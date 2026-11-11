@@ -1107,12 +1107,26 @@ void main() {
   });
 
   group('RemoteRpcSession initialize capabilities', () {
-    test('without repoOps returns the base capabilities unchanged', () async {
+    test('an initialize without a protocol range is refused', () async {
       final space = _FakeChannel();
       final session = _session(space, _RecordingDispatcher());
       addTearDown(session.stop);
       await session.start();
       space.inject({'jsonrpc': '2.0', 'method': 'initialize', 'id': 1});
+      await pumpEventQueue(times: 5);
+      final error = space.sent.single['error'] as Map;
+      expect(error['code'], RpcErrorCodes.opVersionUnsupported);
+      expect((error['data'] as Map)['supported_versions'], [
+        RepoRpcProtocol.max,
+      ]);
+    });
+
+    test('without repoOps returns the base capabilities unchanged', () async {
+      final space = _FakeChannel();
+      final session = _session(space, _RecordingDispatcher());
+      addTearDown(session.stop);
+      await session.start();
+      space.inject(_initialize);
       await pumpEventQueue(times: 5);
       final result = space.sent.single['result'] as Map<String, dynamic>;
       // Base dispatcher returns capabilities with no repoRpc/subscriptions —
@@ -1148,7 +1162,7 @@ void main() {
         );
         addTearDown(session.stop);
         await session.start();
-        space.inject({'jsonrpc': '2.0', 'method': 'initialize', 'id': 1});
+        space.inject(_initialize);
         await pumpEventQueue(times: 5);
         final caps =
             (space.sent.single['result'] as Map)['capabilities'] as Map;
@@ -1175,7 +1189,7 @@ void main() {
       );
       addTearDown(session.stop);
       await session.start();
-      space.inject({'jsonrpc': '2.0', 'method': 'initialize', 'id': 1});
+      space.inject(_initialize);
       await pumpEventQueue(times: 5);
       // repoRpc is still injected into a fresh caps map (no crash).
       final caps = (space.sent.single['result'] as Map)['capabilities'] as Map;
@@ -1605,3 +1619,13 @@ class _RecordingDispatcher implements RpcDispatcher {
     };
   }
 }
+
+/// An `initialize` frame carrying this build's protocol range.
+const Map<String, dynamic> _initialize = {
+  'jsonrpc': '2.0',
+  'method': 'initialize',
+  'id': 1,
+  'params': {
+    'protocol': {'min': RepoRpcProtocol.min, 'max': RepoRpcProtocol.max},
+  },
+};

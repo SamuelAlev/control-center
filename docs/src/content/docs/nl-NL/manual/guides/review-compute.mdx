@@ -2,7 +2,7 @@
 title: Review-compute (cohorten, assen en deterministische diffs)
 description: Wat de review-compute-ronde server-side oplevert — cohorten, API-contract- en visuele diffs, poorten per as — en hoe dat samenkomt in het tabblad Review.
 slug: nl-NL/handleiding/gidsen/review-compute
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Het tabblad **Review** van de PR is de live voortgang van de reviewpipeline terwijl
@@ -15,8 +15,6 @@ Achter dat tabblad bouwt `cc_server` bestandscohorten, draait het de
 deterministische assen en serveert het die via de RPC-operaties `review_studio.*`
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` en hun `watch*`-tweeling).
-Een opgeslagen layout die nog `pr.reviewStudio` heet, opent ditzelfde tabblad
-Review.
 
 Op het tabblad Review:
 
@@ -89,6 +87,8 @@ rendert de compute-ronde de gewijzigde componenten voor en na via een headless
 `flutter test`-goldenpass in de base- en head-worktrees van de PR, en vergelijkt
 daarna de pixels.
 
+Die tests zijn de eigen code van de pull request, dus ze draaien zoals een agenttoolproces: binnen de sandbox wanneer de server agents in een sandbox draait, onbeperkt wanneer de serverbeheerder de sandbox heeft uitgezet, en zonder sandbox alleen voor een verzoek waarvoor de serverbeheerder verantwoordelijk is. Voor alle anderen meldt de as **unavailable** met de reden "no sandbox on this server, and only its owner may run a PR's tests unsandboxed".
+
 :::note[Hiervoor is een Flutter-SDK op de serverhost nodig]
 De pure-Dart-server kan Flutter-widgets niet in-process renderen, dus roept hij
 `flutter test` aan als apart proces. De SDK moet geïnstalleerd zijn op de machine die
@@ -99,9 +99,10 @@ die hij niet heeft verdiend.
 
 Snapshots die als **changed** of **removed** zijn gemarkeerd, houden de visuele
 poort tegen tot ze zijn goedgekeurd; **unchanged**, **added** en **approved**
-snapshots openen hem. Niet-beschikbaarheid heeft een van vier redenen: geen
-Flutter-SDK op de host, geen Widgetbook-app in de repo, geen golden-testbare
-use-cases, of een fout in de golden harness.
+snapshots openen hem. Niet-beschikbaarheid heeft een van vijf redenen: geen Flutter-SDK op de host,
+geen Widgetbook-app in de repo, geen golden-testbare use-cases, een fout in de
+golden harness, of geen sandbox voor een verzoek waarvoor de serverbeheerder
+niet verantwoordelijk is.
 
 Een bedoelde wijziging goedkeuren doe je met `review_studio.approveVisual`.
 

@@ -68,8 +68,8 @@ final phoneWorkspaceGoalsProvider = StreamProvider.autoDispose
       return RpcAgentGoalRunRepository(client).watchForWorkspace(workspaceId);
     });
 
-/// Context-filtered goals use the original conversation watch (older hosts
-/// can still serve the conversation detail without the workspace inventory).
+/// One conversation's goals, over the conversation watch rather than the
+/// workspace inventory.
 final phoneConversationGoalsProvider = StreamProvider.autoDispose
     .family<List<AgentGoalRun>, ({String workspaceId, String conversationId})>((
       ref,

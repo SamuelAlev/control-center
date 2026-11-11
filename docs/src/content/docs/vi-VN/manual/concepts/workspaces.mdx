@@ -2,7 +2,7 @@
 title: Không gian làm việc và cô lập
 description: Vì sao không gian làm việc là một ranh giới tenant cứng, cách việc tách cơ sở dữ liệu biến ranh giới đó thành cấu trúc và điều gì chủ đích vượt qua nó.
 slug: vi-VN/so-tay/khai-niem/khong-gian-lam-viec
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Không gian làm việc là gì?
@@ -79,9 +79,11 @@ Một tệp không gian làm việc chỉ mang một `workspace_meta` một hàn
 
 ## Tạo một không gian làm việc
 
+Chỉ [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) mới có thể tạo một không gian làm việc; máy chủ cấp phát id của nó. Quản trị viên hoặc chủ sở hữu không gian làm việc không thể tạo thêm một cái khác. Ai chưa ở trong không gian làm việc nào sẽ thấy **Bạn chưa ở trong không gian làm việc nào**, thông báo yêu cầu họ nhờ chủ sở hữu máy chủ tạo một cái, hoặc nhờ quản trị viên không gian làm việc mời; còn biểu mẫu **Thêm không gian làm việc** nói điều tương tự với những người khác.
+
 Tạo một không gian làm việc làm nhiều hơn việc chèn một hàng vào sổ đăng ký. Trong một thao tác, máy chủ đóng dấu người dùng tạo là `ownerUserId`, ghi lại tư cách thành viên vai trò chủ sở hữu của người dùng đó và phát một sự kiện miền `WorkspaceCreated`. Các bên lắng nghe sự kiện đó sau đó gieo mầm, một cách idempotent và trong nền:
 
-- một **agent CEO** cùng bốn chuyên gia — `qa`, `architect`, `engineer`, `librarian` — với các chuyên gia báo cáo cho CEO;
+- một **agent CEO** cùng năm chuyên gia — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — với các chuyên gia báo cáo cho CEO;
 - các **mẫu quy trình tích hợp** và trình kích hoạt của chúng (trình kích hoạt sự kiện và thủ công được bật sẵn; các trình kích hoạt theo lịch là tùy chọn, ngoại trừ tác vụ quét GC worktree hằng ngày);
 - các **bộ đánh giá khởi đầu**.
 
@@ -90,7 +92,7 @@ Tạo một không gian làm việc làm nhiều hơn việc chèn một hàng v
 Việc ghi tư cách thành viên chủ sở hữu quan trọng hơn vẻ ngoài của nó: nếu không có nó, không gian làm việc vừa tạo sẽ không có thành viên nào và mọi lời gọi thuộc phạm vi không gian làm việc mà người tạo thực hiện tiếp theo đều bị từ chối.
 
 :::note[Agent không thể tạo không gian làm việc]
-Không có công cụ MCP `create_workspace`. Con người tạo không gian làm việc qua `workspace.create` (điểm chặn chỉ có tên) hoặc `workspace.upsert` (bản ghi đầy đủ, cũng dùng cho cập nhật). Cả hai đều đóng dấu người dùng tạo là `owner` và phát `WorkspaceCreated`.
+Không có công cụ MCP `create_workspace`. Chủ sở hữu máy chủ tạo không gian làm việc qua `workspace.create`, công cụ này đóng dấu họ là `owner` của nó và phát `WorkspaceCreated`. `workspace.upsert` chỉ cập nhật một không gian làm việc đã tồn tại; nó không bao giờ tạo mới và cũng không bao giờ đổi chủ sở hữu của không gian làm việc, việc đó chỉ **Chuyển quyền sở hữu** mới làm được.
 :::
 
 ## Xóa, xuất, nhập
@@ -106,7 +108,7 @@ Bởi vì một không gian làm việc là một tệp, việc chuyển giao m�
 
 Các thao tác sao lưu nằm dưới **Cài đặt → Máy chủ → Sao lưu và khôi phục**: **Sao lưu ngay** chụp một ảnh của bản cài đặt, danh sách hiển thị những ảnh chụp nào hoàn tất và cho phép chủ bản cài đặt xóa một ảnh sau khi xác nhận, và mỗi không gian làm việc cung cấp xuất và nhập. Quy trình tích hợp **Workspace backup** chỉ lấy cơ sở dữ liệu của không gian làm việc đó theo lịch hằng tuần và xóa các bản sao lưu của chính nó cũ hơn tuổi lưu trữ đã cấu hình. Những bản sao lưu đó được liệt kê trên cùng trang theo từng không gian làm việc, nơi mỗi bản có thể được khôi phục, tải xuống hoặc xóa. Xóa một không gian làm việc sẽ để lại các bản sao lưu của nó để chủ bản cài đặt lấy về hoặc xóa, vì lịch và việc lưu trữ của nó dừng cùng với nó. Khôi phục một không gian làm việc từ ảnh chụp bản cài đặt là `workspace.import` trỏ tới `<workspaceId>/workspace.db` của ảnh chụp; khôi phục toàn bộ bản cài đặt vẫn là sao chép ngược thư mục ảnh chụp khi máy chủ đã dừng.
 
-Điều mà không thao tác nào mang theo là phần còn lại của thư mục không gian làm việc. Một không gian làm việc tích lũy nhiều hơn một cơ sở dữ liệu — ảnh được dán, tệp skill và agent, thông tin xác thực chat, worktree — và xuất với nhập chỉ di chuyển **tệp**, nên mọi thứ bên cạnh nó vẫn ở nguyên chỗ cũ. Điều đó là chủ đích đối với thông tin xác thực và có thể bỏ đi đối với worktree; với phần còn lại thì đó là một giới hạn cần biết chứ không phải một tính năng. [Tham chiếu sao lưu](/vi-VN/so-tay/tham-chieu/sao-luu/#what-a-backup-does-not-contain) có bảng đầy đủ.
+Điều mà không thao tác nào mang theo là phần còn lại của thư mục không gian làm việc. Một không gian làm việc tích lũy nhiều hơn một cơ sở dữ liệu — ảnh được dán, tệp skill và agent, thông tin xác thực chat, worktree — và xuất với nhập chỉ di chuyển **tệp**, nên mọi thứ bên cạnh nó vẫn ở nguyên chỗ cũ. Điều đó là chủ đích đối với thông tin xác thực và có thể bỏ đi đối với worktree; với phần còn lại thì đó là một giới hạn cần biết chứ không phải một tính năng. [Tham chiếu sao lưu](/vi-VN/so-tay/tham-chieu/sao-luu/#ảnh-chụp-không-chứa-những-gì) có bảng đầy đủ.
 
 ## Di chuyển bản sao lưu giữa máy chủ và thiết bị của bạn
 

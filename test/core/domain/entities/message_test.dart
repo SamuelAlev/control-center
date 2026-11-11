@@ -34,131 +34,72 @@ void main() {
   }
 
   group('MessageMention', () {
-    group('constructor', () {
-      test('creates with required fields', () {
-        const m = MessageMention(agentId: 'a1', raw: '@agent-1');
-        expect(m.agentId, 'a1');
-        expect(m.raw, '@agent-1');
-        expect(m.resolvedVia, isNull);
-      });
+    const agent = MessageMention(
+      principalId: 'a1',
+      raw: '@agent-1',
+      principalType: PrincipalType.agent,
+    );
 
-      test('creates with optional resolvedVia', () {
-        const m = MessageMention(
-          agentId: 'a1',
-          raw: '@agent-1',
-          resolvedVia: 'roster',
-        );
-        expect(m.resolvedVia, 'roster');
-      });
-    });
-
-    group('fromJson/toJson', () {
-      test('round-trips with required fields', () {
-        final json = {'agentId': 'a1', 'raw': '@agent-1'};
-        final m = MessageMention.fromJson(json);
-        expect(m.agentId, 'a1');
-        expect(m.raw, '@agent-1');
-        expect(m.resolvedVia, isNull);
-        expect(m.toJson(), json);
-      });
-
-      test('round-trips with resolvedVia', () {
-        final json = {
-          'agentId': 'a1',
-          'raw': '@agent-1',
-          'resolvedVia': 'roster',
-        };
-        final m = MessageMention.fromJson(json);
-        expect(m.resolvedVia, 'roster');
-        expect(m.toJson(), json);
-      });
-
-      test('toJson omits resolvedVia when null', () {
-        const m = MessageMention(agentId: 'a1', raw: '@agent-1');
-        final json = m.toJson();
-        expect(json.containsKey('resolvedVia'), isFalse);
+    test('round-trips through toJson/fromJson', () {
+      const human = MessageMention(
+        principalId: 'u1',
+        raw: '@ada',
+        resolvedVia: 'roster',
+        principalType: PrincipalType.user,
+      );
+      expect(MessageMention.fromJson(agent.toJson()), agent);
+      expect(MessageMention.fromJson(human.toJson()), human);
+      expect(agent.toJson(), {
+        'principalId': 'a1',
+        'principalType': 'agent',
+        'raw': '@agent-1',
       });
     });
 
-    group('principalType (PRD 16 §15)', () {
-      test('defaults to agent', () {
-        const m = MessageMention(agentId: 'a1', raw: '@agent-1');
-        expect(m.principalType, PrincipalType.agent);
-        expect(m.principalId, 'a1');
-      });
-
-      test('toJson omits principalType when it is the default agent', () {
-        const m = MessageMention(agentId: 'a1', raw: '@agent-1');
-        expect(m.toJson().containsKey('principalType'), isFalse);
-      });
-
-      test('a human mention round-trips through toJson/fromJson', () {
-        const m = MessageMention(
-          agentId: 'u1',
-          raw: '@ada',
-          principalType: PrincipalType.user,
-        );
-        final json = m.toJson();
-        expect(json['principalType'], 'user');
-        final decoded = MessageMention.fromJson(json);
-        expect(decoded.principalType, PrincipalType.user);
-        expect(decoded.principalId, 'u1');
-        expect(decoded, m);
-      });
-
-      test('fromJson is tolerant of a frame with no principalType (defaults '
-          'to agent)', () {
-        final m = MessageMention.fromJson({'agentId': 'a1', 'raw': '@agent-1'});
-        expect(m.principalType, PrincipalType.agent);
-      });
-
-      test('fromJson defaults to agent for an unknown principalType value', () {
-        final m = MessageMention.fromJson({
-          'agentId': 'a1',
-          'raw': '@agent-1',
+    test('fromJson refuses a frame without a known principalType', () {
+      expect(
+        () => MessageMention.fromJson({'principalId': 'a1', 'raw': '@a'}),
+        throwsFormatException,
+      );
+      expect(
+        () => MessageMention.fromJson({
+          'principalId': 'a1',
+          'raw': '@a',
           'principalType': 'robot',
-        });
-        expect(m.principalType, PrincipalType.agent);
-      });
-
-      test('mentions with different principalType are not equal', () {
-        const a = MessageMention(agentId: 'x1', raw: '@x');
-        const b = MessageMention(
-          agentId: 'x1',
-          raw: '@x',
-          principalType: PrincipalType.user,
-        );
-        expect(a, isNot(equals(b)));
-      });
+        }),
+        throwsFormatException,
+      );
     });
 
-    group('== and hashCode', () {
-      test('equal for same values', () {
-        const a = MessageMention(agentId: 'a1', raw: '@agent-1');
-        const b = MessageMention(agentId: 'a1', raw: '@agent-1');
-        expect(a, equals(b));
-        expect(a.hashCode, equals(b.hashCode));
-      });
-
-      test('not equal for different agentId', () {
-        const a = MessageMention(agentId: 'a1', raw: '@agent-1');
-        const b = MessageMention(agentId: 'a2', raw: '@agent-1');
-        expect(a, isNot(equals(b)));
-      });
-
-      test('not equal for different resolvedVia', () {
-        const a = MessageMention(
-          agentId: 'a1',
+    test('equality covers every field', () {
+      expect(
+        agent,
+        const MessageMention(
+          principalId: 'a1',
           raw: '@agent-1',
-          resolvedVia: 'x',
-        );
-        const b = MessageMention(
-          agentId: 'a1',
-          raw: '@agent-1',
-          resolvedVia: 'y',
-        );
-        expect(a, isNot(equals(b)));
-      });
+          principalType: PrincipalType.agent,
+        ),
+      );
+      expect(
+        agent,
+        isNot(
+          const MessageMention(
+            principalId: 'a1',
+            raw: '@agent-1',
+            principalType: PrincipalType.user,
+          ),
+        ),
+      );
+      expect(
+        agent,
+        isNot(
+          const MessageMention(
+            principalId: 'a2',
+            raw: '@agent-1',
+            principalType: PrincipalType.agent,
+          ),
+        ),
+      );
     });
   });
 
@@ -271,9 +212,7 @@ void main() {
       });
 
       test('isReviewSummary', () {
-        final msg = createMessage(
-          messageType: MessageType.reviewSummary,
-        );
+        final msg = createMessage(messageType: MessageType.reviewSummary);
         expect(msg.isReviewSummary, isTrue);
       });
 
@@ -413,12 +352,16 @@ void main() {
         final msg = createMessage(
           metadata: {
             'mentions': [
-              {'agentId': 'a1', 'raw': '@agent-1'},
+              {
+                'principalId': 'a1',
+                'principalType': 'agent',
+                'raw': '@agent-1',
+              },
             ],
           },
         );
         expect(msg.mentions, hasLength(1));
-        expect(msg.mentions.first.agentId, 'a1');
+        expect(msg.mentions.first.principalId, 'a1');
       });
 
       test('skips entries that are not Map<String, dynamic>', () {

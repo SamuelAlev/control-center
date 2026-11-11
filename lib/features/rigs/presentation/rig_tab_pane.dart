@@ -11,9 +11,11 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.
 import 'package:cc_ui/cc_ui.dart';
 
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/rigs/presentation/rig_access_notes.dart';
 import 'package:control_center/features/rigs/presentation/rig_panel.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_states.dart';
-import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
+import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -43,24 +45,13 @@ class RigTabPane extends ConsumerStatefulWidget {
   /// WHICH machine of this surface + engine in the conversation.
   ///
   /// Null is the conversation's default machine — what an agent's `*_use`
-  /// calls drive, and what every tab means when it names no slot (including
-  /// every tab in a layout written before a conversation could hold two of a
-  /// kind). A non-null slot is a second machine, opened deliberately.
+  /// calls drive, and what every tab means when it names no slot. A non-null
+  /// slot is a second machine, opened deliberately.
   final String? slotId;
 
-  /// Which browser, on the browser surface. Null on the others and on a tab
-  /// restored from a layout written before engines existed.
+  /// Which browser, on the browser surface (where a restored layout always
+  /// names one). Null on the other surfaces.
   final RigBrowserEngine? engine;
-
-  /// The engine this tab actually addresses.
-  ///
-  /// A browser tab with no engine is a Chromium tab — that is what a layout
-  /// written before engines existed meant, and resolving it here is what
-  /// stops such a tab from matching (and later destroying) the Firefox
-  /// machine beside it.
-  RigBrowserEngine? get resolvedEngine => surface == RigTabSurfaces.browser
-      ? (engine ?? RigBrowserEngine.chromium)
-      : null;
 
   /// The conversation the rig belongs to (a space, or a PR's space).
   final String? conversationId;
@@ -103,12 +94,22 @@ class _RigTabPaneState extends ConsumerState<RigTabPane> {
             workspaceId: workspaceId,
             surface: widget.surface,
             conversationId: conversationId,
-            engine: widget.resolvedEngine?.wire,
+            engine: widget.engine?.wire,
             homeTheme: homeTheme,
             slotId: widget.slotId,
           );
     } on Object catch (e) {
-      if (mounted) {
+      // No write grant on the space (or no read): the access state says so
+      // in place of the start button, not as a boot failure.
+      final refused =
+          mounted &&
+          (rigAccessNotifierOf(
+                ref,
+                workspaceId,
+                conversationId,
+              )?.noteRefusal(e) ??
+              false);
+      if (mounted && !refused) {
         setState(() => _error = '$e');
       }
     } finally {
@@ -119,11 +120,19 @@ class _RigTabPaneState extends ConsumerState<RigTabPane> {
   }
 
   Future<void> _stop(String workspaceId, String rigId) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await ref.read(rigRepositoryProvider).destroy(workspaceId, rigId);
     } on Object catch (e) {
       if (mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
+        rigAccessNotifierOf(
+          ref,
+          workspaceId,
+          widget.conversationId,
+        )?.noteRefusal(e);
+        CcToastScope.of(
+          context,
+        ).show(repoRefusalOf(l10n, e) ?? '$e', variant: CcToastVariant.danger);
       }
     }
   }
@@ -156,12 +165,27 @@ class _RigTabPaneState extends ConsumerState<RigTabPane> {
       return RigNotice(text: l10n.rigTabNeedsConversation);
     }
 
+    // Someone who cannot read the space sees no machine at all. A machine
+    // that exists follows its own row (whether this person may drive it);
+    // Start, which has no row yet, follows the space: only a read grant
+    // there means no starting one.
+    final access = ref.watch(
+      rigAccessProvider((workspaceId: workspaceId, spaceId: conversationId)),
+    );
+    if (access.access == RigAccess.none) {
+      return RigAccessRefused(
+        refusal: access.refusal,
+        workspaceId: workspaceId,
+      );
+    }
+    final watchOnly = access.access == RigAccess.watch;
+
     final rig = ref.watch(
       conversationRigProvider((
         workspaceId: workspaceId,
         conversationId: conversationId,
         surface: widget.surface,
-        engine: widget.resolvedEngine,
+        engine: widget.engine,
         slotId: widget.slotId,
       )),
     );
@@ -171,7 +195,9 @@ class _RigTabPaneState extends ConsumerState<RigTabPane> {
         rig: rig,
         paused: !widget.isVisible,
         audioTabKey: widget.audioTabKey,
-        onStop: () => unawaited(_stop(workspaceId, rig.id)),
+        onStop: rigAccessOf(rig, access.access).access != RigAccess.drive
+            ? null
+            : () => unawaited(_stop(workspaceId, rig.id)),
       );
     }
 
@@ -184,26 +210,27 @@ class _RigTabPaneState extends ConsumerState<RigTabPane> {
         workspaceId: workspaceId,
         conversationId: conversationId,
         surface: widget.surface,
-        engine: widget.resolvedEngine,
+        engine: widget.engine,
         slotId: widget.slotId,
       )),
     );
     if (pending != null && !pending.isFailed) {
       return RigProgress(
         surface: widget.surface,
-        engine: widget.resolvedEngine,
+        engine: widget.engine,
         detail: pending.detail,
       );
     }
 
     return RigStart(
       surface: widget.surface,
-      engine: widget.resolvedEngine,
+      engine: widget.engine,
       starting: _starting,
       // A failed boot's reason outlives the call that started it: the rig row
       // carries it, so a user who navigated away and back still sees why.
       error: _error ?? (pending?.isFailed ?? false ? pending?.detail : null),
-      onStart: () => unawaited(_start(workspaceId)),
+      refusal: watchOnly ? l10n.rigStartNeedsWrite : null,
+      onStart: watchOnly ? null : () => unawaited(_start(workspaceId)),
     );
   }
 }

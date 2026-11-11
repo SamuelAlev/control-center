@@ -74,7 +74,7 @@ enum BrowserPermissionDecision {
   /// Stable wire string.
   String get wire => name;
 
-  /// Parses [value], defaulting to [pending] so an older payload still
+  /// Parses [value], defaulting to [pending] so an unknown value still
   /// surfaces as something the flyout can show.
   static BrowserPermissionDecision fromWire(String? value) {
     for (final d in BrowserPermissionDecision.values) {

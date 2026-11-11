@@ -2,7 +2,7 @@
 title: Dùng đánh giá hỗ trợ AI
 description: Chạy quy trình pr_review trên một PR, đọc các phát hiện và kết luận, rồi xuất bản đánh giá lên GitHub.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/danh-gia-ai
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Hướng dẫn này chỉ cho bạn cách để các agent đánh giá xem xét một pull request và
@@ -120,7 +120,7 @@ Control Center gửi **một** đánh giá GitHub duy nhất. Những phát hi�
 quyết hoặc đã bỏ qua sẽ bị bỏ qua. Nút này bao gồm mọi phát hiện đang mở còn lại
 và, khi **Ship**, gửi `APPROVE`. (Công cụ MCP `publish_review_to_github` mặc định
 chỉ dùng các phát hiện đã được xác nhận ngang hàng và không bao giờ phê duyệt: nó
-xuất bản dưới dạng tự động hóa, nên `approve_on_ship` không có tác dụng ở đó.)
+xuất bản dưới dạng tự động hóa, nên `approve_on_ship` không có tác dụng ở đó. Việc xuất bản tự động này do bot đăng, trừ trường hợp ứng dụng Control Center Connect dùng chung mà nhà vận hành Connect chưa đưa cài đặt này vào danh sách: khi đó nó được gửi bằng đăng nhập GitHub của chính người chịu trách nhiệm, dưới tên họ.)
 Những phát hiện có neo tệp và dòng sẽ trở thành bình luận nội tuyến; mọi thứ còn lại được gộp vào phần thân tóm tắt, mỗi
 mục kèm một chân trang "— Control Center AI review" để nguồn gốc rõ ràng. Một kết
 luận **Block** được gửi dưới dạng `REQUEST_CHANGES`; **Hold** là `COMMENT`;
@@ -142,7 +142,7 @@ của agent nếu bạn muốn nó chạy không cần giám sát.
 
 Các quy trình tích hợp sẵn khác thì đăng thẳng lên GitHub: `cross_review`,
 `pr_triage`, `ticket_to_pr` và `pre_merge_gate` đều kết thúc bằng một bước bình
-luận. Chỉ riêng `pr_review` giữ kết quả lại cho bạn.
+luận, do máy chủ đăng. Chỉ riêng `pr_review` giữ kết quả lại cho bạn. Không cái nào trong số này merge hoặc phê duyệt.
 
 ## Tự điều phối người đánh giá
 

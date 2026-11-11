@@ -252,7 +252,7 @@ void main() {
         spaceId: 'ch-1',
         conversationId: 'ch-1',
         senderId: 'system',
-        senderType: 'agent',
+        senderType: 'system',
         content: 'System message',
         messageType: 'system',
         compacted: false,
@@ -266,8 +266,6 @@ void main() {
 
       expect(message.messageType.name, 'system');
       expect(message.isSystem, isTrue);
-      // A row written before `SenderType.system` (agent from `system`) still
-      // decodes as server-authored.
       expect(message.senderType, SenderType.system);
     });
 
@@ -294,7 +292,6 @@ void main() {
       expect(decode('agent-1', 'agent'), SenderType.agent);
       expect(decode('system', 'system'), SenderType.system);
       expect(decode('agent-1', 'robot'), SenderType.agent);
-      expect(decode('system', 'robot'), SenderType.system);
     });
 
     test('maps ticket_card message type', () {

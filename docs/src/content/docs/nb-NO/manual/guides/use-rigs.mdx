@@ -2,7 +2,7 @@
 title: Gi en agent en maskin å teste på
 description: Gi en agent en kastbar nettleser, et skrivebord, en Android-emulator eller en iOS-simulator — overvåket i sanntid, med kontroller du kan ta over.
 slug: nb-NO/handbok/slik-gjor-du/bruk-stasjoner
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 En **stasjon** er en kastbar maskin en agent åpner når den faktisk må prøve
@@ -132,6 +132,21 @@ Trykk **Stopp maskinen** når du er ferdig.
 
 Kontrollen er eksklusiv med vilje: to aktører som skriver inn i én maskin,
 produserer inndata ingen av dem mente.
+
+### Hvem kan se på maskinen, og hvem kan styre den
+
+En maskin åpnet i et område følger områdets repositorier, på samme måte som området selv gjør (se [Områder følger sine repositorier](/nb-NO/handbok/konsepter/autorisasjon/#områder-følger-repoene-sine)):
+
+- **Å se på den** krever lesetilgang til området: en lesetilgang på hvert repository området viser, og at din egen innlogging hos kodeverten kan lese hvert av dem. Å se på dekker listen over maskiner, skjermen, lyden, nettleserens tilstand, portene, og å lese utklippstavlen og filene.
+- **Å styre den** krever også en [skrivetilgang](/nb-NO/handbok/konsepter/autorisasjon/#endring-av-kode-krever-skrivetilgang) på disse repositoriene. Å styre dekker å åpne en maskin i området, skrive og klikke, ta kontroll, starte, stoppe og lukke den, videresende portene, skrive til utklippstavlen, slippe filer på den og bruke mikrofonen.
+
+Med bare lesetilgang viser maskinen **Kun se**, og "Du kan se på denne maskinen. Å styre den, videresende porter, lime inn i den eller slippe filer på den krever skrivetilgang til alle arkiver i dette området." Under en deaktivert **Start maskinen** sier fanen "Å starte en maskin her krever skrivetilgang til alle arkiver i dette området. En arbeidsområdeadministrator kan gi den." Uten lesetilgang vises ikke maskinen, bare "Du kan ikke se denne maskinen. Den tilhører et område du ikke har lesetilgang til."
+
+En maskin som ikke tilhører noe område, når ingen worktree, og alle medlemmer av arbeidsområdet kan se på og styre den.
+
+En maskin som bærer én persons egne innloggingsopplysninger, er deres å styre: deres terminalmaskin, eller enhver maskin åpnet for dem der nettverkstilgangen når en kodevert. Bare den personen, og agentkjøringer som handler for dem alene, kan styre den. Arbeidsområdeadministratorer og serverens eier overstyrer ikke dette. Andre som området slipper inn, kan fortsatt se på skjermen, lyden, tilstanden og portene, men kan ikke styre den, videresende portene, lime inn i den, slippe filer på den, kopiere filer ut av den eller lese utklippstavlen. En slik maskin viser **Kun se** med denne merknaden: "Du kan se på denne maskinen. Den bruker innloggingene til personen den ble åpnet for, så bare personen kan styre den, videresende porter, lime inn i den eller slippe filer på den." En handling som avvises av denne grunnen, sier "Bare personen maskinen ble åpnet for, kan styre den. Den bruker personens egne innlogginger." Andres terminalmaskin vises ikke for deg i det hele tatt, akkurat som deres terminaløkter.
+
+Hver maskin viser om du kan styre den, og det oppdateres selv når en tilgang eller din innlogging hos kodeverten endres.
 
 ## Flytt ting inn og ut
 

@@ -2,7 +2,7 @@
 title: Bruksanalyse
 description: Hva Control Center registrerer når bruksanalyse er slått på, hvem som bestemmer, og hva som aldri sendes.
 slug: nb-NO/handbok/referanse/bruksanalyse
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center kan sende **pseudonyme brukshendelser** til en [Umami](https://umami.is)-instans. Bruksanalyse er **av til serveroperatøren slår den på**. Innstillingen hører til serveren og gjelder for alle klienter som er koblet til den: skrivebordsappen, nettappen, telefonen og selve serveren.
@@ -13,7 +13,7 @@ Bruksanalyse er atskilt fra **Del krasjrapporter**, som er en innstilling per en
 
 | Bryter | Hvor | Virkning |
 | --- | --- | --- |
-| **Del bruksanalyse** | Onboarding (sandkassetrinnet) og **Innstillinger → Personvern**. Bare serveroperatøren kan endre den; andre medlemmer ser gjeldende verdi skrivebeskyttet | Gjelder hele serveren. Lagres som `telemetry.usage_analytics` i serverinnstillingene. Av med mindre den er satt til `true` |
+| **Del bruksanalyse** | Onboarding (sandkassetrinnet) og **Innstillinger → Server → Diagnostikk og personvern**. Bare serveroperatøren kan endre den; andre medlemmer ser gjeldende verdi skrivebeskyttet | Gjelder hele serveren. Lagres som `telemetry.usage_analytics` i serverinnstillingene. Av med mindre den er satt til `true` |
 | Byggtype | Automatisk | Debug- og profile-bygg sender ikke noe. De skriver i stedet hver hendelse til feilsøkingsloggen |
 | `CC_ANALYTICS_DEBUG=1` | Miljøet til `cc_server` eller `.env`-filen dens | Lar debug- og profile-bygg av serveren, og av alle klienter som er koblet til den, sende på ekte for testing. Bryteren over må fortsatt være på |
 | `DO_NOT_TRACK=1` | Miljøet til `cc_server` | Stopper serverens egen rapportering, uansett hva bryteren står på. Klientene følger fortsatt bryteren |

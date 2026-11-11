@@ -8,7 +8,6 @@
 /// plus `foundation.dart` for the commit-chord glyph).
 library;
 
-import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -355,40 +354,11 @@ String scmSyncCounts({required int ahead, required int behind}) {
 /// Whether Source Control should offer Create pull request.
 ///
 /// Being in sync with the branch's own upstream is not "nothing to propose":
-/// publishing drops [ahead] to 0 while the commits are still ahead of the
+/// publishing drops `ahead` to 0 while the commits are still ahead of the
 /// default branch, and that is the pull request. [aheadOfBase] is that count.
-/// When the connected server does not report it, a published non-default
-/// branch still qualifies.
 bool scmCanOpenPullRequest({
   required bool hasForgeRemote,
   required bool hasExistingPr,
   required int dirtyFiles,
-  required bool statusKnown,
-  required bool hasUpstream,
-  required int ahead,
   required int aheadOfBase,
-  required bool aheadOfBaseKnown,
-  required String branch,
-}) {
-  if (!hasForgeRemote) {
-    return false;
-  }
-  if (hasExistingPr || dirtyFiles > 0) {
-    return true;
-  }
-  if (!statusKnown) {
-    return branch.startsWith(kSpaceScratchBranchPrefix);
-  }
-  if (aheadOfBaseKnown) {
-    return aheadOfBase > 0;
-  }
-  if (ahead > 0) {
-    return true;
-  }
-  return hasUpstream && !_scmIsDefaultBranch(branch);
-}
-
-bool _scmIsDefaultBranch(String branch) {
-  final name = branch.trim();
-  return name == 'main' || name == 'master';
-}
+}) => hasForgeRemote && (hasExistingPr || dirtyFiles > 0 || aheadOfBase > 0);

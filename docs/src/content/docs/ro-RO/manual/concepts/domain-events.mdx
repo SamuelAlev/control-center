@@ -2,7 +2,7 @@
 title: Evenimente de domeniu
 description: De ce funcționalitățile comunică printr-un bus de evenimente în proces în loc să se importe reciproc, pentru ce anume este bus-ul sursa de adevăr și pentru ce nu și ce evenimente pot conduce efectiv automatizarea.
 slug: ro-RO/manual/concepte/evenimente-de-domeniu
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Ce este un eveniment de domeniu
@@ -40,8 +40,6 @@ logica de trimitere.
 
 Costul este cel obișnuit: un publicator nu poate spune dacă cineva ascultă, iar
 un ascultător care nu este niciodată construit rămâne mut în mod silențios.
-`TicketRemoteSyncHandler` este exemplul constant: este declarat, acoperit de
-teste și niciodată conectat în producție.
 
 ## Ce nu este bus-ul
 

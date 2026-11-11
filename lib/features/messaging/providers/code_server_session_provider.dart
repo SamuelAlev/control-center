@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart';
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -116,14 +117,26 @@ final codeServerSessionProvider = FutureProvider.autoDispose
       // opens, because the server rewrites settings.json on every open (reuse path
       // included) and VS Code hot-reloads it for the whole worktree's windows.
       final autoSave = ref.read(editorAutoSaveModeProvider).wireValue;
-      final data = await client.call('codeServer.open', {
-        'workspace_id': workspaceId,
-        'space_id': request.spaceId,
-        if (request.repoId != null) 'repo_id': request.repoId!,
-        if (request.path != null) 'path': request.path!,
-        if (request.line != null && request.line! > 0) 'line': request.line!,
-        'auto_save': autoSave,
-      });
+      // Owner-only on the server: a refusal surfaces typed
+      // (ServerOwnerRequiredException), never as a raw RPC error.
+      final Map<String, dynamic> data;
+      try {
+        data = await client.call('codeServer.open', {
+          'workspace_id': workspaceId,
+          'space_id': request.spaceId,
+          if (request.repoId != null) 'repo_id': request.repoId!,
+          if (request.path != null) 'path': request.path!,
+          if (request.line != null && request.line! > 0) 'line': request.line!,
+          'auto_save': autoSave,
+        });
+      } on RemoteRpcException catch (e) {
+        throw serverOwnerRequiredFromRpc(
+              code: e.code,
+              message: e.message,
+              data: e.data,
+            ) ??
+            e;
+      }
       sessionId = data['session_id'] as String?;
       if (disposed) {
         unawaited(release());
@@ -169,8 +182,8 @@ class CodeServerOpenEvent {
   /// Best-effort 0-based go-to line, or null.
   final int? line;
 
-  /// The bridge id of the editor window that navigated (null from an older
-  /// bridge), so the file's tab opens in the pane holding that window.
+  /// The bridge id of the editor window that navigated (null when the bridge
+  /// names none), so the file's tab opens in the pane holding that window.
   final String? windowId;
 }
 

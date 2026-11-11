@@ -1,6 +1,7 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -69,6 +70,22 @@ void main() {
       final upsertArgs = host.lastCall('repos.upsert')!.args;
       expect(upsertArgs['workspace_id'], _ws);
       expect((upsertArgs['repo'] as Map)['id'], 'fallback');
+      expect(upsertArgs.containsKey('relink'), isFalse);
+    });
+
+    test('a relink says so to the server', () async {
+      await RemoteRepoRepository(client).link(
+        _ws,
+        RepoDto(
+          id: 'r1',
+          name: 'n',
+          path: '/p',
+          remoteOwner: 'o',
+          remoteName: 'r',
+        ),
+        relink: true,
+      );
+      expect(host.lastCall('repos.upsert')!.args['relink'], isTrue);
     });
 
     test('delete forwards workspace_id + repo_id', () async {
@@ -85,12 +102,53 @@ void main() {
         'repo': {'id': 'r3', 'name': 'added', 'path': '/srv/checkout'},
       };
       final repo = RemoteRepoRepository(client);
-      final dto = await repo.addFromPath(_ws, '/srv/checkout');
-      expect(dto.id, 'r3');
+      final result = await repo.addFromPath(_ws, '/srv/checkout');
+      expect(result.repo.id, 'r3');
+      expect(result.warnings, isEmpty);
       expect(host.lastCall('repos.addFromPath')!.args, {
         'workspace_id': _ws,
         'path': '/srv/checkout',
       });
+    });
+
+    test('addFromPath and link carry access warnings', () async {
+      const warnings = [
+        {
+          'state': 'app_not_installed',
+          'message': 'The GitHub App is not installed on acme.',
+          'install_url': 'https://github.com/apps/cc/installations/new',
+        },
+        {'state': 'not_a_state'},
+        'junk',
+      ];
+      host.callResults['repos.addFromPath'] = {
+        'repo': {'id': 'r3', 'name': 'added', 'path': '/srv/checkout'},
+        'access_warnings': warnings,
+      };
+      host.callResults['repos.upsert'] = {
+        'repo_id': 'r4',
+        'access_warnings': warnings,
+      };
+      const expected = RepoAccessWarning(
+        state: RepoAccessState.appNotInstalled,
+        message: 'The GitHub App is not installed on acme.',
+        installUrl: 'https://github.com/apps/cc/installations/new',
+      );
+      final repo = RemoteRepoRepository(client);
+      final added = await repo.addFromPath(_ws, '/srv/checkout');
+      expect(added.warnings, [expected]);
+      final linked = await repo.link(
+        _ws,
+        RepoDto(
+          id: 'r4',
+          name: 'n',
+          path: '/p',
+          remoteOwner: 'acme',
+          remoteName: 'api',
+        ),
+      );
+      expect(linked.repoId, 'r4');
+      expect(linked.warnings, [expected]);
     });
 
     test('watchAll skips non-Map rows', () async {

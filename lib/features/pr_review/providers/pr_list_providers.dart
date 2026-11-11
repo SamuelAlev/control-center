@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart' show PullRequestDto;
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/enriched_pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
@@ -12,6 +13,7 @@ import 'package:control_center/features/forge/providers/forge_providers.dart'
     show viewerLoginsProvider;
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
+import 'package:control_center/features/pr_review/providers/pr_table_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/shared/utils/repo_filters.dart';
@@ -61,15 +63,33 @@ class PrsByRepoState {
     required this.hasMore,
     required this.nextPage,
     required this.loadingMore,
-    this.reviewedByRepo = const {},
     this.authenticated = true,
     this.scopeKey,
     this.sweeping = false,
-    this.inaccessibleRepos = const [],
+    this.repoAccess = const [],
+    this.hiddenRepos = const [],
+    this.totalCount = const {},
+    this.extraPrs = const {},
+    this.loadMoreFailed = const {},
   });
 
-  /// PRs grouped by repository.
+  /// PRs grouped by repository: the live first page plus any [extraPrs]
+  /// loaded behind it, merged.
   final List<RepoPullRequests> repos;
+
+  /// Each repo's open PR count across every page, keyed by repo ID, as the
+  /// forge reports it. Absent when the forge gives no total.
+  final Map<String, int> totalCount;
+
+  /// PRs loaded past the first page (via [PrsByRepoNotifier.loadMore]), keyed
+  /// by repo ID. Disjoint from the first page; already merged into [repos].
+  /// Kept apart so a pushed snapshot (which only carries the first page) can
+  /// re-merge them instead of truncating the list back to one page.
+  final Map<String, List<PullRequest>> extraPrs;
+
+  /// Whether the last page load for a repo failed, keyed by repo ID. The list
+  /// then offers a retry instead of loading again on its own.
+  final Map<String, bool> loadMoreFailed;
 
   /// Authenticated account/workspace that produced this snapshot.
   final String? scopeKey;
@@ -83,17 +103,12 @@ class PrsByRepoState {
   /// Whether each repo has more pages to load, keyed by repo ID.
   final Map<String, bool> hasMore;
 
-  /// Next page number per repo, keyed by repo ID.
+  /// Next page number per repo, keyed by repo ID. Every page before it is
+  /// loaded.
   final Map<String, int> nextPage;
 
   /// Whether each repo is currently loading more, keyed by repo ID.
   final Map<String, bool> loadingMore;
-
-  /// The set of open PR numbers the current user has already reviewed, keyed by
-  /// repo id. Captured on the first page (the `reviewed-by:@me` search returns
-  /// the complete set for a repo, not a single page), so `loadMore` can label
-  /// newly-loaded PRs without re-issuing the search every page.
-  final Map<String, Set<int>> reviewedByRepo;
 
   /// Whether the server is running a GitHub sweep right now (the subscribe
   /// kick, a background tick, or a forced refresh). The snapshot itself is
@@ -102,10 +117,27 @@ class PrsByRepoState {
   /// spinning for the whole fetch, not just the initial load.
   final bool sweeping;
 
-  /// Linked repos the server's credential cannot access (typically a GitHub
-  /// App not installed on the repo's org). Their queues are absent or stale;
-  /// the list surface explains why instead of showing silently empty repos.
-  final List<InaccessibleRepo> inaccessibleRepos;
+  /// Linked repos automation cannot reach (the GitHub App not installed on
+  /// the owner, the repo not selected, a suspended installation, the
+  /// accountable person without access). Their queues are absent; the list
+  /// surface explains why and offers the fix.
+  final List<RepoAccessIssue> repoAccess;
+
+  /// Linked repos left out of the reader's view, as counts per forge and
+  /// reason: not signed in to that forge here, their account cannot see
+  /// them, no grant in this workspace, or not checked yet.
+  final List<HiddenRepos> hiddenRepos;
+
+  /// Paging state per repo that still has open PRs past its loaded pages.
+  Map<String, PrRepoPaging> get paging => {
+    for (final entry in hasMore.entries)
+      if (entry.value)
+        entry.key: (
+          hasMore: true,
+          loading: loadingMore[entry.key] ?? false,
+          failed: loadMoreFailed[entry.key] ?? false,
+        ),
+  };
 
   /// Returns a copy with the given fields replaced.
   PrsByRepoState copyWith({
@@ -113,11 +145,14 @@ class PrsByRepoState {
     Map<String, bool>? hasMore,
     Map<String, int>? nextPage,
     Map<String, bool>? loadingMore,
-    Map<String, Set<int>>? reviewedByRepo,
     bool? authenticated,
     String? scopeKey,
     bool? sweeping,
-    List<InaccessibleRepo>? inaccessibleRepos,
+    List<RepoAccessIssue>? repoAccess,
+    List<HiddenRepos>? hiddenRepos,
+    Map<String, int>? totalCount,
+    Map<String, List<PullRequest>>? extraPrs,
+    Map<String, bool>? loadMoreFailed,
   }) {
     return PrsByRepoState(
       repos: repos ?? this.repos,
@@ -125,10 +160,13 @@ class PrsByRepoState {
       hasMore: hasMore ?? this.hasMore,
       nextPage: nextPage ?? this.nextPage,
       loadingMore: loadingMore ?? this.loadingMore,
-      reviewedByRepo: reviewedByRepo ?? this.reviewedByRepo,
       authenticated: authenticated ?? this.authenticated,
       sweeping: sweeping ?? this.sweeping,
-      inaccessibleRepos: inaccessibleRepos ?? this.inaccessibleRepos,
+      repoAccess: repoAccess ?? this.repoAccess,
+      hiddenRepos: hiddenRepos ?? this.hiddenRepos,
+      totalCount: totalCount ?? this.totalCount,
+      extraPrs: extraPrs ?? this.extraPrs,
+      loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
     );
   }
 }
@@ -142,41 +180,97 @@ final openPrListRepositoryProvider = Provider<OpenPrListRepository>((ref) {
   return RpcOpenPrListRepository(ref.watch(rpcClientProvider));
 });
 
-/// The linked repos the server's forge credential cannot access, live — the
-/// lite feed behind the repos-settings notice (the PR list reads the same data
-/// off [PrsByRepoState.inaccessibleRepos] instead of subscribing twice).
+/// The linked repos automation cannot reach, live — the lite feed behind the
+/// repos-settings notice (the PR list reads the same data off
+/// [PrsByRepoState.repoAccess] instead of subscribing twice).
 final repoAccessForWorkspaceProvider = StreamProvider.autoDispose
-    .family<List<InaccessibleRepo>, String>(
+    .family<List<RepoAccessIssue>, String>(
       (ref, workspaceId) => ref
           .watch(openPrListRepositoryProvider)
           .watchRepoAccessForWorkspace(workspaceId),
     );
 
+/// Sorts [prs] by most-recent activity (updated-desc).
+List<PullRequest> _byUpdatedDesc(Iterable<PullRequest> prs) => [...prs]
+  ..sort((a, b) => (b.updatedAt ?? _epoch).compareTo(a.updatedAt ?? _epoch));
+
+/// A pushed snapshot plus, per repo, the last page whose loaded rows may no
+/// longer line up with the new first page and need re-reading.
+typedef _PushedState = ({PrsByRepoState state, Map<String, int> staleThrough});
+
 /// Joins the server's per-repo open-PR `groups` back to the workspace's [repos]
 /// (by id), sorts each repo's PRs and the repos by most-recent activity and
 /// carries the server's `authenticated` flag through to the UI gate.
-PrsByRepoState _buildStateFromGroups(
+///
+/// The server only pushes each repo's first page. Pages the user already
+/// loaded behind it ([previous]'s [PrsByRepoState.extraPrs], same scope only)
+/// are re-merged so a push never truncates a scrolled list. When the first
+/// page's membership or the repo's total changed, those pages may have
+/// shifted; the repo is reported in `staleThrough` so they are re-read.
+_PushedState _buildStateFromGroups(
   List<Repo> repos,
   WorkspaceOpenPrs result,
-  String? scopeKey,
-) {
+  String? scopeKey, {
+  PrsByRepoState? previous,
+}) {
+  final carry = previous != null && previous.scopeKey == scopeKey
+      ? previous
+      : null;
   final reposById = {for (final r in repos) r.id: r};
   final prsByRepo = <RepoPullRequests>[];
   final hasMoreMap = <String, bool>{};
   final nextPageMap = <String, int>{};
+  final totalMap = <String, int>{};
+  final extrasMap = <String, List<PullRequest>>{};
+  final staleThrough = <String, int>{};
 
   for (final group in result.groups) {
     final repo = reposById[group.repoId];
     if (repo == null || group.prs.isEmpty) {
       continue;
     }
-    final prs = [
-      ...group.prs,
-    ]..sort((a, b) => (b.updatedAt ?? _epoch).compareTo(a.updatedAt ?? _epoch));
-    prsByRepo.add(RepoPullRequests(repo: repo, prs: prs));
-    hasMoreMap[repo.id] = group.hasMore;
-    if (group.hasMore) {
-      nextPageMap[repo.id] = 2;
+    final total = group.totalCount;
+    if (total != null) {
+      totalMap[repo.id] = total;
+    }
+    final firstNumbers = {for (final pr in group.prs) pr.number};
+    final previousExtras = carry?.extraPrs[repo.id] ?? const <PullRequest>[];
+    final extras = group.hasMore
+        ? [
+            for (final pr in previousExtras)
+              if (!firstNumbers.contains(pr.number)) pr,
+          ]
+        : const <PullRequest>[];
+    prsByRepo.add(
+      RepoPullRequests(
+        repo: repo,
+        prs: _byUpdatedDesc([...group.prs, ...extras]),
+      ),
+    );
+    if (extras.isEmpty) {
+      hasMoreMap[repo.id] = group.hasMore;
+      if (group.hasMore) {
+        nextPageMap[repo.id] = 2;
+      }
+      continue;
+    }
+    extrasMap[repo.id] = extras;
+    final nextPage = carry!.nextPage[repo.id] ?? 2;
+    hasMoreMap[repo.id] = carry.hasMore[repo.id] ?? true;
+    nextPageMap[repo.id] = nextPage;
+    final extraNumbers = {for (final pr in previousExtras) pr.number};
+    final previousFirst = {
+      for (final group in carry.repos)
+        if (group.repo.id == repo.id)
+          for (final pr in group.prs)
+            if (!extraNumbers.contains(pr.number)) pr.number,
+    };
+    final shifted =
+        previousFirst.length != firstNumbers.length ||
+        !previousFirst.containsAll(firstNumbers) ||
+        carry.totalCount[repo.id] != total;
+    if (shifted) {
+      staleThrough[repo.id] = nextPage - 1;
     }
   }
 
@@ -186,15 +280,22 @@ PrsByRepoState _buildStateFromGroups(
     return bTop.compareTo(aTop);
   });
 
-  return PrsByRepoState(
-    repos: prsByRepo,
-    scopeKey: scopeKey,
-    hasMore: hasMoreMap,
-    nextPage: nextPageMap,
-    loadingMore: const {},
-    authenticated: result.authenticated,
-    sweeping: result.sweepInFlight,
-    inaccessibleRepos: result.inaccessibleRepos,
+  return (
+    state: PrsByRepoState(
+      repos: prsByRepo,
+      scopeKey: scopeKey,
+      hasMore: hasMoreMap,
+      nextPage: nextPageMap,
+      loadingMore: carry?.loadingMore ?? const {},
+      loadMoreFailed: carry?.loadMoreFailed ?? const {},
+      authenticated: result.authenticated,
+      sweeping: result.sweepInFlight,
+      repoAccess: result.repoAccess,
+      hiddenRepos: result.hiddenRepos,
+      totalCount: totalMap,
+      extraPrs: extrasMap,
+    ),
+    staleThrough: staleThrough,
   );
 }
 
@@ -235,7 +336,8 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
     // client (the client holds no token). Each pushed snapshot carries the open
     // PRs grouped per repo with checks already overlaid + whether the SERVER is
     // GitHub-authenticated (drives the connect-GitHub gate). A pushed snapshot
-    // resets pagination state (extra REST pages reload on demand).
+    // carries only each repo's first page; pages already loaded behind it are
+    // re-merged (see [_buildStateFromGroups]).
     final completer = Completer<PrsByRepoState>();
     final scopeKey = _prListScopeKey(workspaceId, userId);
     final sub = ref
@@ -243,7 +345,13 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
         .watchOpenForWorkspace(workspaceId)
         .listen(
           (result) {
-            final next = _buildStateFromGroups(repos, result, scopeKey);
+            final pushed = _buildStateFromGroups(
+              repos,
+              result,
+              scopeKey,
+              previous: completer.isCompleted ? state.value : null,
+            );
+            final next = pushed.state;
             if (scopeKey != null) {
               ref.read(lastGoodOpenPrsProvider.notifier).stamp(scopeKey, next);
             }
@@ -251,6 +359,9 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
               completer.complete(next);
             } else {
               state = AsyncData(next);
+            }
+            for (final stale in pushed.staleThrough.entries) {
+              unawaited(_reloadExtras(stale.key, stale.value));
             }
           },
           onError: (Object error, StackTrace stackTrace) {
@@ -293,97 +404,187 @@ class PrsByRepoNotifier extends AsyncNotifier<PrsByRepoState> {
         .refreshOpenForWorkspace(workspaceId);
   }
 
-  /// Loads the next REST page of open PRs for [repoId] and appends them.
+  /// Loads the next REST page of open PRs for [repoId] and appends them —
+  /// the list's infinite scroll.
   ///
-  /// The first page comes from the batched GraphQL query in [build]; subsequent
-  /// pages use the REST `GET /pulls` endpoint (also `CREATED_AT DESC`, so the
-  /// pages line up) and reuse the reviewed-by-me set captured on the first page
-  /// rather than re-issuing the search. These extra pages aren't metric-enriched
-  /// (same as before the GraphQL batch), so their metric chips stay hidden.
+  /// The first page comes from the server's live snapshot; later pages use
+  /// the REST `GET /pulls` endpoint (also `CREATED_AT DESC`, so the pages line
+  /// up). These extra pages aren't metric-enriched, so their metric chips stay
+  /// hidden. A failure is recorded in [PrsByRepoState.loadMoreFailed] so the
+  /// list offers a retry rather than looping on its own.
   Future<void> loadMore(String repoId) async {
+    final current = state.value;
+    if (current == null ||
+        current.hasMore[repoId] != true ||
+        current.loadingMore[repoId] == true) {
+      return;
+    }
+    final repo = _repoById(current, repoId);
+    if (repo == null) {
+      return;
+    }
+    final page = current.nextPage[repoId] ?? 2;
+    _setLoading(repoId, loading: true);
+    try {
+      final result = await _fetchPage(repo, page);
+      // Re-read: a pushed snapshot may have replaced the state meanwhile.
+      final latest = state.value;
+      if (latest == null || _repoById(latest, repoId) == null) {
+        return;
+      }
+      final extras = [
+        ...latest.extraPrs[repoId] ?? const <PullRequest>[],
+        ...result.prs,
+      ];
+      state = AsyncData(
+        _withExtras(
+          latest,
+          repoId,
+          extras,
+          hasMore: result.hasMore,
+          nextPage: page + 1,
+        ),
+      );
+    } on Object {
+      _setLoading(repoId, loading: false, failed: true);
+    }
+  }
+
+  /// Loads the next page of every repo with more to load (and no load in
+  /// flight or failed). A filtered list calls this until it has read every
+  /// page: a filter or count over only the first pages would be wrong.
+  void loadNextPages() {
     final current = state.value;
     if (current == null) {
       return;
     }
-    if (current.hasMore[repoId] != true) {
+    for (final entry in current.paging.entries) {
+      if (!entry.value.loading && !entry.value.failed) {
+        unawaited(loadMore(entry.key));
+      }
+    }
+  }
+
+  /// Re-reads pages 2..[throughPage] for [repoId] after the first page
+  /// shifted under them (a PR opened or closed), replacing the loaded rows in
+  /// one swap so the list never shrinks while they load.
+  Future<void> _reloadExtras(String repoId, int throughPage) async {
+    final current = state.value;
+    if (current == null || current.loadingMore[repoId] == true) {
       return;
     }
-    if (current.loadingMore[repoId] == true) {
+    final repo = _repoById(current, repoId);
+    if (repo == null) {
       return;
     }
-
-    state = AsyncData(
-      current.copyWith(loadingMore: {...current.loadingMore, repoId: true}),
-    );
-
+    _setLoading(repoId, loading: true);
     try {
-      final repoEntry = current.repos.firstWhere((r) => r.repo.id == repoId);
-      final page = current.nextPage[repoId] ?? 2;
+      final extras = <PullRequest>[];
+      var hasMore = true;
+      var page = 2;
+      for (; page <= throughPage && hasMore; page++) {
+        final result = await _fetchPage(repo, page);
+        extras.addAll(result.prs);
+        hasMore = result.hasMore;
+      }
+      final latest = state.value;
+      if (latest == null || _repoById(latest, repoId) == null) {
+        return;
+      }
+      state = AsyncData(
+        _withExtras(latest, repoId, extras, hasMore: hasMore, nextPage: page),
+      );
+    } on Object {
+      _setLoading(repoId, loading: false, failed: true);
+    }
+  }
 
-      // The next REST page is fetched SERVER-SIDE over RPC (the thin client
-      // holds no GitHub token); the host validates the repo is linked to the
-      // call's workspace (the client stamps the active one).
-      final data = await ref
-          .read(rpcClientProvider)
-          .call('pr.openPageForRepo', {
-            'owner': repoEntry.repo.remoteOwner,
-            'repo': repoEntry.repo.remoteName,
-            'page': page,
-          });
-      final hasMore = data['has_more'] as bool? ?? false;
+  static Repo? _repoById(PrsByRepoState state, String repoId) => state.repos
+      .where((r) => r.repo.id == repoId)
+      .map((r) => r.repo)
+      .firstOrNull;
 
-      // The `reviewed-by:@me` search returns the complete set for the repo, so
-      // the set captured on the first page already covers later pages — reuse
-      // it instead of re-issuing the search on every "load more".
-      final reviewedNumbers = current.reviewedByRepo[repoId] ?? const <int>{};
+  void _setLoading(String repoId, {required bool loading, bool? failed}) {
+    final s = state.value;
+    if (s == null) {
+      return;
+    }
+    state = AsyncData(
+      s.copyWith(
+        loadingMore: {...s.loadingMore, repoId: loading},
+        loadMoreFailed: {...s.loadMoreFailed, repoId: failed ?? false},
+      ),
+    );
+  }
 
-      final newPrs = [
+  /// One REST page of [repo]'s open PRs, fetched SERVER-SIDE over RPC (the
+  /// thin client holds no GitHub token); the host validates the repo is
+  /// linked to the call's workspace (the client stamps the active one).
+  Future<({List<PullRequest> prs, bool hasMore})> _fetchPage(
+    Repo repo,
+    int page,
+  ) async {
+    final data = await ref.read(rpcClientProvider).call('pr.openPageForRepo', {
+      'owner': repo.remoteOwner,
+      'repo': repo.remoteName,
+      'page': page,
+    });
+    return (
+      prs: [
         for (final m in (data['prs'] as List? ?? const []))
           pullRequestFromWireDto(
             PullRequestDto.fromJson((m as Map).cast<String, dynamic>()),
-          ).copyWith(
-            reviewedByMe: reviewedNumbers.contains(
-              (m['number'] as num?)?.toInt() ?? -1,
-            ),
           ),
-      ];
+      ],
+      hasMore: data['has_more'] as bool? ?? false,
+    );
+  }
 
-      final existing = repoEntry.prs;
-      final seen = existing.map((p) => p.number).toSet();
-      final merged = <PullRequest>[...existing];
-      for (final pr in newPrs) {
-        if (seen.add(pr.number)) {
-          merged.add(pr);
-        }
+  /// [state] with [repoId]'s loaded-past-the-first-page rows replaced by
+  /// [extras] (minus anything the live first page already holds) and merged
+  /// into its group.
+  static PrsByRepoState _withExtras(
+    PrsByRepoState state,
+    String repoId,
+    List<PullRequest> extras, {
+    required bool hasMore,
+    required int nextPage,
+  }) {
+    final oldExtras = {
+      for (final pr in state.extraPrs[repoId] ?? const <PullRequest>[])
+        pr.number,
+    };
+    final repos = <RepoPullRequests>[];
+    var kept = const <PullRequest>[];
+    for (final group in state.repos) {
+      if (group.repo.id != repoId) {
+        repos.add(group);
+        continue;
       }
-      merged.sort(
-        (a, b) => (b.updatedAt ?? _epoch).compareTo(a.updatedAt ?? _epoch),
-      );
-
-      final updatedRepos = current.repos
-          .map(
-            (r) => r.repo.id == repoId
-                ? RepoPullRequests(repo: r.repo, prs: merged)
-                : r,
-          )
-          .toList();
-
-      state = AsyncData(
-        current.copyWith(
-          repos: updatedRepos,
-          hasMore: {...current.hasMore, repoId: hasMore},
-          nextPage: {...current.nextPage, repoId: hasMore ? page + 1 : page},
-          loadingMore: {...current.loadingMore, repoId: false},
+      final first = [
+        for (final pr in group.prs)
+          if (!oldExtras.contains(pr.number)) pr,
+      ];
+      final seen = {for (final pr in first) pr.number};
+      kept = [
+        for (final pr in extras)
+          if (seen.add(pr.number)) pr,
+      ];
+      repos.add(
+        RepoPullRequests(
+          repo: group.repo,
+          prs: _byUpdatedDesc([...first, ...kept]),
         ),
       );
-    } catch (_) {
-      final s = state.value;
-      if (s != null) {
-        state = AsyncData(
-          s.copyWith(loadingMore: {...s.loadingMore, repoId: false}),
-        );
-      }
     }
+    return state.copyWith(
+      repos: repos,
+      extraPrs: {...state.extraPrs, repoId: kept},
+      hasMore: {...state.hasMore, repoId: hasMore},
+      nextPage: {...state.nextPage, repoId: nextPage},
+      loadingMore: {...state.loadingMore, repoId: false},
+      loadMoreFailed: {...state.loadMoreFailed, repoId: false},
+    );
   }
 }
 

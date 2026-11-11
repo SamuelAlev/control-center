@@ -4,8 +4,8 @@ part of 'environment_service.dart';
 mixin _OperationOps
     on
         _EnvironmentServiceBase,
-        _SetupOps,
         _DefinitionOps,
+        _TerminalOps,
         _ComponentOps,
         _StackOps,
         _EnsureOps {
@@ -65,6 +65,45 @@ mixin _OperationOps
     }
   }
 
+  /// See [EnvironmentPort.watchRuns].
+  Stream<List<EnvironmentRun>> watchRuns(
+    String workspaceId,
+    String spaceId,
+  ) async* {
+    await _space(workspaceId, spaceId);
+    bool here(({String workspaceId, String spaceId}) change) =>
+        change.workspaceId == workspaceId && change.spaceId == spaceId;
+    // Subscribed before the first read, so nothing falls between the two. A
+    // row moving counts too: tasks and rig runs write their own records, and
+    // every one of them ends by touching its environment.
+    final pending = StreamController<void>();
+    final subscriptions = [
+      _runChanges.stream.where(here).listen((_) => pending.add(null)),
+      _changes.stream.where(here).listen((_) => pending.add(null)),
+    ];
+    String encode(List<EnvironmentRun> runs) =>
+        jsonEncode([for (final run in runs) run.toJson()]);
+    try {
+      final first = await runs(workspaceId, spaceId);
+      var sent = encode(first);
+      yield first;
+      yield* pending.stream.asyncMap((_) => runs(workspaceId, spaceId)).where((
+        next,
+      ) {
+        final encoded = encode(next);
+        final moved = encoded != sent;
+        sent = encoded;
+        return moved;
+      });
+    } finally {
+      for (final subscription in subscriptions) {
+        await subscription.cancel();
+      }
+      // Not awaited, as in [watch].
+      unawaited(pending.close());
+    }
+  }
+
   /// See [EnvironmentPort.stop].
   Future<SpaceEnvironment> stop(
     String workspaceId,
@@ -73,6 +112,8 @@ mixin _OperationOps
   }) async {
     await _space(workspaceId, spaceId);
     final env = await _require(workspaceId, spaceId);
+    // A start waiting on a terminal holds the lock until someone answers it.
+    await _cancelTerminal(env);
     return _exclusive(_lockOf(env), () => _stopLocked(env));
   }
 
@@ -85,7 +126,6 @@ mixin _OperationOps
     await _closeWindows(env);
     await _d.supervisor.stopEnvironment(env.id);
     _d.routing.clearRoutes(env.id);
-    final log = <String>[];
     final run = await _beginRun(env, EnvironmentRunKind.stop);
     EnvironmentError? failure;
     String? note;
@@ -114,16 +154,13 @@ mixin _OperationOps
           await _d.compose.stop(_composeProject(env, stack, component));
         } else if (component is CliEnvironmentComponent &&
             component.verbs.containsKey('stop')) {
-          await _d.cli.stop(
-            _cliContext(stack, component),
-            onEvent: _logTo(log),
-          );
+          await _d.cli.stop(_cliContext(stack, component), onEvent: run.event);
         }
       }
     } on Exception catch (e) {
       failure = note == null ? _EnvironmentServiceBase._errorOf(e) : null;
     }
-    await _endRun(env, run, failure: failure, log: log);
+    await _endRun(env, run, failure: failure);
     final done = await _update(
       env.workspaceId,
       env.id,
@@ -153,6 +190,7 @@ mixin _OperationOps
   Future<SpaceEnvironment> reset(
     String workspaceId,
     String spaceId, {
+    bool attended = false,
     required Principal by,
   }) async {
     final space = await _space(workspaceId, spaceId);
@@ -171,6 +209,7 @@ mixin _OperationOps
             ? EnvironmentPlacement.rig
             : EnvironmentPlacement.host,
         mode: _StartMode.reset,
+        attended: attended,
       );
     });
   }
@@ -219,6 +258,7 @@ mixin _OperationOps
           final result = await _d.compose.refresh(
             _composeContext(
               stack.space,
+              definition,
               stack.roles,
               component,
               env.id,
@@ -282,7 +322,7 @@ mixin _OperationOps
   }) async {
     await _space(workspaceId, spaceId);
     final env = await _require(workspaceId, spaceId);
-    await _cancelSetup(env);
+    await _cancelTerminal(env);
     final run = await _beginRun(env, EnvironmentRunKind.destroy);
     try {
       await _exclusive(_lockOf(env), () => _teardown(env, force: false));
@@ -479,8 +519,26 @@ mixin _OperationOps
     });
   }
 
-  ValidationException _unknownTarget(String target) =>
-      ValidationException('target: This environment has no $target');
+  ValidationException _unknownTarget(String target) => ValidationException(
+    'target: This environment has no '
+    '${target.replaceAll(_unsafeServiceCharacter, '?')}',
+    code: 'environment.unknown_target',
+  );
+
+  static final RegExp _unsafeServiceCharacter = RegExp(
+    r'[\s\x00-\x1f\x7f-\x9f]',
+  );
+
+  /// Whether [service], which an agent may have written, can reach a tool's
+  /// argv as a service name: one argument that is not an option, and one of
+  /// [known] when the tool has reported any. Otherwise `cc-env logs
+  /// --env=other` would become a flag of the tool on the host, and `logs`
+  /// runs without a prompt.
+  bool _isServiceArgument(String service, List<String> known) =>
+      service.isNotEmpty &&
+      !service.startsWith('-') &&
+      !_unsafeServiceCharacter.hasMatch(service) &&
+      (known.isEmpty || known.contains(service));
 
   /// See [EnvironmentPort.stopProcess].
   Future<void> stopProcess(
@@ -517,6 +575,15 @@ mixin _OperationOps
           'This server has no environment rigs',
         );
       }
+      final known = [
+        for (final component
+            in stack.definition.components
+                .whereType<ComposeEnvironmentComponent>())
+          ..._composeServices(env, component),
+      ];
+      if (!_isServiceArgument(service, known)) {
+        throw _unknownTarget(service);
+      }
       return host.exec(
         workspaceId: workspaceId,
         spaceId: spaceId,
@@ -545,7 +612,9 @@ mixin _OperationOps
           );
         }
       } else if (component is CliEnvironmentComponent &&
-          component.verbs.containsKey('exec')) {
+          component.verbs.containsKey('exec') &&
+          stack.isEnabled(component) &&
+          _isServiceArgument(service, _reportedServices(env, component.id))) {
         return _d.cli.exec(
           _cliContext(stack, component),
           service: service,
@@ -587,7 +656,10 @@ mixin _OperationOps
           );
         }
       } else if (item is CliEnvironmentComponent &&
-          item.verbs.containsKey('logs')) {
+          item.verbs.containsKey('logs') &&
+          stack.isEnabled(item) &&
+          (target == item.id ||
+              _isServiceArgument(target, _reportedServices(env, item.id)))) {
         return _d.cli.logs(
           _cliContext(stack, item),
           service: target == item.id ? null : target,
@@ -625,7 +697,10 @@ mixin _OperationOps
           return;
         }
       } else if (item is CliEnvironmentComponent &&
-          item.verbs.containsKey('logs')) {
+          item.verbs.containsKey('logs') &&
+          stack.isEnabled(item) &&
+          (target == item.id ||
+              _isServiceArgument(target, _reportedServices(env, item.id)))) {
         yield* _d.cli.followLogs(
           _cliContext(stack, item),
           service: target == item.id ? null : target,
@@ -712,31 +787,51 @@ mixin _OperationOps
     final env = await _require(workspaceId, spaceId);
     await _readmit(env, space, by);
     await _exclusive(_lockOf(env), () async {
-      final stack = await _stackOf(env);
+      // Under the lock now: a stop or a teardown may have got there first.
+      final row = await _d.environments.get(env.workspaceId, env.id);
+      if (row == null) {
+        throw NotFoundException('This space has no environment: $spaceId');
+      }
+      final stack = await _stackOf(row);
       final app = stack.definition.component(componentId);
       if (app is! AppEnvironmentComponent) {
         throw ValidationException('component: $componentId is not an app');
       }
-      if (!env.status.isRunning) {
+      // Why a component is not part of this environment.
+      String leftOut(EnvironmentComponent component) => stack.hasRole(component)
+          ? 'its enabledWhen is false for these options'
+          : 'this space does not have the repository it runs in';
+      if (!stack.isEnabled(app)) {
+        throw _EnvironmentServiceBase._failure(
+          'component-disabled',
+          '${app.displayName} is off in this environment: ${leftOut(app)}',
+        );
+      }
+      final prepare = app.prepare;
+      final task = prepare == null ? null : stack.definition.component(prepare);
+      if (task is TaskEnvironmentComponent && !stack.isEnabled(task)) {
+        throw _EnvironmentServiceBase._failure(
+          'component-disabled',
+          '${app.displayName} is prepared by ${task.displayName}, which is '
+              'off in this environment: ${leftOut(task)}',
+        );
+      }
+      if (!row.status.isRunning) {
         throw _EnvironmentServiceBase._failure(
           'not-running',
           'Start the environment before launching ${app.displayName}',
         );
       }
-      final running = _d.supervisor.processOf(env.id, componentId) != null;
+      final running = _d.supervisor.processOf(row.id, componentId) != null;
       if (running && !rebuild) {
         return;
       }
       if (running) {
-        await _closeWindow(env.id, componentId);
-        await _d.supervisor.stop(env.id, componentId);
+        await _closeWindow(row.id, componentId);
+        await _d.supervisor.stop(row.id, componentId);
       }
-      final prepare = app.prepare;
-      if (prepare != null) {
-        final task = stack.definition.component(prepare);
-        if (task is TaskEnvironmentComponent) {
-          _throwIfFailed(await _runEnvironmentTask(env, stack, task), task);
-        }
+      if (task is TaskEnvironmentComponent) {
+        _throwIfFailed(await _runEnvironmentTask(row, stack, task), task);
       }
       await _d.supervisor.start(
         EnvironmentProcessSpec.forApp(
@@ -745,7 +840,7 @@ mixin _OperationOps
           workspaceId: workspaceId,
         ),
       );
-      await _openWindow(env, app);
+      await _openWindow(row, app);
     });
   }
 
@@ -777,8 +872,14 @@ mixin _OperationOps
         ),
       );
     } on Object catch (e) {
-      // The app is up and a person can use it. Only the viewer is missing.
+      // The app is up and a person can use it. Only the viewer is missing,
+      // and a viewer left from an earlier launch would show a dead rig.
       CcInfraLog.warning('no viewer for ${app.id}: $e');
+      await _setComponent(
+        env,
+        app.id,
+        (state) => state.copyWith(services: const []),
+      );
     }
   }
 
@@ -914,10 +1015,41 @@ mixin _OperationOps
   ) async {
     final space = await _space(workspaceId, spaceId);
     final env = await _current(workspaceId, spaceId);
-    if (env != null) {
-      return (await _load(workspaceId, env.definitionId)).definition;
+    final loaded = env != null
+        ? await _load(workspaceId, env.definitionId)
+        : (await _eligible(space)).firstOrNull;
+    if (loaded == null) {
+      return null;
     }
-    return (await _eligible(space)).firstOrNull?.definition;
+    await _requireHostApproval(loaded);
+    return loaded.definition;
+  }
+
+  /// See [AgentEnvironmentContext.hostComposeProject].
+  Future<AgentComposeProject?> hostComposeProject(
+    String workspaceId,
+    String spaceId,
+  ) async {
+    await _space(workspaceId, spaceId);
+    final env = await _current(workspaceId, spaceId);
+    if (env == null ||
+        env.status == EnvironmentStatus.gone ||
+        env.placement != EnvironmentPlacement.host.name) {
+      return null;
+    }
+    final loaded = await _load(workspaceId, env.definitionId);
+    if (!loaded.definition.components.any(
+      (component) => component is ComposeEnvironmentComponent,
+    )) {
+      return null;
+    }
+    await _requireHostApproval(loaded);
+    final directory = Directory(_d.stateDirFor(workspaceId, env.id));
+    await directory.create(recursive: true);
+    return AgentComposeProject(
+      name: composeProjectName(env.id),
+      directory: directory.path,
+    );
   }
 
   /// See [AgentEnvironmentContext.nameFor].

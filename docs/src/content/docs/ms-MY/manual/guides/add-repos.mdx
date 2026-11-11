@@ -2,10 +2,10 @@
 title: Tambah repositori ke ruang kerja
 description: Daftarkan checkout Git ke dalam ruang kerja supaya ejen boleh bekerja padanya.
 slug: ms-MY/manual-pengguna/panduan-cara/tambah-repositori
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Panduan ini menunjukkan cara mendaftarkan checkout Git ke dalam ruang kerja, mengindeksnya semula dan membuangnya kembali.
+Panduan ini menunjukkan cara mendaftarkan checkout Git ke dalam ruang kerja, mengindeksnya semula dan membuangnya kembali. Menambah repositori daripada folder pelayan memerlukan pemilik pelayan; membuangnya memerlukan admin ruang kerja.
 
 Repositori berskop **ruang kerja**. Tiada daftar global dan tiada langkah memautkan: menambah repositori dan meletakkannya dalam ruang kerja ialah tindakan yang sama. Checkout yang sama yang didaftarkan dalam dua ruang kerja menjadi dua baris bebas dengan dua id yang berbeza — merentas ruang kerja, identiti sesuatu repositori ialah laluan sistem failnya, tidak pernah idnya.
 
@@ -21,9 +21,29 @@ Apa-apa selain itu ditolak pada masa pendaftaran dengan mesej yang eksplisit: "F
 
 Hos kod dibaca daripada remote dan disimpan pada repositori — anda tidak pernah memilihnya. Sesuatu ruang kerja boleh menyimpan repositori daripada ketiga-tiganya sekali gus, dan setiap satunya dihubungi melalui API-nya sendiri dengan kelayakannya sendiri. Namespace bersarang GitLab dikekalkan, jadi `gitlab.com/group/subgroup/project` didaftarkan sebagai pemilik `group/subgroup`, nama `project`.
 
-Folder itu juga mesti berada pada mesin yang menghoskan `cc_server`, di dalam salah satu direktori `--repo-roots` pelayan tersebut. Senarai benarkan itu lalainya ialah direktori utama pengguna pelayan, dan menyemak imbas melebihi sesuatu root akan ditolak.
+Folder itu juga mesti berada pada mesin yang menghoskan `cc_server`, di dalam salah satu direktori `--repo-roots` pelayan tersebut. Senarai benarkan itu lalainya ialah direktori utama pengguna pelayan, dan menyemak imbas melebihi sesuatu root akan ditolak. Menyemak imbas folder pelayan hanya ditawarkan kepada [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan), kerana ia menyenaraikan fail mesin itu sendiri. Orang lain melihat "Pemilik pelayan menambah repositori daripada folder pelayan." di tempat butang **Tambah repositori**, dan pautan kepada repositori yang tiada satu pun ruang kerja mereka miliki memaklumkan bahawa ia tidak dipautkan dalam mana-mana ruang kerja mereka dan supaya meminta pemilik pelayan menambahnya.
+
+Tempat checkout itu boleh berada bergantung pada siapa yang memautkannya:
+
+- **Di dalam storan ruang kerja itu** pada pelayan: mana-mana admin ruang kerja.
+- **Di tempat lain pada cakera pelayan**: hanya [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan), kerana hanya mereka boleh menunjuk pelayan kepada fail mesin itu sendiri. Orang lain melihat "Hanya pemilik pelayan boleh memautkan folder di luar storan ruang kerja ini."
+- **Folder data pelayan**, atau apa-apa di dalamnya: tidak sama sekali.
+
+`origin` checkout mestilah repositori yang anda pautkan. Folder yang `origin`-nya menamakan repositori lain ditolak dengan "Asal git folder itu ialah repositori yang berbeza."
+
+### Folder yang pelayan tidak akan gunakan lagi
+
+Repositori yang folder-nya berada di luar storan ruang kerja dan tidak dipautkan oleh pemilik pelayan, seperti yang berada dalam ruang kerja yang diimport, menunjukkan "Folder ini berada di luar storan ruang kerja. Sahkan bahawa pelayan ini dibenarkan menggunakannya." di bawah barisnya sehingga pemilik pelayan mengesahkannya. Orang lain melihat "Folder ini berada di luar storan ruang kerja. Hanya pemilik pelayan boleh mengesahkannya." sebagai gantinya.
+
+Pemilik mengesahkannya sekali: **Sahkan** pada baris itu, atau **Sahkan semua** dalam notis di atas senarai apabila beberapa repositori menunggu. Setiap satunya disemak sekali lagi sebagai pemilik, dengan semakan yang sama seperti memautkannya. Sehingga itu ia kekal dalam senarai tetapi tidak dibuka, diperuntukkan atau diindeks: tiada editor, terminal, persekitaran atau checkout ruang yang menggunakannya, dan graf kod melangkaunya. Menambah folder yang sama semula sebagai pemilik pelayan melakukan perkara yang sama seperti mengesahkannya, dan mengekalkan id repositori itu.
+
+Checkout yang telah dialihkan oleh pautan simbolik ke tempat lain dilayan dengan cara yang sama: ia kekal disenaraikan dan tidak digunakan sehingga ia dipautkan semula oleh seseorang yang dibenarkan memautkan folder yang kini ditunjuknya.
+
+Anda juga perlu log masuk ke forge repositori itu, dan akaun forge anda sendiri mesti boleh melihat repositori itu.
 
 ## Daftarkan checkout
+
+Langkah-langkah ini memerlukan anda menjadi pemilik pelayan.
 
 1. Buka **Tetapan → Ruang kerja → Repositori** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Klik **Tambah repositori**.
@@ -56,7 +76,23 @@ Seret pemegang pada baris itu. Susunan yang anda tetapkan itulah susunan yang di
 
 ## Betulkan pautan GitHub
 
-Ikon pautan pada baris itu membuka editor untuk pemilik dan nama repositori GitHub bagi repositori tersebut — berguna apabila remote itu dinamakan semula atau dipindahkan.
+Ikon pautan pada baris itu membuka editor untuk pemilik dan nama repositori GitHub bagi repositori tersebut.
+
+Anda jarang memerlukannya. Pautan diikat kepada id kekal repositori pada forge, jadi penamaan semula atau pemindahan diikuti secara automatik.
+
+- Menamakan semula repositori dalam Control Center hanya menukar nama paparannya.
+- Menukar repositori forge yang dituju oleh pautan memerlukan admin ruang kerja, dan disemak terhadap forge dengan log masuk admin itu sendiri, sama seperti memautkannya.
+- Repositori yang dipautkan tidak boleh ditukar menjadi repositori setempat sahaja.
+
+Jika laluan itu kemudian menamakan repositori **lain** (yang asal dipadam dan dicipta semula, atau dialihkan dan digantikan oleh yang lain), Control Center berhenti menghantar apa-apa kepadanya: tiada token, tolakan, komen atau permintaan. Itu juga meliputi tindakan peribadi seseorang: semakan, cantuman atau komen yang anda buat pada repositori sedemikian ditolak, pada GitHub, GitLab dan Bitbucket sama sahaja. Baris itu dan PR repositori memaparkan "_repo_ kini menunjuk kepada repositori yang berbeza" sehingga admin ruang kerja mengklik **Pautkan semula**.
+
+## Siapa boleh membuka kod
+
+Geran repositori sahaja tidak membuka fail repositori. Untuk membuka fail, diff, carian atau terminal untuknya, ahli memerlukan geran Control Center dan log masuk forge mereka sendiri mesti boleh membaca repositori itu. Admin ruang kerja tidak dikecualikan; pemilik pelayan dikecualikan. Lihat [Kod mengikut forge](/ms-MY/manual-pengguna/konsep/kebenaran/#kod-mengikut-forge).
+
+Apabila anda memberikan repositori kepada seseorang yang akaun forgenya tidak boleh membacanya, geran itu disimpan dan anda melihat amaran, seperti "Disimpan. Akaun GitHub mereka belum dapat membaca repositori ini, jadi ia kekal tersembunyi daripada mereka."
+
+Peraturan yang sama menentukan siapa boleh membuka ruang. Ruang hanya dibuka untuk ahli yang boleh membuka kod setiap repositori yang digunakannya, dan tersembunyi daripada orang lain, bersama hasil carian, log larian, todo, aktiviti dan pemberitahuannya. Ruang tanpa repositori dibuka kepada setiap ahli. Lihat [Ruang mengikut repositorinya](/ms-MY/manual-pengguna/konsep/kebenaran/#ruang-mengikut-repositorinya).
 
 ## Buang repositori
 
@@ -66,7 +102,31 @@ Ikon pautan pada baris itu membuka editor untuk pemilik dan nama repositori GitH
 
 Dialog itu menyatakan apa yang akan dilakukannya: "_name_ akan dibuang dari ruang kerja ini. Fail setempat pada cakera tidak disentuh."
 
+Membuang repositori memerlukan admin ruang kerja. Ia juga melupakan kelayakan forge yang disimpan untuk repositori itu, seperti token automasi GitLab atau Bitbucket.
+
 Penyingkiran memadamkan baris repositori daripada ruang kerja ini dan mengalirkan pemadaman kepada baris graf kodnya — simbol, tepi, fail dan pusat pemeriksaan indeks — serta setiap geran repositori bagi setiap ahli padanya, pautan ruang–repositorinya dan rekod checkout terasingnya. Checkout yang sama yang didaftarkan dalam ruang kerja lain ialah baris bebas dan tidak terjejas. Worktree pada cakera yang ditunjuk oleh rekod-rekod itu tidak dirobohkan oleh pemadaman ini.
+
+## Penyelesaian masalah
+
+### Saya mempunyai geran tetapi repositori berkata akaun saya tidak dapat membacanya
+
+Akaun forge anda sendiri tidak dapat membaca repositori itu, jadi Control Center menyimpan kodnya daripada anda walaupun ruang kerja memberikannya. Log masuk ke forge dalam **Tetapan → Anda → Profil → Hos kod** jika anda belum berbuat demikian, atau minta pemilik repositori di forge untuk akses. Repositori dibuka sebaik sahaja akaun forge anda boleh membacanya.
+
+### "Folder ini berada di luar storan ruang kerja"
+
+Folder repositori itu berada di luar storan ruang kerja dan pemilik pelayan tidak memautkannya, atau pautan simbolik kini menunjuk ke tempat lain. Ia kekal disenaraikan tetapi tidak digunakan sehingga pemilik pelayan mengesahkannya atau menambah folder itu semula. Jika anda bukan pemilik, minta mereka. Jika anda pemilik, tekan **Sahkan** pada baris atau **Sahkan semua** di atas senarai; lihat [Folder yang pelayan tidak akan gunakan lagi](#folder-yang-pelayan-tidak-akan-gunakan-lagi).
+
+### "Tiada apa-apa di laluan ini pada pelayan lagi"
+
+Folder itu telah dialihkan atau dipadam pada mesin pelayan. Letakkannya semula, atau minta admin ruang kerja membuang repositori itu dengan **Buang** dalam notis dan menambahkannya semula daripada folder semasanya.
+
+### "Folder ini tidak boleh digunakan sebagai repositori"
+
+Folder yang disimpan ialah folder data pelayan itu sendiri, sesuatu di dalamnya, atau folder storan ruang kerja itu sendiri. Tiada satu pun daripadanya boleh menjadi repositori. Admin ruang kerja membuangnya dengan **Buang** dalam notis, kemudian menambah semula repositori itu daripada folder checkout sebenar.
+
+### "Tidak dapat mengesahkan akses forge anda"
+
+Control Center tidak dapat menghubungi forge untuk menyemak bahawa akaun anda boleh membaca repositori itu, jadi ia menolak dan bukannya meneka. Cuba lagi sebentar nanti.
 
 ## Panduan berkaitan
 

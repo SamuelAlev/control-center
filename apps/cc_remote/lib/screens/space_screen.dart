@@ -10,6 +10,7 @@ import 'package:cc_remote/conversation_feed.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_remote/retryable_turns.dart';
 import 'package:cc_remote/widgets/jump_to_latest.dart';
 import 'package:cc_remote/widgets/messaging/conversation_actions.dart';
 import 'package:cc_remote/widgets/messaging/conversation_chrome.dart';
@@ -131,7 +132,7 @@ class _SpaceScreenState extends ConsumerState<_ConversationScreen> {
   bool _hasMore = false;
   int _lastMessageCount = 0;
   String? _myUserId;
-  Map<String, String> _userNames = const {};
+  Map<String, UserDto> _users = const {};
   String? _lastReadId;
   bool _markingRead = false;
   Object? _readError;
@@ -163,7 +164,7 @@ class _SpaceScreenState extends ConsumerState<_ConversationScreen> {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     _myUserId = ref.watch(remoteIdentityProvider).value?.userId;
-    _userNames = ref.watch(remoteUserNamesProvider).value ?? const {};
+    _users = ref.watch(remoteUsersProvider).value ?? const {};
     final feedProvider = conversationFeedProvider(_scope);
     final feed = ref.watch(feedProvider);
     ref.listen(

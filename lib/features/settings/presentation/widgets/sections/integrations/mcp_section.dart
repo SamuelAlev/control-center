@@ -2,9 +2,10 @@ import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/mcp/providers/mcp_server_control_provider.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/mcp_token_field.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/demo_unavailable.dart';
 import 'package:control_center/shared/widgets/inline_load_error.dart';
@@ -19,9 +20,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// connected server's MCP server over the `mcp.*` RPC ops. When the connected server exposes no MCP control
 /// (status is `null`), it renders an honest "not available" placeholder.
 ///
-/// The card opens with the three facts that decide whether an external tool can
-/// reach this server at all — is it running, on which port, is a token required
-/// — rather than with the button that changes the first of them.
+/// The card opens with the facts that decide whether an external tool can
+/// reach this server (is it running, on which port) rather than with the
+/// button that changes the first. Every MCP request carries the server's
+/// token as an `Authorization: Bearer` header; the token always exists, and
+/// only the server owner sees, copies or rotates it, or starts and stops the
+/// endpoint. Anyone else sees the facts and that the endpoint is owner-only.
 class McpSection extends ConsumerWidget {
   /// Creates a [McpSection].
   const McpSection({super.key});
@@ -85,20 +89,30 @@ class McpSection extends ConsumerWidget {
   }
 }
 
-class _McpControls extends ConsumerWidget {
+class _McpControls extends ConsumerStatefulWidget {
   const _McpControls({required this.status});
 
   final McpServerStatus status;
 
-  Future<void> _run(
-    BuildContext context,
-    WidgetRef ref,
-    Future<void> Function() action,
-  ) async {
+  @override
+  ConsumerState<_McpControls> createState() => _McpControlsState();
+}
+
+class _McpControlsState extends ConsumerState<_McpControls> {
+  /// The server refused the token although identity said owner: trust the
+  /// server, and re-read identity so every owner surface follows.
+  bool _refused = false;
+
+  void _ownerOnly() {
+    setState(() => _refused = true);
+    ref.invalidate(currentIdentityProvider);
+  }
+
+  Future<void> _run(Future<void> Function() action) async {
     try {
       await action();
     } on Object catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
       }
     } finally {
@@ -108,10 +122,11 @@ class _McpControls extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final control = ref.watch(mcpServerControlProvider);
-    final running = status.running;
+    final owner = ref.watch(isServerOwnerProvider) && !_refused;
+    final running = widget.status.running;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -126,106 +141,42 @@ class _McpControls extends ConsumerWidget {
             ),
             SettingsFact(
               label: l10n.portLabel,
-              value: '${status.port}',
+              value: '${widget.status.port}',
               mono: true,
             ),
-            SettingsFact(
-              label: l10n.authenticationToken,
-              value: status.hasToken
-                  ? l10n.configuredLabel
-                  : l10n.notConfiguredLabel,
-              tone: status.hasToken
-                  ? CcStatusTone.positive
-                  : CcStatusTone.caution,
-              mono: false,
-            ),
           ],
-          note: status.hasToken ? null : l10n.mcpNoTokenWarning,
-          trailing: CcButton(
-            onPressed: () => _run(
-              context,
-              ref,
-              () => running ? control.stop() : control.start(),
-            ),
-            variant: running
-                ? CcButtonVariant.secondary
-                : CcButtonVariant.accent,
-            size: CcButtonSize.sm,
-            child: Text(running ? l10n.stop : l10n.startLabel),
-          ),
+          trailing: owner
+              ? CcButton(
+                  onPressed: () =>
+                      _run(() => running ? control.stop() : control.start()),
+                  variant: running
+                      ? CcButtonVariant.secondary
+                      : CcButtonVariant.accent,
+                  size: CcButtonSize.sm,
+                  child: Text(running ? l10n.stop : l10n.startLabel),
+                )
+              : null,
         ),
         const SizedBox(height: AppSpacing.lg),
-        SettingsGroup(
-          showRule: true,
-          gap: AppSpacing.md,
-          children: [
-            SettingsToggle(
-              title: l10n.startOnAppLaunch,
-              description: l10n.whenOffServerStaysStopped,
-              value: status.enabled,
-              onChanged: (v) =>
-                  _run(context, ref, () => control.setEnabled(enabled: v)),
-            ),
-            SettingsField(
-              label: l10n.authenticationToken,
-              description: status.hasToken
-                  ? l10n.tokenConfigured
-                  : l10n.noTokenSet,
-              controlWidth: 200,
-              trailingControl: true,
-              child: _TokenActions(
-                hasValue: status.hasToken,
-                onEdit: () => showTokenDialog(
-                  context,
-                  title: l10n.mcpAuthToken,
-                  save: (v) => _run(
-                    context,
-                    ref,
-                    () => control.setToken(v.isEmpty ? null : v),
-                  ),
-                ),
-                onClear: () => _run(context, ref, () => control.setToken(null)),
+        if (owner)
+          SettingsGroup(
+            showRule: true,
+            gap: AppSpacing.md,
+            children: [
+              SettingsToggle(
+                title: l10n.startOnAppLaunch,
+                description: l10n.whenOffServerStaysStopped,
+                value: widget.status.enabled,
+                onChanged: (v) => _run(() => control.setEnabled(enabled: v)),
               ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TokenActions extends StatelessWidget {
-  const _TokenActions({
-    required this.hasValue,
-    required this.onEdit,
-    required this.onClear,
-  });
-
-  final bool hasValue;
-  final VoidCallback onEdit;
-  final VoidCallback onClear;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        CcButton(
-          onPressed: onEdit,
-          variant: CcButtonVariant.secondary,
-          size: CcButtonSize.sm,
-          child: Text(hasValue ? l10n.updateLabel : l10n.setLabel),
-        ),
-        if (hasValue) ...[
-          const SizedBox(width: AppSpacing.sm),
-          CcButton(
-            onPressed: onClear,
-            variant: CcButtonVariant.ghost,
-            size: CcButtonSize.sm,
-            child: Text(l10n.clear),
+              McpTokenField(onOwnerOnly: _ownerOnly),
+            ],
+          )
+        else
+          CcAlert(
+            title: l10n.mcpOwnerOnlyTitle,
+            description: Text(l10n.mcpOwnerOnlyBody),
           ),
-        ],
       ],
     );
   }

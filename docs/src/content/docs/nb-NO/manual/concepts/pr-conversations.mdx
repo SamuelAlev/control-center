@@ -2,13 +2,13 @@
 title: PR-samtaler
 description: Hvordan en GitHub-PR-kommentar blir til en agenttur uten webhook, hva som autoriserer forfatteren, og hvem hver side av samtalen tilskrives.
 slug: nb-NO/handbok/konsepter/pr-samtaler
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 En pull request er allerede stedet der samtalen om kode foregår. PR-samtaler gjør
 den til en flate i et Control Center-arbeidsområde, på samme måte som en
 [chatbro](/nb-NO/handbok/konsepter/chatbroer/) gjør Slack til det: @-nevn
-`@usectrl` (eller boten til arbeidsområdets GitHub App) i en PR, svar inne i
+`@usectrl` i en PR, svar inne i
 gjennomgangstrådene dens, eller legg til etiketten `ai-review` — og arbeidet
 skjer i PR-ens gjennomgangsområde, med samme tilskrivning og tillatelsesregler
 som for alt som skrives i appen. En kommentar og en etikett kontrolleres på samme
@@ -25,7 +25,7 @@ tilkoblingen går i**, **hva som autoriserer en kommentar som kommer utenfra** o
 GitHubs eneste push-kanal for en app er en webhook, og en webhook trenger en
 innkommende URL — nettopp det denne flaten bevisst aldri krever. Derfor skjer
 oppdagelsen i en søkerunde: ett aliasert søk per appinstallasjon spør GitHub om
-PR-er som nevner boten (eller den korte slug-en dens) og om åpne PR-er som bærer
+PR-er som nevner `@usectrl` og om åpne PR-er som bærer
 gjennomgangsetiketten, PR-er som allerede har et gjennomgangsområde får
 kommentartrådene sine lest, og alt diffes på kommentar-id mot det som ble sett i
 forrige søkerunde. En egen app går gjennom høyst 25 PR-er hvert minutt. Via
@@ -72,8 +72,8 @@ legges ut:
 - **Et innlogget medlem.** Kontoen må tilhøre et medlem av _dette_
   arbeidsområdet som har logget inn på GitHub på denne serveren
 - **En rolle med skrivetilgang.** `viewer` og `guest` kan ikke starte arbeid
-- **Push-tilgang.** Svar bruker et `bot`-token som er begrenset til medlemmets
-  tilgang til repoet. Hvis serveren ikke kan utstede et, går den ikke videre
+- **Push-tilgang.** Svar bruker et token for det ene repoet, begrenset til
+  medlemmets tilgang til det. Hvis serveren ikke kan utstede et, går den ikke videre
 
 Hver kontroll kjører før noen bekreftelse, så en fremmed får verken reaksjon
 eller svar. En kommentar tilskrives aldri noen som ikke sendte den, og en
@@ -94,15 +94,16 @@ Hver side av samtalen bærer en annen identitet, og forskjellen er selve
 funksjonen:
 
 - **På GitHub er svaret automatisering på dine vegne.** Hvert svar går på et
-  `bot`-token for det ene repoet, begrenset til tilgangen til medlemmet som
-  spurte. Med en egen app er forfatteren appens `[bot]`-konto. Via Connect er et
-  token for den delte appen et brukertoken, så svaret skrives av kontoen til
-  medlemmet som spurte, som handler gjennom appen. Uansett begynner hvert svar
+  token for det ene repoet, begrenset til tilgangen til medlemmet som spurte, og
+  er skrevet av appens `[bot]`-konto. Ett unntak: på den delte Control Center
+  Connect-appen poster boten bare i gjennomgangstråder når Connect-operatøren har
+  listet installasjonen, så ellers er et svar inne i en gjennomgangstråd skrevet
+  av kontoen til medlemmet som spurte. Uansett begynner hvert svar
   med `**Control Center** (for @login):`, som sier hvem som spurte og samtidig
-  fungerer som løkkevern.
+  fungerer som løkkevern. @-nevnelser i agentens egne ord gjøres virkningsløse, så et svar varsler aldri en bruker eller et team.
 - **I området er spørsmålet ditt.** Meldingen tilskrives medlemmet forfatteren
-  ble løst opp til, og agentkjøringen utføres på deres vegne: commits får dem som
-  medforfatter, og områdets autonomiknott og tillatelsesregler for handlinger
+  ble løst opp til, og agentkjøringen utføres på deres vegne: commitene er
+  deres, og områdets autonomiknott og tillatelsesregler for handlinger
   gjelder nøyaktig som for en melding skrevet i appen. Skrivinger til kodeverten
   fra kjøringen bruker tokener for ett repo, begrenset av det medlemmet, aldri
   påloggingen deres overlevert i sin helhet.
@@ -111,23 +112,16 @@ funksjonen:
 tatt i Control Center. En omtale kan _starte_ en gjennomgang; bare et menneske
 publiserer en.
 
-## Løkkevernet, og kortnavnet
+## Løkkevernet
 
 Alt som er skrevet av en botkonto, forkastes før noen port kjører — vår
 spesifikt, og enhver `[bot]`-endelse, slik at en annen apps gjennomgangsbot
 heller ikke kan vekke vår — og det samme gjør hver kommentar som begynner med
-prefikset `**Control Center** (for @`, siden et svar via Connect skrives av en
-persons konto. Uten dette ville svarene komme inn som nye kommentarer og utløse
+prefikset `**Control Center** (for @`, siden et svar i en gjennomgangstråd via
+Connect kan være skrevet av en persons konto. Uten dette ville svarene komme inn som nye kommentarer og utløse
 broen på nytt i det uendelige.
 
-`[bot]`-endelsen er også grunnen til at kortformen finnes. GitHub fastsetter en
-appkonto sin pålogging til `<slug>[bot]`, tilbyr ingen autofullføring for den og
-løser aldri `@slug` opp til appen — så det å godta den bare slug-en er _vår_
-matchers beslutning, og å oppdage den krever en rå søkebane for kommentar-**tekst**
-i stedet for GitHubs omtaleindeks. Kostnaden sies som den er i stedet for å
-glattes over: en menneskelig bruker som deler appens slug, adresserer boten
-med hver kortform-omtale av seg selv. Særegne appnavn gjør kollisjonen
-hypotetisk.
+Bare `@usectrl` starter arbeid. Appens egen pålogging (`<slug>[bot]`) og det korte slug-navnet adresserer ingenting: GitHub tilbyr ingen autofullføring for en appkonto, og et slug-navn kan tilhøre en menneskelig bruker.
 
 ## Det som bevisst ikke tilbys
 

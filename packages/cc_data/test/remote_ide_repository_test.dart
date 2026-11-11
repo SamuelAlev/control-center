@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 
 /// Exercises [RemoteIdeRepository] — the editor / PR-worktree surface over RPC.
 /// Pins the ops, the args shape (repo JSON, pr fields, editor id), the
-/// editors decoder, the opUnknown degradation and the ensureWorktree path.
+/// editors decoder and the opUnknown degradation.
 void main() {
   late _Host host;
   late RemoteRpcClient client;
@@ -76,25 +76,6 @@ void main() {
       expect(call.args['pr_external_id'], 'PR_node');
       expect(call.args['repo_id'], 'r-1');
       expect(call.args['editor_id'], 'vscode');
-    });
-  });
-
-  group('RemoteIdeRepository.ensureWorktree', () {
-    test('returns the server path', () async {
-      host.callResults['ide.ensureWorktree'] = {'path': '/srv/wt'};
-      final repo = RemoteIdeRepository(client);
-      expect(
-        await repo.ensureWorktree(
-          repoFullName: 'octo/repo',
-          prNumber: 7,
-          prExternalId: 'PR_node',
-        ),
-        '/srv/wt',
-      );
-      final call = host.lastCall('ide.ensureWorktree')!;
-      expect(call.args['pr_number'], 7);
-      expect(call.args['repo_full_name'], 'octo/repo');
-      expect(call.args['pr_external_id'], 'PR_node');
     });
   });
 }

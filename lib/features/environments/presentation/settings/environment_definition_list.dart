@@ -7,6 +7,7 @@ import 'package:control_center/features/environments/presentation/environment_se
 import 'package:control_center/features/environments/presentation/settings/environment_definition_delete.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_editor_state.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host_approval.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
@@ -66,7 +67,16 @@ class EnvironmentDefinitionList extends ConsumerWidget {
                   separator: SettingsGroupSeparator.rule,
                   children: [
                     for (final record in records)
-                      _DefinitionRow(record: record),
+                      // The approval notice belongs to its row, inside the
+                      // same group entry.
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _DefinitionRow(record: record),
+                          EnvironmentHostApprovalNotice(record: record),
+                        ],
+                      ),
                   ],
                 ),
               ),

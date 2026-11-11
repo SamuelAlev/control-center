@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/space_folder_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -35,7 +35,7 @@ Future<void> showDeleteSpaceFolderDialog(
   if (deleteSpaces) {
     // The folder preference can retain ids for spaces already deleted or
     // archived. Only the current workspace's actual space rows are eligible
-    // for deletion, including archived ones left by older clients.
+    // for deletion, archived ones included.
     final spaces = await ref.read(workspaceSpacesProvider(workspaceId).future);
     final ownedIds = {
       for (final Space space in spaces)

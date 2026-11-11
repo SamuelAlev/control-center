@@ -2,7 +2,7 @@
 title: Backup, esportazione e importazione
 description: La struttura dell'istantanea, il manifest, ogni operazione di backup e route di trasferimento, ed esattamente quali file un backup contiene e quali no.
 slug: it-IT/manuale/riferimento/backup
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Tutto ciò che Control Center può copiare, cedere o adottare, e la forma esatta di ogni
@@ -115,6 +115,7 @@ contiene più del suo database, e niente del resto viaggia:
 | `models/`                           | No                | No                                         |
 | `meetings/<meetingId>/`             | No                | No                                         |
 | `rigs/`                             | No                | No                                         |
+| `_agent_hooks/`                     | No                | No                                         |
 
 Una parte è usa e getta: `spaces/` contiene worktree copy-on-write che vengono
 riprovisionati dai repo, `pr_clones/` è una cache, `models/` viene riscaricato, `rigs/`
@@ -122,8 +123,16 @@ riprovisionati dai repo, `pr_clones/` è una cache, `models/` viene riscaricato,
 puntano le righe del database, `skills/` e `agents/` contengono i file con cui viene
 eseguito un agente, e `secrets.json` contiene ogni chiave di associazione, credenziale
 di fornitore e impostazione SSO dell'installazione. Vedi
-[Backup e ripristino](/it-IT/manuale/guide/backup-e-ripristino/#copy-backups-off-the-machine)
+[Backup e ripristino](/it-IT/manuale/guide/backup-e-ripristino/#copia-i-backup-fuori-dalla-macchina)
 per coprire il resto.
+:::caution[Un database di spazio di lavoro contiene i segreti dei webhook]
+`workspace.db` è l'intero spazio di lavoro: conversazioni, log delle esecuzioni, l'indice del
+codice, i collegamenti ai repository, le definizioni degli ambienti e i membri. Contiene anche,
+in chiaro, i token dei webhook delle pipeline e i segreti dei webhook di sincronizzazione dei
+ticket, quindi tratta un'esportazione o un backup scaricato come un segreto. Non contiene accessi
+ai provider, chiavi di dispositivo o segreti utente; quelli stanno in `global.db` e `secrets.json`.
+:::
+
 :::note[I token della chat restano deliberatamente indietro]
 Il fatto che `chat_credentials/` si trovi accanto al database invece che al suo interno è
 il motivo per cui uno spazio di lavoro passato a qualcun altro non porta con sé token bot
@@ -148,7 +157,7 @@ rifiutati, ma strutturalmente mancanti.
 | `workspace.listBackups` | lettura | Spazio di lavoro | `admin` | nessuno | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutazione | Spazio di lavoro | `owner` | `name` | `{ok}` |
 | `workspace.export`    | lettura   | Spazio di lavoro  | `admin`             | nessuno       | `{ok, path}`                  |
-| `workspace.import`    | mutazione | Spazio di lavoro  | `owner`             | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`    | mutazione | Spazio di lavoro  | `owner`, e il proprietario del server | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutazione | Installazione*    | `owner`             | `id`          | riga di registro contrassegnata come eliminata |
 
 * `workspace.delete` non ha ambito perché la riga che contrassegna vive nel registro
@@ -173,9 +182,20 @@ di `GET /backup/snapshot`. Un'istantanea acquisisce il database di ogni spazio d
 lavoro, quindi essere admin di un solo spazio di lavoro non basta per gestire gli altri.
 L'eliminazione accetta solo il nome della directory con data e ora presente nell'elenco,
 non un percorso arbitrario del server, e rimuove l'intera istantanea (comprese quelle
-incomplete). Esportazione e importazione per singolo spazio di lavoro restano in capo
-ad admin/proprietario dello spazio di lavoro, non al proprietario dell'installazione.
+incomplete). Esportazione e download dei backup pianificati per singolo spazio di lavoro restano in capo
+solo all'admin dello spazio di lavoro.
 :::
+
+:::note[Il ripristino spetta al proprietario del server]
+`workspace.import` e `POST /backup/restore` fanno sì che il server adotti un file di database
+le cui righe tratta poi come sue: collegamenti ai repository e chi li ha creati, definizioni
+degli ambienti che girano sull'host, percorsi di worktree e di log. Per questo entrambi
+richiedono il proprietario del server (`ServerAuthority.serverOwner`), che deve anche essere
+il proprietario dello spazio di lavoro. Chiunque altro, e ogni chiamante su un host senza un
+proprietario registrato, viene rifiutato con `server_owner_required`. Nessun trigger o vista
+portato dal file viene adottato.
+:::
+
 
 ### Risposta di `server.listBackups`
 
@@ -251,7 +271,7 @@ abbinamento e il ruolo riportato sotto.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** dello spazio di lavoro |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietario** dell'installazione |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** dello spazio di lavoro; **proprietario** dell'installazione una volta eliminato lo spazio di lavoro |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietario** dello spazio di lavoro |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietario** dell'installazione che è anche **proprietario** dello spazio di lavoro (`403` con `server_owner_required` altrimenti) |
 
 `w` è un id di spazio di lavoro, `n` un nome di directory di istantanea o di backup
 pianificato, `d` l'id del dispositivo chiamante, `s` la firma. Su `/backup/snapshot`, `n`

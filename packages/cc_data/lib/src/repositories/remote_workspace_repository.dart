@@ -1,3 +1,4 @@
+import 'package:cc_data/src/server_owner_failure.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
@@ -33,9 +34,11 @@ class RemoteWorkspaceRepository {
       _client.subscribe('workspace.watchAll', const {}).map(_workspaces);
 
   /// Creates a workspace on the host. Id minting, owner membership and
-  /// `WorkspaceCreated` seeding run server-side (`workspace.create`).
+  /// `WorkspaceCreated` seeding run server-side (`workspace.create`). Only
+  /// someone who may create workspaces can; anyone else gets
+  /// [ServerOwnerRequiredException].
   Future<WorkspaceDto> create({required String name}) async {
-    final data = await _client.call('workspace.create', {'name': name});
+    final data = await _client.callAsOwner('workspace.create', {'name': name});
     final workspace = data['workspace'];
     if (workspace is! Map) {
       throw StateError('workspace.create returned no workspace');

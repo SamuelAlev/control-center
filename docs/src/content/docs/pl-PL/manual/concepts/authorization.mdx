@@ -2,7 +2,7 @@
 title: Autoryzacja — kto może co robić i jak to udowodnisz
 description: Katalog uprawnień stojący za rolami w Control Center, odporny na manipulację dziennik audytu, do którego trafia każda decyzja autoryzacyjna, oraz mechanizmy obejmujące całą instalację, które operator może ustalić.
 slug: pl-PL/podrecznik/koncepcje/autoryzacja
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center odpowiada na dwa pytania autoryzacyjne i są to pytania
@@ -64,18 +64,98 @@ jako `custom:<id>`, a klient zbyt stary, by zrozumieć tę wartość, cofa się
 do roli gościa, zamiast zgadywać.
 
 Pod rolami znajdują się **uprawnienia do poszczególnych repozytoriów**
-(`none` / `read` / `review` / `write`): członkostwo w obszarze roboczym
-nigdy po cichu nie daje większych uprawnień niż host kodu. Sprawdzają je
+(`none` / `read` / `review` / `write`, zob. [Zmiana kodu wymaga uprawnienia zapisu](#zmiana-kodu-wymaga-uprawnienia-zapisu)):
+członkostwo w obszarze roboczym nigdy po cichu nie daje większych uprawnień niż host kodu. Sprawdzają je
 wszystkie powierzchnie udostępniające kod — także te, które sięgają do kodu
 bokiem, jak terminal czy sesja edytora otwarta w worktree przestrzeni.
 
-## Autorytet serwera
+## Kod podąża za hostingiem kodu
 
-Niektóre operacje wcale nie dotyczą obszaru roboczego: ustawienia dla całej
-instalacji, konfiguracja SSO, poświadczenia dostawców, zarządzanie modelami,
-kopie zapasowe całej instalacji. Deklarują one **autorytet serwera** i są
-odmawiane wszystkim poza operatorem instalacji (zarejestrowanym właścicielem
-serwera). Świadomie istnieje jedna tożsamość operatora i jedna jej definicja.
+Samo uprawnienie nie otwiera kodu repozytorium. Aby zobaczyć jego pliki, różnice lub wyniki
+wyszukiwania albo otworzyć na nim terminal, członek potrzebuje uprawnienia Control Center
+**i** własne logowanie do hostingu kodu musi mieć prawo odczytu tego repozytorium.
+Administratorzy obszaru roboczego nie są zwolnieni; właściciel serwera jest, bo checkout
+znajduje się na jego maszynie. Repozytorium bez zdalnego adresu hostingu kodu wymaga tylko
+uprawnienia.
+
+- Gdy administrator przydziela repozytorium osobie, której konto w hostingu kodu nie może go
+  odczytać, przydział zostaje zapisany, a administrator widzi ostrzeżenie.
+- Gdy hostingu kodu nie da się sprawdzić, odpowiedź brzmi nie, nigdy nie zgadujemy: osoba
+  widzi „Nie udało się potwierdzić twojego dostępu do GitHub. Spróbuj ponownie.” i próbuje
+  ponownie później.
+- Pull requesty i wszystko, co z nich powstaje, podlegają tej samej zasadzie.
+
+### Zmiana kodu wymaga uprawnienia zapisu
+
+Uprawnienie do repozytorium ma trzy poziomy, a każdy obejmuje poprzedni:
+
+- **read**: przeglądanie plików repozytorium, różnic i wyników wyszukiwania, pod warunkiem że twoje własne logowanie w hostingu kodu też może je odczytać.
+- **review**: odczyt oraz zatwierdzanie, żądanie zmian i pozostałe działania recenzenckie w jego pull requestach.
+- **write**: recenzja oraz zmiana kodu i uruchamianie agentów, które zapisują do repozytorium. Zmiana kodu obejmuje zapisywanie lub cofanie plików w edytorze, synchronizowanie worktree z head pull requesta, commitowanie i wypychanie, publikowanie gałęzi oraz działania na stosie, które wydzielają, wyewidencjonowują lub publikują część.
+
+Każde wypchnięcie wykonane dla osoby, przez nią samą lub przez uruchomienie agenta, o które poprosiła, sprawdza jej uprawnienie zapisu do tego repozytorium w chwili wypychania, na GitHub, GitLab i Bitbucket. Publikując stos, sprawdzane jest każde repozytorium w stosie, zanim cokolwiek zostanie wypchnięte.
+
+Odmowa wskazuje brakujące uprawnienie. Bez dostępu do odczytu aplikacja pisze „Nie masz dostępu do odczytu tego repozytorium. Administrator obszaru roboczego może go przyznać.” Przy samym odczycie bez zapisu pisze: „Możesz czytać to repozytorium, ale nie możesz go zmieniać. Administrator obszaru roboczego może przyznać dostęp do zapisu.”
+
+### Przestrzenie podążają za swoimi repozytoriami
+
+To, co agenci napisali o kodzie, podąża za kodem. Treść przestrzeni (jej wiadomości,
+transkrypcje i wyjście narzędzi, wyniki wyszukiwania, dzienniki uruchomień, zadania,
+aktywność i powiadomienia) niesie kod repozytoriów, nad którymi pracuje, więc przestrzeń
+otwiera się tylko dla członka, który ma uprawnienie odczytu do każdego repozytorium z niej
+korzystającego i którego własne logowanie w hostingu kodu może je odczytać. Są to
+repozytoria wybrane dla niej albo wszystkie repozytoria obszaru roboczego, gdy nie zapisano
+żadnego wyboru. Przestrzeń utworzona bez repozytoriów jest otwarta dla każdego członka.
+
+Przestrzeń, której ktoś nie może otworzyć, nie jest dla niego nigdzie wyświetlana, także w
+wyszukiwaniu, dziennikach uruchomień, zadaniach, aktywności i powiadomieniach. Administratorzy
+obszaru roboczego posiadają każde uprawnienie, ale nie są zwolnieni z części dotyczącej
+hostingu kodu; właściciel serwera jest.
+
+Dla rozmowy, którą każdy ma móc czytać, utwórz przestrzeń bez repozytoriów albo tylko z
+repozytoriami, które każdy może odczytać.
+
+## Właściciel serwera
+
+Osoba, która skonfigurowała serwer, jest jego **właścicielem**. Serwer zapisuje ją raz, przy
+pierwszym uruchomieniu, a nic przesłanego przez sieć tego nie zmienia. Administrator obszaru
+roboczego ani właściciel obszaru roboczego nie jest właścicielem serwera: każdemu można
+przydzielić obszar roboczy, ale maszyna serwera ma jednego właściciela.
+
+**Nic nie działa na maszynie serwera poza piaskownicą, chyba że uruchomił to właściciel serwera
+albo zatwierdził taki rodzaj wykonania na hoście.** Konkretnie tylko właściciel serwera może:
+
+- Utworzyć obszar roboczy. Wszyscy inni widzą ekran z prośbą, by właściciel utworzył go albo
+  administrator obszaru roboczego ich zaprosił.
+- Otworzyć powłokę hosta w terminalu uruchomionym na serwerze. Wszyscy inni dostają terminal
+  w piaskownicy, z ograniczeniami agenta, w katalogach własnych obszaru roboczego.
+- Otworzyć osadzony edytor kodu. Działa jako własny użytkownik serwera, z jego terminalem,
+  zadaniami i rozszerzeniami.
+- Otworzyć pull request albo worktree rozmowy w natywnym edytorze. Edytor uruchamia się na
+  ekranie serwera, jako użytkownik serwera.
+- Zapisać lub zatwierdzić definicję [środowiska](/pl-PL/podrecznik/poradniki/srodowiska/), która uruchamia
+  cokolwiek na hoście: umieszczenie na hoście, sprawdzenie uruchamiające polecenie albo zadanie
+  przygotowania (provision) lub archiwizacji.
+- Uruchamiać agentów na serwerze, którego maszyna nie ma piaskownicy. Uruchomienia wszystkich
+  pozostałych są tam odrzucane, chyba że właściciel uruchomił serwer z `--sandbox off`, co
+  uruchamia agentów wszystkich członków bez ograniczeń (zobacz
+  [Agenty na hoście bez piaskownicy](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/#agenty-na-hoście-bez-sandboxa)).
+- Połączyć kopię repozytorium leżącą poza pamięcią obszaru roboczego, potwierdzić jedną już
+  połączoną przed tą zasadą i przeglądać foldery serwera przy dodawaniu repozytorium (zobacz
+  [Dodaj repozytoria](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/)).
+- Zobaczyć i zatrzymać każdy działający proces agenta na serwerze. Wszyscy inni widzą i
+  zatrzymują tylko działające uruchomienia agentów w obszarach roboczych, do których należą.
+- Sprawić, by agenci używali serwerów MCP skonfigurowanych w narzędziach użytkownika serwera
+  (Claude, Codex, Cursor i reszta). Dostają je tylko wbudowane uruchomienia harnessu, za które
+  odpowiada właściciel; zobacz
+  [Osobiste serwery MCP należą do właściciela](/pl-PL/podrecznik/poradniki/serwer-mcp/#osobiste-serwery-mcp-należą-do-właściciela).
+- Potwierdzić adres e-mail osoby, aby logowanie jednokrotne mogło go dopasować (zobacz
+  [Połącz dostawcę OpenID Connect](/pl-PL/podrecznik/poradniki/sso-oidc/#jak-logowania-dopasowują-istniejące-konta)).
+- Zmieniać ustawienia dla całej instalacji: SSO, poświadczenia dostawców, endpoint MCP i jego
+  token, zarządzanie modelami, Connect oraz kopie zapasowe całej instalacji. Te operacje
+  deklarują **autorytet serwera** i są odmawiane wszystkim pozostałym.
+
+Świadomie istnieje jedna tożsamość operatora i jedna jej definicja.
 
 ## Dziennik audytu
 

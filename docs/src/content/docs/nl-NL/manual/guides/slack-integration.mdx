@@ -2,7 +2,7 @@
 title: Slack-integratie instellen
 description: Verbind Slack met een Control Center-werkruimte, via de gedeelde Control Center-app of een eigen app, zodat leden agenten vanuit Slack aansturen.
 slug: nl-NL/handleiding/gidsen/slack-integratie
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Deze gids laat je zien hoe je Slack met een Control Center-werkruimte verbindt: door de gedeelde Control Center-app toe te voegen, of met een eigen app die Control Center voor je maakt of die je zelf bouwt.
@@ -27,18 +27,18 @@ Een werkruimte draait altijd op precies één van beide.
 
 | Modus                          | Vereist                                                                                                        | Je krijgt                                                                                     |
 | ------------------------------ | -------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **Gedeelde Control Center-app** | De server gebruikt Control Center Connect (**Instellingen → Server → Single sign-on**) en Connect bedient Slack | Eén klik en een Slack-aanmelding. Geen app om te maken, geen token om te plakken, niets om te roteren |
+| **Gedeelde Control Center-app** | De aanmeldapps van de werkruimte lopen via Control Center Connect (de keuze van de server onder **Instellingen → Server → Single sign-on**, of die van de werkruimte zelf onder **Instellingen → Werkruimte → Integraties**) en Connect bedient Slack | Eén klik en een Slack-aanmelding. Geen app om te maken, geen token om te plakken, niets om te roteren |
 | **Je eigen app**               | Een Slack-app in je Slack-workspace, gemaakt op een van de drie manieren hieronder                            | Je eigen botnaam, beschrijvingen en slash-commando, te bewerken vanuit Control Center         |
 
 ### De gedeelde Control Center-app toevoegen
 
-1. Ga in Control Center naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
+1. Ga in Control Center naar **Instellingen → Werkruimte → Integraties** en scrol naar de kaart **Chatbruggen**
 2. Zoek in het Slack-blok de rij **Control Center toevoegen aan Slack** en klik op **Toevoegen aan Slack**
 3. Je browser opent Slack. Meld je aan met Slack, kies de Slack-workspace en keur de installatie goed
 4. Toont de browser een code, voer die dan in in de dialoog die Control Center open liet staan. Stuurt de browser je zelf terug naar de app, dan hoef je niets te typen
 5. Een melding noemt de Slack-workspace waaraan de app is toegevoegd, en het Slack-blok toont dat de verbinding op de gedeelde Control Center-app draait
 
-Alleen een werkruimtebeheerder kan de app toevoegen. De rij zegt waarom hij niet kan starten als de server zijn eigen apps gebruikt in plaats van Connect, als je Connect geen Slack-app heeft, of als deze werkruimte al een eigen Slack-app heeft verbonden.
+Alleen een werkruimtebeheerder kan de app toevoegen. De rij zegt waarom hij niet kan starten als de aanmeldapps van deze werkruimte eigen apps zijn in plaats van Connect, als je Connect geen Slack-app heeft, of als deze werkruimte al een eigen Slack-app heeft verbonden.
 
 Zo verschilt hij van je eigen app:
 
@@ -64,7 +64,7 @@ De gebeurtenissen van je eigen app gaan nooit door Connect: Socket Mode levert z
 ## Optie A: Control Center de app laten maken
 
 1. Genereer op [api.slack.com/apps](https://api.slack.com/apps) een paar app-configuratietokens en kopieer het **refresh**-token (`xoxe-…`)
-2. Ga in Control Center naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
+2. Ga in Control Center naar **Instellingen → Werkruimte → Integraties** en scrol naar de kaart **Chatbruggen**
 3. Klik in het Slack-blok op **Maak de app voor mij**
 4. Plak het token, pas de appnaam, botnaam, beschrijvingen en het slash-commando aan, en klik op **App maken**
 5. Volg de twee resterende stappen die het dialoogvenster toont, elk als een link naar Slack:
@@ -78,7 +78,7 @@ Het configuratietoken roteert bij elk gebruik. Control Center slaat de geroteerd
 
 Dezelfde app, zonder configuratietoken — Slack opent zijn eigen aanmaakscherm met het hele manifest al ingevuld.
 
-1. Ga in Control Center naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
+1. Ga in Control Center naar **Instellingen → Werkruimte → Integraties** en scrol naar de kaart **Chatbruggen**
 2. Klik in het Slack-blok op **Maak de app voor mij**
 3. Pas de appnaam, botnaam, beschrijvingen en het slash-commando aan — die gaan mee met de link
 4. Klik op **Maken in Slack**. Je browser opent de app-aanmaakpagina van Slack met de configuratie al ingevuld
@@ -132,7 +132,7 @@ message.im
 
 Zo bereiken de tokens van je eigen app Control Center. De gedeelde app heeft hier niets van nodig.
 
-1. Ga naar **Instellingen → Werkruimte → Algemeen** en scrol naar de kaart **Chatbruggen**
+1. Ga naar **Instellingen → Werkruimte → Integraties** en scrol naar de kaart **Chatbruggen**
 2. Klik in het Slack-blok op **Slack verbinden**
 3. Vul de velden in:
 
@@ -204,7 +204,7 @@ Elk gekoppeld lid met een schrijvende rol kan vanuit Slack een ticket voorstelle
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-De tekst vóór de `|` is de titel, de tekst erna de beschrijving. De bot antwoordt dat hij een concept van het ticket heeft gemaakt. Er wordt nog niets aangemaakt en er gaat geen ticketautomatisering af: het concept wacht op je in **Instellingen → Werkruimte → Profiel en identiteit → Ticketconcepten uit de chat**, waar je de titel en beschrijving kunt corrigeren en daarna op **Ticket aanmaken** of **Negeren** klikt.
+De tekst vóór de `|` is de titel, de tekst erna de beschrijving. De bot antwoordt dat hij een concept van het ticket heeft gemaakt. Er wordt nog niets aangemaakt en er gaat geen ticketautomatisering af: het concept wacht op je in **Instellingen → Jij → Profiel → Ticketconcepten uit de chat**, waar je de titel en beschrijving kunt corrigeren en daarna op **Ticket aanmaken** of **Negeren** klikt.
 
 - Alleen het lid dat het commando uitvoerde, ziet het concept
 - Een concept dat je laat liggen, wordt na een dag verwijderd. Concepten staan in het geheugen, dus een herstart van de server verwijdert ze ook

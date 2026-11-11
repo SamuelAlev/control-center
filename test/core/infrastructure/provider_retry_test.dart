@@ -50,6 +50,17 @@ void main() {
       );
     });
 
+    test('never retries a typed refusal such as server owner only', () {
+      expect(
+        appProviderRetry(
+          0,
+          const ServerOwnerRequiredException('server_owner_required'),
+        ),
+        isNull,
+      );
+      expect(appProviderRetry(0, const AuthException('no')), isNull);
+    });
+
     test('defers to defaultRetry for an ordinary error', () {
       // A plain exception is retryable under the Riverpod default.
       expect(appProviderRetry(0, Exception('boom')), isNotNull);

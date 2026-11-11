@@ -4,25 +4,6 @@ import 'dart:io';
 
 import 'package:cc_connect/src/private_file.dart';
 
-/// The servers allowed to mint against one GitHub installation.
-final class GitHubInstallationBinding {
-  /// Creates the binding.
-  const GitHubInstallationBinding({
-    required this.installationId,
-    required this.installIds,
-    required this.boundAt,
-  });
-
-  /// GitHub's installation id.
-  final int installationId;
-
-  /// The bound install ids.
-  final Set<String> installIds;
-
-  /// When the binding last changed.
-  final DateTime boundAt;
-}
-
 /// The one server a Slack workspace is bound to.
 final class SlackTeamBinding {
   /// Creates the binding.
@@ -32,7 +13,7 @@ final class SlackTeamBinding {
     required this.botId,
     required this.appId,
     required this.boundAt,
-    this.botUserId = '',
+    required this.botUserId,
   });
 
   /// Slack's team id.
@@ -44,8 +25,7 @@ final class SlackTeamBinding {
   /// The bot id from `auth.test`.
   final String botId;
 
-  /// The bot's user id (`U…`), which Slack names in `tokens_revoked`. Empty
-  /// for a binding recorded before it was kept.
+  /// The bot's user id (`U…`), which Slack names in `tokens_revoked`.
   final String botUserId;
 
   /// The Slack app id.
@@ -58,12 +38,13 @@ final class SlackTeamBinding {
   Map<String, Object?> toJson() => {
     'install_id': installId,
     'bot_id': botId,
-    if (botUserId.isNotEmpty) 'bot_user_id': botUserId,
+    'bot_user_id': botUserId,
     'app_id': appId,
     'bound_at': boundAt.toUtc().toIso8601String(),
   };
 
-  /// Parses the persisted form; null when malformed.
+  /// Parses the persisted form; null when malformed (including a binding
+  /// without `bot_user_id`).
   static SlackTeamBinding? fromJson(String teamId, Object? json) {
     if (json is! Map) {
       return null;
@@ -76,7 +57,9 @@ final class SlackTeamBinding {
     if (install is! String ||
         bot is! String ||
         app is! String ||
-        at is! String) {
+        at is! String ||
+        botUser is! String ||
+        botUser.isEmpty) {
       return null;
     }
     return SlackTeamBinding(
@@ -85,7 +68,7 @@ final class SlackTeamBinding {
       botId: bot,
       appId: app,
       boundAt: DateTime.tryParse(at)?.toUtc() ?? DateTime.utc(1970),
-      botUserId: botUser is String ? botUser : '',
+      botUserId: botUser,
     );
   }
 }
@@ -102,19 +85,18 @@ final class BindingStoreUnavailable implements Exception {
   String toString() => 'BindingStoreUnavailable($reason)';
 }
 
-/// Tenant-to-server bindings (`install_binding`): opaque ids only, never a
-/// token.
+/// Most install ids the retired set holds. Retiring is free for any install
+/// (installs are free to mint), so the set is capped: a full set refuses
+/// further retirements and logs an error for the operator.
+const int maxRetiredInstalls = 100000;
+
+/// The most Slack teams one install's retirement releases.
+const int maxTeamsPerInstall = 1000;
+
+/// Slack team-to-server bindings (`install_binding`) and the retired
+/// installs: opaque ids only, never a token. GitHub has no binding: any
+/// server a member signs in on may use the account's installation.
 abstract interface class BindingStore {
-  /// The binding for a GitHub installation, or null. [fresh] bypasses any
-  /// cache: a mint authorizes on it.
-  Future<GitHubInstallationBinding?> github(
-    int installationId, {
-    bool fresh = false,
-  });
-
-  /// Adds [installId] to the installation's binding.
-  Future<void> addGitHub(int installationId, String installId);
-
   /// The binding for a Slack team, or null. [fresh] bypasses any cache: the
   /// Slack pre-check must never act on a stale "unbound".
   Future<SlackTeamBinding?> slack(String teamId, {bool fresh = false});
@@ -129,41 +111,95 @@ abstract interface class BindingStore {
   /// True when a binding was removed.
   Future<bool> releaseSlack(String teamId, {String? installId});
 
+  /// The teams bound to [installId] (at most [maxTeamsPerInstall]), read
+  /// from the backend.
+  Future<List<String>> slackTeamsOf(String installId);
+
+  /// Whether [installId] was retired ([retireInstall]).
+  Future<bool> isRetired(String installId);
+
+  /// Records [installId] as retired, for good: every later request it signs
+  /// is refused. True when it is retired now (also when it already was);
+  /// false when the set already holds [maxRetiredInstalls] ids and nothing
+  /// was recorded.
+  Future<bool> retireInstall(String installId);
+
+  /// Proves the backend answers (boot and `/readyz`). Throws
+  /// [BindingStoreUnavailable].
+  Future<void> probe();
+
   /// Releases resources.
   Future<void> close();
 }
 
-/// Bindings in a JSON file under `CONNECT_DATA_DIR`, held in memory and
+/// Bindings and retired installs in a JSON file under `CONNECT_DATA_DIR`
+/// (`{"slack": {...}, "retired": [...]}`, both keys required), held in
+/// memory and
 /// rewritten atomically on each change ([writePrivateFile]: created 0600,
 /// then renamed). For one instance; a multi-instance deploy uses Firestore.
+/// [open] takes an exclusive lock on `bindings.lock` in the directory, so a
+/// second Connect on the same directory refuses to start instead of
+/// overwriting the first one's bindings from its own stale copy.
 ///
 /// Every change is compare-and-set against the in-memory map and is undone
 /// when the file write fails, so memory never answers a binding the disk
 /// does not hold.
 final class FileBindingStore implements BindingStore {
-  FileBindingStore._(this._file, {DateTime Function()? clock})
-    : _clock = clock ?? DateTime.now;
+  FileBindingStore._(this._file, this._lock, this._lockPath);
 
-  /// Opens (or creates) `bindings.json` in [dataDir].
-  static Future<FileBindingStore> open(
-    String dataDir, {
-    DateTime Function()? clock,
-  }) async {
+  /// Paths locked by this process: a file lock does not exclude its own
+  /// process.
+  static final Set<String> _lockedHere = {};
+
+  /// Opens (or creates) `bindings.json` in [dataDir]. Throws
+  /// [BindingStoreUnavailable] when another Connect holds the directory.
+  static Future<FileBindingStore> open(String dataDir) async {
     final dir = Directory(dataDir);
     await dir.create(recursive: true);
     await _restrictDirectory(dir.path);
+    final lockFile = File('${dir.path}${Platform.pathSeparator}bindings.lock');
+    final lockPath = lockFile.absolute.path;
+    if (!_lockedHere.add(lockPath)) {
+      throw const BindingStoreUnavailable(_heldElsewhere);
+    }
+    final RandomAccessFile lock;
+    try {
+      lock = await lockFile.open(mode: FileMode.append);
+    } on Object {
+      _lockedHere.remove(lockPath);
+      rethrow;
+    }
+    try {
+      await lock.lock(FileLock.exclusive);
+    } on FileSystemException {
+      _lockedHere.remove(lockPath);
+      await lock.close();
+      throw const BindingStoreUnavailable(_heldElsewhere);
+    }
     final store = FileBindingStore._(
       File('${dir.path}${Platform.pathSeparator}bindings.json'),
-      clock: clock,
+      lock,
+      lockPath,
     );
-    await store._load();
+    try {
+      await store._load();
+    } on Object {
+      await store.close();
+      rethrow;
+    }
     return store;
   }
 
+  static const String _heldElsewhere =
+      'another Connect holds this directory; run one instance per data '
+      'directory, or Firestore bindings for several';
+
   final File _file;
-  final DateTime Function() _clock;
-  final Map<int, GitHubInstallationBinding> _github = {};
+  final RandomAccessFile _lock;
+  final String _lockPath;
+  bool _closed = false;
   final Map<String, SlackTeamBinding> _slack = {};
+  final Set<String> _retired = {};
   Future<void> _writes = Future.value();
 
   Future<void> _load() async {
@@ -176,52 +212,31 @@ final class FileBindingStore implements BindingStore {
     } on FormatException {
       throw const BindingStoreUnavailable('bindings.json is corrupt');
     }
-    if (decoded is! Map) {
+    if (decoded is! Map ||
+        decoded.length != 2 ||
+        decoded['slack'] is! Map ||
+        decoded['retired'] is! List) {
       throw const BindingStoreUnavailable('bindings.json is corrupt');
     }
-    final github = decoded['github'];
-    if (github is Map) {
-      github.forEach((key, value) {
-        final id = int.tryParse('$key');
-        if (id == null || value is! Map) {
-          return;
-        }
-        final ids = value['install_ids'];
-        final at = value['bound_at'];
-        _github[id] = GitHubInstallationBinding(
-          installationId: id,
-          installIds: {
-            if (ids is List)
-              for (final i in ids)
-                if (i is String) i,
-          },
-          boundAt: at is String
-              ? DateTime.tryParse(at)?.toUtc() ?? DateTime.utc(1970)
-              : DateTime.utc(1970),
-        );
-      });
+    final slack = decoded['slack'] as Map;
+    for (final id in decoded['retired'] as List) {
+      if (id is! String || id.isEmpty || id.length > 64) {
+        throw const BindingStoreUnavailable('bindings.json is corrupt');
+      }
+      _retired.add(id);
     }
-    final slack = decoded['slack'];
-    if (slack is Map) {
-      slack.forEach((key, value) {
-        final binding = SlackTeamBinding.fromJson('$key', value);
-        if (binding != null) {
-          _slack['$key'] = binding;
-        }
-      });
-    }
+    slack.forEach((key, value) {
+      final binding = SlackTeamBinding.fromJson('$key', value);
+      if (binding == null) {
+        throw const BindingStoreUnavailable('bindings.json is corrupt');
+      }
+      _slack['$key'] = binding;
+    });
   }
 
   Map<String, Object?> _snapshot() => {
-    'v': 1,
-    'github': {
-      for (final b in _github.values)
-        '${b.installationId}': {
-          'install_ids': b.installIds.toList()..sort(),
-          'bound_at': b.boundAt.toUtc().toIso8601String(),
-        },
-    },
     'slack': {for (final b in _slack.values) b.teamId: b.toJson()},
+    'retired': [..._retired]..sort(),
   };
 
   Future<void> _persist() {
@@ -245,30 +260,6 @@ final class FileBindingStore implements BindingStore {
       undo();
       rethrow;
     }
-  }
-
-  @override
-  Future<GitHubInstallationBinding?> github(
-    int installationId, {
-    bool fresh = false,
-  }) async => _github[installationId];
-
-  @override
-  Future<void> addGitHub(int installationId, String installId) async {
-    final existing = _github[installationId];
-    if (existing != null && existing.installIds.contains(installId)) {
-      return;
-    }
-    await _commit(
-      () => _github[installationId] = GitHubInstallationBinding(
-        installationId: installationId,
-        installIds: {...?existing?.installIds, installId},
-        boundAt: _clock().toUtc(),
-      ),
-      () => existing == null
-          ? _github.remove(installationId)
-          : _github[installationId] = existing,
-    );
   }
 
   @override
@@ -302,7 +293,49 @@ final class FileBindingStore implements BindingStore {
   }
 
   @override
-  Future<void> close() => _writes;
+  Future<List<String>> slackTeamsOf(String installId) async => [
+    for (final binding in _slack.values)
+      if (binding.installId == installId) binding.teamId,
+  ].take(maxTeamsPerInstall).toList();
+
+  @override
+  Future<bool> isRetired(String installId) async =>
+      _retired.contains(installId);
+
+  @override
+  Future<bool> retireInstall(String installId) async {
+    if (_retired.contains(installId)) {
+      return true;
+    }
+    if (_retired.length >= maxRetiredInstalls) {
+      return false;
+    }
+    await _commit(
+      () => _retired.add(installId),
+      () => _retired.remove(installId),
+    );
+    return true;
+  }
+
+  /// Loaded at [open]; nothing remote to reach.
+  @override
+  Future<void> probe() async {}
+
+  @override
+  Future<void> close() async {
+    if (_closed) {
+      return;
+    }
+    _closed = true;
+    await _writes;
+    try {
+      await _lock.unlock();
+    } on FileSystemException {
+      // Closing releases it anyway.
+    }
+    await _lock.close();
+    _lockedHere.remove(_lockPath);
+  }
 }
 
 /// Makes [path] owner-only (0700). The directory is created by the image
@@ -319,8 +352,10 @@ Future<void> _restrictDirectory(String path) async {
 }
 
 /// An in-memory read cache in front of a remote [BindingStore]. Positive
-/// GitHub and Slack entries are cached for [ttl]; misses always go to the
-/// backend, and `slack(fresh: true)` always does.
+/// Slack entries are cached for [ttl]; misses always go to the backend, and
+/// `slack(fresh: true)` always does. A retired install is remembered for
+/// good (retiring is permanent); "not retired" is trusted for [ttl], so a
+/// retirement on another instance applies here within it.
 final class CachedBindingStore implements BindingStore {
   /// Creates the cache.
   CachedBindingStore(
@@ -334,36 +369,43 @@ final class CachedBindingStore implements BindingStore {
   /// How long a positive entry is trusted.
   final Duration ttl;
   final DateTime Function() _clock;
-  final Map<int, (GitHubInstallationBinding, DateTime)> _github = {};
   final Map<String, (SlackTeamBinding, DateTime)> _slack = {};
+  final Set<String> _retired = {};
+  final Map<String, DateTime> _notRetired = {};
 
   bool _fresh(DateTime at) => _clock().difference(at) < ttl;
 
   @override
-  Future<GitHubInstallationBinding?> github(
-    int installationId, {
-    bool fresh = false,
-  }) async {
-    final hit = _github[installationId];
-    if (!fresh && hit != null && _fresh(hit.$2)) {
-      return hit.$1;
+  Future<bool> isRetired(String installId) async {
+    if (_retired.contains(installId)) {
+      return true;
     }
-    final value = await _inner.github(installationId, fresh: true);
-    if (value != null) {
-      _github[installationId] = (value, _clock());
+    final checked = _notRetired[installId];
+    if (checked != null && _fresh(checked)) {
+      return false;
+    }
+    final retired = await _inner.isRetired(installId);
+    if (retired) {
+      _retired.add(installId);
+      _notRetired.remove(installId);
     } else {
-      _github.remove(installationId);
+      if (_notRetired.length >= 10000) {
+        // Only ever costs a backend read.
+        _notRetired.clear();
+      }
+      _notRetired[installId] = _clock();
     }
-    return value;
+    return retired;
   }
 
   @override
-  Future<void> addGitHub(int installationId, String installId) async {
-    try {
-      await _inner.addGitHub(installationId, installId);
-    } finally {
-      _github.remove(installationId);
+  Future<bool> retireInstall(String installId) async {
+    final retired = await _inner.retireInstall(installId);
+    if (retired) {
+      _retired.add(installId);
+      _notRetired.remove(installId);
     }
+    return retired;
   }
 
   @override
@@ -398,6 +440,13 @@ final class CachedBindingStore implements BindingStore {
       _slack.remove(teamId);
     }
   }
+
+  @override
+  Future<List<String>> slackTeamsOf(String installId) =>
+      _inner.slackTeamsOf(installId);
+
+  @override
+  Future<void> probe() => _inner.probe();
 
   @override
   Future<void> close() => _inner.close();

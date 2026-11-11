@@ -1,7 +1,6 @@
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run_status.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_status.dart';
-import 'package:control_center/core/theme/app_radii.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pipelines/presentation/widgets/pipeline_status_visuals.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';

@@ -185,9 +185,9 @@ class DemoProfile {
     'adapter.detectAll',
     // Claude Code's model vocabulary is a curated list, not a CLI probe.
     'acp.listModels',
-    // Fictional Claude Code logins. Create, rename, remove, setDefault and
-    // loginCommand stay under the prefix: loginCommand hands back a
-    // `claude auth login` argv, and the rest write host directories.
+    // Fictional Claude Code logins. Every other verb stays under the prefix:
+    // loginCommand hands back a `claude auth login` argv, signInStates reads
+    // the host keychain, and the rest write host directories.
     'claude_accounts.list',
     // Cached models.dev document (install-wide reference data). The fetch
     // itself is host-side and gated off on the demo (`allowNetwork: false`);
@@ -264,6 +264,9 @@ class DemoProfile {
     'pr.searchForWorkspace',
     'pr.searchReviewRequestedForWorkspace',
     'pr.searchReviewedByForWorkspace',
+    // Fetches the workspace's Connect config. A demo has no Connect; the
+    // client gates the card on `isDemoServerProvider`.
+    'workspaceConnect.test',
   };
 
   /// The mutating surface a visitor actually needs to drive every demo screen:
@@ -634,6 +637,10 @@ class DemoProfile {
     'calendar.deleteEvent',
     'calendar.linkMeetingToEvent',
     'calendar.unlinkMeeting',
+    // A workspace's Connect choice decides where its members sign in and
+    // which pins it trusts. A demo signs nobody in.
+    'workspaceConnect.set',
+    'workspaceConnect.confirmPins',
   };
 
   /// The reviewed watch-query snapshot. See [reviewedWatchQueries].
@@ -687,7 +694,6 @@ class DemoProfile {
     'weather.watchCurrent',
     'action_policy.watchForWorkspace',
     'activity.watchForEntity',
-    'activity.watchForWorkspace',
     'agentGoalRuns.watchForConversation',
     // Workspace DB stream of durable goals; each emission drops spaces whose
     // repository grants restrict the subscriber before serializing goal text.
@@ -739,6 +745,9 @@ class DemoProfile {
     // only rows from the visitor's own workspace database.
     'roles.watchForWorkspace',
     'audit.watchRecent',
+    // The audit log narrows itself per frame: the visitor's own admin
+    // workspaces, and the server trail only for the operator.
+    'audit.watchLog',
     // `terminal.output`/`terminal.titles` are built only under
     // `if (terminals != null)` — a demo wires no terminal port, so they are
     // never in its registry at all. Listed so the ratchet knows they were

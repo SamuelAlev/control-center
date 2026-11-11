@@ -3,7 +3,11 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart'
-    show NotFoundException, ValidationException, WorkspaceMismatchException;
+    show
+        NotFoundException,
+        ServerOwnerRequiredException,
+        ValidationException,
+        WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/events/environment_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
@@ -15,6 +19,8 @@ import 'package:cc_domain/features/environments/domain/entities/space_environmen
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
 import 'package:cc_domain/features/environments/domain/services/environment_definition_draft.dart';
+import 'package:cc_domain/features/environments/domain/services/environment_definition_validator.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_glob.dart';
@@ -22,7 +28,6 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_template.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
-import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart'
     show resolvesInsideRoots;
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
@@ -31,9 +36,11 @@ import 'package:cc_infra/src/environments/compose_driver.dart';
 import 'package:cc_infra/src/environments/compose_plan.dart';
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
 import 'package:cc_infra/src/environments/environment_contract.dart';
+import 'package:cc_infra/src/environments/environment_host_approval.dart';
 import 'package:cc_infra/src/environments/environment_lease_allocator.dart';
 import 'package:cc_infra/src/environments/environment_log_ring.dart';
 import 'package:cc_infra/src/environments/environment_process_supervisor.dart';
+import 'package:cc_infra/src/environments/environment_run_log.dart';
 import 'package:cc_infra/src/environments/environment_service_ports.dart';
 import 'package:cc_infra/src/environments/worktree_seed_files.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -48,8 +55,8 @@ part 'environment_service_definitions.dart';
 part 'environment_service_ensure.dart';
 part 'environment_service_lifecycle.dart';
 part 'environment_service_operations.dart';
-part 'environment_service_setup.dart';
 part 'environment_service_stack.dart';
+part 'environment_service_terminal.dart';
 part 'environment_service_worktree.dart';
 
 /// A definition that passed read-time validation.
@@ -96,10 +103,50 @@ class _Stack {
       if (!role.isSource) role.repo.path,
   ];
 
-  bool isEnabled(EnvironmentComponent component) {
-    final condition = component.enabledWhen;
-    return condition == null || contract.values.evaluate(condition);
+  /// Whether [component] is part of this environment. See [_takesPart].
+  bool isEnabled(EnvironmentComponent component) =>
+      _takesPart(definition, roles, contract.values, component);
+
+  /// Whether the space has the role [component] runs in. See [_hasRole].
+  bool hasRole(EnvironmentComponent component) =>
+      _hasRole(definition, roles, component);
+}
+
+/// Whether [component] is part of an environment bound to [roles], with
+/// [values] for its `enabledWhen`.
+///
+/// A component in an optional role the space lacks is left out exactly like a
+/// disabled one: it does not start, publishes nothing and has no `{url.*}` or
+/// `{port.*}`.
+bool _takesPart(
+  EnvironmentDefinition definition,
+  List<_BoundRole> roles,
+  EnvironmentValues values,
+  EnvironmentComponent component,
+) {
+  if (!_hasRole(definition, roles, component)) {
+    return false;
   }
+  final condition = component.enabledWhen;
+  return condition == null || values.evaluate(condition);
+}
+
+/// Whether [roles] hold the role [component] runs in.
+///
+/// A required role counts as held: a start fails on binding it, with that
+/// reason, instead of running the rest of the stack without it.
+bool _hasRole(
+  EnvironmentDefinition definition,
+  List<_BoundRole> roles,
+  EnvironmentComponent component,
+) {
+  final bound = {for (final role in roles) role.role.key};
+  if (definition.roleFor(component, bound) != null) {
+    return true;
+  }
+  final key = component.cwd?.role ?? definition.repos.firstOrNull?.key;
+  return key == null ||
+      definition.repos.any((role) => role.key == key && role.required);
 }
 
 /// What started this bring-up.
@@ -185,6 +232,10 @@ abstract class _EnvironmentServiceBase {
 
   /// Open `watch` streams by `<workspace>/<space>`.
   final Map<String, int> _watchers = {};
+
+  /// Spaces whose run records moved: one started, ended or printed.
+  final StreamController<({String workspaceId, String spaceId})> _runChanges =
+      StreamController.broadcast();
 
   String _lockKey(String workspaceId, String spaceId, String definitionId) =>
       '$workspaceId/$spaceId/$definitionId';
@@ -287,6 +338,29 @@ abstract class _EnvironmentServiceBase {
     }
   }
 
+  void _runsChanged(String workspaceId, String spaceId) {
+    if (!_runChanges.isClosed) {
+      _runChanges.add((workspaceId: workspaceId, spaceId: spaceId));
+    }
+  }
+
+  /// [_runsChanged] timers in flight, by `<workspace>/<space>`.
+  final Map<String, Timer> _runNotices = {};
+
+  /// How long [_runsChangedSoon] waits: just past the gap at which a task's
+  /// output reaches its record, so the read it causes finds the new lines.
+  static const Duration _runNoticeDelay = Duration(milliseconds: 600);
+
+  /// [_runsChanged], once, shortly: for a run that prints line after line,
+  /// where one notice per line would be one read of the records per line.
+  void _runsChangedSoon(String workspaceId, String spaceId) {
+    final key = '$workspaceId/$spaceId';
+    _runNotices[key] ??= Timer(_runNoticeDelay, () {
+      _runNotices.remove(key);
+      _runsChanged(workspaceId, spaceId);
+    });
+  }
+
   Future<void> _setComponent(
     SpaceEnvironment env,
     String id,
@@ -344,10 +418,10 @@ abstract class _EnvironmentServiceBase {
 class EnvironmentService extends _EnvironmentServiceBase
     with
         _DefinitionOps,
+        _TerminalOps,
         _ComponentOps,
         _StackOps,
         _EnsureOps,
-        _SetupOps,
         _OperationOps,
         _WorktreeOps,
         _LifecycleOps

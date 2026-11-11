@@ -165,55 +165,55 @@ void main() {
     },
   );
 
-  test('v19 migration backfills old message refs', () async {
-    final root = await Directory.systemTemp.createTemp('catalog-v19-');
-    addTearDown(() => root.delete(recursive: true));
-    final file = File('${root.path}/workspace.db');
-    final setup = WorkspaceDatabase.forTesting(
-      NativeDatabase(file),
-      workspaceId: 'ws',
-    );
-    await setup.customStatement('''
+  test(
+    'v19 migration creates the catalog without backfilling old refs',
+    () async {
+      final root = await Directory.systemTemp.createTemp('catalog-v19-');
+      addTearDown(() => root.delete(recursive: true));
+      final file = File('${root.path}/workspace.db');
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement('''
       INSERT INTO spaces (id, workspace_id, name, created_at, updated_at)
       VALUES ('space', 'ws', 'Space', 0, 0)
     ''');
-    await setup.customStatement('''
+      await setup.customStatement('''
       INSERT INTO conversations (id, workspace_id, space_id, created_at, updated_at)
       VALUES ('conv', 'ws', 'space', 0, 0)
     ''');
-    await setup.customStatement(
-      '''
+      await setup.customStatement(
+        '''
       INSERT INTO conversation_messages
         (id, space_id, conversation_id, sender_id, sender_type, content, metadata,
          created_at)
       VALUES (?, ?, ?, ?, ?, ?, ?, 0)
     ''',
-      [
-        'message',
-        'space',
-        'conv',
-        'alice',
-        'user',
-        'file',
-        jsonEncode({
-          'attachments': [
-            {'name': 'old.png', 'path': ref, 'size': 4},
-          ],
-        }),
-      ],
-    );
-    await setup.customStatement('DROP TABLE catalog_files');
-    await setup.customStatement('PRAGMA user_version = 19');
-    await setup.close();
-    final db = WorkspaceDatabase.forTesting(
-      NativeDatabase(file),
-      workspaceId: 'ws',
-    );
-    addTearDown(db.close);
-    final rows = await db.customSelect('SELECT * FROM catalog_files').get();
-    expect(rows, hasLength(1));
-    expect(rows.single.read<String>('path'), ref);
-    expect(rows.single.read<String>('state'), 'attached');
-    expect(rows.single.read<int>('owned_bytes'), 0);
-  });
+        [
+          'message',
+          'space',
+          'conv',
+          'alice',
+          'user',
+          'file',
+          jsonEncode({
+            'attachments': [
+              {'name': 'old.png', 'path': ref, 'size': 4},
+            ],
+          }),
+        ],
+      );
+      await setup.customStatement('DROP TABLE catalog_files');
+      await setup.customStatement('PRAGMA user_version = 19');
+      await setup.close();
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
+      final rows = await db.customSelect('SELECT * FROM catalog_files').get();
+      expect(rows, isEmpty);
+    },
+  );
 }

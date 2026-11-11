@@ -132,9 +132,21 @@ Future<PipelineTrigger> preparePipelineTriggerWrite(
     catchUpPolicy: incoming.catchUpPolicy,
     createdAt: previous?.createdAt ?? DateTime.now(),
   );
+  // Whoever leaves it armed armed it, alongside everyone who armed it
+  // before: their runs name them all as who may not approve the pull
+  // requests those runs' agents open. Never the client's.
+  final stamped = pipelineTriggerIsArmed(prepared)
+      ? prepared.copyWith(
+          armedByUserIds: {
+            if (previous != null && pipelineTriggerIsArmed(previous))
+              ...previous.armedByUserIds,
+            if (ctx.userId.isNotEmpty) ctx.userId,
+          },
+        )
+      : prepared.copyWith(clearArmedBy: true);
 
   if (!_isAdmin(ctx) &&
-      pipelineTriggerIsArmed(prepared) &&
+      pipelineTriggerIsArmed(stamped) &&
       pipelineArmingRequiresAdmin(template)) {
     // Disarming (or leaving disarmed) is always a member's call; arming, or
     // re-configuring an armed trigger, is not.
@@ -143,7 +155,7 @@ Future<PipelineTrigger> preparePipelineTriggerWrite(
       'agents or changes data with no one starting it',
     );
   }
-  return prepared;
+  return stamped;
 }
 
 /// Turns a client's `pipeline_template.upsert` payload into the definition the
@@ -169,8 +181,7 @@ Future<PipelineDefinition> preparePipelineTemplateWrite(
   final toggleOnly =
       stored != null &&
       stored.isBuiltIn &&
-      incoming.copyWith(isBuiltIn: true, isEnabled: stored.isEnabled) ==
-          stored;
+      incoming.copyWith(isBuiltIn: true, isEnabled: stored.isEnabled) == stored;
   final definition = incoming.copyWith(isBuiltIn: toggleOnly);
   if (_isAdmin(ctx)) {
     return definition;
@@ -193,4 +204,37 @@ Future<PipelineDefinition> preparePipelineTemplateWrite(
     }
   }
   return definition;
+}
+
+/// Saves a client's `pipeline_template.upsert` ([preparePipelineTemplateWrite]
+/// decides what is stored), then records [ctx]'s member among who armed every
+/// trigger left armed on it: editing a pipeline an armed trigger runs decides
+/// what those runs do, as arming did, so the editor may not approve a pull
+/// request those runs' agents open either.
+Future<void> savePipelineTemplate(
+  RepoOpContext ctx, {
+  required PipelineTemplateRepository templates,
+  required PipelineTriggerConfigRepository triggers,
+  required PipelineDefinition incoming,
+}) async {
+  final definition = await preparePipelineTemplateWrite(
+    ctx,
+    templates: templates,
+    triggers: triggers,
+    incoming: incoming,
+  );
+  await templates.upsert(definition);
+  final editor = ctx.userId;
+  if (editor.isEmpty) {
+    return;
+  }
+  for (final trigger in await triggers.forWorkspace(ctx.workspaceId!)) {
+    if (trigger.templateId == definition.templateId &&
+        pipelineTriggerIsArmed(trigger) &&
+        !trigger.armedByUserIds.contains(editor)) {
+      await triggers.update(
+        trigger.copyWith(armedByUserIds: {...trigger.armedByUserIds, editor}),
+      );
+    }
+  }
 }

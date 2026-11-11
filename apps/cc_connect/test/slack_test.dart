@@ -36,7 +36,7 @@ final class _FakeSlack {
           }),
         });
       })
-      ..on('POST', 'https://slack.com/api/oauth.v2.access', (call) {
+      ..on('POST', 'https://slack.com/api/oauth.v2.access', (call) async {
         final form = call.form;
         if (form['grant_type'] == 'refresh_token') {
           if (!liveRefresh.remove(form['refresh_token'])) {
@@ -59,6 +59,12 @@ final class _FakeSlack {
             'error': 'invalid_code',
           });
         }
+        activeExchanges++;
+        if (activeExchanges > maxConcurrentExchanges) {
+          maxConcurrentExchanges = activeExchanges;
+        }
+        await Future<void>.delayed(exchangeDelay);
+        activeExchanges--;
         return UpstreamResponse.json(200, {
           'ok': true,
           'app_id': 'A0TEST',
@@ -122,6 +128,9 @@ final class _FakeSlack {
   String team = _team;
   bool installerIsAdmin = true;
   int issued = 0;
+  Duration exchangeDelay = Duration.zero;
+  int activeExchanges = 0;
+  int maxConcurrentExchanges = 0;
   final Set<String> liveAccess = {};
   final Set<String> liveRefresh = {};
   final List<String> revoked = [];
@@ -202,10 +211,7 @@ Future<SealedGrant> _signInSlack(
     '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
   );
   expect(callback.status, 303);
-  final done = await harness.browser(
-    '/oauth/slack/done',
-    cookie: cookieFrom(callback),
-  );
+  final done = await _codePage(harness, callback);
   final claim = await harness.call(
     who,
     'POST',
@@ -219,6 +225,21 @@ Future<SealedGrant> _signInSlack(
   );
   expect(claim.status, 200, reason: claim.body);
   return SealedGrant.fromJson(claim.json);
+}
+
+/// The consent page for the login [callback] completed, then the code page
+/// after continue.
+Future<TestResponse> _codePage(Harness harness, TestResponse callback) async {
+  final cookie = cookieFrom(callback);
+  final consent = await harness.browser('/oauth/slack/done', cookie: cookie);
+  expect(consent.status, 200);
+  expect(consent.body, contains('install the Control Center bot'));
+  return harness.consent(
+    ConnectOAuthLane.slack,
+    'continue',
+    cookie: cookie,
+    token: consentTokenFrom(consent.body),
+  );
 }
 
 /// Sends a Slack-signed request to a hook.
@@ -253,6 +274,7 @@ Future<TestResponse> _event(
   String eventId = 'Ev001',
   String appId = 'A0TEST',
   String team = _team,
+  String? authorizedTeam,
   String secret = 'signing-secret',
   DateTime? eventTime,
   Map<String, Object?> envelope = const {},
@@ -264,6 +286,13 @@ Future<TestResponse> _event(
       'type': 'event_callback',
       'api_app_id': appId,
       'team_id': team,
+      'authorizations': [
+        {
+          'team_id': authorizedTeam ?? team,
+          'user_id': _botUser,
+          'is_bot': true,
+        },
+      ],
       'event_id': eventId,
       'event_time':
           (eventTime ?? DateTime.now()).millisecondsSinceEpoch ~/ 1000,
@@ -366,10 +395,7 @@ void main() {
         final callback = await harness.browser(
           '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
         );
-        final done = await harness.browser(
-          '/oauth/slack/done',
-          cookie: cookieFrom(callback),
-        );
+        final done = await _codePage(harness, callback);
         final claim = await harness.call(
           a,
           'POST',
@@ -397,76 +423,35 @@ void main() {
       expect(again.teamId, _team);
     });
 
-    test('a second sign-in for a team being connected stops before any '
-        'exchange', () async {
-      final first = await _slackOidc(harness, slack, a);
-      expect(first.oidc.status, 303);
-      final second = await _slackOidc(harness, slack, b);
-      expect(second.oidc.status, 409);
-      expect(second.oidc.body, contains('already being connected'));
-      expect(second.botState, isNull);
-      expect(slack.botExchanges, 0);
-      // The first one still completes.
-      final callback = await harness.browser(
-        '/oauth/slack/callback?code=bot-code&state=${first.botState}',
+    test('a sign-in another install started and left open blocks nobody: '
+        'the pre-check reserves nothing', () async {
+      final hostile = await _slackOidc(harness, slack, b);
+      expect(hostile.oidc.status, 303);
+      expect(
+        await harness.service.context.state.get('slackclaim:$_team'),
+        isNull,
       );
-      final done = await harness.browser(
-        '/oauth/slack/done',
-        cookie: cookieFrom(callback),
-      );
-      final claim = await harness.call(
-        a,
-        'POST',
-        '/v1/oauth/slack/claim',
-        body: OAuthClaimRequest(
-          loginId: first.loginId,
-          confirmCode: confirmCodeFrom(done.body)!,
-          codeVerifier: first.pkce.verifier,
-          workspaceId: 'ws1',
-        ).toJson(),
-      );
-      expect(claim.status, 200, reason: claim.body);
-      // Once it finished, the team is free for the next sign-in.
-      final third = await _slackOidc(harness, slack, a);
-      expect(third.oidc.status, 303);
+      final grant = await _signInSlack(harness, slack, a);
+      expect(grant.teamId, _team);
+      expect(slack.botExchanges, 1);
     });
 
     test(
-      'an abandoned reservation is taken over by exactly one login',
-      () async {
-        final first = await _slackOidc(harness, slack, a);
-        expect(first.oidc.status, 303);
-        // The first login is abandoned: its reservation is free to take.
-        await harness.service.context.burnLogin(first.loginId);
-        final second = await _slackOidc(harness, slack, b);
-        expect(second.oidc.status, 303);
-        expect(
-          await harness.service.context.state.get('slackclaim:$_team'),
-          second.loginId,
-        );
-        // The taker is live, so a third login waits its turn.
-        final third = await _slackOidc(harness, slack, a);
-        expect(third.oidc.status, 409);
-      },
-    );
-
-    test(
-      'a claim whose reservation another login took never exchanges',
+      'a claim while another exchange for the team runs is refused as '
+      'busy without spending the login, and succeeds once it is done',
       () async {
         final hop = await _slackOidc(harness, slack, a);
         final callback = await harness.browser(
           '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
         );
-        final done = await harness.browser(
-          '/oauth/slack/done',
-          cookie: cookieFrom(callback),
-        );
-        await harness.service.context.state.set(
+        final done = await _codePage(harness, callback);
+        final state = harness.service.context.state;
+        await state.set(
           'slackclaim:$_team',
-          'someone-else',
-          const Duration(minutes: 5),
+          'exchanging:someone-else',
+          const Duration(minutes: 2),
         );
-        final claim = await harness.call(
+        Future<TestResponse> claim() => harness.call(
           a,
           'POST',
           '/v1/oauth/slack/claim',
@@ -477,12 +462,60 @@ void main() {
             workspaceId: 'ws1',
           ).toJson(),
         );
-        expect(claim.json, {'error': 'needs_sign_in'});
+        final busy = await claim();
+        expect(busy.json, {'error': 'rate_limited'});
         expect(slack.botExchanges, 0);
-        // The other login's reservation is untouched.
         expect(
-          await harness.service.context.state.get('slackclaim:$_team'),
-          'someone-else',
+          await state.get('slackclaim:$_team'),
+          'exchanging:someone-else',
+          reason: "the other exchange's mark is untouched",
+        );
+        expect(
+          harness.logs.any((l) => l.contains('"slack_exchange_busy"')),
+          isTrue,
+        );
+        await state.delete('slackclaim:$_team');
+        final retried = await claim();
+        expect(retried.status, 200, reason: retried.body);
+        expect(slack.botExchanges, 1);
+        expect(await state.get('slackclaim:$_team'), isNull);
+      },
+    );
+
+    test(
+      'of two logins claiming one team at once, every exchange ran alone',
+      () async {
+        Future<Future<TestResponse> Function()> ready() async {
+          final hop = await _slackOidc(harness, slack, a);
+          final callback = await harness.browser(
+            '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
+          );
+          final done = await _codePage(harness, callback);
+          return () => harness.call(
+            a,
+            'POST',
+            '/v1/oauth/slack/claim',
+            body: OAuthClaimRequest(
+              loginId: hop.loginId,
+              confirmCode: confirmCodeFrom(done.body)!,
+              codeVerifier: hop.pkce.verifier,
+              workspaceId: 'ws1',
+            ).toJson(),
+          );
+        }
+
+        final first = await ready();
+        final second = await ready();
+        slack.exchangeDelay = const Duration(milliseconds: 200);
+        final answers = await Future.wait([first(), second()]);
+        expect(
+          answers.map((r) => r.status == 200 ? 'ok' : r.json['error']),
+          unorderedEquals(['ok', 'rate_limited']),
+        );
+        expect(slack.maxConcurrentExchanges, 1);
+        expect(
+          slack.botExchanges,
+          answers.where((r) => r.status == 200).length,
         );
       },
     );
@@ -515,10 +548,7 @@ void main() {
       final callback = await harness.browser(
         '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
       );
-      final done = await harness.browser(
-        '/oauth/slack/done',
-        cookie: cookieFrom(callback),
-      );
+      final done = await _codePage(harness, callback);
       final claim = await harness.call(
         a,
         'POST',
@@ -546,10 +576,7 @@ void main() {
         final callback = await harness.browser(
           '/oauth/slack/callback?code=bot-code&state=${hop.botState}',
         );
-        final done = await harness.browser(
-          '/oauth/slack/done',
-          cookie: cookieFrom(callback),
-        );
+        final done = await _codePage(harness, callback);
         final claim = await harness.call(
           a,
           'POST',
@@ -572,6 +599,18 @@ void main() {
   });
 
   group('refresh and revoke', () {
+    test('another install\'s seal is refused as a seal, before the team\'s '
+        'binding is looked at', () async {
+      final grant = await _signInSlack(harness, slack, a);
+      final refreshed = await harness.call(
+        b,
+        'POST',
+        '/v1/slack/refresh',
+        body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+      );
+      expect(refreshed.json, {'error': 'access_denied'});
+    });
+
     test('refresh rotates for the bound install only', () async {
       final grant = await _signInSlack(harness, slack, a);
       final refreshed = await harness.call(
@@ -790,6 +829,62 @@ void main() {
       expect(previous.status, 200, reason: 'the previous secret still works');
     });
 
+    test('a hook is judged on its headers before its body', () async {
+      // No signature headers: refused without the body being verified.
+      final bare = await harness.raw(
+        'POST',
+        '/v1/hooks/slack/events',
+        body: utf8.encode('{}'),
+      );
+      expect(bare.status, 403);
+      final stale = await harness.raw(
+        'POST',
+        '/v1/hooks/slack/events',
+        headers: {
+          'x-slack-request-timestamp':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000 - 600}',
+          'x-slack-signature': 'v0=00',
+        },
+        body: utf8.encode('{}'),
+      );
+      expect(stale.status, 403);
+      final forged = await harness.raw(
+        'POST',
+        '/v1/hooks/slack/commands',
+        headers: {
+          'x-slack-request-timestamp':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-slack-signature': 'v0=00',
+        },
+        body: utf8.encode('team_id=T0TEAM'),
+      );
+      expect(forged.status, 403);
+      final reasons = [
+        for (final line in harness.logs)
+          if (line.contains('slack.signature_refused'))
+            (jsonDecode(line) as Map<String, Object?>)['reason'],
+      ];
+      expect(reasons, ['headers', 'stale', 'signature']);
+    });
+
+    test('an oversized event is acknowledged and dropped', () async {
+      final response = await harness.raw(
+        'POST',
+        '/v1/hooks/slack/events',
+        headers: {
+          'x-slack-request-timestamp':
+              '${DateTime.now().millisecondsSinceEpoch ~/ 1000}',
+          'x-slack-signature': 'v0=00',
+        },
+        body: List.filled(256 * 1024 + 1, 0x20),
+      );
+      expect(response.status, 200);
+      expect(
+        harness.logs.where((l) => l.contains('slack.event_dropped')),
+        hasLength(1),
+      );
+    });
+
     test('messages are relayed as references without text', () async {
       await _signInSlack(harness, slack, a);
       final hook = await _event(harness, {
@@ -820,6 +915,58 @@ void main() {
       expect(harness.logs.join(), isNot(contains('secret plan')));
       expect(await _poll(harness, a), isEmpty, reason: 'drained');
     });
+
+    test('a shared-channel event goes to the installation Slack delivered it '
+        'for, never to the workspace the envelope names', () async {
+      slack.team = 'T0PARTNER';
+      await _signInSlack(harness, slack, b);
+      slack.team = _team;
+      await _signInSlack(harness, slack, a);
+      // Happened in the partner's workspace, delivered for a's installation.
+      await _event(
+        harness,
+        {'type': 'app_mention', 'channel': 'C0SHARED', 'ts': '1.2'},
+        eventId: 'EvShared',
+        team: 'T0PARTNER',
+        authorizedTeam: _team,
+      );
+      final forA = await _poll(harness, a);
+      expect(forA, hasLength(1));
+      expect(SlackEventRef.tryParse(forA.single)!.teamId, _team);
+      expect(await _poll(harness, b), isEmpty);
+    });
+
+    test(
+      'an event without an authorization for one workspace is dropped',
+      () async {
+        await _signInSlack(harness, slack, a);
+        var n = 0;
+        for (final authorizations in [
+          null,
+          <Object?>[],
+          [
+            {'team_id': null, 'enterprise_id': 'E0ORG'},
+          ],
+          [
+            {'team_id': _team},
+            {'team_id': 'T0OTHER'},
+          ],
+        ]) {
+          final hook = await _event(
+            harness,
+            {'type': 'app_mention', 'channel': 'C0CHAN', 'ts': '1.2'},
+            eventId: 'EvNoAuth${n++}',
+            envelope: {'authorizations': authorizations},
+          );
+          expect(hook.status, 200);
+        }
+        expect(await _poll(harness, a), isEmpty);
+        expect(
+          harness.logs.any((l) => l.contains('"no_authorization"')),
+          isTrue,
+        );
+      },
+    );
 
     test('a poll wakes as soon as a reference is queued', () async {
       await _signInSlack(harness, slack, a);
@@ -876,6 +1023,59 @@ void main() {
         }, eventId: 'Ev$i');
       }
       expect(await _poll(limited, a), hasLength(2));
+    });
+
+    test('a failed push still answers 200 and forgets the event', () async {
+      final store = FlakyStateStore();
+      final flaky = await Harness.start(
+        allowed: [a],
+        state: store,
+        pollTimeout: const Duration(milliseconds: 100),
+      );
+      addTearDown(flaky.close);
+      final fake = _FakeSlack(flaky.upstream);
+      await _signInSlack(flaky, fake, a);
+      store.failPushes.add('slackq:');
+      final mention = {'type': 'app_mention', 'channel': 'C0CHAN', 'ts': '1.1'};
+      final failed = await _event(flaky, mention, eventId: 'EvRetry');
+      expect(failed.status, 200, reason: 'Slack must never see a failure');
+      expect(
+        await store.get('slackev:EvRetry'),
+        isNull,
+        reason: 'the dedupe key is dropped with the failed push',
+      );
+      expect(
+        flaky.logs.where((l) => l.contains('"reason":"state_unavailable"')),
+        hasLength(1),
+      );
+      // Slack's retry of the same event is queued once the store is back.
+      store.failPushes.clear();
+      await _event(flaky, mention, eventId: 'EvRetry');
+      expect(
+        [for (final e in await _poll(flaky, a)) e['event_id']],
+        ['EvRetry'],
+      );
+    });
+
+    test('an unexpected relay failure still answers 200', () async {
+      final store = FlakyStateStore()
+        ..failPuts.add('slackev:')
+        ..putError = StateError('boom');
+      final flaky = await Harness.start(allowed: [a], state: store);
+      addTearDown(flaky.close);
+      final fake = _FakeSlack(flaky.upstream);
+      await _signInSlack(flaky, fake, a);
+      final response = await _event(flaky, {
+        'type': 'app_mention',
+        'channel': 'C0CHAN',
+        'ts': '1.1',
+      });
+      expect(response.status, 200);
+      final line = flaky.logs.firstWhere(
+        (l) => l.contains('slack.event_failed'),
+      );
+      expect(line, contains('"exception":"StateError"'));
+      expect(line, isNot(contains('boom')));
     });
 
     test('an empty poll returns after the timeout', () async {

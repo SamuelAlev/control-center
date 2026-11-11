@@ -2,7 +2,7 @@
 title: Peta rute
 description: Setiap rute yang didaftarkan Control Center, beserta layar dan parameter kuerinya.
 slug: id-ID/panduan-pengguna/referensi/peta-rute
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Shell aplikasi
@@ -11,7 +11,7 @@ Shell aplikasi (`ControlCenterLayout`) membungkus setiap rute di dalam ruang ker
 
 Gerbangnya selesai ketika setidaknya satu forge terhubung **untuk pengguna yang sudah masuk** dan setidaknya satu ruang kerja ada.
 
-Kredensial yang hilang dan penyiapan yang belum selesai diperlakukan berbeda, dan pembedanya adalah `users.onboarding_finished_at` yang dibaca dari `identity.me` milik pemanggil itu sendiri — bukan "ruang kerja ada", yang langsung keliru begitu seseorang diundang ke ruang kerja yang tidak pernah ia buat. Tanpa forge yang terhubung, akun yang sudah menyelesaikan onboarding tetap berada di aplikasi, dan shell ruang kerja menampilkan peringatan dengan tautan ke Pengaturan → Ruang kerja → Profil dan identitas, tempat proses masuk berada; akun yang belum menuju `/onboarding`. Selama flag itu masih belum diketahui, penjaga menahan splash alih-alih menebak, karena ia tidak pernah mengalihkan kembali keluar dari onboarding.
+Kredensial yang hilang dan penyiapan yang belum selesai diperlakukan berbeda, dan pembedanya adalah `users.onboarding_finished_at` yang dibaca dari `identity.me` milik pemanggil itu sendiri — bukan "ruang kerja ada", yang langsung keliru begitu seseorang diundang ke ruang kerja yang tidak pernah ia buat. Tanpa forge yang terhubung, akun yang sudah menyelesaikan onboarding tetap berada di aplikasi, dan shell ruang kerja menampilkan peringatan dengan tautan ke Pengaturan → Anda → Profil, tempat proses masuk berada; akun yang belum menuju `/onboarding`. Selama flag itu masih belum diketahui, penjaga menahan splash alih-alih menebak, karena ia tidak pernah mengalihkan kembali keluar dari onboarding.
 
 ## Rute tanpa prefiks
 
@@ -65,7 +65,7 @@ Tidak ada **item bilah sisi "Plans"**. Plan Studio terbuka sebagai tab editor da
 
 ## Rute Pengaturan
 
-`/settings` dialihkan ke `/settings/you/appearance`. Tombol pengaturan di bilah sisi dan `Cmd/Ctrl + ,` keduanya menuju `/settings/you/appearance`.
+`/settings` dialihkan ke `/settings/you/profile`. Tombol pengaturan di bilah sisi dan `Cmd/Ctrl + ,` keduanya menuju `/settings/you/profile`.
 
 Jalur Pengaturan diberi ruang nama berdasarkan **cakupan** — `you/`, `workspace/`, `server/` — karena segmen itu menyatakan siapa yang terpengaruh oleh suatu perubahan. Dua jalur mendahului pemberian ruang nama tersebut dan tidak bercakupan di URL: `/settings/memory` dan `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Jalur Pengaturan diberi ruang nama berdasarkan **cakupan** — `you/`, `workspac
 
 | Jalur                         | Layar                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Tema, bahasa, tipografi, tema editor (halaman pendaratan Pengaturan)        |
-| `/settings/you/notifications` | Toggle per peristiwa, jam tenang                                            |
+| `/settings/you/profile`       | Akun Anda di server ini: nama, nama pengguna, foto, dan proses masuk (halaman pendaratan Pengaturan) |
+| `/settings/you/profile?section=accounts` | Akun terhubung: proses masuk pribadi Anda ke hosting kode, tiket, kalender, dan chat, serta draf tiket dari chat |
+| `/settings/you/appearance`    | Tema, bahasa, tipografi, tema editor |
 | `/settings/you/audio`         | Mikrofon, dikte, deteksi rapat, dan keluaran soundscape                      |
+| `/settings/you/notifications` | Toggle per peristiwa, jam tenang                                            |
+| `/settings/you/commits`       | Siapa yang dicantumkan pada commit dari pekerjaan yang Anda mulai, dan kunci penandatanganan commit Anda |
+| `/settings/you/desktop`       | Hanya aplikasi desktop: ikon tray, menutup jendela, dan membuka saat login  |
 | `/settings/you/devices`       | Ponsel yang dipasangkan dan kontrol jarak jauh                              |
 | `/settings/you/newsfeed`      | Manajemen umpan: sumber, penyegaran, status dibaca                          |
+| `/settings/you/links`         | Tempat tautan dari luar Control Center dibuka                               |
 
 ### Ruang kerja
 
 | Jalur                              | Layar                                                                                               |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil dan identitas di ruang kerja ini: nama, penulis git, hosting kode, kalender |
-| `/settings/workspace/general`      | Nama, logo, glob rahasia, konkurensi tinjauan, penamaan branch, kesehatan sinkronisasi, jembatan chat, zona berbahaya |
+| `/settings/workspace/profile`      | Profil dan identitas di ruang kerja ini: nama, email, penulis git |
+| `/settings/workspace/general`      | Nama, logo, glob rahasia, konkurensi tinjauan, penamaan branch, zona berbahaya |
+| `/settings/workspace/integrations` | Pilihan Connect, GitHub App dan token otomatisasi, vendor dan otomatisasi tiket, kesehatan sinkronisasi, aplikasi penyedia milik ruang kerja, jembatan chat, GIF. Setiap grup penyedia menyebutkan akun Anda sendiri dan menautkan ke Akun terhubung |
 | `/settings/workspace/meetings`     | Templat catatan rapat dan profil suara tersimpan                                                     |
-| `/settings/workspace/members`      | Daftar anggota, undangan, jejak audit. Jejak audit dipaginasi dengan `?cursor=` opsional             |
+| `/settings/workspace/members`      | Daftar anggota dan undangan                                                                          |
 | `/settings/workspace/repositories` | Repositori yang terdaftar di ruang kerja ini                                                         |
 | `/settings/workspace/environments` | Definisi lingkungan: apa yang dapat dimulai space dan tugas yang dijalankan worktree-nya |
 | `/settings/workspace/agents`       | Identitas agen yang terdaftar                                                                        |
@@ -108,6 +114,8 @@ Jalur Pengaturan diberi ruang nama berdasarkan **cakupan** — `you/`, `workspac
 | `/settings/server/rigs`        | Rigs: apa yang dapat di-boot host ini, image dasar, image kustom, mesin yang berjalan  |
 | `/settings/server/sandbox`     | Hibah eksekusi sandbox: program yang boleh dijalankan agen dari salinan kerja repositori Anda |
 | `/settings/server/diagnostics` | Diagnostik dan privasi: sandboxing, embedding, logging, pelaporan crash |
+| `/settings/server/people`      | Orang di server ini dan apakah tiap alamat sudah dikonfirmasi (hanya pemilik server)       |
+| `/settings/server/audit`       | Log audit: milik server dan ruang kerja yang Anda administrasikan                            |
 | `/settings/server/backup`      | Cadangan dan pemulihan: snapshot instalasi, ekspor per ruang kerja, impor, dan penghapusan |
 | `/settings/server/about`       | Tentang dan pembaruan                                                                 |
 

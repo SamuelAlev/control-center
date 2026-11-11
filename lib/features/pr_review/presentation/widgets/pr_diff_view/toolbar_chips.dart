@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/issue_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_code_review_comment.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:control_center/core/theme/resolve_design_tokens.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_inline_comments.dart';
 import 'package:control_center/features/pr_review/providers/pr_inline_comments_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';

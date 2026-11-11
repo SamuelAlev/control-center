@@ -44,6 +44,7 @@ export 'dao_rig_repository.dart';
 export 'dao_run_transcript_repository.dart';
 export 'dao_runtime_profile_repository.dart';
 export 'dao_sandbox_exec_grant_repository.dart';
+export 'dao_server_audit_repository.dart';
 export 'dao_server_settings_repository.dart';
 export 'dao_skill_scan_repository.dart';
 export 'dao_skill_source_repository.dart';

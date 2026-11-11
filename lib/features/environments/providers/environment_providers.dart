@@ -1,4 +1,5 @@
-import 'package:cc_data/cc_data.dart' show EnvironmentSourceUpdate;
+import 'package:cc_data/cc_data.dart'
+    show EnvironmentSourceUpdate, SpaceEnvironmentsFrame;
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
 import 'package:cc_domain/features/environments/domain/entities/environment_run.dart';
@@ -47,7 +48,7 @@ EnvironmentDefinition? environmentDefinitionOf(
 bool environmentHasStack(EnvironmentDefinitionRecord record) =>
     environmentDefinitionOf(record)?.hasStack ?? false;
 
-/// The connected server predates environments.
+/// The connected server offers no environments (a demo server).
 ///
 /// Surfaces show one plain notice for this instead of the raw `opUnknown`.
 class EnvironmentsUnsupported implements Exception {
@@ -106,12 +107,13 @@ final environmentEndpointsAreRemoteProvider = Provider<bool>((ref) {
   return ref.watch(serverListProvider).mode == ServerConnectionMode.remote;
 });
 
-/// The environments of one space, live. Empty in a demo, which has no
-/// execution surface.
-final spaceEnvironmentsProvider = StreamProvider.autoDispose
-    .family<List<SpaceEnvironment>, EnvironmentSpaceKey>((ref, key) async* {
+/// One space's `environment.watch` feed, live: its environments and whether
+/// this person may operate them. Empty, and not operable, in a demo, which
+/// has no execution surface.
+final spaceEnvironmentsFeedProvider = StreamProvider.autoDispose
+    .family<SpaceEnvironmentsFrame, EnvironmentSpaceKey>((ref, key) async* {
       if (ref.watch(isDemoServerProvider) || key.spaceId.isEmpty) {
-        yield const [];
+        yield (environments: const [], canOperate: false);
         return;
       }
       yield* _translated(
@@ -120,6 +122,38 @@ final spaceEnvironmentsProvider = StreamProvider.autoDispose
             .watch(key.workspaceId, key.spaceId),
       );
     });
+
+/// Follows the environments of one space as they change.
+typedef SpaceEnvironmentsWatch =
+    Stream<List<SpaceEnvironment>> Function(EnvironmentSpaceKey key);
+
+/// A [SpaceEnvironmentsWatch] for code that outlives the widget that asked,
+/// which a provider's own subscription would not: read once, kept, and
+/// listened to for as long as the caller needs.
+final spaceEnvironmentsWatchProvider = Provider<SpaceEnvironmentsWatch>((ref) {
+  final repository = ref.watch(environmentRepositoryProvider);
+  return (key) => repository
+      .watch(key.workspaceId, key.spaceId)
+      .map((frame) => frame.environments);
+});
+
+/// The environments of one space, live (see [spaceEnvironmentsFeedProvider]).
+final spaceEnvironmentsProvider = Provider.autoDispose
+    .family<AsyncValue<List<SpaceEnvironment>>, EnvironmentSpaceKey>(
+      (ref, key) => ref
+          .watch(spaceEnvironmentsFeedProvider(key))
+          .whenData((frame) => frame.environments),
+    );
+
+/// Whether this person may operate the environment of one space: start,
+/// stop, restart, launch and the other controls. Null until the
+/// server has said; the controls stay disabled then, and only a known false
+/// shows the reason.
+final spaceEnvironmentCanOperateProvider = Provider.autoDispose
+    .family<bool?, EnvironmentSpaceKey>(
+      (ref, key) =>
+          ref.watch(spaceEnvironmentsFeedProvider(key)).value?.canOperate,
+    );
 
 /// The environment a space runs, or null. Every `environment.` op derives it
 /// from the space, so there is one to act on.
@@ -220,10 +254,7 @@ final environmentInstancesProvider = StreamProvider.autoDispose
     ) async* {
       final repository = ref.watch(environmentRepositoryProvider);
       while (true) {
-        yield await repository.listInstances(
-          key.workspaceId,
-          key.definitionId,
-        );
+        yield await repository.listInstances(key.workspaceId, key.definitionId);
         await Future<void>.delayed(const Duration(seconds: 3));
       }
     });

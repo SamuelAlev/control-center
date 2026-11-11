@@ -2,7 +2,7 @@
 title: Conectar un Google Calendar
 description: Conecta Google Calendar a un espacio de trabajo, gestiona varias cuentas y vuelve a conectar cuando caduque un inicio de sesión.
 slug: es-ES/manual/guias/conectar-calendario
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Esta guía te muestra cómo conectar Google Calendar a un espacio de trabajo. La
@@ -24,7 +24,7 @@ completo.
 ## Conectar una cuenta
 
 1. Abre **Calendario** en la barra lateral.
-2. Haz clic en **Añadir cuenta de calendario** en la barra lateral del calendario. (La misma sección está en **Ajustes → Espacio de trabajo → Perfil e identidad**, dentro de **Google Calendar**.)
+2. Haz clic en **Añadir cuenta de calendario** en la barra lateral del calendario. (La misma sección está en **Ajustes → Tú → Perfil**, dentro de **Google Calendar**.)
 3. Haz clic en **Conectar Google Calendar**. El navegador abre la página de consentimiento de Google.
 4. Elige la cuenta y aprueba el acceso a tus eventos y a la lista de calendarios.
 
@@ -98,13 +98,12 @@ datos se restauró en otra máquina.
 
 ## Desconectar una cuenta
 
-Desde la barra lateral del calendario (o **Ajustes → Espacio de trabajo → Perfil
-e identidad**), haz clic en **Desconectar** en la cuenta. Esto elimina sus
+Desde la barra lateral del calendario (o **Ajustes → Tú → Perfil**), haz clic en **Desconectar** en la cuenta. Esto elimina sus
 eventos sincronizados y borra su credencial almacenada en el servidor.
 
 ## Trae tu propio cliente de Google
 
-Usa tu propio cliente de Google cuando hayas elegido **Usar mis propias apps**. El cliente del servidor solo se aplica en ese caso: con Control Center o un Connect propio, Connect ejecuta cada carril, también el de Google, y el cliente del servidor se queda guardado pero sin usar. Para que la pantalla de consentimiento muestre el nombre de tu propio proyecto mientras el servidor usa Connect, dale al espacio de trabajo su propio cliente ([más abajo](#dale-a-un-espacio-de-trabajo-su-propio-cliente-de-google)); eso vale en cualquier modo.
+Usa tu propio cliente de Google cuando hayas elegido **Usar mis propias apps**. El cliente del servidor solo se aplica en ese caso: con Control Center o un Connect propio, Connect ejecuta cada carril, también el de Google, y el cliente del servidor se queda guardado pero sin usar. Para que la pantalla de consentimiento muestre el nombre de tu propio proyecto mientras el servidor usa Connect, pon el espacio de trabajo en sus propias apps y dale su propio cliente ([más abajo](#dale-a-un-espacio-de-trabajo-su-propio-cliente-de-google)); eso vale en cualquier modo del servidor.
 
 1. En la [Google Cloud Console](https://console.cloud.google.com/apis/credentials), habilita la **Google Calendar API** y configura la **pantalla de consentimiento de OAuth**, añadiendo los ámbitos `calendar.events`, `calendar.calendarlist.readonly`, `openid` y `email`. Mientras la app no esté verificada, añádete como **usuario de prueba**.
 2. Crea un **ID de cliente de OAuth** con el tipo de aplicación **Aplicación web**.
@@ -126,14 +125,13 @@ inicio de sesión pertenece al cliente que lo emitió.
 Un espacio de trabajo puede conectar Google Calendar con un cliente propio en lugar del del servidor. Solo un administrador o el propietario del espacio de trabajo puede configurarlo.
 
 1. Crea un cliente de Google de tipo **Aplicación web**, como en los pasos 1 y 2 de arriba
-2. Ve a **Ajustes → Espacio de trabajo → General → Aplicaciones de proveedor** y abre **Google Calendar**
-3. Elige **Usar la aplicación propia de este espacio de trabajo**
-4. Añade al cliente, tal cual, el URI de redirección que muestra la fila en **URL de retorno**
-5. Pega el **Id de cliente** y el **Secreto de cliente**
+2. Ve a **Ajustes → Espacio de trabajo → Integraciones**. En la tarjeta **Control Center Connect**, elige **Usar mis propias apps** y haz clic en **Aplicar**
+3. En Calendario aparece la tarjeta **Google Calendar**. Añade al cliente, tal cual, el URI de redirección que muestra en **URL de retorno**
+4. Pega el **Id de cliente** y el **Secreto de cliente**
 
-Las cuentas de calendario conectadas en este espacio de trabajo pasan entonces por ese cliente, sea cual sea la forma en que el servidor inicia la sesión de las personas. Nunca recurre al cliente del servidor ni a Connect: hasta que se definan los dos campos, Google Calendar está desactivado en este espacio de trabajo y la fila indica qué falta. El secreto nunca sale del servidor.
+Las cuentas de calendario conectadas en este espacio de trabajo pasan entonces por ese cliente, sea cual sea la forma en que el servidor inicia la sesión de las personas. Nunca recurre al cliente del servidor ni a Connect: hasta que se definan los dos campos, Google Calendar está desactivado en este espacio de trabajo y la tarjeta indica qué falta. El secreto nunca sale del servidor.
 
-Cambiar entre el cliente del servidor y el del espacio de trabajo, o cambiar el id de cliente del espacio de trabajo, marca todas las cuentas de Google de este espacio de trabajo para volver a conectarse. **Usar la aplicación de este servidor** elimina los campos guardados del espacio de trabajo. Los demás espacios de trabajo del servidor no se ven afectados.
+**Usar mis propias apps** cubre a todos los proveedores a la vez: GitHub, Linear y la búsqueda de GIF también se ejecutan solo con las apps propias del espacio de trabajo. Cambiar las apps de inicio de sesión del espacio de trabajo, o cambiar el id de cliente del espacio de trabajo, marca todas las cuentas de Google de este espacio de trabajo para volver a conectarse. Los campos guardados se conservan cuando el espacio de trabajo vuelve a otra opción, pero solo se usan con **Usar mis propias apps**. Los demás espacios de trabajo del servidor no se ven afectados.
 
 ## Solución de problemas
 
@@ -144,8 +142,8 @@ Cambiar entre el cliente del servidor y el del espacio de trabajo, o cambiar el 
 | `invalid_client` de Google                          | El ID y el secreto son de clientes distintos, o el cliente se eliminó                                                                |
 | La aprobación se realiza pero la sincronización está vacía | Tu cuenta no es **usuario de prueba** en la pantalla de consentimiento, o no se concedió alguno de los ámbitos solicitados                  |
 | El cuadro de diálogo dice que el código no coincide | Escribe los 8 caracteres exactamente como los muestra el navegador. Cinco códigos erróneos terminan el inicio de sesión; vuelve a empezar |
-| «No se pudo actualizar tu respuesta», o reservar, mover o eliminar falla | La cuenta se conectó con el antiguo ámbito de solo lectura. Vuelve a conectarla; un calendario que se te ha compartido en solo lectura también rechaza las escrituras                                                 |
-| Todo el mundo tiene que volver a conectarse         | Cambió el cliente de Google del servidor o del espacio de trabajo, o la elección o la clave de Connect del servidor. Consulta [Reconectar una cuenta caducada](#reconectar-una-cuenta-caducada) |
+| «No se pudo actualizar tu respuesta», o reservar, mover o eliminar falla | La cuenta no concedió acceso de escritura al calendario. Vuelve a conectarla y aprueba todos los ámbitos solicitados; un calendario que se te ha compartido en solo lectura también rechaza las escrituras                                                 |
+| Todo el mundo tiene que volver a conectarse         | Cambió el cliente de Google del servidor o del espacio de trabajo, o la elección de Connect o la clave del servidor, o la elección de Connect del espacio de trabajo. Consulta [Reconectar una cuenta caducada](#reconectar-una-cuenta-caducada) |
 
 ## Guías relacionadas
 

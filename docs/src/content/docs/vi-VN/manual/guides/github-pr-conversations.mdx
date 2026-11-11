@@ -2,7 +2,7 @@
 title: Nói chuyện với Control Center từ một PR GitHub
 description: Yêu cầu Control Center đánh giá hoặc đặt câu hỏi ngay từ cuộc hội thoại trong PR, không cần webhook hay URL công khai.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/hoi-thoai-pr-github
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Hướng dẫn này chỉ cách làm việc với Control Center mà không cần rời khỏi GitHub:
@@ -18,7 +18,7 @@ hành xử y hệt một bản triển khai công khai.
 ## Điều kiện tiên quyết
 
 - Không gian làm việc có một làn GitHub: GitHub App riêng của máy chủ hoặc Connect, với
-  app được [cài đặt](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/) trên tài khoản sở hữu
+  app được [cài đặt](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/#cài-đặt-ở-nơi-có-kho-mã-của-bạn) trên tài khoản sở hữu
   kho mã. Một app riêng cần quyền đọc và ghi **Pull requests** và **Issues**, mà
   **Tạo ứng dụng GitHub của tôi** đã cấp sẵn
 - Kho mã đã được liên kết với một không gian làm việc trong Control Center
@@ -30,26 +30,8 @@ hành xử y hệt một bản triển khai công khai.
 ## Tìm tên bot của bạn
 
 Hãy nhắc đến `@usectrl`, tài khoản GitHub riêng của Control Center. Đây là cách kích
-hoạt mặc định; làn GitHub của không gian làm việc vẫn xử lý yêu cầu và đăng câu trả lời.
+hoạt duy nhất: nhắc đến tài khoản đăng nhập của chính App sẽ không làm gì cả. Làn GitHub của không gian làm việc vẫn xử lý yêu cầu và đăng câu trả lời.
 Bạn không cần thông tin xác thực của tài khoản `usectrl`.
-
-Tên đăng nhập riêng của App, `<appslug>[bot]`, và dạng ngắn `@appslug` cũng hoạt động.
-Để tra bí danh tùy chọn này trên app riêng của bạn:
-
-1. Vào **Cài đặt → Máy chủ → Đăng nhập một lần** và cuộn tới thẻ
-   **Ứng dụng nhà cung cấp**
-2. Mở khối **GitHub** và nhấp **Kiểm thử**
-3. Sao chép **Tên đăng nhập bot** khi giá trị được điền vào. Nếu ô đó vẫn hiển
-   thị gợi ý trống, thì tên đăng nhập luôn là `<appslug>[bot]` — hãy gõ giá trị
-   đó, hoặc dạng ngắn `@appslug`
-
-GitHub không gợi ý tài khoản App trong tính năng tự động hoàn thành `@`, nên bạn phải gõ hoặc sao chép bí danh của App. Người dùng riêng `@usectrl` là cách gọi mặc định; `@myapp` và `@myapp[bot]` vẫn được chấp nhận làm bí danh App.
-
-:::note[Chọn một tên app đủ đặc trưng]
-Dạng ngắn được so khớp như văn bản. Nếu một người dùng GitHub nào đó trùng slug
-với app của bạn, thì việc nhắc đến người đó bằng dạng ngắn cũng chạm tới bot.
-Dạng đầy đủ `@myapp[bot]` thì luôn rõ ràng, không thể nhầm lẫn.
-:::
 
 ## Yêu cầu đánh giá từ GitHub
 
@@ -120,7 +102,7 @@ trước khi làm bất cứ điều gì:
 
 - **Tài khoản GitHub phải đã đăng nhập** trên máy chủ này. Việc khớp dựa trên id tài
   khoản số của GitHub, không bao giờ dựa trên tên đăng nhập. Đăng nhập từ
-  **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**
+  **Cài đặt → Bạn → Hồ sơ → Lưu trữ mã**
 - **Họ phải là thành viên có vai trò ghi** (`member`, `admin` hoặc `owner`) trong
   không gian làm việc liên kết kho mã đó
 - **Họ phải có quyền push** lên kho mã trên GitHub. Câu trả lời dùng một token giới
@@ -143,7 +125,7 @@ không. Nếu bạn đăng nhập trên hai máy chủ cùng liên kết một k
 | Hạng mục            | Hành vi                                                                  |
 | ------------------- | ------------------------------------------------------------------------ |
 | Phản hồi xác nhận   | 👀 từ tài khoản của bạn trên bình luận (hoặc trên PR, với nhãn), trong một lượt quét |
-| Câu trả lời         | Được đăng trong làn mà câu hỏi được đặt ra, bắt đầu bằng `**Control Center** (for @your-login):`. Trên app riêng, tác giả là bot của app; qua Connect, đó là tài khoản của bạn, hoạt động thông qua App |
+| Câu trả lời         | Được đăng trong làn mà câu hỏi được đặt ra, bắt đầu bằng `**Control Center** (for @your-login):`. Do bot của app đăng. Trên ứng dụng Connect dùng chung, một trả lời trong luồng đánh giá được đăng bằng tài khoản của chính bạn, trừ khi nhà vận hành Connect đã liệt kê cài đặt này |
 | Quy kết trong space | Câu hỏi là của bạn; agent chạy thay mặt bạn, theo núm tự chủ của space    |
 | Đánh giá            | Các phát hiện đáp xuống không gian đánh giá; việc công bố lên GitHub là thủ công |
 
@@ -165,8 +147,6 @@ lúc ngừng hoạt động sẽ được bắt ở lượt quét kế tiếp.
 - Bạn đã đăng nhập GitHub trên máy chủ này chưa, bạn có phải thành viên với vai trò
   ghi không, và có push được lên kho mã không? Máy chủ bỏ qua bất kỳ ai khác mà không
   trả lời
-- Trên app dùng chung của Control Center, installation của tổ chức đã được ủy quyền
-  cho máy chủ này chưa? Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)
 - Vẫn không có gì? Nhật ký máy chủ nêu tên lượt quét và PR khi có gì đó thất bại;
   hãy tìm `pr_conversation:` (bộ thăm dò) và `github_pr_conversation:` (cầu)
 

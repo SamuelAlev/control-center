@@ -2,7 +2,7 @@
 title: Obszary robocze i izolacja
 description: Dlaczego obszar roboczy jest twardą granicą dzierżawcy, jak podział bazy danych czyni tę granicę strukturalną i co celowo ją przekracza.
 slug: pl-PL/podrecznik/koncepcje/obszary-robocze
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Czym jest obszar roboczy?
@@ -79,9 +79,11 @@ Plik obszaru roboczego niesie tylko jednowierszowy `workspace_meta` do samoident
 
 ## Tworzenie obszaru roboczego
 
+Obszar roboczy może utworzyć tylko [właściciel serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera); identyfikator nadaje serwer. Administrator lub właściciel obszaru roboczego nie może utworzyć kolejnego. Osoba, która nie należy jeszcze do żadnego obszaru roboczego, widzi komunikat **Nie jesteś jeszcze w obszarze roboczym**, który prosi o to, by właściciel serwera utworzył obszar albo administrator obszaru roboczego ją zaprosił; formularz **Dodaj obszar roboczy** mówi to samo każdemu innemu.
+
 Utworzenie obszaru roboczego to więcej niż wstawienie wiersza do rejestru. W jednej operacji serwer stempluje tworzącego użytkownika jako `ownerUserId`, zapisuje jego członkostwo z rolą właściciela i publikuje zdarzenie domenowe `WorkspaceCreated`. Nasłuchujący tego zdarzenia zasiewają następnie, idempotentnie i w tle:
 
-- **agenta CEO** oraz czterech specjalistów — `qa`, `architect`, `engineer`, `librarian` — którzy podlegają CEO;
+- **agenta CEO** oraz pięciu specjalistów — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — którzy podlegają CEO;
 - **wbudowane szablony potoków** i ich wyzwalacze (wyzwalacze zdarzeniowe i ręczne są domyślnie włączone; wyzwalacze harmonogramu trzeba włączyć, z wyjątkiem dziennego czyszczenia worktree przez GC);
 - **startowe zestawy ewaluacji**.
 
@@ -90,7 +92,7 @@ Dzieje się tak dla _każdego_ obszaru roboczego, nie tylko pierwszego. Zasiani 
 Zapis członkostwa właściciela ma większe znaczenie, niż się wydaje: bez niego świeżo utworzony obszar roboczy nie miałby członków, a każde kolejne wywołanie w zakresie obszaru roboczego wykonane przez twórcę zostałoby odrzucone.
 
 :::note[Agenci nie mogą tworzyć obszaru roboczego]
-Nie ma narzędzia MCP `create_workspace`. Ludzie tworzą obszar roboczy przez `workspace.create` (punkt kontrolny przyjmujący tylko nazwę) albo `workspace.upsert` (pełny rekord, używany także do aktualizacji). Oba stemplują tworzącego użytkownika jako `owner` i publikują `WorkspaceCreated`.
+Nie ma narzędzia MCP `create_workspace`. Obszar roboczy tworzy właściciel serwera przez `workspace.create`, który stempluje go jako `owner` i publikuje `WorkspaceCreated`. `workspace.upsert` tylko aktualizuje istniejący obszar roboczy; nigdy nie tworzy nowego i nigdy nie zmienia właściciela obszaru, co robi wyłącznie **Przenieś własność**.
 :::
 
 ## Usuwanie, eksportowanie, importowanie
@@ -106,7 +108,7 @@ Ponieważ jeden obszar roboczy to jeden plik, przekazywanie obszaru roboczego je
 
 Operacje kopii zapasowej znajdują się w **Ustawienia → Serwer → Kopia zapasowa i przywracanie**: **Wykonaj kopię teraz** tworzy migawkę instalacji, lista pokazuje, które migawki są kompletne, i pozwala właścicielowi instalacji usunąć jedną po potwierdzeniu, a każdy obszar roboczy oferuje eksport i import. Wbudowany potok **Workspace backup** bierze w tygodniowym harmonogramie tylko bazę danych tego obszaru roboczego i usuwa własne kopie zapasowe starsze niż skonfigurowany wiek retencji. Te kopie są wymienione na tej samej stronie dla każdego obszaru roboczego, gdzie każdą można przywrócić, pobrać lub usunąć. Usunięcie obszaru roboczego pozostawia jego kopie zapasowe, aby właściciel instalacji mógł je odebrać lub usunąć, ponieważ jego harmonogram i retencja zatrzymują się wraz z nim. Przywrócenie obszaru roboczego z migawki instalacji to `workspace.import` wskazany na `<workspaceId>/workspace.db` migawki; przywrócenie całej instalacji pozostaje kopiowaniem z powrotem katalogu migawki przy zatrzymanym serwerze.
 
-Żadna z nich nie przenosi jednak reszty katalogu obszaru roboczego. Obszar roboczy gromadzi więcej niż bazę danych — wklejone obrazy, pliki skilli i agentów, poświadczenia czatu, worktree — a eksport i import przenoszą **plik**, więc wszystko obok niego zostaje tam, gdzie było. W przypadku poświadczeń jest to zamierzone, a w przypadku worktree są one jednorazowe; w pozostałym zakresie to ograniczenie, o którym warto wiedzieć, a nie funkcja. Pełną tabelę zawiera [dokumentacja referencyjna kopii zapasowej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#what-a-backup-does-not-contain).
+Żadna z nich nie przenosi jednak reszty katalogu obszaru roboczego. Obszar roboczy gromadzi więcej niż bazę danych — wklejone obrazy, pliki skilli i agentów, poświadczenia czatu, worktree — a eksport i import przenoszą **plik**, więc wszystko obok niego zostaje tam, gdzie było. W przypadku poświadczeń jest to zamierzone, a w przypadku worktree są one jednorazowe; w pozostałym zakresie to ograniczenie, o którym warto wiedzieć, a nie funkcja. Pełną tabelę zawiera [dokumentacja referencyjna kopii zapasowej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#czego-kopia-zapasowa-nie-zawiera).
 
 ## Przenoszenie kopii zapasowej między serwerem a Twoim urządzeniem
 

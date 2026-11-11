@@ -2,7 +2,7 @@
 title: Drift og klienter
 description: Hvordan tynnklientarkitekturen i Control Center skiller en headless server fra skrivebords-, nett- og mobilklientene.
 slug: nb-NO/handbok/konsepter/drift
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center er ikke ett program. Det er en **tynnklientarkitektur**: en
@@ -134,6 +134,8 @@ code-server-backenden. Nettleseren trenger HTTPS eller en sikker
 loopback-kontekst for Service Workere. Native klienter bruker en
 kapabilitetsavgrenset loopback-fasade.
 
+Bare [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier) kan åpne den innebygde code-server-editoren: den kjører på serveren som serverens egen bruker. En økt tilhører enheten og personen som åpnet den. Den åpnes med VS Codes arbeidsområdetillit på, så VS Code spør før den stoler på en mappe, og med automatiske oppgaver av. Alle andre beholder den innebygde enkeltfilredigeringen og filvisningene.
+
 ### Telefonfølgesvenn (cc_remote)
 
 **Remote**-appen er en egen, lettere klient — en Flutter-nett-PWA på
@@ -206,8 +208,7 @@ lokale workeren, mislykkes i stedet for å kjøre. I dag er det bare en ekte
 
 De to nivåene bruker ikke samme sandkasse. `cc_server` pakker kjøringene den
 utfører selv, inn i vertens OS-sandkasse der en backend finnes — Seatbelt på
-macOS, bubblewrap på Linux og WSL2 — og faller tilbake på de andre grensene på
-Windows eller uten `bwrap` og `socat`. **`cc_worker` bruker ingen sandkasse i
+macOS, bubblewrap på Linux og WSL2. På Windows, eller uten `bwrap` og `socat`, starter den bare kjøringene serverens eier står ansvarlig for og avviser alle andres, med mindre eieren startet den med `--sandbox off`, som kjører alle medlemmers agenter uten begrensning. **`cc_worker` bruker ingen sandkasse i
 det hele tatt.** Den annonserer en `sandbox`-kapabilitet, slik at serveren kan
 plassere jobber etter plattform, men ingenting i workeren tar den i bruk: en
 leaset jobb startes direkte, begrenset av miljøet til leasen og worktreet den
@@ -254,8 +255,7 @@ fingeravtrykk-pin. Ved første tilkobling bør du verifisere det fingeravtrykket
 gjennom en klarert QR-kode eller en annen klarert kanal: en signert
 førstekontakt alene kan ikke autentisere hvem som skaffet nøkkelen. Hvis
 identiteten endres, svikter klienten lukket; par på nytt gjennom en klarert
-kanal i stedet for å ignorere avviket. Eldre klienter og klartekst-RPC kan ikke
-koble til. TLS trengs fortsatt for nettleser-origins, oppstart og offentlige
+kanal i stedet for å ignorere avviket. Klartekst-RPC aksepteres ikke. TLS trengs fortsatt for nettleser-origins, oppstart og offentlige
 metadata; `--insecure` påvirker serverens ytre lytter, ikke den påkrevde
 krypterte økten.
 

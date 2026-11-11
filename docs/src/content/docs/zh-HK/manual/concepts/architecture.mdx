@@ -3,7 +3,7 @@ title: 架構
 description: Control Center 如何以精簡用戶端的伺服器模型、功能優先的整潔架構，以及埠與配接器組成。
 dateModified: 2026-09-19
 slug: zh-HK/手冊/概念/架構
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## 概覽
@@ -60,7 +60,7 @@ feature_name/
 - 記憶實體：`MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
 - 共用值物件：`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
 - 共用埠：`SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
-- 領域服務：`MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
+- 領域服務：`MemoryAccessPolicy`、`ActivityLogger`、`AgentMentionParser`、`UserMentionParser`、`RunLivenessClassifier`
 - `DomainEventBus` + 事件類型（工作區／代理、PR／審查、訊息、工單、管線、編排、記憶、日曆／會議、身分與成員資格、可觀測性）
 
 ## 身分與多人協作
@@ -132,7 +132,6 @@ Control Center 是多使用者系統：人類與代理是由 `Principal` 統一�
 
 - 機密存放在 `flutter_secure_storage`（macOS 鑰匙圈、Windows 認證管理員、Linux libsecret）——即用戶端的裝置憑證與遠端配對金鑰，而非供應商權杖
 - `shared_preferences` 只存放非敏感的偏好設定（主題、字體、版面）
-- 舊安裝遺留下來的供應商機密，會由 `features/auth/providers/credential_migration.dart` 一次性交給伺服器，然後從用戶端鑰匙圈刪除
 
 ## 架構強制執行
 

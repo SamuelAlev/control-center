@@ -41,6 +41,20 @@ abstract interface class ForgeOpenPrPagingClient {
   );
 }
 
+/// Optional one-request change probe of the open list, for forges with no
+/// conditional (ETag) list request. The poller re-reads a repo's whole open
+/// list only when this fingerprint moves; a forge without it is re-read on
+/// every pass.
+abstract interface class ForgeOpenPrChangeProbeClient {
+  /// A fingerprint of the open list: the open count (where the forge reports
+  /// one) and the most recently updated open pull request with its update
+  /// time — one page of size one, ordered by update. Opening, closing,
+  /// merging or updating any open pull request moves it. Throws on a failed
+  /// read; an access denial surfaces as a `NetworkException` with code
+  /// `auth_error` or `not_found`.
+  Future<String> openPullRequestsFingerprint();
+}
+
 /// Optional targeted reads behind the author-facing notifications, for forges
 /// whose capabilities carry [ForgeCapability.mergeSignals]. Each throws on a
 /// failed read; the poller logs it and degrades the notification's copy, never
@@ -75,6 +89,17 @@ enum ForgeReviewVerdict {
   /// Leave feedback without a verdict.
   comment,
 }
+
+/// Decides whether pull request [prNumber] may be approved through [client],
+/// which is about to send that approval. Throws to refuse it; nothing has
+/// reached the forge by then.
+///
+/// Every forge adapter takes one and consults it in [ForgePrClient.submitReview]
+/// before anything of an [ForgeReviewVerdict.approve] is sent (its inline
+/// comments and body included), so there is exactly one place an approval
+/// passes on every forge, whichever surface asked for it.
+typedef ForgeApprovalGuard =
+    Future<void> Function(ForgePrClient client, int prNumber);
 
 /// How a merge should be performed.
 enum ForgeMergeMethod {
@@ -566,7 +591,8 @@ abstract interface class ForgePrClient {
   /// review id), null on forges where a verdict is not one addressable record.
   /// A verdict a forge cannot express ([ForgeReviewVerdict.requestChanges]
   /// without [ForgeCapability.requestChanges]) throws [ForgeUnsupportedError];
-  /// callers degrade it to a comment first.
+  /// callers degrade it to a comment first. An approval first passes the
+  /// client's [ForgeApprovalGuard], which may refuse it.
   Future<int?> submitReview({
     required int prNumber,
     required ForgeReviewVerdict verdict,

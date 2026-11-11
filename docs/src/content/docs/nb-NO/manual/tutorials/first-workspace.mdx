@@ -2,7 +2,7 @@
 title: Ditt første arbeidsområde
 description: Opprett et arbeidsområde, registrer en repo i det og se isolasjonsgrensen med egne øyne.
 slug: nb-NO/handbok/veiledninger/forste-arbeidsomrade
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Dette skal du bygge
@@ -11,10 +11,12 @@ Når du er ferdig med denne veiledningen, har du:
 
 - Et arbeidsområde oppkalt etter prosjektet ditt
 - En Git-repo registrert i det
-- Fem seedede agenter, hvorav du har konfigurert én godt nok til å kjøre
+- Seks seedede agenter, hvorav du har konfigurert én godt nok til å kjøre
 - Et andre, tomt arbeidsområde som beviser isolasjonsgrensen
 
 Onboarding opprettet allerede et arbeidsområde for deg. Denne veiledningen oppretter et helt nytt med vilje, slik at du ser hver del av prosessen.
+
+Å opprette et arbeidsområde krever serverens eier, personen som satte opp serveren. På en desktop som kjører sin egen server er det deg. På en annen persons server viser **Legg til arbeidsområde** «Bare serverens eier kan opprette arbeidsområder. Be vedkommende om å opprette ett, eller be en administrator for arbeidsområdet om å invitere deg.» Gjør én av disse, og følg resten av veiledningen i det arbeidsområdet. Registrering av et arkiv i steg 2 krever en administrator for arbeidsområdet, og det andre arbeidsområdet i steg 4 krever igjen serverens eier.
 
 Før du begynner: velg en Git-utsjekking som oppfyller alle tre kravene nedenfor – registreringstrinnet avviser alt annet:
 
@@ -35,12 +37,12 @@ Control Center bytter til det nye arbeidsområdet og lander på innboksen (`/wor
 Bak kulissene publiserer serveren en `WorkspaceCreated`-hendelse og seeder arbeidsområdet med:
 
 - en **CEO-agent**, hvis persona er koordinering og delegering
-- fire spesialister – `qa`, `architect`, `engineer` og `librarian` – hver med sine egne instruksjoner og skills
+- fem spesialister – `qa`, `architect`, `engineer`, `librarian` og `content-synthesizer` – hver med sine egne instruksjoner og skills
 - de innebygde pipeline-malene og utløserradene deres
 
 Hvert arbeidsområde du oppretter, får alt dette – ikke bare det første.
 
-Bekreft det: åpne **Innstillinger → Arbeidsområde → Agenter**. Det står fem agenter i agentlisten, hver med en hul statusring.
+Bekreft det: åpne **Innstillinger → Arbeidsområde → Agenter**. Det står seks agenter i agentlisten, hver med en hul statusring.
 
 ## Steg 2: Registrer en repo
 
@@ -57,7 +59,7 @@ Bekreft det: repoet dukker opp i listen med `owner/repo` og gjeldende gren.
 
 ## Steg 3: Gjør én agent kjørbar
 
-De fem agentene som nettopp ble seedet i dette arbeidsområdet, har verken adapter eller modell. Utsendingen kjører dem på **Control Center (built-in)** og spør, når ingen modell er satt, Anthropic om standardmodellen deres – så de virker bare hvis du har koblet til en Anthropic-konto, og på en modell du ikke selv har valgt hvis du har det. Onboarding ved første kjøring fester valget sitt til hver agent i det første arbeidsområdet, én gang; et arbeidsområde du oppretter etterpå, starter med alle fem usatte. Sett én nå.
+De seks agentene som nettopp ble seedet i dette arbeidsområdet, har verken adapter eller modell. Utsendingen kjører dem på **Control Center (built-in)** og spør, når ingen modell er satt, Anthropic om standardmodellen deres – så de virker bare hvis du har koblet til en Anthropic-konto, og på en modell du ikke selv har valgt hvis du har det. Onboarding ved første kjøring fester valget sitt til hver agent i det første arbeidsområdet, én gang; et arbeidsområde du oppretter etterpå, starter med alle seks usatte. Sett én nå.
 
 1. Åpne **Innstillinger → Arbeidsområde → Agenter**
 2. Velg `engineer` i agentlisten
@@ -73,7 +75,7 @@ Hver agent har sin egen adapter og modell, så gjenta dette for enhver annen age
 Opprett et andre arbeidsområde fra brikken i tittellinjen, akkurat som i steg 1. Se deretter på det:
 
 - **Innstillinger → Arbeidsområde → Arkiv** er tomt. Repoet du registrerte for et minutt siden, er ikke der.
-- **Innstillinger → Arbeidsområde → Agenter** har fem agenter, men de er andre rader – adapteren du satte i steg 3, er borte.
+- **Innstillinger → Arbeidsområde → Agenter** har seks agenter, men de er andre rader – adapteren du satte i steg 3, er borte.
 - Områdelisten, sakene og minnet er alle tomme.
 
 Ingenting lakk, fordi det ikke er noe å lekke fra: radene til hvert arbeidsområde ligger i arbeidsområdets egen databasefil. En lesing på tvers av arbeidsområder er ikke et oppslag som blir filtrert – det er et oppslag som ikke har noe sted å kjøre. Å slette et arbeidsområde er å fjerne koblingen til en fil.
@@ -84,6 +86,6 @@ For hele modellen kan du lese [Arbeidsområder og isolasjon](/nb-NO/handbok/kons
 
 ## Oppsummering
 
-Du opprettet et arbeidsområde, så det seede en CEO og fire spesialister, registrerte en repo i det, ga én agent en adapter og en modell og bekreftet at et andre arbeidsområde ikke deler noe av det.
+Du opprettet et arbeidsområde, så det seede en CEO og fem spesialister, registrerte en repo i det, ga én agent en adapter og en modell og bekreftet at et andre arbeidsområde ikke deler noe av det.
 
 **Neste:** [Send ut din første agent](/nb-NO/handbok/veiledninger/forste-agent/) for å sette arbeidsområdet i arbeid.

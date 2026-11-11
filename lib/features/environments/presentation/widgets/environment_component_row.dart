@@ -71,8 +71,9 @@ class EnvironmentComponentRow extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final caption = CcTypography.caption.copyWith(color: t.textTertiary);
-    final (stateLabel, tone) = error?.needsHostSetup ?? false
-        ? (l10n.environmentNeedsSetup, CcStatusTone.caution)
+    // The part a start stopped at for a person waits; it did not break.
+    final (stateLabel, tone) = error?.blocker != null
+        ? (l10n.environmentStatusBlocked, CcStatusTone.caution)
         : environmentComponentStateDisplay(l10n, component.state);
     final name = component.label ?? component.id;
     final kind = environmentKindLabel(l10n, component.kind);

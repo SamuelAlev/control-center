@@ -2,7 +2,7 @@
 title: Cho đội ngũ đăng nhập bằng SSO
 description: Kết nối Okta (SAML) với máy chủ Control Center của bạn và chạy trọn một lần đăng nhập từ đầu đến cuối.
 slug: vi-VN/so-tay/huong-dan/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -82,6 +82,8 @@ Hai chính sách quyết định điều gì xảy ra ở lần đăng nhập đ
   lời mời vào không gian làm việc minh thị, và đây là mặc định an toàn hơn.
 - **Cấp phát người dùng chưa có khi đăng nhập lần đầu** — bật theo mặc định;
   tắt nó để từ chối bất kỳ ai chưa có sẵn tài khoản.
+
+Nếu người dùng đã có tài khoản trên máy chủ này, hãy xác nhận địa chỉ email của họ trước khi bất kỳ ai đăng nhập bằng SSO: mở **Cài đặt → Máy chủ → Mọi người** và dùng **Xác nhận email** trên từng hàng được đánh dấu **Email chưa được xác nhận**. Một lần đăng nhập chỉ khớp với tài khoản đã có theo email khi địa chỉ đó đã được xác nhận (hoặc được đặt bởi SSO hoặc SCIM). Địa chỉ mà ai đó tự nhập trong hồ sơ hoặc trên lời mời sẽ không khớp với gì cả, nên nếu thiếu bước này họ sẽ có thêm một tài khoản thứ hai, hoặc bị từ chối khi tắt tính năng cấp phát người dùng chưa có. Xem [Cách các lần đăng nhập khớp với tài khoản đã có](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc/#cách-các-lần-đăng-nhập-khớp-với-tài-khoản-đã-có).
 
 Tùy chọn, hãy ánh xạ một thuộc tính mang tên nhóm (ở Okta thường là `groups`)
 và chuyển nhóm thành vai trò bằng bảng ánh xạ — ví dụ

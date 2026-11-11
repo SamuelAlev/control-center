@@ -2,7 +2,7 @@
 title: Backup, export și import
 description: Structura snapshot-urilor, manifestul, fiecare operațiune de backup și rută de transfer și exact ce fișiere conține și ce fișiere nu conține un backup.
 slug: ro-RO/manual/referinta/backup
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Tot ce poate Control Center să copieze, să predea sau să adopte, și forma exactă a fiecărui
@@ -112,6 +112,7 @@ mult decât baza lui de date, iar nimic din rest nu călătorește:
 | `models/`                           | Nu                | Nu                                 |
 | `meetings/<meetingId>/`             | Nu                | Nu                                 |
 | `rigs/`                             | Nu                | Nu                                 |
+| `_agent_hooks/`                     | Nu                | Nu                                 |
 
 O parte din asta este de unică folosință — `spaces/` conține worktree-uri copy-on-write
 care sunt reprovisionate din repo-uri, `pr_clones/` este un cache, `models/` se descarcă
@@ -119,8 +120,12 @@ din nou, `rigs/` este stare de mașină. O parte nu este: `blobs/` conține imag
 spre care indică rânduri din baza de date, `skills/` și `agents/` conțin fișierele cu care
 rulează un agent, iar `secrets.json` conține fiecare cheie de asociere, acreditare de
 provider și setare SSO din instalare. Vezi
-[Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/#copy-backups-off-the-machine)
+[Backup și restaurare](/ro-RO/manual/ghiduri-practice/backup-si-restaurare/#copiază-backup-urile-în-afara-mașinii)
 pentru acoperirea restului.
+:::caution[Baza de date a unui spațiu de lucru conține secretele webhook-urilor]
+`workspace.db` este întregul spațiu de lucru: conversații, jurnale de rulare, indexul de cod, legăturile de repo-uri, definițiile de medii și membrii. Conține și token-urile webhook-urilor de pipeline și secretele webhook-urilor de sincronizare a tichetelor, în formă citibilă, deci tratează un export sau un backup descărcat ca pe un secret. Nu conține nicio autentificare la un provider, cheie de dispozitiv sau secret de utilizator; acestea sunt în `global.db` și `secrets.json`.
+:::
+
 :::note[Token-urile de chat rămân deliberat pe dinafară]
 Faptul că `chat_credentials/` stă lângă baza de date, nu în ea, este motivul pentru care
 un spațiu de lucru predat altcuiva nu conține token-uri de bot active. Vezi
@@ -144,7 +149,7 @@ cum este serverul demo.
 | `workspace.listBackups` | citire | Spațiu de lucru | `admin` | niciunul | `{backups: [...]}` |
 | `workspace.deleteBackup` | modificare | Spațiu de lucru | `owner` | `name` | `{ok}` |
 | `workspace.export`   | citire      | Spațiu de lucru | `admin`              | niciunul      | `{ok, path}`                  |
-| `workspace.import`   | modificare  | Spațiu de lucru | `owner`              | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | modificare  | Spațiu de lucru | `owner`, și proprietarul serverului | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | modificare  | Instalare*     | `owner`              | `id`          | rând de registru marcat ca șters |
 
 * `workspace.delete` nu are sferă pentru că rândul pe care îl marchează trăiește în
@@ -168,9 +173,12 @@ instalării (`ServerAuthority.serverOwner`), aceeași poartă ca `GET /backup/sn
 snapshot capturează baza de date a fiecărui spațiu de lucru, așa că a fi admin al unui
 spațiu de lucru nu este suficient pentru a le administra pe celelalte. Ștergerea acceptă
 doar numele directorului cu marcă de timp din listă, nu o cale arbitrară de server, și
-elimină întregul snapshot (inclusiv snapshot-urile incomplete). Exportul/importul per
-spațiu de lucru rămân la adminul/proprietarul spațiului de lucru, nu la proprietarul
-instalării.
+elimină întregul snapshot (inclusiv snapshot-urile incomplete). Exporturile per spațiu
+de lucru și descărcările backup-urilor programate rămân la adminul spațiului de lucru.
+:::
+
+:::note[Restaurarea este a proprietarului serverului]
+`workspace.import` și `POST /backup/restore` fac serverul să adopte un fișier de bază de date ale cărui rânduri le tratează apoi ca proprii: legăturile de repo-uri și cine le-a făcut, definițiile de medii care rulează pe gazdă, căile de worktree și de jurnale. De aceea ambele cer proprietarul serverului (`ServerAuthority.serverOwner`), care trebuie să fie și proprietarul spațiului de lucru. Oricine altcineva, și fiecare apelant pe o gazdă fără proprietar înregistrat, este refuzat cu `server_owner_required`. Niciun trigger sau view pe care îl aduce fișierul nu este adoptat.
 :::
 
 ### Răspunsul `server.listBackups`
@@ -246,7 +254,7 @@ PSK-ul de asociere și rolul de mai jos.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** al spațiului de lucru |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietar** al instalării |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** al spațiului de lucru; **proprietar** al instalării după ce spațiul de lucru este șters |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietar** al spațiului de lucru |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietar** al instalării care este și **proprietar** al spațiului de lucru (`403` cu `server_owner_required` altfel) |
 
 `w` este un id de spațiu de lucru, `n` un nume de director de snapshot sau de backup
 programat, `d` id-ul dispozitivului apelant, `s` semnătura. Pe `/backup/snapshot`, `n` este

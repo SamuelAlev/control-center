@@ -1,6 +1,6 @@
 import 'package:cc_domain/features/ticketing/domain/entities/project.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_link.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';

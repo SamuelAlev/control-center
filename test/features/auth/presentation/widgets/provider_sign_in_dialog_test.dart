@@ -20,6 +20,7 @@ Map<String, dynamic> _attempt({
   String? error,
   String? codeError,
   String account = '',
+  String message = '',
 }) => {
   'login_id': 'cx-1',
   'lane': 'github',
@@ -33,6 +34,7 @@ Map<String, dynamic> _attempt({
   'account': account,
   'error': ?error,
   'code_error': ?codeError,
+  if (message.isNotEmpty) 'message': message,
 };
 
 void main() {
@@ -169,6 +171,65 @@ void main() {
       expect(find.text(l10n.signInCodePrompt), findsOneWidget);
       await tester.pumpWidget(const SizedBox.shrink());
     });
+
+    testWidgets('a rate-limited code asks to wait and keeps what was typed', (
+      tester,
+    ) async {
+      host.onCall = (op, args) => switch (op) {
+        'oauth.begin' => _attempt(),
+        'oauth.complete' => _attempt(codeError: 'rate_limited'),
+        'oauth.status' => _attempt(),
+        _ => throw StateError('unexpected op $op'),
+      };
+      await tester.pumpWidget(scope(launcher()));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+
+      await tester.enterText(find.byType(EditableText), 'K7Q29WXM');
+      await tester.tap(find.widgetWithText(CcButton, l10n.continueLabel));
+      await settle(tester);
+
+      expect(find.text(l10n.signInErrorRateLimited), findsOneWidget);
+      expect(find.text(l10n.signInErrorInvalidCode), findsNothing);
+      expect(find.text(l10n.signInCodePrompt), findsOneWidget);
+      expect(
+        tester.widget<EditableText>(find.byType(EditableText)).controller.text,
+        isNotEmpty,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  });
+
+  group('own mode', () {
+    testWidgets('also asks for the code its callback page shows', (
+      tester,
+    ) async {
+      host.onCall = (op, args) => switch (op) {
+        'oauth.begin' => _attempt(mode: 'own'),
+        'oauth.status' => _attempt(mode: 'own'),
+        'oauth.complete' => () {
+          completes.add(args);
+          return _attempt(mode: 'own', status: 'succeeded', account: 'octocat');
+        }(),
+        _ => throw StateError('unexpected op $op'),
+      };
+      await tester.pumpWidget(scope(launcher()));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+
+      expect(find.text(l10n.signInCodePrompt), findsOneWidget);
+      await tester.enterText(find.byType(EditableText), 'K7Q29WXM');
+      await tester.tap(find.widgetWithText(CcButton, l10n.continueLabel));
+      await settle(tester);
+
+      expect(completes.single['code'], 'K7Q29WXM');
+      expect(
+        find.text(l10n.signInSucceeded('GitHub', 'octocat')),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 10));
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
   });
 
   group('failures', () {
@@ -193,6 +254,33 @@ void main() {
         findsOneWidget,
       );
       expect(find.widgetWithText(CcButton, l10n.retry), findsOneWidget);
+    });
+
+    testWidgets('an account another person holds gets its own sentence', (
+      tester,
+    ) async {
+      host.onCall = (op, args) => switch (op) {
+        'oauth.begin' => _attempt(
+          status: 'failed',
+          error: 'account_already_bound',
+          message:
+              'This account is already connected to another person on this '
+              'server. An account can act for one person only.',
+        ),
+        _ => throw StateError('unexpected op $op'),
+      };
+      await tester.pumpWidget(scope(launcher()));
+      await tester.tap(find.text('open'));
+      await settle(tester);
+
+      expect(
+        find.text(l10n.signInErrorAccountAlreadyBound('GitHub')),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(l10n.signInErrorAccessDenied('GitHub')),
+        findsNothing,
+      );
     });
 
     testWidgets('a refused start shows what the server said', (tester) async {
@@ -268,32 +356,6 @@ void main() {
         find.widgetWithText(CcButton, l10n.continueLabel),
       );
       expect(close.dx, greaterThan(next.dx));
-      await tester.pumpWidget(const SizedBox.shrink());
-    });
-
-    testWidgets('puts the waiting spinner at the start edge', (tester) async {
-      host.onCall = (op, args) => switch (op) {
-        'oauth.begin' => _attempt(mode: 'own'),
-        'oauth.status' => _attempt(mode: 'own'),
-        _ => throw StateError('unexpected op $op'),
-      };
-      await tester.pumpWidget(
-        scope(
-          const ProviderSignInDialog(
-            lane: ConnectOAuthLane.github,
-            workspaceId: null,
-          ),
-          textDirection: TextDirection.rtl,
-        ),
-      );
-      await settle(tester);
-
-      final line = find.text(l10n.signInWaiting('GitHub'));
-      expect(line, findsOneWidget);
-      expect(
-        tester.getCenter(find.byType(CcSpinner)).dx,
-        greaterThan(tester.getCenter(line).dx),
-      );
       await tester.pumpWidget(const SizedBox.shrink());
     });
   });

@@ -68,11 +68,11 @@ abstract final class MessagingIdeTabs {
   );
 
   /// A terminal tab attached to an environment process [sessionId] (or, with
-  /// [setup], to its setup run).
+  /// [startTerminal], to the terminal a start runs on).
   static EditorTab environmentTerminal(
     String sessionId,
     String label, {
-    bool setup = false,
+    bool startTerminal = false,
   }) {
     final tabSessionId = 'environment-$sessionId';
     return EditorTab(
@@ -82,7 +82,7 @@ abstract final class MessagingIdeTabs {
       args: {
         'termSessionId': tabSessionId,
         'attachSessionId': sessionId,
-        if (setup) kEnvironmentSetupTabArg: true,
+        if (startTerminal) kEnvironmentStartTerminalTabArg: true,
       },
       dedupKey: '${MessagingTabKinds.terminal}:$tabSessionId',
     );

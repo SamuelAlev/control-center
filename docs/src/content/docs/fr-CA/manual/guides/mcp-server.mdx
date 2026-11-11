@@ -2,7 +2,7 @@
 title: Utiliser le serveur MCP
 description: Pointez un client MCP externe vers le serveur d’outils de Control Center, définissez un jeton porteur et sachez ce que la surface expose.
 slug: fr-CA/manuel/guides/serveur-mcp
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Ce guide montre comment connecter un client MCP externe — Claude Code, un
@@ -31,27 +31,33 @@ Une installation locale par défaut se trouve donc à
 2. Lisez la carte **Serveur MCP** — elle indique s’il est en cours ou arrêté,
    ainsi que le port sur lequel il écoute
 
-La surface est activée par défaut sur une installation neuve, donc un client sur
-la boucle locale fonctionne sans détour par les paramètres. **Démarrer au
-lancement de l’app** détermine s’il revient après un redémarrage ; **Démarrer** /
+La surface est activée par défaut sur une installation neuve. Seul le propriétaire du serveur voit le jeton de la carte, et seul lui peut démarrer ou arrêter le point de terminaison. **Démarrer au
+lancement de l'app** détermine s’il revient après un redémarrage ; **Démarrer** /
 **Arrêter** sont des commandes de session qui ne modifient pas cette préférence.
 
 Le serveur se lie à la boucle locale par défaut, donc le point de terminaison
 n’est joignable que depuis la machine sur laquelle `cc_server` s’exécute, à moins
 de l’avoir démarré avec `--bind any`.
 
+## Obtenir le jeton
+
+Chaque requête doit envoyer le jeton MCP du serveur, depuis n’importe quelle machine, y compris la boucle locale. Le serveur le crée la première fois qu’il démarre. Il n’existe aucun moyen de le désactiver ni de l’effacer.
+
+1. Dans **Paramètres → Serveur → Serveurs MCP**, trouvez la ligne **Jeton d'authentification**
+2. Appuyez sur **Afficher le jeton** et copiez-le
+3. Pour le remplacer, appuyez sur **Renouveler le jeton**. Le serveur passe au nouveau jeton immédiatement, et chaque client qui utilise encore l’ancien est refusé jusqu’à ce que vous lui donniez le nouveau
+
 ## Connecter un client
 
-Pointez votre client vers le point de terminaison HTTP streamable. La forme exacte
-de la configuration appartient à votre client ; l’URL est la même dans un cas
-comme dans l’autre.
+Pointez votre client vers le point de terminaison HTTP streamable et envoyez le jeton sous la forme `Authorization: Bearer <token>` dans chaque requête, `GET /sse` compris. Il n’existe aucune autre façon de l’envoyer : un jeton dans l’URL n’est pas accepté. La forme exacte de la configuration appartient à votre client.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -75,25 +81,18 @@ Point de contrôle : demandez au client de lister ses outils. Vous devriez voir 
 entrées `mcp__*` couvrant les tickets, les espaces, la mémoire, le graphe de code
 et la révision.
 
-## Servir MCP au-delà de l’hôte
+## Ce que le point de terminaison refuse
 
-1. Dans **Paramètres → Serveur → Serveurs MCP**, sur la ligne **Jeton
-   d’authentification**, appuyez sur **Définir** et collez un jeton
-2. Envoyez-le comme `Authorization: Bearer <token>` à chaque requête `POST /mcp`
+Le jeton ouvre chaque outil du serveur ; le point de terminaison refuse donc aussi tout ce qu’une page web aurait pu envoyer, avant même de vérifier le jeton :
 
-Une surface sans jeton refuse tout appelant hors boucle locale avec un 403. C’est
-un échec en position fermée par conception : c’est le jeton qui rend possible, à
-lui seul, le service hors hôte.
+| Requête | Réponse |
+| ------- | ------- |
+| Un en-tête `Origin` qui n’est pas une page de cette machine (`http://localhost`, `http://127.0.0.1` ou `http://[::1]`, tout port) | `403`, « Les requêtes inter-origines ne sont pas acceptées » |
+| Un en-tête `Host` qui n’est ni l’adresse et le port de boucle locale de cet écouteur ni le nom d’hôte public du serveur | `403`, « Hôte inconnu » |
+| Un `POST` dont le corps n’est pas `application/json` | `415` |
+| Aucun jeton, ou un jeton erroné | `401` |
 
-Les changements de jeton s’appliquent immédiatement à la surface active — sans
-redémarrage.
-
-:::note[`GET /sse` prend le jeton dans la chaîne de requête]
-Le flux de notifications est vérifié par jeton comme toute autre route, mais un
-`EventSource` de navigateur ne peut pas envoyer d’en-tête `Authorization` — `/sse`
-accepte donc aussi le jeton sous la forme `?token=<token>`. Sans jeton, il répond
-401.
-:::
+Pour servir MCP au-delà de l’hôte, démarrez le serveur avec `--bind any` et envoyez le jeton depuis l’autre machine, en adressant le serveur par son nom d’hôte public.
 
 ## Limiter chaque appel à un espace de travail
 
@@ -135,6 +134,18 @@ Le catalogue complet est annoncé dans `tools/list` sans filtrage de découverte
 un client MCP externe refuse d’appeler un outil qui n’est pas dans sa liste en
 cache, donc masquer des outils les casse plutôt que de faire du rangement.
 
+## Les serveurs MCP personnels restent ceux du propriétaire
+
+Ce guide traite du point de terminaison propre à Control Center. L’autre sens, les serveurs MCP que Control Center remet aux agents qu’il exécute, est listé sous **Paramètres → Serveur → Serveurs MCP → Serveurs MCP externes**. Les serveurs configurés sur la machine du serveur pour Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode ou dans un `.mcp.json` y sont trouvés automatiquement.
+
+Ces serveurs découverts proviennent de la configuration d’outils de l’utilisateur du serveur et agissent avec l’identité et les identifiants de cet utilisateur ; ils appartiennent donc au propriétaire du serveur :
+
+- Ils ne sont disponibles qu’à l’intérieur des exécutions du harnais intégré que le propriétaire du serveur démarre ou dont il est responsable, y compris l’automatisation d’un espace de travail dont le propriétaire est responsable.
+- L’exécution d’un membre, l’automatisation liée à un membre, et chaque exécution sur un serveur sans propriétaire enregistré n’en reçoivent aucun. Là, les outils ne sont pas listés, ne peuvent pas être appelés et n’apparaissent pas dans la recherche d’outils.
+- Ce point de terminaison ne les liste, ne les appelle ni ne les recherche jamais, pour personne, y compris avec le jeton du propriétaire, et il ne transmet ni leurs ressources ni leurs invites. Ainsi, un CLI d’agent qui atteint Control Center par MCP, comme Claude Code, ne les obtient pas non plus par Control Center ; il utilise sa propre configuration.
+
+Les serveurs MCP configurés pour l’espace de travail ne sont touchés par rien de cela.
+
 ## Dépannage
 
 ### Le client ne voit aucun outil
@@ -144,9 +155,17 @@ cache, donc masquer des outils les casse plutôt que de faire du rangement.
 - Dans Claude Code, vérifiez que vous avez passé `--mcp-config` et
   `--strict-mcp-config`
 
-### Erreur 403 depuis une machine qui n’est pas le serveur
+### 401 Unauthorized
 
-Aucun jeton porteur n’est configuré. Définissez-en un et envoyez-le.
+La requête ne contenait aucun jeton, ou un jeton périmé. Copiez le jeton actuel depuis la ligne **Jeton d'authentification** et envoyez-le sous la forme `Authorization: Bearer <token>`. Un jeton dans l’URL est ignoré.
+
+### 403 depuis un client qui fonctionnait auparavant
+
+La requête contenait un `Origin` provenant d’une page web, ou un `Host` auquel le serveur ne répond pas. Appelez le point de terminaison depuis un client plutôt que depuis une page de navigateur, par l’adresse de boucle locale du serveur ou son nom d’hôte public.
+
+### 415 Unsupported Media Type
+
+Envoyez les corps `POST /mcp` en `application/json`.
 
 ### Un appel d’outil échoue avec « Missing or invalid argument: workspace_id »
 

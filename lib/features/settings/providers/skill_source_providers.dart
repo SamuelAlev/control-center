@@ -1,4 +1,3 @@
-import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -322,23 +321,14 @@ class RpcSkillSourceControl {
         ),
       );
 
-  /// The workspace's registered sources. Resolves to an empty list when the
-  /// host predates the sources surface (`opUnknown`) — the panel reads that
-  /// as "no sources on this server".
+  /// The workspace's registered sources.
   Future<List<SkillSourceDto>> listSources() async {
-    try {
-      final data = await _client.call('skills.sourcesList', const {});
-      final list = (data['sources'] as List?) ?? const [];
-      return [
-        for (final e in list)
-          if (e is Map) SkillSourceDto.fromJson(e.cast<String, dynamic>()),
-      ];
-    } on RemoteRpcException catch (e) {
-      if (e.code == RpcErrorCodes.opUnknown) {
-        return const [];
-      }
-      rethrow;
-    }
+    final data = await _client.call('skills.sourcesList', const {});
+    final list = (data['sources'] as List?) ?? const [];
+    return [
+      for (final e in list)
+        if (e is Map) SkillSourceDto.fromJson(e.cast<String, dynamic>()),
+    ];
   }
 
   /// Registers a GitHub repository URL as a skill source. Returns the stored
@@ -405,19 +395,12 @@ class RpcSkillSourceControl {
 
   /// Checks every GitHub-pinned skill for an upstream update.
   Future<List<SkillUpdateInfoDto>> checkUpdates() async {
-    try {
-      final data = await _client.call('skills.checkUpdates', const {});
-      final list = (data['updates'] as List?) ?? const [];
-      return [
-        for (final e in list)
-          if (e is Map) SkillUpdateInfoDto.fromJson(e.cast<String, dynamic>()),
-      ];
-    } on RemoteRpcException catch (e) {
-      if (e.code == RpcErrorCodes.opUnknown) {
-        return const [];
-      }
-      rethrow;
-    }
+    final data = await _client.call('skills.checkUpdates', const {});
+    final list = (data['updates'] as List?) ?? const [];
+    return [
+      for (final e in list)
+        if (e is Map) SkillUpdateInfoDto.fromJson(e.cast<String, dynamic>()),
+    ];
   }
 
   /// Updates one installed skill to its latest upstream commit through the
@@ -453,15 +436,8 @@ final skillSourcesProvider =
 
 /// A source's skill catalog, annotated with installed/update state.
 final skillSourceListingsProvider =
-    FutureProvider.family<List<SourceSkillDto>, String>((ref, sourceId) async {
-      try {
-        return await ref.watch(skillSourceControlProvider).listings(sourceId);
-      } on RemoteRpcException catch (e) {
-        if (e.code == RpcErrorCodes.opUnknown) {
-          return const [];
-        }
-        rethrow;
-      }
+    FutureProvider.family<List<SourceSkillDto>, String>((ref, sourceId) {
+      return ref.watch(skillSourceControlProvider).listings(sourceId);
     });
 
 /// One source skill's README + scan preview.

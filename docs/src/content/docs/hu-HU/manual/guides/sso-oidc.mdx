@@ -2,7 +2,7 @@
 title: OpenID Connect szolgáltató csatlakoztatása
 description: Kössön bármilyen OIDC-kibocsátót — Pocket ID, Keycloak, Auth0, Zitadel — a Control Center bejelentkezéséhez.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -92,6 +92,32 @@ szerverét, ami alagutat vagy nyilvános URL-t igényel — lásd
 [felhasználók provisionálása SCIM-mel](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim).
 :::
 
+## Hogyan párosulnak a bejelentkezések a meglévő fiókokhoz
+
+Az identitásszolgáltatón keresztüli bejelentkezés a fiókját ebben a sorrendben keresi meg:
+
+1. **A rögzített identitás.** Az első SSO-bejelentkezés a szolgáltató tárgyát (a kibocsátót és a `sub` értéket) a fiókhoz rögzíti. Minden későbbi, ezzel a tárggyal érkező bejelentkezés ugyanahhoz a fiókhoz tartozik.
+2. **Megerősített e-mail mindkét oldalon.** Ellenkező esetben a bejelentkezés csak akkor párosít e-mail alapján fiókot, ha a szolgáltató `email_verified: true` értéket küld, és a fiók címe is megerősített. Egy cím akkor megerősített, ha az SSO vagy a SCIM állította be, vagy ha a szerver tulajdonosa megerősítette. A tulajdonos saját címe is számít.
+
+Az e-mail-címek kisbetűsen tárolódnak és jelennek meg, az egyeztetés pedig nem tesz különbséget a kis- és nagybetűk között. Egy megerősített cím csak akkor azonosít fiókot, ha pontosan egy fiók birtokolja; ha két fiók is ugyanazt a megerősített címet tartja, egyikhez sem párosul.
+
+Ha valaki a saját profiljában vagy egy meghívóban adta meg a címet, az nincs megerősítve, és senkihez sem párosul. Egy cím szerkesztése törli a megerősített állapotát, amíg valaki újra nem igazolja. A bejelentkezés soha nem párosul felhasználónév alapján.
+
+Ha nincs találat, a bejelentkezés új fiókot hoz létre, ha az **Ismeretlen felhasználók provisionálása az első bejelentkezéskor** be van kapcsolva, és elutasításra kerül, ha ki van kapcsolva.
+
+### Mielőtt SSO-t kapcsol olyan embereknek, akiknek már van fiókjuk
+
+Először erősítse meg a címüket. Nyissa meg a **Beállítások → Szerver → Emberek** oldalt, ahol minden fiók **E-mail nincs megerősítve** állapotot mutat, amíg valaki meg nem erősítette, és minden személy sorában használja az **E-mail megerősítése** gombot. Csak a szerver tulajdonosa látja ezt a listát. Enélkül az érintettek mindegyike vagy második fiókot kap az első SSO-bejelentkezésekor, vagy elutasításra kerül, ha az ismeretlen felhasználók provisionálása ki van kapcsolva.
+
+Egy személy a saját profiljának e-mail-mezője alatt ezt látja, amíg a címe nincs megerősítve: „Csak Ön adta meg ezt a címet. Az egyszeri bejelentkezés nem illeszti hozzá, amíg a szerver tulajdonosa meg nem erősíti.”
+
+### Szolgáltatók, amelyek nem küldik az `email_verified` értéket
+
+Egyes szolgáltatók kihagyják ezt az igényt. A Microsoft Entra ID alapértelmezés szerint így tesz. A hiányzó igény nem jelent igent, ezért ilyen szolgáltatónál a bejelentkezés csak a rögzített identitás alapján párosul, és a személy első bejelentkezése soha nem találja meg a meglévő fiókját e-mail alapján. A fiók SCIM-mel való provisionálása ezen az első OIDC-bejelentkezésen nem segít. A gyakorlati megoldások:
+
+- hagyja bekapcsolva az **Ismeretlen felhasználók provisionálása az első bejelentkezéskor** lehetőséget, és hagyja, hogy az első bejelentkezés hozza létre a fiókot, vagy
+- állítsa be a szolgáltatót úgy, hogy küldje az `email_verified` értéket, majd a fent leírtak szerint erősítse meg a megfelelő címeket.
+
 ## A konfiguráció ellenőrzése erről az oldalról
 
 Az alábbi ellenőrző a böngészőjében fut. Közvetlenül lekéri a kibocsátója
@@ -103,3 +129,15 @@ nyitni egy próbabejelentkezést, amely megmutatja, hogy a kliens és annak
 átirányítási URI-ja regisztrálva van-e. Soha nem kéri a kliens titkát.
 
 <SsoCheck kind="oidc" />
+
+## Hibaelhárítás
+
+### Valaki második fiókot kapott, miután bekapcsolta az SSO-t
+
+Az érintett meglévő fiókjának címét első SSO-bejelentkezésekor még nem erősítették meg, ezért a bejelentkezés nem párosította, és új fiókot hozott létre. Ez akkor történik, ha a címet a profiljában vagy egy meghívóban adták meg, és a szerver tulajdonosa nem erősítette meg, vagy ha a szolgáltató nem küldött `email_verified: true` értéket. Az új fiók, amelynek címét a szolgáltató igazolta, átveszi azt a címet, a régebbi fiók pedig, amelyben csak megadva volt, elveszíti.
+
+A következő személynél ennek elkerülése: erősítse meg a címeket a **Beállítások → Szerver → Emberek** oldalon, mielőtt bejelentkeznek. Olyan személynél, akinek már két fiókja van, az új fiók az SSO-identitásához van rögzítve, ezért a bejelentkezései mostantól azt használják.
+
+### „Ez a fiók már másik SSO-identitáshoz van kapcsolva”
+
+A bejelentkezés egy fiókot párosított a megerősített e-mail-címe alapján, de az a fiók már másik tárgyhoz vagy másik kibocsátóhoz van rögzítve: a szolgáltatónál egy másik felhasználóhoz, ugyanahhoz a személyhez új szolgáltató alatt, vagy egy olyan fiókhoz, amelyet a SCIM a saját azonosítója alatt hozott létre. A rögzített fiók minden más identitást elutasít, így a szolgáltatónál újrahasznosított cím nem foglalhatja el. Jelentkezzen be azzal az identitással, amelyhez a fiók először kapcsolódott.

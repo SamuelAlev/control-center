@@ -2,7 +2,7 @@
 title: Koble til en Google Calendar
 description: Koble Google Calendar til et arbeidsområde, administrer flere kontoer og koble til på nytt når en pålogging utløper.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-kalender
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Denne veiledningen viser hvordan du kobler Google Calendar til et
@@ -21,7 +21,7 @@ hele bildet.
 ## Koble til en konto
 
 1. Åpne **Kalender** i sidepanelet.
-2. Klikk på **Legg til kalenderkonto** i kalenderens sidepanel. (Den samme delen finnes under **Innstillinger → Arbeidsområde → Profil og identitet**, under **Google Calendar**.)
+2. Klikk på **Legg til kalenderkonto** i kalenderens sidepanel. (Den samme delen finnes under **Innstillinger → Deg → Profil**, under **Google Calendar**.)
 3. Klikk på **Koble til Google Calendar**. Nettleseren din åpner Googles samtykkeside.
 4. Velg kontoen og godkjenn tilgang til hendelsene og kalenderlisten din.
 
@@ -65,8 +65,6 @@ annet medlem, tilbys aldri.
 
 ## Slik fungerer synkroniseringen
 
-## Slik fungerer synkroniseringen
-
 **Serveren** eier tidsplanen: annethvert minutt går den gjennom de tilkoblede
 kontoene i alle arbeidsområder og skriver hendelsene inn i arbeidsområdets
 database. Klientene snakker aldri direkte med Google — de leser det serveren har
@@ -107,17 +105,17 @@ maskin.
 
 ## Koble fra en konto
 
-I kalenderens sidepanel (eller **Innstillinger → Arbeidsområde → Profil og
-identitet**) klikker du på **Koble fra** for kontoen. Dette sletter de
+I kalenderens sidepanel (eller **Innstillinger → Deg → Profil**) klikker du på **Koble fra** for kontoen. Dette sletter de
 synkroniserte hendelsene og fjerner den lagrede påloggingsinformasjonen på
 serveren.
 
 ## Ta med din egen Google-klient
 
 Kjør din egen Google-klient når du har valgt **Bruk mine egne apper**, eller vil
-at samtykkeskjermen skal navngi ditt eget prosjekt. En egen klient gjelder bare da: med Control Centers eller en egendefinert Connect håndterer Connect alle spor, Google inkludert, og serverens klient forblir lagret, men ubrukt. For å få samtykkeskjermen til å navngi ditt prosjekt mens serveren bruker Connect, gi arbeidsområdet en egen klient ([nedenfor](#gi-ett-arbeidsområde-en-egen-google-klient)); dette gjelder i alle moduser.
+at samtykkeskjermen skal navngi ditt eget prosjekt. En egen klient gjelder bare da: med Control Centers eller en egendefinert Connect håndterer Connect alle spor, Google inkludert, og serverens klient forblir lagret, men ubrukt. For å få samtykkeskjermen til å navngi ditt prosjekt mens serveren bruker Connect, la arbeidsområdet gå over til egne apper og gi det en egen klient ([nedenfor](#gi-ett-arbeidsområde-en-egen-google-klient)); dette gjelder uansett modus på serveren.
 
-1. I [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktiver **Google Calendar API** og konfigurer **OAuth-samtykkeskjermen**, og legg til scope-ene `calendar.events`, `calendar.calendarlist.readonly`, `openid` og `email`. Mens appen er uverifisert, legger du til deg selv som **testbruker**.2. Opprett en **OAuth-klient-ID** av applikasjonstypen **Nettapplikasjon**.
+1. I [Google Cloud Console](https://console.cloud.google.com/apis/credentials), aktiver **Google Calendar API** og konfigurer **OAuth-samtykkeskjermen**, og legg til scope-ene `calendar.events`, `calendar.calendarlist.readonly`, `openid` og `email`. Mens appen er uverifisert, legger du til deg selv som **testbruker**
+2. Opprett en **OAuth-klient-ID** av applikasjonstypen **Nettapplikasjon**.
 3. Legg til den autoriserte omdirigerings-URI-en `<server origin>/oauth/google/callback`. **Innstillinger → Server → Enkel pålogging → Leverandørapper → Google** viser den nøyaktige URL-en under **Callback-URL-er**; kopier den ordrett.
 4. Lim inn **Client id** og **Client secret** i den samme Google-blokken, eller legg dem i serverens `.env`-fil som `GOOGLE_OAUTH_CLIENT_ID` og `GOOGLE_OAUTH_CLIENT_SECRET`.
 
@@ -136,18 +134,15 @@ Et arbeidsområde kan koble til Google Calendar via en egen klient i stedet for 
 eller eier av arbeidsområdet kan sette det opp.
 
 1. Opprett en Google-klient av typen **Web application** slik som i trinn 1 og 2 over
-2. Gå til **Innstillinger → Arbeidsområde → Generelt → Leverandørapper** og åpne **Google Calendar**
-3. Velg **Bruk arbeidsområdets egen app**
-4. Legg til omdirigerings-URI-en raden viser under **Callback-URL**, i klienten, nøyaktig slik den står
-5. Lim inn **Client id** og **Client secret**
+2. Gå til **Innstillinger → Arbeidsområde → Integrasjoner**. På kortet **Control Center Connect** velger du **Bruk mine egne apper** og klikker **Bruk**
+3. Under Kalender vises kortet **Google Calendar-app**. Legg til omdirigerings-URI-en kortet viser under **Callback-URL**, i klienten, nøyaktig slik den står
+4. Lim inn **Client id** og **Client secret**
 
 Kalenderkontoer som kobles til i dette arbeidsområdet, går via den klienten, uansett hvordan serveren logger
 folk inn. Det faller aldri tilbake til serverens klient eller Connect: til begge feltene er satt, er Google
-Calendar av i dette arbeidsområdet, og raden sier hva som mangler. Hemmeligheten forlater aldri serveren.
+Calendar av i dette arbeidsområdet, og kortet sier hva som mangler. Hemmeligheten forlater aldri serveren.
 
-Å bytte mellom serverens klient og arbeidsområdets klient, eller endre client-ID-en til arbeidsområdet, merker
-hver Google-konto i dette arbeidsområdet for ny tilkobling. **Bruk serverens app** sletter de lagrede feltene
-for arbeidsområdet. Andre arbeidsområder på serveren berøres ikke.
+**Bruk mine egne apper** dekker alle leverandører samtidig: GitHub, Linear og GIF-søk kjører også bare på arbeidsområdets egne apper. Å bytte arbeidsområdets påloggingsapper, eller endre arbeidsområdets client-ID, merker hver Google-konto i dette arbeidsområdet for ny tilkobling. De lagrede feltene blir værende når arbeidsområdet bytter tilbake til et annet valg, men brukes bare under **Bruk mine egne apper**. Andre arbeidsområder på serveren berøres ikke.
 
 ## Feilsøking
 
@@ -158,8 +153,8 @@ for arbeidsområdet. Andre arbeidsområder på serveren berøres ikke.
 | `invalid_client` fra Google                                 | ID-en og hemmeligheten tilhører forskjellige klienter, eller klienten ble slettet                                                                       |
 | Godkjenningen lykkes, men synkroniseringen er tom           | Kontoen din er ikke en **testbruker** på samtykkeskjermen, eller en av de forespurte scope-ene ble ikke innvilget                                                 |
 | Dialogen sier at koden ikke stemmer                         | Skriv inn de 8 tegnene nøyaktig slik nettleseren viser dem. Fem feil koder avslutter påloggingen; start på nytt                                         |
-| «Kunne ikke oppdatere svaret ditt» ved RSVP, eller booking, flytting og sletting mislykkes | Kontoen ble koblet til med det gamle skrivebeskyttede scopet. Koble til på nytt; en kalender som er delt skrivebeskyttet, avviser også skriving                                                                                             |
-| Alle må koble til på nytt                                   | Serverens eller arbeidsområdets Google-klient er endret, eller Connect-valget eller nøkkelen til serveren er endret. Se [Koble til en utløpt konto på nytt](#koble-til-en-utløpt-konto-på-nytt) |
+| «Kunne ikke oppdatere svaret ditt» ved RSVP, eller booking, flytting og sletting mislykkes | Kontoen har ikke fått skrivetilgang til kalenderen. Koble til på nytt og godkjenn alle forespurte scopes; en kalender som er delt skrivebeskyttet, avviser også skriving                                                                    |
+| Alle må koble til på nytt                                   | Serverens eller arbeidsområdets Google-klient er endret, eller Connect-valget til serveren eller arbeidsområdet, eller nøkkelen til serveren, er endret. Se [Koble til en utløpt konto på nytt](#koble-til-en-utløpt-konto-på-nytt) |
 
 ## Relaterte veiledninger
 

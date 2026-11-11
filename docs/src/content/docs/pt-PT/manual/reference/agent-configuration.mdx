@@ -2,7 +2,7 @@
 title: Configuração de agentes
 description: Todos os campos da entidade agente e as enumerações que utiliza.
 slug: pt-PT/manual/referencia/configuracao-de-agentes
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Esta referência enumera todos os campos da entidade agente, além das enumerações e dos indicadores que utiliza. Para um guia passo a passo sobre como criar ou editar um agente na aplicação, consulta [Criar e configurar um agente](/pt-PT/manual/guias/criar-agente/).
@@ -79,6 +79,35 @@ Um conjunto imutável e insensível a maiúsculas e minúsculas de identificador
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Hooks de shell
+
+Os hooks de shell permitem ao proprietário do servidor executar os seus próprios scripts à volta de uma execução do harness incorporado: uma vez no início da sessão, antes de cada chamada de ferramenta e depois de cada chamada de ferramenta. Um hook é código arbitrário, por isso os hooks são configuração do anfitrião. Só o proprietário do servidor os configura, à mão, na máquina do servidor. Não há nenhuma definição na aplicação nem nenhuma operação que os escreva.
+
+Para um agente, os hooks vivem na sua própria pasta dentro do diretório de dados do servidor:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` é o nome da pasta do agente no espaço de trabalho (`agents/<slug>/`). Essa pasta fica fora do armazenamento de cada espaço de trabalho, e todas as sandboxes ocultam o diretório de dados, por isso nenhum membro, execução ou terminal a consegue escrever.
+
+`hooks.json` associa qualquer uma de três chaves a um script, através de um caminho relativo à pasta de hooks:
+
+| Chave          | Quando corre                      | O que significa o código de saída                              |
+| -------------- | --------------------------------- | -------------------------------------------------------------- |
+| `sessionStart` | Uma vez, quando a execução começa | Nada; o hook apenas observa                                    |
+| `preTool`      | Antes de cada chamada de ferramenta | `0` permite a chamada; qualquer outro valor a recusa         |
+| `postTool`     | Depois de cada chamada de ferramenta | Nada; o hook apenas observa                                  |
+
+- Cada script é iniciado como um executável próprio, sem shell e sem argumentos, por isso tem de ser executável e começar com uma linha shebang. Recebe o evento em JSON na entrada padrão: o nome do evento e, para os hooks de ferramenta, o nome da ferramenta com os seus argumentos (`preTool`) ou o seu resultado (`postTool`).
+- Um hook corre como um dos processos de ferramenta da execução, na pasta do agente para a execução. Quando o servidor põe os agentes em sandbox, corre dentro da sandbox da execução. Recebe um ambiente mínimo e nenhuma das credenciais da execução: nenhum token de forja ou de fornecedor e nenhum acesso ao gateway.
+- Cada hook tem 30 segundos. O seu resultado é lido e descartado.
+- `preTool` falha fechado. Um código de saída diferente de zero, um tempo esgotado ou um script que não consegue arrancar recusa a chamada de ferramenta.
+- Um caminho absoluto, em falta, ou que saia da pasta de hooks (ligações resolvidas) é recusado, e o registo da execução indica qual o hook recusado e porquê. Um hook `preTool` recusado ou ilegível recusa todas as chamadas de ferramenta até ser corrigido.
+- Um bloco `hooks` em `.agents/harness.json`, quer num repositório quer na pasta do próprio agente, é ignorado. Um repositório é muitas vezes código de outra pessoa, e a pasta do agente pode ser escrita por membros e por execuções. O registo da execução diz que o bloco foi ignorado e de onde os hooks são lidos em vez disso.
+
+Os hooks de shell aplicam-se apenas ao harness incorporado. Um hook `preTool` ou `postTool` configurado faz com que a execução chame as suas ferramentas uma de cada vez.
 
 ## AgentLiveState (derivado)
 

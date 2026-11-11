@@ -2,7 +2,7 @@
 title: Användningsstatistik
 description: Vad Control Center registrerar när användningsstatistiken är på, vem som bestämmer och vad som aldrig skickas.
 slug: sv-SE/handbok/referens/anvandningsstatistik
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center kan skicka **pseudonymiserade användningshändelser** till en [Umami](https://umami.is)-instans. Användningsstatistiken är **avstängd tills serveroperatören slår på den**. Inställningen tillhör servern och gäller alla klienter som är anslutna till den: skrivbordsappen, webbappen, telefonen och själva servern.
@@ -13,7 +13,7 @@ Användningsstatistiken är skild från **Dela kraschrapporter**, som är en ins
 
 | Reglage | Var | Effekt |
 | --- | --- | --- |
-| **Dela användningsstatistik** | Introduktionen (sandlådesteget) och **Inställningar → Integritet**. Bara serveroperatören kan ändra det; andra medlemmar ser det aktuella värdet skrivskyddat | Gäller hela servern. Lagras som `telemetry.usage_analytics` i serverinställningarna. Av om det inte är satt till `true` |
+| **Dela användningsstatistik** | Introduktionen (sandlådesteget) och **Inställningar → Server → Diagnostik och integritet**. Bara serveroperatören kan ändra det; andra medlemmar ser det aktuella värdet skrivskyddat | Gäller hela servern. Lagras som `telemetry.usage_analytics` i serverinställningarna. Av om det inte är satt till `true` |
 | Byggtyp | Automatiskt | Debug- och profile-byggen skickar inget. De skriver i stället varje händelse till felsökningsloggen |
 | `CC_ANALYTICS_DEBUG=1` | Miljön för `cc_server` eller dess `.env` | Låter debug- och profile-byggen av servern, och av alla klienter som är anslutna till den, skicka på riktigt, för testning. Reglaget ovan måste fortfarande vara på |
 | `DO_NOT_TRACK=1` | Miljön för `cc_server` | Stoppar serverns egen rapportering, oavsett vad reglaget säger. Klienterna följer fortfarande reglaget |

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/cc_mcp.dart';
 import 'package:cc_server_core/src/server_mcp_control.dart';
 import 'package:test/test.dart';
@@ -62,66 +63,115 @@ void main() {
     control = ServerMcpControl(
       dispatcher: McpToolDispatcher(registry: registry),
       dataDir: tmp.path,
+      // Writing an agent's config starts the surface; without a main
+      // listener that binds the companion, so keep it off the real 9020.
+      companionPort: 8463,
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
+    await control.dispose();
     tmp.deleteSync(recursive: true);
   });
 
   group('writeAgentMcpConfig', () {
-    test('stamps identity scope + toolset revision headers', () async {
+    test('hands the agent its run secret and nothing else', () async {
       final target = File('${tmp.path}/agent/.mcp.json');
       final path = await control.writeAgentMcpConfig(
         target,
-        workspaceId: 'ws-1',
-        agentId: 'agent-1',
-        conversationId: 'conv-1',
+        runToken: 'run-secret',
       );
       expect(path, target.path);
 
-      final json =
-          jsonDecode(target.readAsStringSync()) as Map<String, dynamic>;
-      final server = ((json['mcpServers'] as Map)['control-center'] as Map)
-          .cast<String, dynamic>();
+      final server = _serverOf(target);
       expect(server['type'], 'http');
       expect(server['url'], startsWith('http://127.0.0.1:'));
 
       final headers = (server['headers'] as Map).cast<String, String>();
-      expect(headers['X-CC-Workspace-Id'], 'ws-1');
-      expect(headers['X-CC-Agent-Id'], 'agent-1');
-      expect(headers['X-CC-Conversation-Id'], 'conv-1');
-      expect(headers['X-CC-Toolset-Rev'], registry.toolsetRevision);
+      expect(headers, {
+        McpCallScope.runGrantHeader: 'run-secret',
+        'X-CC-Toolset-Rev': registry.toolsetRevision,
+      });
+      // No bearer token, no caller-written scope.
+      expect(target.readAsStringSync(), isNot(contains('Authorization')));
+      expect(target.readAsStringSync(), isNot(contains('X-CC-Workspace-Id')));
+      expect(
+        target.readAsStringSync(),
+        isNot(contains(await control.token())),
+      );
       // The standard `.mcp.json` stays free of client-specific keys so
       // `claude --strict-mcp-config` never chokes on it.
       expect(server.containsKey('lifecycle'), isFalse);
+    });
+
+    test('a run without a secret gets no config at all', () async {
+      final target = File('${tmp.path}/agent/.mcp.json');
+      await control.writeAgentMcpConfig(target, runToken: 'run-secret');
+
+      expect(await control.writeAgentMcpConfig(target, runToken: null), isNull);
+      expect(target.existsSync(), isFalse);
+      expect(await control.agentMcpServersForDispatch(runToken: ''), isNull);
     });
 
     test(
       'toolset revision header changes when the catalogue changes',
       () async {
         final target = File('${tmp.path}/agent/.mcp.json');
-        await control.writeAgentMcpConfig(target, workspaceId: 'ws-1');
+        await control.writeAgentMcpConfig(target, runToken: 'run-secret');
         final before = _revOf(target);
 
         registry.register(_StubTool('gamma'));
-        await control.writeAgentMcpConfig(target, workspaceId: 'ws-1');
+        await control.writeAgentMcpConfig(target, runToken: 'run-secret');
         expect(_revOf(target), isNot(before));
       },
     );
+  });
 
-    test('omits identity headers when no scope is supplied', () async {
-      final target = File('${tmp.path}/agent/.mcp.json');
-      await control.writeAgentMcpConfig(target);
-      final json =
-          jsonDecode(target.readAsStringSync()) as Map<String, dynamic>;
-      final server = ((json['mcpServers'] as Map)['control-center'] as Map)
-          .cast<String, dynamic>();
-      final headers = (server['headers'] as Map).cast<String, String>();
-      expect(headers.containsKey('X-CC-Workspace-Id'), isFalse);
-      expect(headers.containsKey('X-CC-Agent-Id'), isFalse);
-      expect(headers.containsKey('X-CC-Conversation-Id'), isFalse);
-      expect(headers['X-CC-Toolset-Rev'], isNotEmpty);
+  group('token', () {
+    test('is minted at first start and stored owner-only', () async {
+      final token = await control.token();
+      expect(base64Url.decode(base64Url.normalize(token)), hasLength(32));
+      final file = File('${tmp.path}/mcp_config.json');
+      expect(
+        (jsonDecode(file.readAsStringSync()) as Map)['token'],
+        token,
+      );
+      if (!Platform.isWindows) {
+        expect(file.statSync().mode & 0x1ff, 0x180); // 0600
+      }
+      // A second control over the same data dir reads the same token.
+      final again = ServerMcpControl(
+        dispatcher: McpToolDispatcher(registry: registry),
+        dataDir: tmp.path,
+      );
+      expect(await again.token(), token);
+    });
+
+    test('a stored config without a token gets one', () async {
+      File('${tmp.path}/mcp_config.json').writeAsStringSync(
+        jsonEncode({'enabled': false}),
+      );
+      expect(await control.token(), isNotEmpty);
+      expect((await control.status()).enabled, isFalse);
+    });
+
+    test('rotation replaces it on disk and in the mounted handler', () async {
+      final main = _FakeMainServer(boundPort: 9030);
+      control.attachMainServer(main);
+      await control.start();
+      final handler = main.mounted;
+      final before = await control.token();
+
+      final after = await control.rotateToken();
+      expect(after, isNot(before));
+      expect(await control.token(), after);
+      expect(main.mounted, same(handler), reason: 'no remount on rotation');
+      expect(
+        (jsonDecode(File('${tmp.path}/mcp_config.json').readAsStringSync())
+            as Map)['token'],
+        after,
+      );
+      await control.dispose();
     });
   });
 
@@ -165,21 +215,8 @@ void main() {
     test('agent MCP config points at the main listener port', () async {
       await control.start();
       final target = File('${tmp.path}/agent/.mcp.json');
-      await control.writeAgentMcpConfig(target, workspaceId: 'ws-1');
-      final json =
-          jsonDecode(target.readAsStringSync()) as Map<String, dynamic>;
-      final server = ((json['mcpServers'] as Map)['control-center'] as Map)
-          .cast<String, dynamic>();
-      expect(server['url'], 'http://127.0.0.1:9030/mcp');
-    });
-
-    test('token change applies live, without a restart', () async {
-      await control.start();
-      final handler = main.mounted;
-      await control.setToken('secret');
-      expect(main.mounted, same(handler), reason: 'no remount on token change');
-      expect(handler!.hasToken, isTrue);
-      expect((await control.status()).hasToken, isTrue);
+      await control.writeAgentMcpConfig(target, runToken: 'run-secret');
+      expect(_serverOf(target)['url'], 'http://127.0.0.1:9030/mcp');
     });
   });
 
@@ -276,7 +313,9 @@ void main() {
       final client = HttpClient();
       try {
         final request = await client.post('127.0.0.1', companionPort, '/mcp');
-        request.headers.contentType = ContentType.json;
+        request.headers
+          ..contentType = ContentType.json
+          ..set('Authorization', 'Bearer ${await tlsControl.token()}');
         request.write(
           jsonEncode({
             'jsonrpc': '2.0',
@@ -299,12 +338,8 @@ void main() {
     test('agent MCP config points at the loopback companion', () async {
       await tlsControl.start();
       final target = File('${tmp.path}/agent/.mcp.json');
-      await tlsControl.writeAgentMcpConfig(target, workspaceId: 'ws-1');
-      final json =
-          jsonDecode(target.readAsStringSync()) as Map<String, dynamic>;
-      final server = ((json['mcpServers'] as Map)['control-center'] as Map)
-          .cast<String, dynamic>();
-      expect(server['url'], 'http://127.0.0.1:$companionPort/mcp');
+      await tlsControl.writeAgentMcpConfig(target, runToken: 'run-secret');
+      expect(_serverOf(target)['url'], 'http://127.0.0.1:$companionPort/mcp');
     });
   });
 
@@ -330,16 +365,6 @@ void main() {
       expect(status.running, isTrue);
       expect(status.port, companionPort);
     });
-
-    test('a legacy config with a port key loads, port ignored', () async {
-      File('${tmp.path}/mcp_config.json').writeAsStringSync(
-        jsonEncode({'port': 9999, 'enabled': true, 'token': 'abc'}),
-      );
-      final status = await standalone.status();
-      expect(status.enabled, isTrue);
-      expect(status.hasToken, isTrue);
-      expect(status.port, companionPort);
-    });
   });
 }
 
@@ -353,9 +378,11 @@ bool? _persistedEnabled(Directory dataDir) {
   return json['enabled'] as bool?;
 }
 
-String _revOf(File mcpJson) {
+Map<String, dynamic> _serverOf(File mcpJson) {
   final json = jsonDecode(mcpJson.readAsStringSync()) as Map<String, dynamic>;
-  final server = ((json['mcpServers'] as Map)['control-center'] as Map)
+  return ((json['mcpServers'] as Map)['control-center'] as Map)
       .cast<String, dynamic>();
-  return (server['headers'] as Map)['X-CC-Toolset-Rev'] as String;
 }
+
+String _revOf(File mcpJson) =>
+    (_serverOf(mcpJson)['headers'] as Map)['X-CC-Toolset-Rev'] as String;

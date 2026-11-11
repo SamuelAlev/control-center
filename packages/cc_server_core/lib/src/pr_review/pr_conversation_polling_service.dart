@@ -57,8 +57,8 @@ class PrConversationAppIdentity {
   /// The workspace this bot serves. Mentions route only into it.
   final String workspaceId;
 
-  /// The App's actual bot login (`<slug>[bot]`), for loop detection and
-  /// compatibility mentions; the default invocation is @usectrl.
+  /// The App's actual bot login (`<slug>[bot]`), for loop detection; the
+  /// invocation is @usectrl.
   final String botLogin;
 
   /// The workspace's lane: Connect sweeps on a slower, smaller budget.
@@ -409,11 +409,9 @@ class PrConversationPollingService {
       }
     }
 
-    // Dedicated account and compatible App-login mention lanes funnel into
-    // the same candidate set; a PR hit by several lanes is deduplicated.
+    // The mention and label lanes funnel into the same candidate set; a PR
+    // hit by both is deduplicated.
     await addCandidates(results.mentioned);
-    await addCandidates(results.botMentioned);
-    await addCandidates(results.shortMentioned);
     await addCandidates(results.labeled);
 
     // The label lane: presence-triggered, once per PR per workspace.
@@ -706,21 +704,7 @@ class PrConversationPollingService {
     }
     final seen = decoded['seen'];
     if (seen is List) {
-      for (final key in seen) {
-        if (key is! String) {
-          continue;
-        }
-        if (key.startsWith('c:')) {
-          // Before issue and review comment ids had their own namespaces one
-          // `c:` key covered both; it still suppresses either.
-          final rest = key.substring(2);
-          _seen
-            ..add('ic:$rest')
-            ..add('rc:$rest');
-        } else {
-          _seen.add(key);
-        }
-      }
+      seen.whereType<String>().forEach(_seen.add);
     }
   }
 

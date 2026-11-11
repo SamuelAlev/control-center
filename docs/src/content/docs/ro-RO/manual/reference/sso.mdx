@@ -2,7 +2,7 @@
 title: Referință pentru configurarea SSO
 description: Fiecare opțiune, endpoint, operație și cod de eroare al autentificării unice.
 slug: ro-RO/manual/referinta/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Tot ce este configurabil la autentificarea unică, într-un singur loc. Valorile stau
@@ -33,6 +33,18 @@ cu care ecranul de setări poate intra în contradicție).
 | `groupRoleMap`         | ambele       | `{}`            | grup → rol; mapările către proprietar sunt refuzate la salvare                                                                                            |
 | `autoMember`           | ambele       | pornit          | adaugă automat utilizatorii în fiecare spațiu de lucru la prima autentificare                                                                             |
 | `allowJit`             | ambele       | pornit          | provisionează utilizatorii necunoscuți la autentificare                                                                                                   |
+
+## Potrivirea conturilor
+
+`SsoProvisioner` rezolvă o autentificare în această ordine și niciodată după numele de utilizator:
+
+1. `(users.sso_issuer, users.sso_subject)` egal cu emitentul și subiectul autentificării (SAML NameID / OIDC `sub`).
+2. Un cont a cărui adresă este egală cu emailul autentificării, doar când ambele capete o garantează: furnizorul (OIDC `email_verified: true`; o revendicare lipsă nu este o garanție; o aserțiune SAML semnată este întotdeauna una) și contul (`users.email_verified`). Adresele sunt stocate tăiate și cu litere mici și sunt comparate astfel, iar o adresă verificată se potrivește doar când exact un cont o deține verificată; doi deținători nu se potrivesc cu nimic (se înregistrează în jurnal fără adresă), iar niciun cont nu poate fi verificat pentru o variantă de scriere a unei adrese pe care alt cont o deține verificată.
+3. În caz contrar, un cont nou când `allowJit` este pornit; un refuz când este oprit.
+
+`users.email_verified` este setat de o autentificare SSO sau de o transmitere SCIM care conține adresa, ori de proprietarul serverului cu `users.vouchEmail` (**Setări → Server → Persoane → Confirmă e-mailul**, auditat ca `user.email_vouched`). Editarea propriului profil de către proprietar garantează propria adresă. Orice altă editare de profil, precum și orice adresă introdusă la o invitație, lasă adresa neverificată, iar editarea unei adrese șterge marcajul. O autentificare garantată care creează un cont preia adresa de la conturile care doar au introdus-o (auditat ca `user.email_unvouched_cleared`), niciodată de la unul care o deține verificată; în acest caz noul cont nu primește nicio adresă.
+
+O autentificare care se potrivește cu un cont deja fixat pe alt subiect sau emitent este refuzată cu `This account is already linked to a different SSO identity`. Un cont dezactivat refuză cu `This account has been deactivated`.
 
 ## Configurarea procesului
 
@@ -135,6 +147,7 @@ Eșecurile `cc_saml_verify_response` poartă un cod stabil:
   LUCRU PRIN PROIECTARE.
 - `users.sso_subject` + `users.sso_issuer` — fixarea subiectului furnizorului,
   unică per `(issuer, subject)` printr-un index parțial.
+- `users.email_verified`: dacă adresa contului poate fi potrivită cu o autentificare SSO sau cu o transmitere SCIM (vezi [Potrivirea conturilor](#potrivirea-conturilor)).
 - `users.deactivated_at` — marcajul de dezactivare SCIM.
 - Bearer tokenul SCIM și client secretul OIDC stau în fișierul de secrete 0600,
   niciodată în baza de date.

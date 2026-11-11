@@ -12,18 +12,24 @@ import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:flutter/services.dart';
 
-/// The messaging IDE's per-tab context-menu actions: rename / archive a
-/// conversation, restart a shell, copy a file's path and a rig's audio
-/// controls.
+/// The messaging IDE's per-tab actions: rename a conversation, archive one
+/// whose tab was closed, restart a shell, copy a file's path and a rig's
+/// audio controls.
 class IdeTabActions {
   /// Creates the actions for the tabs of the IDE behind [_host].
   IdeTabActions(this._host);
 
   final IdeHost _host;
 
+  /// Conversations archived on close whose archived status has not reached
+  /// the watched list yet. "Close all" walks every chat tab before any of
+  /// those writes lands, so the live count alone would archive them all.
+  final Set<String> _archiving = {};
+
   /// Context-menu extras per tab kind: a chat tab gets "Rename conversation"
-  /// and "Archive conversation"; a terminal tab gets "Restart shell"; a file
-  /// tab gets Copy path / Copy relative path; a rig tab its audio controls.
+  /// (closing it archives the conversation, so there is no archive row); a
+  /// terminal tab gets "Restart shell"; a file tab gets Copy path / Copy
+  /// relative path; a rig tab its audio controls.
   List<CcMenuItem> contextMenuExtras(EditorTab tab) {
     final context = _host.context;
     if (tab.kind == MessagingTabKinds.rig) {
@@ -42,16 +48,6 @@ class IdeTabActions {
           enabled: conv != null,
           onSelected: () => unawaited(renameConversation(tab)),
         ),
-        CcMenuItem(
-          label: l10n.archiveConversation,
-          // The last active conversation stays: a space always keeps one live
-          // stream (archiving it would just mint a fresh standing one).
-          enabled:
-              conv != null &&
-              !conv.isArchived &&
-              _host.conversations.activeCount > 1,
-          onSelected: () => unawaited(archiveConversation(tab)),
-        ),
       ];
     }
     if (tab.kind == MessagingTabKinds.terminal) {
@@ -59,7 +55,8 @@ class IdeTabActions {
       return [
         CcMenuItem(
           label: l10n.restartShell,
-          enabled: controller != null && !controller.booting,
+          enabled:
+              controller != null && !controller.booting && controller.canDrive,
           onSelected: () => unawaited(controller?.restart()),
         ),
       ];
@@ -109,25 +106,60 @@ class IdeTabActions {
         );
   }
 
-  /// Archives the conversation a chat [tab] shows and closes the tab: the
-  /// conversation leaves the global sidebar's rows and the space's tab strip
-  /// (both filter to active conversations), and the space-open tab mirror
-  /// never re-opens it.
-  Future<void> archiveConversation(EditorTab tab) async {
-    final workspaceId = _host.activeWorkspaceId;
-    final conv = _host.conversations.conversationOf(tab);
-    if (workspaceId == null || conv == null) {
+  /// Archives the conversation a chat [tab] showed, now that the user closed
+  /// it: it leaves the global sidebar's rows (which filter to active
+  /// conversations) and the space-open tab mirror never re-opens it; the
+  /// archived conversations dialog brings it back.
+  ///
+  /// The last active conversation stays: a space always keeps one live stream
+  /// (archiving it would just mint a fresh standing one), so its tab simply
+  /// closes. So does a conversation an agent is still working in, unless
+  /// [agentsStopped]: the close prompt reads that conversation's runs, which
+  /// can still be loading for a background tab, while the busy mark is always
+  /// watched. The tab closes without waiting for the write.
+  void archiveOnClose(EditorTab tab, {bool agentsStopped = false}) {
+    if (!_host.mounted) {
       return;
     }
-    await _host.ref
-        .read(conversationRepositoryProvider)
-        .setStatus(
-          workspaceId: workspaceId,
-          conversationId: conv.id,
-          status: ConversationStatus.archived,
+    final workspaceId = _host.activeWorkspaceId;
+    final view = _host.conversations;
+    final conv = view.conversationOf(tab);
+    if (workspaceId == null ||
+        conv == null ||
+        conv.isArchived ||
+        _archiving.contains(conv.id) ||
+        (!agentsStopped && view.busyIds.contains(conv.id))) {
+      return;
+    }
+    // Ids whose archive has landed (or that left this space) no longer count.
+    _archiving.removeWhere((id) => view.byId[id]?.isArchived ?? true);
+    if (view.activeCount - _archiving.length <= 1) {
+      return;
+    }
+    _archiving.add(conv.id);
+    unawaited(_archive(workspaceId, conv.id));
+  }
+
+  Future<void> _archive(String workspaceId, String conversationId) async {
+    final repository = _host.ref.read(conversationRepositoryProvider);
+    try {
+      await repository.setStatus(
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+        status: ConversationStatus.archived,
+      );
+    } on Object {
+      _archiving.remove(conversationId);
+      if (!_host.mounted) {
+        return;
+      }
+      final context = _host.context;
+      if (context.mounted) {
+        CcToastScope.of(context).show(
+          AppLocalizations.of(context).somethingWentWrong,
+          variant: CcToastVariant.danger,
         );
-    if (_host.mounted) {
-      _host.layout.closeTabByIdentity(tab);
+      }
     }
   }
 

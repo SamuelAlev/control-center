@@ -149,13 +149,13 @@ class RemoteAgentRunLogRepository {
     });
   }
 
-  /// Column-scoped host-side runtime metadata update.
+  /// Column-scoped host-side runtime metadata update. Carries no log path:
+  /// only the server's own dispatch records where a run's log is.
   Future<bool> updateRuntime(
     String workspaceId,
     String runId, {
     int? pid,
     bool markRunning = false,
-    String? logPath,
     String? contextSnapshotJson,
     DateTime? lastOutputAt,
     RunLiveness? liveness,
@@ -170,7 +170,6 @@ class RemoteAgentRunLogRepository {
       'run_id': runId,
       'pid': ?pid,
       if (markRunning) 'mark_running': true,
-      'log_path': ?logPath,
       'context_snapshot_json': ?contextSnapshotJson,
       if (lastOutputAt != null)
         'last_output_at': lastOutputAt.toIso8601String(),

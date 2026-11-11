@@ -3,7 +3,7 @@ title: Exécuter un serveur sans interface
 description: Exécutez le binaire sans interface cc_server ou son image Docker, associez-y un client et configurez-le avec l’ensemble des options de ligne de commande et des variables d’environnement.
 dateModified: 2026-11-08
 slug: fr-FR/manuel/guides/executer-serveur-sans-interface
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Exécutez `cc_server` sur une machine qui reste allumée, puis connectez-vous à
@@ -176,8 +176,7 @@ web), `--label` (par défaut, le nom de la plateforme suivi du nom d’hôte de 
 machine), `--host` (l’hôte à imprimer dans l’URL, puisque la boucle locale n’est pas
 joignable depuis une autre machine) et `--client-url`. Relancer `pair` renouvelle la
 clé de cet appareil et coupe ses sessions actives. L’association ne crée jamais
-d’espace de travail : l’intégration initiale du client qui se connecte nomme et crée
-le premier.
+d’espace de travail : seul le propriétaire du serveur en crée, et sur son client l’intégration initiale nomme et crée le premier. Toute autre personne attend qu’il en crée un pour elle ou qu’un administrateur d’espace de travail l’invite.
 
 Avec `--client-url`, elle imprime aussi un QR code scannable depuis un terminal qui
 ouvre le client web déjà rempli :
@@ -196,8 +195,7 @@ client en cours d’exécution. Les deux ne sont pas interchangeables. Voir
 [Associer un appareil](/fr-FR/manuel/guides/associer-appareil/).
 :::
 
-Un identifiant d’appairage émis par `cc_server pair` ne comporte **aucune
-expiration** ; un identifiant émis dans l’application expire toujours après 30 jours.
+Un identifiant d’appairage émis par `cc_server pair` expire après 30 jours, comme un identifiant émis dans l’application ; relancez `pair` pour le même appareil afin d’en émettre un nouveau.
 Révoquez un appareil créé par la CLI depuis **Paramètres → Vous → Vos appareils**
 lorsque vous n’en avez plus besoin.
 
@@ -249,6 +247,16 @@ associés utilisent plutôt le tunnel chiffré.
 
 Le serveur fonctionne jusqu’à `SIGINT`/`SIGTERM`, puis s’arrête proprement.
 
+### Lire les lignes de démarrage
+
+Deux lignes indiquent comment ce serveur est configuré. La ligne d’exposition, imprimée à côté de la bannière de disponibilité, commence par `cc_server exposure:` et indique jusqu’où le serveur peut être joint (`bind`, `tls`, `relay`, `tunnel`), si un propriétaire du serveur est enregistré (`owner`), et comment les agents s’exécutent sur cette machine (`sandbox`).
+
+- `sandbox=native` — chaque exécution d’agent est enveloppée dans le bac à sable du système d’exploitation.
+- `sandbox=off` — vous avez lancé le serveur avec `--sandbox off`, donc les agents de chaque membre s’exécutent sans confinement sur cette machine.
+- `sandbox=unavailable` — l’hôte n’a aucun backend de bac à sable (Windows, ou Linux sans `bwrap` et `socat`), donc seules les exécutions d’agents dont le propriétaire du serveur est responsable démarrent. Les autres sont refusées avec le message « Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents. »
+
+Une ligne consacrée au bac à sable, plus haut dans le journal, dit la même chose en toutes lettres et, lorsqu’un backend manque, indique quoi installer. Exécuter les agents d’autres personnes sans bac à sable est un choix que le propriétaire du serveur fait une fois, pour tout le monde, avec `--sandbox off`. Voir [Configurer les politiques de bac à sable](/fr-FR/manuel/guides/politiques-de-bac-a-sable/#vérifier-si-vos-exécutions-dagent-sont-isolées).
+
 ## Étape 5 : Connecter un client
 
 Pointez un client vers l’URL du serveur et la clé d’appairage de l’étape 3 :
@@ -275,6 +283,8 @@ et WebSocket par la même session chiffrée authentifiée que le reste du client
 `cc_server` déchiffre chaque requête, la transmet à son backend code-server local
 et chiffre la réponse en retour vers le client. Les fichiers restent la propriété
 du serveur.
+
+L’éditeur tourne sur le serveur, sous l’utilisateur propre au serveur, avec son terminal, ses tâches et ses extensions ; seul le [propriétaire du serveur](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur) peut donc l’ouvrir. Une session appartient à l’appareil et à la personne qui l’ont ouverte. Il s’ouvre avec la confiance d’espace de travail de VS Code activée, de sorte que VS Code demande avant de faire confiance à un dossier, et avec les tâches automatiques désactivées, de sorte que les tâches d’un dépôt ne démarrent jamais à l’ouverture. Les autres conservent l’éditeur intégré de l’application et les vues de fichiers ; l’éditeur complet ne leur est pas proposé.
 
 Hébergez le client web en HTTPS ou sur une origine de boucle locale sécurisée
 pour que les service workers puissent s’exécuter. La compilation web normale et
@@ -323,6 +333,12 @@ serveur n’a donc besoin d’aucune adresse publique pour elles. Les connexions
 les applications propres au serveur renvoient le navigateur vers l’URL publique
 du serveur : définissez donc `--public-url` sur une adresse que les navigateurs
 des personnes peuvent joindre.
+
+C’est la valeur par défaut du serveur. Un administrateur d’espace de travail peut
+donner à un espace de travail un autre choix sous **Paramètres → Espace de travail →
+Intégrations**. Avec `CC_CONNECT_URL` défini, un espace de travail peut tout de même
+passer à ses propres applications, mais pas à un Connect qui lui est propre ; voir
+[Choix par espace de travail](/fr-FR/manuel/reference/connect/#choix-par-espace-de-travail).
 
 Pour héberger Connect pour d’autres serveurs depuis celui-ci, définissez
 `CC_SERVER_CONNECT_HOST=on` ; voir
@@ -377,7 +393,7 @@ Deux choses à savoir avant d’exposer le port au-delà de la boucle locale (TL
 ne fournit pas le chiffrement de bout en bout du client associé et n’autorise pas
 les ressources) :
 
-- **MCP échoue en mode fermé hors de l’hôte.** Une surface MCP sans jeton ne répond qu’à la boucle locale. La liaison `any` ne l’élargit pas — une requête hors hôte est refusée avec « MCP requires a bearer token to answer non-loopback clients » jusqu’à ce que vous en configuriez un (`mcp.setToken`, ou **Paramètres → Serveur → Serveurs MCP**).
+- **Le MCP exige toujours son jeton.** Le serveur crée le jeton MCP au premier démarrage, et chaque requête, y compris celles venues de la boucle locale, doit l’envoyer sous la forme `Authorization: Bearer <token>`. Il ne peut pas être désactivé ; le propriétaire du serveur le lit et le renouvelle dans **Paramètres → Serveur → Serveurs MCP**. Les requêtes venant d’une page web, vers un `Host` inconnu, ou un `POST` qui n’est pas du JSON sont refusées avant la vérification du jeton. Voir [Utiliser le serveur MCP](/fr-FR/manuel/guides/serveur-mcp/).
 - **`GET /healthz` est non authentifié par conception**, avec un CORS générique, et publie l’identifiant, le nom, l’empreinte d’identité et la version de compilation du serveur. Les clients ont besoin de l’empreinte pour épingler le serveur, c’est donc délibéré — mais cela signifie que tout `cc_server` joignable divulgue ces renseignements à quiconque les demande.
 
 ## Guides connexes

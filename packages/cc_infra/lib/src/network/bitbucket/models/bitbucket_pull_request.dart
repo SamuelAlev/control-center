@@ -29,6 +29,8 @@ class BitbucketPullRequest {
     this.sourceCommitHash = '',
     this.destinationBranch = '',
     this.destinationCommitHash = '',
+    this.sourceRepositoryUuid = '',
+    this.destinationRepositoryUuid = '',
     this.mergeCommitHash = '',
     this.closeSourceBranch = false,
     this.commentCount = 0,
@@ -63,6 +65,10 @@ class BitbucketPullRequest {
           asJsonMap(destination?['branch'])?['name'] as String? ?? '',
       destinationCommitHash:
           asJsonMap(destination?['commit'])?['hash'] as String? ?? '',
+      sourceRepositoryUuid:
+          asJsonMap(source?['repository'])?['uuid'] as String? ?? '',
+      destinationRepositoryUuid:
+          asJsonMap(destination?['repository'])?['uuid'] as String? ?? '',
       mergeCommitHash:
           asJsonMap(json['merge_commit'])?['hash'] as String? ?? '',
       closeSourceBranch: json['close_source_branch'] as bool? ?? false,
@@ -117,6 +123,14 @@ class BitbucketPullRequest {
 
   /// Destination branch tip, often abbreviated to 12 hex characters.
   final String destinationCommitHash;
+
+  /// The `{uuid}` of the repository the source branch lives in (a fork's,
+  /// for a fork pull request). Empty when the payload carried none.
+  final String sourceRepositoryUuid;
+
+  /// The `{uuid}` of the repository the pull request merges into: durable
+  /// across renames and transfers. Empty when the payload carried none.
+  final String destinationRepositoryUuid;
 
   /// Merge commit hash. Empty until the pull request merges.
   final String mergeCommitHash;

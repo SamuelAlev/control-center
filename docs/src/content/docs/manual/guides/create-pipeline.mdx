@@ -36,7 +36,7 @@ lands where you drop it, with no incoming connection.
 | **Bash script**                 | listen    | Runs a shell script with `{{state}}` substitution; no agent dispatched               |
 | **Open conversation**           | listen    | Opens the run's one visible space and its checkout; agent nodes join this room       |
 | **Clone PR branch**             | listen    | Discovers the PR head branch via `gh pr view` and clones it into the run directory   |
-| **Post PR comment**             | listen    | Posts consolidated findings to the PR as a GitHub review comment                     |
+| **Post PR comment**             | listen    | Posts a review comment on the PR from the server: the findings, or its `message`     |
 | **Reviewer (prompt)**           | listen    | Dispatches a specialist reviewer agent; suspends until the agent submits its result  |
 | **Consolidate (join)**          | join      | Waits for several upstream branches, then asks an agent to consolidate their outputs |
 | **Custom prompt**               | listen    | Generic prompt-driven node routed through the `promptAgent` body                     |
@@ -130,6 +130,13 @@ neither is configurable:
   (`repo_full_name` in state or the trigger payload), `GH_TOKEN` and
   `GITHUB_TOKEN` hold a token that can only read that one repo, so `gh` and
   `git clone` against it work without setup. Otherwise there is no GitHub token.
+- A script cannot write to GitHub: `gh pr comment`, `gh pr merge`,
+  `gh pr create` and `git push` fail on that token. Comment with a **Post PR
+  comment** node instead (set `extras.message` to post your own text, with
+  `{{key}}` placeholders, rather than the consolidated findings). Push and
+  open pull requests from an agent node: its `git push` goes through the run
+  gateway and it opens the PR with the `open_pull_request` tool. Merging is
+  left to a person; no node merges.
 - Only a workspace admin can create or edit a pipeline with a bash step.
 - The script is spawned as the literal executable `bash`, so `bash` must be on
   the server host's `PATH`.

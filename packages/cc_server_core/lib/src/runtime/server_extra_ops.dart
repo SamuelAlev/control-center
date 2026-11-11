@@ -1,11 +1,14 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/database_backup_port.dart';
 import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/repositories/server_audit_repository.dart';
+import 'package:cc_domain/core/domain/repositories/user_activity_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
+import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
+import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/model_routing/domain/ports/models_dev_source.dart';
 import 'package:cc_domain/features/telemetry/telemetry.dart'
@@ -13,6 +16,7 @@ import 'package:cc_domain/features/telemetry/telemetry.dart'
 import 'package:cc_host/cc_host.dart' show RepoOp, WatchQuery;
 import 'package:cc_infra/cc_infra.dart'
     show
+        ClaudeAccountStore,
         ClaudeSessionSettingsStore,
         FilterListService,
         FontsourceCatalogService,
@@ -24,14 +28,21 @@ import 'package:cc_persistence/cc_persistence.dart'
 import 'package:cc_server_core/src/agents/agent_create_rpc.dart';
 import 'package:cc_server_core/src/backup/backup_rpc.dart';
 import 'package:cc_server_core/src/catalog/account_pool_ops.dart';
+import 'package:cc_server_core/src/catalog/audit_log_ops.dart';
 import 'package:cc_server_core/src/catalog/calendar_write_ops.dart';
 import 'package:cc_server_core/src/catalog/changelog_ops.dart';
 import 'package:cc_server_core/src/catalog/claude_session_settings_ops.dart';
+import 'package:cc_server_core/src/catalog/claude_sign_in_ops.dart';
+import 'package:cc_server_core/src/catalog/commit_signing_ops.dart';
 import 'package:cc_server_core/src/catalog/conversation_title_ops.dart';
+import 'package:cc_server_core/src/catalog/forge_automation_token_ops.dart';
 import 'package:cc_server_core/src/catalog/forge_compose_ops.dart';
 import 'package:cc_server_core/src/catalog/gif_ops.dart';
+import 'package:cc_server_core/src/catalog/mcp_server_ops.dart';
+import 'package:cc_server_core/src/catalog/pr_data_gate.dart';
 import 'package:cc_server_core/src/catalog/pr_merge_conflict_ops.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
+import 'package:cc_server_core/src/catalog/user_profile_ops.dart';
 import 'package:cc_server_core/src/catalog/workspace_provider_app_ops.dart';
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/chat_rpc_ops.dart';
@@ -41,10 +52,12 @@ import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/context/context_inspection_service.dart';
 import 'package:cc_server_core/src/context/context_rpc_ops.dart';
 import 'package:cc_server_core/src/fonts/fonts_rpc.dart';
+import 'package:cc_server_core/src/forge/forge_automation_tokens.dart';
 import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart'
     show ServerCalendarWrites;
 import 'package:cc_server_core/src/identity/caching_workspace_membership_repository.dart';
+import 'package:cc_server_core/src/identity/commit_signing_keys.dart';
 import 'package:cc_server_core/src/identity/sso_ops.dart';
 import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
@@ -69,6 +82,7 @@ typedef ExtraOpsResult = ({List<RepoOp> ops, List<WatchQuery> watches});
 /// list-builder invoked?".
 ExtraOpsResult buildServerExtraOps({
   required ChangelogFetcher fetchChangelog,
+  required ClaudeAccountStore claudeAccounts,
   required ClaudeSessionSettingsStore claudeSessionSettings,
   required List<RepoOp> fleetOps,
   required List<WatchQuery> fleetWatchQueries,
@@ -77,8 +91,6 @@ ExtraOpsResult buildServerExtraOps({
   required DaoWorkspaceRepository workspaceRepository,
   required CachingWorkspaceMembershipRepository membershipRepository,
   required ProviderSignInService? providerSignIn,
-  Future<void> Function(String userId, ConnectOAuthLane lane)?
-  onSignInDisconnected,
   List<RepoOp> connectOps = const [],
   required String pairingServerUrl,
   required DomainEventBus eventBus,
@@ -92,20 +104,36 @@ ExtraOpsResult buildServerExtraOps({
   required ChatConnector chatConnector,
   required DaoUserRepository userRepository,
   required SsoSettingsService ssoSettings,
-  required Future<bool> Function(String userId) isServerOwner,
   required CodeGraphRepository codeGraphRepository,
   CodeGraphTreePort? codeGraphTree,
+  required CodeGraphRepoGate codeGraphRepos,
   WorkspaceGitHubAppSettings? workspaceGitHubApps,
   WorkspaceProviderAppSettings? workspaceProviderApps,
   KlipyGifs? klipyGifs,
   ServerCalendarWrites? calendarWrites,
   PrMergeConflictService? prMergeConflicts,
+  ForgeReadAccessCheck? forgeReadAccess,
   ForgePrClientResolver? forgeClientFor,
   ForgeConnectionView? forgeConnections,
+  ForgeAutomationTokens? forgeAutomationTokens,
+  void Function(String workspaceId)? onAutomationTokensChanged,
+  CommitSigningKeys? commitSigningKeys,
   required DatabaseBackupPort? databaseBackup,
   required ConversationTitlePort? conversationTitles,
+  // The read gate of a conversation's space (derived from the conversation).
+  required Future<void> Function(
+    String workspaceId,
+    String conversationId,
+    String userId,
+  )
+  requireConversationSpace,
   required WorkspaceSettingsRepository? workspaceSettings,
   required TelemetryConfigRepository telemetryConfig,
+  ServerAuditRepository? serverAudit,
+  required UserActivityRepository userActivity,
+  required Future<bool> Function(String userId) isServerOwner,
+  required PrDataGate prData,
+  McpServerControl? mcpServer,
 }) {
   final ops = <RepoOp>[
     ...fleetOps,
@@ -118,16 +146,20 @@ ExtraOpsResult buildServerExtraOps({
       identityMembers: membershipRepository,
       eventBus: eventBus,
     ),
-    ...buildContextOps(inspection: contextInspection),
+    ...buildContextOps(
+      inspection: contextInspection,
+      workspaces: workspaceRepository,
+    ),
     ...buildWeatherOps(weatherService),
     ...buildChangelogOps(fetchChangelog),
     ...buildClaudeSessionSettingsOps(claudeSessionSettings),
+    ...buildClaudeSignInOps(claudeAccounts),
     ...buildFontsOps(fontCatalog),
     ...buildFilterListOps(filterLists),
     ...buildModelsDevOps(source: modelsDevSource, catalog: modelCatalogService),
     ...buildSoundscapeOps(soundscapeHub),
     ...buildChatOps(connector: chatConnector, users: userRepository),
-    ...buildSsoOps(settings: ssoSettings, isServerOwner: isServerOwner),
+    ...buildSsoOps(settings: ssoSettings),
     ...buildIdentityWorkspaceProfileOps(
       users: userRepository,
       members: membershipRepository,
@@ -147,26 +179,45 @@ ExtraOpsResult buildServerExtraOps({
       workspaces: workspaceRepository,
       members: membershipRepository,
       pairingServerUrl: pairingServerUrl,
-      onDisconnected: onSignInDisconnected,
     ),
     ...connectOps,
     ...buildCodeGraphOps(
-      workspaceRepository: workspaceRepository,
+      repoGate: codeGraphRepos,
       codeGraph: codeGraphRepository,
       tree: codeGraphTree,
     ),
-    ...buildPrMergeConflictOps(prMergeConflicts),
+    ...buildPrMergeConflictOps(
+      prMergeConflicts,
+      linkedRepos: (workspaceId) =>
+          workspaceRepository.watchReposForWorkspace(workspaceId).first,
+      members: membershipRepository,
+      forgeAccess: forgeReadAccess,
+    ),
     ...buildForgeComposeOps(
       linkedRepos: (workspaceId) =>
           workspaceRepository.watchReposForWorkspace(workspaceId).first,
       members: membershipRepository,
+      forgeAccess: forgeReadAccess,
       clientFor: forgeClientFor,
       connections: forgeConnections,
     ),
+    ...buildForgeAutomationTokenOps(
+      tokens: forgeAutomationTokens,
+      linkedRepos: (workspaceId) =>
+          workspaceRepository.watchReposForWorkspace(workspaceId).first,
+      onChanged: onAutomationTokensChanged,
+    ),
+    ...buildCommitSigningOps(commitSigningKeys),
+    ...buildUserProfileOps(users: userRepository),
+    ...buildEmailVouchOps(users: userRepository),
     ...buildBackupOps(databaseBackup: databaseBackup),
-    ...buildConversationTitleOps(conversationTitles),
+    ...buildConversationTitleOps(
+      conversationTitles,
+      requireConversation: requireConversationSpace,
+    ),
     ...buildAccountPoolOps(workspaceSettings),
-    ...buildTelemetryOps(config: telemetryConfig, isServerOwner: isServerOwner),
+    ...buildTelemetryOps(config: telemetryConfig),
+    ...buildMcpServerOps(mcp: mcpServer),
   ];
 
   final watches = <WatchQuery>[
@@ -175,6 +226,15 @@ ExtraOpsResult buildServerExtraOps({
     ...buildSoundscapeWatchQueries(soundscapeHub),
     ...buildChatWatchQueries(connector: chatConnector, users: userRepository),
     ...buildTelemetryWatchQueries(telemetryConfig),
+    ...buildAuditLogWatchQueries(
+      serverAudit: serverAudit,
+      activity: userActivity,
+      members: membershipRepository,
+      workspaces: workspaceRepository,
+      isServerOwner: isServerOwner,
+      prData: prData,
+      eventBus: eventBus,
+    ),
   ];
 
   return (ops: ops, watches: watches);

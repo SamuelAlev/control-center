@@ -2,7 +2,7 @@
 title: Połącz dostawcę OpenID Connect
 description: Podłącz dowolnego wystawcę OIDC — Pocket ID, Keycloak, Auth0, Zitadel — do logowania w Control Center.
 slug: pl-PL/podrecznik/poradniki/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -91,6 +91,32 @@ bezpośrednio, co wymaga tunelu lub publicznego adresu URL — zobacz
 [Provisionuj użytkowników przez SCIM](/pl-PL/podrecznik/poradniki/sso-scim).
 :::
 
+## Jak logowania dopasowują istniejące konta
+
+Logowanie przez dostawcę tożsamości znajduje swoje konto w tej kolejności:
+
+1. **Przypięta tożsamość.** Pierwsze logowanie SSO przypina subject dostawcy (issuer plus `sub`) do konta. Każde kolejne logowanie z tym subject trafia na to konto.
+2. **Zweryfikowany e-mail po obu stronach.** W przeciwnym razie logowanie dopasowuje konto po e-mailu tylko wtedy, gdy dostawca wysyła `email_verified: true` i adres konta też jest zweryfikowany. Adres jest zweryfikowany, gdy ustawiło go SSO lub SCIM albo potwierdził go właściciel serwera. Adres samego właściciela też się liczy.
+
+Adresy e-mail są przechowywane i pokazywane małymi literami, a dopasowanie ignoruje wielkość liter. Zweryfikowany adres identyfikuje konto tylko wtedy, gdy dokładnie jedno konto go posiada; jeśli dwa konta mają ten sam zweryfikowany adres, nie pasuje on do żadnego z nich.
+
+Adres wpisany przez kogoś we własnym profilu albo w zaproszeniu nie jest zweryfikowany i do niczego nie pasuje. Zmiana adresu czyści jego stan weryfikacji, dopóki ktoś znów go nie poręczy. Logowanie nigdy nie dopasowuje po nazwie użytkownika.
+
+Gdy nic nie pasuje, logowanie tworzy nowe konto, jeśli **Zakładaj konta nieznanym użytkownikom przy pierwszym logowaniu** jest włączone, a jest odrzucane, gdy jest wyłączone.
+
+### Zanim włączysz SSO dla osób, które już mają konta
+
+Najpierw potwierdź ich adresy. Otwórz **Ustawienia → Serwer → Osoby**, gdzie każde konto pokazuje **E-mail niepotwierdzony**, dopóki ktoś go nie poręczy, i użyj **Potwierdź e-mail** w wierszu każdej osoby. Tę listę widzi tylko właściciel serwera. Bez tego każda z tych osób albo dostanie drugie konto przy pierwszym logowaniu SSO, albo zostanie odrzucona, gdy zakładanie kont nieznanym użytkownikom jest wyłączone.
+
+Osoba widzi pod polem e-mail we własnym profilu komunikat „Tylko ty wpisałeś ten adres. Logowanie jednokrotne go nie dopasuje, dopóki właściciel serwera go nie potwierdzi.”, dopóki jej adres nie jest potwierdzony.
+
+### Dostawcy, którzy nie wysyłają `email_verified`
+
+Niektórzy dostawcy pomijają tę wartość. Microsoft Entra ID robi tak domyślnie. Brakująca wartość nie oznacza zgody, więc przy takim dostawcy logowanie dopasowuje wyłącznie przypiętą tożsamość, a pierwsze logowanie osoby nigdy nie znajdzie jej istniejącego konta po e-mailu. Zakładanie konta przez SCIM nie pomaga przy tym pierwszym logowaniu OIDC. Praktyczne drogi to:
+
+- zostaw włączone **Zakładaj konta nieznanym użytkownikom przy pierwszym logowaniu** i pozwól pierwszemu logowaniu utworzyć konto, albo
+- skonfiguruj dostawcę tak, aby wysyłał `email_verified`, a następnie potwierdź pasujące adresy, jak wyżej.
+
 ## Sprawdź konfigurację z tej strony
 
 Weryfikator poniżej działa w Twojej przeglądarce. Pobiera dokument discovery
@@ -103,3 +129,15 @@ identyfikator URI przekierowania są zarejestrowane. Nigdy nie pyta o sekret
 klienta.
 
 <SsoCheck kind="oidc" />
+
+## Rozwiązywanie problemów
+
+### Ktoś dostał drugie konto po włączeniu SSO
+
+Istniejący adres konta tej osoby nie był zweryfikowany, gdy po raz pierwszy logowała się przez SSO, więc logowanie go nie dopasowało i utworzyło nowe konto. Dzieje się tak, gdy adres został wpisany w profilu lub w zaproszeniu, a właściciel serwera go nie potwierdził, albo gdy dostawca nie wysłał `email_verified: true`. Nowe konto, którego dostawca poręczył za adres, przejmuje ten adres, a starsze konto, które miało go tylko wpisanego, traci go.
+
+Aby uniknąć tego u następnej osoby, potwierdzaj adresy w **Ustawienia → Serwer → Osoby**, zanim się zaloguje. Dla osoby, która ma już dwa konta, nowe jest przypięte do jej tożsamości SSO, więc to ono będzie od tej pory używane przy jej logowaniach.
+
+### „To konto jest już powiązane z inną tożsamością SSO”
+
+Logowanie dopasowało konto po zweryfikowanym e-mailu, ale to konto jest już przypięte do innego subject lub innego issuera: innego użytkownika u dostawcy, tej samej osoby pod nowym dostawcą albo konta utworzonego przez SCIM pod własnym identyfikatorem. Przypięte konto odrzuca każdą inną tożsamość, więc ponownie przydzielony adres u dostawcy nie może go przejąć. Zaloguj się tożsamością, z którą konto zostało pierwotnie powiązane.

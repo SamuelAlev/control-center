@@ -58,6 +58,7 @@ class _Ledger implements CronExecutionLedger {
 /// Records each started run's dedup key; throws while [failures] is positive.
 class _Engine implements PipelineEngine {
   final List<String> started = [];
+  final List<Set<String>> armedBy = [];
   int failures = 0;
   bool templateDeleted = false;
   int attempts = 0;
@@ -72,6 +73,7 @@ class _Engine implements PipelineEngine {
     String? parentPipelineRunId,
     String? parentStepId,
     String? requestedByUserId,
+    Set<String> armedByUserIds = const {},
     bool dryRun = false,
   }) async {
     attempts++;
@@ -83,6 +85,7 @@ class _Engine implements PipelineEngine {
       throw StateError('database is locked');
     }
     started.add(dedupKey!);
+    armedBy.add(armedByUserIds);
     return null;
   }
 
@@ -95,6 +98,7 @@ PipelineTrigger _trigger({
   DateTime? nextRunAt,
   DateTime? lastFiredAt,
   CronCatchUpPolicy catchUpPolicy = CronCatchUpPolicy.catchUpLatestOnly,
+  Set<String> armedByUserIds = const {},
 }) => PipelineTrigger(
   id: 't1',
   eventType: PipelineTrigger.scheduleEventType,
@@ -105,6 +109,7 @@ PipelineTrigger _trigger({
   nextRunAt: nextRunAt,
   lastFiredAt: lastFiredAt,
   catchUpPolicy: catchUpPolicy,
+  armedByUserIds: armedByUserIds,
   createdAt: DateTime.utc(2026, 9, 27),
 );
 
@@ -145,6 +150,20 @@ void main() {
       expect(triggers.trigger.nextRunAt, nextSundaySlot);
     },
   );
+
+  test('a fire carries every admin who armed the trigger', () async {
+    final triggers = _Triggers(
+      _trigger(
+        schedule: '0 3 * * 0',
+        nextRunAt: sundaySlot,
+        armedByUserIds: {'admin-1', 'admin-2'},
+      ),
+    );
+    await service(triggers).tick(mondayBoot);
+    expect(engine.armedBy, [
+      {'admin-1', 'admin-2'},
+    ]);
+  });
 
   test('several missed slots collapse into one fire', () async {
     final triggers = _Triggers(

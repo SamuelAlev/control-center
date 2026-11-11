@@ -2,14 +2,13 @@
 title: Conversații PR
 description: Cum devine un comentariu pe un PR GitHub un tur de agent fără webhook, ce îl autorizează pe autor și cui este atribuită fiecare parte a conversației.
 slug: ro-RO/manual/concepte/conversatii-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Un pull request este deja locul unde se petrece conversația despre cod.
 Conversațiile PR îl transformă într-o suprafață a unui spațiu de lucru Control
 Center, la fel cum o [punte de chat](/ro-RO/manual/concepte/punti-de-chat/)
-transformă Slack într-una: menționează `@usectrl` (sau botul GitHub App al
-spațiului de lucru) pe un PR, răspunde în firele lui de revizuire sau adaugă
+transformă Slack într-una: menționează `@usectrl` pe un PR, răspunde în firele lui de revizuire sau adaugă
 eticheta `ai-review`, iar munca se desfășoară în spațiul de revizuire al
 PR-ului — sub aceeași atribuire și aceleași guardrail-uri ca orice text tastat
 în aplicație. Un comentariu și o etichetă sunt condiționate la fel: de membrul
@@ -27,7 +26,7 @@ Singurul canal push al GitHub pentru o aplicație este un webhook, iar un webhoo
 are nevoie de un URL de intrare — exact lucrul de care această suprafață nu are
 niciodată nevoie, în mod deliberat. Așa că descoperirea este o scanare: câte
 o căutare aliasată per instalare a aplicației cere de la GitHub PR-urile care
-menționează botul (sau slug-ul lui scurt) și PR-urile deschise care poartă
+menționează `@usectrl` și PR-urile deschise care poartă
 eticheta de revizuire, PR-urilor care au deja un spațiu de revizuire li se citesc
 firele de comentarii, iar totul este comparat după id-ul comentariului cu ce s-a
 văzut la scanarea anterioară. O aplicație proprie scanează în fiecare minut cel
@@ -76,9 +75,9 @@ nimic:
 - **Un membru autentificat.** Contul trebuie să aparțină unui membru al
   _acestui_ spațiu de lucru care s-a autentificat în GitHub pe acest server
 - **Un rol de scriere.** `viewer` și `guest` nu pot porni muncă
-- **Acces de push.** Răspunsurile folosesc un token `bot` limitat la accesul
-  acelui membru la repozitoriu. Dacă serverul nu poate emite unul, nu merge mai
-  departe
+- **Acces de push.** Răspunsurile folosesc un token pentru acel singur
+  repozitoriu, limitat la accesul acelui membru la el. Dacă serverul nu poate
+  emite unul, nu merge mai departe
 
 Fiecare verificare rulează înaintea oricărei confirmări, așa că un străin nu
 primește nicio reacție și niciun răspuns. Un comentariu nu este niciodată
@@ -101,16 +100,19 @@ Fiecare parte a conversației poartă o identitate diferită, iar diferența est
 chiar funcționalitatea:
 
 - **Pe GitHub, răspunsul este automatizare în numele tău.** Fiecare răspuns
-  folosește un token `bot` pentru acel singur depozit, limitat la accesul
-  membrului care întreabă. Pe o aplicație proprie, autorul este contul `[bot]`
-  al aplicației. Prin Connect, un token pentru aplicația partajată este un token
-  de utilizator, așa că răspunsul este scris de contul membrului care întreabă,
-  acționând prin aplicație. În ambele cazuri, fiecare răspuns începe cu
-  `**Control Center** (for @login):`, care spune cine a întrebat și servește și
-  ca protecție anti-buclă.
+  folosește un token pentru acel singur repozitoriu, limitat la accesul
+  membrului care întreabă, și este scris de contul `[bot]` al aplicației. Există
+  o excepție: pe aplicația comună Control Center Connect, botul postează în
+  firele de revizuire doar când operatorul Connect a inclus instalarea pe listă,
+  așa că altfel un răspuns dintr-un fir de revizuire este scris de contul propriu
+  al membrului care întreabă. În ambele cazuri, fiecare
+  răspuns începe cu `**Control Center** (for @login):`, care spune cine a
+  întrebat și servește și ca protecție anti-buclă. @-mențiunile din cuvintele
+  agentului sunt neutralizate, astfel încât un răspuns nu notifică niciodată un
+  utilizator sau o echipă.
 - **În spațiu, întrebarea este a ta.** Mesajul este atribuit membrului în care
   s-a rezolvat autorul, iar rularea agentului se execută în numele lui:
-  commit-urile îl trec ca coautor, iar setarea de autonomie a spațiului și
+  commit-urile rulării sunt ale lui, iar setarea de autonomie a spațiului și
   guardrail-urile de acțiune se aplică exact cum se aplică unui mesaj tastat în
   aplicație. Scrierile către host-ul de cod făcute de rulare folosesc tokenuri
   pentru un singur depozit, limitate de acel membru, niciodată autentificarea
@@ -120,23 +122,17 @@ Publicarea constatărilor de revizuire înapoi pe GitHub rămâne decizia unei
 persoane, luată în Control Center. O mențiune poate _începe_ o revizuire; doar
 un om o publică.
 
-## Protecția anti-buclă și numele scurt
+## Protecția anti-buclă
 
 Tot ce este scris de un cont de bot este eliminat înainte ca vreo poartă să
 ruleze — în mod specific al nostru și orice sufix `[bot]`, așa că nici botul de
 revizuire al unei alte aplicații nu îl poate trezi pe al nostru — și la fel orice
 comentariu care începe cu prefixul `**Control Center** (for @`, pentru că un
-răspuns prin Connect este scris de contul unei persoane. Fără asta, răspunsurile
+răspuns dintr-un fir de revizuire prin Connect poate fi scris de contul unei
+persoane. Fără asta, răspunsurile
 ar sosi ca comentarii noi și ar declanșa puntea la nesfârșit.
 
-Sufixul `[bot]` este și motivul pentru care există forma scurtă. GitHub fixează
-loginul unui cont de aplicație la `<slug>[bot]`, nu oferă autocomplete pentru el
-și nu rezolvă niciodată `@slug` către aplicație — așa că acceptarea slug-ului
-simplu este decizia _potrivitorului_ nostru, iar descoperirea lui are nevoie de
-o cale de căutare în **textul** brut al comentariilor, nu de indexul de mențiuni
-al GitHub. Costul este enunțat, nu netezit: un utilizator uman care împărtășește
-slug-ul aplicației adresează botul la fiecare mențiune în formă scurtă a sa.
-Numele distinctive de aplicații fac coliziunea ipotetică.
+Doar `@usectrl` pornește lucrul. Login-ul aplicației (`<slug>[bot]`) și slug-ul ei simplu nu adresează nimic: GitHub nu oferă autocomplete pentru un cont de aplicație, iar un slug simplu poate aparține unui utilizator uman.
 
 ## Ce nu este oferit în mod deliberat
 

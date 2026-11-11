@@ -29,8 +29,8 @@ class ParsedSlashCommand {
   bool get isCommand => command != null;
 }
 
-/// The built-in harness commands with runtime effects (everything else is a
-/// skill name). `compact` never reaches the harness: it is handled by the
+/// The built-in harness commands with runtime effects (anything else is a user
+/// command, or a skill under [skillCommandPrefix]). `compact` never reaches the harness: it is handled by the
 /// messaging layer (a forced compaction pass, no turn dispatched).
 const Set<String> harnessBuiltinCommands = {'plan', 'goal', 'loop', 'compact'};
 
@@ -41,15 +41,13 @@ const String skillCommandPrefix = 'skill:';
 /// The skill [command] names, or null when it is not a skill invocation.
 ///
 /// Returns the part after `skill:` — which may itself be `<repo>:<name>` and is
-/// resolved further downstream. A BARE name is still accepted when it is not a
-/// builtin, so messages and habits from before the namespace existed keep
-/// working; the prefixed form is the one that always resolves.
+/// resolved further downstream. A bare name is never a skill.
 String? skillNameFor(String command) {
-  if (command.startsWith(skillCommandPrefix)) {
-    final rest = command.substring(skillCommandPrefix.length);
-    return rest.isEmpty ? null : rest;
+  if (!command.startsWith(skillCommandPrefix)) {
+    return null;
   }
-  return harnessBuiltinCommands.contains(command) ? null : command;
+  final rest = command.substring(skillCommandPrefix.length);
+  return rest.isEmpty ? null : rest;
 }
 
 final RegExp _commandPattern = RegExp(r'^/([A-Za-z0-9_:.-]+)\s*([\s\S]*)$');

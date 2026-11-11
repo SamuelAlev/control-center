@@ -201,7 +201,9 @@ class _DemoWiring implements DemoWiring {
   OpenPrPollingService get openPrPoller => poller;
 
   @override
-  Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>>
+  Future<
+    List<({Repo repo, List<PullRequest> prs, bool hasMore, int? totalCount})>
+  >
   mergedByViewer(List<Repo> repos, {String? userId, String? workspaceId}) =>
       _mergedHistory.mergedByViewer(
         repos,

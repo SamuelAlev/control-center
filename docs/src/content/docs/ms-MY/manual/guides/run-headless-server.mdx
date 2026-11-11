@@ -3,7 +3,7 @@ title: Jalankan pelayan tanpa kepala
 description: Jalankan binari tanpa kepala cc_server atau imej Docker-nya, gandingkan klien dengannya dan konfigurasikannya dengan keseluruhan permukaan bendera CLI dan pemboleh ubah persekitaran.
 dateModified: 2026-11-08
 slug: ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-tanpa-kepala
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Jalankan `cc_server` pada mesin yang sentiasa hidup, kemudian sambung kepadanya
@@ -169,8 +169,9 @@ peranti — `desktop`, `ios`, `android`, apa-apa yang lain ialah klien web),
 (hos yang dicetak dalam URL, kerana loopback tidak boleh dicapai dari mesin
 lain) dan `--client-url`. Menjalankan `pair` semula memutar kunci peranti itu
 dan menggugurkan sesi langsungnya. Penggandingan tidak pernah mencipta ruang
-kerja: pengenalan klien yang menyambung menamakan dan mencipta ruang kerja
-pertama.
+kerja. Hanya pemilik pelayan mencipta ruang kerja: pada klien pemilik, pengenalan
+menamakan dan mencipta ruang kerja pertama, dan orang lain menunggu sehingga pemilik
+mencipta satu untuk mereka atau admin ruang kerja menjemput mereka.
 
 Dengan `--client-url` ia juga mencetak kod QR yang boleh diimbas dari terminal
 dan membuka klien web itu dengan isian yang sudah lengkap:
@@ -189,8 +190,8 @@ berjalan. Kedua-duanya tidak boleh ditukar ganti. Lihat
 [Gandingkan peranti](/ms-MY/manual-pengguna/panduan-cara/gandingkan-peranti/).
 :::
 
-Kelayakan yang ditempa oleh `cc_server pair` **tiada tempoh tamat**; yang ditempa
-dalam aplikasi sentiasa tamat tempoh selepas 30 hari. Tarik balik peranti yang
+Kelayakan yang ditempa oleh `cc_server pair` tamat tempoh selepas 30 hari, sama seperti
+yang ditempa dalam aplikasi; jalankan `pair` semula untuk peranti yang sama bagi mengeluarkan yang baharu. Tarik balik peranti yang
 ditempa melalui CLI daripada **Tetapan → Anda → Peranti anda** apabila anda
 sudah selesai dengannya.
 
@@ -242,6 +243,19 @@ sebagai gantinya.
 
 Pelayan berjalan sehingga `SIGINT`/`SIGTERM`, kemudian menutup dengan bersih.
 
+### Baca baris permulaan
+
+Dua baris memberitahu anda cara pelayan ini disediakan. Baris pendedahan, yang dicetak
+bersebelahan sepanduk sedia, bermula dengan `cc_server exposure:` dan menyenaraikan sejauh
+mana ia boleh dicapai (`bind`, `tls`, `relay`, `tunnel`), sama ada pemilik pelayan direkodkan
+(`owner`), dan bagaimana ejen berjalan pada mesin ini (`sandbox`):
+
+- `sandbox=native`: setiap larian ejen dibalut dalam sandbox OS.
+- `sandbox=off`: anda memulakan pelayan dengan `--sandbox off`, jadi ejen setiap ahli berjalan tanpa sekatan pada mesin ini.
+- `sandbox=unavailable`: hos tiada bahagian belakang sandbox (Windows, atau Linux tanpa `bwrap` dan `socat`), jadi hanya larian ejen yang pemilik pelayan bertanggungjawab ke atasnya boleh bermula. Larian orang lain ditolak dengan "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini."
+
+Baris sandbox yang lebih awal dalam log menyatakan perkara yang sama dalam perkataan dan, apabila bahagian belakang hilang, menamakan apa yang perlu dipasang. Menjalankan ejen orang lain tanpa sandbox ialah pilihan yang dibuat pemilik pelayan sekali, untuk semua orang, dengan `--sandbox off`. Lihat [Konfigurasikan dasar sandbox](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/#semak-sama-ada-larian-ejen-anda-dikotak-pasirkan).
+
 ## Langkah 5: Sambungkan klien
 
 Arahkan klien kepada URL pelayan dan kunci penggandingan daripada langkah 3:
@@ -269,6 +283,8 @@ melalui sesi tersulit yang disahkan yang sama seperti seluruh klien yang lain.
 tempatannya, lalu menyulitkan respons kembali kepada klien. Fail kekal dimiliki
 pelayan.
 
+Editor berjalan pada pelayan sebagai pengguna pelayan itu sendiri, dengan terminal, tugas dan sambungannya, jadi hanya [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) boleh membukanya. Sesi tergolong kepada peranti dan orang yang membukanya. Ia dibuka dengan kepercayaan ruang kerja VS Code dihidupkan, jadi VS Code bertanya sebelum mempercayai folder, dan dengan tugas automatik dimatikan, jadi tugas repositori tidak pernah bermula semasa dibuka. Orang lain kekal dengan paparan editor dan fail terbina apl; editor penuh tidak ditawarkan kepada mereka.
+
 Hoskan klien web melalui HTTPS atau asalan loopback yang selamat supaya Service
 Worker boleh berjalan. Skrip binaan dan pelepasan web biasa sudah menyertakan aset
 sumber yang dikongsi. Jika anda membina bundel sendiri, sediakan aset itu selepas
@@ -286,7 +302,6 @@ Trafik editor natif menggunakan fasad loopback yang dihadkan oleh keupayaan seba
 gantinya. Jangan dedahkan gerbang laporan/perintah loopback peribadi bagi sambungan
 editor yang dilancarkan pelayan melalui proksi awam. Permintaan HTTP awam yang
 sensitif ditolak; sumber memerlukan sesi tersulit yang disahkan.
-
 
 ## Langkah 6: Pilih cara pengguna log masuk
 
@@ -309,6 +324,8 @@ dan [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/).
 Log masuk melalui Connect selesai dengan kod yang dipaparkan pelayar, jadi pelayan tidak memerlukan alamat awam untuknya.
 Log masuk melalui apl pelayan sendiri menghantar pelayar kembali ke URL awam pelayan, jadi tetapkan `--public-url` kepada
 alamat yang boleh dicapai oleh pelayar pengguna.
+
+Ini ialah lalai pelayan. Pentadbir ruang kerja boleh memberi satu ruang kerja pilihan yang berbeza di bawah **Tetapan → Ruang kerja → Integrasi**. Dengan `CC_CONNECT_URL` ditetapkan, ruang kerja masih boleh bertukar kepada apl sendiri tetapi tidak kepada Connect sendiri; lihat [Pilihan setiap ruang kerja](/ms-MY/manual-pengguna/rujukan/connect/#pilihan-setiap-ruang-kerja).
 
 Untuk menjadi hos Connect bagi pelayan lain daripada pelayan ini, tetapkan `CC_SERVER_CONNECT_HOST=on`; lihat
 [Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/#pasang-connect-dalam-cc_server).
@@ -361,7 +378,7 @@ Dua perkara yang wajar diketahui sebelum anda mendedahkan port itu melebihi
 loopback (TLS sahaja tidak menyediakan penyulitan hujung ke hujung klien yang
 digandingkan atau memberi kebenaran kepada sumber):
 
-- **MCP gagal secara tertutup di luar hos.** Permukaan MCP tanpa token hanya menjawab loopback. Mengikat `any` tidak meluaskannya — permintaan dari luar hos ditolak dengan "MCP requires a bearer token to answer non-loopback clients" sehingga anda mengkonfigurasikan satu (`mcp.setToken`, atau **Tetapan → Pelayan → Pelayan MCP**).
+- **MCP sentiasa memerlukan tokennya.** Pelayan mencipta token MCP pada permulaan pertama dan setiap permintaan, termasuk dari loopback, mesti menghantarnya sebagai `Authorization: Bearer <token>`. Ia tidak boleh dimatikan; pemilik pelayan membaca dan menjananya semula dalam **Tetapan → Pelayan → Pelayan MCP**. Permintaan dari halaman web, ke `Host` yang tidak diketahui, atau `POST` yang bukan JSON ditolak sebelum token diperiksa. Lihat [Gunakan pelayan MCP](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/).
 - **`GET /healthz` tidak disahkan secara reka bentuk**, dengan CORS kad bebas dan menerbitkan id, nama, cap jari identiti serta versi binaan pelayan. Klien memerlukan cap jari itu untuk menyematkan pelayan, jadi ini memang disengajakan — tetapi ia bermakna mana-mana `cc_server` yang boleh dicapai mendedahkan sebanyak itu kepada sesiapa yang bertanya.
 
 ## Panduan berkaitan

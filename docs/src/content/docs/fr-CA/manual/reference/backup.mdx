@@ -2,7 +2,7 @@
 title: Sauvegarde, export et import
 description: La disposition des instantanés, le manifeste, chaque opération de sauvegarde et chaque route de transfert, et exactement les fichiers qu’une sauvegarde contient et ne contient pas.
 slug: fr-CA/manuel/reference/sauvegarde
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Tout ce que Control Center peut copier, céder ou adopter, et la forme exacte de chaque
@@ -115,6 +115,7 @@ travail contient plus que sa base de données, et rien du reste ne voyage :
 | `models/`                           | Non                  | Non                                  |
 | `meetings/<meetingId>/`             | Non                  | Non                                  |
 | `rigs/`                             | Non                  | Non                                  |
+| `_agent_hooks/`                     | Non                  | Non                                  |
 
 Une partie de cela est jetable — `spaces/` contient des arbres de travail copie sur
 écriture qui sont reprovisionnés à partir des dépôts, `pr_clones/` est un cache, `models/`
@@ -123,8 +124,12 @@ contient des images collées vers lesquelles pointent des lignes de la base de d
 `skills/` et `agents/` contiennent les fichiers avec lesquels un agent s’exécute, et
 `secrets.json` contient chaque clé d’appairage, chaque identifiant de fournisseur et
 chaque paramètre SSO de l’installation. Voir
-[Sauvegarder et restaurer](/fr-CA/manuel/guides/sauvegarder-et-restaurer/#copy-backups-off-the-machine)
+[Sauvegarder et restaurer](/fr-CA/manuel/guides/sauvegarder-et-restaurer/#copier-les-sauvegardes-hors-de-la-machine)
 pour couvrir le reste.
+:::caution[Une base de données d’espace de travail contient des secrets de webhook]
+`workspace.db` est tout l’espace de travail : conversations, journaux d’exécution, index de code, liens vers les dépôts, définitions d’environnement et membres. Elle contient aussi, en clair, les jetons de webhook de pipeline et les secrets de webhook de synchronisation des tickets de l’espace de travail ; traitez donc un export ou une sauvegarde téléchargée comme un secret. Elle ne contient aucun identifiant de fournisseur, aucune clé d’appareil ni aucun secret d’utilisateur : ceux-ci se trouvent dans `global.db` et `secrets.json`.
+:::
+
 :::note[Les jetons de clavardage restent délibérément à l’écart]
 Le fait que `chat_credentials/` se trouve à côté de la base de données plutôt qu’à
 l’intérieur explique pourquoi un espace de travail remis à quelqu’un d’autre ne transporte
@@ -149,7 +154,7 @@ serveur sans port de sauvegarde câblé, comme le serveur de démonstration.
 | `workspace.listBackups` | lecture | Espace de travail | `admin` | aucun | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutation | Espace de travail | `owner` | `name` | `{ok}` |
 | `workspace.export`   | lecture  | Espace de travail | `admin`                   | aucun         | `{ok, path}`                  |
-| `workspace.import`   | mutation | Espace de travail | `owner`                   | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutation | Espace de travail | `owner`, et le propriétaire du serveur | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutation | Installation*     | `owner`                   | `id`          | ligne du registre marquée supprimée |
 
 * `workspace.delete` n’a pas de portée parce que la ligne qu’il marque vit dans le
@@ -173,8 +178,11 @@ opérations de suppression n’acceptent qu’un nom de répertoire horodaté li
 travail, donc être administrateur d’un seul espace de travail ne suffit pas pour gérer les
 autres. La suppression n’accepte que le nom du répertoire horodaté listé, et non un chemin
 de serveur arbitraire, et supprime tout l’instantané (y compris les instantanés
-incomplets). L’export/import par espace de travail reste aux mains de l’administrateur ou
-du propriétaire de l’espace de travail, et non du propriétaire de l’installation.
+incomplets). Les exports par espace de travail et les téléchargements de sauvegardes planifiées restent réservés à l’administrateur de l’espace de travail.
+:::
+
+:::note[La restauration appartient au propriétaire du serveur]
+`workspace.import` et `POST /backup/restore` font adopter au serveur un fichier de base de données dont il traite ensuite les lignes comme siennes : liens vers les dépôts et qui les a créés, définitions d’environnement qui s’exécutent sur l’hôte, chemins des arbres de travail et des journaux. Les deux exigent donc le propriétaire du serveur (`ServerAuthority.serverOwner`), qui doit aussi être le propriétaire de l’espace de travail. Tout autre appelant, et tout appelant sur un hôte sans propriétaire enregistré, est refusé avec `server_owner_required`. Aucun déclencheur ni aucune vue apportés par le fichier ne sont adoptés.
 :::
 
 ### Réponse de `server.listBackups`
@@ -251,7 +259,7 @@ d’appairage et du rôle ci-dessous.
 | `/backup/workspace`     | GET     | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **administrateur** de l’espace de travail |
 | `/backup/snapshot`      | GET     | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **propriétaire** de l’installation |
 | `/backup/stored`        | GET     | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **administrateur** de l’espace de travail ; **propriétaire** de l’installation une fois l’espace de travail supprimé |
-| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **propriétaire** de l’espace de travail |
+| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **propriétaire** de l’installation, également **propriétaire** de l’espace de travail (sinon `403` avec `server_owner_required`) |
 
 `w` est un identifiant d’espace de travail, `n` un nom de répertoire d’instantané ou de
 sauvegarde planifiée, `d` l’identifiant de l’appareil appelant, `s` la signature. Sur

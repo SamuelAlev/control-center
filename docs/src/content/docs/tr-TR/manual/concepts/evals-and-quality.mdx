@@ -2,7 +2,7 @@
 title: Eval’ler ve kalite
 description: Eval paketleri ve sürüme sabitlenmiş beceri kampanyaları, ve kanıtlarının nasıl yorumlanacağı.
 slug: tr-TR/kilavuz/kavramlar/evaller-ve-kalite
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Gözlemlenebilirlik → Kalite** hem tek görevlik eval paketlerini hem de
@@ -22,7 +22,7 @@ Bir çalışma alanı oluşturulduğunda beş başlangıç paketi tohumlanır. B
 orkestrasyon önerilerini, yerleştirilmiş bir hatayı bulan bir incelemeyi, plan
 modunun salt okunur kalmasını, plan modunun bir plan üretmesini ve bir bilet
 gidiş-dönüşünü kapsar. Tohumlama `WorkspaceCreated` olayını dinler
-(`workspace.upsert` veya `workspace.create`), zaten var olan bir adı atlar ve
+(`workspace.create` tarafından yayımlanır), zaten var olan bir adı atlar ve
 eski çalışma alanlarını geriye dönük doldurmaz.
 
 ### Nerede görünürler

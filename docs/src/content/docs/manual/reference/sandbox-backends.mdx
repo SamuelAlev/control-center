@@ -4,11 +4,19 @@ description: The sandbox backends, where they are applied and every value object
 ---
 
 :::caution[Whether a run is sandboxed depends on the host]
-`cc_server` probes the host once at boot and wraps agent dispatch in the native backend when the probe reports one available and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+`cc_server` decides once at boot how agents run on this host, and the decision holds until it restarts:
 
-Where the probe reports no backend — **Windows always** and Linux or WSL2 without `bwrap` and `socat` — agent runs are **not** sandboxed. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), a read-only forge token brokered per launch and revoked on teardown, pushes that pass the push rule at the agent run gateway, the per-mode command policy, the unified [action guardrails](/manual/concepts/guardrails/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
+- **Sandboxed** (`native`): the probe found a backend and `--sandbox` is not `off`. Both dispatch seams are wrapped: the Claude Code CLI through the sandbox port, and ACP plus the built-in harness `bash` tool through the sandbox manager.
+- **Off** (`off`): the server owner started it with `--sandbox off`. Every member's agent runs unconfined on this machine, whoever started it.
+- **Unavailable** (`unavailable`): the sandbox is on but the probe found no backend (**Windows always**, and Linux or WSL2 without `bwrap` and `socat`). A run starts only when the person accountable for it is the server [owner](/manual/concepts/authorization/#the-server-owner): the person who asked for it, or for automation the person it is bound to. Anyone else's run is refused before a credential is minted, a lease is taken or a process starts. With no owner recorded, nobody's run starts.
+
+A refused run fails with the code `sandbox_unavailable`. The app shows it as **Agents need a sandbox on this server**: "This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone."
+
+A run that does start without a sandbox (under `off`, or the owner's own run under `unavailable`) runs directly on the host. ACP and the harness `bash` tool still spawn with environment sanitization; Claude Code goes through `NoSandboxAdapter` and inherits the host environment. The remaining boundaries are the run's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows), a read-only forge token brokered per launch and revoked on teardown, pushes that pass the push rule at the agent run gateway, the per-mode command policy, the unified [action guardrails](/manual/concepts/guardrails/) (fail-closed), environment sanitization on the ACP and harness `bash` paths, and the tool surface its mode allows.
 
 The harness's in-process file tools (read, write, edit, apply patch, search, find, search_files) are outside the sandbox on every host: they run in the server process, so only `bash` is wrapped.
+
+The host is never a fallback for a sandboxed server. If the server sandboxes agents but has no sandbox to give a run, its tool processes and `bash` commands are refused, not started on the host. The same posture decides the small processes around a run: ACP one-shot helpers (conversation titles, `/btw`, `/handoff`, `/goal`) and a pull request's golden tests in Review Studio run in the sandbox when the server sandboxes agents, unconfined under `off`, and under `unavailable` only for a request the server owner is accountable for; otherwise they are skipped.
 :::
 
 ## Backend overview
@@ -17,9 +25,9 @@ The harness's in-process file tools (read, write, edit, apply patch, search, fin
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Enclosed VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Probe-gated on the microVM runtime; applies to interactive terminals — the shell runs inside a [rig](/manual/concepts/rigs/), not on the host |
 | Native      | `native`  | macOS (Seatbelt), Linux and WSL2 (bubblewrap) | Probed at boot; Linux refuses a run requiring filename-glob write denies, which bubblewrap cannot enforce |
-| None        | `none`    | All                                           | The parse default, the terminal's default and the fallback when no backend is available or `--sandbox off` is set |
+| None        | `none`    | All                                           | The parse default and the terminal's default; agent dispatch uses it under `--sandbox off`, and for the owner's own runs when no backend is available |
 
-`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value. A stored `"docker"` maps to `native`.
+`SandboxBackend.fromName` returns `none` for a null or unrecognized stored value.
 
 **`microvm` is the one backend with a kernel boundary** — the workload
 genuinely does not run on the host. It is never a silent fallback in either
@@ -31,7 +39,7 @@ back to the client and badged, so a terminal can never claim to be enclosed
 while running on the host. Lifecycle, images and egress for the VM itself are
 covered by the [rigs reference](/manual/reference/rigs/).
 
-**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2. Agent dispatch on Windows therefore uses `none`. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
+**Windows has no native sandbox.** `NativeSandboxAdapter.probe` returns `available: false` on every host that is not macOS or Linux/WSL2, so a Windows server is `unavailable`: only the server owner's agent runs start, unconfined, and everyone else's are refused. To let every member run agents there, the owner starts the server with `--sandbox off`, which runs all of them unconfined. The `microvm` backend is separate: it is probe-gated on the microVM runtime and applies to interactive terminals and rigs, not to wrapping `bash` on the host.
 
 ## Probe results
 
@@ -44,9 +52,9 @@ The probe is what gates enforcement. It runs once, at server boot.
 | Linux or WSL2 missing either tool      | `false`     | `requiresInstall: true`, with an install hint naming the missing packages |
 | Any other platform                     | `false`     | Native sandbox is not offered on this platform                            |
 
-The server logs the outcome on one startup line: `agent sandbox ON` plus the note, `no OS-native agent sandbox on this host` plus the hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+The server logs the outcome on one startup line: `agent sandbox ON` plus the note; `no OS-native agent sandbox on this host` plus the hint, which adds that only runs the server owner is accountable for will start; or `agent sandbox DISABLED by --sandbox off`. The exposure line printed at startup carries the same decision as `sandbox=native`, `sandbox=off` or `sandbox=unavailable`. `GET /healthz` carries no sandbox field.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. It is an opt-out, not an enable: `on` means "wrap when the host offers a backend", never "require one".
+`--sandbox` / `CC_SERVER_SANDBOX` accepts `on` (default) or `off`. `on` wraps every run when the host offers a backend and admits only the owner's runs when it does not. `off` runs every member's agents unconfined on this host; it is the owner's choice for everyone, not a per-run setting.
 
 ## Native backend
 
@@ -61,6 +69,8 @@ The generated profile is **permissive by default** (`(allow default)`) and carve
 - **Process**: `process-exec` denies for the always-dangerous binaries, plus a block on executing anything from a writable directory. Known toolchain install trees under your home (corepack, npx and `pnpm dlx` caches, node version managers, Playwright browsers, rustup and cargo, Go, fvm and the pub cache, pyenv, uv and pipx, rbenv, sdkman, mise, asdf and `~/.local/bin`) are re-opened beneath that block. The shared temp directories are blocked too. Each session instead gets a private `TMPDIR` under `/private/tmp`, where programs it builds (a `go test` binary, a cargo build) can run. The always-dangerous denies are applied after these allows
 - **Network**: restricted to the in-process proxy ports plus DNS — loopback is not blanket-allowed and TCP listening is denied. Unix sockets are allowed only inside the session's private `TMPDIR`, which covers tools such as tsx and Chrome that keep an IPC socket there; your SSH agent and other sockets stay unreachable. The proxies enforce the per-session domain allowlist (see [Network egress](#network-egress))
 - **Configuration**: profiles are generated per launch from the `SandboxSpec`
+- **The server's own commands**: no direct child of a folder the server runs programs from (every `PATH` entry and the usual per-user tool folders such as `~/.local/bin`, with version-manager links like `~/fvm/default` resolved) can be created, replaced, deleted or renamed, nor the installed package a linked command points into. See [The server's command folders](#the-servers-command-folders)
+- **Start-up files**: every home path the profile denies reading is also denied writing, and the start-up files of the server user's shells and sessions (`.zshenv`, `.zlogin`, `.bash_login`, fish config, systemd user units, autostart entries and the like) are write-denied in every mode
 
 Requirements:
 
@@ -73,6 +83,7 @@ Uses bubblewrap (`bwrap`) to create mount and PID namespaces.
 - **Filesystem**: creates a mount namespace with only the bound paths visible
 - **Network**: runs in an unshared network namespace; traffic reaches the host proxies through `socat` Unix-socket bridges
 - **Process**: PID namespace isolation
+- **The server's own commands and start-up files**: the same protections as on macOS, expressed as bubblewrap binds. They are not verified on Linux yet, and a missing command folder there can still be created
 
 Requirements:
 
@@ -87,19 +98,55 @@ run with a silently weaker policy. A backend with create-time filename rules
 is required to restore Linux native dispatch. Disabling sandboxing is an
 explicit unconfined opt-out, not an equivalent workaround.
 
+In practice a Linux or WSL2 server runs agents today in one of two ways.
+Started with `--sandbox off`, it runs every member's agents unconfined. Without
+bubblewrap or `socat` installed, it is `unavailable` and runs the server owner's
+agents alone, unconfined. With both tools installed and the sandbox on, every
+run fails closed, the owner's included.
+
+## The server's command folders
+
+The server finds, once at start, every folder it runs programs from: each entry of its `PATH`, the per-user tool folders it probes (such as `~/.local/bin`, `~/.bun/bin` and the npm, yarn and pnpm global folders), and the real folder behind every link on the way (version-manager links such as `~/fvm/default` or an fnm default). Inside a sandbox, an agent cannot add, replace, delete or rename a command in those folders, the link leading to one, or the installed package a linked command points into, and cannot rename the folders above them. Otherwise a sandboxed run could plant a program that the server, or the person, later starts outside the sandbox.
+
+What this changes for a run:
+
+- Global installs from inside a sandboxed run fail with "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, and `cargo install`, `go install` or `dart pub global activate` when their bin folder is on the server's `PATH`.
+- Switching a default version fails the same way (`fnm default`, `nvm alias default`, `fvm global`), as does a tool updating itself in place.
+- Project-local installs (`node_modules/.bin`), `npx`, `pnpm dlx`, package managers managed by corepack, SDK caches and normal builds keep working.
+
+To make a global tool available to agents, install it on the server itself, as the server's user, and restart the server so the new command is protected too. Or install it in the project. A command installed after the server started is fully protected only from the next start.
+
+Enforced and tested on macOS. On Linux the same rules are bubblewrap binds that are not verified yet. Windows has no sandbox.
+
 ## None backend
 
-No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. This is what agent dispatch falls back to on a host with no available backend or with `--sandbox off` and it is the terminal's default when a client names none.
+No sandboxing. The process runs directly on the host with the host's filesystem, network and process access. ACP and the harness `bash` tool still get environment sanitization and the command policy; Claude Code through `NoSandboxAdapter` inherits the host environment. Agent dispatch uses it for every run under `--sandbox off`, and on a host with no available backend for the server owner's own runs only; anyone else's run is refused there. For a terminal it is the host shell, which only the server owner may open.
 
 ## Server-hosted terminal
 
-The terminal is sandboxed on its own terms, not by the dispatch probe. `TerminalSessionService`'s `defaultBackend` is `none` and `cc_server` does not override it, so a terminal session runs the host shell unless the client explicitly asks for `native` — the desktop's terminal panel does not.
+The server-hosted terminal opens the host shell only for the server's [owner](/manual/concepts/authorization/#the-server-owner). Everyone else gets a sandboxed terminal, with an agent's limits, in the workspace's own directories.
 
-When `native` is requested the shell is wrapped through `SandboxManager` under a fixed terminal profile: `$HOME` and the session's working directory are writable, network is open and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied. The read-only forge token and the push gateway do not apply — they are dispatch concerns. If the wrap is unsupported, the session fails instead of showing a native badge on a host-shell PTY.
+How the backend is chosen for a session:
+
+| Asked for | Server owner | Anyone else |
+| --- | --- | --- |
+| Nothing | The server's default backend | The default, with `none` replaced by `native` |
+| `none` (the host shell) | Host shell | Refused: the host shell runs on the server without a sandbox |
+| `native` | Native sandbox, owner profile | Native sandbox, agent profile |
+| `microvm` | Enclosed VM | Enclosed VM |
+| An unknown name | Refused | Refused |
+
+- **Owner profile.** `$HOME` and the session's working directory are writable, the network is open, and `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` and `~/Library/Keychains` are read-denied.
+- **Agent profile** (`memberTerminalSandboxConfig`). The same policy an agent in that workspace runs under: writes stay in the working directory, a private run directory, `/tmp` and the parts of `$HOME` an agent may write; secrets are read-denied; the network is the agent egress allowlist; programs run only from the working directory and installed toolchains.
+- A terminal opens only inside the workspace's own directories. A working directory outside them is refused, never swapped for another.
+- Only the person who opened a terminal can read, type into, resize or close it. To anyone else its id looks unknown.
+- `microvm` asked for explicitly on a host with no rig service fails instead of falling back. A `microvm` default on such a host steps down to `native` and says so in the log.
+
+The read-only forge token and the push gateway do not apply to terminals: they are dispatch concerns. If the wrap is unsupported, the session fails instead of showing a sandbox badge on a host-shell session.
 
 ## Network egress
 
-When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. On a host with no available backend none of this applies and a spawned process reaches the network exactly as the server user would.
+When a sandbox is launched, outbound network access is enforced by in-process proxies, not by kernel firewall rules. A run that is not sandboxed (every run under `--sandbox off`, or the owner's run on a host with no backend) gets none of this: a process it spawns reaches the network exactly as the server user would.
 
 - The sandbox runtime runs an HTTP/HTTPS proxy and a SOCKS5 proxy on `127.0.0.1` inside the `cc_server` process, **one pair per restricted session** (`http_proxy.dart`, `socks_proxy.dart`). Concurrent runs do not share a pair.
 - Sandboxed processes receive proxy environment variables (`HTTP_PROXY`/`HTTPS_PROXY` → the HTTP proxy, `ALL_PROXY` → the SOCKS proxy; `GIT_SSH_COMMAND` routes git-over-SSH through the SOCKS proxy). On Linux the network namespace is unshared, so the proxies are the only way out; on macOS the sandbox shares the host loopback and talks to them directly.

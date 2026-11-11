@@ -83,20 +83,26 @@ void main() {
       settings: server,
       timeout: const Duration(milliseconds: 200),
     );
-    final before = (await client.configState()).installId;
+    final before = (await client.configState(
+      await client.serverTarget(),
+    )).installId;
     expect(before, isNotEmpty);
-    expect((await client.configState()).installId, before, reason: 'cached');
+    expect(
+      (await client.configState(await client.serverTarget())).installId,
+      before,
+      reason: 'cached',
+    );
 
-    // `cc_server connect rotate-key --yes`: same data directory, another
-    // process.
-    await settings(
-      env: {'CC_CONNECT_URL': 'http://127.0.0.1:9'},
-    ).rotateInstallSeed();
+    // Another process on the same data directory replaces the seed.
+    final other = settings(env: {'CC_CONNECT_URL': 'http://127.0.0.1:9'});
+    await other.replaceInstallSeed(await other.installSeed());
 
-    final after = (await client.configState()).installId;
+    final after = (await client.configState(
+      await client.serverTarget(),
+    )).installId;
     expect(after, isNot(before));
     expect(changes, 1);
-    await client.configState();
+    await client.configState(await client.serverTarget());
     expect(changes, 1, reason: 'one change, noticed once');
   });
 
@@ -104,7 +110,7 @@ void main() {
     final s = settings();
     var changes = 0;
     s.addListener(() => changes++);
-    await s.rotateInstallSeed();
+    await s.replaceInstallSeed(await s.installSeed());
     expect(changes, 1);
     await s.noticeExternalChanges();
     expect(changes, 1);
@@ -114,23 +120,21 @@ void main() {
     final secrets = FileSecretsStore(dataDir: dir.path);
     final s = ConnectSettings(secrets: secrets);
     const base = 'https://connect.example';
-    // What an older build left behind.
-    await secrets.writePsk('connect_klipy_key:$base', 'OLD-KEY');
+    const target = ConnectTarget(mode: ConnectMode.custom, baseUrl: base);
 
-    await s.cacheConfig(base, {
+    await s.cacheConfig(target, {
       'epoch': 1,
       'klipy': {'mode': 'key', 'app_key': 'CONNECT-KEY'},
     });
 
-    final cached = await s.cachedConfig(base);
+    final cached = await s.cachedConfig(target);
     expect(cached!['klipy'], {'mode': 'key'});
-    expect(
-      await secrets.keysMatching((k) => k.startsWith('connect_klipy_key:')),
-      isEmpty,
-    );
-    final file = await FileSecretsStore(
-      dataDir: dir.path,
-    ).readFresh('connect_klipy_key:$base');
-    expect(file, isNull);
+    for (final file in dir.listSync(recursive: true).whereType<File>()) {
+      expect(
+        await file.readAsString(),
+        isNot(contains('CONNECT-KEY')),
+        reason: file.path,
+      );
+    }
   });
 }

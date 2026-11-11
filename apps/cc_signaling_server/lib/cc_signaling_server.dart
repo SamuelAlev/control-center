@@ -1,7 +1,6 @@
 /// Pure-Dart, stateless WebSocket signaling broker for Control Center.
 ///
-/// Dumb relay: understands `join` / `signal` / `admit` / `turn-request` /
-/// `bye` and emits broker frames, but never inspects `signal` payloads or
+/// Dumb relay: understands `join` / `signal` / `admit` / `bye` and emits broker frames, but never inspects `signal` payloads or
 /// pairing PSKs (admission tokens are one-way HMAC of a device PSK; frames
 /// are sealed before arrival).
 ///
@@ -11,8 +10,7 @@
 /// missing room). Removing an admission hash evicts that peer.
 ///
 /// Broker is untrusted for confidentiality; room-id squatters get
-/// `owner conflict` and only ciphertext. With a coturn secret, mints
-/// ephemeral TURN creds (`static-auth-secret` HMAC-SHA1); never stored.
+/// `owner conflict` and only ciphertext.
 library;
 
 import 'dart:async';
@@ -35,8 +33,8 @@ const String defaultSignalingHost = '0.0.0.0';
 /// [handleConnection]. JSON frames; only broker fields are interpreted —
 /// `signal` payloads relay verbatim. `from` on signal is overwritten (no
 /// spoofing). Client types: `join` (owner/`ownerToken` or client/`token`),
-/// `admit`, `signal`, `turn-request`, `bye`. Broker types: `joined`,
-/// `admit-ok`, `peer-joined`, `peer-left`, `turn-credentials`, `error`
+/// `admit`, `signal`, `bye`. Broker types: `joined`, `admit-ok`,
+/// `peer-joined`, `peer-left`, `error`
 /// (`not admitted`, `owner conflict`, `room full`, …).
 class SignalingBroker {
   /// Creates a broker.
@@ -46,7 +44,6 @@ class SignalingBroker {
   /// [idleTtl] reaps an empty room this long after its last peer left.
   /// [gcInterval] paces the periodic sweep started by [start]. Inject [now]
   /// for a deterministic clock and [log] to capture diagnostics in tests.
-  /// [turnSecret]/[turnUris]/[turnTtl] enable TURN credential minting.
   SignalingBroker({
     this.maxPeersPerRoom = 16,
     this.maxRooms = 4096,
@@ -62,9 +59,6 @@ class SignalingBroker {
     this.neverClaimedTtl = const Duration(minutes: 5),
     this.idleTtl = const Duration(seconds: 60),
     this.gcInterval = const Duration(seconds: 30),
-    this.turnSecret = '',
-    this.turnUris = const [],
-    this.turnTtl = const Duration(hours: 6),
     DateTime Function()? now,
     void Function(String message)? log,
   }) : _dataFrameFloor = min(
@@ -187,15 +181,6 @@ class SignalingBroker {
 
   /// Cadence of the periodic garbage-collection sweep started by [start].
   final Duration gcInterval;
-
-  /// coturn `static-auth-secret`; empty disables TURN minting.
-  final String turnSecret;
-
-  /// TURN server URIs handed to clients (e.g. `turn:turn.example.com:3478`).
-  final List<String> turnUris;
-
-  /// Lifetime of minted TURN credentials.
-  final Duration turnTtl;
 
   final DateTime Function() _now;
   final void Function(String message) _log;
@@ -476,8 +461,6 @@ class SignalingBroker {
           _handleSignal(frame, roomCode, self);
         } else if (type == 'admit') {
           _handleAdmit(socket, frame, roomCode, self);
-        } else if (type == 'turn-request') {
-          _handleTurnRequest(socket, roomCode, self);
         } else if (type == 'bye') {
           final code = roomCode;
           final leaving = self;
@@ -777,38 +760,6 @@ class SignalingBroker {
     });
   }
 
-  void _handleTurnRequest(WebSocket socket, String? roomCode, _Peer? self) {
-    if (roomCode == null || self == null || !_rooms.containsKey(roomCode)) {
-      _send(socket, const <String, dynamic>{
-        'type': 'error',
-        'error': 'not a member',
-      });
-      return;
-    }
-    if (turnSecret.isEmpty || turnUris.isEmpty) {
-      _send(socket, <String, dynamic>{
-        'type': 'turn-credentials',
-        'room': roomCode,
-        'uris': const <String>[],
-      });
-      return;
-    }
-    final expiry = _now().add(turnTtl).millisecondsSinceEpoch ~/ 1000;
-    final label = _randomHex(4);
-    final username = '$expiry:$label';
-    final credential = base64.encode(
-      Hmac(sha1, utf8.encode(turnSecret)).convert(utf8.encode(username)).bytes,
-    );
-    _send(socket, <String, dynamic>{
-      'type': 'turn-credentials',
-      'room': roomCode,
-      'uris': turnUris,
-      'username': username,
-      'credential': credential,
-      'ttlSeconds': turnTtl.inSeconds,
-    });
-  }
-
   void _handleSignal(
     Map<String, dynamic> frame,
     String? roomCode,
@@ -1008,14 +959,6 @@ class SignalingBroker {
 
   static String _sha256Hex(String value) =>
       sha256.convert(utf8.encode(value)).toString();
-
-  static String _randomHex(int bytes) {
-    final rnd = Random.secure();
-    return List<int>.generate(
-      bytes,
-      (_) => rnd.nextInt(256),
-    ).map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-  }
 }
 
 /// Resolves a JSON value to a [String], or null when missing or non-string.

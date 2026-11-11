@@ -2,7 +2,7 @@
 title: Chat-Brücke
 description: Anbieter, Befehle, Zugangsdaten, Fähigkeiten, RPC-Operationen und Speicherung der Chat-Brücke.
 slug: de-DE/handbuch/referenz/chat-bruecke
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Anbieter
@@ -211,7 +211,7 @@ Desktops von der Zeile des Bereichs liest.
 | Erwähnung angenommen        | `Working on it…`                                               |
 | Schritt `repo`              | `Cloning <repo>…`                                              |
 | Schritt `prCheckout`        | `Checking out the pull request in <repo>…`                     |
-| Schritt `script`            | `Running the setup script for <repo>…`                         |
+| Schritt `provisionTasks`    | `Running worktree tasks for <repo>…`                           |
 | Schritt `agent`             | `Setting up <agent>…`                                          |
 | `provisioning`, noch kein Schritt | `Preparing the workspace…`                               |
 | `ready`                     | `Starting the agent…`                                          |
@@ -341,7 +341,6 @@ weiterer Anbieter eine Änderung nur am Server.
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Verbindungs-Zugangsdaten       | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Halb fertige geführte Einrichtung | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                          |
-| Ältere Slack-Dateien           | `<dataDir>/<workspaceId>/slack_credentials.json` und `slack_app_setup.json`, einmal gelesen und an Ort und Stelle migriert |
 
 Die Zugangsdaten liegen neben der Datenbank des Arbeitsbereichs, nicht darin:
 Wird der Arbeitsbereich gelöscht, gehen seine Chat-Tokens mit, und

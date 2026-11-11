@@ -240,8 +240,7 @@ void main() {
   });
 
   group('RelaySignalingChannel messaging', () {
-    test('admit builds add/remove deltas and requestTurnCredentials returns '
-        'the minted creds', () async {
+    test('admit builds add/remove deltas', () async {
       final brokerFrames = <Map<String, dynamic>>[];
       broker = await _Broker.start(
         onJoin: (frame) async {
@@ -261,67 +260,19 @@ void main() {
       broker.frames.listen(brokerFrames.add);
 
       channel.admit(add: const ['h1'], remove: const ['h2']);
-
-      // Broker mints TURN creds in reply to the request.
-      final turnFuture = channel.requestTurnCredentials(
-        timeout: const Duration(seconds: 2),
-      );
-      await _flush();
-      broker.sendToLast(const {
-        'type': 'turn-credentials',
-        'uris': ['turn:turn.example.org'],
-        'username': 'user',
-        'credential': 'pass',
-        'ttlSeconds': 600,
-      });
-      final creds = await turnFuture;
+      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      while (!brokerFrames.any((f) => f['type'] == 'admit') &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
 
       // The admit frame carried both deltas.
       final admit = brokerFrames.firstWhere((f) => f['type'] == 'admit');
       expect(admit['add'], ['h1']);
       expect(admit['remove'], ['h2']);
 
-      // TURN creds were parsed verbatim.
-      expect(creds, isNotNull);
-      expect(creds!.uris, ['turn:turn.example.org']);
-      expect(creds.username, 'user');
-      expect(creds.credential, 'pass');
-      expect(creds.ttl, const Duration(seconds: 600));
-
       await channel.close();
     });
-
-    test(
-      'requestTurnCredentials returns null when the broker has none',
-      () async {
-        broker = await _Broker.start(
-          onJoin: (frame) async {
-            return const {
-              'type': 'joined',
-              'ownerPresent': true,
-              'ownerPeer': 'server',
-            };
-          },
-        );
-
-        final channel = await RelaySignalingChannel.joinAsClient(
-          signalingUrl: 'ws://127.0.0.1:${broker.port}/',
-          room: 'room-no-turn',
-          token: 't',
-        );
-
-        final turnFuture = channel.requestTurnCredentials(
-          timeout: const Duration(seconds: 2),
-        );
-        await _flush();
-        // Empty URI list -> no TURN configured.
-        broker.sendToLast(const {'type': 'turn-credentials', 'uris': []});
-
-        expect(await turnFuture, isNull);
-
-        await channel.close();
-      },
-    );
 
     test(
       'a socket close from the broker surfaces peer-left then closes',
@@ -403,19 +354,6 @@ void main() {
     test('RelaySignalingException toString carries the message', () {
       const exc = RelaySignalingException('broker down');
       expect(exc.toString(), 'RelaySignalingException: broker down');
-    });
-
-    test('RelayTurnCredentials exposes its fields', () {
-      const creds = RelayTurnCredentials(
-        uris: ['turn:a', 'turn:b'],
-        username: 'u',
-        credential: 'c',
-        ttl: Duration(seconds: 30),
-      );
-      expect(creds.uris, ['turn:a', 'turn:b']);
-      expect(creds.username, 'u');
-      expect(creds.credential, 'c');
-      expect(creds.ttl, const Duration(seconds: 30));
     });
   });
 

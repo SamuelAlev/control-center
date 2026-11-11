@@ -1149,7 +1149,8 @@ services:
   });
 
   group('up', () {
-    test('writes the override and runs up -d --build, never --wait', () async {
+    test('writes the override and runs up -d --remove-orphans --build, never '
+        '--wait', () async {
       final subject = await plan();
       await driver.up(subject);
       final call = runner.callsWith('up').single;
@@ -1164,6 +1165,7 @@ services:
         '$stateDir/compose.override.yaml',
         'up',
         '-d',
+        '--remove-orphans',
         '--build',
         'db',
         'cache',
@@ -1553,7 +1555,10 @@ services:
     });
 
     test('logs', () async {
-      expect(await driver.logs(subject.context.project, 'web', tail: 50), 'last words');
+      expect(
+        await driver.logs(subject.context.project, 'web', tail: 50),
+        'last words',
+      );
       expect(tailOf(runner.calls.single), [
         'logs',
         '--no-color',
@@ -1565,7 +1570,10 @@ services:
 
     test('exec', () async {
       runner.handler = (_) => failed(3, stderr: 'nope', stdout: 'partial');
-      final result = await driver.exec(subject.context.project, 'web', ['ls', '-la']);
+      final result = await driver.exec(subject.context.project, 'web', [
+        'ls',
+        '-la',
+      ]);
       expect(tailOf(runner.calls.single), ['exec', '-T', 'web', 'ls', '-la']);
       expect(
         (result.exitCode, result.stdout, result.stderr),
@@ -1588,6 +1596,7 @@ services:
       expect(tailOf(runner.callsWith('up').single), [
         'up',
         '-d',
+        '--remove-orphans',
         'db',
         'cache',
         'web',
@@ -1654,8 +1663,12 @@ services:
     test('followers of a service share one process', () async {
       final first = <String>[];
       final second = <String>[];
-      final a = driver.followLogs(subject.context.project, 'web').listen(first.add);
-      final b = driver.followLogs(subject.context.project, 'web').listen(second.add);
+      final a = driver
+          .followLogs(subject.context.project, 'web')
+          .listen(first.add);
+      final b = driver
+          .followLogs(subject.context.project, 'web')
+          .listen(second.add);
       expect(runner.streams, hasLength(1));
       final stream = runner.streams.single;
       expect(stream.call.argv, containsAllInOrder(['--follow', 'web']));
@@ -1670,14 +1683,18 @@ services:
       await b.cancel();
       expect(stream.cancelled, isTrue);
 
-      final c = driver.followLogs(subject.context.project, 'web').listen((_) {});
+      final c = driver
+          .followLogs(subject.context.project, 'web')
+          .listen((_) {});
       expect(runner.streams, hasLength(2), reason: 'a new one after the last');
       await c.cancel();
     });
 
     test('followers hear the end when logs --follow exits', () async {
       final done = Completer<void>();
-      driver.followLogs(subject.context.project, 'web').listen((_) {}, onDone: done.complete);
+      driver
+          .followLogs(subject.context.project, 'web')
+          .listen((_) {}, onDone: done.complete);
       runner.streams.single.result.complete(ok());
       await done.future;
       driver.followLogs(subject.context.project, 'web').listen((_) {});
@@ -1730,6 +1747,24 @@ services:
         expect(result.plan.ports[entry.key], entry.value);
       }
       expect(result.plan.ports['admin.8080'], 42004);
+    });
+
+    test('a change applies with the component\'s build setting', () async {
+      final component = ComposeEnvironmentComponent(id: 's', build: false);
+      final subject = await plan(component: component);
+      await driver.up(subject);
+      runner.calls.clear();
+
+      (model['services'] as Map)['web'] = {'image': 'nginx:next'};
+      final result = await driver.refresh(
+        context(component: component),
+        lease: lease,
+        existingPorts: subject.ports,
+      );
+      expect(result.changed, isTrue);
+      final argv = runner.callsWith('up').single.argv;
+      expect(argv, isNot(contains('--build')));
+      expect(argv, contains('--remove-orphans'));
     });
 
     test('never applied counts as changed', () async {

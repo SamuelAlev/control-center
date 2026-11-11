@@ -15,10 +15,8 @@ import 'package:cc_mcp/src/tools/list_spaces_tool.dart';
 import 'package:test/test.dart';
 
 class _FakeMessagingRepository implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -276,10 +274,17 @@ void main() {
   group('ListSpacesTool', () {
     late _FakeMessagingRepository repository;
     late ListSpacesTool tool;
+    late Set<String> hidden;
 
     setUp(() {
       repository = _FakeMessagingRepository();
-      tool = ListSpacesTool(repository: repository);
+      hidden = {};
+      tool = ListSpacesTool(
+        repository: repository,
+        hiddenSpaces:
+            ({required workspaceId, required callerConversationId}) async =>
+                hidden,
+      );
     });
 
     test('has correct name', () {
@@ -333,6 +338,34 @@ void main() {
       expect(
         ((data['spaces'] as List<dynamic>)[0] as Map<String, dynamic>)['name'],
         'review-1',
+      );
+    });
+
+    test('leaves out review spaces the run requester cannot see', () async {
+      for (final (id, name) in [
+        ('ch-1', 'Review: PR #42 - Rotate prod DB creds'),
+        ('ch-2', 'general'),
+      ]) {
+        repository.addSpace(
+          Space(
+            id: id,
+            name: name,
+            workspaceId: 'ws-1',
+            createdAt: DateTime(2026, 1, 1),
+            updatedAt: DateTime(2026, 1, 1),
+          ),
+        );
+      }
+      hidden = {'ch-1'};
+
+      final result = await tool.call({'workspace_id': 'ws-1'});
+
+      expect(result.content.first.text, isNot(contains('Rotate')));
+      final data =
+          jsonDecode(result.content.first.text) as Map<String, dynamic>;
+      expect(
+        [for (final s in data['spaces'] as List) (s as Map)['id']],
+        ['ch-2'],
       );
     });
 

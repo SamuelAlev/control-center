@@ -93,12 +93,11 @@ class _SkillsListTile extends StatelessWidget {
     final tokens = context.designSystem;
     final accentColor = tokens?.textPrimary ?? DesignSystemPalette.gray900;
     // Provenance/state line under the description: origin · lock state ·
-    // scan-freshness. Absent entirely on the legacy (no-scan-surface) path.
+    // scan-freshness. Empty for an unmanaged, never-scanned skill.
     final meta = <String>[
       if (skill.origin != null)
         switch (skill.origin!) {
           SkillOrigin.manual => l10n.skillOriginManual,
-          SkillOrigin.registry => l10n.skillOriginRegistry,
           SkillOrigin.github => l10n.skillOriginGithub,
           SkillOrigin.runtimeLocal => l10n.skillOriginRuntimeLocal,
         },

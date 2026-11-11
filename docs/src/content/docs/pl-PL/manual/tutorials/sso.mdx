@@ -2,7 +2,7 @@
 title: Zaloguj zespół przez SSO
 description: Podłącz Okta (SAML) do serwera Control Center i przeprowadź logowanie od początku do końca.
 slug: pl-PL/podrecznik/samouczki/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -88,6 +88,8 @@ O tym, co zrobi pierwsze logowanie, decydują dwie polityki:
 - **Zakładaj konta nieznanym użytkownikom przy pierwszym logowaniu** —
   domyślnie włączone; wyłącz, aby odrzucać każdego, czyje konto jeszcze nie
   istnieje.
+
+Jeśli ludzie mają już konta na tym serwerze, potwierdź ich adresy e-mail, zanim ktokolwiek zaloguje się przez SSO: otwórz **Ustawienia → Serwer → Osoby** i użyj **Potwierdź e-mail** przy każdym wierszu oznaczonym **E-mail niepotwierdzony**. Logowanie dopasowuje istniejące konto po e-mailu tylko wtedy, gdy ten adres jest potwierdzony (albo został ustawiony przez SSO lub SCIM). Adres wpisany przez kogoś we własnym profilu lub w zaproszeniu nie pasuje do niczego, więc bez tego kroku ta osoba dostaje drugie konto albo jest odrzucana, gdy zakładanie kont nieznanym użytkownikom jest wyłączone. Zobacz [Jak logowania dopasowują istniejące konta](/pl-PL/podrecznik/poradniki/sso-oidc/#jak-logowania-dopasowują-istniejące-konta).
 
 Opcjonalnie zmapuj atrybut przenoszący nazwy grup (w Okta jest to zwykle
 `groups`) i przełóż grupy na role za pomocą mapy — na przykład

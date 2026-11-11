@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, variabel lingkungan, subperintah, dan jalur direktori data server headless.
 slug: id-ID/panduan-pengguna/referensi/cli-cc-server
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Setiap flag proses diisi lewat flag CLI atau variabel lingkungan; flag menang,
@@ -47,7 +47,7 @@ bawaan. Periksa baris log startup bila suatu flag tampak tidak berpengaruh.
 
 | Flag                     | Env                             | Bawaan                                | Arti                                                                                                                         |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Apakah run agen dibungkus dalam sandbox native OS host bila tersedia. Penolakan ikut (opt-out), bukan pengaktifan — lihat di bawah |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` membungkus run agen dalam sandbox native OS host, dan pada host tanpa sandbox hanya run milik pemilik server yang dimulai. `off` menjalankan agen setiap anggota tanpa kurungan di host ini. Lihat di bawah |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Sakelar pemutus lapangan untuk pengindeksan graf kode latar belakang. `off` melakukan boot bersih tanpa build ulang           |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Detik untuk menahan penyapuan indeks pertama setelah banner siap (dibatasi 0–300)                                             |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Apakah run harness mengirim kumpulan alat residen yang kecil plus indeks nama, lalu memuat sisanya saat pertama dipakai. Lihat di bawah |
@@ -83,21 +83,26 @@ atasnya; di Docker, pasang di `/app/bin/.env`. Server **menolak mulai** (kode ke
 membacanya. Penyemaian dari `.env` terjadi sekali per kolom, sehingga penyuntingan di Pengaturan
 nanti tidak dibatalkan oleh mulai ulang. Nilai kosong dibaca sebagai belum disetel.
 
-Pekerjaan latar belakang GitLab dan Bitbucket juga membaca `GITLAB_TOKEN` / `CI_JOB_TOKEN` dan
-`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` dengan `BITBUCKET_EMAIL`. GitHub tidak memiliki kredensial lingkungan.
+Tidak ada kredensial forge yang berasal dari environment: GitHub, GitLab, dan Bitbucket semuanya
+bertindak dengan proses masuk atau token milik anggota sendiri, atau dengan token GitHub App untuk
+satu repositori yang dibatasi oleh anggota yang bertanggung jawab.
 
 ### `--sandbox`
 
 Server memeriksa host sekali saat boot dan membungkus eksekusi perintah agen dalam
 sandbox native OS bila backend tersedia: `sandbox-exec` (Seatbelt) di macOS,
-`bwrap` plus `socat` di Linux dan WSL2. Bila tidak ada — Windows, atau host Linux yang
-tidak memiliki alat tersebut — run jatuh ke sanitasi lingkungan, kebijakan perintah, dan
-pagar pengaman tindakan, dan log startup menyebutkan keadaan mana yang berlaku.
+`bwrap` plus `socat` di Linux dan WSL2. Keputusan dibuat sekali dan berlaku hingga server
+dimulai ulang. Ada tiga hasil, masing-masing ditampilkan pada baris exposure saat startup:
 
-`--sandbox off` adalah sakelar pemutus lapangan untuk kasus yang tidak dapat dilihat
-pemeriksaan: host tempat profil sandbox itu sendiri berperilaku salah. Ini tidak
-memerlukan build ulang dan server mencatat peringatan sepanjang umur proses sehingga
-keadaan itu tidak pernah senyap.
+| `sandbox=`    | Kapan                                   | Run agen siapa yang dimulai                                                      |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Backend tersedia dan `--sandbox` adalah `on` | Milik semua orang, dibungkus                                               |
+| `off`         | `--sandbox off`                         | Milik semua orang, tanpa kurungan di host ini                                    |
+| `unavailable` | `--sandbox on` dan tidak ada backend (Windows, atau Linux tanpa `bwrap` dan `socat`) | Hanya run yang dipertanggungjawabkan kepada pemilik server, tanpa kurungan. Yang lain ditolak dengan "Server ini tidak memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini." |
+
+Untuk otomatisasi, orang yang bertanggung jawab adalah orang yang diikat oleh otomatisasi itu. Tanpa pemilik server yang tercatat, tidak ada run yang dimulai pada host `unavailable`. Pada Linux dan WSL2 dengan bubblewrap terpasang, dispatch native saat ini gagal tertutup untuk setiap run; lihat [Backend sandbox](/id-ID/panduan-pengguna/referensi/backend-sandbox/#linux-bubblewrap).
+
+`--sandbox off` adalah pilihan pemilik server untuk semua orang yang memakai server: ini menjalankan agen setiap anggota tanpa kurungan di mesin ini. Gunakan pada host yang profil sandbox-nya sendiri berperilaku salah, atau untuk membiarkan anggota menjalankan agen di host tanpa backend. Ini tidak memerlukan build ulang, dan server mencatat peringatan sepanjang umur proses sehingga keadaan itu tidak pernah senyap.
 
 ### `--tool-deferral`
 
@@ -175,7 +180,6 @@ saat dimulai ulang.
 | `cc_server connect enable`              | Memakai Control Center Connect yang dihosting Control Center                                                                             |
 | `cc_server connect enable --url <url>`  | Memakai Connect kustom di URL itu (HTTPS, atau `http` di loopback)                                                                       |
 | `cc_server connect disable`             | Berhenti memakai Connect. Hanya app milik server yang memasukkan orang                                                                   |
-| `cc_server connect rotate-key --yes`    | Membuat kunci instalasi dan id instalasi baru. Semua orang yang masuk melalui Connect harus masuk lagi. Tanpa `--yes` hanya memberi peringatan dan keluar dengan kode `2` |
 
 `status` tanpa perintah adalah bawaan. Setiap perintah menerima `--data-dir`. `CC_CONNECT_URL` menimpa apa pun
 yang disimpan perintah-perintah ini. Perintah yang tidak dikenal keluar dengan kode `64`. Lihat

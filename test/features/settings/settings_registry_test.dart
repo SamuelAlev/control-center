@@ -103,33 +103,91 @@ void main() {
         'agents.org-chart',
         'teams.management',
       });
-      expect(registry.sections.map((s) => s.id).toSet(), {
-        'forge.connections',
-        'forge.github-identity',
-        'ticketing.connection',
-        'calendar.accounts',
-        'chat_bridges.my-account-link',
-        'chat_bridges.ticket-drafts',
-        'chat_bridges.workspace-setup',
-        'connect.connect',
-        'settings.provider-apps',
-        'settings.workspace-provider-apps',
-      });
       expect(
         {for (final s in registry.sections) s.id: s.slot},
         {
-          'forge.connections': SettingsSlot.workspaceProfile,
-          'forge.github-identity': SettingsSlot.workspaceGeneral,
-          'ticketing.connection': SettingsSlot.workspaceGeneral,
-          'calendar.accounts': SettingsSlot.workspaceProfile,
-          'chat_bridges.my-account-link': SettingsSlot.workspaceProfile,
-          'chat_bridges.ticket-drafts': SettingsSlot.workspaceProfile,
-          'chat_bridges.workspace-setup': SettingsSlot.workspaceGeneral,
           'connect.connect': SettingsSlot.serverSignIn,
           'settings.provider-apps': SettingsSlot.serverSignIn,
-          'settings.workspace-provider-apps': SettingsSlot.workspaceGeneral,
+          'forge.connections': SettingsSlot.userAccounts,
+          'ticketing.account': SettingsSlot.userAccounts,
+          'calendar.accounts': SettingsSlot.userAccounts,
+          'chat_bridges.my-account-link': SettingsSlot.userAccounts,
+          'chat_bridges.ticket-drafts': SettingsSlot.userAccounts,
+          'connect.workspace': SettingsSlot.workspaceIntegrations,
+          'forge.account-status': SettingsSlot.workspaceIntegrations,
+          'forge.github-app': SettingsSlot.workspaceIntegrations,
+          'forge.automation-tokens': SettingsSlot.workspaceIntegrations,
+          'ticketing.account-status': SettingsSlot.workspaceIntegrations,
+          'ticketing.connection': SettingsSlot.workspaceIntegrations,
+          'settings.workspace-app.linear': SettingsSlot.workspaceIntegrations,
+          'settings.sync-health': SettingsSlot.workspaceIntegrations,
+          'settings.workspace-app.google': SettingsSlot.workspaceIntegrations,
+          'chat_bridges.account-status': SettingsSlot.workspaceIntegrations,
+          'chat_bridges.workspace-setup': SettingsSlot.workspaceIntegrations,
+          'settings.gifs': SettingsSlot.workspaceIntegrations,
         },
       );
+    });
+
+    test('Integrations groups by provider, in the documented order', () {
+      // Sign-in apps decide whose app every card below uses, so they lead;
+      // then each provider's cards stay adjacent whichever feature owns them,
+      // each group opening with the reader's own account there.
+      expect(
+        registry
+            .sectionsFor(SettingsSlot.workspaceIntegrations)
+            .map((s) => s.id)
+            .toList(),
+        [
+          'connect.workspace',
+          'forge.account-status',
+          'forge.github-app',
+          'forge.automation-tokens',
+          'ticketing.account-status',
+          'ticketing.connection',
+          'settings.workspace-app.linear',
+          'settings.sync-health',
+          'settings.workspace-app.google',
+          'chat_bridges.account-status',
+          'chat_bridges.workspace-setup',
+          'settings.gifs',
+        ],
+      );
+    });
+
+    test('connected accounts group by provider, in the documented order', () {
+      // The same bands as Integrations, so a provider sits at the same height
+      // on the person's profile and the workspace's page.
+      expect(
+        registry
+            .sectionsFor(SettingsSlot.userAccounts)
+            .map((s) => s.id)
+            .toList(),
+        [
+          'forge.connections',
+          'ticketing.account',
+          'calendar.accounts',
+          'chat_bridges.my-account-link',
+          'chat_bridges.ticket-drafts',
+        ],
+      );
+    });
+
+    test('no personal sign-in is left on the workspace page', () {
+      // Every sign-in is stored against the person: connecting one belongs on
+      // their own page, whatever feature owns it.
+      final integrations = registry
+          .sectionsFor(SettingsSlot.workspaceIntegrations)
+          .map((s) => s.id);
+      for (final id in const [
+        'forge.connections',
+        'ticketing.account',
+        'calendar.accounts',
+        'chat_bridges.my-account-link',
+        'chat_bridges.ticket-drafts',
+      ]) {
+        expect(integrations, isNot(contains(id)));
+      }
     });
   });
 
@@ -139,25 +197,27 @@ void main() {
         sections: [
           SettingsSectionContribution(
             id: 'b',
-            slot: SettingsSlot.workspaceProfile,
+            slot: SettingsSlot.workspaceIntegrations,
             order: 20,
             builder: _stub,
           ),
           SettingsSectionContribution(
             id: 'elsewhere',
-            slot: SettingsSlot.workspaceGeneral,
+            slot: SettingsSlot.serverSignIn,
             builder: _stub,
           ),
           SettingsSectionContribution(
             id: 'a',
-            slot: SettingsSlot.workspaceProfile,
+            slot: SettingsSlot.workspaceIntegrations,
             order: 10,
             builder: _stub,
           ),
         ],
       );
       expect(
-        registry.sectionsFor(SettingsSlot.workspaceProfile).map((s) => s.id),
+        registry
+            .sectionsFor(SettingsSlot.workspaceIntegrations)
+            .map((s) => s.id),
         ['a', 'b'],
       );
     });
@@ -169,19 +229,19 @@ void main() {
         sections: [
           SettingsSectionContribution(
             id: 'late',
-            slot: SettingsSlot.workspaceProfile,
+            slot: SettingsSlot.workspaceIntegrations,
             order: 20,
             builder: _stub,
           ),
           SettingsSectionContribution(
             id: 'early',
-            slot: SettingsSlot.workspaceProfile,
+            slot: SettingsSlot.workspaceIntegrations,
             order: 10,
             builder: _stub,
           ),
         ],
       );
-      registry.sectionsFor(SettingsSlot.workspaceProfile);
+      registry.sectionsFor(SettingsSlot.workspaceIntegrations);
       expect(registry.sections.map((s) => s.id), ['late', 'early']);
     });
 

@@ -2,7 +2,7 @@
 title: Gunakan space
 description: Buat space, atur modenya, kelola peserta dan otonomi, lalu buka percakapan dan thread.
 slug: id-ID/panduan-pengguna/panduan-praktis/space
-sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
+sourceHash: c588f695c796a2ddce571d4870ef5c7d3594fe07
 ---
 
 Panduan ini menunjukkan cara menggunakan space. **Space** adalah permukaan
@@ -27,6 +27,15 @@ bawah.
    akan membuat space tanpa apa pun yang di-checkout
 6. Konfirmasi
 
+Repositori yang Anda pilih juga menentukan siapa yang dapat membuka space.
+Hanya anggota yang memegang izin baca di setiap repositori tersebut, dan yang
+akun forge-nya sendiri dapat membaca setiap repositori tersebut, yang dapat
+melihat space beserta isinya: pesan, hasil pencarian, log run, todo, aktivitas,
+dan notifikasi. Space tanpa repositori terbuka bagi setiap anggota. Untuk
+percakapan yang seharusnya dapat dibaca seluruh ruang kerja, batalkan centang
+semua repo, atau pertahankan hanya repo yang dapat dibaca semua orang. Lihat
+[Space mengikuti repositorinya](/id-ID/panduan-pengguna/konsep/otorisasi/#space-mengikuti-repositorinya).
+
 Hanya agen yang menjawab pesan, jadi space tanpa agen tidak memulai apa pun:
 composer memberi tahu hal itu dan menyimpan pesan Anda sampai Anda @-menyebut
 agen, yang lalu menambahkannya ke space dan mengirim. Tidak ada runner default
@@ -39,7 +48,7 @@ Setiap repo di-checkout di `repos/<name>/` di dalam space. Repo yang menyertakan
 skill agennya sendiri menyumbangkan skill itu ke agen mana pun yang bekerja di
 dalamnya — satu set repo pada satu waktu, berganti seiring agen berpindah. Dari
 composer Anda dapat menjangkau semuanya dengan `/skill:<repo>:<name>`. Lihat
-[Skill bercakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
+[Skill bercakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#skill-dengan-cakupan-repo).
 
 Permukaannya berada di `/workspaces/<id>/spaces`, dan satu space di
 `/workspaces/<id>/spaces/<spaceId>`.

@@ -98,47 +98,8 @@ class _BrowserFallback extends StatelessWidget {
   }
 }
 
-/// Own mode: the provider redirects to the server, and this waits for it.
-class SignInBrowserWait extends StatelessWidget {
-  /// Creates a [SignInBrowserWait].
-  const SignInBrowserWait({
-    super.key,
-    required this.session,
-    required this.provider,
-    required this.onReopen,
-  });
-
-  /// The running attempt.
-  final SignInSession session;
-
-  /// The provider's brand name.
-  final String provider;
-
-  /// Opens the provider page again.
-  final VoidCallback onReopen;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          l10n.signInWaitingOwn(provider),
-          style: CcTypography.body.copyWith(color: t.textSecondary),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        SignInStatusLine(text: l10n.signInWaiting(provider)),
-        const SizedBox(height: AppSpacing.sm),
-        _BrowserFallback(session: session, onReopen: onReopen),
-      ],
-    );
-  }
-}
-
-/// Connect mode: the browser shows an eight-character code to bring back.
+/// The browser's last page (Connect's, or this server's own-app callback)
+/// shows an eight-character code to bring back.
 class SignInCodeEntry extends StatelessWidget {
   /// Creates a [SignInCodeEntry].
   const SignInCodeEntry({

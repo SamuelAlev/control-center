@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/terminal_session_service.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +31,8 @@ class _RootedFs extends Fake implements WorkspaceFilesystemPort {
 }
 
 class _UnsupportedNativeSandbox extends SandboxManager {
+  _UnsupportedNativeSandbox() : super(hiddenPaths: const []);
+
   @override
   Future<SandboxWrapResult> wrap({
     required SandboxConfig config,
@@ -60,7 +62,11 @@ void main() {
       // speed. NotFoundException maps to `notFound` — unrecoverable — so the
       // client stops after one attempt.
       expect(
-        () => service().output(workspaceId: 'ws-1', sessionId: 'tty1-gone'),
+        () => service().output(
+          workspaceId: 'ws-1',
+          userId: 'ada',
+          sessionId: 'tty1-gone',
+        ),
         throwsA(
           isA<NotFoundException>().having(
             (e) => e.message,
@@ -73,7 +79,11 @@ void main() {
 
     test('titles on an unknown session throws NotFoundException', () {
       expect(
-        () => service().titles(workspaceId: 'ws-1', sessionId: 'tty1-gone'),
+        () => service().titles(
+          workspaceId: 'ws-1',
+          userId: 'ada',
+          sessionId: 'tty1-gone',
+        ),
         throwsA(isA<NotFoundException>()),
       );
     });
@@ -89,6 +99,8 @@ void main() {
     await expectLater(
       terminal.spawn(
         workspaceId: 'ws-1',
+        actingUserId: 'ada',
+        hostShellAllowed: true,
         rows: 24,
         cols: 80,
         backend: 'native',
@@ -112,6 +124,7 @@ void main() {
           requested: 'micovm',
           defaultBackend: SandboxBackend.native,
           hasVmShell: true,
+          hostShellAllowed: true,
         ),
         throwsA(
           isA<ValidationException>().having(
@@ -131,6 +144,7 @@ void main() {
           requested: 'microvm',
           defaultBackend: SandboxBackend.native,
           hasVmShell: false,
+          hostShellAllowed: false,
         ),
         SandboxBackend.microvm,
       );
@@ -144,6 +158,7 @@ void main() {
           requested: null,
           defaultBackend: SandboxBackend.microvm,
           hasVmShell: false,
+          hostShellAllowed: true,
         ),
         SandboxBackend.native,
       );
@@ -156,9 +171,94 @@ void main() {
           requested: null,
           defaultBackend: SandboxBackend.microvm,
           hasVmShell: true,
+          hostShellAllowed: false,
         ),
         SandboxBackend.microvm,
       );
+    });
+
+    group('the host shell is the server owner\'s alone', () {
+      test('an EXPLICIT none is refused for anyone else', () {
+        expect(
+          () => resolveTerminalBackend(
+            requested: 'none',
+            defaultBackend: SandboxBackend.none,
+            hasVmShell: true,
+            hostShellAllowed: false,
+          ),
+          throwsA(
+            isA<AuthException>().having(
+              (e) => e.message,
+              'message',
+              contains("server's owner"),
+            ),
+          ),
+        );
+      });
+
+      test('an EXPLICIT none is the owner\'s to choose', () {
+        expect(
+          resolveTerminalBackend(
+            requested: 'none',
+            defaultBackend: SandboxBackend.native,
+            hasVmShell: false,
+            hostShellAllowed: true,
+          ),
+          SandboxBackend.none,
+        );
+      });
+
+      test('an UNSPECIFIED none default is the native sandbox for anyone '
+          'else', () {
+        expect(
+          resolveTerminalBackend(
+            requested: null,
+            defaultBackend: SandboxBackend.none,
+            hasVmShell: true,
+            hostShellAllowed: false,
+          ),
+          SandboxBackend.native,
+        );
+      });
+
+      test('an UNSPECIFIED none default stays the owner\'s host shell', () {
+        expect(
+          resolveTerminalBackend(
+            requested: null,
+            defaultBackend: SandboxBackend.none,
+            hasVmShell: false,
+            hostShellAllowed: true,
+          ),
+          SandboxBackend.none,
+        );
+      });
+
+      test('an UNSPECIFIED microvm default steps down to native, never to '
+          'the host, for anyone else', () {
+        expect(
+          resolveTerminalBackend(
+            requested: null,
+            defaultBackend: SandboxBackend.microvm,
+            hasVmShell: false,
+            hostShellAllowed: false,
+          ),
+          SandboxBackend.native,
+        );
+      });
+
+      test('explicit sandboxed backends need no host-shell grant', () {
+        for (final backend in ['native', 'microvm']) {
+          expect(
+            resolveTerminalBackend(
+              requested: backend,
+              defaultBackend: SandboxBackend.none,
+              hasVmShell: true,
+              hostShellAllowed: false,
+            ).name,
+            backend,
+          );
+        }
+      });
     });
   });
 
@@ -238,6 +338,93 @@ void main() {
     });
   });
 
+  group('native terminal cwd confinement', () {
+    late Directory tmp;
+
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('cc-term-native-cwd');
+    });
+
+    tearDown(() {
+      if (tmp.existsSync()) {
+        tmp.deleteSync(recursive: true);
+      }
+    });
+
+    for (final owner in [true, false]) {
+      test('a cwd outside the workspace is refused, not replaced '
+          '(${owner ? 'owner' : 'member'})', () async {
+        final root = Directory('${tmp.path}/ws')..createSync();
+        final secrets = Directory('${tmp.path}/dot-ssh')..createSync();
+        final service = TerminalSessionService(
+          manager: _UnsupportedNativeSandbox(),
+          filesystem: _RootedFs(root.path),
+        );
+        // The wrap would throw UnsupportedError; the refusal comes first.
+        await expectLater(
+          service.spawn(
+            workspaceId: 'ws-1',
+            actingUserId: 'ada',
+            hostShellAllowed: owner,
+            rows: 24,
+            cols: 80,
+            cwd: secrets.path,
+            backend: 'native',
+          ),
+          throwsA(
+            isA<ValidationException>().having(
+              (e) => e.message,
+              'message',
+              contains(secrets.path),
+            ),
+          ),
+        );
+      });
+    }
+
+    test('a member with no backend named gets the sandbox, in the '
+        'workspace', () async {
+      final root = Directory('${tmp.path}/ws')..createSync();
+      final service = TerminalSessionService(
+        manager: _UnsupportedNativeSandbox(),
+        filesystem: _RootedFs(root.path),
+      );
+      // The default is the host shell; for a member it must reach the
+      // sandbox's wrap (which this fake refuses), never a host PTY.
+      await expectLater(
+        service.spawn(
+          workspaceId: 'ws-1',
+          actingUserId: 'eve',
+          hostShellAllowed: false,
+          rows: 24,
+          cols: 80,
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
+    });
+
+    test('a member asking for the host shell is refused before anything '
+        'starts', () async {
+      final root = Directory('${tmp.path}/ws')..createSync();
+      final service = TerminalSessionService(
+        manager: _UnsupportedNativeSandbox(),
+        filesystem: _RootedFs(root.path),
+      );
+      await expectLater(
+        service.spawn(
+          workspaceId: 'ws-1',
+          actingUserId: 'eve',
+          hostShellAllowed: false,
+          rows: 24,
+          cols: 80,
+          cwd: '/',
+          backend: 'none',
+        ),
+        throwsA(isA<AuthException>()),
+      );
+    });
+  });
+
   group('microvm terminal cwd confinement', () {
     late Directory tmp;
 
@@ -279,6 +466,8 @@ void main() {
       await expectLater(
         service.spawn(
           workspaceId: 'ws-1',
+          actingUserId: 'ada',
+          hostShellAllowed: false,
           rows: 24,
           cols: 80,
           spaceId: 'ch-1',
@@ -286,10 +475,10 @@ void main() {
           backend: 'microvm',
         ),
         throwsA(
-          isA<StateError>().having(
+          isA<ValidationException>().having(
             (e) => e.message,
             'message',
-            contains('confined'),
+            contains('outside all of them'),
           ),
         ),
       );
@@ -326,6 +515,8 @@ void main() {
       await expectLater(
         service.spawn(
           workspaceId: 'ws-1',
+          actingUserId: 'ada',
+          hostShellAllowed: false,
           rows: 24,
           cols: 80,
           spaceId: 'ch-1',
@@ -362,6 +553,8 @@ void main() {
       await expectLater(
         service.spawn(
           workspaceId: 'ws-1',
+          actingUserId: 'ada',
+          hostShellAllowed: false,
           rows: 24,
           cols: 80,
           spaceId: 'ch-1',

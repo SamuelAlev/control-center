@@ -2,7 +2,7 @@
 title: Invia agenti revisori
 description: Invia agenti revisori specializzati su una PR dalla vista della PR, da uno strumento MCP o da un passaggio di pipeline.
 slug: it-IT/manuale/guide/invia-revisori
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Questa guida mostra come inviare agenti revisori per revisionare le pull
@@ -90,7 +90,7 @@ Qui contano due eventi, e non sono intercambiabili:
 | Evento                  | Quando scatta                                                                                                                      | Chiavi del payload                                           |
 | ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | `PullRequestPublished`  | Una PR viene aperta **tramite Control Center** — la superficie di composizione, oppure un agente che chiama `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`           |
-| `ExternalPrDetected`    | Il servizio di polling delle PR trova una PR aperta direttamente su GitHub                                                         | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author` |
+| `ExternalPrDetected`    | Il servizio di polling delle PR trova una PR aperta direttamente su GitHub                                                         | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 Una PR aperta su github.com non genera mai `PullRequestPublished`, quindi un
 modello collegato solo a quell'evento non la vedrà. Nota anche che

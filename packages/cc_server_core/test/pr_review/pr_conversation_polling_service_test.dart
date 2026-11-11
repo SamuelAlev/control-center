@@ -57,8 +57,6 @@ GitHubReviewComment _review(
 class _FakeGateway implements GitHubPrConversationGateway {
   String botLoginValue = _botLogin;
   List<GitHubViewerPr> mentioned = [];
-  List<GitHubViewerPr> botMentioned = [];
-  List<GitHubViewerPr> shortMentioned = [];
   List<GitHubViewerPr> labeled = [];
   bool allSuspended = false;
   Set<String> suspendedOwnerLogins = {};
@@ -96,12 +94,7 @@ class _FakeGateway implements GitHubPrConversationGateway {
   @override
   Future<BotConversationCandidates> searchCandidates({DateTime? since}) async {
     searchCalls++;
-    return BotConversationCandidates(
-      mentioned: mentioned,
-      botMentioned: botMentioned,
-      shortMentioned: shortMentioned,
-      labeled: labeled,
-    );
+    return BotConversationCandidates(mentioned: mentioned, labeled: labeled);
   }
 
   @override
@@ -313,7 +306,7 @@ void main() {
     gateway.allSuspended = true;
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
 
     await poller.pollOnce();
 
@@ -333,9 +326,7 @@ void main() {
         prNumber: 414,
       ),
     ];
-    gateway.setIssue('suspended', 'app', 414, [
-      _issue(11, '@$_botLogin hello?'),
-    ]);
+    gateway.setIssue('suspended', 'app', 414, [_issue(11, '@usectrl hello?')]);
 
     await poller.pollOnce();
 
@@ -382,39 +373,12 @@ void main() {
     expect(sink.inbound.single.comment.isReviewComment, isTrue);
   });
 
-  test('the App bot login remains a candidate-search alias', () async {
-    repoLinks['acme/app'] = ['ws-a'];
-    gateway.botMentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(13, '@$_botLogin hello?')]);
-
-    await poller.pollOnce();
-
-    expect(sink.inbound.single.comment.id, 13);
-  });
-
-  test(
-    'a short-alias mention (bare slug) is discovered like a full one',
-    () async {
-      repoLinks['acme/app'] = ['ws-a'];
-      // The text-search lane found the PR; the comment says `@cc-test`, not
-      // `@cc-test[bot]`.
-      gateway.shortMentioned = [_pr('acme/app', 7)];
-      gateway.setIssue('acme', 'app', 7, [_issue(11, '@cc-test hello?')]);
-
-      await poller.pollOnce();
-
-      final call = sink.inbound.single;
-      expect(call.workspaceId, 'ws-a');
-      expect(call.comment.id, 11);
-    },
-  );
-
   test(
     'a mention is offered to every linking workspace; the claim decides',
     () async {
       repoLinks['acme/app'] = ['ws-b', 'ws-a'];
       gateway.mentioned = [_pr('acme/app', 7, 'Fix')];
-      gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
 
       await poller.pollOnce();
 
@@ -430,8 +394,8 @@ void main() {
   test('two PRs of the same repository are both swept', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7), _pr('acme/app', 8)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin a')]);
-    gateway.setIssue('acme', 'app', 8, [_issue(12, '@$_botLogin b')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl a')]);
+    gateway.setIssue('acme', 'app', 8, [_issue(12, '@usectrl b')]);
 
     await poller.pollOnce();
 
@@ -441,7 +405,7 @@ void main() {
   test('the same comment never fires twice', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
 
     await poller.pollOnce();
     await poller.pollOnce();
@@ -453,7 +417,7 @@ void main() {
       'number of times', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
     sink.outcome = GitHubInboundOutcome.authorUnknown;
 
     for (var i = 0; i < 6; i++) {
@@ -467,7 +431,7 @@ void main() {
   test('a retried comment stops once its author maps', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
     sink.outcome = GitHubInboundOutcome.authorUnknown;
     await poller.pollOnce();
     sink.outcome = GitHubInboundOutcome.done;
@@ -482,34 +446,15 @@ void main() {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
     gateway
-      ..setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin timeline')])
-      ..setReview('acme', 'app', 7, [_review(11, '@$_botLogin inline')]);
+      ..setIssue('acme', 'app', 7, [_issue(11, '@usectrl timeline')])
+      ..setReview('acme', 'app', 7, [_review(11, '@usectrl inline')]);
 
     await poller.pollOnce();
 
     expect(sink.inbound.map((i) => i.comment.body).toSet(), {
-      '@$_botLogin timeline',
-      '@$_botLogin inline',
+      '@usectrl timeline',
+      '@usectrl inline',
     });
-  });
-
-  test('a legacy shared comment key still suppresses both kinds', () async {
-    repoLinks['acme/app'] = ['ws-a'];
-    gateway.mentioned = [_pr('acme/app', 7)];
-    gateway
-      ..setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin timeline')])
-      ..setReview('acme', 'app', 7, [_review(11, '@$_botLogin inline')]);
-    poller = build(
-      loadedState: jsonEncode({
-        'v': 2,
-        'watermarks': <String, String>{},
-        'seen': ['c:ws-a:11'],
-      }),
-    );
-
-    await poller.pollOnce();
-
-    expect(sink.inbound, isEmpty);
   });
 
   test('bot-authored comments are skipped entirely (loop guard)', () async {
@@ -564,7 +509,7 @@ void main() {
 
   test('an unlinked repo is ignored and not marked seen', () async {
     gateway.labeled = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hi')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hi')]);
 
     await poller.pollOnce();
     expect(sink.inbound, isEmpty);
@@ -581,7 +526,7 @@ void main() {
   test('the first sweep ever baselines silently', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
     poller = build(wireStore: false);
 
     await poller.pollOnce();
@@ -589,8 +534,8 @@ void main() {
 
     // A NEW comment on the next sweep fires.
     gateway.setIssue('acme', 'app', 7, [
-      _issue(11, '@$_botLogin hello?'),
-      _issue(12, '@$_botLogin and this?'),
+      _issue(11, '@usectrl hello?'),
+      _issue(12, '@usectrl and this?'),
     ]);
     await poller.pollOnce();
 
@@ -603,7 +548,7 @@ void main() {
     () async {
       repoLinks['acme/app'] = ['ws-a', 'ws-b'];
       gateway.mentioned = [_pr('acme/app', 7)];
-      gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
       poller = build(wireStore: false);
 
       await poller.pollOnce();
@@ -615,7 +560,7 @@ void main() {
   test('a persisted store means no baseline: a restart catches up', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
     final first = build(wireStore: false);
     await first.pollOnce();
     // No store wired → first-run baseline records silently (but persists).
@@ -625,8 +570,8 @@ void main() {
     // A comment that arrived while "down" fires on the first sweep after the
     // restart, because the loaded store already says what was seen.
     gateway.setIssue('acme', 'app', 7, [
-      _issue(11, '@$_botLogin hello?'),
-      _issue(12, '@$_botLogin new one'),
+      _issue(11, '@usectrl hello?'),
+      _issue(12, '@usectrl new one'),
     ]);
     final restarted = build(loadedState: savedState);
     await restarted.pollOnce();
@@ -638,7 +583,7 @@ void main() {
   test('a store from an older build is a first run (silent)', () async {
     repoLinks['acme/app'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hello?')]);
     poller = build(
       loadedState: jsonEncode({
         'v': 1,
@@ -672,8 +617,8 @@ void main() {
     repoLinks['acme/one'] = ['ws-a'];
     repoLinks['acme/two'] = ['ws-a'];
     gateway.mentioned = [_pr('acme/one', 1), _pr('acme/two', 2)];
-    gateway.setIssue('acme', 'one', 1, [_issue(11, '@$_botLogin a')]);
-    gateway.setIssue('acme', 'two', 2, [_issue(12, '@$_botLogin b')]);
+    gateway.setIssue('acme', 'one', 1, [_issue(11, '@usectrl a')]);
+    gateway.setIssue('acme', 'two', 2, [_issue(12, '@usectrl b')]);
     final capped = PrConversationPollingService(
       listIdentities: _identitiesOf(() => gateway, repoLinks, () => associated),
       bridge: sink,
@@ -706,7 +651,7 @@ void main() {
       ),
     ];
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin again')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl again')]);
 
     await poller.pollOnce();
 
@@ -730,10 +675,10 @@ void main() {
     final appB = _FakeGateway()..botLoginValue = 'other-bot[bot]';
     appB.mentioned = [_pr('acme/app', 7)];
     appB.setIssue('acme', 'app', 7, [
-      _issue(11, '@other-bot[bot] hello?', login: 'octocat'),
+      _issue(11, '@usectrl hello?', login: 'octocat'),
     ]);
     gateway.mentioned = [_pr('acme/app', 7)];
-    gateway.setIssue('acme', 'app', 7, [_issue(12, '@$_botLogin hello?')]);
+    gateway.setIssue('acme', 'app', 7, [_issue(12, '@usectrl hello?')]);
 
     final routed = PrConversationPollingService(
       bridge: sink,
@@ -852,7 +797,7 @@ void main() {
       budget = GitHubRateBudget(now: () => now);
       repoLinks['acme/app'] = ['ws-a', 'ws-b'];
       gateway.mentioned = [_pr('acme/app', 7)];
-      gateway.setIssue('acme', 'app', 7, [_issue(11, '@$_botLogin hi')]);
+      gateway.setIssue('acme', 'app', 7, [_issue(11, '@usectrl hi')]);
     });
 
     test('a workspace under 15% of its quota is not swept', () async {

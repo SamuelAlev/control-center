@@ -2,7 +2,7 @@
 title: Een PR reviewen en mergen
 description: Open de PR-werkbank, lees de diff, laat inline reacties achter, dien een review in en merge.
 slug: nl-NL/handleiding/gidsen/pr-reviewen-en-mergen
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Deze gids laat zien hoe je een pull request reviewt en merget.
@@ -23,9 +23,13 @@ een browser in de app openen op verzoek; deployment-previewtabs worden
 automatisch toegevoegd zodra er een preview-URL op de PR wordt gedetecteerd. Je
 tabindeling wordt per PR onthouden.
 
+De ingebedde code-server wordt alleen aangeboden aan de servereigenaar, omdat hij op de server draait als de eigen gebruiker van de server. Een sessie hoort bij het apparaat en de persoon die hem heeft geopend, opent met VS Code's workspace-vertrouwen aan (VS Code vraagt om toestemming voordat het een map vertrouwt) en start geen taak automatisch. Alle anderen houden de editor voor één bestand en de bestandsweergaven.
+
 Het tabblad Overzicht bevat de metadata van de PR (auteur, branch, labels,
 toegewezen personen, reacties, commits, controlestatus) en de actierij:
-vernieuwen, **Review**, **Merge**, openen in IDE en een ⋯-overloopmenu.
+vernieuwen, **Review**, **Merge**, een knop met de naam van je editor (zoals **Openen in VS Code**) en een ⋯-overloopmenu.
+
+Die editorknop start een native editor op het **eigen scherm van de server**, als de gebruiker van de server en buiten elke sandbox, dus het wordt alleen aangeboden aan de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder). Op een desktop die zijn eigen server host, is dat de persoon achter het bureau. Hetzelfde geldt voor het openen van de worktree van een gesprek in een editor. Alle anderen gebruiken de ingebouwde editorweergaven. Ook voor de eigenaar opent een pull request alleen vanuit een repository die aan de werkruimte is gekoppeld.
 
 ### Een PR openen vanuit de stack van een ruimte
 
@@ -43,7 +47,7 @@ Enter of de spatiebalk om die in of uit te klappen. Niet-gerelateerde PR's blijv
 gescheiden, en onvolledige of dubbelzinnige branchkoppelingen worden niet als een
 geordende stack gepresenteerd.
 
-In **Broncodebeheer** opent **Gestapelde pull requests (N)** een kiezer met de
+In de koptekst van de PR opent het stapelbadge (een lagenpictogram met het aantal pull requests in de stack) **Gestapelde pull requests**, een kiezer met de
 gepubliceerde delen van de stack, met het onderste deel eerst. Elke vermelding
 toont het PR-nummer, de deelnaam en de positie; het uitgecheckte deel is
 gemarkeerd. Selecteer een vermelding om de bijbehorende PR-werkbank te openen.
@@ -53,6 +57,21 @@ die buiten Control Center zijn aangemaakt, gelden eveneens als gepubliceerd. Bij
 gedeeltelijk gepubliceerde stacks zijn beide acties beschikbaar; bij werk op één
 branch blijven de afzonderlijke acties voor het aanmaken en bekijken van een PR
 staan.
+
+### Commit en push vanuit Broncodebeheer
+
+Een commit die je maakt in het paneel **Broncodebeheer** is van jou: jij bent de auteur en committer, onder het adres dat je forge heeft geverifieerd voor je aanmelding. Wanneer je onder **Geverifieerde commits** in **Instellingen** → **Jij** → **Commits** een ondertekeningssleutel hebt aangemaakt, ondertekent de server hem met je eigen ondertekeningssleutel voordat hij wordt gepusht. Een push draagt je eigen aanmelding, beperkt tot die ene repository.
+
+De server draait Git op zijn eigen machine, in een boom die een agent of een pull request kan wijzigen, dus hij draait geen van de programma's die een repository kan kiezen:
+
+- Commits slaan de Git-hooks van de repository over, zoals `git commit --no-verify` doet. Een pre-commit-hook, een commit-msg-hook of een pre-push-hook draait niet
+- Credential helpers, editors, externe diff-tools en ondertekenprogramma's die de repository configureert, worden genegeerd
+
+Draai je controles zelf voordat je commit, of in CI.
+
+Het wijzigen van de code vereist de [schrijfgrant](/nl-NL/handleiding/concepten/autorisatie/#code-wijzigen-vereist-de-schrijfgrant) op de repository: bestanden opslaan of terugzetten in de editor, **Nieuwste PR-commits ophalen**, committen en pushen, een branch publiceren, en de stackacties die een deel afsnijden, uitchecken of publiceren. Met alleen lees- of reviewtoegang zie je de bestanden en diffs, en antwoorden die acties met "Je kunt deze repository lezen maar niet wijzigen. Een werkruimtebeheerder kan schrijftoegang toekennen."
+
+**Nieuwste PR-commits ophalen** brengt de review-worktree bij naar de nieuwste commits van de pull request. Het haalt op met je eigen GitHub-aanmelding, en vraagt je om in te loggen als je dat niet hebt. Commit of verwijder eerst je wijzigingen: een worktree met niet-gecommitte wijzigingen wordt niet gesynchroniseerd.
 
 ## De diff lezen
 
@@ -140,7 +159,7 @@ Mergen is onomkeerbaar: er worden commits naar de forge gepusht, dus je krijgt
 een bevestigingsstap in plaats van een ongedaanmaakstap. Daarna wordt de cache
 van de PR ongeldig gemaakt, gaat de status naar **Samengevoegd** en wordt een
 `PullRequestStatusChanged`-gebeurtenis gestart met status `merged`. Die
-gebeurtenis geeft de tijdelijke worktree voor 'openen in editor' vrij en start
+gebeurtenis geeft de tijdelijke worktree vrij die de editorknop opende en start
 twee meegeleverde pipelines: **Stale repository cleanup**, dat de verouderde
 worktrees en gespreksmappen van de PR opruimt, en **Release notes**, dat een
 changelog-vermelding opstelt.
@@ -168,6 +187,12 @@ deterministische cohorten- en assenmodel.
 Control Center importeert ook PR's die mensen buiten de app hebben geopend. De
 reviewflow hierboven is identiek. Externe PR's worden gedetecteerd door de
 PR-pollingdienst.
+
+## Problemen oplossen
+
+### Mijn pre-commit-hook is niet gedraaid
+
+Commits die je maakt in het paneel **Broncodebeheer** van de app slaan de Git-hooks van de repository over, zoals `git commit --no-verify` doet. De server draait Git op zijn eigen machine, in een boom die agents en pull requests kunnen wijzigen, dus hij draait nooit een programma dat de repository kiest. Draai de controles van de hook zelf, of vertrouw op CI.
 
 ## Gerelateerde gidsen
 

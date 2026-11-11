@@ -104,8 +104,8 @@ class MyPresenceState {
 ///   heartbeat until re-enabled — the do-not-disturb/invisible toggle.
 /// - Every publish is fire-and-forget with errors swallowed: presence must
 ///   never break the app. A [RemoteRpcException] carrying
-///   [RpcErrorCodes.opUnknown] (an older server with no presence lane)
-///   disables this notifier permanently for the session.
+///   [RpcErrorCodes.opUnknown] (a host without a presence lane, such as a
+///   demo server) disables this notifier permanently for the session.
 class MyPresenceNotifier extends Notifier<MyPresenceState> {
   bool _started = false;
   bool _disabled = false;

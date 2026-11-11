@@ -220,6 +220,10 @@ class PipelineEngine implements PipelineEnginePort {
   /// executes for it yet — [_admitNext] promotes it once a sibling finishes.
   /// The cap governs starts only: [retry] re-opens an existing failed run at
   /// the operator's explicit request and is deliberately not gated by it.
+  ///
+  /// [armedByUserIds] are the members who armed the trigger starting this run
+  /// (server-side trigger firing only; not part of [PipelineEnginePort]),
+  /// recorded under [kPipelineArmedByKey].
   @override
   Future<PipelineRun?> start(
     String templateId, {
@@ -231,6 +235,7 @@ class PipelineEngine implements PipelineEnginePort {
     String? parentStepId,
     bool dryRun = false,
     String? requestedByUserId,
+    Set<String> armedByUserIds = const {},
   }) async {
     await _requireValidParentLink(
       workspaceId: workspaceId,
@@ -247,6 +252,7 @@ class PipelineEngine implements PipelineEnginePort {
     triggerPayload = await _withRequester(
       triggerPayload,
       requestedByUserId: requestedByUserId,
+      armedByUserIds: armedByUserIds,
       parentPipelineRunId: parentPipelineRunId,
       workspaceId: workspaceId,
     );

@@ -2,7 +2,7 @@
 title: Jegyéletciklus
 description: A jegy mezői, állapotai, átmenetei, kapcsolatai és a módosítások szűk keresztmetszete.
 slug: hu-HU/kezikonyv/referencia/jegyeletciklus
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Jegyállapotok
@@ -122,7 +122,7 @@ a Control Centerben létezik, és egy frissítés soha nem nyúl hozzá.
 | `projectId`              | `String?`                  | A tulajdonló projekt; soha nem kerül fel távoli rendszerre                                 |
 | `assignedAgentId`        | `String?`                  | A hozzárendelt principal azonosítója (csak metaadat — a hozzárendelés semmit nem indít el) |
 | `assigneeType`           | `PrincipalType`            | Megadja, milyen fajta principalra mutat az `assignedAgentId` — `user` vagy `agent` (alapértelmezés: `agent`) |
-| `createdByType`          | `PrincipalType?`           | A jegyet létrehozó principal fajtája (`user` vagy `agent`); régi/rendszersoroknál null     |
+| `createdByType`          | `PrincipalType?`           | A jegyet létrehozó principal fajtája (`user` vagy `agent`); rendszer által létrehozott soroknál null     |
 | `createdById`            | `String?`                  | A létrehozó principal azonosítója                                                          |
 | `assignedTeamId`         | `String?`                  | A hozzárendelt csapat (csak metaadat)                                                      |
 | `delegatedByAgentId`     | `String?`                  | Az ügynök, amely delegálta ezt a jegyet                                                    |

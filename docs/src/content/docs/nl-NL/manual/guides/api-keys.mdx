@@ -2,7 +2,7 @@
 title: API-sleutels beheren
 description: Waar elk inloggegeven staat — je gebruikersaccount op de server, de server zelf of een externe CLI — en hoe je het instelt, roteert en verwijdert.
 slug: nl-NL/handleiding/gidsen/api-sleutels
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Deze gids laat zien waar elk inloggegeven dat Control Center gebruikt wordt
@@ -33,8 +33,7 @@ of er een mens achter zit.
   verantwoordelijk lid daar mag doen. Het is nooit je volledige, doorgegeven
   aanmelding
 
-Die van jou stel je in op de kaart **Codehosting** bij **Instellingen →
-Werkruimte → Profiel en identiteit**; de app van de server op **Provider-apps**
+Die van jou stel je in op de kaart **Codehosting** bij **Instellingen → Jij → Profiel**; de app van de server op **Provider-apps**
 bij **Instellingen → Server → Single sign-on**. Zie
 [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/) en
 [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/).
@@ -44,10 +43,10 @@ dezelfde manier wordt opgeslagen. Zie
 [Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/).
 
 :::note[Er is ook een scherm dat alleen via de URL bereikbaar is]
-`/workspaces/<workspaceId>/api-keys` rendert dezelfde twee kaarten als de
+`/workspaces/<workspaceId>/api-keys` rendert dezelfde kaarten als de
 eerste stap van onboarding. Het heeft **nergens in de UI een navigatie-item**;
 je bereikt het alleen door de URL te typen. Gebruik in plaats daarvan
-Instellingen → Werkruimte → Profiel en identiteit.
+Instellingen → Jij → Profiel voor je eigen aanmeldingen, en Instellingen → Werkruimte → Integraties voor de ticketingleverancier.
 :::
 
 ## Sleutels voor modelproviders instellen
@@ -66,10 +65,7 @@ volledige lijst en voor het toevoegen van een aangepast endpoint.
 Deze inloggegevens zijn **host-globaal**: één sleutel bedient elke werkruimte op
 de installatie. OAuth-tokens worden vernieuwd voordat ze verlopen.
 
-Externe adapter-CLI's houden hun eigen inloggegevens bij, in hun eigen
-configuratie, op de serverhost — Control Center beheert ze niet. Authenticeer
-Claude Code zoals de eigen documentatie voorschrijft, op de machine waarop
-`cc_server` draait.
+Claude Code meldt zich aan via **Claude Code-accounts** onder **Instellingen → Server → Modelproviders**: elk account krijgt zijn eigen configuratiemap op de server, en je voert daar het commando `claude auth login` uit dat de app je toont.
 
 Het venster **Omgevingsvariabelen** per adapter lijkt een plek om een sleutel
 voor een van hen neer te zetten, maar dat is het niet: het schrijft naar je
@@ -78,15 +74,14 @@ Zie [Adapters en modellen beheren](/nl-NL/handleiding/gidsen/adapters/).
 
 ## Een ticketingprovider verbinden
 
-De kaart **Tickets** bij **Instellingen → Werkruimte → Algemeen** bevat beide
-helften van één beslissing: bij welke leverancier je tickets staan, en wie
-Control Center is wanneer het daarmee praat. Als je **Lokaal** kiest, verdwijnen
+De kaart **Tickets** bij **Instellingen → Werkruimte → Integraties** bevat de kant van de werkruimte: bij welke leverancier je tickets staan, en wie
+Control Center is wanneer het daar zelfstandig werkt. Als je **Lokaal** kiest, verdwijnen
 de Linear-rijen — lokale tickets staan in de eigen database van deze server en er
 valt niets te authenticeren.
 
 Linear heeft twee aanmeldingen en geen geplakte sleutel: **Linear** is die van
-jou, voor wat jij doet, en **Linear-automatisering** is de Control Center-app van
-de werkruimte, verbonden door een beheerder, voor ticketsynchronisatie,
+jou, voor wat jij doet, en staat op **Instellingen → Jij → Profiel**; **Linear-automatisering** is de Control Center-app van
+de werkruimte, verbonden door een beheerder op de kaart **Tickets**, voor ticketsynchronisatie,
 pipelines en agenten. De server kan ook een **Service-API-sleutel**
 (**Provider-apps**) bewaren voor werkruimtes zonder verbonden automatisering. In
 de sandbox van een agent worden geen ticketinginloggegevens geïnjecteerd; agenten
@@ -104,10 +99,12 @@ externe tracker schrijven** raadplegen. Zie
 - **De app van de server**: genereer een nieuwe privésleutel of een nieuw
   clientsecret op de providerpagina van de app, plak die in **Provider-apps** en
   klik op **Testen**
-- **De installatiesleutel voor Connect**: **Sleutel vervangen** op de kaart
-  **Control Center Connect**, of `cc_server connect rotate-key --yes`. Iedereen
-  die zich via Connect heeft aangemeld, meldt zich opnieuw aan. Zie
-  [Control Center Connect](/nl-NL/handleiding/referentie/connect/)
+- **De installatiesleutel voor Connect**: de serverbeheerder drukt op
+  **Sleutel vervangen** op de kaart **Control Center Connect**. Iedereen die
+  zich via Connect heeft aangemeld, meldt zich opnieuw aan. Als een
+  Connect-server niet bereikbaar is, verandert er niets en krijg je de optie
+  **Toch vernieuwen**. Zie
+  [De installatiesleutel vervangen](/nl-NL/handleiding/referentie/connect/#de-installatiesleutel-vervangen)
 - **Een modelprovider**: meld je op zijn rij af (OAuth) of verwijder de sleutel,
   en maak daarna opnieuw verbinding
 - **Slack**: plak voor je eigen app de tokens opnieuw in het verbindingsvenster.
@@ -120,9 +117,9 @@ externe tracker schrijven** raadplegen. Zie
 
 ### Een GitLab- of Bitbucket-token werkt in `curl`, maar niet hier
 
-Controleer de ondertitel van de rij **Codehosting**. Als daar "uit de omgeving"
-staat, antwoorden de inloggegevens van de server, niet die van jou — die van jou
-zijn niet opgeslagen.
+Controleer de rij **Codehosting**. Staat er "Niet verbonden" of wordt je gevraagd
+opnieuw te verbinden, dan is je token niet opgeslagen of geweigerd. Voor
+Bitbucket voer je je Atlassian-accountmailadres in samen met het API-token.
 
 ### Een GitLab- of Bitbucket-token wordt geaccepteerd, maar latere verzoeken mislukken
 

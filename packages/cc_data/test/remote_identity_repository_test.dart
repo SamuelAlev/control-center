@@ -1,12 +1,15 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart'
+    show RepoGrantAccessWarning;
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
 /// Exercises [RemoteIdentityRepository] — the identity & membership surface —
 /// over an in-process JSON-RPC host. Each method is a thin `_client.call(...)`
 /// or `_client.subscribe(...)` delegate that decodes the `identity.*` /
-/// `users.*` / `members.*` / `invites.*` / `prefs.*` / `activity.*` wire shapes.
+/// `users.*` / `members.*` / `invites.*` / `prefs.*` wire shapes.
 /// These tests pin the op name, the args shape and the return-value mapping.
 void main() {
   late _Host host;
@@ -31,6 +34,9 @@ void main() {
         },
         'device_id': 'dev-1',
         'is_server_owner': true,
+        'can_create_workspaces': true,
+        'can_use_host': true,
+        'sso_issuer': 'https://idp.example',
         'memberships': [
           {
             'id': 'm-1',
@@ -46,6 +52,9 @@ void main() {
       expect(me.user.displayName, 'Sam');
       expect(me.deviceId, 'dev-1');
       expect(me.isServerOwner, isTrue);
+      expect(me.canCreateWorkspaces, isTrue);
+      expect(me.canUseHost, isTrue);
+      expect(me.ssoIssuer, 'https://idp.example');
       expect(me.memberships.length, 1);
       expect(me.memberships.first.workspaceId, 'ws-1');
       expect(me.memberships.first.role, 'admin');
@@ -71,6 +80,9 @@ void main() {
       final me = await repo.me();
       expect(me.user.id, 'u-1');
       expect(me.isServerOwner, isFalse);
+      expect(me.canCreateWorkspaces, isFalse);
+      expect(me.canUseHost, isFalse);
+      expect(me.ssoIssuer, isEmpty);
       expect(me.deviceId, '');
       expect(me.memberships, isEmpty);
     });
@@ -176,6 +188,35 @@ void main() {
       expect(user.displayName, 'New');
     });
 
+    test('vouchEmail confirms one user and returns the row', () async {
+      host.callResults['users.vouchEmail'] = {
+        'user': {
+          'id': 'u-2',
+          'display_name': 'Sam',
+          'email': 'sam@example.com',
+          'email_verified': true,
+        },
+      };
+      final repo = RemoteIdentityRepository(client);
+      final user = await repo.vouchEmail('u-2');
+      expect(host.calls.single.op, 'users.vouchEmail');
+      expect(host.calls.single.args, {'user_id': 'u-2'});
+      expect(user.emailVerified, isTrue);
+    });
+
+    test('vouchEmail refused to anyone but the owner is typed', () async {
+      host.callErrors['users.vouchEmail'] = {
+        'code': RpcErrorCodes.unauthorized,
+        'message': 'owner only',
+        'data': {'kind': 'server_owner_required'},
+      };
+      final repo = RemoteIdentityRepository(client);
+      await expectLater(
+        repo.vouchEmail('u-2'),
+        throwsA(isA<ServerOwnerRequiredException>()),
+      );
+    });
+
     test('updateProfile forwards the avatar + git author fields', () async {
       host.callResults['users.updateProfile'] = {
         'user': {'id': 'u-1'},
@@ -213,6 +254,75 @@ void main() {
       expect(call.args['git_author_name'], 'Sam A');
       expect(call.args['git_author_email'], '');
       expect(user.displayName, 'Sam Here');
+    });
+  });
+
+  group('RemoteIdentityRepository username', () {
+    test('updateProfile sends the handle', () async {
+      host.callResults['users.updateProfile'] = {
+        'user': {'id': 'u-1', 'handle': 'sam'},
+      };
+      final repo = RemoteIdentityRepository(client);
+      final user = await repo.updateProfile(handle: 'Sam', displayName: 'Sam');
+      final call = host.lastCall('users.updateProfile')!;
+      expect(call.args['handle'], 'Sam');
+      expect(call.args['display_name'], 'Sam');
+      expect(user.handle, 'sam');
+    });
+
+    for (final reason in UsernameRefusal.values) {
+      test('a refused handle throws ${reason.name} from data.kind', () async {
+        host.callErrors['users.updateProfile'] = {
+          'code': RpcErrorCodes.validation,
+          'message': 'refused',
+          'data': {'kind': reason.errorKind},
+        };
+        final repo = RemoteIdentityRepository(client);
+        await expectLater(
+          repo.updateProfile(handle: 'x'),
+          throwsA(
+            isA<UsernameRefusedException>().having(
+              (e) => e.reason,
+              'reason',
+              reason,
+            ),
+          ),
+        );
+      });
+    }
+
+    test('another validation error stays an RPC error', () async {
+      host.callErrors['users.updateProfile'] = {
+        'code': RpcErrorCodes.validation,
+        'message': 'bad email',
+      };
+      final repo = RemoteIdentityRepository(client);
+      await expectLater(
+        repo.updateProfile(email: 'x'),
+        throwsA(isA<RemoteRpcException>()),
+      );
+    });
+
+    test('checkHandle sends the raw text and decodes the answer', () async {
+      host.callResults['users.checkHandle'] = {
+        'available': false,
+        'normalized': 'ada',
+        'reason': 'taken',
+      };
+      final repo = RemoteIdentityRepository(client);
+      final check = await repo.checkHandle(' Ada ');
+      expect(host.lastCall('users.checkHandle')!.args, {'handle': ' Ada '});
+      expect(check.available, isFalse);
+      expect(check.normalized, 'ada');
+      expect(check.reason, UsernameRefusal.taken);
+
+      host.callResults['users.checkHandle'] = {
+        'available': true,
+        'normalized': 'sam',
+      };
+      final free = await repo.checkHandle('sam');
+      expect(free.available, isTrue);
+      expect(free.reason, isNull);
     });
   });
 
@@ -280,6 +390,23 @@ void main() {
       expect(call.args['user_id'], 'u-1');
       expect(call.args['repo_id'], 'repo-1');
       expect(call.args['level'], 'write');
+    });
+
+    test('setRepoGrant reads why the member still cannot open it', () async {
+      final repo = RemoteIdentityRepository(client);
+      host.callResults['members.setRepoGrant'] = {
+        'access_warning': {'state': 'cannot_read', 'message': 'm'},
+      };
+      expect(
+        await repo.setRepoGrant('ws-1', 'u-1', 'repo-1', 'read'),
+        RepoGrantAccessWarning.cannotRead,
+      );
+      host.callResults['members.setRepoGrant'] = {'access_warning': null};
+      expect(await repo.setRepoGrant('ws-1', 'u-1', 'repo-1', 'read'), isNull);
+      host.callResults['members.setRepoGrant'] = {
+        'access_warning': {'state': 'something_new'},
+      };
+      expect(await repo.setRepoGrant('ws-1', 'u-1', 'repo-1', 'read'), isNull);
     });
   });
 
@@ -407,68 +534,6 @@ void main() {
     });
   });
 
-  group('RemoteIdentityRepository activity', () {
-    test('watchActivity streams the audit trail for the workspace', () async {
-      host.snapshotFor('activity.watchForWorkspace', {
-        'entries': [
-          {
-            'id': 'act-1',
-            'workspace_id': 'ws-1',
-            'user_id': 'u-1',
-            'action': 'login',
-          },
-        ],
-      });
-      final repo = RemoteIdentityRepository(client);
-      final entries = await repo.watchActivity('ws-1').first;
-      expect(entries.first.id, 'act-1');
-      expect(entries.first.userId, 'u-1');
-      expect(entries.first.action, 'login');
-      final sub = host.lastSubscribe!;
-      expect(sub.args['workspace_id'], 'ws-1');
-    });
-
-    test('watchActivityPage sends the cursor and decodes the total', () async {
-      host.snapshotFor('activity.watchForWorkspace', {
-        'entries': [
-          {
-            'id': 'act-2',
-            'workspace_id': 'ws-1',
-            'user_id': 'u-1',
-            'action': 'agents.upsert',
-          },
-        ],
-        'total': 47,
-        'start': 11,
-        'next_cursor': 'next-token',
-        'prev_cursor': null,
-        'has_more': true,
-      });
-      final repo = RemoteIdentityRepository(client);
-      final page = await repo
-          .watchActivityPage(
-            'ws-1',
-            cursor: 'page-token',
-            query: 'ceo',
-            ip: '203.0.113.7',
-          )
-          .first;
-      expect(page.entries.single.id, 'act-2');
-      expect(page.total, 47);
-      expect(page.start, 11);
-      expect(page.end, 11);
-      expect(page.nextCursor, 'next-token');
-      expect(page.prevCursor, isNull);
-      expect(page.hasMore, isTrue);
-      expect(host.lastSubscribe!.args, {
-        'workspace_id': 'ws-1',
-        'cursor': 'page-token',
-        'limit': 10,
-        'query': 'ceo',
-        'ip': '203.0.113.7',
-      });
-    });
-  });
 }
 
 /// Records a `repo/call` invocation.
@@ -498,6 +563,10 @@ class _Host {
 
   /// Scripted `repo/call` results keyed by op name.
   final Map<String, Map<String, dynamic>> callResults = {};
+
+  /// Scripted `repo/call` errors keyed by op name: the JSON-RPC error object
+  /// (`code`, `message`, optional `data`) the call answers with.
+  final Map<String, Map<String, dynamic>> callErrors = {};
 
   /// Scripted snapshots keyed by watch query (pushed on subscribe).
   final Map<String, Map<String, dynamic>> snapshots = {};
@@ -544,6 +613,11 @@ class _Host {
         final op = params['op'] as String;
         final args = (params['args'] as Map?)?.cast<String, dynamic>() ?? {};
         calls.add(_Call(op: op, args: args));
+        final error = callErrors[op];
+        if (error != null) {
+          space.send({'jsonrpc': '2.0', 'id': id, 'error': error});
+          return;
+        }
         final data = callResults[op] ?? const <String, dynamic>{};
         _reply(id, {'op': op, 'data': data});
       default:

@@ -38,14 +38,11 @@ String? activeEditorTabKey(EditorLayoutController layout) {
   return editorTabKey(controller.tabs[controller.selectedIndex]);
 }
 
-/// Focuses the first tab (across all leaves) whose [editorTabKey] is [key],
-/// else — for a bare-kind key written before that kind minted per-tab keys —
-/// the first tab of that kind. Returns false when no open tab matches: a stale
-/// key (the tab was closed since the URL was written) degrades to leaving the
-/// current selection.
+/// Focuses the first tab (across all leaves) whose [editorTabKey] is [key].
+/// Returns false when no open tab matches: a stale key (the tab was closed
+/// since the URL was written) degrades to leaving the current selection.
 bool focusEditorTabByKey(EditorLayoutController layout, String key) =>
-    layout.focusTab((t) => editorTabKey(t) == key) ||
-    layout.focusTab((t) => t.kind == key);
+    layout.focusTab((t) => editorTabKey(t) == key);
 
 /// [current] as a navigable location with the `?tab=` param set to [key]
 /// (removed when null), every other query param preserved.

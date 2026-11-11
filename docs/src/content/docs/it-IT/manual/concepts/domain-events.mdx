@@ -2,7 +2,7 @@
 title: Eventi di dominio
 description: Perché le funzionalità comunicano tramite un bus di eventi in-process invece di importarsi a vicenda, per cosa il bus è e non è la fonte di verità e quali eventi possono realmente guidare l'automazione.
 slug: it-IT/manuale/concetti/eventi-di-dominio
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Cos'è un evento di dominio
@@ -41,8 +41,7 @@ nell'invio.
 
 Il costo è quello di sempre: chi pubblica non può sapere se qualcuno è in
 ascolto, e un ascoltatore che non viene mai istanziato resta inerte nel
-silenzio. `TicketRemoteSyncHandler` ne è l'esempio perenne: è dichiarato,
-coperto dai test e mai collegato in produzione.
+silenzio.
 
 ## Ciò che il bus non è
 

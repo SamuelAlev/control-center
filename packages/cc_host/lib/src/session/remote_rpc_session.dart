@@ -572,40 +572,37 @@ class RemoteRpcSession {
   /// negotiate the parity surface (version handshake). The thin client
   /// (no [repoOps]) still sees the build identity.
   Future<Map<String, dynamic>> _initialize(JsonRpcRequest request) async {
-    // Protocol negotiation, actually performed. The client sends the range it
-    // speaks; if it does not intersect ours, say so with the supported range
-    // instead of proceeding on a version neither side agreed to.
+    // Protocol negotiation. The client sends the range it speaks; without
+    // one, or with one that does not intersect ours, the session is refused
+    // with the supported range instead of proceeding on a version neither
+    // side agreed to.
     final proto = request.params['protocol'];
-    int? agreed;
-    if (proto is Map) {
-      final clientMin = (proto['min'] as num?)?.toInt() ?? RepoRpcProtocol.min;
-      final clientMax = (proto['max'] as num?)?.toInt() ?? RepoRpcProtocol.max;
-      final high = clientMax < RepoRpcProtocol.max
-          ? clientMax
-          : RepoRpcProtocol.max;
-      final low = clientMin > RepoRpcProtocol.min
-          ? clientMin
-          : RepoRpcProtocol.min;
-      if (high < low) {
-        CcHostLog.warning(
-          'Session $deviceId: no common repo-RPC protocol version '
-          '(client $clientMin..$clientMax, server '
-          '${RepoRpcProtocol.min}..${RepoRpcProtocol.max})',
-        );
-        return _error(
-          request.id,
-          RpcErrorCodes.opVersionUnsupported,
-          'No common protocol version',
-          data: {
-            'supported_versions': [
-              for (var v = RepoRpcProtocol.min; v <= RepoRpcProtocol.max; v++)
-                v,
-            ],
-          },
-        );
-      }
-      agreed = high;
+    final clientMin = proto is Map ? proto['min'] : null;
+    final clientMax = proto is Map ? proto['max'] : null;
+    final high = clientMax is int && clientMax < RepoRpcProtocol.max
+        ? clientMax
+        : RepoRpcProtocol.max;
+    final low = clientMin is int && clientMin > RepoRpcProtocol.min
+        ? clientMin
+        : RepoRpcProtocol.min;
+    if (clientMin is! int || clientMax is! int || high < low) {
+      CcHostLog.warning(
+        'Session $deviceId: no common repo-RPC protocol version '
+        '(client ${clientMin ?? '?'}..${clientMax ?? '?'}, server '
+        '${RepoRpcProtocol.min}..${RepoRpcProtocol.max})',
+      );
+      return _error(
+        request.id,
+        RpcErrorCodes.opVersionUnsupported,
+        'No common protocol version',
+        data: {
+          'supported_versions': [
+            for (var v = RepoRpcProtocol.min; v <= RepoRpcProtocol.max; v++) v,
+          ],
+        },
+      );
     }
+    final agreed = high;
     final base = await dispatcher.handleRequest(request);
     final result = base['result'];
     if (result is! Map<String, dynamic>) {
@@ -625,7 +622,7 @@ class RemoteRpcSession {
     caps['protocol'] = {
       'min': RepoRpcProtocol.min,
       'max': RepoRpcProtocol.max,
-      'agreed': ?agreed,
+      'agreed': agreed,
     };
     caps['gitSha'] = BuildInfo.buildGitSha;
     final ops = repoOps;

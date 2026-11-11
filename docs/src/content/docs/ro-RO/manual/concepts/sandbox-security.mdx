@@ -2,7 +2,7 @@
 title: Sandbox și securitate
 description: Ce limitează de fapt un agent în Control Center astăzi, până unde ajunge sandbox-ul de sistem și ce granițe rezistă pe o gazdă care nu are niciun backend.
 slug: ro-RO/manual/concepte/sandbox-si-securitate
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Unde ajunge sandbox-ul de sistem și unde nu ajunge]
@@ -10,8 +10,7 @@ sourceHash: ac926eb1b2447d93207802824742f121d232f171
 sandbox-ul nativ al sistemului de operare atunci când unul este disponibil — Seatbelt pe macOS,
 bubblewrap pe Linux și WSL2 (care are nevoie de `bwrap` și `socat` în `PATH`). Acolo unde nu
 există niciun backend — Windows, sau o mașină Linux căreia îi lipsesc acele instrumente — rulările
-se întorc la celelalte granițe de mai jos, iar serverul spune asta în jurnalul său de pornire.
-`--sandbox off` îl oprește în mod deliberat.
+pornesc doar rulările de agent ale proprietarului serverului, neînvelite, iar ale tuturor celorlalți sunt refuzate. Proprietarul serverului poate porni în schimb cu `--sandbox off`, care rulează agenții fiecărui membru neînvelit pe mașina aceea. Jurnalul de pornire spune în ce caz te afli; vezi [Agenți pe o gazdă fără sandbox](#agenți-pe-o-gazdă-fără-sandbox).
 
 Două lacune supraviețuiesc sandbox-ului și merită ținute minte:
 
@@ -35,7 +34,23 @@ ci „care este raza de impact atunci când greșește”.
 Control Center răspunde la asta pe straturi, iar straturile sunt independente intenționat. Dacă
 lipsește unul, celelalte rezistă în continuare. Asta contează, pentru că stratul cel mai exterior
 — sandbox-ul de sistem — este singurul condiționat: depinde de faptul că gazda oferă un backend,
-iar pe Windows niciuna nu o face.
+iar pe Windows niciuna nu o face. Acolo unde lipsește, serverul nu rulează discret agenții tuturor fără el.
+
+## Agenți pe o gazdă fără sandbox
+
+Serverul decide o singură dată la pornire cum rulează agenții pe mașina lui și păstrează decizia până la repornire:
+
+- **În sandbox.** Gazda are un backend, iar sandbox-ul este pornit. Fiecare rulare este învelită.
+- **Oprit.** Proprietarul serverului a pornit serverul cu `--sandbox off`. Agenții fiecărui membru rulează neizolați pe această mașină. Aceasta este alegerea proprietarului pentru toți cei care folosesc serverul, nu o setare pentru o singură rulare.
+- **Indisponibil.** Sandbox-ul este pornit, dar gazda nu are niciun backend. O rulare pornește doar când persoana responsabilă de ea este [proprietarul](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului) serverului: persoana care a cerut-o sau, pentru un program, un webhook sau altă automatizare, persoana de care este legată. Rularea oricui altcuiva este refuzată înainte ca o acreditare să fie emisă sau un proces să pornească, cu „Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți. Proprietarul poate instala sandbox-ul sau poate dezactiva sandboxing-ul pentru toată lumea.”
+
+Motivul este proprietatea mașinii. Un agent neizolat poate face orice poate face contul de utilizator al serverului, deci îl rulează doar persoana care deține acel cont, dacă nu decide altfel pentru toată lumea. Un server Windows se află mereu în cazul indisponibil. Linux are propria particularitate, acoperită în [referința backend-urilor sandbox](/ro-RO/manual/referinta/backend-uri-sandbox/#linux-bubblewrap): dispecerul nativ eșuează închis acolo, chiar cu bubblewrap instalat.
+
+Aceeași regulă acoperă și lucrurile mai mici care pornesc un proces pentru tine:
+
+- **Ajutoare rapide care rulează printr-un CLI ACP**: titlurile conversațiilor, `/btw`, `/handoff` și `/goal`. Când serverul învelește agenții în sandbox, ele rulează în sandbox, într-o sesiune proprie. Sub `--sandbox off` rulează neizolate. Fără sandbox disponibil rulează doar pentru cererile de care răspunde proprietarul serverului; pentru ceilalți sunt sărite, deci nu se generează niciun titlu, iar o întrebare secundară raportează că Content synthesizer nu are un runner funcțional. Ajutoarele care nu pornesc niciun instrument nu sunt afectate.
+- **Testele golden ale unui pull request** din verificarea vizuală a Review Studio urmează aceeași regulă.
+- **Procesele de instrumente și `bash`** dintr-o rulare nu revin niciodată pe gazdă. Dacă serverul este setat să învelească agenții în sandbox, dar nu are un sandbox care să-l dea unei rulări, acestea sunt refuzate.
 
 ## Ce limitează de fapt un agent
 
@@ -99,8 +114,7 @@ Instrumentul `bash` este celălalt loc unde trebuie să fim precisi. Comenzile l
 față de politica de comenzi a modului și apoi lansate cu un mediu sanitizat și cu worktree-ul ca
 director de lucru. Acolo unde există un backend, acea lansare este învelită, așa că sandbox-ul
 este ceea ce oprește o comandă shell să scrie în afara worktree-ului; acolo unde nu există
-niciunul — Windows, sau Linux fără `bwrap` și `socat` — politica de comenzi este singurul lucru
-dintre comandă și restul discului. În modul `chat`, politica refuză categoric o listă fixă
+niciunul (fiecare rulare sub `--sandbox off`, și rulările proprietarului pe Windows sau pe Linux fără `bwrap` și `socat`) politica de comenzi este singurul lucru dintre comandă și restul discului. În modul `chat`, politica refuză categoric o listă fixă
 (escaladarea privilegiilor, distrugerea sistemului și a discului, evadarea din container și din
 namespace) și cere aprobare pentru mutațiile stării de la distanță (`git push`, `gh pr create`,
 publicări și instalări de pachete). Orice nu se află pe niciuna dintre liste rulează.
@@ -113,7 +127,7 @@ neinteractiv s-ar bloca altfel la nesfârșit pe propriul prompt de aprobare. Ap
 nevăzute au loc totuși în interiorul învelișului de sandbox, așa că sistemul de operare este
 granița din jurul lor. Acolo unde nu există niciunul, nimic nu este. Fiecare adaptor declară
 asta în matricea sa de aplicare — vezi [matricea de onestitate a
-adaptoarelor](/ro-RO/manual/concepte/guardrail-uri/#the-adapter-honesty-matrix).
+adaptoarelor](/ro-RO/manual/concepte/guardrail-uri/#matricea-de-onestitate-a-adaptoarelor).
 
 ## Push-urile trec prin Control Center
 
@@ -125,11 +139,7 @@ rulează agentul.
 
 Un push este acțiunea care trebuie să reziste chiar și în fața unui agent care
 încearcă să ocolească o regulă, așa că este impus prin ce deține agentul, nu
-prin ce rulează. O rulare într-un worktree GitHub primește un token pentru acel
-singur depozit, emis din GitHub App a spațiului de lucru, din aplicația proprie
-a serverului sau din Control Center Connect. Poate citi conținut și, când
-membrul responsabil poate face push, poate comenta pe pull request-uri, dar nu
-poate face push. Configurația git a rulării
+prin ce rulează. O rulare nu are niciun token de acces la forge la pornire, iar `git` al ei nu primește niciodată unul. Când `gh` are nevoie de unul, Control Center îi dă un token pentru un singur depozit GitHub cu care lucrează rularea, emis din GitHub App a spațiului de lucru, din aplicația proprie a serverului sau din Control Center Connect. Poate doar citi: nu poate face push, comenta sau edita. Configurația git a rulării
 rescrie fiecare URL de push GitHub (`https://github.com/`, `git@github.com:`,
 `ssh://git@github.com/`) către **gateway-ul rulărilor de agenți**, un punct
 final de loopback pe `cc_server`. Gateway-ul citește ce ref-uri actualizează
@@ -143,26 +153,24 @@ push-ul către GitHub cu un token de scriere pe care îl emite în acest scop ș
 ```
 
 Gateway-ul transmite push-uri doar către depozitul propriu al worktree-ului sau
-către un depozit GitHub legat de spațiul de lucru. Fetch-urile merg direct la
-GitHub cu tokenul de citire.
+către un depozit GitHub legat de spațiul de lucru. Fetch-urile trec și ele prin gateway, pe GitHub, GitLab și Bitbucket: gateway-ul preia depozitele cu care lucrează rularea cu o credențială pe care o păstrează și pe care rularea nu o vede niciodată. Pe GitLab și Bitbucket este tokenul tău propriu atunci când ai cerut rularea, iar tokenul de automatizare al repo-ului atunci când nu a cerut-o nimeni. Un fetch nu întreabă pe nimeni, iar doar setarea Refuză pe **Accesează rețeaua** îl oprește.
 
 Celelalte comenzi de shell întâlnesc o poartă mai blândă. Instrumentul `bash` al
 harness-ului și, printr-un hook, instrumentul `Bash` al Claude Code clasifică
 fiecare linie de comandă și întreabă regula în care se încadrează: `git commit`,
 `merge`, `rebase`, `cherry-pick`, `revert` și `am` sunt **Creează un commit**;
 `gh pr create` este **Deschide un pull request**; `gh pr merge`, `review`,
-`comment` și `close` sunt **Publică o revizuire sau o fuziune**;
+`comment` și `close` sunt **Actualizează sau unește un pull request**;
 `gh issue create`, `edit`, `comment` și `close` sunt **Scrie într-un tracker
 extern**; instalările de pachete sunt **Instalează un pachet**; `curl` și `wget`
-sunt **Accesează rețeaua**. Asta recunoaște forma obișnuită de a scrie o
+sunt **Accesează rețeaua**. Scrierea pe GitHub din shell este excepția: `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` și scrierile `gh issue` nu funcționează într-o rulare, al cărei token doar citește, iar agentul este îndrumat spre instrumentele Control Center, care întreabă aceste reguli. Asta recunoaște forma obișnuită de a scrie o
 acțiune, iar un agent hotărât să o ascundă (`eval`, un fișier de script, un apel
 direct la API) poate face asta. Push-urile nu depind de asta.
 
 Fiecare token GitHub pe care îl primește o rulare este limitat de două ori: la
 un singur depozit și la ce poate face acolo membrul responsabil (cel care a
 cerut, altfel proprietarul spațiului de lucru). Nu există nicio acreditare de
-rezervă. Când nu se poate emite niciun token, rularea pornește fără, iar notele
-ei spun de ce.
+rezervă. Când nu se poate emite niciun token, comanda care a cerut-o spune de ce.
 
 Nicio cheie API de tichete nu este pusă într-un sandbox. Agenții scriu tichete
 prin instrumentele MCP ale Control Center, care întreabă **Scrie într-un tracker
@@ -177,6 +185,16 @@ din spatele lor sunt partajate per membru și depozit și expiră în aproximati
 oră; un membru care se deconectează de la GitHub sau părăsește spațiul de lucru
 anulează dintr-odată toate tokenurile emise în numele lui.
 
+## Repository-urile pe care un agent le poate doar citi
+
+O rulare de agent poate schimba doar checkout-urile repository-urilor pe care persoana în numele căreia acționează deține [grantul de scriere](/ro-RO/manual/concepte/autorizare/#modificarea-codului-necesită-grantul-de-scriere). Administratorii spațiului de lucru îl dețin pe fiecare repository legat. O rulare pe care nu a cerut-o nimeni, cum ar fi un program sau o altă automatizare, este judecată de aceeași persoană responsabilă de care este legat tokenul ei de automatizare.
+
+Într-un spațiu cu un repository pe care persoana aceea îl poate doar citi, agentul poate în continuare să citească și să caute în repository, dar nu îi poate schimba fișierele. Instrumentele lui de fișiere refuză cu un mesaj care începe cu `<repo> is read-only for this run` și care spune că schimbarea checkout-ului cere grantul de scriere, pe care persoana în numele căreia acționează rularea nu îl deține, și că un administrator al spațiului de lucru îl poate acorda. Într-un sandbox, checkout-ul este doar pentru citire pentru orice proces, deci o comandă de shell care scrie acolo eșuează cu „Operation not permitted”. Asta include `git commit` și un build sau un test care își scrie rezultatul în checkout. Repository-urile pe care persoana le poate scrie se comportă ca de obicei, deci administratorii și oricine are acces de scriere la fiecare repository al spațiului nu văd nicio diferență.
+
+Asta se decide o singură dată, când pornește rularea. O schimbare de grant intră în vigoare la următoarea rulare a agentului, la fel și un repository adăugat în spațiu în timpul unei rulări.
+
+Acolo unde proprietarul serverului a oprit sandbox-ul, sunt refuzate doar instrumentele de fișiere ale agentului și instrumentele de scriere ale Claude Code, iar comenzile de shell pot schimba în continuare checkout-ul. Oricum, nimic nu poate fi împins fără grantul de scriere, pentru că fiecare push este verificat față de el. Procesele pe care sandbox-ul le limitează pe fiecare platformă sunt descrise în [Backend-urile sandbox-ului](/ro-RO/manual/referinta/backend-uri-sandbox/).
+
 ## Ce adaugă sandbox-ul și unde se oprește
 
 Enumerația `SandboxBackend` are trei valori — `native` (Seatbelt pe macOS, bubblewrap pe Linux și
@@ -189,15 +207,11 @@ ce nu ți-ar fi dat niciodată.
 cusături pe care le are calea de trimitere, pentru că transporturile nu împart una singură. Prima
 (`SandboxPort`) învelește CLI-ul Claude Code. A doua (`SandboxManager`) învelește adaptoarele ACP
 și instrumentul `bash` al harness-ului încorporat. Dacă ai hrăni doar una, celelalte ar fi lansate
-neînvelite, ceea ce se și întâmpla înainte. Pe o gazdă fără backend, sau sub `--sandbox off`,
-toate sunt lansate neînvelite, iar serverul spune în ce caz te afli pe linia sa de pornire. ACP și
+neînvelite, ceea ce se și întâmpla înainte. Sub `--sandbox off` toate sunt lansate neînvelite; pe o gazdă fără backend pornesc doar rulările proprietarului, tot neînvelite. Serverul spune în ce caz te afli pe linia sa de pornire. ACP și
 `bash`-ul harness-ului sanitizează în continuare mediul; Claude Code prin `NoSandboxAdapter`
 moștenește mediul gazdei.
 
-O suprafață se sustrage în mod deliberat: terminalul găzduit de server acceptă un argument de
-backend per sesiune, iar `cc_server` îl construiește implicit cu shell-ul gazdei, așa că un
-terminal pe care îl deschizi din aplicație rulează fără sandbox dacă un client nu numește explicit
-`native`. Acela este un shell real pe gazda serverului, nu o rulare de agent.
+Terminalul găzduit de server deschide shell-ul gazdei doar pentru [proprietarul](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului) serverului. Ceilalți primesc un terminal în sandbox, cu limitele unui agent, în directoarele spațiului de lucru. Doar persoana care a deschis un terminal poate scrie în el, să-l citească sau să-l închidă.
 
 Pe Linux, `bubblewrap` construiește un namespace de montare, așa că agentul vede într-adevăr doar
 ce a fost legat în el. Pe macOS, `sandbox-exec` aplică un profil Seatbelt care este **permisiv
@@ -208,6 +222,10 @@ resetată la refuz cu permisiuni explicite deasupra, blocarea ștergerii (unlink
 interzisă și pe strămoșii ei, astfel încât o redenumire să nu poată ocoli o interdicție de
 scriere, interdicții de execuție pentru binarele mereu periculoase și pentru orice este copiat
 într-un director inscriptibil, și rețeaua restricționată la porturile proxy de loopback plus DNS. Instalările de toolchain din directorul home (pnpm din corepack, managerii de versiuni node, browserele Playwright, rustup, fvm, uv și altele asemenea) rămân executabile în interiorul acelui bloc de exec, astfel încât agenții le pot folosi fără ocolirii. Interdicțiile pentru binarele mereu periculoase se aplică în continuare și în interiorul lui. Fiecare sesiune primește și propriul `TMPDIR` privat. Este singurul director temporar în care agentul poate rula programe pe care le-a compilat sau poate deschide socketuri Unix.
+
+Două protecții în plus se aplică în orice mod. Un sandbox nu poate adăuga, înlocui, șterge sau redenumi o comandă din folderele din care serverul pornește programe (fiecare folder din `PATH`-ul lui și folderele obișnuite de unelte per utilizator), astfel încât o rulare în sandbox nu poate planta un program pe care serverul îl pornește ulterior în afara sandbox-ului. Instalările globale și schimbările de versiune implicită dintr-o rulare eșuează deci cu „Operation not permitted”, în timp ce instalările locale proiectului și rulările de tip `npx` continuă să funcționeze; instalează uneltele globale pe serverul însuși și repornește-l. Și fiecare cale din home pe care un sandbox nu o poate citi nu o poate scrie nici el, iar fișierele de pornire ale shell-ului și ale sesiunii utilizatorului serverului nu sunt scriptibile niciodată. Detaliile și limitele pe platformă sunt în [Folderele de comenzi ale serverului](/ro-RO/manual/referinta/backend-uri-sandbox/#folderele-de-comenzi-ale-serverului).
+
+Uneltele de sandbox ale unei rulări îi aparțin și sunt eliberate când ea se încheie. Serverele de limbaj pornesc de la zero cu fiecare rulare în sandbox. O sesiune de depanare își păstrează sandbox-ul între ture până se încheie, pentru cel mult 30 de minute.
 
 Consecința practică: pe Linux, vederea agentului asupra sistemului de fișiere este îngustată; pe
 macOS, agentul poate în continuare _citi_ cea mai mare parte a gazdei, iar checkout-urile tale

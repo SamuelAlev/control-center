@@ -210,8 +210,10 @@ audio, microphone, file drop, host shell or enclosed-network guarantee.
 
 | Tool | Description |
 | --- | --- |
-| `rig_list` | List a workspace's rigs with surface, status, display and controller |
+| `rig_list` | List the rigs of the run's space with surface, status, display and controller |
 | `rig_close` | Destroy a rig and discard its disk |
+
+These tools, like the four use tools, are for agent runs only; any other caller is refused. A run reaches only the rigs of the space it was leased for: `space_id` comes from the run's grant, never from the call. A rig of another space, or of no space, answers exactly as a missing one.
 
 ## Lifecycle
 
@@ -310,7 +312,12 @@ are independent and are never a workspace setting.
   audio already do.
 - **Auth** is the signed target `rig-files:<workspaceId>/<rigId>` plus
   workspace membership — a target of its own, so a URL minted to *watch* a
-  machine cannot also write files into it.
+  machine cannot also write files into it. For a rig opened in a space, reading
+  the clipboard or a file also needs read access to that space, and writing the
+  clipboard or dropping files needs a write grant on its repositories. On a
+  rig that carries one person's own sign-ins, both lanes, reading included,
+  are that person's alone. See
+  [Who can watch and who can drive](/manual/guides/use-rigs/#who-can-watch-and-who-can-drive).
 - **Take-over applies.** Writing the clipboard and dropping files are
   mutating and are refused while someone else holds control; reading the
   clipboard and reading a file out are observation and are not.

@@ -34,6 +34,13 @@ String providerAppName(String provider) => switch (provider) {
   _ => provider,
 };
 
+/// Whether [ProviderAppsSection] has anything to show: the reader may see
+/// this server's apps (the list resolves empty for anyone else) and the
+/// server uses its own apps rather than a Connect.
+bool watchProviderAppsApplies(WidgetRef ref) =>
+    (ref.watch(providerAppsProvider).value?.isNotEmpty ?? false) &&
+    _usesOwnApps(ref.watch(connectStatusProvider));
+
 /// This server's own provider apps: the GitHub App, the Google OAuth client
 /// and the Linear app, for the lanes that do not run through Connect.
 ///
@@ -42,7 +49,7 @@ String providerAppName(String provider) => switch (provider) {
 /// (the list resolves empty for them).
 ///
 /// Shown only while the server uses its own apps ("Use my own apps" in the
-/// Connect card). Under Control Center's or a custom Connect the server
+/// Connect card; [watchProviderAppsApplies]). Under Control Center's or a custom Connect the server
 /// ignores these apps, so showing them would offer settings that do nothing;
 /// what is stored is kept and comes back when the operator switches back.
 ///
@@ -69,10 +76,6 @@ class _ProviderAppsSectionState extends ConsumerState<ProviderAppsSection> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final apps = ref.watch(providerAppsProvider).value ?? const [];
-    if (apps.isEmpty || !_usesOwnApps(ref.watch(connectStatusProvider))) {
-      return const SizedBox.shrink();
-    }
-
     return SectionCard(
       label: l10n.providerApps,
       subtitle: Text(l10n.providerAppsDescription),

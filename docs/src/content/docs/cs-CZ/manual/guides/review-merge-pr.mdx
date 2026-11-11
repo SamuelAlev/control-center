@@ -2,7 +2,7 @@
 title: Zkontrolujte a sloučte PR
 description: Otevři pracovní plochu PR, přečti diff, nech řádkové komentáře, odešli kontrolu a slouč.
 slug: cs-CZ/prirucka/navody/kontrola-a-slouceni-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Tenhle návod ukazuje, jak pull request zkontrolovat a sloučit.
@@ -22,9 +22,13 @@ souboru, vložený code-server a prohlížeč v aplikaci se otevírají na vyž�
 Záložky náhledu nasazení se přidají samy, jakmile se na PR najde URL náhledu.
 Rozložení záložek se pamatuje pro každý PR zvlášť.
 
+Vložený code-server se nabízí jen vlastníkovi serveru, protože běží na serveru jako uživatel serveru. Relace patří zařízení a osobě, které ji otevřely, otevírá se s důvěrou pracovního prostoru ve VS Code zapnutou (VS Code se zeptá, než složce důvěří) a žádný úkol nespouští automaticky. Všichni ostatní zůstávají u editoru jednoho souboru a pohledů na soubory.
+
 Záložka Přehled nese metadata PR (autor, větev, štítky, přiřazení, reakce,
 commity, stav kontrol) a řádek akcí: obnovení, **Kontrola**, **Sloučit**,
-otevření v IDE a rozbalovací nabídka ⋯.
+tlačítko pojmenované podle tvého editoru (například **Otevřít v VS Code**) a rozbalovací nabídka ⋯.
+
+Tlačítko editoru spustí nativní editor na **vlastní obrazovce serveru**, jako uživatel serveru a mimo jakýkoli sandbox, takže je nabízeno jen [vlastníkovi serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru). Na ploše, která hostuje vlastní server, je to člověk u stolu. Totéž platí pro otevření worktree konverzace v editoru. Všichni ostatní používají vestavěné pohledy editoru. I pro vlastníka se PR otevře jen z repozitáře propojeného s pracovním prostorem.
 
 ### Otevři PR ze zásobníku prostoru
 
@@ -40,14 +44,28 @@ pracovní plochu PR. Zaměř hlavičku zásobníku a stiskem Enter nebo mezerní
 sbalíš nebo rozbalíš. Nesouvisející PR zůstávají zvlášť a neúplné nebo
 nejednoznačné vazby mezi větvemi se jako seřazený zásobník nezobrazují.
 
-Na záložce **Správa zdrojového kódu** otevře **Skládané pull requesty (N)**
-výběr publikovaných částí zásobníku, od spodní části nahoru. Každá položka
+V hlavičce PR otevře odznak zásobníku (ikona vrstev s počtem pull requestů v zásobníku) **Skládané pull requesty**, výběr publikovaných částí zásobníku, od spodní části nahoru. Každá položka
 ukazuje číslo PR, název části a pozici; přepnutá část je označená. Vyber položku
 a otevře se pracovní plocha jejího PR. **Publikovat sadu** se objeví, jen když
 doběhlo vyhledávání PR a aspoň jedna část zatím žádný PR nemá. Platí to i pro
 nabídku větve. PR vytvořené mimo Control Center se taky počítají jako
 publikované. Částečně publikované zásobníky nabízejí obě akce; práce v jedné
 větvi si nechává samostatné akce pro vytvoření a zobrazení PR.
+
+### Commit a push ze Správy zdrojového kódu
+
+Commit, který uděláš v panelu **Správa zdrojového kódu**, je tvůj: autorem i committerem jsi ty, pod adresou, kterou tvůj forge ověřil pro tvoje přihlášení. Když jsi v **Nastavení** → **Vy** → **Commity** pod **Ověřené commity** vytvořil podpisový klíč, server ho před odesláním podepíše tvým vlastním podpisovým klíčem. Push nese tvoje vlastní přihlášení, zúžené na tento jediný repozitář.
+
+Server spouští Git na svém vlastním stroji, ve stromu, který může změnit agent nebo pull request, takže nespouští žádné programy, které si repozitář může vybrat:
+
+- Commity přeskakují Git hooky repozitáře, stejně jako to dělá `git commit --no-verify`. Pre-commit hook, commit-msg hook ani pre-push hook se nespustí
+- Credential helpery, editory, externí diff nástroje a podepisovací programy, které repozitář nastavuje, se ignorují
+
+Spusť si kontroly sám před commitem, nebo je nech běžet v CI.
+
+Změna kódu vyžaduje [zápisové přidělení](/cs-CZ/prirucka/koncepty/autorizace/#změna-kódu-vyžaduje-zápisové-přidělení) k repozitáři: ukládání nebo vracení souborů v editoru, **Stáhnout nejnovější commity PR**, commitování a pushování, publikování větve a akce skládaných pull requestů, které část vytvoří, přepnou na ni nebo ji publikují. S pouhým čtecím nebo review přístupem vidíš soubory a diffy, a tyto akce odpoví „Tento repozitář můžete číst, ale nemůžete ho měnit. Správce pracovního prostoru vám může udělit přístup pro zápis.“
+
+**Stáhnout nejnovější commity PR** přivede worktree kontroly k nejnovějším commitům pull requestu. Stahuje s tvým vlastním přihlášením ke GitHubu a když žádné nemáš, požádá tě o přihlášení. Nejdřív commitni nebo zahoď své změny: worktree s necommitnutými změnami se nesynchronizuje.
 
 ## Přečti diff
 
@@ -128,7 +146,7 @@ nevypne. Pravidla vynucuje ochrana větve na forge.
 Sloučení je nevratné: posílá commity na forge, takže má krok potvrzení místo
 položky pro vrácení zpět. Potom se mezipaměť PR zneplatní, stav se přepne na
 **Sloučeno** a vystřelí událost `PullRequestStatusChanged` se stavem `merged`.
-Ta událost uvolní dočasný worktree akce „Otevřít v editoru“ a spustí dvě
+Ta událost uvolní dočasný worktree, který otevřelo tlačítko editoru, a spustí dvě
 předpřipravené pipeline: **Stale repository cleanup**, která smaže zastaralé
 worktree a složky konverzací toho PR, a **Release notes**, která sepíše položku
 changelogu.
@@ -154,6 +172,12 @@ model kohort a os je ve
 Control Center si bere i PR, které lidé otevřeli mimo aplikaci. Postup kontroly
 nahoře je stejný. Externí PR odhaluje služba, která pull requesty pravidelně
 dotazuje.
+
+## Řešení problémů
+
+### Můj pre-commit hook se nespustil
+
+Commity vytvořené v panelu **Správa zdrojového kódu** v aplikaci přeskakují Git hooky repozitáře, stejně jako to dělá `git commit --no-verify`. Server spouští Git na svém vlastním stroji, ve stromu, který mohou změnit agenti a pull requesty, takže nikdy nespustí program, který si repozitář vybere. Spusť kontroly hooku sám, nebo se spolehni na CI.
 
 ## Související návody
 

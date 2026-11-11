@@ -2,7 +2,7 @@
 title: Spusťte server Connect
 description: Provozuj vlastní Control Center Connect z obrazu Dockeru cc-connect, nebo ho vestav do cc_server, aby tvoje servery přihlašovaly lidi přes aplikace poskytovatelů, které si zaregistruješ.
 slug: cs-CZ/prirucka/navody/spusteni-serveru-connect
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect provádí přihlášení k poskytovatelům (GitHub, Google
@@ -48,7 +48,7 @@ nedostupného. `<base>` níže je tvoje `CONNECT_PUBLIC_URL`.
 
 | Poskytovatel   | Co zaregistrovat                                                                                                                                                                                                                                                              | Co si nechat                            |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` se zapnutým **Redirect on update**. **Request user authorization (OAuth) during installation** nech vypnuté: když je zapnuté, GitHub setup URL ignoruje. **Expire user authorization tokens** nech zapnuté | App id, slug, client id, client secret |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` se zapnutým **Redirect on update**. **Request user authorization (OAuth) during installation** nech vypnuté: když je zapnuté, GitHub setup URL ignoruje. **Expire user authorization tokens** nech zapnuté | App id, slug, client id, client secret, soukromý klíč |
 | **Google**     | Klient OAuth typu **Web application** s URI přesměrování `<base>/oauth/google/callback` a zapnuté Google Calendar API                                                                                                                                                         | Client id, client secret                |
 | **Linear**     | Aplikace OAuth s callback URL `<base>/oauth/linear/callback` a `<base>/oauth/linear_app/callback`                                                                                                                                                                             | Jen client id                           |
 | **Slack**      | Redirect URL `<base>/oauth/slack_oidc/callback` a `<base>/oauth/slack/callback`. Event Subscriptions na `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash příkazy na `<base>/v1/hooks/slack/commands`. Zapnutá rotace tokenů | App id, client id, client secret, signing secret |
@@ -59,9 +59,19 @@ pro čtení a zápis, **Checks**, **Actions** a **Commit statuses** pro čtení.
 žádosti o kontrolu od týmů přidej organizační oprávnění **Members** pro čtení.
 Webhooky můžou zůstat vypnuté: servery se dotazují samy.
 
-Connect soukromý klíč GitHub App nikdy nepotřebuje. Tokeny pro jediný
-repozitář vydává z vlastního přihlášení člověka. Linear nepotřebuje ani
-secret: Connect vrátí kód serveru, který výměnu dokončí sám.
+Connect potřebuje soukromý klíč GitHub App (**Vygenerovat soukromý klíč** v nastavení
+App). Podepisuje požadavky App, které najdou instalaci pokrývající repozitář (a když
+ji repozitář nemá, instalaci vlastníka), a vydává jednorepozitářový token instalace,
+pokaždé až poté, co přihlášení daného člověka prokáže přístup k tomuto repozitáři.
+
+Každý server na tvém Connectu sdílí bota App. Může jako bot číst, komentovat,
+označovat štítky a reagovat u kteréhokoli z nich. Revidovat pull requesty jako bot
+smějí jen servery, které uvedeš v `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (jejich ID
+instalací, oddělená čárkou); každý další server zveřejňuje revize tokenem samotného
+revidujícího. Push se nikdy nedělá jako bot. Aby mohl revidovat jako bot tvůj vlastní
+server, přidej jeho ID instalace tam a restartuj. Soubor s klíčem drž jako tajemství,
+stejně jako klíč pečetí. Linear nepotřebuje žádné tajemství: Connect vrátí kód serveru,
+který výměnu dokončí sám.
 
 ## Krok 3: Posbírej ID instalací
 
@@ -115,13 +125,26 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Reverzní proxy nasměruj na port `8790`. Obraz běží jako neprivilegovaný
-uživatel, stav drží ve svazku `/data` a má vestavěnou kontrolu stavu
-(`cc-connect --healthcheck`, která se ptá `/healthz`).
+Reverzní proxy nasměruj na port `8790` a nastav `CONNECT_TRUST_PROXY` na počet proxy
+před Connectem, aby jeho limit na adresu viděl adresu každého klienta. Obraz běží jako
+neprivilegovaný uživatel, stav drží ve svazku `/data` a má vestavěnou kontrolu stavu
+(`cc-connect --healthcheck`, která se ptá `/healthz`: proces odpovídá). `/readyz` navíc
+ověřuje, že jeho úložiště stavu a vazeb odpovídají a že Redis, pokud se používá, stále
+běží s `maxmemory-policy noeviction`; na ni nasměruj kontrolu připravenosti orchestrátoru.
+
+Stránka se souhlasem s přihlášením odpovídá formulářovým POSTem, který Connect přijme
+jen ze své vlastní stránky: `Sec-Fetch-Site`, když je odeslána, musí být `same-origin`,
+a `Origin`, když je odeslána, musí být origin `CONNECT_PUBLIC_URL`; POST bez obojího se
+odmítne. Proxy proto musí obě hlavičky předávat beze změny a `CONNECT_PUBLIC_URL` musí
+být adresa, kterou lidé v prohlížeči opravdu používají. Když na té stránce pokračování
+pořád ukazuje „Platnost tohoto odkazu vypršela“ a log ukazuje `oauth.done_refused`
+s důvodem `origin` nebo `no_origin`, je jedna z těchto dvou věcí vypnutá.
 
 Connect odmítne nastartovat (exit kód `78`), když je jeho konfigurace otevřená,
 nebezpečná nebo nedokončená, a vypíše, která proměnná je špatně. Zastaví ho
@@ -137,8 +160,9 @@ probíhá každé přihlášení** u každého zaregistrovaného poskytovatele j
 Server může Connect hostovat sám, místo samostatného kontejneru. Vestavěná
 služba je tatáž, jakou spouští obraz.
 
-1. Dej proměnné `CONNECT_*` do souboru `.env` serveru (nebo do jeho prostředí),
-   stejně jako v kroku 5
+1. Dej proměnné `CONNECT_*` do souboru `.env` serveru, jako v kroku 5. Server odmítne
+   nastartovat, když je v jeho prostředí exportované některé tajemství Connectu, včetně
+   `CONNECT_SENTRY_DSN`
 2. Přidej `CC_SERVER_CONNECT_HOST=on`
 3. Restartuj server. Jeho log vypíše `embedded Connect at <url>`
 
@@ -150,6 +174,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect se pak obsluhuje na `<server>/connect`:
@@ -182,9 +207,10 @@ Tajemství označená **dual** během rotace přijímají i `NAME_PREVIOUS` (neb
 | `CONNECT_PUBLIC_URL`            | povinná   | Kanonická veřejná URL. HTTPS, nebo `http` jen na loopbacku. Cesta znamená vestavbu. Bez query a fragmentu                        |
 | `CONNECT_ALLOWED_INSTALLS`      | povinná   | ID instalací oddělená čárkou. `*` se přijme jen spolu s `CONNECT_SIGNED_CONFIG_FILE`                                             |
 | `CONNECT_DENY_INSTALLS`         |           | ID instalací, která se odmítnou, i když jsou povolená                                                                            |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Číselná id vlastníků na GitHubu. Když je nastavené, tokeny repozitářů se vydávají jen pro repozitáře, které vlastní              |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Číselná id vlastníků na GitHubu. Když je nastavené, tokeny repozitářů se vydávají jen pro repozitáře, které vlastní. Nelimituje, kdo se přihlásí: člověk, který smí tento Connect používat, dostane pořád svůj vlastní uživatelský token App. Chceš-li obsluhovat jen jednu organizaci, drž App jen pro ni              |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | ID instalací, které smí nechat bota App revidovat pull requesty. Ve výchozím stavu prázdné; `*` se odmítne a každé ID musí být také povolené |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Adresa a port, na které se váže                                                                                          |
-| `CONNECT_TRUST_PROXY`           | `0`       | Důvěryhodné skoky proxy v `X-Forwarded-For` (0 až 8). Použije se jen pro limit četnosti na adresu                                |
+| `CONNECT_TRUST_PROXY`           | `0`       | Důvěryhodné skoky proxy v `X-Forwarded-For` (0 až 8). Použije se jen pro limity na adresu, pro síťovou nápovědu na přihlašovací stránce a pro zalogovanou adresu. Za proxy `0` počítá každého klienta jako proxy a log to jednou řekne                                |
 
 ### Dráhy poskytovatelů
 
@@ -192,6 +218,7 @@ Tajemství označená **dual** během rotace přijímají i `NAME_PREVIOUS` (neb
 | --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |      | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | Tajemství, dual                                                             |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY` |         | Tajemství. Soukromý klíč App (PEM) |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Klient Google. Tajemství je dual                                            |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Aplikace Linear. Bez tajemství                                              |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | Aplikace Slack                                                              |
@@ -209,12 +236,12 @@ Tajemství označená **dual** během rotace přijímají i `NAME_PREVIOUS` (neb
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` nebo `gcp-kms`                                                                                     |
 | `CONNECT_SEAL_KEYS`                                       |                            | Tajemství, povinné pro `local`. Položky `kid:key` oddělené čárkou, nejnovější první; starší pořád dešifrují |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, povinné pro `gcp-kms`                                    |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` pro jednu instanci, `redis` pro několik                                                           |
-| `CONNECT_REDIS_URL`                                       |                            | Tajemství. `redis://` nebo `rediss://`                                                                     |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` pro jednu instanci, `redis` pro několik. Plné paměťové úložiště odmítne nová přihlášení a požadavky, místo aby zapomnělo živý záznam                                                           |
+| `CONNECT_REDIS_URL`                                       |                            | Tajemství. `redis://` nebo `rediss://`. Redis 6.2 nebo novější s `maxmemory-policy noeviction`, obojí se ověří při startu                                                                     |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | Balík CA pro `rediss://`                                                                                   |
-| `CONNECT_BINDINGS`                                        | `file`                     | Kde leží vazby instalací GitHubu: `file` nebo `firestore`                                                  |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` v obrazu)  | Obsahuje `bindings.json`                                                                                   |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databáze `(default)`       | Pro `CONNECT_BINDINGS=firestore`                                                                           |
+| `CONNECT_BINDINGS`                                        | `file`                     | Kde leží vazby týmů Slacku: `file` nebo `firestore`                                                        |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` v obrazu)  | Obsahuje `bindings.json`. Zamyká ho jeden Connect: druhý nad stejným adresářem nenastartuje                                                                                   |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databáze `(default)`       | Pro `CONNECT_BINDINGS=firestore`. Connect nenastartuje, když Firestore neodpovídá                                                                           |
 
 ### Konfigurace, logy a limity
 
@@ -224,19 +251,40 @@ Tajemství označená **dual** během rotace přijímají i `NAME_PREVIOUS` (neb
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Klíče, proti kterým se podepsaná konfigurace musí ověřit                                            |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epocha konfigurace, kterou generuje Connect hostovaný u tebe                                        |
 | `CONNECT_LOG_HMAC_KEY`                  | náhodný pro každý proces | Tajemství. Nastav ho, aby značky zastupující ID instalací zůstaly stejné napříč restarty a instancemi |
+| `CONNECT_SENTRY_DSN` |  | Tajemství. https DSN Sentry, kam se hlásí chybové řádky: typ chyby, rámce zásobníku, trasa a id požadavku, nikdy zpráva, tělo ani hlavička |
+| `CONNECT_SENTRY_ENVIRONMENT` | `self-hosted` | Prostředí Sentry |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Hlásí je `/v1/version`                                                                              |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Požadavky na instalaci                                                                              |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Požadavky na adresu                                                                                 |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Požadavky na celou službu                                                                           |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Požadavky na adresu (adresa IPv6 se počítá na /64)                                                                                 |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Požadavky na celou instanci                                                                           |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600` | Doručení událostí a příkazů Slacku na adresu, počítané odděleně od ostatních požadavků |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100` | Doručení událostí a příkazů Slacku pro celou instanci |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Události Slacku na tým                                                                              |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Hledání GIF na instalaci                                                                            |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE` | `240` | Hledání GIF na adresu, napříč servery |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60` | Zahájená přihlášení na adresu |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30` | GitHub tokeny vydané jednomu účtu GitHubu na jednom serveru (přihlášení, obnovení, tokeny repozitářů) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × výše (`120`) | Totéž pro účet GitHubu napříč všemi servery |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600` | GitHub tokeny vydané na adresu |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500` | Nová přihlášení GitHubem pro celou aplikaci |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120` | Tokeny bota na server |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240` | Tokeny bota na žádající účet GitHubu, napříč servery |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000` | Tokeny bota pro celou aplikaci |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500` | Obnovení a tokeny repozitářů pro celou aplikaci. Nová přihlášení mají vlastní limit výše |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN` | `10` | Živé tokeny repozitářů, které může mít jeden účet GitHubu, než Connect zaloguje varování |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR` | `10` | Vyřazená ID instalací na adresu (pro IPv6 na /48) |
+
+Volání nad limit dostane odpověď `rate_limited`. Servery to zkusí později a nikoho kvůli tomu neodhlásí.
 
 ## Provozuj víc než jednu instanci
 
 Většině organizací stačí jedna instance s `CONNECT_STATE=memory`. Několik
-instancí za jednou adresou potřebuje `CONNECT_STATE=redis` a buď sdílený
-`CONNECT_DATA_DIR`, nebo `CONNECT_BINDINGS=firestore`, aby přihlášení zahájené
-na jedné instanci šlo dokončit na jiné.
+instancí za jednou adresou potřebuje `CONNECT_STATE=redis` a `CONNECT_BINDINGS=firestore`,
+aby přihlášení zahájené na jedné instanci šlo dokončit na jiné a každá instance viděla
+tytéž vazby Slacku a stejná vyřazená ID instalací. Sdílený `CONNECT_DATA_DIR` nefunguje:
+první Connect ho zamkne. Limity na instalaci, na adresu a na instanci požadavků platí pro
+každou instanci zvlášť; limity na přihlášení, tokeny GitHubu, tokeny bota, hledání GIF na
+adresu, vyřazení a týmy Slacku se sdílejí přes úložiště stavu.
 
 ## Obměň tajemství poskytovatele
 
@@ -268,19 +316,20 @@ uvidí „Connect zablokoval ID instalace tohoto serveru. Obraťte se na
 provozovatele svého serveru Connect.“ a každé přihlášení přes Connect na něm
 skončí.
 
+Server také vyřadí své vlastní staré ID instalace, když jeho vlastník vymění klíč. Dokáže, že ID je jeho, jedinou pečetí přihlašovacího údaje, kterou pro něj tento Connect vytvořil, takže vyřadit ID může jen server, který někoho přihlásil. Connect vyřazená ID drží natrvalo, takže starý klíč a každá pečeť k němu vytvořená přestanou fungovat, a uvolní týmy Slacku navázané na staré ID. Tokeny už vydané vyprší samy: do 8 hodin u osobních, do 1 hodiny u botových. Connect drží nejvýš 100 000 vyřazených ID; nad tím se rotace odmítne a log to zapíše na úrovni error.
+
 ## Řešení problémů
 
 ### Server hlásí, že ho Connect zablokoval
 
-Jeho ID instalace není v `CONNECT_ALLOWED_INSTALLS`, nebo je
-v `CONNECT_DENY_INSTALLS`. ID se změní, když vlastník vymění klíč; požádej
-o nové.
+Jeho ID instalace není v `CONNECT_ALLOWED_INSTALLS`, je v `CONNECT_DENY_INSTALLS`, nebo ho
+vyřadila výměna klíče. ID se změní, když vlastník vymění klíč; požádej o nové.
 
-### Poskytovatel se ukazuje jako nedostupný
+### Každé přihlášení k jednomu poskytovateli selže
 
-Chybí některá z jeho proměnných, takže Connect dráhu vynechal. Projdi log při
-startu a tabulky výše. GitHub potřebuje všechny čtyři: app id, slug, client id
-a client secret; Google potřebuje client id i secret.
+Může chybět některá z jeho proměnných, takže Connect dráhu vynechal. Projdi log při
+startu a tabulky výše. GitHub potřebuje všech pět: app id, slug, client id,
+client secret a soukromý klíč; Google potřebuje client id i secret.
 
 ### Přihlášení selhávají na nesouladu přesměrování
 

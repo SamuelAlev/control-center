@@ -1,5 +1,5 @@
 import 'package:cc_domain/features/pr_review/domain/entities/check_run.dart';
-import 'package:control_center/core/theme/design_system_palette.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
 /// The run duration of a check: `completedAt - startedAt` when finished, the

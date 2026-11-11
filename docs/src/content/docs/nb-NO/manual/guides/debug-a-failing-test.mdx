@@ -2,7 +2,7 @@
 title: Feilsøk en mislykket test med en agent
 description: La en agent sette et bruddpunkt, starte under en feilsøker og lese en ekte stakkramme i stedet for å legge til print-setninger.
 slug: nb-NO/handbok/slik-gjor-du/feilsok-mislykket-test
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Denne veiledningen viser deg hvordan du får en agent til å bruke en feilsøker på en feil som print-setninger ikke forklarer.
@@ -31,8 +31,8 @@ Den svarer med det den fant, eller forklarer at en adapter trenger begge halvdel
 | Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Følger med LLVM                    |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python velger prosjektets tolk]
-`debugpy` slås opp i `.venv/bin` eller `venv/bin` før `$PATH`. En python fra `$PATH` er et annet miljø, og å koble til fra det gale feiler på en måte som leses som ødelagt kode i stedet for som feil tolk.
+:::note[Python velger prosjektets tolk når kjøringen er i sandkasse]
+I en kjøring i sandkasse slås `debugpy` opp i `.venv/bin` eller `venv/bin` før `$PATH`. En python fra `$PATH` er et annet miljø, og å koble til fra det gale feiler på en måte som leses som ødelagt kode i stedet for som feil tolk. I en kjøring uten sandkasse bruker den bare `$PATH`, så et repo kan ikke velge hvilken tolk som kjører på serverens maskin.
 :::
 
 ## Sett bruddpunktet først, og start deretter
@@ -106,6 +106,8 @@ For en prosess som har låst seg, i stedet for en du starter selv:
 debug(op: "attach", port: 5858)
 ```
 
+Porten må være en av kjøringens egne videresendte porter. Enhver annen port avvises før noe starter, så en agent kan ikke koble seg til en prosess som tilhører noen andre på serverens maskin.
+
 ## Avslutt
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Avslutt alltid økten. En feilsøkingsadapter eier en **stoppet prosess** som holder på hva nå enn den prosessen holder — en port, en lås, en databasetilkobling.
 
 :::note[Den kan ikke løpe fra deg]
-Hver økt har en hard TTL den ikke kan forlenge, det finnes nøyaktig én per samtale, og alt rives ned når serveren stopper. En andre `launch` nektes i stedet for å erstatte den første: en agent som starter en uten å avslutte den andre, har nesten helt sikkert mistet oversikten over den første.
+Hver økt har en hard TTL den ikke kan forlenge (30 minutter), det finnes nøyaktig én per samtale, og alt rives ned når serveren stopper. I en kjøring i sandkasse beholder økten sandkassen sin på tvers av turer, men høyst så lenge. En andre `launch` nektes i stedet for å erstatte den første: en agent som starter en uten å avslutte den andre, har nesten helt sikkert mistet oversikten over den første.
 :::
 
 ## Avgrenset utdata

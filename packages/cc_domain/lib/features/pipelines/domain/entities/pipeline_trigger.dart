@@ -55,8 +55,13 @@ class PipelineTrigger {
     this.match = const {},
     this.lastFiredAt,
     this.catchUpPolicy = CronCatchUpPolicy.catchUpLatestOnly,
+    Set<String> armedByUserIds = const {},
     DateTime? createdAt,
-  }) : createdAt = createdAt ?? DateTime.now() {
+  }) : armedByUserIds = Set.unmodifiable({
+         for (final id in armedByUserIds)
+           if (id.isNotEmpty) id,
+       }),
+       createdAt = createdAt ?? DateTime.now() {
     if (eventType.isEmpty) {
       throw ArgumentError('eventType must not be empty');
     }
@@ -134,6 +139,13 @@ class PipelineTrigger {
   /// How missed scheduled fires (server downtime) are handled. Only meaningful
   /// for scheduled triggers; ignored for event/webhook/manual triggers.
   final CronCatchUpPolicy catchUpPolicy;
+
+  /// Every member who armed this trigger (enabled it on an event, schedule
+  /// or webhook) or edited it, or its pipeline, while it was armed. Set by
+  /// the server, never by a client; emptied when it is disarmed. Runs it
+  /// starts record them under `kPipelineArmedByKey`: not as requesters, but
+  /// as who may not approve a pull request those runs' agents open.
+  final Set<String> armedByUserIds;
 
   /// Whether [payload] satisfies this trigger's [match] filter. An empty
   /// filter always matches.
@@ -224,8 +236,10 @@ class PipelineTrigger {
     Map<String, dynamic>? match,
     DateTime? lastFiredAt,
     CronCatchUpPolicy? catchUpPolicy,
+    Set<String>? armedByUserIds,
     bool clearNextRunAt = false,
     bool clearLastFiredAt = false,
+    bool clearArmedBy = false,
   }) {
     return PipelineTrigger(
       id: id,
@@ -241,6 +255,9 @@ class PipelineTrigger {
       match: match ?? this.match,
       lastFiredAt: clearLastFiredAt ? null : (lastFiredAt ?? this.lastFiredAt),
       catchUpPolicy: catchUpPolicy ?? this.catchUpPolicy,
+      armedByUserIds: clearArmedBy
+          ? const {}
+          : (armedByUserIds ?? this.armedByUserIds),
       createdAt: createdAt,
     );
   }
@@ -265,6 +282,7 @@ class PipelineTrigger {
           _deepEquality.equals(match, other.match) &&
           lastFiredAt == other.lastFiredAt &&
           catchUpPolicy == other.catchUpPolicy &&
+          _deepEquality.equals(armedByUserIds, other.armedByUserIds) &&
           createdAt == other.createdAt;
 
   @override
@@ -282,6 +300,7 @@ class PipelineTrigger {
     _deepEquality.hash(match),
     lastFiredAt,
     catchUpPolicy,
+    _deepEquality.hash(armedByUserIds),
     createdAt,
   );
 }

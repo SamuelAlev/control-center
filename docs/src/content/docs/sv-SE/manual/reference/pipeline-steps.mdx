@@ -2,7 +2,7 @@
 title: Pipeline-stegtyper
 description: Referens för pipeline-stegtyper, kroppsnycklar för steg, deras konfiguration och stegresultat.
 slug: sv-SE/handbok/referens/pipeline-steg
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Ett pipelinesteg har två oberoende axlar:
@@ -61,7 +61,7 @@ Generisk nod för prompt och utskick: renderar prompten, skickar ut agenten i et
 
 ### `pipeline.condition`
 
-Kropp för routern – läser `config.extras`, utvärderar ett villkor och returnerar `StepResult.route(key)`. Villkor är **inte** JavaScript-uttryck; tre sätt att skriva dem stöds, i prioritetsordning:
+Kropp för routern – läser `config.extras`, utvärderar ett villkor och returnerar `StepResult.route(key)`. Villkor är **inte** JavaScript-uttryck; två sätt att skriva dem stöds, i prioritetsordning:
 
 - **Predikatträd** (`extras.predicate`) – ett booleskt träd som dirigerar `"true"` / `"false"`. Varje nod är en map med ett `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` – sant när någon av de angivna sökvägarna finns på disken; `negate` vänder på det; `recursive` söker även i underkataloger (och hoppar över `.git`, `node_modules`, `build`, `.dart_tool`). Relativa sökvägar löses mot `state[baseKey]` (standard `repo_local_path`), annars mot arbetsytans katalog för körningen.
@@ -69,19 +69,28 @@ Kropp för routern – läser `config.extras`, utvärderar ett villkor och retur
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` – booleska grupper.
   - `{"type": "not", "of": <predicate>}` – negation.
 - **Switch** (`extras.switchKey`) – `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; dirigerar till det första fall som tillståndsvärdet innehåller utan hänsyn till skiftläge, annars `default`.
-- **Jämförelse** (äldre toppnivå: `extras.left` / `extras.op` / `extras.right`) – likvärdig med predikatet `comparison`, finns kvar för mallar som skrevs innan trädet.
 
 Kanter ut från noden bär en `routeKey` som måste matcha den returnerade nyckeln.
 
 ### `prReview.comment`
 
-Publicerar de sammanställda fynden som en PR-granskningskommentar via GitHub-PR-klienten.
+Publicerar de sammanställda fynden, eller stegets egna `extras.message`, som en PR-granskningskommentar via GitHub-PR-klienten.
 
-| Tillståndsnyckel        | Beskrivning                                   |
-| ----------------------- | --------------------------------------------- |
-| `repo_full_name`        | `owner/repo` (obligatoriskt)                  |
-| `pr_number`             | PR-nummer – int eller numerisk sträng (obligatoriskt) |
-| `consolidated_findings` | Kommentarens brödtext (obligatoriskt)         |
+| Nyckel                  | Läses från      | Beskrivning                                         |
+| ----------------------- | --------------- | --------------------------------------------------- |
+| `repo_full_name`        | triggerns nyttolast | `owner/repo` (obligatoriskt)                    |
+| `pr_number`             | triggerns nyttolast | PR-nummer, ett positivt heltal eller numerisk sträng (obligatoriskt) |
+| `consolidated_findings` | tillståndet     | Kommentarens brödtext när steget saknar `message`   |
+
+Pull requesten kommer bara från körningens triggernyttolast, aldrig från tillstånd som ett steg kan skriva om mitt i körningen. @-omnämnanden i den publicerade texten görs verkningslösa, så kommentaren meddelar ingen.
+
+En `message` renderar sina `{{key}}`-platshållare så här:
+
+- `repo_full_name`, `repo_owner`, `repo_name` och `pr_number` renderar pull requesten som steget publicerar på.
+- `author` renderas från triggerns nyttolast, oförändrat, bara när det är ett giltigt användarnamn på kodvärden; allt annat gör steget misslyckat.
+- `consolidated_findings` renderas som rå markdown, med sina @-omnämnanden gjorda verkningslösa.
+- Alla andra värden renderas som bokstavlig text: på en rad, med markdown-skiljetecken escapade och @-omnämnanden gjorda verkningslösa.
+- En platshållare som inte ger något värde gör steget misslyckat.
 
 Returnerar `StepResult.terminal` med `comment_review_id` och `commented_at` i tillståndet.
 

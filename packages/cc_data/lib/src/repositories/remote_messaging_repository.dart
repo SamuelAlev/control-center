@@ -399,7 +399,7 @@ class RemoteMessagingRepository {
   /// Raw live turn-relay frames for [spaceId] (`seed` / `updates` — see
   /// `spaceTurnEventFromWire` for the typed decode).
   ///
-  /// Workspace-keyed callers pass [workspaceId]. The legacy space-only
+  /// Workspace-keyed callers pass [workspaceId]. The space-only
   /// `SpaceTurnRelayPort` uses the client's active workspace when omitted.
   Stream<Map<String, dynamic>> watchSpaceTurns(
     String spaceId, {

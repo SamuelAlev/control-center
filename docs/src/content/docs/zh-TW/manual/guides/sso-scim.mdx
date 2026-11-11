@@ -2,7 +2,7 @@
 title: 用 SCIM 佈建使用者
 description: 讓你的 IdP 自動建立、更新與取消佈建 Control Center 帳號。
 slug: zh-TW/手冊/操作指南/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 當你需要生命週期控管時請使用本指南——離職必須自動撤銷存取權，而不只是
@@ -31,8 +31,7 @@ sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
    - **Authentication**：`Authorization: Bearer <token>`
    - **User id**：`userName`（電子郵件）或 `externalId`——兩者都能對應
 4. 先用一位使用者測試：從 IdP 推送該使用者，確認他出現在清單中（SCIM
-   建立時會把供應商的 `externalId` 釘在帳號上，與第一次 SSO 登入所釘住的
-   是同一個值）。
+   建立時會把供應商的 `externalId` 記錄在帳號上，之後的 SCIM 呼叫就是靠它找到該帳號），然後讓此人透過 SSO 登入，再全面推出。
 
 ## 取消佈建會做什麼
 
@@ -50,6 +49,7 @@ SCIM 會先拒絕處理（請先轉移擁有權）。否則：
 
 ## 疑難排解
 
+- **已佈建的人員被拒絕，並顯示「此帳戶已連結至不同的 SSO 身分識別」**——已知限制：以 `externalId` 由 SCIM 建立的帳號會維持與該 ID 的綁定，而該帳號的第一次 SSO 登入會被拒絕。在修正之前，請不帶 `externalId` 佈建，或讓 JIT 佈建在第一次登入時建立帳號，並只用 SCIM 進行取消佈建。
 - **每次呼叫都回 401**——token 已變更；請重新產生並更新 IdP。
 - **端點無法觸達**——通道中斷，或該伺服器僅支援中繼。SCIM 需要直接的
   HTTPS；JIT 則不受影響，仍可正常運作。

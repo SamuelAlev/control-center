@@ -5,10 +5,10 @@ import 'package:control_center/core/storage/app_support_path_provider.dart';
 
 /// Single root for everything Control Center persists on disk.
 ///
-/// The on-disk layout logic now lives in cc_infra's [CcPaths] (Flutter-free, so
+/// The on-disk layout logic lives in cc_infra's [CcPaths] (Flutter-free, so
 /// the headless server reuses it with its own root). lib supplies the
-/// device-resolved app-support base via [AppSupportPathProvider] and re-exposes
-/// the legacy free-function API below so existing call sites are unchanged.
+/// device-resolved app-support base via [AppSupportPathProvider] and exposes
+/// the free functions below over it.
 ///
 /// Layout under the root (see [CcPaths]): `global.db`, per-workspace
 /// `<workspaceId>/workspace.db`, `mcp.json`, `rift.sqlite`, `models/`,

@@ -6,7 +6,9 @@ import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
+import 'package:cc_server_core/src/identity/identity_audit.dart';
 import 'package:uuid/uuid.dart';
 
 /// How SSO-authenticated members are auto-added to workspaces (shared by the
@@ -53,7 +55,9 @@ class SsoClaims {
   /// Display name, when supplied.
   final String? displayName;
 
-  /// Preferred handle/username, when supplied (defaults from the email).
+  /// The IdP's username, when supplied: only a suggestion for a NEW
+  /// account's username (the email's local part otherwise), never used to
+  /// match an existing account.
   final String? handle;
 
   /// Group/role names for role mapping.
@@ -109,9 +113,8 @@ class SsoProvisioningPolicy {
 }
 
 /// Shared just-in-time provisioning for every SSO login path (OIDC today,
-/// SAML joining): find-or-create the user by email (then handle), publish
-/// `UserCreated` for new users and ensure workspace memberships under the
-/// over-grant-trap gate.
+/// SAML joining): find-or-create the user by SSO subject, then verified
+/// email, and ensure workspace memberships under the over-grant-trap gate.
 ///
 /// Extracted verbatim from `OidcService` so both flavors stay
 /// behavior-identical — the security review that approved the OIDC semantics
@@ -134,15 +137,26 @@ class SsoProvisioner {
   final DateTime Function() _now;
   static const _uuid = Uuid();
 
-  /// Resolve/create user by SSO subject → email → handle; pin subject at first login.
-  /// Refuse if account already pinned to a different subject/issuer. No JIT when `allowJit` is false.
+  /// Resolve/create user by SSO subject → vouched email; pin subject at
+  /// first login. Refuse if account already pinned to a different
+  /// subject/issuer. No JIT when `allowJit` is false.
+  ///
+  /// An email identifies an account only when both ends vouch for it: the
+  /// provider's claim says it is verified, and the account's address was put
+  /// there by a provider or the server owner ([User.emailVerified]). An
+  /// address a person typed about themselves (profile, invite) never
+  /// matches, so it can never receive someone else's login, subject pin or
+  /// group-derived memberships.
+  ///
+  /// Never matches by username: people choose their own, so a username an
+  /// IdP asserts says nothing about which account it is. It is only the
+  /// suggestion for a new account's name.
   Future<User> provisionUser(
     SsoClaims claims, {
     required SsoProvisioningPolicy policy,
   }) async {
     final email = claims.email;
-    final handleClaim = claims.handle ?? email?.split('@').first ?? 'sso-user';
-    final displayName = claims.displayName ?? handleClaim;
+    final vouched = email != null && email.isNotEmpty && claims.emailVerified;
 
     User? matched;
     if (claims.ssoSubject != null && claims.ssoIssuer != null) {
@@ -151,19 +165,7 @@ class SsoProvisioner {
         claims.ssoSubject!,
       );
     }
-    matched ??= (email == null || !claims.emailVerified)
-        ? null
-        : await _users.getByEmail(email);
-    // Handle matching is only safe on a vouched claim set. An UNVERIFIED
-    // (or email-less) login must never match an existing account by its
-    // self-asserted username: a co-resident IdP user who omits email and
-    // sets `preferred_username` to a colleague's handle would otherwise
-    // match, get pinned and take the account over — the same class as the
-    // unverified-email takeover. SAML assertions are signed, so they always
-    // carry the vouch; OIDC does not unless the issuer verified the email.
-    matched ??= (email == null && claims.emailVerified)
-        ? await _users.getByHandle(sanitizeHandle(handleClaim))
-        : null;
+    matched ??= vouched ? await _users.getByVerifiedEmail(email) : null;
     if (matched != null) {
       if (matched.deactivatedAt != null) {
         // SCIM-deprovisioned accounts never log back in, whatever the IdP
@@ -182,18 +184,26 @@ class SsoProvisioner {
           'This account is already linked to a different SSO identity',
         );
       }
+      var updated = matched;
       if (claims.ssoSubject != null &&
           claims.ssoIssuer != null &&
           matched.ssoSubject == null) {
         // First SSO login for an invited/bootstrap account: pin it.
-        final pinned = matched.copyWith(
+        updated = updated.copyWith(
           ssoSubject: claims.ssoSubject,
           ssoIssuer: claims.ssoIssuer,
         );
-        await _users.upsert(pinned);
-        return pinned;
       }
-      return matched;
+      if (vouched &&
+          updated.email == normalizeEmail(email) &&
+          !updated.emailVerified) {
+        // The provider now stands behind the address this account holds.
+        updated = updated.copyWith(emailVerified: true);
+      }
+      if (updated != matched) {
+        await _users.upsert(updated);
+      }
+      return updated;
     }
     if (!policy.allowJit) {
       // JIT disabled by the admin: unknown identities are refused outright —
@@ -204,36 +214,32 @@ class SsoProvisioner {
         'provision or invite you first',
       );
     }
-    final sanitized = sanitizeHandle(handleClaim);
-    var candidate = sanitized;
-    var suffix = 1;
-    while (await _users.getByHandle(candidate) != null) {
-      suffix += 1;
-      candidate = '$sanitized$suffix';
-    }
-    // An unverified email may seed a new account, but never SHADOW an
-    // existing one: a duplicate row would make the real owner's later
-    // verified login ambiguous (getByEmail cannot resolve two rows) and
-    // deny them service. Drop the address — the claim set was not vouched
-    // anyway.
-    var seedEmail = email;
-    if (email != null && !claims.emailVerified) {
-      final owned = await _users.getByEmail(email);
-      if (owned != null) {
-        seedEmail = null;
-      }
-    }
-    final user = User(
-      id: _uuid.v4(),
-      handle: candidate,
-      displayName: displayName,
-      email: seedEmail,
-      ssoSubject: claims.ssoSubject,
-      ssoIssuer: claims.ssoIssuer,
-      createdAt: _now(),
+    final id = _uuid.v4();
+    final seedEmail = await claimEmailFor(
+      _users,
+      userId: id,
+      email: email,
+      vouched: vouched,
     );
-    await _users.upsert(user);
-    return user;
+    // The IdP's username (else the email's local part) is only the
+    // suggestion; the person picks their own in onboarding's first step.
+    final suggested = Username.fromFreeText(
+      claims.handle ?? email ?? '',
+      fallback: 'member',
+    );
+    final displayName = claims.displayName?.trim() ?? '';
+    return _users.insertWithFreeHandle(
+      User(
+        id: id,
+        handle: suggested.value,
+        displayName: displayName.isNotEmpty ? displayName : suggested.value,
+        email: seedEmail,
+        emailVerified: vouched && seedEmail != null,
+        ssoSubject: claims.ssoSubject,
+        ssoIssuer: claims.ssoIssuer,
+        createdAt: _now(),
+      ),
+    );
   }
 
   /// Ensures memberships per [policy]. Security gate (PRD 14 §13 over-grant
@@ -282,15 +288,6 @@ class SsoProvisioner {
         ),
       );
     }
-  }
-
-  /// Lowercases and reduces a raw provider handle to `[a-z0-9_.-]`.
-  static String sanitizeHandle(String raw) {
-    final cleaned = raw
-        .toLowerCase()
-        .replaceAll(RegExp('[^a-z0-9_.-]+'), '-')
-        .replaceAll(RegExp('^-+|-+\$'), '');
-    return cleaned.isEmpty ? 'sso-user' : cleaned;
   }
 
   /// Accept a web-popup connect-tab origin, or null if unusable.
@@ -354,4 +351,39 @@ class SsoLoginResult {
   /// Public key of the client that initiated this login. Never trust an
   /// unsealed device credential to a browser completion page.
   final String? recipientPublicKey;
+}
+
+/// The address a NEW account [userId] may hold, given that its identity
+/// provider asserted [email] ([vouched] when it stands behind it).
+///
+/// Only one account holds a vouched address. A vouched identity takes the
+/// address from the accounts that merely typed it (each is cleared and
+/// audited by user id). It never takes one another account holds vouched
+/// (a caller that may match that account has already done so), and an
+/// unvouched identity never shadows any holder: either way the new account
+/// gets no address.
+Future<String?> claimEmailFor(
+  UserRepository users, {
+  required String userId,
+  required String? email,
+  required bool vouched,
+}) async {
+  if (email == null || email.isEmpty) {
+    return null;
+  }
+  final holders = await users.getAllByEmail(email);
+  if (!vouched) {
+    return holders.isEmpty ? email : null;
+  }
+  if (holders.any((holder) => holder.emailVerified)) {
+    return null;
+  }
+  for (final holder in holders) {
+    await users.upsert(holder.copyWith(removeEmail: true));
+    identityAudit(IdentityAuditEvent.unvouchedEmailCleared, {
+      'user_id': userId,
+      'holder_user_id': holder.id,
+    });
+  }
+  return email;
 }

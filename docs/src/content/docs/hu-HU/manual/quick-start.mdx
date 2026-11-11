@@ -2,7 +2,7 @@
 title: Gyors kezdés
 description: Telepítse a Control Centert, konfiguráljon egy ügynököt, és nézze, ahogy a repóján dolgozik.
 slug: hu-HU/kezikonyv/gyors-kezdes
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Ez a legrövidebb teljes út attól, hogy semmije sincs, odáig, hogy egy ügynök a saját kódján dolgozik. Kövesse sorrendben; minden lépés az előzőre épül.
@@ -16,7 +16,7 @@ Telepítse a Control Centert a [Telepítés](/hu-HU/kezikonyv/telepites/) oldalo
 Az első indításkor az asztali alkalmazás az **Üdvözli a Control Center** képernyőt jeleníti meg. Válassza a **Futtatás ebben az alkalmazásban** lehetőséget. A Control Center elindít egy headless `cc_server` folyamatot ezen a gépen, amely a saját adatait birtokolja, és minden munkát elvégez. Ezt sosem látja; helyette a bevezető képernyő nyílik meg.
 
 :::note[Inkább nem telepítene semmit?]
-Ugyanez az alkalmazás ugyanazokkal a funkciókkal fut böngészőben az [app.usectrl.dev](https://app.usectrl.dev) címen. A böngészőfül azonban nem tud szervert hosztolni, ezért Önnek kell biztosítania egyet — futtassa a `cc_server`-t helyben, és csatlakozzon a `ws://localhost:9030` címhez, vagy irányítsa egy másik gépen futó szerverre. Ez a gyors kezdés az asztali utat választja, mert nem igényel szerverbeállítást; a böngészős útvonalhoz lásd a [Telepítés](/hu-HU/kezikonyv/telepites/#use-it-in-your-browser) oldalt.
+Ugyanez az alkalmazás ugyanazokkal a funkciókkal fut böngészőben az [app.usectrl.dev](https://app.usectrl.dev) címen. A böngészőfül azonban nem tud szervert hosztolni, ezért Önnek kell biztosítania egyet — futtassa a `cc_server`-t helyben, és csatlakozzon a `ws://localhost:9030` címhez, vagy irányítsa egy másik gépen futó szerverre. Ez a gyors kezdés az asztali utat választja, mert nem igényel szerverbeállítást; a böngészős útvonalhoz lásd a [Telepítés](/hu-HU/kezikonyv/telepites/#használat-a-böngészőben) oldalt.
 :::
 
 ## 2. lépés: A bevezető végigvitele
@@ -25,7 +25,7 @@ A bevezető lépései sorrendben futnak le — nincs lehetőség előreugrani. A
 
 1. **Bejelentkezés** (csak a szerver tulajdonosának): válassza ki, hogyan jelentkeztesse be ez a szerver az embereket a GitHubra, a Google Calendarba és a Linearbe — **A Control Center alkalmazásainak használata**, **Saját alkalmazások használata** vagy **Egyéni Connect-szerver használata**. Saját alkalmazásokkal a **Saját GitHub-alkalmazás létrehozása** egy lépésben beállítja a GitHubot. Ezt később a **Beállítások → Szerver → Egyszeri bejelentkezés** helyen módosíthatja.
 2. **Csatlakozás**: jelentkezzen be a GitHubra, vagy illesszen be egy GitLab- vagy Bitbucket-tokent. A hitelesítő adat a szerveren tárolódik, a fiókjához csatolva.
-3. **Munkaterület**: adjon nevet az első munkaterületének, és igény szerint válasszon logót. Létrehozásakor öt ügynök jön létre — egy CEO, valamint `qa`, `architect`, `engineer` és `librarian` —, továbbá a beépített pipeline-sablonok.
+3. **Munkaterület** (csak a szerver tulajdonosa): adjon nevet az első munkaterületének, és igény szerint válasszon logót. Mindenki más a **Még nincs munkaterületen** üzenetnél vár, amíg a tulajdonos nem hoz létre neki egyet, vagy munkaterület-adminisztrátor nem hívja meg. Létrehozásakor hat ügynök jön létre — egy CEO, valamint `qa`, `architect`, `engineer`, `librarian` és `content-synthesizer` —, továbbá a beépített pipeline-sablonok.
 4. **Homokozó**: rögzít egy homokozóra vonatkozó beállítást. Bármelyik választással folytathatja.
 5. **Adapter**: válassza ki, melyik adapter és modell legyen az ügynökök alapértelmezése. Válassza a **Control Center (built-in)** lehetőséget, majd a megjelenő szolgáltatóválasztóval jelentkezzen be egy modellszolgáltatóhoz — a modellista üresen marad, amíg nincs csatlakoztatva szolgáltató. A lépés befejezése az adaptert és a modellt a munkaterület CEO ügynökére is ráírja.
 6. **Hang (opcionális)**: telepítsen egy eszközön futó beszédfelismerő modellt a diktáláshoz, vagy hagyja ki.
@@ -33,7 +33,7 @@ A bevezető lépései sorrendben futnak le — nincs lehetőség előreugrani. A
 Ezután a Control Center megnyitja a munkaterület beérkező üzeneteit.
 
 :::note[Mi korlátozza egy ügynök futását]
-Az ügynökparancsok a gazdagép operációs rendszerének natív homokozójába csomagolódnak, amikor az elérhető — Seatbelt macOS-en, bubblewrap Linuxon. Windows rendszeren nincs háttérrendszer, így az ottani futásokat csak a többi réteg korlátozza: a beszélgetés saját worktree-je (`git worktree` Windows esetén; copy-on-write ott, ahol a `rift` elérhető), az indításonként közvetített és a lebontáskor visszavont hitelesítő adatok, valamint a műveletkorlátok. Lásd: [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/).
+Az ügynökparancsok a gazdagép operációs rendszerének natív homokozójába csomagolódnak, amikor az elérhető — Seatbelt macOS-en, bubblewrap Linuxon. Windows rendszeren nincs háttérrendszer. Olyan gazdagépen, ahol nincs ilyen, csak a szerver tulajdonosának ügynökfuttatásai indulnak el, és ezeket csak a többi réteg korlátozza: a beszélgetés saját worktree-je (`git worktree` Windows esetén; copy-on-write ott, ahol a `rift` elérhető), az indításonként közvetített és a lebontáskor visszavont hitelesítő adatok, valamint a műveletkorlátok. Mindenki másé addig van elutasítva, amíg a tulajdonos fel nem telepíti a homokozót, vagy mindenki számára ki nem kapcsolja a homokozást. Lásd: [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/).
 :::
 
 ## 3. lépés: Tároló hozzáadása
@@ -57,7 +57,7 @@ A **Beállítások** lapon állítsa be:
 
 Nyomja meg a **Módosítások mentése** gombot.
 
-Ez a lépés a gyakorlatban nem elhagyható. Csak a CEO ügynök örökli a bevezető során kiválasztott adaptert; a négy szakértő adapter nélkül jön létre. Ilyenkor a **Control Center (built-in)** adapterre esnek vissza az Anthropic alapértelmezett modelljével, így csak akkor futnak, ha csatlakoztatott egy Anthropic-fiókot — és ha csatlakoztatott, akkor is egy Ön által nem választott modellen.
+Ez a lépés a gyakorlatban nem elhagyható. A bevezető adapter-lépése beállítja az adaptert és a modellt minden akkor létező ügynökön; a később létrehozott munkaterület mind a hat ügynöke beállítás nélkül jön létre. Ilyenkor a **Control Center (built-in)** adapterre esnek vissza az Anthropic alapértelmezett modelljével, így csak akkor futnak, ha csatlakoztatott egy Anthropic-fiókot — és ha csatlakoztatott, akkor is egy Ön által nem választott modellen.
 
 ## 5. lépés: Küldjön feladatot az ügynöknek
 

@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 
 /// Guards against copyWith field-omission — a class of bug invisible to
 /// `dart analyze` (an omitted field silently takes its constructor default).
-/// The subagent-cost rollup does `parent.copyWith(childCostCents: v)` on every
+/// The subagent-cost rollup does `parent.copyWith(childCostMicros: v)` on every
 /// child completion, so any field copyWith forgets is silently reset on persist.
 void main() {
   group('AgentRunLog.copyWith preservation', () {
@@ -22,17 +22,17 @@ void main() {
         estimatedCostCents: 3,
       ),
       role: AgentRunRole.sub,
-      childCostCents: 42,
+      childCostMicros: 420000,
       outputContractMode: OutputContractMode.permissive,
       expectedOutputSchema: const {'type': 'object'},
       lastOutputAt: DateTime(2025, 6, 1, 12),
     );
 
     test('a single-field copyWith preserves every other field', () {
-      // Mirrors the propagator's write: bump only childCostCents.
-      final next = base.copyWith(childCostCents: 99);
+      // Mirrors the propagator's write: bump only childCostMicros.
+      final next = base.copyWith(childCostMicros: 990000);
 
-      expect(next.childCostCents, 99, reason: 'the changed field applies');
+      expect(next.childCostMicros, 990000, reason: 'the changed field applies');
       // Everything else must survive — especially the contract mode, which a
       // forgotten copyWith line would silently reset to strict.
       expect(next.outputContractMode, OutputContractMode.permissive);

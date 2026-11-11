@@ -18,33 +18,45 @@ import 'dart:collection' show LinkedHashSet;
 
 import 'package:cc_domain/core/domain/entities/directory_listing.dart';
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/repos/presentation/widgets/repo_folder_browser.dart';
+import 'package:control_center/features/repos/providers/repo_providers.dart'
+    show RepoRegistration;
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 
-/// The outcome of a batch registration: the repo ids that were created and
-/// the per-path error for every pick that failed.
-typedef RepoAddOutcome = ({List<String> added, Map<String, Object> failed});
+/// The outcome of a batch registration: the repo ids that were created, the
+/// per-path error for every pick that failed, and what automation cannot
+/// reach in the repos that were added.
+typedef RepoAddOutcome = ({
+  List<String> added,
+  Map<String, Object> failed,
+  List<RepoAccessIssue> issues,
+});
 
 /// Registers every folder in [paths] into [workspaceId], continuing past
 /// individual failures so one invalid pick never drops the rest of the batch.
 /// Registration order matches [paths] order.
 Future<RepoAddOutcome> registerReposFromPaths(
-  Future<String> Function(String workspaceId, String path) register,
+  Future<RepoRegistration> Function(String workspaceId, String path) register,
   String workspaceId,
   List<String> paths,
 ) async {
   final added = <String>[];
   final failed = <String, Object>{};
+  final issues = <RepoAccessIssue>[];
   for (final path in paths) {
     try {
-      added.add(await register(workspaceId, path));
+      final registration = await register(workspaceId, path);
+      added.add(registration.repoId);
+      issues.addAll(registration.issues);
     } catch (e) {
       failed[path] = e;
     }
   }
-  return (added: added, failed: failed);
+  return (added: added, failed: failed, issues: issues);
 }
 
 /// Dialog that registers repos by browsing the server's filesystem.
@@ -71,7 +83,8 @@ class AddRepoDialog extends StatefulWidget {
 
   /// Registers the repo at a server path, returning the new repo id (captured
   /// from a provider).
-  final Future<String> Function(String workspaceId, String path) register;
+  final Future<RepoRegistration> Function(String workspaceId, String path)
+  register;
 
   /// The workspace the repos are registered into. Repos are workspace-scoped,
   /// so this is threaded from the route rather than resolved implicitly.
@@ -186,7 +199,7 @@ class _AddRepoDialogState extends State<AddRepoDialog> {
           style: TextStyle(color: tokens?.textTertiary, height: 1.4),
         ),
         const SizedBox(height: 12),
-        _PathBar(
+        RepoBrowserPathBar(
           listing: listing,
           onUp: listing?.parent != null && !_saving
               ? () => _open(listing!.parent)
@@ -195,14 +208,14 @@ class _AddRepoDialogState extends State<AddRepoDialog> {
         ),
         if (listing != null && listing.roots.length > 1) ...[
           const SizedBox(height: 8),
-          _RootChips(
+          RepoBrowserRootChips(
             roots: listing.roots,
             current: listing.path,
             onSelect: _saving ? null : _open,
           ),
         ],
         const SizedBox(height: 8),
-        _FolderList(
+        RepoFolderList(
           loading: _loading,
           error: _browseError,
           listing: listing,
@@ -256,240 +269,6 @@ class _AddRepoDialogState extends State<AddRepoDialog> {
           ],
         ),
       ],
-    );
-  }
-}
-
-/// The current path with a button to navigate to the parent directory.
-class _PathBar extends StatelessWidget {
-  const _PathBar({
-    required this.listing,
-    required this.onUp,
-    required this.upLabel,
-  });
-
-  final DirectoryListing? listing;
-  final VoidCallback? onUp;
-  final String upLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem;
-    return Row(
-      children: [
-        CcButton(
-          onPressed: onUp,
-          variant: CcButtonVariant.secondary,
-          size: CcButtonSize.sm,
-          icon: CcIcons.cornerLeftUp,
-          child: Text(upLabel),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            listing?.path ?? '…',
-            style: CcFonts.code(
-              textStyle: TextStyle(color: tokens?.textSecondary, fontSize: 13),
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textDirection: TextDirection.ltr,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Quick-jump chips for the configured browse roots (shown when there is more
-/// than one).
-class _RootChips extends StatelessWidget {
-  const _RootChips({
-    required this.roots,
-    required this.current,
-    required this.onSelect,
-  });
-
-  final List<String> roots;
-  final String current;
-  final void Function(String path)? onSelect;
-
-  @override
-  Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        for (final root in roots)
-          CcButton(
-            onPressed: root == current || onSelect == null
-                ? null
-                : () => onSelect!(root),
-            variant: root == current
-                ? CcButtonVariant.line
-                : CcButtonVariant.ghost,
-            size: CcButtonSize.sm,
-            icon: CcIcons.house,
-            child: Text(_lastSegment(root)),
-          ),
-      ],
-    );
-  }
-
-  static String _lastSegment(String path) {
-    final trimmed = path.replaceAll(RegExp(r'[\\/]+$'), '');
-    final parts = trimmed.split(RegExp(r'[\\/]'));
-    final last = parts.isEmpty ? '' : parts.last;
-    return last.isEmpty ? path : last;
-  }
-}
-
-/// The scrollable list of subdirectories — folders navigate in, git checkouts
-/// carry a selection checkbox.
-class _FolderList extends StatelessWidget {
-  const _FolderList({
-    required this.loading,
-    required this.error,
-    required this.listing,
-    required this.selected,
-    required this.enabled,
-    required this.emptyLabel,
-    required this.onOpen,
-    required this.onToggle,
-  });
-
-  final bool loading;
-  final String? error;
-  final DirectoryListing? listing;
-  final Set<String> selected;
-  final bool enabled;
-  final String emptyLabel;
-  final void Function(String path)? onOpen;
-  final void Function(String path)? onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem;
-    return Container(
-      height: 260,
-      decoration: BoxDecoration(
-        color: tokens?.panel,
-        borderRadius: AppRadii.brLg,
-        border: Border.all(
-          color: tokens?.borderSecondary ?? const Color(0x1A000000),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: _buildBody(context, tokens),
-    );
-  }
-
-  Widget _buildBody(BuildContext context, DesignSystemTokens? tokens) {
-    if (loading) {
-      return const Center(child: CcSpinner());
-    }
-    if (error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            error!,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: tokens?.danger),
-          ),
-        ),
-      );
-    }
-    final entries = listing?.entries ?? const <DirectoryEntry>[];
-    if (entries.isEmpty) {
-      return Center(
-        child: Text(emptyLabel, style: TextStyle(color: tokens?.textTertiary)),
-      );
-    }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        return _FolderRow(
-          entry: entry,
-          selected: selected.contains(entry.path),
-          onOpen: onOpen == null ? null : () => onOpen!(entry.path),
-          onToggle: entry.isGitRepo && onToggle != null
-              ? () => onToggle!(entry.path)
-              : null,
-        );
-      },
-    );
-  }
-}
-
-/// A single folder row: tap the body to navigate in; git checkouts carry a
-/// selection checkbox with its own tap target (checking never navigates).
-class _FolderRow extends StatelessWidget {
-  const _FolderRow({
-    required this.entry,
-    required this.selected,
-    required this.onOpen,
-    required this.onToggle,
-  });
-
-  final DirectoryEntry entry;
-  final bool selected;
-  final VoidCallback? onOpen;
-  final VoidCallback? onToggle;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem;
-    return CcTappable(
-      onPressed: onOpen,
-      semanticLabel: entry.name,
-      builder: (context, states) {
-        final hovered = states.contains(WidgetState.hovered);
-        return Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          color: hovered ? tokens?.hover : null,
-          child: Row(
-            children: [
-              Icon(
-                entry.isGitRepo ? CcIcons.folderGit : CcIcons.folder,
-                size: 16,
-                color: entry.isGitRepo
-                    ? (tokens?.accent ?? const Color(0xFFE2570F))
-                    : (tokens?.muted ?? const Color(0xFF6B7280)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  entry.name,
-                  style: TextStyle(color: tokens?.textPrimary, fontSize: 13),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (onToggle != null)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onToggle,
-                  child: Padding(
-                    padding: const EdgeInsets.all(6),
-                    child: IgnorePointer(
-                      child: CcCheckbox(value: selected, onChanged: (_) {}),
-                    ),
-                  ),
-                )
-              else
-                Icon(
-                  CcIcons.chevronRight,
-                  size: 16,
-                  color: tokens?.idle ?? const Color(0xFF9CA3AF),
-                ),
-            ],
-          ),
-        );
-      },
     );
   }
 }

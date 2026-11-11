@@ -2,7 +2,7 @@
 title: Deployment e client
 description: Come l'architettura thin client di Control Center separa un server headless dai suoi client desktop, web e mobile.
 slug: it-IT/manuale/concetti/deployment
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center non è un unico programma. È un'**architettura thin client**: un
@@ -138,6 +138,8 @@ instrada le richieste dell'editor attraverso la sessione cifrata esistente verso
 di HTTPS o di un contesto loopback sicuro per i service worker. I client nativi
 usano una facade loopback con ambito di capacità.
 
+Solo il [proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server) può aprire l'editor code-server incorporato: viene eseguito sul server come utente del server stesso. Una sessione appartiene al dispositivo e alla persona che l'hanno aperta. Si apre con l'attendibilità dell'area di lavoro di VS Code attiva, quindi VS Code chiede conferma prima di considerare attendibile una cartella, e con le attività automatiche disattivate. Tutti gli altri mantengono l'editor integrato a singolo file e le viste dei file.
+
 ### App complementare per il telefono (cc_remote)
 
 L'app **Remote** è un client separato e più leggero: una PWA web Flutter su
@@ -210,8 +212,10 @@ invece di essere eseguito. Oggi solo un vero `cc_worker` esegue lavori in lease.
 
 I due livelli non applicano lo stesso sandbox. `cc_server` avvolge le esecuzioni
 che esegue da sé nel sandbox del sistema operativo dell'host dove esiste un
-backend — Seatbelt su macOS, bubblewrap su Linux e WSL2 — e ricorre agli altri
-confini su Windows o in assenza di `bwrap` e `socat`. **`cc_worker` non applica
+backend — Seatbelt su macOS, bubblewrap su Linux e WSL2. Su Windows, o in assenza di `bwrap` e `socat`, avvia
+solo le esecuzioni di cui risponde il proprietario del server e rifiuta quelle degli
+altri, a meno che il proprietario non l'abbia avviato con `--sandbox off`, che esegue
+gli agenti di ogni membro senza confinamento. **`cc_worker` non applica
 alcun sandbox.** Annuncia una capacità `sandbox` così il server può posizionare i
 lavori in base alla piattaforma, ma nulla nel worker ne applica uno: un lavoro in
 lease viene avviato direttamente, limitato dall'ambiente del lease e dal worktree
@@ -261,7 +265,7 @@ salvato. Alla prima connessione, verifica quella impronta tramite un QR
 attendibile o un altro canale attendibile: un primo contatto firmato, da solo, non
 può autenticare chi ha fornito la chiave. Se l'identità cambia, il client fallisce
 in modo restrittivo; riassocia tramite un canale attendibile invece di ignorare la
-discrepanza. I client più vecchi e l'RPC in chiaro non possono connettersi. TLS
+discrepanza. L'RPC in chiaro non viene accettato. TLS
 resta necessario per le origini dei browser, il bootstrap e i metadati pubblici;
 `--insecure` riguarda il listener esterno del server, non la sessione cifrata
 obbligatoria.

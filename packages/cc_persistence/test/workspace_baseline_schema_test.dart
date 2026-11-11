@@ -1,12 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
-import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
-import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_persistence/database/daos/notification_feed_dao.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
-import 'package:drift/drift.dart' show Value, Variable;
+import 'package:drift/drift.dart' show Variable;
 import 'package:drift/native.dart';
 import 'package:test/test.dart';
 
@@ -65,8 +62,8 @@ void main() {
       },
     );
 
-    // A file from before v4 never had script columns, so the move into
-    // definitions at v21 has nothing to read and must not fail on them.
+    // A file from before v4 never had script columns, so the v22 drop must
+    // not fail on them.
     test('a file from before repo scripts migrates without them', () async {
       final dir = await Directory.systemTemp.createTemp('ws_migration_v4_');
       addTearDown(() => dir.delete(recursive: true));
@@ -265,73 +262,64 @@ void main() {
       },
     );
 
-    test(
-      'an existing v6 database has its unresolved code edges deleted and the file compacted',
-      () async {
-        final dir = await Directory.systemTemp.createTemp('ws_migration_v7_');
-        addTearDown(() => dir.delete(recursive: true));
-        final file = File('${dir.path}/ws.db');
+    test('an existing v6 database keeps its code edges', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v7_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
 
-        // Build a current database carrying one unresolved and one bound
-        // reference edge, then rewind it to v6. FK checks are off for the
-        // fixture inserts only — the graph's repo row is irrelevant here.
-        final setup = WorkspaceDatabase.forTesting(
-          NativeDatabase(file),
-          workspaceId: 'ws',
-        );
-        await setup.customStatement('PRAGMA foreign_keys = OFF');
-        Future<void> insertEdge(
-          String id,
-          String? targetId,
-          String? targetName,
-        ) => setup.customStatement(
-          'INSERT INTO code_edges (id, workspace_id, repo_id, '
-          'source_symbol_id, source_file_path, kind, target_symbol_id, '
-          'target_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          [
-            id,
-            'ws',
-            'repo',
-            'sym-src',
-            'lib/a.dart',
-            'calls',
-            targetId,
-            targetName,
-          ],
-        );
+      // Build a current database carrying one unresolved and one bound
+      // reference edge, then rewind it to v6. FK checks are off for the
+      // fixture inserts only — the graph's repo row is irrelevant here.
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement('PRAGMA foreign_keys = OFF');
+      Future<void> insertEdge(
+        String id,
+        String? targetId,
+        String? targetName,
+      ) => setup.customStatement(
+        'INSERT INTO code_edges (id, workspace_id, repo_id, '
+        'source_symbol_id, source_file_path, kind, target_symbol_id, '
+        'target_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [
+          id,
+          'ws',
+          'repo',
+          'sym-src',
+          'lib/a.dart',
+          'calls',
+          targetId,
+          targetName,
+        ],
+      );
 
-        await insertEdge('edge-dead', null, 'react');
-        await insertEdge('edge-live', 'sym-target', null);
-        await setup.customStatement('PRAGMA user_version = 6');
-        await setup.close();
+      await insertEdge('edge-dead', null, 'react');
+      await insertEdge('edge-live', 'sym-target', null);
+      await setup.customStatement('PRAGMA user_version = 6');
+      await setup.close();
 
-        final db = WorkspaceDatabase.forTesting(
-          NativeDatabase(file),
-          workspaceId: 'ws',
-        );
-        addTearDown(db.close);
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
 
-        final survivors = await db
-            .customSelect('SELECT id FROM code_edges')
-            .get()
-            .then((rows) => rows.map((r) => r.read<String>('id')).toSet());
-        expect(survivors, {
-          'edge-live',
-        }, reason: 'unresolved edges are write-only rows; bound ones stay');
-        // The migration freed pages SQLite would otherwise keep as freelist
-        // forever — the one-time VACUUM in beforeOpen must have returned them.
-        final freelist = await db
-            .customSelect('PRAGMA freelist_count')
-            .getSingle()
-            .then((row) => row.read<int>('freelist_count'));
-        expect(freelist, 0, reason: 'the post-migration VACUUM must compact');
-        final stamped = await db
-            .customSelect('PRAGMA user_version')
-            .getSingle()
-            .then((row) => row.read<int>('user_version'));
-        expect(stamped, WorkspaceDatabase.currentSchemaVersion);
-      },
-    );
+      final survivors = await db
+          .customSelect('SELECT id FROM code_edges')
+          .get()
+          .then((rows) => rows.map((r) => r.read<String>('id')).toSet());
+      expect(survivors, {
+        'edge-dead',
+        'edge-live',
+      }, reason: 'a schema step adds and drops, never rewrites rows');
+      final stamped = await db
+          .customSelect('PRAGMA user_version')
+          .getSingle()
+          .then((row) => row.read<int>('user_version'));
+      expect(stamped, WorkspaceDatabase.currentSchemaVersion);
+    });
 
     test('no table carries the redundant `_table` suffix', () async {
       final db = createTestDatabase();
@@ -839,7 +827,7 @@ CREATE TABLE conversation_goals (
       expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
 
-    test('an existing v11 database backfills the context-meter counts', () async {
+    test('an existing v11 database gains the context-meter columns', () async {
       final dir = await Directory.systemTemp.createTemp('ws_migration_v12_');
       addTearDown(() => dir.delete(recursive: true));
       final file = File('${dir.path}/ws.db');
@@ -885,8 +873,8 @@ CREATE TABLE conversation_goals (
             "FROM conversation_messages WHERE id = 'm'",
           )
           .getSingle();
-      expect(row.read<int>('content_chars'), 5);
-      expect(row.read<int>('transcript_chars'), 380);
+      expect(row.read<int>('content_chars'), 0);
+      expect(row.read<int>('transcript_chars'), 0);
       final index = await db
           .customSelect(
             "SELECT name FROM sqlite_master WHERE type = 'index' "
@@ -897,67 +885,58 @@ CREATE TABLE conversation_goals (
       expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
     });
 
-    test(
-      'an existing v12 database stores list metadata for the message watch',
-      () async {
-        final dir = await Directory.systemTemp.createTemp('ws_migration_v13_');
-        addTearDown(() => dir.delete(recursive: true));
-        final file = File('${dir.path}/ws.db');
+    test('an existing v12 database gains the list metadata column', () async {
+      final dir = await Directory.systemTemp.createTemp('ws_migration_v13_');
+      addTearDown(() => dir.delete(recursive: true));
+      final file = File('${dir.path}/ws.db');
 
-        final setup = WorkspaceDatabase.forTesting(
-          NativeDatabase(file),
-          workspaceId: 'ws',
-        );
-        await setup.customStatement(
-          'INSERT INTO spaces (id, name, workspace_id) VALUES (?, ?, ?)',
-          ['s', 'S', 'ws'],
-        );
-        await setup.customStatement(
-          'INSERT INTO conversations (id, space_id, workspace_id) VALUES (?, ?, ?)',
-          ['c', 's', 'ws'],
-        );
-        await setup.customStatement(
-          'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          [
-            'm',
-            's',
-            'c',
-            'a',
-            'agent',
-            'hello',
-            '{"keep":"yes","segments":[{"t":"text"}]}',
-          ],
-        );
-        await setup.customStatement(
-          'ALTER TABLE conversation_messages DROP COLUMN list_metadata',
-        );
-        await setup.customStatement('PRAGMA user_version = 12');
-        await setup.close();
+      final setup = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      await setup.customStatement(
+        'INSERT INTO spaces (id, name, workspace_id) VALUES (?, ?, ?)',
+        ['s', 'S', 'ws'],
+      );
+      await setup.customStatement(
+        'INSERT INTO conversations (id, space_id, workspace_id) VALUES (?, ?, ?)',
+        ['c', 's', 'ws'],
+      );
+      await setup.customStatement(
+        'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [
+          'm',
+          's',
+          'c',
+          'a',
+          'agent',
+          'hello',
+          '{"keep":"yes","segments":[{"t":"text"}]}',
+        ],
+      );
+      await setup.customStatement(
+        'ALTER TABLE conversation_messages DROP COLUMN list_metadata',
+      );
+      await setup.customStatement('PRAGMA user_version = 12');
+      await setup.close();
 
-        final db = WorkspaceDatabase.forTesting(
-          NativeDatabase(file),
-          workspaceId: 'ws',
-        );
-        addTearDown(db.close);
+      final db = WorkspaceDatabase.forTesting(
+        NativeDatabase(file),
+        workspaceId: 'ws',
+      );
+      addTearDown(db.close);
 
-        final row = await db
-            .customSelect(
-              'SELECT metadata, list_metadata FROM conversation_messages WHERE id = \'m\'',
-            )
-            .getSingle();
-        final full =
-            jsonDecode(row.read<String>('metadata')) as Map<String, dynamic>;
-        final lite =
-            jsonDecode(row.read<String>('list_metadata'))
-                as Map<String, dynamic>;
-        expect(full['segments'], isA<List<dynamic>>());
-        expect(lite.containsKey('segments'), isFalse);
-        expect(lite['segments_elided'], isTrue);
-        expect(lite['segment_count'], 1);
-        expect(lite['keep'], 'yes');
-        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
-      },
-    );
+      final row = await db
+          .customSelect(
+            'SELECT metadata, list_metadata FROM conversation_messages WHERE id = \'m\'',
+          )
+          .getSingle();
+      final full =
+          jsonDecode(row.read<String>('metadata')) as Map<String, dynamic>;
+      expect(full['segments'], isA<List<dynamic>>());
+      expect(row.readNullable<String>('list_metadata'), isNull);
+      expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+    });
 
     test('an existing v14 database drops the sync feed', () async {
       final dir = await Directory.systemTemp.createTemp('ws_migration_v15_');
@@ -1537,7 +1516,7 @@ CREATE TABLE conversation_goals (
       );
     });
 
-    group('v20 -> v21: environments and the repo scripts move', () {
+    group('v20 -> v21 -> v22: environments, and repo scripts dropped', () {
       late File file;
 
       setUp(() async {
@@ -1606,11 +1585,6 @@ CREATE TABLE conversation_goals (
         WorkspaceDatabase db,
       ) => db.environmentDao.definitions();
 
-      EnvironmentDefinition parsed(EnvironmentDefinitionsTableData row) =>
-          EnvironmentDefinition.fromJson(
-            jsonDecode(row.definitionJson) as Map<String, dynamic>,
-          );
-
       test('creates the tables and their indexes', () async {
         await rewind((_) async {});
 
@@ -1633,80 +1607,7 @@ CREATE TABLE conversation_goals (
         expect(await definitions(db), isEmpty);
       });
 
-      test('a repo with both scripts gets a stackless definition', () async {
-        const setup = 'corepack enable\npnpm i --frozen-lockfile\n';
-        const archive = r'[ -n "$CC_SCRIPT_TEST" ] || echo "${HOME}/{name}"';
-        await rewind(
-          (db) => addRepo(
-            db,
-            'repo-1',
-            'acme/shop',
-            setup: setup,
-            archive: archive,
-          ),
-        );
-
-        final db = open();
-        addTearDown(db.close);
-        final row = (await definitions(db)).single;
-        expect(row.id, 'repo-scripts-repo-1');
-        expect(row.name, 'acme/shop');
-        expect(row.createdBy, isNull);
-        expect(row.createdAt.year, DateTime.now().year);
-
-        final definition = parsed(row);
-        expect(definition.name, 'acme/shop');
-        expect(validateEnvironmentDefinition(definition), isEmpty);
-        expect(
-          validateEnvironmentDefinition(definition, linkedRepoIds: {'repo-1'}),
-          isEmpty,
-        );
-        expect(definition.hasStack, isFalse);
-        final role = definition.repos.single;
-        expect(role.repoId, 'repo-1');
-        expect(role.anchor, isFalse);
-
-        final tasks = definition.components
-            .cast<TaskEnvironmentComponent>()
-            .toList();
-        expect(tasks.map((task) => task.id), ['setup', 'archive']);
-        expect(tasks[0].when, {EnvironmentTaskTrigger.provision});
-        expect(tasks[1].when, {EnvironmentTaskTrigger.archive});
-        expect(tasks[0].timeoutSeconds, 300);
-        expect(tasks[1].timeoutSeconds, 120);
-        expect((tasks[0].command as ShellEnvironmentCommand).body, setup);
-        expect((tasks[1].command as ShellEnvironmentCommand).body, archive);
-      });
-
-      test('a single script yields a single task', () async {
-        await rewind((db) async {
-          await addRepo(db, 'repo-1', 'shop', setup: 'make deps');
-          await addRepo(db, 'repo-2', 'tool', archive: 'make clean');
-        });
-
-        final db = open();
-        addTearDown(db.close);
-        final rows = await definitions(db);
-        expect(rows.map((row) => row.name), ['shop', 'tool']);
-        expect(parsed(rows[0]).components.single.id, 'setup');
-        expect(parsed(rows[1]).components.single.id, 'archive');
-        for (final row in rows) {
-          expect(validateEnvironmentDefinition(parsed(row)), isEmpty);
-        }
-      });
-
-      test('repos without a real script get nothing', () async {
-        await rewind((db) async {
-          await addRepo(db, 'repo-1', 'shop');
-          await addRepo(db, 'repo-2', 'tool', setup: ' \n\t ', archive: '');
-        });
-
-        final db = open();
-        addTearDown(db.close);
-        expect(await definitions(db), isEmpty);
-      });
-
-      test('the scripts live only in the definition afterwards', () async {
+      test('the scripts are dropped, not moved', () async {
         await rewind((db) async {
           await addRepo(db, 'repo-1', 'shop', setup: 'make deps');
           await db.customStatement(
@@ -1719,8 +1620,7 @@ CREATE TABLE conversation_goals (
 
         final db = open();
         addTearDown(db.close);
-        final moved = await definitions(db);
-        expect(moved.single.definitionJson, contains('make deps'));
+        expect(await definitions(db), isEmpty);
         expect(await hasRunsTable(db), isFalse);
         expect(
           await repoColumns(db),
@@ -1742,26 +1642,9 @@ CREATE TABLE conversation_goals (
         expect(await hasRunsTable(db), isFalse);
         expect(await repoColumns(db), isNot(contains('setup_script')));
       });
-
-      test('re-entering the step keeps an edited definition', () async {
-        await rewind((db) => addRepo(db, 'repo-1', 'shop', setup: 'make deps'));
-
-        final migrated = open();
-        final row = (await definitions(migrated)).single;
-        await migrated.environmentDao.upsertDefinition(
-          row.toCompanion(false).copyWith(name: const Value('Renamed')),
-        );
-        await migrated.customStatement('PRAGMA user_version = 20');
-        await migrated.close();
-
-        final resumed = open();
-        addTearDown(resumed.close);
-        final rows = await definitions(resumed);
-        expect(rows.single.name, 'Renamed');
-      });
     });
 
-    group('v22 → v23', () {
+    group('v22 → v23 → v24 → v25', () {
       late Directory dir;
       late File file;
       setUp(() async {
@@ -1842,8 +1725,8 @@ CREATE TABLE conversation_goals (
         },
       );
 
-      test('an existing v22 database retypes system messages, gains the index, '
-          'drops the branch index and flags projection runs', () async {
+      test('an existing v22 database gains the index and the projection flag, '
+          'drops the branch index and leaves stored rows alone', () async {
         final setup = open();
         await setup.customStatement(
           'DROP INDEX IF EXISTS idx_notification_feed_wait_id',
@@ -1899,7 +1782,7 @@ CREATE TABLE conversation_goals (
             row.read<String>('id'): row.read<String>('sender_type'),
         };
         expect(types, {
-          'm-system': 'system',
+          'm-system': 'agent',
           'm-agent': 'agent',
           'm-user': 'user',
         });
@@ -1916,11 +1799,48 @@ CREATE TABLE conversation_goals (
             row.read<String>('id'): row.read<bool>('is_projection'),
         };
         expect(projections, {
-          'r-watch': true,
-          'r-scan': true,
-          'r-update': true,
+          'r-watch': false,
+          'r-scan': false,
+          'r-update': false,
           'r-engine': false,
         });
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      });
+
+      test('an existing v23 database records who armed each trigger', () async {
+        final setup = open();
+        await setup.customStatement(
+          'ALTER TABLE pipeline_triggers DROP COLUMN armed_by_user_ids',
+        );
+        await setup.customStatement('PRAGMA user_version = 23');
+        await setup.close();
+
+        final db = open();
+        addTearDown(db.close);
+        expect(
+          await columnsOf(db, 'pipeline_triggers'),
+          contains('armed_by_user_ids'),
+        );
+        expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
+      });
+
+      test('an existing v24 database records every armer, and the '
+          'single-armer column goes', () async {
+        final setup = open();
+        await setup.customStatement(
+          'ALTER TABLE pipeline_triggers DROP COLUMN armed_by_user_ids',
+        );
+        await setup.customStatement(
+          'ALTER TABLE pipeline_triggers ADD COLUMN armed_by_user_id TEXT',
+        );
+        await setup.customStatement('PRAGMA user_version = 24');
+        await setup.close();
+
+        final db = open();
+        addTearDown(db.close);
+        final columns = await columnsOf(db, 'pipeline_triggers');
+        expect(columns, contains('armed_by_user_ids'));
+        expect(columns, isNot(contains('armed_by_user_id')));
         expect(db.schemaVersion, WorkspaceDatabase.currentSchemaVersion);
       });
     });

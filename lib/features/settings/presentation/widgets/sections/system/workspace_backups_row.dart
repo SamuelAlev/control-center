@@ -2,6 +2,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:collection/collection.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_flow.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_gate.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_backup_entry.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
@@ -19,7 +20,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// restore point once opened.
 ///
 /// A deleted workspace keeps its row so its files stay findable, without
-/// Restore: `workspace.import` has no live workspace to adopt into.
+/// Restore: `workspace.import` has no live workspace to adopt into. Restore
+/// is the server owner's ([canRestoreBackups]); anyone else downloads.
 class WorkspaceBackupsRow extends ConsumerStatefulWidget {
   /// Creates a [WorkspaceBackupsRow].
   const WorkspaceBackupsRow({
@@ -209,11 +211,12 @@ class _WorkspaceBackupsRowState extends ConsumerState<WorkspaceBackupsRow> {
       detail: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          const BackupRestoreOwnerOnlyNote(),
           for (final backup in backups)
             WorkspaceBackupEntry(
               key: ValueKey(backup.name),
               backup: backup,
-              canRestore: !widget.workspaceDeleted,
+              canRestore: !widget.workspaceDeleted && canRestoreBackups(ref),
               canDownload: canTransfer && backup.workspaces.isNotEmpty,
               restoring:
                   _restoring != null &&

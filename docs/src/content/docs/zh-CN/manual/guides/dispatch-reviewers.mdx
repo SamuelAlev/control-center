@@ -2,7 +2,7 @@
 title: 派发审查智能体
 description: 从 PR 视图、MCP 工具或流水线步骤向某个 PR 派出专门的审查智能体。
 slug: zh-CN/手册/操作指南/派发审查智能体
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 本指南介绍如何派发审查智能体来审查 pull request。
@@ -77,7 +77,7 @@ dispatch_reviewers(
 | 事件                   | 触发时机                                                                                                          | 载荷键                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | 某个 PR **通过 Control Center** 打开时——经由撰写界面，或由智能体调用 `pr_lifecycle.publish`                        | `pr_id`、`workspace_id`、`repo_owner`、`repo_name`                 |
-| `ExternalPrDetected`   | PR 轮询服务发现某个 PR 直接在 GitHub 上打开时                                                                     | `repo_owner`、`repo_name`、`pr_number`、`pr_title`、`author`       |
+| `ExternalPrDetected`   | PR 轮询服务发现某个 PR 直接在 GitHub 上打开时                                                                     | `repo_owner`、`repo_name`、`repo_full_name`、`pr_number`、`pr_title`、`author`       |
 
 在 github.com 上打开的 PR 绝不会触发 `PullRequestPublished`，因此只接了该事件的
 模板不会看到它。还要注意，`PullRequestPublished` 不携带 `pr_number`——脚本或

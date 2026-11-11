@@ -9,22 +9,26 @@ The forge is a property of each **repo**, read from its `origin` remote when you
 
 ## Connect a forge
 
-1. Open **Settings → Workspace → Profile & identity** (`/settings/workspace/profile`).
+1. Open **Settings → You → Profile** (`/settings/you/profile`).
 2. Find the **Code hosting** card. Every supported forge is listed, connected or not.
 3. On **GitHub**, press **Sign in to GitHub**. On **GitLab** or **Bitbucket**, press **Add token** and paste one.
 
-**GitHub is sign-in only.** The sign-in runs through the server's own GitHub App or through Control Center Connect, whichever the server owner set up (see [Set up GitHub integration](/manual/guides/github-integration/)); there is no GitHub token to paste. GitLab and Bitbucket still take a personal token.
+**GitHub is sign-in only.** The sign-in runs through the server's own GitHub App or through Control Center Connect, whichever the server owner set up, or through the apps a workspace admin picked for this workspace in **Settings → Workspace → Integrations** (see [Set up GitHub integration](/manual/guides/github-integration/)); there is no GitHub token to paste. GitLab and Bitbucket still take a personal token.
 
 Either way the credential is **yours and lives on the server**, keyed by your user id: no token is stored on the machine you typed it into, every device you sign in from uses the same one, and no other member can read it. It takes effect on the **next request** — there is nothing to restart, and disconnecting stops it being sent immediately.
 
-Each row tells you where its credential came from, because that is the difference between "my token isn't working" and "a different token is answering":
+The card says where your accounts are used. A GitLab or Bitbucket token is yours in **every workspace on the server**, so you paste it once. Your GitHub sign-in is too, unless a workspace has its own sign-in apps: that workspace keeps a GitHub sign-in of its own, and the card names it.
 
-| Subtitle                         | Meaning                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Signed in as octocat`           | Your own credential is being used                                   |
-| `Signed in as octocat · from the environment` | GitLab or Bitbucket only: a server environment variable is answering, not your token |
-| `Not connected`                  | You have no credential for this forge                               |
-| `GitHub sign-in isn't set up on this server yet.` | The server has neither its own GitHub App nor Connect; the server owner sets one up |
+Each row shows the state of **your** credential. Only your own credential ever answers for you; nothing else stands in:
+
+| The row says                                                  | Meaning                                                                                              |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Signed in as octocat`                                        | Your own credential is being used                                                                    |
+| `Not connected`                                               | You have no credential for this forge                                                                |
+| `Your GitHub sign-in as octocat has lapsed. Sign in again.`   | Your sign-in expired or was revoked on the forge                                                     |
+| `Paused: this workspace's sign-in service changed`            | This workspace switched to a different sign-in service. Your sign-in is kept and works again if it switches back, so there is no sign-in button |
+| `Can't reach GitHub right now. Retrying.`                     | A temporary outage. Control Center keeps retrying; there is nothing to do                            |
+| A sentence explaining why sign-in isn't available             | For example `GitHub sign-in isn't set up for this workspace.` or `This workspace's sign-in service changed its identity. An admin needs to confirm it.` Admins get a button to the setting that fixes it |
 
 ### What token each forge wants
 
@@ -33,17 +37,43 @@ Each row tells you where its credential came from, because that is the differenc
 | **GitLab**    | A personal access token with `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | An Atlassian API token, plus your account email           | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket authenticates with your **account email as the username** and the token as the password. Set `BITBUCKET_EMAIL` in the server environment so it knows which email to pair with the token.
+Bitbucket authenticates with your **account email as the username** and the API token as the password, so the Bitbucket dialog asks for both. A Bitbucket repository, project or workspace **access token** belongs to no person, so this dialog refuses it: it is an [automation token](#add-an-automation-token) instead. The same goes for a GitLab **project** or **group access token**: GitLab is asked who the token is before it is saved, and a bot's token is refused here.
+
+A token is never tied to one workspace: you hold one per forge, and every workspace on the server uses it. **Disconnect** removes it for all of them.
 
 ### Background work
 
 Work with no human behind it (agent runs, pipelines, PR polling) needs a credential too, and each forge answers it differently:
 
 - **GitHub** — a token for one repository at a time, minted from the server's GitHub App or through Connect and limited to what an accountable member can do there. It is never a person's sign-in handed over whole, and no environment variable or pasted token stands in. See [Set up GitHub integration](/manual/guides/github-integration/#who-your-credential-speaks-for)
-- **GitLab** — the server owner's pasted token, then `GITLAB_TOKEN`, then `CI_JOB_TOKEN`
-- **Bitbucket** — the server owner's pasted token, then `BITBUCKET_API_TOKEN`, then `BITBUCKET_TOKEN` (with `BITBUCKET_EMAIL`)
+- **GitLab** and **Bitbucket** — only the repo's **automation token**: a bot access token a workspace admin adds for that repo, or for every repo on that forge in the workspace. The repo's own token wins over the workspace's. Pull request polling, AI review comments, and pushes and merge requests nobody asked for all use it, so on the forge they show as that bot, never as a member. No member's personal token stands in, and there is no server-wide or environment-variable token. Without one, background work on the repo pauses and the repo access notice says so.
 
-The GitLab and Bitbucket environment variables are the **server's** credential, not yours: a request made on your behalf uses your token and nothing else, so the environment never quietly stands in for you.
+Work a member asks for (a comment, a review, an agent's merge request opened for them) still uses that member's own token.
+
+## Add an automation token
+
+Only workspace admins see or change automation tokens. Each one is checked with the forge when you save it: a token that acts as a person is refused (a GitLab personal access token, an Atlassian API token, or any Bitbucket token that signs in as someone's account), and so is one that cannot read the repo it is for.
+
+- **For one repo:** open **Settings → Workspace → Repositories**. The **Automation tokens** card lists every GitLab and Bitbucket repo with the bot that acts there, **Uses the workspace's token**, or **No token. Automation is paused here.** Press **Add token** on the repo's row.
+- **For every repo on a forge:** open **Settings → Workspace → Integrations**, find the **Automation tokens** card and press **Add token** on the GitLab or Bitbucket row. Repos the token cannot read are named after you save and stay paused.
+
+When background work is already paused, admins also get **Add token** right on the repo access notice. **Update token** replaces a token; the bin button removes it, and any repo left without one pauses. If the forge later refuses a stored token (revoked or expired), its row says so and the repos it covered pause until you replace it.
+
+| Forge         | Automation token                                                                                         | Where to create it                                             |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | A **project** or **group access token** with `read_api` and `read_repository`; add `api` and `write_repository` for comments, merge requests and pushes | The project or group → Settings → Access tokens                |
+| **Bitbucket** | A **repository**, **project** or **workspace access token** with repository read, plus pull request write for comments and pull requests (repository write for pushes) | The repository, project or workspace → Settings → Access tokens |
+
+GitLab shows the work as the token's bot user; Bitbucket shows it under the access token's name.
+
+### Bitbucket: access token or API token
+
+Bitbucket has two kinds of token, and Control Center keeps them apart:
+
+- An **API token** (id.atlassian.com) belongs to your Atlassian account and is used together with your email. It is **your** credential and goes under **Code hosting** in **Settings → You → Profile**.
+- An **access token** (created in a repository, project or workspace's settings) belongs to that repository, project or workspace, not to a person. It is an **automation token** and goes under **Automation tokens**.
+
+Each dialog refuses the other kind and says where it belongs.
 
 ## You are a different person on each forge
 
@@ -51,11 +81,26 @@ The same human is `octocat` on GitHub and something else entirely on GitLab. Con
 
 If a forge's identity has not resolved, its repos contribute nothing to the inbox rather than matching everything. The inbox says so instead of claiming you are all caught up.
 
+## You only see what your own account can see
+
+A repo's pull requests reach you only when your workspace role allows the repo **and your own account on that forge can read it**. Workspace admins and the owner follow the same rule. When some repos are hidden, the inbox and the PR queue say how many and why, without naming them:
+
+- **Sign in to GitHub to see pull requests from 3 more repositories**: you haven't connected that forge here yet. Sign in and they appear
+- **3 repositories are hidden because your GitHub account can't see them**: ask someone with access on the forge
+- **3 repositories are hidden because you don't have access to them in this workspace**: ask a workspace admin for access
+- **Checking your access to 3 more repositories…**: shown briefly while Control Center confirms what your account can read
+
+Code follows the same rule. To open a repository's files, diffs or search, or a terminal on it, you need its grant in this workspace and your own forge account must be able to read it; workspace admins too, only the server owner is exempt. When the forge can't be reached to check, you see "Couldn't confirm your forge access. Try again." (naming the forge) See [Code follows the forge](/manual/concepts/authorization/#code-follows-the-forge).
+
+The same rule covers everything made from those pull requests. A review space, its messages and its agent runs disappear while you can't see its pull request, and an open review space closes if you lose access. Pipeline runs about a hidden pull request drop out of your run list. Agents working for you can't read those review spaces either. The workspace's repository list shows every repo you have access to in this workspace, even one your forge account can't reach yet.
+
+If the forge is rate limiting or down, Control Center keeps showing what it last confirmed for a few minutes, then hides those pull requests until it can check again.
+
 ## One inbox, every forge
 
 The inbox and the PR queue fan out across every forge represented in the workspace and merge the results into one stream — a GitHub pull request and a Bitbucket pull request sit next to each other, ordered by time rather than grouped by vendor.
 
-Failures are isolated. A forge that is down, rate-limited or unconnected contributes nothing and leaves the others untouched; it never empties the whole inbox. Its own repos keep showing their last known state until it recovers.
+Failures are isolated. A forge that is down or rate-limited leaves the others untouched and its repos keep their last known state until it recovers; it never empties the whole inbox. A repo the server can no longer reach drops out instead of showing stale pull requests, and the **repo access notice** names it with the fix: install the GitHub App on its organization, add the repo to the App's repositories, resume a suspended installation, have the accountable member sign in again, or add an automation token for a GitLab or Bitbucket repo. Admins get a button for the GitHub App steps and for adding the token.
 
 ## What each forge can do
 
@@ -91,15 +136,31 @@ GitLab calls a pull request a **merge request**. Control Center says "pull reque
 
 ### The PR list is empty and says a forge is not connected
 
-You have no credential for that forge. Sign in to GitHub, or paste a GitLab or Bitbucket token, in **Settings → Workspace → Profile & identity → Code hosting**. Other forges' repos are unaffected.
+You have no credential for that forge. Sign in to GitHub, or paste a GitLab or Bitbucket token, in **Settings → You → Profile → Code hosting**. Other forges' repos are unaffected.
 
 ### I connected a forge but its repos still show nothing
 
-Check the row's subtitle. If a GitLab or Bitbucket row reads "from the environment", a different credential is answering than the one you expected — your own token wins for anything you ask for, so if it says otherwise yours was not saved. On GitHub, check that the GitHub App is installed on the account that owns the repos.
+Check the row's state, then the notices above the PR list. "Sign in to … to see pull requests from … more repositories" means your own account isn't connected for those repos; "… hidden because your … account can't see them" means the forge doesn't give you access. On GitHub, the repo access notice tells you when the GitHub App isn't installed on the repo's organization or doesn't include the repo.
+
+### Background work on a GitLab or Bitbucket repo is paused
+
+The repo has no automation token that can read it. A workspace admin adds one for the repo or for the whole workspace; see [Add an automation token](#add-an-automation-token). Your own personal token does not unpause it: background work never uses a member's token.
 
 ### A repo will not register
 
-Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. See [Add repos to a workspace](/manual/guides/add-repos/).
+Registration needs all three: the path is inside a git work tree, it has an `origin` remote, and that remote points at github.com, gitlab.com or bitbucket.org. The `origin` must also be the repository you are linking, and a folder outside the workspace's own storage can be linked only by the server owner. See [Add repos to a workspace](/manual/guides/add-repos/).
+
+### I have a grant but the repository says my account can't read it
+
+Your own forge account can't read that repository, so its code stays closed to you whatever the workspace grants. Sign in to the forge under **Code hosting** above, or get access to the repository on the forge.
+
+### "Couldn't confirm your forge access"
+
+The forge could not be reached to check your access, so Control Center refused rather than guess. Try again in a moment.
+
+### A repository says it now points to a different repository
+
+The repository behind that path changed: it was deleted and created again, or moved and replaced. Control Center sends it nothing until a workspace admin clicks **Relink** on the notice or the repository's row. A plain rename or transfer is followed on its own and never shows this.
 
 ### Everything stops working for a while after heavy use
 

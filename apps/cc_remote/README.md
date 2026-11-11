@@ -1,6 +1,6 @@
 # cc_remote
 
-Phone web PWA for server-owned operations over JSON-RPC. Persistence, forge API calls and agent execution stay on the server. [`cc_rpc`](../../packages/cc_rpc/README.md) resolves a v2 `ConnectionDescriptor` across reachable paths (LAN, tailnet, WSS or broker relay), handles PSK authentication and TOFU identity verification, and maintains one resilient RPC client whose subscriptions re-register with fresh snapshots after reconnect. In a browser, only TLS-compatible paths and the relay are usable. [`cc_data`](../../packages/cc_data/README.md) supplies the remote repository adapters.
+Phone web PWA for server-owned operations over JSON-RPC. Persistence, forge API calls and agent execution stay on the server. [`cc_rpc`](../../packages/cc_rpc/README.md) resolves the `ConnectionDescriptor` from a v2 pairing payload across reachable paths (LAN, tailnet, WSS or broker relay), handles PSK authentication and TOFU identity verification, and maintains one resilient RPC client whose subscriptions re-register with fresh snapshots after reconnect. In a browser, only TLS-compatible paths and the relay are usable. [`cc_data`](../../packages/cc_data/README.md) supplies the remote repository adapters.
 
 ```sh
 # from apps/cc_remote

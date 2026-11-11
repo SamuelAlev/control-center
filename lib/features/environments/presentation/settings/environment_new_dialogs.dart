@@ -106,7 +106,10 @@ class _RepoDialogState extends ConsumerState<_RepoDialog> {
       if (mounted) {
         setState(() {
           _busy = false;
-          _error = environmentFailureMessage(error);
+          _error = environmentSaveFailureMessage(
+            AppLocalizations.of(context),
+            error,
+          );
         });
       }
     }

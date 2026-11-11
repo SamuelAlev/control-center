@@ -6,7 +6,7 @@ import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:cc_natives/src/git/rig_worktree_guard.dart';
-import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 import 'package:cc_natives/src/native_unavailable.dart';
 import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as p;

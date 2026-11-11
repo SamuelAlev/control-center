@@ -23,36 +23,42 @@ import 'package:test/test.dart';
 
 const _password = 'hunter2';
 
-EnvironmentDefinitionRecord _record(String workspaceId) =>
-    EnvironmentDefinitionRecord(
-      id: 'def-$workspaceId',
-      workspaceId: workspaceId,
-      name: 'Shop',
-      definitionJson: jsonEncode({
-        'contract': 1,
-        'name': 'Shop',
-        'env': {'DATABASE_URL': 'postgres://app:$_password@db'},
-        'repos': {
-          'app': {'repoId': 'repo-a', 'anchor': true},
-        },
-        'components': [
-          {
-            'kind': 'process',
-            'id': 'web',
-            'command': ['pnpm', 'dev'],
-            'env': {'API_KEY': _password},
-          },
-        ],
-      }),
-      overridesJson: jsonEncode({
-        'env': {'SECRET_ID': _password},
-        'limits': [
-          {'token': _password},
-        ],
-      }),
-      createdAt: DateTime.utc(2026),
-      updatedAt: DateTime.utc(2026),
-    );
+EnvironmentDefinitionRecord _record(
+  String workspaceId, {
+  String? hostApprovedBy,
+}) => EnvironmentDefinitionRecord(
+  id: 'def-$workspaceId',
+  hostApprovedBy: hostApprovedBy,
+  workspaceId: workspaceId,
+  name: 'Shop',
+  definitionJson: jsonEncode({
+    'contract': 1,
+    'name': 'Shop',
+    'env': {'DATABASE_URL': 'postgres://app:$_password@db'},
+    'repos': {
+      'app': {'repoId': 'repo-a', 'anchor': true},
+    },
+    'components': [
+      {
+        'kind': 'process',
+        'id': 'web',
+        'command': ['pnpm', 'dev'],
+        'env': {'API_KEY': _password},
+      },
+    ],
+  }),
+  overridesJson: jsonEncode({
+    'env': {'SECRET_ID': _password},
+    'checks': [
+      {
+        'id': 'vault',
+        'command': ['vault', 'login', _password],
+      },
+    ],
+  }),
+  createdAt: DateTime.utc(2026),
+  updatedAt: DateTime.utc(2026),
+);
 
 class _FakeEnvironments implements EnvironmentPort {
   @override
@@ -61,33 +67,71 @@ class _FakeEnvironments implements EnvironmentPort {
     String definitionId,
   ) async => const [];
 
-  @override
-  Future<String> startSetup(
-    String workspaceId,
-    String spaceId, {
-    required Principal by,
-  }) async => 'session-1';
+  /// Who every definition this fake returns records as its host approver.
+  String? hostApprovedBy;
 
   int watches = 0;
   int logFollows = 0;
   int runReads = 0;
 
+  /// Whether each start said someone is there to answer a terminal.
+  final attended = <bool>[];
+
+  SpaceEnvironment _environment(String workspaceId, String spaceId) =>
+      SpaceEnvironment(
+        id: 'env-1',
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        definitionId: 'def-$workspaceId',
+        name: 'fix-login',
+        status: EnvironmentStatus.ready,
+        createdBy: 'user:user',
+        createdAt: DateTime.utc(2026),
+        lastUsedAt: DateTime.utc(2026),
+      );
+
+  @override
+  Future<SpaceEnvironment> ensure({
+    required String workspaceId,
+    required String spaceId,
+    String? definitionId,
+    Map<String, dynamic> options = const {},
+    bool attended = false,
+    required Principal by,
+  }) async {
+    this.attended.add(attended);
+    return _environment(workspaceId, spaceId);
+  }
+
+  @override
+  Future<SpaceEnvironment> reset(
+    String workspaceId,
+    String spaceId, {
+    bool attended = false,
+    required Principal by,
+  }) async {
+    this.attended.add(attended);
+    return _environment(workspaceId, spaceId);
+  }
+
   @override
   Future<List<EnvironmentDefinitionRecord>> listDefinitions(
     String workspaceId,
-  ) async => [_record(workspaceId)];
+  ) async => [_record(workspaceId, hostApprovedBy: hostApprovedBy)];
 
   @override
   Future<EnvironmentDefinitionRecord?> definition(
     String workspaceId,
     String definitionId,
-  ) async => definitionId == 'def-$workspaceId' ? _record(workspaceId) : null;
+  ) async => definitionId == 'def-$workspaceId'
+      ? _record(workspaceId, hostApprovedBy: hostApprovedBy)
+      : null;
 
   @override
   Future<List<EnvironmentDefinitionRecord>> eligibleDefinitions(
     String workspaceId,
     String spaceId,
-  ) async => [_record(workspaceId)];
+  ) async => [_record(workspaceId, hostApprovedBy: hostApprovedBy)];
 
   @override
   Stream<List<SpaceEnvironment>> watch(String workspaceId, String spaceId) {
@@ -110,6 +154,12 @@ class _FakeEnvironments implements EnvironmentPort {
   Future<List<EnvironmentRun>> runs(String workspaceId, String spaceId) async {
     runReads++;
     return const [];
+  }
+
+  @override
+  Stream<List<EnvironmentRun>> watchRuns(String workspaceId, String spaceId) {
+    runReads++;
+    return Stream.value(const []);
   }
 
   @override
@@ -144,11 +194,12 @@ void main() {
         for (final op in buildEnvironmentOps(
           environments: environments,
           reposExposedBySpace: (_) async => const [],
-          assertSpaceOwned: (workspaceId, spaceId) async {
+          assertSpaceOwned: (workspaceId, spaceId, userId) async {
             if (workspaceId != 'ws-a') {
               throw const WorkspaceMismatchException('Not this workspace');
             }
           },
+          serverOwnerUserId: 'owner',
         ))
           op.name: op,
       };
@@ -199,6 +250,28 @@ void main() {
         expect(body, isNot(contains(_password)));
       });
 
+      test('${entry.key} says whether the owner approved what runs on the '
+          'host', () async {
+        Future<Map<String, dynamic>> first() async {
+          final body = await call(
+            entry.key,
+            WorkspaceRole.member,
+            args: entry.value,
+          );
+          final list = body['definitions'];
+          return Map<String, dynamic>.from(
+            list is List ? list.single as Map : body,
+          );
+        }
+
+        expect(await first(), containsPair('runs_on_host', true));
+        expect(await first(), containsPair('host_approved', false));
+        environments.hostApprovedBy = 'someone-else';
+        expect(await first(), containsPair('host_approved', false));
+        environments.hostApprovedBy = 'owner';
+        expect(await first(), containsPair('host_approved', true));
+      });
+
       test('${entry.key} shows an admin everything', () async {
         final body = jsonEncode(
           await call(entry.key, WorkspaceRole.admin, args: entry.value),
@@ -241,6 +314,25 @@ void main() {
         WorkspaceRole.admin,
       );
     });
+
+    for (final name in const ['environment.ensure', 'environment.reset']) {
+      test('$name says someone is there only when the caller does', () async {
+        const space = {'space_id': 'space-1'};
+        await call(name, WorkspaceRole.member, args: space);
+        await call(
+          name,
+          WorkspaceRole.member,
+          args: const {...space, 'attended': true},
+        );
+        // Anything but the literal is nobody: a start that stops and waits.
+        await call(
+          name,
+          WorkspaceRole.member,
+          args: const {...space, 'attended': 'true'},
+        );
+        expect(environments.attended, [false, true, false]);
+      });
+    }
 
     test('writing stays admin-only', () {
       expect(
@@ -289,11 +381,13 @@ void main() {
                   throw const AuthException('No read access to this repo');
                 }
               },
-          assertSpaceOwned: (workspaceId, spaceId) async {
+          assertSpaceOwned: (workspaceId, spaceId, userId) async {
             if (workspaceId != 'ws-a') {
               throw const WorkspaceMismatchException('Not this workspace');
             }
           },
+          // The right itself is environment_control_rights_test's.
+          mayOperate: (ctx, spaceId) async => false,
         ))
           query.name: query,
       };
@@ -368,14 +462,22 @@ void main() {
       )
       whileHeadMoves,
       void Function() onSync,
-    ) => guardedPrSync(whileHeadMoves, ({
-      required String workspaceId,
-      required String spaceId,
-      required String repoId,
-    }) async {
-      onSync();
-      return {'ok': true, 'synced': true};
-    })(workspaceId: 'ws-a', spaceId: 'space-1', repoId: 'repo-a');
+    ) =>
+        guardedPrSync(whileHeadMoves, ({
+          required String workspaceId,
+          required String spaceId,
+          required String repoId,
+          required String? actingUserId,
+        }) async {
+          expect(actingUserId, 'u-ada', reason: 'the caller acts, not the bot');
+          onSync();
+          return {'ok': true, 'synced': true};
+        })(
+          workspaceId: 'ws-a',
+          spaceId: 'space-1',
+          repoId: 'repo-a',
+          actingUserId: 'u-ada',
+        );
 
     test('a refusal never reaches the sync, and reads as a failure', () async {
       var synced = false;
@@ -409,6 +511,7 @@ void main() {
             required String workspaceId,
             required String spaceId,
             required String repoId,
+            required String? actingUserId,
           }) async => const {},
         ),
         isNull,
@@ -477,7 +580,9 @@ void main() {
             required String workspaceId,
             required String spaceId,
             required String repoId,
+            required String? actingUserId,
           }) async {
+            expect(actingUserId, isNull, reason: 'a head change is automation');
             await commit('second.txt');
             return {'ok': true, 'synced': true};
           },

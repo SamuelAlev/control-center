@@ -2,7 +2,7 @@
 title: Usar revisión con IA
 description: Ejecuta el pipeline pr_review sobre una PR, lee los hallazgos y el veredicto y, después, publica la revisión en GitHub.
 slug: es-ES/manual/guias/revision-con-ia
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Esta guía explica cómo hacer que los agentes revisores revisen una pull request y
@@ -123,8 +123,11 @@ descartados se omiten. El botón incluye todos los hallazgos abiertos restantes 
 con **Ship**, envía `APPROVE`. (La herramienta MCP `publish_review_to_github`
 se limita de forma predeterminada a los hallazgos confirmados por pares y nunca
 aprueba: publica como automatización, así que `approve_on_ship` no tiene efecto
-ahí.) Los que llevan un anclaje de
-archivo y línea se convierten en comentarios en línea; todo lo demás se integra en
+ahí. Esa publicación automatizada la envía el bot, salvo en la app compartida de
+Control Center Connect cuando el operador de Connect no ha incluido esta
+instalación: entonces sale con el inicio de sesión de GitHub de la persona
+responsable, a su nombre.) Los que llevan un anclaje
+de archivo y línea se convierten en comentarios en línea; todo lo demás se integra en
 el cuerpo del resumen, cada elemento con un pie de «— Control Center AI review»
 para que la fuente no deje lugar a dudas. Un veredicto **Block** se envía como
 `REQUEST_CHANGES`; **Hold** como `COMMENT`; **Ship** como `APPROVE` desde este
@@ -147,7 +150,8 @@ supervisión.
 
 Otros pipelines integrados sí publican directamente en GitHub: `cross_review`,
 `pr_triage`, `ticket_to_pr` y `pre_merge_gate` terminan cada uno con un paso de
-comentario. Solo `pr_review` retiene su salida para que la revises tú.
+comentario, que publica el servidor. Solo `pr_review` retiene su salida para que
+la revises tú. Ninguno de ellos fusiona ni aprueba.
 
 ## Despachar los revisores tú mismo
 

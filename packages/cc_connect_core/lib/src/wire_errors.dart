@@ -10,6 +10,13 @@ enum ConnectErrorCode {
   /// it was asked for.
   accessDenied('access_denied', 403),
 
+  /// The shared App's bot (`as: app`) was asked for a scope it does not hold
+  /// for this install: anything that changes code (push, branches, opening a
+  /// pull request) for every install, and `bot` (reviews) for an install the
+  /// Connect operator has not listed. That needs the person who asked for
+  /// it, minted `as: user`.
+  needsRequester('needs_requester', 403),
+
   /// A claim's confirmation code (or PKCE verifier) does not match the
   /// login. Counted against the login's attempts; the person may retry.
   codeMismatch('code_mismatch', 403),
@@ -17,8 +24,9 @@ enum ConnectErrorCode {
   /// The app is not installed where the request needs it.
   notInstalled('not_installed', 404),
 
-  /// A GitHub organization installation is bound to other servers.
-  installationBoundElsewhere('installation_bound_elsewhere', 409),
+  /// The app is installed on the repository's owner, but the installation
+  /// does not include this repository (its owner picked other repositories).
+  repoNotSelected('repo_not_selected', 404),
 
   /// A Slack workspace is bound to another server.
   teamBoundElsewhere('team_bound_elsewhere', 409),
@@ -30,7 +38,9 @@ enum ConnectErrorCode {
   /// The installation or account is suspended.
   suspended('suspended', 423),
 
-  /// Slow down.
+  /// Slow down: a request budget, or a shared provider quota (GitHub token
+  /// calls per account, per address or for the whole App). Transient: a
+  /// server retries later and never drops a grant for it.
   rateLimited('rate_limited', 429),
 
   /// The lane is not configured, or the provider is failing. Never clears a

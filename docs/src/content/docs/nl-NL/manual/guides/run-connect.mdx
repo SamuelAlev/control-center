@@ -2,7 +2,7 @@
 title: Een Connect-server draaien
 description: Draai je eigen Control Center Connect vanuit de Docker-image cc-connect, of bouw hem in cc_server in, zodat je servers mensen aanmelden via provider-apps die jij registreert.
 slug: nl-NL/handleiding/gidsen/connect-server-draaien
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect voert provider-aanmeldingen (GitHub, Google Calendar,
@@ -47,7 +47,7 @@ zien hem als niet beschikbaar. `<base>` hieronder is je `CONNECT_PUBLIC_URL`.
 
 | Provider       | Registreren                                                                                                                                                                                                                                                          | Bewaren                                 |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` met **Redirect on update** aan. Laat **Request user authorization (OAuth) during installation** uit: als die aan staat, negeert GitHub de setup-URL. Laat **Expire user authorization tokens** aan | App-id, slug, client-id, client-secret |
+| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` met **Redirect on update** aan. Laat **Request user authorization (OAuth) during installation** uit: als die aan staat, negeert GitHub de setup-URL. Laat **Expire user authorization tokens** aan | App-id, slug, client-id, client-secret, een privésleutel |
 | **Google**     | Een OAuth-client van het type **Webapplicatie** met redirect-URI `<base>/oauth/google/callback`, en de Google Calendar API ingeschakeld                                                                                                                            | Client-id, client-secret                |
 | **Linear**     | Een OAuth-applicatie met de callback-URL's `<base>/oauth/linear/callback` en `<base>/oauth/linear_app/callback`                                                                                                                                                   | Alleen de client-id                     |
 | **Slack**      | Redirect-URL's `<base>/oauth/slack_oidc/callback` en `<base>/oauth/slack/callback`. Event Subscriptions op `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash-commando's op `<base>/v1/hooks/slack/commands`. Tokenrotatie aan | App-id, client-id, client-secret, signing secret |
@@ -58,10 +58,22 @@ schrijven, **Checks**, **Actions** en **Commit statuses** lezen. Voeg voor
 reviewverzoeken aan teams **Members** van de organisatie met leesrechten toe.
 Webhooks kunnen uit blijven: servers pollen.
 
-Connect heeft de privésleutel van de GitHub App nooit nodig. Het geeft tokens
-voor één repository in plaats daarvan uit vanuit de eigen aanmelding van een
-persoon. Linear heeft ook geen secret nodig: Connect geeft de code terug aan de
-server, die de uitwisseling zelf afrondt.
+Connect heeft de privésleutel van de GitHub App nodig (**Generate a private key** in
+de instellingen van de App). Hij ondertekent de verzoeken van de App die de
+installatie zoeken die een repository dekt (of, als de repository geen heeft, de
+installatie van de eigenaar), en geeft een installatietoken voor één repository
+uit, telkens pas nadat de eigen aanmelding van de vragende persoon toegang tot
+die repository heeft bewezen.
+
+Elke server op je Connect deelt de bot van de App. Hij mag als de bot lezen,
+reageren, labelen en emoji-reacties plaatsen voor elk van hen. Reviews van pull
+requests als de bot zijn alleen toegestaan voor de servers die je vermeldt in
+`CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (hun installatie-ID's, kommagescheiden); elke
+andere server publiceert reviews met het eigen token van de reviewer. Pushen
+gebeurt nooit als de bot. Wil je dat een eigen server als de bot reviewt, voeg dan
+zijn installatie-ID daar toe en herstart. Bewaar het sleutelbestand als geheim,
+net als de zegelsleutel. Linear heeft geen secret nodig: Connect geeft de code
+terug aan de server, die de uitwisseling zelf afrondt.
 
 ## Stap 3: De installatie-ID's verzamelen
 
@@ -116,13 +128,30 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Richt je reverse proxy op poort `8790`. De image draait als gebruiker zonder
-privileges, bewaart zijn state in het volume `/data` en heeft een ingebouwde
-healthcheck (`cc-connect --healthcheck`, die `/healthz` controleert).
+Richt je reverse proxy op poort `8790`, en stel `CONNECT_TRUST_PROXY` in op het aantal
+proxy's vóór Connect, zodat de limiet per adres elk adres van een client ziet. De
+image draait als gebruiker zonder privileges, bewaart zijn state in het volume
+`/data` en heeft een ingebouwde healthcheck (`cc-connect --healthcheck`, die
+`/healthz` controleert: het proces antwoordt). `/readyz` controleert bovendien dat
+zijn state- en bindingsopslag antwoorden en dat Redis, als die wordt gebruikt, nog
+`maxmemory-policy noeviction` draait; wijs een readiness-check van een orkestrator
+daarnaar.
+
+De toestemmingspagina voor aanmelden antwoordt met een formulierpost die Connect
+alleen accepteert van zijn eigen pagina: `Sec-Fetch-Site`, wanneer die wordt
+meegestuurd, moet `same-origin` zijn, en `Origin`, wanneer die wordt meegestuurd,
+moet de origin van `CONNECT_PUBLIC_URL` zijn; een post waarin geen van beide staat,
+wordt geweigerd. De proxy moet dus beide headers ongewijzigd doorgeven, en
+`CONNECT_PUBLIC_URL` moet het adres zijn dat de browsers van mensen werkelijk
+gebruiken. Als doorgaan op die pagina altijd "Deze link is verlopen" toont, en het
+log `oauth.done_refused` toont met reden `origin` of `no_origin`, staat een van die
+twee uit.
 
 Connect weigert te starten (exitcode `78`) wanneer zijn configuratie open,
 onveilig of half af is, en meldt welke variabele fout is. Een ontbrekende
@@ -138,8 +167,9 @@ login loopt** noemt **Connect** voor elke provider die je hebt geregistreerd.
 Een server kan Connect zelf hosten in plaats van een aparte container. De
 ingebouwde dienst is dezelfde die de image draait.
 
-1. Zet de `CONNECT_*`-variabelen in het `.env`-bestand van de server (of in zijn
-   omgeving), zoals in stap 5
+1. Zet de `CONNECT_*`-variabelen in het `.env`-bestand van de server, zoals in stap 5.
+   De server weigert te starten wanneer een Connect-secret, `CONNECT_SENTRY_DSN`
+   inbegrepen, in zijn omgeving is geëxporteerd
 2. Voeg `CC_SERVER_CONNECT_HOST=on` toe
 3. Herstart de server. Het log toont `embedded Connect at <url>`
 
@@ -151,6 +181,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect wordt dan geserveerd op `<server>/connect`:
@@ -184,9 +215,10 @@ waarde vast. Secrets gemarkeerd met **dual** accepteren tijdens een rotatie ook
 | `CONNECT_PUBLIC_URL`            | verplicht | De canonieke openbare URL. HTTPS, of `http` alleen op loopback. Een pad betekent inbouw. Geen query of fragment                  |
 | `CONNECT_ALLOWED_INSTALLS`      | verplicht | Kommagescheiden installatie-ID's. `*` wordt alleen geaccepteerd samen met `CONNECT_SIGNED_CONFIG_FILE`                           |
 | `CONNECT_DENY_INSTALLS`         |           | Installatie-ID's die worden geweigerd, ook als ze zijn toegestaan                                                                |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numerieke GitHub-eigenaar-ID's. Als dit is ingesteld, worden repositorytokens alleen uitgegeven voor repository's die zij bezitten |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numerieke GitHub-eigenaar-ID's. Als dit is ingesteld, worden repositorytokens alleen uitgegeven voor repository's die zij bezitten. Het beperkt niet wie zich aanmeldt: een persoon die deze Connect mag gebruiken, krijgt nog steeds zijn eigen App-gebruikerstoken. Om maar één organisatie te bedienen, houd je de App privé voor die organisatie |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Installatie-ID's die de bot van de App pull requests mag laten reviewen. Standaard leeg; `*` wordt geweigerd, en elk ID moet ook zijn toegestaan |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bindadres en poort                                                                                                       |
-| `CONNECT_TRUST_PROXY`           | `0`       | Vertrouwde proxyhops in `X-Forwarded-For` (0 tot 8). Alleen gebruikt voor de ratelimit per adres                                 |
+| `CONNECT_TRUST_PROXY`           | `0`       | Vertrouwde proxyhops in `X-Forwarded-For` (0 tot 8). Alleen gebruikt voor de limieten per adres, de netwerkhint van de aanmeldpagina en het gelogde adres. Achter een proxy telt `0` elke client als de proxy, en het log meldt dat één keer                                 |
 
 ### Providerroutes
 
@@ -194,6 +226,7 @@ waarde vast. Secrets gemarkeerd met **dual** accepteren tijdens een rotatie ook
 | --------------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |           | De GitHub App                                                             |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |           | Secret, dual                                                              |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |           | Secret. De privésleutel van de App (PEM)                                  |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |           | De Google-client. Het secret is dual                                      |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |           | De Linear-applicatie. Geen secret                                         |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |           | De Slack-app                                                              |
@@ -211,12 +244,12 @@ waarde vast. Secrets gemarkeerd met **dual** accepteren tijdens een rotatie ook
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` of `gcp-kms`                                                                                       |
 | `CONNECT_SEAL_KEYS`                                       |                            | Secret, verplicht voor `local`. Kommagescheiden `kid:key`-items, nieuwste eerst; oudere items ontsleutelen nog steeds |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, verplicht voor `gcp-kms`                                 |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` voor één instantie, `redis` voor meerdere                                                         |
-| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` of `rediss://`                                                                          |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` voor één instantie, `redis` voor meerdere. Een volle memorystore weigert nieuwe aanmeldingen en verzoeken in plaats van een actieve entry te vergeten |
+| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` of `rediss://`. Redis 6.2 of later met `maxmemory-policy noeviction`, beide gecontroleerd bij het opstarten |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | CA-bundel voor `rediss://`                                                                                 |
-| `CONNECT_BINDINGS`                                        | `file`                     | Waar bindingen van GitHub-installaties staan: `file` of `firestore`                                        |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` in de image) | Bevat `bindings.json`                                                                                    |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | database `(default)`       | Voor `CONNECT_BINDINGS=firestore`                                                                          |
+| `CONNECT_BINDINGS`                                        | `file`                     | Waar bindingen van Slack-teams staan: `file` of `firestore`                                                |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` in de image) | Bevat `bindings.json`. Vergrendeld door één Connect: een tweede op dezelfde map start niet |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | database `(default)`       | Voor `CONNECT_BINDINGS=firestore`. Connect start niet wanneer Firestore niet antwoordt |
 
 ### Configuratie, logs en limieten
 
@@ -226,19 +259,43 @@ waarde vast. Secrets gemarkeerd met **dual** accepteren tijdens een rotatie ook
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Sleutels waartegen de ondertekende configuratie moet verifiëren                                     |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Het epoch van de configuratie die een zelf gehoste Connect genereert                                |
 | `CONNECT_LOG_HMAC_KEY`                  | willekeurig per proces | Secret. Stel het in om de tags die voor installatie-ID's staan stabiel te houden over herstarts en instanties heen |
+| `CONNECT_SENTRY_DSN`                    |                    | Secret. Een https-Sentry-DSN waarnaar foutregels worden gerapporteerd: het fouttype, stackframes, route en verzoek-id, nooit een bericht, body of header |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | De Sentry-omgeving                                                                                  |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Gerapporteerd door `/v1/version`                                                                    |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Verzoeken per installatie                                                                           |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Verzoeken per adres                                                                                 |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Verzoeken voor de hele dienst                                                                       |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Verzoeken per adres (een IPv6-adres telt per /64)                                                   |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Verzoeken voor de hele instantie                                                                     |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`              | Slack-gebeurtenis- en opdrachtaflevering per adres, apart van andere verzoeken geteld               |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`          | Slack-gebeurtenis- en opdrachtaflevering voor de hele instantie                                     |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-gebeurtenissen per team                                                                       |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-zoekopdrachten per installatie                                                                  |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | GIF-zoekopdrachten per adres, over alle servers heen                                                |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | Gestarte aanmeldingen per adres                                                                     |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | GitHub-tokens uitgegeven per GitHub-account op één server (aanmeldingen, vernieuwingen, repositorytokens) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × het bovenstaande (`120`) | Hetzelfde per GitHub-account over alle servers                                |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | GitHub-tokens uitgegeven per adres                                                                  |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | Nieuwe GitHub-aanmeldingen voor de hele app                                                         |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | Bot-tokens per server                                                                               |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | Bot-tokens per vragend GitHub-account, over servers heen                                            |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | Bot-tokens voor de hele app                                                                         |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | Vernieuwingen en repositorytokens voor de hele app. Nieuwe aanmeldingen hebben hun eigen limiet hierboven |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | Live repositorytokens die één GitHub-account mag hebben voordat Connect een waarschuwing logt       |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | Uitgefaseerde installatie-ID's per adres (per /48 voor IPv6)                                        |
+
+Een aanroep voorbij een limiet krijgt het antwoord `rate_limited`. Servers proberen
+het later opnieuw en melden nooit iemand af daarvoor.
 
 ## Meer dan één instantie draaien
 
 Eén instantie met `CONNECT_STATE=memory` is genoeg voor de meeste organisaties.
-Meerdere instanties achter één adres hebben `CONNECT_STATE=redis` nodig, en
-ofwel een gedeelde `CONNECT_DATA_DIR` ofwel `CONNECT_BINDINGS=firestore`, zodat
-een aanmelding die op de ene instantie begint, op een andere kan eindigen.
+Meerdere instanties achter één adres hebben `CONNECT_STATE=redis` en
+`CONNECT_BINDINGS=firestore` nodig, zodat een aanmelding die op de ene instantie
+begint op een andere kan eindigen, en elke instantie dezelfde Slack-bindingen en
+uitgefaseerde installatie-ID's ziet. Een gedeelde `CONNECT_DATA_DIR` werkt niet: de
+eerste Connect vergrendelt hem. De limieten per installatie, per adres en voor de
+instantie zijn per instantie; de limieten op aanmeldingen, GitHub-tokens,
+bot-tokens, GIF-zoekopdrachten per adres, uitfasering en Slack-teams worden gedeeld
+via de state-opslag.
 
 ## Een providersecret roteren
 
@@ -267,22 +324,24 @@ melding van jou komt.
 ## Een server blokkeren
 
 Voeg het installatie-ID toe aan `CONNECT_DENY_INSTALLS` en herstart. De eigenaar
-ziet "Connect heeft de installatie-ID van deze server geblokkeerd", en elke
+ziet "Connect heeft de installatie-ID van deze server geblokkeerd. Neem contact op met wie je Connect-server beheert.", en elke
 Connect-aanmelding op die server stopt.
+
+Een server trekt zijn eigen oude installatie-ID ook uit gebruik wanneer zijn eigenaar de sleutel roteert. Hij bewijst dat het ID van hemzelf is met één zegel die deze Connect voor hem heeft gemaakt, dus alleen een server die iemand heeft aangemeld, kan een ID uitfaseren. Connect bewaart uitgefaseerde ID's voorgoed, zodat de oude sleutel en elk zegel dat ervoor is gemaakt niet meer werken, en laat de Slack-werkruimtes los die aan het oude ID zijn gebonden. Tokens die al zijn uitgegeven, verlopen vanzelf: binnen 8 uur die van een persoon, 1 uur die van een bot. Connect houdt maximaal 100.000 uitgefaseerde ID's bij; daarboven wordt een rotatie geweigerd en het log zegt dat op foutniveau.
 
 ## Problemen oplossen
 
 ### Een server meldt dat Connect hem heeft geblokkeerd
 
-Het installatie-ID staat niet in `CONNECT_ALLOWED_INSTALLS`, of het staat in
-`CONNECT_DENY_INSTALLS`. Het ID verandert wanneer de eigenaar de sleutel
-vervangt; vraag om het nieuwe.
+Het installatie-ID staat niet in `CONNECT_ALLOWED_INSTALLS`, het staat in
+`CONNECT_DENY_INSTALLS`, of het is uitgefaseerd door een sleutelrotatie. Het ID
+verandert wanneer de eigenaar de sleutel vervangt; vraag om het nieuwe.
 
-### Een provider wordt als niet beschikbaar getoond
+### Elke aanmelding bij één provider mislukt
 
-Een van de variabelen ontbreekt, dus Connect heeft de route weggelaten.
-Controleer het opstartlog en de tabellen hierboven. GitHub heeft alle vier nodig:
-app-id, slug, client-id en client-secret; Google heeft zowel client-id als
+Een van de variabelen ontbreekt mogelijk, dus Connect heeft de route weggelaten.
+Controleer het opstartlog en de tabellen hierboven. GitHub heeft alle vijf nodig:
+app-id, slug, client-id, client-secret en privésleutel; Google heeft zowel client-id als
 secret nodig.
 
 ### Aanmeldingen mislukken met een redirect-mismatch

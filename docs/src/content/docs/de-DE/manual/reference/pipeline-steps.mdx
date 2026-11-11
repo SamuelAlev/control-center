@@ -2,7 +2,7 @@
 title: Pipeline-Schrittarten
 description: Referenz zu Schrittarten, Body-Schlüsseln, ihrer Konfiguration und den Schrittergebnissen.
 slug: de-DE/handbuch/referenz/pipeline-schritte
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Ein Pipeline-Schritt hat zwei unabhängige Achsen:
@@ -61,7 +61,7 @@ Allgemeiner Knoten für Prompt und Dispatch: rendert den Prompt, schickt den Age
 
 ### `pipeline.condition`
 
-Router-Body — liest `config.extras`, wertet eine Bedingung aus und liefert `StepResult.route(key)`. Bedingungen sind **keine** JavaScript-Ausdrücke; drei Schreibformen werden unterstützt, in dieser Priorität:
+Router-Body — liest `config.extras`, wertet eine Bedingung aus und liefert `StepResult.route(key)`. Bedingungen sind **keine** JavaScript-Ausdrücke; zwei Schreibformen werden unterstützt, in dieser Priorität:
 
 - **Prädikatbaum** (`extras.predicate`) — ein boolescher Baum, der `"true"` / `"false"` routet. Jeder Knoten ist eine Map mit einem `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — wahr, wenn irgendein aufgeführter Pfad auf der Platte existiert; `negate` kehrt das Ergebnis um; `recursive` durchsucht auch Unterverzeichnisse (und überspringt `.git`, `node_modules`, `build`, `.dart_tool`). Relative Pfade lösen gegen `state[baseKey]` auf (Vorgabe `repo_local_path`), sonst gegen das Arbeitsverzeichnis des Laufs.
@@ -69,19 +69,28 @@ Router-Body — liest `config.extras`, wertet eine Bedingung aus und liefert `St
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolesche Gruppen.
   - `{"type": "not", "of": <predicate>}` — Negation.
 - **Verzweigung** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routet zum ersten Fall, den der Zustandswert ohne Beachtung der Groß- und Kleinschreibung enthält, sonst `default`.
-- **Vergleich** (älteres `extras.left` / `extras.op` / `extras.right` auf oberster Ebene) — entspricht einem Prädikat `comparison`, behalten für Vorlagen, die vor dem Baum geschrieben wurden.
 
 Ausgehende Kanten des Knotens tragen einen `routeKey`, der zum gelieferten Schlüssel passen muss.
 
 ### `prReview.comment`
 
-Postet die zusammengeführten Befunde als PR-Review-Kommentar über den GitHub-PR-Client.
+Postet die zusammengeführten Befunde oder den eigenen `extras.message` des Schritts als PR-Review-Kommentar über den GitHub-PR-Client.
 
-| Zustandsschlüssel       | Beschreibung                                      |
-| ----------------------- | ------------------------------------------------- |
-| `repo_full_name`        | `owner/repo` (erforderlich)                       |
-| `pr_number`             | PR-Nummer — int oder numerischer String (erforderlich) |
-| `consolidated_findings` | Kommentartext (erforderlich)                      |
+| Schlüssel               | Gelesen aus      | Beschreibung                                                             |
+| ----------------------- | ---------------- | ------------------------------------------------------------------------ |
+| `repo_full_name`        | Trigger-Payload  | `owner/repo` (erforderlich)                                              |
+| `pr_number`             | Trigger-Payload  | PR-Nummer, eine positive Ganzzahl oder numerische Zeichenkette (erforderlich) |
+| `consolidated_findings` | Zustand          | Kommentartext, wenn der Schritt keine `message` hat                      |
+
+Der Pull Request stammt ausschließlich aus der Trigger-Payload des Laufs, nie aus Zustand, den ein Schritt mitten im Lauf umschreiben kann. @-Erwähnungen im geposteten Text werden entschärft, sodass der Kommentar niemanden benachrichtigt.
+
+Das Feld `message` rendert seine `{{key}}`-Platzhalter so:
+
+- `repo_full_name`, `repo_owner`, `repo_name` und `pr_number` rendern den Pull Request, auf dem der Schritt postet.
+- `author` wird unverändert aus der Trigger-Payload gerendert, aber nur, wenn es ein gültiger Benutzername auf dem Forge ist; andernfalls schlägt der Schritt fehl.
+- `consolidated_findings` wird als roher Markdown gerendert, wobei seine @-Erwähnungen entschärft werden.
+- Jeder andere Wert wird als Literaltext gerendert: einzeilig, mit maskierten Markdown-Zeichen und entschärften @-Erwähnungen.
+- Ein Platzhalter, der nichts ergibt, lässt den Schritt fehlschlagen.
 
 Liefert `StepResult.terminal` mit `comment_review_id` und `commented_at` im Zustand.
 

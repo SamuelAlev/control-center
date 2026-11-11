@@ -25,18 +25,18 @@ A workspace runs on exactly one of these at a time.
 
 | Mode                          | Needs                                                                                                    | You get                                                                               |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **Shared Control Center app** | The server uses Control Center Connect (**Settings → Server → Single sign-on**) and Connect serves Slack | One click and a Slack sign-in. No app to create, no token to paste, nothing to rotate |
+| **Shared Control Center app** | The workspace's sign-in apps run through Control Center Connect (the server's choice in **Settings → Server → Single sign-on**, or the workspace's own on **Settings → Workspace → Integrations**) and Connect serves Slack | One click and a Slack sign-in. No app to create, no token to paste, nothing to rotate |
 | **Your own app**              | A Slack app in your Slack workspace, made one of the three ways below                                    | Your own bot name, descriptions and slash command, editable from Control Center       |
 
 ### Add the shared Control Center app
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
+1. In Control Center, go to **Settings → Workspace → Integrations** and scroll to the **Chat bridges** card
 2. On the Slack block, find the **Add Control Center to Slack** row and click **Add to Slack**
 3. Your browser opens Slack. Sign in with Slack, pick the Slack workspace and approve the install
 4. When the browser shows a code, enter it in the dialog Control Center left open. If the browser hands you back to the app by itself, there is nothing to type
 5. A toast names the Slack workspace the app was added to, and the Slack block shows the connection as running on the shared Control Center app
 
-Only a workspace admin can add the app. The row says why it cannot start when the server uses its own apps rather than Connect, when your Connect has no Slack app, or when this workspace already has its own Slack app connected.
+Only a workspace admin can add the app. The row says why it cannot start when this workspace's sign-in apps are own apps rather than Connect, when your Connect has no Slack app, or when this workspace already has its own Slack app connected.
 
 How it differs from your own app:
 
@@ -62,7 +62,7 @@ Your own app's events never pass through Connect: Socket Mode delivers them stra
 ## Option A: let Control Center create the app
 
 1. Generate an app configuration token pair at [api.slack.com/apps](https://api.slack.com/apps) and copy the **refresh** token (`xoxe-…`)
-2. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
+2. In Control Center, go to **Settings → Workspace → Integrations** and scroll to the **Chat bridges** card
 3. On the Slack block, click **Create app for me**
 4. Paste the token, adjust the app name, bot name, descriptions and slash command, then click **Create app**
 5. Follow the two remaining steps the dialog shows, each as a link into Slack:
@@ -76,7 +76,7 @@ The configuration token rotates on every use. Control Center stores the rotated 
 
 Same app, no configuration token — Slack hands you its own create screen with the whole manifest already filled in.
 
-1. In Control Center, go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
+1. In Control Center, go to **Settings → Workspace → Integrations** and scroll to the **Chat bridges** card
 2. On the Slack block, click **Create app for me**
 3. Adjust the app name, bot name, descriptions and slash command — these travel with the link
 4. Click **Create in Slack**. Your browser opens Slack's app-creation page with the configuration pre-filled
@@ -130,7 +130,7 @@ message.im
 
 This is how your own app's tokens reach Control Center. The shared app needs none of it.
 
-1. Go to **Settings → Workspace → General** and scroll to the **Chat bridges** card
+1. Go to **Settings → Workspace → Integrations** and scroll to the **Chat bridges** card
 2. On the Slack block, click **Connect Slack**
 3. Fill in the fields:
 
@@ -199,7 +199,7 @@ Any linked member with a writing role can propose a ticket from Slack:
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-Text before the `|` is the title, text after it the description. The bot replies that it drafted the ticket. Nothing is created yet and no ticket automation fires: the draft waits for you in **Settings → Workspace → Profile & identity → Ticket drafts from chat**, where you can correct the title and description, then click **Create ticket** or **Discard**.
+Text before the `|` is the title, text after it the description. The bot replies that it drafted the ticket. Nothing is created yet and no ticket automation fires: the draft waits for you in **Settings → You → Profile → Ticket drafts from chat**, where you can correct the title and description, then click **Create ticket** or **Discard**.
 
 - Only the member who ran the command sees the draft
 - A draft you leave is dropped after a day. Drafts live in memory, so a server restart drops them too

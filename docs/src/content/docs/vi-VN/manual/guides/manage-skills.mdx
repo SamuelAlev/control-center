@@ -2,7 +2,7 @@
 title: Cài đặt và quản lý kỹ năng
 description: Cài đặt và cập nhật kỹ năng của không gian làm việc qua cổng quét, rồi so sánh các bản sửa đổi đã lưu bằng những lượt đánh giá kỹ năng có ngân sách.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/quan-ly-skill
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Hướng dẫn này chỉ cho bạn cách lấp đầy một không gian làm việc bằng các kỹ năng
@@ -92,7 +92,7 @@ chiếu khôi phục trong tệp lock.
    năng và một **Bộ điều hợp**. Harness tích hợp dùng một nhà cung cấp đã cấu
    hình và một mô hình có khả năng dùng công cụ. **Claude Code** dùng tài khoản
    Claude được quản lý mặc định và một mã định danh mô hình cụ thể; hãy đăng
-   nhập trong **Cài đặt → Bộ điều hợp** trước. Nó không mượn đăng nhập cá nhân
+   nhập trong **Cài đặt → Máy chủ → Nhà cung cấp mô hình → Tài khoản Claude Code** trước. Nó không mượn đăng nhập cá nhân
    của người vận hành máy chủ.
 3. Chọn một **So sánh** từ bảng bên dưới.
 4. Đặt **Số lần lặp lại mỗi tác vụ** (1–20) và **Ngân sách (US cents)**. Ví dụ,
@@ -184,8 +184,7 @@ giờ đụng với các lệnh slash tích hợp (`/plan`, `/goal`, `/loop`, `/
 - `/skill:<repo>:<name>` — một kỹ năng do một kho mã đã checkout trong space này
   cung cấp
 
-Một tên trần không phải tích hợp vẫn được phân giải, dành cho những tin nhắn
-được viết trước khi không gian tên tồn tại. `/skill:plan` là thứ tiếp cận một kỹ
+`/skill:plan` là thứ tiếp cận một kỹ
 năng tên `plan`; `/plan` luôn là lệnh tích hợp.
 
 ## Kỹ năng theo phạm vi kho mã

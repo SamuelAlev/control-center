@@ -35,23 +35,27 @@ class SettingsSidebarNav extends ConsumerWidget {
     // Install-wide destinations are the operator's; the server refuses every
     // other caller, so offering them is a form that ends in an error.
     final isServerOwner = ref.watch(isServerOwnerProvider);
+    final isWorkspaceAdmin = ref.watch(isWorkspaceAdminAnywhereProvider);
     // "Any forge", not "GitHub": someone who works only on GitLab has a
     // complete setup, and dotting their sidebar forever would train them to
     // ignore the dot.
-    final needsIntegrationSetup = !ref.watch(hasAnyForgeConnectedProvider);
+    final needsForgeAccount = !ref.watch(hasAnyForgeConnectedProvider);
 
     CcSidebarItem? item(SettingsNavItem entry) {
-      if ((entry.ownerOnly && !isServerOwner) || !entry.availableHere) {
+      if (!entry.shownTo(
+            isServerOwner: isServerOwner,
+            isWorkspaceAdmin: isWorkspaceAdmin,
+          ) ||
+          !entry.availableHere) {
         return null;
       }
       final route = entry.route(workspaceId);
       final selected = entry.matchesSubroutes
           ? (location == route || location.startsWith('$route/'))
           : location == route;
-      // The only attention affordance: agents cannot reach a code host until a
-      // forge connection exists and that is configured here.
-      final attention =
-          needsIntegrationSetup && entry.id == 'workspace.profile';
+      // The only attention affordance: agents cannot reach a code host until
+      // the person connects a forge, and they do that on their profile.
+      final attention = needsForgeAccount && entry.id == 'you.profile';
       return CcSidebarItem(
         icon: entry.icon,
         label: entry.label(l10n),

@@ -2,7 +2,7 @@
 title: Tạo mẫu quy trình
 description: Soạn một mẫu quy trình DAG trong trình chỉnh sửa quy trình — thêm nút, nối chúng, khai báo đầu vào và làm cho mẫu chạy được.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tao-quy-trinh
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Mẫu quy trình được soạn trong cài đặt không gian làm việc. Mục **Pipelines**
@@ -38,7 +38,7 @@ có kết nối vào.
 | **Bash script**                 | listen    | Chạy một script shell có thay thế `{{state}}`; không điều phối agent nào                          |
 | **Open conversation**           | listen    | Mở không gian hiển thị duy nhất của lần chạy cùng bản checkout của nó; các nút agent tham gia phòng này |
 | **Clone PR branch**             | listen    | Phát hiện nhánh đầu của PR qua `gh pr view` và clone nó vào thư mục lần chạy                     |
-| **Post PR comment**             | listen    | Đăng các phát hiện đã tổng hợp lên PR dưới dạng bình luận đánh giá của GitHub                     |
+| **Post PR comment**             | listen    | Máy chủ đăng một bình luận đánh giá lên PR: các phát hiện đã tổng hợp, hoặc `message` của nó                     |
 | **Reviewer (prompt)**           | listen    | Điều phối một agent đánh giá chuyên biệt; tạm dừng cho đến khi agent gửi kết quả của nó           |
 | **Consolidate (join)**          | join      | Chờ vài nhánh thượng nguồn, rồi nhờ một agent tổng hợp đầu ra của chúng                           |
 | **Custom prompt**               | listen    | Nút tổng quát chạy bằng prompt, định tuyến qua body `promptAgent`                                 |
@@ -137,6 +137,7 @@ hai đều không cấu hình được:
   `GITHUB_TOKEN` giữ một token chỉ đọc được đúng kho đó, nên `gh` và
   `git clone` vào kho đó hoạt động mà không cần thiết lập. Nếu không thì không có token
   GitHub nào.
+- Script không thể ghi lên GitHub: `gh pr comment`, `gh pr merge`, `gh pr create` và `git push` đều thất bại với token đó. Hãy bình luận bằng nút **Post PR comment** thay thế (đặt `extras.message` để đăng nội dung riêng của bạn, có thể dùng placeholder `{{key}}`, thay vì các phát hiện đã tổng hợp). Hãy push và mở pull request từ nút agent: `git push` của nó đi qua cổng chạy và nó mở PR bằng công cụ `open_pull_request`. Việc merge do người thực hiện; không nút nào merge.
 - Chỉ quản trị viên không gian làm việc mới tạo hoặc sửa được pipeline có bước bash.
 - Script được khởi chạy như đúng tệp thực thi `bash`, nên `bash` phải có trong
   `PATH` của máy chủ.

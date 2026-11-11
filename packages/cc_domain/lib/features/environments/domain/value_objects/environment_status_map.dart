@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/environments/domain/services/environment_definition_reader.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:collection/collection.dart';
 
@@ -18,35 +20,53 @@ class EnvironmentStatusMap {
   });
 
   /// Parses a `statusMap` object.
+  ///
+  /// Throws [EnvironmentDefinitionException] listing every issue.
   factory EnvironmentStatusMap.fromJson(Map<String, dynamic> json) {
-    final rules = json['state'];
-    if (rules is! List || rules.isEmpty) {
-      throw const FormatException('statusMap.state needs at least one rule');
+    final issues = <EnvironmentDefinitionIssue>[];
+    final map = read(EnvironmentJsonReader.of(json, 'statusMap', issues)!);
+    if (map == null || issues.isNotEmpty) {
+      throw EnvironmentDefinitionException(issues);
+    }
+    return map;
+  }
+
+  /// Reads a `statusMap` object, or null when it can't be built.
+  static EnvironmentStatusMap? read(EnvironmentJsonReader reader) {
+    final rules = reader.objects('state', required: true, nonEmpty: true);
+    final state = [
+      for (final rule in rules ?? const <EnvironmentJsonReader>[])
+        EnvironmentStateRule.read(rule),
+    ];
+    final detail = reader.string('detail');
+    final warnings = [
+      for (final rule
+          in reader.objects('warnings') ?? const <EnvironmentJsonReader>[])
+        EnvironmentWarningRule.read(rule),
+    ];
+    final endpoints = [
+      for (final endpoint
+          in reader.objects('endpoints') ?? const <EnvironmentJsonReader>[])
+        EnvironmentEndpointMap.read(endpoint),
+    ];
+    final services = readJsonPointer(reader, 'services');
+    final list = readJsonPointer(reader, 'list');
+    final missingErrorCodes = reader.strings('missingErrorCodes');
+    reader.finish();
+    if (rules == null ||
+        state.contains(null) ||
+        warnings.contains(null) ||
+        endpoints.contains(null)) {
+      return null;
     }
     return EnvironmentStatusMap(
-      state: [
-        for (final rule in rules)
-          EnvironmentStateRule.fromJson(Map<String, dynamic>.from(rule as Map)),
-      ],
-      detail: json['detail'] as String?,
-      warnings: [
-        for (final warning in (json['warnings'] as List?) ?? const [])
-          EnvironmentWarningRule.fromJson(
-            Map<String, dynamic>.from(warning as Map),
-          ),
-      ],
-      endpoints: [
-        for (final endpoint in (json['endpoints'] as List?) ?? const [])
-          EnvironmentEndpointMap.fromJson(
-            Map<String, dynamic>.from(endpoint as Map),
-          ),
-      ],
-      services: json['services'] as String?,
-      list: json['list'] as String?,
-      missingErrorCodes: [
-        for (final code in (json['missingErrorCodes'] as List?) ?? const [])
-          '$code',
-      ],
+      state: state.cast<EnvironmentStateRule>(),
+      detail: detail,
+      warnings: warnings.cast<EnvironmentWarningRule>(),
+      endpoints: endpoints.cast<EnvironmentEndpointMap>(),
+      services: services,
+      list: list,
+      missingErrorCodes: missingErrorCodes ?? const [],
     );
   }
 
@@ -163,22 +183,41 @@ class EnvironmentStatusCondition {
     this.where = const {},
   });
 
-  /// Parses a condition.
-  factory EnvironmentStatusCondition.fromJson(Map<String, dynamic> json) {
-    final path = json['path'] as String?;
-    final any = json['any'] as String?;
-    final none = json['none'] as String?;
-    if (path == null && any == null && none == null) {
-      throw const FormatException('A condition needs path, any or none');
+  /// Reads a condition, or null when it can't be built.
+  static EnvironmentStatusCondition? read(EnvironmentJsonReader reader) {
+    final path = readJsonPointer(reader, 'path');
+    final any = readJsonPointer(reader, 'any');
+    final none = readJsonPointer(reader, 'none');
+    final equals = reader.raw('equals');
+    final where = reader.map('where');
+    final given = [
+      reader.has('path'),
+      reader.has('any'),
+      reader.has('none'),
+    ].where((present) => present).length;
+    var ok = true;
+    if (given != 1) {
+      reader.reportHere('Needs exactly one of path, any and none');
+      ok = false;
+    }
+    if (reader.contains('equals') && !reader.has('path')) {
+      reader.report('equals', 'Only goes with path');
+      ok = false;
+    }
+    if (where != null && reader.has('path')) {
+      reader.report('where', 'Only goes with any or none');
+      ok = false;
+    }
+    reader.finish();
+    if (!ok || (path == null && any == null && none == null)) {
+      return null;
     }
     return EnvironmentStatusCondition(
       path: path,
-      equals: json['equals'],
+      equals: equals,
       any: any,
       none: none,
-      where: json['where'] is Map
-          ? Map<String, dynamic>.from(json['where'] as Map)
-          : const {},
+      where: where ?? const {},
     );
   }
 
@@ -245,20 +284,21 @@ class EnvironmentStateRule {
   /// Creates an [EnvironmentStateRule].
   const EnvironmentStateRule({required this.state, this.when, this.message});
 
-  /// Parses a rule.
-  factory EnvironmentStateRule.fromJson(Map<String, dynamic> json) {
-    final state = EnvironmentReportedState.tryParse(json['state'] as String?);
-    if (state == null) {
-      throw FormatException('Unknown state: ${json['state']}');
+  /// Reads a rule, or null when it can't be built.
+  static EnvironmentStateRule? read(EnvironmentJsonReader reader) {
+    final whenReader = reader.object('when');
+    final when = whenReader == null
+        ? null
+        : EnvironmentStatusCondition.read(whenReader);
+    final state = reader.choice('state', {
+      for (final state in EnvironmentReportedState.values) state.name: state,
+    }, required: true);
+    final message = reader.string('message');
+    reader.finish();
+    if (state == null || (reader.has('when') && when == null)) {
+      return null;
     }
-    final when = json['when'];
-    return EnvironmentStateRule(
-      state: state,
-      message: json['message'] as String?,
-      when: when is Map
-          ? EnvironmentStatusCondition.fromJson(Map<String, dynamic>.from(when))
-          : null,
-    );
+    return EnvironmentStateRule(state: state, message: message, when: when);
   }
 
   /// The state this rule assigns.
@@ -293,14 +333,19 @@ class EnvironmentWarningRule {
   /// Creates an [EnvironmentWarningRule].
   const EnvironmentWarningRule({required this.when, required this.message});
 
-  /// Parses a rule.
-  factory EnvironmentWarningRule.fromJson(Map<String, dynamic> json) =>
-      EnvironmentWarningRule(
-        when: EnvironmentStatusCondition.fromJson(
-          Map<String, dynamic>.from(json['when'] as Map),
-        ),
-        message: json['message'] as String,
-      );
+  /// Reads a rule, or null when it can't be built.
+  static EnvironmentWarningRule? read(EnvironmentJsonReader reader) {
+    final whenReader = reader.object('when', required: true);
+    final when = whenReader == null
+        ? null
+        : EnvironmentStatusCondition.read(whenReader);
+    final message = reader.string('message', required: true, nonEmpty: true);
+    reader.finish();
+    if (when == null || message == null) {
+      return null;
+    }
+    return EnvironmentWarningRule(when: when, message: message);
+  }
 
   /// When to warn.
   final EnvironmentStatusCondition when;
@@ -331,15 +376,28 @@ class EnvironmentEndpointMap {
     this.primary = false,
   });
 
-  /// Parses a mapping.
-  factory EnvironmentEndpointMap.fromJson(Map<String, dynamic> json) =>
-      EnvironmentEndpointMap(
-        role: json['role'] as String,
-        label: json['label'] as String?,
-        url: json['url'] as String?,
-        hostPort: json['hostPort'] as String?,
-        primary: json['primary'] == true,
-      );
+  /// Reads a mapping, or null when it can't be built.
+  static EnvironmentEndpointMap? read(EnvironmentJsonReader reader) {
+    final role = reader.string('role', required: true, nonEmpty: true);
+    final label = reader.string('label');
+    final url = readJsonPointer(reader, 'url');
+    final hostPort = readJsonPointer(reader, 'hostPort');
+    final primary = reader.boolean('primary');
+    if (!reader.has('url') && !reader.has('hostPort')) {
+      reader.reportHere('Needs url or hostPort');
+    }
+    reader.finish();
+    if (role == null || (url == null && hostPort == null)) {
+      return null;
+    }
+    return EnvironmentEndpointMap(
+      role: role,
+      label: label,
+      url: url,
+      hostPort: hostPort,
+      primary: primary ?? false,
+    );
+  }
 
   /// Stable role.
   final String role;
@@ -390,6 +448,19 @@ class EnvironmentEndpointMap {
 
   @override
   int get hashCode => const DeepCollectionEquality().hash(toJson());
+}
+
+/// The JSON pointer at [key] of [reader], which must start with `/`.
+String? readJsonPointer(EnvironmentJsonReader reader, String key) {
+  final pointer = reader.string(key);
+  if (pointer == null) {
+    return null;
+  }
+  if (!pointer.startsWith('/')) {
+    reader.report(key, 'Must be a JSON pointer starting with /');
+    return null;
+  }
+  return pointer;
 }
 
 /// The value at [pointer] in [json], or null.

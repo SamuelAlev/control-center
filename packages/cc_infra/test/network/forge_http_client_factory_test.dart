@@ -113,12 +113,10 @@ void main() {
     ForgeAuthInterceptor forForge(
       ForgeHost forge, {
       String? token,
-      String bitbucketEmail = '',
       Future<String?> Function(ForgeHost forge)? lookup,
     }) => ForgeAuthInterceptor(
       forge: forge,
       tokenLookup: lookup ?? (_) async => token,
-      bitbucketUsername: () => bitbucketEmail,
     );
 
     test('GitHub sends a bearer token and its API version', () async {
@@ -143,11 +141,10 @@ void main() {
       expect(map['PRIVATE-TOKEN'], ['gl-token']);
     });
 
-    test('Bitbucket sends basic auth built from the account email', () async {
+    test('a Bitbucket API token (email:token) is sent as basic auth', () async {
       final result = await forForge(
         ForgeHost.bitbucket,
-        token: 'bb-token',
-        bitbucketEmail: 'me@example.com',
+        token: 'me@example.com:bb-token',
       ).beforeRequest(_request());
 
       final auth =
@@ -156,6 +153,18 @@ void main() {
       expect(
         utf8.decode(base64Decode(auth.substring('Basic '.length))),
         'me@example.com:bb-token',
+      );
+    });
+
+    test('a bare Bitbucket access token is sent as a bearer', () async {
+      final result = await forForge(
+        ForgeHost.bitbucket,
+        token: 'bb-access',
+      ).beforeRequest(_request());
+
+      expect(
+        result.value!.headers![HttpHeaderName.authorization],
+        'Bearer bb-access',
       );
     });
 
@@ -195,9 +204,8 @@ void main() {
       final auth = ForgeAuthInterceptor(
         forge: ForgeHost.github,
         tokenLookup: (_) async => 'unused',
-        requestTokenLookup: (_, _, _) async =>
+        requestTokenLookup: (_, _, _, _) async =>
             throw const ForgeCredentialUnavailable(404, 'no grant'),
-        bitbucketUsername: () => '',
       );
 
       await expectLater(
@@ -244,7 +252,6 @@ void main() {
       final auth = ForgeAuthInterceptor(
         forge: ForgeHost.github,
         tokenLookup: (_) async => token,
-        bitbucketUsername: () => '',
       );
 
       await auth.beforeRequest(_request());

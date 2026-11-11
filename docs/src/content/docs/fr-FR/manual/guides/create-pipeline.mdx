@@ -2,7 +2,7 @@
 title: Créer un modèle de pipeline
 description: Rédigez un modèle de workflow DAG dans l’éditeur de pipeline — ajoutez des nœuds, câblez-les, déclarez des entrées et rendez-le exécutable.
 slug: fr-FR/manuel/guides/creer-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Les modèles de pipeline se rédigent dans les paramètres de l’espace de travail.
@@ -43,7 +43,7 @@ entrante.
 | **Bash script**                 | listen       | Exécute un script shell avec substitution de `{{state}}` ; aucun agent n’est lancé            |
 | **Open conversation**           | listen       | Ouvre l’unique espace visible de l’exécution et son checkout ; les nœuds d’agent rejoignent ce salon |
 | **Clone PR branch**             | listen       | Découvre la branche de tête de la PR via `gh pr view` et la clone dans le répertoire de l’exécution |
-| **Post PR comment**             | listen       | Publie les constats consolidés sur la PR sous forme de commentaire de revue GitHub             |
+| **Post PR comment**             | listen       | Publie un commentaire de revue sur la PR depuis le serveur : les constats, ou son `message`    |
 | **Reviewer (prompt)**           | listen       | Lance un agent relecteur spécialisé ; suspend l’étape jusqu’à ce que l’agent soumette son résultat |
 | **Consolidate (join)**          | join         | Attend plusieurs branches amont, puis demande à un agent de consolider leurs sorties           |
 | **Custom prompt**               | listen       | Nœud générique piloté par un prompt, routé via le corps `promptAgent`                          |
@@ -149,6 +149,13 @@ ni champ d’environnement, car ni l’un ni l’autre n’est configurable :
   `GH_TOKEN` et `GITHUB_TOKEN` contiennent un jeton qui ne peut lire que ce
   dépôt, si bien que `gh` et `git clone` fonctionnent sur lui sans
   configuration. Sinon, aucun jeton GitHub n’est fourni.
+- Un script ne peut pas écrire sur GitHub : `gh pr comment`, `gh pr merge`,
+  `gh pr create` et `git push` échouent avec ce jeton. Commentez avec un nœud
+  **Post PR comment** à la place (définissez `extras.message` pour publier votre
+  propre texte, avec des espaces réservés `{{key}}`, au lieu des constats
+  consolidés). Poussez et ouvrez les PR depuis un nœud d’agent : son `git push`
+  passe par la passerelle d’exécution, et il ouvre la PR avec l’outil
+  `open_pull_request`. La fusion reste à une personne ; aucun nœud ne fusionne.
 - Seul un administrateur de l’espace de travail peut créer ou modifier un
   pipeline comportant une étape bash.
 - Le script est lancé comme l’exécutable littéral `bash`, donc `bash` doit

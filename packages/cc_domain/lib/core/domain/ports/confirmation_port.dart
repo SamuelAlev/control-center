@@ -100,19 +100,20 @@ class ConfirmationRequest {
 
   /// When non-null, the UI offers a time-boxed "remember this decision"
   /// answer scoped to this value. Null when the action has nothing narrow to
-  /// remember (a push whose destination branch is unknown).
+  /// remember (no branch, command, path, host or tool to name), when policy
+  /// could not be consulted, and on cards that confirm one thing on purpose
+  /// (a folder's exec grant, a destructive operation a person started).
   final RememberScope? rememberChoice;
 
   /// Canonical fingerprint of the matched command (exact token sequence).
   /// Used to look up / persist remembered decisions.
   final String? fingerprint;
 
-  /// The effect classes that PROMPTED, as wire names.
+  /// The effect classes this card asks about, as wire names: the ones policy
+  /// asked about, or every declared class when a gate asks on its own.
   ///
   /// Carried so answering with "remember this" can materialize a real policy
-  /// rule for exactly those effects. Without them the remember affordance had
-  /// nothing to write, which is why `rememberChoice` was set on every request
-  /// and read by nobody.
+  /// rule for exactly those effects.
   final List<String> actionClasses;
 
   /// The agent whose action this is (scopes an `agent`-scoped remember).

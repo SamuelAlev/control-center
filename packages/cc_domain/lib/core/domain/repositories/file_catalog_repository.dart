@@ -35,6 +35,7 @@ abstract interface class FileCatalogRepository {
   Future<void> discard(String workspaceId, String userId, String fileId);
 
   /// Only after a completed explicit discard, under the blob hash lock.
-  /// Legacy content not created by an upload is never eligible.
+  /// Bytes the upload did not create (it deduplicated against existing
+  /// content) are never eligible.
   Future<bool> canReclaim(String workspaceId, String path);
 }

@@ -2,14 +2,17 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/cc_domain.dart' show AppException;
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
+    show ForgeRemote;
 import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/task_lifecycle_events.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart'
+    show agentCommitAttributionInstruction;
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart'
@@ -30,7 +33,7 @@ import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart'
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart'
-    show kProposeOnlyReason;
+    show ActionGuardService, kProposeOnlyReason;
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
 import 'package:cc_domain/features/guardrails/domain/services/autonomy_composition.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
@@ -41,6 +44,7 @@ import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level
 import 'package:cc_domain/features/model_routing/domain/entities/model_info.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/context.dart';
@@ -53,6 +57,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
 import 'package:cc_infra/src/dispatch/agent_environment_gateway.dart';
+import 'package:cc_infra/src/dispatch/agent_hook_folder.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
@@ -61,7 +66,9 @@ import 'package:cc_infra/src/dispatch/claude_run_state.dart';
 import 'package:cc_infra/src/dispatch/claude_subagent_runs.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session_deps.dart';
 import 'package:cc_infra/src/dispatch/harness_run_controller.dart';
+import 'package:cc_infra/src/dispatch/network_egress.dart';
 import 'package:cc_infra/src/dispatch/read_media_capture.dart';
+import 'package:cc_infra/src/dispatch/read_only_worktrees.dart';
 import 'package:cc_infra/src/dispatch/render_media_image_refs.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/dispatch/subagent_pilot_gate.dart';
@@ -75,17 +82,20 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/media/media_read_scope.dart';
 import 'package:cc_infra/src/messaging/prompt_attachments.dart';
+import 'package:cc_infra/src/process/agent_run_client_launcher.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/claude_stream_json.dart';
 import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/run_log_writer.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:cc_infra/src/skills/active_repo_tracker.dart';
 import 'package:cc_infra/src/skills/repo_skill_projector.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
 
@@ -98,6 +108,9 @@ part 'dispatch_session_claude_cli.dart';
 part 'dispatch_session_claude_control.dart';
 part 'dispatch_session_claude_credentials.dart';
 part 'dispatch_session_gateway.dart';
+part 'dispatch_session_sandbox.dart';
+part 'dispatch_session_repo_grants.dart';
+part 'dispatch_session_run_log.dart';
 part 'dispatch_session_run_context.dart';
 part 'dispatch_session_account_pool.dart';
 
@@ -407,14 +420,16 @@ class DispatchSession implements SteeringSessionView {
   final StreamController<AgentProcessEvent> controller =
       StreamController<AgentProcessEvent>();
 
-  /// Handle to the scoped credential minted for this run.
-  String? credHandle;
-
   /// This run's registration with the agent run gateway: the push proxy and
   /// the Claude Code hook endpoint that put the action policy between the
   /// agent's shell and the forge. Null when no gateway is wired or reachable;
   /// Claude then installs a blocking Bash hook instead of skipping policy.
   AgentRunLease? _gatewayLease;
+
+  /// The directory holding this run's own programs, when it has any: git's
+  /// signer and `gh`. First on its `PATH`, and granted exec like the
+  /// environment shims.
+  String? _runShimDir;
 
   /// What this run resolved once at its start; see [_RunContext].
   _RunContext _run = _RunContext.beforeStart;
@@ -631,37 +646,6 @@ class DispatchSession implements SteeringSessionView {
   /// tooling in the run can stamp it onto commit messages.
   static const String coAuthorTrailerEnvKey = 'CC_GIT_COAUTHOR_TRAILER';
 
-  /// Resolves policy-owned identity before any transport starts.
-  /// Forge credentials remain the broker's, never the member's PAT.
-  Future<_RunIdentity> _resolveRunIdentity() async {
-    final creditAgent =
-        await deps.resolveAgentAttribution?.call(
-          requestedByUserId,
-          workspaceId: workspaceId,
-        ) ??
-        true;
-    final identity = await deps.resolveCommitIdentity?.call(
-      requestedByUserId,
-      workspaceId: workspaceId,
-    );
-    if (identity == null) {
-      throw StateError('The requester has no Git identity.');
-    }
-    final coAuthorTrailer = creditAgent
-        ? 'Co-Authored-By: Control Center <hi@usectrl.dev>'
-        : null;
-    return _RunIdentity(
-      commitIdentity: identity,
-      gitEnv: Map.unmodifiable({
-        ...identity.environment,
-        // This policy-owned key also masks stale caller and inherited
-        // trailers.
-        coAuthorTrailerEnvKey: coAuthorTrailer ?? '',
-      }),
-      coAuthorTrailer: coAuthorTrailer,
-    );
-  }
-
   /// Writable bind-mount host paths this session could grant exec on (RO mounts
   /// excluded — opening them would widen the sandbox with no binary to run).
   List<String> _execGrantCandidateRoots() => [
@@ -748,41 +732,6 @@ class DispatchSession implements SteeringSessionView {
     }
   }
 
-  /// Per-dispatch bind mounts (cross-agent isolation).
-  ///
-  /// Overlay: cwd **rw**; agent config **ro**; `<convRoot>/repos` **rw** when
-  /// present; space `attachments/` **ro** when present (harness uses
-  /// [_workspaceSharedRoots] with no RO mode — convention only). Fallback/
-  /// oneshot: single writable cwd. Sibling agent dirs never mounted.
-  List<SandboxBindMount> _bindMounts() {
-    final cwd = agentDirHostPath;
-    final layout = _layout;
-    if (!layout.isOverlay) {
-      return [SandboxBindMount(hostPath: cwd, guestPath: cwd)];
-    }
-    final configDir = agentConfigDir!;
-    final reposPath = layout.reposDir;
-    final attachmentsPath = layout.attachmentsDir;
-    return [
-      SandboxBindMount(hostPath: cwd, guestPath: cwd),
-      SandboxBindMount(
-        hostPath: configDir,
-        guestPath: configDir,
-        readOnly: true,
-      ),
-      // Writable so the overlay `repos` symlink resolves in the guest
-      // namespace (identical host/guest paths).
-      if (reposPath != null)
-        SandboxBindMount(hostPath: reposPath, guestPath: reposPath),
-      if (attachmentsPath != null)
-        SandboxBindMount(
-          hostPath: attachmentsPath,
-          guestPath: attachmentsPath,
-          readOnly: true,
-        ),
-    ];
-  }
-
   /// Where this dispatch's directories are, derived once.
   ///
   /// Resolved when the run starts ([run]) and reused by every consumer —
@@ -805,6 +754,9 @@ class DispatchSession implements SteeringSessionView {
   /// harness path sandbox still hold).
   List<String>? _protectedPathsCache;
 
+  /// The worktrees read-only for this run; see `_resolveReadOnlyWorktrees`.
+  List<String>? _readOnlyWorktreeDirs;
+
   Future<List<String>> _protectedPaths() async {
     final cached = _protectedPathsCache;
     if (cached != null) {
@@ -822,24 +774,6 @@ class DispatchSession implements SteeringSessionView {
       return _protectedPathsCache = const [];
     }
   }
-
-  /// Extra workspace roots for the in-process harness file tools: the shared
-  /// conversation worktrees dir (`<convRoot>/repos`) and the conversation's
-  /// materialized attachments, when this session's cwd is a per-agent overlay.
-  /// Without the first, the tools refuse the worktrees' real paths — the
-  /// overlay only reaches them through its `repos` symlink, whose target is
-  /// lexically outside the cwd. Without the second, the paths this run's own
-  /// prompt names are unreadable to the tools that were given them. Derived
-  /// from the directory layout (mirrors [_bindMounts]), never from the
-  /// agent-writable symlink itself.
-  List<String> _workspaceSharedRoots() => [
-    ?_layout.reposDir,
-    ?_layout.attachmentsDir,
-  ];
-
-  /// The space's shared worktree dir, or null when this session's cwd is not a
-  /// per-agent overlay (the fallback path, where there are no worktrees).
-  String? get _reposDir => _layout.reposDir;
 
   /// The server-managed directories whose symlinks the context loaders may
   /// follow.
@@ -982,58 +916,28 @@ class DispatchSession implements SteeringSessionView {
       // FIRST, before anything that can fail: a failure in the mint, the
       // identity or the lease used to end the run with no NDJSON log at all.
       await _openRunLog();
+      if (!await _admittedOnHost()) {
+        return;
+      }
       _layoutCache = _OverlayLayout.resolve(
         cwd: agentDirHostPath,
         configDir: agentConfigDir,
       );
       final networkEnabled = await _resolveNetworkEnabled();
 
-      // Resolve the worktree's GitHub coordinates so the broker can mint a
-      // fine-grained App installation token scoped to exactly this repo.
-      // Without them the App mint is skipped and the broker falls back to the
-      // environment PAT — so a cwd that is not a GitHub checkout still
-      // dispatches, it just carries no repo-scoped credential.
-      String? repoOwner;
-      String? repoName;
-      final inspector = deps.repoInspector;
-      if (inspector != null) {
-        try {
-          final info = await inspector.inspect(agentDirHostPath);
-          if (info.forge == ForgeHost.github) {
-            repoOwner = info.owner;
-            repoName = info.repoName;
-          }
-        } on Object {
-          // Best-effort: not a git worktree / no supported origin remote.
-        }
-      }
-
-      // The REVIEW scope cannot push. Shell preflight always checks push
-      // policy, and gateway-routed pushes independently authorize the actual
-      // refs using a server-held token.
-      final scoped = await deps.broker.mint(
-        conversationId: conversationId ?? 'unknown',
-        scope: ForgeTokenScope.review,
-        repoOwner: repoOwner,
-        repoName: repoName,
-        // The member who asked for this run. It bounds the run's forge
-        // credential to THEIR access rather than the server owner's, so a
-        // read-only collaborator cannot dispatch a pushing agent and have it
-        // succeed on someone else's reach.
-        actingUserId: requestedByUserId,
-        workspaceId: workspaceId,
-      );
-      credHandle = scoped.handle;
+      // The repositories the run works on. Their forge is whose address its
+      // commits carry, and on every forge they are what the run fetches
+      // through the gateway. The run itself holds no forge token.
+      final repos = await _resolveRunRepos();
 
       // Resolve the per-run Git identity and co-author policy before any
-      // transport launches, so every merged env carries them. (After the
-      // mint: callers may fail a stalled mint to abort the run early.) Before
-      // the lease too: the gateway signs only as this identity.
-      final identity = await _resolveRunIdentity();
+      // transport launches, so every merged env carries them. Before the
+      // lease too: the gateway signs and forwards only as this identity.
+      final identity = await _resolveRunIdentity(_forgeOf(repos));
+      await _resolveReadOnlyWorktrees();
 
       final environment = await _openGatewayLease(
-        repoOwner: repoOwner,
-        repoName: repoName,
+        repos: repos,
         identity: identity.commitIdentity,
       );
       // Everything a transport or its sandbox reads from here on is fixed.
@@ -1067,19 +971,11 @@ class DispatchSession implements SteeringSessionView {
 
       switch (backend.transport) {
         case AdapterTransport.claudeCli:
-          await _runClaudeCli(
-            scoped: scoped,
-            sandboxSessionId: sandboxSessionId,
-            wsId: wsId,
-          );
+          await _runClaudeCli(sandboxSessionId: sandboxSessionId, wsId: wsId);
         case AdapterTransport.acp:
-          await _runAcp(
-            scoped: scoped,
-            sandboxSessionId: sandboxSessionId,
-            wsId: wsId,
-          );
+          await _runAcp(sandboxSessionId: sandboxSessionId, wsId: wsId);
         case AdapterTransport.harness:
-          await _runHarness(scoped: scoped, wsId: wsId);
+          await _runHarness(wsId: wsId);
       }
       onScheduleCooldown(sandboxSessionId);
     } on Object catch (e, st) {
@@ -1091,7 +987,10 @@ class DispatchSession implements SteeringSessionView {
         // over RPC. A failed authenticated git/HTTP call embeds
         // `https://x-access-token:ghp_…@github.com` in its message — the
         // NDJSON run log already redacts, the live stream did not.
-        _failRun(redactSecrets('[sandbox] dispatch failed: $e'));
+        _failRun(
+          redactSecrets('[sandbox] dispatch failed: $e'),
+          code: e is AppException ? e.code : null,
+        );
       }
       _finish(error: e);
     }
@@ -1113,6 +1012,9 @@ class DispatchSession implements SteeringSessionView {
   /// and one still holding a dataframe (and a process) after the conversation
   /// ended is the leak the enclosure rules exist to prevent.
   final Map<KernelLanguage, EvalKernel> _kernels = {};
+
+  /// This run's tool process launchers, released when it ends.
+  final Map<String, ToolProcessLauncher> _toolLaunchers = {};
 
   /// The director's background workers, when `/vibe` turned the mode on.
   ///
@@ -1144,14 +1046,18 @@ class DispatchSession implements SteeringSessionView {
   /// first, then bridged CC MCP tools) for a given [mode]/[env]. The
   /// `task` tool is NOT added here — the top-level run adds it explicitly and
   /// subagents deliberately omit it so nesting is capped at one level.
+  ///
+  /// [personalMcp] is [_personalMcpAllowed], asked by the caller right before.
   HarnessToolRegistry _buildHarnessRegistry({
     required Mode mode,
     required Map<String, String> env,
+    required bool personalMcp,
   }) {
     // The `eval` bridge resolves tools against the registry being built, which
     // is why this is a block: a cell's `tool(...)` call must hit the SAME
     // registry a model-issued call does, wrappers and guardrails included.
     late final HarnessToolRegistry registry;
+    final toolProcesses = _toolProcesses(mode);
     registry = buildHarnessToolRegistry(
       mode: mode,
       networkEnabled: _run.networkEnabled,
@@ -1167,12 +1073,14 @@ class DispatchSession implements SteeringSessionView {
       // The SAME resolution the CLI profile uses, so both adapters get the
       // same scoped exec roots — and the tool's own cwd never enters into it.
       execGrantRootsResolver: () => _execGrants(workspaceId ?? ''),
+      sandboxSpec: (id) => _sandboxSpec(id, workspaceId ?? '', mode: mode),
       // The operator's own `commandPrefix` rules reach the bash gate through
       // this — before it, they were stored, resolvable, editable in the
       // what-if probe, and never consulted at runtime.
       actionGuard: deps.actionGuard,
       fileSearch: deps.fileSearch,
       mcpRegistry: deps.mcpRegistry,
+      includePersonalMcp: personalMcp,
       protectedPaths: _protectedPaths,
       // `ask_user` renders in this run's conversation within its space.
       // Both scopes must reach the tool so the answer returns to this run.
@@ -1193,53 +1101,40 @@ class DispatchSession implements SteeringSessionView {
       debugSupervisor: deps.debugSupervisor,
       evalKernelFor: deps.kernelLauncherFactory == null
           ? null
-          : (language) => _kernelFor(language, registryForBridge: registry),
+          : (language) => _kernelFor(
+              language,
+              registryForBridge: registry,
+              hostProcesses: toolProcesses,
+            ),
+      toolProcesses: toolProcesses,
+      debugProcesses: _debugProcesses(mode),
+      lspProcesses: _lspProcesses(mode),
+      harnessSandboxSessionId: _harnessSandboxSessionId,
     );
     return registry;
   }
 
-  /// The live kernel for [language], created on first use.
-  ///
-  /// **The bridge re-enters the registry, it does not go around it.** A
-  /// `tool(...)` call from inside a cell resolves against the SAME tool
-  /// registry a model-issued call does, so `ActionClass` guardrails, the
-  /// approval callback and every wrapper (diagnostics-on-write included) apply
-  /// identically. A bridge that reached past the registry would be a hole in
-  /// the guardrails shaped exactly like "write a Python one-liner".
-  EvalKernel _kernelFor(
-    KernelLanguage language, {
-    required HarnessToolRegistry registryForBridge,
-  }) => _kernels.putIfAbsent(
-    language,
-    () => EvalKernel(
-      language: language,
-      launcher: LazyKernelLauncher(
-        () => deps.kernelLauncherFactory!(
-          workingDirectory: agentDirHostPath,
-          workspaceId: workspaceId,
-          conversationId: conversationId,
-        ),
-      ),
-      bridge: (name, arguments) async {
-        final tool = registryForBridge.findByName(name);
-        if (tool == null) {
-          return (content: 'Unknown tool: $name', isError: true);
-        }
-        final result = await tool.execute(
-          arguments,
-          HarnessToolContext(
-            workingDirectory: agentDirHostPath,
-            sharedRoots: _workspaceSharedRoots(),
-            agentId: agentId,
-            workspaceId: workspaceId,
-            conversationId: conversationId,
-            spaceId: spaceId,
-          ),
-        );
-        return (content: result.content, isError: result.isError);
-      },
-    ),
-  );
+  /// Whether this run may be handed the MCP servers discovered in the server
+  /// OS user's own tool configs: only when the server owner is accountable
+  /// for it (`HostExecutionGate.ownerAccountable`). No answer, or a failed
+  /// one, is no.
+  Future<bool> _personalMcpAllowed() async {
+    final ownerAccountable = deps.hostExecution.ownerAccountable;
+    if (ownerAccountable == null) {
+      return false;
+    }
+    try {
+      return await ownerAccountable(
+        workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
+      );
+    } on Object catch (e) {
+      CcInfraLog.warning(
+        'dispatch $dispatchId: owner check failed, no personal MCP: $e',
+      );
+      return false;
+    }
+  }
 
   SubagentCatalog? _catalogMemo;
 
@@ -1533,26 +1428,20 @@ class DispatchSession implements SteeringSessionView {
       workspaceId: wsId,
       workingDirectory: agentDirHostPath,
       agentConfigDir: agentConfigDir,
-      coAuthorTrailer: _run.identity.coAuthorTrailer,
+      coAuthorTrailers: _run.identity.coAuthorTrailers,
       permittedLinkRoots: _permittedLinkRoots(),
       onWarning: CcInfraLog.warning,
     );
     return parts.assemble();
   }
 
-  /// Builds the merged environment for a dispatch. Adapter defaults cannot
-  /// replace the resolved attribution policy or the broker's forge credentials.
-  ///
-  /// Caller and adapter settings cannot replace the requesting human's identity.
-  /// The run's GitHub credential is always the broker's, never the requesting
-  /// member's token.
-  Map<String, String> _mergedEnv({
-    required Map<String, String> scopedEnv,
-    required Map<String, String> backendEnv,
-  }) {
+  /// Builds the merged environment for a dispatch. Caller and adapter settings
+  /// cannot replace the resolved attribution policy, the requesting human's
+  /// identity or the gateway's routing. No forge token is in it: the run asks
+  /// the gateway for one.
+  Map<String, String> _mergedEnv({required Map<String, String> backendEnv}) {
     final merged = <String, String>{
       ...callerEnv,
-      ...scopedEnv,
       ...backendEnv,
       ...adapterEnvOverride,
       if (wakeContext != null) ...wakeContext!.toEnvironment(),
@@ -1563,15 +1452,9 @@ class DispatchSession implements SteeringSessionView {
       if (claudeConfigDir != null && claudeConfigDir!.isNotEmpty)
         'CLAUDE_CONFIG_DIR': claudeConfigDir!,
     };
-    // …and it survives the re-assertion below, because the broker's scoped env
-    // carries forge credentials, never a runner config dir.
-    // Re-assert the credential keys LAST. The spread order above lets an
+    // Re-assert the identity keys LAST. The spread order above lets an
     // adapter's configured env win for its own keys (which is the point of
-    // `adapterEnvOverride`), but it also let it silently replace a
-    // broker-minted, scoped, revocable credential with a static one — while
-    // `adapterEnvOverride`'s own doc promised the opposite ("caller/broker env
-    // still wins for security-critical keys"). Now it does.
-    merged.addAll(scopedEnv);
+    // `adapterEnvOverride`), never for whose commits these are.
     merged.addAll(_run.identity.gitEnv);
     // Append gateway routing after adapter config. Shell preflight remains
     // necessary: explicit URLs or command-local Git config can avoid rewrites.
@@ -1597,39 +1480,6 @@ class DispatchSession implements SteeringSessionView {
     for (final a in claudeAccounts)
       if (a.configDir.isNotEmpty) a.configDir,
   }.toList();
-
-  /// The sandbox session id a dispatch's CLI transports share: one per
-  /// agent, conversation and mode, so a follow-up turn can reuse it warm.
-  String get _sandboxSessionId {
-    final agentKey = (agentId != null && agentId!.isNotEmpty)
-        ? agentId!
-        : 'oneshot';
-    final convKey = conversationId ?? 'no-conv';
-    return '$agentSessionPrefix$agentKey::$convKey::${mode.name}';
-  }
-
-  /// The ONE sandbox spec this dispatch's process transports (Claude Code,
-  /// ACP) run under. Every input is a value resolved at run start, so two
-  /// transports of one run can never be sandboxed differently — the ACP path
-  /// used to build its own, without process-group supervision.
-  Future<SandboxSpec> _sandboxSpec(
-    String sandboxSessionId,
-    String wsId,
-  ) async => processSandboxSpec(
-    sessionId: sandboxSessionId,
-    workspaceId: wsId,
-    agentId: agentId,
-    bindMounts: _bindMounts(),
-    workdir: agentDirHostPath,
-    networkEnabled: _run.networkEnabled,
-    mode: mode,
-    protectedPaths: await _protectedPaths(),
-    runnerStateDirs: _runnerStateDirs,
-    execGrantRoots: await _execGrants(wsId),
-    loopbackPorts: _gatewayLoopbackPorts,
-    environmentScope: _run.environment.scope,
-    superviseProcessGroup: true,
-  );
 
   /// Resolves this run's sandbox handle and starts listening to nothing yet:
   /// the caller subscribes. An error-state handle is destroyed before the
@@ -1686,7 +1536,8 @@ class DispatchSession implements SteeringSessionView {
   /// Universal command preflight. Evaluates the resolved command string
   /// against the mode's [CommandPolicy] before spawning. Returns `true` when
   /// the spawn should proceed, `false` when it was refused — in which case the
-  /// run has already finished. A `prompt` decision asks the operator through
+  /// run has already finished. A `prompt` decision is answered by a live
+  /// standing approval for this exact command, else asks the operator through
   /// the [ConfirmationPort] and fails closed without one.
   Future<bool> _preflightCommand(List<String> argv) async {
     if (argv.isEmpty) {
@@ -1717,24 +1568,26 @@ class DispatchSession implements SteeringSessionView {
           _finish(exitCode: 126);
           return false;
         }
-        final copy = ActionApprovalCopy.describe(
+        // The command net asks on its own; a person's standing approval of
+        // this exact command spares it. Its deny above stays a deny.
+        final approved = await ActionGuardService.confirmCommand(
+          guard: deps.actionGuard,
+          port: port,
+          workspaceId: workspaceId,
           classes: {
             ActionClass.processSpawn,
             ...const ShellActionClassifier().classify(command),
           },
           command: command,
-        );
-        final approved = await port.requestApproval(
-          ConfirmationRequest(
-            spaceId: spaceId ?? '',
-            conversationId: conversationId,
-            workspaceId: workspaceId,
-            title: copy.title,
-            detail: copy.detail,
-            command: command,
-            severity: ConfirmationSeverity.warning,
-            kind: ConfirmationKind.command,
-          ),
+          spaceId: spaceId,
+          conversationId: conversationId,
+          agentId: agentId,
+          mode: mode,
+          actionSummary: 'spawn: $command',
+          onBehalfOfUserId: requestedByUserId,
+          runId: runLogId,
+          severity: ConfirmationSeverity.warning,
+          kind: ConfirmationKind.command,
         );
         if (!approved) {
           addEvent(
@@ -1856,7 +1709,7 @@ class DispatchSession implements SteeringSessionView {
     _finishing = _bestEffort(
       'run-log close',
       () => _closeRunLog(exitCode: exitCode, error: error),
-    );
+    ).then((_) => _bestEffort('tool sandbox release', _releaseToolProcesses));
     if (!emittedDone) {
       addEvent(DoneEvent());
       _completeRun();
@@ -2202,192 +2055,6 @@ class DispatchSession implements SteeringSessionView {
         ),
       );
     }
-  }
-
-  void _updateRunLogPidAndStart(int forkedPid) {
-    final id = runLogId;
-    final repo = deps.runLogRepo;
-    // The run log lives in this session's workspace; without one there is no
-    // row (the repository refuses a workspace-less run log) to write.
-    final ws = workspaceId;
-    if (id == null || repo == null || ws == null || ws.isEmpty) {
-      return;
-    }
-    unawaited(() async {
-      try {
-        final updated = await repo.updateRuntime(
-          ws,
-          id,
-          pid: forkedPid,
-          markRunning: true,
-        );
-        if (!updated) {
-          _failRun('Run log $id missing when PID $forkedPid arrived');
-        }
-      } on Object catch (e, st) {
-        CcInfraLog.error(
-          'DispatchSession: Failed to persist PID $forkedPid for $id',
-          e,
-          st,
-        );
-        _failRun('Failed to persist PID: $e');
-      }
-    }());
-  }
-
-  /// Flips this run's row from `pending` to `running` as the harness loop starts.
-  ///
-  /// The PID-bearing transports get this from [_updateRunLogPidAndStart], but the
-  /// built-in harness spawns no process and so has no PID — which left its row
-  /// `pending` for the entire run. Anything reading status to tell "queued" apart
-  /// from "working" (the sidebar's status dot, `deriveAgentLiveState` on the
-  /// roster) therefore reported a busy agent as queued/idle until it finished.
-  void _markRunStarted() {
-    final id = runLogId;
-    final repo = deps.runLogRepo;
-    // The run log lives in this session's workspace; without one there is no
-    // row (the repository refuses a workspace-less run log) to write.
-    final ws = workspaceId;
-    if (id == null || repo == null || ws == null || ws.isEmpty) {
-      return;
-    }
-    unawaited(() async {
-      try {
-        await repo.updateRuntime(ws, id, markRunning: true);
-      } on Object catch (e, st) {
-        // Best-effort: a lost transition only mislabels the dot, so it must not
-        // fail the run the way a lost PID does.
-        CcInfraLog.warning(
-          'DispatchSession: Failed to mark run $id running: $e\n$st',
-        );
-      }
-    }());
-  }
-
-  void _updateRunLogPath(String path) {
-    final id = runLogId;
-    final repo = deps.runLogRepo;
-    // The run log lives in this session's workspace; without one there is no
-    // row (the repository refuses a workspace-less run log) to write.
-    final ws = workspaceId;
-    if (id == null || repo == null || ws == null || ws.isEmpty) {
-      return;
-    }
-    unawaited(() async {
-      try {
-        if (!await repo.updateRuntime(ws, id, logPath: path)) {
-          _failRun('Run log $id missing when log path arrived');
-        }
-      } on Object catch (e, st) {
-        CcInfraLog.error(
-          'DispatchSession: Failed to persist log path $path for $id',
-          e,
-          st,
-        );
-        _failRun('Failed to persist log path: $e');
-      }
-    }());
-  }
-
-  /// Records what this run was actually composed of: the tool names handed to
-  /// the loop, the mode profile, the model and the size of the assembled system
-  /// prompt.
-  ///
-  /// This is the answer to "why did the agent not call the tool it was told to
-  /// call?" — a question that previously required reading the SQLite file and
-  /// replaying requests against the provider by hand, because the one column
-  /// meant to hold it was never written. The tool list is the single most
-  /// valuable field: nearly every mode-behavior bug reduces to a surface that
-  /// did not contain what the prompt promised.
-  ///
-  /// The prompt is stored by length and digest, not verbatim — it can carry
-  /// repo contents and memory facts and a run log is not the place for a copy
-  /// of them. The digest is still enough to tell two runs apart.
-  void _recordRunComposition({
-    required List<String> toolNames,
-    required String mode,
-    required String model,
-    required String adapter,
-    required String systemPrompt,
-    List<String> deferredToolNames = const [],
-    int toolSchemaTokens = 0,
-    String? effort,
-  }) {
-    final id = runLogId;
-    final repo = deps.runLogRepo;
-    // The run log lives in this session's workspace; without one there is no
-    // row (the repository refuses a workspace-less run log) to write.
-    final ws = workspaceId;
-    if (id == null || repo == null || ws == null || ws.isEmpty) {
-      return;
-    }
-    final snapshot = jsonEncode({
-      'mode': mode,
-      'model': model,
-      'adapter': adapter,
-      'effort': effort ?? 'default',
-      'toolCount': toolNames.length,
-      'tools': toolNames,
-      'deferredToolCount': deferredToolNames.length,
-      'deferredTools': deferredToolNames,
-      'toolSchemaTokens': toolSchemaTokens,
-      'systemPromptChars': systemPrompt.length,
-      'systemPromptSha256': sha256
-          .convert(utf8.encode(systemPrompt))
-          .toString(),
-    });
-    unawaited(() async {
-      try {
-        await repo.updateRuntime(
-          ws,
-          id,
-          contextSnapshotJson: snapshot,
-          modelId: model,
-          effort: effort ?? 'default',
-          taskFamily: mode,
-        );
-      } on Object catch (e, st) {
-        // Diagnostics must never take the run down with them.
-        CcInfraLog.error(
-          'DispatchSession: Failed to persist run composition for $id',
-          e,
-          st,
-        );
-      }
-    }());
-  }
-
-  void _failRun(String message) {
-    final id = runLogId;
-    final repo = deps.runLogRepo;
-    // The run log lives in this session's workspace; without one there is no
-    // row (the repository refuses a workspace-less run log) to stamp — the
-    // error event below is still emitted.
-    final ws = workspaceId;
-    if (id != null && repo != null && ws != null && ws.isNotEmpty) {
-      unawaited(() async {
-        try {
-          final existing = await repo.getById(ws, id);
-          if (existing != null && existing.completedAt == null) {
-            await repo.completeIfActive(
-              existing.copyWith(
-                status: RunStatus.error,
-                summary: message,
-                completedAt: DateTime.now(),
-              ),
-              writeCost: false,
-            );
-          }
-        } on Object catch (e, st) {
-          CcInfraLog.error(
-            'DispatchSession: Failed to mark run log $id as error',
-            e,
-            st,
-          );
-        }
-      }());
-    }
-    addEvent(ErrorEvent(content: message));
   }
 
   late final _readMedia = ReadMediaCapture(

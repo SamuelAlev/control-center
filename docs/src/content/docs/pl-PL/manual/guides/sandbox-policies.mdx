@@ -2,7 +2,7 @@
 title: Skonfiguruj polityki sandboxa
 description: Co ogranicza uruchomienie agenta, jak rozpoznać, czy opakowuje je sandbox systemowy, i jak reguły akcji decydują, co agent może wypchnąć lub osiągnąć.
 slug: pl-PL/podrecznik/poradniki/polityki-sandboxa
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 O tym, czy uruchomienie agenta działa w sandboxie, decyduje serwer przy starcie
@@ -23,7 +23,7 @@ warunkowa — pozostałe pięć obowiązuje na każdym hoście.
 
 | Granica                      | Co robi                                                                                                                                                                                            |
 | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sandbox systemowy            | Seatbelt w macOS, bubblewrap w Linuksie i WSL2. Opakowuje CLI Claude Code, adaptery ACP i narzędzie `bash` harnessa. **Nieobecny w systemie Windows oraz w Linuksie bez `bwrap` i `socat`** |
+| Sandbox systemowy            | Seatbelt w macOS, bubblewrap w Linuksie i WSL2. Opakowuje CLI Claude Code, adaptery ACP i narzędzie `bash` harnessa. **Nieobecny w systemie Windows oraz w Linuksie bez `bwrap` i `socat`, gdzie startują tylko uruchomienia właściciela serwera** |
 | Własne drzewo robocze        | Każda rozmowa dostaje kopię roboczą copy-on-write. Oryginalna kopia robocza jest włączana do uruchomienia jako ścieżka objęta zakazem zapisu, a egzekwuje to sandbox                                        |
 | Poświadczenia z brokera      | Broker poświadczeń tworzy środowisko dla danego uruchomienia i unieważnia je, gdy uruchomienie się kończy. Token GitHub w nim pozwala czytać, ale nie wykonać push: push przechodzi przez Control Center, który najpierw pyta regułę push |
 | Guardraile działań           | Każde narzędzie zmieniające stan deklaruje swoje klasy efektów, a strażnik rozstrzyga je, zanim wywołanie się wykona. `prompt` bez podłączonego zatwierdzającego jest odrzucany                                |
@@ -43,10 +43,7 @@ Trzy rzeczy pozostają słabsze, niż wyglądają:
   więc żaden profil sandboxa ich nie ogranicza. Przez sandboxowany runner
   poleceń przechodzi tylko narzędzie `bash`. Te narzędzia ogranicza własna
   izolacja ścieżek oraz guardraile działań.
-- Na hoście bez backendu pierwszy wiersz nie ma w ogóle zastosowania. ACP i narzędzie
-  `bash` harnessa opierają się na oczyszczaniu środowiska oraz polityce
-  poleceń; Claude Code dziedziczy środowisko hosta przez `NoSandboxAdapter`.
-  Serwer mówi o tym w swoim logu startowym. Sprawdź swój poniżej.
+- Na hoście bez backendu w ogóle nie obowiązuje pierwszy wiersz, a startują tylko uruchomienia, za które odpowiada właściciel serwera. Uruchomienia wszystkich pozostałych są odrzucane. Przy `--sandbox off` każde uruchomienie członka startuje bez pierwszego wiersza. W obu przypadkach ACP i narzędzie `bash` harnessa opierają się na oczyszczaniu środowiska oraz polityce poleceń, a Claude Code dziedziczy środowisko hosta przez `NoSandboxAdapter`. Serwer mówi, który przypadek obowiązuje, w swoim logu startowym. Sprawdź swój poniżej.
 
 ## Zdecyduj, co agent może wypchnąć
 
@@ -56,8 +53,8 @@ sieci. Każde z nich to reguła akcji:
 | Reguła                                    | Wbudowana wartość domyślna | Co obejmuje                                                                   |
 | ----------------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
 | **Push do zdalnego repozytorium**         | Zapytaj najpierw           | Każdy `git push` do GitHuba, niezależnie od adaptera                          |
-| **Otwarcie pull requesta**                | Zapytaj najpierw           | `gh pr create` i narzędzia do pull requestów                                  |
-| **Opublikowanie recenzji lub scalenie**   | Zapytaj najpierw           | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                 |
+| **Otwarcie pull requesta**                | Zapytaj najpierw           | Narzędzia do pull requestów Control Center. `gh pr create` nie działa w uruchomieniu                                  |
+| **Aktualizacja lub scalenie pull requesta** | Zapytaj najpierw           | Komentarze agenta do jego pull requesta, zmiany jego tytułu lub opisu i opublikowane recenzje, przez narzędzia Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` i `gh pr close` nie działają w uruchomieniu                 |
 | **Zapis do zewnętrznego trackera**        | Zapytaj najpierw           | Zapisy zgłoszeń przez narzędzia Control Center i `gh issue`                   |
 | **Dostęp do sieci**                       | Zezwól                     | Czy sandbox w ogóle ma sieć, oraz narzędzia webowe harnessa                   |
 
@@ -115,45 +112,39 @@ czy `--sandbox` jest włączone. Sprawdź je w tej kolejności.
    **Bez izolacji**. Element **Obowiązuje** to preferencja tego urządzenia, a
    nie opakowanie, którego serwer faktycznie używa.
 3. Odczytaj log startowy serwera. Drukuje dokładnie jeden z trzech wierszy:
-   - `agent sandbox ON` plus informację o backendzie — uruchomienia są opakowane
-   - `no OS-native agent sandbox on this host` plus wskazówkę instalacyjną,
-     jeśli taka istnieje — uruchomienia nie są opakowane
-   - `agent sandbox DISABLED by --sandbox off` — świadome wyłączenie
+   - `agent sandbox ON` plus informację o backendzie: uruchomienia są opakowane
+   - `no OS-native agent sandbox on this host` plus wskazówkę instalacyjną, jeśli taka istnieje: startują tylko uruchomienia, za które odpowiada właściciel serwera, bez opakowania, a pozostałe są odrzucane
+   - `agent sandbox DISABLED by --sandbox off`: uruchomienia wszystkich członków startują bez opakowania
+4. Linia ekspozycji wypisywana przy starcie mówi to samo w jednym słowie: `sandbox=native`, `sandbox=off` albo `sandbox=unavailable`.
 
 `GET /healthz` nie raportuje stanu sandboxa, więc sprawdzeniem jest log
 startowy.
 
-Aby świadomie wyłączyć sandbox — host, na którym profil się psuje, jest
-powodem, dla którego ta opcja istnieje — uruchom serwer z `--sandbox off` albo
-ustaw `CC_SERVER_SANDBOX=off`. Wartością domyślną jest `on`, a `on` oznacza
-„użyj backendu, jeśli host go ma”, nigdy „wymagaj go”.
+Tylko właściciel serwera decyduje o uruchamianiu bez sandboxa. Żeby zrobić to dla wszystkich, uruchom serwer z `--sandbox off` albo ustaw `CC_SERVER_SANDBOX=off`. Agenty wszystkich członków działają wtedy bez ograniczeń na tej maszynie, więc jest to decyzja o wszystkich, którzy korzystają z serwera, podejmowana raz, przy starcie. Wartością domyślną jest `on`: opakowuje każde uruchomienie, gdy host ma backend, a gdy go nie ma, startuje tylko uruchomienia właściciela.
 
 Dwie sytuacje nigdy nie dostają natywnego opakowania sandboxa. W systemie
 **Windows** natywna sonda zawsze zgłasza niedostępność i nie ma czego instalować
-— wysyłanie agentów używa `none`. Backend `microvm` jest osobny (interaktywne terminale i
+— więc startują tylko uruchomienia właściciela serwera, chyba że właściciel poda `--sandbox off`. Backend `microvm` jest osobny (interaktywne terminale i
 rigi) i ma własną bramkę sondy na swoim środowisku uruchomieniowym. W **Linuksie
 i WSL2** oba narzędzia `bwrap` i `socat` muszą być w `PATH`; bez nich sonda
-zgłasza niedostępność i podaje nazwy brakujących pakietów.
+zgłasza niedostępność i podaje nazwy brakujących pakietów, a startują tylko uruchomienia właściciela.
 
 W Linuksie/WSL2 z zainstalowanym bubblewrap standardowa polityka nie może
 wyegzekwować wzorców glob plików z sekretami dla plików, które agent utworzy
-później. Takie natywne uruchomienie kończy się teraz błędem, zamiast po cichu
-ignorować reguły. Dodatnia sonda przy starcie nie gwarantuje więc, że wysyłanie
-w Linuksie zdoła wystartować. `--sandbox off` to świadome, nieograniczone
-wyłączenie, a nie zastępcza granica bezpieczeństwa.
+później, więc każde natywne uruchomienie kończy się błędem, zamiast po cichu ignorować reguły — także uruchomienie właściciela. Dodatnia sonda przy starcie nie oznacza więc, że wysyłanie w Linuksie zdoła wystartować: obecnie serwer w Linuksie uruchamia agentów z `--sandbox off` albo, bez bubblewrap, tylko dla właściciela. `--sandbox off` to świadome, nieograniczone wyłączenie, a nie zastępcza granica bezpieczeństwa.
 
 ## Wiedz, czego tryb już zabrania
 
 Tryb jest przechowywany dla każdej przestrzeni i zasila mechanizm rozstrzygania
 guardraili jako warstwę **preset trybu**. Trzy z czterech trybów są tylko do
-odczytu, a tryb tylko do odczytu odrzuca jedenaście klas efektów wprost:
+odczytu, a tryb tylko do odczytu odrzuca dwanaście klas efektów wprost:
 
 | Tryb                    | Drzewo robocze | Odrzucane przez preset                                                                                                                                                            |
 | ----------------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`)      | Zapisywalne    | Nic — obowiązują wbudowane wartości domyślne                                                                                                                                       |
-| **Plan**                | Tylko do odczytu | Usunięcie pliku, zapis poza drzewem roboczym, utworzenie commita, push do zdalnego repozytorium, otwarcie pull requesta, opublikowanie recenzji lub scalenie, zapis do zewnętrznego trackera, instalacja pakietu, uruchomienie procesu, zmiana struktury obszaru roboczego, uruchomienie i sterowanie rigiem |
-| **Przegląd**            | Tylko do odczytu | Te same jedenaście. Nie do wyboru przez użytkownika — pole tworzenia wiadomości oferuje tylko Agent, Plan i Orkiestrację                                                              |
-| **Orkiestracja**        | Tylko do odczytu | Te same jedenaście                                                                                                                                                                  |
+| **Plan**                | Tylko do odczytu | Usunięcie pliku, zapis poza drzewem roboczym, utworzenie commita, push do zdalnego repozytorium, otwarcie pull requesta, opublikowanie recenzji lub scalenie, zapis do zewnętrznego trackera, instalacja pakietu, uruchomienie procesu, zmiana struktury obszaru roboczego, uruchomienie i sterowanie rigiem, uruchamianie poleceń na hoście |
+| **Przegląd**            | Tylko do odczytu | Te same dwanaście. Nie do wyboru przez użytkownika — pole tworzenia wiadomości oferuje tylko Agent, Plan i Orkiestrację                                                              |
+| **Orkiestracja**        | Tylko do odczytu | Te same dwanaście                                                                                                                                                                  |
 
 Dostęp do sieci i dostęp do sekretów celowo _nie_ są odrzucane przez tryb tylko
 do odczytu: badanie jest całym jego sensem.
@@ -180,18 +171,18 @@ odmówiła push albo że **Zapytaj najpierw** zostało bez odpowiedzi.
 `… is not linked to this workspace` oznacza, że push celuje w repozytorium,
 które nie jest ani repozytorium worktree, ani nie jest połączone z obszarem
 roboczym. `Control Center has no GitHub credential that can push …` oznacza,
-że GitHub App nie jest zainstalowana w tym repozytorium i żadne zapasowe
-poświadczenie nie mogło wykonać push: zainstaluj tam aplikację albo połącz
-GitHuba.
+że nie udało się wygenerować żadnego tokenu do push: zainstaluj GitHub App w tym repozytorium albo zaloguj się do GitHuba.
+
+### Uruchomienie agenta zostało odrzucone: „Ten serwer nie ma piaskownicy”
+
+Na stronie uruchomienia widnieje **Agenty potrzebują piaskownicy na tym serwerze** z komunikatem „Ten serwer nie ma piaskownicy, więc agenty mogą tu uruchamiać tylko jego właściciel. Właściciel może zainstalować piaskownicę albo wyłączyć piaskownicowanie dla wszystkich.” Host serwera nie ma sandboxa systemu operacyjnego, a osoba odpowiedzialna za uruchomienie nie jest właścicielem serwera, więc nic nie zostało uruchomione. W przypadku harmonogramu, webhooka lub innej automatyzacji osobą odpowiedzialną jest ta, z którą automatyzacja jest powiązana, a nie ktokolwiek, kto na nią patrzy.
+
+Zmienić to może tylko właściciel serwera. W Linuksie i WSL2 instaluje `bubblewrap` i `socat` oraz restartuje serwer (ale najpierw przeczytaj uwagę o Linuksie powyżej). W Windows nie ma backendu do zainstalowania. Drugim wyborem jest ponowne uruchomienie serwera z `--sandbox off`, co uruchamia agentów wszystkich członków bez ograniczeń na tej maszynie.
 
 ### Karta Piaskownica nie zgłasza natywnego sandboxa
 
 Wtedy uruchomienia agenta na tym hoście nie są opakowywane przez Seatbelt ani
-bubblewrap i pozostają Ci pozostałe granice. W Linuksie i WSL2 zainstaluj oba
-brakujące narzędzia — `sudo apt-get install bubblewrap socat` — i zrestartuj
-serwer; log startowy powinien wtedy mówić, że sandbox jest włączony. W Windows
-nie ma natywnego backendu do zainstalowania, więc zamiast tego zaostrz
-guardraile: zobacz
+bubblewrap: startują tylko uruchomienia właściciela serwera, a pozostałe granice są tym, co mają. W Linuksie i WSL2 zainstaluj oba brakujące narzędzia (`sudo apt-get install bubblewrap socat`) i zrestartuj serwer; log startowy powinien wtedy mówić, że sandbox jest włączony. W Windows nie ma natywnego backendu do zainstalowania, więc zamiast tego zaostrz guardraile dla własnych uruchomień właściciela: zobacz
 [Skonfiguruj guardraile](/pl-PL/podrecznik/poradniki/konfiguracja-guardraili/).
 
 ### Agent dotarł do pliku poza swoim drzewem roboczym
@@ -205,8 +196,8 @@ patch, search, find, search_files) uruchamiają się w procesie serwera, więc
 tam, gdzie istnieje backend, a Twoje zarejestrowane kopie robocze są wewnątrz
 tego opakowania objęte zakazem zapisu w każdym trybie, również w zapisie po
 rozwiązaniu dowiązań symbolicznych (w macOS ścieżka osiągnięta przez `/tmp` lub
-`/var/folders` rozwiązuje się pod `/private` i oba zapisy są teraz odrzucane).
-Na hoście bez backendu nic z tego nie obowiązuje. Tak czy inaczej guardraile
+`/var/folders` rozwiązuje się pod `/private` i oba zapisy są odrzucane).
+Przy `--sandbox off` albo dla uruchomień właściciela na hoście bez backendu nic z tego nie obowiązuje. Tak czy inaczej guardraile
 mogą odrzucić **Zapis poza drzewem roboczym** wprost.
 
 ## Powiązane poradniki

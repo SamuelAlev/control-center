@@ -8,6 +8,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// row model so the inbox row widget can render both surfaces.
 typedef PrRepoSectionData = ({Repo repo, List<PrInboxItem> items});
 
+/// One repo's paging state in the repo-grouped PR table: whether open PRs
+/// remain past the loaded pages, whether the next page is loading, and
+/// whether the last load failed (the table then offers a retry instead of
+/// loading again on scroll).
+typedef PrRepoPaging = ({bool hasMore, bool loading, bool failed});
+
 /// Multi-select state for the repo-grouped PR table (queue + user profile).
 ///
 /// Keyed by the item's stable `owner/repo#number` identity ([PrInboxItem.key]),

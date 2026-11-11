@@ -4,15 +4,16 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/layout/shell_title_bar.dart';
 import 'package:control_center/features/shell/presentation/widgets/app_sidebar_header.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/no_workspace_state.dart';
 import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/empty_state.dart';
 import 'package:control_center/shared/widgets/mouse_navigation_handler.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
@@ -442,6 +443,7 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
     // inside. Its header's workspace switcher has no active workspace here, so
     // it shows the "select a workspace" placeholder invitation.
     final tokens = context.designSystem ?? DesignSystemTokens.light();
+    final canCreate = ref.watch(canCreateWorkspacesProvider);
     final historyNotifier = ref.read(navigationHistoryProvider.notifier);
     final navState = ref.watch(navigationHistoryProvider);
     return Scaffold(
@@ -449,7 +451,7 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
       body: ScopedShortcuts(
         scope: workspaceListRoute,
         bindings: {
-          'ws.new': _addWorkspace,
+          if (canCreate) 'ws.new': _addWorkspace,
           if (editing != null) ...{
             'ws.open': () => context.go(inboxRoute(editing.id)),
           },
@@ -482,11 +484,7 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
                       // in-flight drag), so the ordered projection is what renders.
                       data: (_) {
                         if (list.isEmpty) {
-                          return EmptyState(
-                            message: l10n.noWorkspace,
-                            primaryAction: _addWorkspace,
-                            actionLabel: l10n.addWorkspace,
-                          );
+                          return NoWorkspaceState(onAdd: _addWorkspace);
                         }
                         final current = editing!;
                         return CallbackShortcuts(
@@ -515,7 +513,7 @@ class _WorkspaceListScreenState extends ConsumerState<WorkspaceListScreen> {
                             editing: current,
                             activeId: activeId,
                             onSelect: _selectWorkspace,
-                            onAdd: _addWorkspace,
+                            onAdd: canCreate ? _addWorkspace : null,
                             onDelete: (w) => _deleteWorkspace(w, list),
                             onReorder: (oldIndex, newIndex) =>
                                 _reorder(list, oldIndex, newIndex),
@@ -578,7 +576,7 @@ class _Canvas extends StatelessWidget {
   final Workspace editing;
   final String? activeId;
   final ValueChanged<Workspace> onSelect;
-  final VoidCallback onAdd;
+  final VoidCallback? onAdd;
   final ValueChanged<Workspace> onDelete;
   final ReorderCallback onReorder;
   final VoidCallback onPickLogo;
@@ -642,13 +640,15 @@ class _Canvas extends StatelessWidget {
                           subtitle: l10n.manageWorkspacesSubtitle,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      CcButton(
-                        onPressed: onAdd,
-                        icon: AppIcons.plus,
-                        size: CcButtonSize.sm,
-                        child: Text(l10n.addWorkspace),
-                      ),
+                      if (onAdd case final add?) ...[
+                        const SizedBox(width: 16),
+                        CcButton(
+                          onPressed: add,
+                          icon: AppIcons.plus,
+                          size: CcButtonSize.sm,
+                          child: Text(l10n.addWorkspace),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 24),

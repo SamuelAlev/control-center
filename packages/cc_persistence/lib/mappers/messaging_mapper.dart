@@ -88,10 +88,7 @@ class MessagingMapper {
         messageType = MessageType.text;
     }
 
-    final senderType = SenderType.fromWire(
-      row.senderType,
-      senderId: row.senderId,
-    );
+    final senderType = SenderType.fromWire(row.senderType);
 
     Map<String, dynamic>? metadata;
     if (row.metadata != null) {

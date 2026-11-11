@@ -1,5 +1,9 @@
 import 'package:cc_domain/features/sandboxing/domain/entities/sandbox_exec_grant.dart';
 
+/// One page of [SandboxExecGrantRepository.searchGrants]: the rows plus how
+/// many grants match the query in total, so a list can say "25 of 60".
+typedef SandboxExecGrantPage = ({List<SandboxExecGrant> grants, int total});
+
 /// Persistence contract for operator decisions about executing binaries from
 /// inside a writable directory tree (see [SandboxExecGrant]).
 ///
@@ -9,6 +13,16 @@ import 'package:cc_domain/features/sandboxing/domain/entities/sandbox_exec_grant
 abstract interface class SandboxExecGrantRepository {
   /// Every grant in [workspaceId], newest first.
   Future<List<SandboxExecGrant>> grants(String workspaceId);
+
+  /// Grants in [workspaceId] whose path contains [query] (case-insensitive,
+  /// taken literally — `%` and `_` are not wildcards), newest first, [limit]
+  /// rows from [offset]. A null or blank [query] matches every grant.
+  Future<SandboxExecGrantPage> searchGrants(
+    String workspaceId, {
+    String? query,
+    required int limit,
+    int offset = 0,
+  });
 
   /// Live grants in [workspaceId] (the Settings surface).
   Stream<List<SandboxExecGrant>> watchGrants(String workspaceId);

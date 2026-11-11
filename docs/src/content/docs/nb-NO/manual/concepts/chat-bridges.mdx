@@ -2,7 +2,7 @@
 title: Chatbroer
 description: Hvorfor Slack-integrasjonen ringer ut i stedet for å lytte, hva som faktisk autoriserer en melding som kommer fra chat, og hvordan én bro betjener et hvilket som helst chatprodukt.
 slug: nb-NO/handbok/konsepter/chatbroer
-sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
+sourceHash: ee6f53efdb43f53c70c6e267108813985fb39a91
 ---
 
 En chatbro gjør et eksternt chatprodukt — Slack i dag — til en førsteklasses vei
@@ -17,11 +17,9 @@ Discord-, Telegram-, Teams- eller Matrix-implementasjon noe sted i produktet.
 Funksjonen er bevisst skrevet leverandørblind — å legge til et nytt produkt er
 én enumverdi, én adapter og én plugin — men i dag betyr «chat» Slack.
 
-To flater dekker det, og de tilhører ulike personer. Å koble et arbeidsområde
-til Slack og tilpasse boten er **admin**-handlinger under
-Innstillinger → Arbeidsområde → Generelt. Å knytte din egen chatkonto til
-Control Center-identiteten din er en **medlems**-handling under
-Innstillinger → Arbeidsområde → Profil og identitet.
+To flater dekker det, og de tilhører ulike personer. Å koble et arbeidsområde til Slack og tilpasse boten er **admin**-handlinger
+på kortet **Chat-broer** i Innstillinger → Arbeidsområde → Integrasjoner. Å knytte din egen chatkonto til Control Center-identiteten din er en
+**medlems**-handling på kortet **Knyttede chat-kontoer** i Innstillinger → Deg → Profil.
 
 Tre beslutninger former hele funksjonen: **hvilken retning tilkoblingen går
 i**, **hva som autoriserer en melding som kommer utenfra** og **hvor den

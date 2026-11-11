@@ -1,6 +1,8 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:cc_server_core/src/identity/identity_bootstrap.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:drift/native.dart';
 import 'package:sqlite3/sqlite3.dart' as sqlite3;
@@ -106,3 +108,14 @@ class SeedDatabases {
     await global.close();
   }
 }
+
+/// The server owner of a seeded data directory, minted and recorded the way
+/// first boot does it. Idempotent: the booting server reuses the record, so
+/// devices and workspaces seeded for the owner bind to it up front.
+Future<String> seedServerOwner(SeedDatabases seed) =>
+    IdentityBootstrap(global: seed.global, workspaces: seed.workspaces).run();
+
+/// A credential expiry for seeded paired devices: one full lifetime from now.
+/// A device with no recorded expiry is refused at authentication.
+DateTime seededDeviceExpiry() =>
+    RemotePairingLifecycle.credentialExpiry(DateTime.now());

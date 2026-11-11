@@ -129,7 +129,7 @@ void main() {
   });
 
   test(
-    'upload deduplicated against pre-catalog content never unlinks legacy bytes',
+    'upload deduplicated against uncataloged content never unlinks its bytes',
     () async {
       final content = Uint8List.fromList([12, 13, 14]);
       final old = await blobs.put('ws', content, catalogArtifact: false);

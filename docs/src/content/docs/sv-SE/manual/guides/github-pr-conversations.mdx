@@ -2,7 +2,7 @@
 title: Prata med Control Center från en GitHub-PR
 description: Be Control Center om en granskning eller ställ en fråga direkt från PR-samtalet – utan webhook eller offentlig URL.
 slug: sv-SE/handbok/how-to-guider/github-pr-samtal
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Den här guiden visar hur du arbetar med Control Center utan att lämna GitHub:
@@ -30,24 +30,7 @@ offentlig driftsättning.
 
 ## Hitta botens namn
 
-Nämn `@usectrl`, Control Centers särskilda GitHub-konto. Det är standardutlösaren; arbetsytans GitHub-spår hanterar fortfarande begäran och publicerar svar. Du behöver inga inloggningsuppgifter till kontot `usectrl`.
-
-Appens egen inloggning, `<appslug>[bot]`, och kortformen `@appslug` fungerar också. Så hittar du detta valfria alias på din egen app:
-
-1. Gå till **Inställningar → Server → Enkel inloggning** och rulla ned till
-   kortet **Leverantörsappar**
-2. Öppna blocket **GitHub** och klicka på **Test**
-3. Kopiera **Bot-inloggning** när den fylls i. Om den fortfarande visar den
-   tomma hjälptexten är inloggningen alltid `<appslug>[bot]` – skriv det, eller
-   den korta formen `@appslug`
-
-GitHub visar inte appkonton i sin autokomplettering för `@`, så appalias måste skrivas eller kopieras. Den särskilda användaren `@usectrl` är standardanropet; både `@myapp` och `@myapp[bot]` godtas fortfarande som appalias.
-
-:::note[Välj ett särpräglat appnamn]
-Den korta formen matchas som text. Om en mänsklig GitHub-användare råkar ha
-samma slug som din app når en nämning av den användaren i kort form också boten.
-Den fullständiga formen `@myapp[bot]` är alltid entydig.
-:::
+Nämn `@usectrl`, Control Centers särskilda GitHub-konto. Det är den enda utlösaren: att nämna appens egna inloggning gör ingenting. Arbetsytans GitHub-spår hanterar fortfarande begäran och publicerar svar. Du behöver inga inloggningsuppgifter till kontot `usectrl`.
 
 ## Begär en granskning från GitHub
 
@@ -117,7 +100,7 @@ Servern löser upp avsändaren av en kommentar, eller den som lade till etikette
 
 - **GitHub-kontot måste vara inloggat** på den här servern. Matchningen sker på
   GitHubs numeriska konto-id, aldrig på inloggningsnamnet. Logga in från
-  **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**
+  **Inställningar → Du → Profil → Kodvärd**
 - **Personen måste vara medlem med en skrivroll** (`member`, `admin` eller
   `owner`) i den arbetsyta som länkar repot
 - **Personen måste kunna pusha** till repot på GitHub. Svar använder en token som
@@ -140,7 +123,7 @@ den första som reagerar, och den andra förblir tyst. Detsamma gäller etikette
 | Sak                    | Beteende                                                                 |
 | ---------------------- | ------------------------------------------------------------------------ |
 | Bekräftelse            | 👀 från ditt konto på kommentaren (eller på PR:en, för etiketten), inom ett svep |
-| Svar                   | Publiceras i samma spår som frågan ställdes i och börjar med `**Control Center** (for @your-login):`. Med en egen app är författaren appens bot; via Connect är det ditt konto, som agerar genom den delade appen |
+| Svar                   | Publiceras i samma spår som frågan ställdes i och börjar med `**Control Center** (for @your-login):`. Författare är appens bot. På den delade Connect-appen är ett svar i en granskningstråd skrivet av ditt eget konto, om inte Connect-operatören har listat den här installationen |
 | Tillskrivning i ytan   | Frågan är din; agenten körs på dina vägnar, under ytans autonomi-inställning |
 | Granskningar           | Fynden landar i granskningsytan; publicering till GitHub är manuell       |
 
@@ -161,9 +144,6 @@ fångas upp vid nästa svep.
   det senare levererar fortfarande
 - Är du inloggad på GitHub på den här servern, medlem med en skrivroll och kan
   du pusha till repot? Servern ignorerar alla andra utan att svara
-- På Control Centers delade app: är organisationens installation auktoriserad
-  för den här servern? Se
-  [Auktorisera den här servern för en organisation](/sv-SE/handbok/how-to-guider/github-app/#auktorisera-den-här-servern-för-en-organisation)
 - Fortfarande inget? Serverloggen namnger svepet och PR:en när något misslyckas;
   leta efter `pr_conversation:` (pollaren) och
   `github_pr_conversation:` (bryggan)

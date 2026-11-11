@@ -28,6 +28,7 @@ SandboxSpec processSandboxSpec({
   String? agentId,
   List<SandboxBindMount>? bindMounts,
   List<String> runnerStateDirs = const [],
+  List<String> toolDirs = const [],
   bool superviseProcessGroup = false,
 }) => SandboxSpec(
   sessionId: sessionId,
@@ -41,6 +42,7 @@ SandboxSpec processSandboxSpec({
   protectedPaths: protectedPaths,
   runnerStateDirs: runnerStateDirs,
   execGrantRoots: execGrantRoots,
+  toolDirs: toolDirs,
   loopbackPorts: loopbackPorts,
   environmentScope: environmentScope,
   superviseProcessGroup: superviseProcessGroup,

@@ -2,7 +2,7 @@
 title: API-Schlüssel verwalten
 description: Wo die einzelnen Zugangsdaten liegen — bei deinem Nutzerkonto auf dem Server, beim Server selbst oder bei einer externen CLI — und wie du sie setzt, rotierst und entfernst.
 slug: de-DE/handbuch/anleitungen/api-schluessel
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Diese Anleitung zeigt, wo jede Zugangsdatenart, die Control Center nutzt, gespeichert ist und wie du sie änderst.
@@ -23,12 +23,12 @@ Diese Anleitung zeigt, wo jede Zugangsdatenart, die Control Center nutzt, gespei
 - **Deine** stammt aus **Bei GitHub anmelden**. Sie gilt für jede Anfrage *in deinem Namen*, deshalb trägt ein Review, das für dich gepostet wird, deinen Namen. Ein anderes Mitglied kann sie nicht nutzen und meldet sich selbst an. Ein GitHub-Token zum Einfügen gibt es nicht
 - **Arbeit, bei der niemand tippt** (Agenten, Pipelines, Polling, Bot-Antworten), bekommt ein Token für jeweils ein Repository, ausgestellt über die GitHub App des Servers oder über Control Center Connect und begrenzt auf das, was ein verantwortliches Mitglied dort tun darf. Es ist nie deine vollständig weitergereichte Anmeldung
 
-Deine setzt du in der Karte **Code-Hosting** unter **Einstellungen → Arbeitsbereich → Profil und Identität**; die App des Servers unter **Anbieter-Apps** bei **Einstellungen → Server → Single sign-on**. Siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/) und [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/).
+Deine setzt du in der Karte **Code-Hosting** unter **Einstellungen → Du → Profil**; die App des Servers unter **Anbieter-Apps** bei **Einstellungen → Server → Single sign-on**. Siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/) und [Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/).
 
 GitLab und Bitbucket nehmen weiterhin ein eingefügtes persönliches Token, das genauso gespeichert wird. Siehe [Einen Code-Host verbinden](/de-DE/handbuch/anleitungen/code-host-verbinden/).
 
 :::note[Es gibt auch einen Bildschirm nur über die URL]
-`/workspaces/<workspaceId>/api-keys` zeigt dieselben zwei Karten wie der erste Schritt des Onboardings. **In der Oberfläche gibt es nirgends einen Navigationseintrag**; erreichbar ist er nur, indem du die URL eintippst. Nimm stattdessen Einstellungen → Arbeitsbereich → Profil und Identität.
+`/workspaces/<workspaceId>/api-keys` zeigt dieselben Karten wie der erste Schritt des Onboardings. **In der Oberfläche gibt es nirgends einen Navigationseintrag**; erreichbar ist er nur, indem du die URL eintippst. Nimm stattdessen Einstellungen → Du → Profil für deine eigenen Anmeldungen und Einstellungen → Arbeitsbereich → Integrationen für den Ticket-Anbieter.
 :::
 
 ## Schlüssel der Modellanbieter setzen
@@ -43,22 +43,22 @@ Siehe [Adapter und Modelle verwalten](/de-DE/handbuch/anleitungen/adapter/) für
 
 Diese Zugangsdaten gelten **für den ganzen Host**: ein Schlüssel bedient jeden Arbeitsbereich der Installation. OAuth-Tokens werden aufgefrischt, bevor sie ablaufen.
 
-Externe Adapter-CLIs behalten ihre eigenen Zugangsdaten, in ihrer eigenen Konfiguration, auf dem Server-Host — Control Center verwaltet sie nicht. Authentifiziere Claude Code so, wie es seine eigene Dokumentation beschreibt, auf der Maschine, auf der `cc_server` läuft.
+Melde Claude Code über **Claude-Code-Konten** unter **Einstellungen → Server → Modellanbieter** an: Jedes Konto erhält ein eigenes Konfigurationsverzeichnis auf dem Server, und dort führst du den Befehl `claude auth login` aus, den dir die App anzeigt.
 
 Der Dialog **Umgebungsvariablen** je Adapter sieht nach dem Ort für einen solchen Schlüssel aus. Er schreibt auf dein Gerät, der Server liest seine eigene Kopie, und nichts verbindet die beiden. Siehe [Adapter und Modelle verwalten](/de-DE/handbuch/anleitungen/adapter/).
 
 ## Einen Ticket-Anbieter verbinden
 
-Die Karte **Tickets** unter **Einstellungen → Arbeitsbereich → Allgemein** hält beide Hälften einer Entscheidung: bei welchem Anbieter deine Tickets liegen und wer Control Center ist, wenn es mit ihm spricht. Wählst du **Lokal**, blendet das die Linear-Zeilen aus — lokale Tickets liegen in der eigenen Datenbank dieses Servers und haben nichts, wogegen sie sich authentifizieren.
+Die Karte **Tickets** unter **Einstellungen → Arbeitsbereich → Integrationen** hält die Seite des Arbeitsbereichs: bei welchem Anbieter deine Tickets liegen und wer Control Center ist, wenn es dort von sich aus arbeitet. Wählst du **Lokal**, blendet das die Linear-Zeilen aus — lokale Tickets liegen in der eigenen Datenbank dieses Servers und haben nichts, wogegen sie sich authentifizieren.
 
-Linear hat zwei Anmeldungen und keinen eingefügten Schlüssel: **Linear** ist deine, für das, was du tust, und **Linear-Automatisierung** ist die Control-Center-App des Arbeitsbereichs, von einem Administrator verbunden, für Ticket-Synchronisierung, Pipelines und Agenten. Der Server kann außerdem einen **Service-API-Schlüssel** (**Anbieter-Apps**) für Arbeitsbereiche ohne verbundene Automatisierung halten. In die Sandbox eines Agenten werden keine Ticketing-Zugangsdaten injiziert; Agenten schreiben Tickets über die Werkzeuge von Control Center, die die Regel **In einen externen Tracker schreiben** fragen. Siehe [Linear-Integration einrichten](/de-DE/handbuch/anleitungen/linear-integration/).
+Linear hat zwei Anmeldungen und keinen eingefügten Schlüssel: **Linear** ist deine, für das, was du tust, und liegt unter **Einstellungen → Du → Profil**; **Linear-Automatisierung** ist die Control-Center-App des Arbeitsbereichs, von einem Administrator auf der Karte **Tickets** verbunden, für Ticket-Synchronisierung, Pipelines und Agenten. Der Server kann außerdem einen **Service-API-Schlüssel** (**Anbieter-Apps**) für Arbeitsbereiche ohne verbundene Automatisierung halten. In die Sandbox eines Agenten werden keine Ticketing-Zugangsdaten injiziert; Agenten schreiben Tickets über die Werkzeuge von Control Center, die die Regel **In einen externen Tracker schreiben** fragen. Siehe [Linear-Integration einrichten](/de-DE/handbuch/anleitungen/linear-integration/).
 
 ## Rotieren oder widerrufen
 
 - **Deine GitHub-Anmeldung**: klicke auf **Trennen**, dann erneut auf **Bei GitHub anmelden**. Das Trennen verwirft auch jedes Token, das der Server in deinem Namen ausgestellt hat
 - **Ein GitLab- oder Bitbucket-Token**: klicke auf **Token aktualisieren** und füge das neue ein. Widerrufe danach das alte bei der Forge
 - **Die App des Servers**: erzeuge auf der Seite der App beim Anbieter einen neuen privaten Schlüssel oder ein Client-Secret, füge es unter **Anbieter-Apps** ein und klicke auf **Testen**
-- **Der Installationsschlüssel für Connect**: **Schlüssel rotieren** auf der Karte **Control Center Connect** oder `cc_server connect rotate-key --yes`. Alle, die sich über Connect angemeldet haben, melden sich erneut an. Siehe [Control Center Connect](/de-DE/handbuch/referenz/connect/)
+- **Der Installationsschlüssel für Connect**: Der Serverinhaber drückt **Schlüssel rotieren** auf der Karte **Control Center Connect**. Alle, die sich über Connect angemeldet haben, melden sich erneut an. Ist ein Connect-Server nicht erreichbar, ändert sich nichts, und du bekommst **Trotzdem erneuern** angeboten. Siehe [Den Installationsschlüssel rotieren](/de-DE/handbuch/referenz/connect/#den-installationsschlüssel-rotieren)
 - **Ein Modellanbieter**: melde dich in seiner Zeile ab (OAuth) oder entferne den Schlüssel, und verbinde ihn erneut
 - **Slack**: Bei deiner eigenen App fügst du die Tokens im Verbindungsdialog erneut ein. Die gemeinsame App von Control Center hat kein Token zum Rotieren: Ihr Bot-Token wird über Connect erneuert, und **Trennen** widerruft es und deinstalliert den Bot aus Slack. Siehe [Slack-Integration einrichten](/de-DE/handbuch/anleitungen/slack-integration/)
 
@@ -66,7 +66,7 @@ Linear hat zwei Anmeldungen und keinen eingefügten Schlüssel: **Linear** ist d
 
 ### Ein GitLab- oder Bitbucket-Token funktioniert in `curl`, aber nicht hier
 
-Prüfe den Untertitel der Zeile **Code-Hosting**. Lautet er „aus der Umgebung“, antworten die Zugangsdaten des Servers, nicht deine — deine wurden nicht gespeichert.
+Prüfe die Zeile **Code-Hosting**. Steht dort „Nicht verbunden“ oder fordert sie dich auf, dich erneut zu verbinden, wurde dein Token nicht gespeichert oder abgelehnt. Gib bei Bitbucket deine Atlassian-Konto-E-Mail zusammen mit dem API-Token ein.
 
 ### Ein GitLab- oder Bitbucket-Token wird angenommen, spätere Anfragen scheitern
 

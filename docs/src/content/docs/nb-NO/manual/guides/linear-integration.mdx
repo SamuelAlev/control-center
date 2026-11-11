@@ -2,7 +2,7 @@
 title: Sett opp Linear-integrasjon
 description: Logg inn på Linear, koble til arbeidsområdets Linear-automatisering, og velg Linear som saksleverandør for nye saker.
 slug: nb-NO/handbok/slik-gjor-du/linear-integrasjon
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear har to identiteter i Control Center, og begge er pålogginger i
@@ -23,7 +23,7 @@ noen ekstern tjeneste er nødvendig — se
 
 ## Velg Linear for arbeidsområdet
 
-1. Gå til **Innstillinger → Arbeidsområde → Generelt** og finn kortet **Saker**
+1. Gå til **Innstillinger → Arbeidsområde → Integrasjoner** og finn kortet **Saker**
 2. Sett **Saksleverandør** til **Linear**
 
 Saker du oppretter fra da av, stemples med `provider: linear`. **Lokal** holder
@@ -32,7 +32,7 @@ sakene i serverens egen database og skjuler Linear-radene: det finnes ingenting
 
 ## Logg inn på Linear
 
-På det samme kortet er raden **Linear** din:
+Din egen Linear-pålogging ligger under **Innstillinger → Deg → Profil**, på kortet **Saker**:
 
 1. Klikk **Logg inn på Linear**
 2. Godkjenn i nettleseren din
@@ -44,9 +44,11 @@ Alt du gjør i Linear fra Control Center, kjører på denne påloggingen og
 ingenting annet. Hvis du ikke er logget inn, ber appen deg logge inn i stedet
 for å handle som noen andre.
 
+Påloggingen fungerer i alle arbeidsområder på serveren, med mindre et arbeidsområde har egne påloggingsapper: det arbeidsområdet beholder en egen Linear-pålogging. Kortet sier hvilken som gjelder.
+
 ## Koble til Linear-automatisering
 
-Raden **Linear-automatisering** er arbeidsområdets Control Center-app i Linear.
+Raden **Linear-automatisering** på kortet **Saker** i **Innstillinger → Arbeidsområde → Integrasjoner** er arbeidsområdets Control Center-app i Linear.
 Sakssynkronisering, pipelines og agenter skriver med den, så automatiserte saker
 og kommentarer vises som Control Center og ikke som en person.
 
@@ -64,7 +66,7 @@ skriver saker gjennom Control Centers egne verktøy, som først spør regelen
 
 ## Registrer din egen Linear-applikasjon
 
-Bruk din egen applikasjon når du har valgt **Bruk mine egne apper**. Serverens egen applikasjon gjelder bare da: med Control Centers eller en egendefinert Connect håndterer Connect alle spor, Linear inkludert, og serverens applikasjon og tjeneste-API-nøkkel forblir lagret, men ubrukt. En arbeidsområdeapplikasjon ([nedenfor](#gi-ett-arbeidsområde-en-egen-linear-applikasjon)) gjelder i alle moduser.
+Bruk din egen applikasjon når du har valgt **Bruk mine egne apper**. Serverens egen applikasjon gjelder bare da: med Control Centers eller en egendefinert Connect håndterer Connect alle spor, Linear inkludert, og serverens applikasjon og tjeneste-API-nøkkel forblir lagret, men ubrukt. Et arbeidsområde på egne apper ([nedenfor](#gi-ett-arbeidsområde-en-egen-linear-applikasjon)) bruker sin egen applikasjon i stedet, uansett serverens modus.
 
 1. Opprett en OAuth-applikasjon på
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -90,27 +92,23 @@ Et arbeidsområde kan logge inn på Linear via en egen applikasjon i stedet for 
 eller eier av arbeidsområdet kan sette det opp.
 
 1. Opprett en Linear OAuth-applikasjon slik som over
-2. Gå til **Innstillinger → Arbeidsområde → Generelt → Leverandørapper** og åpne **Linear**
-3. Velg **Bruk arbeidsområdets egen app**
-4. Legg til begge callback-URL-ene raden viser under **Callback-URL-er**, i Linear-applikasjonen, nøyaktig slik de står
-5. Lim inn **Client id**, og eventuelt **Tjeneste-API-nøkkel** for automatiseringen i dette arbeidsområdet
+2. Gå til **Innstillinger → Arbeidsområde → Integrasjoner**. På kortet **Control Center Connect** velger du **Bruk mine egne apper** og klikker **Bruk**
+3. Under Saker vises kortet **Linear-app**. Legg til begge callback-URL-ene kortet viser under **Callback-URL-er**, i Linear-applikasjonen, nøyaktig slik de står
+4. Lim inn **Client id**, og eventuelt **Tjeneste-API-nøkkel** for automatiseringen i dette arbeidsområdet
 
 Arbeidsområdeapplikasjonen besvarer alle Linear-pålogginger og automatiseringsforespørsler i dette arbeidsområdet, uansett
 hvordan serveren logger folk inn. Den faller aldri tilbake til serverens applikasjon eller Connect: til klient-ID-en er
-satt, er Linear av i dette arbeidsområdet, og raden sier hva som mangler. Tjeneste-API-nøkkelen brukes bare her; uten den
+satt, er Linear av i dette arbeidsområdet, og kortet sier hva som mangler. Tjeneste-API-nøkkelen brukes bare her; uten den
 krever synkronisering **Koble til Linear for automatisering**.
 
-Å bytte mellom serverens applikasjon og arbeidsområdets applikasjon, eller endre klient-ID-en til arbeidsområdet, logger
-alle i dette arbeidsområdet ut av Linear og kobler fra automatiseringen. De logger inn igjen via den nye applikasjonen.
-**Bruk serverens app** sletter de lagrede feltene for arbeidsområdet. Hemmeligheter kan bare skrives: raden viser bare
-om en er lagret. Andre arbeidsområder på serveren berøres ikke.
+**Bruk mine egne apper** dekker alle leverandører samtidig: GitHub, Google Calendar og GIF-søk kjører også bare på arbeidsområdets egne apper, hver satt opp ved siden av leverandøren på samme side. Å bytte arbeidsområdets påloggingsapper, eller endre arbeidsområdets client-ID, logger alle i dette arbeidsområdet ut av Linear og kobler fra automatiseringen. De logger inn igjen via den nye applikasjonen. De lagrede feltene blir værende når arbeidsområdet bytter tilbake til et annet valg, men brukes bare under **Bruk mine egne apper**. Hemmeligheter kan bare skrives: kortet viser bare om en er lagret. Andre arbeidsområder på serveren berøres ikke.
 
 ## Feilsøking
 
 ### Raden Linear sier at påloggingen ikke er satt opp
 
 Serveren har verken sin egen Linear-applikasjon eller Connect. Servereieren
-velger en av dem under **Innstillinger → Server → Enkel pålogging**. Når arbeidsområdet bruker sin egen applikasjon, står det i raden i stedet at oppsettet ikke er fullført: en arbeidsområdeadministrator legger til klient-ID-en under **Innstillinger → Arbeidsområde → Generelt → Leverandørapper**.
+velger en av dem under **Innstillinger → Server → Enkel pålogging**. Når arbeidsområdet bruker sine egne apper, står det i raden i stedet at oppsettet ikke er fullført: en arbeidsområdeadministrator legger til klient-ID-en på kortet **Linear-app** under **Innstillinger → Arbeidsområde → Integrasjoner**.
 
 ### Sakssynkroniseringen feiler med en autentiseringsfeil
 

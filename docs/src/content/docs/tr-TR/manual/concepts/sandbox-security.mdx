@@ -2,7 +2,7 @@
 title: Sandbox ve güvenlik
 description: Bugün Control Center'da bir ajanı gerçekte neyin kısıtladığı, işletim sistemi sandbox'ının ne kadar eriştiği ve arka ucu olmayan bir ana makinede hangi sınırların geçerli kaldığı.
 slug: tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[İşletim sistemi sandbox'ının eriştiği ve erişmediği yerler]
@@ -10,9 +10,11 @@ sourceHash: ac926eb1b2447d93207802824742f121d232f171
 ajan komut yürütmesini işletim sistemi yerel sandbox'ına sarar — macOS'ta
 Seatbelt, Linux ve WSL2'de bubblewrap (`PATH` üzerinde `bwrap` ve `socat`
 gerektirir). Arka uç bulunmayan yerlerde — Windows ya da bu araçlardan yoksun
-bir Linux makinesi — çalıştırmalar aşağıdaki diğer sınırlara geri düşer ve
-sunucu bunu başlangıç günlüğünde söyler.
-`--sandbox off` bunu bilerek kapatır.
+bir Linux makinesi — yalnızca sunucu sahibinin, sınırlandırılmadan başlayan ajan
+çalıştırmaları başlar; diğerlerinin çalıştırmaları reddedilir. Sunucu sahibi bunun
+yerine `--sandbox off` ile başlatabilir; bu da her üyenin ajanlarını o makinede
+sınırlandırılmadan çalıştırır. Başlangıç günlüğü hangi durumda olduğunuzu söyler;
+bkz. [Sandbox olmayan bir ana makinedeki ajanlar](#sandbox-olmayan-bir-ana-makinedeki-ajanlar).
 
 Sandbox'tan sağ çıkan iki boşluk vardır ve bunları akılda tutmakta fayda var:
 
@@ -37,7 +39,24 @@ bir dalı push eden bir ajandır. Dolayısıyla ürünün yanıtlaması gereken 
 Control Center bunu katmanlarla yanıtlar ve katmanlar bilerek bağımsızdır. Biri
 eksikse diğerleri yine de geçerli kalır. Bu önemlidir, çünkü en dış katman —
 işletim sistemi sandbox'ı — tek koşullu olanıdır: ana makinenin bir arka uç
-sunmasına bağlıdır ve Windows'ta hiçbir ana makine sunmaz.
+sunmasına bağlıdır ve Windows'ta hiçbir ana makine sunmaz. Eksik olduğunda, sunucu herkesin ajanlarını onsuz sessizce çalıştırmaz.
+
+## Sandbox olmayan bir ana makinedeki ajanlar
+
+Sunucu, ajanların makinesinde nasıl çalışacağına başlangıçta bir kez karar verir ve
+yeniden başlatılana kadar bu kararı korur:
+
+- **Sandbox içinde.** Ana makinenin bir arka ucu var ve sandbox açık. Her çalıştırma sarılır.
+- **Kapalı.** Sunucu sahibi sunucuyu `--sandbox off` ile başlatmış. Her üyenin ajanları bu makinede sınırlandırılmadan çalışır. Bu, yalnızca bir çalıştırma için değil, sunucuyu kullanan herkes için sahibin tercihidir.
+- **Kullanılamıyor.** Sandbox açık ama ana makinede arka uç yok. Bir çalıştırma yalnızca ondan sorumlu kişi sunucu [sahibiyse](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) başlar: isteyen kişi ya da bir zamanlama, webhook veya başka bir otomasyon için, otomasyonun bağlı olduğu kişi. Diğerlerinin çalıştırması, bir kimlik bilgisi üretilmeden ya da bir süreç başlamadan önce reddedilir: "Bu sunucuda sandbox yok, bu yüzden burada ajanları yalnızca sahibi çalıştırabilir. Sahip sandbox'ı kurabilir ya da sandboxing'i herkes için kapatabilir."
+
+Sebep makinenin sahipliğidir. Sınırlandırılmamış bir ajan, sunucunun kullanıcı hesabının yapabildiği her şeyi yapabilir; bu yüzden onu yalnızca o hesabın sahibi çalıştırır, sahip herkes için başka bir karar vermediği sürece. Windows sunucusu her zaman "mevcut değil" durumundadır. Linux'un kendi ayrıntısı vardır ve [Sandbox arka uçları referansında](/tr-TR/kilavuz/referans/sandbox-arka-uclari/#linux-bubblewrap) ele alınır: orada bubblewrap kurulu olsa bile yerel gönderim şu anda her çalıştırmayı güvenli biçimde reddeder.
+
+Aynı kural, sizin için bir süreç başlatan daha küçük şeylere de uygulanır:
+
+- **ACP CLI üzerinden çalışan hızlı yardımcılar**: konuşma başlıkları, `/btw`, `/handoff` ve `/goal`. Sunucu ajanları sandbox'lıyorsa bunlar, kendi oturumlarında sandbox içinde çalışır. `--sandbox off` altında sınırlandırılmadan çalışırlar. Kullanılabilir bir sandbox yokken yalnızca sunucu sahibinin sorumlu olduğu isteklerde çalışırlar; diğerleri için atlanırlar: hiçbir başlık üretilmez ve bir yan soru, Content synthesizer'ın çalışan bir çalıştırıcısı olmadığını bildirir. Hiçbir araç başlatmayan yardımcılar etkilenmez.
+- **Review Studio'nun görsel denetimindeki bir pull request'in altın testleri** aynı kurala uyar.
+- **Bir çalıştırmadaki araç süreçleri ve `bash`** asla ana makineye geri düşmez. Sunucu ajanları sandbox'lamaya ayarlıysa ama bir çalıştırmaya verecek bir sandbox yoksa, reddedilirler.
 
 ## Bir ajanı gerçekte ne kısıtlıyor
 
@@ -107,8 +126,9 @@ Kesin olunması gereken diğer yer `bash` aracıdır. Komutları modun komut
 politikasına göre değerlendirilir, ardından arındırılmış bir ortamla ve çalışma
 dizini olarak çalışma ağacıyla başlatılır. Bir arka uç varsa bu başlatma
 sarılır, dolayısıyla bir kabuk komutunun çalışma ağacının dışına yazmasını
-engelleyen şey sandbox'tır; yoksa — Windows ya da `bwrap` ve `socat` bulunmayan
-Linux — komut ile diskin geri kalanı arasındaki tek şey komut politikasıdır.
+engelleyen şey sandbox'tır; yoksa (`--sandbox off` altındaki her çalıştırma ve
+sahibin Windows'taki ya da `bwrap` ve `socat` olmayan Linux'taki kendi çalıştırmaları)
+komut ile diskin geri kalanı arasındaki tek şey komut politikasıdır.
 `chat` modunda politika sabit bir listeyi kesin olarak reddeder (ayrıcalık
 yükseltme, sistem ve disk imhası, konteyner ve ad alanı kaçışı) ve uzak durum
 mutasyonlarında (`git push`, `gh pr create`, paket yayımlama ve kurma) istemde
@@ -124,7 +144,7 @@ uç varsa bu görünmeyen çağrılar yine de sandbox sarmalamasının içinde
 gerçekleşir, dolayısıyla etraflarındaki sınırı işletim sistemi oluşturur.
 Yoksa hiçbir şey oluşturmaz. Her adaptör bunu kendi uygulama matrisinde belirtir
 — bkz. [adaptör dürüstlük
-matrisi](/tr-TR/kilavuz/kavramlar/korumalar/#the-adapter-honesty-matrix).
+matrisi](/tr-TR/kilavuz/kavramlar/korumalar/#adaptör-dürüstlük-matrisi).
 
 ## Push'lar Control Center'dan geçer
 
@@ -137,10 +157,7 @@ geçerlidir.
 
 Push, bir kuralı aşmaya çalışan bir ajana karşı bile ayakta kalması gereken
 eylemdir; bu yüzden ajanın ne çalıştırdığıyla değil, elinde ne tuttuğuyla
-uygulanır. Bir GitHub çalışma ağacındaki çalıştırma, çalışma alanının GitHub
-App'inden, sunucunun kendi uygulamasından ya da Control Center Connect'ten o tek
-depo için üretilen bir token alır. Bu token içerik okuyabilir ve hesap verebilir
-üye push edebiliyorsa pull request'lere yorum yapabilir, ama push edemez. Çalıştırmanın git
+uygulanır. Bir çalıştırma, başlarken forge token'ı taşımaz ve `git` hiçbir zaman bir token almaz. `gh` buna ihtiyaç duyduğunda Control Center, çalıştırmanın üzerinde çalıştığı tek bir GitHub deposu için bir token verir; bu token çalışma alanının GitHub App'inden, sunucunun kendi uygulamasından ya da Control Center Connect'ten üretilir. Yalnızca okur: push edemez, yorum yapamaz veya düzenleyemez. Çalıştırmanın git
 yapılandırması her GitHub push URL'sini (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) **ajan çalıştırma ağ geçidine**,
 yani `cc_server` üzerindeki bir loopback uç noktasına yeniden yazar. Ağ geçidi
@@ -155,17 +172,17 @@ kendi çıktısında görünür:
 ```
 
 Ağ geçidi push'ları yalnızca çalışma ağacının kendi deposuna veya çalışma
-alanına bağlı bir GitHub deposuna iletir. Fetch'ler okuma token'ıyla doğrudan
-GitHub'a gider.
+alanına bağlı bir GitHub deposuna iletir. Fetch'ler de ağ geçidi üzerinden gider: GitHub, GitLab ve Bitbucket'ta ağ geçidi, çalıştırmanın üzerinde çalıştığı depoları, kendi tuttuğu ve çalıştırmanın hiçbir zaman görmediği bir kimlik bilgisiyle getirir. GitLab ve Bitbucket'ta bu, çalıştırmayı siz istediyseniz kendi token’nız, kimse istemediyse deponun otomasyon token’ıdır. Bir fetch kimseye sormaz; yalnızca **Ağa eriş** üzerindeki bir reddetme onu engeller.
 
 Diğer kabuk komutları daha yumuşak bir kapıyla karşılaşır. Harness'ın `bash`
 aracı ve bir hook aracılığıyla Claude Code'un `Bash` aracı her komut satırını
 sınıflandırır ve ait olduğu kurala sorar: `git commit`, `merge`, `rebase`,
 `cherry-pick`, `revert` ve `am` **Commit oluştur**; `gh pr create`
 **Pull request aç**; `gh pr merge`, `review`, `comment` ve `close`
-**İnceleme yayınla veya birleştir**; `gh issue create`, `edit`, `comment` ve
+**Pull request güncelle veya birleştir**; `gh issue create`, `edit`, `comment` ve
 `close` **Harici takip sistemine yaz**; paket kurulumları **Paket kur**;
-`curl` ve `wget` ise **Ağa eriş** kuralına girer. Bu, bir eylemin alışılmış
+`curl` ve `wget` ise **Ağa eriş** kuralına girer. Kabuktan GitHub'a yazma bir istisnadır: `gh pr create`, `gh pr comment`,
+`gh pr edit`, `gh pr merge` ve `gh issue` yazmaları bir çalıştırmada çalışmaz; token'ı yalnızca okur ve ajan, bu kurallara soran Control Center araçlarına yönlendirilir. Bu, bir eylemin alışılmış
 yazımını tanır; bir eylemi gizlemeye kararlı bir ajan (`eval`, bir betik
 dosyası, doğrudan bir API çağrısı) bunu başarabilir. Push'lar buna bağlı
 değildir.
@@ -173,7 +190,7 @@ değildir.
 Bir çalıştırmanın aldığı her GitHub token'ı iki kez sınırlanır: tek bir depoyla
 ve hesap verebilir üyenin (isteyen kişi, değilse çalışma alanı sahibi) orada
 yapabilecekleriyle. Yedek bir kimlik bilgisi yoktur. Hiçbir token
-üretilemediğinde çalıştırma token'sız başlar ve notları nedenini belirtir.
+üretilemediğinde bunu isteyen komut nedenini belirtir.
 
 Sandbox'a hiçbir biletleme API anahtarı konmaz. Ajanlar biletleri, **Harici
 takip sistemine yaz** kuralına soran Control Center MCP araçlarıyla yazar.
@@ -186,6 +203,16 @@ yıkıldığında serbest bırakılır. Arkalarındaki token'lar üye ve depo ba
 paylaşılır ve yaklaşık bir saat içinde sona erer; GitHub oturumunu kapatan ya da
 çalışma alanından ayrılan bir üye, kendi adına üretilmiş tüm token'ları bir anda
 geçersiz kılar.
+
+## Yalnızca okuyabildiği depolar
+
+Bir ajan çalıştırması, yalnızca onun adına hareket ettiği kişinin [yazma izni](/tr-TR/kilavuz/kavramlar/yetkilendirme/#kodu-değiştirmek-yazma-izni-gerektirir) sahip olduğu depoların checkout'larını değiştirebilir. Çalışma alanı yöneticileri bunu bağlı her depoda tutar. Zamanlama ya da başka bir otomasyon gibi kimsenin istemediği bir çalıştırma, otomasyon token'ının bağlı olduğu hesap verebilir kişi tarafından değerlendirilir.
+
+Kişinin yalnızca okuyabildiği bir depoya sahip bir alanda ajan o depoyu hâlâ okuyup arayabilir, ama dosyalarını değiştiremez. Dosya araçları, `<repo> is read-only for this run` ile başlayan bir mesajla reddeder; bu mesaj checkout'u değiştirmenin, çalıştırmanın adına hareket ettiği kişinin sahip olmadığı yazma iznini gerektirdiğini ve bir çalışma alanı yöneticisinin bunu verebileceğini söyler. Bir sandbox içinde checkout her süreç için salt okunurdur; bu yüzden oraya yazan bir kabuk komutu "Operation not permitted" ile başarısız olur. Buna `git commit` ve çıktısını checkout'un içine yazan bir derleme ya da test de dahildir. Kişinin yazabildiği depolar olağan biçimde davranır; bu yüzden yöneticiler ve alandaki her depoya yazma erişimi olan herkes bir fark görmez.
+
+Bu karar, çalıştırma başladığında bir kez verilir. Bir izin değişikliği ajanın bir sonraki çalıştırmasında etkili olur; aynı şekilde, bir çalıştırma sırasında alana eklenen bir depo da.
+
+Sunucu sahibi sandbox'ı kapattığında yalnızca ajanın kendi dosya araçları ve Claude Code'un yazma araçları reddedilir; kabuk komutları yine de checkout'u değiştirebilir. Her push yazma iznine karşı denetlendiğinden, iki durumda da yazma izni olmadan hiçbir şey push edilemez. Sandbox'ın her platformda hangi süreçleri sınırladığı [Sandbox arka uçları](/tr-TR/kilavuz/referans/sandbox-arka-uclari/) sayfasında yer alır.
 
 ## Sandbox neyi ekler ve nerede durur
 
@@ -201,17 +228,17 @@ yerde, gönderim yolunda bulunan iki ek noktasının ikisini de besler, çünkü
 taşıyıcılar tek bir noktayı paylaşmaz. Birincisi (`SandboxPort`) Claude Code
 CLI'sını sarar. İkincisi (`SandboxManager`) ACP adaptörlerini ve yerleşik
 harness'ın `bash` aracını sarar. Yalnızca birini beslemek, diğerlerinin
-sarılmadan başlatılmasına yol açardı; eskiden olan da buydu. Arka ucu olmayan
-bir ana makinede ya da `--sandbox off` altında hepsi sarılmadan başlatılır ve
-sunucu başlangıç satırında hangi durumda olduğunuzu söyler. ACP ve harness
+sarılmadan başlatılmasına yol açardı; eskiden olan da buydu. `--sandbox off` altında
+hepsi sarılmadan başlatılır; arka ucu olmayan bir ana makinede yalnızca sahibin
+çalıştırmaları başlar, onlar da sarılmadan. Sunucu başlangıç satırında hangi
+durumda olduğunuzu söyler. ACP ve harness
 `bash` yine de ortamı arındırır; `NoSandboxAdapter` üzerinden Claude Code ise
 ana makinenin ortamını devralır.
 
-Bir yüzey bilerek bunun dışında kalır: sunucuda barındırılan terminal, oturum
-başına bir arka uç argümanı kabul eder ve `cc_server` onu ana makine kabuğunu
-varsayılan alacak şekilde kurar; dolayısıyla uygulamadan açtığınız bir terminal,
-bir istemci açıkça `native` adını vermedikçe sandbox'sız çalışır. Bu, sunucu ana
-makinesindeki gerçek bir kabuktur, bir ajan çalıştırması değildir.
+Sunucuda barındırılan terminal, ana makine kabuğunu yalnızca sunucunun
+[sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) için açar. Diğer herkes,
+çalışma alanının kendi dizinlerinde, bir ajanın sınırlarıyla sandbox'lı bir terminal
+alır. Bir terminale yalnızca onu açan kişi yazabilir, okuyabilir veya kapatabilir.
 
 Linux'ta `bubblewrap` bir mount ad alanı kurar, böylece ajan gerçekten yalnızca
 içine bağlanmış olanı görür. macOS'ta `sandbox-exec`, **varsayılan olarak izin veren**
@@ -224,6 +251,10 @@ politikası, bir yeniden adlandırmanın yazma-reddini atlayamaması için redde
 her yol ve üstünde unlink engelleme, her zaman tehlikeli ikililer ve yazılabilir
 bir dizine kopyalanan her şey için exec retleri ve loopback proxy portlarına
 artı DNS'ye kısıtlanan ağ. Ana dizininizin altındaki araç zinciri kurulumları (corepack'in pnpm'i, node sürüm yöneticileri, Playwright tarayıcıları, rustup, fvm, uv ve benzerleri) bu exec bloğunun içinde çalıştırılabilir kalır; böylece ajanlar geçici çözümlere gerek kalmadan bunları kullanabilir. Her zaman tehlikeli olan yasaklar bunların içinde de geçerli kalır. Her oturuma ayrıca kendine ait özel bir `TMPDIR` verilir. Ajanın kendi derlediği programları çalıştırabileceği ya da Unix soketi açabileceği tek geçici dizin burasıdır.
+
+Her modda iki koruma daha geçerlidir. Bir sandbox, sunucunun programları çalıştırdığı klasörlerdeki bir komutu (`PATH`'teki her klasör ve kullanıcıya özgü yaygın araç klasörleri) ekleyemez, değiştiremez, silemez ya da yeniden adlandıramaz; böylece sandbox'lı bir çalıştırma, sunucunun sonradan sandbox dışında başlatacağı bir programı yerleştiremez. Bu nedenle bir çalıştırmanın içinden yapılan genel kurulumlar ve varsayılan sürüm değişiklikleri "Operation not permitted" ile başarısız olur; proje içi kurulumlar ve `npx` tarzı çalıştırmalar ise çalışmaya devam eder. Genel araçları sunucunun kendisine kurun ve yeniden başlatın. Ayrıca bir sandbox'ın okuyamadığı her ana dizin yolu yazılamaz da olur; sunucu kullanıcısının kabuk ve oturum başlangıç dosyaları ise asla yazılabilir değildir. Ayrıntılar ve platform sınırları [Sunucunun komut klasörleri](/tr-TR/kilavuz/referans/sandbox-arka-uclari/#sunucunun-komut-klasörleri) bölümündedir.
+
+Bir çalıştırmanın araç sandbox'ları o çalıştırmaya aittir ve o sona erdiğinde serbest bırakılır. Dil sunucuları her sandbox'lı çalıştırmayla yeniden başlar. Bir hata ayıklama oturumu, oturum bitene kadar, en fazla 30 dakika boyunca sandbox'ını dönüşler arasında korur.
 
 Pratik sonuç: Linux'ta ajanın dosya sistemine bakışı daraltılır; macOS'ta ajan
 ana makinenin çoğunu hâlâ _okuyabilir_ ve kayıtlı kopyalarınız görünmezlikle

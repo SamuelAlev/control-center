@@ -2,7 +2,7 @@
 title: Hızlı başlangıç
 description: Control Center'ı kurun, bir ajanı yapılandırın ve deponuzda çalışmasını izleyin.
 slug: tr-TR/kilavuz/hizli-baslangic
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Bu, hiçbir şeyden yola çıkıp kendi kodunuz üzerinde çalışan bir ajana ulaşmanın en kısa eksiksiz yoludur. Adımları sırayla izleyin; her adım kendinden öncekine dayanır.
@@ -20,7 +20,7 @@ Aynı uygulama, aynı özelliklerle tarayıcıda [app.usectrl.dev](https://app.u
 çalışır. Ancak bir tarayıcı sekmesi sunucuyu barındıramaz, bu yüzden sunucuyu siz sağlarsınız —
 `cc_server`'ı yerel olarak çalıştırıp `ws://localhost:9030` adresine bağlanın ya da onu başka
 bir makinedeki bir sunucuya yönlendirin. Bu hızlı başlangıç, sunucu kurulumu gerektirmediği
-için masaüstü yolunu izler; tarayıcı yolu için [Kurulum](/tr-TR/kilavuz/kurulum/#use-it-in-your-browser)
+için masaüstü yolunu izler; tarayıcı yolu için [Kurulum](/tr-TR/kilavuz/kurulum/#tarayıcınızda-kullanın)
 sayfasına bakın.
 :::
 
@@ -30,7 +30,7 @@ sayfasına bakın.
 
 1. **Oturum açma** (yalnızca sunucu sahibi): bu sunucunun kişileri GitHub, Google Calendar ve Linear'a nasıl oturum açtıracağını seçin — **Control Center’ın uygulamalarını kullan**, **Kendi uygulamalarımı kullan** ya da **Özel bir Connect sunucusu kullan**. Kendi uygulamalarınızla **GitHub uygulamamı oluştur** GitHub'ı tek adımda kurar. Bunu daha sonra **Ayarlar → Sunucu → Tek oturum açma** bölümünden değiştirebilirsiniz.
 2. **Bağlan**: GitHub'a oturum açın ya da bir GitLab veya Bitbucket token'ı yapıştırın. Kimlik bilgisi sunucuda saklanır ve hesabınıza bağlanır.
-3. **Çalışma alanı**: ilk çalışma alanınızı adlandırın ve isterseniz bir logo seçin. Oluşturmak, beş ajanı — bir CEO ile `qa`, `architect`, `engineer` ve `librarian` — ve yerleşik pipeline şablonlarını tohumlar.
+3. **Çalışma alanı** (yalnızca sunucu sahibi): ilk çalışma alanınızı adlandırın ve isterseniz bir logo seçin. Diğer herkes, sahip onlar için bir tane oluşturana ya da bir çalışma alanı yöneticisi onları davet edene kadar **Henüz bir çalışma alanında değilsiniz** ekranında bekler. Oluşturmak, altı ajanı — bir CEO ile `qa`, `architect`, `engineer`, `librarian` ve `content-synthesizer` — ve yerleşik pipeline şablonlarını tohumlar.
 4. **Sandbox**: bir sandbox tercihini kaydeder. Her iki seçenek de devam etmenizi sağlar.
 5. **Adaptör**: ajanların varsayılan olarak kullanacağı adaptörü ve modeli seçin. **Control Center (built-in)** seçeneğini seçin, ardından görünen sağlayıcı seçiciyi kullanarak bir model sağlayıcısına oturum açın — bir sağlayıcı bağlanana kadar model listesi boş kalır. Bu adımı bitirmek, adaptörü ve modeli çalışma alanının CEO ajanına da işler.
 6. **Ses (isteğe bağlı)**: dikte için cihaz üzerinde çalışan bir konuşma modeli kurun ya da atlayın.
@@ -38,7 +38,7 @@ sayfasına bakın.
 Control Center ardından çalışma alanınızın gelen kutusunu açar.
 
 :::note[Bir ajan çalıştırmasını ne sınırlar]
-Bir tane varsa ajan komutları ana makinenin işletim sistemine özgü sandbox'ına sarılır — macOS'ta Seatbelt, Linux'ta bubblewrap. Windows'ta arka uç yoktur, bu yüzden oradaki çalıştırmalar yalnızca diğer katmanlarla sınırlanır: konuşmanın kendi worktree'si (Windows'ta `git worktree`; `rift`'in geldiği yerde copy-on-write), başlatma başına aracılık edilen ve kapatmada geri alınan kimlik bilgileri ve eylem korumaları. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
+Bir tane varsa ajan komutları ana makinenin işletim sistemine özgü sandbox'ına sarılır — macOS'ta Seatbelt, Linux'ta bubblewrap. Windows'ta arka uç yoktur. Birinin olmadığı bir ana makinede yalnızca sunucu sahibinin ajan çalıştırmaları başlar ve bunlar yalnızca diğer katmanlarla sınırlanır: konuşmanın kendi worktree'si (Windows'ta `git worktree`; `rift`'in geldiği yerde copy-on-write), başlatma başına aracılık edilen ve kapatmada geri alınan kimlik bilgileri ve eylem korumaları. Diğerlerinin çalıştırmaları, sahip sandbox'ı kurana ya da sandboxing'i herkes için kapatana kadar reddedilir. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
 ## 3. Adım: Bir depo ekleyin
@@ -62,7 +62,7 @@ Depolar çalışma alanı kapsamlıdır: burada bir checkout kaydetmek onu _bu_ 
 
 **Değişiklikleri kaydet**'e basın.
 
-Bu adım pratikte isteğe bağlı değildir. İlk kurulum sırasında seçilen adaptörü yalnızca CEO ajanı devralır; dört uzman adaptörsüz oluşturulur. Anthropic'in varsayılan modeliyle birlikte **Control Center (built-in)** seçeneğine geri düşerler; bu yüzden yalnızca bir Anthropic hesabı bağladıysanız çalışırlar — ve bağladıysanız da seçmediğiniz bir model üzerinde çalışırlar.
+Bu adım pratikte isteğe bağlı değildir. İlk kurulumdaki adaptör adımı, o anda var olan her ajana kendi adaptörünü ve modelini atar; sonradan oluşturulan bir çalışma alanı ise altısını da ayarsız başlatır. Adaptörü olmayan bir ajan, Anthropic'in varsayılan modeliyle birlikte **Control Center (built-in)** seçeneğine geri düşer; bu yüzden yalnızca bir Anthropic hesabı bağladıysanız çalışırlar — ve bağladıysanız da seçmediğiniz bir model üzerinde çalışırlar.
 
 ## 5. Adım: Ajana bir görev gönderin
 

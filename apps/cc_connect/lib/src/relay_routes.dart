@@ -2,10 +2,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_connect/src/binding_store.dart';
+import 'package:cc_connect/src/connect_log.dart';
 import 'package:cc_connect/src/context.dart';
 import 'package:cc_connect/src/http_io.dart';
 import 'package:cc_connect/src/provider_slack.dart';
+import 'package:cc_connect/src/quota.dart';
 import 'package:cc_connect/src/rate_limiter.dart';
+import 'package:cc_connect/src/state_store.dart';
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:crypto/crypto.dart' as crypto;
 
@@ -64,8 +67,8 @@ bool verifySlackSignature({
   return ok;
 }
 
-/// Slack Events API and slash-command intake, the reference long poll, the
-/// Klipy proxy and the reserved chat action gateway.
+/// Slack Events API and slash-command intake, the reference long poll and
+/// the Klipy proxy.
 final class RelayRoutes {
   /// Creates the routes.
   RelayRoutes(this.ctx)
@@ -80,15 +83,60 @@ final class RelayRoutes {
   final TokenBucketLimiter _klipyLimiter;
   final Map<String, int> _activePolls = {};
 
+  /// Why a hook cannot carry a valid signature, judged from its headers
+  /// before the body is read: missing headers, a timestamp outside
+  /// [slackSignatureSkew], or a declared length over [maxBytes]. Null when
+  /// the body is worth reading.
+  String? _precheck(HttpRequest request, int maxBytes) {
+    final timestamp = int.tryParse(
+      singleHeader(request, 'x-slack-request-timestamp') ?? '',
+    );
+    if (timestamp == null ||
+        singleHeader(request, 'x-slack-signature') == null) {
+      return 'headers';
+    }
+    if ((timestamp - ctx.now().millisecondsSinceEpoch ~/ 1000).abs() >
+        slackSignatureSkew.inSeconds) {
+      return 'stale';
+    }
+    if (request.contentLength > maxBytes) {
+      return 'too_large';
+    }
+    return null;
+  }
+
+  void _refused(String reason, String ip) => ctx.log.sampled(
+    'slack.signature_refused',
+    '$reason/$ip',
+    {'reason': reason, 'ip': ip},
+  );
+
   /// `POST /v1/hooks/slack/events`. Always 200 once the signature verified,
-  /// quickly, whatever happens next: an offline server must never make Slack
-  /// disable the subscription.
-  Future<void> slackEvents(HttpRequest request) async {
+  /// quickly, whatever happens next: an offline server or a failing store
+  /// must never make Slack disable the subscription. [ip] is the truncated
+  /// client address, for the refusal log.
+  Future<void> slackEvents(HttpRequest request, {required String ip}) async {
     final response = request.response;
     final (_, creds, _) = await ctx.slackLane();
+    final early = _precheck(request, slackEventMaxBytes);
+    if (early != null) {
+      // The body is never read: the connection cannot be reused.
+      response.persistentConnection = false;
+      if (early == 'too_large') {
+        ctx.log.event('slack.event_dropped', {
+          'reason': early,
+        }, ConnectLogLevel.warn);
+        return sendJson(response, 200, const <String, Object?>{});
+      }
+      _refused(early, ip);
+      return sendError(response, ConnectErrorCode.accessDenied);
+    }
     final body = await readCappedBody(request, slackEventMaxBytes);
     if (body == null) {
-      ctx.log.event('slack.event_dropped', {'reason': 'too_large'});
+      response.persistentConnection = false;
+      ctx.log.event('slack.event_dropped', {
+        'reason': 'too_large',
+      }, ConnectLogLevel.warn);
       return sendJson(response, 200, const <String, Object?>{});
     }
     if (!verifySlackSignature(
@@ -98,6 +146,7 @@ final class RelayRoutes {
       body: body,
       now: ctx.now(),
     )) {
+      _refused('signature', ip);
       return sendError(response, ConnectErrorCode.accessDenied);
     }
     final Object? json;
@@ -118,18 +167,55 @@ final class RelayRoutes {
       return sendError(response, ConnectErrorCode.invalidRequest);
     }
     if (json['type'] == 'event_callback' && json['api_app_id'] == creds.appId) {
-      await _relayEvent(json);
+      try {
+        await _relayEvent(json);
+      } on StateStoreUnavailable {
+        ctx.log.event('slack.event_dropped', {
+          'reason': 'state_unavailable',
+        }, ConnectLogLevel.warn);
+      } on BindingStoreUnavailable {
+        ctx.log.event('slack.event_dropped', {
+          'reason': 'bindings_unavailable',
+        }, ConnectLogLevel.warn);
+      } on Object catch (error, stack) {
+        ctx.log.exception('slack.event_failed', error, stack);
+      }
     }
     return sendJson(response, 200, const <String, Object?>{});
   }
 
+  /// Runs [work] after `slackev:<eventId>` was claimed; a failure forgets the
+  /// claim so Slack's retry of the event is not taken for a duplicate.
+  Future<void> _afterDedupe(String eventId, Future<void> Function() work) async {
+    try {
+      await work();
+    } on Object {
+      try {
+        await ctx.state.delete('slackev:$eventId');
+      } on Object {
+        // The store is down too; the key lapses with slackQueueTtl.
+      }
+      rethrow;
+    }
+  }
+
+  /// Routes an event by the installation Slack delivered it for (its
+  /// `authorizations`), never by the envelope's `team_id`: in a channel
+  /// shared between workspaces that names where the event happened, which
+  /// may be another server's workspace. The envelope's team is logged only.
   Future<void> _relayEvent(Map<Object?, Object?> json) async {
-    final team = json['team_id'];
+    final team = _authorizedTeam(json);
     final eventId = json['event_id'];
     final event = json['event'];
-    if (team is! String ||
-        !isSlackId(team) ||
-        eventId is! String ||
+    if (team == null) {
+      final outer = json['team_id'];
+      ctx.log.sampled('slack.event_dropped', 'no_authorization', {
+        'reason': 'no_authorization',
+        'team': outer is String ? ctx.log.tag(outer) : '',
+      }, ConnectLogLevel.warn);
+      return;
+    }
+    if (eventId is! String ||
         eventId.length > 64 ||
         event is! Map) {
       return;
@@ -142,40 +228,14 @@ final class RelayRoutes {
       // for the binding that existed when it happened: a retry or replay
       // inside the signature window must not free a team that has been
       // connected again since.
-      if (!_aboutTeam(json, team) ||
-          !await ctx.state.putIfAbsent(
+      if (!await ctx.state.putIfAbsent(
             'slackev:$eventId',
             '1',
             slackQueueTtl,
           )) {
         return;
       }
-      final bound = await ctx.bindings.slack(team, fresh: true);
-      final at = json['event_time'];
-      if (bound == null ||
-          at is! int ||
-          at < bound.boundAt.millisecondsSinceEpoch ~/ 1000 ||
-          (type == 'tokens_revoked' &&
-              !_revokesBoundBot(event['tokens'], bound))) {
-        if (bound != null) {
-          ctx.log.event('slack.release_ignored', {
-            'team': ctx.log.tag(team),
-            'reason': type is String ? type : '',
-          });
-        }
-        return;
-      }
-      final released = await ctx.bindings.releaseSlack(
-        team,
-        installId: bound.installId,
-      );
-      if (released) {
-        ctx.log.event('slack.released', {
-          'team': ctx.log.tag(team),
-          'reason': type is String ? type : '',
-        });
-      }
-      return;
+      return _afterDedupe(eventId, () => _release(json, team, type, event));
     }
     if (type is! String || !relayedSlackEvents.contains(type)) {
       return;
@@ -194,7 +254,9 @@ final class RelayRoutes {
     );
     if (count > ctx.config.rateLimits.slackEventsPerTeamPerMinute) {
       if (count == ctx.config.rateLimits.slackEventsPerTeamPerMinute + 1) {
-        ctx.log.event('slack.team_over_budget', {'team': ctx.log.tag(team)});
+        ctx.log.event('slack.team_over_budget', {
+          'team': ctx.log.tag(team),
+        }, ConnectLogLevel.warn);
       }
       return;
     }
@@ -225,33 +287,73 @@ final class RelayRoutes {
       ),
       messageTs: text(edited is Map ? edited['ts'] : event['ts']),
     );
-    await ctx.state.push(
-      'slackq:${binding.installId}',
-      jsonEncode(ref.toJson()),
-      slackQueueTtl,
-      maxLength: queueMaxItems,
+    await _afterDedupe(
+      eventId,
+      () => ctx.state.push(
+        'slackq:${binding.installId}',
+        jsonEncode(ref.toJson()),
+        slackQueueTtl,
+        maxLength: queueMaxItems,
+      ),
     );
     ctx.signal.notify(binding.installId);
   }
 
-  /// Whether an uninstall event is about [team] alone: every authorization
-  /// Slack lists for the delivery names that team (an event delivered for a
-  /// Slack Connect partner's installation, or an organization-wide one with
-  /// no team, never frees a team).
-  static bool _aboutTeam(Map<Object?, Object?> json, String team) {
-    final authorizations = json['authorizations'];
-    if (authorizations == null) {
-      return true;
+  /// Frees [team] on `app_uninstalled` / `tokens_revoked`.
+  Future<void> _release(
+    Map<Object?, Object?> json,
+    String team,
+    Object? type,
+    Map<Object?, Object?> event,
+  ) async {
+    final bound = await ctx.bindings.slack(team, fresh: true);
+    final at = json['event_time'];
+    if (bound == null ||
+        at is! int ||
+        at < bound.boundAt.millisecondsSinceEpoch ~/ 1000 ||
+        (type == 'tokens_revoked' &&
+            !_revokesBoundBot(event['tokens'], bound))) {
+      if (bound != null) {
+        ctx.log.event('slack.release_ignored', {
+          'team': ctx.log.tag(team),
+          'reason': type is String ? type : '',
+        });
+      }
+      return;
     }
-    if (authorizations is! List || authorizations.isEmpty) {
-      return false;
+    final released = await ctx.bindings.releaseSlack(
+      team,
+      installId: bound.installId,
+    );
+    if (released) {
+      ctx.log.event('slack.released', {
+        'team': ctx.log.tag(team),
+        'reason': type is String ? type : '',
+      });
     }
-    return authorizations.every((a) => a is Map && a['team_id'] == team);
   }
 
-  /// Whether `tokens_revoked` names [bound]'s bot. A binding recorded before
-  /// the bot's user id was kept frees on any revoked bot token of this app
-  /// in its team, which is the only bot this app has there.
+  /// The workspace of the installation an event was delivered for: Slack
+  /// lists it in `authorizations`. Null when the list is absent or empty,
+  /// when an entry names no workspace (an organization-wide installation),
+  /// or when its entries disagree.
+  static String? _authorizedTeam(Map<Object?, Object?> json) {
+    final authorizations = json['authorizations'];
+    if (authorizations is! List || authorizations.isEmpty) {
+      return null;
+    }
+    String? team;
+    for (final authorization in authorizations) {
+      final id = authorization is Map ? authorization['team_id'] : null;
+      if (id is! String || !isSlackId(id) || (team != null && id != team)) {
+        return null;
+      }
+      team = id;
+    }
+    return team;
+  }
+
+  /// Whether `tokens_revoked` names [bound]'s bot.
   static bool _revokesBoundBot(Object? tokens, SlackTeamBinding bound) {
     if (tokens is! Map) {
       return false;
@@ -260,16 +362,26 @@ final class RelayRoutes {
     if (bot is! List || bot.isEmpty) {
       return false;
     }
-    return bound.botUserId.isEmpty || bot.contains(bound.botUserId);
+    return bot.contains(bound.botUserId);
   }
 
   /// `POST /v1/hooks/slack/commands`: queue a bounded reference and answer
   /// immediately with a fixed ephemeral message.
-  Future<void> slackCommands(HttpRequest request) async {
+  Future<void> slackCommands(HttpRequest request, {required String ip}) async {
     final response = request.response;
     final (_, creds, _) = await ctx.slackLane();
+    final early = _precheck(request, slackCommandMaxBytes);
+    if (early != null) {
+      response.persistentConnection = false;
+      if (early == 'too_large') {
+        return sendError(response, ConnectErrorCode.invalidRequest);
+      }
+      _refused(early, ip);
+      return sendError(response, ConnectErrorCode.accessDenied);
+    }
     final body = await readCappedBody(request, slackCommandMaxBytes);
     if (body == null) {
+      response.persistentConnection = false;
       return sendError(response, ConnectErrorCode.invalidRequest);
     }
     if (!verifySlackSignature(
@@ -279,6 +391,7 @@ final class RelayRoutes {
       body: body,
       now: ctx.now(),
     )) {
+      _refused('signature', ip);
       return sendError(response, ConnectErrorCode.accessDenied);
     }
     final Map<String, String> form;
@@ -410,6 +523,16 @@ final class RelayRoutes {
     if (!_klipyLimiter.tryTake(caller.installId)) {
       throw const ConnectException(ConnectErrorCode.rateLimited);
     }
+    // Shared across instances, against installs minted by the thousand.
+    await ctx.quotas.admit([
+      Quota(
+        'klipy_ip',
+        caller.address,
+        window: const Duration(minutes: 1),
+        limit: ctx.config.rateLimits.klipyPerIpPerMinute,
+        logFields: {'ip': caller.network},
+      ),
+    ]);
     final gifs = await api.gifs(query);
     return KlipyGifsResponse(gifs: gifs).toJson();
   }

@@ -13,7 +13,7 @@ import 'package:path/path.dart' as p;
 ///
 /// Escape hatch: empty `.cc_natives_allow_missing` at repo root downgrades to
 /// a warning. A FILE, not env — the hooks runner does not forward the caller
-/// environment (`CC_NATIVES_ALLOW_MISSING=1` is ignored).
+/// environment.
 void main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) {
@@ -98,11 +98,8 @@ const _allowMissingFile = '.cc_natives_allow_missing';
 /// Repo-root file whose contents override the staging directory.
 const _prebuiltDirFile = '.cc_natives_prebuilt_dir';
 
-/// Whether the caller opted into building without natives. The env var is read
-/// first for forward-compatibility, but the hooks runner does not forward the
-/// caller's environment — the FILE is what works today.
+/// Whether the caller opted into building without natives.
 bool _allowMissing(String repoRoot) =>
-    Platform.environment['CC_NATIVES_ALLOW_MISSING'] == '1' ||
     File(p.join(repoRoot, _allowMissingFile)).existsSync();
 
 /// The repo root: `packageRoot` is `<repo>/apps/cc_server/`, two levels down.
@@ -155,16 +152,10 @@ Future<File> _thinIfFat(BuildInput input, File file) async {
   return outputFile;
 }
 
-/// The staging directory holding the prebuilt natives, in order: the
-/// `CC_NATIVES_PREBUILT_DIR` env var (forward-compatible only — see
-/// [_allowMissing] for why env does not reach a hook), the repo-root
+/// The staging directory holding the prebuilt natives, in order: the repo-root
 /// `.cc_natives_prebuilt_dir` pointer file, else `<repo>/build/natives` (the
 /// default DEST of `scripts/natives/build_natives.sh`).
 Directory? _resolveStagingDir(BuildInput input) {
-  final env = Platform.environment['CC_NATIVES_PREBUILT_DIR'];
-  if (env != null && env.isNotEmpty) {
-    return Directory(env);
-  }
   final repoRoot = _repoRoot(input);
   final pointer = File(p.join(repoRoot, _prebuiltDirFile));
   if (pointer.existsSync()) {

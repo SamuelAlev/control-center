@@ -2,7 +2,7 @@
 title: Sandbox i bezpieczeństwo
 description: Co dziś realnie ogranicza agenta w Control Center, jak daleko sięga sandbox systemowy i które granice utrzymują się na hoście bez backendu.
 slug: pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Gdzie sandbox systemowy sięga, a gdzie nie]
@@ -10,8 +10,7 @@ sourceHash: ac926eb1b2447d93207802824742f121d232f171
 sandbox natywny dla systemu, gdy taki jest dostępny — Seatbelt w macOS,
 bubblewrap w Linuksie i WSL2 (który wymaga `bwrap` i `socat` w `PATH`). Tam,
 gdzie backendu nie ma — w Windows albo na maszynie z Linuksem bez tych narzędzi
-— uruchomienia opierają się na pozostałych granicach opisanych poniżej, a
-serwer mówi o tym w swoim logu startowym. `--sandbox off` wyłącza go celowo.
+— startują tylko uruchomienia właściciela serwera, bez ograniczeń, a pozostałe są odrzucane. Właściciel serwera może też uruchomić go z `--sandbox off`, co uruchamia agentów wszystkich członków bez ograniczeń na tej maszynie. Serwer mówi w swoim logu startowym, w którym przypadku jesteś; zob. [Agenty na hoście bez sandboxa](#agenty-na-hoście-bez-sandboxa).
 
 Dwie luki przetrwają sandbox i warto je mieć na uwadze:
 
@@ -36,7 +35,23 @@ lecz „jaki jest promień rażenia, gdy się myli”.
 Control Center odpowiada na to warstwami, które celowo są niezależne. Jeśli
 jednej brakuje, pozostałe nadal działają. Ma to znaczenie, bo najbardziej
 zewnętrzna warstwa — sandbox systemowy — jest jedyną warunkową: zależy od
-tego, czy host oferuje backend, a w Windows żaden host go nie oferuje.
+tego, czy host oferuje backend, a w Windows żaden host go nie oferuje. Tam, gdzie go brakuje, serwer nie uruchamia po cichu agentów wszystkich bez niego.
+
+## Agenty na hoście bez sandboxa
+
+Serwer rozstrzyga raz, przy starcie, jak agenty działają na jego maszynie, i zachowuje tę decyzję do ponownego uruchomienia:
+
+- **W piaskownicy.** Host ma backend i sandbox jest włączony. Każde uruchomienie jest opakowane.
+- **Wyłączony.** Właściciel serwera uruchomił go z `--sandbox off`. Agenty wszystkich członków działają bez ograniczeń na tej maszynie. To decyzja właściciela dla wszystkich, którzy korzystają z serwera, a nie ustawienie jednego uruchomienia.
+- **Niedostępny.** Sandbox jest włączony, ale host nie ma backendu. Uruchomienie startuje tylko wtedy, gdy osoba odpowiedzialna za nie jest [właścicielem](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera) serwera: osobą, która o nie poprosiła, a w przypadku harmonogramu, webhooka lub innej automatyzacji osobą, z którą jest powiązane. Uruchomienie każdego innego członka jest odrzucane, zanim zostanie wydane poświadczenie albo wystartuje proces, komunikatem: „Ten serwer nie ma piaskownicy, więc agenty mogą tu uruchamiać tylko jego właściciel. Właściciel może zainstalować piaskownicę albo wyłączyć piaskownicowanie dla wszystkich.”
+
+Powód to własność maszyny. Agent bez ograniczeń może wszystko, co może konto użytkownika serwera, więc uruchamia go tylko właściciel serwera, chyba że zdecyduje inaczej dla wszystkich. Serwer z Windows zawsze znajduje się w przypadku „niedostępny”. Linux ma własny niuans, opisany w [dokumentacji backendów sandboxa](/pl-PL/podrecznik/dokumentacja-referencyjna/backendy-sandboxa/#linux-bubblewrap): natywne wysyłanie zawodzi tam obecnie zamykająco, nawet przy zainstalowanym bubblewrap.
+
+Ta sama zasada obejmuje mniejsze rzeczy, które za Ciebie uruchamiają procesy:
+
+- **Szybkie pomocniki uruchamiane przez CLI ACP**: tytuły rozmów, `/btw`, `/handoff` i `/goal`. Gdy serwer opakowuje agentów w sandbox, działają wewnątrz sandboxa, we własnej sesji. Przy `--sandbox off` działają bez ograniczeń. Bez dostępnego sandboxa działają tylko dla żądań, za które odpowiada właściciel serwera; dla innych są pomijane: tytuł nie jest generowany, a pytanie poboczne dostaje odpowiedź, że Content synthesizer nie ma działającego runnera. Pomocniki, które nie uruchamiają żadnego narzędzia, nie są objęte tą regułą.
+- **Testy golden sprawdzenia wizualnego** w Review Studio dla pull requesta podlegają tej samej regule.
+- **Procesy narzędzi i `bash`** w uruchomieniu nigdy nie przechodzą na host. Jeśli serwer ma opakować agentów w sandbox, a nie ma sandboxa do przydzielenia uruchomieniu, są odrzucane.
 
 ## Co faktycznie ogranicza agenta
 
@@ -111,8 +126,8 @@ nośnym, a nie drugą linią obrony.
 względem polityki poleceń danego trybu, a następnie uruchamiane z oczyszczonym
 środowiskiem i worktree jako katalogiem roboczym. Tam, gdzie istnieje backend,
 to uruchomienie jest opakowane, więc to sandbox powstrzymuje polecenie powłoki
-przed zapisem poza worktree; tam, gdzie go nie ma — Windows albo Linux bez
-`bwrap` i `socat` — polityka poleceń jest jedyną rzeczą między poleceniem a
+przed zapisem poza worktree; tam, gdzie go nie ma (każde uruchomienie przy `--sandbox off` oraz uruchomienia właściciela serwera na Windows albo na Linuksie bez
+`bwrap` i `socat`) — polityka poleceń jest jedyną rzeczą między poleceniem a
 resztą dysku. W trybie `chat` polityka twardo odmawia w przypadku stałej listy
 (podnoszenie uprawnień, niszczenie systemu i dysku, ucieczka z kontenera i
 przestrzeni nazw) i pyta o mutacje stanu zdalnego (`git push`, `gh pr create`,
@@ -128,7 +143,7 @@ zawsze na własnym pytaniu o zatwierdzenie. Jego wywołania odczytu, zapisu i ed
 niewidoczne wywołania i tak odbywają się w opakowaniu sandboxa, więc granicą
 wokół nich jest system operacyjny. Tam, gdzie go nie ma, nie ma żadnej. Każdy
 adapter stwierdza to w swojej macierzy egzekwowania — zobacz [macierz
-uczciwości adapterów](/pl-PL/podrecznik/koncepcje/guardraile/#the-adapter-honesty-matrix).
+uczciwości adapterów](/pl-PL/podrecznik/koncepcje/guardraile/#matryca-uczciwości-adapterów).
 
 ## Push przechodzi przez Control Center
 
@@ -140,10 +155,7 @@ uruchamia agenta.
 
 Push to akcja, która musi się utrzymać nawet wobec agenta próbującego obejść
 regułę, więc egzekwuje się ją przez to, co agent posiada, a nie przez to, co
-uruchamia. Uruchomienie w worktree GitHuba dostaje token dla tego jednego
-repozytorium, wydany z GitHub App obszaru roboczego, z własnej aplikacji serwera
-albo przez Control Center Connect. Może czytać zawartość i, gdy odpowiedzialny
-członek ma prawo push, komentować pull requesty, ale nie może wykonać push.
+uruchamia. Uruchomienie nie ma tokenu forge w chwili startu, a jego `git` nigdy go nie dostaje. Gdy jego `gh` go potrzebuje, Control Center przekazuje mu token dla jednego repozytorium GitHuba, nad którym pracuje uruchomienie, wydany z GitHub App obszaru roboczego, z własnej aplikacji serwera albo przez Control Center Connect. Token służy tylko do odczytu: nie może wykonać push, komentować ani edytować.
 Konfiguracja gita
 uruchomienia przepisuje każdy adres URL push do GitHuba (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) na **bramę uruchomień agentów**,
@@ -158,25 +170,23 @@ nigdy nie przekazuje agentowi. Odrzucony push widać w wyjściu samego gita:
 ```
 
 Brama przekazuje push tylko do własnego repozytorium worktree albo do
-repozytorium GitHuba połączonego z obszarem roboczym. Fetch trafia bezpośrednio
-do GitHuba z tokenem odczytu.
+repozytorium GitHuba połączonego z obszarem roboczym. Fetch też przechodzi przez bramę, na GitHubie, GitLabie i Bitbucket: pobiera repozytoria, nad którymi pracuje uruchomienie, używając poświadczenia, które brama przechowuje, a którego uruchomienie nigdy nie widzi. Na GitLabie i Bitbucket jest to Twój własny token, gdy zleciłeś uruchomienie, a token automatyzacji repozytorium, gdy nikt tego nie zrobił. Fetch nikogo nie pyta, a odrzuca go wyłącznie Odmów dla **Dostęp do sieci**.
 
 Inne polecenia powłoki napotykają łagodniejszą bramkę. Narzędzie `bash`
 harnessa oraz, przez hook, narzędzie `Bash` Claude Code klasyfikują każdy wiersz
 poleceń i pytają regułę, pod którą podpada: `git commit`, `merge`, `rebase`,
 `cherry-pick`, `revert` i `am` to **Utworzenie commita**; `gh pr create` to
 **Otwarcie pull requesta**; `gh pr merge`, `review`, `comment` i `close` to
-**Opublikowanie recenzji lub scalenie**; `gh issue create`, `edit`, `comment`
+**Aktualizacja lub scalenie pull requesta**; `gh issue create`, `edit`, `comment`
 i `close` to **Zapis do zewnętrznego trackera**; instalacje pakietów to
-**Instalacja pakietu**; `curl` i `wget` to **Dostęp do sieci**. To rozpoznaje
+**Instalacja pakietu**; `curl` i `wget` to **Dostęp do sieci**. Zapis do GitHuba z poziomu powłoki jest wyjątkiem: `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` oraz zapisy `gh issue` nie działają w uruchomieniu, którego token tylko czyta, a agent jest kierowany do narzędzi Control Center, które pytają te reguły. To rozpoznaje
 typowy zapis akcji, a agent zdecydowany ją ukryć (`eval`, plik skryptu,
 bezpośrednie wywołanie API) jest w stanie to zrobić. Push od tego nie zależy.
 
 Każdy token GitHub, który dostaje uruchomienie, jest ograniczony podwójnie: do
 jednego repozytorium i do tego, co może tam zrobić odpowiedzialny członek (ten,
 kto poprosił, a w przeciwnym razie właściciel obszaru roboczego). Nie ma
-zapasowego poświadczenia. Gdy nie da się wydać tokenu, uruchomienie startuje bez
-niego, a jego notatki wyjaśniają dlaczego.
+zapasowego poświadczenia. Gdy nie da się wydać tokenu, polecenie, które o niego poprosiło, wyjaśnia dlaczego.
 
 Do sandboxa nie trafia żaden klucz API zgłoszeń. Agenci zapisują zgłoszenia
 przez narzędzia MCP Control Center, które pytają regułę **Zapis do zewnętrznego
@@ -190,6 +200,16 @@ zwalniane, gdy się ono kończy. Tokeny za nimi są współdzielone per członek
 i repozytorium i wygasają w ciągu mniej więcej godziny; gdy członek wyloguje się
 z GitHuba albo opuści obszar roboczy, wszystkie tokeny wydane w jego imieniu
 przepadają naraz.
+
+## Repozytoria, które agent może tylko czytać
+
+Uruchomienie agenta może zmieniać wyłącznie checkouty repozytoriów, na które osoba, w imieniu której działa, ma [uprawnienie zapisu](/pl-PL/podrecznik/koncepcje/autoryzacja/#zmiana-kodu-wymaga-uprawnienia-zapisu). Administratorzy obszaru roboczego mają je na każdym powiązanym repozytorium. Uruchomienie, o które nikt nie poprosił, na przykład harmonogram albo inna automatyzacja, jest oceniane według tej samej osoby odpowiedzialnej, do której ogranicza się token automatyzacji.
+
+W przestrzeni z repozytorium, którego ta osoba może tylko czytać, agent nadal może czytać i przeszukiwać to repozytorium, ale nie może zmieniać jego plików. Jego narzędzia do plików odmawiają z komunikatem zaczynającym się od `<repo> is read-only for this run`, który mówi, że zmiana checkoutu wymaga uprawnienia zapisu, którego osoba, w imieniu której działa uruchomienie, nie ma, i że administrator obszaru roboczego może je przyznać. Wewnątrz sandboxa checkout jest tylko do odczytu dla każdego procesu, więc polecenie powłoki, które tam zapisuje, kończy się błędem „Operation not permitted”. Dotyczy to także `git commit` oraz builda lub testu zapisującego wynik wewnątrz checkoutu. Repozytoria, do których osoba może zapisywać, działają jak zwykle, więc administratorzy i osoby z dostępem do zapisu do wszystkich repozytoriów przestrzeni nie widzą żadnej różnicy.
+
+Ta decyzja zapada raz, na starcie uruchomienia. Zmiana uprawnienia działa dopiero w następnym uruchomieniu agenta, tak samo jak repozytorium dodane do przestrzeni w trakcie uruchomienia.
+
+Tam, gdzie właściciel serwera wyłączył sandbox, odmawiane są tylko narzędzia plików agenta i narzędzia zapisu Claude Code, a polecenia powłoki nadal mogą zmienić checkout. Mimo to nic nie da się wypchnąć bez uprawnienia zapisu, ponieważ każde wypchnięcie jest sprawdzane pod kątem tego uprawnienia. To, które procesy sandbox ogranicza na każdej platformie, opisuje [Backendy sandboxa](/pl-PL/podrecznik/dokumentacja-referencyjna/backendy-sandboxa/).
 
 ## Co dodaje sandbox i gdzie się zatrzymuje
 
@@ -205,16 +225,10 @@ oba punkty podłączenia, które ma ścieżka wysyłania, bo transporty nie dzie
 jednego. Pierwszy (`SandboxPort`) opakowuje CLI Claude Code. Drugi
 (`SandboxManager`) opakowuje adaptery ACP i narzędzie `bash` wbudowanego
 harnessa. Zasilenie tylko jednego pozostawiłoby pozostałe uruchamiane bez
-opakowania — i tak właśnie kiedyś było. Na hoście bez backendu albo przy
-`--sandbox off` wszystkie uruchamiają się bez opakowania, a serwer w wierszu
-startowym mówi, który to przypadek. ACP i `bash` harnessa nadal oczyszczają
+opakowania — i tak właśnie kiedyś było. Przy `--sandbox off` wszystkie uruchamiają się bez opakowania; na hoście bez backendu bez opakowania startują tylko uruchomienia właściciela serwera. Serwer w wierszu startowym mówi, który to przypadek. ACP i `bash` harnessa nadal oczyszczają
 środowisko; Claude Code przez `NoSandboxAdapter` dziedziczy środowisko hosta.
 
-Jedna powierzchnia celowo się wycofuje: terminal hostowany na serwerze
-przyjmuje argument backendu dla sesji, a `cc_server` konstruuje go tak, że
-domyślnie wskazuje powłokę hosta, więc terminal otwarty z aplikacji działa bez
-sandboxa, chyba że klient wprost wskaże `native`. To prawdziwa powłoka na
-hoście serwera, a nie uruchomienie agenta.
+Terminal hostowany na serwerze otwiera powłokę hosta tylko dla [właściciela serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera). Wszyscy inni dostają terminal w sandboxie, z ograniczeniami agenta, w katalogach samego obszaru roboczego. Tylko osoba, która otworzyła terminal, może w nim pisać, czytać go lub go zamykać.
 
 W Linuksie `bubblewrap` buduje przestrzeń nazw montowania, więc agent naprawdę
 widzi tylko to, co zostało do niej podmontowane. W macOS `sandbox-exec`
@@ -228,6 +242,10 @@ przodkach, tak aby zmiana nazwy nie ominęła zakazu zapisu, odmowy wykonania
 (exec) dla zawsze niebezpiecznych plików binarnych i dla wszystkiego, co
 skopiowano do katalogu z prawem zapisu, oraz sieć ograniczoną do portów proxy
 na pętli zwrotnej plus DNS. Instalacje narzędzi w katalogu domowym (pnpm z corepack, menedżery wersji node, przeglądarki Playwright, rustup, fvm, uv i podobne) pozostają uruchamialne w tym bloku exec, dzięki czemu agenci mogą z nich korzystać bez obejść. Zawsze niebezpieczne odmowy nadal obowiązują wewnątrz niego. Każda sesja otrzymuje też własny prywatny `TMPDIR`. Jest to jedyny katalog tymczasowy, w którym agent może uruchamiać zbudowane przez siebie programy lub otwierać gniazda Unix.
+
+Dwie kolejne ochrony obowiązują w każdym trybie. Sandbox nie może dodać, zastąpić, usunąć ani przemianować polecenia w folderach, z których serwer uruchamia programy (każdy folder w jego `PATH` oraz zwykłe foldery narzędzi użytkownika), więc uruchomienie w sandboxie nie może podrzucić programu, który serwer później uruchomi poza sandboxem. Globalne instalacje i przełączenia domyślnej wersji z wnętrza uruchomienia zawodzą więc z komunikatem „Operation not permitted”, podczas gdy instalacje lokalne dla projektu i uruchomienia w stylu `npx` nadal działają; instaluj narzędzia globalne na samym serwerze i uruchom go ponownie. Każda ścieżka domowa, której sandbox nie może odczytać, nie może być też zapisywana, a pliki startowe powłoki i sesji użytkownika serwera nigdy nie są zapisywalne. Szczegóły i ograniczenia platform opisuje [Foldery poleceń serwera](/pl-PL/podrecznik/dokumentacja-referencyjna/backendy-sandboxa/#foldery-poleceń-serwera).
+
+Sandboxy narzędzi uruchomienia należą do tego uruchomienia i są zwalniane, gdy się ono kończy. Serwery językowe startują od nowa przy każdym uruchomieniu w sandboxie. Sesja debugowania zachowuje swój sandbox między turami aż do zakończenia sesji, najdłużej przez 30 minut.
 
 Praktyczna konsekwencja: w Linuksie widok systemu plików dostępny dla agenta
 jest zawężony; w macOS agent nadal może _czytać_ większość hosta, a Twoje

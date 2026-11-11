@@ -41,6 +41,7 @@ export 'src/inference/speech/meeting_diarization_service.dart';
 export 'src/inference/speech/sherpa_onnx_transcriber.dart';
 export 'src/inference/speech/silero_vad_detector.dart';
 export 'src/native_library.dart';
+export 'src/native_library_paths.dart';
 export 'src/native_runtime.dart';
 export 'src/native_unavailable.dart';
 export 'src/pty/pty.dart';

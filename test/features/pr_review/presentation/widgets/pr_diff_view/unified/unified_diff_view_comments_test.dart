@@ -277,6 +277,154 @@ void main() {
       },
     );
 
+    testWidgets('revealing a thread far down lands on its row, not near it', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      // Twenty long files above the target, each with its own conversation:
+      // their heights are estimates until parsed and measured, which is
+      // what used to move the row after the jump had aimed at it.
+      final filler = [
+        for (var f = 0; f < 20; f++)
+          PrFile(
+            filename: 'lib/filler_$f.dart',
+            status: PrFileStatus.modified,
+            additions: 80,
+            deletions: 0,
+            patch:
+                '@@ -0,0 +1,80 @@\n'
+                '${[for (var l = 1; l <= 80; l++) '+final v$l = $l;'].join('\n')}\n',
+          ),
+      ];
+      // The hunk starts at line 200, so file line 205 is display row 6:
+      // a file line used as a row index points past the end of the file.
+      // Files after the target, so its row can reach the top of the viewport
+      // instead of the scroll clamping at the end of the diff.
+      final after = [
+        for (var f = 0; f < 3; f++)
+          PrFile(
+            filename: 'lib/after_$f.dart',
+            status: PrFileStatus.modified,
+            additions: 80,
+            deletions: 0,
+            patch: filler[f].patch,
+          ),
+      ];
+      final target = PrFile(
+        filename: 'lib/target.dart',
+        status: PrFileStatus.modified,
+        additions: 10,
+        deletions: 0,
+        patch:
+            '@@ -199,0 +200,10 @@\n'
+            '${[for (var l = 200; l < 210; l++) '+final t$l = $l;'].join('\n')}\n',
+      );
+      final comments = [
+        for (var f = 0; f < filler.length; f++)
+          PrCodeReviewComment(
+            id: 1000 + f,
+            body: 'filler note $f\n\nwith a second paragraph',
+            user: const PrUser(login: 'krishna', avatarUrl: ''),
+            path: filler[f].filename,
+            position: 40,
+            createdAt: DateTime.utc(2026, 8, 17),
+            line: 40,
+          ),
+        PrCodeReviewComment(
+          id: 9001,
+          body: 'the target note',
+          user: const PrUser(login: 'krishna', avatarUrl: ''),
+          path: target.filename,
+          position: 6,
+          createdAt: DateTime.utc(2026, 8, 17),
+          line: 205,
+        ),
+      ];
+
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      final viewKey = GlobalKey<UnifiedDiffViewState>();
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            codeFontFamilyProvider.overrideWithValue('Fira Code'),
+            diffOverflowModeProvider.overrideWith(DiffOverflowModeNotifier.new),
+          ],
+          child: testWrap(
+            Consumer(
+              builder: (context, ref, _) => PrimaryScrollController(
+                controller: controller,
+                child: CustomScrollView(
+                  controller: controller,
+                  primary: false,
+                  slivers: [
+                    UnifiedDiffView(
+                      key: viewKey,
+                      files: [...filler, target, ...after],
+                      serverComments: comments,
+                      inlineCommentsController: ref.watch(
+                        prInlineCommentsControllerProvider(_prRef).notifier,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await _settle(tester);
+      expect(find.text('the target note'), findsNothing);
+
+      final revealed = viewKey.currentState!.revealThread(
+        'server-9001',
+        fileIndex: filler.length,
+      );
+      for (var i = 0; i < 60; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(await revealed, isTrue);
+
+      final sliver = tester.renderObject<RenderUnifiedDiffSliver>(
+        find.byType(UnifiedDiffSliver),
+      );
+      // Row 0 is the hunk header, so file line 205 is display row 6.
+      expect(
+        controller.offset,
+        moreOrLessEquals(
+          sliver.revealOffsetForLine(filler.length, 6),
+          epsilon: 1,
+        ),
+      );
+      final card = tester.getRect(find.text('the target note'));
+      expect(card.top, greaterThan(0));
+      expect(card.bottom, lessThan(800));
+    });
+
+    testWidgets('an unknown thread reports that it has no row', (tester) async {
+      tester.view.physicalSize = const Size(1400, 2400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      final viewKey = GlobalKey<UnifiedDiffViewState>();
+      await tester.pumpWidget(
+        _wrap([_comment(body: 'Why this cast?')], viewKey: viewKey),
+      );
+      await _settle(tester);
+
+      final revealed = viewKey.currentState!.revealThread(
+        'server-404',
+        fileIndex: 0,
+      );
+      for (var i = 0; i < 15; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(await revealed, isFalse);
+    });
+
     testWidgets('the collapsed row height stays one line', (tester) async {
       tester.view.physicalSize = const Size(1400, 2400);
       tester.view.devicePixelRatio = 1;

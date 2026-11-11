@@ -129,7 +129,7 @@ void main() {
         RigFrameReader.forContentType('video/x-motion-jpeg').startPattern,
         kJpegSoi,
       );
-      // An older server declares nothing; JPEG is what it served.
+      // A lane that declares nothing reads as JPEG.
       expect(RigFrameReader.forContentType(null).startPattern, kJpegSoi);
     });
 

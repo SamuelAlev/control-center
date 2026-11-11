@@ -3,7 +3,7 @@ title: Uruchom serwer headless
 description: Uruchom binarkę headless cc_server lub jej obraz Docker, sparuj z nią klienta i skonfiguruj ją pełnym zestawem flag CLI i zmiennych środowiskowych.
 dateModified: 2026-11-08
 slug: pl-PL/podrecznik/poradniki/uruchamianie-serwera-headless
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Uruchom `cc_server` na maszynie, która jest stale włączona, a następnie połącz się
@@ -172,8 +172,9 @@ webowy), `--label` (domyślnie nazwa platformy plus nazwa hosta tej maszyny),
 `--host` (host wypisywany w adresie URL, ponieważ loopback nie jest osiągalny z
 innej maszyny) oraz `--client-url`. Ponowne uruchomienie `pair` rotuje klucz tego
 urządzenia i porzuca jego aktywne sesje. Parowanie nigdy nie tworzy obszaru
-roboczego: robi to onboarding łączącego się klienta, nadając nazwę i tworząc
-pierwszy obszar.
+roboczego. Obszary robocze tworzy tylko właściciel serwera: na kliencie właściciela onboarding
+nadaje nazwę i tworzy pierwszy z nich, a każdy inny czeka, aż właściciel utworzy dla niego
+obszar albo administrator obszaru roboczego go zaprosi.
 
 Z opcją `--client-url` wypisuje też kod QR do zeskanowania z terminala, który
 otwiera klienta webowego z już wypełnionymi danymi:
@@ -192,8 +193,7 @@ działającym kliencie. Tych dwóch nie można używać zamiennie. Zobacz
 [Sparuj urządzenie](/pl-PL/podrecznik/poradniki/parowanie-urzadzenia/).
 :::
 
-Poświadczenie wygenerowane przez `cc_server pair` **nie ma terminu ważności**; to
-wygenerowane w aplikacji zawsze wygasa po 30 dniach. Gdy urządzenie utworzone z
+Poświadczenie wygenerowane przez `cc_server pair` wygasa po 30 dniach, tak jak wygenerowane w aplikacji; uruchom `pair` ponownie dla tego samego urządzenia, aby wydać nowe. Gdy urządzenie utworzone z
 CLI przestanie być potrzebne, odwołaj je w
 **Ustawienia → Ty → Twoje urządzenia**.
 
@@ -244,6 +244,26 @@ z szyfrowanego tunelu.
 
 Serwer działa aż do `SIGINT`/`SIGTERM`, po czym zamyka się czysto.
 
+### Odczytaj wiersze startowe
+
+Dwa wiersze mówią, jak ten serwer jest skonfigurowany. Wiersz ekspozycji, wypisywany obok banera
+gotowości, zaczyna się od `cc_server exposure:` i wylicza, jak daleko serwer może być osiągnięty
+(`bind`, `tls`, `relay`, `tunnel`), czy zapisano właściciela serwera (`owner`) oraz jak agenci
+działają na tej maszynie (`sandbox`):
+
+- `sandbox=native`: każde uruchomienie agenta jest opakowane w sandbox systemu operacyjnego.
+- `sandbox=off`: uruchomiono serwer z `--sandbox off`, więc agenci wszystkich członków działają
+  na tej maszynie bez ograniczeń.
+- `sandbox=unavailable`: host nie ma backendu sandboxa (Windows albo Linux bez `bwrap` i `socat`),
+  więc startują tylko uruchomienia agentów, za które odpowiada właściciel serwera. Uruchomienia
+  wszystkich pozostałych są odrzucane komunikatem „Ten serwer nie ma piaskownicy, więc agenty
+  mogą tu uruchamiać tylko jego właściciel.”
+
+Wiersz o piaskownicy wcześniej w logu mówi to samo słowami i, gdy brakuje backendu, podaje, co
+zainstalować. Uruchamianie cudzych agentów bez piaskownicy to wybór właściciela serwera, dokonywany
+raz, dla wszystkich, przez `--sandbox off`. Zobacz
+[Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/#sprawdź-czy-uruchomienia-twojego-agenta-działają-w-sandboxie).
+
 ## Krok 5: Połącz klienta
 
 Skieruj klienta na adres URL serwera i klucz parowania z kroku 3:
@@ -269,6 +289,13 @@ webowej. Jego Service Worker kieruje ruch HTTP i WebSocket przez tę samą
 uwierzytelnioną szyfrowaną sesję co reszta klienta. `cc_server` odszyfrowuje
 każde żądanie, przekazuje je do swojego lokalnego zaplecza code-server i
 szyfruje odpowiedź z powrotem do klienta. Pliki pozostają własnością serwera.
+
+Edytor działa na serwerze jako własny użytkownik serwera, z jego terminalem, zadaniami i
+rozszerzeniami, więc tylko [właściciel serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera)
+może go otworzyć. Sesja należy do urządzenia i osoby, która ją otworzyła. Otwiera się z włączonym
+zaufaniem obszaru roboczego VS Code, więc VS Code pyta przed zaufaniem folderowi, i z wyłączonymi
+automatycznymi zadaniami, więc zadania repozytorium nigdy nie startują przy otwarciu. Pozostali
+zachowują wbudowany edytor aplikacji i widoki plików; pełny edytor nie jest im oferowany.
 
 Hostuj klienta webowego przez HTTPS lub bezpieczny origin loopback, aby Service
 Workery mogły działać. Standardowa kompilacja webowa i skrypty wydania zawierają
@@ -313,6 +340,8 @@ Logowania przez Connect kończą się kodem, który pokazuje przeglądarka, wię
 serwer nie potrzebuje dla nich publicznego adresu. Logowania przez własne
 aplikacje serwera odsyłają przeglądarkę na publiczny adres URL serwera, więc
 ustaw `--public-url` na adres, do którego przeglądarki ludzi mogą dotrzeć.
+
+To jest domyślne ustawienie serwera. Administrator obszaru roboczego może dać jednemu obszarowi roboczemu inny wybór w **Ustawienia → Obszar roboczy → Integracje**. Gdy ustawiono `CC_CONNECT_URL`, obszar roboczy nadal może przełączyć się na własne aplikacje, ale nie na własny serwer Connect; zobacz [Wybór dla każdego obszaru roboczego](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/#wybór-dla-każdego-obszaru-roboczego).
 
 Aby hostować Connect dla innych serwerów z tego serwera, ustaw
 `CC_SERVER_CONNECT_HOST=on`; zobacz
@@ -365,7 +394,7 @@ klucza parowania.
 
 Dwie rzeczy, o których warto wiedzieć, zanim wystawisz port poza loopback:
 
-- **MCP działa w trybie fail-closed poza hostem.** Powierzchnia MCP bez tokenu odpowiada tylko na loopbacku. Powiązanie `any` tego nie rozszerza — żądanie spoza hosta jest odrzucane komunikatem „MCP requires a bearer token to answer non-loopback clients”, dopóki nie skonfigurujesz tokenu (`mcp.setToken` albo **Ustawienia → Serwer → Serwery MCP**).
+- **MCP zawsze potrzebuje swojego tokenu.** Serwer tworzy token MCP przy pierwszym uruchomieniu, a każde żądanie, także z loopbacku, musi go wysłać jako `Authorization: Bearer <token>`. Nie da się tego wyłączyć; właściciel serwera odczytuje go i rotuje w **Ustawienia → Serwer → Serwery MCP**. Żądania z przeglądarki, do nieznanego `Host` albo `POST`, który nie jest JSON-em, są odrzucane, zanim sprawdzony zostanie token. Zobacz [Użyj serwera MCP](/pl-PL/podrecznik/poradniki/serwer-mcp/).
 - **`GET /healthz` jest celowo nieuwierzytelnione**, ma wieloznaczne CORS i publikuje identyfikator serwera, jego nazwę, odcisk tożsamości i wersję kompilacji. Klienty potrzebują odcisku, aby przypiąć serwer, więc jest to zamierzone — oznacza to jednak, że każdy osiągalny `cc_server` ujawnia tyle każdemu, kto o to zapyta.
 
 ## Powiązane poradniki

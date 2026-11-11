@@ -12,8 +12,8 @@
 /// whose operator exported `GITHUB_CLIENT_SECRET` must not hand it to a pipeline
 /// step, an agent or an MCP server. Explicit values are the caller's own
 /// decision and are not filtered: that is how a broker-minted one-repo
-/// `GH_TOKEN` reaches an agent run, and how the owner's commit signer reaches
-/// their SSH agent.
+/// `GH_TOKEN` reaches a pipeline shell step, and how the owner's commit signer
+/// reaches their SSH agent.
 ///
 /// Pure: the host map is passed in (`Platform.environment` in the infra
 /// layer), so the policy itself has no `dart:io`.
@@ -47,6 +47,12 @@ final class ChildEnvironment {
     'ALL_PROXY',
     'SSL_CERT_FILE',
     'SSL_CERT_DIR',
+    // Nix's CA bundle. Nix-packaged tools read their trust anchors from it:
+    // the nixpkgs `claude` wrapper defaults to the macOS system store, which
+    // cannot verify Anthropic's chain, and only adds this bundle when it sees
+    // the variable. Without it every Claude Code run fails TLS before it
+    // starts.
+    'NIX_SSL_CERT_FILE',
     // macOS: the default text encoding CoreFoundation tools read.
     '__CF_USER_TEXT_ENCODING',
     // Windows: a process cannot start, resolve a program or find its profile

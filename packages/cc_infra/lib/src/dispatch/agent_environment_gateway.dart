@@ -9,6 +9,7 @@ import 'package:cc_domain/features/guardrails/domain/services/action_guard_servi
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_harness/tools.dart' show ActionClass;
+import 'package:cc_infra/src/environments/environment_host_approval.dart';
 import 'package:meta/meta.dart';
 
 /// Who is asking, taken from the run's lease and never from the request.
@@ -90,7 +91,20 @@ typedef AgentHostCommandRunner =
 /// What the gateway needs to know about a space.
 abstract interface class AgentEnvironmentContext {
   /// The definition the space's environment uses, or the one it could start.
+  ///
+  /// A pass-through tool is that definition's, run on the host, so this
+  /// throws `EnvironmentHostUnapprovedException` when the definition runs on
+  /// the host and the current server owner has not approved it.
   Future<EnvironmentDefinition?> definitionFor(
+    String workspaceId,
+    String spaceId,
+  );
+
+  /// The compose project the `docker` shim may reach: that of the space's
+  /// current environment, when it runs compose on this host. Null when there
+  /// is none, or it runs in a rig. Throws `EnvironmentHostUnapprovedException`
+  /// when the current server owner has not approved its definition.
+  Future<AgentComposeProject?> hostComposeProject(
     String workspaceId,
     String spaceId,
   );
@@ -108,6 +122,21 @@ abstract interface class AgentEnvironmentContext {
   Future<bool> isInside(String path, List<String> roots);
 }
 
+/// The compose project the `docker` shim runs against.
+class AgentComposeProject {
+  /// Creates an [AgentComposeProject].
+  const AgentComposeProject({required this.name, required this.directory});
+
+  /// The project name, passed as `-p`.
+  final String name;
+
+  /// Where the shim runs: the environment's state directory, which the
+  /// server writes and no agent can. Never a worktree, so no `compose.yaml`,
+  /// override file or `.env` (which can set `COMPOSE_FILE`) an agent wrote
+  /// is in the directory compose looks in.
+  final String directory;
+}
+
 /// Sub-commands of `docker compose` an agent may use.
 const Set<String> kAgentComposeCommands = {
   'ps',
@@ -118,9 +147,45 @@ const Set<String> kAgentComposeCommands = {
   'top',
 };
 
-/// The only flags `docker compose exec` accepts here. An allowlist, because
-/// a new Docker flag must not widen what an agent can do by default.
-const Set<String> _allowedComposeExecFlags = {'-T', '--no-tty', '--no-TTY'};
+/// The options each sub-command accepts here, and whether each takes a value.
+///
+/// An allowlist, because a new Docker flag must not widen what an agent can do
+/// by default, and because compose's own options (`-f`, `-p`,
+/// `--project-directory`, `--env-file`, `--profile`) would retarget the
+/// command or read a host file wherever on the line they appear.
+const Map<String, Map<String, bool>> kAgentComposeOptions = {
+  'ps': {
+    '-a': false,
+    '--all': false,
+    '-q': false,
+    '--quiet': false,
+    '--services': false,
+    '--no-trunc': false,
+    '--format': true,
+    '--status': true,
+  },
+  'logs': {
+    '-n': true,
+    '--tail': true,
+    '-t': false,
+    '--timestamps': false,
+    '--no-color': false,
+    '--no-log-prefix': false,
+    '--since': true,
+    '--until': true,
+  },
+  'exec': _composeNoTtyFlags,
+  'port': {'--protocol': true, '--index': true},
+  'restart': {'-t': true, '--timeout': true, '--no-deps': false},
+  'top': {},
+};
+
+/// The only flags `docker compose exec` accepts here, all of them "no TTY".
+const Map<String, bool> _composeNoTtyFlags = {
+  '-T': false,
+  '--no-tty': false,
+  '--no-TTY': false,
+};
 
 /// The action classes each environment operation carries.
 ///
@@ -194,6 +259,8 @@ class AgentEnvironmentGateway {
         return await _docker(caller, arguments);
       }
       return await _passthrough(caller, tool, arguments);
+    } on EnvironmentHostUnapprovedException catch (e) {
+      return AgentEnvironmentResult(exitCode: 5, stderr: e.message);
     } on Exception catch (e) {
       return AgentEnvironmentResult(exitCode: 1, stderr: '$e');
     }
@@ -219,7 +286,9 @@ class AgentEnvironmentGateway {
       actionSummary: summary,
       onBehalfOfUserId: caller.actingUserId,
       runId: caller.runId,
-      request: ActionRequest(classes: classes),
+      // The summary is the command line the agent ran: command rules see it,
+      // the card shows it, and "Approve for 8 hours" covers exactly it.
+      request: ActionRequest(classes: classes, command: summary),
       autonomy: caller.autonomy,
     );
     if (verdict.allowed) {
@@ -359,19 +428,16 @@ class AgentEnvironmentGateway {
     if (refusal != null) {
       return refusal;
     }
-    final variables = await _environments.terminalEnvironment(
+    final project = await _context.hostComposeProject(
       caller.workspaceId,
       caller.spaceId,
     );
-    final project = variables['COMPOSE_PROJECT_NAME'];
-    final directory = await _context.workingDirectory(
-      caller.workspaceId,
-      caller.spaceId,
-    );
-    if (project == null || directory == null) {
+    if (project == null) {
       return const AgentEnvironmentResult(
         exitCode: 5,
-        stderr: 'This space has no running compose environment',
+        stderr:
+            'This space has no compose environment on this host. '
+            'Use cc-env exec to reach one in a rig',
       );
     }
     final sub = arguments[1];
@@ -388,13 +454,15 @@ class AgentEnvironmentGateway {
     if (refused != null) {
       return refused;
     }
-    // By project name alone. This runs on the host with the operator's SSH
-    // agent, and the worktree's compose file is the agent's to edit: naming it
-    // would let `include: git@…` fetch from anywhere, outside sandbox egress.
+    // By project name alone, from the state directory. This runs on the host
+    // with the operator's SSH agent, and the worktree's compose file is the
+    // agent's to edit: naming it would let `include: git@…` fetch from
+    // anywhere, outside sandbox egress. The variables are these two over the
+    // operator's own host environment; nothing here comes from the run.
     return _runHost(
       'docker',
-      composeShimArguments(arguments, project: project),
-      workingDirectory: directory,
+      composeShimArguments(arguments, project: project.name),
+      workingDirectory: project.directory,
       environment: const {
         'COMPOSE_EXPERIMENTAL_GIT_REMOTE': '0',
         'COMPOSE_EXPERIMENTAL_OCI_REMOTE': '0',
@@ -423,7 +491,10 @@ class AgentEnvironmentGateway {
       return AgentEnvironmentResult.unavailable('$tool ${arguments.join(' ')}');
     }
     for (final argument in arguments) {
-      if (rule.denyFlags.contains(argument.split('=').first)) {
+      final option = readOption(argument);
+      if (option != null &&
+          (rule.denyFlags.contains(option.name) ||
+              option.shorts.any(rule.denyFlags.contains))) {
         return AgentEnvironmentResult(
           exitCode: 5,
           stderr: '$argument is not available in Control Center agent runs',
@@ -512,8 +583,11 @@ class AgentEnvironmentGateway {
 /// Why a `docker` invocation is refused, or null when it may run.
 ///
 /// Only `docker compose <allowed>` passes, with nothing between `compose` and
-/// the sub-command: `-f`, `-p` or `--project-directory` there would point the
-/// command at a stack that isn't this space's.
+/// the sub-command, and after it only that sub-command's
+/// [kAgentComposeOptions]: `-f`, `-p`, `--project-directory` or `--env-file`
+/// anywhere would point the command at a stack that isn't this space's, or
+/// read a host file. Everything else is a service name, a port, or (after
+/// `exec`'s service) the command run inside that service's container.
 @visibleForTesting
 AgentEnvironmentResult? validateComposeShim(List<String> arguments) {
   if (arguments.length < 2 ||
@@ -522,46 +596,82 @@ AgentEnvironmentResult? validateComposeShim(List<String> arguments) {
     return AgentEnvironmentResult.unavailable('docker ${arguments.join(' ')}');
   }
   final sub = arguments[1];
+  final options = kAgentComposeOptions[sub] ?? const {};
   final rest = arguments.sublist(2);
-  if (sub == 'logs' && rest.any((a) => a == '-f' || a == '--follow')) {
-    return const AgentEnvironmentResult(
-      exitCode: 5,
-      stderr: '--follow is not available in Control Center agent runs',
-    );
-  }
-  if (sub == 'exec') {
-    for (final argument in rest) {
-      if (argument == '--') {
+  for (var index = 0; index < rest.length; index++) {
+    final argument = rest[index];
+    final option = readOption(argument);
+    if (option == null) {
+      if (sub == 'exec' || argument == '--') {
+        // The service, then its container's command; or only operands.
         break;
       }
-      if (!argument.startsWith('-')) {
-        break;
-      }
-      if (!_allowedComposeExecFlags.contains(argument)) {
-        return AgentEnvironmentResult(
-          exitCode: 5,
-          stderr: '$argument is not available in Control Center agent runs',
-        );
-      }
+      continue;
+    }
+    // A bundle or an attached value is never on the list: each option is
+    // spelled out on its own.
+    final takesValue = option.shorts.isEmpty ? options[option.name] : null;
+    if (takesValue == null || (!takesValue && option.value != null)) {
+      return AgentEnvironmentResult(
+        exitCode: 5,
+        stderr: '$argument is not available in Control Center agent runs',
+      );
+    }
+    if (takesValue && option.value == null) {
+      index++;
     }
   }
   return null;
 }
 
+/// How [argument] reads as an option, or null when it is an operand (`-`,
+/// `--` or anything not starting with `-`).
+///
+/// `name` is everything before an `=`. A single-dash name longer than one
+/// letter is also every short option it could be read as (`shorts`): a
+/// bundle (`-abc` is `-a`, `-b`, `-c`) or a short option with its value
+/// attached (`-Xvalue` starts with `-X`). Which it is depends on the tool, so
+/// a refusal checks both and an allowlist accepts neither.
+@visibleForTesting
+({String name, String? value, List<String> shorts})? readOption(
+  String argument,
+) {
+  if (argument == '-' || argument == '--' || !argument.startsWith('-')) {
+    return null;
+  }
+  final equals = argument.indexOf('=');
+  final name = equals > 0 ? argument.substring(0, equals) : argument;
+  final value = equals > 0 ? argument.substring(equals + 1) : null;
+  final single = !name.startsWith('--') && name.length > 2;
+  return (
+    name: name,
+    value: value,
+    shorts: single
+        ? [for (final letter in name.substring(1).split('')) '-$letter']
+        : const [],
+  );
+}
+
 /// The argv the shim really runs: pinned to [project], and `exec` never gets a
-/// TTY.
+/// TTY. Only the options before `exec`'s service count: a `-T` in the
+/// container's command is that command's.
 @visibleForTesting
 List<String> composeShimArguments(
   List<String> arguments, {
   required String project,
-}) => [
-  'compose',
-  '-p',
-  project,
-  arguments[1],
-  if (arguments[1] == 'exec' && !arguments.contains('-T')) '-T',
-  ...arguments.sublist(2),
-];
+}) {
+  final rest = arguments.sublist(2);
+  final options = rest.takeWhile((a) => a.startsWith('-') && a != '--');
+  return [
+    'compose',
+    '-p',
+    project,
+    arguments[1],
+    if (arguments[1] == 'exec' && !options.any(_composeNoTtyFlags.containsKey))
+      '-T',
+    ...rest,
+  ];
+}
 
 /// [arguments] with the environment's name forced into position, or null when
 /// the rule needs a name and none exists.
@@ -621,31 +731,11 @@ String filterJsonToName(String stdout, String name) {
 }
 
 /// The shim every name resolves to. It reads its own name, so one script
-/// serves `cc-env`, `docker` and each declared tool.
-String agentShimScript({
-  required String tokenHeader,
-  required String tokenEnvKey,
-  required String gatewayEnvKey,
-}) =>
+/// serves `cc-env`, `docker` and each declared tool, and hands the call to
+/// the agent run client ([clientCommand], its command already quoted for
+/// `sh`), which posts it to the gateway.
+String agentShimScript({required String clientCommand}) =>
     '''
-#!/bin/bash
-tool=\$(basename "\$0")
-out=\$(mktemp) || exit 1
-head=\$(mktemp) || exit 1
-trap 'rm -f "\$out" "\$head"' EXIT
-if ! { [ \$# -eq 0 ] || printf '%s\\0' "\$@"; } | curl --disable --silent --show-error --noproxy '*' \\
-  --connect-timeout 5 --max-time 3600 \\
-  --header "$tokenHeader: \$$tokenEnvKey" \\
-  --header "X-CC-Env-Tool: \$tool" \\
-  --header 'Content-Type: application/octet-stream' \\
-  --data-binary @- --dump-header "\$head" --output "\$out" \\
-  "\$$gatewayEnvKey/agent/env"; then
-  printf '%s\\n' 'Control Center gateway is unavailable.' >&2
-  exit 5
-fi
-cat "\$out"
-err=\$(sed -n 's/^[Xx]-[Cc][Cc]-[Ss]tderr: *//p' "\$head" | tr -d '\\r')
-[ -n "\$err" ] && printf '%s' "\$err" | base64 -d >&2
-code=\$(sed -n 's/^[Xx]-[Cc][Cc]-[Ee]xit-[Cc]ode: *//p' "\$head" | tr -d '\\r')
-exit "\${code:-1}"
+#!/bin/sh
+exec $clientCommand env "\$(basename "\$0")" "\$@"
 ''';

@@ -2,7 +2,7 @@
 title: Dağıtım ve istemciler
 description: Control Center’ın ince istemci mimarisinin headless bir sunucuyu masaüstü, web ve mobil istemcilerinden nasıl ayırdığı.
 slug: tr-TR/kilavuz/kavramlar/dagitim
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center tek bir program değildir. Bir **ince istemci mimarisidir**:
@@ -132,6 +132,8 @@ code-server arka ucuna sahip olan `cc_server`'a yönlendirir. Tarayıcının Ser
 Worker'lar için HTTPS'e ya da güvenli bir loopback bağlamına ihtiyacı vardır. Yerel
 istemciler ise yetenekle sınırlandırılmış bir loopback cephesi kullanır.
 
+Yalnızca [sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) gömülü code-server düzenleyicisini açabilir: sunucuda, sunucunun kendi kullanıcısı olarak çalışır. Bir oturum, onu açan cihaza ve kişiye aittir. VS Code çalışma alanı güvenini açık olarak açılır; böylece VS Code bir klasöre güvenmeden önce sorar ve otomatik görevler kapalıdır. Diğerleri yerleşik tek dosyalı düzenleyiciyi ve dosya görünümlerini kullanmayı sürdürür.
+
 ### Telefon yardımcı istemcisi (cc_remote)
 
 **Remote** uygulaması ayrı, daha hafif bir istemcidir —
@@ -203,8 +205,10 @@ yürütür.
 
 İki katman aynı biçimde sandbox uygulamaz. `cc_server`, kendi yürüttüğü
 çalıştırmaları, bir arka ucun bulunduğu yerlerde ana makinenin işletim sistemi
-sandbox’ına sarar — macOS’ta Seatbelt, Linux ve WSL2’de bubblewrap — ve
-Windows’ta ya da `bwrap` ile `socat` yokken diğer sınırlara geri düşer.
+sandbox’ına sarar — macOS’ta Seatbelt, Linux ve WSL2’de bubblewrap. Windows’ta ya
+da `bwrap` ile `socat` yokken yalnızca sunucu sahibinin sorumlu olduğu
+çalıştırmaları başlatır, başkalarınınkini reddeder; sahip `--sandbox off` ile
+başlattıysa bu, her üyenin ajanlarını sınırsız çalıştırır.
 **`cc_worker` hiç sandbox uygulamaz.** Sunucunun işleri platforma göre
 yerleştirebilmesi için bir `sandbox` yeteneği bildirir, ama worker’da bunu
 uygulayan hiçbir şey yoktur: kiralanmış bir iş doğrudan başlatılır ve sınırlarını
@@ -253,8 +257,7 @@ bağlantılar da dâhildir:
 İlk bağlantıda bu parmak izini güvenilir bir QR ya da başka bir güvenilir kanal
 üzerinden doğrulayın: tek başına imzalı bir ilk temas, anahtarı kimin sağladığını
 doğrulayamaz. Kimlik değişirse istemci kapalı yönde başarısız olur; uyuşmazlığı
-yok saymak yerine güvenilir bir kanal üzerinden yeniden eşleştirin. Eski istemciler
-ve düz metin RPC bağlanamaz. TLS yine de tarayıcı kaynakları, önyükleme ve genel üst
+yok saymak yerine güvenilir bir kanal üzerinden yeniden eşleştirin. Düz metin RPC kabul edilmez. TLS yine de tarayıcı kaynakları, önyükleme ve genel üst
 veri için gereklidir; `--insecure` sunucunun dış dinleyicisini etkiler, zorunlu
 şifrelenmiş oturumu değil.
 

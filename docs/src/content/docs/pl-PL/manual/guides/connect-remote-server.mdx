@@ -2,7 +2,7 @@
 title: Połącz się ze zdalnym serwerem
 description: Skieruj aplikację desktopową lub klienta webowego na serwer cc_server działający gdzie indziej i przełączaj się między serwerami bez ponownego uruchamiania.
 slug: pl-PL/podrecznik/poradniki/laczenie-ze-zdalnym-serwerem
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Każdy klient to renderer działający nad serwerem `cc_server`, do którego należą dane. Aplikacja desktopowa może uruchomić taki serwer u siebie; aplikacja webowa pod [app.usectrl.dev](https://app.usectrl.dev) nie może, bo karta przeglądarki nie może hostować serwera. Tak czy inaczej, ten poradnik kieruje klienta na serwer działający gdzie indziej — mały komputer, maszynę wirtualną w chmurze albo serwer budowania.
@@ -80,6 +80,8 @@ webowej; jego Service Worker przekazuje żądania przez uwierzytelnioną szyfrow
 zaplecza code-server na `cc_server`. Hostuj klienta webowego przez HTTPS lub bezpieczny
 loopback, aby Service Workery były dostępne. Klienci natywni korzystają z fasady
 loopback o ograniczonym zakresie uprawnień.
+
+Tylko właściciel serwera może otworzyć wbudowany edytor code-server: działa on na serwerze jako własny użytkownik serwera. Sesja należy do urządzenia i osoby, która ją otworzyła. Uruchamia się z włączonym zaufaniem do obszaru roboczego VS Code, więc VS Code pyta przed zaufaniem folderowi, i z wyłączonymi automatycznymi zadaniami. Wszyscy pozostali zachowują wbudowany edytor pojedynczych plików i widoki plików.
 :::
 
 ### Czego przeglądarka nie robi
@@ -94,8 +96,7 @@ powierzchni wymaga natywnego okna lub urządzeń samej maszyny:
 
 Dwie funkcje zachowują się inaczej, zamiast być nieobecne. **Nagrywanie** spotkania działa
 w przeglądarce: przechwytuje mikrofon oraz udostępniony ekran zawierający ścieżkę audio.
-**Otwórz w IDE** też działa, ale prosi serwer o uruchomienie edytora na ekranie
-_serwera_, więc przycisk ukrywa się na hoście headless bez zainstalowanych edytorów.
+Przycisk nazwany od twojego edytora (na przykład **Otwórz w VS Code**) prosi serwer o uruchomienie edytora na ekranie _serwera_, więc jest oferowany tylko właścicielowi serwera, a przycisk ukrywa się na hoście headless bez zainstalowanych edytorów.
 
 ## Rozwiązywanie problemów
 

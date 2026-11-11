@@ -28,6 +28,26 @@ class DaoSandboxExecGrantRepository implements SandboxExecGrantRepository {
           .toList();
 
   @override
+  Future<SandboxExecGrantPage> searchGrants(
+    String workspaceId, {
+    String? query,
+    required int limit,
+    int offset = 0,
+  }) async {
+    final dao = _dao(workspaceId);
+    final rows = await dao.searchGrants(
+      workspaceId,
+      query: query,
+      limit: limit,
+      offset: offset,
+    );
+    return (
+      grants: rows.map(_mapper.fromRow).toList(),
+      total: await dao.countGrants(workspaceId, query: query),
+    );
+  }
+
+  @override
   Stream<List<SandboxExecGrant>> watchGrants(String workspaceId) =>
       _dao(workspaceId)
           .watchGrants(workspaceId)

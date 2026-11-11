@@ -5,6 +5,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/keybindings/keybinding_dispatcher.dart';
 import 'package:control_center/core/keybindings/keybinding_providers.dart';
+import 'package:control_center/features/inbox/presentation/widgets/inbox_pr_row.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_rail.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/user_profiles/presentation/widgets/github_profile_pr_queue.dart';
@@ -304,8 +305,12 @@ void main() {
         .position;
     expect(position.maxScrollExtent, greaterThan(280));
 
-    position.jumpTo(position.maxScrollExtent);
-    await tester.pumpAndSettle();
+    // Rows build lazily, so the extent is an estimate until the last rows
+    // lay out: jump until it stops growing.
+    do {
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pumpAndSettle();
+    } while (position.pixels < position.maxScrollExtent);
 
     expect(find.text('profile-header').hitTestable(), findsNothing);
     expect(tester.getTopLeft(filterChrome).dy, lessThan(filterTopAtRest));
@@ -320,6 +325,7 @@ void main() {
       tester.getTopLeft(headerFinder).dy,
       greaterThanOrEqualTo(tester.getBottomLeft(filterChrome).dy - 1),
     );
-    expect(find.text('Change 40'), findsOneWidget);
+    // The list's last row is reachable at the bottom of the scroll.
+    expect(find.byType(InboxPrRow).last.hitTestable(), findsOneWidget);
   });
 }

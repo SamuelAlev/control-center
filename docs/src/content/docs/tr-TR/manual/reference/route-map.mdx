@@ -2,7 +2,7 @@
 title: Rota haritası
 description: Control Center'ın kaydettiği her rota, ekranı ve sorgu parametreleriyle birlikte.
 slug: tr-TR/kilavuz/referans/rota-haritasi
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Uygulama kabuğu
@@ -11,7 +11,7 @@ Uygulama kabuğu (`ControlCenterLayout`), çalışma alanı içindeki her rotay�
 
 Kapı, **oturum açmış kullanıcı için** en az bir forge bağlı olduğunda ve en az bir çalışma alanı var olduğunda tamamlanır.
 
-Eksik bir kimlik bilgisi ile eksik bir kurulum ayrı ele alınır ve ayırt edici ölçüt, çağıranın kendi `identity.me` değerinden okunan `users.onboarding_finished_at` alanıdır — asla “çalışma alanları var”, çünkü bu, biri hiç oluşturmadığı bir çalışma alanına davet edildiği anda yanlış olur. Bağlı forge yokken kurulumu tamamlamış bir hesap uygulamada kalır: çalışma alanı kabuğu, oturum açmanın bulunduğu **Ayarlar → Çalışma alanı → Profil ve kimlik** bölümüne bağlantı veren bir uyarı gösterir. Tamamlamamış olan ise `/onboarding` adresine gider. Bayrak hâlâ bilinmezken koruma tahmin yürütmek yerine açılış ekranını tutar, çünkü onboarding'den geri asla yönlendirme yapmaz.
+Eksik bir kimlik bilgisi ile eksik bir kurulum ayrı ele alınır ve ayırt edici ölçüt, çağıranın kendi `identity.me` değerinden okunan `users.onboarding_finished_at` alanıdır — asla “çalışma alanları var”, çünkü bu, biri hiç oluşturmadığı bir çalışma alanına davet edildiği anda yanlış olur. Bağlı forge yokken kurulumu tamamlamış bir hesap uygulamada kalır: çalışma alanı kabuğu, oturum açmanın bulunduğu **Ayarlar → Siz → Profil** bölümüne bağlantı veren bir uyarı gösterir. Tamamlamamış olan ise `/onboarding` adresine gider. Bayrak hâlâ bilinmezken koruma tahmin yürütmek yerine açılış ekranını tutar, çünkü onboarding'den geri asla yönlendirme yapmaz.
 
 ## Öneksiz rotalar
 
@@ -65,7 +65,7 @@ Sohbetlerin ve ileti dizilerinin **kendi rotası yoktur** — bir ileti dizisi `
 
 ## Ayarlar rotaları
 
-`/settings`, `/settings/you/appearance` adresine yönlendirir. Kenar çubuğundaki ayarlar düğmesi ve `Cmd/Ctrl + ,` de `/settings/you/appearance` adresine gider.
+`/settings`, `/settings/you/profile` adresine yönlendirir. Kenar çubuğundaki ayarlar düğmesi ve `Cmd/Ctrl + ,` de `/settings/you/profile` adresine gider.
 
 Ayarlar yolları **kapsama** göre ad alanına ayrılır — `you/`, `workspace/`, `server/` — çünkü bu bölüm bir değişikliğin kimi etkilediğini belirtir. İki yol bu ad alanı düzeninden öncesine aittir ve URL'de kapsamlı değildir: `/settings/memory` ve `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Ayarlar yolları **kapsama** göre ad alanına ayrılır — `you/`, `workspace/
 
 | Yol                           | Ekran                                                             |
 | ----------------------------- | ---------------------------------------------------------------- |
-| `/settings/you/appearance`    | Tema, dil, tipografi, düzenleyici teması (ayarların açılış sayfası) |
-| `/settings/you/notifications` | Olay bazında anahtarlar, sessiz saatler                            |
+| `/settings/you/profile`       | Bu sunucudaki hesabınız: ad, kullanıcı adı, resim ve oturum açma (ayarların açılış sayfası) |
+| `/settings/you/profile?section=accounts` | Bağlı hesaplar: kendi kod barındırma, bilet, takvim ve sohbet oturum açmalarınız ve sohbetten bilet taslakları |
+| `/settings/you/appearance`    | Tema, dil, tipografi, düzenleyici teması |
 | `/settings/you/audio`         | Mikrofon, dikte, toplantı algılama ve ses manzarası çıkışı         |
+| `/settings/you/notifications` | Olay bazında anahtarlar, sessiz saatler                            |
+| `/settings/you/commits`       | Sizin başlattığınız işlerden yapılan commit'lerde kimin kredilendirildiği ve commit imzalama anahtarınız |
+| `/settings/you/desktop`       | Yalnızca masaüstü uygulaması: tepsi simgesi, pencereyi kapatma ve oturum açılışında başlatma |
 | `/settings/you/devices`       | Eşleştirilmiş telefonlar ve uzaktan kontrol                        |
 | `/settings/you/newsfeed`      | Akış yönetimi: kaynaklar, yenileme, okundu durumu                  |
+| `/settings/you/links`         | Control Center dışındaki bağlantıların açıldığı yer                |
 
 ### Çalışma alanı
 
 | Yol                                | Ekran                                                                                                            |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Bu çalışma alanındaki profil ve kimlik: ad, git yazarı, kod barındırma, takvim                                    |
-| `/settings/workspace/general`      | Ad, logo, gizli yol dışlamaları, inceleme yayılımı, dal adlandırma, eşitleme sağlığı, sohbet köprüleri, tehlikeli bölge |
+| `/settings/workspace/profile`      | Bu çalışma alanındaki profil ve kimlik: ad, e-posta, git yazarı                                                   |
+| `/settings/workspace/general`      | Ad, logo, gizli yol dışlamaları, inceleme yayılımı, dal adlandırma, tehlikeli bölge                             |
+| `/settings/workspace/integrations` | Connect seçimi, GitHub App ve otomasyon belirteçleri, bilet sağlayıcısı ve otomasyonu, eşitleme sağlığı, çalışma alanının kendi sağlayıcı uygulamaları, sohbet köprüleri, GIF'ler. Her sağlayıcı grubu sizin kendi hesabınızı adlandırır ve Bağlı hesaplar sayfasına bağlanır |
 | `/settings/workspace/meetings`     | Toplantı notu şablonları ve kayıtlı ses profilleri                                                                |
-| `/settings/workspace/members`      | Kadro, davetler, denetim kaydı. Denetim kaydı isteğe bağlı `?cursor=` ile sayfalanır                               |
+| `/settings/workspace/members`      | Kadro ve davetler                               |
 | `/settings/workspace/repositories` | Bu çalışma alanında kayıtlı depolar                                                                              |
 | `/settings/workspace/environments` | Ortam tanımları: alanların neleri başlatabileceği ve worktree'lerinin hangi görevleri çalıştırdığı |
 | `/settings/workspace/agents`       | Kayıtlı ajan kimlikleri                                                                                          |
@@ -108,6 +114,8 @@ Ayarlar yolları **kapsama** göre ad alanına ayrılır — `you/`, `workspace/
 | `/settings/server/rigs`        | Rigs: bu ana makinenin açabildikleri, temel imajlar, özel imajlar, çalışan makineler            |
 | `/settings/server/sandbox`     | Sandbox çalıştırma izinleri: ajanların depolarınızın çalışma kopyasından çalıştırabileceği programlar |
 | `/settings/server/diagnostics` | Tanılama ve gizlilik: sandbox, gömme, günlükleme, çökme raporlama             |
+| `/settings/server/people`      | Bu sunucudaki kişiler ve her adresin onaylı olup olmadığı (yalnızca sunucu sahibi)       |
+| `/settings/server/audit`       | Denetim kaydı: sunucunun ve yönettiğiniz çalışma alanlarının                            |
 | `/settings/server/backup`      | Yedekleme ve geri yükleme: kurulum anlık görüntüleri, çalışma alanı başına dışa aktarma, içe aktarma ve silme |
 | `/settings/server/about`       | Hakkında ve güncellemeler                                                                     |
 

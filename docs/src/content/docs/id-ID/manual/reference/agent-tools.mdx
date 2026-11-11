@@ -2,7 +2,7 @@
 title: Alat agen bawaan
 description: Permukaan alat yang diberikan harness bawaan kepada agen — server bahasa, pencarian struktural, debugger, kernel, dan kontrol pekerja — beserta setiap operasi dan argumennya.
 slug: id-ID/panduan-pengguna/referensi/alat-agen
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Berikut adalah alat **terikat server** yang didaftarkan langsung oleh runtime agen bawaan — server bahasa, pencarian struktural, debugger, kernel, pertanyaan, dan kontrol pekerja — berbeda dengan [alat MCP](/id-ID/panduan-pengguna/referensi/alat-mcp/) yang dijembatani ke dalamnya serta alat berkas, pencarian, dan shell generik dari runtime harness. Alat-alat ini tidak ada di registri MCP: klien MCP eksternal tidak akan melihatnya, karena masing-masing terikat pada sumber daya sisi server yang hidup — proses server bahasa, adapter debug, interpreter — yang menjadi milik satu run.
@@ -24,6 +24,8 @@ Setiap alat mendeklarasikan sebuah tingkat, dan tingkat itulah yang menentukan *
 ## `lsp` — kueri server bahasa
 
 Didaftarkan ketika run memiliki supervisor server bahasa dan direktori kerja. Apakah sebuah server benar-benar dapat menjawab dideteksi pada saat pemanggilan, sebagai sebuah **irisan**: penanda root harus ada *dan* biner server harus dapat di-resolve. Salah satu saja berarti tidak ada server yang dimulai — `status` yang mengatakannya — alih-alih tebakan diam-diam.
+
+Server hanya berasal dari tabel bawaan; `lsp.json` milik repositori tidak dibaca. Dalam run yang di-sandbox, setiap run memiliki sesi server bahasanya sendiri, sehingga server dimulai lagi pada setiap run. Biner lokal proyek (`node_modules/.bin`) hanya dipakai saat run di-sandbox, dan root proyek tidak pernah di-resolve di atas direktori kerja run.
 
 Posisi dialamatkan dengan `line` ditambah substring `symbol`, tidak pernah dengan kolom. Model yang diminta memakai kolom akan menebak, dan tebakan yang salah me-resolve ke simbol lain pada baris yang sama — jawaban yang tampak benar padahal membahas hal lain. Menghilangkan `symbol` pada aksi navigasi adalah galat, bukan tebakan kolom pertama.
 
@@ -117,7 +119,7 @@ Setiap berkas dibandingkan dengan konten yang ditangkap pada saat staging, dan k
 
 Didaftarkan ketika run memiliki supervisor sesi debug, direktori kerja, dan id percakapan. Apakah sebuah adapter benar-benar dapat dimulai dideteksi pada saat pemanggilan, dengan aturan irisan yang sama seperti server bahasa (penanda root *dan* biner). Bertingkat `exec`; tidak aman untuk paralel (sebuah sesi adalah status yang bertahan antar panggilan, sehingga `continue` yang menyalip `stack` akan membaca frame yang sudah bergeser).
 
-Satu sesi per percakapan, dengan TTL yang tegas (30 menit). `launch` kedua ditolak alih-alih diam-diam menggantikan yang pertama.
+Satu sesi per percakapan, dengan TTL yang tegas (30 menit). `launch` kedua ditolak alih-alih diam-diam menggantikan yang pertama. Dalam run yang di-sandbox, sesi mempertahankan sandbox-nya antar giliran hingga berakhir, jadi paling lama selama 30 menit tersebut.
 
 | Operasi       | Argumen                       | Catatan                                        |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Satu sesi per percakapan, dengan TTL yang tegas (30 menit). `launch` kedua ditol
 | `status`      | —                             | Apakah ada sesi yang berjalan, dan di mana ia berhenti |
 | `breakpoints` | `file`, `lines[]`             | `lines` kosong menghapus breakpoint di berkas itu. Dapat ditetapkan **sebelum** peluncuran |
 | `launch`      | `program`, `args[]`           | Menjalankan program dalam keadaan berhenti di breakpoint Anda |
-| `attach`      | `port`                        | Menyambung ke debuggee yang sudah berjalan     |
+| `attach`      | `port`                        | Menyambung ke debuggee yang sudah berjalan pada salah satu port teruskan milik run; port lain ditolak sebelum apa pun dimulai |
 | `continue`    | `thread_id?`                  | Menjalankan sampai titik henti berikutnya      |
 | `pause`       | `thread_id?`                  | Menghentikannya di tempatnya sekarang          |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Bergerak satu langkah                  |
@@ -146,7 +148,7 @@ Satu sesi per percakapan, dengan TTL yang tegas (30 menit). `launch` kedua ditol
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` lebih memilih `.venv/bin` atau `venv/bin` milik proyek daripada `$PATH`: python dari `$PATH` adalah lingkungan yang berbeda, dan menyambung dari lingkungan yang salah gagal dengan cara yang terbaca sebagai kode rusak.
+`debugpy` lebih memilih `.venv/bin` atau `venv/bin` milik proyek daripada `$PATH` saat run di-sandbox: python dari `$PATH` adalah lingkungan yang berbeda, dan menyambung dari lingkungan yang salah gagal dengan cara yang terbaca sebagai kode rusak. Tanpa sandbox ia hanya memakai `$PATH`, sehingga sebuah repositori tidak dapat memilih interpreter yang berjalan di host.
 
 ---
 
@@ -176,7 +178,7 @@ Jembatan itu **masuk kembali ke registri alat harness**, sehingga pagar pengaman
 Batas waktu sel adalah anggaran *ketidakaktifan* (default 5 menit) dan **ditangguhkan** selama panggilan yang dijembatani belum selesai, sehingga sel yang menyebar ke subagen tidak dimatikan di tengah penyebaran.
 
 :::note[Di mana kernel berjalan]
-Di dalam enclosure percakapan bila percakapan itu memilikinya, dan di host bila tidak. Ia tidak menyalakan enclosure untuk sampai ke sana — aturan yang sama yang mencegah tab rig memulai otomatis.
+Di dalam enclosure percakapan bila percakapan itu memilikinya; bila tidak, di dalam sandbox OS run di host. Dengan sandbox dimatikan atau tidak tersedia, ia berjalan tanpa kurungan dan `eval` meminta persetujuan eksekusi host. Ia tidak menyalakan enclosure untuk sampai ke sana — aturan yang sama yang mencegah tab rig memulai otomatis.
 :::
 
 ---

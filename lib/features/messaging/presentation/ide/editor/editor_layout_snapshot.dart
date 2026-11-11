@@ -1,4 +1,5 @@
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 
 /// The messaging IDE's [EditorLayoutCodec] configuration.
@@ -64,6 +65,8 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
   transientArgs: {EditorLayoutCodec.deferStartArg, 'initialInput'},
   requiredStringArgs: {
     MessagingTabKinds.chat: ['spaceId'],
+    // The session id is how a restored terminal re-claims its kept shell.
+    MessagingTabKinds.terminal: ['termSessionId'],
     MessagingTabKinds.codeServer: ['spaceId'],
     MessagingTabKinds.file: ['repoId', 'path'],
     // A rig tab with no surface has no machine to show.
@@ -79,8 +82,13 @@ const EditorLayoutCodec messagingLayoutCodec = EditorLayoutCodec(
     ],
     MessagingTabKinds.environmentLogs: ['workspaceId', 'spaceId', 'target'],
   },
+  acceptArgs: _restorableRigTab,
   iconFor: MessagingTabKinds.iconFor,
 );
+
+/// A browser rig tab restores only when it names its engine.
+bool _restorableRigTab(String kind, Map<String, Object?> args) =>
+    kind != MessagingTabKinds.rig || RigTabSurfaces.restorable(args);
 
 /// Stamps a restored machine-bearing tab as "start on demand".
 ///

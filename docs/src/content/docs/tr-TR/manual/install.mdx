@@ -2,7 +2,7 @@
 title: Kurulum
 description: Control Center'ı tarayıcıda kullanın ya da masaüstü uygulamasını kurun, bir ajan arka ucunu ayarlayın ve sunucusunun nerede çalışacağını seçin.
 slug: tr-TR/kilavuz/kurulum
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center iki şekilde çalışır: [app.usectrl.dev](https://app.usectrl.dev)
@@ -196,12 +196,12 @@ kimliğinize göre anahtarlanır — istemci işletim sisteminin anahtarlığın
 değil. Oturum açtığınız her cihaz aynı kimlik bilgisini kullanır ve başka
 hiçbir üye onu okuyamaz.
 
-GitHub yalnızca oturum açmayla çalışır: **Ayarlar → Çalışma alanı → Profil ve
-kimlik → Kod barındırma** size **GitHub hesabıyla oturum aç** seçeneğini sunar ve
+GitHub yalnızca oturum açmayla çalışır: **Ayarlar → Siz → Profil
+→ Kod barındırma** size **GitHub hesabıyla oturum aç** seçeneğini sunar ve
 yapıştırılacak bir token yoktur. Oturum açma, sunucu sahibinin seçimine göre
 sunucunun kendi GitHub App'i
 ([GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/)) ya da Control
-Center Connect üzerinden yürür. Sunucunun kendi uygulamasıyla tarayıcı sunucuya
+Center Connect üzerinden yürür; bir çalışma alanı yöneticisi o çalışma alanı için başka oturum açma uygulamalarını **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümünden seçtiyse bu seçim geçerlidir. Sunucunun kendi uygulamasıyla tarayıcı sunucuya
 kendiliğinden geri döner; Connect üzerinden ise tarayıcının gösterdiği 8
 karakterlik kodu yazarsınız ya da Control Center'ı açmasına izin verirsiniz. Bkz.
 [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/).
@@ -253,7 +253,7 @@ anahtarı üretmeyi ve `--data-dir` / `--port` / `--bind` bayraklarını anlatı
    olarak görünür. Eksikse **Yenile**'ye basın.
 2. **Ayarlar → Çalışma alanı → Depolar** bu çalışma alanının depolarını listeler
    ve **Depo ekle**, sunucu ana makinesinin klasörlerine göz atar.
-3. **Ayarlar → Çalışma alanı → Ajanlar** ilk çalışma alanınızın oluşturduğu beş
+3. **Ayarlar → Çalışma alanı → Ajanlar** ilk çalışma alanınızın oluşturduğu altı
    ajanı listeler. Her birinin çalışabilmesi için önce bir **Adaptör** ve bir
    **Model** ayarlanmış olmalıdır.
 4. **Ayarlar → Sunucu → Tanılama ve gizlilik** bu ana makinenin sunduğu sandbox

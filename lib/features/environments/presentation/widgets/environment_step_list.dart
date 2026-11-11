@@ -1,93 +1,70 @@
-import 'package:cc_domain/features/environments/domain/entities/environment_run.dart';
 import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:collection/collection.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 
-/// Where one step stands.
-enum EnvironmentStepState {
-  /// Not reached yet.
-  pending,
+/// One line of the live step list: a part of the environment, where it
+/// stands, and what it is doing right now when it says.
+typedef EnvironmentStep = ({
+  String label,
+  EnvironmentStepState state,
+  String? detail,
+});
 
-  /// Under way.
-  running,
+EnvironmentStepState _stateOf(EnvironmentComponentState component) =>
+    switch (component.phase) {
+      EnvironmentComponentPhase.starting ||
+      EnvironmentComponentPhase.interactive ||
+      EnvironmentComponentPhase.waiting => EnvironmentStepState.running,
+      EnvironmentComponentPhase.running ||
+      EnvironmentComponentPhase.ready ||
+      EnvironmentComponentPhase.completed => EnvironmentStepState.done,
+      EnvironmentComponentPhase.failed ||
+      EnvironmentComponentPhase.crashed => EnvironmentStepState.failed,
+      EnvironmentComponentPhase.pending ||
+      EnvironmentComponentPhase.idle ||
+      EnvironmentComponentPhase.stopped ||
+      EnvironmentComponentPhase.closed ||
+      null => EnvironmentStepState.pending,
+    };
 
-  /// Finished.
-  done,
-
-  /// Failed.
-  failed,
+/// What a part under way is doing: the step its tool last reported, else its
+/// own one-line detail. On a terminal the notice below the list says it, and
+/// a part that is not under way has nothing to add.
+String? _detailOf(EnvironmentComponentState component) {
+  if (component.phase != EnvironmentComponentPhase.starting &&
+      component.phase != EnvironmentComponentPhase.waiting) {
+    return null;
+  }
+  final detail = component.currentStep?.label ?? component.detail;
+  return detail == null || detail.trim().isEmpty ? null : detail;
 }
 
-/// One line of the live step list.
-typedef EnvironmentStep = ({String label, EnvironmentStepState state});
-
-EnvironmentStepState _stepState(String? wire) => switch (wire) {
-  'done' ||
-  'ok' ||
-  'ready' ||
-  'completed' ||
-  'succeeded' => EnvironmentStepState.done,
-  'failed' || 'error' || 'crashed' => EnvironmentStepState.failed,
-  'running' ||
-  'start' ||
-  'started' ||
-  'starting' => EnvironmentStepState.running,
-  _ => EnvironmentStepState.pending,
-};
-
-/// The steps of what [environment] is doing now.
+/// The steps of what [environment] is doing now: the parts this start goes
+/// through, in order.
 ///
-/// A tool's own `step` lines are the better story, so they win. Until one
-/// reports anything, the components are the steps.
-List<EnvironmentStep> environmentSteps(
-  SpaceEnvironment environment,
-  List<EnvironmentRun> runs,
-) {
-  final run = runs.firstWhereOrNull(
-    (run) =>
-        run.status == EnvironmentRunStatus.running &&
-        run.environmentId == environment.id,
-  );
-  final reported = <String, EnvironmentStepState>{};
-  for (final line in (run?.output ?? '').split('\n')) {
-    final progress = EnvironmentProgress.tryParseLine(line);
-    final label = progress?.label;
-    if (progress?.type == 'step' && label != null) {
-      reported[label] = _stepState(progress?.state);
-    }
-  }
-  if (reported.isNotEmpty) {
-    return [
-      for (final entry in reported.entries)
-        (label: entry.key, state: entry.value),
-    ];
-  }
-  return [
-    for (final component in environment.components)
-      (
-        label: component.label ?? component.id,
-        state: _stepState(component.state),
-      ),
-  ];
-}
+/// The list keeps its shape from the first frame to the last. A tool's own
+/// `step` lines don't add rows: they say what its part is doing, on that
+/// part's row, and the run's output keeps every one of them.
+List<EnvironmentStep> environmentSteps(SpaceEnvironment environment) => [
+  for (final component in environment.startComponents)
+    (
+      label: component.label ?? component.id,
+      state: _stateOf(component),
+      detail: _detailOf(component),
+    ),
+];
 
 /// The live step list, shown while an environment is changing.
 class EnvironmentStepList extends StatelessWidget {
   /// Creates an [EnvironmentStepList].
-  const EnvironmentStepList({
-    super.key,
-    required this.environment,
-    required this.runs,
-  });
+  const EnvironmentStepList({super.key, required this.environment});
 
   /// What is changing.
   final SpaceEnvironment environment;
 
-  /// Recent runs, whose output carries the tool's own steps.
-  final List<EnvironmentRun> runs;
+  static const double _glyph = 14;
 
   @override
   Widget build(BuildContext context) {
@@ -95,45 +72,66 @@ class EnvironmentStepList extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final step in environmentSteps(environment, runs))
+        for (final step in environmentSteps(environment))
           Padding(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxs),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox.square(
-                  dimension: 14,
-                  child: switch (step.state) {
-                    EnvironmentStepState.running => const CcSpinner(size: 12),
-                    EnvironmentStepState.done => Icon(
-                      AppIcons.check,
-                      size: 14,
-                      color: t.fgSuccessPrimary,
+                Row(
+                  children: [
+                    SizedBox.square(
+                      dimension: _glyph,
+                      child: switch (step.state) {
+                        EnvironmentStepState.running => const CcSpinner(
+                          size: 12,
+                        ),
+                        EnvironmentStepState.done => Icon(
+                          AppIcons.check,
+                          size: _glyph,
+                          color: t.fgSuccessPrimary,
+                        ),
+                        EnvironmentStepState.failed => Icon(
+                          AppIcons.x,
+                          size: _glyph,
+                          color: t.textErrorPrimary,
+                        ),
+                        EnvironmentStepState.pending => Icon(
+                          AppIcons.circleDashed,
+                          size: _glyph,
+                          color: t.textTertiary,
+                        ),
+                      },
                     ),
-                    EnvironmentStepState.failed => Icon(
-                      AppIcons.x,
-                      size: 14,
-                      color: t.textErrorPrimary,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        step.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: CcTypography.caption.copyWith(
+                          color: step.state == EnvironmentStepState.pending
+                              ? t.textTertiary
+                              : t.textSecondary,
+                        ),
+                      ),
                     ),
-                    EnvironmentStepState.pending => Icon(
-                      AppIcons.circleDashed,
-                      size: 14,
-                      color: t.textTertiary,
-                    ),
-                  },
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    step.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: CcTypography.caption.copyWith(
-                      color: step.state == EnvironmentStepState.pending
-                          ? t.textTertiary
-                          : t.textSecondary,
+                if (step.detail case final detail?)
+                  Padding(
+                    padding: const EdgeInsetsDirectional.only(
+                      start: _glyph + AppSpacing.sm,
+                    ),
+                    child: Text(
+                      detail,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: CcTypography.caption.copyWith(
+                        color: t.textTertiary,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),

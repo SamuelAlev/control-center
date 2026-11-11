@@ -3,7 +3,7 @@ title: آرکیٹیکچر
 description: Control Center کی ساخت کیسی ہے — تھن-کلائنٹ سرور ماڈل، فیچر-فرسٹ کلین آرکیٹیکچر اور پورٹس اینڈ اڈاپٹرز کے ساتھ۔
 dateModified: 2026-09-19
 slug: ur-PK/ہدایت-نامہ/تصورات/آرکیٹیکچر
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## جائزہ
@@ -60,7 +60,7 @@ feature_name/
 - میموری اینٹٹیز: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - مشترکہ ویلیو آبجیکٹس: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - مشترکہ پورٹس: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- ڈومین سروسز: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- ڈومین سروسز: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + ایونٹ کی اقسام (ورک اسپیس/ایجنٹ، PR/ریویو، میسجنگ، ٹکٹنگ، پائپ لائن، آرکیسٹریشن، میموری، کیلنڈر/میٹنگز، شناخت اور رکنیت، آبزرویبیلٹی)
 
 ## شناخت اور ملٹی پلیئر
@@ -132,7 +132,6 @@ Control Center ملٹی یوزر ہے: انسان اور ایجنٹس ہم پل�
 
 - `flutter_secure_storage` میں سیکرٹس (macOS کی چین، Windows کریڈینشل مینیجر، Linux libsecret) — کلائنٹ کا ڈیوائس کریڈینشل اور ریموٹ پیئرنگ کیز، پرووائیڈر ٹوکنز نہیں
 - `shared_preferences` صرف غیر حساس ترجیحات کے لیے (تھیم، فونٹ، لے آؤٹ)
-- پرانے انسٹالز سے بچے ہوئے پرووائیڈر سیکرٹس ایک بار `features/auth/providers/credential_migration.dart` کے ذریعے سرور کے حوالے کیے جاتے ہیں، پھر کلائنٹ کی چین سے حذف کر دیے جاتے ہیں
 
 ## آرکیٹیکچر کا نفاذ
 

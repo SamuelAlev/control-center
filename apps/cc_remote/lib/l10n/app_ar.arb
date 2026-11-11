@@ -97,7 +97,6 @@
 
   "inboxLoadFailed": "تعذّر تحميل الوارد",
   "allCaughtUp": "اطّلعت على كل شيء",
-  "inboxNoForgeAccount": "لا يوجد حساب منصة Git متصل بالخادم، لذا لا يمكن نسب طلبات السحب إليك بعد.",
   "inboxNothingWaiting": "لا شيء معطّل ولا يوجد طلب سحب في انتظارك.",
   "blocked": "معطّل",
   "sectionNeedsYourReview": "بحاجة إلى مراجعتك",
@@ -186,22 +185,6 @@
       "names": { "type": "String" }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, zero{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.} one{\u2068{names}\u2069 أكبر من أن يُرسل عبر المرحّل من هنا.} two{\u2068{names}\u2069 أكبر من أن يُرسلا عبر المرحّل من هنا.} few{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.} many{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.} other{\u2068{names}\u2069 أكبر من أن تُرسل عبر المرحّل من هنا.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": { "type": "int" },
-      "names": { "type": "String" }
-    }
-  },
-  "attachmentUploadFailed": "تعذّر رفع المرفق. حاول مرة أخرى.",
-  "attachmentsLeftOut": "{count, plural, zero{لم يتعذّر رفع أي مرفق.} one{تعذّر رفع مرفق واحد فاستُبعد.} two{تعذّر رفع مرفقين فاستُبعدا.} few{تعذّر رفع {count} مرفقات فاستُبعدت.} many{تعذّر رفع {count} مرفقًا فاستُبعدت.} other{تعذّر رفع {count} مرفق فاستُبعدت.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "teammate": "زميل",
   "systemSender": "النظام",
   "agent": "وكيل",
@@ -260,24 +243,6 @@
   "prsEmptyDescription": "تظهر هنا طلبات السحب عبر مستودعات مساحة العمل هذه.",
   "refreshPullRequests": "تحديث طلبات السحب",
   "noForgeConnected": "لا توجد منصة Git متصلة بالخادم، لذا يتعذّر جلب طلبات السحب. اربط منصة من تطبيق سطح المكتب.",
-  "reposUnreadable": "{count, plural, zero{لم تتعذّر قراءة أي مستودع.} one{تعذّرت قراءة مستودع واحد.} two{تعذّرت قراءة مستودعين.} few{تعذّرت قراءة {count} مستودعات.} many{تعذّرت قراءة {count} مستودعًا.} other{تعذّرت قراءة {count} مستودع.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "reposNotReadable": "تعذّرت قراءة: \u2068{names}\u2069",
-  "installationSuspendedTitle": "تم تعليق تثبيت GitHub App",
-  "installationSuspendedBody": "يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub.",
-  "installationSuspendedNotice": "تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨{names}⁩. استأنف التثبيت على GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-
   "draft": "مسودة",
   "merged": "تم الدمج",
   "closed": "مغلق",
@@ -676,7 +641,7 @@
   "permissionGitCommit": "تثبيت التغييرات",
   "permissionGitPush": "دفع التغييرات المثبتة",
   "permissionPrCreate": "إنشاء طلبات سحب",
-  "permissionPrPublish": "نشر طلبات سحب",
+  "permissionPrPublish": "تحديث طلبات سحب أو دمجها",
   "permissionVendorSyncWrite": "الكتابة أثناء مزامنة المورّد",
   "permissionNetworkEgress": "الوصول إلى الشبكة",
   "permissionSecretAccess": "الوصول إلى الأسرار",
@@ -688,12 +653,11 @@
   "permissionEffectiveDescription": "سارية في هذا النطاق دون وسائط للإجراء. تنطبق الأذونات المشروطة أدناه على الطلبات المطابقة فقط؛ ويعود القرار النهائي إلى الخادم.",
   "permissionSpaceAgentNote": "لم يُختر وكيل. لن تظهر القواعد الخاصة بالوكيل حتى تختار واحدًا أعلاه.",
   "permissionScopedGrants": "القواعد في هذا النطاق",
-  "permissionRemembered": "موافقة محفوظة",
+  "permissionRemembered": "موافقة سارية",
   "permissionSetAtThisScope": "{source} · محددة هنا",
   "permissionInheritedFrom": "{source} · موروثة",
   "permissionExpiresAt": "تنتهي الصلاحية في {date}",
   "permissionSetHere": "تحديد قاعدة هنا",
-  "permissionRevokeBeforeEdit": "ألغِ القاعدة الخاصة بالنطاق أو المحفوظة قبل تحديد قاعدة عامة لهذا الإجراء.",
   "permissionConfirmRevoke": "تأكيد الإلغاء",
   "permissionRevokeRule": "إلغاء القاعدة",
   "permissionCommandPrefix": "بادئة الأمر: {prefix}",
@@ -807,9 +771,6 @@
   "activityAgentBlocked": "إجراء الوكيل محظور",
   "activityMessage": "رسالة جديدة",
   "activityPullRequest": "تحديث طلب السحب",
-  "activityTicket": "تحديث التذكرة",
-  "activityMeeting": "تحديث الاجتماع",
-  "activityCalendar": "اتصال التقويم",
   "activityRig": "تحديث الحاوية",
   "activityPrReady": "طلب السحب جاهز للدمج",
   "activityPrBlocked": "دمج طلب السحب محظور",
@@ -961,7 +922,7 @@
   "credentialsApiKeyHint": "الصق مفتاح API للمزوّد",
   "credentialsBrowserLogin": "تسجيل الدخول عبر المتصفح",
   "credentialsWaitingForLogin": "بانتظار التفويض في متصفحك…",
-  "credentialsConnectCodePrompt": "أدخل الرمز المعروض في المتصفح",
+  "credentialsConnectCodePrompt": "رمز التأكيد",
   "credentialsConnectCodeMalformed": "لا يبدو هذا رمز تسجيل دخول. تتكون الرموز من 8 أحرف وأرقام.",
   "credentialsSignInInvalidCode": "هذا الرمز لا يطابق تسجيل الدخول هذا. تحقّق منه وحاول مرة أخرى.",
   "credentialsSignInTooManyCodes": "رموز خاطئة كثيرة جدًا. ابدأ تسجيل الدخول من جديد.",
@@ -978,11 +939,51 @@
   "credentialsCompleteLogin": "إكمال تسجيل الدخول",
   "credentialsPersonalToken": "رمز وصول شخصي",
   "credentialsPersonalTokenHint": "الصق رمز وصول شخصيًا",
-  "credentialsHostManaged": "يأتي هذا الاتصال من تطبيق الخادم أو بيئته. لا يستطيع تغييره هناك سوى مالك الخادم؛ لكن يمكنك إضافة رمز الوصول الخاص بك.",
   "credentialsStopWatching": "إيقاف المتابعة",
   "transcriptClaudeSignInExpiredTitle": "انتهت صلاحية تسجيل الدخول إلى Claude Code",
   "transcriptClaudeSignInExpiredBody": "توقف التشغيل لأن حسابه لم يعد يجتاز المصادقة. سجّل الدخول مرة أخرى، ثم أعد محاولة الدور.",
   "transcriptSignInExpiredTitle": "انتهت صلاحية تسجيل الدخول إلى المزوّد",
   "transcriptSignInExpiredBody": "توقف التشغيل لأن بيانات اعتماد المزوّد لم تعد تعمل. أعد ربطه من الإعدادات ← المزوّدون، ثم أعد محاولة الدور.",
-  "permissionHostExecution": "تشغيل الأوامر على المضيف"
+  "permissionHostExecution": "تشغيل الأوامر على المضيف",
+  "credentialsSignInLapsed": "انتهت صلاحية تسجيل دخولك إلى {provider}. سجّل الدخول مجددًا.",
+  "credentialsSignInPaused": "متوقف مؤقتًا: تغيّرت خدمة تسجيل الدخول في مساحة العمل هذه. سيعمل مجددًا عند عودة الخدمة.",
+  "credentialsProviderUnreachable": "يتعذر الوصول إلى {provider} الآن. جارٍ إعادة المحاولة.",
+  "credentialsScopeWorkspace": "مساحة العمل هذه فقط",
+  "credentialsScopeAllWorkspaces": "كل مساحات العمل",
+  "credentialsRemoveConfirmWorkspace": "إزالة بيانات الاعتماد المحفوظة من مساحة العمل هذه؟ تحتفظ مساحات العمل الأخرى ببياناتها.",
+  "credentialsRemoveConfirmAllWorkspaces": "إزالة بيانات الاعتماد المحفوظة من كل مساحات العمل التي تشاركها؟",
+  "credentialsSignInServerRestarted": "أُعيد تشغيل الخادم. ابدأ تسجيل الدخول من جديد.",
+  "repoAccessInstallApp": "ثبّت GitHub App على {owner} لتصل الأتمتة إلى {names}. اضغط لفتح GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App غير مثبّت على {owner}، لذا لا تصل الأتمتة إلى {names}. اطلب من مسؤول مساحة العمل تثبيته.",
+  "repoAccessAddToApp": "أضف {names} إلى مستودعات GitHub App. اضغط لفتح GitHub.",
+  "repoAccessAskAdminAdd": "لا يرى GitHub App {names} بعد. اطلب من مسؤول مساحة العمل إضافتها إلى مستودعاته.",
+  "repoAccessSuspended": "تم تعليق تثبيت GitHub App. الأتمتة لـ {names} متوقفة مؤقتًا حتى يستأنف أحد مالكي الحساب التثبيت على GitHub.",
+  "repoAccessOwnerCannotSee": "لم يعد الشخص المسؤول عن أتمتة مساحة العمل هذه يرى {names}، لذا لا يعمل شيء هناك باسمه.",
+  "repoAccessOwnerNotSignedIn": "الشخص المسؤول عن أتمتة مساحة العمل هذه لم يسجّل الدخول إلى منصة الاستضافة، لذا تنتظر الأتمتة لـ {names} حتى يسجّل الدخول.",
+  "repoAccessRetrying": "تعذر التحقق من الوصول إلى {names}. جارٍ إعادة المحاولة.",
+  "hiddenReposSignIn": "{count, plural, =1{سجّل الدخول إلى {forge} لرؤية طلبات السحب من مستودع إضافي واحد} other{سجّل الدخول إلى {forge} لرؤية طلبات السحب من مستودعات إضافية: {count}}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{مستودع واحد مخفي لأن حسابك على {forge} لا يراه} other{مستودعات مخفية لأن حسابك على {forge} لا يراها: {count}}}",
+  "hiddenReposNoGrant": "{count, plural, =1{مستودع واحد مخفي لأنه ليس لديك وصول إليه في مساحة العمل هذه} other{مستودعات مخفية ليس لديك وصول إليها في مساحة العمل هذه: {count}}}",
+  "hiddenReposChecking": "{count, plural, =1{جارٍ التحقق من وصولك إلى مستودع إضافي واحد…} other{جارٍ التحقق من وصولك إلى مستودعات إضافية: {count}…}}",
+  "credentialsAtlassianEmail": "البريد الإلكتروني لحساب Atlassian",
+  "credentialsAtlassianEmailInvalid": "أدخل عنوان البريد الإلكتروني لحسابك على Atlassian.",
+  "credentialsBitbucketApiToken": "رمز API",
+  "repoAccessAutomationTokenMissing": "لا يوجد رمز أتمتة يستطيع قراءة {names}، لذا فالعمل في الخلفية هناك متوقف مؤقتًا. يمكن للمسؤول إضافة رمز من الإعدادات ← المستودعات.",
+  "credentialsSignInConfirmInBrowser": "أكِّد في متصفحك، ثم أدخل الرمز الذي يظهر فيه.",
+  "credentialsSignInAccountAlreadyBound": "هذا الحساب مرتبط بالفعل بشخص آخر على هذا الخادم. سجّل الدخول بحساب مختلف.",
+  "credentialsTokenUnreachable": "تعذّر الوصول إلى {provider} للتحقق من هذا الرمز. حاول مرة أخرى بعد قليل.",
+  "credentialsTokenRejected": "{provider} لا يقبل هذا الرمز. تحقّق من أنك نسخته كاملًا وأنه لم يُلغَ.",
+  "credentialsTokenWrongKind": "هذا ليس رمز وصول شخصيًا. الصق رمز وصول شخصيًا من حسابك الخاص على {provider}، لا رمز مشروع أو مجموعة أو مساحة عمل أو روبوت.",
+  "credentialsTokenNarrowScope": "ينقص هذا الرمز نطاق {scope}. أنشئ رمزًا يتضمنه.",
+  "credentialsTokenExpired": "انتهت صلاحية هذا الرمز. أنشئ رمزًا جديدًا والصقه هنا.",
+  "credentialsSignInRateLimited": "طلبات كثيرة جدًا الآن. انتظر قليلًا ثم حاول مرة أخرى.",
+  "credentialsSignInCancelled": "أُلغي تسجيل الدخول أو رُفض. ابدأه من جديد عندما تكون مستعدًا.",
+  "credentialsSignInNoLongerOpen": "تسجيل الدخول هذا لم يعد مفتوحًا: أُلغي أو استُخدم أو استُبدل. ابدأه من جديد.",
+  "noWorkspacesYetHint": "يجب أن يدعوك مسؤول مساحة عمل، أو يمكن لمالك الخادم إنشاء مساحة عمل لك.",
+  "repoAccessReplaced": "{repos} يشير الآن إلى مستودع مختلف على {forge}. أعِد ربطه من تطبيق سطح المكتب أو الويب لمواصلة استخدامه.",
+  "repoAccessAskAdminRelink": "{repos} يشير الآن إلى مستودع مختلف على {forge}. يجب أن يعيد مسؤول مساحة العمل ربطه قبل أن يُستخدم مجددًا.",
+  "runSandboxUnavailableTitle": "يحتاج الوكلاء إلى حاوية معزولة على هذا الخادم",
+  "runSandboxUnavailable": "لا توجد حاوية معزولة على هذا الخادم، لذا لا يمكن إلا لمالكه تشغيل الوكلاء هنا. يمكن للمالك تثبيت الحاوية المعزولة، أو إيقاف العزل للجميع.",
+  "permissionTools": "الأدوات: {tools}",
+  "permissionNotInEffect": "غير سارية أثناء رفض هذا الإجراء"
 }

@@ -2,7 +2,7 @@
 title: "Rigs"
 description: "Cada superficie, backend, verbo de acción, estado del ciclo de vida, puerto, valor predeterminado y contrato de los rigs: el catálogo factual completo."
 slug: es-MX/manual/referencia/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Solo hechos. Para el modelo que hay detrás, lee [Rigs y
@@ -226,8 +226,10 @@ garantía de red cerrada.
 
 | Herramienta | Descripción |
 | --- | --- |
-| `rig_list` | Lista los rigs de un espacio de trabajo con su superficie, estado, pantalla y controlador |
+| `rig_list` | Lista los rigs del espacio de la ejecución con su superficie, estado, pantalla y controlador |
 | `rig_close` | Destruye un rig y descarta su disco |
+
+Estas herramientas, como las cuatro herramientas de uso, son solo para ejecuciones de agentes; cualquier otro llamador es rechazado. Una ejecución solo alcanza los rigs del espacio para el que se le arrendó: `space_id` viene de la concesión de la ejecución, nunca de la llamada. Un rig de otro espacio, o de ningún espacio, responde igual que uno inexistente.
 
 ## Ciclo de vida
 
@@ -333,7 +335,11 @@ configuración de espacio de trabajo.
   de ruta que ya usan los fotogramas de los rigs y el audio de las reuniones.
 - **La autenticación** es el destino firmado `rig-files:<workspaceId>/<rigId>`
   más la membresía del espacio de trabajo: un destino propio, de modo que una URL
-  emitida para *observar* una máquina tampoco pueda escribirle archivos.
+  emitida para *observar* una máquina tampoco pueda escribirle archivos. Para un
+  rig abierto en un espacio, leer el portapapeles o un archivo también requiere
+  acceso de lectura a ese espacio, y escribir en el portapapeles o soltar archivos
+  requiere una concesión de escritura sobre sus repositorios. En un rig que lleva los inicios de sesión propios de una persona, ambos carriles, incluida la lectura, son solo de esa persona. Consulta
+  [Quién puede observar y quién puede dirigir](/es-MX/manual/guias/usar-rigs/#quién-puede-observar-y-quién-puede-dirigir).
 - **La toma de control aplica.** Escribir en el portapapeles y soltar archivos
   mutan, así que se rechazan mientras otra persona tiene el control; leer el
   portapapeles y extraer un archivo son observación y no se rechazan.

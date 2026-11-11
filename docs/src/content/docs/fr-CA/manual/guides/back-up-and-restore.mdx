@@ -2,7 +2,7 @@
 title: Sauvegarder et restaurer
 description: Prenez un instantané de l’installation, déplacez un espace de travail entre machines, restaurez un seul espace de travail ou tous, et conservez des copies ailleurs.
 slug: fr-CA/manuel/guides/sauvegarder-et-restaurer
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Ce guide couvre les cinq choses que les gens font réellement avec les sauvegardes : en
@@ -17,7 +17,8 @@ Tout ce qui suit se trouve dans **Paramètres → Serveur → Sauvegarde et rest
 
 - Un **client complet** — l’application de bureau ou l’application Web. Un téléphone associé ne peut déclencher aucune de ces opérations, par conception.
 - Pour créer, lister, télécharger ou supprimer un **instantané de l’installation** : le **propriétaire** de l’installation.
-- Pour les opérations par espace de travail : **admin** de cet espace de travail pour l’exporter ou pour lister et télécharger ses sauvegardes planifiées, **propriétaire** pour l’importer ou le supprimer ou pour supprimer une de ses sauvegardes.
+- Pour les opérations par espace de travail : **admin** de cet espace de travail pour l’exporter ou pour lister et télécharger ses sauvegardes planifiées, **propriétaire** pour le supprimer ou pour supprimer une de ses sauvegardes.
+- Pour **restaurer** un espace de travail, à partir d’un fichier téléversé, d’une sauvegarde planifiée ou d’un instantané : le [propriétaire du serveur](/fr-CA/manuel/concepts/autorisation/#le-propriétaire-du-serveur), qui doit aussi être propriétaire de cet espace de travail. Une restauration amène le serveur à adopter un fichier de base de données comme le sien; c’est donc à la discrétion du propriétaire du serveur. Tous les autres voient « Seul le propriétaire du serveur peut restaurer les sauvegardes. Vous pouvez tout de même les télécharger. » à la place des actions de restauration.
 - Pour les téléchargements et les téléversements : un client complet associé, sur une connexion directe ou par le relais intermédié. Les deux chemins transportent les octets du fichier par le même tunnel de ressources authentifié et chiffré de bout en bout ; le relais ne peut pas les lire.
 
 :::caution[Les instantanés de l’installation sont manuels]
@@ -44,12 +45,14 @@ Les deux artefacts sont **des bases de données uniquement** :
 - Un **instantané de l’installation** est un répertoire horodaté : `manifest.json`, `global.db` et un `<workspaceId>/workspace.db` par espace de travail.
 - Une **exportation d’espace de travail** est ce seul fichier `workspace.db`.
 
+La base de données d’un espace de travail représente tout l’espace de travail : ses conversations, ses journaux d’exécution, son index de code, ses liens de dépôts, ses définitions d’environnement et ses membres. Elle contient aussi les jetons de webhook des pipelines et les secrets de webhook de synchronisation des tickets de l’espace, sous une forme lisible. Conservez une sauvegarde ou une exportation téléchargée d’un espace de travail comme vous conserveriez un secret. Elle ne contient aucune connexion de fournisseur, aucune clé d’appareil et aucun secret d’utilisateur; ceux-ci se trouvent dans la base de données globale et dans le magasin de secrets du serveur.
+
 Ni l’un ni l’autre ne transporte le reste du répertoire de données : `secrets.json` (clés
 d’association, identifiants de fournisseurs, SSO), le dossier `blobs/` d’un espace de
 travail (images collées dans les messages), `skills/`, `agents/`,
 `chat_credentials/`, l’audio des réunions enregistrées ou les images de rig. Une partie de
 tout cela est jetable et une autre ne l’est pas — le
-[tableau complet se trouve dans la référence](/fr-CA/manuel/reference/sauvegarde/#what-a-backup-does-not-contain),
+[tableau complet se trouve dans la référence](/fr-CA/manuel/reference/sauvegarde/#ce-quune-sauvegarde-ne-contient-pas),
 et c’est à cela que sert la [section sur les copies hors machine](#copier-les-sauvegardes-hors-de-la-machine).
 
 ## Créer un instantané de toute l’installation
@@ -77,7 +80,7 @@ n’existe encore), ou dont la copie a échoué — vérifiez le journal du serv
 
 ## Planifier les sauvegardes d’espaces de travail et leur conservation
 
-Ouvrez **Paramètres → Pipelines → Modèles de pipeline** pour l’espace de travail et
+Ouvrez **Paramètres → Espace de travail → Modèles de pipeline** pour l’espace de travail et
 trouvez **Workspace backup**. Sa planification activée s’exécute chaque dimanche à
 03:00 UTC : **Back up workspace**, suivi de **Delete backups older than** (30 jours
 par défaut). Le second nœud ne s’exécute qu’après la réussite de la sauvegarde. Vous
@@ -104,7 +107,7 @@ l’indique sur sa ligne au lieu de lister ses sauvegardes.
 
 Développez une ligne pour voir chaque sauvegarde, de la plus récente à la plus ancienne :
 
-- **Restaurer** remplace la base de données actuelle de l’espace de travail par cette sauvegarde. Exportez d’abord l’espace de travail si vous pourriez avoir besoin d’annuler l’opération. Exige **propriétaire**.
+- **Restaurer** remplace la base de données actuelle de l’espace de travail par cette sauvegarde. Exportez d’abord l’espace de travail si vous pourriez avoir besoin d’annuler l’opération. Exige le propriétaire du serveur, qui doit aussi être propriétaire de l’espace de travail.
 - **Télécharger** enregistre le fichier sur la machine que vous utilisez. La sauvegarde reste sur le serveur.
 - **Copier le chemin** copie son emplacement sur le serveur.
 - **Supprimer** retire définitivement cette sauvegarde, une fois que vous avez saisi le nom de l’espace de travail. Exige **propriétaire**.
@@ -118,7 +121,7 @@ liste, marquées **Espace de travail supprimé**, et peut les y télécharger ou
 supprimer. Personne d’autre ne voit ces lignes.
 
 Elles n’ont pas de **Restaurer**, car il n’y a aucun espace de travail dans lequel
-restaurer. Pour en récupérer une, téléchargez-la, créez un espace de travail et téléversez
+restaurer. Pour en récupérer une, téléchargez-la, créez un espace de travail (seul le propriétaire du serveur peut le faire) et téléversez
 le fichier comme décrit dans
 [Déplacer un espace de travail vers une autre installation](#déplacer-un-espace-de-travail-vers-une-autre-installation).
 
@@ -162,10 +165,9 @@ une opération sur fichier.
 2. Sur le serveur de **destination**, créez (ou choisissez) l’espace de travail qui le recevra.
 3. Dépliez cet espace de travail, puis, sous **Restaurer depuis cet appareil**, appuyez sur **Choisir un fichier et l’envoyer**. Choisissez le fichier `.db` que vous avez téléchargé.
 
-Si les deux serveurs sont la même machine que celle devant laquelle vous êtes assis,
-**Enregistrer sur le serveur** suivi d’**Importer** → **Choisir un fichier** produit le
-même résultat sans aller-retour ; les chemins de la boîte de dialogue d’importation sont
-résolus sur l’hôte du serveur.
+L’étape 3 est une restauration : elle exige le propriétaire du serveur de destination, qui doit aussi être propriétaire de cet espace de travail.
+
+Si les deux serveurs sont la même machine que celle devant laquelle vous êtes assis, **Enregistrer sur le serveur** sur la source, puis le chemin du fichier dans **Fichier de base de données d'espace de travail** et **Importer** sur la destination, produisent le même résultat sans aller-retour; ce chemin est résolu sur l’hôte du serveur.
 
 :::caution[L’importation remplace tout]
 L’importation écrase tout ce que contient actuellement l’espace de travail cible, et elle
@@ -182,11 +184,11 @@ appartiennent à l’installation d’origine et ne se résoudront pas sur celle
 données propres à l’espace de travail sont intactes, mais vérifiez de nouveau l’adhésion
 après son adoption.
 
-Les jetons des robots de clavardage résident à côté de la base de données, pas à
-l’intérieur, de sorte qu’un espace de travail que vous remettez à quelqu’un d’autre ne
-transporte aucun identifiant actif. L’installation qui le reçoit reconnecte les siens.
+Les jetons des robots de clavardage et les connexions aux fournisseurs se trouvent hors de la base de données, de sorte que l’installation qui reçoit l’espace de travail reconnecte les siens. Le fichier contient en revanche les jetons de webhook des pipelines et les secrets de webhook de synchronisation des tickets de l’espace de travail : un espace de travail que vous remettez à quelqu’un d’autre leur transmet donc aussi ces éléments. Renouvelez-les ensuite si le destinataire ne doit pas les conserver.
 
 ## Restaurer un espace de travail à partir d’un instantané
+
+Vous devez être le propriétaire du serveur et le propriétaire de l’espace de travail.
 
 1. Sous **Instantanés de l’installation**, dépliez l’instantané voulu.
 2. Repérez la ligne de l’espace de travail et appuyez sur **Restaurer**.
@@ -198,8 +200,7 @@ mécanisme ne puisse traiter le même fichier différemment.
 
 Une ligne peut indiquer **N’existe plus sur ce serveur**, avec **Restaurer** désactivé :
 l’instantané contient un espace de travail que cette installation n’a plus. Récupérez-le
-manuellement — créez un espace de travail, puis, sous **Données des espaces de travail**,
-importez-y le fichier à partir de `<snapshot path>/<old workspace id>/workspace.db`.
+manuellement — créez un espace de travail (seul le propriétaire du serveur peut le faire), puis, sous **Données des espaces de travail**, saisissez `<snapshot path>/<old workspace id>/workspace.db` dans son champ **Fichier de base de données d'espace de travail** et appuyez sur **Importer**.
 L’instantané déplié affiche son propre **Chemin sur le serveur** dans un champ copiable,
 et le titre de la ligne est l’ancien identifiant d’espace de travail : vous avez donc les
 deux moitiés de ce chemin sous les yeux.
@@ -377,9 +378,11 @@ fois que vous changez l’endroit où elles sont stockées.
 | Symptôme                                                                | Cause et solution                                                                                                            |
 | ----------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Le téléchargement ou le téléversement échoue après un changement de connexion | Réessayez sur la connexion associée active. La connexion directe comme celle du relais prennent en charge le transfert de fichiers chiffré ; aucune n’expose de solution de repli HTTP en clair |
-| « Le serveur a refusé »                                                 | Rôle. Créer ou lister un instantané de l’installation exige l’opérateur de l’installation. Télécharger un espace de travail exige le rôle admin, le restaurer exige le rôle propriétaire, et le zip d’un instantané complet exige l’opérateur de l’installation |
-| « Ce serveur n’a aucune interface de sauvegarde »                       | Aucun port de sauvegarde n’est câblé sur l’hôte — c’est un serveur de démonstration. Les opérations sont absentes plutôt que refusées |
-| « Le fichier dépasse ce que le serveur accepte »                        | Les téléversements sont plafonnés à 8 GiB. Placez le fichier sur l’hôte du serveur et utilisez plutôt **Importer** → **Choisir un fichier** |
+| « Le serveur a refusé. Télécharger un espace de travail demande le rôle admin de l'espace de travail. En restaurer un demande le propriétaire du serveur, qui doit aussi être propriétaire de cet espace de travail. Un instantané complet demande le propriétaire du serveur. » | Rôle. Créer, lister ou télécharger un instantané de l’installation exige le propriétaire du serveur. Télécharger un espace de travail exige le rôle admin; restaurer un espace de travail exige le propriétaire du serveur, qui doit aussi en être propriétaire |
+| « Les transferts de fichiers ne sont pas encore configurés pour cette connexion. Reconnectez-vous au serveur pour télécharger ou envoyer une sauvegarde. » | Cette connexion au serveur n’a pas de voie de transfert de fichiers, donc **Télécharger** et le téléversement sont désactivés. Reconnectez-vous au serveur, puis réessayez |
+| « Seul le propriétaire du serveur peut restaurer les sauvegardes. Vous pouvez tout de même les télécharger. » | Restaurer remplace la base de données d’un espace de travail sur l’hôte du serveur, donc seul le propriétaire du serveur restaure. Téléchargez la sauvegarde et demandez-le-lui |
+| « Ce serveur n'expose aucune surface de sauvegarde. »                       | Aucun port de sauvegarde n’est câblé sur l’hôte — c’est un serveur de démonstration. Les opérations sont absentes plutôt que refusées |
+| « Le fichier dépasse la taille acceptée par le serveur. »                        | Les téléversements sont plafonnés à 8 GiB. Placez le fichier sur l’hôte du serveur et saisissez son chemin dans **Fichier de base de données d'espace de travail** |
 | Importation refusée : ce n’est pas une base de données d’espace de travail Control Center | Le fichier n’a pas de ligne `workspace_meta` — ce n’est pas une exportation d’espace de travail, ou il est tronqué. Rien n’a été remplacé |
 | Un instantané est listé comme **Incomplet**                             | Son manifeste est absent ou nomme des fichiers manquants. Créez-en un nouveau ; entre-temps, adoptez les fichiers d’espace de travail qu’il contient un par un |
 | Un instantané indique que des espaces de travail n’ont pas été capturés | Rien n’a jamais été écrit dans ces espaces de travail, ou leur copie a échoué. Vérifiez le journal du serveur          |

@@ -16,14 +16,10 @@ extension _AcpMethods on DispatchSession {
   /// other runtime's approvals, and `fs/*` reads and writes only inside the
   /// run's own directories.
   Future<void> _runAcp({
-    required ScopedCredentials scoped,
     required String sandboxSessionId,
     required String wsId,
   }) async {
     final backend = deps.backendRegistry.backendFor(cliName)!;
-    for (final note in scoped.notes) {
-      addEvent(DebugEvent(content: '[acp] $note'));
-    }
 
     if (deps.sandboxManager == null) {
       addEvent(
@@ -62,12 +58,7 @@ extension _AcpMethods on DispatchSession {
     if (!await _preflightCommand(argv)) {
       return;
     }
-    // The broker-minted, one-repo credential reaches ACP agents like every
-    // other transport; `_mergedEnv` re-asserts it over adapter config.
-    final mergedEnv = _mergedEnv(
-      scopedEnv: scoped.environment,
-      backendEnv: backend.defaultEnv(),
-    );
+    final mergedEnv = _mergedEnv(backendEnv: backend.defaultEnv());
 
     addEvent(DebugEvent(content: '[acp] launching $cliName…'));
     final handle = await _launchSandbox(sandboxSessionId, wsId);
@@ -234,6 +225,20 @@ extension _AcpMethods on DispatchSession {
         // The sandbox decides what a read can see; there is nothing to ask.
         return true;
       case 'edit' || 'delete' || 'move':
+        final readOnly = [
+          for (final path in paths)
+            ?ReadOnlyWorktrees.containing(path, _readOnlyWorktrees),
+        ];
+        if (readOnly.isNotEmpty) {
+          addEvent(
+            DebugEvent(
+              content:
+                  '[acp] "$title" denied: '
+                  '${ReadOnlyWorktrees.refusal(readOnly.first)}',
+            ),
+          );
+          return false;
+        }
         final roots = await _acpRoots(write: true);
         for (final path in paths) {
           final resolved = _resolveExistingAncestor(path);
@@ -307,22 +312,50 @@ extension _AcpMethods on DispatchSession {
       );
       return false;
     }
-    final copy = ActionApprovalCopy.describe(
-      classes: classes.isEmpty ? {ActionClass.processSpawn} : classes,
-      command: command,
-    );
+    final asked = classes.isEmpty
+        ? ActionGuardService.undeclaredEffect
+        : classes;
+    final copy = ActionApprovalCopy.describe(classes: asked, command: command);
+    final detail = '${copy.detail}\n\n$title';
+    final cardKind = kind == 'execute'
+        ? ConfirmationKind.command
+        : ConfirmationKind.fileWrite;
+    if (kind == 'execute' && command != null && command.trim().isNotEmpty) {
+      // A command the classifier names no effect for is still a process the
+      // agent runs, and a person may approve that exact command for a while.
+      return ActionGuardService.confirmCommand(
+        guard: guard,
+        port: port,
+        workspaceId: ws,
+        classes: asked,
+        command: command,
+        spaceId: spaceId,
+        conversationId: conversationId,
+        agentId: agentId,
+        mode: mode,
+        actionSummary: 'acp $kind: $title',
+        onBehalfOfUserId: requestedByUserId,
+        runId: runLogId,
+        detail: detail,
+        kind: cardKind,
+        withdrawn: _cancelSource.token.whenCancelled,
+      );
+    }
+    // Not a command: policy names no effect for this call (or cannot be
+    // asked), so there is nothing a standing approval could rest on and this
+    // card confirms this one call.
     return port.requestApproval(
-      ConfirmationRequest(
-        spaceId: spaceId ?? '',
+      ActionGuardService.approvalRequest(
+        resolution: null,
+        classes: asked,
+        command: command,
+        spaceId: spaceId,
         conversationId: conversationId,
         workspaceId: workspaceId,
         agentId: agentId,
-        title: copy.title,
-        detail: '${copy.detail}\n\n$title',
-        command: command,
-        kind: kind == 'execute'
-            ? ConfirmationKind.command
-            : ConfirmationKind.fileWrite,
+        actionSummary: 'acp $kind: $title',
+        detail: detail,
+        kind: cardKind,
         withdrawn: _cancelSource.token.whenCancelled,
       ),
     );
@@ -395,6 +428,12 @@ extension _AcpMethods on DispatchSession {
       if (write && (p.equals(root, resolved) || p.isWithin(root, resolved))) {
         throw AcpRpcException('$raw is a protected checkout.');
       }
+    }
+    final readOnly = write
+        ? ReadOnlyWorktrees.containing(resolved, _readOnlyWorktrees)
+        : null;
+    if (readOnly != null) {
+      throw AcpRpcException(ReadOnlyWorktrees.refusal(readOnly));
     }
     return resolved;
   }

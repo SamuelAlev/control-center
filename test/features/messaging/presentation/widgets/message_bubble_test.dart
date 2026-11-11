@@ -4,7 +4,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
-import 'package:control_center/features/messaging/presentation/widgets/message_bubble.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/message_bubble.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/github_user_avatar.dart';

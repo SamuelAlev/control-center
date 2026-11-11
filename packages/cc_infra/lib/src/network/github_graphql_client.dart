@@ -4,168 +4,17 @@ library;
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/github_team_profile.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
     show githubPrConversationMentionLogin;
 import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/github/github_http.dart';
+import 'package:cc_infra/src/network/models/github_graphql_results.dart';
 import 'package:cc_infra/src/network/models/github_pr_review_state.dart';
 import 'package:cc_infra/src/network/models/github_team.dart';
-import 'package:cc_infra/src/network/models/github_user_profile.dart';
 import 'package:cc_infra/src/network/models/github_viewer_activity.dart';
 import 'package:rhttp/rhttp.dart';
-
-/// Raw open-pull-request nodes for a single repo, as returned by the batched
-/// GraphQL query. Holds undecoded GraphQL `PullRequest` maps so this network
-/// model stays free of feature-domain types — the pr_review mapper turns the
-/// nodes into `PullRequest` entities.
-class GitHubRepoPrNodes {
-  /// Creates a [GitHubRepoPrNodes].
-  const GitHubRepoPrNodes({required this.nodes, required this.hasMore});
-
-  /// Raw GraphQL `PullRequest` node maps (created-desc, first page).
-  final List<Map<String, dynamic>> nodes;
-
-  /// Whether the repo has more open PRs beyond this first page.
-  final bool hasMore;
-}
-
-/// Result of [GitHubGraphQLClient.fetchOpenPullRequestsBatch]: the viewer's
-/// login (for `reviewed-by-me` derivation) plus the per-repo nodes keyed by the
-/// caller's input index. Repos that errored/are inaccessible are simply absent
-/// from [byIndex] (GraphQL returns partial data + an errors array; one bad repo
-/// must not blank the whole dashboard).
-class GitHubPrBatchResult {
-  /// Creates a [GitHubPrBatchResult].
-  const GitHubPrBatchResult({required this.viewerLogin, required this.byIndex});
-
-  /// The authenticated user's login, or null if the query couldn't resolve it.
-  final String? viewerLogin;
-
-  /// Per-repo nodes keyed by the index of the repo in the caller's input list.
-  final Map<int, GitHubRepoPrNodes> byIndex;
-}
-
-/// One PR's slice of the checks/review enrichment pass
-/// ([GitHubGraphQLClient.fetchOpenPullRequestsChecks]): the raw
-/// `statusCheckRollup.state` string (null when no checks are configured) and
-/// the raw `reviewDecision` string (null when no reviews are required/given).
-typedef GitHubPrStatusOverlay = ({
-  String? checksRollup,
-  String? reviewDecision,
-});
-
-/// One inline review thread's conversation state, from
-/// [GitHubGraphQLClient.listReviewThreads].
-///
-/// [commentIds] are REST `databaseId`s, so a thread's state can be stamped onto
-/// the comments the diff already fetched without a per-comment round trip.
-class GitHubReviewThread {
-  /// Creates a [GitHubReviewThread].
-  const GitHubReviewThread({
-    required this.id,
-    required this.isResolved,
-    required this.isOutdated,
-    required this.commentIds,
-  });
-
-  /// GraphQL node id of the thread — the handle the resolve mutations take.
-  final String id;
-
-  /// Whether the conversation is marked resolved.
-  final bool isResolved;
-
-  /// Whether the thread's anchor line is gone from the current diff.
-  final bool isOutdated;
-
-  /// Numeric ids of the thread's comments.
-  final List<int> commentIds;
-}
-
-/// One reaction on a review summary, from
-/// [GitHubGraphQLClient.listReviewReactions].
-class GitHubReviewReaction {
-  /// Creates a [GitHubReviewReaction].
-  const GitHubReviewReaction({
-    required this.id,
-    required this.content,
-    required this.login,
-  });
-
-  /// GraphQL node id of the reaction — the handle `removeReaction` takes.
-  final String id;
-
-  /// Reaction content in the REST shortcode vocabulary (`+1`, `rocket`, …).
-  final String content;
-
-  /// Login of the account that reacted (empty when withheld).
-  final String login;
-}
-
-/// One review's reactions plus the handles reacting to it requires, from
-/// [GitHubGraphQLClient.listReviewReactions].
-class GitHubReviewReactionSet {
-  /// Creates a [GitHubReviewReactionSet].
-  const GitHubReviewReactionSet({
-    required this.databaseId,
-    required this.nodeId,
-    required this.reactions,
-  });
-
-  /// The review's REST numeric id — what joins this back to the REST review.
-  final int databaseId;
-
-  /// GraphQL node id of the review — the `addReaction` subject handle.
-  final String nodeId;
-
-  /// The reactions themselves.
-  final List<GitHubReviewReaction> reactions;
-}
-
-/// A head branch plus its last-commit activity, from
-/// [GitHubGraphQLClient.listBranchesWithActivity].
-class GitHubBranchActivity {
-  /// Creates a [GitHubBranchActivity].
-  const GitHubBranchActivity({
-    required this.name,
-    required this.committedDate,
-    required this.authorLogin,
-  });
-
-  /// Branch name (without the `refs/heads/` prefix).
-  final String name;
-
-  /// Date of the branch's tip commit, or null if unavailable.
-  final DateTime? committedDate;
-
-  /// GitHub login of the tip commit's author, or null if the author doesn't
-  /// map to a GitHub user.
-  final String? authorLogin;
-}
-
-/// A single pull-request template discovered in a repo: a display [name] and
-/// the markdown [body] used to seed a new PR's description. [isDefault] marks
-/// the repo's single conventional `pull_request_template.md` (as opposed to a
-/// named template from a `PULL_REQUEST_TEMPLATE/` directory) so the UI can
-/// localise its label.
-class GitHubPrTemplate {
-  /// Creates a [GitHubPrTemplate].
-  const GitHubPrTemplate({
-    required this.name,
-    required this.body,
-    this.isDefault = false,
-  });
-
-  /// Display name — derived from the template's filename, or empty for the
-  /// single default template (the UI substitutes a localised "Default").
-  final String name;
-
-  /// The template's markdown content.
-  final String body;
-
-  /// Whether this is the repo's single default template (not a named one).
-  final bool isDefault;
-}
 
 /// Client for GitHub GraphQL API mutations and queries.
 class GitHubGraphQLClient {
@@ -766,10 +615,9 @@ class GitHubGraphQLClient {
     return name.replaceAll(RegExp(r'[_-]+'), ' ').trim();
   }
 
-  /// First page of open PRs for many repos in one GraphQL request (aliased
-  /// `repository` nodes): list fields, metrics, reviewers. Chunked at
-  /// [_prBatchChunkSize]; ordered `CREATED_AT DESC` to match REST. Partial
-  /// failure omits that alias from [GitHubPrBatchResult.byIndex].
+  /// First page of open PRs per repo, one repo per request, [_prListConcurrency]
+  /// at a time. A failed or inaccessible repo is absent from `byIndex` (the
+  /// caller keeps its last entry); only a sweep where every repo failed throws.
   Future<GitHubPrBatchResult> fetchOpenPullRequestsBatch(
     List<({String owner, String name})> repos, {
     CancelToken? cancelToken,
@@ -779,42 +627,57 @@ class GitHubGraphQLClient {
     }
 
     final byIndex = <int, GitHubRepoPrNodes>{};
+    Object? failure;
 
-    for (var start = 0; start < repos.length; start += _prBatchChunkSize) {
-      final end = (start + _prBatchChunkSize) > repos.length
+    for (var start = 0; start < repos.length; start += _prListConcurrency) {
+      final end = (start + _prListConcurrency) > repos.length
           ? repos.length
-          : start + _prBatchChunkSize;
-      final chunk = repos.sublist(start, end);
-      final data = await _postTolerant(_buildBatchQuery(chunk), cancelToken);
-      final root = data?['data'] as Map<String, dynamic>?;
-      if (root == null) {
-        continue;
-      }
-      for (var i = 0; i < chunk.length; i++) {
-        // An inaccessible/errored repo alias comes back null alongside an entry
-        // in the top-level `errors` array — skip it, keep the rest.
-        final repository = root['r$i'] as Map<String, dynamic>?;
-        if (repository == null) {
-          continue;
-        }
-        final pulls = repository['pullRequests'] as Map<String, dynamic>?;
-        final nodes =
-            (pulls?['nodes'] as List?)
-                ?.whereType<Map<String, dynamic>>()
-                .toList(growable: false) ??
-            const <Map<String, dynamic>>[];
-        final pageInfo = pulls?['pageInfo'] as Map<String, dynamic>?;
-        final hasMore = pageInfo?['hasNextPage'] as bool? ?? false;
-        byIndex[start + i] = GitHubRepoPrNodes(nodes: nodes, hasMore: hasMore);
-      }
+          : start + _prListConcurrency;
+      await Future.wait([
+        for (var index = start; index < end; index++)
+          () async {
+            final Map<String, dynamic>? data;
+            try {
+              data = await _postTolerant(
+                _buildListQuery(repos[index]),
+                cancelToken,
+              );
+            } on Object catch (e) {
+              failure = e;
+              return;
+            }
+            // An inaccessible repo is null (plus an `errors` entry): absent.
+            final root = data?['data'] as Map<String, dynamic>?;
+            final repository = root?['r0'] as Map<String, dynamic>?;
+            if (repository == null) {
+              return;
+            }
+            final pulls = repository['pullRequests'] as Map<String, dynamic>?;
+            final nodes =
+                (pulls?['nodes'] as List?)
+                    ?.whereType<Map<String, dynamic>>()
+                    .toList(growable: false) ??
+                const <Map<String, dynamic>>[];
+            final pageInfo = pulls?['pageInfo'] as Map<String, dynamic>?;
+            final hasMore = pageInfo?['hasNextPage'] as bool? ?? false;
+            byIndex[index] = GitHubRepoPrNodes(
+              nodes: nodes,
+              hasMore: hasMore,
+              totalCount: (pulls?['totalCount'] as num?)?.toInt(),
+            );
+          }(),
+      ]);
     }
 
+    if (byIndex.isEmpty && failure != null) {
+      throw failure!;
+    }
     return GitHubPrBatchResult(viewerLogin: null, byIndex: byIndex);
   }
 
-  /// Max repos per list request. Larger batches (e.g. 20) hit gateway HTTP 504;
-  /// 5 keeps each request inside budget. Chunks run sequentially.
-  static const int _prBatchChunkSize = 5;
+  /// List requests in flight at once. Aliasing busy repos into one query ran
+  /// past GitHub's GraphQL timeout (HTTP 504) and failed the whole chunk.
+  static const int _prListConcurrency = 4;
 
   /// Open PRs per checks/review enrichment request. One repo per request,
   /// paged: `statusCheckRollup` is resolved per PR on GitHub's side, and on a
@@ -828,27 +691,18 @@ class GitHubGraphQLClient {
   /// `per_page`, so REST pagination (`loadMore`) continues cleanly.
   static const int _prBatchPageSize = 100;
 
-  String _buildBatchQuery(List<({String owner, String name})> chunk) {
-    final b = StringBuffer('query {\n');
-    for (var i = 0; i < chunk.length; i++) {
-      final owner = _escapeGraphqlString(chunk[i].owner);
-      final name = _escapeGraphqlString(chunk[i].name);
-      b
-        ..writeln('  r$i: repository(owner: "$owner", name: "$name") {')
-        ..writeln(
-          '    pullRequests(states: OPEN, first: $_prBatchPageSize, '
-          'orderBy: {field: CREATED_AT, direction: DESC}) {',
-        )
-        ..writeln('      pageInfo { hasNextPage }')
-        ..writeln('      nodes { ...PrListFields }')
-        ..writeln('    }')
-        ..writeln('  }');
+  String _buildListQuery(({String owner, String name}) repo) =>
+      '''
+query {
+  r0: repository(owner: "${_escapeGraphqlString(repo.owner)}", name: "${_escapeGraphqlString(repo.name)}") {
+    pullRequests(states: OPEN, first: $_prBatchPageSize, orderBy: {field: CREATED_AT, direction: DESC}) {
+      totalCount
+      pageInfo { hasNextPage }
+      nodes { ...PrListFields }
     }
-    b
-      ..writeln('}')
-      ..writeln(_prListFieldsFragment);
-    return b.toString();
   }
+}
+$_prListFieldsFragment''';
 
   String _buildChecksQuery(
     ({String owner, String name}) repo, {
@@ -982,7 +836,7 @@ $_prChecksFragment''';
   id
   baseRefName
   headRefName
-  headRefOid
+  headRefOid baseRepository { databaseId } headRepository { databaseId }
   author { login avatarUrl }
   additions
   deletions
@@ -1206,24 +1060,26 @@ fragment viewerPr on PullRequest {
   }
 
   /// Open PRs invoking the conversation bridge: mentions of the dedicated
-  /// @usectrl account, or compatible App bot full-login and bare-slug mentions
-  /// (the slug needs `in:comments` because GitHub does not resolve it to the
-  /// App), plus [label] (apps cannot hold requested-reviewer). One aliased
-  /// request, not `repo:`-scoped; [since] bounds only the mention lanes. A
-  /// lane with nothing to search for (no bare slug, no label) is left out of
-  /// the request rather than sent as a filler query.
+  /// @usectrl account, plus [label] (apps cannot hold requested-reviewer).
+  /// One aliased request, not `repo:`-scoped; [since] bounds only the
+  /// mention lane. An empty [label] is left out of the request rather than
+  /// sent as a filler query; an empty [botLogin] (no installed App) searches
+  /// nothing.
   Future<BotConversationCandidates> searchBotConversationCandidates({
     required String botLogin,
     required String label,
     DateTime? since,
+    String? repoFullName,
     CancelToken? cancelToken,
   }) async {
     if (botLogin.isEmpty) {
       return BotConversationCandidates.empty;
     }
-    final short = botLogin.toLowerCase().endsWith('[bot]')
-        ? botLogin.substring(0, botLogin.length - '[bot]'.length)
-        : '';
+    // Confined to one repository when asked (a one-repository token sees
+    // nothing else anyway; saying so keeps the search honest and cheap).
+    final scope = repoFullName == null || repoFullName.isEmpty
+        ? ''
+        : ' repo:$repoFullName';
     final window = (since ?? DateTime.now().toUtc().subtract(_activityWindow))
         .toUtc();
     // Second precision: GitHub rejects sub-second values in a date qualifier.
@@ -1234,12 +1090,11 @@ fragment viewerPr on PullRequest {
       (
         'mentioned',
         'mn',
-        'is:pr mentions:"$githubPrConversationMentionLogin" updated:>$stamp',
+        'is:pr mentions:"$githubPrConversationMentionLogin" '
+            'updated:>$stamp$scope',
       ),
-      ('botMentioned', 'bm', 'is:pr mentions:"$botLogin" updated:>$stamp'),
-      if (short.isNotEmpty)
-        ('shortMentioned', 'sm', 'is:pr in:comments "@$short" updated:>$stamp'),
-      if (label.isNotEmpty) ('labeled', 'lb', 'is:pr is:open label:"$label"'),
+      if (label.isNotEmpty)
+        ('labeled', 'lb', 'is:pr is:open label:"$label"$scope'),
     ];
     final variables = <String, dynamic>{'first': _reviewSearchPageSize};
     final declarations = StringBuffer();
@@ -1270,10 +1125,6 @@ fragment viewerPr on PullRequest {
     final data = response?['data'] as Map<String, dynamic>?;
     return BotConversationCandidates(
       mentioned: _viewerPrNodes(data, 'mentioned'),
-      botMentioned: _viewerPrNodes(data, 'botMentioned'),
-      shortMentioned: short.isEmpty
-          ? const <GitHubViewerPr>[]
-          : _viewerPrNodes(data, 'shortMentioned'),
       labeled: label.isEmpty
           ? const <GitHubViewerPr>[]
           : _viewerPrNodes(data, 'labeled'),

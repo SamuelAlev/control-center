@@ -2,7 +2,7 @@
 title: Environments einrichten
 description: Gib jedem Bereich und jedem Pull Request einen eigenen laufenden Stack – mit Compose, einer eigenen CLI, überwachten Prozessen oder einer Desktop-App.
 slug: de-DE/handbuch/anleitungen/environments
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 Ein **Environment** ist der laufende Stack eines Bereichs: die Dienste, die ein Branch braucht, isoliert von allen anderen Bereichen, sichtbar in der Seitenleiste und für Agenten erreichbar. Auch Pull Requests bekommen eines, denn ein PR hat bereits seinen eigenen Bereich.
@@ -11,12 +11,26 @@ Ein Admin des Arbeitsbereichs schreibt einmal eine **Definition**. Mitglieder kl
 
 ## Eine Definition anlegen
 
-1. Öffne **Einstellungen → Arbeitsbereich → Environments**. Nur Admins des Arbeitsbereichs können Definitionen ändern.
+1. Öffne **Einstellungen → Arbeitsbereich → Environments**. Nur Admins des Arbeitsbereichs können Definitionen ändern, und nur der Serverinhaber kann eine speichern, die auf dem Server-Host läuft (siehe [Wer darf was speichern](#wer-darf-was-speichern)).
 2. Klicke auf **Neue Definition** und dann auf **Leere Definition** oder **Aus Repo entwerfen**. Ein Entwurf durchsucht das Repo nach Compose-Dateien, einem `Procfile` und `package.json`-Skripten, und du prüfst das Ergebnis.
 3. Fülle das Formular aus oder nutze den Tab **JSON**. Die Beispiele auf dieser Seite zeigen dieses JSON.
 4. Klicke auf **Test ausführen**. Das startet ein Wegwerf-Environment, wartet, bis es bereit ist, und zerstört es wieder.
 
-Um eine Definition in einem Repo zu pflegen, nutze **Repo-Datei verknüpfen**. Control Center liest die Datei nur vom Standardbranch und führt nur die Version aus, die ein Admin freigegeben hat. Eine neuere Version zeigt **Update verfügbar** und ändert bis zur Freigabe nichts.
+Speichern prüft eine Definition streng. Ein unbekanntes Feld, ein Wert mit falschem Typ oder eine falsch geschriebene Auswahl wird abgelehnt, mit Pfad und dem nächstliegenden gültigen Namen, etwa `repos.app.requird: Unknown field. Did you mean "required"?`. Ein `$schema` auf oberster Ebene ist erlaubt.
+
+Um eine Definition in einem Repo zu pflegen, nutze **Repo-Datei verknüpfen**. Control Center liest die Datei nur vom Standardbranch und führt nur die Version aus, die freigegeben wurde: von einem Admin des Arbeitsbereichs oder, wenn die Definition auf dem Host läuft, vom Serverinhaber. Eine neuere Version zeigt **Update verfügbar** und ändert bis zur Freigabe nichts.
+
+### Wer darf was speichern
+
+Eine Environment-Definition kann Befehle auf dem Server-Host als dessen eigener Benutzer ausführen. Das ist die Entscheidung des Serverinhabers, nicht einer Arbeitsbereichsrolle:
+
+- Eine Definition **läuft auf dem Host**, wenn sie Host-Platzierung hat, eine Prüfung, die einen Befehl ausführt, oder eine Aufgabe `provision` oder `archive`. Diese Aufgaben laufen auf dem Host im Worktree des Bereichs, unabhängig von der Platzierung.
+- Nur der [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber) kann eine Definition speichern oder genehmigen, die auf dem Host läuft. Dazu gehört auch die Genehmigung einer neuen Version einer verknüpften Repo-Datei. Ein Admin des Arbeitsbereichs, der es versucht, sieht „Nur der Serverinhaber kann eine Umgebung speichern oder genehmigen, die auf dem Server-Host läuft. Ein Workspace-Admin kann eine nutzen, die in einem Rig läuft.“
+- Ein Admin des Arbeitsbereichs kann eine Definition speichern und genehmigen, die vollständig in einem Rig läuft: `"placement": "rig"`, ohne Prüfbefehl und ohne Aufgabe `provision` oder `archive`.
+- Mitglieder starten, stoppen und nutzen Environments in beiden Fällen.
+- Eine Definition, die auf dem Host läuft, läuft erst, nachdem der **aktuelle** Serverinhaber sie gespeichert oder genehmigt hat. Der Server hält diese Genehmigung selbst fest und prüft sie vor jedem Start, jeder Prüfung, jeder Aufgabe und jedem Abgleich des PR-Heads. Eine Definition, die der aktuelle Inhaber nicht genehmigt hat, etwa eine, die ein früherer Inhaber gespeichert hat, wartet unter ihrer Zeile in der Environment-Liste und im Editor. Der Serverinhaber sieht „Läuft auf diesem Server. Genehmige sie, damit sie starten kann.“ mit **Genehmigen**, was die Definition unverändert speichert; alle anderen sehen „Läuft auf diesem Server. Der Serverinhaber muss sie genehmigen, bevor sie starten kann.“
+- Eine Environment, die auf diese Genehmigung wartet, zeigt „Der Serverinhaber hat diese Umgebung noch nicht genehmigt, daher kann sie auf diesem Server nicht laufen.“ Der Serverinhaber sieht stattdessen „Du hast diese Umgebung noch nicht genehmigt. Sie läuft auf diesem Server und startet, sobald du ihre Definition genehmigst.“ mit **Prüfen und genehmigen**, was die Definition öffnet.
+- Prozess-Terminals einer Environment und das Terminal, das ein Start öffnet, wenn er dich braucht, laufen auf dem Server-Host. Tippen, Größe ändern oder Schließen braucht Schreibzugriff auf jedes Repository, das der Bereich freigibt und das über deine eigene Forge-Anmeldung lesbar ist; das gilt wie beim Starten der Environment. Alle anderen erreichen diese Terminals gar nicht.
 
 ## Die kleinste Definition
 
@@ -35,7 +49,7 @@ Alles andere hat einen Standardwert: Die Compose-Datei wird gefunden, jeder Dien
 
 ## Komponentenarten
 
-Ein Environment ist eine geordnete Liste von Komponenten. Jede wartet, bis die vorherige bereit ist, sofern `after` keine anderen nennt, und das Stoppen läuft umgekehrt. `enabledWhen` macht eine Komponente von einer Option oder Rolle abhängig, zum Beispiel `opt.seed`, `!opt.seed` oder `repo.web`.
+Ein Environment ist eine geordnete Liste von Komponenten. Jede wartet, bis die vorherige bereit ist, sofern `after` keine anderen nennt, und das Stoppen läuft umgekehrt. `enabledWhen` macht eine Komponente von einer Option oder Rolle abhängig, zum Beispiel `opt.seed`, `!opt.seed` oder `repo.web`. Eine Komponente, deren Rolle optional und im Bereich nicht vorhanden ist, wird genauso ausgelassen, ohne dass `enabledWhen` nötig ist: Sie startet nicht und hat weder `{port.*}` noch `{url.*}`, sodass eine andere Komponente, die diese liest, den Start scheitern lässt.
 
 | Art | Wer sie ausführt | Wofür |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Ein Environment ist eine geordnete Liste von Komponenten. Jede wartet, bis die v
 | `manual` | Auf Anfrage: **Ausführen**, `cc-env run <id>` oder `environment_run_task` |
 | `archive` | Kurz bevor der Worktree zerstört wird |
 
-Ein als Array angegebener Befehl ist argv, Optionswerte laufen also nie durch eine Shell. Ein String oder `script` mit einem Array von Zeilen läuft unter `bash -lc`. Platzhalter wie `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` und `{url.<role>}` werden nur in argv aufgelöst. Shell-Befehle lesen dieselben Werte als `CC_ENV_*`-Variablen, etwa `$CC_ENV_PORT_WEB`.
+Eine Task, die beim Start nichts zu tun hat, zeigt **Inaktiv** und fehlt in der Liste der Schritte, die angezeigt werden, während die Environment startet: eine `manual`- oder `change`-Task oder eine `create`-Task, die bereits gelaufen ist.
 
-Jeder Befehl und jedes Bereichsterminal bekommt außerdem `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` und in PR-Bereichen `CC_PR_NUMBER` und `CC_PR_IS_FORK`. Mit einer Compose-Komponente kommen `COMPOSE_PROJECT_NAME` und `COMPOSE_FILE` dazu, sodass `docker compose exec` in einem Task das richtige Projekt erreicht.
+Ein als Array angegebener Befehl ist argv, Optionswerte laufen also nie durch eine Shell. Ein String oder `script` mit einem Array von Zeilen läuft unter `bash -lc`. Platzhalter wie `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` und `{url.<role>}` werden nur in argv aufgelöst. Shell-Befehle lesen dieselben Werte als `CC_ENV_*`-Variablen, etwa `$CC_ENV_PORT_WEB`. Ein unbekannter Platzhalter in einer beteiligten Komponente stoppt den Start, bevor etwas ausgeführt wird.
+
+Jeder Befehl und jedes Bereichsterminal bekommt außerdem `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` und in PR-Bereichen `CC_PR_NUMBER` und `CC_PR_IS_FORK`. Mit einer Compose-Komponente kommen `COMPOSE_PROJECT_NAME` und `COMPOSE_FILE` dazu, sodass `docker compose exec` in einem Task das richtige Projekt erreicht.
 
 ## Rollen und Arbeitsverzeichnis
 
@@ -77,7 +93,7 @@ Eine Definition bindet **Rollen** an Repos des Arbeitsbereichs, sodass ein Stack
 - `whenMissing`: Was passiert, wenn dem Bereich die Rolle fehlt. `addToSpace` fügt das Repo auf seinem Standardbranch hinzu und ist der Standard für `required`-Rollen. `useSource` übergibt deinen registrierten Checkout, den du als schreibgeschützt behandeln solltest. `skip` lässt die Variable leer und ist sonst der Standard.
 - Zum Starten brauchst du eine `write`-Berechtigung auf einem Anker-Repo im Bereich und Lesezugriff auf jedes andere gebundene Repo.
 
-Ein Befehl läuft in der ersten Rolle aus `repos`, die der Bereich hat, eine Definition mit einem Repo erwähnt das also nie. Jede Komponente kann das mit `"cwd": { "role": "e2e", "path": "packages/ui" }` überschreiben. Beide Felder sind optional.
+Ein Befehl läuft in der ersten in `repos` deklarierten Rolle, nie in einer anderen Rolle, die der Bereich zufällig hat, eine Definition mit einem Repo erwähnt das also nie. Jede Komponente kann das mit `"cwd": { "role": "e2e", "path": "packages/ui" }` überschreiben. Beide Felder sind optional. Wenn die erste Rolle in einem Bereich fehlen könnte, weil sie weder `required` noch der einzige Anker ist, muss jede Komponente ihre Rolle nennen.
 
 ## Ports und URLs
 
@@ -130,6 +146,8 @@ Eine Web-App und Postgres aus einer Compose-Datei, mit einer gitignorierten `.en
 
 Mit `healthchecks` kann auch ein Dienst ohne eigenen Healthcheck die nächste Komponente aufhalten. Ohne ihn gilt ein laufender Container als bereit, und Migrationen können einer noch startenden Datenbank zuvorkommen.
 
+Jeder Start und jede Aktualisierung führt `up` mit `--remove-orphans` aus, sodass ein Dienst, der aus der Compose-Datei entfernt wurde, stoppt und seinen Port freigibt. Images werden beim Start und bei der Aktualisierung gebaut, außer die Komponente setzt `"build": false`.
+
 ## Beispiel: eigene CLI
 
 Ein erfundenes Tool `acme`, dem seine Container, Domains und TLS gehören. Control Center liefert `{name}` und erfährt alles andere aus `status`. Es leitet nie die Hostnamen eines Tools ab und bearbeitet nie `/etc/hosts`.
@@ -147,7 +165,8 @@ Ein erfundenes Tool `acme`, dem seine Container, Domains und TLS gehören. Contr
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Ein erfundenes Tool `acme`, dem seine Container, Domains und TLS gehören. Contr
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Ein erfundenes Tool `acme`, dem seine Container, Domains und TLS gehören. Contr
 ```
 
 - `create`, `status` und `destroy` sind Pflicht. Control Center wählt `create` oder `start` anhand des gelesenen Status. Jedes Verb kann statt argv auch `{ "shell": "…" }` sein.
+- `interactive` nennt die Verben aus `create`, `start` und `reset`, die ihre benötigten Angaben an einem Terminal erfragen können. Beendet sich ein solches Verb mit Code 3 für eine Person, die **Starten** gedrückt hat, führt Control Center dasselbe Verb erneut in einem Terminal-Tab aus, und der Start läuft weiter, sobald es mit 0 endet. Dort ist die Bedingung `interactive` wahr und `CC_ENV_INTERACTIVE=1` gesetzt, sodass `{ "if": "!interactive", "args": ["--json"] }` die maschinelle Ausgabe für die nicht interaktive Ausführung beibehält. Ein Start durch einen Agenten oder ein automatischer Start öffnet nie ein Terminal: Die Environment zeigt **Aktion nötig** und wartet.
+- Ein `destroy`, das fehlschlägt, entfernt die Environment trotzdem, wenn `status` danach `missing` meldet, sodass eine Environment, die das Tool nicht mehr hat, immer entfernt werden kann.
+- `list` lässt Control Center eine Environment bemerken, die das Tool verloren hat. Sie gilt nur dann als verschwunden, wenn ihr Name in `list` fehlt und `status` dann `missing` meldet. Ausgabe, die sich nicht als Liste lesen lässt, ändert nichts.
+- `{service}` in `logs` und `exec` muss ein einzelnes Wort sein, das nicht mit `-` beginnt, und einer der Dienste, die das Tool zuletzt gemeldet hat, sofern es welche gemeldet hat.
 - `statusMap` liest das eigene JSON des Tools mit JSON-Pointern, wobei `*` auf jedes Element passt. Zustandsregeln sind geordnet, und der erste Treffer gewinnt. Eine Bedingung ist `path` mit `equals` oder `any` bzw. `none` mit `where`.
 - `keepsDataOnStop: false` schaltet den Leerlauf-Stopp aus und ergänzt **Stoppen** um eine Warnung vor Datenverlust. Setze es, wenn beim Stoppen Daten verloren gehen.
 - `routing.mode: "tool"` verbindet die Hostnamen des Tools mit dem Browser (VM) und mit Agenten. Die Domain muss auf `.test`, `.localhost` oder `.internal` enden, und eine gemeldete URL außerhalb davon wird verworfen.
@@ -229,8 +253,8 @@ Nur Prozesse und Tasks, keine Container. Die Web-App findet die API über `{url.
 }
 ```
 
-- Jeder Prozess ist ein Terminal-Tab, den du öffnen, lesen und in den du tippen kannst. Das Schließen des Tabs stoppt ihn nicht.
-- `ready` nimmt `http`, `tcp` oder `logMatch`. `restart` ist `on-failure` (der Standard), `always` oder `never`. `restartOn` startet den Prozess neu, wenn ein geänderter Pfad passt.
+- Jeder Prozess ist ein Terminal-Tab, den du öffnen, lesen und in den du tippen kannst, wenn du Schreibzugriff auf jedes Repository im Bereich hast (siehe [Wer darf was speichern](#wer-darf-was-speichern)). Das Schließen des Tabs stoppt ihn nicht.
+- `ready` nimmt `http` (eine vollständige URL), `tcp` (`host:port`) oder `logMatch` (ein regulärer Ausdruck). `restart` ist `on-failure` (der Standard), `always` oder `never`. `restartOn` startet den Prozess neu, wenn ein geänderter Pfad passt.
 - `options` werden zu einem Formular bei **Starten**, und `agentDefault` gilt für Läufe, die ein Agent startet.
 
 ## Beispiel: Desktop-App
@@ -251,21 +275,21 @@ Eine Desktop-App mit Build-Schritt. Eine App funktioniert gleich, egal womit sie
 }
 ```
 
-Eine App startet nicht mit dem Environment. Jemand klickt auf **Starten**, und `prepare` läuft zuerst. **Neu bauen und starten** führt dieses Paar erneut aus. Ein sauberes Beenden wird als geschlossen angezeigt, ein Absturz zeigt die letzten Logzeilen ohne Neustart, ein Serverneustart startet die App nie wieder, und der Leerlauf-Stopp lässt eine laufende App in Ruhe.
+Eine App startet nicht mit dem Environment. Jemand klickt auf **Starten**, und `prepare` läuft zuerst. **Neu bauen und starten** führt dieses Paar erneut aus. `enabledWhen` gilt für die App und ihre `prepare`-Aufgabe, und **Starten** wird abgelehnt, solange eines von beiden deaktiviert ist. Eine App gilt als laufend, solange ein Prozess ihrer Prozessgruppe läuft, sodass ein Starter, der die App startet und sich dann beendet, in Ordnung ist. Ist innerhalb von etwa 5 Sekunden nach **Starten** alles verschwunden, zeigt die App einen Fehler mit ihren letzten Logzeilen. Danach wird ein sauberes Beenden als geschlossen angezeigt und ein Absturz zeigt die letzten Logzeilen, und keines von beiden startet sie neu. Ein Serverneustart schließt die App und startet sie nie neu, und der Leerlauf-Stopp lässt eine laufende App in Ruhe.
 
 ### Berechtigungen und Grenzen von Desktop-Apps
 
 - Gib Control Center unter macOS einmalig in den Systemeinstellungen die Rechte **Bildschirmaufnahme** und **Bedienungshilfen**. Der Server-Host braucht eine GUI-Sitzung: Ein Headless-Server verweigert den App-Start.
-- Starte die Binärdatei direkt. `open -a` übergibt die App an LaunchServices, und sie verlässt den Prozessbaum, den Control Center verfolgt. `"window": { "match": { "bundleId": "…" } }` deckt diesen Fall ab, ist aber nur mit einer laufenden Kopie sicher.
+- Starte die Binärdatei direkt. `open -a` übergibt die App an LaunchServices, und sie verlässt den Prozessbaum, den Control Center verfolgt, sodass die App direkt nach dem Start einen Fehler anzeigt.
 - Fenster bleiben auf einem Display. macOS erfasst kein Fenster, das außerhalb aller Displays liegt, eine von einem Agenten genutzte App ist also auf dem Bildschirm des Servers sichtbar. Sie braucht keinen Fokus.
 - `"isolate": "home"` gibt der App über `HOME`, `XDG_*` und `CFFIXED_USER_HOME` ein privates Home, sodass Kopien aus zwei Bereichen nebeneinander laufen können. `NSUserDefaults` ist nicht isoliert, Cocoa-Einstellungen und Flutters `shared_preferences` bleiben also zwischen den Kopien geteilt.
 - `isolate` gilt nur für den gestarteten Prozess. Ein Toolchain-Launcher wie `flutter run` braucht das echte Home, kombiniere `isolate` also mit einer gebauten Binärdatei. Hat die App eine eigene Einstellung wie `--user-data-dir`, nimm lieber diese.
 - Agenten steuern das Fenster mit `app_use`, das nur den Prozessbaum dieses Environments erreicht. Ein Agent sieht das Fenster, nicht den Desktop. App-Starts durch Agenten laufen über die Aktionsrichtlinie und fragen standardmäßig nach, und Agenteneingaben pausieren, solange eine Person die Kontrolle hat.
 - `"input": "background"` (der Standard) sendet Ereignisse an den Prozess. `"foreground"` aktiviert das Fenster und übernimmt den Mauszeiger.
 
-## Worktree-Tasks ersetzen Repo-Skripte
+## Worktree-Tasks
 
-`provision`- und `archive`-Tasks ersetzen die alten Setup- und Archivierungsskripte pro Repo. **Vorhandene Skripte wurden automatisch migriert:** Jedes Repo mit Skripten hat jetzt eine nach dem Repo benannte Definition mit den Tasks `setup` und `archive`, die denselben Skripttext enthalten. Das Symbol in der Zeile eines Repos unter **Einstellungen → Arbeitsbereich → Repositorys** öffnet sie. Frühere Skriptläufe bleiben als schreibgeschützter Verlauf erhalten.
+`provision`- und `archive`-Tasks führen Setup und Abbau eines Repos mit seinem Worktree aus. Das Symbol in der Zeile eines Repos unter **Einstellungen → Arbeitsbereich → Repositorys** öffnet die Definition des Repos.
 
 Diese Tasks folgen dem Worktree, nicht dem Environment, und laufen also auch in Bereichen, in denen niemand auf **Starten** klickt:
 
@@ -292,7 +316,7 @@ Ein Repo ohne Stack braucht nur eine Definition mit seinen Tasks. Da es nichts z
 
 - Es gibt noch kein Environment, diese Tasks können also weder `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` noch `enabledWhen` nutzen, und sie bekommen das `env` der Definition nicht.
 - Nur eine Definition darf `provision`- und `archive`-Tasks für ein Repo enthalten. Andere dürfen es für alles Weitere trotzdem binden.
-- `"when": ["provision", "change"]` installiert auch neu, wenn sich eine Lockfile ändert, was Setup-Skripte nie getan haben.
+- `"when": ["provision", "change"]` installiert auch neu, wenn sich eine Lockfile ändert.
 - Ein Task läuft für den Worktree seiner `cwd`-Rolle, eine Definition mit mehreren Repos kann also jedes Repo einzeln einrichten.
 - Ein Testlauf setzt `CC_SCRIPT_TEST=1`. Ein erneuter Versuch beginnt mit einem sauberen Worktree, schreibe Tasks also so, dass sie eine Wiederholung überstehen.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Mit einer Compose-Komponente erlaubt ein `docker`-Shim außerdem `docker compose` mit `ps`, `logs`, `exec`, `port`, `restart` und `top`. Vor dem Verb dürfen keine Flags stehen, `logs` kann nicht folgen, und `exec` akzeptiert nur `-T`. Alles andere endet mit Exit-Code 5 und „not available in Control Center agent runs“.
+Mit einer Compose-Komponente erlaubt ein `docker`-Shim außerdem `docker compose` mit `ps`, `logs`, `exec`, `port`, `restart` und `top`, und zwar nur gegen das eigene Compose-Projekt dieser Environment. Vor dem Verb dürfen keine Flags stehen, und jedes Verb akzeptiert eine kurze Liste von Optionen: `logs` kann nicht folgen, und `exec` akzeptiert nur `-T` (oder `--no-tty`). Optionen, die compose auf eine andere Datei oder ein anderes Projekt zeigen lassen (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`), werden abgelehnt, wo immer sie stehen. Alles andere endet mit Exit-Code 5 und „not available in Control Center agent runs“.
 
-Ein Repo, dessen Skills sein eigenes Tool aufrufen, kann das weiter tun. Ein `agentPassthrough`-Block an einer `cli`-Komponente legt fest, welche Befehle Agenten ausführen dürfen:
+Ein Repo, dessen Skills sein eigenes Tool aufrufen, kann das weiter tun. Ein `agentPassthrough`-Block an einer `cli`-Komponente legt fest, welche Befehle Agenten ausführen dürfen. Nur Befehle, die die genehmigte Definition deklariert, werden durchgereicht, und jeder läuft auf dem Host, daher gilt für ihn die Regel **Befehle auf dem Host ausführen**, die standardmäßig zuerst fragt:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Exit-Codes gelten für jedes Verb:
 | Code | Bedeutung |
 | --- | --- |
 | 0 | OK |
-| 3 | Host-Einrichtung nötig. **Im Terminal ausführen** öffnet ein Bereichsterminal mit dem eingetippten, aber nicht ausgeführten Befehl, danach versucht **Erneut versuchen** es erneut. Control Center führt nie `sudo` aus |
-| 4 | Authentifizierung nötig |
-| 5 | Abhängigkeit nicht verfügbar |
+| 3 | Eine Antwort wird an einem Terminal benötigt, etwa ein `sudo`-Passwort. Ein in `interactive` aufgeführtes Verb läuft für die Person, die **Starten** gedrückt hat, erneut in einem Terminal-Tab. Andernfalls öffnet **Im Terminal ausführen** ein Bereichsterminal mit dem `command` des Tools eingetippt, aber nicht ausgeführt, danach versucht **Erneut versuchen** es erneut. Control Center führt nie `sudo` aus und beantwortet nie eine Eingabeaufforderung |
+| 4 | Anmeldung nötig. Der `command` des Tools zeigt, wie |
+| 5 | Etwas, wovon es abhängt, ist nicht verfügbar, etwa eine Container-Laufzeit, die nicht läuft |
 | Andere | Fehler |
+
+Die Codes 3, 4 und 5 sind keine Fehler. Die Environment zeigt **Aktion nötig** und wartet, und der nächste Start knüpft dort an, wo dieser aufgehört hat. Eine Aufgabe, die mit einem dieser Codes endet, bedeutet dasselbe.
 
 Fortschritt geht als zeilenweises JSON an stderr:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-`step`-Zeilen erscheinen als Live-Schrittliste, `note`-Zeilen werden unverändert angezeigt. Eine letzte Zeile vom Typ `error` wird zu einem strukturierten Fehler, wobei `command` zum Kopieren angeboten wird. Ohne sie zeigt Control Center die letzten 20 stderr-Zeilen. Alles, was kein JSON ist, ist normale Logausgabe.
+Während eine Environment startet, listet das Panel die Komponenten auf, die der Start durchläuft, jede mit einem Spinner, einem Häkchen oder einem Kreuz. Eine `step`-Zeile zeigt, was das Tool gerade tut, und ihr `label` erscheint unter der eigenen Zeile des Tools; Schritte bekommen nie eine eigene Zeile. Der `state` eines Schritts ist `pending`, `running`, `done` oder `failed`, und ein Schritt ohne `state` läuft. Ein Schritt, der sich erneut unter derselben `id` (einer Zeichenkette oder einer Zahl, oder demselben `label`, wenn keine da ist) meldet, ersetzt seine bisherige Meldung, sodass ein Tool mit einem einzigen Spinner dieselbe `id` behalten und das `label` ändern kann. Ohne IDs folgen Schritte aufeinander: Ein neuer beendet den vorherigen. Wenn der Befehl endet, endet ein noch laufender Schritt so, wie der Befehl geendet hat.
+
+Eine `log`-Zeile enthält eine Ausgabezeile, die das Tool in JSON verpackt hat, und wird wie normaler Ausgabetext gelesen. Eine `note`-Zeile geht in die Ausgabe des Laufs, und eine mit `"level": "warn"` bleibt außerdem als Warnung an der Environment. Eine letzte Zeile vom Typ `error` wird zu einem strukturierten Fehler, wobei `command` zum Kopieren angeboten wird, und die letzten 12 Zeilen der Ausgabe erscheinen unter ihrer `message`. Ohne sie zeigt Control Center die letzten 20 stderr-Zeilen. Alles, was kein JSON ist, ist normale Logausgabe.
 
 ## Verwandte Seiten
 

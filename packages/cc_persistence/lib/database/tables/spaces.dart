@@ -19,7 +19,7 @@ class SpacesTable extends Table {
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();
 
   /// Conversation mode. Stored as the `name` of the `Mode` enum
-  /// (`chat`, `review`, `plan`). Defaults to `chat` for legacy rows.
+  /// (`chat`, `review`, `plan`). Defaults to `chat`.
   TextColumn get mode => text().withDefault(const Constant('chat'))();
 
   /// Owning pipeline run when this conversation was spawned by a pipeline
@@ -49,7 +49,7 @@ class SpacesTable extends Table {
 
   /// Whether the space EXPLICITLY provisions no repo worktrees (created with
   /// every repo deselected). Needed because "no rows in `space_repos`" already
-  /// means "all workspace repos" (the pre-selection back-compat default), so
+  /// means "all workspace repos" (the default selection), so
   /// an empty selection is otherwise inexpressible. When true, the provisioner
   /// checks out nothing and `space_repos` holds no rows for the space.
   BoolColumn get noRepos => boolean().withDefault(const Constant(false))();

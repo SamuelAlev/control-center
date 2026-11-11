@@ -2,7 +2,7 @@
 title: Kör agenter parallellt
 description: Skicka ut flera agenter samtidigt och se till att deras arbete inte krockar.
 slug: sv-SE/handbok/how-to-guider/parallella-agenter
-sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
+sourceHash: a14be769d17ca7bcc63fc1c9c22645a1127209a5
 ---
 
 Den här guiden visar hur du kör flera agenter samtidigt utan att de skriver över varandra.
@@ -48,7 +48,7 @@ Att tilldela en agent ett ärende registrerar ägarskap. Det finns ingen ärende
 
 ## Se dem köra
 
-**Observability → Live** (sidofältets sidfot → **Observability**, sedan fliken **Live**) visar arbetsytans agentlista och uppdateras varje sekund: status (körs / overksam / parkerad / avbruten), vad var och en gör, tokens och kostnad för dess senaste körning samt en kontroll för att avsluta en körande process. Att välja en rad fäster en panel med livetranskriptet.
+**Observability → Live** (sidofältets sidfot → **Observability**, sedan fliken **Live**) visar arbetsytans agentlista och uppdateras varje sekund: status (körs / overksam / parkerad / avbruten), vad var och en gör, tokens och kostnad för dess senaste körning samt en kontroll för att avsluta en körande process. Kontrollen stoppar bara levande agentkörningar i arbetsytor du tillhör; serverägaren kan stoppa vilka som helst. Att välja en rad fäster en panel med livetranskriptet.
 
 **Inställningar → Arbetsyta → Agenter** visar samma lista med en annan statusvokabulär där uppmärksamhet går först, härledd ur varje agents körningshistorik — körs, blockerad, misslyckades, overksam, aldrig körd — sorterad så att allt som kräver uppmärksamhet flyter uppåt. Varje agents flik **Loggar** innehåller dess egen körningshistorik.
 

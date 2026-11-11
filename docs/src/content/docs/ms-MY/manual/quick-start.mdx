@@ -2,7 +2,7 @@
 title: Mula pantas
 description: Pasang Control Center, konfigurasikan satu ejen dan saksikan ia bekerja pada repo anda.
 slug: ms-MY/manual-pengguna/mula-pantas
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Inilah laluan lengkap yang paling pendek daripada kosong sehingga ejen berjalan pada kod anda sendiri. Ikutinya mengikut urutan; setiap langkah bergantung pada langkah sebelumnya.
@@ -21,7 +21,7 @@ ciri yang sama. Namun begitu, tab pelayar tidak boleh menghoskan pelayan, jadi a
 menyediakan satu — jalankan `cc_server` secara setempat dan sambung ke `ws://localhost:9030`,
 atau halakan ia ke pelayan pada mesin lain. Mula pantas ini menempuh laluan desktop kerana
 ia tidak memerlukan persediaan pelayan; lihat
-[Pasang](/ms-MY/manual-pengguna/pasang/#use-it-in-your-browser) untuk laluan pelayar.
+[Pasang](/ms-MY/manual-pengguna/pasang/#gunakan-dalam-penyemak-imbas-anda) untuk laluan pelayar.
 :::
 
 ## Langkah 2: Selesaikan onboarding
@@ -30,7 +30,7 @@ Onboarding mempunyai enam langkah dan kesemuanya berjalan mengikut urutan — ti
 
 1. **Log masuk** (pemilik pelayan sahaja): pilih cara pelayan ini mendaftar masuk orang ke GitHub, Google Calendar dan Linear — **Gunakan aplikasi Control Center**, **Gunakan aplikasi saya sendiri**, atau **Gunakan pelayan Connect tersuai**. Dengan apl sendiri, **Cipta aplikasi GitHub saya** menyediakan GitHub hanya dalam satu langkah. Anda boleh menukarnya kemudian dalam **Tetapan → Pelayan → Daftar masuk tunggal**.
 2. **Sambung**: log masuk ke GitHub, atau tampal token GitLab atau Bitbucket. Kelayakan itu disimpan pada pelayan, dilampirkan pada akaun anda.
-3. **Ruang kerja**: namakan ruang kerja pertama anda dan secara pilihan pilih logo. Menciptanya menyemai lima ejen — seorang CEO serta `qa`, `architect`, `engineer` dan `librarian` — dan templat pipeline terbina dalam.
+3. **Ruang kerja** (pemilik pelayan sahaja): namakan ruang kerja pertama anda dan secara pilihan pilih logo. Orang lain menunggu pada **Anda belum berada dalam mana-mana ruang kerja** sehingga pemilik mencipta satu untuk mereka atau admin ruang kerja menjemput mereka. Menciptanya menyemai enam ejen — seorang CEO serta `qa`, `architect`, `engineer`, `librarian` dan `content-synthesizer` — dan templat pipeline terbina dalam.
 4. **Kotak pasir**: merekod keutamaan kotak pasir. Mana-mana pilihan membolehkan anda teruskan.
 5. **Penyesuai**: pilih penyesuai dan model yang sepatutnya menjadi lalai ejen. Pilih **Control Center (built-in)**, kemudian gunakan pemilih penyedia yang muncul untuk log masuk ke penyedia model — senarai model kekal kosong sehingga satu disambungkan. Menyelesaikan langkah ini juga mengecap penyesuai dan model pada ejen CEO ruang kerja itu.
 6. **Suara (pilihan)**: pasang model pertuturan pada peranti untuk diktasi, atau langkau sahaja.
@@ -38,7 +38,7 @@ Onboarding mempunyai enam langkah dan kesemuanya berjalan mengikut urutan — ti
 Control Center kemudian membuka peti masuk ruang kerja anda.
 
 :::note[Apa yang membataskan larian ejen]
-Perintah ejen dibalut dalam kotak pasir natif OS hos apabila ada satu tersedia — Seatbelt pada macOS, bubblewrap pada Linux. Windows tiada bahagian belakang, jadi larian di sana hanya dibataskan oleh lapisan yang lain: worktree perbualan itu sendiri (`git worktree` pada Windows; copy-on-write di mana `rift` disertakan), kelayakan yang diuruskan melalui broker bagi setiap pelancaran dan dicabut semasa teardown serta guardrail tindakan. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
+Perintah ejen dibalut dalam kotak pasir natif OS hos apabila ada satu tersedia — Seatbelt pada macOS, bubblewrap pada Linux. Windows tiada bahagian belakang. Pada hos tanpa satu, hanya larian ejen pemilik pelayan dimulakan, dan larian itu hanya dibataskan oleh lapisan yang lain: worktree perbualan itu sendiri (`git worktree` pada Windows; copy-on-write di mana `rift` disertakan), kelayakan yang diuruskan melalui broker bagi setiap pelancaran dan dicabut semasa teardown serta guardrail tindakan. Larian orang lain ditolak sehingga pemilik memasang kotak pasir atau mematikan kotak pasir untuk semua orang. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
 :::
 
 ## Langkah 3: Tambah repositori
@@ -62,7 +62,7 @@ Pada tab **Tetapan**, tetapkan:
 
 Tekan **Simpan perubahan**.
 
-Dalam praktiknya, langkah ini bukan pilihan. Hanya ejen CEO mewarisi penyesuai yang dipilih semasa onboarding; empat pakar itu dicipta tanpanya. Mereka berpatah balik kepada **Control Center (built-in)** dengan model lalai Anthropic, jadi mereka berjalan hanya jika anda telah menyambungkan akaun Anthropic — dan pada model yang tidak anda pilih jika anda telah berbuat demikian.
+Dalam praktiknya, langkah ini bukan pilihan. Langkah penyesuai onboarding menetapkan penyesuai dan model pada setiap ejen yang wujud ketika itu; ruang kerja yang dicipta kemudian menyemai kesemua enam ejen tanpa tetapan. Ejen tanpa penyesuai berpatah balik kepada **Control Center (built-in)** dengan model lalai Anthropic, jadi mereka berjalan hanya jika anda telah menyambungkan akaun Anthropic — dan pada model yang tidak anda pilih jika anda telah berbuat demikian.
 
 ## Langkah 5: Hantar tugasan kepada ejen
 

@@ -2,7 +2,7 @@
 title: SSO 設定參考
 description: 單一登入的每一個設定項、端點、操作與錯誤碼。
 slug: zh-TW/手冊/參考/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 單一登入所有可設定的項目，全都集中在這裡。這些值存放在 `global.db` 的
@@ -32,6 +32,18 @@ sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 | `groupRoleMap`         | 兩者   | `{}`            | 群組 → 角色；儲存時會拒絕擁有者的對應                                                                                                                |
 | `autoMember`           | 兩者   | 開啟            | 首次登入時自動將使用者加入每個工作區                                                                                                                 |
 | `allowJit`             | 兩者   | 開啟            | 登入時佈建未知的使用者                                                                                                                                 |
+
+## 帳戶比對
+
+`SsoProvisioner` 依以下順序解析登入，且絕不依使用者名稱比對：
+
+1. `(users.sso_issuer, users.sso_subject)` 等於登入的簽發者與主體（SAML NameID / OIDC `sub`）。
+2. 地址等於登入電子郵件的帳戶，但僅當兩端都為其背書時：供應商（OIDC `email_verified: true`；缺少該宣告不算背書；已簽章的 SAML 斷言則一律算背書）與帳戶（`users.email_verified`）。地址會以去除空白並轉為小寫的形式儲存與比對；已驗證的地址只有在恰好一個帳戶已驗證持有它時才會比對成功；兩個持有者則不比對任何帳戶（記錄時不含地址），而且無法為另一個已驗證持有某地址的帳戶之大小寫變體驗證帳戶。
+3. 否則，當 `allowJit` 開啟時建立新帳戶；關閉時則拒絕。
+
+`users.email_verified` 由帶有該地址的 SSO 登入或 SCIM 推送設定，或由伺服器擁有者以 `users.vouchEmail` 設定（**設定 → 伺服器 → 人員 → 確認電子郵件**，稽核為 `user.email_vouched`）。擁有者自己的個人資料編輯會為其自身地址背書。任何其他個人資料編輯，以及在邀請上輸入的任何地址，都會保持未驗證，而編輯地址會清除該標記。經背書的登入若建立帳戶，會從僅輸入過該地址的帳戶取得地址（稽核為 `user.email_unvouched_cleared`），絕不會從已驗證持有該地址的帳戶取得；在那種情況下，新帳戶不會得到任何地址。
+
+已釘選到不同主體或簽發者的相符帳戶，會以 `This account is already linked to a different SSO identity` 拒絕登入。已停用的帳戶會以 `This account has been deactivated` 拒絕。
 
 ## 行程設定
 
@@ -121,6 +133,7 @@ HTTPS 保護那段引導；配對之後，直接與經中繼的 `/rpc` 工作階
 - `sso_connections`（global.db）——每種類型一列，依設計就是跨工作區。
 - `users.sso_subject` 與 `users.sso_issuer`——供應商主體的釘選，透過部分
   索引讓 `(issuer, subject)` 保持唯一。
+- `users.email_verified`：此帳戶的地址是否可以比對 SSO 登入或 SCIM 推送（請見[帳戶比對](#帳戶比對)）。
 - `users.deactivated_at`——SCIM 停用標記。
 - SCIM bearer 權杖與 OIDC 用戶端密鑰存放在權限 0600 的機密檔案中，絕不會
   存進資料庫。

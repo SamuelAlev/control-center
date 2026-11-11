@@ -2,7 +2,7 @@
 title: Verbinden met een externe server
 description: Wijs de desktopapp of de webclient naar een cc_server die ergens anders draait en wissel tussen servers zonder opnieuw te starten.
 slug: nl-NL/handleiding/gidsen/externe-server-verbinden
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Elke client is een renderer bovenop een `cc_server` die de gegevens bezit. De
@@ -87,6 +87,8 @@ versleutelde sessie naar de code-server-backend op `cc_server`. Host de
 webclient via HTTPS of een veilige loopback-origin, zodat Service Workers
 beschikbaar zijn. Native clients gebruiken een tot capabilities beperkte
 loopback-façade.
+
+Alleen de servereigenaar kan de ingebedde code-server-editor openen: die draait op de server als de eigen gebruiker van de server. Een sessie hoort bij het apparaat en de persoon die hem heeft geopend. Hij opent met VS Code's werkruimtevertrouwen aan, dus VS Code vraagt om toestemming voordat het een map vertrouwt, en met automatische taken uit. Alle anderen houden de ingebouwde editor voor één bestand en de bestandsweergaven.
 :::
 
 ### Wat de browser niet doet
@@ -101,9 +103,7 @@ onderdelen hebben een native venster of de apparaten van de machine zelf nodig:
 
 Twee dingen gedragen zich anders in plaats van dat ze ontbreken. Het **opnemen** van
 vergaderingen werkt in de browser, waarbij je microfoon plus een schermopname met een
-audiotrack worden vastgelegd. **Openen in IDE** werkt ook, maar vraagt de server de
-editor op het scherm van de _server_ te starten, dus tegen een headless host zonder
-editors verbergt de knop zichzelf.
+audiotrack worden vastgelegd. De knop met de naam van je editor (zoals **Openen in VS Code**) vraagt de server de editor op het scherm van de _server_ te starten, dus die wordt alleen aangeboden aan de servereigenaar, en de knop verbergt zichzelf tegen een headless host zonder geïnstalleerde editors.
 
 ## Problemen oplossen
 

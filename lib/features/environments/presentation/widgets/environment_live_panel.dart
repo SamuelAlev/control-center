@@ -10,6 +10,7 @@ import 'package:control_center/features/environments/presentation/widgets/enviro
 import 'package:control_center/features/environments/presentation/widgets/environment_labels.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_recreate_notice.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_step_list.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_terminal_notice.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -48,11 +49,7 @@ class EnvironmentLivePanel extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        EnvironmentSummary(
-          spaceKey: spaceKey,
-          environment: environment,
-          runs: runs,
-        ),
+        EnvironmentSummary(spaceKey: spaceKey, environment: environment),
         if (environment.endpoints.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.sm),
           EnvironmentEndpointRows(
@@ -97,7 +94,6 @@ class EnvironmentSummary extends ConsumerWidget {
     super.key,
     required this.spaceKey,
     required this.environment,
-    required this.runs,
     this.menu = false,
   });
 
@@ -106,9 +102,6 @@ class EnvironmentSummary extends ConsumerWidget {
 
   /// What the server last reported.
   final SpaceEnvironment environment;
-
-  /// The space's runs, for the steps of a start in progress.
-  final List<EnvironmentRun> runs;
 
   /// Whether this carries the overflow menu, for a surface with no section
   /// header to hold it.
@@ -119,7 +112,10 @@ class EnvironmentSummary extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
     final record = environmentRecordFor(ref, spaceKey, environment);
-    final (statusLabel, tone) = environmentDisplay(l10n, environment);
+    final (statusLabel, tone) = environmentStatusDisplay(
+      l10n,
+      environment.status,
+    );
     final error = environment.lastError;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -173,7 +169,11 @@ class EnvironmentSummary extends ConsumerWidget {
         ),
         if (environment.status.isBusy) ...[
           const SizedBox(height: AppSpacing.sm),
-          EnvironmentStepList(environment: environment, runs: runs),
+          EnvironmentStepList(environment: environment),
+        ],
+        if (environment.interactiveComponent case final waiting?) ...[
+          const SizedBox(height: AppSpacing.sm),
+          EnvironmentTerminalNotice(spaceKey: spaceKey, component: waiting),
         ],
         for (final warning in environment.warnings)
           Padding(

@@ -122,8 +122,8 @@ ToolPresentation resolveToolPresentation(ToolSegment seg) {
       );
     // Script tools carry a required per-call `description` (their command /
     // code is not scannable the way a path is). When present it IS the row's
-    // label and the tool name demotes to the subtitle; older transcripts
-    // without one keep the tool-name-plus-command form.
+    // label and the tool name demotes to the subtitle; a call without one
+    // keeps the tool-name-plus-command form.
     case 'bash':
       final bashDescription = _firstLine(str('description'));
       return ToolPresentation(

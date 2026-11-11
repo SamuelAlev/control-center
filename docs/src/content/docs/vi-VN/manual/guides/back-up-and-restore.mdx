@@ -2,7 +2,7 @@
 title: Sao lưu và khôi phục
 description: Tạo ảnh chụp bản cài đặt, chuyển một không gian làm việc giữa các máy, khôi phục một không gian làm việc hoặc toàn bộ, và giữ bản sao ở nơi khác.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Hướng dẫn này bao quát năm việc người ta thực sự làm với bản sao lưu: tạo một bản,
@@ -16,7 +16,8 @@ Mọi thứ ở đây nằm tại **Cài đặt → Máy chủ → Sao lưu và 
 
 - Một **máy khách đầy đủ** — ứng dụng desktop hoặc web. Một điện thoại đã ghép nối không kích hoạt được bất cứ phần nào trong số này, và đó là chủ đích.
 - Để tạo, liệt kê, tải xuống hoặc xóa một **ảnh chụp cài đặt**: **owner** của bản cài đặt.
-- Với các thao tác theo từng không gian làm việc: **admin** của không gian làm việc đó để xuất nó hoặc để liệt kê và tải xuống các bản sao lưu theo lịch của nó, **owner** để nhập hoặc xóa nó hoặc để xóa một trong các bản sao lưu của nó.
+- Với các thao tác theo từng không gian làm việc: **admin** của không gian làm việc đó để xuất nó hoặc để liệt kê và tải xuống các bản sao lưu theo lịch của nó, **owner** để xóa nó hoặc để xóa một trong các bản sao lưu của nó.
+- Để **khôi phục** một không gian làm việc, từ một tệp đã tải lên, một bản sao lưu theo lịch hoặc một ảnh chụp: [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ), người cũng phải là owner của không gian làm việc đó. Khôi phục khiến máy chủ nhận một tệp cơ sở dữ liệu làm của riêng nó, nên đó là quyết định của chủ sở hữu máy chủ. Những người khác thấy "Chỉ chủ sở hữu máy chủ mới có thể khôi phục bản sao lưu. Bạn vẫn có thể tải chúng xuống." thay cho các thao tác khôi phục.
 - Với tải xuống và tải lên: một máy khách đầy đủ đã ghép nối, trên kết nối trực tiếp hoặc qua relay được môi giới. Cả hai đường đều chở các byte của tệp qua cùng một đường hầm tài nguyên đã xác thực và mã hóa đầu-cuối; relay không thể đọc chúng.
 
 ::::caution[Ảnh chụp cài đặt là thao tác thủ công]
@@ -42,11 +43,13 @@ Cả hai artifact đều **chỉ là cơ sở dữ liệu**:
 - Một **ảnh chụp cài đặt** là một thư mục có dấu thời gian: `manifest.json`, `global.db` và một `<workspaceId>/workspace.db` cho mỗi không gian làm việc.
 - Một **bản xuất không gian làm việc** là chính tệp `workspace.db` đó.
 
+Cơ sở dữ liệu của một không gian làm việc là toàn bộ không gian làm việc: các cuộc hội thoại, nhật ký chạy, chỉ mục mã, liên kết kho mã, định nghĩa môi trường và thành viên. Nó cũng giữ, ở dạng đọc được, các token webhook pipeline và bí mật webhook đồng bộ ticket của không gian làm việc. Hãy cất một bản sao lưu hoặc bản xuất không gian làm việc đã tải xuống như cách bạn cất một bí mật. Nó không giữ đăng nhập nhà cung cấp, khóa thiết bị hay bí mật người dùng nào; những thứ đó nằm trong cơ sở dữ liệu toàn cục và kho bí mật của máy chủ.
+
 Cả hai đều không mang theo phần còn lại của thư mục dữ liệu: `secrets.json` (khóa
 ghép nối, thông tin xác thực nhà cung cấp, SSO), `blobs/` của một không gian làm việc
 (ảnh được dán vào tin nhắn), `skills/`, `agents/`, `chat_credentials/`, âm thanh cuộc
 họp đã ghi hay ảnh rig. Phần nào trong đó có thể bỏ đi, phần nào thì không —
-[bảng đầy đủ nằm trong tham chiếu](/vi-VN/so-tay/tham-chieu/sao-luu/#what-a-backup-does-not-contain),
+[bảng đầy đủ nằm trong tham chiếu](/vi-VN/so-tay/tham-chieu/sao-luu/#ảnh-chụp-không-chứa-những-gì),
 và che phủ nó chính là việc mà [phần ngoài máy](#sao-chép-bản-sao-lưu-ra-khỏi-máy) hướng tới.
 
 ## Tạo ảnh chụp toàn bộ bản cài đặt
@@ -73,7 +76,7 @@ gian làm việc mà bản sao của nó thất bại — hãy kiểm tra nhật
 
 ## Lên lịch sao lưu không gian làm việc và lưu giữ
 
-Mở **Cài đặt → Pipelines → Mẫu quy trình** cho không gian làm việc và tìm
+Mở **Cài đặt → Không gian làm việc → Mẫu quy trình** cho không gian làm việc và tìm
 **Workspace backup**. Lịch đã bật của nó chạy vào mỗi Chủ nhật lúc 03:00 UTC:
 **Back up workspace**, tiếp theo là **Delete backups older than** (mặc định 30 ngày).
 Nút thứ hai chỉ chạy sau khi bản sao lưu thành công. Bạn có thể đổi số ngày lưu giữ
@@ -96,7 +99,7 @@ ra gì sẽ hiện **Chưa có bản sao lưu**. Không gian làm việc mà b�
 
 Mở rộng một hàng để xem từng bản sao lưu, mới nhất trước:
 
-- **Khôi phục** thay thế cơ sở dữ liệu hiện tại của không gian làm việc bằng bản sao lưu này. Hãy xuất không gian làm việc trước nếu bạn có thể cần hoàn tác. Cần **owner**.
+- **Khôi phục** thay thế cơ sở dữ liệu hiện tại của không gian làm việc bằng bản sao lưu này. Hãy xuất không gian làm việc trước nếu bạn có thể cần hoàn tác. Cần chủ sở hữu máy chủ, người cũng phải là owner của không gian làm việc đó.
 - **Tải xuống** lưu tệp trên máy bạn đang dùng. Bản sao lưu vẫn ở trên máy chủ.
 - **Sao chép đường dẫn** sao chép vị trí của nó trên máy chủ.
 - **Xóa** xóa vĩnh viễn bản sao lưu này, sau khi bạn nhập tên không gian làm việc. Cần **owner**.
@@ -110,7 +113,7 @@ vì lịch của nó dừng cùng với nó nên việc dọn dẹp theo thời 
 Không ai khác thấy những hàng đó.
 
 Chúng không có **Khôi phục**, vì không có không gian làm việc nào để khôi phục vào. Để
-đưa một bản trở lại, hãy tải nó xuống, tạo một không gian làm việc và tải tệp lên như mô
+đưa một bản trở lại, hãy tải nó xuống, tạo một không gian làm việc (chỉ chủ sở hữu máy chủ mới có thể) và tải tệp lên như mô
 tả trong
 [Chuyển một không gian làm việc sang bản cài đặt khác](#chuyển-một-không-gian-làm-việc-sang-bản-cài-đặt-khác).
 
@@ -150,8 +153,10 @@ Một không gian làm việc là một tệp cơ sở dữ liệu, nên chuyể
 2. Trên máy chủ **đích**, tạo (hoặc chọn) không gian làm việc sẽ nhận nó.
 3. Mở rộng không gian làm việc đó, và dưới **Khôi phục từ thiết bị này** nhấn **Chọn tệp và tải lên**. Chọn tệp `.db` bạn đã tải xuống.
 
-Nếu cả hai máy chủ đều là máy bạn đang ngồi, **Lưu trên máy chủ** cộng với **Nhập** →
-**Chọn tệp** làm đúng việc đó mà không cần đi vòng; các đường dẫn trong hộp thoại nhập
+Bước 3 là một khôi phục, nên nó cần chủ sở hữu máy chủ đích, người cũng phải là owner của không gian làm việc đó.
+
+Nếu cả hai máy chủ đều là máy bạn đang ngồi, **Lưu trên máy chủ** ở nguồn, rồi đường dẫn của tệp trong **Tệp cơ sở dữ liệu không gian làm việc** và **Nhập** ở đích,
+làm đúng việc đó mà không cần đi vòng; đường dẫn đó
 được phân giải trên máy chủ.
 
 :::caution[Nhập thay thế mọi thứ]
@@ -167,11 +172,12 @@ bản cài đặt gốc và sẽ không phân giải được trên bản cài �
 không gian làm việc vẫn nguyên vẹn, nhưng hãy kiểm tra lại tư cách thành viên sau khi
 nhận nó.
 
-Token của bot chat nằm bên cạnh cơ sở dữ liệu chứ không nằm trong đó, nên một không
-gian làm việc bạn trao cho người khác không mang theo thông tin xác thực nào đang sống.
-Bản cài đặt nhận sẽ tự kết nối lại thông tin xác thực của chính nó.
+Token của bot chat và đăng nhập nhà cung cấp nằm ngoài cơ sở dữ liệu, nên bản cài đặt nhận sẽ tự kết nối lại của nó. Tệp thì có mang theo các token webhook pipeline và bí mật webhook đồng bộ ticket của không gian làm việc, nên một không
+gian làm việc bạn trao cho người khác cũng trao luôn chúng. Hãy đổi chúng sau đó nếu người nhận không nên có chúng.
 
 ## Khôi phục một không gian làm việc từ ảnh chụp
+
+Bạn cần là chủ sở hữu máy chủ và owner của không gian làm việc đó.
 
 1. Dưới **Ảnh chụp cài đặt**, mở rộng ảnh chụp bạn muốn.
 2. Tìm hàng của không gian làm việc và nhấn **Khôi phục**.
@@ -183,8 +189,8 @@ một tệp theo cách khác.
 
 Một hàng có thể ghi **Không còn trên máy chủ này**, với **Khôi phục** bị vô hiệu hóa:
 ảnh chụp chứa một không gian làm việc mà bản cài đặt này không còn nữa. Hãy đưa nó trở
-lại bằng tay — tạo một không gian làm việc, rồi dưới **Dữ liệu không gian làm việc**
-nhập vào nó từ `<snapshot path>/<old workspace id>/workspace.db`. Ảnh chụp đã mở rộng
+lại bằng tay — tạo một không gian làm việc (chỉ chủ sở hữu máy chủ), rồi dưới **Dữ liệu không gian làm việc**
+nhập đường dẫn `<snapshot path>/<old workspace id>/workspace.db` vào trường **Tệp cơ sở dữ liệu không gian làm việc** và nhấn **Nhập**. Ảnh chụp đã mở rộng
 hiển thị **Đường dẫn trên máy chủ** của chính nó trong một trường sao chép, và tiêu đề
 của hàng là id không gian làm việc cũ, nên bạn có cả hai nửa của đường dẫn đó ngay
 trước mắt.
@@ -354,9 +360,11 @@ lưu chúng.
 | Triệu chứng | Nguyên nhân và cách khắc phục |
 | --- | --- |
 | Tải xuống hoặc tải lên thất bại sau khi kết nối thay đổi | Hãy thử lại trên kết nối đã ghép nối đang hoạt động. Cả đường trực tiếp lẫn relay đều hỗ trợ truyền tệp đã mã hóa; không đường nào để lộ một lối lùi về HTTP bản rõ |
-| "Máy chủ từ chối" | Vai trò. Tạo hoặc liệt kê một ảnh chụp cài đặt cần operator của bản cài đặt. Tải xuống một không gian làm việc cần admin, khôi phục một không gian làm việc cần owner, một tệp zip toàn bộ ảnh chụp cần operator của bản cài đặt |
-| "Máy chủ này không có bề mặt sao lưu" | Máy chủ không có cổng sao lưu nào được nối — một máy chủ demo. Các thao tác vắng mặt thay vì bị từ chối |
-| "Tệp lớn hơn mức máy chủ chấp nhận" | Tải lên bị giới hạn ở 8 GiB. Hãy đặt tệp lên máy chủ và dùng **Nhập** → **Chọn tệp** thay thế |
+| "Máy chủ từ chối. Tải xuống không gian làm việc cần vai trò admin của không gian làm việc. Khôi phục một không gian làm việc cần chủ sở hữu máy chủ, đồng thời người đó cũng phải sở hữu không gian làm việc đó. Toàn bộ snapshot cần chủ sở hữu máy chủ." | Vai trò. Tạo, liệt kê hoặc tải xuống một ảnh chụp cài đặt cần chủ sở hữu máy chủ. Tải xuống một không gian làm việc cần admin; khôi phục một không gian làm việc cần chủ sở hữu máy chủ, người cũng phải là owner của không gian làm việc đó |
+| "Chưa thiết lập truyền tệp cho kết nối này. Kết nối lại với máy chủ để tải xuống hoặc tải lên bản sao lưu." | Kết nối này tới máy chủ không có làn truyền tệp, nên **Tải xuống** và tải lên bị tắt. Hãy kết nối lại với máy chủ, rồi thử lại |
+| "Chỉ chủ sở hữu máy chủ mới có thể khôi phục bản sao lưu. Bạn vẫn có thể tải chúng xuống." | Khôi phục thay thế cơ sở dữ liệu của một không gian làm việc trên máy chủ, nên chỉ chủ sở hữu máy chủ mới khôi phục. Hãy tải bản sao lưu xuống và hỏi họ |
+| "Máy chủ này không có bề mặt sao lưu." | Máy chủ không có cổng sao lưu nào được nối — một máy chủ demo. Các thao tác vắng mặt thay vì bị từ chối |
+| "Tệp lớn hơn mức máy chủ chấp nhận." | Tải lên bị giới hạn ở 8 GiB. Hãy đặt tệp lên máy chủ và nhập đường dẫn của nó vào **Tệp cơ sở dữ liệu không gian làm việc** |
 | Nhập bị từ chối: không phải cơ sở dữ liệu không gian làm việc của Control Center | Tệp không có hàng `workspace_meta` — nó không phải một bản xuất không gian làm việc, hoặc nó bị cắt cụt. Không có gì bị thay thế |
 | Một ảnh chụp được liệt kê là **Chưa hoàn tất** | Manifest của nó bị thiếu hoặc nêu những tệp không tồn tại. Hãy tạo một ảnh chụp mới; trong lúc chờ, hãy nhận từng tệp không gian làm việc từ nó |
 | Một ảnh chụp báo có không gian làm việc không được chụp | Những không gian làm việc đó chưa từng được ghi vào, hoặc bản sao của chúng thất bại. Hãy kiểm tra nhật ký máy chủ |

@@ -10,19 +10,6 @@ import 'package:cc_domain/features/settings/domain/entities/adapter.dart';
 /// has those features off.
 const String kContentSynthesizerSlug = 'content-synthesizer';
 
-/// `workspace_settings` marker written once the content synthesizer has been
-/// seeded into a workspace, so deleting the agent is not undone at the next
-/// boot.
-const String kContentSynthesizerSeededSettingKey = 'content_synthesizer_seeded';
-
-/// The adapter the retired workspace "short task" runner used. Read once, to
-/// carry an existing choice onto the content synthesizer, then deleted.
-const String kLegacyShortTaskAdapterSettingKey = 'conversation_title_adapter';
-
-/// The model the retired workspace "short task" runner used; see
-/// [kLegacyShortTaskAdapterSettingKey].
-const String kLegacyShortTaskModelSettingKey = 'conversation_title_model';
-
 /// What a one-shot synthesis runs on, resolved from the workspace's
 /// content synthesizer agent.
 class ContentSynthesizer {

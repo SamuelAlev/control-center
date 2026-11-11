@@ -1,15 +1,15 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
-import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/presentation/widgets/forge_access_notices.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_filter/pr_filter_bar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_filter/pr_filter_menu.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pull_request_list/pr_display_options_button.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pull_request_list/pr_list_sections.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pull_request_list/pr_list_shared.dart'
-    show EmptyConfigState, prPassesFilters;
+    show EmptyConfigState;
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_display_prefs_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
@@ -24,7 +24,6 @@ import 'package:control_center/shared/providers/last_checked_provider.dart';
 import 'package:control_center/shared/utils/repo_filters.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
-import 'package:control_center/shared/widgets/repo_access_banner.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -129,44 +128,6 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
     GoRouter.of(
       context,
     ).go(pullRequestsComposeRoute(context.currentWorkspaceId!));
-  }
-
-  /// One repo section per github-linked repo, in the SAME order as the
-  /// workspace repo list ([reposForWorkspaceProvider], the operator's own
-  /// drag-to-reorder order) — the single ordering used everywhere repos are
-  /// listed. Repos are never hidden: one with no PR matching the active filters
-  /// still appears (with a 0 count), so the left rail is the always-complete
-  /// repo map. The row sort inside each card is the shared updated-desc default.
-  List<PrRepoSectionData> _buildSections({
-    required PrsByRepoState state,
-    required List<Repo> linkedRepos,
-    required PrListFilters filters,
-    required String login,
-    required bool showDrafts,
-    required Set<String> reviewedKeys,
-    Map<String, Set<String>> viewerTeamsByOrg = const {},
-  }) {
-    final groups = filters.reviewedByMe
-        ? overlayReviewedByMe(state.repos, reviewedKeys)
-        : state.repos;
-    final prsByRepoId = {for (final group in groups) group.repo.id: group.prs};
-    return [
-      for (final repo in linkedRepos)
-        (
-          repo: repo,
-          items: <PrInboxItem>[
-            for (final pr in prsByRepoId[repo.id] ?? const <PullRequest>[])
-              if (prPassesFilters(
-                pr,
-                filters: filters,
-                currentLogin: login,
-                includeDrafts: showDrafts,
-                viewerTeamsByOrg: viewerTeamsByOrg,
-              ))
-                PrInboxItem(pr: pr, repo: repo),
-          ],
-        ),
-    ];
   }
 
   @override
@@ -351,7 +312,18 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
       );
     }
 
-    final sections = _buildSections(
+    // Unfiltered, the rail shows each repo's forge total and further pages
+    // load as the list scrolls. Filtered, the remaining pages load straight
+    // away so the filter (and its counts) cover the whole queue.
+    final unfiltered = !filters.isActive && showDrafts;
+    if (!unfiltered && state.paging.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(prsByRepoProvider.notifier).loadNextPages();
+        }
+      });
+    }
+    final sections = prListSections(
       state: state,
       linkedRepos: linkedRepos,
       filters: filters,
@@ -370,10 +342,14 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
           // makes it stale or partial while it still looks authoritative.
           // Renders nothing while GitHub is healthy.
           const GitHubDegradedBanner(),
-          // Repos the server's credential cannot see (e.g. the GitHub App is
-          // not installed on their org): their queues are absent or stale, and
-          // without the notice they just look empty.
-          RepoAccessBanner(repos: state.inaccessibleRepos),
+          // Repos hidden from the reader (not signed in to that forge, no
+          // access there or here) and repos automation cannot reach (the
+          // GitHub App not installed on their owner): without the notices
+          // their queues just look empty.
+          ForgeAccessNotices(
+            hidden: state.hiddenRepos,
+            repoAccess: state.repoAccess,
+          ),
           if (filters.isActive) ...[
             PrFilterBar(scope: prListFilterScope),
             const SizedBox(height: AppSpacing.md),
@@ -384,6 +360,9 @@ class _PullRequestListScreenState extends ConsumerState<PullRequestListScreen> {
               selectable: true,
               selectedRepoId: _selectedRepoId(sections),
               onSelect: _onSelectRepo(sections),
+              totals: unfiltered ? state.totalCount : const {},
+              paging: state.paging,
+              onLoadMore: ref.read(prsByRepoProvider.notifier).loadMore,
             ),
           ),
         ],

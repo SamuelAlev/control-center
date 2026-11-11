@@ -9,16 +9,13 @@ import 'package:cc_host/cc_host.dart';
 /// every op is `workspaceScoped: false`. `<prefix>Status` returns the snapshot
 /// wire map; each mutator (`install`/`cancel`/`uninstall`) applies the action
 /// and returns the FRESH snapshot, so the thin client refreshes its UI without a
-/// second round-trip — the same shape the desktop reads in-process.
+/// second round-trip — the same shape the desktop reads in-process. The
+/// mutators are the server owner's: a model is installed for everyone.
 List<RepoOp> modelControlOps({
   required String prefix,
   required ModelControl control,
-  void Function(RepoOpContext ctx)? guard,
 }) {
   final capitalized = '${prefix[0].toUpperCase()}${prefix.substring(1)}';
-  final authority = guard == null
-      ? ServerAuthority.none
-      : ServerAuthority.serverOwner;
   return [
     RepoOp(
       name: 'models.${prefix}Status',
@@ -30,9 +27,8 @@ List<RepoOp> modelControlOps({
       name: 'models.install$capitalized',
       kind: RepoOpKind.mutate,
       workspaceScoped: false,
-      serverAuthority: authority,
+      serverAuthority: ServerAuthority.serverOwner,
       handler: (ctx) async {
-        guard?.call(ctx);
         await control.install();
         return (await control.status()).toJson();
       },
@@ -41,9 +37,8 @@ List<RepoOp> modelControlOps({
       name: 'models.cancel$capitalized',
       kind: RepoOpKind.mutate,
       workspaceScoped: false,
-      serverAuthority: authority,
+      serverAuthority: ServerAuthority.serverOwner,
       handler: (ctx) async {
-        guard?.call(ctx);
         await control.cancel();
         return (await control.status()).toJson();
       },
@@ -52,9 +47,8 @@ List<RepoOp> modelControlOps({
       name: 'models.uninstall$capitalized',
       kind: RepoOpKind.mutate,
       workspaceScoped: false,
-      serverAuthority: authority,
+      serverAuthority: ServerAuthority.serverOwner,
       handler: (ctx) async {
-        guard?.call(ctx);
         await control.uninstall();
         return (await control.status()).toJson();
       },
@@ -95,10 +89,7 @@ WatchQuery modelControlWatchQuery({
 /// diarization are single fixed models, so they wire only [modelControlOps].
 /// These are added on top of the voice `modelControlOps` (status/install/…), so
 /// a server that hosts a selectable voice control exposes the full surface.
-List<RepoOp> voiceSelectionOps({
-  required SelectableModelControl control,
-  void Function(RepoOpContext ctx)? guard,
-}) {
+List<RepoOp> voiceSelectionOps({required SelectableModelControl control}) {
   return [
     RepoOp(
       name: 'models.voiceCatalog',
@@ -110,12 +101,9 @@ List<RepoOp> voiceSelectionOps({
       name: 'models.selectVoice',
       kind: RepoOpKind.mutate,
       workspaceScoped: false,
-      serverAuthority: guard == null
-          ? ServerAuthority.none
-          : ServerAuthority.serverOwner,
+      serverAuthority: ServerAuthority.serverOwner,
       requiredArgs: const ['model_id'],
       handler: (ctx) async {
-        guard?.call(ctx);
         final modelId = ctx.args['model_id'] as String;
         return (await control.select(modelId)).toJson();
       },

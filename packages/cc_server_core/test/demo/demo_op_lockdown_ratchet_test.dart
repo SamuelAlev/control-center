@@ -180,6 +180,11 @@ void main() {
       reason: 'loginCommand returns a claude auth argv',
     );
     expect(
+      profile.admits(op('claude_accounts.signInStates', RepoOpKind.read)),
+      isFalse,
+      reason: 'signInStates reads the host keychain',
+    );
+    expect(
       profile.admits(op('claude_accounts.create', RepoOpKind.mutate)),
       isFalse,
     );
@@ -223,6 +228,9 @@ void main() {
       'rig.open',
       'codeServer.ensure',
       'mcp.callTool',
+      // The server's MCP token.
+      'mcp.token',
+      'mcp.rotateToken',
       'oauth.begin',
       'oauth.complete',
       'oauth.disconnect',
@@ -232,14 +240,21 @@ void main() {
       'chat.confirmTicketDraft',
       'connect.configure',
       'connect.rotateKey',
+      // Vouching for an address lets SSO and SCIM match it to a person.
+      'users.vouchEmail',
       'github.manifest.begin',
       'github.install.begin',
-      'github.authorizeServer',
+      // GitLab/Bitbucket automation tokens: bot credentials, admin-only.
+      'forge.listAutomationTokens',
+      'forge.setAutomationToken',
+      'forge.clearAutomationToken',
       'credentials.set',
       'providerApps.setGitHub',
       'workspaceProviderApps.list',
       'workspaceProviderApps.save',
-      'workspaceProviderApps.setMode',
+      'workspaceConnect.set',
+      'workspaceConnect.test',
+      'workspaceConnect.confirmPins',
       'pairing.createInvite',
       'worktree.commitAndPush',
       'server.backupNow',

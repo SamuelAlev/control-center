@@ -2,7 +2,7 @@
 title: Il tuo primo spazio di lavoro
 description: Crea uno spazio di lavoro, registra un repository al suo interno e osserva con i tuoi occhi il confine di isolamento.
 slug: it-IT/manuale/tutorial/primo-spazio-di-lavoro
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Cosa costruirai
@@ -11,10 +11,12 @@ Al termine di questo tutorial avrai:
 
 - Uno spazio di lavoro intitolato al tuo progetto
 - Un repository Git registrato al suo interno
-- Cinque agenti inizializzati, uno dei quali configurato abbastanza bene da poter essere eseguito
+- Sei agenti inizializzati, uno dei quali configurato abbastanza bene da poter essere eseguito
 - Un secondo spazio di lavoro vuoto che dimostra il confine di isolamento
 
 L'onboarding ha già creato uno spazio di lavoro per te. Questo tutorial ne crea uno nuovo di proposito, così vedrai ogni parte del processo.
+
+Creare uno spazio di lavoro richiede il proprietario del server, cioè la persona che ha configurato il server. Su un desktop che esegue il proprio server sei tu. Sul server di qualcun altro, **Aggiungi spazio di lavoro** mostra "Solo il proprietario del server può creare spazi di lavoro. Chiedigli di crearne uno, oppure chiedi a un amministratore dello spazio di lavoro di invitarti."; fai una delle due cose e segui il resto del tutorial in quello spazio di lavoro. La registrazione di un repository nel passaggio 2 richiede un amministratore dello spazio di lavoro, mentre il secondo spazio di lavoro del passaggio 4 richiede di nuovo il proprietario del server.
 
 Prima di iniziare, scegli un checkout Git che soddisfi tutte e tre queste condizioni: il passaggio di registrazione rifiuta qualsiasi altro caso:
 
@@ -35,12 +37,12 @@ Control Center passa al nuovo spazio di lavoro e si apre sulla sua posta in arri
 Dietro le quinte, il server pubblica un evento `WorkspaceCreated` e inizializza lo spazio di lavoro con:
 
 - un **agente CEO**, la cui persona è il coordinamento e la delega
-- quattro specialisti — `qa`, `architect`, `engineer` e `librarian` — ciascuno con le proprie istruzioni e skill
+- cinque specialisti — `qa`, `architect`, `engineer`, `librarian` e `content-synthesizer` — ciascuno con le proprie istruzioni e skill
 - i modelli di pipeline integrati e le relative righe di trigger
 
 Ogni spazio di lavoro che crei riceve tutto questo, non solo il primo.
 
-Verifica: apri **Impostazioni → Spazio di lavoro → Agenti**. Nell'elenco ci sono cinque agenti, ciascuno con un anello di stato vuoto.
+Verifica: apri **Impostazioni → Spazio di lavoro → Agenti**. Nell'elenco ci sono sei agenti, ciascuno con un anello di stato vuoto.
 
 ## Passaggio 2: registra un repository
 
@@ -57,7 +59,7 @@ Verifica: il repository compare nell'elenco con il suo `owner/repo` e il branch 
 
 ## Passaggio 3: rendi eseguibile un agente
 
-I cinque agenti appena inizializzati in questo spazio di lavoro non hanno adattatore né modello. L'invio li esegue su **Control Center (built-in)** e, non essendo impostato alcun modello, chiede ad Anthropic il suo valore predefinito: funzionano quindi solo se hai collegato un account Anthropic, e su un modello che non hai scelto se lo hai fatto. L'onboarding alla prima esecuzione imprime la propria scelta su ogni agente del primo spazio di lavoro, una sola volta; uno spazio di lavoro creato in seguito parte con tutti e cinque privi di impostazioni. Impostane uno adesso.
+I sei agenti appena inizializzati in questo spazio di lavoro non hanno adattatore né modello. L'invio li esegue su **Control Center (built-in)** e, non essendo impostato alcun modello, chiede ad Anthropic il suo valore predefinito: funzionano quindi solo se hai collegato un account Anthropic, e su un modello che non hai scelto se lo hai fatto. L'onboarding alla prima esecuzione imprime la propria scelta su ogni agente del primo spazio di lavoro, una sola volta; uno spazio di lavoro creato in seguito parte con tutti e sei privi di impostazioni. Impostane uno adesso.
 
 1. Apri **Impostazioni → Spazio di lavoro → Agenti**
 2. Seleziona `engineer` nell'elenco
@@ -73,7 +75,7 @@ Ogni agente porta con sé il proprio adattatore e il proprio modello, quindi rip
 Crea un secondo spazio di lavoro dal chip nella barra del titolo, esattamente come nel passaggio 1. Poi osservalo:
 
 - **Impostazioni → Spazio di lavoro → Repository** è vuoto. Il repository che hai registrato un minuto fa non c'è.
-- **Impostazioni → Spazio di lavoro → Agenti** contiene cinque agenti, ma sono righe diverse: l'adattatore che hai impostato nel passaggio 3 non c'è più.
+- **Impostazioni → Spazio di lavoro → Agenti** contiene sei agenti, ma sono righe diverse: l'adattatore che hai impostato nel passaggio 3 non c'è più.
 - L'elenco degli spazi, i ticket e la memoria sono tutti vuoti.
 
 Non è trapelato nulla, perché non c'è nulla da cui trapelare: le righe di ogni spazio di lavoro vivono nel file di database di quello spazio di lavoro. Una lettura tra spazi di lavoro non è una query che viene filtrata, è una query che non ha dove essere eseguita. Eliminare uno spazio di lavoro equivale a scollegare un file.
@@ -84,6 +86,6 @@ Per il modello completo, leggi [Spazi di lavoro e isolamento](/it-IT/manuale/con
 
 ## Riepilogo
 
-Hai creato uno spazio di lavoro, l'hai visto inizializzare un CEO e quattro specialisti, hai registrato un repository al suo interno, hai assegnato a un agente un adattatore e un modello e hai verificato che un secondo spazio di lavoro non ne condivida nulla.
+Hai creato uno spazio di lavoro, l'hai visto inizializzare un CEO e cinque specialisti, hai registrato un repository al suo interno, hai assegnato a un agente un adattatore e un modello e hai verificato che un secondo spazio di lavoro non ne condivida nulla.
 
 **Prossimo passo:** [Invia il tuo primo agente](/it-IT/manuale/tutorial/primo-agente/) per mettere al lavoro lo spazio di lavoro.

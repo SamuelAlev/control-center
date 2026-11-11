@@ -293,10 +293,6 @@
   "@allCaughtUp": {
     "description": "Inbox empty-state title."
   },
-  "inboxNoForgeAccount": "No forge account is connected on the server, so pull requests can’t be attributed to you yet.",
-  "@inboxNoForgeAccount": {
-    "description": "Inbox empty-state description when no forge account is connected."
-  },
   "inboxNothingWaiting": "Nothing is blocked and no pull request is waiting on you.",
   "@inboxNothingWaiting": {
     "description": "Inbox empty-state description when the inbox is genuinely empty."
@@ -561,25 +557,6 @@
       "names": { "type": "String" }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, =1{{names} is too large to send over the relay from here.} other{{names} are too large to send over the relay from here.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": { "type": "int" },
-      "names": { "type": "String" }
-    }
-  },
-  "attachmentUploadFailed": "Couldn't upload the attachment. Try again.",
-  "@attachmentUploadFailed": {
-    "description": "Composer error: no attachment survived the upload and there was no text."
-  },
-  "attachmentsLeftOut": "{count, plural, =1{1 attachment couldn't be uploaded and was left out.} other{{count} attachments couldn't be uploaded and were left out.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "teammate": "Teammate",
   "@teammate": {
     "description": "Fallback display name for another member's message."
@@ -761,39 +738,6 @@
   "@noForgeConnected": {
     "description": "Notice when the server has no forge credential to poll with."
   },
-  "reposUnreadable": "{count, plural, =1{1 repo could not be read.} other{{count} repos could not be read.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "reposNotReadable": "Not readable: {names}",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-  "installationSuspendedTitle": "GitHub App installation suspended",
-  "@installationSuspendedTitle": {
-    "description": "Title when the GitHub App installation is suspended and lists are cached."
-  },
-  "installationSuspendedBody": "Showing last known data for {names}. Resume the installation on GitHub.",
-  "@installationSuspendedBody": {
-    "description": "Empty-inbox body when the GitHub App installation is suspended.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-  "installationSuspendedNotice": "GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub.",
-  "@installationSuspendedNotice": {
-    "description": "Inline notice on inbox and PR list when the GitHub App installation is suspended.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-
   "draft": "Draft",
   "@draft": {
     "description": "PR lifecycle: a draft pull request."
@@ -1272,7 +1216,7 @@
   "permissionGitCommit": "Commit changes",
   "permissionGitPush": "Push commits",
   "permissionPrCreate": "Create pull requests",
-  "permissionPrPublish": "Publish pull requests",
+  "permissionPrPublish": "Update or merge pull requests",
   "permissionVendorSyncWrite": "Write vendor sync",
   "permissionNetworkEgress": "Access network",
   "permissionSecretAccess": "Access secrets",
@@ -1286,7 +1230,7 @@
   "permissionScopedGrants": "Rules at this scope",
   "permissionModePreset": "Mode preset",
   "permissionBuiltInDefault": "Built-in default",
-  "permissionRemembered": "Remembered approval",
+  "permissionRemembered": "Standing approval",
   "permissionSource": "Source",
   "permissionSetAtThisScope": "{source} · set here",
   "@permissionSetAtThisScope": {
@@ -1313,7 +1257,6 @@
     }
   },
   "permissionSetHere": "Set a rule here",
-  "permissionRevokeBeforeEdit": "Revoke the scoped or remembered rule before setting a general rule for this action.",
   "permissionConfirmRevoke": "Confirm revoke",
   "permissionRevokeRule": "Revoke rule",
   "permissionCommandPrefix": "Command prefix: {prefix}",
@@ -1361,6 +1304,20 @@
         "type": "String"
       }
     }
+  },
+  "permissionTools": "Tools: {tools}",
+  "@permissionTools": {
+    "description": "Permissions screen: the tools one listed rule or standing approval is limited to. {tools} is a comma-separated list of tool names, which stay as they are.",
+    "placeholders": {
+      "tools": {
+        "type": "String",
+        "example": "update_pull_request"
+      }
+    }
+  },
+  "permissionNotInEffect": "Not in effect while this action is denied",
+  "@permissionNotInEffect": {
+    "description": "Permissions screen: shown on a listed standing approval when the action it approves is set to Deny. A standing approval only spares a question; it never overrides a Deny."
   },
   "permissionMaxCount": "Maximum count: {count}",
   "@permissionMaxCount": {
@@ -1683,9 +1640,6 @@
   "activityAgentBlocked": "Agent action blocked",
   "activityMessage": "New message",
   "activityPullRequest": "Pull request update",
-  "activityTicket": "Ticket update",
-  "activityMeeting": "Meeting update",
-  "activityCalendar": "Calendar connection",
   "activityRig": "Enclosure update",
   "activityEvent": "Update",
   "activityPrReady": "Pull request ready to merge",
@@ -2042,8 +1996,8 @@
   "credentialsBrowserLogin": "Sign in with browser",
   "credentialsSignInAgain": "Sign in again",
   "credentialsWaitingForLogin": "Waiting for authorization in your browser…",
-  "credentialsConnectCodePrompt": "Enter the code shown in your browser",
-  "@credentialsConnectCodePrompt": {"description": "Label of the field where a person types the confirmation code Control Center Connect's page showed after they approved a sign-in"},
+  "credentialsConnectCodePrompt": "Confirmation code",
+  "@credentialsConnectCodePrompt": {"description": "Label of the field where a person types the code the browser showed after they confirmed a sign-in (both Control Center Connect and this server's own sign-in)"},
   "credentialsConnectCodeMalformed": "That doesn't look like a sign-in code. Codes have 8 letters and digits.",
   "@credentialsConnectCodeMalformed": {"description": "Shown when the typed sign-in confirmation code is not 8 letters and digits"},
   "credentialsSignInInvalidCode": "That code doesn't match this sign-in. Check it and try again.",
@@ -2070,7 +2024,6 @@
   "credentialsAddToken": "Add token",
   "credentialsPersonalToken": "Personal access token",
   "credentialsPersonalTokenHint": "Paste a personal access token",
-  "credentialsHostManaged": "This connection comes from the server app or environment. Only the server owner can change it there; you can still add your own token.",
   "credentialsStopWatching": "Stop watching",
   "transcriptClaudeSignInExpiredTitle": "Claude Code sign-in expired",
   "@transcriptClaudeSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its Claude Code account stopped authenticating"},
@@ -2081,5 +2034,307 @@
   "transcriptSignInExpiredBody": "The run stopped because its provider credential no longer works. Reconnect it in Settings → Providers, then retry the turn.",
   "@transcriptSignInExpiredBody": {"description": "Body of the notice in a turn that failed because its model provider credential stopped working"},
   "permissionHostExecution": "Run commands on the host",
-  "@permissionHostExecution": {"description": "Permission class: running commands on the host outside any sandbox, at an agent's request"}
+  "@permissionHostExecution": {"description": "Permission class: running commands on the host outside any sandbox, at an agent's request"},
+  "credentialsSignInLapsed": "Your {provider} sign-in has lapsed. Sign in again.",
+  "@credentialsSignInLapsed": {
+    "description": "Connection status: the grant expired or was revoked",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "credentialsSignInPaused": "Paused: this workspace's sign-in service changed. It works again once the service is back.",
+  "@credentialsSignInPaused": {
+    "description": "Connection status: the grant is parked because the workspace's sign-in service changed"
+  },
+  "credentialsProviderUnreachable": "Can't reach {provider} right now. Retrying.",
+  "@credentialsProviderUnreachable": {
+    "description": "Connection status: renewing the grant failed for now; it retries on its own",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "credentialsScopeWorkspace": "This workspace only",
+  "@credentialsScopeWorkspace": {
+    "description": "Credential scope: applies to the current workspace only"
+  },
+  "credentialsScopeAllWorkspaces": "All workspaces",
+  "@credentialsScopeAllWorkspaces": {
+    "description": "Credential scope: applies to every workspace on the server"
+  },
+  "credentialsRemoveConfirmWorkspace": "Remove your saved credential from this workspace? Other workspaces keep theirs.",
+  "@credentialsRemoveConfirmWorkspace": {
+    "description": "Confirmation before removing a credential kept for this workspace only"
+  },
+  "credentialsRemoveConfirmAllWorkspaces": "Remove your saved credential from every workspace that shares it?",
+  "@credentialsRemoveConfirmAllWorkspaces": {
+    "description": "Confirmation before removing a credential shared by all workspaces"
+  },
+  "credentialsSignInServerRestarted": "The server restarted. Start the sign-in again.",
+  "@credentialsSignInServerRestarted": {
+    "description": "Sign-in failure: the server no longer knows the attempt"
+  },
+  "repoAccessInstallApp": "Install the GitHub App on {owner} so automation can reach {names}. Tap to open GitHub.",
+  "@repoAccessInstallApp": {
+    "description": "Notice for admins: the GitHub App is not installed on the owner of these repositories",
+    "placeholders": {
+      "owner": {
+        "type": "String",
+        "example": "acme"
+      },
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessAskAdminInstall": "The GitHub App isn't installed on {owner}, so automation can't reach {names}. Ask a workspace admin to install it.",
+  "@repoAccessAskAdminInstall": {
+    "description": "Notice for members: the GitHub App is not installed on the owner of these repositories",
+    "placeholders": {
+      "owner": {
+        "type": "String",
+        "example": "acme"
+      },
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessAddToApp": "Add {names} to the GitHub App's repositories. Tap to open GitHub.",
+  "@repoAccessAddToApp": {
+    "description": "Notice for admins: these repositories are not selected in the GitHub App installation",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessAskAdminAdd": "The GitHub App can't see {names} yet. Ask a workspace admin to add them to its repositories.",
+  "@repoAccessAskAdminAdd": {
+    "description": "Notice for members: these repositories are not selected in the GitHub App installation",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessSuspended": "GitHub App installation suspended. Automation for {names} is paused until an owner of the account resumes the installation on GitHub.",
+  "@repoAccessSuspended": {
+    "description": "Notice: the GitHub App installation covering these repositories is suspended",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessOwnerCannotSee": "The person accountable for this workspace's automation can no longer see {names}, so nothing runs there on their behalf.",
+  "@repoAccessOwnerCannotSee": {
+    "description": "Notice: the workspace's accountable person lost access to these repositories",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessOwnerNotSignedIn": "The person accountable for this workspace's automation isn't signed in to the forge, so automation for {names} waits until they sign in.",
+  "@repoAccessOwnerNotSignedIn": {
+    "description": "Notice: the workspace's accountable person is not signed in to the forge",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessRetrying": "Couldn't check access to {names}. Retrying.",
+  "@repoAccessRetrying": {
+    "description": "Muted notice: an access check got no answer and is retried automatically",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "hiddenReposSignIn": "{count, plural, =1{Sign in to {forge} to see pull requests from 1 more repository} other{Sign in to {forge} to see pull requests from {count} more repositories}}",
+  "@hiddenReposSignIn": {
+    "description": "Notice: repositories hidden because the person is not signed in to that forge",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 repository is hidden because your {forge} account can't see it} other{{count} repositories are hidden because your {forge} account can't see them}}",
+  "@hiddenReposNoForgeAccess": {
+    "description": "Notice: repositories hidden because the person's own forge account cannot read them",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "hiddenReposNoGrant": "{count, plural, =1{1 repository is hidden because you don't have access to it in this workspace} other{{count} repositories are hidden because you don't have access to them in this workspace}}",
+  "@hiddenReposNoGrant": {
+    "description": "Notice: repositories hidden because the person holds no grant on them in this workspace",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hiddenReposChecking": "{count, plural, =1{Checking your access to 1 more repository…} other{Checking your access to {count} more repositories…}}",
+  "@hiddenReposChecking": {
+    "description": "Quiet notice while access to some repositories is still being checked",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "credentialsAtlassianEmail": "Atlassian account email",
+  "@credentialsAtlassianEmail": {
+    "description": "Label of the email field next to a Bitbucket API token"
+  },
+  "credentialsAtlassianEmailInvalid": "Enter the email address of your Atlassian account.",
+  "@credentialsAtlassianEmailInvalid": {
+    "description": "Error when the Atlassian account email for a Bitbucket token is missing or malformed"
+  },
+  "credentialsBitbucketApiToken": "API token",
+  "@credentialsBitbucketApiToken": {
+    "description": "Label of the Bitbucket API token field"
+  },
+  "repoAccessAutomationTokenMissing": "No automation token can read {names}, so background work there is paused. An admin can add one in Settings → Repositories.",
+  "@repoAccessAutomationTokenMissing": {
+    "description": "Notice: GitLab/Bitbucket repositories whose background work is paused for lack of an automation token",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "credentialsSignInConfirmInBrowser": "Confirm in your browser, then enter the code it shows.",
+  "@credentialsSignInConfirmInBrowser": {
+    "description": "Shown while a browser sign-in is open: the browser page (Control Center Connect's or this server's own) first asks to confirm, then shows a code to type in the field below"
+  },
+  "credentialsSignInAccountAlreadyBound": "This account is already connected to another person on this server. Sign in with a different account.",
+  "@credentialsSignInAccountAlreadyBound": {
+    "description": "Sign-in failure: the provider account is already held by another person on this server; one account acts for one person only"
+  },
+  "credentialsTokenUnreachable": "{provider} could not be reached to check this token. Try again in a moment.",
+  "@credentialsTokenUnreachable": {
+    "description": "Token form error: the server could not ask the forge about the pasted token",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "credentialsTokenRejected": "{provider} does not accept this token. Check that you copied all of it and that it has not been revoked.",
+  "@credentialsTokenRejected": {
+    "description": "Token form error: the forge refused the pasted token",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "credentialsTokenWrongKind": "This is not a personal token. Paste a personal access token from your own {provider} account, not a project, group, workspace or bot token.",
+  "@credentialsTokenWrongKind": {
+    "description": "Token form error: the pasted token belongs to a bot, project, group or workspace instead of the person",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "credentialsTokenNarrowScope": "This token is missing the {scope} scope, which reviewing and commenting need. Create one that has it.",
+  "@credentialsTokenNarrowScope": {
+    "description": "Token form error: the pasted token lacks a permission. {scope} is the forge's own scope name; keep it as is",
+    "placeholders": {
+      "scope": {
+        "type": "String",
+        "example": "api"
+      }
+    }
+  },
+  "credentialsTokenExpired": "This token has expired. Create a new one and paste it here.",
+  "@credentialsTokenExpired": {
+    "description": "Token form error: the pasted token is already expired"
+  },
+  "credentialsSignInRateLimited": "Too many requests right now. Wait a bit, then try again.",
+  "@credentialsSignInRateLimited": {
+    "description": "Sign-in failure: the sign-in service is limiting requests. Must not ask the person to sign in again"
+  },
+  "credentialsSignInCancelled": "The sign-in was cancelled or declined. Start it again when you're ready.",
+  "@credentialsSignInCancelled": {
+    "description": "Sign-in failure: the person cancelled on the browser page, or declined at the provider"
+  },
+  "credentialsSignInNoLongerOpen": "This sign-in is no longer open: it was cancelled, used or replaced. Start it again.",
+  "@credentialsSignInNoLongerOpen": {
+    "description": "Sign-in failure: the server no longer knows this attempt"
+  },
+  "noWorkspacesYetHint": "A workspace admin has to invite you, or the server owner can create a workspace for you.",
+  "@noWorkspacesYetHint": {
+    "description": "Under noWorkspacesYet on the workspace switcher, when the signed-in person is in no workspace. The phone cannot create workspaces; 'the server owner' = the person who runs this Control Center server."
+  },
+  "repoAccessReplaced": "{repos} now points to a different repository on {forge}. Relink it from the desktop or web app to keep using it.",
+  "@repoAccessReplaced": {
+    "description": "Pull requests notice for a workspace admin: the linked owner/name now names a different repository on the forge. The phone cannot edit links",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/shop-ui"
+      },
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoAccessAskAdminRelink": "{repos} now points to a different repository on {forge}. A workspace admin has to relink it before it can be used again.",
+  "@repoAccessAskAdminRelink": {
+    "description": "Same notice for a member who is not an admin",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/shop-ui"
+      },
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "runSandboxUnavailableTitle": "Agents need a sandbox on this server",
+  "@runSandboxUnavailableTitle": {
+    "description": "Title of the notice in an agent turn when the server refused to start the run because it has no sandbox and the person is not the server owner. Guidance, not an error"
+  },
+  "runSandboxUnavailable": "This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.",
+  "@runSandboxUnavailable": {
+    "description": "Body of that notice. 'Owner' = the person who runs this Control Center server; 'sandbox' = the isolation agents run in"
+  }
 }

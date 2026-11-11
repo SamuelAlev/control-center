@@ -2,7 +2,7 @@
 title: Cómputo de revisión (cohortes, ejes y diffs deterministas)
 description: Qué produce del lado del servidor la pasada de cómputo de revisión —cohortes, diffs de contrato de API y visuales, compuertas por eje— y cómo se integra en la pestaña Revisar.
 slug: es-MX/manual/guias/computo-de-revision
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 La pestaña **Revisar** de la PR es el progreso en vivo del pipeline de revisión
@@ -14,9 +14,7 @@ así que **Ask AI** es lo que la abre.
 Detrás de esa pestaña, `cc_server` arma cohortes de archivos, ejecuta los ejes
 deterministas y los sirve mediante las operaciones RPC de `review_studio.*`
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` y sus pares `watch*`). Una
-disposición persistida que todavía se llame `pr.reviewStudio` abre esta misma
-pestaña **Revisar**.
+`setContractDecision`, `approveVisual`, `compute` y sus pares `watch*`).
 
 En la pestaña Revisar:
 
@@ -87,6 +85,8 @@ Widgetbook, la pasada de cómputo renderiza los componentes modificados antes y
 después mediante una pasada golden headless de `flutter test` en los worktrees
 base y head de la PR, y luego compara los píxeles.
 
+Esas pruebas son código de la propia PR, así que se ejecutan como el proceso de una herramienta de un agente: dentro del sandbox cuando el servidor pone a los agentes en sandbox, sin confinar cuando el propietario del servidor desactivó el sandbox, y sin sandbox solo para una solicitud de la que responde el propietario del servidor. Para cualquier otra persona el eje informa **unavailable** con el motivo «no hay sandbox en este servidor, y solo su propietario puede ejecutar las pruebas de una PR sin sandbox».
+
 :::note[Esto requiere un SDK de Flutter en el host del servidor]
 El servidor de Dart puro no puede renderizar widgets de Flutter dentro del
 proceso, así que recurre a `flutter test` como proceso externo. El SDK debe estar
@@ -97,9 +97,10 @@ aprobación que no se ganó.
 
 Las instantáneas marcadas como **changed** o **removed** retienen la compuerta
 visual hasta que se aprueban; las instantáneas **unchanged**, **added** y
-**approved** la superan. La falta de disponibilidad tiene uno de cuatro motivos:
+**approved** la superan. La falta de disponibilidad tiene uno de cinco motivos:
 no hay SDK de Flutter en el host, no hay app de Widgetbook en el repositorio, no
-hay casos de uso comprobables con golden, o hay un error en el arnés de golden.
+hay casos de uso comprobables con golden, hay un error en el arnés de golden, o
+no hay sandbox para una solicitud de la que el propietario del servidor no responde.
 
 Aprobar un cambio intencional es `review_studio.approveVisual`.
 

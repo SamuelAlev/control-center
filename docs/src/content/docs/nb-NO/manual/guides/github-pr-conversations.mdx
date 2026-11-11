@@ -2,7 +2,7 @@
 title: Snakk med Control Center fra en GitHub-PR
 description: Be Control Center om en gjennomgang eller still et spørsmål direkte fra PR-samtalen, uten webhook eller offentlig URL.
 slug: nb-NO/handbok/slik-gjor-du/github-pr-samtaler
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Denne guiden viser deg hvordan du kan jobbe med Control Center uten å forlate
@@ -30,24 +30,7 @@ oppfører seg nøyaktig som en offentlig utrulling.
 
 ## Finn navnet på boten din
 
-Omtal `@usectrl`, den dedikerte GitHub-kontoen til Control Center. Dette er standardutløseren; arbeidsområdets GitHub-spor håndterer fortsatt forespørselen og publiserer svar. Du trenger ikke legitimasjon for `usectrl`-kontoen.
-
-Appens egen pålogging, `<appslug>[bot]`, og kortformen `@appslug` fungerer også. Slik finner du dette valgfrie aliaset på din egen app:
-
-1. Gå til **Innstillinger → Server → Enkel pålogging** og rull ned til
-   **Leverandørapper**-kortet
-2. Åpne **GitHub**-blokken og klikk på **Test**
-3. Kopier **Bot-innlogging** når den fylles ut. Hvis den fortsatt viser hintet
-   for tomt felt, er påloggingen alltid `<appslug>[bot]` — skriv det, eller den
-   korte formen `@appslug`
-
-GitHub tilbyr ikke appkontoer i `@`-autofullføringen, så appaliaser må skrives inn eller kopieres. Den dedikerte brukeren `@usectrl` er standardmåten å kalle inn boten på; både `@myapp` og `@myapp[bot]` godtas fortsatt som appaliaser.
-
-:::note[Velg et særegent appnavn]
-Kortformen matches som tekst. Hvis en menneskelig GitHub-bruker tilfeldigvis
-deler appens slug, når en omtale av den brukeren på kortform også boten. Den
-fulle formen `@myapp[bot]` er alltid entydig.
-:::
+Omtal `@usectrl`, den dedikerte GitHub-kontoen til Control Center. Den er den eneste utløseren: å omtale appens egen pålogging gjør ingenting. Arbeidsområdets GitHub-spor håndterer fortsatt forespørselen og publiserer svar. Du trenger ikke legitimasjon for `usectrl`-kontoen.
 
 ## Be om en gjennomgang fra GitHub
 
@@ -118,7 +101,7 @@ Serveren løser opp forfatteren av en kommentar, eller den som la til etiketten
 
 - **GitHub-kontoen må være logget inn** på denne serveren. Matchingen skjer på
   GitHubs numeriske konto-id, aldri på påloggingsnavnet. Logg inn fra
-  **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**
+  **Innstillinger → Deg → Profil → Kodehosting**
 - **Vedkommende må være medlem med en skriverolle** (`member`, `admin` eller
   `owner`) i arbeidsområdet som kobler til repoet
 - **Vedkommende må kunne pushe** til repoet på GitHub. Svar bruker et token som er
@@ -142,7 +125,7 @@ etiketten.
 | Ting               | Oppførsel                                                                |
 | ------------------ | ------------------------------------------------------------------------ |
 | Bekreftelse         | 👀 fra kontoen din på kommentaren (eller på PR-en, for etiketten), innen én søkerunde |
-| Svar                | Publiseres i sporet spørsmålet ble stilt i, og begynner med `**Control Center** (for @your-login):`. Med en egen app er forfatteren appens bot; via Connect er det kontoen din, som handler gjennom den delte appen |
+| Svar                | Publiseres i sporet spørsmålet ble stilt i, og begynner med `**Control Center** (for @your-login):`. Forfatter er appens bot. På den delte Connect-appen er et svar inne i en gjennomgangstråd forfattet av kontoen din, med mindre Connect-operatøren har oppført denne installasjonen |
 | Tilskrivning i området | Spørsmålet er ditt; agenten kjører på dine vegne, under områdets autonomiinnstillinger |
 | Gjennomganger       | Funn lander i gjennomgangsområdet; publisering til GitHub er manuell      |
 
@@ -163,9 +146,6 @@ nedetiden, fanges opp i neste søkerunde.
   koble det til senere leverer fortsatt
 - Er du logget inn på GitHub på denne serveren, medlem med en skriverolle og
   i stand til å pushe til repoet? Serveren ignorerer alle andre uten å svare
-- På den delte appen til Control Center: er organisasjonens installasjon
-  autorisert for denne serveren? Se
-  [Autoriser denne serveren for en organisasjon](/nb-NO/handbok/slik-gjor-du/github-app/#autoriser-denne-serveren-for-en-organisasjon)
 - Fortsatt ingenting? Serverloggen navngir søkerunden og PR-en når noe
   mislykkes; se etter `pr_conversation:` (søket) og
   `github_pr_conversation:` (broen)

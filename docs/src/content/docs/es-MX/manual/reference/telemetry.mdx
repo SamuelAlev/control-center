@@ -2,7 +2,7 @@
 title: Analíticas de uso
 description: Qué registra Control Center cuando las analíticas de uso están activadas, quién lo decide y qué no se envía nunca.
 slug: es-MX/manual/referencia/analiticas-de-uso
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center puede enviar **eventos de uso seudónimos** a una instancia de [Umami](https://umami.is). Las analíticas de uso están **desactivadas hasta que el operador del servidor las activa**. El ajuste pertenece al servidor y se aplica a todos los clientes conectados a él: la aplicación de escritorio, la aplicación web, el celular y el propio servidor.
@@ -13,7 +13,7 @@ Las analíticas de uso son independientes de **Compartir informes de fallas**, q
 
 | Interruptor | Dónde | Efecto |
 | --- | --- | --- |
-| **Compartir analíticas de uso** | Incorporación (paso del sandbox) y **Ajustes → Privacidad**. Solo el operador del servidor puede cambiarlo; los demás miembros ven el valor actual en modo de solo lectura | Para todo el servidor. Se guarda como `telemetry.usage_analytics` en los ajustes del servidor. Desactivado salvo que se establezca en `true` |
+| **Compartir analíticas de uso** | Incorporación (paso del sandbox) y **Ajustes → Servidor → Diagnóstico y privacidad**. Solo el operador del servidor puede cambiarlo; los demás miembros ven el valor actual en modo de solo lectura | Para todo el servidor. Se guarda como `telemetry.usage_analytics` en los ajustes del servidor. Desactivado salvo que se establezca en `true` |
 | Tipo de compilación | Automático | Las compilaciones debug y profile no envían nada. En su lugar, escriben cada evento en el log de depuración |
 | `CC_ANALYTICS_DEBUG=1` | Entorno de `cc_server` o su `.env` | Permite que las compilaciones debug y profile del servidor, y de todos los clientes conectados a él, envíen de verdad, para hacer pruebas. El interruptor anterior tiene que seguir activado |
 | `DO_NOT_TRACK=1` | Entorno de `cc_server` | Detiene los informes propios del servidor, diga lo que diga el interruptor. Los clientes siguen haciendo caso al interruptor |

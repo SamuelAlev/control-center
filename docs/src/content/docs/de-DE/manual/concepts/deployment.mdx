@@ -2,7 +2,7 @@
 title: Bereitstellung und Clients
 description: Wie die Thin-Client-Architektur von Control Center einen Headless-Server von Desktop-, Web- und Smartphone-Clients trennt.
 slug: de-DE/handbuch/konzepte/bereitstellung
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center ist kein einzelnes Programm. Es ist eine **Thin-Client-Architektur**:
@@ -141,6 +141,8 @@ weiter, der die Dateien und das code-server-Backend besitzt. Der Browser
 braucht HTTPS oder einen sicheren Loopback-Kontext für Service Worker. Native
 Clients nutzen eine Fassade mit Capability-Begrenzung auf Loopback.
 
+Nur der [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber) kann den eingebetteten code-server-Editor öffnen: er läuft auf dem Server als dessen eigener Benutzer. Eine Sitzung gehört dem Gerät und der Person, die sie geöffnet hat. Er startet mit eingeschaltetem Arbeitsbereichsvertrauen von VS Code, also fragt VS Code, bevor es einem Ordner vertraut, und mit ausgeschalteten automatischen Aufgaben. Alle anderen behalten den eingebauten Einzeldatei-Editor und die Dateiansichten.
+
 ### Smartphone-Begleiter (cc_remote)
 
 Die **Remote**-App ist ein eigener, schlankerer Client, eine Flutter-Web-PWA
@@ -217,8 +219,10 @@ statt zu laufen. Befristet zugewiesene Jobs führt derzeit nur ein echter
 Die beiden Ebenen setzen die Sandbox nicht gleich ein. `cc_server` hüllt die
 Läufe, die er selbst ausführt, in die OS-Sandbox des Hosts, wo ein Backend
 vorhanden ist: Seatbelt unter macOS, bubblewrap unter Linux und WSL2. Unter
-Windows oder ohne `bwrap` und `socat` greifen die übrigen Grenzen.
-**`cc_worker` setzt überhaupt keine Sandbox.** Er meldet eine Fähigkeit
+Windows oder ohne `bwrap` und `socat` startet er nur die Läufe, für die der
+Serverinhaber einsteht, und verweigert alle anderen. Ausnahme ist ein Server, den
+der Inhaber mit `--sandbox off` gestartet hat; dann laufen die Agenten jedes
+Mitglieds ohne Einschränkung. **`cc_worker` setzt überhaupt keine Sandbox.** Er meldet eine Fähigkeit
 `sandbox`, damit der Server Jobs nach Plattform platzieren kann. Im Worker
 wendet nichts eine Sandbox an: ein befristet zugewiesener Job wird direkt
 gestartet, begrenzt durch die Umgebung des Lease und den Worktree, den er
@@ -268,8 +272,7 @@ einen vertrauenswürdigen QR-Code oder einen anderen vertrauenswürdigen Kanal:
 Ein erster signierter Kontakt allein kann nicht authentifizieren, wer den
 Schlüssel bereitgestellt hat. Ändert sich die Identität, fällt der Client
 geschlossen aus; koppele über einen vertrauenswürdigen Kanal neu, statt die
-Abweichung zu ignorieren. Ältere Clients und Klartext-RPC können sich nicht
-verbinden. TLS bleibt für Browser-Origins, Bootstrap und öffentliche Metadaten
+Abweichung zu ignorieren. Klartext-RPC wird nicht akzeptiert. TLS bleibt für Browser-Origins, Bootstrap und öffentliche Metadaten
 nötig; `--insecure` betrifft den äußeren Server-Listener, nicht die
 erforderliche verschlüsselte Sitzung.
 

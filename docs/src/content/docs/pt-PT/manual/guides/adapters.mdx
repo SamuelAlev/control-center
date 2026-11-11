@@ -2,7 +2,7 @@
 title: Gerir adaptadores e modelos
 description: Ligue fornecedores de modelos, escolha o modelo em que um agente é executado e verifique que CLIs de executor de agentes existem no anfitrião do servidor.
 slug: pt-PT/manual/guias/adaptadores
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Este guia mostra como ligar fornecedores de modelos e escolher aquilo em que um
@@ -121,6 +121,8 @@ agentes que pretende utilizar.
 
 O agente **Content synthesizer** escreve o texto que o Control Center gera em torno de uma conversa: o título, as respostas de `/btw`, os documentos de `/handoff` e a entrevista de objetivo de `/goal`. Executa, de cada vez, uma única conclusão sem ferramentas, com o seu próprio adaptador e modelo, por isso atribua-lhe um modelo pequeno e rápido.
 
+Quando esse adaptador é uma CLI ACP, a conclusão é um processo na máquina do servidor e segue a [regra da sandbox](/pt-PT/manual/conceitos/sandbox-e-seguranca/#agentes-num-anfitrião-sem-sandbox): dentro da sandbox quando o servidor isola os agentes, e sem sandbox apenas para pedidos pelos quais o proprietário do servidor é responsável. Para qualquer outra pessoa, estas funcionalidades são ignoradas: não é gerado nenhum título, e `/btw` responde "O agente Content synthesizer não existe ou não tem um runner funcionando".
+
 Edite a **persona** dele em **Definições → Espaço de trabalho → Agentes** para mudar a forma como esse texto soa: tamanho dos títulos, idioma, tom e os exemplos que segue. O formato de resposta que cada funcionalidade interpreta (um título numa só linha, as secções do objetivo) é fixo e aplicado depois da sua persona. Apague o agente para desligar estas funcionalidades; ele não é recriado automaticamente.
 
 ## Instalar uma CLI de executor
@@ -137,8 +139,7 @@ Em seguida, carregue em **Atualizar** no topo da página. Cada linha detetada
 mostra a versão e o caminho resolvidos, além de etiquetas que indicam se suporta
 o modo JSON e a seleção de modelo.
 
-Uma CLI externa mantém as suas próprias credenciais, na sua própria configuração,
-no anfitrião do servidor. O Control Center não as gere.
+Os inícios de sessão do Claude Code estão listados em **Contas do Claude Code**, no executor do Claude Code. O Control Center cria o diretório de configuração de cada conta no servidor e dá-lhe o comando `claude auth login` para executar aí; nunca inicia sessão por si.
 
 :::caution[Os argumentos do adaptador e as variáveis de ambiente ficam neste dispositivo]
 Cada linha de adaptador oferece um campo **Argumentos** e uma caixa de diálogo

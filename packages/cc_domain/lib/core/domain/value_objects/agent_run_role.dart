@@ -8,7 +8,7 @@
 ///
 /// * [main] — a top-level, user-facing driving agent run.
 /// * [sub] — a subagent spawned by another agent (its cost rolls up to the
-///   parent run via `AgentRunLog.childCostCents`).
+///   parent run via `AgentRunLog.childCostMicros`).
 /// * [advisor] — a passive shadow reviewer: tracked for usage/observability but
 ///   never a peer.
 enum AgentRunRole {
@@ -22,8 +22,8 @@ enum AgentRunRole {
   advisor;
 
   /// Parses [value] (an `AgentKind`/`AgentRunRole` `.name`) into a role,
-  /// defaulting to [main] for null/unknown values so legacy run logs (written
-  /// before role attribution existed) attribute to the main agent.
+  /// defaulting to [main] for null/unknown values so a run log without a
+  /// role attributes to the main agent.
   static AgentRunRole tryParse(String? value) {
     if (value == null) {
       return AgentRunRole.main;

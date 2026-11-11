@@ -11,7 +11,7 @@ import 'package:cc_remote/widgets/permission_labels.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
-/// Effective class policy, provenance, and the editable plain rule only.
+/// One action's setting, where it came from, and the editable plain rule.
 class PermissionClassRow extends StatelessWidget {
   const PermissionClassRow({
     super.key,
@@ -50,7 +50,9 @@ class PermissionClassRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final resolution = const PolicyResolver().resolveClass(
+    // The class's setting; conditional rules and standing approvals are its
+    // exceptions, listed under "Rules at this scope".
+    final resolution = const PolicyResolver().resolveClassSetting(
       actionClass,
       rules: rules,
       spaceId: scopeType == ActionScopeType.space ? scopeId : null,
@@ -59,13 +61,6 @@ class PermissionClassRow extends StatelessWidget {
       now: DateTime.now(),
     );
     ActionPolicyRule? plain;
-    final specialClass = local.any(
-      (r) =>
-          r.actionClass == actionClass &&
-          (r.provenance != 'user' ||
-              r.constraint != null ||
-              r.expiresAt != null),
-    );
     for (final rule in local) {
       if (rule.actionClass == actionClass &&
           rule.commandPrefix == null &&
@@ -130,57 +125,50 @@ class PermissionClassRow extends StatelessWidget {
             ),
           if (canEdit) ...[
             const SizedBox(height: 8),
-            if (specialClass)
-              Text(
-                l.permissionRevokeBeforeEdit,
-                style: CcTypography.caption.copyWith(color: t.textTertiary),
-              )
-            else ...[
-              SizedBox(
-                height: 48,
-                child: CcSelect<ActionDecision>(
-                  options: [
-                    for (final d in ActionDecision.values)
-                      CcSelectOption(
-                        value: d,
-                        label: permissionDecisionLabel(l, d),
+            SizedBox(
+              height: 48,
+              child: CcSelect<ActionDecision>(
+                options: [
+                  for (final d in ActionDecision.values)
+                    CcSelectOption(
+                      value: d,
+                      label: permissionDecisionLabel(l, d),
+                    ),
+                ],
+                value: draft,
+                hintText: l.permissionSetHere,
+                semanticLabel: permissionClassLabel(l, actionClass),
+                enabled: !busy,
+                onChanged: onDraftChanged,
+              ),
+            ),
+            if (draft != null || plain != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (draft != null)
+                      CcButton(
+                        size: CcButtonSize.lg,
+                        onPressed: busy ? null : () => onSave(plain),
+                        child: Text(l.save),
+                      ),
+                    if (plain != null)
+                      CcButton(
+                        size: CcButtonSize.lg,
+                        variant: CcButtonVariant.secondary,
+                        onPressed: busy ? null : () => onRevoke(plain!),
+                        child: Text(
+                          revokeArmed == plain.id
+                              ? l.permissionConfirmRevoke
+                              : l.permissionRevokeRule,
+                        ),
                       ),
                   ],
-                  value: draft,
-                  hintText: l.permissionSetHere,
-                  semanticLabel: permissionClassLabel(l, actionClass),
-                  enabled: !busy,
-                  onChanged: onDraftChanged,
                 ),
               ),
-              if (draft != null || plain != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (draft != null)
-                        CcButton(
-                          size: CcButtonSize.lg,
-                          onPressed: busy ? null : () => onSave(plain),
-                          child: Text(l.save),
-                        ),
-                      if (plain != null)
-                        CcButton(
-                          size: CcButtonSize.lg,
-                          variant: CcButtonVariant.secondary,
-                          onPressed: busy ? null : () => onRevoke(plain!),
-                          child: Text(
-                            revokeArmed == plain.id
-                                ? l.permissionConfirmRevoke
-                                : l.permissionRevokeRule,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-            ],
           ],
           CcDivider(color: t.borderSoft),
         ],

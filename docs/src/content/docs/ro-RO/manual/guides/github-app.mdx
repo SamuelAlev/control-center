@@ -1,8 +1,8 @@
 ---
 title: Creează GitHub App
-description: Dă-i serverului tău propria GitHub App dintr-un singur clic, instaleaz-o acolo unde sunt depozitele tale și autorizează serverul pentru instalarea unei organizații.
+description: Dă-i serverului tău propria GitHub App dintr-un singur clic și instaleaz-o acolo unde sunt depozitele tale, astfel încât toată lumea din organizație să o poată folosi de pe orice server.
 slug: ro-RO/manual/ghiduri-practice/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Acest ghid îți arată cum să îi dai serverului tău propria GitHub App. Durează
@@ -39,9 +39,9 @@ push. Automatizarea nu aprobă niciodată un pull request.
 Aplicația proprie a serverului se aplică doar sub **Folosește aplicațiile mele**.
 Cu Control Center Connect sau cu un Connect propriu, Connect gestionează toate
 benzile, inclusiv GitHub; aplicația serverului rămâne salvată, dar nefolosită,
-până treci înapoi. Aplicația unui spațiu de lucru ([Dă unui spațiu de lucru o altă
-aplicație](#dă-unui-spațiu-de-lucru-o-altă-aplicație)) se aplică în continuare în
-orice mod. O aplicație căreia îi lipsesc unele câmpuri este o eroare, nu o revenire
+până treci înapoi. Un spațiu de lucru pe propriile aplicații
+([Dă unui spațiu de lucru propria aplicație](#dă-unui-spațiu-de-lucru-propria-aplicație))
+folosește aplicația proprie în locul celei a serverului, indiferent de modul serverului. O aplicație căreia îi lipsesc unele câmpuri este o eroare, nu o revenire
 la alternativă: autentificările GitHub sunt refuzate până când fiecare câmp este
 setat.
 
@@ -103,27 +103,26 @@ citi nimic.
    trebui să le vadă
 
 Ca să o instaleze mai târziu pe alt cont, un administrator al spațiului de lucru
-merge la **Setări → Spațiu de lucru → General**, găsește **Instalări ale
-aplicației GitHub** pe cardul de identitate GitHub și apasă **Instalează
-aplicația GitHub**. Lista arată fiecare cont pe care este instalată aplicația și
+merge la **Setări → Spațiu de lucru → Integrări**, găsește **Instalări ale
+aplicației GitHub** pe cardul **Aplicația GitHub**, din Găzduire de cod, și apasă
+**Instalează aplicația GitHub**. Lista arată fiecare cont pe care este instalată aplicația și
 semnalează o instalare suspendată.
 
-## Autorizează acest server pentru o organizație
+## Împarte instalarea unei organizații
 
-Pe aplicația partajată a Control Center, instalarea unei organizații servește
-doar serverele pe care administratorii ei le-au autorizat. Instalarea prin
-**Instalează aplicația GitHub** autorizează serverul care a pornit-o. Pentru o
-instalare care există deja:
+O organizație instalează GitHub App o singură dată. După aceea, oricine din ea
+care se autentifică în GitHub pe un server Control Center poate folosi instalarea,
+indiferent de server: al tău, al unui coleg sau al lui. Nu trebuie autorizat nimic
+pe fiecare server.
 
-1. Un administrator al acelei organizații se autentifică în GitHub pe acest
-   server
-2. Deschide **Setări → Spațiu de lucru → General → Instalări ale aplicației
-   GitHub**
-3. Rândul organizației afișează **Neautorizată**. Apasă **Autorizează acest
-   server**
+Fiecare token pe care îl primește un server este al persoanei autentificate,
+limitat la un singur depozit și la rolul ei în acel depozit, așa că nu ajunge mai
+departe decât ar putea ajunge ea pe GitHub. Jurnalul de audit al GitHub arată
+acea persoană, care acționează prin aplicație.
 
-Rândul afișează apoi **Autorizată**. Aplicația ta proprie nu are nevoie de nimic
-din toate acestea: fiecare instalare a ei aparține serverului tău.
+Ca să oprească accesul Control Center la o organizație, un proprietar al
+organizației elimină instalarea sau îi restrânge depozitele pe GitHub. Scoaterea
+unei persoane din organizație îi oprește și accesul.
 
 ## Înregistreaz-o manual
 
@@ -162,22 +161,17 @@ fișierul `.env` (în Docker, montează-l la `/app/bin/.env`). Inițializarea ar
 loc **o singură dată per câmp**, așa că o editare în Setări nu este anulată de
 următoarea repornire.
 
-## Dă unui spațiu de lucru o altă aplicație
+## Dă unui spațiu de lucru propria aplicație
 
-Un spațiu de lucru poate folosi o aplicație proprie în locul celei a serverului.
-Un administrator al spațiului de lucru merge la **Setări → Spațiu de lucru →
-General**, alege **Folosește un alt GitHub App** pe cardul **Identitate GitHub**
-și introduce id-ul, cheia privată, client id-ul și client secret-ul acelei
-aplicații. Membrii se autentifică apoi în acea aplicație pentru acest spațiu de
-lucru. Un spațiu de lucru pe propria aplicație nu revine niciodată la aplicația
-serverului sau la Connect: până când câmpurile lui sunt complete, munca lui pe
-GitHub este refuzată. Se aplică oricum ar autentifica serverul oamenii, inclusiv
-prin Connect.
+Un spațiu de lucru poate folosi o aplicație proprie în locul celei a serverului:
 
-Cardul **Aplicații ale providerilor** de pe aceeași pagină face același lucru pentru
-Google Calendar, Linear și căutarea GIF. Vezi [Dă unui spațiu de lucru propria
-aplicație Linear](/ro-RO/manual/ghiduri-practice/integrare-linear/#dă-unui-spațiu-de-lucru-propria-aplicație-linear)
+1. Un administrator al spațiului de lucru merge la **Setări → Spațiu de lucru → Integrări**
+2. Pe cardul **Control Center Connect**, alege **Folosește aplicațiile mele** și apasă **Aplică**. Toți din spațiul de lucru se autentifică din nou prin aplicațiile spațiului de lucru
+3. Cardul **Aplicația GitHub**, din Găzduire de cod, are acum câmpurile aplicației: **App id** și **Cheie privată** sub **Acționează pentru acest spațiu de lucru**, **Client id** și **Client secret** sub **Autentificarea oamenilor**. Apasă **Test** odată ce sunt completate
+
+Membrii se autentifică apoi în acea aplicație pentru acest spațiu de lucru. Un spațiu de lucru pe propriile aplicații nu revine niciodată la aplicația serverului sau la Connect: până când câmpurile lui sunt complete, munca lui pe GitHub este refuzată. Aceeași alegere acoperă Google Calendar, Linear și căutarea GIF, fiecare cu propriile câmpuri lângă furnizorul său, pe aceeași pagină. Vezi [Dă unui spațiu de lucru propria aplicație Linear](/ro-RO/manual/ghiduri-practice/integrare-linear/#dă-unui-spațiu-de-lucru-propria-aplicație-linear)
 și [Dă unui spațiu de lucru propriul client Google](/ro-RO/manual/ghiduri-practice/conecteaza-calendar/#dă-unui-spațiu-de-lucru-propriul-client-google).
+Celelalte alegeri de pe acest card, și ce face fiecare, sunt în [Alegerea pe spațiu de lucru](/ro-RO/manual/referinta/connect/#alegerea-pe-spațiu-de-lucru).
 
 ## Depanare
 
@@ -195,7 +189,7 @@ Pornește din nou din Setări.
 
 Înregistrarea și instalarea sunt pași separați. Deschide pagina de instalare a
 aplicației sau folosește **Instalează aplicația GitHub** din Spațiu de lucru →
-General.
+Integrări.
 
 ### Testul spune că cheia privată nu a putut fi citită
 

@@ -173,6 +173,59 @@ void main() {
       await write(admin, trigger(templateId: 'agent'));
     });
 
+    test('whoever leaves a trigger armed is recorded as arming it, never '
+        'the client\'s value', () async {
+      final armed = await write(
+        admin,
+        trigger(templateId: 'agent').copyWith(armedByUserIds: {'mallory'}),
+      );
+      expect(armed.armedByUserIds, {'user-1'});
+
+      final disarmed = await write(
+        member,
+        trigger(templateId: 'agent', enabled: false),
+        previous: armed,
+      );
+      expect(disarmed.armedByUserIds, isEmpty);
+
+      // A manual trigger fires only when someone starts it: nobody armed it.
+      final manual = await write(
+        admin,
+        trigger(eventType: PipelineTrigger.manualEventType),
+      );
+      expect(manual.armedByUserIds, isEmpty);
+    });
+
+    test('every admin who armed it stays recorded while it stays armed; '
+        'disarming forgets them all', () async {
+      const otherAdmin = RepoOpContext(
+        args: {},
+        workspaceId: 'ws-1',
+        deviceId: 'device-2',
+        userId: 'user-2',
+        role: WorkspaceRole.admin,
+      );
+      final first = await write(admin, trigger(templateId: 'agent'));
+      final second = await write(
+        otherAdmin,
+        trigger(templateId: 'agent'),
+        previous: first,
+      );
+      expect(second.armedByUserIds, {'user-1', 'user-2'});
+
+      final disarmed = await write(
+        admin,
+        trigger(templateId: 'agent', enabled: false),
+        previous: second,
+      );
+      final rearmed = await write(
+        otherAdmin,
+        trigger(templateId: 'agent'),
+        previous: disarmed,
+      );
+      expect(rearmed.armedByUserIds, {'user-2'});
+    });
+
     test('any trigger on a shell pipeline is admin-only', () async {
       await expectLater(
         write(member, trigger(templateId: 'shell', enabled: false)),
@@ -323,6 +376,39 @@ void main() {
         await upsert(member, template('inert', [BuiltInBodyKeys.promptAgent]));
       },
     );
+
+    test('saving a pipeline records its editor on every trigger armed on '
+        'it, and on no other', () async {
+      triggers.rows
+        ..add(trigger(id: 'armed').copyWith(armedByUserIds: {'admin-a'}))
+        ..add(trigger(id: 'off', enabled: false))
+        ..add(trigger(id: 'elsewhere', templateId: 'agent'));
+      await savePipelineTemplate(
+        member,
+        templates: templates,
+        triggers: triggers,
+        incoming: template('inert', [BuiltInBodyKeys.humanGate]),
+      );
+      expect(templates.rows['inert']!.name, 'inert');
+      final byId = {for (final t in triggers.rows) t.id: t};
+      expect(byId['armed']!.armedByUserIds, {'admin-a', 'user-1'});
+      expect(byId['off']!.armedByUserIds, isEmpty);
+      expect(byId['elsewhere']!.armedByUserIds, isEmpty);
+    });
+
+    test('a refused save records nobody', () async {
+      triggers.rows.add(trigger(id: 'armed', templateId: 'shell'));
+      await expectLater(
+        savePipelineTemplate(
+          member,
+          templates: templates,
+          triggers: triggers,
+          incoming: templates.rows['shell']!.copyWith(name: 'x'),
+        ),
+        throwsA(isA<AuthException>()),
+      );
+      expect(triggers.rows.single.armedByUserIds, isEmpty);
+    });
   });
 }
 
@@ -337,6 +423,10 @@ class _Templates implements PipelineTemplateRepository {
   ) async => workspaceId == 'ws-1' ? rows[templateId] : null;
 
   @override
+  Future<void> upsert(PipelineDefinition definition) async =>
+      rows[definition.templateId] = definition;
+
+  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -346,6 +436,11 @@ class _Triggers implements PipelineTriggerConfigRepository {
   @override
   Future<List<PipelineTrigger>> forWorkspace(String workspaceId) async =>
       rows.where((t) => t.workspaceId == workspaceId).toList();
+
+  @override
+  Future<void> update(PipelineTrigger trigger) async {
+    rows[rows.indexWhere((t) => t.id == trigger.id)] = trigger;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

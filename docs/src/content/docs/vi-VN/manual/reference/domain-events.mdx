@@ -2,7 +2,7 @@
 title: Sự kiện miền
 description: Danh mục đầy đủ của 54 sự kiện miền, dữ liệu tải của chúng và những bên đăng ký phía máy chủ tiêu thụ chúng.
 slug: vi-VN/so-tay/tham-chieu/su-kien-mien
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bus sự kiện
@@ -148,14 +148,13 @@ Một số hệ thống con trông có vẻ hướng sự kiện khi nhìn từ 
 
 | Miền con           | Trạng thái vận động bằng cách nào thay vào đó                                                           |
 | ------------------ | --------------------------------------------------------------------------------------------------------- |
-| Bộ nhớ             | `record_memory_fact` và những công cụ cùng nhóm ghi rồi trả về; việc truy hồi thì đọc. Không có gì được phát khi có một dữ kiện hay xung đột |
+| Bộ nhớ             | `propose_fact` và những công cụ cùng nhóm ghi rồi trả về; việc truy hồi thì đọc. Không có gì được phát khi có một dữ kiện hay xung đột |
 | Điều phối          | Đề xuất, việc phê duyệt đề xuất và lượt chạy quy trình được tạo ra đều là các hàng dữ liệu và lời gọi RPC |
 | Tài liệu kế hoạch  | `submit_plan` ghi một bản sửa đổi; việc phê duyệt hiện thực hóa một điều phối. Cả hai đều không được thông báo |
 | Artifact           | `publish_artifact` / `revise_artifact` ghi bản sửa đổi trực tiếp                                        |
 | Phê duyệt          | Việc leo thang được xử lý bên trong dịch vụ quy trình phê duyệt                                          |
 | Đồng bộ phiếu      | Bộ điều phối nhà cung cấp đăng ký các sự kiện phiếu ở trên; các webhook đến được áp dụng trực tiếp       |
 | Làm mới lịch       | Một lần đồng bộ upsert các sự kiện và máy khách đọc lại; không có quảng bá làm mới nào                   |
-| Merge worktree     | Được ghi vào `worktree_merge_log` và đọc từ đó                                                           |
 
 ## Các bên đăng ký
 
@@ -190,7 +189,7 @@ Mọi bên đăng ký dưới đây đều được khởi tạo bên trong `run
 
 `TicketAssigned` là một tín hiệu kiểm toán và thông báo, đồng thời là một trình kích hoạt quy trình. Việc gán cho một agent ghi lại quyền sở hữu và không khởi chạy lượt chạy nào — không có bộ điều phối phiếu. Việc gán cho một nhóm (khi `assignedTeamId` được đặt) là ngoại lệ: `TeamRoutingService` điều phối trưởng nhóm.
 
-`TicketRemoteSyncHandler` được khai báo nhưng không bao giờ được khởi tạo trong mã chạy thật, nên hiện nay nó không đăng ký gì cả. `NotificationEventMapper` phía máy khách chỉ được khởi tạo trong chính bài kiểm thử của nó — đó là tàn dư của đường đi trong cùng tiến trình từ trước khi tách máy khách/máy chủ. Toast trực tiếp đến từ các khung truyền ở dưới.
+Toast trực tiếp đến từ các khung truyền ở dưới.
 
 ## Ánh xạ thông báo
 

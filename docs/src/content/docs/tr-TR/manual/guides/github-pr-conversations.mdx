@@ -2,7 +2,7 @@
 title: Bir GitHub PR'dan Control Center ile konuşma
 description: Control Center’dan, webhook ya da genel URL olmadan, doğrudan PR konuşmasından bir inceleme veya yanıt isteyin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-pr-konusmalari
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Bu kılavuz, GitHub'dan ayrılmadan Control Center ile nasıl çalışacağınızı
@@ -31,24 +31,7 @@ tamamen aynı davranır.
 
 ## Botunuzun adını bulun
 
-Control Center'ın özel GitHub hesabı `@usectrl` adresini anın. Varsayılan tetikleyici budur; çalışma alanınızın GitHub hattı isteği işlemeye ve yanıtları yayımlamaya devam eder. `usectrl` hesabının kimlik bilgilerine ihtiyacınız yoktur.
-
-App'in kendi giriş adı `<appslug>[bot]` ve kısa `@appslug` biçimi de çalışır. Kendi uygulamanızda isteğe bağlı bu diğer adı bulmak için:
-
-1. **Ayarlar → Sunucu → Tek oturum açma** bölümüne gidin ve
-   **Sağlayıcı uygulamaları** kartına kaydırın
-2. **GitHub** bloğunu açın ve **Test**'e tıklayın
-3. **Bot girişi** dolduğunda kopyalayın. Hâlâ boş ipucunu gösteriyorsa giriş
-   adı her zaman `<appslug>[bot]` biçimindedir — bunu yazın, ya da kısa
-   `@appslug` biçimini kullanın
-
-GitHub, `@` otomatik tamamlamasında App hesaplarını göstermez; bu yüzden App takma adlarının yazılması veya kopyalanması gerekir. Özel `@usectrl` kullanıcısı varsayılan çağrı yoludur; `@myapp` ve `@myapp[bot]` App takma adları olarak kabul edilmeye devam eder.
-
-:::note[Kendine özgü bir uygulama adı seçin]
-Kısa biçim metin olarak eşleştirilir. Bir insan GitHub kullanıcısı uygulamanızın
-slug'ını paylaşıyorsa, o kullanıcıdan kısa biçimle söz etmek de bota ulaşır.
-Tam `@myapp[bot]` biçimi ise her zaman nettir.
-:::
+Control Center'ın özel GitHub hesabı `@usectrl` adresini anın. Tek tetikleyici budur: uygulamanın kendi girişini anmak hiçbir şey yapmaz. Çalışma alanınızın GitHub hattı isteği işlemeye ve yanıtları yayımlamaya devam eder. `usectrl` hesabının kimlik bilgilerine ihtiyacınız yoktur.
 
 ## GitHub'dan inceleme isteyin
 
@@ -118,8 +101,8 @@ Sunucu, herhangi bir şey yapmadan önce bir yorumun yazarını ya da `ai-review
 etiketini ekleyen kişiyi çözümler:
 
 - **GitHub hesabı bu sunucuda oturum açmış olmalıdır.** Eşleştirme, giriş adına
-  göre değil, GitHub’ın sayısal hesap kimliğine göre yapılır. **Ayarlar → Çalışma
-  alanı → Profil ve kimlik → Kod barındırma** altından oturum açın
+  göre değil, GitHub’ın sayısal hesap kimliğine göre yapılır. **Ayarlar → Siz →
+  Profil → Kod barındırma** altından oturum açın
 - Depoyu bağlayan çalışma alanında **yazma rolüne sahip bir üye olmalıdır**
   (`member`, `admin` veya `owner`)
 - GitHub’da depoya **push edebilmelidir**. Yanıtlar o kişinin erişimiyle sınırlı
@@ -142,7 +125,7 @@ geçerlidir.
 | Şey                      | Davranış                                                                 |
 | ------------------------ | ------------------------------------------------------------------------ |
 | Alındı bildirimi         | Tek bir tarama içinde yorumda (etiket için PR’da) hesabınızdan 👀          |
-| Yanıtlar                 | Sorunun sorulduğu kanalda, `**Control Center** (for @your-login):` ile başlayarak gönderilir. Kendi uygulamada yazar uygulamanın botudur; Connect üzerinden ise paylaşılan App aracılığıyla hareket eden hesabınızdır |
+| Yanıtlar                 | Sorunun sorulduğu kanalda, `**Control Center** (for @your-login):` ile başlayarak gönderilir. Uygulamanın botu tarafından yazılır. Paylaşılan Connect uygulamasında, bir inceleme dizisi içindeki yanıt, Connect operatörü bu kurulumu listelemediyse hesabınız tarafından yazılır |
 | Alan içi atıf            | Soru size aittir; ajan, alanın özerklik ayarları altında sizin adınıza çalışır |
 | İncelemeler              | Bulgular inceleme alanına düşer; GitHub'a yayımlamak elle yapılır         |
 
@@ -163,9 +146,6 @@ yakalanır.
   dolayısıyla sonradan bağlamak yine de teslim eder
 - Bu sunucuda GitHub’a oturum açtınız mı, yazma rolüne sahip bir üye misiniz ve
   depoya push edebiliyor musunuz? Sunucu diğer herkesi yanıt vermeden yok sayar
-- Control Center’ın paylaşılan App’inde: kuruluşun kurulumu bu sunucu için
-  yetkilendirildi mi? Bkz.
-  [Bu sunucuyu bir kuruluş için yetkilendirme](/tr-TR/kilavuz/nasil-yapilir/github-app/#bu-sunucuyu-bir-kuruluş-için-yetkilendirme)
 - Hâlâ hiçbir şey yok mu? Bir şey başarısız olduğunda sunucu günlüğü taramayı
   ve PR'ı adlandırır; `pr_conversation:` (yoklayıcı) ve
   `github_pr_conversation:` (köprü) aramalarına bakın

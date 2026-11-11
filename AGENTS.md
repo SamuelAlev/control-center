@@ -25,6 +25,9 @@ Keep this file for cross-cutting coding rules. Put subsystem details in the owni
 - Settings is a shell. Feature-owned `presentation/settings/` and `settings_contributions.dart` implement `settings_extensions.dart`; `lib/di/settings_registry.dart` composes them. Settings must not import another feature's presentation. Contribution IDs are unique and `<feature>.`-namespaced; destinations resolve against `kSettingsNav`.
 - Use declared `DomainEventBus` events, not assumed ones. Workspace seeding reacts to `WorkspaceCreated`, never fire-and-forget from widget `build()`.
 - People act on a provider only through their own sign-in (`GitHubClients.asPerson`, `LinearClients.personAuthorization`); automation only through one-repository tokens bounded by an accountable human (`GitHubClients.mintScoped`/`forOwner`) or an app actor. No PAT, server-owner or environment fallback; build no other authenticated GitHub client. See [ARCH.md](ARCH.md#provider-credentials-and-connect).
+- Commit identity is decided in one place (`AgentCommitIdentity`, resolved by `AgentCommitIdentities`): work a person started is theirs (author, committer, their own opt-in signing key), automation is the bot's and unsigned, and co-author credit follows `agent_commit_attribution`. Set no `GIT_AUTHOR_*`/`GIT_COMMITTER_*`, signer or trailer anywhere else; a run's commits are signed only by the gateway and checked by `PushedCommitInspector`. See [SECURITY.md](SECURITY.md#agent-run-gateway).
+- The host belongs to the server owner, and a workspace admin is not the server owner. Nothing runs on the host outside a sandbox unless the owner started it or approved that kind of host execution: an op that reaches the host's shell, files, display or restore path declares `serverAuthority: ServerAuthority.serverOwner`, a definition that runs on the host needs the current owner's recorded approval, and a missing sandbox is a refusal (`sandbox_unavailable`), never a bare-host fallback. Server code spawns through `ChildProcess` (inside a run, the run's tool launcher), never a raw `Process.start/run`. See [SECURITY.md](SECURITY.md#sandboxes-and-rigs).
+- Code follows the forge: a repository grant alone opens no code. Ops that expose a repository's files, or a space's content, go through the shared gates (`repoForgeReadCheck`, `SpaceRepoAccess` via `PrDataGate.requireSpace`); mutations need the write grant. Refusals carry a `data.kind` the clients localize; add a kind, never a second message to parse. See [SECURITY.md](SECURITY.md#authorization-and-isolation).
 
 ## Workspace isolation
 
@@ -63,9 +66,9 @@ Never run two test suites in parallel or omit the concurrency cap.
 
 | Changed surface | Required regeneration/build |
 | --- | --- |
-| Drift tables/DAOs or JSON/codegen models | `fvm flutter pub run build_runner build --delete-conflicting-outputs` from root; shared pub workspace/lockfile |
+| Drift tables/DAOs or JSON/codegen models | `fvm dart run build_runner build --delete-conflicting-outputs` from root for the app, inside the package (`packages/<name>`) for a member package (a root run writes nothing for members); shared pub workspace/lockfile |
 | ARB files | `fvm flutter gen-l10n` |
-| Server-side code | Build/stage natives, then `cd apps/cc_server && fvm dart build cli`; desktop prefers the prebuilt binary |
+| Server-side code | Build/stage natives, then `scripts/build_server.sh` (raw `dart build cli` leaves out the media the server needs to boot); desktop prefers the prebuilt binary |
 | Worker entry or transitive source | `tool/gen_workers.sh`; commit generated `web/*.js`, check with `tool/check_workers.sh` |
 
 Worker entries (`@isolateManagerCustomWorker` / `@isolateManagerWorker`) must remain Flutter-free. The generator is a global build tool, not a dev_dependency; adding it conflicts with the workspace analyzer constraints.

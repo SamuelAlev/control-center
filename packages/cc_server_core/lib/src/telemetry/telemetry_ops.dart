@@ -1,5 +1,5 @@
 import 'package:cc_domain/cc_domain.dart'
-    show AuthException, RepoOpKind, ValidationException;
+    show RepoOpKind, ValidationException;
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:cc_host/cc_host.dart';
 
@@ -10,10 +10,7 @@ import 'package:cc_host/cc_host.dart';
 /// a client never decides that on its own. Only the server owner flips the
 /// switch. All ops are `workspaceScoped: false`; nothing here is workspace
 /// data.
-List<RepoOp> buildTelemetryOps({
-  required TelemetryConfigRepository config,
-  required Future<bool> Function(String userId) isServerOwner,
-}) => [
+List<RepoOp> buildTelemetryOps({required TelemetryConfigRepository config}) => [
   RepoOp(
     name: 'telemetry.config',
     kind: RepoOpKind.read,
@@ -27,13 +24,6 @@ List<RepoOp> buildTelemetryOps({
     serverAuthority: ServerAuthority.serverOwner,
     requiredArgs: ['enabled'],
     handler: (ctx) async {
-      // Depth behind `serverAuthority`, for catalogs driven without the
-      // dispatcher.
-      if (!await isServerOwner(ctx.userId)) {
-        throw const AuthException(
-          'Only the server owner may change usage analytics for this install',
-        );
-      }
       final enabled = ctx.args['enabled'];
       if (enabled is! bool) {
         throw const ValidationException(

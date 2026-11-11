@@ -1,4 +1,8 @@
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart'
+    show WorktreePublishResult;
 import 'package:control_center/features/pr_review/providers/compose_pr_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -35,9 +39,18 @@ class ComposeUnpushedHeadNotice extends ConsumerWidget {
   Future<void> _publish(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final toaster = CcToastScope.maybeOf(context);
-    final result = await ref
-        .read(composePrProvider.notifier)
-        .publishHead(spaceId: spaceId);
+    final WorktreePublishResult? result;
+    try {
+      result = await ref
+          .read(composePrProvider.notifier)
+          .publishHead(spaceId: spaceId);
+    } on RemoteRpcException catch (e) {
+      toaster?.show(
+        repoRefusalOf(l10n, e) ?? l10n.pushFailed,
+        variant: CcToastVariant.danger,
+      );
+      return;
+    }
     if (!context.mounted) {
       return;
     }

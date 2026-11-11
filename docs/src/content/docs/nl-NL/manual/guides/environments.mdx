@@ -2,7 +2,7 @@
 title: Omgevingen instellen
 description: Geef elke ruimte en elke pull request een eigen draaiende stack, met compose, een eigen CLI, bewaakte processen of een desktop-app.
 slug: nl-NL/handleiding/gidsen/omgevingen
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 Een **omgeving** is de draaiende stack van één ruimte: de services die een branch nodig heeft, geïsoleerd van alle andere ruimtes, zichtbaar in de zijbalk en bereikbaar voor agents. Ook pull requests krijgen er een, want een PR heeft al een eigen ruimte.
@@ -11,12 +11,26 @@ Een beheerder van de werkruimte schrijft één keer een **definitie**. Leden kli
 
 ## Een definitie maken
 
-1. Open **Instellingen → Werkruimte → Omgevingen**. Alleen beheerders van de werkruimte kunnen definities wijzigen.
+1. Open **Instellingen → Werkruimte → Omgevingen**. Alleen beheerders van de werkruimte kunnen definities wijzigen, en alleen de serverbeheerder kan er een opslaan die op de serverhost draait (zie [Wie wat kan opslaan](#wie-wat-kan-opslaan)).
 2. Klik op **Nieuwe definitie** en daarna op **Lege definitie** of **Concept uit repo**. Een concept doorzoekt de repo op compose-bestanden, een `Procfile` en `package.json`-scripts, en jij controleert het resultaat.
 3. Vul het formulier in of gebruik het tabblad **JSON**. De voorbeelden op deze pagina zijn die JSON.
 4. Klik op **Test uitvoeren**. Dat start een wegwerpomgeving, wacht tot die klaar is en vernietigt hem weer.
 
-Gebruik **Repo-bestand koppelen** om een definitie in een repo te bewaren. Control Center leest het bestand alleen van de standaardbranch en voert alleen de versie uit die een beheerder heeft goedgekeurd. Een nieuwere versie toont **Update beschikbaar** en verandert niets totdat ze is goedgekeurd.
+Opslaan controleert een definitie streng. Een onbekend veld, een waarde van het verkeerde type of een verkeerd gespelde keuze wordt geweigerd, met het pad en de dichtstbijzijnde geldige naam, zoals `repos.app.requird: Unknown field. Did you mean "required"?`. Een `$schema` op het hoogste niveau is toegestaan.
+
+Gebruik **Repo-bestand koppelen** om een definitie in een repo te bewaren. Control Center leest het bestand alleen van de standaardbranch en voert alleen de versie uit die is goedgekeurd: door een beheerder van de werkruimte, of door de serverbeheerder wanneer de definitie op de host draait. Een nieuwere versie toont **Update beschikbaar** en verandert niets totdat ze is goedgekeurd.
+
+### Wie wat kan opslaan
+
+Een omgevingsdefinitie kan opdrachten uitvoeren op de serverhost als de eigen gebruiker van de server. Dat is een beslissing van de servereigenaar, niet van een werkruimterol:
+
+- Een definitie **draait op de host** wanneer hij host-plaatsing heeft, een controle die een opdracht uitvoert, of een `provision`- of `archive`-taak. Die taken draaien in de worktree van de ruimte op de host, wat de plaatsing ook is.
+- Alleen de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) kan een definitie die op de host draait opslaan of goedkeuren. Dat geldt ook voor het goedkeuren van een nieuwe versie van een gekoppeld repo-bestand. Een werkruimte-admin die het probeert, ziet "Alleen de serverbeheerder kan een omgeving opslaan of goedkeuren die op de serverhost draait. Een werkruimte-admin kan er een gebruiken die in een rig draait."
+- Een werkruimte-admin kan een definitie die volledig in een rig draait opslaan en goedkeuren: `"placement": "rig"`, geen controle-opdracht en geen `provision`- of `archive`-taak.
+- Leden starten, stoppen en gebruiken omgevingen in beide gevallen.
+- Een definitie die op de host draait, draait pas nadat de **huidige** servereigenaar hem heeft opgeslagen of goedgekeurd. De server legt die goedkeuring zelf vast en controleert haar vóór elke start, controle, taak en synchronisatie van de pull-requestkop. Een definitie die de huidige eigenaar niet heeft goedgekeurd, zoals een definitie die een vorige eigenaar heeft opgeslagen, wacht onder zijn rij in de omgevingslijst en in de editor. De serverbeheerder ziet "Draait op deze server. Keur hem goed om het starten toe te staan." met **Goedkeuren**, wat hem ongewijzigd opslaat; alle anderen zien "Draait op deze server. De serverbeheerder moet hem goedkeuren voordat hij kan starten."
+- Een omgeving die op die goedkeuring wacht, zegt "De serverbeheerder heeft deze omgeving nog niet goedgekeurd, dus hij kan niet op deze server draaien." De serverbeheerder ziet in plaats daarvan "Je hebt deze omgeving nog niet goedgekeurd. Hij draait op deze server en start zodra je de definitie goedkeurt." met **Bekijken en goedkeuren**, wat de definitie opent.
+- De procesterminals van een omgeving en de terminal die een start opent wanneer die jou nodig heeft, draaien op de serverhost. Typen in een ervan, de grootte ervan wijzigen of hem sluiten vereist schrijfrechten op elke repository die de ruimte blootstelt, leesbaar via je eigen forge-aanmelding: hetzelfde als het starten van de omgeving. Alle anderen kunnen die terminals helemaal niet bereiken.
 
 ## De kleinste definitie
 
@@ -35,7 +49,7 @@ Al het andere heeft een standaardwaarde: het compose-bestand wordt gevonden, elk
 
 ## Soorten componenten
 
-Een omgeving is een geordende lijst componenten. Elk component wacht tot het vorige klaar is, tenzij `after` andere noemt, en stoppen gaat in omgekeerde volgorde. `enabledWhen` maakt een component afhankelijk van een optie of rol, bijvoorbeeld `opt.seed`, `!opt.seed` of `repo.web`.
+Een omgeving is een geordende lijst componenten. Elk component wacht tot het vorige klaar is, tenzij `after` andere noemt, en stoppen gaat in omgekeerde volgorde. `enabledWhen` maakt een component afhankelijk van een optie of rol, bijvoorbeeld `opt.seed`, `!opt.seed` of `repo.web`. Een component waarvan de rol optioneel is en ontbreekt in de ruimte, wordt op dezelfde manier overgeslagen, zonder dat `enabledWhen` nodig is: het start niet en heeft geen `{port.*}` of `{url.*}`, dus een ander component dat die leest laat de start mislukken.
 
 | Soort | Wie het uitvoert | Waarvoor |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Een omgeving is een geordende lijst componenten. Elk component wacht tot het vor
 | `manual` | Op verzoek: **Uitvoeren**, `cc-env run <id>` of `environment_run_task` |
 | `archive` | Vlak voordat de worktree wordt vernietigd |
 
-Een opdracht als array is argv, dus optiewaarden gaan nooit door een shell. Een string, of `script` met een array van regels, draait onder `bash -lc`. Plaatshouders als `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` en `{url.<role>}` worden alleen in argv ingevuld. Shell-opdrachten lezen dezelfde waarden als `CC_ENV_*`-variabelen, zoals `$CC_ENV_PORT_WEB`.
+Een task zonder iets te doen bij een start toont **Inactief** en staat niet in de lijst met stappen die worden getoond terwijl de omgeving start: een `manual`- of `change`-task, of een `create`-task die al is uitgevoerd.
 
-Elke opdracht en ruimteterminal krijgt ook `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` en, in PR-ruimtes, `CC_PR_NUMBER` en `CC_PR_IS_FORK`. Met een compose-component komen daar `COMPOSE_PROJECT_NAME` en `COMPOSE_FILE` bij, zodat `docker compose exec` in een taak het juiste project bereikt.
+Een opdracht als array is argv, dus optiewaarden gaan nooit door een shell. Een string, of `script` met een array van regels, draait onder `bash -lc`. Plaatshouders als `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` en `{url.<role>}` worden alleen in argv ingevuld. Shell-opdrachten lezen dezelfde waarden als `CC_ENV_*`-variabelen, zoals `$CC_ENV_PORT_WEB`. Een onbekende plaatshouder in een component dat meedoet, stopt de start voordat er iets wordt uitgevoerd.
+
+Elke opdracht en ruimteterminal krijgt ook `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` en, in PR-ruimtes, `CC_PR_NUMBER` en `CC_PR_IS_FORK`. Met een compose-component komen daar `COMPOSE_PROJECT_NAME` en `COMPOSE_FILE` bij, zodat `docker compose exec` in een taak het juiste project bereikt.
 
 ## Rollen en werkmap
 
@@ -77,7 +93,7 @@ Een definitie koppelt **rollen** aan repo's van de werkruimte, zodat één stack
 - `whenMissing`: wat er gebeurt als de ruimte de rol mist. `addToSpace` voegt de repo toe op zijn standaardbranch en is de standaard voor `required`-rollen. `useSource` geeft je geregistreerde checkout door, die je als alleen-lezen behandelt. `skip` laat de variabele leeg en is verder de standaard.
 - Starten vereist een `write`-recht op een ankerrepo in de ruimte en leestoegang tot elke andere gekoppelde repo.
 
-Een opdracht draait in de eerste rol uit `repos` die de ruimte heeft, dus een definitie met één repo noemt dit nooit. Elk component kan dat overschrijven met `"cwd": { "role": "e2e", "path": "packages/ui" }`. Beide velden zijn optioneel.
+Een opdracht draait in de eerste rol die in `repos` is gedeclareerd, nooit in een andere rol die de ruimte toevallig heeft, dus een definitie met één repo noemt dit nooit. Elk component kan dat overschrijven met `"cwd": { "role": "e2e", "path": "packages/ui" }`. Beide velden zijn optioneel. Als de eerste rol in een ruimte zou kunnen ontbreken, omdat die niet `required` is en ook niet het enige anker is, moet elk component zijn rol noemen.
 
 ## Poorten en URL's
 
@@ -130,6 +146,8 @@ Een webapp en Postgres uit één compose-bestand, met een door git genegeerde `.
 
 Met `healthchecks` kan een service zonder eigen healthcheck het volgende component tegenhouden. Zonder healthcheck telt een draaiende container als klaar, en kunnen migraties een database inhalen die nog opstart.
 
+Elke start en elke vernieuwing voert `up` uit met `--remove-orphans`, zodat een service die uit het compose-bestand is verwijderd stopt en zijn poort vrijgeeft. Images worden bij de start en bij het vernieuwen gebouwd, tenzij het component `"build": false` instelt.
+
 ## Voorbeeld: eigen CLI
 
 Een verzonnen tool `acme` die zelf zijn containers, domeinen en TLS beheert. Control Center levert `{name}` en haalt de rest uit `status`. Het leidt nooit de hostnamen van een tool af en bewerkt nooit `/etc/hosts`.
@@ -147,7 +165,8 @@ Een verzonnen tool `acme` die zelf zijn containers, domeinen en TLS beheert. Con
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Een verzonnen tool `acme` die zelf zijn containers, domeinen en TLS beheert. Con
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Een verzonnen tool `acme` die zelf zijn containers, domeinen en TLS beheert. Con
 ```
 
 - `create`, `status` en `destroy` zijn verplicht. Control Center kiest `create` of `start` op basis van de status die het leest. Elk werkwoord mag `{ "shell": "…" }` zijn in plaats van argv.
+- `interactive` noemt de werkwoorden uit `create`, `start` en `reset` die op een terminal kunnen vragen wat ze nodig hebben. Wanneer zo’n werkwoord eindigt met code 3 voor een persoon die op **Starten** heeft geklikt, voert Control Center hetzelfde werkwoord opnieuw uit in een terminaltabblad, en gaat de start verder zodra het met 0 eindigt. Daar is de voorwaarde `interactive` waar en is `CC_ENV_INTERACTIVE=1` ingesteld, zodat `{ "if": "!interactive", "args": ["--json"] }` de machine-uitvoer voor de niet-interactieve uitvoering behoudt. Een start door een agent, of een automatische start, opent nooit een terminal: de omgeving toont **Actie nodig** en wacht.
+- Een `destroy` die mislukt, verwijdert de omgeving toch wanneer `status` daarna `missing` meldt, zodat een omgeving die het tool niet meer heeft altijd kan worden verwijderd.
+- `list` laat Control Center een omgeving opmerken die de tool is kwijtgeraakt. Ze wordt pas als verdwenen gemarkeerd wanneer haar naam ontbreekt in `list` en `status` dan `missing` zegt. Uitvoer die niet als lijst gelezen kan worden, verandert niets.
+- `{service}` in `logs` en `exec` moet één woord zijn dat niet met `-` begint, en een van de services die de tool het laatst heeft gemeld, wanneer het er gemeld heeft.
 - `statusMap` leest de eigen JSON van de tool met JSON-pointers, waarbij `*` op elk item past. Statusregels zijn geordend en de eerste match wint. Een voorwaarde is `path` met `equals`, of `any` of `none` met `where`.
 - `keepsDataOnStop: false` schakelt stoppen bij inactiviteit uit en voegt een waarschuwing voor gegevensverlies toe aan **Stoppen**. Gebruik het als stoppen data kost.
 - `routing.mode: "tool"` koppelt de hostnamen van de tool aan de browser (VM) en aan agents. Het domein moet eindigen op `.test`, `.localhost` of `.internal`, en een gemelde URL daarbuiten wordt genegeerd.
@@ -229,8 +253,8 @@ Alleen processen en taken, geen containers. De webapp vindt de API via `{url.api
 }
 ```
 
-- Elk proces is een terminaltabblad dat je kunt openen, lezen en waarin je kunt typen. Het tabblad sluiten stopt het proces niet.
-- `ready` neemt `http`, `tcp` of `logMatch`. `restart` is `on-failure` (de standaard), `always` of `never`. `restartOn` herstart het proces als een gewijzigd pad overeenkomt.
+- Elk proces is een terminaltabblad dat je kunt openen, lezen en waarin je kunt typen, als je schrijfrechten hebt op elke repository in de ruimte (zie [Wie wat kan opslaan](#wie-wat-kan-opslaan)). Het tabblad sluiten stopt het proces niet.
+- `ready` neemt `http` (een volledige URL), `tcp` (`host:port`) of `logMatch` (een reguliere expressie). `restart` is `on-failure` (de standaard), `always` of `never`. `restartOn` herstart het proces als een gewijzigd pad overeenkomt.
 - `options` worden een formulier bij **Starten**, en `agentDefault` geldt voor runs die een agent start.
 
 ## Voorbeeld: desktop-app
@@ -251,21 +275,21 @@ Een desktop-app met een buildstap. Een app werkt hetzelfde waarmee hij ook is ge
 }
 ```
 
-Een app start niet met de omgeving mee. Iemand klikt op **Openen**, en `prepare` draait eerst. **Opnieuw bouwen en openen** voert dat paar opnieuw uit. Een nette afsluiting toont als gesloten, een crash toont de laatste logregels zonder herstart, een herstart van de server start de app nooit opnieuw en stoppen bij inactiviteit laat een draaiende app met rust.
+Een app start niet met de omgeving mee. Iemand klikt op **Openen**, en `prepare` draait eerst. **Opnieuw bouwen en openen** voert dat paar opnieuw uit. `enabledWhen` geldt voor de app en voor de `prepare`-taak, en **Openen** wordt geweigerd zolang een van beide uit staat. Een app telt als draaiend zolang een proces in de procesgroep ervan draait, dus een launcher die de app start en daarna afsluit, is prima. Als alles binnen ongeveer 5 seconden na **Openen** verdwenen is, toont de app een fout met de laatste logregels. Daarna toont een nette afsluiting als gesloten en toont een crash de laatste logregels, en geen van beide herstart de app. Een herstart van de server sluit de app en start hem nooit opnieuw, en stoppen bij inactiviteit laat een draaiende app met rust.
 
 ### Rechten en beperkingen van desktop-apps
 
 - Geef Control Center op macOS eenmalig **Schermopname** en **Toegankelijkheid** in Systeeminstellingen. De serverhost heeft een GUI-sessie nodig: een headless server weigert een app te starten.
-- Start de binary rechtstreeks. `open -a` geeft de app aan LaunchServices en die verlaat dan de procesboom die Control Center volgt. `"window": { "match": { "bundleId": "…" } }` dekt dat geval, maar is alleen veilig met één draaiende kopie.
+- Start de binary rechtstreeks. `open -a` geeft de app aan LaunchServices en die verlaat dan de procesboom die Control Center volgt, zodat de app direct na de start als mislukt wordt getoond.
 - Vensters blijven op een scherm. macOS legt geen venster vast dat buiten alle schermen staat, dus een app die een agent gebruikt is zichtbaar op het scherm van de server. Focus is niet nodig.
 - `"isolate": "home"` geeft de app een privé-thuismap via `HOME`, `XDG_*` en `CFFIXED_USER_HOME`, zodat kopieën uit twee ruimtes naast elkaar kunnen draaien. `NSUserDefaults` is niet geïsoleerd, dus Cocoa-voorkeuren en Flutters `shared_preferences` blijven gedeeld tussen kopieën.
 - `isolate` geldt alleen voor het gestarte proces. Een toolchain-launcher als `flutter run` heeft de echte thuismap nodig, dus combineer `isolate` met een gebouwde binary. Heeft de app een eigen instelling, zoals `--user-data-dir`, gebruik die dan liever.
 - Agents besturen het venster met `app_use`, dat alleen de procesboom van deze omgeving kan bereiken. Een agent ziet het venster, niet het bureaublad. Starts door agents gaan via het actiebeleid en vragen standaard om bevestiging, en agentinvoer stopt zolang een persoon de besturing heeft.
 - `"input": "background"` (de standaard) stuurt gebeurtenissen naar het proces. `"foreground"` activeert het venster en neemt de cursor over.
 
-## Worktree-taken vervangen repo-scripts
+## Worktree-taken
 
-`provision`- en `archive`-taken vervangen de oude setup- en archiefscripts per repo. **Bestaande scripts zijn automatisch gemigreerd:** elke repo met scripts heeft nu een definitie met de naam van de repo, met taken `setup` en `archive` die dezelfde scripttekst bevatten. Het pictogram in de rij van een repo onder **Instellingen → Werkruimte → Repository's** opent die. Eerdere scriptruns blijven bewaard als alleen-lezen geschiedenis.
+`provision`- en `archive`-taken voeren het setup- en opruimwerk van een repo uit met zijn worktree. Het pictogram in de rij van een repo onder **Instellingen → Werkruimte → Repository's** opent de definitie van de repo.
 
 Deze taken volgen de worktree, niet de omgeving, dus ze draaien ook in ruimtes waar niemand op **Starten** klikt:
 
@@ -292,7 +316,7 @@ Een repo zonder stack heeft alleen een definitie met zijn taken nodig. Omdat er 
 
 - Er is nog geen omgeving, dus deze taken kunnen `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` en `enabledWhen` niet gebruiken, en ze krijgen de `env` van de definitie niet.
 - Slechts één definitie mag `provision`- en `archive`-taken voor een repo bevatten. Andere mogen de repo voor al het overige wel koppelen.
-- `"when": ["provision", "change"]` installeert ook opnieuw als een lockfile verandert, wat setupscripts nooit deden.
+- `"when": ["provision", "change"]` installeert ook opnieuw als een lockfile verandert.
 - Een taak draait voor de worktree van zijn `cwd`-rol, dus een definitie met meerdere repo's kan elke repo apart inrichten.
 - Een testrun zet `CC_SCRIPT_TEST=1`. Een nieuwe poging begint met een schone worktree, dus schrijf taken die opnieuw uitvoeren overleven.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Met een compose-component staat een `docker`-shim ook `docker compose` toe met `ps`, `logs`, `exec`, `port`, `restart` en `top`. Voor het werkwoord mogen geen vlaggen staan, `logs` kan niet volgen en `exec` accepteert alleen `-T`. Al het andere eindigt met code 5 en "not available in Control Center agent runs".
+Met een compose-component staat een `docker`-shim ook `docker compose` toe met `ps`, `logs`, `exec`, `port`, `restart` en `top`, en alleen tegen het eigen compose-project van deze omgeving. Voor het werkwoord mogen geen vlaggen staan, en elk werkwoord accepteert een korte lijst opties: `logs` kan niet volgen en `exec` accepteert alleen `-T` (of `--no-tty`). Opties die compose naar een ander bestand of project laten wijzen (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) worden geweigerd, waar ze ook staan. Al het andere eindigt met code 5 en "not available in Control Center agent runs".
 
-Een repo waarvan de skills zijn eigen tool aanroepen, kan dat blijven doen. Een `agentPassthrough`-blok op een `cli`-component legt vast welke opdrachten agents mogen uitvoeren:
+Een repo waarvan de skills zijn eigen tool aanroepen, kan dat blijven doen. Een `agentPassthrough`-blok op een `cli`-component legt vast welke opdrachten agents mogen uitvoeren. Alleen opdrachten die de goedgekeurde definitie declareert, worden doorgegeven, en elk draait op de host, dus hij valt onder de regel **Opdrachten uitvoeren op de host**, die standaard eerst vraagt:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Exitcodes gelden voor elk werkwoord:
 | Code | Betekenis |
 | --- | --- |
 | 0 | OK |
-| 3 | Hostinstelling vereist. **Uitvoeren in terminal** opent een ruimteterminal met de opdracht getypt maar niet uitgevoerd, daarna probeert **Opnieuw proberen** het opnieuw. Control Center voert nooit `sudo` uit |
-| 4 | Authenticatie vereist |
-| 5 | Afhankelijkheid niet beschikbaar |
+| 3 | Er is een antwoord nodig in een terminal, zoals een `sudo`-wachtwoord. Een werkwoord dat in `interactive` staat, wordt opnieuw uitgevoerd in een terminaltabblad voor de persoon die op **Starten** heeft geklikt. Anders opent **Uitvoeren in terminal** een ruimteterminal met de `command` van de tool getypt maar niet uitgevoerd, daarna probeert **Opnieuw proberen** het opnieuw. Control Center voert nooit `sudo` uit en beantwoordt nooit een prompt |
+| 4 | Aanmelding vereist. De `command` van de tool geeft aan hoe |
+| 5 | Iets waarvan het afhankelijk is, is niet beschikbaar, zoals een containerruntime die niet draait |
 | Anders | Fout |
+
+Codes 3, 4 en 5 zijn geen fouten. De omgeving toont **Actie nodig** en wacht, en de volgende start pakt op waar die gestopt is. Een taak die met een van die codes eindigt, betekent hetzelfde.
 
 Voortgang gaat naar stderr als JSON per regel:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-`step`-regels verschijnen als een live stappenlijst en `note`-regels worden getoond zoals ze zijn. Een laatste regel van het type `error` wordt een gestructureerde fout, met `command` om te kopiëren. Zonder die regel toont Control Center de laatste 20 stderr-regels. Alles wat geen JSON is, is gewone loguitvoer.
+Terwijl een omgeving start, toont het paneel de onderdelen die de start doorloopt, elk met een spinner, een vinkje of een kruisje. Een `step`-regel laat zien wat het tool nu doet, en de `label` verschijnt onder de eigen rij van het tool; stappen voegen nooit rijen toe. De `state` van een stap is `pending`, `running`, `done` of `failed`, en een stap zonder `state` geldt als lopend. Een stap die zich opnieuw meldt onder dezelfde `id` (een tekst of een getal, of dezelfde `label` zonder een), vervangt wat die eerder zei, zodat een tool met één spinner één `id` kan houden en de `label` kan wijzigen. Zonder ids volgen stappen elkaar op: een nieuwe beëindigt de vorige. Wanneer het commando eindigt, eindigt een stap die nog loopt zoals het commando is geëindigd.
+
+Een `log`-regel bevat één regel uitvoer die het tool in JSON heeft verpakt, en wordt gelezen als gewone uitvoer. Een `note`-regel gaat naar de uitvoer van de run, en een regel met `"level": "warn"` blijft ook op de omgeving staan als waarschuwing. Een laatste regel van het type `error` wordt een gestructureerde fout, met `command` om te kopiëren, en de laatste 12 regels uitvoer staan onder de `message`. Zonder die regel toont Control Center de laatste 20 stderr-regels. Alles wat geen JSON is, is gewone loguitvoer.
 
 ## Gerelateerd
 

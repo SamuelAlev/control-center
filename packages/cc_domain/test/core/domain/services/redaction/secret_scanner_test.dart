@@ -38,6 +38,28 @@ void main() {
       );
     });
 
+    test('flags every GitHub token shape, the stateless installation token '
+        'included', () {
+      // `ghs_<appId>_<JWT>`: dots and hyphens, about 520 characters.
+      final stateless =
+          'ghs_123456_e-J0eXAiOiJKV1QifQ.${'aB3-_' * 40}.${'Zz9_-' * 50}';
+      for (final token in [
+        'ghp_${'a' * 36}',
+        'gho_${'b' * 36}',
+        'ghu_${'c' * 36}',
+        'ghr_${'d' * 76}',
+        'ghs_${'e' * 36}',
+        stateless,
+      ]) {
+        expect(
+          scanner.scan('token=$token.').map((f) => f.reason),
+          contains('GitHub token'),
+          reason: token.substring(0, 12),
+        );
+      }
+      expect(scanner.scan('the ghs_ prefix alone, or gh_pages'), isEmpty);
+    });
+
     test('flags Slack, Linear and Google OAuth tokens', () {
       for (final (value, reason) in [
         ('xoxb-1234567890-AbCdEfGhIjKl', 'Slack token'),

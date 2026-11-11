@@ -2,7 +2,7 @@
 title: Eszköz párosítása
 description: Párosítsa a telefonját (vagy egy második böngészőt vagy asztali alkalmazást) a Control Center szerverével, hogy távolról is követhesse a flottát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Ez az útmutató megmutatja, hogyan párosíthat egy telefont a Control Centerrel,
@@ -64,8 +64,7 @@ létrehozása pillanatától aktív, és a csatlakozási kapu csak azt ellenőrz
 hitelesítő adat aktív és nem járt le. Kezelje a QR-kódot és a párosítási kulcsot
 jelszóként, és vonjon vissza mindent, amit nem szándékozott kiadni. A közvetlen és
 a relén átvezetett kliensmunkamenetek egyaránt végponttól végpontig terjedő
-titkosítást igényelnek; a régebbi kliensek nem eshetnek vissza nyílt szöveges
-RPC-re.
+titkosítást igényelnek; nincs nyílt szöveges RPC.
 :::
 
 ## A párosított eszközök kezelése
@@ -80,9 +79,9 @@ eszköz szemszögéből nézve azonnali és visszafordíthatatlan.
 
 Az ebből a panelből kiállított hitelesítő adatok időhöz kötöttek: a kiállításuk
 után 30 nappal lejárnak, és a csatlakozási kapu ezt követően zártan elutasítja
-őket. A parancssorban a `cc_server pair` paranccsal kiállított hitelesítő adat
-**egyáltalán nem jár le** — vonja vissza kézzel, amikor a gépet, amelyhez szánta,
-kivonják a használatból.
+őket. A parancssorban a `cc_server pair` paranccsal kiállított hitelesítő adat ugyanúgy lejár;
+a `pair` parancsot újra futtatva új adatot kérhet, és ha a gépet, amelyhez szánta,
+kivonják a használatból, vonja vissza kézzel.
 
 ## Munkaterület váltása a telefonról
 

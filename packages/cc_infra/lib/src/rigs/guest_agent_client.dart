@@ -21,19 +21,22 @@ class GuestAgentException implements Exception {
 
 /// What the in-guest agent says it is.
 ///
-/// The forward-compatibility seam: a host that can ask an image what protocol
-/// it speaks can refuse (or adapt to) one it does not, instead of failing
-/// somewhere further in with a mystery. Nothing enforces [protocol] yet.
+/// A host that can ask an image what protocol it speaks can refuse one it
+/// does not, instead of failing somewhere further in with a mystery. Nothing
+/// enforces [protocol] yet.
 class GuestAgentVersion {
   /// Creates a [GuestAgentVersion].
   const GuestAgentVersion({required this.protocol, required this.agent});
 
-  /// Parses a `/version` reply, defaulting a missing/garbled protocol to 0 —
-  /// "older than the first one that announced itself", never a throw.
+  /// Parses a `/version` reply; a missing or non-integer protocol is a
+  /// [FormatException].
   factory GuestAgentVersion.fromJson(Map<String, dynamic> json) {
     final protocol = json['protocol'];
+    if (protocol is! int) {
+      throw const FormatException('guest agent version without a protocol');
+    }
     return GuestAgentVersion(
-      protocol: protocol is int ? protocol : 0,
+      protocol: protocol,
       agent: json['agent'] is String ? json['agent'] as String : 'unknown',
     );
   }
@@ -151,23 +154,21 @@ class GuestAgentClient {
     return RigDisplaySize.defaultDesktop;
   }
 
-  /// What the guest agent reports it is, or null when the image predates
-  /// `/version`.
+  /// What the guest agent reports it is.
   ///
-  /// A 404 is an OLD image, not a broken one, and the two need different
-  /// answers: every image built before this endpoint existed is still a
-  /// perfectly good rig, so treating "no such endpoint" as a failure would
-  /// break machines that work. Any OTHER non-200 is a real fault and throws.
-  Future<GuestAgentVersion?> version() async {
+  /// A 404 is an image built without this endpoint ([GuestAgentTooOld]: the
+  /// fix is rebuilding the image); any other non-200 is a real fault and
+  /// throws [GuestAgentException].
+  Future<GuestAgentVersion> version() async {
     final response = await _get('/version');
     // Drain unconditionally: an unread body holds the connection open in the
-    // client's pool, and the 404 path is the one most likely to be hit.
+    // client's pool.
     final text = await response
         .transform(utf8.decoder)
         .join()
         .timeout(_requestTimeout);
     if (response.statusCode == HttpStatus.notFound) {
-      return null;
+      throw const GuestAgentTooOld('/version');
     }
     if (response.statusCode != 200) {
       throw GuestAgentException(

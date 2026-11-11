@@ -1,5 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
+import 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart';
 import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 

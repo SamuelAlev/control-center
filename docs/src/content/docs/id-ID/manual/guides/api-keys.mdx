@@ -2,7 +2,7 @@
 title: Kelola kunci API
 description: Di mana setiap kredensial disimpan — akun pengguna Anda di server, server itu sendiri, atau CLI eksternal — serta cara menetapkan, merotasi, dan menghapusnya.
 slug: id-ID/panduan-pengguna/panduan-praktis/kunci-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Panduan ini menunjukkan kepada Anda di mana setiap kredensial yang digunakan
@@ -32,8 +32,7 @@ bergantung pada apakah ada manusia di baliknya.
   Control Center Connect, dan dibatasi pada apa yang dapat dilakukan anggota yang
   bertanggung jawab di sana. Itu tidak pernah proses masuk Anda yang diserahkan utuh
 
-Milik Anda diatur di kartu **Hosting kode** pada **Pengaturan → Ruang kerja → Profil &
-identitas**; aplikasi server di **Aplikasi penyedia** pada **Pengaturan → Server → Single
+Milik Anda diatur di kartu **Hosting kode** pada **Pengaturan → Anda → Profil**; aplikasi server di **Aplikasi penyedia** pada **Pengaturan → Server → Single
 sign-on**. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)
 dan [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/).
 
@@ -41,10 +40,11 @@ GitLab dan Bitbucket masih menerima token pribadi yang ditempel, disimpan dengan
 sama. Lihat [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
 
 :::note[Ada juga layar yang hanya bisa diakses lewat URL]
-`/workspaces/<workspaceId>/api-keys` menampilkan dua kartu yang sama seperti
+`/workspaces/<workspaceId>/api-keys` menampilkan kartu yang sama seperti
 langkah pertama onboarding. Layar ini **tidak punya entri navigasi di mana pun
 dalam UI**; hanya bisa dicapai dengan mengetik URL-nya. Gunakan Pengaturan →
-Ruang kerja → Profil & identitas sebagai gantinya.
+Anda → Profil untuk proses masuk Anda sendiri, dan Pengaturan → Ruang kerja →
+Integrasi untuk vendor tiket.
 :::
 
 ## Tetapkan kunci penyedia model
@@ -63,10 +63,7 @@ untuk menambahkan endpoint kustom.
 Kredensial ini **global per host**: satu kunci melayani setiap ruang kerja pada
 instalasi. Token OAuth disegarkan sebelum kedaluwarsa.
 
-CLI adapter eksternal menyimpan kredensialnya sendiri, di konfigurasinya sendiri,
-di host server — Control Center tidak mengelolanya. Autentikasi Claude Code
-sesuai yang dijelaskan dokumentasinya sendiri, di mesin tempat `cc_server`
-berjalan.
+Claude Code masuk melalui **Akun Claude Code** di bawah **Pengaturan → Server → Penyedia model**: setiap akun mendapat direktori konfigurasinya sendiri di server, dan Anda menjalankan perintah `claude auth login` yang ditampilkan aplikasi di sana.
 
 Dialog **Variabel lingkungan** per adapter tampak seperti tempat menaruh kunci
 untuk salah satunya, tetapi bukan: dialog itu menulis ke perangkat Anda,
@@ -76,14 +73,15 @@ keduanya. Lihat
 
 ## Hubungkan vendor tiket
 
-Kartu **Tiket** pada **Pengaturan → Ruang kerja → Umum** memuat kedua bagian
-dari satu keputusan: di mana tiket Anda berada, dan siapa Control Center saat
-berbicara dengannya. Memilih **Lokal** menyembunyikan baris Linear — tiket lokal
+Kartu **Tiket** pada **Pengaturan → Ruang kerja → Integrasi** memuat sisi ruang
+kerja: di mana tiket Anda berada, dan siapa Control Center saat ia bekerja di sana
+secara mandiri. Memilih **Lokal** menyembunyikan baris Linear — tiket lokal
 berada di basis data server ini sendiri dan tidak ada yang perlu diautentikasi.
 
 Linear memiliki dua proses masuk dan tanpa kunci yang ditempel: **Linear** adalah milik
-Anda, untuk apa yang Anda lakukan, dan **Otomatisasi Linear** adalah app Control Center
-milik ruang kerja, dihubungkan oleh admin, untuk sinkronisasi tiket, pipeline, dan agen.
+Anda, untuk apa yang Anda lakukan, dan berada di **Pengaturan → Anda → Profil**;
+**Otomatisasi Linear** adalah app Control Center milik ruang kerja, dihubungkan oleh admin
+di kartu Tiket, untuk sinkronisasi tiket, pipeline, dan agen.
 Server juga dapat menyimpan **Kunci API layanan** (**Aplikasi penyedia**) untuk ruang kerja
 yang belum menghubungkan otomatisasi. Tidak ada kredensial tiket yang disuntikkan ke sandbox
 agen; agen menulis tiket melalui alat Control Center, yang menanyakan aturan **Tulis ke
@@ -97,9 +95,10 @@ pelacak eksternal**. Lihat [Siapkan integrasi Linear](/id-ID/panduan-pengguna/pa
   cabut yang lama di host kode
 - **Aplikasi server**: buat kunci privat atau client secret baru di halaman penyedia
   aplikasi tersebut, tempel di **Aplikasi penyedia** dan tekan **Tes**
-- **Kunci instalasi Connect**: **Rotasi kunci** pada kartu **Control Center Connect**, atau
-  `cc_server connect rotate-key --yes`. Semua orang yang masuk melalui Connect harus masuk
-  lagi. Lihat [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/)
+- **Kunci instalasi Connect**: pemilik server menekan **Rotasi kunci** pada kartu
+  **Control Center Connect**. Semua orang yang masuk melalui Connect harus masuk
+  lagi. Jika server Connect tidak dapat dijangkau, tidak ada yang berubah dan Anda
+  ditawari **Tetap ganti**. Lihat [Rotasi kunci instalasi](/id-ID/panduan-pengguna/referensi/connect/#rotasi-kunci-instalasi)
 - **Penyedia model**: pada barisnya, keluar (OAuth) atau hapus kuncinya, lalu
   hubungkan lagi
 - **Slack**: untuk app Anda sendiri, tempel ulang token di dialog koneksi. App Slack bersama
@@ -111,8 +110,7 @@ pelacak eksternal**. Lihat [Siapkan integrasi Linear](/id-ID/panduan-pengguna/pa
 
 ### Token GitLab atau Bitbucket berfungsi di `curl` tetapi tidak di sini
 
-Periksa subjudul baris **Hosting kode**. Jika menyebut "dari environment", kredensial yang
-menjawab adalah milik server, bukan milik Anda — milik Anda tidak tersimpan.
+Periksa baris **Hosting kode**. Jika bertuliskan "Tidak terhubung" atau meminta Anda menghubungkan ulang, token Anda tidak tersimpan atau ditolak. Untuk Bitbucket, masukkan email akun Atlassian Anda bersama token API.
 
 ### Token GitLab atau Bitbucket diterima tetapi permintaan berikutnya gagal
 

@@ -2,7 +2,7 @@
 title: Kör en Connect-server
 description: Kör din egen Control Center Connect från Docker-avbildningen cc-connect, eller montera den i cc_server, så att dina servrar loggar in personer via leverantörsappar som du registrerar.
 slug: sv-SE/handbok/how-to-guider/kor-connect-server
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect kör leverantörsinloggningar (GitHub, Google Calendar,
@@ -17,7 +17,7 @@ funderar på om du ska köra en.
 :::note[Du kanske inte behöver den]
 En server kan registrera sina egna appar i stället: **Inställningar → Server →
 Enkel inloggning → Leverantörsappar**, där **Skapa min GitHub-app** konfigurerar
-GitHub i ett steg. Serverns egna appar gäller bara under **Använd mina egna appar**: med Control Center Connect eller en egen Connect sköter Connect alla spår, medan en arbetsytas egna app gäller i alla lägen. Kör en Connect när flera servrar ska dela en uppsättning appar.
+GitHub i ett steg. Serverns egna appar gäller bara under **Använd mina egna appar**: med Control Center Connect eller en egen Connect sköter Connect alla spår, medan en arbetsytas egna app fortfarande gäller. Kör en Connect när flera servrar ska dela en uppsättning appar.
 :::
 
 ## Förutsättningar
@@ -46,7 +46,7 @@ otillgänglig. `<base>` nedan är din `CONNECT_PUBLIC_URL`.
 
 | Leverantör     | Registrera                                                                                                                                                                                                                                                           | Spara                                   |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` med **Redirect on update** påslaget. Låt **Request user authorization (OAuth) during installation** vara avstängt: när det är på ignorerar GitHub setup-URL:en. Låt **Expire user authorization tokens** vara påslaget | App-ID, slug, klient-ID, klienthemlighet |
+| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` med **Redirect on update** påslaget. Låt **Request user authorization (OAuth) during installation** vara avstängt: när det är på ignorerar GitHub setup-URL:en. Låt **Expire user authorization tokens** vara påslaget | App-ID, slug, klient-ID, klienthemlighet, en privat nyckel |
 | **Google**     | En OAuth-klient av typen **Web application** med omdirigerings-URI `<base>/oauth/google/callback`, och Google Calendar API aktiverat                                                                                                                                | Klient-ID, klienthemlighet              |
 | **Linear**     | En OAuth-applikation med callback-URL:erna `<base>/oauth/linear/callback` och `<base>/oauth/linear_app/callback`                                                                                                                                                  | Bara klient-ID                          |
 | **Slack**      | Omdirigerings-URL:er `<base>/oauth/slack_oidc/callback` och `<base>/oauth/slack/callback`. Event Subscriptions på `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash-kommandon på `<base>/v1/hooks/slack/commands`. Tokenrotation påslagen | App-ID, klient-ID, klienthemlighet, signing secret |
@@ -57,10 +57,20 @@ och skriva, **Pull requests** läsa och skriva, **Issues** läsa och skriva,
 organisationen med läsrätt för granskningsbegäranden till team. Webhooks kan
 vara avstängda: servrarna pollar.
 
-Connect behöver aldrig GitHub-appens privata nyckel. Den utfärdar i stället token
-för ett enda repo från en persons egen inloggning. Linear behöver inte heller
-någon hemlighet: Connect lämnar tillbaka koden till servern, som slutför utbytet
-själv.
+Connect behöver GitHub-appens privata nyckel (**Skapa en privat nyckel** i appens
+inställningar). Den signerar appens förfrågningar som hittar installationen som
+täcker ett repo (eller, när repot saknar en, ägarens installation) och utfärdar en
+installationstoken för ett enda repo, var och en först efter att personen som frågar
+har bevisat sin egen inloggning och åtkomst till repot.
+
+Varje server på din Connect delar appens bot. Den får läsa, kommentera, sätta etiketter
+och reagera som boten för vilken som helst av dem. Att granska pull requests som boten
+är bara tillåtet för de servrar du listar i `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (deras
+installations-id:n, kommaseparerade); varje annan server publicerar granskningar med
+granskarens egen token. Pushar görs aldrig som boten. För att låta en server du själv
+driver granska som boten, lägg till dess installations-id där och starta om. Behåll
+nyckelfilen som en hemlighet, precis som sigillnyckeln. Linear behöver ingen hemlighet:
+Connect lämnar tillbaka koden till servern, som slutför utbytet själv.
 
 ## Steg 3: Samla in installations-id:na
 
@@ -113,13 +123,27 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Peka din omvända proxy mot port `8790`. Avbildningen körs som en användare utan
-privilegier, sparar sitt tillstånd i volymen `/data` och har en inbyggd
-hälsokontroll (`cc-connect --healthcheck`, som kontrollerar `/healthz`).
+Peka din omvända proxy mot port `8790`, och sätt `CONNECT_TRUST_PROXY` till antalet
+proxyer framför Connect, så att dess gräns per adress ser varje klients adress.
+Avbildningen körs som en användare utan privilegier, sparar sitt tillstånd i volymen
+`/data` och har en inbyggd hälsokontroll (`cc-connect --healthcheck`, som kontrollerar
+`/healthz`: processen svarar). `/readyz` kontrollerar dessutom att dess tillstånds- och
+bindningslager svarar och att Redis, när den används, fortfarande kör
+`maxmemory-policy noeviction`; peka en orkestrerares beredskapskontroll dit.
+
+Sidan för inloggningsgodkännandet svarar med ett formulär-POST som Connect bara accepterar
+från sin egen sida: `Sec-Fetch-Site`, när den skickas, måste vara `same-origin`, och
+`Origin`, när den skickas, måste vara ursprunget för `CONNECT_PUBLIC_URL`; en POST med
+ingetdera nekas. Så proxyn måste vidarebefordra båda headerna oförändrade, och
+`CONNECT_PUBLIC_URL` måste vara den adress folks webbläsare faktiskt använder. Om det
+alltid visas "Länken har gått ut" på den sidan, och loggen visar `oauth.done_refused`
+med orsaken `origin` eller `no_origin`, är ett av de två fel.
 
 Connect vägrar starta (avslutningskod `78`) när dess konfiguration är öppen,
 osäker eller halvfärdig, och skriver ut vilken variabel som är fel. En saknad
@@ -135,8 +159,9 @@ registrerat. `cc_server connect status` skriver ut `Health: ok` och samma spår.
 En server kan själv vara värd för Connect i stället för en separat container. Den
 monterade tjänsten är samma som avbildningen kör.
 
-1. Lägg `CONNECT_*`-variablerna i serverns `.env`-fil (eller i dess miljö), som i
-   steg 5
+1. Lägg `CONNECT_*`-variablerna i serverns `.env`-fil, som i steg 5. Servern vägrar
+   starta när en Connect-hemlighet, `CONNECT_SENTRY_DSN` inräknad, är exporterad i
+   dess miljö
 2. Lägg till `CC_SERVER_CONNECT_HOST=on`
 3. Starta om servern. Dess logg skriver ut `embedded Connect at <url>`
 
@@ -148,6 +173,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect serveras då på `<server>/connect`:
@@ -180,9 +206,10 @@ under en rotation.
 | `CONNECT_PUBLIC_URL`            | krävs     | Den kanoniska offentliga URL:en. HTTPS, eller `http` bara på loopback. En sökväg innebär en montering. Ingen fråga eller fragment |
 | `CONNECT_ALLOWED_INSTALLS`      | krävs     | Kommaseparerade installations-id:n. `*` accepteras bara tillsammans med `CONNECT_SIGNED_CONFIG_FILE`                             |
 | `CONNECT_DENY_INSTALLS`         |           | Installations-id:n som avvisas även när de är tillåtna                                                                           |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeriska GitHub-ägar-id:n. När den är angiven utfärdas repotoken bara för repos som de äger                                     |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeriska GitHub-ägar-id:n. När den är angiven utfärdas repotoken bara för repos som de äger. Den begränsar inte vem som loggar in: en person som får använda denna Connect får ändå sin egen App-användartoken. Vill du betjäna en enda organisation, håll appen privat för den |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Installations-id:n som får låta appens bot granska pull requests. Tom som standard; `*` nekas, och varje id måste också vara tillåtet |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bindningsadress och port                                                                                                 |
-| `CONNECT_TRUST_PROXY`           | `0`       | Betrodda proxyhopp i `X-Forwarded-For` (0 till 8). Används bara för hastighetsgränsen per adress                                 |
+| `CONNECT_TRUST_PROXY`           | `0`       | Betrodda proxyhopp i `X-Forwarded-For` (0 till 8). Används för gränserna per adress, sidan för inloggningsgodkännandets nätverkstips och den loggade adressen. Bakom en proxy räknar `0` varje klient som proxyn, och loggen säger det en gång |
 
 ### Leverantörsspår
 
@@ -190,6 +217,7 @@ under en rotation.
 | --------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |          | GitHub-appen                                                               |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |          | Hemlighet, dual                                                            |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |          | Hemlighet. Appens privata nyckel (PEM)                                     |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |          | Google-klienten. Hemligheten är dual                                       |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |          | Linear-applikationen. Ingen hemlighet                                      |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |          | Slack-appen                                                                |
@@ -207,12 +235,12 @@ under en rotation.
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` eller `gcp-kms`                                                                                    |
 | `CONNECT_SEAL_KEYS`                                       |                            | Hemlighet, krävs för `local`. Kommaseparerade `kid:key`-poster, nyaste först; äldre poster dekrypterar fortfarande |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, krävs för `gcp-kms`                                      |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` för en instans, `redis` för flera                                                                 |
-| `CONNECT_REDIS_URL`                                       |                            | Hemlighet. `redis://` eller `rediss://`                                                                    |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` för en instans, `redis` för flera. En full minnesbutik nekar nya inloggningar och förfrågningar i stället för att glömma en levande post                                                                 |
+| `CONNECT_REDIS_URL`                                       |                            | Hemlighet. `redis://` eller `rediss://`. Redis 6.2 eller senare med `maxmemory-policy noeviction`, båda kontrolleras vid start                                                                                    |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | CA-paket för `rediss://`                                                                                   |
-| `CONNECT_BINDINGS`                                        | `file`                     | Var bindningar till GitHub-installationer finns: `file` eller `firestore`                                  |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` i avbildningen) | Innehåller `bindings.json`                                                                            |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databasen `(default)`      | För `CONNECT_BINDINGS=firestore`                                                                           |
+| `CONNECT_BINDINGS`                                        | `file`                     | Var bindningar till Slack-team finns: `file` eller `firestore`                                  |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` i avbildningen) | Innehåller `bindings.json`. Låst av en Connect: en andra Connect på samma katalog startar inte                                                                            |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databasen `(default)`      | För `CONNECT_BINDINGS=firestore`. Connect startar inte när Firestore inte svarar                                                                           |
 
 ### Konfiguration, loggar och gränser
 
@@ -222,19 +250,41 @@ under en rotation.
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Nycklar som den signerade konfigurationen måste verifieras mot                                      |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoken för konfigurationen som en egenhostad Connect genererar                                      |
 | `CONNECT_LOG_HMAC_KEY`                  | slumpmässig per process | Hemlighet. Ange den för att hålla taggarna som står för installations-id:n stabila över omstarter och instanser |
+| `CONNECT_SENTRY_DSN`                    |                    | Hemlighet. En https-Sentry-DSN som felrader rapporteras till: feltypen, stackramar, rutt och begär-id, aldrig ett meddelande, en kropp eller en header |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | Sentry-miljön                                                                                       |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Rapporteras av `/v1/version`                                                                        |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Begäranden per installation                                                                         |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Begäranden per adress                                                                               |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Begäranden för hela tjänsten                                                                        |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Begäranden per adress (en IPv6-adress räknas per /64)                                               |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Begäranden för hela instansen                                                                       |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`              | Slack-händelse- och kommandoleveranser per adress, räknade separat från andra begäranden            |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`          | Slack-händelse- och kommandoleveranser för hela instansen                                           |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-händelser per team                                                                            |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-sökningar per installation                                                                      |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | GIF-sökningar per adress, över alla servrar                                                         |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | Startade inloggningar per adress                                                                    |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | GitHub-tokens utfärdade per GitHub-konto på en server (inloggningar, förnyelser, repotokens)      |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × ovanstående (`120`) | Samma per GitHub-konto över alla servrar                                        |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | GitHub-tokens utfärdade per adress                                                                  |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | Nya GitHub-inloggningar för hela appen                                                              |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | Bot-tokens per server                                                                               |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | Bot-tokens per frågande GitHub-konto, över servrar                                                  |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | Bot-tokens för hela appen                                                                           |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | Förnyelser och repotokens för hela appen. Nya inloggningar har sin egen gräns ovan                  |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | Levande repotokens ett GitHub-konto får ha innan Connect loggar en varning                          |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | Retirerade installations-id:n per adress (per /48 för IPv6)                                         |
+
+Ett anrop över en gräns besvaras med `rate_limited`. Servrar försöker igen senare och loggar aldrig ut någon för det.
 
 ## Kör mer än en instans
 
 En instans med `CONNECT_STATE=memory` räcker för de flesta organisationer. Flera
-instanser bakom en adress behöver `CONNECT_STATE=redis`, och antingen en delad
-`CONNECT_DATA_DIR` eller `CONNECT_BINDINGS=firestore`, så att en inloggning som
-startade på en instans kan slutföras på en annan.
+instanser bakom en adress behöver `CONNECT_STATE=redis` och `CONNECT_BINDINGS=firestore`,
+så att en inloggning som startade på en instans kan slutföras på en annan och varje
+instans ser samma Slack-bindningar och retirerade installations-id:n. En delad
+`CONNECT_DATA_DIR` fungerar inte: den första Connect låser den. Gränserna per
+installation, per adress och för instansens förfrågningar gäller per instans; gränserna
+för inloggningar, GitHub-tokens, bot-tokens, GIF-sökningar per adress, retirering och
+Slack-team delas genom tillståndslagret.
 
 ## Rotera en leverantörshemlighet
 
@@ -262,21 +312,24 @@ vet att meddelandet kommer från dig.
 ## Blockera en server
 
 Lägg till dess installations-id i `CONNECT_DENY_INSTALLS` och starta om. Ägaren
-ser ”Connect har blockerat den här serverns installations-id”, och varje
+ser ”Connect har blockerat den här serverns installations-id. Kontakta den som driver din Connect-server.”, och varje
 Connect-inloggning på den stoppas.
+
+En server retirerar också sitt eget gamla installations-id när dess ägare roterar nyckeln. Den bevisar att id:t är dess eget med ett enda inloggningssigill som den här Connect gjorde åt den, så bara en server som har loggat in någon kan retirera ett id. Connect behåller retirerade id:n för gott, så den gamla nyckeln och varje sigill som gjorts för den slutar fungera, och Connect släpper de Slack-arbetsytor som var bundna till det gamla id:t. Tokens som redan har utfärdats går ut av sig själva: inom 8 timmar för en persons, 1 timme för en bots. Connect håller högst 100 000 retirerade id:n; över det vägras en rotation, och loggen säger det på felnivå.
 
 ## Felsökning
 
 ### En server säger att Connect har blockerat den
 
-Dess installations-id finns inte i `CONNECT_ALLOWED_INSTALLS`, eller så finns det
-i `CONNECT_DENY_INSTALLS`. Id:t ändras när ägaren byter nyckeln; be om det nya.
+Dess installations-id finns inte i `CONNECT_ALLOWED_INSTALLS`, det finns i
+`CONNECT_DENY_INSTALLS`, eller så retirerades det av en nyckelrotation. Id:t ändras när
+ägaren byter nyckeln; be om det nya.
 
-### En leverantör visas som otillgänglig
+### Alla inloggningar till en leverantör misslyckas
 
-En av dess variabler saknas, så Connect utelämnade spåret. Kontrollera
-startloggen och tabellerna ovan. GitHub behöver alla fyra: app-ID, slug,
-klient-ID och klienthemlighet; Google behöver både klient-ID och hemlighet.
+En av dess variabler kanske saknas, så Connect utelämnade spåret. Kontrollera
+startloggen och tabellerna ovan. GitHub behöver alla fem: app-ID, slug,
+klient-ID, klienthemlighet och privat nyckel; Google behöver både klient-ID och hemlighet.
 
 ### Inloggningar misslyckas med en omdirigeringskonflikt
 

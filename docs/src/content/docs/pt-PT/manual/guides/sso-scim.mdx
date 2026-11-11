@@ -2,7 +2,7 @@
 title: Provisionar utilizadores com SCIM
 description: Deixe o seu IdP criar, atualizar e desprovisionar contas do Control Center automaticamente.
 slug: pt-PT/manual/guias/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Use este guia quando quer controlar o ciclo de vida — a saída de um
@@ -35,8 +35,9 @@ inícios de sessão futuros. O SCIM é o protocolo de envio que os IdPs
    - **Autenticação**: `Authorization: Bearer <token>`
    - **Id de utilizador**: `userName` (email) ou `externalId` — ambos correspondem
 4. Teste com um utilizador: envie-o a partir do IdP e confirme que aparece (a
-   criação por SCIM fixa o `externalId` do fornecedor à conta, a mesma fixação
-   que o primeiro início de sessão por SSO define).
+   criação por SCIM regista o `externalId` do fornecedor na conta, que é a
+   forma como os envios SCIM posteriores a encontram), e depois peça a essa
+   pessoa que inicie sessão por SSO antes de o implementar para toda a gente.
 
 ## O que o desprovisionamento faz
 
@@ -57,6 +58,7 @@ política de membro automático no momento do início de sessão.
 
 ## Resolução de problemas
 
+- **Um utilizador provisionado é recusado com "Esta conta já está associada a uma identidade SSO diferente"** — limitação conhecida: uma conta que o SCIM criou com um `externalId` fica ligada a esse id, e o primeiro início de sessão por SSO nela é recusado. Enquanto isto não for corrigido, provisione sem `externalId`, ou deixe o provisionamento JIT criar a conta no primeiro início de sessão e use o SCIM apenas para o desprovisionamento.
 - **401 em todas as chamadas** — o token mudou; regenere-o e atualize o IdP.
 - **O endpoint não está acessível** — o túnel está em baixo, ou o servidor só é
   acessível através do retransmissor. O SCIM precisa de HTTPS direto; o JIT

@@ -2,7 +2,7 @@
 title: Diagnose an agent
 description: Work through the run log, adapter probe, server status and host diagnostics when an agent stops producing runs.
 slug: en-GB/manual/guides/agent-diagnostics
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 This guide shows you how to find out why an agent is not producing runs.
@@ -13,13 +13,13 @@ Work top down: the agent's own runs first, then its backend, then the server, th
 
 **Settings → Workspace → Agents** → select the agent → **Logs**.
 
-Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent.
+Each run shows a status badge, a duration ("Running…" while in flight), its start and completion times, its PID and the adapter it used. **View** opens that run's raw event stream. **Stop** kills a running process and marks the run "Killed by user"; **Kill running** in the header does the same for every in-flight run of that agent in this workspace. You can see and stop only live agent runs in workspaces you belong to; the server owner sees and stops all of them.
 
 Read it like this:
 
 - **No runs at all** — the dispatch never happened. Composer mentions are `@` plus word characters (letters, digits, underscore). Resolution is an exact or prefix match on the agent name, so `@code-reviewer` is parsed as `code` and can still wake an agent named `code-reviewer`. A name with a space cannot be mentioned as one token. Then go to step 2.
-- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error.
-- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout** in the Settings tab. An unset timeout uses the per-mode default.
+- **A run that ended immediately in error** — open **View**. A failure to launch the backend shows up here as a process error. "This server has no sandbox, so only its owner can run agents here." means the server's machine has no OS sandbox and you are not its owner; see [Configure sandbox policies](/en-GB/manual/guides/sandbox-policies/#my-agent-run-was-refused-with-this-server-has-no-sandbox).
+- **A run stuck at "Running…"** — stop it, then check the agent's **Silence timeout (minutes)** in its **Settings** tab. An unset timeout uses the per-mode default.
 - **A completed run with no useful output** — the run log's status stays `completed` for a run that ended without its declared deliverable; the honest signal is the summary text, not the badge.
 
 The Logs tab shows no cost. For spend, use the per-agent table in **Observability → Insights**.
@@ -67,11 +67,11 @@ Two things worth knowing when a change "works in tests but not in the app":
 - **Privacy** — whether raw diff content may be forwarded to the agent's model and whether crash reports are sent.
 
 :::caution[This section reports the host and its controls are client-side]
-Detection and enforcement now agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle and the backend picker are preferences stored on your device and the server reads neither — the server's own switch is `--sandbox` (`on` by default, `off` to opt out).
+Detection and enforcement agree: where the detector reports a native backend, agent runs on that host really are wrapped in it. But the detector is the only live thing in this section. The master toggle and the backend picker are preferences stored on your device and the server reads neither — the server's own switch is `--sandbox` (`on` by default, `off` to opt out).
 
-So a warning here is worth acting on, but it is not usually why an agent is failing. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`. `GET /healthz` carries no sandbox field.
+So a warning here is worth acting on. On a host with no backend it is why someone other than the server owner cannot run agents at all. To confirm which state the server is in, read its startup log: it prints `agent sandbox ON` with the backend note, `no OS-native agent sandbox on this host` with an install hint, or `agent sandbox DISABLED by --sandbox off`, and its exposure line carries `sandbox=native`, `sandbox=unavailable` or `sandbox=off`. `GET /healthz` carries no sandbox field.
 
-Where there is no backend — Windows always, Linux or WSL2 without `bwrap` and `socat` — runs are **not** sandboxed and what bounds them is the conversation's own checkout, its read-only forge token and the push gateway, the action guardrails, environment sanitisation and the tool surface its mode allows.
+Where there is no backend (Windows always, Linux or WSL2 without `bwrap` and `socat`), only runs the server owner is accountable for start, and everyone else's are refused. The runs that start there, and every run under `--sandbox off`, are **not** sandboxed and what bounds them is the conversation's own checkout, its read-only forge token and the push gateway, the action guardrails, environment sanitisation and the tool surface its mode allows.
 :::
 
 ## Common failures

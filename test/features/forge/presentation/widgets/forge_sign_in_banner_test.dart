@@ -21,13 +21,26 @@ class _FixedWorkspace extends ActiveWorkspaceIdNotifier {
 }
 
 const _signedOut = [
-  ForgeConnection(forge: ForgeHost.github, authenticated: false),
-  ForgeConnection(forge: ForgeHost.gitlab, authenticated: false),
+  ForgeConnection(
+    forge: ForgeHost.github,
+    status: ForgeConnectionStatus.notConnected,
+  ),
+  ForgeConnection(
+    forge: ForgeHost.gitlab,
+    status: ForgeConnectionStatus.notConnected,
+  ),
 ];
 
 const _signedIn = [
-  ForgeConnection(forge: ForgeHost.github, authenticated: true, username: 'a'),
-  ForgeConnection(forge: ForgeHost.gitlab, authenticated: false),
+  ForgeConnection(
+    forge: ForgeHost.github,
+    status: ForgeConnectionStatus.connected,
+    username: 'a',
+  ),
+  ForgeConnection(
+    forge: ForgeHost.gitlab,
+    status: ForgeConnectionStatus.notConnected,
+  ),
 ];
 
 /// The banner under a real router, so its link and its "hide on the page
@@ -46,7 +59,10 @@ Future<GoRouter> _pump(
     initialLocation: initial,
     routes: [
       GoRoute(path: inboxRoute('ws-1'), builder: (_, s) => page(s)),
-      GoRoute(path: settingsProfileRoute('ws-1'), builder: (_, s) => page(s)),
+      GoRoute(
+        path: settingsAccountProfileRoute('ws-1'),
+        builder: (_, s) => page(s),
+      ),
     ],
   );
   addTearDown(router.dispose);
@@ -99,6 +115,38 @@ void main() {
     });
   });
 
+  group('forgeSignInBannerSubject', () {
+    const lapsed = ForgeConnection(
+      forge: ForgeHost.github,
+      status: ForgeConnectionStatus.needsSignIn,
+      username: 'a',
+    );
+    const paused = ForgeConnection(
+      forge: ForgeHost.gitlab,
+      status: ForgeConnectionStatus.paused,
+    );
+    const unreachable = ForgeConnection(
+      forge: ForgeHost.bitbucket,
+      status: ForgeConnectionStatus.unreachable,
+    );
+
+    test('a lapsed sign-in comes first: it is the reader\'s to fix', () {
+      expect(forgeSignInBannerSubject(const [paused, lapsed]), lapsed);
+    });
+
+    test('a paused grant is named when nothing needs a sign-in', () {
+      expect(forgeSignInBannerSubject(const [paused]), paused);
+    });
+
+    test('a provider that is only retrying raises no banner', () {
+      expect(forgeSignInBannerSubject(const [unreachable]), isNull);
+    });
+
+    test('nothing to say while a forge is usable', () {
+      expect(forgeSignInBannerSubject(_signedIn), isNull);
+    });
+  });
+
   group('ForgeSignInBanner', () {
     testWidgets('warns in place and links to the sign-in', (tester) async {
       final router = await _pump(tester, connections: _signedOut);
@@ -109,11 +157,14 @@ void main() {
       await tester.tap(find.text(l10n.forgeSignInBannerAction));
       await tester.pumpAndSettle();
       expect(
-        router.routerDelegate.currentConfiguration.uri.path,
-        settingsProfileRoute('ws-1'),
+        router.routerDelegate.currentConfiguration.uri.toString(),
+        settingsAccountsRoute('ws-1'),
       );
       // The page it links to holds the sign-in card: no warning pointing at
-      // the screen it sits on.
+      // the screen it sits on, however that screen was opened.
+      expect(find.text(l10n.forgeSignInBannerTitle), findsNothing);
+      router.go(settingsAccountProfileRoute('ws-1'));
+      await tester.pumpAndSettle();
       expect(find.text(l10n.forgeSignInBannerTitle), findsNothing);
     });
 

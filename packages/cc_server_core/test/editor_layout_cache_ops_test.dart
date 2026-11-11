@@ -101,22 +101,7 @@ void main() {
     expect(await read('alice', 'space-1', workspaceId: 'ws-2'), isNull);
   });
 
-  test('a shared layout from before per-person rows seeds a first read, '
-      'then the person\'s own write wins', () async {
-    cache.rows[('ws-1', EditorLayoutCacheKinds.space, 'space-1')] = 'legacy';
-
-    expect(await read('alice', 'space-1'), 'legacy');
-    await write('alice', 'space-1', 'alice-layout');
-    expect(await read('alice', 'space-1'), 'alice-layout');
-    expect(await read('bob', 'space-1'), 'legacy');
-    expect(
-      cache.rows[('ws-1', EditorLayoutCacheKinds.space, 'space-1')],
-      'legacy',
-    );
-  });
-
-  test('a key naming an owner is refused, so the fallback cannot read '
-      'another person\'s row', () async {
+  test('a key naming an owner is refused', () async {
     await write('alice', 'space-1', 'alice-layout');
 
     expect(

@@ -45,7 +45,7 @@ unavailable. `<base>` below is your `CONNECT_PUBLIC_URL`.
 
 | Provider       | Register                                                                                                                                                                                                                                                             | Keep                                    |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` with **Redirect on update** on. Leave **Request user authorization (OAuth) during installation** off: with it on, GitHub ignores the setup URL. Keep **Expire user authorization tokens** on | App id, slug, client id, client secret |
+| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` with **Redirect on update** on. Leave **Request user authorization (OAuth) during installation** off: with it on, GitHub ignores the setup URL. Keep **Expire user authorization tokens** on | App id, slug, client id, client secret, a private key |
 | **Google**     | An OAuth client of type **Web application** with redirect URI `<base>/oauth/google/callback`, and the Google Calendar API enabled                                                                                                                                  | Client id, client secret                |
 | **Linear**     | An OAuth application with callback URLs `<base>/oauth/linear/callback` and `<base>/oauth/linear_app/callback`                                                                                                                                                    | Client id only                          |
 | **Slack**      | Redirect URLs `<base>/oauth/slack_oidc/callback` and `<base>/oauth/slack/callback`. Event Subscriptions at `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash commands at `<base>/v1/hooks/slack/commands`. Token rotation on | App id, client id, client secret, signing secret |
@@ -55,9 +55,20 @@ read and write, **Pull requests** read and write, **Issues** read and write,
 **Checks**, **Actions** and **Commit statuses** read. Add organization
 **Members** read for team review requests. Webhooks can stay off: servers poll.
 
-Connect never needs the GitHub App's private key. It mints one-repository
-tokens from a person's own sign-in instead. Linear needs no secret either:
-Connect hands the code back to the server, which finishes the exchange itself.
+Connect needs the GitHub App's private key (**Generate a private key** in the
+App's settings). It signs the App's requests that find the installation covering
+a repository (or, when the repository has none, the owner's installation) and
+mint a one-repository installation token, each only after the asking person's
+own sign-in proved access to that repository.
+
+Every server on your Connect shares the App's bot. It may read, comment, label
+and react as the bot for any of them. Reviewing pull requests as the bot is
+allowed only for the servers you list in `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`
+(their install ids, comma-separated); every other server publishes reviews on
+the reviewer's own token. Pushing is never done as the bot. To let a server of
+your own review as the bot, add its install id there and restart. Keep the key file
+as a secret, like the seal key. Linear needs no secret: Connect hands the code
+back to the server, which finishes the exchange itself.
 
 ## Step 3: Collect the install ids
 
@@ -111,13 +122,28 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Point your reverse proxy at port `8790`. The image runs as an unprivileged user,
-keeps its state in the `/data` volume and has a built-in health check
-(`cc-connect --healthcheck`, which probes `/healthz`).
+Point your reverse proxy at port `8790`, and set `CONNECT_TRUST_PROXY` to the
+number of proxies in front of Connect so its per-address limit sees each
+client's address. The image runs as an unprivileged user, keeps its state in the
+`/data` volume and has a built-in health check (`cc-connect --healthcheck`,
+which probes `/healthz`: the process answers). `/readyz` also checks that its
+state and binding stores answer and that Redis, when used, still runs
+`maxmemory-policy noeviction`; point an orchestrator's readiness check there.
+
+The sign-in consent page answers with a form post that Connect accepts only
+from its own page: `Sec-Fetch-Site`, when sent, must be `same-origin`, and
+`Origin`, when sent, must be the origin of `CONNECT_PUBLIC_URL`; a post with
+neither is refused. So the proxy must pass both headers through unchanged, and
+`CONNECT_PUBLIC_URL` must be the address people's browsers actually use. If
+continuing on that page always shows "This link has expired", and the log shows
+`oauth.done_refused` with reason `origin` or `no_origin`, one of those two is
+off.
 
 Connect refuses to start (exit code `78`) when its configuration is open, unsafe
 or half finished, and prints which variable is wrong. A missing allowlist, an
@@ -133,8 +159,9 @@ sign-in runs** names **Connect** for every provider you registered.
 A server can host Connect itself instead of a separate container. The mounted
 service is the same one the image runs.
 
-1. Put the `CONNECT_*` variables in the server's `.env` file (or its
-   environment), as in Step 5
+1. Put the `CONNECT_*` variables in the server's `.env` file, as in Step 5.
+   The server refuses to start when a Connect secret, `CONNECT_SENTRY_DSN`
+   included, is exported in its environment
 2. Add `CC_SERVER_CONNECT_HOST=on`
 3. Restart the server. Its log prints `embedded Connect at <url>`
 
@@ -146,6 +173,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect is then served at `<server>/connect`:
@@ -178,9 +206,10 @@ accept `NAME_PREVIOUS` (or `NAME_PREVIOUS_FILE`) during a rotation.
 | `CONNECT_PUBLIC_URL`            | required  | The canonical public URL. HTTPS, or `http` on loopback only. A path means a mount. No query or fragment                          |
 | `CONNECT_ALLOWED_INSTALLS`      | required  | Comma-separated install ids. `*` is accepted only together with `CONNECT_SIGNED_CONFIG_FILE`                                     |
 | `CONNECT_DENY_INSTALLS`         |           | Install ids refused even when allowed                                                                                            |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeric GitHub owner ids. When set, repository tokens are minted only for repositories they own                                  |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeric GitHub owner ids. When set, repository tokens are minted only for repositories they own. It does not limit who signs in: a person allowed to use this Connect still receives their own App user token. To serve one organization only, keep the App private to it |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Install ids that may have the App's bot review pull requests. Empty by default; `*` is refused, and each id must also be allowed |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bind address and port                                                                                                    |
-| `CONNECT_TRUST_PROXY`           | `0`       | Trusted proxy hops in `X-Forwarded-For` (0 to 8). Used only for the per-address rate limit                                        |
+| `CONNECT_TRUST_PROXY`           | `0`       | Trusted proxy hops in `X-Forwarded-For` (0 to 8). Used only for the per-address limits, the sign-in page's network hint and the logged address. Behind a proxy, `0` counts every client as the proxy, and the log says so once |
 
 ### Provider lanes
 
@@ -188,6 +217,7 @@ accept `NAME_PREVIOUS` (or `NAME_PREVIOUS_FILE`) during a rotation.
 | --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | The GitHub App                                                              |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | Secret, dual                                                                |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |         | Secret. The App's private key (PEM)                                         |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | The Google client. The secret is dual                                       |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |         | The Linear application. No secret                                           |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | The Slack app                                                               |
@@ -205,12 +235,12 @@ accept `NAME_PREVIOUS` (or `NAME_PREVIOUS_FILE`) during a rotation.
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` or `gcp-kms`                                                                                       |
 | `CONNECT_SEAL_KEYS`                                       |                            | Secret, required for `local`. Comma-separated `kid:key` entries, newest first; older entries still decrypt |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, required for `gcp-kms`                                   |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` for one instance, `redis` for several                                                             |
-| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` or `rediss://`                                                                          |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` for one instance, `redis` for several. A full memory store refuses new sign-ins and requests rather than forget a live entry |
+| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` or `rediss://`. Redis 6.2 or later with `maxmemory-policy noeviction`, both checked at startup |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | CA bundle for `rediss://`                                                                                  |
-| `CONNECT_BINDINGS`                                        | `file`                     | Where GitHub installation bindings live: `file` or `firestore`                                             |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` in the image) | Holds `bindings.json`                                                                                   |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` database       | For `CONNECT_BINDINGS=firestore`                                                                           |
+| `CONNECT_BINDINGS`                                        | `file`                     | Where Slack team bindings live: `file` or `firestore`                                                      |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` in the image) | Holds `bindings.json`. Locked by one Connect: a second one on the same directory does not start         |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` database       | For `CONNECT_BINDINGS=firestore`. Connect does not start when Firestore does not answer                    |
 
 ### Configuration, logs and limits
 
@@ -220,19 +250,42 @@ accept `NAME_PREVIOUS` (or `NAME_PREVIOUS_FILE`) during a rotation.
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Keys the signed configuration must verify against                                                   |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | The epoch of the configuration a self-hosted Connect generates                                      |
 | `CONNECT_LOG_HMAC_KEY`                  | random per process | Secret. Set it to keep the tags that stand in for install ids stable across restarts and instances  |
+| `CONNECT_SENTRY_DSN`                    |                    | Secret. An https Sentry DSN that error lines are reported to: the error type, stack frames, route and request id, never a message, body or header |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | The Sentry environment                                                                              |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Reported by `/v1/version`                                                                           |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Requests per install                                                                                |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Requests per address                                                                                |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Requests for the whole service                                                                      |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Requests per address (an IPv6 address counts per /64)                                               |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Requests for the whole instance                                                                     |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`              | Slack event and command deliveries per address, counted apart from other requests                   |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`          | Slack event and command deliveries for the whole instance                                           |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack events per team                                                                               |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF searches per install                                                                            |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | GIF searches per address, across servers                                                            |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | Sign-ins started per address                                                                        |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | GitHub tokens issued per GitHub account on one server (sign-ins, refreshes, repository tokens)      |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × the above (`120`) | The same per GitHub account across all servers                                        |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | GitHub tokens issued per address                                                                    |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | New GitHub sign-ins for the whole app                                                               |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | Bot tokens per server                                                                               |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | Bot tokens per asking GitHub account, across servers                                                |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | Bot tokens for the whole app                                                                        |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | Refreshes and repository tokens for the whole app. New sign-ins have their own limit above          |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | Live repository tokens one GitHub account may hold before Connect logs a warning                    |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | Install ids retired per address (per /48 for IPv6)                                                  |
+
+A call past a limit is answered `rate_limited`. Servers retry later and never
+sign anyone out for it.
 
 ## Run more than one instance
 
 One instance with `CONNECT_STATE=memory` is enough for most organizations.
-Several instances behind one address need `CONNECT_STATE=redis`, and either a
-shared `CONNECT_DATA_DIR` or `CONNECT_BINDINGS=firestore`, so a sign-in started
-on one instance can finish on another.
+Several instances behind one address need `CONNECT_STATE=redis` and
+`CONNECT_BINDINGS=firestore`, so a sign-in started on one instance can finish on
+another and every instance sees the same Slack bindings and retired install
+ids. A shared `CONNECT_DATA_DIR` does not work: the first Connect locks it. The
+per-install, per-address and instance request limits are per instance; the
+limits on sign-ins, GitHub tokens, bot tokens, GIF searches per address,
+retirements and Slack teams are shared through the state store.
 
 ## Rotate a provider secret
 
@@ -259,22 +312,30 @@ prompt is yours.
 ## Block a server
 
 Add its install id to `CONNECT_DENY_INSTALLS` and restart. Its owner sees
-"Connect has blocked this server's install id" and every Connect sign-in on it
-stops.
+"Connect has blocked this server's install id. Contact whoever runs your Connect server." and every Connect sign-in on it stops.
+
+A server also retires its own old install id when its owner rotates the key.
+It proves the id is its own with one credential seal this Connect made for it,
+so only a server that signed someone in can retire an id. Connect keeps retired
+ids for good, so the old key and every seal made for it stop working, and
+releases the Slack workspaces bound to the old id. Tokens already handed out
+expire on their own: within 8 hours for a person's, 1 hour for a bot's. Connect
+holds at most 100,000 retired ids; past that, a rotation is refused and the log
+says so at error level.
 
 ## Troubleshooting
 
 ### A server says Connect has blocked it
 
-Its install id is not in `CONNECT_ALLOWED_INSTALLS`, or it is in
-`CONNECT_DENY_INSTALLS`. The id changes when its owner rotates the key; ask for
-the new one.
+Its install id is not in `CONNECT_ALLOWED_INSTALLS`, it is in
+`CONNECT_DENY_INSTALLS`, or it was retired by a key rotation. The id changes
+when its owner rotates the key; ask for the new one.
 
-### A provider shows as unavailable
+### Every sign-in to one provider fails
 
-One of its variables is missing, so Connect left the lane out. Check the startup
-log and the tables above. GitHub needs all four of app id, slug, client id and
-client secret; Google needs both client id and secret.
+One of its variables may be missing, so Connect left the lane out. Check the startup
+log and the tables above. GitHub needs all five of app id, slug, client id,
+client secret and private key; Google needs both client id and secret.
 
 ### Sign-ins fail with a redirect mismatch
 

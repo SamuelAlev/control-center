@@ -2,7 +2,7 @@
 title: SSO 配置参考
 description: 单点登录的每一项配置、端点、操作与错误码。
 slug: zh-CN/手册/参考/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 关于单点登录的一切可配置项都集中在这里。取值存放在 `global.db` 的
@@ -32,6 +32,18 @@ sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 | `groupRoleMap`         | 两者     | `{}`            | 组 → 角色；保存时会拒绝 owner 映射                                                                                                                   |
 | `autoMember`           | 两者     | 开启            | 首次登录时自动把用户加入每个工作区                                                                                                                   |
 | `allowJit`             | 两者     | 开启            | 登录时预配未知用户                                                                                                                                   |
+
+## 账户匹配
+
+`SsoProvisioner` 按以下顺序解析一次登录，且从不按用户名匹配：
+
+1. `(users.sso_issuer, users.sso_subject)` 与该登录的签发者和主体相等（SAML NameID / OIDC `sub`）。
+2. 某个账户的邮箱与该登录的邮箱相等，且仅当两端都为其担保时：提供方（OIDC `email_verified: true`；缺少该声明不算担保；已签名的 SAML 断言始终算作担保）以及账户（`users.email_verified`）。邮箱以去除首尾空白并转为小写的形式存储和比较；已验证的邮箱只有在恰好一个账户已验证持有它时才会匹配；如果有两个持有者，则什么都不匹配（日志中不含该邮箱）；另一账户已验证持有的邮箱，其大小写变体也不能由任何账户验证。
+3. 否则，`allowJit` 开启时创建新账户；关闭时拒绝。
+
+`users.email_verified` 由携带该邮箱的 SSO 登录或 SCIM 推送设置，或由服务器所有者通过 `users.vouchEmail` 设置（**设置 → 服务器 → 人员 → 确认邮箱**，审计记录为 `user.email_vouched`）。所有者自己编辑个人资料时，会为自己的邮箱担保。其他任何个人资料编辑，以及邀请中输入的任何邮箱，都保持未验证，而编辑邮箱会清除该标志。经担保的登录若创建新账户，会从仅仅输入过该邮箱的账户上取得它（审计记录为 `user.email_unvouched_cleared`），但绝不会从已验证持有该邮箱的账户上取得；在这种情况下，新账户不会获得任何邮箱地址。
+
+已固定到不同主体或签发者的匹配账户会拒绝该登录，并显示 `This account is already linked to a different SSO identity`。已停用的账户会拒绝登录，并显示 `This account has been deactivated`。
 
 ## 进程配置
 
@@ -103,6 +115,7 @@ IdP 发起的 SAML 响应（在启用时）没有发起方接收者。作为替�
 - `sso_connections`（global.db）——每种一行，按设计即跨工作区。
 - `users.sso_subject` + `users.sso_issuer`——提供方主体的固定，通过部分索引
   保证每个 `(issuer, subject)` 唯一。
+- `users.email_verified`：该账户的邮箱能否与 SSO 登录或 SCIM 推送匹配（见[账户匹配](#账户匹配)）。
 - `users.deactivated_at`——SCIM 停用时间戳。
 - SCIM bearer token 与 OIDC 客户端密钥存放在 0600 密钥文件中，绝不会存入
   数据库。

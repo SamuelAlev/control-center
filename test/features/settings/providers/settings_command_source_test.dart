@@ -31,6 +31,10 @@ GoRouter _router({bool includeGlobalDestinations = false}) => GoRouter(
       path: settingsNewsfeedRoute(workspaceIdParam),
       builder: (_, _) => const Scaffold(body: Text('Feed settings page')),
     ),
+    GoRoute(
+      path: settingsAccountProfileRoute(workspaceIdParam),
+      builder: (_, _) => const Scaffold(body: Text('Profile page')),
+    ),
   ],
 );
 
@@ -176,6 +180,25 @@ void main() {
       settingsNewsfeedRoute('ws-1'),
     );
     expect(find.text('Feed settings page'), findsOneWidget);
+  });
+
+  testWidgets('connected accounts are found by name and open the profile '
+      'at them', (tester) async {
+    final router = _router();
+    addTearDown(router.dispose);
+    await tester.pumpWidget(_app(router));
+    await _open(tester);
+
+    await tester.enterText(find.byType(EditableText), 'Connected accounts You');
+    await tester.pump();
+    expect(find.text('Connected accounts'), findsOneWidget);
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(
+      router.routeInformationProvider.value.uri.toString(),
+      settingsAccountsRoute('ws-1'),
+    );
+    expect(find.text('Profile page'), findsOneWidget);
   });
 
   testWidgets('without a workspace no settings are offered or owner read', (

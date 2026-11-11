@@ -3,7 +3,7 @@ title: Arkitektur
 description: Hur Control Center är uppbyggt med en servermodell för tunna klienter, funktionsorienterad Clean Architecture samt portar och adaptrar.
 dateModified: 2026-09-19
 slug: sv-SE/handbok/koncept/arkitektur
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Översikt
@@ -60,7 +60,7 @@ Funktionen **`guardrails`** lägger sitt domänlager i `cc_domain/features/guard
 - Minneentiteter: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Delade värdeobjekt: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Delade portar: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domäntjänster: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Domäntjänster: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + händelsetyper (arbetsyta/agent, PR/granskning, meddelanden, ärenden, pipeline, orkestrering, minne, kalender/möten, identitet och medlemskap, observerbarhet)
 
 ## Identitet och multiplayer
@@ -132,7 +132,6 @@ Servern håller de autentiseringsuppgifter som spelar roll: GitHub- och ärendet
 
 - Hemligheter i `flutter_secure_storage` (macOS-nyckelring, Windows-autentiseringshanteraren, Linux libsecret) — klientens enhetsautentiseringsuppgift och fjärrparkopplingsnycklar, inte leverantörstokens
 - `shared_preferences` endast för icke-känsliga inställningar (tema, typsnitt, layout)
-- Kvarblivna leverantörshemligheter från äldre installationer lämnas en gång över till servern av `features/auth/providers/credential_migration.dart` och raderas sedan från klientens nyckelring
 
 ## Upprätthållande av arkitekturen
 

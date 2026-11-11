@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
@@ -199,7 +200,7 @@ void main() {
         workspaceRepo: _FakeWorkspaceRepository([]),
       );
 
-      final result = await service.detect();
+      final result = await service.detect(visible: (_) async => true);
       expect(result, isEmpty);
     });
 
@@ -212,7 +213,7 @@ void main() {
         workspaceRepo: _FakeWorkspaceRepository([]),
       );
 
-      final result = await service.detect();
+      final result = await service.detect(visible: (_) async => true);
       expect(result, isEmpty);
     });
 
@@ -231,18 +232,63 @@ void main() {
         workspaceRepo: _FakeWorkspaceRepository([]),
       );
 
-      final result = await service.detect();
+      final result = await service.detect(visible: (_) async => true);
       expect(result, isEmpty);
     });
 
-    test('killProcess does not throw', () async {
+    test('detect shows only runs of a workspace the caller sees', () async {
+      final child = await Process.start('sleep', ['300']);
+      addTearDown(() => child.kill(ProcessSignal.sigkill));
       final service = ProcessDetectionService(
-        runLogRepo: _FakeAgentRunLogRepository([]),
+        runLogRepo: _FakeAgentRunLogRepository([
+          _runningLog(workspaceId: 'ws-a', pid: child.pid),
+        ]),
         agentRepo: _FakeAgentRepository([]),
         workspaceRepo: _FakeWorkspaceRepository([]),
       );
 
-      await service.killProcess(99999);
-    });
+      expect(
+        await service.detect(visible: (ws) async => ws == 'ws-b'),
+        isEmpty,
+      );
+      expect(
+        (await service.detect(visible: (ws) async => ws == 'ws-a')).single.pid,
+        child.pid,
+      );
+    }, skip: Platform.isWindows ? 'POSIX kill' : false);
+
+    test(
+      'stopRun signals only a live agent run its workspace admits',
+      () async {
+        final child = await Process.start('sleep', ['300']);
+        addTearDown(() => child.kill(ProcessSignal.sigkill));
+        final service = ProcessDetectionService(
+          runLogRepo: _FakeAgentRunLogRepository([
+            _runningLog(workspaceId: 'ws-a', pid: child.pid),
+          ]),
+          agentRepo: _FakeAgentRepository([]),
+          workspaceRepo: _FakeWorkspaceRepository([]),
+        );
+        bool alive(int target) =>
+            Process.runSync('kill', ['-0', '$target']).exitCode == 0;
+
+        // Not an agent run at all: the test process itself.
+        expect(await service.stopRun(pid, mayStop: (_) async => true), isFalse);
+        expect(alive(pid), isTrue);
+        // An agent run of a workspace the caller may not stop.
+        expect(
+          await service.stopRun(child.pid, mayStop: (ws) async => ws == 'ws-b'),
+          isFalse,
+        );
+        expect(alive(child.pid), isTrue);
+
+        expect(
+          await service.stopRun(child.pid, mayStop: (ws) async => ws == 'ws-a'),
+          isTrue,
+        );
+        await child.exitCode.timeout(const Duration(seconds: 10));
+      },
+      skip: Platform.isWindows ? 'POSIX kill' : false,
+    );
   });
 }

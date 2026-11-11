@@ -2,7 +2,7 @@
 title: Räcken – en policy för varje muterande åtgärd
 description: Varför Control Center leder varje sidoeffekt från en agent genom en enda motor för tillåt/fråga/neka, hur ActionClass-taxonomin medvetet hålls liten och vad autonomireglaget verkligen ändrar.
 slug: sv-SE/handbok/koncept/racken
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agenter i Control Center kan ta bort filer, pusha grenar, publicera pull
@@ -18,23 +18,24 @@ Det finns exakt en policymotor. Den tillfrågas vid varje punkt där en åtgärd
 lämna systemet: den inbyggda harnessens verktygsregister, MCP-dispatcherns grind
 på serversidan och mutationer i repo-operationer. En regel som skrivs en gång
 gäller därför både den inbyggda körningen och externa agent-CLI:er – det finns
-ingen andra, tystare väg runt den. Den äldre kommandopolicyn för enbart bash
-fungerar fortfarande: en regel kan matcha ett kommandoprefix i stället för en
-åtgärdsklass, och de två formerna samsas i samma regellager.
+ingen andra, tystare väg runt den. En regel kan även matcha ett kommandoprefix i stället för en
+åtgärdsklass; båda formerna finns i samma regellager.
 
 Motorn är dock ingen ersättning för OS-sandlådan, och sandlådan är ingen
 ersättning för motorn. De svarar på olika frågor: räckena avgör om ett anrop som
 Control Center kan se alls får ske, medan sandlådan begränsar var den
 resulterande processen kan nå. `cc_server` tillämpar sandlådan där värden
 erbjuder en backend – men [Windows erbjuder ingen och Linux kräver `bwrap` och `socat`](/sv-SE/handbok/koncept/sandlada-och-sakerhet/). På
-sådana värdar är räckena det yttersta verkställighetslagret i stället för en
-policy ovanpå ett golv, vilket är värt att veta när du bestämmer hur tillåtande
-du vill vara.
+sådana värdar startar bara serverägarens körningar, om inte ägaren har stängt av
+sandlådan för alla med `--sandbox off`. För varje körning som startar utan
+sandlåda är räckena det yttersta verkställighetslagret i stället för en policy
+ovanpå ett golv, vilket är värt att veta när du bestämmer hur tillåtande du vill
+vara.
 
 ## ActionClass: en medvetet sluten taxonomi
 
 Varje muterande verktyg deklarerar vilka **ActionClasses** det tillhör, ur en
-sluten uppsättning på tretton effektklasser. Fem av dem frågar först som
+sluten uppsättning på fjorton effektklasser. Sex av dem frågar först som
 standard; resten tillåter, och det är en regel som ändrar på det.
 
 | Klass                      | Inbyggd standard | Vad den omfattar                                                  |
@@ -52,17 +53,19 @@ standard; resten tillåter, och det är en regel som ändrar på det.
 | `processSpawn`             | tillåt           | Starta en process (shell och allt som går via shell)              |
 | `workspaceMutation`        | tillåt           | Ändra arbetsytans struktur (repos, ytor, agenter)                 |
 | `enclosureControl`         | tillåt           | Styra en avskild miljö (station): starta en VM, skicka in indata  |
+| `hostExecution`            | **Fråga först**  | Köra ett kommando på serverns värd utanför all sandlåda på en agents begäran: miljöuppgifter, processer, compose-stackar och `eval` när dess kärna körs obegränsad |
 
 De åtta klasser som tillåter som standard valdes utifrån antagandet att
 sandlådegolvet ligger under dem. Det stämmer där värden erbjuder en backend, och
-det stämmer inte på Windows eller på en Linux-maskin som saknar `bwrap` och
+det stämmer inte vid `--sandbox off`, inte heller för serverägarens egna körningar
+på Windows eller på en Linux-maskin som saknar `bwrap` och
 `socat` – så om du vill att `fileWriteOutsideWorktree` eller `packageInstall`
 ska gå genom en grind där, är det en regel du själv måste skriva.
 
 Uppsättningen är sluten med avsikt. Ett nytt muterande verktyg som inte
 deklarerar någon klass faller i spärrtestet, så taxonomin kan bara växa genom
 ett uttryckligt, genomtänkt beslut – "taxonomispridning är döden för den här
-funktionen". Tretton klasser räcker för att uttrycka de policyer folk faktiskt
+funktionen". Fjorton klasser räcker för att uttrycka de policyer folk faktiskt
 skriver (pusha aldrig utan att fråga, radera aldrig utanför en worktree, tillåt
 alltid läsning) och är få nog för att inställningsgränssnittet ska förbli
 begripligt.
@@ -91,7 +94,7 @@ Två beslut har hårda garantier:
 
 Det finns medvetet ingen spärr per tur. Varje verktygsanrop löser upp policyn på
 nytt från grunden, så upprepade frågor för samma åtgärd begränsas av operatörens
-eget "kom ihåg det här beslutet" i stället för av något som gäller per tur.
+eget stående godkännande i stället för av något som gäller per tur.
 
 ## Regler på argumentnivå
 
@@ -107,6 +110,7 @@ En begränsning kan namnge:
   gren som helst utom main")
 - **värdar** – nätverksdestinationer, med jokertecken för underdomäner (`*.internal`)
 - **kommandon** – kommandoprefix, matchade på en ordgräns
+- **verktyg** – det exakta verktyg som ett anrop anger, så att ett godkännande kan täcka ett enda verktyg i stället för alla verktyg med samma effekt
 - **tak** – `maxCount` / `maxCents`, så att "radera upp till 50 filer" går att
   uttrycka
 
@@ -149,13 +153,17 @@ slutgiltigt.
 
 ## Stående godkännanden
 
-Att svara på en fråga med "kom ihåg det här" skriver en riktig policyregel:
-avgränsad till ett omfång (yta / agent / arbetsyta), **argumentbegränsad** (att
-godkänna en push till `feature/login` ger `feature/**`, inte `main`) och
-**självåterkallande** efter en uttrycklig TTL. Att säga ja de närmaste timmarna
-är inte samma sak som att tyst skriva om din permanenta policy, och reglerna den
-skriver hamnar i samma regellager med ursprunget `remembered` och ett
-utgångsdatum, så de kan återkallas i förtid.
+Varje godkännandekort som utlöses av en agents åtgärd erbjuder **Godkänn i 8 timmar** när åtgärden har något smalare än sin klass att namnge. När du väljer det skrivs en riktig policyregel, ett stående godkännande, i samma lager som de regler du sätter, med ursprunget `remembered` och ett utgångsdatum:
+
+- **Avgränsat.** Det skrivs för ytan som frågan kom från. Endast en admins svar kan skrivas för hela arbetsytan.
+- **Smalt.** Det anger en grengrupp (att godkänna en push till `feature/login` ger `feature/**`, inte `main`), en mapp, en värd, det exakta kommandot eller verktyget. En commit är den enda åtgärd som godkänns som klass för den ytan: den har inget smalare att namnge.
+- **Återkallar sig själv.** Det upphör efter åtta timmar och kan återkallas tidigare på sidan Agentbehörigheter.
+
+Ett stående godkännande besparar bara en fråga. Det gäller för en åtgärd som står på ”Fråga först” på sitt eget omfång eller ett bredare, aldrig för ett Neka, oavsett vilket omfång nekandet kommer från. Det lagras bredvid regeln du satt för åtgärden, så att ändring av den regeln lämnar godkännandet kvar och återkallelse av godkännandet lämnar regeln kvar.
+
+Vissa spärrar frågar på egen hand efter att policyn tillåtit ett anrop: verktygets egna deklarerade godkännande, eller lägets kommandonät. De hoppar över sin fråga bara för ett stående godkännande som namnger just det verktyget eller kommandot. Att sätta åtgärden på ”Tillåt” tystar dem inte.
+
+Tre kort behåller två knappar, eftersom det inte finns något att bära vidare: att låta sandlådan köra program från en mapp (ett godkännande där är redan ett lagrat tillstånd som du kan återkalla), en destruktiv åtgärd som du bekräftar en gång, och en installation av en skill (en ändrad skill ska fråga igen).
 
 ## Verkställighetsnivåer
 

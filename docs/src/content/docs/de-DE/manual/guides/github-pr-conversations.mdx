@@ -2,7 +2,7 @@
 title: Aus einem GitHub-PR mit Control Center sprechen
 description: Bitte Control Center aus der PR-Unterhaltung selbst um ein Review oder eine Frage, ohne Webhook und ohne öffentliche URL.
 slug: de-DE/handbuch/anleitungen/github-pr-unterhaltungen
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Diese Anleitung zeigt, wie du mit Control Center arbeitest, ohne GitHub zu
@@ -31,24 +31,7 @@ Bereitstellung.
 
 ## Den Namen deines Bots finden
 
-Erwähne `@usectrl`, das eigene GitHub-Konto von Control Center. Dies ist der Standardauslöser; die GitHub-Spur deines Arbeitsbereichs bearbeitet die Anfrage weiterhin und veröffentlicht die Antworten. Zugangsdaten für das Konto `usectrl` brauchst du nicht.
-
-Auch der eigene App-Login `<appslug>[bot]` und die Kurzform `@appslug` funktionieren. So findest du diesen optionalen Alias bei deiner eigenen App:
-
-1. Geh zu **Einstellungen → Server → Single sign-on** und scrolle zur Karte
-   **Anbieter-Apps**
-2. Öffne den Block **GitHub** und klicke auf **Testen**
-3. Kopiere **Bot-Login**, sobald er erscheint. Zeigt er noch den leeren Hinweis,
-   ist der Login immer `<appslug>[bot]` — tippe das, oder die Kurzform `@appslug`
-
-GitHub bietet App-Konten in der `@`-Autovervollständigung nicht an; App-Aliasse musst du daher eintippen oder kopieren. Standardmäßig rufst du den Bot über den eigenen Nutzer `@usectrl` auf; `@myapp` und `@myapp[bot]` bleiben gültige App-Aliasse.
-
-:::note[Wähle einen unverwechselbaren App-Namen]
-Die Kurzform wird als Text abgeglichen. Teilt sich ein menschlicher
-GitHub-Nutzer zufällig den Slug deiner App, erreicht die Erwähnung dieses
-Nutzers in der Kurzform auch den Bot. Die volle Form `@myapp[bot]` ist immer
-eindeutig.
-:::
+Erwähne `@usectrl`, das eigene GitHub-Konto von Control Center. Er ist der einzige Auslöser: Die Erwähnung des eigenen Logins der App bewirkt nichts. die GitHub-Spur deines Arbeitsbereichs bearbeitet die Anfrage weiterhin und veröffentlicht die Antworten. Zugangsdaten für das Konto `usectrl` brauchst du nicht.
 
 ## Ein Review von GitHub aus anfordern
 
@@ -123,7 +106,7 @@ Der Server löst den Autor eines Kommentars, oder die Person, die das Label
 
 - **Das GitHub-Konto muss auf diesem Server angemeldet sein.** Abgeglichen wird
   die numerische Konto-ID von GitHub, nie der Login. Melde dich unter
-  **Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** an
+  **Einstellungen → Du → Profil → Code-Hosting** an
 - **Die Person muss Mitglied mit einer Schreibrolle sein** (`member`, `admin`
   oder `owner`) in dem Arbeitsbereich, der das Repository verknüpft
 - **Die Person muss auf GitHub in das Repository pushen dürfen.** Antworten
@@ -147,7 +130,7 @@ andere bleibt still. Dasselbe gilt für das Label.
 | Was                      | Verhalten                                                                                                |
 | ------------------------ | -------------------------------------------------------------------------------------------------------- |
 | Bestätigung              | 👀 von deinem Konto auf dem Kommentar (oder beim Label auf dem PR), innerhalb eines Durchlaufs           |
-| Antworten                | Gepostet in der Spur, in der die Frage gestellt wurde, beginnend mit `**Control Center** (for @your-login):`. Bei einer eigenen App ist der Autor der Bot der App; über Connect ist es dein Konto, das über die gemeinsame App handelt |
+| Antworten                | Gepostet in der Spur, in der die Frage gestellt wurde, beginnend mit `**Control Center** (for @your-login):`. Verfasst vom Bot der App. Auf der gemeinsamen Connect-App ist eine Antwort innerhalb eines Review-Threads von deinem eigenen Konto verfasst, außer der Connect-Betreiber hat diese Installation eingetragen |
 | Zuschreibung im Bereich  | Die Frage gehört dir; der Agent läuft in deinem Auftrag, unter den Autonomieeinstellungen des Bereichs   |
 | Reviews                  | Befunde landen im Review-Bereich; das Veröffentlichen auf GitHub ist manuell                             |
 
@@ -170,9 +153,6 @@ Ausfallzeit ankommt, wird beim nächsten Durchlauf erfasst.
 - Bist du auf diesem Server bei GitHub angemeldet, Mitglied mit einer
   Schreibrolle und darfst du in das Repo pushen? Alle anderen ignoriert der
   Server, ohne zu antworten
-- Ist bei der gemeinsamen App von Control Center die Installation der
-  Organisation für diesen Server autorisiert? Siehe
-  [Diesen Server für eine Organisation autorisieren](/de-DE/handbuch/anleitungen/github-app/#diesen-server-für-eine-organisation-autorisieren)
 - Immer noch nichts? Das Serverprotokoll nennt den Durchlauf und den PR, wenn
   etwas fehlschlägt; such nach `pr_conversation:` (der Poller) und
   `github_pr_conversation:` (die Brücke)

@@ -2,7 +2,7 @@
 title: Spravujte adaptéry a modely
 description: Připojte poskytovatele modelů, vyberte model, na kterém agent běží, a zkontrolujte, která CLI runnerů má hostitel serveru.
 slug: cs-CZ/prirucka/navody/adaptery
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Tento návod ukazuje, jak připojit poskytovatele modelů a vybrat, na čem agent
@@ -113,6 +113,8 @@ Adaptér a model nastavte výslovně u každého agenta, kterého chcete použí
 
 Agent **Content synthesizer** píše text, který kolem konverzace generuje Control Center: její název, odpovědi na `/btw`, dokumenty `/handoff` a rozhovor k cíli `/goal`. Pokaždé spustí jedno dokončení bez nástrojů, na vlastním adaptéru a modelu, takže mu dejte malý a rychlý model.
 
+Když je tím adaptérem ACP CLI, dokončení je proces na počítači serveru a řídí se [pravidlem pro sandbox](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/#agenti-na-hostiteli-bez-sandboxu): uvnitř sandboxu, když server agenty sandboxuje, a bez sandboxu jen u požadavků, za které odpovídá vlastník serveru. Pro všechny ostatní se tyto funkce přeskočí: nevznikne žádný název a `/btw` odpoví „Agent Content synthesizer chybí nebo nemá funkční runner“.
+
 Jeho **Persona** upravte v **Nastavení → Pracovní prostor → Agenti**, když chcete změnit, jak ten text zní: délku názvu, jazyk, tón, příklady, které následuje. Formát odpovědi, který každá funkce zpracovává (jednořádkový název, sekce cíle), je pevný a použije se až po vaší personě. Agenta smažte, když chcete tyto funkce vypnout; nebude znovu založen.
 
 ## Nainstalujte CLI runneru
@@ -127,8 +129,7 @@ npm install -g @anthropic-ai/claude-code
 Pak nahoře na stránce stiskněte **Obnovit**. Každý nalezený řádek ukáže
 zjištěnou verzi a cestu a štítky, jestli umí **Režim JSON** a **Výběr modelu**.
 
-Externí CLI si drží vlastní přihlašovací údaje ve vlastní konfiguraci na
-hostiteli serveru. Control Center je nespravuje.
+Přihlášení Claude Code jsou uvedená v **Účty Claude Code** u runneru Claude Code. Control Center na serveru vytvoří konfigurační adresář každého účtu a dá ti příkaz `claude auth login`, který tam spustíš; nikdy se za tebe nepřihlásí.
 
 :::caution[Další argumenty a proměnné prostředí zůstávají na tomto zařízení]
 Každý řádek adaptéru nabízí pole **Další argumenty** a dialog **Proměnné prostředí**.

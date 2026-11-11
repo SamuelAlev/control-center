@@ -6,17 +6,21 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/agent_shell_output.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_comment_port.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_port.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/harness/harness_command_runner.dart';
 import 'package:cc_infra/src/process/agent_shell_file_output.dart';
 import 'package:cc_infra/src/process/agent_shell_process_service.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:test/test.dart';
 
 /// Exercises [SandboxedHarnessCommandRunner] along its no-sandbox fallback
@@ -39,7 +43,9 @@ void main() {
     ConfirmationPort? confirmationPort,
     ActionGuardService? actionGuard,
     SandboxManager? sandboxManager,
+    ToolProcessLauncher? hostProcesses = const HostToolProcessLauncher(),
     Future<List<String>> Function()? execGrantRootsResolver,
+    Future<SandboxSpec> Function(String sessionId)? sandboxSpec,
     Map<String, String> baseEnv = const {},
     int maxOutputChars = 16000,
   }) => SandboxedHarnessCommandRunner(
@@ -48,7 +54,9 @@ void main() {
     confirmationPort: confirmationPort,
     actionGuard: actionGuard,
     sandboxManager: sandboxManager,
+    hostProcesses: hostProcesses,
     execGrantRootsResolver: execGrantRootsResolver,
+    sandboxSpec: sandboxSpec,
     workspaceId: 'ws',
     agentId: 'a',
     conversationId: 'conv-1',
@@ -63,6 +71,16 @@ void main() {
       expect(res.denied, isFalse);
       expect(res.exitCode, 0);
       expect(res.stdout.trim(), 'hello');
+    });
+
+    test('with no sandbox and no host launcher, nothing runs', () async {
+      final marker = File('${cwd.path}/ran');
+      final res = await runner(
+        hostProcesses: null,
+      ).run('touch ${marker.path}', workdir: cwd.path);
+      expect(res.denied, isTrue);
+      expect(res.stderr, contains('No sandbox is available'));
+      expect(marker.existsSync(), isFalse);
     });
 
     test('deny path blocks a dangerous command before exec', () async {
@@ -138,45 +156,67 @@ void main() {
     });
 
     test(
-      'a shell `gh pr create` meets the "Open a pull request" rule',
+      'a shell `gh pr create` is refused with directions to the server tool',
       () async {
-        final now = DateTime.now();
         final audits = <GuardAudit>[];
+        final approver = _Approver(approve: true);
         final guard = ActionGuardService(
-          repository: _Rules([
-            ActionPolicyRule(
-              id: 'no-prs',
-              workspaceId: 'ws',
-              scopeType: ActionScopeType.workspace,
-              scopeId: '',
-              actionClass: ActionClass.prCreate,
-              decision: ActionDecision.deny,
-              createdAt: now,
-              updatedAt: now,
-            ),
-          ]),
+          repository: _Rules([]),
+          confirmationPort: approver,
           onAudit: audits.add,
         );
 
         final result = await runner(
           actionGuard: guard,
+          confirmationPort: approver,
         ).run('git add -A && gh pr create --fill', workdir: cwd.path);
         expect(result.denied, isTrue);
-        expect(audits.single.ruleId, 'no-prs');
-        expect(
-          audits.single.actionClasses,
-          containsAll(['processSpawn', 'prCreate']),
-        );
+        expect(result.denyReason, kAgentShellPrCreateRefusal);
+        expect(result.denyReason, contains('open_pull_request'));
+        // Refused before any rule is consulted: nobody is asked to approve a
+        // command that cannot work.
+        expect(approver.requests, isEmpty);
+        expect(audits, isEmpty);
       },
     );
+
+    for (final command in [
+      'gh pr comment 12 --body done',
+      'gh pr review 12 --approve',
+      'gh pr edit 12 --body done',
+      'gh issue comment 3 --body hi',
+      'gh api repos/acme/app/issues/12/comments -f body=hi',
+    ]) {
+      test(
+        'a shell GitHub write is refused with directions: $command',
+        () async {
+          final audits = <GuardAudit>[];
+          final approver = _Approver(approve: true);
+          final guard = ActionGuardService(
+            repository: _Rules([]),
+            confirmationPort: approver,
+            onAudit: audits.add,
+          );
+          final marker = File('${cwd.path}/started');
+
+          final result = await runner(
+            actionGuard: guard,
+            confirmationPort: approver,
+          ).run('printf started > started; $command', workdir: cwd.path);
+          expect(result.denied, isTrue);
+          expect(result.denyReason, kAgentShellGitHubWriteRefusal);
+          expect(marker.existsSync(), isFalse);
+          expect(approver.requests, isEmpty);
+          expect(audits, isEmpty);
+        },
+      );
+    }
   });
 
   group('effectful shell commands stop before the first side effect', () {
     final effects = <ActionClass, String>{
       ActionClass.gitPush:
           'git push https://example.invalid/repo.git HEAD:main',
-      ActionClass.prCreate: 'gh pr create --fill',
-      ActionClass.prPublish: 'gh pr review --approve',
       ActionClass.fileDelete: 'rm victim',
     };
 
@@ -343,6 +383,7 @@ void main() {
           workspaceId: 'ws',
           spaceId: 'space-1',
           agentId: 'a',
+          hostProcesses: const HostToolProcessLauncher(),
           shellRegistry: registry,
         );
         final pending = command.run(
@@ -476,6 +517,48 @@ void main() {
       },
     );
 
+    test('a run\'s own sandbox spec is what a command runs under, whatever '
+        'its cwd', () async {
+      final manager = _CapturingSandboxManager();
+      final profile = Directory('${cwd.path}/profile')..createSync();
+      final tools = Directory('${cwd.path}/.cc-runs/d1/bin')
+        ..createSync(recursive: true);
+      final sessions = <String>[];
+      final r = runner(
+        sandboxManager: manager,
+        sandboxSpec: (sessionId) async {
+          sessions.add(sessionId);
+          return SandboxSpec(
+            sessionId: sessionId,
+            workspaceId: 'ws',
+            guestWorkdir: cwd.path,
+            bindMounts: [
+              SandboxBindMount(hostPath: cwd.path, guestPath: cwd.path),
+              SandboxBindMount(
+                hostPath: profile.path,
+                guestPath: profile.path,
+                readOnly: true,
+              ),
+            ],
+            toolDirs: [tools.path],
+          );
+        },
+      );
+      final sub = Directory('${cwd.path}/sub')..createSync();
+
+      final res = await r.run('echo hi', workdir: sub.path);
+
+      expect(res.exitCode, 0);
+      expect(sessions, ['harness-a::conv-1']);
+      final policy = manager.lastConfig!.policy!;
+      expect(policy.readOnlyMounts, contains(profile.path));
+      expect(policy.toolDirs, contains(tools.path));
+      expect(
+        manager.lastConfig!.filesystem.allowWrite,
+        isNot(contains(sub.path)),
+      );
+    });
+
     test('with no resolver wired the exec block stays closed', () async {
       final manager = _CapturingSandboxManager();
       final r = runner(sandboxManager: manager);
@@ -540,6 +623,8 @@ class _Approver implements ConfirmationPort {
 /// command unchanged — so a test can read exactly which exec roots reached the
 /// profile without a real Seatbelt/bwrap layer.
 class _CapturingSandboxManager extends SandboxManager {
+  _CapturingSandboxManager() : super(hiddenPaths: const []);
+
   SandboxConfig? lastConfig;
 
   @override

@@ -2,7 +2,7 @@
 title: Bir terminalden port yönlendirme
 description: Bir Terminal (VM) veya ana makine kabuğunda başlatılan bir geliştirme sunucusuna erişin — makinenizden, Tarayıcı (VM) içinden, Android'den, ağınızdan veya HTTPS'li bir geliştirme etki alanı altında.
 slug: tr-TR/kilavuz/nasil-yapilir/port-yonlendirme
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Bir konuşmanın terminalinde başlattığınız sunucu yalnızca **o alan** için yayımlanır. Portlar paneli, bu uygulamanın orada başlattığı dinleyicileri fark eder, onları eşler ve erişmek isteyebileceğiniz her yer için size bir adres verir. İki alan da aynı anda `5173` portunu dinleyebilir; haritaları asla karışmaz.
@@ -11,7 +11,7 @@ Buradaki hiçbir şey makineyi dışarı açmaz: her yol, sunucu tarafından ist
 
 ## Neyin dinlediğini görün
 
-1. Konuşmanın **Terminal (VM)** sekmesini ya da ana makine kabuğunu açın (bir alanda veya bir PR sayfasında).
+1. Konuşmanın düzenleyicisinde (bir alanda ya da bir PR sayfasında) `+` menüsünden **Terminal**'i açın: konuşmanın VM'indeki bir kabuk için **Makineler** altında, sunucudaki bir terminal için **Araçlar** altında. Ana makine kabuğunu yalnızca sunucu sahibi açabilir; diğer herkesin terminali sandbox içinde çalışır.
 2. Sunucunuzu başlatın — `pnpm dev`, `python -m http.server 8000`, herhangi bir şey.
 3. Birkaç saniye içinde terminalin sağ üst köşesindeki **fiş simgesi** bir nokta
    alır. Üzerine tıklayın.
@@ -122,6 +122,10 @@ sunucunuz yeniden başlarken adresini korur — geri gelene kadar satır
 kalktığında kaybolur. Bir ana makine kabuğunda farklı bir yerel port da
 ayarlayabilirsiniz.
 
+Yönlendirmeleri değiştirmek, alanın sunduğu her depo üzerinde yazma yetkisi gerektirir. Okuma erişimiyle portları hâlâ görürsünüz; panel, **Port ekle** yerine "Bu portları değiştirmek için bu alandaki her depoya yazma erişimi gerekir." mesajını gösterir. Bkz. [Kimler izleyebilir, kimler yönetebilir](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/#kimler-izleyebilir-kimler-yönetebilir).
+
+Biri kendisi için açtığı bir terminal, portlarını yalnızca kendisine bırakır: başkaları için port listesi ve port değişiklikleri, oturumun kendisi gibi, sanki oturum yokmuş gibi yanıt verir. Bir alanda paylaşılan terminaller yukarıdaki alan kuralını izler.
+
 ## Nasıl yalıtılmış kalıyor
 
 Portlar çalışma alanına ve alana göre anahtarlanır. Hipervizörün kendi port
@@ -132,9 +136,9 @@ sunucunun Tarayıcı (VM) ile Android için açık tuttuğu ters tüneller. Bir 
 makine kabuğu tüm makineyi asla taramaz. Bir misafirin içinde, sunucunun oraya
 koymadığı hiçbir dinleyici asla oluşturulmaz ve her şey terminalle ya da rig'le
 birlikte sökülür. Tasarım,
-[Rig'ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/#ports-without-holes)
+[Rig'ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/#deliksiz-portlar)
 sayfasında açıklanır; tam ayrılmış portlar ve etki alanı kuralları
-[rig referansında](/tr-TR/kilavuz/referans/rigler/#ports-and-dev-domains) yer alır.
+[rig referansında](/tr-TR/kilavuz/referans/rigler/#portlar-ve-geliştirme-etki-alanları) yer alır.
 
 ## İlgili
 

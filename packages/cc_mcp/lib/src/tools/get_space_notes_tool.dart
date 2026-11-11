@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_notes_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_mcp/src/tools/hidden_spaces_for_caller.dart';
 
 /// MCP tool that reads a space's shared Notes / handoff document (PRD 16
 /// §11). Agents call this to pick up context a human (or another agent) left
@@ -12,10 +14,14 @@ class GetSpaceNotesTool extends McpTool {
   GetSpaceNotesTool({
     required this._notesPort,
     required MessagingRepository messagingRepository,
+    required this._hiddenSpaces,
   }) : _messaging = messagingRepository;
 
   final SpaceNotesPort _notesPort;
   final MessagingRepository _messaging;
+
+  /// Review spaces of pull requests the run's requester cannot see.
+  final HiddenSpacesForCaller _hiddenSpaces;
 
   @override
   String get name => 'get_space_notes';
@@ -38,6 +44,7 @@ class GetSpaceNotesTool extends McpTool {
         'type': 'string',
         'description': 'The space whose notes to read.',
       },
+      McpCallScope.callerConversationKey: callerConversationProperty,
     },
     'required': ['workspace_id', 'space_id'],
   };
@@ -61,6 +68,14 @@ class GetSpaceNotesTool extends McpTool {
         .first;
     if (!spaces.any((c) => c.id == spaceId)) {
       return CallResult.error('Space belongs to a different workspace.');
+    }
+    if (await isSpaceHiddenFromCaller(
+      _hiddenSpaces,
+      arguments,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+    )) {
+      return CallResult.error(hiddenSpaceRefusal);
     }
 
     final note = await _notesPort.getNote(workspaceId, spaceId);

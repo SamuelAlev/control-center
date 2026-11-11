@@ -12,7 +12,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 sealed class PrActivityEntry {
   const PrActivityEntry();
 
-  /// When the entry happened; null sorts to the top (unknown legacy data).
+  /// When the entry happened; null (unknown) sorts to the top.
   DateTime? get timestamp;
 }
 

@@ -11,8 +11,7 @@ class BudgetPolicyTable extends Table {
   /// Unique policy identifier.
   TextColumn get id => text()();
 
-  /// Owning workspace. Defaults to empty for legacy rows (none exist in
-  /// practice — the table had no DAO before governance).
+  /// Owning workspace. Defaults to empty.
   TextColumn get workspaceId => text().withDefault(const Constant(''))();
 
   /// Scope type (e.g. 'workspace', 'agent').

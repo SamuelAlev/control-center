@@ -1,6 +1,7 @@
 import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_session_settings.dart';
+import 'package:cc_domain/features/settings/domain/entities/claude_sign_in_state.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// Reads and manages the host's Claude Code logins over RPC.
@@ -83,6 +84,25 @@ class RpcClaudeAccountsRepository {
       if (console) 'console': true,
     }),
   );
+
+  /// Whether each account holds a credential a run could use right now, by
+  /// account id.
+  ///
+  /// Cheap on the host (no CLI probe), which is what lets a surface waiting on
+  /// a `claude auth login` ask it every couple of seconds. Server owner only,
+  /// like [loginCommand]: whoever is handed the command may watch it finish.
+  Future<Map<String, ClaudeSignInState>> signInStates() async {
+    final data = await _client.call('claude_accounts.signInStates', const {});
+    final accounts = data['accounts'];
+    return {
+      if (accounts is List)
+        for (final a in accounts)
+          if (a is Map && a['id'] is String)
+            a['id'] as String: ClaudeSignInState.fromJson(
+              a.cast<String, dynamic>(),
+            ),
+    };
+  }
 
   static ({List<String> argv, Map<String, String> environment})? _command(
     Map<String, dynamic> data,

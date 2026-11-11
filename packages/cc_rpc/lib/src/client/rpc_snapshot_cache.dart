@@ -389,8 +389,8 @@ class RpcSnapshotCache {
       // The stored values are already JSON text: splice them in verbatim.
       // Decoding every entry only to re-encode the whole store was the
       // single most expensive thing this cache did, every few hundred ms.
-      // The document is byte-compatible with the decoded-then-encoded form
-      // (same keys, same order), so older builds still load it.
+      // The document is byte-identical to the decoded-then-encoded form
+      // (same keys, same order), so the full decode reads it too.
       final payload = StringBuffer('{"version":1,"entries":[');
       var first = true;
       for (final entry in _entries.entries) {

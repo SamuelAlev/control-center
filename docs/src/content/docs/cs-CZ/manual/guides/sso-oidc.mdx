@@ -2,7 +2,7 @@
 title: Připojte poskytovatele OpenID Connect
 description: Napoj libovolného vydavatele OIDC — Pocket ID, Keycloak, Auth0, Zitadel — k přihlášení do Control Center.
 slug: cs-CZ/prirucka/navody/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -83,6 +83,32 @@ přes SCIM**: IdP volá tvůj server přímo, a to chce tunel nebo veřejnou
 URL. Viz [provisioning uživatelů přes SCIM](/cs-CZ/prirucka/navody/sso-scim/).
 :::
 
+## Jak se přihlášení páruje s existujícími účty
+
+Přihlášení přes poskytovatele identity najde svůj účet v tomto pořadí:
+
+1. **Připnutá identita.** První přihlášení přes SSO připne subjekt poskytovatele (vydavatele a `sub`) k účtu. Každé další přihlášení s tímto subjektem je tentýž účet.
+2. **Ověřený e-mail na obou stranách.** Jinak přihlášení najde účet podle e-mailu, jen když poskytovatel pošle `email_verified: true` a adresa účtu je také ověřená. Adresa je ověřená, když ji nastavilo SSO nebo SCIM, nebo když ji potvrdil vlastník serveru. Vlastní adresa vlastníka se také počítá.
+
+Adresy se ukládají a zobrazují malými písmeny a porovnání nerozlišuje velikost písmen. Ověřená adresa identifikuje účet, jen když ji drží přesně jeden účet; drží-li ji dva účty, neodpovídá žádnému z nich.
+
+Adresa, kterou někdo zadal ve svém profilu nebo u pozvánky, není ověřená a neodpovídá žádnému účtu. Úprava adresy vymaže její stav ověření, dokud ji někdo znovu nepotvrdí. Přihlášení se nikdy nepáruje podle uživatelského jména.
+
+Když nic nesedí, přihlášení založí nový účet, pokud je zapnuté **Provisionovat neznámé uživatele při prvním přihlášení**, a když je vypnuté, bude odmítnuto.
+
+### Než SSO zapnete lidem, kteří už účty mají
+
+Nejdřív potvrďte jejich adresy. Otevřete **Nastavení → Server → Lidé**, kde každý účet ukazuje **E-mail nepotvrzen**, dokud ho někdo nepotvrdí, a u řádku každé osoby použijte **Potvrdit e-mail**. Tenhle seznam vidí jen vlastník serveru. Bez toho každý z nich při prvním přihlášení přes SSO buď dostane druhý účet, nebo bude odmítnut, když je provisionování neznámých uživatelů vypnuté.
+
+Osoba vidí pod polem e-mailu ve svém profilu zprávu „Tuto adresu jste zadal pouze vy. Jednotné přihlášení ji nebude shodovat, dokud ji vlastník serveru nepotvrdí.“, dokud je její adresa nepotvrzená.
+
+### Poskytovatelé, kteří neposílají `email_verified`
+
+Někteří poskytovatelé tento údaj vynechají. Microsoft Entra ID ho ve výchozím nastavení vynechává. Chybějící údaj není souhlas, takže u takového poskytovatele přihlášení páruje jen podle připnuté identity a první přihlášení člověka nikdy nenajde jeho existující účet podle e-mailu. Provisionování účtu přes SCIM tomu u prvního přihlášení přes OIDC nepomůže. Praktické postupy jsou:
+
+- nechat **Provisionovat neznámé uživatele při prvním přihlášení** zapnuté, aby první přihlášení účet založilo, nebo
+- nastavit poskytovatele, aby posílal `email_verified`, a pak potvrdit odpovídající adresy výše uvedeným způsobem.
+
 ## Zkontroluj konfiguraci z téhle stránky
 
 Kontrola níž běží v prohlížeči. Discovery dokument tvého vydavatele
@@ -94,3 +120,15 @@ přihlášení, které ukáže, jestli jsou klient a jeho redirect URI
 zaregistrované. Na client secret se nikdy neptá.
 
 <SsoCheck kind="oidc" />
+
+## Řešení potíží
+
+### Někdo dostal po zapnutí SSO druhý účet
+
+Jeho stávající adresa účtu nebyla při prvním přihlášení přes SSO ověřená, takže přihlášení ji nenašlo a založilo nový účet. Stává se to, když byla adresa zadaná v profilu nebo u pozvánky a vlastník serveru ji nepotvrdil, nebo když poskytovatel neposlal `email_verified: true`. Nový účet, jehož poskytovatel adresu potvrdil, si ji převezme a starší účet, který ji měl jen zadanou, o ni přijde.
+
+Abyste tomu u dalšího člověka předešli, potvrďte adresy v **Nastavení → Server → Lidé**, než se přihlásí. U někoho, kdo už má dva účty, je připnutý k jeho identitě SSO nový účet, takže jeho přihlášení ho budou používat od této chvíle.
+
+### „Tento účet je už propojený s jinou identitou SSO“
+
+Přihlášení našlo účet podle jeho ověřeného e-mailu, ale ten je už připnutý k jinému subjektu nebo jinému vydavateli: jinému uživateli u poskytovatele, stejnému člověku u nového poskytovatele, nebo účtu, který SCIM vytvořil pod vlastním identifikátorem. Připnutý účet odmítá každou jinou identitu, takže znovu použitá adresa u poskytovatele ho nemůže převzít. Přihlaste se identitou, ke které byl účet poprvé propojen.

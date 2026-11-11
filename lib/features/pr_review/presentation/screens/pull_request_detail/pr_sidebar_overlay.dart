@@ -41,7 +41,7 @@ class TreeOverlay extends ConsumerWidget {
     required this.searchFocusToken,
     required this.onOpenSearch,
     required this.onShowFileTree,
-    required this.onOpenFileInEditor,
+    this.onOpenFileInEditor,
   });
 
   /// PullRequest.
@@ -65,8 +65,8 @@ class TreeOverlay extends ConsumerWidget {
   /// Switches back to the tree (search panel's toggle + Esc/`t`).
   final VoidCallback onShowFileTree;
 
-  /// Opens a file at an optional 1-based line in an editable tab.
-  final void Function(String path, {int? line}) onOpenFileInEditor;
+  /// Opens a file at an optional 1-based line in the editor; null hides it.
+  final void Function(String path, {int? line})? onOpenFileInEditor;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -134,7 +134,7 @@ class _SearchHost extends ConsumerStatefulWidget {
     required this.diffKey,
     required this.focusToken,
     required this.onShowFileTree,
-    required this.onOpenFileInEditor,
+    this.onOpenFileInEditor,
   });
 
   final PullRequest pr;
@@ -144,7 +144,7 @@ class _SearchHost extends ConsumerStatefulWidget {
   final GlobalKey<PrDiffViewState> diffKey;
   final int focusToken;
   final VoidCallback onShowFileTree;
-  final void Function(String path, {int? line}) onOpenFileInEditor;
+  final void Function(String path, {int? line})? onOpenFileInEditor;
 
   @override
   ConsumerState<_SearchHost> createState() => _SearchHostState();
@@ -205,7 +205,7 @@ class _SearchHostState extends ConsumerState<_SearchHost> {
       _jumpInDiff(path, line: line);
       return;
     }
-    widget.onOpenFileInEditor(path, line: line);
+    widget.onOpenFileInEditor?.call(path, line: line);
   }
 
   /// Retries across frames so a commit-range scope can widen before the jump.

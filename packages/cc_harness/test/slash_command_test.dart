@@ -58,8 +58,8 @@ void main() {
       expect(skillNameFor('skill:plan'), 'plan');
     });
 
-    test('a bare non-builtin still resolves, for messages predating the namespace', () {
-      expect(skillNameFor('testing'), 'testing');
+    test('a bare name is never a skill', () {
+      expect(skillNameFor('testing'), isNull);
     });
 
     test('every builtin is refused as a bare skill name', () {

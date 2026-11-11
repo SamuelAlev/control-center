@@ -2,7 +2,7 @@
 title: Ouvrir une session pour votre équipe avec SSO
 description: Connectez Okta (SAML) à votre serveur Control Center et effectuez une connexion de bout en bout.
 slug: fr-CA/manuel/tutoriels/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -91,6 +91,17 @@ Deux politiques déterminent ce que fait une première connexion :
 - **Provisionner les utilisateurs inconnus à la première connexion** — actif par
   défaut ; désactivez-le pour refuser toute personne dont le compte n’existe pas
   déjà.
+
+Si des personnes ont déjà un compte sur ce serveur, confirmez leurs adresses
+courriel avant que quiconque se connecte par authentification unique : ouvrez
+**Paramètres → Serveur → Personnes** et utilisez **Confirmer le courriel** sur
+chaque ligne marquée **Courriel non confirmé**. Une connexion ne retrouve un
+compte existant par courriel que si cette adresse est confirmée (ou a été
+définie par l’authentification unique ou SCIM). Une adresse saisie par la
+personne dans son propre profil ou sur une invitation ne correspond à rien :
+sans cette étape, elle obtient un second compte, ou est refusée lorsque le
+provisionnement des utilisateurs inconnus est désactivé. Voir [Comment les
+connexions retrouvent les comptes existants](/fr-CA/manuel/guides/sso-oidc/#comment-les-connexions-retrouvent-les-comptes-existants).
 
 Vous pouvez aussi associer un attribut contenant les noms de groupes (celui
 d’Okta est généralement `groups`) et traduire les groupes en rôles au moyen de

@@ -11,6 +11,7 @@ import 'package:control_center/features/environments/presentation/environment_lo
 import 'package:control_center/features/environments/presentation/pr_environment_panel.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
 import 'package:control_center/features/environments/providers/environment_pr_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/code_server_window_pool.dart';
@@ -217,9 +218,7 @@ class _PrDetailBody extends ConsumerStatefulWidget {
 }
 
 class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
-  /// The editor split-tree that hosts the PR tabs — the same surface the
-  /// messaging IDE uses, so tabs can be split into panes and dragged between
-  /// them.
+  /// The editor split-tree that hosts the PR tabs (the messaging IDE's).
   ///
   /// Deliberately `late`, NOT `late final`: [_setLayout] replaces it (persisted
   /// restore, the N9 review-split preset). A `late final` reassignment throws
@@ -723,6 +722,18 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     _focusKind(PrTabKinds.diff);
   }
 
+  /// The activity timeline asked to open a review conversation: focus the Diff
+  /// tab and hand it the comment to reveal, the same path a permalink takes.
+  void _openCommentInDiff(int commentId) {
+    // Assigning the same id does not notify. Clear first so opening the same
+    // conversation twice still scrolls back to it.
+    if (_pendingCommentId.value == commentId) {
+      _pendingCommentId.value = null;
+    }
+    _pendingCommentId.value = commentId;
+    _focusKind(PrTabKinds.diff);
+  }
+
   /// The activity timeline asked to open one commit: scope the diff to that
   /// commit's files and focus the Diff tab at the top of them.
   void _openCommitInDiff(String sha) {
@@ -750,13 +761,14 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     _focusKind(PrTabKinds.overview);
   }
 
-  /// Opens (or focuses) an editable code-server tab at [path] on the PR
-  /// worktree — full VS Code on the isolated CoW checkout, so edits land beside
-  /// any agent edits and surface in Source Control. Deduped by path so
-  /// re-opening the same file refocuses; [line] (1-based) deep-links a location
-  /// (best-effort). Replaces the former plain-text quick editor; the legacy
-  /// `pr.file` kind stays decodable for old persisted layouts. [toSide] opens
-  /// it in a new pane split off to the right instead (quick open's ⌘↵).
+  /// Whether this person may open the code-server editor, which runs on the
+  /// server host outside any sandbox; without it every "open in editor" hides.
+  bool get _hostEditor => ref.watch(canUseHostProvider);
+
+  /// Opens (or focuses) a code-server tab at [path] on the PR worktree, so
+  /// edits land beside any agent edits. Deduped by path; [line] (1-based)
+  /// deep-links a location; [toSide] opens it in a new pane to the right.
+  /// Nothing opens without host access (quick open, in-editor navigation).
   void _openFileInEditor(
     String path, {
     int? line,
@@ -764,6 +776,9 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
     String? repoId,
     bool toSide = false,
   }) {
+    if (!ref.read(canUseHostProvider)) {
+      return;
+    }
     final slash = path.lastIndexOf('/');
     final basename = slash >= 0 ? path.substring(slash + 1) : path;
     final repo = (repoId != null && repoId.isNotEmpty) ? repoId : _prRepoId;
@@ -1058,6 +1073,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           pr: widget.pr,
           prRef: widget.prRef,
           onOpenFileInDiff: _openFileInDiff,
+          onOpenCommentInDiff: _openCommentInDiff,
           onOpenCommit: _openCommitInDiff,
           onOpenReview: () => _focusKind(PrTabKinds.reviewArtifact),
           onOpenEnvironment: () => _focusKind(PrTabKinds.environment),
@@ -1075,7 +1091,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
                 .read(prDetailPollingProvider(widget.prRef).notifier)
                 .refreshDiff(),
           ),
-          onOpenFileInEditor: _openFileInEditor,
+          onOpenFileInEditor: _hostEditor ? _openFileInEditor : null,
         );
       case PrTabKinds.actions:
         final checksAsync = ref.watch(prCheckRunsProvider(widget.prRef));
@@ -1093,7 +1109,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
         return PrSourceControlTab(
           pr: widget.pr,
           prRef: widget.prRef,
-          onOpenInEditor: _openFileInEditor,
+          onOpenInEditor: _hostEditor ? _openFileInEditor : null,
         );
       case PrTabKinds.chat:
         return PrChatTab(pr: widget.pr, prRef: widget.prRef);
@@ -1155,11 +1171,6 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           isVisible: isVisible,
         );
       case PrTabKinds.reviewArtifact:
-      // Legacy review kinds fold into the artifact tab (decode-compat): a
-      // standing dashboard tab, and before it a split Findings / Studio pair.
-      case PrTabKinds.review:
-      case PrTabKinds.aiReview:
-      case PrTabKinds.reviewStudio:
         return PrReviewArtifactTab(pr: widget.pr);
       default:
         return const SizedBox.shrink();
@@ -1168,9 +1179,8 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
 
   /// The browsers the connected server can boot.
   ///
-  /// Empty when the probe has not answered or the server is too old to report
-  /// engines; [RigTabSurfaces.targets] reads that as Chromium, which is what
-  /// such a server runs.
+  /// Empty until the probe has answered, which [RigTabSurfaces.targets] reads
+  /// as "offer no browser yet".
   Set<RigBrowserEngine> get _serverBrowserEngines => ref
       .read(rigCapabilitiesProvider)
       .maybeWhen(
@@ -1282,13 +1292,10 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
       }
     });
 
-    // In-editor navigation → app tab. When a code-server tab is open, the
-    // embedded editor's bridge extension reports files the user navigated to
-    // (cmd-click "go to definition", quick open); focus or open that file's
-    // tab in the pane holding the window that navigated, which then takes the
-    // window over, already on the file. Gated on an existing code-server tab
-    // so merely viewing a PR never provisions the worktree (watching
-    // prSpaceProvider ensures the space).
+    // In-editor navigation → app tab: the editor's bridge reports files the
+    // user navigated to; open that file's tab in the pane holding the window
+    // that navigated. Gated on an existing code-server tab so merely viewing a
+    // PR never provisions the worktree.
     final hasCodeServerTab = _layout.allTabs().any(
       (t) => t.kind == PrTabKinds.codeServer,
     );
@@ -1320,8 +1327,7 @@ class _PrDetailBodyState extends ConsumerState<_PrDetailBody> {
           },
         );
 
-        // Unsaved-changes reporting → per-tab dirty dot. Toggles the matching
-        // code-server tab's dot. Errors (no code-server) are ignored.
+        // Unsaved-changes reporting → the matching code-server tab's dirty dot.
         ref.listen<AsyncValue<CodeServerDirtyEvent>>(
           codeServerDirtyStateProvider(spaceId),
           (previous, next) {

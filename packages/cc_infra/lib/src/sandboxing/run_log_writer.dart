@@ -84,6 +84,23 @@ class RunLogWriter {
     }
   }
 
+  /// The text and metadata a log line records for [event].
+  static ({String text, Map<String, dynamic>? metadata}) _logPayload(
+    AgentProcessEvent event,
+  ) => switch (event) {
+    TextEvent(:final content) ||
+    ThinkingEvent(:final content) ||
+    ErrorEvent(:final content) ||
+    DebugEvent(:final content) => (text: content, metadata: null),
+    SandboxViolationEvent() => (text: event.content, metadata: event.metadata),
+    ToolCallEvent() => (text: event.toolName, metadata: event.metadata),
+    ToolResultEvent() => (text: event.outputs, metadata: event.metadata),
+    UsageEvent() => (text: '', metadata: event.metadata),
+    StageTimingEvent() => (text: '', metadata: event.metadata),
+    ContextWindowEvent() => (text: '', metadata: event.metadata),
+    TextRetractedEvent() || DoneEvent() => (text: '', metadata: null),
+  };
+
   /// Logs a process event, coalescing high-frequency types or flushing
   /// immediately for other types.
   void logEvent(AgentProcessEvent event) {
@@ -92,21 +109,22 @@ class RunLogWriter {
       return;
     }
     final type = event.type.name;
-    final content = redactSecrets(event.content);
+    final (:text, :metadata) = _logPayload(event);
+    final content = redactSecrets(text);
 
     if (!coalesceableLogTypes.contains(type)) {
       flushBuffer();
       try {
         // Metadata (e.g. a tool result's raw `outputs`) can duplicate a token
         // that `content` already redacts, so scrub it too before persisting.
-        final metadata = _redactMetadata(event.metadata);
+        final redacted = _redactMetadata(metadata);
         sink.writeln(
           jsonEncode({
             'type': 'event',
             'ts': DateTime.now().toIso8601String(),
             'eventType': type,
             'content': content,
-            if (metadata != null && metadata.isNotEmpty) 'metadata': metadata,
+            if (redacted != null && redacted.isNotEmpty) 'metadata': redacted,
           }),
         );
       } catch (_) {

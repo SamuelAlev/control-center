@@ -2,7 +2,7 @@
 title: Sediakan pengguna dengan SCIM
 description: Biarkan IdP Anda membuat, memperbarui, dan melakukan deprovisioning akun Control Center secara otomatis.
 slug: id-ID/panduan-pengguna/panduan-praktis/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Gunakan panduan ini ketika Anda menginginkan kendali atas siklus hidup —
@@ -35,8 +35,9 @@ dan lainnya) untuk tepat hal itu.
    - **Autentikasi**: `Authorization: Bearer <token>`
    - **ID pengguna**: `userName` (email) atau `externalId` — keduanya cocok
 4. Uji dengan satu pengguna: push mereka dari IdP, pastikan mereka muncul
-   (pembuatan SCIM menyematkan `externalId` milik penyedia ke akun itu,
-   penyematan yang sama seperti yang ditetapkan login SSO pertama).
+   (pembuatan SCIM mencatat `externalId` milik penyedia pada akun, yang menjadi
+   cara panggilan SCIM berikutnya menemukannya), lalu minta orang tersebut masuk
+   melalui SSO sebelum Anda menerapkannya ke semua orang.
 
 ## Apa yang dilakukan deprovisioning
 
@@ -56,6 +57,7 @@ otomatis saat login.
 
 ## Pemecahan masalah
 
+- **Orang yang di-provision ditolak dengan "Akun ini sudah ditautkan ke identitas SSO yang berbeda"** — keterbatasan yang diketahui: akun yang dibuat SCIM dengan `externalId` tetap terikat pada id tersebut, dan masuk SSO pertama ke akun itu ditolak. Sampai ini diperbaiki, provision tanpa `externalId`, atau biarkan provisioning JIT membuat akun saat masuk pertama dan gunakan SCIM untuk deprovisioning.
 - **401 pada setiap panggilan** — token berubah; buat ulang lalu perbarui IdP.
 - **Endpoint tidak dapat dijangkau** — tunnel sedang mati, atau server hanya
   relay. SCIM memerlukan HTTPS langsung; JIT tetap berfungsi apa pun itu.

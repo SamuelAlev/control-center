@@ -2,7 +2,7 @@
 title: Hantera API-nycklar
 description: Var varje autentiseringsuppgift finns – ditt användarkonto på servern, servern själv eller en extern CLI – och hur du anger, roterar och tar bort den.
 slug: sv-SE/handbok/how-to-guider/api-nycklar
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Den här guiden visar var varje autentiseringsuppgift som Control Center använder
@@ -32,19 +32,17 @@ människa bakom den.
   Center Connect, och begränsad till vad en ansvarig medlem kan göra där. Det är
   aldrig din inloggning överlämnad i sin helhet
 
-Din egen anges i kortet **Kodvärd** under **Inställningar → Arbetsyta → Profil och
-identitet**; serverns app i **Leverantörsappar** under **Inställningar → Server →
-Enkel inloggning**. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
+Din egen anges i kortet **Kodvärd** under **Inställningar → Du → Profil**; serverns app i **Leverantörsappar** under **Inställningar → Server
+→ Enkel inloggning**. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)
 och [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/).
 
 GitLab och Bitbucket tar fortfarande emot en inklistrad personlig token, lagrad
 på samma sätt. Se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
 
 :::note[Det finns även en skärm som bara nås via URL]
-`/workspaces/<workspaceId>/api-keys` visar samma två kort som första steget i
+`/workspaces/<workspaceId>/api-keys` visar samma kort som första steget i
 introduktionsflödet. Den har **ingen navigationspost någonstans i gränssnittet**;
-den nås bara genom att skriva URL:en. Använd Inställningar → Arbetsyta → Profil
-och identitet i stället.
+den nås bara genom att skriva URL:en. Använd Inställningar → Du → Profil för dina egna inloggningar, och Inställningar → Arbetsyta → Integrationer för ärendeleverantören.
 :::
 
 ## Ange nycklar för modellleverantörer
@@ -63,10 +61,7 @@ för att lägga till en anpassad slutpunkt.
 De här autentiseringsuppgifterna är **globala för värden**: en nyckel betjänar
 varje arbetsyta i installationen. OAuth-tokens förnyas innan de går ut.
 
-Externa adapter-CLI:n behåller sina egna autentiseringsuppgifter, i sin egen
-konfiguration, på servervärden – Control Center hanterar dem inte. Autentisera
-Claude Code på det sätt som dess egen dokumentation beskriver, på maskinen som
-kör `cc_server`.
+Claude Code loggar in via **Claude Code-konton** under **Inställningar → Server → Modellleverantörer**: varje konto får en egen konfigurationsmapp på servern, och där kör du kommandot `claude auth login` som appen visar dig.
 
 Dialogen **Miljövariabler** per adapter ser ut som en plats att lägga en nyckel
 för en av dem på, men det är den inte: den skriver till din enhet, medan servern
@@ -75,15 +70,13 @@ läser sin egen kopia och ingenting överbryggar de två. Se
 
 ## Anslut en ärendeleverantör
 
-Kortet **Ärenden** under **Inställningar → Arbetsyta → Allmänt** rymmer båda
-halvorna av ett och samma beslut: hos vilken leverantör dina ärenden ligger, och
-vem Control Center är när det pratar med den. Om du väljer **Lokal** döljs
+Kortet **Ärenden** under **Inställningar → Arbetsyta → Integrationer** rymmer arbetsytans
+sida: hos vilken leverantör dina ärenden ligger, och vem Control Center är när det arbetar där på egen hand. Om du väljer **Lokal** döljs
 Linear-raderna – lokala ärenden ligger i serverns egen databas och har inget att
 autentisera mot.
 
-Linear har två inloggningar och ingen inklistrad nyckel: **Linear** är din, för
-det du gör, och **Linear-automatisering** är arbetsytans Control Center-app,
-ansluten av en administratör, för ärendesynk, pipelines och agenter. Servern kan
+Linear har två inloggningar och ingen inklistrad nyckel: **Linear** är din, för det du gör, och finns under **Inställningar → Du → Profil**; **Linear-automatisering** är arbetsytans Control Center-app,
+ansluten av en administratör på kortet **Ärenden**, för ärendesynk, pipelines och agenter. Servern kan
 också ha en **Tjänst-API-nyckel** (**Leverantörsappar**) för arbetsytor utan
 ansluten automatisering. Ingen autentiseringsuppgift för ärenden injiceras i en
 agents sandlåda; agenter skriver ärenden via Control Centers verktyg, som frågar
@@ -100,10 +93,11 @@ regeln **Skriv till ett externt ärendesystem**. Se
 - **Serverns app**: generera en ny privat nyckel eller klienthemlighet på appens
   sida hos leverantören, klistra in den i **Leverantörsappar** och tryck på
   **Test**
-- **Connects installationsnyckel**: **Byt nyckel** på kortet **Control Center
-  Connect**, eller `cc_server connect rotate-key --yes`. Alla som loggade in via
-  Connect loggar in igen. Se
-  [Control Center Connect](/sv-SE/handbok/referens/connect/)
+- **Connects installationsnyckel**: serverägaren trycker på **Byt nyckel** på
+  kortet **Control Center Connect**. Alla som loggade in via Connect loggar in
+  igen. Om en Connect-server inte kan nås händer ingenting, och du erbjuds
+  **Rotera ändå**. Se
+  [Rotera installationsnyckeln](/sv-SE/handbok/referens/connect/#byt-installationsnyckeln)
 - **En modellleverantör**: logga ut på dess rad (OAuth) eller ta bort nyckeln och
   anslut sedan igen
 - **Slack**: för din egen app klistrar du in tokens igen i anslutningsdialogen.
@@ -116,8 +110,9 @@ regeln **Skriv till ett externt ärendesystem**. Se
 
 ### En GitLab- eller Bitbucket-token fungerar i `curl` men inte här
 
-Kontrollera undertexten på raden **Kodvärd**. Om den lyder ”från miljön” är det
-serverns autentiseringsuppgift som svarar, inte din – din sparades inte.
+Kontrollera **Kodvärd**-raden. Om den visar ”Inte ansluten” eller ber dig ansluta
+igen sparades inte din token, eller så avvisades den. För Bitbucket anger du
+ditt Atlassian-kontos e-postadress tillsammans med API-token.
 
 ### En GitLab- eller Bitbucket-token accepteras men senare begäranden misslyckas
 

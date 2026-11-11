@@ -48,7 +48,7 @@ enum RigBrowserEngine {
   /// The engine every browser rig gets when a caller names none.
   ///
   /// Chromium, because it is the engine with a screencast and the smallest
-  /// image, and because every rig that existed before this enum was one.
+  /// image.
   static const RigBrowserEngine fallback = RigBrowserEngine.chromium;
 
   /// Whether the engine pushes frames on its own.

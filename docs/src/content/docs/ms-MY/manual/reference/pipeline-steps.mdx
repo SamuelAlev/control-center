@@ -2,7 +2,7 @@
 title: Jenis langkah pipeline
 description: Rujukan untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya dan hasil langkah.
 slug: ms-MY/manual-pengguna/rujukan/langkah-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Satu langkah pipeline mempunyai dua paksi bebas:
@@ -61,7 +61,7 @@ Nod prompt-dan-hantar generik: menjana prompt, menghantar ejen ke dalam perbuala
 
 ### `pipeline.condition`
 
-Badan router — membaca `config.extras`, menilai satu syarat dan mengembalikan `StepResult.route(key)`. Syarat **bukan** ungkapan JavaScript; tiga bentuk pengarangan disokong, mengikut keutamaan:
+Badan router — membaca `config.extras`, menilai satu syarat dan mengembalikan `StepResult.route(key)`. Syarat **bukan** ungkapan JavaScript; dua bentuk pengarangan disokong, mengikut keutamaan:
 
 - **Pokok predikat** (`extras.predicate`) — pokok boolean yang menghala ke `"true"` / `"false"`. Setiap nod ialah peta dengan `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — benar apabila mana-mana laluan yang disenaraikan wujud pada cakera; `negate` menyongsangkannya; `recursive` turut mencari sub-direktori (melangkau `.git`, `node_modules`, `build`, `.dart_tool`). Laluan relatif diselesaikan terhadap `state[baseKey]` (lalai `repo_local_path`), jika tidak direktori ruang kerja bagi setiap larian.
@@ -69,19 +69,28 @@ Badan router — membaca `config.extras`, menilai satu syarat dan mengembalikan 
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — kumpulan boolean.
   - `{"type": "not", "of": <predicate>}` — penafian.
 - **Suis** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; menghala ke kes pertama yang terkandung dalam nilai keadaan secara tidak sensitif huruf besar-kecil, jika tidak `default`.
-- **Perbandingan** (legasi aras atas `extras.left` / `extras.op` / `extras.right`) — setara dengan predikat `comparison`, dikekalkan untuk templat yang dikarang sebelum pokok itu.
 
 Tepi yang keluar daripada nod membawa `routeKey` yang mesti sepadan dengan kunci yang dikembalikan.
 
 ### `prReview.comment`
 
-Menyiarkan penemuan yang dikonsolidasikan sebagai komen semakan PR melalui klien PR GitHub.
+Menyiarkan penemuan yang dikonsolidasikan, atau `extras.message` langkah itu sendiri, sebagai komen semakan PR melalui klien PR GitHub.
 
-| Kunci keadaan           | Keterangan                                    |
-| ----------------------- | --------------------------------------------- |
-| `repo_full_name`        | `owner/repo` (wajib)                          |
-| `pr_number`             | Nombor PR — int atau rentetan angka (wajib)   |
-| `consolidated_findings` | Badan komen (wajib)                           |
+| Kunci                   | Dibaca daripada | Keterangan                                            |
+| ----------------------- | --------------- | ----------------------------------------------------- |
+| `repo_full_name`        | Muatan pencetus | `owner/repo` (wajib)                                  |
+| `pr_number`             | Muatan pencetus | Nombor PR, int positif atau rentetan angka (wajib)    |
+| `consolidated_findings` | Keadaan         | Badan komen apabila langkah tidak mempunyai `message` |
+
+Pull request datang daripada muatan pencetus larian sahaja, tidak pernah daripada keadaan yang boleh ditulis semula oleh langkah semasa larian. @-sebutan dalam teks yang disiarkan dinyahaktifkan, jadi komen tidak memberitahu sesiapa.
+
+`message` memaparkan pemegang tempat `{{key}}`-nya seperti berikut:
+
+- `repo_full_name`, `repo_owner`, `repo_name` dan `pr_number` memaparkan pull request tempat langkah itu menyiarkan.
+- `author` dipaparkan daripada muatan pencetus, seadanya, hanya apabila ia ialah nama pengguna yang sah pada forge; apa-apa lain menyebabkan langkah gagal.
+- `consolidated_findings` dipaparkan sebagai markdown mentah, dengan @-sebutannya dinyahaktifkan.
+- Setiap nilai lain dipaparkan sebagai teks literal: dalam satu baris, dengan aksara tanda markdown di-escape dan @-sebutan dinyahaktifkan.
+- Pemegang tempat yang tidak diselesaikan kepada apa-apa menyebabkan langkah gagal.
 
 Mengembalikan `StepResult.terminal` dengan `comment_review_id` dan `commented_at` dalam keadaan.
 

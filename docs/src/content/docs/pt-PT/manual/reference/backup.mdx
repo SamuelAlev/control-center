@@ -2,7 +2,7 @@
 title: Cópia de segurança, exportação e importação
 description: A estrutura do instantâneo, o manifesto, todas as operações de cópia de segurança e rotas de transferência, e exatamente que ficheiros uma cópia de segurança contém e não contém.
 slug: pt-PT/manual/referencia/copia-de-seguranca
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
@@ -112,6 +112,7 @@ mais do que a sua base de dados, e nada do resto viaja:
 | `models/`                           | Não              | Não                                    |
 | `meetings/<meetingId>/`             | Não              | Não                                    |
 | `rigs/`                             | Não              | Não                                    |
+| `_agent_hooks/`                     | Não              | Não                                    |
 
 Parte disso é descartável — `spaces/` contém worktrees copy-on-write que são reprovisionadas
 a partir dos repos, `pr_clones/` é uma cache, `models/` volta a ser descarregado e `rigs/` é
@@ -119,8 +120,12 @@ estado da máquina. Outra parte não é: `blobs/` contém imagens coladas para a
 linhas da base de dados, `skills/` e `agents/` contêm os ficheiros com que um agente é
 executado e `secrets.json` contém todas as chaves de emparelhamento, credenciais de
 fornecedor e definições de SSO da instalação. Consulte
-[Fazer cópia de segurança e restaurar](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/#copy-backups-off-the-machine)
+[Fazer cópia de segurança e restaurar](/pt-PT/manual/guias/copia-de-seguranca-e-restauro/#copiar-as-cópias-de-segurança-para-fora-da-máquina)
 para cobrir o resto.
+:::caution[Uma base de dados de espaço de trabalho guarda segredos de webhook]
+O `workspace.db` é o espaço de trabalho inteiro: conversas, registos de execução, o índice de código, as ligações a repositórios, as definições de ambientes e os membros. Guarda também, em forma legível, os tokens de webhook de pipeline e os segredos de webhook de sincronização de tickets do espaço de trabalho, por isso trate uma exportação ou cópia de segurança transferida como um segredo. Não guarda nenhum início de sessão de fornecedor, chave de dispositivo nem segredo de utilizador; esses estão em `global.db` e `secrets.json`.
+:::
+
 :::note[Os tokens de chat ficam deliberadamente para trás]
 O facto de `chat_credentials/` estar ao lado da base de dados e não dentro dela é a razão
 pela qual um espaço de trabalho entregue a outra pessoa não transporta tokens de bots
@@ -145,7 +150,7 @@ de cópia de segurança ligada, como o servidor de demonstração.
 | `workspace.listBackups` | leitura | Espaço de trabalho | `admin` | nenhum | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutação | Espaço de trabalho | `owner` | `name` | `{ok}` |
 | `workspace.export`    | leitura | Espaço de trabalho | `admin`                           | nenhum        | `{ok, path}`                  |
-| `workspace.import`    | mutação | Espaço de trabalho | `owner`                           | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`    | mutação | Espaço de trabalho | `owner`, e o proprietário do servidor | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutação | Instalação*        | `owner`                           | `id`          | linha do registo marcada como eliminada |
 
 * O `workspace.delete` não tem âmbito porque a linha que marca vive no registo global; o seu
@@ -169,8 +174,11 @@ O `server.backupNow`, o `server.listBackups` e o `server.deleteBackup` exigem o
 trabalho, pelo que ser admin de um espaço de trabalho não chega para gerir os restantes. A
 eliminação aceita apenas o nome do diretório com data e hora listado, não um caminho
 arbitrário do servidor, e remove o instantâneo inteiro (incluindo instantâneos incompletos).
-A exportação/importação por espaço de trabalho mantém-se no admin/proprietário do espaço de
-trabalho, não no proprietário da instalação.
+A exportação e as transferências das cópias de segurança agendadas por espaço de trabalho mantêm-se no admin do espaço de trabalho.
+:::
+
+:::note[A restauração é do proprietário do servidor]
+`workspace.import` e `POST /backup/restore` fazem o servidor adotar um ficheiro de base de dados cujas linhas ele passa a tratar como suas: ligações a repositórios e quem as criou, definições de ambientes que correm no anfitrião, e caminhos de worktrees e de registos. Por isso ambos exigem o proprietário do servidor (`ServerAuthority.serverOwner`), que tem também de ser o proprietário do espaço de trabalho. Qualquer outra pessoa, e cada chamador num anfitrião sem proprietário registado, é recusado com `server_owner_required`. Nenhum gatilho ou vista que o ficheiro traga é adotado.
 :::
 
 ### Resposta do `server.listBackups`
@@ -247,7 +255,7 @@ sua cadeia de destino usando a sua PSK de emparelhamento e o papel abaixo.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Admin** do espaço de trabalho |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Proprietário** da instalação  |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **Admin** do espaço de trabalho; **proprietário** da instalação depois de o espaço de trabalho ser eliminado |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Proprietário** do espaço de trabalho |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Proprietário** da instalação que é também **proprietário** do espaço de trabalho (`403` com `server_owner_required` nos restantes casos) |
 
 O `w` é um id de espaço de trabalho, o `n` um nome de diretório de instantâneo ou de cópia de
 segurança agendada, o `d` o id do dispositivo que chama e o `s` a assinatura. Em

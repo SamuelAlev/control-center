@@ -2,13 +2,13 @@
 title: Conversas de PR
 description: Como um comentário numa PR do GitHub se transforma num turno de agente sem webhook, o que autoriza o autor e a quem é atribuído cada lado da conversa.
 slug: pt-PT/manual/conceitos/conversas-de-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Uma pull request já é o sítio onde acontece a conversa sobre código. As conversas
 de PR transformam-na numa superfície de um espaço de trabalho do Control Center,
 tal como uma [ponte de chat](/pt-PT/manual/conceitos/pontes-de-chat/) transforma o
-Slack numa: mencione `@usectrl` (ou o bot da GitHub App do espaço de trabalho)
+Slack numa: mencione `@usectrl`
 numa PR, responda dentro das respetivas threads de revisão ou adicione a
 etiqueta `ai-review`, e o trabalho acontece no espaço de revisão da PR —
 sujeito à mesma atribuição e às mesmas barreiras que qualquer coisa escrita na
@@ -26,8 +26,8 @@ atribuído cada lado**.
 O único canal de push que o GitHub oferece a uma aplicação é um webhook, e um
 webhook precisa de um URL de entrada — exatamente a única coisa de que esta
 superfície nunca precisa. Por isso, a descoberta é uma varredura: uma pesquisa
-com alias por instalação da aplicação pede ao GitHub as PRs que mencionam o bot
-(ou o respetivo slug curto) e as PRs abertas que têm a etiqueta de revisão, as
+com alias por instalação da aplicação pede ao GitHub as PRs que mencionam `@usectrl`
+e as PRs abertas que têm a etiqueta de revisão, as
 PRs que já têm um espaço de revisão têm as suas threads de comentários lidas, e
 tudo é comparado por id de comentário com o que foi visto na varredura
 anterior. Uma aplicação própria faz a varredura a cada minuto, sobre no máximo
@@ -76,8 +76,8 @@ nada é publicado:
 - **Um membro com sessão iniciada.** A conta tem de pertencer a um membro
   _deste_ espaço de trabalho que tenha iniciado sessão no GitHub neste servidor
 - **Um papel com escrita.** `viewer` e `guest` não podem iniciar trabalho
-- **Acesso de push.** As respostas usam um token `bot` limitado ao acesso desse
-  membro ao repositório. Se o servidor não conseguir emitir um, não avança
+- **Acesso de push.** As respostas usam um token para esse único repositório,
+  limitado ao acesso desse membro a ele. Se o servidor não conseguir emitir um, não avança
 
 Todas as verificações correm antes de qualquer reconhecimento, pelo que um
 estranho não recebe nenhuma reação nem resposta. Um comentário nunca é
@@ -100,16 +100,18 @@ Cada lado da conversa transporta uma identidade diferente, e essa diferença é 
 funcionalidade:
 
 - **No GitHub, a resposta é uma automação em seu nome.** Cada resposta usa um
-  token `bot` para esse único repositório, limitado ao acesso do membro que
-  perguntou. Com uma aplicação própria, o autor é a conta `[bot]` da aplicação.
-  Através do Connect, um token da App partilhada é um token de utilizador, pelo
-  que a resposta tem como autor a conta do membro que perguntou, a agir através
-  da App. Em qualquer dos casos, cada resposta começa por
-  `**Control Center** (for @login):`, que diz quem perguntou e serve também de
-  proteção contra ciclos.
+  token para esse único repositório, limitado ao acesso do membro que perguntou,
+  e é escrita pela conta `[bot]` da aplicação. Uma exceção: na aplicação
+  partilhada Control Center Connect, o bot só publica em conversas de revisão
+  quando o operador do Connect listou a instalação; caso contrário, uma resposta
+  dentro de uma conversa de revisão tem como autor a conta do próprio membro que
+  perguntou. Em qualquer dos casos, cada resposta começa
+  por `**Control Center** (for @login):`, que diz quem perguntou e serve também de
+  proteção contra ciclos. As @-menções nas palavras do agente ficam neutralizadas,
+  por isso uma resposta nunca notifica um utilizador ou uma equipa.
 - **No espaço, a pergunta é sua.** A mensagem é atribuída ao membro em que o
   autor foi resolvido, e a execução do agente corre em nome dele: os commits
-  indicam-no como coautor, e o seletor de autonomia e as barreiras de ação do
+  são dessa pessoa, e o seletor de autonomia e as barreiras de ação do
   espaço aplicam-se exatamente como a uma mensagem escrita na aplicação. As
   escritas na forge feitas pela execução usam tokens de um único repositório
   limitados a esse membro, nunca o início de sessão dele entregue por inteiro.
@@ -118,24 +120,17 @@ Publicar os resultados da revisão de volta no GitHub continua a ser uma decisã
 de uma pessoa, tomada no Control Center. Uma menção pode _iniciar_ uma revisão;
 só um ser humano publica uma.
 
-## A proteção contra ciclos e o nome curto
+## A proteção contra ciclos
 
 Tudo o que é da autoria de uma conta de bot é descartado antes de qualquer
 barreira ser avaliada — a nossa especificamente, e todos os sufixos `[bot]`, para
 que o bot de revisão de outra aplicação também não possa acordar o nosso —, e o
 mesmo acontece a todos os comentários que começam pelo prefixo
-`**Control Center** (for @`, já que uma resposta através do Connect tem como
-autor a conta de uma pessoa. Sem isto, as respostas chegariam como novos
+`**Control Center** (for @`, já que uma resposta de conversa de revisão através
+do Connect pode ter como autor a conta de uma pessoa. Sem isto, as respostas chegariam como novos
 comentários e voltariam a acionar a ponte para sempre.
 
-O sufixo `[bot]` é também a razão pela qual a forma curta existe. O GitHub fixa o
-login de uma conta de aplicação em `<slug>[bot]`, não oferece preenchimento
-automático para ele e nunca resolve `@slug` para a aplicação — por isso, aceitar
-o slug isolado é uma decisão _do nosso_ comparador, e descobri-lo exige uma via
-de pesquisa de **texto** de comentário em bruto, em vez do índice de menções do
-GitHub. O custo é declarado em vez de atenuado: um utilizador humano que partilhe
-o slug da aplicação endereça o bot em todas as menções curtas a si próprio. Nomes
-de aplicação distintos tornam a colisão hipotética.
+Só `@usectrl` inicia trabalho. O login da própria App (`<slug>[bot]`) e o seu slug isolado não endereçam nada: o GitHub não oferece preenchimento automático para uma conta de aplicação, e um slug isolado pode pertencer a um utilizador humano.
 
 ## O que deliberadamente não é oferecido
 

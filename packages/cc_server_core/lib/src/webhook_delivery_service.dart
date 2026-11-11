@@ -10,7 +10,8 @@ import 'package:uuid/uuid.dart';
 
 /// Starts a pipeline run for a verified webhook delivery. Injected so the
 /// delivery service is testable without the full pipeline engine; the runtime
-/// wires it to `PipelineEngine.start`.
+/// wires it to `PipelineEngine.start`. [armedByUserIds] are everyone who
+/// armed the trigger.
 typedef WebhookPipelineStarter =
     Future<PipelineRun?> Function({
       required String templateId,
@@ -18,6 +19,7 @@ typedef WebhookPipelineStarter =
       String? triggerEventType,
       Map<String, dynamic>? triggerPayload,
       String? dedupKey,
+      required Set<String> armedByUserIds,
     });
 
 /// The HTTP-facing outcome of handling an inbound webhook.
@@ -150,6 +152,7 @@ class WebhookDeliveryService {
         triggerEventType: PipelineTrigger.webhookEventType,
         triggerPayload: payload,
         dedupKey: dedupeKey,
+        armedByUserIds: trigger.armedByUserIds,
       );
       delivery = delivery.copyWith(
         status: WebhookDeliveryStatus.dispatched,
@@ -200,6 +203,7 @@ class WebhookDeliveryService {
       workspaceId: trigger.workspaceId,
       triggerEventType: PipelineTrigger.webhookEventType,
       triggerPayload: payload,
+      armedByUserIds: trigger.armedByUserIds,
     );
     await _deliveries.update(
       delivery.copyWith(

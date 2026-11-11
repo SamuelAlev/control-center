@@ -2,15 +2,23 @@
 title: Backends de sandbox
 description: Os backends de sandbox, onde são aplicados e todos os objetos de valor que o runtime da sandbox utiliza.
 slug: pt-PT/manual/referencia/backends-de-sandbox
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Se uma execução é isolada numa sandbox depende do anfitrião]
-O `cc_server` sonda o anfitrião uma vez no arranque e envolve o despacho de agentes no backend nativo quando a sonda reporta um disponível e `--sandbox` não está em `off`. Ambas as costuras de despacho são envolvidas: a CLI do Claude Code através da porta de sandbox, e o ACP mais a ferramenta `bash` do harness integrado através do gestor de sandbox.
+`cc_server` decide uma vez, no arranque, como os agentes correm neste anfitrião, e a decisão mantém-se até reiniciar:
 
-Onde a sonda não reporta nenhum backend — **no Windows, sempre**, e no Linux ou no WSL2 sem `bwrap` e `socat` — as execuções de agentes **não são** isoladas numa sandbox. O ACP e a ferramenta `bash` do harness continuam a arrancar com saneamento do ambiente; o Claude Code passa pelo `NoSandboxAdapter` e herda o ambiente do anfitrião. As fronteiras restantes são a própria worktree da execução (copy-on-write onde o `rift` é incluído; `git worktree` no Windows), um token de forge só de leitura, mediado em cada lançamento e revogado na desmontagem, os pushes que têm de passar a regra de push no gateway de execuções de agentes, a política de comandos por modo, as [barreiras de ação](/pt-PT/manual/conceitos/barreiras/) unificadas (fail-closed), o saneamento do ambiente nos percursos do ACP e do `bash` do harness, e a superfície de ferramentas que o seu modo permite.
+- **Em sandbox** (`native`): a sonda encontrou um backend e `--sandbox` não está em `off`. Ambas as costuras de despacho são envolvidas: a CLI do Claude Code através da porta de sandbox, e o ACP mais a ferramenta `bash` do harness integrado através do gestor de sandbox.
+- **Desligado** (`off`): o proprietário do servidor iniciou-o com `--sandbox off`. Os agentes de todos os membros correm sem confinamento nesta máquina, seja quem for que o tenha iniciado.
+- **Indisponível** (`unavailable`): a sandbox está ligada, mas a sonda não encontrou nenhum backend (**no Windows, sempre**, e no Linux ou no WSL2 sem `bwrap` e `socat`). Uma execução só arranca quando a pessoa responsável por ela é o [proprietário](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor) do servidor: quem a pediu, ou, na automação, a pessoa a quem está vinculada. As execuções de qualquer outra pessoa são recusadas antes de ser emitida uma credencial, tomado um lease ou iniciado um processo. Sem nenhum proprietário registado, nenhuma execução arranca.
+
+Uma execução recusada falha com o código `sandbox_unavailable`. A aplicação mostra-o como **Agentes precisam de uma sandbox neste servidor**: "Este servidor não tem sandbox, por isso apenas o proprietário pode executar agentes aqui. O proprietário pode instalar a sandbox ou desligar o sandboxing para todos."
+
+Uma execução que arranca sem sandbox (sob `off`, ou a execução do próprio proprietário sob `unavailable`) corre diretamente no anfitrião. O ACP e a ferramenta `bash` do harness continuam a arrancar com saneamento do ambiente; o Claude Code passa pelo `NoSandboxAdapter` e herda o ambiente do anfitrião. As fronteiras restantes são a própria worktree da execução (copy-on-write onde o `rift` é incluído; `git worktree` no Windows), um token de forge só de leitura, mediado em cada lançamento e revogado na desmontagem, os pushes que têm de passar a regra de push no gateway de execuções de agentes, a política de comandos por modo, as [barreiras de ação](/pt-PT/manual/conceitos/barreiras/) unificadas (fail-closed), o saneamento do ambiente nos percursos do ACP e do `bash` do harness, e a superfície de ferramentas que o seu modo permite.
 
 As ferramentas de ficheiros em processo do harness (read, write, edit, apply patch, search, find, search_files) ficam fora da sandbox em todos os anfitriões: correm no processo do servidor, pelo que só o `bash` é envolvido.
+
+O anfitrião nunca é uma alternativa para um servidor que isola os agentes. Se o servidor isola os agentes mas não tem sandbox para dar a uma execução, os seus processos de ferramentas e comandos `bash` são recusados, não arrancados no anfitrião. A mesma postura decide os pequenos processos à volta de uma execução: os auxiliares ACP pontuais (títulos de conversas, `/btw`, `/handoff`, `/goal`) e os testes golden de uma pull request no Review Studio correm na sandbox quando o servidor isola os agentes, sem confinamento sob `off`, e sob `unavailable` apenas para um pedido pelo qual o proprietário do servidor é responsável; caso contrário, são ignorados.
 :::
 
 ## Visão geral dos backends
@@ -19,9 +27,9 @@ As ferramentas de ficheiros em processo do harness (read, write, edit, apply pat
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | VM fechada  | `microvm` | macOS, Linux, Windows (hipervisor de microVM) | Condicionado pela sonda ao runtime do microVM; aplica-se a terminais interativos — a shell corre dentro de um [rig](/pt-PT/manual/conceitos/rigs/), não no anfitrião |
 | Nativo      | `native`  | macOS (Seatbelt), Linux e WSL2 (bubblewrap)   | Sondado no arranque; o Linux recusa uma execução que exija negações de escrita por glob de nome de ficheiro, que o bubblewrap não consegue impor |
-| Nenhum      | `none`    | Todas                                         | O predefinido de análise, o predefinido do terminal e a alternativa quando não há nenhum backend disponível ou está definido `--sandbox off` |
+| Nenhum      | `none`    | Todas                                         | O predefinido de análise e o predefinido do terminal; o despacho de agentes usa-o sob `--sandbox off`, e para as execuções do próprio proprietário quando não há nenhum backend disponível |
 
-`SandboxBackend.fromName` devolve `none` para um valor armazenado nulo ou não reconhecido. Um `"docker"` armazenado é mapeado para `native`.
+`SandboxBackend.fromName` devolve `none` para um valor armazenado nulo ou não reconhecido.
 
 **O `microvm` é o único backend com uma fronteira de kernel** — a carga de
 trabalho não corre genuinamente no anfitrião. Nunca é uma alternativa silenciosa
@@ -34,7 +42,7 @@ distintivo, pelo que um terminal nunca pode afirmar estar fechado enquanto corre
 no anfitrião. O ciclo de vida, as imagens e a saída da própria VM são abordados
 na [referência de rigs](/pt-PT/manual/referencia/rigs/).
 
-**O Windows não tem sandbox nativa.** `NativeSandboxAdapter.probe` devolve `available: false` em todos os anfitriões que não sejam macOS ou Linux/WSL2. O despacho de agentes no Windows usa, por isso, `none`. O backend `microvm` é separado: é condicionado pela sonda ao runtime do microVM e aplica-se a terminais interativos e rigs, não ao envolvimento do `bash` no anfitrião.
+**O Windows não tem sandbox nativa.** `NativeSandboxAdapter.probe` devolve `available: false` em todos os anfitriões que não sejam macOS ou Linux/WSL2, por isso um servidor Windows está `unavailable`: só arrancam as execuções de agentes do proprietário do servidor, sem confinamento, e as dos restantes são recusadas. Para que todos os membros possam executar agentes aí, o proprietário inicia o servidor com `--sandbox off`, o que os executa todos sem confinamento. O backend `microvm` é separado: é condicionado pela sonda ao runtime do microVM e aplica-se a terminais interativos e rigs, não ao envolvimento do `bash` no anfitrião.
 
 ## Resultados da sonda
 
@@ -47,9 +55,9 @@ na [referência de rigs](/pt-PT/manual/referencia/rigs/).
 | Linux ou WSL2 sem qualquer das ferramentas | `false` | `requiresInstall: true`, com uma dica de instalação que nomeia os pacotes em falta |
 | Qualquer outra plataforma              | `false`     | A sandbox nativa não é oferecida nesta plataforma                         |
 
-O servidor regista o resultado numa única linha de arranque: `agent sandbox ON` mais a nota, `no OS-native agent sandbox on this host` mais a dica, ou `agent sandbox DISABLED by --sandbox off`. O `GET /healthz` não transporta nenhum campo de sandbox.
+O servidor regista o resultado numa única linha de arranque: `agent sandbox ON` mais a nota; `no OS-native agent sandbox on this host` mais a dica, que acrescenta que só arrancam as execuções pelas quais o proprietário do servidor é responsável; ou `agent sandbox DISABLED by --sandbox off`. A linha de exposição impressa no arranque transporta a mesma decisão como `sandbox=native`, `sandbox=off` ou `sandbox=unavailable`. O `GET /healthz` não transporta nenhum campo de sandbox.
 
-`--sandbox` / `CC_SERVER_SANDBOX` aceita `on` (predefinido) ou `off`. É uma forma de desativar, não de ativar: `on` significa «envolver quando o anfitrião oferece um backend», nunca «exigir um».
+`--sandbox` / `CC_SERVER_SANDBOX` aceita `on` (predefinido) ou `off`. `on` envolve todas as execuções quando o anfitrião oferece um backend, e só admite as execuções do proprietário quando não oferece. `off` executa os agentes de todos os membros sem confinamento neste anfitrião; é uma escolha do proprietário para todos, não uma definição por execução.
 
 ## Backend nativo
 
@@ -62,8 +70,10 @@ O perfil gerado é **permissivo por predefinição** (`(allow default)`) e recor
 - **Leituras do sistema de ficheiros**: negadas para os caminhos secretos (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` e o resto do conjunto de negação de leitura)
 - **Escritas no sistema de ficheiros**: repostas em negação e depois autorizações explícitas por subcaminho, com os caminhos de negação obrigatória (ficheiros rc da shell, `.git/hooks`, configuração do Claude, checkouts protegidos) bloqueados mesmo dentro de uma raiz gravável. O `file-write-unlink` é negado em todos os caminhos negados e nos seus ascendentes, pelo que uma renomeação não consegue contornar uma negação de escrita
 - **Processos**: negações de `process-exec` para os binários sempre perigosos, mais um bloqueio à execução de qualquer coisa a partir de um diretório gravável. Os diretórios de instalação de toolchains conhecidos na pasta pessoal (corepack, caches de `npx` e `pnpm dlx`, gestores de versões do node, browsers do Playwright, rustup e cargo, Go, fvm e a cache do pub, pyenv, uv e pipx, rbenv, sdkman, mise, asdf e `~/.local/bin`) são reabertos sob esse bloqueio. Os diretórios temporários partilhados também são bloqueados. Em vez disso, cada sessão recebe um `TMPDIR` privado em `/private/tmp`, onde podem correr os programas que compila (um binário de `go test`, uma compilação do cargo). As negações sempre perigosas são aplicadas depois destas autorizações
-- **Rede**: restrita às portas do proxy em processo mais o DNS — o loopback não é permitido de forma indiscriminada e a escuta TCP é negada. Os sockets Unix são permitidos apenas dentro do `TMPDIR` privado da sessão, que abrange ferramentas como tsx e Chrome que mantêm um socket IPC aí; o seu agente SSH e os restantes sockets continuam inacessíveis. Os proxies impõem a lista de permissões de domínios por sessão (ver [Saída de rede](#saída-de-rede)) impõem a lista de permissões de domínios por sessão (ver [Saída de rede](#saída-de-rede))
+- **Rede**: restrita às portas do proxy em processo mais o DNS — o loopback não é permitido de forma indiscriminada e a escuta TCP é negada. Os sockets Unix são permitidos apenas dentro do `TMPDIR` privado da sessão, que abrange ferramentas como tsx e Chrome que mantêm um socket IPC aí; o seu agente SSH e os restantes sockets continuam inacessíveis. Os proxies impõem a lista de permissões de domínios por sessão (ver [Saída de rede](#saída-de-rede))
 - **Configuração**: os perfis são gerados em cada lançamento a partir do `SandboxSpec`
+- **Os comandos do próprio servidor**: nenhum filho direto de uma pasta de onde o servidor executa programas (cada entrada de `PATH` e as pastas comuns de ferramentas por utilizador, como `~/.local/bin`, com as ligações de gestores de versões como `~/fvm/default` resolvidas) pode ser criado, substituído, eliminado ou renomeado, nem o pacote instalado para onde aponta um comando ligado. Ver [As pastas de comandos do servidor](#as-pastas-de-comandos-do-servidor)
+- **Ficheiros de arranque**: cada caminho pessoal cuja leitura o perfil nega fica também com a escrita negada, e os ficheiros de arranque das shells e sessões do utilizador do servidor (`.zshenv`, `.zlogin`, `.bash_login`, configuração do fish, unidades de utilizador do systemd, entradas de arranque automático e afins) ficam com a escrita negada em todos os modos.
 
 Requisitos:
 
@@ -76,6 +86,7 @@ Utiliza o bubblewrap (`bwrap`) para criar namespaces de montagem e de PID.
 - **Sistema de ficheiros**: cria um namespace de montagem onde só os caminhos associados estão visíveis
 - **Rede**: corre num namespace de rede não partilhado; o tráfego chega aos proxies do anfitrião através de pontes de socket Unix do `socat`
 - **Processos**: isolamento por namespace de PID
+- **Os comandos do próprio servidor e os ficheiros de arranque**: as mesmas proteções que no macOS, expressas como montagens bind do bubblewrap. Ainda não estão verificadas no Linux, e uma pasta de comandos em falta aí ainda pode ser criada
 
 Requisitos:
 
@@ -92,19 +103,51 @@ de ficheiro no momento da criação para restaurar o despacho nativo no Linux.
 Desativar o isolamento numa sandbox é uma desativação explícita e sem
 confinamento, não um contorno equivalente.
 
+Na prática, um servidor Linux ou WSL2 executa agentes hoje de uma de duas formas. Iniciado com `--sandbox off`, executa os agentes de todos os membros sem confinamento. Sem o bubblewrap ou o `socat` instalados, fica `unavailable` e executa apenas os agentes do proprietário do servidor, sem confinamento. Com as duas ferramentas instaladas e a sandbox ligada, cada execução falha de forma fechada, incluindo as do proprietário.
+
+## As pastas de comandos do servidor
+
+O servidor descobre, uma vez no arranque, cada pasta de onde executa programas: cada entrada do seu `PATH`, as pastas de ferramentas por utilizador que sonda (como `~/.local/bin`, `~/.bun/bin` e as pastas globais do npm, do yarn e do pnpm), e a pasta real por trás de cada ligação no caminho (ligações de gestores de versões como `~/fvm/default` ou o predefinido do fnm). Dentro de uma sandbox, um agente não consegue adicionar, substituir, eliminar nem renomear um comando nessas pastas, nem a ligação que leva a um, nem o pacote instalado para onde aponta um comando ligado, e não consegue renomear as pastas acima delas. Caso contrário, uma execução em sandbox poderia plantar um programa que o servidor, ou a pessoa, iniciaria mais tarde fora da sandbox.
+
+O que isto muda numa execução:
+
+- As instalações globais feitas a partir de uma execução em sandbox falham com "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, e `cargo install`, `go install` ou `dart pub global activate` quando a respetiva pasta bin está no `PATH` do servidor.
+- Mudar uma versão predefinida falha da mesma forma (`fnm default`, `nvm alias default`, `fvm global`), tal como uma ferramenta que se atualiza a si própria no lugar.
+- As instalações locais ao projeto (`node_modules/.bin`), `npx`, `pnpm dlx`, os gestores de pacotes geridos pelo corepack, as caches de SDK e as compilações normais continuam a funcionar.
+
+Para tornar uma ferramenta global disponível aos agentes, instale-a no próprio servidor, como utilizador do servidor, e reinicie o servidor para que o novo comando fique também protegido. Ou instale-a no projeto. Um comando instalado depois de o servidor arrancar só fica totalmente protegido a partir do arranque seguinte.
+
+Imposto e testado no macOS. No Linux, as mesmas regras são montagens bind do bubblewrap que ainda não estão verificadas. O Windows não tem sandbox.
+
 ## Backend nenhum
 
-Sem isolamento numa sandbox. O processo corre diretamente no anfitrião, com o acesso deste ao sistema de ficheiros, à rede e aos processos. O ACP e a ferramenta `bash` do harness continuam a ter saneamento do ambiente e a política de comandos; o Claude Code através do `NoSandboxAdapter` herda o ambiente do anfitrião. É para isto que o despacho de agentes recua num anfitrião sem nenhum backend disponível ou com `--sandbox off`, e é o predefinido do terminal quando um cliente não indica nenhum.
+Sem isolamento numa sandbox. O processo corre diretamente no anfitrião, com o acesso deste ao sistema de ficheiros, à rede e aos processos. O ACP e a ferramenta `bash` do harness continuam a ter saneamento do ambiente e a política de comandos; o Claude Code através do `NoSandboxAdapter` herda o ambiente do anfitrião. O despacho de agentes usa-o para cada execução sob `--sandbox off`, e num anfitrião sem nenhum backend disponível apenas para as execuções do próprio proprietário do servidor; as execuções de qualquer outra pessoa são recusadas aí. Para um terminal é a shell do anfitrião, que só o proprietário do servidor pode abrir.
 
 ## Terminal alojado no servidor
 
-O terminal é isolado numa sandbox segundo regras próprias, e não pela sonda de despacho. O `defaultBackend` do `TerminalSessionService` é `none` e o `cc_server` não o substitui, pelo que uma sessão de terminal corre a shell do anfitrião a menos que o cliente peça explicitamente `native` — o painel de terminal do desktop não o faz.
+O terminal alojado no servidor abre a shell do anfitrião apenas para o [proprietário](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor) do servidor. Os restantes obtêm um terminal em sandbox, com os limites de um agente, nas pastas do próprio espaço de trabalho.
 
-Quando é pedido `native`, a shell é envolvida através do `SandboxManager` sob um perfil de terminal fixo: o `$HOME` e o diretório de trabalho da sessão são graváveis, a rede está aberta e é negada a leitura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains`. O token de forge só de leitura e o gateway de push não se aplicam — são questões de despacho. Se o envolvimento não for suportado, a sessão falha em vez de mostrar um distintivo nativo num PTY com a shell do anfitrião.
+Como o backend é escolhido para uma sessão:
+
+| Pedido | Proprietário do servidor | Qualquer outra pessoa |
+| --- | --- | --- |
+| Nada | O backend predefinido do servidor | O predefinido, com `none` substituído por `native` |
+| `none` (a shell do anfitrião) | Shell do anfitrião | Recusado: a shell do anfitrião corre no servidor sem sandbox |
+| `native` | Sandbox nativa, perfil do proprietário | Sandbox nativa, perfil de agente |
+| `microvm` | VM fechada | VM fechada |
+| Um nome desconhecido | Recusado | Recusado |
+
+- **Perfil do proprietário.** `$HOME` e o diretório de trabalho da sessão são graváveis, a rede está aberta, e `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` e `~/Library/Keychains` têm a leitura negada.
+- **Perfil de agente** (`memberTerminalSandboxConfig`). A mesma política que um agente naquele espaço de trabalho executa: as escritas ficam no diretório de trabalho, num diretório de execução privado, em `/tmp` e nas partes de `$HOME` onde um agente pode escrever; os segredos têm a leitura negada; a rede é a lista de permissões de saída do agente; os programas só correm a partir do diretório de trabalho e das toolchains instaladas.
+- Um terminal só abre dentro das próprias pastas do espaço de trabalho. Um diretório de trabalho fora delas é recusado, nunca trocado por outro.
+- Só a pessoa que abriu um terminal o pode ler, escrever, redimensionar ou fechar. Para qualquer outra, o seu id parece desconhecido.
+- `microvm` pedido explicitamente num anfitrião sem serviço de rig falha em vez de recuar. Um `microvm` predefinido num anfitrião assim recua para `native` e di-lo no registo.
+
+O token de forge só de leitura e o gateway de push não se aplicam aos terminais: são questões de despacho. Se o envolvimento não for suportado, a sessão falha em vez de mostrar um distintivo de sandbox numa sessão com a shell do anfitrião.
 
 ## Saída de rede
 
-Quando uma sandbox é lançada, o acesso de rede de saída é imposto por proxies em processo, e não por regras de firewall do kernel. Num anfitrião sem nenhum backend disponível nada disto se aplica e um processo lançado alcança a rede exatamente como o faria o utilizador do servidor.
+Quando uma sandbox é lançada, o acesso de rede de saída é imposto por proxies em processo, e não por regras de firewall do kernel. Uma execução que não é isolada numa sandbox (cada execução sob `--sandbox off`, ou a execução do proprietário num anfitrião sem backend) não recebe nada disto: um processo que lança alcança a rede exatamente como o faria o utilizador do servidor.
 
 - O runtime da sandbox corre um proxy HTTP/HTTPS e um proxy SOCKS5 em `127.0.0.1` dentro do processo do `cc_server`, **um par por sessão restrita** (`http_proxy.dart`, `socks_proxy.dart`). As execuções simultâneas não partilham um par.
 - Os processos em sandbox recebem variáveis de ambiente de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → o proxy HTTP, `ALL_PROXY` → o proxy SOCKS; `GIT_SSH_COMMAND` encaminha o git por SSH através do proxy SOCKS). No Linux, o namespace de rede não é partilhado, pelo que os proxies são a única saída; no macOS, a sandbox partilha o loopback do anfitrião e fala diretamente com eles.

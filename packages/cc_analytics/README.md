@@ -20,8 +20,7 @@ client, the phone PWA and the server all use the same code.
 Write a new `AnalyticsSink` here (e.g. `PostHogAnalyticsSink`) that maps an
 `AnalyticsEnvelope` to the provider's wire format, then return it from
 `AnalyticsDestination.createSink`. Call sites, the tracking plan, consent and
-privacy rules do not change. A fan-out sink that wraps two providers works the
-same way, for a migration period.
+privacy rules do not change.
 
 A sink must not add identifying fields of its own (IP, hostname, file paths,
 user names); envelopes are already sanitized and pseudonymized.

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
@@ -58,9 +57,8 @@ void main() {
     await probe.close();
     server = McpHttpServer(
       port: port,
-      dispatcher: dispatcher,
       handler: McpRequestHandler(
-        config: const McpConfig(enabled: true),
+        token: 'owner-token',
         dispatcher: dispatcher,
         attestRun: (secret) => secret == 'run-a'
             ? const McpCallScope(
@@ -76,7 +74,8 @@ void main() {
 
   tearDown(() => server.stop());
 
-  Future<Map<String, dynamic>> call(
+  /// The JSON-RPC result, or the HTTP status when the request was refused.
+  Future<Object> call(
     Map<String, String> headers, {
     Map<String, dynamic> arguments = const {},
   }) async {
@@ -95,6 +94,9 @@ void main() {
       );
       final response = await request.close();
       final body = await response.transform(utf8.decoder).join();
+      if (response.statusCode != HttpStatus.ok) {
+        return response.statusCode;
+      }
       final decoded = jsonDecode(body) as Map<String, dynamic>;
       return decoded['result'] as Map<String, dynamic>;
     } finally {
@@ -102,34 +104,33 @@ void main() {
     }
   }
 
-  test('identity headers alone do not reach a host tool', () async {
+  test('identity headers alone are no credential', () async {
     final result = await call({
       'X-CC-Workspace-Id': 'ws-b',
       'X-CC-Space-Id': 'space-b',
     });
 
-    expect(result['isError'], isTrue);
+    expect(result, HttpStatus.unauthorized);
     expect(tool.calls, isEmpty);
   });
 
-  test('no headers at all do not let the arguments choose', () async {
+  test("the owner's token does not let the arguments choose", () async {
     final result = await call(
-      const {},
+      const {'Authorization': 'Bearer owner-token'},
       arguments: {'workspace_id': 'ws-b', 'space_id': 'space-b'},
     );
 
-    expect(result['isError'], isTrue);
+    expect((result as Map)['isError'], isTrue);
     expect(tool.calls, isEmpty);
   });
 
   test('a secret that names no run proves nothing', () async {
     final result = await call({
       McpCallScope.runGrantHeader: 'guessed',
-      'X-CC-Workspace-Id': 'ws-a',
-      'X-CC-Space-Id': 'space-a',
+      'Authorization': 'Bearer owner-token',
     });
 
-    expect(result['isError'], isTrue);
+    expect(result, HttpStatus.unauthorized);
     expect(tool.calls, isEmpty);
   });
 
@@ -143,7 +144,7 @@ void main() {
       arguments: {'workspace_id': 'ws-b', 'space_id': 'space-b'},
     );
 
-    expect(result['isError'], isNot(isTrue));
+    expect((result as Map)['isError'], isNot(isTrue));
     expect(tool.calls.single['workspace_id'], 'ws-a');
     expect(tool.calls.single['space_id'], 'space-a');
   });

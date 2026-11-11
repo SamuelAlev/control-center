@@ -5,10 +5,12 @@ import 'package:cc_harness/context.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:path/path.dart' as p;
 
-/// Opt-in on-disk harness config from `.agents/harness.json` (working tree or
-/// agent config dir). Absent file → defaults (stream rules, advisor, shell hooks
-/// off). Also accepts `compaction` and `toolExecution` experiments; defaults
-/// preserve text compaction and post-response tool execution.
+/// Opt-in on-disk harness config. Data settings (stream rules, advisor,
+/// `compaction` and `toolExecution` experiments) come from `.agents/harness.json`
+/// in the working tree or the agent config dir; shell hooks come only from
+/// `hooks.json` in the server's own hook folder for the agent (see [load]).
+/// Absent files → defaults (stream rules, advisor, shell hooks off; text
+/// compaction and post-response tool execution).
 class HarnessRunConfig {
   /// Creates a [HarnessRunConfig].
   const HarnessRunConfig({
@@ -24,6 +26,8 @@ class HarnessRunConfig {
     this.hookSessionStart,
     this.hookPreTool,
     this.hookPostTool,
+    this.preToolRefused = false,
+    this.refusedHooks = const [],
     this.droppedHookBase,
   });
 
@@ -58,46 +62,60 @@ class HarnessRunConfig {
   /// Opt-in overlap of audited read-only tools with model streaming.
   final bool overlapReadOnlyTools;
 
-  /// Absolute path to the session-start hook script, if configured.
+  /// Real path of the session-start hook script, if configured.
   final String? hookSessionStart;
 
-  /// Absolute path to the pre-tool hook script, if configured.
+  /// Real path of the pre-tool hook script, if configured.
   final String? hookPreTool;
 
-  /// Absolute path to the post-tool hook script, if configured.
+  /// Real path of the post-tool hook script, if configured.
   final String? hookPostTool;
 
-  /// Whether any shell hook is configured.
-  bool get hasHooks =>
-      hookSessionStart != null || hookPreTool != null || hookPostTool != null;
+  /// Whether a pre-tool gate was declared but refused (see [refusedHooks]):
+  /// the run then denies every tool call rather than run ungated.
+  final bool preToolRefused;
 
-  /// The base whose `.agents/harness.json` declared hooks that were REFUSED
-  /// because that base is not hook-trusted (see [load]), or null.
+  /// Why each refused hook declaration was refused, e.g.
+  /// `preTool: an absolute path`.
+  final List<String> refusedHooks;
+
+  /// Whether any shell hook is configured, a refused pre-tool gate included.
+  bool get hasHooks =>
+      hookSessionStart != null ||
+      hookPreTool != null ||
+      hookPostTool != null ||
+      preToolRefused;
+
+  /// The base whose `.agents/harness.json` declared hooks, which were dropped:
+  /// hooks are read only from the server's hook folder (see [load]), or null.
   final String? droppedHookBase;
 
-  /// Loads the config from the first `<base>/.agents/harness.json` found among
-  /// [bases] (cwd first, then the agent config dir). Returns [none] when no
-  /// file exists or it fails to parse. Hook script paths are resolved relative
-  /// to the file's base.
+  /// The hook declarations file inside a hook folder.
+  static const hooksFileName = 'hooks.json';
+
+  /// Loads the data settings from the first `<base>/.agents/harness.json`
+  /// found among [bases] (cwd first, then the agent config dir), and the
+  /// shell hooks from `<hookBase>/hooks.json` alone. An unparsable
+  /// `harness.json` gives [none]'s data settings.
   ///
-  /// SHELL HOOKS are honored only when the winning base is in
-  /// [hookTrustedBases]. Everything else in the file is DATA (patterns, a
-  /// model name, instructions); hooks are arbitrary code execution, and this
-  /// file is routinely read out of the agent's WORKING TREE — i.e. out of a
-  /// cloned repository. Cloning a hostile repo and dispatching an agent in it
-  /// must not run that repo's scripts on the host, which is exactly what the
-  /// project's own fail-closed skills gate exists to prevent for skill
-  /// content. A repo-declared hook is dropped and reported through
-  /// [droppedHookBase] rather than silently ignored, so the operator can move
-  /// it into their own agent config dir if they actually want it.
+  /// SHELL HOOKS are arbitrary code execution, so they are host
+  /// configuration: [hookBase] is a folder the server owner fills by hand on
+  /// the host, outside every workspace's storage, which no client op, run or
+  /// member terminal can write. A working tree is routinely a cloned
+  /// repository and the agent config dir is writable by workspace members and
+  /// by runs, so a `hooks` block in either `harness.json` is dropped and
+  /// reported through [droppedHookBase] rather than silently ignored.
+  ///
+  /// `hooks.json` maps `sessionStart`, `preTool` and `postTool` to script
+  /// paths RELATIVE to [hookBase]. A path that is absolute, missing, or whose
+  /// real path (links resolved) leaves [hookBase] is refused and listed in
+  /// [refusedHooks]; a refused or unreadable pre-tool gate sets
+  /// [preToolRefused].
   static Future<HarnessRunConfig> load(
     List<String?> bases, {
-    List<String?> hookTrustedBases = const [],
+    String? hookBase,
   }) async {
-    final trusted = {
-      for (final b in hookTrustedBases)
-        if (b != null && b.isNotEmpty) p.normalize(p.absolute(b)),
-    };
+    var data = none;
     for (final base in bases) {
       if (base == null || base.isEmpty) {
         continue;
@@ -108,40 +126,113 @@ class HarnessRunConfig {
       }
       try {
         final json = jsonDecode(await file.readAsString());
-        if (json is! Map<String, dynamic>) {
-          return none;
+        if (json is Map<String, dynamic>) {
+          data = _parse(json);
+          final hooks = json['hooks'];
+          if (hooks is Map && hooks.isNotEmpty) {
+            data = data._withHooks(droppedHookBase: base);
+          }
         }
-        final parsed = _parse(json, base);
-        if (trusted.contains(p.normalize(p.absolute(base)))) {
-          return parsed;
-        }
-        return parsed.hasHooks
-            ? parsed.withoutHooks(droppedHookBase: base)
-            : parsed;
       } on Object {
-        return none;
+        data = none;
       }
+      break;
     }
-    return none;
+    return hookBase == null || hookBase.isEmpty
+        ? data
+        : data._withHooks(
+            droppedHookBase: data.droppedHookBase,
+            hooks: await _loadHooks(hookBase),
+          );
   }
 
-  /// This config with every shell hook removed, recording where they came
-  /// from so the caller can tell the operator instead of failing silently.
-  HarnessRunConfig withoutHooks({required String droppedHookBase}) =>
-      HarnessRunConfig(
-        streamRules: streamRules,
-        advisorEnabled: advisorEnabled,
-        advisorModel: advisorModel,
-        advisorEveryTurns: advisorEveryTurns,
-        advisorInstructions: advisorInstructions,
-        compaction: compaction,
-        snapshotCompaction: snapshotCompaction,
-        maxParallelToolCalls: maxParallelToolCalls,
-        overlapReadOnlyTools: overlapReadOnlyTools,
-        droppedHookBase: droppedHookBase,
-      );
+  static Future<_Hooks> _loadHooks(String hookBase) async {
+    final file = File(p.join(hookBase, hooksFileName));
+    if (!file.existsSync()) {
+      return const _Hooks();
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(await file.readAsString());
+    } on Object {
+      return const _Hooks(preToolRefused: true, refused: ['not valid JSON']);
+    }
+    if (decoded is! Map) {
+      return const _Hooks(preToolRefused: true, refused: ['not a JSON object']);
+    }
+    final json = decoded;
+    final String realBase;
+    try {
+      realBase = Directory(hookBase).resolveSymbolicLinksSync();
+    } on Object {
+      return const _Hooks(preToolRefused: true, refused: ['folder unreadable']);
+    }
+    final refused = <String>[];
+    String? resolve(String key) {
+      final path = json[key];
+      if (path == null) {
+        return null;
+      }
+      final String? reason;
+      if (path is! String || path.isEmpty) {
+        reason = 'not a path';
+      } else if (p.isAbsolute(path)) {
+        reason = 'an absolute path';
+      } else {
+        final real = _realFile(p.join(realBase, path));
+        if (real == null) {
+          reason = 'no such file';
+        } else if (!p.isWithin(realBase, real)) {
+          reason = 'outside the hook folder';
+        } else {
+          return real;
+        }
+      }
+      refused.add('$key: $reason');
+      return null;
+    }
 
-  static HarnessRunConfig _parse(Map<String, dynamic> json, String base) {
+    final preTool = resolve('preTool');
+    return _Hooks(
+      sessionStart: resolve('sessionStart'),
+      preTool: preTool,
+      postTool: resolve('postTool'),
+      preToolRefused: preTool == null && json['preTool'] != null,
+      refused: refused,
+    );
+  }
+
+  static String? _realFile(String path) {
+    try {
+      final real = File(path).resolveSymbolicLinksSync();
+      return FileSystemEntity.isFileSync(real) ? real : null;
+    } on Object {
+      return null;
+    }
+  }
+
+  HarnessRunConfig _withHooks({
+    required String? droppedHookBase,
+    _Hooks hooks = const _Hooks(),
+  }) => HarnessRunConfig(
+    streamRules: streamRules,
+    advisorEnabled: advisorEnabled,
+    advisorModel: advisorModel,
+    advisorEveryTurns: advisorEveryTurns,
+    advisorInstructions: advisorInstructions,
+    compaction: compaction,
+    snapshotCompaction: snapshotCompaction,
+    maxParallelToolCalls: maxParallelToolCalls,
+    overlapReadOnlyTools: overlapReadOnlyTools,
+    hookSessionStart: hooks.sessionStart,
+    hookPreTool: hooks.preTool,
+    hookPostTool: hooks.postTool,
+    preToolRefused: hooks.preToolRefused,
+    refusedHooks: hooks.refused,
+    droppedHookBase: droppedHookBase,
+  );
+
+  static HarnessRunConfig _parse(Map<String, dynamic> json) {
     final rules = <StreamRule>[];
     final rawRules = json['streamRules'];
     if (rawRules is List) {
@@ -188,18 +279,6 @@ class HarnessRunConfig {
     final execution = json['toolExecution'];
     final parallel = execution is Map ? execution['maxParallel'] : null;
 
-    final hooks = json['hooks'];
-    String? resolveHook(String key) {
-      if (hooks is! Map) {
-        return null;
-      }
-      final path = hooks[key];
-      if (path is! String || path.isEmpty) {
-        return null;
-      }
-      return p.isAbsolute(path) ? path : p.join(base, path);
-    }
-
     return HarnessRunConfig(
       streamRules: rules,
       advisorEnabled: advisorEnabled,
@@ -211,9 +290,24 @@ class HarnessRunConfig {
       maxParallelToolCalls: parallel is int && parallel > 0 ? parallel : 4,
       overlapReadOnlyTools:
           execution is Map && execution['overlapReadOnly'] == true,
-      hookSessionStart: resolveHook('sessionStart'),
-      hookPreTool: resolveHook('preTool'),
-      hookPostTool: resolveHook('postTool'),
     );
   }
+}
+
+/// The hooks a hook folder declares, as [HarnessRunConfig._loadHooks] read
+/// them.
+final class _Hooks {
+  const _Hooks({
+    this.sessionStart,
+    this.preTool,
+    this.postTool,
+    this.preToolRefused = false,
+    this.refused = const [],
+  });
+
+  final String? sessionStart;
+  final String? preTool;
+  final String? postTool;
+  final bool preToolRefused;
+  final List<String> refused;
 }

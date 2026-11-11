@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_data_section.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
@@ -33,10 +34,12 @@ void main() {
     List<Workspace> workspaces, {
     MediaProxyConfig? proxy,
     BackupTransfer Function(Ref)? transfer,
+    bool owner = true,
   }) {
     return ProviderScope(
       overrides: [
         rpcClientProvider.overrideWithValue(host.client()),
+        canUseHostProvider.overrideWithValue(owner),
         workspacesProvider.overrideWith((ref) => Stream.value(workspaces)),
         mediaProxyConfigProvider.overrideWithValue(proxy),
         if (transfer != null) backupTransferProvider.overrideWith(transfer),
@@ -171,14 +174,14 @@ void main() {
     expect(ops, contains('workspace.delete'));
   });
 
-  testWidgets('a relayed connection cannot move files, and says so', (
+  testWidgets('a session with no file lane cannot move files, and says so', (
     tester,
   ) async {
     final host = FakeRpcHost();
     host.onCall = (op, args) => throw StateError('no call expected: $op');
 
-    // A relayed connection carries RPC and nothing else, so the two controls
-    // that move bytes are dead — and say why rather than failing on press.
+    // No media proxy, no file lane: the two controls that move bytes are
+    // dead — and say why rather than failing on press.
     await tester.pumpWidget(wrap(host, [workspace('ws-1', 'Alpha')]));
     await openRow(tester, 'Alpha');
 
@@ -186,13 +189,13 @@ void main() {
         tester.widget<CcButton>(find.widgetWithText(CcButton, label).first);
     expect(button('Download').onPressed, isNull);
     expect(button('Choose a file and upload').onPressed, isNull);
-    expect(find.textContaining('through a relay'), findsOneWidget);
+    expect(find.textContaining("File transfers aren't set up"), findsOneWidget);
     // The server-path import is unaffected: it names a file the SERVER already
     // holds, so it needs no lane between here and there.
     expect(find.widgetWithText(CcButton, 'Import'), findsOneWidget);
   });
 
-  testWidgets('a direct connection offers both file lanes', (tester) async {
+  testWidgets('a connected session offers both file lanes', (tester) async {
     final host = FakeRpcHost();
     host.onCall = (op, args) => throw StateError('no call expected: $op');
 
@@ -213,7 +216,46 @@ void main() {
         tester.widget<CcButton>(find.widgetWithText(CcButton, label).first);
     expect(button('Download').onPressed, isNotNull);
     expect(button('Choose a file and upload').onPressed, isNotNull);
-    expect(find.textContaining('through a relay'), findsNothing);
+    expect(find.textContaining("File transfers aren't set up"), findsNothing);
+  });
+
+  testWidgets('someone other than the server owner downloads but cannot '
+      'restore', (tester) async {
+    final host = FakeRpcHost();
+    host.onCall = (op, args) => throw StateError('no call expected: $op');
+
+    await tester.pumpWidget(
+      wrap(
+        host,
+        [workspace('ws-1', 'Alpha')],
+        proxy: MediaProxyConfig(
+          httpBase: Uri.parse('http://127.0.0.1:9030'),
+          deviceId: 'device-1',
+          psk: 'psk-1',
+        ),
+        owner: false,
+      ),
+    );
+    await openRow(tester, 'Alpha');
+
+    expect(
+      tester
+          .widget<CcButton>(find.widgetWithText(CcButton, 'Download').first)
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      find.widgetWithText(CcButton, 'Choose a file and upload'),
+      findsNothing,
+    );
+    expect(find.text('/path/to/workspace.db'), findsNothing);
+    expect(
+      find.text(
+        'Only the server owner can restore backups. You can still download '
+        'them.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('a download reports how far it has got', (tester) async {

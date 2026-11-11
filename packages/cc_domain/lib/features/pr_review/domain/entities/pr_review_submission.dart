@@ -28,7 +28,7 @@ class PrReviewSubmission {
     this.reactions = const [],
   });
 
-  /// GitHub review id (0 when unknown, e.g. legacy cache rows).
+  /// GitHub review id (0 when unknown).
   final int id;
 
   /// State.

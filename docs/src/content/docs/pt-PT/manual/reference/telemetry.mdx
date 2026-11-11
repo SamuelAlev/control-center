@@ -2,7 +2,7 @@
 title: Análises de utilização
 description: O que o Control Center regista quando as análises de utilização estão ativadas, quem decide e o que nunca é enviado.
 slug: pt-PT/manual/referencia/analises-de-utilizacao
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 O Control Center pode enviar **eventos de utilização pseudónimos** para uma instância do [Umami](https://umami.is). As análises de utilização estão **desativadas até que o operador do servidor as ative**. A definição pertence ao servidor e aplica-se a todos os clientes ligados a ele: a aplicação de ambiente de trabalho, a aplicação web, o telemóvel e o próprio servidor.
@@ -13,7 +13,7 @@ As análises de utilização são independentes de **Partilhar relatórios de fa
 
 | Interruptor | Onde | Efeito |
 | --- | --- | --- |
-| **Partilhar análises de utilização** | Onboarding (passo da sandbox) e **Definições → Privacidade**. Só o operador do servidor o pode alterar; os restantes membros veem o valor atual apenas para leitura | Para todo o servidor. Guardado como `telemetry.usage_analytics` nas definições do servidor. Desligado, a menos que esteja definido como `true` |
+| **Partilhar análises de utilização** | Onboarding (passo da sandbox) e **Definições → Servidor → Diagnóstico e privacidade**. Só o operador do servidor o pode alterar; os restantes membros veem o valor atual apenas para leitura | Para todo o servidor. Guardado como `telemetry.usage_analytics` nas definições do servidor. Desligado, a menos que esteja definido como `true` |
 | Tipo de build | Automático | As builds de debug e de profile não enviam nada. Em vez disso, escrevem cada evento no registo de debug |
 | `CC_ANALYTICS_DEBUG=1` | Ambiente do `cc_server` ou o respetivo `.env` | Permite que as builds de debug e de profile do servidor, e de todos os clientes ligados a ele, enviem eventos a sério, para testes. O interruptor acima tem de continuar ligado |
 | `DO_NOT_TRACK=1` | Ambiente do `cc_server` | Interrompe os envios do próprio servidor, seja qual for o valor do interruptor. Os clientes continuam a seguir o interruptor |

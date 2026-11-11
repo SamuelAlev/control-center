@@ -2,10 +2,10 @@
 title: Outils MCP
 description: Catalogue complet des outils MCP enregistrés par cc_server, par famille.
 slug: fr-FR/manuel/reference/outils-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` héberge un registre d'outils MCP (JSON-RPC 2.0) unique, exposé sur le port principal du serveur (par défaut `9030`) en `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l'application de bureau, la version web, les clients MCP externes et le moteur d'agents intégré. Les serveurs MCP externes peuvent être raccordés au même registre sous forme de couche dynamique.
+`cc_server` héberge un registre d'outils MCP (JSON-RPC 2.0) unique, exposé sur le port principal du serveur (par défaut `9030`) en `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l'application de bureau, la version web, les clients MCP externes et le moteur d'agents intégré. Les serveurs MCP externes peuvent être raccordés au même registre sous forme de couche dynamique. Les serveurs découverts dans la configuration d'outils personnelle de l'utilisateur du serveur font exception : ce point d'accès ne les liste, ne les appelle et ne les recherche jamais, et seules les exécutions du harnais intégré, dont le propriétaire du serveur répond, les obtiennent (voir [Les serveurs MCP personnels restent ceux de leur propriétaire](/fr-FR/manuel/guides/serveur-mcp/#les-serveurs-mcp-personnels-restent-ceux-du-propriétaire)).
 
 ## Taille du registre
 
@@ -23,7 +23,7 @@ Les cinq outils de graphe de code ne sont enregistrés que lorsque l'hôte trans
 Le registre complet est annoncé dans `tools/list`, sans filtrage de découverte. Les modifications de tickets sont des outils typés.
 
 :::note[Les clients externes voient toujours tout le catalogue]
-`tools/list` n'est jamais tronqué. Les clients MCP valident les noms d'outils par rapport à leur propre copie en cache de cette liste et refusent tout ce qui n'y figure pas sans interroger le serveur ; un outil dissimulé à cet endroit est donc inatteignable, et pas simplement discret.
+`tools/list` n'est jamais tronqué, à l'exception des serveurs MCP personnels du propriétaire du serveur, que la liste ne contient jamais. Les clients MCP valident les noms d'outils par rapport à leur propre copie en cache de cette liste et refusent tout ce qui n'y figure pas sans interroger le serveur ; un outil dissimulé à cet endroit est donc inatteignable, et pas simplement discret.
 
 Le **harnais intégré** fonctionne autrement : il ne charge par requête qu'un sous-ensemble résident de définitions et récupère le reste au premier usage, ce qui relève du harnais et ne change rien à ce registre. Voir [Contexte des outils et cache de prompts](/fr-FR/manuel/concepts/contexte-des-outils).
 :::
@@ -247,7 +247,7 @@ comme données non fiables. Les quatre outils d'usage plus `rig_close` déclaren
 (les outils d'usage déclarent en outre `networkEgress` et `processSpawn` ; `mobile_use` et
 `ios_use` déclarent en outre `packageInstall`), si bien que les modes en lecture seule les refusent.
 `rig_list` n'en déclare aucune — il ne fait que lire l'état de l'espace de travail. Le vocabulaire
-complet des verbes par surface figure dans la [référence des rigs](/fr-FR/manuel/reference/rigs/#action-verbs).
+complet des verbes par surface figure dans la [référence des rigs](/fr-FR/manuel/reference/rigs/#verbes-daction).
 
 | Outil | Description |
 | --- | --- |
@@ -255,8 +255,10 @@ complet des verbes par surface figure dans la [référence des rigs](/fr-FR/manu
 | `browser_use` | Pilote un Chromium, Firefox ou WebKit sans interface (`engine`) : naviguer, cliquer, remplir, extraire (a11y/DOM/console), presse-papiers, capture d'écran |
 | `mobile_use` | Pilote Android via ADB : inspecter/saisir, captures d'écran, installer/démarrer/arrêter/réinitialiser/désinstaller des applications, liens profonds et commandes d'appareil au format argv |
 | `ios_use` | Pilote le simulateur iOS via WebDriverAgent/CoreSimulator : inspecter/saisir, captures d'écran, installer/démarrer/arrêter/désinstaller des applications, liens profonds et processus de simulateur au format argv |
-| `rig_list` | Liste les rigs d'un espace de travail avec leur surface, leur statut, leur taille d'affichage et leur contrôleur |
+| `rig_list` | Liste les rigs de l’espace de l’exécution avec leur surface, leur statut, leur taille d'affichage et leur contrôleur |
 | `rig_close` | Détruit un rig et abandonne l'état de machine qu'il possède |
+
+Seules les exécutions d’agents peuvent appeler ces outils ; tout autre appelant est refusé. Une exécution n’atteint que les rigs de l’espace pour lequel elle a reçu son autorisation : `space_id` vient de l’autorisation de l’exécution, jamais de l’appel, et un rig d’un autre espace, ou d’aucun espace, répond exactement comme un rig absent.
 
 `app_use` est un cinquième outil use : il pilote les fenêtres d’une application de bureau lancée dans un espace, directement sur l’hôte et non dans une VM, et déclare aussi `fileWriteOutsideWorktree` et `fileDelete`. Lui et les outils `environment_*` sont décrits dans [Configurer des environnements](/fr-FR/manuel/guides/environnements/).
 
@@ -301,7 +303,7 @@ donc un nom que vous auriez pu voir cité ailleurs renvoie « unknown tool »�
 | Capacité | Où cela se trouve à la place |
 | --- | --- |
 | Embaucher, renvoyer ou modifier un agent | L'interface des agents. Il n'existe aucun outil `hire_agent` / `fire_agent` / `update_agent` |
-| Créer un espace de travail | `workspace.upsert` via RPC, qui initialise et estampille la propriété |
+| Créer un espace de travail | `workspace.create` via RPC, réservé au propriétaire du serveur, qui initialise et estampille la propriété |
 | Projets (créer / lister / modifier / classer) | L'interface des tickets. Les projets sont une surface d'opérateur — voir [Projets](/fr-FR/manuel/guides/projets/) |
 | Poser à l'opérateur une question bloquante | L'outil `ask_user` du **harnais**, et non MCP. Il affiche un formulaire dans la conversation et bloque jusqu'à la réponse |
 | Diagnostics par agent | Rien. Il n'existe aucun `doctor` — voir [Diagnostiquer un agent](/fr-FR/manuel/guides/diagnostiquer-agent/) |

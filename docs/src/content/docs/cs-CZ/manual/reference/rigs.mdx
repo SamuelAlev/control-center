@@ -2,7 +2,7 @@
 title: Stanice
 description: Každá plocha stanice, backend, sloveso akce, stav životního cyklu, port, výchozí hodnota a kontrakt — úplný faktický katalog.
 slug: cs-CZ/prirucka/referencni-prirucka/stanice
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Jen fakta. Model za nimi je ve [Stanicích a izolovaných
@@ -214,8 +214,10 @@ uzavřené sítě.
 
 | Nástroj | Popis |
 | --- | --- |
-| `rig_list` | Vypíše stanice pracovního prostoru s plochou, stavem, displejem a tím, kdo je řídí |
+| `rig_list` | Vypíše stanice prostoru běhu s plochou, stavem, displejem a tím, kdo je řídí |
 | `rig_close` | Zničí stanici a zahodí její disk |
+
+Tyto nástroje, stejně jako čtyři nástroje použití, jsou jen pro běhy agentů; každý jiný volající je odmítnut. Běh dosáhne jen na stanice prostoru, pro který byl přidělen: `space_id` pochází z přidělení běhu, nikdy z volání. Stanice jiného prostoru nebo žádného prostoru odpoví přesně jako chybějící.
 
 ## Životní cyklus
 
@@ -317,7 +319,7 @@ nastavení pracovního prostoru.
   a zvuk schůzky.
 - **Ověření** je podepsaný cíl `rig-files:<workspaceId>/<rigId>` plus
   členství v pracovním prostoru — vlastní cíl, takže URL vystavené ke
-  *sledování* stroje do něj nemůže taky zapisovat soubory.
+  *sledování* stroje do něj nemůže taky zapisovat soubory. U stanice otevřené v prostoru čtení schránky nebo souboru také potřebuje čtecí přístup k tomu prostoru a zápis do schránky nebo puštění souborů zápisové oprávnění k jeho repozitářům. U stanice, která nese vlastní přihlášení jedné osoby, jsou oba kanály, včetně čtení, jen její; viz [Kdo může sledovat a kdo ovládat](/cs-CZ/prirucka/navody/pouziti-stanic/#kdo-může-sledovat-a-kdo-ovládat).
 - **Převzetí platí.** Zápis do schránky a puštění souborů jsou měnící
   a odmítnou se, dokud řízení drží někdo jiný; čtení schránky a čtení
   souboru ven jsou pozorování a neodmítnou se.

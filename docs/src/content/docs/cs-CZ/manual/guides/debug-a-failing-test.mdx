@@ -2,7 +2,7 @@
 title: Laděte padající test s agentem
 description: Nech agenta nastavit breakpoint, spustit program pod debuggerem a přečíst skutečný rámec zásobníku místo příkazů print.
 slug: cs-CZ/prirucka/navody/ladeni-padajiciho-testu
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Tenhle návod ukáže, jak nechat agenta použít debugger na selhání, které příkazy print nevysvětlují.
@@ -31,8 +31,8 @@ Odpoví tím, co našel, nebo vysvětlí, že adaptér potřebuje obě poloviny.
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Dodává se s LLVM                                      |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python bere interpret projektu]
-`debugpy` se hledá v `.venv/bin` nebo `venv/bin` dřív než na `$PATH`. Python z `$PATH` je jiné prostředí a připojení ze špatného selže tak, že to vypadá jako rozbitý kód, ne jako špatný interpret.
+:::note[Python bere interpret projektu, když běh běží v sandboxu]
+V běhu v sandboxu se `debugpy` hledá v `.venv/bin` nebo `venv/bin` dřív než na `$PATH`. Python z `$PATH` je jiné prostředí a připojení ze špatného selže tak, že to vypadá jako rozbitý kód, ne jako špatný interpret. V běhu bez sandboxu používá jen `$PATH`, takže repozitář nemůže vybrat interpret, který běží na stroji serveru.
 :::
 
 ## Nejdřív breakpoint, potom spuštění
@@ -106,6 +106,8 @@ U zaseknutého procesu, který nespouštíš ty:
 debug(op: "attach", port: 5858)
 ```
 
+Port musí být jeden z přesměrovaných portů samotného běhu. Každý jiný port se odmítne dřív, než cokoli začne, takže se agent nemůže připojit k procesu, který na stroji serveru patří někomu jinému.
+
 ## Ukonči
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Relaci vždycky ukonči. Adaptér debuggeru vlastní **zastavený proces**, který drží všechno, co ten proces drží: port, zámek, spojení s databází.
 
 :::note[Utéct ti nemůže]
-Každá relace má tvrdou TTL, kterou sama neprodlouží, na konverzaci je přesně jedna a při zastavení serveru se všechno zruší. Druhý `launch` se odmítne, místo aby první nahradil. Agent, který spustí druhou, aniž první ukončil, o té první skoro jistě ztratil přehled.
+Každá relace má tvrdou TTL (30 minut), kterou sama neprodlouží, na konverzaci je přesně jedna a při zastavení serveru se všechno zruší. V běhu v sandboxu si relace ponechá svůj sandbox napříč tahy nejdéle na tuto dobu. Druhý `launch` se odmítne, místo aby první nahradil. Agent, který spustí druhou, aniž první ukončil, o té první skoro jistě ztratil přehled.
 :::
 
 ## Ohraničený výstup

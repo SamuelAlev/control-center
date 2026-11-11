@@ -2,7 +2,7 @@
 title: Je Slack-account koppelen
 description: Bewijs dat een Slack-identiteit van jou is, zodat agenten op je berichten handelen en je werk aan jou wordt toegeschreven.
 slug: nl-NL/handleiding/gidsen/chataccount-koppelen
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Deze gids laat zien hoe je je chatidentiteit aan je Control Center-gebruiker koppelt en hoe je een koppeling weer ongedaan maakt.
@@ -19,7 +19,7 @@ Een niet-gekoppeld lid dat de bot vermeldt, krijgt in die Slack-thread een antwo
 
 Voor koppelen zijn beide kanten nodig: een code vanuit Slack sturen bewijst het Slack-account, en hem in Control Center bevestigen bewijst dat dat account van jou is.
 
-1. Ga naar **Instellingen → Werkruimte → Profiel en identiteit** en scrol naar de kaart **Gekoppelde
+1. Ga naar **Instellingen → Jij → Profiel** en zoek de kaart **Gekoppelde
    chataccounts**
 2. Klik in het Slack-blok op **Mijn Slack-account koppelen**. De dialoog toont een eenmalige code, bijvoorbeeld:
 
@@ -32,7 +32,7 @@ K7M2QP
 5. Is het jouw account, klik dan op **Bevestigen**. De koppeling wordt gemaakt, de dialoog meldt het en de bot bevestigt in hetzelfde directe bericht
 6. Is het niet van jou, klik dan op **Weigeren**. Er wordt niets gekoppeld en de code werkt niet meer; klik op **Nieuwe code aanvragen** om het opnieuw te proberen
 
-Als je de dialoog sluit, gaat een claim niet verloren. Een code die later binnenkomt, wacht in de rij **Mijn Slack-account koppelen** op je profielpagina, met dezelfde knoppen **Bevestigen** en **Weigeren**.
+Als je de dialoog sluit, gaat een claim niet verloren. Een code die later binnenkomt, wacht in de rij **Mijn Slack-account koppelen** op die kaart, met dezelfde knoppen **Bevestigen** en **Weigeren**.
 
 Waarom de bevestigingsstap: een code die iemand over je schouder meeleest en vanaf een ander Slack-account verstuurt, zou dat account anders namens jou laten handelen. Alleen jij kunt bevestigen, en alleen precies het profiel dat de code stuurde.
 
@@ -51,18 +51,20 @@ Een code die onbekend is, verlopen is, geweigerd is of voor een andere werkruimt
 
 Als je Slack-profiel een bevestigd e-mailadres bevat dat overeenkomt met het geverifieerde e-mailadres van een Control Center-gebruiker die **al lid is van deze werkruimte**, koppelt de brug je zodra je voor het eerst met de bot praat. Je hebt geen code nodig.
 
+De Control Center-kant telt als geverifieerd wanneer single sign-on of SCIM het adres heeft ingesteld, of wanneer de serverbeheerder het heeft bevestigd onder **Instellingen → Server → Personen**. Een adres dat je zelf in je profiel hebt ingetypt is niet geverifieerd, dus het koppelt niets totdat de beheerder het bevestigt; gebruik tot die tijd de codeprocedure.
+
 Beide helften doen ertoe: de e-mailmatch bewijst de identiteit, maar alleen lidmaatschap geeft toegang, dus een vreemde wiens e-mailadres toevallig op de server bestaat, koppelt aan niets. De koppelingenlijst toont hoe elke koppeling tot stand kwam ("gematcht via e-mail" of "gekoppeld met een code").
 
 Automatisch koppelen vereist de scope `users:read.email`. Zonder die scope geeft Slack het adres niet vrij en is koppelen via een code de enige route.
 
 ## Bekijk wie er gekoppeld is
 
-De koppelingenlijst valt onder werkruimtebeheer en staat dus aan de andere helft van het
-oppervlak: **Instellingen → Werkruimte → Algemeen → Chatbruggen → Gekoppelde accounts**. Hij
+De koppelingenlijst valt onder werkruimtebeheer en staat dus op de beheerkaart:
+**Instellingen → Werkruimte → Integraties → Chatbruggen → Gekoppelde accounts**. Hij
 somt elk gekoppeld lid van de werkruimte op, met het Slack-account waaraan het is gekoppeld
 en hoe de koppeling tot stand kwam.
 
-Je eigen status staat op je profielpagina: de rij **Mijn Slack-account koppelen** toont
+Je eigen status staat op **Instellingen → Jij → Profiel**: de rij **Mijn Slack-account koppelen** toont
 "Gekoppeld aan _your-slack-id_" zodra je gekoppeld bent, en vraagt je te koppelen zolang dat
 niet het geval is.
 

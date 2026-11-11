@@ -34,7 +34,6 @@ class CodeIndexProgress {
   Map<String, dynamic> toJson() => {
     'filesIndexed': filesIndexed,
     'filesToIndex': filesToIndex,
-    'totalFiles': totalFiles,
     'symbols': symbols,
     'edges': edges,
   };

@@ -2,7 +2,7 @@
 title: 聊天桥接
 description: 聊天桥接的提供方、命令、凭据、能力、RPC 操作与存储。
 slug: zh-CN/手册/参考/聊天桥接
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## 提供方
@@ -150,7 +150,7 @@ Control Center 在创建或编辑应用时强制断言的结构性设置：已�
 | 提及已被接受                | `Working on it…`                                                |
 | 步骤 `repo`                 | `Cloning <repo>…`                                               |
 | 步骤 `prCheckout`           | `Checking out the pull request in <repo>…`                      |
-| 步骤 `script`               | `Running the setup script for <repo>…`                          |
+| 步骤 `provisionTasks`       | `Running worktree tasks for <repo>…`                            |
 | 步骤 `agent`                | `Setting up <agent>…`                                           |
 | `provisioning`，尚无步骤    | `Preparing the workspace…`                                      |
 | `ready`                     | `Starting the agent…`                                           |
@@ -254,7 +254,6 @@ Control Center 在创建或编辑应用时强制断言的结构性设置：已�
 | ------------------ | ------------------------------------------------------------------------------------------------------------ |
 | 连接凭据           | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | 未完成的引导式设置 | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| 旧版 Slack 文件    | `<dataDir>/<workspaceId>/slack_credentials.json` 和 `slack_app_setup.json`，读取一次并原地迁移                |
 
 凭据存放在工作区数据库的旁边，而不是里面：删除工作区会带走它的聊天 token，而 `workspace.export` 或备份只复制 `workspace.db`——因此交给别人的工作区不会夹带仍然有效的机器人 token。写入是原子的（临时文件加重命名），并被收紧为仅属主可访问。
 

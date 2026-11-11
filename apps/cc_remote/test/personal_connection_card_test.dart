@@ -8,6 +8,7 @@ import 'dart:js_interop_unsafe';
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_data/cc_data.dart' show SignInLaneInfo, SignInLaneMode;
 import 'package:cc_domain/cc_domain.dart' show RpcMethods;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/l10n/phone_widgets_localizations.dart';
 import 'package:cc_remote/l10n/remote_locales.dart';
@@ -68,7 +69,13 @@ class _Host {
         server.send({
           'jsonrpc': '2.0',
           'id': id,
-          'error': {'code': -32000, 'message': '$error'},
+          'error': error is _RpcError
+              ? {
+                  'code': error.code,
+                  'message': error.message,
+                  'data': error.data,
+                }
+              : {'code': -32000, 'message': '$error'},
         }),
       );
     }
@@ -80,10 +87,21 @@ class _Host {
   }
 }
 
+/// A server refusal with its own code and `data`.
+class _RpcError {
+  const _RpcError(this.code, this.message, this.data);
+
+  final int code;
+  final String message;
+  final Map<String, dynamic> data;
+}
+
 Map<String, dynamic> _attempt(
   String status, {
   String mode = 'connect',
   String? codeError,
+  String? error,
+  String? message,
 }) => {
   'login_id': 'login-1234567890abcdef12',
   'lane': 'github',
@@ -95,6 +113,8 @@ Map<String, dynamic> _attempt(
       .toIso8601String(),
   'status': status,
   'code_error': ?codeError,
+  'error': ?error,
+  'message': ?message,
 };
 
 Future<void> _mount(WidgetTester tester, _Host host, Widget card) async {
@@ -145,18 +165,30 @@ Future<void> _mount(WidgetTester tester, _Host host, Widget card) async {
   await tester.pumpAndSettle();
 }
 
-PersonalConnectionCard _github({required SignInLaneInfo? info}) =>
-    PersonalConnectionCard(
-      providerId: 'github',
-      name: 'GitHub',
-      workspaceId: _ws,
-      isForge: true,
-      connected: false,
-      username: '',
-      canManage: true,
-      lane: ConnectOAuthLane.github,
-      laneInfo: info,
-    );
+PersonalConnectionCard _github({
+  required SignInLaneInfo? info,
+  ForgeConnectionStatus? status,
+  ForgeCredentialScope? scope,
+  bool connected = false,
+  String username = '',
+}) => PersonalConnectionCard(
+  providerId: 'github',
+  name: 'GitHub',
+  workspaceId: _ws,
+  isForge: true,
+  connected: connected,
+  username: username,
+  canManage: true,
+  lane: ConnectOAuthLane.github,
+  laneInfo: info,
+  status: status,
+  scope: scope,
+);
+
+const _connectLane = SignInLaneInfo(
+  lane: ConnectOAuthLane.github,
+  mode: SignInLaneMode.connect,
+);
 
 Future<void> _settle(WidgetTester tester) async {
   await tester.pump();
@@ -358,6 +390,242 @@ void main() {
     expect(find.text('Add token'), findsOne, reason: 'GitLab only');
     expect(
       find.text("GitHub sign-in isn't set up on this server yet."),
+      findsOne,
+    );
+  });
+
+  testWidgets('a lapsed sign-in says so and offers sign in again', (
+    tester,
+  ) async {
+    final host = _Host();
+    addTearDown(host.close);
+    await _mount(
+      tester,
+      host,
+      _github(info: _connectLane, status: ForgeConnectionStatus.needsSignIn),
+    );
+    expect(
+      find.text('Your GitHub sign-in has lapsed. Sign in again.'),
+      findsOne,
+    );
+    expect(find.text('Sign in again'), findsOne);
+    expect(find.text('Disconnect'), findsOne);
+  });
+
+  testWidgets('a paused sign-in explains itself and offers no sign-in', (
+    tester,
+  ) async {
+    final host = _Host();
+    addTearDown(host.close);
+    await _mount(
+      tester,
+      host,
+      _github(info: _connectLane, status: ForgeConnectionStatus.paused),
+    );
+    expect(find.textContaining('sign-in service changed'), findsOne);
+    expect(find.text('Sign in again'), findsNothing);
+    expect(find.text('Sign in with browser'), findsNothing);
+    expect(find.text('Disconnect'), findsOne);
+  });
+
+  testWidgets('an unreachable provider reads as retrying', (tester) async {
+    final host = _Host();
+    addTearDown(host.close);
+    await _mount(
+      tester,
+      host,
+      _github(info: _connectLane, status: ForgeConnectionStatus.unreachable),
+    );
+    expect(find.text("Can't reach GitHub right now. Retrying."), findsOne);
+    expect(find.text('Sign in with browser'), findsNothing);
+  });
+
+  testWidgets('a connection names its scope, and so does removing it', (
+    tester,
+  ) async {
+    final host = _Host();
+    addTearDown(host.close);
+    await _mount(
+      tester,
+      host,
+      _github(
+        info: _connectLane,
+        status: ForgeConnectionStatus.connected,
+        scope: ForgeCredentialScope.workspace,
+        connected: true,
+        username: 'octocat',
+      ),
+    );
+    expect(find.text('Signed in as octocat · This workspace only'), findsOne);
+    await tester.tap(find.text('Disconnect'));
+    await _settle(tester);
+    expect(find.textContaining('Other workspaces keep theirs'), findsOne);
+  });
+
+  testWidgets('a Bitbucket token goes out with its account email', (
+    tester,
+  ) async {
+    final host = _Host();
+    addTearDown(host.close);
+    host.onCall = (op, args) => switch (op) {
+      'credentials.setForgeToken' => <String, dynamic>{},
+      'forge.listConnections' => {'connections': <Object>[]},
+      _ => throw StateError('Unexpected RPC: $op'),
+    };
+    await _mount(
+      tester,
+      host,
+      const PersonalConnectionCard(
+        providerId: 'bitbucket',
+        name: 'Bitbucket',
+        workspaceId: _ws,
+        isForge: true,
+        connected: false,
+        username: '',
+        canManage: true,
+      ),
+    );
+    await tester.tap(find.text('Add token'));
+    await _settle(tester);
+    expect(find.text('Atlassian account email'), findsOne);
+
+    final fields = find.byType(EditableText);
+    await tester.enterText(fields.at(0), 'ana');
+    await tester.enterText(fields.at(1), 'ATATT-1');
+    await tester.tap(find.text('Save'));
+    await _settle(tester);
+    expect(
+      host.calls.where((c) => c.$1 == 'credentials.setForgeToken'),
+      isEmpty,
+    );
+    expect(
+      find.text('Enter the email address of your Atlassian account.'),
+      findsOne,
+    );
+
+    await tester.enterText(fields.at(0), 'ana@example.com');
+    await tester.tap(find.text('Save'));
+    await _settle(tester);
+    final saved = host.calls
+        .firstWhere((c) => c.$1 == 'credentials.setForgeToken')
+        .$2;
+    expect(saved['token'], 'ana@example.com:ATATT-1');
+    // The person's own token, used in every workspace: no scope, and no
+    // workspace to pin it to.
+    expect(saved.containsKey('scope'), isFalse);
+    expect(saved.containsKey('workspace_id'), isFalse);
+  });
+
+  testWidgets('an own-app sign-in also asks for the code its page shows', (
+    tester,
+  ) async {
+    final host = _Host();
+    addTearDown(host.close);
+    host.onCall = (op, args) => switch (op) {
+      'oauth.begin' => _attempt('pending', mode: 'own'),
+      'oauth.complete' => _attempt('succeeded', mode: 'own'),
+      'oauth.status' => _attempt('pending', mode: 'own'),
+      'forge.listConnections' => {'connections': <Object>[]},
+      _ => throw StateError('Unexpected RPC: $op'),
+    };
+    await _mount(
+      tester,
+      host,
+      _github(
+        info: const SignInLaneInfo(
+          lane: ConnectOAuthLane.github,
+          mode: SignInLaneMode.own,
+          redirectUri: 'https://cc.example.com/oauth/github/callback',
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Sign in with browser'));
+    await _settle(tester);
+    expect(
+      find.text('Confirm in your browser, then enter the code it shows.'),
+      findsOne,
+    );
+    await tester.enterText(find.byType(EditableText), 'abcd-efgh');
+    await tester.tap(find.text('Confirm'));
+    await _settle(tester);
+
+    final complete = host.calls.firstWhere((c) => c.$1 == 'oauth.complete').$2;
+    expect(complete['code'], 'ABCDEFGH');
+  });
+
+  testWidgets('an account another person holds gets its own sentence', (
+    tester,
+  ) async {
+    final host = _Host();
+    addTearDown(host.close);
+    host.onCall = (op, args) => switch (op) {
+      'oauth.begin' => _attempt('pending'),
+      'oauth.complete' => _attempt(
+        'failed',
+        error: 'account_already_bound',
+        message:
+            'This account is already connected to another person on this '
+            'server. An account can act for one person only.',
+      ),
+      'oauth.status' => _attempt('pending'),
+      'forge.listConnections' => {'connections': <Object>[]},
+      _ => throw StateError('Unexpected RPC: $op'),
+    };
+    await _mount(tester, host, _github(info: _connectLane));
+
+    await tester.tap(find.text('Sign in with browser'));
+    await _settle(tester);
+    await tester.enterText(find.byType(EditableText), 'ABCDEFGH');
+    await tester.tap(find.text('Confirm'));
+    await _settle(tester);
+
+    expect(
+      find.text(
+        'This account is already connected to another person on this server. '
+        'Sign in with a different account.',
+      ),
+      findsOne,
+    );
+    expect(find.textContaining('was refused'), findsNothing);
+  });
+
+  testWidgets('a refused token says why', (tester) async {
+    final host = _Host();
+    addTearDown(host.close);
+    host.onCall = (op, args) => switch (op) {
+      'credentials.setForgeToken' => throw const _RpcError(
+        -32005,
+        'This GitLab token lacks the "api" scope.',
+        {'code': 'person_token.narrow_scope'},
+      ),
+      'forge.listConnections' => {'connections': <Object>[]},
+      _ => throw StateError('Unexpected RPC: $op'),
+    };
+    await _mount(
+      tester,
+      host,
+      const PersonalConnectionCard(
+        providerId: 'gitlab',
+        name: 'GitLab',
+        workspaceId: _ws,
+        isForge: true,
+        connected: false,
+        username: '',
+        canManage: true,
+      ),
+    );
+    await tester.tap(find.text('Add token'));
+    await _settle(tester);
+    await tester.enterText(find.byType(EditableText), 'glpat-1');
+    await tester.tap(find.text('Save'));
+    await _settle(tester);
+
+    expect(
+      find.text(
+        'This token is missing the api scope, which reviewing and commenting '
+        'need. Create one that has it.',
+      ),
       findsOne,
     );
   });

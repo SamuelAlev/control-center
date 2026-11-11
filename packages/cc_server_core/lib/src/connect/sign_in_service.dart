@@ -5,13 +5,31 @@ import 'dart:io';
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
-import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_server_core/src/connect/bounded_body.dart';
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/connect/connect_error_messages.dart';
+import 'package:cc_server_core/src/connect/connect_settings.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 
+part 'connect_sign_in.dart';
+part 'own_oauth_client.dart';
+part 'sign_in_attempts.dart';
 part 'sign_in_types.dart';
+
+/// The HTTP origin of this server's public [url] (`wss://host:9030` →
+/// `https://host:9030`), or empty when it has none: where own-app OAuth
+/// redirects and the embedded Connect are served.
+String providerOAuthHttpOrigin(String url) {
+  final uri = Uri.tryParse(url.trim());
+  if (url.trim().isEmpty || uri == null || uri.host.isEmpty) {
+    return '';
+  }
+  final scheme = uri.scheme == 'wss' || uri.scheme == 'https'
+      ? 'https'
+      : 'http';
+  return Uri(scheme: scheme, host: uri.host, port: uri.port).toString();
+}
 
 /// This server's callback URL for an own-app [lane], under an HTTP [origin]
 /// (`https://host:9030`).
@@ -22,44 +40,66 @@ part 'sign_in_types.dart';
 Uri providerOAuthRedirectUri(String origin, String lane) =>
     Uri.parse('$origin/oauth/$lane/callback');
 
+/// What the own-app callback page shows: the confirmation code and the local
+/// deep link that hands it to the client that started the sign-in.
+typedef SignInCallbackPage = ({String loginId, String confirmCode, Uri link});
+
 /// Runs every browser sign-in this server offers (GitHub, Google, Linear,
 /// Linear app, Slack), in own-app or Connect mode.
 ///
-/// The person always comes from the authenticated session: nothing a client
-/// sends can mint a credential for somebody else. Own-app sign-ins come back
-/// to `/oauth/<lane>/callback` with a single-use `state`; Connect sign-ins
-/// finish when the client presents the confirmation code the approving
-/// browser showed, with this server's PKCE verifier and its signed install
-/// identity. A deep link the local client did not start is never completed.
+/// Both modes end the same way. The browser shows an eight-character
+/// confirmation code (and a `control-center://oauth-done` link carrying it);
+/// nothing is stored until the session that began the attempt (same person,
+/// same workspace) presents that code with `oauth.complete`. The code goes
+/// from the browser to the client, never the other way, so a sign-in link
+/// sent to somebody else cannot land their account in the sender's slot.
+///
+/// * Own app: the provider redirects to `/oauth/<lane>/callback` with a
+///   single-use `state`. The callback only records the provider's code; the
+///   code is exchanged when the confirmation code comes back.
+/// * Connect: Connect's `/done` page first says what this server will be
+///   able to do and asks the person to continue, then shows the code; the
+///   claim carries it with this server's PKCE verifier and its signed
+///   install identity.
+///
+/// One provider account acts for one person: a grant for an account another
+/// user already holds is refused and revoked.
 class ProviderSignInService {
   /// Creates the service.
   ProviderSignInService({
-    required this.connect,
+    required ConnectClient connect,
     HttpClient? httpClient,
     DateTime Function()? now,
-  }) : _http = httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
-       _now = now ?? (() => DateTime.now().toUtc());
+  }) : this._(
+         connect,
+         httpClient ?? (HttpClient()..connectionTimeout = _httpTimeout),
+         now ?? (() => DateTime.now().toUtc()),
+       );
+
+  ProviderSignInService._(this.connect, HttpClient http, this._now)
+    : _oauth = _OwnOAuthClient(http, _now),
+      _attempts = SignInAttemptStore(now: _now);
 
   static const Duration _httpTimeout = Duration(seconds: 15);
-  static const int _maxResponseBytes = 256 * 1024;
-
-  /// Pending-attempt ceiling; the own-app callback is unauthenticated.
-  static const int maxPending = 256;
 
   /// How long an attempt stays completable.
   static const Duration pendingTtl = Duration(minutes: 10);
 
-  /// Wrong confirmation codes before an attempt is dropped.
+  /// Wrong confirmation codes before an attempt is over.
   static const int maxConfirmAttempts = 5;
+
+  /// Linear's token endpoint (public PKCE clients, own or Connect's).
+  static final Uri linearTokenEndpoint = Uri.parse(
+    'https://api.linear.app/oauth/token',
+  );
 
   /// The Connect client.
   final ConnectClient connect;
 
-  final HttpClient _http;
   final DateTime Function() _now;
+  final _OwnOAuthClient _oauth;
+  final SignInAttemptStore _attempts;
   final Map<ConnectOAuthLane, SignInLaneBinding> _bindings = {};
-  final Map<String, SignInAttempt> _attempts = {};
-  final Map<String, String> _byState = {};
   final Set<String> _claiming = {};
 
   /// Registers a lane. Each lane has exactly one binding.
@@ -70,38 +110,80 @@ class ProviderSignInService {
   /// The lane's binding, when registered.
   SignInLaneBinding? binding(ConnectOAuthLane lane) => _bindings[lane];
 
-  /// How [lane] signs in for [workspaceId] right now, with the setup error
-  /// when it is misconfigured.
-  Future<({SignInMode mode, String error})> modeFor(
+  /// Every registered lane.
+  Iterable<SignInLaneBinding> get bindings => _bindings.values;
+
+  /// How [lane] signs in for [workspaceId] right now; when it cannot, why
+  /// ([SignInUnavailableReason]) and, for a misconfigured own app, the setup
+  /// error to show.
+  Future<SignInLaneState> modeFor(
     ConnectOAuthLane lane, {
     String? workspaceId,
   }) async {
     final binding = _bindings[lane];
     if (binding == null) {
-      return (mode: SignInMode.unavailable, error: '');
+      return const SignInLaneState.unavailable(
+        SignInUnavailableReason.laneNotOffered,
+      );
     }
     try {
       if (await binding.ownApp(workspaceId) != null) {
-        return (mode: SignInMode.own, error: '');
+        return const SignInLaneState(SignInLaneMode.own);
       }
     } on SignInMisconfigured catch (e) {
-      return (mode: SignInMode.unavailable, error: e.message);
+      return SignInLaneState.unavailable(
+        SignInUnavailableReason.misconfigured,
+        error: e.message,
+      );
     }
+    final route = await connect.routeFor(workspaceId);
     if (!await binding.allowsConnect(workspaceId)) {
-      return (mode: SignInMode.unavailable, error: '');
+      return SignInLaneState.unavailable(
+        route.workspaceOwnApps
+            ? SignInUnavailableReason.ownAppMissing
+            : SignInUnavailableReason.laneNotOffered,
+      );
     }
-    final config = await connect.usableConfig();
+    if (route.blockedByEnvironment) {
+      return const SignInLaneState.unavailable(
+        SignInUnavailableReason.blockedByEnvironment,
+      );
+    }
+    if (route.connectUrlInvalid) {
+      return const SignInLaneState.unavailable(
+        SignInUnavailableReason.connectUrlInvalid,
+      );
+    }
+    if (!route.target.enabled) {
+      // The server on its own apps without one for this lane, or no Connect
+      // chosen at all.
+      return const SignInLaneState.unavailable(
+        SignInUnavailableReason.notConfigured,
+      );
+    }
+    final config = await connect.usableConfig(route.target);
+    if (config == null) {
+      final state = await connect.configState(route.target);
+      return SignInLaneState.unavailable(switch (state) {
+        ConnectConfigState(pendingPins: _?) =>
+          SignInUnavailableReason.connectPinsPending,
+        ConnectConfigState(error: 'hosted_unprovisioned') =>
+          SignInUnavailableReason.connectUnprovisioned,
+        _ => SignInUnavailableReason.connectUnreachable,
+      });
+    }
     final available = switch (lane) {
-      ConnectOAuthLane.github => config?.github?.acceptsNewAuthorizations,
-      ConnectOAuthLane.google => config?.google?.acceptsNewAuthorizations,
+      ConnectOAuthLane.github => config.github?.acceptsNewAuthorizations,
+      ConnectOAuthLane.google => config.google?.acceptsNewAuthorizations,
       ConnectOAuthLane.linear ||
-      ConnectOAuthLane.linearApp => config?.linear?.acceptsNewAuthorizations,
-      ConnectOAuthLane.slack => config?.slack?.acceptsNewAuthorizations,
+      ConnectOAuthLane.linearApp => config.linear?.acceptsNewAuthorizations,
+      ConnectOAuthLane.slack => config.slack?.acceptsNewAuthorizations,
     };
-    return (
-      mode: available ?? false ? SignInMode.connect : SignInMode.unavailable,
-      error: '',
-    );
+    return available ?? false
+        ? const SignInLaneState(SignInLaneMode.connect)
+        : const SignInLaneState.unavailable(
+            SignInUnavailableReason.laneNotOffered,
+          );
   }
 
   /// Starts a sign-in for [userId] on [lane].
@@ -118,7 +200,6 @@ class ProviderSignInService {
     if (binding == null) {
       throw AuthException('${lane.wire} sign-in is not available here.');
     }
-    _evict();
     final pkce = PkcePair.generate();
     final slot = await binding.slotFor(workspaceId);
     final OwnOAuthApp? own;
@@ -127,17 +208,48 @@ class ProviderSignInService {
     } on SignInMisconfigured catch (e) {
       throw AuthException(e.message);
     }
-    final SignInAttempt attempt;
-    if (own != null) {
-      if (origin.isEmpty) {
-        throw const AuthException(
-          'This server does not advertise a reachable URL, so a sign-in has '
-          'nowhere to come back to.',
-        );
-      }
-      final redirect = providerOAuthRedirectUri(origin, lane.wire);
-      final state = b64url(randomBytes(32));
-      final url = own.authorize.replace(
+    final attempt = own != null
+        ? _beginOwn(own, lane, userId, workspaceId, slot, pkce, origin)
+        : await _beginConnect(lane, userId, workspaceId, slot, pkce);
+    _attempts.add(attempt);
+    forgeAudit(ForgeAuditEvent.signinBegun, {
+      'lane': lane.wire,
+      'mode': attempt.mode.name,
+      'user_id': userId,
+      'workspace_id': workspaceId,
+      'attempt': attempt.loginId,
+      'expires_s': attempt.expiresAt.difference(_now()).inSeconds,
+    });
+    return attempt;
+  }
+
+  SignInAttempt _beginOwn(
+    OwnOAuthApp own,
+    ConnectOAuthLane lane,
+    String userId,
+    String? workspaceId,
+    String? slot,
+    PkcePair pkce,
+    String origin,
+  ) {
+    if (origin.isEmpty) {
+      throw const AuthException(
+        'This server does not advertise a reachable URL, so a sign-in has '
+        'nowhere to come back to.',
+      );
+    }
+    final redirect = providerOAuthRedirectUri(origin, lane.wire);
+    final state = b64url(randomBytes(32));
+    return SignInAttempt._(
+      loginId: newLoginId(),
+      lane: lane,
+      mode: SignInLaneMode.own,
+      userId: userId,
+      workspaceId: workspaceId,
+      slot: slot,
+      verifier: pkce.verifier,
+      expiresAt: _now().add(pendingTtl),
+      url: own.authorize.replace(
         queryParameters: {
           'client_id': own.clientId,
           'redirect_uri': redirect.toString(),
@@ -149,80 +261,11 @@ class ProviderSignInService {
             'scope': own.scopes.join(own.scopeSeparator),
           ...own.extraAuthorizeParams,
         },
-      );
-      attempt = SignInAttempt._(
-        loginId: newLoginId(),
-        lane: lane,
-        mode: SignInMode.own,
-        userId: userId,
-        workspaceId: workspaceId,
-        slot: slot,
-        verifier: pkce.verifier,
-        expiresAt: _now().add(pendingTtl),
-        url: url,
-        state: state,
-        redirectUri: redirect,
-        clientId: own.clientId,
-      );
-      _byState[state] = attempt.loginId;
-    } else {
-      final mode = await modeFor(lane, workspaceId: workspaceId);
-      if (mode.mode != SignInMode.connect) {
-        throw AuthException(
-          mode.error.isNotEmpty
-              ? mode.error
-              : '${lane.wire} sign-in is not set up on this server. Turn on '
-                    'Control Center Connect or add your own app in Settings.',
-        );
-      }
-      final config = (await connect.usableConfig())!;
-      final clientId = switch (lane) {
-        ConnectOAuthLane.github => config.github!.clientId,
-        ConnectOAuthLane.google => config.google!.clientId,
-        ConnectOAuthLane.linear ||
-        ConnectOAuthLane.linearApp => config.linear!.clientId,
-        ConnectOAuthLane.slack => config.slack!.clientId,
-      };
-      final OAuthStartResponse started;
-      try {
-        started = await connect.startOAuth(
-          lane,
-          OAuthStartRequest(
-            workspaceId: slot ?? globalWorkspaceScope,
-            codeChallenge: pkce.challenge,
-          ),
-          expectedClientId: clientId,
-        );
-      } on ConnectException catch (e) {
-        throw AuthException(
-          connectErrorMessage(e.code, ConnectErrorContext.signIn),
-        );
-      }
-      final expires = started.expiresAt.isBefore(_now().add(pendingTtl))
-          ? started.expiresAt
-          : _now().add(pendingTtl);
-      attempt = SignInAttempt._(
-        loginId: started.loginId,
-        lane: lane,
-        mode: SignInMode.connect,
-        userId: userId,
-        workspaceId: workspaceId,
-        slot: slot,
-        verifier: pkce.verifier,
-        expiresAt: expires,
-        url: started.authorizeUrl,
-        clientId: clientId,
-      );
-    }
-    if (_attempts.length >= maxPending) {
-      final oldest = _attempts.values.toList()
-        ..sort((a, b) => a.expiresAt.compareTo(b.expiresAt));
-      for (final stale in oldest.take(_attempts.length - maxPending + 1)) {
-        _drop(stale);
-      }
-    }
-    _attempts[attempt.loginId] = attempt;
-    return attempt;
+      ),
+      state: state,
+      redirectUri: redirect,
+      clientId: own.clientId,
+    );
   }
 
   /// The caller's own attempt. Another person's login id reads as unknown.
@@ -231,25 +274,65 @@ class ProviderSignInService {
     required String userId,
     String? workspaceId,
   }) {
-    final attempt = _attempts[loginId];
-    if (attempt == null ||
-        attempt.userId != userId ||
-        attempt.workspaceId != workspaceId) {
+    final attempt = lookup(
+      loginId: loginId,
+      userId: userId,
+      workspaceId: workspaceId,
+    );
+    if (attempt == null) {
       throw const AuthException('This sign-in is no longer valid.');
-    }
-    if (attempt.status == SignInStatus.pending &&
-        !_now().isBefore(attempt.expiresAt)) {
-      attempt._fail(SignInFailure.expired);
     }
     return attempt;
   }
 
-  /// Finishes a Connect sign-in with the confirmation code the approving
-  /// browser showed (typed, or carried by the deep link).
+  /// Like [status], but null for an attempt this server does not know (a
+  /// restart, an eviction, another person's or another workspace's login
+  /// id), so `oauth.status` can answer it as failed
+  /// ([unknownSignInAttemptJson]).
+  SignInAttempt? lookup({
+    required String loginId,
+    required String userId,
+    String? workspaceId,
+  }) {
+    final attempt = _attempts[loginId];
+    if (attempt == null ||
+        attempt.userId != userId ||
+        attempt.workspaceId != workspaceId) {
+      return null;
+    }
+    if (attempt.status == SignInAttemptStatus.pending &&
+        !_now().isBefore(attempt.expiresAt) &&
+        // A code that matched is being exchanged; its outcome ends it.
+        !_claiming.contains(loginId)) {
+      return _fail(attempt, SignInFailure.expired, reason: 'expired');
+    }
+    return attempt;
+  }
+
+  /// The wire shape of an attempt this server does not know: failed with
+  /// [SignInFailure.attemptUnknown], so the client stops waiting and offers
+  /// a new sign-in instead of an error. [lane] is the one the client says
+  /// it started, when it says.
+  Map<String, Object?> unknownSignInAttemptJson(
+    String loginId, {
+    ConnectOAuthLane? lane,
+  }) => {
+    'login_id': loginId,
+    'lane': ?lane?.wire,
+    'mode': SignInLaneMode.unavailable.name,
+    'url': '',
+    'expires_at': _now().toIso8601String(),
+    'status': SignInAttemptStatus.failed.wire,
+    'error': SignInFailure.attemptUnknown.wire,
+  };
+
+  /// Finishes a sign-in with the confirmation code the browser showed
+  /// (typed, or carried by the deep link), from the session that began it.
   ///
   /// A wrong code is not an exception: the attempt comes back pending with
   /// [SignInAttempt.codeError] set, or failed with
-  /// [SignInFailure.invalidCode] once the codes ran out.
+  /// [SignInFailure.invalidCode] once the codes ran out. A code typed before
+  /// the browser came back counts as wrong.
   Future<SignInAttempt> complete({
     required String loginId,
     required String confirmCode,
@@ -261,238 +344,167 @@ class ProviderSignInService {
       userId: userId,
       workspaceId: workspaceId,
     );
-    if (attempt.mode != SignInMode.connect) {
-      throw const AuthException('This sign-in finishes in the browser.');
-    }
-    if (attempt.status != SignInStatus.pending) {
+    if (attempt.status != SignInAttemptStatus.pending) {
       return attempt;
     }
     final code = normaliseConfirmCode(confirmCode);
     if (code == null) {
-      _countWrongCode(attempt);
-      return attempt;
+      return _wrongCode(attempt, 'malformed');
     }
-    attempt.codeError = null;
-    // A login claims once at Connect: a second completion while the first is
-    // in flight (the deep link and a typed code) would come back
-    // `stale_request` and mark a succeeding sign-in failed.
-    if (!_claiming.add(attempt.loginId)) {
+    // One completion at a time: a second one while the first is in flight
+    // (the deep link and a typed code) would spend the login twice.
+    if (!_claiming.add(loginId)) {
       return attempt;
     }
     try {
-      return await _claim(attempt, code);
+      final current =
+          _attempts.update(loginId, (a) => a._copy(clearCodeError: true)) ??
+          attempt;
+      return attempt.mode == SignInLaneMode.own
+          ? await _completeOwn(current, code)
+          : await _claimConnect(
+              current,
+              code,
+              deferred: attempt.codeError == SignInFailure.rateLimited,
+            );
     } finally {
-      _claiming.remove(attempt.loginId);
+      _claiming.remove(loginId);
     }
   }
 
-  Future<SignInAttempt> _claim(SignInAttempt attempt, String code) async {
-    final binding = _bindings[attempt.lane]!;
-    final Map<String, Object?> claimed;
-    try {
-      claimed = await connect.claim(
-        attempt.lane,
-        OAuthClaimRequest(
-          loginId: attempt.loginId,
-          confirmCode: code,
-          codeVerifier: attempt.verifier,
-          workspaceId: attempt.slot ?? globalWorkspaceScope,
-        ),
-      );
-    } on ConnectException catch (e) {
-      // Connect counts a wrong code against the same budget; anything that
-      // consumed the login answers `stale_request` on the retry.
-      if (e.code == ConnectErrorCode.codeMismatch) {
-        _countWrongCode(attempt);
-        return attempt;
-      }
-      attempt._fail(SignInFailure.fromConnect(e.code));
-      return attempt;
+  Future<SignInAttempt> _completeOwn(SignInAttempt attempt, String code) async {
+    if (!attempt.callbackSeen) {
+      return _wrongCode(attempt, 'browser_not_back');
     }
-    // The login is spent at Connect from here on: whatever happens, the
-    // attempt ends succeeded or failed, never pending.
-    SealedGrant? grant;
-    try {
-      final ProviderToken token;
-      switch (attempt.lane) {
-        case ConnectOAuthLane.linear || ConnectOAuthLane.linearApp:
-          // Connect relays only Linear's one-time code; this server exchanges
-          // it directly, so Connect never sees a Linear token.
-          final linear = LinearCodeGrant.fromJson(claimed);
-          token = await _exchangeCode(
-            lane: attempt.lane,
-            tokenEndpoint: linearTokenEndpoint,
-            clientId: attempt.clientId,
-            clientSecret: '',
-            code: linear.code,
-            redirectUri: Uri.parse(linear.redirectUri),
-            verifier: attempt.verifier,
-            expectedScopes: linearConnectScopes,
-            binding: binding,
-          );
-        default:
-          grant = SealedGrant.fromJson(claimed);
-          final installId = (await connect.identity())?.installId ?? '';
-          final choice = await connect.settings.choice();
-          token = ProviderToken(
-            accessToken: grant.accessToken,
-            expiresAt: grant.expiresAt,
-            source: ForgeCredentialSource.connect,
-            accountLogin: grant.accountLogin,
-            accountId: grant.accountId,
-            seal: grant.seal,
-            sealInstallId: installId,
-            connectOrigin: canonicalConnectBaseUrl(choice.baseUrl),
-            appId: grant.appId,
-          );
-      }
-      await _store(
-        attempt,
-        binding,
-        SignInResult(
-          lane: attempt.lane,
-          userId: attempt.userId,
-          workspaceId: attempt.workspaceId,
-          slot: attempt.slot,
-          token: token,
-          grant: grant,
-        ),
-      );
-    } on FormatException {
-      attempt._fail(SignInFailure.providerUnavailable);
-    } on _ExchangeRefused catch (e) {
-      attempt._fail(e.code);
-    } on _StoreFailed {
-      // A grant this server could not keep must not stay live upstream: a
-      // Slack install holds the team's single bot token.
-      final seal = grant?.seal ?? '';
-      if (attempt.lane == ConnectOAuthLane.slack && seal.isNotEmpty) {
-        try {
-          await connect.slackRevoke(
-            SealRequest(
-              seal: seal,
-              workspaceId: attempt.slot ?? globalWorkspaceScope,
-            ),
-          );
-        } on ConnectException catch (e) {
-          CcHostLog.warning(
-            'sign-in: revoking an unstored Slack grant failed (${e.code})',
-          );
-        }
-      }
-      attempt._fail(SignInFailure.storeFailed);
-    } on Object catch (e) {
-      CcHostLog.warning('sign-in: ${attempt.lane.wire} claim failed ($e)');
-      attempt._fail(SignInFailure.providerUnavailable);
-    }
-    return attempt;
-  }
-
-  /// Stores [result] and marks [attempt] succeeded; a store that throws is
-  /// [_StoreFailed].
-  Future<void> _store(
-    SignInAttempt attempt,
-    SignInLaneBinding binding,
-    SignInResult result,
-  ) async {
-    try {
-      await binding.store(result);
-    } on Object catch (e, st) {
-      CcHostLog.error(
-        'sign-in: storing a ${attempt.lane.wire} grant failed',
-        e,
-        st,
-      );
-      throw const _StoreFailed();
-    }
-    attempt
-      ..status = SignInStatus.succeeded
-      ..account = result.token.accountLogin;
-  }
-
-  /// Completes an own-app sign-in from `/oauth/<lane>/callback`.
-  ///
-  /// Returns the attempt for the page the person is looking at. Throws
-  /// [AuthException] with a reason worth reading.
-  Future<SignInAttempt> handleCallback(Uri requestUri) async {
-    final query = requestUri.queryParameters;
-    final state = query['state'];
-    // Single use: a replayed callback (history, a shared link, a logged
-    // referrer) mints nothing.
-    final loginId = state == null ? null : _byState.remove(state);
-    final attempt = loginId == null ? null : _attempts[loginId];
-    if (attempt == null || attempt.mode != SignInMode.own) {
-      throw const AuthException('This sign-in link is no longer valid.');
-    }
-    final segments = requestUri.pathSegments;
-    if (segments.length != 3 || segments[1] != attempt.lane.wire) {
-      attempt._fail(SignInFailure.invalidRequest);
-      throw const AuthException('This sign-in link is no longer valid.');
-    }
-    if (!_now().isBefore(attempt.expiresAt)) {
-      attempt._fail(SignInFailure.expired);
-      throw const AuthException('This sign-in took too long — try again.');
-    }
-    final error = query['error'];
-    final code = query['code'];
-    if (error != null || code == null || code.isEmpty) {
-      attempt._fail(SignInFailure.accessDenied);
-      throw const AuthException('The sign-in was cancelled or refused.');
+    if (!_sameCode(code, attempt.confirmCode)) {
+      return _wrongCode(attempt, 'mismatch');
     }
     final binding = _bindings[attempt.lane]!;
     final OwnOAuthApp? own;
     try {
       own = await binding.ownApp(attempt.workspaceId);
     } on SignInMisconfigured catch (e) {
-      attempt._fail(SignInFailure.misconfigured);
-      throw AuthException(e.message);
+      return _fail(
+        attempt,
+        SignInFailure.misconfigured,
+        message: e.message,
+        reason: 'misconfigured',
+      );
     }
     if (own == null || own.clientId != attempt.clientId) {
-      attempt._fail(SignInFailure.misconfigured);
-      throw const AuthException(
-        'The app credentials changed while you were signing in.',
+      return _fail(
+        attempt,
+        SignInFailure.misconfigured,
+        message: 'The app credentials changed while you were signing in.',
+        reason: 'app_changed',
       );
     }
     try {
-      final token = await _exchangeCode(
+      final token = await _oauth.exchange(
         lane: attempt.lane,
         tokenEndpoint: own.token,
         clientId: own.clientId,
         clientSecret: own.clientSecret,
-        code: code,
+        code: attempt.providerCode,
         redirectUri: attempt.redirectUri!,
         verifier: attempt.verifier,
         expectedScopes: own.scopes,
         binding: binding,
       );
-      await _store(
-        attempt,
-        binding,
-        SignInResult(
-          lane: attempt.lane,
-          userId: attempt.userId,
-          workspaceId: attempt.workspaceId,
-          slot: attempt.slot,
-          token: token,
-        ),
-      );
-      return attempt;
+      return await _finish(attempt, binding, _resultOf(attempt, token));
     } on _ExchangeRefused catch (e) {
-      attempt._fail(e.code);
-      throw AuthException(e.message);
-    } on _StoreFailed {
-      attempt._fail(SignInFailure.storeFailed);
-      throw const AuthException(
-        'The sign-in worked, but this server could not save it. Try again.',
+      return _fail(
+        attempt,
+        e.code,
+        message: e.message,
+        reason: e.reason,
+        requestId: e.requestId,
       );
     }
   }
 
+  /// Records the provider's redirect to `/oauth/<lane>/callback` for an
+  /// own-app attempt and returns what the page shows. Nothing is exchanged
+  /// or stored here: the request is unauthenticated, and only the session
+  /// that began the attempt may finish it with the code this returns.
+  ///
+  /// Throws [AuthException] with a fixed message (never anything from the
+  /// request).
+  SignInCallbackPage handleCallback(Uri requestUri) {
+    final query = requestUri.queryParameters;
+    final state = query['state'];
+    // Single use: a replayed callback (history, a shared link, a logged
+    // referrer) finds nothing.
+    final loginId = state == null || state.length > 128
+        ? null
+        : _attempts.takeState(state);
+    final attempt = loginId == null ? null : _attempts[loginId];
+    if (attempt == null ||
+        attempt.mode != SignInLaneMode.own ||
+        attempt.status != SignInAttemptStatus.pending ||
+        attempt.callbackSeen) {
+      forgeAudit(ForgeAuditEvent.signinCallbackRefused, {
+        'reason': 'unknown_state',
+      });
+      throw const AuthException('This sign-in link is no longer valid.');
+    }
+    final segments = requestUri.pathSegments;
+    if (segments.length != 3 || segments[1] != attempt.lane.wire) {
+      _refuseCallback(attempt, SignInFailure.invalidRequest, 'lane_mismatch');
+      throw const AuthException('This sign-in link is no longer valid.');
+    }
+    if (!_now().isBefore(attempt.expiresAt)) {
+      _refuseCallback(attempt, SignInFailure.expired, 'expired');
+      throw const AuthException('This sign-in took too long. Try again.');
+    }
+    final error = query['error'];
+    final code = query['code'];
+    if (error != null || code == null || code.isEmpty) {
+      final shaped = _OwnOAuthClient._oauthError(error);
+      _refuseCallback(
+        attempt,
+        SignInFailure.accessDenied,
+        shaped == null ? 'no_code' : 'provider_error:$shaped',
+      );
+      throw const AuthException('The sign-in was cancelled or refused.');
+    }
+    if (code.length > 2048) {
+      _refuseCallback(attempt, SignInFailure.invalidRequest, 'code_too_long');
+      throw const AuthException('This sign-in link is no longer valid.');
+    }
+    final confirm = newConfirmCode();
+    _attempts.update(
+      attempt.loginId,
+      (a) => a._copy(providerCode: code, confirmCode: confirm),
+    );
+    return (
+      loginId: attempt.loginId,
+      confirmCode: confirm,
+      link: oauthDoneDeepLink(loginId: attempt.loginId, code: confirm),
+    );
+  }
+
+  void _refuseCallback(
+    SignInAttempt attempt,
+    SignInFailure failure,
+    String reason,
+  ) {
+    forgeAudit(ForgeAuditEvent.signinCallbackRefused, {
+      'lane': attempt.lane.wire,
+      'user_id': attempt.userId,
+      'attempt': attempt.loginId,
+      'reason': reason,
+    });
+    _fail(attempt, failure, reason: reason);
+  }
+
   /// Renews an expired credential for [lane].
   ///
-  /// Sealed credentials refresh through the Connect that sealed them; own
-  /// ones against the provider. Only a refused grant is [RefreshRejected]:
-  /// everything transient is [RefreshUnavailable].
+  /// Sealed credentials refresh through the Connect that sealed them, and
+  /// only while that is still the Connect [workspaceId] (the credential's
+  /// slot; null for the server-wide one) routes through; own ones against
+  /// the provider. Only a refused grant is [RefreshRejected]: everything
+  /// transient is [RefreshUnavailable].
   Future<RefreshOutcome> refresh(
     ConnectOAuthLane lane,
     ProviderToken expired, {
@@ -500,56 +512,35 @@ class ProviderSignInService {
     String? workspaceId,
   }) async {
     if (expired.isSealed) {
-      switch (await connect.sealStanding(
-        connectOrigin: expired.connectOrigin,
-        sealInstallId: expired.sealInstallId,
-      )) {
-        case SealStanding.parked:
-          // Connect off or pointed elsewhere: the grant is fine, only
-          // unreachable from here until the setting comes back.
-          return const RefreshUnavailable();
-        case SealStanding.dead:
-          // Sealed for another install identity: Connect can never open it.
-          return const RefreshRejected();
-        case SealStanding.usable:
-          break;
-      }
-      try {
-        final grant = await connect.refresh(
-          lane.provider,
-          SealRequest(
-            seal: expired.seal,
-            workspaceId: slot ?? globalWorkspaceScope,
-          ),
-        );
-        return Refreshed(
-          expired.copyWith(
-            accessToken: grant.accessToken,
-            expiresAt: grant.expiresAt,
-            seal: grant.seal.isEmpty ? expired.seal : grant.seal,
-            accountLogin: grant.accountLogin.isEmpty
-                ? expired.accountLogin
-                : grant.accountLogin,
-          ),
-        );
-      } on ConnectException catch (e) {
-        return e.code.clearsGrant
-            ? const RefreshRejected()
-            : const RefreshUnavailable();
-      }
+      return _refreshSealed(
+        lane,
+        expired,
+        slot: slot,
+        workspaceId: workspaceId,
+      );
     }
+    RefreshOutcome refused(RefreshOutcome outcome, String reason) {
+      forgeAudit(
+        outcome is RefreshRejected
+            ? ForgeAuditEvent.grantRefreshRejected
+            : ForgeAuditEvent.grantRefreshUnavailable,
+        {'lane': lane.wire, 'path': 'own', 'reason': reason},
+      );
+      return outcome;
+    }
+
     if (!expired.canRefresh) {
-      return const RefreshRejected();
+      return refused(const RefreshRejected(), 'no_refresh_token');
     }
     final binding = _bindings[lane];
     if (binding == null) {
-      return const RefreshUnavailable();
+      return refused(const RefreshUnavailable(), 'lane_not_registered');
     }
     OwnOAuthApp? own;
     try {
       own = await binding.ownApp(workspaceId);
     } on SignInMisconfigured {
-      return const RefreshUnavailable();
+      return refused(const RefreshUnavailable(), 'misconfigured');
     }
     var tokenEndpoint = own?.token;
     var clientId = own?.clientId ?? '';
@@ -564,243 +555,239 @@ class ProviderSignInService {
         // No own app answers here, so only Connect's client may renew: a
         // grant of an app no longer in force (removed, or a server app left
         // inactive by a Connect choice) must not keep refreshing.
-        final connectClientId =
-            (await connect.usableConfig())?.linear?.clientId;
+        final connectClientId = (await connect.usableConfig(
+          await connect.targetFor(workspaceId),
+        ))?.linear?.clientId;
         if (connectClientId == null) {
-          return const RefreshUnavailable();
+          return refused(const RefreshUnavailable(), 'connect_unavailable');
         }
         if (connectClientId != clientId) {
-          return const RefreshRejected();
+          return refused(const RefreshRejected(), 'app_changed');
         }
       }
     }
     if (tokenEndpoint == null || clientId.isEmpty) {
       // The own app that issued this grant is gone; nothing can renew it.
-      return const RefreshRejected();
+      return refused(const RefreshRejected(), 'app_removed');
     }
     if (own != null &&
         expired.appId.isNotEmpty &&
         own.clientId != expired.appId) {
       // The app was replaced (the server's, or the workspace's own); this
       // grant belongs to the old one and must not refresh under another.
-      return const RefreshRejected();
+      return refused(const RefreshRejected(), 'app_changed');
     }
-    try {
-      final decoded = await _postToken(tokenEndpoint, {
-        'grant_type': 'refresh_token',
-        'refresh_token': expired.refreshToken,
-        'client_id': clientId,
-        if (clientSecret.isNotEmpty) 'client_secret': clientSecret,
-      });
-      final error = decoded['error'];
-      if (error == 'invalid_grant') {
-        return const RefreshRejected();
-      }
-      if (error != null) {
-        return const RefreshUnavailable();
-      }
-      final fresh = _tokenFrom(decoded, appId: clientId);
-      if (fresh == null) {
-        return const RefreshUnavailable();
-      }
-      return Refreshed(
-        fresh.copyWith(
-          refreshToken: fresh.refreshToken.isEmpty
-              ? expired.refreshToken
-              : fresh.refreshToken,
-          refreshExpiresAt: fresh.refreshExpiresAt ?? expired.refreshExpiresAt,
-          accountLogin: expired.accountLogin,
-          accountId: expired.accountId,
-        ),
-      );
-    } on Object catch (e) {
-      CcHostLog.warning('sign-in: ${lane.wire} refresh unavailable ($e)');
-      return const RefreshUnavailable();
-    }
+    return _oauth.refresh(
+      lane,
+      expired,
+      tokenEndpoint: tokenEndpoint,
+      clientId: clientId,
+      clientSecret: clientSecret,
+    );
   }
 
-  /// Linear's token endpoint (public PKCE clients, own or Connect's).
-  static final Uri linearTokenEndpoint = Uri.parse(
-    'https://api.linear.app/oauth/token',
+  /// Stores a finished sign-in once nothing stands against it: the provider
+  /// account is not another person's here, and the attempt is still the
+  /// caller's to finish. A grant this server does not keep is revoked.
+  Future<SignInAttempt> _finish(
+    SignInAttempt attempt,
+    SignInLaneBinding binding,
+    SignInResult result,
+  ) async {
+    final token = result.token;
+    if (token.accountId.isNotEmpty) {
+      final others = (await binding.accountHolders(token.accountId))
+        ..remove(attempt.userId);
+      if (others.isNotEmpty) {
+        forgeAudit(ForgeAuditEvent.signinAccountAlreadyBound, {
+          'lane': attempt.lane.wire,
+          'user_id': attempt.userId,
+          'attempt': attempt.loginId,
+        });
+        await _revokeUnkept(attempt, binding, result, 'account_already_bound');
+        return _fail(
+          attempt,
+          SignInFailure.accountAlreadyBound,
+          message:
+              'This account is already connected to another person on this '
+              'server. An account can act for one person only.',
+          reason: 'account_already_bound',
+        );
+      }
+    }
+    if (_attempts[attempt.loginId]?.status != SignInAttemptStatus.pending) {
+      // Ended while the grant was on its way: nobody will use it.
+      await _revokeUnkept(attempt, binding, result, 'attempt_ended');
+      return _attempts[attempt.loginId] ?? attempt;
+    }
+    try {
+      await binding.store(result);
+    } on Object catch (e) {
+      await _revokeUnkept(attempt, binding, result, 'store_failed');
+      return _fail(
+        attempt,
+        SignInFailure.storeFailed,
+        reason: 'store_failed:${errorKindOf(e)}',
+      );
+    }
+    final done = _attempts.update(
+      attempt.loginId,
+      (a) => a._succeeded(token.accountLogin),
+    );
+    forgeAudit(ForgeAuditEvent.signinCompleted, {
+      'lane': attempt.lane.wire,
+      'mode': attempt.mode.name,
+      'user_id': attempt.userId,
+      'workspace_id': attempt.workspaceId,
+      'slot': result.slot == null ? 'global' : 'workspace',
+      'attempt': attempt.loginId,
+      'account_id': token.accountId,
+    }, token: token.accessToken);
+    return done ?? _attempts[attempt.loginId] ?? attempt;
+  }
+
+  SignInResult _resultOf(
+    SignInAttempt attempt,
+    ProviderToken token, {
+    SealedGrant? grant,
+  }) => SignInResult(
+    lane: attempt.lane,
+    userId: attempt.userId,
+    workspaceId: attempt.workspaceId,
+    slot: attempt.slot,
+    token: token,
+    grant: grant,
+    target: attempt.target,
   );
 
-  Future<ProviderToken> _exchangeCode({
-    required ConnectOAuthLane lane,
-    required Uri tokenEndpoint,
-    required String clientId,
-    required String clientSecret,
-    required String code,
-    required Uri redirectUri,
-    required String verifier,
-    required List<String> expectedScopes,
-    required SignInLaneBinding binding,
-  }) async {
-    final Map<String, Object?> decoded;
-    try {
-      decoded = await _postToken(tokenEndpoint, {
-        'grant_type': 'authorization_code',
-        'code': code,
-        'redirect_uri': redirectUri.toString(),
-        'code_verifier': verifier,
-        'client_id': clientId,
-        if (clientSecret.isNotEmpty) 'client_secret': clientSecret,
-      });
-    } on Object {
-      throw const _ExchangeRefused(
-        SignInFailure.providerUnavailable,
-        'The provider could not be reached. Try again.',
-      );
-    }
-    final error = decoded['error'];
-    if (error != null) {
-      throw _ExchangeRefused(
-        SignInFailure.exchangeFailed,
-        'The provider refused the sign-in ($error).',
-      );
-    }
-    final token = _tokenFrom(decoded, appId: clientId);
-    if (token == null) {
-      throw const _ExchangeRefused(
-        SignInFailure.exchangeFailed,
-        'The provider returned no token.',
-      );
-    }
-    if (expectedScopes.isNotEmpty) {
-      final raw = decoded['scope'];
-      final granted = raw is List
-          ? [for (final s in raw) '$s']
-          : splitScopes(raw is String ? raw : null);
-      if (!scopesExactlyMatch(granted, expectedScopes)) {
-        throw const _ExchangeRefused(
-          SignInFailure.scopeMismatch,
-          'The provider granted different access than Control Center asks '
-          'for, so the sign-in was refused. Try again and approve the '
-          'requested access as shown.',
-        );
-      }
-    }
-    if (lane == ConnectOAuthLane.github) {
-      // A GitHub App user token must expire; a non-expiring one would be a
-      // standing credential nobody can rotate.
-      if (!token.accessToken.startsWith('ghu_') || token.expiresAt == null) {
-        throw const _ExchangeRefused(
-          SignInFailure.exchangeFailed,
-          'This GitHub App issues tokens that never expire. Turn on '
-          '"Expire user authorization tokens" in the app settings.',
-        );
-      }
-    }
-    final SignInIdentity who;
-    try {
-      who = await binding.identify(token.accessToken);
-    } on Object {
-      throw const _ExchangeRefused(
-        SignInFailure.providerUnavailable,
-        'The provider did not say who signed in. Try again.',
-      );
-    }
-    if (who.id.isEmpty) {
-      throw const _ExchangeRefused(
-        SignInFailure.exchangeFailed,
-        'The provider did not say who signed in.',
-      );
-    }
-    return token.copyWith(accountId: who.id, accountLogin: who.login);
-  }
-
-  ProviderToken? _tokenFrom(Map<String, Object?> decoded, {String appId = ''}) {
-    final access = decoded['access_token'];
-    if (access is! String || access.isEmpty) {
-      return null;
-    }
-    final expiresIn = (decoded['expires_in'] as num?)?.toInt();
-    final refreshExpiresIn = (decoded['refresh_token_expires_in'] as num?)
-        ?.toInt();
-    final refresh = decoded['refresh_token'];
-    return ProviderToken(
-      accessToken: access,
-      refreshToken: refresh is String ? refresh : '',
-      expiresAt: expiresIn == null
-          ? null
-          : _now().add(Duration(seconds: expiresIn)),
-      refreshExpiresAt: refreshExpiresIn == null
-          ? null
-          : _now().add(Duration(seconds: refreshExpiresIn)),
-      source: ForgeCredentialSource.oauth,
-      appId: appId,
-      issuedAt: _now(),
-    );
-  }
-
-  Future<Map<String, Object?>> _postToken(
-    Uri url,
-    Map<String, String> body,
+  /// Revokes a grant this server obtained but does not keep, best effort:
+  /// a sealed one at its Connect, an own one with the app that issued it.
+  Future<void> _revokeUnkept(
+    SignInAttempt attempt,
+    SignInLaneBinding binding,
+    SignInResult result,
+    String why,
   ) async {
-    final request = await _http.postUrl(url);
-    // A 307/308 would re-POST the code and the client secret elsewhere.
-    request.followRedirects = false;
-    request.headers.contentType = ContentType(
-      'application',
-      'x-www-form-urlencoded',
-    );
-    request.headers.set(HttpHeaders.acceptHeader, 'application/json');
-    request.write(Uri(queryParameters: body).query);
-    final response = await request.close().timeout(_httpTimeout);
-    final raw = await readBoundedText(
-      response,
-      maxBytes: _maxResponseBytes,
-      timeout: _httpTimeout,
-    );
-    Object? decoded;
+    final token = result.token;
     try {
-      decoded = jsonDecode(raw);
-    } on FormatException {
-      decoded = null;
-    }
-    if (decoded is Map<String, Object?>) {
-      if (response.statusCode >= 500) {
-        throw HttpException('HTTP ${response.statusCode}');
+      if (!token.isSealed) {
+        await binding.revokeOwnGrant(token, result.slot);
+        return;
       }
-      return decoded;
-    }
-    throw HttpException('HTTP ${response.statusCode}');
-  }
-
-  void _countWrongCode(SignInAttempt attempt) {
-    attempt._wrongCodes++;
-    if (attempt._wrongCodes >= maxConfirmAttempts) {
-      attempt._fail(SignInFailure.invalidCode);
-    } else {
-      attempt.codeError = SignInFailure.codeMismatch;
-    }
-  }
-
-  void _drop(SignInAttempt attempt) {
-    _attempts.remove(attempt.loginId);
-    if (attempt.state.isNotEmpty) {
-      _byState.remove(attempt.state);
-    }
-  }
-
-  void _evict() {
-    // Keep finished attempts until their expiry so a client cannot miss the
-    // outcome; drop everything past it.
-    final now = _now();
-    for (final attempt in _attempts.values.toList()) {
-      if (now.isAfter(attempt.expiresAt.add(const Duration(minutes: 5)))) {
-        _drop(attempt);
+      final request = SealRequest(
+        seal: token.seal,
+        workspaceId: result.slot ?? globalWorkspaceScope,
+      );
+      switch (attempt.lane) {
+        case ConnectOAuthLane.github:
+          await connect.githubRevoke(
+            result.target,
+            GitHubRevokeRequest(
+              workspaceId: request.workspaceId,
+              seal: token.seal,
+            ),
+          );
+        case ConnectOAuthLane.slack:
+          await connect.slackRevoke(result.target, request);
+        case ConnectOAuthLane.google ||
+            ConnectOAuthLane.linear ||
+            ConnectOAuthLane.linearApp:
+          forgeAudit(ForgeAuditEvent.grantRevokeSkipped, {
+            'lane': attempt.lane.wire,
+            'reason': 'no_revoke_endpoint',
+            'why': why,
+          });
       }
+    } on ConnectException catch (e) {
+      forgeAudit(ForgeAuditEvent.grantRevokeSkipped, {
+        'lane': attempt.lane.wire,
+        'reason': 'connect:${e.code.wire}',
+        'why': why,
+      });
+    } on Object catch (e) {
+      forgeAudit(ForgeAuditEvent.grantRevokeSkipped, {
+        'lane': attempt.lane.wire,
+        'reason': 'revoke_failed:${errorKindOf(e)}',
+        'why': why,
+      });
     }
+  }
+
+  SignInAttempt _wrongCode(SignInAttempt attempt, String reason) {
+    final next =
+        _attempts.update(
+          attempt.loginId,
+          (a) => a._wrongCode(maxConfirmAttempts),
+        ) ??
+        _attempts[attempt.loginId] ??
+        attempt;
+    forgeAudit(ForgeAuditEvent.signinCodeRejected, {
+      'lane': attempt.lane.wire,
+      'user_id': attempt.userId,
+      'attempt': attempt.loginId,
+      'tries': next.wrongCodes,
+      'reason': reason,
+    });
+    if (next.status == SignInAttemptStatus.failed) {
+      forgeAudit(ForgeAuditEvent.signinFailed, {
+        'lane': attempt.lane.wire,
+        'user_id': attempt.userId,
+        'attempt': attempt.loginId,
+        'reason': 'invalid_code',
+      });
+    }
+    return next;
+  }
+
+  /// Ends [attempt] as failed (if it is still pending) and logs why.
+  SignInAttempt _fail(
+    SignInAttempt attempt,
+    SignInFailure failure, {
+    required String reason,
+    String message = '',
+    String requestId = '',
+  }) {
+    final next = _attempts.update(
+      attempt.loginId,
+      (a) => a._failed(failure, message: message),
+    );
+    if (next != null) {
+      forgeAudit(ForgeAuditEvent.signinFailed, {
+        'lane': attempt.lane.wire,
+        'mode': attempt.mode.name,
+        'user_id': attempt.userId,
+        'workspace_id': attempt.workspaceId,
+        'attempt': attempt.loginId,
+        'error': failure.wire,
+        'reason': reason,
+        'upstream_request_id': requestId.isEmpty ? null : requestId,
+      });
+    }
+    return next ?? _attempts[attempt.loginId] ?? attempt;
+  }
+
+  /// Compares two confirmation codes in time independent of where they
+  /// differ.
+  static bool _sameCode(String a, String b) {
+    if (a.isEmpty || a.length != b.length) {
+      return false;
+    }
+    var diff = 0;
+    for (var i = 0; i < a.length; i++) {
+      diff |= a.codeUnitAt(i) ^ b.codeUnitAt(i);
+    }
+    return diff == 0;
   }
 }
 
-final class _ExchangeRefused implements Exception {
-  const _ExchangeRefused(this.code, this.message);
-
-  final SignInFailure code;
-  final String message;
-}
-
-final class _StoreFailed implements Exception {
-  const _StoreFailed();
-}
+/// A closed, log-safe name for what kind of error [e] is: never its message,
+/// which may quote a provider body or a credential.
+String errorKindOf(Object e) => switch (e) {
+  TimeoutException() => 'timeout',
+  SocketException() || HttpException() => 'network',
+  FileSystemException() => 'filesystem',
+  FormatException() => 'format',
+  AuthException() => 'refused',
+  ConnectException(:final code) => 'connect:${code.wire}',
+  _ => 'error',
+};

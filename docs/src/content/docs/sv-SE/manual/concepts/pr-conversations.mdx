@@ -2,13 +2,13 @@
 title: PR-samtal
 description: Hur en GitHub-PR-kommentar blir en agenttur utan webhook, vad som auktoriserar avsändaren och vem varje sida av samtalet tillskrivs.
 slug: sv-SE/handbok/koncept/pr-samtal
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 En pull request är redan platsen där samtalet om kod äger rum. PR-samtal gör den
 till en yta i en Control Center-arbetsyta, på samma sätt som en
 [chattbrygga](/sv-SE/handbok/koncept/chattbryggor/) gör Slack till en: @-nämn
-`@usectrl` (eller boten för arbetsytans GitHub-app) i en PR, svara i dess
+`@usectrl` i en PR, svara i dess
 granskningstrådar, eller lägg till etiketten `ai-review`, och arbetet sker i
 PR:ens granskningsyta — under samma tillskrivning och samma räcken som allt som
 skrivs i appen. En kommentar och en etikett kontrolleras på samma sätt: utifrån
@@ -25,7 +25,7 @@ och **vem varje sida tillskrivs**.
 GitHubs enda push-kanal för en app är en webhook, och en webhook kräver en
 inkommande URL — det enda som den här ytan medvetet aldrig behöver. Så
 upptäckten sker genom ett svep: en aliasbaserad sökning per appinstallation ber
-GitHub om PR:er som nämner boten (eller dess korta slug) och om öppna PR:er som
+GitHub om PR:er som nämner `@usectrl` och om öppna PR:er som
 bär granskningsetiketten, PR:er som redan har en granskningsyta får sina
 kommentarstrådar lästa, och allting jämförs via kommentars-id mot vad som sågs i
 förra svepet. En egen app sveper varje minut över högst 25 PR:er. Via Connect
@@ -72,8 +72,8 @@ ingenting publiceras:
 - **En inloggad medlem.** Kontot måste tillhöra en medlem i _den här_ arbetsytan
   som har loggat in på GitHub på den här servern
 - **En roll med skrivrätt.** `viewer` och `guest` kan inte starta arbete
-- **Push-åtkomst.** Svar använder en `bot`-token som är begränsad till den
-  medlemmens åtkomst till repot. Om servern inte kan utfärda en går den inte
+- **Push-åtkomst.** Svar använder en token för ett enda repo, begränsad till den
+  medlemmens åtkomst till det. Om servern inte kan utfärda en går den inte
   vidare
 
 Varje kontroll körs före all bekräftelse, så en främling får varken reaktion
@@ -95,15 +95,17 @@ Varje sida av samtalet bär en egen identitet, och skillnaden är själva
 funktionen:
 
 - **På GitHub är svaret automatisering för din räkning.** Varje svar går via en
-  `bot`-token för just det repot, begränsad till den frågande medlemmens
-  åtkomst. Med en egen app är författaren appens `[bot]`-konto. Via Connect är en
-  token för den delade appen en användartoken, så svaret skrivs av den frågande
-  medlemmens konto, som agerar genom appen. Hur som helst börjar varje svar med
+  token för just det repot, begränsad till den frågande medlemmens åtkomst, och
+  skrivs av appens `[bot]`-konto. Ett undantag: på den delade Control Center
+  Connect-appen publicerar boten bara i granskningstrådar när Connect-operatören
+  har listat installationen, så ett svar i en granskningstråd skrivs annars av den
+  frågande medlemmens egna konto. Hur som helst börjar varje svar med
   `**Control Center** (for @login):`, som talar om vem som frågade och samtidigt
-  fungerar som loopskydd.
+  fungerar som loopskydd. @-omnämnanden i agentens ord görs verkningslösa, så att ett
+  svar aldrig meddelar en användare eller ett team.
 - **I ytan är frågan din.** Meddelandet tillskrivs den medlem som avsändaren
-  matchades till, och agentkörningen utförs på deras vägnar: commits anger dem
-  som medförfattare, och ytans autonomi-inställning och åtgärdsräcken gäller
+  matchades till, och agentkörningen utförs på deras vägnar: dess commits är
+  deras egna, och ytans autonomi-inställning och åtgärdsräcken gäller
   precis som för ett meddelande som skrivs i appen. Skrivningar till kodvärden
   från körningen använder token för ett enda repo, begränsade av den medlemmen,
   aldrig medlemmens inloggning överlämnad i sin helhet.
@@ -112,23 +114,16 @@ Att publicera granskningsfynd tillbaka till GitHub är fortfarande en persons
 beslut, fattat i Control Center. En nämning kan _starta_ en granskning; bara en
 människa publicerar en.
 
-## Loopskyddet och kortnamnet
+## Loopskyddet
 
 Allt som skrivits av ett botkonto kastas innan någon grind körs — vårt
 specifikt, och varje `[bot]`-suffix, så att en annan apps granskningsbot inte
 heller kan väcka vår — och likaså varje kommentar som börjar med prefixet
-`**Control Center** (for @`, eftersom ett svar via Connect skrivs av en persons
+`**Control Center** (for @`, eftersom ett svar i en granskningstråd via Connect kan skrivas av en persons
 konto. Utan detta skulle svaren komma in som nya kommentarer och utlösa bryggan
 om och om igen för alltid.
 
-Suffixet `[bot]` är också anledningen till att kortformen finns. GitHub låser
-ett appkontos inloggning till `<slug>[bot]`, erbjuder ingen autokomplettering
-för den och matchar aldrig `@slug` till appen — så att acceptera den bara slugen
-är _vår_ matchares beslut, och att upptäcka den kräver ett sökspår över rå
-kommentars-**text** i stället för GitHubs nämningsindex. Kostnaden sägs rakt ut
-i stället för att slätas över: en människa som delar appens slug adresserar
-boten vid varje kortformsnämning av sig själv. Särpräglade appnamn gör
-kollisionen hypotetisk.
+Bara `@usectrl` startar arbete. Appens egna inloggning (`<slug>[bot]`) och den blotta slugen adresserar ingenting: GitHub erbjuder ingen autokomplettering för ett appkonto, och en blott slug kan tillhöra en mänsklig användare.
 
 ## Vad som medvetet inte erbjuds
 

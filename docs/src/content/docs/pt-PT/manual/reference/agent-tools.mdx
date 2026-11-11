@@ -2,7 +2,7 @@
 title: Ferramentas de agente integradas
 description: A superfície de ferramentas que o harness integrado dá a um agente — servidor de linguagem, pesquisa estrutural, depurador, kernels e controlo de workers — com cada operação e os respetivos argumentos.
 slug: pt-PT/manual/referencia/ferramentas-de-agente
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Estas são as ferramentas **ligadas ao servidor** que o runtime de agente integrado regista diretamente — servidor de linguagem, pesquisa estrutural, depurador, kernels, perguntas e controlo de workers — por oposição às [ferramentas MCP](/pt-PT/manual/referencia/ferramentas-mcp/) que interliga e às ferramentas genéricas de ficheiros, pesquisa e shell do runtime do harness. Não estão no registo MCP: um cliente MCP externo não as verá, porque cada uma está ligada a um recurso vivo do lado do servidor — um processo de servidor de linguagem, um adaptador de depuração, um interpretador — que pertence a uma execução.
@@ -24,6 +24,8 @@ Cada ferramenta declara um nível, e o nível decide **que superfícies a veem**
 ## `lsp` — consultas ao servidor de linguagem
 
 Registada quando a execução tem um supervisor de servidor de linguagem e um diretório de trabalho. Se um servidor consegue mesmo responder é detetado no momento da chamada, como uma **interseção**: tem de existir um marcador de raiz *e* o binário do servidor tem de resolver. Qualquer um deles sozinho significa que nenhum servidor arranca — o `status` di-lo — em vez de uma suposição silenciosa.
+
+Os servidores vêm apenas da tabela incorporada; um `lsp.json` do repositório não é lido. Numa execução em sandbox, cada execução tem a sua própria sessão de servidor de linguagem, pelo que os servidores arrancam de novo a cada execução. Os binários locais do projeto (`node_modules/.bin`) são usados apenas quando a execução está em sandbox, e a raiz do projeto nunca resolve acima do diretório de trabalho da execução.
 
 As posições são indicadas por `line` mais uma subcadeia `symbol`, nunca por coluna. Um modelo a quem se pede uma coluna adivinha, e uma suposição errada resolve para um símbolo diferente na mesma linha — uma resposta que parece certa e é sobre outra coisa. Omitir `symbol` numa ação de navegação é um erro, não uma suposição da primeira coluna.
 
@@ -117,7 +119,7 @@ Cada ficheiro é comparado com o conteúdo capturado no momento da preparação,
 
 Registada quando a execução tem um supervisor de sessão de depuração, um diretório de trabalho e um id de conversa. Se um adaptador consegue mesmo arrancar é detetado no momento da chamada, pela mesma regra de interseção do servidor de linguagem (marcador de raiz *e* binário). Nível `exec`; não é seguro em paralelo (uma sessão é estado entre chamadas, pelo que um `continue` a ultrapassar um `stack` leria um frame que já se moveu).
 
-Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` é recusado em vez de substituir silenciosamente o primeiro.
+Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` é recusado em vez de substituir silenciosamente o primeiro. Numa execução em sandbox, a sessão mantém a sua sandbox entre turnos até terminar, por isso durante no máximo esses 30 minutos.
 
 | Op            | Argumentos                    | Notas                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` �
 | `status`      | —                             | Se há uma sessão a correr, e onde parou        |
 | `breakpoints` | `file`, `lines[]`             | Um `lines` vazio limpa o ficheiro. Podem ser definidos **antes** de iniciar |
 | `launch`      | `program`, `args[]`           | Inicia o programa parado nos seus pontos de interrupção |
-| `attach`      | `port`                        | Liga-se a um programa em depuração já a correr |
+| `attach`      | `port`                        | Liga-se a um programa em depuração já a correr numa das portas reencaminhadas da própria execução; qualquer outra porta é recusada antes de algo arrancar |
 | `continue`    | `thread_id?`                  | Executa até à paragem seguinte                 |
 | `pause`       | `thread_id?`                  | Pára-o onde está                               |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Avança um passo                        |
@@ -146,7 +148,7 @@ Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` �
 | `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                    | `go.mod`                                        |
 
-O `debugpy` prefere um `.venv/bin` ou `venv/bin` local do projeto em vez do `$PATH`: um python do `$PATH` é um ambiente diferente, e anexar a partir do errado falha de uma forma que se lê como código avariado.
+O `debugpy` prefere um `.venv/bin` ou `venv/bin` local do projeto em vez do `$PATH` quando a execução está em sandbox: um python do `$PATH` é um ambiente diferente, e anexar a partir do errado falha de uma forma que se lê como código avariado. Fora da sandbox usa apenas o `$PATH`, pelo que um repositório não pode escolher o interpretador que corre no host.
 
 ---
 
@@ -176,7 +178,7 @@ A ponte **volta a entrar no registo de ferramentas do harness**, pelo que as bar
 O tempo limite da célula é um orçamento de *inatividade* (predefinição de 5 minutos) e é **suspenso** enquanto há uma chamada através da ponte pendente, para que uma célula que se distribui por subagentes não seja morta a meio da distribuição.
 
 :::note[Onde é que o kernel é executado]
-No recinto da conversa quando esta tem um, no anfitrião caso contrário. Não arranca um recinto para lá chegar — a mesma regra que impede um separador de rig de arrancar automaticamente.
+No recinto da conversa quando esta tem um, caso contrário na sandbox do sistema operativo da execução, no anfitrião. Com a sandbox desligada ou indisponível, corre sem confinamento e o `eval` pede aprovação para executar comandos no host. Não arranca um recinto para lá chegar — a mesma regra que impede um separador de rig de arrancar automaticamente.
 :::
 
 ---

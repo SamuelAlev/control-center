@@ -2,9 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_mcp/src/mcp_request_handler.dart';
-import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 
 /// Exception thrown when the MCP HTTP server fails to start or encounters a runtime error.
 class McpServerException extends ServerException {
@@ -27,17 +25,14 @@ class McpServerException extends ServerException {
 class McpHttpServer {
   /// Creates a new [McpHttpServer] bound to [port] when started.
   ///
-  /// [handler] is the request-handling core; when omitted one is created from
-  /// [config]. Pass a shared instance so this listener and the main cc_server
-  /// mount serve the same SSE clients and auth posture.
+  /// [handler] is the request-handling core. Pass the instance the main
+  /// cc_server listener mounts so both serve the same SSE clients and the same
+  /// callers.
   McpHttpServer({
     required this.port,
-    required McpToolDispatcher dispatcher,
-    McpConfig config = const McpConfig(enabled: true),
-    McpRequestHandler? handler,
+    required this.handler,
     this.onRunningChanged,
-  }) : handler =
-           handler ?? McpRequestHandler(config: config, dispatcher: dispatcher);
+  });
 
   /// TCP port the listener binds on [start].
   final int port;

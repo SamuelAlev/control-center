@@ -1,8 +1,10 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_notes_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_mcp/src/tools/hidden_spaces_for_caller.dart';
 
 /// MCP tool that updates a space's shared Notes / handoff document (PRD 16
 /// §11). Agents call this to leave context for the next human or agent — a
@@ -16,10 +18,14 @@ class UpdateSpaceNotesTool extends McpTool {
   UpdateSpaceNotesTool({
     required this._notesPort,
     required MessagingRepository messagingRepository,
+    required this._hiddenSpaces,
   }) : _messaging = messagingRepository;
 
   final SpaceNotesPort _notesPort;
   final MessagingRepository _messaging;
+
+  /// Review spaces of pull requests the run's requester cannot see.
+  final HiddenSpacesForCaller _hiddenSpaces;
 
   @override
   String get name => 'update_space_notes';
@@ -43,6 +49,7 @@ class UpdateSpaceNotesTool extends McpTool {
         'type': 'string',
         'description': 'The space whose notes to update.',
       },
+      McpCallScope.callerConversationKey: callerConversationProperty,
       'content': {
         'type': 'string',
         'description': 'The new full markdown content of the notes document.',
@@ -81,6 +88,14 @@ class UpdateSpaceNotesTool extends McpTool {
         .first;
     if (!spaces.any((c) => c.id == spaceId)) {
       return CallResult.error('Space belongs to a different workspace.');
+    }
+    if (await isSpaceHiddenFromCaller(
+      _hiddenSpaces,
+      arguments,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+    )) {
+      return CallResult.error(hiddenSpaceRefusal);
     }
 
     final note = await _notesPort.upsertNote(

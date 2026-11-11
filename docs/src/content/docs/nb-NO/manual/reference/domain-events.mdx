@@ -2,7 +2,7 @@
 title: Domenehendelser
 description: Fullstendig katalog over de 54 domenehendelsene, nyttelastene deres og abonnentene på serversiden som konsumerer dem.
 slug: nb-NO/handbok/referanse/domenehendelser
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Hendelsesbuss
@@ -148,14 +148,13 @@ Flere delsystemer som ser hendelsesdrevne ut fra utsiden, er det ikke. De er lis
 
 | Underdomene         | Hvordan tilstanden flyttes i stedet                                                                       |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Minne               | `record_memory_fact` og lignende skriver og returnerer; recall leser. Ingenting publiserer ved et faktum eller en konflikt |
+| Minne               | `propose_fact` og lignende skriver og returnerer; recall leser. Ingenting publiserer ved et faktum eller en konflikt |
 | Orkestrering        | Forslaget, godkjenningen av det og den genererte pipeline-kjøringen er rader og RPC-kall                 |
 | Plandokumenter      | `submit_plan` skriver en revisjon; godkjenning materialiserer en orkestrering. Ingen av dem kunngjøres   |
 | Artefakter          | `publish_artifact` / `revise_artifact` skriver revisjoner direkte                                        |
 | Godkjenninger       | Eskalering håndteres inne i godkjenningsarbeidsflyttjenesten                                             |
 | Sakssynkronisering  | Leverandørkoordinatoren abonnerer på sakshendelsene ovenfor; innkommende webhooks brukes direkte         |
 | Kalenderoppdatering | En synkronisering legger inn eller oppdaterer hendelser, og klienten leser på nytt; det finnes ingen kringkasting av oppdateringer |
-| Worktree-sammenslåinger | Registreres i `worktree_merge_log` og leses derfra                                                 |
 
 ## Abonnenter
 
@@ -190,7 +189,7 @@ Alle abonnentene nedenfor konstrueres inne i `runCcServer` (eller en tjeneste de
 
 `TicketAssigned` er et revisjons- og varselsignal og en pipeline-utløser. Tildeling til en agent registrerer eierskap og starter ingen kjøring — det finnes ingen saksdispatcher. Tildeling til et team (`assignedTeamId` satt) er unntaket: `TeamRoutingService` sender ut teamlederen.
 
-`TicketRemoteSyncHandler` er deklarert, men konstrueres aldri i produksjonskode, så den abonnerer på ingenting i dag. `NotificationEventMapper` på klientsiden konstrueres bare i sin egen test — den er resten av den prosessinterne veien fra før klient/server-delingen. Levende toast kommer fra rammene nedenfor.
+Levende toast kommer fra rammene nedenfor.
 
 ## Varseltilordning
 

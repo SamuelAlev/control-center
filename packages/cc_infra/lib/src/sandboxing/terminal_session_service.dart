@@ -1,17 +1,24 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart'
-    show NotFoundException, ValidationException, WorkspaceMismatchException;
+    show
+        AuthException,
+        NotFoundException,
+        ValidationException,
+        WorkspaceMismatchException;
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/terminal_command_buffer.dart';
 import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/rigs/rig_port_service.dart';
+import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/terminal_foreground_title.dart';
 import 'package:cc_natives/cc_natives.dart' show Pty;
@@ -60,21 +67,26 @@ typedef TerminalGuestRootsResolver =
 
 /// The backend a terminal session actually runs under.
 ///
-/// Pure so the one branch that DEGRADES can be pinned by a test. There are
-/// exactly three outcomes and they are deliberately different:
+/// Pure so every branch can be pinned by a test:
 ///
 ///  * an unknown name is refused ([ValidationException]) — answering a typo
 ///    with the host default is the silent downgrade this feature exists to
 ///    prevent, dressed up as a default;
+///  * an EXPLICIT `none` (the host shell, unsandboxed) is refused
+///    ([AuthException]) unless [hostShellAllowed]: only the server's owner
+///    runs anything on the host outside a sandbox;
 ///  * an EXPLICIT `microvm` on a host with no rig service is returned as
 ///    `microvm` so the PTY start fails loudly ("I asked for a VM and got my
 ///    laptop" is the one degradation this feature cannot afford);
-///  * only an UNSPECIFIED backend that defaults to `microvm` on a rig-less
-///    host steps down to the native sandbox, and it says so in the log.
+///  * an UNSPECIFIED backend is the default, except that a `microvm` default
+///    on a rig-less host steps down to the native sandbox (and says so in the
+///    log), and a `none` default is the native sandbox for anyone who may not
+///    use the host shell.
 SandboxBackend resolveTerminalBackend({
   required String? requested,
   required SandboxBackend defaultBackend,
   required bool hasVmShell,
+  required bool hostShellAllowed,
 }) {
   if (requested == null) {
     if (defaultBackend == SandboxBackend.microvm && !hasVmShell) {
@@ -82,6 +94,9 @@ SandboxBackend resolveTerminalBackend({
         'terminal: microvm is the default here but no rig service is wired '
         'in — falling back to the native sandbox for this session.',
       );
+      return SandboxBackend.native;
+    }
+    if (defaultBackend == SandboxBackend.none && !hostShellAllowed) {
       return SandboxBackend.native;
     }
     return defaultBackend;
@@ -93,6 +108,12 @@ SandboxBackend resolveTerminalBackend({
       '${SandboxBackend.values.map((b) => b.name).join(', ')}.',
     );
   }
+  if (parsed == SandboxBackend.none && !hostShellAllowed) {
+    throw const AuthException(
+      'The host shell runs on the server without a sandbox, so only the '
+      "server's owner can open one. Open a sandboxed terminal instead.",
+    );
+  }
   return parsed;
 }
 
@@ -100,11 +121,12 @@ SandboxBackend resolveTerminalBackend({
 ///
 /// Returns null when the path does not exist or is outside every root.
 ///
-/// **Why this exists.** A directory handed to the microvm terminal becomes the
-/// rig's `worktreePath`, and a rig tars its worktree INTO a guest the caller
-/// drives. Without this, `terminal.spawn(backend: "microvm", cwd: "~/.ssh")`
-/// is a host-directory read primitive for any workspace member — the exact
-/// thing `rig.open` refuses by building its spec from a closed field set.
+/// **Why this exists.** A terminal's working directory is what its sandbox
+/// opens for writing, and a directory handed to the microvm terminal becomes
+/// the rig's `worktreePath`, which a rig tars INTO a guest the caller drives.
+/// Without this, `terminal.spawn(cwd: "~/.ssh")` is a host-directory read or
+/// write primitive for any workspace member — the exact thing `rig.open`
+/// refuses by building its spec from a closed field set.
 ///
 /// Both sides are resolved through symlinks before comparison: a path can sit
 /// inside an allowed root by string and outside it by content, and it is the
@@ -138,10 +160,10 @@ String? confineToGuestRoots({
   return null;
 }
 
-/// The sandbox profile a terminal session runs under. The terminal is the
-/// user's playground (capability gating only applies to the agent dispatcher):
-/// home is writable, secret paths (`~/.ssh`, `~/.aws`, …) are read-denied,
-/// network is open. Kept identical to the desktop copy.
+/// The sandbox profile the server owner's native terminal runs under: the
+/// owner's playground (they may open the host shell anyway), so home is
+/// writable, secret paths (`~/.ssh`, `~/.aws`, …) are read-denied and the
+/// network is open. Anyone else gets [memberTerminalSandboxConfig].
 SandboxConfig terminalSandboxConfig({
   required String sessionId,
   required String cwd,
@@ -166,10 +188,40 @@ SandboxConfig terminalSandboxConfig({
   );
 }
 
+/// The sandbox profile the native terminal of anyone but the server owner runs
+/// under: an agent's ([processSandboxConfig]), rooted at [cwd] with its own
+/// [runDir]. Writes stay inside [cwd], `$HOME` outside the persistence and
+/// credential paths, `/tmp` and [runDir]; secrets are read-denied; the
+/// network is the agent egress allowlist; and code runs from [cwd] and the
+/// toolchains only. So a member's shell can do on the host what an agent in
+/// their workspace can, and no more.
+Future<SandboxConfig> memberTerminalSandboxConfig({
+  required String sessionId,
+  required String workspaceId,
+  required String cwd,
+  required String runDir,
+}) => processSandboxConfig(
+  processSandboxSpec(
+    sessionId: '$terminalSandboxSessionPrefix$sessionId',
+    workspaceId: workspaceId,
+    workdir: cwd,
+    networkEnabled: true,
+    mode: Mode.chat,
+    // [cwd] may be a registered checkout the person opened on purpose, so
+    // there is no original here to protect from them.
+    protectedPaths: const [],
+    execGrantRoots: [cwd],
+    loopbackPorts: const [],
+    environmentScope: null,
+  ),
+  runDir: runDir,
+);
+
 /// Boots an interactive terminal PTY (on `libccpty`) under the given [backend]:
 ///  * microvm → `ssh` into an enclosed VM, so nothing runs on the host,
 ///  * none    → host shell directly,
-///  * native  → `sandbox-exec`/`bwrap`-wrapped shell via [manager].
+///  * native  → `sandbox-exec`/`bwrap`-wrapped shell via [manager], under
+///    [sandbox].
 ///
 /// The microvm path is a PTY running `ssh -tt` rather than a bespoke protocol.
 /// That is what keeps every terminal affordance identical to the host shell:
@@ -179,7 +231,7 @@ SandboxConfig terminalSandboxConfig({
 Future<Pty> _startTerminalPty({
   required SandboxManager manager,
   required SandboxBackend backend,
-  required String sessionId,
+  required SandboxConfig? sandbox,
   required String cwd,
   required int rows,
   required int cols,
@@ -216,10 +268,12 @@ Future<Pty> _startTerminalPty({
       environment: hostEnvironment,
     );
   }
+  if (sandbox == null) {
+    throw StateError('A native terminal needs its sandbox profile.');
+  }
   final shell = Platform.isMacOS ? '/bin/zsh' : '/bin/bash';
-  final config = terminalSandboxConfig(sessionId: sessionId, cwd: cwd);
   final wrap = await manager.wrap(
-    config: config,
+    config: sandbox,
     argv: [shell, '-il'],
     workingDirectory: cwd,
   );
@@ -264,6 +318,8 @@ class _Session {
     required this.sandboxSessionId,
     required this.backend,
     required this.pty,
+    this.openedBy,
+    this.runDir,
     this.spaceId,
     this.owner,
     void Function(List<int> bytes)? onOutput,
@@ -296,6 +352,13 @@ class _Session {
 
   final String workspaceId;
   final String sandboxSessionId;
+
+  /// The person who opened this session, the only one who may use it. Null
+  /// for an owned session ([owner]), which no person opened.
+  final String? openedBy;
+
+  /// The member sandbox's run directory, removed with the session.
+  final String? runDir;
 
   /// The backend this session ACTUALLY runs under, which is not always the one
   /// requested.
@@ -432,6 +495,14 @@ class _Session {
     if (!_titles.isClosed) {
       await _titles.close();
     }
+    final dir = runDir;
+    if (dir != null) {
+      try {
+        await Directory(dir).delete(recursive: true);
+      } on FileSystemException {
+        // Already gone, or the OS temp sweep will take it.
+      }
+    }
   }
 }
 
@@ -442,14 +513,16 @@ class _Session {
 /// takes its deps directly so it links into the `dart build cli` binary.
 ///
 /// Every [output]/[titles]/[write]/[resize]/[kill] validates the session's
-/// owning `workspaceId` before touching the PTY — a connected client physically
-/// cannot drive another workspace's terminal (the workspace-isolation
-/// invariant).
+/// owning `workspaceId` and the person who opened it before touching the PTY
+/// — a connected client cannot drive another workspace's terminal (the
+/// workspace-isolation invariant) or a terminal another member opened.
 class TerminalSessionService
     implements TerminalSessionPort, OwnedTerminalSessionPort {
   /// Creates the service over a [_manager] (sandbox lifecycle), a [filesystem]
   /// (working-dir resolution) and a [_defaultBackend] used when the client does
-  /// not name one (the headless server defaults to the host shell).
+  /// not name one (the headless server defaults to the host shell, which
+  /// [resolveTerminalBackend] turns into the native sandbox for anyone but the
+  /// server's owner).
   TerminalSessionService({
     required this._manager,
     required WorkspaceFilesystemPort filesystem,
@@ -489,7 +562,16 @@ class TerminalSessionService
   }
 
   final Map<String, _Session> _sessions = {};
-  int _counter = 0;
+  final Random _random = Random.secure();
+
+  /// A session id nobody can guess: 96 random bits.
+  String _newSessionId() {
+    final hex = StringBuffer('tty-');
+    for (var i = 0; i < 12; i++) {
+      hex.write(_random.nextInt(256).toRadixString(16).padLeft(2, '0'));
+    }
+    return hex.toString();
+  }
 
   void _assertOwned(_Session? session, String workspaceId) {
     if (session != null && session.workspaceId != workspaceId) {
@@ -507,65 +589,96 @@ class TerminalSessionService
   /// which every client treats as unrecoverable. As a generic internal error it
   /// read as transient and a client still holding a session id from before a
   /// server restart resubscribed against it forever.
-  _Session _require(String sessionId, String workspaceId) {
-    final session = _sessions[sessionId];
+  _Session _require(String sessionId, String workspaceId, String userId) {
+    final session = _find(sessionId, workspaceId, userId);
     if (session == null) {
       throw NotFoundException('Terminal session not found: $sessionId');
     }
+    return session;
+  }
+
+  /// The session [userId] may use, or null when there is none: a session
+  /// somebody else opened is treated exactly like one that does not exist,
+  /// so a member learns nothing about another's terminals. A session of
+  /// another workspace is refused loudly.
+  _Session? _find(String sessionId, String workspaceId, String userId) {
+    final session = _sessions[sessionId];
     _assertOwned(session, workspaceId);
+    if (session == null) {
+      return null;
+    }
+    final opener = session.openedBy;
+    if (opener != null && opener != userId) {
+      return null;
+    }
     return session;
   }
 
   @override
-  /// [actingUserId] is the member opening the shell.
+  /// [actingUserId] is the member opening the shell, and the only one who may
+  /// use it afterwards.
   ///
-  /// For an ENCLOSED terminal it decides which rig is opened or reused and
-  /// whose forge access the guest's credentials are bounded by — so one
+  /// For an ENCLOSED terminal it also decides which rig is opened or reused
+  /// and whose forge access the guest's credentials are bounded by — so one
   /// member's shell can never mint on another's behalf, nor land inside a VM
   /// where another member's agent is running with its token in the
   /// environment.
   Future<String> spawn({
     required String workspaceId,
+    required String actingUserId,
+    required bool hostShellAllowed,
     required int rows,
     required int cols,
     String? spaceId,
     String? cwd,
     String? backend,
-    String? actingUserId,
   }) async {
-    final String workingDir;
-    if (cwd != null && cwd.isNotEmpty) {
-      workingDir = cwd;
-    } else if (spaceId != null && spaceId.isNotEmpty) {
-      workingDir = await _fs.ensureSpaceDir(workspaceId, spaceId);
-    } else {
-      await _fs.ensureWorkspaceDirs(workspaceId);
-      workingDir = await _fs.workspaceDir(workspaceId);
-    }
-
     final resolvedBackend = resolveTerminalBackend(
       requested: backend,
       defaultBackend: _defaultBackend,
       hasVmShell: _vmShell != null,
+      hostShellAllowed: hostShellAllowed,
     );
+    var workingDir = await _workingDir(workspaceId, spaceId, cwd);
+    if (resolvedBackend != SandboxBackend.none) {
+      // Only the owner's host shell opens anywhere; every sandboxed terminal
+      // opens in this workspace's own directories.
+      workingDir = await _confinedWorkingDir(workspaceId, workingDir);
+    }
 
-    final sessionId = 'tty${++_counter}-${spaceId ?? workspaceId}';
+    final sessionId = _newSessionId();
     final vmShell = resolvedBackend == SandboxBackend.microvm
         ? await _vmShell?.call(
             workspaceId: workspaceId,
             conversationId: spaceId,
             actingUserId: actingUserId,
-            // Confined, because this value becomes the rig's `worktreePath`
-            // and a rig tars its worktree into a guest the caller drives.
-            worktreePath: await _confinedWorktreePath(workspaceId, workingDir),
+            // Confined above, because this value becomes the rig's
+            // `worktreePath` and a rig tars its worktree into a guest the
+            // caller drives.
+            worktreePath: workingDir,
           )
         : null;
+    String? runDir;
     final Pty pty;
     try {
+      SandboxConfig? sandbox;
+      if (resolvedBackend == SandboxBackend.native) {
+        if (hostShellAllowed) {
+          sandbox = terminalSandboxConfig(sessionId: sessionId, cwd: workingDir);
+        } else {
+          runDir = await _memberRunDir();
+          sandbox = await memberTerminalSandboxConfig(
+            sessionId: sessionId,
+            workspaceId: workspaceId,
+            cwd: workingDir,
+            runDir: runDir,
+          );
+        }
+      }
       pty = await _startTerminalPty(
         manager: _manager,
         backend: resolvedBackend,
-        sessionId: sessionId,
+        sandbox: sandbox,
         cwd: workingDir,
         rows: rows,
         cols: cols,
@@ -576,6 +689,9 @@ class TerminalSessionService
       // The pin is taken before the PTY exists, so a spawn failure must give
       // it back or the VM is held open by a terminal that never opened.
       vmShell?.release();
+      if (runDir != null) {
+        await Directory(runDir).delete(recursive: true);
+      }
       rethrow;
     }
     _sessions[sessionId] = _Session(
@@ -583,6 +699,8 @@ class TerminalSessionService
       sandboxSessionId: '$terminalSandboxSessionPrefix$sessionId',
       backend: resolvedBackend,
       pty: pty,
+      openedBy: actingUserId,
+      runDir: runDir,
       spaceId: spaceId == null || spaceId.isEmpty ? null : spaceId,
     )..releaseVm = vmShell?.release;
     if (resolvedBackend != SandboxBackend.microvm) {
@@ -596,15 +714,42 @@ class TerminalSessionService
     return sessionId;
   }
 
-  /// [workingDir] proven to be a directory this workspace may sync INTO a
-  /// guest, or a loud refusal.
+  /// The directory a terminal opens in: [cwd] when given, else the space's
+  /// directory, else the workspace's.
+  Future<String> _workingDir(
+    String workspaceId,
+    String? spaceId,
+    String? cwd,
+  ) async {
+    if (cwd != null && cwd.isNotEmpty) {
+      return cwd;
+    }
+    if (spaceId != null && spaceId.isNotEmpty) {
+      return _fs.ensureSpaceDir(workspaceId, spaceId);
+    }
+    await _fs.ensureWorkspaceDirs(workspaceId);
+    return _fs.workspaceDir(workspaceId);
+  }
+
+  /// A fresh run directory for a member's sandbox, by its resolved path
+  /// (Seatbelt matches `/private/var/folders`, not `/var/folders`).
+  Future<String> _memberRunDir() async {
+    final dir = await Directory.systemTemp.createTemp('cc-term-');
+    return dir.resolveSymbolicLinksSync();
+  }
+
+  /// [workingDir], resolved, when it lies in this workspace's own directory
+  /// tree or one of its registered checkouts; otherwise a loud refusal, never
+  /// a replacement directory.
   ///
-  /// The host shell needs no such proof (it opens a directory in place, on the
-  /// machine the operator already owns); an enclosed shell does, because the
-  /// directory is COPIED into a VM whose filesystem the caller reads freely.
-  /// Membership is the access boundary, so "a member asked for it" is not an
-  /// answer — the workspace's own tree and its registered checkouts are.
-  Future<String> _confinedWorktreePath(
+  /// Only the owner's host shell needs no such proof (it opens a directory in
+  /// place, on the machine its owner runs). A sandboxed shell does, because
+  /// its working directory is what the sandbox opens for writing, and an
+  /// enclosed one COPIES it into a VM whose filesystem the caller reads
+  /// freely. Membership is the access boundary, so "a member asked for it" is
+  /// not an answer — the workspace's own tree and its registered checkouts
+  /// are.
+  Future<String> _confinedWorkingDir(
     String workspaceId,
     String workingDir,
   ) async {
@@ -616,34 +761,34 @@ class TerminalSessionService
     if (confined != null) {
       return confined;
     }
-    throw StateError(
-      'The enclosed-VM terminal is confined to this workspace\'s own '
-      'directories and its registered repositories. "$workingDir" is outside '
-      'all of them, and an enclosed terminal copies its working directory '
-      'into the VM — so this would hand that directory to whoever drives it.',
+    throw ValidationException(
+      "A terminal opens only in this workspace's own directories and its "
+      'registered repositories, and "$workingDir" is outside all of them.',
     );
   }
 
   @override
   Stream<List<int>> output({
     required String workspaceId,
+    required String userId,
     required String sessionId,
-  }) => _require(sessionId, workspaceId).output;
+  }) => _require(sessionId, workspaceId, userId).output;
 
   @override
   Stream<String> titles({
     required String workspaceId,
+    required String userId,
     required String sessionId,
-  }) => _require(sessionId, workspaceId).titles;
+  }) => _require(sessionId, workspaceId, userId).titles;
 
   @override
   Future<TerminalWriteResult> write({
     required String workspaceId,
+    required String userId,
     required String sessionId,
     required List<int> data,
   }) async {
-    final session = _sessions[sessionId];
-    _assertOwned(session, workspaceId);
+    final session = _find(sessionId, workspaceId, userId);
     if (session == null) {
       return TerminalWriteResult.none;
     }
@@ -658,22 +803,21 @@ class TerminalSessionService
   @override
   Future<void> resize({
     required String workspaceId,
+    required String userId,
     required String sessionId,
     required int rows,
     required int cols,
   }) async {
-    final session = _sessions[sessionId];
-    _assertOwned(session, workspaceId);
-    session?.pty.resize(rows, cols);
+    _find(sessionId, workspaceId, userId)?.pty.resize(rows, cols);
   }
 
   @override
   Future<void> kill({
     required String workspaceId,
+    required String userId,
     required String sessionId,
   }) async {
-    final session = _sessions[sessionId];
-    _assertOwned(session, workspaceId);
+    final session = _find(sessionId, workspaceId, userId);
     if (session == null) {
       return;
     }
@@ -711,7 +855,7 @@ class TerminalSessionService
       throw const ValidationException('An owned terminal needs an owner');
     }
     final space = spaceId == null || spaceId.isEmpty ? null : spaceId;
-    final sessionId = 'tty${++_counter}-${space ?? workspaceId}';
+    final sessionId = _newSessionId();
     final pty = Pty.start(
       executable,
       arguments: arguments,
@@ -787,6 +931,17 @@ class TerminalSessionService
 
   @override
   String? backendOf(String sessionId) => _sessions[sessionId]?.backend.name;
+
+  @override
+  ({String? spaceId})? ownedSessionOf(String sessionId) => switch (_sessions[
+    sessionId
+  ]) {
+    final session? when session.owner != null => (spaceId: session.spaceId),
+    _ => null,
+  };
+
+  @override
+  String? openerOf(String sessionId) => _sessions[sessionId]?.openedBy;
 
   /// Tears down every live session (host shutdown).
   Future<void> disposeAll() async {

@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/governance/domain/entities/work_product.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_text_styles.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:control_center/core/theme/resolve_design_tokens.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';

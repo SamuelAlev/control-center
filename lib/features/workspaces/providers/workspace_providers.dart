@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
@@ -301,18 +302,29 @@ class CreateWorkspaceNotifier extends Notifier<AsyncValue<String?>> {
   @override
   AsyncValue<String?> build() => const AsyncData(null);
 
-  /// Creates a workspace and returns its id when successful.
-  Future<String?> create({required String name, String? logoPath}) async {
+  /// Creates a workspace and returns its id when successful. A picked logo
+  /// travels as [logoBytes] with its [logoExtension] (`.png`): a path would
+  /// name a file on this machine, and the server reads server paths only for
+  /// its owner.
+  Future<String?> create({
+    required String name,
+    Uint8List? logoBytes,
+    String logoExtension = '',
+  }) async {
     state = const AsyncLoading();
     try {
       final workspace = await RpcWorkspaceRepository(
         ref.read(rpcClientProvider),
       ).create(name: name);
-      if (logoPath != null) {
+      if (logoBytes != null && logoBytes.isNotEmpty) {
         final filesystem = ref.read(workspaceFilesystemPortProvider);
         String? persistedLogo;
         try {
-          persistedLogo = await filesystem.persistLogo(workspace.id, logoPath);
+          persistedLogo = await filesystem.persistLogoBytes(
+            workspace.id,
+            logoBytes,
+            logoExtension,
+          );
         } on Exception {
           persistedLogo = null;
         }

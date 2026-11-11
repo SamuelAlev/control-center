@@ -101,18 +101,23 @@ final class SlackApi {
     'invalid_client',
   };
 
+  /// Slack's own codes for a dead code or token, besides the shared
+  /// refresh table ([oauthRefreshRejectedErrors]).
   static const Set<String> _grantErrors = {
     'invalid_code',
     'code_already_used',
     'code_expired',
     'invalid_refresh_token',
-    'invalid_grant',
     'token_expired',
     'token_revoked',
     'invalid_auth',
     'account_inactive',
     'not_authed',
   };
+
+  static bool _grantRejected(Object? error) =>
+      oauthRefreshRejectedErrors.contains(error) ||
+      _grantErrors.contains(error);
 
   Future<Map<String, Object?>> _call(
     String method,
@@ -135,7 +140,7 @@ final class SlackApi {
       if (_clientErrors.contains(error)) {
         throw const InvalidClientCredentials();
       }
-      if (_grantErrors.contains(error)) {
+      if (_grantRejected(error)) {
         throw const GrantRejected();
       }
       if (error == 'ratelimited') {
@@ -273,7 +278,7 @@ final class SlackApi {
       throw const ConnectException(ConnectErrorCode.providerUnavailable);
     }
     if (json['ok'] != true) {
-      if (_grantErrors.contains(json['error'])) {
+      if (_grantRejected(json['error'])) {
         throw const GrantRejected();
       }
       throw const ConnectException(ConnectErrorCode.providerUnavailable);

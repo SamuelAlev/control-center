@@ -5,19 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_connect/src/state_store.dart';
-
-/// The state backend is unreachable or misbehaving. Answered
-/// `provider_unavailable`: a transient failure, never a verdict.
-final class StateStoreUnavailable implements Exception {
-  /// Creates the exception.
-  const StateStoreUnavailable(this.reason);
-
-  /// A fixed, secret-free reason.
-  final String reason;
-
-  @override
-  String toString() => 'StateStoreUnavailable($reason)';
-}
+import 'package:cc_connect_core/cc_connect_core.dart' show b64url, randomBytes;
 
 /// A Redis error reply (`-ERR …`).
 final class RespError {
@@ -225,7 +213,6 @@ final class RedisStateStore implements StateStore {
   final SecurityContext? _tls;
   _RespConnection? _connection;
   Future<_RespConnection>? _connecting;
-  bool _noGetDel = false;
 
   static const String _prefix = 'cc_connect:';
 
@@ -372,27 +359,37 @@ final class RedisStateStore implements StateStore {
     return reply == 1;
   }
 
+  /// GETDEL needs Redis 6.2 or later; [probe] proves it at boot.
   @override
   Future<String?> take(String key) async {
-    if (!_noGetDel) {
-      final reply = (await _run([
-        ['GETDEL', _k(key)],
-      ])).single;
-      if (reply is RespError) {
-        if (!reply.message.toLowerCase().contains('unknown command')) {
-          throw const StateStoreUnavailable('redis GETDEL');
-        }
-        _noGetDel = true; // Redis < 6.2: fall through to MULTI GET DEL.
-      } else {
-        return reply is String ? reply : null;
+    final reply = await _one(['GETDEL', _k(key)]);
+    return reply is String ? reply : null;
+  }
+
+  /// Connects (with AUTH/SELECT) and round-trips a throwaway key through SET
+  /// and GETDEL.
+  @override
+  Future<void> probe() async {
+    final key = 'probe:${b64url(randomBytes(12))}';
+    await set(key, '1', const Duration(seconds: 10));
+    if (await take(key) != '1') {
+      throw const StateStoreUnavailable('redis GETDEL');
+    }
+  }
+
+  /// The server's `maxmemory-policy`, read from `INFO memory`; null when the
+  /// answer does not name one.
+  Future<String?> evictionPolicy() async {
+    final reply = await _one(['INFO', 'memory']);
+    if (reply is! String) {
+      return null;
+    }
+    for (final line in const LineSplitter().convert(reply)) {
+      if (line.startsWith('maxmemory_policy:')) {
+        return line.substring('maxmemory_policy:'.length).trim();
       }
     }
-    final exec = await _transaction([
-      ['GET', _k(key)],
-      ['DEL', _k(key)],
-    ]);
-    final value = exec.first;
-    return value is String ? value : null;
+    return null;
   }
 
   @override

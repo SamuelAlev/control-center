@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
@@ -9,6 +8,8 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/dispatch/sandboxed_agent_dispatch_adapter.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,8 +19,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// `SandboxPort` fake for testing `SandboxedAgentDispatchAdapter`.
 ///
-/// `mintStaller` is a `Completer` whose future is returned by `mint`.
-/// Completing it allows the DispatchSession's `run()` to proceed.
 class _FakeSandboxPort implements SandboxPort {
   @override
   SandboxBackend get backend => SandboxBackend.native;
@@ -71,41 +70,21 @@ class _FakeSandboxPort implements SandboxPort {
   Future<void> destroy(SandboxHandle handle) async {}
 }
 
-/// `CredentialBrokerPort` whose `mint` can be stalled via a `Completer`.
-///
-/// By default `mint` resolves immediately. Set `mintStaller` before calling
-/// `start` to keep the DispatchSession's `run()` pending.
-class _FakeBroker implements CredentialBrokerPort {
-  Completer<ScopedCredentials>? _mintStaller;
-
-  Completer<ScopedCredentials>? get mintStaller => _mintStaller;
-
-  /// The run opens its log before it mints, so a test can fail the staller
-  /// before `mint` has been asked for it; an error nobody listens to yet would
-  /// otherwise surface as an uncaught one. The run still sees it once it asks.
-  set mintStaller(Completer<ScopedCredentials>? staller) {
-    _mintStaller = staller;
-    staller?.future.ignore();
+/// Holds a run at the first thing it asks (whose commits it makes), so a
+/// test can act on a dispatch that is still live. [fail] ends the run.
+class _Gate {
+  _Gate() {
+    // A test can fail the gate before the run has reached it; an error
+    // nobody listens to yet would otherwise surface as an uncaught one. The
+    // run still sees it once it asks.
+    _completer.future.ignore();
   }
 
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async {
-    if (mintStaller != null) {
-      return mintStaller!.future;
-    }
-    return const ScopedCredentials(handle: 'h1', environment: {});
-  }
+  final _completer = Completer<void>();
 
-  @override
-  Future<void> revoke(String handle) async {}
+  Future<void> get passed => _completer.future;
+
+  void fail() => _completer.completeError(Exception('done'));
 }
 
 /// Minimal [AgentRepository] stub. Only [getById] is called by
@@ -126,20 +105,24 @@ class _FakeAgentRepo implements AgentRepository {
 /// (or default) fakes.
 SandboxedAgentDispatchAdapter _adapter({
   SandboxPort? sandbox,
-  CredentialBrokerPort? broker,
+  _Gate? gate,
   AgentRepository? agentRepo,
 }) {
   return SandboxedAgentDispatchAdapter(
+    hostExecution: const HostExecutionGate(
+      posture: HostExecutionPosture.offByOwner,
+    ),
     sandbox: sandbox ?? _FakeSandboxPort(),
-    credentialBroker: broker ?? _FakeBroker(),
     agentRepository: agentRepo ?? _FakeAgentRepo(),
     runLogRepository: null,
     eventBus: null,
-    resolveCommitIdentity: (_, {workspaceId}) async =>
-        AgentCommitIdentity.owner(
-          name: 'Test User',
-          email: 'test@example.test',
-        ),
+    resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async {
+      await gate?.passed;
+      return AgentCommitIdentity.person((
+        name: 'Test User',
+        email: 'test@example.test',
+      ));
+    },
   );
 }
 
@@ -164,9 +147,8 @@ void main() {
     test(
       'start returns DispatchHandle with dispatchId and event stream',
       () async {
-        final broker = _FakeBroker();
-        broker.mintStaller = Completer<ScopedCredentials>();
-        final adapter = _adapter(broker: broker);
+        final gate = _Gate();
+        final adapter = _adapter(gate: gate);
 
         final handle = adapter.start(
           cliName: 'claude',
@@ -180,7 +162,7 @@ void main() {
         expect(handle.onStop, isNotNull);
 
         // Allow run() to proceed so the session can clean up.
-        broker.mintStaller!.completeError(Exception('test completion'));
+        gate.fail();
         await pumpEventQueue();
       },
     );
@@ -188,9 +170,8 @@ void main() {
     test(
       'start with different agentIds produces different dispatchIds',
       () async {
-        final broker = _FakeBroker();
-        broker.mintStaller = Completer<ScopedCredentials>();
-        final adapter = _adapter(broker: broker);
+        final gate = _Gate();
+        final adapter = _adapter(gate: gate);
 
         final h1 = adapter.start(
           cliName: 'claude',
@@ -207,7 +188,7 @@ void main() {
 
         expect(h1.dispatchId, isNot(h2.dispatchId));
 
-        broker.mintStaller!.completeError(Exception('done'));
+        gate.fail();
         await pumpEventQueue();
       },
     );
@@ -216,9 +197,8 @@ void main() {
     // stopDispatch
     // -----------------------------------------------------------------------
     test('stopDispatch removes session and calls terminate', () async {
-      final broker = _FakeBroker();
-      broker.mintStaller = Completer<ScopedCredentials>();
-      final adapter = _adapter(broker: broker);
+      final gate = _Gate();
+      final adapter = _adapter(gate: gate);
 
       final handle = adapter.start(
         cliName: 'claude',
@@ -234,7 +214,7 @@ void main() {
       await adapter.stopDispatch(handle.dispatchId);
 
       // Allow run() to complete.
-      broker.mintStaller!.completeError(Exception('done'));
+      gate.fail();
       await pumpEventQueue();
     });
 
@@ -249,25 +229,8 @@ void main() {
     // stopAllForAgent
     // -----------------------------------------------------------------------
     test('stopAllForAgent terminates only matching agent sessions', () async {
-      final broker1 = _FakeBroker();
-      broker1.mintStaller = Completer<ScopedCredentials>();
-      final broker2 = _FakeBroker();
-      broker2.mintStaller = Completer<ScopedCredentials>();
-
-      final _ = SandboxedAgentDispatchAdapter(
-        sandbox: _FakeSandboxPort(),
-        credentialBroker: _FakeBroker(),
-        agentRepository: _FakeAgentRepo(),
-        runLogRepository: null,
-        eventBus: null,
-      );
-
-      // Both dispatches use the same broker that doesn't stall, so run()
-      // completes quickly. We need to start them and stop by agent.
-      // Use stalled broker so sessions stay alive.
-      final stalledBroker = _FakeBroker();
-      stalledBroker.mintStaller = Completer<ScopedCredentials>();
-      final stalledAdapter = _adapter(broker: stalledBroker);
+      final gate = _Gate();
+      final stalledAdapter = _adapter(gate: gate);
 
       final h1 = stalledAdapter.start(
         cliName: 'claude',
@@ -291,7 +254,7 @@ void main() {
       // agent-a's dispatch already removed — no-op.
       await stalledAdapter.stopDispatch(h1.dispatchId);
 
-      stalledBroker.mintStaller!.completeError(Exception('done'));
+      gate.fail();
       await pumpEventQueue();
     });
 
@@ -299,9 +262,8 @@ void main() {
     // stop — stop all
     // -----------------------------------------------------------------------
     test('stop clears all active dispatches', () async {
-      final broker = _FakeBroker();
-      broker.mintStaller = Completer<ScopedCredentials>();
-      final adapter = _adapter(broker: broker);
+      final gate = _Gate();
+      final adapter = _adapter(gate: gate);
 
       adapter.start(
         cliName: 'claude',
@@ -322,7 +284,7 @@ void main() {
       // (sessions already cleaned up).
       await adapter.stopDispatch('any-id');
 
-      broker.mintStaller!.completeError(Exception('done'));
+      gate.fail();
       await pumpEventQueue();
     });
 
@@ -337,9 +299,8 @@ void main() {
     });
 
     test('destroyAll after stop does not throw', () async {
-      final broker = _FakeBroker();
-      broker.mintStaller = Completer<ScopedCredentials>();
-      final adapter = _adapter(broker: broker);
+      final gate = _Gate();
+      final adapter = _adapter(gate: gate);
 
       adapter.start(
         cliName: 'claude',
@@ -351,7 +312,7 @@ void main() {
 
       await adapter.destroyAll();
 
-      broker.mintStaller!.completeError(Exception('done'));
+      gate.fail();
       await pumpEventQueue();
     });
   });

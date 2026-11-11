@@ -2,7 +2,7 @@
 title: 備份、匯出與匯入
 description: 快照的目錄佈局、資訊清單、每一項備份操作與傳輸路由，以及備份究竟包含與不包含哪些檔案。
 slug: zh-HK/手冊/參考/備份
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Control Center 能夠複製、移交或採用的一切，以及每種成品確切的形態。要實際執行一次
@@ -96,13 +96,18 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | `models/`                           | 否             | 否                     |
 | `meetings/<meetingId>/`             | 否             | 否                     |
 | `rigs/`                             | 否             | 否                     |
+| `_agent_hooks/`                     | 否             | 否                     |
 
 其中有些可以捨棄 —— `spaces/` 保存的是會從程式庫重新佈建的寫入時複製 worktree，
 `pr_clones/` 是快取，`models/` 會重新下載，`rigs/` 是機器狀態。有些則不是：`blobs/`
 保存著資料庫資料列所指向的貼上圖片，`skills/` 與 `agents/` 保存著代理執行時使用的
 檔案，而 `secrets.json` 保存著該安裝上的每一組配對金鑰、供應商憑證與 SSO 設定。要
 涵蓋其餘內容，請參閱
-[備份與還原](/zh-HK/手冊/操作指南/備份與還原/#copy-backups-off-the-machine)。
+[備份與還原](/zh-HK/手冊/操作指南/備份與還原/#將備份複製到機器之外)。
+:::caution[工作區資料庫含有 webhook 密鑰]
+`workspace.db` 就是整個工作區：對話、運行日誌、程式碼索引、儲存庫連結、環境定義與成員。它也以可讀形式保存工作區的管線 webhook 權杖與工單同步 webhook 密鑰，因此請把下載的匯出檔或備份視為機密。它不保存任何供應商登入、裝置金鑰或用戶密鑰；這些位於 `global.db` 與 `secrets.json` 中。
+:::
+
 :::note[聊天權杖刻意留在原處]
 `chat_credentials/` 位於資料庫旁邊而不是其中，正因如此，交給別人的工作區不會帶有任何
 有效的機械人權杖。請參閱[聊天橋接參考](/zh-HK/手冊/參考/聊天橋接/)。
@@ -124,7 +129,7 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | `workspace.listBackups` | read | 工作區 | `admin` | 無 | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | 工作區 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | 工作區    | `admin`           | 無            | `{ok, path}`                  |
-| `workspace.import`   | mutate | 工作區    | `owner`           | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | 工作區    | `owner`，並且是伺服器擁有者 | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | 安裝*     | `owner`           | `id`          | 註冊表資料列標記為已刪除      |
 
 * `workspace.delete` 沒有作用範圍，是因為它標記的那一列位於全域註冊表中；其處理程式
@@ -143,8 +148,11 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 **擁有者**（`ServerAuthority.serverOwner`），與 `GET /backup/snapshot` 是同一道
 關卡。一份快照會擷取每個工作區的資料庫，因此僅僅是一個工作區的管理員，還不足以管理
 其他工作區。刪除只接受清單中出現的那個時間戳目錄名，而不是任意的伺服器路徑，並且會
-移除整份快照（包括不完整的快照）。按工作區進行的匯出/匯入仍只要求工作區管理員/
-擁有者，而不是安裝擁有者。
+移除整份快照（包括不完整的快照）。按工作區進行的匯出與排程備份下載仍只要求工作區管理員。
+:::
+
+:::note[還原屬於伺服器擁有者]
+`workspace.import` 與 `POST /backup/restore` 會讓伺服器採用一個資料庫檔案，而它會把其中的資料列視為自己的：儲存庫連結及建立者、在主機上執行的環境定義、worktree 與日誌路徑。因此兩者都需要伺服器擁有者（`ServerAuthority.serverOwner`），而該擁有者也必須是工作區的擁有者。其他人，以及在沒有記錄擁有者的主機上的所有呼叫者，都會被以 `server_owner_required` 拒絕。檔案所帶來的任何觸發器或檢視都不會被採用。
 :::
 
 ### `server.listBackups` 的回應
@@ -213,7 +221,7 @@ Control Center 能夠複製、移交或採用的一切，以及每種成品確�
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | 工作區**管理員**     |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | 安裝**擁有者**       |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | 工作區**管理員**；工作區刪除後為安裝**擁有者** |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 工作區**擁有者**     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 安裝**擁有者**，且同時為工作區**擁有者**（否則為 `403`，並附 `server_owner_required`） |
 
 `w` 是工作區 id，`n` 是快照或排程備份的目錄名，`d` 是發起呼叫的裝置 id，`s` 是簽名。在
 `/backup/snapshot` 上，`n` 是依據備份清單解析的，而不是直接拼接到備份根目錄上，因此這條

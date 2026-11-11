@@ -7,15 +7,12 @@ import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/git_repo_info.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/entities/review_space_association.dart';
 import 'package:cc_domain/core/domain/entities/role_definition.dart';
 import 'package:cc_domain/core/domain/entities/run_transcript.dart';
 import 'package:cc_domain/core/domain/entities/user.dart';
-import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
-import 'package:cc_domain/core/domain/events/workspace_events.dart';
 import 'package:cc_domain/core/domain/ports/activity_log_reader.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart'
     show AgentQuestionAnswer;
@@ -25,9 +22,9 @@ import 'package:cc_domain/core/domain/ports/editor_launcher_port.dart';
 import 'package:cc_domain/core/domain/ports/entitlements_port.dart';
 import 'package:cc_domain/core/domain/ports/forge_credential_port.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
-import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_cost_history_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -46,7 +43,9 @@ import 'package:cc_domain/core/domain/repositories/workspace_membership_reposito
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_role_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/services/secret_exclusion.dart';
+import 'package:cc_domain/core/domain/services/slugify.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
@@ -54,7 +53,6 @@ import 'package:cc_domain/core/domain/value_objects/permission.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/repositories/agent_goal_run_repository.dart';
@@ -70,11 +68,11 @@ import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/guard_decision_repository.dart';
+import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/policy_templates.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/ide/domain/code_server_port.dart';
-import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
@@ -130,14 +128,9 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.d
 import 'package:cc_domain/features/pr_review/domain/value_objects/visual_diff.dart';
 import 'package:cc_domain/features/presence/domain/value_objects/participant_presence.dart';
 import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
-import 'package:cc_domain/features/repos/domain/usecases/add_repo_from_path.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_ports_port.dart';
-import 'package:cc_domain/features/rigs/domain/value_objects/rig_action.dart';
-import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
-import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
-import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_domain/features/sandboxing/domain/ports/sandbox_detector_port.dart';
 import 'package:cc_domain/features/sandboxing/domain/repositories/sandbox_exec_grant_repository.dart';
 import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
@@ -188,31 +181,45 @@ import 'package:cc_server_core/src/catalog/demo_review_ops.dart';
 import 'package:cc_server_core/src/catalog/editor_layout_cache_ops.dart';
 import 'package:cc_server_core/src/catalog/environment_ops.dart';
 import 'package:cc_server_core/src/catalog/file_discard_ops.dart';
+import 'package:cc_server_core/src/catalog/granted_repos.dart';
 import 'package:cc_server_core/src/catalog/meeting_ops.dart';
+import 'package:cc_server_core/src/catalog/meeting_wire.dart';
+import 'package:cc_server_core/src/catalog/memory_ops.dart';
 import 'package:cc_server_core/src/catalog/mobile_space_ops.dart';
 import 'package:cc_server_core/src/catalog/model_control_ops.dart';
+import 'package:cc_server_core/src/catalog/newsfeed_ops.dart';
 import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
+import 'package:cc_server_core/src/catalog/owned_terminal_access.dart';
 import 'package:cc_server_core/src/catalog/pending_question_watch.dart';
 import 'package:cc_server_core/src/catalog/pipeline_shell_guard.dart';
+import 'package:cc_server_core/src/catalog/pr_data_gate.dart';
+import 'package:cc_server_core/src/catalog/pr_repo_visibility.dart';
 import 'package:cc_server_core/src/catalog/pr_review_ops.dart';
 import 'package:cc_server_core/src/catalog/presence_visibility.dart';
-import 'package:cc_server_core/src/catalog/repo_link_guard.dart';
+import 'package:cc_server_core/src/catalog/repo_forge_read.dart';
+import 'package:cc_server_core/src/catalog/repo_link_ops.dart';
+import 'package:cc_server_core/src/catalog/review_space_ops.dart';
+import 'package:cc_server_core/src/catalog/rig_access.dart';
+import 'package:cc_server_core/src/catalog/rig_ops.dart';
 import 'package:cc_server_core/src/catalog/sign_in_ops.dart';
 import 'package:cc_server_core/src/catalog/space_provisioning_ops.dart';
+import 'package:cc_server_core/src/catalog/space_repo_access.dart';
 import 'package:cc_server_core/src/catalog/space_stack_ops.dart';
 import 'package:cc_server_core/src/catalog/steering_force_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_port_ops.dart';
 import 'package:cc_server_core/src/catalog/terminal_watch_queries.dart';
+import 'package:cc_server_core/src/catalog/user_profile_ops.dart';
 import 'package:cc_server_core/src/catalog/worktree_branch_ops.dart';
 import 'package:cc_server_core/src/collab/checker_listener.dart';
 import 'package:cc_server_core/src/collab/takeover_service.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart'
-    show providerOAuthRedirectUri;
+    show providerOAuthHttpOrigin, providerOAuthRedirectUri;
 import 'package:cc_server_core/src/connection/network_runtime.dart';
 import 'package:cc_server_core/src/connection/server_descriptor_service.dart';
 import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
 import 'package:cc_server_core/src/demo/demo_review_service.dart';
 import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
+import 'package:cc_server_core/src/fs_confinement.dart';
 import 'package:cc_server_core/src/google_calendar_server.dart';
 import 'package:cc_server_core/src/harness_model_override_cache.dart';
 import 'package:cc_server_core/src/identity/approval_escalation_sweeper.dart';
@@ -228,12 +235,12 @@ import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:cc_server_core/src/pr_review/review_ci_signal_service.dart';
 import 'package:cc_server_core/src/push/web_push_ops.dart';
 import 'package:cc_server_core/src/push/web_push_service.dart';
-import 'package:cc_server_core/src/rig_rpc_ops.dart';
-import 'package:cc_server_core/src/rig_wire.dart';
+import 'package:cc_server_core/src/repo_path_guard.dart';
 import 'package:cc_server_core/src/run_log_reader.dart';
 import 'package:cc_server_core/src/skill_analysis_service.dart';
 import 'package:cc_server_core/src/skills/installed_skills_list.dart';
 import 'package:cc_server_core/src/usage/harness_usage_accounts.dart';
+import 'package:cc_server_core/src/workspaces/workspace_logo.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -249,6 +256,7 @@ export 'catalog/terminal_port_ops.dart';
 part 'catalog/invite_redeem_url.dart';
 part 'catalog/provider_model_override_args.dart';
 part 'catalog/rig_watch_queries.dart';
+part 'catalog/standing_approval_write.dart';
 
 /// The repo-RPC + watch-query registries a server exposes to first-party
 /// clients (desktop-remote / web). `ops` are request/response operations;
@@ -339,14 +347,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   required NewsfeedRepository newsfeedRepository,
   required AgentRepository agentRepository,
   required RepoRepository repoRepository,
+  // The space read gate (a read grant and forge read on every repository a
+  // space exposes): the runtime's one instance, shared with the agent MCP
+  // lane and the notification paths.
+  required SpaceRepoAccess spaceRepoAccess,
   // Refuses a forge repository link the caller cannot see themselves (throws
-  // a `ValidationException`). Null only in bare test catalogs.
-  Future<void> Function({
-    required String workspaceId,
-    required String userId,
-    required Repo repo,
-  })?
-  verifyRepoLink,
+  // a `ValidationException`, or `NeedsSignInException` when they have no
+  // sign-in for that forge) and answers what automation will meet there
+  // (recorded in the repo access registry too), with the forge's durable id
+  // the link is pinned to. Null only in bare test catalogs.
+  VerifyRepoLink? verifyRepoLink,
   EnvironmentPort? environments,
   required SpaceReadRepository spaceReadRepository,
   required MemoryDomainRepository memoryDomainRepository,
@@ -390,7 +400,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // credential that workspace's GitHub identity mode selects.
   SkillBundlePort? skillBundles,
   SkillSourceRepository? skillSources,
-  SkillSourcePort Function(String workspaceId, String owner)?
+  SkillSourcePort Function(String workspaceId, {String? actingUserId})?
   skillSourceCatalogFor,
   // The skills antivirus as a pipeline (PRD 23 §2/§6): backs the scan /
   // analyze ops with run recording (projection rows the Pipelines UI shows).
@@ -551,31 +561,43 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   forgeProviderRegistryFor,
   PrPreviewFetcher? fetchPrPreview,
   CommitPreviewFetcher? fetchCommitPreview,
-  // Fetches the workspace's open PRs across its linked GitHub repos (the PR-list
-  // screen's data) on the SERVER's gh-authenticated client. Optional: when null
-  // the `pr.listOpenForWorkspace` op reports `authenticated: false`.
+  // Fetches the workspace's open PRs across the linked repos the caller may
+  // see (the PR-list screen's data), server-side. Optional: when null the
+  // `pr.listOpenForWorkspace` op reports `authenticated: false`.
   OpenPrListFetcher? fetchOpenPrList,
   // The open-PR poller behind the live PR list: `pr.watchOpenForWorkspace`
   // streams its snapshot and `pr.refreshOpenForWorkspace` forces a sweep.
-  // Optional: when null the watch reports `authenticated: false` (no gh token).
+  // Optional: when null the watch reports `authenticated: false`.
   OpenPrPollingService? openPrPoller,
-  // The SERVER's authenticated GitHub user (drives `github.currentUser`). Null
-  // when the server holds no gh token → the op returns a null user.
+  // Which linked repos each caller may see PRs of (admin or read grant, AND
+  // their own forge sign-in can read it). Every workspace-wide PR surface
+  // filters through it and reports the rest as `hidden_repos` counts; per-repo
+  // PR ops check the caller's forge reach with it. Null fails closed: every
+  // workspace-wide PR surface answers empty, every per-repo PR op refuses.
+  PrRepoVisibility? prRepoVisibility,
+  // The CALLER's GitHub account in the bound workspace, on their own sign-in
+  // (drives `github.currentUser`). Null → the op returns a null user.
   CurrentGitHubUserFetcher? fetchCurrentGitHubUser,
-  // The SERVER user's GitHub team membership (org → slugs). Null → inbox /
-  // badge stay user-only (today's matching).
+  // The CALLER's GitHub team membership in the bound workspace (org → slugs).
+  // Null → inbox / badge match the caller's own login only.
   ViewerGitHubTeamsFetcher? fetchViewerGitHubTeams,
-  // The dashboard's "review-requested:@me" PRs (server-side gh search). Null →
+  // The dashboard's "review-requested:@me" PRs (server-side search on the
+  // caller's own sign-in). Null →
   // `pr.searchReviewRequestedForWorkspace` returns an empty list.
   ReviewRequestedFetcher? fetchReviewRequested,
-  // The PR-list "reviewed by me" key set (server-side gh search). Null →
+  // The PR-list "reviewed by me" key set (server-side search on the caller's
+  // own sign-in). Null →
   // `pr.searchReviewedByForWorkspace` returns an empty set.
   ReviewedByFetcher? fetchReviewedBy,
-  // PR-queue free-text search (server-side gh search). Null → empty results.
+  // PR-queue free-text search (server-side, on the caller's own sign-in).
+  // Null → empty results.
   PrSearchFetcher? fetchPrSearch,
   // The CALLER's merged PR history across a workspace's repos, resolved per
   // forge under that caller's own per-forge viewer identity. Null → empty.
-  Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
+  Future<
+    List<({Repo repo, List<PullRequest> prs, bool hasMore, int? totalCount})>
+  >
+  Function(
     List<Repo> repos, {
     String? userId,
     String? workspaceId,
@@ -584,7 +606,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // GitHub org members (profile people picker). Null → empty.
   OrgMembersFetcher? fetchOrgMembers,
   // Bundled GitHub read fetchers for compose-PR / peek / profile / pagination
-  // (server-side gh client). Null (no gh token) → those ops degrade to empty.
+  // (server-side, on the caller's own GitHub sign-in). Null → those ops
+  // degrade to empty.
   GitHubReadFetchers? githubRead,
   // Fetches the raw githubstatus.com summary for `github.serviceStatus`. Needs
   // no token; null only when the host wires no status fetcher → null summary.
@@ -615,6 +638,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Null ⇒ pools keep the id (dispatch skips it, and refuses a pool left
   // naming only removed accounts).
   Future<void> Function(String lane)? onAccountPoolCredentialsRemoved,
+  // Runs after a repository is unlinked from a workspace, with the repository
+  // as it was linked, so the forge credentials minted or stored for it there
+  // are revoked and forgotten. Null ⇒ nothing beyond the unlink itself.
+  Future<void> Function(String workspaceId, Repo repo)? onRepoUnlinked,
+  // Where a linked repository's checkout may live; null refuses every link.
+  RepoPathGuard? repoPathGuard,
   // Per-account 5h/weekly quota, so the picker can show which login still has
   // headroom. Null ⇒ accounts list without usage.
   ClaudeAccountUsageFetcher? fetchClaudeAccountUsage,
@@ -675,14 +704,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // headless cc_server — both link cc_infra); when null the op is absent
   // (default-deny) and the thin client degrades to a "No isolation only" result.
   SandboxDetectorPort? sandboxDetector,
-  // Detects the agent processes running in the SERVER's OS process table (the
-  // dashboard's "active processes" matrix) and stops one by pid. The process
-  // table is host-global and the detection spans every workspace's agents (the
-  // dashboard's cross-workspace overview), so `process.detect` / `process.kill`
-  // are CROSS-WORKSPACE BY DESIGN (`workspaceScoped: false`). Killing a host
-  // process is privileged, so both ops are `fullClient`-only (a companion phone
-  // is denied). Absent when null → the client sees an empty process list.
-  ProcessDetectionPort? processDetection,
+  // The agent runs alive on the SERVER (the dashboard's "active processes"
+  // matrix) and the stop for one. `process.detect` / `process.kill` are
+  // CROSS-WORKSPACE BY DESIGN (`workspaceScoped: false`), filtered per caller:
+  // see the ops. Absent when null → the client sees an empty process list.
+  ProcessDetectionService? processDetection,
   // The shell commands agents left running in one space (backgrounded tasks,
   // long foreground ones), and the stop for a stuck one. Unlike the
   // process.detect pair this is workspace AND space scoped: the port derives
@@ -719,10 +745,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Re-syncs a PR space's worktree to the latest PR head (commits pushed after
   // it was provisioned). No-ops on a dirty tree. Absent on a host that owns no
   // worktrees.
+  // The fetch rides the caller's own sign-in ([actingUserId]).
   Future<Map<String, dynamic>> Function({
     required String workspaceId,
     required String spaceId,
     required String repoId,
+    required String actingUserId,
   })?
   syncPrWorktree,
   // Computes a conversation's working-tree diff on the SERVER (reads the CoW
@@ -839,13 +867,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Recorded layers, so pr.forSpaceBranches matches every part, not only the
   // branch currently checked out. Null keeps the single-branch match.
   SpaceStackRepository? spaceStackRepository,
-  // Controls the MCP HTTP server the SERVER hosts (start/stop/reconfigure +
-  // status). The MCP server is a host-global process-wide listener (NOT
-  // workspace data), so the `mcp.*` ops are declared `workspaceScoped: false`.
-  // Only a host that actually runs an MCP server wires it (desktop in-process
-  // host / headless cc_server); when null the `mcp.*` ops are simply absent and
-  // the web settings section degrades to "MCP not available on this server".
-  McpServerControl? mcpControl,
   // Controls the host's EXTERNAL MCP client (PRD 01): the subsystem that
   // connects to OTHER MCP servers and bridges their tools into the agent tool
   // surface. Host-global (the external servers are a process-wide concern, NOT
@@ -868,8 +889,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   ModelControl? voiceModelControl,
   // Server-hosted interactive PTY sessions inside the agent sandbox, backed by
   // cc_natives rather than a Flutter plugin. `terminal.*` and `terminal.output`
-  // are present when the host wires this port. Sessions are workspace-scoped;
-  // ownership is validated on every operation.
+  // are present when the host wires this port. A session belongs to its
+  // workspace and to the member who opened it; both are checked on every
+  // operation.
   TerminalSessionPort? terminalSessions,
   // Owns enclosures (rigs): disposable VMs/microVMs an agent or a human drives.
   // Present only on a host that can actually boot one — a server with no
@@ -878,6 +900,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // failing per action. Rigs are workspace-scoped and ownership is validated on
   // every op.
   RigPort? rigs,
+  // Who may see and drive [rigs]; required with them.
+  RigAccess? rigAccess,
   // Port visibility + forwarding for enclosed rigs: what is listening inside a
   // Terminal (VM), and every address each port answers on (host loopback, an
   // optional LAN port, a dev domain in the Browser (VM)). Present alongside
@@ -1187,6 +1211,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   /// instance from the caller so the pull request carries their name.
   final prLifecycleRepository = prLifecycleRepositoryFor(null);
 
+  // PR data outside the PR surfaces: review spaces, runs, run logs. No
+  // visibility service wired: nothing is visible (fail closed). Every space
+  // also passes [spaceRepoAccess].
+  final prData = PrDataGate(
+    reviewSpaces: reviewSpaceRepository,
+    resolve: (ws, user) async =>
+        await prRepoVisibility?.resolve(ws, user) ?? RepoVisibility.empty,
+    watch: (ws, user) =>
+        prRepoVisibility?.watch(ws, user) ?? Stream.value(RepoVisibility.empty),
+    spaceRead: spaceRepoAccess,
+  );
+
   /// An indexed point lookup, NOT a materialize-then-scan.
   ///
   /// This gates every messaging op and every messaging/notes/reactions/autonomy
@@ -1288,11 +1324,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   /// Filter durable feed rows before serializing them. Repo names and PR
   /// titles are not public just because a caller belongs to the workspace.
   /// The same predicate gates per-item mutations, including guessed IDs.
+  /// A PR-derived row also needs its repo in the caller's PR visibility
+  /// ([prVisibility] when the caller already holds it live, else resolved
+  /// now; none wired shows none of them).
   Future<List<NotificationFeedItem>> visibleNotificationItems(
     String workspaceId,
     String userId,
-    List<NotificationFeedItem> items,
-  ) async {
+    List<NotificationFeedItem> items, {
+    RepoVisibility? prVisibility,
+  }) async {
     final members = membershipRepository;
     if (members != null) {
       return visibleNotificationItemsForUser(
@@ -1301,7 +1341,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         items: items,
         members: members,
         workspaces: workspaceRepository,
-        isolatedRepos: isolatedRepoRepository,
+        prVisibility:
+            prVisibility ??
+            await prRepoVisibility?.resolve(workspaceId, userId) ??
+            RepoVisibility.empty,
+        spaceRead: spaceRepoAccess,
       );
     }
     // Bare catalogs without membership cannot expose repository-scoped rows.
@@ -1319,6 +1363,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             '${repo.remoteOwner}/${repo.remoteName}'.toLowerCase(): repo.id,
       },
       readableRepoIds: const <String>{},
+      prVisibleRepoIds: const <String>{},
       canReadSpace: (spaceId) async =>
           !await viewerTraceRestricted(workspaceId, spaceId, userId),
     );
@@ -1340,14 +1385,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       item,
     ])).isEmpty) {
       throw const AuthException('No access to this notification');
-    }
-  }
-
-  Future<void> assertSpaceOwned(String workspaceId, String spaceId) async {
-    if (!await spaceInWorkspace(workspaceId, spaceId)) {
-      throw const WorkspaceMismatchException(
-        'Space belongs to a different workspace',
-      );
     }
   }
 
@@ -1381,10 +1418,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // Every PR for this space's worktree and recorded stack branches. Exhaustive
   // head-ref history is cached per workspace/repo/branch and reconciled with
   // poller transitions; errors must leave `complete` false, never look merged.
+  // Only repos [visibility] shows contribute; a hidden one leaves `complete`
+  // false (its PRs are unknown to this caller, not absent).
   Future<Map<String, dynamic>> spaceBranchPrMatches(
     OpenPrPollingService poller,
     String workspaceId,
     String spaceId,
+    RepoVisibility visibility,
   ) async {
     final worktrees = await isolatedRepoRepository.forSpace(
       workspaceId,
@@ -1406,6 +1446,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         continue;
       }
       if (!repo.hasForgeRemote) {
+        continue;
+      }
+      if (!visibility.canSee(repo.id)) {
+        complete = false;
         continue;
       }
       final heads = pullRequestHeadBranches(
@@ -1436,25 +1480,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       }
     }
     return {'matches': matches, 'complete': complete};
-  }
-
-  Future<void> assertConversationOwned(
-    String workspaceId,
-    String conversationId,
-  ) async {
-    final repo = conversationRepository;
-    if (repo == null) {
-      return;
-    }
-    final conv = await repo.getById(
-      workspaceId: workspaceId,
-      conversationId: conversationId,
-    );
-    if (conv == null) {
-      throw const WorkspaceMismatchException(
-        'Conversation belongs to a different workspace',
-      );
-    }
   }
 
   /// The conversation (stream) a caller means: the one it named, or the
@@ -1518,9 +1543,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     );
   }
 
+  // A run of [workspaceId] that [userId] may see (not about a pull request
+  // they cannot see, [PrDataGate.requireRun]).
   Future<PipelineRun> loadOwnedPipelineRun(
     String workspaceId,
     String runId,
+    String userId,
   ) async {
     final run = await pipelineRunRepository.getRun(runId);
     if (run == null) {
@@ -1531,11 +1559,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         'Pipeline run belongs to a different workspace',
       );
     }
+    await prData.requireRun(workspaceId, userId, run);
     return run;
-  }
-
-  Future<void> assertPipelineRunOwned(String workspaceId, String runId) async {
-    await loadOwnedPipelineRun(workspaceId, runId);
   }
 
   // PR-lifecycle ownership chokepoint: the id-keyed mutations (`updateDraft` /
@@ -1559,17 +1584,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // absolute paths, so a legitimate client path always passes; a traversal
   // (`..`, absolute escape, or a path outside the workspace) is rejected
   // loudly as a workspace-boundary violation. [root] is the workspace dir
-  // resolved server-side (never client-supplied).
-  String confineFsPath(String root, String clientPath) {
-    final absRoot = p.normalize(p.absolute(root));
-    final target = p.normalize(p.absolute(clientPath));
-    if (target != absRoot && !p.isWithin(absRoot, target)) {
-      throw const WorkspaceMismatchException(
+  // resolved server-side (never client-supplied). Symlinks are resolved, so a
+  // link an agent made in its space cannot carry a write out of it.
+  String confineFsPath(String root, String clientPath) =>
+      confinedRealPath(root, clientPath) ??
+      (throw const WorkspaceMismatchException(
         'Path escapes the workspace directory',
-      );
-    }
-    return target;
-  }
+      ));
 
   // Reject slugs carrying path separators / traversal. A slug with
   // `..` escapes the workspace dir once p.join collapses it, so only a bare
@@ -1579,11 +1600,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       throw const WorkspaceMismatchException('Invalid slug');
     }
     return slug;
-  }
-
-  String? optionalArg(Map<String, dynamic> args, String key) {
-    final value = args[key];
-    return value is String && value.isNotEmpty ? value : null;
   }
 
   // Privileged host-surface ops (filesystem, terminal, adapter/model
@@ -1674,6 +1690,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     return await members.getMember(workspaceId, callerId) != null;
   }
 
+  /// The caller's role in [workspaceId], read only once the workspace is
+  /// known to be registered and not deleted; null otherwise, and null for
+  /// everyone when no membership is wired (fail closed).
+  Future<WorkspaceRole?> liveRoleIn(String workspaceId, String userId) async {
+    final workspace = await workspaceRepository.getById(workspaceId);
+    if (workspace == null || workspace.isDeleted) {
+      return null;
+    }
+    return (await identityMembers?.getMember(workspaceId, userId))?.role;
+  }
+
   // The HTTP redemption endpoint derived from the advertised RPC URL
   // (ws(s)://host:port/rpc → http(s)://host:port/invites/redeem). Empty when
   // the host advertises no reachable URL — the client then composes the link
@@ -1697,26 +1724,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // and `audited` from every op it wrapped — the wrapper meant to RAISE the
     // privilege bar was quietly lowering it, and the loss was invisible at
     // the call site because the result is still a valid RepoOp.
+    // It still dropped `serverAuthority`, `repoAccessVia`, `auditWhen` and
+    // `timeout`: an owner-only op wrapped here was owner-only only because
+    // its handler repeated the check by hand.
+    repoAccessVia: op.repoAccessVia,
+    serverAuthority: op.serverAuthority,
     undoClass: op.undoClass,
     preview: op.preview,
     actionClasses: op.actionClasses,
     audited: op.audited,
+    auditWhen: op.auditWhen,
+    timeout: op.timeout,
   );
-
-  /// Reads a guest port from a client arg, accepting the int and the numeric
-  /// string a JSON client may send. Null on anything outside 1–65535.
-  int? asPort(Object? raw) {
-    final port = switch (raw) {
-      final int i => i,
-      final String s => int.tryParse(s),
-      _ => null,
-    };
-    return (port == null || port <= 0 || port > 65535) ? null : port;
-  }
 
   Future<void> assertPipelineStepRunOwned(
     String workspaceId,
     String stepRunId,
+    String userId,
   ) async {
     final stepRun = await pipelineRunRepository.getStepRunById(
       workspaceId,
@@ -1726,7 +1750,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       throw const NotFoundException('Pipeline step run not found');
     }
     // Step runs carry no workspaceId — ownership flows through the parent run.
-    await loadOwnedPipelineRun(workspaceId, stepRun.pipelineRunId);
+    await loadOwnedPipelineRun(workspaceId, stepRun.pipelineRunId, userId);
   }
 
   // CachedPrReviewRepository is STATEFUL: it owns an SWR disk cache and emits
@@ -1752,6 +1776,105 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       for (final r in linked)
         if (r.hasForgeRemote) r,
     ];
+  }
+
+  /// What a catalog with no [prRepoVisibility] shows: nothing, every linked
+  /// repo hidden as `checking` (fail closed).
+  Future<RepoVisibility> nothingVisible(String workspaceId) async =>
+      RepoVisibility(
+        visible: const {},
+        hidden: {
+          for (final r in await linkedForgeRepos(workspaceId))
+            r.id: (forge: r.forge, reason: HiddenRepoReason.checking),
+        },
+      );
+
+  /// The linked repos [userId] may see PRs of in [workspaceId] (see
+  /// [PrRepoVisibility]), waiting for their forge reach where it is not
+  /// known yet. Every one-shot workspace-wide PR surface fans out over
+  /// `visibleRepos` of this, never over every linked repo.
+  Future<RepoVisibility> prVisibilityFor(String workspaceId, String userId) {
+    final visibility = prRepoVisibility;
+    return visibility == null
+        ? nothingVisible(workspaceId)
+        : visibility.resolve(workspaceId, userId);
+  }
+
+  /// Whether [userId] is an admin (or the owner) of [workspaceId] right now.
+  /// Live surfaces call it per frame, never once per subscription.
+  Future<bool> callerIsAdmin(String workspaceId, String userId) async =>
+      (await identityMembers?.getMember(workspaceId, userId))?.role.isAdmin ??
+      false;
+
+  /// [prVisibilityFor], live: re-emits when the caller's view changes.
+  Stream<RepoVisibility> watchPrVisibility(String workspaceId, String userId) {
+    final visibility = prRepoVisibility;
+    return visibility == null
+        ? Stream.fromFuture(nothingVisible(workspaceId))
+        : visibility.watch(workspaceId, userId);
+  }
+
+  /// Refuses [userId] reading [repo]'s pull requests unless their own sign-in
+  /// on its forge can read it. The per-repo half of PR visibility; the grant
+  /// half is [requireRepoReadGrant]. Fails closed without a
+  /// [prRepoVisibility].
+  Future<void> requireForgeReadAccess(
+    String workspaceId,
+    String userId,
+    Repo repo,
+  ) async {
+    final visibility = prRepoVisibility;
+    if (visibility == null) {
+      throw const AuthException(
+        'This server cannot check forge access, so pull request data cannot '
+        'be served.',
+      );
+    }
+    await visibility.requireForgeAccess(workspaceId, userId, repo);
+  }
+
+  // The space gate: [ws]'s, a review space only for a caller who may see its
+  // pull request, and any space only for a caller who may read every
+  // repository it exposes ([PrDataGate.requireSpace]).
+  Future<void> assertSpaceOwned(String ws, String spaceId, String user) async {
+    if (!await spaceInWorkspace(ws, spaceId)) {
+      throw const WorkspaceMismatchException(
+        'Space belongs to a different workspace',
+      );
+    }
+    await prData.requireSpace(ws, user, spaceId);
+  }
+
+  // The space gate over the call's `space_id`, for op packs built outside
+  // this function.
+  Future<void> requireSpaceArg(RepoOpContext ctx) => assertSpaceOwned(
+    ctx.workspaceId!,
+    ctx.args['space_id'] as String,
+    ctx.userId,
+  );
+
+  // A conversation's content is its space's: [workspaceId]'s, and the space
+  // gate (`assertSpaceOwned`) for [userId] over the space the conversation
+  // itself names, never one the caller names.
+  Future<void> assertConversationOwned(
+    String workspaceId,
+    String conversationId,
+    String userId,
+  ) async {
+    final repo = conversationRepository;
+    if (repo == null) {
+      return;
+    }
+    final conv = await repo.getById(
+      workspaceId: workspaceId,
+      conversationId: conversationId,
+    );
+    if (conv == null || conv.workspaceId != workspaceId) {
+      throw const WorkspaceMismatchException(
+        'Conversation belongs to a different workspace',
+      );
+    }
+    await assertSpaceOwned(workspaceId, conv.spaceId, userId);
   }
 
   // Approval ROUTING for the ephemeral agent-action lane.
@@ -1803,43 +1926,40 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     return targets == null || targets.isEmpty || targets.contains(userId);
   }
 
-  /// Refuses a caller who is not the operator of this INSTALL.
-  ///
-  /// Server-scoped ops cannot rely on `minRole`: `RepoOpDispatcher` evaluates
-  /// the role gate only when `op.workspaceScoped` is true, so a `minRole` on a
-  /// global op reads as protection in the source and enforces nothing. Every
-  /// paired device would be able to write install-wide settings — including
-  /// the sandbox posture and the argv agents launch with.
-  ///
-  /// The operator is the recorded server owner. A catalog built without
-  /// identity wiring (bare tests) has no owner to compare against and skips the
-  /// check, matching how the other hand-rolled guards here behave.
-  void requireServerAdmin(RepoOpContext ctx) {
-    final owner = serverOwnerUserId;
-    if (owner == null) {
-      // Fail CLOSED. This used to no-op, so a catalog built without identity
-      // wiring served every server-wide setting ungated — the one shape where
-      // "production always wires it" is an argument for the check being
-      // cheap, not for skipping it.
-      throw const AuthException(
-        'This server has no operator identity configured, so server-wide '
-        'settings cannot be changed.',
-      );
-    }
-    if (ctx.userId != owner) {
-      throw const AuthException(
-        'This setting affects every workspace on this server and can only be '
-        'changed by its operator.',
-      );
-    }
-  }
-
   // Per-repo grant chokepoint: workspace membership must never silently
   // out-privilege the forge, so every code-bearing surface resolves the
   // caller's grant on the repo it exposes. Owners/admins hold every grant
   // implicitly. Denies loudly, never silently — and FAILS CLOSED when no
   // identity repository is wired (this used to return, i.e. grant access, on
   // a catalog with no membership wiring).
+  // The workspace's repo access record narrowed to what [userId] may see,
+  // for the one-shot open-PR op (the watch joins the live stream instead).
+  Future<List<Map<String, dynamic>>> repoAccessFor(
+    String workspaceId,
+    String userId,
+    RepoVisibility visibility,
+  ) async {
+    final poller = openPrPoller;
+    if (poller == null) {
+      return const [];
+    }
+    final issues = await poller.watchRepoAccessForWorkspace(workspaceId).first;
+    return filterRepoAccessEntries(
+      [for (final i in issues) i.toJson()],
+      linked: await linkedForgeRepos(workspaceId),
+      isAdmin: await callerIsAdmin(workspaceId, userId),
+      visibility: visibility,
+    );
+  }
+
+  // Code follows the caller's own forge access, admins included; the op
+  // dispatcher's per-repo gates ask the same question (`repoForgeReadCheck`).
+  final requireRepoForgeRead = repoForgeReadCheck(
+    repos: repoRepository,
+    visibility: prRepoVisibility,
+    serverOwnerUserId: serverOwnerUserId,
+  );
+
   Future<void> requireRepoReadGrant({
     required String workspaceId,
     required String userId,
@@ -1856,13 +1976,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (member == null) {
       throw const AuthException('Not a member of this workspace');
     }
-    if (member.role.isAdmin) {
-      return;
+    if (!member.role.isAdmin) {
+      final grants = await members.getRepoGrants(workspaceId, userId);
+      if (!(grants[repoId] ?? RepoGrantLevel.none).allowsRead) {
+        throw const RepoGrantRequiredException(
+          RepoGrantLevel.read,
+          'No read access to this repo',
+        );
+      }
     }
-    final grants = await members.getRepoGrants(workspaceId, userId);
-    if (!(grants[repoId] ?? RepoGrantLevel.none).allowsRead) {
-      throw const AuthException('No read access to this repo');
-    }
+    await requireRepoForgeRead(
+      workspaceId: workspaceId,
+      userId: userId,
+      repoId: repoId,
+    );
   }
 
   // Secret exclusion: a per-workspace glob list (`.env`, `id_rsa`, `.npmrc`,
@@ -1930,20 +2057,25 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (member == null) {
       throw const AuthException('Not a member of this workspace');
     }
-    if (member.role.isAdmin) {
-      return;
-    }
-    final grants = await members.getRepoGrants(workspaceId, userId);
+    final grants = member.role.isAdmin
+        ? null
+        : await members.getRepoGrants(workspaceId, userId);
     final linked = await workspaceRepository
         .watchReposForWorkspace(workspaceId)
         .first;
     for (final repo in linked) {
-      if (!(grants[repo.id] ?? RepoGrantLevel.none).allowsRead) {
+      if (grants != null &&
+          !(grants[repo.id] ?? RepoGrantLevel.none).allowsRead) {
         throw const AuthException(
           'Workspace-wide code search requires read access to every linked '
           'repo',
         );
       }
+      await requireRepoForgeRead(
+        workspaceId: workspaceId,
+        userId: userId,
+        repoId: repo.id,
+      );
     }
   }
 
@@ -1958,38 +2090,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   // repo — the shell can `cd` into each of them.
   Future<List<String>> reposExposedBySpaceArg(RepoOpContext ctx) async {
     final workspaceId = ctx.workspaceId!;
-    Future<List<String>> allLinked() async => [
-      for (final r
-          in await workspaceRepository
-              .watchReposForWorkspace(workspaceId)
-              .first)
-        r.id,
-    ];
-    final dbs = workspaceDbs;
-    if (dbs == null) {
-      // A catalog with no workspace persistence has no space selections to
-      // read (bare tests); the surfaces this feeds don't exist there either.
-      return const [];
-    }
     final spaceArg = ctx.args['space_id'];
-    if (spaceArg is! String || spaceArg.isEmpty) {
-      return allLinked();
-    }
-    final db = dbs.of(workspaceId);
-    final space = await db.messagingDao.getSpaceById(spaceArg);
-    if (space != null && space.workspaceId != workspaceId) {
-      throw const WorkspaceMismatchException(
-        'Space belongs to a different workspace',
+    final dbs = workspaceDbs;
+    if (dbs != null && spaceArg is String && spaceArg.isNotEmpty) {
+      final space = await dbs.of(workspaceId).messagingDao.getSpaceById(
+        spaceArg,
       );
+      if (space != null && space.workspaceId != workspaceId) {
+        throw const WorkspaceMismatchException(
+          'Space belongs to a different workspace',
+        );
+      }
     }
-    if (space?.noRepos ?? false) {
-      return const [];
-    }
-    final selected = await db.spaceRepoDao.repoIdsForSpace(
+    // A catalog with no workspace persistence exposes nothing (bare tests).
+    return spaceRepoAccess.exposedBy(
       workspaceId,
-      spaceArg,
+      spaceArg is String ? spaceArg : null,
     );
-    return selected.isEmpty ? allLinked() : selected;
   }
 
   // Validates that `(owner, repo)` is a repo linked to the bound workspace
@@ -2023,7 +2140,28 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       userId: userId,
       repoId: match.id,
     );
+    await requireForgeReadAccess(workspaceId, userId, match);
     return match;
+  }
+
+  /// Refuses [userId] acting on, or reading, the pull requests of the linked
+  /// forge repo named [repoFullName] (`owner/name`) unless they may see them:
+  /// grant AND their own forge sign-in ([requireWorkspaceForgeRepo]).
+  Future<Repo> requirePrRepoByFullName(
+    String workspaceId,
+    String repoFullName, {
+    required String userId,
+  }) {
+    final slash = repoFullName.indexOf('/');
+    if (slash <= 0 || slash == repoFullName.length - 1) {
+      throw const ValidationException('repo_full_name must be owner/name');
+    }
+    return requireWorkspaceForgeRepo(
+      workspaceId,
+      repoFullName.substring(0, slash),
+      repoFullName.substring(slash + 1),
+      userId: userId,
+    );
   }
 
   /// The forge client for a repo already validated by
@@ -2070,12 +2208,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       );
     }
     // The grant gate runs BEFORE the cache: the cached repository instance is
-    // shared across members, but access is re-checked per call.
+    // shared across members, but access is re-checked per call — the grant
+    // here, and the caller's own forge reach (a member whose sign-in cannot
+    // read the repo gets nothing of it, whatever the workspace grants).
     await requireRepoReadGrant(
       workspaceId: workspaceId,
       userId: userId,
       repoId: match.id,
     );
+    await requireForgeReadAccess(workspaceId, userId, match);
     // Cache key: forge + coordinate + acting user. Same owner/repo on two
     // forges are different repos; the cached instance holds the
     // authenticated write client (sharing would mis-attribute).
@@ -2159,15 +2300,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       try {
         final decoded = jsonDecode(cached);
         if (decoded is Map<String, dynamic>) {
-          // Unwrap the envelope. A legacy (un-timestamped) row has no
-          // `__swr_val`; treat it as immediately stale so it upgrades on the
-          // next write.
-          final wrapped = decoded.containsKey('__swr_val');
-          final rawValue = wrapped ? decoded['__swr_val'] : decoded;
+          // Unwrap the envelope. A row without one is a miss.
+          final rawValue = decoded['__swr_val'];
           final tsRaw = decoded['__swr_ts'];
           final ts = tsRaw is String ? DateTime.tryParse(tsRaw) : null;
-          final isStale =
-              ts == null || DateTime.now().difference(ts) >= revalidateTtl;
+          if (rawValue is! Map || ts == null) {
+            throw const FormatException('not an SWR envelope');
+          }
+          final isStale = DateTime.now().difference(ts) >= revalidateTtl;
           if (isStale) {
             // Background revalidation; ignore failures (keep the cached value).
             unawaited(
@@ -2180,9 +2320,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                   .catchError((_) {}),
             );
           }
-          if (rawValue is Map) {
-            return rawValue.cast<String, dynamic>();
-          }
+          return rawValue.cast<String, dynamic>();
         }
       } catch (_) {
         // Bad payload — treat as a miss and fetch fresh below.
@@ -2226,12 +2364,22 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
   final worktreeSync = worktreeSyncBranch;
   final worktreeBranches = worktreeListBranches;
   final worktreeCheckoutFn = worktreeCheckout;
-  final mcp = mcpControl;
   final mcpClient = mcpClientControl;
   final embeddingModel = embeddingModelControl;
   final diarizationModel = diarizationModelControl;
   final voiceModel = voiceModelControl;
   final terminals = terminalSessions;
+  // An environment's host process takes the `environment.ensure` grant
+  // to drive; anyone else sees no such session.
+  Future<bool> mayDrive(RepoOpContext ctx) => mayDriveTerminal(
+    ctx,
+    sessionId: ctx.args['session_id'] as String,
+    terminals: terminals!,
+    members: identityMembers,
+    reposExposedBySpace: reposExposedBySpaceArg,
+    requireRepoForgeRead: requireRepoForgeRead,
+    assertSpaceOwned: assertSpaceOwned,
+  );
   final vscode = codeServer;
   final fs = workspaceFilesystem;
   final dispatch = messagingDispatch;
@@ -2305,16 +2453,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         requiredCapability: SessionCapability.fullClient,
+        // How this server is reached from outside. The hand-rolled check this
+        // replaces let anyone through when no owner was recorded.
+        serverAuthority: ServerAuthority.serverOwner,
         requiredArgs: ['provider'],
         handler: (ctx) async {
           final runtime = networkRuntime();
           if (runtime == null) {
             throw const NotFoundException('Network runtime is not available');
-          }
-          if (serverOwnerUserId != null && ctx.userId != serverOwnerUserId) {
-            throw const AuthException(
-              'Only the server owner can change how this server is shared.',
-            );
           }
           final provider = ctx.args['provider'];
           const allowed = {'off', 'cloudflared', 'ngrok', 'tailscale'};
@@ -2422,7 +2568,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (content is! String) {
             throw const ValidationException('content must be a string');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final row = await workspaceDbs
               .of(ctx.workspaceId!)
               .spaceExtrasDao
@@ -2447,7 +2593,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (emoji is! String || emoji.isEmpty || emoji.length > 16) {
             throw const ValidationException('emoji must be a short string');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final message = await messagingRepository.getMessageById(
             ctx.workspaceId!,
             messageId,
@@ -2510,7 +2656,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredCapability: SessionCapability.fullClient,
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           String displayName = ctx.userId;
           if (userRepository != null) {
             displayName =
@@ -2533,7 +2679,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredCapability: SessionCapability.fullClient,
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           String displayName = ctx.userId;
           if (userRepository != null) {
             displayName =
@@ -2557,7 +2703,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           return {
             'takeover': await takeoverService.status(ctx.workspaceId!, spaceId),
           };
@@ -2584,7 +2730,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'level must be one of ${allowed.join(', ')} or null',
             );
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           await workspaceDbs
               .of(ctx.workspaceId!)
               .spaceExtrasDao
@@ -2606,7 +2752,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           final agentId = ctx.args['agent_id'];
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           if (agentId is String && agentId.isNotEmpty) {
             await workspaceDbs
                 .of(ctx.workspaceId!)
@@ -2636,7 +2782,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final raw = await workspaceDbs
               .of(ctx.workspaceId!)
               .cacheDao
@@ -2868,6 +3014,16 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'user': userToWire(user, includeOnboarding: true),
             'device_id': ctx.deviceId,
             'is_server_owner': ctx.userId == serverOwnerUserId,
+            // `workspace.create` requires the server owner; the client hides
+            // the affordance from everyone else.
+            'can_create_workspaces': ctx.userId == serverOwnerUserId,
+            // Surfaces that run on the server host itself (the embedded
+            // editor, host-placed environments) require the server owner.
+            'can_use_host': ctx.userId == serverOwnerUserId,
+            // The identity provider the caller's account is pinned to (You →
+            // Profile). The issuer only: the subject is never sent.
+            if (user.ssoIssuer case final issuer? when issuer.isNotEmpty)
+              'sso_issuer': issuer,
             'memberships': memberships.map(workspaceMemberToWire).toList(),
           };
         },
@@ -2886,36 +3042,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ),
         },
       ),
-      // Edit your OWN profile (display name, email, avatar, git identity).
-      // The target is always `ctx.userId` — no principal can edit another.
+      // Edit your OWN profile (username, display name, email, avatar, git
+      // identity). The target is always `ctx.userId` — no principal can edit
+      // another. Body and rules: `updateOwnProfile`.
       RepoOp(
         name: 'users.updateProfile',
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
-        handler: (ctx) async {
-          final user = await identityUsers.getById(ctx.userId);
-          if (user == null) {
-            throw const NotFoundException('User not found');
-          }
-          String? optional(String key) {
-            final value = ctx.args[key];
-            return value is String && value.isNotEmpty ? value : null;
-          }
-
-          final displayName = optional('display_name');
-          final updated = user.copyWith(
-            displayName: displayName,
-            email: optional('email'),
-            avatarRef: optional('avatar_ref'),
-            gitAuthorName: optional('git_author_name'),
-            gitAuthorEmail: optional('git_author_email'),
-          );
-          await identityUsers.upsert(updated);
-          if (displayName != null) {
-            presenceHub?.renameUser(ctx.userId, displayName);
-          }
-          return {'user': userToWire(updated, includeOnboarding: true)};
-        },
+        handler: (ctx) =>
+            updateOwnProfile(
+              ctx,
+              users: identityUsers,
+              serverOwnerUserId: serverOwnerUserId,
+              eventBus: eventBus,
+            ),
       ),
       // Records that the caller has finished first-run setup. Self-service
       // like `users.updateProfile`: the target is always `ctx.userId`, so
@@ -3176,7 +3316,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             repoId,
             level,
           );
-          return {'ok': true};
+          // Their PR surfaces re-filter at once rather than on the next tick.
+          prRepoVisibility?.memberChanged(workspaceId, targetUserId);
+          return {
+            'ok': true,
+            // A grant never out-privileges the forge: say so when the
+            // member's own sign-in cannot read what they were just granted.
+            'access_warning': level.allowsRead
+                ? await memberForgeReadWarning(
+                    requireRepoForgeRead,
+                    workspaceId: workspaceId,
+                    userId: targetUserId,
+                    repoId: repoId,
+                  )
+                : null,
+          };
         },
       ),
       // Mint a single-use, expiring invite. Admin-gated. The one-time code is
@@ -3696,6 +3850,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'existing row only.',
           );
         }
+        // The agent file's directory is the agent's writable working
+        // directory, so it moves only to the file the server keeps for the
+        // agent's (new) name, as the rename in the agent form does.
+        if (agent.agentMdPath != existing.agentMdPath &&
+            (fs == null ||
+                agent.agentMdPath !=
+                    await fs.agentFilePath(
+                      ctx.workspaceId!,
+                      slugify(agent.name),
+                    ))) {
+          throw const ValidationException(
+            "An agent's file is the one the server keeps for its name",
+          );
+        }
         await agentRepository.upsert(agent);
         return {'ok': true};
       },
@@ -3753,7 +3921,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             if (!log.isRunning || pid == null) {
               continue;
             }
-            await processDetection.killProcess(pid);
+            await processDetection.stopRun(
+              pid,
+              mayStop: (runWorkspace) async => runWorkspace == ctx.workspaceId,
+            );
             killedPids.add(pid);
             await agentRunLogRepository.upsert(
               log.copyWith(
@@ -3763,145 +3934,24 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               ),
             );
           }
-          // Runs whose pid was never recorded (crash before the stamp) still
-          // show up in the host's process table under the agent's name.
-          for (final proc in await processDetection.detect()) {
-            if (!killedPids.contains(proc.pid) &&
-                proc.command.contains(agent.name)) {
-              await processDetection.killProcess(proc.pid);
-              killedPids.add(proc.pid);
-            }
-          }
+          // No second pass by name: detection lists only runs with a recorded
+          // pid, all covered above, and a name match reached other agents'
+          // runs in every workspace.
           return {'killed': killedPids.length};
         },
       ),
 
-    RepoOp(
-      name: 'repos.get',
-      kind: RepoOpKind.read,
-      requiredArgs: ['repo_id'],
-      handler: (ctx) async {
-        final repo = await repoRepository.getById(
-          ctx.workspaceId!,
-          ctx.args['repo_id'] as String,
-        );
-        if (repo == null) {
-          throw const NotFoundException('Repo not found');
-        }
-        return {'repo': repoToWire(repo)};
-      },
+    // Reading, linking, unlinking and ordering repositories.
+    ...buildRepoLinkOps(
+      repos: repoRepository,
+      requireRepoRead: requireRepoReadGrant,
+      members: membershipRepository,
+      pathGuard: repoPathGuard,
+      inspector: inspector,
+      eventBus: eventBus,
+      verifyRepoLink: verifyRepoLink,
+      onRepoUnlinked: onRepoUnlinked,
     ),
-    // Repo identity ACROSS workspaces is by path, not id (each workspace mints
-    // its own id for a checkout), so this is how a caller asks "is this
-    // checkout already here?".
-    RepoOp(
-      name: 'repos.findByPath',
-      kind: RepoOpKind.read,
-      requiredArgs: ['path'],
-      handler: (ctx) async {
-        final repo = await repoRepository.findByPath(
-          ctx.workspaceId!,
-          ctx.args['path'] as String,
-        );
-        return {'repo': repo == null ? null : repoToWire(repo)};
-      },
-    ),
-    RepoOp(
-      name: 'repos.exists',
-      kind: RepoOpKind.read,
-      requiredArgs: ['repo_id'],
-      handler: (ctx) async {
-        final exists = await repoRepository.exists(
-          ctx.workspaceId!,
-          ctx.args['repo_id'] as String,
-        );
-        return {'exists': exists};
-      },
-    ),
-    RepoOp(
-      name: 'repos.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['repo'],
-      handler: (ctx) async {
-        final repo = repoFromWire(
-          (ctx.args['repo'] as Map).cast<String, dynamic>(),
-        );
-        final existing = await repoRepository.getById(
-          ctx.workspaceId!,
-          repo.id,
-        );
-        // A new link, or one retargeted at another forge repository, lets
-        // automation mint for that repository: only a workspace admin may
-        // make it, and only for a repository their own sign-in can see.
-        if (isNewForgeLink(existing, repo)) {
-          requireRepoLinkAdmin(ctx);
-          await verifyRepoLink?.call(
-            workspaceId: ctx.workspaceId!,
-            userId: ctx.userId,
-            repo: repo,
-          );
-        }
-        final id = await repoRepository.upsert(ctx.workspaceId!, repo);
-        return {'repo_id': id};
-      },
-    ),
-    RepoOp(
-      name: 'repos.delete',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['repo_id'],
-      handler: (ctx) async {
-        await repoRepository.delete(
-          ctx.workspaceId!,
-          ctx.args['repo_id'] as String,
-        );
-        return {'ok': true};
-      },
-    ),
-    // Drag-to-reorder: persists the manual order every repo list reads back.
-    RepoOp(
-      name: 'repos.reorder',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['repo_ids'],
-      handler: (ctx) async {
-        await repoRepository.reorder(
-          ctx.workspaceId!,
-          (ctx.args['repo_ids'] as List).map((e) => e.toString()).toList(),
-        );
-        return {'ok': true};
-      },
-    ),
-    // Register a repo by pointing at a git checkout on the SERVER's filesystem.
-    // Workspace-scoped: the inspected repo is linked into the session's bound
-    // workspace via the `RepoAdded` event (server-side indexing keys off it).
-    // The local `inspector` is promoted non-null by the guard, so the op only
-    // exists when the host wired a [GitRepoInspectorPort].
-    if (inspector != null)
-      RepoOp(
-        name: 'repos.addFromPath',
-        kind: RepoOpKind.mutate,
-        requiredArgs: ['path'],
-        handler: (ctx) async {
-          final useCase = AddRepoFromPathUseCase(
-            repository: repoRepository,
-            inspector: inspector,
-            eventBus: eventBus,
-          );
-          final repo = await useCase.execute(
-            ctx.args['path'] as String,
-            workspaceId: ctx.workspaceId!,
-            // A new link: admin only, as in `repos.upsert`.
-            verify: (repo) async {
-              requireRepoLinkAdmin(ctx);
-              await verifyRepoLink?.call(
-                workspaceId: ctx.workspaceId!,
-                userId: ctx.userId,
-                repo: repo,
-              );
-            },
-          );
-          return {'repo': repoToWire(repo)};
-        },
-      ),
     // Browses one level of the SERVER's filesystem (constrained to allow-listed
     // roots) so a web client can navigate to a git checkout and register it via
     // `repos.addFromPath`. Host-global filesystem, NOT workspace data, so it is
@@ -3912,6 +3962,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'fs.browseDirectory',
         kind: RepoOpKind.read,
         workspaceScoped: false,
+        // The host's own directories, outside every workspace: only the
+        // server owner may link a checkout from there (`RepoPathGuard`), so
+        // only the owner browses them.
+        serverAuthority: ServerAuthority.serverOwner,
         handler: (ctx) async {
           final path = ctx.args['path'] as String?;
           final listing = await directoryBrowser.browse(path: path);
@@ -3920,11 +3974,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     // Lists the editors the SERVER host can launch (each flagged installed).
     // Editors are host-global, not workspace data. Absent on a headless host.
+    // The server owner's, like the launches it offers.
     if (launcher != null)
       RepoOp(
         name: 'ide.detectEditors',
         kind: RepoOpKind.read,
         workspaceScoped: false,
+        serverAuthority: ServerAuthority.serverOwner,
         handler: (ctx) async {
           final editors = await launcher.detectEditors();
           return {'editors': editors.map(ideEditorToWire).toList()};
@@ -4028,9 +4084,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // only: a pasted GitHub token is refused by `ForgeCredentials.setToken`.
     //
     // Strictly self-service: the target is always `ctx.userId`, so there is no
-    // admin gate and no way to write another member's. Tokens are read per
-    // call, so the next request uses it. Answers the connection probed with
-    // the new token, so a rejected paste reads as such at once.
+    // admin gate and no way to write another member's. The token is the
+    // person's one credential for that forge on this server, used in every
+    // workspace; it is read per call, so the next request uses it. Answers
+    // the connection probed with the new token, so a rejected paste reads as
+    // such at once.
     if (forgeTokens != null)
       RepoOp(
         name: 'credentials.setForgeToken',
@@ -4049,7 +4107,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             forge,
             token,
             userId: ctx.userId,
-            workspaceId: await overlayWorkspaceIdChecked(ctx),
           )).toJson();
         },
       ),
@@ -4063,11 +4120,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (!forge.isSupported) {
             throw const NotFoundException('Missing or invalid argument: forge');
           }
-          await forgeTokens.clearToken(
-            forge,
-            userId: ctx.userId,
-            workspaceId: await overlayWorkspaceIdChecked(ctx),
-          );
+          // GitHub signs out through `oauth.disconnect`, which revokes the
+          // grant upstream before deleting it; deleting it here would leave
+          // it live at GitHub.
+          if (forge == ForgeHost.github) {
+            throw const ValidationException(
+              'Sign out of GitHub from its sign-in instead.',
+            );
+          }
+          // A pasted token is the person's one credential for the forge,
+          // whichever workspace they clear it from.
+          await forgeTokens.clearToken(forge, userId: ctx.userId);
           return {'ok': true};
         },
       ),
@@ -4144,8 +4207,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
     ],
     // These configure how the SERVER authenticates as itself, which is a
-    // server-wide decision — hence `requireServerAdmin`, matching `sso.*` and
-    // `models.*`. Secrets are write-only: what comes back is presence flags.
+    // server-wide decision — hence the server owner only, matching `sso.*`
+    // and `models.*`. Secrets are write-only: what comes back is presence flags.
     if (providerApps != null) ...[
       RepoOp(
         name: 'providerApps.list',
@@ -4153,7 +4216,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.read,
         workspaceScoped: false,
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final origin = providerOAuthHttpOrigin(pairingServerUrl);
           return {
             'apps': [
@@ -4187,7 +4249,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final provider = ProviderApp.fromWire(
             ctx.args['provider'] as String?,
           );
@@ -4225,7 +4286,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final provider = ProviderApp.fromWire(
             ctx.args['provider'] as String?,
           );
@@ -4252,13 +4312,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return sandboxDetectionResultToWire(result);
         },
       ),
-    // The dashboard's "active agent processes" matrix reads the SERVER's OS
-    // process table and can stop a process by pid. The process table is
-    // host-global and the detection spans every workspace's agents (the
-    // dashboard's cross-workspace overview), so both ops are
-    // `workspaceScoped: false`. Killing a host process is privileged, so both
-    // ops are `fullClient`-only — a companion phone is denied before the handler
-    // runs. Absent when the host wires no detector → an empty process list.
+    // The dashboard's "active agent processes" matrix: the agent runs alive on
+    // this host, and the stop for one by pid. CROSS-WORKSPACE BY DESIGN
+    // (`workspaceScoped: false`, read through the run log's cross-workspace
+    // query) and filtered per caller: a person sees and stops only runs of a
+    // live workspace they belong to (stopping takes the member role, as
+    // `agents.killProcesses`), the server owner sees and stops all. A stop
+    // resolves the pid against a live running run first, so no other process
+    // is ever signalled, and "not an agent run" and "not yours" answer alike.
+    // `fullClient`-only: a companion phone is denied before the handler runs.
     if (processes != null) ...[
       RepoOp(
         name: 'process.detect',
@@ -4266,7 +4328,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredCapability: SessionCapability.fullClient,
         handler: (ctx) async {
-          final found = await processes.detect();
+          final found = await processes.detect(
+            visible: (workspaceId) async =>
+                ctx.userId == serverOwnerUserId ||
+                await liveRoleIn(workspaceId, ctx.userId) != null,
+          );
           return {'processes': found.map(activeProcessInfoToWire).toList()};
         },
       ),
@@ -4277,7 +4343,19 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredCapability: SessionCapability.fullClient,
         requiredArgs: ['pid'],
         handler: (ctx) async {
-          await processes.killProcess((ctx.args['pid'] as num).toInt());
+          final stopped = await processes.stopRun(
+            (ctx.args['pid'] as num).toInt(),
+            mayStop: (workspaceId) async =>
+                ctx.userId == serverOwnerUserId ||
+                ((await liveRoleIn(
+                      workspaceId,
+                      ctx.userId,
+                    ))?.atLeast(WorkspaceRole.member) ??
+                    false),
+          );
+          if (!stopped) {
+            throw const NotFoundException('No such agent run');
+          }
           return const {};
         },
       ),
@@ -4291,14 +4369,21 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         environments: environments,
         reposExposedBySpace: reposExposedBySpaceArg,
         assertSpaceOwned: assertSpaceOwned,
+        serverOwnerUserId: serverOwnerUserId,
       ),
     // Resolves the PR's space worktree (creating + provisioning it if needed)
     // and opens it in the chosen editor on the host's display. Returns the
-    // server-side worktree path (opaque to the client).
+    // server-side worktree path. An editor launched on the host runs as the
+    // server's OS user outside any sandbox, so this and
+    // `ide.openSpaceWorktree` are the server owner's. Even for them the repo
+    // is one linked to this workspace whose PRs they may read, and whose
+    // path is served, before any worktree is made.
     if (launcher != null && ensurePrWorktree != null)
       RepoOp(
         name: 'ide.openPrInEditor',
         kind: RepoOpKind.mutate,
+        serverAuthority: ServerAuthority.serverOwner,
+        actionClasses: const {ActionClass.processSpawn},
         requiredArgs: [
           'repo_full_name',
           'pr_number',
@@ -4306,13 +4391,31 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           'editor_id',
         ],
         handler: (ctx) async {
+          final repoFullName = ctx.args['repo_full_name'] as String;
+          final repo = await requirePrRepoByFullName(
+            ctx.workspaceId!,
+            repoFullName,
+            userId: ctx.userId,
+          );
+          final repoId = ctx.args['repo_id'] as String?;
+          if (repoId != null && repoId.isNotEmpty && repoId != repo.id) {
+            throw const WorkspaceMismatchException(
+              'repo_id does not name that repository',
+            );
+          }
+          final guard =
+              repoPathGuard ??
+              (throw const ValidationException(
+                'This server cannot check repository paths, so it opens none.',
+              ));
+          await guard.admit(ctx.workspaceId!, repo);
           final path = await ensurePrWorktree(
             workspaceId: ctx.workspaceId!,
-            repoFullName: ctx.args['repo_full_name'] as String,
+            repoFullName: repoFullName,
             prNumber: (ctx.args['pr_number'] as num).toInt(),
             prExternalId: ctx.args['pr_external_id'] as String,
             title: ctx.args['title'] as String? ?? '',
-            repoId: ctx.args['repo_id'] as String?,
+            repoId: repo.id,
           );
           await launcher.openDirectory(
             editorId: ctx.args['editor_id'] as String,
@@ -4328,6 +4431,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       RepoOp(
         name: 'ide.openSpaceWorktree',
         kind: RepoOpKind.mutate,
+        serverAuthority: ServerAuthority.serverOwner,
         actionClasses: const {ActionClass.processSpawn},
         requiredArgs: ['space_id', 'repo_id', 'editor_id'],
         handler: (ctx) async {
@@ -4354,29 +4458,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'ok': true};
         },
       ),
-    // Resolves the PR's space worktree (creating + provisioning it if needed)
-    // and returns its absolute path WITHOUT launching an editor. The thin
-    // client now opens editors through `ide.openPrInEditor`; this op remains
-    // for hosts that expose a worktree path to other server-side tools.
-    // This is the SAME worktree the in-app workbench edits; there is no
-    // separate `pr_worktrees/` checkout. Served even by a headless host.
-    if (ensurePrWorktree != null)
-      RepoOp(
-        name: 'ide.ensureWorktree',
-        kind: RepoOpKind.mutate,
-        requiredArgs: ['repo_full_name', 'pr_number', 'pr_external_id'],
-        handler: (ctx) async {
-          final path = await ensurePrWorktree(
-            workspaceId: ctx.workspaceId!,
-            repoFullName: ctx.args['repo_full_name'] as String,
-            prNumber: (ctx.args['pr_number'] as num).toInt(),
-            prExternalId: ctx.args['pr_external_id'] as String,
-            title: ctx.args['title'] as String? ?? '',
-            repoId: ctx.args['repo_id'] as String?,
-          );
-          return {'path': path};
-        },
-      ),
     // Editor layouts (messaging space and PR workbench) are persisted per
     // PERSON in the SERVER-owned `caches` table, so the tab a user last had
     // open follows them from one device to another. See
@@ -4398,7 +4479,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // `space_id` is optional: the IDE Source Control panel (always
           // per-conversation) supplies it so the diff runs against the
           // conversation's isolated CoW worktree — the tree agents/code-server
-          // edit. Absent → the original linked-repo checkout (back-compat).
+          // edit. Absent → the linked-repo checkout (the repo panel outside a
+          // conversation).
           final spaceId = ctx.args['space_id'];
           final files = await repoCh(
             ctx.workspaceId!,
@@ -4435,6 +4517,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             ctx.workspaceId!,
             ctx.args['repo_id'] as String,
             spaceId: spaceId is String && spaceId.isNotEmpty ? spaceId : null,
+            // The open-PR fallback is forge data: only what this caller
+            // may see of the repo's pull requests counts.
+            viewerId: ctx.userId,
           );
           final policy = await secretPolicyForReadOnlyCaller(
             ctx.workspaceId!,
@@ -4518,7 +4603,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           await assertPathNotSecretExcluded(ctx, path);
           // `space_id` is optional and scopes the read to the conversation's
           // isolated CoW worktree — the copy the Explorer lists and agents
-          // write. Absent → the linked checkout (back-compat).
+          // write. Absent → the linked checkout.
           final spaceId = ctx.args['space_id'];
           final r = await repoFileC(
             ctx.workspaceId!,
@@ -4598,8 +4683,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             workspaceId: ctx.workspaceId!,
             userId: ctx.userId,
           );
-          // The option map is optional and defaults to legacy (case-insensitive
-          // literal) behaviour. We pass it through verbatim; the fetcher reads
+          // The option map is optional and defaults to a case-insensitive
+          // literal search. We pass it through verbatim; the fetcher reads
           // only the keys it knows.
           final optionsArg = ctx.args['options'];
           final options = optionsArg is Map
@@ -4622,11 +4707,19 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'worktree.searchContent',
         kind: RepoOpKind.read,
         requiredArgs: ['workspace_id', 'space_id', 'repo_id', 'query'],
+        // A space's worktree is its code: the repository's grant (read) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.read,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           // Scoped to the conversation's isolated worktree — the isolation
           // registry (workspace→space→repo) is the access boundary, so a
           // foreign space resolves to no worktree → empty. The option map is
-          // optional (legacy case-insensitive literal defaults).
+          // optional (defaults to a case-insensitive literal search).
           final optionsArg = ctx.args['options'];
           final options = optionsArg is Map
               ? Map<String, Object?>.from(optionsArg)
@@ -4646,7 +4739,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'worktree.searchFiles',
         kind: RepoOpKind.read,
         requiredArgs: ['workspace_id', 'space_id', 'repo_id', 'query'],
+        // A space's worktree is its code: the repository's grant (read) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.read,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           // Scoped to the conversation's isolated worktree — the isolation
           // registry (workspace→space→repo) is the access boundary, so a
           // foreign space resolves to no worktree → empty. Paged exactly like
@@ -4681,7 +4782,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           'path',
           'content',
         ],
+        // A space's worktree is its code: the repository's grant (write) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.write,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           final res = await worktreeWrite(
             workspaceId: ctx.workspaceId!,
             spaceId: ctx.args['space_id'] as String,
@@ -4700,7 +4809,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'worktree.revertFiles',
         kind: RepoOpKind.mutate,
         requiredArgs: ['workspace_id', 'space_id', 'repo_id', 'paths'],
+        // A space's worktree is its code: the repository's grant (write) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.write,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           final rawPaths = ctx.args['paths'];
           final paths = <String>[];
           if (rawPaths is List) {
@@ -4733,11 +4850,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // siblings (`writeFile`/`revertFiles`) stay in the worktree and declare
         // nothing: see `test/core/action_class_coverage_test.dart`.
         actionClasses: const {ActionClass.networkEgress},
+        // A space's worktree is its code: the repository's grant (write) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.write,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           return syncPrWorktree(
             workspaceId: ctx.workspaceId!,
             spaceId: ctx.args['space_id'] as String,
             repoId: ctx.args['repo_id'] as String,
+            actingUserId: ctx.userId,
           );
         },
       ),
@@ -4746,7 +4872,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'worktree.readFile',
         kind: RepoOpKind.read,
         requiredArgs: ['workspace_id', 'space_id', 'repo_id', 'path'],
+        // A space's worktree is its code: the repository's grant (read) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.read,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           final res = await worktreeRead(
             workspaceId: ctx.workspaceId!,
             spaceId: ctx.args['space_id'] as String,
@@ -4769,7 +4903,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // dispatcher reads space_id (a required arg) for space-scoped policy.
         actionClasses: const {ActionClass.gitCommit, ActionClass.gitPush},
         requiredArgs: ['workspace_id', 'space_id', 'repo_id', 'message'],
+        // A space's worktree is its code: the repository's grant (write) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.write,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           final rawPaths = ctx.args['paths'];
           final paths = <String>[
             if (rawPaths is List)
@@ -4819,7 +4961,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // test treats the declared set as the truth about what an op can do.
         actionClasses: const {ActionClass.gitPush},
         requiredArgs: ['workspace_id', 'space_id', 'repo_id'],
+        // A space's worktree is its code: the repository's grant (write) and
+        // forge read, and the space read gate.
+        repoAccess: RepoGrantLevel.write,
         handler: (ctx) async {
+          await assertSpaceOwned(
+            ctx.workspaceId!,
+            ctx.args['space_id'] as String,
+            ctx.userId,
+          );
           final res = await worktreePublish(
             workspaceId: ctx.workspaceId!,
             spaceId: ctx.args['space_id'] as String,
@@ -4837,78 +4987,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // Sync, branch list, and checkout live in [buildWorktreeBranchOps] so
     // this file's constructor count stays on the freeze.
     ...buildWorktreeBranchOps(
+      requireSpace: requireSpaceArg,
       sync: worktreeSync,
       listBranches: worktreeBranches,
       checkout: worktreeCheckoutFn,
     ),
-    ...buildSpaceStackOps(stack: spaceStack),
-
-    // The MCP HTTP server is a single process-wide listener the SERVER hosts;
-    // it is not workspace data, so these ops are `workspaceScoped: false`. They
-    // exist only when the host wired an [McpServerControl] (the guard promotes
-    // `mcp` non-null into the closures). A headless server with no MCP server
-    // leaves them absent and the web section shows "not available".
-    if (mcp != null) ...[
-      // Every op here is operator-only: the listener + bearer token decide who
-      // can drive the full MCP tool surface from off-host, so mere pairing (or
-      // a membership somewhere) must never suffice.
-      RepoOp(
-        name: 'mcp.status',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.read,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          final status = await mcp.status();
-          return status.toJson();
-        },
-      ),
-      RepoOp(
-        name: 'mcp.start',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          await mcp.start();
-          return (await mcp.status()).toJson();
-        },
-      ),
-      RepoOp(
-        name: 'mcp.stop',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          await mcp.stop();
-          return (await mcp.status()).toJson();
-        },
-      ),
-      RepoOp(
-        name: 'mcp.setEnabled',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        requiredArgs: ['enabled'],
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          await mcp.setEnabled(enabled: ctx.args['enabled'] as bool);
-          return (await mcp.status()).toJson();
-        },
-      ),
-      RepoOp(
-        name: 'mcp.setToken',
-        serverAuthority: ServerAuthority.serverOwner,
-        kind: RepoOpKind.mutate,
-        workspaceScoped: false,
-        handler: (ctx) async {
-          requireServerAdmin(ctx);
-          await mcp.setToken(ctx.args['token'] as String?);
-          return (await mcp.status()).toJson();
-        },
-      ),
-    ],
+    ...buildSpaceStackOps(stack: spaceStack, requireSpace: requireSpaceArg),
 
     // The external MCP servers the host connects to (and the standing approval
     // posture that gates their tools) are a process-wide concern, NOT workspace
@@ -4921,15 +5005,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // desktop in-process host); a remote headless server rejects it and the
     // client relays the message.
     if (mcpClient != null) ...[
-      // Operator-only: the external-server roster + approval posture decide
-      // which third-party tools every agent on this host may run.
+      // Operator-only: the roster is the server OS user's own MCP servers,
+      // bridged only into runs the server owner is accountable for.
       RepoOp(
         name: 'mcp.client.servers',
         serverAuthority: ServerAuthority.serverOwner,
         kind: RepoOpKind.read,
         workspaceScoped: false,
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final servers = await mcpClient.servers();
           return {
             'servers': [for (final s in servers) s.toJson()],
@@ -4942,7 +5025,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.read,
         workspaceScoped: false,
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           return {'mode': (await mcpClient.approvalMode()).wire};
         },
       ),
@@ -4953,7 +5035,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['mode'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await mcpClient.setApprovalMode(
             ApprovalMode.fromWire(ctx.args['mode'] as String?),
           );
@@ -4967,7 +5048,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['name'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await mcpClient.authorize(ctx.args['name'] as String);
           return {'ok': true};
         },
@@ -4979,7 +5059,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['name'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await mcpClient.reconnect(ctx.args['name'] as String);
           return {'ok': true};
         },
@@ -4998,31 +5077,29 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ...modelControlOps(
         prefix: 'embedding',
         control: embeddingModel,
-        guard: requireServerAdmin,
       ),
     if (diarizationModel != null)
       ...modelControlOps(
         prefix: 'diarization',
         control: diarizationModel,
-        guard: requireServerAdmin,
       ),
     if (voiceModel != null)
       ...modelControlOps(
         prefix: 'voice',
         control: voiceModel,
-        guard: requireServerAdmin,
       ),
     // Voice is the only SELECTABLE model (the user picks the active ASR build),
     // so when the host wired a selectable voice control we also expose the
     // catalog + select ops on top of its status/install/… surface. A fixed
     // (non-selectable) voice control omits these → the web picker hides itself.
     if (voiceModel is SelectableModelControl)
-      ...voiceSelectionOps(control: voiceModel, guard: requireServerAdmin),
+      ...voiceSelectionOps(control: voiceModel),
 
     // Thin clients drive the server's native PTY through these ops and the
     // `terminal.output` subscription when a TerminalSessionPort is wired.
-    // `spawn` records the bound workspace; the port validates ownership on
-    // `output`/`write`/`resize`/`kill`, so no session leaks across workspaces.
+    // `spawn` records the bound workspace and the person opening it; the port
+    // checks both on `output`/`write`/`resize`/`kill`, so no session leaks
+    // across workspaces or between members.
     if (terminals != null)
       ...[
         RepoOp(
@@ -5041,18 +5118,28 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // session's default handler budget.
           timeout: const Duration(minutes: 4),
           handler: (ctx) async {
+            // A space's shell is the space's machine: its gate first.
+            final spaceArg = ctx.args['space_id'];
+            if (spaceArg is String) {
+              await assertSpaceOwned(ctx.workspaceId!, spaceArg, ctx.userId);
+            }
+            final owner = serverOwnerUserId;
             final sessionId = await terminals.spawn(
               workspaceId: ctx.workspaceId!,
-              rows: (ctx.args['rows'] as num).toInt(),
-              cols: (ctx.args['cols'] as num).toInt(),
-              spaceId: ctx.args['space_id'] as String?,
-              cwd: ctx.args['cwd'] as String?,
-              backend: ctx.args['backend'] as String?,
               // From the SESSION, never the arguments: a client cannot open a
               // shell as somebody else. For an enclosed terminal this decides
               // which rig is opened or reused and whose forge access the
               // guest's credentials are bounded by.
               actingUserId: ctx.userId,
+              // Only the server's owner runs anything on the host outside a
+              // sandbox. A workspace role
+              // is no grant on the host: anyone can own a workspace.
+              hostShellAllowed: owner != null && ctx.userId == owner,
+              rows: (ctx.args['rows'] as num).toInt(),
+              cols: (ctx.args['cols'] as num).toInt(),
+              spaceId: ctx.args['space_id'] as String?,
+              cwd: ctx.args['cwd'] as String?,
+              backend: ctx.args['backend'] as String?,
             );
             // The backend the session ACTUALLY got, which is not always the
             // one asked for. The client badges it, so reporting the request
@@ -5073,8 +5160,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // (and the reconstructed line) is an accountability event.
           auditWhen: (_, result) => result['sent'] == true,
           handler: (ctx) async {
+            if (!await mayDrive(ctx)) {
+              return const {};
+            }
             final outcome = await terminals.write(
               workspaceId: ctx.workspaceId!,
+              userId: ctx.userId,
               sessionId: ctx.args['session_id'] as String,
               // Bytes travel as a base64 string (the same framing the
               // `terminal.output` snapshots use), decoded back to raw bytes here.
@@ -5093,8 +5184,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           audited: false,
           requiredArgs: ['session_id', 'rows', 'cols'],
           handler: (ctx) async {
+            if (!await mayDrive(ctx)) {
+              return const {};
+            }
             await terminals.resize(
               workspaceId: ctx.workspaceId!,
+              userId: ctx.userId,
               sessionId: ctx.args['session_id'] as String,
               rows: (ctx.args['rows'] as num).toInt(),
               cols: (ctx.args['cols'] as num).toInt(),
@@ -5108,8 +5203,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           actionClasses: const {ActionClass.processSpawn},
           requiredArgs: ['session_id'],
           handler: (ctx) async {
+            if (!await mayDrive(ctx)) {
+              return const {};
+            }
             await terminals.kill(
               workspaceId: ctx.workspaceId!,
+              userId: ctx.userId,
               sessionId: ctx.args['session_id'] as String,
             );
             return const {};
@@ -5117,611 +5216,45 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         ),
       ].map(fullClientOnly),
 
-    // A rig is a disposable VM an agent or a human drives. These ops exist only
-    // when the host wired a [RigPort]: a server with no hypervisor leaves it
-    // null, the ops are absent and the client renders an honest "enclosed VMs
-    // are unavailable on this server" state instead of failing per action.
-    //
-    // Every op is `fullClientOnly`: the paired phone is a lower-privilege
-    // principal whose surface is tickets/messaging/newsfeed, and booting a
-    // machine is not on that list. `RemoteToolPolicy` denies the MCP side by
-    // default for the same reason.
+    // Rigs (disposable VMs) and their forwarded ports: catalog/rig_ops.dart.
+    // Every op is `fullClientOnly`.
     if (rigs != null)
-      ...[
-        RepoOp(
-          name: 'rig.detect',
-          kind: RepoOpKind.read,
-          handler: (ctx) async => (await rigs.probe()).toJson(),
-        ),
-        buildRigInstallBackendSetupOp(
-          rigs: rigs,
-          requireServerAdmin: requireServerAdmin,
-        ),
-        RepoOp(
-          name: 'rig.list',
-          kind: RepoOpKind.read,
-          handler: (ctx) async {
-            final all = await rigs.list(ctx.workspaceId!);
-            return {
-              'rigs': [for (final r in all) rigToWire(r)],
-            };
-          },
-        ),
-        RepoOp(
-          name: 'rig.open',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['surface'],
-          actionClasses: const {
-            ActionClass.enclosureControl,
-            ActionClass.processSpawn,
-          },
-          handler: (ctx) async {
-            // Build the spec from a CLOSED set of client-supplied fields.
-            //
-            // Splatting `ctx.args` into `RigSpec.fromJson` handed the caller
-            // every field the spec has: `worktreePath` would tar an arbitrary
-            // host directory (`~/.ssh` — the sync excludes `.env` and `*.pem`,
-            // not `id_ed25519`) into a VM the caller drives, and `memoryMb` /
-            // `cpuCount` / `ttlSeconds` would let one call evict every other
-            // rig on the host or mint one with no effective lifetime. The
-            // client only ever sends these two, and the resource envelope is
-            // the server's to choose.
-            final surface = ctx.args['surface'];
-            if (surface is! String) {
-              throw const ValidationException(
-                'Missing or invalid argument: surface',
-              );
-            }
-            final parsedSurface = RigSurface.fromWire(surface);
-            if (parsedSurface == null) {
-              throw ValidationException('Unknown rig surface "$surface"');
-            }
-            // A window rig opens against an app a person launched, never on
-            // a client's say-so: this op would otherwise reach a refusal
-            // whose ArgumentError reads as an internal error.
-            if (parsedSurface == RigSurface.window) {
-              throw const ValidationException(
-                'An app window rig opens when its app launches.',
-              );
-            }
-            // Its image, mount and egress come from a resolved definition,
-            // none of which this op carries.
-            if (parsedSurface == RigSurface.environment) {
-              throw const ValidationException(
-                'An environment rig opens when its environment starts.',
-              );
-            }
-            // Read, not cast: a client that sends a number here produced a
-            // raw `TypeError` (mapped to the generic internal error) instead
-            // of a named validation failure the caller can act on.
-            final conversationId = ctx.args['conversation_id'];
-            if (conversationId != null && conversationId is! String) {
-              throw const ValidationException(
-                'Invalid argument: conversation_id (expected a string)',
-              );
-            }
-            // Which browser, when the surface is one. Refused rather than
-            // defaulted on an unknown name: a client asking for an engine
-            // this server cannot boot is asking a compatibility question, and
-            // answering it with a different browser is worse than not
-            // answering it.
-            final engineArg = ctx.args['engine'];
-            if (engineArg != null && engineArg is! String) {
-              throw const ValidationException(
-                'Invalid argument: engine (expected a string)',
-              );
-            }
-            // WHICH machine of this kind in the conversation. Absent is the
-            // conversation's default — what an agent's `*_use` calls reach —
-            // so a client that names none behaves exactly as before slots.
-            // `RigSpec` validates the shape; a wrong TYPE is caught here so
-            // it reads as a named validation failure rather than a TypeError.
-            final slotArg = ctx.args['slot_id'];
-            if (slotArg != null && slotArg is! String) {
-              throw const ValidationException(
-                'Invalid argument: slot_id (expected a string)',
-              );
-            }
-            final slotError = RigSpec.slotIdError(
-              slotArg as String?,
-              parsedSurface,
-            );
-            if (slotError != null) {
-              throw ValidationException(
-                'Invalid argument: slot_id. $slotError',
-              );
-            }
-            final engine = engineArg == null
-                ? RigBrowserEngine.fallback
-                : RigBrowserEngine.fromWire(engineArg as String);
-            if (engine == null) {
-              throw ValidationException(
-                'Unknown browser engine "$engineArg". Use '
-                '${RigBrowserEngine.values.map((e) => e.wire).join(', ')}.',
-              );
-            }
-            // The home page's color scheme is baked into the guest at boot,
-            // so it has to arrive WITH the open. An explicit `home_theme`
-            // wins and is remembered: an agent-opened rig (the browser_use
-            // tool sends none) then follows the last theme any app named
-            // rather than the server's static default.
-            final themeArg = ctx.args['home_theme'];
-            if (themeArg != null && themeArg is! String) {
-              throw const ValidationException(
-                'Invalid argument: home_theme (expected a string)',
-              );
-            }
-            var homeTheme = RigBrowserHomeTheme.fromWire(themeArg as String?);
-            if (themeArg != null && homeTheme == null) {
-              throw ValidationException(
-                'Unknown home theme "$themeArg". Use '
-                '${RigBrowserHomeTheme.values.map((t) => t.wire).join(', ')}.',
-              );
-            }
-            if (homeTheme != null) {
-              await serverSettingsRepository?.set(
-                kRigHomeThemeSettingKey,
-                homeTheme.wire,
-              );
-            } else {
-              homeTheme = RigBrowserHomeTheme.fromWire(
-                await serverSettingsRepository?.get(kRigHomeThemeSettingKey),
-              );
-            }
-            final rig = await rigs.open(
-              workspaceId: ctx.workspaceId!,
-              spec: RigSpec(
-                surface: parsedSurface,
-                browserEngine: engine,
-                conversationId: conversationId as String?,
-                slotId: slotArg,
-                homeTheme: homeTheme,
-                // A browser rig boots to its home page, so its default
-                // allowlist admits that page's host — an empty list left the
-                // tab a white rectangle whose first navigation anywhere was
-                // refused. Still the caller's to widen, never the client's:
-                // the egress envelope is the server's to choose.
-                egressAllowlist: parsedSurface == RigSurface.browser
-                    ? browserRigEgressAllowlist()
-                    : const [],
-                // Whose forge access anything inside this machine is bounded
-                // by. A rig cannot tell which process is asking, so the
-                // credential grant is bound to the person who opened it.
-                openedByUserId: ctx.userId,
-              ),
-              openedBy: ctx.principal,
-            );
-            return rigToWire(rig);
-          },
-        ),
-        RepoOp(
-          name: 'rig.restartUnrestricted',
-          // This removes a host-level network boundary and can expose the
-          // server's LAN from inside the guest. Workspace membership alone is
-          // not authority to make that machine-wide security decision.
-          serverAuthority: ServerAuthority.serverOwner,
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id'],
-          actionClasses: const {
-            ActionClass.enclosureControl,
-            ActionClass.networkEgress,
-            ActionClass.processSpawn,
-          },
-          handler: (ctx) async {
-            requireServerAdmin(ctx);
-            final workspaceId = ctx.workspaceId!;
-            final rig = await rigs.get(
-              workspaceId,
-              ctx.args['rig_id'] as String,
-            );
-            if (rig == null || rig.status.phase.isTerminal) {
-              throw const NotFoundException('Rig not found in this workspace');
-            }
-            if (!rig.backend.hasEnforcedEgress) {
-              throw const ValidationException(
-                'This backend already allows every network host; it has no '
-                'egress gate to bypass.',
-              );
-            }
-            if (rig.spec.unrestrictedNetwork) {
-              return rigToWire(rig);
-            }
-
-            // The existing row is closed BEFORE the replacement is opened:
-            // reuse matching would otherwise hand the caller the restricted
-            // machine it is trying to replace. Only this one policy bit is
-            // widened; every server-owned resource and filesystem field comes
-            // from the persisted spec, never from client arguments.
-            await rigs.close(
-              workspaceId: workspaceId,
-              rigId: rig.id,
-              reason: RigCloseReason.requested,
-            );
-            final restarted = await rigs.open(
-              workspaceId: workspaceId,
-              spec: rig.spec.copyWith(
-                unrestrictedNetwork: true,
-                openedByUserId: ctx.userId,
-              ),
-              openedBy: ctx.principal,
-            );
-            return rigToWire(restarted);
-          },
-        ),
-        RepoOp(
-          name: 'rig.act',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id', 'action'],
-          // Human take-over: attributed to the caller's own principal, never
-          // to the agent that owns the rig.
-          //
-          // Out of the GENERIC audit trail (like `terminal.resize`) because a
-          // person driving a rig emits a mouse event per frame — mirroring
-          // those into the per-user audit would bury every real accountability
-          // event under pointer noise. They are not unrecorded: every one lands
-          // in `rig_action_log` with its principal and a monotonic sequence,
-          // which is the purpose-built record and the finer one.
-          audited: false,
-          actionClasses: const {ActionClass.enclosureControl},
-          handler: (ctx) async {
-            final rig = await rigs.get(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-            );
-            if (rig == null) {
-              throw const NotFoundException('Rig not found in this workspace');
-            }
-            final parse = parseRigAction(rig.surface, ctx.args);
-            if (parse is RigActionInvalid) {
-              throw ValidationException(parse.message);
-            }
-            final result = await rigs.act(
-              workspaceId: ctx.workspaceId!,
-              rigId: rig.id,
-              action: (parse as RigActionParsed).action,
-              actor: ctx.principal,
-            );
-            return {
-              'text': result.text,
-              'is_error': result.isError,
-              if (result.displaySize != null) 'display': result.displaySize,
-              if (result.imageBase64 != null)
-                'image_base64': result.imageBase64,
-              if (result.imageMediaType != null)
-                'image_media_type': result.imageMediaType,
-            };
-          },
-        ),
-        RepoOp(
-          name: 'rig.browserState',
-          kind: RepoOpKind.read,
-          requiredArgs: ['rig_id'],
-          handler: (ctx) async {
-            // The address bar's live half: back/forward reachability comes
-            // from the page's own session history, so it has to be asked for
-            // — the pushed `current_url` on the rig row is the other half.
-            final rig = await rigs.get(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-            );
-            if (rig == null) {
-              throw const NotFoundException('Rig not found in this workspace');
-            }
-            if (rig.surface != RigSurface.browser) {
-              throw ValidationException(
-                'Rig ${rig.id} is a ${rig.surface.wire} rig; only a browser '
-                'rig has navigation state.',
-              );
-            }
-            final state = await rigs.browserState(
-              workspaceId: ctx.workspaceId!,
-              rigId: rig.id,
-            );
-            // Not live (booting, closed): report the last known URL with no
-            // history rather than erroring a toolbar that races the boot.
-            return state?.toJson() ??
-                {
-                  'url': rig.currentUrl ?? '',
-                  'can_go_back': false,
-                  'can_go_forward': false,
-                  'loading': false,
-                };
-          },
-        ),
-        RepoOp(
-          name: 'rig.takeControl',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id'],
-          actionClasses: const {ActionClass.enclosureControl},
-          handler: (ctx) async {
-            final rig = await rigs.takeControl(
-              workspaceId: ctx.workspaceId!,
-              rigId: ctx.args['rig_id'] as String,
-              actor: ctx.principal,
-            );
-            return rigToWire(rig);
-          },
-        ),
-        RepoOp(
-          name: 'rig.releaseControl',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id'],
-          actionClasses: const {ActionClass.enclosureControl},
-          handler: (ctx) async {
-            final rig = await rigs.releaseControl(
-              workspaceId: ctx.workspaceId!,
-              rigId: ctx.args['rig_id'] as String,
-              actor: ctx.principal,
-            );
-            return rigToWire(rig);
-          },
-        ),
-        RepoOp(
-          name: 'rig.images',
-          serverAuthority: ServerAuthority.serverOwner,
-          kind: RepoOpKind.read,
-          workspaceScoped: false,
-          handler: (ctx) async {
-            // Admin-gated like its two mutations. This is host inventory —
-            // which operating systems this machine has on disk and how far a
-            // download got — not workspace data, and it is only ever read by
-            // the Settings → Enclosures page, which is already operator-only.
-            // A viewer in any workspace could read it before.
-            requireServerAdmin(ctx);
-            return {'images': rigs.imageStatuses()};
-          },
-        ),
-        RepoOp(
-          name: 'rig.downloadImage',
-          serverAuthority: ServerAuthority.serverOwner,
-          kind: RepoOpKind.mutate,
-          workspaceScoped: false,
-          requiredArgs: ['image_id'],
-          // Fetching an operating system onto the host. Not `enclosureControl`
-          // — nothing is driven — but it is a real network fetch and a
-          // multi-gigabyte write, so it declares both.
-          actionClasses: const {
-            ActionClass.networkEgress,
-            ActionClass.packageInstall,
-          },
-          handler: (ctx) async {
-            requireServerAdmin(ctx);
-            // Returns as soon as the download is ACCEPTED, not when it
-            // finishes: a base image is ~590 MB and holding an RPC call open
-            // for minutes ties up the connection and times the client out on a
-            // download that is working fine. The service owns the transfer;
-            // progress rides on `rig.images` (the partial size on disk).
-            await rigs.downloadImage(ctx.args['image_id'] as String);
-            return const {'started': true};
-          },
-        ),
-        RepoOp(
-          name: 'rig.importImage',
-          serverAuthority: ServerAuthority.serverOwner,
-          kind: RepoOpKind.mutate,
-          workspaceScoped: false,
-          requiredArgs: ['image_id', 'path'],
-          actionClasses: const {ActionClass.packageInstall},
-          handler: (ctx) async {
-            // Reading a caller-named path off the server's disk, so it is
-            // operator-only: this is the same trust level as choosing which
-            // operating system every rig on this host boots.
-            requireServerAdmin(ctx);
-            await rigs.importImage(
-              imageId: ctx.args['image_id'] as String,
-              sourcePath: ctx.args['path'] as String,
-            );
-            return const {};
-          },
-        ),
-        RepoOp(
-          name: 'rig.removeImage',
-          serverAuthority: ServerAuthority.serverOwner,
-          kind: RepoOpKind.mutate,
-          workspaceScoped: false,
-          requiredArgs: ['image_id'],
-          actionClasses: const {ActionClass.fileDelete},
-          handler: (ctx) async {
-            requireServerAdmin(ctx);
-            await rigs.removeImage(ctx.args['image_id'] as String);
-            return const {};
-          },
-        ),
-        RepoOp(
-          name: 'rig.destroy',
-          // Mutate, like `terminal.kill` — NOT destructive. A rig is
-          // disposable by construction (overlay discarded, TTL-bounded), so
-          // stopping one is routine lifecycle, and `destructive` is denied
-          // outright wherever no confirmation flow is wired ("Operation
-          // requires approval") — which made the panel's stop button fail
-          // with a permission error on every press.
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id'],
-          actionClasses: const {ActionClass.enclosureControl},
-          handler: (ctx) async {
-            // Parsed HERE, at the wire edge, so an unknown reason is a named
-            // validation error rather than a silent fall back to `requested`
-            // in the service — the row's close reason is the only surviving
-            // answer to "where did my machine go".
-            final rawReason = ctx.args['reason'];
-            if (rawReason != null && rawReason is! String) {
-              throw const ValidationException(
-                'Invalid argument: reason (expected a string)',
-              );
-            }
-            final reason = rawReason == null
-                ? null
-                : RigCloseReason.fromWire(rawReason as String);
-            if (rawReason != null && reason == null) {
-              throw ValidationException(
-                'Unknown close reason "$rawReason". Expected one of: '
-                '${RigCloseReason.values.map((r) => r.wire).join(', ')}.',
-              );
-            }
-            // Look the row up BEFORE close so the audit trail can say
-            // which machine and which space, not just `rig.destroy`.
-            final existing = await rigs.get(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-            );
-            await rigs.close(
-              workspaceId: ctx.workspaceId!,
-              rigId: ctx.args['rig_id'] as String,
-              reason: reason,
-            );
-            return {
-              if (existing?.conversationId != null)
-                'conversation_id': existing!.conversationId,
-              if (existing != null) 'surface': existing.surface.wire,
-            };
-          },
-        ),
-      ].map(fullClientOnly),
-
-    // What is listening inside a Terminal (VM), and every address each port
-    // answers on: host loopback (`localhost:<port>`), an optional LAN port
-    // (`<server-ip>:<random>`), and a dev domain in the Browser (VM). Present
-    // only when the host wired a [RigPortsPort] alongside [rigs]. Reads are
-    // plain reads; each mutation reconfigures a host listener, so it declares
-    // `networkEgress`.
+      ...buildRigOps(
+        rigs: rigs,
+        access: rigAccess!,
+        serverSettingsRepository: serverSettingsRepository,
+      ).map(fullClientOnly),
     if (rigPorts != null)
-      ...[
-        RepoOp(
-          name: 'rig.setPortsAutoForward',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id', 'enabled'],
-          // The WIDEST of the port ops: with this on, every port a guest opens
-          // is forwarded automatically, so one call stands in for an unbounded
-          // number of `rig.addPort`s. It shipped with no class and
-          // `audited: false` — an egress decision that neither the guardrails
-          // nor the activity log could see.
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final ok = await rigPorts.setPortsAutoForward(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-              enabled: ctx.args['enabled'] == true,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'rig.addPort',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id', 'guest_port'],
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            final ok = await rigPorts.addPortForward(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-              port,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'rig.removePort',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id', 'guest_port'],
-          // Reconfigures the same host listener its sibling opens. Declared
-          // even though this direction only ever NARROWS exposure: the class
-          // is what a read-only mode denies, and a mode that refuses `addPort`
-          // has nothing left for this to close.
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            final ok = await rigPorts.removePortForward(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-              port,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'rig.setPortLan',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id', 'guest_port', 'exposed'],
-          // Publishing a guest port on the LAN is a real egress decision, so
-          // it declares the class — read-only modes deny it, and the autonomy
-          // dial can demote it to a prompt.
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            final ok = await rigPorts.setPortLanExposed(
-              ctx.workspaceId!,
-              ctx.args['rig_id'] as String,
-              port,
-              exposed: ctx.args['exposed'] == true,
-            );
-            return {'ok': ok};
-          },
-        ),
-        RepoOp(
-          name: 'rig.setPortDomain',
-          kind: RepoOpKind.mutate,
-          requiredArgs: ['rig_id', 'guest_port'],
-          // Mapping a dev domain onto a guest port is the same kind of
-          // exposure decision `setPortLan` declares — it changes which name
-          // reaches what is listening inside the machine.
-          actionClasses: const {ActionClass.networkEgress},
-          handler: (ctx) async {
-            final port = asPort(ctx.args['guest_port']);
-            if (port == null) {
-              throw const ValidationException(
-                'Invalid argument: guest_port (expected 1-65535)',
-              );
-            }
-            try {
-              final ok = await rigPorts.setPortDomain(
-                ctx.workspaceId!,
-                ctx.args['rig_id'] as String,
-                port,
-                ctx.args['domain'] as String?,
-              );
-              return {'ok': ok};
-            } on ArgumentError catch (e) {
-              // The domain validation message reaches the client verbatim.
-              throw ValidationException('${e.message}');
-            }
-          },
-        ),
-      ].map(fullClientOnly),
+      ...buildRigPortOps(
+        rigPorts: rigPorts,
+        access: rigAccess!,
+      ).map(fullClientOnly),
 
     // Same snapshots and mutations as `rig.*Port*`. The literals live in
     // `catalog/terminal_port_ops.dart` so this file's RepoOp freeze does not
     // grow. Present only when [rigPorts] is wired (demo omits them).
     if (rigPorts != null)
-      ...buildTerminalPortOps(rigPorts: rigPorts).map(fullClientOnly),
+      ...buildTerminalPortOps(
+        rigPorts: rigPorts,
+        terminals: terminalSessions,
+        requireSpace: requireSpaceArg,
+      ).map(fullClientOnly),
 
-    // code-server runs on the SERVER host, bound loopback to the conversation's
-    // isolated CoW worktree. The client reaches it through an encrypted resource
-    // tunnel with a device-bound proxy capability. The shared process's
-    // extension bridge id is server-only. A foreign workspace/space/repo yields
-    // no worktree or session (never a raw-checkout fallback).
+    // code-server runs on the SERVER host as the server's OS user, bound
+    // loopback to the conversation's isolated CoW worktree, so only the server
+    // owner may drive it. The client reaches it through an encrypted resource
+    // tunnel with a device- and user-bound proxy capability. The shared
+    // process's extension bridge id is server-only. A foreign
+    // workspace/space/repo yields no worktree or session (never a raw-checkout
+    // fallback).
     if (vscode != null)
       ...[
         RepoOp(
           name: 'codeServer.open',
           kind: RepoOpKind.mutate,
           actionClasses: const {ActionClass.processSpawn},
-          requiredArgs: ['space_id'],
+          serverAuthority: ServerAuthority.serverOwner,
+          requiredArgs: ['space_id', 'auto_save'],
           // Full VS Code over the space worktree = code access to every repo
           // the space checks out; gate on the per-repo grant like any other
           // code-bearing surface.
@@ -5733,11 +5266,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               spaceId: ctx.args['space_id'] as String,
               repoId: ctx.args['repo_id'] as String? ?? '',
               deviceId: ctx.deviceId,
+              userId: ctx.userId,
               path: ctx.args['path'] as String?,
               // The client pushes its editor auto-save preference on every open;
-              // the service sanitises it into `files.autoSave`. Default when the
-              // client omits it (older clients) is the port's own default.
-              autoSave: ctx.args['auto_save'] as String? ?? 'afterDelay',
+              // the service sanitises it into `files.autoSave`.
+              autoSave: ctx.args['auto_save'] as String,
             );
             final base = ctx.args['base_url'] as String?;
             // code-server web opens the folder (and any deep-linked file) from the
@@ -5773,6 +5306,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         RepoOp(
           name: 'codeServer.saveFile',
           kind: RepoOpKind.mutate,
+          serverAuthority: ServerAuthority.serverOwner,
           requiredArgs: ['space_id', 'path'],
           handler: (ctx) async {
             final saved = await vscode.saveFile(
@@ -5954,20 +5488,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           },
         ),
         RepoOp(
-          name: 'fs.ensureMcpSymlink',
-          kind: RepoOpKind.mutate,
-          actionClasses: const {ActionClass.fileWriteOutsideWorktree},
-          requiredArgs: ['agent_slug'],
-          handler: (ctx) async {
-            // No-op (kept for wire-compat): the agent-dir `.mcp.json` symlink was
-            // removed when MCP config consolidation moved the derived config into
-            // the per-agent overlay cwd (written by cc_server's
-            // `ServerMcpControl` at dispatch). The op stays registered so older
-            // clients don't hit an "unknown method" error; it now does nothing.
-            return {'ok': true};
-          },
-        ),
-        RepoOp(
           name: 'fs.writeAgentFile',
           kind: RepoOpKind.mutate,
           actionClasses: const {ActionClass.fileWriteOutsideWorktree},
@@ -6064,6 +5584,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           name: 'fs.persistLogo',
           kind: RepoOpKind.mutate,
           actionClasses: const {ActionClass.fileWriteOutsideWorktree},
+          // Copies a file the caller names off the host's disk, so it is the
+          // server owner's (who alone creates workspaces); anyone else sends
+          // the bytes through `fs.persistLogoBytes`.
+          serverAuthority: ServerAuthority.serverOwner,
           requiredArgs: ['source_path'],
           handler: (ctx) async => {
             'path': await fs.persistLogo(
@@ -6077,12 +5601,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           kind: RepoOpKind.mutate,
           actionClasses: const {ActionClass.fileWriteOutsideWorktree},
           requiredArgs: ['bytes', 'extension'],
-          handler: (ctx) async => {
-            'path': await fs.persistLogoBytes(
-              ctx.workspaceId!,
-              base64Decode(ctx.args['bytes'] as String),
-              ctx.args['extension'] as String,
-            ),
+          handler: (ctx) async {
+            // The extension becomes part of the file name; anything but an
+            // image extension (`/../x`) would write outside the workspace.
+            final extension = (ctx.args['extension'] as String).toLowerCase();
+            if (!workspaceLogoExtensions.contains(extension)) {
+              throw const ValidationException('Unsupported logo file type');
+            }
+            return {
+              'path': await fs.persistLogoBytes(
+                ctx.workspaceId!,
+                base64Decode(ctx.args['bytes'] as String),
+                extension,
+              ),
+            };
           },
         ),
         // Opaque-path ops: the client passes a server path it obtained from a
@@ -6145,10 +5677,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       name: 'messaging.listSpaces',
       kind: RepoOpKind.read,
       handler: (ctx) async {
+        final ws = ctx.workspaceId!;
         final spaces = await messagingRepository
-            .watchSpacesByWorkspace(ctx.workspaceId!)
+            .watchSpacesByWorkspace(ws)
             .first;
-        return {'spaces': spaces.map(spaceToWire).toList()};
+        // A review space of a pull request the caller cannot see is left out.
+        final hidden = await prData.hiddenSpaces(ws, ctx.userId);
+        return {
+          'spaces': [
+            for (final s in spaces)
+              if (!hidden.contains(s.id)) spaceToWire(s),
+          ],
+        };
       },
     ),
     RepoOp(
@@ -6157,7 +5697,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final messages = await messagingRepository.getMessages(
           ctx.workspaceId!,
           spaceId,
@@ -6178,7 +5718,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'conversation_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final rawLimit = (ctx.args['limit'] as num?)?.toInt();
         final page = await messagingRepository.getMessagePage(
           ctx.workspaceId!,
@@ -6203,7 +5743,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'query'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final limit = ctx.args['limit'];
         final messages = await messagingRepository.searchInSpace(
           ctx.workspaceId!,
@@ -6220,7 +5760,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'content'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         // Attribution is stamped server-side. Human messages are authored as
         // the session's USER (not its device: three devices, one author).
         //
@@ -6273,6 +5813,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         audited: false,
         requiredArgs: ['repo_full_name', 'pr_number', 'pr_external_id'],
         handler: (ctx) async {
+          // A PR's space carries its review: only for a caller who may see
+          // the repo's pull requests.
+          await requirePrRepoByFullName(
+            ctx.workspaceId!,
+            ctx.args['repo_full_name'] as String,
+            userId: ctx.userId,
+          );
           final result = await ensurePrSpace(
             workspaceId: ctx.workspaceId!,
             repoFullName: ctx.args['repo_full_name'] as String,
@@ -6294,7 +5841,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final conv = await conversationRepository.ensure(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -6308,7 +5855,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'title'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           // Thread anchoring (validated here, one chokepoint): the anchor
           // message must live in a conversation OF THIS space, and that
           // conversation must itself be unanchored — threads never nest.
@@ -6352,14 +5899,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['conversation_id', 'title'],
         handler: (ctx) async {
           final conversationId = ctx.args['conversation_id'] as String;
-          // Scope-load the conversation to assert it is in the bound workspace.
-          final existing = await conversationRepository.getById(
-            workspaceId: ctx.workspaceId!,
-            conversationId: conversationId,
+          // Scope-load the conversation (bound workspace, its space's gate).
+          await assertConversationOwned(
+            ctx.workspaceId!,
+            conversationId,
+            ctx.userId,
           );
-          if (existing == null) {
-            throw const NotFoundException('conversation not found');
-          }
           await conversationRepository.rename(
             workspaceId: ctx.workspaceId!,
             conversationId: conversationId,
@@ -6374,13 +5919,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['conversation_id'],
         handler: (ctx) async {
           final conversationId = ctx.args['conversation_id'] as String;
-          final existing = await conversationRepository.getById(
-            workspaceId: ctx.workspaceId!,
-            conversationId: conversationId,
+          await assertConversationOwned(
+            ctx.workspaceId!,
+            conversationId,
+            ctx.userId,
           );
-          if (existing == null) {
-            throw const NotFoundException('conversation not found');
-          }
           final reopen = ctx.args['reopen'] == true;
           await conversationRepository.setStatus(
             workspaceId: ctx.workspaceId!,
@@ -6407,6 +5950,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             workspaceId: ctx.workspaceId!,
             conversationId: ctx.args['conversation_id'] as String,
           );
+          // Its space's gate, derived from the conversation itself.
+          if (conversation != null) {
+            await assertSpaceOwned(
+              ctx.workspaceId!,
+              conversation.spaceId,
+              ctx.userId,
+            );
+          }
           return {
             'conversation': conversation == null
                 ? null
@@ -6420,7 +5971,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final list = await conversationRepository.listForSpace(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -6443,7 +5994,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         }
         // Messages are keyed by id alone — validate the owning space is in the
         // bound workspace so a foreign message can't leak (isolation invariant).
-        await assertSpaceOwned(ctx.workspaceId!, message.spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, message.spaceId, ctx.userId);
         final wire = messageToWire(message);
         // Per-viewer trace redaction (PRD 16): transcript bodies never cross
         // a repo grant the viewer lacks.
@@ -6483,7 +6034,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final participants = await messagingRepository.getParticipants(
           ctx.workspaceId!,
           spaceId,
@@ -6499,7 +6050,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'mode'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.setSpaceMode(
           ctx.workspaceId!,
           spaceId,
@@ -6514,7 +6065,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'agent_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.addParticipant(
           ctx.workspaceId!,
           spaceId,
@@ -6541,7 +6092,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (existing == null) {
           throw const NotFoundException('Message not found');
         }
-        await assertSpaceOwned(ctx.workspaceId!, existing.spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, existing.spaceId, ctx.userId);
         // Authorship gate: another member's words are not yours to rewrite.
         // Content edits to a human-authored message are limited to its author
         // (admins included, for moderation); metadata-only updates (feedback,
@@ -6779,7 +6330,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.deleteSpace(ctx.workspaceId!, spaceId);
         // Mirror MessagingService.deleteSpace: let listeners (e.g. worktree
         // GC) tear down per-conversation resources.
@@ -6799,7 +6350,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.archiveSpace(ctx.workspaceId!, spaceId);
         // Deliberately no SpaceDeleted: archiving is a reversible hide, so
         // nothing (worktree GC, retention sweeps) may tear the space's
@@ -6821,7 +6372,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.unarchiveSpace(ctx.workspaceId!, spaceId);
         return {'ok': true};
       },
@@ -6832,7 +6383,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'name'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.updateSpaceName(
           ctx.workspaceId!,
           spaceId,
@@ -6847,7 +6398,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         // The effective selection in createSpace's contract: null → all
         // workspace repos, [] → explicitly none, a subset → those ids.
         final repoIds = await messagingRepository.spaceRepoSelection(
@@ -6864,7 +6415,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       handler: (ctx) async {
         final workspaceId = ctx.workspaceId!;
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(workspaceId, spaceId);
+        await assertSpaceOwned(workspaceId, spaceId, ctx.userId);
         // Same contract as createSpace: absent/null → all workspace repos,
         // an EMPTY list → explicitly none. Repos the selection DROPS lose
         // their worktree folder through the provisioner's ordinary destroy
@@ -6912,7 +6463,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.clearSpaceMessages(ctx.workspaceId!, spaceId);
         return {'ok': true};
       },
@@ -6923,7 +6474,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'agent_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await messagingRepository.removeParticipant(
           ctx.workspaceId!,
           spaceId,
@@ -6947,6 +6498,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.read,
       requiredArgs: ['conversation_id'],
       handler: (ctx) async {
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          ctx.args['conversation_id'] as String,
+          ctx.userId,
+        );
         final tree = await messagingRepository.conversationTree(
           workspaceId: ctx.workspaceId!,
           conversationId: ctx.args['conversation_id'] as String,
@@ -6978,6 +6534,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       requiredArgs: ['conversation_id', 'message_id'],
       handler: (ctx) async {
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          ctx.args['conversation_id'] as String,
+          ctx.userId,
+        );
         await messagingRepository.branchConversationAt(
           workspaceId: ctx.workspaceId!,
           conversationId: ctx.args['conversation_id'] as String,
@@ -6995,7 +6556,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'conversation_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final forkId = await messagingRepository.forkConversation(
           workspaceId: ctx.workspaceId!,
           spaceId: spaceId,
@@ -7012,7 +6573,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id', 'message_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final messageId = ctx.args['message_id'] as String;
         final inclusive = ctx.args['inclusive'] as bool? ?? false;
         // Prefer the host closure (transcript + worktree filesystem rollback);
@@ -7048,7 +6609,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['space_id'],
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final affected = conversationUnrevert != null
             ? await conversationUnrevert(
                 workspaceId: ctx.workspaceId!,
@@ -7077,7 +6638,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'content'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final metadata = ctx.args['metadata'];
           await claimMessageFiles(ctx, metadata);
           await dispatch.sendUserMessage(
@@ -7098,7 +6659,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'agent_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           await dispatch.addAgentToSpace(
             ctx.workspaceId!,
             spaceId,
@@ -7114,7 +6675,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'content'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           await claimMessageFiles(ctx, ctx.args['metadata']);
           await dispatch.sendAndDispatch(
             ctx.workspaceId!,
@@ -7145,7 +6706,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         repoAccessVia: reposExposedBySpaceArg,
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final schema = ctx.args['expected_output_schema'];
           final runId = await dispatch.dispatchAgent(
             spaceId: spaceId,
@@ -7178,11 +6739,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'feedback'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           await dispatch.refinePlan(
             spaceId: spaceId,
             feedback: ctx.args['feedback'] as String,
             workspaceId: ctx.workspaceId!,
+            senderUserId: ctx.userId, // identity, never a client arg
           );
           return {'ok': true};
         },
@@ -7193,19 +6755,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'failed_message_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           await dispatch.retryAgentTurn(
             spaceId: spaceId,
             failedMessageId: ctx.args['failed_message_id'] as String,
-            // The session's workspace, never a client arg. Without it the
-            // retried run log carries no workspace, which hides it from the
-            // composer's stop affordance and makes the ownership check on
-            // `dispatch.stopRun` reject it — an unstoppable run.
+            // The session's workspace and user, never client args. With no
+            // workspace the run is hidden from the composer's stop control
+            // and refused by `dispatch.stopRun`: unstoppable. With no user it
+            // is nobody's run: bot commits, and no sign-in to push with.
             workspaceId: ctx.workspaceId!,
-            // Retrying on a DIFFERENT model is the move that actually changes
-            // the outcome when the first model produced something the loop
-            // could not use. Applies to this run only — the agent record keeps
-            // its configured model.
+            requestedByUserId: ctx.userId,
+            // A different model is what changes the outcome; this run only.
             modelOverride: ctx.args['model_override'] as String?,
           );
           return {'ok': true};
@@ -7229,6 +6789,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Run belongs to a different workspace.',
             );
           }
+          // A run's controls act in its space: the space's read gate applies.
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, log);
           await dispatch.stopRun(ctx.workspaceId!, runId);
           return {'ok': true};
         },
@@ -7254,6 +6816,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Run belongs to a different workspace.',
             );
           }
+          // A run's controls act in its space: the space's read gate applies.
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, log);
           final paused = await dispatch.pauseRun(runId);
           return {'paused': paused};
         },
@@ -7273,6 +6837,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Run belongs to a different workspace.',
             );
           }
+          // A run's controls act in its space: the space's read gate applies.
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, log);
           final resumed = await dispatch.resumeRun(runId);
           return {'resumed': resumed};
         },
@@ -7299,6 +6865,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Run belongs to a different workspace.',
             );
           }
+          // A run's controls act in its space: the space's read gate applies.
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, log);
           final delivered = await dispatch.steerRun(
             runId,
             message,
@@ -7321,7 +6889,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           final conversationId = ctx.args['conversation_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           // Same narrowing as `dispatch.sendAndDispatch`: attachments are the
           // one client-authored metadata key.
           final metadata = userMessageMetadataFromWire(ctx.args['metadata']);
@@ -7331,6 +6899,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             spaceId: spaceId,
             conversationId: conversationId,
             content: ctx.args['message'] as String,
+            senderUserId: ctx.userId, // identity, never a client arg
             attachments: [
               for (final a in (metadata?['attachments'] as List?) ?? const [])
                 (a as Map).cast<String, dynamic>(),
@@ -7355,7 +6924,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final spaceId = ctx.args['space_id'] as String;
           final conversationId = ctx.args['conversation_id'] as String;
           final messageId = ctx.args['message_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final ok = await dispatch.editSteering(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -7374,7 +6943,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final spaceId = ctx.args['space_id'] as String;
           final conversationId = ctx.args['conversation_id'] as String;
           final messageId = ctx.args['message_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final ok = await dispatch.deleteSteering(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -7391,7 +6960,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
           final conversationId = ctx.args['conversation_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final ids = (ctx.args['message_ids'] as List)
               .whereType<String>()
               .toList();
@@ -7412,7 +6981,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final spaceId = ctx.args['space_id'] as String;
           final conversationId = ctx.args['conversation_id'] as String;
           final messageId = ctx.args['message_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final delivered = await dispatch.deliverSteering(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -7444,7 +7013,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final result = await dispatch.compactConversation(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -7469,7 +7038,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final result = await dispatch.shakeConversation(
             workspaceId: ctx.workspaceId!,
             spaceId: spaceId,
@@ -7498,6 +7067,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final step = await dispatch.guidedGoalStep(
             workspaceId: ctx.workspaceId!,
+            requestedByUserId: ctx.userId,
             rough: ctx.args['rough'] as String,
             transcript: [
               for (final line in (ctx.args['transcript'] as List?) ?? const [])
@@ -7521,9 +7091,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id', 'kind'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final result = await dispatch.askAside(
             workspaceId: ctx.workspaceId!,
+            requestedByUserId: ctx.userId,
             spaceId: spaceId,
             conversationId: ctx.args['conversation_id'] as String?,
             kind: ctx.args['kind'] as String,
@@ -7551,7 +7122,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['agent_id', 'prompt', 'space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final conversationId = ctx.args['conversation_id'];
           await reviewDispatcher(
             workspaceId: ctx.workspaceId!,
@@ -7566,17 +7137,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
 
-    RepoOp(
-      name: 'newsfeed.listArticles',
-      kind: RepoOpKind.read,
-      workspaceScoped: false,
-      handler: (ctx) async {
-        final articles = await newsfeedRepository
-            .watchArticles(ctx.userId)
-            .first;
-        return {'articles': articles.map(articleToWire).toList()};
-      },
-    ),
+    ...buildNewsfeedOps(newsfeedRepository),
     // The other real-external-data lane besides the newsfeed: the SERVER
     // fetches public repo metadata and caches it, the visitor reads the one
     // number their tour's "Star on GitHub" button shows next to its label.
@@ -7590,153 +7151,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         handler: (ctx) async => {'stars': await demoRepoStars()},
       ),
-    // Scoped point lookup. The client used to `listArticles()` and scan for the
-    // id, which pulls every article across every subscribed feed to answer a
-    // primary-key question. The DAO query joins through `rss_feeds` so the
-    // article is found only if it belongs to THIS user's feeds — an id alone
-    // never proves ownership.
-    RepoOp(
-      name: 'newsfeed.getArticle',
-      kind: RepoOpKind.read,
-      workspaceScoped: false,
-      requiredArgs: ['article_id'],
-      handler: (ctx) async {
-        final article = await newsfeedRepository.getArticleById(
-          ctx.userId,
-          ctx.args['article_id'] as String,
-        );
-        if (article == null) {
-          throw const NotFoundException('Article not found');
-        }
-        return {'article': articleToWire(article)};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.setArticleRead',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      requiredArgs: ['article_id', 'read'],
-      handler: (ctx) async {
-        await newsfeedRepository.setArticleRead(
-          ctx.userId,
-          ctx.args['article_id'] as String,
-          read: ctx.args['read'] as bool,
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.setArticleSaved',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      requiredArgs: ['article_id', 'saved'],
-      handler: (ctx) async {
-        await newsfeedRepository.setArticleSaved(
-          ctx.userId,
-          ctx.args['article_id'] as String,
-          saved: ctx.args['saved'] as bool,
-        );
-        return {'ok': true};
-      },
-    ),
-    // Feed management + refresh (per-user). RSS fetching runs server-side;
-    // these let a thin client SEE the user's feeds, manage them and trigger
-    // a host-side fetch. The refreshed rows stream back over
-    // `newsfeed.watchArticles` / `newsfeed.watchFeeds`.
-    RepoOp(
-      name: 'newsfeed.refreshAll',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      // Fetches every enabled feed + og:image fallbacks host-side; the
-      // first-party client gives the call 3 minutes, so the server budget
-      // must outlive it (the deadline exists to free the session slot, not
-      // to cut a healthy sweep short).
-      timeout: const Duration(minutes: 4),
-      handler: (ctx) async {
-        await newsfeedRepository.refreshAll(ctx.userId);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.refreshFeed',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      requiredArgs: ['feed_id'],
-      // See `newsfeed.refreshAll` for the budget.
-      timeout: const Duration(minutes: 4),
-      handler: (ctx) async {
-        await newsfeedRepository.refreshFeed(
-          ctx.userId,
-          ctx.args['feed_id'] as String,
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.addFeed',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      requiredArgs: ['name', 'url'],
-      handler: (ctx) async {
-        final feed = await newsfeedRepository.addFeed(
-          ctx.userId,
-          name: ctx.args['name'] as String,
-          url: ctx.args['url'] as String,
-          description: ctx.args['description'] as String? ?? '',
-          userAgent: ctx.args['user_agent'] as String? ?? '',
-        );
-        return {'feed': feedToWire(feed)};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.setFeedEnabled',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      requiredArgs: ['feed_id', 'enabled'],
-      handler: (ctx) async {
-        await newsfeedRepository.setFeedEnabled(
-          ctx.userId,
-          ctx.args['feed_id'] as String,
-          enabled: ctx.args['enabled'] as bool,
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.deleteFeed',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      requiredArgs: ['feed_id'],
-      handler: (ctx) async {
-        await newsfeedRepository.deleteFeed(
-          ctx.userId,
-          ctx.args['feed_id'] as String,
-        );
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'newsfeed.markAllRead',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      handler: (ctx) async {
-        await newsfeedRepository.markAllRead(ctx.userId);
-        return {'ok': true};
-      },
-    ),
-    // Seeds the session user's default feed set on first use, so a user
-    // created after boot still gets the bundled defaults the moment they
-    // open the newsfeed (the boot-time sweep only covers users that
-    // existed at startup).
-    RepoOp(
-      name: 'newsfeed.seedDefaultFeedsIfEmpty',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      handler: (ctx) async {
-        await newsfeedRepository.seedDefaultFeedsIfEmpty(ctx.userId);
-        return {'ok': true};
-      },
-    ),
 
     RepoOp(
       name: 'space_read.markSpaceRead',
@@ -7749,7 +7163,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       minRole: WorkspaceRole.guest,
       handler: (ctx) async {
         final spaceId = ctx.args['space_id'] as String;
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         await spaceReadRepository.markSpaceRead(
           ctx.workspaceId!,
           spaceId,
@@ -7772,303 +7186,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    RepoOp(
-      name: 'memory_domain.getByWorkspace',
-      kind: RepoOpKind.read,
-      handler: (ctx) async {
-        final domains = await memoryDomainRepository.getByWorkspace(
-          ctx.workspaceId!,
-        );
-        return {'domains': domains.map(memoryDomainToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_domain.findByName',
-      kind: RepoOpKind.read,
-      requiredArgs: ['name'],
-      handler: (ctx) async {
-        final domain = await memoryDomainRepository.findByName(
-          ctx.workspaceId!,
-          ctx.args['name'] as String,
-        );
-        return {'domain': domain == null ? null : memoryDomainToWire(domain)};
-      },
-    ),
-    RepoOp(
-      name: 'memory_domain.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['domain'],
-      handler: (ctx) async {
-        final domain = memoryDomainFromWire(
-          (ctx.args['domain'] as Map).cast<String, dynamic>(),
-        );
-        // The domain's own workspace must match the bound session — a client
-        // can't write a domain into a foreign workspace (isolation invariant).
-        if (domain.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Memory domain belongs to a different workspace',
-          );
-        }
-        await memoryDomainRepository.upsert(domain);
-        return {'ok': true};
-      },
-    ),
-
-    RepoOp(
-      name: 'memory_access_grant.getByWorkspace',
-      kind: RepoOpKind.read,
-      handler: (ctx) async {
-        final grants = await memoryAccessGrantRepository.getByWorkspace(
-          ctx.workspaceId!,
-        );
-        return {'grants': grants.map(memoryAccessGrantToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_access_grant.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['grant'],
-      handler: (ctx) async {
-        final grant = memoryAccessGrantFromWire(
-          (ctx.args['grant'] as Map).cast<String, dynamic>(),
-        );
-        // The grant's own workspace must match the bound session — a client
-        // can't write a grant into a foreign workspace (isolation invariant).
-        if (grant.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Memory access grant belongs to a different workspace',
-          );
-        }
-        await memoryAccessGrantRepository.upsert(grant);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'memory_access_grant.upsertAll',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['grants'],
-      handler: (ctx) async {
-        final grants = ((ctx.args['grants'] as List?) ?? const [])
-            .whereType<Map>()
-            .map((g) => memoryAccessGrantFromWire(g.cast<String, dynamic>()))
-            .toList();
-        // Every grant must belong to the bound session's workspace — reject the
-        // whole batch on any foreign row (isolation invariant).
-        for (final grant in grants) {
-          if (grant.workspaceId != ctx.workspaceId) {
-            throw const WorkspaceMismatchException(
-              'Memory access grant belongs to a different workspace',
-            );
-          }
-        }
-        await memoryAccessGrantRepository.upsertAll(grants);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'agent_working_memory.getByAgent',
-      kind: RepoOpKind.read,
-      requiredArgs: ['agent_id'],
-      handler: (ctx) async {
-        final memory = await agentWorkingMemoryRepository.getByAgent(
-          ctx.workspaceId!,
-          ctx.args['agent_id'] as String,
-        );
-        return {
-          'memory': memory == null ? null : agentWorkingMemoryToWire(memory),
-        };
-      },
-    ),
-    RepoOp(
-      name: 'agent_working_memory.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['memory'],
-      handler: (ctx) async {
-        final memory = agentWorkingMemoryFromWire(
-          (ctx.args['memory'] as Map).cast<String, dynamic>(),
-        );
-        // The memory's own workspace must match the bound session — a client
-        // can't write into a foreign workspace (isolation invariant).
-        if (memory.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Agent working memory belongs to a different workspace',
-          );
-        }
-        await agentWorkingMemoryRepository.upsert(memory);
-        return {'ok': true};
-      },
-    ),
-
-    RepoOp(
-      name: 'memory_fact.getByWorkspace',
-      kind: RepoOpKind.read,
-      handler: (ctx) async {
-        final facts = await memoryFactRepository.getByWorkspace(
-          ctx.workspaceId!,
-        );
-        return {'facts': facts.map(memoryFactToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_fact.getById',
-      kind: RepoOpKind.read,
-      requiredArgs: ['fact_id'],
-      handler: (ctx) async {
-        // Scoped by workspace at the repository — a foreign fact is simply not
-        // found (ids are global UUIDs, the workspace is the boundary).
-        final fact = await memoryFactRepository.getById(
-          ctx.workspaceId!,
-          ctx.args['fact_id'] as String,
-        );
-        if (fact == null) {
-          throw const NotFoundException('Memory fact not found');
-        }
-        return {'fact': memoryFactToWire(fact)};
-      },
-    ),
-    RepoOp(
-      name: 'memory_fact.getActiveByTopic',
-      kind: RepoOpKind.read,
-      requiredArgs: ['topic'],
-      handler: (ctx) async {
-        final facts = await memoryFactRepository.getActiveByTopic(
-          ctx.workspaceId!,
-          ctx.args['topic'] as String,
-        );
-        return {'facts': facts.map(memoryFactToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_fact.getByAuthor',
-      kind: RepoOpKind.read,
-      requiredArgs: ['agent_id'],
-      handler: (ctx) async {
-        final facts = await memoryFactRepository.getByAuthor(
-          ctx.workspaceId!,
-          ctx.args['agent_id'] as String,
-        );
-        return {'facts': facts.map(memoryFactToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_fact.search',
-      kind: RepoOpKind.read,
-      requiredArgs: ['query'],
-      handler: (ctx) async {
-        // FTS5-only over RPC: the thin client cannot ship a query embedding, so
-        // hybrid BM25+vector search stays host-internal.
-        final facts = await memoryFactRepository.search(
-          ctx.workspaceId!,
-          ctx.args['query'] as String,
-        );
-        return {'facts': facts.map(memoryFactToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_fact.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['fact'],
-      handler: (ctx) async {
-        final fact = memoryFactFromWire(
-          (ctx.args['fact'] as Map).cast<String, dynamic>(),
-        );
-        // The fact's own workspace must match the bound session — a client
-        // can't write a fact into a foreign workspace (isolation invariant).
-        if (fact.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Memory fact belongs to a different workspace',
-          );
-        }
-        await memoryFactRepository.upsert(fact);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'memory_fact.delete',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['fact_id'],
-      handler: (ctx) async {
-        // delete() is itself workspace-scoped — a foreign fact is a no-op there,
-        // so passing the bound workspace is the boundary (no ID-only delete).
-        await memoryFactRepository.delete(
-          ctx.workspaceId!,
-          ctx.args['fact_id'] as String,
-        );
-        return {'ok': true};
-      },
-    ),
-
-    RepoOp(
-      name: 'memory_policy.getByWorkspace',
-      kind: RepoOpKind.read,
-      handler: (ctx) async {
-        final policies = await memoryPolicyRepository.getByWorkspace(
-          ctx.workspaceId!,
-        );
-        return {'policies': policies.map(memoryPolicyToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_policy.getById',
-      kind: RepoOpKind.read,
-      requiredArgs: ['id'],
-      handler: (ctx) async {
-        // Scoped lookup: a policy owned by another workspace is simply not
-        // found (ids are global UUIDs; the workspace is the isolation
-        // boundary, not id uniqueness).
-        final policy = await memoryPolicyRepository.getById(
-          ctx.workspaceId!,
-          ctx.args['id'] as String,
-        );
-        if (policy == null) {
-          throw const NotFoundException('Memory policy not found');
-        }
-        return {'policy': memoryPolicyToWire(policy)};
-      },
-    ),
-    RepoOp(
-      name: 'memory_policy.getActiveByWorkspace',
-      kind: RepoOpKind.read,
-      handler: (ctx) async {
-        final policies = await memoryPolicyRepository.getActiveByWorkspace(
-          ctx.workspaceId!,
-          domain: ctx.args['domain'] as String?,
-        );
-        return {'policies': policies.map(memoryPolicyToWire).toList()};
-      },
-    ),
-    RepoOp(
-      name: 'memory_policy.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['policy'],
-      handler: (ctx) async {
-        final policy = memoryPolicyFromWire(
-          (ctx.args['policy'] as Map).cast<String, dynamic>(),
-        );
-        // The policy's own workspace must match the bound session — a client
-        // can't write a policy into a foreign workspace (isolation invariant).
-        if (policy.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Memory policy belongs to a different workspace',
-          );
-        }
-        await memoryPolicyRepository.upsert(policy);
-        return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'memory_policy.delete',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['id'],
-      handler: (ctx) async {
-        // Scoped delete: the repository filters by workspaceId, so one
-        // workspace can never delete another's policy.
-        await memoryPolicyRepository.delete(
-          ctx.workspaceId!,
-          ctx.args['id'] as String,
-        );
-        return {'ok': true};
-      },
+    ...buildMemoryOps(
+      memoryDomainRepository: memoryDomainRepository,
+      memoryAccessGrantRepository: memoryAccessGrantRepository,
+      agentWorkingMemoryRepository: agentWorkingMemoryRepository,
+      memoryFactRepository: memoryFactRepository,
+      memoryPolicyRepository: memoryPolicyRepository,
     ),
 
     // Allow/deny statements the model catalog's finalize consults to drop
@@ -8170,8 +7293,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // dispatcher only evaluates `minRole` for workspace-scoped ops — so a
     // declared role floor here would be silently ignored. `serverAuthority`
     // is the declarative gate (enforced by the dispatcher, visible in
-    // `op/list`); the in-handler `requireServerAdmin` stays as depth for
-    // catalogs driven without the dispatcher.
+    // `op/list`).
     if (serverSettingsRepository != null)
       RepoOp(
         name: 'server_settings.getAll',
@@ -8179,7 +7301,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         serverAuthority: ServerAuthority.serverOwner,
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           return {'settings': await serverSettingsRepository.getAll()};
         },
       ),
@@ -8191,7 +7312,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         serverAuthority: ServerAuthority.serverOwner,
         requiredArgs: ['key'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await serverSettingsRepository.set(
             ctx.args['key'] as String,
             ctx.args['value'] as String?,
@@ -8324,9 +7444,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // A custom role names a base preset and a set of DENIED permissions
     // removed from it, so it can never grant more than its base — which is
     // what keeps every hand-rolled `role.isAdmin` check in this catalog a
-    // sound upper bound while the surface migrates to the permission
-    // catalog. Members hold them as `custom:<id>`; an old client parses that
-    // as an unknown role and fails safe to guest.
+    // sound upper bound. Members hold them as `custom:<id>`, which the
+    // built-in role parser refuses, so a reader without the custom role fails
+    // safe to guest.
     if (workspaceRoleRepository != null &&
         entitlements.has(Entitlement.customRoles)) ...[
       RepoOp(
@@ -8550,7 +7670,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         serverAuthority: ServerAuthority.serverOwner,
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final rules = await managedPolicy.rules();
           return {
             'pinned_to_file': managedPolicy.isPinnedToFile,
@@ -8575,7 +7694,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         serverAuthority: ServerAuthority.serverOwner,
         requiredArgs: ['decision'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           if (managedPolicy.isPinnedToFile) {
             throw const AuthException(
               'This install pins its managed policy to a file '
@@ -8618,7 +7736,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         serverAuthority: ServerAuthority.serverOwner,
         requiredArgs: ['id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await managedPolicy.delete(ctx.args['id'] as String);
           return {'ok': true};
         },
@@ -8639,12 +7756,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'sandbox.listExecGrants',
         kind: RepoOpKind.read,
         handler: (ctx) async {
-          final grants = await sandboxExecGrantRepository.grants(
+          // Paged and searched in SQL: every agent working copy the operator
+          // allowed leaves a row, so the list only grows. `total` counts the
+          // grants matching `query`, so the client can say "25 of 60".
+          final query = ctx.args['query'];
+          final page = await sandboxExecGrantRepository.searchGrants(
             ctx.workspaceId!,
+            query: query is String ? query : null,
+            limit: ((ctx.args['limit'] as num?)?.toInt() ?? 25).clamp(1, 100),
+            offset: ((ctx.args['offset'] as num?)?.toInt() ?? 0).clamp(
+              0,
+              1 << 31,
+            ),
           );
           return {
+            'total': page.total,
             'grants': [
-              for (final g in grants)
+              for (final g in page.grants)
                 {
                   'id': g.id,
                   'path': g.path,
@@ -8716,26 +7844,38 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'already_exists': true,
             };
           }
-          // Existence + metadata probe: a 404 (or a private repo the
-          // workspace's credentials cannot see) fails the add with a typed
-          // error.
-          final snapshot = await skillSourceCatalogFor(
+          // Registered first: only a registered source gets a read token from
+          // the workspace's GitHub App. The existence + metadata probe then
+          // runs as it always will, and a repository neither the App nor the
+          // caller can read is unregistered again with a typed error.
+          final stored = await skillSources.add(
             workspaceId,
-            owner,
-          ).repoSnapshot(owner, repo);
-          final source = SkillSource(
-            id: const Uuid().v4(),
-            workspaceId: workspaceId,
-            owner: owner,
-            repo: repo,
-            url: 'https://github.com/$owner/$repo',
+            SkillSource(
+              id: const Uuid().v4(),
+              workspaceId: workspaceId,
+              owner: owner,
+              repo: repo,
+              url: 'https://github.com/$owner/$repo',
+              createdAt: DateTime.now(),
+            ),
+          );
+          final SkillSourceRepoSnapshot snapshot;
+          try {
+            snapshot = await skillSourceCatalogFor(
+              workspaceId,
+              actingUserId: ctx.userId,
+            ).repoSnapshot(owner, repo);
+          } on Object {
+            await skillSources.remove(workspaceId, stored.id);
+            rethrow;
+          }
+          final probed = stored.copyWith(
             description: snapshot.description,
             defaultBranch: snapshot.defaultBranch,
             starCount: snapshot.starCount,
-            createdAt: DateTime.now(),
           );
-          final stored = await skillSources.add(workspaceId, source);
-          return {'source': skillSourceToWire(stored)};
+          await skillSources.update(workspaceId, probed);
+          return {'source': skillSourceToWire(probed)};
         },
       ),
     if (skillSources != null)
@@ -8777,7 +7917,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           try {
             listings = await skillSourceCatalogFor(
               workspaceId,
-              source.owner,
+              actingUserId: ctx.userId,
             ).listSkills(source.owner, source.repo);
             await skillSources.update(
               workspaceId,
@@ -8799,7 +7939,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // GitHub pins, matched by slug).
           final lock = await skillBundles.readLock(workspaceId);
           final updates = {
-            for (final u in await skillBundles.checkUpdates(workspaceId))
+            for (final u in await skillBundles.checkUpdates(
+              workspaceId,
+              actingUserId: ctx.userId,
+            ))
               u.slug: u,
           };
           return {
@@ -8853,7 +7996,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // install's scan is a free cache hit.
           final resolved = await skillSourceCatalogFor(
             workspaceId,
-            source.owner,
+            actingUserId: ctx.userId,
           ).resolve(source.owner, source.repo, path);
           final scan = await skillBundles.previewFiles(
             workspaceId: workspaceId,
@@ -8928,6 +8071,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               allowQuarantineOverride: allowOverride,
               spaceId: ctx.args['space_id'] as String?,
               agentId: ctx.args['agent_id'] as String?,
+              actingUserId: ctx.userId,
             );
             return {
               'status': 'installed',
@@ -8976,7 +8120,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.read,
         timeout: const Duration(seconds: 45),
         handler: (ctx) async {
-          final candidates = await skillBundles.checkUpdates(ctx.workspaceId!);
+          final candidates = await skillBundles.checkUpdates(
+            ctx.workspaceId!,
+            actingUserId: ctx.userId,
+          );
           return {
             'updates': [
               for (final c in candidates)
@@ -9003,7 +8150,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           final workspaceId = ctx.workspaceId!;
           final slug = validatedSlug(ctx.args['skill_slug'] as String);
           SkillUpdateCandidate? candidate;
-          for (final c in await skillBundles.checkUpdates(workspaceId)) {
+          for (final c in await skillBundles.checkUpdates(
+            workspaceId,
+            actingUserId: ctx.userId,
+          )) {
             if (c.slug == slug) {
               candidate = c;
               break;
@@ -9021,6 +8171,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                   ctx.args['allow_quarantine_override'] == true,
               spaceId: ctx.args['space_id'] as String?,
               agentId: ctx.args['agent_id'] as String?,
+              actingUserId: ctx.userId,
             );
             return {
               'status': 'updated',
@@ -9070,7 +8221,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final spaceDir = await fs.spaceDir(ctx.workspaceId!, spaceId);
           final catalog = RepoSkillCatalog(
             workspaceId: ctx.workspaceId!,
@@ -9401,7 +8552,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id', 'api_key'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           final key = ctx.args['api_key'] as String;
           final baseUrl = ctx.args['base_url'] as String?;
@@ -9457,7 +8607,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           // For a custom provider "remove credential" drops only the key —
           // the provider definition survives (delete it via
@@ -9500,7 +8649,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['display_name', 'dialect', 'base_url'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final name = (ctx.args['display_name'] as String).trim();
           final dialect = CustomProviderDialect.fromWire(
             ctx.args['dialect'] as String?,
@@ -9577,7 +8725,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           if (harnessProviderMetas.containsKey(id)) {
             throw ArgumentError('"$id" is a built-in provider.');
@@ -9603,7 +8750,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           if (!harnessProviderMetas.containsKey(id)) {
             final known = {
@@ -9675,7 +8821,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id', 'model_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           await _requireKnownProvider(harnessCreds, id);
           final modelId = _bareModelId(id, ctx.args['model_id'] as String);
@@ -9719,7 +8864,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id', 'model_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final id = ctx.args['provider_id'] as String;
           await _requireKnownProvider(harnessCreds, id);
           final modelId = _bareModelId(id, ctx.args['model_id'] as String);
@@ -9747,7 +8891,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['provider_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final start = await oauthBroker.start(
             ctx.args['provider_id'] as String,
           );
@@ -9769,7 +8912,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['flow_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final status = oauthBroker.status(ctx.args['flow_id'] as String);
           return {
             'status': status.state.name,
@@ -9786,7 +8928,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['flow_id', 'code'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await oauthBroker.complete(
             ctx.args['flow_id'] as String,
             ctx.args['code'] as String,
@@ -9808,7 +8949,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['flow_id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await oauthBroker.cancel(ctx.args['flow_id'] as String);
           return {'ok': true};
         },
@@ -9834,18 +8974,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           entries = await projected.costHistory(ctx.workspaceId!, since);
         } else {
           // A host wired to a repository without the projected read (the thin
-          // client's RPC-backed one) still answers correctly, just the old way.
+          // client's RPC-backed one) answers from a full scan.
           final logs = await agentRunLogRepository.watchAll().first;
           entries = [
             for (final log in logs)
               if (log.workspaceId == ctx.workspaceId &&
-                  log.cost.estimatedCostCents > 0 &&
+                  log.cost.costMicros > 0 &&
                   !log.startedAt.isBefore(since))
                 UsageCostHistoryEntry(
                   recordedAt: log.startedAt,
                   provider: log.adapter ?? 'agent',
                   accountKey: log.adapter ?? 'agent',
-                  costUsd: log.cost.estimatedCostCents / 100.0,
+                  costUsd: log.cost.costUsd,
                 ),
           ];
         }
@@ -9858,51 +8998,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       },
     ),
 
-    RepoOp(
-      name: 'review_space.create',
-      kind: RepoOpKind.mutate,
-      requiredArgs: [
-        'space_id',
-        'pr_external_id',
-        'pr_number',
-        'repo_full_name',
-      ],
-      handler: (ctx) async {
-        // The association is stamped with the bound session workspace — a
-        // client can't create one in a foreign workspace (isolation invariant).
-        final association = await reviewSpaceRepository.create(
-          spaceId: ctx.args['space_id'] as String,
-          workspaceId: ctx.workspaceId!,
-          prExternalId: ctx.args['pr_external_id'] as String,
-          prNumber: (ctx.args['pr_number'] as num).toInt(),
-          repoFullName: ctx.args['repo_full_name'] as String,
-        );
-        return {'association': reviewSpaceToWire(association)};
-      },
-    ),
-    RepoOp(
-      name: 'review_space.updateStatus',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['id', 'status'],
-      handler: (ctx) async {
-        final id = ctx.args['id'] as String;
-        // Verify ownership before mutating (ID-only lookup is not a boundary):
-        // the association must already be visible in the bound workspace.
-        final owned = await reviewSpaceRepository
-            .watchByWorkspace(ctx.workspaceId!)
-            .first;
-        if (!owned.any((a) => a.id == id)) {
-          throw const WorkspaceMismatchException(
-            'Review space association belongs to a different workspace',
-          );
-        }
-        final status = ReviewSpaceStatus.values.asNameMap()[ctx.args['status']];
-        if (status == null) {
-          throw const NotFoundException('Unknown review space status');
-        }
-        await reviewSpaceRepository.updateStatus(ctx.workspaceId!, id, status);
-        return {'ok': true};
-      },
+    ...buildReviewSpaceOps(
+      reviewSpaces: reviewSpaceRepository,
+      requirePrRepo: requirePrRepoByFullName,
     ),
     RepoOp(
       name: 'agent_run_log.get',
@@ -9923,6 +9021,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Agent run log belongs to a different workspace',
           );
         }
+        await prData.requireRunLog(ctx.workspaceId!, ctx.userId, log);
         return {'log': agentRunLogToWire(log)};
       },
     ),
@@ -9952,6 +9051,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Agent run log belongs to a different workspace',
             );
           }
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, run);
           final replay = await loadRunReplay(ctx.workspaceId!, runId);
           final transcript = replay.row;
           var segments = replay.segments;
@@ -9966,7 +9066,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           var json = encodeTranscript(segments);
           if (await viewerTraceRestricted(
             ctx.workspaceId!,
-            run.spaceId ?? run.conversationId ?? '',
+            run.spaceId ?? '',
             ctx.userId,
           )) {
             json = [for (final seg in json) redactSegmentJson(seg)];
@@ -10013,11 +9113,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Agent run log belongs to a different workspace',
             );
           }
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, run);
           final path = run.logPath;
           if (path == null || path.isEmpty) {
             return {'events': const [], 'truncated': false};
           }
-          final read = await runLogReader.readRunLogEvents(path);
+          final read = await runLogReader.readRunLogEvents(
+            path,
+            workspaceId: ctx.workspaceId!,
+          );
           return {'events': read.events, 'truncated': read.truncated};
         },
       ),
@@ -10037,7 +9141,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Agent run log belongs to a different workspace',
           );
         }
-        return {'log': log == null ? null : agentRunLogToWire(log)};
+        final hidden = await prData.hiddenSpaces(ctx.workspaceId!, ctx.userId);
+        final seen = log != null && !hidden.contains(log.spaceId);
+        return {'log': seen ? agentRunLogToWire(log) : null};
       },
     ),
     RepoOp(
@@ -10049,7 +9155,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.workspaceId!,
           ctx.args['pipeline_run_id'] as String,
         );
-        return {'logs': logs.map(agentRunLogToWire).toList()};
+        return prData.runLogsWire(ctx.workspaceId!, ctx.userId, logs);
       },
     ),
     RepoOp(
@@ -10062,7 +9168,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           ctx.args['pipeline_run_id'] as String,
           ctx.args['pipeline_step_id'] as String,
         );
-        return {'logs': logs.map(agentRunLogToWire).toList()};
+        return prData.runLogsWire(ctx.workspaceId!, ctx.userId, logs);
       },
     ),
     RepoOp(
@@ -10320,25 +9426,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 isolatedRepoToWire(r),
           ],
         };
-      },
-    ),
-    RepoOp(
-      name: 'isolated_repo.upsert',
-      kind: RepoOpKind.mutate,
-      requiredArgs: ['repo'],
-      handler: (ctx) async {
-        final repo = isolatedRepoFromWire(
-          (ctx.args['repo'] as Map).cast<String, dynamic>(),
-        );
-        // The row's own workspace must match the bound session — a client can't
-        // write a worktree into a foreign workspace (isolation invariant).
-        if (repo.workspaceId != ctx.workspaceId) {
-          throw const WorkspaceMismatchException(
-            'Isolated repo belongs to a different workspace',
-          );
-        }
-        await isolatedRepoRepository.upsert(repo);
-        return {'ok': true};
       },
     ),
     RepoOp(
@@ -10675,11 +9762,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {'ok': true};
       },
     ),
-    // Fetched SERVER-SIDE on the gh-authenticated client: the thin client holds
-    // no GitHub token, so it reads the workspace's open PRs (grouped per linked
-    // repo, checks already overlaid) over this op instead of hitting GitHub
-    // itself. The linked repos are resolved from the BOUND workspace — never a
-    // client-sent list. `authenticated:false` means the server has no gh token.
+    // Fetched SERVER-SIDE: the thin client holds no forge token, so it reads
+    // the workspace's open PRs (grouped per linked repo, checks already
+    // overlaid) over this op instead of hitting the forge itself. The repos
+    // are the BOUND workspace's linked repos the CALLER may see (admin or
+    // read grant, and their own forge sign-in can read it) — never a
+    // client-sent list; the rest are counted in `hidden_repos`.
+    // `authenticated:false` means the server has no fetcher wired.
     RepoOp(
       name: 'pr.listOpenForWorkspace',
       kind: RepoOpKind.read,
@@ -10688,35 +9777,39 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (fetch == null) {
           return {'authenticated': false, 'repos': <Map<String, dynamic>>[]};
         }
-        final linked = await workspaceRepository
-            .watchReposForWorkspace(ctx.workspaceId!)
-            .first;
-        final ghRepos = [
-          for (final r in linked)
-            if (r.hasForgeRemote) r,
-        ];
-        if (ghRepos.isEmpty) {
-          return {'authenticated': true, 'repos': <Map<String, dynamic>>[]};
+        final visibility = await prVisibilityFor(ctx.workspaceId!, ctx.userId);
+        final repos = visibility.visibleRepos;
+        if (repos.isEmpty) {
+          return {
+            'authenticated': true,
+            'repos': <Map<String, dynamic>>[],
+            'hidden_repos': visibility.hiddenReposWire(),
+            'repo_access': await repoAccessFor(ctx.workspaceId!, ctx.userId, visibility),
+          };
         }
-        final groups = await fetch(ghRepos, workspaceId: ctx.workspaceId!);
+        final groups = await fetch(repos, workspaceId: ctx.workspaceId!);
         return {
           'authenticated': true,
           'repos': [
             for (final g in groups)
-              {
-                'repo_id': g.repo.id,
-                'repo_full_name': g.repo.fullName,
-                'has_more': g.hasMore,
-                'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
-              },
+              if (visibility.canSee(g.repo.id))
+                {
+                  'repo_id': g.repo.id,
+                  'repo_full_name': g.repo.fullName,
+                  'has_more': g.hasMore,
+                  'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
+                },
           ],
+          'hidden_repos': visibility.hiddenReposWire(),
+          'repo_access': await repoAccessFor(ctx.workspaceId!, ctx.userId, visibility),
         };
       },
     ),
     // Forces an immediate open-PR poller sweep (ETag short-circuits bypassed,
-    // checks pass included) — the "refresh now" behind the live PR list. The
-    // result arrives over the `pr.watchOpenForWorkspace` subscription, not in
-    // this reply.
+    // checks pass included) — the "refresh now" behind the live PR list. At
+    // most one per 20 s per workspace (later calls join it). The result
+    // arrives over the `pr.watchOpenForWorkspace` subscription, not in this
+    // reply.
     if (openPrPoller != null)
       RepoOp(
         name: 'pr.refreshOpenForWorkspace',
@@ -10727,7 +9820,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         },
       ),
     // One-shot read of [spaceBranchPrMatches]; `pr.watchForSpaceBranches` is
-    // the live counterpart the space panels subscribe to.
+    // the live counterpart the space panels subscribe to. Only repos the
+    // caller may see contribute matches.
     if (openPrPoller != null)
       RepoOp(
         name: 'pr.forSpaceBranches',
@@ -10735,19 +9829,31 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['space_id'],
         handler: (ctx) async {
           final spaceId = ctx.args['space_id'] as String;
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
-          return spaceBranchPrMatches(openPrPoller, ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
+          return spaceBranchPrMatches(
+            openPrPoller,
+            ctx.workspaceId!,
+            spaceId,
+            await prVisibilityFor(ctx.workspaceId!, ctx.userId),
+          );
         },
       ),
-    // The SERVER's authenticated GitHub user (global — not workspace data). The
-    // thin client holds no token, so its `login`/avatar resolve from the host.
+    // The CALLER's GitHub account in the BOUND workspace: the sign-in in
+    // effect for them there (a workspace on its own App can see a different
+    // GitHub account for the same member). The thin client holds no token,
+    // so its `login`/avatar resolve from the host.
     RepoOp(
       name: 'github.currentUser',
       kind: RepoOpKind.read,
-      workspaceScoped: false,
       handler: (ctx) async {
-        final user = await fetchCurrentGitHubUser?.call(ctx.userId);
-        final teams = await fetchViewerGitHubTeams?.call(ctx.userId);
+        final user = await fetchCurrentGitHubUser?.call(
+          ctx.userId,
+          workspaceId: ctx.workspaceId!,
+        );
+        final teams = await fetchViewerGitHubTeams?.call(
+          ctx.userId,
+          workspaceId: ctx.workspaceId!,
+        );
         return {
           'user': user,
           'teams': [
@@ -10757,79 +9863,98 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         };
       },
     ),
-    // The dashboard's priority reviews: open PRs requesting the server user's
-    // review across the BOUND workspace's linked repos (server-side gh search).
+    // The dashboard's priority reviews: open PRs requesting the caller's
+    // review across the GitHub repos of the BOUND workspace they may see
+    // (server-side search on their own credential). GitHub's search takes
+    // only GitHub `repo:` qualifiers, so other forges are left out here; the
+    // badge counts them from the snapshot.
     RepoOp(
       name: 'pr.searchReviewRequestedForWorkspace',
       kind: RepoOpKind.read,
       handler: (ctx) async {
         final fetch = fetchReviewRequested;
-        if (fetch == null) {
-          return {'reviews': <Map<String, dynamic>>[]};
-        }
-        final linked = await workspaceRepository
-            .watchReposForWorkspace(ctx.workspaceId!)
-            .first;
+        final visibility = await prVisibilityFor(ctx.workspaceId!, ctx.userId);
         final ghRepos = [
-          for (final r in linked)
-            if (r.hasForgeRemote) r,
+          for (final r in visibility.visibleRepos)
+            if (r.forge == ForgeHost.github) r,
         ];
-        if (ghRepos.isEmpty) {
-          return {'reviews': <Map<String, dynamic>>[]};
+        if (fetch == null || ghRepos.isEmpty) {
+          return {
+            'reviews': <Map<String, dynamic>>[],
+            'hidden_repos': visibility.hiddenReposWire(),
+          };
         }
-        final results = await fetch(ghRepos, ctx.userId);
+        final results = await fetch(
+          ghRepos,
+          ctx.userId,
+          workspaceId: ctx.workspaceId!,
+        );
         return {
           'reviews': [
             for (final r in results)
-              {
-                'repo_id': r.repo.id,
-                'repo_full_name': r.repo.fullName,
-                'pr': pullRequestToWire(r.pr),
-              },
+              if (visibility.canSee(r.repo.id))
+                {
+                  'repo_id': r.repo.id,
+                  'repo_full_name': r.repo.fullName,
+                  'pr': pullRequestToWire(r.pr),
+                },
           ],
+          'hidden_repos': visibility.hiddenReposWire(),
         };
       },
     ),
-    // The PR-list "reviewed by me" overlay: `"<owner/repo>#<number>"` keys of the
-    // open PRs the server user has reviewed across the bound workspace's repos.
+    // The PR-list "reviewed by me" overlay: `"<owner/repo>#<number>"` keys of
+    // the open PRs the caller has reviewed across the GitHub repos of the
+    // bound workspace they may see (GitHub `repo:` qualifiers only).
     RepoOp(
       name: 'pr.searchReviewedByForWorkspace',
       kind: RepoOpKind.read,
       handler: (ctx) async {
         final fetch = fetchReviewedBy;
-        if (fetch == null) {
-          return {'keys': <String>[]};
-        }
-        final linked = await workspaceRepository
-            .watchReposForWorkspace(ctx.workspaceId!)
-            .first;
+        final visibility = await prVisibilityFor(ctx.workspaceId!, ctx.userId);
         final ghRepos = [
-          for (final r in linked)
-            if (r.hasForgeRemote) r,
+          for (final r in visibility.visibleRepos)
+            if (r.forge == ForgeHost.github) r,
         ];
-        if (ghRepos.isEmpty) {
-          return {'keys': <String>[]};
+        if (fetch == null || ghRepos.isEmpty) {
+          return {
+            'keys': <String>[],
+            'hidden_repos': visibility.hiddenReposWire(),
+          };
         }
-        final keys = await fetch(ghRepos, ctx.userId);
-        return {'keys': keys.toList()};
+        final allowed = {for (final r in ghRepos) r.fullName.toLowerCase()};
+        final keys = await fetch(
+          ghRepos,
+          ctx.userId,
+          workspaceId: ctx.workspaceId!,
+        );
+        return {
+          'keys': [
+            for (final k in keys)
+              if (allowed.contains(k.split('#').first.toLowerCase())) k,
+          ],
+          'hidden_repos': visibility.hiddenReposWire(),
+        };
       },
     ),
-    // The PR-queue free-text search across the bound workspace's linked repos.
+    // The PR-queue free-text search across the linked repos of the bound
+    // workspace the caller may see.
     RepoOp(
       name: 'pr.searchForWorkspace',
       kind: RepoOpKind.read,
       requiredArgs: ['query'],
       handler: (ctx) async {
         final fetch = fetchPrSearch;
-        if (fetch == null) {
-          return {'repos': <Map<String, dynamic>>[]};
-        }
-        final ghRepos = await linkedForgeRepos(ctx.workspaceId!);
-        if (ghRepos.isEmpty) {
-          return {'repos': <Map<String, dynamic>>[]};
+        final visibility = await prVisibilityFor(ctx.workspaceId!, ctx.userId);
+        final repos = visibility.visibleRepos;
+        if (fetch == null || repos.isEmpty) {
+          return {
+            'repos': <Map<String, dynamic>>[],
+            'hidden_repos': visibility.hiddenReposWire(),
+          };
         }
         final groups = await fetch(
-          ghRepos,
+          repos,
           ctx.args['query'] as String,
           workspaceId: ctx.workspaceId!,
           userId: ctx.userId,
@@ -10837,34 +9962,35 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {
           'repos': [
             for (final g in groups)
-              {
-                'repo_id': g.repo.id,
-                'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
-              },
+              if (visibility.canSee(g.repo.id))
+                {
+                  'repo_id': g.repo.id,
+                  'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
+                },
           ],
+          'hidden_repos': visibility.hiddenReposWire(),
         };
       },
     ),
-    // The operator's merged PR history across the bound workspace's repos.
+    // The caller's merged PR history across the repos of the bound workspace
+    // they may see.
     //
-    // Fans out per forge under each forge's OWN viewer identity rather than
-    // searching one login everywhere: the same human is a different account on
-    // GitHub than on GitLab, so a single-login search would silently return
-    // nothing for every repo outside the forge that login belongs to. The
-    // `login` argument is therefore advisory — the server resolves the real
-    // per-forge identity itself.
+    // Fans out per forge under each forge's OWN viewer identity for the
+    // caller in this workspace, resolved server-side: the same human is a
+    // different account on GitHub than on GitLab, so there is no login to
+    // pass in.
     RepoOp(
       name: 'pr.closedByAuthorForWorkspace',
       kind: RepoOpKind.read,
-      requiredArgs: ['login'],
       handler: (ctx) async {
         final history = fetchMergedHistory;
-        if (history == null) {
-          return {'repos': <Map<String, dynamic>>[]};
-        }
-        final repos = await linkedForgeRepos(ctx.workspaceId!);
-        if (repos.isEmpty) {
-          return {'repos': <Map<String, dynamic>>[]};
+        final visibility = await prVisibilityFor(ctx.workspaceId!, ctx.userId);
+        final repos = visibility.visibleRepos;
+        if (history == null || repos.isEmpty) {
+          return {
+            'repos': <Map<String, dynamic>>[],
+            'hidden_repos': visibility.hiddenReposWire(),
+          };
         }
         // The CALLER's history: resolved under their own per-forge identity
         // and fetched on their own credential, so one member's merged PRs are
@@ -10877,17 +10003,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         return {
           'repos': [
             for (final g in groups)
-              {
-                'repo_id': g.repo.id,
-                'has_more': g.hasMore,
-                'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
-              },
+              if (visibility.canSee(g.repo.id))
+                {
+                  'repo_id': g.repo.id,
+                  'has_more': g.hasMore,
+                  'prs': [for (final pr in g.prs) pullRequestToWire(pr)],
+                },
           ],
+          'hidden_repos': visibility.hiddenReposWire(),
         };
       },
     ),
     // GitHub org members (profile people picker). Owners are derived SERVER-SIDE
-    // from the bound workspace's linked repos — never a client-sent list.
+    // from the bound workspace's linked GitHub repos the caller may see —
+    // never a client-sent list.
     RepoOp(
       name: 'github.orgMembers',
       kind: RepoOpKind.read,
@@ -10896,10 +10025,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (fetch == null) {
           return {'members': <Map<String, dynamic>>[]};
         }
-        final ghRepos = await linkedForgeRepos(ctx.workspaceId!);
+        final visibility = await prVisibilityFor(ctx.workspaceId!, ctx.userId);
         final owners = {
-          for (final r in ghRepos)
-            if (r.remoteOwner.isNotEmpty) r.remoteOwner,
+          for (final r in visibility.visibleRepos)
+            if (r.forge == ForgeHost.github && r.remoteOwner.isNotEmpty)
+              r.remoteOwner,
         }.toList();
         if (owners.isEmpty) {
           return {'members': <Map<String, dynamic>>[]};
@@ -10929,7 +10059,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'repos': <Map<String, dynamic>>[],
           };
         }
-        final repos = await linkedForgeRepos(ctx.workspaceId!);
+        // Only the repos the caller may see feed their profile: another
+        // member's view of the workspace never widens theirs.
+        final repos = (await prVisibilityFor(
+          ctx.workspaceId!,
+          ctx.userId,
+        )).visibleRepos;
         final kind = ctx.args['kind'] as String;
         late final List<String> logins;
         switch (kind) {
@@ -11339,7 +10474,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         kind: RepoOpKind.mutate,
         workspaceScoped: false,
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final account = await claudeAccounts.create(
             label: ctx.args['label'] as String?,
           );
@@ -11353,7 +10487,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['id', 'label'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await claudeAccounts.rename(
             ctx.args['id'] as String,
             ctx.args['label'] as String,
@@ -11368,7 +10501,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await claudeAccounts.remove(ctx.args['id'] as String);
           await onAccountPoolCredentialsRemoved?.call(
             AccountPoolLanes.claudeCode,
@@ -11383,7 +10515,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           await claudeAccounts.setDefault(ctx.args['id'] as String);
           return {'ok': true};
         },
@@ -11395,7 +10526,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         workspaceScoped: false,
         requiredArgs: ['id'],
         handler: (ctx) async {
-          requireServerAdmin(ctx);
           final cmd = claudeAccounts.loginCommand(
             ctx.args['id'] as String,
             email: ctx.args['email'] as String?,
@@ -11550,6 +10680,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             'Pipeline run belongs to a different workspace',
           );
         }
+        await prData.requireRun(ctx.workspaceId!, ctx.userId, run);
         return {'run': pipelineRunToWire(run, withSnapshot: true)};
       },
     ),
@@ -11563,7 +10694,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           workspaceId: ctx.workspaceId!,
           dedupKey: ctx.args['dedup_key'] as String,
         );
-        return {'run': run == null ? null : pipelineRunToWire(run)};
+        final seen =
+            run != null &&
+            (await prData.view(ctx.workspaceId!, ctx.userId)).canSeeRun(run);
+        return {'run': seen ? pipelineRunToWire(run) : null};
       },
     ),
     RepoOp(
@@ -11577,6 +10711,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         final run = await loadOwnedPipelineRun(
           ctx.workspaceId!,
           ctx.args['run_id'] as String,
+          ctx.userId,
         );
         if (!run.isTerminal) {
           throw const ValidationException(
@@ -11592,9 +10727,10 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.read,
       requiredArgs: ['pipeline_run_id'],
       handler: (ctx) async {
-        await assertPipelineRunOwned(
+        await loadOwnedPipelineRun(
           ctx.workspaceId!,
           ctx.args['pipeline_run_id'] as String,
+          ctx.userId,
         );
         final stepRuns = await pipelineRunRepository.stepRunsForPipeline(
           ctx.args['pipeline_run_id'] as String,
@@ -11615,7 +10751,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           return {'step_run': null};
         }
         // Step runs carry no workspaceId — validate through the parent run.
-        await assertPipelineRunOwned(ctx.workspaceId!, stepRun.pipelineRunId);
+        await loadOwnedPipelineRun(
+          ctx.workspaceId!,
+          stepRun.pipelineRunId,
+          ctx.userId,
+        );
         return {'step_run': pipelineStepRunToWire(stepRun)};
       },
     ),
@@ -11666,7 +10806,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         handler: (ctx) async {
           final runId = ctx.args['pipeline_run_id'] as String;
           // ID-only lookup is not a boundary — assert the run is ours first.
-          await loadOwnedPipelineRun(ctx.workspaceId!, runId);
+          await loadOwnedPipelineRun(ctx.workspaceId!, runId, ctx.userId);
           await pipeline.cancel(ctx.workspaceId!, runId);
           return {'ok': true};
         },
@@ -11679,7 +10819,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['pipeline_run_id'],
         handler: (ctx) async {
           final runId = ctx.args['pipeline_run_id'] as String;
-          await loadOwnedPipelineRun(ctx.workspaceId!, runId);
+          await loadOwnedPipelineRun(ctx.workspaceId!, runId, ctx.userId);
           await pipeline.retry(ctx.workspaceId!, runId);
           return {'ok': true};
         },
@@ -11694,7 +10834,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           // Step runs carry no workspaceId — resolve the parent run and assert
           // OWNERSHIP through it before killing (the chokepoint loads the step,
           // reads its `pipelineRunId`, then `loadOwnedPipelineRun`).
-          await assertPipelineStepRunOwned(ctx.workspaceId!, stepRunId);
+          await assertPipelineStepRunOwned(
+            ctx.workspaceId!,
+            stepRunId,
+            ctx.userId,
+          );
           await pipeline.killStep(ctx.workspaceId!, stepRunId);
           return {'ok': true};
         },
@@ -12189,6 +11333,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['owner', 'repo', 'pr_number'],
         handler: (ctx) async {
           final c = requireRepoCoords(ctx.args);
+          // Grant AND the caller's own forge reach, before any bot read.
+          await requireWorkspaceForgeRepo(
+            ctx.workspaceId!,
+            c.owner,
+            c.repo,
+            userId: ctx.userId,
+          );
           return computeReviewStudio(
             workspaceId: ctx.workspaceId!,
             owner: c.owner,
@@ -12226,6 +11377,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['owner', 'repo', 'file_path'],
         handler: (ctx) async {
           final c = requireRepoCoords(ctx.args);
+          await requireWorkspaceForgeRepo(
+            ctx.workspaceId!,
+            c.owner,
+            c.repo,
+            userId: ctx.userId,
+          );
           return reviewBlastRadius(
             workspaceId: ctx.workspaceId!,
             owner: c.owner,
@@ -12244,6 +11401,12 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         requiredArgs: ['owner', 'repo', 'pr_number', 'cohort_key'],
         handler: (ctx) async {
           final c = requireRepoCoords(ctx.args);
+          await requireWorkspaceForgeRepo(
+            ctx.workspaceId!,
+            c.owner,
+            c.repo,
+            userId: ctx.userId,
+          );
           return reviewCohortImpact(
             workspaceId: ctx.workspaceId!,
             owner: c.owner,
@@ -12373,6 +11536,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               '${ReviewLevel.values.map((l) => l.wireName).join(', ')}.',
             );
           }
+          // The review reads the PR as the bot: the caller must be able to
+          // see it themselves (grant AND their own forge sign-in).
+          await requireWorkspaceForgeRepo(
+            ctx.workspaceId!,
+            c.owner,
+            c.repo,
+            userId: ctx.userId,
+          );
           return reviewHubStart(
             workspaceId: ctx.workspaceId!,
             owner: c.owner,
@@ -12436,14 +11607,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           );
         }
         // `isBuiltIn` is the server's to decide, shell steps and steps behind
-        // an armed trigger are admin decisions — see the helper.
-        await pipelineTemplateRepository.upsert(
-          await preparePipelineTemplateWrite(
-            ctx,
-            templates: pipelineTemplateRepository,
-            triggers: pipelineTriggerRepository,
-            incoming: definition,
-          ),
+        // an armed trigger are admin decisions, and the editor joins who
+        // armed those triggers — see the helper.
+        await savePipelineTemplate(
+          ctx,
+          templates: pipelineTemplateRepository,
+          triggers: pipelineTriggerRepository,
+          incoming: definition,
         );
         return {'ok': true};
       },
@@ -12727,9 +11897,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           };
         },
       ),
-    // CROSS-WORKSPACE BY DESIGN: create_workspace / list_workspaces are the
-    // declared isolation exemptions (a workspace can't be scoped to itself
-    // before it exists). Mirrors WorkspaceRepository.{upsert,delete,watchAll}.
+    // CROSS-WORKSPACE BY DESIGN: the registry row lives in the global
+    // database, so the op is unscoped and checks the caller's role itself.
+    //
+    // It only UPDATES. A workspace is created by `workspace.create` alone,
+    // which mints the id and requires the server owner. An id that names no
+    // live workspace (never registered, or deleted) is not found here, so a
+    // deleted workspace is never restored or re-created under its old id.
     RepoOp(
       name: 'workspace.upsert',
       kind: RepoOpKind.mutate,
@@ -12738,106 +11912,55 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       handler: (ctx) async {
         final raw = (ctx.args['workspace'] as Map).cast<String, dynamic>();
         final incoming = workspaceFromWire(raw);
-        // Detect a CREATE (vs an update) so the server can bootstrap the new
-        // workspace exactly once.
+        // The registry is checked before membership: the membership lookup
+        // opens the workspace's database, and opening creates the file.
         final existing = await workspaceRepository.getById(incoming.id);
-        final isNew = existing == null;
-        // UPDATEs mutate another tenant's registry row. The op is
-        // `workspaceScoped: false` because a CREATE has no workspace to scope
-        // to, so the dispatcher's role gate never fires here — enforce it in
-        // the handler: only an admin of the existing workspace may change it.
-        if (!isNew) {
-          // Fail closed: an identity-less catalog previously served this
-          // ungated, so "update any workspace" depended on wiring that the
-          // check itself is supposed to enforce.
-          final members = identityMembers;
-          if (members == null) {
-            throw const AuthException(
-              'This server has no membership wiring, so a workspace cannot be '
-              'updated.',
-            );
-          }
-          final role = (await members.getMember(incoming.id, ctx.userId))?.role;
-          if (role == null || !role.atLeast(WorkspaceRole.admin)) {
-            throw const AuthException(
-              'Updating a workspace requires its admin role',
-            );
-          }
+        if (existing == null) {
+          throw const NotFoundException('Workspace not found');
         }
-        // On CREATE the calling principal becomes the workspace owner: stamp
-        // `ownerUserId` and record an owner-role membership row NOW, in the
-        // same op. Without this the freshly created workspace has no members,
-        // so every workspace-scoped call the creator makes next (the whole
-        // post-onboarding app) is denied with "Not a member of this
-        // workspace" until the next server restart, when
-        // `IdentityBootstrap._backfillWorkspaceOwnership` happens to repair it.
-        // On UPDATE, carry the stored owner over when the wire omits it so a
-        // rename from an older client can never wipe the stamp.
-        var toStore = incoming.ownerUserId != null
-            ? incoming
-            : incoming.copyWith(
-                ownerUserId: isNew ? ctx.userId : existing.ownerUserId,
-              );
-        // Older clients omit the GitHub identity fields. Carry the stored
-        // values over so a rename cannot silently reset a workspace that
-        // picked its own App.
-        final previous = existing;
-        if (previous != null) {
-          if (!raw.containsKey('github_auth_mode')) {
-            toStore = toStore.copyWith(githubAuthMode: previous.githubAuthMode);
-          }
-          if (!raw.containsKey('github_app_id')) {
-            toStore = toStore.copyWith(githubAppId: previous.githubAppId);
-          }
+        final members = identityMembers;
+        if (members == null) {
+          throw const AuthException(
+            'This server has no membership wiring, so a workspace cannot be '
+            'updated.',
+          );
         }
+        final role = (await members.getMember(existing.id, ctx.userId))?.role;
+        if (role == null || !role.atLeast(WorkspaceRole.admin)) {
+          throw const AuthException(
+            'Updating a workspace requires its admin role',
+          );
+        }
+        // Only the settings come off the wire. Ownership changes only through
+        // `workspace.transferOwnership`, the Connect choice only through
+        // `workspaceConnect.set` and deletion only through `workspace.delete`;
+        // the wire's owner, Connect fields, deletion and creation time are
+        // ignored, never merged. A new logo is only ever the file
+        // `fs.persistLogo*` wrote: the logo routes serve whatever this names.
+        final logo = incoming.logoPath;
+        if (logo != null &&
+            logo != existing.logoPath &&
+            (fs == null ||
+                !isWorkspaceLogoPath(await fs.workspaceDir(existing.id), logo))) {
+          throw const ValidationException(
+            "A workspace logo must be the workspace's own logo file",
+          );
+        }
+        final toStore = existing.copyWith(
+          name: incoming.name,
+          logoPath: incoming.logoPath,
+          removeLogoPath: incoming.logoPath == null,
+          secretExcludeGlobs: incoming.secretExcludeGlobs,
+          reviewConcurrency: incoming.reviewConcurrency,
+          autoPublishReview: incoming.autoPublishReview,
+          githubAppId: incoming.githubAppId,
+          updatedAt: DateTime.now(),
+        );
         final id = await workspaceRepository.upsert(toStore);
-        if (previous != null &&
-            (previous.githubAuthMode != toStore.githubAuthMode ||
-                previous.githubAppId != toStore.githubAppId)) {
+        if (existing.githubAppId != toStore.githubAppId) {
           // Another GitHub identity: nothing the previous one minted for
           // this workspace may be served again.
           workspaceGitHubApps?.identityChanged(id);
-        }
-        if (isNew) {
-          final members = identityMembers;
-          if (members != null &&
-              await members.getMember(id, ctx.userId) == null) {
-            await members.upsert(
-              WorkspaceMember(
-                id: const Uuid().v4(),
-                workspaceId: id,
-                userId: ctx.userId,
-                role: WorkspaceRole.owner,
-                joinedAt: DateTime.now(),
-              ),
-            );
-            // Announce the membership, not just the workspace. Every live
-            // membership-scoped stream ([visibleRows]) resolves the
-            // subscriber's workspace set ONCE and re-resolves only on this
-            // event — so a session that subscribed to `workspace.watchAll`
-            // while the user belonged to nothing (onboarding does exactly
-            // that) would filter its own brand-new workspace out of every
-            // later emission for the life of the connection. That is what
-            // stranded first-run onboarding: the workspace existed on disk,
-            // the client's list stayed empty, the gate stayed "incomplete",
-            // and Finish was bounced straight back to the flow, which then
-            // created another workspace on the next attempt.
-            eventBus?.publish(
-              WorkspaceMemberAdded(
-                workspaceId: id,
-                userId: ctx.userId,
-                role: WorkspaceRole.owner,
-                occurredAt: DateTime.now(),
-              ),
-            );
-          }
-          // Drives the server-side WorkspaceSeeder (CEO + specialist agents +
-          // built-in pipeline templates) wired in `runCcServer`. The thin
-          // client's own `WorkspaceCreated` fires on its bus, where the seeder
-          // is absent — the server is the sole DB owner, so it seeds here.
-          eventBus?.publish(
-            WorkspaceCreated(workspaceId: id, occurredAt: DateTime.now()),
-          );
         }
         return {'workspace_id': id};
       },
@@ -12853,14 +11976,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // row lives in the GLOBAL registry), so the dispatcher's role gate
         // never fires; only the workspace's OWNER may delete it.
         final id = ctx.args['id'] as String;
+        // Registered and live first: the membership lookup opens the
+        // workspace's database, and opening creates the file.
+        if (await workspaceRepository.getById(id) == null) {
+          throw const NotFoundException('Workspace not found');
+        }
         final members = identityMembers;
-        if (members != null) {
-          final role = (await members.getMember(id, ctx.userId))?.role;
-          if (role != WorkspaceRole.owner) {
-            throw const AuthException(
-              'Deleting a workspace requires its owner role',
-            );
-          }
+        if (members == null) {
+          throw const AuthException(
+            'This server has no membership wiring, so a workspace cannot be '
+            'deleted.',
+          );
+        }
+        final role = (await members.getMember(id, ctx.userId))?.role;
+        if (role != WorkspaceRole.owner) {
+          throw const AuthException(
+            'Deleting a workspace requires its owner role',
+          );
         }
         // Its machines go first, while their rows can still be written: a
         // deleted workspace's rig would otherwise run to its TTL.
@@ -12882,6 +12014,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         }
         await workspaceRepository.delete(id);
         await workspaceGitHubApps?.deleteForWorkspace(id);
+        // Its members' cached forge reach and live PR ticks go with it.
+        prRepoVisibility?.forgetWorkspace(id);
         return {'ok': true};
       },
     ),
@@ -12936,10 +12070,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       kind: RepoOpKind.mutate,
       requiredArgs: ['repo_id'],
       handler: (ctx) async {
-        await workspaceRepository.unlinkRepoFromWorkspace(
-          ctx.workspaceId!,
-          ctx.args['repo_id'] as String,
-        );
+        final workspaceId = ctx.workspaceId!;
+        final repoId = ctx.args['repo_id'] as String;
+        final repo = await repoRepository.getById(workspaceId, repoId);
+        await workspaceRepository.unlinkRepoFromWorkspace(workspaceId, repoId);
+        if (repo != null) {
+          await onRepoUnlinked?.call(workspaceId, repo);
+        }
         return {'ok': true};
       },
     ),
@@ -13011,96 +12148,23 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             id,
             approved: approved,
           );
-          // "Remember this decision" — a STANDING APPROVAL, materialized as a
-          // real, expiring, argument-scoped policy rule.
-          //
-          // `RememberScope` and a fingerprint had been set on every guard
-          // confirmation since PRD 24 and read by nobody: the docs described
-          // the feature, no code implemented it, and `provenance:'remembered'`
-          // had no writer. This is it. The rule is narrow (the constraint
-          // generalized from the approved call), scoped (space / agent /
-          // workspace) and SELF-REVOKING (an explicit TTL), so an operator
-          // saying "yes, for the next few hours" is not quietly rewriting
-          // their permanent policy.
+          // "Approve for 8 hours": an approving answer may leave a standing
+          // approval behind. What it may write is decided there, from the
+          // server's own record of the card.
           final remember = ctx.args['remember'];
           if (ok &&
               approved &&
               remember is Map &&
               ws != null &&
               actionPolicyRepository != null) {
-            final scopeWire = remember['scope'] as String?;
-            final requestedTtl = (remember['ttl_seconds'] as num?)?.toInt();
-            final classes = pending.request.actionClasses;
-            // Answering a prompt is a MEMBER-level act; writing workspace
-            // policy is an ADMIN one (`action_policy.upsert` is admin-gated).
-            // A standing approval must not be a way around that, so a
-            // non-admin's remember is confined to the space (or the agent)
-            // the prompt came from, and workspace scope needs the same role
-            // the policy editor does.
-            final responderRole = members == null
-                ? null
-                : (await members.getMember(ws, ctx.userId))?.role;
-            final mayWriteWorkspaceScope = responderRole?.isAdmin ?? false;
-            final spaceId = pending.request.spaceId;
-            final agentId = pending.request.agentId ?? '';
-            final (scopeType, scopeId) = switch (scopeWire) {
-              'space' when spaceId.isNotEmpty => (
-                ActionScopeType.space,
-                spaceId,
-              ),
-              'agent' when agentId.isNotEmpty => (
-                ActionScopeType.agent,
-                agentId,
-              ),
-              'workspace' when mayWriteWorkspaceScope => (
-                ActionScopeType.workspace,
-                '',
-              ),
-              // Narrow rather than refuse: the answer already stands, and the
-              // narrowest scope that exists is what the responder is entitled
-              // to. With neither a space nor an agent to pin it to, an
-              // unprivileged remember writes nothing at all.
-              _ when spaceId.isNotEmpty => (ActionScopeType.space, spaceId),
-              _ when agentId.isNotEmpty => (ActionScopeType.agent, agentId),
-              _ when mayWriteWorkspaceScope => (ActionScopeType.workspace, ''),
-              _ => (ActionScopeType.workspace, unscopedRemember),
-            };
-            if (classes.isNotEmpty && scopeId != unscopedRemember) {
-              // A standing approval is time-boxed BY DEFINITION. An unbounded
-              // ttl would let one click become permanent policy, which is the
-              // admin-gated act this path must not become.
-              final ttl = Duration(
-                seconds: (requestedTtl ?? defaultRememberTtlSeconds).clamp(
-                  60,
-                  maxRememberTtlSeconds,
-                ),
-              );
-              final now = DateTime.now();
-              for (final wire in classes) {
-                final cls = ActionClass.fromWire(wire);
-                if (cls == null) {
-                  continue;
-                }
-                await actionPolicyRepository.upsertRule(
-                  ActionPolicyRule(
-                    id: const Uuid().v4(),
-                    workspaceId: ws,
-                    scopeType: scopeType,
-                    scopeId: scopeId,
-                    actionClass: cls,
-                    decision: ActionDecision.allow,
-                    provenance: 'remembered',
-                    createdBy: ctx.userId,
-                    constraint: ActionConstraint.decode(
-                      pending.request.constraintJson,
-                    ),
-                    expiresAt: now.add(ttl),
-                    createdAt: now,
-                    updatedAt: now,
-                  ),
-                );
-              }
-            }
+            await _writeStandingApproval(
+              request: pending.request,
+              remember: remember,
+              workspaceId: ws,
+              responderId: ctx.userId,
+              members: members,
+              repository: actionPolicyRepository,
+            );
           }
           return {'ok': ok};
         },
@@ -13220,7 +12284,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         final items = await todoRepository.list(
           ctx.workspaceId!,
           conversationId,
@@ -13235,7 +12303,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       handler: (ctx) async {
         final workspaceId = ctx.workspaceId!;
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(workspaceId, conversationId);
+        await assertConversationOwned(workspaceId, conversationId, ctx.userId);
         final raw = (ctx.args['todos'] as List).cast<Map>();
         final now = DateTime.now();
         final items = <TodoItem>[
@@ -13263,7 +12331,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id', 'content'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         final item = await todoRepository.append(
           ctx.workspaceId!,
           conversationId,
@@ -13280,7 +12352,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id', 'id', 'status'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         await todoRepository.updateStatus(
           ctx.workspaceId!,
           conversationId,
@@ -13296,7 +12372,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id', 'id'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         await todoRepository.remove(
           ctx.workspaceId!,
           conversationId,
@@ -13311,7 +12391,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id', 'ordered_ids'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         await todoRepository.reorder(
           ctx.workspaceId!,
           conversationId,
@@ -13326,7 +12410,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         await todoRepository.clear(ctx.workspaceId!, conversationId);
         return {'ok': true};
       },
@@ -13340,7 +12428,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id', 'title'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         await todoRepository.setGoal(
           ctx.workspaceId!,
           conversationId,
@@ -13355,7 +12447,11 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       requiredArgs: ['conversation_id'],
       handler: (ctx) async {
         final conversationId = ctx.args['conversation_id'] as String;
-        await assertConversationOwned(ctx.workspaceId!, conversationId);
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
         await todoRepository.clearGoal(ctx.workspaceId!, conversationId);
         return {'ok': true};
       },
@@ -13563,7 +12659,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'notes.watchForSpace',
         handler: (ctx) async* {
           final spaceId = ctx.args['space_id'] as String? ?? '';
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* workspaceDbs
               .of(ctx.workspaceId!)
               .spaceExtrasDao
@@ -13578,7 +12674,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         minRole: WorkspaceRole.member,
         handler: (ctx) async* {
           final spaceId = ctx.args['space_id'] as String? ?? '';
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* workspaceDbs
               .of(ctx.workspaceId!)
               .spaceExtrasDao
@@ -13597,7 +12693,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         name: 'reactions.watchForSpace',
         handler: (ctx) async* {
           final spaceId = ctx.args['space_id'] as String? ?? '';
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* workspaceDbs
               .of(ctx.workspaceId!)
               .spaceExtrasDao
@@ -13647,7 +12743,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId is! String || spaceId.isEmpty) {
             throw const ValidationException('space_id is required');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* takeoverService
               .watch(ctx.workspaceId!, spaceId)
               .map((marker) => {'takeover': marker});
@@ -13692,42 +12788,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
                 'invites': invites.map(workspaceInviteToWire).toList(),
               },
             ),
-      ),
-      WatchQuery(
-        name: 'activity.watchForWorkspace',
-        minRole: WorkspaceRole.admin,
-        handler: (ctx) {
-          // Cursor page of the audit trail. `limit` defaults to 200 so a
-          // subscriber that does not pass paging args still gets the
-          // historic snapshot; the settings table always sends a page size.
-          final rawLimit = (ctx.args['limit'] as num?)?.toInt();
-          final rawIds = ctx.args['user_ids'];
-          return identityActivity
-              .watchPage(
-                ctx.workspaceId!,
-                limit: (rawLimit ?? 200).clamp(1, 200),
-                cursor: ctx.args['cursor'] as String?,
-                filter: UserActivityFilter(
-                  query: optionalArg(ctx.args, 'query'),
-                  ip: optionalArg(ctx.args, 'ip'),
-                  countryCode: optionalArg(ctx.args, 'country_code'),
-                  localNetwork: ctx.args['local_network'] == true,
-                  userIds: rawIds is List
-                      ? rawIds.whereType<String>().toList()
-                      : const [],
-                ),
-              )
-              .map(
-                (page) => {
-                  'entries': page.entries.map(userActivityToWire).toList(),
-                  'total': page.total,
-                  'start': page.start,
-                  'next_cursor': page.nextCursor,
-                  'prev_cursor': page.prevCursor,
-                  'has_more': page.hasMore,
-                },
-              );
-        },
       ),
       // The session user's OWN preferences (`ctx.userId`, never a client arg)
       // — the stream that makes a theme change on one device appear on the
@@ -13774,6 +12834,9 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (vscode != null)
       WatchQuery(
         name: 'codeServer.watchOpenRequests',
+        // Only the server owner can open an editor, so only they see its
+        // navigation reports.
+        serverAuthority: ServerAuthority.serverOwner,
         handler: (ctx) {
           final space = ctx.args['space_id'] as String?;
           return vscode
@@ -13797,6 +12860,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (vscode != null)
       WatchQuery(
         name: 'codeServer.watchDirtyState',
+        serverAuthority: ServerAuthority.serverOwner,
         handler: (ctx) {
           final space = ctx.args['space_id'] as String?;
           return vscode
@@ -13868,20 +12932,36 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         (a) => a.workspaceId,
       ).map((list) => {'agents': list.map(agentToWire).toList()}),
     ),
-    // A workspace's repos, in the operator's manual order. Workspace-scoped:
-    // repos live inside a workspace, so there is no all-repos-on-this-server
-    // subscription to offer.
+    // A workspace's repos, in the operator's manual order, narrowed to the
+    // caller's grants (admins: all), live, each with the reason its path is
+    // not served (`path_issue`). Workspace-scoped: there is no
+    // all-repos-on-this-server subscription to offer.
     WatchQuery(
       name: 'repos.watchAll',
-      handler: (ctx) => repoRepository
-          .watchAll(ctx.workspaceId!)
-          .map((list) => {'repos': list.map(repoToWire).toList()}),
+      handler: (ctx) => grantedRepoFrames(
+        members: membershipRepository,
+        workspaceId: ctx.workspaceId!,
+        userId: ctx.userId,
+        repos: repoRepository.watchAll(ctx.workspaceId!),
+        render: (list) async => {
+          'repos': await reposToListingWire(
+            repoPathGuard,
+            ctx.workspaceId!,
+            list,
+          ),
+        },
+        changes: grantChanges(prRepoVisibility, ctx.workspaceId!, ctx.userId),
+      ),
     ),
     WatchQuery(
       name: 'messaging.watchSpaces',
-      handler: (ctx) => messagingRepository
-          .watchSpacesByWorkspace(ctx.workspaceId!)
-          .map((list) => {'spaces': list.map(spaceToWire).toList()}),
+      handler: (ctx) => prData.spaceRows(
+        ctx.workspaceId!,
+        ctx.userId,
+        messagingRepository.watchSpacesByWorkspace(ctx.workspaceId!),
+        (s) => s.id,
+        (list) => {'spaces': list.map(spaceToWire).toList()},
+      ),
     ),
     WatchQuery(
       name: 'messaging.watchMessages',
@@ -13891,7 +12971,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           throw const NotFoundException('Missing space_id');
         }
         // Validate ownership once, before streaming any rows.
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         // Conversation (stream) inside the space; the space's standing
         // conversation when the client doesn't scope it.
         final conversationId = await resolveConversationId(
@@ -13899,9 +12979,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           spaceId,
           ctx.args['conversation_id'],
         );
-        yield* messagingRepository
-            .watchMessages(ctx.workspaceId!, spaceId, conversationId)
-            .map((list) => {'messages': list.map(messageToWireLite).toList()});
+        yield* prData.guardSpace(
+          ctx.workspaceId!,
+          ctx.userId,
+          spaceId,
+          messagingRepository
+              .watchMessages(ctx.workspaceId!, spaceId, conversationId)
+              .map((l) => {'messages': l.map(messageToWireLite).toList()}),
+        );
       },
     ),
     // Space-wide watch: every message in the room, across all its
@@ -13917,10 +13002,15 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         }
         // Same ownership gate as the conversation-scoped watch, before any row
         // streams — widening the read must not widen who may read.
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
-        yield* messagingRepository
-            .watchSpaceMessages(ctx.workspaceId!, spaceId)
-            .map((list) => {'messages': list.map(messageToWireLite).toList()});
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
+        yield* prData.guardSpace(
+          ctx.workspaceId!,
+          ctx.userId,
+          spaceId,
+          messagingRepository
+              .watchSpaceMessages(ctx.workspaceId!, spaceId)
+              .map((l) => {'messages': l.map(messageToWireLite).toList()}),
+        );
       },
     ),
     // Windowed feed watch: newest-N messages of a conversation + has_more,
@@ -13938,25 +13028,30 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           1,
           2000,
         );
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final conversationId = await resolveConversationId(
           ctx.workspaceId!,
           spaceId,
           ctx.args['conversation_id'],
         );
-        yield* messagingRepository
-            .watchMessagesWindow(
-              ctx.workspaceId!,
-              spaceId,
-              conversationId,
-              limit: limit,
-            )
-            .map(
-              (w) => {
-                'messages': w.messages.map(messageToWireLite).toList(),
-                'has_more': w.hasMore,
-              },
-            );
+        yield* prData.guardSpace(
+          ctx.workspaceId!,
+          ctx.userId,
+          spaceId,
+          messagingRepository
+              .watchMessagesWindow(
+                ctx.workspaceId!,
+                spaceId,
+                conversationId,
+                limit: limit,
+              )
+              .map(
+                (w) => {
+                  'messages': w.messages.map(messageToWireLite).toList(),
+                  'has_more': w.hasMore,
+                },
+              ),
+        );
       },
     ),
     // Context-meter aggregate: the live region's size as two integers.
@@ -13973,7 +13068,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId == null) {
             throw const NotFoundException('Missing space_id');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final conversationId = await resolveConversationId(
             ctx.workspaceId!,
             spaceId,
@@ -14004,7 +13099,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId == null) {
             throw const NotFoundException('Missing space_id');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final conversationId = await resolveConversationId(
             ctx.workspaceId!,
             spaceId,
@@ -14031,13 +13126,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId == null) {
             throw const NotFoundException('Missing space_id');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           final restricted = await viewerTraceRestricted(
             ctx.workspaceId!,
             spaceId,
             ctx.userId,
           );
-          final frames = watchSpaceTurnFrames(streamRegistry, spaceId);
+          final frames = prData.guardSpace(
+            ctx.workspaceId!,
+            ctx.userId,
+            spaceId,
+            watchSpaceTurnFrames(streamRegistry, spaceId),
+          );
           yield* restricted ? frames.map(redactTurnFrame) : frames;
         },
       ),
@@ -14068,6 +13168,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               'Agent run log belongs to a different workspace',
             );
           }
+          await prData.requireRunLog(ctx.workspaceId!, ctx.userId, run);
           // Replay covers BOTH stores: a subagent's `run_transcripts` row and a
           // top-level run's own `agent_turn` message (`messageId == runLog.id`).
           // The live lane needs no such split — the registry is keyed by that
@@ -14077,7 +13178,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               : (await loadRunReplay(ctx.workspaceId!, runId)).segments;
           final restricted = await viewerTraceRestricted(
             ctx.workspaceId!,
-            run.spaceId ?? run.conversationId ?? '',
+            run.spaceId ?? '',
             ctx.userId,
           );
           final frames = watchRunTranscriptFrames(
@@ -14093,9 +13194,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     if (watchSpaceActivity != null)
       WatchQuery(
         name: 'messaging.watchSpaceActivity',
-        handler: (ctx) => watchSpaceActivity(
+        // A space the caller may not read is left out, as in the space list.
+        handler: (ctx) => prData.spaceRows(
           ctx.workspaceId!,
-        ).map((list) => {'spaces': list.map((a) => a.toJson()).toList()}),
+          ctx.userId,
+          watchSpaceActivity(ctx.workspaceId!),
+          (a) => a.spaceId,
+          (list) => {'spaces': list.map((a) => a.toJson()).toList()},
+        ),
       ),
     // Conversations (streams) inside a space — flat equals, threads included.
     if (watchConversationsForSpace != null)
@@ -14106,7 +13212,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId == null) {
             throw const NotFoundException('Missing space_id');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* watchConversationsForSpace(ctx.workspaceId!, spaceId).map(
             (list) => {'conversations': list.map(conversationToWire).toList()},
           );
@@ -14123,7 +13229,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId == null) {
             throw const NotFoundException('Missing space_id');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* conversationTitles
               .watchGenerating(workspaceId: ctx.workspaceId!, spaceId: spaceId)
               .map((ids) => {'conversation_ids': ids.toList()});
@@ -14140,7 +13246,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (spaceId == null) {
             throw const NotFoundException('Missing space_id');
           }
-          await assertSpaceOwned(ctx.workspaceId!, spaceId);
+          await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
           yield* conversationRepository
               .watchThreadSummaries(
                 workspaceId: ctx.workspaceId!,
@@ -14158,7 +13264,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         if (spaceId == null) {
           throw const NotFoundException('Missing space_id');
         }
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         yield* messagingRepository
             .watchParticipants(ctx.workspaceId!, spaceId)
             .map(
@@ -14189,9 +13295,20 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // WorkspaceRepository.watchReposForWorkspace.
     WatchQuery(
       name: 'workspace.watchReposForWorkspace',
-      handler: (ctx) => workspaceRepository
-          .watchReposForWorkspace(ctx.workspaceId!)
-          .map((list) => {'repos': list.map(repoToWire).toList()}),
+      handler: (ctx) => grantedRepoFrames(
+        members: membershipRepository,
+        workspaceId: ctx.workspaceId!,
+        userId: ctx.userId,
+        repos: workspaceRepository.watchReposForWorkspace(ctx.workspaceId!),
+        render: (list) async => {
+          'repos': await reposToListingWire(
+            repoPathGuard,
+            ctx.workspaceId!,
+            list,
+          ),
+        },
+        changes: grantChanges(prRepoVisibility, ctx.workspaceId!, ctx.userId),
+      ),
     ),
     WatchQuery(
       name: 'newsfeed.watchArticles',
@@ -14215,7 +13332,7 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           throw const NotFoundException('Missing space_id');
         }
         // Validate ownership once, before streaming any cursor updates.
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         yield* spaceReadRepository
             .watchUserLastReadAt(ctx.workspaceId!, spaceId, ctx.userId)
             .map((lastReadAt) => spaceReadToWire(spaceId, lastReadAt));
@@ -14317,12 +13434,6 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // unscoped: no workspace_id selects anything here.
         workspaceScoped: false,
         handler: (ctx) async* {
-          if (serverOwnerUserId != null && ctx.userId != serverOwnerUserId) {
-            throw const AuthException(
-              'This setting affects every workspace on this server and can '
-              'only be read by its operator.',
-            );
-          }
           yield* serverSettingsRepository.watchAll().map(
             (settings) => {'settings': settings},
           );
@@ -14351,113 +13462,74 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
               },
             ),
       ),
-    WatchQuery(
-      name: 'review_space.watchByWorkspace',
-      handler: (ctx) => reviewSpaceRepository
-          .watchByWorkspace(ctx.workspaceId!)
-          .map(
-            (list) => {'associations': list.map(reviewSpaceToWire).toList()},
-          ),
-    ),
-    WatchQuery(
-      name: 'review_space.watchByPr',
-      handler: (ctx) {
-        final prExternalId = ctx.args['pr_external_id'] as String?;
-        if (prExternalId == null) {
-          throw const NotFoundException('Missing pr_external_id');
-        }
-        // PR node ids are global; scope to the bound workspace server-side.
-        return reviewSpaceRepository
-            .watchByPr(ctx.workspaceId!, prExternalId)
-            .map(
-              (a) => {'association': a == null ? null : reviewSpaceToWire(a)},
-            );
-      },
-    ),
-    WatchQuery(
-      name: 'review_space.watchBySpace',
-      handler: (ctx) {
-        final spaceId = ctx.args['space_id'] as String?;
-        if (spaceId == null) {
-          throw const NotFoundException('Missing space_id');
-        }
-        // The interface keys by space_id alone; enforce ownership on the
-        // emitted row — a foreign-workspace association is filtered to null so
-        // an ID-only lookup can't leak across workspaces (isolation invariant).
-        return reviewSpaceRepository
-            .watchBySpace(ctx.workspaceId!, spaceId)
-            .map(
-              (a) => {
-                'association': (a == null || a.workspaceId != ctx.workspaceId)
-                    ? null
-                    : reviewSpaceToWire(a),
-              },
-            );
-      },
-    ),
-    WatchQuery(
-      name: 'review_space.watchAllBySpace',
-      handler: (ctx) {
-        final spaceId = ctx.args['space_id'] as String?;
-        if (spaceId == null) {
-          throw const NotFoundException('Missing space_id');
-        }
-        // Workspace-scoped at the query level (the bound workspace), so a
-        // foreign-workspace association is never emitted (isolation invariant).
-        return reviewSpaceRepository
-            .watchAllBySpace(ctx.workspaceId!, spaceId)
-            .map(
-              (list) => {'associations': list.map(reviewSpaceToWire).toList()},
-            );
-      },
+    ...buildReviewSpaceWatchQueries(
+      reviewSpaces: reviewSpaceRepository,
+      watchPrVisibility: watchPrVisibility,
     ),
     WatchQuery(
       name: 'agent_run_log.watchByAgent',
-      handler: (ctx) => agentRunLogRepository
-          .watchByAgent(ctx.workspaceId!, ctx.args['agent_id'] as String)
-          .map((list) => {'logs': list.map(agentRunLogToWire).toList()}),
+      handler: (ctx) => prData.runLogFrames(
+        ctx,
+        agentRunLogRepository.watchByAgent(
+          ctx.workspaceId!,
+          ctx.args['agent_id'] as String,
+        ),
+      ),
     ),
     WatchQuery(
       name: 'agent_run_log.watchActiveByConversation',
-      handler: (ctx) => agentRunLogRepository
-          .watchActiveByConversation(
-            ctx.workspaceId!,
-            ctx.args['conversation_id'] as String,
-          )
-          .map((list) => {'logs': list.map(agentRunLogToWire).toList()}),
+      handler: (ctx) => prData.runLogFrames(
+        ctx,
+        agentRunLogRepository.watchActiveByConversation(
+          ctx.workspaceId!,
+          ctx.args['conversation_id'] as String,
+        ),
+      ),
     ),
     WatchQuery(
       name: 'agent_run_log.watchActiveBySpace',
-      handler: (ctx) => agentRunLogRepository
-          .watchActiveBySpace(ctx.workspaceId!, ctx.args['space_id'] as String)
-          .map((list) => {'logs': list.map(agentRunLogToWire).toList()}),
+      handler: (ctx) => prData.runLogFrames(
+        ctx,
+        agentRunLogRepository.watchActiveBySpace(
+          ctx.workspaceId!,
+          ctx.args['space_id'] as String,
+        ),
+      ),
     ),
     // All runs (active + completed) for a conversation, for the run-tree UI
     // (parent dispatch + its ephemeral subagent runs).
     WatchQuery(
       name: 'agent_run_log.watchByConversation',
-      handler: (ctx) => agentRunLogRepository
-          .watchByConversation(
-            ctx.workspaceId!,
-            ctx.args['conversation_id'] as String,
-          )
-          .map((list) => {'logs': list.map(agentRunLogToWire).toList()}),
+      handler: (ctx) => prData.runLogFrames(
+        ctx,
+        agentRunLogRepository.watchByConversation(
+          ctx.workspaceId!,
+          ctx.args['conversation_id'] as String,
+        ),
+      ),
     ),
     WatchQuery(
       name: 'agent_run_log.watchBySpace',
-      handler: (ctx) => agentRunLogRepository
-          .watchBySpace(ctx.workspaceId!, ctx.args['space_id'] as String)
-          .map((list) => {'logs': list.map(agentRunLogToWire).toList()}),
+      handler: (ctx) => prData.runLogFrames(
+        ctx,
+        agentRunLogRepository.watchBySpace(
+          ctx.workspaceId!,
+          ctx.args['space_id'] as String,
+        ),
+      ),
     ),
     // The global all-runs view — membership-scoped via [visibleRows].
     WatchQuery(
       name: 'agent_run_log.watchAll',
       workspaceScoped: false,
-      handler: (ctx) => visibleRows(
+      handler: (ctx) => prData.runLogFramesAcross(
         ctx,
-        agentRunLogRepository.watchAll(),
-        (l) => l.workspaceId,
-      ).map((list) => {'logs': list.map(agentRunLogToWire).toList()}),
+        visibleRows(
+          ctx,
+          agentRunLogRepository.watchAll(),
+          (l) => l.workspaceId,
+        ),
+      ),
     ),
     // CROSS-WORKSPACE BY DESIGN: the bounded companion to
     // `agent_run_log.watchAll` — only the newest `limit` rows are read and
@@ -14472,11 +13544,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         // bounded op back into a full-table watch.
         final requested = (ctx.args['limit'] as num?)?.toInt() ?? 1000;
         final limit = requested.clamp(1, 5000);
-        return visibleRows(
+        return prData.runLogFramesAcross(
           ctx,
-          agentRunLogRepository.watchRecent(limit),
-          (l) => l.workspaceId,
-        ).map((list) => {'logs': list.map(agentRunLogToWire).toList()});
+          visibleRows(
+            ctx,
+            agentRunLogRepository.watchRecent(limit),
+            (l) => l.workspaceId,
+          ),
+        );
       },
     ),
     WatchQuery(
@@ -14693,13 +13768,18 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       WatchQuery(
         name: 'activity.watchForEntity',
         minRole: WorkspaceRole.member,
-        handler: (ctx) {
+        handler: (ctx) async* {
           final entityType = ctx.args['entity_type'] as String?;
           final entityId = ctx.args['entity_id'] as String?;
           if (entityType == null || entityId == null) {
             throw const NotFoundException('Missing entity_type or entity_id');
           }
-          return activityLogReader
+          // A run's entries are keyed by its conversation and quote it: its
+          // space's gate applies.
+          if (entityType == 'run') {
+            await assertConversationOwned(ctx.workspaceId!, entityId, ctx.userId);
+          }
+          yield* activityLogReader
               .watchForEntity(ctx.workspaceId!, entityType, entityId)
               .map(
                 (list) => {'entries': list.map(activityEntryToWire).toList()},
@@ -14714,41 +13794,56 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     ),
     WatchQuery(
       name: 'pipeline_run.watchRun',
-      handler: (ctx) => pipelineRunRepository
-          .watchRun(ctx.args['id'] as String)
-          // ID-only watch is not a boundary — drop a run owned by another
-          // workspace so a foreign run never streams through.
-          .map(
-            (run) => {
-              'run': run == null || run.workspaceId != ctx.workspaceId
-                  ? null
-                  : pipelineRunToWire(run, withSnapshot: true),
-            },
-          ),
+      // ID-only watch is not a boundary — drop a run owned by another
+      // workspace (or about a PR the caller cannot see), live.
+      handler: (ctx) => prData.rows(
+        ctx.workspaceId!,
+        ctx.userId,
+        pipelineRunRepository
+            .watchRun(ctx.args['id'] as String)
+            .map((r) => [?r]),
+        (v, r) => r.workspaceId == ctx.workspaceId && v.canSeeRun(r),
+        (l) => {
+          'run': l.isEmpty
+              ? null
+              : pipelineRunToWire(l.first, withSnapshot: true),
+        },
+      ),
     ),
     // The global all-runs view — membership-scoped via [visibleRows].
     WatchQuery(
       name: 'pipeline_run.watchAll',
       workspaceScoped: false,
-      handler: (ctx) => visibleRows(
-        ctx,
-        pipelineRunRepository.watchAll(),
+      handler: (ctx) => prData.rowsAcrossWorkspaces(
+        visibleRows(
+          ctx,
+          pipelineRunRepository.watchAll(),
+          (r) => r.workspaceId,
+        ),
         (r) => r.workspaceId,
-      ).map((list) => {'runs': list.map(pipelineRunToWire).toList()}),
+        (ws) => prData.watchView(ws, ctx.userId),
+        (v, r) => v.canSeeRun(r),
+        (list) => {'runs': list.map(pipelineRunToWire).toList()},
+      ),
     ),
     WatchQuery(
       name: 'pipeline_run.watchForWorkspace',
-      handler: (ctx) => pipelineRunRepository
-          .watchForWorkspace(ctx.workspaceId!)
-          .map((list) => {'runs': list.map(pipelineRunToWire).toList()}),
+      handler: (ctx) => prData.rows(
+        ctx.workspaceId!,
+        ctx.userId,
+        pipelineRunRepository.watchForWorkspace(ctx.workspaceId!),
+        (v, r) => v.canSeeRun(r),
+        (list) => {'runs': list.map(pipelineRunToWire).toList()},
+      ),
     ),
     WatchQuery(
       name: 'pipeline_run.watchStepRunsForPipeline',
       handler: (ctx) async* {
         // Validate parent-run ownership before opening the step stream.
-        await assertPipelineRunOwned(
+        await loadOwnedPipelineRun(
           ctx.workspaceId!,
           ctx.args['pipeline_run_id'] as String,
+          ctx.userId,
         );
         yield* pipelineRunRepository
             .watchStepRunsForPipeline(ctx.args['pipeline_run_id'] as String)
@@ -14861,6 +13956,8 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           if (!await spaceInWorkspace(workspaceId, spaceId)) {
             throw const NotFoundException('Space not found in this workspace');
           }
+          // Work products quote the space's messages: its read gate applies.
+          await prData.requireSpace(workspaceId, ctx.userId, spaceId);
           final supplied = ctx.args['conversation_id'];
           final Stream<List<Message>> messages;
           if (supplied is String && supplied.isNotEmpty) {
@@ -15065,10 +14162,13 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
       ),
 
     // The push counterpart of `pr.listOpenForWorkspace`: streams the poller's
-    // snapshot (same wire shape) and re-emits whenever a sweep lands a change.
-    // Subscribing registers watcher interest, which switches the workspace to
-    // the fast polling cadence. Token-less hosts answer `authenticated: false`
-    // once (mirroring the one-shot op) so the client can gate on it.
+    // snapshot (same wire shape) filtered to the repos the CALLER may see,
+    // with `hidden_repos` counts, and re-emits whenever a sweep lands a change
+    // or the caller's visibility moves (their forge reach is listed, a repo is
+    // linked, their grants or sign-in change). Subscribing registers watcher
+    // interest, which switches the workspace to the fast polling cadence.
+    // Hosts with no poller answer `authenticated: false` once (mirroring the
+    // one-shot op) so the client can gate on it.
     WatchQuery(
       name: 'pr.watchOpenForWorkspace',
       handler: (ctx) async* {
@@ -15077,109 +14177,147 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
           yield {'authenticated': false, 'repos': <Map<String, dynamic>>[]};
           return;
         }
-        yield* poller.watchOpenForWorkspace(ctx.workspaceId!);
+        final workspaceId = ctx.workspaceId!;
+        // One subscription carries the PRs and why some repositories are
+        // missing from them (`repo_access`), filtered like the PRs. The
+        // caller's role is read per frame and a role change re-renders
+        // ([PrRepoVisibility.changes]): a demoted admin stops seeing every
+        // repo's access record at once.
+        yield* combineWithVisibility(
+          withRepoAccess(
+            poller.watchOpenForWorkspace(workspaceId),
+            poller
+                .watchRepoAccessForWorkspace(workspaceId)
+                .map((issues) => [for (final i in issues) i.toJson()]),
+          ),
+          watchPrVisibility(workspaceId, ctx.userId),
+          (frame, visibility) async => {
+            ...visibility.filterOpenPrFrame(frame),
+            'repo_access': filterRepoAccessEntries(
+              (frame['repo_access'] as List?) ?? const [],
+              linked: await linkedForgeRepos(workspaceId),
+              isAdmin: await callerIsAdmin(workspaceId, ctx.userId),
+              visibility: visibility,
+            ),
+          },
+          reevaluate: prRepoVisibility?.changes(workspaceId, ctx.userId),
+        );
       },
     ),
 
     // The push counterpart of `pr.forSpaceBranches`: re-matches whenever a
-    // sweep lands a snapshot change, so a PR opened outside the app (the forge
-    // UI, `gh`, an agent terminal) reaches the space panel without the
-    // operator acting. A lite feed: no fast-cadence interest, one freshness
-    // pass on subscribe. Re-emits only when the matches themselves change.
+    // sweep lands a snapshot change or the caller's visibility moves, so a PR
+    // opened outside the app (the forge UI, `gh`, an agent terminal) reaches
+    // the space panel without the operator acting. A lite feed: no
+    // fast-cadence interest, one freshness pass on subscribe. Re-emits only
+    // when the matches themselves change.
     WatchQuery(
       name: 'pr.watchForSpaceBranches',
       handler: (ctx) async* {
         final spaceId = ctx.args['space_id'] as String? ?? '';
-        await assertSpaceOwned(ctx.workspaceId!, spaceId);
+        await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
         final poller = openPrPoller;
         if (poller == null) {
           yield {'matches': <Map<String, dynamic>>[], 'complete': false};
           return;
         }
-        String? last;
-        await for (final _ in poller.watchSnapshotChanges(ctx.workspaceId!)) {
-          final result = await spaceBranchPrMatches(
+        yield* combineWithVisibility(
+          poller
+              .watchSnapshotChanges(ctx.workspaceId!)
+              .map((_) => const <String, dynamic>{}),
+          watchPrVisibility(ctx.workspaceId!, ctx.userId),
+          (_, visibility) => spaceBranchPrMatches(
             poller,
             ctx.workspaceId!,
             spaceId,
-          );
-          final encoded = jsonEncode(result);
-          if (encoded == last) {
-            continue;
-          }
-          last = encoded;
-          yield result;
-        }
+            visibility,
+          ),
+        );
       },
     ),
 
-    // The repos the poller has parked as inaccessible (a 404/403 that held
-    // through the failure threshold — typically a GitHub App not installed on
-    // the repo's org), with a reason and since-when. A lite feed for the
-    // repos-settings notice: it rides the persisted snapshot's watch without
-    // holding the full open-PR payload or registering fast-cadence interest.
+    // The workspace's repo access record ([RepoAccessRegistry]): which linked
+    // repos the server cannot act on, why, since when and where to fix it. A
+    // lite feed for the repos-settings notice. Filtered per subscriber to the
+    // repos they may see (admins: every linked repo, whatever their own forge
+    // reach — fixing the App installation is theirs to do).
     WatchQuery(
       name: 'pr.watchRepoAccessForWorkspace',
       handler: (ctx) async* {
         final poller = openPrPoller;
         if (poller == null) {
-          yield {'inaccessible_repos': <Map<String, dynamic>>[]};
+          yield {'repo_access': <Map<String, dynamic>>[]};
           return;
         }
-        yield* poller
-            .watchRepoAccessForWorkspace(ctx.workspaceId!)
-            .map((list) => {'inaccessible_repos': list});
+        final workspaceId = ctx.workspaceId!;
+        // Admin standing is read per frame, never once per subscription: a
+        // role change ticks [PrRepoVisibility.changes] and re-renders.
+        yield* combineWithVisibility(
+          poller
+              .watchRepoAccessForWorkspace(workspaceId)
+              .map(
+                (issues) => {
+                  'repo_access': [for (final i in issues) i.toJson()],
+                },
+              ),
+          watchPrVisibility(workspaceId, ctx.userId),
+          (frame, visibility) async => {
+            'repo_access': filterRepoAccessEntries(
+              (frame['repo_access'] as List?) ?? const [],
+              linked: await linkedForgeRepos(workspaceId),
+              isAdmin: await callerIsAdmin(workspaceId, ctx.userId),
+              visibility: visibility,
+            ),
+          },
+          reevaluate: prRepoVisibility?.changes(workspaceId, ctx.userId),
+        );
       },
     ),
 
-    // The count of open PRs requesting the SERVER user's review, derived from
-    // the poller's snapshot stream. A deliberate lite feed for the sidebar's
-    // always-on inbox badge: the client subscribes to a single int instead
-    // of holding the full open-PR list (titles, bodies, checks) resident for
-    // the whole session just to render a number.
+    // The count of open PRs needing the CALLER's review (requested from them
+    // or one of their teams), across every forge, matched against their own
+    // login on each forge in THIS workspace, over the repos they may see. A
+    // deliberate lite feed for the always-on inbox badge: a single int
+    // instead of the full open-PR list. It follows the poller's snapshot
+    // WITHOUT registering fast-cadence interest, never ends (a caller with no
+    // login reads 0 until they sign in), and re-evaluates on their credential,
+    // membership or grant changes.
     WatchQuery(
       name: 'pr.watchNeedsMyReviewCount',
       handler: (ctx) async* {
         final poller = openPrPoller;
-        if (poller == null) {
-          yield {'count': 0};
+        final visibility = prRepoVisibility;
+        if (poller == null || visibility == null) {
+          yield {'count': 0, 'hidden_repos': <Map<String, dynamic>>[]};
           return;
         }
-        final user = await fetchCurrentGitHubUser?.call(ctx.userId);
-        final login = (user?['login'] as String?)?.toLowerCase() ?? '';
-        if (login.isEmpty) {
-          yield {'count': 0};
-          return;
-        }
-        final teams =
-            await fetchViewerGitHubTeams?.call(ctx.userId) ?? const {};
-        var last = -1;
-        await for (final snapshot in poller.watchOpenForWorkspace(
-          ctx.workspaceId!,
-        )) {
-          var count = 0;
-          for (final repo in (snapshot['repos'] as List?) ?? const []) {
-            if (repo is! Map) {
-              continue;
-            }
-            for (final pr in (repo['prs'] as List?) ?? const []) {
-              if (pr is! Map) {
-                continue;
-              }
-              if (prCountsTowardNeedsMyReview(
-                pr,
-                login,
-                viewerTeamsByOrg: teams,
-              )) {
-                count++;
-              }
-            }
-          }
-          if (count != last) {
-            last = count;
-            yield {'count': count};
-          }
-        }
+        final workspaceId = ctx.workspaceId!;
+        final userId = ctx.userId;
+        yield* combineWithVisibility(
+          poller.watchOpenForWorkspace(workspaceId, fastCadence: false),
+          visibility.watch(workspaceId, userId),
+          // The caller's logins and teams are read per evaluation (both are
+          // cached behind these calls), and a change tick — a sign-in landing,
+          // a credential cleared — re-evaluates even when the visible repo
+          // set did not move.
+          (frame, view) async => {
+            'count': PrRepoVisibility.needsMyReviewCount(
+              frame,
+              view,
+              loginByForge: {
+                for (final forge in ForgeHost.supported)
+                  forge: await visibility.viewerLogin(
+                    workspaceId,
+                    userId,
+                    forge,
+                  ),
+              },
+              githubTeams: await visibility.githubTeams(workspaceId, userId),
+            ),
+            'hidden_repos': view.hiddenReposWire(),
+          },
+          reevaluate: visibility.changes(workspaceId, userId),
+        );
       },
     ),
 
@@ -15435,8 +14573,17 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
             );
       },
     ),
-    if (terminals != null) ...buildTerminalWatchQueries(terminals),
-    ..._rigWatchQueries(rigs, rigPorts),
+    if (terminals != null)
+      ...buildTerminalWatchQueries(
+        terminals,
+        mayDrive: mayDrive,
+        requireView: (ctx) => requireTerminalView(
+          ctx,
+          terminals: terminals,
+          assertSpaceOwned: assertSpaceOwned,
+        ),
+      ),
+    ..._rigWatchQueries(rigs, rigPorts, rigAccess, terminalSessions),
     // CROSS-WORKSPACE BY DESIGN: approvals are host-global; the `space_id`
     // field in the snapshot routes each to the right thread. Absent when the
     // host wired no [PendingConfirmationRegistry] (headless cc_server).
@@ -15518,38 +14665,59 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
     // from the client's `conversation_id` filter arg).
     WatchQuery(
       name: 'todos.watch',
-      handler: (ctx) => todoRepository
-          .watch(ctx.workspaceId!, ctx.args['conversation_id'] as String)
-          .map((list) => {'todos': list.map(todoItemToWire).toList()}),
+      handler: (ctx) async* {
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
+        yield* todoRepository
+            .watch(ctx.workspaceId!, conversationId)
+            .map((list) => {'todos': list.map(todoItemToWire).toList()});
+      },
     ),
     // The conversation's working goal (or null), driving the goal accordion
     // the todos nest under.
     WatchQuery(
       name: 'todos.watchGoal',
-      handler: (ctx) => todoRepository
-          .watchGoal(ctx.workspaceId!, ctx.args['conversation_id'] as String)
-          .map((g) => {'goal': g == null ? null : goalToWire(g)}),
+      handler: (ctx) async* {
+        final conversationId = ctx.args['conversation_id'] as String;
+        await assertConversationOwned(
+          ctx.workspaceId!,
+          conversationId,
+          ctx.userId,
+        );
+        yield* todoRepository
+            .watchGoal(ctx.workspaceId!, conversationId)
+            .map((g) => {'goal': g == null ? null : goalToWire(g)});
+      },
     ),
     // The workspace's durable notification feed (newest-first stored
     // `notifications/*` frames; the client renders + principal-routes rows
     // through the same frame mapper it uses for live pushes) and the
     // CALLER's read mark (keyed on the session user, never a client arg).
+    // Re-filtered when the caller's PR visibility moves too, so a PR-derived
+    // row appears once their forge reach is listed and goes when it is lost.
     WatchQuery(
       name: 'notifications.watch',
-      handler: (ctx) => notificationFeedRepository
-          .watchFeed(ctx.workspaceId!)
-          .asyncMap(
-            (list) async => {
-              'items': [
-                for (final item in await visibleNotificationItems(
-                  ctx.workspaceId!,
-                  ctx.userId,
-                  list,
-                ))
-                  notificationFeedItemToWire(item),
-              ],
-            },
-          ),
+      handler: (ctx) => combineWithVisibility(
+        notificationFeedRepository
+            .watchFeed(ctx.workspaceId!)
+            .map((list) => {'rows': list}),
+        watchPrVisibility(ctx.workspaceId!, ctx.userId),
+        (frame, visibility) async => {
+          'items': [
+            for (final item in await visibleNotificationItems(
+              ctx.workspaceId!,
+              ctx.userId,
+              frame['rows'] as List<NotificationFeedItem>,
+              prVisibility: visibility,
+            ))
+              notificationFeedItemToWire(item),
+          ],
+        },
+      ),
     ),
     WatchQuery(
       name: 'notifications.watchReadMark',
@@ -15590,6 +14758,14 @@ RemoteRpcCatalog buildRemoteRpcCatalog({
         reposExposedBySpace: reposExposedBySpaceArg,
         requireRepoReadGrant: requireRepoReadGrant,
         assertSpaceOwned: assertSpaceOwned,
+        mayOperate: (ctx, spaceId) => mayOperateEnvironment(
+          ctx,
+          spaceId: spaceId,
+          members: identityMembers,
+          reposExposedBySpace: reposExposedBySpaceArg,
+          requireRepoForgeRead: requireRepoForgeRead,
+          assertSpaceOwned: assertSpaceOwned,
+        ),
       ),
     if (spaceProvisioningLog != null)
       buildSpaceProvisioningLogWatchQuery(

@@ -2,7 +2,7 @@
 title: Gunakan semakan berkuasa AI
 description: Jalankan pipeline pr_review pada sesuatu PR, baca penemuan dan keputusannya, kemudian terbitkan semakan itu ke GitHub.
 slug: ms-MY/manual-pengguna/panduan-cara/semakan-ai
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Panduan ini menunjukkan cara membuat ejen penyemak menyemak sesuatu pull request
@@ -120,7 +120,7 @@ Control Center menghantar **satu** semakan GitHub. Penemuan yang sudah
 diselesaikan atau ditutup dilangkau. Butang itu merangkumi setiap penemuan terbuka
 yang tinggal dan, pada **Ship**, menyerahkan `APPROVE`. (Alat MCP
 `publish_review_to_github` secara lalai hanya menggunakan penemuan yang disahkan rakan sebaya dan tidak pernah
-meluluskan: ia menyiarkan sebagai automasi, jadi `approve_on_ship` tidak memberi kesan di sana.) Yang membawa sauh fail dan baris menjadi komen sebaris; semua
+meluluskan: ia menyiarkan sebagai automasi, jadi `approve_on_ship` tidak memberi kesan di sana. Penerbitan automatik itu disiarkan oleh bot, kecuali pada apl Control Center Connect yang dikongsi apabila operator Connect belum menyenaraikan pemasangan ini: dalam kes itu ia keluar melalui log masuk GitHub sendiri orang yang bertanggungjawab, di bawah nama mereka.) Yang membawa sauh fail dan baris menjadi komen sebaris; semua
 yang lain dilipat ke dalam badan ringkasan, masing-masing dengan pengaki
 "— Control Center AI review" supaya sumbernya tidak kabur. Keputusan **Block**
 diserahkan sebagai `REQUEST_CHANGES`; **Hold** sebagai `COMMENT`; **Ship** sebagai
@@ -142,7 +142,7 @@ mahu ia berjalan tanpa pengawasan.
 
 Pipeline terbina dalam yang lain memang menyiarkan ke GitHub secara terus:
 `cross_review`, `pr_triage`, `ticket_to_pr` dan `pre_merge_gate` masing-masing
-berakhir dengan langkah komen. Hanya `pr_review` menahan outputnya untuk anda.
+berakhir dengan langkah komen, yang dihantar oleh pelayan. Hanya `pr_review` menahan outputnya untuk anda. Tiada satu pun daripadanya mencantum atau meluluskan.
 
 ## Hantar penyemak sendiri
 

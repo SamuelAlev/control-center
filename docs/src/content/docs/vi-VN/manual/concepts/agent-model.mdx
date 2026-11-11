@@ -2,7 +2,7 @@
 title: Mô hình agent
 description: Agent thực ra là gì trong Control Center, những trường nào của nó làm thay đổi hành vi và cách adapter mà nó chạy trên đó quyết định những gì có thể được thi hành.
 slug: vi-VN/so-tay/khai-niem/mo-hinh-agent
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Agent là gì?
@@ -54,7 +54,7 @@ Kỹ năng của kho mã được nạp cho **mọi** adapter, không chỉ harn
 
 Agent không mang cờ quyền hạn riêng. Việc nó có được tạo commit, push, mở pull request, ghi vào tracker hay truy cập mạng hay không do [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) quyết định — cho phép, hỏi trước hoặc từ chối, ở phạm vi không gian làm việc, agent hoặc space — và cùng các quy tắc đó áp dụng bất kể adapter nào chạy nó.
 
-Thứ mà một lượt chạy được _trao_ không thay đổi theo các quy tắc đó. Một lượt chạy trong worktree GitHub luôn nhận token GitHub chỉ đọc, và một lần push được hỏi đúng lúc nó diễn ra: cấu hình git của agent gửi mọi lần push lên GitHub qua Control Center, nơi áp dụng quy tắc **Push lên remote** trước khi chuyển tiếp.
+Thứ mà một lượt chạy được _trao_ không thay đổi theo các quy tắc đó. Một lượt chạy luôn có thể đọc các kho mã GitHub mà nó đang xử lý, bằng token chỉ đọc, và một lần push được hỏi đúng lúc nó diễn ra: cấu hình git của agent gửi mọi lần push lên GitHub qua Control Center, nơi áp dụng quy tắc **Push lên remote** trước khi chuyển tiếp.
 
 Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết cơ chế này hoạt động thế nào, bao gồm những gì được và không được thi hành ở mức hệ thống tệp.
 
@@ -70,16 +70,16 @@ Trường có hệ quả lớn nhất trên một agent là adapter của nó, b
 Cụ thể, **chỉ harness tích hợp mới hỗ trợ subagent, điều hướng giữa lượt chạy, tạm dừng và tiếp tục (và do đó cả tiếp quản) cùng việc thực thi chế độ theo cấu trúc.** Claude Code không có bất kỳ thứ nào trong số đó.
 
 :::caution[Sandbox của hệ điều hành là mức sàn, không phải bộ thi hành chế độ, và không phải máy chủ nào cũng có]
-Ma trận trên nói về những gì Control Center có thể _thấy và chặn_. Bên dưới nó, `cc_server` bọc CLI Claude Code trong sandbox hệ điều hành của máy chủ ở nơi có một sandbox như vậy — Seatbelt trên macOS, bubblewrap trên Linux và WSL2 — nên một lệnh `rm` không ai thấy hay một thao tác ghi không ai thấy vẫn bị hệ điều hành giới hạn. Trên **Windows thì hoàn toàn không có backend**, còn trên Linux hay WSL2 thiếu `bwrap` và `socat` thì bước dò báo không có backend nào, nên ở đó những lượt chạy này quay về việc làm sạch môi trường, thông tin đăng nhập do bộ môi giới cấp, các rào chắn trên những lệnh gọi mà Control Center thấy được, và worktree riêng của cuộc trò chuyện (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows).
+Ma trận trên nói về những gì Control Center có thể _thấy và chặn_. Bên dưới nó, `cc_server` bọc CLI Claude Code trong sandbox hệ điều hành của máy chủ ở nơi có một sandbox như vậy — Seatbelt trên macOS, bubblewrap trên Linux và WSL2 — nên một lệnh `rm` không ai thấy hay một thao tác ghi không ai thấy vẫn bị hệ điều hành giới hạn. Trên **Windows thì hoàn toàn không có backend**, còn trên Linux hay WSL2 thiếu `bwrap` và `socat` thì bước dò báo không có backend nào. Ở đó chỉ các lượt chạy của chủ sở hữu máy chủ mới bắt đầu, và các lượt chạy của người khác bị từ chối trừ khi chủ sở hữu khởi động máy chủ với `--sandbox off`. Một lượt chạy bắt đầu mà không có sandbox sẽ quay về việc làm sạch môi trường, thông tin đăng nhập do bộ môi giới cấp, các rào chắn trên những lệnh gọi mà Control Center thấy được, và worktree riêng của cuộc trò chuyện (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows).
 
 Điều mà sandbox không phải là một _cổng chặn_. Nó giới hạn nơi mà một tiến trình được phép đọc, ghi và kết nối — chế độ chỉ đọc có chạm tới nó, dưới dạng các bind mount chỉ đọc — nhưng nó không thể chặn đứng một lệnh gọi, dựng lên một yêu cầu phê duyệt, hay cho bạn biết sau đó CLI đã thử làm gì. Điều đó, cộng với bốn quyền hạn vừa nêu ngay trên, vẫn là thứ mà harness tích hợp có còn những cái khác thì không. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
 :::
 
-Một agent **không có** adapter sẽ quay về **Control Center (built-in)** — vòng lặp bên trong máy chủ, nên không có CLI nào phải cài — và nhật ký lượt chạy của nó ghi lại `cc-harness`. Mọi agent được gieo tạo đều được tạo ra mà không có adapter hay mô hình, nên năm agent của một không gian làm việc mới đều chạy ở đó, trên mô hình mặc định của Anthropic, cho tới khi bạn đặt adapter và mô hình cho từng agent. Lựa chọn “adapter mặc định” trong bước thiết lập ban đầu là một tùy chọn phía máy khách mà máy chủ không bao giờ đọc, và nó không áp dụng ngược lại cho những agent đã được tạo trước đó.
+Một agent **không có** adapter sẽ quay về **Control Center (built-in)** — vòng lặp bên trong máy chủ, nên không có CLI nào phải cài — và nhật ký lượt chạy của nó ghi lại `cc-harness`. Mọi agent được gieo tạo đều được tạo ra mà không có adapter hay mô hình, nên sáu agent của một không gian làm việc mới đều chạy ở đó, trên mô hình mặc định của Anthropic, cho tới khi bạn đặt adapter và mô hình cho từng agent. Hoàn tất bước adapter của thiết lập ban đầu sẽ đặt cặp adapter và mô hình của nó cho mọi agent còn thiếu cặp đó trong các không gian làm việc tồn tại vào thời điểm ấy; không có bộ chạy mặc định cho không gian làm việc.
 
 ## Agent đến từ đâu
 
-- **Được gieo tạo cùng không gian làm việc.** Mọi không gian làm việc — không chỉ cái đầu tiên — đều có một CEO cùng bốn chuyên gia (`qa`, `architect`, `engineer`, `librarian`) báo cáo cho nó, được tạo một cách lũy đẳng trong nền khi không gian làm việc được tạo. Xem [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
+- **Được gieo tạo cùng không gian làm việc.** Mọi không gian làm việc — không chỉ cái đầu tiên — đều có một CEO cùng năm chuyên gia (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) báo cáo cho nó, được tạo một cách lũy đẳng trong nền khi không gian làm việc được tạo. Xem [Không gian làm việc và cô lập](/vi-VN/so-tay/khai-niem/khong-gian-lam-viec/).
 - **Được thêm thủ công** tại Cài đặt → Không gian làm việc → Agent. Việc yêu cầu một agent thuê đồng nghiệp không tạo ra hàng nào; hãy dùng màn hình đó.
 
 ## Trạng thái trực tiếp

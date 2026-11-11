@@ -3,7 +3,7 @@ title: "Архітектура"
 description: "Як Control Center структуровано: модель тонкого клієнта із сервером, Clean Architecture з первинністю фіч і патерн «порти та адаптери»."
 dateModified: 2026-09-19
 slug: uk-UA/керівництво/поняття/архітектура
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Огляд
@@ -60,7 +60,7 @@ feature_name/
 - Сутності пам’яті: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Спільні об’єкти-значення: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Спільні порти: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Доменні сервіси: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Доменні сервіси: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + типи подій (робочий простір/агент, PR/перевірка, повідомлення, тікети, конвеєр, оркестрація, пам’ять, календар/зустрічі, ідентичність і членство, спостережуваність)
 
 ## Ідентичність і спільна робота
@@ -132,7 +132,6 @@ Control Center — багатокористувацька система: люд
 
 - Секрети у `flutter_secure_storage` (ланцюжок ключів macOS, диспетчер облікових даних Windows, libsecret у Linux) — облікові дані пристрою клієнта та ключі прив’язки до віддаленого сервера, а не токени провайдерів
 - `shared_preferences` лише для нечутливих налаштувань (тема, шрифт, компонування)
-- Секрети провайдерів, що залишилися від старіших інсталяцій, `features/auth/providers/credential_migration.dart` один раз передає серверу, а потім видаляє з ланцюжка ключів клієнта
 
 ## Дотримання архітектури
 

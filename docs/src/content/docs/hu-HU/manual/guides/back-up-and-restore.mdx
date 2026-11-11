@@ -2,7 +2,7 @@
 title: Mentés és visszaállítás
 description: Készítsen pillanatképet a telepítésről, mozgasson munkaterületet gépek között, állítson vissza egy vagy az összes munkaterületet, és tartson másolatokat máshol.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Ez az útmutató az öt dolgot járja körül, amit az emberek valójában csinálni szoktak a
@@ -18,7 +18,8 @@ alatt található.
 
 - **Teljes kliens** — az asztali vagy a webes alkalmazás. Egy párosított telefon szándékosan egyiket sem tudja elindítani.
 - **Telepítési pillanatkép** készítéséhez, listázásához, letöltéséhez vagy törléséhez: a telepítés **tulajdonosa**.
-- Munkaterületenkénti műveletekhez: a munkaterület **adminja** az exportáláshoz, illetve az ütemezett mentéseinek listázásához és letöltéséhez, **tulajdonosa** az importáláshoz vagy a törléshez, illetve valamelyik mentésének törléséhez.
+- Munkaterületenkénti műveletekhez: a munkaterület **adminja** az exportáláshoz, illetve az ütemezett mentéseinek listázásához és letöltéséhez, **tulajdonosa** a törléshez, illetve valamelyik mentésének törléséhez.
+- A munkaterület **visszaállítása** egy feltöltött fájlból, ütemezett mentésből vagy pillanatképből: a [szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa), akinek a munkaterületnek is tulajdonosnak kell lennie. A visszaállítás azt jelenti, hogy a szerver egy adatbázisfájlt a sajátjaként fogad el, ezért ez a szerver tulajdonosának a döntése. Mindenki más a visszaállítási műveletek helyett ezt látja: „Csak a szerver tulajdonosa állíthat vissza biztonsági mentést. A mentéseket továbbra is letöltheti.”
 - Letöltésekhez és feltöltésekhez: egy párosított teljes kliens, akár közvetlen, akár közvetített relés kapcsolaton. Mindkét útvonal ugyanazon a hitelesített, végponttól végpontig titkosított erőforrás-alagúton viszi a fájlbájtokat; a relé nem tudja elolvasni őket.
 
 :::caution[A telepítési pillanatképek manuálisak]
@@ -45,12 +46,14 @@ Mindkét artefaktum **kizárólag adatbázis**:
 - A **telepítési pillanatkép** egy időbélyeges könyvtár: `manifest.json`, `global.db` és munkaterületenként egy `<workspaceId>/workspace.db`.
 - A **munkaterület-export** maga az az egyetlen `workspace.db` fájl.
 
+A munkaterület adatbázisa maga a teljes munkaterület: a beszélgetései, a futási naplói, a kódindexe, a repókapcsolatai, a környezeti definíciói és a tagjai. Olvasható formában tartalmazza a munkaterület pipeline webhook-tokenjeit és a jegy-szinkronizálás webhook-titkait is. A letöltött munkaterület-mentést vagy -exportot úgy tárolja, mint egy titkot. Nem tartalmaz szolgáltatói bejelentkezéseket, eszközkulcsokat vagy felhasználói titkokat; ezek a globális adatbázisban és a szerver titkostárolójában élnek.
+
 Egyik sem viszi magával az adatkönyvtár többi részét: a `secrets.json`-t (párosítási
 kulcsok, szolgáltatói hitelesítő adatok, SSO), egy munkaterület `blobs/` mappáját (az
 üzenetekbe beillesztett képek), a `skills/`, `agents/`, `chat_credentials/` mappákat,
 a rögzített megbeszélés-hanganyagot vagy az állomásképeket. Ezek egy része eldobható,
 más része nem — a
-[teljes táblázat a referenciában van](/hu-HU/kezikonyv/referencia/mentes/#what-a-backup-does-not-contain),
+[teljes táblázat a referenciában van](/hu-HU/kezikonyv/referencia/mentes/#mit-nem-tartalmaz-egy-biztonsági-mentés),
 és ezek lefedéséről szól a [gépen kívüli szakasz](#biztonsági-mentések-másolása-a-gépen-kívülre).
 
 ## Pillanatkép készítése a teljes telepítésről
@@ -77,7 +80,7 @@ a másolása meghiúsult — nézze meg a szervernaplót.
 
 ## Munkaterület-mentések és megőrzés ütemezése
 
-Nyissa meg a munkaterület **Beállítások → Pipeline-ok → Pipeline-sablonok** oldalát, és
+Nyissa meg a munkaterület **Beállítások → Munkaterület → Pipeline-sablonok** oldalát, és
 keresse meg a **Workspace backup** elemet. Az engedélyezett ütemezése minden vasárnap
 03:00 UTC-kor fut: **Back up workspace**, majd **Delete backups older than**
 (alapértelmezésben 30 nap). A második csomópont csak a sikeres mentés után fut. A
@@ -102,7 +105,7 @@ munkaterületnek, a sora ezt jelzi, és nem listázza a mentéseit.
 
 Nyisson le egy sort az egyes mentések megtekintéséhez, a legújabbal kezdve:
 
-- A **Visszaállítás** ezzel a mentéssel cseréli le a munkaterület jelenlegi adatbázisát. Előbb exportálja a munkaterületet, ha szükség lehet a művelet visszavonására. Ehhez a munkaterület **tulajdonosa** szükséges.
+- A **Visszaállítás** ezzel a mentéssel cseréli le a munkaterület jelenlegi adatbázisát. Előbb exportálja a munkaterületet, ha szükség lehet a művelet visszavonására. Ehhez a szerver tulajdonosa szükséges, akinek a munkaterületnek is tulajdonosnak kell lennie.
 - A **Letöltés** arra a gépre menti a fájlt, amelyet éppen használ. A mentés a szerveren marad.
 - Az **Útvonal másolása** a mentés szerveren lévő helyét másolja ki.
 - A **Törlés** véglegesen eltávolítja ezt a mentést, miután beírta a munkaterület nevét. Ehhez a munkaterület **tulajdonosa** szükséges.
@@ -116,7 +119,7 @@ távolítja őket. A telepítés **tulajdonosa** ugyanabban a listában látja �
 látja ezeket a sorokat.
 
 Ezeknél nincs **Visszaállítás**, mivel nincs munkaterület, amelybe vissza lehetne állítani
-őket. Egy ilyen mentés visszahozásához töltse le, hozzon létre egy munkaterületet, és
+őket. Egy ilyen mentés visszahozásához töltse le, hozzon létre egy munkaterületet (csak a szerver tulajdonosa teheti meg), és
 töltse fel a fájlt a
 [Munkaterület áthelyezése másik telepítésre](#munkaterület-áthelyezése-másik-telepítésre)
 szakaszban leírtak szerint.
@@ -159,9 +162,9 @@ Egy munkaterület egy adatbázisfájl, így az átadása fájlművelet.
 2. A **cél** szerveren hozza létre (vagy válassza ki) azt a munkaterületet, amely fogadni fogja.
 3. Nyissa le azt a munkaterületet, és a **Visszaállítás erről az eszközről** alatt nyomja meg a **Fájl választása és feltöltése** gombot. Válassza ki a letöltött `.db` fájlt.
 
-Ha mindkét szerver az a gép, amely előtt ül, a **Mentés a szerverre**, valamint az
-**Importálás** → **Fájl kiválasztása** ugyanezt teszi meg a körút nélkül; az importálási
-párbeszédablak útvonalai a szervergépen oldódnak fel.
+A 3. lépés visszaállítás, ezért a cél-szerver tulajdonosa szükséges hozzá, akinek a munkaterület tulajdonosának is kell lennie.
+
+Ha mindkét szerver az a gép, amely előtt ül, a forrásszerveren a **Mentés a szerverre** gombbal, majd a célszerveren a **Munkaterület-adatbázisfájl** mezőbe írt fájlútvonallal és az **Importálás** gombbal ugyanezt teszi meg a körút nélkül; ez az útvonal a szervergépen oldódik fel.
 
 :::caution[Az importálás mindent lecserél]
 Az importálás felülír mindent, amit a cél-munkaterület jelenleg tartalmaz, és nem
@@ -177,11 +180,11 @@ telepítésből** származó fájl importálását. Ez utóbbi esetben a fájl p
 nem fognak feloldódni — a munkaterület saját adatai sértetlenek, de az átvétel után
 ellenőrizze újra a tagságot.
 
-A csevegőbot-tokenek az adatbázis mellett élnek, nem benne, így egy másnak átadott
-munkaterület nem visz magával élő hitelesítő adatokat. A fogadó telepítés
-újracsatlakoztatja a sajátjait.
+A csevegőbot-tokenek és a szolgáltatói bejelentkezések az adatbázison kívül élnek, így a fogadó telepítés a sajátjait csatlakoztatja újra. A fájl viszont magában hordozza a munkaterület pipeline webhook-tokenjeit és a jegy-szinkronizálás webhook-titkait, így az a munkaterület, amelyet másnak ad át, ezeket is átadja. Ha a címzettnek nem szabad ezeket birtokolnia, utólag cserélje ki őket.
 
 ## Egy munkaterület visszaállítása pillanatképből
+
+Önnek a szerver tulajdonosának és a munkaterület tulajdonosának kell lennie.
 
 1. A **Telepítési pillanatképek** alatt nyissa le a kívánt pillanatképet.
 2. Keresse meg a munkaterület sorát, és nyomja meg a **Visszaállítás** gombot.
@@ -193,9 +196,9 @@ mechanizmus, amely ugyanazt a fájlt másképp kezelné.
 
 Egy sor azt mondhatja, hogy **Már nincs ezen a szerveren**, és a **Visszaállítás**
 letiltva van: a pillanatkép olyan munkaterületet tartalmaz, amellyel ez a telepítés már
-nem rendelkezik. Hozza vissza kézzel — hozzon létre egy munkaterületet, majd a
-**Munkaterület adatai** alatt importáljon bele a
-`<snapshot path>/<old workspace id>/workspace.db` útvonalról. A lenyitott pillanatkép
+nem rendelkezik. Hozza vissza kézzel — hozzon létre egy munkaterületet (csak a szerver tulajdonosa), majd a
+**Munkaterület adatai** alatt írja be a
+`<snapshot path>/<old workspace id>/workspace.db` útvonalat a munkaterület **Munkaterület-adatbázisfájl** mezőjébe, és nyomja meg az **Importálás** gombot. A lenyitott pillanatkép
 egy másolható mezőben mutatja a saját **Útvonal a szerveren** értékét, a sor címe pedig a
 régi munkaterület-azonosító, így az útvonal mindkét fele Ön előtt van.
 
@@ -369,9 +372,11 @@ hogy hol tárolódnak.
 | Tünet | Ok és megoldás |
 | --- | --- |
 | A letöltés vagy feltöltés egy kapcsolatváltás után meghiúsul | Próbálja újra az aktív párosított kapcsolaton. A közvetlen és a relés átvitel egyaránt támogatja a titkosított fájlátvitelt; egyik sem kínál nyílt szöveges HTTP-tartalékot |
-| „A szerver elutasította” | Szerep. Egy telepítési pillanatkép készítéséhez vagy listázásához a telepítés üzemeltetője kell. Egy munkaterület letöltéséhez admin, a visszaállításához tulajdonos, egy teljes pillanatkép-ziphez a telepítés üzemeltetője kell |
-| „Ennek a szervernek nincs biztonsági mentési felülete” | A gazdagépen nincs bekötve mentési port — ez egy demószerver. A műveletek hiányoznak, nem pedig megtagadottak |
-| „A fájl nagyobb, mint amit a szerver elfogad” | A feltöltéseket 8 GiB-re korlátozzuk. Tegye a fájlt a szervergépre, és használja helyette az **Importálás** → **Fájl kiválasztása** lehetőséget |
+| „A szerver elutasította. Munkaterület letöltéséhez a munkaterület adminja szerep kell. Visszaállításához a szerver tulajdonosa kell, akinek a munkaterület tulajdonosának is lennie kell. Egy teljes pillanatkép letöltéséhez a szerver tulajdonosa kell.” | Szerep. Egy telepítési pillanatkép készítéséhez, listázásához vagy letöltéséhez a szerver tulajdonosa kell. Egy munkaterület letöltéséhez admin kell; a visszaállításához a szerver tulajdonosa kell, akinek a munkaterületnek is tulajdonosnak kell lennie |
+| „A fájlátvitel ehhez a kapcsolathoz még nincs beállítva. Csatlakozzon újra a szerverhez a biztonsági mentés letöltéséhez vagy feltöltéséhez.” | Ehhez a szerverkapcsolathoz még nincs fájlátviteli sáv, ezért a **Letöltés** és a feltöltés ki van kapcsolva. Csatlakozzon újra a szerverhez, majd próbálja újra |
+| „Csak a szerver tulajdonosa állíthat vissza biztonsági mentést. A mentéseket továbbra is letöltheti.” | A visszaállítás a szerver gépén lévő munkaterület-adatbázist cseréli le, ezért csak a szerver tulajdonosa állíthat vissza. Töltse le a mentést, és kérje meg a tulajdonost, hogy állítsa vissza |
+| „Ennek a szervernek nincs biztonsági mentési felülete.” | A gazdagépen nincs bekötve mentési port — ez egy demószerver. A műveletek hiányoznak, nem pedig megtagadottak |
+| „A fájl nagyobb, mint amit a szerver elfogad.” | A feltöltéseket 8 GiB-re korlátozzuk. Tegye a fájlt a szervergépre, és adja meg az útvonalát a **Munkaterület-adatbázisfájl** mezőben |
 | Az importálás elutasítva: nem Control Center munkaterület-adatbázis | A fájlban nincs `workspace_meta` sor — ez nem munkaterület-export, vagy csonka. Semmi nem lett lecserélve |
 | Egy pillanatkép **Hiányos** állapotban szerepel a listán | A manifestje hiányzik, vagy nem létező fájlokat nevez meg. Készítsen egy újat; addig egyenként vegye át belőle a munkaterület-fájlokat |
 | Egy pillanatkép szerint munkaterületek nem kerültek rögzítésre | Azokat a munkaterületeket soha nem írták, vagy a másolásuk meghiúsult. Nézze meg a szervernaplót |

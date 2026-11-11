@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_harness_runtime/cc_harness_runtime.dart'
+    show isNonPublicAddress;
 import 'package:cc_server_core/src/push/web_push_repository.dart';
 import 'package:webcrypto/webcrypto.dart' as wc;
 import 'package:webpush_encryption/webpush_encryption.dart';
@@ -179,7 +181,7 @@ class WebPushTransport {
       uri.host,
     ).timeout(const Duration(seconds: 3));
     if (addresses.isEmpty ||
-        addresses.any((address) => !isPublicPushAddress(address))) {
+        addresses.any(isNonPublicAddress)) {
       throw const FormatException(
         'Push endpoint resolves to a private address',
       );
@@ -229,34 +231,4 @@ class WebPushTransport {
       client.close(force: true);
     }
   }
-}
-
-/// Rejects private, local and reserved address ranges before pinning the dial.
-bool isPublicPushAddress(InternetAddress address) {
-  if (address.isLoopback || address.isLinkLocal || address.isMulticast) {
-    return false;
-  }
-  final b = address.rawAddress;
-  if (address.type == InternetAddressType.IPv4) {
-    final a = b[0], second = b[1];
-    return a > 0 &&
-        a < 224 &&
-        a != 10 &&
-        a != 127 &&
-        !(a == 100 && second >= 64 && second <= 127) &&
-        !(a == 169 && second == 254) &&
-        !(a == 172 && second >= 16 && second <= 31) &&
-        !(a == 192 &&
-            (second == 0 || second == 2 || second == 88 || second == 168)) &&
-        !(a == 198 &&
-            (second == 18 || second == 19 || (second == 51 && b[2] == 100))) &&
-        !(a == 203 && second == 0 && b[2] == 113);
-  }
-  if (address.type != InternetAddressType.IPv6) {
-    return false;
-  }
-  // Block ULA, unspecified, documentation/reserved and mapped IPv4.
-  return b[0] >= 0x20 &&
-      b[0] <= 0x3f &&
-      !(b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0d && b[3] == 0xb8);
 }

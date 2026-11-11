@@ -19,6 +19,8 @@ EnvironmentDefinitionRecord definitionRecord({
   String name = 'Shop',
   List<Map<String, dynamic>>? components,
   List<Map<String, dynamic>> options = const [],
+  bool runsOnHost = false,
+  bool hostApproved = false,
 }) => EnvironmentDefinitionRecord(
   id: id,
   workspaceId: kWorkspace,
@@ -38,6 +40,8 @@ EnvironmentDefinitionRecord definitionRecord({
   }),
   createdAt: DateTime.utc(2026),
   updatedAt: DateTime.utc(2026),
+  runsOnHost: runsOnHost,
+  hostApproved: hostApproved,
 );
 
 /// An environment in [status] with [components].
@@ -95,8 +99,39 @@ class FakeEnvironmentRepository extends Fake
   Completer<void>? ensureGate;
 
   /// What `watch` streams instead of [environments], for rows that land while
-  /// something else is in flight.
+  /// something else is in flight. Every subscriber starts from the rows last
+  /// published, as the server's watch does.
   Stream<List<SpaceEnvironment>>? liveRows;
+
+  Stream<List<SpaceEnvironment>>? _liveSource;
+  final _live = StreamController<List<SpaceEnvironment>>.broadcast();
+  List<SpaceEnvironment>? _liveLast;
+
+  Stream<List<SpaceEnvironment>> _liveFrom(
+    Stream<List<SpaceEnvironment>> source,
+  ) {
+    if (!identical(_liveSource, source)) {
+      _liveSource = source;
+      source.listen((rows) {
+        _liveLast = rows;
+        _live.add(rows);
+      });
+    }
+    return Stream.multi((subscriber) {
+      final last = _liveLast;
+      if (last != null) {
+        subscriber.add(last);
+      }
+      final rows = _live.stream.listen(subscriber.add);
+      subscriber.onCancel = rows.cancel;
+    });
+  }
+
+  /// Whether the last start said someone is there to answer a terminal.
+  bool? lastAttended;
+
+  /// The `can_operate` every `watch` frame carries.
+  bool canOperate = true;
   Map<String, dynamic>? lastOptions;
   String? lastDefinitionId;
   Map<String, dynamic>? savedDefinition;
@@ -116,19 +151,16 @@ class FakeEnvironmentRepository extends Fake
   }
 
   @override
-  Future<String> startSetup(String workspaceId, String spaceId) async {
-    calls.add('startSetup');
-    return 'setup-session';
-  }
-
-  @override
-  Stream<List<SpaceEnvironment>> watch(String workspaceId, String spaceId) {
+  Stream<SpaceEnvironmentsFrame> watch(String workspaceId, String spaceId) {
     calls.add('watch');
     final error = readError;
     if (error != null) {
       return Stream.error(error);
     }
-    return liveRows ?? Stream.value(environments);
+    final live = liveRows;
+    return (live == null ? Stream.value(environments) : _liveFrom(live)).map(
+      (rows) => (environments: rows, canOperate: canOperate),
+    );
   }
 
   @override
@@ -193,12 +225,25 @@ class FakeEnvironmentRepository extends Fake
     String spaceId, {
     String? definitionId,
     Map<String, dynamic>? options,
+    bool attended = false,
   }) async {
     calls.add('ensure');
+    lastAttended = attended;
     await ensureGate?.future;
     lastDefinitionId = definitionId;
     lastOptions = options;
     return ensureResult ?? environment();
+  }
+
+  @override
+  Future<SpaceEnvironment> reset(
+    String workspaceId,
+    String spaceId, {
+    bool attended = false,
+  }) async {
+    calls.add('reset');
+    lastAttended = attended;
+    return environment();
   }
 
   @override
@@ -277,8 +322,9 @@ class RecordingHost {
         opened.add('provisioning-logs:$spaceId'),
     openProcess: ({required spaceId, required sessionId, required label}) =>
         opened.add('process:$sessionId'),
-    openSetup: ({required spaceId, required sessionId, required label}) =>
-        opened.add('setup:$sessionId'),
+    openStartTerminal:
+        ({required spaceId, required sessionId, required label}) =>
+            opened.add('start-terminal:$sessionId'),
     openViewer: ({required spaceId, required componentId, required label}) =>
         opened.add('viewer:$componentId'),
     openPrefilledTerminal: ({required spaceId, required command}) =>

@@ -2,7 +2,7 @@
 title: Référence de configuration SSO
 description: Tous les paramètres, points de terminaison, opérations et codes d’erreur de l’ouverture de session unique.
 slug: fr-CA/manuel/reference/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Tout ce qui est configurable au sujet de l’ouverture de session unique, au même
@@ -35,6 +35,18 @@ des paramètres peut être en désaccord).
 | `groupRoleMap`         | les deux     | `{}`              | groupe → rôle ; les correspondances vers le rôle owner sont refusées à l’enregistrement                                                                          |
 | `autoMember`           | les deux     | activé            | ajouter automatiquement les utilisateurs à chaque espace de travail à la première connexion                                                                      |
 | `allowJit`             | les deux     | activé            | provisionner les utilisateurs inconnus à la connexion                                                                                                            |
+
+## Correspondance des comptes
+
+`SsoProvisioner` résout une connexion dans cet ordre, et jamais par nom d’utilisateur :
+
+1. `(users.sso_issuer, users.sso_subject)` égal à l’émetteur et au sujet de la connexion (NameID SAML / `sub` OIDC).
+2. Un compte dont l’adresse est égale au courriel de la connexion, uniquement lorsque les deux côtés le garantissent : le fournisseur (OIDC `email_verified: true` ; une revendication absente ne constitue pas une garantie, et une assertion SAML signée en constitue toujours une) et le compte (`users.email_verified`). Les adresses sont enregistrées après retrait des espaces et en minuscules, et comparées ainsi ; une adresse vérifiée ne correspond que si exactement un compte la détient comme vérifiée. Deux titulaires ne correspondent à rien (journalisé sans l’adresse), et aucun compte ne peut être vérifié pour une variante de casse d’une adresse qu’un autre compte détient comme vérifiée.
+3. Sinon, un nouveau compte lorsque `allowJit` est activé ; un refus lorsqu’il est désactivé.
+
+`users.email_verified` est défini par une connexion SSO ou une poussée SCIM qui transporte l’adresse, ou par le propriétaire du serveur avec `users.vouchEmail` (**Paramètres → Serveur → Personnes → Confirmer le courriel**, audité `user.email_vouched`). La modification du profil du propriétaire garantit sa propre adresse. Toute autre modification de profil, et toute adresse saisie sur une invitation, la laisse non vérifiée, et modifier une adresse efface l’indicateur. Une connexion garantie qui crée un compte prend l’adresse parmi les comptes qui ne l’ont que saisie (audité `user.email_unvouched_cleared`), jamais parmi ceux qui la détiennent comme vérifiée ; dans ce cas, le nouveau compte n’obtient aucune adresse.
+
+Un compte correspondant déjà épinglé à un autre sujet ou à un autre émetteur refuse la connexion avec `This account is already linked to a different SSO identity`. Un compte désactivé refuse la connexion avec `This account has been deactivated`.
 
 ## Configuration du processus
 
@@ -138,6 +150,7 @@ Les échecs de `cc_saml_verify_response` portent un code stable :
   ESPACES DE TRAVAIL PAR CONCEPTION.
 - `users.sso_subject` + `users.sso_issuer` — l’épinglage du sujet du
   fournisseur, unique par `(issuer, subject)` grâce à un index partiel.
+- `users.email_verified` : indique si l’adresse du compte peut correspondre à une connexion SSO ou à une poussée SCIM (voir [Correspondance des comptes](#correspondance-des-comptes)).
 - `users.deactivated_at` — l’estampille de désactivation SCIM.
 - Le jeton porteur SCIM et le secret client OIDC résident dans le fichier de
   secrets en 0600, jamais dans la base de données.

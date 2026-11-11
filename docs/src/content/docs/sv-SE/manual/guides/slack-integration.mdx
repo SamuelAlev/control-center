@@ -2,7 +2,7 @@
 title: Konfigurera Slack-integration
 description: Anslut Slack till en arbetsyta i Control Center, via den delade Control Center-appen eller en egen app, så att medlemmar kan styra agenter från Slack.
 slug: sv-SE/handbok/how-to-guider/slack-integration
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Den här guiden visar hur du ansluter Slack till en arbetsyta i Control Center: genom att lägga till den delade Control Center-appen, eller med en egen app som Control Center skapar åt dig eller som du bygger själv.
@@ -28,18 +28,18 @@ En arbetsyta kör på exakt ett av dessa åt gången.
 
 | Läge                              | Kräver                                                                                                          | Du får                                                                                      |
 | --------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Delad Control Center-app**      | Servern använder Control Center Connect (**Inställningar → Server → Enkel inloggning**) och Connect betjänar Slack | Ett klick och en Slack-inloggning. Ingen app att skapa, ingen token att klistra in, inget att rotera |
+| **Delad Control Center-app**      | Arbetsytans inloggningsappar körs via Control Center Connect (serverns val under **Inställningar → Server → Enkel inloggning**, eller arbetsytans eget val under **Inställningar → Arbetsyta → Integrationer**) och Connect betjänar Slack | Ett klick och en Slack-inloggning. Ingen app att skapa, ingen token att klistra in, inget att rotera |
 | **Din egen app**                  | En Slack-app i din Slack-arbetsyta, skapad på ett av de tre sätten nedan                                         | Ditt eget botnamn, egna beskrivningar och eget slash-kommando, redigerbara från Control Center |
 
 ### Lägg till den delade Control Center-appen
 
-1. Gå i Control Center till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+1. Gå i Control Center till **Inställningar → Arbetsyta → Integrationer** och rulla ned till kortet **Chattbryggor**
 2. Leta upp raden **Lägg till Control Center i Slack** i Slack-blocket och klicka på **Lägg till i Slack**
 3. Webbläsaren öppnar Slack. Logga in med Slack, välj Slack-arbetsytan och godkänn installationen
 4. När webbläsaren visar en kod skriver du in den i dialogen som Control Center lämnade öppen. Om webbläsaren lämnar tillbaka dig till appen av sig själv finns det inget att skriva
 5. En notis namnger Slack-arbetsytan som appen lades till i, och Slack-blocket visar att anslutningen körs på den delade Control Center-appen
 
-Bara en admin för arbetsytan kan lägga till appen. Raden säger varför den inte kan starta när servern använder sina egna appar i stället för Connect, när din Connect inte har någon Slack-app, eller när den här arbetsytan redan har en egen Slack-app ansluten.
+Bara en admin för arbetsytan kan lägga till appen. Raden säger varför den inte kan starta när arbetsytans inloggningsappar är egna appar i stället för Connect, när din Connect inte har någon Slack-app, eller när den här arbetsytan redan har en egen Slack-app ansluten.
 
 Så skiljer den sig från en egen app:
 
@@ -65,7 +65,7 @@ Din egen apps händelser passerar aldrig genom Connect: Socket Mode levererar de
 ## Alternativ A: låt Control Center skapa appen
 
 1. Generera ett par tokens för appkonfiguration på [api.slack.com/apps](https://api.slack.com/apps) och kopiera **refresh**-token (`xoxe-…`)
-2. Gå i Control Center till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+2. Gå i Control Center till **Inställningar → Arbetsyta → Integrationer** och rulla ned till kortet **Chattbryggor**
 3. I Slack-blocket klickar du på **Skapa app åt mig**
 4. Klistra in token, justera appnamn, botnamn, beskrivningar och slash-kommando och klicka sedan på **Skapa app**
 5. Följ de två återstående stegen dialogen visar, vart och ett som en länk in i Slack:
@@ -79,7 +79,7 @@ Konfigurationstoken roterar vid varje användning. Control Center sparar det rot
 
 Samma app, inget token för appkonfiguration — Slack visar dig sin egen skaparskärm med hela manifestet redan ifyllt.
 
-1. Gå i Control Center till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+1. Gå i Control Center till **Inställningar → Arbetsyta → Integrationer** och rulla ned till kortet **Chattbryggor**
 2. I Slack-blocket klickar du på **Skapa app åt mig**
 3. Justera appnamn, botnamn, beskrivningar och slash-kommando — de följer med länken
 4. Klicka på **Skapa i Slack**. Webbläsaren öppnar Slacks sida för att skapa appar med konfigurationen ifylld
@@ -133,7 +133,7 @@ message.im
 
 Så når din egen apps tokens Control Center. Den delade appen behöver inget av detta.
 
-1. Gå till **Inställningar → Arbetsyta → Allmänt** och rulla ned till kortet **Chattbryggor**
+1. Gå till **Inställningar → Arbetsyta → Integrationer** och rulla ned till kortet **Chattbryggor**
 2. I Slack-blocket klickar du på **Anslut Slack**
 3. Fyll i fälten:
 
@@ -204,7 +204,7 @@ Varje länkad medlem med en skrivande roll kan föreslå ett ärende från Slack
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-Texten före `|` är titeln, texten efter den är beskrivningen. Boten svarar att den har skapat ett utkast till ärendet. Ingenting skapas ännu och ingen ärendeautomatisering utlöses: utkastet väntar på dig under **Inställningar → Arbetsyta → Profil och identitet → Ärendeutkast från chatten**, där du kan rätta titeln och beskrivningen och sedan klicka på **Skapa ärende** eller **Kasta**.
+Texten före `|` är titeln, texten efter den är beskrivningen. Boten svarar att den har skapat ett utkast till ärendet. Ingenting skapas ännu och ingen ärendeautomatisering utlöses: utkastet väntar på dig under **Inställningar → Du → Profil → Ärendeutkast från chatten**, där du kan rätta titeln och beskrivningen och sedan klicka på **Skapa ärende** eller **Kasta**.
 
 - Bara medlemmen som körde kommandot ser utkastet
 - Ett utkast som du lämnar kastas efter ett dygn. Utkast finns i minnet, så en serveromstart kastar dem också

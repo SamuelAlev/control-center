@@ -3,7 +3,7 @@ title: "Architektur"
 description: "Wie Control Center aufgebaut ist: Thin Client über einem Headless-Server, Clean Architecture nach Features sowie Ports und Adapter."
 dateModified: 2026-09-19
 slug: de-DE/handbuch/konzepte/architektur
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Überblick
@@ -60,7 +60,7 @@ Das Feature **`guardrails`** legt seine Domänenschicht in `cc_domain/features/g
 - Gedächtnis-Entitäten: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Gemeinsame Wertobjekte: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Gemeinsame Ports: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domänendienste: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Domänendienste: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` und Ereignistypen (Arbeitsbereich/Agent, PR/Review, Nachrichten, Tickets, Pipeline, Orchestrierung, Gedächtnis, Kalender/Besprechungen, Identität und Mitgliedschaft, Observability)
 
 ## Identität und Multiplayer
@@ -132,7 +132,6 @@ Der Server hält die Zugangsdaten, auf die es ankommt: GitHub- und Ticket-Tokens
 
 - Geheimnisse in `flutter_secure_storage` (Schlüsselbund unter macOS, Anmeldeinformationsverwaltung unter Windows, libsecret unter Linux): das Geräte-Credential des Clients und die Kopplungsschlüssel für einen Remote-Server. Tokens der Anbieter liegen hier nicht
 - `shared_preferences` nur für nicht sensible Präferenzen (Thema, Schrift, Layout)
-- Anbieter-Geheimnisse aus älteren Installationen übergibt `features/auth/providers/credential_migration.dart` einmal an den Server und löscht sie danach aus der Schlüsselkette des Clients
 
 ## Durchsetzung der Architektur
 

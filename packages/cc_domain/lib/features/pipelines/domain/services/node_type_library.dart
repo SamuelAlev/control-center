@@ -141,8 +141,10 @@ NodeTypeLibrary defaultNodeTypeLibrary() {
       id: 'prReview.comment',
       displayName: 'Post PR comment',
       description:
-          'Posts the consolidated findings to the PR as a GitHub review '
-          'comment.',
+          'Posts a review comment on the PR from the server: the consolidated '
+          'findings, or the step\'s `message` (with {{key}} placeholders) '
+          'when it sets one. Use it instead of `gh pr comment` in a script, '
+          'whose token only reads.',
       defaultKind: StepKind.listen,
       defaultBodyKey: BuiltInBodyKeys.prReviewComment,
       defaultConfig: PipelineNodeConfig(

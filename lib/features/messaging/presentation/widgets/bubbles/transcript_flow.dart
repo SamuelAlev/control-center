@@ -11,6 +11,7 @@ import 'package:control_center/features/messaging/presentation/widgets/bubbles/q
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/steering_bubble.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/transcript_segment_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/bubbles/turn_auth_failure_notice.dart';
+import 'package:control_center/features/messaging/presentation/widgets/bubbles/turn_sandbox_unavailable_notice.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_image.dart';
@@ -246,6 +247,8 @@ class _TranscriptFlowState extends State<TranscriptFlow> {
         );
       case ErrorSegment(isAuthentication: true):
         return TurnAuthFailureNotice(segment: seg);
+      case ErrorSegment(isSandboxUnavailable: true):
+        return const TurnSandboxUnavailableNotice();
       case ToolSegment():
       case ErrorSegment():
       case ViolationSegment():

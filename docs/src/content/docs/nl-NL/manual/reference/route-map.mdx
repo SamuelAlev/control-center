@@ -2,7 +2,7 @@
 title: Routekaart
 description: Elke route die Control Center registreert, met het bijbehorende scherm en de queryparameters.
 slug: nl-NL/handleiding/referentie/routekaart
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## App-shell
@@ -11,7 +11,7 @@ De app-shell (`ControlCenterLayout`) omvat elke route binnen een werkruimte via 
 
 De poort is compleet wanneer minstens één forge is gekoppeld **voor de aangemelde gebruiker** en er minstens één werkruimte bestaat.
 
-Ontbrekende inloggegevens en een ontbrekende configuratie worden verschillend behandeld, en het onderscheidende criterium is `users.onboarding_finished_at`, uitgelezen uit de eigen `identity.me` van de aanroeper — nooit “er bestaan werkruimtes”, wat fout is op het moment dat iemand wordt uitgenodigd in een werkruimte die hij nooit heeft gemaakt. Zonder gekoppelde forge gaat een account dat de onboarding heeft afgerond blijft in de app, en de werkruimte-shell toont een waarschuwing met een link naar Instellingen → Werkruimte → Profiel en identiteit, waar de aanmelding staat; een account dat dat niet heeft gedaan gaat naar `/onboarding`. Zolang de vlag nog onbekend is, houdt de guard het splashscherm vast in plaats van te gokken, want hij verwijst nooit terug weg uit de onboarding.
+Ontbrekende inloggegevens en een ontbrekende configuratie worden verschillend behandeld, en het onderscheidende criterium is `users.onboarding_finished_at`, uitgelezen uit de eigen `identity.me` van de aanroeper — nooit “er bestaan werkruimtes”, wat fout is op het moment dat iemand wordt uitgenodigd in een werkruimte die hij nooit heeft gemaakt. Zonder gekoppelde forge gaat een account dat de onboarding heeft afgerond blijft in de app, en de werkruimte-shell toont een waarschuwing met een link naar Instellingen → Jij → Profiel, waar de aanmelding staat; een account dat dat niet heeft gedaan gaat naar `/onboarding`. Zolang de vlag nog onbekend is, houdt de guard het splashscherm vast in plaats van te gokken, want hij verwijst nooit terug weg uit de onboarding.
 
 ## Routes zonder prefix
 
@@ -65,7 +65,7 @@ Er is **geen zijbalkitem “Plannen”**. Plan Studio opent als een tabblad in d
 
 ## Instellingenroutes
 
-`/settings` verwijst door naar `/settings/you/appearance`. De instellingenknop in de zijbalk en `Cmd/Ctrl + ,` gaan beide naar `/settings/you/appearance`.
+`/settings` verwijst door naar `/settings/you/profile`. De instellingenknop in de zijbalk en `Cmd/Ctrl + ,` gaan beide naar `/settings/you/profile`.
 
 Instellingenpaden zijn genamespaced per **bereik** — `you/`, `workspace/`, `server/` — omdat het segment aangeeft wie een wijziging raakt. Twee paden dateren van vóór de namespacing en hebben geen bereik in de URL: `/settings/memory` en `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Instellingenpaden zijn genamespaced per **bereik** — `you/`, `workspace/`, `se
 
 | Pad                           | Scherm                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Thema, taal, typografie, editorthema (de landingspagina van de instellingen) |
-| `/settings/you/notifications` | Schakelaars per gebeurtenis, stille uren                                    |
+| `/settings/you/profile`       | Je account op deze server: naam, gebruikersnaam, foto en aanmelding (de landingspagina van de instellingen) |
+| `/settings/you/profile?section=accounts` | Gekoppelde accounts: je eigen aanmeldingen voor codehosting, tickets, agenda en chat, en ticketconcepten uit de chat |
+| `/settings/you/appearance`    | Thema, taal, typografie, editorthema |
 | `/settings/you/audio`         | Microfoon, dicteren, vergaderingsdetectie en klanklandschap-uitvoer         |
+| `/settings/you/notifications` | Schakelaars per gebeurtenis, stille uren                                    |
+| `/settings/you/commits`       | Wie wordt vermeld bij commits van werk dat je start, en je ondertekeningssleutel voor commits |
+| `/settings/you/desktop`       | Alleen desktopapp: het traypictogram, het sluiten van het venster en openen bij het aanmelden |
 | `/settings/you/devices`       | Gekoppelde telefoons en afstandsbediening                                   |
 | `/settings/you/newsfeed`      | Feedbeheer: bronnen, verversen, leesstatus                                  |
+| `/settings/you/links`         | Waar links van buiten Control Center worden geopend                         |
 
 ### Werkruimte
 
 | Pad                                | Scherm                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profiel en identiteit in deze werkruimte: naam, git-auteur, codehosting, agenda |
-| `/settings/workspace/general`      | Naam, logo, patronen voor geheimen, reviewconcurrentie, branchnaamgeving, synchronisatiestatus, chatbruggen, gevarenzone |
+| `/settings/workspace/profile`      | Profiel en identiteit in deze werkruimte: naam, e-mail, git-auteur |
+| `/settings/workspace/general`      | Naam, logo, patronen voor geheimen, reviewconcurrentie, branchnaamgeving, gevarenzone |
+| `/settings/workspace/integrations` | Connect-keuze, de GitHub-app en automatiseringstokens, ticketingleverancier en automatisering, synchronisatiestatus, de eigen providerapps van de werkruimte, chatbruggen, GIF's. Elke providergroep noemt je eigen account en linkt naar Gekoppelde accounts |
 | `/settings/workspace/meetings`     | Sjablonen voor vergadernotities en opgeslagen stemprofielen                                         |
-| `/settings/workspace/members`      | Ledenlijst, uitnodigingen, auditlogboek. Het auditlogboek pagineert met optionele `?cursor=`         |
+| `/settings/workspace/members`      | Ledenlijst en uitnodigingen         |
 | `/settings/workspace/repositories` | Repository's die in deze werkruimte zijn geregistreerd                                              |
 | `/settings/workspace/environments` | Omgevingsdefinities: wat ruimtes kunnen starten en welke taken hun worktrees uitvoeren |
 | `/settings/workspace/agents`       | Geregistreerde agentidentiteiten                                                                    |
@@ -108,6 +114,8 @@ Instellingenpaden zijn genamespaced per **bereik** — `you/`, `workspace/`, `se
 | `/settings/server/rigs`        | Rigs: wat deze host kan starten, basis-images, aangepaste images, draaiende machines   |
 | `/settings/server/sandbox`     | Sandbox-uitvoeringsrechten: programma's die agents mogen uitvoeren vanuit hun werkkopie van je repository's |
 | `/settings/server/diagnostics` | Diagnose en privacy: sandboxing, embedding, logging, crashrapportage |
+| `/settings/server/people`      | Mensen op deze server en of elk adres is bevestigd (alleen de servereigenaar)       |
+| `/settings/server/audit`       | Auditlog: van de server en van de werkruimtes die je beheert                            |
 | `/settings/server/backup`      | Back-up en herstel: momentopnamen van de installatie, export per werkruimte, importeren en verwijderen |
 | `/settings/server/about`       | Over en updates                                                                       |
 

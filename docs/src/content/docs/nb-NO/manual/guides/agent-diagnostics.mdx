@@ -2,7 +2,7 @@
 title: Diagnostiser en agent
 description: Gå gjennom kjøreloggen, adaptersonderingen, serverstatusen og vertsdiagnostikken når en agent slutter å produsere kjøringer.
 slug: nb-NO/handbok/slik-gjor-du/diagnostiser-agent
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Denne guiden viser deg hvordan du finner ut hvorfor en agent ikke produserer kjøringer.
@@ -13,13 +13,13 @@ Arbeid ovenfra og ned: først agentens egne kjøringer, deretter backenden, dere
 
 **Innstillinger → Arbeidsområde → Agenter** → velg agenten → **Logger**.
 
-Hver kjøring viser en statusmerkelapp, en varighet («Running…» mens den pågår), start- og sluttidspunktet, PID-en og adapteren den brukte. **Vis** åpner den rå hendelsesstrømmen for kjøringen. **Stopp** dreper en kjørende prosess og merker kjøringen «Killed by user»; **Avslutt kjørende** i toppteksten gjør det samme for alle kjøringer av agenten som pågår.
+Hver kjøring viser en statusmerkelapp, en varighet («Running…» mens den pågår), start- og sluttidspunktet, PID-en og adapteren den brukte. **Vis** åpner den rå hendelsesstrømmen for kjøringen. **Stopp** dreper en kjørende prosess og merker kjøringen «Killed by user»; **Avslutt kjørende** i toppteksten gjør det samme for alle pågående kjøringer av agenten i dette arbeidsområdet. Du ser og stopper bare levende agentkjøringer i arbeidsområder du er medlem av; serverens eier ser og stopper alle av dem.
 
 Les det slik:
 
 - **Ingen kjøringer i det hele tatt** — utsendingen skjedde aldri. Nevninger i skrivefeltet er `@` pluss ordtegn (bokstaver, sifre, understrek). Oppslaget er et eksakt samsvar eller et prefikssamsvar på agentnavnet, så `@code-reviewer` tolkes som `code` og kan fortsatt vekke en agent som heter `code-reviewer`. Et navn med mellomrom kan ikke nevnes som én token. Gå deretter til steg 2.
-- **En kjøring som avsluttet umiddelbart med feil** — åpne **Vis**. En feil ved oppstart av backenden vises her som en prosessfeil.
-- **En kjøring som står fast på «Running…»** — stopp den, og sjekk deretter agentens **Stillhetstidsavbrudd** i Innstillinger-fanen. Et tidsavbrudd som ikke er angitt, bruker standarden for modusen.
+- **En kjøring som avsluttet umiddelbart med feil** — åpne **Vis**. En feil ved oppstart av backenden vises her som en prosessfeil. «Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her.» betyr at serverens maskin ikke har en OS-sandkasse, og at du ikke er eieren; se [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/#agentkjøringen-min-ble-avvist-med-denne-serveren-har-ingen-sandkasse).
+- **En kjøring som står fast på «Running…»** — stopp den, og sjekk deretter agentens **Stillhetstidsavbrudd (minutter)** i **Innstillinger**-fanen. Et tidsavbrudd som ikke er angitt, bruker standarden for modusen.
 - **En fullført kjøring uten nyttige data** — statusen i kjøreloggen forblir `completed` for en kjøring som avsluttet uten leveransen den erklærte; det ærlige signalet er sammendragsteksten, ikke merkelappen.
 
 Logger-fanen viser ingen kostnad. For forbruk bruker du tabellen per agent i **Observabilitet → Innsikt**.
@@ -67,11 +67,11 @@ To ting det er verdt å vite når en endring «fungerer i tester, men ikke i app
 - **Personvern** — om rå diff-innhold kan videresendes til agentens modell, og om krasjrapporter sendes.
 
 :::caution[Denne delen rapporterer om verten, og kontrollene er klientside]
-Deteksjon og håndheving stemmer nå overens: der detektoren rapporterer en innebygd backend, er agentkjøringer på den verten faktisk pakket inn i den. Men detektoren er det eneste levende i denne delen. Hovedbryteren og backend-velgeren er innstillinger som lagres på enheten din, og serveren leser ingen av dem — serverens egen bryter er `--sandbox` (`on` som standard, `off` for å velge det bort).
+Deteksjon og håndheving stemmer overens: der detektoren rapporterer en innebygd backend, er agentkjøringer på den verten faktisk pakket inn i den. Men detektoren er det eneste levende i denne delen. Hovedbryteren og backend-velgeren er innstillinger som lagres på enheten din, og serveren leser ingen av dem — serverens egen bryter er `--sandbox` (`on` som standard, `off` for å velge det bort).
 
-Så en advarsel her er verdt å handle på, men den er vanligvis ikke grunnen til at en agent feiler. For å bekrefte hvilken tilstand serveren er i, leser du oppstartsloggen: den skriver ut `agent sandbox ON` med backend-merknaden, `no OS-native agent sandbox on this host` med et installasjonstips, eller `agent sandbox DISABLED by --sandbox off`. `GET /healthz` inneholder ingen sandkasse-felt.
+Så en advarsel her er verdt å handle på. På en vert uten backend er den nettopp grunnen til at noen andre enn serverens eier ikke kan kjøre agenter i det hele tatt. For å bekrefte hvilken tilstand serveren er i, leser du oppstartsloggen: den skriver ut `agent sandbox ON` med backend-merknaden, `no OS-native agent sandbox on this host` med et installasjonstips, eller `agent sandbox DISABLED by --sandbox off`, og eksponeringslinjen har `sandbox=native`, `sandbox=unavailable` eller `sandbox=off`. `GET /healthz` inneholder ingen sandkasse-felt.
 
-Der det ikke finnes noen backend — alltid på Windows, og på Linux eller WSL2 uten `bwrap` og `socat` — er kjøringer **ikke** sandkasset, og det som avgrenser dem, er samtalens egen checkout, kodeverttokenet som bare kan lese, og push-gatewayen, tillatelsesreglene for handlinger, sanering av miljøet og verktøyflaten modusen tillater.
+Der det ikke finnes noen backend (alltid på Windows, og på Linux eller WSL2 uten `bwrap` og `socat`), starter bare kjøringer serverens eier er ansvarlig for, og alle andres avvises. Kjøringene som starter der, og alle kjøringer under `--sandbox off`, er **ikke** sandkasset, og det som avgrenser dem, er samtalens egen checkout, kodeverttokenet som bare kan lese, og push-gatewayen, tillatelsesreglene for handlinger, sanering av miljøet og verktøyflaten modusen tillater.
 :::
 
 ## Vanlige feil

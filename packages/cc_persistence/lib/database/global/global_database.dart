@@ -1,12 +1,13 @@
 /// @docImport 'package:cc_persistence/database/workspace/workspace_database.dart';
 library;
 
-import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_persistence/database/daos/environment_lease_dao.dart';
 import 'package:cc_persistence/database/daos/fleet_dao.dart';
 import 'package:cc_persistence/database/daos/managed_action_policy_dao.dart';
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_persistence/database/daos/rss_dao.dart';
+import 'package:cc_persistence/database/daos/server_audit_dao.dart';
 import 'package:cc_persistence/database/daos/server_setting_dao.dart';
 import 'package:cc_persistence/database/daos/sso_connection_dao.dart';
 import 'package:cc_persistence/database/daos/user_dao.dart';
@@ -20,6 +21,7 @@ import 'package:cc_persistence/database/tables/managed_action_policies_table.dar
 import 'package:cc_persistence/database/tables/paired_devices.dart';
 import 'package:cc_persistence/database/tables/rss_articles.dart';
 import 'package:cc_persistence/database/tables/rss_feeds.dart';
+import 'package:cc_persistence/database/tables/server_audit_table.dart';
 import 'package:cc_persistence/database/tables/server_meta_table.dart';
 import 'package:cc_persistence/database/tables/server_settings_table.dart';
 import 'package:cc_persistence/database/tables/sso_connections_table.dart';
@@ -37,8 +39,8 @@ part 'global_database.g.dart';
 /// Tables here must be server-wide: workspace registry; users / preferences /
 /// paired devices; per-user RSS; fleet workers/jobs/placement (payloads carry
 /// ids, never workspace content); workspace_routes + server_meta; environment
-/// port leases (ports are host-wide; rows carry ids only). Boot opens only this
-/// file.
+/// port leases (ports are host-wide; rows carry ids only); the server-scope
+/// audit trail (calls no workspace owns). Boot opens only this file.
 @DriftDatabase(
   tables: [
     WorkspacesTable,
@@ -56,6 +58,7 @@ part 'global_database.g.dart';
     SsoConnectionsTable,
     ManagedActionPoliciesTable,
     EnvironmentSlotLeasesTable,
+    ServerAuditTable,
   ],
   daos: [
     WorkspaceRegistryDao,
@@ -69,6 +72,7 @@ part 'global_database.g.dart';
     SsoConnectionDao,
     ManagedActionPolicyDao,
     EnvironmentLeaseDao,
+    ServerAuditDao,
   ],
 )
 class GlobalDatabase extends _$GlobalDatabase {
@@ -89,10 +93,14 @@ class GlobalDatabase extends _$GlobalDatabase {
   final void Function(String tag, String message)? onError;
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 12;
 
   /// The `server_meta` key holding this install's uuid.
   static const installIdKey = 'install_id';
+
+  /// The `server_meta` key holding the server owner's user id: the operator
+  /// recorded when the server first booted, never derived again.
+  static const serverOwnerKey = 'server_owner_user_id';
 
   /// Writes a consistent, defragmented snapshot of this database to [path]
   /// using `VACUUM INTO`. Safe on a live WAL database (it takes a read
@@ -107,21 +115,8 @@ class GlobalDatabase extends _$GlobalDatabase {
   /// fresh file never replays this chain. Append a [MigrationStep] here (and
   /// bump [schemaVersion]) for every schema change from now on.
   List<MigrationStep> get _migrationSteps => <MigrationStep>[
-    // v2: `users.onboarding_finished_at` — first-run setup moved off the
-    // device-local/synced-preference lane onto the identity itself.
-    //
-    // Deliberately NOT backfilled from the old `user_preferences` row. That
-    // row is exactly what could not be trusted: the preference promotion pass
-    // seeds the server from a device's local store, so an account could carry
-    // `onboarding_finished = true` purely because some machine it was first
-    // opened on had onboarded a *different* install. Starting at null costs a
-    // real returning operator nothing — the gate re-stamps the flag the moment
-    // it observes a complete setup — while anyone wrongly marked gets the
-    // first-run flow they were owed.
-    //
-    // The stale `user_preferences` row is left in place: nothing reads that
-    // key any more, and deleting a user's rows in a schema migration is a
-    // heavier promise than this change needs to make.
+    // v2: `users.onboarding_finished_at` — first-run setup lives on the
+    // identity itself. Starts null; the gate stamps it on a complete setup.
     MigrationStep(1, 2, (m) async {
       await m.addColumn(usersTable, usersTable.onboardingFinishedAt);
     }),
@@ -132,15 +127,10 @@ class GlobalDatabase extends _$GlobalDatabase {
     MigrationStep(2, 3, (m) async {
       await m.createTable(managedActionPoliciesTable);
     }),
-    // v4: per-workspace GitHub identity — inherit the install App, use a
-    // different App, or PAT-only. Typed columns because background polling
-    // reads them on the credential path. Private keys stay in secrets.json.
+    // v4: the workspace's own GitHub App id. Typed because background polling
+    // reads it on the credential path. Private keys stay in secrets.json. (Its
+    // companion mode column was replaced by `connect_mode` at v9.)
     MigrationStep(3, 4, (m) async {
-      await _addColumnIfMissing(
-        m,
-        workspacesTable,
-        workspacesTable.githubAuthMode,
-      );
       await _addColumnIfMissing(
         m,
         workspacesTable,
@@ -150,24 +140,7 @@ class GlobalDatabase extends _$GlobalDatabase {
     // v5: indexed public invite routes carry their private code hash only in
     // local storage. A pre-auth Noise hello transmits the route id, never the
     // stored SHA-256(code), because the latter is the handshake PSK.
-    MigrationStep(4, 5, (m) async {
-      await _createSecureInviteRoutes();
-      final existing = await customSelect(
-        "SELECT key_hash, workspace_id FROM workspace_routes WHERE kind = 'invite_code'",
-      ).get();
-      for (final row in existing) {
-        final hash = row.read<String>('key_hash');
-        await customStatement(
-          'INSERT OR REPLACE INTO invite_secure_routes '
-          '(route_id, code_hash, workspace_id) VALUES (?, ?, ?)',
-          [
-            InvitePairingProof.routeIdFromHash(hash),
-            hash,
-            row.read<String>('workspace_id'),
-          ],
-        );
-      }
-    }),
+    MigrationStep(4, 5, (m) => _createSecureInviteRoutes()),
     // v6: review publishing is opt-in. Existing installations must gain the
     // column before identity bootstrap reads their registered workspaces.
     MigrationStep(5, 6, (m) async {
@@ -188,17 +161,119 @@ class GlobalDatabase extends _$GlobalDatabase {
         await m.createTable(environmentSlotLeasesTable);
       }
     }),
-    // v8: GitHub is App-only. The personal-access-token workspace mode is
-    // gone; a workspace that used it follows the server's GitHub lane (its
-    // own App or Connect) and its members sign in once. The stored PATs
-    // themselves lived in secrets.json and are purged at boot.
-    MigrationStep(7, 8, (m) async {
-      await customStatement(
-        "UPDATE workspaces SET github_auth_mode = 'inherit' "
-        "WHERE github_auth_mode = 'pat'",
+    // v8 rewrote the GitHub-only mode column, which v9 drops.
+    MigrationStep(7, 8, (m) async {}),
+    // v9: one per-workspace Connect choice replaces the GitHub-only mode.
+    // Every workspace starts on the server's choice (`inherit`); the old
+    // column is dropped so a migrated file matches a fresh one.
+    MigrationStep(8, 9, (m) async {
+      await _addColumnIfMissing(
+        m,
+        workspacesTable,
+        workspacesTable.connectMode,
       );
+      await _addColumnIfMissing(m, workspacesTable, workspacesTable.connectUrl);
+      if (await _hasColumn('workspaces', 'github_auth_mode')) {
+        await customStatement(
+          'ALTER TABLE workspaces DROP COLUMN github_auth_mode',
+        );
+      }
+    }),
+    // v10: every handle is a username by the one rule (`Username`), which
+    // `User` now enforces on construction, so a stored handle that breaks it
+    // would make its row unreadable. No column changes; the existing unique
+    // index stays the backstop.
+    MigrationStep(9, 10, (m) => _conformHandles()),
+    // v11: the server-scope audit trail. Purely additive; a fresh database
+    // builds it in `onCreate`, and an upgraded one starts it empty.
+    MigrationStep(10, 11, (m) async {
+      if (!await _hasTable('server_audit')) {
+        await m.createTable(serverAuditTable);
+        await m.createIndex(idxServerAuditCreated);
+      }
+    }),
+    // v12: `users.email_verified`, so an address a person typed about
+    // themselves never matches an SSO login or a SCIM push. Every row starts
+    // unverified; the next SSO login or SCIM push vouches for it.
+    MigrationStep(11, 12, (m) async {
+      await _addColumnIfMissing(m, usersTable, usersTable.emailVerified);
     }),
   ];
+
+  /// Rewrites every stored handle to a valid, unique username.
+  ///
+  /// Two passes, oldest row first. A handle that is a valid username once
+  /// lowercased keeps that name unless an older row already has it (names
+  /// that differ only in case were the same name all along, so the oldest
+  /// row keeps it). Every other row gets the free-text normalisation of its
+  /// handle, moved to the next free name ([Username.candidates]) when
+  /// claimed. The rows that change move to a placeholder first, all in one
+  /// transaction, so no intermediate state can trip the unique index on
+  /// `handle` or survive a crash. Each rename is reported through [onWarn].
+  Future<void> _conformHandles() async {
+    final rows = [
+      for (final row in await customSelect(
+        'SELECT id, handle FROM users ORDER BY created_at, id',
+      ).get())
+        (id: row.read<String>('id'), handle: row.read<String>('handle')),
+    ];
+    final claimed = <String>{};
+    final names = <String, String>{};
+    for (final row in rows) {
+      final lowered = Username.normalizeInput(row.handle);
+      if (Username.isValid(lowered) && claimed.add(lowered)) {
+        names[row.id] = lowered;
+      }
+    }
+    for (final row in rows) {
+      if (names.containsKey(row.id)) {
+        continue;
+      }
+      final name = Username.candidates(
+        Username.fromFreeText(row.handle, fallback: 'member'),
+      ).firstWhere((c) => !claimed.contains(c.value)).value;
+      claimed.add(name);
+      names[row.id] = name;
+    }
+    final renames = <String, ({String from, String to})>{
+      for (final row in rows)
+        if (names[row.id] != row.handle)
+          row.id: (from: row.handle, to: names[row.id]!),
+    };
+    await transaction(() async {
+      for (final id in renames.keys) {
+        await customStatement('UPDATE users SET handle = ? WHERE id = ?', [
+          'migrating:$id',
+          id,
+        ]);
+      }
+      for (final MapEntry(key: id, value: rename) in renames.entries) {
+        await customStatement('UPDATE users SET handle = ? WHERE id = ?', [
+          rename.to,
+          id,
+        ]);
+      }
+    });
+    for (final MapEntry(key: id, value: rename) in renames.entries) {
+      onWarn?.call(
+        'GlobalDatabase',
+        'users: handle of $id changed from "${rename.from}" to "${rename.to}" '
+            '(not a valid or free username)',
+      );
+    }
+  }
+
+  /// Whether this file has a table named [table].
+  Future<bool> _hasTable(String table) async => (await customSelect(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+    variables: [Variable.withString(table)],
+  ).get()).isNotEmpty;
+
+  /// Whether [table] in this file has a column named [column].
+  Future<bool> _hasColumn(String table, String column) async {
+    final existing = await customSelect('PRAGMA table_info($table)').get();
+    return existing.any((row) => row.read<String>('name') == column);
+  }
 
   /// Adds [column] to [table] unless the file already has it.
   ///

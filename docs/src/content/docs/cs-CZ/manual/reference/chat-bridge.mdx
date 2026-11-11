@@ -2,7 +2,7 @@
 title: Chatový most
 description: Poskytovatelé, příkazy, přihlašovací údaje, schopnosti, operace RPC a úložiště chatového mostu.
 slug: cs-CZ/prirucka/referencni-prirucka/chatovy-most
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Poskytovatelé
@@ -150,7 +150,7 @@ Karta se otevře, když je zmínka přijata, před klonováním a před prvním 
 | Zmínka přijata              | `Working on it…`                                               |
 | Krok `repo`                 | `Cloning <repo>…`                                              |
 | Krok `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Krok `script`               | `Running the setup script for <repo>…`                         |
+| Krok `provisionTasks`       | `Running worktree tasks for <repo>…`                           |
 | Krok `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, ještě bez kroku | `Preparing the workspace…`                                 |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Existuje proto, že propojení se děje na _druhé_ straně: člen napíše jedn
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Přihlašovací údaje spojení     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Nedokončené vedené nastavení   | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Starší soubory Slacku          | `<dataDir>/<workspaceId>/slack_credentials.json` a `slack_app_setup.json`, přečtou se jednou a migrují na místě |
 
 Přihlašovací údaje leží vedle databáze pracovního prostoru, ne v ní: smazání pracovního prostoru vezme chatové tokeny s sebou a `workspace.export` nebo záloha kopíruje `workspace.db` — takže pracovní prostor předaný někomu jinému v sobě nenese živé tokeny bota. Zápisy jsou atomické (dočasný soubor a přejmenování) a práva se stáhnou jen na vlastníka.
 

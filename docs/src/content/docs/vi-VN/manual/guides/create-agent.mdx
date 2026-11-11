@@ -2,12 +2,12 @@
 title: Tạo và cấu hình một agent
 description: Thêm một agent vào không gian làm việc, gán cho nó bộ điều hợp, mô hình, kỹ năng và quyền hạn rồi xác nhận rằng nó chạy được.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tao-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Hướng dẫn này chỉ cho bạn cách thêm một agent vào không gian làm việc và cấu hình nó cho tới khi nó thực sự chạy được.
 
-Mỗi không gian làm việc được gieo tạo sẵn năm agent — một CEO cùng `qa`, `architect`, `engineer` và `librarian` — nên bạn thường đã có agent trước khi cấu hình bất kỳ agent nào. Những bước dưới đây áp dụng như nhau cho một agent được gieo tạo sẵn lẫn một agent mới.
+Mỗi không gian làm việc được gieo tạo sẵn sáu agent — một CEO cùng `qa`, `architect`, `engineer`, `librarian` và `content-synthesizer` — nên bạn thường đã có agent trước khi cấu hình bất kỳ agent nào. Những bước dưới đây áp dụng như nhau cho một agent được gieo tạo sẵn lẫn một agent mới.
 
 ## Trước khi bắt đầu
 
@@ -53,7 +53,7 @@ Danh sách thả xuống **Mô hình** do bộ điều hợp bạn đã chọn q
 
 **Kỹ năng** là bộ chọn dạng chip trên các gói kỹ năng đã cài trong không gian làm việc này. Nhấp một chip để bật/tắt nó; dấu tích đánh dấu những cái đã được chọn. Nếu không gian làm việc không có kỹ năng nào, trường này hiển thị “No skills available. Create skills in Settings → Skills first.”
 
-Bạn không chọn kỹ năng riêng của kho mã ở đây. Một kho mã mang theo chúng (trong `.agents/skills/`, `.claude/skills/` hoặc `.opencode/skills/`) sẽ tự động đóng góp chúng cho bất kỳ agent nào đang làm việc trong kho đó, và chúng được hoán đổi khi agent chuyển sang kho khác — xem [Kỹ năng theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills).
+Bạn không chọn kỹ năng riêng của kho mã ở đây. Một kho mã mang theo chúng (trong `.agents/skills/`, `.claude/skills/` hoặc `.opencode/skills/`) sẽ tự động đóng góp chúng cho bất kỳ agent nào đang làm việc trong kho đó, và chúng được hoán đổi khi agent chuyển sang kho khác — xem [Kỹ năng theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#kỹ-năng-theo-phạm-vi-kho-mã).
 
 ## Đặt tuyến báo cáo và persona
 
@@ -73,7 +73,7 @@ Agent không có công tắc quyền hạn riêng. Những gì nó được push
 Token GitHub của agent luôn chỉ đọc. Một lần push đi qua Control Center, nơi hỏi quy tắc **Push lên remote** trước khi chuyển tiếp. Xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/) để biết mỗi quy tắc tác động tới một lượt chạy thế nào.
 
 :::note[Quy tắc và sandbox của hệ điều hành là hai tầng tách biệt]
-Quy tắc quyết định agent được làm gì; sandbox của hệ điều hành giới hạn nơi các tiến trình của nó có thể đọc, ghi và kết nối. `cc_server` bọc các lượt chạy agent trong sandbox của máy chủ ở nơi có một sandbox như vậy — Windows không có backend gốc, còn Linux và WSL2 cần `bwrap` và `socat`. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết toàn bộ các ranh giới.
+Quy tắc quyết định agent được làm gì; sandbox của hệ điều hành giới hạn nơi các tiến trình của nó có thể đọc, ghi và kết nối. `cc_server` bọc các lượt chạy agent trong sandbox của máy chủ ở nơi có một sandbox như vậy — Windows không có backend gốc, còn Linux và WSL2 cần `bwrap` và `socat`. Ở nơi không có sandbox nào, chỉ các lượt chạy của chủ sở hữu máy chủ mới bắt đầu, trừ khi chủ sở hữu đã tắt sandbox cho tất cả mọi người. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/) để biết toàn bộ các ranh giới.
 :::
 
 ## Xác nhận nó chạy

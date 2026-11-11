@@ -3,7 +3,7 @@ title: Chạy máy chủ không giao diện
 description: Chạy tệp nhị phân không giao diện cc_server hoặc ảnh Docker của nó, ghép nối một máy khách với nó và cấu hình nó với toàn bộ bề mặt cờ CLI và biến môi trường.
 dateModified: 2026-11-08
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-khong-giao-dien
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Chạy `cc_server` trên một chiếc máy luôn bật, rồi kết nối tới nó từ máy tính,
@@ -166,8 +166,10 @@ Các cờ hữu ích: `--device` (mặc định `web-client`; id cũng chọn h�
 (mặc định là tên nền tảng cộng với hostname của máy này), `--host` (máy chủ để in
 trong URL, vì loopback không với tới được từ máy khác) và `--client-url`. Chạy lại
 `pair` sẽ xoay khóa của thiết bị đó và hủy các phiên đang hoạt động của nó. Việc
-ghép nối không bao giờ tạo không gian làm việc: phần hướng dẫn ban đầu của máy khách
-kết nối sẽ đặt tên và tạo không gian làm việc đầu tiên.
+ghép nối không bao giờ tạo không gian làm việc. Chỉ chủ sở hữu máy chủ mới tạo không
+gian làm việc: trên máy khách của chủ sở hữu, phần hướng dẫn ban đầu sẽ đặt tên và tạo
+không gian làm việc đầu tiên, còn những người khác chờ cho đến khi chủ sở hữu tạo một
+cái cho họ hoặc một quản trị viên không gian làm việc mời họ.
 
 Với `--client-url`, nó cũng in một mã QR quét được từ terminal để mở máy khách web
 với các trường đã điền sẵn:
@@ -185,8 +187,7 @@ payload khác (bộ mô tả kết nối đầy đủ của máy chủ kèm th�
 không thể thay thế cho nhau. Xem [Ghép nối thiết bị](/vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi/).
 :::
 
-Thông tin xác thực do `cc_server pair` tạo **không có thời hạn**; thông tin xác thực
-tạo trong ứng dụng luôn hết hạn sau 30 ngày. Hãy thu hồi thiết bị do CLI tạo từ
+Thông tin xác thực do `cc_server pair` tạo sẽ hết hạn sau 30 ngày, giống như thông tin xác thực tạo trong ứng dụng; hãy chạy `pair` lại cho cùng thiết bị để cấp một cái mới. Hãy thu hồi thiết bị do CLI tạo từ
 **Cài đặt → Bạn → Thiết bị của bạn** khi bạn không cần nữa.
 
 Khóa ghép nối xác thực bắt tay Noise bắt buộc; mỗi phiên dẫn xuất các khóa lưu lượng
@@ -234,6 +235,26 @@ khách đã ghép nối dùng đường hầm đã mã hóa thay vào đó.
 
 Máy chủ chạy cho tới khi nhận `SIGINT`/`SIGTERM`, rồi tắt một cách sạch sẽ.
 
+### Đọc các dòng khởi động
+
+Hai dòng cho bạn biết máy chủ này được thiết lập như thế nào. Dòng phơi bày (exposure), in
+ngay cạnh biểu ngữ sẵn sàng, bắt đầu bằng `cc_server exposure:` và liệt kê mức độ nó có
+thể được truy cập (`bind`, `tls`, `relay`, `tunnel`), việc có ghi nhận chủ sở hữu máy chủ
+hay không (`owner`), và cách các agent chạy trên máy này (`sandbox`):
+
+- `sandbox=native`: mọi lượt chạy agent đều được bọc trong sandbox của hệ điều hành.
+- `sandbox=off`: bạn đã khởi động máy chủ với `--sandbox off`, nên mọi agent của thành
+  viên đều chạy không bị giới hạn trên máy này.
+- `sandbox=unavailable`: máy không có backend sandbox (Windows, hoặc Linux không có
+  `bwrap` và `socat`), nên chỉ các lượt chạy agent mà chủ sở hữu máy chủ chịu trách nhiệm
+  mới được khởi động. Lượt chạy của những người khác bị từ chối với thông báo "Máy chủ này
+  không có sandbox, nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây."
+
+Một dòng sandbox trước đó trong nhật ký nói điều tương tự bằng lời và, khi thiếu một
+backend, nêu tên thứ cần cài đặt. Việc chạy agent của người khác mà không có sandbox là
+một lựa chọn mà chủ sở hữu máy chủ đưa ra một lần, cho tất cả mọi người, với `--sandbox off`.
+Xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/#kiểm-tra-xem-các-lượt-chạy-agent-của-bạn-có-được-sandbox-không).
+
 ## Bước 5: Kết nối một máy khách
 
 Trỏ một máy khách tới URL máy chủ và khóa ghép nối từ bước 3:
@@ -259,6 +280,8 @@ phiên đã mã hóa và đã xác thực như phần còn lại của máy khá
 từng yêu cầu, chuyển nó tới phần phụ trợ code-server cục bộ của mình, rồi mã hóa
 phản hồi trở lại máy khách. Các tệp vẫn thuộc quyền sở hữu của máy chủ.
 
+Trình soạn thảo chạy trên máy chủ với tư cách người dùng riêng của máy chủ, cùng terminal, tác vụ và tiện ích mở rộng của nó, nên chỉ [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) mới có thể mở nó. Một phiên thuộc về thiết bị và người đã mở nó. Nó mở với tính năng tin cậy workspace của VS Code được bật, nên VS Code sẽ hỏi trước khi tin cậy một thư mục, và với các tác vụ tự động tắt, nên các tác vụ của một kho mã không bao giờ tự khởi động khi mở. Những người khác vẫn dùng trình soạn thảo tích hợp sẵn và các chế độ xem tệp của ứng dụng; trình soạn thảo đầy đủ không được cung cấp cho họ.
+
 Hãy lưu trữ máy khách web qua HTTPS hoặc một origin loopback bảo mật để Service
 Worker có thể chạy. Các script dựng và phát hành web thông thường đã bao gồm các tài
 nguyên dùng chung. Nếu bạn tự dựng một gói, hãy đưa các tài nguyên đó vào sau khi
@@ -276,7 +299,6 @@ Lưu lượng của trình soạn thảo gốc thay vào đó dùng một mặt 
 theo năng lực. Đừng để lộ cổng báo cáo/lệnh riêng trên loopback của tiện ích trình
 soạn thảo do máy chủ khởi chạy qua một proxy công khai. Các yêu cầu HTTP công khai
 nhạy cảm bị từ chối; tài nguyên yêu cầu một phiên đã mã hóa và đã xác thực.
-
 
 ## Bước 6: Chọn cách người dùng đăng nhập
 
@@ -302,6 +324,8 @@ và [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/).
 chỉ công khai cho chúng. Đăng nhập qua ứng dụng riêng của máy chủ đưa trình duyệt quay về URL
 công khai của máy chủ, nên hãy đặt `--public-url` thành một địa chỉ mà trình duyệt của người
 dùng có thể truy cập.
+
+Đây là mặc định của máy chủ. Một quản trị viên không gian làm việc có thể đặt cho một không gian làm việc một lựa chọn khác trong **Cài đặt → Không gian làm việc → Tích hợp**. Với `CC_CONNECT_URL` đã đặt, một không gian làm việc vẫn có thể chuyển sang ứng dụng riêng của nó, nhưng không sang một Connect riêng; xem [Lựa chọn riêng của từng không gian làm việc](/vi-VN/so-tay/tham-chieu/connect/#lựa-chọn-riêng-của-từng-không-gian-làm-việc).
 
 Để lưu trữ Connect cho các máy chủ khác từ máy chủ này, hãy đặt `CC_SERVER_CONNECT_HOST=on`; xem
 [Chạy máy chủ Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect/#gắn-connect-bên-trong-cc_server).
@@ -351,7 +375,7 @@ gian làm việc của bên gọi — chứ không phải bởi việc giữ m�
 
 Hai điều cần biết trước khi bạn để lộ cổng ra ngoài loopback (chỉ TLS thì không cung cấp mã hóa đầu-cuối cho máy khách đã ghép nối và không cấp quyền cho tài nguyên):
 
-- **MCP đóng an toàn khi ở ngoài máy chủ.** Một bề mặt MCP không token chỉ trả lời loopback. Việc bind `any` không mở rộng điều đó — một yêu cầu từ ngoài máy chủ bị từ chối với thông báo "MCP requires a bearer token to answer non-loopback clients" cho tới khi bạn cấu hình một token (`mcp.setToken`, hoặc **Cài đặt → Máy chủ → Máy chủ MCP**).
+- **MCP luôn cần token của nó.** Máy chủ tạo token MCP ở lần khởi động đầu tiên, và mọi yêu cầu, kể cả từ loopback, đều phải gửi nó dưới dạng `Authorization: Bearer <token>`. Không thể tắt điều này; chủ sở hữu máy chủ đọc và xoay token trong **Cài đặt → Máy chủ → Máy chủ MCP**. Các yêu cầu từ một trang web, tới một `Host` không rõ, hoặc một `POST` không phải JSON bị từ chối trước khi token được kiểm tra. Xem [Dùng máy chủ MCP](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/).
 - **`GET /healthz` không yêu cầu xác thực theo thiết kế**, có CORS ký tự đại diện và công bố id, tên, dấu vân tay danh tính và phiên bản build của máy chủ. Các máy khách cần dấu vân tay để ghim máy chủ, nên đây là chủ ý — nhưng điều đó cũng có nghĩa là bất kỳ `cc_server` nào với tới được cũng tiết lộ chừng đó cho bất kỳ ai hỏi.
 
 ## Hướng dẫn liên quan

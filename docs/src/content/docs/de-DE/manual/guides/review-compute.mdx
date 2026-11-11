@@ -2,7 +2,7 @@
 title: Review-Compute (Kohorten, Achsen und deterministische Diffs)
 description: Was der Durchgang von Review-Compute auf dem Server erzeugt — Kohorten, Diffs zum API-Vertrag und visuelle Diffs, Gates je Achse — und wie das in den Tab Review eingeht.
 slug: de-DE/handbuch/anleitungen/review-compute
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Der Tab **Review** eines PR ist der Live-Fortschritt der Review-Pipeline, solange
@@ -15,8 +15,7 @@ Hinter diesem Tab baut `cc_server` Kohorten aus Dateien, führt die
 deterministischen Achsen aus und liefert sie über die RPC-Operationen
 `review_studio.*` (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`,
 `dependencyDiffs`, `setContractDecision`, `approveVisual`, `compute` und ihre
-`watch*`-Zwillinge). Ein gespeichertes Layout, das noch `pr.reviewStudio`
-heißt, öffnet denselben Tab **Review**.
+`watch*`-Zwillinge).
 
 Auf dem Tab **Review**:
 
@@ -86,6 +85,14 @@ rendert der Compute-Durchgang die geänderten Komponenten davor und danach über
 einen headless Golden-Lauf mit `flutter test` in den Worktrees von Base und
 Head des PR und vergleicht dann die Pixel.
 
+Diese Tests sind der eigene Code des Pull Requests, also laufen sie wie der
+Werkzeugprozess eines Agenten: innerhalb der Sandbox, wenn der Server Agenten in
+einer Sandbox ausführt, ohne Einschränkung, wenn der Serverinhaber die Sandbox
+ausgeschaltet hat, und ohne Sandbox nur für eine Anfrage, für die der
+Serverinhaber einsteht. Für alle anderen meldet die Achse **unavailable** mit
+dem Grund „no sandbox on this server, and only its owner may run a PR's tests
+unsandboxed“.
+
 :::note[Dafür braucht der Server-Host ein Flutter SDK]
 Der Server in reinem Dart kann Flutter-Widgets nicht im Prozess zeichnen,
 deshalb startet er `flutter test` als eigenen Prozess. Das SDK muss auf der
@@ -97,9 +104,9 @@ nie.
 
 Snapshots mit **changed** oder **removed** halten das visuelle Gate, bis sie
 genehmigt sind. **unchanged**, **added** und **approved** heben es auf. Die
-Nichtverfügbarkeit hat einen von vier Gründen: „no Flutter SDK on host“, „no
-Widgetbook app in repo“, „no golden-testable use-cases“ oder „golden harness
-error“.
+Nichtverfügbarkeit hat einen von fünf Gründen: „no Flutter SDK on host“, „no
+Widgetbook app in repo“, „no golden-testable use-cases“, „golden harness
+error“ oder „no sandbox for a request the server owner is not accountable for“.
 
 Eine beabsichtigte Änderung genehmigst du mit `review_studio.approveVisual`.
 

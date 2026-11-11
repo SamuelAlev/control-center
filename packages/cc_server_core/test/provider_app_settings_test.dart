@@ -65,6 +65,19 @@ void main() {
     expect(credentials!.clientSecret, 'one');
   });
 
+  test('a field cleared in Settings stays cleared while the environment still '
+      'has it', () async {
+    const env = {
+      'GOOGLE_OAUTH_CLIENT_ID': 'one.apps.googleusercontent',
+      'GOOGLE_OAUTH_CLIENT_SECRET': 'one',
+    };
+    await apps.loadAndApply(env: env);
+    await apps.save(ProviderApp.google, clientId: '', clientSecret: '');
+    await apps.loadAndApply(env: env);
+    expect(await apps.oauthCredentials(ProviderApp.google), isNull);
+    expect((await apps.status(ProviderApp.google)).state, OwnAppState.none);
+  });
+
   test('clearing both Google fields returns the lane to none', () async {
     await apps.save(ProviderApp.google, clientId: 'id', clientSecret: 'shh');
     await apps.save(ProviderApp.google, clientId: '', clientSecret: '');

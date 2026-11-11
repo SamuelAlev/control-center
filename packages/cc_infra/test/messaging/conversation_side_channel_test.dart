@@ -2,10 +2,13 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
+import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 import 'package:cc_infra/src/messaging/conversation_side_channel_service.dart';
 import 'package:test/test.dart';
@@ -126,7 +129,11 @@ void main() {
     final factory = _Factory()..reply = 'the aside';
     final service = ConversationSideChannelService(
       repo: messaging,
-      runner: AdapterOneShotRunner(credentials: _Creds(), factory: factory),
+      runner: AdapterOneShotRunner(
+        confinement: _offByOwner,
+        credentials: _Creds(),
+        factory: factory,
+      ),
       synthesizer: ContentSynthesizerResolver(agents),
       sideChannelMessages:
           ({
@@ -138,6 +145,7 @@ void main() {
     );
     final result = await service.aside(
       workspaceId: 'ws',
+      requestedByUserId: 'olga',
       spaceId: 's',
       conversationId: 'c',
       question: 'where are we?',
@@ -151,11 +159,16 @@ void main() {
     final factory = _Factory()..reply = 'never';
     final service = ConversationSideChannelService(
       repo: _ScanMessaging(),
-      runner: AdapterOneShotRunner(credentials: _Creds(), factory: factory),
+      runner: AdapterOneShotRunner(
+        confinement: _offByOwner,
+        credentials: _Creds(),
+        factory: factory,
+      ),
       synthesizer: ContentSynthesizerResolver(FakeAgentRoster()),
     );
     final result = await service.handoff(
       workspaceId: 'ws',
+      requestedByUserId: 'olga',
       spaceId: 's',
       conversationId: 'c',
     );
@@ -241,3 +254,8 @@ class _Provider extends LlmProviderPort {
   @override
   dynamic noSuchMethod(Invocation invocation) {}
 }
+
+/// These run on the in-process harness, which the posture does not gate.
+const _offByOwner = OneShotConfinement(
+  gate: HostExecutionGate(posture: HostExecutionPosture.offByOwner),
+);

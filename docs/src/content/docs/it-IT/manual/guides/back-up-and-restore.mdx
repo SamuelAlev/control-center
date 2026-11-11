@@ -2,7 +2,7 @@
 title: Backup e ripristino
 description: Scatta un'istantanea dell'installazione, sposta uno spazio di lavoro tra macchine, ripristina un solo spazio di lavoro o tutti quanti, e conserva copie altrove.
 slug: it-IT/manuale/guide/backup-e-ripristino
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Questa guida copre le cinque cose che si fanno davvero con i backup: crearne uno,
@@ -16,7 +16,8 @@ Tutto quello che c'è qui vive in **Impostazioni → Server → Backup e riprist
 
 - Un **client completo** — l'app desktop o web. Un telefono associato non può attivare nulla di tutto questo, per scelta progettuale.
 - Per creare, elencare, scaricare o eliminare un'**istantanea dell'installazione**: il **proprietario** dell'installazione.
-- Per le azioni su un singolo spazio di lavoro: **admin** di quello spazio di lavoro per esportarlo o per elencarne e scaricarne i backup pianificati, **proprietario** per importarlo o eliminarlo o per eliminare uno dei suoi backup.
+- Per le azioni su un singolo spazio di lavoro: **admin** di quello spazio di lavoro per esportarlo o per elencarne e scaricarne i backup pianificati, **proprietario** per eliminarlo o per eliminare uno dei suoi backup.
+- Per **ripristinare** uno spazio di lavoro, da un file caricato, un backup pianificato o un'istantanea: il [proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server), che deve anche essere proprietario di quello spazio di lavoro. Un ripristino fa adottare al server un file di database come proprio, quindi è una decisione del proprietario del server. Chiunque altro vede «Solo il proprietario del server può ripristinare i backup. Puoi comunque scaricarli.» al posto delle azioni di ripristino.
 - Per i download e gli upload: un client completo associato, su una connessione diretta o tramite relay. Entrambi i percorsi trasportano i byte del file attraverso lo stesso tunnel delle risorse autenticato e cifrato end-to-end; il relay non può leggerli.
 
 :::caution[Le istantanee dell'installazione sono manuali]
@@ -42,11 +43,13 @@ Entrambi gli artefatti sono **solo database**:
 - Un'**istantanea dell'installazione** è una directory con data e ora: `manifest.json`, `global.db` e un `<workspaceId>/workspace.db` per ogni spazio di lavoro.
 - Un'**esportazione dello spazio di lavoro** è quel singolo file `workspace.db`.
 
+Il database di uno spazio di lavoro è l'intero spazio di lavoro: le sue conversazioni, i log delle esecuzioni, l'indice del codice, i collegamenti dei repository, le definizioni degli ambienti e i membri. Contiene anche, in forma leggibile, i token dei webhook delle pipeline e i segreti dei webhook di sincronizzazione dei ticket. Conserva un backup o un'esportazione dello spazio di lavoro scaricati come conserveresti un segreto. Non contiene accessi ai provider, chiavi dei dispositivi né segreti degli utenti: quelli vivono nel database globale e nell'archivio segreti del server.
+
 Nessuno dei due porta con sé il resto della directory dei dati: `secrets.json` (chiavi di
 associazione, credenziali dei fornitori, SSO), i `blobs/` di uno spazio di lavoro (immagini
 incollate nei messaggi), `skills/`, `agents/`, `chat_credentials/`, l'audio delle riunioni
 registrate o le immagini dei rig. Una parte è usa e getta e una parte no — la
-[tabella completa è nel riferimento](/it-IT/manuale/riferimento/backup/#what-a-backup-does-not-contain),
+[tabella completa è nel riferimento](/it-IT/manuale/riferimento/backup/#cosa-non-contiene-un-backup),
 e coprirla è esattamente lo scopo della [sezione fuori dalla macchina](#copia-i-backup-fuori-dalla-macchina).
 
 ## Scatta un'istantanea dell'intera installazione
@@ -73,7 +76,7 @@ la cui copia non è riuscita — controlla il log del server.
 
 ## Pianifica i backup degli spazi di lavoro e la conservazione
 
-Apri **Impostazioni → Pipeline → Modelli di pipeline** per lo spazio di lavoro e cerca
+Apri **Impostazioni → Spazio di lavoro → Modelli di pipeline** per lo spazio di lavoro e cerca
 **Workspace backup**. La sua pianificazione attiva viene eseguita ogni
 domenica alle 03:00 UTC: **Back up workspace**, seguito da **Delete backups older than**
 (30 giorni per impostazione predefinita). Il secondo nodo viene eseguito solo dopo il
@@ -98,7 +101,7 @@ di cui non sei admin lo segnala nella sua riga invece di elencare i backup.
 
 Espandi una riga per vedere ogni backup, dal più recente:
 
-- **Ripristina** sostituisce il database attuale dello spazio di lavoro con questo backup. Esporta prima lo spazio di lavoro se potresti aver bisogno di annullare l'operazione. Richiede **proprietario**.
+- **Ripristina** sostituisce il database attuale dello spazio di lavoro con questo backup. Esporta prima lo spazio di lavoro se potresti aver bisogno di annullare l'operazione. Richiede il proprietario del server, che deve anche essere proprietario dello spazio di lavoro.
 - **Scarica** salva il file sulla macchina che stai usando. Il backup resta sul server.
 - **Copia percorso** copia la sua posizione sul server.
 - **Elimina** rimuove definitivamente questo backup, dopo che hai digitato il nome dello spazio di lavoro. Richiede **proprietario**.
@@ -112,7 +115,7 @@ elenco, contrassegnati con **Spazio di lavoro eliminato**, e può scaricarli o e
 lì. Nessun altro vede quelle righe.
 
 Non hanno **Ripristina**, perché non c'è uno spazio di lavoro in cui ripristinarli. Per
-recuperarne uno, scaricalo, crea uno spazio di lavoro e carica il file come descritto in
+recuperarne uno, scaricalo, crea uno spazio di lavoro (solo il proprietario del server può farlo) e carica il file come descritto in
 [Sposta uno spazio di lavoro su un'altra installazione](#sposta-uno-spazio-di-lavoro-su-unaltra-installazione).
 
 ## Elimina un'istantanea dell'installazione
@@ -152,9 +155,11 @@ un'operazione su file.
 2. Sul server **di destinazione**, crea (o scegli) lo spazio di lavoro che lo riceverà.
 3. Espandi quello spazio di lavoro e, sotto **Ripristina da questo dispositivo**, premi **Scegli un file e caricalo**. Scegli il `.db` che hai scaricato.
 
-Se entrambi i server sono la macchina su cui sei seduto, **Salva sul server** più
-**Importa** → **Scegli un file** fanno la stessa cosa senza il viaggio di andata e ritorno;
-i percorsi della finestra di importazione vengono risolti sull'host del server.
+Il passaggio 3 è un ripristino, quindi richiede il proprietario del server di destinazione, che deve anche essere proprietario di quello spazio di lavoro.
+
+Se entrambi i server sono la macchina su cui sei seduto, **Salva sul server** sull'origine,
+poi il percorso del file in **File di database dello spazio di lavoro** e **Importa** sulla destinazione,
+fanno la stessa cosa senza il viaggio di andata e ritorno; quel percorso viene risolto sull'host del server.
 
 :::caution[L'importazione sostituisce tutto]
 Importare sovrascrive tutto ciò che lo spazio di lavoro di destinazione contiene
@@ -170,11 +175,15 @@ utente del file appartengono all'installazione da cui proviene e non si risolver
 questa — i dati dello spazio di lavoro sono intatti, ma ricontrolla l'appartenenza dopo
 averlo adottato.
 
-I token dei bot di chat vivono accanto al database, non al suo interno, quindi uno spazio
-di lavoro che passi a qualcun altro non porta con sé credenziali attive. L'installazione
-che lo riceve ricollega le proprie.
+I token dei bot di chat e gli accessi ai provider vivono fuori dal database, quindi
+l'installazione che lo riceve ricollega i propri. Il file contiene però i token dei
+webhook delle pipeline e i segreti dei webhook di sincronizzazione dei ticket dello
+spazio di lavoro, quindi uno spazio di lavoro che passi a qualcun altro passa anche
+quelli. Ruotali dopo, se il destinatario non dovrebbe averli.
 
 ## Ripristina un solo spazio di lavoro da un'istantanea
+
+Devi essere il proprietario del server e proprietario dello spazio di lavoro.
 
 1. Sotto **Istantanee dell'installazione**, espandi l'istantanea che vuoi.
 2. Trova la riga dello spazio di lavoro e premi **Ripristina**.
@@ -186,8 +195,8 @@ possa trattare lo stesso file in modo diverso.
 
 Una riga può dire **Non è più su questo server**, con **Ripristina** disattivato:
 l'istantanea contiene uno spazio di lavoro che questa installazione non ha più. Riportalo
-indietro a mano — crea uno spazio di lavoro, poi sotto **Dati dello spazio di lavoro**
-importa al suo interno da `<snapshot path>/<old workspace id>/workspace.db`. L'istantanea
+indietro a mano — crea uno spazio di lavoro (solo il proprietario del server), poi sotto **Dati dello spazio di lavoro**
+inserisci `<snapshot path>/<old workspace id>/workspace.db` nel suo campo **File di database dello spazio di lavoro** e premi **Importa**. L'istantanea
 espansa mostra il suo **Percorso sul server** in un campo copiabile, e il titolo della riga
 è il vecchio id dello spazio di lavoro, quindi hai entrambe le metà di quel percorso davanti
 a te.
@@ -360,9 +369,11 @@ conservati.
 | Sintomo                                                                  | Causa e soluzione                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Il download o l'upload non riesce dopo un cambio di connessione | Riprova sulla connessione associata attiva. Sia la connessione diretta sia quella via relay supportano il trasferimento di file cifrato; nessuna espone un fallback HTTP in chiaro |
-| «Il server ha rifiutato»                                                 | Ruolo. Creare o elencare un'istantanea dell'installazione richiede l'operatore dell'installazione. Scaricare uno spazio di lavoro richiede admin, ripristinarne uno richiede proprietario, e uno zip con l'intera istantanea richiede l'operatore dell'installazione |
-| «Questo server non espone alcuna superficie di backup»                   | L'host non ha alcuna porta di backup cablata — un server demo. Le operazioni sono assenti invece che rifiutate               |
-| «Il file supera la dimensione accettata dal server»                      | Gli upload sono limitati a 8 GiB. Metti il file sull'host del server e usa invece **Importa** → **Scegli un file**            |
+| «Il server ha rifiutato. Scaricare uno spazio di lavoro richiede il ruolo admin dello spazio di lavoro. Ripristinarne uno richiede il proprietario del server, che deve anche essere proprietario di quello spazio di lavoro. Un'istantanea completa richiede il proprietario del server.» | Ruolo. Creare, elencare o scaricare un'istantanea dell'installazione richiede il proprietario del server. Scaricare uno spazio di lavoro richiede admin; ripristinarne uno richiede il proprietario del server, che deve anche essere proprietario dello spazio di lavoro |
+| «I trasferimenti di file non sono ancora configurati per questa connessione. Riconnettiti al server per scaricare o caricare un backup.» | Questa connessione al server non ha una corsia di trasferimento file, quindi **Scarica** e il caricamento sono disattivati. Riconnettiti al server, poi riprova |
+| «Solo il proprietario del server può ripristinare i backup. Puoi comunque scaricarli.» | Il ripristino sostituisce il database di uno spazio di lavoro sull'host del server, quindi solo il proprietario del server ripristina. Scarica il backup e chiediglielo |
+| «Questo server non espone alcuna superficie di backup.»                   | L'host non ha alcuna porta di backup cablata — un server demo. Le operazioni sono assenti invece che rifiutate               |
+| «Il file supera la dimensione accettata dal server.»                      | Gli upload sono limitati a 8 GiB. Metti il file sull'host del server e inserisci il suo percorso in **File di database dello spazio di lavoro**            |
 | Import refused: not a Control Center workspace database                  | Il file non ha alcuna riga `workspace_meta` — non è un'esportazione di spazio di lavoro, oppure è troncato. Non è stato sostituito nulla |
 | Un'istantanea è elencata come **Incompleta**                             | Il suo manifest manca o nomina file assenti. Creane una nuova; nel frattempo adotta da essa i singoli file degli spazi di lavoro |
 | Un'istantanea dice che alcuni spazi di lavoro non sono stati acquisiti   | Quegli spazi di lavoro non hanno mai ricevuto scritture, oppure la loro copia non è riuscita. Controlla il log del server     |

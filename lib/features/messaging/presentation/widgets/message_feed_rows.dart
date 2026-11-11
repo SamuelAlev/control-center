@@ -43,6 +43,7 @@ extension _FeedRowMethods on _SpaceMessageFeedState {
           kept.message == m.message &&
           kept.collapseHeader == m.collapseHeader &&
           listEquals(kept.inlineMessages, m.inlineMessages) &&
+          kept.canRetry == m.canRetry &&
           kept.highlighted == highlighted &&
           (kept.onOpenThread == null) == (openThread == null) &&
           (kept.onStartThread == null) == (startThread == null)) {
@@ -52,6 +53,7 @@ extension _FeedRowMethods on _SpaceMessageFeedState {
           message: m.message,
           collapseHeader: m.collapseHeader,
           inlineMessages: m.inlineMessages,
+          canRetry: m.canRetry,
           onStartThread: startThread == null
               ? null
               : () => widget.onStartThread!(m.message),
@@ -64,6 +66,7 @@ extension _FeedRowMethods on _SpaceMessageFeedState {
           message: m.message,
           collapseHeader: m.collapseHeader,
           inlineMessages: m.inlineMessages,
+          canRetry: m.canRetry,
           highlighted: highlighted,
           onOpenThread: openThread,
           onStartThread: startThread,
@@ -101,6 +104,7 @@ class _KeptFeedRow {
     required this.message,
     required this.collapseHeader,
     required this.inlineMessages,
+    required this.canRetry,
     required this.highlighted,
     required this.onOpenThread,
     required this.onStartThread,
@@ -110,6 +114,7 @@ class _KeptFeedRow {
   final Message message;
   final bool collapseHeader;
   final List<Message> inlineMessages;
+  final bool canRetry;
   final bool highlighted;
   final void Function(String threadId)? onOpenThread;
   final void Function(Message message)? onStartThread;

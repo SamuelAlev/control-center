@@ -1,12 +1,16 @@
 import 'dart:async';
 
+import 'package:cc_data/cc_data.dart' show IdentityMe;
+import 'package:cc_domain/cc_domain.dart' show UserDto;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/core/providers/server_switch_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/workspaces/presentation/screens/workspace_list_screen.dart';
@@ -49,9 +53,17 @@ Widget _wrap({
   String? activeId,
   Workspace? activeWorkspace,
   WorkspaceRepository? workspaceRepository,
+  FutureOr<IdentityMe> Function()? identity,
+  Future<void> Function()? returnToSignIn,
 }) {
   return ProviderScope(
     overrides: [
+      // Without an identity, the person may create (the operator's view).
+      if (identity == null)
+        canCreateWorkspacesProvider.overrideWithValue(true)
+      else
+        currentIdentityProvider.overrideWith((ref) => identity()),
+      returnToServerSignInProvider.overrideWithValue(returnToSignIn),
       if (workspaceRepository != null)
         workspaceRepositoryProvider.overrideWithValue(workspaceRepository),
       // The sidebar's workspace chip reads the cold-start display cache when
@@ -89,6 +101,19 @@ Widget _wrap({
   );
 }
 
+/// No workspaces, answered again to every listener: "Check again" re-reads
+/// the list, and a single-subscription stream would fail the second listen.
+Stream<List<Workspace>> _emptyOnEveryListen() =>
+    Stream.multi((listener) => listener.add(const <Workspace>[]));
+
+IdentityMe _member({bool canCreate = false}) => IdentityMe(
+  user: UserDto(id: 'u-1', handle: 'ada', displayName: 'Ada Lovelace'),
+  deviceId: 'dev-1',
+  isServerOwner: false,
+  memberships: const [],
+  canCreateWorkspaces: canCreate,
+);
+
 void main() {
   final testWorkspace = Workspace(
     id: 'ws1',
@@ -115,6 +140,98 @@ void main() {
 
     expect(find.text('No workspace'), findsOneWidget);
     expect(find.text('Add workspace'), findsOneWidget);
+
+    await tester.pumpWidget(Container());
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+
+  testWidgets('without the right to create, an empty list explains the '
+      'invite instead of offering a create button', (tester) async {
+    var reads = 0;
+    var signOuts = 0;
+    await tester.pumpWidget(
+      _wrap(
+        child: const WorkspaceListScreen(),
+        workspacesStream: _emptyOnEveryListen(),
+        identity: () {
+          reads++;
+          return _member();
+        },
+        returnToSignIn: () async => signOuts++,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('You are not in a workspace yet'), findsOneWidget);
+    expect(
+      find.textContaining('A workspace admin has to invite you'),
+      findsOneWidget,
+    );
+    expect(find.text('Signed in as Ada Lovelace'), findsOneWidget);
+    expect(find.text('Add workspace'), findsNothing);
+    expect(find.byType(CcSpinner), findsNothing);
+
+    final before = reads;
+    await tester.tap(find.text('Check again'));
+    await tester.pump();
+    await tester.pump();
+    expect(reads, before + 1);
+    // One read per press: nothing keeps polling afterwards.
+    await tester.pump(const Duration(seconds: 5));
+    expect(reads, before + 1);
+    expect(find.byType(CcSpinner), findsNothing);
+
+    await tester.tap(find.text('Sign out'));
+    await tester.pump();
+    expect(signOuts, 1);
+
+    await tester.pumpWidget(Container());
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+
+  testWidgets('the dead end turns into the create action once the right '
+      'arrives', (tester) async {
+    var canCreate = false;
+    await tester.pumpWidget(
+      _wrap(
+        child: const WorkspaceListScreen(),
+        workspacesStream: _emptyOnEveryListen(),
+        identity: () => _member(canCreate: canCreate),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    // No sign-in screen to return to here, so no sign-out button.
+    expect(find.text('Sign out'), findsNothing);
+
+    canCreate = true;
+    await tester.tap(find.text('Check again'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('You are not in a workspace yet'), findsNothing);
+    expect(find.text('Add workspace'), findsOneWidget);
+
+    await tester.pumpWidget(Container());
+    await tester.pump(const Duration(milliseconds: 50));
+  });
+
+  testWidgets('the page offers no add button without the right to create', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _wrap(
+        child: const WorkspaceListScreen(),
+        workspacesStream: Stream.value([testWorkspace, testWorkspace2]),
+        activeId: 'ws1',
+        identity: _member,
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Test Workspace'), findsAtLeastNWidgets(1));
+    expect(find.text('Add workspace'), findsNothing);
 
     await tester.pumpWidget(Container());
     await tester.pump(const Duration(milliseconds: 50));
@@ -178,6 +295,7 @@ void main() {
 
     expect(find.text('Test Workspace'), findsAtLeastNWidgets(1));
     expect(find.text('Second Workspace'), findsAtLeastNWidgets(1));
+    expect(find.text('Add workspace'), findsOneWidget);
 
     await tester.pumpWidget(Container());
     await tester.pump(const Duration(milliseconds: 50));

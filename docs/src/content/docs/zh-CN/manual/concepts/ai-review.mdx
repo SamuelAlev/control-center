@@ -2,7 +2,7 @@
 title: AI 审查
 description: 一个 pull request 如何变成经审查过的 pull request —— 审查空间、审查节点与同行共识、队列与轴、Ship/Hold/Block 判定，以及为什么发布始终是你要亲自执行的一步。
 slug: zh-CN/手册/概念/ai-审查
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## 一次审查的形态
@@ -169,8 +169,8 @@ Hold。
   将 Ship 保留为 `COMMENT`。
 - **发布到 GitHub** 按钮会以按下它的那个人的身份发布审查，使用其自己的 GitHub 登录：
   发布的把关权属于他们，因此审查也归他们名下。没有人在背后的发布属于自动化，自动化从不
-  批准：Ship 会以 `COMMENT` 发出，而在 Control Center Connect 上，发布内容会带上
-  `**Control Center** (for @login):` 前缀以标明归属。
+  批准：Ship 会以 `COMMENT` 发出，发现项中的 @ 提及会被失效处理，因此发布不会通知任何人。发布由机器人完成，但有一个例外：在共享的 Control Center Connect 应用上，如果 Connect 运营方没有将此安装列入名单，则改由负责人自己的登录发布，以其名义并加上
+  `**Control Center** (for @login):` 前缀以标明归属。拥有自己 GitHub 应用的服务器或工作区始终以机器人身份发布。通过 MCP 工具调用的智能体只能发布其自身空间的审查。
 
 发布会声明 `prPublish` 动作类别，因此护栏卡点会像对待任何变更类操作一样对它施加
 门禁 —— 它默认会弹出确认提示，并且在未连接任何审批人时以失败关闭的方式处理。

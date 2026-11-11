@@ -2,7 +2,7 @@
 title: Gebruikers provisioneren met SCIM
 description: Laat je IdP automatisch Control Center-accounts aanmaken, bijwerken en deprovisioneren.
 slug: nl-NL/handleiding/gidsen/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Gebruik deze gids als je de levenscyclus wilt beheersen — bij offboarding moet
@@ -34,8 +34,9 @@ Entra ID en andere) precies daarvoor gebruiken.
    - **Authenticatie**: `Authorization: Bearer <token>`
    - **Gebruikers-id**: `userName` (e-mail) of `externalId` — beide komen overeen
 4. Test met één gebruiker: push die vanuit de IdP en controleer of die
-   verschijnt (een SCIM-create zet de `externalId` van de provider vast op het
-   account, dezelfde vastzetting die een eerste SSO-aanmelding doet).
+   verschijnt (een SCIM-create legt de `externalId` van de provider vast op het
+   account, zodat latere SCIM-aanroepen het account vinden), en laat die persoon
+   daarna via SSO aanmelden voordat je het voor iedereen uitrolt.
 
 ## Wat deprovisionering doet
 
@@ -56,6 +57,7 @@ auto-member-beleid bij het aanmelden.
 
 ## Problemen oplossen
 
+- **Een geprovisioneerde persoon wordt geweigerd met "This account is already linked to a different SSO identity"** — bekende beperking: een account dat SCIM met een `externalId` heeft aangemaakt, blijft aan dat id gekoppeld, en de eerste SSO-aanmelding daarop wordt geweigerd. Totdat dit is opgelost, provisioneer je zonder `externalId`, of laat je JIT-provisioning het account bij de eerste aanmelding aanmaken en gebruik je SCIM voor deprovisionering.
 - **401 bij elke aanroep** — het token is gewijzigd; genereer een nieuw token en
   werk de IdP bij.
 - **Het endpoint is niet bereikbaar** — de tunnel ligt eruit, of de server is

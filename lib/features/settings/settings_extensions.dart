@@ -15,12 +15,32 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// set small — a slot per page is a registry, a slot per gap is a plugin
 /// framework nobody asked for.
 enum SettingsSlot {
-  /// Settings → Workspace → Profile & identity, after the built-in identity
-  /// cards (name, email, git author).
-  workspaceProfile,
+  /// Settings → You → Profile, under its Connected accounts heading: the
+  /// accounts a person connects for themself (code hosting sign-ins and
+  /// tokens, their ticketing sign-in, calendar accounts, their chat link and
+  /// the ticket drafts it sends them). Every one is stored against the
+  /// person, never the workspace; each card says in one line whether it
+  /// applies in every workspace on this server or only in the current one.
+  /// The page's own cards are the profile; every card under the heading is
+  /// contributed.
+  ///
+  /// Order bands match [workspaceIntegrations], so a provider sits at the
+  /// same height on both pages: 20 code hosting, 30 tickets, 40 calendar,
+  /// 50 chat.
+  userAccounts,
 
-  /// Settings → Workspace → General, after the built-in workspace cards.
-  workspaceGeneral,
+  /// Settings → Workspace → Integrations: what this workspace decides about
+  /// every provider it talks to (its Connect choice, its side of code
+  /// hosting, tickets, calendar, chat and GIFs), grouped by provider through
+  /// each contribution's `order`. The page has no built-in cards; everything
+  /// on it is contributed. A group whose personal half is on
+  /// [userAccounts] opens with one line naming the reader's own account
+  /// there, linking to it.
+  ///
+  /// Order bands, one per provider group, so a provider's cards stay
+  /// adjacent whichever feature owns them: 10 sign-in apps, 20 code hosting,
+  /// 30 tickets, 40 calendar, 50 chat, 60 GIFs.
+  workspaceIntegrations,
 
   /// Settings → Server → Single sign-on, after the SSO card: how this server
   /// signs people in to providers (Connect, then its own provider apps).
@@ -37,6 +57,7 @@ class SettingsSectionContribution {
     required this.slot,
     required this.builder,
     this.order = 0,
+    this.visible,
   });
 
   /// Stable `<feature>.<section>` identifier. Tests address contributions by
@@ -52,6 +73,24 @@ class SettingsSectionContribution {
 
   /// Builds the card.
   final WidgetBuilder builder;
+
+  /// Whether the card has anything to show right now. Null means always.
+  ///
+  /// The page stacks its cards with a gap between each pair, so a card that
+  /// builds to nothing still leaves its gap behind, doubling the space between
+  /// its neighbours. A card that is only sometimes relevant (a vendor the
+  /// workspace does not use, an admin-only form, a line that waits for its
+  /// first answer) declares that here and the page leaves it out, gap and
+  /// all. Deciding it needs a [WidgetRef] because the answer usually depends
+  /// on async server state (the reader's role, which providers are connected)
+  /// rather than on anything the page knows — which is also why it is a
+  /// predicate here and not a filter in `di/settings_registry.dart`, where the
+  /// contribution list is `const`.
+  ///
+  /// Taking `WidgetRef` keeps this contract-only: riverpod is the app's state
+  /// vocabulary, not settings UI, so declaring a card still pulls in no
+  /// screen.
+  final bool Function(WidgetRef ref)? visible;
 }
 
 /// A whole settings destination's body, owned by the feature behind it.

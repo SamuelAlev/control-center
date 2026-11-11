@@ -34,7 +34,6 @@ import 'package:cc_domain/core/domain/value_objects/memory_permission.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
-import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
@@ -48,11 +47,6 @@ import 'package:cc_domain/features/governance/domain/entities/org_goal.dart';
 import 'package:cc_domain/features/governance/domain/entities/work_product.dart';
 import 'package:cc_domain/features/governance/domain/value_objects/agent_presence.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/guard_decision.dart';
-import 'package:cc_domain/features/meetings/domain/entities/meeting.dart';
-import 'package:cc_domain/features/meetings/domain/entities/meeting_action_item.dart';
-import 'package:cc_domain/features/meetings/domain/entities/meeting_decision.dart';
-import 'package:cc_domain/features/meetings/domain/entities/meeting_segment.dart';
-import 'package:cc_domain/features/meetings/domain/entities/meeting_speaker_label.dart';
 import 'package:cc_domain/features/meetings/domain/entities/voice_profile.dart';
 import 'package:cc_domain/features/memory/domain/entities/memory_domain.dart';
 import 'package:cc_domain/features/memory/domain/value_objects/memory_type.dart';
@@ -583,7 +577,6 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   'estimated_cost_cents': l.cost.estimatedCostCents,
   'cost_micros': l.cost.costMicros,
   'cost_basis': l.cost.costBasis.name,
-  'child_cost_cents': l.childCostCents,
   'child_cost_micros': l.childCostMicros,
   'agent_role': l.role.name,
   // Null means unknown, so the key travels only when a level was recorded.
@@ -596,7 +589,7 @@ Map<String, dynamic> agentRunLogToWire(AgentRunLog l) => {
   'last_output_at': ?l.lastOutputAt?.toIso8601String(),
   'continuation_summary': ?l.continuationSummary,
   // An empty profile is every stage unknown, so it is omitted rather than sent
-  // as `[]` — the same fact a legacy row records as absent.
+  // as `[]`.
   if (!l.latency.isEmpty) 'latency': l.latency.toJson(),
   // Only a verdict a verifier actually reached travels: `unverified` is
   // "nothing checked", which is what an absent key already says.
@@ -659,7 +652,8 @@ AgentRunLog agentRunLogFromWire(Map<String, dynamic> w) {
     adapter: w['adapter'] as String?,
     modelId: w['model_id'] as String?,
     pid: (w['pid'] as num?)?.toInt(),
-    logPath: w['log_path'] as String?,
+    // No `log_path`: only the server's own dispatch stamps where a run's log
+    // is, so the run viewer never opens a file a caller named.
     cost: runCostFromWire(w),
     liveness: w['liveness'] == null
         ? null
@@ -686,7 +680,6 @@ AgentRunLog agentRunLogFromWire(Map<String, dynamic> w) {
       attempt: (w['retry_attempt'] as num?)?.toInt() ?? 0,
     ),
     role: AgentRunRole.tryParse(w['agent_role'] as String?),
-    childCostCents: (w['child_cost_cents'] as num?)?.toInt() ?? 0,
     childCostMicros: (w['child_cost_micros'] as num?)?.toInt() ?? 0,
     effort: w['effort'] as String?,
     taskFamily: w['task_family'] as String?,
@@ -1195,6 +1188,7 @@ Map<String, dynamic> userToWire(User u, {bool includeOnboarding = false}) =>
       handle: u.handle,
       displayName: u.displayName,
       email: u.email,
+      emailVerified: u.emailVerified,
       avatarRef: u.avatarRef,
       gitAuthorName: u.gitAuthorName,
       gitAuthorEmail: u.gitAuthorEmail,
@@ -1420,7 +1414,7 @@ Map<String, dynamic> workspaceToWire(Workspace w) => {
   'secret_exclude_globs': w.secretExcludeGlobs,
   'review_concurrency': w.reviewConcurrency,
   'auto_publish_review': w.autoPublishReview,
-  'github_auth_mode': w.githubAuthMode.wireName,
+  'connect_mode': w.connectMode.wireName,
   'github_app_id': w.githubAppId,
   'deleted_at': ?w.deletedAt?.toIso8601String(),
   'created_at': w.createdAt.toIso8601String(),
@@ -1445,7 +1439,7 @@ Workspace workspaceFromWire(Map<String, dynamic> w) {
     autoPublishReview: w['auto_publish_review'] is bool
         ? w['auto_publish_review'] as bool
         : false,
-    githubAuthMode: GithubAuthMode.fromWire(w['github_auth_mode'] as String?),
+    connectMode: WorkspaceConnectMode.fromWire(w['connect_mode'] as String?),
     githubAppId: w['github_app_id'] as String? ?? '',
     deletedAt: w['deleted_at'] is String
         ? DateTime.parse(w['deleted_at'] as String)
@@ -1627,23 +1621,6 @@ Map<String, dynamic> isolatedRepoToWire(IsolatedRepo r) => {
   'created_at': r.createdAt.toIso8601String(),
 };
 
-/// Reconstructs an [IsolatedRepo] from an `IsolatedRepoDto` wire map (the
-/// inverse of [isolatedRepoToWire]), used by the `isolated_repo.upsert` op.
-IsolatedRepo isolatedRepoFromWire(Map<String, dynamic> w) => IsolatedRepo(
-  id: w['id'] as String,
-  workspaceId: w['workspace_id'] as String? ?? '',
-  spaceId: w['space_id'] as String? ?? '',
-  repoId: w['repo_id'] as String? ?? '',
-  path: w['path'] as String? ?? '',
-  branch: w['branch'] as String? ?? '',
-  backend: RepoIsolationBackend.fromName(w['backend'] as String?),
-  sourcePath: w['source_path'] as String? ?? '',
-  ticketId: w['ticket_id'] as String?,
-  createdAt: w['created_at'] is String
-      ? DateTime.parse(w['created_at'] as String)
-      : DateTime.fromMillisecondsSinceEpoch(0),
-);
-
 /// Maps a [VoiceProfile] to the `VoiceProfileDto` wire shape.
 Map<String, dynamic> voiceProfileToWire(VoiceProfile p) => {
   'id': p.id,
@@ -1673,154 +1650,6 @@ VoiceProfile voiceProfileFromWire(Map<String, dynamic> w) {
     updatedAt: parse(w['updated_at']),
   );
 }
-
-//
-// Meetings are workspace-scoped at the repository. Enums travel as `.name`,
-// timestamps as ISO-8601 and the speaker embedding as a raw `List<double>`.
-// The reads/user-facing edits travel over RPC; the recorder-only writes
-// (upsert/appendSegment/replace*) stay host-side, so only the wire SHAPES the
-// thin client parses back are mapped here (entity → wire).
-
-/// Maps a [Meeting] to its wire map (the inverse is [meetingFromWire]).
-Map<String, dynamic> meetingToWire(Meeting m) => {
-  'id': m.id,
-  'workspace_id': m.workspaceId,
-  'title': m.title,
-  'status': m.status.name,
-  'mode': m.mode.name,
-  'source_app': ?m.sourceApp,
-  'user_notes': m.userNotes,
-  'enhanced_notes': ?m.enhancedNotes,
-  'summary': ?m.summary,
-  'summary_instructions': ?m.summaryInstructions,
-  'audio_path': ?m.audioPath,
-  'title_is_custom': m.titleIsCustom,
-  'started_at': m.startedAt.toIso8601String(),
-  'ended_at': ?m.endedAt?.toIso8601String(),
-  'created_at': m.createdAt.toIso8601String(),
-  'updated_at': m.updatedAt.toIso8601String(),
-};
-
-/// Reconstructs a [Meeting] from its wire map (the inverse of [meetingToWire]).
-Meeting meetingFromWire(Map<String, dynamic> w) {
-  DateTime parse(Object? iso) => iso is String
-      ? DateTime.parse(iso)
-      : DateTime.fromMillisecondsSinceEpoch(0);
-  return Meeting(
-    id: w['id'] as String,
-    workspaceId: w['workspace_id'] as String? ?? '',
-    title: w['title'] as String? ?? '',
-    status: MeetingStatus.fromStorage(w['status'] as String?),
-    mode: MeetingMode.fromStorage(w['mode'] as String?),
-    sourceApp: w['source_app'] as String?,
-    userNotes: w['user_notes'] as String? ?? '',
-    enhancedNotes: w['enhanced_notes'] as String?,
-    summary: w['summary'] as String?,
-    summaryInstructions: w['summary_instructions'] as String?,
-    audioPath: w['audio_path'] as String?,
-    titleIsCustom: w['title_is_custom'] as bool? ?? false,
-    startedAt: parse(w['started_at']),
-    endedAt: w['ended_at'] is String
-        ? DateTime.parse(w['ended_at'] as String)
-        : null,
-    createdAt: parse(w['created_at']),
-    updatedAt: parse(w['updated_at']),
-  );
-}
-
-/// Maps a [MeetingSegment] to its wire map.
-Map<String, dynamic> meetingSegmentToWire(MeetingSegment s) => {
-  'id': s.id,
-  'meeting_id': s.meetingId,
-  'workspace_id': s.workspaceId,
-  'speaker': s.speaker.name,
-  'speaker_label': ?s.speakerLabel,
-  'speaker_name_override': ?s.speakerNameOverride,
-  'text': s.text,
-  'start_ms': s.startMs,
-  'end_ms': s.endMs,
-  'created_at': s.createdAt.toIso8601String(),
-};
-
-/// Maps a [MeetingSpeakerLabel] to its wire map (embedding as a `List<double>`).
-Map<String, dynamic> meetingSpeakerLabelToWire(MeetingSpeakerLabel s) => {
-  'id': s.id,
-  'meeting_id': s.meetingId,
-  'workspace_id': s.workspaceId,
-  'channel': s.channel.name,
-  'label': s.label,
-  'display_name': ?s.displayName,
-  'embedding': ?s.embedding,
-  'enrolled_profile_name': ?s.enrolledProfileName,
-  'created_at': s.createdAt.toIso8601String(),
-};
-
-/// Maps a [MeetingActionItem] to its wire map.
-Map<String, dynamic> meetingActionItemToWire(MeetingActionItem a) => {
-  'id': a.id,
-  'meeting_id': a.meetingId,
-  'workspace_id': a.workspaceId,
-  'content': a.content,
-  'owner': ?a.owner,
-  'done': a.done,
-  'ticket_id': ?a.ticketId,
-  'sort_order': a.sortOrder,
-  'is_manual': a.isManual,
-  'created_at': a.createdAt.toIso8601String(),
-};
-
-/// Reconstructs a [MeetingActionItem] from its wire map (the inverse of
-/// [meetingActionItemToWire]), used by the `meeting.addActionItem` op.
-MeetingActionItem meetingActionItemFromWire(Map<String, dynamic> w) =>
-    MeetingActionItem(
-      id: w['id'] as String,
-      meetingId: w['meeting_id'] as String? ?? '',
-      workspaceId: w['workspace_id'] as String? ?? '',
-      content: w['content'] as String? ?? '',
-      owner: w['owner'] as String?,
-      done: w['done'] as bool? ?? false,
-      ticketId: w['ticket_id'] as String?,
-      sortOrder: (w['sort_order'] as num?)?.toInt() ?? 0,
-      isManual: w['is_manual'] as bool? ?? false,
-      createdAt: w['created_at'] is String
-          ? DateTime.parse(w['created_at'] as String)
-          : DateTime.fromMillisecondsSinceEpoch(0),
-    );
-
-/// Maps a [MeetingDecision] to its wire map.
-Map<String, dynamic> meetingDecisionToWire(MeetingDecision d) => {
-  'id': d.id,
-  'meeting_id': d.meetingId,
-  'workspace_id': d.workspaceId,
-  'content': d.content,
-  'sort_order': d.sortOrder,
-  'is_manual': d.isManual,
-  'created_at': d.createdAt.toIso8601String(),
-};
-
-/// Reconstructs a [MeetingDecision] from its wire map (the inverse of
-/// [meetingDecisionToWire]), used by the `meeting.addDecision` op.
-MeetingDecision meetingDecisionFromWire(Map<String, dynamic> w) =>
-    MeetingDecision(
-      id: w['id'] as String,
-      meetingId: w['meeting_id'] as String? ?? '',
-      workspaceId: w['workspace_id'] as String? ?? '',
-      content: w['content'] as String? ?? '',
-      sortOrder: (w['sort_order'] as num?)?.toInt() ?? 0,
-      isManual: w['is_manual'] as bool? ?? false,
-      createdAt: w['created_at'] is String
-          ? DateTime.parse(w['created_at'] as String)
-          : DateTime.fromMillisecondsSinceEpoch(0),
-    );
-
-/// Maps a `(meetingId → MeetingActionItemStats)` map to its wire object: a JSON
-/// object keyed by meeting id whose values are `{total, done}`.
-Map<String, dynamic> meetingActionItemStatsToWire(
-  Map<String, MeetingActionItemStats> stats,
-) => {
-  for (final entry in stats.entries)
-    entry.key: {'total': entry.value.total, 'done': entry.value.done},
-};
 
 //
 // The calendar feature is workspace-scoped at the repository (the per-workspace
@@ -2707,43 +2536,56 @@ typedef CommitPreviewFetcher =
     });
 
 /// Fetches the open pull requests across a workspace's linked GitHub repos,
-/// already enriched with checks and grouped per repo. Runs SERVER-SIDE on the
-/// gh-authenticated GitHub client (the thin client holds no token); the
-/// composition root wires it as a closure. Null when the server has no token —
-/// `pr.listOpenForWorkspace` then reports `authenticated: false` so the client
-/// shows a "connect GitHub on the server" state instead of an empty list.
+/// already enriched with checks and grouped per repo. Runs SERVER-SIDE (the
+/// thin client holds no token) over only the repos the caller may see; the
+/// composition root wires it as a closure. Null when the host wires no
+/// fetcher: `pr.listOpenForWorkspace` then reports `authenticated: false`.
 typedef OpenPrListFetcher =
-    Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>> Function(
-      List<Repo> repos, {
-      required String workspaceId,
-    });
+    Future<
+      List<({Repo repo, List<PullRequest> prs, bool hasMore, int? totalCount})>
+    >
+    Function(List<Repo> repos, {required String workspaceId});
 
-/// GitHub account for [actingUserId] (`{login, avatar_url, name}`), or null.
+/// GitHub account for [actingUserId] in [workspaceId] (`{login, avatar_url,
+/// name}`), on the GitHub sign-in in effect for them there, or null.
 /// Who-am-I surfaces must name the session user (`RepoOpContext.userId`),
 /// never a client-supplied id or a process-wide "server user".
 typedef CurrentGitHubUserFetcher =
-    Future<Map<String, dynamic>?> Function(String actingUserId);
+    Future<Map<String, dynamic>?> Function(
+      String actingUserId, {
+      required String workspaceId,
+    });
 
-/// [actingUserId]'s GitHub teams (org → slugs, already lower-cased), or null
-/// when the lookup failed. Empty map = belongs to no teams. Drives
-/// team-requested rows in Needs your review.
+/// [actingUserId]'s GitHub teams in [workspaceId] (org → slugs, already
+/// lower-cased), or null when the lookup failed. Empty map = belongs to no
+/// teams. Drives team-requested rows in Needs your review.
 typedef ViewerGitHubTeamsFetcher =
-    Future<Map<String, Set<String>>?> Function(String actingUserId);
+    Future<Map<String, Set<String>>?> Function(
+      String actingUserId, {
+      required String workspaceId,
+    });
 
 /// Open PRs requesting [actingUserId]'s review across a workspace's linked
-/// [repos] (the dashboard's priority reviews), grouped back to their [Repo].
-/// Runs `review-requested:<their login>` on THEIR credential.
+/// GitHub [repos] (the dashboard's priority reviews), grouped back to their
+/// [Repo]. Runs `review-requested:<their login>` on THEIR credential for
+/// [workspaceId].
 typedef ReviewRequestedFetcher =
     Future<List<({Repo repo, PullRequest pr})>> Function(
       List<Repo> repos,
-      String actingUserId,
-    );
+      String actingUserId, {
+      required String workspaceId,
+    });
 
-/// The open PRs [actingUserId] has already reviewed across [repos], as
-/// `"<owner/repo>#<number>"` keys (the PR list's "reviewed by me" overlay and
-/// the inbox's "Waiting for author" section).
+/// The open PRs [actingUserId] has already reviewed across the GitHub
+/// [repos], as `"<owner/repo>#<number>"` keys (the PR list's "reviewed by
+/// me" overlay and the inbox's "Waiting for author" section), on their
+/// credential for [workspaceId].
 typedef ReviewedByFetcher =
-    Future<Set<String>> Function(List<Repo> repos, String actingUserId);
+    Future<Set<String>> Function(
+      List<Repo> repos,
+      String actingUserId, {
+      required String workspaceId,
+    });
 
 /// Runs the PR-queue free-text search (the raw [query] string, parsed
 /// server-side) across a workspace's linked [repos] on [userId]'s own GitHub
@@ -2962,7 +2804,12 @@ typedef RepoChangesGroupedFetcher =
         int aheadOfBase,
       })
     >
-    Function(String workspaceId, String repoId, {String? spaceId});
+    Function(
+      String workspaceId,
+      String repoId, {
+      String? spaceId,
+      String? viewerId,
+    });
 
 /// Stages or unstages files in a conversation's isolated worktree index (`git
 /// add` / `git reset HEAD`). Empty paths ⇒ all. Returns false when the space

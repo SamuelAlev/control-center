@@ -2,7 +2,7 @@
 title: Revue par IA
 description: Comment une pull request devient une pull request relue — espaces de revue, nœuds de revue et consensus entre pairs, cohortes et axes, le verdict Ship/Hold/Block, et pourquoi la publication reste une étape que vous déclenchez.
 slug: fr-FR/manuel/concepts/revue-par-ia
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## La forme d'une revue
@@ -218,9 +218,14 @@ fois. Quand vous appuyez sur **Publier sur GitHub** :
 - Le bouton **Publier sur GitHub** publie la revue au nom de la personne qui l'a
   pressé, avec sa propre connexion GitHub : la porte de mise en production lui
   appartient, la revue aussi. Une publication sans personne derrière relève de
-  l'automatisation, qui n'approuve jamais : Ship part alors en `COMMENT` et, sur
-  Control Center Connect, le message est attribué avec le préfixe
-  `**Control Center** (for @login):`.
+  l'automatisation, qui n'approuve jamais : Ship part alors en `COMMENT`, et les
+  @-mentions des constats sont rendues inertes, de sorte que la publication n'avertit
+  personne. Elle est publiée par le bot, sauf sur l’application partagée Control Center
+  Connect lorsque l’opérateur de Connect n’a pas listé cette installation : elle part
+  alors avec la connexion GitHub propre à la personne responsable, sous son nom, et le message est attribué avec le préfixe
+  `**Control Center** (for @login):`. Un serveur ou un espace de travail disposant de sa
+  propre application GitHub publie toujours en tant que bot. Un agent qui appelle l'outil
+  MCP ne peut publier que la revue de son propre espace.
 
 La publication déclare la classe d'action `prPublish`, de sorte que le point de
 passage des garde-fous la soumet au même verrou que toute action mutante : elle

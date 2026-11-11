@@ -2,7 +2,7 @@
 title: Deployment and clients
 description: How Control Center's thin-client architecture splits a headless server from its desktop, web and mobile clients.
 slug: en-GB/manual/concepts/deployment
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center is not one program. It is a **thin-client architecture**: a
@@ -120,6 +120,12 @@ which owns the files and the code-server backend. The browser needs HTTPS or a
 secure loopback context for Service Workers.
 Native clients use a capability-scoped loopback facade.
 
+Only the [server owner](/en-GB/manual/concepts/authorisation/#the-server-owner) can open the embedded code-server editor: it runs on the
+server as the server's own user. A session belongs to the device and person
+that opened it. It opens with VS Code's workspace trust on, so VS Code asks
+before trusting a folder, and with automatic tasks off. Everyone else keeps the
+built-in single-file editor and file views.
+
 ### Phone companion (cc_remote)
 
 The **Remote** app is a separate, lighter client — a Flutter web PWA at
@@ -187,8 +193,10 @@ Today, only a real `cc_worker` executes leased jobs.
 
 The two tiers do not sandbox alike. `cc_server` wraps the runs it executes
 itself in the host's OS sandbox where a backend exists — Seatbelt on macOS,
-bubblewrap on Linux and WSL2 — and falls back to the other boundaries on
-Windows or without `bwrap` and `socat`. **`cc_worker` does not sandbox at
+bubblewrap on Linux and WSL2. On Windows, or without `bwrap` and `socat`, it
+starts only the runs the server owner is accountable for and refuses everyone
+else's, unless the owner started it with `--sandbox off`, which runs every
+member's agents unconfined. **`cc_worker` does not sandbox at
 all.** It advertises a `sandbox` capability so the server can place jobs by
 platform, but nothing in the worker applies one: a leased job is spawned
 directly, bounded by the lease's environment and the worktree it was given.
@@ -231,8 +239,8 @@ The client checks the server's signed identity against its saved fingerprint
 pin. On first connection, verify that fingerprint through a trusted QR or
 other trusted channel: a signed first contact alone cannot authenticate who
 provided the key. If the identity changes, the client fails closed; re-pair
-through a trusted channel instead of ignoring the mismatch. Older clients and
-plaintext RPC cannot connect. TLS is still needed for browser origins,
+through a trusted channel instead of ignoring the mismatch. Plaintext RPC is
+not accepted. TLS is still needed for browser origins,
 bootstrap and public metadata; `--insecure` affects the outer server listener,
 not the required encrypted session.
 

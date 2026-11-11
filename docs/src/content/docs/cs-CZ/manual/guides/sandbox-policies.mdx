@@ -2,7 +2,7 @@
 title: Nastavte politiky sandboxu
 description: Co omezuje běh agenta, jak poznáš, jestli ho obaluje sandbox operačního systému, a jak pravidla akcí rozhodují, co agent smí pushnout nebo kam dosáhnout.
 slug: cs-CZ/prirucka/navody/politiky-sandboxu
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Jestli běh agenta běží v sandboxu, rozhoduje se na serveru při startu
@@ -23,7 +23,7 @@ podmíněná — zbylých pět drží na každém hostiteli.
 
 | Hranice                  | Co dělá                                                                                                                                                                            |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sandbox operačního systému | Seatbelt na macOS, bubblewrap na Linuxu a na WSL2. Obalí CLI Claude Code, adaptéry ACP a nástroj `bash` harnessu. **Chybí na Windows a na Linuxu bez `bwrap` a `socat`** |
+| Sandbox operačního systému | Seatbelt na macOS, bubblewrap na Linuxu a na WSL2. Obalí CLI Claude Code, adaptéry ACP a nástroj `bash` harnessu. **Chybí na Windows a na Linuxu bez `bwrap` a `socat`, kde startují jen běhy vlastníka serveru** |
 | Vlastní worktree         | Každá konverzace dostane copy-on-write checkout. Původní checkout se do běhu vloží jako cesta se zákazem zápisu a vynucuje to sandbox                                              |
 | Pověření od brokera      | Broker přihlašovacích údajů vystaví prostředí pro daný běh a při úklidu ho odebere. Token GitHub v něm umí číst, ale ne pushovat: push jde přes Control Center, které se nejdřív zeptá pravidla pro push |
 | Guardraily akcí          | Každý mutující nástroj deklaruje své třídy efektů a strážce je vyhodnotí, než se volání spustí. `prompt` bez připojeného schvalovatele se odmítne                                 |
@@ -41,10 +41,12 @@ Tři věci jsou slabší, než vypadají:
   find, search_files) běží uvnitř procesu serveru, takže je neomezuje žádný profil sandboxu.
   Sandboxovaným runnerem příkazů projde jen nástroj `bash`. Ty nástroje
   omezuje jejich vlastní omezení cest a k tomu guardraily akcí.
-- Na hostiteli bez backendu první řádek neplatí vůbec. ACP a
-  nástroj `bash` harnessu spadnou na očištění prostředí a politiku
-  příkazů; Claude Code dědí prostředí hostitele přes `NoSandboxAdapter`.
-  Server to řekne ve startovacím logu. Svůj si zkontroluj níže.
+- Na hostiteli bez backendu startují jen běhy, za které odpovídá vlastník serveru,
+  a pro ty první řádek neplatí vůbec. Ostatní běhy se odmítnou. Při `--sandbox off`
+  startují všechny běhy bez prvního řádku. Tak či tak ACP a nástroj `bash` harnessu
+  spadnou na očištění prostředí a politiku příkazů a Claude Code dědí prostředí
+  hostitele přes `NoSandboxAdapter`. Server řekne, v jakém případu jsi, ve
+  startovacím logu. Svůj si zkontroluj níže.
 
 ## Rozhodni, co agent smí pushnout
 
@@ -54,8 +56,8 @@ nich je pravidlo akce:
 | Pravidlo                              | Vestavěný výchozí | Co pokrývá                                                                   |
 | ------------------------------------- | ----------------- | ---------------------------------------------------------------------------- |
 | **Odeslat na remote**                 | Nejdřív se zeptat | Každý `git push` na GitHub, bez ohledu na adaptér                            |
-| **Otevřít pull request**              | Nejdřív se zeptat | `gh pr create` a nástroje pro pull requesty                                  |
-| **Zveřejnit kontrolu nebo sloučení**  | Nejdřív se zeptat | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                |
+| **Otevřít pull request**              | Nejdřív se zeptat | Nástroje pro pull requesty v Control Center. `gh pr create` v běhu nefunguje                                  |
+| **Aktualizovat nebo sloučit pull request** | Nejdřív se zeptat | Komentáře agenta k jeho pull requestu, úpravy jeho názvu nebo popisu a zveřejněné kontroly, přes nástroje Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` a `gh pr close` v běhu nefungují                |
 | **Zápis do externího trackeru**       | Nejdřív se zeptat | Zápisy ticketů přes nástroje Control Center a `gh issue`                     |
 | **Přístup k síti**                    | Povolit           | Jestli má sandbox vůbec síť, a webové nástroje harnessu                      |
 
@@ -112,44 +114,50 @@ jestli je `--sandbox` zapnutý. Zkontroluj je v tomhle pořadí.
    **Bez izolace**. Údaj **V platnosti** je preference tohohle zařízení, ne
    obal, který server skutečně používá.
 3. Přečti startovací log serveru. Vypíše přesně jeden ze tří řádků:
-   - `agent sandbox ON` plus poznámka k backendu — běhy jsou obalené
+   - `agent sandbox ON` plus poznámka k backendu: běhy jsou obalené
    - `no OS-native agent sandbox on this host` plus nápověda k instalaci, kde
-     nějaká je — běhy obalené nejsou
-   - `agent sandbox DISABLED by --sandbox off` — záměrné vypnutí
+     nějaká je: startují jen běhy, za které odpovídá vlastník serveru, bez obalu,
+     a ostatní se odmítnou
+   - `agent sandbox DISABLED by --sandbox off`: startují běhy všech členů, bez obalu
+4. Řádek o vystavení, který se vypíše při startu, říká totéž jedním slovem:
+   `sandbox=native`, `sandbox=off` nebo `sandbox=unavailable`.
 
 `GET /healthz` stav sandboxu nehlásí, takže kontrolou je startovací log.
 
-Sandbox vypneš schválně — existuje proto, že na některém hostiteli se profil
-chová špatně — tak, že server spustíš s `--sandbox off`, nebo nastavíš
-`CC_SERVER_SANDBOX=off`. Výchozí hodnota je `on` a `on` znamená „použij
-backend, když ho hostitel má“, nikdy „vyžaduj ho“.
+Bez sandboxu běžet rozhoduje jen vlastník serveru. Aby to platilo pro všechny,
+spusť server s `--sandbox off`, nebo nastav `CC_SERVER_SANDBOX=off`. Agenti všech
+členů pak na tom stroji běží bez omezení, takže jde o rozhodnutí o všech, kdo
+server používají, a učiní se jednou při startu. Výchozí hodnota je `on`: obalí
+každý běh, když hostitel backend má, a když ho nemá, startují jen běhy vlastníka.
 
 Nativní obal sandboxu ve dvou situacích nevznikne vůbec. Na **Windows** nativní
-sonda vždycky hlásí, že není k dispozici, a není co instalovat — odeslání
-agenta používá `none`. Backend `microvm` je zvlášť (interaktivní terminály a
-stanice) a pouští ho vlastní sonda podle jeho runtime. Na **Linuxu a WSL2**
-musí být na `PATH` jak `bwrap`, tak `socat`; bez nich sonda hlásí, že není
-k dispozici, a pojmenuje chybějící balíčky.
+sonda vždycky hlásí, že není k dispozici, a není co instalovat, takže startují
+jen běhy vlastníka serveru, pokud vlastník nepředá `--sandbox off`. Backend
+`microvm` je zvlášť (interaktivní terminály a stanice) a pouští ho vlastní sonda
+podle jeho runtime. Na **Linuxu a WSL2** musí být na `PATH` jak `bwrap`, tak
+`socat`; bez nich sonda hlásí, že není k dispozici, a pojmenuje chybějící
+balíčky, a startují jen běhy vlastníka.
 
 Na Linuxu a WSL2 s nainstalovaným bubblewrapem se globy tajných souborů
-standardní politiky nedají vynutit u souborů, které agent vytvoří až později.
-Takový nativní běh teď selže, místo aby pravidla potichu ignoroval. Kladná
-sonda při startu proto nezaručí, že se odeslání na Linuxu umí rozběhnout.
-`--sandbox off` je záměrné vypnutí bez omezení, ne náhradní bezpečnostní
-hranice.
+standardní politiky nedají vynutit u souborů, které agent vytvoří až později,
+takže každý nativní běh selže, místo aby pravidla potichu ignoroval, i běh
+vlastníka. Kladná sonda při startu proto nezaručí, že se odeslání na Linuxu umí
+rozběhnout: dnes Linux server spouští agenty buď s `--sandbox off`, nebo bez
+bubblewrapu jen pro vlastníka. `--sandbox off` je záměrné vypnutí bez omezení,
+ne náhradní bezpečnostní hranice.
 
 ## Zjisti, co režim už zakazuje
 
 Režim se ukládá na prostor a do vyhodnocovače guardrailů vstupuje jako vrstva
 **Předvolba režimu**. Tři ze čtyř režimů jsou jen pro čtení a režim jen pro
-čtení odmítne jedenáct tříd efektů rovnou:
+čtení odmítne dvanáct tříd efektů rovnou:
 
 | Režim               | Worktree         | Co předvolba odmítá                                                                                                                                                                                                                     |
 | ------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`)  | Zapisovatelný    | Nic — platí vestavěné výchozí hodnoty                                                                                                                                                                                                   |
-| **Plán**            | Jen pro čtení    | Smazat soubor, zápis mimo worktree, vytvořit commit, odeslat na remote, otevřít pull request, zveřejnit kontrolu nebo sloučení, zápis do externího trackeru, nainstalovat balíček, spustit proces, změnit strukturu pracovního prostoru, ovládat izolované prostředí (stanici) |
-| **Kontrola**        | Jen pro čtení    | Stejných jedenáct. Nejde vybrat — composer nabízí jen Agent, Plán a Orchestraci                                                                                                                                                        |
-| **Orchestrace**     | Jen pro čtení    | Stejných jedenáct                                                                                                                                                                                                                       |
+| **Plán**            | Jen pro čtení    | Smazat soubor, zápis mimo worktree, vytvořit commit, odeslat na remote, otevřít pull request, zveřejnit kontrolu nebo sloučení, zápis do externího trackeru, nainstalovat balíček, spustit proces, změnit strukturu pracovního prostoru, ovládat izolované prostředí (stanici), spouštět příkazy na hostiteli |
+| **Kontrola**        | Jen pro čtení    | Stejných dvanáct. Nejde vybrat — composer nabízí jen Agent, Plán a Orchestraci                                                                                                                                                        |
+| **Orchestrace**     | Jen pro čtení    | Stejných dvanáct                                                                                                                                                                                                                       |
 
 Přístup k síti a čtení tajemství režim jen pro čtení schválně _neodmítá_:
 výzkum je jeho smysl.
@@ -174,17 +182,20 @@ Přečti si, co git vypsal. `Control Center policy: …` znamená, že push zam�
 pravidlo nebo že **Nejdřív se zeptat** zůstalo bez odpovědi.
 `… is not linked to this workspace` znamená, že push míří do repozitáře, který
 není repozitářem worktree ani není propojený s pracovním prostorem.
-`Control Center has no GitHub credential that can push …` znamená, že GitHub
-App na tom repozitáři není nainstalovaná a žádný záložní údaj pushnout nemohl:
-nainstaluj aplikaci na ten repozitář nebo připoj GitHub.
+`Control Center has no GitHub credential that can push …` znamená, že se nepodařilo vygenerovat žádný push token: nainstaluj GitHub App na ten repozitář, nebo se přihlas k GitHubu.
+
+### Můj běh byl odmítnut hláškou „Tento server nemá sandbox“
+
+Běh ukáže **Agenti na tomto serveru potřebují sandbox** s hláškou „Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník. Vlastník může sandbox nainstalovat nebo sandboxing vypnout pro všechny.“ Hostitel serveru nemá sandbox operačního systému a osoba odpovědná za běh není vlastník serveru, takže nic nenastartovalo. U plánu, webhooku nebo jiné automatizace je odpovědná osoba ta, ke které je automatizace navázaná, ne ten, kdo se na ni zrovna dívá.
+
+Jen vlastník serveru to může změnit. Na Linuxu a WSL2 nainstaluje `bubblewrap` a `socat` a restartuje server (ale nejdřív si přečte poznámku o Linuxu výš). Na Windows není backend, který by se dal nainstalovat. Druhou volbou je restartovat server s `--sandbox off`, což spustí agenty všech členů na tom stroji bez omezení.
 
 ### Karta Sandboxing nehlásí nativní sandbox
 
-Pak běhy agenta na tom hostiteli neobaluje Seatbelt ani bubblewrap a zbývající
-hranice jsou to, co máš. Na Linuxu a na WSL2 nainstaluj oba chybějící
+Pak běhy agenta na tom hostiteli neobaluje Seatbelt ani bubblewrap: startují jen běhy vlastníka serveru a zbývající hranice jsou to, co mají. Na Linuxu a na WSL2 nainstaluj oba chybějící
 nástroje — `sudo apt-get install bubblewrap socat` — a restartuj server;
 startovací log by pak měl říct, že je sandbox zapnutý. Na Windows není nativní
-backend k instalaci, takže místo toho utáhni guardraily: viz
+backend k instalaci, takže místo toho utáhni guardraily pro běhy vlastníka: viz
 [Nastavte guardraily](/cs-CZ/prirucka/navody/nastaveni-guardrailu/).
 
 ### Agent se dostal k souboru mimo svůj worktree
@@ -197,8 +208,8 @@ sandboxu nevztahuje — jejich mez je vlastní omezení cest a k tomu guardraily
 Příkaz `bash` nebo CLI Claude Code se _obaluje_ tam, kde backend existuje, a
 tvoje registrované checkouty jsou uvnitř toho obalu v každém režimu se zákazem
 zápisu, včetně zápisů po rozřešení symlinku (na macOS se cesta dosažená přes
-`/tmp` nebo `/var/folders` rozřeší pod `/private` a oba zápisy se teď odmítají).
-Na hostiteli bez backendu nic z toho neplatí. V obou případech umí guardraily
+`/tmp` nebo `/var/folders` rozřeší pod `/private` a oba zápisy se odmítají).
+Při `--sandbox off` nebo u běhů vlastníka na hostiteli bez backendu nic z toho neplatí. V obou případech umí guardraily
 rovnou odmítnout **Zápis mimo worktree**.
 
 ## Související návody

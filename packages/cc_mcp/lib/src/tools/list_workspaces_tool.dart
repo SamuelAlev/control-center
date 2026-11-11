@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 
-/// List workspaces tool.
+/// Lists workspaces: every one for the server owner's own tooling, and only
+/// its own for an agent run (the dispatcher forces `workspace_id` from the
+/// run's grant).
 class ListWorkspacesTool extends McpTool {
   /// Creates a new [List workspaces tool].
   ListWorkspacesTool({required this._repository});
@@ -14,14 +16,24 @@ class ListWorkspacesTool extends McpTool {
   String get name => 'list_workspaces';
 
   @override
-  String get description => 'Lists all workspaces with their IDs and names.';
+  String get description =>
+      'Lists workspaces with their IDs and names. An agent sees only its own.';
 
   @override
-  Map<String, dynamic> get inputSchema => {'type': 'object', 'properties': {}};
+  Map<String, dynamic> get inputSchema => {
+    'type': 'object',
+    'properties': {
+      'workspace_id': {'type': 'string', 'description': 'Only this workspace.'},
+    },
+  };
 
   @override
   Future<CallResult> run(Map<String, dynamic> arguments) async {
-    final workspaces = await _repository.watchAll().first;
+    final only = arguments['workspace_id'];
+    final workspaces = [
+      for (final w in await _repository.watchAll().first)
+        if (only is! String || only.isEmpty || w.id == only) w,
+    ];
 
     final list = workspaces
         .map(

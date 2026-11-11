@@ -2,7 +2,7 @@
 title: Buat templat pipeline
 description: Susun templat alur kerja DAG di editor pipeline — tambahkan node, hubungkan, deklarasikan input, dan buat agar dapat dijalankan.
 slug: id-ID/panduan-pengguna/panduan-praktis/buat-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Templat pipeline disusun di pengaturan ruang kerja. Entri **Pipeline** di bilah
@@ -40,7 +40,7 @@ melepasnya, tanpa koneksi masuk.
 | **Bash script**                 | listen        | Menjalankan skrip shell dengan substitusi `{{state}}`; tidak ada agen yang dikirim             |
 | **Open conversation**           | listen        | Membuka satu space yang terlihat untuk eksekusi ini beserta checkout-nya; node agen bergabung ke ruangan ini |
 | **Clone PR branch**             | listen        | Menemukan branch head PR melalui `gh pr view` lalu mengkloningnya ke direktori eksekusi        |
-| **Post PR comment**             | listen        | Memposting temuan yang telah dikonsolidasikan ke PR sebagai komentar tinjauan GitHub           |
+| **Post PR comment**             | listen        | Memposting komentar tinjauan ke PR dari server: temuan, atau `message`           |
 | **Reviewer (prompt)**           | listen        | Mengirim agen peninjau spesialis; menangguhkan langkah sampai agen mengirimkan hasilnya        |
 | **Consolidate (join)**          | join          | Menunggu beberapa cabang hulu, lalu meminta agen mengonsolidasikan output mereka               |
 | **Custom prompt**               | listen        | Node generik berbasis prompt yang dirutekan melalui badan `promptAgent`                        |
@@ -137,6 +137,7 @@ keduanya tidak dapat dikonfigurasi:
   payload pemicu), `GH_TOKEN` dan `GITHUB_TOKEN` memegang token yang hanya dapat membaca repo itu,
   sehingga `gh` dan `git clone` terhadapnya berfungsi tanpa penyiapan. Jika tidak, tidak ada token
   GitHub sama sekali.
+- Skrip tidak dapat menulis ke GitHub: `gh pr comment`, `gh pr merge`, `gh pr create`, dan `git push` gagal dengan token itu. Untuk berkomentar, gunakan node **Post PR comment** (atur `extras.message` untuk memposting teks Anda sendiri, dengan placeholder `{{key}}`, alih-alih temuan yang sudah digabung). Push dan buka pull request dari node agen: `git push`-nya melewati gateway run dan membuka PR dengan alat `open_pull_request`. Penggabungan diserahkan kepada orang; tidak ada node yang menggabungkan.
 - Hanya admin ruang kerja yang dapat membuat atau mengedit pipeline dengan langkah bash.
 - Skrip dijalankan sebagai executable literal `bash`, sehingga `bash` harus ada di `PATH` host server.
 

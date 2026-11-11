@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:cc_natives/src/inference/cc_inference_bindings.dart';
 import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 import 'package:ffi/ffi.dart';
 import 'package:path/path.dart' as p;
 

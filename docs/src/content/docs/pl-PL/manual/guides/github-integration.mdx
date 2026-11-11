@@ -2,7 +2,7 @@
 title: Skonfiguruj integrację GitHub
 description: Zaloguj się do GitHuba, aby powierzchnia pull requestów, rejestracja repozytoriów i uruchomienia agentów działały.
 slug: pl-PL/podrecznik/poradniki/integracja-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Ten poradnik obejmuje części konfiguracji właściwe dla GitHuba. GitHub to jeden
@@ -30,7 +30,7 @@ a zalogowanie go to coś, co robi on sam.
 
 GitHub obsługuje wyłącznie logowanie: nie ma tokenu do wklejania.
 
-1. Przejdź do **Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu**
+1. Przejdź do **Ustawienia → Ty → Profil → Hosting kodu**
    (albo do pierwszego kroku konfiguracji)
 2. W wierszu **GitHub** kliknij **Zaloguj się do GitHub**
 3. Przeglądarka otwiera GitHuba. Zatwierdź aplikację
@@ -55,18 +55,30 @@ utworzył w Twoim imieniu.
 
 ## W czyim imieniu działa Twoje poświadczenie
 
-- **Wszystko, co robisz Ty** (otwieranie strony PR, publikowanie recenzji,
-  zatwierdzanie, scalanie), działa na **Twoim** logowaniu i na niczym innym.
-  Jeśli nie jesteś zalogowany, aplikacja to mówi i prosi o zalogowanie. Żadne
-  inne poświadczenie Cię nie zastępuje
-- **Praca, przy której nikt nie pisze** (uruchomienia agentów, pipeline'y,
-  odpytywanie PR-ów, odpowiedzi bota, klonowanie), dostaje token dla jednego
-  repozytorium, utworzony z GitHub App serwera albo przez Connect. Jest
-  ograniczony do tego, co może tam zrobić odpowiedzialny członek: ten, który
-  poprosił, a w przeciwnym razie właściciel obszaru roboczego. Członek, który nie
-  może wykonywać push, ogranicza token do odczytu
+Control Center stosuje podział GitHuba między działanie **jako osoba** a działanie **jako aplikacja**:
+
+| Co się dzieje                                                                | Na GitHubie widać jako                              |
+| ---------------------------------------------------------------------------- | --------------------------------------------------- |
+| Wszystko, co robisz sam: komentarz, recenzja, zatwierdzenie, scalenie, prośba o recenzentów | **Ty**. GitHub oznacza komentarz w rozmowie jako napisany w aplikacji Control Center; recenzja i jej komentarze w treści nie mają takiego oznaczenia |
+| Recenzja AI, odpowiedzi i komentarze agentów w rozmowach PR, etykiety, praca pipeline i bota | **Bot Control Center**. We współdzielonej aplikacji Connect recenzja należy do bota tylko dla instalacji, którą operator Connect umieścił na liście; w przeciwnym razie widnieje jako odpowiedzialna osoba |
+| Pull request, który agent otwiera dla Ciebie, jego edycje tytułu lub opisu tego pull requesta, jego push-e i jego commity      | **Ty**. Control Center jest wymieniane jako współautor, gdy uznanie współautorstwa jest włączone |
+| Praca, o którą nikt nie prosił (harmonogramy, webhooki)                      | **Bot Control Center**, także jako autor jego commitów. W Control Center Connect bot nigdy nie wykonuje push ani nie otwiera pull requesta |
+
+- **Wszystko, co robisz Ty** działa na **Twoim** logowaniu i na niczym innym. Jeśli nie jesteś zalogowany, aplikacja prosi o zalogowanie. Żadne inne poświadczenie Cię nie zastępuje
+- **Praca bota** dostaje token dla jednego repozytorium naraz, ograniczony do tego, co może tam zrobić odpowiedzialny członek: ten, który poprosił, a w przeciwnym razie właściciel obszaru roboczego. Członek, który nie może wykonywać push, ogranicza token do odczytu. Odpowiedzi bota działające w czyimś imieniu zaczynają się od **Control Center (for @login)**
+- **Agenci otwierają pull requesty przez Control Center**, nigdy ze swojego sandboxa, więc pull request należy do Ciebie, a reguły samego GitHuba nie pozwalają Ci go zatwierdzić. Control Center odrzuca też zatwierdzenie od osoby, która poprosiła agenta, i od autora pull requesta. W przypadku uruchomienia harmonogramowego lub webhookowego obejmuje to każdego administratora, który włączył jego wyzwalacz albo edytował pipeline, gdy był aktywny. Musi zrecenzować ktoś inny. Jeśli Control Center nie może potwierdzić, kto otworzył pull request albo które konto na forge jest Twoje, odmawia i prosi o ponowną próbę
+- **Agenci komentują także przez Control Center.** Token GitHub, który dostaje uruchomienie agenta, tylko czyta. Gdy agent komentuje pull request, nad którym pracuje, Control Center publikuje komentarz jako bot, zaczynając od **Control Center (for @login)**, jeśli ktoś zlecił uruchomienie. Agent może komentować tylko pull request w tym samym repozytorium (nie fork), którego ostatni commit wypchnął agent albo który jest bieżącym commitem gałęzi jego przestrzeni. @-wzmianki w komentarzu agenta nikogo nie powiadamiają. Agent może też zmienić tytuł lub opis własnego pull requesta, dopóki jest otwarty. Zmiana jest wykonywana w taki sam sposób, w jaki pull request został otwarty (jako Ty, gdy zleciłeś uruchomienie), a domyślnie wymaga najpierw zatwierdzenia. Opis pull requesta zachowuje swoje @-wzmianki, zarówno gdy agent go otwiera, jak i gdy go edytuje, więc osoby, które wymienia, zostają powiadomione
+- **Na Control Center Connect bot nigdy nie wykonuje push ani nie otwiera pull requestów.** Push, tworzenie gałęzi lub otwieranie pull requesta wymaga tam osoby, która o to poprosiła, i działa na jej logowaniu. Uruchomienie harmonogramowe lub webhookowe, które próbuje wykonać push, zatrzymuje się z komunikatem o tym. Aby uruchomienia bez nadzoru mogły wykonywać push, daj obszarowi roboczemu własną GitHub App w **Ustawieniach**
+- **Co może bot Connect.** We współdzielonej aplikacji Connect bot komentuje, etykietuje i reaguje. Publikuje recenzję (recenzję AI, komentarze do recenzji, prośby o recenzentów) tylko dla instalacji serwera, którą operator Connect umieścił na liście. W przeciwnym razie recenzja idzie na logowaniu odpowiedzialnej osoby i pojawia się pod jej nazwiskiem. Bot nigdy nie otwiera, nie edytuje, nie zamyka ani nie zmienia tytułu pull requesta, nie odrzuca recenzji i nie edytuje ani nie usuwa komentarza; wymaga to osoby, która o to poprosiła, na jej własnym logowaniu. Connect nie wiąże instalacji Twojej organizacji z jednym serwerem Control Center: każdy serwer, na którym członek mogący wykonywać push do repozytorium zalogował się przez Connect, może uzyskać token komentarzy bota dla tego repozytorium.
+- **Serwer lub obszar roboczy z własną GitHub App** zachowuje bota do wszystkiego powyżej, łącznie z recenzjami.
 - **Automatyzacja nigdy nie zatwierdza** pull requesta. Zatwierdzenie to akt
   człowieka
+
+Gdy łączysz repozytorium, Control Center sprawdza, czy Twoje konto je widzi, i ostrzega, gdy GitHub App nie jest zainstalowana w organizacji repozytorium albo nie obejmuje repozytorium, z linkiem do naprawy. Łączenie i rozłączanie wymaga administratora obszaru roboczego, a kopię repozytorium leżącą poza pamięcią obszaru roboczego może połączyć tylko właściciel serwera; zobacz [Dodaj repozytoria do obszaru roboczego](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/).
+
+Połączenie śledzi trwały identyfikator repozytorium na GitHubie, więc zmiana nazwy lub przeniesienie nie wymagają od Ciebie niczego. Jeśli ścieżka później wskazuje na inne repozytorium, Control Center przestaje wysyłać mu cokolwiek i pokazuje powiadomienie, dopóki administrator obszaru roboczego nie kliknie **Połącz ponownie**.
+
+Otwieranie kodu repozytorium (plików, różnic, wyszukiwania, terminala) wymaga zarówno jego uprawnienia w obszarze roboczym, jak i Twojego logowania do GitHuba, które może je odczytać. Administratorzy obszaru roboczego podlegają tej samej zasadzie; wyjątkiem jest tylko właściciel serwera.
 
 ## Co daje Ci ta integracja
 
@@ -76,7 +88,7 @@ utworzył w Twoim imieniu.
 | Uruchomienia kontroli    | Interfejs Checks API GitHuba                                                                                           |
 | Publikowanie recenzji    | Krok wymagający zatwierdzenia przez użytkownika, który publikuje Twoją recenzję w PR jako Ty                           |
 | Rejestracja repozytoriów | Kopia robocza jest przyjmowana, jeśli jej zdalne repozytorium `origin` wskazuje na github.com albo na gitlab.com / bitbucket.org |
-| Dostęp agentów do GitHuba | Token dla jednego repozytorium uruchomienia jako `GH_TOKEN` / `GITHUB_TOKEN`; push przechodzi przez Control Center |
+| Dostęp agentów do GitHuba | W uruchomieniu `git fetch` idzie przez Control Center, który pobiera repozytoria, nad którymi pracuje uruchomienie, tokenem tylko do odczytu, którego uruchomienie nigdy nie posiada. `gh` odczytuje je tokenem tylko do odczytu, który Control Center wydaje na żądanie i unieważnia po zakończeniu uruchomienia. Push, pull requesty, ich edycje i komentarze przechodzą przez Control Center |
 | Sygnały powiadomień      | Odpytywanie po stronie serwera Twojej skrzynki powiadomień GitHub wywołuje „Wzmianka w pull requeście” i „Prośba o recenzję” |
 | Profile użytkowników     | Karty profili po najechaniu i filtrowanie PR-ów według autora                                                           |
 
@@ -96,18 +108,19 @@ i przyciskiem odświeżania. Statusy odświeżają się same co dwie minuty.
 
 ## Wiedz, jak agenci działają na GitHubie
 
-- Agent pracujący w worktree GitHuba otrzymuje token dla tego jednego
-  repozytorium. Może czytać kod i komentować pull requesty, gdy odpowiedzialny
-  członek może wykonywać push, a tylko czytać, gdy nie może. Push przechodzi przez Control Center, który pyta regułę **Push do
-  zdalnego repozytorium**, a potem przekazuje go z tokenem zapisu, którego
-  agent nigdy nie posiada. Zobacz
+- Agent pracujący w worktree GitHuba otrzymuje token tylko dla tego repozytorium. Może czytać wyłącznie kod, issues i pull requesty. Komentarze idą przez Control Center, jak opisano powyżej. Push przechodzi przez Control Center, który pyta regułę **Push do zdalnego repozytorium**, a potem przekazuje go z tokenem zapisu, którego agent nigdy nie posiada. Zobacz
   [Skonfiguruj polityki sandboxa](/pl-PL/podrecznik/poradniki/polityki-sandboxa/)
-- Commity agenta zawsze używają tożsamości Git osoby zlecającej pracę jako autora i zatwierdzającego. Domyślnie stopka `Co-Authored-By: Control Center <hi@usectrl.dev>` wskazuje konto GitHub `@usectrl` jako współautora. W **Ustawienia → Ty → Przypisanie autorstwa commitów** można wyłączyć wskazywanie współautora bez zmiany swojej tożsamości. Ustawienie obszaru roboczego w **Ustawienia → Obszar roboczy → Ogólne** ma pierwszeństwo i blokuje osobisty przełącznik. Własne przypisywanie autorstwa Claude Code jest zawsze wyłączone. Podpisywanie commitów nadal wymaga osobnej, prawidłowej konfiguracji
+- Praca, którą zaczynasz Ty, jest commitowana jako Ty. Gdy prosisz agenta o coś albo commitujesz w IDE, jesteś autorem i committerem, pod adresem zweryfikowanym przez Twój forge: Twoim adresem noreply GitHuba z logowania do GitHuba albo, na GitLabie i Bitbucket, e-mailem, który tam zgłasza Twoje logowanie. Twoja tożsamość Git w obszarze roboczym jest używana tylko do commita, który zrobisz ręcznie w repozytorium, w którym żaden forge nie potwierdza Twojego adresu. Jeśli nie jesteś zalogowany do tego forge, commity agenta są zamiast tego commitami bota, a notatki uruchomienia o tym informują
+- Praca, o którą nikt nie prosił, jest commitowana jako bot. Uruchomienie harmonogramowe lub webhookowe commituje jako GitHub App obszaru roboczego (`<app>[bot]`, z adresem noreply GitHuba) albo jako `Control Center <hi@usectrl.dev>`, gdy nie ma GitHub App albo repozytorium jest na GitLabie lub Bitbucket
+- **Dodawaj Control Center jako współautora** (**Ustawienia → Ty → Commity**) dodaje stopkę `Co-Authored-By:` dla drugiej strony: Control Center w Twoich commitach, a w commitach bota każdą osobę, która skonfigurowała wyzwalacz stojący za uruchomieniem. Jest włączone, dopóki go nie wyłączysz. Administrator obszaru roboczego może rozstrzygnąć to dla wszystkich opcją **Uznanie współautorstwa** w **Ustawienia → Obszar roboczy → Ogólne**; Twój własny wybór jest wtedy zapisany, ale w tym obszarze roboczym nie obowiązuje. Własne przypisywanie autorstwa Claude Code jest zawsze wyłączone
+- Twoje commity mogą być podpisywane. W sekcji **Zweryfikowane commity** w **Ustawienia → Ty → Commity** wybierz **Utwórz klucz podpisywania** i dodaj jego połowę publiczną do swojego konta GitHub lub GitLab jako klucz podpisywania; od tej chwili commity uruchomień, o które prosisz, oraz commity, które robisz w IDE, są pokazywane jako zweryfikowane. Połowa prywatna pozostaje na Twoim serwerze, więc ktokolwiek kontroluje ten serwer, może podpisywać commity jako Ty, dopóki klucz jest na Twoim koncie; na GitHubie commit już pokazany jako zweryfikowany pozostaje zweryfikowany po usunięciu klucza. Bitbucket nie ma klucza wyłącznie do podpisywania: nie dodawaj tam klucza, a commity na Bitbucket nie są podpisywane. Commity bota nigdy nie są podpisywane
+- Commity, które robisz w panelu **Kontrola źródła** w IDE, pomijają haki Git repozytorium, tak jak `git commit --no-verify`, a Git serwera ignoruje helpery poświadczeń, edytory, zewnętrzne narzędzia do różnic i podpisujące, które skonfiguruje repozytorium: uruchamia Git na własnej maszynie, w drzewie, które agent albo pull request może zmienić. Zobacz [Commituj i wypychaj z Kontroli źródła](/pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr/#commit-i-push-z-panelu-kontrola-źródła)
+- Każdy commit, który agent wypycha, jest najpierw sprawdzany, łącznie z warstwami wypychanymi przez `stack_publish` dla stosu. Push, który wskazuje kogoś innego, usuwa albo pożycza jedną z zasług, dodaje sign-off albo nie jest podpisany tak, jak mówią Twoje ustawienia, zostaje odrzucony. Commity, które wypychasz sam z IDE, są Twoje i nie są sprawdzane w ten sposób
 - Terminal, który otwierasz na rigu, dostaje Twoje własne logowanie, zawężone do
   jednego repozytorium, więc push z niego jest Twój
 - Gdy nie da się utworzyć tokenu (nikt odpowiedzialny nie jest zalogowany,
   aplikacja nie jest zainstalowana u właściciela albo instalacja jest
-  zawieszona), uruchomienie startuje bez tokenu, a jego notatki wyjaśniają
+  zawieszona), polecenie, które o niego poprosiło, wyjaśnia
   dlaczego. Nie ma zapasowego poświadczenia
 
 ## Rozwiązywanie problemów
@@ -115,7 +128,7 @@ i przyciskiem odświeżania. Statusy odświeżają się same co dwie minuty.
 ### Lista PR-ów jest pusta i informuje, że GitHub nie jest połączony
 
 Nie jesteś zalogowany do GitHuba na tym serwerze. Kliknij **Zaloguj się do
-GitHub** w **Hostingu kodu**. Repozytoria na innych forge pozostają bez zmian.
+GitHub** w **Ustawienia → Ty → Profil → Hosting kodu**. Repozytoria na innych forge pozostają bez zmian.
 
 ### Wiersz GitHub informuje, że logowanie nie jest skonfigurowane na tym serwerze
 
@@ -123,6 +136,8 @@ Serwer nie ma ani własnej GitHub App, ani Connect. Właściciel serwera wybiera
 jedno z nich w **Ustawienia → Serwer → Logowanie jednokrotne**: **Utwórz moją
 aplikację GitHub** zajmuje około dwóch minut. Zobacz
 [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/).
+
+W obszarze roboczym na własnych aplikacjach wiersz to zaznacza, gdy GitHub App obszaru roboczego jest niedostępna lub niekompletna. Administrator obszaru roboczego uzupełnia ją na karcie **Aplikacja GitHub** w **Ustawienia → Obszar roboczy → Integracje**; zobacz [Daj jednemu obszarowi roboczemu własną aplikację](/pl-PL/podrecznik/poradniki/github-app/#daj-jednemu-obszarowi-roboczemu-własną-aplikację).
 
 ### Okno dialogowe informuje, że kod się nie zgadza
 
@@ -133,10 +148,7 @@ błędnych kodów kończy logowanie; zacznij je od nowa.
 
 GitHub App nie ma instalacji na koncie, które jest właścicielem repozytorium.
 Administrator obszaru roboczego instaluje ją w **Ustawienia → Obszar roboczy →
-Ogólne → Instalacje aplikacji GitHub**. W przypadku organizacji korzystającej ze
-współdzielonej App od Control Center administrator tej organizacji może musieć
-kliknąć **Autoryzuj ten serwer**. Zobacz
-[Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/#autoryzuj-ten-serwer-dla-organizacji).
+Integracje → Instalacje aplikacji GitHub**.
 
 ### Wszyscy muszą ponownie zalogować się do GitHuba
 
@@ -148,8 +160,25 @@ Connect są powiązane z serwerem, który je utworzył.
 
 Rejestracja wymaga wszystkich trzech warunków: ścieżka znajduje się w drzewie
 roboczym Gita, repozytorium ma zdalne `origin`, a to zdalne repozytorium wskazuje
-na obsługiwany forge (github.com, gitlab.com lub bitbucket.org). Zobacz
+na obsługiwany forge (github.com, gitlab.com lub bitbucket.org). `origin` musi wskazywać repozytorium, które łączysz, a folder
+spoza pamięci obszaru roboczego może połączyć tylko właściciel serwera. Zobacz
 [Dodaj repozytoria do obszaru roboczego](/pl-PL/podrecznik/poradniki/dodawanie-repozytoriow/).
+
+### Mam uprawnienie, ale repozytorium mówi, że moje konto nie może go odczytać
+
+Twoje konto GitHub nie może odczytać tego repozytorium, więc jego kod pozostaje dla Ciebie
+zamknięty, nawet przy uprawnieniu w obszarze roboczym. Zaloguj się do GitHuba w **Hosting
+kodu** albo poproś o dostęp do repozytorium na GitHubie.
+
+### „Nie udało się potwierdzić twojego dostępu do GitHub”
+
+GitHub nie odpowiedział na sprawdzenie Twojego dostępu, więc Control Center odmówił zamiast
+zgadywać. Spróbuj ponownie za chwilę.
+
+### Recenzje na Connect pojawiają się pod moim nazwiskiem, a nie pod botem
+
+We współdzielonej aplikacji Connect bot publikuje recenzje tylko dla instalacji, które operator
+Connect umieścił na liście. Wszędzie indziej recenzja idzie na logowaniu odpowiedzialnej osoby. Aby bot publikował recenzje, daj obszarowi roboczemu własną GitHub App.
 
 ### Po intensywnym użytkowaniu wszystko na jakiś czas przestaje działać
 

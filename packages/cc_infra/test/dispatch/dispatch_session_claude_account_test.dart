@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
@@ -15,8 +14,10 @@ import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:test/test.dart';
 
@@ -127,22 +128,6 @@ String _init(String sessionId) => jsonEncode({
   'mcp_servers': const [],
 });
 
-class _NoopBroker implements CredentialBrokerPort {
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async => const ScopedCredentials(handle: 'h', environment: {});
-
-  @override
-  Future<void> revoke(String handle) async {}
-}
-
 class _UnusedAgentRepo implements AgentRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -178,16 +163,18 @@ _dispatchClaude({
   final authFailed = <String>[];
 
   final deps = SandboxDispatchDeps(
+    hostExecution: const HostExecutionGate(
+      posture: HostExecutionPosture.offByOwner,
+    ),
     sandbox: sandbox,
-    broker: _NoopBroker(),
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: null,
     eventBus: null,
-    resolveCommitIdentity: (_, {workspaceId}) async =>
-        AgentCommitIdentity.owner(
+    resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+        AgentCommitIdentity.person((
           name: 'Test User',
           email: 'test@example.test',
-        ),
+        )),
     backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     credentialGate: credentialGate,
     syncClaudeCredential: syncClaudeCredential,
@@ -357,16 +344,18 @@ void main() {
     // config dir, so an empty directory must not be refused out of hand.
     final sandbox = _RecordingSandbox();
     final deps = SandboxDispatchDeps(
+      hostExecution: const HostExecutionGate(
+        posture: HostExecutionPosture.offByOwner,
+      ),
       sandbox: sandbox,
-      broker: _NoopBroker(),
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
       eventBus: null,
-      resolveCommitIdentity: (_, {workspaceId}) async =>
-          AgentCommitIdentity.owner(
+      resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+          AgentCommitIdentity.person((
             name: 'Test User',
             email: 'test@example.test',
-          ),
+          )),
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     );
     final session = DispatchSession(

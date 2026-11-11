@@ -2,7 +2,7 @@
 title: Depurar um teste com falha com um agente
 description: Peça a um agente para definir um ponto de interrupção, iniciar o programa sob um depurador e ler um frame de pilha real em vez de adicionar instruções de print.
 slug: pt-BR/manual/guias/depurar-teste-com-falha
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Este guia mostra como fazer um agente usar um depurador em uma falha que as instruções de print não explicam.
@@ -31,8 +31,8 @@ Ele responde com o que encontrou ou explica que um adaptador precisa das duas me
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Vem com o LLVM               |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[O Python escolhe o interpretador do projeto]
-O `debugpy` é procurado em `.venv/bin` ou `venv/bin` antes do `$PATH`. Um python do `$PATH` é outro ambiente, e anexar a partir do errado falha de um jeito que se lê como código quebrado, e não como o interpretador errado.
+:::note[O Python escolhe o interpretador do projeto quando a execução está em sandbox]
+Em uma execução em sandbox, o `debugpy` é procurado em `.venv/bin` ou `venv/bin` antes do `$PATH`. Um python do `$PATH` é outro ambiente, e anexar a partir do errado falha de um jeito que se lê como código quebrado, e não como o interpretador errado. Em uma execução sem sandbox ele usa somente o `$PATH`, então um repositório não pode escolher o interpretador que roda na máquina do servidor.
 :::
 
 ## Defina o ponto de interrupção primeiro, e só então inicie
@@ -106,6 +106,8 @@ Para um processo travado, e não um que você está iniciando:
 debug(op: "attach", port: 5858)
 ```
 
+A porta precisa ser uma das portas encaminhadas da própria execução. Qualquer outra porta é recusada antes de qualquer coisa começar, para que um agente não possa anexar a um processo que pertence a outra pessoa na máquina do servidor.
+
 ## Encerrar
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Sempre encerre a sessão. Um adaptador de depuração é dono de um **processo parado** que segura o que quer que aquele processo segure — uma porta, um lock, uma conexão de banco de dados.
 
 :::note[Ele não consegue escapar de você]
-Toda sessão tem um TTL rígido que ela não pode estender, existe exatamente uma por conversa, e tudo é desmontado quando o servidor para. Um segundo `launch` é recusado em vez de substituir o primeiro: um agente que inicia um sem encerrar o outro quase certamente perdeu o rastro do primeiro.
+Toda sessão tem um TTL rígido que ela não pode estender (30 minutos), existe exatamente uma por conversa, e tudo é desmontado quando o servidor para. Em uma execução em sandbox, a sessão mantém a sua sandbox entre os turnos por no máximo esse tempo. Um segundo `launch` é recusado em vez de substituir o primeiro: um agente que inicia um sem encerrar o outro quase certamente perdeu o rastro do primeiro.
 :::
 
 ## Saída limitada

@@ -118,7 +118,7 @@ class ClaudeAccountRow extends ConsumerWidget {
                     ? l10n.claudeAccountSignInAgain
                     : l10n.claudeAccountSignIn,
                 icon: AppIcons.externalLink,
-                onSelected: () => showClaudeLoginCommand(context, ref, account),
+                onSelected: () => showClaudeLoginCommand(context, account),
               ),
               CcMenuItem(
                 label: l10n.claudeAccountMakeDefault,

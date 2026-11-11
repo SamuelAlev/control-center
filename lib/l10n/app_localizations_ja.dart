@@ -149,7 +149,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get guardrailClassPrCreate => 'プルリクエストを作成';
 
   @override
-  String get guardrailClassPrPublish => 'レビューの公開またはマージ';
+  String get guardrailClassPrPublish => 'プルリクエストの更新またはマージ';
 
   @override
   String get guardrailClassVendorSyncWrite => '外部トラッカーへの書き込み';
@@ -2502,9 +2502,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get activityToggledMcpServer => 'MCPサーバーを切り替えました';
 
   @override
-  String get activityUpdatedMcpToken => 'MCPトークンを更新しました';
-
-  @override
   String get activitySavedApiKey => 'APIキーを保存しました';
 
   @override
@@ -3117,9 +3114,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String deleteConfirmName(String name) {
     return '「$name」を削除しますか？';
   }
-
-  @override
-  String get archiveConversation => '会話をアーカイブ';
 
   @override
   String get deleteFact => 'ファクトを削除';
@@ -3799,9 +3793,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get matchOsAppearance => 'OSの外観に合わせるか、固定モードを選択してください。';
 
   @override
-  String get mcpAuthToken => 'MCP認証トークン';
-
-  @override
   String get mcpNotAvailableOnServer => '接続中のサーバーではMCPサーバーの操作は利用できません。';
 
   @override
@@ -4003,9 +3994,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'システムフォントは検出されませんでした。';
-
-  @override
-  String get noTokenSet => 'トークンが設定されていません。アクセスは無制限です。';
 
   @override
   String get noWorkingMemory => '作業メモリのメモはまだありません。';
@@ -4482,30 +4470,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'サーバーのGitHub認証情報では$reposを参照できません。リポジトリが組織に属している場合は、そこにGitHub Appをインストールするか、アクセス権のあるトークンを接続してください。';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count件のリポジトリにアクセスできません',
-      one: 'リポジトリにアクセスできません',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle => 'GitHub Appのインストールが停止されています';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return '$repos の最終既知データを表示しています。GitHubでインストールを再開するか、アクセス権のあるトークンを接続してください。';
-  }
-
-  @override
   String get repoNoAccessBadge => 'アクセスなし';
 
   @override
@@ -4618,9 +4582,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get ruleLabel => 'ルール';
-
-  @override
-  String get runCompleted => '実行完了';
 
   @override
   String get running => '実行中';
@@ -4781,9 +4742,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get setLabel => '設定';
-
-  @override
-  String get setToken => 'トークンを設定';
 
   @override
   String get settingsLabel => '設定';
@@ -4978,9 +4936,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get skillOriginManual => '手動';
 
   @override
-  String get skillOriginRegistry => 'レジストリ';
-
-  @override
   String get skillOriginRuntimeLocal => 'ランタイムローカル';
 
   @override
@@ -5154,9 +5109,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get toggleTheme => 'テーマを切り替え';
-
-  @override
-  String get tokenConfigured => '設定済み — クライアントはこのトークンを提示する必要があります。';
 
   @override
   String get topic => 'トピック';
@@ -8628,7 +8580,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      '確認なしで実行するツール操作を選びます。読み取りは常に許可され、上位の段階では確認が表示されます。';
+      'Control Center 自身のツールのうち、MCP エンドポイント経由またはエージェントが呼び出すもので、確認なしで実行されるものを選びます。読み取りは常に許可され、上位の段階では確認が表示されます。実行内のサーバーは、その実行のアクション方針に従います。';
 
   @override
   String get mcpApprovalAlwaysAsk => '常に確認';
@@ -12063,20 +12015,8 @@ class AppLocalizationsJa extends AppLocalizations {
   String get settingsAbout => 'このアプリについて';
 
   @override
-  String get settingsScopeBadgeYou => '自分';
-
-  @override
-  String get settingsScopeBadgeDevice => 'このデバイス';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'ワークスペース';
-
-  @override
-  String get settingsScopeBadgeServer => 'サーバー';
-
-  @override
   String get settingsProfileDescription =>
-      'このワークスペースでの名前、メール、git の身元です。ワークスペースを切り替えるとこのオーバーレイも切り替わります。ハンドル、サインイン、デバイスはアカウントに残ります。';
+      'このワークスペースでのお名前、メール、git の ID です。ワークスペースを切り替えるとこの設定も切り替わります。ユーザー名、サインイン、デバイスはアカウントに残り、自分 → プロフィール で管理します。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12091,47 +12031,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'このワークスペースの全メンバーで共有される識別情報、ポリシー、規約です。';
-
-  @override
-  String get settingsAgentAttributionTitle => 'コミットの帰属';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'エージェントのコミットに Control Center のクレジットを付けるか選択します。ワークスペースの管理者は、全メンバーに対してこの設定を上書きできます。';
-
-  @override
-  String get settingsAgentCoauthorSection => 'エージェントへのクレジット';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'エージェントのコミットに Control Center のクレジットを付ける';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'コミットの作成者とコミッターは常にあなたです。オンにすると、Control Center (@usectrl) が共同作成者として追加されます。オフにすると、コミットにエージェントのクレジットは含まれません。';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'このワークスペースの設定が個人の選択より優先されます。個人の設定は保存されますが、ここでは適用されません。';
-
-  @override
-  String get settingsAgentAttributionLoading => '帰属設定を読み込み中…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'エージェントのコミットに Control Center のクレジットを付けるか選択します。ワークスペースの設定は各メンバーの個人設定より優先されます。';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit => '各メンバーの設定を使用';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      '常に Control Center のクレジットを付ける';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Control Center のクレジットを付けない';
+      'このワークスペースの全員が共有するポリシーと規約です。';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12478,9 +12378,6 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get checkingConnection => '接続を確認中…';
-
-  @override
-  String get fromEnvironment => '環境変数から';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13021,14 +12918,14 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'このインストールのGitHubアプリを継承するワークスペースで使われます。独自のアプリを持つワークスペースは「ワークスペース → 全般」で設定します。';
+      'このサーバーのサインインアプリに従うワークスペースが使用します。独自のアプリを使うワークスペースは、ワークスペース → 連携 で自分の App を設定します。';
 
   @override
   String get providerAppsGroupPrConversations => 'プルリクエストでの会話';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '継承ワークスペースで GitHub 上からこのサーバーに話しかける方法です。独自 App のワークスペースはワークスペース → 一般にボットがあります。Webhook も公開 URL も不要で、サーバーがポーリングします。';
+      'このサーバーに従うワークスペースで、開発者が GitHub 上でこのサーバーとやり取りする方法です。独自のアプリを使うワークスペースは、ワークスペース → 連携 に独自のボットを持ちます。Webhook や公開 URL は不要で、サーバーがポーリングします。';
 
   @override
   String get providerAppBotLogin => 'ボットログイン';
@@ -13060,10 +12957,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String get portLabel => 'ポート';
 
   @override
-  String get mcpNoTokenWarning =>
-      'トークンがないと、このポートに到達できるものであれば何でも、すべてのツールを呼び出せてしまいます。';
-
-  @override
   String get mcpBridgedToolsLabel => 'ツール';
 
   @override
@@ -13090,6 +12983,129 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'すべてクリア';
+
+  @override
+  String get guardrailFamilyCommands => 'コマンド';
+
+  @override
+  String get guardrailStandingApproval => '期間付き承認';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return '許可: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return '先に確認: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return '拒否: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'ブランチ $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'パス $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'ホスト $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'コマンド $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'ツール $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return '$prefix で始まるコマンド';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return '同時に最大 $count 件';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return '最大 $amount セント';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'この種類のすべての操作';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return '承認者 $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return '$time まで';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => '取り消すまで';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return '取り消し: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => '取り消せませんでした。もう一度お試しください。';
+
+  @override
+  String get guardrailEntryInactive => '拒否中は無効';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '下記の $count 件では許可されています',
+      one: '下記の 1 件では許可されています',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ワークスペース全体に対する期間付き承認が $count 件、ここにも適用されます。',
+      one: 'ワークスペース全体に対する期間付き承認が 1 件、ここにも適用されます。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '単一のスペースまたはエージェントに期間付き承認が $count 件設定されています。上の「スペース」または「エージェント」を選ぶと表示されます。',
+      one:
+          '単一のスペースまたはエージェントに期間付き承認が 1 件設定されています。上の「スペース」または「エージェント」を選ぶと表示されます。',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'サンドボックス化';
@@ -13889,6 +13905,12 @@ class AppLocalizationsJa extends AppLocalizations {
       '次にエージェントがこのコピーからプログラムを実行する必要ができたとき、再度尋ねられます。';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'パスを検索';
+
+  @override
+  String get sandboxExecGrantsNoMatch => '検索に一致する許可はありません';
+
+  @override
   String get demoBadgeLabel => 'デモ';
 
   @override
@@ -14238,11 +14260,11 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'この接続はリレー経由でサーバーに到達しているため、ファイル転送は行えません。バックアップのダウンロードやアップロードには、サーバーへ直接接続してください。';
+      'この接続ではまだファイル転送が設定されていません。バックアップのダウンロードやアップロードには、サーバーに再接続してください。';
 
   @override
   String get backupTransferForbidden =>
-      'サーバーに拒否されました。ワークスペースのダウンロードには管理者ロール、復元にはオーナー、スナップショット全体にはインストールのオペレーターが必要です。';
+      'サーバーに拒否されました。ワークスペースのダウンロードにはワークスペースの管理者ロールが必要です。ワークスペースの復元には、そのワークスペースのオーナーでもあるサーバーオーナーが必要です。サーバー全体のスナップショットにはサーバーオーナーが必要です。';
 
   @override
   String get backupTransferUnsupported => 'このサーバーにはバックアップの仕組みがありません。';
@@ -14538,32 +14560,8 @@ class AppLocalizationsJa extends AppLocalizations {
       '任意の環境からのクリップボード内容を確認なしでこのデバイスに配置します。';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub の身元';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'このワークスペースのバックグラウンドのGitHub作業がどのように認証するか：このインストールのアプリ、またはワークスペース独自のアプリ。';
-
-  @override
-  String get workspaceGitHubModeInherit => 'このインストールの GitHub App を使う';
-
-  @override
-  String get workspaceGitHubModeApp => '別の GitHub App を使う';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'サーバー → プロバイダーアプリの GitHub App を使います。';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'このワークスペースのボットとポーリングの身元です。メンバーは「あなた」でこの App からサインインします。';
-
-  @override
   String get profileOverlayHint =>
       'これらの項目はこのワークスペースでのあなたです。空欄はアカウントの名前とメールを継承します。ワークスペースを切り替えるとこのオーバーレイも切り替わります。';
-
-  @override
-  String get forgeConnectionsThisWorkspace => 'このワークスペース用にサインインするかトークンを貼り付けます。';
 
   @override
   String get stackStartNextPart => '次のパートを始める';
@@ -15349,6 +15347,16 @@ class AppLocalizationsJa extends AppLocalizations {
       'サーバーはこのアカウントのログインコマンドを提供できませんでした。';
 
   @override
+  String get claudeAccountSignedIn => 'サインイン済み';
+
+  @override
+  String get claudeSignInClosesItself => 'サインインが完了すると、このダイアログは自動的に閉じます。';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'すべてのアカウントのサインインが完了すると、このダイアログは自動的に閉じます。';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Claude Code のサインインの有効期限が切れました';
 
@@ -15496,7 +15504,7 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'サーバーでの設定が必要です';
+  String get environmentInputNeeded => 'サーバーでの設定が必要です';
 
   @override
   String get environmentKindApp => 'アプリ';
@@ -16074,20 +16082,38 @@ class AppLocalizationsJa extends AppLocalizations {
   String get environmentOpenPanel => '環境を開く';
 
   @override
-  String get environmentNeedsSetup => '設定が必要';
+  String get environmentStatusBlocked => '対応が必要';
+
+  @override
+  String get environmentStateInTerminal => 'ターミナルで入力待ち';
+
+  @override
+  String get environmentWaitingInTerminal => 'ターミナルでの入力を待っています';
+
+  @override
+  String get environmentOpenTerminal => 'ターミナルを開く';
+
+  @override
+  String get environmentSignInNeeded => '再度サインインが必要です';
+
+  @override
+  String get environmentDependencyNeeded => '必要なものが利用できません';
+
+  @override
+  String get environmentStartTerminalDone => 'ここでの操作は完了しました。環境はまだ起動中です';
 
   @override
   String get environmentContinueInTerminal => 'ターミナルで続行';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'ツールがパスワードや確認のためにターミナルでの操作を求めています。完了すると起動が続きます。';
 
   @override
-  String get environmentSetupTabReason => '起動に操作が必要なため、このターミナルを開きました';
+  String get environmentStartTerminalReason => '起動に操作が必要なため、このターミナルを開きました';
 
   @override
-  String get environmentSetupTab => '環境のセットアップ';
+  String get environmentStartTerminalTab => '環境のセットアップ';
 
   @override
   String get environmentsNothingRunning => 'この定義から実行中のものはありません。';
@@ -16373,23 +16399,13 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'ブラウザの$providerのページでリクエストを承認してください。完了するとこのウィンドウが自動で検知します。';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return '$providerを待っています…';
-  }
-
-  @override
   String get signInFailedTitle => 'サインインが完了しませんでした';
 
   @override
   String get signInReopenPage => 'サインインページをもう一度開く';
 
   @override
-  String get signInCodePrompt => 'ブラウザに表示されたコードを入力してください';
+  String get signInCodePrompt => 'ブラウザで確認してから、表示された 8 文字のコードを入力してください。';
 
   @override
   String get signInCodeMalformed => 'サインインコードではないようです。コードは英数字8文字です。';
@@ -16428,14 +16444,15 @@ class AppLocalizationsJa extends AppLocalizations {
   String get signInErrorTooManyCodes => '誤ったコードが多すぎます。サインインをやり直してください。';
 
   @override
-  String get signInErrorStaleRequest => 'このサインインは無効になりました。もう一度開始してください。';
+  String get signInErrorStaleRequest =>
+      'このサインインは、取り消された、使用された、または置き換えられたため、もう開いていません。もう一度開始してください。';
 
   @override
   String get signInErrorInvalidRequest =>
       'サーバーがこのサインイン要求を読み取れませんでした。もう一度開始してください。';
 
   @override
-  String get signInErrorRateLimited => '現在サインインの試行が多すぎます。1分待ってからもう一度お試しください。';
+  String get signInErrorRateLimited => '現在リクエストが多すぎます。少し待ってから、もう一度お試しください。';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16466,10 +16483,6 @@ class AppLocalizationsJa extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return '必要な場所に$providerアプリがインストールされていません。インストールしてからもう一度お試しください。';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'このGitHubアプリのインストールは、すでに別のControl Centerサーバーに承認されています。';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16527,7 +16540,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'このワークスペースのリポジトリが属するアカウントに限った、GitHubアプリのインストール先です。組織のインストールは、その管理者が承認したサーバーでのみ動作します。';
+      'このワークスペースのリポジトリが属するアカウントに限った、GitHubアプリのインストール先です。';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16537,21 +16550,7 @@ class AppLocalizationsJa extends AppLocalizations {
   String get githubInstallApp => 'GitHubアプリをインストール';
 
   @override
-  String get githubAuthorizeServer => 'このサーバーを承認';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'このサーバーで$accountのインストールを使えるようになりました。';
-  }
-
-  @override
   String get githubInstallationSuspended => '停止中';
-
-  @override
-  String get githubInstallationAuthorized => '承認済み';
-
-  @override
-  String get githubInstallationNotAuthorized => '未承認';
 
   @override
   String get linearAutomationTitle => 'Linearの自動化';
@@ -16577,7 +16576,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'GitHub、Google、Linearのアプリを「設定 → サーバー → シングルサインオン」で自分で登録し、各ワークスペース独自のSlackアプリはそのワークスペースの設定で接続します。「自分のGitHubアプリを作成」を使うとGitHubを1ステップで設定できます。';
+      'GitHub、Google、Linear のアプリは「設定 → サーバー → シングルサインオン」で自分で登録し、各ワークスペース独自の Slack アプリは「ワークスペース → 連携」で接続します。ワークスペースは独自のアプリまたは Connect を選ぶこともできます。「自分の GitHub アプリを作成」を使うと、GitHub を 1 ステップで設定できます。';
 
   @override
   String get connectModeCustom => 'カスタムConnectサーバーを使う';
@@ -16709,7 +16708,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'このサーバーに新しい鍵とインストールIDが割り当てられます。Connect経由のサインインはすべて無効になり、全員がもう一度サインインする必要があります。自分のアプリ経由のサインインには影響しません。';
+      'このサーバーには新しい鍵とインストール ID が割り当てられ、古い ID は Connect で無効化されます。古い ID と鍵で暗号化されたサインインは、そこで使えなくなり、Connect 経由でサインインしたすべての人がもう一度サインインする必要があります。すでに発行されたトークンは期限切れまで有効です。自分のアプリからのサインインには影響しません。Connect に到達できない場合は何も変わらないため、もう一度お試しください。';
 
   @override
   String get connectRotateKeyDone =>
@@ -16842,33 +16841,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'プロバイダーアプリ';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'このワークスペースが使う Googleカレンダー、Linear、Klipy のアプリです。既定では、このサーバーのアプリまたは Control Center Connect を使います。ワークスペース専用のアプリを設定すると、サーバーのアプリには切り替わりません。';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'このサーバーのアプリを使う';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'サインインとリクエストには、このサーバーのアプリまたは Control Center Connect が使われます。';
-
-  @override
-  String get workspaceProviderAppModeOwn => 'このワークスペースのアプリを使う';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'このワークスペースのアプリのみ使われます。設定が完了するまで、このプロバイダーはここでは無効になり、ほかのアプリには切り替わりません。';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'サーバーのアプリ';
-
-  @override
-  String get workspaceProviderAppStatusOwn => '独自のアプリ';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return '未設定：$fields。すべての項目を設定するまで、このワークスペースではこのプロバイダーが無効です。このサーバーのアプリには切り替わりません。';
   }
@@ -16884,22 +16856,111 @@ class AppLocalizationsJa extends AppLocalizations {
   String get workspaceProviderAppKlipyHint => 'このワークスペースの GIF 検索では、このキーが使われます。';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return '$provider のアプリを切り替えますか？';
+  String get settingsWorkspaceIntegrations => '連携';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'このワークスペースのコードホスティング、チケット、カレンダー、チャット、GIF検索と、それぞれがサインインに使うアプリ。';
+
+  @override
+  String get workspaceConnectDescription =>
+      'このワークスペースが GitHub、Google カレンダー、Linear、Slack、GIF検索に使うアプリです。管理者が別に選ばない限り、このサーバーに従います。';
+
+  @override
+  String get workspaceConnectModeInherit => 'このサーバーと同じ';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'このサーバーは Control Center のアプリを使用します。';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'このサーバーは $url の Connect サーバーを使用します。';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'このサーバーのアプリを通じてこのワークスペースの $provider に接続しているユーザーは、全員がワークスペースのアプリで再度サインインする必要があります。';
+  String get workspaceConnectInheritOwn => 'このサーバーは独自のアプリを使用します。';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'サーバーの所有者がまだ選択していないため、サーバー独自のアプリが適用されます。';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'このワークスペースのアプリのみが使用されます。下のそれぞれのプロバイダーの横に追加してください。アプリがないプロバイダーはここでは無効になり、代わりにこのサーバーのアプリや Connect が使われることはありません。';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'HTTPS のみ。プライベートネットワークまたはローカルネットワーク上のアドレスは拒否されます。';
+
+  @override
+  String get workspaceConnectLocked =>
+      'このサーバーの環境の CC_CONNECT_URL がサインインの送信先を決めているため、このワークスペースは独自の Connect を選べません。このサーバーに従うか、独自のアプリを使うことができます。';
+
+  @override
+  String get workspaceConnectSwitchTitle => 'このワークスペースのサインインアプリを切り替えますか?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'このワークスペースの全員が、新しいアプリを使って GitHub、Linear、Google カレンダーに再度サインインする必要があります。現在のアプリで行ったサインインは、ここでは使えなくなります。';
+
+  @override
+  String get workspaceConnectSwitchAction => 'アプリを切り替える';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      '上記の選択に従います。プロバイダーが別のアプリに切り替わることはありません。';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'ワークスペースのアプリ';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'サーバーのアプリ';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub App';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'このワークスペース独自の App が、そのリポジトリのために動作し、メンバーのサインインを行います。このサーバーの App や Connect に切り替わることはありません。';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'このワークスペースは、サインインアプリが提供する GitHub App を使用します。リポジトリを所有するアカウントにインストールしてください。';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'このワークスペースの代理として動作';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'App のボットは、このワークスペースのリポジトリにあるプルリクエストにコメント、レビュー、ポーリングを行います。';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider アプリ';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'このワークスペースの $provider の認証情報が削除されます。ワークスペースのアプリを通じて接続しているユーザーは、全員が再度サインインする必要があります。';
+  String workspaceOwnAppDescription(String provider) {
+    return 'このワークスペースの $provider のサインインとリクエストは、このアプリのみを使用します。';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'アプリを切り替える';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'GIF検索はこのワークスペースの Klipy キーを使用します。';
+
+  @override
+  String get workspaceGifsSourceServerOwn => 'GIF検索はこのサーバーの Klipy キーを使用します。';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF検索は Control Center Connect を経由して動作します。';
+
+  @override
+  String get workspaceGifsSourceOff => 'このワークスペースでは GIF検索はオフになっています。';
 
   @override
   String openOnForge(String forge) {
@@ -16916,7 +16977,7 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      '設定 → ワークスペース → プロフィールと ID → コードホスティング で GitHub、GitLab、Bitbucket のいずれかを接続してください';
+      '設定 → 自分 → プロフィール で GitHub、GitLab、Bitbucket を接続してください';
 
   @override
   String get addForgeRepoPrompt =>
@@ -16933,4 +16994,1095 @@ class AppLocalizationsJa extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'このリポジトリでプルリクエストを作成するには $forge を接続してください';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return '$account としての $provider のサインインが切れています。もう一度サインインしてください。';
+  }
+
+  @override
+  String get connectionPaused => '一時停止中: このワークスペースのサインインサービスが変更されました';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '現在 $provider に接続できません。再試行しています。';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'サインインは保持されており、サービスが戻れば再び使えます。ワークスペースの管理者は「連携」でサインインの設定を確認できます。';
+
+  @override
+  String get signInErrorAttemptUnknown => 'サーバーが再起動しました。サインインをやり直してください。';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'このワークスペースでは $provider のサインインが設定されていません。';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider のサインイン設定に誤りがあります: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'このワークスペースは独自のアプリを使っていますが、$provider のアプリがありません。';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'このビルドは Control Center Connect を検証できないため、$provider のサインインはオフになっています。';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'このワークスペースのサインインサービスの識別情報が変わりました。管理者の確認が必要です。';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      '現在このワークスペースのサインインサービスに接続できません。';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'このワークスペースのサインインサービスのアドレスがないか、無効です。';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'サーバーの運用者がサインインサービスを固定しているため、このワークスペース独自の選択は適用されません。';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'このワークスペースのサインインサービスは $provider に対応していません。';
+  }
+
+  @override
+  String get signInOpenIntegrations => '連携を開く';
+
+  @override
+  String get signInOpenServerSettings => 'サインイン設定を開く';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'これは $provider 上であなたとして実行されますが、トークンが追加されていません。追加してからもう一度お試しください。';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '$provider を切断しますか？';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return '$provider のリポジトリで作業するには、もう一度接続する必要があります。';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'このワークスペースでのみ $provider を切断します。ほかのワークスペースは独自の接続を保ちます。';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'この接続を共有しているすべてのワークスペースで $provider を切断します。';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return 'このワークスペースから $provider を切断しました';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return 'すべてのワークスペースから $provider を切断しました';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return '$owner に GitHub App をインストール';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'そこに App がインストールされるまで、自動化は $repos にアクセスできません。';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return '$repos を GitHub App のリポジトリに追加';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'App はこのアカウントにインストールされていますが、これらのリポジトリはまだ見えていません。';
+
+  @override
+  String get repoAccessChooseRepos => 'リポジトリを選択';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App のインストールが停止されています';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'アカウントのオーナーが GitHub でインストールを再開するまで、$repos の自動化は一時停止しています。';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => '自動化は一時停止中です';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'このワークスペースの自動化の責任者が $repos を見られなくなったため、そこではその人の代わりに何も実行されません。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'このワークスペースの自動化の責任者がフォージにサインインしていないため、$repos の自動化はその人がサインインするまで待機しています。';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return '$repos へのアクセスを確認できませんでした。再試行しています。';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return '$admins に修正を依頼してください。';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin => 'ワークスペースの管理者に修正を依頼してください。';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$forge にサインインすると、さらに $count 件のリポジトリのプルリクエストが表示されます',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$forge アカウントから見えないため、$count 件のリポジトリが非表示です',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'このワークスペースでアクセス権がないため、$count 件のリポジトリが非表示です',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'さらに $count 件のリポジトリへのアクセスを確認しています…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle => 'リンクしましたが、自動化はまだすべてにアクセスできません';
+
+  @override
+  String get githubInstallOnAnotherOrganization => '別の組織にインストール';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian アカウントのメールアドレス';
+
+  @override
+  String get forgeTokenEmailInvalid => 'Atlassian アカウントのメールアドレスを入力してください。';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API トークン';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket の API トークンは、それを作成した Atlassian アカウントのメールアドレスと組み合わせて使います。';
+
+  @override
+  String get automationTokensTitle => '自動化トークン';
+
+  @override
+  String get automationTokensRepoHint =>
+      'GitLab と Bitbucket でのバックグラウンド処理（プルリクエストの更新、AI レビューのコメント、誰も依頼していないマージリクエストなど）は、人ではなくボットのアクセストークンを使います。リポジトリ自身のトークンはワークスペースのトークンより優先されます。';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'このワークスペースで自動化トークンを持たないすべての GitLab / Bitbucket リポジトリに使われます。そこでのバックグラウンド処理はこのトークンのボットとして表示されます。';
+
+  @override
+  String get automationTokenNone => 'トークンがありません。ここでは自動化が一時停止しています。';
+
+  @override
+  String get automationTokenFromWorkspace => 'ワークスペースのトークンを使用';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '$name として動作';
+  }
+
+  @override
+  String get automationTokenStored => 'アクセストークンを追加済み';
+
+  @override
+  String get automationTokenRejected => 'このトークンはプラットフォームに拒否されました。置き換えてください。';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge 自動化トークン';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'プロジェクトまたはグループのアクセストークンを貼り付けてください。read_api と read_repository が必要です。コメント、マージリクエスト、プッシュには api と write_repository も追加してください。GitLab はその処理をトークンのボットとして表示します。';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'リポジトリの読み取り権限と、コメントやプルリクエスト用のプルリクエスト書き込み権限を持つ、リポジトリ・プロジェクト・ワークスペースのアクセストークンを貼り付けてください。あなた自身の API トークンはここではなく「自分 → プロフィール」に追加します。';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'トークンを保存しましたが、$repos を読み取れません。そこでの自動化は一時停止したままです。';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => '自動化トークンを削除しますか？';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'このトークンに依存する自動化は、別のトークンが追加されるまで一時停止します。';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return '独自のトークンがないすべての $forge リポジトリ';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return '$repos を読み取れる自動化トークンがないため、そこでのバックグラウンド処理は一時停止しています。';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      '作業を開始したときのコミットには、あなたの名前が入ります。他に誰をクレジットするか、フォージがあなたのコミットを検証済みと表示するかどうかを選べます。';
+
+  @override
+  String get settingsCommitAuthorshipSection => '作成者';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => '自分が開始した作業';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'フォージがサインイン用に確認したメールアドレスで、あなたが作成者兼コミッターになります。エージェントとのチャット、自分で開始したパイプライン、エディターで行ったコミットが対象です。';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => '自動実行';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'スケジュールまたは Webhook によって開始された実行は、ボットとしてコミットされ、署名されることはありません。';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'ワークスペースでフォージにサインインするまで、そこでの実行はボットとしてコミットされます。';
+
+  @override
+  String get settingsCoauthorCreditTitle => 'Control Center を共同作成者としてクレジットする';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'あなたのコミットには共同作成者として Control Center (@usectrl) が記載され、設定した自動実行にはあなたが記載されます。オフの場合、どちらの行も追加されません。';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'このワークスペースの設定が個人の選択より優先されます。個人の設定は保存されますが、ここでは適用されません。';
+
+  @override
+  String get settingsCoauthorCreditLoading => '帰属設定を読み込み中…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => '共同作成者のクレジット';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'コミットに共同作成者の行を入れるかどうかです。メンバー自身のコミットには Control Center、自動実行を設定したメンバーには、そのコミットに対して記載されます。ここでの選択は、各メンバーの個別設定より優先されます。';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit => '各メンバーの設定を使用';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways => '常に共同作成者のクレジットを追加';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever => '共同作成者のクレジットを追加しない';
+
+  @override
+  String get settingsCommitSigningSection => '検証済みのコミット';
+
+  @override
+  String get settingsCommitSigningStatusOn => '署名中';
+
+  @override
+  String get settingsCommitSigningStatusOff => '署名なし';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'このサーバーは、お客様専用の鍵でコミットに署名できるため、GitHub と GitLab で検証済みと表示されます。鍵を作成するまで、何も署名されません。';
+
+  @override
+  String get settingsCommitSigningCreate => '署名鍵を作成';
+
+  @override
+  String get settingsCommitSigningCreated => '署名鍵を作成しました。フォージのアカウントに追加してください。';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => '公開鍵';
+
+  @override
+  String get settingsCommitSigningKeyCopied => '公開鍵をコピーしました';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'フィンガープリント';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => '作成日時';
+
+  @override
+  String get settingsCommitSigningAddTitle => 'フォージのアカウントに追加';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'コミットが検証済みと表示されるのは、ワークスペースでそのフォージにもサインインしている間だけです。そのためフォージがあなたのメールアドレスを保証します。';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key。Key type を Signing Key に設定します。';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys。Usage type を Signing に設定します。';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Bitbucket のコミットは署名されません。この鍵を Bitbucket アカウントに追加しないでください。Bitbucket の SSH 鍵はログインにも使われるためです。';
+
+  @override
+  String get settingsCommitSigningUnsupported => '未対応';
+
+  @override
+  String get settingsCommitSigningTrustTitle => '信頼することになる内容';
+
+  @override
+  String get settingsCommitSigningTrustPrivate => '秘密鍵がこのサーバーから外に出ることはありません。';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      '鍵がフォージのアカウントにある限り、このサーバーを管理する人は、あなたとしてコミットに署名できます。';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'GitHub では、検証済みと表示されたコミットは、鍵を削除した後も検証済みのままです。';
+
+  @override
+  String get settingsCommitSigningDelete => '鍵を削除';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => '署名鍵を削除しますか？';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      '今後、あなたのコミットは署名されなくなります。鍵は、フォージのアカウントから削除するまでそこに残ります。';
+
+  @override
+  String get settingsCommitSigningDeleted => '署名鍵を削除しました';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return '署名鍵を読み込めませんでした: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'プロフィール';
+
+  @override
+  String get accountProfileDescription =>
+      'すべてのワークスペースでのあなたの情報と、ご自身で連携したコードホスティング、チケット管理、カレンダー、チャットのアカウントです。';
+
+  @override
+  String get accountSectionTitle => 'アカウント';
+
+  @override
+  String get accountSectionDescription =>
+      'ユーザー名と名前は、すべてのワークスペースで共通です。ワークスペースごとに別の名前やメールアドレスを表示できます。その設定は ワークスペース → プロフィールと識別情報 で行います。';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'プロフィールを読み込めませんでした: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint => 'メッセージやレビューに表示される名前です。';
+
+  @override
+  String get accountDisplayNameRequired => '表示名を入力してください。';
+
+  @override
+  String get accountFieldCannotBeCleared => '変更はできますが、削除はできません。';
+
+  @override
+  String get accountAvatarLabel => '写真';
+
+  @override
+  String get accountAvatarHint => '正方形の画像へのリンクです。https:// で始まります。';
+
+  @override
+  String get accountAvatarInvalid => 'https:// で始まるリンクを使用してください。';
+
+  @override
+  String get usernameLabel => 'ユーザー名';
+
+  @override
+  String get usernameRule =>
+      '2〜32文字の小文字の英字、数字、ドット、ハイフン、アンダースコアです。他の人はこの名前であなたにメンションします。';
+
+  @override
+  String get usernameAvailable => '利用できます。';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return '利用できます。$username として保存されます。';
+  }
+
+  @override
+  String get usernameInvalid =>
+      '2〜32文字の小文字の英字、数字、“.”、“_”、“-” を使用してください。先頭と末尾は英字または数字にします。';
+
+  @override
+  String get usernameReserved => 'そのユーザー名は予約されています。';
+
+  @override
+  String get usernameTaken => 'そのユーザー名は使用されています。';
+
+  @override
+  String get usernameCheckFailed =>
+      '今はこの名前を確認できません。このまま保存できます。最終的な判断はサーバーが行います。';
+
+  @override
+  String get linkedAccountsTitle => '連携したアカウント';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'アイデンティティプロバイダー';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => '再サインインが必要';
+
+  @override
+  String get linkedAccountStatusPaused => '一時停止中';
+
+  @override
+  String get linkedAccountStatusUnreachable => '到達できません';
+
+  @override
+  String get ssoIdentityDescription =>
+      'あなたのアカウントがサインインに使う ID プロバイダーです。このサーバーを運用している管理者が管理します。';
+
+  @override
+  String get settingsAccountsDescription =>
+      'あなたが自分のために連携するアカウントです。Control Center はこれらを通じてあなたとして動作するため、変更はあなたにだけ影響します。';
+
+  @override
+  String get accountReachServer => 'このサーバーのすべてのワークスペースで使われます。';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return '$workspace でのみ使われます。';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub は、専用のサインインアプリを持つ $workspace でのみ使われます。GitLab と Bitbucket は、このサーバーのすべてのワークスペースで使われます。';
+  }
+
+  @override
+  String get yourAccountLabel => 'あなたのアカウント';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'あなたのアカウント: $status。移動先: 自分 → プロフィール。';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'コードホスティングのアカウントが連携されていません';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return '$provider のアカウントが連携されていません';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return '$provider のアカウントが連携されていません';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'デモでは一時的なゲストとしてご利用いただいているため、変更できるアカウントはありません。ユーザー名、プロフィール、連携したアカウントはありません。';
+
+  @override
+  String get onboardingStepYou => 'あなた';
+
+  @override
+  String get onboardingYouTitle => 'ユーザー名を選ぶ';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'ユーザー名は、他の人があなたにメンションする名前であり、あなたの作業のラベルにもなります。ユーザー名と表示名は、後で 設定 → 自分 → プロフィール で変更できます。';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'この $provider アカウントは、このサーバー上の別のユーザーにすでに連携されています。別の $provider アカウントでサインインしてください。';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'トークンの有効期限: $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'トークンは $date に期限切れになりました。引き続き使うには、新しいトークンを貼り付けてください。';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge に接続してこのトークンを確認できませんでした。しばらくしてからもう一度お試しください。';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge がこのトークンを受け付けません。すべてコピーできているか、取り消されていないかを確認してください。';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'これは個人用トークンではありません。プロジェクト、グループ、ワークスペース、ボットのトークンではなく、ご自身の $forge アカウントの個人用アクセストークンを貼り付けてください。';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'このトークンには $scope スコープがありません。レビューとコメントに必要です。これを含むトークンを作成してください。';
+  }
+
+  @override
+  String get personTokenExpired => 'このトークンは期限切れです。新しいトークンを作成して、ここに貼り付けてください。';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'あなたが開始したエージェントは、作業するどのリポジトリでも、あなたとして署名されたコミットを作成できます。ここで鍵を削除すると、直ちにそれが止まります。すでに実行中の実行は、それ以上何も署名しません。';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return '鍵は更新されず、何も変わりません: $error もう一度お試しください。';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'まだワークスペースに参加していません';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'ワークスペースの管理者に招待してもらうか、サーバーオーナーにワークスペースを作成してもらってください。追加されるとすぐにここに表示されます。';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return '$name としてサインイン中';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => '再確認';
+
+  @override
+  String get noWorkspaceSignOut => 'サインアウト';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'ワークスペースを作成できるのはサーバーオーナーだけです。作成を依頼するか、ワークスペース管理者に招待してもらってください。';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo はどのワークスペースにも含まれておらず、追加先となるワークスペースにも参加していません。ワークスペース管理者に招待を依頼してください。';
+  }
+
+  @override
+  String get serverOwnerOnly => 'この操作はサーバーオーナーだけができます';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'フルエディターはサーバーのマシン上で動作するため、開けるのはサーバーオーナーだけです。エクスプローラーからファイルを開いて編集することはできます。';
+
+  @override
+  String get terminalSandboxedBadge => 'サンドボックス';
+
+  @override
+  String get terminalSandboxedHint =>
+      'このワークスペースのフォルダー内のサンドボックスで実行されるため、一部のホストツールやパスはここでは利用できません。';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'ホストシェルはサンドボックスなしでサーバー上で実行されるため、開けるのはサーバーオーナーだけです。通常のターミナルはサンドボックス内で実行されます。';
+
+  @override
+  String get terminalOutsideWorkspace => 'ターミナルは、このワークスペース自身のフォルダー内でのみ開けます。';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'サーバーのホスト上で実行される環境を保存または承認できるのは、サーバーオーナーだけです。ワークスペース管理者はリグで実行される環境を使用できます。';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'アプリ内のエディターで行ったコミットは、git commit --no-verify の場合と同様に、リポジトリの Git フックを実行しません。サーバーは、エージェントやプルリクエストが変更しうるツリーで、自身のホスト上の Git を実行します。';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP クライアントは、すべてのリクエストにこのトークンを Authorization: Bearer ヘッダーとして送ります。トークンは初回起動時にサーバーが作成します。ローテーションはできますが、削除はできません。';
+
+  @override
+  String get mcpShowToken => 'トークンを表示';
+
+  @override
+  String get mcpHideToken => 'トークンを非表示';
+
+  @override
+  String get mcpRotateToken => 'トークンをローテーション';
+
+  @override
+  String get mcpRotateTokenTitle => 'MCP トークンをローテーションしますか？';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'サーバーはすぐに新しいトークンに切り替わります。現在のトークンを使っている MCP クライアントはすべて、新しいトークンを渡されるまで拒否されます。';
+
+  @override
+  String get mcpTokenRotated => 'トークンをローテーションしました。MCP クライアントに新しいトークンを渡してください。';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP エンドポイントはサーバーオーナー向けです';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'このトークンはこのサーバーのすべてのツールを開けるため、表示、ローテーション、エンドポイントの開始や停止ができるのはサーバーオーナーだけです。';
+
+  @override
+  String get activityRotatedMcpToken => 'MCP トークンをローテーションしました';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle => 'Connect は古い鍵を無効化できませんでした';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      '何も変わっていません。このまま再ローテーションすると、このサーバーには新しい鍵が設定されますが、古い ID は、そのサインインが期限切れになるまで、その Connect で使用可能なままになります。';
+
+  @override
+  String get connectRotateKeyAnyway => 'それでもローテーション';
+
+  @override
+  String get settingsAuditLog => '監査ログ';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'サーバーと管理しているすべてのワークスペースについて、誰が何をどこで変更し、どのように終わったかを表示します。サーバーの操作は引数の名前のみを記録し、値は記録しません。';
+
+  @override
+  String get auditLogNoAccessTitle => '管理者のみ';
+
+  @override
+  String get auditLogNoAccess =>
+      '監査ログは、サーバーと管理しているワークスペースを対象とします。管理しているワークスペースがないため、表示する内容はありません。';
+
+  @override
+  String get auditLogSourceServer => 'サーバー';
+
+  @override
+  String get auditLogSourceWorkspace => 'ワークスペース';
+
+  @override
+  String get auditLogAddFilter => 'フィルター';
+
+  @override
+  String get auditLogFilterOptionsHint => 'フィルター…';
+
+  @override
+  String get auditLogFilterActor => '実行者';
+
+  @override
+  String get auditLogFilterSource => 'ワークスペース';
+
+  @override
+  String get auditLogFilterOutcome => '結果';
+
+  @override
+  String get auditLogFilterTime => '日時';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => '成功';
+
+  @override
+  String get auditLogOutcomeDenied => '拒否';
+
+  @override
+  String get auditLogOutcomeFailed => '失敗';
+
+  @override
+  String get auditLogTimeAtOrAfter => '以降';
+
+  @override
+  String get auditLogTimeAfter => 'より後';
+
+  @override
+  String get auditLogTimeBefore => 'より前';
+
+  @override
+  String get auditLogTimeAtOrBefore => '以前';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return '日時 $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 時間前';
+
+  @override
+  String get auditLogTimePresetDay => '24 時間前';
+
+  @override
+  String get auditLogTimePresetWeek => '7 日前';
+
+  @override
+  String get auditLogTimePresetMonth => '30 日前';
+
+  @override
+  String get auditLogTimeExact => '日時を指定';
+
+  @override
+  String get auditLogTimeInvalid => 'YYYY-MM-DD 形式で入力してください（HH:MM も指定できます）';
+
+  @override
+  String get auditLogTimeAdd => '追加';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo は別のリポジトリを指すようになりました';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'このパスは、$forge 上の別のリポジトリを指すようになりました。引き続き使うには再リンクしてください。';
+  }
+
+  @override
+  String get repoRelink => '再リンク';
+
+  @override
+  String repoRelinked(String repo) {
+    return '$repo を再リンクしました。';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'このパスは別のリポジトリを指すようになりました。使用するには、ワークスペース管理者が再リンクする必要があります。';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'お使いの $forge アカウントでは、このリポジトリを読めません。';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return '$forge へのアクセスを確認できませんでした。もう一度お試しください。';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed => 'お使いのフォージアカウントでは、このリポジトリを読めません。';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'フォージへのアクセスを確認できませんでした。もう一度お試しください。';
+
+  @override
+  String get repoPathHostPath =>
+      'このワークスペースのストレージの外にあるフォルダーは、サーバーオーナーだけがリンクできます。';
+
+  @override
+  String get repoPathMissing => 'サーバー上のそのパスには何もありません。';
+
+  @override
+  String get repoPathDataDir => 'リポジトリはサーバーのデータフォルダーの中を指すことはできません。';
+
+  @override
+  String get repoPathWorkspaceRoot => 'リポジトリにワークスペース自身のフォルダーを指定することはできません。';
+
+  @override
+  String get repoPathOriginMismatch => 'そのフォルダーの origin は別のリポジトリです。';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return '保存しました。このリポジトリを開く前に、$forge にサインインする必要があります。';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return '保存しました。お使いの $forge アカウントではまだこのリポジトリを読めないため、表示されません。';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return '保存しました。今は $forge でのアクセスを確認できませんでした。';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo はどのワークスペースにもリンクされていません。サーバーオーナーに追加を依頼してください。';
+  }
+
+  @override
+  String get reposEmptyAskOwner => 'リポジトリは、サーバーのフォルダーからサーバーオーナーが追加します。';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'このアドレスを入力したのはあなただけです。サーバーオーナーが確認するまで、シングルサインオンは一致しません。';
+
+  @override
+  String get settingsServerPeople => 'ユーザー';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'このサーバーのアカウントを持つすべての人と、そのメールアドレスが確認済みかどうかです。';
+
+  @override
+  String get serverPeopleLabel => 'アカウント';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'すべてのユーザーのアカウントを見て、メールアドレスを確認できるのはサーバーオーナーだけです。';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'メールアドレス未確認';
+
+  @override
+  String get serverPeopleConfirmEmail => 'メールアドレスを確認';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return '$email が $name のものであることを確認しますか？シングルサインオンは、このアドレスをそのアカウントに一致させます。';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '$email を確認しました。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => 'エージェントにはこのサーバーのサンドボックスが必要です';
+
+  @override
+  String get runSandboxUnavailable =>
+      'このサーバーにはサンドボックスがないため、ここでエージェントを実行できるのはそのオーナーだけです。オーナーはサンドボックスをインストールするか、全員のサンドボックスをオフにできます。';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'このフォルダーはワークスペースのストレージの外にあります。このサーバーの使用を確認してください。';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'このフォルダーはワークスペースのストレージの外にあります。確認できるのはサーバーオーナーだけです。';
+
+  @override
+  String get repoPathIssueMissing =>
+      'サーバー上のこのパスには、もう何もありません。このリポジトリを削除し、現在のフォルダーから追加し直してください。';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'このフォルダーはリポジトリとして使用できません。削除し、別のフォルダーからリポジトリを追加してください。';
+
+  @override
+  String get repoPathConfirm => '確認';
+
+  @override
+  String get repoPathConfirmAll => 'すべて確認';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count件のフォルダーはワークスペースのストレージの外にあります',
+      one: '1 件のフォルダーはワークスペースのストレージの外にあります',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'これらのサーバーの使用を確認してください。各リポジトリは、あなたのアクセス権で再度確認されます。';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'このマシン自身のツール設定にあるサーバーは、あなたが開始した、または責任を負う実行でのみ利用できます。他の人の実行には表示されず、Control Center の MCP エンドポイントからも提供されません。';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'このリポジトリのコードを見るには、$provider にサインインしてください。';
+  }
+
+  @override
+  String get repoCodeSignIn => 'サインイン';
+
+  @override
+  String get ideContentSearchFailed => 'ファイル内を検索できませんでした';
+
+  @override
+  String get ideWorktreeFileUnavailable => 'このファイルは、このワークツリーでは利用できません。';
+
+  @override
+  String get ideChangesLoadFailed => '変更を読み込めませんでした';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'このパスは、$forge 上の別のリポジトリを指すようになりました。使用するには、ワークスペース管理者が再リンクする必要があります。';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'バックアップを復元できるのはサーバーオーナーだけです。ダウンロードは引き続き可能です。';
+
+  @override
+  String get terminalReadOnlyBadge => '読み取り専用';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'このターミナルを見ることはできます。入力、サイズ変更、停止には、この会話内のすべてのリポジトリへの書き込みアクセスが必要です。';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'この環境を見ることはできます。開始、停止、再起動には、この会話内のすべてのリポジトリへの書き込みアクセスが必要です。';
+
+  @override
+  String get environmentHostApprovalOwner => 'このサーバー上で実行されます。開始するには承認してください。';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'このサーバー上で実行されます。開始するには、サーバーオーナーの承認が必要です。';
+
+  @override
+  String get environmentHostApprove => '承認';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'ワークスペース管理者として承認してください。シークレットの値を表示できるのは管理者のコピーだけで、承認すると値がそのまま保存されます。';
+
+  @override
+  String get environmentHostUnapproved =>
+      'サーバーオーナーがまだこの環境を承認していないため、このサーバーでは実行できません。';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'まだこの環境を承認していません。サーバー上で実行されるため、定義を承認すると開始されます。';
+
+  @override
+  String get environmentHostApprovalReview => '確認して承認';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'このスペースを開くには、$provider にサインインしてください。';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'お使いの $forge アカウントでは、このスペースが使うリポジトリの1つを読めません。';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'お使いのフォージアカウントでは、このスペースが使うリポジトリの1つを読めません。';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'このスペースが使うリポジトリの1つへの読み取り権限がありません。ワークスペース管理者が付与できます。';
+
+  @override
+  String get spaceAccessFailed => 'このスペースを開けませんでした。';
+
+  @override
+  String get contextExplorerRefused => 'このセッションではコンテキストの内訳を利用できません。';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'リンクされたリポジトリには、オーナーとリポジトリ名の両方が必要です。';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'このリポジトリへの読み取りアクセス権がありません。ワークスペースの管理者が付与できます。';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'このリポジトリは閲覧できますが、変更はできません。ワークスペースの管理者が書き込みアクセス権を付与できます。';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'このリポジトリは閲覧できますが、レビューはできません。ワークスペースの管理者がレビューアクセス権を付与できます。';
+
+  @override
+  String get rigWatchOnlyBadge => '閲覧のみ';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'このマシンは閲覧できます。操作、ポート転送、貼り付け、ファイルのドロップには、このスペース内のすべてのリポジトリへの書き込みアクセス権が必要です。';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'ここでマシンを起動するには、このスペース内のすべてのリポジトリへの書き込みアクセス権が必要です。ワークスペースの管理者が付与できます。';
+
+  @override
+  String get rigViewRefused => 'このマシンは表示できません。読み取りアクセス権のないスペースに属しています。';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'これらのポートを変更するには、このスペース内のすべてのリポジトリへの書き込みアクセス権が必要です。';
+
+  @override
+  String get rigHolderOnly =>
+      'このマシンは特定の人のために開かれたもので、操作できるのはその本人だけです。マシンは本人のサインインを使用します。';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'このマシンは閲覧できます。特定の人のために開かれたマシンで、その本人のサインインを使用するため、操作、ポート転送、貼り付け、ファイルのドロップができるのは本人だけです。';
 }

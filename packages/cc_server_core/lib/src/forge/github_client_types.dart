@@ -4,6 +4,8 @@ library;
 
 import 'package:cc_connect_core/cc_connect_core.dart'
     show ConnectErrorCode, GitHubTokenScope, globalWorkspaceScope;
+import 'package:cc_server_core/src/connect/connect_settings.dart'
+    show ConnectTarget;
 
 /// Which GitHub lane a workspace's automation runs on.
 enum GitHubLane {
@@ -39,8 +41,9 @@ enum GitHubRefusal {
   /// The App is not installed on the repository's owner.
   notInstalled('not_installed'),
 
-  /// The shared App's installation there belongs to other servers.
-  installationBoundElsewhere('installation_bound_elsewhere'),
+  /// The App is installed on the owner, but its installation does not
+  /// include this repository.
+  repoNotSelected('repo_not_selected'),
 
   /// The installation is suspended.
   suspended('suspended'),
@@ -48,11 +51,29 @@ enum GitHubRefusal {
   /// GitHub or Connect is unreachable or failing; transient.
   providerUnavailable('provider_unavailable'),
 
-  /// Too many requests; transient.
+  /// Too many requests (GitHub's primary or secondary rate limit, which it
+  /// answers with 403 as often as 429); transient, never cached, never
+  /// recorded as blocking.
   rateLimited('rate_limited'),
+
+  /// The repository's organization enforces SAML single sign-on and the
+  /// person's sign-in has no active SSO session for it: they sign in to
+  /// GitHub again (through the organization's SSO) and it works.
+  ssoRequired('sso_required'),
+
+  /// A shared Connect App's bot was asked to change code (push, create a
+  /// branch, open or edit a pull request). On Connect the bot only reads and
+  /// comments; that work needs a person who asked for it, on their own
+  /// one-repository token.
+  needsRequester('needs_requester'),
 
   /// Connect refused this server outright.
   installBlocked('install_blocked'),
+
+  /// The linked repository's owner/name now names a different repository on
+  /// GitHub than the one linked (another repository id): nothing is minted
+  /// for it until an admin relinks it.
+  repoReplaced('repo_replaced'),
 
   /// No GitHub lane, or an incomplete own App.
   notConfigured('not_configured'),
@@ -72,9 +93,10 @@ enum GitHubRefusal {
     ConnectErrorCode.notAdmin ||
     ConnectErrorCode.teamBoundElsewhere => accessDenied,
     ConnectErrorCode.notInstalled => notInstalled,
-    ConnectErrorCode.installationBoundElsewhere => installationBoundElsewhere,
+    ConnectErrorCode.repoNotSelected => repoNotSelected,
     ConnectErrorCode.suspended => suspended,
     ConnectErrorCode.rateLimited => rateLimited,
+    ConnectErrorCode.needsRequester => needsRequester,
     ConnectErrorCode.installBlocked => installBlocked,
     ConnectErrorCode.invalidRequest ||
     ConnectErrorCode.codeMismatch => invalidRequest,
@@ -90,13 +112,17 @@ enum GitHubRefusal {
 /// environment fallback behind it.
 final class GitHubScopeRefused implements Exception {
   /// Creates the refusal.
-  const GitHubScopeRefused(this.code, this.message);
+  const GitHubScopeRefused(this.code, this.message, {this.installUrl});
 
   /// What kind of refusal.
   final GitHubRefusal code;
 
   /// What a person can do about it.
   final String message;
+
+  /// Where an admin fixes it, when the refusal knows: the installation's
+  /// repository selection for [GitHubRefusal.repoNotSelected].
+  final Uri? installUrl;
 
   @override
   String toString() => 'GitHubScopeRefused(${code.wire}): $message';
@@ -116,10 +142,14 @@ final class GitHubScopedGrant {
     this.accountableUserId,
     this.connectSeal = '',
     this.connectSealScope = '',
+    this.connectTarget,
+    this.appClient,
+    this.requestId = '',
   });
 
-  /// The bearer token (`ghs_` from an own App, `ghu_` child from Connect or
-  /// a person downscope).
+  /// The bearer token: `ghs_` for the App's bot (an own App's installation,
+  /// or Connect `as: app`), `ghu_` for a person's narrowed sign-in (an own
+  /// App downscope, or Connect `as: user`).
   final String token;
 
   /// The scope actually granted (clamped to the human's role).
@@ -150,6 +180,18 @@ final class GitHubScopedGrant {
   /// The workspace slot [connectSeal] is bound to ([globalWorkspaceScope]
   /// for a person's global grant).
   final String connectSealScope;
+
+  /// On Connect, the Connect that minted it: a revoke goes there, even after
+  /// the workspace moved to another.
+  final ConnectTarget? connectTarget;
+
+  /// For a person downscope on an App lane, the client credentials of the
+  /// App that narrowed it, held in memory only: it is revoked with them,
+  /// even after that App was rotated or removed.
+  final ({String clientId, String clientSecret})? appClient;
+
+  /// GitHub's `x-github-request-id` for the mint, or ''.
+  final String requestId;
 }
 
 /// Whether [owner]/[repo] is a repository linked to [workspaceId].
@@ -184,7 +226,3 @@ final class GitHubBotPresence {
       owners.isNotEmpty &&
       owners.every((o) => suspendedOwners.contains(o.toLowerCase()));
 }
-
-/// Picks the accountable human for automation in a workspace when the
-/// caller did not name one.
-typedef AccountableHumanFallback = Future<String?> Function(String workspaceId);

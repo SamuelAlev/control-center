@@ -4,18 +4,23 @@ import 'dart:io' as io;
 
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart'
     show gitHubRestApiVersion;
+import 'package:cc_host/cc_host.dart' show CcHostLog;
 
 /// One answer from [GitHubRest.send]. [status] is 0 when GitHub could not be
 /// reached at all (connection, timeout, unreadable body).
 final class GitHubRestResponse {
   /// Creates the response.
-  const GitHubRestResponse(this.status, this.json);
+  const GitHubRestResponse(this.status, this.json, {this.headers = const {}});
 
   /// The HTTP status, or 0 for a transport failure.
   final int status;
 
   /// The decoded body, or null when empty or not JSON.
   final Object? json;
+
+  /// The response headers, names lower-cased (repeated values joined with
+  /// `,`). Empty for a transport failure.
+  final Map<String, String> headers;
 
   /// Whether GitHub answered 2xx.
   bool get ok => status >= 200 && status < 300;
@@ -28,8 +33,8 @@ final class GitHubRestResponse {
 /// it) make outside an `RhttpClient`: the App-authenticated `/applications`
 /// endpoints, the bare repository and installation reads that bound a mint,
 /// and token revocation. One transport, one header set, one API version,
-/// never following redirects.
-final class GitHubRest {
+/// never following redirects. Not final so a test can stand in for GitHub.
+class GitHubRest {
   /// Creates the transport.
   GitHubRest({io.HttpClient? httpClient, this.timeout = _defaultTimeout})
     : _http = httpClient ?? (io.HttpClient()..connectionTimeout = timeout);
@@ -83,6 +88,10 @@ final class GitHubRest {
       await for (final chunk in response.timeout(timeout)) {
         bytes.addAll(chunk);
         if (bytes.length > _maxBodyBytes) {
+          CcHostLog.warning(
+            'github: $method ${_template(path)} answered more than '
+            '$_maxBodyBytes bytes; treated as unreached',
+          );
           return const GitHubRestResponse(0, null);
         }
       }
@@ -94,12 +103,26 @@ final class GitHubRest {
           json = null;
         }
       }
-      return GitHubRestResponse(response.statusCode, json);
-    } on Object {
+      final headers = <String, String>{};
+      response.headers.forEach(
+        (name, values) => headers[name.toLowerCase()] = values.join(','),
+      );
+      return GitHubRestResponse(response.statusCode, json, headers: headers);
+    } on Object catch (e) {
+      // Reported as status 0 (GitHub not reached); the endpoint and the
+      // error's type say why without the request's credential.
+      CcHostLog.warning(
+        'github: $method ${_template(path)} did not reach GitHub '
+        '(${e.runtimeType})',
+      );
       return const GitHubRestResponse(0, null);
     }
   }
 
   /// Closes the transport. Calls after this fail as unreachable.
   void close() => _http.close(force: true);
+
+  /// [path] with numeric segments as `{n}`: what a log line names it by.
+  static String _template(String path) =>
+      path.replaceAll(RegExp(r'/\d+'), '/{n}');
 }

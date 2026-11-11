@@ -2,7 +2,7 @@
 title: CLI do cc_server
 description: Todas as flags, variáveis de ambiente, subcomandos e caminhos do diretório de dados do servidor headless.
 slug: pt-PT/manual/referencia/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Cada flag de processo aceita uma flag de CLI ou uma variável de ambiente; a flag
@@ -49,7 +49,7 @@ uma flag parecer não ter efeito.
 
 | Flag                 | Ambiente                     | Predefinição | Significado                                                                                                                                                                       |
 | -------------------- | ---------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`          | `CC_SERVER_SANDBOX`          | `on`         | Se as execuções de agentes são envolvidas na sandbox nativa do sistema operativo do anfitrião quando existe uma disponível. Uma opção de exclusão, não uma ativação — veja abaixo |
+| `--sandbox`          | `CC_SERVER_SANDBOX`          | `on`         | `on` envolve as execuções de agentes na sandbox nativa do sistema operativo do anfitrião, e num anfitrião sem uma arranca apenas as execuções do proprietário do servidor. `off` executa as execuções de todos os membros sem confinamento neste anfitrião. Veja abaixo |
 | `--code-index`       | `CC_SERVER_CODE_INDEX`       | `on`         | Interruptor de emergência no terreno para a indexação do grafo de código em segundo plano. `off` arranca de forma limpa, sem recompilação                                         |
 | `--code-index-defer` | `CC_SERVER_CODE_INDEX_DEFER` | `15`         | Segundos de espera antes da primeira varredura de indexação após o banner de prontidão (limitado a 0–300)                                                                         |
 | `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`    | `on`         | Se as execuções do harness enviam um pequeno conjunto residente de ferramentas mais um índice de nomes, carregando o resto na primeira utilização. Veja abaixo                    |
@@ -91,24 +91,36 @@ poderia ler. A sementeira a partir do `.env` acontece uma vez por campo, pelo
 que uma edição posterior nas Definições não é desfeita por um reinício. Um valor
 vazio é lido como não definido.
 
-O trabalho em segundo plano do GitLab e do Bitbucket também lê `GITLAB_TOKEN` /
-`CI_JOB_TOKEN` e `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` com
-`BITBUCKET_EMAIL`. O GitHub não tem credencial de ambiente.
+Nenhuma credencial de forge vem do ambiente: GitHub, GitLab e Bitbucket atuam com o
+início de sessão ou o token de um membro, ou com tokens da GitHub App para um único
+repositório, limitados a esse membro.
 
 ### `--sandbox`
 
 O servidor sonda o anfitrião uma vez no arranque e envolve a execução de comandos
 dos agentes na sandbox nativa do sistema operativo quando existe um backend
 disponível: `sandbox-exec` (Seatbelt) no macOS, `bwrap` mais `socat` no Linux e no
-WSL2. Onde não existe nenhum — no Windows, ou num anfitrião Linux sem essas
-ferramentas —, as execuções recaem na sanitização do ambiente, na política de
-comandos e nas barreiras de ação, e o registo de arranque indica qual o estado
-aplicável.
+WSL2. A decisão é tomada uma vez e mantém-se até o servidor reiniciar. Há três
+resultados, cada um indicado na linha de exposição do arranque:
 
-O `--sandbox off` é o interruptor de emergência no terreno para o caso que a
-sondagem não consegue ver: um anfitrião onde o próprio perfil de sandbox se
-comporta mal. Não precisa de recompilação e o servidor regista um aviso durante
-toda a vida do processo, para que o estado nunca fique em silêncio.
+| `sandbox=`    | Quando                                    | De quem arrancam as execuções de agentes                                                                                                                       |
+| ------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `native`      | Existe um backend e `--sandbox` está em `on` | Todas, envolvidas                                                                                                                                       |
+| `off`         | `--sandbox off`                           | Todas, sem confinamento neste anfitrião                                                                                                                       |
+| `unavailable` | `--sandbox on` e nenhum backend (Windows, ou Linux sem `bwrap` e `socat`) | Apenas as que o proprietário do servidor tem a responsabilidade, sem confinamento. As restantes são recusadas com "Este servidor não tem sandbox, por isso apenas o proprietário pode executar agentes aqui." |
+
+Para a automação, a pessoa responsável é aquela a que a automação está associada.
+Sem proprietário do servidor registado, nenhuma execução arranca num anfitrião
+`unavailable`. No Linux e no WSL2 com o bubblewrap instalado, o despacho nativo
+atualmente falha de forma fechada para todas as execuções; veja
+[Backends de sandbox](/pt-PT/manual/referencia/backends-de-sandbox/#linux-bubblewrap).
+
+O `--sandbox off` é uma escolha do proprietário do servidor para todos os que usam o
+servidor: executa as execuções de todos os membros sem confinamento nesta máquina.
+Use-o num anfitrião onde o próprio perfil de sandbox se comporta mal, ou para deixar
+os membros executarem agentes num anfitrião sem backend. Não precisa de recompilação,
+e o servidor regista um aviso durante toda a vida do processo, para que o estado nunca
+fique em silêncio.
 
 ### `--tool-deferral`
 
@@ -193,7 +205,6 @@ reiniciar.
 | `cc_server connect enable`      | Usa o Connect alojado do Control Center                                                                          |
 | `cc_server connect enable --url <url>` | Usa um Connect próprio nesse URL (HTTPS, ou `http` em loopback)                                           |
 | `cc_server connect disable`     | Deixa de usar o Connect. Só as apps do próprio servidor iniciam a sessão das pessoas                             |
-| `cc_server connect rotate-key --yes` | Emite uma nova chave de instalação e um novo id de instalação. Todos os que iniciaram sessão através do Connect voltam a iniciar sessão. Sem `--yes` só avisa e sai com `2` |
 
 `status` sem comando é o predefinido. Cada comando aceita `--data-dir`.
 `CC_CONNECT_URL` sobrepõe-se ao que estes guardam. Um comando desconhecido sai

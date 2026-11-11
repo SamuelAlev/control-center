@@ -2,14 +2,13 @@
 title: PR-beszélgetések
 description: Hogyan lesz egy GitHub PR-hozzászólásból ügynökkör webhook nélkül, mi jogosítja fel a szerzőt, és kihez van rendelve a beszélgetés mindkét oldala.
 slug: hu-HU/kezikonyv/fogalmak/pr-beszelgetesek
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Egy pull request már önmagában is az a hely, ahol a kód körüli beszélgetés
 zajlik. A PR-beszélgetések egy Control Center-munkaterület felületévé teszik,
 ugyanúgy, ahogy egy [csevegőhíd](/hu-HU/kezikonyv/fogalmak/csevegohidak/) a
-Slackből az: említse meg @-tel a `@usectrl` fiókot (vagy a munkaterület GitHub App
-botját) egy PR-en, válaszoljon az átnézési szálain belül, vagy adja hozzá az
+Slackből az: említse meg @-tel a `@usectrl` fiókot egy PR-en, válaszoljon az átnézési szálain belül, vagy adja hozzá az
 `ai-review` címkét, és a munka a PR átnézési terében történik — ugyanolyan
 attribúció és korlátok mellett, mint bármi, amit az alkalmazásban gépelnek be. A
 hozzászólás és a címke ugyanúgy kapuzott: azon a tagon, aki írta vagy hozzáadta.
@@ -25,7 +24,7 @@ rendelve a beszélgetés mindkét oldala**.
 A GitHub egyetlen push-csatornája egy alkalmazás számára a webhook, a webhookhoz
 pedig bejövő URL kell — pont az, amit ez a felület szándékosan soha nem igényel.
 A felderítés ezért pásztázás: alkalmazástelepítésenként egy
-aliasolt keresés megkérdezi a GitHubot a botot (vagy annak rövid slugját) említő
+aliasolt keresés megkérdezi a GitHubot a `@usectrl` nevet említő
 PR-ekről és az átnézési címkét viselő nyitott PR-ekről, azoknak a PR-eknek,
 amelyeknek már van átnézési terük, beolvassuk a hozzászólásszálait, és mindent a
 hozzászólás azonosítója alapján vetünk össze azzal, amit az előző pásztázás
@@ -76,8 +75,8 @@ közzétételre:
 - **Bejelentkezett tag.** A fióknak _ennek_ a munkaterületnek egy olyan
   tagjához kell tartoznia, aki ezen a szerveren bejelentkezett a GitHubra
 - **Írási szerepkör.** A `viewer` és a `guest` nem indíthat munkát
-- **Push-hozzáférés.** A válaszok egy `bot` tokent használnak, amely az adott
-  tag repóhozzáférésére korlátozódik. Ha a szerver nem tud ilyet kiállítani, nem
+- **Push-hozzáférés.** A válaszok egy erre az egy repóra szóló tokent használnak,
+  amely a tag hozzáférésére korlátozódik. Ha a szerver nem tud ilyet kiállítani, nem
   folytatja
 
 Minden ellenőrzés bármilyen visszaigazolás előtt lefut, így egy idegen sem
@@ -101,16 +100,17 @@ A beszélgetés mindkét oldala más identitást visel, és épp a különbség 
 funkció:
 
 - **A GitHubon a válasz az Ön nevében végzett automatizálás.** Minden válasz egy
-  erre az egy repóra szóló `bot` tokennel megy ki, amely a kérdező tag
-  hozzáférésére korlátozódik. Saját alkalmazásnál a szerző az alkalmazás `[bot]`
-  fiókja. A Connecten keresztül a megosztott App tokenje felhasználói token, így
-  a válasz szerzője a kérdező tag fiókja, amely az Appon keresztül jár el. Így
-  vagy úgy, minden válasz `**Control Center** (for @login):` kezdettel indul,
-  ami megmondja, ki kérdezett, és egyben hurokvédelemként is szolgál.
+  erre az egy repóra szóló tokennel megy ki, amely a kérdező tag hozzáférésére
+  korlátozódik, és az alkalmazás `[bot]` fiókja írja. Egy kivétel van: a megosztott
+  Control Center Connect alkalmazásnál a bot csak akkor posztol átnézési szálakban,
+  ha a Connect üzemeltetője felvette a telepítést a listájára. Ellenkező esetben
+  az átnézési szálon belüli válasz a kérdező tag saját fiókja nevében jelenik meg. Így vagy úgy, minden válasz
+  `**Control Center** (for @login):` kezdettel indul, ami megmondja, ki kérdezett,
+  és egyben hurokvédelemként is szolgál. Az ügynök szövegében lévő @-említések
+  inaktívak, így a válasz soha nem értesít felhasználót vagy csapatot.
 - **A térben a kérdés az Öné.** Az üzenet ahhoz a taghoz van rendelve, akivé a
-  szerző feloldódott, és az ügynökfuttatás az ő nevében történik: a commitok
-  társszerzőjeként tüntetik fel, a tér autonómiatárcsája és műveletkorlátai pedig
-  pontosan úgy érvényesek, mint egy az alkalmazásban beírt üzenetre. A
+  szerző feloldódott, és az ügynökfuttatás az ő nevében történik: a commitjai
+  az övéi, a tér autonómiatárcsája és műveletkorlátai pedig pontosan úgy érvényesek, mint egy az alkalmazásban beírt üzenetre. A
   futtatásból származó kódhoszt-írások az adott tag által korlátozott, egyetlen
   repóra szóló tokeneket használnak, soha nem a tag egészben átadott
   bejelentkezését.
@@ -119,24 +119,16 @@ Az átnézési megállapítások visszaközzététele a GitHubra továbbra is eg
 döntése marad, amelyet a Control Centerben hoz meg. Egy említés _elindíthat_ egy
 átnézést; közzétenni csak ember tud egyet.
 
-## A hurok elleni védelem és a rövid név
+## A hurok elleni védelem
 
 Minden, amit botfiók írt, még azelőtt kiesik, hogy bármelyik kapu lefutna —
 konkrétan a miénk, és minden `[bot]` utótag, így egy másik alkalmazás átnéző
 botja sem ébresztheti fel a miénket —, és ugyanígy minden olyan hozzászólás,
 amely a `**Control Center** (for @` előtaggal kezdődik, mivel a Connecten
-keresztüli válasz szerzője egy személy fiókja. E nélkül a válaszok új
+keresztüli, átnézési szálbeli válasz szerzője egy személy fiókja lehet. E nélkül a válaszok új
 hozzászólásként érkeznének meg, és a végtelenségig újraaktiválnák a hidat.
 
-A `[bot]` utótag az oka annak is, hogy létezik a rövid forma. A GitHub egy
-alkalmazásfiók bejelentkezési nevét `<slug>[bot]` formában rögzíti, nem kínál
-hozzá automatikus kiegészítést, és soha nem oldja fel a `@slug` nevet az
-alkalmazásra — a csupasz slug elfogadása tehát _a mi_ illesztőnk döntése, a
-felderítéséhez pedig a hozzászólás nyers **szövegére** irányuló keresési sávra van
-szükség, nem a GitHub említési indexére. A költséget kimondjuk, nem elsimítjuk:
-egy olyan emberi felhasználó, aki ugyanazt a slugot használja, mint az alkalmazás,
-a saját minden rövid formájú említésével a botot szólítja meg. A jellegzetes
-alkalmazásnevek hipotetikussá teszik ezt az ütközést.
+Csak a `@usectrl` indít munkát. Az App saját bejelentkezése (`<slug>[bot]`) és a csupasz slugja semmire sem vonatkozik: a GitHub nem kínál automatikus kiegészítést egy alkalmazásfiókhoz, a csupasz slug pedig egy emberi felhasználóhoz is tartozhat.
 
 ## Ami szándékosan nincs felkínálva
 

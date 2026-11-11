@@ -230,9 +230,9 @@ class ContextUsageFlyout extends ConsumerWidget {
                 size: CcButtonSize.sm,
                 fullWidth: true,
                 icon: AppIcons.arrowUpRight,
-                // The explorer needs the active workspace to build its tab;
-                // without one the action would dead-end, so it disables.
-                onPressed: workspaceId == null
+                // Without the active workspace (or with the inspection
+                // refused) the explorer would dead-end, so this disables.
+                onPressed: workspaceId == null || breakdown.refused
                     ? null
                     : () {
                         openContextExplorer(

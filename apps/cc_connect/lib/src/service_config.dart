@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:cc_connect/src/secrets.dart';
+import 'package:cc_connect/src/sentry_reporter.dart';
 import 'package:cc_connect_core/cc_connect_core.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart' show RSAPrivateKey;
 
 /// Why a Connect refused to start. The message names the offending variable
 /// and never includes a secret value.
@@ -43,7 +45,8 @@ enum BindingBackend {
   firestore,
 }
 
-/// The shared GitHub App's OAuth credentials (no RSA key, no webhook secret).
+/// The shared GitHub App's credentials: OAuth client and RSA private key (no
+/// webhook secret).
 final class GitHubCredentials {
   /// Creates the credentials.
   const GitHubCredentials({
@@ -51,6 +54,7 @@ final class GitHubCredentials {
     required this.appSlug,
     required this.clientId,
     required this.clientSecret,
+    required this.privateKey,
     this.acceptsNewAuthorizations = true,
     this.minSealGeneration = 1,
   });
@@ -67,11 +71,75 @@ final class GitHubCredentials {
   /// The App's OAuth client secret, both generations.
   final DualSecret clientSecret;
 
+  /// The App's RSA private key (PEM): signs the App JWT that mints
+  /// one-repository installation tokens (`as: app`). It never leaves
+  /// Connect; every mint is authorized by a person's sealed grant first.
+  final SecretSource privateKey;
+
   /// Self-hosted: whether new sign-ins are accepted.
   final bool acceptsNewAuthorizations;
 
   /// Self-hosted: seals below this generation must sign in again.
   final int minSealGeneration;
+}
+
+final RegExp _pemBlock = RegExp(
+  r'-----BEGIN ([A-Z0-9 ]+)-----(.*?)-----END \1-----',
+  dotAll: true,
+);
+
+/// [raw] as a well-formed PEM, however it was pasted into an environment
+/// variable. Hosts without secret files (Heroku, Fly) often hold a
+/// multi-line PEM on one line: wrapped in quotes, with literal `\n` escapes,
+/// with the line breaks turned into spaces, or base64-encoded whole. The body
+/// is re-wrapped at 64 columns. Anything that is not a PEM comes back trimmed
+/// and unchanged, so the key check still refuses it.
+String normalizePem(String raw) {
+  var text = raw.trim();
+  if (text.length >= 2 &&
+      (text.startsWith('"') && text.endsWith('"') ||
+          text.startsWith("'") && text.endsWith("'"))) {
+    text = text.substring(1, text.length - 1).trim();
+  }
+  if (!text.contains('-----BEGIN')) {
+    try {
+      final decoded = utf8.decode(
+        base64.decode(text.replaceAll(RegExp(r'\s'), '')),
+      );
+      if (decoded.contains('-----BEGIN')) {
+        text = decoded.trim();
+      }
+    } on FormatException {
+      return text;
+    }
+  }
+  final block = _pemBlock.firstMatch(
+    text.replaceAll(r'\r', '').replaceAll(r'\n', '\n'),
+  );
+  if (block == null) {
+    return text;
+  }
+  final label = block.group(1)!;
+  final body = block.group(2)!.replaceAll(RegExp(r'\s'), '');
+  final lines = [
+    for (var i = 0; i < body.length; i += 64)
+      body.substring(i, i + 64 > body.length ? body.length : i + 64),
+  ];
+  return '-----BEGIN $label-----\n${lines.join('\n')}\n-----END $label-----\n';
+}
+
+/// Whether [pem] parses as the RSA key a GitHub App JWT is signed with, once
+/// normalized ([normalizePem]).
+bool isReadableGitHubAppKey(String pem) {
+  if (pem.isEmpty) {
+    return false;
+  }
+  try {
+    RSAPrivateKey(normalizePem(pem));
+    return true;
+  } on Object {
+    return false;
+  }
 }
 
 /// The Google web OAuth client.
@@ -188,17 +256,39 @@ final class ConnectRateLimits {
     this.perIpPerMinute = 300,
     this.globalPerSecond = 500,
     this.slackEventsPerTeamPerMinute = 600,
+    this.slackHookPerIpPerMinute = 600,
+    this.slackHookGlobalPerSecond = 100,
     this.klipyPerInstallPerMinute = 120,
-  });
+    this.klipyPerIpPerMinute = 240,
+    this.loginsPerIpPer10Minutes = 60,
+    this.githubTokensPerAccountPerHour = 30,
+    int? githubTokensAccountCeilingPerHour,
+    this.githubTokensPerIpPerHour = 600,
+    this.githubExchangeCeilingPerHour = 500,
+    this.githubAppMintsPerInstallPerHour = 120,
+    this.githubAppMintsPerAccountPerHour = 240,
+    this.githubAppCeilingPerHour = 3000,
+    this.githubTokenCeilingPerHour = 1500,
+    this.githubLiveChildrenWarn = 10,
+    this.retiresPerIpPerHour = 10,
+  }) : githubTokensAccountCeilingPerHour =
+           githubTokensAccountCeilingPerHour ??
+           githubTokensPerAccountPerHour * 4;
 
   /// Signed calls per install per minute.
   final int perInstallPerMinute;
 
-  /// Requests per client IP per minute (Slack hooks excepted).
+  /// Requests per client IP per minute (Slack hooks have their own).
   final int perIpPerMinute;
 
-  /// Requests per second across the instance.
+  /// Requests per second across the instance (Slack hooks have their own).
   final int globalPerSecond;
+
+  /// Slack hook requests per client IP per minute.
+  final int slackHookPerIpPerMinute;
+
+  /// Slack hook requests per second across the instance.
+  final int slackHookGlobalPerSecond;
 
   /// Slack events queued per team per minute; the rest are dropped (and
   /// still answered 200, so Slack never disables the subscription).
@@ -206,6 +296,54 @@ final class ConnectRateLimits {
 
   /// Klipy proxy calls per install per minute.
   final int klipyPerInstallPerMinute;
+
+  /// Klipy proxy calls per client address per minute, across instances: the
+  /// Klipy key's quota is shared by every server.
+  final int klipyPerIpPerMinute;
+
+  /// Sign-ins started per client address per 10 minutes (a login lives 10
+  /// minutes), across instances: one address cannot fill the state store.
+  final int loginsPerIpPer10Minutes;
+
+  /// GitHub token-endpoint calls (code exchanges, refreshes, new children)
+  /// per GitHub account and install per hour, across instances: one server
+  /// spends only its own share of a person's budget.
+  final int githubTokensPerAccountPerHour;
+
+  /// GitHub token-endpoint calls per GitHub account per hour across every
+  /// install (by default four shares).
+  final int githubTokensAccountCeilingPerHour;
+
+  /// GitHub token-endpoint calls per client address per hour.
+  final int githubTokensPerIpPerHour;
+
+  /// GitHub code exchanges (new sign-ins) per hour for the whole App. They
+  /// have this budget of their own and never count against
+  /// [githubTokenCeilingPerHour].
+  final int githubExchangeCeilingPerHour;
+
+  /// `as: app` installation-token mints per install per hour.
+  final int githubAppMintsPerInstallPerHour;
+
+  /// `as: app` installation-token mints per asking GitHub account per hour,
+  /// across installs.
+  final int githubAppMintsPerAccountPerHour;
+
+  /// `as: app` installation-token mints (App JWT calls) per hour for the
+  /// whole App.
+  final int githubAppCeilingPerHour;
+
+  /// Refreshes and new children per hour for the whole App; past it they
+  /// answer `rate_limited`. Code exchanges have their own ceiling
+  /// ([githubExchangeCeilingPerHour]).
+  final int githubTokenCeilingPerHour;
+
+  /// Live children one GitHub account holds across every install past which
+  /// `github.token_cap` is logged.
+  final int githubLiveChildrenWarn;
+
+  /// `/v1/install/retire` calls per client address per hour.
+  final int retiresPerIpPerHour;
 }
 
 /// A hosted Connect's offline-signed `/v1/config`, from
@@ -282,6 +420,7 @@ final class ConnectServiceConfig {
     this.slack,
     this.klipy,
     this.githubAllowedOwners = const {},
+    this.githubReviewBotInstalls = const {},
     this.signedConfigPath,
     this.signedConfigInline,
     this.configEpoch = 1,
@@ -299,6 +438,8 @@ final class ConnectServiceConfig {
     this.imageDigest = '',
     this.version = connectServiceVersion,
     this.logHmacKey,
+    this.sentryDsn,
+    this.sentryEnvironment = '',
     this.rateLimits = const ConnectRateLimits(),
   }) : publicBaseUrl = _checkedBaseUrl(publicUrl) {
     basePath = Uri.parse(publicBaseUrl).path;
@@ -359,6 +500,11 @@ final class ConnectServiceConfig {
   /// these numeric GitHub account ids.
   final Set<int> githubAllowedOwners;
 
+  /// Installs whose `as: app` mints may carry `bot` (`pull_requests: write`,
+  /// reviews as the shared bot): `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Every
+  /// other install's bot holds at most `comment`.
+  final Set<String> githubReviewBotInstalls;
+
   /// Hosted: the offline-signed config file, re-read as it changes.
   final String? signedConfigPath;
 
@@ -412,6 +558,18 @@ final class ConnectServiceConfig {
   /// Optional stable HMAC key for install ids in logs; a per-process random
   /// key otherwise.
   final SecretSource? logHmacKey;
+
+  /// Optional Sentry DSN (`CONNECT_SENTRY_DSN`), checked by
+  /// [SentryDsn.tryParse] at load.
+  final SecretSource? sentryDsn;
+
+  /// `CONNECT_SENTRY_ENVIRONMENT`; empty derives `hosted` (a signed config)
+  /// or `self-hosted`.
+  final String sentryEnvironment;
+
+  /// Whether this Connect serves an offline-signed config (hosted).
+  bool get servesSignedConfig =>
+      signedConfigPath != null || signedConfigInline != null;
 
   /// Rate ceilings.
   final ConnectRateLimits rateLimits;
@@ -549,6 +707,26 @@ ConnectServiceConfig _fromEnvironment(
     );
   }
 
+  final reviewBotRaw = text('CONNECT_GITHUB_REVIEW_BOT_INSTALLS');
+  if (reviewBotRaw == '*') {
+    throw const ConnectConfigException(
+      'CONNECT_GITHUB_REVIEW_BOT_INSTALLS lists install ids; * is refused: '
+      'the shared bot reviews only for servers the operator knows',
+    );
+  }
+  final reviewBotInstalls = installSet(
+    'CONNECT_GITHUB_REVIEW_BOT_INSTALLS',
+    reviewBotRaw,
+  );
+  for (final id in reviewBotInstalls) {
+    if (!access.permits(id)) {
+      throw ConnectConfigException(
+        'CONNECT_GITHUB_REVIEW_BOT_INSTALLS: "$id" is not allowed by '
+        'CONNECT_ALLOWED_INSTALLS / CONNECT_DENY_INSTALLS',
+      );
+    }
+  }
+
   final owners = <int>{};
   for (final part in text('CONNECT_GITHUB_ALLOWED_OWNERS').split(',')) {
     final raw = part.trim();
@@ -575,10 +753,12 @@ ConnectServiceConfig _fromEnvironment(
       'CONNECT_GITHUB_CLIENT_SECRET',
       generationName: 'CONNECT_GITHUB_SECRET_GENERATION',
     );
+    final privateKey = secret('CONNECT_GITHUB_APP_PRIVATE_KEY');
     if (appIdRaw.isNotEmpty &&
         slug.isNotEmpty &&
         clientId.isNotEmpty &&
-        secretPair != null) {
+        secretPair != null &&
+        privateKey != null) {
       final appId = int.tryParse(appIdRaw);
       if (appId == null || appId <= 0) {
         throw const ConnectConfigException(
@@ -590,11 +770,20 @@ ConnectServiceConfig _fromEnvironment(
           'CONNECT_GITHUB_APP_SLUG is not a GitHub App slug',
         );
       }
+      // A file-backed key is re-read on use (rotation); an unreadable file
+      // only makes installation-token mints unavailable.
+      if (!privateKey.isFileBacked &&
+          !isReadableGitHubAppKey(privateKey.value)) {
+        throw const ConnectConfigException(
+          'CONNECT_GITHUB_APP_PRIVATE_KEY is not an RSA private key (PEM)',
+        );
+      }
       github = GitHubCredentials(
         appId: appId,
         appSlug: slug,
         clientId: clientId,
         clientSecret: secretPair,
+        privateKey: privateKey,
         acceptsNewAuthorizations: flag(
           'CONNECT_GITHUB_ACCEPTS_NEW',
           fallback: true,
@@ -787,6 +976,25 @@ ConnectServiceConfig _fromEnvironment(
     );
   }
 
+  final sentryDsn = secret('CONNECT_SENTRY_DSN');
+  if (sentryDsn != null && SentryDsn.tryParse(sentryDsn.value) == null) {
+    throw ConnectConfigException(
+      '${sentryDsn.name} is not a Sentry DSN (https://<key>@<host>/<project>)',
+    );
+  }
+  final sentryEnvironment = text('CONNECT_SENTRY_ENVIRONMENT');
+  if (sentryEnvironment.isNotEmpty &&
+      !RegExp(r'^[A-Za-z0-9_.\-]{1,64}$').hasMatch(sentryEnvironment)) {
+    throw const ConnectConfigException(
+      'CONNECT_SENTRY_ENVIRONMENT is 1..64 letters, digits, _ . -',
+    );
+  }
+
+  final accountShare = integer(
+    'CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR',
+    30,
+    min: 1,
+  );
   final config = ConnectServiceConfig(
     publicUrl: publicUrl,
     access: access,
@@ -799,6 +1007,7 @@ ConnectServiceConfig _fromEnvironment(
     slack: slack,
     klipy: klipy,
     githubAllowedOwners: owners,
+    githubReviewBotInstalls: reviewBotInstalls,
     signedConfigPath: signedPath.isEmpty ? null : signedPath,
     signedConfigInline: signedInline.isEmpty ? null : signedInline,
     configEpoch: integer('CONNECT_CONFIG_EPOCH', 1, min: 1),
@@ -820,6 +1029,8 @@ ConnectServiceConfig _fromEnvironment(
         ? connectServiceVersion
         : text('CONNECT_VERSION'),
     logHmacKey: logHmacKey,
+    sentryDsn: sentryDsn,
+    sentryEnvironment: sentryEnvironment,
     rateLimits: ConnectRateLimits(
       perInstallPerMinute: integer(
         'CONNECT_RATE_INSTALL_PER_MINUTE',
@@ -833,9 +1044,75 @@ ConnectServiceConfig _fromEnvironment(
         600,
         min: 1,
       ),
+      slackHookPerIpPerMinute: integer(
+        'CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE',
+        600,
+        min: 1,
+      ),
+      slackHookGlobalPerSecond: integer(
+        'CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND',
+        100,
+        min: 1,
+      ),
       klipyPerInstallPerMinute: integer(
         'CONNECT_RATE_KLIPY_PER_MINUTE',
         120,
+        min: 1,
+      ),
+      klipyPerIpPerMinute: integer(
+        'CONNECT_RATE_KLIPY_IP_PER_MINUTE',
+        240,
+        min: 1,
+      ),
+      loginsPerIpPer10Minutes: integer(
+        'CONNECT_RATE_LOGINS_IP_PER_10_MINUTES',
+        60,
+        min: 1,
+      ),
+      githubTokensPerAccountPerHour: accountShare,
+      githubTokensAccountCeilingPerHour: integer(
+        'CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR',
+        accountShare * 4,
+        min: accountShare,
+      ),
+      githubTokensPerIpPerHour: integer(
+        'CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR',
+        600,
+        min: 1,
+      ),
+      githubExchangeCeilingPerHour: integer(
+        'CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR',
+        500,
+        min: 1,
+      ),
+      githubAppMintsPerInstallPerHour: integer(
+        'CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR',
+        120,
+        min: 1,
+      ),
+      githubAppMintsPerAccountPerHour: integer(
+        'CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR',
+        240,
+        min: 1,
+      ),
+      githubAppCeilingPerHour: integer(
+        'CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR',
+        3000,
+        min: 1,
+      ),
+      githubTokenCeilingPerHour: integer(
+        'CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR',
+        1500,
+        min: 1,
+      ),
+      githubLiveChildrenWarn: integer(
+        'CONNECT_GITHUB_TOKEN_CAP_WARN',
+        10,
+        min: 1,
+      ),
+      retiresPerIpPerHour: integer(
+        'CONNECT_RATE_RETIRE_IP_PER_HOUR',
+        10,
         min: 1,
       ),
     ),

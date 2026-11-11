@@ -56,6 +56,8 @@ class DaoRepoRepository implements RepoRepository {
             forge: drift.Value(repo.forge.wire),
             remoteOwner: drift.Value(repo.remoteOwner),
             remoteName: drift.Value(repo.remoteName),
+            linkedByUserId: drift.Value(repo.linkedBy),
+            forgeRepoId: drift.Value(repo.forgeRepoId),
             createdAt: drift.Value(repo.createdAt),
             updatedAt: drift.Value(repo.updatedAt),
           ),

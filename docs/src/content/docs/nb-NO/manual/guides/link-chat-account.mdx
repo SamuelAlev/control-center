@@ -2,7 +2,7 @@
 title: Koble til Slack-kontoen din
 description: Bevis at en Slack-identitet er din, slik at agenter handler på meldingene dine og arbeidet ditt tilskrives deg.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-chatkonto
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Denne veiledningen viser hvordan du kobler chat-identiteten din til Control Center-brukeren din, og hvordan du fjerner en kobling.
@@ -19,7 +19,7 @@ Et medlem uten kobling som nevner boten, får et svar i den Slack-tråden som fo
 
 Kobling krever begge sider: å sende en kode fra Slack beviser Slack-kontoen, og å bekrefte den i Control Center beviser at kontoen er din.
 
-1. Gå til **Innstillinger → Arbeidsområde → Profil og identitet** og rull ned til kortet **Knyttede chat-kontoer**
+1. Gå til **Innstillinger → Deg → Profil** og finn kortet **Knyttede chat-kontoer**
 2. I Slack-blokken klikker du på **Knytt Slack-kontoen min**. Dialogen viser en engangskode, for eksempel:
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Hvis det er kontoen din, klikker du på **Bekreft**. Koblingen opprettes, dialogen sier fra, og boten bekrefter i den samme direktemeldingen
 6. Hvis den ikke er din, klikker du på **Avslå**. Ingenting kobles, og koden slutter å virke; klikk på **Hent en ny kode** for å prøve igjen
 
-Å lukke dialogen gjør ikke at et krav går tapt. En kode som kommer senere, venter på raden **Knytt Slack-kontoen min** på profilsiden din, med de samme knappene **Bekreft** og **Avslå**.
+Å lukke dialogen gjør ikke at et krav går tapt. En kode som kommer senere, venter på raden **Knytt Slack-kontoen min** på det kortet, med de samme knappene **Bekreft** og **Avslå**.
 
 Hvorfor bekreftelsessteget finnes: en kode som noen leser over skulderen din og sender fra en annen Slack-konto, ville ellers fått den kontoen til å handle som deg. Bare du kan bekrefte, og bare akkurat den profilen som sendte koden.
 
@@ -50,15 +50,17 @@ En kode som er ukjent, utløpt, avslått eller generert for et annet arbeidsomr�
 
 Hvis Slack-profilen din har en bekreftet e-postadresse som stemmer med den verifiserte e-postadressen til en Control Center-bruker som **allerede er medlem av dette arbeidsområdet**, kobler broen deg til første gang du snakker med den. Ingen kode trengs.
 
+Adressen på Control Center-siden regnes som verifisert når enkel pålogging eller SCIM har satt den, eller når serverens eier har bekreftet den under **Innstillinger → Server → Personer**. En adresse du skrev inn i din egen profil, er ikke verifisert, så den kobler ingenting før eieren bekrefter den; bruk kodeflyten i mellomtiden.
+
 Begge delene må stemme: e-posttreffet beviser identiteten, men bare medlemskap gir tilgang, så en fremmed hvis e-postadresse tilfeldigvis finnes på serveren, blir ikke koblet til noe. Oversikten viser hvordan hver kobling ble opprettet («matchet på e-post» eller «knyttet med en kode»).
 
 Automatisk kobling krever scope-et `users:read.email`. Uten det oppgir ikke Slack adressen, og kodeflyten er den eneste veien.
 
 ## Se hvem som er koblet til
 
-Oversikten hører til administrasjonen av arbeidsområdet og ligger derfor på den andre halvdelen av flaten: **Innstillinger → Arbeidsområde → Generelt → Chat-broer → Knyttede kontoer**. Den lister opp hvert koblet medlem i arbeidsområdet, med Slack-kontoen hver av dem er knyttet til, og hvordan koblingen ble opprettet.
+Oversikten hører til administrasjonen av arbeidsområdet og ligger derfor på adminkortet: **Innstillinger → Arbeidsområde → Integrasjoner → Chat-broer → Knyttede kontoer**. Den lister opp hvert koblet medlem i arbeidsområdet, med Slack-kontoen hver av dem er knyttet til, og hvordan koblingen ble opprettet.
 
-Din egen status står på profilsiden din: raden **Knytt Slack-kontoen min** viser «Knyttet til _your-slack-id_» når du er koblet til, og ber deg koble til når du ikke er det.
+Din egen status står under **Innstillinger → Deg → Profil**: raden **Knytt Slack-kontoen min** viser «Knyttet til _your-slack-id_» når du er koblet til, og ber deg koble til når du ikke er det.
 
 Oversikten og kravet er levende abonnementer, fordi endringen skjer på den andre siden: du sender koden i Slack, så ingen forespørsel fra appen kan bære svaret tilbake.
 

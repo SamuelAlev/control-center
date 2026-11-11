@@ -2,7 +2,7 @@
 title: "Revisión con IA"
 description: "Cómo una pull request pasa a estar revisada: espacios de revisión, nodos de revisión y consenso entre pares, cohortes y ejes, el veredicto Ship/Hold/Block y por qué publicar sigue siendo un paso que das tú."
 slug: es-MX/manual/conceptos/revision-con-ia
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## La forma de una revisión
@@ -223,9 +223,14 @@ usuario, así que una revisión nunca puede publicarse dos veces. Cuando presion
 - El botón **Publicar en GitHub** publica la revisión en nombre de quien lo
   presionó, con su propio inicio de sesión de GitHub: la decisión de publicar es
   suya, así que la revisión también. Una publicación sin una persona detrás es
-  automatización, que nunca aprueba: Ship sale entonces como `COMMENT` y, en
-  Control Center Connect, la publicación se atribuye con el prefijo
-  `**Control Center** (for @login):`.
+  automatización, que nunca aprueba: Ship sale entonces como `COMMENT`, y las
+  @-menciones en los hallazgos quedan inertes, así que la publicación no notifica
+  a nadie. La publica el bot, salvo en la app compartida de Control Center Connect
+  cuando el operador de Connect no ha listado esta instalación: entonces sale con
+  el inicio de sesión propio de la persona responsable, con su nombre, atribuida con el prefijo `**Control Center** (for @login):`.
+  Un servidor o un espacio de trabajo con su propia app de GitHub siempre la
+  publica como bot. Un agente que llama a la herramienta MCP solo puede publicar
+  la revisión de su propio espacio.
 
 Publicar declara la clase de acción `prPublish`, así que el punto de control de
 las barandillas lo condiciona como cualquier acción que muta: pide aprobación de

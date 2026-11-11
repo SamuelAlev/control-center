@@ -109,7 +109,7 @@ typography:
 rounded:
   sm: "0px" # all standard elements, buttons, inputs, chips, cards (xs/sm/md all = 0)
   md: "0px" # intentionally equal to sm; no mid rounding
-  pill: "9999px" # pills + status capsules + live dots ONLY
+  pill: "999px" # pills + status capsules + live dots ONLY
 
 # AppSpacing productive scale: 2/4/8/12/16/24/32/48.
 spacing:
@@ -241,7 +241,7 @@ This is the visual contract for the client and site. [PRODUCT.md](PRODUCT.md) ow
 - Reuse `Cc*` widgets rather than styling new primitives. Buttons are 32/40/48px, with 40px matching fields; a full-width label aligns to start. A signed approve/destructive pair uses success/danger with white labels; an unsigned third action stays neutral, while ordinary Save/Create uses the ink primary, not green.
 - Panels are square data containers; status may tint a card **border**, not its entire fill. Do not nest cards. A desktop navigation selection needs legible inverted badges and synchronized fill/ink transitions. Use `assets/logo_with_background.svg` for the square brand mark, `logo.svg`/`logo_white.svg` for the figure alone. On the login screen the mark takes the app icon's continuous corner (about 22.5% of the tile), the one rounded exception to square geometry.
 - The Source Control sidebar starts with the space's PR inventory, followed by repository changes in one scroll area. Its header's creation menu groups Create pull request / Publish stack actions by repository; repository sections have no duplicate PR footer buttons. The inventory keeps title and status together with a 2px gap, 4px vertical row insets and a ≥44px row target. Titles use the compact body-sm line height and can wrap to two lines; stack rails remain centered on their numbered markers.
-- Settings kit (`lib/features/settings/presentation/widgets/kit/`) uses `SettingsPage` → `SectionCard` → `SettingsGroup` → field/toggle/entity row. Open with `SettingsSummary` (3–5 state facts), disclose expert controls while badging overrides, filter lists beyond roughly eight entities, and show `SettingsSaveBar` only when edits need committing. `SettingsCopyField` handles selectable values and `SettingsKeyValueEditor` handles maps.
+- Settings kit (`lib/features/settings/presentation/widgets/kit/`) uses `SettingsPage` → `SectionCard` → `SettingsGroup` → field/toggle/entity row. A page that holds two subjects names the second with a `SettingsPageHeading` between its cards, never a card around cards. Open with `SettingsSummary` (3–5 state facts), disclose expert controls while badging overrides, filter lists beyond roughly eight entities, and show `SettingsSaveBar` only when edits need committing. `SettingsCopyField` handles selectable values and `SettingsKeyValueEditor` handles maps.
 - Code fences and Mermaid diagrams share a square framed surface. Labeled blocks get a kind/action header; unlabeled fences put Copy in the body. Diagrams add source, fenced copy, expandable pan/zoom and generated text alternatives. Theme diagram strokes from tokens; categorical color needs adjacent text. Preserve shape semantics, and collapse diagrams taller than ~340px.
 
 ## Checks when designing

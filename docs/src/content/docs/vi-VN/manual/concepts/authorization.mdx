@@ -2,7 +2,7 @@
 title: Ủy quyền — ai được phép làm gì và cách bạn chứng minh điều đó
 description: Danh mục quyền đằng sau các vai trò của Control Center, dấu vết kiểm toán chống sửa đổi mà mọi quyết định ủy quyền đều ghi vào, và những kiểm soát toàn bản cài đặt mà người vận hành có thể ấn định.
 slug: vi-VN/so-tay/khai-niem/uy-quyen
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center trả lời hai câu hỏi về ủy quyền, và chúng thực sự khác nhau.
@@ -60,19 +60,103 @@ dạng `custom:<id>`, và một client quá cũ để hiểu giá trị đó s�
 thay vì đoán mò.
 
 Bên dưới vai trò là các **cấp quyền theo từng kho mã** (`none` / `read` /
-`review` / `write`): tư cách thành viên không gian làm việc không bao giờ âm
-thầm vượt quyền trên máy chủ mã. Mọi bề mặt phơi ra mã đều kiểm tra chúng — kể
+`review` / `write`, xem [Thay đổi mã cần quyền ghi](#thay-đổi-mã-cần-quyền-ghi)):
+tư cách thành viên không gian làm việc không bao giờ âm thầm vượt quyền trên máy chủ mã. Mọi bề mặt phơi ra mã đều kiểm tra chúng — kể
 cả những bề mặt chạm tới mã theo đường vòng, như terminal hay phiên trình soạn
 thảo mở trên worktree của một space.
 
-## Thẩm quyền máy chủ
+## Mã đi theo forge
 
-Một số thao tác hoàn toàn không liên quan đến không gian làm việc: cấu hình áp
-dụng cho toàn bản cài đặt, cấu hình SSO, thông tin xác thực của nhà cung cấp,
-quản lý mô hình, sao lưu toàn bộ bản cài đặt. Những thao tác này khai báo
-**thẩm quyền máy chủ** và bị từ chối với tất cả mọi người trừ người vận hành
-của bản cài đặt (chủ sở hữu máy chủ đã được ghi nhận). Ở đây cố ý chỉ có một
-danh tính người vận hành và một định nghĩa duy nhất về nó.
+Một grant riêng lẻ không mở được mã của một kho. Để xem các tệp, diff hoặc kết quả
+tìm kiếm của nó, hoặc mở một terminal trên đó, thành viên cần grant của Control Center
+**và** tài khoản forge của chính họ phải đọc được kho. Quản trị viên không gian làm việc
+cũng không được miễn; chỉ chủ sở hữu máy chủ là được miễn, vì checkout nằm trên máy của
+họ. Một kho không có remote forge thì chỉ cần grant.
+
+- Khi quản trị viên cấp một kho cho người mà tài khoản forge không đọc được nó, grant
+  vẫn được lưu và quản trị viên thấy một cảnh báo.
+- Khi không thể kết nối tới forge để kiểm tra, câu trả lời là không, chứ không phải một
+  phỏng đoán: người đó thấy "Không thể xác nhận quyền truy cập GitHub của bạn. Hãy thử
+  lại." (kèm tên forge của họ) và thử lại sau.
+- Pull request và mọi thứ được tạo từ chúng đều theo cùng quy tắc.
+
+### Thay đổi mã cần quyền ghi
+
+Một grant kho có ba cấp, và mỗi cấp bao gồm cấp đứng trước nó:
+
+- **read**: xem các tệp, diff và kết quả tìm kiếm của kho, miễn là tài khoản forge của
+  chính bạn cũng đọc được nó.
+- **review**: read, cộng với phê duyệt, yêu cầu thay đổi và các hành động đánh giá khác
+  trên pull request của nó.
+- **write**: review, cộng với thay đổi mã và điều khiển các lượt chạy agent ghi vào kho.
+  Thay đổi mã bao gồm lưu hoặc hoàn tác tệp trong trình soạn thảo, đồng bộ một worktree
+  với head của pull request, commit và push, xuất bản một nhánh, và các hành động của
+  pull request xếp chồng để cắt, checkout hoặc xuất bản một phần.
+
+Mọi lần push được thực hiện cho một người, bởi chính họ hoặc bởi một lượt chạy agent mà họ yêu cầu, đều kiểm tra quyền ghi của họ trên kho đó tại thời điểm push, trên GitHub, GitLab và Bitbucket. Xuất bản một stack sẽ kiểm tra mọi kho trong stack trước khi push bất kỳ kho nào.
+
+Một từ chối nêu tên grant còn thiếu. Khi thiếu quyền đọc, ứng dụng hiển thị "Bạn không có
+quyền đọc kho lưu trữ này. Quản trị viên không gian làm việc có thể cấp quyền." Khi có quyền
+đọc nhưng thiếu quyền ghi, ứng dụng nói "Bạn có thể đọc kho lưu trữ này nhưng không thể
+thay đổi. Quản trị viên không gian làm việc có thể cấp quyền ghi."
+
+### Space đi theo kho mã của chúng
+
+Những gì agent viết về mã đi theo mã. Nội dung của một space (tin nhắn, bản ghi và đầu ra
+công cụ, kết quả tìm kiếm, nhật ký lượt chạy, todo, hoạt động và thông báo) mang theo mã
+của các kho mà nó làm việc trên, nên một space chỉ mở cho thành viên có grant đọc trên
+mọi kho mà space dùng, và tài khoản forge của chính họ đọc được các kho đó. Đó là các kho
+được chọn cho nó, hoặc tất cả kho của không gian làm việc khi space không ghi nhận lựa
+chọn nào. Một space được tạo không có kho nào thì mở cho mọi thành viên.
+
+Một space mà ai đó không thể mở thì không được liệt kê cho họ ở bất kỳ đâu, kể cả tìm
+kiếm, nhật ký lượt chạy, todo, hoạt động và thông báo. Quản trị viên không gian làm việc
+nắm mọi grant nhưng không được miễn phần forge; chỉ chủ sở hữu máy chủ là được miễn.
+
+Với một cuộc hội thoại mà mọi người đều nên đọc được, hãy tạo space không có kho nào,
+hoặc chỉ với các kho mà mọi người đều đọc được.
+
+## Chủ sở hữu máy chủ
+
+Người đã thiết lập máy chủ là **chủ sở hữu** của nó. Máy chủ ghi nhận họ một lần, khi khởi
+động lần đầu, và không có gì gửi qua mạng thay đổi điều đó. Quản trị viên không gian làm
+việc, hay chủ sở hữu không gian làm việc, không phải là chủ sở hữu máy chủ: ai cũng có thể
+được trao một không gian làm việc, nhưng máy của máy chủ chỉ có một chủ sở hữu.
+
+**Không có gì chạy trên chính máy của máy chủ ngoài sandbox trừ khi chủ sở hữu máy chủ đã
+khởi động nó hoặc đã phê duyệt kiểu thực thi trên máy chủ đó.** Cụ thể, chỉ chủ sở hữu máy
+chủ mới có thể:
+
+- Tạo một không gian làm việc. Mọi người khác thấy một màn hình yêu cầu họ nhờ chủ sở hữu
+  tạo một cái, hoặc nhờ quản trị viên không gian làm việc mời họ.
+- Mở shell host trong terminal do máy chủ lưu trữ. Mọi người khác nhận một terminal trong
+  sandbox, với giới hạn của agent, trong các thư mục riêng của không gian làm việc.
+- Mở trình soạn thảo mã được nhúng. Nó chạy với tư cách người dùng của máy chủ, cùng
+  terminal, tác vụ và tiện ích mở rộng của nó.
+- Mở một pull request hoặc worktree của cuộc hội thoại trong một trình soạn thảo native.
+  Trình soạn thảo khởi động trên màn hình của máy chủ, với tư cách người dùng máy chủ.
+- Lưu hoặc phê duyệt một định nghĩa [môi trường](/vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong/) chạy bất cứ
+  thứ gì trên máy chủ: đặt trên host, một kiểm tra chạy một lệnh, hoặc một tác vụ provision
+  hay archive.
+- Chạy agent trên một máy chủ có máy không có sandbox. Lượt chạy của người khác bị từ chối
+  ở đó, trừ khi chủ sở hữu đã khởi động máy chủ với `--sandbox off`, khi đó mọi agent của
+  thành viên chạy không bị giới hạn (xem [Agent trên máy chủ không có sandbox](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/#agent-trên-máy-chủ-không-có-sandbox)).
+- Liên kết một checkout kho nằm ngoài bộ nhớ riêng của không gian làm việc, xác nhận một kho
+  đã được liên kết trước quy tắc đó, và duyệt các thư mục của máy chủ khi thêm một kho (xem
+  [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)).
+- Xem và dừng mọi tiến trình agent đang chạy trên máy chủ. Những người khác chỉ thấy và dừng
+  các lượt chạy agent đang hoạt động trong các không gian làm việc mà họ thuộc về.
+- Để agent dùng các máy chủ MCP được cấu hình trong công cụ riêng của người dùng máy chủ
+  (Claude, Codex, Cursor và các công cụ khác). Chỉ các lượt chạy harness tích hợp mà chủ
+  sở hữu chịu trách nhiệm mới nhận được chúng; xem
+  [Máy chủ MCP cá nhân thuộc về chủ sở hữu](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-mcp-cá-nhân-thuộc-về-chủ-sở-hữu).
+- Xác nhận địa chỉ email của một người, để đăng nhập một lần có thể khớp nó (xem
+  [Kết nối nhà cung cấp OpenID Connect](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc/#cách-các-lần-đăng-nhập-khớp-với-tài-khoản-đã-có)).
+- Thay đổi cài đặt toàn bản cài đặt: SSO, thông tin xác thực nhà cung cấp, endpoint MCP và
+  token của nó, quản lý mô hình, Connect, và sao lưu toàn bộ bản cài đặt. Các thao tác này
+  khai báo **thẩm quyền máy chủ** và bị từ chối với mọi người khác.
+
+Ở đây cố ý chỉ có một danh tính người vận hành và một định nghĩa duy nhất về nó.
 
 ## Dấu vết kiểm toán
 

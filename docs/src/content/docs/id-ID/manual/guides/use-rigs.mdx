@@ -2,7 +2,7 @@
 title: Berikan agen mesin untuk menguji
 description: Berikan agen browser, desktop, emulator Android, atau Simulator iOS sekali pakai — dipantau langsung, dengan kontrol yang dapat Anda ambil alih.
 slug: id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 **Rig** adalah mesin sekali pakai yang dibuka agen saat ia benar-benar perlu
@@ -132,6 +132,21 @@ Tekan **Hentikan mesin** setelah selesai.
 
 Kendali bersifat eksklusif dengan sengaja: dua pelaku yang mengetik di satu
 mesin menghasilkan input yang tidak dimaksudkan keduanya.
+
+### Siapa yang dapat menonton dan siapa yang dapat mengemudikan
+
+Mesin yang dibuka di sebuah space mengikuti repositori space itu, sama seperti space itu sendiri (lihat [Space mengikuti repositorinya](/id-ID/panduan-pengguna/konsep/otorisasi/#space-mengikuti-repositorinya)):
+
+- **Menontonnya** memerlukan akses baca ke space: izin baca atas setiap repositori yang ditampilkan space, dan proses masuk forge Anda sendiri yang dapat membaca masing-masingnya. Menonton mencakup daftar mesin, layar, suara, status peramban, port-portnya, serta membaca papan klip dan berkasnya.
+- **Mengemudikannya** juga memerlukan [izin tulis](/id-ID/panduan-pengguna/konsep/otorisasi/#mengubah-kode-membutuhkan-izin-tulis) atas repositori tersebut. Mengemudikan mencakup membuka mesin di space, mengetik dan mengklik, mengambil kendali, memulai, menghentikan, dan menutup mesin, meneruskan port-portnya, menulis ke papan kliknya, menjatuhkan berkas ke dalamnya, serta menggunakan mikrofon.
+
+Dengan akses baca saja, mesin menampilkan **Hanya tonton** dan "Anda dapat menonton mesin ini. Mengendalikannya, meneruskan portnya, menempelkan sesuatu ke dalamnya, atau menjatuhkan file ke dalamnya memerlukan akses tulis ke setiap repositori di ruang ini." Di bawah **Mulai mesin** yang dinonaktifkan, tab menampilkan "Memulai mesin di sini memerlukan akses tulis ke setiap repositori di ruang ini. Admin ruang kerja dapat memberikannya." Tanpa akses baca, mesin tidak ditampilkan, hanya "Anda tidak dapat melihat mesin ini. Mesin ini milik ruang yang tidak dapat Anda baca."
+
+Mesin yang tidak dimiliki space mana pun tidak menjangkau worktree, dan setiap anggota ruang kerja dapat menontonnya dan mengemudikannya.
+
+Mesin yang membawa proses masuk milik satu orang adalah milik orang itu untuk dikemudikan: terminal mesinnya, atau mesin apa pun yang dibuka untuknya dan jaringannya menjangkau forge. Hanya orang itu, dan run agen yang bertindak atas namanya saja, yang dapat mengemudikannya. Admin ruang kerja dan pemilik server tidak dapat menimpa ini. Pihak lain yang diizinkan space masih dapat menonton layar, suara, status, dan port-nya, tetapi tidak dapat mengemudikannya, meneruskan portnya, menempelkan ke dalamnya, menjatuhkan file ke dalamnya, menyalin file darinya, atau membaca papan kliknya. Mesin seperti itu menampilkan **Hanya tonton** dengan catatan ini: "Anda dapat menonton mesin ini. Mesin ini menggunakan akun masuk milik orang yang mesin ini dibuka untuknya, sehingga hanya orang tersebut yang dapat mengendalikannya, meneruskan portnya, menempelkan sesuatu ke dalamnya, atau menjatuhkan file ke dalamnya." Tindakan yang ditolak karena alasan ini menyatakan "Hanya orang yang mesin ini dibuka untuknya yang dapat mengendalikannya. Mesin ini menggunakan akun masuk milik orang tersebut." Mesin terminal milik orang lain tidak muncul untuk Anda sama sekali, sama seperti sesi terminal mereka.
+
+Setiap mesin menampilkan apakah Anda dapat mengemudikannya, dan itu diperbarui sendiri saat grant atau proses masuk forge Anda berubah.
 
 ## Memindahkan konten masuk dan keluar
 

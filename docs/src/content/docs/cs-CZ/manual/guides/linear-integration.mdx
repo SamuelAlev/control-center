@@ -2,7 +2,7 @@
 title: Nastavte integraci Linear
 description: Přihlas se k Linear, připoj automatizaci Linear pracovního prostoru a zvol Linear jako poskytovatele ticketingu pro nové tickety.
 slug: cs-CZ/prirucka/navody/integrace-linear
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear má v Control Center dvě identity a obě jsou přihlášení v prohlížeči:
@@ -23,7 +23,7 @@ externí službu nepotřebují. Viz
 
 ## Zvol Linear pro pracovní prostor
 
-1. Jdi do **Nastavení → Pracovní prostor → Obecné** a najdi kartu **Ticketing**
+1. Jdi do **Nastavení → Pracovní prostor → Integrace** a najdi kartu **Ticketing**
 2. Nastav **Poskytovatel ticketingu** na **Linear**
 
 Na tickety, které od té chvíle vytvoříš, se zapíše `provider: linear`.
@@ -32,7 +32,7 @@ skryje: není k čemu se ověřovat.
 
 ## Přihlas se k Linear
 
-Na stejné kartě je řádek **Linear** tvůj:
+Tvoje vlastní přihlášení k Linear je v **Nastavení → Vy → Profil**, na kartě **Ticketing**:
 
 1. Klikni na **Přihlásit se k Linear**
 2. Schval to v prohlížeči
@@ -44,9 +44,11 @@ Všechno, co v Linear z Control Center děláš, běží na tomhle přihlášen�
 ničem jiném. Když přihlášený nejsi, aplikace tě vyzve k přihlášení, místo aby
 jednala jako někdo jiný.
 
+Přihlášení funguje ve všech pracovních prostorech na serveru, pokud pracovní prostor nemá vlastní přihlašovací aplikace: ten pracovní prostor si drží vlastní přihlášení k Linear. Karta říká, které platí.
+
 ## Připoj automatizaci Linear
 
-Řádek **Automatizace Linear** je aplikace Control Center pracovního prostoru
+Řádek **Automatizace Linear** na kartě **Ticketing** v **Nastavení → Pracovní prostor → Integrace** je aplikace Control Center pracovního prostoru
 v Linear. Synchronizace ticketů, pipelines a agenti zapisují přes ni, takže
 automatické issues a komentáře se ukážou jako Control Center, ne jako člověk.
 
@@ -62,7 +64,7 @@ přes vlastní nástroje Control Center, které se nejdřív zeptají pravidla
 
 ## Zaregistruj vlastní aplikaci Linear
 
-Vlastní aplikaci použij, když jsi zvolil **Použít vlastní aplikace**. Aplikace serveru platí jen v tomto případě: s Control Center nebo vlastním Connect běží přes Connect každá dráha, včetně Linear, a aplikace serveru i její servisní klíč API zůstávají uložené, ale nepoužité. Vlastní aplikace pracovního prostoru ([níže](#dej-pracovnímu-prostoru-vlastní-aplikaci-linear)) platí vždy, v každém režimu.
+Vlastní aplikaci použij, když jsi zvolil **Použít vlastní aplikace**. Aplikace serveru platí jen v tomto případě: s Control Center nebo vlastním Connect běží přes Connect každá dráha, včetně Linear, a aplikace serveru i její servisní klíč API zůstávají uložené, ale nepoužité. Pracovní prostor na vlastních aplikacích ([níže](#dej-pracovnímu-prostoru-vlastní-aplikaci-linear)) používá místo ní svou vlastní aplikaci, bez ohledu na režim serveru.
 
 1. Vytvoř aplikaci OAuth na
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -88,21 +90,20 @@ exportovaný v prostředí jeho procesu.
 Pracovní prostor se může přihlašovat k Linear přes vlastní aplikaci místo aplikace serveru. Nastavit to může jen správce nebo vlastník pracovního prostoru.
 
 1. Vytvoř OAuth aplikaci Linear jako v krocích výše
-2. Otevři **Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů** a otevři **Linear**
-3. Zvol **Použít vlastní aplikaci pracovního prostoru**
-4. Přidej do aplikace Linear beze změn obě URL zpětného volání, které řádek ukazuje pod **Callback URLs**
-5. Vlož její **Client id** a volitelně **Servisní klíč API** pro automatizaci tohoto pracovního prostoru
+2. Otevři **Nastavení → Pracovní prostor → Integrace**. Na kartě **Control Center Connect** zvol **Použít vlastní aplikace** a klikni na **Použít**
+3. V sekci Tickety se objeví karta **Aplikace Linear**. Přidej do aplikace Linear beze změn obě URL zpětného volání, které karta ukazuje pod **Callback URLs**
+4. Vlož její **Client id** a volitelně **Servisní klíč API** pro automatizaci tohoto pracovního prostoru
 
-Vlastní aplikace pracovního prostoru pak odpovídá na každé přihlášení a požadavek automatizace Linear v tomto pracovním prostoru, ať server přihlašuje lidi jakkoli. Nikdy nepřejde na aplikaci serveru ani na Connect: dokud není nastavené client id, je Linear v tomto pracovním prostoru vypnutý a řádek říká, co chybí. Její servisní klíč API se používá jen tady; bez něj synchronizace potřebuje **Připojit Linear pro automatizaci**.
+Vlastní aplikace pracovního prostoru pak odpovídá na každé přihlášení a požadavek automatizace Linear v tomto pracovním prostoru, ať server přihlašuje lidi jakkoli. Nikdy nepřejde na aplikaci serveru ani na Connect: dokud není nastavené client id, je Linear v tomto pracovním prostoru vypnutý a karta říká, co chybí. Její servisní klíč API se používá jen tady; bez něj synchronizace potřebuje **Připojit Linear pro automatizaci**.
 
-Přepnutí mezi aplikací serveru a aplikací pracovního prostoru nebo změna client id pracovního prostoru odhlásí všechny v tomto pracovním prostoru z Linear a odpojí jejich automatizaci. Znovu se přihlásí přes novou aplikaci. **Použít aplikaci tohoto serveru** smaže uložená pole pracovního prostoru. Tajné hodnoty se jen zapisují: řádek ukáže jen to, zda je některá uložená. Ostatní pracovní prostory na serveru nejsou dotčené.
+**Použít vlastní aplikace** platí pro všechny poskytovatele najednou: GitHub, Google Calendar a hledání GIF běží také jen na aplikacích pracovního prostoru, každé s vlastními poli vedle svého poskytovatele na téže stránce. Přepnutí přihlašovacích aplikací pracovního prostoru nebo změna client id pracovního prostoru odhlásí všechny v tomto pracovním prostoru z Linear a odpojí jejich automatizaci. Znovu se přihlásí přes novou aplikaci. Uložená pole zůstanou, když se pracovní prostor přepne na jinou volbu, ale použijí se jen při **Použít vlastní aplikace**. Tajné hodnoty se jen zapisují: karta ukáže jen to, zda je některá uložená. Ostatní pracovní prostory na serveru nejsou dotčené.
 
 ## Řešení problémů
 
 ### Řádek Linear hlásí, že přihlášení není nastavené
 
 Server nemá vlastní aplikaci Linear ani Connect. Jedno z nich vybere vlastník
-serveru v **Nastavení → Server → Jednotné přihlášení**. Když pracovní prostor používá vlastní aplikaci, řádek místo toho ukáže, že jeho nastavení není dokončené: správce pracovního prostoru doplní client id v **Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů**.
+serveru v **Nastavení → Server → Jednotné přihlášení**. Když pracovní prostor používá vlastní aplikaci, řádek místo toho ukáže, že jeho nastavení není dokončené: správce pracovního prostoru doplní client id na kartě **Aplikace Linear** v **Nastavení → Pracovní prostor → Integrace**.
 
 ### Synchronizace ticketů selže na chybě ověření
 

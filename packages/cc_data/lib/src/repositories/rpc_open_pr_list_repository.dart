@@ -1,6 +1,7 @@
 import 'package:cc_data/src/absent_op.dart';
 import 'package:cc_data/src/repositories/pr_dto_mapping.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
@@ -45,21 +46,26 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
   }
 
   @override
-  Stream<int> watchNeedsMyReviewCount(String workspaceId) {
+  Stream<NeedsMyReviewCount> watchNeedsMyReviewCount(String workspaceId) {
     return _client
         .subscribe('pr.watchNeedsMyReviewCount', {'workspace_id': workspaceId})
-        .map((data) => (data['count'] as num?)?.toInt() ?? 0);
+        .map(
+          (data) => NeedsMyReviewCount(
+            count: (data['count'] as num?)?.toInt() ?? 0,
+            hiddenRepos: HiddenRepos.listOf(data['hidden_repos']),
+          ),
+        );
   }
 
   @override
-  Stream<List<InaccessibleRepo>> watchRepoAccessForWorkspace(
+  Stream<List<RepoAccessIssue>> watchRepoAccessForWorkspace(
     String workspaceId,
   ) {
     return _client
         .subscribe('pr.watchRepoAccessForWorkspace', {
           'workspace_id': workspaceId,
         })
-        .map(_inaccessibleOf);
+        .map(_repoAccessOf);
   }
 
   static WorkspaceOpenPrs _workspaceOpenPrsOf(Map<String, dynamic> data) {
@@ -70,6 +76,7 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
           RepoOpenPrs(
             repoId: (raw['repo_id'] as String?) ?? '',
             hasMore: (raw['has_more'] as bool?) ?? false,
+            totalCount: (raw['total_count'] as num?)?.toInt(),
             prs: _prsOf(raw),
           ),
     ];
@@ -77,30 +84,24 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
       authenticated: authenticated,
       groups: groups,
       sweepInFlight: (data['sweep_in_flight'] as bool?) ?? false,
-      inaccessibleRepos: _inaccessibleOf(data),
+      repoAccess: _repoAccessOf(data),
+      hiddenRepos: HiddenRepos.listOf(data['hidden_repos']),
     );
   }
 
-  static List<InaccessibleRepo> _inaccessibleOf(Map<String, dynamic> data) => [
-    for (final raw in (data['inaccessible_repos'] as List?) ?? const [])
-      if (raw is Map)
-        InaccessibleRepo(
-          repoId: (raw['repo_id'] as String?) ?? '',
-          repoFullName: (raw['repo_full_name'] as String?) ?? '',
-          reason: (raw['reason'] as String?) ?? '',
-          since: DateTime.tryParse((raw['since'] as String?) ?? ''),
-        ),
+  /// A frame's `repo_access` entries; malformed or unknown ones are dropped.
+  static List<RepoAccessIssue> _repoAccessOf(Map<String, dynamic> data) => [
+    for (final raw in (data['repo_access'] as List?) ?? const [])
+      if (raw is Map) ?RepoAccessIssue.tryParse(raw.cast<String, dynamic>()),
   ];
 
   @override
   Future<List<({String repoId, PullRequest pr})>> reviewRequestedForWorkspace(
     String workspaceId,
   ) async {
-    final data = await _client.readOr(
-      'pr.searchReviewRequestedForWorkspace',
-      const {},
-      const {},
-    );
+    final data = await _client.readOr('pr.searchReviewRequestedForWorkspace', {
+      'workspace_id': workspaceId,
+    }, const {});
     return [
       for (final raw in (data['reviews'] as List?) ?? const [])
         if (raw is Map && raw['pr'] is Map)
@@ -144,11 +145,9 @@ class RpcOpenPrListRepository implements OpenPrListRepository {
   @override
   Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(
     String workspaceId,
-    String login,
   ) async {
     final data = await _client.call('pr.closedByAuthorForWorkspace', {
       'workspace_id': workspaceId,
-      'login': login,
     });
     return [
       for (final raw in (data['repos'] as List?) ?? const [])

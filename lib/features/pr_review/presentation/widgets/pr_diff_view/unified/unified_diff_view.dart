@@ -2245,29 +2245,8 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       widget.onOpenFileInEditor?.call(path, line: line);
       return;
     }
-    var needsLayout = false;
-    if (_document.isPreviewing(index)) {
-      final file = _document.files[index];
-      // Raster image bodies have no source rows to land on. SVG with a text
-      // patch can drop back to the XML hunks when a line is named.
-      if (!file.isImage ||
-          (file.isSvg && file.patch.isNotEmpty && line != null)) {
-        _document.setPreviewing(index, previewing: false);
-        needsLayout = true;
-      }
-    }
-    if (!_document.isExpanded(index) || _document.isRevealing(index)) {
-      // A jump lands inside the file, so it opens at full height at once.
-      _setFileExpanded(index, expanded: true, animate: false);
-      needsLayout = true;
-    }
-    _store.ensureStructure(index);
-    if (needsLayout) {
-      setState(() => _revision++);
-      await WidgetsBinding.instance.endOfFrame;
-      if (!mounted) {
-        return;
-      }
+    if (!await _openFileForJump(index, wantsRows: line != null)) {
+      return;
     }
     final displayLine = _displayLineForFileLine(index, line);
     await jumpToFile(index, line: displayLine);
@@ -2282,6 +2261,39 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
       displayLine: displayLine,
       name: highlightName,
     );
+  }
+
+  /// Opens file [index] at full height with its rows parsed, so a jump can
+  /// land inside it rather than on a collapsed header or a rendered preview.
+  /// [wantsRows] asks an SVG preview to drop back to its XML hunks. Returns
+  /// false when the view unmounted while the new layout was applied.
+  Future<bool> _openFileForJump(int index, {required bool wantsRows}) async {
+    var needsLayout = false;
+    if (_document.isPreviewing(index)) {
+      final file = _document.files[index];
+      // Raster image bodies have no source rows to land on. SVG with a text
+      // patch can drop back to the XML hunks when a line is named.
+      if (!file.isImage || (file.isSvg && file.patch.isNotEmpty && wantsRows)) {
+        _document.setPreviewing(index, previewing: false);
+        needsLayout = true;
+      }
+    }
+    if (!_document.isExpanded(index) || _document.isRevealing(index)) {
+      // A jump lands inside the file, so it opens at full height at once.
+      _setFileExpanded(index, expanded: true, animate: false);
+      needsLayout = true;
+    }
+    if (_document.structureOf(index) == null) {
+      // Files parse lazily as they scroll into the sliver's window, so a far
+      // file has no rows (and so no thread slots) until this.
+      _store.ensureStructure(index);
+      needsLayout = true;
+    }
+    if (needsLayout) {
+      setState(() => _revision++);
+      await WidgetsBinding.instance.endOfFrame;
+    }
+    return mounted;
   }
 
   Timer? _gotoLandingFade;
@@ -3357,34 +3369,55 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
   /// added here is the scroll and the fade — a permalink's highlight is a
   /// "here it is" flash, and left set it would read as a selection the reader
   /// has to dismiss.
-  Future<void> revealThread(
-    String threadId, {
-    required int fileIndex,
-    required int displayLine,
-  }) async {
-    if (!mounted) {
-      return;
+  ///
+  /// The row is the one the thread's own slot anchors to. A forge comment
+  /// names a file line on one side; the display row it sits on depends on the
+  /// hunks above it, and only the slot builder resolves that. Returns false
+  /// when the thread has no row in this diff (outdated, or on a line hidden in
+  /// a collapsed gap), so the caller can send the reader elsewhere.
+  Future<bool> revealThread(String threadId, {required int fileIndex}) async {
+    if (!mounted || fileIndex < 0 || fileIndex >= _document.fileCount) {
+      return false;
+    }
+    if (!await _openFileForJump(fileIndex, wantsRows: true)) {
+      return false;
     }
     _openThread(threadId);
-    // After the open: the card changes the document's line offsets, so the
-    // target must be computed once the re-layout it triggers has happened.
-    await WidgetsBinding.instance.endOfFrame;
-    if (!mounted) {
-      return;
+    // The open card changes the document's line offsets, and the thread's
+    // server comments can reach this view a frame after the tab saw them, so
+    // the slot is looked up after the re-layout, with a few frames of grace.
+    final slotKey = 'thread:$threadId';
+    int? anchorLine() {
+      _ensureSlots();
+      final i = _slotIndexByKey[slotKey];
+      if (i == null || _slots[i].fileIndex != fileIndex) {
+        return null;
+      }
+      final line = _slots[i].anchorDisplayLine;
+      return line < 0 ? null : line;
     }
-    final renderObject = _sliverKey.currentContext?.findRenderObject();
-    final controller = PrimaryScrollController.maybeOf(context);
-    if (renderObject is RenderUnifiedDiffSliver &&
-        controller != null &&
-        controller.hasClients) {
-      final target = renderObject
-          .revealOffsetForLine(fileIndex, displayLine)
-          .clamp(0.0, controller.position.maxScrollExtent);
-      await controller.animateTo(
-        target,
-        duration: const Duration(milliseconds: 240),
-        curve: Curves.easeOutCubic,
-      );
+
+    int? line;
+    for (var frame = 0; frame < 10 && line == null; frame++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) {
+        return false;
+      }
+      line = anchorLine();
+    }
+    if (line == null) {
+      if (_focusedThreadId == threadId) {
+        setState(() => _focusedThreadId = null);
+      }
+      return false;
+    }
+    var lastLine = line;
+    await _scrollSettled(() {
+      lastLine = anchorLine() ?? lastLine;
+      return _sliver?.revealOffsetForLine(fileIndex, lastLine);
+    });
+    if (!mounted) {
+      return true;
     }
     _threadHighlightFade?.cancel();
     _threadHighlightFade = Timer(const Duration(seconds: 3), () {
@@ -3395,6 +3428,7 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
         });
       }
     });
+    return true;
   }
 
   /// Clears a permalink's highlight after a beat. Held so a second permalink
@@ -3412,32 +3446,96 @@ class UnifiedDiffViewState extends ConsumerState<UnifiedDiffView>
     if (index < 0 || index >= _document.fileCount) {
       return false;
     }
-    final renderObject = _sliverKey.currentContext?.findRenderObject();
+    return _scrollSettled(() {
+      final sliver = _sliver;
+      if (sliver == null) {
+        return null;
+      }
+      return line == null
+          ? sliver.revealOffsetForFile(index)
+          : sliver.revealOffsetForLine(index, line);
+    });
+  }
+
+  /// Bumped by every [_scrollSettled], so an older jump stops re-aiming once
+  /// a newer one starts.
+  int _jumpEpoch = 0;
+
+  /// Scrolls the host scrollable to [targetOf] and holds it there while the
+  /// lazily built geometry around the landing settles.
+  ///
+  /// Offsets are estimates until a file is parsed and its comment cards are
+  /// measured, and the sliver only parses what reaches its cache window. The
+  /// first aim uses those estimates; the frames after the landing parse the
+  /// neighbouring files and measure the cards, which moves the row. Re-reading
+  /// [targetOf] each frame until it holds still is what makes a jump land ON
+  /// the row instead of somewhere near it. A long jump does not animate: the
+  /// sweep would parse every file it passes and drift the target mid-flight.
+  ///
+  /// Returns false when the diff has no laid-out scroll position yet. Stops
+  /// early when the reader scrolls or a newer jump starts.
+  Future<bool> _scrollSettled(double? Function() targetOf) async {
+    final epoch = ++_jumpEpoch;
     final controller = PrimaryScrollController.maybeOf(context);
-    if (renderObject is! RenderUnifiedDiffSliver ||
-        controller == null ||
-        !controller.hasClients) {
+    if (controller == null || !controller.hasClients) {
       return false;
     }
-    final rawTarget = line == null
-        ? renderObject.revealOffsetForFile(index)
-        : renderObject.revealOffsetForLine(index, line);
-    final max = controller.position.maxScrollExtent;
-    // A zero extent with the file past the origin means the sliver has not
+    final rawTarget = targetOf();
+    if (rawTarget == null) {
+      return false;
+    }
+    final position = controller.position;
+    // A zero extent with the target past the origin means the sliver has not
     // reported its height yet. Clamping that to 0 and treating it as "already
     // there" would swallow the jump.
-    if (rawTarget > 1 && max <= 0) {
+    if (rawTarget > 1 && position.maxScrollExtent <= 0) {
       return false;
     }
-    final target = rawTarget.clamp(0.0, max);
-    if ((controller.offset - target).abs() < 1) {
-      return true;
+    final target = rawTarget.clamp(0.0, position.maxScrollExtent);
+    final distance = (position.pixels - target).abs();
+    if (distance >= 1) {
+      if (distance > position.viewportDimension * 2) {
+        position.jumpTo(target);
+      } else {
+        await position.animateTo(
+          target,
+          duration: const Duration(milliseconds: 240),
+          curve: Curves.easeOutCubic,
+        );
+        // An animation that stopped short was interrupted by the reader.
+        if (!mounted ||
+            !controller.hasClients ||
+            (controller.position.pixels - target).abs() >= 1) {
+          return true;
+        }
+      }
     }
-    await controller.animateTo(
-      target,
-      duration: const Duration(milliseconds: 240),
-      curve: Curves.easeOutCubic,
-    );
+    var placed = controller.position.pixels;
+    var stillFrames = 0;
+    for (var frame = 0; frame < 30 && stillFrames < 3; frame++) {
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted || epoch != _jumpEpoch || !controller.hasClients) {
+        return true;
+      }
+      final current = controller.position;
+      // Only this loop moves the position (layout here never corrects the
+      // scroll offset), so any other movement is the reader taking over.
+      if ((current.pixels - placed).abs() >= 1) {
+        return true;
+      }
+      final next = targetOf();
+      if (next == null) {
+        return true;
+      }
+      final aim = next.clamp(0.0, current.maxScrollExtent);
+      if ((current.pixels - aim).abs() < 1) {
+        stillFrames++;
+        continue;
+      }
+      stillFrames = 0;
+      current.jumpTo(aim);
+      placed = current.pixels;
+    }
     return true;
   }
 

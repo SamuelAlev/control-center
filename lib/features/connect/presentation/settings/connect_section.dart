@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/features/connect/domain/value_objects/connect_health_error.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/connect/presentation/settings/connect_server_actions.dart';
 import 'package:control_center/features/connect/presentation/widgets/connect_health.dart';
@@ -15,10 +16,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Settings → Server → Single sign-on: how this server runs provider
 /// sign-ins through Control Center Connect.
 ///
-/// Server-owner only. It renders nothing for anyone else, exactly like the
-/// server refuses them every `connect.*` op. A `CC_CONNECT_URL` in the
-/// server's environment pins the mode, and the card says so instead of
-/// offering choices the server will refuse.
+/// Server-owner only. It is absent for anyone else, exactly like the server
+/// refuses them every `connect.*` op ([watchConnectSectionApplies]). A
+/// `CC_CONNECT_URL` in the server's environment pins the mode, and the card
+/// says so instead of offering choices the server will refuse.
 class ConnectSection extends ConsumerWidget {
   /// Creates a [ConnectSection].
   const ConnectSection({super.key});
@@ -27,9 +28,6 @@ class ConnectSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final async = ref.watch(connectStatusProvider);
-    if (!async.hasValue && !async.hasError) {
-      return const SizedBox.shrink();
-    }
     if (async.hasError && !async.hasValue) {
       return SectionCard(
         label: l10n.connectTitle,
@@ -45,6 +43,14 @@ class ConnectSection extends ConsumerWidget {
     }
     return ConnectStatusCard(status: status);
   }
+}
+
+/// Whether [ConnectSection] has anything to show: the server's Connect status
+/// (null for anyone but the server owner), or why it could not be read.
+/// Nothing while the first answer is on its way.
+bool watchConnectSectionApplies(WidgetRef ref) {
+  final async = ref.watch(connectStatusProvider);
+  return async.value != null || (async.hasError && !async.hasValue);
 }
 
 /// The Connect card for one [status]; split from [ConnectSection] so tests
@@ -195,7 +201,9 @@ class _ConnectStatusCardState extends ConsumerState<ConnectStatusCard> {
             const SizedBox(height: AppSpacing.md),
           ],
           ConnectHealthAlerts(
-            status: status,
+            error: status.error,
+            stale: status.stale,
+            pendingPins: status.pendingPins,
             confirming: _confirming,
             onConfirmPins: () => unawaited(
               _run(
@@ -238,7 +246,14 @@ class _ConnectStatusCardState extends ConsumerState<ConnectStatusCard> {
               title: l10n.connectLanesTitle,
               description: l10n.connectLanesDescription,
               gap: AppSpacing.xs,
-              children: [ConnectLaneList(lanes: status.lanes)],
+              children: [
+                ConnectLaneList(
+                  rows: [
+                    for (final lane in status.lanes)
+                      ConnectLaneRow.fromServer(l10n, lane),
+                  ],
+                ),
+              ],
             ),
           ],
           const SizedBox(height: AppSpacing.lg),

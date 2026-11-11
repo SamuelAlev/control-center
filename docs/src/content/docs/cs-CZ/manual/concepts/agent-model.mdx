@@ -2,7 +2,7 @@
 title: Model agentů
 description: Co agent v Control Center skutečně je, která jeho pole mění chování a jak adaptér, na kterém běží, rozhoduje, co se dá vynutit.
 slug: cs-CZ/prirucka/koncepty/model-agentu
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Co je agent?
@@ -54,7 +54,7 @@ Skilly repozitáře se načítají pro **každý** adaptér, nejen pro vestavěn
 
 Agent nemá vlastní příznaky oprávnění. Jestli smí vytvořit commit, pushovat, otevřít pull request, zapisovat do trackeru nebo sahat na síť, rozhodují [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) — povolit, nejdřív se zeptat nebo zakázat, v rozsahu pracovního prostoru, agenta nebo prostoru — a stejná pravidla platí bez ohledu na to, který adaptér ho spouští.
 
-To, co se běhu _předá_, se s těmi pravidly nemění. Běh ve worktree GitHubu dostane vždycky token GitHub jen pro čtení a na push se ptá ve chvíli, kdy nastane: konfigurace gitu agenta posílá každý push na GitHub přes Control Center, které před předáním dál uplatní pravidlo **Odeslat na remote**.
+To, co se běhu _předá_, se s těmi pravidly nemění. Běh může vždy číst repozitáře GitHubu, se kterými pracuje, na tokenu jen pro čtení a na push se ptá ve chvíli, kdy nastane: konfigurace gitu agenta posílá každý push na GitHub přes Control Center, které před předáním dál uplatní pravidlo **Odeslat na remote**.
 
 Jak to funguje, včetně toho, co se na úrovni souborového systému vynucuje a co ne, popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 
@@ -70,16 +70,16 @@ Pole s největšími důsledky je adaptér, protože jeho transport určuje, kol
 Konkrétně **jen vestavěný harness umí subagenty, řízení uprostřed běhu, pozastavení a obnovení (a tedy převzetí) a strukturální vynucení režimu.** Claude Code z toho neumí nic.
 
 :::caution[Sandbox operačního systému je spodní hranice, režim nevynucuje a ne každý hostitel ho má]
-Matice výše je o tom, co Control Center _vidí a brání_. Pod ní `cc_server` obalí CLI Claude Code sandboxem operačního systému hostitele, pokud tam nějaký je: Seatbelt na macOS, bubblewrap na Linuxu a ve WSL2. Neviděné `rm` i neviděný zápis proto pořád omezuje operační systém. **Na Windows backend vůbec není** a na Linuxu nebo WSL2 bez `bwrap` a `socat` sonda nehlásí žádný, takže tam tyto běhy spadnou na sanitizaci prostředí, zprostředkované přihlašovací údaje, guardraily na voláních, která Control Center vidí, a vlastní worktree konverzace (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows).
+Matice výše je o tom, co Control Center _vidí a brání_. Pod ní `cc_server` obalí CLI Claude Code sandboxem operačního systému hostitele, pokud tam nějaký je: Seatbelt na macOS, bubblewrap na Linuxu a ve WSL2. Neviděné `rm` i neviděný zápis proto pořád omezuje operační systém. **Na Windows backend vůbec není** a na Linuxu nebo WSL2 bez `bwrap` a `socat` sonda nehlásí žádný. Tam startují jen běhy vlastníka serveru a ostatní běhy se odmítnou, pokud vlastník nespustil server s `--sandbox off`. Běh, který se spustí bez sandboxu, spadne na sanitizaci prostředí, zprostředkované přihlašovací údaje, guardraily na voláních, která Control Center vidí, a vlastní worktree konverzace (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows).
 
 Sandbox _bránou_ není. Omezuje, kde proces smí číst, zapisovat a kam se smí připojit. Režim jen pro čtení k němu dospěje, a to jako bind mounty jen pro čtení, ale zachytit volání, vyvolat schválení ani potom říct, co CLI zkusilo, nedokáže. Tohle a čtyři schopnosti pojmenované těsně výše má vestavěný harness. Ostatní ne. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
-Agent **bez** adaptéru spadne zpět na **Control Center (built-in)**, smyčku uvnitř serveru, takže není žádné CLI k instalaci, a záznam běhu zapíše `cc-harness`. Každý takto založený agent vznikne bez adaptéru i modelu, takže pět agentů v novém pracovním prostoru tam běží všichni, na výchozím modelu Anthropic, dokud u každého nenastavíte adaptér a model. Volba „výchozího adaptéru“ při úvodním nastavení je preference na straně klienta. Server ji nečte a na už vytvořené agenty se zpětně nepromítne.
+Agent **bez** adaptéru spadne zpět na **Control Center (built-in)**, smyčku uvnitř serveru, takže není žádné CLI k instalaci, a záznam běhu zapíše `cc-harness`. Každý takto založený agent vznikne bez adaptéru i modelu, takže šest agentů v novém pracovním prostoru tam běží všichni, na výchozím modelu Anthropic, dokud u každého nenastavíte adaptér a model. Dokončení kroku s adaptérem v úvodním nastavení nastaví jeho dvojici na každém agentovi, který ještě žádnou nemá, ve všech pracovních prostorech, které v tu chvíli existují; žádný výchozí runner pracovního prostoru neexistuje.
 
 ## Odkud se agenti berou
 
-- **Založeni s pracovním prostorem.** Každý pracovní prostor, nejen první, dostane CEO a čtyři specialisty (`qa`, `architect`, `engineer`, `librarian`), kteří jsou mu podřízeni. Vzniknou idempotentně na pozadí při vytvoření pracovního prostoru. Viz [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
+- **Založeni s pracovním prostorem.** Každý pracovní prostor, nejen první, dostane CEO a pět specialistů (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`), kteří jsou mu podřízeni. Vzniknou idempotentně na pozadí při vytvoření pracovního prostoru. Viz [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pracovni-prostory/).
 - **Přidaní ručně** v Nastavení → Pracovní prostor → Agenti. Požádat agenta, aby najal kolegu, řádek nevytvoří. Použijte tuto obrazovku.
 
 ## Živý stav

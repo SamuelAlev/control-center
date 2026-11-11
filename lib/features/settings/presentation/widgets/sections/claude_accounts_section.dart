@@ -114,6 +114,6 @@ class ClaudeAccountsSection extends ConsumerWidget {
     // Straight into signing it in: an account directory with no credential in
     // it does nothing, so creating one and stopping there would leave a row
     // that looks configured and refuses every run.
-    await showClaudeLoginCommand(context, ref, created);
+    await showClaudeLoginCommand(context, created);
   }
 }

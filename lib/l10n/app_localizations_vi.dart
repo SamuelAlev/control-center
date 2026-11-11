@@ -156,7 +156,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get guardrailClassPrCreate => 'Mở một pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Xuất bản review hoặc merge';
+  String get guardrailClassPrPublish =>
+      'Cập nhật hoặc hợp nhất một pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Ghi vào tracker bên ngoài';
@@ -2547,9 +2548,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get activityToggledMcpServer => 'Đã bật/tắt máy chủ MCP';
 
   @override
-  String get activityUpdatedMcpToken => 'Đã cập nhật token MCP';
-
-  @override
   String get activitySavedApiKey => 'Đã lưu khóa API';
 
   @override
@@ -3175,9 +3173,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Xóa \"$name\"?';
   }
-
-  @override
-  String get archiveConversation => 'Lưu trữ cuộc trò chuyện';
 
   @override
   String get deleteFact => 'Xóa dữ kiện';
@@ -3865,9 +3860,6 @@ class AppLocalizationsVi extends AppLocalizations {
       'Khớp giao diện hệ điều hành hoặc chọn chế độ cố định.';
 
   @override
-  String get mcpAuthToken => 'Token xác thực MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Không thể điều khiển máy chủ MCP trên máy chủ đang kết nối.';
 
@@ -4080,9 +4072,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Không phát hiện font hệ thống.';
-
-  @override
-  String get noTokenSet => 'Chưa đặt token — truy cập không bị hạn chế.';
 
   @override
   String get noWorkingMemory => 'Chưa có ghi chú bộ nhớ làm việc.';
@@ -4571,31 +4560,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Thông tin xác thực GitHub của máy chủ không thể thấy $repos. Nếu kho lưu trữ thuộc một tổ chức, hãy cài GitHub App ở đó hoặc kết nối token có quyền truy cập.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Không thể truy cập $count kho lưu trữ',
-      one: 'Không thể truy cập một kho lưu trữ',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Cài đặt GitHub App đã bị tạm ngưng';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Đang hiển thị dữ liệu đã biết gần nhất cho $repos. Tiếp tục cài đặt trên GitHub, hoặc kết nối token có quyền truy cập.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Không có quyền';
 
   @override
@@ -4710,9 +4674,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Quy tắc';
-
-  @override
-  String get runCompleted => 'Chạy xong';
 
   @override
   String get running => 'Đang chạy';
@@ -4874,9 +4835,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get setLabel => 'Đặt';
-
-  @override
-  String get setToken => 'Đặt token';
 
   @override
   String get settingsLabel => 'Cài đặt';
@@ -5071,9 +5029,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get skillOriginManual => 'Thủ công';
 
   @override
-  String get skillOriginRegistry => 'Registry';
-
-  @override
   String get skillOriginRuntimeLocal => 'Runtime cục bộ';
 
   @override
@@ -5248,9 +5203,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Chuyển chủ đề';
-
-  @override
-  String get tokenConfigured => 'Đã cấu hình — client phải cung cấp token này.';
 
   @override
   String get topic => 'Chủ đề';
@@ -8804,7 +8756,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Hành động công cụ nào chạy mà không hỏi. Đọc luôn được phép; cấp cao hơn sẽ hỏi.';
+      'Hành động nào của các công cụ riêng của Control Center, được gọi qua endpoint MCP hoặc bởi agent, sẽ chạy mà không hỏi. Thao tác đọc luôn được phép; các cấp cao hơn sẽ hỏi. Máy chủ bên trong một lần chạy tuân theo chính sách hành động của lần chạy đó.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Luôn hỏi';
@@ -12286,20 +12238,8 @@ class AppLocalizationsVi extends AppLocalizations {
   String get settingsAbout => 'Giới thiệu';
 
   @override
-  String get settingsScopeBadgeYou => 'BẠN';
-
-  @override
-  String get settingsScopeBadgeDevice => 'THIẾT BỊ NÀY';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'KHÔNG GIAN LÀM VIỆC';
-
-  @override
-  String get settingsScopeBadgeServer => 'MÁY CHỦ';
-
-  @override
   String get settingsProfileDescription =>
-      'Tên, email và danh tính git của bạn trong không gian này. Đổi không gian sẽ đổi lớp phủ này; biệt hiệu, đăng nhập và thiết bị ở lại trên tài khoản.';
+      'Tên, email và danh tính git của bạn trong không gian làm việc này. Chuyển không gian làm việc sẽ chuyển lớp phủ này; tên người dùng, đăng nhập và thiết bị vẫn ở trên tài khoản của bạn trong Bạn → Hồ sơ.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12314,48 +12254,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Danh tính, chính sách và quy ước dùng chung cho mọi người trong không gian làm việc này.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Ghi công trong commit';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Chọn có ghi công Control Center trong commit của agent hay không. Quản trị viên không gian làm việc có thể thay đổi lựa chọn này cho mọi người trong không gian làm việc.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Ghi công agent';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Ghi công Control Center trong commit của agent';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Bạn luôn là tác giả và người ghi commit. Khi bật, Control Center (@usectrl) được thêm làm đồng tác giả. Khi tắt, commit không ghi công agent.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Thiết lập của không gian làm việc này thay thế lựa chọn cá nhân của bạn. Tùy chọn của bạn vẫn được lưu nhưng không áp dụng tại đây.';
-
-  @override
-  String get settingsAgentAttributionLoading => 'Đang tải thiết lập ghi công…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Chọn có ghi công Control Center trong commit của agent hay không. Lựa chọn của không gian làm việc thay thế tùy chọn cá nhân của từng thành viên.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Dùng tùy chọn của từng thành viên';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Luôn ghi công Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Không bao giờ ghi công Control Center';
+      'Chính sách và quy ước mà mọi người trong không gian làm việc này cùng dùng.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12721,9 +12620,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Đang kiểm tra kết nối…';
-
-  @override
-  String get fromEnvironment => 'từ môi trường';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13289,14 +13185,14 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Được dùng bởi các không gian làm việc kế thừa ứng dụng GitHub của bản cài đặt này. Không gian làm việc có ứng dụng riêng sẽ cấu hình trong Không gian làm việc → Chung.';
+      'Được dùng bởi các không gian làm việc theo ứng dụng đăng nhập của máy chủ này. Không gian làm việc dùng ứng dụng riêng sẽ thiết lập App của mình trong Không gian làm việc → Tích hợp.';
 
   @override
   String get providerAppsGroupPrConversations => 'Hội thoại pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cách nhà phát triển nói với máy chủ này trên GitHub trong không gian kế thừa. Không gian có App riêng có bot trong Không gian làm việc → Chung. Không cần webhook hay URL công khai — máy chủ thăm dò.';
+      'Cách nhà phát triển có thể trò chuyện với máy chủ này trên GitHub trong các không gian làm việc theo máy chủ này. Không gian làm việc dùng ứng dụng riêng có bot riêng trong Không gian làm việc → Tích hợp. Hoạt động không cần webhook hay URL công khai; máy chủ tự thăm dò.';
 
   @override
   String get providerAppBotLogin => 'Tên đăng nhập bot';
@@ -13329,10 +13225,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get portLabel => 'Cổng';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Không có token, bất kỳ thứ gì truy cập được cổng này đều có thể gọi mọi công cụ.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Công cụ';
 
   @override
@@ -13359,6 +13251,131 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Xóa tất cả';
+
+  @override
+  String get guardrailFamilyCommands => 'Lệnh';
+
+  @override
+  String get guardrailStandingApproval => 'Phê duyệt có thời hạn';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Cho phép: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Hỏi trước: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Từ chối: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'nhánh $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'đường dẫn $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'máy chủ $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'lệnh $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'công cụ $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'lệnh bắt đầu bằng $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'tối đa $count cùng lúc';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'tối đa $amount xu';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'mọi thao tác thuộc loại này';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'bởi $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'kết thúc $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'cho đến khi thu hồi';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Thu hồi: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'Không thể thu hồi. Vui lòng thử lại.';
+
+  @override
+  String get guardrailEntryInactive => 'không có hiệu lực khi bị từ chối';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Được cho phép trong $count trường hợp bên dưới',
+      one: 'Được cho phép trong 1 trường hợp bên dưới',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count phê duyệt có thời hạn cho toàn bộ không gian làm việc cũng áp dụng tại đây.',
+      one:
+          '1 phê duyệt có thời hạn cho toàn bộ không gian làm việc cũng áp dụng tại đây.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count phê duyệt có thời hạn được đặt cho các Space hoặc Agent riêng lẻ. Chọn Space hoặc Agent ở trên để xem.',
+      one:
+          '1 phê duyệt có thời hạn được đặt cho một Space hoặc Agent. Chọn Space hoặc Agent ở trên để xem.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandbox';
@@ -14172,6 +14189,12 @@ class AppLocalizationsVi extends AppLocalizations {
       'Bạn sẽ được hỏi lại lần sau khi agent cần chạy chương trình từ bản sao này.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Tìm đường dẫn';
+
+  @override
+  String get sandboxExecGrantsNoMatch => 'Không có quyền nào khớp với tìm kiếm';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14525,11 +14548,11 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Kết nối này tới máy chủ qua relay, không truyền được tệp. Kết nối trực tiếp tới máy chủ để tải xuống hoặc tải lên bản sao lưu.';
+      'Chưa thiết lập truyền tệp cho kết nối này. Kết nối lại với máy chủ để tải xuống hoặc tải lên bản sao lưu.';
 
   @override
   String get backupTransferForbidden =>
-      'Máy chủ từ chối. Tải xuống không gian làm việc cần vai trò admin, khôi phục cần owner, và toàn bộ snapshot cần operator của bản cài đặt.';
+      'Máy chủ từ chối. Tải xuống không gian làm việc cần vai trò admin của không gian làm việc. Khôi phục một không gian làm việc cần chủ sở hữu máy chủ, đồng thời người đó cũng phải sở hữu không gian làm việc đó. Toàn bộ snapshot cần chủ sở hữu máy chủ.';
 
   @override
   String get backupTransferUnsupported =>
@@ -14833,33 +14856,8 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đặt nội dung bảng nhớ tạm từ bất kỳ môi trường nào trên thiết bị này mà không cần hỏi.';
 
   @override
-  String get workspaceGitHubIdentity => 'Danh tính GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Cách công việc GitHub chạy nền trong không gian làm việc này xác thực: bằng ứng dụng của bản cài đặt này, hoặc bằng ứng dụng riêng của không gian làm việc.';
-
-  @override
-  String get workspaceGitHubModeInherit => 'Dùng GitHub App của bản cài này';
-
-  @override
-  String get workspaceGitHubModeApp => 'Dùng GitHub App khác';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Dùng GitHub App trong Máy chủ → Ứng dụng nhà cung cấp.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Danh tính bot và thăm dò của không gian này. Thành viên đăng nhập ở Bạn qua App này.';
-
-  @override
   String get profileOverlayHint =>
       'Các trường này là bạn trong không gian này. Trường trống kế thừa tên và email tài khoản. Đổi không gian sẽ đổi lớp phủ này.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Đăng nhập hoặc dán mã thông báo cho không gian làm việc này.';
 
   @override
   String get stackStartNextPart => 'Bắt đầu phần tiếp theo';
@@ -15664,6 +15662,17 @@ class AppLocalizationsVi extends AppLocalizations {
       'Máy chủ không thể cung cấp lệnh đăng nhập cho tài khoản này.';
 
   @override
+  String get claudeAccountSignedIn => 'Đã đăng nhập';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Hộp thoại này sẽ tự đóng khi quá trình đăng nhập hoàn tất.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Hộp thoại này sẽ tự đóng khi tất cả tài khoản đã đăng nhập.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Phiên đăng nhập Claude Code đã hết hạn';
 
@@ -15818,8 +15827,7 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
-      'Cần thiết lập việc này trên máy chủ';
+  String get environmentInputNeeded => 'Cần thiết lập việc này trên máy chủ';
 
   @override
   String get environmentKindApp => 'Ứng dụng';
@@ -16420,21 +16428,40 @@ class AppLocalizationsVi extends AppLocalizations {
   String get environmentOpenPanel => 'Mở môi trường';
 
   @override
-  String get environmentNeedsSetup => 'Cần thiết lập';
+  String get environmentStatusBlocked => 'Cần thao tác';
+
+  @override
+  String get environmentStateInTerminal => 'Trong terminal';
+
+  @override
+  String get environmentWaitingInTerminal => 'Đang chờ bạn trong terminal';
+
+  @override
+  String get environmentOpenTerminal => 'Mở terminal';
+
+  @override
+  String get environmentSignInNeeded => 'Cần bạn đăng nhập';
+
+  @override
+  String get environmentDependencyNeeded => 'Một thứ cần thiết không khả dụng';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Đã xong ở đây. Môi trường vẫn đang khởi động';
 
   @override
   String get environmentContinueInTerminal => 'Tiếp tục trong terminal';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Công cụ cần bạn nhập mật khẩu hoặc trả lời trong terminal. Quá trình khởi động sẽ tiếp tục khi xong.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Terminal này đã mở vì quá trình khởi động cần bạn';
 
   @override
-  String get environmentSetupTab => 'Thiết lập môi trường';
+  String get environmentStartTerminalTab => 'Thiết lập môi trường';
 
   @override
   String get environmentsNothingRunning =>
@@ -16728,23 +16755,14 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Phê duyệt yêu cầu trên trang $provider trong trình duyệt. Cửa sổ này tự nhận biết khi bạn hoàn tất.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Đang chờ $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Đăng nhập chưa hoàn tất';
 
   @override
   String get signInReopenPage => 'Mở lại trang đăng nhập';
 
   @override
-  String get signInCodePrompt => 'Nhập mã hiển thị trong trình duyệt';
+  String get signInCodePrompt =>
+      'Xác nhận trong trình duyệt của bạn, sau đó nhập mã mà nó hiển thị.';
 
   @override
   String get signInCodeMalformed =>
@@ -16788,7 +16806,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Lượt đăng nhập này không còn hợp lệ. Hãy bắt đầu lại.';
+      'Lượt đăng nhập này không còn mở: nó đã bị hủy, đã dùng hoặc đã được thay thế. Hãy bắt đầu lại.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16796,7 +16814,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Hiện có quá nhiều lượt thử đăng nhập. Đợi một phút rồi thử lại.';
+      'Hiện có quá nhiều yêu cầu. Hãy đợi một chút rồi thử lại.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16827,10 +16845,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Ứng dụng $provider chưa được cài ở nơi cần dùng. Hãy cài đặt rồi thử lại.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Bản cài đặt ứng dụng GitHub này đã được ủy quyền cho một máy chủ Control Center khác.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16889,7 +16903,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Nơi ứng dụng GitHub được cài đặt, trong số các tài khoản mà kho lưu trữ của không gian làm việc này thuộc về. Bản cài đặt của một tổ chức chỉ hoạt động trên các máy chủ mà quản trị viên của tổ chức đó ủy quyền.';
+      'Nơi ứng dụng GitHub được cài đặt, trong số các tài khoản mà kho lưu trữ của không gian làm việc này thuộc về.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16899,21 +16913,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get githubInstallApp => 'Cài ứng dụng GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Ủy quyền máy chủ này';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Máy chủ này giờ có thể dùng bản cài đặt trên $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Đã tạm ngưng';
-
-  @override
-  String get githubInstallationAuthorized => 'Đã ủy quyền';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Chưa ủy quyền';
 
   @override
   String get linearAutomationTitle => 'Tự động hóa Linear';
@@ -16939,7 +16939,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Tự đăng ký ứng dụng GitHub, Google và Linear trong Cài đặt → Máy chủ → Đăng nhập một lần, và kết nối ứng dụng Slack riêng của từng không gian làm việc trong phần cài đặt của nó. “Tạo ứng dụng GitHub của tôi” thiết lập GitHub chỉ trong một bước.';
+      'Tự đăng ký ứng dụng GitHub, Google và Linear trong Cài đặt → Máy chủ → Đăng nhập một lần, và kết nối ứng dụng Slack riêng của từng không gian làm việc trong Không gian làm việc → Tích hợp, nơi một không gian làm việc cũng có thể chọn ứng dụng riêng hoặc Connect. “Tạo ứng dụng GitHub của tôi” thiết lập GitHub chỉ trong một bước.';
 
   @override
   String get connectModeCustom => 'Dùng máy chủ Connect tùy chỉnh';
@@ -17074,7 +17074,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Máy chủ này sẽ nhận khóa và ID cài đặt mới. Mọi lần đăng nhập qua Connect sẽ ngừng hoạt động và mọi người phải đăng nhập lại. Đăng nhập qua ứng dụng của riêng bạn không bị ảnh hưởng.';
+      'Máy chủ này nhận khóa và ID cài đặt mới, và ID cũ bị thu hồi tại Connect: các lần đăng nhập được niêm phong dưới nó, cùng khóa cũ, ngừng hoạt động ở đó, nên mọi người đã đăng nhập qua Connect sẽ phải đăng nhập lại. Các token đã phát hành vẫn hoạt động cho đến khi hết hạn. Đăng nhập qua ứng dụng riêng của bạn không bị ảnh hưởng. Nếu không thể kết nối tới Connect, không có gì thay đổi và bạn có thể thử lại.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17208,34 +17208,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Ứng dụng nhà cung cấp';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Ứng dụng Google Calendar, Linear và Klipy mà không gian làm việc này sử dụng. Mặc định, không gian làm việc dùng ứng dụng của máy chủ này hoặc Control Center Connect. Không gian làm việc có ứng dụng riêng sẽ không chuyển sang các ứng dụng đó.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'Dùng ứng dụng của máy chủ này';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Đăng nhập và yêu cầu sẽ dùng ứng dụng của máy chủ này hoặc Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Dùng ứng dụng riêng của không gian làm việc này';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Chỉ dùng ứng dụng của không gian làm việc này. Khi chưa cấu hình xong, nhà cung cấp này bị tắt ở đây và không chuyển sang ứng dụng khác.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Ứng dụng của máy chủ';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Ứng dụng riêng';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Còn thiếu: $fields. Cho đến khi điền đủ mọi trường, nhà cung cấp này bị tắt trong không gian làm việc này. Không chuyển sang ứng dụng của máy chủ này.';
   }
@@ -17252,22 +17224,117 @@ class AppLocalizationsVi extends AppLocalizations {
       'Tìm kiếm GIF trong không gian làm việc này sử dụng khóa này.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Chuyển ứng dụng $provider?';
+  String get settingsWorkspaceIntegrations => 'Tích hợp';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Lưu trữ mã, phiếu việc, lịch, trò chuyện và tìm GIF trong không gian làm việc này, cùng các ứng dụng mà họ dùng để đăng nhập.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Không gian làm việc này dùng ứng dụng nào cho GitHub, Google Lịch, Linear, Slack và tìm GIF. Trừ khi quản trị viên chọn khác, nó sẽ theo máy chủ này.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Giống máy chủ này';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Máy chủ này dùng ứng dụng của Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Máy chủ này dùng máy chủ Connect tại $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Mọi người đã kết nối $provider trong không gian làm việc này qua ứng dụng của máy chủ này phải đăng nhập lại bằng ứng dụng của không gian làm việc.';
+  String get workspaceConnectInheritOwn =>
+      'Máy chủ này dùng ứng dụng riêng của nó.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Chủ máy chủ chưa chọn, nên ứng dụng riêng của máy chủ được áp dụng.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Chỉ dùng ứng dụng của không gian làm việc này. Thêm từng ứng dụng bên dưới, cạnh nhà cung cấp tương ứng. Nhà cung cấp không có ứng dụng sẽ bị tắt tại đây; ứng dụng của máy chủ này và Connect không được dùng thay thế.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Chỉ HTTPS. Địa chỉ trong mạng riêng hoặc mạng cục bộ sẽ bị từ chối.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL trong môi trường của máy chủ này quyết định nơi đăng nhập được chuyển đến, vì vậy không gian làm việc này không thể chọn Connect riêng. Nó có thể theo máy chủ này hoặc dùng ứng dụng riêng.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Chuyển ứng dụng đăng nhập của không gian làm việc này?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Mọi người trong không gian làm việc phải đăng nhập lại vào GitHub, Linear và Google Lịch qua các ứng dụng mới. Các lần đăng nhập đã thực hiện qua ứng dụng hiện tại sẽ ngừng hoạt động tại đây.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Chuyển ứng dụng';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Theo lựa chọn ở trên. Một nhà cung cấp không bao giờ chuyển sang ứng dụng khác.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn =>
+      'Ứng dụng của không gian làm việc';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Ứng dụng của máy chủ';
+
+  @override
+  String get workspaceGitHubAppTitle => 'Ứng dụng GitHub';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Ứng dụng riêng của không gian làm việc này hoạt động thay cho các kho lưu trữ của nó và đăng nhập thành viên. Nó không bao giờ chuyển sang ứng dụng của máy chủ này hoặc Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Không gian làm việc này dùng ứng dụng GitHub do các ứng dụng đăng nhập của nó cung cấp. Hãy cài đặt trên các tài khoản sở hữu kho lưu trữ của bạn.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Hoạt động thay mặt không gian làm việc này';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Bot của ứng dụng bình luận, xem xét và thăm dò các pull request trong kho lưu trữ của không gian làm việc này.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Ứng dụng $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Thao tác này xóa thông tin xác thực $provider của không gian làm việc. Mọi người đã kết nối qua ứng dụng của không gian làm việc phải đăng nhập lại.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Đăng nhập và yêu cầu $provider trong không gian làm việc này chỉ dùng ứng dụng này.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Chuyển ứng dụng';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Tìm GIF dùng khóa Klipy của không gian làm việc này.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Tìm GIF dùng khóa Klipy của máy chủ này.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Tìm GIF chạy qua Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Tìm GIF đang tắt trong không gian làm việc này.';
 
   @override
   String openOnForge(String forge) {
@@ -17285,7 +17352,7 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Kết nối GitHub, GitLab hoặc Bitbucket trong Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã';
+      'Kết nối GitHub, GitLab hoặc Bitbucket trong Cài đặt → Bạn → Hồ sơ';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17302,4 +17369,1133 @@ class AppLocalizationsVi extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Kết nối $forge để mở pull request trong kho mã này';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Phiên đăng nhập $provider của bạn với tư cách $account đã hết hạn. Hãy đăng nhập lại.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Đã tạm dừng: dịch vụ đăng nhập của không gian làm việc này đã thay đổi';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'Hiện không kết nối được với $provider. Đang thử lại.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Phiên đăng nhập của bạn được giữ lại và sẽ hoạt động trở lại khi dịch vụ quay lại. Quản trị viên không gian làm việc có thể kiểm tra thiết lập đăng nhập trong Tích hợp.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Máy chủ đã khởi động lại. Hãy bắt đầu đăng nhập lại.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Đăng nhập bằng $provider chưa được thiết lập cho không gian làm việc này.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Đăng nhập bằng $provider được thiết lập sai: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Không gian làm việc này dùng ứng dụng riêng nhưng không có ứng dụng $provider.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Bản dựng này không thể xác minh Control Center Connect, nên đăng nhập bằng $provider bị tắt.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Dịch vụ đăng nhập của không gian làm việc này đã thay đổi danh tính. Quản trị viên cần xác nhận.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Hiện không kết nối được với dịch vụ đăng nhập của không gian làm việc này.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Địa chỉ dịch vụ đăng nhập của không gian làm việc này bị thiếu hoặc không hợp lệ.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Người vận hành máy chủ đã cố định dịch vụ đăng nhập, nên lựa chọn của không gian làm việc này không áp dụng.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Dịch vụ đăng nhập của không gian làm việc này không hỗ trợ $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Mở tích hợp';
+
+  @override
+  String get signInOpenServerSettings => 'Mở cài đặt đăng nhập';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Thao tác này chạy với tư cách của bạn trên $provider, và bạn chưa thêm token. Hãy thêm một token rồi thử lại.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Ngắt kết nối $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Bạn sẽ cần kết nối lại $provider để làm việc với các kho lưu trữ của nó.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Thao tác này chỉ ngắt kết nối $provider trong không gian làm việc này. Các không gian làm việc khác giữ kết nối riêng.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Thao tác này ngắt kết nối $provider trong mọi không gian làm việc dùng chung kết nối này.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return 'Đã ngắt kết nối $provider khỏi không gian làm việc này';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return 'Đã ngắt kết nối $provider khỏi tất cả không gian làm việc';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Cài GitHub App trên $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Tự động hóa không thể truy cập $repos cho đến khi App được cài ở đó.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Thêm $repos vào các kho lưu trữ của GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'App đã được cài trên tài khoản này nhưng chưa thấy các kho lưu trữ này.';
+
+  @override
+  String get repoAccessChooseRepos => 'Chọn kho lưu trữ';
+
+  @override
+  String get repoAccessSuspendedTitle => 'Cài đặt GitHub App đã bị tạm ngưng';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Tự động hóa cho $repos đang tạm dừng cho đến khi chủ sở hữu tài khoản tiếp tục cài đặt trên GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Tự động hóa đang tạm dừng';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Người chịu trách nhiệm về tự động hóa của không gian làm việc này không còn thấy $repos, nên không có gì chạy ở đó thay mặt họ.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Người chịu trách nhiệm về tự động hóa của không gian làm việc này chưa đăng nhập vào forge, nên tự động hóa cho $repos chờ đến khi họ đăng nhập.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Không kiểm tra được quyền truy cập vào $repos. Đang thử lại.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Hãy nhờ $admins khắc phục.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Hãy nhờ quản trị viên không gian làm việc khắc phục.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Đăng nhập vào $forge để xem pull request từ $count kho lưu trữ nữa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count kho lưu trữ bị ẩn vì tài khoản $forge của bạn không thấy chúng',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count kho lưu trữ bị ẩn vì bạn không có quyền truy cập trong không gian làm việc này',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đang kiểm tra quyền truy cập của bạn vào $count kho lưu trữ nữa…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Đã liên kết, nhưng tự động hóa chưa truy cập được mọi thứ';
+
+  @override
+  String get githubInstallOnAnotherOrganization => 'Cài trên tổ chức khác';
+
+  @override
+  String get forgeTokenEmailLabel => 'Email tài khoản Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Nhập địa chỉ email của tài khoản Atlassian của bạn.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'Token API';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Token API của Bitbucket hoạt động cùng với email của tài khoản Atlassian đã tạo ra chúng.';
+
+  @override
+  String get automationTokensTitle => 'Token tự động hóa';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Công việc chạy nền trên GitLab và Bitbucket, như cập nhật pull request, bình luận đánh giá AI và merge request không ai yêu cầu, dùng token truy cập của bot, không bao giờ của một người. Token riêng của kho mã được ưu tiên hơn token của không gian làm việc.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Dùng cho mọi kho mã GitLab hoặc Bitbucket trong không gian làm việc này chưa có token tự động hóa riêng. Công việc chạy nền ở đó hiển thị là bot của token này.';
+
+  @override
+  String get automationTokenNone =>
+      'Không có token. Tự động hóa đang tạm dừng ở đây.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Dùng token của không gian làm việc';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Hoạt động với tư cách $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Đã thêm token truy cập';
+
+  @override
+  String get automationTokenRejected =>
+      'Nền tảng đã từ chối token này. Hãy thay thế nó.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Token tự động hóa $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Dán token truy cập dự án hoặc nhóm. Token cần read_api và read_repository; thêm api và write_repository cho bình luận, merge request và push. GitLab hiển thị công việc của nó là bot của token.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Dán token truy cập kho mã, dự án hoặc không gian làm việc có quyền đọc kho mã, cùng quyền ghi pull request cho bình luận và pull request. Token API của riêng bạn thuộc Bạn → Hồ sơ, không phải ở đây.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Đã lưu token, nhưng nó không đọc được $repos. Tự động hóa ở đó vẫn tạm dừng.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Xóa token tự động hóa?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Tự động hóa dựa vào token này sẽ tạm dừng cho đến khi thêm token khác.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Mọi kho mã $forge chưa có token riêng';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Không token tự động hóa nào đọc được $repos, nên công việc chạy nền ở đó đang tạm dừng.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commit từ công việc bạn bắt đầu sẽ mang tên bạn. Chọn ai khác được ghi công, và forge có hiển thị commit của bạn là đã xác minh hay không.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Tác giả';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Công việc bạn bắt đầu';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Bạn là tác giả và người commit, dưới email mà forge đã xác minh cho đăng nhập của bạn. Điều này bao gồm các cuộc trò chuyện với agent, pipeline bạn khởi chạy và commit bạn thực hiện trong editor.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Lần chạy tự động';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Các lần chạy được khởi chạy bởi lịch hoặc webhook sẽ commit dưới tên bot, và không bao giờ được ký.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Cho đến khi bạn đăng nhập vào forge trong không gian làm việc, các lần chạy của bạn ở đó sẽ commit dưới tên bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Ghi công Control Center là đồng tác giả';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Commit của bạn ghi Control Center (@usectrl) là đồng tác giả, và các lần chạy tự động bạn đã kích hoạt sẽ ghi tên bạn. Khi tắt, không dòng nào được thêm vào.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Thiết lập của không gian làm việc này thay thế lựa chọn cá nhân của bạn. Tùy chọn của bạn vẫn được lưu nhưng không áp dụng tại đây.';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'Đang tải thiết lập ghi công…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Ghi công đồng tác giả';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Commit có mang dòng đồng tác giả hay không: Control Center trên commit của thành viên, và các thành viên đã kích hoạt lần chạy tự động trên commit của nó. Lựa chọn ở đây ghi đè lựa chọn của từng thành viên.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Dùng tùy chọn của từng thành viên';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Luôn thêm ghi công đồng tác giả';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Không bao giờ thêm ghi công đồng tác giả';
+
+  @override
+  String get settingsCommitSigningSection => 'Commit đã xác minh';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Đang ký';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Không ký';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Máy chủ này có thể ký commit của bạn bằng khóa riêng của bạn, để GitHub và GitLab hiển thị chúng là đã xác minh. Chưa có gì được ký cho đến khi bạn tạo khóa.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Tạo khóa ký';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Đã tạo khóa ký. Hãy thêm vào tài khoản forge của bạn.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Khóa công khai';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Đã sao chép khóa công khai';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Dấu vân tay';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Đã tạo';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Thêm vào tài khoản forge của bạn';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Commit chỉ hiển thị là đã xác minh khi bạn cũng đang đăng nhập vào forge đó trong không gian làm việc, để forge xác nhận email của bạn.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Đặt Key type thành Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Đặt Usage type thành Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commit trên Bitbucket không được ký. Đừng thêm khóa này vào tài khoản Bitbucket của bạn: khóa SSH ở đó cũng là một đăng nhập.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Không được hỗ trợ';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Bạn đang tin tưởng điều gì';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Khóa riêng không bao giờ rời khỏi máy chủ này.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Bất kỳ ai kiểm soát máy chủ này đều có thể ký commit thay bạn chừng nào khóa còn trên tài khoản forge của bạn.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'Trên GitHub, các commit đã hiển thị là đã xác minh vẫn được giữ xác minh sau khi bạn xóa khóa.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Xóa khóa';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Xóa khóa ký của bạn?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Từ giờ commit của bạn sẽ không được ký. Khóa vẫn còn trên tài khoản forge của bạn cho đến khi bạn xóa nó ở đó.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Đã xóa khóa ký';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Không thể tải khóa ký của bạn: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Hồ sơ';
+
+  @override
+  String get accountProfileDescription =>
+      'Bạn là ai trong mọi không gian làm việc, cùng các tài khoản lưu trữ mã, phiếu, lịch và trò chuyện do chính bạn kết nối.';
+
+  @override
+  String get accountSectionTitle => 'Tài khoản';
+
+  @override
+  String get accountSectionDescription =>
+      'Tên người dùng và tên của bạn đi theo bạn vào mọi không gian làm việc. Một không gian làm việc có thể hiển thị tên hoặc email khác: đặt điều đó trong Không gian làm việc → Hồ sơ & danh tính.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Không thể tải hồ sơ của bạn: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Tên mà mọi người thấy trên tin nhắn và đánh giá của bạn.';
+
+  @override
+  String get accountDisplayNameRequired => 'Nhập tên hiển thị.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Có thể thay đổi nhưng không thể xóa.';
+
+  @override
+  String get accountAvatarLabel => 'Ảnh';
+
+  @override
+  String get accountAvatarHint =>
+      'Liên kết tới ảnh vuông, bắt đầu bằng https://.';
+
+  @override
+  String get accountAvatarInvalid => 'Dùng liên kết bắt đầu bằng https://.';
+
+  @override
+  String get usernameLabel => 'Tên người dùng';
+
+  @override
+  String get usernameRule =>
+      '2 đến 32 chữ cái thường, chữ số, dấu chấm, dấu gạch ngang hoặc gạch dưới. Mọi người nhắc đến bạn bằng tên này.';
+
+  @override
+  String get usernameAvailable => 'Có thể dùng.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Có thể dùng. Sẽ được lưu thành $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Dùng 2 đến 32 chữ cái thường, chữ số, “.”, “_” hoặc “-”, bắt đầu và kết thúc bằng chữ cái hoặc chữ số.';
+
+  @override
+  String get usernameReserved => 'Tên người dùng đó đã được dành riêng.';
+
+  @override
+  String get usernameTaken => 'Tên người dùng đó đã có người dùng.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Hiện không thể kiểm tra tên này. Bạn vẫn có thể lưu; máy chủ sẽ quyết định.';
+
+  @override
+  String get linkedAccountsTitle => 'Tài khoản đã kết nối';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Nhà cung cấp danh tính';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Cần đăng nhập';
+
+  @override
+  String get linkedAccountStatusPaused => 'Đã tạm dừng';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Không kết nối được';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Nhà cung cấp danh tính mà tài khoản của bạn đăng nhập qua. Người quản lý máy chủ này sẽ quản lý nó.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Các tài khoản bạn kết nối cho riêng mình. Control Center hoạt động thay bạn qua các tài khoản này, và thay đổi chúng chỉ ảnh hưởng đến bạn.';
+
+  @override
+  String get accountReachServer =>
+      'Được dùng trong mọi không gian làm việc trên máy chủ này.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Chỉ dùng trong $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub chỉ được dùng trong $workspace, nơi có các ứng dụng đăng nhập riêng. GitLab và Bitbucket được dùng trong mọi không gian làm việc trên máy chủ này.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Tài khoản của bạn';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Tài khoản của bạn: $status. Mở Bạn → Hồ sơ.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Chưa kết nối tài khoản lưu trữ mã nào';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Chưa kết nối tài khoản $provider';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Chưa liên kết tài khoản $provider';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'Bạn là khách tạm thời trong bản demo, nên không có tài khoản để thay đổi: không có tên người dùng, hồ sơ hay tài khoản đã kết nối.';
+
+  @override
+  String get onboardingStepYou => 'Bạn';
+
+  @override
+  String get onboardingYouTitle => 'Chọn tên người dùng của bạn';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Tên người dùng là cách mọi người nhắc đến bạn và cách công việc của bạn được gắn nhãn. Bạn có thể đổi tên này và tên hiển thị sau trong Cài đặt → Bạn → Hồ sơ.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Tài khoản $provider này đã được kết nối với người khác trên máy chủ này. Hãy đăng nhập bằng một tài khoản $provider khác.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token hết hạn $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token đã hết hạn $date. Dán token mới để tiếp tục hoạt động.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'Không thể kết nối tới $forge để kiểm tra token này. Vui lòng thử lại sau.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge không chấp nhận token này. Hãy kiểm tra xem bạn đã sao chép đầy đủ và token chưa bị thu hồi.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Đây không phải token cá nhân. Hãy dán personal access token từ tài khoản $forge của chính bạn, không phải token của dự án, nhóm, không gian làm việc hoặc bot.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Token này thiếu quyền $scope, thứ cần cho việc đánh giá và bình luận. Hãy tạo một token có quyền đó.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Token này đã hết hạn. Hãy tạo token mới và dán vào đây.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Các agent bạn khởi chạy có thể tạo commit được ký dưới tên bạn, trong bất kỳ repository nào chúng làm việc. Xóa khóa tại đây sẽ dừng việc đó ngay: các lần chạy đang diễn ra sẽ không ký thêm gì nữa.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Khóa chưa được thay đổi và không có gì thay đổi: $error Hãy thử lại.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle =>
+      'Bạn chưa ở trong không gian làm việc nào';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Quản trị viên không gian làm việc cần mời bạn, hoặc chủ sở hữu máy chủ có thể tạo không gian làm việc cho bạn. Nó sẽ mở ở đây ngay khi bạn được thêm vào.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Đã đăng nhập với tên $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Kiểm tra lại';
+
+  @override
+  String get noWorkspaceSignOut => 'Đăng xuất';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Chỉ chủ sở hữu máy chủ mới có thể tạo không gian làm việc. Hãy nhờ họ tạo một cái, hoặc nhờ quản trị viên không gian làm việc mời bạn.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo không nằm trong bất kỳ không gian làm việc nào của bạn, và bạn không ở trong không gian làm việc nào để thêm nó vào. Hãy nhờ quản trị viên không gian làm việc mời bạn.';
+  }
+
+  @override
+  String get serverOwnerOnly =>
+      'Chỉ chủ sở hữu máy chủ mới có thể làm việc này';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Trình soạn thảo đầy đủ chạy trên chính máy của máy chủ, nên chỉ chủ sở hữu máy chủ mới mở được. Bạn vẫn có thể mở và chỉnh sửa tệp từ Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'Sandbox';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Chạy trong sandbox bên trong các thư mục của không gian làm việc này, nên một số công cụ và đường dẫn của máy chủ không khả dụng ở đây.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Shell của máy chủ chạy trên máy chủ mà không có sandbox, nên chỉ chủ sở hữu máy chủ mới mở được. Terminal thông thường chạy trong sandbox.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Terminal chỉ có thể mở bên trong các thư mục của chính không gian làm việc này.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Chỉ chủ sở hữu máy chủ mới có thể lưu hoặc phê duyệt môi trường chạy trên máy chủ. Quản trị viên không gian làm việc có thể dùng môi trường chạy trong rig.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commit bạn thực hiện trong trình soạn thảo của ứng dụng không chạy Git hook nào từ repository, giống như git commit --no-verify: máy chủ chạy Git trên chính máy của nó, trong một cây thư mục mà agent và pull request có thể thay đổi.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Các client MCP gửi token này trong mỗi yêu cầu, dưới dạng tiêu đề Authorization: Bearer. Máy chủ tạo token khi khởi động lần đầu; bạn có thể đổi mới nhưng không thể xóa.';
+
+  @override
+  String get mcpShowToken => 'Hiện token';
+
+  @override
+  String get mcpHideToken => 'Ẩn token';
+
+  @override
+  String get mcpRotateToken => 'Đổi token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Đổi token MCP?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Máy chủ chuyển sang token mới ngay lập tức. Mọi client MCP vẫn dùng token hiện tại sẽ bị từ chối cho đến khi bạn cung cấp token mới.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Đã đổi token. Hãy cung cấp token mới cho các client MCP của bạn.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'Endpoint MCP dành cho chủ sở hữu máy chủ';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Token của nó mở mọi công cụ trên máy chủ này, nên chỉ chủ sở hữu máy chủ mới có thể xem, đổi, hoặc bật và tắt endpoint.';
+
+  @override
+  String get activityRotatedMcpToken => 'Đã đổi token MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect không thể thu hồi khóa cũ';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Không có gì thay đổi. Nếu bạn vẫn đổi, máy chủ này sẽ nhận khóa mới, nhưng danh tính cũ vẫn dùng được tại Connect đó cho đến khi các lần đăng nhập của nó hết hạn.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Vẫn đổi';
+
+  @override
+  String get settingsAuditLog => 'Nhật ký kiểm toán';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Ai đã thay đổi gì, ở đâu và kết thúc ra sao, trên toàn bộ máy chủ và mọi không gian làm việc bạn quản trị. Thao tác của máy chủ chỉ ghi tên đối số, không ghi giá trị.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Chỉ dành cho quản trị viên';
+
+  @override
+  String get auditLogNoAccess =>
+      'Nhật ký kiểm toán bao phủ máy chủ và các không gian làm việc bạn quản trị. Bạn không quản trị không gian làm việc nào, nên không có gì để hiển thị.';
+
+  @override
+  String get auditLogSourceServer => 'Máy chủ';
+
+  @override
+  String get auditLogSourceWorkspace => 'Không gian làm việc';
+
+  @override
+  String get auditLogAddFilter => 'Bộ lọc';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Lọc…';
+
+  @override
+  String get auditLogFilterActor => 'Người thực hiện';
+
+  @override
+  String get auditLogFilterSource => 'Không gian làm việc';
+
+  @override
+  String get auditLogFilterOutcome => 'Kết quả';
+
+  @override
+  String get auditLogFilterTime => 'Thời gian';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Thành công';
+
+  @override
+  String get auditLogOutcomeDenied => 'Từ chối';
+
+  @override
+  String get auditLogOutcomeFailed => 'Thất bại';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Từ lúc trở đi';
+
+  @override
+  String get auditLogTimeAfter => 'Sau';
+
+  @override
+  String get auditLogTimeBefore => 'Trước';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Trước hoặc đúng lúc';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Thời gian $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 giờ trước';
+
+  @override
+  String get auditLogTimePresetDay => '24 giờ trước';
+
+  @override
+  String get auditLogTimePresetWeek => '7 ngày trước';
+
+  @override
+  String get auditLogTimePresetMonth => '30 ngày trước';
+
+  @override
+  String get auditLogTimeExact => 'Thời điểm cụ thể';
+
+  @override
+  String get auditLogTimeInvalid => 'Nhập YYYY-MM-DD, có thể kèm HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Thêm';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo giờ trỏ tới một kho lưu trữ khác';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Đường dẫn này giờ trỏ tới một kho lưu trữ khác trên $forge. Hãy liên kết lại để tiếp tục sử dụng.';
+  }
+
+  @override
+  String get repoRelink => 'Liên kết lại';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Đã liên kết lại $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Đường dẫn này giờ trỏ tới một kho lưu trữ khác. Quản trị viên không gian làm việc cần liên kết lại trước khi có thể sử dụng.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Tài khoản $forge của bạn không thể đọc kho lưu trữ này.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Không thể xác nhận quyền truy cập $forge của bạn. Hãy thử lại.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Tài khoản forge của bạn không thể đọc kho lưu trữ này.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Không thể xác nhận quyền truy cập forge của bạn. Hãy thử lại.';
+
+  @override
+  String get repoPathHostPath =>
+      'Chỉ chủ sở hữu máy chủ mới có thể liên kết thư mục nằm ngoài bộ nhớ của không gian làm việc này.';
+
+  @override
+  String get repoPathMissing =>
+      'Không có gì tồn tại tại đường dẫn đó trên máy chủ.';
+
+  @override
+  String get repoPathDataDir =>
+      'Kho lưu trữ không thể trỏ vào thư mục dữ liệu của máy chủ.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Kho lưu trữ không thể là chính thư mục gốc của không gian làm việc.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Origin của thư mục đó là một kho lưu trữ khác.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Đã lưu. Họ cần đăng nhập vào $forge trước khi có thể mở kho lưu trữ này.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Đã lưu. Tài khoản $forge của họ chưa thể đọc kho lưu trữ này, nên nó vẫn bị ẩn đối với họ.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Đã lưu. Hiện không thể xác nhận quyền truy cập $forge của họ.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo chưa được liên kết trong bất kỳ không gian làm việc nào của bạn. Hãy nhờ chủ sở hữu máy chủ thêm nó.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Chủ sở hữu máy chủ thêm kho lưu trữ từ các thư mục của máy chủ.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Chỉ có bạn nhập địa chỉ này. Đăng nhập một lần (SSO) sẽ không khớp với nó cho đến khi chủ sở hữu máy chủ xác nhận.';
+
+  @override
+  String get settingsServerPeople => 'Mọi người';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Tất cả những ai có tài khoản trên máy chủ này, và địa chỉ email của họ đã được xác nhận hay chưa.';
+
+  @override
+  String get serverPeopleLabel => 'Tài khoản';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Chỉ chủ sở hữu máy chủ mới có thể xem tất cả tài khoản và xác nhận địa chỉ email.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'Email chưa được xác nhận';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Xác nhận email';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Xác nhận rằng $email thuộc về $name? Đăng nhập một lần (SSO) sẽ khớp địa chỉ này với tài khoản của họ.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Đã xác nhận $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => 'Agent cần sandbox trên máy chủ này';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Máy chủ này không có sandbox, nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây. Chủ sở hữu có thể cài đặt sandbox hoặc tắt sandboxing cho tất cả mọi người.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Thư mục này nằm ngoài bộ nhớ của không gian làm việc. Hãy xác nhận rằng máy chủ này được phép sử dụng nó.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Thư mục này nằm ngoài bộ nhớ của không gian làm việc. Chỉ chủ sở hữu máy chủ mới có thể xác nhận.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Hiện không còn gì tồn tại tại đường dẫn này trên máy chủ. Hãy xóa kho lưu trữ này và thêm lại từ thư mục hiện tại của nó.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Thư mục này không thể dùng làm kho lưu trữ. Hãy xóa nó và thêm kho lưu trữ từ thư mục khác.';
+
+  @override
+  String get repoPathConfirm => 'Xác nhận';
+
+  @override
+  String get repoPathConfirmAll => 'Xác nhận tất cả';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count thư mục nằm ngoài bộ nhớ của không gian làm việc',
+      one: '1 thư mục nằm ngoài bộ nhớ của không gian làm việc',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Xác nhận rằng máy chủ này được phép sử dụng chúng. Mỗi kho lưu trữ sẽ được kiểm tra lại với quyền truy cập của bạn.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Các máy chủ tìm thấy trong cài đặt công cụ riêng của máy này chỉ khả dụng trong các lần chạy bạn khởi chạy hoặc chịu trách nhiệm. Lần chạy của người khác không bao giờ thấy chúng, và chúng không được cung cấp qua endpoint MCP của Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Đăng nhập vào $provider để xem mã của kho lưu trữ này.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Đăng nhập';
+
+  @override
+  String get ideContentSearchFailed => 'Không thể tìm kiếm trong tệp';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Tệp này không khả dụng trong worktree này.';
+
+  @override
+  String get ideChangesLoadFailed => 'Không thể tải các thay đổi';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Đường dẫn này giờ trỏ tới một kho lưu trữ khác trên $forge. Quản trị viên không gian làm việc cần liên kết lại trước khi có thể sử dụng.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Chỉ chủ sở hữu máy chủ mới có thể khôi phục bản sao lưu. Bạn vẫn có thể tải chúng xuống.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Chỉ đọc';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Bạn có thể xem terminal này. Gõ, đổi kích thước hoặc dừng nó cần quyền ghi trên mọi kho lưu trữ trong cuộc trò chuyện này.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Bạn có thể xem môi trường này. Khởi động, dừng hoặc khởi động lại nó cần quyền ghi trên mọi kho lưu trữ trong cuộc trò chuyện này.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Chạy trên máy chủ này. Hãy phê duyệt để cho phép nó khởi động.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Chạy trên máy chủ này. Chủ sở hữu máy chủ cần phê duyệt trước khi nó có thể khởi động.';
+
+  @override
+  String get environmentHostApprove => 'Phê duyệt';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Hãy phê duyệt với tư cách quản trị viên không gian làm việc: chỉ bản sao của quản trị viên mới hiển thị giá trị bí mật, và việc phê duyệt sẽ lưu lại các giá trị đó.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Chủ sở hữu máy chủ chưa phê duyệt môi trường này, nên nó không thể chạy trên máy chủ này.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Bạn chưa phê duyệt môi trường này. Nó chạy trên máy chủ này, nên sẽ khởi động khi bạn phê duyệt định nghĩa của nó.';
+
+  @override
+  String get environmentHostApprovalReview => 'Xem xét và phê duyệt';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Đăng nhập vào $provider để mở không gian này.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Tài khoản $forge của bạn không thể đọc một kho lưu trữ mà không gian này sử dụng.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Tài khoản forge của bạn không thể đọc một kho lưu trữ mà không gian này sử dụng.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Bạn không có quyền đọc đối với một kho lưu trữ mà không gian này sử dụng. Quản trị viên không gian làm việc có thể cấp quyền.';
+
+  @override
+  String get spaceAccessFailed => 'Không thể mở không gian này.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Phần phân tích ngữ cảnh không khả dụng trong phiên này.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Một kho lưu trữ được liên kết cần cả tên chủ sở hữu và tên kho lưu trữ.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Bạn không có quyền đọc kho lưu trữ này. Quản trị viên không gian làm việc có thể cấp quyền.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Bạn có thể đọc kho lưu trữ này nhưng không thể thay đổi. Quản trị viên không gian làm việc có thể cấp quyền ghi.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Bạn có thể đọc kho lưu trữ này nhưng không thể duyệt. Quản trị viên không gian làm việc có thể cấp quyền duyệt.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Chỉ xem';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Bạn có thể xem máy này. Điều khiển máy, chuyển tiếp cổng, dán nội dung vào hoặc thả tệp vào máy cần quyền ghi trên mọi kho lưu trữ trong không gian này.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Khởi động máy ở đây cần quyền ghi trên mọi kho lưu trữ trong không gian này. Quản trị viên không gian làm việc có thể cấp quyền.';
+
+  @override
+  String get rigViewRefused =>
+      'Bạn không thể xem máy này. Máy thuộc một không gian mà bạn không có quyền đọc.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Thay đổi các cổng này cần quyền ghi trên mọi kho lưu trữ trong không gian này.';
+
+  @override
+  String get rigHolderOnly =>
+      'Chỉ người mà máy này được mở cho mới có thể điều khiển. Máy dùng tài khoản đăng nhập của chính người đó.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Bạn có thể xem máy này. Máy dùng tài khoản đăng nhập của người mà máy được mở cho, nên chỉ người đó mới có thể điều khiển, chuyển tiếp cổng, dán nội dung vào hoặc thả tệp vào máy.';
 }

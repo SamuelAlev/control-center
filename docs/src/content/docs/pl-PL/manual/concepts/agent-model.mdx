@@ -2,7 +2,7 @@
 title: Model agentów
 description: Czym agent naprawdę jest w Control Center, które z jego pól zmieniają zachowanie i jak adapter, na którym działa, decyduje o tym, co można wyegzekwować.
 slug: pl-PL/podrecznik/koncepcje/model-agentow
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Czym jest agent?
@@ -54,7 +54,7 @@ Skille repozytorium są wczytywane dla **każdego** adaptera, nie tylko dla wbud
 
 Agent nie ma własnych flag uprawnień. O tym, czy może utworzyć commit, wykonać push, otworzyć pull request, zapisywać do trackera albo sięgać do sieci, decydują [guardraile akcji](/pl-PL/podrecznik/koncepcje/guardraile/) — zezwól, zapytaj najpierw lub odmów, w zakresie obszaru roboczego, agenta lub przestrzeni — i te same reguły obowiązują niezależnie od tego, który adapter go uruchamia.
 
-To, co uruchomienie _otrzymuje_, nie zmienia się wraz z tymi regułami. Uruchomienie w worktree GitHuba zawsze dostaje token GitHub tylko do odczytu, a o push pyta się w chwili, gdy następuje: konfiguracja gita agenta kieruje każdy push do GitHuba przez Control Center, który przed przekazaniem go dalej stosuje regułę **Push do zdalnego repozytorium**.
+To, co uruchomienie _otrzymuje_, nie zmienia się wraz z tymi regułami. Uruchomienie zawsze może czytać repozytoria GitHuba, nad którymi pracuje, na tokenie tylko do odczytu, a o push pyta się w chwili, gdy następuje: konfiguracja gita agenta kieruje każdy push do GitHuba przez Control Center, który przed przekazaniem go dalej stosuje regułę **Push do zdalnego repozytorium**.
 
 Jak to działa, w tym co jest egzekwowane na poziomie systemu plików, a co nie, znajdziesz w sekcji [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 
@@ -70,16 +70,16 @@ Polem o największych konsekwencjach na agencie jest jego adapter, ponieważ tra
 Konkretnie: **tylko wbudowany harness obsługuje subagentów, sterowanie w trakcie uruchomienia, pauzę i wznowienie (a więc i przejęcie) oraz strukturalne egzekwowanie trybu.** Claude Code nie ma żadnego z nich.
 
 :::caution[Sandbox systemu to dolna granica, nie egzekwuje trybu, a nie każdy host go ma]
-Powyższa tabela dotyczy tego, co Control Center potrafi _zobaczyć i zablokować_. Pod spodem `cc_server` zamyka CLI Claude Code w sandboxie systemu hosta, tam gdzie taki istnieje — Seatbelt na macOS, bubblewrap na Linuksie i w WSL2 — więc niewidoczne `rm` czy niewidoczny zapis wciąż są ograniczane przez system. W **Windows nie ma żadnego backendu**, a na Linuksie lub w WSL2 bez `bwrap` i `socat` sonda nie zgłasza żadnego, więc tam takie uruchomienia opierają się na sanityzacji środowiska, poświadczeniach z brokera, guardrailach na wywołaniach, które Control Center widzi, oraz własnym worktree rozmowy (copy-on-write wszędzie tam, gdzie dostępny jest `rift`; `git worktree` w Windows).
+Powyższa tabela dotyczy tego, co Control Center potrafi _zobaczyć i zablokować_. Pod spodem `cc_server` zamyka CLI Claude Code w sandboxie systemu hosta, tam gdzie taki istnieje — Seatbelt na macOS, bubblewrap na Linuksie i w WSL2 — więc niewidoczne `rm` czy niewidoczny zapis wciąż są ograniczane przez system. W **Windows nie ma żadnego backendu**, a na Linuksie lub w WSL2 bez `bwrap` i `socat` sonda nie zgłasza żadnego. Tam startują tylko uruchomienia właściciela serwera, a uruchomienia wszystkich pozostałych są odrzucane, chyba że właściciel uruchomił serwer z `--sandbox off`. Uruchomienie, które startuje bez piaskownicy, opiera się na sanityzacji środowiska, poświadczeniach z brokera, guardrailach na wywołaniach, które Control Center widzi, oraz własnym worktree rozmowy (copy-on-write wszędzie tam, gdzie dostępny jest `rift`; `git worktree` w Windows).
 
 Sandbox nie jest natomiast _bramą_. Ogranicza, gdzie proces może czytać, pisać i się łączyć — tryb tylko do odczytu faktycznie do niego dociera, jako montowania bind tylko do odczytu — ale nie potrafi przechwycić wywołania, podnieść prośby o zatwierdzenie ani powiedzieć ci później, czego próbowało CLI. To, plus cztery uprawnienia wymienione powyżej, to wciąż rzeczy, które ma wbudowany harness, a których nie mają pozostałe. Zobacz [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 :::
 
-Agent, który **nie ma** adaptera, wraca do **Control Center (built-in)** — pętli wewnątrz serwera, więc nie ma żadnego CLI do zainstalowania — a jego log uruchomienia zapisuje `cc-harness`. Każdy zasiany agent jest tworzony bez adaptera i modelu, więc pięć agentów świeżego obszaru roboczego działa tam, na domyślnym modelu Anthropic, dopóki nie ustawisz adaptera i modelu dla każdego agenta. Wybór „domyślnego adaptera” w onboardingu to preferencja po stronie klienta, której serwer nigdy nie czyta i której nie stosuje wstecz do już utworzonych agentów.
+Agent, który **nie ma** adaptera, wraca do **Control Center (built-in)** — pętli wewnątrz serwera, więc nie ma żadnego CLI do zainstalowania — a jego log uruchomienia zapisuje `cc-harness`. Każdy zasiany agent jest tworzony bez adaptera i modelu, więc sześć agentów świeżego obszaru roboczego działa tam, na domyślnym modelu Anthropic, dopóki nie ustawisz adaptera i modelu dla każdego agenta. Zakończenie kroku adaptera w onboardingu ustawia jego parę na każdym agencie, który jeszcze jej nie ma, w obszarach roboczych istniejących w tym momencie; nie ma domyślnego runnera obszaru roboczego.
 
 ## Skąd biorą się agenci
 
-- **Zasiewani razem z obszarem roboczym.** Każdy obszar roboczy — nie tylko pierwszy — dostaje CEO oraz czterech specjalistów (`qa`, `architect`, `engineer`, `librarian`) podlegających jemu, tworzonych idempotentnie w tle w momencie utworzenia obszaru roboczego. Zobacz [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/).
+- **Zasiewani razem z obszarem roboczym.** Każdy obszar roboczy — nie tylko pierwszy — dostaje CEO oraz pięciu specjalistów (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) podlegających jemu, tworzonych idempotentnie w tle w momencie utworzenia obszaru roboczego. Zobacz [Obszary robocze i izolacja](/pl-PL/podrecznik/koncepcje/obszary-robocze/).
 - **Dodawani ręcznie** w **Ustawienia → Obszar roboczy → Agenci**. Poproszenie agenta, by zatrudnił kolegę, nie tworzy wiersza; użyj tego ekranu.
 
 ## Stan bieżący

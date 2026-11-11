@@ -2,7 +2,7 @@
 title: 審查運算（群組、軸與確定性差異）
 description: 審查運算階段在伺服器端產出什麼 —— 群組、API 合約與視覺差異、依軸劃分的閘門 —— 以及它如何納入檢閱分頁。
 slug: zh-TW/手冊/操作指南/審查運算
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 PR 的**檢閱**分頁在審查管線運作期間顯示它的即時進度，之後則顯示它所發佈的產物，
@@ -12,8 +12,7 @@ PR 的**檢閱**分頁在審查管線運作期間顯示它的即時進度，之�
 在那個分頁背後，`cc_server` 建立檔案群組、執行確定性軸，並透過 `review_studio.*`
 RPC 操作把它們提供出去（`cohorts`、`blastRadius`、`cohortImpact`、`ciSignals`、
 `dependencyDiffs`、`setContractDecision`、`approveVisual`、`compute`，以及它們各自
-對應的 `watch*` 孿生操作）。仍指名 `pr.reviewStudio` 的持久化版面配置，開啟的也是
-這個檢閱分頁。
+對應的 `watch*` 孿生操作）。
 
 在檢閱分頁上：
 
@@ -65,6 +64,8 @@ param）、non-breaking（附加式），或 informational。被拒絕的變更�
 會透過在該 PR 的 base 與 head 工作樹中進行一次無介面的 `flutter test` golden 執行，
 渲染出這些變更元件的前後狀態，然後對像素做差異比對。
 
+這些測試屬於 pull request 本身的程式碼，因此它們的執行方式與代理的工具程序相同：伺服器為代理使用沙箱時，在沙箱內執行；伺服器擁有者關閉沙箱時，不受約束地執行；沒有沙箱時，則只針對伺服器擁有者負責的請求執行。對其他人而言，此軸會回報 **unavailable**，原因是「no sandbox on this server, and only its owner may run a PR's tests unsandboxed」。
+
 :::note[這需要在伺服器主機上安裝 Flutter SDK]
 純 Dart 伺服器無法在行程內渲染 Flutter widget，因此它會以外部命令呼叫
 `flutter test`。SDK 必須安裝在執行 `cc_server` 的那台機器上 —— 而不是你的用戶端。
@@ -73,9 +74,9 @@ param）、non-breaking（附加式），或 informational。被拒絕的變更�
 :::
 
 標記為 **changed** 或 **removed** 的快照會扣住視覺閘門，直到被核准；**unchanged**、
-**added** 與 **approved** 的快照則會放行。無法使用的原因有四種：主機上沒有 Flutter
-SDK、儲存庫中沒有 Widgetbook 應用程式、沒有可進行 golden 測試的使用案例，或 golden
-測試裝置發生錯誤。
+**added** 與 **approved** 的快照則會放行。無法使用的原因有五種：主機上沒有 Flutter
+SDK、儲存庫中沒有 Widgetbook 應用程式、沒有可進行 golden 測試的使用案例、golden
+測試裝置發生錯誤，或沒有沙箱可供伺服器擁有者不負責的請求使用。
 
 核准一個有意為之的變更用的是 `review_studio.approveVisual`。
 

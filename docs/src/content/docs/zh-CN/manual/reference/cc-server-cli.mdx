@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: 无界面服务器的每一个标志、环境变量、子命令和数据目录路径。
 slug: zh-CN/手册/参考/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 每个进程标志都可以通过命令行标志或环境变量设置；优先级依次是标志、环境变量、默认值。提供商凭据是例外——见[提供商应用与 Connect](#提供商应用与-connect)。
@@ -43,7 +43,7 @@ sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 
 | 标志                     | 环境变量                        | 默认值                                | 含义                                                                                                          |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | 当主机提供操作系统原生沙盒时，是否用它包裹智能体运行。这是退出开关，而不是启用开关——见下文                    |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` 会用操作系统原生沙盒包裹智能体运行，在没有沙盒的主机上只启动服务器所有者的运行。`off` 会在本主机上不受限地运行每位成员的智能体。见下文 |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | 后台代码图索引的现场关停开关。设为 `off` 无需重新构建即可干净启动                                             |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | 就绪横幅出现后推迟首次索引扫描的秒数（限制在 0–300）                                                          |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | 运行框架发出的请求是否只带一小批常驻工具加一份名称索引，其余工具在首次使用时加载。见下文                      |
@@ -69,13 +69,21 @@ sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 
 `.env` 文件从服务器的工作目录、可执行文件旁，或其上层的源码检出目录中读取；在 Docker 中，把它挂载到 `/app/bin/.env`。当 `GITHUB_APP_PRIVATE_KEY`、`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、`LINEAR_API_KEY` 或任何 `SLACK_*SECRET*` 被导出到服务器的进程环境中时（所有子进程都能读取），服务器会**拒绝启动**（退出代码 `78`）。从 `.env` 的赋值每个字段只发生一次，因此之后在设置中所做的编辑不会被重启撤销。空值视为未设置。
 
-GitLab 和 Bitbucket 的后台工作还会读取 `GITLAB_TOKEN` / `CI_JOB_TOKEN`，以及 `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` 配合 `BITBUCKET_EMAIL`。GitHub 没有环境凭据。
+没有任何代码托管平台凭据来自环境变量：GitHub、GitLab 和 Bitbucket 都只以某位成员自己的登录或令牌行事，或以受该成员约束的单仓库 GitHub App 令牌行事。
 
 ### `--sandbox`
 
-服务器在启动时会对主机探测一次，只要存在可用的后端，就用操作系统原生沙盒包裹智能体的命令执行：macOS 上是 `sandbox-exec`（Seatbelt），Linux 和 WSL2 上是 `bwrap` 加 `socat`。在没有后端的地方——Windows，或缺少这些工具的 Linux 主机——运行会回退到环境净化、命令策略和操作护栏，启动日志会说明当前适用的是哪种状态。
+服务器在启动时会对主机探测一次，只要存在可用的后端，就用操作系统原生沙盒包裹智能体的命令执行：macOS 上是 `sandbox-exec`（Seatbelt），Linux 和 WSL2 上是 `bwrap` 加 `socat`。该决定只做一次，并在服务器重启前保持不变。共有三种结果，每种都会显示在启动时的暴露行中：
 
-`--sandbox off` 是针对探测无法察觉的情况的现场关停开关：主机上的沙盒配置本身行为异常。它不需要重新构建，服务器会在整个进程生命周期内记录一条警告，因此这种状态永远不会悄无声息。
+| `sandbox=` | 何时 | 哪些人的智能体运行会启动 |
+| ---------- | ---- | ------------------------ |
+| `native` | 有可用后端且 `--sandbox` 为 `on` | 所有人的运行，并被包裹 |
+| `off` | `--sandbox off` | 所有人的运行，在本主机上不受限 |
+| `unavailable` | `--sandbox on` 且没有后端（Windows，或缺少 `bwrap` 和 `socat` 的 Linux） | 只有服务器所有者负责的运行，不受限。其他人的运行会被拒绝，并显示“此服务器没有沙箱，因此只有其所有者可以在此运行智能体。” |
+
+对于自动化而言，负责的人是该自动化所绑定的人。若未记录服务器所有者，则 `unavailable` 主机上不会启动任何运行。在安装了 bubblewrap 的 Linux 和 WSL2 上，原生派发目前会对每次运行都采取失败关闭；参见[沙盒后端](/zh-CN/手册/参考/沙盒后端/#linuxbubblewrap)。
+
+`--sandbox off` 是服务器所有者为所有使用该服务器的人做出的选择：它会在这台机器上以不受限的方式运行每位成员的智能体。请在沙盒配置本身行为异常的主机上使用它，或让成员能在没有后端的主机上运行智能体。它不需要重新构建，服务器会在整个进程生命周期内记录一条警告，因此这种状态永远不会悄无声息。
 
 ### `--tool-deferral`
 
@@ -126,7 +134,6 @@ GitLab 和 Bitbucket 的后台工作还会读取 `GITLAB_TOKEN` / `CI_JOB_TOKEN`
 | `cc_server connect enable`          | 使用 Control Center 托管的 Connect                                                                          |
 | `cc_server connect enable --url <url>` | 使用该地址的自定义 Connect（HTTPS，或回环地址上的 `http`）                                              |
 | `cc_server connect disable`         | 停止使用 Connect。只有服务器自己的应用能让人们登录                                                          |
-| `cc_server connect rotate-key --yes` | 生成新的安装密钥与安装 ID。所有通过 Connect 登录的人都需要重新登录。不带 `--yes` 时只会发出警告并以退出代码 `2` 退出 |
 
 不带命令的 `status` 是默认行为。每个命令都接受 `--data-dir`。`CC_CONNECT_URL` 会覆盖这些设置中存储的值。未知命令以退出代码 `64` 退出。模式、安装身份与状态代码参见 [Control Center Connect](/zh-CN/手册/参考/connect/)。
 

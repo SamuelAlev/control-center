@@ -2,7 +2,7 @@
 title: Mentés, exportálás és importálás
 description: A pillanatkép felépítése, a manifest, minden mentési művelet és átviteli útvonal, valamint pontosan azok a fájlok, amelyeket egy biztonsági mentés tartalmaz, és amelyeket nem.
 slug: hu-HU/kezikonyv/referencia/mentes
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Minden, amit a Control Center másolni, átadni vagy átvenni képes, és az egyes
@@ -114,6 +114,7 @@ az adatbázisánál, és a többi semmi nem utazik vele:
 | `models/`                         | Nem                          | Nem                                  |
 | `meetings/<meetingId>/`           | Nem                          | Nem                                  |
 | `rigs/`                           | Nem                          | Nem                                  |
+| `_agent_hooks/`                   | Nem                          | Nem                                  |
 
 Ennek egy része eldobható — a `spaces/` másolás-írás munkakönyvtárakat tartalmaz, amelyek
 a repókból újra előállnak, a `pr_clones/` gyorsítótár, a `models/` újra letöltődik, a
@@ -122,8 +123,12 @@ képeket tartalmazza, amelyekre az adatbázis sorai hivatkoznak, a `skills/` és
 `agents/` azokat a fájlokat, amelyekkel egy ügynök fut, a `secrets.json` pedig a
 telepítés minden párosítási kulcsát, szolgáltatói hitelesítő adatát és SSO-beállítását. A
 többi lefedéséről a
-[Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/#copy-backups-off-the-machine)
+[Mentés és visszaállítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/mentes-es-visszaallitas/#biztonsági-mentések-másolása-a-gépen-kívülre)
 oldal szól.
+:::caution[A munkaterület-adatbázis webhook-titkokat tartalmaz]
+A `workspace.db` a teljes munkaterület: beszélgetések, futtatási naplók, a kódindex, tárolókapcsolatok, környezetdefiníciók és tagok. Olvasható formában tartalmazza a munkaterület pipeline-webhook-tokenjeit és a ticket-szinkronizálási webhook-titkait is, ezért a letöltött exportot vagy mentést titokként kezelje. Nem tartalmaz szolgáltatói bejelentkezést, eszközkulcsot vagy felhasználói titkot; ezek a `global.db`-ben és a `secrets.json`-ban vannak.
+:::
+
 :::note[A csevegőtokenek szándékosan kimaradnak]
 Az, hogy a `chat_credentials/` az adatbázis mellett van, nem pedig benne, azért van, hogy
 egy másvalakinek átadott munkaterület ne vigyen magával élő bot-tokeneket. Lásd a
@@ -148,7 +153,7 @@ nincsenek ott.
 | `workspace.listBackups` | Olvasás | Munkaterület | `admin` | nincs | `{backups: [...]}` |
 | `workspace.deleteBackup` | Írás | Munkaterület | `owner` | `name` | `{ok}` |
 | `workspace.export`    | Olvasás | Munkaterület | `admin`                     | nincs         | `{ok, path}`                                           |
-| `workspace.import`    | Írás    | Munkaterület | `owner`                     | `source_path` | `{ok, workspace_id}`                                   |
+| `workspace.import`    | Írás    | Munkaterület | `owner`, és a szerver tulajdonosa | `source_path` | `{ok, workspace_id}`                                   |
 | `workspace.delete`    | Írás    | Telepítés*   | `owner`                     | `id`          | a nyilvántartási sor töröltként megjelölve             |
 
 * A `workspace.delete` azért hatókör nélküli, mert a sor, amelyet megjelöl, a globális
@@ -172,8 +177,11 @@ A `server.backupNow`, a `server.listBackups` és a `server.deleteBackup` a telep
 önmagában attól, hogy valaki egy munkaterület adminja, még nem kezelheti a többit. A
 törlés kizárólag a listázott időbélyeg-könyvtárnevet fogadja el, nem tetszőleges
 szerverútvonalat, és a teljes pillanatképet eltávolítja (a hiányosakat is). A
-munkaterületenkénti exportálás/importálás továbbra is a munkaterület adminjánál, illetve
-tulajdonosánál marad, nem a telepítés tulajdonosánál.
+munkaterületenkénti exportálás és az ütemezett mentések letöltése továbbra is a munkaterület adminjánál marad.
+:::
+
+:::note[A visszaállítás a szerver tulajdonosáé]
+A `workspace.import` és a `POST /backup/restore` olyan adatbázisfájlt fogad be a szerverbe, amelynek sorait a szerver a sajátjaként kezeli: a tárolókapcsolatokat és azok létrehozóit, a gépen futó környezetdefiníciókat, valamint a munkakönyvtár- és naplóútvonalakat. Ezért mindkettőhöz a szerver tulajdonosa kell (`ServerAuthority.serverOwner`), aki egyben a munkaterület tulajdonosa is. Bárki mást, és minden hívót olyan gépen, ahol nincs rögzített tulajdonos, `server_owner_required` hibával elutasít. A fájl által hozott triggert vagy nézetet nem veszi át.
 :::
 
 ### A `server.listBackups` válasza
@@ -249,7 +257,7 @@ párosítási PSK-jával, valamint az alábbi szerepkört.
 | `/backup/workspace` | GET     | `w`, `d`, `s` | `backup-workspace:<workspaceId>` | Munkaterület **admin**    |
 | `/backup/snapshot`  | GET     | `n`, `d`, `s` | `backup-snapshot:<name>`         | Telepítés **tulajdonosa** |
 | `/backup/stored` | GET | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Munkaterület **admin**; a munkaterület törlése után a telepítés **tulajdonosa** |
-| `/backup/restore`   | POST    | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Munkaterület **tulajdonosa** |
+| `/backup/restore`   | POST    | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Telepítés **tulajdonosa**, aki a munkaterület **tulajdonosa** is (egyébként `403` a `server_owner_required` hibával) |
 
 A `w` egy munkaterület-azonosító, az `n` egy pillanatkép vagy ütemezett mentés
 könyvtárneve, a `d` a hívó eszköz azonosítója, az `s` pedig az aláírás. A

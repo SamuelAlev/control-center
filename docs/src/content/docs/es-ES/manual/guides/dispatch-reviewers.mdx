@@ -2,7 +2,7 @@
 title: Despachar agentes revisores
 description: Envía agentes revisores especializados a una PR desde la vista de la PR, una herramienta MCP o un paso de pipeline.
 slug: es-ES/manual/guias/despachar-revisores
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Esta guía explica cómo despachar agentes revisores para que revisen pull
@@ -88,10 +88,10 @@ Para que un pipeline de revisión se active por sí solo:
 
 Aquí importan dos eventos, y no son intercambiables:
 
-| Evento                 | Se activa cuando                                                                                                            | Claves del payload                                           |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `PullRequestPublished` | Se abre una PR **desde Control Center** —la superficie de redacción de la PR, o un agente que llama a `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`           |
-| `ExternalPrDetected`   | El servicio de sondeo de PR encuentra una PR abierta directamente en GitHub                                                  | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author` |
+| Evento                 | Se activa cuando                                                                                                             | Claves del payload                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PullRequestPublished` | Se abre una PR **desde Control Center** —la superficie de redacción de la PR, o un agente que llama a `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                             |
+| `ExternalPrDetected`   | El servicio de sondeo de PR encuentra una PR abierta directamente en GitHub                                                  | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 Una PR abierta en github.com nunca emite `PullRequestPublished`, así que una
 plantilla conectada solo a ese evento no la verá. Ten en cuenta además que
@@ -111,9 +111,9 @@ etiqueta de rol solicitada, sin distinguir mayúsculas y minúsculas:
 
 | Coincidencia                                        | Puntuación |
 | --------------------------------------------------- | ---------- |
-| Una skill que contiene la etiqueta de rol            | +3         |
-| Un título que contiene la etiqueta de rol            | +2         |
-| Un nombre de agente que contiene la etiqueta de rol  | +1         |
+| Una skill que contiene la etiqueta de rol           | +3         |
+| Un título que contiene la etiqueta de rol           | +2         |
+| Un nombre de agente que contiene la etiqueta de rol | +1         |
 
 Las puntuaciones se acumulan y gana el total más alto (en caso de empate, el
 primer candidato encontrado). Si ningún candidato puntúa por encima de cero, la

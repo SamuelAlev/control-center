@@ -227,12 +227,20 @@ void main() {
         'agent_id': 'ag',
         'agent_name': 'Ada',
         'mode': 'chat',
+        'runner': 'harness',
         'window_tokens': 1,
         'segments': [
           {'kind': 'fromTheFuture', 'tokens': 3, 'chars': 9, 'parts': []},
         ],
       });
       expect(restored.segments, isEmpty);
+    });
+
+    test('a missing runner is refused', () {
+      expect(
+        () => ContextInspection.fromJson({'workspace_id': 'ws'}),
+        throwsFormatException,
+      );
     });
   });
 }

@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -157,19 +157,76 @@ void main() {
   });
 
   group('buildBwrapArgs — denyWrite', () {
-    test('maps denyWrite paths to /dev/null shadow', () {
+    test('maps denyWrite files to /dev/null shadow', () {
+      final dir = Directory.systemTemp.createTempSync('cc-lx-deny-file-');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File('${dir.path}/sensitive')..writeAsStringSync('x');
       final args = LinuxSandbox.buildBwrapArgs(
-        config: const SandboxConfig(
+        config: SandboxConfig(
           sessionId: 't',
-          network: NetworkConfig(),
-          filesystem: FilesystemConfig(denyWrite: ['/etc/sensitive']),
+          network: const NetworkConfig(),
+          filesystem: FilesystemConfig(denyWrite: [file.path]),
         ),
         innerCommand: 'echo hi',
       );
-      expect(
-        args,
-        containsAll(['--ro-bind-try', '/dev/null', '/etc/sensitive']),
+      expect(args, containsAll(['--ro-bind-try', '/dev/null', file.path]));
+    });
+
+    test('skips a denyWrite path that does not exist: binding over it would '
+        'create it on the host', () {
+      final dir = Directory.systemTemp.createTempSync('cc-lx-deny-missing-');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final missing = '${dir.path}/.git/commondir';
+      final args = LinuxSandbox.buildBwrapArgs(
+        config: SandboxConfig(
+          sessionId: 't',
+          network: const NetworkConfig(),
+          filesystem: FilesystemConfig(denyWrite: [missing]),
+        ),
+        innerCommand: 'echo hi',
       );
+      expect(args, isNot(contains(missing)));
+    });
+
+    test('git internals in a writable root are re-bound read-only in place, '
+        'never emptied', () {
+      // Git inside the sandbox still reads them: a /dev/null config has no
+      // remotes, an empty objects/info loses alternates.
+      final root = Directory.systemTemp.createTempSync('cc-lx-git-');
+      addTearDown(() => root.deleteSync(recursive: true));
+      final git = '${root.path}/.git';
+      Directory('$git/hooks').createSync(recursive: true);
+      Directory('$git/info').createSync();
+      Directory('$git/objects/info').createSync(recursive: true);
+      File('$git/config').writeAsStringSync('[core]\n');
+      File('$git/commondir').writeAsStringSync('../elsewhere\n');
+      File('$git/config.worktree').writeAsStringSync('');
+      final args = LinuxSandbox.buildBwrapArgs(
+        config: SandboxConfig(
+          sessionId: 't',
+          network: const NetworkConfig(),
+          filesystem: FilesystemConfig(allowWrite: [root.path]),
+        ),
+        innerCommand: 'echo hi',
+      );
+      final writable = args.lastIndexOf(root.path);
+      for (final internal in [
+        'hooks',
+        'config',
+        'config.worktree',
+        'commondir',
+        'info',
+        'objects/info',
+      ]) {
+        final path = '$git/$internal';
+        final at = args.lastIndexOf(path);
+        expect(at, greaterThan(writable), reason: path);
+        expect(args.sublist(at - 2, at + 1), [
+          '--ro-bind-try',
+          path,
+          path,
+        ], reason: path);
+      }
     });
 
     test(
@@ -231,7 +288,7 @@ void main() {
     test(
       'manager refuses a new-secret rule before starting the sandbox',
       () async {
-        final manager = SandboxManager();
+        final manager = SandboxManager(hiddenPaths: const []);
         addTearDown(manager.reset);
         await expectLater(
           manager.wrap(

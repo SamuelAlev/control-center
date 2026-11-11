@@ -175,6 +175,52 @@ void main() {
           : false,
     );
 
+    test('denies every git internal that steers what git reads, created '
+        'yet or not', () async {
+      // `commondir`, `config.worktree` and alternates do not exist in a
+      // normal repository: creating one is the attack, so they are denied
+      // before they exist (macOS; Linux can only shadow what exists).
+      for (final repo in [root.path, p.join(root.path, 'vendor', 'lib')]) {
+        Directory(
+          p.join(repo, '.git', 'objects', 'info'),
+        ).createSync(recursive: true);
+      }
+
+      final cfg = await builder.build(
+        SandboxPolicySpec(
+          sessionId: 's6b',
+          denyRead: const [],
+          allowWrite: [root.path],
+          denyWrite: const [],
+          denyExecutables: const [],
+          allowedDomains: const [],
+          deniedDomains: const [],
+          networkOn: false,
+        ),
+      );
+      for (final repo in [root.path, p.join(root.path, 'vendor', 'lib')]) {
+        for (final internal in [
+          ['hooks'],
+          ['config'],
+          ['config.worktree'],
+          ['commondir'],
+          ['info'],
+          ['objects', 'info'],
+        ]) {
+          expect(
+            cfg.filesystem.denyWrite,
+            contains(p.joinAll([repo, '.git', ...internal])),
+            reason: '$repo .git/${internal.join('/')}',
+          );
+        }
+      }
+      // A directory with no `.git` gets no git denies.
+      expect(
+        cfg.filesystem.denyWrite.where((d) => d.contains('${p.separator}src')),
+        isEmpty,
+      );
+    }, skip: Platform.isWindows ? 'no sandbox on Windows' : false);
+
     test('recurses up to the depth cap', () async {
       // Depth 0..3 are scanned; depth 4 is beyond the cap (depth > 3 returns).
       // A dangerous file at depth 3 (a/b/c) IS shadowed...

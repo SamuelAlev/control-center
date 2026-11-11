@@ -2,7 +2,7 @@
 title: Implantação e clientes
 description: Como a arquitetura de cliente leve do Control Center separa um servidor headless de seus clientes de desktop, web e celular.
 slug: pt-BR/manual/conceitos/implantacao
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 O Control Center não é um único programa. É uma **arquitetura de cliente leve**: um servidor headless que detém seus dados e um conjunto de clientes que renderizam uma interface por meio de uma única conexão RPC com ele. Entender essa divisão explica por que algumas coisas rodam onde rodam e o que cada cliente consegue ou não alcançar.
@@ -55,6 +55,8 @@ O bundle em si é hospedado separadamente do servidor com que conversa. Um `cc_s
 
 Mídias (avatares, imagens do feed, capturas de tela de PR), uploads, backups e o HTTP/WebSocket do editor incorporado trafegam pelo túnel de recursos cifrado, não por rotas HTTP públicas legíveis; caminhos assinados ainda exigem autorização. O frontend do editor confiável roda na origem própria do app web. O seu service worker encaminha as requisições do editor pela sessão cifrada existente até o `cc_server`, que é dono dos arquivos e do backend code-server. O navegador precisa de HTTPS ou de um contexto de loopback seguro para os service workers. Clientes nativos usam uma fachada de loopback com escopo de capacidade.
 
+Somente o [proprietário do servidor](/pt-BR/manual/conceitos/autorizacao/#o-proprietário-do-servidor) pode abrir o editor code-server incorporado: ele roda no servidor como o próprio usuário do servidor. Uma sessão pertence ao dispositivo e à pessoa que a abriram. Ele abre com a confiança em workspaces do VS Code ativada, então o VS Code pergunta antes de confiar em uma pasta, e com tarefas automáticas desligadas. Todos os demais continuam com o editor de arquivo único integrado e as visualizações de arquivos.
+
 ### Companheiro de celular (cc_remote)
 
 O aplicativo **Remote** é um cliente separado e mais leve — uma PWA web em Flutter em [remote.usectrl.dev](https://remote.usectrl.dev/). Ele é intencionalmente **não** o aplicativo completo. Ele se conecta diretamente quando possível ou por um relay intermediado; os dois caminhos exigem criptografia de ponta a ponta. Fala uma fatia predominantemente de leitura da superfície de ferramentas: ler tickets, mensagens e o feed de notícias; enviar uma resposta ou atualizar um ticket.
@@ -88,7 +90,7 @@ Um desktop sozinho não percebe nada disso, porque o despacho comum não passa p
 | Captura de reunião (microfone + áudio da reunião) | — | — | captura nativa | somente web, via áudio de compartilhamento de tela |
 | Logins de provedores (GitHub, Google, Linear) | executa e armazena | — | — | — |
 
-Os dois níveis não aplicam sandbox da mesma forma. O `cc_server` envolve as execuções que ele mesmo realiza no sandbox do sistema operacional do host onde existe um backend — Seatbelt no macOS, bubblewrap no Linux e no WSL2 — e recorre às outras fronteiras no Windows ou sem `bwrap` e `socat`. **O `cc_worker` não aplica sandbox nenhum.** Ele anuncia uma capacidade `sandbox` para que o servidor possa posicionar tarefas por plataforma, mas nada no worker aplica uma: uma tarefa em lease é iniciada diretamente, limitada pelo ambiente do lease e pela worktree que recebeu. Repassar trabalho em lease, portanto, move a execução para fora do sandbox mesmo em um host que tenha um. Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/) para saber o que limita uma execução em cada caso.
+Os dois níveis não aplicam sandbox da mesma forma. O `cc_server` envolve as execuções que ele mesmo realiza no sandbox do sistema operacional do host onde existe um backend — Seatbelt no macOS, bubblewrap no Linux e no WSL2. No Windows, ou sem `bwrap` e `socat`, ele inicia somente as execuções pelas quais o proprietário do servidor é responsável e recusa as de todos os demais, a menos que o proprietário tenha iniciado com `--sandbox off`, o que executa os agentes de todos os membros sem confinamento. **O `cc_worker` não aplica sandbox nenhum.** Ele anuncia uma capacidade `sandbox` para que o servidor possa posicionar tarefas por plataforma, mas nada no worker aplica uma: uma tarefa em lease é iniciada diretamente, limitada pelo ambiente do lease e pela worktree que recebeu. Repassar trabalho em lease, portanto, move a execução para fora do sandbox mesmo em um host que tenha um. Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/) para saber o que limita uma execução em cada caso.
 
 Os logins de provedores são concluídos no servidor, pelos apps próprios dele ou pelo [Control Center Connect](/pt-BR/manual/referencia/connect/), um serviço opcional que executa o OAuth do provedor para servidores sem apps próprios. O Connect devolve uma credencial que só este servidor consegue usar e nunca vê o conteúdo dos repositórios. Os clientes só abrem o navegador e, em um login pelo Connect, devolvem o código que ele mostra.
 
@@ -103,7 +105,7 @@ Todo cliente usa uma **chave pré-compartilhada** provisionada uma única vez pa
 - O desktop em modo local gera uma chave nova a cada inicialização e a entrega ao servidor iniciado por meio do ambiente, de modo que nenhum segredo é persistido no desktop.
 - Clientes remotos (desktop remoto, web, celular) usam uma chave emitida pelo fluxo de emparelhamento do servidor ou pelo comando `pair`. Clientes nativos usam o cofre de chaves do sistema operacional; clientes de navegador guardam o emparelhamento localmente.
 
-O cliente verifica a identidade assinada do servidor contra o pin de impressão digital salvo. Na primeira conexão, verifique essa impressão digital por um QR confiável ou outro canal confiável: um primeiro contato assinado, por si só, não consegue autenticar quem forneceu a chave. Se a identidade mudar, o cliente falha fechado; emparelhe de novo por um canal confiável em vez de ignorar a divergência. Clientes mais antigos e RPC em texto claro não conseguem conectar. O TLS continua necessário para origens de navegador, bootstrap e metadados públicos; `--insecure` afeta o listener externo do servidor, não a sessão cifrada obrigatória.
+O cliente verifica a identidade assinada do servidor contra o pin de impressão digital salvo. Na primeira conexão, verifique essa impressão digital por um QR confiável ou outro canal confiável: um primeiro contato assinado, por si só, não consegue autenticar quem forneceu a chave. Se a identidade mudar, o cliente falha fechado; emparelhe de novo por um canal confiável em vez de ignorar a divergência. RPC em texto claro não é aceito. O TLS continua necessário para origens de navegador, bootstrap e metadados públicos; `--insecure` afeta o listener externo do servidor, não a sessão cifrada obrigatória.
 
 A revogação é **imediata**, não preguiçosa. O servidor observa sua tabela de dispositivos emparelhados e derruba, em segundos, qualquer sessão aberta cujo dispositivo tenha saído do conjunto ativo — tanto no caminho direto por WebSocket quanto no caminho do relay. Você não precisa esperar o dispositivo se reconectar para cortá-la.
 

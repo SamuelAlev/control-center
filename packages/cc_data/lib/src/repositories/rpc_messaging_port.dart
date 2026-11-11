@@ -232,11 +232,15 @@ class RpcMessagingPort implements MessagingPort {
     outputContractMode: outputContractMode,
   );
 
+  // [senderUserId] here and [requestedByUserId] on the retry below are
+  // accepted for interface parity but never sent over the wire: the server
+  // takes both from the session's authenticated user.
   @override
   Future<void> refinePlan({
     required String workspaceId,
     required String spaceId,
     required String feedback,
+    String? senderUserId,
   }) => _dispatch.refinePlan(
     workspaceId: workspaceId,
     spaceId: spaceId,
@@ -249,6 +253,7 @@ class RpcMessagingPort implements MessagingPort {
     required String spaceId,
     required String failedMessageId,
     String? modelOverride,
+    String? requestedByUserId,
   }) => _dispatch.retryAgentTurn(
     workspaceId: workspaceId,
     spaceId: spaceId,
@@ -273,12 +278,15 @@ class RpcMessagingPort implements MessagingPort {
     bool followUp = false,
   }) => _dispatch.steerRun(runLogId, message, followUp: followUp);
 
+  // [senderUserId] is never sent: the server stamps the card's author from
+  // the session's authenticated user.
   @override
   Future<({String messageId, bool steerable})?> enqueueSteering({
     required String workspaceId,
     required String spaceId,
     required String conversationId,
     required String content,
+    String? senderUserId,
     List<Map<String, dynamic>> attachments = const [],
   }) => _dispatch.enqueueSteering(
     workspaceId: workspaceId,
@@ -379,17 +387,22 @@ class RpcMessagingPort implements MessagingPort {
     target: target,
   );
 
+  /// [requestedByUserId] is not sent: the server names the caller from the
+  /// connection.
   @override
   Future<GuidedGoalStepResult> guidedGoalStep({
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) => _dispatch.guidedGoalStep(
     workspaceId: workspaceId,
     rough: rough,
     transcript: transcript,
   );
 
+  /// [requestedByUserId] is not sent: the server names the caller from the
+  /// connection.
   @override
   Future<ConversationSideChannelResult> askAside({
     required String workspaceId,
@@ -397,6 +410,7 @@ class RpcMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) => _dispatch.askAside(
     workspaceId: workspaceId,
     spaceId: spaceId,

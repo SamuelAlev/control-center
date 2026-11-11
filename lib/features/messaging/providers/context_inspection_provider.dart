@@ -1,9 +1,11 @@
 import 'package:cc_data/cc_data.dart' show RemoteContextRepository;
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/context/conversation_token_estimator.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/conversation_token_totals.dart';
 import 'package:cc_harness/context.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
@@ -45,6 +47,12 @@ final contextInspectionProvider = FutureProvider.autoDispose
           ),
     );
 
+/// Whether the server refused [error]'s inspection outright: `context.inspect`
+/// answers only a full client that may read the conversation's space, so a
+/// retry cannot change it (unlike a failed read).
+bool isContextInspectionRefused(Object? error) =>
+    error is RemoteRpcException && error.code == RpcErrorCodes.unauthorized;
+
 /// A context-window reading that merges the server-side persistent breakdown
 /// with the client-computed conversation segment into one ordered segment list
 /// plus totals. Shared by the flyout (counts only) and the explorer tab
@@ -59,6 +67,7 @@ class ContextBreakdown {
     required this.isLoading,
     required this.hasError,
     this.isMeasured = false,
+    this.refused = false,
   });
 
   /// The server inspection, or null while the summary RPC has not landed yet
@@ -88,6 +97,10 @@ class ContextBreakdown {
 
   /// Whether the summary RPC failed with no value to fall back on.
   final bool hasError;
+
+  /// Whether that failure is the server refusing this session or person the
+  /// inspection ([isContextInspectionRefused]); the explorer is then no use.
+  final bool refused;
 
   /// Fraction of the window used, clamped to `[0, 1]`.
   double get fraction =>
@@ -172,6 +185,7 @@ ContextBreakdown composeContextBreakdown(
   ReportedContext? reported,
   required bool isLoading,
   required bool hasError,
+  bool refused = false,
 }) {
   final serverConversation = inspection?.segmentFor(
     ContextSegmentKind.conversation,
@@ -232,6 +246,7 @@ ContextBreakdown composeContextBreakdown(
     isMeasured: reported != null,
     isLoading: isLoading,
     hasError: hasError,
+    refused: hasError && refused,
   );
 }
 
@@ -318,6 +333,7 @@ final contextBreakdownProvider = Provider.autoDispose
         reported: reportedContextOf(totals),
         isLoading: async.isLoading && inspection == null,
         hasError: async.hasError && inspection == null,
+        refused: isContextInspectionRefused(async.error),
       );
     });
 

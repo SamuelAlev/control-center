@@ -2,7 +2,7 @@
 title: 從 GitHub PR 與 Control Center 對話
 description: 直接在 PR 對話中向 Control Center 要求審查或提問，不需要 webhook 或公開 URL。
 slug: zh-TW/手冊/操作指南/github-pr-對話
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 本指南說明如何在不必離開 GitHub 的情況下與 Control Center 協作：直接從 PR
@@ -27,22 +27,7 @@ sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 
 ## 找出機器人的名稱
 
-提及 `@usectrl`，這是 Control Center 專用的 GitHub 帳號。這是預設觸發方式；工作區的 GitHub 通道仍會處理請求並發布回覆。你不需要 `usectrl` 帳號的憑證。
-
-App 本身的登入名稱 `<appslug>[bot]` 與簡短形式 `@appslug` 也能使用。如需在你自己的 App 上查找這個可選別名：
-
-1. 前往 **設定 → 伺服器 → 單一登入**，並捲動到 **供應商應用程式** 卡片
-2. 開啟 **GitHub** 區塊，然後按一下 **測試**
-3. 在 **機器人登入名稱** 填入後複製它。如果它仍顯示空白提示，登入名稱一律是
-   `<appslug>[bot]` — 請直接輸入該值，或輸入簡短的 `@appslug`
-
-GitHub 的 `@` 自動補全不會顯示 App 帳號，因此必須手動輸入或複製 App 別名。專用使用者 `@usectrl` 是預設的呼叫方式；`@myapp` 和 `@myapp[bot]` 仍可作為 App 別名使用。
-
-:::note[挑一個獨特的 App 名稱]
-短格式是以文字比對的。如果某個人類 GitHub 使用者的名稱恰好與你的 App slug
-相同，以短格式提及該使用者也會叫到機器人。完整的 `@myapp[bot]` 格式則永遠
-不會有歧義。
-:::
+提及 `@usectrl`，這是 Control Center 專用的 GitHub 帳號。它是唯一的觸發方式：提及 App 自己的登入名稱不會有任何作用。工作區的 GitHub 通道仍會處理請求並發布回覆。你不需要 `usectrl` 帳號的憑證。
 
 ## 從 GitHub 要求審查
 
@@ -102,7 +87,7 @@ what would the complexity be with the bounded queue instead?
 伺服器會先解析留言的作者，或加上 `ai-review` 標籤的人，才會進行任何動作：
 
 - **該 GitHub 帳號必須已在這台伺服器上登入。** 比對依據是 GitHub 的數字帳號
-  ID，絕不是登入名稱。請從 **設定 → 工作區 → 個人資料與身分 → 程式碼託管** 登入
+  ID，絕不是登入名稱。請從 **設定 → 你 → 個人資料 → 程式碼託管** 登入
 - **此人必須是具備寫入角色**（`member`、`admin` 或 `owner`）的成員，且隸屬於
   連結該儲存庫的工作區
 - **此人必須能在 GitHub 上推送**到該儲存庫。回覆使用的權杖被限制在此人的存取權
@@ -122,7 +107,7 @@ what would the complexity be with the bounded queue instead?
 | 項目 | 行為 |
 | --- | --- |
 | 確認 | 在一輪掃描內，由你的帳號在留言上（若是標籤則在 PR 上）加上 👀 |
-| 答案 | 發佈在提問所在的對話串中，以 `**Control Center** (for @your-login):` 開頭。使用自己的 App 時，作者是該 App 的機器人；透過 Connect 時則是你的帳號，經由共用 App 代為操作 |
+| 答案 | 發佈在提問所在的對話串中，以 `**Control Center** (for @your-login):` 開頭。作者是該 App 的機器人。在共用的 Connect App 上，審查討論串中的回覆由你自己的帳號發佈，除非 Connect 營運者已將此安裝列入清單 |
 | 空間內的歸屬 | 問題算在你頭上；代理代表你執行，並受該空間的自主程度設定約束 |
 | 審查 | 發現會落在審查空間中；發佈到 GitHub 須由人工進行 |
 
@@ -140,8 +125,6 @@ GitHub 配額剩餘不到 15% 的工作區會被略過，直到配額恢復。�
   未連結的儲存庫會在記錄任何內容之前就被跳過，因此之後再連結它仍然會送達
 - 你是否已在這台伺服器上登入 GitHub、是具備寫入角色的成員，而且能推送到該儲存庫？
   其他任何人都會被伺服器忽略，不會收到回覆
-- 若使用 Control Center 的共用 App，組織的安裝是否已為這台伺服器授權？請參閱
-  [為組織授權這台伺服器](/zh-TW/手冊/操作指南/github-app/#為組織授權這台伺服器)
 - 還是沒有動靜？伺服器日誌會在出錯時記下該次掃描與該 PR；請尋找
   `pr_conversation:`（輪詢器）與 `github_pr_conversation:`（橋接器）
 

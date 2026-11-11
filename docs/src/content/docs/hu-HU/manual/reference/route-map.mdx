@@ -2,7 +2,7 @@
 title: Útvonaltérkép
 description: Minden útvonal, amelyet a Control Center regisztrál, a hozzá tartozó képernyővel és lekérdezési paramétereivel.
 slug: hu-HU/kezikonyv/referencia/utvonalterkep
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Alkalmazáshéj
@@ -11,7 +11,7 @@ Az alkalmazáshéj (`ControlCenterLayout`) egy `ShellRoute` segítségével csom
 
 A kapu akkor teljes, ha legalább egy kódhoszt csatlakoztatva van **a bejelentkezett felhasználó számára**, és létezik legalább egy munkaterület.
 
-A hiányzó hitelesítő adat és a hiányzó beállítás másként van kezelve, a megkülönböztető pedig a `users.onboarding_finished_at`, amelyet a hívó saját `identity.me` válaszából olvasunk ki — soha nem a „léteznek munkaterületek” feltétel, mert az abban a pillanatban téves, amikor valakit olyan munkaterületbe hívnak meg, amelyet ő soha nem hozott létre. Csatlakoztatott kódhoszt nélkül a bevezetésen már átesett fiók az alkalmazásban marad, a munkaterület-héj pedig figyelmeztetést jelenít meg a Beállítások → Munkaterület → Profil és identitás oldalra mutató hivatkozással, ahol a bejelentkezés van; amelyik még nem, az a `/onboarding` oldalra. Amíg a jelző ismeretlen, az őr az indítási képernyőn tart, ahelyett hogy találgatna, mert soha nem irányít vissza a bevezetésből.
+A hiányzó hitelesítő adat és a hiányzó beállítás másként van kezelve, a megkülönböztető pedig a `users.onboarding_finished_at`, amelyet a hívó saját `identity.me` válaszából olvasunk ki — soha nem a „léteznek munkaterületek” feltétel, mert az abban a pillanatban téves, amikor valakit olyan munkaterületbe hívnak meg, amelyet ő soha nem hozott létre. Csatlakoztatott kódhoszt nélkül a bevezetésen már átesett fiók az alkalmazásban marad, a munkaterület-héj pedig figyelmeztetést jelenít meg a Beállítások → Ön → Profil oldalra mutató hivatkozással, ahol a bejelentkezés van; amelyik még nem, az a `/onboarding` oldalra. Amíg a jelző ismeretlen, az őr az indítási képernyőn tart, ahelyett hogy találgatna, mert soha nem irányít vissza a bevezetésből.
 
 ## Előtag nélküli útvonalak
 
@@ -65,7 +65,7 @@ A `/observability` és a `/pull-requests/compose` nem szerepel az útvonalcím- 
 
 ## Beállítások útvonalai
 
-A `/settings` a `/settings/you/appearance` címre irányít. Az oldalsáv beállítások gombja és a `Cmd/Ctrl + ,` is a `/settings/you/appearance` címre visz.
+A `/settings` a `/settings/you/profile` címre irányít. Az oldalsáv beállítások gombja és a `Cmd/Ctrl + ,` is a `/settings/you/profile` címre visz.
 
 A beállítások útvonalai **hatókör** szerint kapnak névteret — `you/`, `workspace/`, `server/` —, mert a szegmens megmondja, kire hat ki egy módosítás. Két útvonal régebbi a névtérhasználatnál, ezért az URL-ben nincs hatóköre: a `/settings/memory` és a `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ A beállítások útvonalai **hatókör** szerint kapnak névteret — `you/`, `
 
 | Útvonal                       | Képernyő                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Téma, nyelv, tipográfia, szerkesztőtéma (a beállítások nyitóképernyője)    |
-| `/settings/you/notifications` | Eseményenkénti kapcsolók, csendes órák                                     |
+| `/settings/you/profile`       | Az Ön fiókja ezen a szerveren: név, felhasználónév, kép és bejelentkezés (a beállítások nyitóképernyője) |
+| `/settings/you/profile?section=accounts` | Csatlakoztatott fiókok: saját kódtárhely-, jegykezelési, naptár- és csevegési bejelentkezések, valamint csevegésből készült jegyvázlatok |
+| `/settings/you/appearance`    | Téma, nyelv, tipográfia, szerkesztőtéma |
 | `/settings/you/audio`         | Mikrofon, diktálás, megbeszélésészlelés és hangtáj-kimenet                 |
+| `/settings/you/notifications` | Eseményenkénti kapcsolók, csendes órák                                     |
+| `/settings/you/commits`       | Kinek a neve kerül a commitokba az Ön által indított munkából, és az Ön commit-aláíró kulcsa |
+| `/settings/you/desktop`       | Csak asztali alkalmazás: tálcaikon, ablak bezárása és indítás bejelentkezéskor |
 | `/settings/you/devices`       | Párosított telefonok és távirányítás                                       |
 | `/settings/you/newsfeed`      | Hírfolyam kezelése: források, frissítés, olvasási állapot                  |
+| `/settings/you/links`         | Hol nyílnak meg a Control Centeren kívülről érkező hivatkozások            |
 
 ### Munkaterület
 
 | Útvonal                            | Képernyő                                                                                             |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil és identitás ebben a munkaterületben: név, git-szerző, kódtárhely, naptár |
-| `/settings/workspace/general`      | Név, logó, titkos útvonalak kizárása, átnézési párhuzamosság, ágelnevezés, szinkronizálás állapota, csevegőhidak, veszélyzóna |
+| `/settings/workspace/profile`      | Profil és identitás ebben a munkaterületben: név, e-mail, git-szerző |
+| `/settings/workspace/general`      | Név, logó, titkos útvonalak kizárása, átnézési párhuzamosság, ágelnevezés, veszélyzóna |
+| `/settings/workspace/integrations` | Control Center Connect választása, a GitHub-alkalmazás és az automatizálási tokenek, a jegykezelő-szolgáltató és annak automatizálása, szinkronizálás állapota, a munkaterület saját szolgáltatói alkalmazásai, csevegőhidak, GIF-ek. Minden szolgáltatócsoport megnevezi az Ön saját fiókját, és a Csatlakoztatott fiókok oldalra mutat |
 | `/settings/workspace/meetings`     | Megbeszélésjegyzet-sablonok és mentett hangprofilok                                                   |
-| `/settings/workspace/members`      | Névsor, meghívók, auditnapló. Az auditnapló opcionális `?cursor=` paraméterrel lapozható              |
+| `/settings/workspace/members`      | Névsor és meghívók              |
 | `/settings/workspace/repositories` | Az ebben a munkaterületben regisztrált repók                                                          |
 | `/settings/workspace/environments` | Környezetdefiníciók: mit indíthatnak a terek, és milyen feladatokat futtatnak a worktree-jeik |
 | `/settings/workspace/agents`       | Regisztrált ügynökidentitások                                                                         |
@@ -108,6 +114,8 @@ A beállítások útvonalai **hatókör** szerint kapnak névteret — `you/`, `
 | `/settings/server/rigs`        | Állomások: mit tud elindítani ez a gazdagép, alap image-ek, egyéni image-ek, futó gépek   |
 | `/settings/server/sandbox`     | Homokozó exec-engedélyek: programok, amelyeket az ügynökök a repóik munkapéldányából futtathatnak |
 | `/settings/server/diagnostics` | Diagnosztika és adatvédelem: homokozás, beágyazás, naplózás, összeomlásjelentés |
+| `/settings/server/people`      | Ezen a szerveren lévő személyek, és hogy az egyes címek megerősítettek-e (csak a szerver tulajdonosa)                  |
+| `/settings/server/audit`       | Auditnapló: a szerveré és az Ön által adminisztrált munkaterületeké                                                    |
 | `/settings/server/backup`      | Biztonsági mentés és visszaállítás: telepítési pillanatképek, munkaterületenkénti export, importálás és törlés |
 | `/settings/server/about`       | Névjegy és frissítések                                                                   |
 

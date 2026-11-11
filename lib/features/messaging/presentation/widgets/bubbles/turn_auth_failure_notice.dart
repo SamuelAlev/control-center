@@ -1,6 +1,6 @@
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/claude_sign_in_account_list.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/claude_account_sign_in_dialogs.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';

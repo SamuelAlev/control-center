@@ -99,7 +99,7 @@ class TicketsTable extends Table {
   /// The root ticket id of this delegation chain (PRD 22 §3). Equals the row's
   /// own id for a root; inherited by every delegated descendant. Lets the
   /// cycle detector and budget-envelope inheritance identify a chain without a
-  /// graph walk. Null for legacy rows (treated as their own root).
+  /// graph walk. Null is treated as its own root.
   TextColumn get delegationRootTicketId => text().nullable()();
 
   /// Linked discussion space. No FK — cleaned up in application code, like

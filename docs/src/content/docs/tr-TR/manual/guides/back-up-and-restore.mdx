@@ -2,7 +2,7 @@
 title: Yedekleme ve geri yükleme
 description: Kurulumun anlık görüntüsünü alın, bir çalışma alanını makineler arasında taşıyın, tek bir çalışma alanını ya da tümünü geri yükleyin ve kopyaları başka bir yerde saklayın.
 slug: tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Bu kılavuz, yedeklerle gerçekte yapılan beş şeyi ele alır: yedek almak, yedeği toplamak,
@@ -16,7 +16,8 @@ Buradaki her şey **Ayarlar → Sunucu → Yedekleme ve geri yükleme** altında
 
 - **Tam bir istemci** — masaüstü ya da web uygulaması. Eşleştirilmiş bir telefon bunların hiçbirini tetikleyemez; bu tasarım gereğidir.
 - **Kurulum anlık görüntüsü** almak, listelemek, indirmek veya silmek için: kurulumun **sahibi**.
-- Çalışma alanı başına işlemler için: dışa aktarmak ya da zamanlanmış yedeklerini listelemek ve indirmek üzere o çalışma alanının **yöneticisi**, içe aktarmak, silmek ya da yedeklerinden birini silmek üzere **sahibi**.
+- Çalışma alanı başına işlemler için: dışa aktarmak ya da zamanlanmış yedeklerini listelemek ve indirmek üzere o çalışma alanının **yöneticisi**, çalışma alanını silmek ya da yedeklerinden birini silmek üzere **sahibi**.
+- Bir çalışma alanını **geri yüklemek** için, yüklenen bir dosyadan, zamanlanmış bir yedekten ya da anlık görüntüden: [sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) olmanız ve ayrıca o çalışma alanının sahibi olmanız gerekir. Geri yükleme, sunucunun bir veritabanı dosyasını kendi dosyası olarak benimsemesi anlamına gelir; bu yüzden bu sunucu sahibinin kararıdır. Diğerleri, geri yükleme eylemleri yerine “Yedekleri yalnızca sunucu sahibi geri yükleyebilir. Yine de bunları indirebilirsiniz.” mesajını görür.
 - İndirmeler ve yüklemeler için: eşleştirilmiş tam bir istemci; ister doğrudan ister aracılı aktarıcı üzerinden bir bağlantıda. İki yol da dosya baytlarını aynı kimliği doğrulanmış ve uçtan uca şifrelenmiş kaynak tünelinden geçirir; aktarıcı bunları okuyamaz.
 
 ::::caution[Kurulum anlık görüntüleri elle alınır]
@@ -42,11 +43,13 @@ Her iki yapıt da **yalnızca veritabanıdır**:
 - **Kurulum anlık görüntüsü**, zaman damgalı bir dizindir: `manifest.json`, `global.db` ve her çalışma alanı için bir `<workspaceId>/workspace.db`.
 - **Çalışma alanı dışa aktarımı** ise tek bir `workspace.db` dosyasıdır.
 
+Bir çalışma alanının veritabanı, çalışma alanının tamamıdır: konuşmaları, çalıştırma günlükleri, kod indeksi, depo bağlantıları, ortam tanımları ve üyeleri. Ayrıca çalışma alanının pipeline webhook token’larını ve bilet senkronizasyonu webhook sırlarını okunabilir biçimde taşır. İndirdiğiniz bir çalışma alanı yedeğini ya da dışa aktarımını bir sır gibi saklayın. Sağlayıcı oturum açmalarını, cihaz anahtarlarını ya da kullanıcı sırlarını taşımaz; bunlar genel veritabanında ve sunucunun sır deposunda durur.
+
 İkisi de veri dizininin geri kalanını taşımaz: `secrets.json` (eşleştirme anahtarları,
 sağlayıcı kimlik bilgileri, SSO), bir çalışma alanının `blobs/` dizini (iletilere
 yapıştırılan görseller), `skills/`, `agents/`, `chat_credentials/`, kaydedilmiş toplantı
 sesleri veya rig imajları. Bunların bir kısmı gözden çıkarılabilir, bir kısmı değil —
-[tam tablo başvuruda](/tr-TR/kilavuz/referans/yedekleme/#what-a-backup-does-not-contain)
+[tam tablo başvuruda](/tr-TR/kilavuz/referans/yedekleme/#bir-yedeğin-içermedikleri)
 yer alır ve bunları kapsamak
 [makine dışı bölümünün](#yedekleri-makinenin-dışına-kopyalama) işidir.
 
@@ -74,7 +77,7 @@ sunucu günlüğüne bakın.
 
 ## Çalışma alanı yedeklerini ve saklama süresini zamanlayın
 
-Çalışma alanı için **Ayarlar → Pipelines → Pipeline şablonları** bölümünü açın ve
+Çalışma alanı için **Ayarlar → Çalışma alanı → Pipeline şablonları** bölümünü açın ve
 **Workspace backup** şablonunu bulun. Etkin zamanlaması her Pazar 03:00 UTC'de çalışır:
 önce **Back up workspace**, ardından **Delete backups older than** (varsayılan olarak
 30 gün). İkinci düğüm yalnızca yedekleme başarılı olduktan sonra çalışır. Düğümdeki
@@ -98,7 +101,7 @@ arasında yer alır ve her çalışma alanı için bir satır gösterir: son yed
 
 Her yedeği görmek için bir satırı genişletin; en yenisi en üsttedir:
 
-- **Geri yükle**, çalışma alanının mevcut veritabanını bu yedekle değiştirir. Bunu geri almanız gerekebilecekse önce çalışma alanını dışa aktarın. Çalışma alanının **sahibi** olmanız gerekir.
+- **Geri yükle**, çalışma alanının mevcut veritabanını bu yedekle değiştirir. Bunu geri almanız gerekebilecekse önce çalışma alanını dışa aktarın. Sunucu sahibi olmanız gerekir; çalışma alanının sahibi de olmanız gerekir.
 - **İndir**, dosyayı kullandığınız makineye kaydeder. Yedek sunucuda kalır.
 - **Yolu kopyala**, sunucudaki konumunu kopyalar.
 - **Sil**, çalışma alanının adını yazdığınızda bu yedeği kalıcı olarak kaldırır. Çalışma alanının **sahibi** olmanız gerekir.
@@ -111,7 +114,7 @@ birlikte durduğu için saklama da durur: yedekler biri kaldırana kadar kalır.
 indirebilir ya da silebilir. Bu satırları başka kimse görmez.
 
 Bu satırlarda **Geri yükle** yoktur, çünkü geri yüklenecek bir çalışma alanı yoktur.
-Birini geri getirmek için indirin, bir çalışma alanı oluşturun ve dosyayı
+Birini geri getirmek için indirin, bir çalışma alanı oluşturun (yalnızca sunucu sahibi oluşturabilir) ve dosyayı
 [Bir çalışma alanını başka bir kuruluma taşıma](#bir-çalışma-alanını-başka-bir-kuruluma-taşıma)
 bölümünde anlatıldığı gibi yükleyin.
 
@@ -151,9 +154,11 @@ Bir çalışma alanı tek bir veritabanı dosyasıdır; bu yüzden devretmek bir
 2. **Hedef** sunucuda, dosyayı alacak çalışma alanını oluşturun (veya seçin).
 3. O çalışma alanını genişletin ve **Bu aygıttan geri yükle** altında **Bir dosya seçin ve yükleyin**'e basın. İndirdiğiniz `.db` dosyasını seçin.
 
-Her iki sunucu da bulunduğunuz makineyse, **Sunucuya kaydet** ve ardından **İçe aktar** →
-**Dosya seç** aynı şeyi gidiş dönüş olmadan yapar; içe aktarma iletişim kutusundaki yollar
-sunucu makinesinde çözülür.
+Üçüncü adım bir geri yüklemedir; bu yüzden hedefin sunucu sahibi ve o çalışma alanının sahibi olmanız gerekir.
+
+Her iki sunucu da bulunduğunuz makineyse, kaynakta **Sunucuya kaydet** ve ardından hedefte
+**Çalışma alanı veritabanı dosyası** alanındaki dosya yolu ile **İçe aktar** aynı şeyi gidiş dönüş
+olmadan yapar; bu yol sunucu makinesinde çözülür.
 
 :::caution[İçe aktarma her şeyin üzerine yazar]
 İçe aktarma, hedef çalışma alanının şu anda barındırdığı her şeyin üzerine yazar ve geri
@@ -167,11 +172,15 @@ içe aktarmak. İkinci durumda dosyanın eşleştirilmiş aygıtları ve kullan�
 geldiği kuruluma aittir ve bu kurulumda çözülmez — çalışma alanının kendi verisi
 sağlamdır, ancak devraldıktan sonra üyeliği yeniden kontrol edin.
 
-Sohbet botu token'ları veritabanının içinde değil yanında bulunur; bu yüzden başkasına
-devrettiğiniz çalışma alanı canlı kimlik bilgisi taşımaz. Dosyayı alan kurulum kendi
-kimlik bilgilerini yeniden bağlar.
+Sohbet botu token'ları ve sağlayıcı oturum açmaları veritabanının dışında yaşar; bu yüzden
+alıcı kurulum kendi bağlantılarını yeniden kurar. Dosya ise çalışma alanının pipeline
+webhook token'larını ve bilet senkronizasyonu webhook sırlarını taşır; bu yüzden
+devrettiğiniz çalışma alanı bunları da devreder. Alıcının bunlara sahip olmaması gerekiyorsa
+sonra bunları yenileyin.
 
 ## Bir çalışma alanını anlık görüntüden geri yükleme
+
+Bunun için sunucu sahibi ve çalışma alanının sahibi olmanız gerekir.
 
 1. **Kurulum anlık görüntüleri** altında istediğiniz anlık görüntüyü genişletin.
 2. Çalışma alanının satırını bulun ve **Geri yükle**'ye basın.
@@ -183,8 +192,8 @@ mekanizma olmasın diye.
 
 Bir satırda **Artık bu sunucuda yok** yazabilir ve **Geri yükle** devre dışı olabilir:
 anlık görüntü, bu kurulumun artık sahip olmadığı bir çalışma alanını barındırıyordur. Onu
-elle geri getirin — bir çalışma alanı oluşturun, ardından **Çalışma alanı verisi** altında
-`<snapshot path>/<old workspace id>/workspace.db` yolundan içine aktarın. Genişletilmiş
+elle geri getirin — bir çalışma alanı oluşturun (yalnızca sunucu sahibi), ardından **Çalışma alanı verisi** altında
+`<snapshot path>/<old workspace id>/workspace.db` yolunu onun **Çalışma alanı veritabanı dosyası** alanına girin ve **İçe aktar**’a basın. Genişletilmiş
 anlık görüntü kendi **Sunucudaki yol** değerini kopyalanabilir bir alanda gösterir ve
 satırın başlığı eski çalışma alanı kimliğidir; böylece o yolun iki yarısı da önünüzde olur.
 
@@ -355,9 +364,11 @@ yapın.
 | Belirti                                                                  | Neden ve çözüm                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Bağlantı değiştikten sonra indirme veya yükleme başarısız oluyor | Etkin eşleştirilmiş bağlantıda yeniden deneyin. Doğrudan yol da aktarıcı da şifrelenmiş dosya aktarımını destekler; ikisi de düz metin HTTP'ye dönüş sunmaz |
-| “Sunucu reddetti”                                                        | Rol. Kurulum anlık görüntüsü almak veya listelemek kurulumun operatörünü gerektirir. Bir çalışma alanını indirmek yönetici rolünü, geri yüklemek sahip rolünü, tüm bir anlık görüntü zip'i kurulumun operatörünü gerektirir |
-| “Bu sunucuda yedekleme yüzeyi yok”                                       | Makinede yedekleme portu bağlı değil — bir demo sunucusu. İşlemler reddedilmek yerine yoktur                                  |
-| “Dosya, sunucunun kabul ettiğinden büyük”                                | Yüklemeler 8 GiB ile sınırlıdır. Dosyayı sunucu makinesine koyun ve bunun yerine **İçe aktar** → **Dosya seç** kullanın   |
+| “Sunucu reddetti. Bir çalışma alanını indirmek için yönetici rolü gerekir. Geri yüklemek için sunucu sahibi gerekir ve bu kişinin aynı zamanda çalışma alanının sahibi olması gerekir. Tüm bir anlık görüntü için sunucu sahibi gerekir.”                                                        | Rol. Kurulum anlık görüntüsü almak, listelemek veya indirmek sunucu sahibini gerektirir. Bir çalışma alanını indirmek yönetici rolünü, geri yüklemek sunucu sahibini ve çalışma alanının sahibini gerektirir |
+| “Bu bağlantı için dosya aktarımı henüz ayarlanmadı. Yedeği indirmek veya yüklemek için sunucuya yeniden bağlanın.” | Sunucuyla bu bağlantının dosya aktarım hattı yok, bu yüzden **İndir** ve yükleme kapalı. Sunucuya yeniden bağlanın, sonra yeniden deneyin |
+| “Yedekleri yalnızca sunucu sahibi geri yükleyebilir. Yine de bunları indirebilirsiniz.” | Geri yükleme, bir çalışma alanının veritabanını sunucu ana makinesinde değiştirir; bu yüzden yalnızca sunucu sahibi geri yükler. Yedeği indirin ve onlardan geri yüklemelerini isteyin |
+| “Bu sunucuda yedekleme yüzeyi yok.”                                       | Makinede yedekleme portu bağlı değil — bir demo sunucusu. İşlemler reddedilmek yerine yoktur                                  |
+| “Dosya, sunucunun kabul ettiğinden büyük.”                               | Yüklemeler 8 GiB ile sınırlıdır. Dosyayı sunucu makinesine koyun ve yolunu **Çalışma alanı veritabanı dosyası** alanına girin |
 | Import refused: not a Control Center workspace database                  | Dosyada `workspace_meta` satırı yok — bu bir çalışma alanı dışa aktarımı değil veya dosya kesilmiş. Hiçbir şey değiştirilmedi |
 | Bir anlık görüntü **Eksik** olarak listelenir                            | Manifesti eksik ya da olmayan dosyaları adlandırıyor. Yeni bir tane alın; bu arada ondan tek tek çalışma alanı dosyalarını devralın |
 | Bir anlık görüntü, bazı çalışma alanlarının yakalanmadığını söyler       | O çalışma alanlarına hiç yazılmamıştır veya kopyaları başarısız olmuştur. Sunucu günlüğüne bakın                            |

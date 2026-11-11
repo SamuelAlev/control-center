@@ -2,7 +2,7 @@
 title: Siapkan integrasi GitHub
 description: Masuk ke GitHub agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Panduan ini membahas bagian-bagian penyiapan yang khusus untuk GitHub. GitHub
@@ -30,7 +30,7 @@ memasukkan mereka adalah hal yang mereka lakukan sendiri.
 
 GitHub hanya memakai proses masuk: tidak ada token untuk ditempel.
 
-1. Buka **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode** (atau langkah pertama
+1. Buka **Pengaturan → Anda → Profil → Hosting kode** (atau langkah pertama
    onboarding)
 2. Pada baris **GitHub**, klik **Masuk ke GitHub**
 3. Peramban Anda membuka GitHub. Setujui aplikasinya
@@ -54,14 +54,29 @@ sebuah ruang kerja, juga membatalkan setiap token yang dicetak server atas nama 
 
 ## Siapa yang diwakili kredensial Anda
 
-- **Apa pun yang Anda lakukan** (membuka halaman PR, mengirim tinjauan, menyetujui, merge) berjalan
-  di bawah proses masuk **Anda** dan tidak di bawah yang lain. Jika Anda belum masuk, aplikasi akan
-  memberi tahu dan meminta Anda masuk. Tidak ada kredensial lain yang menggantikan Anda
-- **Pekerjaan tanpa orang mengetik** (eksekusi agen, pipeline, polling PR, balasan bot, clone)
-  menerima token untuk satu repositori, dicetak dari GitHub App server atau melalui Connect. Token
-  itu dibatasi pada apa yang dapat dilakukan anggota yang bertanggung jawab di sana: yang meminta,
-  atau jika tidak, pemilik ruang kerja. Anggota yang tidak dapat push akan membatasi token hanya ke baca
-- **Otomatisasi tidak pernah menyetujui** sebuah pull request. Persetujuan adalah tindakan seseorang
+Control Center mengikuti pemisahan GitHub sendiri antara bertindak **sebagai orang** dan bertindak **sebagai app**:
+
+| Yang terjadi                                                                                   | Tampil di GitHub sebagai                                                                  |
+| ---------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Apa pun yang Anda lakukan sendiri: berkomentar, meninjau, menyetujui, merge, meminta peninjau | **Anda**. GitHub menandai komentar dalam percakapan sebagai dibuat dengan app Control Center; tinjauan dan komentar inline-nya tidak memiliki tanda seperti itu |
+| Tinjauan AI, balasan dan komentar agen dalam percakapan PR, label, pipeline, dan pekerjaan bot              | **Bot Control Center**. Pada app Connect bersama, bot hanya memiliki tinjauan untuk instalasi yang dicantumkan operator Connect; jika tidak, tinjauan tampil sebagai orang yang bertanggung jawab |
+| Pull request yang dibuka agen untuk Anda, perubahan judul atau deskripsinya, push-nya, dan commit-nya                                         | **Anda**. Control Center dikreditkan sebagai co-author ketika kredit co-author aktif         |
+| Pekerjaan yang tidak diminta siapa pun (jadwal, webhook) | **Bot Control Center**, juga sebagai penulis commit-nya. Di Control Center Connect tidak pernah push atau membuka pull request |
+
+- **Apa pun yang Anda lakukan** berjalan di bawah proses masuk **Anda** dan tidak di bawah yang lain. Jika Anda belum masuk, app meminta Anda masuk. Tidak ada kredensial lain yang menggantikan Anda
+- **Pekerjaan bot** menerima token untuk satu repositori dalam satu waktu, dibatasi pada apa yang dapat dilakukan anggota yang bertanggung jawab di sana: yang meminta, atau jika tidak, pemilik ruang kerja. Anggota yang tidak dapat push membatasinya ke baca saja. Balasan bot yang bertindak untuk seseorang dimulai dengan **Control Center (untuk @login)**
+- **Agen membuka pull request melalui Control Center**, tidak pernah dari sandbox mereka, sehingga pull request itu milik Anda dan aturan GitHub sendiri mencegah Anda menyetujuinya. Control Center juga menolak persetujuan dari orang yang meminta agen melakukan pekerjaan itu, dan dari penulis pull request. Untuk run terjadwal atau webhook, ini mencakup setiap admin yang mengaktifkan pemicunya atau mengedit pipeline-nya selama masih aktif. Orang lain harus meninjau. Jika Control Center tidak dapat memastikan siapa yang membuka pull request, atau akun forge mana yang milik Anda, ia menolak dan meminta Anda mencoba lagi
+- **Agen juga berkomentar melalui Control Center.** Token GitHub yang diterima run agen hanya dapat membaca. Ketika agen berkomentar di pull request yang sedang dikerjakannya, Control Center memposting komentar itu sebagai bot, dimulai dengan **Control Center (for @login)** ketika seseorang meminta run tersebut. Agen hanya dapat berkomentar di pull request-nya sendiri: yang berada di repositori yang sama, bukan fork, dan commit terakhirnya di-push oleh agen atau merupakan commit terkini dari cabang space-nya. @-mention di komentar agen tidak memberi notifikasi kepada siapa pun. Agen juga dapat mengubah judul atau deskripsi pull request-nya sendiri selama pull request itu terbuka. Perubahan itu dilakukan dengan cara yang sama seperti pull request itu dibuka (atas nama Anda, ketika Anda meminta run tersebut), dan meminta persetujuan terlebih dahulu secara default. Deskripsi pull request mempertahankan @-mention-nya, saat agen membukanya dan saat agen mengubahnya, sehingga orang-orang yang disebutnya mendapat notifikasi
+- **Di Control Center Connect, bot tidak pernah push atau membuka pull request.** Push, membuat cabang, atau membuka pull request di sana membutuhkan orang yang memintanya, dan berjalan dengan proses masuk orang tersebut. Run terjadwal atau webhook yang mencoba push akan berhenti dengan pesan yang menyatakannya. Agar run tanpa pengawasan dapat push, berikan ruang kerja GitHub App-nya sendiri di **Pengaturan**
+- **Yang dapat dilakukan bot Connect.** Dengan app Connect bersama, bot berkomentar, memberi label, dan bereaksi. Bot memposting tinjauan (tinjauan AI, komentar tinjauan, permintaan peninjau) hanya ketika operator Connect telah mencantumkan instalasi server ini. Jika tidak, tinjauan dikirim melalui proses masuk orang yang bertanggung jawab sendiri dan tampil di bawah nama mereka. Bot tidak pernah membuka, mengedit, menutup, atau mengganti judul pull request, membatalkan tinjauan, atau mengedit atau menghapus komentar; tindakan-tindakan itu membutuhkan orang yang memintanya, dengan proses masuk mereka sendiri. Connect tidak mengikat instalasi organisasi Anda ke satu server Control Center: server mana pun tempat anggota yang dapat push ke repositori telah masuk melalui Connect dapat memperoleh token komentar bot untuk repositori tersebut
+- **Server atau ruang kerja dengan GitHub App sendiri** tetap memakai bot untuk semua hal di atas, termasuk tinjauan
+- **Otomatisasi tidak pernah menyetujui** pull request. Persetujuan adalah tindakan seseorang
+
+Saat Anda menautkan repo, Control Center memeriksa bahwa akun Anda dapat melihatnya, dan memberi peringatan ketika GitHub App tidak terpasang di organisasinya atau tidak menyertakan repo tersebut, dengan tautan untuk memperbaikinya. Penautan dan pelepasan tautan membutuhkan admin ruang kerja, dan checkout di luar penyimpanan ruang kerja sendiri hanya dapat ditautkan oleh pemilik server; lihat [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+
+Tautan mengikuti id GitHub permanen repositori, sehingga pengubahan nama atau pemindahan tidak memerlukan apa pun dari Anda. Jika path kemudian menyebut repositori lain, Control Center berhenti mengirimkan apa pun ke sana dan menampilkan pemberitahuan sampai admin ruang kerja mengklik **Tautkan ulang**.
+
+Membuka kode repositori (berkas, diff, pencarian, terminal) membutuhkan izin di ruang kerja dan proses masuk GitHub milik Anda yang dapat membacanya. Admin ruang kerja mengikuti aturan yang sama; hanya pemilik server yang dikecualikan.
 
 ## Yang Anda dapatkan dari integrasi ini
 
@@ -71,7 +86,7 @@ sebuah ruang kerja, juga membatalkan setiap token yang dicetak server atas nama 
 | Hasil pemeriksaan     | API Checks GitHub                                                                                             |
 | Publikasi tinjauan    | Langkah dengan gerbang pengguna yang memposting tinjauan Anda ke PR, atas nama Anda                            |
 | Pendaftaran repo      | Sebuah checkout diterima jika remote `origin`-nya menunjuk ke github.com, atau ke gitlab.com / bitbucket.org  |
-| Akses GitHub agen     | Token untuk satu repositori milik run sebagai `GH_TOKEN` / `GITHUB_TOKEN`; push melewati Control Center         |
+| Akses GitHub agen | Di dalam run, `git fetch` melewati Control Center, yang mengambil repositori yang dikerjakan run dengan token hanya-baca yang tidak pernah dipegang run. `gh` membacanya dengan token hanya-baca yang diberikan Control Center saat diminta dan dicabut saat run berakhir. Push, pull request, perubahannya, dan komentar melewati Control Center |
 | Ping notifikasi       | Polling di sisi server atas kotak masuk notifikasi GitHub Anda memunculkan "Disebutkan di pull request" dan "Tinjauan diminta" |
 | Profil pengguna       | Kartu hover profil dan pemfilteran PR per penulis                                                             |
 
@@ -91,19 +106,24 @@ segarkan. Statusnya diperbarui sendiri setiap dua menit.
 ## Pahami cara agen bertindak di GitHub
 
 - Agen yang bekerja di worktree GitHub mendapat token untuk repositori tersebut. Ia dapat membaca
-  kode dan berkomentar di pull request ketika anggota yang bertanggung jawab memiliki hak push, dan
-  hanya membaca ketika tidak. Push melewati Control Center, yang menanyakan aturan **Push ke remote**
+  kode, issue dan pull request; komentar melewati Control Center, seperti dijelaskan di atas.
+  Push melewati Control Center, yang menanyakan aturan **Push ke remote**
   lalu meneruskannya dengan token tulis yang tidak pernah dipegang agen. Lihat
   [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/)
-- Commit agen selalu memakai identitas Git peminta sebagai penulis dan committer. Secara default, trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` mencantumkan akun GitHub `@usectrl` sebagai penulis bersama. Di **Pengaturan → Anda → Atribusi commit**, Anda dapat mematikan kredit penulis bersama ini tanpa mengubah identitas Anda. Pengaturan ruang kerja di **Pengaturan → Ruang kerja → Umum** diutamakan dan mengunci tombol pribadi. Atribusi bawaan Claude Code selalu dinonaktifkan. Penandatanganan commit tetap memerlukan konfigurasi valid tersendiri
+- Pekerjaan yang Anda mulai di-commit atas nama Anda. Ketika Anda meminta agen sesuatu, atau commit di IDE, Anda adalah penulis dan committer, dengan alamat yang diverifikasi forge Anda: alamat noreply GitHub Anda dari proses masuk GitHub, atau di GitLab dan Bitbucket surel yang dilaporkan proses masuk Anda di sana. Identitas Git ruang kerja Anda hanya digunakan untuk commit yang Anda buat sendiri dengan tangan di repositori tempat tidak ada forge yang memverifikasi alamat milik Anda. Jika Anda belum masuk ke forge tersebut, commit agen menjadi milik bot dan catatan run menyatakannya
+- Pekerjaan yang tidak diminta siapa pun di-commit sebagai bot. Run terjadwal atau webhook di-commit sebagai GitHub App ruang kerja (`<app>[bot]`, dengan alamat noreply GitHub-nya), atau sebagai `Control Center <hi@usectrl.dev>` ketika tidak ada GitHub App atau repositori berada di GitLab atau Bitbucket
+- **Cantumkan Control Center sebagai co-author** (**Pengaturan** → **Anda** → **Commit**) menambahkan trailer `Co-Authored-By:` untuk pihak lain: Control Center pada commit Anda, dan pada commit bot setiap orang yang mengaktifkan pemicu di balik run. Opsi ini aktif kecuali Anda mematikannya. Admin ruang kerja dapat menetapkannya untuk semua orang dengan **Pencantuman co-author** di **Pengaturan** → **Ruang kerja** → **Umum**; pilihan Anda sendiri kemudian tetap tersimpan tetapi tidak berlaku di ruang kerja itu. Atribusi bawaan Claude Code selalu dinonaktifkan
+- Commit Anda dapat ditandatangani. Di bawah **Commit terverifikasi** di **Pengaturan** → **Anda** → **Commit**, pilih **Buat kunci penandatanganan** dan tambahkan bagian publiknya ke akun GitHub atau GitLab Anda sebagai kunci penandatanganan; sejak saat itu commit dari run yang Anda minta, dan commit yang Anda buat di IDE, tampil sebagai terverifikasi. Bagian privatnya tetap di server Anda, sehingga siapa pun yang mengendalikan server itu dapat menandatangani commit sebagai Anda selama kunci tersebut ada di akun Anda, dan di GitHub commit yang sudah tampil terverifikasi tetap terverifikasi setelah Anda menghapus kunci. Bitbucket tidak memiliki kunci khusus penandatanganan: jangan tambahkan kunci di sana, dan commit di Bitbucket tidak ditandatangani. Commit bot tidak pernah ditandatangani
+- Commit yang Anda buat di panel **Kontrol sumber** IDE melewati hook Git repositori, seperti `git commit --no-verify`, dan Git di server mengabaikan credential helper, editor, alat diff eksternal, serta penandatangan yang dikonfigurasi repositori: ia menjalankan Git di mesinnya sendiri, dalam pohon yang dapat diubah oleh agen atau pull request. Lihat [Commit dan push dari Kontrol sumber](/id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr/#commit-dan-push-dari-kontrol-sumber)
+- Setiap commit yang di-push agen diperiksa lebih dulu, termasuk lapisan yang di-push `stack_publish` untuk stack. Push yang menyebut orang lain, menghapus atau meminjam sebuah kredit, menambahkan sign-off, atau tidak ditandatangani sesuai pengaturan Anda ditolak. Commit yang Anda push sendiri dari IDE adalah milik Anda dan tidak diperiksa dengan cara ini
 - Terminal yang Anda buka di sebuah rig menerima proses masuk Anda sendiri, dipersempit ke satu repositori, sehingga push di sana adalah milik Anda
-- Ketika tidak ada token yang dapat dicetak (tidak ada anggota yang bertanggung jawab yang sudah masuk, app tidak terpasang di pemilik, atau instalasinya ditangguhkan), run dimulai tanpa token dan catatannya menjelaskan alasannya. Tidak ada kredensial cadangan
+- Ketika tidak ada token yang dapat dicetak (tidak ada anggota yang bertanggung jawab yang sudah masuk, app tidak terpasang di pemilik, atau instalasinya ditangguhkan), perintah yang memintanya menjelaskan alasannya. Tidak ada kredensial cadangan
 
 ## Pemecahan masalah
 
 ### Daftar PR kosong dan menyebut GitHub tidak terhubung
 
-Anda belum masuk ke GitHub di server ini. Klik **Masuk ke GitHub** di **Hosting kode**.
+Anda belum masuk ke GitHub di server ini. Klik **Masuk ke GitHub** di bawah **Pengaturan → Anda → Profil → Hosting kode**.
 Repo di host kode lain tidak terpengaruh.
 
 ### Baris GitHub menyatakan proses masuk belum disiapkan di server ini
@@ -111,6 +131,11 @@ Repo di host kode lain tidak terpengaruh.
 Server tidak memiliki GitHub App sendiri maupun Connect. Pemilik server memilih salah satunya di
 **Pengaturan → Server → Single sign-on**: **Buat aplikasi GitHub saya** memakan waktu sekitar dua
 menit. Lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/).
+
+Di ruang kerja yang memakai aplikasinya sendiri, baris itu menyebutkan jika GitHub App ruang kerja
+belum ada atau belum lengkap. Admin ruang kerja melengkapinya pada kartu **Aplikasi GitHub** di
+**Pengaturan → Ruang kerja → Integrasi**; lihat
+[Berikan satu ruang kerja aplikasinya sendiri](/id-ID/panduan-pengguna/panduan-praktis/github-app/#berikan-satu-ruang-kerja-aplikasinya-sendiri).
 
 ### Dialog menyatakan kode tidak cocok
 
@@ -120,9 +145,7 @@ kode akan mengakhiri proses masuk; mulai lagi.
 ### Proses masuk menyatakan aplikasi belum dipasang
 
 GitHub App tidak memiliki pemasangan apa pun di akun pemilik repo. Seorang admin ruang kerja
-memasangnya dari **Pengaturan → Ruang kerja → Umum → Pemasangan aplikasi GitHub**. Untuk
-organisasi yang memakai App bersama Control Center, admin organisasi tersebut mungkin perlu
-mengklik **Otorisasi server ini**. Lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/).
+memasangnya dari **Pengaturan → Ruang kerja → Integrasi → Pemasangan aplikasi GitHub**.
 
 ### Semua orang harus masuk ke GitHub lagi
 
@@ -133,8 +156,20 @@ dipulihkan ke mesin lain. Proses masuk melalui Connect terikat pada server yang 
 
 Pendaftaran mensyaratkan ketiganya: path berada di dalam work tree git, ada
 remote `origin`, dan remote tersebut menunjuk ke host kode yang didukung
-(github.com, gitlab.com, atau bitbucket.org). Lihat
+(github.com, gitlab.com, atau bitbucket.org). `origin` harus merupakan repositori yang Anda tautkan, dan folder di luar penyimpanan ruang kerja sendiri hanya dapat ditautkan oleh pemilik server. Lihat
 [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+
+### Akun saya tidak dapat membaca repositori yang sudah saya beri izin
+
+Akun GitHub Anda tidak dapat membaca repositori itu, sehingga kodenya tetap tertutup bagi Anda meskipun Anda memiliki izin ruang kerja. Masuk ke GitHub di bawah **Hosting kode**, atau minta akses ke repositori itu di GitHub.
+
+### "Tidak dapat memastikan akses GitHub Anda"
+
+GitHub tidak dapat dihubungi untuk memeriksa akses Anda, sehingga Control Center menolak alih-alih menebak. Coba lagi sebentar lagi.
+
+### Tinjauan di Connect tampil atas nama saya, bukan bot
+
+Di app Connect bersama, bot memposting tinjauan hanya untuk instalasi yang dicantumkan operator Connect. Di tempat lain, tinjauan dikirim melalui proses masuk orang yang bertanggung jawab sendiri. Agar bot memposting tinjauan, berikan ruang kerja GitHub App-nya sendiri.
 
 ### Semua berhenti berfungsi untuk sementara setelah pemakaian berat
 

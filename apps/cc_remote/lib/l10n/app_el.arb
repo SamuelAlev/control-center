@@ -94,7 +94,6 @@
   },
   "inboxLoadFailed": "Δεν ήταν δυνατή η φόρτωση των εισερχομένων",
   "allCaughtUp": "Είστε ενήμεροι",
-  "inboxNoForgeAccount": "Δεν είναι συνδεδεμένος λογαριασμός forge στον διακομιστή, επομένως τα pull requests δεν μπορούν ακόμη να αποδοθούν σε εσάς.",
   "inboxNothingWaiting": "Τίποτα δεν είναι αποκλεισμένο και κανένα pull request δεν σας περιμένει.",
   "blocked": "Αποκλεισμένος",
   "sectionNeedsYourReview": "Χρειάζεται την ανασκόπησή σας",
@@ -201,28 +200,6 @@
       }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, =1{{names} είναι πολύ μεγάλο για αποστολή μέσω του relay από εδώ.} other{{names} είναι πολύ μεγάλα για αποστολή μέσω του relay από εδώ.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "names": {
-        "type": "String"
-      }
-    }
-  },
-  "attachmentUploadFailed": "Δεν ήταν δυνατή η μεταφόρτωση του συνημμένου. Δοκιμάστε ξανά.",
-  "attachmentsLeftOut": "{count, plural, =1{1 συνημμένο δεν μεταφορτώθηκε και παραλείφθηκε.} other{{count} συνημμένα δεν μεταφορτώθηκαν και παραλείφθηκαν.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teammate": "Συνάδελφος",
   "systemSender": "Σύστημα",
   "agent": "Πράκτορας",
@@ -282,27 +259,6 @@
   "prsEmptyDescription": "Τα pull requests από τα repo αυτού του χώρου εργασίας εμφανίζονται εδώ.",
   "refreshPullRequests": "Ανανέωση pull requests",
   "noForgeConnected": "Δεν είναι συνδεδεμένο forge στον διακομιστή, επομένως δεν μπορούν να ανακτηθούν pull requests. Συνδέστε ένα από την εφαρμογή υπολογιστή.",
-  "reposUnreadable": "{count, plural, =1{1 repo δεν ήταν αναγνώσιμο.} other{{count} repo δεν ήταν αναγνώσιμα.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reposNotReadable": "Μη αναγνώσιμα: {names}",
-  "installationSuspendedTitle": "Η εγκατάσταση του GitHub App έχει ανασταλεί",
-  "installationSuspendedBody": "Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub.",
-  "installationSuspendedNotice": "Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨{names}⁩. Συνεχίστε την εγκατάσταση στο GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "draft": "Πρόχειρο",
   "merged": "Συγχωνεύθηκε",
   "closed": "Κλειστό",
@@ -740,7 +696,7 @@
   "permissionGitCommit": "Καταχώριση αλλαγών",
   "permissionGitPush": "Αποστολή commit",
   "permissionPrCreate": "Δημιουργία pull request",
-  "permissionPrPublish": "Δημοσίευση pull request",
+  "permissionPrPublish": "Ενημέρωση ή συγχώνευση pull requests",
   "permissionVendorSyncWrite": "Εγγραφή συγχρονισμού παρόχου",
   "permissionNetworkEgress": "Πρόσβαση στο δίκτυο",
   "permissionSecretAccess": "Πρόσβαση σε απόρρητα στοιχεία",
@@ -752,12 +708,11 @@
   "permissionEffectiveDescription": "Ισχύει σε αυτό το πεδίο εφαρμογής χωρίς ορίσματα ενέργειας. Οι παρακάτω εξουσιοδοτήσεις υπό όρους ισχύουν μόνο για αιτήματα που πληρούν τις προϋποθέσεις· η τελική απόφαση λαμβάνεται από τον διακομιστή.",
   "permissionSpaceAgentNote": "Δεν έχει επιλεγεί πράκτορας. Οι κανόνες για συγκεκριμένο πράκτορα παραλείπονται μέχρι να επιλεγεί κάποιος παραπάνω.",
   "permissionScopedGrants": "Κανόνες σε αυτό το πεδίο εφαρμογής",
-  "permissionRemembered": "Αποθηκευμένη έγκριση",
+  "permissionRemembered": "Προσωρινή έγκριση",
   "permissionSetAtThisScope": "{source} · ορίστηκε εδώ",
   "permissionInheritedFrom": "{source} · κληρονομήθηκε",
   "permissionExpiresAt": "Λήγει {date}",
   "permissionSetHere": "Ορισμός κανόνα εδώ",
-  "permissionRevokeBeforeEdit": "Απαιτείται ανάκληση του κανόνα με συγκεκριμένο πεδίο εφαρμογής ή του αποθηκευμένου κανόνα πριν οριστεί γενικός κανόνας για αυτή την ενέργεια.",
   "permissionConfirmRevoke": "Επιβεβαίωση ανάκλησης",
   "permissionRevokeRule": "Ανάκληση κανόνα",
   "permissionCommandPrefix": "Πρόθεμα εντολής: {prefix}",
@@ -871,9 +826,6 @@
   "activityAgentBlocked": "Η ενέργεια του πράκτορα αποκλείστηκε",
   "activityMessage": "Νέο μήνυμα",
   "activityPullRequest": "Ενημέρωση pull request",
-  "activityTicket": "Ενημέρωση εισιτηρίου",
-  "activityMeeting": "Ενημέρωση σύσκεψης",
-  "activityCalendar": "Σύνδεση ημερολογίου",
   "activityRig": "Ενημέρωση περιβλήματος",
   "activityPrReady": "Το pull request είναι έτοιμο για συγχώνευση",
   "activityPrBlocked": "Η συγχώνευση του pull request αποκλείστηκε",
@@ -1025,7 +977,7 @@
   "credentialsApiKeyHint": "Επικολλήστε ένα κλειδί API παρόχου",
   "credentialsBrowserLogin": "Σύνδεση μέσω προγράμματος περιήγησης",
   "credentialsWaitingForLogin": "Αναμονή έγκρισης στο πρόγραμμα περιήγησης…",
-  "credentialsConnectCodePrompt": "Εισαγάγετε τον κωδικό που εμφανίζεται στο πρόγραμμα περιήγησης",
+  "credentialsConnectCodePrompt": "Κωδικός επιβεβαίωσης",
   "credentialsConnectCodeMalformed": "Αυτό δεν μοιάζει με κωδικό σύνδεσης. Οι κωδικοί έχουν 8 γράμματα και ψηφία.",
   "credentialsSignInInvalidCode": "Αυτός ο κωδικός δεν αντιστοιχεί σε αυτή τη σύνδεση. Ελέγξτε τον και δοκιμάστε ξανά.",
   "credentialsSignInTooManyCodes": "Πάρα πολλοί λανθασμένοι κωδικοί. Ξεκινήστε ξανά τη σύνδεση.",
@@ -1042,11 +994,51 @@
   "credentialsCompleteLogin": "Ολοκλήρωση σύνδεσης",
   "credentialsPersonalToken": "Προσωπικό token πρόσβασης",
   "credentialsPersonalTokenHint": "Επικολλήστε ένα προσωπικό token πρόσβασης",
-  "credentialsHostManaged": "Αυτή η σύνδεση προέρχεται από την εφαρμογή ή το περιβάλλον του διακομιστή. Μόνο ο ιδιοκτήτης του διακομιστή μπορεί να την αλλάξει εκεί. Μπορείτε πάντως να προσθέσετε το δικό σας token.",
   "credentialsStopWatching": "Διακοπή παρακολούθησης",
   "transcriptClaudeSignInExpiredTitle": "Η σύνδεση στο Claude Code έληξε",
   "transcriptClaudeSignInExpiredBody": "Η εκτέλεση σταμάτησε επειδή ο λογαριασμός της δεν πιστοποιείται πλέον. Συνδεθείτε ξανά και επαναλάβετε τον γύρο.",
   "transcriptSignInExpiredTitle": "Η σύνδεση στον πάροχο έληξε",
   "transcriptSignInExpiredBody": "Η εκτέλεση σταμάτησε επειδή τα διαπιστευτήρια του παρόχου δεν λειτουργούν πλέον. Συνδέστε τον ξανά στις Ρυθμίσεις → Πάροχοι και επαναλάβετε τον γύρο.",
-  "permissionHostExecution": "Εκτέλεση εντολών στον κεντρικό υπολογιστή"
+  "permissionHostExecution": "Εκτέλεση εντολών στον κεντρικό υπολογιστή",
+  "credentialsSignInLapsed": "Η σύνδεσή σας στο {provider} έληξε. Συνδεθείτε ξανά.",
+  "credentialsSignInPaused": "Σε παύση: η υπηρεσία σύνδεσης αυτού του χώρου εργασίας άλλαξε. Θα λειτουργήσει ξανά μόλις επιστρέψει η υπηρεσία.",
+  "credentialsProviderUnreachable": "Δεν είναι δυνατή η επικοινωνία με το {provider} αυτή τη στιγμή. Γίνεται νέα προσπάθεια.",
+  "credentialsScopeWorkspace": "Μόνο αυτός ο χώρος εργασίας",
+  "credentialsScopeAllWorkspaces": "Όλοι οι χώροι εργασίας",
+  "credentialsRemoveConfirmWorkspace": "Αφαίρεση των αποθηκευμένων διαπιστευτηρίων σας από αυτόν τον χώρο εργασίας; Οι άλλοι κρατούν τα δικά τους.",
+  "credentialsRemoveConfirmAllWorkspaces": "Αφαίρεση των αποθηκευμένων διαπιστευτηρίων σας από κάθε χώρο εργασίας που τα μοιράζεται;",
+  "credentialsSignInServerRestarted": "Ο διακομιστής επανεκκινήθηκε. Ξεκινήστε ξανά τη σύνδεση.",
+  "repoAccessInstallApp": "Εγκαταστήστε το GitHub App στο {owner} ώστε ο αυτοματισμός να φτάνει στα {names}. Πατήστε για άνοιγμα του GitHub.",
+  "repoAccessAskAdminInstall": "Το GitHub App δεν είναι εγκατεστημένο στο {owner}, οπότε ο αυτοματισμός δεν φτάνει στα {names}. Ζητήστε από έναν διαχειριστή του χώρου εργασίας να το εγκαταστήσει.",
+  "repoAccessAddToApp": "Προσθέστε τα {names} στα αποθετήρια του GitHub App. Πατήστε για άνοιγμα του GitHub.",
+  "repoAccessAskAdminAdd": "Το GitHub App δεν βλέπει ακόμη τα {names}. Ζητήστε από έναν διαχειριστή του χώρου εργασίας να τα προσθέσει στα αποθετήριά του.",
+  "repoAccessSuspended": "Η εγκατάσταση του GitHub App έχει ανασταλεί. Ο αυτοματισμός για τα {names} είναι σε παύση μέχρι ένας κάτοχος του λογαριασμού να συνεχίσει την εγκατάσταση στο GitHub.",
+  "repoAccessOwnerCannotSee": "Το άτομο που είναι υπεύθυνο για τον αυτοματισμό αυτού του χώρου εργασίας δεν βλέπει πια τα {names}, οπότε τίποτα δεν εκτελείται εκεί για λογαριασμό του.",
+  "repoAccessOwnerNotSignedIn": "Το άτομο που είναι υπεύθυνο για τον αυτοματισμό αυτού του χώρου εργασίας δεν έχει συνδεθεί στο forge, οπότε ο αυτοματισμός για τα {names} περιμένει μέχρι να συνδεθεί.",
+  "repoAccessRetrying": "Δεν ήταν δυνατός ο έλεγχος πρόσβασης στα {names}. Γίνεται νέα προσπάθεια.",
+  "hiddenReposSignIn": "{count, plural, =1{Συνδεθείτε στο {forge} για να δείτε pull requests από 1 ακόμη αποθετήριο} other{Συνδεθείτε στο {forge} για να δείτε pull requests από {count} ακόμη αποθετήρια}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 αποθετήριο είναι κρυφό επειδή ο λογαριασμός σας στο {forge} δεν το βλέπει} other{{count} αποθετήρια είναι κρυφά επειδή ο λογαριασμός σας στο {forge} δεν τα βλέπει}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 αποθετήριο είναι κρυφό επειδή δεν έχετε πρόσβαση σε αυτό σε αυτόν τον χώρο εργασίας} other{{count} αποθετήρια είναι κρυφά επειδή δεν έχετε πρόσβαση σε αυτά σε αυτόν τον χώρο εργασίας}}",
+  "hiddenReposChecking": "{count, plural, =1{Ελέγχεται η πρόσβασή σας σε 1 ακόμη αποθετήριο…} other{Ελέγχεται η πρόσβασή σας σε {count} ακόμη αποθετήρια…}}",
+  "credentialsAtlassianEmail": "Email λογαριασμού Atlassian",
+  "credentialsAtlassianEmailInvalid": "Εισαγάγετε τη διεύθυνση email του λογαριασμού σας Atlassian.",
+  "credentialsBitbucketApiToken": "Token API",
+  "repoAccessAutomationTokenMissing": "Κανένα διακριτικό αυτοματοποίησης δεν μπορεί να διαβάσει τα {names}, οπότε η εργασία στο παρασκήνιο εκεί είναι σε παύση. Ένας διαχειριστής μπορεί να προσθέσει ένα στις Ρυθμίσεις → Αποθετήρια.",
+  "credentialsSignInConfirmInBrowser": "Επιβεβαιώστε στο πρόγραμμα περιήγησης, και μετά εισαγάγετε τον κωδικό που εμφανίζει στο πεδίο παρακάτω.",
+  "credentialsSignInAccountAlreadyBound": "Αυτός ο λογαριασμός είναι ήδη συνδεδεμένος με άλλο άτομο σε αυτόν τον διακομιστή. Συνδεθείτε με διαφορετικό λογαριασμό.",
+  "credentialsTokenUnreachable": "Δεν ήταν δυνατή η επικοινωνία με το {provider} για τον έλεγχο αυτού του token. Δοκιμάστε ξανά σε λίγο.",
+  "credentialsTokenRejected": "Το {provider} δεν αποδέχεται αυτό το token. Ελέγξτε ότι το αντιγράψατε ολόκληρο και ότι δεν έχει ανακληθεί.",
+  "credentialsTokenWrongKind": "Αυτό δεν είναι προσωπικό token. Επικολλήστε ένα προσωπικό access token από τον δικό σας λογαριασμό στο {provider}, όχι token έργου, ομάδας, χώρου εργασίας ή bot.",
+  "credentialsTokenNarrowScope": "Στο token λείπει το δικαίωμα {scope}, που χρειάζονται η αναθεώρηση και τα σχόλια. Δημιουργήστε ένα που το περιλαμβάνει.",
+  "credentialsTokenExpired": "Αυτό το token έχει λήξει. Δημιουργήστε ένα νέο και επικολλήστε το εδώ.",
+  "credentialsSignInRateLimited": "Πάρα πολλά αιτήματα αυτή τη στιγμή. Περιμένετε λίγο και δοκιμάστε ξανά.",
+  "credentialsSignInCancelled": "Η σύνδεση ακυρώθηκε ή απορρίφθηκε. Ξεκινήστε την ξανά όταν είστε έτοιμοι.",
+  "credentialsSignInNoLongerOpen": "Αυτή η σύνδεση δεν είναι πλέον ανοιχτή: ακυρώθηκε, χρησιμοποιήθηκε ή αντικαταστάθηκε. Ξεκινήστε την ξανά.",
+  "noWorkspacesYetHint": "Ένας διαχειριστής χώρου εργασίας πρέπει να σας προσκαλέσει, ή ο κάτοχος του διακομιστή μπορεί να δημιουργήσει χώρο εργασίας για εσάς.",
+  "repoAccessReplaced": "Το {repos} δείχνει πλέον σε διαφορετικό αποθετήριο στο {forge}. Επανασυνδέστε το από την επιφάνεια εργασίας ή την εφαρμογή ιστού για να συνεχίσετε να το χρησιμοποιείτε.",
+  "repoAccessAskAdminRelink": "Το {repos} δείχνει πλέον σε διαφορετικό αποθετήριο στο {forge}. Ένας διαχειριστής χώρου εργασίας πρέπει να το επανασυνδέσει πριν μπορέσει να χρησιμοποιηθεί ξανά.",
+  "runSandboxUnavailableTitle": "Οι πράκτορες χρειάζονται sandbox σε αυτόν τον διακομιστή",
+  "runSandboxUnavailable": "Αυτός ο διακομιστής δεν έχει sandbox, γι' αυτό μόνο ο κάτοχός του μπορεί να εκτελεί εδώ πράκτορες. Ο κάτοχος μπορεί να εγκαταστήσει το sandbox ή να απενεργοποιήσει την απομόνωση για όλους.",
+  "permissionTools": "Εργαλεία: {tools}",
+  "permissionNotInEffect": "Χωρίς ισχύ όσο αυτή η ενέργεια είναι σε Απόρριψη"
 }

@@ -3,7 +3,7 @@ title: 아키텍처
 description: 씬 클라이언트 서버 모델, 피처 우선 클린 아키텍처, 포트와 어댑터로 구성된 Control Center의 구조를 설명합니다.
 dateModified: 2026-09-19
 slug: ko-KR/매뉴얼/개념/아키텍처
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## 개요
@@ -60,7 +60,7 @@ feature_name/
 - 메모리 엔티티: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - 공유 값 객체: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - 공유 포트: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- 도메인 서비스: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- 도메인 서비스: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + 이벤트 유형(워크스페이스/에이전트, PR/리뷰, 메시징, 티켓팅, 파이프라인, 오케스트레이션, 메모리, 캘린더/회의, 신원과 멤버십, 관측성)
 
 ## 신원과 멀티플레이어
@@ -132,7 +132,6 @@ Control Center는 멀티유저 시스템입니다. 사람과 에이전트는 `Pr
 
 - 시크릿은 `flutter_secure_storage`(macOS 키체인, Windows 자격 증명 관리자, Linux libsecret)에 있습니다 — 제공업체 토큰이 아니라 클라이언트의 기기 자격 증명과 원격 페어링 키입니다
 - `shared_preferences`는 민감하지 않은 환경설정(테마, 글꼴, 레이아웃)에만 사용합니다
-- 이전 설치에서 남은 제공업체 시크릿은 `features/auth/providers/credential_migration.dart`가 서버에 한 번 넘기고, 그다음 클라이언트 키체인에서 삭제됩니다
 
 ## 아키텍처 강제
 

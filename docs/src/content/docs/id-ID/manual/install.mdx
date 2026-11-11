@@ -2,7 +2,7 @@
 title: Instal
 description: Gunakan Control Center di peramban atau instal aplikasi desktop, siapkan backend agen, dan pilih tempat server-nya berjalan.
 slug: id-ID/panduan-pengguna/instal
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center berjalan dengan dua cara: sebagai **aplikasi web** di
@@ -124,7 +124,7 @@ Daftar model dilayani secara langsung oleh setiap penyedia yang terhubung; [mode
 
 Kredensial GitHub adalah **milik Anda dan tersimpan di server**, dikunci berdasarkan id pengguna Anda — bukan di keychain OS klien. Setiap perangkat yang Anda gunakan untuk masuk memakai kredensial yang sama, dan tidak ada anggota lain yang dapat membacanya.
 
-GitHub hanya memakai proses masuk: **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode** menawarkan **Masuk ke GitHub**, dan tidak ada token yang perlu ditempel. Proses masuk berjalan melalui GitHub App server ([Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)) atau melalui Control Center Connect, tergantung pilihan pemilik server. Dengan app milik server, peramban kembali ke server dengan sendirinya; melalui Connect, Anda mengetik kode 8 karakter yang ditampilkan peramban, atau membiarkannya membuka Control Center. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/).
+GitHub hanya memakai proses masuk: **Pengaturan → Anda → Profil → Hosting kode** menawarkan **Masuk ke GitHub**, dan tidak ada token yang perlu ditempel. Proses masuk berjalan melalui GitHub App server ([Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)) atau melalui Control Center Connect, tergantung pilihan pemilik server, kecuali admin ruang kerja memilih aplikasi masuk lain untuk ruang kerja itu di **Pengaturan → Ruang kerja → Integrasi**. Dengan app milik server, peramban kembali ke server dengan sendirinya; melalui Connect, Anda mengetik kode 8 karakter yang ditampilkan peramban, atau membiarkannya membuka Control Center. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/).
 
 Penyiapan awal meminta koneksi ini. Setelah itu, kartu yang sama menjadi tempat Anda masuk ulang atau memutuskannya. GitLab dan Bitbucket menggunakan kartu yang sama dengan token pribadi yang ditempel; lihat [Hubungkan host kode](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode/).
 
@@ -146,7 +146,7 @@ Untuk menghosting server sendiri, ikuti [Jalankan server headless](/id-ID/pandua
 
 1. **Pengaturan → Server → Penyedia model** mencantumkan kedua adapter. "Control Center (built-in)" terbaca sebagai ditemukan dengan versi `built-in`; Claude Code terbaca sebagai ditemukan jika CLI-nya ada di `PATH` host server. Tekan **Segarkan** jika tidak ada.
 2. **Pengaturan → Ruang kerja → Repositori** mencantumkan repo ruang kerja ini, dan **Tambah repositori** menelusuri folder di host server.
-3. **Pengaturan → Ruang kerja → Agen** mencantumkan lima agen yang disemai ruang kerja pertama Anda. Masing-masing memerlukan **Adapter** dan **Model** yang disetel sebelum dapat berjalan.
+3. **Pengaturan → Ruang kerja → Agen** mencantumkan enam agen yang disemai ruang kerja pertama Anda. Masing-masing memerlukan **Adapter** dan **Model** yang disetel sebelum dapat berjalan.
 4. **Pengaturan → Server → Diagnostik & privasi** melaporkan backend sandbox yang ditawarkan host ini, status model embedding, dan logging.
 
 ## Bangun dari sumber

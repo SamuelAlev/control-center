@@ -1,8 +1,8 @@
 ---
 title: Create the GitHub App
-description: Give your server its own GitHub App in one click, install it where your repositories live, and authorise the server for an organisation's installation.
+description: Give your server its own GitHub App in one click and install it where your repositories live, so everyone in the organisation can use it from any server.
 slug: en-GB/manual/guides/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 This guide shows you how to give your server its own GitHub App. It takes about
@@ -33,7 +33,7 @@ server mints covers one repository and is limited to what an accountable member
 can do there. Reading a linked repository needs only the app; anything that
 writes needs a member who can push. Automation never approves a pull request.
 
-The server's own app applies only under **Use my own apps**. With Control Center's or a custom Connect, Connect runs every lane, GitHub included; the server's app stays saved but unused until you switch back. A workspace's own app ([Give one workspace a different app](#give-one-workspace-a-different-app)) still applies in every mode. An app with some of
+The server's own app applies only under **Use my own apps**. With Control Center's or a custom Connect, Connect runs every lane, GitHub included; the server's app stays saved but unused until you switch back. A workspace on its own apps ([Give one workspace its own app](#give-one-workspace-its-own-app)) uses its own App instead, whatever the server's mode. An app with some of
 its fields missing is an error, not a fall back: GitHub sign-ins are refused
 until every field is set.
 
@@ -91,23 +91,24 @@ An app that is registered but not installed can sign people in and read nothing.
 2. Choose **All repositories**, or select the ones this server should see
 
 To install it on another account later, a workspace admin goes to **Settings →
-Workspace → General**, finds **GitHub App installations** on the GitHub
-identity card and clicks **Install GitHub App**. The list shows every account
+Workspace → Integrations**, finds **GitHub App installations** on the **GitHub
+App** card under Code hosting and clicks **Install GitHub App**. The list shows every account
 the app is installed on and flags a suspended installation.
 
-## Authorise this server for an organisation
+## Share an organisation's installation
 
-On Control Center's shared App, an organisation's installation serves only the
-servers its admins have authorised. Installing through **Install GitHub App**
-authorises the server that started it. For an installation that already exists:
+An organisation installs the GitHub App once. After that, anyone in it who signs
+in to GitHub on a Control Center server can use the installation, whichever
+server that is: yours, a colleague's, or one of their own. There is nothing to
+authorise per server.
 
-1. An admin of that organisation signs in to GitHub on this server
-2. They open **Settings → Workspace → General → GitHub App installations**
-3. The organisation's row says **Not authorised**. They click **Authorise this
-   server**
+Every token a server gets is the signed-in person's own, limited to one
+repository and to their role on it, so it never reaches further than they could
+on GitHub. GitHub's audit log shows that person, acting through the app.
 
-The row then reads **Authorised**. Your own app needs none of this: every
-installation of it belongs to your server.
+To stop Control Center reaching an organisation, an owner of the organisation
+removes the installation or narrows its repositories on GitHub. Removing a
+person from the organisation stops their access too.
 
 ## Register it by hand instead
 
@@ -144,16 +145,16 @@ environment, where every child process could read it; keep them in the `.env`
 file (in Docker, mount it at `/app/bin/.env`). Seeding happens **once per
 field**, so editing in Settings is not undone by the next restart.
 
-## Give one workspace a different app
+## Give one workspace its own app
 
-A workspace can use an app of its own instead of the server's. A workspace admin
-goes to **Settings → Workspace → General**, chooses **Use a different GitHub
-App** on the **GitHub identity** card and enters that app's id, private key,
-client id and client secret. Members then sign in to that app for this
-workspace. A workspace on its own app never falls back to the server's app or to
-Connect: until its fields are complete, its GitHub work is refused. It applies whichever way the server signs people in, Connect included.
+A workspace can run on an app of its own instead of the server's:
 
-The **Provider apps** card on the same page does the same for Google Calendar, Linear and GIF search. See [Give one workspace its own Linear application](/en-GB/manual/guides/linear-integration/#give-one-workspace-its-own-linear-application) and [Give one workspace its own Google client](/en-GB/manual/guides/connect-calendar/#give-one-workspace-its-own-google-client).
+1. A workspace admin goes to **Settings → Workspace → Integrations**
+2. On the **Control Center Connect** card, they choose **Use my own apps** and click **Apply**. Everyone in the workspace signs in again through the workspace's apps
+3. The **GitHub App** card under Code hosting now holds the app's fields: **App id** and **Private key** under **Acting for this workspace**, **Client id** and **Client secret** under **Signing people in**. Click **Test** once they are set
+
+Members then sign in to that app for this workspace. A workspace on its own apps never falls back to the server's app or to Connect: until its fields are complete, its GitHub work is refused. The same choice covers Google Calendar, Linear and GIF search, each with its own fields beside its provider on the same page. See [Give one workspace its own Linear application](/en-GB/manual/guides/linear-integration/#give-one-workspace-its-own-linear-application) and [Give one workspace its own Google client](/en-GB/manual/guides/connect-calendar/#give-one-workspace-its-own-google-client).
+The other choices on that card, and what each one does, are in [Per-workspace choice](/en-GB/manual/reference/connect/#per-workspace-choice).
 
 ## Troubleshooting
 
@@ -170,7 +171,7 @@ Settings.
 ### Test says the credentials work but the app is not installed anywhere
 
 Registration and installation are separate steps. Open the app's install page,
-or use **Install GitHub App** in Workspace → General.
+or use **Install GitHub App** in Workspace → Integrations.
 
 ### Test says the private key could not be read
 

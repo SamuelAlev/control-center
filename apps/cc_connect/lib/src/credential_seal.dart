@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_connect/src/connect_log.dart';
 import 'package:cc_connect/src/seal_cipher.dart';
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:crypto/crypto.dart' as crypto;
@@ -45,6 +46,17 @@ final class SealHeader {
   };
 }
 
+/// What a seal holds. Bound into the AEAD, so one kind never opens as
+/// another.
+enum SealKind {
+  /// A grant a server keeps and hands back (refresh token, access token).
+  grant,
+
+  /// A one-repository child token Connect keeps for itself (reuse and
+  /// revocation); it never leaves Connect.
+  childRecord,
+}
+
 /// Who may open a seal: the verified caller and the workspace it names.
 final class SealBinding {
   /// Creates the binding.
@@ -88,15 +100,38 @@ final class OpenedSeal {
 /// The AEAD associated data is the canonical JSON of
 /// `{v, provider, connect_origin, install_id, workspace_id, account_id,
 /// app_id, secret_generation}`, so a seal copied to another server, another
-/// workspace or another Connect never decrypts.
+/// workspace or another Connect never decrypts. A record Connect keeps for
+/// itself ([SealKind.childRecord]) also binds `kind`, so it never opens as a
+/// grant seal, and a grant seal never opens as one of them.
 final class CredentialSealer {
   /// Creates the sealer for the Connect at [connectOrigin] (its canonical
-  /// base URL).
-  CredentialSealer({required this.connectOrigin, required this._cipher});
+  /// base URL). [retryDelays] space the retries of a failed encryption.
+  CredentialSealer({
+    required this.connectOrigin,
+    required this._cipher,
+    required this._log,
+    this.retryDelays = const [
+      Duration(milliseconds: 100),
+      Duration(milliseconds: 400),
+    ],
+  });
 
   /// The canonical base URL bound into every seal.
   final String connectOrigin;
+
+  /// Waits between encryption attempts: a seal is made after the provider
+  /// already rotated the refresh token, so giving up at once loses it.
+  final List<Duration> retryDelays;
   final SealCipher _cipher;
+  final ConnectLog _log;
+
+  /// Writes `seal.refused` for [provider] (at most once a minute per
+  /// reason).
+  void refused(ConnectProvider provider, String reason) => _log.sampled(
+    'seal.refused',
+    '${provider.name}/$reason',
+    {'provider': provider.name, 'reason': reason},
+  );
 
   List<int> _aad(
     ConnectProvider provider,
@@ -104,6 +139,7 @@ final class CredentialSealer {
     String appId,
     int generation,
     SealBinding binding,
+    SealKind kind,
   ) => utf8.encode(
     canonicalJson({
       'v': 1,
@@ -114,10 +150,11 @@ final class CredentialSealer {
       'account_id': accountId,
       'app_id': appId,
       'secret_generation': generation,
+      if (kind == SealKind.childRecord) 'kind': 'child',
     }),
   );
 
-  /// Seals [payload].
+  /// Seals [payload] as a [kind].
   Future<String> seal({
     required ConnectProvider provider,
     required String accountId,
@@ -125,11 +162,25 @@ final class CredentialSealer {
     required int generation,
     required SealBinding binding,
     required Map<String, Object?> payload,
+    SealKind kind = SealKind.grant,
   }) async {
-    final ciphertext = await _cipher.encrypt(
-      utf8.encode(jsonEncode(payload)),
-      _aad(provider, accountId, appId, generation, binding),
-    );
+    final plaintext = utf8.encode(jsonEncode(payload));
+    final aad = _aad(provider, accountId, appId, generation, binding, kind);
+    SealCiphertext? ciphertext;
+    for (var attempt = 0; ciphertext == null; attempt++) {
+      try {
+        ciphertext = await _cipher.encrypt(plaintext, aad);
+      } on Object catch (error, stack) {
+        if (attempt >= retryDelays.length) {
+          _log.exception('seal.encrypt_failed', error, stack, {
+            'provider': provider.name,
+            'count': attempt + 1,
+          });
+          rethrow;
+        }
+        await Future<void>.delayed(retryDelays[attempt]);
+      }
+    }
     final header = SealHeader(
       provider: provider,
       accountId: accountId,
@@ -145,17 +196,25 @@ final class CredentialSealer {
   /// [ConnectException] (`access_denied`) when malformed.
   SealHeader header(String seal) => _split(seal).header;
 
-  /// Opens [seal] for [binding]. Throws [ConnectException]: `access_denied`
-  /// when the seal is malformed, for another provider, or does not decrypt
-  /// for this caller.
+  /// Opens [seal] for [binding] as a [kind]. Throws [ConnectException]:
+  /// `access_denied` when the seal is malformed, for another provider or
+  /// kind, or does not decrypt for this caller.
   Future<OpenedSeal> open(
     String seal, {
     required ConnectProvider provider,
     required SealBinding binding,
+    SealKind kind = SealKind.grant,
   }) async {
-    final parts = _split(seal);
+    final ({SealHeader header, List<int> ciphertext}) parts;
+    try {
+      parts = _split(seal);
+    } on ConnectException {
+      refused(provider, 'malformed');
+      rethrow;
+    }
     final header = parts.header;
     if (header.provider != provider) {
+      refused(provider, 'provider');
       throw const ConnectException(ConnectErrorCode.accessDenied);
     }
     final List<int> plaintext;
@@ -168,9 +227,11 @@ final class CredentialSealer {
           header.appId,
           header.generation,
           binding,
+          kind,
         ),
       );
     } on SealDecryptFailed {
+      refused(provider, 'decrypt');
       throw const ConnectException(ConnectErrorCode.accessDenied);
     }
     final Object? decoded;

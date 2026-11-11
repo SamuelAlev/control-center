@@ -2,7 +2,7 @@
 title: Configura l'integrazione Slack
 description: Collega Slack a uno spazio di lavoro di Control Center, tramite l'app condivisa di Control Center o un'app tutta tua, così i membri possono guidare gli agenti da Slack.
 slug: it-IT/manuale/guide/integrazione-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Questa guida mostra come collegare Slack a uno spazio di lavoro di Control Center: aggiungendo l'app condivisa di Control Center, oppure con un'app tutta tua, che Control Center crea per te o che costruisci tu stesso.
@@ -27,18 +27,18 @@ Uno spazio di lavoro funziona con esattamente una delle due alla volta.
 
 | Modalità | Cosa serve | Cosa ottieni |
 | --- | --- | --- |
-| **App condivisa di Control Center** | Il server usa Control Center Connect (**Impostazioni → Server → Accesso single sign-on**) e Connect serve Slack | Un clic e un accesso con Slack. Nessuna app da creare, nessun token da incollare, niente da ruotare |
+| **App condivisa di Control Center** | Le app di accesso dello spazio di lavoro passano da Control Center Connect (la scelta del server in **Impostazioni → Server → Accesso single sign-on**, oppure quella dello spazio di lavoro in **Impostazioni → Spazio di lavoro → Integrazioni**) e Connect serve Slack | Un clic e un accesso con Slack. Nessuna app da creare, nessun token da incollare, niente da ruotare |
 | **La tua app** | Un'app Slack nel tuo spazio di lavoro Slack, ottenuta in uno dei tre modi descritti sotto | Il nome del bot, le descrizioni e il comando slash che vuoi tu, modificabili da Control Center |
 
 ### Aggiungi l'app condivisa di Control Center
 
-1. In Control Center, vai in **Impostazioni → Spazio di lavoro → Generale** e scorri fino alla scheda **Ponti di chat**
+1. In Control Center, vai in **Impostazioni → Spazio di lavoro → Integrazioni** e scorri fino alla scheda **Ponti di chat**
 2. Nel blocco di Slack, trova la riga **Aggiungi Control Center a Slack** e fai clic su **Aggiungi a Slack**
 3. Il browser apre Slack. Accedi con Slack, scegli lo spazio di lavoro Slack e approva l'installazione
 4. Quando il browser mostra un codice, inseriscilo nella finestra che Control Center ha lasciato aperta. Se il browser ti riporta da solo all'app, non c'è nulla da digitare
 5. Una notifica indica lo spazio di lavoro Slack a cui è stata aggiunta l'app, e il blocco di Slack mostra che la connessione funziona con l'app condivisa di Control Center
 
-Solo un amministratore dello spazio di lavoro può aggiungere l'app. La riga spiega perché non può partire quando il server usa le proprie app anziché Connect, quando il tuo Connect non ha un'app Slack o quando questo spazio di lavoro ha già collegato una propria app Slack.
+Solo un amministratore dello spazio di lavoro può aggiungere l'app. La riga spiega perché non può partire quando le app di accesso di questo spazio di lavoro sono le proprie anziché Connect, quando il tuo Connect non ha un'app Slack o quando questo spazio di lavoro ha già collegato una propria app Slack.
 
 In cosa differisce dalla tua app:
 
@@ -64,7 +64,7 @@ Gli eventi della tua app non passano mai attraverso Connect: Socket Mode li cons
 ## Opzione A: lascia che Control Center crei l'app
 
 1. Genera una coppia di token di configurazione dell'app su [api.slack.com/apps](https://api.slack.com/apps) e copia il token di **aggiornamento** (`xoxe-…`)
-2. In Control Center, vai in **Impostazioni → Spazio di lavoro → Generale** e scorri fino alla scheda **Ponti di chat**
+2. In Control Center, vai in **Impostazioni → Spazio di lavoro → Integrazioni** e scorri fino alla scheda **Ponti di chat**
 3. Nel blocco di Slack, fai clic su **Crea l'app per me**
 4. Incolla il token, regola il nome dell'app, il nome del bot, le descrizioni e il comando slash, poi fai clic su **Crea l'app**
 5. Segui i due passaggi rimanenti che la finestra mostra, ciascuno come link verso Slack:
@@ -78,7 +78,7 @@ Il token di configurazione ruota a ogni utilizzo. Control Center memorizza il va
 
 Stessa app, nessun token di configurazione: Slack ti presenta la propria schermata di creazione con l'intero manifest già compilato.
 
-1. In Control Center, vai in **Impostazioni → Spazio di lavoro → Generale** e scorri fino alla scheda **Ponti di chat**
+1. In Control Center, vai in **Impostazioni → Spazio di lavoro → Integrazioni** e scorri fino alla scheda **Ponti di chat**
 2. Nel blocco di Slack, fai clic su **Crea l'app per me**
 3. Regola il nome dell'app, il nome del bot, le descrizioni e il comando slash: questi valori viaggiano con il link
 4. Fai clic su **Crea in Slack**. Il browser apre la pagina di creazione dell'app di Slack con la configurazione precompilata
@@ -132,7 +132,7 @@ message.im
 
 È così che i token della tua app arrivano a Control Center. L'app condivisa non ha bisogno di nulla di tutto questo.
 
-1. Vai in **Impostazioni → Spazio di lavoro → Generale** e scorri fino alla scheda **Ponti di chat**
+1. Vai in **Impostazioni → Spazio di lavoro → Integrazioni** e scorri fino alla scheda **Ponti di chat**
 2. Nel blocco di Slack, fai clic su **Connetti Slack**
 3. Compila i campi:
 
@@ -204,7 +204,7 @@ Qualsiasi membro collegato con un ruolo di scrittura può proporre un ticket da 
 /cc ticket Correggi il test di login instabile | Fallisce in CI circa una volta al giorno.
 ```
 
-Il testo prima di `|` è il titolo, quello dopo è la descrizione. Il bot risponde di aver creato una bozza del ticket. Non viene ancora creato nulla e non scatta alcuna automazione dei ticket: la bozza ti aspetta in **Impostazioni → Spazio di lavoro → Profilo e identità → Bozze di ticket dalla chat**, dove puoi correggere il titolo e la descrizione, poi fare clic su **Crea ticket** o **Annulla**.
+Il testo prima di `|` è il titolo, quello dopo è la descrizione. Il bot risponde di aver creato una bozza del ticket. Non viene ancora creato nulla e non scatta alcuna automazione dei ticket: la bozza ti aspetta in **Impostazioni → Tu → Profilo → Bozze di ticket dalla chat**, dove puoi correggere il titolo e la descrizione, poi fare clic su **Crea ticket** o **Annulla**.
 
 - Solo il membro che ha eseguito il comando vede la bozza
 - Una bozza che lasci lì viene scartata dopo un giorno. Le bozze vivono in memoria, quindi anche un riavvio del server le scarta

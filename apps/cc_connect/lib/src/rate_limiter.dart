@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:collection';
 
-/// Token buckets keyed by an opaque string (install id, client IP, `*`).
-/// Process-local: a cheap first line in front of Cloud Armor, not a
-/// distributed quota.
+/// Token buckets keyed by an opaque string (install id, client IP or /64,
+/// `*`). Process-local: each instance counts on its own, so N instances
+/// admit N times the configured rate. A first line of defence, not a
+/// distributed quota; put an edge limit in front for anything stronger.
 final class TokenBucketLimiter {
   /// A bucket of [capacity] tokens refilled at [capacity] per [per].
   TokenBucketLimiter({
@@ -45,7 +46,9 @@ final class TokenBucketLimiter {
 }
 
 /// Bounds concurrent work (signature verification) and the queue in front of
-/// it, so a flood waits briefly or is refused instead of piling up.
+/// it: jobs past [concurrency] wait in a FIFO queue of at most [maxQueued]
+/// (they are not dropped while there is room), and a job arriving at a full
+/// queue is refused without running.
 final class BoundedPool {
   /// Creates the pool.
   BoundedPool({required this.concurrency, required this.maxQueued});

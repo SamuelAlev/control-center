@@ -2,21 +2,28 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_infra/src/network/app_network.dart';
+import 'package:cc_infra/src/network/forge_git_auth.dart';
 import 'package:rhttp/rhttp.dart';
 
 /// Resolves the current credential for a forge. Returns null when none is
 /// configured.
 typedef ForgeTokenLookup = Future<String?> Function(ForgeHost forge);
 
-/// Resolves the credential for one request, given its method and URL (which
-/// may be relative to the forge's API base). Lets a client pick a
-/// per-repository token per call.
+/// Resolves the credential for one request, given its method, URL (which
+/// may be relative to the forge's API base) and decoded JSON body (null when
+/// it has none). Lets a client pick a per-repository token per call, and a
+/// GraphQL query's scope apart from a mutation's.
 ///
 /// Returning null sends the request without a credential. A lookup that knows
 /// the request must not go out anonymously throws [ForgeCredentialUnavailable]
 /// instead, and the request fails locally.
 typedef ForgeRequestTokenLookup =
-    Future<String?> Function(ForgeHost forge, String method, String url);
+    Future<String?> Function(
+      ForgeHost forge,
+      String method,
+      String url,
+      Object? jsonBody,
+    );
 
 /// Observes the status and headers of every response (and status failure) a
 /// forge client receives, e.g. to track `x-ratelimit-*` budgets. Must not
@@ -46,10 +53,12 @@ typedef ForgeHttpClientBuilder =
 
 /// Builds authenticated [RhttpClient]s, one per forge.
 ///
-/// Auth schemes live here once (wrong scheme → silent 401): GitHub/GitLab
-/// `Bearer` on their API bases; Bitbucket `Basic base64(email:token)` on
-/// `api.bitbucket.org/2.0`. Token is read per request via the lookup — Settings
-/// paste/clear applies on the next call without rebuild.
+/// Auth schemes live in [forgeAuthorizationHeader] (wrong scheme → silent
+/// 401): GitHub/GitLab `Bearer` on their API bases; Bitbucket on
+/// `api.bitbucket.org/2.0` takes a person's API token as `email:token`
+/// (`Basic`) and an access token as `Bearer` ([BitbucketCredential]). Token is
+/// read per request via the lookup — Settings paste/clear applies on the next
+/// call without rebuild.
 ///
 /// The interceptor only AUTHENTICATES. It deliberately does not map failures:
 /// callers catch the status they care about (`RhttpStatusCodeException` with
@@ -57,19 +66,14 @@ typedef ForgeHttpClientBuilder =
 /// failure in anything else here would hide the status from every one of them.
 class ForgeHttpClientFactory {
   /// Creates a [ForgeHttpClientFactory].
-  ///
-  /// [bitbucketUsername] supplies the username half of Bitbucket's basic auth
-  /// (its account email); it is read lazily for the same reason as the token.
   ForgeHttpClientFactory({
     required this._tokenLookup,
     this._requestTokenLookup,
     this._onResponse,
     this._requestGuard,
-    String Function()? bitbucketUsername,
     this._timeout = const Duration(seconds: 12),
     ForgeHttpClientBuilder? buildClient,
-  }) : _bitbucketUsername = bitbucketUsername ?? (() => ''),
-       _buildClient =
+  }) : _buildClient =
            buildClient ??
            ((baseUrl, settings, interceptors) => createHttpClient(
              baseUrl: baseUrl,
@@ -87,7 +91,6 @@ class ForgeHttpClientFactory {
 
   /// Refuses requests this client must never send, when set.
   final ForgeRequestGuard? _requestGuard;
-  final String Function() _bitbucketUsername;
 
   /// Longest a forge call may take, connection included.
   final Duration _timeout;
@@ -98,6 +101,14 @@ class ForgeHttpClientFactory {
 
   /// The authenticated client for [forge], built once and reused.
   RhttpClient of(ForgeHost forge) => _clients[forge] ??= _build(forge);
+
+  /// Releases every client built here. The factory must not be used after.
+  void dispose() {
+    for (final client in _clients.values) {
+      client.dispose();
+    }
+    _clients.clear();
+  }
 
   RhttpClient _build(ForgeHost forge) {
     // Cap forge calls well below the RPC client's 30s deadline so a slow or
@@ -120,7 +131,6 @@ class ForgeHttpClientFactory {
           forge: forge,
           tokenLookup: _tokenLookup,
           requestTokenLookup: _requestTokenLookup,
-          bitbucketUsername: _bitbucketUsername,
         ),
         if (_onResponse case final observer?)
           ForgeResponseObserverInterceptor(forge: forge, observer: observer),
@@ -135,7 +145,6 @@ class ForgeAuthInterceptor extends Interceptor {
   ForgeAuthInterceptor({
     required this.forge,
     required this.tokenLookup,
-    required this.bitbucketUsername,
     this.requestTokenLookup,
   });
 
@@ -149,10 +158,6 @@ class ForgeAuthInterceptor extends Interceptor {
   /// Per-request credential, when the client picks one per call.
   final ForgeRequestTokenLookup? requestTokenLookup;
 
-  /// The username half of Bitbucket's basic auth, read lazily for the same
-  /// reason as [tokenLookup].
-  final String Function() bitbucketUsername;
-
   @override
   Future<InterceptorResult<HttpRequest>> beforeRequest(
     HttpRequest request,
@@ -162,7 +167,12 @@ class ForgeAuthInterceptor extends Interceptor {
     final String? token;
     try {
       token = perRequest != null
-          ? await perRequest(forge, request.method.value, request.url)
+          ? await perRequest(
+              forge,
+              request.method.value,
+              request.url,
+              ForgeRequestGuardInterceptor.jsonBodyOf(request),
+            )
           : await tokenLookup(forge);
     } on ForgeCredentialUnavailable catch (e) {
       // Thrown, like the rate-limit circuit's failure: there is no error route
@@ -172,15 +182,15 @@ class ForgeAuthInterceptor extends Interceptor {
     if (token != null && token.isNotEmpty) {
       headers = (headers ?? HttpHeaders.empty).copyWithRaw(
         name: 'Authorization',
-        value: _authHeader(forge, token),
+        value: forgeAuthorizationHeader(forge, token),
       );
       if (forge == ForgeHost.gitlab) {
         // GitLab accepts a personal access token either way, but
         // `PRIVATE-TOKEN` is the documented header for one while
-        // `Authorization: Bearer` is documented for OAuth. Sending both means
-        // an operator can paste whichever kind of token they have without us
-        // having to guess which — and a token that is valid for neither fails
-        // identically.
+        // `Authorization: Bearer` is documented for OAuth and access tokens.
+        // Sending both means a person's token and an automation token work
+        // without guessing which kind is stored — and a token that is valid
+        // for neither fails identically.
         headers = headers.copyWithRaw(name: 'PRIVATE-TOKEN', value: token);
       }
     }
@@ -198,15 +208,6 @@ class ForgeAuthInterceptor extends Interceptor {
     return Interceptor.next(request.copyWith(headers: headers));
   }
 
-  String _authHeader(ForgeHost forge, String token) => switch (forge) {
-    // Bitbucket Cloud has no bearer scheme for API tokens: the token is the
-    // password half of basic auth and the account email is the username.
-    ForgeHost.bitbucket =>
-      'Basic '
-          '${base64Encode(utf8.encode('${bitbucketUsername()}:$token'))}',
-    ForgeHost.github || ForgeHost.gitlab || ForgeHost.local => 'Bearer $token',
-  };
-
   Map<String, String> _extraHeaders(ForgeHost forge) => switch (forge) {
     ForgeHost.github => const {'X-GitHub-Api-Version': gitHubRestApiVersion},
     _ => const {},
@@ -223,7 +224,60 @@ class ForgeAuthInterceptor extends Interceptor {
 /// degrade exactly as they would for the forge's own answer.
 class ForgeCredentialUnavailable implements Exception {
   /// Creates the refusal.
-  const ForgeCredentialUnavailable(this.statusCode, this.message);
+  const ForgeCredentialUnavailable(
+    this.statusCode,
+    this.message, {
+    this.signInLane,
+  }) : automationTokenMissing = false,
+       replacedOn = null;
+
+  /// A person acting with no sign-in of their own on the forge: the local
+  /// 401 names [lane] (`gitlab`, `bitbucket`, …) so the caller can offer that
+  /// sign-in (`NeedsSignInException`) instead of reporting a failure.
+  const ForgeCredentialUnavailable.needsSignIn(String lane, this.message)
+    : statusCode = 401,
+      signInLane = lane,
+      automationTokenMissing = false,
+      replacedOn = null;
+
+  /// Automation with no person behind it on a token-only forge (GitLab,
+  /// Bitbucket) and no automation token for the repository: the local 401
+  /// says so ([automationTokenMissingKey]) so the caller pauses that
+  /// repository instead of reporting an access denial.
+  const ForgeCredentialUnavailable.automationTokenMissing(this.message)
+    : statusCode = 401,
+      signInLane = null,
+      automationTokenMissing = true,
+      replacedOn = null;
+
+  /// The repository at a linked path is another one than the one linked
+  /// there (the forge's durable id for the path changed): the local 409
+  /// names [forge] ([repoReplacedKey]) so the caller reports `repo_replaced`
+  /// and an admin relinks.
+  const ForgeCredentialUnavailable.repoReplaced(ForgeHost forge, this.message)
+    : statusCode = 409,
+      signInLane = null,
+      automationTokenMissing = false,
+      replacedOn = forge;
+
+  /// The body key that carries [signInLane] on the local failure.
+  static const String signInLaneKey = 'needs_sign_in';
+
+  /// The body key that marks an [ForgeCredentialUnavailable.automationTokenMissing]
+  /// refusal.
+  static const String automationTokenMissingKey = 'automation_token_missing';
+
+  /// The body key that carries [replacedOn]'s wire on a
+  /// [ForgeCredentialUnavailable.repoReplaced] refusal.
+  static const String repoReplacedKey = 'repo_replaced';
+
+  /// The forge of a [ForgeCredentialUnavailable.repoReplaced] refusal, else
+  /// null.
+  final ForgeHost? replacedOn;
+
+  /// Whether this is an [ForgeCredentialUnavailable.automationTokenMissing]
+  /// refusal.
+  final bool automationTokenMissing;
 
   /// The status the local failure carries.
   final int statusCode;
@@ -231,13 +285,22 @@ class ForgeCredentialUnavailable implements Exception {
   /// Why there is no credential; becomes the failure body's `message`.
   final String message;
 
+  /// The sign-in the acting person lacks, or null when the refusal is not
+  /// about a missing sign-in.
+  final String? signInLane;
+
   /// The local status failure for [request]. Nothing was sent.
   RhttpStatusCodeException asStatusFailure(HttpRequest request) =>
       RhttpStatusCodeException(
         request: request,
         statusCode: statusCode,
         headers: const [('content-type', 'application/json')],
-        body: jsonEncode({'message': message}),
+        body: jsonEncode({
+          'message': message,
+          signInLaneKey: ?signInLane,
+          if (automationTokenMissing) automationTokenMissingKey: true,
+          repoReplacedKey: ?replacedOn?.wire,
+        }),
       );
 
   @override
@@ -268,20 +331,22 @@ class ForgeRequestGuardInterceptor extends Interceptor {
   /// Decides per request.
   final ForgeRequestGuard guard;
 
+  /// [request]'s decoded JSON body, or null when it has none.
+  static Object? jsonBodyOf(HttpRequest request) => switch (request.body) {
+    HttpBodyJson(:final json) => json,
+    HttpBodyText(:final text) => _tryDecode(text),
+    _ => null,
+  };
+
   @override
   Future<InterceptorResult<HttpRequest>> beforeRequest(
     HttpRequest request,
   ) async {
-    final body = request.body;
     final reason = guard(
       forge,
       request.method.value,
       request.url,
-      switch (body) {
-        HttpBodyJson(:final json) => json,
-        HttpBodyText(:final text) => _tryDecode(text),
-        _ => null,
-      },
+      jsonBodyOf(request),
     );
     if (reason != null) {
       throw ForgeRequestRefused(request, reason);

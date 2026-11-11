@@ -2,7 +2,7 @@
 title: Eventos de domínio
 description: Por que as features se comunicam por um barramento de eventos em processo em vez de importar umas às outras, para que o barramento é — e para que não é — a fonte da verdade, e quais eventos podem de fato impulsionar a automação.
 slug: pt-BR/manual/conceitos/eventos-de-dominio
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## O que é um evento de domínio
@@ -36,9 +36,7 @@ requests, tickets ou reuniões. A observabilidade agrega resultados de execuçã
 sem alcançar o despacho.
 
 O custo é o de sempre: um publicador não consegue saber se alguém está
-escutando, e um ouvinte que nunca é construído fica silenciosamente inerte. O
-`TicketRemoteSyncHandler` é o exemplo permanente: ele é declarado, coberto por
-testes e nunca é conectado em produção.
+escutando, e um ouvinte que nunca é construído fica silenciosamente inerte.
 
 ## O que o barramento não é
 

@@ -52,6 +52,16 @@ final chatProvidersProvider = FutureProvider<List<ChatProviderView>>((
   return ref.watch(chatClientProvider).listProviders(workspaceId);
 });
 
+/// The [chatProvidersProvider] entries this workspace has connected: the only
+/// ones a member can link their own account on. Empty until the list arrives.
+final connectedChatProvidersProvider = Provider<List<ChatProviderView>>(
+  (ref) => [
+    for (final view
+        in ref.watch(chatProvidersProvider).value ?? const <ChatProviderView>[])
+      if (view.status.isConnected) view,
+  ],
+);
+
 /// The workspace's chat↔Control Center identity links (the settings roster).
 ///
 /// One roster across providers: a member's Slack and Discord links are two rows

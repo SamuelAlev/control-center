@@ -2,7 +2,7 @@
 title: Stații
 description: Fiecare suprafață de stație, backend, verb de acțiune, stare din ciclul de viață, port, valoare implicită și contract — catalogul factual complet.
 slug: ro-RO/manual/referinta/statii
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Doar fapte. Pentru modelul din spatele lor, citește [Stații și medii
@@ -226,8 +226,10 @@ fișiere, shell al gazdei sau rețea izolată.
 
 | Instrument | Descriere |
 | --- | --- |
-| `rig_list` | Listează stațiile unui spațiu de lucru cu suprafață, stare, afișaj și controlor |
+| `rig_list` | Listează stațiile spațiului rulării cu suprafață, stare, afișaj și controlor |
 | `rig_close` | Distruge o stație și elimină discul ei |
+
+Aceste instrumente, ca și cele patru instrumente use, sunt doar pentru rulările de agent; orice alt apelant este refuzat. O rulare ajunge doar la stațiile spațiului pentru care a fost închiriată: `space_id` vine din grantul rulării, niciodată din apel. O stație a altui spațiu, sau a niciunui spațiu, răspunde exact ca una inexistentă.
 
 ## Ciclul de viață
 
@@ -334,7 +336,7 @@ niciodată o setare de spațiu de lucru.
   de rută pe care o fac deja cadrele stației și audio-ul ședințelor.
 - **Autentificarea** este ținta semnată `rig-files:<workspaceId>/<rigId>`
   plus calitatea de membru al spațiului de lucru — o țintă proprie, așa că un
-  URL emis pentru a *privi* o mașină nu poate scrie și fișiere în ea.
+  URL emis pentru a *privi* o mașină nu poate scrie și fișiere în ea. Pentru o stație deschisă într-un spațiu, citirea clipboardului sau a unui fișier necesită și drept de citire asupra acelui spațiu, iar scrierea în clipboard sau depunerea de fișiere necesită un drept de scriere asupra depozitelor sale. La o stație care poartă autentificările proprii ale unei persoane, ambele canale, inclusiv citirea, sunt doar ale acelei persoane. Vezi [Cine poate privi și cine poate conduce](/ro-RO/manual/ghiduri-practice/foloseste-statii/#cine-poate-privi-și-cine-poate-conduce).
 - **Preluarea controlului se aplică.** Scrierea în clipboard și depunerea de
   fișiere modifică starea și sunt refuzate cât timp altcineva deține
   controlul; citirea clipboardului și extragerea unui fișier sunt observare și

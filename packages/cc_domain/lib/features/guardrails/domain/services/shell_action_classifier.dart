@@ -207,6 +207,10 @@ class ShellActionClassifier {
     );
   }
 
+  static final RegExp _issueEndpoint = RegExp(
+    r'^/?repos/[^/]+/[^/]+/issues(?:/[^?]*)?/?(?:\?.*)?$',
+  );
+
   static final RegExp _prEndpoint = RegExp(
     r'^/?repos/[^/]+/[^/]+/pulls(?:/([^?]+))?/?(?:\?.*)?$',
   );
@@ -278,6 +282,12 @@ class ShellActionClassifier {
       method = 'POST';
     }
     if (const {'GET', 'HEAD', 'OPTIONS'}.contains(method)) {
+      return;
+    }
+    if (_issueEndpoint.hasMatch(endpoint)) {
+      // Comments, labels, edits and locks on issues and pull request
+      // conversations, like `gh issue comment`.
+      classes.add(ActionClass.vendorSyncWrite);
       return;
     }
     final match = _prEndpoint.firstMatch(endpoint);

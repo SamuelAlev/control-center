@@ -8,8 +8,6 @@ import 'package:cc_domain/features/messaging/domain/repositories/conversation_re
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
-export 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
-
 /// Closes a question nobody answered: a CONDITIONAL write that only lands
 /// while the question is still unanswered (`answered != 1`), returning
 /// whether it did. Production binds the DAO's `expireQuestion`.

@@ -5,9 +5,10 @@
 //! machinery) would be exported from the dylib. That matters for two reasons:
 //!
 //! 1. **Interposition.** On Linux the dynamic loader resolves symbols globally
-//!    and first-loaded-wins. During the migration the old `libonnxruntime.so`
-//!    can still be present in the same process; two ONNX Runtimes exporting the
-//!    same symbols is exactly the class of bug this whole change removes.
+//!    and first-loaded-wins. Any other library in the process that carries its
+//!    own ONNX Runtime would otherwise bind to ours (or we to it); two ONNX
+//!    Runtimes exporting the same symbols is exactly the class of bug the single
+//!    statically linked runtime exists to prevent.
 //! 2. **Honest surface.** The dylib's exported set becomes precisely the
 //!    contract in `cc_inference.h`, so `nm` in build_inference.sh can assert it.
 //!

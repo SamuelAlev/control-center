@@ -1,16 +1,15 @@
 /// Canonical, vendor-neutral lifecycle status for a ticket.
 ///
-/// This superset absorbs the five legacy `TaskStatus` states (the pipeline
-/// engine relies on the [isTerminal] / success-vs-failure distinction to
-/// resume suspended steps) and adds the richer states a tracker needs
-/// (backlog / blocked / inReview). A remote provider's native state name is
+/// The pipeline engine relies on the [isTerminal] / success-vs-failure
+/// distinction to resume suspended steps; the richer states (backlog /
+/// blocked / inReview) are what a tracker needs. A remote provider's native state name is
 /// preserved separately in `Ticket.rawStatus`; the normalization tables that
 /// map native names to this enum live inside each adapter, not here.
 enum TicketStatus {
   /// Captured but not yet triaged into the active queue.
   backlog,
 
-  /// Triaged and ready to be worked, but not started. Legacy `pending`.
+  /// Triaged and ready to be worked, but not started.
   open,
 
   /// Actively being worked.
@@ -22,7 +21,7 @@ enum TicketStatus {
   /// Work done, awaiting review.
   inReview,
 
-  /// Finished successfully. Legacy `completed`.
+  /// Finished successfully.
   done,
 
   /// Finished with an error (Control-Center / pipeline path only).
@@ -31,10 +30,8 @@ enum TicketStatus {
   /// Abandoned.
   cancelled;
 
-  /// Whether this is a terminal state (no further work expected).
-  ///
-  /// Identical predicate to the legacy `TaskStatus.isTerminal`, so the
-  /// pipeline resume listener keeps working unchanged.
+  /// Whether this is a terminal state (no further work expected). The
+  /// pipeline resume listener keys off it.
   bool get isTerminal =>
       this == TicketStatus.done ||
       this == TicketStatus.failed ||

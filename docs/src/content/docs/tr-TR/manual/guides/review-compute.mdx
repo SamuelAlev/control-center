@@ -2,7 +2,7 @@
 title: İnceleme hesaplaması (kohortlar, eksenler ve deterministik diff'ler)
 description: İnceleme hesaplama geçişinin sunucu tarafında ürettikleri — kohortlar, API sözleşmesi ve görsel diff'ler, eksen başına kapılar — ve bunun İncele sekmesine nasıl bağlandığı.
 slug: tr-TR/kilavuz/nasil-yapilir/inceleme-hesaplamasi
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 PR'ın **İncele** sekmesi, inceleme pipeline'ı çalışırken onun canlı
@@ -15,8 +15,6 @@ Bu sekmenin arkasında `cc_server` dosya kohortları oluşturur, deterministik
 eksenleri çalıştırır ve bunları `review_studio.*` RPC işlemleri üzerinden sunar
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` ve bunların `watch*` ikizleri).
-Hâlâ `pr.reviewStudio` adını taşıyan kalıcı bir düzen, aynı **İncele** sekmesini
-açar.
 
 **İncele** sekmesinde:
 
@@ -87,6 +85,13 @@ değiştiriyorsa, hesaplama geçişi değişen bileşenleri PR'ın base ve head 
 ağaçlarında headless bir `flutter test` golden geçişiyle öncesi ve sonrası
 olarak render eder, ardından piksellerin diff'ini alır.
 
+Bu testler pull request'in kendi kodu olduğundan, bir ajanın araç süreci gibi
+çalışır: sunucu ajanları sandbox'ta çalıştırıyorsa sandbox içinde, sunucu sahibi
+sandbox'ı kapattıysa sınırsız, sandbox yoksa yalnızca sunucu sahibinin sorumlu
+olduğu bir istek için çalışır. Başkaları için eksen, "Bu sunucuda sandbox yok ve
+bir PR'ın testlerini sandbox'sız yalnızca sahibi çalıştırabilir" gerekçesiyle
+**Kullanılamıyor** olarak bildirir.
+
 :::note[Bunun için sunucu ana makinesinde bir Flutter SDK gerekir]
 Saf Dart sunucusu Flutter widget'larını süreç içinde render edemez; bu yüzden
 `flutter test`'i ayrı bir süreç olarak çalıştırır. SDK, `cc_server`'ı çalıştıran
@@ -97,9 +102,10 @@ geçişi asla bildirmez.
 
 **changed** ya da **removed** olarak işaretlenen anlık görüntüler onaylanana
 kadar görsel kapıyı tutar; **unchanged**, **added** ve **approved** anlık
-görüntüler kapıyı açar. Kullanılamamanın dört nedeni vardır: sunucu ana
+görüntüler kapıyı açar. Kullanılamamanın beş nedeni vardır: sunucu ana
 makinesinde Flutter SDK olmaması, depoda Widgetbook uygulaması olmaması, golden
-ile test edilebilir kullanım senaryosu olmaması ya da bir golden harness hatası.
+ile test edilebilir kullanım senaryosu olmaması, bir golden harness hatası ya da
+sunucu sahibinin sorumlu olmadığı bir istek için sandbox olmaması.
 
 Amaçlanan bir değişikliği onaylamak `review_studio.approveVisual` işlemidir.
 

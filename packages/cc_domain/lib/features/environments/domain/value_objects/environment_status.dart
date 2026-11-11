@@ -17,6 +17,11 @@ enum EnvironmentStatus {
   /// A component failed.
   failed,
 
+  /// A start stopped for something only a person can do: an answer at a
+  /// terminal, a sign-in, a dependency that isn't there. Nothing is broken,
+  /// and the next start picks up where this one stopped.
+  blocked,
+
   /// Stopped. Start brings it back.
   stopped,
 
@@ -46,6 +51,10 @@ enum EnvironmentStatus {
   /// Whether anything is expected to be running.
   bool get isRunning => this == ready || this == degraded || this == starting;
 
+  /// Whether it stays as it is until someone acts: it broke, or it waits for
+  /// a person. Either way the row says why, and no report replaces that.
+  bool get needsAttention => this == failed || this == blocked;
+
   /// Whether a row in this state may be written as [next].
   ///
   /// The table is the lifecycle's one statement of order, enforced where
@@ -62,7 +71,7 @@ enum EnvironmentStatus {
       destroying => next == failed || next == gone,
       stopping => next != ready && next != degraded,
       stopped || gone => next != ready && next != degraded,
-      creating || starting || ready || degraded || failed => true,
+      creating || starting || ready || degraded || failed || blocked => true,
     };
   }
 }
@@ -208,6 +217,44 @@ class EnvironmentEndpoint {
   int get hashCode => Object.hash(role, label, url, hostPort, primary);
 }
 
+/// What a failure is waiting on a person for.
+///
+/// Read from the exit-code contract every command of a definition shares, so
+/// "is this broken, or does it need someone" is decided once, here.
+enum EnvironmentBlocker {
+  /// Exit 3: the command needs an answer and had no terminal to ask on, such
+  /// as a password for `sudo`. Run on a terminal, it asks for itself.
+  input(3),
+
+  /// Exit 4: a sign-in ran out. Renewing it is another command, which the
+  /// tool names.
+  authentication(4),
+
+  /// Exit 5: something it depends on isn't there, such as a container runtime
+  /// that isn't running.
+  dependency(5);
+
+  const EnvironmentBlocker(this.exitCode);
+
+  /// The exit code that reports it.
+  final int exitCode;
+
+  /// The blocker [exitCode] reports, or null for any other code.
+  static EnvironmentBlocker? ofExitCode(int? exitCode) {
+    for (final blocker in values) {
+      if (blocker.exitCode == exitCode) {
+        return blocker;
+      }
+    }
+    return null;
+  }
+
+  /// Whether the command clears it itself when run on a terminal: it asks, a
+  /// person answers. A sign-in or a missing dependency is fixed somewhere
+  /// else, so a tool that can sign in from its own prompt reports [input].
+  bool get answersOnTerminal => this == input;
+}
+
 /// A structured failure from a tool.
 class EnvironmentError {
   /// Creates an [EnvironmentError].
@@ -217,6 +264,7 @@ class EnvironmentError {
     this.hint,
     this.command,
     this.exitCode,
+    this.output,
   });
 
   /// Parses an error, or null when [json] isn't one.
@@ -230,6 +278,7 @@ class EnvironmentError {
       hint: json['hint'] is String ? json['hint'] as String : null,
       command: json['command'] is String ? json['command'] as String : null,
       exitCode: json['exitCode'] is int ? json['exitCode'] as int : null,
+      output: json['output'] is String ? json['output'] as String : null,
     );
   }
 
@@ -248,8 +297,13 @@ class EnvironmentError {
   /// The process exit code, when there was one.
   final int? exitCode;
 
-  /// Whether a person has to do something on the host (exit 3).
-  bool get needsHostSetup => exitCode == 3;
+  /// The last lines the command printed before it failed, when [message] is
+  /// the tool's own summary. That summary often names only what gave up
+  /// ("compose exited 1"); the reason is in the lines above it.
+  final String? output;
+
+  /// What this waits on a person for, or null for a plain failure.
+  EnvironmentBlocker? get blocker => EnvironmentBlocker.ofExitCode(exitCode);
 
   /// Wire form.
   Map<String, dynamic> toJson() => {
@@ -258,6 +312,7 @@ class EnvironmentError {
     if (hint != null) 'hint': hint,
     if (command != null) 'command': command,
     if (exitCode != null) 'exitCode': exitCode,
+    if (output != null) 'output': output,
   };
 
   @override
@@ -267,45 +322,115 @@ class EnvironmentError {
       other.message == message &&
       other.hint == hint &&
       other.command == command &&
-      other.exitCode == exitCode;
+      other.exitCode == exitCode &&
+      other.output == output;
 
   @override
-  int get hashCode => Object.hash(code, message, hint, command, exitCode);
+  int get hashCode =>
+      Object.hash(code, message, hint, command, exitCode, output);
+}
+
+/// Where one step of a start stands.
+enum EnvironmentStepState {
+  /// Not reached yet.
+  pending,
+
+  /// Under way.
+  running,
+
+  /// Finished.
+  done,
+
+  /// Failed.
+  failed;
+
+  /// Reads the state a tool wrote. Tools name the same thing differently, so
+  /// the common spellings all count. A step announced with no state is the
+  /// one under way; a word nobody knows has not started.
+  static EnvironmentStepState parse(String? wire) => switch (wire) {
+    'done' || 'ok' || 'ready' || 'completed' || 'succeeded' => done,
+    'failed' || 'error' || 'crashed' => failed,
+    null || 'running' || 'start' || 'started' || 'starting' => running,
+    _ => pending,
+  };
 }
 
 /// One line of progress from stderr.
 class EnvironmentProgress {
   /// Creates an [EnvironmentProgress].
-  const EnvironmentProgress({required this.type, this.label, this.state});
+  const EnvironmentProgress({
+    required this.type,
+    this.id,
+    this.label,
+    this.state,
+    this.level,
+  });
 
-  /// Parses a stderr line, or null when it is plain log output.
-  static EnvironmentProgress? tryParseLine(String line) {
-    final text = line.trim();
-    if (!text.startsWith('{')) {
-      return null;
-    }
-    final Object? json;
-    try {
-      json = jsonDecode(text);
-    } on FormatException {
-      return null;
-    }
-    if (json is! Map || json['type'] is! String) {
-      return null;
-    }
-    final type = json['type'] as String;
-    if (type != 'step' && type != 'note') {
+  /// Parses the stored form of a step ([toJson]), or null when it isn't one.
+  static EnvironmentProgress? tryFromJson(Object? json) {
+    if (json is! Map || json['label'] is! String) {
       return null;
     }
     return EnvironmentProgress(
-      type: type,
-      label: (json['label'] ?? json['message']) as String?,
-      state: json['state'] as String?,
+      type: 'step',
+      id: json['id'] is String ? json['id'] as String : null,
+      label: json['label'] as String,
+      state: json['state'] is String ? json['state'] as String : null,
     );
   }
 
-  /// `step` or `note`.
+  /// Parses a stderr line, or null when it is plain log output.
+  static EnvironmentProgress? tryParseLine(String line) {
+    final trimmed = line.trim();
+    if (!trimmed.startsWith('{')) {
+      return null;
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(trimmed);
+    } on FormatException {
+      return null;
+    }
+    if (decoded is! Map) {
+      return null;
+    }
+    final json = decoded;
+    String? text(String key) {
+      final value = json[key];
+      return value is String ? value : null;
+    }
+
+    final type = text('type');
+    if (type == 'log') {
+      final line = text('line');
+      return line == null
+          ? null
+          : EnvironmentProgress(type: 'log', label: line);
+    }
+    if (type != 'step' && type != 'note') {
+      return null;
+    }
+    // A counter is as good a name as a word: `1` and `"1"` are one step.
+    final id = json['id'];
+    return EnvironmentProgress(
+      type: type!,
+      id: id is String
+          ? id
+          : id is num
+          ? '$id'
+          : null,
+      label: text('label') ?? text('message'),
+      state: text('state'),
+      level: text('level'),
+    );
+  }
+
+  /// `step`, `note`, or `log` for a line of output the tool wrapped in JSON.
   final String type;
+
+  /// A step's stable name. A step that reports again under the same id
+  /// replaces what it said before, so its label can change as it goes.
+  final String? id;
 
   /// What to show.
   final String? label;
@@ -313,15 +438,65 @@ class EnvironmentProgress {
   /// A step's state.
   final String? state;
 
+  /// A note's weight: `warn` stays on the environment, anything else is log
+  /// output.
+  final String? level;
+
+  /// What tells one step from another: its [id], or its [label] without one.
+  String? get key => id ?? label;
+
+  /// Whether this is a step that can be told from the others.
+  bool get isStep => type == 'step' && key != null;
+
+  /// Whether this is a line of output, to be read as if it were not JSON.
+  bool get isLog => type == 'log';
+
+  /// Where a step stands.
+  EnvironmentStepState get stepState => EnvironmentStepState.parse(state);
+
+  /// This step, over: nothing reports for it any more.
+  EnvironmentProgress ended({required bool failed}) => EnvironmentProgress(
+    type: type,
+    id: id,
+    label: label,
+    state: failed ? 'failed' : 'done',
+    level: level,
+  );
+
+  /// Whether this is a note worth keeping in sight.
+  bool get isWarning =>
+      type == 'note' &&
+      label != null &&
+      (level == 'warn' || level == 'warning');
+
+  /// The line this reads as in a log.
+  String get logLine {
+    final text = label ?? '';
+    if (isLog) {
+      return text;
+    }
+    final suffix = state == null || state == 'running' ? '' : ' ($state)';
+    return '[$type] $text$suffix';
+  }
+
+  /// A step's stored form.
+  Map<String, dynamic> toJson() => {
+    if (id != null) 'id': id,
+    if (label != null) 'label': label,
+    if (state != null) 'state': state,
+  };
+
   @override
   bool operator ==(Object other) =>
       other is EnvironmentProgress &&
       other.type == type &&
+      other.id == id &&
       other.label == label &&
-      other.state == state;
+      other.state == state &&
+      other.level == level;
 
   @override
-  int get hashCode => Object.hash(type, label, state);
+  int get hashCode => Object.hash(type, id, label, state, level);
 }
 
 /// What a tool says about an environment, in CC's terms.

@@ -43,20 +43,39 @@ void main() {
         ListTicketsTool(repository: tickets),
         GetTicketTool(repository: tickets),
         ListAgentsTool(repository: _Agents()),
-        ListSpacesTool(repository: messages),
-        GetSpaceMessagesTool(repository: messages),
+        ListSpacesTool(repository: messages, hiddenSpaces: _noHiddenSpaces),
+        GetSpaceMessagesTool(
+          repository: messages,
+          hiddenSpaces: _noHiddenSpaces,
+        ),
         UpdateTicketTool(service: workflow, repository: tickets),
         AssignTicketTool(service: workflow),
         SendSpaceMessageTool(repository: messages),
       ]);
 
       for (final name in RemoteToolPolicy.readOnly) {
-        expect(registry.resolve(name)?.isMutating, isFalse, reason: name);
+        expect(
+          registry.resolve(name, includePersonal: false)?.isMutating,
+          isFalse,
+          reason: name,
+        );
       }
       for (final name in RemoteToolPolicy.mutating) {
-        expect(registry.resolve(name)?.isMutating, isTrue, reason: name);
+        expect(
+          registry.resolve(name, includePersonal: false)?.isMutating,
+          isTrue,
+          reason: name,
+        );
       }
-      expect(registry.resolve('nonexistent')?.isMutating, isNull);
+      expect(
+        registry.resolve('nonexistent', includePersonal: false)?.isMutating,
+        isNull,
+      );
     },
   );
 }
+
+Future<Set<String>> _noHiddenSpaces({
+  required String workspaceId,
+  required String? callerConversationId,
+}) async => const {};

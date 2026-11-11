@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
@@ -15,44 +14,13 @@ class LspServerConfig {
     this.initOptions,
     this.settings,
     this.isLinter = false,
-    this.disabled = false,
   });
-
-  /// Builds a config from a user override map, layered over [base] when the
-  /// name matches a built-in (so an override can set one field without
-  /// restating the command).
-  factory LspServerConfig.fromJson(
-    String name,
-    Map<String, dynamic> json, {
-    LspServerConfig? base,
-  }) => LspServerConfig(
-    name: name,
-    command: json['command'] as String? ?? base?.command ?? '',
-    args: (json['args'] as List?)?.map((e) => '$e').toList() ??
-        base?.args ??
-        const [],
-    fileTypes:
-        (json['fileTypes'] as List?)?.map((e) => '$e').toList() ??
-        base?.fileTypes ??
-        const [],
-    rootMarkers:
-        (json['rootMarkers'] as List?)?.map((e) => '$e').toList() ??
-        base?.rootMarkers ??
-        const [],
-    initOptions:
-        (json['initOptions'] as Map?)?.cast<String, dynamic>() ??
-        base?.initOptions,
-    settings:
-        (json['settings'] as Map?)?.cast<String, dynamic>() ?? base?.settings,
-    isLinter: json['isLinter'] as bool? ?? base?.isLinter ?? false,
-    disabled: json['disabled'] as bool? ?? base?.disabled ?? false,
-  );
 
   /// Stable identifier, e.g. `dartls`.
   final String name;
 
-  /// Binary name (resolved through project-local bins then `PATH`) or an
-  /// absolute path.
+  /// Binary name (resolved through project-local bins, for a sandboxed run
+  /// only, then `PATH`) or an absolute path.
   final String command;
 
   /// Arguments passed to the binary.
@@ -79,8 +47,6 @@ class LspServerConfig {
   /// Linters are queried for diagnostics and excluded from everything else.
   final bool isLinter;
 
-  /// Never start this server.
-  final bool disabled;
 
   /// Whether this server claims [path] by extension.
   bool handles(String path) {
@@ -172,7 +138,9 @@ const List<LspServerConfig> builtinLspServers = [
 ///
 /// A repo that pins its own toolchain (a `node_modules/.bin/tsserver`, a
 /// `.venv/bin/ruff`) means a version-specific server, and the globally
-/// installed one may not even understand its config. Local wins.
+/// installed one may not even understand its config. Local wins, but only
+/// when the server runs inside the run's sandbox: a binary the repository
+/// put there is the repository's program, and it never runs unconfined.
 const List<String> projectLocalBinDirs = [
   'node_modules/.bin',
   '.venv/bin',
@@ -191,38 +159,26 @@ const List<String> projectLocalBinDirs = [
 ///    the model reads as "this language has no definitions".
 ///
 /// The result is that the common case needs no configuration at all, and an
-/// uninstalled server is silently absent rather than loudly broken.
-///
-/// [overrides] layer user config over the built-ins by name. Supplying any
-/// server override switches OFF auto-detection for servers not mentioned —
-/// matching the principle that an explicit list is a decision, not a hint.
+/// uninstalled server is silently absent rather than loudly broken. The
+/// server list is the built-in one; a repository cannot name a command.
+/// [projectLocalBins] is whether [projectLocalBinDirs] may supply a binary.
 List<LspServerConfig> detectLspServers({
   required String projectRoot,
-  Map<String, Map<String, dynamic>> overrides = const {},
+  required bool projectLocalBins,
   bool Function(String command)? binaryResolver,
 }) {
   final resolve =
-      binaryResolver ?? (cmd) => resolveServerBinary(cmd, projectRoot) != null;
-  final byName = {for (final s in builtinLspServers) s.name: s};
-  final merged = <String, LspServerConfig>{...byName};
-  for (final entry in overrides.entries) {
-    merged[entry.key] = LspServerConfig.fromJson(
-      entry.key,
-      entry.value,
-      base: byName[entry.key],
-    );
-  }
-  // With explicit overrides, only the named servers are candidates. Without
-  // them, everything built-in is.
-  final candidates = overrides.isEmpty
-      ? merged.values
-      : merged.values.where((s) => overrides.containsKey(s.name));
-
+      binaryResolver ??
+      (cmd) =>
+          resolveServerBinary(
+            cmd,
+            projectRoot,
+            projectLocalBins: projectLocalBins,
+          ) !=
+          null;
   return [
-    for (final server in candidates)
-      if (!server.disabled &&
-          server.command.isNotEmpty &&
-          _hasRootMarker(projectRoot, server.rootMarkers) &&
+    for (final server in builtinLspServers)
+      if (_hasRootMarker(projectRoot, server.rootMarkers) &&
           resolve(server.command))
         server,
   ];
@@ -239,13 +195,18 @@ bool _hasRootMarker(String projectRoot, List<String> markers) {
 }
 
 /// Resolves [command] to an executable path, checking project-local bin
-/// directories before `$PATH`. Returns null when it cannot be found.
-String? resolveServerBinary(String command, String projectRoot) {
+/// directories (with [projectLocalBins]) before `$PATH`. Returns null when it
+/// cannot be found.
+String? resolveServerBinary(
+  String command,
+  String projectRoot, {
+  required bool projectLocalBins,
+}) {
   if (command.contains(p.separator)) {
     final file = File(command);
     return file.existsSync() ? command : null;
   }
-  for (final dir in projectLocalBinDirs) {
+  for (final dir in projectLocalBins ? projectLocalBinDirs : const <String>[]) {
     final candidate = p.join(projectRoot, dir, command);
     if (File(candidate).existsSync()) {
       return candidate;
@@ -268,46 +229,4 @@ String? resolveServerBinary(String command, String projectRoot) {
     }
   }
   return null;
-}
-
-/// Reads per-project LSP overrides from the first config file that exists.
-///
-/// Mirrors where the rest of the agent config already lives, so a repo that
-/// configures skills and hooks in `.agents/` configures its language servers
-/// there too rather than in a fifth convention.
-Map<String, Map<String, dynamic>> loadLspOverrides(String projectRoot) {
-  const candidates = [
-    '.agents/lsp.json',
-    '.omp/lsp.json',
-    '.claude/lsp.json',
-    'lsp.json',
-    '.lsp.json',
-  ];
-  for (final relative in candidates) {
-    final file = File(p.join(projectRoot, relative));
-    if (!file.existsSync()) {
-      continue;
-    }
-    try {
-      final decoded = jsonDecode(file.readAsStringSync());
-      if (decoded is! Map) {
-        continue;
-      }
-      // Both shapes are accepted: a `servers` wrapper and a flat map. A config
-      // that only sets a non-server key must NOT disable auto-detection, so
-      // non-map values are skipped rather than treated as overrides.
-      final raw = decoded['servers'] is Map ? decoded['servers'] as Map : decoded;
-      return {
-        for (final entry in raw.entries)
-          if (entry.value is Map)
-            '${entry.key}': (entry.value as Map).cast<String, dynamic>(),
-      };
-    } on Object {
-      // A malformed config falls back to auto-detection rather than failing
-      // the run: no language server is a degraded agent, but a crashed
-      // dispatch is a broken one.
-      return const {};
-    }
-  }
-  return const {};
 }

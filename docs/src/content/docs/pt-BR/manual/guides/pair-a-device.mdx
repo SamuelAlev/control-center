@@ -2,7 +2,7 @@
 title: Emparelhar um dispositivo
 description: Emparelhe seu telefone (ou um segundo navegador ou app de desktop) com o seu servidor do Control Center para acompanhar a frota remotamente.
 slug: pt-BR/manual/guias/emparelhar-dispositivo
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Este guia mostra como emparelhar um telefone com o Control Center, para você ler
@@ -63,8 +63,7 @@ ativo a partir do momento em que é criado e a verificação de conexão confere
 apenas se a credencial está ativa e não expirou. Trate o QR e a chave de
 emparelhamento como uma senha e revogue tudo o que você não pretendia entregar.
 Tanto as sessões de cliente diretas como as que passam pelo relay exigem
-criptografia de ponta a ponta; clientes mais antigos não podem recorrer a RPC em
-texto claro.
+criptografia de ponta a ponta; não existe RPC em texto claro.
 :::
 
 ## Gerenciar dispositivos emparelhados
@@ -79,9 +78,7 @@ irreversível do ponto de vista do dispositivo.
 
 As credenciais emitidas neste painel têm prazo limitado: elas expiram 30 dias
 após a emissão e, depois disso, a verificação de conexão passa a rejeitá-las. Uma
-credencial emitida com `cc_server pair` na linha de comando **não tem validade
-alguma** — revogue-a manualmente quando a máquina para a qual ela servia for
-aposentada.
+credencial emitida com `cc_server pair` na linha de comando expira da mesma forma; execute `pair` de novo para emitir uma nova, e revogue-a manualmente quando a máquina para a qual ela servia for aposentada.
 
 ## Trocar de espaço de trabalho pelo telefone
 

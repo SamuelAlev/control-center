@@ -63,9 +63,9 @@ void main() {
         ForgeHost.github,
         const ProviderToken(accessToken: 'secret'),
       );
-      final raw = jsonDecode(
-        File('${dir.path}/secrets.json').readAsStringSync(),
-      ) as Map;
+      final raw =
+          jsonDecode(File('${dir.path}/secrets.json').readAsStringSync())
+              as Map;
       expect(raw.keys.single, 'user_forge_github_$alice');
     });
 
@@ -115,20 +115,22 @@ void main() {
       expect(stored.accountLogin, 'octocat');
     });
 
-    test('an empty token clears rather than storing an empty credential',
-        () async {
-      await store.setForgeToken(
-        alice,
-        ForgeHost.github,
-        const ProviderToken(accessToken: 'x'),
-      );
-      await store.setForgeToken(
-        alice,
-        ForgeHost.github,
-        const ProviderToken(accessToken: ''),
-      );
-      expect(await store.forgeToken(alice, ForgeHost.github), isNull);
-    });
+    test(
+      'an empty token clears rather than storing an empty credential',
+      () async {
+        await store.setForgeToken(
+          alice,
+          ForgeHost.github,
+          const ProviderToken(accessToken: 'x'),
+        );
+        await store.setForgeToken(
+          alice,
+          ForgeHost.github,
+          const ProviderToken(accessToken: ''),
+        );
+        expect(await store.forgeToken(alice, ForgeHost.github), isNull);
+      },
+    );
 
     test('a corrupt entry reads as no credential, never as one', () async {
       await secrets.writePsk('user_forge_github_$alice', '{not json');
@@ -195,7 +197,7 @@ void main() {
           alice,
           workspaceId: 'ws-a',
         ),
-        'user_forge_github_${alice}_ws-a',
+        'workspace_forge_github:ws-a:$alice',
       );
     });
   });

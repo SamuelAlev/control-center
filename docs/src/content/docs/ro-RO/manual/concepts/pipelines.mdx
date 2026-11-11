@@ -2,7 +2,7 @@
 title: Pipeline-uri și automatizare
 description: De ce pipeline-urile separă programarea de muncă, ce anume pornește una și care dintre șabloanele incluse sunt active din start.
 slug: ro-RO/manual/concepte/pipeline-uri
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipeline-urile sunt jumătatea deterministă a Control Center. Un agent decide ce
@@ -35,7 +35,7 @@ pentru că reluarea ar fi mai rea decât oprirea:
   `extras['awaitApproval'] == true` — aceea este poarta de aprobare parțială
   `orchestration.awaitApproval`. `human.gate` nu face excepție.
 - Un pas declarat `extras: {'idempotent': false}` care era în curs când serverul
-  s-a oprit poate să fi aplicat deja efectul secundar (un squash merge, o
+  s-a oprit poate să fi aplicat deja efectul secundar (un backup al spațiului de lucru, o
   curățare de worktree). Reluarea lui ar putea aplica efectul de două ori, așa
   că motorul îl marchează ca eșuat și îți lasă reluarea ție.
 
@@ -141,8 +141,24 @@ fără el, iar asta nu a fost niciodată menită să fie o alegere a utilizatoru
 Încă o asimetrie de știut: șablonul inclus `pr_review` nu mai postează deliberat
 pe GitHub. Publicarea unei revizuiri este un pas separat, condiționat de
 utilizator, iar un pipeline care ar posta direct ar publica de două ori.
-`cross_review`, `ticket_to_pr` și `pr_triage` postează totuși un comentariu
-direct pe GitHub când rulează.
+`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` și
+`external_pr_welcome` postează totuși un comentariu pe GitHub când rulează.
+
+Ele postează de pe server, prin pasul **Post PR comment** (`prReview.comment`),
+niciodată dintr-un script de shell: pașii shell ai unui pipeline și sandbox-urile
+agenților au un token GitHub care doar citește. Aceeași regulă modelează restul:
+
+- `external_pr_welcome` postează salutul ca `message` al acelui pas.
+- `ticket_to_pr` îl face pe agentul programator să împingă `agent/<ticket_id>`
+  (prin gateway-ul de rulări) și să deschidă PR-ul ciornă cu `open_pull_request`,
+  cu contul GitHub al celui care a pornit rularea, sau ca bot când nu a pornit-o
+  nimeni. Ambele trec prin regulile spațiului de lucru **Push către un remote** și
+  **Deschide un pull request**. Pe Control Center Connect, o rulare pe care nimeni
+  nu a solicitat-o, precum una pornită de `TicketAssigned`, nu poate face push sau
+  deschide PR-ul: botul aplicației partajate doar citește și comentează.
+- `pre_merge_gate` nu face niciodată merge. Aprobarea la poarta lui postează că
+  PR-ul este gata ca un maintainer să îl îmbine; respingerea postează că sunt
+  cerute modificări. Un om face merge din pagina PR-ului.
 
 ## Ce știe motorul
 

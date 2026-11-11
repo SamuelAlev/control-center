@@ -193,11 +193,13 @@ void main() {
     });
 
     group('agent_awaiting_input', () {
-      AppNotification? map(Map<String, dynamic> extra) => mapNotificationFrame(
-        'notifications/agent_awaiting_input',
-        {'workspace_id': 'ws-1', 'summary': 'Push to main', ...extra},
-        l10n: l10n,
-      );
+      AppNotification? map(Map<String, dynamic> extra) =>
+          mapNotificationFrame('notifications/agent_awaiting_input', {
+            'workspace_id': 'ws-1',
+            'summary': 'Push to main',
+            'wait_id': 'w-0',
+            ...extra,
+          }, l10n: l10n);
 
       test('names the agent and the kind of wait', () {
         expect(
@@ -259,9 +261,8 @@ void main() {
         expect(unknown.approvable, isFalse);
       });
 
-      test('an older server without a wait id still notifies, plainly', () {
-        final n = map({'kind': 'approval'})!;
-        expect(n.wait, isNull);
+      test('a frame without a wait id is not a wait and is dropped', () {
+        expect(map({'kind': 'approval', 'wait_id': null}), isNull);
       });
     });
 
@@ -546,8 +547,13 @@ void main() {
     test('a frame naming no repository is never muted', () {
       expect(
         mapNotificationFrame(
-          'notifications/agent_run_completed',
-          const {'conversation_id': 'c-1', 'workspace_id': 'ws-1'},
+          'notifications/agent_awaiting_input',
+          const {
+            'workspace_id': 'ws-1',
+            'space_id': 'space-1',
+            'wait_id': 'w-1',
+            'kind': 'approval',
+          },
           l10n: l10n,
           mutedRepos: {'acme/widgets'},
         ),

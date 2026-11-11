@@ -145,7 +145,7 @@ class BuildConversationContextUseCase {
     final verbatimCandidates = <Message>[];
 
     for (final m in allMessages) {
-      if (history == null && m.isContextSummary) {
+      if (history == null && m.isCompaction) {
         summaries.add(m);
         continue;
       }

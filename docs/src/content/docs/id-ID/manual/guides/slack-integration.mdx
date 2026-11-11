@@ -2,7 +2,7 @@
 title: Siapkan integrasi Slack
 description: Hubungkan Slack ke ruang kerja Control Center, melalui app bersama Control Center atau salah satu app milik Anda, agar anggota dapat menjalankan agen dari Slack.
 slug: id-ID/panduan-pengguna/panduan-praktis/integrasi-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Panduan ini menunjukkan cara menghubungkan Slack ke ruang kerja Control Center: dengan menambahkan app bersama Control Center, atau dengan app milik Anda yang dibuat Control Center untuk Anda atau yang Anda bangun sendiri.
@@ -27,18 +27,18 @@ Satu ruang kerja hanya berjalan pada salah satu dari dua mode ini dalam satu wak
 
 | Mode                          | Memerlukan                                                                                               | Yang Anda dapatkan                                                                    |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **App bersama Control Center** | Server memakai Control Center Connect (**Pengaturan → Server → Single sign-on**) dan Connect melayani Slack | Satu klik dan satu proses masuk Slack. Tidak perlu membuat app, tidak perlu menempel token, tidak ada yang perlu dirotasi |
+| **App bersama Control Center** | Aplikasi masuk ruang kerja berjalan lewat Control Center Connect (pilihan server di **Pengaturan → Server → Single sign-on**, atau pilihan ruang kerja di **Pengaturan → Ruang kerja → Integrasi**) dan Connect melayani Slack | Satu klik dan satu proses masuk Slack. Tidak perlu membuat app, tidak perlu menempel token, tidak ada yang perlu dirotasi |
 | **App Anda sendiri**          | Sebuah app Slack di ruang kerja Slack Anda, dibuat dengan salah satu dari tiga cara di bawah              | Nama bot, deskripsi, dan perintah slash Anda sendiri, dapat diedit dari Control Center |
 
 ### Tambahkan app bersama Control Center
 
-1. Di Control Center, buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
+1. Di Control Center, buka **Pengaturan → Ruang kerja → Integrasi** dan gulir ke kartu **Jembatan chat**
 2. Pada blok Slack, cari baris **Tambahkan Control Center ke Slack** dan klik **Tambahkan ke Slack**
 3. Peramban Anda membuka Slack. Masuk dengan Slack, pilih ruang kerja Slack, dan setujui pemasangan
 4. Ketika peramban menampilkan kode, masukkan ke dialog yang tetap dibiarkan terbuka oleh Control Center. Jika peramban mengembalikan Anda ke aplikasi dengan sendirinya, tidak ada yang perlu diketik
 5. Sebuah notifikasi menyebut nama ruang kerja Slack tempat app ditambahkan, dan blok Slack menampilkan koneksi sebagai berjalan di app bersama Control Center
 
-Hanya admin ruang kerja yang dapat menambahkan app. Baris itu menyebutkan alasannya ketika tidak dapat dimulai: ketika server memakai app sendiri alih-alih Connect, ketika Connect Anda tidak punya app Slack, atau ketika ruang kerja ini sudah memiliki app Slack sendiri yang terhubung.
+Hanya admin ruang kerja yang dapat menambahkan app. Baris itu menyebutkan alasannya ketika tidak dapat dimulai: ketika app masuk ruang kerja ini adalah app sendiri alih-alih Connect, ketika Connect Anda tidak punya app Slack, atau ketika ruang kerja ini sudah memiliki app Slack sendiri yang terhubung.
 
 Berbeda dari app Anda sendiri:
 
@@ -64,7 +64,7 @@ Peristiwa app Slack milik Anda tidak pernah melewati Connect: Socket Mode mengir
 ## Opsi A: biarkan Control Center membuat aplikasinya
 
 1. Buat pasangan token konfigurasi aplikasi di [api.slack.com/apps](https://api.slack.com/apps) dan salin token **refresh** (`xoxe-…`)
-2. Di Control Center, buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
+2. Di Control Center, buka **Pengaturan → Ruang kerja → Integrasi** dan gulir ke kartu **Jembatan chat**
 3. Pada blok Slack, klik **Buatkan aplikasi**
 4. Tempel tokennya, sesuaikan nama aplikasi, nama bot, deskripsi, dan perintah slash, lalu klik **Buat aplikasi**
 5. Ikuti dua langkah tersisa yang ditampilkan dialog, masing-masing berupa tautan ke Slack:
@@ -78,7 +78,7 @@ Token konfigurasi dirotasi setiap kali digunakan. Control Center menyimpan nilai
 
 Aplikasi yang sama, tanpa token konfigurasi — Slack membuka layar pembuatannya sendiri dengan seluruh manifes sudah terisi.
 
-1. Di Control Center, buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
+1. Di Control Center, buka **Pengaturan → Ruang kerja → Integrasi** dan gulir ke kartu **Jembatan chat**
 2. Pada blok Slack, klik **Buatkan aplikasi**
 3. Sesuaikan nama aplikasi, nama bot, deskripsi, dan perintah slash — semuanya ikut terbawa lewat tautan
 4. Klik **Buat di Slack**. Browser Anda membuka halaman pembuatan aplikasi Slack dengan konfigurasi yang sudah terisi
@@ -132,7 +132,7 @@ message.im
 
 Inilah cara token app milik Anda sampai ke Control Center. App bersama tidak memerlukan apa pun dari ini.
 
-1. Buka **Pengaturan → Ruang kerja → Umum** dan gulir ke kartu **Jembatan chat**
+1. Buka **Pengaturan → Ruang kerja → Integrasi** dan gulir ke kartu **Jembatan chat**
 2. Pada blok Slack, klik **Hubungkan Slack**
 3. Isi kolom-kolomnya:
 
@@ -205,7 +205,7 @@ Anggota mana pun yang sudah tertaut dengan peran tulis dapat mengusulkan tiket d
 
 Teks sebelum `|` adalah judulnya, teks sesudahnya deskripsinya. Bot membalas bahwa ia telah membuat
 drafnya. Belum ada tiket yang dibuat dan tidak ada otomatisasi tiket yang terpicu: draf menunggu Anda
-di **Pengaturan → Ruang kerja → Profil & identitas → Draf tiket dari chat**, tempat Anda dapat
+di **Pengaturan → Anda → Profil → Draf tiket dari chat**, tempat Anda dapat
 memperbaiki judul dan deskripsi, lalu mengklik **Buat tiket** atau **Buang**.
 
 - Hanya anggota yang menjalankan perintah yang melihat draf

@@ -5,11 +5,9 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
@@ -19,8 +17,10 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/core/domain/value_objects/wake_context.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 // ---------------------------------------------------------------------------
@@ -69,37 +69,6 @@ class FakeSandboxPort implements SandboxPort {
 
   @override
   Future<void> destroy(SandboxHandle handle) async {}
-}
-
-class FakeCredentialBrokerPort implements CredentialBrokerPort {
-  int mintCount = 0;
-  final Set<String> revoked = {};
-
-  /// Every scope a launch asked for, in order.
-  final List<ForgeTokenScope> scopes = [];
-
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async {
-    mintCount++;
-    scopes.add(scope);
-    return ScopedCredentials(
-      handle: 'cred-$mintCount',
-      environment: {'API_KEY': 'test-key-$mintCount'},
-    );
-  }
-
-  @override
-  Future<void> revoke(String handle) async {
-    revoked.add(handle);
-  }
 }
 
 class FakeAgentRepository implements AgentRepository {
@@ -255,22 +224,20 @@ Future<String?> _fakeResolveBinary(String binary) async => '/usr/bin/$binary';
 
 SandboxDispatchDeps _makeDeps({
   FakeSandboxPort? sandbox,
-  FakeCredentialBrokerPort? broker,
   FakeAgentRepository? agentRepo,
   FakeAgentRunLogRepository? runLogRepo,
   DomainEventBus? eventBus,
 }) {
   return SandboxDispatchDeps(
+    hostExecution: const HostExecutionGate(
+      posture: HostExecutionPosture.offByOwner,
+    ),
     sandbox: sandbox ?? FakeSandboxPort(),
-    broker: broker ?? FakeCredentialBrokerPort(),
     agentRepo: agentRepo ?? FakeAgentRepository(),
     runLogRepo: runLogRepo,
     eventBus: eventBus,
-    resolveCommitIdentity: (_, {workspaceId}) async =>
-        AgentCommitIdentity.owner(
-          name: 'Test User',
-          email: 'test@example.test',
-        ),
+    resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+        AgentCommitIdentity.person((name: 'Test User', email: 'test@example.test')),
     backendRegistry: buildBackendRegistry(),
   );
 }
@@ -310,14 +277,15 @@ void main() {
   group('SandboxDispatchDeps', () {
     test('stores all fields', () {
       final sandbox = FakeSandboxPort();
-      final broker = FakeCredentialBrokerPort();
       final agentRepo = FakeAgentRepository();
       final runLogRepo = FakeAgentRunLogRepository();
       final eventBus = DomainEventBus();
 
       final deps = SandboxDispatchDeps(
+        hostExecution: const HostExecutionGate(
+          posture: HostExecutionPosture.offByOwner,
+        ),
         sandbox: sandbox,
-        broker: broker,
         agentRepo: agentRepo,
         runLogRepo: runLogRepo,
         eventBus: eventBus,
@@ -325,7 +293,6 @@ void main() {
       );
 
       expect(deps.sandbox, same(sandbox));
-      expect(deps.broker, same(broker));
       expect(deps.agentRepo, same(agentRepo));
       expect(deps.runLogRepo, same(runLogRepo));
       expect(deps.eventBus, same(eventBus));
@@ -421,7 +388,6 @@ void main() {
       final session = _makeSession();
 
       expect(session.controller, isA<StreamController<AgentProcessEvent>>());
-      expect(session.credHandle, isNull);
       expect(session.eventsSub, isNull);
       expect(session.emittedDone, isFalse);
       expect(session.pid, isNull);
@@ -565,27 +531,6 @@ void main() {
   // stop()
   // -----------------------------------------------------------------------
   group('stop', () {
-    test('revokes credentials', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(deps: _makeDeps(broker: broker));
-
-      session.credHandle = 'cred-1';
-
-      await session.stop();
-
-      expect(broker.revoked, contains('cred-1'));
-      expect(session.credHandle, isNull);
-    });
-
-    test('is idempotent when credHandle is null', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(deps: _makeDeps(broker: broker));
-
-      await session.stop();
-
-      expect(broker.revoked, isEmpty);
-    });
-
     test('closes controller', () async {
       final session = _makeSession();
       expect(session.controller.isClosed, isFalse);
@@ -613,17 +558,6 @@ void main() {
   // terminate()
   // -----------------------------------------------------------------------
   group('terminate', () {
-    test('revokes credentials', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(deps: _makeDeps(broker: broker));
-      session.credHandle = 'cred-1';
-
-      await session.terminate();
-
-      expect(broker.revoked, contains('cred-1'));
-      expect(session.credHandle, isNull);
-    });
-
     test('emits DebugEvent about termination', () async {
       final session = _makeSession();
       final events = <AgentProcessEvent>[];
@@ -1119,58 +1053,6 @@ void main() {
   });
 
   // -----------------------------------------------------------------------
-  // credential lifecycle
-  // -----------------------------------------------------------------------
-  group('credential lifecycle', () {
-    test('credHandle starts null', () {
-      final session = _makeSession();
-      expect(session.credHandle, isNull);
-    });
-
-    test('credHandle can be set directly', () {
-      final session = _makeSession();
-      session.credHandle = 'cred-test-1';
-      expect(session.credHandle, 'cred-test-1');
-    });
-
-    test('stop revokes and nullifies credHandle', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(deps: _makeDeps(broker: broker));
-      session.credHandle = 'cred-1';
-
-      await session.stop();
-
-      expect(broker.revoked, contains('cred-1'));
-      expect(session.credHandle, isNull);
-    });
-
-    test('terminate revokes and nullifies credHandle', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(deps: _makeDeps(broker: broker));
-      session.credHandle = 'cred-1';
-
-      await session.terminate();
-
-      expect(broker.revoked, contains('cred-1'));
-      expect(session.credHandle, isNull);
-    });
-
-    test('multiple stop calls do not double-revoke', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(deps: _makeDeps(broker: broker));
-      session.credHandle = 'cred-1';
-
-      await session.stop();
-      await session.stop();
-
-      // cred-1 should appear exactly once in the revoked set.
-      expect(broker.revoked.lookup('cred-1'), 'cred-1');
-      expect(broker.revoked.length, 1);
-      expect(session.credHandle, isNull);
-    });
-  });
-
-  // -----------------------------------------------------------------------
   // SandboxEvent subscription
   // -----------------------------------------------------------------------
   group('SandboxEvent subscription', () {
@@ -1253,121 +1135,6 @@ void main() {
       session.controller.stream.listen((_) {});
 
       expect(() => session.controller.stream.listen((_) {}), throwsStateError);
-    });
-  });
-
-  // -----------------------------------------------------------------------
-  // Credential scope — what lands in the agent's environment via run()
-  // -----------------------------------------------------------------------
-  // The action policy is the only permission system: whoever the agent is,
-  // its own environment only ever gets a READ-scoped forge token. A push goes
-  // through the agent run gateway, which asks the push rule first.
-  group('credential scope', () {
-    test('mints a review-scoped (never write) token for a known agent', () async {
-      final agentRepo = FakeAgentRepository();
-      agentRepo.agentToReturn = Agent(
-        id: 'agent-1',
-        name: 'test-agent',
-        title: 'Test Agent',
-        agentMdPath: '/tmp/test.md',
-        workspaceId: 'ws-1',
-        skills: AgentSkills([]),
-        createdAt: DateTime.now(),
-      );
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(
-        deps: _makeDeps(agentRepo: agentRepo, broker: broker),
-      );
-
-      // Call run() — it will stop at resolveBinaryPath or exec, but
-      // broker.mint happens first.
-      unawaited(session.run());
-      // Pump the event loop so the first awaits settle.
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.review));
-    });
-
-    test('mints a review-scoped token when the agent is not found', () async {
-      final agentRepo = FakeAgentRepository();
-      agentRepo.agentToReturn = null;
-      final broker = FakeCredentialBrokerPort();
-      final session = _makeSession(
-        deps: _makeDeps(agentRepo: agentRepo, broker: broker),
-      );
-
-      unawaited(session.run());
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.review));
-    });
-
-    test('mints a review-scoped token when agentId is null', () async {
-      final broker = FakeCredentialBrokerPort();
-      final session = DispatchSession(
-        deps: _makeDeps(broker: broker),
-        onResolveHandle:
-            ({required sessionId, required spec, required emit}) async =>
-                SandboxHandle(
-                  sessionId: sessionId,
-                  backend: SandboxBackend.native,
-                ),
-        onScheduleCooldown: (_) {},
-        dispatchId: 'd1',
-        cliName: 'claude',
-        prompt: 'hello',
-        agentDirHostPath: '/tmp',
-        modelId: null,
-        callerEnv: {},
-        agentId: null,
-        workspaceId: null,
-        conversationId: null,
-        runLogId: null,
-        mode: Mode.chat,
-      );
-
-      unawaited(session.run());
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.review));
-    });
-
-    test('mints a review-scoped token for an unknown agent id', () async {
-      final agentRepo = FakeAgentRepository();
-      agentRepo.agentToReturn = null;
-      final broker = FakeCredentialBrokerPort();
-      final session = DispatchSession(
-        deps: _makeDeps(agentRepo: agentRepo, broker: broker),
-        onResolveHandle:
-            ({required sessionId, required spec, required emit}) async =>
-                SandboxHandle(
-                  sessionId: sessionId,
-                  backend: SandboxBackend.native,
-                ),
-        onScheduleCooldown: (_) {},
-        dispatchId: 'd1',
-        cliName: 'claude',
-        prompt: 'hello',
-        agentDirHostPath: '/tmp',
-        modelId: null,
-        callerEnv: {},
-        agentId: 'bad-id',
-        workspaceId: null,
-        conversationId: null,
-        runLogId: null,
-        mode: Mode.chat,
-      );
-
-      unawaited(session.run());
-      await Future<void>.delayed(const Duration(milliseconds: 100));
-
-      // Still mints, and still without push, when the agent lookup finds
-      // nothing.
-      expect(broker.mintCount, greaterThanOrEqualTo(1));
-      expect(broker.scopes, everyElement(ForgeTokenScope.review));
     });
   });
 
@@ -1588,7 +1355,7 @@ void main() {
   // run() — exec args, env and lifecycle
   // -----------------------------------------------------------------------
   group('run exec arguments', () {
-    test('passes combined env vars to sandbox exec', () async {
+    test('passes the caller env to sandbox exec, and no forge token', () async {
       final sandbox = ControllableSandboxPort();
       final session = _makeSession(deps: _makeDeps(sandbox: sandbox));
 
@@ -1603,8 +1370,9 @@ void main() {
       expect(sandbox.lastEnv, isNotNull);
       // Caller env passed through
       expect(sandbox.lastEnv!['HOME'], '/tmp');
-      // Credentials injected
-      expect(sandbox.lastEnv!, contains('API_KEY'));
+      // A run asks the gateway for a token when its git or gh needs one.
+      expect(sandbox.lastEnv!.keys, isNot(contains('GH_TOKEN')));
+      expect(sandbox.lastEnv!.keys, isNot(contains('GITHUB_TOKEN')));
     });
 
     test('passes prompt as the first stream-json message on stdin', () async {

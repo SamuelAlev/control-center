@@ -2,7 +2,7 @@
 title: Stasjoner og isolerte miljøer
 description: Hvorfor agenter får kastbare maskiner i stedet for datamaskinen din — isolasjonsgrensene, visningsbanene, legitimasjonen, portene og livssyklusen.
 slug: nb-NO/handbok/konsepter/stasjoner
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 En **stasjon** er en kastbar maskin som en agent styrer i sanntid — en
@@ -244,6 +244,8 @@ En stasjon er bevisst **ikke** en global destinasjon. Sanntidsvisningen er en
 fane i området eller PR-en der arbeidet skjer, avgrenset til den samtalen — så
 fanen din og agentens `browser_use`-kall adresserer *én* maskin (én per motor,
 på nettleserflaten).
+En stasjon åpnet i et område er områdets maskin, med områdets worktrees innen rekkevidde, så den følger områdets repositorier: lesetilgang til området lar deg se på den, og en skrivetilgang på disse repositoriene lar deg styre den. En stasjon som ikke hører til noe område, når ingen worktree, og alle medlemmer av arbeidsområdet kan bruke den. [Hvem kan se på maskinen, og hvem kan styre den](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/#hvem-kan-se-på-maskinen-og-hvem-kan-styre-den)
+lister hva hver av dem dekker.
 Om stasjoner i det hele tatt kan startes, er en egenskap ved verten, så
 kapabiliteter, bilder, egendefinerte bilder per arbeidsområde og listen over
 kjørende maskiner ligger under **Innstillinger → Server → Stasjoner**. Å styre

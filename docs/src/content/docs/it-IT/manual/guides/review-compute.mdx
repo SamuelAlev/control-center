@@ -2,7 +2,7 @@
 title: Calcolo della revisione (coorti, assi e diff deterministici)
 description: Che cosa produce lato server la passata di calcolo della revisione — coorti, diff di contratto API e visivi, gate per asse — e come tutto questo confluisce nella scheda Revisione.
 slug: it-IT/manuale/guide/calcolo-revisione
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 La scheda **Revisione** della PR è l'avanzamento dal vivo della pipeline di
@@ -15,8 +15,6 @@ Dietro quella scheda, `cc_server` costruisce le coorti di file, esegue gli assi
 deterministici e li serve tramite le operazioni RPC `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` e i loro gemelli `watch*`).
-Un layout salvato che fa ancora riferimento a `pr.reviewStudio` apre questa
-stessa scheda Revisione.
 
 Nella scheda Revisione:
 
@@ -86,6 +84,13 @@ passata di calcolo renderizza i componenti modificati prima e dopo tramite una
 passata golden headless di `flutter test` nei worktree base e head della PR, poi
 mette in diff i pixel.
 
+Quei test sono codice della PR stessa, quindi vengono eseguiti come il processo di
+uno strumento di un agente: dentro la sandbox quando il server isola gli agenti,
+senza sandbox quando il proprietario del server l'ha disattivata, e senza sandbox
+solo per una richiesta di cui il proprietario del server risponde. Per chiunque
+altro l'asse segnala **Non disponibile** con la ragione "no sandbox on this server,
+and only its owner may run a PR's tests unsandboxed".
+
 :::note[Serve un Flutter SDK sull'host del server]
 Il server puro Dart non può renderizzare i widget Flutter nel proprio processo,
 quindi invoca `flutter test`. L'SDK deve essere installato sulla macchina che
@@ -96,9 +101,10 @@ superamento che non si è guadagnato.
 
 Gli snapshot contrassegnati **changed** o **removed** trattengono il gate visivo
 finché non vengono approvati; gli snapshot **unchanged**, **added** e
-**approved** lo sbloccano. L'indisponibilità ha una delle quattro cause seguenti:
+**approved** lo sbloccano. L'indisponibilità ha una delle cinque cause seguenti:
 nessun Flutter SDK sull'host, nessuna app Widgetbook nel repo, nessun caso d'uso
-testabile con golden, oppure un errore dell'harness golden.
+testabile con golden, un errore dell'harness golden, oppure nessuna sandbox per
+una richiesta di cui il proprietario del server non risponde.
 
 Approvare una modifica voluta si fa con `review_studio.approveVisual`.
 

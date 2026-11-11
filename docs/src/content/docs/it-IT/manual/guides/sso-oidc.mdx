@@ -2,7 +2,7 @@
 title: Collega un provider OpenID Connect
 description: Collega qualsiasi issuer OIDC — Pocket ID, Keycloak, Auth0, Zitadel — all'accesso a Control Center.
 slug: it-IT/manuale/guide/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -91,6 +91,54 @@ il tuo server, il che richiede un tunnel o un URL pubblico — vedi [esegui il
 provisioning degli utenti con SCIM](/it-IT/manuale/guide/sso-scim).
 :::
 
+## Come gli accessi associano gli account esistenti
+
+Un accesso tramite il provider di identità trova il suo account in quest'ordine:
+
+1. **L'identità fissata.** Il primo accesso SSO associa il subject del provider (issuer
+   più `sub`) all'account. Ogni accesso successivo con quel subject è quell'account.
+2. **Un'e-mail verificata, da entrambe le parti.** Altrimenti l'accesso associa un account
+   tramite e-mail solo quando il provider invia `email_verified: true` e anche l'indirizzo
+   dell'account è verificato. Un indirizzo è verificato quando lo hanno impostato SSO o SCIM,
+   oppure quando il proprietario del server lo ha confermato. Conta anche l'indirizzo del
+   proprietario stesso.
+
+Gli indirizzi e-mail vengono memorizzati e mostrati in minuscolo, e la corrispondenza ignora
+le maiuscole. Un indirizzo verificato identifica un account solo quando un solo account lo
+possiede; se due account hanno lo stesso indirizzo verificato, non corrisponde a nessuno dei due.
+
+Un indirizzo inserito da qualcuno nel proprio profilo, o in un invito, non è verificato e non
+corrisponde a nulla. Modificare un indirizzo ne cancella lo stato di verificato finché qualcuno
+non lo conferma di nuovo. Un accesso non corrisponde mai tramite il nome utente.
+
+Quando nulla corrisponde, l'accesso crea un nuovo account se **Esegui il provisioning degli
+utenti sconosciuti al primo accesso** è attivo, ed è rifiutato se è disattivato.
+
+### Prima di attivare SSO per persone che hanno già un account
+
+Conferma prima i loro indirizzi. Apri **Impostazioni → Server → Persone**, dove ogni account
+mostra **E-mail non confermata** finché qualcuno non lo ha garantito, e usa **Conferma e-mail**
+sulla riga di ciascuna persona. Solo il proprietario del server vede questo elenco. Senza questo
+passaggio, ognuna di quelle persone ottiene al primo accesso SSO un secondo account, oppure viene
+rifiutata quando il provisioning degli utenti sconosciuti è disattivato.
+
+Finché il suo indirizzo non è confermato, una persona vede sotto il campo e-mail del proprio
+profilo un avviso: «Solo tu hai inserito questo indirizzo. L’accesso singolo non lo riconoscerà
+finché il proprietario del server non lo confermerà.»
+
+### Provider che non inviano `email_verified`
+
+Alcuni provider omettono l'attributo. Microsoft Entra ID lo fa per impostazione predefinita. Un
+attributo mancante non equivale a un sì: con un provider del genere un accesso corrisponde solo
+tramite l'identità fissata, quindi il primo accesso di una persona non può mai trovare il suo
+account esistente tramite e-mail. Anche il provisioning dell'account con SCIM non aiuta in quel
+primo accesso OIDC. Le strade pratiche sono:
+
+- lasciare attivo **Esegui il provisioning degli utenti sconosciuti al primo accesso** e far
+  creare l'account al primo accesso, oppure
+- configurare il provider perché emetta `email_verified`, poi confermare gli indirizzi
+  corrispondenti come sopra.
+
 ## Verifica la configurazione da questa pagina
 
 Il verificatore qui sotto viene eseguito nel tuo browser. Recupera
@@ -103,3 +151,26 @@ che mostra se il client e il suo URI di reindirizzamento sono registrati.
 Non chiede mai il segreto client.
 
 <SsoCheck kind="oidc" />
+
+## Risoluzione dei problemi
+
+### Qualcuno ha ottenuto un secondo account dopo l'attivazione di SSO
+
+Il suo account esistente aveva un indirizzo non verificato quando la persona ha effettuato per la
+prima volta l'accesso con SSO, quindi l'accesso non lo ha associato e ne ha creato uno nuovo. Succede
+quando l'indirizzo è stato inserito nel profilo o in un invito e il proprietario del server non lo
+aveva confermato, oppure quando il provider non ha inviato `email_verified: true`. Un nuovo account
+il cui provider garantisce per l'indirizzo lo prende, e l'account più vecchio che lo aveva solo
+inserito lo perde.
+
+Per evitarlo con la prossima persona, conferma gli indirizzi in **Impostazioni → Server → Persone**
+prima che accedano. Per chi ha già due account, il nuovo è fissato alla sua identità SSO, quindi è
+quello che i suoi accessi useranno da ora in poi.
+
+### "Questo account è già collegato a un'altra identità SSO"
+
+L'accesso ha associato un account tramite la sua e-mail verificata, ma quell'account è già fissato a
+un altro subject o a un altro issuer: un utente diverso presso il provider, la stessa persona con un
+nuovo provider, oppure un account creato da SCIM con il proprio identificativo. L'account fissato
+rifiuta ogni altra identità, quindi un indirizzo riassegnato dal provider non può prenderne il
+controllo. Accedi con l'identità a cui l'account era stato collegato per primo.

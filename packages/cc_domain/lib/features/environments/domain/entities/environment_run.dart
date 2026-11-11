@@ -37,6 +37,9 @@ enum EnvironmentRunStatus {
   /// Finished with a failure.
   failed,
 
+  /// Stopped for something only a person can do (`EnvironmentBlocker`).
+  blocked,
+
   /// Stopped by its deadline.
   timedOut;
 

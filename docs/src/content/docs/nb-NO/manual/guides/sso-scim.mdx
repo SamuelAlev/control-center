@@ -2,7 +2,7 @@
 title: Provisioner brukere med SCIM
 description: La IdP-en opprette, oppdatere og deprovisjonere Control Center-kontoer automatisk.
 slug: nb-NO/handbok/slik-gjor-du/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Bruk denne veiledningen når du vil ha livssykluskontroll — avslutning av
@@ -35,8 +35,9 @@ nettopp til dette.
    - **Authentication**: `Authorization: Bearer <token>`
    - **User id**: `userName` (e-post) eller `externalId` — begge passer
 4. Test med én bruker: push vedkommende fra IdP-en og bekreft at de dukker
-   opp (en SCIM-oppretting fester leverandørens `externalId` til kontoen,
-   samme feste som den første SSO-innloggingen setter).
+   opp (en SCIM-oppretting registrerer leverandørens `externalId` på kontoen,
+   og det er slik senere SCIM-kall finner den), og la så vedkommende logge inn
+   via SSO før du ruller det ut til alle.
 
 ## Hva deprovisjonering gjør
 
@@ -56,6 +57,7 @@ automatisk medlemskap ved innlogging.
 
 ## Feilsøking
 
+- **En provisjonert person avvises med «Denne kontoen er allerede koblet til en annen SSO-identitet»** — kjent begrensning: en konto SCIM opprettet med en `externalId`, forblir knyttet til den id-en, og den første SSO-innloggingen til den avvises. Inntil dette er rettet, provisjoner uten `externalId`, eller la JIT-provisjonering opprette kontoen ved første innlogging og bruk SCIM til deprovisjonering.
 - **401 på hvert kall** — tokenet er endret; generer et nytt og oppdater IdP-en.
 - **Endepunktet er ikke nåbart** — tunnelen er nede, eller serveren er bare
   tilgjengelig via reléet. SCIM trenger direkte HTTPS; JIT fortsetter å virke

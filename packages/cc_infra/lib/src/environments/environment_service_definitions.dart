@@ -34,6 +34,9 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
     final EnvironmentDefinition definition;
     try {
       definition = _parse(record);
+    } on EnvironmentDefinitionException catch (e) {
+      // One line per issue, `<path>: <message>`, as the editor reads them.
+      throw ValidationException(e.issues.join('\n'));
     } on FormatException catch (e) {
       throw ValidationException('definition: ${e.message}');
     }
@@ -175,11 +178,80 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
     }
   }
 
+  /// A definition that runs anything on the host runs it as the server's OS
+  /// user, so only the server owner may save or approve one; a workspace
+  /// admin may still save one that runs entirely in a rig. Decided on the
+  /// validated definition, so neither the wire nor a stored row's old
+  /// placement can say otherwise.
+  void _refuseHostUnlessOwner(
+    EnvironmentDefinition definition, {
+    required bool byServerOwner,
+  }) {
+    if (!byServerOwner && definition.runsOnHost) {
+      throw const ServerOwnerRequiredException(
+        'This definition runs commands on the server itself, so only the '
+        "server's owner can save or approve it. Place everything in a rig "
+        'to save it yourself.',
+      );
+    }
+  }
+
+  /// Who a saved row records as having approved what it runs on the host:
+  /// the server owner saving it, when it runs anything there; nobody
+  /// otherwise. Decided here on every save, never read from the request or
+  /// the stored row, so neither a client's copy nor an older approval
+  /// survives a save it does not belong to.
+  String? _hostApprover(
+    EnvironmentDefinition definition,
+    Principal by, {
+    required bool byServerOwner,
+  }) => definition.runsOnHost && byServerOwner && by.isUser ? by.id : null;
+
+  /// Refuses [loaded] when it runs anything on the host and the current
+  /// server owner is not who approved it. No owner known: nobody approved
+  /// it.
+  ///
+  /// Every path that runs a definition's commands asks this first: starts
+  /// (`_ensureLocked`), work in a running environment (`_readmit`), checks,
+  /// tests, worktree tasks and following a PR head. Stopping and tearing down
+  /// do not, so an unapproved environment can always be stopped.
+  Future<void> _requireHostApproval(_Loaded loaded) async {
+    if (!loaded.definition.runsOnHost) {
+      return;
+    }
+    final owner = await _d.serverOwner();
+    if (owner == null ||
+        owner.isEmpty ||
+        loaded.record.hostApprovedBy != owner) {
+      throw const EnvironmentHostUnapprovedException();
+    }
+  }
+
+  /// [_requireHostApproval] for the definition an environment runs. A row
+  /// that is gone or unreadable has nothing to run: the stack refuses it.
+  Future<void> _requireHostApprovalOf(
+    String workspaceId,
+    String definitionId,
+  ) async {
+    final record = await _d.definitions.get(workspaceId, definitionId);
+    if (record == null) {
+      return;
+    }
+    final EnvironmentDefinition definition;
+    try {
+      definition = _parse(record);
+    } on FormatException {
+      return;
+    }
+    await _requireHostApproval(_Loaded(record, definition));
+  }
+
   Future<EnvironmentDefinitionRecord> saveDefinition({
     required String workspaceId,
     String? definitionId,
     required Map<String, dynamic> definition,
     required Principal by,
+    required bool byServerOwner,
   }) async {
     _refuseRedacted(definition);
     final source = definition['source'];
@@ -193,13 +265,13 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
             ? Map<String, dynamic>.from(definition['overrides'] as Map)
             : null,
         by: by,
+        byServerOwner: byServerOwner,
       );
     }
-    final EnvironmentDefinition parsed;
-    try {
-      parsed = EnvironmentDefinition.fromJson(definition);
-    } on FormatException catch (e) {
-      throw ValidationException('definition: ${e.message}');
+    final shape = parseEnvironmentDefinition(definition);
+    final parsed = shape.definition;
+    if (parsed == null) {
+      throw ValidationException(shape.issues.join('\n'));
     }
     final issues = validateEnvironmentDefinition(
       parsed,
@@ -208,6 +280,7 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
     if (issues.isNotEmpty) {
       throw ValidationException(issues.join('\n'));
     }
+    _refuseHostUnlessOwner(parsed, byServerOwner: byServerOwner);
     await _assertOneOwner(workspaceId, definitionId, parsed);
     final existing = definitionId == null
         ? null
@@ -219,6 +292,7 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
       name: parsed.name,
       definitionJson: jsonEncode(definition),
       createdBy: existing?.createdBy ?? by.wire,
+      hostApprovedBy: _hostApprover(parsed, by, byServerOwner: byServerOwner),
       createdAt: existing?.createdAt ?? now,
       updatedAt: now,
     );
@@ -274,6 +348,7 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
     Map<String, dynamic>? overrides,
     String? expectedBlobHash,
     required Principal by,
+    required bool byServerOwner,
   }) async {
     _refuseRedacted(overrides);
     if (!isSafeRelativePath(path)) {
@@ -320,6 +395,7 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
       updatedAt: now,
     );
     final loaded = _validated(draft, await _linkedRepoIds(workspaceId));
+    _refuseHostUnlessOwner(loaded.definition, byServerOwner: byServerOwner);
     await _assertOneOwner(workspaceId, definitionId, loaded.definition);
     final record = EnvironmentDefinitionRecord(
       id: draft.id,
@@ -331,6 +407,11 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
       approvedBlobHash: draft.approvedBlobHash,
       overridesJson: draft.overridesJson,
       createdBy: draft.createdBy,
+      hostApprovedBy: _hostApprover(
+        loaded.definition,
+        by,
+        byServerOwner: byServerOwner,
+      ),
       createdAt: draft.createdAt,
       updatedAt: now,
     );
@@ -413,6 +494,7 @@ mixin _DefinitionOps on _EnvironmentServiceBase {
     String definitionId,
   ) async {
     final loaded = await _load(workspaceId, definitionId);
+    await _requireHostApproval(loaded);
     return _runChecks(workspaceId, loaded.definition);
   }
 

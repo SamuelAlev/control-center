@@ -3,7 +3,7 @@ title: Ejecutar un servidor headless
 description: Ejecuta el binario headless cc_server o su imagen de Docker, empareja un cliente con él y configúralo con toda la superficie de flags de CLI y variables de entorno.
 dateModified: 2026-11-08
 slug: es-MX/manual/guias/ejecutar-servidor-headless
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Ejecuta `cc_server` en una computadora que permanezca encendida y luego conéctate
@@ -175,9 +175,11 @@ valor es un cliente web—), `--label` (de forma predeterminada, el nombre de la
 plataforma más el nombre de host de esta computadora), `--host` (el host que se
 imprime en la URL, ya que loopback no es accesible desde otra computadora) y
 `--client-url`. Volver a ejecutar `pair` rota la clave de ese dispositivo y
-corta sus sesiones activas. El emparejamiento nunca crea un espacio de trabajo:
-la configuración inicial del cliente que se conecta le pone nombre y crea el
-primero.
+corta sus sesiones activas. El emparejamiento nunca crea un espacio de trabajo.
+Solo el propietario del servidor crea espacios de trabajo: en el cliente del
+propietario, la configuración inicial le pone nombre y crea el primero, y
+cualquier otra persona espera a que el propietario cree uno para ella o a que un
+administrador del espacio de trabajo la invite.
 
 Con `--client-url` también imprime un QR que se puede escanear desde el
 terminal y que abre el cliente web ya rellenado:
@@ -196,9 +198,7 @@ en un cliente en ejecución. Las dos no son intercambiables. Consulta
 [Emparejar un dispositivo](/es-MX/manual/guias/emparejar-dispositivo/).
 :::
 
-Una credencial generada por `cc_server pair` **no caduca**; una generada en la
-app siempre caduca a los 30 días. Cuando ya no necesites un dispositivo
-generado por la CLI, revócalo desde **Ajustes → Tú → Tus dispositivos**.
+Una credencial generada por `cc_server pair` caduca a los 30 días, igual que una generada en la app; vuelve a ejecutar `pair` para el mismo dispositivo y emitir una nueva. Cuando ya no necesites un dispositivo generado por la CLI, revócalo desde **Ajustes → Tú → Tus dispositivos**.
 
 La clave de emparejamiento autentica el handshake Noise obligatorio; cada sesión
 deriva claves de tráfico nuevas y verifica la identidad firmada del servidor.
@@ -249,6 +249,16 @@ clientes emparejados usan el túnel cifrado en su lugar.
 El servidor se ejecuta hasta que recibe `SIGINT`/`SIGTERM`, y luego se apaga de
 forma limpia.
 
+### Lee las líneas de arranque
+
+Dos líneas indican cómo está configurado este servidor. La línea de exposición, impresa junto al banner de listo, empieza con `cc_server exposure:` y enumera hasta dónde puede alcanzarse (`bind`, `tls`, `relay`, `tunnel`), si hay un propietario del servidor registrado (`owner`) y cómo se ejecutan los agentes en esta máquina (`sandbox`):
+
+- `sandbox=native`: cada ejecución de agente se envuelve en el sandbox del sistema operativo.
+- `sandbox=off`: iniciaste el servidor con `--sandbox off`, así que los agentes de cada miembro se ejecutan sin confinar en esta máquina.
+- `sandbox=unavailable`: el host no tiene un backend de sandbox (Windows, o Linux sin `bwrap` y `socat`), así que solo inician las ejecuciones de agentes de las que responde el propietario del servidor. Las ejecuciones de los demás se rechazan con "Este servidor no tiene sandbox, así que solo su propietario puede ejecutar agentes aquí."
+
+Una línea de sandbox anterior en el registro dice lo mismo con palabras y, cuando falta un backend, indica qué instalar. Ejecutar agentes de otras personas sin sandbox es una decisión que el propietario del servidor toma una vez, para todos, con `--sandbox off`. Consulta [Configurar las políticas de sandbox](/es-MX/manual/guias/politicas-de-sandbox/#comprobar-si-tus-ejecuciones-de-agentes-están-dentro-de-un-sandbox).
+
 ## Paso 5: Conectar un cliente
 
 Apunta un cliente a la URL del servidor y a la clave de emparejamiento del paso
@@ -259,8 +269,8 @@ Apunta un cliente a la URL del servidor y a la clave de emparejamiento del paso
 - **Teléfono**: empareja la app **Remote** desde un cliente en ejecución; consulta [Emparejar un dispositivo](/es-MX/manual/guias/emparejar-dispositivo/).
 
 :::note[cc_server no sirve ningún bundle web]
-Un `cc_server` independiente nunca monta una raíz web, así que `GET /` devuelve
-404. El cliente web se aloja aparte: usa `app.usectrl.dev`, o aloja tú mismo la
+Un `cc_server` independiente nunca monta una raíz web, así que `GET /` devuelve 404.
+El cliente web se aloja aparte: usa `app.usectrl.dev`, o aloja tú mismo la
 compilación web en cualquier host HTTPS estático (la imagen `cc-webapp` de
 arriba es exactamente eso). Un origen de navegador distinto de loopback tiene
 que estar en `--allowed-origins`, o se rechaza el upgrade de WebSocket a
@@ -276,6 +286,8 @@ WebSocket por la misma sesión cifrada autenticada que el resto del cliente.
 `cc_server` descifra cada petición, la reenvía a su backend local de code-server
 y cifra la respuesta de vuelta al cliente. Los archivos siguen siendo propiedad
 del servidor.
+
+El editor se ejecuta en el servidor como el propio usuario del servidor, con su terminal, tareas y extensiones, así que solo el [propietario del servidor](/es-MX/manual/conceptos/autorizacion/#el-propietario-del-servidor) puede abrirlo. Una sesión pertenece al dispositivo y a la persona que la abrió. Se abre con la confianza del espacio de trabajo de VS Code activada, así que VS Code pregunta antes de confiar en una carpeta, y con las tareas automáticas desactivadas, para que las tareas de un repositorio nunca se inicien al abrirlo. Los demás conservan el editor integrado de la app y las vistas de archivos; el editor completo no se les ofrece.
 
 Aloja el cliente web por HTTPS o en un origen de loopback seguro para que los
 service workers puedan ejecutarse. La compilación web normal y los scripts de
@@ -322,6 +334,8 @@ navegador, así que el servidor no necesita una dirección pública para ellos. 
 inicios de sesión con las apps propias del servidor regresan el navegador a la
 URL pública del servidor, así que configura `--public-url` con una dirección a
 la que lleguen los navegadores de las personas.
+
+Es la opción predeterminada del servidor. Un administrador del espacio de trabajo puede dar a un espacio de trabajo otra elección en **Ajustes → Espacio de trabajo → Integraciones**. Con `CC_CONNECT_URL` definido, un espacio de trabajo puede seguir cambiando a sus propias apps, pero no a un Connect propio; consulta [Elección por espacio de trabajo](/es-MX/manual/referencia/connect/#elección-por-espacio-de-trabajo).
 
 Para alojar Connect para otros servidores desde este, configura
 `CC_SERVER_CONNECT_HOST=on`; consulta
@@ -378,7 +392,7 @@ Dos cosas que conviene saber antes de exponer el puerto más allá de loopback (
 por sí solo no aporta el cifrado de extremo a extremo del cliente emparejado ni
 autoriza recursos):
 
-- **MCP falla en cerrado fuera del host.** Una superficie MCP sin token solo responde en loopback. Enlazar `any` no la amplía: una solicitud desde fuera del host se rechaza con «MCP requires a bearer token to answer non-loopback clients» hasta que configures uno (`mcp.setToken`, o **Ajustes → Servidor → Servidores MCP**).
+- **MCP siempre necesita su token.** El servidor crea el token de MCP en el primer arranque, y cada petición, incluidas las de loopback, debe enviarlo como `Authorization: Bearer <token>`. No se puede desactivar; el propietario del servidor lo consulta y lo rota en **Ajustes → Servidor → Servidores MCP**. Las peticiones desde una página web, a un `Host` desconocido o un `POST` que no es JSON se rechazan antes de comprobar el token. Consulta [Usar el servidor MCP](/es-MX/manual/guias/servidor-mcp/).
 - **`GET /healthz` no requiere autenticación por diseño**, tiene CORS comodín y publica el id, el nombre, la huella de identidad y la versión de compilación del servidor. Los clientes necesitan la huella para fijar el servidor, así que es deliberado, pero significa que cualquier `cc_server` accesible revela esos datos a quien se los pida.
 
 ## Guías relacionadas

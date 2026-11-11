@@ -2,7 +2,7 @@
 title: Csapat bejelentkeztetése SSO-val
 description: Kapcsolja össze az Okta (SAML) szolgáltatást a Control Center szerverével, és vigyen végig egy bejelentkezést az elejétől a végéig.
 slug: hu-HU/kezikonyv/oktatoanyagok/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -90,6 +90,8 @@ Két szabályzat dönti el, mit tesz az első bejelentkezés:
 - **Ismeretlen felhasználók provisionálása az első bejelentkezéskor** —
   alapértelmezés szerint be van kapcsolva; kapcsolja ki, ha el szeretné
   utasítani mindazokat, akiknek még nincs fiókjuk.
+
+Ha az embereknek már van fiókjuk ezen a szerveren, erősítsék meg e-mail-címüket, mielőtt bárki SSO-val bejelentkezne: nyissa meg a **Beállítások → Szerver → Emberek** oldalt, és minden olyan sornál, amelyet **E-mail nincs megerősítve** jelöl, használja az **E-mail megerősítése** gombot. Egy bejelentkezés csak akkor párosul e-mail alapján a meglévő fiókhoz, ha ez a cím meg van erősítve (vagy SSO vagy SCIM állította be). Az a cím, amelyet valaki a saját profiljában vagy egy meghívóban adott meg, senkihez sem párosul, ezért e lépés nélkül második fiókot kapnak, vagy visszautasítják őket, ha az ismeretlen felhasználók provisionálása ki van kapcsolva. Lásd: [Hogyan párosulnak a bejelentkezések a meglévő fiókokhoz](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc/#hogyan-párosulnak-a-bejelentkezések-a-meglévő-fiókokhoz).
 
 Opcionálisan leképezhet egy csoportneveket hordozó attribútumot (az Okta
 esetében ez általában a `groups`), és a leképezéssel csoportokat fordíthat

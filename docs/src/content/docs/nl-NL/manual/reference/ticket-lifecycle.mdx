@@ -2,7 +2,7 @@
 title: Ticketlevenscyclus
 description: Ticketvelden, statussen, transities, relaties en het centrale mutatiepunt.
 slug: nl-NL/handleiding/referentie/ticketlevenscyclus
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Ticketstatussen
@@ -118,7 +118,7 @@ Het aggregaat bestrijkt twee zaken op één rij. De **spiegel** (provider, sleut
 | `projectId`              | `String?`                  | Project waartoe het hoort; wordt nooit naar een externe provider gepusht                   |
 | `assignedAgentId`        | `String?`                  | Id van de toegewezen principal (alleen metadata — toewijzen dispatcht niets)               |
 | `assigneeType`           | `PrincipalType`            | Soort principal dat `assignedAgentId` aanwijst — `user` of `agent` (standaard `agent`)     |
-| `createdByType`          | `PrincipalType?`           | Soort principal dat het ticket heeft gemaakt (`user` of `agent`); null voor verouderde/systeemrijen |
+| `createdByType`          | `PrincipalType?`           | Soort principal dat het ticket heeft gemaakt (`user` of `agent`); null voor door het systeem aangemaakte rijen |
 | `createdById`            | `String?`                  | Id van de aanmakende principal                                                             |
 | `assignedTeamId`         | `String?`                  | Toegewezen team (alleen metadata)                                                          |
 | `delegatedByAgentId`     | `String?`                  | Agent die dit ticket heeft gedelegeerd                                                     |

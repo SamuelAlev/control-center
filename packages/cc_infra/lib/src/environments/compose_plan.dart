@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/environments/domain/services/environment_definition_validator.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
-import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
 import 'package:crypto/crypto.dart';

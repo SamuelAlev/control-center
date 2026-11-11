@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_attended_start.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_controls.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/providers/environment_actions.dart';
@@ -34,17 +35,22 @@ class EnvironmentRecreateNotice extends ConsumerWidget {
       confirmLabel: l10n.environmentRecreate,
     );
     if (confirmed && context.mounted) {
-      await runEnvironmentAction(context, ref, spaceKey, 'recreate', (
-        repository,
-      ) async {
-        await repository.destroy(spaceKey.workspaceId, spaceKey.spaceId);
-        await repository.ensure(
-          spaceKey.workspaceId,
-          spaceKey.spaceId,
-          definitionId: environment.definitionId,
-          options: environment.options,
-        );
-      });
+      final attendance = AttendedStart.of(context, ref);
+      await attendance.follow(
+        spaceKey,
+        () => runEnvironmentAction(context, ref, spaceKey, 'recreate', (
+          repository,
+        ) async {
+          await repository.destroy(spaceKey.workspaceId, spaceKey.spaceId);
+          await repository.ensure(
+            spaceKey.workspaceId,
+            spaceKey.spaceId,
+            definitionId: environment.definitionId,
+            options: environment.options,
+            attended: attendance.attended,
+          );
+        }),
+      );
     }
   }
 
@@ -63,7 +69,9 @@ class EnvironmentRecreateNotice extends ConsumerWidget {
           variant: CcButtonVariant.secondary,
           size: CcButtonSize.sm,
           loading: busy,
-          onPressed: busy ? null : () => unawaited(_recreate(context, ref)),
+          onPressed: busy || !environmentOperable(ref, spaceKey)
+              ? null
+              : () => unawaited(_recreate(context, ref)),
           child: Text(l10n.environmentRecreate),
         ),
       ),

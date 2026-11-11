@@ -2,7 +2,7 @@
 title: Slovník
 description: Definice klíčových pojmů, které se v Control Center používají.
 slug: cs-CZ/prirucka/referencni-prirucka/slovnik
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Manifest nainstalovaných skillů v pracovním prostoru: u každého zdrojový repozitář, cesta v repozitáři, commit, ke kterému je připnutý, a souhrnný hash obsahu. Instalace, aktualizace a odinstalace ho udržují aktuální; verify_skills ho porovná s diskem.'],
 ['Brána běhů agentů', 'Loopback endpoint na cc_server, který uplatňuje politiku akcí uvnitř sandboxu agenta. Každý push agenta na GitHub se přesměruje na ni, zkontroluje proti pravidlu Odeslat na remote a předá se zapisovacím tokenem, který agent nikdy nedrží; příkazy Bash v Claude Code se kontrolují přes hook na stejném endpointu.'],
 ['Režim', 'chat, plan, review nebo orchestrate. Ukládá se na prostor, takže jeden agent může být v různých prostorech v různých režimech; všechny konverzace prostoru ho sdílejí. Rozhoduje o systémovém promptu, pravidlech zápisu sandboxu a seznamu povolených nástrojů MCP.'],
-['SandboxBackend', 'microvm (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), native (nativní Seatbelt operačního systému na macOS, bubblewrap na Linuxu a WSL2) nebo none. Při startu se osondá jednou; native obalí odeslání agenta, když je k dispozici. Windows nativní backend nemá a Linux potřebuje bwrap a socat, takže tam běhy jdou bez obalu; --sandbox off ho vypne schválně.'],
+['SandboxBackend', 'microvm (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), native (nativní Seatbelt operačního systému na macOS, bubblewrap na Linuxu a WSL2) nebo none. Při startu se osondá jednou; native obalí odeslání agenta, když je k dispozici. Windows nativní backend nemá a Linux potřebuje bwrap a socat, takže na takovém hostiteli startují jen běhy vlastníka serveru bez obalu a ostatní se odmítnou; --sandbox off spustí agenty všech členů bez obalu.'],
 ['Stanice', 'Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka i nástroj agenta míří na jeden stroj.'],
 ['Izolované prostředí', 'Silnější izolace, kterou mají stanice na virtuálním stroji: hranice jádra, jednorázový překryvový disk, síťová brána s výchozím odmítnutím a broker přihlašovacích údajů. Stanice pro Android a iOS jsou jednorázové, ale síť jim spravuje hostitel, takže tuhle hranici nenárokují. Řízení jakékoli stanice používá třídu guardrailu enclosureControl.'],
 ['RunCost', 'Součet tokenů a nákladů (vstupní tokeny, výstupní tokeny, odhadovaný náklad v centech) jednoho běhu agenta.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Řídí provedení běhu: běhy spouští, kroky plánuje, stav ukládá, obstarává routery, joiny a continue-on-fail a po restartu obnoví běhy, které byly v pohybu.'],
 ['PipelineTriggerDispatcher', 'Odebírá doménové události a u zapnutých spouštěčů sám spustí odpovídající běhy pipeline.'],
 ['MemoryAccessPolicy', 'Vyřeší a vynutí oprávnění role agenta k doménám paměti.'],
-['HarnessCostCalculator', 'Ocení spotřebu tokenů vestavěného harnessu na RunCost podle katalogu models.dev. Odeslání ten součet zapíše do záznamu běhu.'],
+['HarnessRunAccounting', 'Účtuje volání modelů vestavěného harnessu jednou, ocení je podle katalogu models.dev, uloží je na vlastnícím běhu a útratu dceřiného běhu přičte do rozpočtu rodiče.'],
 ['BudgetEnforcementService', 'Spočítá měsíční útratu agenta a blok před odesláním (checkInvocationBlock). Na ten blok sahají jen rekoncilery obnovy (OrphanRunReaper, StrandedTicketReconciler), nikdy běžné odeslání.'],
 ['BudgetGovernanceService', 'Po každém běhu vyhodnotí měsíční útratu agenta: měkký práh zapíše varovný incident; vyčerpání zapíše tvrdý incident a přepne životní cyklus agenta na paused.'],
 ['DomainEventBus', 'Procesní broadcastová sběrnice publish/subscribe pro komunikaci napříč doménami. Události jsou typované; odběratelé čtou streamy podle typu.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Telefonní tenký klient: Flutter webová PWA, která na dálku ovládá flotilu přes zprostředkované relé, s politikou nástrojů s výchozím zákazem.'],
 ['cc_signaling_server', 'Bezstavový zprostředkovatel WebSocket relé, který hostuje místnosti otevřené jen na pozvánku. Hloupé relé: přeposílá jen rámce zapečetěné od konce ke konci, nedrží data aplikace a párovací PSK nikdy neuvidí.'],
 ['Principál', 'Zapečetěná hodnota, která sjednocuje lidi a agenty do jediné abstrakce aktéra. UserPrincipal(userId) nebo AgentPrincipal(agentId). Každá zpráva, ticket, kontrola, plán a záznam běhu se připisuje přes principála.'],
-['Uživatel', 'Lidská identita, uložená v global.db, a proto globální napříč pracovními prostory. Principál, který pracovní prostor založí, se stane jeho vlastníkem, zapsaným do Workspace.ownerUserId s řádkem členství v roli vlastníka; ostatní se připojí pozvánkou nebo přes SSO.'],
+['Uživatel', 'Lidská identita, uložená v global.db, a proto globální napříč pracovními prostory. Pracovní prostor založí jen vlastník serveru, který se stane jeho vlastníkem, zapsaným do Workspace.ownerUserId s řádkem členství v roli vlastníka; ostatní se připojí pozvánkou nebo přes SSO.'],
+['Vlastník serveru', 'Člověk, který server nastavil, zapsaný jednou při prvním startu; nic, co přijde po síti, ho nemění. Správce pracovního prostoru ani vlastník pracovního prostoru není vlastníkem serveru. Nic neběží na stroji serveru mimo sandbox, pokud to vlastník serveru nespustil nebo neschválil tenhle druh spouštění na hostiteli: zakládání pracovních prostorů, shell hostitele, vestavěný editor kódu, prostředí běžící na hostiteli a checkouty propojené zvenku úložiště pracovního prostoru jsou jen jeho.'],
 ['WorkspaceMember', 'Řádek členství, který váže uživatele k pracovnímu prostoru v roli WorkspaceRole. Hranice přístupu je členství, ne párovací klíč.'],
 ['WorkspaceRole', 'Odstupňovaná role členství: owner, admin, member, viewer nebo guest. Úzké místo operací nad repozitáři odvodí spodní hranici role podle druhu operace.'],
 ['ParticipantPresence', 'Pomíjivé povědomí o principálovi (stav, lokus, kurzor, psaní, živý stav agenta a běžící náklad). Nikdy se neukládá; soustředí ho server; před rozesláním se filtruje podle oprávnění k repozitáři.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Volič autonomie', 'Ovládání na prostor a na agenta: propose-only / act-with-approval / act-freely. Je to pojmenovaný profil nad úložištěm guardrailů akcí.'],
 ['cc_worker', 'Bezhlavá binárka vykonavatele flotily v čistém Dartu. Spáruje se s cc_server, ohlásí své schopnosti, stahuje zapůjčené úlohy, provede je a streamuje události zpátky. Nedrží žádný trvalý stav.'],
 ['JobSpec', 'Typovaná specifikace všeho, co se dá spustit (běh agenta, krok pipeline, index kódu, golden-render, benchmark, dávka eval): požadované schopnosti, priorita, rozpočet, pracovní prostor.'],
-['ActionClass', 'Uzavřená sada 13 tříd účinku (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Každý mutující nástroj deklaruje své třídy; engine guardrailů vyřeší allow / prompt / deny podle rozsahu.'],
+['ActionClass', 'Uzavřená sada 14 tříd účinku (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Každý mutující nástroj deklaruje své třídy; engine guardrailů vyřeší allow / prompt / deny podle rozsahu.'],
 ['WriteLedger', 'Kniha idempotence v rozsahu pracovního prostoru. Každá mutace nese klíč idempotence na logickou akci; opakování vrátí bajtově shodný původní výsledek. Znovupřipojení a víc klientů jsou tím bezpečné už z konstrukce.'],
 ['Klíč idempotence', 'UUIDv7, který klient vygeneruje na logickou akci (ne na každý pokus). Odstraní duplicity opakování přes znovupřipojení i klienty.'],
 ['Doručená pošta', 'Fronta napříč pilíři s přísným pravidlem: položka se objeví jen tehdy, když něco blokuje (agenta, sloučení, synchronizaci) nebo výslovně žádá operátora.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Verdikt kontroly', 'ship, hold nebo block. Jakékoli zjištění P0 s jistotou >= 0.7 dá block; jakékoli jiné P0 nebo jakékoli P1 dá hold; jinak ship. Selhání osy s bránou vynutí block a zjištění ho nepřehlasují.'],
 ['SessionRecording', 'Stream událostí plus kazety HTTP/LLM a vstup a výstup nástrojů zachycené pro jeden běh, spárované s AgentConfigHash.'],
 ['Zlatá relace', 'Posvěcený SessionRecording připnutý k agentovi nebo playbooku.'],
-['Control Center Connect', 'Volitelná služba, která provádí přihlášení k poskytovatelům (GitHub, Google, Linear) pro servery bez vlastních aplikací. Hostuje ji Control Center, hostuje si ji organizace sama, nebo je vypnutá. Vrací pečetě pověření a tokeny GitHubu pro jediný repozitář a obsah repozitářů nikdy nevidí.'],
+['Control Center Connect', 'Volitelná služba, která provádí přihlášení k poskytovatelům (GitHub, Google, Linear) pro servery nebo pracovní prostory, které si ji zvolily místo vlastních aplikací. Hostuje ji Control Center, hostuje si ji organizace sama, nebo je vypnutá. Vrací pečetě pověření a tokeny GitHubu pro jediný repozitář a obsah repozitářů nikdy nevidí.'],
 ['Pečeť pověření', 'Zašifrované pověření, které umí otevřít jen Connect, který ho vytvořil, vázané na poskytovatele, adresu Connect, ID instalace, pracovní prostor, účet, aplikaci a generaci secretu. Server ukládá pečeť; přístupové tokeny zůstávají v paměti.'],
 ['ID instalace', 'Identita serveru vůči jedné adrese Connect, odvozená z jeho instalačního klíče. Connect povoluje servery podle ID instalace; výměna klíče ho změní a odhlásí všechny z drah přes Connect.'],
-['Vazba instalace', 'Záznam Connect o tom, které servery smějí používat instalaci GitHubu sdílené App. Instalace v organizaci potřebuje, aby každý server autorizoval admin.'],
-['Dráha přihlášení', 'Přihlášení v prohlížeči u jednoho poskytovatele: github, google, linear, linear_app nebo slack. Každá dráha běží na vlastní aplikaci serveru, když je kompletní, jinak přes Connect, jinak není dostupná.'],
+['Vazba instalace', 'Záznam Connect (install_binding) o tom, ke kterému jedinému serveru je vázaný tým Slacku. Instalace GitHubu žádnou nemají: kterýkoli server, na kterém se člen přihlásí, je může použít.'],
+['Dráha přihlášení', 'Přihlášení v prohlížeči u jednoho poskytovatele: github, google, linear, linear_app nebo slack. Při vlastních aplikacích dráha běží na vlastní aplikaci (serveru nebo pracovního prostoru), když je plně nastavená, jinak není dostupná; když je zvolen Connect, běží přes něj. Ani jedno nepřechází na druhé.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Režim**: `chat`, `plan`, `review` nebo `orchestrate`. Ukládá se **na prostor**, takže jeden agent může být v různých prostorech v různých režimech; všechny konverzace prostoru ho sdílejí. Rozhoduje o systémovém promptu, pravidlech zápisu sandboxu a seznamu povolených nástrojů MCP. Composer nabízí jen `chat`, `plan` a `orchestrate`; `chat` má popisek „Agent“.
 
-**SandboxBackend**: `microvm` (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), `native` (Seatbelt na macOS, bubblewrap na Linuxu a WSL2) nebo `none`. Při startu se osondá jednou; `native` se **nasadí na odeslání agenta**, když je k dispozici, a obalí CLI Claude Code i nástroj `bash` harnessu. Windows nativní backend nemá a Linux potřebuje `bwrap` a `socat`, takže tam běhy jdou bez obalu; `--sandbox off` ho vypne schválně.
+**SandboxBackend**: `microvm` (uzavřený virtuální stroj, jediný backend s hranicí jádra, použitý na interaktivní terminály), `native` (Seatbelt na macOS, bubblewrap na Linuxu a WSL2) nebo `none`. Při startu se osondá jednou; `native` se **nasadí na odeslání agenta**, když je k dispozici, a obalí CLI Claude Code i nástroj `bash` harnessu. Windows nativní backend nemá a Linux potřebuje `bwrap` a `socat`, takže na takovém hostiteli startují jen běhy vlastníka serveru bez obalu a ostatní se odmítnou; `--sandbox off` spustí agenty všech členů bez obalu.
 
 **Stanice**: Jednorázový stroj, který agent řídí v reálném čase: uzavřený prohlížeč nebo linuxová plocha, emulátor Androidu nebo simulátor iOS spravovaný hostitelem, nebo uzavřený terminál. Sleduje se živě po vlastním kanálu v plném rozlišení a převzetí vynucuje server. V rozsahu konverzace, takže záložka člověka a volání `browser_use` / `computer_use` / `mobile_use` / `ios_use` míří na jeden výchozí stroj. Viz [Stanice a izolovaná prostředí](/cs-CZ/prirucka/koncepty/stanice/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Vyřeší a vynutí oprávnění role agenta k doménám paměti.
 
-**HarnessCostCalculator**: Ocení spotřebu tokenů vestavěného harnessu na `RunCost` podle katalogu models.dev. Odeslání ten součet zapíše do záznamu běhu.
+**HarnessRunAccounting**: Účtuje volání modelů vestavěného harnessu jednou, ocení je podle katalogu models.dev, uloží je na vlastnícím běhu a útratu dceřiného běhu přičte do rozpočtu rodiče.
 
 **BudgetEnforcementService**: Spočítá měsíční útratu agenta a blok před odesláním (`checkInvocationBlock`). Na ten blok sahají jen rekoncilery obnovy (`OrphanRunReaper`, `StrandedTicketReconciler`), nikdy běžné odeslání uživatelem nebo agentem.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Strukturované výstupy, které vytáhne pipeline shrnutí a uloží je jako samostatné řádky. Akční položky se dají navázat na ticket.
 
-**CalendarEvent**: Synchronizovaná položka Google Calendar v rozsahu pracovního prostoru a připojeného účtu. Od schůzky se liší: událost je naplánovaný závazek, schůzka je nahraná relace. Propojené jedna ku jedné přes `MeetingCalendarLink`.
+**CalendarEvent**: Synchronizovaná položka Google Calendar v rozsahu pracovního prostoru a připojeného účtu. Od schůzky se liší: událost je naplánovaný závazek, schůzka je nahraná relace. Propojené jedna ku jedné přes tabulku `meeting_calendar_links`.
 
 **CalendarAccount**: Připojený účet Google, na pracovní prostor, člena a e-mail (`google:<workspaceId>:<userId>:<email>`). Jeho pověření se ukládá na serveru jako klíč `google_*` v `<dataDir>/secrets.json` a ke klientovi se nikdy nedostane; přihlášení v prohlížeči se dokončí na serveru. Přihlášení přes Connect uloží jen pečeť pověření. Příznak `authExpiredAt` řídí banner **Znovu připojit**.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principál**: Zapečetěná hodnota, která sjednocuje lidi a agenty do jediné abstrakce aktéra: `UserPrincipal(userId)` nebo `AgentPrincipal(agentId)`. Každá zpráva, ticket, kontrola, plán a záznam běhu se připisuje přes principála.
 
-**Uživatel**: Lidská identita, uložená v `global.db`, a proto globální napříč pracovními prostory. Principál, který pracovní prostor založí, se stane jeho **vlastníkem**, zapsaným do `Workspace.ownerUserId` s řádkem členství v roli vlastníka v téže operaci. Ostatní se připojí pozvánkou nebo přes SSO.
+**Vlastník serveru**: Člověk, který server nastavil, zapsaný jednou při prvním startu; nic, co přijde po síti, ho nemění. Správce pracovního prostoru ani vlastník pracovního prostoru není vlastníkem serveru. Nic neběží na stroji serveru mimo sandbox, pokud to vlastník serveru nespustil nebo neschválil tenhle druh spouštění na hostiteli: zakládání pracovních prostorů, shell hostitele, vestavěný editor kódu, prostředí běžící na hostiteli a checkouty propojené zvenku úložiště pracovního prostoru jsou jen jeho. Viz [Vlastník serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru).
+
+**Uživatel**: Lidská identita, uložená v `global.db`, a proto globální napříč pracovními prostory. Pracovní prostor založí jen vlastník serveru, který se stane jeho **vlastníkem**, zapsaným do `Workspace.ownerUserId` s řádkem členství v roli vlastníka v téže operaci. Ostatní se připojí pozvánkou nebo přes SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Řádek členství, který váže uživatele k pracovnímu prostoru v roli (`owner` / `admin` / `member` / `viewer` / `guest`). **Hranice přístupu je členství, ne párovací klíč.** Oprávnění na repozitář drží členství v mezích forge.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Volič autonomie**: Ovládání na prostor a na agenta, `propose-only` / `act-with-approval` / `act-freely`, pojmenovaný profil nad úložištěm guardrailů akcí.
 
-**ActionClass**: Uzavřená sada 13 tříd účinku (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Každý mutující nástroj deklaruje své třídy; engine guardrailů vyřeší `allow` / `prompt` / `deny` podle rozsahu (prostor > agent > pracovní prostor > předvolba režimu > vestavěný výchozí).
+**ActionClass**: Uzavřená sada 14 tříd účinku (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Každý mutující nástroj deklaruje své třídy; engine guardrailů vyřeší `allow` / `prompt` / `deny` podle rozsahu (prostor > agent > pracovní prostor > předvolba režimu > vestavěný výchozí).
 
 **WriteLedger** / **klíč idempotence**: Každá mutace nese klíč idempotence, který vygeneruje klient (UUIDv7, na logickou akci). Kniha v rozsahu pracovního prostoru odstraní duplicitu dřív, než doběhne handler; opakování vrátí bajtově shodný původní výsledek. Znovupřipojení a víc klientů jsou tím bezpečné už z konstrukce.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Bezstavový zprostředkovatel WebSocket relé, který hostuje místnosti otevřené jen na pozvánku. Hloupé relé, které přeposílá jen rámce zapečetěné od konce ke konci, nedrží data aplikace a párovací PSK nikdy neuvidí.
 
-**Control Center Connect**: Volitelná služba, která provádí přihlášení k poskytovatelům (GitHub, Google Calendar, Linear) pro servery, které si nezaregistrovaly vlastní aplikace: hostovaná služba Control Center, služba, kterou provozuje organizace (`cc-connect` nebo připojená v `cc_server` na `/connect`), nebo žádná. Vrací pečetě pověření a tokeny GitHubu pro jediný repozitář a obsah repozitářů nikdy nevidí. Viz [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/).
+**Control Center Connect**: Volitelná služba, která provádí přihlášení k poskytovatelům (GitHub, Google Calendar, Linear) pro servery nebo pracovní prostory, které si ji zvolily místo vlastních aplikací: hostovaná služba Control Center, služba, kterou provozuje organizace (`cc-connect` nebo připojená v `cc_server` na `/connect`), nebo žádná. Vrací pečetě pověření a tokeny GitHubu pro jediný repozitář a obsah repozitářů nikdy nevidí. Viz [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/).
 
 **Pečeť pověření**: Zašifrované pověření (`credential_seal`), které umí otevřít jen Connect, který ho vytvořil, vázané na poskytovatele, adresu Connect, ID instalace, pracovní prostor, účet, aplikaci a generaci secretu. Server ukládá pečeť a ID instalace, pro které vznikla; přístupové tokeny zůstávají v paměti. Pečeť, jejíž ID instalace už nesedí, se zahodí a její vlastník se přihlásí znovu.
 
 **ID instalace**: Identita serveru vůči jedné adrese Connect (`install_id`), odvozená z instalačního klíče v jeho souboru secrets. Connect povoluje servery podle ID instalace. Výměna klíče dá nové ID a odhlásí všechny z drah přes Connect.
 
-**Vazba instalace**: Záznam Connect (`install_binding`) o tom, které servery smějí používat instalaci GitHubu sdílené App. Instalace přes server ho naváže; **Autorizovat tento server** od admina organizace naváže další.
+**Vazba instalace**: Záznam Connect (`install_binding`) o tom, ke kterému jedinému serveru je vázaný tým Slacku. Instalace GitHubu žádnou nemají: kterýkoli server, na kterém se člen přihlásí, je může použít.
 
-**Dráha přihlášení**: Přihlášení v prohlížeči u jednoho poskytovatele — `github`, `google`, `linear`, `linear_app` nebo `slack`. Dráha běží na vlastní aplikaci serveru, když je ta aplikace kompletní, jinak přes Connect, jinak není dostupná; částečně nastavená vlastní aplikace je chyba, nikdy přechod na náhradu.
+**Dráha přihlášení**: Přihlášení v prohlížeči u jednoho poskytovatele — `github`, `google`, `linear`, `linear_app` nebo `slack`. Při vlastních aplikacích dráha běží na vlastní aplikaci (serveru nebo pracovního prostoru), když je plně nastavená, jinak není dostupná; když je zvolen Connect, běží přes něj. Ani jedno nepřechází na druhé a částečně nastavená vlastní aplikace je chyba.
 
 ## Viz také
 

@@ -2,7 +2,7 @@
 title: Wdrażanie i klienci
 description: Jak architektura cienkiego klienta w Control Center rozdziela serwer headless od klientów desktopowych, webowych i mobilnych.
 slug: pl-PL/podrecznik/koncepcje/wdrazanie
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center to nie jeden program. To **architektura cienkiego klienta**:
@@ -134,6 +134,8 @@ zaplecza code-server. Przeglądarka wymaga HTTPS lub bezpiecznego kontekstu
 loopback dla Service Workerów. Klienci natywni korzystają z fasady loopback o
 ograniczonym zakresie uprawnień.
 
+Tylko [właściciel serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera) może otworzyć osadzony edytor code-server: działa on na serwerze, jako własny użytkownik serwera. Sesja należy do urządzenia i osoby, która ją otworzyła. Otwiera się z włączonym zaufaniem obszaru roboczego VS Code, więc VS Code pyta przed zaufaniem folderowi, i z wyłączonymi automatycznymi zadaniami. Pozostali nadal korzystają z wbudowanego edytora pojedynczego pliku i widoków plików.
+
 ### Towarzysz na telefonie (cc_remote)
 
 Aplikacja **Remote** to osobny, lżejszy klient — PWA we Flutterze dostępna pod
@@ -205,8 +207,8 @@ się wykonać. Dziś tylko prawdziwy `cc_worker` wykonuje wydzierżawione zadani
 
 Oba poziomy nie stosują takiego samego sandboxa. `cc_server` zamyka
 uruchomienia, które wykonuje samodzielnie, w sandboxie systemu operacyjnego hosta,
-gdy backend jest dostępny — Seatbelt w macOS, bubblewrap w Linuksie i WSL2 —
-a w Windows lub bez `bwrap` i `socat` sięga po pozostałe ograniczenia.
+gdy backend jest dostępny — Seatbelt w macOS, bubblewrap w Linuksie i WSL2.
+W Windows lub bez `bwrap` i `socat` uruchamia tylko te uruchomienia, za które odpowiada właściciel serwera, a pozostałe odrzuca, chyba że właściciel wystartował serwer z `--sandbox off`, co uruchamia agentów wszystkich członków bez ograniczeń.
 **`cc_worker` w ogóle nie stosuje sandboxa.** Ogłasza możliwość `sandbox`, aby
 serwer mógł rozdzielać zadania według platformy, ale nic w workerze jej nie
 egzekwuje: wydzierżawione zadanie jest uruchamiane bezpośrednio, ograniczone
@@ -256,7 +258,7 @@ przypięcia odcisku. Przy pierwszym połączeniu zweryfikuj ten odcisk przez
 zaufany kod QR albo inny zaufany kanał: podpisany pierwszy kontakt sam nie
 uwierzytelnia, kto dostarczył klucz. Jeśli tożsamość się zmieni, klient odmawia
 domyślnie; sparuj ponownie przez zaufany kanał, zamiast ignorować niezgodność.
-Starzy klienci i tekst jawny RPC nie mogą się połączyć. TLS jest nadal potrzebny
+Tekst jawny RPC nie jest przyjmowany. TLS jest nadal potrzebny
 dla pochodzeń przeglądarek, startu i publicznych metadanych; `--insecure`
 dotyczy zewnętrznego nasłuchu serwera, a nie wymaganej szyfrowanej sesji.
 

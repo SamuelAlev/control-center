@@ -84,7 +84,7 @@
   "guardrailClassGitCommit": "Create a commit",
   "guardrailClassGitPush": "Push to a remote",
   "guardrailClassPrCreate": "Open a pull request",
-  "guardrailClassPrPublish": "Publish a review or merge",
+  "guardrailClassPrPublish": "Update or merge a pull request",
   "guardrailClassVendorSyncWrite": "Write to an external tracker",
   "guardrailClassNetworkEgress": "Access the network",
   "guardrailClassSecretAccess": "Read a secret",
@@ -1718,7 +1718,6 @@
   "activityStartedRecording": "Started the recording",
   "activityStoppedRecording": "Stopped the recording",
   "activityToggledMcpServer": "Toggled the MCP server",
-  "activityUpdatedMcpToken": "Updated the MCP token",
   "activitySavedApiKey": "Saved an API key",
   "activityRemovedProviderCredential": "Removed a provider credential",
   "activityUpdatedLinkedRepos": "Updated the linked repositories",
@@ -2403,7 +2402,6 @@
       }
     }
   },
-  "archiveConversation": "Archive conversation",
   "deleteFact": "Delete fact",
   "@deleteFact": {
     "description": "Delete fact"
@@ -3212,7 +3210,6 @@
   "manageWorkspaces": "Manage workspaces",
   "reorderWorkspace": "Reorder workspace",
   "matchOsAppearance": "Match your OS appearance or pick a fixed mode.",
-  "mcpAuthToken": "MCP authentication token",
   "@mcpDefaultPort": {
     "description": "Default port number hint",
     "placeholders": {
@@ -3408,10 +3405,6 @@
     "description": "Empty state body for saved articles"
   },
   "noSystemFonts": "No system fonts detected.",
-  "noTokenSet": "No token set — access is unrestricted.",
-  "@noTokenSet": {
-    "description": "No token set — access is unrestricted."
-  },
   "noWorkingMemory": "No working memory notes yet.",
   "@noWorkingMemory": {
     "description": "Empty state for agent working memory"
@@ -3843,37 +3836,6 @@
       }
     }
   },
-  "repoAccessNoticeBody": "The server's GitHub credential can't see {repos}. If a repository belongs to an organization, install the GitHub App there or connect a token that has access.",
-  "@repoAccessNoticeBody": {
-    "description": "Body of the notice listing repos the server's forge credential cannot access",
-    "placeholders": {
-      "repos": {
-        "type": "String"
-      }
-    }
-  },
-  "repoAccessNoticeTitle": "{count, plural, =1 {A repository can't be accessed} other {{count} repositories can't be accessed}}",
-  "@repoAccessNoticeTitle": {
-    "description": "Title of the notice shown when the server's forge credential cannot access linked repos",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "repoAccessNoticeSuspendedTitle": "GitHub App installation suspended",
-  "@repoAccessNoticeSuspendedTitle": {
-    "description": "Title of the notice when the GitHub App installation covering linked repos is suspended"
-  },
-  "repoAccessNoticeSuspendedBody": "Showing last known data for {repos}. Resume the installation on GitHub, or connect a token that has access.",
-  "@repoAccessNoticeSuspendedBody": {
-    "description": "Body telling the operator the lists are cached because the GitHub App installation is suspended",
-    "placeholders": {
-      "repos": {
-        "type": "String"
-      }
-    }
-  },
   "repoNoAccessBadge": "No access",
   "@repoNoAccessBadge": {
     "description": "Badge on a repo row the server's forge credential cannot access"
@@ -3987,10 +3949,6 @@
   "ruleLabel": "Rule",
   "@ruleLabel": {
     "description": "Label for policy rule field"
-  },
-  "runCompleted": "Run completed",
-  "@runCompleted": {
-    "description": "Run completed"
   },
   "running": "Running",
   "@running": {
@@ -4178,10 +4136,6 @@
   "setLabel": "Set",
   "@setLabel": {
     "description": "Generic set button label"
-  },
-  "setToken": "Set token",
-  "@setToken": {
-    "description": "Button to set an auth token"
   },
   "settingsLabel": "Settings",
   "@settingsLabel": {
@@ -4445,8 +4399,6 @@
   "@skillOriginGithub": {},
   "skillOriginManual": "Manual",
   "@skillOriginManual": {},
-  "skillOriginRegistry": "Registry",
-  "@skillOriginRegistry": {},
   "skillOriginRuntimeLocal": "Runtime local",
   "@skillOriginRuntimeLocal": {},
   "skillRulesStale": "Scan outdated",
@@ -4648,10 +4600,6 @@
   "toggleTheme": "Toggle theme",
   "@toggleTheme": {
     "description": "Toggle theme"
-  },
-  "tokenConfigured": "Configured — clients must present this token.",
-  "@tokenConfigured": {
-    "description": "Configured — clients must present this token."
   },
   "@tokenName": {
     "description": "Token field label",
@@ -7806,7 +7754,8 @@
   "mcpExternalServers": "External MCP servers",
   "mcpExternalServersDescription": "Connect to external MCP servers (GitHub, Sentry, Postgres, browser automation). Servers you configured for Claude, Cursor, VS Code and other tools are auto-discovered.",
   "mcpApprovalMode": "Tool approval",
-  "mcpApprovalModeDescription": "Which tool actions run without asking. Reads are always allowed; higher tiers prompt.",
+  "mcpApprovalModeDescription": "Which actions of Control Center's own tools, called through its MCP endpoint or by its agents, run without asking. Reads are always allowed; higher tiers prompt. Servers inside a run follow that run's action policy.",
+  "@mcpApprovalModeDescription": {"description": "Under 'Tool approval' in the External MCP servers section. It governs Control Center's own tools by capability tier (reads, writes, everything), not the personal MCP servers listed in that section, which a run's action policy and confirmations govern"},
   "mcpApprovalAlwaysAsk": "Always ask",
   "mcpApprovalWrite": "Auto-approve writes",
   "mcpApprovalYolo": "Auto-approve all",
@@ -10879,23 +10828,7 @@
   "@settingsAbout": {
     "description": "Locale string for settingsAbout"
   },
-  "settingsScopeBadgeYou": "YOU",
-  "@settingsScopeBadgeYou": {
-    "description": "Locale string for settingsScopeBadgeYou"
-  },
-  "settingsScopeBadgeDevice": "THIS DEVICE",
-  "@settingsScopeBadgeDevice": {
-    "description": "Locale string for settingsScopeBadgeDevice"
-  },
-  "settingsScopeBadgeWorkspace": "WORKSPACE",
-  "@settingsScopeBadgeWorkspace": {
-    "description": "Locale string for settingsScopeBadgeWorkspace"
-  },
-  "settingsScopeBadgeServer": "SERVER",
-  "@settingsScopeBadgeServer": {
-    "description": "Locale string for settingsScopeBadgeServer"
-  },
-  "settingsProfileDescription": "Your name, email and git identity in this workspace. Switching workspace switches this overlay; handle, sign-in and devices stay on your account.",
+  "settingsProfileDescription": "Your name, email and git identity in this workspace. Switching workspace switches this overlay; your username, sign-in and devices stay on your account in You → Profile.",
   "@settingsProfileDescription": {
     "description": "Locale string for settingsProfileDescription"
   },
@@ -10911,53 +10844,9 @@
   "@settingsDiagnosticsDescription": {
     "description": "Locale string for settingsDiagnosticsDescription"
   },
-  "settingsWorkspaceGeneralDescription": "Identity, policy and conventions shared by everyone in this workspace.",
+  "settingsWorkspaceGeneralDescription": "Policy and conventions shared by everyone in this workspace.",
   "@settingsWorkspaceGeneralDescription": {
     "description": "Locale string for settingsWorkspaceGeneralDescription"
-  },
-  "settingsAgentAttributionTitle": "Commit attribution",
-  "@settingsAgentAttributionTitle": {
-    "description": "Page and section title for agent commit attribution settings"
-  },
-  "settingsAgentAttributionDescription": "Choose whether agent commits credit Control Center. Workspace admins can override this choice for everyone in a workspace.",
-  "@settingsAgentAttributionDescription": {
-    "description": "Description of the personal agent commit attribution setting"
-  },
-  "settingsAgentCoauthorSection": "Agent attribution",
-  "@settingsAgentCoauthorSection": {
-    "description": "Section label for Control Center agent attribution"
-  },
-  "settingsAgentCoauthorTitle": "Credit Control Center on agent commits",
-  "@settingsAgentCoauthorTitle": {
-    "description": "User toggle to credit Control Center on agent commits"
-  },
-  "settingsAgentCoauthorDescription": "You are always the author and committer. When enabled, Control Center (@usectrl) is added as a co-author. When disabled, commits contain no agent credit.",
-  "@settingsAgentCoauthorDescription": {
-    "description": "Explanation of enabled and disabled agent commit attribution"
-  },
-  "settingsAgentCoauthorWorkspaceOverride": "This workspace overrides your personal choice. Your preference is saved but does not apply here.",
-  "@settingsAgentCoauthorWorkspaceOverride": {
-    "description": "Notice shown when a workspace setting disables the personal co-author toggle"
-  },
-  "settingsAgentAttributionLoading": "Loading attribution settings…",
-  "@settingsAgentAttributionLoading": {
-    "description": "Status shown while personal and workspace attribution settings load"
-  },
-  "settingsWorkspaceAgentCoauthorDescription": "Choose whether agent commits credit Control Center. A workspace choice overrides each member's personal preference.",
-  "@settingsWorkspaceAgentCoauthorDescription": {
-    "description": "Description of the workspace agent attribution override"
-  },
-  "settingsWorkspaceAgentCoauthorInherit": "Use each member's preference",
-  "@settingsWorkspaceAgentCoauthorInherit": {
-    "description": "Workspace agent commit attribution option that inherits each user's preference"
-  },
-  "settingsWorkspaceAgentCoauthorAlways": "Always credit Control Center",
-  "@settingsWorkspaceAgentCoauthorAlways": {
-    "description": "Workspace option to always credit Control Center"
-  },
-  "settingsWorkspaceAgentCoauthorNever": "Never credit Control Center",
-  "@settingsWorkspaceAgentCoauthorNever": {
-    "description": "Workspace option to never credit Control Center"
   },
   "settingsWorkspaceMeetingsDescription": "Note templates and saved voices for meetings in this workspace.",
   "@settingsWorkspaceMeetingsDescription": {
@@ -11425,10 +11314,6 @@
   "checkingConnection": "Checking connection…",
   "@checkingConnection": {
     "description": "Locale string for checkingConnection"
-  },
-  "fromEnvironment": "from the environment",
-  "@fromEnvironment": {
-    "description": "Locale string for fromEnvironment"
   },
   "forgeTokenTitle": "{forge} token",
   "@forgeTokenTitle": {
@@ -11917,12 +11802,12 @@
   "adapterArgumentsDescription": "Appended to the runner's command line on every launch.",
   "settingsStateFailed": "Failed",
   "providerAppsGroupServer": "Acting as the server",
-  "providerAppsGroupServerDescription": "Used by workspaces that inherit this install's GitHub App. A workspace with its own App configures it under Workspace → General.",
+  "providerAppsGroupServerDescription": "Used by workspaces that follow this server's sign-in apps. A workspace on its own apps sets up its App under Workspace → Integrations.",
   "providerAppsGroupPrConversations": "Pull request conversations",
   "@providerAppsGroupPrConversations": {
     "description": "Settings group: how developers talk to the server on GitHub PRs"
   },
-  "providerAppsGroupPrConversationsDescription": "How developers can talk to this server on GitHub in inherit workspaces. A workspace with its own App has its own bot under Workspace → General. Works with no webhook or public URL — the server polls.",
+  "providerAppsGroupPrConversationsDescription": "How developers can talk to this server on GitHub in workspaces that follow this server. A workspace on its own apps has its own bot under Workspace → Integrations. Works with no webhook or public URL — the server polls.",
   "@providerAppsGroupPrConversationsDescription": {
     "description": "Settings group description for the PR-conversations group"
   },
@@ -11947,7 +11832,6 @@
   "providerAppCapActsAsServer": "Acts as the server",
   "providerAppCapSignsIn": "Signs people in",
   "portLabel": "Port",
-  "mcpNoTokenWarning": "Without a token, anything that can reach this port can call every tool.",
   "mcpBridgedToolsLabel": "Tools",
   "guardrailFamilyFiles": "Files",
   "guardrailFamilyGit": "Git and pull requests",
@@ -11957,6 +11841,197 @@
   "guardrailScopeFieldDescription": "A narrower scope wins over a wider one. Rules set here apply on top of what is inherited.",
   "guardrailSetHere": "Set here",
   "guardrailClearAllHere": "Clear all",
+  "guardrailFamilyCommands": "Commands",
+  "@guardrailFamilyCommands": {
+    "description": "Agent permissions settings: heading of the group that lists rules written for a shell command prefix (e.g. `git push`) rather than for an action type."
+  },
+  "guardrailStandingApproval": "Standing approval",
+  "@guardrailStandingApproval": {
+    "description": "Agent permissions settings: names a rule created when someone answered an agent's approval request with 'Approve for 8 hours'. Shown as the source badge of an action row and inside each listed approval."
+  },
+  "guardrailEntryAllow": "Allowed for {what}",
+  "@guardrailEntryAllow": {
+    "description": "Agent permissions settings: one listed standing approval or conditional rule that allows something. {what} is a phrase such as 'branches feature/**' or 'every action of this kind'.",
+    "placeholders": {
+      "what": {
+        "type": "String",
+        "example": "branches feature/**"
+      }
+    }
+  },
+  "guardrailEntryPrompt": "Ask first for {what}",
+  "@guardrailEntryPrompt": {
+    "description": "Agent permissions settings: one listed conditional rule that makes agents ask before acting. {what} is a phrase such as 'paths src/**'.",
+    "placeholders": {
+      "what": {
+        "type": "String",
+        "example": "paths src/**"
+      }
+    }
+  },
+  "guardrailEntryDeny": "Denied for {what}",
+  "@guardrailEntryDeny": {
+    "description": "Agent permissions settings: one listed conditional rule that blocks something. {what} is a phrase such as 'branches main'.",
+    "placeholders": {
+      "what": {
+        "type": "String",
+        "example": "branches main"
+      }
+    }
+  },
+  "guardrailCoversBranches": "branches {patterns}",
+  "@guardrailCoversBranches": {
+    "description": "Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of git branch patterns, shown as typed.",
+    "placeholders": {
+      "patterns": {
+        "type": "String",
+        "example": "feature/**"
+      }
+    }
+  },
+  "guardrailCoversPaths": "paths {patterns}",
+  "@guardrailCoversPaths": {
+    "description": "Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of file path patterns.",
+    "placeholders": {
+      "patterns": {
+        "type": "String",
+        "example": "src/**"
+      }
+    }
+  },
+  "guardrailCoversHosts": "hosts {patterns}",
+  "@guardrailCoversHosts": {
+    "description": "Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of network host names.",
+    "placeholders": {
+      "patterns": {
+        "type": "String",
+        "example": "api.example.com"
+      }
+    }
+  },
+  "guardrailCoversCommands": "commands {patterns}",
+  "@guardrailCoversCommands": {
+    "description": "Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of shell commands.",
+    "placeholders": {
+      "patterns": {
+        "type": "String",
+        "example": "git status"
+      }
+    }
+  },
+  "guardrailCoversTools": "tools {names}",
+  "@guardrailCoversTools": {
+    "description": "Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {names} is a comma-separated list of agent tool names, shown as typed.",
+    "placeholders": {
+      "names": {
+        "type": "String",
+        "example": "create_issue"
+      }
+    }
+  },
+  "guardrailCoversCommandPrefix":"commands starting with {prefix}",
+  "@guardrailCoversCommandPrefix": {
+    "description": "Agent permissions settings: what a command rule covers, inserted into 'Allowed for {what}'. {prefix} is the start of a shell command.",
+    "placeholders": {
+      "prefix": {
+        "type": "String",
+        "example": "git push"
+      }
+    }
+  },
+  "guardrailCoversMaxCount": "at most {count} at once",
+  "@guardrailCoversMaxCount": {
+    "description": "Agent permissions settings: a limit on how many items (for example files) one action may touch, inserted into 'Allowed for {what}'. {count} is an already formatted number.",
+    "placeholders": {
+      "count": {
+        "type": "String",
+        "example": "20"
+      }
+    }
+  },
+  "guardrailCoversMaxCents": "at most {amount} cents",
+  "@guardrailCoversMaxCents": {
+    "description": "Agent permissions settings: a spending limit, in cents, for one action, inserted into 'Allowed for {what}'. {amount} is an already formatted number.",
+    "placeholders": {
+      "amount": {
+        "type": "String",
+        "example": "500"
+      }
+    }
+  },
+  "guardrailCoversEverything": "every action of this kind",
+  "@guardrailCoversEverything": {
+    "description": "Agent permissions settings: inserted into 'Allowed for {what}' when a listed rule has no condition and covers the whole action type."
+  },
+  "guardrailEntryGivenBy": "by {name}",
+  "@guardrailEntryGivenBy": {
+    "description": "Agent permissions settings: who gave a standing approval, shown after the rule as ' · by Alex'. Only shown when it was someone other than the viewer.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Alex"
+      }
+    }
+  },
+  "guardrailEntryEnds": "ends {time}",
+  "@guardrailEntryEnds": {
+    "description": "Agent permissions settings: when a standing approval stops applying, shown after the rule as ' · ends 18:40'. {time} is a formatted time, with the date when it is not today.",
+    "placeholders": {
+      "time": {
+        "type": "String",
+        "example": "18:40"
+      }
+    }
+  },
+  "guardrailEntryNoEnd": "until revoked",
+  "@guardrailEntryNoEnd": {
+    "description": "Agent permissions settings: shown after a listed rule that has no end time, as ' · until revoked'."
+  },
+  "guardrailRevokeEntry": "Revoke: {entry}",
+  "@guardrailRevokeEntry": {
+    "description": "Agent permissions settings: screen reader label of the button that deletes one listed standing approval or rule. {entry} is the rule's description, e.g. 'Allowed for branches feature/**'.",
+    "placeholders": {
+      "entry": {
+        "type": "String",
+        "example": "Allowed for branches feature/**"
+      }
+    }
+  },
+  "guardrailRevokeFailed": "Couldn't revoke it. Try again.",
+  "@guardrailRevokeFailed": {
+    "description": "Agent permissions settings: toast shown when deleting a standing approval or rule failed."
+  },
+  "guardrailEntryInactive": "not in effect while denied",
+  "@guardrailEntryInactive": {
+    "description": "Agent permissions settings: shown after a listed standing approval, as ' · not in effect while denied', when the action it approves is set to Deny. A standing approval only spares a question; it never overrides a Deny."
+  },
+  "guardrailClassPartlyAllowed": "{count, plural, =1{Allowed in 1 case listed below} other{Allowed in {count} cases listed below}}",
+  "@guardrailClassPartlyAllowed": {
+    "description": "Agent permissions settings: second line of an action row whose setting is 'Ask first' or 'Deny' while standing approvals listed under it still let some of these actions through.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guardrailStandingFromWorkspace": "{count, plural, =1{1 standing approval for the whole workspace also applies here.} other{{count} standing approvals for the whole workspace also apply here.}}",
+  "@guardrailStandingFromWorkspace": {
+    "description": "Agent permissions settings: note under the summary when a single space or agent is being edited and standing approvals given for the whole workspace also apply to it.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "guardrailStandingInNarrowerScopes": "{count, plural, =1{1 standing approval is set for a single space or agent. Pick Space or Agent above to see it.} other{{count} standing approvals are set for single spaces or agents. Pick Space or Agent above to see them.}}",
+  "@guardrailStandingInNarrowerScopes": {
+    "description": "Agent permissions settings: note under the summary when the whole workspace is being edited and standing approvals exist that were given for one space or one agent only. 'Space' and 'Agent' are the scope toggle's labels.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "sandboxingCardLabel": "Sandboxing",
   "sandboxingCardDescription": "Whether agent work runs isolated from this host, and what an isolated agent can still reach.",
   "sandboxBackendNoneActive": "Host, no isolation",
@@ -12874,6 +12949,14 @@
   "@sandboxExecGrantRevokeConfirmBody": {
     "description": "Confirm dialog body when revoking a grant"
   },
+  "sandboxExecGrantsSearchHint": "Search paths",
+  "@sandboxExecGrantsSearchHint": {
+    "description": "Placeholder of the search field filtering executable grants by path"
+  },
+  "sandboxExecGrantsNoMatch": "No grants match your search",
+  "@sandboxExecGrantsNoMatch": {
+    "description": "Shown when no executable grant path matches the search"
+  },
   "demoBadgeLabel": "Demo",
   "@demoBadgeLabel": {
     "description": "Persistent badge in the app shell header when connected to a public demo server"
@@ -13322,11 +13405,11 @@
   "@backupUploadAction": {
     "description": "Button that picks a file and uploads it to restore a workspace"
   },
-  "backupTransferUnavailable": "This connection reaches the server through a relay, which carries no file transfers. Connect to the server directly to download or upload a backup.",
+  "backupTransferUnavailable": "File transfers aren't set up for this connection yet. Reconnect to the server to download or upload a backup.",
   "@backupTransferUnavailable": {
-    "description": "Why download and upload are unavailable on a relayed connection"
+    "description": "Why download and upload are off: the app has no file lane to the server for this session (direct and relayed connections both carry one once connected)"
   },
-  "backupTransferForbidden": "The server refused. Downloading a workspace needs the admin role, restoring one needs owner, and a whole snapshot needs the install's operator.",
+  "backupTransferForbidden": "The server refused. Downloading a workspace needs the workspace admin role. Restoring one needs the server owner, who must also own the workspace. A whole snapshot needs the server owner.",
   "@backupTransferForbidden": {
     "description": "Which role each backup transfer requires, after a refusal"
   },
@@ -13583,37 +13666,9 @@
   "@rigClipboardAlwaysCopyTitle": {"description": "Rig clipboard permission and settings"},
   "rigClipboardAlwaysCopyDescription": "Put clipboard content from any enclosure on this device without asking.",
   "@rigClipboardAlwaysCopyDescription": {"description": "Rig clipboard permission and settings"},
-  "workspaceGitHubIdentity": "GitHub identity",
-  "@workspaceGitHubIdentity": {
-    "description": "Workspace settings card: how this workspace authenticates to GitHub"
-  },
-  "workspaceGitHubIdentityDescription": "How background GitHub work in this workspace authenticates: this install's App, or a different App of the workspace's own.",
-  "@workspaceGitHubIdentityDescription": {
-    "description": "Subtitle of the workspace GitHub identity card"
-  },
-  "workspaceGitHubModeInherit": "Use this install's GitHub App",
-  "@workspaceGitHubModeInherit": {
-    "description": "Workspace GitHub auth mode: inherit the server App"
-  },
-  "workspaceGitHubModeApp": "Use a different GitHub App",
-  "@workspaceGitHubModeApp": {
-    "description": "Workspace GitHub auth mode: a dedicated App"
-  },
-  "workspaceGitHubInheritHint": "Uses the GitHub App on Server → Provider apps.",
-  "@workspaceGitHubInheritHint": {
-    "description": "Hint when the workspace inherits the install GitHub App"
-  },
-  "workspaceGitHubAppHint": "This workspace's bot and polling identity. Members sign in on You through this App.",
-  "@workspaceGitHubAppHint": {
-    "description": "Hint when the workspace uses its own GitHub App"
-  },
   "profileOverlayHint": "These fields are you in this workspace. Empty fields inherit your account name and email. Switching workspace switches this overlay.",
   "@profileOverlayHint": {
     "description": "Profile card subtitle: workspace overlay, not a second account"
-  },
-  "forgeConnectionsThisWorkspace": "Sign in or paste a token for this workspace.",
-  "@forgeConnectionsThisWorkspace": {
-    "description": "Code hosting card subtitle on Workspace \u2192 Profile"
   },
   "stackStartNextPart": "Start next part",
   "@stackStartNextPart": {
@@ -14062,6 +14117,12 @@
   "@claudeSignInNoAccounts": {"description": "Shown when no managed Claude Code account needs signing in; followed by the plain login command"},
   "claudeSignInCommandUnavailable": "The server could not provide a login command for this account.",
   "@claudeSignInCommandUnavailable": {"description": "Shown when the login command for a Claude Code account could not be loaded"},
+  "claudeAccountSignedIn": "Signed in",
+  "@claudeAccountSignedIn": {"description": "Badge on a Claude Code account whose sign-in just finished while the sign-in dialog was open. The opposite of the 'Signed out' badge"},
+  "claudeSignInClosesItself": "This closes on its own once the sign-in finishes.",
+  "@claudeSignInClosesItself": {"description": "Line under the login command in the Claude Code sign-in dialog, beside a spinner. The dialog watches for the login the user runs in a terminal and closes itself when it finishes"},
+  "claudeSignInClosesItselfAll": "This closes on its own once every account is signed in.",
+  "@claudeSignInClosesItselfAll": {"description": "Same line as claudeSignInClosesItself when the dialog lists several Claude Code accounts, each with its own login command"},
   "transcriptClaudeSignInExpiredTitle": "Claude Code sign-in expired",
   "@transcriptClaudeSignInExpiredTitle": {"description": "Title of the notice in a turn that failed because its Claude Code account stopped authenticating"},
   "transcriptClaudeSignInExpiredBody": "The run stopped because its account no longer authenticates. Sign in again, then retry the turn.",
@@ -14146,8 +14207,8 @@
   "@environmentExecTitle": {"description": "Space environments: environmentExecTitle"},
   "environmentExitCode": "Exit code {code}",
   "@environmentExitCode": {"description": "Space environments: environmentExitCode", "placeholders": {"code": {"type": "int"}}},
-  "environmentHostSetupNeeded": "This needs setting up on the server",
-  "@environmentHostSetupNeeded": {"description": "Space environments: environmentHostSetupNeeded"},
+  "environmentInputNeeded": "This needs setting up on the server",
+  "@environmentInputNeeded": {"description": "Heading of a notice on an environment whose start stopped because its tool needs an answer only a person at a terminal on the server can give, for example a sudo password."},
   "environmentKindApp": "App",
   "@environmentKindApp": {"description": "Space environments: environmentKindApp"},
   "environmentKindCli": "CLI",
@@ -14504,16 +14565,28 @@
   "@environmentEditDefinition": {"description": "Environment panel copy."},
   "environmentOpenPanel": "Open environment",
   "@environmentOpenPanel": {"description": "Environment panel copy."},
-  "environmentNeedsSetup": "Needs setup",
-  "@environmentNeedsSetup": {"description": "Status of an environment that stopped because a person has to do something on the host, such as adding hostnames with sudo."},
+  "environmentStatusBlocked": "Action needed",
+  "@environmentStatusBlocked": {"description": "Status of an environment whose start stopped for something only a person can do: an answer at a terminal such as a sudo password, a sign-in, or a missing dependency. Nothing is broken. Shown in a small status tag, so keep it to two or three words."},
+  "environmentStateInTerminal": "In terminal",
+  "@environmentStateInTerminal": {"description": "State of one part of an environment while its tool runs on a terminal tab and waits for the person to answer it. Shown next to a status dot, so keep it to two or three words."},
+  "environmentWaitingInTerminal": "Waiting for you in a terminal",
+  "@environmentWaitingInTerminal": {"description": "Heading of a notice on an environment that is still starting: one step of the start runs on a terminal tab and waits for the person to type a password or answer a prompt."},
+  "environmentOpenTerminal": "Open terminal",
+  "@environmentOpenTerminal": {"description": "Button that opens the terminal tab a start is waiting on."},
+  "environmentSignInNeeded": "This needs you to sign in",
+  "@environmentSignInNeeded": {"description": "Heading of a notice on an environment whose start stopped because the tool behind it needs the person to sign in again, for example an expired cloud session."},
+  "environmentDependencyNeeded": "Something this needs is not available",
+  "@environmentDependencyNeeded": {"description": "Heading of a notice on an environment whose start stopped because something it depends on is missing or not running, for example Docker. The tool's own explanation follows below it."},
+  "environmentStartTerminalDone": "Done here. The environment is still starting",
+  "@environmentStartTerminalDone": {"description": "Heading of a notice on a terminal tab after the tool got the answer it needed there. The terminal has gone quiet, and the rest of the start happens in the background."},
   "environmentContinueInTerminal": "Continue in terminal",
   "@environmentContinueInTerminal": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
-  "environmentSetupHint": "The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.",
-  "@environmentSetupHint": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
-  "environmentSetupTabReason": "This terminal opened because the start needs you",
-  "@environmentSetupTabReason": {"description": "Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared."},
-  "environmentSetupTab": "Environment setup",
-  "@environmentSetupTab": {"description": "Environment host setup: the terminal tab a stopped start finishes in."},
+  "environmentStartTerminalHint": "The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.",
+  "@environmentStartTerminalHint": {"description": "Body of a notice shown while one step of a start runs on a terminal tab: the tool asks there for a password or an answer, and the start carries on by itself once it has it."},
+  "environmentStartTerminalReason": "This terminal opened because the start needs you",
+  "@environmentStartTerminalReason": {"description": "Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared."},
+  "environmentStartTerminalTab": "Environment setup",
+  "@environmentStartTerminalTab": {"description": "Title of the terminal tab a start runs on when its tool needs the person, for example for a sudo password. A tab title, so keep it to two or three words."},
   "environmentsNothingRunning": "Nothing is running from this definition.",
   "@environmentsNothingRunning": {"description": "Empty state of the Running tab of an environment definition."},
   "searchPoliciesHint": "Search policies...",
@@ -14852,26 +14925,6 @@
       }
     }
   },
-  "signInWaitingOwn": "Approve the request on {provider}'s page in your browser. This window notices by itself when you're done.",
-  "@signInWaitingOwn": {
-    "description": "Sign-in dialog instruction while the server waits for the provider to redirect back",
-    "placeholders": {
-      "provider": {
-        "type": "String",
-        "example": "GitHub"
-      }
-    }
-  },
-  "signInWaiting": "Waiting for {provider}…",
-  "@signInWaiting": {
-    "description": "Sign-in dialog status line while waiting",
-    "placeholders": {
-      "provider": {
-        "type": "String",
-        "example": "GitHub"
-      }
-    }
-  },
   "signInFailedTitle": "Sign-in didn't finish",
   "@signInFailedTitle": {
     "description": "Title of the alert shown when a provider sign-in fails"
@@ -14880,9 +14933,9 @@
   "@signInReopenPage": {
     "description": "Button that reopens the provider sign-in page in the browser"
   },
-  "signInCodePrompt": "Enter the code shown in your browser",
+  "signInCodePrompt": "Confirm in your browser, then enter the code it shows.",
   "@signInCodePrompt": {
-    "description": "Sign-in dialog instruction to type the 8-character confirmation code"
+    "description": "Sign-in dialog instruction, for every sign-in: the browser page (Control Center Connect's or this server's own) first asks to confirm, then shows an 8-character code to type here"
   },
   "signInCodeMalformed": "That doesn't look like a sign-in code. Codes have 8 letters and digits.",
   "@signInCodeMalformed": {
@@ -14948,17 +15001,17 @@
   "@signInErrorTooManyCodes": {
     "description": "Sign-in failure: too many wrong confirmation codes ended the attempt"
   },
-  "signInErrorStaleRequest": "This sign-in is no longer valid. Start it again.",
+  "signInErrorStaleRequest": "This sign-in is no longer open: it was cancelled, used or replaced. Start it again.",
   "@signInErrorStaleRequest": {
-    "description": "Sign-in failure: the server no longer knows this attempt"
+    "description": "Sign-in failure: the server no longer knows this attempt (cancelled on the browser page, already used, or replaced by a newer one)"
   },
   "signInErrorInvalidRequest": "The server couldn't read this sign-in request. Start it again.",
   "@signInErrorInvalidRequest": {
     "description": "Sign-in failure: the server could not read the request"
   },
-  "signInErrorRateLimited": "Too many sign-in attempts right now. Wait a minute, then try again.",
+  "signInErrorRateLimited": "Too many requests right now. Wait a bit, then try again.",
   "@signInErrorRateLimited": {
-    "description": "Sign-in failure: too many sign-in attempts right now"
+    "description": "Sign-in failure: the sign-in service (Control Center Connect or the provider) is limiting requests. Must not ask the person to sign in again; the dialog offers Try again"
   },
   "signInErrorStoreFailed": "{provider} accepted the sign-in, but the server couldn't save it. Try again.",
   "@signInErrorStoreFailed": {
@@ -15019,10 +15072,6 @@
         "example": "GitHub"
       }
     }
-  },
-  "signInErrorInstallationBoundElsewhere": "This GitHub App installation is already authorized for another Control Center server.",
-  "@signInErrorInstallationBoundElsewhere": {
-    "description": "Sign-in failure: the installation belongs to another server"
   },
   "signInErrorTeamBoundElsewhere": "This Slack workspace is already connected to another Control Center server.",
   "@signInErrorTeamBoundElsewhere": {
@@ -15106,7 +15155,7 @@
   "@githubInstallations": {
     "description": "Settings group title listing where the GitHub App is installed"
   },
-  "githubInstallationsDescription": "Where the GitHub App is installed, among the accounts this workspace's repositories belong to. An organization's installation works only on servers its admins authorize.",
+  "githubInstallationsDescription": "Where the GitHub App is installed, among the accounts this workspace's repositories belong to.",
   "@githubInstallationsDescription": {
     "description": "Settings group description for GitHub App installations"
   },
@@ -15118,31 +15167,9 @@
   "@githubInstallApp": {
     "description": "Button that opens the GitHub App installation page"
   },
-  "githubAuthorizeServer": "Authorize this server",
-  "@githubAuthorizeServer": {
-    "description": "Button: an organization admin authorizes this server to use the installation"
-  },
-  "githubServerAuthorized": "This server can now use the installation on {account}.",
-  "@githubServerAuthorized": {
-    "description": "Toast after authorizing this server for an installation; account is the GitHub organization",
-    "placeholders": {
-      "account": {
-        "type": "String",
-        "example": "acme"
-      }
-    }
-  },
   "githubInstallationSuspended": "Suspended",
   "@githubInstallationSuspended": {
     "description": "Status tag: the GitHub App installation is suspended"
-  },
-  "githubInstallationAuthorized": "Authorized",
-  "@githubInstallationAuthorized": {
-    "description": "Status tag: this server may use the installation"
-  },
-  "githubInstallationNotAuthorized": "Not authorized",
-  "@githubInstallationNotAuthorized": {
-    "description": "Status tag: this server may not use the installation yet"
   },
   "linearAutomationTitle": "Linear automation",
   "@linearAutomationTitle": {
@@ -15174,7 +15201,7 @@
   "@connectModeOwn": {
     "description": "Connect mode option: the operator registers their own provider apps"
   },
-  "connectModeOwnHint": "Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace's own Slack app in its settings. Create my GitHub App sets up GitHub in one step.",
+  "connectModeOwnHint": "Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace's own Slack app under Workspace → Integrations, where a workspace can also pick its own apps or Connect. Create my GitHub App sets up GitHub in one step.",
   "@connectModeOwnHint": {
     "description": "Hint under the own-apps option"
   },
@@ -15330,7 +15357,7 @@
   "@connectRotateKeyTitle": {
     "description": "Confirm dialog title for rotating the Connect key"
   },
-  "connectRotateKeyBody": "This server gets a new key and install id. Every sign-in made through Connect stops working, and everyone has to sign in again. Sign-ins through your own apps aren't affected.",
+  "connectRotateKeyBody": "This server gets a new key and install id, and the old id is retired at Connect: sign-ins sealed under it, and the old key, stop working there, so everyone who signed in through Connect signs in again. Tokens already handed out keep working until they expire. Sign-ins through your own apps aren't affected. If Connect can't be reached, nothing changes and you can try again.",
   "@connectRotateKeyBody": {
     "description": "Confirm dialog body for rotating the Connect key"
   },
@@ -15530,38 +15557,6 @@
       }
     }
   },
-  "workspaceProviderApps": "Provider apps",
-  "@workspaceProviderApps": {
-    "description": "Title of the workspace card that sets which Google Calendar, Linear and Klipy apps the workspace uses"
-  },
-  "workspaceProviderAppsDescription": "Which Google Calendar, Linear and Klipy apps this workspace uses. By default it uses this server's apps or Control Center Connect. A workspace with its own app never falls back to them.",
-  "@workspaceProviderAppsDescription": {
-    "description": "Subtitle of the workspace provider apps card"
-  },
-  "workspaceProviderAppModeInherit": "Use this server's app",
-  "@workspaceProviderAppModeInherit": {
-    "description": "Radio option: the workspace uses the server's app (or Connect) for this provider"
-  },
-  "workspaceProviderAppModeInheritHint": "Sign-ins and requests use this server's own app, or Control Center Connect.",
-  "@workspaceProviderAppModeInheritHint": {
-    "description": "Hint under the 'use this server's app' option"
-  },
-  "workspaceProviderAppModeOwn": "Use this workspace's own app",
-  "@workspaceProviderAppModeOwn": {
-    "description": "Radio option: the workspace brings its own app for this provider"
-  },
-  "workspaceProviderAppModeOwnHint": "Only this workspace's app is used. While it is incomplete, this provider is off here instead of falling back.",
-  "@workspaceProviderAppModeOwnHint": {
-    "description": "Hint under the 'use this workspace's own app' option"
-  },
-  "workspaceProviderAppStatusInherit": "Server's app",
-  "@workspaceProviderAppStatusInherit": {
-    "description": "Status tag: the workspace uses the server's app for this provider"
-  },
-  "workspaceProviderAppStatusOwn": "Own app",
-  "@workspaceProviderAppStatusOwn": {
-    "description": "Status tag: the workspace uses its own complete app for this provider"
-  },
   "workspaceProviderAppMissingFields": "Still missing: {fields}. Until every field is set, this provider is off in this workspace. It does not fall back to this server's app.",
   "@workspaceProviderAppMissingFields": {
     "description": "Lists the fields a workspace's own provider app still needs",
@@ -15584,9 +15579,103 @@
   "@workspaceProviderAppKlipyHint": {
     "description": "Description of the Klipy app key group"
   },
-  "workspaceProviderAppSwitchTitle": "Switch the {provider} app?",
-  "@workspaceProviderAppSwitchTitle": {
-    "description": "Confirm dialog title when switching which app a workspace uses for a provider",
+  "settingsWorkspaceIntegrations": "Integrations",
+  "@settingsWorkspaceIntegrations": {
+    "description": "Settings nav item and page title: every provider this workspace uses (code hosting, tickets, calendar, chat, GIFs)"
+  },
+  "settingsWorkspaceIntegrationsDescription": "Code hosting, tickets, calendar, chat and GIF search in this workspace, and whose apps they sign in through.",
+  "@settingsWorkspaceIntegrationsDescription": {
+    "description": "Subtitle of Settings → Workspace → Integrations"
+  },
+  "workspaceConnectDescription": "Whose apps this workspace uses for GitHub, Google Calendar, Linear, Slack and GIF search. Unless an admin picks something else, it follows this server.",
+  "@workspaceConnectDescription": {
+    "description": "Subtitle of the workspace's Control Center Connect card"
+  },
+  "workspaceConnectModeInherit": "Same as this server",
+  "@workspaceConnectModeInherit": {
+    "description": "Workspace Connect choice: follow the server owner's choice of sign-in apps"
+  },
+  "workspaceConnectInheritHosted": "This server uses Control Center's apps.",
+  "@workspaceConnectInheritHosted": {
+    "description": "Hint under 'Same as this server' when the server uses Control Center's hosted Connect"
+  },
+  "workspaceConnectInheritCustom": "This server uses the Connect server at {url}.",
+  "@workspaceConnectInheritCustom": {
+    "description": "Hint under 'Same as this server' when the server uses a custom Connect server",
+    "placeholders": {
+      "url": {
+        "type": "String",
+        "example": "https://connect.example.com"
+      }
+    }
+  },
+  "workspaceConnectInheritOwn": "This server uses its own apps.",
+  "@workspaceConnectInheritOwn": {
+    "description": "Hint under 'Same as this server' when the server uses its own provider apps"
+  },
+  "workspaceConnectInheritUnset": "This server's owner hasn't chosen yet, so the server's own apps apply.",
+  "@workspaceConnectInheritUnset": {
+    "description": "Hint under 'Same as this server' when the server owner has not picked sign-in apps"
+  },
+  "workspaceConnectOwnHint": "Only this workspace's apps are used. Add each one below, next to its provider. A provider without one is off here; this server's apps and Connect are never used instead.",
+  "@workspaceConnectOwnHint": {
+    "description": "Hint under 'Use my own apps' on the workspace Connect card"
+  },
+  "workspaceConnectCustomUrlHint": "HTTPS only. Addresses on a private or local network are refused.",
+  "@workspaceConnectCustomUrlHint": {
+    "description": "Helper under the workspace's custom Connect server URL field"
+  },
+  "workspaceConnectLocked": "CC_CONNECT_URL in this server's environment sets where sign-ins go, so this workspace can't pick a Connect of its own. It can follow this server or use its own apps.",
+  "@workspaceConnectLocked": {
+    "description": "Notice when the server environment forbids a workspace from choosing a Connect server; CC_CONNECT_URL is an environment variable name, keep it verbatim"
+  },
+  "workspaceConnectSwitchTitle": "Switch this workspace's sign-in apps?",
+  "@workspaceConnectSwitchTitle": {
+    "description": "Confirm dialog title when an admin changes the workspace's Connect choice"
+  },
+  "workspaceConnectSwitchBody": "Everyone in this workspace has to sign in to GitHub, Linear and Google Calendar again through the new apps. Sign-ins made through the current ones stop working here.",
+  "@workspaceConnectSwitchBody": {
+    "description": "Confirm dialog body when an admin changes the workspace's Connect choice"
+  },
+  "workspaceConnectSwitchAction": "Switch apps",
+  "@workspaceConnectSwitchAction": {
+    "description": "Confirm button that changes the workspace's Connect choice"
+  },
+  "workspaceConnectLanesDescription": "Follows the choice above. A provider never falls back to another app.",
+  "@workspaceConnectLanesDescription": {
+    "description": "Description of the per-provider list on the workspace Connect card"
+  },
+  "workspaceConnectLaneWorkspaceOwn": "Workspace's app",
+  "@workspaceConnectLaneWorkspaceOwn": {
+    "description": "Status tag: this provider runs on the workspace's own app"
+  },
+  "workspaceConnectLaneServerOwn": "Server's app",
+  "@workspaceConnectLaneServerOwn": {
+    "description": "Status tag: this provider runs on the server's own app"
+  },
+  "workspaceGitHubAppTitle": "GitHub App",
+  "@workspaceGitHubAppTitle": {
+    "description": "Title of the workspace card about the GitHub App the workspace runs on"
+  },
+  "workspaceGitHubAppOwnDescription": "This workspace's own App acts for its repositories and signs members in. It never falls back to this server's App or to Connect.",
+  "@workspaceGitHubAppOwnDescription": {
+    "description": "Subtitle of the GitHub App card while the workspace uses its own apps"
+  },
+  "workspaceGitHubAppSharedDescription": "This workspace uses the GitHub App its sign-in apps provide. Install it on the accounts your repositories belong to.",
+  "@workspaceGitHubAppSharedDescription": {
+    "description": "Subtitle of the GitHub App card while the workspace uses the server's apps or a Connect"
+  },
+  "workspaceGitHubAppActingTitle": "Acting for this workspace",
+  "@workspaceGitHubAppActingTitle": {
+    "description": "Group title for the workspace GitHub App's id and private key"
+  },
+  "workspaceGitHubAppActingDescription": "The App's bot comments, reviews and polls pull requests in this workspace's repositories.",
+  "@workspaceGitHubAppActingDescription": {
+    "description": "Description of the workspace GitHub App's id and private key group"
+  },
+  "workspaceOwnAppTitle": "{provider} app",
+  "@workspaceOwnAppTitle": {
+    "description": "Title of the card holding a workspace's own app for one provider",
     "placeholders": {
       "provider": {
         "type": "String",
@@ -15594,9 +15683,9 @@
       }
     }
   },
-  "workspaceProviderAppSwitchToOwnBody": "Everyone connected to {provider} in this workspace through this server's app has to sign in again with the workspace's app.",
-  "@workspaceProviderAppSwitchToOwnBody": {
-    "description": "Confirm dialog body when switching a workspace to its own provider app",
+  "workspaceOwnAppDescription": "{provider} sign-ins and requests in this workspace use only this app.",
+  "@workspaceOwnAppDescription": {
+    "description": "Subtitle of the card holding a workspace's own app for one provider",
     "placeholders": {
       "provider": {
         "type": "String",
@@ -15604,19 +15693,25 @@
       }
     }
   },
-  "workspaceProviderAppSwitchToServerBody": "This deletes the workspace's {provider} credentials. Everyone connected through the workspace's app has to sign in again.",
-  "@workspaceProviderAppSwitchToServerBody": {
-    "description": "Confirm dialog body when switching a workspace back to the server's provider app",
-    "placeholders": {
-      "provider": {
-        "type": "String",
-        "example": "Linear"
-      }
-    }
+  "workspaceGifsTitle": "GIFs",
+  "@workspaceGifsTitle": {
+    "description": "Title of the workspace card about GIF search"
   },
-  "workspaceProviderAppSwitchAction": "Switch app",
-  "@workspaceProviderAppSwitchAction": {
-    "description": "Confirm button that switches which app a workspace uses for a provider"
+  "workspaceGifsSourceWorkspaceOwn": "GIF search uses this workspace's Klipy key.",
+  "@workspaceGifsSourceWorkspaceOwn": {
+    "description": "GIF search runs on the workspace's own Klipy key; Klipy is a brand name"
+  },
+  "workspaceGifsSourceServerOwn": "GIF search uses this server's Klipy key.",
+  "@workspaceGifsSourceServerOwn": {
+    "description": "GIF search runs on the server's own Klipy key; Klipy is a brand name"
+  },
+  "workspaceGifsSourceConnect": "GIF search runs through Control Center Connect.",
+  "@workspaceGifsSourceConnect": {
+    "description": "GIF search runs through a Control Center Connect server"
+  },
+  "workspaceGifsSourceOff": "GIF search is off in this workspace.",
+  "@workspaceGifsSourceOff": {
+    "description": "No app or key provides GIF search in this workspace"
   },
   "openOnForge": "Open on {forge}",
   "@openOnForge": {
@@ -15646,9 +15741,9 @@
   "@connectForgeToLoadPrs": {
     "description": "Empty state when no code host (GitHub, GitLab, Bitbucket) is connected"
   },
-  "connectForgeHint": "Connect GitHub, GitLab or Bitbucket in Settings → Workspace → Profile & identity → Code hosting",
+  "connectForgeHint": "Connect GitHub, GitLab or Bitbucket in Settings → You → Profile",
   "@connectForgeHint": {
-    "description": "Hint under the empty state pointing at the code hosting settings"
+    "description": "Hint under the empty pull request and inbox states pointing at where a person connects their own code hosting accounts. 'Settings → You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle"
   },
   "addForgeRepoPrompt": "Add at least one repository on GitHub, GitLab or Bitbucket to see pull requests",
   "@addForgeRepoPrompt": {
@@ -15671,5 +15766,1573 @@
         "example": "GitLab"
       }
     }
+  },
+  "connectionNeedsSignInAs": "Your {provider} sign-in as {account} has lapsed. Sign in again.",
+  "@connectionNeedsSignInAs": {
+    "description": "A forge or provider connection whose grant expired or was revoked, naming the last known account",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      },
+      "account": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "connectionPaused": "Paused: this workspace's sign-in service changed",
+  "@connectionPaused": {
+    "description": "A connection whose grant is parked because the workspace's sign-in service (Connect or its own apps) changed; not the person's fault"
+  },
+  "connectionUnreachable": "Can't reach {provider} right now. Retrying.",
+  "@connectionUnreachable": {
+    "description": "A connection whose grant could not be renewed because the provider or sign-in service is down; it retries on its own",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "forgeSignInBannerPausedBody": "Your sign-in is kept and works again once the service is back. A workspace admin can check the sign-in setup in Integrations.",
+  "@forgeSignInBannerPausedBody": {
+    "description": "Body of the workspace banner when the person's forge sign-in is paused because the workspace's sign-in service changed"
+  },
+  "signInErrorAttemptUnknown": "The server restarted. Start the sign-in again.",
+  "@signInErrorAttemptUnknown": {
+    "description": "Sign-in failure: the server no longer knows the attempt (it restarted)"
+  },
+  "signInUnavailableNotConfigured": "{provider} sign-in isn't set up for this workspace.",
+  "@signInUnavailableNotConfigured": {
+    "description": "Why a sign-in lane cannot be used: nothing is configured for it",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "signInUnavailableMisconfigured": "{provider} sign-in is set up incorrectly: {error}",
+  "@signInUnavailableMisconfigured": {
+    "description": "Why a sign-in lane cannot be used: its own app is set up wrongly; error is the server's explanation",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      },
+      "error": {
+        "type": "String",
+        "example": "The client secret is missing."
+      }
+    }
+  },
+  "signInUnavailableOwnAppMissing": "This workspace uses its own apps but has no {provider} app.",
+  "@signInUnavailableOwnAppMissing": {
+    "description": "Why a sign-in lane cannot be used: the workspace uses its own apps and none is set up for this provider",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Linear"
+      }
+    }
+  },
+  "signInUnavailableConnectUnprovisioned": "This build can't verify Control Center Connect, so {provider} sign-in is off.",
+  "@signInUnavailableConnectUnprovisioned": {
+    "description": "Why a sign-in lane cannot be used: this server build cannot verify the hosted Connect service",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "signInUnavailableConnectPinsPending": "This workspace's sign-in service changed its identity. An admin needs to confirm it.",
+  "@signInUnavailableConnectPinsPending": {
+    "description": "Why sign-in cannot be used: the custom Connect service's identifiers changed and await an admin's confirmation"
+  },
+  "signInUnavailableConnectUnreachable": "Can't reach this workspace's sign-in service right now.",
+  "@signInUnavailableConnectUnreachable": {
+    "description": "Why sign-in cannot be used: the Connect service cannot be reached or trusted"
+  },
+  "signInUnavailableConnectUrlInvalid": "This workspace's sign-in service address is missing or invalid.",
+  "@signInUnavailableConnectUrlInvalid": {
+    "description": "Why sign-in cannot be used: the custom Connect URL is missing or unusable"
+  },
+  "signInUnavailableBlockedByEnvironment": "The server's operator set the sign-in service, so this workspace's own choice doesn't apply.",
+  "@signInUnavailableBlockedByEnvironment": {
+    "description": "Why sign-in cannot be used: the server operator pinned the Connect service in the environment"
+  },
+  "signInUnavailableLaneNotOffered": "This workspace's sign-in service doesn't offer {provider}.",
+  "@signInUnavailableLaneNotOffered": {
+    "description": "Why a sign-in lane cannot be used: the sign-in service in use does not support this provider",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Google Calendar"
+      }
+    }
+  },
+  "signInOpenIntegrations": "Open integrations",
+  "@signInOpenIntegrations": {
+    "description": "Button taking a workspace admin to Workspace > Integrations to fix the sign-in setup"
+  },
+  "signInOpenServerSettings": "Open sign-in settings",
+  "@signInOpenServerSettings": {
+    "description": "Button taking the server owner to the server's sign-in settings to fix the sign-in setup"
+  },
+  "forgeTokenRequiredBody": "This runs as you on {provider}, and you haven't added a token. Add one, then try again.",
+  "@forgeTokenRequiredBody": {
+    "description": "Dialog body when an action was refused because the person has no token for a token-only forge",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "disconnectProviderTitle": "Disconnect {provider}?",
+  "@disconnectProviderTitle": {
+    "description": "Title of the confirmation before disconnecting a forge",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "disconnectProviderBody": "You'll need to connect {provider} again to work on its repositories.",
+  "@disconnectProviderBody": {
+    "description": "Confirmation body before disconnecting a forge outside any workspace",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "disconnectScopeWorkspaceBody": "This disconnects {provider} in this workspace only. Other workspaces keep their own connection.",
+  "@disconnectScopeWorkspaceBody": {
+    "description": "Confirmation body: the credential being removed belongs to this workspace only",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "disconnectScopeGlobalBody": "This disconnects {provider} in every workspace that shares this connection.",
+  "@disconnectScopeGlobalBody": {
+    "description": "Confirmation body: the credential being removed is shared by all workspaces",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "disconnectedFromWorkspace": "Disconnected {provider} from this workspace",
+  "@disconnectedFromWorkspace": {
+    "description": "Toast after removing a credential kept for this workspace only",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "disconnectedFromAllWorkspaces": "Disconnected {provider} from all workspaces",
+  "@disconnectedFromAllWorkspaces": {
+    "description": "Toast after removing a credential shared by all workspaces",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "repoAccessInstallTitle": "Install the GitHub App on {owner}",
+  "@repoAccessInstallTitle": {
+    "description": "Notice title: the workspace's GitHub App is not installed on the account that owns linked repositories",
+    "placeholders": {
+      "owner": {
+        "type": "String",
+        "example": "acme"
+      }
+    }
+  },
+  "repoAccessInstallBody": "Automation can't reach {repos} until the App is installed there.",
+  "@repoAccessInstallBody": {
+    "description": "Notice body naming the repositories affected by the missing GitHub App installation",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api, acme/web"
+      }
+    }
+  },
+  "repoAccessSelectTitle": "Add {repos} to the GitHub App's repositories",
+  "@repoAccessSelectTitle": {
+    "description": "Notice title: the GitHub App is installed but these repositories are not selected in the installation",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessSelectBody": "The App is installed on this account but can't see these repositories yet.",
+  "@repoAccessSelectBody": {
+    "description": "Notice body for repositories not selected in the GitHub App installation"
+  },
+  "repoAccessChooseRepos": "Choose repositories",
+  "@repoAccessChooseRepos": {
+    "description": "Button opening the GitHub App installation's repository selection"
+  },
+  "repoAccessSuspendedTitle": "GitHub App installation suspended",
+  "@repoAccessSuspendedTitle": {
+    "description": "Notice title: the GitHub App installation covering linked repositories is suspended"
+  },
+  "repoAccessSuspendedBody": "Automation for {repos} is paused until an owner of the account resumes the installation on GitHub.",
+  "@repoAccessSuspendedBody": {
+    "description": "Notice body for a suspended GitHub App installation",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessAutomationPausedTitle": "Automation is paused",
+  "@repoAccessAutomationPausedTitle": {
+    "description": "Notice title: automation acting for the workspace's accountable person is paused for some repositories"
+  },
+  "repoAccessOwnerCannotSeeBody": "The person accountable for this workspace's automation can no longer see {repos}, so nothing runs there on their behalf.",
+  "@repoAccessOwnerCannotSeeBody": {
+    "description": "Notice body: the accountable person lost access to these repositories",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessOwnerNotSignedInBody": "The person accountable for this workspace's automation isn't signed in to the forge, so automation for {repos} waits until they sign in.",
+  "@repoAccessOwnerNotSignedInBody": {
+    "description": "Notice body: the accountable person is not signed in to the forge",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessTransient": "Couldn't check access to {repos}. Retrying.",
+  "@repoAccessTransient": {
+    "description": "Muted line: the forge did not answer an access check; it is retried automatically",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "repoAccessAskAdmins": "Ask {admins} to fix this.",
+  "@repoAccessAskAdmins": {
+    "description": "Shown to a non-admin member: who in the workspace can fix the access problem",
+    "placeholders": {
+      "admins": {
+        "type": "String",
+        "example": "Sam Alev, Ana Lima"
+      }
+    }
+  },
+  "repoAccessAskAnAdmin": "Ask a workspace admin to fix this.",
+  "@repoAccessAskAnAdmin": {
+    "description": "Shown to a non-admin member when the admins' names are not known"
+  },
+  "hiddenReposSignIn": "{count, plural, =1{Sign in to {forge} to see pull requests from 1 more repository} other{Sign in to {forge} to see pull requests from {count} more repositories}}",
+  "@hiddenReposSignIn": {
+    "description": "Notice above a PR list: repositories hidden because the person is not signed in to that forge",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 repository is hidden because your {forge} account can't see it} other{{count} repositories are hidden because your {forge} account can't see them}}",
+  "@hiddenReposNoForgeAccess": {
+    "description": "Notice above a PR list: repositories hidden because the person's own forge account cannot read them",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "hiddenReposNoGrant": "{count, plural, =1{1 repository is hidden because you don't have access to it in this workspace} other{{count} repositories are hidden because you don't have access to them in this workspace}}",
+  "@hiddenReposNoGrant": {
+    "description": "Notice above a PR list: repositories hidden because the person holds no grant on them in this workspace",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hiddenReposChecking": "{count, plural, =1{Checking your access to 1 more repository…} other{Checking your access to {count} more repositories…}}",
+  "@hiddenReposChecking": {
+    "description": "Quiet line above a PR list while the person's access to some repositories is still being checked",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "repoLinkAccessWarningsTitle": "Linked, but automation can't reach everything yet",
+  "@repoLinkAccessWarningsTitle": {
+    "description": "Title of the dialog listing access problems found while linking repositories"
+  },
+  "githubInstallOnAnotherOrganization": "Install on another organization",
+  "@githubInstallOnAnotherOrganization": {
+    "description": "Button installing the workspace's GitHub App on another account or organization"
+  },
+  "forgeTokenEmailLabel": "Atlassian account email",
+  "@forgeTokenEmailLabel": {
+    "description": "Label of the email field next to a Bitbucket API token; Bitbucket API tokens authenticate with the Atlassian account's email"
+  },
+  "forgeTokenEmailInvalid": "Enter the email address of your Atlassian account.",
+  "@forgeTokenEmailInvalid": {
+    "description": "Inline error when the Atlassian account email for a Bitbucket token is missing or malformed"
+  },
+  "forgeTokenApiTokenLabel": "API token",
+  "@forgeTokenApiTokenLabel": {
+    "description": "Label of the Bitbucket API token field"
+  },
+  "forgeTokenBitbucketHint": "Bitbucket API tokens work together with the email of the Atlassian account that created them.",
+  "@forgeTokenBitbucketHint": {
+    "description": "Explains why the Bitbucket token dialog also asks for an email"
+  },
+  "automationTokensTitle": "Automation tokens",
+  "@automationTokensTitle": {
+    "description": "Section title: bot access tokens GitLab/Bitbucket background work uses"
+  },
+  "automationTokensRepoHint": "Background work on GitLab and Bitbucket, such as pull request updates, AI review comments and merge requests nobody asked for, uses a bot access token, never a person's. A repository's own token wins over the workspace's.",
+  "@automationTokensRepoHint": {
+    "description": "Section description in Settings → Repositories"
+  },
+  "automationTokensWorkspaceHint": "Used for every GitLab or Bitbucket repository in this workspace that has no automation token of its own. Background work there shows as this token's bot.",
+  "@automationTokensWorkspaceHint": {
+    "description": "Section description in Settings → Workspace → Integrations"
+  },
+  "automationTokenNone": "No token. Automation is paused here.",
+  "@automationTokenNone": {
+    "description": "Status: this repository has no automation token"
+  },
+  "automationTokenFromWorkspace": "Uses the workspace's token",
+  "@automationTokenFromWorkspace": {
+    "description": "Status: the repository uses the workspace-wide automation token"
+  },
+  "automationTokenActsAs": "Acts as {name}",
+  "@automationTokenActsAs": {
+    "description": "Status: automation acts as this bot account",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "project_42_bot"
+      }
+    }
+  },
+  "automationTokenStored": "Access token added",
+  "@automationTokenStored": {
+    "description": "Status: a token is stored but the forge did not name its bot"
+  },
+  "automationTokenRejected": "The forge refused this token. Replace it.",
+  "@automationTokenRejected": {
+    "description": "Status: the stored automation token was revoked or expired"
+  },
+  "automationTokenDialogTitle": "{forge} automation token",
+  "@automationTokenDialogTitle": {
+    "description": "Dialog title for adding an automation token",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "automationTokenGitLabHint": "Paste a project or group access token. It needs read_api and read_repository; add api and write_repository for comments, merge requests and pushes. GitLab shows its work as the token's bot.",
+  "@automationTokenGitLabHint": {
+    "description": "Dialog hint for a GitLab automation token"
+  },
+  "automationTokenBitbucketHint": "Paste a repository, project or workspace access token with repository read, plus pull request write for comments and pull requests. Your own API token belongs under You → Profile, not here.",
+  "@automationTokenBitbucketHint": {
+    "description": "Dialog hint for a Bitbucket automation token. 'You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle"
+  },
+  "automationTokenUnreadable": "Token saved, but it can't read {repos}. Automation there stays paused.",
+  "@automationTokenUnreadable": {
+    "description": "Toast after saving a workspace automation token that cannot read some repositories",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "automationTokenRemoveTitle": "Remove automation token?",
+  "@automationTokenRemoveTitle": {
+    "description": "Confirm dialog title"
+  },
+  "automationTokenRemoveBody": "Automation that relies on this token pauses until another one is added.",
+  "@automationTokenRemoveBody": {
+    "description": "Confirm dialog body"
+  },
+  "automationTokenWorkspaceTarget": "Every {forge} repository without its own token",
+  "@automationTokenWorkspaceTarget": {
+    "description": "What a workspace-wide automation token applies to",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "repoAccessAutomationTokenMissingBody": "No automation token can read {repos}, so background work there is paused.",
+  "@repoAccessAutomationTokenMissingBody": {
+    "description": "Notice body: GitLab/Bitbucket repositories without a working automation token",
+    "placeholders": {
+      "repos": {
+        "type": "String",
+        "example": "acme/api"
+      }
+    }
+  },
+  "settingsCommitsDescription": "Commits from work you start carry your name. Choose who else is credited, and whether forges show your commits as verified.",
+  "@settingsCommitsDescription": {
+    "description": "Subtitle of Settings > You > Commits: authorship, co-author credit and commit signing"
+  },
+  "settingsCommitAuthorshipSection": "Authorship",
+  "@settingsCommitAuthorshipSection": {
+    "description": "Section label on the Commits settings page: whose name commits carry"
+  },
+  "settingsCommitAuthorshipYoursLabel": "Work you start",
+  "@settingsCommitAuthorshipYoursLabel": {
+    "description": "Row label: commits from work the person started themselves (chat, pipeline, editor)"
+  },
+  "settingsCommitAuthorshipYoursBody": "You are the author and committer, under the email your forge verified for your sign-in. This covers chats with agents, pipelines you start and commits you make in the editor.",
+  "@settingsCommitAuthorshipYoursBody": {
+    "description": "Explains that the person is author and committer of commits from work they start, under the email their forge verified"
+  },
+  "settingsCommitAuthorshipBotLabel": "Automated runs",
+  "@settingsCommitAuthorshipBotLabel": {
+    "description": "Row label: runs nobody started by hand (schedules, webhooks)"
+  },
+  "settingsCommitAuthorshipBotBody": "Runs started by a schedule or a webhook commit as the bot, and are never signed.",
+  "@settingsCommitAuthorshipBotBody": {
+    "description": "Explains that runs started by a schedule or webhook commit as the bot account and are never signed"
+  },
+  "settingsCommitAuthorshipSignInNote": "Until you sign in to a forge in a workspace, your runs there commit as the bot.",
+  "@settingsCommitAuthorshipSignInNote": {
+    "description": "Note: without a forge sign-in in a workspace, the person's runs there commit as the bot"
+  },
+  "settingsCoauthorCreditTitle": "Credit Control Center as co-author",
+  "@settingsCoauthorCreditTitle": {
+    "description": "Personal toggle: add Control Center as co-author on the person's commits"
+  },
+  "settingsCoauthorCreditDescription": "Your commits name Control Center (@usectrl) as co-author, and automated runs you armed name you. When off, neither line is added.",
+  "@settingsCoauthorCreditDescription": {
+    "description": "What the co-author toggle does on the person's own commits and on automated runs they armed"
+  },
+  "settingsCoauthorCreditWorkspaceOverride": "This workspace overrides your personal choice. Your preference is saved but does not apply here.",
+  "@settingsCoauthorCreditWorkspaceOverride": {
+    "description": "Notice shown when a workspace setting locks the personal co-author toggle"
+  },
+  "settingsCoauthorCreditLoading": "Loading attribution settings…",
+  "@settingsCoauthorCreditLoading": {
+    "description": "Status shown while personal and workspace co-author settings load"
+  },
+  "settingsWorkspaceCoauthorCreditTitle": "Co-author credit",
+  "@settingsWorkspaceCoauthorCreditTitle": {
+    "description": "Section label and select label for the workspace co-author credit policy"
+  },
+  "settingsWorkspaceCoauthorCreditDescription": "Whether commits carry co-author lines: Control Center on a member's own commits, and the members who armed an automated run on its commits. A choice here overrides each member's own.",
+  "@settingsWorkspaceCoauthorCreditDescription": {
+    "description": "Explains the workspace co-author credit policy and that it overrides each member's preference"
+  },
+  "settingsWorkspaceCoauthorCreditInherit": "Use each member's preference",
+  "@settingsWorkspaceCoauthorCreditInherit": {
+    "description": "Workspace co-author option: each member's own preference applies"
+  },
+  "settingsWorkspaceCoauthorCreditAlways": "Always add co-author credit",
+  "@settingsWorkspaceCoauthorCreditAlways": {
+    "description": "Workspace co-author option: co-author lines are always added"
+  },
+  "settingsWorkspaceCoauthorCreditNever": "Never add co-author credit",
+  "@settingsWorkspaceCoauthorCreditNever": {
+    "description": "Workspace co-author option: co-author lines are never added"
+  },
+  "settingsCommitSigningSection": "Verified commits",
+  "@settingsCommitSigningSection": {
+    "description": "Section label for the person's commit signing key"
+  },
+  "settingsCommitSigningStatusOn": "Signing",
+  "@settingsCommitSigningStatusOn": {
+    "description": "Status tag: the person has a signing key, so their commits are signed"
+  },
+  "settingsCommitSigningStatusOff": "Not signing",
+  "@settingsCommitSigningStatusOff": {
+    "description": "Status tag: the person has no signing key, so their commits are not signed"
+  },
+  "settingsCommitSigningIntro": "This server can sign your commits with a key of your own, so GitHub and GitLab show them as verified. Nothing is signed until you create the key.",
+  "@settingsCommitSigningIntro": {
+    "description": "Shown when the person has no signing key yet: what creating one does"
+  },
+  "settingsCommitSigningCreate": "Create signing key",
+  "@settingsCommitSigningCreate": {
+    "description": "Button: create the person's commit signing key on the server"
+  },
+  "settingsCommitSigningCreated": "Signing key created. Add it to your forge account.",
+  "@settingsCommitSigningCreated": {
+    "description": "Toast after creating a signing key"
+  },
+  "settingsCommitSigningPublicKeyLabel": "Public key",
+  "@settingsCommitSigningPublicKeyLabel": {
+    "description": "Label above the SSH public key to copy"
+  },
+  "settingsCommitSigningKeyCopied": "Public key copied",
+  "@settingsCommitSigningKeyCopied": {
+    "description": "Toast after copying the public key"
+  },
+  "settingsCommitSigningFingerprintLabel": "Fingerprint",
+  "@settingsCommitSigningFingerprintLabel": {
+    "description": "Label before the key's SHA256 fingerprint"
+  },
+  "settingsCommitSigningCreatedLabel": "Created",
+  "@settingsCommitSigningCreatedLabel": {
+    "description": "Label before the date the key was created"
+  },
+  "settingsCommitSigningAddTitle": "Add it to your forge account",
+  "@settingsCommitSigningAddTitle": {
+    "description": "Heading above the per-forge steps for adding the public key as a signing key"
+  },
+  "settingsCommitSigningAddDescription": "A commit shows as verified only while you are also signed in to that forge in the workspace, so the forge vouches for your email.",
+  "@settingsCommitSigningAddDescription": {
+    "description": "Explains that a commit is verified only when the person is also signed in to that forge in the workspace"
+  },
+  "settingsCommitSigningGitHubSteps": "Settings → SSH and GPG keys → New SSH key. Set Key type to Signing Key.",
+  "@settingsCommitSigningGitHubSteps": {
+    "description": "Steps on GitHub. 'Settings', 'SSH and GPG keys', 'New SSH key', 'Key type' and 'Signing Key' are GitHub's own English UI labels: keep them in English"
+  },
+  "settingsCommitSigningGitLabSteps": "Preferences → SSH Keys. Set Usage type to Signing.",
+  "@settingsCommitSigningGitLabSteps": {
+    "description": "Steps on GitLab. 'Preferences', 'SSH Keys', 'Usage type' and 'Signing' are GitLab's UI labels: keep them in English"
+  },
+  "settingsCommitSigningBitbucketSteps": "Commits on Bitbucket are not signed. Do not add this key to your Bitbucket account: an SSH key there is also a login.",
+  "@settingsCommitSigningBitbucketSteps": {
+    "description": "Bitbucket does not support signing with this key; warns not to add it there because a Bitbucket SSH key also grants access"
+  },
+  "settingsCommitSigningUnsupported": "Not supported",
+  "@settingsCommitSigningUnsupported": {
+    "description": "Tag beside a forge that does not support this signing key"
+  },
+  "settingsCommitSigningTrustTitle": "What you are trusting",
+  "@settingsCommitSigningTrustTitle": {
+    "description": "Heading above the plain statements of what creating a signing key entrusts to the server"
+  },
+  "settingsCommitSigningTrustPrivate": "The private key never leaves this server.",
+  "@settingsCommitSigningTrustPrivate": {
+    "description": "Trust statement: the private key never leaves the server and signs only the person's commits"
+  },
+  "settingsCommitSigningTrustControl": "Whoever controls this server can sign commits as you for as long as the key is on your forge account.",
+  "@settingsCommitSigningTrustControl": {
+    "description": "Trust statement: the server's operator can sign as the person while the key is on their forge account"
+  },
+  "settingsCommitSigningTrustVerified": "On GitHub, commits already shown as verified stay verified after you remove the key.",
+  "@settingsCommitSigningTrustVerified": {
+    "description": "Trust statement: GitHub keeps already verified commits verified after the key is removed"
+  },
+  "settingsCommitSigningDelete": "Delete key",
+  "@settingsCommitSigningDelete": {
+    "description": "Button and confirm label: delete the person's signing key"
+  },
+  "settingsCommitSigningDeleteTitle": "Delete your signing key?",
+  "@settingsCommitSigningDeleteTitle": {
+    "description": "Confirmation dialog title for deleting the signing key"
+  },
+  "settingsCommitSigningDeleteBody": "Your commits are unsigned from now on. The key stays on your forge accounts until you remove it there.",
+  "@settingsCommitSigningDeleteBody": {
+    "description": "Confirmation dialog body: consequences of deleting the signing key"
+  },
+  "settingsCommitSigningDeleted": "Signing key deleted",
+  "@settingsCommitSigningDeleted": {
+    "description": "Toast after deleting the signing key"
+  },
+  "settingsCommitSigningLoadFailed": "Could not load your signing key: {error}",
+  "@settingsCommitSigningLoadFailed": {
+    "description": "Error shown when the signing key could not be loaded",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connection lost"
+      }
+    }
+  },
+  "accountProfileTitle": "Profile",
+  "@accountProfileTitle": {
+    "description": "Settings > You > Profile: nav label and page title for the person's own account (username, name, picture, single sign-on identity) and, under their own heading, the accounts they connect"
+  },
+  "accountProfileDescription": "Who you are in every workspace, and your own code hosting, ticketing, calendar and chat accounts.",
+  "@accountProfileDescription": {
+    "description": "Subtitle of Settings > You > Profile, the page that holds the person's profile and, under it, their connected accounts"
+  },
+  "accountSectionTitle": "Account",
+  "@accountSectionTitle": {
+    "description": "Card label on Settings > You > Profile holding username, display name, email and picture"
+  },
+  "accountSectionDescription": "Your username and name follow you into every workspace. A workspace can show a different name or email: set that in Workspace → Profile & identity.",
+  "@accountSectionDescription": {
+    "description": "Explains account-wide fields vs the per-workspace overlay. 'Workspace → Profile & identity' must match the nav labels settingsScopeWorkspace and settingsProfile"
+  },
+  "accountLoadFailed": "Could not load your profile: {error}",
+  "@accountLoadFailed": {
+    "description": "Error shown when the person's own account row cannot be read; error is a server message",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Server unreachable"
+      }
+    }
+  },
+  "accountDisplayNameHint": "The name people see on your messages and reviews.",
+  "@accountDisplayNameHint": {
+    "description": "Hint under the Display name field (account profile and onboarding 'You' step)"
+  },
+  "accountDisplayNameRequired": "Enter a display name.",
+  "@accountDisplayNameRequired": {
+    "description": "Validation error when the display name field is empty"
+  },
+  "accountFieldCannotBeCleared": "This can be changed but not removed.",
+  "@accountFieldCannotBeCleared": {
+    "description": "Validation error when the person empties the email or picture field, which the server cannot clear"
+  },
+  "accountAvatarLabel": "Picture",
+  "@accountAvatarLabel": {
+    "description": "Label of the profile picture (avatar image link) field"
+  },
+  "accountAvatarHint": "A link to a square image, starting with https://.",
+  "@accountAvatarHint": {
+    "description": "Hint under the profile picture field. Keep 'https://' literal"
+  },
+  "accountAvatarInvalid": "Use a link that starts with https://.",
+  "@accountAvatarInvalid": {
+    "description": "Validation error for a profile picture link that is not an https URL. Keep 'https://' literal"
+  },
+  "usernameLabel": "Username",
+  "@usernameLabel": {
+    "description": "Label of the username field (the person's unique @name). Use the same term everywhere for 'username'"
+  },
+  "usernameRule": "2 to 32 lowercase letters, digits, dots, dashes or underscores. People mention you with it.",
+  "@usernameRule": {
+    "description": "Hint under the username field describing the rule"
+  },
+  "usernameAvailable": "Available.",
+  "@usernameAvailable": {
+    "description": "Status under the username field: the typed name is free"
+  },
+  "usernameAvailableAs": "Available. It will be saved as {username}.",
+  "@usernameAvailableAs": {
+    "description": "Status under the username field when the typed name is free but is stored normalized (lowercased); username is ASCII",
+    "placeholders": {
+      "username": {
+        "type": "String",
+        "example": "sam"
+      }
+    }
+  },
+  "usernameInvalid": "Use 2 to 32 lowercase letters, digits, “.”, “_” or “-”, starting and ending with a letter or digit.",
+  "@usernameInvalid": {
+    "description": "Error under the username field: the name breaks the rule. Keep the three quoted characters literal"
+  },
+  "usernameReserved": "That username is reserved.",
+  "@usernameReserved": {
+    "description": "Error under the username field: nobody may hold this name"
+  },
+  "usernameTaken": "That username is taken.",
+  "@usernameTaken": {
+    "description": "Error under the username field: someone else has this name"
+  },
+  "usernameCheckFailed": "Could not check this name right now. You can still save; the server decides.",
+  "@usernameCheckFailed": {
+    "description": "Status under the username field when the availability check failed"
+  },
+  "linkedAccountsTitle": "Connected accounts",
+  "@linkedAccountsTitle": {
+    "description": "Heading on Settings > You > Profile over the accounts a person connects for themself (code hosting, ticketing, calendar, chat). Also the link text on Workspace > Integrations that leads there, and a command palette entry"
+  },
+  "linkedAccountsIdentityProvider": "Identity provider",
+  "@linkedAccountsIdentityProvider": {
+    "description": "Row title on Settings > You > Profile for the single sign-on (SAML/OIDC) identity the account is pinned to"
+  },
+  "linkedAccountStatusNeedsSignIn": "Needs sign-in",
+  "@linkedAccountStatusNeedsSignIn": {
+    "description": "State of one of the reader's own accounts in the summary line on Settings > Workspace > Integrations (the detail of yourAccountEntry): the provider refused the sign-in or it expired"
+  },
+  "linkedAccountStatusPaused": "Paused",
+  "@linkedAccountStatusPaused": {
+    "description": "State of one of the reader's own accounts in the summary line on Settings > Workspace > Integrations (the detail of yourAccountEntry): parked because the workspace's sign-in service changed"
+  },
+  "linkedAccountStatusUnreachable": "Unreachable",
+  "@linkedAccountStatusUnreachable": {
+    "description": "State of one of the reader's own accounts in the summary line on Settings > Workspace > Integrations (the detail of yourAccountEntry): its renewal failed for now"
+  },
+  "ssoIdentityDescription": "The identity provider your account signs in through. Whoever runs this server manages it.",
+  "@ssoIdentityDescription": {
+    "description": "Subtitle of the Single sign-on card on Settings > You > Profile, shown only when the account is pinned to an identity provider"
+  },
+  "settingsAccountsDescription": "The accounts you connect for yourself. Control Center acts as you through them, and changing them affects only you.",
+  "@settingsAccountsDescription": {
+    "description": "Text under the Connected accounts heading on Settings > You > Profile. Keep 'Control Center' untranslated"
+  },
+  "accountReachServer": "Used in every workspace on this server.",
+  "@accountReachServer": {
+    "description": "One line on a connected account's card on Settings > You > Profile: the account applies in every workspace on this server"
+  },
+  "accountReachWorkspace": "Used only in {workspace}.",
+  "@accountReachWorkspace": {
+    "description": "One line on a connected account's card on Settings > You > Profile: the account applies only in the named workspace (the one settings were opened from)",
+    "placeholders": {
+      "workspace": {
+        "type": "String",
+        "example": "Acme"
+      }
+    }
+  },
+  "forgeReachGitHubOwnApp": "GitHub is used only in {workspace}, which has its own sign-in apps. GitLab and Bitbucket are used in every workspace on this server.",
+  "@forgeReachGitHubOwnApp": {
+    "description": "Code hosting card line on Settings > You > Profile when the current workspace has its own sign-in apps (its own GitHub App or its own Connect; same term as workspaceConnectSwitchTitle), so the GitHub sign-in is kept for that workspace only. Keep GitHub, GitLab and Bitbucket untranslated",
+    "placeholders": {
+      "workspace": {
+        "type": "String",
+        "example": "Acme"
+      }
+    }
+  },
+  "yourAccountLabel": "Your account",
+  "@yourAccountLabel": {
+    "description": "Leading label of the one-line summary of the reader's own account at the top of a provider group on Settings > Workspace > Integrations"
+  },
+  "yourAccountEntry": "{provider}: {detail}",
+  "@yourAccountEntry": {
+    "description": "One account in the summary line on Settings > Workspace > Integrations; provider is a service name (GitHub, Linear, Slack), detail is the account name or its state (for example 'Needs sign-in')",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      },
+      "detail": {
+        "type": "String",
+        "example": "octocat"
+      }
+    }
+  },
+  "yourAccountLineSemantics": "Your account: {status}. Opens You → Profile.",
+  "@yourAccountLineSemantics": {
+    "description": "Screen reader label of the account summary line on Settings > Workspace > Integrations. 'You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle",
+    "placeholders": {
+      "status": {
+        "type": "String",
+        "example": "GitHub: octocat"
+      }
+    }
+  },
+  "yourForgeAccountNone": "No code hosting account connected",
+  "@yourForgeAccountNone": {
+    "description": "Account summary line on Settings > Workspace > Integrations > code hosting when the reader has connected no GitHub, GitLab or Bitbucket account"
+  },
+  "yourAccountNotConnected": "No {provider} account connected",
+  "@yourAccountNotConnected": {
+    "description": "Account summary line on Settings > Workspace > Integrations when the reader has not signed in to the provider",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Linear"
+      }
+    }
+  },
+  "yourChatAccountNotLinked": "No {provider} account linked",
+  "@yourChatAccountNotLinked": {
+    "description": "Account summary line on Settings > Workspace > Integrations > chat when the reader has not linked their chat account",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "Slack"
+      }
+    }
+  },
+  "demoUnavailableAccount": "You are a temporary guest in the demo, so there is no account to change: no username, profile or connected accounts.",
+  "@demoUnavailableAccount": {
+    "description": "Demo notice on Settings > You > Profile"
+  },
+  "onboardingStepYou": "You",
+  "@onboardingStepYou": {
+    "description": "Onboarding progress-bar label of the first step, where the person chooses their username and display name"
+  },
+  "onboardingYouTitle": "Choose your username",
+  "@onboardingYouTitle": {
+    "description": "Title of the onboarding 'You' step"
+  },
+  "onboardingYouSubtitle": "Your username is how people mention you and how your work is labeled. You can change it and your display name later in Settings → You → Profile.",
+  "@onboardingYouSubtitle": {
+    "description": "Lead of the onboarding 'You' step. 'Settings → You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle"
+  },
+  "signInErrorAccountAlreadyBound": "This {provider} account is already connected to another person on this server. Sign in with a different {provider} account.",
+  "@signInErrorAccountAlreadyBound": {
+    "description": "Sign-in failure: the provider account the person signed in with is already held by another person on this server; one account acts for one person only",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "forgeTokenExpiresOn": "Token expires {date}",
+  "@forgeTokenExpiresOn": {
+    "description": "Settings → Code hosting: under a forge row, when the pasted GitLab/Bitbucket token stops working. Hovering the line shows the exact time",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Mar 4, 2027"
+      }
+    }
+  },
+  "forgeTokenExpiredOn": "Token expired {date}. Paste a new one to keep working.",
+  "@forgeTokenExpiredOn": {
+    "description": "Settings → Code hosting: warning under a forge row once the pasted token has expired",
+    "placeholders": {
+      "date": {
+        "type": "String",
+        "example": "Mar 4, 2027"
+      }
+    }
+  },
+  "personTokenUnreachable": "{forge} could not be reached to check this token. Try again in a moment.",
+  "@personTokenUnreachable": {
+    "description": "Token dialog error: the server could not ask the forge about the pasted token (offline, rate limited)",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "personTokenRejected": "{forge} does not accept this token. Check that you copied all of it and that it has not been revoked.",
+  "@personTokenRejected": {
+    "description": "Token dialog error: the forge refused the pasted token (wrong, revoked, or for Bitbucket the wrong email)",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "personTokenWrongKind": "This is not a personal token. Paste a personal access token from your own {forge} account, not a project, group, workspace or bot token.",
+  "@personTokenWrongKind": {
+    "description": "Token dialog error: the pasted token belongs to a bot, project, group or workspace instead of the person",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitLab"
+      }
+    }
+  },
+  "personTokenNarrowScope": "This token is missing the {scope} scope, which reviewing and commenting need. Create one that has it.",
+  "@personTokenNarrowScope": {
+    "description": "Token dialog error: the pasted token lacks a permission. {scope} is the forge's own scope name, e.g. api or write:pullrequest:bitbucket; keep it as is",
+    "placeholders": {
+      "scope": {
+        "type": "String",
+        "example": "api"
+      }
+    }
+  },
+  "personTokenExpired": "This token has expired. Create a new one and paste it here.",
+  "@personTokenExpired": {
+    "description": "Token dialog error: the pasted token is already expired"
+  },
+  "settingsCommitSigningTrustAgents": "Agents you start can make commits signed as you, in any repository they work in. Deleting the key here stops that at once: runs already under way sign nothing further.",
+  "@settingsCommitSigningTrustAgents": {
+    "description": "Settings → You → Commits → Verified commits, \"What you are trusting\" list. \"Deleting the key here\" = the Delete key action on this page, not removing it from the forge"
+  },
+  "connectRotateKeyFailed": "The key was not rotated, and nothing changed: {error} Try again.",
+  "@connectRotateKeyFailed": {
+    "description": "Settings → Connect: toast when rotating the server's Connect key failed (for example Connect could not be reached). The old key and id keep working; the Rotate key button stays for another try. {error} is the server's sentence",
+    "placeholders": {
+      "error": {
+        "type": "String",
+        "example": "Connect could not be reached."
+      }
+    }
+  },
+  "noWorkspaceInviteTitle": "You are not in a workspace yet",
+  "@noWorkspaceInviteTitle": {
+    "description": "Workspace picker, shown to a signed-in person who belongs to no workspace and may not create one (only the server owner can). Title of a calm dead end, not an error."
+  },
+  "noWorkspaceInviteBody": "A workspace admin has to invite you, or the server owner can create a workspace for you. It opens here as soon as you are added.",
+  "@noWorkspaceInviteBody": {
+    "description": "Body under noWorkspaceInviteTitle. 'Invite' = an admin adds them to an existing workspace; 'the server owner' = the person who runs this Control Center server."
+  },
+  "noWorkspaceSignedInAs": "Signed in as {name}",
+  "@noWorkspaceSignedInAs": {
+    "description": "Small line under noWorkspaceInviteBody, reassuring the person that their sign-in worked.",
+    "placeholders": {
+      "name": {
+        "type": "String",
+        "example": "Ada Lovelace"
+      }
+    }
+  },
+  "noWorkspaceCheckAgain": "Check again",
+  "@noWorkspaceCheckAgain": {
+    "description": "Button on the no-workspace dead end: re-reads whether they were added to a workspace (or may now create one)."
+  },
+  "noWorkspaceSignOut": "Sign out",
+  "@noWorkspaceSignOut": {
+    "description": "Button on the no-workspace dead end: leaves this server for the server sign-in screen, so they can sign in as someone else or pick another server."
+  },
+  "workspaceCreateOwnerOnly": "Only the server owner can create workspaces. Ask them to create one, or ask a workspace admin to invite you.",
+  "@workspaceCreateOwnerOnly": {
+    "description": "Error in the new-workspace form when the server refuses because only its owner may create workspaces (their right was withdrawn after the form opened)."
+  },
+  "repoLinkNoWorkspaceToAddTo": "{repo} is not in any of your workspaces, and you are not in a workspace to add it to. Ask a workspace admin to invite you.",
+  "@repoLinkNoWorkspaceToAddTo": {
+    "description": "Toast when a link names a repository no workspace links, the person is in no workspace, and they may not create one.",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/shop-ui"
+      }
+    }
+  },
+  "serverOwnerOnly": "Only the server owner can do this",
+  "@serverOwnerOnly": {
+    "description": "Shared title when the server refused something only its owner (the person who runs this Control Center server) may do. Used for the embedded editor today."
+  },
+  "ideCodeServerOwnerOnlyHint": "The full editor runs on the server's own machine, so only the server's owner can open it. You can still open and edit files from the Explorer.",
+  "@ideCodeServerOwnerOnlyHint": {
+    "description": "Under serverOwnerOnly in an editor tab when opening the embedded VS Code editor was refused. 'Explorer' is the IDE's file tree panel, whose built-in single-file editor everyone can still use"
+  },
+  "terminalSandboxedBadge": "Sandboxed",
+  "@terminalSandboxedBadge": {
+    "description": "Small badge above a terminal that runs inside the sandbox (not directly on the server host)"
+  },
+  "terminalSandboxedHint": "Runs in a sandbox inside this workspace's folders, so some host tools and paths are not available here.",
+  "@terminalSandboxedHint": {
+    "description": "One line beside terminalSandboxedBadge, for someone who is not the server owner: why some things are missing in their terminal"
+  },
+  "terminalHostShellOwnerOnly": "The host shell runs on the server without a sandbox, so only the server owner can open one. A regular terminal runs in the sandbox.",
+  "@terminalHostShellOwnerOnly": {
+    "description": "Terminal panel, when the server refused an unsandboxed host shell to someone who is not its owner"
+  },
+  "terminalOutsideWorkspace": "A terminal can only open inside this workspace's own folders.",
+  "@terminalOutsideWorkspace": {
+    "description": "Terminal panel, when the server refused a working directory outside the workspace's directories"
+  },
+  "environmentHostOwnerOnly": "Only the server owner can save or approve an environment that runs on the server host. A workspace admin can use one that runs in a rig.",
+  "@environmentHostOwnerOnly": {
+    "description": "Settings → Environments, when saving or approving a definition was refused because it places something on the server host. 'Rig' = an isolated machine Control Center boots for the environment (keep the product term)"
+  },
+  "settingsCommitsNoHooks": "Commits you make in the app's own editor run no Git hooks from the repository, as with git commit --no-verify: the server runs Git on its own host, in a tree that agents and pull requests can change.",
+  "@settingsCommitsNoHooks": {
+    "description": "You → Commits, in the list of what to know about commits made here. 'git commit --no-verify' is a literal command; keep it verbatim"
+  },
+  "mcpTokenDescription": "MCP clients send this token with every request, as an Authorization: Bearer header. The server creates it on first start; you can rotate it but not remove it.",
+  "@mcpTokenDescription": {
+    "description": "Settings → MCP servers, under the Authentication token label, for the server owner. 'Authorization: Bearer' is the literal HTTP header; keep it verbatim"
+  },
+  "mcpShowToken": "Show token",
+  "@mcpShowToken": {
+    "description": "Button: reveals the MCP token (as the header line to copy). Server owner only"
+  },
+  "mcpHideToken": "Hide token",
+  "@mcpHideToken": {
+    "description": "Button: hides the MCP token again"
+  },
+  "mcpRotateToken": "Rotate token",
+  "@mcpRotateToken": {
+    "description": "Button, and the confirm button of the rotate dialog: replaces the MCP token with a new random one"
+  },
+  "mcpRotateTokenTitle": "Rotate the MCP token?",
+  "@mcpRotateTokenTitle": {
+    "description": "Title of the confirm dialog before rotating the MCP token"
+  },
+  "mcpRotateTokenBody": "The server switches to a new token right away. Every MCP client still using the current one is refused until you give it the new one.",
+  "@mcpRotateTokenBody": {
+    "description": "Body of the rotate-token confirm dialog: the consequence"
+  },
+  "mcpTokenRotated": "Token rotated. Give your MCP clients the new one.",
+  "@mcpTokenRotated": {
+    "description": "Toast after the MCP token was rotated; the new token is shown in the card"
+  },
+  "mcpOwnerOnlyTitle": "The MCP endpoint is for the server owner",
+  "@mcpOwnerOnlyTitle": {
+    "description": "Settings → MCP servers, for someone who is not the server owner. Informational, not an error"
+  },
+  "mcpOwnerOnlyBody": "Its token opens every tool on this server, so only the server owner can see it, rotate it, or start and stop the endpoint.",
+  "@mcpOwnerOnlyBody": {
+    "description": "Under mcpOwnerOnlyTitle"
+  },
+  "activityRotatedMcpToken": "Rotated the MCP token",
+  "@activityRotatedMcpToken": {
+    "description": "Activity log entry: someone rotated the server's MCP token (op mcp.rotateToken)"
+  },
+  "connectRotateKeyRetireFailedTitle": "Connect could not retire the old key",
+  "@connectRotateKeyRetireFailedTitle": {
+    "description": "Settings → Connect, dialog title after Rotate key failed because a Connect could not retire the old key. The server's own explanation (which Connect, which error code) is shown under it"
+  },
+  "connectRotateKeyForceBody": "Nothing changed. If you rotate anyway, this server gets its new key, but the old identity stays usable at that Connect until its sign-ins expire.",
+  "@connectRotateKeyForceBody": {
+    "description": "Same dialog, under the server's explanation: what 'Rotate anyway' leaves behind. 'Connect' = Control Center Connect (product name)"
+  },
+  "connectRotateKeyAnyway": "Rotate anyway",
+  "@connectRotateKeyAnyway": {
+    "description": "Destructive button in that dialog: rotates the key even though a Connect could not retire the old one"
+  },
+  "settingsAuditLog": "Audit log",
+  "@settingsAuditLog": {
+    "description": "Settings → Server navigation entry and page title: one table of who changed what across the server and the workspaces the person administers"
+  },
+  "settingsAuditLogDescription": "Who changed what, where and how it ended, across the server and every workspace you administer. Server operations record argument names, never their values.",
+  "@settingsAuditLogDescription": {
+    "description": "Subtitle of the Audit log page"
+  },
+  "auditLogNoAccessTitle": "Admins only",
+  "@auditLogNoAccessTitle": {
+    "description": "Alert title on the Audit log page for someone who is neither the server owner nor a workspace admin"
+  },
+  "auditLogNoAccess": "The audit log covers the server and the workspaces you administer. You don't administer any workspace, so there's nothing to show.",
+  "@auditLogNoAccess": {
+    "description": "Alert body under auditLogNoAccessTitle"
+  },
+  "auditLogSourceServer": "Server",
+  "@auditLogSourceServer": {
+    "description": "Where an audit record happened: the whole server (install-wide settings), as opposed to a workspace. Shown on rows and as a filter option"
+  },
+  "auditLogSourceWorkspace": "Workspace",
+  "@auditLogSourceWorkspace": {
+    "description": "Fallback name for a workspace whose name is unknown, on an audit log row"
+  },
+  "auditLogAddFilter": "Filter",
+  "@auditLogAddFilter": {
+    "description": "Audit log toolbar button that opens the filter menu"
+  },
+  "auditLogFilterOptionsHint": "Filter…",
+  "@auditLogFilterOptionsHint": {
+    "description": "Placeholder of the search field inside a filter flyout (e.g. the list of actors)"
+  },
+  "auditLogFilterActor": "Actor",
+  "@auditLogFilterActor": {
+    "description": "Audit log filter category: the person who made the change"
+  },
+  "auditLogFilterSource": "Workspace",
+  "@auditLogFilterSource": {
+    "description": "Audit log filter category: which workspace (or the server) the change happened in"
+  },
+  "auditLogFilterOutcome": "Outcome",
+  "@auditLogFilterOutcome": {
+    "description": "Audit log filter category: how the operation ended (succeeded, denied, failed)"
+  },
+  "auditLogFilterTime": "Time",
+  "@auditLogFilterTime": {
+    "description": "Audit log toolbar button that adds a time condition"
+  },
+  "auditLogFilterChip": "{category}: {values}",
+  "@auditLogFilterChip": {
+    "description": "Active filter chip, e.g. 'Actor: Ada, Riley'. {category} is a filter category name, {values} the selected values",
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "values": {
+        "type": "String"
+      }
+    }
+  },
+  "auditLogFilterChipMore": "{values} +{count}",
+  "@auditLogFilterChipMore": {
+    "description": "Selected values of a filter chip when more than two are selected: the first two, then how many more, e.g. 'Ada, Riley +3'",
+    "placeholders": {
+      "values": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "auditLogOutcomeOk": "Succeeded",
+  "@auditLogOutcomeOk": {
+    "description": "Audit outcome: the operation ran and returned"
+  },
+  "auditLogOutcomeDenied": "Denied",
+  "@auditLogOutcomeDenied": {
+    "description": "Audit outcome: a permission check refused the operation before it ran"
+  },
+  "auditLogOutcomeFailed": "Failed",
+  "@auditLogOutcomeFailed": {
+    "description": "Audit outcome: the operation ran and threw an error"
+  },
+  "auditLogTimeAtOrAfter": "On or after",
+  "@auditLogTimeAtOrAfter": {
+    "description": "Time filter comparison ≥ in words"
+  },
+  "auditLogTimeAfter": "After",
+  "@auditLogTimeAfter": {
+    "description": "Time filter comparison > in words"
+  },
+  "auditLogTimeBefore": "Before",
+  "@auditLogTimeBefore": {
+    "description": "Time filter comparison < in words"
+  },
+  "auditLogTimeAtOrBefore": "On or before",
+  "@auditLogTimeAtOrBefore": {
+    "description": "Time filter comparison ≤ in words"
+  },
+  "auditLogTimeChip": "Time {operator} {time}",
+  "@auditLogTimeChip": {
+    "description": "Active time filter chip, e.g. 'Time ≥ Nov 10, 2026 14:30'. {operator} is a comparison symbol (or its words for screen readers), {time} a formatted date and time",
+    "placeholders": {
+      "operator": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "auditLogTimePresetHour": "1 hour ago",
+  "@auditLogTimePresetHour": {
+    "description": "Time filter preset: the instant one hour before now"
+  },
+  "auditLogTimePresetDay": "24 hours ago",
+  "@auditLogTimePresetDay": {
+    "description": "Time filter preset: the instant 24 hours before now"
+  },
+  "auditLogTimePresetWeek": "7 days ago",
+  "@auditLogTimePresetWeek": {
+    "description": "Time filter preset: the instant 7 days before now"
+  },
+  "auditLogTimePresetMonth": "30 days ago",
+  "@auditLogTimePresetMonth": {
+    "description": "Time filter preset: the instant 30 days before now"
+  },
+  "auditLogTimeExact": "Exact time",
+  "@auditLogTimeExact": {
+    "description": "Label above the field where a date and time is typed for a time filter"
+  },
+  "auditLogTimeInvalid": "Use YYYY-MM-DD, optionally with HH:MM",
+  "@auditLogTimeInvalid": {
+    "description": "Error under the exact-time field when the typed text is not a date. Keep YYYY-MM-DD and HH:MM literally"
+  },
+  "auditLogTimeAdd": "Add",
+  "@auditLogTimeAdd": {
+    "description": "Button that adds the typed exact time as a filter condition"
+  },
+  "repoAccessReplacedTitle": "{repo} now points to a different repository",
+  "@repoAccessReplacedTitle": {
+    "description": "Repository access notice (pull requests, Settings → Repositories) when the linked owner/name now names a different repository on the forge (deleted and re-created, or moved and replaced). Nothing is sent to it until an admin relinks it",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/shop-ui"
+      }
+    }
+  },
+  "repoAccessReplacedBody": "This path now points to a different repository on {forge}. Relink it to keep using it.",
+  "@repoAccessReplacedBody": {
+    "description": "Under repoAccessReplacedTitle. 'Path' = the repository's owner/name on the forge. A member also sees who to ask, appended after it",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoRelink": "Relink",
+  "@repoRelink": {
+    "description": "Button on that notice, for workspace admins only: links the repository again, so the server checks it with the admin's own forge sign-in and pins the new repository"
+  },
+  "repoRelinked": "Relinked {repo}.",
+  "@repoRelinked": {
+    "description": "Toast after Relink succeeded",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/shop-ui"
+      }
+    }
+  },
+  "repoCodeRepoReplaced": "This path now points to a different repository. A workspace admin has to relink it before it can be used.",
+  "@repoCodeRepoReplaced": {
+    "description": "Code views (file content, terminal in a space) when the server refused because the repository was replaced on its forge"
+  },
+  "repoCodeForgeCannotRead": "Your {forge} account can't read this repository.",
+  "@repoCodeForgeCannotRead": {
+    "description": "Code views (file content, a terminal in a space) when the server refused because the person's own forge account cannot read a repository in the space",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoCodeForgeUnconfirmed": "Couldn't confirm your {forge} access. Try again.",
+  "@repoCodeForgeUnconfirmed": {
+    "description": "Same place, when the forge could not be asked whether the person can read the repository; a retry is offered",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoCodeForgeCannotReadUnnamed": "Your forge account can't read this repository.",
+  "@repoCodeForgeCannotReadUnnamed": {
+    "description": "repoCodeForgeCannotRead when the server did not name the forge. 'Forge' = the code host (GitHub, GitLab, Bitbucket)"
+  },
+  "repoCodeForgeUnconfirmedUnnamed": "Couldn't confirm your forge access. Try again.",
+  "@repoCodeForgeUnconfirmedUnnamed": {
+    "description": "repoCodeForgeUnconfirmed when the server did not name the forge"
+  },
+  "repoPathHostPath": "Only the server's owner can link a folder outside this workspace's storage.",
+  "@repoPathHostPath": {
+    "description": "Linking or relinking a repository was refused: its folder lies outside the workspace's storage on the server"
+  },
+  "repoPathMissing": "Nothing exists at that path on the server.",
+  "@repoPathMissing": {
+    "description": "Linking a repository was refused: no folder at that path on the server"
+  },
+  "repoPathDataDir": "A repository can't point into the server's data folder.",
+  "@repoPathDataDir": {
+    "description": "Linking a repository was refused: the folder is inside the server's own data folder"
+  },
+  "repoPathWorkspaceRoot": "A repository can't be the workspace's own folder.",
+  "@repoPathWorkspaceRoot": {
+    "description": "Linking a repository was refused: the folder is the workspace's root folder itself"
+  },
+  "repoPathOriginMismatch": "That folder's origin is a different repository.",
+  "@repoPathOriginMismatch": {
+    "description": "Linking a repository was refused: the git origin of the folder names another repository than the one being linked"
+  },
+  "repoGrantNeedsSignIn": "Saved. They need to sign in to {forge} before they can open this repository.",
+  "@repoGrantNeedsSignIn": {
+    "description": "Member repository access dialog, under a repository row right after its grant was saved: the member is not signed in to its forge",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoGrantCannotRead": "Saved. Their {forge} account can't read this repository yet, so it stays hidden from them.",
+  "@repoGrantCannotRead": {
+    "description": "Same place: the member's own forge account cannot read the repository",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoGrantUnconfirmed": "Saved. Couldn't confirm their {forge} access right now.",
+  "@repoGrantUnconfirmed": {
+    "description": "Same place: the forge could not be asked whether the member can read it",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoLinkAskOwnerToAdd": "{repo} is not linked in any of your workspaces. Ask the server owner to add it.",
+  "@repoLinkAskOwnerToAdd": {
+    "description": "Toast when someone who is not the server owner opens a repository link (e.g. from the browser extension) for a repository no workspace of theirs links. Adding one means picking a folder on the server's machine, which only the server owner (the person who runs this Control Center server) may do",
+    "placeholders": {
+      "repo": {
+        "type": "String",
+        "example": "acme/shop-ui"
+      }
+    }
+  },
+  "reposEmptyAskOwner": "The server owner adds repositories from the server's folders.",
+  "@reposEmptyAskOwner": {
+    "description": "Settings → Repositories, empty list, for someone who is not the server owner: why there is no Add button. 'Server owner' = the person who runs this Control Center server"
+  },
+  "accountEmailUnconfirmedHint": "Only you have entered this address. Single sign-on won't match it until the server's owner confirms it.",
+  "@accountEmailUnconfirmedHint": {
+    "description": "Under the email field in the person's own profile settings while their address is unconfirmed (they typed it themselves; neither their identity provider nor the server owner has vouched for it)"
+  },
+  "settingsServerPeople": "People",
+  "@settingsServerPeople": {
+    "description": "Settings → Server navigation item and page title: every account on this server. Server owner only"
+  },
+  "settingsServerPeopleDescription": "Everyone with an account on this server, and whether their email address is confirmed.",
+  "@settingsServerPeopleDescription": {
+    "description": "Subtitle of Settings → Server → People"
+  },
+  "serverPeopleLabel": "Accounts",
+  "@serverPeopleLabel": {
+    "description": "Section label above the list of accounts on Settings → Server → People"
+  },
+  "serverPeopleOwnerOnly": "Only the server's owner can see everyone's account and confirm email addresses.",
+  "@serverPeopleOwnerOnly": {
+    "description": "Settings → Server → People, under serverOwnerOnly, for anyone who is not the server owner; also a toast when the server refused to confirm an address for that reason"
+  },
+  "serverPeopleEmailNotConfirmed": "Email not confirmed",
+  "@serverPeopleEmailNotConfirmed": {
+    "description": "Status tag on an account row in Settings → Server → People (shown to the server owner only) when the person typed their email address themselves and nobody has vouched for it"
+  },
+  "serverPeopleConfirmEmail": "Confirm email",
+  "@serverPeopleConfirmEmail": {
+    "description": "Row action (icon button tooltip), confirmation dialog title and its confirm button on Settings → Server → People: the server owner vouches that the address belongs to that person"
+  },
+  "serverPeopleConfirmEmailBody": "Confirm that {email} belongs to {name}? Single sign-on will match this address to their account.",
+  "@serverPeopleConfirmEmailBody": {
+    "description": "Body of the Confirm email dialog",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "sam@example.com"
+      },
+      "name": {
+        "type": "String",
+        "example": "Sam Rivera"
+      }
+    }
+  },
+  "serverPeopleEmailConfirmed": "Confirmed {email}.",
+  "@serverPeopleEmailConfirmed": {
+    "description": "Toast after the server owner confirmed an email address",
+    "placeholders": {
+      "email": {
+        "type": "String",
+        "example": "sam@example.com"
+      }
+    }
+  },
+  "runSandboxUnavailableTitle": "Agents need a sandbox on this server",
+  "@runSandboxUnavailableTitle": {
+    "description": "Title of the notice in a chat turn (and the run's title in its activity tab) when the server refused to start an agent run because it has no sandbox and the person is not the server owner. Guidance, not an error"
+  },
+  "runSandboxUnavailable": "This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.",
+  "@runSandboxUnavailable": {
+    "description": "Body of that notice. 'Owner' = the person who runs this Control Center server; 'sandbox' = the isolation agents run in"
+  },
+  "repoPathIssueHostPath": "This folder is outside the workspace's storage. Confirm that this server may use it.",
+  "@repoPathIssueHostPath": {
+    "description": "Settings → Repositories, under a repository the server lists but does not serve (no IDE, environments, terminals, index) until it is confirmed, shown to the server owner, next to a Confirm button. Every checkout linked from a desktop before this rule shows it once"
+  },
+  "repoPathIssueHostPathAskOwner": "This folder is outside the workspace's storage. Only the server's owner can confirm it.",
+  "@repoPathIssueHostPathAskOwner": {
+    "description": "Same notice for anyone who is not the server owner (no button)"
+  },
+  "repoPathIssueMissing": "Nothing exists at this path on the server anymore. Remove this repository and add it again from its current folder.",
+  "@repoPathIssueMissing": {
+    "description": "Settings → Repositories, under a repository whose folder no longer exists on the server. Workspace admins see a Remove button beside it; no action re-points an existing repository's folder"
+  },
+  "repoPathIssueUnusable": "This folder can't be used as a repository. Remove it and add the repository from another folder.",
+  "@repoPathIssueUnusable": {
+    "description": "Settings → Repositories, under a repository whose folder is the server's own data folder or the workspace's storage root. Workspace admins see a Remove button beside it"
+  },
+  "repoPathConfirm": "Confirm",
+  "@repoPathConfirm": {
+    "description": "Button next to repoPathIssueHostPath: the server owner confirms the server may use the folder (the server re-checks the link as them)"
+  },
+  "repoPathConfirmAll": "Confirm all",
+  "@repoPathConfirmAll": {
+    "description": "Button above the repository list when more than one repository waits for that confirmation; confirms them one after another"
+  },
+  "repoPathConfirmAllTitle": "{count, plural, =1{1 folder is outside the workspace's storage} other{{count} folders are outside the workspace's storage}}",
+  "@repoPathConfirmAllTitle": {
+    "description": "Title of the notice above the repository list that carries Confirm all",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "4"
+      }
+    }
+  },
+  "repoPathConfirmAllBody": "Confirm that this server may use them. Each repository is checked again with your access.",
+  "@repoPathConfirmAllBody": {
+    "description": "Body of that notice"
+  },
+  "mcpExternalServersOwnerRunsOnly": "Servers found in this machine's own tool settings are available only in runs you start or are accountable for. Other people's runs never see them, and they aren't offered through Control Center's MCP endpoint.",
+  "@mcpExternalServersOwnerRunsOnly": {
+    "description": "Second line under the External MCP servers title in Settings → Server → MCP (seen by the server owner). 'This machine's own tool settings' = the MCP configs of Claude, Cursor, VS Code etc. on the server's own OS account; 'MCP endpoint' = the MCP server Control Center itself exposes"
+  },
+  "repoCodeNeedsSignIn": "Sign in to {provider} to see this repository's code.",
+  "@repoCodeNeedsSignIn": {
+    "description": "Code views (the Explorer's file tree and searches, a file, a diff) when the server refused because the person has no sign-in of their own for the repository's forge. Shown with a 'Sign in' action",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "repoCodeSignIn": "Sign in",
+  "@repoCodeSignIn": {
+    "description": "Action beside repoCodeNeedsSignIn in the Explorer tree row and code panes; opens the sign-in prompt for the person's forge account"
+  },
+  "ideContentSearchFailed": "Couldn't search in files",
+  "@ideContentSearchFailed": {
+    "description": "Explorer, 'search in files' (content search) mode: the search failed for a reason that is not an access refusal. Sibling of ideFileSearchFailed"
+  },
+  "ideWorktreeFileUnavailable": "This file isn't available in this worktree.",
+  "@ideWorktreeFileUnavailable": {
+    "description": "Quick-fix file editor (conversation IDE, PR workbench) when the file could not be read from the conversation's own copy of the repository. Shown with a 'Retry' action"
+  },
+  "ideChangesLoadFailed": "Couldn't load the changes",
+  "@ideChangesLoadFailed": {
+    "description": "Review tab of the conversation IDE (the branch diff) when the diff could not be loaded for a reason that is not an access refusal. Shown with a 'Retry' action"
+  },
+  "repoCodeRepoReplacedOn": "This path now points to a different repository on {forge}. A workspace admin has to relink it before it can be used.",
+  "@repoCodeRepoReplacedOn": {
+    "description": "Code views (Explorer tree and searches, a file, a diff, a terminal in a space) when the server refused because the linked repository's owner/name now names a different repository on the forge. The forge-named sibling of repoCodeRepoReplaced, used when the server names the forge",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "backupRestoreServerOwnerOnly": "Only the server owner can restore backups. You can still download them.",
+  "@backupRestoreServerOwnerOnly": {
+    "description": "Settings → Server → Backup & restore, in place of the Restore buttons and the restore/import fields, for anyone who is not the server owner. Restoring replaces a workspace's data with a file on the server's own machine, so it is the owner's; downloading stays available"
+  },
+  "terminalReadOnlyBadge": "Read-only",
+  "@terminalReadOnlyBadge": {
+    "description": "Small badge above a terminal the person may watch but not type into (an environment's setup or process terminal they lack the right to operate)"
+  },
+  "terminalReadOnlyHint": "You can watch this terminal. Typing in it, resizing or stopping it needs write access to every repository in this conversation.",
+  "@terminalReadOnlyHint": {
+    "description": "One quiet line beside terminalReadOnlyBadge, above a read-only terminal. 'Conversation' = the space whose environment runs the terminal; 'write access' = the person's write grant on each repository there (admins have it)"
+  },
+  "environmentOperateNeedsWrite": "You can watch this environment. Starting, stopping or restarting it needs write access to every repository in this conversation.",
+  "@environmentOperateNeedsWrite": {
+    "description": "One quiet line in the Environment panel and sidebar section when the person may see the environment but not operate it; its start/stop/restart/launch controls are disabled. 'Write access' = the person's write grant on each repository in the conversation (admins have it)"
+  },
+  "environmentHostApprovalOwner": "Runs on this server. Approve it to let it start.",
+  "@environmentHostApprovalOwner": {
+    "description": "Settings → Environments, a quiet line under a definition (in the list and at the top of its editor) that runs something on the server's own machine and has no approval from the current server owner. Seen by the server owner, beside an 'Approve' button that saves the definition unchanged"
+  },
+  "environmentHostApprovalMember": "Runs on this server. The server owner has to approve it before it can start.",
+  "@environmentHostApprovalMember": {
+    "description": "Same place as environmentHostApprovalOwner, for anyone who is not the server owner; no action"
+  },
+  "environmentHostApprove": "Approve",
+  "@environmentHostApprove": {
+    "description": "Button beside environmentHostApprovalOwner; the server owner approves the definition by saving it unchanged"
+  },
+  "environmentHostApproveNeedsAdmin": "Approve it as a workspace admin: only an admin's copy shows its secret values, and approving saves them back.",
+  "@environmentHostApproveNeedsAdmin": {
+    "description": "Error under the approval notice when the server owner is not a workspace admin, so the definition they see has its secret values hidden and cannot be saved back unchanged"
+  },
+  "environmentHostUnapproved": "The server owner hasn't approved this environment yet, so it can't run on this server.",
+  "@environmentHostUnapproved": {
+    "description": "Environment panel in a conversation (and the toast after a refused start, restart, task, exec, check, setup or test) when the environment's definition runs on the server's own machine and the current server owner has not approved it. Seen by anyone but the server owner"
+  },
+  "environmentHostUnapprovedOwner": "You haven't approved this environment yet. It runs on this server, so it starts once you approve its definition.",
+  "@environmentHostUnapprovedOwner": {
+    "description": "Same situation as environmentHostUnapproved, seen by the server owner; in the panel it sits beside environmentHostApprovalReview"
+  },
+  "environmentHostApprovalReview": "Review and approve",
+  "@environmentHostApprovalReview": {
+    "description": "Button beside environmentHostUnapprovedOwner in the Environment panel; opens the environment's definition in Settings, where the owner approves it"
+  },
+  "spaceAccessNeedsSignIn": "Sign in to {provider} to open this space.",
+  "@spaceAccessNeedsSignIn": {
+    "description": "In place of a whole space (conversation workspace) the person opened from a link, a notification or the last space they had open, when the server refused because they are not signed in to the forge that hosts one of the space's repositories. Followed by a Sign in button",
+    "placeholders": {
+      "provider": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "spaceAccessForgeCannotRead": "Your {forge} account can't read a repository this space uses.",
+  "@spaceAccessForgeCannotRead": {
+    "description": "In place of a whole space when the person's own forge account cannot read one of the repositories the space uses, so the server will not show the space to them",
+    "placeholders": {
+      "forge": {
+        "type": "String",
+        "example": "GitHub"
+      }
+    }
+  },
+  "spaceAccessForgeCannotReadUnnamed": "Your forge account can't read a repository this space uses.",
+  "@spaceAccessForgeCannotReadUnnamed": {
+    "description": "Same as spaceAccessForgeCannotRead, when the server's refusal does not name the forge"
+  },
+  "spaceAccessNoGrant": "You don't have read access to a repository this space uses. A workspace admin can grant it.",
+  "@spaceAccessNoGrant": {
+    "description": "In place of a whole space when the person holds no read grant on one of the repositories the space uses"
+  },
+  "spaceAccessFailed": "This space couldn't be opened.",
+  "@spaceAccessFailed": {
+    "description": "In place of a whole space when opening it failed for a reason other than access, with a Retry button"
+  },
+  "contextExplorerRefused": "The context breakdown isn't available in this session.",
+  "@contextExplorerRefused": {
+    "description": "Context explorer tab (what an agent holds in its context window), when the server refuses the inspection for this kind of session or person; no retry is offered"
+  },
+  "repoLinkForgeRemoteRequired": "A linked repository needs both an owner and a repository name.",
+  "@repoLinkForgeRemoteRequired": {
+    "description": "Toast after saving a repository's forge link (owner/organization and repository name) when the server refused because one of them was cleared"
+  },
+  "repoCodeNoReadGrant": "You don't have read access to this repository. A workspace admin can grant it.",
+  "@repoCodeNoReadGrant": {
+    "description": "Code views (Explorer, a file, a diff, search) and repository actions when the server refused because the person holds no Control Center read grant on the repository"
+  },
+  "repoCodeNoWriteGrant": "You can read this repository but not change it. A workspace admin can grant write access.",
+  "@repoCodeNoWriteGrant": {
+    "description": "Toast when saving a file, reverting, committing, pushing, publishing, syncing or checking out a branch, or moving a stack part was refused because the person holds only a read grant on the repository"
+  },
+  "repoCodeNoReviewGrant": "You can read this repository but not review it. A workspace admin can grant review access.",
+  "@repoCodeNoReviewGrant": {
+    "description": "Toast or notice when approving, requesting changes or another review action was refused because the person holds no Control Center review grant on the repository"
+  },
+  "rigWatchOnlyBadge": "Watch only",
+  "@rigWatchOnlyBadge": {
+    "description": "Badge above a rig (Browser, Desktop, Android or iOS machine) the person may watch but not drive, because they hold only a read grant on the space's repositories"
+  },
+  "rigWatchOnlyHint": "You can watch this machine. Driving it, forwarding its ports, pasting into it or dropping files on it needs write access to every repository in this space.",
+  "@rigWatchOnlyHint": {
+    "description": "One quiet line beside the watch-only badge above a rig, saying what is off and why"
+  },
+  "rigStartNeedsWrite": "Starting a machine here needs write access to every repository in this space. A workspace admin can grant it.",
+  "@rigStartNeedsWrite": {
+    "description": "Under the disabled Start button of a rig tab when the server refused opening a rig because the person holds only a read grant on the space's repositories"
+  },
+  "rigViewRefused": "You can't view this machine. It belongs to a space you don't have read access to.",
+  "@rigViewRefused": {
+    "description": "In place of a rig when its live view was refused because the person cannot read the rig's space"
+  },
+  "rigPortsWatchOnly": "Changing these ports needs write access to every repository in this space.",
+  "@rigPortsWatchOnly": {
+    "description": "Line in a rig's forwarded-ports popover, in place of the add-a-port field, when the person may watch the rig but not change its ports"
+  },
+  "rigHolderOnly": "Only the person this machine was opened for can drive it. It uses their own sign-ins.",
+  "@rigHolderOnly": {
+    "description": "Toast after a refused action on a rig (Browser, Desktop, Android or iOS machine, or a Terminal (VM)) that carries another person's own sign-ins, and the line in its forwarded-ports popover in place of the add-a-port field"
+  },
+  "rigHolderOnlyHint": "You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it.",
+  "@rigHolderOnlyHint": {
+    "description": "One quiet line beside the watch-only badge above a rig that carries another person's own sign-ins, saying what is off and why"
   }
 }

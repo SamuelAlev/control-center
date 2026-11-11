@@ -1,8 +1,8 @@
 ---
 title: Referanse for Control Center Connect
-description: Hva Connect ser og aldri ser, de tre modusene, installasjonsidentiteten, forseglet påloggingsinformasjon, tillit til konfigurasjonen og hver innstilling, operasjon og statuskode.
+description: Hva Connect ser og aldri ser, de tre modusene, et arbeidsområdes eget valg, installasjonsidentiteten, forseglet påloggingsinformasjon, tillit til konfigurasjonen og hver innstilling, operasjon og statuskode.
 slug: nb-NO/handbok/referanse/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect kjører leverandørpålogginger for servere som ikke har
@@ -10,14 +10,14 @@ registrert egne apper. En server bruker enten den hostede Connect-tjenesten til
 Control Center, en Connect som organisasjonen kjører
 ([Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/)),
 eller ingen. Valget ligger under **Innstillinger → Server → Enkel pålogging →
-Control Center Connect**, i `cc_server connect` eller i `CC_CONNECT_URL`.
+Control Center Connect**, i `cc_server connect` eller i `CC_CONNECT_URL`. Et arbeidsområde følger det med mindre en administrator velger noe annet for arbeidsområdet under **Innstillinger → Arbeidsområde → Integrasjoner** ([Valg for hvert arbeidsområde](#valg-for-hvert-arbeidsområde)).
 
 ## Spor
 
 Hver leverandør er et spor. Under **Bruk mine egne apper** (eller før noen har valgt) kjører et spor på serverens egen app når en er
 fullstendig konfigurert, ellers er det utilgjengelig. Med Control Centers eller en egendefinert Connect håndterer
 Connect alle spor den betjener: serverens egne apper forblir lagret, men brukes ikke til pålogging,
-serverautomatisering eller statusen serveren rapporterer. Arbeidsområdets egen app gjelder alltid i alle moduser.
+serverautomatisering eller statusen serveren rapporterer. Et arbeidsområde som har valgt sitt eget valg, kjører alle spor etter det valget i stedet.
 
 | Spor         | Egen app trenger                                 | Via Connect                                                      |
 | ------------ | ------------------------------------------------ | ---------------------------------------------------------------- |
@@ -29,9 +29,7 @@ serverautomatisering eller statusen serveren rapporterer. Arbeidsområdets egen 
 | `klipy`      | `KLIPY_APP_KEY`                                  | GIF-søk, med Connect som proxy                                   |
 
 En egen app som bare er delvis konfigurert, gjør sporet sitt til en feil, aldri
-til en stille reserveløsning via Connect. Et arbeidsområde som bruker sin egen
-GitHub App (**Innstillinger → Arbeidsområde → Generelt → GitHub-identitet**),
-går aldri via Connect for GitHub. Et arbeidsområde som bruker sin egen Google-, Linear- eller Klipy-app (**Innstillinger → Arbeidsområde → Generelt → Leverandørapper**) går aldri via serverens app eller Connect for den leverandøren. Å bytte Connect-valget logger ingen ut av et arbeidsområdes egen app.
+til en stille reserveløsning via Connect. Et arbeidsområde på **Bruk mine egne apper** går aldri via serverens apper eller noen Connect, for noen leverandør. Å bytte Connect-valget til serveren logger ingen ut av et arbeidsområde som har valgt sitt eget.
 
 ## Hva Connect ser og aldri ser
 
@@ -39,18 +37,13 @@ går aldri via Connect for GitHub. Et arbeidsområde som bruker sin egen Google-
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Serverens installasjons-ID og forespørselssignaturer                                          | Kildekode, innhold i repoer, differ eller tekst i pull requests       |
 | Leverandørkontoen som logget inn, under påloggingen                                           | Saker, transkripsjoner eller noe annet i en arbeidsområdedatabase     |
-| Hvilket arbeidsområde en påloggingsinformasjon tilhører, som en ugjennomsiktig ID inne i seglet | Den private nøkkelen til en GitHub App: repotokener kommer fra en persons pålogging |
+| Hvilket arbeidsområde en påloggingsinformasjon tilhører, som en ugjennomsiktig ID inne i seglet | Serverens egne app-hemmeligheter: de forlater aldri serveren |
 | Repoet et GitHub-token for ett repo utstedes for                                              | Oppdateringstokener i ro: de finnes bare inne i segl som serveren oppbevarer |
-| GitHub-installasjons-ID-er som er bundet til serveren                                         | Linear-hemmeligheter: serveren veksler inn koden fra Linear selv      |
+| Slack-team som er bundet til serveren                                                         | Linear-hemmeligheter: serveren veksler inn koden fra Linear selv      |
 | GIF-søkeord, når den er proxy for Klipy                                                       | Passord, paringsnøkler eller nøkler til modellleverandører            |
 | Referanser til Slack-hendelser (team, kanal, meldings-ID) og teksten i slash-kommandoer       | Teksten i Slack-meldinger: Connect forkaster den ved ankomst, og serveren leser meldingen fra Slack selv |
 
-Connect beholder kortlivet tilstand (pålogginger under arbeid, nonces,
-hurtigbuffere) i høyst 15 minutter. De eneste varige oppføringene er
-installasjonsbindinger: hvilke servere som kan bruke hvilken GitHub-installasjon,
-og hvilken server hvert Slack-team er bundet til. Feil inneholder en kode, aldri
-leverandørens svar, og logger registrerer installasjons-ID-er bare som nøklede
-hasher.
+Connect beholder pålogginger under arbeid, nonces og hurtigbuffere i høyst 10 minutter, og timebaserte bruksteller i høyst to timer. Et GitHub-token for ett repo utstedt som en person, forblir registrert, forseglet til påloggingen som ba om det, til det utløper (høyst 8 timer), slik at Connect kan dele det ut på nytt og tilbakekalle det ved frakobling. Connects eneste varige oppføringer er Slack-bindinger (hvilken server hvert Slack-team er bundet til) og pensjonerte installasjons-ID-er. Feil inneholder en kode, aldri leverandørens svar. Logger registrerer installasjons-ID-er bare som nøklede hasher, og et GitHub-token bare som `hashed_token` GitHubs revisjonslogg for organisasjonen viser for det, slik at en organisasjonseier kan koble de to sammen.
 
 ## Moduser
 
@@ -68,9 +61,28 @@ Dette bygget har ingen innebygd nøkkel for den hostede konfigurasjonen, så
 hostet modus rapporterer `hosted_unprovisioned` og betjener ingen spor. Egne
 apper og en egen Connect fungerer.
 
+Den hostede Connect-tjenesten kjører i én enkelt container. Seglnøkkelen og den delte GitHub App-ens private nøkkel er miljøvariabler der, ikke nøkler i et hvelv som bare signerer eller dekrypterer, slik GitHub anbefaler for en Apps private nøkkel. Det er et kjent gap i det nåværende oppsettet.
+
 En server leser Connects konfigurasjon høyst hvert 10. minutt og venter høyst 5
 sekunder på hvert kall. Når Connect ikke kan nås, brukes den siste gode
 konfigurasjonen fortsatt, og Innstillinger markerer den som foreldet.
+
+## Valg for hvert arbeidsområde
+
+**Innstillinger → Arbeidsområde → Integrasjoner → Control Center Connect** overstyrer serverens valg for ett arbeidsområde. Alle medlemmer ser det og hvor hver pålogging kjører; bare en arbeidsområdeadministrator endrer det.
+
+| Valg                            | Oppførsel                                                                                                      |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Samme som denne serveren**    | Standard. Arbeidsområdet kjører på det serverens eier valgte; alternativet oppgir hva det er                  |
+| **Bruk appene til Control Center** | Control Centers hostede Connect, uansett hva serveren bruker                                              |
+| **Bruk mine egne apper**        | Bare arbeidsområdets egne apper: GitHub-appen, Google-klienten, Linear-applikasjonen, Klipy-nøkkelen og Slack-appen. En leverandør uten en er av her; en delvis konfigurert er en oppsettsfeil |
+| **Bruk en egen Connect-server** | En Connect på en HTTPS-adresse som arbeidsområdet oppgir. Adresser på et privat eller lokalt nettverk avvises  |
+
+- Ethvert valg annet enn **Samme som denne serveren** holder hver persons GitHub- og Linear-pålogginger i en plass som tilhører arbeidsområdet, så de aldri blandes med de som gjelder hele serveren
+- Å bytte spør først: alle i arbeidsområdet logger inn på GitHub, Linear og Google Calendar på nytt gjennom de nye appene
+- Arbeidsområdets egen Slack-app-tilkobling fungerer under alle valg; **Legg til Control Center i Slack** følger valget
+- `CC_CONNECT_URL` låser også arbeidsområdene ute fra en egen Connect: de kan følge serveren eller bruke egne apper
+- Et arbeidsområdes egen Connect stoles på ved første bruk, bare for det arbeidsområdet: **Stol på nye apper** der endrer aldri det serveren eller et annet arbeidsområde stoler på
 
 ## Installasjonsidentitet
 
@@ -102,17 +114,31 @@ og hemmelighetsgenerasjonen.
 
 ## GitHub-installasjoner
 
-En installasjon av den delte GitHub App-en kan bare brukes av en server når
-Connect har bundet den til serverens installasjons-ID.
+En installasjon av den delte GitHub App-en kan brukes fra alle servere. Connect fører ingen oversikt over hvilke servere som kan bruke den.
 
-- **Installer GitHub-appen** under **Innstillinger → Arbeidsområde → Generelt**
-  åpner GitHub med en billett som varer i 15 minutter. Connect binder den nye
-  installasjonen når den som installerer, eier den personlige kontoen eller
-  administrerer organisasjonen
-- **Autoriser denne serveren** binder en installasjon som allerede finnes. Bare
-  en administrator i organisasjonen kan gjøre det
-- En organisasjonsinstallasjon kan bindes til flere servere; hver av dem trenger
-  en administrators autorisasjon
+- **Installer GitHub-appen** under **Innstillinger → Arbeidsområde → Integrasjoner** åpner appens installasjonsside på GitHub. Serveren bygger lenken fra appnavnet i Connects konfigurasjon
+- Et token for ett repo krever at appen er installert hos eieren av repoet, og at innlogget person har tilgang til repoet. Det er personens eget token, begrenset til rollen, aldri mer
+- En organisasjon begrenser Control Center på GitHub: ved å fjerne installasjonen, snevre inn repoene eller fjerne personen
+- For kall bare personen kan gjøre, som å liste installasjonene sine, gir Connect serveren personens egne App-brukertoken, ikke et token for ett repo. Å logge inn på en server er å stole på den serveren med det tokenet
+- En organisasjon som håndhever en IP-tillatelsesliste hos GitHub, kan ikke bruke den hostede Connect, hvis adresser ikke er faste. Den registrerer i stedet sin egen GitHub App, på sine servere eller på en Connect den kjører
+- **Koble fra** tilbakekaller bare den påloggingen: Connect bruker oppdateringstokenet sitt én gang og sletter det som kommer tilbake, sletter brukertokenet sitt og tokenene for ett repo Connect utstedte for den. En kopi av seglet, hvor den enn ligger, slutter å virke. Personens pålogginger på andre servere og arbeidsområder fortsetter å virke. For å fjerne Control Center fra en GitHub-konto helt, tilbakekall den i GitHub under **Innstillinger → Applikasjoner → Autoriserte GitHub-apper → Tilbakekall**
+
+### Den delte boten
+
+Tokener utstedt som appens bot (`as: app`) viser den samme boten på GitHub for hver server som bruker samme Connect: GitHub kan ikke skille disse serverne fra hverandre.
+
+- Hver server kan la boten lese og kommentere: `read`, `review` og `comment` (kommentarer, etiketter, tildelinger og reaksjoner på issues og pull requests)
+- Å gjennomgå en pull request som boten (`bot`, som skriver pull requests) er tillatt bare for servere Connect-operatøren oppfører i `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Alle andre servere får svaret `needs_requester`, og gjennomgangen publiseres med den ansvarlige personens eget token, som GitHub begrenser til den personen: gjennomgangen vises under deres navn. Dette gjelder publisering av AI-gjennomgang, gjennomgangskommentarer og forespørsler om gjennomgåere
+- Å pushe, opprette en branch og åpne en pull request (`write`) utstedes aldri som den delte boten. De bruker alltid forespørrerens egen pålogging
+- Å godkjenne en pull request automatiseres aldri, med noe token
+- En server eller et arbeidsområde med sin egen GitHub App beholder boten for alt dette, også gjennomganger
+
+### Det organisasjonseiere og medlemmer bør vite
+
+- En server noen logger inn på, har deres App-brukertoken: opptil 8 timer per token, fornyet til de kobler fra. Det kan handle som dem på hvert repo den delte appen er installert på, som de kan nå. Connect kan kutte en server av for godt (en pensjonert eller nektet installasjon), men et token som allerede er utlevert, forblir gyldig til det utløper
+- Å installere den delte GitHub App-en på en organisasjon samtykker for hver Control Center-server et medlem logger inn på, ikke for én server
+- Boten er delt, som over: en organisasjon kan ikke se på GitHub hvilken server som handlet som boten
+- En organisasjon som vil ha sin egen grense, registrerer sin egen GitHub App og kjører sin egen Connect ([Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/)), eller konfigurerer appen på sine egne servere
 
 ## Tillit til konfigurasjonen
 
@@ -123,7 +149,7 @@ Connect har bundet den til serverens installasjons-ID.
 
 ## Operasjoner
 
-Alle Connect-innstillinger er bare for servereieren.
+Serverens Connect-innstillinger er bare for servereieren.
 
 | Operasjon             | Gjør                                                                                   |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -131,7 +157,16 @@ Alle Connect-innstillinger er bare for servereieren.
 | `connect.configure`   | Setter `hosted`, `custom` (med `url`) eller `off`                                      |
 | `connect.test`        | Henter konfigurasjonen på nytt og rapporterer helsetilstanden                          |
 | `connect.confirmPins` | Godtar de endrede identifikatorene til en egen Connect                                 |
-| `connect.rotateKey`   | Lager en ny installasjonsnøkkel. Hver pålogging via Connect på denne serveren slutter å fungere |
+| `connect.rotateKey`   | Lager en ny installasjonsnøkkel og en ny installasjons-ID (`force` erstatter den selv når en Connect ikke kunne pensjonere den gamle); se [Bytt installasjonsnøkkelen](#bytt-installasjonsnøkkelen) |
+
+Et arbeidsområdes eget valg har egne operasjoner, og hver nevner arbeidsområdet:
+
+| Operasjon                      | Hvem                         | Gjør                                                                                                |
+| ------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Alle medlemmer               | Valget, hva det løser seg til, helsetilstand og kilden for hver leverandør. Installasjons-ID og ventende pinner bare for administratorer |
+| `workspaceConnect.set`         | Arbeidsområdeadministrator   | Setter `inherit`, `hosted`, `custom` (med `url`) eller `own`                                        |
+| `workspaceConnect.test`        | Arbeidsområdeadministrator   | Henter arbeidsområdets Connect-konfigurasjon på nytt og rapporterer helsetilstanden                 |
+| `workspaceConnect.confirmPins` | Arbeidsområdeadministrator   | Godtar de endrede identifikatorene til arbeidsområdets egen Connect                                 |
 
 Selve påloggingene bruker `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` og `oauth.disconnect`. Personen er alltid
@@ -140,21 +175,24 @@ den innloggede som kaller.
 ## Pålogging via Connect
 
 1. Serveren ber Connect starte sporet og får leverandørens autoriserings-URL, som
-   den kontrollerer før den viser den
+   den kontrollerer før den viser den. GitHub viser alltid sin kontovelger
 2. Personen godkjenner i nettleseren. Leverandøren går tilbake til Connect
-3. Connect viser en kode på 8 tegn og en `control-center://oauth-done`-lenke
-4. Personen skriver inn koden i appen eller følger lenken. Serveren gjør krav på
+3. Connect viser hva serveren som startet påloggingen vil kunne gjøre som personen, og hvor lenge. Connect kan ikke si hvem som kjører den serveren, så siden ber personen fortsette bare hvis de selv startet påloggingen, og lukke den hvis noen sendte dem lenken. Når nettleseren er på et annet nettverk enn det påloggingen ble startet fra, sier siden det: det er normalt for en hostet server eller en annen enhet, og det er også det phishing ser ut som. **Avbryt** avslutter påloggingen: leverandørens kode brukes aldri. Hver side svarer én gang: et svar som ikke kom fra siden Connect nettopp viste, avvises
+4. Etter **Fortsett** viser Connect en kode på 8 tegn og en `control-center://oauth-done`-lenke. Den som får koden, får tilgangen som nettopp ble godkjent, så den sendes bare dit påloggingen ble startet
+5. Personen skriver inn koden i appen eller følger lenken. Serveren gjør krav på
    påloggingen med koden og sitt eget bevis for forespørselen
 
 En pålogging utløper etter 10 minutter. Fem feil koder avslutter den. En lenke
-som denne appen ikke startet, avvises med **Påloggingen ble ikke startet her**.
+som denne appen ikke startet, avvises med **Påloggingen ble ikke startet her**. Connect begrenser hvor mange pålogginger én nettverksadresse kan starte, og hvor ofte GitHub-tokener utstedes per person og server, per person på tvers av servere, per adresse og for hele appen. Nye pålogginger har et eget budsjett, så de aldri holder opp fornyelsene andre trenger. Etter en grense avvises et kall med `rate_limited`, og serveren prøver igjen senere uten å logge noen ut. En pålogging over personens grense blir angret hos GitHub og avvist.
 
 ## Bytt installasjonsnøkkelen
 
-**Bytt nøkkel** på Connect-kortet, eller `cc_server connect rotate-key --yes`:
+Bare serverens eier kan bytte nøkkelen, med **Bytt nøkkel** på **Control Center Connect**-kortet under **Innstillinger → Server → Enkel pålogging**. Det finnes ingen kommando for det. Bytting:
 
-- Gir serveren en ny installasjonsnøkkel og en ny installasjons-ID
-- Logger alle ut av hvert spor som går via Connect
+- Logger alle ut av hvert spor som går via Connect. For hver Connect-server den gamle nøkkelen ble brukt med, tilbakekaller serveren GitHub- og Slack-pålogginger den har derfra (en Google-pålogging har ingenting å tilbakekalle og utløper)
+- Pensjonerer den gamle installasjons-ID-en hos hver av disse Connect-serverne, signert med den gamle nøkkelen og bevist med ett påloggingssegl serveren har fra den Connect-en. Fra da av avviser Connect hver forespørsel som gjøres med den gamle nøkkelen, så et segl eller en kopi av den gamle nøkkelen tatt fra denne serveren er ubrukelig, og Slack-arbeidsområdene bundet til den gamle ID-en frigjøres slik at de kan koble til igjen. Tokener som allerede er utlevert, forblir gyldige til de utløper (en time for et bot-token, åtte timer for en persons). En Connect-server denne serveren ikke har noe segl fra, har ingenting å pensjonere og hoppes over
+- Gir deretter serveren en ny installasjonsnøkkel og en ny installasjons-ID
+- Hvis en Connect-server ikke kan nås, eller nekter å pensjonere den gamle ID-en, stopper den før nøklene byttes og viser **Connect kunne ikke pensjonere den gamle nøkkelen**. **Roter likevel** bytter nøkler uansett; den gamle installasjons-ID-en forblir da brukbar hos den Connect-en til tokenene utløper, høyst 8 timer for GitHub
 - Lar pålogginger via serverens egne apper være urørt
 - Krever at den nye installasjons-ID-en legges til i tillatelseslisten til en
   egen Connect
@@ -167,7 +205,7 @@ som denne appen ikke startet, avvises med **Påloggingen ble ikke startet her**.
 | `signature`            | Den hostede konfigurasjonen besto ikke signaturkontrollen            |
 | `rollback`             | Connect serverte en eldre konfigurasjon enn serveren allerede hadde sett |
 | `unreachable`          | Serveren kan ikke nå Connect                                         |
-| `install_blocked`      | Connect tillater ikke denne installasjons-ID-en                      |
+| `install_blocked`      | Connect tillater ikke denne installasjons-ID-en, eller den ble pensjonert            |
 | `pins_changed`         | En egen Connect kunngjorde andre appidentifikatorer                  |
 | `protocol`             | Connect svarte i en form denne serveren ikke forstår                 |
 

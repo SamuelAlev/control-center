@@ -2,6 +2,8 @@ import 'package:cc_connect_core/cc_connect_core.dart' show GitHubLaneConfig;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_server_core/src/connect/connect_client.dart';
+import 'package:cc_server_core/src/connect/connect_settings.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/forge/github_client_types.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
@@ -31,23 +33,26 @@ AppLaneSource appLanePrecedence(
   OwnAppState.none => connectOffers ? AppLaneSource.connect : AppLaneSource.off,
 };
 
-/// Whether [workspace] runs GitHub on its own App: then it never inherits
-/// the server's lane, its people sign in to that App only, and their grants
-/// live in the workspace slot.
-bool workspaceOwnsGitHubApp(Workspace? workspace) =>
-    workspace?.githubAuthMode == GithubAuthMode.app;
-
-/// The GitHub lane [workspace]'s automation runs on, given the server's
-/// own-App state and whether Connect offers GitHub.
+/// The GitHub lane a workspace's automation runs on, given its [route], how
+/// complete its own App is ([workspaceApp]), the server's own-App state as
+/// lanes see it ([serverApp]) and whether the route's Connect offers GitHub.
+///
+/// On its own apps only the workspace's App counts (none is off, partial a
+/// fail-closed App lane). Inheriting, the server's precedence applies. On a
+/// Connect of its own, only that Connect.
 GitHubLane githubLaneFor(
-  Workspace? workspace, {
+  ConnectRoute route, {
+  required OwnAppState workspaceApp,
   required OwnAppState serverApp,
   required bool connectOffers,
 }) {
-  if (workspaceOwnsGitHubApp(workspace)) {
-    return GitHubLane.workspaceApp;
+  if (route.workspaceOwnApps) {
+    return workspaceApp == OwnAppState.none
+        ? GitHubLane.none
+        : GitHubLane.workspaceApp;
   }
-  return switch (appLanePrecedence(serverApp, connectOffers: connectOffers)) {
+  final server = route.serverOwnApps ? serverApp : OwnAppState.none;
+  return switch (appLanePrecedence(server, connectOffers: connectOffers)) {
     AppLaneSource.own => GitHubLane.ownApp,
     AppLaneSource.connect => GitHubLane.connect,
     AppLaneSource.off => GitHubLane.none,
@@ -66,6 +71,10 @@ final class GitHubLaneIdentity {
   /// Connect's shared App); empty for [GitHubLane.none]. Part of every grant
   /// cache key, so a rotated App never serves its predecessor's tokens.
   final String appId;
+
+  /// Whether [other] is the same lane through the same App.
+  bool sameAs(GitHubLaneIdentity other) =>
+      lane == other.lane && appId == other.appId;
 }
 
 /// Resolves which GitHub lane a workspace is on and the App behind it.
@@ -76,7 +85,20 @@ final class GitHubLaneResolver {
     required this.workspaceApps,
     required this.workspaceLookup,
     required this.connect,
-  });
+    DateTime Function()? now,
+  }) : _now = now ?? DateTime.now;
+
+  /// How long a resolved lane is reused before it is resolved again. Every
+  /// change that moves a lane ([invalidate]) drops it sooner.
+  static const Duration memo = Duration(seconds: 5);
+
+  final DateTime Function() _now;
+  final Map<String, ({GitHubLaneIdentity identity, DateTime at})> _memo = {};
+
+  /// The last lane written to the log per workspace, so
+  /// `github.lane.resolved` is written on a change only.
+  final Map<String, GitHubLaneIdentity> _announced = {};
+  int _generation = 0;
 
   /// The server's own apps.
   final ProviderAppSettings apps;
@@ -90,36 +112,87 @@ final class GitHubLaneResolver {
   /// Connect.
   final ConnectClient connect;
 
-  /// The lane and App [workspaceId]'s automation runs on right now.
+  /// The lane and App [workspaceId]'s automation runs on right now
+  /// (resolved at most [memo] ago).
   Future<GitHubLaneIdentity> resolve(String workspaceId) async {
-    final workspace = workspaceId.isEmpty
-        ? null
-        : await workspaceLookup(workspaceId);
-    if (workspaceOwnsGitHubApp(workspace)) {
+    final hit = _memo[workspaceId];
+    if (hit != null && _now().difference(hit.at) < memo) {
+      return hit.identity;
+    }
+    final generation = _generation;
+    final identity = await _resolve(workspaceId);
+    if (generation == _generation) {
+      _memo[workspaceId] = (identity: identity, at: _now());
+    }
+    final before = _announced[workspaceId];
+    if (before == null || !before.sameAs(identity)) {
+      _announced[workspaceId] = identity;
+      forgeAudit(ForgeAuditEvent.githubLaneResolved, {
+        'workspace_id': workspaceId,
+        'lane': identity.lane.name,
+        'app_id': identity.appId,
+        'previous_lane': before?.lane.name,
+        'previous_app_id': before?.appId,
+      });
+    }
+    return identity;
+  }
+
+  /// Drops the remembered lane of [workspaceId], or of every workspace: an
+  /// App, a Connect or a workspace's mode changed. A resolution in the air
+  /// is not remembered either.
+  void invalidate([String? workspaceId]) {
+    _generation++;
+    if (workspaceId == null) {
+      _memo.clear();
+    } else {
+      _memo.remove(workspaceId);
+    }
+  }
+
+  Future<GitHubLaneIdentity> _resolve(String workspaceId) async {
+    final route = await connect.routeFor(
+      workspaceId.isEmpty ? null : workspaceId,
+    );
+    if (route.workspaceOwnApps) {
+      final workspace = await workspaceLookup(workspaceId);
+      final state = workspace == null
+          ? OwnAppState.none
+          : (await workspaceApps.status(workspace)).state;
+      final lane = githubLaneFor(
+        route,
+        workspaceApp: state,
+        serverApp: OwnAppState.none,
+        connectOffers: false,
+      );
       return GitHubLaneIdentity(
-        GitHubLane.workspaceApp,
-        workspace!.githubAppId.trim(),
+        lane,
+        lane == GitHubLane.workspaceApp ? workspace!.githubAppId.trim() : '',
       );
     }
-    final status = await apps.status(ProviderApp.github);
-    final connectGitHub = status.effectiveState == OwnAppState.none
-        ? await this.connectGitHub()
+    final status = route.serverOwnApps
+        ? await apps.status(ProviderApp.github)
+        : null;
+    final serverState = status?.effectiveState ?? OwnAppState.none;
+    final connectGitHub = serverState == OwnAppState.none
+        ? await this.connectGitHub(route.target)
         : null;
     final lane = githubLaneFor(
-      workspace,
-      serverApp: status.effectiveState,
+      route,
+      workspaceApp: OwnAppState.none,
+      serverApp: serverState,
       connectOffers: connectGitHub != null,
     );
     return GitHubLaneIdentity(lane, switch (lane) {
-      GitHubLane.ownApp => status.appId,
+      GitHubLane.ownApp => status!.appId,
       GitHubLane.connect => '${connectGitHub!.appId}',
       GitHubLane.workspaceApp || GitHubLane.none => '',
     });
   }
 
-  /// Connect's GitHub lane, when Connect is usable and offers one.
-  Future<GitHubLaneConfig?> connectGitHub() async =>
-      (await connect.usableConfig())?.github;
+  /// [target]'s GitHub lane, when it is usable and offers one.
+  Future<GitHubLaneConfig?> connectGitHub(ConnectTarget target) async =>
+      (await connect.usableConfig(target))?.github;
 
   /// The App client behind an App [lane] in [workspaceId], or null.
   Future<GitHubAppClient?> appFor(String workspaceId, GitHubLane lane) async {

@@ -16,3 +16,14 @@ typedef ForgePrClientResolver =
       required String workspaceId,
       String? actingUserId,
     });
+
+/// The [ForgeApprovalGuard] every client built for [repo] in [workspaceId]
+/// acting as [actingUserId] consults before it sends an approval. Required
+/// wherever a server forge client is built, so no client can approve
+/// without it.
+typedef ForgeApprovalGuardResolver =
+    ForgeApprovalGuard Function(
+      Repo repo, {
+      required String workspaceId,
+      String? actingUserId,
+    });

@@ -2,14 +2,14 @@
 title: Korumaları yapılandırma
 description: Ajan eylemleri için izin ver, önce sor ve reddet kuralları belirleyin; bunları Ne olur? sondasıyla sınayın ve alan bazında özerkliği ayarlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/korumalari-yapilandirma
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Bu kılavuz, korumaları nasıl yapılandıracağınızı gösterir: bir ajanın eyleminin
 çalışıp çalışmayacağına, önce onay isteyip istemeyeceğine yoksa reddedilip
 edilmeyeceğine karar veren kurallar.
 
-Korumalar, değişiklik yapan her aracın bildirdiği on üç etki sınıfını kapsar.
+Korumalar, değişiklik yapan her aracın bildirdiği on dört etki sınıfını kapsar.
 Araç çağrıldığı noktada sunucu tarafında denetlenirler; hiçbir zaman bir
 istemdeki talimatla değil.
 
@@ -23,7 +23,7 @@ istemdeki talimatla değil.
    düğmesine basın (**Devralınana sıfırla**) — karar daha geniş kapsama geri
    döner
 
-Her satır, geçerli kararı bir durum etiketi olarak ve nereden geldiğini
+Her satır, eylemin ayarını bir durum etiketi olarak ve nereden geldiğini
 gösteren bir rozetle birlikte gösterir: **Bu kapsam**, **Devralınan** veya
 **Yerleşik varsayılan**. Matris Ajan (`chat`) modunda çözümlenir, dolayısıyla
 **Mod ön ayarı** burada hiç görünmez — bu katmanı görmek için salt okunur bir
@@ -35,6 +35,18 @@ Kontrol noktası: çalışma alanı kapsamında **Uzak depoya push et**'i **Redd
 olarak ayarlayın, ardından aşağıdaki Ne olur? sondasını `git push origin main`
 üzerinde çalıştırın. Sonuç, `workspace` kaynağıyla `deny` olarak okunur.
 
+## Süreli onayları gözden geçirme ve iptal etme
+
+Bir onay kartını **8 saatliğine onayla** ile yanıtlamak bir süreli onay yazar: aynı türden eylemi sona erene kadar sormadan geçiren bir kural. Her biri bu sayfada, ait olduğu eylemin altında listelenir.
+
+1. **Ayarlar → Çalışma alanı → Ajan izinleri** bölümüne gidin ve kapsamı seçin. Bir onay, soru hangi alandan geldiyse o alan için yazılır; bu nedenle **Space** seçeneğini belirleyin ve ardından o alanı seçin
+2. Eylemin satırının altında kaydı okuyun: neyi izin verdiği (örneğin `feature/**` ile eşleşen dallara push), **Süreli onay** sözcükleri, eğer başka biriyse onu kimin verdiği ve ne zaman sona erdiği
+3. Şimdi sona erdirmek için kayda işaret edin ve **İptal et** düğmesine basın. Ajanlar bir sonraki eylemlerinden itibaren yeniden sorar
+
+Satır, eylemin kendi ayarını göstermeye devam eder; altında bir satır, aşağıda listelenen ve yine de izin verilen durumları sayar. Bir şablonun yazdığı koşullu kurallar aynı listede görünür, komut kuralları ise son eylemden sonra **Komutlar** grubunda yer alır. Çalışma alanı kapsamında, özetin altındaki bir not tek tek alanlar ya da ajanlar için ayarlanmış süreli onayları sayar. Bir alanda ya da ajanda ise çalışma alanınınkileri sayar; bunlar orada da geçerlidir.
+
+Süreli onay yalnızca bir soruyu atlatır. **Reddet** kararını asla geçersiz kılmaz: eylemi **Reddet** olarak ayarlarsanız ve bu eylem için süreli onay hâlâ geçerliyse, o onayın kaydı sona erene ya da onayı iptal edene kadar **reddedildiği sürece geçerli değil** ifadesini gösterir. Bir eylemin ayarını değiştirmek onun süreli onaylarını yerinde bırakır, bir onayı iptal etmek ise ayarı bırakır.
+
 ## Bir kararın nasıl çözümlendiğini anlama
 
 Çözümleme **önce özgüllük, sonra kısıtlayıcılık** ilkesine göre yapılır:
@@ -42,7 +54,7 @@ olarak ayarlayın, ardından aşağıdaki Ne olur? sondasını `git push origin 
 1. **Alan** kuralları, sonra **ajan**, sonra **çalışma alanı**. Eşleşen bir
    kurala sahip ilk kapsam karar verir ve çözümleme durur
 2. Hiçbir kural eşleşmezse **mod ön ayarı** geçerli olur — salt okunur bir mod
-   (plan, inceleme, orkestrasyon) on üç sınıftan on birini reddeder
+   (plan, inceleme, orkestrasyon) on dört sınıftan on ikisini reddeder
 3. Modun söyleyecek bir şeyi yoksa **yerleşik varsayılan** geçerli olur
 
 Tek bir kapsam içinde, bir komut kuralı en uzun eşleşen önekle çözümlenir ve
@@ -71,7 +83,7 @@ bir çalıştırma, reddedilen bir çalıştırmadan daha kötüdür.
 | Commit oluştur                  | İzin ver            |
 | Uzak depoya push et             | Önce sor            |
 | Pull request aç                 | Önce sor            |
-| İnceleme yayınla veya birleştir | Önce sor            |
+| Pull request güncelle veya birleştir | Önce sor            |
 | Harici takip sistemine yaz      | Önce sor            |
 | Ağa eriş                        | İzin ver            |
 | Bir secret oku                  | İzin ver            |
@@ -79,6 +91,7 @@ bir çalıştırma, reddedilen bir çalıştırmadan daha kötüdür.
 | Süreç çalıştır                  | İzin ver            |
 | Çalışma alanı yapısını değiştir | İzin ver            |
 | Bir enclosure’ı (rig) yönet     | İzin ver            |
+| Ana makinede komut çalıştır     | Önce sor            |
 
 Sınıflandırma kapalıdır. Sınıflarını bildirmeden gönderilen yeni bir araç,
 CI'daki bir ratchet testinde başarısız olur; böylece hiçbir şey sessizce boş bir
@@ -90,13 +103,13 @@ Bir kuralı değiştirmeden önce, geçerli politikanın onu hâlihazırda nası
 çözümlediğini kontrol edin.
 
 1. Aynı sayfada **Ne olur?** bölümüne kaydırın
-2. Bir **Eylem** seçin (on üç sınıftan biri)
+2. Bir **Eylem** seçin (on dört sınıftan biri)
 3. İsteğe bağlı olarak **Komut** (örneğin `git push origin main`), **Ajan**,
    **Alan** ve **Mod** alanlarını doldurun
 4. Sonucu okuyun: karar, gerekçe ve **Kaynak:**
 
 Sonda, denetim yolunun kullandığı aynı çözümleyiciyi geçerli kurallarınıza karşı
-çalıştırır, dolayısıyla yanıt kesindir. Sizi şaşırtırsa yukarıdaki matriste bir
+çalıştırır, dolayısıyla yanıt kesindir. Bir süreli onay karar verdiğinde, kaynak **Süreli onay** ve ardından kapsamını gösterir. Yanıt sizi şaşırtırsa yukarıdaki matriste bir
 kuralı değiştirip yeniden sondayın.
 
 ## Bir alanın özerklik kadranını ayarlama

@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Mọi cờ, biến môi trường, lệnh con và đường dẫn thư mục dữ liệu của máy chủ không giao diện.
 slug: vi-VN/so-tay/tham-chieu/cli-cc-server
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Mọi cờ của tiến trình nhận một cờ CLI hoặc một biến môi trường; cờ thắng, rồi đến
@@ -48,7 +48,7 @@ tác dụng.
 
 | Cờ                       | Biến môi trường                 | Mặc định                              | Ý nghĩa                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Liệu các lượt chạy agent có được bọc trong sandbox native của hệ điều hành trên máy chủ nhà khi có sẵn hay không. Đây là cách chủ động tắt chứ không phải cách bật — xem bên dưới |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` bọc các lượt chạy agent trong sandbox native của hệ điều hành trên máy chủ nhà, và trên một máy chủ nhà không có sandbox thì chỉ khởi động các lượt chạy của chủ sở hữu máy chủ. `off` chạy agent của mọi thành viên không bị giới hạn trên máy chủ nhà này. Xem bên dưới |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Công tắc tắt cho môi trường thật đối với việc lập chỉ mục đồ thị mã chạy nền. `off` khởi động sạch mà không cần dựng lại     |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Số giây giữ lần quét chỉ mục đầu tiên sau banner báo sẵn sàng (giới hạn trong khoảng 0–300)                                  |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Liệu các lượt chạy harness có gửi một tập công cụ thường trú nhỏ cộng một chỉ mục tên, phần còn lại được nạp ở lần dùng đầu tiên hay không. Xem bên dưới |
@@ -83,23 +83,33 @@ trong môi trường tiến trình của nó, nơi mọi tiến trình con đề
 `.env` diễn ra một lần cho mỗi trường, nên một chỉnh sửa sau đó trong Cài đặt không bị lần
 khởi động lại hoàn tác. Giá trị rỗng được coi là chưa đặt.
 
-Công việc nền của GitLab và Bitbucket cũng đọc `GITLAB_TOKEN` / `CI_JOB_TOKEN` và
-`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` với `BITBUCKET_EMAIL`. GitHub không có thông tin
-xác thực trong môi trường.
+Không có thông tin xác thực máy chủ mã nào đến từ biến môi trường: GitHub, GitLab và Bitbucket đều chỉ hoạt động dưới đăng nhập hoặc token của chính một thành viên, hoặc dưới token GitHub App cho một kho mã duy nhất và bị ràng buộc bởi một thành viên.
 
 ### `--sandbox`
 
 Máy chủ dò máy chủ nhà một lần lúc khởi động và bọc việc thực thi lệnh của agent trong
 sandbox native của hệ điều hành khi có backend: `sandbox-exec` (Seatbelt) trên macOS,
-`bwrap` cùng `socat` trên Linux và WSL2. Ở nơi không có backend nào — Windows, hoặc một
-máy chủ nhà Linux thiếu những công cụ đó — các lượt chạy lùi về việc làm sạch môi
-trường, chính sách lệnh và các rào chắn hành động, và nhật ký khởi động cho biết trạng
-thái nào đang áp dụng.
+`bwrap` cùng `socat` trên Linux và WSL2. Quyết định được đưa ra một lần và giữ nguyên
+cho tới khi máy chủ khởi động lại. Có ba kết quả, mỗi kết quả được hiện trên dòng
+exposure lúc khởi động:
 
-`--sandbox off` là công tắc tắt cho môi trường thật dành cho trường hợp mà phép dò
-không thấy được: một máy chủ nhà nơi chính hồ sơ sandbox cư xử sai. Nó không cần dựng
-lại và máy chủ ghi một cảnh báo suốt vòng đời tiến trình để trạng thái đó không bao
-giờ im lặng.
+| `sandbox=`    | Khi nào                                                                                 | Lượt chạy của ai bắt đầu                                                                                                                                   |
+| ------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `native`      | Có backend và `--sandbox` là `on`                                                       | Của tất cả mọi người, được bọc                                                                                                                             |
+| `off`         | `--sandbox off`                                                                         | Của tất cả mọi người, không bị giới hạn trên máy chủ nhà này                                                                                               |
+| `unavailable` | `--sandbox on` và không có backend (Windows, hoặc Linux thiếu `bwrap` và `socat`)       | Chỉ các lượt chạy mà chủ sở hữu máy chủ chịu trách nhiệm, không bị giới hạn. Những người khác bị từ chối với "Máy chủ này không có sandbox, nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây." |
+
+Với tự động hóa, người chịu trách nhiệm là người mà tự động hóa đó được gắn với. Khi
+chưa ghi nhận chủ sở hữu máy chủ nào thì không lượt chạy nào bắt đầu trên một máy chủ
+nhà `unavailable`. Trên Linux và WSL2 đã cài bubblewrap, việc điều phối native hiện
+đóng khi lỗi (fail closed) với mọi lượt chạy; xem
+[Backend sandbox](/vi-VN/so-tay/tham-chieu/backend-sandbox/#linux-bubblewrap).
+
+`--sandbox off` là lựa chọn của chủ sở hữu máy chủ cho tất cả những ai dùng máy chủ:
+nó chạy agent của mọi thành viên không bị giới hạn trên máy chủ nhà này. Hãy dùng nó
+trên một máy chủ nhà mà chính hồ sơ sandbox cư xử sai, hoặc để cho phép thành viên
+chạy agent trên một máy chủ nhà không có backend. Nó không cần dựng lại, và máy chủ ghi
+một cảnh báo suốt vòng đời tiến trình để trạng thái đó không bao giờ im lặng.
 
 ### `--tool-deferral`
 
@@ -178,7 +188,6 @@ phút hoặc khi khởi động lại.
 | `cc_server connect enable`            | Dùng Control Center Connect do Control Center lưu trữ                                                                                      |
 | `cc_server connect enable --url <url>` | Dùng một Connect tùy chỉnh tại URL đó (HTTPS, hoặc `http` trên loopback)                                                                   |
 | `cc_server connect disable`           | Ngừng dùng Connect. Chỉ các ứng dụng riêng của máy chủ mới đăng nhập được người dùng                                                        |
-| `cc_server connect rotate-key --yes`  | Tạo khóa cài đặt và id cài đặt mới. Mọi người đã đăng nhập qua Connect sẽ phải đăng nhập lại. Không có `--yes` thì nó chỉ cảnh báo và thoát với mã `2` |
 
 `status` không kèm lệnh là mặc định. Mỗi lệnh đều nhận `--data-dir`. `CC_CONNECT_URL` ghi đè
 mọi thứ mà các lệnh này lưu. Lệnh không xác định thoát với mã `64`. Xem

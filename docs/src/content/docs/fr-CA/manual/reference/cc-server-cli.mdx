@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Toutes les options, variables d’environnement, sous-commandes et chemins du répertoire de données du serveur sans interface.
 slug: fr-CA/manuel/reference/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Chaque paramètre du processus accepte une option de ligne de commande ou une
@@ -49,7 +49,7 @@ de démarrage quand une option semble sans effet.
 
 | Option                   | Env                             | Valeur par défaut                     | Signification                                                                                                               |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Indique si les exécutions d’agents sont encapsulées dans le bac à sable natif du système d’exploitation de l’hôte lorsqu’un tel bac à sable est disponible. Une désactivation, et non une activation — voir ci-dessous |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` encapsule les exécutions d’agents dans le bac à sable natif du système d’exploitation de l’hôte, et sur un hôte qui n’en a pas, ne démarre que les exécutions du propriétaire du serveur. `off` exécute les agents de chaque membre sans confinement sur cet hôte. Voir ci-dessous |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Coupe-circuit à utiliser en production pour l’indexation en arrière-plan du graphe de code. `off` démarre proprement sans reconstruction |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Nombre de secondes pendant lesquelles la première passe d’indexation est retenue après la bannière de disponibilité (borné entre 0 et 300) |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Indique si les exécutions du harnais envoient un petit ensemble résident d’outils plus un index de noms, et chargent le reste à la première utilisation. Voir ci-dessous |
@@ -87,24 +87,34 @@ pourrait le lire. L’initialisation à partir de `.env` se fait une fois par
 champ, donc une modification ultérieure dans Paramètres n’est pas annulée par un
 redémarrage. Une valeur vide équivaut à une absence de définition.
 
-Le travail en arrière-plan de GitLab et de Bitbucket lit aussi `GITLAB_TOKEN` /
-`CI_JOB_TOKEN` et `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` avec
-`BITBUCKET_EMAIL`. GitHub n’a aucun identifiant d’environnement.
+Aucun identifiant de forge ne provient de l’environnement : GitHub, GitLab et Bitbucket agissent tous avec la connexion ou le jeton d’un membre, ou avec des jetons d’application GitHub limités à un seul dépôt et bornés par un membre responsable.
 
 ### `--sandbox`
 
 Le serveur sonde l’hôte une fois au démarrage et encapsule l’exécution des commandes
 des agents dans le bac à sable natif du système d’exploitation lorsqu’un backend est
 disponible : `sandbox-exec` (Seatbelt) sur macOS, `bwrap` et `socat` sur Linux et
-WSL2. Là où il n’y en a pas — Windows, ou un hôte Linux auquel ces outils manquent —,
-les exécutions se rabattent sur l’assainissement de l’environnement, la politique de
-commandes et les garde-fous d’action, et le journal de démarrage indique l’état qui
-s’applique.
+WSL2. La décision est prise une fois et reste valable jusqu’au redémarrage du serveur.
+Il existe trois issues, chacune affichée sur la ligne d’exposition au démarrage :
 
-`--sandbox off` est le coupe-circuit à utiliser en production pour le cas que la sonde
-ne peut pas voir : un hôte où le profil de bac à sable lui-même se comporte mal. Il
-n’exige aucune reconstruction et le serveur consigne un avertissement pendant toute la
-durée de vie du processus, de sorte que l’état n’est jamais silencieux.
+| `sandbox=`    | Quand                                                                         | Dont les exécutions d’agents démarrent                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `native`      | Un backend est disponible et `--sandbox` vaut `on`                            | Celles de tous, encapsulées                                                                                                                                                  |
+| `off`         | `--sandbox off`                                                               | Celles de tous, sans confinement sur cet hôte                                                                                                                                |
+| `unavailable` | `--sandbox on` et aucun backend (Windows, ou Linux sans `bwrap` ni `socat`)   | Seulement les exécutions dont le propriétaire du serveur est responsable, sans confinement. Les autres sont refusées avec « Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents. » |
+
+Pour l’automatisation, la personne responsable est celle à laquelle l’automatisation
+est liée. Sans propriétaire de serveur enregistré, aucune exécution ne démarre sur un
+hôte `unavailable`. Sur Linux et WSL2 avec bubblewrap installé, l’envoi natif échoue
+actuellement en mode fermé pour chaque exécution ; voir [Backends de bac à
+sable](/fr-CA/manuel/reference/backends-de-bac-a-sable/#linux--bubblewrap).
+
+`--sandbox off` est le choix du propriétaire du serveur pour tous ceux qui utilisent le
+serveur : il exécute les agents de chaque membre sans confinement sur cette machine.
+Utilisez-le sur un hôte où le profil de bac à sable lui-même se comporte mal, ou pour
+permettre aux membres de lancer des agents sur un hôte sans backend. Il n’exige aucune
+reconstruction, et le serveur consigne un avertissement pendant toute la durée de vie
+du processus, de sorte que l’état n’est jamais silencieux.
 
 ### `--tool-deferral`
 
@@ -187,7 +197,6 @@ les 10 minutes ou au redémarrage.
 | `cc_server connect enable` | Utilise le Connect hébergé de Control Center |
 | `cc_server connect enable --url <url>` | Utilise un Connect personnalisé à cette URL (HTTPS, ou `http` sur la boucle locale) |
 | `cc_server connect disable` | Cesse d’utiliser Connect. Seules les apps propres au serveur connectent les gens |
-| `cc_server connect rotate-key --yes` | Émet une nouvelle clé d’installation et un nouvel identifiant d’installation. Toutes les personnes connectées par Connect doivent se reconnecter. Sans `--yes`, se contente d’avertir et se termine avec `2` |
 
 `status` sans commande est le comportement par défaut. Chaque commande accepte
 `--data-dir`. `CC_CONNECT_URL` l’emporte sur ce qu’elles enregistrent. Une

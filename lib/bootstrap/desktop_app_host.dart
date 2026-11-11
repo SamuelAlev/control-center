@@ -100,7 +100,7 @@ class _DesktopAppHostState extends State<DesktopAppHost> {
           }
           final wsId = container.read(activeWorkspaceIdProvider);
           router.go(
-            wsId == null ? workspaceListRoute : settingsAppearanceRoute(wsId),
+            wsId == null ? workspaceListRoute : settingsLandingRoute(wsId),
           );
         case 'openUrl':
           final rawUrl = call.arguments as String?;

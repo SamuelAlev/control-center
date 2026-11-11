@@ -45,7 +45,8 @@ class _FakeGateway implements GitHubPrConversationGateway {
   Object? claimError;
   GitHubPrActor? labeller;
 
-  final canPostChecks = <({String repo, String actingUserId})>[];
+  final canPostChecks =
+      <({String repo, String actingUserId, bool inReviewThread})>[];
   final claims = <({String kind, int id, String asUserId})>[];
   final conversationComments =
       <({int prNumber, String body, String actingUserId})>[];
@@ -66,8 +67,13 @@ class _FakeGateway implements GitHubPrConversationGateway {
     String owner,
     String repo, {
     required String actingUserId,
+    required bool inReviewThread,
   }) async {
-    canPostChecks.add((repo: '$owner/$repo', actingUserId: actingUserId));
+    canPostChecks.add((
+      repo: '$owner/$repo',
+      actingUserId: actingUserId,
+      inReviewThread: inReviewThread,
+    ));
     return canPost;
   }
 
@@ -253,6 +259,7 @@ class _FakeMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -260,6 +267,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 
@@ -512,14 +520,16 @@ void main() {
   }
 
   group('mention matching', () {
-    test('dedicated account is default alongside App aliases', () {
+    test('the dedicated account is the only mention', () {
       expect(GitHubPrConversationBridge.acceptedMentionLogins(_botLogin), [
         'usectrl',
-        _botLogin,
-        'cc-test',
       ]);
       expect(
         GitHubPrConversationBridge.mentionsBot('@USECTRL why?', _botLogin),
+        isTrue,
+      );
+      expect(
+        GitHubPrConversationBridge.mentionsBot('(@usectrl: go)', _botLogin),
         isTrue,
       );
       expect(
@@ -530,70 +540,37 @@ void main() {
         'why is this failing?',
       );
       expect(
-        GitHubPrConversationBridge.mentionsBot('@usectrl[bot] why?', _botLogin),
-        isFalse,
-      );
-      expect(
         GitHubPrConversationBridge.mentionsBot('@usectrl why?', ''),
         isFalse,
       );
     });
 
-    test('matches the exact bot login, case-insensitively', () {
+    test('the App bot login and its bare slug address nothing', () {
       expect(
         GitHubPrConversationBridge.mentionsBot('hey @CC-TEST[bot]!', _botLogin),
-        isTrue,
+        isFalse,
       );
-      expect(
-        GitHubPrConversationBridge.mentionsBot(
-          '(@cc-test[bot]: go)',
-          _botLogin,
-        ),
-        isTrue,
-      );
-    });
-
-    test('matches the bare slug — the [bot] suffix is optional to type', () {
       expect(
         GitHubPrConversationBridge.mentionsBot('hey @cc-test!', _botLogin),
-        isTrue,
+        isFalse,
       );
-      expect(
-        GitHubPrConversationBridge.mentionsBot('@CC-TEST: why?', _botLogin),
-        isTrue,
-      );
-    });
-
-    test('strips a bare-slug mention cleanly, and a full one entirely', () {
       expect(
         GitHubPrConversationBridge.stripMention('@cc-test why?', _botLogin),
-        'why?',
-      );
-      // The full login is preferred for stripping so the bracket suffix
-      // never survives into the question text.
-      expect(
-        GitHubPrConversationBridge.stripMention(
-          '@cc-test[bot] why?',
-          _botLogin,
-        ),
-        'why?',
+        '@cc-test why?',
       );
     });
 
     test('rejects longer logins and unaddressed text', () {
       expect(
-        GitHubPrConversationBridge.mentionsBot('@cc-test[bots] hi', _botLogin),
+        GitHubPrConversationBridge.mentionsBot('@usectrl[bot] why?', _botLogin),
         isFalse,
       );
       expect(
-        GitHubPrConversationBridge.mentionsBot('@cc-tests hi', _botLogin),
+        GitHubPrConversationBridge.mentionsBot('@usectrls hi', _botLogin),
         isFalse,
       );
       expect(
-        GitHubPrConversationBridge.mentionsBot(
-          'cc-test[bot] without at',
-          _botLogin,
-        ),
+        GitHubPrConversationBridge.mentionsBot('usectrl without at', _botLogin),
         isFalse,
       );
       expect(
@@ -646,11 +623,23 @@ void main() {
         isFalse,
       );
     });
+
+    test('the reply pings no one; the asker prefix still names them', () {
+      final text = GitHubPrConversationBridge.attributed(
+        'octocat',
+        'Ask @acme/security or @mallory; see `@keep` in code.',
+      );
+      expect(text, startsWith('**Control Center** (for @octocat): '));
+      expect(text, isNot(contains('@acme/security')));
+      expect(text, isNot(contains('@mallory')));
+      expect(text, contains('`@keep`'));
+      expect(GitHubPrConversationBridge.isAutomatedReply(text), isTrue);
+    });
   });
 
   group('loop guard', () {
     test('a bot-authored comment is dropped before anything happens', () async {
-      await inbound(_issueComment(1, '@$_botLogin review', login: _botLogin));
+      await inbound(_issueComment(1, '@usectrl review', login: _botLogin));
       await inbound(
         _issueComment(2, '@usectrl review', login: 'dependabot[bot]'),
       );
@@ -720,7 +709,7 @@ void main() {
       await inbound(
         _issueComment(
           21,
-          '@$_botLogin what do you think?',
+          '@usectrl what do you think?',
           authorId: _strangerId,
           login: 'stranger',
         ),
@@ -735,7 +724,7 @@ void main() {
       await inbound(
         _issueComment(
           23,
-          '@$_botLogin review',
+          '@usectrl review',
           authorId: _viewerId,
           login: 'viewer',
         ),
@@ -753,6 +742,7 @@ void main() {
       expect(gateway.canPostChecks.single, (
         repo: 'acme/app',
         actingUserId: 'u1',
+        inReviewThread: false,
       ));
       expect(gateway.claims.single, (
         kind: 'issue_comment',
@@ -767,6 +757,9 @@ void main() {
 
       expect(gateway.claims.single.kind, 'review_comment');
       expect(gateway.claims.single.id, 32);
+      // Its claim and reply live in the review thread: that is what is
+      // asked whether it may be posted.
+      expect(gateway.canPostChecks.single.inReviewThread, isTrue);
     });
 
     test('200: another server of the author owns it, stop cleanly', () async {
@@ -808,7 +801,7 @@ void main() {
     test(
       'a bare mention starts the review as the member and replies',
       () async {
-        await inbound(_issueComment(11, '@$_botLogin'));
+        await inbound(_issueComment(11, '@usectrl'));
 
         expect(startedReviews.single, (
           workspaceId: _workspaceId,
@@ -826,7 +819,7 @@ void main() {
     );
 
     test('an explicit review word in a thread replies in it', () async {
-      await inbound(_reviewComment(12, '@$_botLogin review'));
+      await inbound(_reviewComment(12, '@usectrl review'));
 
       expect(startedReviews.single.prNumber, 7);
       final reply = gateway.reviewReplies.single;
@@ -839,7 +832,7 @@ void main() {
     test('a failed start is reported, not swallowed', () async {
       startReviewError = StateError('no linked repo');
 
-      await inbound(_issueComment(13, '@$_botLogin review'));
+      await inbound(_issueComment(13, '@usectrl review'));
 
       expect(
         gateway.conversationComments.single.body,
@@ -973,10 +966,7 @@ void main() {
           repo: 'app',
           prNumber: 7,
           prTitle: 'A title',
-          comment: _issueComment(
-            31,
-            '@$_botLogin why does the flaky test fail?',
-          ),
+          comment: _issueComment(31, '@usectrl why does the flaky test fail?'),
         );
 
         final sent = messaging.userMessages.single;
@@ -1015,7 +1005,7 @@ void main() {
     test(
       'a first question on a fresh PR space wakes the coordinator',
       () async {
-        await inbound(_issueComment(33, '@$_botLogin what does this PR do?'));
+        await inbound(_issueComment(33, '@usectrl what does this PR do?'));
 
         expect(messaging.addedAgents.single, (
           spaceId: _spaceId,
@@ -1029,7 +1019,7 @@ void main() {
     test('a provisioning failure apologizes on the timeline', () async {
       ensureSpaceError = StateError('checkout failed');
 
-      await inbound(_issueComment(34, '@$_botLogin what does this PR do?'));
+      await inbound(_issueComment(34, '@usectrl what does this PR do?'));
 
       final reply = gateway.conversationComments.single;
       expect(reply.body, contains('could not prepare'));
@@ -1040,7 +1030,7 @@ void main() {
     test('a refused dispatch is reported on the timeline', () async {
       messaging.dispatchError = StateError('agent gone');
 
-      await inbound(_issueComment(35, '@$_botLogin what does this PR do?'));
+      await inbound(_issueComment(35, '@usectrl what does this PR do?'));
 
       expect(messaging.userMessages, isNotEmpty);
       expect(
@@ -1066,7 +1056,7 @@ void main() {
     test(
       'a completed run posts the attributed answer bounded by the asker',
       () async {
-        await inbound(_issueComment(41, '@$_botLogin what does this PR do?'));
+        await inbound(_issueComment(41, '@usectrl what does this PR do?'));
 
         await completeRun('It adds the polling lane.');
 
@@ -1101,7 +1091,7 @@ void main() {
     test(
       'an empty completed turn posts nothing and still consumes the row',
       () async {
-        await inbound(_issueComment(43, '@$_botLogin what does this PR do?'));
+        await inbound(_issueComment(43, '@usectrl what does this PR do?'));
         final commentsBefore = gateway.conversationComments.length;
 
         await completeRun('  ');
@@ -1132,7 +1122,7 @@ void main() {
     });
 
     test('a lane change between ask and reply drops the reply', () async {
-      await inbound(_issueComment(44, '@$_botLogin what does this PR do?'));
+      await inbound(_issueComment(44, '@usectrl what does this PR do?'));
       gateway.identityValue = const GitHubConversationIdentity(
         botLogin: _botLogin,
         slug: 'cc-test',
@@ -1147,7 +1137,7 @@ void main() {
     });
 
     test('a different bot between ask and reply drops the reply', () async {
-      await inbound(_issueComment(45, '@$_botLogin what does this PR do?'));
+      await inbound(_issueComment(45, '@usectrl what does this PR do?'));
       gateway.identityValue = const GitHubConversationIdentity(
         botLogin: 'other-app[bot]',
         slug: 'other-app',
@@ -1161,7 +1151,7 @@ void main() {
     });
 
     test('an asker who left the workspace gets no post-back', () async {
-      await inbound(_issueComment(46, '@$_botLogin what does this PR do?'));
+      await inbound(_issueComment(46, '@usectrl what does this PR do?'));
       members.members = [_member('m2', 'u2', WorkspaceRole.viewer)];
       directory.invalidate(_workspaceId);
 

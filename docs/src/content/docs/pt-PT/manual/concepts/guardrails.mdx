@@ -2,7 +2,7 @@
 title: Barreiras — uma única política para todas as ações mutáveis
 description: Por que motivo o Control Center encaminha todos os efeitos secundários dos agentes através de um único motor allow/prompt/deny, como a taxonomia de ActionClass se mantém pequena de propósito e o que o dial de autonomia realmente altera.
 slug: pt-PT/manual/conceitos/barreiras
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Os agentes do Control Center podem eliminar ficheiros, fazer push de branches,
@@ -20,10 +20,7 @@ uma ação pode sair do sistema: o registo de ferramentas do harness integrado, 
 portão do despachante MCP do lado do servidor e as mutações de operações de
 repositório. Uma regra escrita uma vez aplica-se, portanto, ao executor
 integrado e às CLIs de agentes externos, sem distinção — não há um segundo
-caminho mais silencioso para lhe escapar. A antiga política de comandos, só para
-o bash, continua a funcionar: uma regra pode corresponder a um prefixo de comando
-em vez de a uma classe de ação, e as duas formas coexistem no mesmo
-armazenamento.
+caminho mais silencioso para lhe escapar. Uma regra também pode corresponder a um prefixo de comando em vez de a uma classe de ação, e as duas formas coexistem no mesmo armazenamento.
 
 O motor não substitui, no entanto, a sandbox do sistema operativo, e a sandbox
 não o substitui a ele. Respondem a perguntas diferentes: as barreiras decidem se
@@ -31,14 +28,17 @@ uma chamada que o Control Center consegue ver pode sequer acontecer, enquanto a
 sandbox delimita até onde pode chegar o processo resultante. O `cc_server` aplica
 a sandbox onde o anfitrião oferece um backend — mas [no Windows não existe
 nenhum e o Linux precisa de `bwrap` e
-`socat`](/pt-PT/manual/conceitos/sandbox-e-seguranca/). Nesses anfitriões, as
-barreiras são a camada de aplicação mais exterior, e não uma política assente
-sobre um piso, o que vale a pena saber quando decide quão permissivo quer ser.
+`socat`](/pt-PT/manual/conceitos/sandbox-e-seguranca/). Nesses anfitriões, só
+arrancam as execuções do proprietário do servidor, a menos que o proprietário tenha
+desligado a sandbox para todos com `--sandbox off`. Para qualquer execução que
+arranque sem sandbox, as barreiras são a camada de aplicação mais exterior, e não
+uma política assente sobre um piso, o que vale a pena saber quando decide quão
+permissivo quer ser.
 
 ## ActionClass: uma taxonomia deliberadamente fechada
 
 Cada ferramenta mutável declara a que **ActionClasses** pertence, de um conjunto
-fechado de treze classes de efeito. Cinco delas pedem confirmação logo à partida;
+fechado de catorze classes de efeito. Seis delas pedem confirmação logo à partida;
 as restantes permitem, e é uma regra que altera isso.
 
 | Classe                     | Predefinição integrada | O que abrange                                                       |
@@ -56,18 +56,19 @@ as restantes permitem, e é uma regra que altera isso.
 | `processSpawn`             | allow                  | Criar um processo (a shell e tudo o que passe por uma shell)        |
 | `workspaceMutation`        | allow                  | Modificar a estrutura do espaço de trabalho (repos, espaços, agentes) |
 | `enclosureControl`         | allow                  | Controlar um recinto (rig): arrancar uma VM, enviar-lhe entrada     |
+| `hostExecution`            | **prompt**             | Executar um comando no host do servidor fora de qualquer sandbox a pedido de um agente: tarefas de ambiente, processos, stacks de compose e `eval` quando o seu kernel corre sem confinamento |
 
 As oito classes com allow por predefinição foram escolhidas partindo do
 pressuposto de que o piso da sandbox se aplica por baixo delas. Aplica-se onde o
-anfitrião oferece um backend e não se aplica no Windows nem numa máquina Linux
-sem `bwrap` e `socat` — por isso, se quiser condicionar
-`fileWriteOutsideWorktree` ou `packageInstall` nesses casos, tem de escrever uma
-regra.
+anfitrião oferece um backend, e não se aplica com `--sandbox off`, nem às execuções
+do proprietário no Windows ou numa máquina Linux sem `bwrap` e `socat`. Se quiser
+condicionar `fileWriteOutsideWorktree` ou `packageInstall` nesses casos, tem de
+escrever uma regra.
 
 O conjunto é fechado de propósito. Uma nova ferramenta mutável que não declare
 nenhuma classe falha o teste de catraca, pelo que a taxonomia só pode crescer
 através de uma decisão explícita e fundamentada — "a proliferação da taxonomia é
-a morte desta funcionalidade". Treze classes são suficientes para expressar as
+a morte desta funcionalidade". Catorze classes são suficientes para expressar as
 políticas que as pessoas realmente escrevem (nunca fazer push sem perguntar,
 nunca eliminar fora de uma worktree, permitir sempre leituras) e poucas o
 bastante para que a interface de configurações se mantenha compreensível.
@@ -96,8 +97,7 @@ Duas decisões trazem garantias firmes:
 
 Não existe, deliberadamente, qualquer memorização por turno. Cada chamada de
 ferramenta volta a resolver a política de raiz, pelo que os pedidos de
-confirmação repetidos para a mesma ação ficam limitados pelo próprio "lembrar
-esta decisão" do operador e não por algo com o âmbito de um turno.
+confirmação repetidos para a mesma ação ficam limitados pela aprovação temporária própria do operador e não por algo com o âmbito de um turno.
 
 ## Regras ao nível dos argumentos
 
@@ -114,6 +114,7 @@ Uma restrição pode indicar:
 - **hosts** — destinos de rede, com carateres universais de subdomínio
   (`*.internal`)
 - **comandos** — prefixos de comando, comparados num limite de palavra
+- **ferramentas** — a ferramenta exata que uma chamada indica, para que uma aprovação possa abranger uma ferramenta e não todas as que têm o mesmo efeito
 - **limites** — `maxCount` / `maxCents`, para que "eliminar até 50 ficheiros"
   seja exprimível
 
@@ -155,16 +156,19 @@ modo por baixo do armazenamento de políticas e a sandbox do sistema operativo p
 baixo de ambas. Uma regra de comando que se resolve em `allow` nunca afrouxa
 nenhuma destas — a rede do modo corre depois e o seu `deny` é definitivo.
 
-## Aprovações permanentes
+## Aprovações temporárias
 
-Responder a um pedido de confirmação com "lembrar isto" escreve uma regra de
-política real: com âmbito definido (espaço / agente / espaço de trabalho),
-**restrita por argumentos** (aprovar um push para `feature/login` concede
-`feature/**`, não `main`) e **autorrevogável** ao fim de um TTL explícito. Dizer
-sim durante as próximas horas não é o mesmo que reescrever discretamente a sua
-política permanente, e as regras que escreve ficam no mesmo armazenamento com a
-proveniência `remembered` e uma data de expiração, pelo que podem ser revogadas
-antecipadamente.
+Cada cartão de aprovação que a ação de um agente levanta oferece **Aprovar durante 8 horas** quando a ação tem algo mais restrito do que a sua classe para indicar. Escolher esta opção escreve uma regra de política real, uma aprovação temporária, no mesmo armazenamento das regras que define, com proveniência `remembered` e uma expiração:
+
+- **Com âmbito.** Fica escrita para o espaço de onde veio a pergunta. Só a resposta de um administrador pode ser escrita para todo o espaço de trabalho.
+- **Restrita.** Indica uma família de branches (aprovar um push para `feature/login` abrange `feature/**`, não `main`), uma pasta, um host, o comando exato ou a ferramenta. Um commit é a única ação aprovada como classe, para esse espaço: não há nada mais restrito para indicar.
+- **Autorrevogável.** Termina ao fim de oito horas, e pode ser revogada mais cedo na página de permissões dos agentes.
+
+Uma aprovação temporária só dispensa uma pergunta. Responde a uma decisão Perguntar primeiro definida no seu próprio âmbito ou num mais amplo, e nunca a uma negação, seja qual for o âmbito de onde ela venha. Fica guardada junto da regra que define para a ação, por isso alterar essa regra deixa a aprovação no lugar, e revogar a aprovação deixa a regra.
+
+Alguns controlos perguntam por si próprios depois de a política ter permitido uma chamada: a aprovação declarada pela própria ferramenta, ou a rede de comandos de um modo. Só dispensam a pergunta para uma aprovação temporária que indique exatamente essa ferramenta ou esse comando. Pôr a ação em permitir não os silencia.
+
+Três cartões mantêm dois botões, porque não há nada a levar para a frente: deixar o sandbox executar programas a partir de uma pasta (aprová-la já é uma concessão guardada que pode revogar), uma operação destrutiva que confirma uma vez, e a instalação de uma skill (uma skill alterada deve voltar a perguntar).
 
 ## Níveis de aplicação
 

@@ -2,7 +2,7 @@
 title: Becerileri kurma ve yönetme
 description: Çalışma alanı becerilerini tarama kapısından geçirerek kurun ve güncelleyin, ardından kaydedilmiş sürümleri bütçeli beceri değerlendirmeleriyle karşılaştırın.
 slug: tr-TR/kilavuz/nasil-yapilir/becerileri-yonetme
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Bu kılavuz, bir çalışma alanını GitHub'dan gelen becerilerle nasıl
@@ -98,7 +98,7 @@ içinde bir geri alma referansı olarak saklanır.
    **Görev kümesi** ve bir **Adaptör** seçin. Yerleşik harness yapılandırılmış
    bir sağlayıcı ve araç kullanabilen bir model kullanır. **Claude Code**,
    varsayılan yönetilen Claude hesabını ve somut bir model tanımlayıcısını
-   kullanır; önce **Ayarlar → Adaptörler** altında oturum açın. Sunucu
+   kullanır; önce **Ayarlar → Sunucu → Model sağlayıcıları → Claude Code hesapları** altında önce oturum açın. Sunucu
    operatörünün kişisel oturumunu ödünç almaz.
 3. Aşağıdaki tablodan bir **Karşılaştırma** seçin.
 4. **Görev başına tekrar** (1–20) ve **Bütçe (ABD senti)** değerlerini ayarlayın.
@@ -190,8 +190,7 @@ komutlarıyla (`/plan`, `/goal`, `/loop`, `/compact`) asla çakışmazlar:
 - `/skill:<repo>:<name>` — bu alanda çalışma kopyası hazırlanmış bir deponun
   sunduğu beceri
 
-Ön eksiz, yerleşik olmayan bir ad hâlâ çözümlenir; bu, ad alanı var olmadan
-önce yazılmış mesajlar içindir. `plan` adlı bir beceriye ulaşan şey
+`plan` adlı bir beceriye ulaşan şey
 `/skill:plan`'dır; `/plan` her zaman yerleşiktir.
 
 ## Depo kapsamlı beceriler

@@ -70,6 +70,7 @@ class _FakeDeliveryRepo implements WebhookDeliveryRepository {
 PipelineTrigger _webhookTrigger({
   String token = 'secret-token',
   Map<String, dynamic> eventFilters = const {},
+  Set<String> armedByUserIds = const {},
 }) => PipelineTrigger(
   id: 'trg1',
   eventType: PipelineTrigger.webhookEventType,
@@ -78,6 +79,7 @@ PipelineTrigger _webhookTrigger({
   enabled: true,
   webhookToken: token,
   eventFilters: eventFilters,
+  armedByUserIds: armedByUserIds,
 );
 
 String _sign(String body, String secret) =>
@@ -110,8 +112,14 @@ void main() {
             triggerEventType,
             triggerPayload,
             dedupKey,
+            required armedByUserIds,
           }) async {
-            started.add(templateId);
+            started.add(
+              armedByUserIds.isEmpty
+                  ? templateId
+                  : '$templateId armed by '
+                        '${(armedByUserIds.toList()..sort()).join(', ')}',
+            );
             return null;
           },
       idGenerator: () => 'delivery-id',
@@ -155,6 +163,21 @@ void main() {
       expect(delivery.replayable, isFalse);
     },
   );
+
+  test('a run carries every admin who armed the webhook trigger', () async {
+    final h = build(
+      byToken: {
+        token: _webhookTrigger(armedByUserIds: {'admin', 'other'}),
+      },
+    );
+    final result = await h.service.handle(
+      token: token,
+      headers: {'X-Hub-Signature-256': _sign(body, token)},
+      body: body,
+    );
+    expect(result.statusCode, 202);
+    expect(h.started, ['on_webhook armed by admin, other']);
+  });
 
   test('missing signature → rejected, no run', () async {
     final h = build();

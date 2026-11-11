@@ -46,22 +46,18 @@ void main() {
       () async {
         final version = await client.version();
 
-        expect(version, isNotNull);
-        expect(version!.protocol, 1);
+        expect(version.protocol, 1);
         expect(version.agent, 'cc-guest-agent/1');
         expect(seenAuth.single, 'Bearer tok-1');
       },
     );
 
-    test(
-      'an image that predates the endpoint returns null, not a throw',
-      () async {
-        status = HttpStatus.notFound;
-        body = '{"error": "no such endpoint"}';
+    test('an image without the endpoint reads as an OLD image', () async {
+      status = HttpStatus.notFound;
+      body = '{"error": "no such endpoint"}';
 
-        expect(await client.version(), isNull);
-      },
-    );
+      await expectLater(client.version(), throwsA(isA<GuestAgentTooOld>()));
+    });
 
     test('a fail-closed guest (503 with its cause) throws with the cause '
         'in the message', () async {
@@ -87,12 +83,14 @@ void main() {
       await expectLater(client.version(), throwsA(isA<GuestAgentException>()));
     });
 
-    test('a missing protocol field reads as 0 — older than the first one '
-        'that announced itself', () {
-      final version = GuestAgentVersion.fromJson(const {'agent': 'x'});
+    test('a reply without a protocol is malformed', () async {
+      body = '{"agent": "x"}';
 
-      expect(version.protocol, 0);
-      expect(version.agent, 'x');
+      expect(
+        () => GuestAgentVersion.fromJson(const {'agent': 'x'}),
+        throwsFormatException,
+      );
+      await expectLater(client.version(), throwsA(isA<GuestAgentException>()));
     });
   });
 

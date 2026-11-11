@@ -2,7 +2,7 @@
 title: Kecerdasan kode
 description: Mengapa agen membutuhkan compiler, pencari struktural, dan debugger — dan pertanyaan apa yang dijawab masing-masing yang tidak dapat dijawab oleh yang lain.
 slug: id-ID/panduan-pengguna/konsep/kecerdasan-kode
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center memberi agen empat cara untuk memahami kode di luar sekadar membacanya. Keempatnya menjawab pertanyaan yang benar-benar berbeda, dan alasan ada empat alih-alih satu adalah karena tidak ada satu mekanisme pun yang dapat menjawab semuanya.
@@ -31,6 +31,8 @@ Mengulangi apa yang sudah diberitahukan kepada agen lebih buruk daripada tidak m
 Tidak ada server yang dimulai saat boot. Sebuah server dimulai pada permintaan pertama yang membutuhkannya, yang hampir selalu merupakan edit pertama pada file yang diklaimnya, dan server yang menganggur akan dibersihkan. Host yang tidak pernah menyentuh Dart tidak akan pernah memulai analyzer.
 
 Deteksi adalah sebuah **irisan**: penanda root harus ada di checkout *dan* biner-nya harus dapat di-resolve. Penanda saja hanya mengatakan "proyek ini adalah Python" dan tidak mengatakan apa pun tentang apakah server-nya terpasang; biner yang dapat di-resolve saja hanya mengatakan bahwa host memiliki toolchain dan tidak mengatakan apa pun tentang checkout ini. Hanya keduanya bersama-sama yang berarti sebuah kueri dapat berhasil, dan alat yang ditawarkan tetapi selalu gagal lebih buruk daripada alat yang tidak ada.
+
+Apa yang dapat dipengaruhi sebuah repositori sengaja dibuat kecil. Server berasal dari tabel bawaan, tidak pernah dari berkas di checkout, dan biner di dalam proyek (`node_modules/.bin`) hanya dipakai saat run berada di dalam sandbox. Language server adalah program yang berjalan di mesin server, jadi sebuah repositori tidak berhak menamai salah satunya.
 
 ## Mengapa pencarian struktural, padahal grep sudah ada
 

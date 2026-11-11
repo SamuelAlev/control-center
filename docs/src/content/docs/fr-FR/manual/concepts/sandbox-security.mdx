@@ -2,7 +2,7 @@
 title: Bac à sable et sécurité
 description: Ce qui limite réellement un agent dans Control Center aujourd'hui, jusqu'où va le bac à sable du système d'exploitation et quelles frontières tiennent sur un hôte dépourvu de backend.
 slug: fr-FR/manuel/concepts/bac-a-sable-et-securite
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Là où le bac à sable du système d'exploitation agit, et où il ne va pas]
@@ -10,10 +10,7 @@ sourceHash: ac926eb1b2447d93207802824742f121d232f171
 l'agent dans le bac à sable natif du système d'exploitation lorsqu'un tel
 backend est disponible — Seatbelt sous macOS, bubblewrap sous Linux et WSL2 (qui
 exige `bwrap` et `socat` dans le `PATH`). Là où aucun backend n'existe —
-Windows, ou une machine Linux dépourvue de ces outils — les exécutions
-retombent sur les autres frontières décrites ci-dessous et le serveur le
-signale dans son journal de démarrage. `--sandbox off` le désactive
-délibérément.
+Windows, ou une machine Linux dépourvue de ces outils — seules les exécutions de l'agent du propriétaire du serveur démarrent, sans confinement, et celles de tous les autres sont refusées. Le propriétaire peut à la place démarrer le serveur avec `--sandbox off`, qui exécute les agents de chaque membre sans confinement sur cette machine. Le journal de démarrage indique dans quel cas vous vous trouvez ; voir [Agents sur un hôte sans bac à sable](#agents-sur-un-hôte-sans-bac-à-sable).
 
 Deux lacunes subsistent malgré le bac à sable et méritent d'être gardées en
 tête :
@@ -42,7 +39,23 @@ Control Center y répond par couches, et ces couches sont indépendantes à
 dessein. Si l'une manque, les autres tiennent. Cela compte, car la couche la
 plus externe — le bac à sable du système d'exploitation — est la seule
 conditionnelle : elle dépend d'un hôte qui offre un backend, et sous Windows
-aucun hôte n'en offre.
+aucun hôte n'en offre. Là où il manque, le serveur n'exécute pas en silence les agents de tout le monde sans lui.
+
+## Agents sur un hôte sans bac à sable
+
+Le serveur décide une fois, au démarrage, comment les agents s'exécutent sur sa machine, et conserve cette décision jusqu'à son redémarrage :
+
+- **Dans le bac à sable.** L'hôte dispose d'un backend et le bac à sable est activé. Chaque exécution est encapsulée.
+- **Désactivé.** Le propriétaire du serveur a démarré le serveur avec `--sandbox off`. Les agents de chaque membre s'exécutent sans confinement sur cette machine. C'est le choix du propriétaire pour tous ceux qui utilisent le serveur, et non un réglage pour une seule exécution.
+- **Indisponible.** Le bac à sable est activé mais l'hôte n'a aucun backend. Une exécution ne démarre que si la personne qui en répond est le [propriétaire](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur) du serveur : celle qui l'a demandée, ou, pour une planification, un webhook ou une autre automatisation, la personne à laquelle elle est liée. Les exécutions de tous les autres sont refusées avant qu'un identifiant ne soit émis ou qu'un processus ne démarre, avec le message « Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents. Le propriétaire peut installer le bac à sable ou le désactiver pour tout le monde. »
+
+La raison tient à la propriété de la machine. Un agent sans confinement peut faire tout ce que le compte utilisateur du serveur peut faire ; seule la personne qui possède ce compte en lance donc, sauf si elle décide autrement pour tout le monde. Un serveur Windows se trouve toujours dans le cas indisponible. Linux a sa particularité, décrite dans la [référence des backends de bac à sable](/fr-FR/manuel/reference/backends-de-bac-a-sable/#linux-bubblewrap) : le dispatch natif échoue par précaution là aussi, même avec bubblewrap installé.
+
+La même règle s'applique aux petits mécanismes qui lancent un processus pour vous :
+
+- **Les assistants rapides qui passent par une CLI ACP** : titres de conversation, `/btw`, `/handoff` et `/goal`. Lorsque le serveur met les agents en bac à sable, ils s'exécutent dans le bac à sable, dans une session à eux. Sous `--sandbox off`, ils s'exécutent sans confinement. Sans bac à sable disponible, ils ne tournent que pour les demandes dont le propriétaire du serveur répond ; pour les autres, ils sont ignorés : aucun titre n'est généré, et une question annexe signale que Content synthesizer n'a pas de runner fonctionnel. Les assistants qui ne lancent aucun outil ne sont pas concernés.
+- **Les tests dorés d'une pull request** dans la vérification visuelle de Review Studio suivent la même règle.
+- **Les processus d'outils et `bash`** d'une exécution ne basculent jamais sur l'hôte. Si le serveur est réglé pour mettre les agents en bac à sable mais n'a pas de bac à sable à donner à une exécution, celle-ci est refusée.
 
 ## Ce qui limite réellement un agent
 
@@ -121,7 +134,7 @@ L'outil `bash` est l'autre endroit où il faut être précis. Ses commandes sont
 environnement assaini et l'arbre de travail comme répertoire de travail. Là où
 un backend existe, ce lancement est encapsulé : c'est donc le bac à sable qui
 empêche une commande shell d'écrire en dehors de l'arbre de travail ; là où il
-n'y en a pas — Windows, ou Linux sans `bwrap` ni `socat` — la politique de
+n'y en a pas (chaque exécution sous `--sandbox off`, et les exécutions du propriétaire sous Windows ou sous Linux sans `bwrap` ni `socat`), la politique de
 commandes est la seule chose entre la commande et le reste du disque. En mode
 `chat`, la politique refuse catégoriquement une liste fixe (élévation de
 privilèges, destruction du système et du disque, évasion de conteneur et
@@ -139,7 +152,7 @@ même à l'intérieur de l'encapsulation du bac à sable : c'est donc le systè
 d'exploitation qui est la frontière autour d'eux. Là où il n'y en a pas, il n'y
 a rien. Chaque adaptateur l'énonce dans sa matrice d'application — voir [la
 matrice d'honnêteté des
-adaptateurs](/fr-FR/manuel/concepts/garde-fous/#the-adapter-honesty-matrix).
+adaptateurs](/fr-FR/manuel/concepts/garde-fous/#la-matrice-dhonnêteté-des-adaptateurs).
 
 ## Les push passent par Control Center
 
@@ -152,11 +165,7 @@ exécute l'agent.
 
 Un push est l'action qui doit tenir même face à un agent qui cherche à
 contourner une règle : il est donc appliqué par ce que l'agent détient plutôt
-que par ce qu'il exécute. Une exécution dans un arbre de travail GitHub reçoit
-un jeton limité à ce seul dépôt, émis à partir de la GitHub App de l'espace de
-travail, de l'application propre du serveur ou de Control Center Connect. Il
-peut lire le contenu et, lorsque le membre responsable peut pousser, commenter
-les pull requests, mais il ne peut pas pousser. La
+que par ce qu'il exécute. Une exécution ne détient aucun jeton de forge au démarrage, et son `git` n'en reçoit jamais. Lorsque son `gh` en a besoin, Control Center lui remet un jeton pour un seul dépôt GitHub sur lequel l'exécution travaille, émis à partir de la GitHub App de l'espace de travail, de l'application propre du serveur ou de Control Center Connect. Il ne fait que lire : il ne peut ni pousser, ni commenter, ni modifier. La
 configuration git de l'exécution réécrit chaque URL de push GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) vers la
 **passerelle d'exécution d'agent**, un point de terminaison en boucle locale sur
@@ -172,26 +181,24 @@ elle-même :
 ```
 
 La passerelle ne transmet les push qu'au dépôt propre à l'arbre de travail ou à
-un dépôt GitHub lié à l'espace de travail. Les fetch vont directement à GitHub
-avec le jeton de lecture.
+un dépôt GitHub lié à l'espace de travail. Les fetch passent eux aussi par la passerelle, sur GitHub, GitLab et Bitbucket : elle récupère les dépôts sur lesquels l'exécution travaille avec un identifiant qu'elle conserve et que l'exécution ne voit jamais. Sur GitLab et Bitbucket, c'est votre propre jeton lorsque vous avez demandé l'exécution, et le jeton d'automatisation du dépôt lorsque personne ne l'a demandée. Un fetch ne demande rien à personne, et seul un refus sur **Accéder au réseau** le bloque.
 
 Les autres commandes shell rencontrent une barrière plus souple. L'outil `bash`
 du harnais et, via un hook, l'outil `Bash` de Claude Code classent chaque ligne
 de commande et interrogent la règle dont elle relève : `git commit`, `merge`,
 `rebase`, `cherry-pick`, `revert` et `am` relèvent de **Créer un commit** ;
 `gh pr create` de **Ouvrir une pull request** ; `gh pr merge`, `review`,
-`comment` et `close` de **Publier une revue ou fusionner** ; `gh issue create`,
+`comment` et `close` de **Mettre à jour ou fusionner une pull request** ; `gh issue create`,
 `edit`, `comment` et `close` de **Écrire dans un outil de suivi externe** ; les
 installations de paquets de **Installer un paquet** ; `curl` et `wget` de
-**Accéder au réseau**. Cela reconnaît l'écriture habituelle d'une action, et un
+**Accéder au réseau**. Écrire vers GitHub depuis le shell fait exception : `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` et les écritures `gh issue` ne fonctionnent pas dans une exécution, dont le jeton ne fait que lire, et l'agent est orienté vers les outils de Control Center, qui interrogent ces règles. Cela reconnaît l'écriture habituelle d'une action, et un
 agent déterminé à en cacher une (`eval`, un fichier de script, un appel d'API
 direct) y parvient. Les push n'en dépendent pas.
 
 Chaque jeton GitHub que reçoit une exécution est doublement borné : à un seul
 dépôt, et à ce que le membre responsable (celui qui a demandé, sinon le
 propriétaire de l'espace de travail) peut y faire. Il n'existe aucun
-identifiant de repli. Lorsqu'aucun jeton ne peut être émis, l'exécution démarre
-sans jeton et ses notes en donnent la raison.
+identifiant de repli. Lorsqu'aucun jeton ne peut être émis, la commande qui l'a demandé indique la raison.
 
 Aucune clé d'API de tickets n'est placée dans un bac à sable. Les agents
 écrivent les tickets via les outils MCP de Control Center, qui interrogent
@@ -206,6 +213,16 @@ libérées à son démontage. Les jetons qui se trouvent derrière sont partagé
 membre et par dépôt et expirent en une heure environ ; un membre qui se
 déconnecte de GitHub ou quitte l'espace de travail invalide d'un coup tous les
 jetons émis en son nom.
+
+## Dépôts que l'agent ne peut que lire
+
+Une exécution d'agent ne peut modifier que les copies de travail des dépôts sur lesquels la personne pour laquelle elle agit détient l'[autorisation d'écriture](/fr-FR/manuel/concepts/autorisation/#changer-du-code-exige-lautorisation-décriture). Les administrateurs de l'espace de travail la détiennent sur chaque dépôt lié. Une exécution que personne n'a demandée, comme une planification ou une autre automatisation, est jugée par la même personne responsable que celle à laquelle son jeton d'automatisation est lié.
+
+Dans un espace où cette personne ne peut que lire un dépôt, l'agent peut encore lire et chercher dans ce dépôt, mais il ne peut pas en modifier les fichiers. Ses outils de fichiers refusent avec un message qui commence par `<repo> is read-only for this run` et indique que modifier la copie de travail exige l'autorisation d'écriture, que la personne pour laquelle agit l'exécution ne détient pas, et qu'un administrateur de l'espace de travail peut l'accorder. Dans un bac à sable, la copie de travail est en lecture seule pour tous les processus : une commande shell qui y écrit échoue avec "Operation not permitted". Cela vaut aussi pour `git commit` et pour un build ou un test qui écrit sa sortie dans la copie de travail. Les dépôts que la personne peut modifier se comportent comme d'habitude, si bien que les administrateurs, et toute personne ayant l'accès en écriture à tous les dépôts de l'espace, ne voient aucune différence.
+
+Cette décision est prise une fois, au démarrage de l'exécution. Un changement d'autorisation prend effet à la prochaine exécution de l'agent, de même qu'un dépôt ajouté à l'espace pendant une exécution.
+
+Lorsque le propriétaire du serveur a désactivé le bac à sable, seuls les outils de fichiers propres à l'agent et les outils d'écriture de Claude Code sont refusés, et les commandes shell peuvent encore modifier la copie de travail. Dans les deux cas, rien ne peut être poussé sans l'autorisation d'écriture, car chaque push est vérifié par rapport à elle. Les processus que le bac à sable confine sur chaque plateforme sont décrits dans [Backends du bac à sable](/fr-FR/manuel/reference/backends-de-bac-a-sable/).
 
 ## Ce que le bac à sable ajoute et où il s'arrête
 
@@ -223,17 +240,13 @@ transports n'en partagent pas une seule. La première (`SandboxPort`) encapsule
 la CLI Claude Code. La seconde (`SandboxManager`) encapsule les adaptateurs ACP
 et l'outil `bash` du harnais intégré. N'en alimenter qu'une seule laisserait les
 autres se lancer sans encapsulation, ce qui se produisait auparavant. Sur un
-hôte dépourvu de backend, ou avec `--sandbox off`, ils se lancent tous sans
+hôte dépourvu de backend, seules les exécutions du propriétaire démarrent, également sans encapsulation. Avec `--sandbox off`, ils se lancent tous sans
 encapsulation et le serveur indique votre cas sur sa ligne de démarrage. ACP et
 le `bash` du harnais assainissent toujours l'environnement ; Claude Code via
 `NoSandboxAdapter` hérite de l'environnement de l'hôte.
 
-Une surface s'y soustrait délibérément : le terminal hébergé par le serveur
-accepte un argument de backend par session, et `cc_server` le construit en
-retombant par défaut sur le shell de l'hôte ; un terminal que vous ouvrez depuis
-l'application s'exécute donc sans bac à sable, à moins qu'un client ne nomme
-explicitement `native`. Il s'agit d'un vrai shell sur l'hôte du serveur, pas
-d'une exécution d'agent.
+Une surface reste à part : le terminal hébergé par le serveur
+n'ouvre le shell de l'hôte que pour le [propriétaire](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur) du serveur ; tous les autres obtiennent un terminal dans un bac à sable, soumis aux limites d'un agent, dans les répertoires propres à l'espace de travail ; seule la personne qui a ouvert un terminal peut le saisir, le lire ou le fermer.
 
 Sous Linux, `bubblewrap` construit un espace de noms de montage : l'agent ne
 voit donc réellement que ce qui y a été lié. Sous macOS, `sandbox-exec` applique
@@ -247,6 +260,10 @@ qu'un renommage ne puisse pas contourner un refus d'écriture, refus d'exécutio
 pour les binaires toujours dangereux et pour tout ce qui est copié dans un
 répertoire accessible en écriture, et réseau restreint aux ports proxy de la
 boucle locale plus le DNS. Les installations d’outils sous votre répertoire personnel (pnpm via corepack, gestionnaires de versions de Node, navigateurs Playwright, rustup, fvm, uv et similaires) restent exécutables à l’intérieur de ces refus d’exécution, de sorte que les agents peuvent les utiliser sans contournement. Les refus visant les binaires toujours dangereux continuent de s’appliquer à l’intérieur. Chaque session reçoit aussi son propre `TMPDIR` privé. C’est le seul répertoire temporaire où l’agent peut exécuter les programmes qu’il a compilés ou ouvrir des sockets Unix.
+
+Deux protections supplémentaires s'appliquent dans tous les modes. Un bac à sable ne peut ni ajouter, ni remplacer, ni supprimer, ni renommer une commande dans les dossiers dont le serveur lance des programmes (chaque dossier de son `PATH` et les dossiers d'outils habituels propres à chaque utilisateur) : une exécution en bac à sable ne peut donc pas y déposer un programme que le serveur lancerait ensuite hors du bac à sable. Les installations globales et les changements de version par défaut depuis une exécution échouent donc avec « Operation not permitted », tandis que les installations locales au projet et les exécutions de type `npx` continuent de fonctionner ; installez les outils globaux sur le serveur lui-même, puis redémarrez-le. Et tout chemin personnel qu'un bac à sable ne peut pas lire ne peut pas non plus être écrit, les fichiers de démarrage du shell et de la session de l'utilisateur du serveur n'étant jamais inscriptibles. Les détails et les limites par plateforme figurent dans [Les dossiers de commandes du serveur](/fr-FR/manuel/reference/backends-de-bac-a-sable/#les-dossiers-de-commandes-du-serveur).
+
+Les bacs à sable d'outils d'une exécution appartiennent à cette exécution et sont libérés à sa fin. Les serveurs de langage repartent de zéro à chaque exécution en bac à sable. Une session de débogage conserve son bac à sable d'un tour à l'autre jusqu'à sa fin, pendant 30 minutes au maximum.
 
 La conséquence pratique : sous Linux, la vue que l'agent a du système de
 fichiers est rétrécie ; sous macOS, l'agent peut encore _lire_ la majeure partie

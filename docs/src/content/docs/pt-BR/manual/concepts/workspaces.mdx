@@ -2,7 +2,7 @@
 title: Espaços de trabalho e isolamento
 description: Por que um espaço de trabalho é uma fronteira rígida de tenant, como a divisão do banco de dados torna essa fronteira estrutural e o que a atravessa de propósito.
 slug: pt-BR/manual/conceitos/espacos-de-trabalho
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## O que é um espaço de trabalho?
@@ -79,9 +79,11 @@ Um arquivo de espaço de trabalho carrega apenas um `workspace_meta` de linha ú
 
 ## Criar um espaço de trabalho
 
+Somente o [proprietário do servidor](/pt-BR/manual/conceitos/autorizacao/#o-proprietário-do-servidor) pode criar um espaço de trabalho; o servidor gera o id dele. Um administrador ou proprietário do espaço de trabalho não pode criar outro. Quem ainda não está em nenhum espaço de trabalho vê **Você ainda não está em um espaço de trabalho**, que pede que o proprietário do servidor crie um ou que um administrador do espaço de trabalho o convide, e o formulário **Adicionar espaço de trabalho** diz o mesmo a qualquer outra pessoa.
+
 Criar um espaço de trabalho faz mais do que inserir uma linha no registro. Em uma única operação, o servidor marca o usuário criador como `ownerUserId`, registra a associação desse usuário na função de proprietário e publica um evento de domínio `WorkspaceCreated`. Os listeners desse evento então semeiam, de forma idempotente e em segundo plano:
 
-- um **agente CEO** mais quatro especialistas — `qa`, `architect`, `engineer`, `librarian` — com os especialistas se reportando ao CEO;
+- um **agente CEO** mais cinco especialistas — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — com os especialistas se reportando ao CEO;
 - os **modelos de pipeline integrados** e seus gatilhos (gatilhos de evento e manuais vêm habilitados; os agendados são opcionais, exceto a varredura diária de GC de worktrees);
 - as **suítes de avaliação iniciais**.
 
@@ -90,7 +92,7 @@ Isso acontece para _todos_ os espaços de trabalho, não apenas o primeiro. Os a
 A gravação da associação do proprietário importa mais do que parece: sem ela, o espaço de trabalho recém-criado não teria membros e toda chamada com escopo de espaço de trabalho que o criador fizesse em seguida seria negada.
 
 :::note[Agentes não podem criar um espaço de trabalho]
-Não existe uma ferramenta MCP `create_workspace`. Os humanos criam um espaço de trabalho por meio de `workspace.create` (ponto de estrangulamento apenas com nome) ou `workspace.upsert` (registro completo, também usado para atualizações). Ambos marcam o usuário criador como `owner` e publicam `WorkspaceCreated`.
+Não existe uma ferramenta MCP `create_workspace`. O proprietário do servidor cria um espaço de trabalho por meio de `workspace.create`, que o marca como seu `owner` e publica `WorkspaceCreated`. `workspace.upsert` apenas atualiza um espaço de trabalho que já existe; ele nunca cria um e nunca altera o proprietário de um espaço de trabalho, o que só **Transferir a propriedade** faz.
 :::
 
 ## Excluir, exportar, importar
@@ -106,7 +108,7 @@ Como um espaço de trabalho é um arquivo, entregar um espaço de trabalho é um
 
 As operações de backup ficam em **Configurações → Servidor → Backup e restauração**: **Fazer backup agora** tira um snapshot da instalação, a lista mostra quais snapshots estão completos e permite que o proprietário da instalação exclua um após confirmação, e cada espaço de trabalho oferece exportação e importação. O pipeline integrado **Workspace backup** pega apenas o banco de dados desse espaço de trabalho em um agendamento semanal e exclui os próprios backups mais antigos que a idade de retenção configurada. Esses backups aparecem na mesma página por espaço de trabalho, onde cada um pode ser restaurado, baixado ou excluído. Excluir um espaço de trabalho deixa seus backups para o proprietário da instalação recolher ou remover, já que o agendamento e a retenção param junto com ele. Restaurar um espaço de trabalho a partir de um snapshot da instalação é apontar `workspace.import` para o `<workspaceId>/workspace.db` do snapshot; restaurar uma instalação inteira continua sendo uma cópia de volta do diretório do snapshot com o servidor parado.
 
-O que nenhuma delas carrega é o resto do diretório do espaço de trabalho. Um espaço de trabalho acumula mais do que um banco de dados — imagens coladas, arquivos de skill e de agente, credenciais de chat, worktrees — e a exportação e a importação movem o **arquivo**, então tudo o que está ao lado dele fica onde está. Isso é proposital para credenciais e descartável para worktrees; para o resto, é um limite que vale conhecer, e não um recurso. A [referência de backup](/pt-BR/manual/referencia/backup/#what-a-backup-does-not-contain) tem a tabela completa.
+O que nenhuma delas carrega é o resto do diretório do espaço de trabalho. Um espaço de trabalho acumula mais do que um banco de dados — imagens coladas, arquivos de skill e de agente, credenciais de chat, worktrees — e a exportação e a importação movem o **arquivo**, então tudo o que está ao lado dele fica onde está. Isso é proposital para credenciais e descartável para worktrees; para o resto, é um limite que vale conhecer, e não um recurso. A [referência de backup](/pt-BR/manual/referencia/backup/#o-que-um-backup-não-contém) tem a tabela completa.
 
 ## Mover um backup entre o servidor e seu dispositivo
 

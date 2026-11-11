@@ -4,6 +4,8 @@ import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/dispatch/sandboxed_agent_dispatch_adapter.dart';
 import 'package:test/test.dart';
 
@@ -51,8 +53,10 @@ void main() {
   setUp(() {
     sandbox = _Sandbox();
     adapter = SandboxedAgentDispatchAdapter(
+      hostExecution: const HostExecutionGate(
+        posture: HostExecutionPosture.offByOwner,
+      ),
       sandbox: sandbox,
-      credentialBroker: _Unused(),
       agentRepository: _Unused(),
     );
   });

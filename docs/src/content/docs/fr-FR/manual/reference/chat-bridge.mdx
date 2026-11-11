@@ -2,7 +2,7 @@
 title: Passerelle de chat
 description: Fournisseurs, commandes, identifiants, capacités, opérations RPC et stockage de la passerelle de chat.
 slug: fr-FR/manuel/reference/passerelle-de-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Fournisseurs
@@ -150,7 +150,7 @@ La carte s’ouvre lorsqu’une mention est acceptée, avant le clonage et avant
 | Mention acceptée                    | `Working on it…`                                               |
 | Étape `repo`                        | `Cloning <repo>…`                                              |
 | Étape `prCheckout`                  | `Checking out the pull request in <repo>…`                     |
-| Étape `script`                      | `Running the setup script for <repo>…`                         |
+| Étape `provisionTasks`                      | `Running worktree tasks for <repo>…`                         |
 | Étape `agent`                       | `Setting up <agent>…`                                          |
 | `provisioning`, aucune étape encore | `Preparing the workspace…`                                     |
 | `ready`                             | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Elle existe parce que la liaison se fait de l’_autre_ côté : un membre sais
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Identifiants de connexion      | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Configuration guidée inachevée | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Fichiers Slack hérités         | `<dataDir>/<workspaceId>/slack_credentials.json` et `slack_app_setup.json`, lus une fois et migrés sur place |
 
 Les identifiants vivent à côté de la base de données de l’espace de travail, pas à l’intérieur : supprimer un espace de travail emporte ses jetons de chat, et `workspace.export` ou une sauvegarde copie `workspace.db` — un espace de travail transmis à quelqu’un d’autre ne transporte donc aucun jeton de bot actif. Les écritures sont atomiques (fichier temporaire puis renommage) et resserrées au seul propriétaire.
 

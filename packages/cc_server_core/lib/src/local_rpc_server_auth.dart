@@ -378,37 +378,68 @@ extension _AuthMethods on LocalRpcServer {
       await res.close();
       return;
     }
+    _setBrowserPageHeaders(res);
     try {
-      final attempt = await oauth.handleCallback(request.uri);
+      final page = oauth.handleCallback(request.uri);
       res
         ..statusCode = HttpStatus.ok
         ..headers.contentType = ContentType.html
-        ..headers.set('Cache-Control', 'no-store')
-        ..headers.set('Referrer-Policy', 'no-referrer')
-        ..write(
-          _providerOAuthPage(
-            title: 'Signed in',
-            body: attempt.account.isEmpty
-                ? 'You can close this tab and return to Control Center.'
-                : 'Signed in as ${attempt.account}. You can close this tab '
-                      'and return to Control Center.',
-          ),
-        );
-    } catch (e) {
-      _w('Provider sign-in failed: $e');
+        ..write(_confirmCodePage(page.confirmCode, page.link));
+    } on AuthException catch (e) {
+      // The service already logged why; its messages are fixed strings.
       res
         ..statusCode = HttpStatus.forbidden
         ..headers.contentType = ContentType.html
-        ..headers.set('Cache-Control', 'no-store')
         ..write(
-          _providerOAuthPage(
-            title: 'Sign-in failed',
-            body: e is AuthException ? e.message : 'Something went wrong.',
-            ok: false,
-          ),
+          _providerOAuthPage(title: 'Sign-in failed', body: e.message, ok: false),
         );
     }
     await res.close();
+  }
+
+  /// The headers every sign-in page sends: nothing loads, frames or sniffs
+  /// it, nothing caches it, and no link on it leaks the URL it was opened
+  /// with (the provider's code and `state` are in that URL).
+  static void _setBrowserPageHeaders(
+    HttpResponse res, {
+    String csp =
+        "default-src 'none'; style-src 'unsafe-inline'; img-src data:; "
+        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  }) {
+    res.headers
+      ..set('Content-Security-Policy', csp)
+      ..set('X-Frame-Options', 'DENY')
+      ..set('X-Content-Type-Options', 'nosniff')
+      ..set('Cache-Control', 'no-store')
+      ..set('Referrer-Policy', 'no-referrer');
+  }
+
+  /// The own-app callback's answer: the confirmation code and the local deep
+  /// link, as Connect's `/done` page shows them once the person continued
+  /// past its consent step (the own app's consent is the provider's own
+  /// screen, so this page has none). [code] is an 8-character
+  /// Crockford code this server made and [link] is built from this server's
+  /// own login id, so nothing from the request is reflected.
+  static String _confirmCodePage(String code, Uri link) {
+    final shown = code.length == 8
+        ? '${code.substring(0, 4)}-${code.substring(4)}'
+        : code;
+    return browserHandoffPage(
+      title: 'Finish signing in',
+      body:
+          'Open Control Center on this device, or type this code where '
+          'Control Center asks for it. Only enter it in a Control Center you '
+          'started this sign-in from; nobody from Control Center will ever '
+          'ask you for it.',
+      statusLabel: '',
+      ctaLabel: 'Open Control Center',
+      ctaHref: link.toString(),
+      extraHead:
+          '<style>.confirm-code{display:block;margin:16px 0;font-family:'
+          'var(--mono);font-size:32px;letter-spacing:4px;direction:ltr}'
+          '</style>',
+      extraBody: '<p class="confirm-code">${htmlEscape.convert(shown)}</p>',
+    );
   }
 
   Future<void> _serveGitHubManifest(HttpRequest request) async {
@@ -423,9 +454,7 @@ extension _AuthMethods on LocalRpcServer {
       await res.close();
       return;
     }
-    res.headers
-      ..set('Cache-Control', 'no-store')
-      ..set('Referrer-Policy', 'no-referrer');
+    _setBrowserPageHeaders(res);
     if (path == GitHubManifestService.startPath) {
       final page = manifest.startPage(
         request.uri.queryParameters['ticket'] ?? '',
@@ -442,14 +471,16 @@ extension _AuthMethods on LocalRpcServer {
             ),
           );
       } else {
+        _setBrowserPageHeaders(
+          res,
+          csp:
+              "default-src 'none'; script-src 'unsafe-inline'; "
+              "style-src 'unsafe-inline'; img-src data:; base-uri 'none'; "
+              "form-action https://github.com; frame-ancestors 'none'",
+        );
         res
           ..statusCode = HttpStatus.ok
           ..headers.contentType = ContentType.html
-          ..headers.set(
-            'Content-Security-Policy',
-            "default-src 'none'; script-src 'unsafe-inline'; "
-                "form-action https://github.com; style-src 'unsafe-inline'",
-          )
           // Lax: GitHub's redirect back is a top-level GET, which carries it.
           ..cookies.add(
             Cookie(GitHubManifestService.browserCookie, page.browserKey)
@@ -478,8 +509,8 @@ extension _AuthMethods on LocalRpcServer {
       res
         ..statusCode = HttpStatus.found
         ..headers.set(HttpHeaders.locationHeader, result.installUrl.toString());
-    } catch (e) {
-      _w('GitHub App registration failed: $e');
+    } on Object catch (e) {
+      // The manifest service logs its own refusals.
       res
         ..statusCode = HttpStatus.forbidden
         ..headers.contentType = ContentType.html

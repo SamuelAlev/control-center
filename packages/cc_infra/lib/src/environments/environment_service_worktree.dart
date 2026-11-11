@@ -5,6 +5,7 @@ mixin _WorktreeOps
     on
         _EnvironmentServiceBase,
         _DefinitionOps,
+        _TerminalOps,
         _ComponentOps,
         _StackOps,
         _EnsureOps,
@@ -196,6 +197,7 @@ mixin _WorktreeOps
     bool isTest = false,
     void Function(String line)? onOutput,
   }) async {
+    await _requireHostApproval(owner);
     final definition = owner.definition;
     if (context.isForkPr &&
         definition.forkPolicy != EnvironmentForkPolicy.rig) {
@@ -257,11 +259,17 @@ mixin _WorktreeOps
       kind: isTest ? EnvironmentRunKind.test : EnvironmentRunKind.task,
       onEvent: onOutput == null
           ? null
-          : (event) => onOutput(switch (event) {
-              EnvironmentCommandOutput(:final line) => line,
-              EnvironmentCommandProgress(:final progress) =>
-                '[${progress.type}] ${progress.label ?? ''}',
-            }),
+          : (event) {
+              final line = switch (event) {
+                EnvironmentCommandOutput(:final line) => line,
+                EnvironmentCommandProgress(:final progress) =>
+                  '[${progress.type}] ${progress.label ?? ''}',
+                EnvironmentCommandExit() => null,
+              };
+              if (line != null) {
+                onOutput(line);
+              }
+            },
     );
     return outcome.run;
   }
@@ -385,6 +393,9 @@ mixin _WorktreeOps
     // A first start may not have written its row yet. Wait for it, so the row
     // it writes is one this tears down instead of one outliving the space.
     final prefix = '$workspaceId/$spaceId/';
+    // One waiting on a terminal would keep the space for as long as nobody
+    // answers it.
+    await _cancelTerminalsIn(workspaceId, spaceId);
     await Future.wait([
       for (final entry in _ensures.entries)
         if (entry.key.startsWith(prefix))
@@ -418,6 +429,7 @@ mixin _WorktreeOps
   /// See [EnvironmentPort.testDefinition].
   Future<String> testDefinition(String workspaceId, String definitionId) async {
     final loaded = await _load(workspaceId, definitionId);
+    await _requireHostApproval(loaded);
     final id = _uuid.v4();
     await _d.runs.start(
       EnvironmentRun(

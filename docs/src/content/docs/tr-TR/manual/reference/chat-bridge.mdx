@@ -2,7 +2,7 @@
 title: Sohbet köprüsü
 description: Sohbet köprüsünün sağlayıcıları, komutları, kimlik bilgileri, yetenekleri, RPC işlemleri ve depolaması.
 slug: tr-TR/kilavuz/referans/sohbet-koprusu
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Sağlayıcılar
@@ -150,7 +150,7 @@ Kart, bir anma kabul edildiğinde, klonlamadan ve ilk token'dan önce açılır;
 | Anma kabul edildi           | `Working on it…`                                               |
 | `repo` adımı                | `Cloning <repo>…`                                              |
 | `prCheckout` adımı          | `Checking out the pull request in <repo>…`                     |
-| `script` adımı              | `Running the setup script for <repo>…`                         |
+| `provisionTasks` adımı              | `Running worktree tasks for <repo>…`                         |
 | `agent` adımı               | `Setting up <agent>…`                                          |
 | `provisioning`, henüz adım yok | `Preparing the workspace…`                                  |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Bu sorgu, bağlama işi _diğer_ tarafta gerçekleştiği için vardır: üye te
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Bağlantı kimlik bilgileri     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Yarım kalmış rehberli kurulum | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Eski Slack dosyaları          | `<dataDir>/<workspaceId>/slack_credentials.json` ve `slack_app_setup.json`; bir kez okunur ve yerinde taşınır |
 
 Kimlik bilgileri, çalışma alanının veritabanının içinde değil yanında durur: bir çalışma alanını silmek sohbet token'larını da onunla götürür ve `workspace.export` veya bir yedek `workspace.db` dosyasını kopyalar — böylece başkasına verilen bir çalışma alanı canlı bot token'ları taşımaz. Yazmalar atomiktir (geçici dosya artı yeniden adlandırma) ve yalnızca sahibinin erişimine sıkılaştırılır.
 

@@ -2,7 +2,7 @@
 title: Passaggi delle pipeline
 description: Riferimento per i tipi di passaggio delle pipeline, le chiavi del corpo dei passaggi, la loro configurazione e i risultati dei passaggi.
 slug: it-IT/manuale/riferimento/passaggi-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Un passaggio di pipeline ha due assi indipendenti:
@@ -61,7 +61,7 @@ Nodo generico di prompt e invio: renderizza il prompt, invia l'agente in una con
 
 ### `pipeline.condition`
 
-Corpo del router — legge `config.extras`, valuta una condizione e restituisce `StepResult.route(key)`. Le condizioni **non** sono espressioni JavaScript; sono supportate tre forme di scrittura, in ordine di priorità:
+Corpo del router — legge `config.extras`, valuta una condizione e restituisce `StepResult.route(key)`. Le condizioni **non** sono espressioni JavaScript; sono supportate due forme di scrittura, in ordine di priorità:
 
 - **Albero di predicati** (`extras.predicate`) — un albero booleano che instrada `"true"` / `"false"`. Ogni nodo è una map con un `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — vero quando uno qualsiasi dei percorsi elencati esiste su disco; `negate` lo inverte; `recursive` cerca anche nelle sottodirectory (saltando `.git`, `node_modules`, `build`, `.dart_tool`). I percorsi relativi vengono risolti rispetto a `state[baseKey]` (predefinito `repo_local_path`), altrimenti rispetto alla directory dello spazio di lavoro dell'esecuzione.
@@ -69,19 +69,28 @@ Corpo del router — legge `config.extras`, valuta una condizione e restituisce 
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — gruppi booleani.
   - `{"type": "not", "of": <predicate>}` — negazione.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; instrada verso il primo caso che il valore di stato contiene senza distinguere maiuscole e minuscole, altrimenti verso `default`.
-- **Confronto** (legacy, a livello superiore `extras.left` / `extras.op` / `extras.right`) — equivalente a un predicato `comparison`, mantenuto per i modelli creati prima dell'albero.
 
 Gli archi in uscita dal nodo portano un `routeKey` che deve corrispondere alla chiave restituita.
 
 ### `prReview.comment`
 
-Pubblica le segnalazioni consolidate come commento di revisione della PR tramite il client PR di GitHub.
+Pubblica le segnalazioni consolidate, oppure il `extras.message` del passo stesso, come commento di revisione della PR tramite il client PR di GitHub.
 
-| Chiave di stato           | Descrizione                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (obbligatorio)                  |
-| `pr_number`               | Numero della PR — int o stringa numerica (obbligatorio) |
-| `consolidated_findings`   | Corpo del commento (obbligatorio)            |
+| Chiave                    | Letta da            | Descrizione                                                       |
+| ------------------------- | ------------------- | ----------------------------------------------------------------- |
+| `repo_full_name`          | payload del trigger | `owner/repo` (obbligatorio)                                       |
+| `pr_number`               | payload del trigger | Numero della PR, un int positivo o una stringa numerica (obbligatorio) |
+| `consolidated_findings`   | stato               | Corpo del commento quando il passo non ha un `message`            |
+
+La pull request arriva solo dal payload del trigger dell'esecuzione, mai da uno stato che un passo può riscrivere durante l'esecuzione. Le @-menzioni nel testo pubblicato vengono rese inerti, così il commento non notifica nessuno.
+
+Un `message` rende i suoi segnaposto `{{key}}` così:
+
+- `repo_full_name`, `repo_owner`, `repo_name` e `pr_number` rendono la pull request su cui il passo pubblica.
+- `author` viene reso dal payload del trigger, così com'è, solo quando è un nome utente valido sul forge; in caso contrario il passo fallisce.
+- `consolidated_findings` viene reso come markdown grezzo, con le sue @-menzioni rese inerti.
+- Ogni altro valore viene reso come testo letterale: su una riga, con la punteggiatura markdown escapata e le @-menzioni rese inerti.
+- Un segnaposto che non risolve a nulla fa fallire il passo.
 
 Restituisce `StepResult.terminal` con `comment_review_id` e `commented_at` nello stato.
 

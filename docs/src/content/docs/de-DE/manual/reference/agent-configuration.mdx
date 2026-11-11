@@ -2,7 +2,7 @@
 title: Agentenkonfiguration
 description: Jedes Feld der Agenten-Entität und die Enums, die sie verwendet.
 slug: de-DE/handbuch/referenz/agentenkonfiguration
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Diese Referenz listet jedes Feld der Agenten-Entität auf, dazu die Enums und Flags, die sie verwendet. Wie du einen Agenten in der App anlegst oder bearbeitest, steht Schritt für Schritt unter [Einen Agenten erstellen und konfigurieren](/de-DE/handbuch/anleitungen/agent-erstellen/).
@@ -79,6 +79,35 @@ Eine unveränderliche Menge von Skill-Kennungen, ohne Unterscheidung der Groß- 
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Shell-Hooks
+
+Shell-Hooks lassen den Serverinhaber eigene Skripte um einen eingebauten Harness-Lauf ausführen: einmal beim Sitzungsstart, vor jedem Tool-Aufruf und nach jedem Tool-Aufruf. Ein Hook ist beliebiger Code, daher gehören Hooks zur Host-Konfiguration. Nur der Serverinhaber richtet sie von Hand auf der Maschine des Servers ein. Es gibt keine Einstellung in der App und keine Operation, die sie schreibt.
+
+Für einen Agenten liegen die Hooks in seinem eigenen Ordner unter dem Datenverzeichnis des Servers:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` ist der Name des Ordners des Agenten im Arbeitsbereich (`agents/<slug>/`). Dieser Ordner liegt außerhalb des Speichers jedes Arbeitsbereichs, und jede Sandbox verbirgt das Datenverzeichnis, daher kann kein Mitglied, kein Lauf und kein Terminal ihn beschreiben.
+
+`hooks.json` ordnet jedem von drei Schlüsseln ein Skript zu, über einen Pfad relativ zum Hook-Ordner:
+
+| Schlüssel      | Wann er läuft                 | Was sein Exit-Code bedeutet                                    |
+| -------------- | ----------------------------- | -------------------------------------------------------------- |
+| `sessionStart` | Einmal, wenn der Lauf startet | Nichts; der Hook beobachtet nur                                |
+| `preTool`      | Vor jedem Tool-Aufruf         | `0` erlaubt den Aufruf; alles andere verweigert ihn            |
+| `postTool`     | Nach jedem Tool-Aufruf        | Nichts; der Hook beobachtet nur                                |
+
+- Jedes Skript wird als eigene ausführbare Datei gestartet, ohne Shell und ohne Argumente. Es muss daher ausführbar sein und mit einer Shebang-Zeile beginnen. Es bekommt das Ereignis als JSON auf stdin: den Ereignisnamen und bei den Tool-Hooks den Namen des Tools mit seinen Argumenten (`preTool`) bzw. seinem Ergebnis (`postTool`).
+- Ein Hook läuft als einer der Tool-Prozesse des Laufs, im Ordner des Agenten für diesen Lauf. Lässt der Server Agenten in einer Sandbox laufen, läuft er in der Sandbox des Laufs. Er bekommt eine minimale Umgebung und keine Anmeldedaten des Laufs: kein Forge- oder Anbieter-Token und keinen Zugriff auf das Gateway.
+- Jeder Hook hat 30 Sekunden. Seine Ausgabe wird gelesen und verworfen.
+- `preTool` schließt im Fehlerfall: Ein Exit-Code ungleich null, ein Timeout oder ein Skript, das nicht starten kann, verweigert den Tool-Aufruf.
+- Ein Pfad, der absolut ist, fehlt oder den Hook-Ordner verlässt (Links aufgelöst), wird abgelehnt, und das Log des Laufs sagt, welcher Hook warum abgelehnt wurde. Ein abgelehnter oder unlesbarer `preTool`-Hook verweigert jeden Tool-Aufruf, bis er behoben ist.
+- Ein `hooks`-Block in `.agents/harness.json`, egal ob im Repository oder im eigenen Ordner des Agenten, wird ignoriert. Ein Repository ist oft fremder Code, und den Ordner des Agenten können Mitglieder und Läufe beschreiben. Das Log des Laufs sagt, dass der Block ignoriert wurde, und wo Hooks stattdessen gelesen werden.
+
+Shell-Hooks gelten nur für den eingebauten Harness. Ist ein `preTool`- oder `postTool`-Hook konfiguriert, ruft der Lauf seine Tools nacheinander auf.
 
 ## AgentLiveState (abgeleitet)
 

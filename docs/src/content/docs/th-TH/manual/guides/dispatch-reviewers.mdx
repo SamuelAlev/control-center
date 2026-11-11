@@ -2,7 +2,7 @@
 title: สั่งงานเอเจนต์รีวิวเวอร์
 description: ส่งเอเจนต์รีวิวเวอร์ผู้เชี่ยวชาญไปที่ PR จากหน้า PR เครื่องมือ MCP หรือขั้นตอนไปป์ไลน์
 slug: th-TH/คู่มือ/วิธีทำ/สั่งงานรีวิวเวอร์
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 คู่มือนี้แสดงวิธีสั่งงานเอเจนต์รีวิวเวอร์ให้รีวิว pull request
@@ -81,7 +81,7 @@ dispatch_reviewers(
 | เหตุการณ์              | เกิดเมื่อ                                                                                                     | คีย์เพย์โหลด                                                       |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | PR ถูกเปิด **ผ่าน Control Center** — พื้นผิวการเขียน PR หรือเอเจนต์ที่เรียก `pr_lifecycle.publish`              | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | บริการโพลล์ PR พบ PR ที่เปิดบน GitHub โดยตรง                                                                  | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | บริการโพลล์ PR พบ PR ที่เปิดบน GitHub โดยตรง                                                                  | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 PR ที่เปิดบน github.com ไม่เคยทำให้เกิด `PullRequestPublished` ดังนั้นเทมเพลตที่
 เชื่อมไว้กับเฉพาะเหตุการณ์นั้นจะไม่เห็นมัน สังเกตด้วยว่า `PullRequestPublished`

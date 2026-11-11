@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_harness_runtime/cc_harness_runtime.dart'
+    show isNonPublicAddress;
 import 'package:cc_server_core/src/notification_wire.dart';
 import 'package:cc_server_core/src/push/web_push_repository.dart';
 import 'package:cc_server_core/src/push/web_push_service.dart';
@@ -121,13 +123,16 @@ void main() {
         '::ffff:127.0.0.1',
       ]) {
         expect(
-          isPublicPushAddress(InternetAddress(address)),
-          isFalse,
+          isNonPublicAddress(InternetAddress(address)),
+          isTrue,
           reason: address,
         );
       }
-      expect(isPublicPushAddress(InternetAddress('8.8.8.8')), isTrue);
-      expect(isPublicPushAddress(InternetAddress('2607:f8b0:4000::1')), isTrue);
+      expect(isNonPublicAddress(InternetAddress('8.8.8.8')), isFalse);
+      expect(
+        isNonPublicAddress(InternetAddress('2607:f8b0:4000::1')),
+        isFalse,
+      );
     },
   );
 

@@ -2,7 +2,7 @@
 title: Semakan AI
 description: Bagaimana satu pull request menjadi pull request yang telah disemak — ruang semakan, nod semakan dan konsensus rakan sebaya, kohort dan paksi, keputusan Ship/Hold/Block, dan sebab penerbitan kekal sebagai langkah yang anda ambil.
 slug: ms-MY/manual-pengguna/konsep/semakan-ai
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Bentuk satu semakan
@@ -210,7 +210,7 @@ supaya sesuatu semakan tidak pernah diterbitkan dua kali. Apabila anda menekan
 - Keputusan **Block** diserahkan sebagai `REQUEST_CHANGES`; **Hold** sebagai
   `COMMENT`; **Ship** sebagai `APPROVE` daripada butang itu
   (`approve_on_ship: true`). Alat MCP menyiarkan sebagai automasi dan sentiasa membiarkan Ship sebagai `COMMENT`.
-- Butang **Terbitkan ke GitHub** menghantar semakan sebagai orang yang menekannya, menggunakan log masuk GitHub mereka sendiri: pintu keluaran ialah milik mereka, maka semakan itu juga. Penerbitan tanpa orang di belakangnya ialah automasi, dan automasi tidak pernah meluluskan: Ship dihantar sebagai `COMMENT`, dan pada Control Center Connect siaran itu dikreditkan dengan awalan `**Control Center** (for @login):`.
+- Butang **Terbitkan ke GitHub** menghantar semakan sebagai orang yang menekannya, menggunakan log masuk GitHub mereka sendiri: pintu keluaran ialah milik mereka, maka semakan itu juga. Penerbitan tanpa orang di belakangnya ialah automasi, dan automasi tidak pernah meluluskan: Ship dihantar sebagai `COMMENT`, dan @-sebutan dalam penemuan dinyahaktifkan supaya siaran tidak memberitahu sesiapa. Siaran itu dihantar oleh bot, kecuali pada apl bersama Control Center Connect apabila pengendali Connect belum menyenaraikan pemasangan ini: maka ia dihantar menggunakan log masuk GitHub orang yang bertanggungjawab sendiri, atas nama mereka, dan dikreditkan dengan awalan `**Control Center** (for @login):`. Pelayan atau ruang kerja dengan Apl GitHub sendiri sentiasa menyiarkannya sebagai bot. Ejen yang memanggil alat MCP hanya boleh menerbitkan semakan ruangnya sendiri.
 
 Penerbitan mengisytiharkan kelas tindakan `prPublish`, jadi titik kawalan
 guardrail mengawalnya seperti sebarang tindakan yang mengubah keadaan — ia

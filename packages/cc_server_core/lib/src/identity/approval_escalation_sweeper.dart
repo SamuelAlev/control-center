@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
@@ -44,17 +43,11 @@ class ApprovalEscalationSweeper {
        _now = now ?? DateTime.now;
 
   /// Cache kind holding per-approval sweep STATE (escalation tiers). The
-  /// POLICY no longer lives here: `caches` rows are pruned by `updatedAt`
-  /// age, so a policy configured once and not edited for the retention
-  /// window was silently deleted and the workspace reverted to defaults.
-  /// Tier state is genuinely staleness-bounded (a pruned row costs at most
-  /// one duplicate escalation comment), so it stays.
+  /// POLICY lives in the durable [ApprovalRoutingPolicyRepository], never
+  /// here: `caches` rows are pruned by `updatedAt` age. Tier state is
+  /// staleness-bounded (a pruned row costs at most one duplicate escalation
+  /// comment), so the cache suits it.
   static const cacheKind = 'approval_routing';
-
-  /// Legacy cache key the policy JSON used to live under — still read once
-  /// per workspace as a migrate-on-read fallback so an already-configured
-  /// install keeps its policy across the upgrade.
-  static const policyKey = 'policy';
 
   final ApprovalRepository _approvals;
   final WorkspaceRepository _workspaces;
@@ -86,28 +79,9 @@ class ApprovalEscalationSweeper {
   }
 
   /// Loads [workspaceId]'s routing policy (defaults when unset/malformed).
-  ///
-  /// Reads the durable store first; on a miss, falls back ONCE to the legacy
-  /// `caches` row and migrates it forward, so an install configured before
-  /// the durable table existed keeps its policy (unless the retention sweep
-  /// already ate the row — the bug that forced this move).
   Future<ApprovalRoutingPolicy> policyFor(String workspaceId) async {
     try {
-      final stored = await _policies.get(workspaceId);
-      if (stored != null) {
-        return stored;
-      }
-      final raw = await _cache.read(workspaceId, cacheKind, policyKey);
-      if (raw == null) {
-        return ApprovalRoutingPolicy.defaults;
-      }
-      final decoded = jsonDecode(raw);
-      if (decoded is! Map<String, dynamic>) {
-        return ApprovalRoutingPolicy.defaults;
-      }
-      final legacy = ApprovalRoutingPolicy.fromJson(decoded);
-      await _policies.set(workspaceId, legacy);
-      return legacy;
+      return await _policies.get(workspaceId) ?? ApprovalRoutingPolicy.defaults;
     } catch (_) {
       return ApprovalRoutingPolicy.defaults;
     }

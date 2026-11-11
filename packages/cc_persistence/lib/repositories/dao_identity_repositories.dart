@@ -11,8 +11,9 @@ import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_invite_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
+import 'package:cc_domain/core/domain/value_objects/audit_log_filter.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
@@ -27,6 +28,7 @@ import 'package:cc_persistence/database/tables/workspace_routes_table.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/identity_mapper.dart';
+import 'package:cc_persistence/src/log/cc_persistence_log.dart';
 import 'package:drift/drift.dart';
 
 /// DAO-backed [UserRepository].
@@ -61,11 +63,28 @@ class DaoUserRepository implements UserRepository {
     return row == null ? null : _mapper.userToDomain(row);
   }
 
+  /// Fails closed: when more than one account holds a case variant of
+  /// [email] vouched, none of them is the answer, and that is logged once.
   @override
-  Future<User?> getByEmail(String email) async {
-    final row = await _dao.getByEmail(email);
-    return row == null ? null : _mapper.userToDomain(row);
+  Future<User?> getByVerifiedEmail(String email) async {
+    final rows = await _dao.getAllByVerifiedEmail(email);
+    if (rows.length > 1) {
+      if (_ambiguousReported.add(rows.map((r) => r.id).join(' '))) {
+        CcPersistenceLog.warning(
+          'users: ${rows.length} accounts hold one verified email address '
+          '(${rows.map((r) => r.id).join(', ')}); none is matched by it',
+        );
+      }
+      return null;
+    }
+    return rows.isEmpty ? null : _mapper.userToDomain(rows.single);
   }
+
+  static final _ambiguousReported = <String>{};
+
+  @override
+  Future<List<User>> getAllByEmail(String email) async =>
+      (await _dao.getAllByEmail(email)).map(_mapper.userToDomain).toList();
 
   @override
   Future<User?> getBySsoSubject(String issuer, String subject) async {
@@ -74,21 +93,35 @@ class DaoUserRepository implements UserRepository {
   }
 
   @override
-  Future<void> upsert(User user) => _dao.upsert(
-    UsersTableCompanion(
-      id: Value(user.id),
-      handle: Value(user.handle),
-      displayName: Value(user.displayName),
-      email: Value(user.email),
-      avatarRef: Value(user.avatarRef),
-      gitAuthorName: Value(user.gitAuthorName),
-      gitAuthorEmail: Value(user.gitAuthorEmail),
-      ssoSubject: Value(user.ssoSubject),
-      ssoIssuer: Value(user.ssoIssuer),
-      deactivatedAt: Value(user.deactivatedAt),
-      onboardingFinishedAt: Value(user.onboardingFinishedAt),
-      createdAt: Value(user.createdAt),
-    ),
+  Future<void> upsert(User user) async {
+    if (!await _dao.upsert(_companion(user))) {
+      throw UsernameRefusedException(UsernameRefusal.taken);
+    }
+  }
+
+  @override
+  Future<User> insertWithFreeHandle(User user) async {
+    final handle = await _dao.insertWithFreeHandle(
+      _companion(user),
+      Username.candidates(Username.parse(user.handle)).map((u) => u.value),
+    );
+    return user.copyWith(handle: handle);
+  }
+
+  static UsersTableCompanion _companion(User user) => UsersTableCompanion(
+    id: Value(user.id),
+    handle: Value(user.handle),
+    displayName: Value(user.displayName),
+    email: Value(user.email),
+    emailVerified: Value(user.emailVerified),
+    avatarRef: Value(user.avatarRef),
+    gitAuthorName: Value(user.gitAuthorName),
+    gitAuthorEmail: Value(user.gitAuthorEmail),
+    ssoSubject: Value(user.ssoSubject),
+    ssoIssuer: Value(user.ssoIssuer),
+    deactivatedAt: Value(user.deactivatedAt),
+    onboardingFinishedAt: Value(user.onboardingFinishedAt),
+    createdAt: Value(user.createdAt),
   );
 
   @override
@@ -445,101 +478,49 @@ class DaoUserActivityRepository implements UserActivityRepository {
       .map((rows) => rows.map(_mapper.activityToDomain).toList());
 
   @override
-  Future<UserActivityPage> getPage(
+  Future<List<UserActivityEntry>> pageRows(
     String workspaceId, {
-    int limit = defaultUserActivityPageSize,
-    String? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) async {
-    final decoded = ActivityCursor.decode(cursor);
-    final rows = await _dao(workspaceId).getPageRows(
-      workspaceId,
-      limit: limit + 1,
-      cursor: decoded,
-      filter: filter,
-    );
-    return _assemblePage(workspaceId, rows, limit: limit, filter: filter);
-  }
+    ActivityCursor? olderThan,
+    required int limit,
+    AuditLogFilter filter = const AuditLogFilter(),
+  }) async => (await _dao(workspaceId).pageRows(
+    workspaceId,
+    olderThan: olderThan,
+    limit: limit,
+    filter: filter,
+  )).map(_mapper.activityToDomain).toList();
 
   @override
-  Stream<UserActivityPage> watchPage(
+  Future<List<UserActivityEntry>> newerRows(
     String workspaceId, {
-    int limit = defaultUserActivityPageSize,
-    String? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) {
-    final decoded = ActivityCursor.decode(cursor);
-    return _dao(workspaceId)
-        .watchPageRows(
-          workspaceId,
-          limit: limit + 1,
-          cursor: decoded,
-          filter: filter,
-        )
-        .asyncMap(
-          (rows) =>
-              _assemblePage(workspaceId, rows, limit: limit, filter: filter),
-        );
-  }
-
-  Future<UserActivityPage> _assemblePage(
-    String workspaceId,
-    List<UserActivityTableData> rows, {
+    required ActivityCursor newerThan,
     required int limit,
-    required UserActivityFilter filter,
-  }) async {
-    final hasMore = rows.length > limit;
-    final page = hasMore ? rows.sublist(0, limit) : rows;
-    final total = await _dao(
-      workspaceId,
-    ).countForWorkspace(workspaceId, filter: filter);
-    if (page.isEmpty) {
-      return UserActivityPage(
-        entries: const [],
-        total: total,
-        start: total == 0 ? 1 : total + 1,
-      );
-    }
-    final first = ActivityCursor(
-      createdAtMs: page.first.createdAt.toUtc().millisecondsSinceEpoch,
-      id: page.first.id,
-    );
-    final start =
-        await _dao(
-          workspaceId,
-        ).countNewerThan(workspaceId, first, filter: filter) +
-        1;
-    String? nextCursor;
-    if (hasMore) {
-      nextCursor = ActivityCursor(
-        createdAtMs: page.last.createdAt.toUtc().millisecondsSinceEpoch,
-        id: page.last.id,
-      ).encode();
-    }
-    String? prevCursor;
-    if (start > 1) {
-      final newer = await _dao(workspaceId).getNewerRows(
-        workspaceId,
-        cursor: first,
-        limit: limit + 1,
-        filter: filter,
-      );
-      if (newer.length > limit) {
-        final boundary = newer[limit];
-        prevCursor = ActivityCursor(
-          createdAtMs: boundary.createdAt.toUtc().millisecondsSinceEpoch,
-          id: boundary.id,
-        ).encode();
-      }
-    }
-    return UserActivityPage(
-      entries: page.map(_mapper.activityToDomain).toList(growable: false),
-      total: total,
-      start: start,
-      nextCursor: nextCursor,
-      prevCursor: prevCursor,
-    );
-  }
+    AuditLogFilter filter = const AuditLogFilter(),
+  }) async => (await _dao(workspaceId).newerRows(
+    workspaceId,
+    newerThan: newerThan,
+    limit: limit,
+    filter: filter,
+  )).map(_mapper.activityToDomain).toList();
+
+  @override
+  Future<int> count(
+    String workspaceId, {
+    AuditLogFilter filter = const AuditLogFilter(),
+    ActivityCursor? newerThan,
+  }) => _dao(
+    workspaceId,
+  ).count(workspaceId, filter: filter, newerThan: newerThan);
+
+  @override
+  Future<Map<String, int>> countByActor(
+    String workspaceId, {
+    AuditLogFilter filter = const AuditLogFilter(),
+  }) => _dao(workspaceId).countByActor(workspaceId, filter: filter);
+
+  @override
+  Stream<void> watchChanges(String workspaceId) =>
+      _dao(workspaceId).watchChanges();
 }
 
 /// DAO-backed [UserPreferencesRepository].

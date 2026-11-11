@@ -6,14 +6,16 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-
+import 'package:cc_infra/src/process/agent_run_client_launcher.dart';
 import 'package:cc_infra/src/process/child_process.dart';
-import 'package:cc_infra/src/sandboxing/git_global_config.dart';
+import 'package:cc_infra/src/sandboxing/agent_run_client_access.dart';
+import 'package:cc_infra/src/sandboxing/hidden_roots.dart';
+import 'package:cc_infra/src/sandboxing/host_executables.dart';
 import 'package:cc_infra/src/sandboxing/http_proxy.dart';
 import 'package:cc_infra/src/sandboxing/linux_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/macos_sandbox.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/socks_proxy.dart';
 import 'package:cc_infra/src/sandboxing/violation_monitor.dart';
 import 'package:meta/meta.dart';
@@ -33,10 +35,29 @@ class SandboxManager {
   /// on the first call to [wrap]; construction itself is cheap so Riverpod
   /// can keep using a synchronous `Provider`.
   ///
-  /// The git environment is the one the user's global git config is read
-  /// in (tests point `GIT_CONFIG_GLOBAL` at a scratch file); null is this
-  /// process's own.
-  SandboxManager({@visibleForTesting this._gitEnvironment});
+  /// [hiddenPaths] are the server's private paths (its data directory and
+  /// `.env`). Every sandbox this manager wraps can neither read nor write
+  /// them, except for the paths inside them its own config names.
+  ///
+  /// [hostExecutables] are where the host finds the programs it runs outside
+  /// any sandbox; nothing in them may change from inside one. They are found
+  /// once, here, from this process's `PATH` and the install prefixes the
+  /// binary resolver probes, unless given.
+  ///
+  /// [agentRunClient] are the files the agent run client runs from
+  /// ([AgentRunClientLauncher.files] of this process unless given). A
+  /// process that cannot find the client (a Flutter engine) admits none, so
+  /// a shim in its sandboxes fails, and the hook blocks.
+  SandboxManager({
+    required List<String> hiddenPaths,
+    HostExecutableDirs? hostExecutables,
+    List<String>? agentRunClient,
+  }) : hiddenPaths = List.unmodifiable(hiddenPaths),
+       hostExecutables =
+           hostExecutables ?? scanHostExecutables(protectedRoots: hiddenPaths),
+       agentRunClient = List.unmodifiable(
+         agentRunClient ?? _currentAgentRunClientFiles(),
+       );
 
   /// Injectable constructor for tests. Bypasses lazy initialization —
   /// the caller supplies pre-built proxies, monitor and profiles dir.
@@ -46,10 +67,29 @@ class SandboxManager {
     this._socksProxy,
     this._violationMonitor,
     this._profilesDir,
-  }) : _initFuture = Future.value(),
-       _gitEnvironment = null;
+    this.hiddenPaths = const [],
+    this.hostExecutables = HostExecutableDirs.none,
+    this.agentRunClient = const [],
+  }) : _initFuture = Future.value();
 
-  final Map<String, String>? _gitEnvironment;
+  /// Server-private paths hidden from every sandbox; see [SandboxManager.new].
+  ///
+  /// Applied here rather than by each launcher because every sandboxed
+  /// process — a dispatch's CLI, the harness `bash` tool, a space terminal, a
+  /// pipeline shell step — is wrapped by this manager, and a launcher that
+  /// forgot them would expose every credential the server stores.
+  final List<String> hiddenPaths;
+
+  /// The host's executable directories; see [SandboxManager.new]. Applied
+  /// here for the same reason as [hiddenPaths]: every sandbox is wrapped by
+  /// this manager, and one that left them writable would let a run choose
+  /// what the host executes next.
+  final HostExecutableDirs hostExecutables;
+
+  /// The agent run client's files; see [SandboxManager.new]. Every sandbox
+  /// may run it and none may change it ([withAgentRunClient]): the run's
+  /// shims and Claude Code's hook start it inside the sandbox.
+  final List<String> agentRunClient;
 
   /// Maps `(scope, hostname)` to a loopback `host:port` a run may reach.
   ///
@@ -85,6 +125,10 @@ class SandboxManager {
     http: _sessions[sessionId]?.httpProxy,
     socks: _sessions[sessionId]?.socksProxy,
   );
+
+  /// The sessions holding resources now, by id.
+  @visibleForTesting
+  Iterable<String> get sessionIds => _sessions.keys;
 
   /// Directory under `$TMPDIR` where per-session Seatbelt profiles are kept.
   Directory get profilesDir => _profilesDir!;
@@ -143,6 +187,15 @@ class SandboxManager {
     required List<String> argv,
     String? workingDirectory,
   }) async {
+    config = withHiddenRoots(config, hiddenPaths);
+    if (!hostExecutables.isEmpty) {
+      config = config.copyWith(
+        filesystem: config.filesystem.copyWith(
+          hostExecutables: hostExecutables,
+        ),
+      );
+    }
+    config = withAgentRunClient(config, agentRunClient);
     // Refuse unenforceable write-deny globs before acquiring per-session
     // proxies or creating bridges. bwrap can mask existing paths but cannot
     // prevent a sandboxed process from creating a NEW matching secret file.
@@ -181,10 +234,6 @@ class SandboxManager {
         httpProxyPort: session.httpProxy?.port,
         socksProxyPort: session.socksProxy?.port,
         sessionTmpDir: session.ensureTmpDir(),
-        // Read per spawn: the user may turn SSH signing on or off any time.
-        sshSigningProgram: await globalSshSigningProgram(
-          environment: _gitEnvironment,
-        ),
       );
       session.profilePaths.add(result.profilePath);
       return SandboxWrapResult(
@@ -433,5 +482,14 @@ class _SessionState {
     }
     await http?.close();
     await socks?.close();
+  }
+}
+
+/// This process's agent run client files, or none where it cannot be found.
+List<String> _currentAgentRunClientFiles() {
+  try {
+    return AgentRunClientLauncher.current.files;
+  } on StateError {
+    return const [];
   }
 }

@@ -1,4 +1,4 @@
-import 'package:cc_infra/src/newsfeed/scriptlet_library.dart';
+import 'package:cc_domain/features/newsfeed/domain/helpers/scriptlet_library.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

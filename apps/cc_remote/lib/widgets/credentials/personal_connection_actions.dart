@@ -2,6 +2,11 @@ part of 'personal_connection_card.dart';
 
 mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
   final _token = TextEditingController();
+  final _email = TextEditingController();
+
+  /// Bitbucket API tokens authenticate with the Atlassian account's email,
+  /// stored together as `email:token`.
+  bool get _needsEmail => widget.providerId == 'bitbucket';
   String? _error;
   bool _busy = false;
   bool _confirmRemove = false;
@@ -20,13 +25,25 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
 
   /// Stores a pasted GitLab or Bitbucket token. Sign-in lanes never take one.
   Future<void> _save() async {
-    final token = _token.text.trim();
+    var token = _token.text.trim();
     if (!_authorized ||
         _busy ||
         token.isEmpty ||
         widget.lane != null ||
         !widget.isForge) {
       return;
+    }
+    if (_needsEmail) {
+      final email = _email.text.trim();
+      if (!RegExp(r'^[^\s@:]+@[^\s@:]+\.[^\s@:]+$').hasMatch(email)) {
+        setState(
+          () => _error = AppLocalizations.of(
+            context,
+          ).credentialsAtlassianEmailInvalid,
+        );
+        return;
+      }
+      token = '$email:$token';
     }
     final providerId = widget.providerId;
     final workspaceId = widget.workspaceId;
@@ -36,10 +53,10 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
     });
     try {
       final client = ref.read(rpcClientProvider).requireValue;
+      // The person's own token for the forge, used in every workspace.
       await client.call('credentials.setForgeToken', {
         'forge': providerId,
         'token': token,
-        'workspace_id': workspaceId,
       });
       if (!mounted ||
           widget.providerId != providerId ||
@@ -47,14 +64,16 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
         return;
       }
       _token.clear();
+      _email.clear();
       if (!_authorized) return;
       setState(() => _editing = false);
       _refresh();
-    } on Object {
+    } on Object catch (e) {
       if (mounted) {
+        final l = AppLocalizations.of(context);
         setState(
-          () =>
-              _error = AppLocalizations.of(context).credentialsOperationFailed,
+          () => _error =
+              _tokenRefusalMessage(l, e) ?? l.credentialsOperationFailed,
         );
       }
     } finally {
@@ -62,8 +81,29 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
     }
   }
 
+  /// Why the server refused the pasted token, in words the person can act
+  /// on; null when [error] is not such a refusal.
+  String? _tokenRefusalMessage(AppLocalizations l, Object error) {
+    final refusal = error is RemoteRpcException
+        ? PersonTokenRefusal.ofErrorData(error.data)
+        : null;
+    return switch (refusal) {
+      PersonTokenRefusal.unreachable => l.credentialsTokenUnreachable(
+        widget.name,
+      ),
+      PersonTokenRefusal.rejected => l.credentialsTokenRejected(widget.name),
+      PersonTokenRefusal.wrongKind => l.credentialsTokenWrongKind(widget.name),
+      PersonTokenRefusal.narrowScope => l.credentialsTokenNarrowScope(
+        // The forges' own scope names, never translated.
+        _needsEmail ? 'write:pullrequest:bitbucket' : 'api',
+      ),
+      PersonTokenRefusal.expired => l.credentialsTokenExpired,
+      null => null,
+    };
+  }
+
   Future<void> _remove() async {
-    if (!_authorized || _busy || !_confirmRemove || widget.hostManaged) return;
+    if (!_authorized || _busy || !_confirmRemove) return;
     final providerId = widget.providerId;
     final workspaceId = widget.workspaceId;
     final lane = widget.lane;
@@ -79,10 +119,7 @@ mixin _PersonalCredentialActions on ConsumerState<PersonalConnectionCard> {
           client,
         ).disconnect(lane, workspaceId: workspaceId);
       } else {
-        await client.call('credentials.clearForgeToken', {
-          'forge': providerId,
-          'workspace_id': workspaceId,
-        });
+        await client.call('credentials.clearForgeToken', {'forge': providerId});
       }
       if (!mounted ||
           !_authorized ||

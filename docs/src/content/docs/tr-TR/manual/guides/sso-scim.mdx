@@ -2,7 +2,7 @@
 title: SCIM ile kullanıcı sağlama
 description: IdP’nizin Control Center hesaplarını otomatik olarak oluşturmasını, güncellemesini ve sağlamayı kaldırmasını sağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Yaşam döngüsü denetimi istediğinizde bu kılavuzu kullanın — kullanıcı
@@ -35,7 +35,8 @@ ve diğerleri) tam da bunun için kullandığı push protokolüdür.
    - **User id**: `userName` (e-posta) veya `externalId` — ikisi de eşleşir
 4. Tek bir kullanıcıyla test edin: kullanıcıyı IdP’den gönderin ve göründüğünü
    doğrulayın (SCIM create işlemi, sağlayıcının `externalId` değerini hesaba
-   sabitler; bu, ilk SSO oturum açmasının yaptığı sabitlemenin aynısıdır).
+   kaydeder; sonraki SCIM çağrıları hesabı bu sayede bulur), ardından herkese
+   açmadan önce bu kişinin SSO ile oturum açmasını sağlayın.
 
 ## Sağlamayı kaldırma ne yapar
 
@@ -55,6 +56,7 @@ bir davet ya da giriş sırasındaki otomatik üye ekleme ilkesi gerekir.
 
 ## Sorun giderme
 
+- **Sağlanan bir kişi "This account is already linked to a different SSO identity" mesajıyla reddedilir** — bilinen bir sınırlama: `externalId` ile SCIM’in oluşturduğu bir hesap o kimliğe bağlı kalır ve hesaba yapılan ilk SSO oturum açması reddedilir. Bu düzelene kadar `externalId` olmadan sağlayın ya da anında sağlamanın (JIT) ilk oturum açmada hesabı oluşturmasına izin verin ve sağlamayı kaldırmak için SCIM’i kullanın.
 - **Her çağrıda 401** — token değişmiş; yeniden oluşturun ve IdP’yi
   güncelleyin.
 - **Uç noktaya erişilemiyor** — tünel çalışmıyor ya da sunucu yalnızca röle

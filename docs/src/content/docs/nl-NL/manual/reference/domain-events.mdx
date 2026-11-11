@@ -2,7 +2,7 @@
 title: Domeingebeurtenissen
 description: Volledige catalogus van de 54 domeingebeurtenissen, hun payloads en de abonnees aan de serverkant die ze consumeren.
 slug: nl-NL/handleiding/referentie/domeingebeurtenissen
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Gebeurtenissenbus
@@ -148,14 +148,13 @@ Verschillende subsystemen die van buitenaf gebeurtenisgestuurd lijken, zijn dat 
 
 | Subdomein           | Hoe de status wél verandert                                                                             |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Geheugen            | `record_memory_fact` en vrienden schrijven en geven terug; recall leest. Niets publiceert bij een feit of conflict |
+| Geheugen            | `propose_fact` en vrienden schrijven en geven terug; recall leest. Niets publiceert bij een feit of conflict |
 | Orkestratie         | Het voorstel, de goedkeuring ervan en de gegenereerde pipelinerun zijn rijen en RPC-aanroepen           |
 | Plandocumenten      | `submit_plan` schrijft een revisie; goedkeuring materialiseert een orkestratie. Geen van beide wordt aangekondigd |
 | Artefacten          | `publish_artifact` / `revise_artifact` schrijven revisies rechtstreeks                                  |
 | Goedkeuringen       | Escalatie wordt binnen de goedkeuringsworkflowservice afgehandeld                                       |
 | Ticketsynchronisatie | De leverancierscoördinator abonneert zich op de ticketgebeurtenissen hierboven; inkomende webhooks worden rechtstreeks toegepast |
 | Agendaverversing    | Een sync upsert afspraken en de client leest opnieuw; er is geen verversingsbroadcast                   |
-| Worktreemerges      | Vastgelegd in `worktree_merge_log` en daarvandaan gelezen                                               |
 
 ## Abonnees
 
@@ -190,7 +189,7 @@ Elke abonnee hieronder wordt geconstrueerd in `runCcServer` (of in een service d
 
 `TicketAssigned` is een audit- en meldingssignaal en een pipelinetrigger. Toewijzing aan een agent legt eigenaarschap vast en start geen run — er is geen ticketdispatcher. Toewijzing aan een team (`assignedTeamId` ingesteld) is de uitzondering: `TeamRoutingService` dispatcht de teamleider.
 
-`TicketRemoteSyncHandler` is gedeclareerd maar wordt nooit geconstrueerd in productiecode, dus hij abonneert zich vandaag op niets. De client-side `NotificationEventMapper` wordt alleen in zijn eigen test geconstrueerd — het is het overblijfsel van het in-process-pad van vóór de client/server-splitsing. Live toasts komen uit de wire frames hieronder.
+Live toasts komen uit de wire frames hieronder.
 
 ## Meldingstoewijzing
 

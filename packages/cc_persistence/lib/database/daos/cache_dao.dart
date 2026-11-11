@@ -92,6 +92,18 @@ class CacheDao extends DatabaseAccessor<WorkspaceDatabase>
     return true;
   });
 
+  /// Every entry of `(workspaceId, kind)` with when it was last written.
+  /// For kinds that hold a handful of durable rows, not for SWR payloads.
+  Future<List<({String key, String payload, DateTime updatedAt})>>
+  entriesOfKind(String workspaceId, String kind) async => [
+    for (final row
+        in await (select(cachesTable)..where(
+              (t) => t.workspaceId.equals(workspaceId) & t.kind.equals(kind),
+            ))
+            .get())
+      (key: row.key, payload: row.payload, updatedAt: row.updatedAt),
+  ];
+
   /// Deletes a single entry. No-op when absent.
   Future<void> deleteEntry(String workspaceId, String kind, String key) async {
     await (delete(cachesTable)..where(

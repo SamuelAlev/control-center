@@ -2,7 +2,7 @@
 title: Ghép nối thiết bị
 description: Ghép nối điện thoại (hoặc trình duyệt hay máy tính thứ hai) với máy chủ Control Center của bạn để theo dõi đội máy từ xa.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ghep-noi-thiet-bi
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Hướng dẫn này chỉ cho bạn cách ghép nối một chiếc điện thoại với Control Center,
@@ -60,7 +60,7 @@ Không có bước chờ rồi phê duyệt: một thiết bị đã được c�
 lúc nó được tạo và cổng kết nối chỉ kiểm tra rằng thông tin xác thực còn hoạt
 động và chưa hết hạn. Hãy đối xử với mã QR và khóa ghép nối như mật khẩu và thu
 hồi bất cứ thứ gì bạn không có ý định trao ra. Cả phiên máy khách trực tiếp lẫn
-qua relay đều cần mã hóa đầu-cuối; máy khách cũ hơn không thể lùi về RPC bản rõ.
+qua relay đều cần mã hóa đầu-cuối; không có RPC bản rõ nào.
 :::
 
 ## Quản lý thiết bị đã ghép nối
@@ -76,7 +76,7 @@ phía thiết bị, nó diễn ra tức thì và không thể đảo ngược.
 Thông tin xác thực được cấp từ bảng ghép nối này có giới hạn thời gian: chúng hết
 hạn 30 ngày sau khi được phát hành và cổng kết nối đánh trượt chúng theo hướng
 đóng sau đó. Một thông tin xác thực được cấp bằng `cc_server pair` trên dòng lệnh
-**không có ngày hết hạn nào cả** — hãy thu hồi nó bằng tay khi chiếc máy mà nó
+hết hạn theo cách tương tự; hãy chạy `pair` lại để cấp một cái mới, và thu hồi nó bằng tay khi chiếc máy mà nó
 phục vụ đã ngừng sử dụng.
 
 ## Chuyển không gian làm việc từ điện thoại

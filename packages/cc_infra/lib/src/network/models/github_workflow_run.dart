@@ -70,6 +70,20 @@ class GitHubWorkflowRun {
   /// fallback display label when [name] is empty.
   final String path;
 
+  /// Display name: the explicit `name:` from the YAML, else the workflow file
+  /// basename (e.g. `tests-pr.yaml`) when the run was triggered before the
+  /// workflow was named.
+  String get displayName {
+    if (name.isNotEmpty) {
+      return name;
+    }
+    if (path.isEmpty) {
+      return '';
+    }
+    final slash = path.lastIndexOf('/');
+    return slash < 0 ? path : path.substring(slash + 1);
+  }
+
   /// Raw status string (`queued`, `in_progress`, `completed`).
   final String status;
 

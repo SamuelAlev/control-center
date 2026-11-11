@@ -155,7 +155,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get guardrailClassPrCreate => 'Pull request aç';
 
   @override
-  String get guardrailClassPrPublish => 'İnceleme yayınla veya birleştir';
+  String get guardrailClassPrPublish => 'Pull request güncelle veya birleştir';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Harici takip sistemine yaz';
@@ -2549,9 +2549,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get activityToggledMcpServer => 'MCP sunucusunu açıp kapattı';
 
   @override
-  String get activityUpdatedMcpToken => 'MCP token\'ını güncelledi';
-
-  @override
   String get activitySavedApiKey => 'Bir API anahtarı kaydetti';
 
   @override
@@ -3177,9 +3174,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String deleteConfirmName(String name) {
     return '\"$name\" silinsin mi?';
   }
-
-  @override
-  String get archiveConversation => 'Sohbeti arşivle';
 
   @override
   String get deleteFact => 'Gerçeği sil';
@@ -3868,9 +3862,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'İşletim sistemi görünümünü kullan veya sabit bir mod seç.';
 
   @override
-  String get mcpAuthToken => 'MCP kimlik doğrulama jetonu';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Bağlı sunucuda MCP sunucu denetimi kullanılamıyor.';
 
@@ -4081,9 +4072,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Sistem yazı tipi algılanmadı.';
-
-  @override
-  String get noTokenSet => 'Token ayarlanmamış — erişim kısıtsız.';
 
   @override
   String get noWorkingMemory => 'Henüz çalışma belleği notu yok.';
@@ -4571,31 +4559,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Sunucunun GitHub kimlik bilgisi $repos öğesini göremiyor. Depo bir kuruluşa aitse GitHub App\'i oraya yükleyin veya erişimi olan bir token bağlayın.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count depoya erişilemiyor',
-      one: 'Bir depoya erişilemiyor',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'GitHub App kurulumu askıya alındı';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return '$repos için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün veya erişimi olan bir token bağlayın.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Erişim yok';
 
   @override
@@ -4710,9 +4673,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Kural';
-
-  @override
-  String get runCompleted => 'Çalıştırma tamamlandı';
 
   @override
   String get running => 'Çalışıyor';
@@ -4874,9 +4834,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get setLabel => 'Ayarla';
-
-  @override
-  String get setToken => 'Token ayarla';
 
   @override
   String get settingsLabel => 'Ayarlar';
@@ -5073,9 +5030,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get skillOriginManual => 'Manuel';
 
   @override
-  String get skillOriginRegistry => 'Kayıt';
-
-  @override
   String get skillOriginRuntimeLocal => 'Yerel runtime';
 
   @override
@@ -5251,10 +5205,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Temayı değiştir';
-
-  @override
-  String get tokenConfigured =>
-      'Yapılandırıldı — istemcilerin bu token\'ı sunması gerekir.';
 
   @override
   String get topic => 'Konu';
@@ -8806,7 +8756,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Hangi araç eylemlerinin sormadan çalışacağı. Okumalar her zaman izinlidir; üst katmanlar sorar.';
+      'Control Center’ın kendi araçlarından, MCP uç noktası üzerinden ya da ajanları tarafından çağrılan hangi işlemler sormadan çalışır. Okumalar her zaman izinlidir; daha yüksek seviyeler onay ister. Bir çalışmanın içindeki sunucular, o çalışmanın eylem politikasını izler.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Her zaman sor';
@@ -12294,20 +12244,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get settingsAbout => 'Hakkında';
 
   @override
-  String get settingsScopeBadgeYou => 'SİZ';
-
-  @override
-  String get settingsScopeBadgeDevice => 'BU CİHAZ';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'ÇALIŞMA ALANI';
-
-  @override
-  String get settingsScopeBadgeServer => 'SUNUCU';
-
-  @override
   String get settingsProfileDescription =>
-      'Bu çalışma alanındaki adınız, e-postanız ve git kimliğiniz. Çalışma alanı değiştirmek bu katmanı değiştirir; kullanıcı adı, oturum açma ve cihazlar hesapta kalır.';
+      'Bu çalışma alanındaki adınız, e-postanız ve git kimliğiniz. Çalışma alanı değiştirmek bu katmanı değiştirir; kullanıcı adınız, oturum açmanız ve cihazlarınız Siz → Profil bölümünde hesabınızda kalır.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12322,48 +12260,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Bu çalışma alanındaki herkesin paylaştığı kimlik, ilke ve kurallar.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Commit atfı';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Ajan commit\'lerinde Control Center\'a atıf yapılıp yapılmayacağını seçin. Çalışma alanı yöneticileri bu seçimi çalışma alanındaki herkes için geçersiz kılabilir.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Ajana atıf';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Ajan commit\'lerinde Control Center\'a atıf yap';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Commit\'lerin yazarı ve commit\'i oluşturan kişi her zaman sizsiniz. Etkinleştirildiğinde Control Center (@usectrl) ortak yazar olarak eklenir. Devre dışı bırakıldığında commit\'lerde ajan atfı bulunmaz.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Bu çalışma alanının ayarı kişisel seçiminizin yerine geçer. Tercihiniz kaydedilir ancak burada uygulanmaz.';
-
-  @override
-  String get settingsAgentAttributionLoading => 'Atıf ayarları yükleniyor…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Ajan commit\'lerinde Control Center\'a atıf yapılıp yapılmayacağını seçin. Çalışma alanının ayarı her üyenin kişisel tercihinin yerine geçer.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Her üyenin tercihini kullan';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Control Center\'a her zaman atıf yap';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Control Center\'a hiçbir zaman atıf yapma';
+      'Bu çalışma alanındaki herkesin paylaştığı politika ve kurallar.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12731,9 +12628,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Bağlantı denetleniyor…';
-
-  @override
-  String get fromEnvironment => 'ortamdan';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13301,14 +13195,14 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Bu kurulumun GitHub uygulamasını devralan çalışma alanları tarafından kullanılır. Kendi uygulaması olan bir çalışma alanı bunu Çalışma alanı → Genel bölümünde ayarlar.';
+      'Bu sunucunun oturum açma uygulamalarını izleyen çalışma alanları tarafından kullanılır. Kendi uygulamalarını kullanan bir çalışma alanı, uygulamasını Çalışma alanı → Entegrasyonlar bölümünde ayarlar.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request konuşmaları';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Miras alan çalışma alanlarında geliştiricilerin GitHub\'da bu sunucuyla nasıl konuştuğu. Kendi App\'i olan bir çalışma alanının botu Çalışma alanı → Genel altındadır. Webhook veya genel URL olmadan çalışır — sunucu yoklar.';
+      'Bu sunucuyu izleyen çalışma alanlarında geliştiricilerin GitHub üzerinden bu sunucuyla nasıl konuşabileceği. Kendi uygulamalarını kullanan bir çalışma alanının, Çalışma alanı → Entegrasyonlar altında kendi botu vardır. Webhook veya herkese açık URL gerekmez; sunucu yoklama yapar.';
 
   @override
   String get providerAppBotLogin => 'Bot girişi';
@@ -13341,10 +13235,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Token olmadan, bu porta ulaşabilen her şey tüm araçları çağırabilir.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Araçlar';
 
   @override
@@ -13371,6 +13261,130 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Tümünü temizle';
+
+  @override
+  String get guardrailFamilyCommands => 'Komutlar';
+
+  @override
+  String get guardrailStandingApproval => 'Süreli onay';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'İzin verildi: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Önce sor: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Reddedildi: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'dallar $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'yollar $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'ana makineler $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'komutlar $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'araçlar $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return '$prefix ile başlayan komutlar';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'aynı anda en fazla $count';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'en fazla $amount kuruş';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'bu türdeki her eylem';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'veren: $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'sona erer: $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'iptal edilene kadar';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'İptal et: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'İptal edilemedi. Lütfen tekrar deneyin.';
+
+  @override
+  String get guardrailEntryInactive => 'reddedildiği sürece geçerli değil';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Aşağıda listelenen $count durumda izin veriliyor',
+      one: 'Aşağıda listelenen 1 durumda izin veriliyor',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Tüm çalışma alanı için verilen $count süreli onay buraya da uygulanır.',
+      one: 'Tüm çalışma alanı için verilen 1 süreli onay buraya da uygulanır.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Yalnızca tek tek Space veya Ajan için ayarlanmış $count süreli onay var. Görmek için yukarıda Space veya Ajan seçin.',
+      one:
+          'Yalnızca tek bir Space veya Ajan için ayarlanmış 1 süreli onay var. Görmek için yukarıda Space veya Ajan seçin.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Korumalı alan';
@@ -14185,6 +14199,12 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bir ajanın bu kopyadan bir program çalıştırması gerektiğinde yeniden sorulacak.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Yollarda ara';
+
+  @override
+  String get sandboxExecGrantsNoMatch => 'Aramanızla eşleşen izin yok';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14540,11 +14560,11 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Bu bağlantı sunucuya bir relay üzerinden ulaşıyor; dosya aktarımı taşımıyor. Yedek indirmek veya yüklemek için sunucuya doğrudan bağlanın.';
+      'Bu bağlantı için dosya aktarımı henüz ayarlanmadı. Yedeği indirmek veya yüklemek için sunucuya yeniden bağlanın.';
 
   @override
   String get backupTransferForbidden =>
-      'Sunucu reddetti. Bir çalışma alanını indirmek için yönetici rolü, geri yüklemek için sahip, tüm bir anlık görüntü için kurulumun operatörü gerekir.';
+      'Sunucu reddetti. Bir çalışma alanını indirmek için yönetici rolü gerekir. Geri yüklemek için sunucu sahibi gerekir ve bu kişinin aynı zamanda çalışma alanının sahibi olması gerekir. Tüm bir anlık görüntü için sunucu sahibi gerekir.';
 
   @override
   String get backupTransferUnsupported => 'Bu sunucuda yedekleme yüzeyi yok.';
@@ -14851,34 +14871,8 @@ class AppLocalizationsTr extends AppLocalizations {
       'Herhangi bir ortamdan pano içeriğini sormadan bu cihaza koy.';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub kimliği';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Bu çalışma alanındaki arka plan GitHub işlerinin nasıl kimlik doğruladığı: bu kurulumun uygulamasıyla veya çalışma alanının kendi uygulamasıyla.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'Bu kurulumun GitHub App\'ini kullan';
-
-  @override
-  String get workspaceGitHubModeApp => 'Farklı bir GitHub App kullan';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Sunucu → Sağlayıcı uygulamaları altındaki GitHub App\'i kullanır.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Bu çalışma alanının bot ve yoklama kimliği. Üyeler Siz\'de bu App ile oturum açar.';
-
-  @override
   String get profileOverlayHint =>
       'Bu alanlar bu çalışma alanındaki sizsiniz. Boş alanlar hesap adı ve e-postasını miras alır. Çalışma alanı değiştirmek bu katmanı değiştirir.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Bu çalışma alanı için oturum açın veya bir belirteç yapıştırın.';
 
   @override
   String get stackStartNextPart => 'Sonraki parçayı başlat';
@@ -15683,6 +15677,17 @@ class AppLocalizationsTr extends AppLocalizations {
       'Sunucu bu hesap için bir oturum açma komutu sağlayamadı.';
 
   @override
+  String get claudeAccountSignedIn => 'Oturum açıldı';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Oturum açma tamamlandığında bu pencere kendiliğinden kapanır.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Tüm hesaplarda oturum açıldığında bu pencere kendiliğinden kapanır.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Claude Code oturumunun süresi doldu';
 
@@ -15837,7 +15842,7 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'Bunun sunucuda kurulması gerekiyor';
+  String get environmentInputNeeded => 'Bunun sunucuda kurulması gerekiyor';
 
   @override
   String get environmentKindApp => 'Uygulama';
@@ -16435,21 +16440,40 @@ class AppLocalizationsTr extends AppLocalizations {
   String get environmentOpenPanel => 'Ortamı aç';
 
   @override
-  String get environmentNeedsSetup => 'Kurulum gerekli';
+  String get environmentStatusBlocked => 'İşlem gerekli';
+
+  @override
+  String get environmentStateInTerminal => 'Terminalde';
+
+  @override
+  String get environmentWaitingInTerminal => 'Terminalde sizi bekliyor';
+
+  @override
+  String get environmentOpenTerminal => 'Terminali aç';
+
+  @override
+  String get environmentSignInNeeded => 'Oturum açmanız gerekiyor';
+
+  @override
+  String get environmentDependencyNeeded => 'Gereken bir şey kullanılamıyor';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Burada tamamlandı. Ortam hâlâ başlatılıyor';
 
   @override
   String get environmentContinueInTerminal => 'Terminalde devam et';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Araç, parola veya bir soru için sizi terminalde bekliyor. Bittiğinde başlatma devam eder.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Başlatma sizi beklediği için bu terminal açıldı';
 
   @override
-  String get environmentSetupTab => 'Ortam kurulumu';
+  String get environmentStartTerminalTab => 'Ortam kurulumu';
 
   @override
   String get environmentsNothingRunning => 'Bu tanımdan çalışan bir şey yok.';
@@ -16741,23 +16765,14 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Tarayıcıda $provider sayfasındaki isteği onayla. Bu pencere işin bittiğini kendiliğinden fark eder.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return '$provider bekleniyor…';
-  }
-
-  @override
   String get signInFailedTitle => 'Oturum açma tamamlanmadı';
 
   @override
   String get signInReopenPage => 'Oturum açma sayfasını yeniden aç';
 
   @override
-  String get signInCodePrompt => 'Tarayıcında gösterilen kodu gir';
+  String get signInCodePrompt =>
+      'Tarayıcınızda onaylayın, ardından gösterdiği kodu girin.';
 
   @override
   String get signInCodeMalformed =>
@@ -16801,7 +16816,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Bu oturum açma artık geçerli değil. Yeniden başlatın.';
+      'Bu oturum açma artık açık değil: iptal edildi, kullanıldı veya yenisiyle değiştirildi. Yeniden başlatın.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16809,7 +16824,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Şu anda çok fazla oturum açma denemesi var. Bir dakika bekleyip yeniden deneyin.';
+      'Şu anda çok fazla istek var. Bir süre bekleyip yeniden deneyin.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16840,10 +16855,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return '$provider uygulaması gereken yerde yüklü değil. Yükle ve yeniden dene.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Bu GitHub uygulaması kurulumu zaten başka bir Control Center sunucusu için yetkilendirilmiş.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16902,7 +16913,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'GitHub uygulamasının yüklü olduğu yerler; yalnızca bu çalışma alanının depolarının ait olduğu hesaplar arasından. Bir kuruluşun kurulumu yalnızca yöneticilerinin yetkilendirdiği sunucularda çalışır.';
+      'GitHub uygulamasının yüklü olduğu yerler; yalnızca bu çalışma alanının depolarının ait olduğu hesaplar arasından.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16912,21 +16923,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get githubInstallApp => 'GitHub uygulamasını yükle';
 
   @override
-  String get githubAuthorizeServer => 'Bu sunucuyu yetkilendir';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Bu sunucu artık $account üzerindeki kurulumu kullanabilir.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Askıda';
-
-  @override
-  String get githubInstallationAuthorized => 'Yetkili';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Yetkisiz';
 
   @override
   String get linearAutomationTitle => 'Linear otomasyonu';
@@ -16952,7 +16949,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'GitHub, Google ve Linear uygulamalarını Ayarlar → Sunucu → Tek oturum açma bölümünde kendin kaydet; her çalışma alanının kendi Slack uygulamasını da o alanın ayarlarından bağla. “GitHub uygulamamı oluştur” GitHub’ı tek adımda kurar.';
+      'GitHub, Google ve Linear uygulamalarını Ayarlar → Sunucu → Tek oturum açma bölümünde kendiniz kaydedin; her çalışma alanının kendi Slack uygulamasını ise Çalışma alanı → Entegrasyonlar bölümünden bağlayın. Orada bir çalışma alanı kendi uygulamalarını veya Connect’i de seçebilir. “GitHub uygulamamı oluştur” GitHub’ı tek adımda kurar.';
 
   @override
   String get connectModeCustom => 'Özel bir Connect sunucusu kullan';
@@ -17088,7 +17085,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Bu sunucu yeni bir anahtar ve kurulum kimliği alır. Connect üzerinden yapılan tüm oturum açmalar çalışmayı bırakır ve herkesin yeniden oturum açması gerekir. Kendi uygulamaların üzerinden yapılan oturum açmalar etkilenmez.';
+      'Bu sunucu yeni bir anahtar ve kurulum kimliği alır; eski kimlik Connect’te emekliye ayrılır: onunla mühürlenmiş oturum açmalar ve eski anahtar orada çalışmayı bırakır, bu yüzden Connect üzerinden oturum açmış herkes yeniden oturum açmak zorunda kalır. Şimdiye kadar verilmiş token’lar sona erene kadar çalışmaya devam eder. Kendi uygulamalarınız üzerinden yapılan oturum açmalar etkilenmez. Connect’e ulaşılamazsa hiçbir şey değişmez ve yeniden deneyebilirsiniz.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17222,35 +17219,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Sağlayıcı uygulamaları';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Bu çalışma alanının hangi Google Calendar, Linear ve Klipy uygulamalarını kullandığı. Varsayılan olarak bu sunucunun uygulamalarını veya Control Center Connect\'i kullanır. Kendi uygulamasına sahip bir çalışma alanı bunlara asla geri dönmez.';
-
-  @override
-  String get workspaceProviderAppModeInherit =>
-      'Bu sunucunun uygulamasını kullan';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Oturum açma ve istekler bu sunucunun kendi uygulamasını veya Control Center Connect\'i kullanır.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Bu çalışma alanının kendi uygulamasını kullan';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Yalnızca bu çalışma alanının uygulaması kullanılır. Eksik olduğu sürece bu sağlayıcı burada kapalıdır ve başka bir uygulamaya geri dönmez.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Sunucunun uygulaması';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Kendi uygulaması';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Hâlâ eksik: $fields. Tüm alanlar doldurulana kadar bu sağlayıcı bu çalışma alanında kapalıdır. Bu sunucunun uygulamasına geri dönmez.';
   }
@@ -17267,22 +17235,116 @@ class AppLocalizationsTr extends AppLocalizations {
       'Bu çalışma alanında GIF araması bu anahtarı kullanır.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return '$provider uygulaması değiştirilsin mi?';
+  String get settingsWorkspaceIntegrations => 'Entegrasyonlar';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Bu çalışma alanındaki kod barındırma, biletler, takvim, sohbet ve GIF araması ile bunlara hangi uygulamalar üzerinden oturum açıldığı.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Bu çalışma alanının GitHub, Google Takvim, Linear, Slack ve GIF araması için hangi uygulamaları kullandığı. Bir yönetici başka bir seçim yapmadıkça bu sunucuyu izler.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Bu sunucuyla aynı';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Bu sunucu Control Center’ın uygulamalarını kullanır.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Bu sunucu $url adresindeki Connect sunucusunu kullanır.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Bu çalışma alanında sunucunun uygulaması üzerinden $provider hesabına bağlı olan herkesin, çalışma alanının uygulamasıyla yeniden oturum açması gerekir.';
+  String get workspaceConnectInheritOwn =>
+      'Bu sunucu kendi uygulamalarını kullanır.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Sunucu sahibi henüz seçim yapmadı, bu yüzden sunucunun kendi uygulamaları geçerli.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Yalnızca bu çalışma alanının uygulamaları kullanılır. Her birini aşağıda, sağlayıcısının yanına ekleyin. Uygulaması olmayan bir sağlayıcı burada kapalıdır; bunun yerine bu sunucunun uygulamaları veya Connect kullanılmaz.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Yalnızca HTTPS. Özel veya yerel ağdaki adresler reddedilir.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'Bu sunucunun ortamındaki CC_CONNECT_URL, oturum açmaların nereye gideceğini belirler; bu yüzden bu çalışma alanı kendi Connect’ini seçemez. Bu sunucuyu izleyebilir veya kendi uygulamalarını kullanabilir.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Bu çalışma alanının oturum açma uygulamaları değiştirilsin mi?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Çalışma alanındaki herkesin GitHub, Linear ve Google Takvim’de yeni uygulamalar üzerinden yeniden oturum açması gerekir. Mevcut uygulamalarla yapılan oturum açmalar burada artık çalışmaz.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Uygulamaları değiştir';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Yukarıdaki seçimi izler. Bir sağlayıcı asla başka bir uygulamaya geri dönmez.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Çalışma alanının uygulaması';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Sunucunun uygulaması';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub Uygulaması';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Bu çalışma alanının kendi uygulaması, depoları adına işlem yapar ve üyelerin oturumunu açar. Bu sunucunun uygulamasına veya Connect’e asla geri dönmez.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Bu çalışma alanı, oturum açma uygulamalarının sağladığı GitHub uygulamasını kullanır. Depolarınızın ait olduğu hesaplara yükleyin.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Bu çalışma alanı adına işlem yapma';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Uygulamanın botu, bu çalışma alanının depolarındaki çekme isteklerine yorum yapar, inceler ve bunları yoklar.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider uygulaması';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Bu işlem çalışma alanının $provider kimlik bilgilerini siler. Çalışma alanının uygulaması üzerinden bağlanan herkesin yeniden oturum açması gerekir.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Bu çalışma alanındaki $provider oturum açmaları ve istekleri yalnızca bu uygulamayı kullanır.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Uygulamayı değiştir';
+  String get workspaceGifsTitle => 'GIF’ler';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'GIF araması bu çalışma alanının Klipy anahtarını kullanır.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'GIF araması bu sunucunun Klipy anahtarını kullanır.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF araması Control Center Connect üzerinden çalışır.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Bu çalışma alanında GIF araması kapalı.';
 
   @override
   String openOnForge(String forge) {
@@ -17300,7 +17362,7 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma bölümünden GitHub, GitLab veya Bitbucket bağlayın';
+      'Ayarlar → Siz → Profil bölümünden GitHub, GitLab veya Bitbucket bağlayın';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17317,4 +17379,1137 @@ class AppLocalizationsTr extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Bu depoda pull request açmak için $forge bağlayın';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return '$account olarak $provider oturumunun süresi doldu. Yeniden oturum aç.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Duraklatıldı: bu çalışma alanının oturum açma hizmeti değişti';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '$provider şu anda erişilemiyor. Yeniden deneniyor.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Oturumun korunur ve hizmet geri geldiğinde yeniden çalışır. Çalışma alanının bir yöneticisi oturum açma kurulumunu Entegrasyonlar\'dan kontrol edebilir.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Sunucu yeniden başlatıldı. Oturum açmayı yeniden başlat.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return '$provider ile oturum açma bu çalışma alanı için ayarlanmamış.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider ile oturum açma yanlış ayarlanmış: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Bu çalışma alanı kendi uygulamalarını kullanıyor ama $provider uygulaması yok.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Bu derleme Control Center Connect\'i doğrulayamıyor, bu yüzden $provider ile oturum açma kapalı.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Bu çalışma alanının oturum açma hizmeti kimliğini değiştirdi. Bir yöneticinin bunu onaylaması gerekiyor.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Bu çalışma alanının oturum açma hizmetine şu anda erişilemiyor.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Bu çalışma alanının oturum açma hizmeti adresi eksik veya geçersiz.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Sunucunun operatörü oturum açma hizmetini sabitledi, bu yüzden bu çalışma alanının kendi seçimi geçerli değil.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Bu çalışma alanının oturum açma hizmeti $provider sunmuyor.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Entegrasyonları aç';
+
+  @override
+  String get signInOpenServerSettings => 'Oturum açma ayarlarını aç';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Bu, $provider üzerinde senin adına çalışır ve henüz token eklemedin. Bir tane ekleyip yeniden dene.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '$provider bağlantısı kesilsin mi?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Depolarında çalışmak için $provider hizmetini yeniden bağlaman gerekecek.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Bu, $provider bağlantısını yalnızca bu çalışma alanında keser. Diğer çalışma alanları kendi bağlantılarını korur.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Bu, $provider bağlantısını bu bağlantıyı paylaşan her çalışma alanında keser.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider bu çalışma alanından ayrıldı';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider tüm çalışma alanlarından ayrıldı';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'GitHub App\'i $owner hesabına yükle';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Uygulama orada yüklenene kadar otomasyon $repos depolarına erişemez.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return '$repos depolarını GitHub App\'in depolarına ekle';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Uygulama bu hesapta yüklü ama bu depoları henüz göremiyor.';
+
+  @override
+  String get repoAccessChooseRepos => 'Depoları seç';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App kurulumu askıya alındı';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Hesabın bir sahibi kurulumu GitHub\'da sürdürene kadar $repos için otomasyon duraklatıldı.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Otomasyon duraklatıldı';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Bu çalışma alanının otomasyonundan sorumlu kişi artık $repos depolarını göremiyor, bu yüzden orada onun adına hiçbir şey çalışmıyor.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Bu çalışma alanının otomasyonundan sorumlu kişi forge\'da oturum açmamış, bu yüzden $repos için otomasyon o oturum açana kadar bekliyor.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return '$repos erişimi kontrol edilemedi. Yeniden deneniyor.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Bunu düzeltmesi için şu kişilere başvur: $admins.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Bunu düzeltmesi için çalışma alanının bir yöneticisine başvur.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count depodaki pull request\'leri de görmek için $forge hizmetinde oturum aç',
+      one:
+          '1 depodaki pull request\'leri de görmek için $forge hizmetinde oturum aç',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$forge hesabın göremediği için $count depo gizlendi',
+      one: '$forge hesabın göremediği için 1 depo gizlendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bu çalışma alanında erişimin olmadığı için $count depo gizlendi',
+      one: 'Bu çalışma alanında erişimin olmadığı için 1 depo gizlendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count depoya daha erişimin kontrol ediliyor…',
+      one: '1 depoya daha erişimin kontrol ediliyor…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Bağlandı, ancak otomasyon henüz her şeye erişemiyor';
+
+  @override
+  String get githubInstallOnAnotherOrganization => 'Başka bir kuruluşa yükle';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian hesabının e-postası';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Atlassian hesabının e-posta adresini gir.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API token\'ı';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket API token\'ları, onları oluşturan Atlassian hesabının e-postasıyla birlikte çalışır.';
+
+  @override
+  String get automationTokensTitle => 'Otomasyon belirteçleri';
+
+  @override
+  String get automationTokensRepoHint =>
+      'GitLab ve Bitbucket\'taki arka plan işleri, örneğin pull request güncellemeleri, yapay zekâ inceleme yorumları ve kimsenin istemediği merge request\'ler, bir kişinin değil bir botun erişim belirtecini kullanır. Bir deponun kendi belirteci çalışma alanınınkinden önce gelir.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Bu çalışma alanında kendi otomasyon belirteci olmayan her GitLab veya Bitbucket deposu için kullanılır. Oradaki arka plan işleri bu belirtecin botu olarak görünür.';
+
+  @override
+  String get automationTokenNone =>
+      'Belirteç yok. Otomasyon burada duraklatıldı.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Çalışma alanının belirtecini kullanır';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '$name olarak çalışır';
+  }
+
+  @override
+  String get automationTokenStored => 'Erişim belirteci eklendi';
+
+  @override
+  String get automationTokenRejected =>
+      'Platform bu belirteci reddetti. Değiştirin.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge otomasyon belirteci';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Bir proje veya grup erişim belirteci yapıştırın. read_api ve read_repository gerekir; yorumlar, merge request\'ler ve push\'lar için api ve write_repository ekleyin. GitLab işini belirtecin botu olarak gösterir.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Depo okuma ve yorumlar ile pull request\'ler için pull request yazma izni olan bir depo, proje veya çalışma alanı erişim belirteci yapıştırın. Kendi API belirteciniz buraya değil, Siz → Profil altında yer alır.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Belirteç kaydedildi ancak $repos deposunu okuyamıyor. Otomasyon orada duraklatılmış kalır.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle =>
+      'Otomasyon belirteci kaldırılsın mı?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Bu belirtece dayanan otomasyon, başka bir belirteç eklenene kadar duraklatılır.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Kendi belirteci olmayan her $forge deposu';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Hiçbir otomasyon belirteci $repos deposunu okuyamıyor, bu yüzden oradaki arka plan işleri duraklatıldı.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Başlattığınız işlerden gelen commit\'ler adınızı taşır. Başka kimlerin kredi alacağını ve kod barındırma platformlarının commit\'lerinizi doğrulanmış olarak gösterip göstermeyeceğini seçin.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Yazarlık';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Başlattığınız işler';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Kod barındırma platformunuzun oturumunuz için doğruladığı e-posta adresi altında yazar ve commit eden kişi sizsiniz. Bu; ajanlarla sohbetleri, başlattığınız pipeline\'ları ve düzenleyicide yaptığınız commit\'leri kapsar.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Otomatik çalıştırmalar';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Bir zamanlama ya da webhook ile başlatılan çalıştırmalar bot olarak commit eder ve hiçbir zaman imzalanmaz.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Bir çalışma alanında bir kod barındırma platformuna oturum açana kadar, oradaki çalıştırmalarınız bot olarak commit eder.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Control Center’ı ortak yazar olarak belirt';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Commit\'lerinizde Control Center (@usectrl) ortak yazar olarak gösterilir ve kurduğunuz otomatik çalıştırmalar sizi anar. Kapalıyken iki satır da eklenmez.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Bu çalışma alanının ayarı kişisel seçiminizin yerine geçer. Tercihiniz kaydedilir ancak burada uygulanmaz.';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'Atıf ayarları yükleniyor…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Ortak yazar kredisi';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Commit\'lerin ortak yazar satırları taşıyıp taşımayacağı: bir üyenin kendi commit\'lerinde Control Center, bir otomatik çalıştırmayı kuran üyeler de o çalıştırmanın commit\'lerinde. Buradaki seçim her üyenin kendi tercihinin yerine geçer.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Her üyenin tercihini kullan';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Her zaman ortak yazar kredisi ekle';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Hiçbir zaman ortak yazar kredisi ekleme';
+
+  @override
+  String get settingsCommitSigningSection => 'Doğrulanmış commit\'ler';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'İmzalanıyor';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'İmzalanmıyor';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Bu sunucu, commit\'lerinizi kendi anahtarınızla imzalayabilir; böylece GitHub ve GitLab bunları doğrulanmış olarak gösterir. Anahtarı oluşturana kadar hiçbir şey imzalanmaz.';
+
+  @override
+  String get settingsCommitSigningCreate => 'İmzalama anahtarı oluştur';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'İmzalama anahtarı oluşturuldu. Bunu kod barındırma hesabınıza ekleyin.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Genel anahtar';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Genel anahtar kopyalandı';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Parmak izi';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Oluşturulma';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Bunu kod barındırma hesabınıza ekleyin';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Bir commit, yalnızca çalışma alanında o kod barındırma platformuna da oturum açtığınız sürece doğrulanmış görünür; böylece platform e-postanızı onaylar.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Key type değerini Signing Key olarak ayarlayın.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Usage type değerini Signing olarak ayarlayın.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Bitbucket üzerindeki commit\'ler imzalanmaz. Bu anahtarı Bitbucket hesabınıza eklemeyin: orada bir SSH anahtarı aynı zamanda bir oturum açma anlamına gelir.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Desteklenmiyor';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Neye güvendiğiniz';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Özel anahtar bu sunucudan asla çıkmaz.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Bu sunucuyu yöneten kişi, anahtar kod barındırma hesabınızda durduğu sürece commit\'lerinizi sizin adınıza imzalayabilir.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'GitHub\'da, doğrulanmış olarak gösterilmiş commit\'ler anahtarı kaldırdıktan sonra da doğrulanmış kalır.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Anahtarı sil';
+
+  @override
+  String get settingsCommitSigningDeleteTitle =>
+      'İmzalama anahtarınız silinsin mi?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Bundan sonra commit\'leriniz imzalanmaz. Anahtar, siz onu kod barındırma hesaplarınızdan kaldırana kadar orada kalır.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'İmzalama anahtarı silindi';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'İmzalama anahtarınız yüklenemedi: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Her çalışma alanındaki kimliğiniz ve kendi kod barındırma, biletler, takvim ve sohbet hesaplarınız.';
+
+  @override
+  String get accountSectionTitle => 'Hesap';
+
+  @override
+  String get accountSectionDescription =>
+      'Kullanıcı adınız ve adınız her çalışma alanına sizinle birlikte gider. Bir çalışma alanı farklı bir ad ya da e-posta gösterebilir: bunu Çalışma alanı → Profil ve kimlik bölümünden ayarlayın.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Profiliniz yüklenemedi: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Mesajlarınızda ve incelemelerinizde insanların gördüğü ad.';
+
+  @override
+  String get accountDisplayNameRequired => 'Bir görünen ad girin.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Değiştirilebilir ama kaldırılamaz.';
+
+  @override
+  String get accountAvatarLabel => 'Resim';
+
+  @override
+  String get accountAvatarHint =>
+      'Kare bir görselin bağlantısı; https:// ile başlar.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'https:// ile başlayan bir bağlantı kullanın.';
+
+  @override
+  String get usernameLabel => 'Kullanıcı adı';
+
+  @override
+  String get usernameRule =>
+      '2 ila 32 küçük harf, rakam, nokta, tire veya alt çizgi. İnsanlar sizi bununla anar.';
+
+  @override
+  String get usernameAvailable => 'Kullanılabilir.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Kullanılabilir. $username olarak kaydedilecek.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      '2 ila 32 küçük harf, rakam, “.”, “_” veya “-” kullanın; bir harf veya rakamla başlayıp bitmeli.';
+
+  @override
+  String get usernameReserved => 'Bu kullanıcı adı ayrılmış.';
+
+  @override
+  String get usernameTaken => 'Bu kullanıcı adı alınmış.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Bu ad şu anda kontrol edilemedi. Yine de kaydedebilirsiniz; karar sunucuda verilir.';
+
+  @override
+  String get linkedAccountsTitle => 'Bağlı hesaplar';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Kimlik sağlayıcı';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Oturum açma gerekli';
+
+  @override
+  String get linkedAccountStatusPaused => 'Duraklatıldı';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Ulaşılamıyor';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Hesabınızın oturum açtığı kimlik sağlayıcı. Bu sunucuyu yöneten kişi bunu yönetir.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Kendiniz için bağladığınız hesaplar. Control Center bu hesaplar üzerinden sizin adınıza işlem yapar ve bu hesaplarda yapılan değişiklikler yalnızca sizi etkiler.';
+
+  @override
+  String get accountReachServer =>
+      'Bu sunucudaki her çalışma alanında kullanılır.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Yalnızca $workspace içinde kullanılır.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub yalnızca kendi oturum açma uygulamaları olan $workspace içinde kullanılır. GitLab ve Bitbucket bu sunucudaki her çalışma alanında kullanılır.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Hesabınız';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Hesabınız: $status. Siz → Profil sayfasını açar.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Bağlı kod barındırma hesabı yok';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return '$provider hesabı bağlı değil';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return '$provider hesabı bağlanmadı';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'Demoda geçici bir misafirsiniz, bu yüzden değiştirilecek bir hesap yok: kullanıcı adı, profil veya bağlı hesap yok.';
+
+  @override
+  String get onboardingStepYou => 'Siz';
+
+  @override
+  String get onboardingYouTitle => 'Kullanıcı adınızı seçin';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Kullanıcı adınız, insanların sizi nasıl andığı ve işinizin nasıl etiketlendiğidir. Bunu ve görünen adınızı daha sonra Ayarlar → Siz → Profil bölümünden değiştirebilirsiniz.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Bu $provider hesabı bu sunucuda başka bir kişiye bağlı. Farklı bir $provider hesabıyla oturum açın.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token $date tarihinde sona erer';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token $date tarihinde sona erdi. Çalışmaya devam etmek için yenisini yapıştırın.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'Bu token’ı kontrol etmek için $forge ulaşılamadı. Birazdan yeniden deneyin.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge bu token’ı kabul etmiyor. Tamamını kopyaladığınızı ve iptal edilmediğini kontrol edin.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Bu kişisel bir token değil. Kendi $forge hesabınızdan kişisel bir erişim token’ı yapıştırın; proje, grup, çalışma alanı veya bot token’ı değil.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Bu token’da, inceleme ve yorum için gereken $scope kapsamı yok. Bu kapsamı içeren bir tane oluşturun.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Bu token’ın süresi dolmuş. Yeni bir tane oluşturup buraya yapıştırın.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Başlattığınız ajanlar, çalıştıkları her depoda sizin adınıza imzalanmış commit\'ler yapabilir. Anahtarı buradan silmek bunu hemen durdurur: halihazırda çalışan çalıştırmalar artık hiçbir şey imzalamaz.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Anahtar değiştirilmedi ve hiçbir şey değişmedi: $error Yeniden deneyin.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Henüz bir çalışma alanında değilsiniz';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Bir çalışma alanı yöneticisinin sizi davet etmesi gerekir ya da sunucu sahibi sizin için bir çalışma alanı oluşturabilir. Eklendiğiniz anda burada açılır.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return '$name olarak oturum açıldı';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Yeniden kontrol et';
+
+  @override
+  String get noWorkspaceSignOut => 'Oturumu kapat';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Çalışma alanlarını yalnızca sunucu sahibi oluşturabilir. Ondan bir tane oluşturmasını isteyin ya da bir çalışma alanı yöneticisinden sizi davet etmesini isteyin.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo çalışma alanlarınızın hiçbirinde değil ve eklenebileceğiniz bir çalışma alanında da değilsiniz. Bir çalışma alanı yöneticisinden sizi davet etmesini isteyin.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Bunu yalnızca sunucu sahibi yapabilir';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Tam düzenleyici sunucunun kendi makinesinde çalışır, bu yüzden onu yalnızca sunucu sahibi açabilir. Gezgin’den dosyaları yine de açıp düzenleyebilirsiniz.';
+
+  @override
+  String get terminalSandboxedBadge => 'Sandbox içinde';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Bu çalışma alanının klasörleri içinde bir sandbox’ta çalışır, bu yüzden bazı host araçları ve yollar burada kullanılamaz.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Host shell, sunucuda sandbox olmadan çalışır; bu yüzden birini yalnızca sunucu sahibi açabilir. Normal bir terminal sandbox içinde çalışır.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Terminal yalnızca bu çalışma alanının kendi klasörlerinin içinde açılabilir.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Sunucu host’unda çalışan bir ortamı yalnızca sunucu sahibi kaydedebilir veya onaylayabilir. Bir çalışma alanı yöneticisi rig’de çalışan bir ortamı kullanabilir.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Uygulamanın kendi düzenleyicisinde yaptığınız commit\'ler, tıpkı git commit --no-verify gibi, depodaki Git hook\'larını çalıştırmaz. Sunucu Git\'i kendi host’unda, ajanların ve pull request\'lerin değiştirebileceği bir ağaç üzerinde çalıştırır.';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP istemcileri bu token’ı her istekte Authorization: Bearer başlığı olarak gönderir. Sunucu onu ilk başlatmada oluşturur; yenileyebilirsiniz ama kaldıramazsınız.';
+
+  @override
+  String get mcpShowToken => 'Token’ı göster';
+
+  @override
+  String get mcpHideToken => 'Token’ı gizle';
+
+  @override
+  String get mcpRotateToken => 'Token’ı yenile';
+
+  @override
+  String get mcpRotateTokenTitle => 'MCP token’ı yenilensin mi?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Sunucu hemen yeni bir token’a geçer. Mevcut token’ı kullanmaya devam eden her MCP istemcisi, ona yenisini verene kadar reddedilir.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Token yenilendi. MCP istemcilerinize yenisini verin.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP uç noktası sunucu sahibine özeldir';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Token’ı bu sunucudaki her aracı açar; bu yüzden onu yalnızca sunucu sahibi görebilir, yenileyebilir veya uç noktayı başlatıp durdurabilir.';
+
+  @override
+  String get activityRotatedMcpToken => 'MCP token’ı yenilendi';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect eski anahtarı kaldıramadı';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Hiçbir şey değişmedi. Yine de yenilerseniz bu sunucu yeni anahtarını alır, ancak eski kimlik, oturum açmaları sona erene kadar o Connect’te kullanılabilir kalır.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Yine de yenile';
+
+  @override
+  String get settingsAuditLog => 'Denetim günlüğü';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Sunucuda ve yönettiğiniz tüm çalışma alanlarında kimin neyi değiştirdiğini, nerede değiştirdiğini ve işlemin nasıl sonuçlandığını gösterir. Sunucu işlemleri yalnızca argüman adlarını kaydeder, değerlerini kaydetmez.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Yalnızca yöneticiler';
+
+  @override
+  String get auditLogNoAccess =>
+      'Denetim günlüğü sunucuyu ve yönettiğiniz çalışma alanlarını kapsar. Herhangi bir çalışma alanını yönetmiyorsunuz, bu nedenle gösterilecek bir şey yok.';
+
+  @override
+  String get auditLogSourceServer => 'Sunucu';
+
+  @override
+  String get auditLogSourceWorkspace => 'Çalışma alanı';
+
+  @override
+  String get auditLogAddFilter => 'Filtre';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filtre…';
+
+  @override
+  String get auditLogFilterActor => 'İşlemi yapan';
+
+  @override
+  String get auditLogFilterSource => 'Çalışma alanı';
+
+  @override
+  String get auditLogFilterOutcome => 'Sonuç';
+
+  @override
+  String get auditLogFilterTime => 'Zaman';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Başarılı';
+
+  @override
+  String get auditLogOutcomeDenied => 'Reddedildi';
+
+  @override
+  String get auditLogOutcomeFailed => 'Başarısız';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Eşit veya sonrası';
+
+  @override
+  String get auditLogTimeAfter => 'Sonrası';
+
+  @override
+  String get auditLogTimeBefore => 'Öncesi';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Eşit veya öncesi';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Zaman $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 saat önce';
+
+  @override
+  String get auditLogTimePresetDay => '24 saat önce';
+
+  @override
+  String get auditLogTimePresetWeek => '7 gün önce';
+
+  @override
+  String get auditLogTimePresetMonth => '30 gün önce';
+
+  @override
+  String get auditLogTimeExact => 'Kesin zaman';
+
+  @override
+  String get auditLogTimeInvalid =>
+      'YYYY-MM-DD biçiminde girin, isteğe bağlı olarak HH:MM ekleyebilirsiniz';
+
+  @override
+  String get auditLogTimeAdd => 'Ekle';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo artık farklı bir depoyu gösteriyor';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Bu yol artık $forge üzerinde farklı bir depoyu gösteriyor. Kullanmaya devam etmek için yeniden bağlayın.';
+  }
+
+  @override
+  String get repoRelink => 'Yeniden bağla';
+
+  @override
+  String repoRelinked(String repo) {
+    return '$repo yeniden bağlandı.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Bu yol artık farklı bir depoyu gösteriyor. Kullanılabilmesi için bir çalışma alanı yöneticisinin yeniden bağlaması gerekir.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return '$forge hesabınız bu depoyu okuyamıyor.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return '$forge erişiminiz doğrulanamadı. Yeniden deneyin.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Kod barındırma hesabınız bu depoyu okuyamıyor.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Kod barındırma erişiminiz doğrulanamadı. Yeniden deneyin.';
+
+  @override
+  String get repoPathHostPath =>
+      'Yalnızca sunucu sahibi, bu çalışma alanının depolama alanının dışındaki bir klasörü bağlayabilir.';
+
+  @override
+  String get repoPathMissing => 'Sunucuda bu yolda hiçbir şey yok.';
+
+  @override
+  String get repoPathDataDir =>
+      'Bir depo, sunucunun veri klasörünün içini gösteremez.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Bir depo, çalışma alanının kendi klasörü olamaz.';
+
+  @override
+  String get repoPathOriginMismatch => 'Bu klasörün origin’i farklı bir depo.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Kaydedildi. Bu depoyu açabilmeleri için önce $forge hesabına oturum açmaları gerekir.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Kaydedildi. $forge hesapları bu depoyu henüz okuyamıyor, bu yüzden depo onlardan gizli kalır.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Kaydedildi. $forge erişimleri şu anda doğrulanamadı.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo çalışma alanlarınızın hiçbirinde bağlı değil. Sunucu sahibinden eklemesini isteyin.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Depoları sunucu sahibi, sunucunun klasörlerinden ekler.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Bu adresi yalnızca siz girdiniz. Tek oturum açma (SSO), sunucu sahibi onaylayana kadar bununla eşleşmez.';
+
+  @override
+  String get settingsServerPeople => 'Kişiler';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Bu sunucuda hesabı olan herkes ve e-posta adreslerinin onaylı olup olmadığı.';
+
+  @override
+  String get serverPeopleLabel => 'Hesaplar';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Yalnızca sunucu sahibi herkesin hesabını görebilir ve e-posta adreslerini onaylayabilir.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-posta onaylanmadı';
+
+  @override
+  String get serverPeopleConfirmEmail => 'E-postayı onayla';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return '$email adresinin $name kişisine ait olduğunu onaylıyor musunuz? Tek oturum açma (SSO) bu adresi onun hesabıyla eşleştirecek.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '$email onaylandı.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Ajanların bu sunucuda sandbox’a ihtiyacı var';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Bu sunucuda sandbox yok, bu yüzden burada ajanları yalnızca sahibi çalıştırabilir. Sahip sandbox’ı kurabilir ya da sandboxing’i herkes için kapatabilir.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Bu klasör çalışma alanının depolama alanının dışında. Bu sunucunun onu kullanmasına izin verdiğinizi onaylayın.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Bu klasör çalışma alanının depolama alanının dışında. Yalnızca sunucu sahibi bunu onaylayabilir.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Sunucuda bu yolda artık hiçbir şey yok. Bu depoyu kaldırın ve mevcut klasöründen yeniden ekleyin.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Bu klasör depo olarak kullanılamaz. Kaldırın ve depoyu başka bir klasörden ekleyin.';
+
+  @override
+  String get repoPathConfirm => 'Onayla';
+
+  @override
+  String get repoPathConfirmAll => 'Tümünü onayla';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count klasör çalışma alanının depolama alanının dışında',
+      one: '1 klasör çalışma alanının depolama alanının dışında',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Sunucunun bunları kullanmasına izin verdiğinizi onaylayın. Her depo sizin erişiminizle yeniden kontrol edilir.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Bu makinenin kendi araç ayarlarında bulunan sunucular yalnızca sizin başlattığınız ya da sorumlu olduğunuz çalıştırmalarda kullanılabilir. Başkalarının çalıştırmaları bunları hiç görmez ve Control Center’ın MCP uç noktası üzerinden sunulmazlar.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Bu deponun kodunu görmek için $provider hesabına oturum açın.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Oturum aç';
+
+  @override
+  String get ideContentSearchFailed => 'Dosyalarda aranamadı';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Bu dosya bu worktree’de kullanılamıyor.';
+
+  @override
+  String get ideChangesLoadFailed => 'Değişiklikler yüklenemedi';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Bu yol artık $forge üzerinde farklı bir depoyu gösteriyor. Kullanılabilmesi için bir çalışma alanı yöneticisinin yeniden bağlaması gerekir.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Yedekleri yalnızca sunucu sahibi geri yükleyebilir. Yine de bunları indirebilirsiniz.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Salt okunur';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Bu terminali izleyebilirsiniz. Ona yazmak, boyutunu değiştirmek veya durdurmak için bu sohbetteki her depoya yazma erişimi gerekir.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Bu ortamı izleyebilirsiniz. Başlatmak, durdurmak veya yeniden başlatmak için sohbetteki her depoya yazma erişimi gerekir.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Bu sunucuda çalışır. Başlayabilmesi için onaylayın.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Bu sunucuda çalışır. Başlayabilmesi için sunucu sahibinin onaylaması gerekir.';
+
+  @override
+  String get environmentHostApprove => 'Onayla';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Bir çalışma alanı yöneticisi olarak onaylayın: yalnızca bir yöneticinin kopyası gizli değerlerini gösterir ve onaylamak bunları geri kaydeder.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Sunucu sahibi bu ortamı henüz onaylamadı, bu yüzden bu sunucuda çalışamaz.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Bu ortamı henüz onaylamadınız. Bu sunucuda çalışır, bu yüzden tanımını onayladığınızda başlar.';
+
+  @override
+  String get environmentHostApprovalReview => 'İncele ve onayla';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Bu alanı açmak için $provider hesabına oturum açın.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return '$forge hesabınız, bu alanın kullandığı bir depoyu okuyamıyor.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Kod barındırma hesabınız, bu alanın kullandığı bir depoyu okuyamıyor.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Bu alanın kullandığı bir depo için okuma erişiminiz yok. Bir çalışma alanı yöneticisi bunu verebilir.';
+
+  @override
+  String get spaceAccessFailed => 'Bu alan açılamadı.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Bağlam dökümü bu oturumda kullanılamıyor.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Bağlı bir deponun hem sahibi (organizasyon) hem de depo adı olmalı.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Bu depoyu okuma erişiminiz yok. Bir çalışma alanı yöneticisi erişim verebilir.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Bu depoyu okuyabilirsiniz ama değiştiremezsiniz. Bir çalışma alanı yöneticisi yazma erişimi verebilir.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Bu depoyu okuyabilirsiniz ama inceleyemezsiniz. Bir çalışma alanı yöneticisi inceleme erişimi verebilir.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Yalnızca izleme';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Bu makineyi izleyebilirsiniz. Makineyi sürmek, portlarını yönlendirmek, içine yapıştırmak ya da üzerine dosya bırakmak için bu alandaki her depoya yazma erişimi gerekir.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Burada bir makine başlatmak için bu alandaki her depoya yazma erişimi gerekir. Bir çalışma alanı yöneticisi bunu verebilir.';
+
+  @override
+  String get rigViewRefused =>
+      'Bu makineyi görüntüleyemezsiniz. Okuma erişiminiz olmayan bir alana ait.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Bu portları değiştirmek için bu alandaki her depoya yazma erişimi gerekir.';
+
+  @override
+  String get rigHolderOnly =>
+      'Bu makineyi yalnızca makinenin açıldığı kişi sürebilir. Makine o kişinin kendi oturum açmalarını kullanır.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Bu makineyi izleyebilirsiniz. Makine, açıldığı kişinin oturum açmalarını kullanır; bu yüzden makineyi yalnızca o kişi sürebilir, portlarını yönlendirebilir, içine yapıştırabilir veya üzerine dosya bırakabilir.';
 }

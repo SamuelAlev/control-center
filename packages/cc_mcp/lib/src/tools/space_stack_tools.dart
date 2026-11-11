@@ -1,7 +1,10 @@
 import 'dart:convert';
 
+import 'package:cc_domain/cc_domain.dart' show AppException;
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_port.dart';
 import 'package:cc_harness/tools.dart';
 
 /// Reads the branch stack recorded for a space.
@@ -229,11 +232,33 @@ class StackCheckoutTool extends McpTool {
 /// Each pull request targets the branch below it. On GitHub the layers are
 /// also grouped as a stack. Does not attach the space to a review room, so
 /// merging one layer leaves the checkout in place.
+///
+/// Only an agent run can call it, for its own space, and the pull requests
+/// carry the name of the person who requested the run ([AgentPullRequestPort
+/// .requesterOf]; the bot when nobody did). That person cannot approve them;
+/// for a run nobody requested, nobody who armed its trigger can
+/// ([AgentPullRequestPort.approvalOwnersOf]).
 class StackPublishTool extends McpTool {
   /// Creates a [StackPublishTool].
-  StackPublishTool({required this._stack});
+  StackPublishTool({required this._stack, required this._agentRuns});
 
   final SpaceStackPort _stack;
+  final AgentPullRequestPort _agentRuns;
+
+  /// The run's own space and conversation, whatever the model sent.
+  @override
+  Set<String> get forcedScopeKeys => const {'space_id', 'conversation_id'};
+
+  @override
+  Set<String> get requiredScopeKeys => const {
+    'workspace_id',
+    'space_id',
+    'conversation_id',
+  };
+
+  /// The requester is read from the calling run; headers can name any.
+  @override
+  bool get requiresRunGrant => true;
 
   @override
   String get name => 'stack_publish';
@@ -264,7 +289,11 @@ class StackPublishTool extends McpTool {
       },
       'space_id': {
         'type': 'string',
-        'description': 'Space whose stack to publish.',
+        'description': 'Space whose stack to publish (this run\'s own).',
+      },
+      'conversation_id': {
+        'type': 'string',
+        'description': 'This run\'s conversation (filled in automatically).',
       },
       'repo_id': {
         'type': 'string',
@@ -274,10 +303,11 @@ class StackPublishTool extends McpTool {
       },
       'draft': {
         'type': 'boolean',
-        'description': 'Open the new pull requests as drafts. Defaults to true.',
+        'description':
+            'Open the new pull requests as drafts. Defaults to true.',
       },
     },
-    'required': ['workspace_id', 'space_id'],
+    'required': ['workspace_id', 'space_id', 'conversation_id'],
   };
 
   @override
@@ -293,14 +323,52 @@ class StackPublishTool extends McpTool {
     if (spaceErr != null) {
       return spaceErr;
     }
+    final (conversationId, conversationErr) = McpTool.requireString(
+      arguments,
+      'conversation_id',
+    );
+    if (conversationErr != null) {
+      return conversationErr;
+    }
+    final String? requester;
+    final Set<String> approvalOwners;
+    final List<AgentCommitIdentity> identities;
+    try {
+      // What every pushed commit is held to: the runs' own identities, as
+      // the push gateway holds their pushes, never anything the model sent.
+      identities = await _agentRuns.commitIdentitiesOf(
+        workspaceId: workspaceId!,
+        conversationId: conversationId!,
+      );
+      requester = await _agentRuns.requesterOf(
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+      );
+      approvalOwners = await _agentRuns.approvalOwnersOf(
+        workspaceId: workspaceId,
+        conversationId: conversationId,
+      );
+    } on AppException catch (e) {
+      return CallResult.error('Could not publish the stack: ${e.message}');
+    }
     final repoId = arguments['repo_id'];
     final draft = arguments['draft'];
-    final view = await _stack.publish(
-      workspaceId: workspaceId!,
-      spaceId: spaceId!,
-      repoId: repoId is String && repoId.isNotEmpty ? repoId : null,
-      draft: draft is bool ? draft : true,
-    );
+    final SpaceStackView view;
+    try {
+      view = await _stack.publish(
+        workspaceId: workspaceId,
+        spaceId: spaceId!,
+        repoId: repoId is String && repoId.isNotEmpty ? repoId : null,
+        actingUserId: requester,
+        approvalOwnerUserIds: approvalOwners,
+        agentRunIdentities: identities,
+        draft: draft is bool ? draft : true,
+      );
+    } on AppException catch (e) {
+      // The person this run acts for lacks the write grant on a repository
+      // of the stack: nothing was pushed.
+      return CallResult.error('Could not publish the stack: ${e.message}');
+    }
     if (!view.ok) {
       return CallResult.error(view.error ?? 'could not publish the stack');
     }

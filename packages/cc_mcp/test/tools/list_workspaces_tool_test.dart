@@ -101,10 +101,23 @@ void main() {
       expect(tool.description, isNotEmpty);
     });
 
-    test('has empty inputSchema properties', () {
+    test('takes only an optional workspace_id', () {
       final schema = tool.inputSchema;
       expect(schema['type'], 'object');
-      expect(schema['properties'], {});
+      expect((schema['properties'] as Map).keys, ['workspace_id']);
+      expect(schema.containsKey('required'), isFalse);
+    });
+
+    test('with a workspace_id lists only that workspace', () async {
+      repository
+        ..addWorkspace(_createTestWorkspace(id: 'ws-a', name: 'A'))
+        ..addWorkspace(_createTestWorkspace(id: 'ws-b', name: 'B'));
+
+      final result = await tool.run({'workspace_id': 'ws-b'});
+      final json = jsonDecode(result.content.first.text) as Map;
+      expect([for (final w in json['workspaces'] as List) (w as Map)['id']], [
+        'ws-b',
+      ]);
     });
 
     test('returns empty list when no workspaces exist', () async {

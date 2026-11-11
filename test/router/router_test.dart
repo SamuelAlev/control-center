@@ -80,32 +80,16 @@ IdentityMe _me({DateTime? onboardingFinishedAt}) => IdentityMe(
   memberships: const [],
 );
 
-/// Hands a provider `Ref` out to a test, so the `Ref`-flavoured helpers can be
-/// exercised the way a provider would call them.
-final _refProvider = Provider<Ref>((ref) => ref);
-
-/// A settable stand-in for the finished flag, to resolve it after the gate.
-class _FinishedFlag extends Notifier<bool?> {
-  @override
-  bool? build() => null;
-
-  void set(bool? value) => state = value;
-}
-
-final _finishedProvider = NotifierProvider<_FinishedFlag, bool?>(
-  _FinishedFlag.new,
-);
-
 const _connectedGitHub = ForgeConnection(
   forge: ForgeHost.github,
-  authenticated: true,
+  status: ForgeConnectionStatus.connected,
   username: 'testuser',
   source: ForgeCredentialSource.oauth,
 );
 
 const _disconnectedGitHub = ForgeConnection(
   forge: ForgeHost.github,
-  authenticated: false,
+  status: ForgeConnectionStatus.notConnected,
   username: '',
   source: ForgeCredentialSource.none,
 );
@@ -114,24 +98,29 @@ const _disconnectedGitHub = ForgeConnection(
 /// workspaces, the forge connections and whether this user has ever finished
 /// setup.
 ///
-/// The finished flag is overridden as a VALUE rather than through the server
-/// prefs stream it normally derives from: these tests are about which gate the
-/// three inputs produce, and threading a stream through would make them assert
-/// on delivery timing instead. How the flag itself merges the local and server
-/// lanes has its own group below.
+/// The finished flag is overridden as a VALUE rather than through the
+/// `identity.me` read it normally derives from: these tests are about which
+/// gate the three inputs produce. How the flag itself is read has its own group
+/// below.
 ProviderContainer _gateContainer({
   required List<Workspace> workspaces,
-  required List<ForgeConnection> connections,
+  required List<ForgeConnection>? connections,
   required bool? onboardingFinished,
   AppPreferences? prefs,
   Future<void> Function()? push,
+  bool canCreate = true,
 }) => ProviderContainer(
   overrides: [
+    canCreateWorkspacesProvider.overrideWithValue(canCreate),
     appPreferencesProvider.overrideWithValue(
       prefs ?? AppPreferences.inMemory(),
     ),
     workspacesProvider.overrideWithValue(AsyncValue.data(workspaces)),
-    forgeConnectionsProvider.overrideWith((ref) async => connections),
+    forgeConnectionsProvider.overrideWith(
+      (ref) => connections == null
+          ? Completer<List<ForgeConnection>>().future
+          : Future.value(connections),
+    ),
     onboardingFinishedProvider.overrideWithValue(onboardingFinished),
     onboardingFinishedPushProvider.overrideWithValue(push ?? () async {}),
   ],
@@ -677,6 +666,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           isDemoServerProvider.overrideWithValue(false),
+          onboardingFinishedProvider.overrideWithValue(false),
           workspacesProvider.overrideWithValue(
             const AsyncValue<List<Workspace>>.loading(),
           ),
@@ -690,37 +680,29 @@ void main() {
       expect(container.read(onboardingGateProvider), OnboardingGate.loading);
     });
 
-    test('is loading until the forge connections resolve', () {
-      final container = ProviderContainer(
-        overrides: [
-          workspacesProvider.overrideWithValue(
-            const AsyncValue<List<Workspace>>.loading(),
-          ),
-          forgeConnectionsProvider.overrideWith(
-            (ref) async => const <ForgeConnection>[],
-          ),
-        ],
+    test('an incomplete verdict waits for the forge connections', () async {
+      // The flow plans its steps from them once, at its start.
+      final container = _gateContainer(
+        workspaces: const [],
+        connections: null,
+        onboardingFinished: false,
       );
       addTearDown(container.dispose);
 
+      container.read(onboardingGateProvider);
+      await Future<void>.delayed(Duration.zero);
       expect(container.read(onboardingGateProvider), OnboardingGate.loading);
     });
 
     test('is loading until the workspaces stream emits', () {
       final container = ProviderContainer(
         overrides: [
+          onboardingFinishedProvider.overrideWithValue(true),
           workspacesProvider.overrideWithValue(
             const AsyncValue<List<Workspace>>.loading(),
           ),
           forgeConnectionsProvider.overrideWith(
-            (ref) async => const [
-              ForgeConnection(
-                forge: ForgeHost.github,
-                authenticated: true,
-                username: 'testuser',
-                source: ForgeCredentialSource.oauth,
-              ),
-            ],
+            (ref) async => const [_connectedGitHub],
           ),
         ],
       );
@@ -772,11 +754,40 @@ void main() {
       expect(container.read(onboardingGateProvider), OnboardingGate.incomplete);
     });
 
+    test('a FINISHED person who may not create a workspace is not sent back '
+        'to create one', () async {
+      // The flow has nothing left for them: the gate opens and the landing
+      // falls back to the picker, which says an admin has to invite them.
+      final container = _gateContainer(
+        workspaces: const [],
+        connections: null,
+        onboardingFinished: true,
+        canCreate: false,
+      );
+      addTearDown(container.dispose);
+
+      container.read(onboardingGateProvider);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(onboardingGateProvider), OnboardingGate.complete);
+    });
+
+    test('someone who may not create still walks the flow once', () async {
+      final container = _gateContainer(
+        workspaces: const [],
+        connections: const [_disconnectedGitHub],
+        onboardingFinished: false,
+        canCreate: false,
+      );
+      addTearDown(container.dispose);
+
+      container.read(onboardingGateProvider);
+      await Future<void>.delayed(Duration.zero);
+      expect(container.read(onboardingGateProvider), OnboardingGate.incomplete);
+    });
+
     test('an INVITED member with no forge onboards, not re-auths', () async {
-      // The case that killed the old "workspaces prove you were signed in
-      // once" inference: an invited member has a workspace they never created
-      // and has never onboarded. Landing them in the app would skip the
-      // sandbox, model and dictation setup they still need.
+      // An invited member has a workspace they never created and has never
+      // onboarded: the workspace proves nothing about them.
       final container = _gateContainer(
         workspaces: [_workspaceRow()],
         connections: const [_disconnectedGitHub],
@@ -787,6 +798,40 @@ void main() {
       container.read(onboardingGateProvider);
       await Future<void>.delayed(Duration.zero);
       expect(container.read(onboardingGateProvider), OnboardingGate.incomplete);
+    });
+
+    test(
+      'every account passes the flow once, even in a ready workspace',
+      () async {
+        // A forge and a workspace are not a finished onboarding: the flow then
+        // shows only "You", but it shows.
+        final container = _gateContainer(
+          workspaces: [_workspaceRow()],
+          connections: const [_connectedGitHub],
+          onboardingFinished: false,
+        );
+        addTearDown(container.dispose);
+
+        container.read(onboardingGateProvider);
+        await Future<void>.delayed(Duration.zero);
+        expect(
+          container.read(onboardingGateProvider),
+          OnboardingGate.incomplete,
+        );
+      },
+    );
+
+    test('a finished account with a workspace does not wait for the forge', () {
+      // A forge credential gates nothing for someone already set up, so an
+      // unanswered `forge.listConnections` cannot hold the splash.
+      final container = _gateContainer(
+        workspaces: [_workspaceRow()],
+        connections: null,
+        onboardingFinished: true,
+      );
+      addTearDown(container.dispose);
+
+      expect(container.read(onboardingGateProvider), OnboardingGate.complete);
     });
 
     test('holds the splash while the finished flag is unknown', () async {
@@ -805,11 +850,10 @@ void main() {
       expect(container.read(onboardingGateProvider), OnboardingGate.loading);
     });
 
-    test('a complete setup records that onboarding is finished', () async {
-      // Self-healing for installs that predate the flag and for a workspace
-      // that arrived by invite: without this, the FIRST credential lapse after
-      // upgrading would run the first-run flow instead of asking for a sign-in.
-      // It lands on the USER server-side — nothing is written to this device.
+    test('the effects never record the finished flag', () async {
+      // Only the flow's last step does: a setup that looks complete is not a
+      // finished onboarding, and there is no carry-over for an account whose
+      // flag was never set.
       var pushes = 0;
       final container = _gateContainer(
         workspaces: [_workspaceRow()],
@@ -821,26 +865,7 @@ void main() {
 
       container.listen(onboardingGateEffectsProvider, (_, _) {});
       await Future<void>.delayed(Duration.zero);
-      expect(container.read(onboardingGateProvider), OnboardingGate.complete);
-      expect(pushes, 1);
-    });
-
-    test('an already-finished user is not re-recorded', () async {
-      // The write refreshes `identity.me`, which recomputes the gate. Firing it
-      // unconditionally on every complete recomputation would be a round-trip
-      // loop, so the gate reads the flag before deciding to record it.
-      var pushes = 0;
-      final container = _gateContainer(
-        workspaces: [_workspaceRow()],
-        connections: const [_connectedGitHub],
-        onboardingFinished: true,
-        push: () async => pushes++,
-      );
-      addTearDown(container.dispose);
-
-      container.listen(onboardingGateEffectsProvider, (_, _) {});
-      await Future<void>.delayed(Duration.zero);
-      expect(container.read(onboardingGateProvider), OnboardingGate.complete);
+      expect(container.read(onboardingGateProvider), OnboardingGate.incomplete);
       expect(pushes, 0);
     });
 
@@ -866,6 +891,7 @@ void main() {
           AppPreferences.inMemory(prefs),
         ),
         sessionScopeProvider.overrideWithValue(scope),
+        onboardingFinishedProvider.overrideWithValue(null),
         workspacesProvider.overrideWithValue(
           const AsyncValue<List<Workspace>>.loading(),
         ),
@@ -952,37 +978,6 @@ void main() {
       expect(prefs.getBool(scopeA.key('onboarding_complete')), isTrue);
       expect(prefs.getBool('onboarding_complete'), isNull);
     });
-
-    test(
-      'the finished flag is recorded when it resolves after the verdict',
-      () async {
-        var pushes = 0;
-        final container = ProviderContainer(
-          overrides: [
-            appPreferencesProvider.overrideWithValue(AppPreferences.inMemory()),
-            workspacesProvider.overrideWithValue(
-              AsyncValue.data([_workspaceRow()]),
-            ),
-            forgeConnectionsProvider.overrideWith(
-              (ref) async => const [_connectedGitHub],
-            ),
-            onboardingFinishedProvider.overrideWith(
-              (ref) => ref.watch(_finishedProvider),
-            ),
-            onboardingFinishedPushProvider.overrideWithValue(
-              () async => pushes++,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-        container.listen(onboardingGateEffectsProvider, (_, _) {});
-        await Future<void>.delayed(Duration.zero);
-        expect(pushes, 0);
-        container.read(_finishedProvider.notifier).set(false);
-        await Future<void>.delayed(Duration.zero);
-        expect(pushes, 1);
-      },
-    );
   });
 
   // ---------------------------------------------------------------------------
@@ -1050,7 +1045,47 @@ void main() {
       expect(await _settledFlag(container), isFalse);
     });
 
-    test('markOnboardingFinished pushes once and coalesces a race', () async {
+    test('a failed first identity read is unknown, not "no"', () async {
+      // "No" would send a set-up person into onboarding, where the guard
+      // keeps them.
+      final container = containerWith(
+        identity: () async => throw StateError('offline'),
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(onboardingFinishedProvider, (_, _) {});
+      addTearDown(sub.close);
+      await expectLater(
+        container.read(currentIdentityProvider.future),
+        throwsStateError,
+      );
+
+      expect(container.read(onboardingFinishedProvider), isNull);
+    });
+
+    /// Hands the flow's [WidgetRef] to [body], inside [container].
+    Future<void> withWidgetRef(
+      WidgetTester tester,
+      ProviderContainer container,
+      Future<void> Function(WidgetRef ref) body,
+    ) async {
+      late WidgetRef captured;
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: Consumer(
+            builder: (context, ref, _) {
+              captured = ref;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.runAsync(() => body(captured));
+    }
+
+    testWidgets('the flow writes the flag once and coalesces a double tap', (
+      tester,
+    ) async {
       var pushes = 0;
       final gate = Completer<void>();
       final container = containerWith(
@@ -1062,38 +1097,37 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      // Both callers land while the first round-trip is still in flight — the
-      // gate fires on every recomputation, so this is the normal case, not an
-      // edge one.
-      final first = markOnboardingFinished(container.read(_refProvider));
-      final second = markOnboardingFinished(container.read(_refProvider));
-      gate.complete();
-      await Future.wait([first, second]);
+      await withWidgetRef(tester, container, (ref) async {
+        final first = markOnboardingFinishedFromWidget(ref);
+        final second = markOnboardingFinishedFromWidget(ref);
+        gate.complete();
+        await Future.wait([first, second]);
+      });
 
       expect(pushes, 1);
     });
 
-    test(
-      'a failed push is swallowed and does not latch the writer shut',
-      () async {
-        // The gate fires this from a provider body and the flow awaits it before
-        // navigating, so a server that is down must not throw into either — but
-        // it must also leave the writer able to try again.
-        var pushes = 0;
-        final container = containerWith(
-          identity: () async => _me(),
-          push: () async {
-            pushes++;
-            throw StateError('offline');
-          },
-        );
-        addTearDown(container.dispose);
+    testWidgets('a failed write is swallowed and does not latch the writer', (
+      tester,
+    ) async {
+      // The flow awaits this before navigating, so a server that is down must
+      // not throw into it, but the writer must be able to try again.
+      var pushes = 0;
+      final container = containerWith(
+        identity: () async => _me(),
+        push: () async {
+          pushes++;
+          throw StateError('offline');
+        },
+      );
+      addTearDown(container.dispose);
 
-        await markOnboardingFinished(container.read(_refProvider));
-        await markOnboardingFinished(container.read(_refProvider));
-        expect(pushes, 2);
-      },
-    );
+      await withWidgetRef(tester, container, (ref) async {
+        await markOnboardingFinishedFromWidget(ref);
+        await markOnboardingFinishedFromWidget(ref);
+      });
+      expect(pushes, 2);
+    });
   });
 
   // ---------------------------------------------------------------------------
@@ -1220,6 +1254,20 @@ void main() {
       expect(
         settingsAppearanceRoute('w1'),
         '/workspaces/w1/settings/you/appearance',
+      );
+    });
+
+    test('settings opens on the profile', () {
+      expect(settingsLandingRoute('w1'), '/workspaces/w1/settings/you/profile');
+    });
+
+    test('connected accounts are a part of the profile page, not a path', () {
+      final accounts = Uri.parse(settingsAccountsRoute('w1'));
+      expect(accounts.path, settingsAccountProfileRoute('w1'));
+      expect(opensAtConnectedAccounts(accounts), isTrue);
+      expect(
+        opensAtConnectedAccounts(Uri.parse(settingsAccountProfileRoute('w1'))),
+        isFalse,
       );
     });
 

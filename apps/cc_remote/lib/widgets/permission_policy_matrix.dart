@@ -2,6 +2,7 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
+import 'package:cc_domain/features/guardrails/domain/services/policy_resolver.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
@@ -13,9 +14,10 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Effective decisions and the exact local rules at the selected scope.
-/// Conditional grants are listed separately: a generic action-class picker
-/// must never silently overwrite a remembered, argument-constrained grant.
+/// Each action's setting and the exact local rules at the selected scope.
+/// Conditional rules and standing approvals are listed separately: they are
+/// rules of their own on the server, so the action picker writes only the
+/// plain rule and never touches them.
 class PermissionPolicyMatrix extends ConsumerStatefulWidget {
   const PermissionPolicyMatrix({
     super.key,
@@ -58,19 +60,6 @@ class _PermissionPolicyMatrixState
   Future<void> _save(ActionClass cls, ActionPolicyRule? existing) async {
     final choice = _drafts[cls];
     if (!_authorized || choice == null || _busy != null) return;
-    if (widget.rules.any(
-      (r) =>
-          r.workspaceId == widget.workspaceId &&
-          r.scopeType == widget.scopeType &&
-          r.scopeId == widget.scopeId &&
-          r.actionClass == cls &&
-          r.id != existing?.id,
-    )) {
-      setState(
-        () => _error = AppLocalizations.of(context).permissionRevokeBeforeEdit,
-      );
-      return;
-    }
     final id =
         existing?.id ??
         'ap_${widget.workspaceId}_${widget.scopeType.wire}_${widget.scopeId}_class:${cls.wire}';
@@ -132,6 +121,27 @@ class _PermissionPolicyMatrixState
     } finally {
       if (mounted) setState(() => _busy = null);
     }
+  }
+
+  /// Whether [rule] changes anything now. A standing approval spares a
+  /// question and never overrides a deny, so under a denied action it is
+  /// listed as not in effect until it ends or is revoked.
+  bool _inEffect(ActionPolicyRule rule) {
+    final cls = rule.actionClass;
+    if (cls == null || !rule.isStandingApproval) return true;
+    final setting = const PolicyResolver().resolveClassSetting(
+      cls,
+      rules: widget.rules,
+      spaceId: widget.scopeType == ActionScopeType.space
+          ? widget.scopeId
+          : null,
+      agentId: widget.scopeType == ActionScopeType.agent
+          ? widget.scopeId
+          : widget.agentContextId,
+      mode: widget.mode,
+      now: DateTime.now(),
+    );
+    return setting.decision != ActionDecision.deny;
   }
 
   @override
@@ -207,6 +217,7 @@ class _PermissionPolicyMatrixState
           for (final rule in special)
             PermissionSpecialRow(
               rule: rule,
+              inEffect: _inEffect(rule),
               canEdit: widget.canEdit,
               busy: _busy != null,
               revokeArmed: _revokeArmed,

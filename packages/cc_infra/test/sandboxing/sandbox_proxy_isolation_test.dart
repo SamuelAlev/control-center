@@ -37,7 +37,7 @@ void main() {
   test(
     'concurrent sessions get their own proxies on their own ports',
     () async {
-      final manager = SandboxManager();
+      final manager = SandboxManager(hiddenPaths: const []);
       addTearDown(manager.reset);
 
       await manager.wrap(
@@ -62,7 +62,7 @@ void main() {
   );
 
   test('an unrestricted spawn cannot relax a restricted session', () async {
-    final manager = SandboxManager();
+    final manager = SandboxManager(hiddenPaths: const []);
     addTearDown(manager.reset);
 
     await manager.wrap(
@@ -89,7 +89,7 @@ void main() {
   });
 
   test('disposing a session releases only its own proxies', () async {
-    final manager = SandboxManager();
+    final manager = SandboxManager(hiddenPaths: const []);
     addTearDown(manager.reset);
 
     await manager.wrap(

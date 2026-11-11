@@ -2,7 +2,7 @@
 title: Koble til en OpenID Connect-leverandør
 description: Koble en hvilken som helst OIDC-utsteder — Pocket ID, Keycloak, Auth0, Zitadel — til innloggingen i Control Center.
 slug: nb-NO/handbok/slik-gjor-du/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -90,6 +90,32 @@ noe som krever en tunnel eller en offentlig URL — se
 [provisjoner brukere med SCIM](/nb-NO/handbok/slik-gjor-du/sso-scim).
 :::
 
+## Slik matcher pålogginger eksisterende kontoer
+
+En pålogging via identitetsleverandøren finner kontoen sin i denne rekkefølgen:
+
+1. **Den festede identiteten.** Den første SSO-innloggingen fester leverandørens subject (utsteder pluss `sub`) til kontoen. Hver senere innlogging med det subjectet er den kontoen.
+2. **En bekreftet e-post, på begge sider.** Ellers matcher pålogginga en konto på e-post bare når leverandøren sender `email_verified: true` og kontoens adresse også er bekreftet. En adresse er bekreftet når SSO eller SCIM satte den, eller når serverens eier bekreftet den. Eierens egen adresse teller.
+
+E-postadresser lagres og vises med små bokstaver, og matchingen ignorerer store og små bokstaver. En bekreftet adresse identifiserer bare en konto når nøyaktig én konto har den; har to kontoer samme bekreftede adresse, matcher den ingen av dem.
+
+En adresse noen har skrevet inn i sin egen profil, eller på en invitasjon, er ikke bekreftet og matcher ingenting. Å redigere en adresse fjerner dens bekreftede status til noen bekrefter den på nytt. En pålogging matcher aldri på brukernavn.
+
+Når ingenting matcher, oppretter pålogginga en ny konto hvis **Provisjoner ukjente brukere ved første innlogging** er på, og avvises hvis den er av.
+
+### Før du slår på SSO for folk som allerede har kontoer
+
+Bekreft adressene deres først. Åpne **Innstillinger → Server → Personer**, der hver konto viser **E-post ikke bekreftet** til noen har bekreftet den, og bruk **Bekreft e-post** på hver persons rad. Bare serverens eier ser denne listen. Uten det får hver av disse personene enten en ny konto ved første SSO-innlogging, eller blir avvist når provisjonering av ukjente brukere er av.
+
+En person ser «Bare du har lagt inn denne adressen. Enkel pålogging matcher den ikke før serverens eier bekrefter den.» under e-postfeltet i sin egen profil mens adressen er ubekreftet.
+
+### Leverandører som ikke sender `email_verified`
+
+Noen leverandører utelater påstanden. Microsoft Entra ID gjør det som standard. En manglende påstand er ikke et ja, så med en slik leverandør matcher en pålogging bare på den festede identiteten, og en persons første innlogging kan aldri finne den eksisterende kontoen sin på e-post. Å provisjonere kontoen med SCIM hjelper ikke den første OIDC-innloggingen. De praktiske veiene er:
+
+- la **Provisjoner ukjente brukere ved første innlogging** stå på, og la første innlogging opprette kontoen, eller
+- konfigurer leverandøren til å sende `email_verified`, og bekreft deretter de samsvarende adressene som over.
+
 ## Sjekk konfigurasjonen din fra denne siden
 
 Sjekkeren nedenfor kjører i nettleseren din. Den henter utstederens
@@ -101,3 +127,15 @@ serveradresse kan den åpne en testinnlogging som viser om klienten og
 redirect-URI-en er registrert. Den spør aldri om klienthemmeligheten.
 
 <SsoCheck kind="oidc" />
+
+## Feilsøking
+
+### Noen fikk en ny konto etter at SSO ble slått på
+
+Den eksisterende kontoens adresse var ikke bekreftet da de først logget inn med SSO, så pålogginga matchet den ikke og opprettet en ny konto. Det skjer når adressen ble skrevet inn i profilen deres eller på en invitasjon og serverens eier ikke hadde bekreftet den, eller når leverandøren ikke sendte `email_verified: true`. En ny konto hvis leverandør har bekreftet adressen, tar over den adressen, og den eldre kontoen som bare hadde den skrevet inn, mister den.
+
+For å unngå det for neste person, bekreft adressene i **Innstillinger → Server → Personer** før de logger inn. For noen som allerede har to kontoer, er den nye festet til deres SSO-identitet, så det er den deres pålogginger bruker fra nå av.
+
+### Denne kontoen er allerede koblet til en annen SSO-identitet
+
+Pålogginga matchet en konto på dens bekreftede e-post, men den kontoen er allerede festet til et annet subject eller en annen utsteder: en annen bruker hos leverandøren, samme person under en ny leverandør, eller en konto SCIM opprettet under sin egen identifikator. Den festede kontoen avviser alle andre identiteter, så en gjenbrukt adresse hos leverandøren kan ikke ta den over. Logg inn med identiteten kontoen først ble koblet til.

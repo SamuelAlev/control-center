@@ -3,7 +3,7 @@ title: "Architettura"
 description: "Come è strutturato Control Center: un modello a client leggero con server, Clean Architecture feature-first e porte e adattatori."
 dateModified: 2026-09-19
 slug: it-IT/manuale/concetti/architettura
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Panoramica
@@ -60,7 +60,7 @@ La feature **`guardrails`** colloca il proprio livello di dominio in `cc_domain/
 - Entità di memoria: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Value object condivisi: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Porte condivise: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Servizi di dominio: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Servizi di dominio: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + tipi di evento (spazio di lavoro/agente, PR/revisione, messaggistica, ticketing, pipeline, orchestrazione, memoria, calendario/riunioni, identità e appartenenza, osservabilità)
 
 ## Identità e multigiocatore
@@ -132,7 +132,6 @@ Il server custodisce le credenziali che contano: i token di GitHub e dei ticket 
 
 - Segreti in `flutter_secure_storage` (portachiavi di macOS, gestione credenziali di Windows, libsecret di Linux) — la credenziale di dispositivo del client e le chiavi di abbinamento remote, non i token dei provider
 - `shared_preferences` solo per preferenze non sensibili (tema, font, layout)
-- I segreti dei provider rimasti da installazioni precedenti vengono consegnati al server una volta da `features/auth/providers/credential_migration.dart`, poi eliminati dal portachiavi del client
 
 ## Applicazione dell'architettura
 

@@ -8,6 +8,8 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/services/cache_stats.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart'
+    show serverOwnerRequiredKind;
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
@@ -25,6 +27,7 @@ import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:cc_server_core/src/catalog/rig_access.dart';
 import 'package:cc_server_core/src/connect/embedded_connect.dart';
 import 'package:cc_server_core/src/connect/github_manifest_service.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
@@ -46,7 +49,7 @@ import 'package:cc_server_core/src/server_mcp_control.dart';
 import 'package:path/path.dart' as p;
 
 export 'package:cc_server_core/src/media_proxy_guard.dart'
-    show isBlockedProxyTarget, resolvesToBlockedAddress;
+    show ConnectionFactory, isBlockedProxyTarget, resolvesToBlockedAddress;
 
 part 'local_rpc_server_auth.dart';
 part 'local_rpc_server_backup.dart';
@@ -212,40 +215,6 @@ typedef TicketWebhookRequestHandler =
       required String body,
     });
 
-/// Looks up a live code-server session by its capability `sessionId` for the
-/// `/proxy/vscode/<sid>/*` reverse proxy. Returns null for an unknown / expired
-/// / foreign-workspace session (the proxy then denies with 403). Wired by the
-/// server runtime to [CodeServerService.lookup]; null on a host that does not
-/// run code-server (the route then 404s).
-typedef CodeServerSessionResolver =
-    CodeServerSession? Function(String sessionId);
-
-/// Records a bridge-extension "open this file as an app tab" report for the
-/// code-server addressed by capability `sessionId`. Wired by the runtime to
-/// [CodeServerService.reportOpen]; null on a host that does not run code-server.
-/// `windowId` is the reporting window's bridge id (null from an older bridge).
-typedef CodeServerOpenReporter =
-    void Function(
-      String sessionId,
-      String absPath,
-      int? line,
-      String? windowId,
-    );
-
-/// Records a bridge-extension "this file's dirty state changed" report for the
-/// code-server addressed by capability `sessionId`. Wired by the runtime to
-/// [CodeServerService.reportDirty]; null on a host that does not run code-server.
-typedef CodeServerDirtyReporter =
-    void Function(String sessionId, String absPath, bool dirty);
-
-/// Resolves the reverse command stream for the code-server addressed by
-/// capability `sessionId` — the `{cmd, …}` maps relayed to the bridge extension
-/// over `/proxy/vscode/<sid>/__cc_commands__` (SSE). Wired by the runtime to
-/// [CodeServerService.commandStream]; null on a host that does not run
-/// code-server.
-typedef CodeServerCommandStreamResolver =
-    Stream<Map<String, Object?>> Function(String sessionId);
-
 /// Reads a singleton header that a malformed upstream may send more than
 /// once — `headers.value()` throws [HttpException] on multiple values, so
 /// take the first instead of failing the whole fetch.
@@ -293,15 +262,6 @@ final class _UpstreamError extends _UpstreamOpen {
   final int statusCode;
 }
 
-/// Whether an MCP request from [remote] may be answered. Fail-closed: a
-/// tokenless MCP surface serves loopback clients only (the standalone
-/// listener's historical exposure); off-host clients require a configured
-/// bearer token. A null [remote] (no connection info) is treated as off-host.
-bool mcpRemoteClientAllowed({
-  required InternetAddress? remote,
-  required bool hasToken,
-}) => hasToken || (remote?.isLoopback ?? false);
-
 /// Reachable-server WebSocket transport (`wss://…/rpc` or loopback `ws://`).
 /// Direct and relayed clients use the same signed-identity Noise session and
 /// shared `RpcDispatcher` / `RemoteRpcSession`.
@@ -322,6 +282,7 @@ class LocalRpcServer implements McpHostServer {
     this.watchQueries,
     this.workspaceExists,
     this.resolveRole,
+    this.canViewNotification,
     this.toolIsMutating,
     this.meetingAudio,
     this.workspaceLogo,
@@ -336,6 +297,7 @@ class LocalRpcServer implements McpHostServer {
     this.rigStream,
     this.rigAudioInput,
     this.rigTransfer,
+    this.rigAccess,
     this.soundscapeStream,
     this.soundscapePlaylist,
     this.soundscapeSegment,
@@ -354,6 +316,7 @@ class LocalRpcServer implements McpHostServer {
     this.isDemo = false,
     this.trustProxy = false,
     this.mediaCredential,
+    this.mediaConnectionFactory = pinnedPermittedConnection,
     this.oidc,
     this.providerOAuth,
     this.githubManifest,
@@ -375,7 +338,18 @@ class LocalRpcServer implements McpHostServer {
     this.fontCacheDir,
     this.backupUploadDir,
     this.onRunningChanged,
-  }) : rateLimiters = rateLimiters ?? RemoteRateLimiterPool();
+  }) : rateLimiters = rateLimiters ?? RemoteRateLimiterPool() {
+    // Every membership gate passes when no resolver is wired, which only a
+    // bare loopback test server may run with.
+    if (resolveRole == null &&
+        !(address ?? InternetAddress.loopbackIPv4).isLoopback) {
+      throw ArgumentError.value(
+        address,
+        'address',
+        'a server bound beyond loopback needs resolveRole',
+      );
+    }
+  }
 
   /// Ed25519 identity required for every remote secure session. Null is allowed
   /// only for HTTP-only test hosts, which cannot authenticate RPC clients.
@@ -428,10 +402,11 @@ class LocalRpcServer implements McpHostServer {
   /// with no backup port — the route then 404s.
   final BackupRestoreReader? backupRestore;
 
-  /// Whether a user is the operator of this INSTALL. Used by the snapshot
-  /// download, which is the one backup route that is not workspace-scoped: a
-  /// snapshot holds EVERY workspace, so membership in one of them authorizes
-  /// nothing. Null (bare test servers) skips the check.
+  /// Whether a user is the operator of this INSTALL. Gates the snapshot
+  /// download (a snapshot holds EVERY workspace, so membership in one of them
+  /// authorizes nothing), the restore upload (an adopted file's rows count as
+  /// server-written) and a deleted workspace's stored backups. Null refuses
+  /// all three.
   final Future<bool> Function(String userId)? isServerOwner;
 
   /// Hard ceiling on one `POST /backup/restore` body.
@@ -469,15 +444,13 @@ class LocalRpcServer implements McpHostServer {
 
   /// The rig clipboard and file lanes, serving `/rig/clipboard/<id>` and
   /// `/rig/files/<id>`. Null on a host with no enclosure support.
-  ///
-  /// **Why these are HTTP routes and not RPC ops.** The RPC socket caps an
-  /// inbound frame at 256 KB and CLOSES the connection past it
-  /// ([WsRemoteTransport]) — a DoS guard that is right for JSON commands and
-  /// fatal for a pasted screenshot. Putting a base64 image or a dropped file
-  /// on that lane would not be slow, it would drop the client's whole
-  /// session. So bytes ride HTTP, exactly as rig frames, meeting audio and
-  /// proxied media already do, and the RPC lane stays small.
+  /// Why these are HTTP routes: see `local_rpc_server_rig.dart`.
   final RigPort? rigTransfer;
+
+  /// Who may see (frames, sound, clipboard and file reads) and drive
+  /// (microphone, clipboard writes, drops) a rig; every rig lane refuses
+  /// without it.
+  final RigLaneAccess? rigAccess;
 
   /// Opens the soundscape audio stream for `/soundscape/stream`. Null on a
   /// host with no soundscape engine.
@@ -554,8 +527,8 @@ class LocalRpcServer implements McpHostServer {
 
   /// Whether `X-Forwarded-For` is trusted as the client address.
   ///
-  /// Behind a TLS-terminating edge (the documented demo deployment: Railway,
-  /// Render, Fly) `connectionInfo.remoteAddress` is the PROXY, so every visitor
+  /// Behind a TLS-terminating edge (the documented demo deployment: Render,
+  /// Fly) `connectionInfo.remoteAddress` is the PROXY, so every visitor
   /// shares one address — a per-IP cap then bounds the whole deployment, not an
   /// address. With this flag the pre-auth IP-sensitive paths take the FIRST
   /// `X-Forwarded-For` hop (the client as the edge saw it) and fall back to the
@@ -606,10 +579,16 @@ class LocalRpcServer implements McpHostServer {
   /// behalf of a user, or null when that host needs none.
   ///
   /// This is what replaced the client holding a forge token: a private PR
-  /// attachment is fetched BY THE SERVER, with the viewer's own credential,
-  /// and only the bytes cross to the app. Null leaves every media fetch
-  /// anonymous, which is correct for a host with no forge wiring.
-  final Future<String?> Function(String userId, Uri target)? mediaCredential;
+  /// attachment is fetched BY THE SERVER, with the viewer's own credential in
+  /// the workspace named by `ws`, and only the bytes cross to the app (never
+  /// via the shared cache). Null keeps every fetch anonymous (no forge wiring).
+  final MediaCredentialResolver? mediaCredential;
+
+  /// How the media and font proxy open each upstream connection (every
+  /// redirect hop included): [pinnedPermittedConnection], which dials only
+  /// the public address it judged. Tests supply [pinnedConnectionVia] with a
+  /// scripted resolver.
+  final ConnectionFactory mediaConnectionFactory;
 
   /// Optional SAML single sign-on (`GET /saml/login` + `POST /saml/acs` +
   /// `GET /saml/metadata`). Null (the default) leaves the routes absent —
@@ -668,9 +647,14 @@ class LocalRpcServer implements McpHostServer {
   /// Membership gate forwarded to each session: `tools/call` naming a
   /// workspace the user is not a member of is refused, workspace-scoped
   /// subscriptions are denied for non-members and workspace-targeted event
-  /// forwarding is filtered. Null (bare test servers) skips the gates;
-  /// production wiring always supplies it.
+  /// forwarding is filtered. Null skips the gates, so only a loopback-bound
+  /// server (a bare test server) may be built without it.
   final WorkspaceRoleResolver? resolveRole;
+
+  /// Per-frame visibility for the event forwarder: a workspace notification
+  /// about a repository, space or pull request the session user may not see
+  /// is dropped (the durable feed's rule). Null skips it (bare test hosts).
+  final NotificationViewCheck? canViewNotification;
 
   /// Classifies a registered tool before a remote session applies its role
   /// gate. An unknown tool returns null and is refused before dispatch.
@@ -1101,39 +1085,14 @@ class LocalRpcServer implements McpHostServer {
   /// Routes the MCP Streamable HTTP transport (`/mcp`, `/sse`) to the mounted
   /// [McpRequestHandler] — the single-port topology: MCP rides the same
   /// listener as `/rpc` + the HTTP endpoints instead of a port of its own.
-  /// 404s while the MCP surface is stopped (no handler mounted).
-  ///
-  /// Fail-closed guard: a tokenless MCP surface never answers OFF-HOST
-  /// clients. The pre-unification standalone MCP listener bound loopback-only,
-  /// and mounting on a LAN/Tailscale/TLS listener must not silently widen
-  /// that exposure — configure a bearer token (`mcp.setToken`) to serve MCP
-  /// beyond this host. With a token set, the handler's own auth check gates
-  /// every request regardless of origin.
+  /// 404s while the MCP surface is stopped (no handler mounted). The handler
+  /// authenticates every request itself, on loopback too: an off-host caller
+  /// needs the server's MCP token, and a run secret is accepted only from a
+  /// loopback peer.
   Future<void> _serveMcp(HttpRequest request) async {
     final handler = _mcpHandler;
     if (handler == null) {
       request.response.statusCode = HttpStatus.notFound;
-      await request.response.close();
-      return;
-    }
-    if (!mcpRemoteClientAllowed(
-      remote: request.connectionInfo?.remoteAddress,
-      hasToken: handler.hasToken,
-    )) {
-      _w(
-        'Rejecting MCP request from '
-        '${request.connectionInfo?.remoteAddress ?? 'unknown'} — no bearer '
-        'token configured (set one via mcp.setToken to serve MCP off-host)',
-      );
-      request.response
-        ..statusCode = HttpStatus.forbidden
-        ..write(
-          jsonEncode({
-            'error':
-                'MCP requires a bearer token to answer non-loopback '
-                'clients (mcp.setToken)',
-          }),
-        );
       await request.response.close();
       return;
     }
@@ -2291,8 +2250,8 @@ class LocalRpcServer implements McpHostServer {
     final userId = auth.row.userId;
     if (userId == null || userId.isEmpty) {
       // A device credential with no user binding cannot act as a principal.
-      // The identity bootstrap binds every legacy row at startup, so this only
-      // fires for a corrupt/hand-edited row — fail closed, generic wire error.
+      // Every writer binds one, so this only fires for a corrupt or
+      // hand-edited row — fail closed, generic wire error.
       _w('Rejecting session for device ${auth.row.id} — no bound user');
       try {
         await transport.send(const {'type': 'auth_denied'});
@@ -2339,6 +2298,7 @@ class LocalRpcServer implements McpHostServer {
           ? null
           : (workspaceId) async =>
                 await roleResolver(workspaceId, userId) != null,
+      canView: canViewNotification,
     );
     final session = _WsSession(
       rpc: rpc,

@@ -2,7 +2,7 @@
 title: Model agen
 description: Apa sebenarnya agen di Control Center, bidang mana darinya yang mengubah perilaku dan bagaimana adapter yang menjalankannya menentukan apa yang dapat ditegakkan.
 slug: id-ID/panduan-pengguna/konsep/model-agen
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Apa itu agen?
@@ -54,7 +54,7 @@ Skill repo dimuat untuk **setiap** adapter, bukan hanya harness bawaan. Skill re
 
 Agen tidak membawa flag izin sendiri. Apakah agen boleh membuat commit, melakukan push, membuka pull request, menulis ke pelacak, atau menjangkau jaringan ditentukan oleh [pagar pengaman aksi](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) — izinkan, tanyakan dulu, atau tolak, pada cakupan ruang kerja, agen, atau space — dan aturan yang sama berlaku adapter mana pun yang menjalankannya.
 
-Apa yang _diberikan_ ke sebuah run tidak berubah karena aturan-aturan itu. Run di worktree GitHub selalu mendapat token GitHub hanya-baca, dan push ditanyakan saat push itu terjadi: konfigurasi git agen mengirim setiap push GitHub melalui Control Center, yang menerapkan aturan **Push ke remote** sebelum meneruskannya.
+Apa yang _diberikan_ ke sebuah run tidak berubah karena aturan-aturan itu. Run selalu dapat membaca repositori GitHub yang dikerjakannya, dengan token hanya-baca, dan push ditanyakan saat push itu terjadi: konfigurasi git agen mengirim setiap push GitHub melalui Control Center, yang menerapkan aturan **Push ke remote** sebelum meneruskannya.
 
 Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk cara kerjanya, termasuk apa yang ditegakkan dan tidak ditegakkan di tingkat sistem file.
 
@@ -70,16 +70,16 @@ Bidang yang paling berpengaruh pada agen adalah adapter-nya, karena transport ad
 Secara konkret, **hanya harness bawaan yang mendukung subagen, pengarahan di tengah run, jeda dan lanjutkan (dan karena itu ambil alih) serta penegakan mode secara struktural.** Claude Code tidak mendapat satu pun dari itu.
 
 :::caution[Sandbox OS adalah batas bawah, bukan penegak mode, dan tidak setiap host memilikinya]
-Matriks di atas berbicara tentang apa yang dapat _dilihat dan dibatasi_ oleh Control Center. Di bawahnya, `cc_server` membungkus CLI Claude Code dalam sandbox OS milik host jika ada — Seatbelt di macOS, bubblewrap di Linux dan WSL2 — sehingga `rm` yang tak terlihat atau penulisan yang tak terlihat tetap dibatasi oleh OS. Di **Windows tidak ada backend sama sekali** dan di Linux atau WSL2 tanpa `bwrap` dan `socat` probe melaporkan tidak ada, jadi di sana run tersebut jatuh kembali ke sanitasi lingkungan, kredensial via broker, pagar pengaman pada panggilan yang bisa dilihat Control Center dan worktree percakapan itu sendiri (copy-on-write di tempat `rift` dikirim; `git worktree` di Windows).
+Matriks di atas berbicara tentang apa yang dapat _dilihat dan dibatasi_ oleh Control Center. Di bawahnya, `cc_server` membungkus CLI Claude Code dalam sandbox OS milik host jika ada — Seatbelt di macOS, bubblewrap di Linux dan WSL2 — sehingga `rm` yang tak terlihat atau penulisan yang tak terlihat tetap dibatasi oleh OS. Di **Windows tidak ada backend sama sekali** dan di Linux atau WSL2 tanpa `bwrap` dan `socat` probe melaporkan tidak ada. Di sana hanya run milik pemilik server yang dimulai, dan run orang lain ditolak kecuali pemilik memulai server dengan `--sandbox off`. Run yang dimulai tanpa sandbox jatuh kembali ke sanitasi lingkungan, kredensial via broker, pagar pengaman pada panggilan yang bisa dilihat Control Center dan worktree percakapan itu sendiri (copy-on-write di tempat `rift` dikirim; `git worktree` di Windows).
 
 Apa yang bukan sandbox adalah sebuah _gerbang_. Sandbox membatasi di mana sebuah proses boleh membaca, menulis dan terhubung — mode hanya-baca memang menjangkaunya, sebagai bind mount hanya-baca — tetapi sandbox tidak dapat mencegat panggilan, memunculkan persetujuan, atau memberi tahu Anda setelahnya apa yang dicoba CLI. Itu, ditambah keempat kemampuan yang disebut di atas, tetap yang dimiliki harness bawaan dan tidak dimiliki yang lain. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/).
 :::
 
-Agen **tanpa** adapter jatuh kembali ke **Control Center (built-in)** — loop di dalam server, jadi tidak ada CLI yang perlu diinstal — dan log run-nya mencatat `cc-harness`. Setiap agen hasil seeding dibuat tanpa adapter atau model, jadi kelima agen di ruang kerja baru semuanya berjalan di sana, pada model default Anthropic, sampai Anda menetapkan adapter dan model untuk tiap agen. Pilihan "adapter default" saat onboarding adalah preferensi sisi klien yang tidak pernah dibaca server dan tidak berlaku surut ke agen yang sudah dibuat.
+Agen **tanpa** adapter jatuh kembali ke **Control Center (built-in)** — loop di dalam server, jadi tidak ada CLI yang perlu diinstal — dan log run-nya mencatat `cc-harness`. Setiap agen hasil seeding dibuat tanpa adapter atau model, jadi keenam agen di ruang kerja baru semuanya berjalan di sana, pada model default Anthropic, sampai Anda menetapkan adapter dan model untuk tiap agen. Menyelesaikan langkah adapter pada onboarding menetapkan pasangan adapter dan model-nya pada setiap agen yang masih belum memilikinya di ruang kerja yang ada saat itu; tidak ada runner default ruang kerja.
 
 ## Dari mana agen berasal
 
-- **Diseed bersama ruang kerja.** Setiap ruang kerja — bukan hanya yang pertama — mendapat seorang CEO plus empat spesialis (`qa`, `architect`, `engineer`, `librarian`) yang melapor kepadanya, dibuat secara idempoten di latar belakang saat ruang kerja dibuat. Lihat [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
+- **Diseed bersama ruang kerja.** Setiap ruang kerja — bukan hanya yang pertama — mendapat seorang CEO plus lima spesialis (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) yang melapor kepadanya, dibuat secara idempoten di latar belakang saat ruang kerja dibuat. Lihat [Ruang kerja dan isolasi](/id-ID/panduan-pengguna/konsep/ruang-kerja/).
 - **Ditambahkan secara manual** di Pengaturan → Ruang kerja → Agen. Meminta agen merekrut kolega tidak membuat baris; gunakan layar itu.
 
 ## Status langsung

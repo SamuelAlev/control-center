@@ -158,7 +158,8 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
   /// `estimated_cost_cents`, and materializing whole run-log rows to get them
   /// drags each run's serialized prompt context along for nothing.
   Future<List<({DateTime startedAt, String? adapter, int costCents})>>
-  costHistory(String workspaceId, int sinceSeconds) => customSelect(
+  costHistory(String workspaceId, int sinceSeconds) =>
+      customSelect(
         'SELECT started_at, adapter, estimated_cost_cents '
         'FROM agent_run_logs '
         'WHERE workspace_id = ? AND started_at >= ? '
@@ -285,8 +286,7 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
       (select(agentRunLogsTable)
             ..where(
               (t) =>
-                  t.workspaceId.equals(workspaceId) &
-                  t.spaceId.equals(spaceId),
+                  t.workspaceId.equals(workspaceId) & t.spaceId.equals(spaceId),
             )
             ..orderBy([(t) => OrderingTerm.asc(t.startedAt)]))
           .watch();
@@ -316,31 +316,24 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
     String workspaceId,
     String runId,
     AgentRunLogsTableCompanion cost,
-  ) => (update(agentRunLogsTable)
-        ..where(
-          (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
-        ))
-      .write(cost);
+  ) =>
+      (update(agentRunLogsTable)..where(
+            (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
+          ))
+          .write(cost);
 
-  /// SQLite evaluates both assignments against the OLD row. Repeat the exact
-  /// new total expression for the cents projection (positive micro-USD rounds
-  /// to the nearest cent), widening legacy cents-only rows on their first add.
-  /// A single SQL statement prevents concurrent sibling writes losing deltas.
+  /// Adds [amountMicros] to the run's child rollup in a single SQL statement,
+  /// so concurrent sibling writes never lose a delta.
   Future<int> addLogChildCostMicros(
     String workspaceId,
     String runId,
     int amountMicros,
   ) {
-    const total =
-        '(CASE WHEN child_cost_micros = 0 THEN child_cost_cents * 10000 '
-        'ELSE child_cost_micros END) + ?';
     return customUpdate(
       'UPDATE agent_run_logs SET '
-      'child_cost_micros = $total, '
-      'child_cost_cents = CAST(($total + 5000) / 10000 AS INTEGER) '
+      'child_cost_micros = child_cost_micros + ? '
       'WHERE id = ? AND workspace_id = ?',
       variables: [
-        Variable.withInt(amountMicros),
         Variable.withInt(amountMicros),
         Variable.withString(runId),
         Variable.withString(workspaceId),
@@ -361,24 +354,24 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
   }) => transaction(() async {
     var updated = 0;
     if (hasMetadata) {
-      updated = await (update(agentRunLogsTable)
-            ..where(
-              (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
-            ))
-          .write(runtime);
+      updated =
+          await (update(agentRunLogsTable)..where(
+                (t) => t.id.equals(runId) & t.workspaceId.equals(workspaceId),
+              ))
+              .write(runtime);
     }
     if (markRunning) {
-      final started = await (update(agentRunLogsTable)
-            ..where(
-              (t) =>
-                  t.id.equals(runId) &
-                  t.workspaceId.equals(workspaceId) &
-                  t.completedAt.isNull() &
-                  t.status.equals('pending'),
-            ))
-          .write(
-            const AgentRunLogsTableCompanion(status: Value('running')),
-          );
+      final started =
+          await (update(agentRunLogsTable)..where(
+                (t) =>
+                    t.id.equals(runId) &
+                    t.workspaceId.equals(workspaceId) &
+                    t.completedAt.isNull() &
+                    t.status.equals('pending'),
+              ))
+              .write(
+                const AgentRunLogsTableCompanion(status: Value('running')),
+              );
       if (started > 0) {
         updated = started;
       }
@@ -392,14 +385,14 @@ class AgentDao extends DatabaseAccessor<WorkspaceDatabase>
     String workspaceId,
     String runId,
     AgentRunLogsTableCompanion terminal,
-  ) => (update(agentRunLogsTable)
-        ..where(
-          (t) =>
-              t.id.equals(runId) &
-              t.workspaceId.equals(workspaceId) &
-              t.completedAt.isNull(),
-        ))
-      .write(terminal);
+  ) =>
+      (update(agentRunLogsTable)..where(
+            (t) =>
+                t.id.equals(runId) &
+                t.workspaceId.equals(workspaceId) &
+                t.completedAt.isNull(),
+          ))
+          .write(terminal);
 
   /// Deletes run logs by agent id.
   Future<int> deleteLogsByAgentId(String agentId) =>

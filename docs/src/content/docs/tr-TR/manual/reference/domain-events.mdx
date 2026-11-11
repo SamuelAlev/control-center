@@ -2,7 +2,7 @@
 title: Alan olayları
 description: 54 alan olayının, yüklerinin ve bunları tüketen sunucu tarafı abonelerin eksiksiz kataloğu.
 slug: tr-TR/kilavuz/referans/alan-olaylari
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Olay veri yolu
@@ -148,14 +148,13 @@ Dışarıdan olay güdümlü görünen birkaç alt sistem aslında öyle değild
 
 | Alt alan                     | Durumun bunun yerine nasıl ilerlediği                                                                                  |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Bellek                       | `record_memory_fact` ve benzerleri yazar ve döner; geri çağırma okur. Bir olgu ya da çakışma üzerine hiçbir şey yayımlanmaz |
+| Bellek                       | `propose_fact` ve benzerleri yazar ve döner; geri çağırma okur. Bir olgu ya da çakışma üzerine hiçbir şey yayımlanmaz |
 | Orkestrasyon                 | Öneri, onayı ve üretilen pipeline çalıştırması satırlar ve RPC çağrılarıdır                                            |
 | Plan belgeleri               | `submit_plan` bir revizyon yazar; onay bir orkestrasyonu somutlaştırır. İkisi de duyurulmaz                            |
 | Artifaktlar                  | `publish_artifact` / `revise_artifact` doğrudan revizyon yazar                                                         |
 | Onaylar                      | Yükseltme, onay iş akışı hizmetinin içinde ele alınır                                                                  |
 | Bilet eşitleme               | Sağlayıcı koordinatörü yukarıdaki bilet olaylarına abone olur; gelen web kancaları doğrudan uygulanır                  |
 | Takvim yenileme              | Bir eşitleme etkinlikleri upsert eder ve istemci yeniden okur; yenileme yayını yoktur                                  |
-| Çalışma ağacı birleştirmeleri | `worktree_merge_log` içine kaydedilir ve oradan okunur                                                                 |
 
 ## Aboneler
 
@@ -190,7 +189,7 @@ Aşağıdaki her abone, `runCcServer` içinde (ya da onun oluşturduğu bir hizm
 
 `TicketAssigned` bir denetim ve bildirim sinyali ile bir pipeline tetikleyicisidir. Bir ajana atama sahipliği kaydeder ve hiçbir çalıştırma başlatmaz — bilet dağıtıcısı yoktur. Bir ekibe atama (`assignedTeamId` ayarlı) istisnadır: `TeamRoutingService` ekip liderini gönderir.
 
-`TicketRemoteSyncHandler` bildirilmiştir ancak üretim kodunda hiç oluşturulmaz; dolayısıyla bugün hiçbir şeye abone değildir. İstemci tarafındaki `NotificationEventMapper` yalnızca kendi testinde oluşturulur — istemci/sunucu ayrımından önceki süreç içi yolun kalıntısıdır. Canlı bildirim balonları aşağıdaki iletişim çerçevelerinden gelir.
+Canlı bildirim balonları aşağıdaki iletişim çerçevelerinden gelir.
 
 ## Bildirim eşlemesi
 

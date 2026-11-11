@@ -56,17 +56,107 @@ as `custom:<id>`, and a client too old to understand that value falls back
 to guest rather than guessing.
 
 Underneath roles sit **per-repo grants** (`none` / `read` / `review` /
-`write`): workspace membership never silently out-privileges the forge. Every
+`write`, see [Changing code needs the write grant](#changing-code-needs-the-write-grant)):
+workspace membership never silently out-privileges the forge. Every
 surface that exposes code checks them — including the ones that reach code
 sideways, like a terminal or an editor session opened on a space's worktree.
 
-## Server authority
+## Code follows the forge
 
-Some operations are not about a workspace at all: install-wide settings, SSO
-configuration, provider credentials, model management, whole-install backups.
-Those declare **server authority** and are refused for everyone except the
-install's operator (the recorded server owner). There is deliberately one
-operator identity and one definition of it.
+A grant alone does not open a repository's code. To see its files, diffs or
+search results, or to open a terminal on it, a member needs the Control Center
+grant **and** their own forge sign-in must be able to read the repository.
+Workspace admins are not exempt; the server owner is, because the checkout is
+on their machine. A repository with no forge remote needs only the grant.
+
+- When an admin grants a repository to someone whose forge account cannot read
+  it, the grant is saved and the admin sees a warning.
+- When the forge cannot be reached to check, the answer is no, never a guess:
+  the person sees "Couldn't confirm your GitHub access. Try again." (with
+  their forge's name) and tries again later.
+- Pull requests and everything made from them follow the same rule.
+
+### Changing code needs the write grant
+
+A repository grant has three levels, and each includes the one before it:
+
+- **read**: see the repository's files, diffs and search results, provided your
+  own forge sign-in can read it too.
+- **review**: read, plus approving, requesting changes and the other review
+  actions on its pull requests.
+- **write**: review, plus changing the code and driving agent runs that write
+  to the repository. Changing the code covers saving or reverting files in the
+  editor, syncing a worktree to its pull request's head, committing and pushing,
+  publishing a branch, and the stack actions that cut, check out or publish a
+  part.
+
+Every push made for a person, by them or by an agent run they asked for, checks their write grant on that repository at the moment of the push, on GitHub, GitLab and Bitbucket alike. Publishing a stack checks every repository in the stack before it pushes any of them.
+
+A refusal names the grant that is missing. Without read access the app says
+"You don't have read access to this repository. A workspace admin can grant it."
+With read but not write it says "You can read this repository but not change it. A workspace admin can grant write access."
+
+### Spaces follow their repositories
+
+What agents wrote about code follows the code. A space's content (its
+messages, transcripts and tool output, search results, run logs, todos,
+activity and notifications) carries the code of the repositories it works on,
+so a space opens only for a member who holds a read grant on, and whose own
+forge sign-in can read, every repository the space uses. Those are the
+repositories selected for it, or all of the workspace's repositories when the
+space has no selection recorded. A space created with no repositories is open
+to every member.
+
+A space someone cannot open is not listed for them anywhere, including search,
+run logs, todos, activity and notifications. Workspace admins hold every grant
+but are not exempt from the forge half; the server owner is.
+
+For a conversation everyone should be able to read, create the space with no
+repositories, or only with repositories everyone can read.
+
+## The server owner
+
+The person who set the server up is its **owner**. The server records them
+once, at first start, and nothing sent over the network changes that. A
+workspace admin, or a workspace owner, is not the server owner: anyone can be
+given a workspace, but the server's machine has one owner.
+
+**Nothing runs on the server's own machine outside a sandbox unless the server
+owner started it or approved that kind of host execution.** Concretely, only
+the server owner can:
+
+- Create a workspace. Everyone else sees a screen asking them to have the
+  owner create one or a workspace admin invite them.
+- Open the host shell in the server-hosted terminal. Everyone else gets a
+  sandboxed terminal, with an agent's limits, in the workspace's own
+  directories.
+- Open the embedded code editor. It runs as the server's own user, with its
+  terminal, tasks and extensions.
+- Open a pull request or a conversation's worktree in a native editor. The
+  editor starts on the server's own screen, as the server's user.
+- Save or approve an [environment](/manual/guides/environments/) definition
+  that runs anything on the host: host placement, a check that runs a
+  command, or a provision or archive task.
+- Run agents on a server whose machine has no sandbox. Everyone else's runs
+  are refused there, unless the owner started the server with `--sandbox off`,
+  which runs every member's agents unconfined (see
+  [Agents on a host without a sandbox](/manual/concepts/sandbox-security/#agents-on-a-host-without-a-sandbox)).
+- Link a repository checkout that lives outside the workspace's own storage,
+  confirm one linked before that rule, and browse the server's folders when
+  adding a repository (see [Add repositories](/manual/guides/add-repos/)).
+- See and stop every running agent process on the server. Everyone else sees
+  and stops only live agent runs in workspaces they belong to.
+- Have agents use the MCP servers configured in the server user's own tools
+  (Claude, Codex, Cursor and the rest). Only built-in harness runs the owner
+  is accountable for get them; see
+  [Personal MCP servers stay the owner's](/manual/guides/mcp-server/#personal-mcp-servers-stay-the-owners).
+- Confirm a person's email address, so single sign-on can match it (see
+  [Connect an OpenID Connect provider](/manual/guides/sso-oidc/#how-sign-ins-match-existing-accounts)).
+- Change install-wide settings: SSO, provider credentials, the MCP endpoint
+  and its token, model management, Connect, and whole-install backups. These
+  operations declare **server authority** and are refused for everyone else.
+
+There is deliberately one operator identity and one definition of it.
 
 ## The audit trail
 

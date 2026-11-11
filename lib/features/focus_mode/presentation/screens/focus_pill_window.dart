@@ -4,9 +4,8 @@
 
 import 'dart:async';
 
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/app/window_chrome.dart';
-import 'package:control_center/core/theme/app_radii.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/window_drag_area.dart';

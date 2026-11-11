@@ -2,7 +2,7 @@
 title: Nastavení prostředí
 description: Dej každému prostoru a pull requestu vlastní běžící stack, s compose, vlastním CLI, hlídanými procesy nebo desktopovou aplikací.
 slug: cs-CZ/prirucka/navody/prostredi
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 **Prostředí** je běžící stack jednoho prostoru: služby, které větev potřebuje, izolované od všech ostatních prostorů, viditelné v postranním panelu a dostupné agentům. Mají ho i pull requesty, protože PR už vlastní prostor má.
@@ -11,12 +11,26 @@ Správce pracovního prostoru jednou napíše **definici**. Členové pak klikno
 
 ## Vytvoření definice
 
-1. Otevři **Nastavení → Pracovní prostor → Prostředí**. Definice mohou měnit jen správci pracovního prostoru.
+1. Otevři **Nastavení → Pracovní prostor → Prostředí**. Definice mohou měnit jen správci pracovního prostoru, ale definici, která běží na hostiteli serveru, může uložit jen vlastník serveru (viz [Kdo co smí uložit](#kdo-co-smí-uložit)).
 2. Klikni na **Nová definice** a pak na **Prázdná definice** nebo **Návrh z repozitáře**. Koncept prohledá repozitář a najde soubory compose, `Procfile` a skripty v `package.json`, výsledek zkontroluješ.
 3. Vyplň formulář, nebo použij kartu **JSON**. Příklady na této stránce jsou tento JSON.
 4. Klikni na **Spustit test**. Spustí se jednorázové prostředí, Control Center počká na jeho připravenost a zruší ho.
 
-Pokud chceš mít definici v repozitáři, použij **Propojit soubor z repozitáře**. Control Center čte soubor jen z výchozí větve a spouští jen verzi schválenou správcem. Novější verze zobrazí **Dostupná aktualizace** a do schválení nic nezmění.
+Uložení přísně kontroluje definici. Neznámé pole, hodnota špatného typu nebo přepsaná volba se odmítnou, s uvedením cesty a nejbližšího platného názvu, například `repos.app.requird: Unknown field. Did you mean "required"?`. Klíč `$schema` na nejvyšší úrovni je povolen.
+
+Pokud chceš mít definici v repozitáři, použij **Propojit soubor z repozitáře**. Control Center čte soubor jen z výchozí větve a spouští jen verzi, která byla schválena: správcem pracovního prostoru, nebo vlastníkem serveru, když definice běží na hostiteli. Novější verze zobrazí **Dostupná aktualizace** a do schválení nic nezmění.
+
+### Kdo co smí uložit
+
+Prostředí definice může spouštět příkazy na hostiteli serveru jako uživatel serveru. To je rozhodnutí vlastníka serveru, ne role v pracovním prostoru:
+
+- Definice **běží na hostiteli**, když má umístění na hostiteli, kontrolu, která spouští příkaz, nebo úlohu `provision` nebo `archive`. Tyhle úlohy běží ve worktree prostoru na hostiteli bez ohledu na umístění.
+- Definici, která běží na hostiteli, může uložit nebo schválit jen [vlastník serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru). Patří sem i schválení nové verze propojeného souboru z repozitáře. Správce pracovního prostoru, který to zkusí, uvidí hlášku „Prostředí, které běží na hostiteli serveru, může uložit nebo schválit jen vlastník serveru. Správce pracovního prostoru může použít to, které běží na stanici.“
+- Správce pracovního prostoru může uložit a schválit definici, která běží celá v rigu: `"placement": "rig"`, bez kontrolního příkazu a bez úlohy `provision` nebo `archive`.
+- Členové spouštějí, zastavují a používají prostředí tak či onak.
+- Definice, která běží na hostiteli, se spustí až poté, co ji uložil nebo schválil **aktuální** vlastník serveru. Server si toto schválení zaznamenává sám a kontroluje ho před každým startem, kontrolou, úlohou a synchronizací hlavy pull requestu. Definice, kterou aktuální vlastník neschválil, třeba takovou, kterou uložil předchozí vlastník, čeká pod svým řádkem v seznamu prostředí i v editoru. Vlastník serveru vidí „Běží na tomto serveru. Schvalte jej, aby se mohlo spustit.“ s tlačítkem **Schválit**, které ji uloží beze změny; všichni ostatní vidí „Běží na tomto serveru. Před spuštěním jej musí schválit vlastník serveru.“
+- Prostředí čekající na toto schválení hlásí „Vlastník serveru toto prostředí zatím neschválil, takže na tomto serveru nemůže běžet.“ Vlastník serveru místo toho vidí „Toto prostředí jste zatím neschválil. Běží na tomto serveru, takže se spustí, až schválíte jeho definici.“ s tlačítkem **Zkontrolovat a schválit**, které otevře definici.
+- Terminály procesů prostředí a terminál, který se otevře při startu, když potřebuje odpověď, běží na hostiteli serveru. Psát do nich, měnit jejich velikost nebo je zavírat vyžaduje zápisový přístup ke každému repozitáři, který prostor vystavuje, čitelnému přes tvoje vlastní přihlášení k forge: stejně jako spuštění prostředí. Kdo jiný se k těm terminálům nedostane vůbec.
 
 ## Nejmenší definice
 
@@ -35,7 +49,7 @@ Vše ostatní má výchozí hodnotu: soubor compose se najde, běží všechny s
 
 ## Druhy komponent
 
-Prostředí je seřazený seznam komponent. Každá čeká, až bude předchozí připravená, pokud `after` neurčuje jiné, a zastavení probíhá v opačném pořadí. `enabledWhen` podmiňuje komponentu volbou nebo rolí, například `opt.seed`, `!opt.seed` nebo `repo.web`.
+Prostředí je seřazený seznam komponent. Každá čeká, až bude předchozí připravená, pokud `after` neurčuje jiné, a zastavení probíhá v opačném pořadí. `enabledWhen` podmiňuje komponentu volbou nebo rolí, například `opt.seed`, `!opt.seed` nebo `repo.web`. Komponenta, jejíž role je volitelná a v prostoru chybí, se vynechá stejným způsobem, bez potřeby `enabledWhen`: nespustí se a nemá `{port.*}` ani `{url.*}`, takže jiná komponenta, která je čte, způsobí selhání startu.
 
 | Druh | Kdo ji spouští | K čemu slouží |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Komponenty `task` přijímají seznam `when`:
 | `manual` | Na vyžádání: **Spustit**, `cc-env run <id>` nebo `environment_run_task` |
 | `archive` | Těsně před zrušením worktree |
 
-Příkaz zadaný jako pole je argv, takže hodnoty voleb nikdy neprocházejí shellem. Řetězec nebo `script` s polem řádků běží pod `bash -lc`. Zástupné symboly jako `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` a `{url.<role>}` se rozvíjejí jen v argv. Příkazy shellu čtou stejné hodnoty jako proměnné `CC_ENV_*`, například `$CC_ENV_PORT_WEB`.
+Úloha, která při startu nemá co dělat, ukazuje **Nečinný** a v seznamu kroků zobrazovaném během startu prostředí chybí: jde o úlohu `manual` nebo `change`, nebo o úlohu `create`, která už proběhla.
 
-Každý příkaz a terminál prostoru dostane také `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` a v prostorech PR ještě `CC_PR_NUMBER` a `CC_PR_IS_FORK`. S komponentou compose dostanou i `COMPOSE_PROJECT_NAME` a `COMPOSE_FILE`, takže `docker compose exec` v úloze trefí správný projekt.
+Příkaz zadaný jako pole je argv, takže hodnoty voleb nikdy neprocházejí shellem. Řetězec nebo `script` s polem řádků běží pod `bash -lc`. Zástupné symboly jako `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` a `{url.<role>}` se rozvíjejí jen v argv. Příkazy shellu čtou stejné hodnoty jako proměnné `CC_ENV_*`, například `$CC_ENV_PORT_WEB`. Neznámý zástupný symbol v komponentě, která je součástí, zastaví start dřív, než cokoli poběží.
+
+Každý příkaz a terminál prostoru dostane také `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` a v prostorech PR ještě `CC_PR_NUMBER` a `CC_PR_IS_FORK`. S komponentou compose dostanou i `COMPOSE_PROJECT_NAME` a `COMPOSE_FILE`, takže `docker compose exec` v úloze trefí správný projekt.
 
 ## Role a pracovní adresář
 
@@ -77,7 +93,7 @@ Definice váže **role** na repozitáře pracovního prostoru, takže jeden stac
 - `whenMissing`: co se stane, když prostoru role chybí. `addToSpace` přidá repozitář na výchozí větvi a je výchozí pro role `required`. `useSource` předá tvůj registrovaný checkout, se kterým zacházej jako s pouze pro čtení. `skip` nechá proměnnou nenastavenou a je výchozí v ostatních případech.
 - Ke spuštění je potřeba oprávnění `write` ke kotevnímu repozitáři v prostoru a přístup pro čtení ke všem ostatním vázaným repozitářům.
 
-Příkaz běží v první roli z `repos`, kterou prostor má, takže definice s jedním repozitářem to nikdy nezmiňuje. Každá komponenta to může změnit pomocí `"cwd": { "role": "e2e", "path": "packages/ui" }`. Obě pole jsou volitelná.
+Příkaz běží v první roli deklarované v `repos`, nikoli v jiné roli, kterou prostor náhodou má, takže definice s jedním repozitářem to nikdy nezmiňuje. Každá komponenta to může změnit pomocí `"cwd": { "role": "e2e", "path": "packages/ui" }`. Obě pole jsou volitelná. Pokud první role může v prostoru chybět, protože není `required` ani jedinou kotvou, musí každá komponenta uvést svou roli.
 
 ## Porty a URL
 
@@ -130,6 +146,8 @@ Webová aplikace a Postgres z jednoho souboru compose, s gitem ignorovaným `.en
 
 `healthchecks` umožní službě bez vlastní kontroly stavu zdržet další komponentu. Bez ní se běžící kontejner počítá jako připravený a migrace mohou předběhnout databázi, která se ještě spouští.
 
+Každý start a obnovení spouští `up` s `--remove-orphans`, takže služba odstraněná ze souboru compose se zastaví a uvolní svůj port. Obrazy se sestavují při startu i obnovení, pokud komponenta nenastaví `"build": false`.
+
 ## Příklad: vlastní CLI
 
 Smyšlený nástroj `acme`, který sám spravuje své kontejnery, domény a TLS. Control Center dodá `{name}` a vše ostatní zjistí ze `status`. Nikdy neodvozuje názvy hostitelů nástroje a nikdy neupravuje `/etc/hosts`.
@@ -147,7 +165,8 @@ Smyšlený nástroj `acme`, který sám spravuje své kontejnery, domény a TLS.
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Smyšlený nástroj `acme`, který sám spravuje své kontejnery, domény a TLS.
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Smyšlený nástroj `acme`, který sám spravuje své kontejnery, domény a TLS.
 ```
 
 - `create`, `status` a `destroy` jsou povinné. Control Center volí `create` nebo `start` podle přečteného stavu. Každé sloveso může být místo argv `{ "shell": "…" }`.
+- `interactive` vyjmenovává slovesa z `create`, `start` a `reset`, která se mohou v terminálu zeptat na to, co potřebují. Když takové sloveso skončí kódem 3 pro osobu, která stiskla **Start**, Control Center spustí stejné sloveso znovu v záložce terminálu a start pokračuje, jakmile skončí kódem 0. Tam je podmínka `interactive` pravdivá a nastaveno je `CC_ENV_INTERACTIVE=1`, takže `{ "if": "!interactive", "args": ["--json"] }` zachovává strojový výstup pro neinteraktivní běh. Start od agenta nebo automatický start nikdy neotevře terminál: prostředí ukazuje **Vyžaduje akci** a čeká.
+- I když `destroy` selže, prostředí se odstraní, pokud `status` pak hlásí `missing`, takže prostředí, které nástroj už nemá, lze vždy odstranit.
+- `list` umožňuje Control Center všimnout si prostředí, které nástroj ztratil. Je označeno jako zmizelé, jen když jeho název chybí v `list` a `status` pak uvádí `missing`. Výstup, který nelze přečíst jako seznam, nic nemění.
+- `{service}` v `logs` a `exec` musí být jedno slovo, které nezačíná na `-`, a jedna ze služeb, které nástroj naposledy hlásil, pokud vůbec nějaké hlásil.
 - `statusMap` čte vlastní JSON nástroje pomocí ukazatelů JSON, kde `*` odpovídá každé položce. Pravidla stavu jsou seřazená a vyhrává první shoda. Podmínka je `path` s `equals`, nebo `any` či `none` s `where`.
 - `keepsDataOnStop: false` vypne zastavení při nečinnosti a přidá k **Zastavit** varování před ztrátou dat. Nastav to, když zastavení přijde o data.
 - `routing.mode: "tool"` propojí názvy hostitelů nástroje s prohlížečem (VM) a agenty. Doména musí končit na `.test`, `.localhost` nebo `.internal` a nahlášená URL mimo ni se zahodí.
@@ -229,8 +253,8 @@ Jen procesy a úlohy, žádné kontejnery. Webová aplikace najde API přes `{ur
 }
 ```
 
-- Každý proces je karta terminálu, kterou můžeš otevřít, číst a psát do ní. Zavření karty ho nezastaví.
-- `ready` přijímá `http`, `tcp` nebo `logMatch`. `restart` je `on-failure` (výchozí), `always` nebo `never`. `restartOn` restartuje proces, když změněná cesta odpovídá.
+- Každý proces je karta terminálu, kterou můžeš otevřít, číst a psát do ní, pokud máš zápisový přístup ke každému repozitáři v prostoru (viz [Kdo co smí uložit](#kdo-co-smí-uložit)). Zavření karty ho nezastaví.
+- `ready` přijímá `http` (úplné URL), `tcp` (`host:port`) nebo `logMatch` (regulární výraz). `restart` je `on-failure` (výchozí), `always` nebo `never`. `restartOn` restartuje proces, když změněná cesta odpovídá.
 - `options` se stanou formulářem u **Start** a `agentDefault` platí pro běhy spuštěné agentem.
 
 ## Příklad: desktopová aplikace
@@ -251,21 +275,21 @@ Desktopová aplikace s krokem sestavení. Aplikace funguje stejně bez ohledu na
 }
 ```
 
-Aplikace se nespouští s prostředím. Někdo klikne na **Otevřít** a nejdřív běží `prepare`. **Znovu sestavit a spustit** tuto dvojici spustí znovu. Čisté ukončení se zobrazí jako zavřeno, pád ukáže poslední řádky logu bez restartu, restart serveru aplikaci nikdy znovu nespustí a zastavení při nečinnosti nechá běžící aplikaci na pokoji.
+Aplikace se nespouští s prostředím. Někdo klikne na **Otevřít** a nejdřív běží `prepare`. **Znovu sestavit a spustit** tuto dvojici spustí znovu. `enabledWhen` platí pro aplikaci a její úlohu `prepare` a **Otevřít** se odmítne, dokud je vypnuté některé z nich. Aplikace se považuje za běžící, dokud běží kterýkoli proces v její skupině procesů, takže spouštěč, který aplikaci nastartuje a skončí, je v pořádku. Pokud vše zmizí do zhruba 5 sekund od **Otevřít**, aplikace se zobrazí jako selhaná s posledními řádky logu. Poté se čisté ukončení zobrazí jako zavřeno a pád ukáže poslední řádky logu, a ani jedno aplikaci nepřidá nový start. Restart serveru aplikaci zavře a nikdy ji znovu nespustí, a zastavení při nečinnosti nechá běžící aplikaci na pokoji.
 
 ### Oprávnění a omezení desktopových aplikací
 
 - V macOS jednou uděl Control Center oprávnění **Záznam obrazovky** a **Zpřístupnění** v Nastavení systému. Hostitel serveru potřebuje grafickou relaci: server bez GUI spuštění aplikace odmítne.
-- Spouštěj binárku přímo. `open -a` předá aplikaci službě LaunchServices a ta opustí strom procesů, který Control Center sleduje. `"window": { "match": { "bundleId": "…" } }` tento případ pokrývá, ale je bezpečné jen s jednou běžící kopií.
+- Spouštěj binárku přímo. `open -a` předá aplikaci službě LaunchServices a ta opustí strom procesů, který Control Center sleduje, takže aplikace se hned po spuštění zobrazí jako selhaná.
 - Okna zůstávají na displeji. macOS nezachytí okno mimo všechny displeje, takže aplikace, kterou používá agent, je vidět na obrazovce serveru. Fokus nepotřebuje.
 - `"isolate": "home"` dá aplikaci soukromý domovský adresář přes `HOME`, `XDG_*` a `CFFIXED_USER_HOME`, takže kopie ze dvou prostorů mohou běžet vedle sebe. `NSUserDefaults` izolované není, takže předvolby Cocoa a `shared_preferences` z Flutteru zůstávají mezi kopiemi sdílené.
 - `isolate` platí jen pro spuštěný proces. Spouštěč nástrojů jako `flutter run` potřebuje skutečný domovský adresář, proto `isolate` kombinuj se sestavenou binárkou. Pokud má aplikace vlastní nastavení, třeba `--user-data-dir`, dej mu přednost.
 - Agenti ovládají okno přes `app_use`, které dosáhne jen na strom procesů tohoto prostředí. Agent vidí okno, ne plochu. Spuštění agentem prochází zásadami akcí a ve výchozím stavu se ptá a vstup agenta se zastaví, dokud má ovládání člověk.
 - `"input": "background"` (výchozí) posílá události procesu. `"foreground"` aktivuje okno a převezme kurzor.
 
-## Úlohy worktree nahrazují skripty repozitáře
+## Úlohy worktree
 
-Úlohy `provision` a `archive` nahrazují staré skripty nastavení a archivace pro jednotlivé repozitáře. **Stávající skripty byly migrovány automaticky:** každý repozitář se skripty má teď definici pojmenovanou podle repozitáře, s úlohami `setup` a `archive` se stejným textem skriptu. Ikona v řádku repozitáře v **Nastavení → Pracovní prostor → Repozitáře** ji otevře. Minulé běhy skriptů zůstávají jako historie jen pro čtení.
+Úlohy `provision` a `archive` spouštějí nastavení a úklid repozitáře spolu s jeho worktree. Ikona v řádku repozitáře v **Nastavení → Pracovní prostor → Repozitáře** otevře definici repozitáře.
 
 Tyto úlohy se řídí worktree, ne prostředím, takže běží i v prostorech, kde nikdo neklikne na **Start**:
 
@@ -292,7 +316,7 @@ Repozitář bez stacku potřebuje jen definici se svými úlohami. Protože nen�
 
 - Prostředí ještě neexistuje, takže tyto úlohy nemohou používat `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` ani `enabledWhen` a nedostávají `env` z definice.
 - Úlohy `provision` a `archive` pro repozitář smí obsahovat jen jedna definice. Ostatní ho mohou vázat na vše ostatní.
-- `"when": ["provision", "change"]` také přeinstaluje závislosti, když se změní lockfile, což skripty nastavení nikdy nedělaly.
+- `"when": ["provision", "change"]` také přeinstaluje závislosti, když se změní lockfile.
 - Úloha běží pro worktree své role `cwd`, takže definice s více repozitáři může nastavit každý zvlášť.
 - Testovací běh nastaví `CC_SCRIPT_TEST=1`. Opakovaný pokus začíná s čistým worktree, takže piš úlohy, které opakované spuštění zvládnou.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-S komponentou compose povoluje shim `docker` také `docker compose` s `ps`, `logs`, `exec`, `port`, `restart` a `top`. Před slovesem nesmí být žádné přepínače, `logs` nemůže sledovat výstup a `exec` přijímá jen `-T`. Vše ostatní skončí kódem 5 a hláškou „not available in Control Center agent runs“.
+S komponentou compose povoluje shim `docker` také `docker compose` s `ps`, `logs`, `exec`, `port`, `restart` a `top`, a to jen proti vlastnímu compose projektu tohoto prostředí. Před slovesem nesmí být žádné přepínače a každé sloveso přijímá krátký seznam voleb: `logs` nemůže sledovat výstup a `exec` přijímá jen `-T` (nebo `--no-tty`). Volby, které ukazují compose na jiný soubor nebo projekt (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`), se odmítnou, ať jsou kdekoli. Vše ostatní skončí kódem 5 a hláškou „not available in Control Center agent runs“.
 
-Repozitář, jehož dovednosti volají jeho vlastní nástroj, v tom může pokračovat. Blok `agentPassthrough` na komponentě `cli` deklaruje, které příkazy smějí agenti spouštět:
+Repozitář, jehož dovednosti volají jeho vlastní nástroj, v tom může pokračovat. Blok `agentPassthrough` na komponentě `cli` deklaruje, které příkazy smějí agenti spouštět. Projdou jen příkazy, které schválená definice deklaruje, a každý běží na hostiteli, takže nese pravidlo **Spouštět příkazy na hostiteli**, které se ve výchozím nastavení nejdřív zeptá:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Návratové kódy platí pro všechna slovesa:
 | Kód | Význam |
 | --- | --- |
 | 0 | OK |
-| 3 | Je potřeba nastavit hostitele. **Spustit v terminálu** otevře terminál prostoru s napsaným, ale nespuštěným příkazem a **Zopakovat** pak zkusí akci znovu. Control Center nikdy nespouští `sudo` |
-| 4 | Je potřeba ověření |
-| 5 | Závislost není dostupná |
+| 3 | Je potřeba odpověď v terminálu, například heslo pro `sudo`. Sloveso uvedené v `interactive` se spustí znovu v záložce terminálu pro osobu, která stiskla **Start**. Jinak **Spustit v terminálu** otevře terminál prostoru s napsaným, ale nespuštěným příkazem `command` nástroje a **Zopakovat** pak zkusí akci znovu. Control Center nikdy nespouští `sudo` a nikdy neodpovídá na výzvu |
+| 4 | Je potřeba přihlášení. Příkaz `command` nástroje uvádí, jak |
+| 5 | Není dostupné, na čem závisí, například neběží běhové prostředí kontejnerů |
 | Jiný | Selhání |
+
+Kódy 3, 4 a 5 nejsou selhání. Prostředí ukazuje **Vyžaduje akci** a čeká, a další start naváže tam, kde předchozí skončil. Úloha, která skončí jedním z nich, znamená totéž.
 
 Průběh jde na stderr jako JSON oddělený novými řádky:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-Řádky `step` se zobrazují jako živý seznam kroků a řádky `note` tak, jak jsou. Poslední řádek typu `error` se stane strukturovanou chybou a `command` se nabídne ke zkopírování. Bez něj Control Center ukáže posledních 20 řádků stderr. Vše, co není JSON, je běžný log.
+Zatímco prostředí startuje, panel vypisuje komponenty, kterými start prochází, a u každé je točící se indikátor, fajfka nebo křížek. Řádek `step` říká, co nástroj právě dělá, a jeho `label` se zobrazí pod vlastním řádkem nástroje; kroky nikdy nepřidávají řádky. Pole `state` kroku má hodnotu `pending`, `running`, `done` nebo `failed`, a krok bez `state` běží. Krok, který se znovu ohlásí pod stejným `id` (řetězcem nebo číslem, nebo stejným `label`, pokud ho nemá), nahradí to, co hlásil dříve, takže nástroj s jedním indikátorem může zachovat jedno `id` a měnit `label`. Bez ID na sobě kroky navazují: nový ukončí předchozí. Když příkaz skončí, krok, který ještě běží, skončí tak, jak příkaz skončil.
+
+Řádek `log` nese jeden řádek výstupu, který nástroj zabalil do JSON, a čte se jako prostý výstup. Řádek `note` jde do výstupu běhu a řádek s `"level": "warn"` zůstane i v prostředí jako varování. Poslední řádek typu `error` se stane strukturovanou chybou a `command` se nabídne ke zkopírování, a posledních 12 řádků výstupu se zobrazí pod jeho `message`. Bez něj Control Center ukáže posledních 20 řádků stderr. Vše, co není JSON, je běžný log.
 
 ## Související
 

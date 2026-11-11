@@ -2,7 +2,7 @@
 title: 파이프라인과 자동화
 description: 파이프라인이 스케줄링과 작업을 분리하는 이유, 파이프라인을 실제로 시작하는 것, 기본 제공 템플릿 중 바로 사용할 수 있는 것을 설명합니다.
 slug: ko-KR/매뉴얼/개념/파이프라인
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 파이프라인은 Control Center의 결정적 절반입니다. 에이전트는 무엇을 말할지
@@ -34,7 +34,7 @@ sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
   `orchestration.awaitApproval` 부분 승인 게이트입니다. `human.gate`는 예외가
   아닙니다.
 - 서버가 중단될 때 진행 중이던 `extras: {'idempotent': false}`로 선언된 단계는
-  이미 부수 효과(스쿼시 병합, 워크트리 정리)를 적용했을 수 있습니다. 다시
+  이미 부수 효과(워크스페이스 백업, 워크트리 정리)를 적용했을 수 있습니다. 다시
   실행하면 이중 적용될 수 있으므로 엔진은 이 단계를 실패 처리하고 재시도를
   여러분에게 맡깁니다.
 
@@ -129,11 +129,13 @@ sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
 copy-on-write 사본이 쌓여만 가며, 그건 애초에 사용자가 선택할 일이
 아니었습니다.
 
-한 가지 더 알아 둘 비대칭이 있습니다. `pr_review` 기본 제공은 의도적으로 더
-이상 GitHub에 게시하지 않습니다. 리뷰 게시는 별도의 사용자 승인 단계이고,
-직접 게시하는 파이프라인은 이중 게시가 되기 때문입니다. `cross_review`,
-`ticket_to_pr`, `pr_triage`는 실행될 때 여전히 GitHub에 곧바로 댓글을
-게시합니다.
+한 가지 더 알아 둘 비대칭이 있습니다. `pr_review` 기본 제공은 의도적으로 더 이상 GitHub에 게시하지 않습니다. 리뷰 게시는 별도의 사용자 승인 단계이고, 직접 게시하는 파이프라인은 이중 게시가 되기 때문입니다. `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, `external_pr_welcome`은 실행될 때 여전히 GitHub에 댓글을 게시합니다.
+
+이들은 **Post PR comment** 단계(`prReview.comment`)를 통해 서버에서 게시하며, 셸 스크립트에서는 게시하지 않습니다. 파이프라인의 셸 단계와 에이전트의 샌드박스는 읽기만 가능한 GitHub 토큰을 갖고 있기 때문입니다. 같은 규칙이 나머지에도 적용됩니다.
+
+- `external_pr_welcome`은 인사 메시지를 해당 단계의 `message`로 게시합니다.
+- `ticket_to_pr`는 코더 에이전트가 (실행 게이트웨이를 통해) `agent/<ticket_id>`를 푸시하고, `open_pull_request`로 드래프트 PR을 엽니다. 실행을 시작한 사람의 GitHub 로그인으로 하며, 아무도 시작하지 않았다면 봇으로 합니다. 둘 다 워크스페이스의 **리모트에 푸시** 및 **풀 리퀘스트 열기** 규칙을 따릅니다. Control Center Connect에서는 `TicketAssigned`로 시작된 실행처럼 아무도 요청하지 않은 실행이 푸시하거나 PR을 열 수 없습니다. 공유 앱의 봇은 읽기와 댓글만 가능하기 때문입니다.
+- `pre_merge_gate`는 병합하지 않습니다. 게이트에서 승인하면 PR이 메인테이너의 병합 준비가 되었다는 댓글이 게시되고, 거부하면 변경 요청이 게시됩니다. 병합은 사람이 PR 페이지에서 합니다.
 
 ## 엔진이 아는 것
 

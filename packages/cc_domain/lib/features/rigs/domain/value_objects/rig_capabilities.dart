@@ -163,18 +163,10 @@ class RigBackendCapabilities {
           for (final s in (json['surfaces'] as List? ?? const []))
             ?RigSurface.fromWire(s as String?),
         },
-        // An OLDER server names no engines while still hosting the browser
-        // surface — it only ever had Chromium. Reading that as "no engines"
-        // would grey out the browser tab against a server that boots one
-        // perfectly well, so the absent field means Chromium rather than
-        // nothing. An empty LIST is different and is taken at its word: that
-        // is a current server saying it cannot boot any browser.
-        browserEngines: json.containsKey('browserEngines')
-            ? {
-                for (final e in (json['browserEngines'] as List? ?? const []))
-                  ?RigBrowserEngine.fromWire(e as String?),
-              }
-            : const {RigBrowserEngine.chromium},
+        browserEngines: {
+          for (final e in (json['browserEngines'] as List? ?? const []))
+            ?RigBrowserEngine.fromWire(e as String?),
+        },
         supportsTerminals: json['terminals'] as bool? ?? false,
         requiresInstall: json['requiresInstall'] as bool? ?? false,
         installHint: json['installHint'] as String?,

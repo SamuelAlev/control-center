@@ -3,7 +3,7 @@ title: "Kiến trúc"
 description: "Cách Control Center được tổ chức: mô hình máy khách mỏng trên máy chủ, Clean Architecture hướng tính năng, cổng và adapter."
 dateModified: 2026-09-19
 slug: vi-VN/so-tay/khai-niem/kien-truc
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Tổng quan
@@ -60,7 +60,7 @@ Tính năng **`guardrails`** đặt tầng miền của nó trong `cc_domain/fea
 - Thực thể bộ nhớ: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Đối tượng giá trị dùng chung: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Cổng dùng chung: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Dịch vụ miền: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Dịch vụ miền: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + các loại sự kiện (không gian làm việc/agent, PR/đánh giá, nhắn tin, phiếu, quy trình, điều phối, bộ nhớ, lịch/cuộc họp, danh tính và tư cách thành viên, khả năng quan sát)
 
 ## Danh tính và đa người dùng
@@ -132,7 +132,6 @@ Máy chủ nắm giữ những thông tin xác thực thực sự quan trọng: 
 
 - Bí mật nằm trong `flutter_secure_storage` (keychain macOS, trình quản lý thông tin xác thực Windows, libsecret trên Linux) — đó là thông tin xác thực thiết bị và khóa ghép nối từ xa của máy khách, không phải token của nhà cung cấp
 - `shared_preferences` chỉ dành cho các tùy chọn không nhạy cảm (giao diện, phông chữ, bố cục)
-- Những bí mật nhà cung cấp còn sót lại từ các bản cài cũ được chuyển giao một lần cho máy chủ bởi `features/auth/providers/credential_migration.dart`, rồi bị xóa khỏi keychain của máy khách
 
 ## Thực thi kiến trúc
 

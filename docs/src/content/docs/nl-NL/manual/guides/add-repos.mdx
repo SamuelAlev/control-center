@@ -2,10 +2,10 @@
 title: Repos toevoegen aan een werkruimte
 description: Registreer Git-checkouts in een werkruimte zodat agenten eraan kunnen werken.
 slug: nl-NL/handleiding/gidsen/repos-toevoegen
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Deze gids laat zien hoe je een Git-checkout in een werkruimte registreert, opnieuw indexeert en weer verwijdert.
+Deze gids laat zien hoe je een Git-checkout in een werkruimte registreert, opnieuw indexeert en weer verwijdert. Een repo uit de mappen van de server toevoegen vereist de serverbeheerder; er een verwijderen vereist een werkruimte-admin.
 
 Repo's zijn **werkruimtegebonden**. Er is geen globaal register en geen koppelstap: een repo toevoegen en hem in een werkruimte zetten zijn dezelfde handeling. Dezelfde checkout die in twee werkruimtes is geregistreerd, wordt twee onafhankelijke rijen met twee verschillende id's — over werkruimtes heen is de identiteit van een repo zijn bestandssysteempad, nooit zijn id.
 
@@ -21,9 +21,29 @@ Al het andere wordt op het moment van registratie geweigerd met een expliciete m
 
 De forge wordt uit de remote gelezen en op de repo opgeslagen — je kiest hem nooit zelf. Een werkruimte kan repo's van alle drie tegelijk bevatten, en met elk wordt via zijn eigen API en met zijn eigen referentie gecommuniceerd. Geneste namespaces van GitLab blijven behouden, dus `gitlab.com/group/subgroup/project` wordt geregistreerd met eigenaar `group/subgroup` en naam `project`.
 
-De map moet ook op de machine staan die `cc_server` host, binnen een van de `--repo-roots`-mappen van die server. Die allowlist staat standaard op de homedirectory van de servergebruiker, en browsen boven een root wordt geweigerd.
+De map moet ook op de machine staan die `cc_server` host, binnen een van de `--repo-roots`-mappen van die server. Die allowlist staat standaard op de homedirectory van de servergebruiker, en browsen boven een root wordt geweigerd. Browsen door de mappen van de server wordt alleen aangeboden aan de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder), omdat het de eigen bestanden van de machine weergeeft. Alle anderen zien "De serverbeheerder voegt repository's toe vanuit de mappen van de server." waar de knop **Repository toevoegen** zou staan, en een koppeling naar een repository die geen van hun werkruimtes heeft, zegt dat hij in geen van hun werkruimtes is gekoppeld en dat ze de serverbeheerder moeten vragen hem toe te voegen.
+
+Waar de checkout mag staan, hangt af van wie hem koppelt:
+
+- **Binnen de eigen opslag van de werkruimte** op de server: elke werkruimte-admin.
+- **Elders op de schijf van de server**: alleen de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder), want alleen hij mag de server naar de eigen bestanden van de machine laten wijzen. Alle anderen zien "Alleen de serverbeheerder kan een map koppelen die buiten de opslag van deze werkruimte ligt."
+- **De datamap van de server**, of iets erin: nooit.
+
+De `origin` van de checkout moet de repository zijn die je koppelt. Een map waarvan de `origin` een andere repository noemt, wordt geweigerd met "De origin van die map is een andere repository."
+
+### Mappen die de server nog niet gebruikt
+
+Een repository waarvan de map buiten de opslag van de werkruimte ligt en die niet door de serverbeheerder is gekoppeld, zoals een repo in een geïmporteerde werkruimte, toont "Deze map ligt buiten de opslag van de werkruimte. Bevestig dat deze server hem mag gebruiken." onder zijn rij, totdat de serverbeheerder het bevestigt. Iedereen anders ziet in plaats daarvan "Deze map ligt buiten de opslag van de werkruimte. Alleen de serverbeheerder kan dit bevestigen."
+
+De eigenaar bevestigt het één keer: **Bevestigen** op de rij, of **Alles bevestigen** in de melding boven de lijst als er meerdere repo's wachten. Elke repo wordt opnieuw gecontroleerd als eigenaar, met dezelfde controles als bij het koppelen. Tot dan blijft hij in de lijst staan maar wordt hij niet geopend, geprovisioneerd of geïndexeerd: geen editor, terminal, omgeving of checkout van een ruimte gebruikt hem, en de codegraph slaat hem over. Dezelfde map opnieuw toevoegen als serverbeheerder doet hetzelfde als bevestigen, en behoudt het id van de repo.
+
+Een checkout die een symbolische link elders heen heeft verplaatst, wordt op dezelfde manier behandeld: hij blijft in de lijst staan en ongebruikt totdat iemand die de map mag koppelen waar hij nu naar wijst, hem opnieuw koppelt.
+
+Je moet ook ingelogd zijn bij de forge van de repository, en je eigen account moet de repository kunnen zien.
 
 ## Een checkout registreren
+
+Je moet de serverbeheerder zijn voor deze stappen.
 
 1. Open **Instellingen → Werkruimte → Repository's** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Klik op **Repository toevoegen**.
@@ -56,7 +76,23 @@ Sleep het handvat op een rij. De volgorde die je instelt, is de volgorde die elk
 
 ## De GitHub-link herstellen
 
-Het linkpictogram op een rij opent een editor voor de GitHub-eigenaar en repositorynaam van de repo — handig wanneer de remote is hernoemd of overgedragen.
+Het linkpictogram op een rij opent een editor voor de GitHub-eigenaar en repositorynaam van de repo.
+
+Je hebt hem zelden nodig. Een koppeling hangt aan het permanente id van de repository op de forge, dus een hernoeming of overdracht wordt automatisch gevolgd.
+
+- Een repo hernoemen in Control Center wijzigt alleen de weergavenaam.
+- Wijzigen naar welke forge-repository een koppeling verwijst, vereist een werkruimte-admin, en wordt gecontroleerd op de forge met de eigen aanmelding van de admin, net als bij het koppelen.
+- Een gekoppelde repo kan niet worden omgezet in een alleen-lokale repo.
+
+Als het pad later een **andere** repository noemt (het origineel is verwijderd en opnieuw aangemaakt, of verplaatst en vervangen door een andere), stuurt Control Center er niets meer naar toe: geen tokens, pushes, opmerkingen of verzoeken. Dat geldt ook voor de eigen acties van een persoon: een review, merge of opmerking die je op zo'n repo maakt, wordt geweigerd, op GitHub, GitLab en Bitbucket. De rij en de pull requests van de repo tonen "_repo_ verwijst nu naar een andere repository" totdat een werkruimte-admin op **Opnieuw koppelen** klikt.
+
+## Wie de code kan openen
+
+Een repogrant alleen opent de bestanden van een repo niet. Om bestanden, diffs, zoekopdrachten of een terminal ervoor te openen, heeft een lid de grant van Control Center nodig, en de eigen forge-aanmelding moet de repo kunnen lezen. Werkruimte-admins zijn niet uitgezonderd; de serverbeheerder wel. Zie [Code volgt de forge](/nl-NL/handleiding/concepten/autorisatie/#code-volgt-de-codehost).
+
+Wanneer je een repo toekent aan iemand wiens forge-account die niet kan lezen, wordt de grant opgeslagen en zie je een waarschuwing, zoals "Opgeslagen. Het GitHub-account van die persoon kan deze repository nog niet lezen, dus blijft hij verborgen voor haar."
+
+Dezelfde regel bepaalt wie een ruimte kan openen. Een ruimte opent alleen voor leden die de code van elke repo die hij gebruikt kunnen openen, en is verborgen voor alle anderen, samen met de zoekresultaten, runlogboeken, to-do's, activiteit en meldingen. Een ruimte zonder repo's staat open voor elk lid. Zie [Ruimtes volgen hun repo's](/nl-NL/handleiding/concepten/autorisatie/#ruimtes-volgen-hun-repositories).
 
 ## Een repo verwijderen
 
@@ -66,7 +102,31 @@ Het linkpictogram op een rij opent een editor voor de GitHub-eigenaar en reposit
 
 Het dialoogvenster zegt wat het doet: "_name_ wordt verwijderd uit deze werkruimte. De lokale bestanden op schijf worden niet aangeraakt."
 
+Een repo verwijderen vereist een werkruimte-admin. Ook de forge-referenties die voor die repo zijn opgeslagen, zoals een GitLab- of Bitbucket-automatiseringstoken, worden vergeten.
+
 Verwijderen schrapt de reporij uit deze werkruimte en verwijdert in cascade de codegraph-rijen ervan — symbolen, randen, bestanden en indexcontrolepunten — plus elke repotoekenning per lid, zijn ruimte-repo-koppelingen en de registraties van zijn geïsoleerde checkouts. Dezelfde checkout die in een andere werkruimte is geregistreerd, is een onafhankelijke rij en blijft onaangetast. Worktrees op schijf waar die registraties naar verwezen, worden door het verwijderen niet afgebroken.
+
+## Problemen oplossen
+
+### Ik heb toegang maar de repository zegt dat mijn account hem niet kan lezen
+
+Je eigen forge-account kan de repo niet lezen, dus Control Center houdt de code voor je verborgen, ook al heeft de werkruimte hem toegekend. Meld je aan bij de forge onder **Instellingen → Jij → Profiel → Codehosting** als je dat nog niet hebt gedaan, of vraag de eigenaar van de repo op de forge om toegang. De repo opent zodra je forge-account hem kan lezen.
+
+### "Deze map ligt buiten de opslag van de werkruimte"
+
+De map van de repo ligt buiten de opslag van de werkruimte en is niet door de serverbeheerder gekoppeld, of een symbolische link wijst hem nu ergens anders heen. Hij blijft in de lijst staan maar ongebruikt totdat de serverbeheerder hem bevestigt of de map opnieuw toevoegt. Ben je niet de eigenaar, vraag het hen dan. Ben je dat wel, druk dan op **Bevestigen** op de rij of op **Alles bevestigen** boven de lijst; zie [Mappen die de server nog niet gebruikt](#mappen-die-de-server-nog-niet-gebruikt).
+
+### "Op dit pad op de server staat niets meer"
+
+De map is verplaatst of verwijderd op de machine van de server. Zet hem terug, of laat een werkruimte-admin de repo verwijderen met **Verwijderen** in de melding en hem opnieuw toevoegen vanuit zijn huidige map.
+
+### "Deze map kan niet als repository worden gebruikt"
+
+De opgeslagen map is de eigen datamap van de server, iets erin, of de opslagmap van de werkruimte zelf. Geen daarvan kan een repo zijn. Een werkruimte-admin verwijdert hem met **Verwijderen** in de melding en voegt de repo daarna opnieuw toe vanuit de echte map van de checkout.
+
+### "Je forge-toegang kon niet worden bevestigd"
+
+Control Center kon de forge niet bereiken om te controleren dat je account de repo kan lezen, dus weigerde het in plaats van te gokken. Probeer het over een moment opnieuw.
 
 ## Gerelateerde gidsen
 

@@ -86,8 +86,7 @@ class _DeviceRow extends ConsumerStatefulWidget {
 }
 
 class _DeviceRowState extends ConsumerState<_DeviceRow> {
-  String get _id =>
-      (widget.device['device_id'] ?? widget.device['id'] ?? '') as String;
+  String get _id => widget.device['device_id'] as String? ?? '';
   String get _label => widget.device['label'] as String? ?? '';
   String get _platform => widget.device['platform'] as String? ?? '';
   String get _status => widget.device['status'] as String? ?? '';

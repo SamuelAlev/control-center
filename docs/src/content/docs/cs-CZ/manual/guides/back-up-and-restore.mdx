@@ -2,7 +2,7 @@
 title: Záloha a obnovení
 description: Pořiď snímek instalace, přesuň pracovní prostor mezi stroji, obnov jeden pracovní prostor nebo všechny a drž kopie jinde.
 slug: cs-CZ/prirucka/navody/zaloha-a-obnoveni
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Zálohy se v praxi používají na pět věcí: pořídit snímek, stáhnout ho, přesunout
@@ -16,7 +16,8 @@ Všechno odsud je v **Nastavení → Server → Záloha a obnovení**.
 
 - **Plný klient**, tedy desktopová nebo webová aplikace. Spárovaný telefon z toho schválně nespustí nic.
 - Pořídit, vypsat, stáhnout nebo smazat **snímek instalace** smí **vlastník** instalace.
-- U akcí jednoho pracovního prostoru: **admin** toho prostoru pro export nebo pro výpis a stažení jeho plánovaných záloh, **vlastník** pro import, smazání nebo pro smazání některé z jeho záloh.
+- U akcí jednoho pracovního prostoru: **admin** toho prostoru pro export nebo pro výpis a stažení jeho plánovaných záloh, **vlastník** pro smazání pracovního prostoru nebo pro smazání některé z jeho záloh.
+- **Obnovit** pracovní prostor z nahraného souboru, plánované zálohy nebo snímku: [vlastník serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru), který musí být zároveň vlastníkem toho pracovního prostoru. Obnovení dělá ze serveru adoptovat soubor databáze jako svůj, takže je to rozhodnutí vlastníka serveru. Všichni ostatní vidí hlášku „Zálohy může obnovit jen vlastník serveru. Stáhnout je můžete i nadále.“ místo akcí obnovení.
 - Stahování a nahrávání chce spárovaný plný klient na přímém spojení nebo přes zprostředkované relé. Obě cesty přenesou bajty souboru stejným ověřeným, od konce ke konci šifrovaným tunelem prostředků; relé je nepřečte.
 
 :::caution[Snímky instalace jsou ruční]
@@ -40,6 +41,8 @@ Oba artefakty jsou **jen databáze**:
 
 - **Snímek instalace** je adresář s časovým razítkem: `manifest.json`, `global.db` a jeden `<workspaceId>/workspace.db` na pracovní prostor.
 - **Export pracovního prostoru** je ten jeden soubor `workspace.db`.
+
+Databáze pracovního prostoru je celý pracovní prostor: jeho konverzace, logy běhů, index kódu, propojení repozitářů, definice prostředí a členové. Obsahuje také tokeny webhooků pipeline a tajemství webhooků synchronizace tiketů v čitelné podobě. Staženou zálohu pracovního prostoru nebo export ulož stejně, jako ukládáš tajemství. Nenese žádná přihlášení poskytovatelů, klíče zařízení ani uživatelská tajemství; ta žijí v globální databázi a v tajném úložišti serveru.
 
 Ani jeden nenese zbytek datového adresáře: `secrets.json` (klíče párování,
 přihlašovací údaje poskytovatelů, SSO), `blobs/` pracovního prostoru (obrázky
@@ -95,7 +98,7 @@ nevytvořila, stojí **Zatím žádné zálohy**. Pracovní prostor, ve kterém 
 
 Rozbal řádek a uvidíš každou zálohu, od nejnovější:
 
-- **Obnovit** nahradí aktuální databázi pracovního prostoru touto zálohou. Když to možná budeš chtít vrátit, pracovní prostor nejdřív exportuj. Vyžaduje roli **vlastník**.
+- **Obnovit** nahradí aktuální databázi pracovního prostoru touto zálohou. Když to možná budeš chtít vrátit, pracovní prostor nejdřív exportuj. Vyžaduje vlastníka serveru, který musí být zároveň vlastníkem pracovního prostoru.
 - **Stáhnout** uloží soubor na stroj, který právě používáš. Záloha zůstane na serveru.
 - **Kopírovat cestu** zkopíruje její umístění na serveru.
 - **Smazat** tuhle zálohu trvale odstraní, jakmile napíšeš název pracovního prostoru. Vyžaduje roli **vlastník**.
@@ -108,7 +111,7 @@ stejném seznamu je vidí **vlastník** instalace s označením **Pracovní pros
 a může je tam stáhnout nebo smazat. Nikdo jiný tyhle řádky nevidí.
 
 Nemají **Obnovit**, protože není žádný pracovní prostor, do kterého by se obnovovalo.
-Když chceš některou vrátit, stáhni ji, vytvoř pracovní prostor a nahraj soubor podle
+Když chceš některou vrátit, stáhni ji, vytvoř pracovní prostor (jen vlastník serveru) a nahraj soubor podle
 postupu v části
 [Přesuň pracovní prostor na jinou instalaci](#přesuň-pracovní-prostor-na-jinou-instalaci).
 
@@ -149,9 +152,9 @@ souborem.
 2. Na **cílovém** serveru založ (nebo vyber) pracovní prostor, který ho přijme.
 3. Ten pracovní prostor rozbal a pod **Obnovit z tohoto zařízení** stiskni **Vybrat soubor a nahrát**. Vyber stažený `.db`.
 
-Když jsou oba servery ten stroj, u kterého sedíš, **Uložit na server** a
-**Importovat** → **Vybrat soubor** udělá totéž bez cesty tam a zpět. Cesty v
-dialogu importu se řeší na hostiteli serveru.
+Krok 3 je obnovení, takže potřebuje vlastníka serveru cílové instalace, který musí být zároveň vlastníkem toho pracovního prostoru.
+
+Když jsou oba servery ten stroj, u kterého sedíš, **Uložit na server** na zdroji, pak cestu k souboru v poli **Soubor databáze pracovního prostoru** a **Importovat** na cíli udělá totéž bez cesty tam a zpět. Tahle cesta se řeší na hostiteli serveru.
 
 :::caution[Import nahradí všechno]
 Import přepíše všechno, co cílový pracovní prostor právě drží, a nejde vrátit.
@@ -165,11 +168,14 @@ instalace**. V tom druhém případě spárovaná zařízení a id uživatelů v
 patří instalaci, odkud přišel, a na téhle se nevyřeší. Vlastní data pracovního
 prostoru jsou v pořádku, ale po převzetí znovu zkontroluj členství.
 
-Tokeny chatbota leží vedle databáze, ne v ní, takže pracovní prostor, který
-někomu předáš, nenese živé přihlašovací údaje. Přijímající instalace si
-připojí svoje.
+Tokeny chatbotů a přihlášení poskytovatelů leží mimo databázi, takže přijímající
+instalace si připojí svoje. Soubor ale nese tokeny webhooků pipeline a tajemství
+webhooků synchronizace tiketů, takže pracovní prostor, který předáš někomu jinému,
+předá i ty. Pokud by je příjemce neměl mít, otoč je potom.
 
 ## Obnov jeden pracovní prostor ze snímku
+
+Musíš být vlastník serveru a vlastník tohoto pracovního prostoru.
 
 1. Pod **Snímky instalace** rozbal snímek, který chceš.
 2. Najdi řádek pracovního prostoru a stiskni **Obnovit**.
@@ -181,8 +187,8 @@ stejným souborem zacházel jinak.
 
 Řádek může říct **Na tomto serveru už není** a **Obnovit** je vypnuté: snímek
 drží pracovní prostor, který tahle instalace už nemá. Vrať ho ručně. Založ
-pracovní prostor a pod **Data pracovního prostoru** do něj importuj z
-`<snapshot path>/<old workspace id>/workspace.db`. Rozbalený snímek ukazuje
+pracovní prostor (jen vlastník serveru) a pod **Data pracovního prostoru** do jeho pole **Soubor databáze pracovního prostoru** zadej cestu
+`<snapshot path>/<old workspace id>/workspace.db` a stiskni **Importovat**. Rozbalený snímek ukazuje
 vlastní **Cesta na serveru** v poli ke kopírování a titulek řádku je staré id
 pracovního prostoru, takže máš obě poloviny té cesty před sebou.
 
@@ -354,9 +360,11 @@ ukládají.
 | Příznak | Příčina a oprava |
 | --- | --- |
 | Stažení nebo nahrání selže po změně spojení | Zkus to znovu na aktivním spárovaném spojení. Přímé i reléové spojení podporuje šifrovaný přenos souborů; ani jedno nevystavuje otevřenou HTTP variantu |
-| „Server odmítl“ | Role. Pořízení nebo výpis snímku instalace potřebuje operátora instalace. Stažení pracovního prostoru potřebuje admina, obnovení vlastníka a zip celého snímku operátora instalace |
-| „Tento server nemá povrch záloh“ | Hostitel nemá připojený port záloh. Je to demo server. Operace chybí, neodmítají se |
-| „Soubor je větší, než server přijímá“ | Nahrávání je omezené na 8 GiB. Dej soubor na hostitele serveru a použij **Importovat** → **Vybrat soubor** |
+| „Server odmítl. Stažení pracovního prostoru vyžaduje roli admin pracovního prostoru. Obnovení vyžaduje vlastníka serveru, který musí být zároveň vlastníkem tohoto pracovního prostoru. Celý snímek vyžaduje vlastníka serveru.“ | Role. Pořízení, výpis nebo stažení snímku instalace potřebuje vlastníka serveru. Stažení pracovního prostoru potřebuje admina; obnovení vyžaduje vlastníka serveru, který musí být zároveň vlastníkem pracovního prostoru |
+| „Přenos souborů pro toto připojení ještě není nastaven. Pro stažení nebo nahrání zálohy se znovu připojte k serveru.“ | Toto připojení k serveru nemá linku pro přenos souborů, takže **Stáhnout** a nahrání jsou vypnuté. Znovu se připojte k serveru a zkuste to znovu |
+| „Zálohy může obnovit jen vlastník serveru. Stáhnout je můžete i nadále.“ | Obnovení přepíše databázi pracovního prostoru na hostiteli serveru, takže ji obnovuje jen vlastník serveru. Stáhni zálohu a požádej ho |
+| „Tento server nemá povrch záloh.“ | Hostitel nemá připojený port záloh. Je to demo server. Operace chybí, neodmítají se |
+| „Soubor je větší, než server přijímá.“ | Nahrávání je omezené na 8 GiB. Dej soubor na hostitele serveru a zadej jeho cestu do pole **Soubor databáze pracovního prostoru** |
 | Import odmítnut: není to databáze pracovního prostoru Control Center | Soubor nemá řádek `workspace_meta`. Není to export pracovního prostoru, nebo je useknutý. Nic se nenahradilo |
 | Snímek je uvedený jako **Neúplný** | Manifest chybí, nebo jmenuje chybějící soubory. Pořiď nový a mezitím z něj převezmi jednotlivé soubory pracovních prostorů |
 | Snímek hlásí, že se pracovní prostory nezachytily | Ty pracovní prostory se ještě nikdy nezapsaly, nebo jejich kopie selhala. Podívej se do logu serveru |

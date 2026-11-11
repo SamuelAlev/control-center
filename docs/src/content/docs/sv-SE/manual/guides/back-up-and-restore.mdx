@@ -2,7 +2,7 @@
 title: Säkerhetskopiera och återställ
 description: Ta en ögonblicksbild av installationen, flytta en arbetsyta mellan maskiner, återställ en arbetsyta eller alla, och förvara kopior någon annanstans.
 slug: sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Den här guiden täcker de fem saker folk faktiskt gör med säkerhetskopior: tar en,
@@ -16,7 +16,8 @@ Allt här finns under **Inställningar → Server → Säkerhetskopiering och å
 
 - En **fullständig klient** – skrivbordsappen eller webbappen. En parkopplad telefon kan inte starta något av detta, och det är avsiktligt.
 - För att ta, lista, hämta eller radera en **ögonblicksbild av installationen**: installationens **ägare**.
-- För åtgärder per arbetsyta: **admin** för arbetsytan att exportera den eller att lista och hämta dess schemalagda säkerhetskopior, **ägare** att importera eller radera den eller att radera en av dess säkerhetskopior.
+- För åtgärder per arbetsyta: **admin** för arbetsytan att exportera den eller att lista och hämta dess schemalagda säkerhetskopior, **ägare** att radera den eller att radera en av dess säkerhetskopior.
+- För att **återställa** en arbetsyta, från en uppladdad fil, en schemalagd säkerhetskopia eller en ögonblicksbild: [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren), som dessutom måste vara den arbetsytans ägare. En återställning gör att servern tar över en databasfil som sin egen, så det är serverägarens beslut. Alla andra ser "Bara serverägaren kan återställa säkerhetskopior. Du kan fortfarande ladda ner dem." i stället för återställningsåtgärderna.
 - För hämtningar och uppladdningar: en parkopplad fullständig klient på antingen en direkt eller en reläförmedlad anslutning. Båda vägarna bär filbyten genom samma autentiserade, end-to-end-krypterade resurstunnel; reläet kan inte läsa dem.
 
 :::caution[Ögonblicksbilder av installationen är manuella]
@@ -40,6 +41,8 @@ Båda artefakterna är **enbart databaser**:
 
 - En **ögonblicksbild av installationen** är en katalog med tidsstämpel: `manifest.json`, `global.db` och en `<workspaceId>/workspace.db` per arbetsyta.
 - En **arbetsytaexport** är just den enda filen `workspace.db`.
+
+En arbetsytas databas är hela arbetsytan: dess samtal, körloggar, kodindex, repolänkar, miljödefinitioner och medlemmar. Den innehåller också arbetsytans pipeline-webhook-tokens och webhook-hemligheter för ärendesynk, i läsbar form. Förvara en nedladdad säkerhetskopia eller export av en arbetsyta som du förvarar en hemlighet. Den innehåller inga leverantörsinloggningar, enhetsnycklar eller användarhemligheter; de ligger i den globala databasen och i serverns hemlighetslager.
 
 Ingen av dem tar med resten av datakatalogen: `secrets.json` (parkopplingsnycklar,
 leverantörsuppgifter, SSO), en arbetsytas `blobs/` (bilder som klistrats in i
@@ -72,7 +75,7 @@ misslyckades – kontrollera serverloggen.
 
 ## Schemalägg säkerhetskopior av arbetsytan och bevarande
 
-Öppna **Inställningar → Pipelines → Pipelinemallar** för arbetsytan och leta upp
+Öppna **Inställningar → Arbetsyta → Pipelinemallar** för arbetsytan och leta upp
 **Workspace backup**. Dess aktiverade schema körs varje söndag kl. 03:00 UTC:
 **Back up workspace**, följt av **Delete backups older than** (30 dagar som
 standard). Den andra noden körs bara efter att säkerhetskopieringen har lyckats.
@@ -96,7 +99,7 @@ admin för säger det på sin rad i stället för att lista sina säkerhetskopio
 
 Fäll ut en rad för att se varje säkerhetskopia, nyast först:
 
-- **Återställ** ersätter arbetsytans aktuella databas med den här säkerhetskopian. Exportera arbetsytan först om du kan behöva ångra det. Kräver **ägare**.
+- **Återställ** ersätter arbetsytans aktuella databas med den här säkerhetskopian. Exportera arbetsytan först om du kan behöva ångra det. Kräver serverägaren, som dessutom måste äga arbetsytan.
 - **Hämta** sparar filen på maskinen du använder. Säkerhetskopian ligger kvar på servern.
 - **Kopiera sökväg** kopierar dess plats på servern.
 - **Ta bort** tar bort den här säkerhetskopian permanent, när du har skrivit arbetsytans namn. Kräver **ägare**.
@@ -110,7 +113,7 @@ tar bort dem. Installationens **ägare** ser dem i samma lista, markerade med
 raderna.
 
 De har ingen **Återställ**, eftersom det inte finns någon arbetsyta att återställa till.
-För att få tillbaka en hämtar du den, skapar en arbetsyta och laddar upp filen enligt
+För att få tillbaka en hämtar du den, skapar en arbetsyta (bara serverägaren kan) och laddar upp filen enligt
 beskrivningen i
 [Flytta en arbetsyta till en annan installation](#flytta-en-arbetsyta-till-en-annan-installation).
 
@@ -151,9 +154,11 @@ En arbetsyta är en databasfil, så överlämningen är en filoperation.
 2. På **målservern** skapar du (eller väljer) arbetsytan som ska ta emot den.
 3. Fäll ut den arbetsytan och tryck på **Välj en fil och ladda upp** under **Återställ från den här enheten**. Välj den `.db` du hämtade.
 
-Om båda servrarna är samma maskin som du sitter vid gör **Spara på servern** plus
-**Importera** → **Välj fil** samma sak utan omvägen; sökvägarna i importdialogen löses
-upp på servervärden.
+Steg 3 är en återställning, så det kräver destinationens serverägare, som dessutom måste äga den arbetsytan.
+
+Om båda servrarna är samma maskin som du sitter vid gör **Spara på servern** på källan,
+och sedan filens sökväg i **Arbetsytans databasfil** och **Importera** på destinationen,
+samma sak utan omvägen; den sökvägen löses upp på servervärden.
 
 :::caution[Importen ersätter allt]
 En import skriver över allt som målarbetsytan just nu innehåller, och den går inte att
@@ -167,11 +172,14 @@ installation**. I det andra fallet tillhör filens parkopplade enheter och anvä
 installationen den kom från och löses inte upp i den här – arbetsytans egna data är
 intakta, men kontrollera medlemskapet igen efter att du tagit över den.
 
-Chattbottens tokens ligger bredvid databasen, inte i den, så en arbetsyta du lämnar
-till någon annan bär inga levande uppgifter. Den mottagande installationen återansluter
-sina egna.
+Chattbot-tokens och leverantörsinloggningar ligger utanför databasen, så den mottagande
+installationen ansluter sina egna. Filen bär däremot arbetsytans pipeline-webhook-tokens
+och webhook-hemligheter för ärendesynk, så en arbetsyta du lämnar till någon annan lämnar
+dem med. Rotera dem efteråt om mottagaren inte ska ha dem.
 
 ## Återställ en arbetsyta från en ögonblicksbild
+
+Du behöver vara serverägaren och arbetsytans ägare.
 
 1. Under **Installationsögonblicksbilder** fäller du ut ögonblicksbilden du vill ha.
 2. Leta upp arbetsytans rad och tryck på **Återställ**.
@@ -183,8 +191,9 @@ kunna behandla samma fil annorlunda.
 
 En rad kan säga **Inte på den här servern längre**, med **Återställ** inaktiverat:
 ögonblicksbilden innehåller en arbetsyta som den här installationen inte längre har. Ta
-tillbaka den för hand – skapa en arbetsyta och importera sedan in i den under
-**Arbetsytedata** från `<snapshot path>/<old workspace id>/workspace.db`. Den utfällda
+tillbaka den för hand – skapa en arbetsyta (bara serverägaren) och under **Arbetsytedata** skriver du
+`<snapshot path>/<old workspace id>/workspace.db` i fältet **Arbetsytans databasfil** och trycker på
+**Importera**. Den utfällda
 ögonblicksbilden visar sin egen **Sökväg på servern** i ett kopieringsfält, och radens
 titel är det gamla arbetsyte-id:t, så du har båda halvorna av sökvägen framför dig.
 
@@ -357,9 +366,11 @@ de lagras.
 | Symtom                                                                   | Orsak och åtgärd                                                                                                          |
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
 | Hämtningen eller uppladdningen misslyckas efter att anslutningen ändrats | Försök igen på den aktiva parkopplade anslutningen. Både direkt och via relä stöds krypterad filöverföring; ingen av dem erbjuder en klartext-HTTP-reserv |
-| "Servern nekade"                                                         | Roll. Att ta eller lista en ögonblicksbild av installationen kräver installationens operatör. Att hämta en arbetsyta kräver admin, att återställa en kräver ägare, en zip för hela ögonblicksbilden kräver installationens operatör |
-| "Den här servern har ingen säkerhetskopieringsyta"                       | Värden har ingen säkerhetskopieringsport inkopplad – en demoserver. Operationerna saknas i stället för att nekas              |
-| "Filen är större än vad servern accepterar"                              | Uppladdningar är begränsade till 8 GiB. Lägg filen på servervärden och använd **Importera** → **Välj fil** i stället          |
+| "Servern vägrade. Att hämta en arbetsyta kräver adminrollen. Att återställa en kräver serverägaren, som också måste äga arbetsytan. En hel ögonblicksbild kräver serverägaren." | Roll. Att ta, lista eller hämta en ögonblicksbild av installationen kräver serverägaren. Att hämta en arbetsyta kräver admin; att återställa en kräver serverägaren, som dessutom måste äga arbetsytan |
+| "Filöverföring är inte konfigurerad för den här anslutningen än. Anslut till servern igen för att hämta eller ladda upp en säkerhetskopia." | Den här anslutningen till servern har ingen filöverföringskanal, så **Hämta** och uppladdningen är avstängda. Anslut till servern igen och försök sedan igen |
+| "Bara serverägaren kan återställa säkerhetskopior. Du kan fortfarande ladda ner dem." | Att återställa ersätter en arbetsytas databas på servervärden, så bara serverägaren återställer. Ladda ner säkerhetskopian och be dem |
+| "Den här servern har ingen säkerhetskopieringsyta."                      | Värden har ingen säkerhetskopieringsport inkopplad – en demoserver. Operationerna saknas i stället för att nekas              |
+| "Filen är större än servern accepterar."                                 | Uppladdningar är begränsade till 8 GiB. Lägg filen på servervärden och ange dess sökväg i **Arbetsytans databasfil**        |
 | Import nekad: inte en arbetsytedatabas från Control Center               | Filen har ingen `workspace_meta`-rad – den är inte en arbetsytaexport, eller så är den trunkerad. Inget ersattes              |
 | En ögonblicksbild listas som **Ofullständig**                            | Dess manifest saknas eller anger filer som inte finns. Ta en ny; ta under tiden över enskilda arbetsytefiler från den        |
 | En ögonblicksbild säger att arbetsytor inte fångades                     | De arbetsytorna har aldrig skrivits till, eller så misslyckades deras kopia. Kontrollera serverloggen                        |

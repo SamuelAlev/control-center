@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_natives/cc_natives.dart'
     show SamlAuthnRequest, SamlIdpMetadata, SamlIdentity;
@@ -495,6 +496,7 @@ void main() {
           handle: 'alice',
           displayName: 'Alice',
           email: 'alice@example.com',
+          emailVerified: true,
           ssoSubject: 'alice@example.com',
           ssoIssuer: 'scim',
           createdAt: DateTime.utc(2025, 1, 1),
@@ -737,7 +739,13 @@ class _FakeUserRepository implements UserRepository {
   Future<User?> getByHandle(String handle) async => byHandle[handle];
 
   @override
-  Future<User?> getByEmail(String email) async => byEmail[email];
+  Future<User?> getByVerifiedEmail(String email) async => byId.values
+      .where((u) => u.email == email && u.emailVerified)
+      .firstOrNull;
+
+  @override
+  Future<List<User>> getAllByEmail(String email) async =>
+      byId.values.where((u) => u.email == email).toList();
 
   @override
   Future<User?> getBySsoSubject(String issuer, String subject) async {
@@ -757,6 +765,16 @@ class _FakeUserRepository implements UserRepository {
       byEmail[user.email!] = user;
     }
   }
+  @override
+  Future<User> insertWithFreeHandle(User user) async {
+    final free = Username.candidates(
+      Username.parse(user.handle),
+    ).firstWhere((c) => byHandle[c.value] == null);
+    final stored = user.copyWith(handle: free.value);
+    await upsert(stored);
+    return stored;
+  }
+
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>

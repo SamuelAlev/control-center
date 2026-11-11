@@ -2,11 +2,11 @@
 title: Repók hozzáadása munkaterülethez
 description: Regisztráljon Git-checkoutokat egy munkaterületbe, hogy az ügynökök dolgozhassanak rajtuk.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
 Ez az útmutató bemutatja, hogyan regisztrálhat egy Git-checkoutot egy
-munkaterületbe, hogyan indexelheti újra, és hogyan távolíthatja el ismét.
+munkaterületbe, hogyan indexelheti újra, és hogyan távolíthatja el ismét. A repó hozzáadása a szerver mappáiból a szerver tulajdonosának feladata; eltávolításához munkaterület-adminisztrátor kell.
 
 A repók **munkaterülethez kötöttek**. Nincs globális nyilvántartás és nincs
 összekapcsolási lépés: egy repó hozzáadása és munkaterületbe helyezése ugyanaz a
@@ -37,9 +37,29 @@ kommunikál. A GitLab beágyazott névterei megmaradnak, így a
 
 A mappának emellett a `cc_server`-t futtató gépen kell lennie, a szerver egyik
 `--repo-roots` könyvtárán belül. Ez az engedélyezett lista alapértelmezésben a
-szerverfelhasználó kezdőkönyvtára, és a gyökér fölé navigálást elutasítja.
+szerverfelhasználó kezdőkönyvtára, és a gyökér fölé navigálást elutasítja. A szerver mappáinak böngészését csak a [szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) kapja meg, mert a gép saját fájljait listázza. Mindenki más a **Tároló hozzáadása** gomb helyén ezt látja: „A szerver tulajdonosa adja hozzá a tárolókat a szerver mappáiból.” Ha egy olyan repóra mutat a kapcsolat, amelyet egyik munkaterülete sem tartalmaz, ezt látja: a repó nincs összekapcsolva egyik munkaterületén sem, és kérje meg a szerver tulajdonosát, hogy adja hozzá.
+
+A checkout helye attól függ, ki kapcsolja össze:
+
+- **A munkaterület saját tárhelyén** a szerveren: bármely munkaterület-adminisztrátor.
+- **Bárhol máshol a szerver lemezén**: csak a [szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa), mert csak ő irányíthatja a szervert a gép saját fájljaira. Mindenki más ezt látja: „Csak a szerver tulajdonosa köthet össze olyan mappát, amely a munkaterület tárhelyén kívül esik.”
+- **A szerver adatmappája**, vagy annak bármelyik eleme: soha.
+
+A checkout `origin`-jének arra a repóra kell mutatnia, amelyet összekapcsol. Egy mappa, amelynek `origin`-je másik repóra mutat, ezzel az üzenettel utasítódik el: „Ennek a mappának az origin-je egy másik tárolóra mutat.”
+
+### A szerver még nem használja ezeket a mappákat
+
+Az olyan repó, amelynek mappája a munkaterület tárhelyén kívül van, és amelyet nem a szerver tulajdonosa kapcsolt össze — például egy importált munkaterületen lévő —, a sora alatt ezt mutatja, amíg a szerver tulajdonosa meg nem erősíti: „Ez a mappa a munkaterület tárhelyén kívül esik. Erősítse meg, hogy ez a szerver használhatja-e.” Más felhasználó ehelyett ezt látja: „Ez a mappa a munkaterület tárhelyén kívül esik. Csak a szerver tulajdonosa erősítheti meg.”
+
+A tulajdonos egyszer erősíti meg: a soron a **Megerősítés** gombbal, vagy több várakozó repó esetén a lista feletti értesítésben az **Összes megerősítése** gombbal. Mindegyiket a tulajdonosként újra ellenőrzik, ugyanazokkal az ellenőrzésekkel, mint az összekapcsolásnál. Addig a repó megmarad a listában, de nem nyílik meg, nem provisionálódik és nem indexelődik: sem szerkesztő, sem terminál, sem környezet vagy téri checkout nem használja, a kódgráf pedig kihagyja. Ha a szerver tulajdonosaként újra hozzáadja ugyanazt a mappát, az ugyanaz, mint a megerősítés, és megtartja a repó azonosítóját.
+
+Az a checkout, amelyet egy szimbolikus link máshová mozgatott, ugyanígy kezelődik: a listában marad, de nem használják, amíg valaki, aki összekapcsolhatja az új célt tartalmazó mappát, újra nem kapcsolja össze.
+
+A repó kódhosztjára is be kell jelentkeznie, és a saját fiókjának láthatnia kell a repót.
 
 ## Egy checkout regisztrálása
+
+A következő lépésekhez a szerver tulajdonosának kell lennie.
 
 1. Nyissa meg a **Beállítások → Munkaterület → Tárolók** oldalt
    (`/workspaces/<id>/settings/workspace/repositories`).
@@ -96,7 +116,23 @@ repólistája visszaolvas.
 ## A GitHub-hivatkozás javítása
 
 A soron lévő hivatkozásikon megnyit egy szerkesztőt a repó GitHub-tulajdonosához
-és tárolónevéhez — hasznos, ha a remote-ot átnevezték vagy áttelepítették.
+és tárolónevéhez.
+
+Ritkán van rá szükség. A hivatkozás a repó állandó azonosítójához kötődik a kódhoszton, így az átnevezést vagy az áttelepítést a rendszer automatikusan követi.
+
+- A repó átnevezése a Control Centerben csak a megjelenített nevet változtatja meg.
+- Annak megváltoztatásához, hogy a hivatkozás melyik kódhoszt-repóra mutasson, munkaterület-adminisztrátor kell, és az adminisztrátor saját bejelentkezésével ellenőrzik a kódhoszton, ugyanúgy, mint az összekapcsolásnál.
+- Egy összekapcsolt repó nem alakítható át csak helyi repóvá.
+
+Ha az elérési út később **másik** repóra mutat (az eredeti törölve lett és újra létrehozták, vagy másik repó váltotta fel), a Control Center nem küld neki semmit: sem tokent, push-t, hozzászólást vagy kérést. Ez a személyes műveletekre is vonatkozik: egy ilyen repón tett átnézés, összefésülés vagy hozzászólás elutasításra kerül, a GitHubon, a GitLabon és a Bitbucketen egyaránt. A sor és a repó pull requestjei a „A(z) _repo_ most egy másik tárolóra mutat” üzenetet mutatják, amíg egy munkaterület-adminisztrátor nem nyomja meg az **Újrakapcsolás** gombot.
+
+## Ki nyithatja meg a kódot
+
+Egy repó-jogosultság önmagában nem nyitja meg a repó fájljait. Fájlok, diffek, keresés vagy terminál megnyitásához a tagnak kell a Control Center-jogosultság, és a saját forge-bejelentkezésének is olvasnia kell tudnia a repót. A munkaterület-adminisztrátorok sincsenek mentesítve; a szerver tulajdonosa igen. Lásd: [A kód a forge-ot követi](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-kód-a-forge-ot-követi).
+
+Ha olyan valakinek ad jogosultságot egy repóhoz, akinek a forge-fiókja nem olvashatja, a jogosultság mentésre kerül, és figyelmeztetést lát, például: „Mentve. A(z) GitHub-fiókjuk még nem olvashatja ezt a tárolót, ezért előttük rejtve marad.”
+
+Ugyanez a szabály dönti el, ki nyithatja meg a teret. Egy tér csak azoknak a tagoknak nyílik meg, akik a benne használt repók mindegyikének kódját megnyithatják, és mindenki másnak rejtve marad, a keresési találatokkal, futási naplókkal, teendőkkel, tevékenységgel és értesítésekkel együtt. Repó nélküli tér minden tag számára nyitott. Lásd: [Terek a repóikat követik](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-terek-a-tárolóikat-követik).
 
 ## Repó eltávolítása
 
@@ -107,12 +143,36 @@ A soron lévő hivatkozásikon megnyit egy szerkesztőt a repó GitHub-tulajdono
 A párbeszédablak megmondja, mit tesz: „A(z) _name_ el lesz távolítva ebből a
 munkaterületből. A lemezen lévő helyi fájlokhoz nem nyúl.”
 
+Repó eltávolításához munkaterület-adminisztrátor kell. Ez törli az adott repóhoz tárolt kódhoszt-hitelesítő adatokat is, például a GitLab- vagy Bitbucket-automatizálási tokent.
+
 Az eltávolítás törli a repó sorát ebből a munkaterületből, és kaszkádolva
 eltünteti a kódgráf sorait — szimbólumok, élek, fájlok és indexelési checkpointok
 —, valamint a repón lévő összes tagonkénti repó-jogosultságot, a tér–repó
 kapcsolatait és az elszigetelt checkout rekordjait. Ugyanaz a checkout egy másik
 munkaterületen regisztrálva független sor, és nem érinti semmi. A lemezen lévő
 worktree-k, amelyekre ezek a rekordok mutattak, nem szűnnek meg a törléstől.
+
+## Hibaelhárítás
+
+### Van jogosultságom, de a repó szerint a fiókom nem olvashatja
+
+A saját kódhoszt-fiókja nem olvashatja a repót, ezért a Control Center a munkaterületi jogosultság ellenére is elzárja előled a kódját. Jelentkezzen be a kódhosztra a **Beállítások → Ön → Profil → Kódtárhely** alatt, ha még nem tette meg, vagy kérjen hozzáférést a repó tulajdonosától a kódhoszton. A repó megnyílik, amint a kódhoszt-fiókja olvashatja.
+
+### „Ez a mappa a munkaterület tárhelyén kívül esik”
+
+A repó mappája a munkaterület tárhelyén kívül van, és a szerver tulajdonosa nem kapcsolta össze, vagy egy szimbolikus link máshová mutat. A repó a listában marad, de nem használják, amíg a szerver tulajdonosa meg nem erősíti, vagy újra nem adja a mappát. Ha Ön nem a tulajdonos, kérje meg őt. Ha Ön az, nyomja meg a **Megerősítés** gombot a soron, vagy az **Összes megerősítése** gombot a lista fölött; lásd: [A szerver még nem használja ezeket a mappákat](#a-szerver-még-nem-használja-ezeket-a-mappákat).
+
+### „A szerveren már nincs semmi ezen az elérési úton”
+
+A mappát a szerver gépén áthelyezték vagy törölték. Állítsa vissza, vagy egy munkaterület-adminisztrátor távolítsa el a repót az értesítésben lévő **Eltávolítás** gombbal, és adja hozzá újra a jelenlegi mappából.
+
+### „Ez a mappa nem használható tárolóként”
+
+A tárolt mappa a szerver saját adatmappája, annak egy eleme, vagy maga a munkaterület tárhelymappája. Ezek egyike sem lehet repó. Egy munkaterület-adminisztrátor az értesítésben lévő **Eltávolítás** gombbal törölje, majd adja hozzá újra a repót a checkout valódi mappájából.
+
+### „Nem sikerült igazolni a forge-hozzáférését”
+
+A Control Center nem tudta elérni a kódhosztot annak ellenőrzésére, hogy a fiókja olvashatja-e a repót, ezért inkább elutasította, mintsem találgatott. Próbálja újra kis idő múlva.
 
 ## Kapcsolódó útmutatók
 

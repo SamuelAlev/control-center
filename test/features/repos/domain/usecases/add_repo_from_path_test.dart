@@ -136,13 +136,18 @@ void main() {
         ),
       );
 
-      final repo = await useCase.execute('/path/to/repo', workspaceId: _testWs);
+      final repo = await useCase.execute(
+        '/path/to/repo',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
 
       expect(repo, isA<Repo>());
       expect(repo.name, 'acme/project');
       expect(repo.path, '/path/to/repo');
       expect(repo.remoteOwner, 'acme');
       expect(repo.remoteName, 'project');
+      expect(repo.linkedBy, 'u-1');
       expect(fakeRepo.saved.length, 1);
     });
 
@@ -157,7 +162,11 @@ void main() {
         ),
       );
 
-      final repo = await useCase.execute('/path', workspaceId: _testWs);
+      final repo = await useCase.execute(
+        '/path',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
 
       expect(repo.id, isNotEmpty);
       expect(repo.id.length, 36);
@@ -169,7 +178,8 @@ void main() {
       );
 
       expect(
-        () => useCase.execute('/bad/path', workspaceId: _testWs),
+        () =>
+            useCase.execute('/bad/path', workspaceId: _testWs, linkedBy: 'u-1'),
         throwsA(isA<GitRepoInspectionException>()),
       );
       expect(fakeRepo.saved, isEmpty);
@@ -187,7 +197,11 @@ void main() {
       );
 
       final before = DateTime.now();
-      final repo = await useCase.execute('/path', workspaceId: _testWs);
+      final repo = await useCase.execute(
+        '/path',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
       final after = DateTime.now();
 
       expect(
@@ -212,7 +226,11 @@ void main() {
         ),
       );
 
-      final repo = await useCase.execute('/code', workspaceId: _testWs);
+      final repo = await useCase.execute(
+        '/code',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
 
       expect(repo.name, 'github/myproject');
     });
@@ -228,7 +246,11 @@ void main() {
         ),
       );
 
-      final repo = await useCase.execute('/path', workspaceId: _testWs);
+      final repo = await useCase.execute(
+        '/path',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
       expect(repo, isA<Repo>());
       expect(fakeRepo.saved.length, 1);
     });
@@ -246,8 +268,16 @@ void main() {
           ),
         );
 
-        final first = await useCase.execute('/path', workspaceId: _testWs);
-        final second = await useCase.execute('/path', workspaceId: _testWs);
+        final first = await useCase.execute(
+          '/path',
+          workspaceId: _testWs,
+          linkedBy: 'u-1',
+        );
+        final second = await useCase.execute(
+          '/path',
+          workspaceId: _testWs,
+          linkedBy: 'u-1',
+        );
 
         expect(second.id, first.id);
         expect(fakeRepo.reposIn(_testWs), hasLength(1));
@@ -265,10 +295,15 @@ void main() {
         ),
       );
 
-      final inA = await useCase.execute('/path', workspaceId: _testWs);
+      final inA = await useCase.execute(
+        '/path',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
       final inB = await useCase.execute(
         '/path',
         workspaceId: 'other-workspace',
+        linkedBy: 'u-1',
       );
 
       // Repos are workspace-scoped: identity across workspaces is the path.
@@ -288,7 +323,11 @@ void main() {
           branch: 'main',
         ),
       );
-      final repoA = await useCase.execute('/path/a', workspaceId: _testWs);
+      final repoA = await useCase.execute(
+        '/path/a',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
 
       fakeInspector.setResult(
         const GitRepoInfo(
@@ -299,7 +338,11 @@ void main() {
           branch: 'feature',
         ),
       );
-      final repoB = await useCase.execute('/path/b', workspaceId: _testWs);
+      final repoB = await useCase.execute(
+        '/path/b',
+        workspaceId: _testWs,
+        linkedBy: 'u-1',
+      );
 
       expect(repoA.path, '/path/a');
       expect(repoB.path, '/path/b');

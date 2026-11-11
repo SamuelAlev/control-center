@@ -2,7 +2,7 @@
 title: Szójegyzék
 description: A Control Centerben használt kulcsfontosságú kifejezések meghatározásai.
 slug: hu-HU/kezikonyv/referencia/szojegyzek
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'A telepített készségek munkaterületenkénti jegyzéke: mindegyiknél a forrásrepó, a repón belüli útvonal, a commit, amelyhez rögzítve van, és egy összesített tartalomhash. A telepítések, a frissítések és az eltávolítások naprakészen tartják; a verify_skills ellenőrzi a lemezen lévő állapottal szemben.'],
 ['Ügynökfuttatási átjáró', 'Loopback végpont a cc_server-en, amely az ügynök homokozóján belül alkalmazza a műveleti szabályzatot. Az ügynök minden GitHub-pushát ide irányítja, ellenőrzi a Küldés távoli tárolóra szabály alapján, és egy olyan írási tokennel továbbítja, amely soha nincs az ügynök birtokában; a Claude Code Bash parancsait egy hook ellenőrzi ugyanezen a végponton.'],
 ['Mode', 'chat, plan, review vagy orchestrate. Térénként tárolódik, így egy ügynök különböző tereken különböző módban lehet; egy tér minden beszélgetése ugyanazt osztja. Kapuzza a rendszerpromptot, a homokozó írási szabályait és az MCP-eszközök engedélyezési listáját.'],
-['SandboxBackend', 'microvm (egy elzárt VM — az egyetlen háttérrendszer kernelhatárral, az interaktív terminálokra alkalmazva), native (operációs rendszer natív Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n) vagy none. Indításkor egyszer vizsgáljuk; a native behúzza az ügynökindítást, ahol elérhető. A Windowsnak nincs natív háttérrendszere, a Linuxnak pedig bwrap és socat kell, így az ottani futások beburkolás nélkül maradnak; a --sandbox off szándékosan lemond róla.'],
+['SandboxBackend', 'microvm (egy elzárt VM — az egyetlen háttérrendszer kernelhatárral, az interaktív terminálokra alkalmazva), native (operációs rendszer natív Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n) vagy none. Indításkor egyszer vizsgáljuk; a native behúzza az ügynökindítást, ahol elérhető. A Windowsnak nincs natív háttérrendszere, a Linuxnak pedig bwrap és socat kell; ilyen gazdagépen csak a szerver tulajdonosának futtatásai indulnak el, beburkolás nélkül, a többieket pedig visszautasítjuk. A --sandbox off minden tag ügynökét beburkolás nélkül futtatja.'],
 ['Rig', 'Egy eldobható gép, amelyet egy ügynök valós időben vezet: elzárt böngésző vagy Linux asztal, gazdagép által kezelt Android-emulátor vagy iOS-szimulátor, vagy elzárt terminál. Élőben figyelhető a saját teljes felbontású sávján, a szerveroldalon kikényszerített átvétellel. Egy beszélgetéshez kötött, így az emberi fül és az ügynök eszköze egy gépet címez meg.'],
 ['Elszigetelt környezet', 'A VM-alapú állomások számára elérhető erősebb elszigetelési tulajdonság: kernelhatár, eldobható overlay-lemez, alapértelmezésben elzáró hálózati kapu és hitelesítőadat-ügynök. Az Android- és iOS-állomások eldobhatók, de gazdagép által kezelt hálózatot használnak, ezért nem tartanak igényt erre a határra. Bármely állomás vezetése az enclosureControl korlátosztályt használja.'],
 ['RunCost', 'Token- és költségkimutatás (bemeneti tokenek, kimeneti tokenek, becsült költség centre) egyetlen ügynökfutásra.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'A futásvégrehajtást hangolja össze: futásokat indít, lépéseket ütemez, állapotot perzisztál, kezeli a routereket/csatlakozásokat/folytatást hiba esetén, és újraindítás után folytatja a repülés közbeni futásokat.'],
 ['PipelineTriggerDispatcher', 'Feliratkozik a domaineseményekre, és az engedélyezett eseményindítókhoz automatikusan elindítja a megfelelő pipeline-futásokat.'],
 ['MemoryAccessPolicy', 'Feloldja és érvényesíti az ügynökszerep memóriaengedélyeit a domaineken.'],
-['HarnessCostCalculator', 'A beépített harness tokenhasználatát RunCost értékké árazza a models.dev katalógusból. Az indítás ezt a kimutatást a futásnaplóra perzisztálja.'],
+['HarnessRunAccounting', 'Egyszer elszámolja a beépített harness modellhívásait, a models.dev katalógusából árazva, rögzíti őket a tulajdonos futáson, és a gyermekfutás költését a szülő költségkeretéhez adja hozzá.'],
 ['BudgetEnforcementService', 'Kiszámítja az ügynökönkénti havi költést és egy indítás előtti blokkolást (checkInvocationBlock). Ezt a blokkolást csak a helyreállítási reconcilerek (OrphanRunReaper, StrandedTicketReconciler) kérdezik le, a hétköznapi indítás soha.'],
 ['BudgetGovernanceService', 'Minden futás után kiértékeli az ügynökönkénti havi költést: egy puha küszöb figyelmeztető incidenst rögzít; a kimerülés kemény incidenst rögzít, és az ügynök életciklusát paused állapotba billenti.'],
 ['DomainEventBus', 'Folyamaton belüli, szórásos publish/subscribe busz funkciók közötti kommunikációhoz. Az események típusosak; az előfizetők típus szerinti folyamokat fogyasztanak.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'A telefonos vékonykliens — egy Flutter web PWA, amely a közvetített relayen keresztül távolról vezérli a flottát, alapértelmezésben elzáró eszközszabályzattal.'],
 ['cc_signaling_server', 'Egy állapotmentes WebSocket relay broker, amely meghívásra korlátozott szobákat szolgál ki. Egy buta relay: csak végpontok között lezárt kereteket továbbít, nem tartalmaz alkalmazásadatokat, és soha nem látja a párosítási PSK-t.'],
 ['Principal', 'Egy lezárt érték, amely egységesíti az embereket és az ügynököket egyetlen szereplő-absztrakcióként. UserPrincipal(userId) vagy AgentPrincipal(agentId). Minden üzenet, jegy, átnézés, terv és futásnapló egy Principalon keresztül attribútumozódik.'],
-['User', 'Egy emberi identitás, a global.db-ben tárolva, ezért globális a munkaterületeken át. Az a principal, aki létrehoz egy munkaterületet, annak tulajdonosává válik, a Workspace.ownerUserId mezőn tulajdonos szerepű tagsági sorral; mások meghívóval vagy SSO-val csatlakoznak.'],
+['User', 'Egy emberi identitás, a global.db-ben tárolva, ezért globális a munkaterületeken át. Munkaterületet csak a szerver tulajdonosa hoz létre, és ő lesz annak tulajdonosa: a Workspace.ownerUserId mezőn tulajdonos szerepű tagsági sorral; mások meghívóval vagy SSO-val csatlakoznak.'],
+['Server owner', 'Az a személy, aki beállította a szervert; az első indításkor rögzítjük, és semmi, ami a hálózaton érkezik, nem változtatja meg. A munkaterület-adminisztrátor vagy a munkaterület-tulajdonos nem a szerver tulajdonosa. A szerver saját gépén semmi sem fut homokozón kívül, hacsak a szerver tulajdonosa nem indította el, vagy nem hagyta jóvá az adott fajta gazdagépi végrehajtást: a munkaterületek létrehozása, a gazdagép shellje, a beágyazott kódszerkesztő, a gazdagépen futó környezetek és a munkaterület tárhelyén kívülről összekapcsolt checkoutok kizárólag az ő jogköre.'],
 ['WorkspaceMember', 'Egy tagsági sor, amely egy Felhasználót egy Munkaterülethez köt egy WorkspaceRole értékkel. A tagság — nem egy párosítási kulcs — a hozzáférési határ.'],
 ['WorkspaceRole', 'Fokozatos tagsági szerep: owner, admin, member, viewer vagy guest. A repóműveleti szűk keresztmetszet műveletfajtánként levezet egy minimális szerepküszöböt.'],
 ['ParticipantPresence', 'Efemer jelenlét egy Principal számára (állapot, hely, kurzor, gépelés, ügynök élő állapota + futó költsége). Soha nem perzisztálódik; szerver-hubos; a repó-jogosultság szerint szűrve a szétosztás előtt.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Autonomy dial', 'Térénként és ügynökönkénti vezérlő — propose-only / act-with-approval / act-freely — a műveleti-korlát tároló fölötti nevesített profilként megvalósítva.'],
 ['cc_worker', 'Egy headless, tiszta Dart nyelvű flottavégrehajtó bináris. Párosul egy cc_serverrel, deklarálja a képességeit, bérbe adott feladatokat húz, végrehajtja őket, és visszafolyatja az eseményeket. Nem tart fenn tartós állapotot.'],
 ['JobSpec', 'Minden végrehajtható dolog típusos specifikációja (ügynökfutás, pipeline-lépés, code-index, golden-render, benchmark, eval batch): szükséges képességek, prioritás, büdzsé, munkaterület.'],
-['ActionClass', '13 effektosztály zárt halmaza (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Minden módosító eszköz deklarálja az osztályait; a korlátmotor hatókörönként allow / prompt / deny döntést hoz.'],
+['ActionClass', '14 effektosztály zárt halmaza (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Minden módosító eszköz deklarálja az osztályait; a korlátmotor hatókörönként allow / prompt / deny döntést hoz.'],
 ['WriteLedger', 'Egy munkaterület-hatókörű idempotencialedger. Minden mutáció hordoz egy logikai műveletenkénti idempotenciakulcsot; egy újrajátszás bájtazonos eredeti eredményt ad vissza. Konstrukciójánál fogva biztonságossá teszi az újracsatlakozást és a többklienst.'],
 ['Idempotency key', 'Egy kliens által generált UUIDv7, logikai műveletenként (nem kísérletenként) kiadva. Az újrapróbálkozásokat az újracsatlakozásokon és klienseken át deduplikálja.'],
 ['Needs me inbox', 'Egy pillérek közötti sor szigorú szabállyal: egy elem csak akkor jelenik meg, ha blokkol valamit (egy ügynököt, egy összefésülést, egy szinkronizálást), vagy kifejezetten az operátort kéri.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Review verdict', 'ship, hold vagy block. Bármely P0 megállapítás 0,7 vagy nagyobb bizonyossággal block ítéletet ad; bármely más P0 vagy bármely P1 hold ítéletet; egyébként ship. Egy kapuzott, megbukó tengely blockot kényszerít, és a megállapítások nem szavazhatják felül.'],
 ['SessionRecording', 'Egy futáshoz rögzített eseményfolyam, valamint HTTP/LLM-kazetták és eszköz-I/O, egy AgentConfigHash-sal párosítva.'],
 ['Golden session', 'Egy megáldott SessionRecording, ügynökönként vagy playbookonként rögzítve.'],
-['Control Center Connect', 'Opcionális szolgáltatás, amely a szolgáltatói bejelentkezéseket (GitHub, Google, Linear) futtatja a saját alkalmazással nem rendelkező szerverek számára. A Control Center üzemelteti, saját üzemeltetésű, vagy ki van kapcsolva. Hitelesítőadat-pecséteket és egyetlen repóra szóló GitHub-tokeneket ad vissza, és soha nem látja a repók tartalmát.'],
+['Control Center Connect', 'Opcionális szolgáltatás, amely a szolgáltatói bejelentkezéseket (GitHub, Google, Linear) futtatja azoknak a szervereknek vagy munkaterületeknek, amelyek a saját alkalmazásuk helyett ezt választották. A Control Center üzemelteti, saját üzemeltetésű, vagy ki van kapcsolva. Hitelesítőadat-pecséteket és egyetlen repóra szóló GitHub-tokeneket ad vissza, és soha nem látja a repók tartalmát.'],
 ['Hitelesítőadat-pecsét', 'Titkosított hitelesítő adat, amelyet csak az a Connect tud megnyitni, amely létrehozta; a szolgáltatóhoz, a Connect címéhez, a telepítési azonosítóhoz, a munkaterülethez, a fiókhoz, az alkalmazáshoz és a titokgenerációhoz kötött. A szerver a pecsétet tárolja; a hozzáférési tokenek a memóriában maradnak.'],
 ['Telepítési azonosító', 'Egy szerver identitása egy adott Connect-cím felé, a telepítési kulcsából származtatva. A Connect telepítési azonosító alapján engedélyezi a szervereket; a kulcs cseréje megváltoztatja, és mindenkit kijelentkeztet a Connect-sávokból.'],
-['Telepítési kötés', 'A Connect nyilvántartása arról, mely szerverek használhatják a megosztott App egy GitHub-telepítését. Egy szervezeti telepítésnél minden szervert egy adminisztrátornak kell engedélyeznie.'],
-['Bejelentkezési sáv', 'Egy szolgáltató böngészős bejelentkezése: github, google, linear, linear_app vagy slack. Minden sáv a szerver saját alkalmazásán fut, ha az teljes, egyébként a Connecten keresztül, egyébként nem érhető el.'],
+['Telepítési kötés', 'A Connect nyilvántartása (install_binding) arról, melyik egyetlen szerverhez kötődik egy Slack-csapat. A GitHub-telepítéseknek nincs ilyen: bármely szerver, amelyre egy tag bejelentkezik, használhatja őket.'],
+['Bejelentkezési sáv', 'Egy szolgáltató böngészős bejelentkezése: github, google, linear, linear_app vagy slack. Saját alkalmazásokkal a sáv a saját alkalmazáson fut, ha az teljesen be van állítva, egyébként nem érhető el; ha a Connect van kiválasztva, a Connect futtatja. Egyik sem esik vissza a másikra.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Mode**: `chat`, `plan`, `review` vagy `orchestrate`. **Térénként** tárolódik, így egy ügynök különböző tereken különböző módban lehet; egy tér minden beszélgetése ugyanazt osztja. Kapuzza a rendszerpromptot, a homokozó írási szabályait és az MCP-eszközök engedélyezési listáját. A szerkesztő csak a `chat`, a `plan` és az `orchestrate` módot kínálja; a `chat` címkéje „Agent”.
 
-**SandboxBackend**: `microvm` (egy elzárt VM — az egyetlen háttérrendszer kernelhatárral, az interaktív terminálokra alkalmazva), `native` (Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n) vagy `none`. Indításkor egyszer vizsgáljuk; a `native` **az ügynökindításra alkalmazódik**, ahol elérhető, beburkolva a Claude Code CLI-t és a harness `bash` eszközét. A Windowsnak nincs natív háttérrendszere, a Linuxnak pedig `bwrap` és `socat` kell, így az ottani futások beburkolás nélkül maradnak; a `--sandbox off` szándékosan lemond róla.
+**SandboxBackend**: `microvm` (egy elzárt VM — az egyetlen háttérrendszer kernelhatárral, az interaktív terminálokra alkalmazva), `native` (Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n) vagy `none`. Indításkor egyszer vizsgáljuk; a `native` **az ügynökindításra alkalmazódik**, ahol elérhető, beburkolva a Claude Code CLI-t és a harness `bash` eszközét. A Windowsnak nincs natív háttérrendszere, a Linuxnak pedig `bwrap` és `socat` kell; ilyen gazdagépen csak a szerver tulajdonosának futtatásai indulnak el, beburkolás nélkül, a többieket pedig visszautasítjuk. A `--sandbox off` minden tag ügynökét beburkolás nélkül futtatja.
 
 **Állomás**: Egy eldobható gép, amelyet egy ügynök valós időben vezet — elzárt böngésző vagy Linux asztal, gazdagép által kezelt Android-emulátor vagy iOS-szimulátor, vagy elzárt terminál. Élőben figyelhető a saját teljes felbontású sávján, a szerveroldalon kikényszerített átvétellel. Egy beszélgetéshez kötött, így az emberi fül és az ügynök `browser_use` / `computer_use` / `mobile_use` / `ios_use` hívásai egy alapértelmezett gépet címeznek meg. Lásd: [Állomások és elszigetelt környezetek](/hu-HU/kezikonyv/fogalmak/allomasok/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Feloldja és érvényesíti az ügynökszerep memóriaengedélyeit a domaineken.
 
-**HarnessCostCalculator**: A beépített harness tokenhasználatát `RunCost` értékké árazza a models.dev katalógusból. Az indítás ezt a kimutatást a futásnaplóra perzisztálja.
+**HarnessRunAccounting**: Egyszer elszámolja a beépített harness modellhívásait, a models.dev katalógusából árazva, rögzíti őket a tulajdonos futáson, és a gyermekfutás költését a szülő költségkeretéhez adja hozzá.
 
 **BudgetEnforcementService**: Kiszámítja az ügynökönkénti havi költést és egy indítás előtti blokkolást (`checkInvocationBlock`). Ezt a blokkolást csak a helyreállítási reconcilerek (`OrphanRunReaper`, `StrandedTicketReconciler`) kérdezik le, egy hétköznapi felhasználói vagy ügynökindítás soha.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Az összefoglaló pipeline által kinyert strukturált kimenetek, diszkrét sorként tárolva. A feladatlistaelemek egy jegyhez kapcsolódhatnak.
 
-**CalendarEvent**: Egy munkaterülethez és csatlakoztatott fiókhoz kötött, szinkronizált Google Calendar-bejegyzés. Különbözik a Megbeszéléstől: az esemény egy ütemezett elköteleződés; a Megbeszélés egy rögzített ülés. Egy az egyhez kapcsolódnak egy `MeetingCalendarLink` révén.
+**CalendarEvent**: Egy munkaterülethez és csatlakoztatott fiókhoz kötött, szinkronizált Google Calendar-bejegyzés. Különbözik a Megbeszéléstől: az esemény egy ütemezett elköteleződés; a Megbeszélés egy rögzített ülés. Egy az egyhez kapcsolódnak a `meeting_calendar_links` tábla révén.
 
 **CalendarAccount**: Egy csatlakoztatott Google-fiók, munkaterületenként, tagonként és e-mail-címenként (`google:<workspaceId>:<userId>:<email>`). A hitelesítő adata kiszolgálóoldalon, `google_*` kulcsként a `<dataDir>/secrets.json` fájlban tárolódik, és soha nem jut el a klienshez; a böngészős bejelentkezés a szerveren fejeződik be. A Connecten keresztüli bejelentkezés csak egy hitelesítőadat-pecsétet tárol. Egy `authExpiredAt` jelző vezérli az újracsatlakozási sávot.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: Egy lezárt érték, amely egységesíti az embereket és az ügynököket egyetlen szereplő-absztrakcióként — `UserPrincipal(userId)` vagy `AgentPrincipal(agentId)`. Minden üzenet, jegy, átnézés, terv és futásnapló egy Principalon keresztül attribútumozódik.
 
-**Felhasználó**: Egy emberi identitás, a `global.db`-ben tárolva, ezért globális a munkaterületeken át. Az a principal, aki létrehoz egy munkaterületet, annak **tulajdonosává** válik — ugyanabban a műveletben a `Workspace.ownerUserId` mezőn, tulajdonos szerepű tagsági sorral. Mások meghívóval vagy SSO-val csatlakoznak.
+**Szerver tulajdonosa**: Az a személy, aki beállította a szervert; az első indításkor rögzítjük, és semmi, ami a hálózaton érkezik, nem változtatja meg. A munkaterület-adminisztrátor vagy a munkaterület-tulajdonos nem a szerver tulajdonosa. A szerver saját gépén semmi sem fut homokozón kívül, hacsak a szerver tulajdonosa nem indította el, vagy nem hagyta jóvá az adott fajta gazdagépi végrehajtást: a munkaterületek létrehozása, a gazdagép shellje, a beágyazott kódszerkesztő, a gazdagépen futó környezetek és a munkaterület tárhelyén kívülről összekapcsolt checkoutok kizárólag az ő jogköre. Lásd: [A szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa).
+
+**Felhasználó**: Egy emberi identitás, a `global.db`-ben tárolva, ezért globális a munkaterületeken át. Munkaterületet csak a szerver tulajdonosa hoz létre, és ő lesz annak **tulajdonosa** — ugyanabban a műveletben a `Workspace.ownerUserId` mezőn, tulajdonos szerepű tagsági sorral. Mások meghívóval vagy SSO-val csatlakoznak.
 
 **WorkspaceMember** / **WorkspaceRole**: Egy tagsági sor, amely egy Felhasználót egy Munkaterülethez köt egy szerepben (`owner` / `admin` / `member` / `viewer` / `guest`). **A tagság — nem egy párosítási kulcs — a hozzáférési határ.** A repónkénti jogosultságok megakadályozzák, hogy a tagság nagyobb jogosultságot adjon, mint a kódhoszt.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Autonómiatárcsa**: Térénként és ügynökönkénti vezérlő — `propose-only` / `act-with-approval` / `act-freely` — a műveleti-korlát tároló fölötti nevesített profilként megvalósítva.
 
-**ActionClass**: 13 effektosztály zárt halmaza (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Minden módosító eszköz deklarálja az osztályait; a korlátmotor hatókörönként `allow` / `prompt` / `deny` döntést hoz (tér > ügynök > munkaterület > mód-preset > beépített alapértelmezés).
+**ActionClass**: 14 effektosztály zárt halmaza (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Minden módosító eszköz deklarálja az osztályait; a korlátmotor hatókörönként `allow` / `prompt` / `deny` döntést hoz (tér > ügynök > munkaterület > mód-preset > beépített alapértelmezés).
 
 **WriteLedger** / **idempotenciakulcs**: Minden mutáció hordoz egy kliens által generált idempotenciakulcsot (UUIDv7, logikai műveletenként). A munkaterület-hatókörű ledger a kezelő lefutása előtt deduplikál; egy újrajátszás bájtazonos eredeti eredményt ad vissza. Konstrukciójánál fogva biztonságossá teszi az újracsatlakozást és a többklienst.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Egy állapotmentes WebSocket relay broker, amely meghívásra korlátozott szobákat szolgál ki — egy buta relay, amely csak végpontok között lezárt kereteket továbbít, nem tartalmaz alkalmazásadatokat, és soha nem látja a párosítási PSK-t.
 
-**Control Center Connect**: Opcionális szolgáltatás, amely a szolgáltatói bejelentkezéseket (GitHub, Google Calendar, Linear) futtatja azoknak a szervereknek, amelyek nem regisztráltak saját alkalmazást: a Control Center által üzemeltetett, egy szervezet által futtatott (`cc-connect`, vagy a `cc_server`-be a `/connect` alá csatolva), vagy egyik sem. Hitelesítőadat-pecséteket és egyetlen repóra szóló GitHub-tokeneket ad vissza, és soha nem látja a repók tartalmát. Lásd: [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/).
+**Control Center Connect**: Opcionális szolgáltatás, amely a szolgáltatói bejelentkezéseket (GitHub, Google Calendar, Linear) futtatja azoknak a szervereknek vagy munkaterületeknek, amelyek a saját alkalmazásuk helyett ezt választották: a Control Center által üzemeltetett, egy szervezet által futtatott (`cc-connect`, vagy a `cc_server`-be a `/connect` alá csatolva), vagy egyik sem. Hitelesítőadat-pecséteket és egyetlen repóra szóló GitHub-tokeneket ad vissza, és soha nem látja a repók tartalmát. Lásd: [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/).
 
 **Hitelesítőadat-pecsét**: Titkosított hitelesítő adat (`credential_seal`), amelyet csak az a Connect tud megnyitni, amely létrehozta; a szolgáltatóhoz, a Connect címéhez, a telepítési azonosítóhoz, a munkaterülethez, a fiókhoz, az alkalmazáshoz és a titokgenerációhoz kötött. A szerver a pecsétet és azt a telepítési azonosítót tárolja, amelyhez készült; a hozzáférési tokenek a memóriában maradnak. Az a pecsét, amelynek telepítési azonosítója már nem egyezik, elvetésre kerül, és a tulajdonosa újra bejelentkezik.
 
 **Telepítési azonosító**: Egy szerver identitása egy adott Connect-cím felé (`install_id`), a titokfájljában lévő telepítési kulcsból származtatva. A Connect telepítési azonosító alapján engedélyezi a szervereket. A kulcs cseréje új azonosítót ad, és mindenkit kijelentkeztet a Connect-sávokból.
 
-**Telepítési kötés**: A Connect nyilvántartása (`install_binding`) arról, mely szerverek használhatják a megosztott App egy GitHub-telepítését. A szerveren keresztüli telepítés köti azt a szervert; egy szervezeti adminisztrátor **A szerver engedélyezése** művelete egy másikat köt.
+**Telepítési kötés**: A Connect nyilvántartása (`install_binding`) arról, melyik egyetlen szerverhez kötődik egy Slack-csapat. A GitHub-telepítéseknek nincs ilyen: bármely szerver, amelyre egy tag bejelentkezik, használhatja őket.
 
-**Bejelentkezési sáv**: Egy szolgáltató böngészős bejelentkezése — `github`, `google`, `linear`, `linear_app` vagy `slack`. Egy sáv a szerver saját alkalmazásán fut, ha az az alkalmazás teljes, egyébként a Connecten keresztül, egyébként nem érhető el; a részben beállított saját alkalmazás hiba, soha nem tartalékra váltás.
+**Bejelentkezési sáv**: Egy szolgáltató böngészős bejelentkezése — `github`, `google`, `linear`, `linear_app` vagy `slack`. Saját alkalmazások mellett a sáv a (szerver vagy munkaterület) saját alkalmazásán fut, ha az teljesen be van állítva, egyébként nem érhető el; ha a Connect van kiválasztva, a Connect futtatja. Egyik sem esik vissza a másikra, a részben beállított saját alkalmazás pedig hiba.
 
 ## Lásd még
 

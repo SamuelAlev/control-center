@@ -2,7 +2,7 @@
 title: Chatbro
 description: Leverandører, kommandoer, legitimasjon, kapabiliteter, RPC-operasjoner og lagring for chatbroen.
 slug: nb-NO/handbok/referanse/chatbro
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Leverandører
@@ -150,7 +150,7 @@ Kortet åpnes når en omtale godtas, før kloning og før det første tokenet; t
 | Omtale godtatt              | `Working on it…`                                               |
 | Steg `repo`                 | `Cloning <repo>…`                                              |
 | Steg `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Steg `script`               | `Running the setup script for <repo>…`                         |
+| Steg `provisionTasks`       | `Running worktree tasks for <repo>…`                           |
 | Steg `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, ennå ikke noe steg | `Preparing the workspace…`                              |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Den finnes fordi knytningen skjer på den _andre_ siden: et medlem skriver engan
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Tilkoblingslegitimasjon    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Halvferdig veiledet oppsett | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Eldre Slack-filer          | `<dataDir>/<workspaceId>/slack_credentials.json` og `slack_app_setup.json`, leses én gang og migreres på stedet |
 
 Legitimasjon ligger ved siden av arbeidsområdets database, ikke inni den: å slette et arbeidsområde tar chattokenene med seg, og `workspace.export` eller en sikkerhetskopi kopierer `workspace.db` — så et arbeidsområde som gis videre til noen andre, bærer ingen levende bottokens. Skrivinger er atomiske (tempfil pluss omdøping) og strammes inn til kun eieren.
 

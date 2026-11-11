@@ -2,8 +2,6 @@ import 'package:control_center/features/chat_bridges/presentation/widgets/sectio
 import 'package:control_center/features/chat_bridges/presentation/widgets/sections/chat_provider_setup_block.dart';
 import 'package:control_center/features/chat_bridges/providers/chat_bridge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
-import 'package:control_center/features/settings/presentation/widgets/scope_badge.dart';
-import 'package:control_center/features/settings/settings_nav.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -14,15 +12,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// A chat bridge spans two scopes, so it is split rather than filed whole under
 /// one of them: connecting a Slack app and customizing the bot is workspace
-/// setup an admin does once, while linking *your* Slack account to *your* user
-/// is personal and lives with the rest of your identity.
+/// setup an admin does once (Workspace → Integrations), while linking *your*
+/// Slack account to *your* user is personal and lives with the rest of your
+/// accounts (You → Profile).
 enum ChatBridgeSurface {
   /// Connect/disconnect, the shared-app install, guided setup, bot
   /// customization and the roster of who in the workspace has linked.
   /// Workspace-scoped, admin-gated.
   workspaceSetup,
 
-  /// Just "link my account" for each connected provider. User-scoped.
+  /// Just "link my account" for each connected provider. User-scoped, and
+  /// kept for this workspace only.
   myAccountLink,
 }
 
@@ -33,7 +33,8 @@ enum ChatBridgeSurface {
 /// that offers Discord grows a Discord block here with no client change. Per
 /// provider, an admin connects the app (or installs the shared one) and every
 /// member links their own chat identity so their messages are attributed to
-/// them rather than to whoever installed the app.
+/// them rather than to whoever installed the app. Shown while
+/// [watchChatBridgesApplies] holds for its [surface].
 class ChatBridgesSection extends ConsumerWidget {
   /// Creates a [ChatBridgesSection].
   const ChatBridgesSection({
@@ -50,33 +51,28 @@ class ChatBridgesSection extends ConsumerWidget {
     // The same workspace the chat reads are scoped to, so the rows and the
     // shared-app install can never disagree about which one this is.
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final providers = ref.watch(chatProvidersProvider).value ?? const [];
-    if (providers.isEmpty || workspaceId == null) {
-      // No provider offered (or the list has not arrived): a card with nothing
-      // actionable in it is worse than no card.
+    if (workspaceId == null) {
       return const SizedBox.shrink();
     }
     final links = ref.watch(chatUserLinksProvider).value ?? const [];
     final personal = surface == ChatBridgeSurface.myAccountLink;
-
-    // The personal half has nothing to say until an admin has connected
-    // something — an unconnected provider offers no account to link.
+    // The personal half lists only connected providers: an unconnected one
+    // offers no account to link.
     final visible = personal
-        ? providers.where((v) => v.status.isConnected).toList()
-        : providers;
-    if (visible.isEmpty) {
-      return const SizedBox.shrink();
-    }
+        ? ref.watch(connectedChatProvidersProvider)
+        : ref.watch(chatProvidersProvider).value ?? const [];
     final isAdmin =
         ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false;
+    final workspaceName = personal
+        ? ref.watch(activeWorkspaceProvider)?.name
+        : null;
 
     return SectionCard(
       label: personal ? l10n.chatMyAccountsTitle : l10n.chatBridgesTitle,
-      // The workspace half already lives under Settings → Workspace; a
-      // WORKSPACE badge there restates the nav. Keep YOU on the personal
-      // half so a Profile page of mixed cards (forge, calendar, chat) still
-      // names whose credential this is.
-      trailing: personal ? const ScopeBadge(SettingScope.user) : null,
+      // A link is made in one workspace and acts as the person only there.
+      subtitle: workspaceName == null
+          ? null
+          : Text(l10n.accountReachWorkspace(workspaceName)),
       child: Column(
         children: [
           for (final view in visible)
@@ -97,3 +93,14 @@ class ChatBridgesSection extends ConsumerWidget {
     );
   }
 }
+
+/// Whether [ChatBridgesSection] has anything to show on [surface]: inside a
+/// workspace, while the server offers a chat provider (a card with nothing
+/// actionable in it is worse than no card). The personal half also waits
+/// until an admin has connected one: an unconnected provider offers no
+/// account to link.
+bool watchChatBridgesApplies(WidgetRef ref, ChatBridgeSurface surface) =>
+    ref.watch(activeWorkspaceIdProvider) != null &&
+    (surface == ChatBridgeSurface.myAccountLink
+        ? ref.watch(connectedChatProvidersProvider).isNotEmpty
+        : ref.watch(chatProvidersProvider).value?.isNotEmpty ?? false);

@@ -69,8 +69,7 @@ sealed class HarnessContentBlock {
                   mediaType: raw['media_type'] as String? ?? '',
                 ),
           ],
-          // Absent/null/non-map all mean "no handle": a transcript written
-          // before references existed must still load.
+          // Absent/null/non-map all mean "no handle".
           outputReference: rawReference is Map
               ? ToolOutputReference.fromJson(
                   rawReference.cast<String, dynamic>(),
@@ -464,7 +463,7 @@ class HarnessMessage {
         if (raw is Map)
           HarnessContentBlock.fromJson(raw.cast<String, dynamic>()),
     ],
-    // Tolerant: an older transcript has no such key, and a non-string entry is
+    // Tolerant: an absent key is no activations, and a non-string entry is
     // ignored rather than failing the whole history load.
     activatedToolNames: [
       for (final raw in (json['activated_tool_names'] as List?) ?? const [])

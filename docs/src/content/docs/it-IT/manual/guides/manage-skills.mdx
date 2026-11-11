@@ -2,7 +2,7 @@
 title: Installa e gestisci le skill
 description: Installa e aggiorna le skill dello spazio di lavoro attraverso il varco della scansione, poi confronta le revisioni salvate con valutazioni delle skill a budget.
 slug: it-IT/manuale/guide/gestisci-skill
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Questa guida mostra come riempire uno spazio di lavoro di skill provenienti da
@@ -102,7 +102,7 @@ versione precedente viene conservato come riferimento per il rollback nel lock.
    allo scopo della skill e un **Adattatore**. Il harness integrato usa un
    provider configurato e un modello in grado di usare gli strumenti. **Claude
    Code** usa l'account Claude gestito predefinito e un identificatore di
-   modello concreto; accedi prima in **Impostazioni → Adattatori**. Non prende
+   modello concreto; accedi prima in **Impostazioni → Server → Fornitori di modelli → Account Claude Code**. Non prende
    in prestito l'accesso personale dell'operatore del server.
 3. Scegli un **Confronto** dalla tabella qui sotto.
 4. Imposta **Ripetizioni per attività** (1–20) e **Budget (centesimi di dollaro
@@ -199,8 +199,7 @@ collisione con i comandi slash integrati (`/plan`, `/goal`, `/loop`, `/compact`)
 - `/skill:<repo>:<name>` — una skill fornita da un repo di cui è stato fatto il
   checkout in questo spazio
 
-Un nome nudo non integrato viene comunque risolto, per i messaggi scritti prima
-che il namespace esistesse. `/skill:plan` è ciò che raggiunge una skill
+`/skill:plan` è ciò che raggiunge una skill
 chiamata `plan`; `/plan` è sempre quello integrato.
 
 ## Skill con ambito di repository

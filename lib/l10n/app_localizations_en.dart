@@ -153,7 +153,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get guardrailClassPrCreate => 'Open a pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Publish a review or merge';
+  String get guardrailClassPrPublish => 'Update or merge a pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Write to an external tracker';
@@ -2542,9 +2542,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activityToggledMcpServer => 'Toggled the MCP server';
 
   @override
-  String get activityUpdatedMcpToken => 'Updated the MCP token';
-
-  @override
   String get activitySavedApiKey => 'Saved an API key';
 
   @override
@@ -3167,9 +3164,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Delete \"$name\"?';
   }
-
-  @override
-  String get archiveConversation => 'Archive conversation';
 
   @override
   String get deleteFact => 'Delete fact';
@@ -3857,9 +3851,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Match your OS appearance or pick a fixed mode.';
 
   @override
-  String get mcpAuthToken => 'MCP authentication token';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'MCP server control is not available on the connected server.';
 
@@ -4070,9 +4061,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'No system fonts detected.';
-
-  @override
-  String get noTokenSet => 'No token set — access is unrestricted.';
 
   @override
   String get noWorkingMemory => 'No working memory notes yet.';
@@ -4558,31 +4546,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'The server\'s GitHub credential can\'t see $repos. If a repository belongs to an organization, install the GitHub App there or connect a token that has access.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repositories can\'t be accessed',
-      one: 'A repository can\'t be accessed',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'GitHub App installation suspended';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Showing last known data for $repos. Resume the installation on GitHub, or connect a token that has access.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'No access';
 
   @override
@@ -4695,9 +4658,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Rule';
-
-  @override
-  String get runCompleted => 'Run completed';
 
   @override
   String get running => 'Running';
@@ -4859,9 +4819,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get setLabel => 'Set';
-
-  @override
-  String get setToken => 'Set token';
 
   @override
   String get settingsLabel => 'Settings';
@@ -5058,9 +5015,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get skillOriginManual => 'Manual';
 
   @override
-  String get skillOriginRegistry => 'Registry';
-
-  @override
   String get skillOriginRuntimeLocal => 'Runtime local';
 
   @override
@@ -5235,9 +5189,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Toggle theme';
-
-  @override
-  String get tokenConfigured => 'Configured — clients must present this token.';
 
   @override
   String get topic => 'Topic';
@@ -8789,7 +8740,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Which tool actions run without asking. Reads are always allowed; higher tiers prompt.';
+      'Which actions of Control Center\'s own tools, called through its MCP endpoint or by its agents, run without asking. Reads are always allowed; higher tiers prompt. Servers inside a run follow that run\'s action policy.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Always ask';
@@ -12269,20 +12220,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsAbout => 'About';
 
   @override
-  String get settingsScopeBadgeYou => 'YOU';
-
-  @override
-  String get settingsScopeBadgeDevice => 'THIS DEVICE';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'WORKSPACE';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Your name, email and git identity in this workspace. Switching workspace switches this overlay; handle, sign-in and devices stay on your account.';
+      'Your name, email and git identity in this workspace. Switching workspace switches this overlay; your username, sign-in and devices stay on your account in You → Profile.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12297,48 +12236,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identity, policy and conventions shared by everyone in this workspace.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Commit attribution';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Choose whether agent commits credit Control Center. Workspace admins can override this choice for everyone in a workspace.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Agent attribution';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Credit Control Center on agent commits';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'You are always the author and committer. When enabled, Control Center (@usectrl) is added as a co-author. When disabled, commits contain no agent credit.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'This workspace overrides your personal choice. Your preference is saved but does not apply here.';
-
-  @override
-  String get settingsAgentAttributionLoading => 'Loading attribution settings…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Choose whether agent commits credit Control Center. A workspace choice overrides each member\'s personal preference.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Use each member\'s preference';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Always credit Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Never credit Control Center';
+      'Policy and conventions shared by everyone in this workspace.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12702,9 +12600,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Checking connection…';
-
-  @override
-  String get fromEnvironment => 'from the environment';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13269,14 +13164,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Used by workspaces that inherit this install\'s GitHub App. A workspace with its own App configures it under Workspace → General.';
+      'Used by workspaces that follow this server\'s sign-in apps. A workspace on its own apps sets up its App under Workspace → Integrations.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request conversations';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'How developers can talk to this server on GitHub in inherit workspaces. A workspace with its own App has its own bot under Workspace → General. Works with no webhook or public URL — the server polls.';
+      'How developers can talk to this server on GitHub in workspaces that follow this server. A workspace on its own apps has its own bot under Workspace → Integrations. Works with no webhook or public URL — the server polls.';
 
   @override
   String get providerAppBotLogin => 'Bot login';
@@ -13309,10 +13204,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Without a token, anything that can reach this port can call every tool.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Tools';
 
   @override
@@ -13339,6 +13230,130 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Clear all';
+
+  @override
+  String get guardrailFamilyCommands => 'Commands';
+
+  @override
+  String get guardrailStandingApproval => 'Standing approval';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Allowed for $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Ask first for $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Denied for $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'branches $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'paths $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'hosts $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'commands $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'tools $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'commands starting with $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'at most $count at once';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'at most $amount cents';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'every action of this kind';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'by $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'ends $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'until revoked';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Revoke: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'Couldn\'t revoke it. Try again.';
+
+  @override
+  String get guardrailEntryInactive => 'not in effect while denied';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Allowed in $count cases listed below',
+      one: 'Allowed in 1 case listed below',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count standing approvals for the whole workspace also apply here.',
+      one: '1 standing approval for the whole workspace also applies here.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count standing approvals are set for single spaces or agents. Pick Space or Agent above to see them.',
+      one:
+          '1 standing approval is set for a single space or agent. Pick Space or Agent above to see it.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandboxing';
@@ -14151,6 +14166,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'You\'ll be asked again the next time an agent needs to run a program from this copy.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Search paths';
+
+  @override
+  String get sandboxExecGrantsNoMatch => 'No grants match your search';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14506,11 +14527,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'This connection reaches the server through a relay, which carries no file transfers. Connect to the server directly to download or upload a backup.';
+      'File transfers aren\'t set up for this connection yet. Reconnect to the server to download or upload a backup.';
 
   @override
   String get backupTransferForbidden =>
-      'The server refused. Downloading a workspace needs the admin role, restoring one needs owner, and a whole snapshot needs the install\'s operator.';
+      'The server refused. Downloading a workspace needs the workspace admin role. Restoring one needs the server owner, who must also own the workspace. A whole snapshot needs the server owner.';
 
   @override
   String get backupTransferUnsupported => 'This server has no backup surface.';
@@ -14814,33 +14835,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Put clipboard content from any enclosure on this device without asking.';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub identity';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'How background GitHub work in this workspace authenticates: this install\'s App, or a different App of the workspace\'s own.';
-
-  @override
-  String get workspaceGitHubModeInherit => 'Use this install\'s GitHub App';
-
-  @override
-  String get workspaceGitHubModeApp => 'Use a different GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Uses the GitHub App on Server → Provider apps.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'This workspace\'s bot and polling identity. Members sign in on You through this App.';
-
-  @override
   String get profileOverlayHint =>
       'These fields are you in this workspace. Empty fields inherit your account name and email. Switching workspace switches this overlay.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Sign in or paste a token for this workspace.';
 
   @override
   String get stackStartNextPart => 'Start next part';
@@ -15642,6 +15638,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server could not provide a login command for this account.';
 
   @override
+  String get claudeAccountSignedIn => 'Signed in';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'This closes on its own once the sign-in finishes.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'This closes on its own once every account is signed in.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Claude Code sign-in expired';
 
@@ -15796,8 +15803,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
-      'This needs setting up on the server';
+  String get environmentInputNeeded => 'This needs setting up on the server';
 
   @override
   String get environmentKindApp => 'App';
@@ -16398,21 +16404,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get environmentOpenPanel => 'Open environment';
 
   @override
-  String get environmentNeedsSetup => 'Needs setup';
+  String get environmentStatusBlocked => 'Action needed';
+
+  @override
+  String get environmentStateInTerminal => 'In terminal';
+
+  @override
+  String get environmentWaitingInTerminal => 'Waiting for you in a terminal';
+
+  @override
+  String get environmentOpenTerminal => 'Open terminal';
+
+  @override
+  String get environmentSignInNeeded => 'This needs you to sign in';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Something this needs is not available';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Done here. The environment is still starting';
 
   @override
   String get environmentContinueInTerminal => 'Continue in terminal';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'This terminal opened because the start needs you';
 
   @override
-  String get environmentSetupTab => 'Environment setup';
+  String get environmentStartTerminalTab => 'Environment setup';
 
   @override
   String get environmentsNothingRunning =>
@@ -16704,23 +16730,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Approve the request on $provider\'s page in your browser. This window notices by itself when you\'re done.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Waiting for $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Sign-in didn\'t finish';
 
   @override
   String get signInReopenPage => 'Open the sign-in page again';
 
   @override
-  String get signInCodePrompt => 'Enter the code shown in your browser';
+  String get signInCodePrompt =>
+      'Confirm in your browser, then enter the code it shows.';
 
   @override
   String get signInCodeMalformed =>
@@ -16763,7 +16780,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'This sign-in is no longer valid. Start it again.';
+      'This sign-in is no longer open: it was cancelled, used or replaced. Start it again.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16771,7 +16788,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Too many sign-in attempts right now. Wait a minute, then try again.';
+      'Too many requests right now. Wait a bit, then try again.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16802,10 +16819,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'The $provider app isn\'t installed where this needs it. Install it, then try again.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'This GitHub App installation is already authorized for another Control Center server.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16864,7 +16877,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Where the GitHub App is installed, among the accounts this workspace\'s repositories belong to. An organization\'s installation works only on servers its admins authorize.';
+      'Where the GitHub App is installed, among the accounts this workspace\'s repositories belong to.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16874,21 +16887,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get githubInstallApp => 'Install GitHub App';
 
   @override
-  String get githubAuthorizeServer => 'Authorize this server';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'This server can now use the installation on $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Suspended';
-
-  @override
-  String get githubInstallationAuthorized => 'Authorized';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Not authorized';
 
   @override
   String get linearAutomationTitle => 'Linear automation';
@@ -16914,7 +16913,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace\'s own Slack app in its settings. Create my GitHub App sets up GitHub in one step.';
+      'Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace\'s own Slack app under Workspace → Integrations, where a workspace can also pick its own apps or Connect. Create my GitHub App sets up GitHub in one step.';
 
   @override
   String get connectModeCustom => 'Use a custom Connect server';
@@ -17049,7 +17048,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'This server gets a new key and install id. Every sign-in made through Connect stops working, and everyone has to sign in again. Sign-ins through your own apps aren\'t affected.';
+      'This server gets a new key and install id, and the old id is retired at Connect: sign-ins sealed under it, and the old key, stop working there, so everyone who signed in through Connect signs in again. Tokens already handed out keep working until they expire. Sign-ins through your own apps aren\'t affected. If Connect can\'t be reached, nothing changes and you can try again.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17183,33 +17182,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Provider apps';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Which Google Calendar, Linear and Klipy apps this workspace uses. By default it uses this server\'s apps or Control Center Connect. A workspace with its own app never falls back to them.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'Use this server\'s app';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Sign-ins and requests use this server\'s own app, or Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn => 'Use this workspace\'s own app';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Only this workspace\'s app is used. While it is incomplete, this provider is off here instead of falling back.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Server\'s app';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Own app';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Still missing: $fields. Until every field is set, this provider is off in this workspace. It does not fall back to this server\'s app.';
   }
@@ -17226,22 +17198,113 @@ class AppLocalizationsEn extends AppLocalizations {
       'GIF search in this workspace uses this key.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Switch the $provider app?';
+  String get settingsWorkspaceIntegrations => 'Integrations';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Code hosting, tickets, calendar, chat and GIF search in this workspace, and whose apps they sign in through.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Whose apps this workspace uses for GitHub, Google Calendar, Linear, Slack and GIF search. Unless an admin picks something else, it follows this server.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Same as this server';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'This server uses Control Center\'s apps.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'This server uses the Connect server at $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Everyone connected to $provider in this workspace through this server\'s app has to sign in again with the workspace\'s app.';
+  String get workspaceConnectInheritOwn => 'This server uses its own apps.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'This server\'s owner hasn\'t chosen yet, so the server\'s own apps apply.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Only this workspace\'s apps are used. Add each one below, next to its provider. A provider without one is off here; this server\'s apps and Connect are never used instead.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'HTTPS only. Addresses on a private or local network are refused.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL in this server\'s environment sets where sign-ins go, so this workspace can\'t pick a Connect of its own. It can follow this server or use its own apps.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Switch this workspace\'s sign-in apps?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Everyone in this workspace has to sign in to GitHub, Linear and Google Calendar again through the new apps. Sign-ins made through the current ones stop working here.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Switch apps';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Follows the choice above. A provider never falls back to another app.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Workspace\'s app';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Server\'s app';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub App';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'This workspace\'s own App acts for its repositories and signs members in. It never falls back to this server\'s App or to Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'This workspace uses the GitHub App its sign-in apps provide. Install it on the accounts your repositories belong to.';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'Acting for this workspace';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'The App\'s bot comments, reviews and polls pull requests in this workspace\'s repositories.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider app';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'This deletes the workspace\'s $provider credentials. Everyone connected through the workspace\'s app has to sign in again.';
+  String workspaceOwnAppDescription(String provider) {
+    return '$provider sign-ins and requests in this workspace use only this app.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Switch app';
+  String get workspaceGifsTitle => 'GIFs';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'GIF search uses this workspace\'s Klipy key.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'GIF search uses this server\'s Klipy key.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF search runs through Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff => 'GIF search is off in this workspace.';
 
   @override
   String openOnForge(String forge) {
@@ -17259,7 +17322,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Connect GitHub, GitLab or Bitbucket in Settings → Workspace → Profile & identity → Code hosting';
+      'Connect GitHub, GitLab or Bitbucket in Settings → You → Profile';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17276,6 +17339,1134 @@ class AppLocalizationsEn extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Connect $forge to open a pull request in this repository';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Your $provider sign-in as $account has lapsed. Sign in again.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Paused: this workspace\'s sign-in service changed';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'Can\'t reach $provider right now. Retrying.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Your sign-in is kept and works again once the service is back. A workspace admin can check the sign-in setup in Integrations.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'The server restarted. Start the sign-in again.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return '$provider sign-in isn\'t set up for this workspace.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider sign-in is set up incorrectly: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'This workspace uses its own apps but has no $provider app.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'This build can\'t verify Control Center Connect, so $provider sign-in is off.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'This workspace\'s sign-in service changed its identity. An admin needs to confirm it.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Can\'t reach this workspace\'s sign-in service right now.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'This workspace\'s sign-in service address is missing or invalid.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'The server\'s operator set the sign-in service, so this workspace\'s own choice doesn\'t apply.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'This workspace\'s sign-in service doesn\'t offer $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Open integrations';
+
+  @override
+  String get signInOpenServerSettings => 'Open sign-in settings';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'This runs as you on $provider, and you haven\'t added a token. Add one, then try again.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Disconnect $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'You\'ll need to connect $provider again to work on its repositories.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'This disconnects $provider in this workspace only. Other workspaces keep their own connection.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'This disconnects $provider in every workspace that shares this connection.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return 'Disconnected $provider from this workspace';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return 'Disconnected $provider from all workspaces';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Install the GitHub App on $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Automation can\'t reach $repos until the App is installed there.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Add $repos to the GitHub App\'s repositories';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'The App is installed on this account but can\'t see these repositories yet.';
+
+  @override
+  String get repoAccessChooseRepos => 'Choose repositories';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App installation suspended';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Automation for $repos is paused until an owner of the account resumes the installation on GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Automation is paused';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'The person accountable for this workspace\'s automation can no longer see $repos, so nothing runs there on their behalf.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'The person accountable for this workspace\'s automation isn\'t signed in to the forge, so automation for $repos waits until they sign in.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Couldn\'t check access to $repos. Retrying.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Ask $admins to fix this.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin => 'Ask a workspace admin to fix this.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Sign in to $forge to see pull requests from $count more repositories',
+      one: 'Sign in to $forge to see pull requests from 1 more repository',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositories are hidden because your $forge account can\'t see them',
+      one: '1 repository is hidden because your $forge account can\'t see it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositories are hidden because you don\'t have access to them in this workspace',
+      one:
+          '1 repository is hidden because you don\'t have access to it in this workspace',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Checking your access to $count more repositories…',
+      one: 'Checking your access to 1 more repository…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Linked, but automation can\'t reach everything yet';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Install on another organization';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian account email';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Enter the email address of your Atlassian account.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API token';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket API tokens work together with the email of the Atlassian account that created them.';
+
+  @override
+  String get automationTokensTitle => 'Automation tokens';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Background work on GitLab and Bitbucket, such as pull request updates, AI review comments and merge requests nobody asked for, uses a bot access token, never a person\'s. A repository\'s own token wins over the workspace\'s.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Used for every GitLab or Bitbucket repository in this workspace that has no automation token of its own. Background work there shows as this token\'s bot.';
+
+  @override
+  String get automationTokenNone => 'No token. Automation is paused here.';
+
+  @override
+  String get automationTokenFromWorkspace => 'Uses the workspace\'s token';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Acts as $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Access token added';
+
+  @override
+  String get automationTokenRejected =>
+      'The forge refused this token. Replace it.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge automation token';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Paste a project or group access token. It needs read_api and read_repository; add api and write_repository for comments, merge requests and pushes. GitLab shows its work as the token\'s bot.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Paste a repository, project or workspace access token with repository read, plus pull request write for comments and pull requests. Your own API token belongs under You → Profile, not here.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token saved, but it can\'t read $repos. Automation there stays paused.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Remove automation token?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Automation that relies on this token pauses until another one is added.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Every $forge repository without its own token';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'No automation token can read $repos, so background work there is paused.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commits from work you start carry your name. Choose who else is credited, and whether forges show your commits as verified.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Authorship';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Work you start';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'You are the author and committer, under the email your forge verified for your sign-in. This covers chats with agents, pipelines you start and commits you make in the editor.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Automated runs';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Runs started by a schedule or a webhook commit as the bot, and are never signed.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Until you sign in to a forge in a workspace, your runs there commit as the bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Credit Control Center as co-author';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Your commits name Control Center (@usectrl) as co-author, and automated runs you armed name you. When off, neither line is added.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'This workspace overrides your personal choice. Your preference is saved but does not apply here.';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'Loading attribution settings…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Co-author credit';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Whether commits carry co-author lines: Control Center on a member\'s own commits, and the members who armed an automated run on its commits. A choice here overrides each member\'s own.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Use each member\'s preference';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Always add co-author credit';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Never add co-author credit';
+
+  @override
+  String get settingsCommitSigningSection => 'Verified commits';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Signing';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Not signing';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'This server can sign your commits with a key of your own, so GitHub and GitLab show them as verified. Nothing is signed until you create the key.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Create signing key';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Signing key created. Add it to your forge account.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Public key';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Public key copied';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Fingerprint';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Created';
+
+  @override
+  String get settingsCommitSigningAddTitle => 'Add it to your forge account';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'A commit shows as verified only while you are also signed in to that forge in the workspace, so the forge vouches for your email.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Set Key type to Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Set Usage type to Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commits on Bitbucket are not signed. Do not add this key to your Bitbucket account: an SSH key there is also a login.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Not supported';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'What you are trusting';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'The private key never leaves this server.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Whoever controls this server can sign commits as you for as long as the key is on your forge account.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'On GitHub, commits already shown as verified stay verified after you remove the key.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Delete key';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Delete your signing key?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Your commits are unsigned from now on. The key stays on your forge accounts until you remove it there.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Signing key deleted';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Could not load your signing key: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profile';
+
+  @override
+  String get accountProfileDescription =>
+      'Who you are in every workspace, and your own code hosting, ticketing, calendar and chat accounts.';
+
+  @override
+  String get accountSectionTitle => 'Account';
+
+  @override
+  String get accountSectionDescription =>
+      'Your username and name follow you into every workspace. A workspace can show a different name or email: set that in Workspace → Profile & identity.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Could not load your profile: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'The name people see on your messages and reviews.';
+
+  @override
+  String get accountDisplayNameRequired => 'Enter a display name.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'This can be changed but not removed.';
+
+  @override
+  String get accountAvatarLabel => 'Picture';
+
+  @override
+  String get accountAvatarHint =>
+      'A link to a square image, starting with https://.';
+
+  @override
+  String get accountAvatarInvalid => 'Use a link that starts with https://.';
+
+  @override
+  String get usernameLabel => 'Username';
+
+  @override
+  String get usernameRule =>
+      '2 to 32 lowercase letters, digits, dots, dashes or underscores. People mention you with it.';
+
+  @override
+  String get usernameAvailable => 'Available.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Available. It will be saved as $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Use 2 to 32 lowercase letters, digits, “.”, “_” or “-”, starting and ending with a letter or digit.';
+
+  @override
+  String get usernameReserved => 'That username is reserved.';
+
+  @override
+  String get usernameTaken => 'That username is taken.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Could not check this name right now. You can still save; the server decides.';
+
+  @override
+  String get linkedAccountsTitle => 'Connected accounts';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Identity provider';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Needs sign-in';
+
+  @override
+  String get linkedAccountStatusPaused => 'Paused';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Unreachable';
+
+  @override
+  String get ssoIdentityDescription =>
+      'The identity provider your account signs in through. Whoever runs this server manages it.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'The accounts you connect for yourself. Control Center acts as you through them, and changing them affects only you.';
+
+  @override
+  String get accountReachServer => 'Used in every workspace on this server.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Used only in $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub is used only in $workspace, which has its own sign-in apps. GitLab and Bitbucket are used in every workspace on this server.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Your account';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Your account: $status. Opens You → Profile.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'No code hosting account connected';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'No $provider account connected';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'No $provider account linked';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'You are a temporary guest in the demo, so there is no account to change: no username, profile or connected accounts.';
+
+  @override
+  String get onboardingStepYou => 'You';
+
+  @override
+  String get onboardingYouTitle => 'Choose your username';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Your username is how people mention you and how your work is labeled. You can change it and your display name later in Settings → You → Profile.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'This $provider account is already connected to another person on this server. Sign in with a different $provider account.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token expires $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token expired $date. Paste a new one to keep working.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge could not be reached to check this token. Try again in a moment.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge does not accept this token. Check that you copied all of it and that it has not been revoked.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'This is not a personal token. Paste a personal access token from your own $forge account, not a project, group, workspace or bot token.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'This token is missing the $scope scope, which reviewing and commenting need. Create one that has it.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'This token has expired. Create a new one and paste it here.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agents you start can make commits signed as you, in any repository they work in. Deleting the key here stops that at once: runs already under way sign nothing further.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'The key was not rotated, and nothing changed: $error Try again.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'You are not in a workspace yet';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'A workspace admin has to invite you, or the server owner can create a workspace for you. It opens here as soon as you are added.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Signed in as $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Check again';
+
+  @override
+  String get noWorkspaceSignOut => 'Sign out';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Only the server owner can create workspaces. Ask them to create one, or ask a workspace admin to invite you.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo is not in any of your workspaces, and you are not in a workspace to add it to. Ask a workspace admin to invite you.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Only the server owner can do this';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'The full editor runs on the server\'s own machine, so only the server\'s owner can open it. You can still open and edit files from the Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'Sandboxed';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Runs in a sandbox inside this workspace\'s folders, so some host tools and paths are not available here.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'The host shell runs on the server without a sandbox, so only the server owner can open one. A regular terminal runs in the sandbox.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'A terminal can only open inside this workspace\'s own folders.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Only the server owner can save or approve an environment that runs on the server host. A workspace admin can use one that runs in a rig.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commits you make in the app\'s own editor run no Git hooks from the repository, as with git commit --no-verify: the server runs Git on its own host, in a tree that agents and pull requests can change.';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP clients send this token with every request, as an Authorization: Bearer header. The server creates it on first start; you can rotate it but not remove it.';
+
+  @override
+  String get mcpShowToken => 'Show token';
+
+  @override
+  String get mcpHideToken => 'Hide token';
+
+  @override
+  String get mcpRotateToken => 'Rotate token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Rotate the MCP token?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'The server switches to a new token right away. Every MCP client still using the current one is refused until you give it the new one.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Token rotated. Give your MCP clients the new one.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'The MCP endpoint is for the server owner';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Its token opens every tool on this server, so only the server owner can see it, rotate it, or start and stop the endpoint.';
+
+  @override
+  String get activityRotatedMcpToken => 'Rotated the MCP token';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect could not retire the old key';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Nothing changed. If you rotate anyway, this server gets its new key, but the old identity stays usable at that Connect until its sign-ins expire.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Rotate anyway';
+
+  @override
+  String get settingsAuditLog => 'Audit log';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Who changed what, where and how it ended, across the server and every workspace you administer. Server operations record argument names, never their values.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Admins only';
+
+  @override
+  String get auditLogNoAccess =>
+      'The audit log covers the server and the workspaces you administer. You don\'t administer any workspace, so there\'s nothing to show.';
+
+  @override
+  String get auditLogSourceServer => 'Server';
+
+  @override
+  String get auditLogSourceWorkspace => 'Workspace';
+
+  @override
+  String get auditLogAddFilter => 'Filter';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filter…';
+
+  @override
+  String get auditLogFilterActor => 'Actor';
+
+  @override
+  String get auditLogFilterSource => 'Workspace';
+
+  @override
+  String get auditLogFilterOutcome => 'Outcome';
+
+  @override
+  String get auditLogFilterTime => 'Time';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Succeeded';
+
+  @override
+  String get auditLogOutcomeDenied => 'Denied';
+
+  @override
+  String get auditLogOutcomeFailed => 'Failed';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'On or after';
+
+  @override
+  String get auditLogTimeAfter => 'After';
+
+  @override
+  String get auditLogTimeBefore => 'Before';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'On or before';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Time $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 hour ago';
+
+  @override
+  String get auditLogTimePresetDay => '24 hours ago';
+
+  @override
+  String get auditLogTimePresetWeek => '7 days ago';
+
+  @override
+  String get auditLogTimePresetMonth => '30 days ago';
+
+  @override
+  String get auditLogTimeExact => 'Exact time';
+
+  @override
+  String get auditLogTimeInvalid => 'Use YYYY-MM-DD, optionally with HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Add';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo now points to a different repository';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'This path now points to a different repository on $forge. Relink it to keep using it.';
+  }
+
+  @override
+  String get repoRelink => 'Relink';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Relinked $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'This path now points to a different repository. A workspace admin has to relink it before it can be used.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Your $forge account can\'t read this repository.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Couldn\'t confirm your $forge access. Try again.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Your forge account can\'t read this repository.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Couldn\'t confirm your forge access. Try again.';
+
+  @override
+  String get repoPathHostPath =>
+      'Only the server\'s owner can link a folder outside this workspace\'s storage.';
+
+  @override
+  String get repoPathMissing => 'Nothing exists at that path on the server.';
+
+  @override
+  String get repoPathDataDir =>
+      'A repository can\'t point into the server\'s data folder.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'A repository can\'t be the workspace\'s own folder.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'That folder\'s origin is a different repository.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Saved. They need to sign in to $forge before they can open this repository.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Saved. Their $forge account can\'t read this repository yet, so it stays hidden from them.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Saved. Couldn\'t confirm their $forge access right now.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo is not linked in any of your workspaces. Ask the server owner to add it.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'The server owner adds repositories from the server\'s folders.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Only you have entered this address. Single sign-on won\'t match it until the server\'s owner confirms it.';
+
+  @override
+  String get settingsServerPeople => 'People';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Everyone with an account on this server, and whether their email address is confirmed.';
+
+  @override
+  String get serverPeopleLabel => 'Accounts';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Only the server\'s owner can see everyone\'s account and confirm email addresses.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'Email not confirmed';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Confirm email';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Confirm that $email belongs to $name? Single sign-on will match this address to their account.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Confirmed $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agents need a sandbox on this server';
+
+  @override
+  String get runSandboxUnavailable =>
+      'This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'This folder is outside the workspace\'s storage. Confirm that this server may use it.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'This folder is outside the workspace\'s storage. Only the server\'s owner can confirm it.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Nothing exists at this path on the server anymore. Remove this repository and add it again from its current folder.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'This folder can\'t be used as a repository. Remove it and add the repository from another folder.';
+
+  @override
+  String get repoPathConfirm => 'Confirm';
+
+  @override
+  String get repoPathConfirmAll => 'Confirm all';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count folders are outside the workspace\'s storage',
+      one: '1 folder is outside the workspace\'s storage',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Confirm that this server may use them. Each repository is checked again with your access.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Servers found in this machine\'s own tool settings are available only in runs you start or are accountable for. Other people\'s runs never see them, and they aren\'t offered through Control Center\'s MCP endpoint.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Sign in to $provider to see this repository\'s code.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Sign in';
+
+  @override
+  String get ideContentSearchFailed => 'Couldn\'t search in files';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'This file isn\'t available in this worktree.';
+
+  @override
+  String get ideChangesLoadFailed => 'Couldn\'t load the changes';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'This path now points to a different repository on $forge. A workspace admin has to relink it before it can be used.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Only the server owner can restore backups. You can still download them.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Read-only';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'You can watch this terminal. Typing in it, resizing or stopping it needs write access to every repository in this conversation.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'You can watch this environment. Starting, stopping or restarting it needs write access to every repository in this conversation.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Runs on this server. Approve it to let it start.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Runs on this server. The server owner has to approve it before it can start.';
+
+  @override
+  String get environmentHostApprove => 'Approve';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Approve it as a workspace admin: only an admin\'s copy shows its secret values, and approving saves them back.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'The server owner hasn\'t approved this environment yet, so it can\'t run on this server.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'You haven\'t approved this environment yet. It runs on this server, so it starts once you approve its definition.';
+
+  @override
+  String get environmentHostApprovalReview => 'Review and approve';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Sign in to $provider to open this space.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Your $forge account can\'t read a repository this space uses.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Your forge account can\'t read a repository this space uses.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'You don\'t have read access to a repository this space uses. A workspace admin can grant it.';
+
+  @override
+  String get spaceAccessFailed => 'This space couldn\'t be opened.';
+
+  @override
+  String get contextExplorerRefused =>
+      'The context breakdown isn\'t available in this session.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'A linked repository needs both an owner and a repository name.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'You don\'t have read access to this repository. A workspace admin can grant it.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'You can read this repository but not change it. A workspace admin can grant write access.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'You can read this repository but not review it. A workspace admin can grant review access.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Watch only';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'You can watch this machine. Driving it, forwarding its ports, pasting into it or dropping files on it needs write access to every repository in this space.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Starting a machine here needs write access to every repository in this space. A workspace admin can grant it.';
+
+  @override
+  String get rigViewRefused =>
+      'You can\'t view this machine. It belongs to a space you don\'t have read access to.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Changing these ports needs write access to every repository in this space.';
+
+  @override
+  String get rigHolderOnly =>
+      'Only the person this machine was opened for can drive it. It uses their own sign-ins.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -17297,11 +18488,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get ownerOrganization => 'Owner / Organisation';
-
-  @override
-  String repoAccessNoticeBody(String repos) {
-    return 'The server\'s GitHub credential can\'t see $repos. If a repository belongs to an organisation, install the GitHub App there or connect a token that has access.';
-  }
 
   @override
   String get skillSourceRemoveConfirmBody =>
@@ -17479,23 +18665,6 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get windowMaximize => 'Maximise';
 
   @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'This GitHub App installation is already authorised for another Control Center server.';
-
-  @override
-  String get githubInstallationsDescription =>
-      'Where the GitHub App is installed, among the accounts this workspace\'s repositories belong to. An organisation\'s installation works only on servers its admins authorise.';
-
-  @override
-  String get githubAuthorizeServer => 'Authorise this server';
-
-  @override
-  String get githubInstallationAuthorized => 'Authorised';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Not authorised';
-
-  @override
   String get connectModeCustomHint =>
       'Your organisation runs its own Connect server. Sign-ins go there instead of to Control Center\'s.';
 
@@ -17509,4 +18678,12 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get providerAppCreateGitHubOrgHint =>
       'Leave empty to create the app under your own GitHub account. Creating it under an organisation takes an owner of that organisation.';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Install on another organisation';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Your username is how people mention you and how your work is labelled. You can change it and your display name later in Settings → You → Profile.';
 }

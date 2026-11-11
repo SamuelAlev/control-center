@@ -69,8 +69,9 @@ class HarnessSystemPromptBuilder {
   /// Builds the parts for a run rooted at [workingDirectory] in [workspaceId].
   ///
   /// [agentConfigDir] is the agent's global config dir (a skill-scan base);
-  /// [coAuthorTrailer] is the git-trailer line a real run appends — null on
-  /// the inspection path, where no requesting human is in play.
+  /// [coAuthorTrailers] are the `Co-Authored-By:` lines a real run's commits
+  /// end with, one per line: empty when it credits nobody, and on the
+  /// inspection path, where no run is in play.
   ///
   /// [permittedLinkRoots] are the server-managed directories whose symlinks the
   /// loaders may follow. Without them the overlay cwd yields nothing at all:
@@ -82,7 +83,7 @@ class HarnessSystemPromptBuilder {
     required String workspaceId,
     required String workingDirectory,
     String? agentConfigDir,
-    String? coAuthorTrailer,
+    String coAuthorTrailers = '',
     List<String> permittedLinkRoots = const [],
     void Function(String message)? onWarning,
   }) async {
@@ -104,11 +105,11 @@ class HarnessSystemPromptBuilder {
     }
 
     buffer.write('\n\n$agentCommitAttributionInstruction');
-    // Include the exact Control Center trailer when agent credit is enabled.
-    if (coAuthorTrailer != null) {
+    // The run's exact co-author lines, when it credits anybody.
+    if (coAuthorTrailers.isNotEmpty) {
       buffer.write(
-        '\n\nWhen you create git commits, append this trailer line to the '
-        'commit message: $coAuthorTrailer',
+        '\n\nWhen you create git commits, end the commit message with '
+        'exactly these trailer lines:\n$coAuthorTrailers',
       );
     }
 
@@ -117,7 +118,17 @@ class HarnessSystemPromptBuilder {
       'pull requests, commit the current part and call stack_cut. Pass `at` '
       'when commits already on the branch should move onto the new part. '
       'stack_publish opens each pull request against the branch below it. '
-      'git checkout -b does not record a part, so the sidebar will not show it.',
+      'git checkout -b does not record a part, so the sidebar will not show it. '
+      'To open a single pull request, push the branch with git push and call '
+      'open_pull_request; gh pr create cannot open pull requests from the '
+      'sandbox. git fetch works for the GitHub repositories this run works '
+      'on, and gh reads them (pull requests, issues, checks) on a read-only '
+      'token: with several repositories, run gh inside one or pass --repo '
+      "owner/name. To comment on this run's pull request call "
+      'comment_on_pull_request (it posts as the '
+      'Control Center bot), and to change its title or description call '
+      'update_pull_request; gh pr comment, gh pr edit, gh issue comment and '
+      'gh api writes do not work here.',
     );
 
     // Repo operating instructions (AGENTS.md, root + nested).

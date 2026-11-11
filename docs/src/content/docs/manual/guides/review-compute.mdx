@@ -12,8 +12,6 @@ Behind that tab, `cc_server` builds file cohorts, runs the deterministic axes
 and serves them over the `review_studio.*` RPC operations (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` and their `watch*` twins).
-A persisted layout that still names `pr.reviewStudio` opens this same Review
-tab.
 
 On the Review tab:
 
@@ -74,6 +72,13 @@ compute pass renders the changed components before and after via a headless
 `flutter test` golden pass in the PR's base and head worktrees, then diffs the
 pixels.
 
+Those tests are the pull request's own code, so they run like an agent's tool
+process: inside the sandbox when the server sandboxes agents, unconfined when
+the server owner turned the sandbox off, and with no sandbox only for a
+request the server owner is accountable for. For anyone else the axis reports
+**unavailable** with the reason "no sandbox on this server, and only its owner
+may run a PR's tests unsandboxed".
+
 :::note[This needs a Flutter SDK on the server host]
 The pure-Dart server cannot render Flutter widgets in-process, so it shells out
 to `flutter test`. The SDK has to be installed on the machine running
@@ -84,8 +89,9 @@ earn.
 
 Snapshots marked **changed** or **removed** hold the visual gate until approved;
 **unchanged**, **added** and **approved** snapshots clear it. Unavailability has
-one of four reasons: no Flutter SDK on host, no Widgetbook app in repo, no
-golden-testable use-cases, or a golden harness error.
+one of five reasons: no Flutter SDK on host, no Widgetbook app in repo, no
+golden-testable use-cases, a golden harness error, or no sandbox for a request
+the server owner is not accountable for.
 
 Approving an intended change is `review_studio.approveVisual`.
 

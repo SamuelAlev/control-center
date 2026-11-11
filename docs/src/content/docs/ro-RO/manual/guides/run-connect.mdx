@@ -2,7 +2,7 @@
 title: Rulează un server Connect
 description: Rulează propriul Control Center Connect din imaginea Docker cc-connect sau montează-l în cc_server, ca serverele tale să autentifice oamenii prin aplicații provider pe care le înregistrezi tu.
 slug: ro-RO/manual/ghiduri-practice/ruleaza-server-connect
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect rulează autentificările la provideri (GitHub, Google
@@ -54,7 +54,7 @@ al tău.
 
 | Provider       | Înregistrează                                                                                                                                                                                                                                                       | Păstrează                               |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup`, cu **Redirect on update** activat. Lasă **Request user authorization (OAuth) during installation** dezactivat: cu el activat, GitHub ignoră setup URL-ul. Păstrează **Expire user authorization tokens** activat | App id, slug, client id, client secret |
+| **Aplicația GitHub** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup`, cu **Redirect on update** activat. Lasă **Request user authorization (OAuth) during installation** dezactivat: cu el activat, GitHub ignoră setup URL-ul. Păstrează **Expire user authorization tokens** activat | App id, slug, client id, client secret, o cheie privată |
 | **Google**     | Un client OAuth de tip **Web application** cu URI-ul de redirecționare `<base>/oauth/google/callback` și Google Calendar API activat                                                                                                                               | Client id, client secret                |
 | **Linear**     | O aplicație OAuth cu URL-urile de callback `<base>/oauth/linear/callback` și `<base>/oauth/linear_app/callback`                                                                                                                                                   | Doar client id                          |
 | **Slack**      | URL-urile de redirecționare `<base>/oauth/slack_oidc/callback` și `<base>/oauth/slack/callback`. Event Subscriptions la `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Comenzi slash la `<base>/v1/hooks/slack/commands`. Rotirea tokenurilor activată | App id, client id, client secret, signing secret |
@@ -65,10 +65,21 @@ scriere, **Checks**, **Actions** și **Commit statuses** citire. Adaugă
 **Members** al organizației cu citire pentru cererile de revizuire către echipe.
 Webhook-urile pot rămâne dezactivate: serverele interoghează periodic.
 
-Connect nu are niciodată nevoie de cheia privată a GitHub App. Emite tokenuri
-pentru un singur depozit din autentificarea proprie a unei persoane. Nici Linear
-nu are nevoie de un secret: Connect returnează codul serverului, care încheie
-singur schimbul.
+Connect are nevoie de cheia privată a GitHub App (**Generează o cheie privată** în
+setările App-ului). Semnează cererile App-ului care găsesc instalarea ce acoperă
+un depozit (sau, când depozitul nu are niciuna, instalarea proprietarului) și
+emite un token de instalare pentru un singur depozit, fiecare doar după ce
+autentificarea proprie a persoanei care cere a dovedit accesul la acel depozit.
+
+Fiecare server de pe Connect-ul tău împarte botul App-ului. Acesta poate citi,
+comenta, eticheta și reacționa ca bot pentru oricare dintre ele. Revizuirea
+pull request-urilor ca bot este permisă doar pentru serverele pe care le treci în
+`CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (ID-urile lor de instalare, separate prin
+virgulă); fiecare alt server publică revizuiri cu tokenul propriu al revizorului.
+Push-ul nu se face niciodată ca bot. Ca să lași un server de-al tău să revizuiască
+ca bot, adaugă acolo ID-ul lui de instalare și repornește. Păstrează fișierul cu
+cheia ca pe un secret, la fel ca cheia de sigilare. Linear nu are nevoie de niciun
+secret: Connect returnează codul serverului, care încheie singur schimbul.
 
 ## Pasul 3: Colectează ID-urile de instalare
 
@@ -123,13 +134,30 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Îndreaptă reverse proxy-ul spre portul `8790`. Imaginea rulează ca utilizator
-neprivilegiat, își păstrează starea în volumul `/data` și are o verificare de
-sănătate încorporată (`cc-connect --healthcheck`, care interoghează `/healthz`).
+Îndreaptă reverse proxy-ul spre portul `8790` și setează `CONNECT_TRUST_PROXY` la
+numărul de proxy-uri din fața Connect-ului, ca limita per adresă să vadă adresa
+fiecărui client. Imaginea rulează ca utilizator neprivilegiat, își păstrează
+starea în volumul `/data` și are o verificare de sănătate încorporată
+(`cc-connect --healthcheck`, care interoghează `/healthz`: procesul răspunde).
+`/readyz` verifică și că magazinele lui de stare și de legături răspund și că
+Redis, când este folosit, rulează în continuare cu `maxmemory-policy noeviction`;
+indică acolo verificarea de disponibilitate a unui orchestrator.
+
+Pagina de consimțământ pentru autentificare răspunde cu un form post pe care
+Connect îl acceptă doar de la propria pagină: `Sec-Fetch-Site`, când este trimis,
+trebuie să fie `same-origin`, iar `Origin`, când este trimis, trebuie să fie
+originea lui `CONNECT_PUBLIC_URL`; un post cu niciunul dintre ele este refuzat.
+Deci proxy-ul trebuie să transmită ambele anteturi neschimbate, iar
+`CONNECT_PUBLIC_URL` trebuie să fie adresa pe care o folosesc efectiv browserele
+oamenilor. Dacă continuarea din pagina aceea arată mereu „Acest link a expirat”,
+iar jurnalul arată `oauth.done_refused` cu motivul `origin` sau `no_origin`, unul
+dintre cele două este greșit.
 
 Connect refuză să pornească (cod de ieșire `78`) când configurația lui este
 deschisă, nesigură sau neterminată și afișează ce variabilă este greșită. O
@@ -147,8 +175,9 @@ provider pe care l-ai înregistrat. `cc_server connect status` afișează
 Un server poate găzdui el însuși Connect în locul unui container separat.
 Serviciul montat este același pe care îl rulează imaginea.
 
-1. Pune variabilele `CONNECT_*` în fișierul `.env` al serverului (sau în mediul
-   lui), ca la Pasul 5
+1. Pune variabilele `CONNECT_*` în fișierul `.env` al serverului, ca la Pasul 5.
+   Serverul refuză să pornească atunci când un secret Connect, inclusiv
+   `CONNECT_SENTRY_DSN`, este exportat în mediul lui
 2. Adaugă `CC_SERVER_CONNECT_HOST=on`
 3. Repornește serverul. Jurnalul lui afișează `embedded Connect at <url>`
 
@@ -160,6 +189,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect este servit apoi la `<server>/connect`:
@@ -193,9 +223,10 @@ Secretele marcate **dual** acceptă și `NAME_PREVIOUS` (sau `NAME_PREVIOUS_FILE
 | `CONNECT_PUBLIC_URL`            | obligatoriu | URL-ul public canonic. HTTPS sau `http` doar pe loopback. O cale înseamnă o montare. Fără query sau fragment                   |
 | `CONNECT_ALLOWED_INSTALLS`      | obligatoriu | ID-uri de instalare separate prin virgulă. `*` este acceptat doar împreună cu `CONNECT_SIGNED_CONFIG_FILE`                     |
 | `CONNECT_DENY_INSTALLS`         |           | ID-uri de instalare refuzate chiar și atunci când sunt permise                                                                   |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | ID-uri numerice de proprietari GitHub. Când este setată, tokenurile de depozit sunt emise doar pentru depozitele pe care le dețin |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | ID-uri numerice de proprietari GitHub. Când este setată, tokenurile de depozit sunt emise doar pentru depozitele pe care le dețin. Nu limitează cine se autentifică: o persoană permisă să folosească acest Connect primește totuși propriul token de utilizator al App-ului. Ca să servești o singură organizație, ține App-ul privat pentru ea |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | ID-uri de instalare care pot avea botul App-ului care revizuiește pull request-uri. Implicit gol; `*` este refuzat, iar fiecare ID trebuie să fie și permis |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Adresa de legare și portul                                                                                               |
-| `CONNECT_TRUST_PROXY`           | `0`       | Salturile de proxy de încredere din `X-Forwarded-For` (0 până la 8). Folosit doar pentru limita de rată per adresă               |
+| `CONNECT_TRUST_PROXY`           | `0`       | Salturile de proxy de încredere din `X-Forwarded-For` (0 până la 8). Folosit pentru limitele per adresă, pentru indiciul de rețea al paginii de autentificare și pentru adresa înregistrată în jurnal. În spatele unui proxy, `0` numără fiecare client ca fiind proxy-ul, iar jurnalul o spune o dată               |
 
 ### Benzile providerilor
 
@@ -203,6 +234,7 @@ Secretele marcate **dual** acceptă și `NAME_PREVIOUS` (sau `NAME_PREVIOUS_FILE
 | --------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |        | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |          | Secret, dual                                                                |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY` | | Secret. Cheia privată a App-ului (PEM) |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |          | Clientul Google. Secretul este dual                                         |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |          | Aplicația Linear. Fără secret                                               |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |          | Aplicația Slack                                                             |
@@ -220,12 +252,12 @@ Secretele marcate **dual** acceptă și `NAME_PREVIOUS` (sau `NAME_PREVIOUS_FILE
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` sau `gcp-kms`                                                                                      |
 | `CONNECT_SEAL_KEYS`                                       |                            | Secret, obligatoriu pentru `local`. Intrări `kid:key` separate prin virgulă, cele mai noi primele; intrările mai vechi încă decriptează |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, obligatoriu pentru `gcp-kms`                             |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` pentru o singură instanță, `redis` pentru mai multe                                               |
-| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` sau `rediss://`                                                                         |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` pentru o singură instanță, `redis` pentru mai multe. O memorie plină refuză autentificările și cererile noi, în loc să uite o intrare activă                                               |
+| `CONNECT_REDIS_URL`                                       |                            | Secret. `redis://` sau `rediss://`. Redis 6.2 sau mai nou cu `maxmemory-policy noeviction`, ambele verificate la pornire                                                                         |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | Pachetul CA pentru `rediss://`                                                                             |
-| `CONNECT_BINDINGS`                                        | `file`                     | Unde stau legăturile instalărilor GitHub: `file` sau `firestore`                                           |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` în imagine) | Conține `bindings.json`                                                                                   |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | baza de date `(default)`   | Pentru `CONNECT_BINDINGS=firestore`                                                                        |
+| `CONNECT_BINDINGS`                                        | `file`                     | Unde stau legăturile echipelor Slack: `file` sau `firestore`                                           |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` în imagine) | Conține `bindings.json`. Blocat de un singur Connect: un al doilea pe același director nu pornește                                                                                   |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | baza de date `(default)`   | Pentru `CONNECT_BINDINGS=firestore`. Connect nu pornește când Firestore nu răspunde                                                                        |
 
 ### Configurație, jurnale și limite
 
@@ -235,20 +267,43 @@ Secretele marcate **dual** acceptă și `NAME_PREVIOUS` (sau `NAME_PREVIOUS_FILE
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Cheile pe care configurația semnată trebuie să le verifice                                          |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoca configurației pe care o generează un Connect găzduit de tine                                  |
 | `CONNECT_LOG_HMAC_KEY`                  | aleatorie per proces | Secret. Seteaz-o ca etichetele care țin locul ID-urilor de instalare să rămână stabile între reporniri și instanțe |
+| `CONNECT_SENTRY_DSN` | | Secret. Un DSN Sentry https către care sunt raportate liniile de eroare: tipul erorii, cadrele de stivă, ruta și ID-ul cererii, niciodată un mesaj, corp sau antet |
+| `CONNECT_SENTRY_ENVIRONMENT` | `self-hosted` | Mediul Sentry |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Raportate de `/v1/version`                                                                          |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Cereri per instalare                                                                                |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Cereri per adresă                                                                                   |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Cereri pentru întregul serviciu                                                                     |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Cereri per adresă (o adresă IPv6 se numără per /64)                                                                                   |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Cereri pentru întreaga instanță                                                                     |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600` | Livrări de evenimente și comenzi Slack per adresă, numărate separat de celelalte cereri |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100` | Livrări de evenimente și comenzi Slack pentru întreaga instanță |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Evenimente Slack per echipă                                                                         |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Căutări de GIF-uri per instalare                                                                    |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE` | `240` | Căutări de GIF-uri per adresă, pe toate serverele |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60` | Autentificări pornite per adresă |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30` | Tokenuri GitHub emise per cont GitHub pe un server (autentificări, reîmprospătări, tokenuri de depozit) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × cel de mai sus (`120`) | Același lucru per cont GitHub pe toate serverele |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600` | Tokenuri GitHub emise per adresă |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500` | Autentificări GitHub noi pentru întreaga aplicație |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120` | Tokenuri de bot per server |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240` | Tokenuri de bot per cont GitHub care cere, pe toate serverele |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000` | Tokenuri de bot pentru întreaga aplicație |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500` | Reîmprospătări și tokenuri de depozit pentru întreaga aplicație. Autentificările noi au propria lor limită, de mai sus |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN` | `10` | Tokenuri de depozit active pe care le poate ține un cont GitHub înainte ca Connect să scrie un avertisment în jurnal |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR` | `10` | ID-uri de instalare retrase per adresă (per /48 pentru IPv6) |
+
+O cerere peste o limită primește răspunsul `rate_limited`. Serverele reîncearcă
+mai târziu și nu deconectează pe nimeni din cauza ei.
 
 ## Rulează mai multe instanțe
 
 O singură instanță cu `CONNECT_STATE=memory` este suficientă pentru majoritatea
 organizațiilor. Mai multe instanțe în spatele unei singure adrese au nevoie de
-`CONNECT_STATE=redis` și fie de un `CONNECT_DATA_DIR` partajat, fie de
-`CONNECT_BINDINGS=firestore`, ca o autentificare pornită pe o instanță să se
-poată încheia pe alta.
+`CONNECT_STATE=redis` și de `CONNECT_BINDINGS=firestore`, ca o autentificare
+pornită pe o instanță să se poată încheia pe alta și ca fiecare instanță să vadă
+aceleași legături Slack și aceleași ID-uri de instalare retrase. Un
+`CONNECT_DATA_DIR` partajat nu funcționează: primul Connect îl blochează. Limitele
+de cereri per instalare, per adresă și per instanță sunt per instanță; limitele
+pentru autentificări, tokenuri GitHub, tokenuri de bot, căutări de GIF-uri per
+adresă, retrageri și echipe Slack sunt partajate prin magazinul de stare.
 
 ## Rotește un secret de provider
 
@@ -277,22 +332,24 @@ schimbi, ca să știe că solicitarea vine de la tine.
 ## Blochează un server
 
 Adaugă ID-ul lui de instalare în `CONNECT_DENY_INSTALLS` și repornește.
-Proprietarul lui vede „Connect a blocat ID-ul de instalare al acestui server”,
+Proprietarul lui vede „Connect a blocat ID-ul de instalare al acestui server. Contactează operatorul serverului tău Connect.”,
 iar fiecare autentificare prin Connect de pe el se oprește.
+
+Un server își retrage și propriul ID de instalare vechi când proprietarul lui schimbă cheia. Dovedește că ID-ul îi aparține cu un singur sigiliu de credențial pe care acest Connect l-a făcut pentru el, deci doar un server care a autentificat pe cineva poate retrage un ID. Connect păstrează ID-urile retrase definitiv, așa că vechea cheie și fiecare sigiliu făcut pentru ea încetează să funcționeze, iar echipele Slack legate de vechiul ID sunt eliberate. Tokenurile deja emise expiră singure: în 8 ore pentru cele ale unei persoane, 1 oră pentru cele ale unui bot. Connect ține cel mult 100.000 de ID-uri retrase; peste această limită, o rotire este refuzată, iar jurnalul o spune la nivel de eroare.
 
 ## Depanare
 
 ### Un server spune că Connect l-a blocat
 
-ID-ul lui de instalare nu este în `CONNECT_ALLOWED_INSTALLS` sau este în
-`CONNECT_DENY_INSTALLS`. ID-ul se schimbă când proprietarul lui schimbă cheia;
+ID-ul lui de instalare nu este în `CONNECT_ALLOWED_INSTALLS`, este în
+`CONNECT_DENY_INSTALLS` sau a fost retras printr-o rotire a cheii. ID-ul se schimbă când proprietarul lui schimbă cheia;
 cere-l pe cel nou.
 
-### Un provider apare ca indisponibil
+### Fiecare autentificare la un furnizor eșuează
 
-Una dintre variabilele lui lipsește, așa că Connect a lăsat banda deoparte.
+Una dintre variabilele lui poate lipsi, așa că Connect a lăsat banda deoparte.
 Verifică jurnalul de pornire și tabelele de mai sus. GitHub are nevoie de toate
-patru: app id, slug, client id și client secret; Google are nevoie atât de
+cinci: app id, slug, client id, client secret și cheia privată; Google are nevoie atât de
 client id, cât și de secret.
 
 ### Autentificările eșuează cu o nepotrivire de redirecționare

@@ -2,7 +2,7 @@
 title: Rig’ler ve yalıtılmış ortamlar
 description: Ajanlar neden sizin bilgisayarınız yerine atılabilir makineler alır — yalıtım sınırları, görüntü kanalları, kimlik bilgileri, portlar ve yaşam döngüsü.
 slug: tr-TR/kilavuz/kavramlar/rigler
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 **Rig**, bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makinedir — bir
@@ -250,7 +250,13 @@ başka bir şey yapmak yerine bunu söyler.
 Bir rig, bilinçli olarak **küresel bir varış noktası değildir**. Canlı görünüm,
 işin gerçekleştiği alandaki ya da PR’daki bir sekmedir ve o konuşmaya kapsamlanır
 — böylece sizin sekmeniz ile ajanın `browser_use` çağrıları *tek* bir makineyi
-adresler (tarayıcı yüzeyinde, motor başına bir tane).
+adresler (tarayıcı yüzeyinde, motor başına bir tane). Bir alanda açılmış bir rig,
+alanın makinesidir ve alanın worktree’lerine erişir; bu yüzden alanın depolarını
+izler: alana okuma erişimi onu izlemenizi, o depolardaki yazma yetkisi ise onu
+yönetmenizi sağlar. Hiçbir alana ait olmayan bir rig hiçbir worktree’ye erişmez ve
+çalışma alanının her üyesi onu kullanabilir.
+[Kimler izleyebilir, kimler yönetebilir](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/#kimler-izleyebilir-kimler-yönetebilir)
+her birinin neyi kapsadığını listeler.
 Rig’lerin hiç açılıp açılamaması bir ana makine özelliğidir; bu yüzden
 yetenekler, imajlar, çalışma alanı başına özel imajlar ve çalışan makine listesi
 **Ayarlar → Sunucu → Rigs** altında bulunur. Bir yalıtılmış ortamı yönetmek kendi

@@ -2,7 +2,7 @@
 title: Slash-commando’s
 description: Elk commando dat je in de composer kunt typen, wat het doet en waar het draait.
 slug: nl-NL/handleiding/referentie/slash-commandos
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Commando’s die je in de composer van een ruimte typt. Ze vallen in drie groepen op basis van waar ze effect hebben, en dat verschil is belangrijk: een **lokaal** commando reist nooit als bericht mee, dus het verschijnt niet in het transcript en bereikt geen agent.
@@ -140,7 +140,7 @@ Beide hebben dezelfde vorm — neem het gesprek zoals het ervoor staat, stel er 
 
 Sjabloonverwerking: `$1`, `$@`, `$@[start:length]` en `$ARGUMENTS`. Frontmatter kan `description` instellen (autocomplete in de composer). `allowed-tools` en `model` worden uit het bestand geparseerd, maar een aanroep van een gebruikerscommando vervangt op dit moment alleen argumenten in de body — ze veranderen het model of het tooloppervlak van de run niet.
 
-Een door de gebruiker geschreven commando wint van een skill met dezelfde naam — het is een snelkoppeling die een mens bewust heeft aangeroepen, met argumenten.
+Skills zijn alleen bereikbaar als `/skill:<name>`, dus een door de gebruiker geschreven commando botst nooit met een skill.
 
 ---
 

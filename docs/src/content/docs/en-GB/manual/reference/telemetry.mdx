@@ -2,7 +2,7 @@
 title: Usage analytics
 description: What Control Center records when usage analytics are switched on, who decides, and what is never sent.
 slug: en-GB/manual/reference/telemetry
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center can send **pseudonymised usage events** to an [Umami](https://umami.is) instance. Usage analytics are **off until the server operator switches them on**. The setting belongs to the server and applies to every client connected to it: the desktop app, the web app, the phone and the server itself.
@@ -13,7 +13,7 @@ Usage analytics are separate from **Share crash reports**, which is a per-device
 
 | Switch | Where | Effect |
 | --- | --- | --- |
-| **Share usage analytics** | Onboarding (sandbox step) and **Settings → Privacy**. Only the server operator can change it; other members see the current value read-only | Server-wide. Stored as `telemetry.usage_analytics` in the server settings. Off unless set to `true` |
+| **Share usage analytics** | Onboarding (sandbox step) and **Settings → Server → Diagnostics & privacy**. Only the server operator can change it; other members see the current value read-only | Server-wide. Stored as `telemetry.usage_analytics` in the server settings. Off unless set to `true` |
 | Build type | Automatic | Debug and profile builds don't send. They write each event to the debug log instead |
 | `CC_ANALYTICS_DEBUG=1` | `cc_server` environment or its `.env` | Lets debug and profile builds of the server, and of every client connected to it, send for real, for testing. The switch above must still be on |
 | `DO_NOT_TRACK=1` | `cc_server` environment | Stops the server's own reporting, whatever the switch says. Clients still follow the switch |

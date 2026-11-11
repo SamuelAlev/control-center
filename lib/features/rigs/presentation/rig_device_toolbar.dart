@@ -12,6 +12,7 @@ import 'dart:typed_data';
 import 'package:cc_data/cc_data.dart' show RigView;
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -28,7 +29,17 @@ class RigDeviceToolbar extends ConsumerStatefulWidget {
     super.key,
     required this.workspaceId,
     required this.rig,
+    this.watchOnly = false,
+    this.onRefused,
   });
+
+  /// Whether the person may only watch: every button here acts on the
+  /// device (a screenshot included), so all of them are off.
+  final bool watchOnly;
+
+  /// Told about a failed `rig.act`, so a refusal by kind lowers the space's
+  /// rig access.
+  final ValueChanged<Object>? onRefused;
 
   /// The owning workspace.
   final String workspaceId;
@@ -44,7 +55,8 @@ class _RigDeviceToolbarState extends ConsumerState<RigDeviceToolbar> {
   bool _busy = false;
 
   bool get _canMutate =>
-      widget.rig.controller == null || widget.rig.isHumanControlled;
+      !widget.watchOnly &&
+      (widget.rig.controller == null || widget.rig.isHumanControlled);
 
   Map<String, dynamic> get _homeAction =>
       widget.rig.surfaceKind == RigSurface.ios
@@ -55,9 +67,10 @@ class _RigDeviceToolbarState extends ConsumerState<RigDeviceToolbar> {
     ({String text, bool isError, String? imageBase64, String? imageMediaType})?
   >
   _act(Map<String, dynamic> action) async {
-    if (_busy) {
+    if (_busy || widget.watchOnly) {
       return null;
     }
+    final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       final result = await ref
@@ -75,7 +88,10 @@ class _RigDeviceToolbarState extends ConsumerState<RigDeviceToolbar> {
       return result;
     } on Object catch (e) {
       if (mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
+        widget.onRefused?.call(e);
+        CcToastScope.of(
+          context,
+        ).show(repoRefusalOf(l10n, e) ?? '$e', variant: CcToastVariant.danger);
       }
       return null;
     } finally {
@@ -195,7 +211,9 @@ class _RigDeviceToolbarState extends ConsumerState<RigDeviceToolbar> {
               CcIconButton(
                 icon: AppIcons.image,
                 size: CcButtonSize.sm,
-                onPressed: _busy ? null : () => unawaited(_screenshot()),
+                onPressed: _busy || widget.watchOnly
+                    ? null
+                    : () => unawaited(_screenshot()),
                 tooltip: l10n.rigTakeScreenshot,
               ),
             ],

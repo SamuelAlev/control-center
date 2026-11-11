@@ -8,7 +8,6 @@ void main() {
   test('three enter speeds and their faster exits', () {
     expect(CcMotion.fast, const Duration(milliseconds: 80));
     expect(CcMotion.moderate, const Duration(milliseconds: 160));
-    expect(CcMotion.normal, CcMotion.moderate);
     expect(CcMotion.slow, const Duration(milliseconds: 240));
     expect(CcMotion.fastExit, const Duration(milliseconds: 60));
     expect(CcMotion.moderateExit, const Duration(milliseconds: 120));
@@ -19,7 +18,6 @@ void main() {
   test('exitFor pairs each enter with one-tier-faster leave', () {
     expect(CcMotion.exitFor(CcMotion.fast), CcMotion.fastExit);
     expect(CcMotion.exitFor(CcMotion.moderate), CcMotion.moderateExit);
-    expect(CcMotion.exitFor(CcMotion.normal), CcMotion.moderateExit);
     expect(CcMotion.exitFor(CcMotion.slow), CcMotion.slowExit);
     expect(
       CcMotion.exitFor(const Duration(milliseconds: 400)),

@@ -2,7 +2,7 @@
 import MarketingLayout from '../layouts/MarketingLayout.astro';
 import LegalDoc from '../components/legal/LegalDoc.astro';
 
-const lastUpdated = '8 November 2026';
+const lastUpdated = '10 November 2026';
 const issuesUrl = 'https://github.com/SamuelAlev/control-center/issues';
 
 const sections = [
@@ -13,6 +13,7 @@ const sections = [
   { id: 'website-analytics', title: 'Website analytics' },
   { id: 'usage-analytics', title: 'App usage analytics' },
   { id: 'integrations', title: 'Connected services' },
+  { id: 'google-user-data', title: 'Google user data' },
   { id: 'connect', title: 'Control Center Connect' },
   { id: 'ai', title: 'AI agents and your code' },
   { id: 'meetings', title: 'Meeting capture and transcription' },
@@ -44,8 +45,9 @@ const sections = [
         <li><strong>We do not host your workspace data.</strong> Your self-hosted <code>cc_server</code> holds it. The public website uses separate analytics described <a href="#website-analytics">below</a>.</li>
         <li><strong>Your data is stored locally.</strong> Workspaces, agents, spaces, tickets, memory, code indexes and meeting notes are kept in a local database and files on your machine.</li>
         <li><strong>Some features talk to services you connect.</strong> When you link GitHub, Linear, Google Calendar, or an AI coding agent, the relevant data is sent to those providers to make the feature work. They process it under their own privacy policies.</li>
+        <li><strong>Google Calendar data is used only for the calendar feature.</strong> It is never sold, used for advertising, or used to train AI models. <a href="#google-user-data">Google user data</a> lists exactly what is accessed, how it is used and who it is shared with.</li>
         <li><strong>Your code can be sent to an AI provider.</strong> The built-in adapter sends prompts, code, diffs and context to whichever model provider you connect. The Claude Code adapter sends the same kinds of data to Anthropic under your own Claude Code subscription.</li>
-        <li><strong>Crash reports are sent in production — and you can turn them off.</strong> Released builds send crash, error, performance and session-replay diagnostics to Sentry; you can disable this during onboarding or in Settings → Server → Diagnostics & privacy. See <a href="#diagnostics">Diagnostics and crash reporting</a> for exactly what this includes.</li>
+        <li><strong>Crash reports are sent in production — and you can turn them off.</strong> Released builds send crash, error, performance and sampled session-replay diagnostics to Sentry; you can disable this during onboarding or in Settings → Server → Diagnostics & privacy. See <a href="#diagnostics">Diagnostics and crash reporting</a> for exactly what this includes.</li>
         <li><strong>App usage analytics are off unless your server's operator turns them on.</strong> When on, released builds send pseudonymous usage events (screens, actions, counts, durations) to our Umami instance, never names, content, file paths or email addresses. See <a href="#usage-analytics">App usage analytics</a>.</li>
         <li><strong>The public website uses Umami analytics.</strong> Pageviews and named acquisition-link clicks are measured on <code>usectrl.dev</code>; the app does not load this website tracker.</li>
       </ul>
@@ -118,13 +120,58 @@ const sections = [
       <h3>GitHub</h3>
       <p>Used for pull-request and repository features. The server sends repository names, pull-request numbers, file diffs, commit and review data and requests for user-profile details. You sign in through your browser to a GitHub App: your server's own, or Control Center's shared app through Connect. Personal access tokens are not accepted. Automated work uses short-lived tokens limited to one repository, and when it posts for you through the shared app the post is labelled as Control Center acting for you. The <code>gh</code> CLI is not an authentication method.</p>
       <h3>Google Calendar</h3>
-      <p>Used for the calendar feature. With your consent through Google's browser sign-in, the app reads your calendar list and event details (titles, times, attendees, recurrence). It requests the <code>calendar.readonly</code> scope plus <code>openid</code> and <code>email</code> to identify the account. It does not request <code>calendar.events</code>, so RSVP writes fail. Calendar data goes straight from your server to Google. Access is per-workspace and can be revoked at any time from your Google account settings.</p>
+      <p>Used for the calendar feature: showing your calendars and events and, when you ask, answering invitations and creating, moving or deleting events. Calendar data goes straight between your server and Google. <a href="#google-user-data">Google user data</a> describes the scopes, the data accessed, how it is used and who it is shared with.</p>
       <h3>Linear</h3>
       <p>Used for the ticketing integration. The app sends issue data — title, description, team, priority, assignee, labels and state changes — to Linear's API. You sign in through your browser; your server exchanges Linear's sign-in code itself, so Linear tokens never pass through Connect. A workspace admin can also connect Linear's app actor, or the server owner can set a Linear API key, for ticket sync that has no person behind it.</p>
       <h3>Slack</h3>
       <p>Used by the chat bridge, when a workspace admin connects a Slack workspace. The server reads the messages and slash commands addressed to the bot, looks up the profiles of people who write to it and posts replies. A workspace either runs its own Slack app, which talks to Slack directly, or uses Control Center's shared Slack app, whose events reach your server through Connect without their message text; your server then reads the message from Slack itself.</p>
       <h3>Newsfeed and other requests</h3>
       <p>The newsfeed fetches the RSS/Atom feed URLs you subscribe to (only the feed URL is contacted; no personal data is sent) and downloads public ad-blocking filter lists used to strip trackers from feed content. The GIF picker used in pull-request reactions sends your search terms to a third-party GIF service (Klipy), with an application key that is not tied to your identity: your server's own key, or Control Center's through Connect. GIF images load directly from that service.</p>
+    </section>
+
+    <section id="google-user-data">
+      <h2>Google user data</h2>
+      <p>This section describes the Google user data Control Center accesses, how it uses that data, and with whom it is shared. Google sign-in is used only by the calendar feature, and only after you connect a Google account to a workspace yourself. Control Center does not use Google to sign you in to the app, and it does not access Gmail, Drive, Contacts or any other Google service.</p>
+
+      <h3 id="google-data-accessed">Data accessed</h3>
+      <p>On Google's consent screen, Control Center asks for exactly these permissions. A grant that adds or drops any of them is refused and revoked:</p>
+      <ul>
+        <li><strong><code>openid</code> and <code>email</code></strong>: your Google account ID and email address.</li>
+        <li><strong><code>https://www.googleapis.com/auth/calendar.calendarlist.readonly</code></strong>: the list of calendars in your account, with each calendar's name, colour, time zone and whether you can edit it.</li>
+        <li><strong><code>https://www.googleapis.com/auth/calendar.events</code></strong>: the events on those calendars, read from 60 days in the past to 90 days ahead and for any other date range you open. For each event: title, description, location, start and end time, all-day flag, attendees (names, email addresses and their responses), conference link, status and recurrence. The same permission lets Control Center change events, but only the ones you act on.</li>
+      </ul>
+      <p>Control Center does not access any other Google account data.</p>
+
+      <h3 id="google-data-use">How the data is used</h3>
+      <p>Google user data is used only to provide the calendar features you see in the app:</p>
+      <ul>
+        <li><strong>Account identification.</strong> Your email address and account ID label the connected account, keep it attached to you and your workspace, and prevent the same account from being connected twice.</li>
+        <li><strong>Showing your calendar.</strong> Your server syncs calendars and events about every two minutes so the app can show month, week and agenda views and alert you before a meeting starts.</li>
+        <li><strong>Changes you make.</strong> When you answer an invitation, create an event, or move, resize or delete one, your server sends that change to Google for you. Google then notifies the event's guests, just as it does when you make the change in Google Calendar. Control Center never changes your calendar on its own, and never lets an AI agent do it.</li>
+        <li><strong>Meeting notes.</strong> If you link a recording to a calendar event, the event's title and its attendees' names are used to name the meeting and give speakers default names in the transcript.</li>
+      </ul>
+      <p>Control Center does not sell Google user data. It does not use Google user data for advertising, retargeting or interest-based ads, and does not use it to determine creditworthiness or for lending. It does not use Google user data to develop, improve or train generalized AI or machine-learning models. People do not read your Google user data, except with your explicit permission (for example, when you send it to us in a bug report), when required for security purposes or to comply with applicable law.</p>
+
+      <h3 id="google-data-storage">Where the data is stored</h3>
+      <p>Synced calendars and events are stored in that workspace's database on your own self-hosted <code>cc_server</code>, not on a server we run. Google OAuth tokens are kept in an owner-only secrets file on that server and are never sent to the desktop, web or phone apps. Calendar data travels between your server and Google over HTTPS, and between your server and your apps over the server's own connection.</p>
+
+      <h3 id="google-data-sharing">Who the data is shared with</h3>
+      <p>We do not sell, rent or trade Google user data. It is shared, transferred or disclosed only in these cases:</p>
+      <ul>
+        <li><strong>Google.</strong> Reads and the changes you request go to the Google Calendar API.</li>
+        <li><strong>Members of the same workspace.</strong> Your server shows synced events in that workspace's calendar, so other members of the workspace on your server can see the events from your connected account. Only you can change those events or disconnect the account.</li>
+        <li><strong>Event guests.</strong> When you create, move or delete an event, or answer an invitation, Google tells the other guests, as Google Calendar normally does.</li>
+        <li><strong>Control Center Connect, if your server uses it.</strong> If your server signs in through Control Center's shared Google app instead of its own, the hosted <a href="#connect">Connect</a> service handles the sign-in and token refreshes. It sees your Google account ID and email address during sign-in, and it receives Google access and refresh tokens. It encrypts the refresh token into a seal that only your server stores, and it keeps nothing about the sign-in for more than 15 minutes. Connect never reads your calendars or events.</li>
+        <li><strong>The AI model provider you choose, for meeting notes only.</strong> If you link a recording to an event, the meeting summary sent to the model provider you connected can include the event title and attendee names. This happens only to produce the summary you asked for, under that provider's terms. Calendar events are never given to AI agents as a data source.</li>
+        <li><strong>Service providers that help us run Control Center, with limited data.</strong> Sentry crash diagnostics (see <a href="#diagnostics">Diagnostics and crash reporting</a>) can include error details and, in the small share of sessions that are replayed, the screen with text and images masked. Opt-in usage analytics record calendar actions only as counts and keyed hashes of IDs (for example, "event created, 2 guests"), never titles, descriptions, attendees or email addresses. Push notifications for an upcoming meeting, which go through your browser's or phone's push service, are encrypted and contain only a link into the app, with no event details.</li>
+        <li><strong>Legal and safety reasons.</strong> When required by law, or to protect the security of the service and its users.</li>
+      </ul>
+
+      <h3 id="google-limited-use">Limited Use</h3>
+      <p>Control Center's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy">Google API Services User Data Policy</a>, including the Limited Use requirements.</p>
+
+      <h3 id="google-data-deletion">Retention, revoking access and deletion</h3>
+      <p>Synced events are kept only while the account stays connected. Your server reconciles events that were deleted in Google on each sync. Disconnecting the account in Settings or from the calendar deletes its synced events and its stored credential from your server. You can also revoke Control Center's access at any time at <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>; your server then stops syncing and asks you to reconnect. To have Google user data removed from a diagnostic record, <a href={issuesUrl}>contact us</a>.</p>
     </section>
 
     <section id="connect">
@@ -168,7 +215,7 @@ const sections = [
       <ul>
         <li><strong>When it runs.</strong> Diagnostics are sent only in released production builds. Local development and debug builds send nothing.</li>
         <li><strong>You can turn it off.</strong> Diagnostics are on by default, but you can disable them during onboarding or at any time in Settings → Server → Diagnostics & privacy. Turning them off stops further reporting (a restart fully applies the change). The diff-sharing preference described above is a separate control and does not affect diagnostics.</li>
-        <li><strong>What is sent.</strong> Crash and error reports; application logs and activity breadcrumbs (a trail of the recent actions in the app leading up to an event); your IP address and HTTP request metadata (such as your platform and user-agent); performance traces and profiles, captured for <strong>100% of sessions</strong>; and session-replay recordings that capture interface interactions and on-screen content for <strong>10% of all sessions</strong> and <strong>100% of sessions in which an error occurs</strong>.</li>
+        <li><strong>What is sent.</strong> Crash and error reports; application logs and activity breadcrumbs (a trail of the recent actions in the app leading up to an event); your IP address and HTTP request metadata (such as your platform and user-agent); performance traces, captured for <strong>10% of sessions</strong>; and low-quality session-replay recordings of interface interactions, with on-screen text and images masked, for <strong>1% of all sessions</strong> and <strong>10% of sessions in which an error occurs</strong>.</li>
       </ul>
       <p>Sentry processes this data on our behalf to provide error monitoring. Because session replay and logs can incidentally capture content visible in the app, we keep this data only as long as needed for debugging and we recommend disabling diagnostics if you routinely work with sensitive material. If you have questions or want a diagnostic record removed, <a href={issuesUrl}>contact us</a>.</p>
     </section>

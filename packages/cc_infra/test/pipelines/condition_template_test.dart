@@ -13,8 +13,7 @@ import 'package:cc_infra/src/pipelines/condition_template.dart';
 import 'package:test/test.dart';
 
 /// Exercises the `pipeline.condition` router body: the predicate-tree mode
-/// (fileExists / comparison / and / or / not), the switch mode and the legacy
-/// top-level comparison mode. The body is registered against a fake template
+/// (fileExists / comparison / and / or / not) and the switch mode. The body is registered against a fake template
 /// repo that returns a step with the under-test `config.extras`, then invoked
 /// through the registry like the real engine does.
 
@@ -412,22 +411,13 @@ void main() {
     );
   });
 
-  group('registerConditionBody — legacy top-level comparison', () {
-    test('routes true/false from a bare left/op/right', () async {
-      expect(
-        (await _run(
-          {'left': '{{score}}', 'op': 'gt', 'right': 10},
-          state: {'score': 50},
-        )).nextRouterKey,
-        'true',
+  group('registerConditionBody — no routing shape', () {
+    test('a bare top-level left/op/right fails the step', () async {
+      final res = await _run(
+        {'left': '{{score}}', 'op': 'gt', 'right': 10},
+        state: {'score': 50},
       );
-    });
-
-    test('defaults op to "exists" when omitted', () async {
-      expect(
-        (await _run({'left': '{{x}}'}, state: {'x': 'here'})).nextRouterKey,
-        'true',
-      );
+      expect(res.errorMessage, contains('neither a predicate nor a switchKey'));
     });
   });
 

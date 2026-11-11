@@ -62,7 +62,10 @@ void main() {
     );
   }
 
-  FakeRpcHost hostWithGrants(Map<String, String> grants) {
+  FakeRpcHost hostWithGrants(
+    Map<String, String> grants, {
+    Map<String, dynamic>? accessWarning,
+  }) {
     final host = FakeRpcHost();
     host.onCall = (op, args) {
       if (op == 'members.getRepoGrants') {
@@ -70,7 +73,7 @@ void main() {
       }
       if (op == 'members.setRepoGrant') {
         grantCalls.add(Map.of(args));
-        return {'ok': true};
+        return {'ok': true, 'access_warning': accessWarning};
       }
       throw StateError('unexpected op $op');
     };
@@ -142,4 +145,44 @@ void main() {
     expect(grantCalls.single['repo_id'], 'r-1');
     expect(grantCalls.single['level'], 'write');
   });
+
+  for (final (state, text) in const [
+    (
+      'not_signed_in',
+      'Saved. They need to sign in to GitHub before they can open this '
+          'repository.',
+    ),
+    (
+      'cannot_read',
+      "Saved. Their GitHub account can't read this repository yet, so it "
+          'stays hidden from them.',
+    ),
+    ('unconfirmed', "Saved. Couldn't confirm their GitHub access right now."),
+  ]) {
+    testWidgets('a saved grant they cannot use yet says why ($state)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        wrap(
+          hostWithGrants(
+            const {},
+            accessWarning: {'state': state, 'message': 'server words'},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(CcCheckbox).at(1));
+      await tester.pumpAndSettle();
+
+      expect(grantCalls.single['level'], 'read');
+      expect(find.text(text), findsOneWidget);
+      expect(find.text('server words'), findsNothing);
+      // Still shared: the grant was saved.
+      expect(
+        tester.widgetList<CcCheckbox>(find.byType(CcCheckbox)).last.value,
+        isTrue,
+      );
+    });
+  }
 }

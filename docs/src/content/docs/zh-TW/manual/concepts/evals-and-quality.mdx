@@ -2,7 +2,7 @@
 title: 評測與品質
 description: 評測套件與按版本固定的技能評估活動，以及如何解讀它們的證據。
 slug: zh-TW/手冊/概念/評測與品質
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **可觀測性 → 品質**同時包含針對單一任務的評測套件，以及成對進行的技能評估活動。技能評估活動所衡量的是某個封裝在特定模型與 harness 下被使用時的表現，而不是它自身的 Markdown 品質。
@@ -16,7 +16,7 @@ sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
 
 建立工作區時會預置五個入門套件。它們涵蓋編排提案、能找出預置錯誤的審查、
 計畫模式維持唯讀、計畫模式產出計畫，以及工單往返。預置程序會監聽
-`WorkspaceCreated`（`workspace.upsert` 或 `workspace.create`），略過已存在的名稱，
+`WorkspaceCreated`（由 `workspace.create` 發布），略過已存在的名稱，
 也不會回填較舊的工作區。
 
 ### 它們出現的位置

@@ -11,6 +11,7 @@ import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/acp/acp_client.dart';
+import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
 
@@ -56,12 +57,22 @@ typedef OneShotLauncher =
 ///   tools, no MCP servers and the caller's system prompt replacing Claude Code's own.
 /// - [AdapterTransport.acp]: full ACP handshake via [AcpClient], collect
 ///   [TextEvent]s.
-/// Returns null on cannot-run (unknown id / missing CLI / no credential) —
-/// quiet skip. Failures mid-run throw.
+///
+/// Only the ACP transport is confined ([OneShotConfinement]): an ACP CLI
+/// brings its own tools and its own config decides whether it asks before
+/// using them, so refusing its permission requests is no boundary. The
+/// harness transport runs in process with no tools at all, and `claude -p`
+/// runs with `--tools ''`, `--strict-mcp-config` and slash commands off in a
+/// throwaway cwd, so neither can act on the host whatever the prompt says.
+///
+/// Returns null on cannot-run (unknown id / missing CLI / no credential / an
+/// ACP one-shot this host may not run for the requester) — quiet skip.
+/// Failures mid-run throw.
 class AdapterOneShotRunner {
   /// Creates an [AdapterOneShotRunner].
   AdapterOneShotRunner({
     required ProviderCredentialStore credentials,
+    required this._confinement,
     this._factory = const HarnessProviderFactory(),
     this._refresher,
     Future<String?> Function(String cliName)? resolveBinary,
@@ -73,6 +84,7 @@ class AdapterOneShotRunner {
        _adapters = adapters ?? predefinedAdapters;
 
   final ProviderCredentialStore _creds;
+  final OneShotConfinement _confinement;
   final HarnessProviderFactory _factory;
   final ProviderCredentialRefresher? _refresher;
   final Future<String?> Function(String cliName) _resolveBinary;
@@ -82,11 +94,16 @@ class AdapterOneShotRunner {
   /// Runs [prompt] under [systemPrompt] on [adapterId] with [modelId] and
   /// returns the reply text, or null when the adapter cannot run.
   ///
+  /// [requestedByUserId] is the person whose message or action asked for it
+  /// in [workspaceId]; null is nobody, which is never the server owner.
+  ///
   /// [timeout] is a hard wall-clock ceiling on the whole attempt including
   /// process spawn; the process is killed when it expires. [maxTokens] bounds
   /// the reply on the harness transport only — an external CLI owns its own
   /// output budget and there is no flag we can portably set.
   Future<String?> complete({
+    required String? workspaceId,
+    required String? requestedByUserId,
     required String adapterId,
     String? modelId,
     required String systemPrompt,
@@ -134,6 +151,8 @@ class AdapterOneShotRunner {
         timeout: timeout,
       ),
       AdapterTransport.acp => _runAcp(
+        workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
         adapter: adapter,
         modelId: modelId,
         systemPrompt: systemPrompt,
@@ -233,6 +252,8 @@ class AdapterOneShotRunner {
   }
 
   Future<String?> _runAcp({
+    required String? workspaceId,
+    required String? requestedByUserId,
     required Adapter adapter,
     required String? modelId,
     required String systemPrompt,
@@ -247,13 +268,39 @@ class AdapterOneShotRunner {
 
     final acpArgs = adapter.acpArgs;
     final tmp = await Directory.systemTemp.createTemp('cc-one-shot-');
+    final OneShotSpawn? spawn;
+    try {
+      spawn = await _confinement.spawnFor(
+        workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
+        workdir: tmp.path,
+      );
+    } on Object {
+      unawaited(tmp.delete(recursive: true).catchError((_) => tmp));
+      rethrow;
+    }
+    if (spawn == null) {
+      unawaited(tmp.delete(recursive: true).catchError((_) => tmp));
+      CcInfraLog.debug(
+        'one-shot: no sandbox here and the requester is not the server '
+        'owner; ${adapter.cliName} not started',
+      );
+      return null;
+    }
     OneShotProcess? proc;
     StreamSubscription<String>? stdoutSub;
     StreamSubscription<AgentProcessEvent>? eventsSub;
     try {
-      proc = await _launch(cliPath, [
+      final command = await spawn.prepare([
+        cliPath,
         if (acpArgs != null && acpArgs.isNotEmpty) acpArgs,
-      ], workingDirectory: tmp.path);
+      ]);
+      proc = await _launch(
+        command.executable,
+        command.argv,
+        workingDirectory: tmp.path,
+        environment: command.environment.isEmpty ? null : command.environment,
+      );
       final spawned = proc;
 
       final client = AcpClient(send: spawned.writeStdin);
@@ -289,6 +336,7 @@ class AdapterOneShotRunner {
       await stdoutSub?.cancel();
       await eventsSub?.cancel();
       proc?.kill();
+      await spawn.release();
       unawaited(tmp.delete(recursive: true).catchError((_) => tmp));
     }
   }

@@ -1,115 +1,176 @@
 ---
 title: Kódhoszt csatlakoztatása
-description: Csatlakoztassa a GitHubot, a GitLabot vagy a Bitbucketet, hogy a PR-felület, a repóregisztráció és az ügynökfutások működjenek — egy munkaterület mindhármat használhatja.
+description: Csatlakoztassa a GitHubot, a GitLabot vagy a Bitbucketet, hogy a PR-felület, a repóregisztráció és az ügynökfutások működjenek — egy munkaterület mindhárom szolgáltatást használhatja.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
-A Control Center három kódhoszttal működik együtt, amelyeket az alkalmazás végig **forge** néven említ: **GitHub**, **GitLab** és **Bitbucket Cloud**. Egyik sem az alapértelmezett. Ha egyet csatlakoztat, minden működik; ha többet, egyetlen munkaterület egyszerre mindháromról tarthat repókat.
+A Control Center három kódhosztszolgáltatással működik, amelyeket az egész alkalmazásban **forge**-oknak neveznek: **GitHub**, **GitLab** és **Bitbucket Cloud**. Egyik sem az alapértelmezett. Csatlakoztasson egyet, és minden működik; csatlakoztasson többet, és egy munkaterület egyszerre tartalmazhat repókat mindhárom forge-ból.
 
-A forge minden **repó** tulajdonsága: regisztráláskor annak `origin` remote-jából olvassuk ki. Ezt soha nem kell kiválasztania, és nincs munkaterületenkénti beállítás, amit el lehetne rontani.
+A forge a repo **tulajdonsága**, amelyet a regisztrációkor az `origin` távoli tárolóból olvas ki. Ön soha nem választ forge-ot, és nincs olyan munkaterületenkénti beállítás, amelyet elronthatna.
 
 ## Forge csatlakoztatása
 
-1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás** (`/settings/workspace/profile`) oldalt.
+1. Nyissa meg a **Beállítások → Ön → Profil** (`/settings/you/profile`) oldalt.
 2. Keresse meg a **Kódtárhely** kártyát. Minden támogatott forge szerepel rajta, akár csatlakoztatva van, akár nem.
 3. A **GitHub** sorban nyomja meg a **Bejelentkezés: GitHub** gombot. A **GitLab** vagy **Bitbucket** sorban nyomja meg a **Token hozzáadása** gombot, és illesszen be egyet.
 
-**A GitHub kizárólag bejelentkezéssel működik.** A bejelentkezés a szerver saját GitHub Appján vagy a Control Center Connecten keresztül fut, aszerint, hogy a szerver tulajdonosa melyiket állította be (lásd [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)); nincs beillesztendő GitHub-token. A GitLab és a Bitbucket továbbra is személyes tokent vár.
+**A GitHub kizárólag bejelentkezéssel működik.** A bejelentkezés a szerver saját GitHub Appján, a Control Center Connecten keresztül, vagy a munkaterület adminisztrátora által a **Beállítások → Munkaterület → Integrációk** oldalon ehhez a munkaterülethez kiválasztott alkalmazásokon keresztül fut (lásd [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)); nincs beillesztendő GitHub-token. A GitLab és a Bitbucket továbbra is személyes tokent fogad.
 
 Akár így, akár úgy, a hitelesítő adat **az Öné, és a szerveren él**, a felhasználói azonosítójához rendelve: nem tárolódik token azon a gépen, amelyre beírta, minden eszköz, amelyről bejelentkezik, ugyanazt használja, és más tag nem tudja kiolvasni. A **következő kérésnél** lép életbe — nincs mit újraindítani, a leválasztás pedig azonnal leállítja a küldését.
 
-Minden sor megmondja, honnan származik a hitelesítő adata, mert ez a különbség aközött, hogy „nem működik a tokenem”, és aközött, hogy „egy másik token válaszol”:
+A kártya megmutatja, hol használják a fiókjait. A GitLab- vagy Bitbucket-token az Ön számára **a szerveren minden munkaterületen** érvényes, ezért egyszer kell beillesztenie. A GitHub-bejelentkezése is ilyen, kivéve ha egy munkaterületnek saját bejelentkezési alkalmazásai vannak: az a munkaterület saját GitHub-bejelentkezést tart fenn, és a kártya ezt megnevezi.
 
-| Felirat                          | Jelentés                                                           |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Bejelentkezve mint octocat`     | A saját hitelesítő adata van használatban                          |
-| `Bejelentkezve mint octocat · a környezetből` | Csak GitLab vagy Bitbucket: egy szerverkörnyezeti változó válaszol, nem az Ön tokenje |
-| `Nincs csatlakoztatva`           | Nincs hitelesítő adata ehhez a forge-hoz                           |
-| `A(z) GitHub bejelentkezés még nincs beállítva ezen a szerveren.` | A szervernek sincs saját GitHub Appja, és Connectje sincs; a szerver tulajdonosa beállítja az egyiket |
+Minden sor az Ön **saját** hitelesítő adatának állapotát mutatja. Csak az Ön saját hitelesítő adata válaszol Ön helyett; semmi más nem lép a helyébe:
+
+| A sor jelzi | Jelentés |
+| --- | --- |
+| `Bejelentkezve mint octocat` | Az Ön saját hitelesítő adata van használatban |
+| `Nincs csatlakoztatva` | Nincs hitelesítő adata ehhez a forge-hoz |
+| `A(z) GitHub bejelentkezésed (octocat) lejárt. Jelentkezz be újra.` | A bejelentkezése lejárt, vagy a forge visszavonta |
+| `Szüneteltetve: a munkaterület bejelentkezési szolgáltatása megváltozott` | A munkaterület másik bejelentkezési szolgáltatásra váltott. Az Ön bejelentkezése megmarad, és ha visszaváltanak, újra működik, ezért nincs bejelentkezés gomb |
+| `A(z) GitHub most nem érhető el. Újrapróbálkozás folyamatban.` | Átmeneti kimaradás. A Control Center tovább próbálkozik; nincs teendő |
+| Egy mondat, amely megmagyarázza, miért nem elérhető a bejelentkezés | Például `A(z) GitHub bejelentkezés nincs beállítva ehhez a munkaterülethez.` vagy `A munkaterület bejelentkezési szolgáltatása megváltoztatta az azonosságát. Egy adminnak meg kell erősítenie.` Az adminisztrátorok kapnak egy gombot a problémát megoldó beállításhoz |
 
 ### Milyen tokent vár el az egyes forge-ok
 
 | Forge         | Token                                                     | Hol hozza létre                                           |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
 | **GitLab**    | Személyes hozzáférési token `api` jogosultsággal          | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | Atlassian API-token, valamint a fiókja e-mail-címe        | id.atlassian.com → Security → API tokens                   |
+| **Bitbucket** | Atlassian API-token, plusz a fiókja e-mail-címe           | id.atlassian.com → Security → API tokens                   |
 
-A Bitbucket a **fiókja e-mail-címét használja felhasználónévként**, a tokent pedig jelszóként. Állítsa be a `BITBUCKET_EMAIL` változót a szerver környezetében, hogy tudja, melyik e-mail-címet párosítsa a tokenhez.
+A Bitbucket az Ön **fiókjának e-mail-címét használja felhasználónévként**, a tokent pedig jelszóként, ezért a Bitbucket-párbeszédablak mindkettőt kéri. A Bitbucket munkaterület-, projekt- vagy repo-**hozzáférési token** nem tartozik senkihez, ezért ez a párbeszédablak elutasítja: helyette egy [automatizálási token](#automatizálási-token-hozzáadása) kell. Ugyanez vonatkozik a GitLab **projekt-** vagy **csoport-hozzáférési tokenjére**: mentés előtt a GitLabtól lekérdezzük, kihez tartozik a token, és a bot tokenjét itt elutasítjuk.
+
+A token soha nem kötődik egy munkaterülethez: forge-onként egy tartozik Önhöz, és a szerveren minden munkaterület ezt használja. A **Leválasztás** mindegyikből eltávolítja.
 
 ### Háttérmunka
 
 Az ember nélkül futó munkának (ügynökfutások, pipeline-ok, PR-lekérdezés) is kell hitelesítő adat, és ezt minden forge másképp oldja meg:
 
 - **GitHub** — egyszerre egyetlen repóra szóló token, amelyet a szerver GitHub Appja vagy a Connect állít ki, és arra korlátozódik, amit egy felelős tag ott megtehet. Soha nem egy személy bejelentkezése adódik át egészben, és semmilyen környezeti változó vagy beillesztett token nem lép a helyébe. Lásd: [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/#kinek-a-nevében-szól-a-hitelesítő-adata)
-- **GitLab** — a szerver tulajdonosának beillesztett tokenje, majd `GITLAB_TOKEN`, majd `CI_JOB_TOKEN`
-- **Bitbucket** — a szerver tulajdonosának beillesztett tokenje, majd `BITBUCKET_API_TOKEN`, majd `BITBUCKET_TOKEN` (a `BITBUCKET_EMAIL` változóval)
+- **GitLab** és **Bitbucket** — csak a repo **automatizálási tokenje**: a munkaterület adminisztrátora ehhez a repóhoz, vagy a munkaterület adott forge-jának minden repójához egy bot-hozzáférési tokent ad. A repo saját tokenje felülírja a munkaterületiét. A lekérdezett PR-ok, az MI-átnézési megjegyzések, valamint a senki által nem kért pushok és merge requestek ezt a tokent használják, ezért a forge-on ezek a bot nevén jelennek meg, soha nem egy tagén. Egyetlen tag személyes tokenje sem léphet a helyébe, és nincs szerverszintű vagy környezeti változós token. Automatizálási token nélkül a repo háttérmunkája szünetel, és a repó-hozzáférési értesítés ezt jelzi.
 
-A GitLab és a Bitbucket környezeti változói a **szerver** hitelesítő adatai, nem az Öné: az Ön nevében indított kérés az Ön tokenjét használja, és semmi mást, így a környezet soha nem lép csendben az Ön helyébe.
+A tag által kért munka (megjegyzés, átnézés, egy ügynök által az ő nevében nyitott merge request) továbbra is az adott tag saját tokenjét használja.
+
+## Automatizálási token hozzáadása
+
+Csak a munkaterület-adminisztrátorok látják és módosíthatják az automatizálási tokeneket. Mindegyiket a mentéskor ellenőrzi a forge: a személyes tokent (GitLab személyes hozzáférési token, Atlassian API-token, vagy bármely olyan Bitbucket-token, amely valaki fiókjaként jelentkezik be) elutasítja, ahogy azt a tokent is, amely nem olvashatja az általa kiszolgált repót.
+
+- **Egy repóhoz:** nyissa meg a **Beállítások → Munkaterület → Tárolók** menüt. Az **Automatizálási tokenek** kártya minden GitLab- és Bitbucket-repót listáz, megmutatva a benne működő botot, a **A munkaterület tokenjét használja** üzenetet vagy a **Nincs token. Az automatizálás itt szünetel.** jelzést. Nyomja meg a **Token hozzáadása** gombot a repó sorában.
+- **Egy forge minden repójához:** nyissa meg a **Beállítások → Munkaterület → Integrációk** menüt, keresse meg az **Automatizálási tokenek** kártyát, és nyomja meg a **Token hozzáadása** gombot a GitLab vagy a Bitbucket sorában. A mentés után a token által nem olvasható repók megnevezésre kerülnek, és szünetelnek.
+
+Ha a háttérmunka már szünetel, az adminisztrátorok a repó-hozzáférési értesítésen is közvetlenül kapnak **Token hozzáadása** gombot. A **Token frissítése** lecseréli a tokent; a kuka gomb eltávolítja, és az a repó, amely így tokenje nélkül marad, szünetel. Ha a forge később visszautasít egy tárolt tokent (visszavont vagy lejárt), annak sora ezt jelzi, és az általa lefedett repók szünetelnek, amíg ki nem cseréli.
+
+| Forge         | Automatizálási token                                                                                     | Hol hozza létre                                                |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | **Projekt-** vagy **csoport-hozzáférési token** `read_api` és `read_repository` jogosultsággal; megjegyzésekhez, merge requestekhez és pushokhoz adja hozzá az `api` és a `write_repository` jogosultságot | A projekt vagy a csoport → Settings → Access tokens            |
+| **Bitbucket** | **Repo-, projekt- vagy workspace-hozzáférési token** repo-olvasási jogosultsággal, plusz pull request-írási jogosultsággal a megjegyzésekhez és pull requestekhez (repo-írási jogosultsággal a pushokhoz) | A repo, a projekt vagy a workspace → Settings → Access tokens  |
+
+A GitLab a munkát a token bot-felhasználója nevén mutatja; a Bitbucket a hozzáférési token nevén.
+
+### Bitbucket: hozzáférési token vagy API-token
+
+A Bitbucketnek kétféle tokenje van, és a Control Center szétválasztja őket:
+
+- Az **API-token** (id.atlassian.com) az Atlassian-fiókjához tartozik, és az e-mail-címével együtt használják. Ez **az Ön** hitelesítő adata, és a **Kódtárhely** alá tartozik a **Beállítások → Ön → Profil** oldalon.
+- A **hozzáférési token** (egy repo, projekt vagy workspace beállításaiban létrehozva) az adott repóhoz, projekthez vagy workspace-hez tartozik, nem egy személyhez. Ez egy **automatizálási token**, és az **Automatizálási tokenek** alá tartozik.
+
+Mindkét párbeszédablak elutasítja a másik típust, és megmondja, hová tartozik.
 
 ## Ön minden forge-on más személy
 
-Ugyanaz az ember a GitHubon `octocat`, a GitLabon pedig valami egészen más. A Control Center **forge-onként** oldja fel az identitását, és minden repóhoz a megfelelőt használja; ez teszi helyessé az „átnézésre vár”, az „én hoztam létre” és az „ezt Ön hagyta jóvá” megjelöléseket egy vegyes munkaterületen.
+Ugyanaz az ember `octocat` a GitHubon, a GitLabon pedig teljesen más. A Control Center **forge-onként** oldja fel az Ön azonosságát, és repónként a megfelelőt használja; ettől lesz helyes a „átnézésre vár”, a „saját létrehozás” és az „Ön jóváhagyta ezt” jelzés egy vegyes munkaterületen.
 
-Ha egy forge identitása nem oldható fel, a repói semmivel sem járulnak hozzá a Beérkezetthez, ahelyett hogy mindenre illeszkednének. A Beérkezett ezt jelzi, ahelyett hogy azt állítaná, minden elolvasva.
+Ha egy forge azonossága nem oldódott fel, a repói semmit nem adnak a beérkezett üzenetekhez, ahelyett hogy mindenre illeszkednének. A beérkezett üzenetek ezt jelzik, ahelyett hogy azt állítanák, hogy mindennel végeztek.
+
+## Csak azt látja, amit a saját fiókja láthat
+
+Egy repo pull requestjei akkor jutnak el Önhöz, ha a munkaterületi szerepe engedélyezi a repót, **és a saját fiókja azon a forge-on olvashatja is**. A munkaterület-adminisztrátorokra és a tulajdonosra ugyanez a szabály vonatkozik. Ha egyes repók rejtve maradnak, a beérkezett üzenetek és a PR-sor elmondja, hányan és miért, a neveik említése nélkül:
+
+- **Jelentkezzen be a GitHubra, hogy lássa 3 további repo pull requestjeit**: még nem csatlakoztatta ezt a forge-ot itt. Jelentkezzen be, és megjelennek
+- **3 repo rejtve van, mert a GitHub-fiókja nem látja őket**: kérdezze meg valakitől, akinek van hozzáférése a forge-on
+- **3 repo rejtve van, mert ebben a munkaterületben nincs hozzá hozzáférése**: kérjen hozzáférést egy munkaterület-adminisztrátortól
+- **Hozzáférésének ellenőrzése 3 további repóhoz…**: rövid ideig látszik, amíg a Control Center megerősíti, mit olvashat a fiókja
+
+A kódra ugyanez a szabály vonatkozik. Ha egy repó fájljait, diffjeit vagy keresését, illetve az azon futó terminált szeretné megnyitni, ahhoz szükséges a repóhoz tartozó jogosultság ebben a munkaterületben, és a saját forge-fiókjának is olvasnia kell tudnia a repót. A munkaterület-adminisztrátorokra is ez vonatkozik; csak a szerver tulajdonosa mentesül. Ha a forge-ot nem lehet elérni az ellenőrzéshez, ezt látja: „Nem sikerült igazolni a forge-hozzáférését. Próbálja újra.” (a forge nevével). Lásd: [A kód a forge-ot követi](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-kód-a-forge-ot-követi).
+
+Ugyanez a szabály vonatkozik mindarra, ami ezekből a pull requestekből készül. Egy áttekintési tér, az üzenetei és az ügynökfuttatásai addig tűnnek el, amíg nem látja annak a pull requestjét, a nyitva lévő áttekintési tér pedig bezárul, ha elveszíti a hozzáférést. A rejtett pull requesthez tartozó pipeline-futtatások kikerülnek a futtatáslistájából. Az Önnek dolgozó ügynökök sem tudják olvasni ezeket az áttekintési tereket. A munkaterület repólistája minden olyan repót megmutat, amelyhez ebben a munkaterületben hozzáfér, még akkor is, ha a forge-fiókja még nem éri el.
+
+Ha a forge korlátozza a kérések számát vagy nem elérhető, a Control Center néhány percig még mutatja, amit utoljára megerősített, majd elrejti ezeket a pull requestöket, amíg újra nem tudja ellenőrizni őket.
 
 ## Egy Beérkezett, minden forge
 
-A Beérkezett és a PR-várólista szétágazik a munkaterületen képviselt minden forge-ra, és az eredményeket egyetlen folyamba vonja össze — egy GitHub pull request és egy Bitbucket pull request egymás mellett áll, idő szerint rendezve, nem szállító szerint csoportosítva.
+A beérkezett üzenetek és a PR-sor minden, a munkaterületen képviselt forge-ra szétágazik, és az eredményeket egyetlen folyamba egyesíti — egy GitHub-pull request és egy Bitbucket-pull request egymás mellett jelenik meg, időrend szerint rendezve, nem szállító szerint csoportosítva.
 
-A hibák elkülönülnek. Az a forge, amelyik leállt, sebességkorlátozás alá esik vagy nincs csatlakoztatva, semmivel sem járul hozzá, és a többit érintetlenül hagyja; soha nem üríti ki a teljes Beérkezettet. A saját repói továbbra is a legutóbb ismert állapotukat mutatják, amíg helyre nem áll.
+A hibák elszigeteltek. Egy leállt vagy sebességkorlátozott forge nem érinti a többit, a repói pedig a legutóbbi ismert állapotukat őrzik, amíg helyre nem áll; soha nem üríti ki a teljes beérkezett üzenetek listáját. Egy repo, amelyet a szerver már nem ér el, kiesik ahelyett, hogy elavult pull requestöket mutatna, és a **repó-hozzáférési értesítés** megnevezi a megoldással együtt: telepítse a GitHub Appot a szervezetére, adja hozzá a repót az App repóihoz, folytassa a felfüggesztett telepítést, kérje meg a felelős tagot, hogy jelentkezzen be újra, vagy adjon automatizálási tokent egy GitLab- vagy Bitbucket-repóhoz. Az adminisztrátorok gombot kapnak a GitHub App lépéseihez és a token hozzáadásához.
 
 ## Mire képes az egyes forge-ok
 
-Minden forge támogatja az alapvető ciklust: a pull requestek listázása és megnyitása, a diffek olvasása, beágyazott és legfelső szintű megjegyzés írása, átnézés, összefésülés és lezárás. Azon túl azonban valóban különböznek, és a Control Center elrejti azt, amire egy forge nem képes, ahelyett hogy olyan vezérlőt mutatna, amely csendben meghibásodik.
+Minden forge támogatja az alapciklust: pull requestek listázása és megnyitása, diffek olvasása, megjegyzés sorba és általánosan, átnézés, összefésülés és lezárás. Ezen túl valóban különböznek, és a Control Center elrejti azt, amit egy forge nem tud, ahelyett hogy olyan vezérlőt mutatna, amely csendben meghiúsul.
 
 | Képesség                          | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Kötegelt (függőben lévő) átnézések |   ✓    |   ✓    |     —     |
-| Módosítás kérése                  |   ✓    |   ✓    |     ✓     |
-| Fájlonkénti „megtekintett” állapot szinkronizálva |   ✓    |   —    |     —     |
-| Emodzsi-reakciók                  |   ✓    |   ✓    |     —     |
-| Csapat- vagy csoportátnézők      |   ✓    |   ✓    |     —     |
+| Kötegelt (függő) átnézések        |   ✓    |   ✓    |     —     |
+| Változtatások kérése              |   ✓    |   ✓    |     ✓     |
+| Fájlonkénti „megnézve” állapot szinkronizálva |   ✓    |   —    |     —     |
+| Emoji-reakciók                    |   ✓    |   ✓    |     —     |
+| Csapat- / csoport-átnézők         |   ✓    |   ✓    |     —     |
 | Javasolt átnézők                  |   ✓    |   —    |     ✓     |
 | CI-eredmények egy PR-en           |   ✓    |   ✓    |     ✓     |
-| Egy CI-feladat lépéseinek/naplóinak megtekintése |   ✓    |   ✓    |     —     |
-| Halmozott pull requestek          |   ✓    |   —    |     —     |
+| CI-feladat lépéseinek/naplóinak böngészése |   ✓    |   ✓    |     —     |
+| Egymásra épülő pull requestek     |   ✓    |   —    |     —     |
 | PR-leírássablonok                 |   ✓    |   ✓    |     —     |
 | Értesítések lekérdezése           |   ✓    |   —    |     —     |
-| Részletes felhasználói profilok   |   ✓    |   ✓    |     —     |
-| Szerveroldali PR head ref         |   ✓    |   ✓    |     —     |
+| Gazdag felhasználói profilok      |   ✓    |   ✓    |     —     |
+| PR-fejreferencia a szerveren      |   ✓    |   ✓    |     —     |
 
-Ahol egy képesség hiányzik, a funkció korlátozottan, de őszintén működik:
+Ahol egy képesség hiányzik, a funkció becsületesen visszalép:
 
-- A **megtekintett állapot** továbbra is működik, de csak azon az eszközön, amelyen beállította.
-- A **kötegelt átnézések** a Bitbucketnél megjegyzésenként küldődnek el, így az átnézők egyenként látják megérkezni őket, nem egyszerre.
-- A Bitbucketnél nincs **PR head ref**, ezért egy pull request kivétele a forráságát név szerint hozza le, ami az ág törlése után meghiúsul.
+- A **„megnézve” állapot** továbbra is működik, de csak azon az eszközön, amelyen beállította.
+- A **kötegelt átnézések** Bitbucketen megjegyzésenként küldik el a megjegyzéseket, így az átnézők egyenként, és nem egyszerre látják őket.
+- A **PR-fejreferencia hiánya** Bitbucketen azt jelenti, hogy a pull request kijelölésekor a forrásága név szerint töltődik le, ami meghiúsul, ha az ág már törlődött.
 
 ## Szóhasználat
 
-A GitLab a pull requestet **merge request**nek hívja. A Control Center a saját modelljében végig „pull requestet” mond, és ott használja az adott forge saját szavát, ahol arról a forge-ról beszél.
+A GitLab a pull requestet **merge request**-nek hívja. A Control Center a saját modelljében végig „pull request”-et mond, és az adott forge saját megnevezését használja, amikor arról a forge-ról beszél.
 
 ## Hibaelhárítás
 
 ### A PR-lista üres, és azt írja, hogy egy forge nincs csatlakoztatva
 
-Nincs hitelesítő adata ahhoz a forge-hoz. Jelentkezzen be a GitHubra, vagy illesszen be egy GitLab- vagy Bitbucket-tokent a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely** alatt. A többi forge repóit ez nem érinti.
+Nincs hitelesítő adata ehhez a forge-hoz. Jelentkezzen be a GitHubra, vagy illesszen be GitLab- vagy Bitbucket-tokent a **Beállítások → Ön → Profil → Kódtárhely** alatt. Más forge-ok repói nem érintettek.
 
 ### Csatlakoztattam egy forge-ot, de a repói továbbra sem mutatnak semmit
 
-Ellenőrizze a sor feliratát. Ha egy GitLab- vagy Bitbucket-sorban az áll, hogy „a környezetből”, akkor más hitelesítő adat válaszol, mint amire számított — bármit is kér, az Ön saját tokenje élvez elsőbbséget, tehát ha más szerepel, az Öné nem lett elmentve. GitHubon ellenőrizze, hogy a GitHub App telepítve van-e a repók tulajdonosának fiókján.
+Ellenőrizze a sor állapotát, majd a PR-lista fölötti értesítéseket. A „Jelentkezzen be a GitHubra, hogy lássa 3 további repo pull requestjeit” azt jelenti, hogy a saját fiókja nincs csatlakoztatva ezekhez a repókhoz; a „3 repo rejtve van, mert a GitHub-fiókja nem látja őket” azt, hogy a forge nem ad hozzáférést. GitHubon a repó-hozzáférési értesítés megmondja, ha a GitHub App nincs telepítve a repó szervezetére, vagy nem tartalmazza a repót.
+
+### A GitLab- vagy Bitbucket-repo háttérmunkája szünetel
+
+A repónak nincs olyan automatizálási tokenje, amely olvashatná. Egy munkaterület-adminisztrátor ad egyet a repóhoz vagy az egész munkaterülethez; lásd: [Automatizálási token hozzáadása](#automatizálási-token-hozzáadása). A saját személyes tokenje nem oldja fel: a háttérmunka soha nem használ tag tokenjét.
 
 ### Egy repó nem regisztrálódik
 
-A regisztrációhoz mindhárom kell: az útvonal egy git work tree-n belül van, van `origin` remote-ja, és az a remote a github.com, a gitlab.com vagy a bitbucket.org címre mutat. Lásd: [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/).
+A regisztrációhoz mind a három feltétel szükséges: az útvonal egy git-munkafában van, van `origin` távoli tárolója, és ez a távoli tároló github.com, gitlab.com vagy bitbucket.org címre mutat. Az `origin`-nek is azt a repót kell megneveznie, amelyet összekapcsol, a munkaterület saját tárhelyén kívül eső mappát pedig csak a szerver tulajdonosa köthet össze. Lásd: [Repók hozzáadása egy munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/).
+
+### Van jogosultságom, de a repó szerint a fiókom nem olvashatja
+
+A saját forge-fiókja nem olvashatja ezt a repót, ezért a kódja Ön előtt zárva marad, bármit ad is a munkaterület. Jelentkezzen be a forge-ra a fenti **Kódtárhely** alatt, vagy kérjen hozzáférést a repóhoz a forge-on.
+
+### „Nem sikerült igazolni a forge-hozzáférését”
+
+A forge-ot nem lehetett elérni az ellenőrzéshez, ezért a Control Center inkább elutasított, mintsem találgatott. Próbálja újra pár perc múlva.
+
+### Egy repó most egy másik repóra mutat
+
+Az elérési út mögötti repó megváltozott: törölték és újra létrehozták, vagy áthelyezték és lecserélték. A Control Center addig nem küld neki semmit, amíg egy munkaterület-adminisztrátor nem nyomja meg az **Újrakapcsolás** gombot az értesítésen vagy a repó sorában. Az egyszerű átnevezést vagy átvitelt a rendszer önállóan követi, ezért ilyenkor ez soha nem jelenik meg.
 
 ### Nagy használat után egy időre minden leáll
 
-Ez a sebességkorlát áramkör-megszakítója. Ha egy forge jelzi az elsődleges korlátját, a kliens a további kéréseket helyben, hálózati hívás nélkül buktatja el, amíg az időablak le nem telik — így az újrapróbálkozások vihara nem mélyítheti el a korlátot. Az átmeneti hibákat exponenciális visszalépéssel próbálja újra.
+Ez a sebességkorlát-megszakító. Ha egy forge jelzi az elsődleges korlátját, a kliens a további kéréseket helyben, hálózati hívás nélkül elutasítja, amíg az ablak le nem jár — így egy újrapróbálkozási lavina nem mélyítheti el a korlátot. Az átmeneti hibákat exponenciális visszalépéssel próbálja újra.
 
 ## Kapcsolódó útmutatók
 
-- [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
+- [Repók hozzáadása egy munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)
 - [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
 - [PR átnézése és összefésülése](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/)
-- [Beérkezett üzenetek triázsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)
+- [A beérkezett üzenetek triázsolása](/hu-HU/kezikonyv/gyakorlati-utmutatok/beerkezett-uzenetek-triazsolasa/)

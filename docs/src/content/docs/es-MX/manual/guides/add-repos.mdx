@@ -2,10 +2,10 @@
 title: Agregar repos a un espacio de trabajo
 description: Registra checkouts de Git en un espacio de trabajo para que los agentes puedan trabajar en ellos.
 slug: es-MX/manual/guias/agregar-repos
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Esta guía te muestra cómo registrar un checkout de Git en un espacio de trabajo, reindexarlo y quitarlo de nuevo.
+Esta guía te muestra cómo registrar un checkout de Git en un espacio de trabajo, reindexarlo y quitarlo de nuevo. Agregar un repo desde las carpetas del servidor lo necesita el propietario del servidor; quitarlo necesita a un administrador del espacio de trabajo.
 
 Los repos están **acotados al espacio de trabajo**. No hay un registro global ni un paso de vinculación: agregar un repo y ponerlo en un espacio de trabajo son el mismo acto. El mismo checkout registrado en dos espacios de trabajo se convierte en dos filas independientes con dos IDs distintos: entre espacios de trabajo, la identidad de un repo es su ruta en el sistema de archivos, nunca su ID.
 
@@ -21,9 +21,29 @@ Cualquier otro caso se rechaza en el momento del registro con un mensaje explíc
 
 El host de código se lee del remoto y se guarda en el repo, tú nunca lo eliges. Un espacio de trabajo puede contener repos de los tres a la vez, y con cada uno se habla a través de su propia API con su propia credencial. Los espacios de nombres anidados de GitLab se conservan, así que `gitlab.com/group/subgroup/project` se registra con el propietario `group/subgroup` y el nombre `project`.
 
-La carpeta también debe estar en la máquina que aloja `cc_server`, dentro de uno de los directorios `--repo-roots` de ese servidor. Esa lista de permitidos usa de forma predeterminada el directorio home del usuario del servidor, y navegar por encima de una raíz se rechaza.
+La carpeta también debe estar en la máquina que aloja `cc_server`, dentro de uno de los directorios `--repo-roots` de ese servidor. Esa lista de permitidos usa de forma predeterminada el directorio home del usuario del servidor, y navegar por encima de una raíz se rechaza. Explorar las carpetas del servidor se ofrece solo al [propietario del servidor](/es-MX/manual/conceptos/autorizacion/#el-propietario-del-servidor), porque lista los archivos propios de la máquina. A los demás se les muestra «El propietario del servidor agrega repositorios desde las carpetas del servidor.» en el lugar del botón **Añadir repositorio**, y un enlace a un repositorio que ninguno de sus espacios de trabajo tiene dice que no está vinculado en ninguno de ellos y que pidan al propietario del servidor que lo agregue.
+
+Dónde puede estar el checkout depende de quién lo vincule:
+
+- **Dentro del almacenamiento del espacio de trabajo** en el servidor: cualquier administrador del espacio de trabajo.
+- **En cualquier otro lugar del disco del servidor**: solo el [propietario del servidor](/es-MX/manual/conceptos/autorizacion/#el-propietario-del-servidor), porque solo él puede apuntar el servidor a los archivos propios de la máquina. Los demás ven «Solo el propietario del servidor puede vincular una carpeta fuera del almacenamiento de este espacio de trabajo.»
+- **La carpeta de datos del servidor**, o cualquier cosa dentro de ella: nunca.
+
+El `origin` del checkout debe ser el repositorio que estás vinculando. Una carpeta cuyo `origin` nombra otro repositorio se rechaza con «El origin de esa carpeta es otro repositorio.»
+
+### Carpetas que el servidor aún no usará
+
+Un repositorio cuya carpeta está fuera del almacenamiento del espacio de trabajo y no la vinculó el propietario del servidor (por ejemplo, la de un espacio de trabajo importado) muestra «Esta carpeta está fuera del almacenamiento del espacio de trabajo. Confirma que este servidor puede usarla.» bajo su fila hasta que el propietario del servidor lo confirme. A los demás se les muestra en cambio «Esta carpeta está fuera del almacenamiento del espacio de trabajo. Solo el propietario del servidor puede confirmarla.»
+
+El propietario lo confirma una vez: **Confirmar** en la fila, o **Confirmar todo** en el aviso sobre la lista cuando varios repositorios esperan. Cada uno se vuelve a comprobar como propietario, con las mismas comprobaciones que al vincularlo. Mientras tanto, sigue en la lista pero no se abre, no se aprovisiona ni se indexa: ningún editor, terminal, entorno ni checkout de espacio lo usa, y el grafo de código lo omite. Volver a agregar la misma carpeta como propietario del servidor hace lo mismo que confirmarla, y conserva el id del repositorio.
+
+Un checkout que un enlace simbólico ha movido a otro lugar se trata igual: sigue listado y sin usar hasta que alguien con permiso para vincular la carpeta a la que ahora apunta lo vuelva a vincular.
+
+También necesitas haber iniciado sesión en la forja del repositorio, y tu propia cuenta debe poder ver el repositorio.
 
 ## Registrar un checkout
+
+Necesitas ser el propietario del servidor para estos pasos.
 
 1. Abre **Ajustes → Espacio de trabajo → Repositorios** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Haz clic en **Añadir repositorio**.
@@ -56,7 +76,23 @@ Arrastra el asa de una fila. El orden que fijes es el orden que devuelve cada li
 
 ## Corregir el enlace de GitHub
 
-El icono de enlace de una fila abre un editor para el propietario de GitHub y el nombre del repositorio del repo; es útil cuando el remoto se renombró o se transfirió.
+El icono de enlace de una fila abre un editor para el propietario de GitHub y el nombre del repositorio del repo.
+
+Casi nunca lo necesitas. Un vínculo está atado al id permanente del repositorio en la forja, así que un cambio de nombre o una transferencia se siguen automáticamente.
+
+- Renombrar un repositorio en Control Center solo cambia su nombre para mostrar.
+- Cambiar a qué repositorio de la forja apunta un vínculo necesita a un administrador del espacio de trabajo, y se comprueba contra la forja con el propio inicio de sesión del administrador, igual que al vincularlo.
+- Un repositorio vinculado no se puede convertir en uno solo local.
+
+Si la ruta nombra **otro** repositorio después (el original se eliminó y se volvió a crear, o se movió y lo reemplazó otro), Control Center deja de enviarle cualquier cosa: ni tokens, pushes, comentarios ni solicitudes. Eso incluye también tus propias acciones: una revisión, fusión o comentario que hagas en ese repositorio se rechaza, en GitHub, GitLab y Bitbucket por igual. La fila y las pull requests del repositorio muestran «_repo_ ahora apunta a un repositorio distinto» hasta que un administrador del espacio de trabajo pulse **Volver a vincular**.
+
+## Quién puede abrir el código
+
+Una concesión de repositorio por sí sola no abre sus archivos. Para abrir archivos, diffs, búsqueda o una terminal de él, un miembro necesita la concesión de Control Center, y su propio inicio de sesión en la forja debe poder leer el repositorio. Los administradores del espacio de trabajo no están exentos; el propietario del servidor sí. Consulta [El código sigue a la forja](/es-MX/manual/conceptos/autorizacion/#el-código-sigue-a-la-forja).
+
+Cuando concedes un repositorio a alguien cuya cuenta de la forja no puede leerlo, la concesión se guarda y ves una advertencia, como «Guardado. Su cuenta de GitHub todavía no puede leer este repositorio, así que sigue oculto para ellos.»
+
+La misma regla decide quién puede abrir un espacio. Un espacio se abre solo para los miembros que pueden abrir el código de cada repositorio que usa, y queda oculto para los demás, junto con sus resultados de búsqueda, registros de ejecución, pendientes, actividad y notificaciones. Un espacio sin repositorios está abierto a todos los miembros. Consulta [Los espacios siguen a sus repositorios](/es-MX/manual/conceptos/autorizacion/#los-espacios-siguen-a-sus-repositorios).
 
 ## Quitar un repo
 
@@ -66,7 +102,31 @@ El icono de enlace de una fila abre un editor para el propietario de GitHub y el
 
 El cuadro de diálogo dice lo que hace: «_name_ se eliminará de este espacio de trabajo. Los archivos locales en disco no se modifican.»
 
+Quitar un repositorio necesita a un administrador del espacio de trabajo. También olvida las credenciales de la forja guardadas para ese repositorio, como un token de automatización de GitLab o Bitbucket.
+
 Quitar elimina la fila del repo de este espacio de trabajo y borra en cascada sus filas del grafo de código —símbolos, aristas, archivos y puntos de control de indexación—, además de cada permiso de repositorio por miembro sobre él, sus vínculos entre espacio y repo y sus registros de checkouts aislados. El mismo checkout registrado en otro espacio de trabajo es una fila independiente y no se ve afectado. Los worktrees en disco a los que apuntaban esos registros no se desmontan con la eliminación.
+
+## Solución de problemas
+
+### Tengo una concesión pero el repositorio dice que mi cuenta no puede leerlo
+
+Tu propia cuenta de la forja no puede leer el repositorio, así que Control Center le oculta su código aunque el espacio de trabajo lo haya concedido. Inicia sesión en la forja en **Ajustes → Tú → Perfil → Alojamiento de código** si aún no lo has hecho, o pide al propietario del repositorio en la forja que te dé acceso. El repositorio se abre en cuanto tu cuenta de la forja pueda leerlo.
+
+### «Esta carpeta está fuera del almacenamiento del espacio de trabajo»
+
+La carpeta del repositorio está fuera del almacenamiento del espacio de trabajo y el propietario del servidor no la vinculó, o un enlace simbólico ahora lo apunta a otro lugar. Sigue listado pero sin usarse hasta que el propietario del servidor lo confirme o vuelva a agregar la carpeta. Si no eres el propietario, pídele que lo haga. Si lo eres, pulsa **Confirmar** en la fila o **Confirmar todo** sobre la lista; consulta [Carpetas que el servidor aún no usará](#carpetas-que-el-servidor-aún-no-usará).
+
+### «Ya no existe nada en esta ruta del servidor»
+
+La carpeta se movió o se eliminó en la máquina del servidor. Vuelve a ponerla, o pide a un administrador del espacio de trabajo que quite el repositorio con **Quitar** en el aviso y lo agregue de nuevo desde su carpeta actual.
+
+### «Esta carpeta no puede usarse como repositorio»
+
+La carpeta guardada es la carpeta de datos del propio servidor, algo dentro de ella, o la carpeta de almacenamiento del propio espacio de trabajo. Ninguna de ellas puede ser un repositorio. Un administrador del espacio de trabajo lo quita con **Quitar** en el aviso, y luego lo agrega de nuevo desde la carpeta real del checkout.
+
+### «No se pudo confirmar tu acceso a la forja»
+
+Control Center no pudo contactar la forja para comprobar que tu cuenta puede leer el repositorio, así que lo rechazó en lugar de suponer. Inténtalo de nuevo en un momento.
 
 ## Guías relacionadas
 

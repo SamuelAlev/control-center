@@ -2,7 +2,7 @@
 title: Wyślij agentów-recenzentów
 description: Wysyłaj wyspecjalizowanych agentów-recenzentów do PR-a z widoku PR-a, narzędzia MCP lub kroku potoku.
 slug: pl-PL/podrecznik/poradniki/wysylanie-agentow-recenzentow
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Ten poradnik pokazuje, jak wysyłać agentów-recenzentów do recenzowania pull
@@ -88,7 +88,7 @@ Znaczenie mają tu dwa zdarzenia i nie są one wymienne:
 | Zdarzenie              | Uruchamia się, gdy                                                                                        | Klucze ładunku                                                      |
 | ---------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `PullRequestPublished` | PR zostaje otwarty **przez Control Center** — interfejs tworzenia albo agent wywołujący `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                  |
-| `ExternalPrDetected`   | Usługa odpytywania PR-ów znajduje PR otwarty bezpośrednio w GitHubie                                      | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`        |
+| `ExternalPrDetected`   | Usługa odpytywania PR-ów znajduje PR otwarty bezpośrednio w GitHubie                                      | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`        |
 
 PR otwarty na github.com nigdy nie wywołuje `PullRequestPublished`, więc szablon
 podłączony tylko do tego zdarzenia go nie zobaczy. Zwróć też uwagę, że

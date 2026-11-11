@@ -27,10 +27,7 @@ List<RepoOp> buildWorkspaceGitHubOps({
           throw const NotFoundException('Workspace not found');
         }
         final status = await apps.status(ws, probe: ctx.args['probe'] == true);
-        return {
-          ...status.toJson(),
-          'github_auth_mode': ws.githubAuthMode.wireName,
-        };
+        return {...status.toJson(), 'connect_mode': ws.connectMode.wireName};
       },
     ),
     RepoOp(
@@ -53,10 +50,7 @@ List<RepoOp> buildWorkspaceGitHubOps({
           clientSecret: field('client_secret'),
           privateKeyPem: field('private_key'),
         );
-        return {
-          ...saved.toJson(),
-          'github_auth_mode': ws.githubAuthMode.wireName,
-        };
+        return {...saved.toJson(), 'connect_mode': ws.connectMode.wireName};
       },
     ),
     RepoOp(
@@ -69,10 +63,7 @@ List<RepoOp> buildWorkspaceGitHubOps({
           throw const NotFoundException('Workspace not found');
         }
         final status = await apps.status(ws, probe: true);
-        return {
-          ...status.toJson(),
-          'github_auth_mode': ws.githubAuthMode.wireName,
-        };
+        return {...status.toJson(), 'connect_mode': ws.connectMode.wireName};
       },
     ),
   ];

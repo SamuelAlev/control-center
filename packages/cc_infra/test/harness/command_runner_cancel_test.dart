@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/harness/harness_command_runner.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -15,6 +16,7 @@ void main() {
       final runner = SandboxedHarnessCommandRunner(
         mode: Mode.chat,
         networkEnabled: false,
+        hostProcesses: const HostToolProcessLauncher(),
       );
       final source = CancellationTokenSource();
       final sw = Stopwatch()..start();

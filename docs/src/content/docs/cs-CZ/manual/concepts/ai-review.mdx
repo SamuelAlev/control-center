@@ -2,7 +2,7 @@
 title: AI kontrola
 description: Jak se z pull requestu stane zkontrolovaný — prostory kontroly, uzly kontroly a shoda recenzentů, kohorty a osy, verdikt Ship/Hold/Block a proč zveřejnění zůstává krokem, který uděláš ty.
 slug: cs-CZ/prirucka/koncepty/ai-kontrola
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Podoba kontroly
@@ -195,8 +195,7 @@ jedna kontrola neodeslala dvakrát. Když stiskneš **Zveřejnit na GitHub**:
 - Tlačítko **Zveřejnit na GitHub** odešle revizi jako člověk, který ho stiskl,
   přes jeho vlastní přihlášení ke GitHubu: brána vydání je jeho, a tak je jeho
   i revize. Zveřejnění, za kterým nestojí žádný člověk, je automatizace, a ta
-  nikdy neschvaluje: Ship pak odejde jako `COMMENT` a na Control Center
-  Connect se příspěvek označí předponou `**Control Center** (for @login):`.
+  nikdy neschvaluje: Ship pak odejde jako `COMMENT` a zmínky @ v nálezech jsou neúčinné, takže příspěvek nikoho neupozorní. Příspěvek zveřejňuje bot, kromě sdílené aplikace Control Center Connect, pokud provozovatel Connectu tuto instalaci na seznam neuvedl: pak odejde přes přihlášení odpovědné osoby, pod jejím jménem a s předponou `**Control Center** (for @login):`. Server nebo pracovní prostor s vlastní aplikací GitHub App příspěvek vždy zveřejní jako bot. Agent, který volá nástroj MCP, smí zveřejnit jen revizi svého vlastního pracovního prostoru.
 
 Zveřejnění deklaruje třídu akce `prPublish`, takže ho úzké místo guardrailů
 hlídá jako každou měnící akci: ve výchozím stavu se zeptá a když není

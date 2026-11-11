@@ -9,7 +9,8 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// `ide.detectEditors` + `ide.openPrInEditor` ops in the host catalog. A
 /// headless server registers neither op, so [detectEditors] returns an empty
 /// list there and the open-in-IDE button hides itself — exactly like the
-/// desktop button on an unsupported platform.
+/// desktop button on an unsupported platform. All three ops are the server
+/// owner's: anyone else is refused `server_owner_required`.
 class RemoteIdeRepository {
   /// Creates a [RemoteIdeRepository] over [_client].
   RemoteIdeRepository(this._client);
@@ -71,28 +72,6 @@ class RemoteIdeRepository {
       'repo_id': ?repoId,
       if (title.isNotEmpty) 'title': title,
     });
-  }
-
-  /// Resolves PR #[prNumber]'s space worktree on the server (creating +
-  /// provisioning it if needed) and returns its absolute path WITHOUT launching
-  /// an editor. Prefer [openPrInEditor] from a thin client — process launch
-  /// belongs on the host. This is the SAME worktree the workbench edits; there
-  /// is no separate `pr_worktrees/` checkout.
-  Future<String> ensureWorktree({
-    required String repoFullName,
-    required int prNumber,
-    required String prExternalId,
-    String? repoId,
-    String title = '',
-  }) async {
-    final data = await _client.call('ide.ensureWorktree', {
-      'repo_full_name': repoFullName,
-      'pr_number': prNumber,
-      'pr_external_id': prExternalId,
-      'repo_id': ?repoId,
-      if (title.isNotEmpty) 'title': title,
-    });
-    return data['path'] as String;
   }
 
   IdeEditor _editor(Map<String, dynamic> w) => IdeEditor(

@@ -1,18 +1,19 @@
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
-import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_attended_start.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
-import 'package:control_center/features/environments/presentation/widgets/environment_host_setup.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_section.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_start.dart';
 import 'package:control_center/features/environments/providers/environment_actions.dart';
 import 'package:control_center/features/environments/providers/environment_pr_providers.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_space_provider.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -61,29 +62,31 @@ mixin PrEnvironmentStarting<T extends ConsumerStatefulWidget>
     required Map<String, dynamic> options,
   }) async {
     final toasts = CcToastScope.maybeOf(context);
-    final followUp = HostSetupFollowUp.of(context, ref);
+    final l10n = AppLocalizations.of(context);
+    final owner = ref.read(canUseHostProvider);
+    final attendance = AttendedStart.of(context, ref);
     setState(() => starting = true);
     try {
       final spaceId = await ref.read(prSpaceProvider(PrSpaceKey.of(pr)).future);
       final key = (workspaceId: workspaceId, spaceId: spaceId);
       await _provisioned(spaceId);
-      SpaceEnvironment? started;
-      await ref.read(environmentActionsProvider(key).notifier).run('start', (
-        repository,
-      ) async {
-        started = await repository.ensure(
-          key.workspaceId,
-          key.spaceId,
-          definitionId: definitionId,
-          options: options,
-        );
-      });
-      if (started != null) {
-        await followUp.after(key, started!);
-      }
+      final actions = ref.read(environmentActionsProvider(key).notifier);
+      await attendance.follow(
+        key,
+        () => actions.run(
+          'start',
+          (repository) => repository.ensure(
+            key.workspaceId,
+            key.spaceId,
+            definitionId: definitionId,
+            options: options,
+            attended: attendance.attended,
+          ),
+        ),
+      );
     } on Object catch (error) {
       toasts?.show(
-        environmentFailureMessage(error),
+        environmentRefusalMessage(l10n, error, owner: owner),
         variant: CcToastVariant.danger,
       );
     } finally {

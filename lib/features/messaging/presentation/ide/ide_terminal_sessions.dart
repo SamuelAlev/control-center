@@ -22,17 +22,10 @@ import 'package:flutter/foundation.dart';
 /// sidebar's TERMINALS mirror ([mirrorsFor]).
 class IdeTerminalSessions extends ChangeNotifier {
   /// Creates the sessions over the app's terminal registry.
-  IdeTerminalSessions({
-    required this._registry,
-    required this._registryState,
-    String Function()? mintSessionId,
-  }) : _mintSessionId =
-           mintSessionId ??
-           (() => 'ide-terminal-${DateTime.now().microsecondsSinceEpoch}');
+  IdeTerminalSessions({required this._registry, required this._registryState});
 
   final TerminalRegistryNotifier Function() _registry;
   final TerminalRegistryState Function() _registryState;
-  final String Function() _mintSessionId;
 
   /// Terminal controllers claimed by live tabs of the active layout.
   final Map<EditorTab, TerminalSessionController> _claims = {};
@@ -85,16 +78,20 @@ class IdeTerminalSessions extends ChangeNotifier {
   }
 
   /// Begins claiming a session for [tab]: true exactly once per unclaimed,
-  /// startable tab, so the caller schedules one [completeClaim].
+  /// startable tab that names its session, so the caller schedules one
+  /// [completeClaim].
   bool beginClaim(EditorTab tab) =>
-      !_claims.containsKey(tab) && !awaitsStart(tab) && _claiming.add(tab);
+      tab.args['termSessionId'] is String &&
+      !_claims.containsKey(tab) &&
+      !awaitsStart(tab) &&
+      _claiming.add(tab);
 
   /// Lands the claim [beginClaim] started for [tab] in [spaceId].
   ///
   /// The tab carries its session id in args (minted at tab creation and
   /// round-tripped through the persisted layout), so a tab restored after a
   /// space switch re-claims its kept session — shell, buffer and
-  /// subscriptions intact. Legacy snapshots without the arg mint a fresh id.
+  /// subscriptions intact.
   ///
   /// [stillOpen] false (the tab closed while the claim was deferred) kills
   /// the session instead. [onShellExit] is told when the claimed shell exits.
@@ -106,7 +103,7 @@ class IdeTerminalSessions extends ChangeNotifier {
     required bool stillOpen,
     required void Function(String sessionId) onShellExit,
   }) {
-    final sessionId = tab.args['termSessionId'] as String? ?? _mintSessionId();
+    final sessionId = tab.args['termSessionId']! as String;
     // The terminal opens at the conversation root (`conversations/<spaceId>`),
     // resolved from the space id by the view/server. The session id stays
     // unique per tab so each terminal gets its own sandbox session.
@@ -267,8 +264,8 @@ class IdeTerminalSessions extends ChangeNotifier {
       // An environment process keeps its name until it titles itself.
       return tab.label;
     }
-    // A constant default (NOT tab.label): a persisted snapshot from before
-    // the label fix would otherwise leak a stale "New terminal" forever.
+    // A constant default (NOT tab.label): the persisted label is a
+    // placeholder, never the shell's name.
     return (kept == null || kept.isEmpty) ? l10n.terminal : kept;
   }
 

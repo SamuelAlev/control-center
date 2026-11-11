@@ -2,7 +2,7 @@
 title: Provisioning uživatelů přes SCIM
 description: Nech IdP automaticky zakládat, aktualizovat a deprovisionovat účty Control Center.
 slug: cs-CZ/prirucka/navody/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Tenhle návod použij, když chceš řídit životní cyklus — odchod musí přístup
@@ -33,8 +33,9 @@ protokol, který na tohle používají IdP (Okta, Entra ID a další).
    - **Ověření**: `Authorization: Bearer <token>`
    - **Id uživatele**: `userName` (e-mail) nebo `externalId` — obojí se shoduje
 4. Vyzkoušej to na jednom uživateli: pošli ho z IdP a ověř, že se objeví
-   (vytvoření přes SCIM připne na účet `externalId` poskytovatele, stejné
-   připnutí jako při prvním přihlášení přes SSO).
+   (vytvoření přes SCIM zapíše `externalId` poskytovatele na účet, podle něhož
+   pozdější volání SCIM účet najdou), pak nech tuto osobu přihlásit se přes SSO,
+   než to nasadíš všem.
 
 ## Co deprovisioning udělá
 
@@ -54,6 +55,7 @@ potřebují novou pozvánku, nebo politiku automatického členství při přihl
 
 ## Řešení problémů
 
+- **Zřízená osoba je odmítnuta se zprávou „This account is already linked to a different SSO identity“** — známé omezení: účet, který SCIM vytvořil s `externalId`, zůstane svázaný s tímto id a první přihlášení přes SSO k němu je odmítnuto. Dokud to nebude opraveno, zřizuj bez `externalId`, nebo nech účet vytvořit JIT provisioning při prvním přihlášení a na deprovisioning používej SCIM.
 - **401 u každého volání** — token se změnil; vygeneruj ho znovu a aktualizuj IdP.
 - **Na endpoint se nedá dostat** — tunel neběží, nebo je server jen přes
   relé. SCIM potřebuje přímé HTTPS; JIT funguje dál bez ohledu na to.

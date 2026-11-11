@@ -8,6 +8,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:control_center/features/sandboxing/presentation/terminal_panel.dart';
 import 'package:control_center/features/sandboxing/presentation/terminal_session_controller.dart';
@@ -32,6 +33,13 @@ class _FakeChannel implements RemoteRpcChannelPort {
   /// When set, `terminal.spawn` replies with this RPC error code instead of a
   /// session id (used to exercise the "unavailable" / generic-error paths).
   int? spawnErrorCode;
+
+  /// The `data` of the spawn refusal, when [spawnErrorCode] is set.
+  Map<String, dynamic>? spawnErrorData;
+
+  /// The backend `terminal.spawn` reports the shell actually got (omitted
+  /// when null, as from a server that predates the field).
+  String? spawnBackend;
 
   /// When true, `terminal.spawn` never replies — keeps the panel in its
   /// booting state for assertions on the pre-boot render.
@@ -73,7 +81,11 @@ class _FakeChannel implements RemoteRpcChannelPort {
           _incoming.add({
             'jsonrpc': '2.0',
             'id': id,
-            'error': {'code': code, 'message': 'terminal unavailable'},
+            'error': {
+              'code': code,
+              'message': 'terminal unavailable',
+              'data': ?spawnErrorData,
+            },
           });
         } else if (!hangSpawn) {
           spawnCount++;
@@ -81,7 +93,10 @@ class _FakeChannel implements RemoteRpcChannelPort {
             'jsonrpc': '2.0',
             'id': id,
             'result': {
-              'data': {'session_id': 'fake-session-$spawnCount'},
+              'data': {
+                'session_id': 'fake-session-$spawnCount',
+                'backend': ?spawnBackend,
+              },
             },
           });
         }
@@ -158,6 +173,19 @@ class _FakeChannel implements RemoteRpcChannelPort {
     });
   }
 
+  /// Pushes the output subscription's opening `{can_drive}` frame: whether
+  /// this person may type into, resize or stop the terminal.
+  void pushDriveRight({required bool canDrive}) {
+    _incoming.add({
+      'jsonrpc': '2.0',
+      'method': 'sub/snapshot',
+      'params': {
+        'subscriptionId': 'fake-sub-$_outputSubscriptions',
+        'data': {'can_drive': canDrive},
+      },
+    });
+  }
+
   /// Pushes [title] as a foreground-process title event on the fake
   /// `terminal.titles` subscription — the shape the server's `ps` polling
   /// emits when the PTY's foreground process group changes.
@@ -175,14 +203,18 @@ class _FakeChannel implements RemoteRpcChannelPort {
   /// Pushes the `sub/error` frame the host sends when a watch query fails —
   /// [code] `notFound` is what an unknown terminal session id yields after a
   /// `cc_server` restart.
-  void pushSubError(String subscriptionId, int code) {
+  void pushSubError(
+    String subscriptionId,
+    int code, {
+    Map<String, dynamic> data = const {'kind': 'stream_error'},
+  }) {
     _incoming.add({
       'jsonrpc': '2.0',
       'method': 'sub/error',
       'params': {
         'subscriptionId': subscriptionId,
         'code': code,
-        'data': {'kind': 'stream_error'},
+        'data': data,
       },
     });
   }
@@ -196,10 +228,15 @@ class _FakeChannel implements RemoteRpcChannelPort {
   }
 }
 
-Widget _terminalWrap(Widget child, {RemoteRpcClient? rpcClient}) {
+Widget _terminalWrap(
+  Widget child, {
+  RemoteRpcClient? rpcClient,
+  bool canUseHost = true,
+}) {
   final client = rpcClient ?? (RemoteRpcClient(_FakeChannel())..start());
   return ProviderScope(
     overrides: [
+      canUseHostProvider.overrideWithValue(canUseHost),
       activeWorkspaceProvider.overrideWith((ref) => null),
       activeRepoProvider.overrideWith((ref) => null),
       prReviewRepositoryProvider.overrideWith(
@@ -547,6 +584,129 @@ void main() {
   });
 
   group('TerminalPanel against a server with no terminal ops', () {
+    testWidgets('a refused host shell is explained, with nothing to retry', (
+      tester,
+    ) async {
+      await setLargeViewport(tester);
+      final space = _FakeChannel()..spawnErrorCode = RpcErrorCodes.unauthorized;
+      final client = RemoteRpcClient(space)..start();
+
+      await tester.pumpWidget(
+        _terminalWrap(
+          const TerminalPanel(
+            session: TerminalSession(
+              sessionId: 'host-session',
+              spaceId: 'chan-1',
+              workspaceId: 'ws-1',
+              backend: 'none',
+            ),
+          ),
+          rpcClient: client,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('only the server owner can open one'),
+        findsOneWidget,
+      );
+      expect(find.text('terminal unavailable'), findsNothing);
+      expect(find.text('Retry'), findsNothing);
+    });
+
+    for (final (kind, text, retry) in const [
+      (
+        'forge_cannot_read',
+        "Your forge account can't read this repository.",
+        false,
+      ),
+      (
+        'forge_unconfirmed',
+        "Couldn't confirm your forge access. Try again.",
+        true,
+      ),
+    ]) {
+      testWidgets('a forge refusal is worded by its kind ($kind)', (
+        tester,
+      ) async {
+        await setLargeViewport(tester);
+        final space = _FakeChannel()
+          ..spawnErrorCode = RpcErrorCodes.unauthorized
+          ..spawnErrorData = {'kind': kind};
+        final client = RemoteRpcClient(space)..start();
+
+        await tester.pumpWidget(
+          _terminalWrap(
+            const TerminalPanel(session: session),
+            rpcClient: client,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(text), findsOneWidget);
+        expect(find.textContaining('server owner'), findsNothing);
+        expect(find.text('terminal unavailable'), findsNothing);
+        expect(find.text('Retry'), retry ? findsOneWidget : findsNothing);
+      });
+    }
+
+    testWidgets('an unauthorized sandboxed spawn keeps the server message', (
+      tester,
+    ) async {
+      await setLargeViewport(tester);
+      final space = _FakeChannel()..spawnErrorCode = RpcErrorCodes.unauthorized;
+      final client = RemoteRpcClient(space)..start();
+
+      await tester.pumpWidget(
+        _terminalWrap(const TerminalPanel(session: session), rpcClient: client),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('terminal unavailable'), findsOneWidget);
+      expect(find.textContaining('server owner'), findsNothing);
+    });
+
+    testWidgets('any other spawn failure keeps the server message and retry', (
+      tester,
+    ) async {
+      await setLargeViewport(tester);
+      final space = _FakeChannel()
+        ..spawnErrorCode = RpcErrorCodes.internalError;
+      final client = RemoteRpcClient(space)..start();
+
+      await tester.pumpWidget(
+        _terminalWrap(const TerminalPanel(session: session), rpcClient: client),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('terminal unavailable'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+
+    for (final canUseHost in const [false, true]) {
+      testWidgets('a sandboxed shell is labelled for someone without host '
+          'access (host access: $canUseHost)', (tester) async {
+        await setLargeViewport(tester);
+        final space = _FakeChannel()..spawnBackend = 'native';
+        final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
+
+        await tester.pumpWidget(
+          _terminalWrap(
+            const TerminalPanel(session: session),
+            rpcClient: client,
+            canUseHost: canUseHost,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Sandboxed'),
+          canUseHost ? findsNothing : findsOneWidget,
+        );
+      });
+    }
+
     testWidgets('shows the "runs on the server host" placeholder', (
       tester,
     ) async {
@@ -862,6 +1022,131 @@ void main() {
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
+    });
+
+    testWidgets('a terminal this person may only watch takes no input', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
+      try {
+        await setLargeViewport(tester);
+        final space = _FakeChannel();
+        final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
+        await tester.pumpWidget(
+          _terminalWrap(
+            const TerminalPanel(
+              session: TerminalSession(
+                sessionId: 'watch-session',
+                spaceId: 'chan-1',
+                workspaceId: 'ws-1',
+                attachSessionId: 'env-pty',
+              ),
+            ),
+            rpcClient: client,
+          ),
+        );
+        await tester.pumpAndSettle();
+        space.pushDriveRight(canDrive: false);
+        space.pushOutput(utf8.encode('watching'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Read-only'), findsOneWidget);
+        expect(
+          find.textContaining('You can watch this terminal.'),
+          findsOneWidget,
+        );
+        expect(
+          tester.widget<TerminalView>(find.byType(TerminalView)).readOnly,
+          isTrue,
+        );
+        await tester.tap(find.byType(TerminalView), warnIfMissed: false);
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyA);
+        await tester.pump();
+        expect(space.writes, isEmpty);
+        // Let the tap's double-tap timer expire.
+        await tester.pump(const Duration(seconds: 1));
+
+        // Closing the view leaves someone else's terminal running.
+        await tester.pumpWidget(
+          _terminalWrap(const SizedBox(), rpcClient: client),
+        );
+        await tester.pumpAndSettle();
+        expect(space.killCount, 0);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    for (final (data, text) in [
+      (
+        {'kind': 'repo_grant_required', 'level': 'read'},
+        "You don't have read access to a repository this space uses. A "
+            'workspace admin can grant it.',
+      ),
+      (
+        {'kind': 'forge_cannot_read', 'forge': 'github'},
+        "Your GitHub account can't read a repository this space uses.",
+      ),
+    ]) {
+      testWidgets('a watch the space refuses shows the space notice '
+          '(${data['kind']})', (tester) async {
+        await setLargeViewport(tester);
+        final space = _FakeChannel();
+        final client = RemoteRpcClient(space)..start();
+        closePanelAfterTest(tester, client);
+        var exits = 0;
+        await tester.pumpWidget(
+          _terminalWrap(
+            TerminalPanel(
+              session: const TerminalSession(
+                sessionId: 'watch-session',
+                spaceId: 'chan-1',
+                workspaceId: 'ws-1',
+                attachSessionId: 'env-pty',
+              ),
+              onShellExit: () => exits++,
+            ),
+            rpcClient: client,
+          ),
+        );
+        await tester.pumpAndSettle();
+        space.pushSubError(
+          'fake-sub-1',
+          RpcErrorCodes.unauthorized,
+          data: data,
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(text), findsOneWidget);
+        expect(find.byType(TerminalView), findsNothing);
+        expect(find.textContaining('subscription error'), findsNothing);
+        // A refusal is not the shell ending: the tab stays open.
+        expect(exits, 0);
+        expect(space.killCount, 0);
+      });
+    }
+
+    testWidgets('a terminal this person may drive shows no read-only note', (
+      tester,
+    ) async {
+      await setLargeViewport(tester);
+      final space = _FakeChannel();
+      final client = RemoteRpcClient(space)..start();
+      closePanelAfterTest(tester, client);
+      await tester.pumpWidget(
+        _terminalWrap(const TerminalPanel(session: session), rpcClient: client),
+      );
+      await tester.pumpAndSettle();
+      space.pushDriveRight(canDrive: true);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Read-only'), findsNothing);
+      expect(
+        tester.widget<TerminalView>(find.byType(TerminalView)).readOnly,
+        isFalse,
+      );
     });
 
     testWidgets('a drag selection takes focus so ⌘C copies it', (tester) async {

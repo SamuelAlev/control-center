@@ -2,7 +2,7 @@
 title: Teruskan port dari terminal
 description: Jangkau server dev yang dijalankan di Terminal (VM) atau shell host — dari mesin Anda, dari Browser (VM), dari Android, di jaringan Anda, atau di bawah domain dev dengan HTTPS.
 slug: id-ID/panduan-pengguna/panduan-praktis/port-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Server yang Anda jalankan di terminal sebuah percakapan hanya dipublikasikan untuk **space itu**. Panel port mendeteksi pendengar yang dijalankan aplikasi ini di sana, memetakannya, dan memberi Anda alamat untuk setiap tempat yang mungkin Anda gunakan untuk menjangkaunya. Dua space dapat sama-sama mendengarkan di `5173`; peta keduanya tidak pernah tercampur.
@@ -11,7 +11,7 @@ Tidak ada apa pun di sini yang membuka mesinnya: setiap jalur dibuat oleh server
 
 ## Lihat apa yang sedang mendengarkan
 
-1. Buka **Terminal (VM)** percakapan atau shell host (di sebuah space atau di halaman PR).
+1. Di editor percakapan (di sebuah space atau di halaman PR), buka **Terminal** dari menu `+`: di bawah **Mesin** untuk shell di VM percakapan, atau di bawah **Alat** untuk terminal di server. Hanya pemilik server yang dapat membuka shell host; terminal milik orang lain berada dalam sandbox.
 2. Jalankan server Anda — `pnpm dev`, `python -m http.server 8000`, apa saja.
 3. Dalam beberapa detik, **ikon plug** di sudut kanan atas terminal
    akan mendapat titik. Klik ikon itu.
@@ -121,6 +121,13 @@ mendengarkan* sampai server kembali — sedangkan penerusan otomatis menghilang
 ketika portnya hilang. Pada shell host Anda juga dapat menetapkan port lokal
 yang berbeda.
 
+Mengubah penerusan memerlukan izin tulis di setiap repositori yang diekspos
+space. Dengan akses baca, Anda tetap dapat melihat port-portnya, dan panel
+menampilkan "Mengubah port ini memerlukan akses tulis ke setiap repositori di ruang ini." sebagai pengganti **Tambah port**. Lihat
+[Siapa yang bisa menonton dan siapa yang bisa mengendalikan](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/#siapa-yang-dapat-menonton-dan-siapa-yang-dapat-mengemudikan).
+
+Terminal yang dibuka seseorang untuk dirinya sendiri tetap hanya miliknya: bagi orang lain, daftar port dan perubahan port pada terminal itu dijawab seolah sesinya tidak ada, sama seperti sesinya sendiri. Terminal yang dibagikan dalam space mengikuti aturan space di atas.
+
 ## Bagaimana semuanya tetap terkurung
 
 Port dikunci berdasarkan ruang kerja dan space. Peta port milik hypervisor
@@ -131,9 +138,9 @@ sistem tamu, dan tunnel balik yang dijaga server tetap terbuka untuk Browser
 (VM) dan Android. Shell host tidak pernah memindai seluruh mesin. Tidak ada
 pendengar yang pernah dibuat di dalam sistem tamu yang tidak diletakkan server
 di sana, dan semuanya dibongkar bersama terminal atau rig. Desainnya dijelaskan
-di [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/#ports-without-holes);
+di [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/#port-tanpa-lubang);
 port yang dicadangkan dan aturan domain yang tepat ada di
-[referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/#ports-and-dev-domains).
+[referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/#port-dan-domain-dev).
 
 ## Terkait
 

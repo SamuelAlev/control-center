@@ -2,7 +2,7 @@
 title: Sparuj urządzenie
 description: Sparuj telefon (albo drugą przeglądarkę lub komputer) z serwerem Control Center, aby śledzić flotę zdalnie.
 slug: pl-PL/podrecznik/poradniki/parowanie-urzadzenia
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Ten poradnik pokazuje, jak sparować telefon z Control Center, aby czytać
@@ -60,8 +60,7 @@ Nie ma etapu oczekiwania i zatwierdzania: utworzone urządzenie jest aktywne od
 chwili powstania, a brama połączenia sprawdza tylko, czy poświadczenie jest
 aktywne i nie wygasło. Traktuj kod QR i klucz parowania jak hasło i odwołuj
 wszystko, czego nie zamierzałeś przekazać. Zarówno połączenia bezpośrednie, jak
-i przez przekaźnik wymagają szyfrowania end-to-end; starsi klienci nie mogą
-przejść na tekst jawny RPC.
+i przez przekaźnik wymagają szyfrowania end-to-end; nie ma tekstu jawnego RPC.
 :::
 
 ## Zarządzaj sparowanymi urządzeniami
@@ -76,8 +75,7 @@ perspektywy urządzenia jest natychmiastowe i nieodwracalne.
 
 Poświadczenia utworzone w tym panelu mają ograniczony czas ważności: wygasają 30
 dni po wydaniu, a po tym czasie brama połączenia je odrzuca. Poświadczenie
-utworzone poleceniem `cc_server pair` w wierszu poleceń **nie ma żadnego terminu
-ważności** — odwołaj je ręcznie, gdy maszyna, dla której było przeznaczone,
+utworzone poleceniem `cc_server pair` w wierszu poleceń wygasa tak samo; uruchom `pair` ponownie, aby wydać nowe — odwołaj je ręcznie, gdy maszyna, dla której było przeznaczone,
 zostanie wycofana.
 
 ## Przełączaj obszary robocze z telefonu

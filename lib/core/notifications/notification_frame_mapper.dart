@@ -81,11 +81,6 @@ AppNotification? mapNotificationFrame(
       return _prThreadResolved(p, l10n);
   }
   switch (method) {
-    // No longer pushed — an agent's turn notifies through `message_received`
-    // once the reply is persisted. Kept so feed rows recorded before that
-    // still render.
-    case 'notifications/agent_run_completed':
-      return _agentRunCompleted(p, l10n);
     case 'notifications/pr_published':
       return _prPublished(p, l10n);
     case 'notifications/pr_merged':
@@ -156,7 +151,7 @@ String _spaceDeepLink(
 
 /// Deep-links to the PR detail screen when the frame identifies the PR
 /// (`repo_owner`/`repo_name`/`pr_number`), falling back to the PR list so a
-/// partial frame from an older server still lands somewhere useful.
+/// partial frame still lands somewhere useful.
 String _prDeepLink(
   String? workspaceId,
   Map<String, dynamic> p, {
@@ -199,10 +194,8 @@ bool _isMutedRepo(Map<String, dynamic> p, Set<String> muted) {
 /// own vocabulary (a login, not a Control Center user id — the pollers only
 /// ever learn the forge identity).
 ///
-/// Deliberately a list of existing keys rather than one renamed `actor_login`:
-/// these names are already on the wire and already in stored feed rows, so
-/// renaming them would silently stop matching every notification recorded
-/// before the change.
+/// A list of the per-event keys rather than one shared `actor_login`: each
+/// frame names its actor in that event's own terms.
 const _actorLoginKeys = <String>[
   // Who merged the pull request (`external_pr_merged`).
   'merged_by_login',
@@ -269,9 +262,8 @@ AppNotification _prReadyToMerge(Map<String, dynamic> p, AppLocalizations l10n) {
 AppNotification _prMergeBlocked(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   final title = p['pr_title'] as String? ?? '';
-  // `reason` is `PrBlockReason.name` on the wire. An unrecognised value (an
-  // older or newer server) falls to the generic body rather than rendering an
-  // enum name at the operator.
+  // `reason` is `PrBlockReason.name` on the wire. An unrecognised value falls
+  // to the generic body rather than rendering an enum name at the operator.
   final body = switch (p['reason'] as String?) {
     'conflicts' => l10n.notificationPrMergeBlockedBodyConflicts(title),
     'behind' => l10n.notificationPrMergeBlockedBodyBehind(title),
@@ -444,25 +436,6 @@ AppNotification _prThreadResolved(
   );
 }
 
-AppNotification? _agentRunCompleted(
-  Map<String, dynamic> p,
-  AppLocalizations l10n,
-) {
-  final conversationId = p['conversation_id'] as String?;
-  if (conversationId == null) {
-    return null;
-  }
-  final workspaceId = p['workspace_id'] as String?;
-  return AppNotification(
-    category: NotificationCategory.agentRunCompleted,
-    title: l10n.notificationAgentFinished,
-    body: l10n.runCompleted,
-    route: _spaceDeepLink(workspaceId, conversationId),
-    workspaceId: workspaceId,
-    spaceId: conversationId,
-  );
-}
-
 AppNotification _prPublished(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String;
   return AppNotification(
@@ -588,8 +561,8 @@ AppNotification _reviewStale(Map<String, dynamic> p, AppLocalizations l10n) {
 /// PRD 16 §7(b): when the ticket is assigned to a human
 /// (`assignee_type == 'user'`) and that assignee is known, only the actual
 /// assignee is pinged — assigning a ticket to a teammate must not ping the
-/// whole workspace. An agent assignment (or an older frame with no
-/// `assignee_type`) keeps today's unfiltered behaviour.
+/// whole workspace. An agent assignment (or a frame with no `assignee_type`)
+/// is unfiltered.
 AppNotification _ticketAssigned(Map<String, dynamic> p, AppLocalizations l10n) {
   final workspaceId = p['workspace_id'] as String?;
   final ticketId = p['ticket_id'] as String;
@@ -661,9 +634,8 @@ AppNotification _calendarAuthExpired(
 /// knows they took it, so the notification goes to everyone EXCEPT them.
 ///
 /// A release carries no controller (the event does not record who let go), so
-/// it is unfiltered — as is any frame from a server that predates the
-/// `controller` param, or one seen before identity finishes loading. Both
-/// degrade to "notify", never to a silently dropped machine event.
+/// it is unfiltered — as is a frame seen before identity finishes loading,
+/// which degrades to "notify", never to a silently dropped machine event.
 ///
 /// A rig is not a destination of its own (its live view is a TAB in the
 /// space or PR it serves) and the event does not name a conversation, so the
@@ -674,8 +646,7 @@ AppNotification _rigControlChanged(
   AppLocalizations l10n,
 ) {
   final workspaceId = p['workspace_id'] as String?;
-  final controller = p['controller'] as String?;
-  final held = p['held'] as bool? ?? (controller != null);
+  final held = p['held'] == true;
   return AppNotification(
     category: NotificationCategory.rigStatusChanged,
     title: held ? l10n.notificationRigTakenOver : l10n.notificationRigReleased,
@@ -721,12 +692,16 @@ AppNotification _rigClosed(Map<String, dynamic> p, AppLocalizations l10n) {
 ///
 /// Carries the wait so the OS notification keeps one identity for its whole
 /// life (reminders replace it, the wait's end withdraws it) and, for an
-/// approval, offers Approve and Deny. A frame without a `wait_id` (an older
-/// server) still notifies, without either.
+/// approval, offers Approve and Deny. A frame without a `wait_id` is not a
+/// wait and is dropped.
 AppNotification? _agentAwaitingInput(
   Map<String, dynamic> p,
   AppLocalizations l10n,
 ) {
+  final wait = agentWaitOf(p);
+  if (wait == null) {
+    return null;
+  }
   final workspaceId = p['workspace_id'] as String?;
   final spaceId = p['space_id'] as String?;
   final name = (p['agent_name'] as String? ?? '').trim();
@@ -758,7 +733,7 @@ AppNotification? _agentAwaitingInput(
     ),
     workspaceId: workspaceId,
     spaceId: spaceId,
-    wait: agentWaitOf(p),
+    wait: wait,
   );
 }
 
@@ -796,8 +771,8 @@ AppNotification? _agentActionBlocked(
   final name = (p['agent_name'] as String? ?? '').trim();
   final action = (p['summary'] as String? ?? '').trim();
   final reason = (p['reason'] as String? ?? '').trim();
-  // What was refused, then why. Either half can be missing — an older server,
-  // or a guard with nothing to summarize — so the other still carries the row.
+  // What was refused, then why. Either half can be missing — a guard with
+  // nothing to summarize — so the other still carries the row.
   final body = action.isEmpty
       ? reason
       : reason.isEmpty

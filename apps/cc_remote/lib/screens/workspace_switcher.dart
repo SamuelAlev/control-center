@@ -166,6 +166,7 @@ class WorkspaceSwitcherScreen extends ConsumerWidget {
           return CcEmptyState(
             icon: AppIcons.layers,
             message: AppLocalizations.of(context).noWorkspacesYet,
+            description: AppLocalizations.of(context).noWorkspacesYetHint,
           );
         }
         return ListView(

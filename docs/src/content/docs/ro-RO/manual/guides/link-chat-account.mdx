@@ -2,7 +2,7 @@
 title: Leagă contul tău Slack
 description: Dovedește că o identitate Slack este a ta, astfel încât agenții să acționeze pe baza mesajelor tale, iar munca ta să ți se atribuie.
 slug: ro-RO/manual/ghiduri-practice/leaga-cont-de-chat
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Acest ghid îți arată cum să legi identitatea ta de chat de utilizatorul tău
@@ -29,8 +29,8 @@ Legarea are nevoie de ambele părți: trimiterea unui cod din Slack dovedește
 contul Slack, iar confirmarea lui în Control Center dovedește că acel cont este
 al tău.
 
-1. Mergi la **Setări → Spațiu de lucru → Profil și identitate** și derulează
-   până la cardul **Conturi de chat legate**
+1. Mergi la **Setări → Tu → Profil** și găsește cardul
+   **Conturi de chat legate**
 2. În blocul Slack, apasă **Leagă-mi contul Slack**. Dialogul afișează un cod
    de unică folosință, de exemplu:
 
@@ -49,7 +49,7 @@ K7M2QP
    funcționează; apasă **Obține un cod nou** ca să încerci din nou
 
 Închiderea dialogului nu pierde o revendicare. Un cod care sosește mai târziu
-așteaptă pe rândul **Leagă-mi contul Slack** din pagina ta de profil, cu
+așteaptă pe rândul **Leagă-mi contul Slack** din acel card, cu
 aceleași **Confirmă** și **Refuză**.
 
 De ce pasul de confirmare: un cod citit peste umărul tău și trimis din contul
@@ -79,6 +79,8 @@ Dacă profilul tău Slack conține un email confirmat care corespunde emailului
 verificat al unui utilizator Control Center ce este **deja membru al acestui spațiu de lucru**,
 puntea te leagă prima dată când vorbești cu ea. Nu este nevoie de cod.
 
+Partea Control Center se consideră verificată când adresa a fost setată de autentificarea unică sau de SCIM, ori când proprietarul serverului a confirmat-o în **Setări → Server → Persoane**. O adresă pe care ai introdus-o în propriul profil nu este verificată, așa că nu leagă nimic până când proprietarul o confirmă; între timp folosește fluxul cu cod.
+
 Ambele jumătăți contează: potrivirea emailului dovedește identitatea, dar numai
 apartenența acordă acces, așa că un străin al cărui email se întâmplă să existe
 pe server nu se leagă de nimic. Lista arată cum a fost făcută fiecare legătură
@@ -89,13 +91,13 @@ divulga adresa, iar fluxul cu cod este singura cale.
 
 ## Vezi cine este legat
 
-Lista ține de administrarea spațiului de lucru, așa că se află pe cealaltă
-jumătate a suprafeței: **Setări → Spațiu de lucru → General → Punți de chat →
+Lista ține de administrarea spațiului de lucru, așa că se află în cardul de administrare:
+**Setări → Spațiu de lucru → Integrări → Punți de chat →
 Conturi legate**. Ea enumeră fiecare membru legat din spațiul de lucru, împreună
 cu contul Slack căruia îi corespunde fiecare și cu modul în care a fost făcută
 legătura.
 
-Starea ta se află pe pagina de profil: rândul **Leagă-mi contul Slack** scrie
+Starea ta se află în **Setări → Tu → Profil**: rândul **Leagă-mi contul Slack** scrie
 „Legat de _your-slack-id_” odată ce ești legat și îți spune să faci legarea când
 nu ești.
 

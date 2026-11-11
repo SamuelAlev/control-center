@@ -2,7 +2,7 @@
 title: Quick start
 description: Install Control Center, configure one agent and watch it work on your repo.
 slug: en-GB/manual/quick-start
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 This is the shortest complete path from nothing to an agent running against your own code. Follow it in order; every step depends on the one before it.
@@ -29,7 +29,7 @@ Onboarding runs its steps in order — there is no skipping ahead. The first one
 
 1. **Sign-in** (server owner only): choose how this server signs people in to GitHub, Google Calendar and Linear — **Use Control Center's apps**, **Use my own apps**, or **Use a custom Connect server**. With your own apps, **Create my GitHub App** sets up GitHub in one step. You can change this later in **Settings → Server → Single sign-on**.
 2. **Connect**: sign in to GitHub, or paste a GitLab or Bitbucket token. The credential is stored on the server, attached to your account.
-3. **Workspace**: name your first workspace and optionally pick a logo. Creating it seeds five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — and the built-in pipeline templates.
+3. **Workspace** (server owner only): name your first workspace and optionally pick a logo. Anyone else waits on **You are not in a workspace yet** until the owner creates one for them or a workspace admin invites them. Creating it seeds six agents — a CEO plus `qa`, `architect`, `engineer`, `librarian` and `content-synthesizer` — and the built-in pipeline templates.
 4. **Sandbox**: records a sandboxing preference. Either choice lets you continue.
 5. **Adapter**: pick the adapter and model agents should default to. Choose **Control Center (built-in)**, then use the provider picker that appears to sign in to a model provider — the model list stays empty until one is connected. Finishing this step also stamps the adapter and model onto the workspace's CEO agent.
 6. **Voice (optional)**: install an on-device speech model for dictation, or skip it.
@@ -37,7 +37,7 @@ Onboarding runs its steps in order — there is no skipping ahead. The first one
 Control Center then opens your workspace inbox.
 
 :::note[What bounds an agent run]
-Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend, so runs there are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/).
+Agent commands are wrapped in the host's OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on Linux. Windows has no backend. On a host without one, only the server owner's agent runs start, and they are bounded by the other layers only: the conversation's own worktree (`git worktree` on Windows; copy-on-write where `rift` ships), credentials brokered per launch and revoked at teardown and the action guardrails. Everyone else's runs are refused until the owner installs the sandbox or turns sandboxing off for everyone. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/).
 :::
 
 ## Step 3: Add a repository
@@ -61,7 +61,7 @@ On the **Settings** tab, set:
 
 Press **Save changes**.
 
-This step is not optional in practice. Only the CEO agent inherits the adapter chosen during onboarding; the four specialists are created without one. They fall back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
+This step is not optional in practice. Onboarding's adapter step sets its adapter and model on every agent that existed at the time; a workspace created later seeds all six unset. An agent without one falls back to **Control Center (built-in)** with Anthropic's default model, so they run only if you have connected an Anthropic account — and on a model you did not choose if you have.
 
 ## Step 5: Send the agent a task
 

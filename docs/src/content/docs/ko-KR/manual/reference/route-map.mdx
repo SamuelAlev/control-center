@@ -2,7 +2,7 @@
 title: 라우트 맵
 description: Control Center가 등록하는 모든 라우트를 화면 및 쿼리 매개변수와 함께 정리합니다.
 slug: ko-KR/매뉴얼/레퍼런스/라우트-맵
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## 앱 셸
@@ -11,7 +11,7 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 게이트는 **로그인한 사용자에게** forge가 하나 이상 연결되어 있고 워크스페이스가 하나 이상 존재할 때 완료됩니다.
 
-자격 증명이 없는 경우와 설정이 없는 경우는 서로 다르게 취급되며, 이를 가르는 기준은 호출자 자신의 `identity.me`에서 읽은 `users.onboarding_finished_at`입니다 — "워크스페이스가 존재함"은 아닙니다. 누군가 자신이 만들지 않은 워크스페이스에 초대되는 순간 그것은 틀린 판단이 되기 때문입니다. forge가 연결되어 있지 않으면, 온보딩을 마친 계정은 앱에 머무르고 워크스페이스 셸에 로그인으로 가는 링크가 있는 경고가 표시되며, 마치지 않은 계정은 `/onboarding`으로 갑니다. 플래그를 아직 알 수 없는 동안에는 가드가 추측하는 대신 스플래시를 붙잡고 있는데, 온보딩 밖으로 다시 리디렉션하는 일은 결코 없기 때문입니다.
+자격 증명이 없는 경우와 설정이 없는 경우는 서로 다르게 취급되며, 이를 가르는 기준은 호출자 자신의 `identity.me`에서 읽은 `users.onboarding_finished_at`입니다 — "워크스페이스가 존재함"은 아닙니다. 누군가 자신이 만들지 않은 워크스페이스에 초대되는 순간 그것은 틀린 판단이 되기 때문입니다. forge가 연결되어 있지 않으면, 온보딩을 마친 계정은 앱에 머무르고 워크스페이스 셸에 설정 → 나 → 프로필으로 가는 링크가 있는 경고가 표시되며, 마치지 않은 계정은 `/onboarding`으로 갑니다. 플래그를 아직 알 수 없는 동안에는 가드가 추측하는 대신 스플래시를 붙잡고 있는데, 온보딩 밖으로 다시 리디렉션하는 일은 결코 없기 때문입니다.
 
 ## 접두사 없는 라우트
 
@@ -65,7 +65,7 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 ## 설정 라우트
 
-`/settings`는 `/settings/you/appearance`로 리디렉션합니다. 사이드바의 설정 버튼과 `Cmd/Ctrl + ,`는 둘 다 `/settings/you/appearance`로 이동합니다.
+`/settings`는 `/settings/you/profile`로 리디렉션합니다. 사이드바의 설정 버튼과 `Cmd/Ctrl + ,`는 둘 다 `/settings/you/profile`로 이동합니다.
 
 설정 경로는 **범위**별로 네임스페이스가 나뉘며 — `you/`, `workspace/`, `server/` — 이 세그먼트가 변경이 누구에게 영향을 주는지 나타냅니다. 두 경로는 네임스페이스 도입 이전의 것으로 URL에 범위가 붙지 않습니다: `/settings/memory`와 `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 | 경로                          | 화면                                                                     |
 | ----------------------------- | ------------------------------------------------------------------------ |
-| `/settings/you/appearance`    | 테마, 언어, 타이포그래피, 편집기 테마(설정의 기본 화면)                  |
-| `/settings/you/notifications` | 이벤트별 토글, 방해 금지 시간                                            |
+| `/settings/you/profile`       | 이 서버에서의 본인 계정: 이름, 사용자 이름, 사진, 로그인(설정의 기본 화면) |
+| `/settings/you/profile?section=accounts` | 연결된 계정: 코드 호스팅, 티켓팅, 캘린더, 채팅의 본인 로그인, 그리고 채팅에서 만든 티켓 초안 |
+| `/settings/you/appearance`    | 테마, 언어, 타이포그래피, 편집기 테마 |
 | `/settings/you/audio`         | 마이크, 받아쓰기, 회의 감지, 사운드스케이프 출력                         |
+| `/settings/you/notifications` | 이벤트별 토글, 방해 금지 시간                                            |
+| `/settings/you/commits`       | 본인이 시작한 작업의 커밋에 표시되는 작성자와 본인의 커밋 서명 키        |
+| `/settings/you/desktop`       | 데스크톱 앱 전용: 트레이 아이콘, 창 닫기, 로그인 시 열기                 |
 | `/settings/you/devices`       | 페어링된 휴대폰과 원격 제어                                              |
 | `/settings/you/newsfeed`      | 피드 관리: 소스, 새로고침, 읽음 상태                                     |
+| `/settings/you/links`         | Control Center 바깥에서 온 링크가 열리는 곳                              |
 
 ### 워크스페이스
 
 | 경로                               | 화면                                                                                                |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | 이 워크스페이스의 프로필과 신원: 이름, git 작성자, 코드 호스팅, 캘린더 |
-| `/settings/workspace/general`      | 이름, 로고, 시크릿 글롭, 리뷰 동시성, 브랜치 이름 지정, 동기화 상태, 채팅 브리지, 위험 영역 |
+| `/settings/workspace/profile`      | 이 워크스페이스의 프로필과 신원: 이름, 이메일, git 작성자 |
+| `/settings/workspace/general`      | 이름, 로고, 시크릿 글롭, 리뷰 동시성, 브랜치 이름 지정, 위험 영역 |
+| `/settings/workspace/integrations` | Connect 선택, GitHub App과 자동화 토큰, 티켓팅 제공자와 자동화, 동기화 상태, 워크스페이스 자체 공급자 앱, 채팅 브리지, GIF. 각 공급자 그룹은 본인 계정의 이름을 표시하고 연결된 계정으로 연결됩니다 |
 | `/settings/workspace/meetings`     | 회의 노트 템플릿과 저장된 음성 프로필                                                               |
-| `/settings/workspace/members`      | 멤버 명단, 초대, 감사 기록. 감사 기록은 선택적 `?cursor=`로 페이지를 나눕니다                        |
+| `/settings/workspace/members`      | 멤버 명단과 초대                        |
 | `/settings/workspace/repositories` | 이 워크스페이스에 등록된 리포지토리                                                                 |
 | `/settings/workspace/environments` | 환경 정의: 스페이스가 시작할 수 있는 것과 워크트리가 실행하는 작업 |
 | `/settings/workspace/agents`       | 등록된 에이전트 아이덴티티                                                                          |
@@ -108,6 +114,8 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 | `/settings/server/rigs`        | 리그: 이 호스트가 부팅할 수 있는 것, 베이스 이미지, 사용자 지정 이미지, 실행 중인 머신 |
 | `/settings/server/sandbox`     | 샌드박스 실행 권한: 에이전트가 여러분의 리포지토리 작업 복사본에서 실행할 수 있는 프로그램 |
 | `/settings/server/diagnostics` | 진단 및 개인정보 보호: 샌드박싱, 임베딩, 로깅, 충돌 보고                 |
+| `/settings/server/people`      | 이 서버의 사람들과 각 주소의 확인 여부(서버 소유자만)                                  |
+| `/settings/server/audit`       | 감사 로그: 서버의 로그와 관리하는 워크스페이스의 로그                                  |
 | `/settings/server/backup`      | 백업 및 복원: 설치 스냅샷, 워크스페이스별 내보내기, 가져오기 및 삭제                  |
 | `/settings/server/about`       | 정보 및 업데이트                                                                      |
 

@@ -1,3 +1,4 @@
+import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_remote/providers.dart';
@@ -28,18 +29,14 @@ final remoteIdentityProvider = FutureProvider<RemoteIdentity?>((ref) async {
   );
 });
 
-/// Optional global identity labels, shared across conversation views.
-final remoteUserNamesProvider = FutureProvider<Map<String, String>>((
-  ref,
-) async {
+/// The people visible to this session, keyed by id, shared across
+/// conversation views. Live, so a rename reaches every row that names them.
+final remoteUsersProvider = StreamProvider<Map<String, UserDto>>((ref) {
   final client = ref.watch(rpcClientProvider).value;
-  if (client == null) return const {};
-  final result = await client.call('users.list', const {});
-  return {
-    for (final row in (result['users'] as List? ?? const []).whereType<Map>())
-      if (row['id'] is String)
-        row['id'] as String: (row['display_name'] as String?) ?? '',
-  };
+  if (client == null) return const Stream.empty();
+  return RemoteIdentityRepository(
+    client,
+  ).watchUsers().map((users) => {for (final user in users) user.id: user});
 });
 
 /// Membership updates immediately remove phone mutation affordances on revoke.

@@ -38,9 +38,8 @@ enum SubscriptionStatus {
 
   /// Parses the wire string; an unrecognised value maps to [error].
   ///
-  /// The fallback is what keeps a NEW server safe in front of an OLD client:
-  /// every value it does not know degrades to [error], which every surface
-  /// already renders as "usage unavailable" — a less specific reading, never a
+  /// Every value this build does not know degrades to [error], which every
+  /// surface renders as "usage unavailable" — a less specific reading, never a
   /// wrong one.
   static SubscriptionStatus fromWire(String? raw) => switch (raw) {
     'ok' => SubscriptionStatus.ok,

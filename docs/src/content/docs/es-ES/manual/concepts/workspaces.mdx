@@ -2,7 +2,7 @@
 title: Espacios de trabajo y aislamiento
 description: Por qué un espacio de trabajo es una frontera de inquilino infranqueable, cómo la separación de bases de datos hace que esa frontera sea estructural y qué la cruza de forma deliberada.
 slug: es-ES/manual/conceptos/espacios-de-trabajo
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## ¿Qué es un espacio de trabajo?
@@ -79,9 +79,11 @@ Un archivo de espacio de trabajo solo contiene una `workspace_meta` de una sola 
 
 ## Crear un espacio de trabajo
 
+Solo el [propietario del servidor](/es-ES/manual/conceptos/autorizacion/#el-propietario-del-servidor) puede crear un espacio de trabajo; el servidor genera su identificador. Un administrador o propietario del espacio de trabajo no puede crear otro. Quien todavía no esté en ningún espacio de trabajo ve **Todavía no estás en un espacio de trabajo**, que le pide que el propietario del servidor cree uno o que un administrador del espacio de trabajo lo invite; el formulario **Añadir espacio de trabajo** le dice lo mismo a cualquier otra persona.
+
 Crear un espacio de trabajo hace más que insertar una fila en el registro. En una sola operación, el servidor marca al usuario que lo crea como `ownerUserId`, registra la pertenencia de ese usuario con el rol de propietario y publica un evento de dominio `WorkspaceCreated`. Los escuchadores de ese evento siembran entonces, de forma idempotente y en segundo plano:
 
-- un **agente CEO** y cuatro especialistas —`qa`, `architect`, `engineer`, `librarian`—, que reportan al CEO;
+- un **agente CEO** y cinco especialistas —`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`—, que reportan al CEO;
 - las **plantillas de pipeline integradas** y sus disparadores (los disparadores por evento y manuales vienen activados; los programados son opcionales, salvo el barrido diario de recolección de basura de worktrees);
 - las **suites de evaluación iniciales**.
 
@@ -90,7 +92,7 @@ Esto ocurre en _todos_ los espacios de trabajo, no solo en el primero. Los agent
 La escritura de la pertenencia como propietario importa más de lo que parece: sin ella, el espacio de trabajo recién creado no tendría miembros y se denegaría toda llamada con ámbito de espacio de trabajo que hiciera después quien lo creó.
 
 :::note[Los agentes no pueden crear un espacio de trabajo]
-No existe ninguna herramienta MCP `create_workspace`. Las personas crean un espacio de trabajo mediante `workspace.create` (punto de control que solo admite el nombre) o `workspace.upsert` (registro completo, que también se usa para las actualizaciones). Ambos marcan al usuario que lo crea como `owner` y publican `WorkspaceCreated`.
+No existe ninguna herramienta MCP `create_workspace`. El propietario del servidor crea un espacio de trabajo mediante `workspace.create`, que lo marca como su `owner` y publica `WorkspaceCreated`. `workspace.upsert` solo actualiza un espacio de trabajo que ya existe; nunca crea uno ni cambia el propietario de un espacio de trabajo, cosa que solo hace **Transferir la propiedad**.
 :::
 
 ## Eliminar, exportar e importar
@@ -117,7 +119,7 @@ instantánea de la instalación es `workspace.import` apuntando al
 `<workspaceId>/workspace.db` de la instantánea; restaurar una instalación completa sigue siendo una
 recopia del directorio de la instantánea con el servidor detenido.
 
-Lo que ninguno de ellos transporta es el resto del directorio del espacio de trabajo. Un espacio de trabajo acumula más que una base de datos —imágenes pegadas, archivos de skills y de agentes, credenciales de chat, worktrees—, y la exportación y la importación mueven el **archivo**, así que todo lo que está a su lado se queda donde está. Eso es deliberado para las credenciales y prescindible para los worktrees; para el resto es un límite que conviene conocer y no una función. La [referencia de copias de seguridad](/es-ES/manual/referencia/copia-de-seguridad/#what-a-backup-does-not-contain) tiene la tabla completa.
+Lo que ninguno de ellos transporta es el resto del directorio del espacio de trabajo. Un espacio de trabajo acumula más que una base de datos —imágenes pegadas, archivos de skills y de agentes, credenciales de chat, worktrees—, y la exportación y la importación mueven el **archivo**, así que todo lo que está a su lado se queda donde está. Eso es deliberado para las credenciales y prescindible para los worktrees; para el resto es un límite que conviene conocer y no una función. La [referencia de copias de seguridad](/es-ES/manual/referencia/copia-de-seguridad/#qué-no-contiene-una-copia-de-seguridad) tiene la tabla completa.
 
 ## Mover una copia de seguridad entre el servidor y tu dispositivo
 

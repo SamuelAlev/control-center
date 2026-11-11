@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_connect/src/connect_log.dart';
 import 'package:cc_connect/src/context.dart';
 import 'package:cc_connect/src/credential_seal.dart';
 import 'package:cc_connect/src/provider_github.dart';
 import 'package:cc_connect/src/provider_google.dart';
 import 'package:cc_connect/src/provider_slack.dart';
-import 'package:cc_connect/src/rate_limiter.dart' show BoundedPool;
 import 'package:cc_connect/src/service_config.dart';
 import 'package:cc_connect/src/state_store.dart' show StateLease;
 import 'package:cc_connect_core/cc_connect_core.dart';
@@ -62,21 +62,6 @@ final class GitHubGrant {
   int get accountId => int.tryParse(opened.header.accountId) ?? 0;
 }
 
-/// What an attempt to bind a server to an installation found.
-enum AuthorizeOutcome {
-  /// The server is now bound.
-  bound,
-
-  /// GitHub does not report the installation for this person and app.
-  notInstalled,
-
-  /// The installation is suspended.
-  suspended,
-
-  /// The person may not authorize servers on it.
-  notAdmin,
-}
-
 /// Map a seal payload's fields into a fresh [SealedGrant] wire body.
 Map<String, Object?> _grantBody({
   required String seal,
@@ -112,7 +97,6 @@ Map<String, Object?> githubSealPayload(GitHubTokens tokens) => {
   'refresh': tokens.refresh,
   'access': tokens.access,
   'access_expires_at': tokens.accessExpiresAt.toUtc().toIso8601String(),
-  'refresh_expires_at': tokens.refreshExpiresAt?.toUtc().toIso8601String(),
 };
 
 /// The Slack seal payload for [grant].
@@ -165,17 +149,24 @@ final class GrantRoutes {
     }
   }
 
-  /// Refuses seals of a retired app or below the minimum generation.
-  static void checkSealHeader(
+  /// Refuses seals for another provider, of a retired app or below the
+  /// minimum generation, and logs `seal.refused`.
+  void _checkSealHeader(
     SealHeader header, {
     required ConnectProvider provider,
     required String appId,
     required int minGeneration,
   }) {
     if (header.provider != provider) {
+      ctx.sealer.refused(provider, 'provider');
       throw _denied;
     }
-    if (header.appId != appId || header.generation < minGeneration) {
+    if (header.appId != appId) {
+      ctx.sealer.refused(provider, 'retired_app');
+      throw _signIn;
+    }
+    if (header.generation < minGeneration) {
+      ctx.sealer.refused(provider, 'below_min_generation');
       throw _signIn;
     }
   }
@@ -311,10 +302,13 @@ final class GrantRoutes {
         // Retried once below.
       }
     }
-    ctx.log.event('seal.handoff_unsaved', {'provider': provider.name});
+    ctx.log.event('seal.handoff_unsaved', {
+      'provider': provider.name,
+    }, ConnectLogLevel.error);
   }
 
   Future<(String, OpenedSeal)> _rotateGitHub(
+    ConnectCaller caller,
     String seal,
     OpenedSeal opened,
     SealBinding binding,
@@ -331,7 +325,17 @@ final class GrantRoutes {
         if (refresh.isEmpty) {
           throw _signIn;
         }
+        await ctx.quotas.admit(
+          ctx.githubTokenQuotas(
+            caller,
+            accountId: int.tryParse(opened.header.accountId),
+          ),
+        );
         final tokens = await api.refresh(refresh);
+        ctx.log.event('github.rotated', {
+          'github_user_id': int.tryParse(opened.header.accountId),
+          'hashed_token': githubHashedToken(tokens.access),
+        });
         return (
           accountId: opened.header.accountId,
           appId: opened.header.appId,
@@ -345,21 +349,18 @@ final class GrantRoutes {
   /// and refreshes the parent token when it has less than [minRemaining].
   /// A parent with more is answered as it is: these routes need a usable
   /// parent, not a new one, and every rotation spends a refresh token.
-  ///
-  /// With [rotate] false a parent below [minRemaining] answers
-  /// `needs_sign_in` instead: for callers that cannot hand a rotated seal
-  /// back to the server (the browser-side setup redirect).
+  /// [admit] runs once the seal opened, before any upstream call.
   Future<GitHubGrant> resolveGitHub(
     ConnectCaller caller,
     String workspaceId,
     String seal, {
     required GitHubLane lane,
     required Duration minRemaining,
-    bool rotate = true,
+    Future<void> Function(OpenedSeal opened)? admit,
   }) async {
     final (config, creds, _) = lane;
     final binding = caller.binding(workspaceId);
-    checkSealHeader(
+    _checkSealHeader(
       ctx.sealer.header(seal),
       provider: ConnectProvider.github,
       appId: '${creds.appId}',
@@ -373,14 +374,18 @@ final class GrantRoutes {
     var current = openedSeal;
     var opened = openedValue;
     var updated = replayed ? current : '';
+    await admit?.call(opened);
     final expires = opened.time('access_expires_at');
     if (opened.text('access').isEmpty ||
         expires == null ||
         expires.difference(ctx.now()) < minRemaining) {
-      if (!rotate) {
-        throw _signIn;
-      }
-      (current, opened) = await _rotateGitHub(current, opened, binding, lane);
+      (current, opened) = await _rotateGitHub(
+        caller,
+        current,
+        opened,
+        binding,
+        lane,
+      );
       updated = current;
     }
     return GitHubGrant(opened, current, updated);
@@ -388,7 +393,10 @@ final class GrantRoutes {
 
   // ---------------------------------------------------------------- refresh
 
-  Future<_SealedLane> _sealedLane(ConnectProvider provider) async {
+  Future<_SealedLane> _sealedLane(
+    ConnectProvider provider,
+    ConnectCaller caller,
+  ) async {
     switch (provider) {
       case ConnectProvider.github:
         final lane = await ctx.githubLane();
@@ -399,7 +407,7 @@ final class GrantRoutes {
           minGeneration: config.minSealGeneration,
           generation: creds.clientSecret.generation,
           renew: (seal, opened, binding) =>
-              _rotateGitHub(seal, opened, binding, lane),
+              _rotateGitHub(caller, seal, opened, binding, lane),
         );
       case ConnectProvider.google:
         final (config, creds, api) = await ctx.googleLane();
@@ -437,30 +445,32 @@ final class GrantRoutes {
   /// or gone with a restart, since access tokens live only in its memory),
   /// and only a renewal answers with a full-lifetime one. The routes that
   /// just need a usable parent ([resolveGitHub]) reuse a fresh one instead.
-  /// Slack refreshes only for the install the team is bound to.
+  /// Slack refreshes only for the install the team is bound to, checked
+  /// after the seal opened: a caller without a seal for the team learns
+  /// nothing about its binding.
   Future<Object?> refresh(
     ConnectCaller caller,
     Map<String, Object?> body,
     ConnectProvider provider,
   ) async {
     final request = _parse(() => SealRequest.fromJson(body));
-    final lane = await _sealedLane(provider);
+    final lane = await _sealedLane(provider, caller);
     final binding = caller.binding(request.workspaceId);
     final header = ctx.sealer.header(request.seal);
-    checkSealHeader(
+    _checkSealHeader(
       header,
       provider: provider,
       appId: lane.appId,
       minGeneration: lane.minGeneration,
     );
-    if (provider == ConnectProvider.slack) {
-      await _requireSlackBinding(header.accountId, caller.installId);
-    }
     final (seal, opened, replayed) = await _openOrReplay(
       provider,
       request.seal,
       binding,
     );
+    if (provider == ConnectProvider.slack) {
+      await _requireSlackBinding(opened.header.accountId, caller.installId);
+    }
     if (replayed) {
       return _grantBody(seal: seal, opened: opened);
     }
@@ -590,43 +600,50 @@ final class GrantRoutes {
     return fresh;
   }
 
-  /// The parent token's person. Cached: a token's account never changes.
-  Future<GitHubUser> _user(GitHubApi api, String parent) async {
-    final key = 'ghc:${ctx.tokenCacheKey(parent)}:user';
-    final cached = await ctx.state.get(key);
-    if (cached != null) {
-      final json = jsonDecode(cached);
-      if (json is Map && json['id'] is int && json['login'] is String) {
-        return GitHubUser(
-          id: json['id'] as int,
-          login: json['login'] as String,
-        );
-      }
-    }
-    final user = await api.user(parent);
-    await ctx.state.set(
-      key,
-      jsonEncode({'id': user.id, 'login': user.login}),
-      githubReadCacheTtl,
-    );
-    return user;
-  }
-
   // ------------------------------------------------------------ GitHub scope
 
-  /// `POST /v1/github/scope`: one repository, clamped to the person's role,
-  /// through an installation this server is bound to.
+  /// `POST /v1/github/scope`: one repository, clamped to the person's role.
+  ///
+  /// `as: user` mints a child of the person's own user token through the
+  /// App's installation on the repository's owner; `as: app` mints an
+  /// installation token of the App itself (the bot), authorized by the same
+  /// person: their own token must see the repository with the asked
+  /// permission, and the token never carries more than the clamp allows.
+  /// GitHub does not clamp an installation token to that person, and any
+  /// server may be anyone's script, so the bot holds at most `comment`
+  /// (`read`, `review`, `comment`) for every install, and `bot` (reviews,
+  /// `pull_requests: write`) only for the installs the operator lists in
+  /// `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Anything else answers
+  /// `needs_requester` before GitHub is asked: the server then mints for the
+  /// person (`as: user`), whom GitHub clamps itself.
   ///
   /// Everything this decides on is read fresh, never from a cache: the
   /// person's role on the repository (a demotion must not keep minting the
-  /// old scope), the installation list (suspended or removed) and the
-  /// installation's server binding. Servers cache the minted tokens, so this
-  /// runs about once per repository and scope per parent lifetime.
+  /// old scope) and the installation (suspended, removed, repository
+  /// deselected). Servers cache the minted tokens, so this runs about once
+  /// per repository and scope per token lifetime.
   Future<Object?> githubScope(
     ConnectCaller caller,
     Map<String, Object?> body,
   ) async {
     final request = _parse(() => GitHubScopeRequest.fromJson(body));
+    try {
+      return await _githubScope(caller, request);
+    } on ConnectException catch (error) {
+      ctx.log.event('github.mint', {
+        'as': request.actor.wire,
+        'outcome': 'refused',
+        'error': error.code.wire,
+        if (error.reason.isNotEmpty) 'reason': error.reason,
+      }, ConnectLogLevel.warn);
+      rethrow;
+    }
+  }
+
+  Future<Object?> _githubScope(
+    ConnectCaller caller,
+    GitHubScopeRequest request,
+  ) async {
     if (!isGitHubSegment(request.repoOwner) ||
         !isGitHubSegment(request.repoName)) {
       throw _invalid;
@@ -634,6 +651,21 @@ final class GrantRoutes {
     final requested = GitHubTokenScope.fromWire(request.scope);
     if (requested == null) {
       throw _invalid;
+    }
+    // Nothing binds an organization's installation of this shared App to
+    // one Control Center server, so its bot never writes contents, and
+    // reviews only for a server the operator listed. A push, a branch, a
+    // pull request or a review is otherwise minted for the person who asked.
+    if (request.actor == GitHubMintActor.app &&
+        !requested.connectBotMayHold &&
+        !(requested.connectBotNeedsListing &&
+            ctx.config.githubReviewBotInstalls.contains(caller.installId))) {
+      throw ConnectException(
+        ConnectErrorCode.needsRequester,
+        reason: requested.connectBotNeedsListing
+            ? 'github_app_review_scope'
+            : 'github_app_write_scope',
+      );
     }
     final lane = await ctx.githubLane();
     final (_, _, api) = lane;
@@ -643,9 +675,16 @@ final class GrantRoutes {
       request.seal,
       lane: lane,
       minRemaining: githubParentMinRemaining,
+      // Once the seal opened (so the account is the verified one) and before
+      // any upstream call.
+      admit: request.actor == GitHubMintActor.app
+          ? (opened) => ctx.quotas.admit(
+              ctx.githubAppMintQuotas(caller, opened.header.accountId),
+            )
+          : null,
     );
-    final userId = grant.accountId;
-    final installations = await api.installations(grant.parent);
+    // The person's own view of the repository is the authorization for
+    // either kind of token: they must see it, and their role clamps it.
     final repo = await api.repo(
       grant.parent,
       request.repoOwner,
@@ -654,34 +693,9 @@ final class GrantRoutes {
     if (repo.id != request.repoId) {
       throw _denied;
     }
-    final installation = installations
-        .where((i) => i.accountId == repo.ownerId)
-        .firstOrNull;
-    if (installation == null) {
-      throw const ConnectException(ConnectErrorCode.notInstalled);
-    }
-    if (installation.suspended) {
-      throw const ConnectException(ConnectErrorCode.suspended);
-    }
     final allowedOwners = ctx.config.githubAllowedOwners;
     if (allowedOwners.isNotEmpty && !allowedOwners.contains(repo.ownerId)) {
       throw _denied;
-    }
-    final binding = await ctx.bindings.github(installation.id, fresh: true);
-    final boundHere = binding?.installIds.contains(caller.installId) ?? false;
-    if (!boundHere) {
-      if (installation.isOrganization || installation.accountId != userId) {
-        throw const ConnectException(
-          ConnectErrorCode.installationBoundElsewhere,
-        );
-      }
-      // The person's own account: any server they sign in on may bind it.
-      await ctx.bindings.addGitHub(installation.id, caller.installId);
-      ctx.log.event('github.bound', {
-        'installation_id': installation.id,
-        'install': ctx.log.tag(caller.installId),
-        'reason': 'personal',
-      });
     }
     final granted = clampGitHubScope(
       requested: requested,
@@ -691,37 +705,314 @@ final class GrantRoutes {
     if (granted == null) {
       throw _denied;
     }
+    return switch (request.actor) {
+      GitHubMintActor.user => _githubUserChild(
+        caller,
+        api,
+        grant,
+        request,
+        repo,
+        requested,
+        granted,
+      ),
+      GitHubMintActor.app => _githubInstallationToken(
+        caller,
+        api,
+        grant,
+        request,
+        repo,
+        requested,
+        granted,
+      ),
+    };
+  }
+
+  /// `as: user`: a child of the person's token, through the installation
+  /// on the owner they can see. No per-server binding: the account's
+  /// installation is its consent, and the child is the member's own token.
+  ///
+  /// GitHub caps how many tokens one person may hold for the App and how
+  /// fast they may be created, evicting the oldest past the cap: a child
+  /// another request still uses. So a live child for the same install,
+  /// workspace slot, parent, repository and permissions is handed out again
+  /// instead of minting another ([_reusableChild]); revoking it ends that.
+  /// The answer carries the coverage the server checks: `selected`, this one
+  /// repository, exactly the granted permissions.
+  Future<Object?> _githubUserChild(
+    ConnectCaller caller,
+    GitHubApi api,
+    GitHubGrant grant,
+    GitHubScopeRequest request,
+    GitHubRepo repo,
+    GitHubTokenScope requested,
+    GitHubTokenScope granted,
+  ) async {
+    final userId = grant.accountId;
+    final installations = await api.installations(grant.parent);
+    final installation = installations
+        .where((i) => i.accountId == repo.ownerId)
+        .firstOrNull;
+    if (installation == null) {
+      throw const ConnectException(ConnectErrorCode.notInstalled);
+    }
+    if (installation.suspended) {
+      throw const ConnectException(ConnectErrorCode.suspended);
+    }
+    final binding = caller.binding(request.workspaceId);
+    final reuseKey = _childReuseKey(
+      caller.installId,
+      request.workspaceId,
+      userId,
+      repo.id,
+      granted.permissions,
+    );
+    final reused = await _reusableChild(reuseKey, grant, binding);
+    GitHubScopedToken answer(String token, DateTime expires) =>
+        GitHubScopedToken(
+          accessToken: token,
+          grantedScope: granted.wire,
+          expiresAt: expires,
+          updatedSeal: grant.updatedSeal,
+          installationId: installation.id,
+          repositorySelection: 'selected',
+          repositoryIds: [repo.id],
+          permissions: granted.permissions,
+        );
+    void audit(String token, {required bool reuse, String? requestId}) =>
+        ctx.log.event('github.mint', {
+          'as': GitHubMintActor.user.wire,
+          'outcome': 'ok',
+          'installation_id': installation.id,
+          'repo_id': repo.id,
+          'github_user_id': userId,
+          'scope': requested.wire,
+          'granted_scope': granted.wire,
+          'reused': reuse,
+          'hashed_token': githubHashedToken(token),
+          'github_request_id': requestId,
+        });
+    if (reused != null) {
+      audit(reused.token, reuse: true);
+      return answer(reused.token, reused.expires).toJson();
+    }
+    await ctx.quotas.admit(ctx.githubTokenQuotas(caller, accountId: userId));
     final mint = await api.scoped(
       parent: grant.parent,
       targetId: installation.accountId,
       repoId: repo.id,
       permissions: granted.permissions,
     );
-    ctx.log.event('github.scope', {
-      'installation_id': installation.id,
-      'repo_id': repo.id,
-      'github_user_id': userId,
-      'scope': requested.wire,
-      'granted_scope': granted.wire,
-      'install': ctx.log.tag(caller.installId),
-    });
+    audit(mint.token, reuse: false, requestId: mint.requestId);
+    await _countLiveChild(userId);
     final minted = mint.expiresAt ?? grant.parentExpiresAt;
     final expires = minted.isAfter(grant.parentExpiresAt)
         ? grant.parentExpiresAt
         : minted;
+    final lifetime = expires.difference(ctx.now()) + const Duration(minutes: 5);
     // Who may revoke this child later: only the install it was minted for,
     // presenting a seal of the same GitHub account.
     await ctx.state.set(
       _childKey(mint.token),
       _childOwner(caller.installId, '$userId'),
-      expires.difference(ctx.now()) + const Duration(minutes: 5),
+      lifetime,
     );
+    await _rememberChild(reuseKey, grant, binding, mint.token, expires);
+    await ctx.state.push(
+      _childrenKey(caller.installId, request.workspaceId, userId),
+      await _sealChild(grant, binding, {'child': mint.token}),
+      _childrenTtl,
+      maxLength: _maxRecordedChildren,
+    );
+    return answer(mint.token, expires).toJson();
+  }
+
+  /// Counts a new child against its account across every install (an
+  /// 8-hour window: a child never outlives its parent) and logs
+  /// `github.token_cap` past [ConnectRateLimits.githubLiveChildrenWarn].
+  /// GitHub does not document how many tokens one person may hold for an
+  /// App; past an undocumented cap it may revoke their oldest, which can
+  /// be another server's.
+  Future<void> _countLiveChild(int accountId) async {
+    const window = Duration(hours: 8);
+    final index = ctx.now().millisecondsSinceEpoch ~/ window.inMilliseconds;
+    final count = await ctx.state.increment(
+      'livechildren:$accountId:$index',
+      window * 2,
+    );
+    if (count > ctx.config.rateLimits.githubLiveChildrenWarn) {
+      ctx.log.sampled('github.token_cap', '$accountId', {
+        'github_user_id': accountId,
+        'count': count,
+      });
+    }
+  }
+
+  /// How long the list of one sign-in's children lives past its last
+  /// entry: longer than any child (a child never outlives its 8-hour
+  /// parent).
+  static const Duration _childrenTtl = Duration(hours: 9);
+
+  /// Most children recorded per sign-in for a disconnect to revoke.
+  static const int _maxRecordedChildren = 200;
+
+  /// The state key listing the children minted for one sign-in (install,
+  /// workspace slot, GitHub account), each sealed to it: what a disconnect
+  /// revokes along with the sign-in's own token.
+  static String _childrenKey(
+    String installId,
+    String workspaceId,
+    int accountId,
+  ) =>
+      'children:${sealDigest(canonicalJson({'install': installId, 'workspace': workspaceId, 'account': accountId}))}';
+
+  /// Seals [payload] (a child token) to [binding] under [grant]'s account.
+  Future<String> _sealChild(
+    GitHubGrant grant,
+    SealBinding binding,
+    Map<String, Object?> payload,
+  ) {
+    final header = grant.opened.header;
+    return ctx.sealer.seal(
+      provider: ConnectProvider.github,
+      accountId: header.accountId,
+      appId: header.appId,
+      generation: header.generation,
+      binding: binding,
+      payload: payload,
+      kind: SealKind.childRecord,
+    );
+  }
+
+  /// The state key of the reusable child for one install, workspace slot,
+  /// GitHub account, repository and permission set. Ids only: the token is
+  /// stored sealed under it ([_rememberChild]).
+  static String _childReuseKey(
+    String installId,
+    String workspaceId,
+    int accountId,
+    int repoId,
+    Map<String, String> permissions,
+  ) =>
+      'childfor:${sealDigest(canonicalJson({'install': installId, 'workspace': workspaceId, 'account': accountId, 'repo': repoId, 'permissions': permissions}))}';
+
+  /// Remembers [token] for reuse, sealed to the caller's binding (another
+  /// install or workspace slot cannot open it) and tied to the parent it
+  /// came from.
+  Future<void> _rememberChild(
+    String reuseKey,
+    GitHubGrant grant,
+    SealBinding binding,
+    String token,
+    DateTime expires,
+  ) async {
+    final ttl = expires.difference(ctx.now()) - githubParentMinRemaining;
+    if (ttl <= Duration.zero) {
+      return;
+    }
+    final sealed = await _sealChild(grant, binding, {
+      'child': token,
+      'expires_at': expires.toUtc().toIso8601String(),
+      'parent': sealDigest(grant.parent),
+    });
+    await ctx.state.set(reuseKey, sealed, ttl);
+  }
+
+  /// The remembered child under [reuseKey], when it opens for [binding], was
+  /// minted from [grant]'s current parent for the same account, has not been
+  /// revoked (its revocation owner is still recorded) and still lives long
+  /// enough for a server to use it.
+  Future<({String token, DateTime expires})?> _reusableChild(
+    String reuseKey,
+    GitHubGrant grant,
+    SealBinding binding,
+  ) async {
+    final stored = await ctx.state.get(reuseKey);
+    if (stored == null) {
+      return null;
+    }
+    final OpenedSeal opened;
+    try {
+      opened = await ctx.sealer.open(
+        stored,
+        provider: ConnectProvider.github,
+        binding: binding,
+        kind: SealKind.childRecord,
+      );
+    } on ConnectException {
+      return null;
+    }
+    final token = opened.text('child');
+    final expires = opened.time('expires_at');
+    if (opened.header.accountId != grant.opened.header.accountId ||
+        opened.text('parent') != sealDigest(grant.parent) ||
+        !token.startsWith('ghu_') ||
+        expires == null ||
+        expires.difference(ctx.now()) < githubParentMinRemaining ||
+        await ctx.state.get(_childKey(token)) == null) {
+      return null;
+    }
+    return (token: token, expires: expires);
+  }
+
+  /// `as: app`: an installation token for exactly this repository, found
+  /// with the App JWT (not through what the person can list, so a
+  /// repository left out of the installation reads as `repo_not_selected`
+  /// rather than "not installed").
+  Future<Object?> _githubInstallationToken(
+    ConnectCaller caller,
+    GitHubApi api,
+    GitHubGrant grant,
+    GitHubScopeRequest request,
+    GitHubRepo repo,
+    GitHubTokenScope requested,
+    GitHubTokenScope granted,
+  ) async {
+    final installation = await api.repoInstallation(
+      request.repoOwner,
+      request.repoName,
+    );
+    if (installation == null) {
+      final onOwner = await api.accountInstallation(request.repoOwner);
+      if (onOwner == null || onOwner.accountId != repo.ownerId) {
+        throw const ConnectException(ConnectErrorCode.notInstalled);
+      }
+      throw onOwner.suspended
+          ? const ConnectException(ConnectErrorCode.suspended)
+          : const ConnectException(ConnectErrorCode.repoNotSelected);
+    }
+    if (installation.accountId != repo.ownerId) {
+      // The repository moved between the two reads; never mint across.
+      throw _denied;
+    }
+    if (installation.suspended) {
+      throw const ConnectException(ConnectErrorCode.suspended);
+    }
+    final mint = await api.installationToken(
+      installationId: installation.id,
+      repoId: repo.id,
+      permissions: granted.permissions,
+    );
+    ctx.log.event('github.mint', {
+      'as': GitHubMintActor.app.wire,
+      'outcome': 'ok',
+      'installation_id': installation.id,
+      'repo_id': repo.id,
+      'github_user_id': grant.accountId,
+      'scope': requested.wire,
+      'granted_scope': granted.wire,
+      'hashed_token': githubHashedToken(mint.token),
+      'github_request_id': mint.requestId,
+    });
     return GitHubScopedToken(
       accessToken: mint.token,
       grantedScope: granted.wire,
-      expiresAt: expires,
+      expiresAt:
+          mint.expiresAt ?? ctx.now().toUtc().add(const Duration(minutes: 55)),
       updatedSeal: grant.updatedSeal,
       installationId: installation.id,
+      repositorySelection: mint.repositorySelection,
+      repositoryIds: mint.repositoryIds,
+      permissions: mint.permissions,
     ).toJson();
   }
 
@@ -730,93 +1021,8 @@ final class GrantRoutes {
   static String _childOwner(String installId, String accountId) =>
       '$installId|$accountId';
 
-  // ------------------------------------------------- GitHub install binding
-
-  /// Binds [installId] to [installationId] when [grant]'s person
-  /// administers it (org admin, or the personal account itself).
-  Future<AuthorizeOutcome> authorizeInstallation(
-    GitHubGrant grant,
-    int installationId,
-    String installId, {
-    required GitHubLane lane,
-  }) async {
-    final (_, _, api) = lane;
-    final user = await _user(api, grant.parent);
-    if (user.id != grant.accountId) {
-      return AuthorizeOutcome.notAdmin;
-    }
-    // A binding write is authorization: read the installation list fresh.
-    final installation = (await api.installations(
-      grant.parent,
-    )).where((i) => i.id == installationId).firstOrNull;
-    if (installation == null) {
-      return AuthorizeOutcome.notInstalled;
-    }
-    if (installation.suspended) {
-      return AuthorizeOutcome.suspended;
-    }
-    final admin = installation.isOrganization
-        ? await api.isActiveOrgAdmin(
-            grant.parent,
-            installation.accountLogin,
-            user.login,
-          )
-        : installation.accountId == user.id;
-    if (!admin) {
-      return AuthorizeOutcome.notAdmin;
-    }
-    await ctx.bindings.addGitHub(installation.id, installId);
-    ctx.log.event('github.bound', {
-      'installation_id': installation.id,
-      'github_user_id': user.id,
-      'install': ctx.log.tag(installId),
-      'reason': installation.isOrganization ? 'org_admin' : 'personal',
-    });
-    return AuthorizeOutcome.bound;
-  }
-
-  /// `POST /v1/github/install/start`.
-  Future<Object?> githubInstallStart(
-    ConnectCaller caller,
-    Map<String, Object?> body,
-  ) async {
-    final request = _parse(() => SealRequest.fromJson(body));
-    final lane = await ctx.githubLane();
-    // Opening the seal proves the caller owns it before a ticket exists. The
-    // parent must outlive the ticket: setup cannot rotate it.
-    final grant = await resolveGitHub(
-      caller,
-      request.workspaceId,
-      request.seal,
-      lane: lane,
-      minRemaining: installTicketTtl + const Duration(minutes: 5),
-    );
-    final ticket = b64url(randomBytes(32));
-    await ctx.state.set(
-      'ticket:$ticket',
-      jsonEncode({
-        'install_id': caller.installId,
-        'workspace_id': request.workspaceId,
-        'seal': grant.seal,
-      }),
-      installTicketTtl,
-    );
-    return GitHubInstallStartResponse(
-      installUrl: Uri.https(
-        'github.com',
-        '/apps/${lane.$1.appSlug}/installations/new',
-        {'state': ticket},
-      ),
-      expiresAt: ctx.now().add(installTicketTtl),
-      updatedSeal: grant.updatedSeal,
-    ).toJson();
-  }
-
   /// Most installations one listing shows.
   static const int _maxListedInstallations = 50;
-
-  /// Organization membership lookups in flight at once for one listing.
-  static const int _listingConcurrency = 8;
 
   /// `POST /v1/github/installations`.
   Future<Object?> githubInstallations(
@@ -833,89 +1039,36 @@ final class GrantRoutes {
       lane: lane,
       minRemaining: const Duration(minutes: 5),
     );
-    final user = await _user(api, grant.parent);
-    if (user.id != grant.accountId) {
-      throw _denied;
-    }
-    Future<GitHubInstallationView> view(GitHubInstallation installation) async {
-      final own =
-          !installation.isOrganization && installation.accountId == user.id;
-      final admin = installation.isOrganization
-          ? await api.isActiveOrgAdmin(
-              grant.parent,
-              installation.accountLogin,
-              user.login,
-            )
-          : own;
-      final binding = await ctx.bindings.github(installation.id);
-      return GitHubInstallationView(
-        installationId: installation.id,
-        accountId: installation.accountId,
-        accountLogin: installation.accountLogin,
-        targetType: installation.targetType,
-        boundHere:
-            (binding?.installIds.contains(caller.installId) ?? false) || own,
-        suspended: installation.suspended,
-        callerIsAdmin: admin,
-      );
-    }
-
-    // One membership lookup per organization, at most eight in flight: the
-    // whole listing fits the caller's deadline without a burst at GitHub,
-    // and one slow organization never holds up the rest of its batch.
     final installations = (await _cachedInstallations(
       api,
       grant.parent,
-    )).take(_maxListedInstallations).toList();
-    final pool = BoundedPool(
-      concurrency: _listingConcurrency,
-      maxQueued: _maxListedInstallations,
-    );
-    final views = await Future.wait([
-      for (final installation in installations)
-        pool.run(() => view(installation)),
-    ]);
+    )).take(_maxListedInstallations);
     return GitHubInstallationsResponse(
-      installations: [for (final v in views) ?v],
+      installations: [
+        for (final installation in installations)
+          GitHubInstallationView(
+            installationId: installation.id,
+            accountId: installation.accountId,
+            accountLogin: installation.accountLogin,
+            targetType: installation.targetType,
+            suspended: installation.suspended,
+          ),
+      ],
       updatedSeal: grant.updatedSeal,
     ).toJson();
   }
 
-  /// `POST /v1/github/authorize_server`.
-  Future<Object?> githubAuthorizeServer(
-    ConnectCaller caller,
-    Map<String, Object?> body,
-  ) async {
-    final request = _parse(() => GitHubAuthorizeServerRequest.fromJson(body));
-    final lane = await ctx.githubLane();
-    final grant = await resolveGitHub(
-      caller,
-      request.workspaceId,
-      request.seal,
-      lane: lane,
-      minRemaining: const Duration(minutes: 5),
-    );
-    final outcome = await authorizeInstallation(
-      grant,
-      request.installationId,
-      caller.installId,
-      lane: lane,
-    );
-    return switch (outcome) {
-      AuthorizeOutcome.bound => ConnectAck(
-        updatedSeal: grant.updatedSeal,
-      ).toJson(),
-      AuthorizeOutcome.notInstalled => throw const ConnectException(
-        ConnectErrorCode.notInstalled,
-      ),
-      AuthorizeOutcome.suspended => throw const ConnectException(
-        ConnectErrorCode.suspended,
-      ),
-      AuthorizeOutcome.notAdmin => throw _denied,
-    };
-  }
-
-  /// `POST /v1/github/revoke`: one scoped token, or the whole grant.
+  /// `POST /v1/github/revoke`: one scoped token, or this sign-in.
+  ///
+  /// Disconnecting ends this sign-in only, never the person's whole
+  /// authorization (`.../grant`): on a shared App that would sign them out
+  /// of every other server. Its refresh token is spent once (a copy of the
+  /// seal then answers `needs_sign_in`), the access token that refresh
+  /// returned is deleted unsealed, as are the seal's own access token
+  /// (`DELETE /applications/{client_id}/token`) and the children recorded
+  /// for the same install, workspace slot and account. It runs under the
+  /// seal's rotation lease, so a refresh of the same seal waits for it and
+  /// then finds the refresh token spent.
   Future<Object?> githubRevoke(
     ConnectCaller caller,
     Map<String, Object?> body,
@@ -930,7 +1083,7 @@ final class GrantRoutes {
       }
       // The seal proves the caller holds a grant on this app, and whose.
       final header = ctx.sealer.header(request.seal);
-      checkSealHeader(
+      _checkSealHeader(
         header,
         provider: ConnectProvider.github,
         appId: '${creds.appId}',
@@ -945,31 +1098,143 @@ final class GrantRoutes {
       final mintedFor = await ctx.state.get(child);
       if (mintedFor == null) {
         // Expired, already revoked, or never minted here: nothing to do.
+        ctx.log.event('github.child_revoked', {'outcome': 'unknown'});
         return const ConnectAck().toJson();
       }
-      // A child minted before owners carried the account names the install
-      // alone; it still revokes for that install.
-      if (mintedFor != _childOwner(caller.installId, header.accountId) &&
-          mintedFor != caller.installId) {
+      if (mintedFor != _childOwner(caller.installId, header.accountId)) {
+        ctx.log.event('github.child_revoked', {
+          'outcome': 'denied',
+        }, ConnectLogLevel.warn);
         throw _denied;
       }
       await api.deleteToken(token);
       await ctx.state.delete(child);
+      ctx.log.event('github.child_revoked', {
+        'outcome': 'ok',
+        'hashed_token': githubHashedToken(token),
+      });
       return const ConnectAck().toJson();
     }
-    final grant = await resolveGitHub(
-      caller,
-      request.workspaceId,
-      request.seal,
-      lane: lane,
-      minRemaining: const Duration(minutes: 1),
+    final binding = caller.binding(request.workspaceId);
+    _checkSealHeader(
+      ctx.sealer.header(request.seal),
+      provider: ConnectProvider.github,
+      appId: '${creds.appId}',
+      minGeneration: config.minSealGeneration,
     );
-    await api.deleteGrant(grant.parent);
-    ctx.log.event('grant.revoked', {
-      'provider': 'github',
-      'install': ctx.log.tag(caller.installId),
-    });
-    return const ConnectAck().toJson();
+    var (seal, opened, _) = await _openOrReplay(
+      ConnectProvider.github,
+      request.seal,
+      binding,
+    );
+    var lease = await _revokeLease(seal);
+    // A rotation that finished while this waited left its successor: that
+    // one holds the live refresh token.
+    for (var hop = 0; hop < 3; hop++) {
+      final newer = await _replay(ConnectProvider.github, seal, binding);
+      if (newer == null) {
+        break;
+      }
+      await lease.release();
+      (seal, opened) = newer;
+      lease = await _revokeLease(seal);
+    }
+    final grant = GitHubGrant(opened, seal, '');
+    try {
+      final refresh = opened.text('refresh');
+      var spent = '';
+      if (refresh.isNotEmpty) {
+        await ctx.quotas.admit(
+          ctx.githubTokenQuotas(
+            caller,
+            accountId: grant.accountId,
+            enforce: false,
+          ),
+        );
+        try {
+          spent = (await api.refresh(refresh)).access;
+        } on ConnectException catch (error) {
+          // Already spent (a rotation won the race, or GitHub dropped it):
+          // nothing is left to spend.
+          if (error.code != ConnectErrorCode.needsSignIn) {
+            rethrow;
+          }
+        }
+      }
+      for (final token in {spent, grant.parent}) {
+        if (token.isNotEmpty) {
+          await api.deleteToken(token);
+        }
+      }
+      final children = await _revokeChildren(binding, grant, api);
+      ctx.log.event('grant.revoked', {
+        'provider': 'github',
+        'scope': 'token',
+        'github_user_id': grant.accountId,
+        'hashed_token': grant.parent.isEmpty
+            ? null
+            : githubHashedToken(grant.parent),
+        'reason': spent.isEmpty ? 'refresh_already_spent' : 'refresh_spent',
+        'count': children,
+      });
+      return const ConnectAck().toJson();
+    } finally {
+      await lease.release();
+    }
+  }
+
+  /// The seal's rotation lease, waited for as a refresh waits: a rotation
+  /// running now finishes first, and every later one finds the refresh
+  /// token spent.
+  Future<StateLease> _revokeLease(String seal) async {
+    final key = 'lock:${sealDigest(seal)}';
+    for (var waited = 0; ; waited++) {
+      final lease = await StateLease.acquire(ctx.state, key, rotationLockTtl);
+      if (lease != null) {
+        return lease;
+      }
+      if (waited >= 50) {
+        throw _unavailable;
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+    }
+  }
+
+  /// Revokes the live children recorded for [binding] and [grant]'s
+  /// account; returns how many.
+  Future<int> _revokeChildren(
+    SealBinding binding,
+    GitHubGrant grant,
+    GitHubApi api,
+  ) async {
+    final recorded = await ctx.state.drain(
+      _childrenKey(binding.installId, binding.workspaceId, grant.accountId),
+      max: _maxRecordedChildren,
+    );
+    var revoked = 0;
+    for (final sealed in recorded) {
+      final OpenedSeal opened;
+      try {
+        opened = await ctx.sealer.open(
+          sealed,
+          provider: ConnectProvider.github,
+          binding: binding,
+          kind: SealKind.childRecord,
+        );
+      } on ConnectException {
+        continue;
+      }
+      final token = opened.text('child');
+      if (!token.startsWith('ghu_') ||
+          opened.header.accountId != grant.opened.header.accountId ||
+          await ctx.state.get(_childKey(token)) == null) {
+        continue; // Expired or revoked already.
+      }
+      await api.deleteToken(token);
+      await ctx.state.delete(_childKey(token));
+      revoked++;
+    }
+    return revoked;
   }
 
   /// `POST /v1/slack/revoke`: only the bound install. Revokes the bot token

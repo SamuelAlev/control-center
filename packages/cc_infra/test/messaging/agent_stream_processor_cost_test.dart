@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/usage_scope.dart';
@@ -10,7 +11,6 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
 import 'package:test/test.dart';
 
@@ -402,7 +402,11 @@ class _FakeDispatch implements AgentDispatchService {
   }
 
   @override
-  Future<void> failRun(AgentRunLog runLog, String error) async {}
+  Future<void> failRun(
+    AgentRunLog runLog,
+    String error, {
+    String? errorCode,
+  }) async {}
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

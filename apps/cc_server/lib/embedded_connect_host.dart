@@ -2,7 +2,10 @@ import 'dart:io';
 
 import 'package:cc_connect/cc_connect.dart';
 import 'package:cc_server_core/cc_server_core.dart'
-    show EmbeddedConnect, embeddedConnectEnvironmentKey;
+    show
+        EmbeddedConnect,
+        embeddedConnectEnvironmentKey,
+        providerOAuthHttpOrigin;
 
 /// Builds the `/connect` mount when `CC_SERVER_CONNECT_HOST=on`.
 ///
@@ -31,7 +34,7 @@ Future<EmbeddedConnect?> buildEmbeddedConnect({
   if (configured.isNotEmpty) {
     base = configured;
   } else {
-    final origin = _httpOrigin(publicUrl);
+    final origin = providerOAuthHttpOrigin(publicUrl);
     if (origin.isEmpty) {
       throw StateError(
         'The embedded Connect needs a public URL; set CONNECT_PUBLIC_URL or '
@@ -51,24 +54,6 @@ Future<EmbeddedConnect?> buildEmbeddedConnect({
   final service = await ConnectService.start(config);
   stdout.writeln('cc_server: embedded Connect at $canonical');
   return _Mount(service);
-}
-
-String _httpOrigin(String url) {
-  if (url.trim().isEmpty) {
-    return '';
-  }
-  final uri = Uri.tryParse(url.trim());
-  if (uri == null || uri.host.isEmpty) {
-    return '';
-  }
-  final scheme = uri.scheme == 'wss' || uri.scheme == 'https'
-      ? 'https'
-      : 'http';
-  return Uri(
-    scheme: scheme,
-    host: uri.host,
-    port: uri.hasPort ? uri.port : null,
-  ).toString();
 }
 
 final class _Mount implements EmbeddedConnect {

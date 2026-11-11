@@ -2,7 +2,7 @@
 title: 티켓 수명주기
 description: 티켓의 필드, 상태, 전이, 관계와 변경 병목 지점.
 slug: ko-KR/매뉴얼/레퍼런스/티켓-수명주기
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## 티켓 상태
@@ -117,7 +117,7 @@ Linear의 기본 0–4 척도에 따라 정수로 저장됩니다. 알 수 없�
 | `projectId`              | `String?`                  | 소유 프로젝트이며 원격으로 푸시되지 않음                                                   |
 | `assignedAgentId`        | `String?`                  | 배정된 주체의 id(메타데이터일 뿐이며, 배정해도 아무것도 디스패치되지 않음)                 |
 | `assigneeType`           | `PrincipalType`            | `assignedAgentId`가 가리키는 주체의 종류 — `user` 또는 `agent`(기본값 `agent`)             |
-| `createdByType`          | `PrincipalType?`           | 티켓을 생성한 주체의 종류(`user` 또는 `agent`)이며, 레거시/시스템 행에서는 null             |
+| `createdByType`          | `PrincipalType?`           | 티켓을 생성한 주체의 종류(`user` 또는 `agent`)이며, 시스템이 생성한 행에서는 null             |
 | `createdById`            | `String?`                  | 생성한 주체의 id                                                                           |
 | `assignedTeamId`         | `String?`                  | 배정된 팀(메타데이터일 뿐)                                                                 |
 | `delegatedByAgentId`     | `String?`                  | 이 티켓을 위임한 에이전트                                                                  |

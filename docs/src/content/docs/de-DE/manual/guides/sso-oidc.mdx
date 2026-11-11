@@ -2,7 +2,7 @@
 title: Einen OpenID Connect-Anbieter verbinden
 description: Verbinde einen beliebigen OIDC-Issuer — Pocket ID, Keycloak, Auth0, Zitadel — mit der Anmeldung an Control Center.
 slug: de-DE/handbuch/anleitungen/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -89,6 +89,32 @@ direkt auf, dafür brauchst du einen Tunnel oder eine öffentliche URL — siehe
 [Benutzer mit SCIM provisionieren](/de-DE/handbuch/anleitungen/sso-scim/).
 :::
 
+## Wie Anmeldungen zu bestehenden Konten passen
+
+Eine Anmeldung über den Identity Provider findet ihr Konto in dieser Reihenfolge:
+
+1. **Die angeheftete Identität.** Die erste SSO-Anmeldung heftet den Subject-Wert des Providers (Issuer plus `sub`) an das Konto. Jede spätere Anmeldung mit diesem Subject ist dieses Konto.
+2. **Eine verifizierte E-Mail-Adresse auf beiden Seiten.** Andernfalls passt die Anmeldung nur dann über die E-Mail-Adresse zu einem Konto, wenn der Provider `email_verified: true` sendet und auch die Adresse des Kontos verifiziert ist. Eine Adresse ist verifiziert, wenn SSO oder SCIM sie gesetzt hat oder wenn der Serverinhaber sie bestätigt hat. Die eigene Adresse des Serverinhabers zählt mit.
+
+E-Mail-Adressen werden in Kleinbuchstaben gespeichert und angezeigt, und der Abgleich ignoriert Groß- und Kleinschreibung. Eine verifizierte Adresse identifiziert ein Konto nur, wenn genau ein Konto sie hat; halten zwei Konten dieselbe verifizierte Adresse, passt sie zu keinem.
+
+Eine Adresse, die jemand in seinem eigenen Profil oder bei einer Einladung eingegeben hat, ist nicht verifiziert und passt zu nichts. Das Ändern einer Adresse nimmt ihr den verifizierten Status, bis jemand sie erneut bestätigt. Eine Anmeldung passt nie über den Benutzernamen.
+
+Passt nichts, legt die Anmeldung ein neues Konto an, wenn **Unbekannte Benutzer bei der ersten Anmeldung bereitstellen** eingeschaltet ist, und wird abgewiesen, wenn sie ausgeschaltet ist.
+
+### Bevor du SSO für Personen einschaltest, die schon Konten haben
+
+Bestätige zuerst deren Adressen. Öffne **Einstellungen → Server → Personen**, dort zeigt jedes Konto **E-Mail nicht bestätigt**, bis jemand es bestätigt hat. Nutze in der Zeile jeder Person **E-Mail bestätigen**. Nur der Serverinhaber sieht diese Liste. Ohne diesen Schritt bekommt jede dieser Personen bei ihrer ersten SSO-Anmeldung ein zweites Konto oder wird abgewiesen, wenn das Bereitstellen unbekannter Benutzer ausgeschaltet ist.
+
+Solange ihre Adresse unbestätigt ist, sieht eine Person unter dem E-Mail-Feld ihres eigenen Profils den Hinweis: „Nur du hast diese Adresse eingegeben. Single Sign-on passt sie nicht an, bis der Serverinhaber sie bestätigt.“
+
+### Provider, die `email_verified` nicht senden
+
+Manche Provider lassen den Anspruch weg. Microsoft Entra ID tut das standardmäßig. Ein fehlender Anspruch ist kein Ja. Bei einem solchen Provider passt eine Anmeldung daher nur über die angeheftete Identität, und die erste Anmeldung einer Person kann ihr bestehendes Konto nie über die E-Mail-Adresse finden. Die Bereitstellung des Kontos per SCIM hilft bei dieser ersten OIDC-Anmeldung nicht. Praktische Wege sind:
+
+- **Unbekannte Benutzer bei der ersten Anmeldung bereitstellen** eingeschaltet lassen und die erste Anmeldung das Konto anlegen lassen, oder
+- den Provider so konfigurieren, dass er `email_verified` sendet, und dann die passenden Adressen wie oben bestätigen.
+
 ## Konfiguration von dieser Seite prüfen
 
 Die Prüfung unten läuft in deinem Browser. Sie holt das Discovery-Dokument
@@ -101,3 +127,15 @@ zeigt, ob der Client und seine Redirect-URI registriert sind. Nach dem
 Client-Secret fragt sie nie.
 
 <SsoCheck kind="oidc" />
+
+## Fehlersuche
+
+### Jemand hat nach dem Einschalten von SSO ein zweites Konto bekommen
+
+Die Adresse des bestehenden Kontos war bei der ersten SSO-Anmeldung nicht verifiziert, daher passte die Anmeldung nicht und legte ein neues Konto an. Das passiert, wenn die Adresse im Profil oder bei einer Einladung eingegeben und vom Serverinhaber nicht bestätigt war, oder wenn der Provider kein `email_verified: true` gesendet hat. Ein neues Konto, dessen Provider die Adresse bestätigt, übernimmt diese Adresse, und das ältere Konto, das sie nur eingegeben hatte, verliert sie.
+
+Um das bei der nächsten Person zu vermeiden, bestätige Adressen unter **Einstellungen → Server → Personen**, bevor sich die Personen anmelden. Hat jemand bereits zwei Konten, ist das neue an seine SSO-Identität angeheftet und wird ab jetzt für seine Anmeldungen verwendet.
+
+### „Dieses Konto ist bereits mit einer anderen SSO-Identität verknüpft“
+
+Die Anmeldung hat ein Konto über seine verifizierte E-Mail-Adresse gefunden, aber dieses Konto ist bereits an ein anderes Subject oder einen anderen Issuer angeheftet: eine andere Person beim Provider, dieselbe Person unter einem neuen Provider oder ein Konto, das SCIM unter einer eigenen Kennung angelegt hat. Das angeheftete Konto weist jede andere Identität ab, sodass eine wiederverwendete Adresse beim Provider es nicht übernehmen kann. Melde dich mit der Identität an, mit der das Konto zuerst verknüpft wurde.

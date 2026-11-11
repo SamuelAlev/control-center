@@ -2,10 +2,10 @@
 title: MCP-tools
 description: Volledige catalogus van de MCP-tools die cc_server registreert, per familie.
 slug: nl-NL/handleiding/referentie/mcp-tools
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` host één MCP-toolregister (JSON-RPC 2.0), aangeboden op de hoofdpoort van de server (standaard `9030`) via `POST /mcp` en `GET /sse`, met protocolversie `2024-11-05`. Elke client komt op hetzelfde register uit: de desktop, de webbuild, externe MCP-clients en de ingebouwde agentruntime. Externe MCP-servers kunnen als dynamische laag in hetzelfde register worden opgenomen.
+`cc_server` host één MCP-toolregister (JSON-RPC 2.0), aangeboden op de hoofdpoort van de server (standaard `9030`) via `POST /mcp` en `GET /sse`, met protocolversie `2024-11-05`. Elke client komt op hetzelfde register uit: de desktop, de webbuild, externe MCP-clients en de ingebouwde agentruntime. Externe MCP-servers kunnen als dynamische laag in hetzelfde register worden opgenomen. Servers die in de persoonlijke toolconfiguratie van de servergebruiker worden gevonden, vormen de uitzondering: dit eindpunt somt ze nooit op, roept ze nooit aan en doorzoekt ze nooit, en alleen de ingebouwde harness-runs waarvoor de servereigenaar verantwoordelijk is, krijgen ze (zie [Persoonlijke MCP-servers blijven van de eigenaar](/nl-NL/handleiding/gidsen/mcp-server/#persoonlijke-mcp-servers-blijven-van-de-eigenaar)).
 
 ## Omvang van het register
 
@@ -23,7 +23,7 @@ De vijf codegraaftools worden alleen geregistreerd wanneer de host een codegraaf
 Het volledige register wordt aangekondigd in `tools/list`, zonder beperking op discovery. Ticketbewerkingen zijn getypeerde tools.
 
 :::note[Externe clients zien altijd de volledige catalogus]
-`tools/list` wordt nooit ingekort. MCP-clients valideren toolnamen tegen hun eigen gecachte kopie van die lijst en weigeren alles wat daar niet op staat, zonder het de server te vragen; een tool die daar verborgen blijft, is dus onbereikbaar in plaats van alleen maar stil.
+`tools/list` wordt nooit ingekort, behalve voor de persoonlijke MCP-servers van de servereigenaar, die er nooit in staan. MCP-clients valideren toolnamen tegen hun eigen gecachte kopie van die lijst en weigeren alles wat daar niet op staat, zonder het de server te vragen; een tool die daar verborgen blijft, is dus onbereikbaar in plaats van alleen maar stil.
 
 De **ingebouwde harness** werkt anders: die laadt per verzoek alleen een residente subset van definities en haalt de rest binnen bij het eerste gebruik. Dat is gedrag aan de harnesskant en verandert niets aan dit register. Zie [Toolcontext en promptcaching](/nl-NL/handleiding/concepten/toolcontext).
 :::
@@ -257,8 +257,10 @@ werkwoordenvocabulaire per oppervlak staat in de
 | `browser_use`  | Bestuur een headless Chromium, Firefox of WebKit (`engine`): navigeren, klikken, invullen, extraheren (a11y/DOM/console), klembord, screenshot |
 | `mobile_use`   | Bestuur Android via ADB: inspecteren/invoeren, screenshots, apps installeren/starten/stoppen/resetten/verwijderen, deep links en apparaatcommando's in argv-vorm |
 | `ios_use`      | Bestuur de iOS Simulator via WebDriverAgent/CoreSimulator: inspecteren/invoeren, screenshots, apps installeren/starten/stoppen/verwijderen, deep links en simulatorprocessen in argv-vorm |
-| `rig_list`     | Toon de rigs van een werkruimte met oppervlak, status, weergavegrootte en controller            |
+| `rig_list`     | Toon de rigs van de space van de run met oppervlak, status, weergavegrootte en controller      |
 | `rig_close`    | Vernietig een rig en gooi de bijbehorende machinestatus weg                                     |
+
+Alleen agentruns kunnen deze tools aanroepen; elke andere aanroeper wordt geweigerd. Een run bereikt alleen de rigs van de space waarvoor hij is toegekend: `space_id` komt uit de grant van de run, nooit uit de aanroep, en een rig van een andere space, of van geen space, antwoordt precies als een ontbrekende.
 
 `app_use` is een vijfde use-tool: het bestuurt de vensters van een desktop-app die in een ruimte is gestart, rechtstreeks op de host en niet in een VM, en declareert ook `fileWriteOutsideWorktree` en `fileDelete`. Deze tool en de `environment_*`-tools staan beschreven in [Omgevingen instellen](/nl-NL/handleiding/gidsen/omgevingen/).
 
@@ -304,7 +306,7 @@ helemaal geen tool, dus een naam die je elders hebt zien staan levert
 | Mogelijkheid                             | Waar het in plaats daarvan zit                                                                  |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Een agent aannemen, ontslaan of bewerken  | De agenten-UI. Er is geen `hire_agent` / `fire_agent` / `update_agent`-tool                       |
-| Een werkruimte aanmaken                   | `workspace.upsert` via RPC, dat eigenaarschap initialiseert en vastlegt                            |
+| Een werkruimte aanmaken                   | `workspace.create` via RPC, alleen voor de serverbeheerder, dat eigenaarschap initialiseert en vastlegt |
 | Projecten (aanmaken / tonen / bijwerken / indienen) | De tickets-UI. Projecten zijn een operatoroppervlak — zie [Projecten](/nl-NL/handleiding/gidsen/projecten/) |
 | De operator een blokkerende vraag stellen | De **harness**-tool `ask_user`, niet MCP. Die toont een formulier in het gesprek en wacht op het antwoord |
 | Diagnostiek per agent                     | Niets. Er is geen `doctor` — zie [Een agent diagnosticeren](/nl-NL/handleiding/gidsen/agent-diagnosticeren/) |

@@ -2,7 +2,7 @@
 title: Mapa de rotas
 description: Todas as rotas que o Control Center registra, com sua tela e seus parâmetros de consulta.
 slug: pt-BR/manual/referencia/mapa-de-rotas
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Shell do app
@@ -11,7 +11,7 @@ O shell do app (`ControlCenterLayout`) envolve toda rota dentro do espaço de tr
 
 O portão é considerado completo quando pelo menos um forge está conectado **para o usuário autenticado** e existe pelo menos um espaço de trabalho.
 
-Uma credencial ausente e uma configuração ausente são tratadas de forma diferente, e o discriminador é `users.onboarding_finished_at`, lido do próprio `identity.me` de quem chama — nunca "existem espaços de trabalho", o que já está errado no momento em que alguém é convidado para um espaço de trabalho que nunca criou. Sem nenhum forge conectado, uma conta que passou pelo onboarding continua no app: o shell do espaço de trabalho mostra um aviso com link para Configurações → Espaço de trabalho → Perfil e identidade, onde fica o login; uma que não passou vai para `/onboarding`. Enquanto o sinalizador ainda é desconhecido, a guarda mantém a splash em vez de adivinhar, porque ela nunca redireciona de volta para fora do onboarding.
+Uma credencial ausente e uma configuração ausente são tratadas de forma diferente, e o discriminador é `users.onboarding_finished_at`, lido do próprio `identity.me` de quem chama — nunca "existem espaços de trabalho", o que já está errado no momento em que alguém é convidado para um espaço de trabalho que nunca criou. Sem nenhum forge conectado, uma conta que passou pelo onboarding continua no app: o shell do espaço de trabalho mostra um aviso com link para Configurações → Você → Perfil, onde fica o login; uma que não passou vai para `/onboarding`. Enquanto o sinalizador ainda é desconhecido, a guarda mantém a splash em vez de adivinhar, porque ela nunca redireciona de volta para fora do onboarding.
 
 ## Rotas sem prefixo
 
@@ -65,7 +65,7 @@ Não existe **nenhum item "Planos" na barra lateral**. O Plan Studio abre como u
 
 ## Rotas de configurações
 
-`/settings` redireciona para `/settings/you/appearance`. O botão de configurações da barra lateral e `Cmd/Ctrl + ,` vão ambos para `/settings/you/appearance`.
+`/settings` redireciona para `/settings/you/profile`. O botão de configurações da barra lateral e `Cmd/Ctrl + ,` vão ambos para `/settings/you/profile`.
 
 Os caminhos de configurações são separados por **escopo** — `you/`, `workspace/`, `server/` — porque o segmento indica quem uma alteração afeta. Dois caminhos são anteriores a essa separação e não têm escopo na URL: `/settings/memory` e `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Os caminhos de configurações são separados por **escopo** — `you/`, `worksp
 
 | Caminho                       | Tela                                                                       |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Tema, idioma, tipografia, tema do editor (a página inicial das configurações) |
-| `/settings/you/notifications` | Interruptores por evento, horário de silêncio                                |
+| `/settings/you/profile`       | Sua conta neste servidor: nome, nome de usuário, foto e login (a página inicial das configurações) |
+| `/settings/you/profile?section=accounts` | Contas conectadas: seus próprios logins de hospedagem de código, tickets, calendário e chat, e rascunhos de tickets do chat |
+| `/settings/you/appearance`    | Tema, idioma, tipografia, tema do editor |
 | `/settings/you/audio`         | Microfone, ditado, detecção de reunião e saída de paisagens sonoras           |
+| `/settings/you/notifications` | Interruptores por evento, horário de silêncio                                |
+| `/settings/you/commits`       | De quem é o crédito nos commits do trabalho que você inicia, e sua chave de assinatura de commits |
+| `/settings/you/desktop`       | Somente o app de desktop: o ícone na bandeja, fechar a janela e abrir ao iniciar sessão |
 | `/settings/you/devices`       | Telefones emparelhados e controle remoto                                    |
 | `/settings/you/newsfeed`      | Gerenciamento de feeds: fontes, atualização, estado de leitura              |
+| `/settings/you/links`         | Onde os links de fora do Control Center são abertos                         |
 
 ### Espaço de trabalho
 
 | Caminho                            | Tela                                                                                                |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Perfil e identidade neste espaço de trabalho: nome, autor do git, hospedagem de código, calendário  |
-| `/settings/workspace/general`      | Nome, logo, globs de segredos, concorrência de revisão, nomenclatura de branches, saúde da sincronização, pontes de chat, zona de perigo |
+| `/settings/workspace/profile`      | Perfil e identidade neste espaço de trabalho: nome, e-mail, autor do git |
+| `/settings/workspace/general`      | Nome, logo, globs de segredos, concorrência de revisão, nomenclatura de branches, zona de perigo |
+| `/settings/workspace/integrations` | Escolha do Connect, o app do GitHub e tokens de automação, fornecedor de tickets e automação, saúde da sincronização, os próprios apps de provedor do espaço de trabalho, pontes de chat, GIFs. Cada grupo de provedor nomeia a sua própria conta e leva a Contas conectadas |
 | `/settings/workspace/meetings`     | Modelos de notas de reunião e perfis de voz salvos                                                   |
-| `/settings/workspace/members`      | Lista de membros, convites, trilha de auditoria. A trilha de auditoria é paginada com `?cursor=` opcional |
+| `/settings/workspace/members`      | Lista de membros e convites |
 | `/settings/workspace/repositories` | Repositórios registrados neste espaço de trabalho                                                    |
 | `/settings/workspace/environments` | Definições de ambiente: o que os espaços podem iniciar e as tarefas que os worktrees executam |
 | `/settings/workspace/agents`       | Identidades de agentes registradas                                                                   |
@@ -108,6 +114,8 @@ Os caminhos de configurações são separados por **escopo** — `you/`, `worksp
 | `/settings/server/rigs`        | Rigs: o que este host consegue iniciar, imagens base, imagens personalizadas, máquinas em execução |
 | `/settings/server/sandbox`     | Concessões de execução no sandbox: programas que os agentes podem executar a partir da cópia de trabalho dos seus repositórios |
 | `/settings/server/diagnostics` | Diagnóstico e privacidade: sandboxing, embedding, registro de logs, relatórios de falhas |
+| `/settings/server/people`      | Pessoas neste servidor e se cada endereço está confirmado (somente o proprietário do servidor)       |
+| `/settings/server/audit`       | Log de auditoria: o do servidor e o dos espaços de trabalho que você administra                            |
 | `/settings/server/backup`      | Backup e restauração: snapshots da instalação, exportação por espaço de trabalho, importação e exclusão |
 | `/settings/server/about`       | Sobre e atualizações                                                                  |
 

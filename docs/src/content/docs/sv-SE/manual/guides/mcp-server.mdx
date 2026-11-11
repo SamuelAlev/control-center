@@ -1,8 +1,8 @@
 ---
 title: Använd MCP-servern
-description: Peka en extern MCP-klient mot Control Centers verktygsserver, ange en bearer-token och förstå vad ytan exponerar.
+description: Peka en extern MCP-klient mot Control Centers verktygsserver, skicka dess bearer-token och förstå vad ytan exponerar.
 slug: sv-SE/handbok/how-to-guider/mcp-server
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Den här guiden visar hur du ansluter en extern MCP-klient – Claude Code, en
@@ -30,25 +30,40 @@ Så en standardinstallation lokalt ligger på `http://127.0.0.1:9030/mcp`.
 2. Läs kortet **MCP-server** – det visar om den körs eller är stoppad och vilken
    port den lyssnar på
 
-Ytan är på som standard i en nyinstallation, så en loopback-klient fungerar utan
-att du behöver röra inställningarna. **Starta vid applansering** styr om den
-kommer tillbaka efter en omstart; **Starta** / **Stoppa** är sessionskontroller
-som inte ändrar den inställningen.
+Ytan är på som standard i en nyinstallation. Token på kortet syns bara för
+serverägaren, och endast serverägaren kan starta eller stoppa slutpunkten.
+**Starta vid applansering** styr om den kommer tillbaka efter en omstart;
+**Starta** / **Stoppa** är sessionskontroller som inte ändrar den inställningen.
 
 Servern binder till loopback som standard, så slutpunkten nås bara från
 maskinen som `cc_server` kör på, om du inte startade den med `--bind any`.
 
+## Hämta token
+
+Varje begäran behöver serverns MCP-token, från vilken maskin som helst, även från
+loopback. Servern skapar den första gången den startar. Det finns inget sätt att
+stänga av den och inget sätt att rensa den.
+
+1. Gå till **Inställningar → Server → MCP-servrar** och hitta raden **Autentiseringstoken**
+2. Tryck på **Visa token** och kopiera den
+3. För att ersätta den, tryck på **Rotera token**. Servern byter till den nya
+   token direkt, och varje klient som fortfarande använder den gamla avvisas tills
+   du ger den den nya
+
 ## Anslut en klient
 
-Peka din klient mot Streamable HTTP-slutpunkten. Exakt hur konfigurationen ser
-ut är upp till din klient; URL:en är densamma oavsett.
+Peka din klient mot Streamable HTTP-slutpunkten och skicka token som
+`Authorization: Bearer <token>` i varje begäran, `GET /sse` inkluderad. Det finns
+inget annat sätt att skicka den: en token i URL:en godtas inte. Exakt hur
+konfigurationen ser ut är upp till din klient.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -70,23 +85,20 @@ server inte också upptäcks från projektet och registreras två gånger.
 Kontrollpunkt: be klienten lista sina verktyg. Du bör se `mcp__*`-poster som
 täcker ärenden, ytor, minne, kodgraf och granskning.
 
-## Betjäna MCP utanför värden
+## Vad slutpunkten vägrar
 
-1. I **Inställningar → Server → MCP-servrar**, på raden **Autentiseringstoken**,
-   tryck på **Ange** och klistra in en token
-2. Skicka den som `Authorization: Bearer <token>` i varje `POST /mcp`-begäran
+Token öppnar varje verktyg på servern, så slutpunkten avvisar också allt som en
+webbsida kan ha skickat, innan den tittar på token:
 
-En yta utan token avvisar alla anropare utanför loopback med 403. Det är
-fail-closed med avsikt: token är det som över huvud taget gör tjänsten utanför
-värden möjlig.
+| Begäran | Svar |
+| ------- | ---- |
+| En `Origin`-header som inte är en sida på den här maskinen (`http://localhost`, `http://127.0.0.1` eller `http://[::1]`, vilken port som helst) | `403`, "Cross-origin requests are not accepted" |
+| En `Host`-header som varken är denna lyssnares loopback-adress och port eller serverns publika värdnamn | `403`, "Unknown host" |
+| En `POST` vars brödtext inte är `application/json` | `415` |
+| Ingen token, eller fel token | `401` |
 
-Tokenändringar slår igenom på den körande ytan omedelbart – ingen omstart krävs.
-
-:::note[`GET /sse` tar token i frågesträngen]
-Aviseringsströmmen kontrolleras mot token precis som alla andra rutter, men en
-`EventSource` i webbläsaren kan inte skicka headern `Authorization` – så `/sse`
-accepterar även token som `?token=<token>`. Utan en sådan svarar den 401.
-:::
+För att betjäna MCP utanför värden, starta servern med `--bind any` och skicka
+token från den andra maskinen, och adressera servern med dess publika värdnamn.
 
 ## Begränsa varje anrop till en arbetsyta
 
@@ -126,6 +138,30 @@ Hela katalogen annonseras i `tools/list` utan upptäcktsstyrning – en extern
 MCP-klient vägrar anropa ett verktyg som inte finns i dess cachade lista, så att
 dölja verktyg förstör dem i stället för att snygga till dem.
 
+## Personliga MCP-servrar förblir ägarens
+
+Den här guiden handlar om Control Centers egen slutpunkt. Den andra riktningen,
+MCP-servrar som Control Center ger till de agenter den kör, finns under
+**Inställningar → Server → MCP-servrar → Externa MCP-servrar**. Servrar som
+konfigurerats på serverns maskin för Claude, Codex, Cursor, Gemini, VS Code,
+Windsurf, OpenCode eller i en `.mcp.json` hittas där automatiskt.
+
+De upptäckta servrarna kommer från serverns användares egen verktygskonfiguration
+och agerar med den användarens identitet och uppgifter, så de tillhör
+serverägaren:
+
+- De är bara tillgängliga inom inbyggda harness-körningar som serverägaren startar
+  eller svarar för, inklusive automatisering i en arbetsyta som ägaren svarar för.
+- En medlems körning, automatisering bunden till en medlem och varje körning på en
+  server utan någon registrerad ägare får ingen av dem. Där listas verktygen inte,
+  kan inte anropas och syns inte i verktygssökningen.
+- Slutpunkten här listar, anropar eller söker aldrig dem, för någon, ägarens token
+  inräknad, och den vidarebefordrar inte deras resurser eller prompts. En agent-CLI
+  som når Control Center över MCP, som Claude Code, får alltså inte dem genom
+  Control Center heller; den använder sin egen konfiguration.
+
+MCP-servrar som konfigurerats för arbetsytan påverkas inte av något av detta.
+
 ## Felsökning
 
 ### Klienten ser inga verktyg
@@ -135,9 +171,21 @@ dölja verktyg förstör dem i stället för att snygga till dem.
 - I Claude Code: kontrollera att du skickade med `--mcp-config` och
   `--strict-mcp-config`
 
-### 403 från en maskin som inte är servern
+### 401 Unauthorized
 
-Ingen bearer-token är konfigurerad. Ange en och skicka den.
+Begäran bar ingen token, eller en gammal. Kopiera den aktuella token från raden
+**Autentiseringstoken** och skicka den som `Authorization: Bearer <token>`. En
+token i URL:en ignoreras.
+
+### 403 från en klient som tidigare fungerade
+
+Begäran bar en `Origin` från en webbsida, eller en `Host` som servern inte svarar
+på. Anropa slutpunkten från en klient i stället för en webbsida, med serverns
+loopback-adress eller dess publika värdnamn.
+
+### 415 Unsupported Media Type
+
+Skicka `POST /mcp`-brödtexter som `application/json`.
 
 ### Ett verktygsanrop misslyckas med "Missing or invalid argument: workspace_id"
 

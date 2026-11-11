@@ -2,7 +2,7 @@
 title: Poorten doorsturen vanaf een terminal
 description: Bereik een dev-server die in een Terminal (VM) of een hostshell is gestart — vanaf je eigen machine, vanuit de Browser (VM), vanaf Android, op je netwerk, of onder een dev-domein met HTTPS.
 slug: nl-NL/handleiding/gidsen/vm-poorten
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Een server die je in de terminal van een gesprek start, wordt alleen gepubliceerd voor **die ruimte**. Het poortenpaneel merkt de processen op die deze app daar heeft gestart, brengt ze in kaart en geeft je een adres voor elke plek van waaruit je ze wilt bereiken. Twee ruimtes kunnen allebei op `5173` luisteren; hun poortmappen lopen nooit door elkaar.
@@ -11,7 +11,7 @@ Niets hiervan zet de machine open: elk pad wordt door de server aangemaakt, op v
 
 ## Zie wat er luistert
 
-1. Open de **Terminal (VM)** of hostshell van het gesprek (in een ruimte of op een PR-pagina).
+1. Open in het `+`-menu van de editor van het gesprek (in een ruimte of op een PR-pagina) **Terminal**: onder **Machines** een shell in de VM van het gesprek, of onder **Tools** een terminal op de server. Alleen de serverbeheerder kan een hostshell openen; de terminal van iedereen anders draait in een sandbox.
 2. Start je server — `pnpm dev`, `python -m http.server 8000`, wat dan ook.
 3. Binnen een paar seconden krijgt het **stekkerpictogram** rechtsboven in de
    terminal een stip. Klik erop.
@@ -124,6 +124,10 @@ er iets op luistert. Een handmatige doorsturing behoudt zijn adres terwijl je
 server opnieuw opstart — de rij toont *luistert niet* totdat hij terug is —
 terwijl automatische doorsturingen verdwijnen zodra hun poort dat doet. Op een
 hostshell kun je ook een andere lokale poort instellen.
+
+Het wijzigen van doorsturingen vereist een schrijfrecht op elke repository die de ruimte beschikbaar stelt. Met leestoegang zie je de poorten nog wel; het paneel toont dan "Deze poorten wijzigen vereist schrijftoegang tot elke repository in deze space." in plaats van **Poort toevoegen**. Zie [Wie kan kijken en wie kan aansturen](/nl-NL/handleiding/gidsen/rigs-gebruiken/#wie-kan-kijken-en-wie-kan-aansturen).
+
+Een terminal die iemand voor zichzelf heeft geopend, houdt zijn poorten voor die persoon: voor alle anderen beantwoorden de poortenlijst en de wijzigingen daarin alsof de sessie niet bestaat, net als de sessie zelf. Terminals die in een space zijn gedeeld, volgen de spaceregel hierboven.
 
 ## Hoe het ingesloten blijft
 

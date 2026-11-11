@@ -2,14 +2,13 @@
 title: Conversations de PR
 description: Comment un commentaire de PR GitHub devient un tour d’agent sans webhook, ce qui autorise son auteur et à qui chaque partie de la conversation est attribuée.
 slug: fr-CA/manuel/concepts/conversations-de-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Une demande de tirage est déjà l’endroit où se déroule la conversation sur le code. Les
 conversations de PR en font une surface d’un espace de travail Control Center, de la même
 manière qu’une [passerelle de clavardage](/fr-CA/manuel/concepts/passerelles-de-clavardage/)
-fait de Slack une surface : @mentionnez `@usectrl` (ou le robot de la GitHub App
-de l’espace de travail) dans une PR, répondez dans ses fils de révision ou
+fait de Slack une surface : @mentionnez `@usectrl` dans une PR, répondez dans ses fils de révision ou
 ajoutez l’étiquette `ai-review`, et le travail se fait dans l’espace de révision de la PR —
 sous la même attribution et les mêmes garde-fous que tout ce qui est saisi dans
 l’application. Un commentaire et une étiquette sont contrôlés de la même façon : sur le
@@ -26,8 +25,7 @@ l’extérieur** et **à qui chaque partie est attribuée**.
 Le seul canal de poussée que GitHub offre à une application est le webhook, et un webhook
 exige une URL entrante — précisément ce que cette surface ne requiert jamais,
 délibérément. La découverte se fait donc par balayage : une recherche avec alias par
-installation de l’application demande à GitHub les PR qui mentionnent le robot (ou son
-slug court) ainsi que les PR ouvertes qui portent l’étiquette de révision, les PR qui ont
+installation de l’application demande à GitHub les PR qui mentionnent `@usectrl` ainsi que les PR ouvertes qui portent l’étiquette de révision, les PR qui ont
 déjà un espace de révision voient leurs fils de commentaires lus, et le tout est comparé
 par identifiant de commentaire avec ce qui a été vu au balayage précédent. Une app propre
 balaie chaque minute au plus 25 PR. Par Connect, les appels puisent dans le quota GitHub
@@ -74,8 +72,8 @@ publié :
 - **Un membre connecté.** Le compte doit appartenir à un membre de _cet_ espace de travail
   qui s’est connecté à GitHub sur ce serveur
 - **Un rôle en écriture.** `viewer` et `guest` ne peuvent pas lancer de travail
-- **Un accès en poussée.** Les réponses utilisent un jeton `bot` limité à l’accès de ce
-  membre au dépôt. Si le serveur ne peut pas en émettre un, il ne poursuit pas
+- **Un accès en poussée.** Les réponses utilisent un jeton pour ce seul dépôt, limité à
+  l’accès de ce membre à celui-ci. Si le serveur ne peut pas en émettre un, il ne poursuit pas
 
 Chaque vérification s’exécute avant tout accusé de réception, de sorte qu’un inconnu
 n’obtient ni réaction ni réponse. Un commentaire n’est jamais attribué à quelqu’un qui ne
@@ -97,15 +95,16 @@ Chaque partie de la conversation porte une identité différente, et cette diff�
 fonctionnalité même :
 
 - **Sur GitHub, la réponse est une automatisation qui agit en votre nom.** Chaque réponse
-  utilise un jeton `bot` pour ce seul dépôt, limité à l’accès du membre qui pose la
-  question. Avec une app propre, l’auteur est le compte `[bot]` de l’app. Par Connect, un
-  jeton de l’App partagée est un jeton d’utilisateur : la réponse est donc rédigée par le
-  compte du membre qui pose la question, agissant par l’entremise de l’App. Dans les deux
-  cas, chaque réponse commence par `**Control Center** (for @login):`, qui indique qui a
-  posé la question et sert aussi de garde anti-boucle.
+  utilise un jeton pour ce seul dépôt, limité à l’accès du membre qui pose la question,
+  et elle est rédigée par le compte `[bot]` de l’app. Une exception : sur l’app partagée
+  Control Center Connect, le robot ne publie dans les fils de révision que lorsque
+  l’opérateur de Connect a inscrit l’installation; sinon, une réponse dans un fil de
+  révision est rédigée par le compte du membre qui pose la question. Dans les deux cas, chaque réponse commence par `**Control Center** (for @login):`, qui indique qui a
+  posé la question et sert aussi de garde anti-boucle. Les @-mentions dans les mots de
+  l’agent sont rendues inertes, de sorte qu’une réponse ne notifie jamais un utilisateur ou une équipe.
 - **Dans l’espace, la question est la vôtre.** Le message est attribué au membre obtenu par
-  résolution de l’auteur, et l’exécution de l’agent se fait en son nom : les commits le
-  désignent comme coauteur, et le cadran d’autonomie de l’espace ainsi que les garde-fous
+  résolution de l’auteur, et l’exécution de l’agent se fait en son nom : ses commits lui
+  appartiennent, et le cadran d’autonomie de l’espace ainsi que les garde-fous
   d’action s’appliquent exactement comme à un message saisi dans l’application. Les
   écritures vers la forge provenant de l’exécution utilisent des jetons limités à un dépôt
   et bornés par ce membre, jamais sa connexion remise telle quelle.
@@ -113,24 +112,17 @@ fonctionnalité même :
 Publier les constatations de révision vers GitHub demeure une décision humaine, prise dans
 Control Center. Une mention peut _lancer_ une révision; seul un humain en publie une.
 
-## Le garde anti-boucle et le nom court
+## Le garde anti-boucle
 
 Tout ce qui est produit par un compte de robot est écarté avant l’exécution de quelque
 filtre que ce soit — le nôtre en particulier, et tout suffixe `[bot]`, pour qu’un robot de
 révision appartenant à une autre application ne puisse pas non plus réveiller le nôtre —
 tout comme chaque commentaire qui commence par le préfixe `**Control Center** (for @`,
-puisqu’une réponse par Connect est rédigée par le compte d’une personne. Sans cela, les
+puisqu’une réponse dans un fil de révision par Connect peut être rédigée par le compte d’une personne. Sans cela, les
 réponses arriveraient comme de nouveaux commentaires et redéclencheraient la passerelle
 sans fin.
 
-Le suffixe `[bot]` explique aussi l’existence de la forme courte. GitHub fixe l’identifiant
-de connexion d’un compte d’application à `<slug>[bot]`, n’offre aucune saisie
-semi-automatique pour celui-ci et ne résout jamais `@slug` vers l’application — accepter le
-slug seul relève donc d’une décision de _notre_ mécanisme de correspondance, et le
-découvrir exige une voie de recherche brute dans le **texte** des commentaires plutôt que
-l’index des mentions de GitHub. Le coût est énoncé plutôt que lissé : un utilisateur humain
-qui partage le slug de l’application interpelle le robot à chacune de ses propres mentions
-en forme courte. Des noms d’application distinctifs rendent cette collision hypothétique.
+Seul `@usectrl` déclenche le travail. L’identifiant de connexion de l’App (`<slug>[bot]`) et son slug nu n’adressent rien : GitHub n’offre aucune saisie semi-automatique pour un compte d’application, et un slug nu peut appartenir à un utilisateur humain.
 
 ## Ce qui n’est délibérément pas offert
 

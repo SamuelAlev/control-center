@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
 import 'package:cc_domain/core/domain/value_objects/account_pool.dart';
 import 'package:cc_domain/features/settings/domain/entities/claude_account.dart';
+import 'package:cc_domain/features/settings/domain/entities/claude_sign_in_state.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:crypto/crypto.dart';
@@ -410,24 +411,7 @@ class ClaudeAccountStore {
     final entries = await Future.wait(
       accounts.map((a) async {
         final dir = configDirFor(a.id);
-        final mirrored = await syncCredentialFromKeychain(a.id);
-        // A run that 401'd proved the credential in this directory is dead, and
-        // the keychain says nothing about that — the item is still THERE, it
-        // just no longer authenticates, so the mirror above happily reports a
-        // signed-in account we already watched fail. Honour the observation
-        // until a NEWER credential lands (a re-login, or an in-sandbox
-        // refresh), which is the only thing that can make it work again.
-        // An UNRENEWABLE credential is the same verdict arrived at without a
-        // wasted run: it says when it stops working and carries nothing to
-        // renew itself with, so a dispatch that could only 401 is skipped now
-        // rather than after it fails. Cheap enough for the dispatch path — a
-        // read of a file already on disk. A merely-expired token is NOT
-        // excluded: the CLI refreshes that on start, and treating it as dead
-        // would empty the rotation every morning.
-        final signedIn =
-            mirrored &&
-            !credentialBeyondRepair(a.id, at) &&
-            !_authFailurePending(a, dir);
+        final signedIn = await _signedIn(a, at);
         final cooldown = a.rateLimitedUntil;
         final cooling = cooldown != null && cooldown.isAfter(at);
         // Don't spend a probe on an account that already cannot serve a run.
@@ -448,6 +432,51 @@ class ClaudeAccountStore {
       }),
     );
     return Map.fromEntries(entries);
+  }
+
+  /// Whether a run would find a working credential in [account]'s directory
+  /// at [at], after mirroring its keychain item in. No CLI probe.
+  ///
+  /// A run that 401'd proved the credential in this directory is dead, and the
+  /// keychain says nothing about that — the item is still THERE, it just no
+  /// longer authenticates, so the mirror happily reports a signed-in account
+  /// we already watched fail. Honour the observation until a NEWER credential
+  /// lands (a re-login, or an in-sandbox refresh), which is the only thing
+  /// that can make it work again.
+  /// An UNRENEWABLE credential is the same verdict arrived at without a wasted
+  /// run: it says when it stops working and carries nothing to renew itself
+  /// with, so a dispatch that could only 401 is skipped now rather than after
+  /// it fails. Cheap enough for the dispatch path — a read of a file already
+  /// on disk. A merely-expired token is NOT excluded: the CLI refreshes that
+  /// on start, and treating it as dead would empty the rotation every morning.
+  Future<bool> _signedIn(ClaudeAccount account, DateTime at) async {
+    final mirrored = await syncCredentialFromKeychain(account.id);
+    return mirrored &&
+        !credentialBeyondRepair(account.id, at) &&
+        !_authFailurePending(account, configDirFor(account.id));
+  }
+
+  /// Whether each registered account holds a credential a run could use right
+  /// now, and until when it lasts, WITHOUT probing the CLI.
+  ///
+  /// What a surface waiting on `claude auth login` asks every couple of
+  /// seconds. The login runs in a terminal and writes the account's keychain
+  /// item, so the only sign that it finished is a newer credential there. Each
+  /// account is mirrored first, exactly as a run would do it, which is also
+  /// what lets the next roster read report the new login. The accounts come
+  /// from the registry and from nowhere else: a caller names none.
+  Future<List<ClaudeSignInState>> signInStates() async {
+    final at = now();
+    return Future.wait([
+      for (final account in await list())
+        _signedIn(account, at).then(
+          (signedIn) => ClaudeSignInState(
+            accountId: account.id,
+            signedIn: signedIn,
+            credentialExpiresAt: credentialExpiry(account.id),
+          ),
+        ),
+    ]);
   }
 
   Future<({double used, DateTime? resetsAt})?> _usageFor(
@@ -961,62 +990,6 @@ class ClaudeAccountStore {
     ],
     environment: {'CLAUDE_CONFIG_DIR': configDirFor(accountId)},
   );
-
-  /// Retires the account an older build seeded from the operator's own
-  /// `~/.claude` keychain login.
-  ///
-  /// That account held a COPY of the operator's credential, refresh token
-  /// included. Refresh tokens rotate on use, so the first run that renewed the
-  /// copy revoked the operator's own, and their Claude Code asked them to sign
-  /// in again — and the next sign-in was copied straight back in, so it
-  /// happened again the next day. The copy is deleted (the operator's original
-  /// is untouched in the keychain) and the account is left signed out until it
-  /// gets its own login.
-  ///
-  /// Idempotent: the marker is dropped from the registry once handled.
-  /// Returns the ids it retired. Never throws.
-  Future<List<String>> retireDefaultLoginCopies() async {
-    final retired = <String>[];
-    try {
-      final file = _registryFile;
-      if (!file.existsSync()) {
-        return retired;
-      }
-      final decoded = jsonDecode(await file.readAsString());
-      if (decoded is! List) {
-        return retired;
-      }
-      for (final row in decoded) {
-        if (row is Map && row['tracks_default_login'] == true) {
-          final id = row['id'];
-          if (id is String && id.isNotEmpty) {
-            retired.add(id);
-          }
-        }
-      }
-      if (retired.isEmpty) {
-        return retired;
-      }
-      for (final id in retired) {
-        final copy = File(p.join(configDirFor(id), '.credentials.json'));
-        if (copy.existsSync()) {
-          copy.deleteSync();
-        }
-      }
-      // `toRegistryJson` no longer writes the marker, so a rewrite drops it.
-      await _writeRegistry(await list());
-      CcInfraLog.info(
-        'ClaudeAccountStore: retired ${retired.join(', ')}, which mirrored the '
-        "operator's own Claude Code login and signed it out on every refresh. "
-        'Sign it in on its own or give it a long-lived token.',
-      );
-    } on Object catch (e) {
-      CcInfraLog.warning(
-        'ClaudeAccountStore: could not retire the keychain-seeded account: $e',
-      );
-    }
-    return retired;
-  }
 
   /// Reads one generic-password item, accepting it only if it parses as the
   /// credential envelope.

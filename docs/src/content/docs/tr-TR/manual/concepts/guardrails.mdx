@@ -2,7 +2,7 @@
 title: Korumalar — her değiştirici eylem için tek ilke
 description: Control Center her ajan yan etkisini neden tek bir izin/soru/ret motorundan geçiriyor, ActionClass sınıflandırması bilinçli olarak nasıl küçük kalıyor ve özerklik kadranı gerçekte neyi değiştiriyor.
 slug: tr-TR/kilavuz/kavramlar/korumalar
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Control Center'daki ajanlar dosya silebilir, dal push edebilir, pull request
@@ -19,9 +19,7 @@ Tam olarak tek bir ilke motoru vardır. Bir eylemin sistemden çıkabileceği he
 noktada ona danışılır: yerleşik harness'ın araç kaydı, sunucu tarafındaki MCP
 dağıtıcı kapısı ve repo-op mutasyonları. Bu yüzden bir kez yazılan kural, hem
 yerleşik çalışma zamanında hem de harici ajan CLI'larında geçerli olur —
-etrafından dolaşan ikinci, daha sessiz bir yol yoktur. Eski yalnızca-bash komut
-ilkesi hâlâ çalışır: bir kural, eylem sınıfı yerine bir komut önekiyle
-eşleşebilir ve iki biçim aynı depoda bir arada bulunur.
+etrafından dolaşan ikinci, daha sessiz bir yol yoktur. Bir kural ayrıca eylem sınıfı yerine bir komut önekiyle eşleşebilir; iki biçim de aynı depoda bir arada bulunur.
 
 Ne var ki motor, işletim sistemi sandbox'ının yerini tutmaz; sandbox da onun
 yerini tutmaz. Farklı soruları yanıtlarlar: korumalar, Control Center'ın
@@ -29,14 +27,12 @@ görebildiği bir çağrının gerçekleşmesine hiç izin verilip verilmediğin
 verir; sandbox ise ortaya çıkan sürecin nerelere erişebileceğini sınırlar.
 `cc_server`, ana makine bir arka uç sunduğunda sandbox'ı uygular — ancak
 [Windows hiçbir şey sunmaz ve Linux `bwrap` ile `socat` gerektirir](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/). Bu
-ana makinelerde korumalar, bir tabanın üzerinde oturan bir ilke değil, en dıştaki
-uygulama katmanıdır; ne kadar izin verici olacağınıza karar verirken bunu bilmek
-faydalıdır.
+ana makinelerde yalnızca sunucu sahibinin çalıştırmaları başlar; sahip, `--sandbox off` ile herkes için sandbox'ı kapatmadıysa. Sandbox olmadan başlayan her çalıştırma için korumalar, bir tabanın üzerinde oturan bir ilke değil, en dıştaki uygulama katmanıdır; ne kadar izin verici olacağınıza karar verirken bunu bilmek faydalıdır.
 
 ## ActionClass: bilinçli olarak kapalı bir sınıflandırma
 
-Her değiştirici araç, kapalı bir on üç etki sınıfı kümesinden hangi
-**ActionClass**'lara ait olduğunu bildirir. Bunlardan beşi kutudan çıktığı
+Her değiştirici araç, kapalı bir on dört etki sınıfı kümesinden hangi
+**ActionClass**'lara ait olduğunu bildirir. Bunlardan altısı kutudan çıktığı
 hâliyle sorar; geri kalanı izin verir ve bunu değiştiren şey bir kuraldır.
 
 | Sınıf                      | Yerleşik varsayılan | Neyi kapsar                                                          |
@@ -54,17 +50,14 @@ hâliyle sorar; geri kalanı izin verir ve bunu değiştiren şey bir kuraldır.
 | `processSpawn`             | izin ver            | Süreç başlatma (shell ve shell'e çıkan her şey)                      |
 | `workspaceMutation`        | izin ver            | Çalışma alanı yapısını değiştirme (depolar, alanlar, ajanlar)        |
 | `enclosureControl`         | izin ver            | Bir enclosure'ı (rig) yönetme: bir VM başlatma, ona girdi gönderme   |
+| `hostExecution`            | **önce sor**        | Bir ajanın isteğiyle, herhangi bir sandbox dışında sunucu ana makinesinde bir komut çalıştırma: ortam görevleri, süreçler, compose yığınları ve çekirdeği sınırlandırılmamış çalışan `eval` |
 
 Varsayılan olarak izin veren sekiz sınıf, altlarında sandbox tabanının geçerli
-olduğu varsayımıyla seçildi. Ana makine bir arka uç sunduğunda bu böyledir;
-Windows'ta ya da `bwrap` ve `socat` eksik bir Linux makinesinde ise böyle
-değildir — dolayısıyla orada `fileWriteOutsideWorktree` veya `packageInstall`
-için bir kapı istiyorsanız, yazmanız gereken bir kural vardır.
+olduğu varsayımıyla seçildi. Ana makine bir arka uç sunduğunda bu böyledir ve `--sandbox off` altında değildir; Windows'ta ya da `bwrap` ve `socat` eksik bir Linux makinesinde sahibin kendi çalıştırmaları için de değildir. Dolayısıyla orada `fileWriteOutsideWorktree` veya `packageInstall` için bir kapı istiyorsanız, yazmanız gereken bir kural vardır.
 
 Küme bilinçli olarak kapalıdır. Sınıf bildirmeyen yeni bir değiştirici araç
 ratchet testini geçemez; bu yüzden sınıflandırma ancak açık ve gerekçeli bir
-kararla büyüyebilir — "sınıflandırmanın şişmesi bu özelliğin sonu demektir." On
-üç sınıf, insanların gerçekte yazdığı ilkeleri ifade etmeye yeter (sormadan asla
+kararla büyüyebilir — "sınıflandırmanın şişmesi bu özelliğin sonu demektir." On dört sınıf, insanların gerçekte yazdığı ilkeleri ifade etmeye yeter (sormadan asla
 push etme, bir çalışma ağacının dışında asla silme, okumalara her zaman izin
 ver) ve ayarlar arayüzünün anlaşılır kalmasını sağlayacak kadar da azdır.
 
@@ -91,8 +84,7 @@ kuralı en uzun komut önekiyle eşleşir. İzin, hiçbir yerde reddi yenmez.
 
 Bilinçli olarak tur başına kalıcı bir kilit yoktur. Her araç çağrısı ilkeyi
 sıfırdan yeniden çözümler; bu yüzden aynı eylem için tekrar tekrar sorulması,
-tura bağlı herhangi bir şeyle değil, operatörün kendi "bu kararı hatırla"
-tercihiyle sınırlanır.
+tura bağlı herhangi bir şeyle değil, operatörün kendi süreli onayıyla sınırlanır.
 
 ## Argüman düzeyinde kurallar
 
@@ -108,6 +100,7 @@ Bir kısıt şunları adlandırabilir:
   dışındaki her dal" diye okunur)
 - **host'lar** — alt alan adı joker karakterleriyle ağ hedefleri (`*.internal`)
 - **komutlar** — sözcük sınırında eşleşen komut önekleri
+- **araçlar** — çağrının adını verdiği tam araç, böylece bir onay aynı etkiye sahip her aracı değil yalnızca bir aracı kapsayabilir
 - **üst sınırlar** — `maxCount` / `maxCents`, böylece "en fazla 50 dosya sil"
   ifade edilebilir
 
@@ -149,15 +142,19 @@ deposunun altındaki mod komut ağı ve her ikisinin altındaki işletim sistemi
 sandbox'ıdır. `allow` olarak çözülen bir komut kuralı bu ikisinden hiçbirini
 hiçbir zaman gevşetmez — mod ağı sonradan çalışır ve onun `deny` kararı nihaidir.
 
-## Kalıcı onaylar
+## Süreli onaylar
 
-Bir soruyu "bunu hatırla" diyerek yanıtlamak gerçek bir ilke kuralı yazar:
-kapsamlıdır (alan / ajan / çalışma alanı), **argümanla kısıtlıdır**
-(`feature/login` dalına yönelik bir push'u onaylamak `main`i değil `feature/**`
-kalıbını verir) ve açık bir TTL ile **kendini iptal eder**. Önümüzdeki birkaç
-saat için evet demek, kalıcı ilkenizi sessizce yeniden yazmakla aynı şey değildir;
-yazdığı kurallar aynı depoya `remembered` kaynağı ve bir son kullanma tarihiyle
-düşer, böylece erkenden iptal edilebilirler.
+Bir ajanın eyleminin onay kartı oluşturduğunda ve eylem, sınıfından daha dar adlandırılabilecek bir şeye sahipse, kart **8 saatliğine onayla** seçeneğini sunar. Bunu seçmek, sizin belirlediğiniz kurallarla aynı depoya gerçek bir ilke kuralı yazar; bu bir süreli onaydır, kaynağı `remembered` ve bir son kullanma tarihi vardır:
+
+- **Kapsamla sınırlı.** Soru hangi alandan geldiyse o alan için yazılır; tüm çalışma alanı için yalnızca bir yöneticinin yanıtı yazılabilir.
+- **Dar.** Bir dal ailesini adlandırır (`feature/login` dalına push onayı `feature/**` kapsar, `main` değil), bir klasörü, bir host’u, tam komutu veya aracı. Bir commit, o alan için bir sınıf olarak onaylanan tek eylemdir: adlandırabileceği daha dar bir şey yoktur.
+- **Kendini iptal eder.** 8 saat sonra sona erer ve ajan izinleri sayfasında daha erken iptal edilebilir.
+
+Süreli onay yalnızca bir soruyu atlatır. Kendi kapsamında ya da daha geniş bir kapsamda ayarlanmış Önce sor kararını yanıtlar; hangi kapsamdan gelirse gelsin Reddet kararını hiçbir zaman yanıtlamaz. Eylem için belirlediğiniz kuralın yanında saklanır; bu nedenle o kuralı değiştirmek onayı yerinde bırakır ve onayı iptal etmek kuralı bırakır.
+
+Bazı kapılar, politika bir çağrıya izin verdikten sonra kendi başlarına sorar: bir aracın kendi bildirdiği onay ya da bir mod komut ağı. Yalnızca tam olarak o aracı veya komutu adlandıran süreli onay için sorularını atlarlar. Eylemi İzin ver olarak ayarlamak onları susturmaz.
+
+Üç kart iki düğme bırakır, çünkü taşınacak bir şey yoktur: sandbox'ın bir klasörden program çalıştırmasına izin vermek (bu onay zaten iptal edebileceğiniz kayıtlı bir izindir), bir kez onayladığınız yıkıcı bir işlem ve bir beceri kurulumu (değişen bir beceri yeniden sormalıdır).
 
 ## Uygulama düzeyleri
 

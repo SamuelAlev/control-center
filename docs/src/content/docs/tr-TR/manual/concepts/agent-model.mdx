@@ -2,7 +2,7 @@
 title: Ajan modeli
 description: Control Center'da bir ajanın gerçekte ne olduğu, hangi alanlarının davranışı değiştirdiği ve üzerinde çalıştığı adaptörün nelerin uygulanabileceğine nasıl karar verdiği.
 slug: tr-TR/kilavuz/kavramlar/ajan-modeli
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Ajan nedir?
@@ -54,7 +54,7 @@ Depo becerileri yalnızca yerleşik harness için değil, **her** adaptör için
 
 Bir ajanın kendine ait izin bayrakları yoktur. Commit oluşturup oluşturamayacağına, push edip edemeyeceğine, pull request açıp açamayacağına, bir takip sistemine yazıp yazamayacağına ya da ağa erişip erişemeyeceğine [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) karar verir — çalışma alanı, ajan veya alan kapsamında izin ver, önce sor ya da reddet — ve onu hangi adaptör çalıştırırsa çalıştırsın aynı kurallar geçerlidir.
 
-Bir çalıştırmaya neyin _verildiği_ bu kurallarla değişmez. Bir GitHub çalışma ağacındaki çalıştırma her zaman salt okunur bir GitHub belirteci alır ve bir push, gerçekleştiği anda sorulur: ajanın git yapılandırması her GitHub push'unu Control Center üzerinden gönderir; Control Center da onu iletmeden önce **Uzak depoya push et** kuralını uygular.
+Bir çalıştırmaya neyin _verildiği_ bu kurallarla değişmez. Bir çalıştırma, üzerinde çalıştığı GitHub depolarını her zaman salt okunur bir belirteçle okuyabilir ve bir push, gerçekleştiği anda sorulur: ajanın git yapılandırması her GitHub push'unu Control Center üzerinden gönderir; Control Center da onu iletmeden önce **Uzak depoya push et** kuralını uygular.
 
 Bunun nasıl işlediği, dosya sistemi düzeyinde neyin uygulandığı ve neyin uygulanmadığı dâhil, [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/) sayfasındadır.
 
@@ -70,16 +70,16 @@ Bir ajan üzerindeki en sonuç doğuran tek alan adaptörüdür, çünkü adapt�
 Somut olarak, **alt ajanları, çalıştırma ortasında yönlendirmeyi, duraklatma ve sürdürmeyi (ve dolayısıyla devralmayı) ve yapısal mod uygulamasını yalnızca yerleşik harness destekler.** Claude Code bunların hiçbirini almaz.
 
 :::caution[İşletim sistemi sandbox'ı bir tabandır, bir mod uygulayıcısı değildir ve her ana makinede bulunmaz]
-Yukarıdaki matris, Control Center'ın _neleri görüp kapıdan geçirebildiğiyle_ ilgilidir. Onun altında, `cc_server`, Claude Code CLI'yi var olduğu yerde ana makinenin işletim sistemi sandbox'ına sarar — macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap — böylece görülmeyen bir `rm` ya da görülmeyen bir yazma yine de işletim sistemi tarafından sınırlanır. **Windows'ta hiçbir arka uç yoktur** ve `bwrap` ile `socat` olmayan Linux veya WSL2'de sonda hiçbir şey bildirmez; bu yüzden oralarda bu çalıştırmalar ortam arındırmaya, aracılı kimlik bilgilerine, Control Center'ın görebildiği çağrılardaki korumalara ve konuşmanın kendi worktree'sine geri düşer (`rift`'in geldiği yerde copy-on-write; Windows'ta `git worktree`).
+Yukarıdaki matris, Control Center'ın _neleri görüp kapıdan geçirebildiğiyle_ ilgilidir. Onun altında, `cc_server`, Claude Code CLI'yi var olduğu yerde ana makinenin işletim sistemi sandbox'ına sarar — macOS'ta Seatbelt, Linux ve WSL2'de bubblewrap — böylece görülmeyen bir `rm` ya da görülmeyen bir yazma yine de işletim sistemi tarafından sınırlanır. **Windows'ta hiçbir arka uç yoktur** ve `bwrap` ile `socat` olmayan Linux veya WSL2'de sonda hiçbir şey bildirmez. Orada yalnızca sunucu sahibinin çalıştırmaları başlar; diğerlerinin çalıştırmaları, sahip sunucuyu `--sandbox off` ile başlatmadıkça reddedilir. Sandbox olmadan başlayan bir çalıştırma ortam arındırmaya, aracılı kimlik bilgilerine, Control Center'ın görebildiği çağrılardaki korumalara ve konuşmanın kendi worktree'sine geri düşer (`rift`'in geldiği yerde copy-on-write; Windows'ta `git worktree`).
 
 Sandbox bir _kapı_ değildir. Bir sürecin nerede okuyabileceğini, yazabileceğini ve bağlanabileceğini sınırlar — salt okunur bir mod ona ulaşır, salt okunur bağlama noktaları olarak — ama bir çağrıyı kesemez, bir onay isteği çıkaramaz ya da sonrasında CLI'nin ne denediğini söyleyemez. Bu ve hemen yukarıda adı geçen dört yetenek, hâlâ yerleşik harness'ın sahip olup diğerlerinin olmadığı şeydir. Bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
-**Adaptörü olmayan** bir ajan **Control Center (built-in)** seçeneğine geri düşer — sunucunun içindeki döngü, yani kurulacak bir CLI yoktur — ve çalıştırma günlüğü `cc-harness` kaydeder. Tohumlanan her ajan adaptörsüz ve modelsiz oluşturulur; bu yüzden yeni bir çalışma alanının beş ajanı da, siz ajan başına bir adaptör ve model belirleyene kadar orada, Anthropic'in varsayılan modeli üzerinde çalışır. İlk kurulumdaki “varsayılan adaptör” seçimi, sunucunun hiç okumadığı bir istemci tarafı tercihtir ve hâlihazırda oluşturulmuş ajanlara geriye dönük uygulanmaz.
+**Adaptörü olmayan** bir ajan **Control Center (built-in)** seçeneğine geri düşer — sunucunun içindeki döngü, yani kurulacak bir CLI yoktur — ve çalıştırma günlüğü `cc-harness` kaydeder. Tohumlanan her ajan adaptörsüz ve modelsiz oluşturulur; bu yüzden yeni bir çalışma alanının altı ajanı da, siz ajan başına bir adaptör ve model belirleyene kadar orada, Anthropic'in varsayılan modeli üzerinde çalışır. İlk kurulumdaki adaptör adımını tamamlamak, o anda var olan çalışma alanlarındaki, adaptörü ya da modeli eksik olan her ajana kendi adaptör ve model çiftini atar; çalışma alanı başına bir varsayılan çalıştırıcı yoktur.
 
 ## Ajanlar nereden gelir
 
-- **Çalışma alanıyla birlikte tohumlanır.** Her çalışma alanı — yalnızca ilki değil — kendisine bağlı bir CEO ile dört uzman (`qa`, `architect`, `engineer`, `librarian`) alır; bunlar çalışma alanı oluşturulurken arka planda idempotent biçimde oluşturulur. Bkz. [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
+- **Çalışma alanıyla birlikte tohumlanır.** Her çalışma alanı — yalnızca ilki değil — kendisine bağlı bir CEO ile beş uzman (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) alır; bunlar çalışma alanı oluşturulurken arka planda idempotent biçimde oluşturulur. Bkz. [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/calisma-alanlari/).
 - **Elle eklenir** Ayarlar → Çalışma alanı → Ajanlar altından. Bir ajandan iş arkadaşı işe almasını istemek bir satır oluşturmaz; o ekranı kullanın.
 
 ## Canlı durum

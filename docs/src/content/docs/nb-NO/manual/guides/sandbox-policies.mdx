@@ -2,7 +2,7 @@
 title: Konfigurer sandkassepolicyer
 description: Hva som begrenser en agentkjøring, hvordan du ser om OS-sandkassen pakker den inn, og hvordan handlingsreglene avgjør hva en agent får pushe eller nå.
 slug: nb-NO/handbok/slik-gjor-du/sandkassepolicyer
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Om en agentkjøring er sandkasset, avgjøres på serveren, ved oppstart
@@ -23,7 +23,7 @@ som er betinget — de fem andre holder på alle verter.
 
 | Grense                     | Hva den gjør                                                                                                                                                                                                                                                      |
 | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OS-sandkassen              | Seatbelt på macOS, bubblewrap på Linux og WSL2. Pakker inn Claude Code-CLI-et, ACP-adaptere og harnessets `bash`-verktøy. **Finnes ikke på Windows og på Linux uten `bwrap` og `socat`** |
+| OS-sandkassen              | Seatbelt på macOS, bubblewrap på Linux og WSL2. Pakker inn Claude Code-CLI-et, ACP-adaptere og harnessets `bash`-verktøy. **Finnes ikke på Windows og på Linux uten `bwrap` og `socat`, der bare serverens eiers kjøringer starter** |
 | Sin egen worktree          | Hver samtale får sin egen copy-on-write-arbeidskopi. Den opprinnelige arbeidskopien legges inn i kjøringen som en skrivenekt-sti, og det er sandkassen som håndhever den                                                                                          |
 | Formidlet legitimasjon     | Legitimasjonsmegleren utsteder et miljø per kjøring og tilbakekaller det ved avslutning. GitHub-tokenet i det kan lese, men ikke pushe: en push går gjennom Control Center, som først spør push-regelen |
 | Tillatelsesregler for handlinger | Hvert muterende verktøy deklarerer effektklassene sine, og vakten løser dem før kallet kjøres. Et `prompt` uten tilkoblet godkjenner nektes                                                                                                               |
@@ -43,10 +43,13 @@ Tre ting er svakere enn de ser ut:
   begrenser dem. Bare `bash`-verktøyet går gjennom den sandkasseinnpakkede
   kommandokjøreren. Disse verktøyene er begrenset av sin egen stibegrensning
   pluss tillatelsesreglene for handlinger.
-- På en vert uten backend gjelder den første raden ikke i det hele tatt. ACP og
-  harnessets `bash`-verktøy faller tilbake på sanering av miljøet pluss
-  kommandopolicyen; Claude Code arver vertens miljø gjennom `NoSandboxAdapter`.
-  Serveren sier fra om dette i oppstartsloggen. Sjekk din nedenfor.
+- På en vert uten backend starter bare kjøringer serverens eier er ansvarlig for,
+  og for dem gjelder ikke den første raden. Alles andres kjøringer avvises. Under
+  `--sandbox off` starter alle medlemmers kjøringer uten den første raden.
+  Uansett faller ACP og harnessets `bash`-verktøy tilbake på sanering av miljøet
+  pluss kommandopolicyen, og Claude Code arver vertens miljø gjennom
+  `NoSandboxAdapter`. Serveren sier hvilket tilfelle du er i, i oppstartsloggen.
+  Sjekk din nedenfor.
 
 ## Avgjør hva en agent får pushe
 
@@ -56,8 +59,8 @@ Hver av dem er en handlingsregel:
 | Regel                                          | Innebygd standard | Hva den dekker                                                            |
 | ---------------------------------------------- | ----------------- | ------------------------------------------------------------------------- |
 | **Push til en remote**                         | Spør først        | Hver `git push` til GitHub, uansett adapter                               |
-| **Åpne en pull request**                       | Spør først        | `gh pr create` og verktøyene for pull requests                            |
-| **Publiser en gjennomgang eller sammenslåing** | Spør først        | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`             |
+| **Åpne en pull request**                       | Spør først        | Control Centers verktøy for pull requests. `gh pr create` fungerer ikke i en kjøring                            |
+| **Oppdater eller slå sammen en pull request**  | Spør først        | Agentens kommentarer på sin pull request, endringer av tittelen eller beskrivelsen og publiserte gjennomganger, gjennom Control Centers verktøy. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` og `gh pr close` fungerer ikke i en kjøring             |
 | **Skriv til et eksternt oppfølgingssystem**    | Spør først        | Saksskriving gjennom Control Centers verktøy og `gh issue`                |
 | **Bruk nettverket**                            | Tillat            | Om sandkassen har nettverk i det hele tatt, og harnessens nettverktøy     |
 
@@ -115,46 +118,54 @@ To ting avgjør det, begge på serveren: om verten tilbyr en backend, og om
    isolasjon**. Opplysningen **I kraft** er denne enhetens innstilling, ikke
    innpakningen serveren faktisk bruker.
 3. Les oppstartsloggen til serveren. Den skriver ut nøyaktig én av tre linjer:
-   - `agent sandbox ON` pluss backend-merknaden — kjøringer pakkes inn
+   - `agent sandbox ON` pluss backend-merknaden: kjøringer pakkes inn
    - `no OS-native agent sandbox on this host` pluss et installasjonstips der
-     det finnes — kjøringer pakkes ikke inn
-   - `agent sandbox DISABLED by --sandbox off` — et bevisst valg om å slå den av
+     det finnes: bare kjøringer serverens eier er ansvarlig for, starter, uten
+     innpakning, og alles andres avvises
+   - `agent sandbox DISABLED by --sandbox off`: alle medlemmers kjøringer
+     starter, uten innpakning
+4. Eksponeringslinjen som skrives ut ved oppstart, sier det samme med ett ord:
+   `sandbox=native`, `sandbox=off` eller `sandbox=unavailable`.
 
 `GET /healthz` rapporterer ikke sandkassetilstand, så oppstartsloggen er
 sjekken.
 
-For å slå av sandkassen bevisst — en vert der profilen oppfører seg dårlig, er
-grunnen til at muligheten finnes — starter du serveren med `--sandbox off`,
-eller setter `CC_SERVER_SANDBOX=off`. Standarden er `on`, og `on` betyr «bruk en
-backend hvis verten har én», aldri «krev én».
+Bare serverens eier bestemmer å kjøre uten sandkasse. For å gjøre det for alle
+starter du serveren med `--sandbox off`, eller setter `CC_SERVER_SANDBOX=off`.
+Alle medlemmers agenter kjører da uten avgrensning på denne maskinen, så dette er
+en beslutning for alle som bruker serveren, tatt én gang ved oppstart. Standarden
+er `on`: den pakker inn hver kjøring når verten har en backend, og når den ikke
+har det, starter den bare eierens kjøringer.
 
 To situasjoner får aldri en innebygd sandkasseinnpakning. På **Windows**
 rapporterer den innebygde sonderingen alltid at den ikke er tilgjengelig, og
-det finnes ingenting å installere — agentutsending bruker `none`.
-`microvm`-backenden er noe eget (interaktive terminaler og stasjoner) og
-avhenger av sin egen sondering av kjøretidsmiljøet. På **Linux og WSL2** må
-både `bwrap` og `socat` ligge på `PATH`; uten dem rapporterer sonderingen at den
-ikke er tilgjengelig, og navngir pakkene som mangler.
+det finnes ingenting å installere, så bare serverens eiers kjøringer starter med
+mindre eieren sender `--sandbox off`. `microvm`-backenden er noe eget
+(interaktive terminaler og stasjoner) og avhenger av sin egen sondering av
+kjøretidsmiljøet. På **Linux og WSL2** må både `bwrap` og `socat` ligge på
+`PATH`; uten dem rapporterer sonderingen at den ikke er tilgjengelig, og navngir
+pakkene som mangler, og bare eierens kjøringer starter.
 
 På Linux/WSL2 med bubblewrap installert kan standardpolicyens glob-mønstre for
-hemmelige filer ikke håndheves for filer en agent oppretter senere. En slik
-innebygd kjøring feiler nå i stedet for å ignorere reglene i stillhet. En
-positiv sondering ved oppstart garanterer derfor ikke at en Linux-utsending kan
-starte. `--sandbox off` er et bevisst valg om å kjøre uten begrensninger, ikke
-en erstatning for en sikkerhetsgrense.
+hemmelige filer ikke håndheves for filer en agent oppretter senere, så hver
+innebygd kjøring feiler i stedet for å ignorere reglene i stillhet, også eierens.
+En positiv sondering ved oppstart betyr derfor ikke at en Linux-utsending kan
+starte: i dag kjører en Linux-server agenter med `--sandbox off`, eller uten
+bubblewrap for eieren alene. `--sandbox off` er et bevisst valg om å kjøre uten
+begrensninger, ikke en erstatning for en sikkerhetsgrense.
 
 ## Vit hva en modus allerede forbyr
 
 Modusen lagres per område og mates inn i regeløseren som laget
 **modusforhåndsvalg**. Tre av de fire modusene er skrivebeskyttede, og en
-skrivebeskyttet modus avviser elleve effektklasser kontant:
+skrivebeskyttet modus avviser tolv effektklasser kontant:
 
 | Modus                    | Worktree       | Avvises av forhåndsvalget                                                                                                                                                        |
 | ------------------------ | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`)       | Skrivbar       | Ingenting — de innebygde standardene gjelder                                                                                                                                    |
-| **Plan**                 | Skrivebeskyttet | Sletting av en fil, skriving utenfor worktreet, commit, push, oppretting av en PR, publisering eller sammenslåing, skriving til et eksternt oppfølgingssystem, installasjon av en pakke, oppstart av en prosess, endring av strukturen i arbeidsområdet, start eller styring av et isolert miljø |
-| **Gjennomgang**          | Skrivebeskyttet | De samme elleve. Ikke brukervalgbart — skrivefeltet tilbyr bare Agent, Plan og Orkestrer                                                                                          |
-| **Orkestrer**            | Skrivebeskyttet | De samme elleve                                                                                                                                                                  |
+| **Plan**                 | Skrivebeskyttet | Sletting av en fil, skriving utenfor worktreet, commit, push, oppretting av en PR, publisering eller sammenslåing, skriving til et eksternt oppfølgingssystem, installasjon av en pakke, oppstart av en prosess, endring av strukturen i arbeidsområdet, start eller styring av et isolert miljø, kjøring av kommandoer på verten |
+| **Gjennomgang**          | Skrivebeskyttet | De samme tolv. Ikke brukervalgbart — skrivefeltet tilbyr bare Agent, Plan og Orkestrer                                                                                          |
+| **Orkestrer**            | Skrivebeskyttet | De samme tolv                                                                                                                                                                  |
 
 Nettverkstilgang og tilgang til hemmeligheter nektes bevisst _ikke_ av en
 skrivebeskyttet modus: forskning er hele poenget med en slik modus.
@@ -180,19 +191,33 @@ Les hva git skrev ut. `Control Center policy: …` betyr at en regel nektet
 pushen, eller at en **Spør først** ikke ble besvart.
 `… is not linked to this workspace` betyr at pushen sikter mot et repo som
 verken er worktreens eget eller koblet til arbeidsområdet.
-`Control Center has no GitHub credential that can push …` betyr at GitHub
-App-en ikke er installert på det repoet, og at ingen reservelegitimasjon kunne
-pushe: installer appen på repoet eller koble til GitHub.
+`Control Center has no GitHub credential that can push …` betyr at ingen push-token kunne lages:
+installer GitHub App-en på repoet, eller logg inn på GitHub.
+
+### Agentkjøringen min ble avvist med «Denne serveren har ingen sandkasse»
+
+Kjøringen viser **Agenter trenger en sandkasse på denne serveren** med «Denne
+serveren har ingen sandkasse, så bare eieren kan kjøre agenter her. Eieren kan
+installere sandkassen eller slå av sandkassing for alle.» Serverens vert har ingen
+OS-sandkasse, og den ansvarlige personen for kjøringen er ikke serverens eier, så
+ingenting ble startet. For en tidsplan, webhook eller annen automatisering er den
+ansvarlige personen den automatiseringen er knyttet til, ikke den som ser på den.
+
+Bare serverens eier kan endre dette. På Linux og WSL2 installerer de `bubblewrap`
+og `socat` og starter serveren på nytt (men les Linux-merknaden over først). På
+Windows finnes det ingen backend å installere. Det andre valget er å starte
+serveren på nytt med `--sandbox off`, som kjører alle medlemmers agenter uten
+avgrensning på den maskinen.
 
 ### Sandkasse-kortet rapporterer ingen innebygd sandkasse
 
-Da er ikke agentkjøringer på den verten pakket inn av Seatbelt eller bubblewrap,
-og de gjenværende grensene er det du har. På Linux og WSL2 installerer du begge
-verktøyene som mangler — `sudo apt-get install bubblewrap socat` — og starter
-serveren på nytt; oppstartsloggen skal da si at sandkassen er på. På Windows
-finnes det ingen innebygd backend å installere, så stram inn
-tillatelsesreglene i stedet: se
-[Konfigurer tillatelsesregler](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/).
+Da er ikke agentkjøringer på den verten pakket inn av Seatbelt eller bubblewrap:
+bare serverens eiers kjøringer starter, og de gjenværende grensene er det de har.
+På Linux og WSL2 installerer du begge verktøyene som mangler
+(`sudo apt-get install bubblewrap socat`) og starter serveren på nytt; oppstartsloggen
+skal da si at sandkassen er på. På Windows finnes det ingen innebygd backend å
+installere, så stram inn tillatelsesreglene for eierens egne kjøringer i stedet:
+se [Konfigurer tillatelsesregler](/nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler/).
 
 ### En agent nådde en fil utenfor worktreet
 
@@ -205,8 +230,8 @@ En `bash`-kommando eller Claude Code-CLI-et _blir_ pakket inn der en backend
 finnes, og de registrerte arbeidskopiene dine er skrivenekt innenfor den
 innpakningen i hver modus, inkludert stavemåtene deres med symlenker løst opp
 (på macOS løses en sti nådd gjennom `/tmp` eller `/var/folders` opp under
-`/private`, og begge stavemåtene nektes nå). På en vert uten backend gjelder
-ingenting av dette. Uansett kan tillatelsesreglene avvise **Skriv utenfor
+`/private`, og begge stavemåtene nektes). Under `--sandbox off`, eller for
+eierens egne kjøringer på en vert uten backend, gjelder ingenting av dette. Uansett kan tillatelsesreglene avvise **Skriv utenfor
 worktree** kontant.
 
 ## Relaterte guider

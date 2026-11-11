@@ -2,7 +2,7 @@
 title: MCP-verktøy
 description: Fullstendig katalog over MCP-verktøyene cc_server registrerer, gruppert etter familie.
 slug: nb-NO/handbok/referanse/mcp-verktoy
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
 `cc_server` er vert for ett MCP-verktøyregister (JSON-RPC 2.0), betjent på
@@ -10,7 +10,7 @@ serverens hovedport (standard `9030`) på `POST /mcp` og `GET /sse`, med
 protokollversjon `2024-11-05`. Alle klienter når det samme registeret:
 skrivebordsappen, nettappen, eksterne MCP-klienter og den innebygde
 agentkjøretiden. Eksterne MCP-servere kan broes inn i det samme registeret som
-et dynamisk lag.
+et dynamisk lag. Servere som oppdages i serverbrukerens egen verktøykonfigurasjon er unntaket: dette endepunktet lister aldri opp, kaller aldri og søker aldri i dem, og bare kjøringer av det innebygde harnesset som serverens eier har ansvaret for, får bruke dem (se [Personlige MCP-servere forblir eierens](/nb-NO/handbok/slik-gjor-du/mcp-server/#personlige-mcp-servere-forblir-eierens)).
 
 ## Registerets størrelse
 
@@ -31,7 +31,7 @@ Hele registeret annonseres i `tools/list` uten noen porting ved oppdagelse.
 Redigering av saker skjer gjennom typede verktøy.
 
 :::note[Eksterne klienter ser alltid hele katalogen]
-`tools/list` kuttes aldri ned. MCP-klienter validerer verktøynavn mot sin egen
+`tools/list` kuttes aldri ned, bortsett fra serverens eiers personlige MCP-servere, som den aldri inneholder. MCP-klienter validerer verktøynavn mot sin egen
 bufrede kopi av listen og avviser alt som ikke står der, uten å spørre serveren,
 så et verktøy som skjules der, er uoppnåelig og ikke bare stille.
 
@@ -292,8 +292,10 @@ fulle verbvokabularet per flate står i
 | `browser_use`  | Styr en headless Chromium, Firefox eller WebKit (`engine`): naviger, klikk, fyll ut, hent ut (a11y/DOM/konsoll), utklippstavle, skjermbilde |
 | `mobile_use`   | Styr Android over ADB: inspiser/gi input, skjermbilder, installer/start/stopp/nullstill/avinstaller apper, dype lenker og enhetskommandoer formet som argv |
 | `ios_use`      | Styr iOS-simulatoren gjennom WebDriverAgent/CoreSimulator: inspiser/gi input, skjermbilder, installer/start/stopp/avinstaller apper, dype lenker og simulatorprosesser formet som argv |
-| `rig_list`     | List opp stasjonene i et arbeidsområde med flate, status, skjermstørrelse og kontroller         |
+| `rig_list`     | List opp stasjonene i kjøringens område med flate, status, skjermstørrelse og kontroller         |
 | `rig_close`    | Ødelegg en stasjon og forkast maskintilstanden den eier                                          |
+
+Bare agentkjøringer kan kalle disse verktøyene; alle andre kallere avvises. En kjøring når bare stasjonene i området den ble leid for: `space_id` kommer fra kjøringens tilgang, aldri fra kallet, og en stasjon i et annet område, eller i ingen område, svarer nøyaktig som en som mangler.
 
 `app_use` er et femte use-verktøy: det styrer vinduene til en skrivebordsapp startet i et område, direkte på verten og ikke i en VM, og deklarerer også `fileWriteOutsideWorktree` og `fileDelete`. Det og `environment_*`-verktøyene er beskrevet i [Sett opp miljøer](/nb-NO/handbok/slik-gjor-du/miljoer/).
 
@@ -356,7 +358,7 @@ det hele tatt, så et navn du kan ha sett referert andre steder, returnerer
 | Evne                                     | Hvor den bor i stedet                                                                         |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Å ansette, si opp eller redigere en agent | Agentgrensesnittet. Det finnes ikke noe `hire_agent` / `fire_agent` / `update_agent`-verktøy   |
-| Å opprette et arbeidsområde               | `workspace.upsert` over RPC, som seeder og stempler eierskap                                    |
+| Å opprette et arbeidsområde               | `workspace.create` over RPC, bare serverens eier, som seeder og stempler eierskap              |
 | Prosjekter (opprett / list opp / oppdater / plasser) | Saksgrensesnittet. Prosjekter er en operatørflate – se [Prosjekter](/nb-NO/handbok/slik-gjor-du/prosjekter/) |
 | Å stille operatøren et blokkerende spørsmål | **harness**-verktøyet `ask_user`, ikke MCP. Det viser et skjema i samtalen og blokkerer til svaret kommer |
 | Diagnostikk per agent                     | Ingenting. Det finnes ingen `doctor` – se [Diagnostiser en agent](/nb-NO/handbok/slik-gjor-du/diagnostiser-agent/) |

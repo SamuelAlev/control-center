@@ -46,6 +46,7 @@ void main() {
           cachedReadTokens: 3,
           cachedWriteTokens: 2,
           estimatedCostCents: 7,
+          costMicros: 70000,
         );
         const b = RunCost(
           inputTokens: 1,
@@ -54,6 +55,7 @@ void main() {
           cachedReadTokens: 7,
           cachedWriteTokens: 8,
           estimatedCostCents: 3,
+          costMicros: 30000,
         );
         final result = a + b;
         expect(result.inputTokens, 11);
@@ -62,6 +64,7 @@ void main() {
         expect(result.cachedReadTokens, 10);
         expect(result.cachedWriteTokens, 10);
         expect(result.estimatedCostCents, 10);
+        expect(result.costMicros, 100000);
       });
 
       group('coalesces nullable durationMs', () {

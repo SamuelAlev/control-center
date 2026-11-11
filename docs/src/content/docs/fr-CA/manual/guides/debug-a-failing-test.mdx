@@ -2,7 +2,7 @@
 title: Déboguer un test en échec avec un agent
 description: Demandez à un agent de poser un point d’arrêt, de lancer le programme sous un débogueur et de lire une vraie trame de pile plutôt que d’ajouter des instructions d’affichage.
 slug: fr-CA/manuel/guides/deboguer-test-en-echec
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Ce guide montre comment amener un agent à utiliser un débogueur sur une défaillance que les instructions d’affichage n’expliquent pas.
@@ -31,8 +31,8 @@ Il répond avec ce qu’il a trouvé, ou explique qu’un adaptateur a besoin de
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Fourni avec LLVM                                      |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python choisit l’interpréteur du projet]
-`debugpy` est cherché dans `.venv/bin` ou `venv/bin` avant `$PATH`. Un python trouvé dans le `$PATH` appartient à un autre environnement, et s’attacher depuis le mauvais échoue d’une manière qui se lit comme du code défectueux plutôt que comme un mauvais interpréteur.
+:::note[Python choisit l’interpréteur du projet lorsque l’exécution est dans le bac à sable]
+Dans une exécution dans le bac à sable, `debugpy` est cherché dans `.venv/bin` ou `venv/bin` avant `$PATH`. Un python trouvé dans le `$PATH` appartient à un autre environnement, et s’attacher depuis le mauvais échoue d’une manière qui se lit comme du code défectueux plutôt que comme un mauvais interpréteur. Dans une exécution sans bac à sable, il n’utilise que `$PATH`, de sorte qu’un dépôt ne peut pas choisir l’interpréteur qui s’exécute sur la machine du serveur.
 :::
 
 ## Poser d’abord le point d’arrêt, puis lancer
@@ -106,6 +106,8 @@ Pour un processus bloqué plutôt qu’un processus que vous lancez :
 debug(op: "attach", port: 5858)
 ```
 
+Le port doit être l’un des ports transférés de l’exécution elle-même. Tout autre port est refusé avant que quoi que ce soit ne démarre, de sorte qu’un agent ne peut pas s’attacher à un processus appartenant à quelqu’un d’autre sur la machine du serveur.
+
 ## Terminer
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Terminez toujours la session. Un adaptateur de débogage possède un **processus arrêté** qui retient tout ce que ce processus retient — un port, un verrou, une connexion à une base de données.
 
 :::note[Il ne peut pas vous échapper]
-Chaque session a un TTL strict qu’elle ne peut pas prolonger, il y en a exactement une par conversation, et tout est démonté à l’arrêt du serveur. Un second `launch` est refusé plutôt que de remplacer le premier : un agent qui en lance un deuxième sans terminer le premier a presque certainement perdu la trace du premier.
+Chaque session a un TTL strict qu’elle ne peut pas prolonger (30 minutes), il y en a exactement une par conversation, et tout est démonté à l’arrêt du serveur. Dans une exécution en bac à sable, la session garde son bac à sable d’un tour à l’autre, pendant cette durée au plus. Un second `launch` est refusé plutôt que de remplacer le premier : un agent qui en lance un deuxième sans terminer le premier a presque certainement perdu la trace du premier.
 :::
 
 ## Sortie délimitée

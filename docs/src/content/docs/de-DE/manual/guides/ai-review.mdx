@@ -2,7 +2,7 @@
 title: KI-gestützte Review nutzen
 description: Führe die Pipeline pr_review auf einem PR aus, lies die Befunde und das Verdikt und veröffentliche das Review auf GitHub.
 slug: de-DE/handbuch/anleitungen/ki-review
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Diese Anleitung zeigt, wie Reviewer-Agenten einen Pull Request prüfen und wie du
@@ -119,7 +119,7 @@ Befunde werden übersprungen. Die Schaltfläche nimmt jeden verbleibenden offene
 Befund mit und reicht bei **Ship** `APPROVE` ein. (Das MCP-Tool
 `publish_review_to_github` bleibt standardmäßig bei nur von einem Peer
 bestätigten Befunden und gibt nie frei: Es veröffentlicht als Automatisierung,
-`approve_on_ship` wirkt dort also nicht.) Befunde mit Anker auf Datei und Zeile werden
+`approve_on_ship` wirkt dort also nicht. Diese automatisierte Veröffentlichung wird vom Bot gepostet, außer bei der gemeinsamen Control-Center-Connect-App, wenn der Connect-Betreiber diese Installation nicht aufgeführt hat: Dann geht sie über die eigene GitHub-Anmeldung der verantwortlichen Person, unter deren Namen.) Befunde mit Anker auf Datei und Zeile werden
 Inline-Kommentare. Alles andere wandert in den Text der Zusammenfassung, jeder
 mit der Fußzeile "— Control Center AI review", damit die Quelle eindeutig ist.
 Ein Verdikt **Block** wird als `REQUEST_CHANGES` eingereicht, **Hold** als
@@ -143,7 +143,8 @@ soll.
 
 Andere mitgelieferte Pipelines posten direkt nach GitHub: `cross_review`,
 `pr_triage`, `ticket_to_pr` und `pre_merge_gate` enden jeweils in einem
-Kommentarschritt. Nur `pr_review` hält die Ausgabe für dich zurück.
+Kommentarschritt, den der Server postet. Nur `pr_review` hält die Ausgabe für
+dich zurück. Keine von ihnen führt einen Merge aus oder genehmigt den PR.
 
 ## Reviewer selbst starten
 

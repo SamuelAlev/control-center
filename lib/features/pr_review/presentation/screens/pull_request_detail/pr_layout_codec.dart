@@ -1,15 +1,14 @@
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/features/messaging/providers/editor_layout_cache_provider.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_kinds.dart';
+import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/shared/editor/host/editor_layout_codec.dart';
 import 'package:control_center/shared/editor/host/editor_layout_persistence.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The PR workbench's [EditorLayoutCodec] configuration.
 ///
-/// Restorable kinds cover every PR tab; the legacy `pr.aiReview` /
-/// `pr.reviewStudio` kinds alias onto the merged `pr.review` on decode so an
-/// old persisted layout restores onto the unified tab. A restored `pr.file`
+/// Restorable kinds cover every PR tab. A restored `pr.file`
 /// needs its `path` and a restored `pr.rig` its `surface`; terminal, browser
 /// and code-server come back blank (their live state is never persisted). A
 /// restored rig tab shows its start affordance rather than booting a VM —
@@ -44,7 +43,7 @@ const EditorLayoutCodec prLayoutCodec = EditorLayoutCodec(
     PrTabKinds.rig: ['surface'],
     PrTabKinds.environmentLogs: ['workspaceId', 'spaceId', 'target'],
   },
-  aliasKind: _aliasLegacyReview,
+  acceptArgs: _restorableRigTab,
   // An ENCLOSED terminal boots a VM on first attach, so a restored one gets the
   // same treatment as a restored rig tab: the badge comes back, the machine
   // does not. Otherwise reopening a PR page with a persisted `microvm` terminal
@@ -55,6 +54,10 @@ const EditorLayoutCodec prLayoutCodec = EditorLayoutCodec(
   iconFor: PrTabKinds.iconFor,
 );
 
+/// A browser rig tab restores only when it names its engine.
+bool _restorableRigTab(String kind, Map<String, Object?> args) =>
+    kind != PrTabKinds.rig || RigTabSurfaces.restorable(args);
+
 /// Stamps a restored `microvm` terminal tab as "start on demand".
 Map<String, Object?> _deferEnclosedTerminalStart(
   String kind,
@@ -62,15 +65,6 @@ Map<String, Object?> _deferEnclosedTerminalStart(
 ) => (kind == PrTabKinds.terminal && args['backend'] == 'microvm')
     ? {...args, EditorLayoutCodec.deferStartArg: true}
     : args;
-
-/// Folds every retired review kind onto the artifact tab, so a layout
-/// persisted before the review became one artifact still opens something.
-String _aliasLegacyReview(String kind) =>
-    (kind == PrTabKinds.review ||
-        kind == PrTabKinds.aiReview ||
-        kind == PrTabKinds.reviewStudio)
-    ? PrTabKinds.reviewArtifact
-    : kind;
 
 /// The workbench's layout store: codec, cache kind, and the in-process memo.
 EditorLayoutPersistence prDetailLayoutPersistence(WidgetRef ref) {

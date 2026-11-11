@@ -89,34 +89,29 @@ class PrRepoSectionCard extends ConsumerWidget {
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: tokens.panel,
-              border: Border(
-                left: BorderSide(color: tokens.borderSecondary),
-                right: BorderSide(color: tokens.borderSecondary),
-                bottom: BorderSide(color: tokens.borderSecondary),
-              ),
+        // Rows build lazily: an infinitely scrolled repo can hold hundreds.
+        DecoratedSliver(
+          decoration: BoxDecoration(
+            color: tokens.panel,
+            border: Border(
+              left: BorderSide(color: tokens.borderSecondary),
+              right: BorderSide(color: tokens.borderSecondary),
+              bottom: BorderSide(color: tokens.borderSecondary),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < sorted.length; i++) ...[
-                  if (i > 0) CcDivider(color: tokens.borderSoft),
-                  InboxPrRow(
-                    item: sorted[i],
-                    showRepo: false,
-                    selecting: selecting,
-                    selected: selectable && selection.contains(sorted[i].key),
-                    onToggleSelect: selectable
-                        ? () => ref
-                              .read(prTableSelectionProvider.notifier)
-                              .toggle(sorted[i].key)
-                        : null,
-                  ),
-                ],
-              ],
+          ),
+          sliver: SliverList.separated(
+            itemCount: sorted.length,
+            separatorBuilder: (_, _) => CcDivider(color: tokens.borderSoft),
+            itemBuilder: (context, i) => InboxPrRow(
+              item: sorted[i],
+              showRepo: false,
+              selecting: selecting,
+              selected: selectable && selection.contains(sorted[i].key),
+              onToggleSelect: selectable
+                  ? () => ref
+                        .read(prTableSelectionProvider.notifier)
+                        .toggle(sorted[i].key)
+                  : null,
             ),
           ),
         ),

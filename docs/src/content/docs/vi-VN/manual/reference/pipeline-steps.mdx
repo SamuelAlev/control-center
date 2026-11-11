@@ -2,7 +2,7 @@
 title: Các bước quy trình
 description: Tài liệu tham chiếu về các loại bước quy trình, khóa body của bước, cấu hình và kết quả của bước.
 slug: vi-VN/so-tay/tham-chieu/buoc-quy-trinh
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Một bước quy trình có hai trục độc lập:
@@ -61,7 +61,7 @@ Nút tổng quát gửi prompt rồi điều phối: kết xuất prompt, điề
 
 ### `pipeline.condition`
 
-Body router — đọc `config.extras`, đánh giá một điều kiện rồi trả về `StepResult.route(key)`. Điều kiện **không phải** biểu thức JavaScript; có ba cách viết được hỗ trợ, theo thứ tự ưu tiên:
+Body router — đọc `config.extras`, đánh giá một điều kiện rồi trả về `StepResult.route(key)`. Điều kiện **không phải** biểu thức JavaScript; có hai cách viết được hỗ trợ, theo thứ tự ưu tiên:
 
 - **Cây vị từ** (`extras.predicate`) — một cây boolean định tuyến `"true"` / `"false"`. Mỗi nút là một map có một `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — đúng khi bất kỳ đường dẫn nào được liệt kê tồn tại trên đĩa; `negate` đảo ngược kết quả; `recursive` cũng tìm trong các thư mục con (bỏ qua `.git`, `node_modules`, `build`, `.dart_tool`). Đường dẫn tương đối được giải dựa trên `state[baseKey]` (mặc định `repo_local_path`), nếu không thì dựa trên thư mục không gian làm việc của từng lần chạy.
@@ -69,19 +69,28 @@ Body router — đọc `config.extras`, đánh giá một điều kiện rồi t
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — các nhóm boolean.
   - `{"type": "not", "of": <predicate>}` — phủ định.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; định tuyến tới case đầu tiên mà giá trị trạng thái chứa nó (không phân biệt hoa thường), nếu không thì tới `default`.
-- **So sánh** (các khóa cấp cao nhất `extras.left` / `extras.op` / `extras.right` kiểu cũ) — tương đương một vị từ `comparison`, được giữ lại cho những mẫu được viết trước khi có cây vị từ.
 
 Các cạnh đi ra khỏi nút mang một `routeKey` phải khớp với khóa được trả về.
 
 ### `prReview.comment`
 
-Đăng các phát hiện đã tổng hợp dưới dạng bình luận đánh giá PR qua máy khách PR của GitHub.
+Đăng các phát hiện đã tổng hợp, hoặc `extras.message` riêng của bước, dưới dạng bình luận đánh giá PR qua máy khách PR của GitHub.
 
-| Khóa trạng thái         | Mô tả                                          |
-| ----------------------- | ---------------------------------------------- |
-| `repo_full_name`        | `owner/repo` (bắt buộc)                        |
-| `pr_number`             | Số PR — số nguyên hoặc chuỗi số (bắt buộc)     |
-| `consolidated_findings` | Nội dung bình luận (bắt buộc)                  |
+| Khóa                    | Đọc từ            | Mô tả                                                          |
+| ----------------------- | ----------------- | -------------------------------------------------------------- |
+| `repo_full_name`        | payload của trigger | `owner/repo` (bắt buộc)                                      |
+| `pr_number`             | payload của trigger | Số PR, một số nguyên dương hoặc chuỗi số (bắt buộc)          |
+| `consolidated_findings` | trạng thái        | Nội dung bình luận khi bước không có `message` (bắt buộc)      |
+
+Pull request chỉ lấy từ payload của trigger của lượt chạy, không bao giờ từ trạng thái mà một bước có thể ghi đè giữa lượt chạy. Các lượt nhắc @ trong nội dung đăng sẽ bị vô hiệu hóa, nên bình luận không thông báo cho ai.
+
+Một `message` hiển thị các placeholder `{{key}}` như sau:
+
+- `repo_full_name`, `repo_owner`, `repo_name` và `pr_number` hiển thị pull request mà bước đăng lên.
+- `author` được lấy từ payload của trigger nguyên trạng, chỉ khi đó là tên người dùng hợp lệ trên forge; trường hợp khác khiến bước thất bại.
+- `consolidated_findings` được hiển thị dưới dạng markdown thô, với các lượt nhắc @ bị vô hiệu hóa.
+- Mọi giá trị khác được hiển thị dưới dạng văn bản nguyên bản: trên một dòng, với ký tự markdown được escape và các lượt nhắc @ bị vô hiệu hóa.
+- Một placeholder không phân giải thành giá trị nào sẽ khiến bước thất bại.
 
 Trả về `StepResult.terminal` với `comment_review_id` và `commented_at` trong trạng thái.
 

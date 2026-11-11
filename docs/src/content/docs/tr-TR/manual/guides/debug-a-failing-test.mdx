@@ -2,7 +2,7 @@
 title: Başarısız bir testi ajanla ayıklama
 description: Bir ajana kesme noktası koydurun, hata ayıklayıcı altında başlatın ve print deyimleri eklemek yerine gerçek bir yığın çerçevesi okutun.
 slug: tr-TR/kilavuz/nasil-yapilir/basarisiz-testi-ayiklama
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Bu kılavuz, print deyimlerinin açıklamadığı bir başarısızlıkta bir ajanın hata ayıklayıcı kullanmasını nasıl sağlayacağınızı gösterir.
@@ -31,8 +31,8 @@ Bulduğunu yanıtlar ya da bir adaptörün her iki yarıma da ihtiyaç duyduğun
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | LLVM ile birlikte gelir            |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python projenin yorumlayıcısını seçer]
-`debugpy`, `$PATH`'ten önce `.venv/bin` veya `venv/bin` içinde aranır. `$PATH`'teki bir python farklı bir ortamdır ve yanlış olandan bağlanmak, yanlış yorumlayıcı olarak değil bozuk kod olarak okunan bir hatayla sonuçlanır.
+:::note[Python, sandbox içindeki bir çalıştırmada projenin yorumlayıcısını seçer]
+Sandbox içindeki bir çalıştırmada `debugpy`, `$PATH`'ten önce `.venv/bin` veya `venv/bin` içinde aranır. `$PATH`'teki bir python farklı bir ortamdır ve yanlış olandan bağlanmak, yanlış yorumlayıcı olarak değil bozuk kod olarak okunan bir hatayla sonuçlanır. Sandbox olmayan bir çalıştırmada yalnızca `$PATH` kullanılır; bu yüzden bir depo, sunucunun makinesinde çalışacak yorumlayıcıyı seçemez.
 :::
 
 ## Önce kesme noktasını koyun, sonra başlatın
@@ -106,6 +106,8 @@ Başlattığınız bir süreç yerine takılıp kalmış bir süreç için:
 debug(op: "attach", port: 5858)
 ```
 
+Port, çalıştırmanın kendi yönlendirilmiş portlarından biri olmalıdır. Diğer tüm portlar, hiçbir şey başlamadan reddedilir; böylece bir ajan, sunucunun makinesinde başkasına ait bir sürece bağlanamaz.
+
 ## Bitirme
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Oturumu her zaman sonlandırın. Bir hata ayıklama adaptörü, o sürecin elinde ne varsa — bir port, bir kilit, bir veritabanı bağlantısı — tutan bir **durdurulmuş sürece** sahiptir.
 
 :::note[Kontrolünüzden çıkamaz]
-Her oturumun uzatamadığı katı bir TTL'i vardır, konuşma başına tam olarak bir oturum bulunur ve sunucu durduğunda her şey sökülür. İkinci bir `launch`, ilkini değiştirmek yerine reddedilir: birini sonlandırmadan diğerini başlatan bir ajan, neredeyse kesinlikle ilkinin izini kaybetmiştir.
+Her oturumun uzatamadığı katı bir TTL'i vardır (30 dakika), konuşma başına tam olarak bir oturum bulunur ve sunucu durduğunda her şey sökülür. Sandbox içindeki bir çalıştırmada oturum, sandbox’ını turlar boyunca en fazla bu süre kadar korur. İkinci bir `launch`, ilkini değiştirmek yerine reddedilir: birini sonlandırmadan diğerini başlatan bir ajan, neredeyse kesinlikle ilkinin izini kaybetmiştir.
 :::
 
 ## Sınırlandırılmış çıktı

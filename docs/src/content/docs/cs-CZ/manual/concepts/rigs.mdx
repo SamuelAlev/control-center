@@ -2,7 +2,7 @@
 title: Stanice a izolovaná prostředí
 description: Proč agenti dostanou jednorázové stroje místo vašeho počítače — hranice izolace, kanály zobrazení, přihlašovací údaje, porty a životní cyklus.
 slug: cs-CZ/prirucka/koncepty/stanice
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 **Stanice** je jednorázový stroj, který agent řídí v reálném čase — prohlížeč,
@@ -234,6 +234,7 @@ Stanice záměrně **není** globální cíl. Živý náhled je karta v prostoru
 kde práce probíhá, vázaná na tu konverzaci — takže vaše karta i volání
 `browser_use` agenta míří na *jeden* stroj (jeden na každý engine, na ploše
 prohlížeče).
+Stanice otevřená v prostoru je strojem toho prostoru se záběrem na jeho worktreey, takže se řídí repozitáři prostoru: čtecí přístup k prostoru ti umožní ji sledovat a zápisové oprávnění k jeho repozitářům ji umožní ovládat. Stanice, která nepatří k žádnému prostoru, nedosáhne na žádný worktree a každý člen pracovního prostoru ji smí používat. [Kdo může sledovat a kdo ovládat](/cs-CZ/prirucka/navody/pouziti-stanic/#kdo-může-sledovat-a-kdo-ovládat) popisuje, co které oprávnění pokrývá.
 Jestli stanice vůbec smějí naběhnout, je vlastnost hostitele, takže schopnosti,
 obrazy, vlastní obrazy po pracovních prostorech a seznam běžících strojů žijí
 v **Nastavení → Server → Stanice**. Řízení izolovaného prostředí je vlastní

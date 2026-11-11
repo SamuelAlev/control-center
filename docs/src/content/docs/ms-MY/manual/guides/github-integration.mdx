@@ -2,7 +2,7 @@
 title: Sediakan integrasi GitHub
 description: Log masuk ke GitHub supaya permukaan PR, pendaftaran repo dan larian ejen berfungsi.
 slug: ms-MY/manual-pengguna/panduan-cara/integrasi-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Panduan ini merangkumi bahagian persediaan yang khusus untuk GitHub. GitHub
@@ -30,7 +30,7 @@ sesuatu yang mereka lakukan sendiri.
 
 GitHub hanya menggunakan log masuk: tiada token untuk ditampal.
 
-1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti → Hos kod** (atau langkah pertama
+1. Pergi ke **Tetapan → Anda → Profil → Hos kod** (atau langkah pertama
    onboarding)
 2. Pada baris **GitHub**, klik **Log masuk ke GitHub**
 3. Pelayar anda membuka GitHub. Luluskan apl itu
@@ -54,14 +54,29 @@ sesuatu ruang kerja, juga membatalkan setiap token yang dicetak oleh pelayan bag
 
 ## Siapa yang diwakili kelayakan anda
 
-- **Apa sahaja yang anda lakukan** (membuka halaman PR, menyiarkan semakan, meluluskan, mencantum) berjalan
-  di bawah log masuk **anda** dan tiada yang lain. Jika anda belum log masuk, apl itu akan memaklumkan dan
-  meminta anda log masuk. Tiada kelayakan lain yang menggantikan anda
-- **Kerja tanpa sesiapa menaip** (larian ejen, pipeline, pengundian PR, balasan bot, clone) menerima token
-  untuk satu repositori, dicetak daripada GitHub App pelayan atau melalui Connect. Token itu dihadkan kepada
-  apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana: yang meminta, atau jika tidak, pemilik
-  ruang kerja. Ahli yang tidak boleh push akan menghadkan token kepada baca sahaja
+Control Center mengikut pembahagian GitHub sendiri antara bertindak **sebagai seseorang** dan bertindak **sebagai app**:
+
+| Apa yang berlaku                                                                                  | Dipaparkan di GitHub sebagai                                                                       |
+| ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Apa sahaja yang anda lakukan sendiri: mengulas, menyemak, meluluskan, mencantum, meminta penyemak | **Anda**. GitHub menandakan komen dalam perbualan sebagai dibuat dengan apl Control Center; semakan dan komen sebarisnya tidak membawa tanda sedemikian |
+| Semakan AI, balasan dan ulasan ejen dalam perbualan PR, label, kerja pipeline dan bot                       | **Bot Control Center**. Pada app Connect dikongsi, semakan hanya milik bot untuk pemasangan yang pengendali Connect senaraikan; jika tidak, ia dipaparkan sebagai orang yang bertanggungjawab                                                                             |
+| Pull request yang dibuka oleh ejen untuk anda, suntingan pada tajuk atau keterangan pull request itu, push-nya dan komitnya                              | **Anda**. Control Center dikreditkan sebagai pengarang bersama apabila kredit pengarang bersama dihidupkan |
+| Kerja yang tiada sesiapa minta (jadual, webhook)                                                  | **Bot Control Center**, sebagai pengarang komitnya juga. Pada Control Center Connect, ia tidak pernah push atau membuka pull request                 |
+
+- **Apa sahaja yang anda lakukan** berjalan di bawah log masuk **anda** dan tiada yang lain. Jika anda belum log masuk, apl itu meminta anda log masuk. Tiada kelayakan lain yang menggantikan anda
+- **Kerja bot** menerima token untuk satu repositori pada satu masa, dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana: yang meminta, atau jika tidak, pemilik ruang kerja. Ahli yang tidak boleh push menghadkannya kepada baca sahaja. Balasan bot yang bertindak untuk seseorang bermula dengan **Control Center (for @login)**
+- **Ejen membuka pull request melalui Control Center**, tidak pernah dari kotak pasir mereka, jadi pull request itu milik anda dan peraturan GitHub sendiri menghalang anda daripada meluluskannya. Control Center juga menolak kelulusan daripada orang yang meminta ejen itu dan daripada pengarang pull request. Untuk larian berjadual atau webhook, ini merangkumi setiap pentadbir yang mengaktifkan pencetusnya atau mengedit pipelinenya semasa ia diaktifkan. Orang lain mesti menyemak. Jika Control Center tidak dapat mengesahkan siapa yang membuka pull request, atau akaun mana pada forge yang merupakan milik anda, ia menolak dan meminta anda mencuba semula
+- **Ejen mengulas melalui Control Center juga.** Token GitHub yang diterima oleh larian ejen hanya membaca. Apabila ejen mengulas pada pull request yang sedang dikerjakannya, Control Center memposkan komen itu sebagai bot, bermula dengan **Control Center (for @login)** apabila seseorang meminta larian itu. Ejen hanya boleh mengulas pada pull request dalam repositori yang sama (bukan fork), yang komit terakhirnya ditolak oleh ejen atau merupakan komit semasa cawangan ruangnya. @-sebutan dalam komen ejen tidak memberitahu sesiapa. Ejen juga boleh menukar tajuk atau keterangan pull request miliknya semasa ia masih terbuka. Suntingan itu dibuat dengan cara pull request itu dibuka (sebagai anda, apabila anda meminta larian itu), dan meminta kelulusan terlebih dahulu secara lalai. Keterangan pull request mengekalkan @-sebutannya, apabila ejen membukanya dan apabila ejen menyuntingnya, supaya orang yang dinamakannya diberitahu
+- **Pada Control Center Connect, bot tidak pernah push atau membuka pull request.** Push, mencipta cawangan atau membuka pull request di sana memerlukan orang yang memintanya, dan berjalan di bawah log masuk orang itu. Larian berjadual atau webhook yang cuba push akan berhenti dengan mesej yang menyatakannya. Untuk membenarkan larian tanpa pengawasan push, berikan ruang kerja GitHub App sendiri dalam **Tetapan**
+- **Apa yang boleh dilakukan bot Connect.** Dengan app Connect dikongsi, bot mengulas, melabel dan memberi reaksi. Ia menyiarkan semakan (semakan AI, komen semakan, permintaan penyemak) hanya apabila pengendali Connect telah menyenaraikan pemasangan pelayan ini. Jika tidak, semakan itu dihantar menggunakan log masuk orang yang bertanggungjawab sendiri dan muncul di bawah nama mereka. Bot tidak pernah membuka, mengedit, menutup atau menamakan semula pull request, membatalkan semakan, atau mengedit atau memadam komen; itu memerlukan seseorang yang memintanya, dengan log masuk mereka sendiri. Connect tidak mengikat pemasangan organisasi anda kepada satu pelayan Control Center; mana-mana pelayan tempat ahli yang boleh push ke repositori telah log masuk melalui Connect boleh mendapat token komen bot ini untuk repositori itu
+- **Pelayan atau ruang kerja dengan GitHub App sendiri** mengekalkan bot untuk semua di atas, termasuk semakan
 - **Automasi tidak pernah meluluskan** pull request. Kelulusan ialah tindakan seseorang
+
+Apabila anda memautkan repo, Control Center menyemak bahawa akaun anda boleh melihatnya, dan memberi amaran apabila GitHub App tidak dipasang pada organisasinya atau tidak merangkumi repo itu, dengan pautan untuk membetulkannya. Memautkan dan menyahpautkan memerlukan admin ruang kerja, dan checkout di luar storan ruang kerja itu sendiri hanya boleh dipautkan oleh pemilik pelayan; lihat [Tambah repo ke ruang kerja](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/).
+
+Pautan itu mengikut id GitHub kekal repositori, jadi penamaan semula atau pemindahan tidak memerlukan apa-apa daripada anda. Jika laluan itu kemudian menamakan repositori yang berbeza, Control Center berhenti menghantar apa-apa kepadanya dan memaparkan notis sehingga admin ruang kerja mengklik **Pautkan semula**.
+
+Membuka kod repositori (fail, diff, carian, terminal) memerlukan kedua-dua geran dalam ruang kerja dan log masuk GitHub anda yang boleh membacanya. Admin ruang kerja mengikut peraturan yang sama; hanya pemilik pelayan dikecualikan.
 
 ## Apa yang integrasi ini berikan kepada anda
 
@@ -71,7 +86,7 @@ sesuatu ruang kerja, juga membatalkan setiap token yang dicetak oleh pelayan bag
 | Larian semakan        | API Checks GitHub                                                                                             |
 | Penerbitan semakan    | Langkah berpagar pengguna yang menyiarkan semakan anda ke PR, atas nama anda                                  |
 | Pendaftaran repo      | Checkout diterima jika remote `origin`-nya menunjuk ke github.com — atau ke gitlab.com / bitbucket.org        |
-| Akses GitHub ejen     | Token untuk satu repositori larian sebagai `GH_TOKEN` / `GITHUB_TOKEN`; push melalui Control Center           |
+| Akses GitHub ejen     | Dalam larian, `git fetch` melalui Control Center, yang mengambil repositori yang dikerjakan larian dengan token baca sahaja yang tidak pernah dipegang larian. `gh` membacanya dengan token baca sahaja yang diberikan oleh Control Center apabila diminta dan dibatalkan apabila larian tamat. Push, pull request, suntingannya dan komen melalui Control Center |
 | Ping pemberitahuan    | Pengundian di sisi pelayan bagi peti masuk pemberitahuan GitHub anda memunculkan "disebut dalam pull request" dan "semakan diminta" |
 | Profil pengguna       | Kad hover profil dan penapisan PR mengikut pengarang                                                          |
 
@@ -90,20 +105,22 @@ butang muat semula. Status itu dimuat semula sendiri setiap dua minit.
 
 ## Fahami cara ejen bertindak di GitHub
 
-- Ejen yang bekerja dalam worktree GitHub mendapat token untuk repositori itu. Ia boleh membaca kod dan
-  mengulas pada pull request apabila ahli yang bertanggungjawab boleh push, dan hanya membaca apabila tidak.
-  Push melalui Control Center, yang bertanya kepada peraturan **Push ke remote** dan kemudian memajukannya
-  dengan token tulis yang tidak pernah dipegang ejen. Lihat
+- Ejen yang bekerja dalam worktree GitHub mendapat token untuk repositori itu. Ia hanya boleh membaca kod, isu dan pull request. Komen melalui Control Center seperti yang diterangkan di atas. Push melalui Control Center, yang bertanya kepada peraturan **Push ke remote** dan kemudian memajukannya dengan token tulis yang tidak pernah dipegang ejen. Lihat
   [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/)
-- Komit ejen sentiasa menggunakan identiti Git peminta sebagai pengarang dan pelaku komit. Secara lalai, treler `Co-Authored-By: Control Center <hi@usectrl.dev>` mengiktiraf GitHub `@usectrl` sebagai penulis bersama. **Tetapan → Anda → Atribusi komit** boleh mematikan kredit penulis bersama ini tanpa menukar identiti anda. Tetapan ruang kerja dalam **Tetapan → Ruang kerja → Umum** mengatasi pilihan peribadi dan mengunci suis itu. Atribusi Claude Code sendiri sentiasa dinyahaktifkan. Penandatanganan komit tetap memerlukan konfigurasi sahnya sendiri
+- Kerja yang anda mulakan dikomit sebagai anda. Apabila anda meminta ejen untuk sesuatu, atau mengkomit dalam IDE, anda ialah pengarang dan pengkomit, di bawah alamat yang disahkan oleh forge anda: alamat noreply GitHub anda daripada log masuk GitHub anda, atau pada GitLab dan Bitbucket e-mel yang dilaporkan oleh log masuk anda di sana. Identiti Git ruang kerja anda hanya digunakan untuk komit yang anda buat sendiri dalam repositori yang tiada forge mengesahkan alamat anda. Jika anda tidak log masuk ke forge itu, komit ejen ialah milik bot dan nota larian menyatakannya
+- Kerja yang tiada sesiapa minta dikomit sebagai bot. Larian berjadual atau webhook mengkomit sebagai GitHub App ruang kerja (`<app>[bot]`, dengan alamat noreply GitHubnya), atau sebagai `Control Center <hi@usectrl.dev>` apabila tiada GitHub App atau repositori berada di GitLab atau Bitbucket
+- **Beri kredit kepada Control Center sebagai pengarang bersama** (**Tetapan** → **Anda** → **Commit**) menambah treler `Co-Authored-By:` untuk pihak lain: Control Center pada komit anda, dan pada komit bot setiap orang yang mengaktifkan pencetus di sebalik larian itu. Ia dihidupkan melainkan anda mematikannya. Admin ruang kerja boleh menentukannya untuk semua orang dengan **Kredit pengarang bersama** dalam **Tetapan** → **Ruang kerja** → **Umum**; pilihan anda sendiri kemudian disimpan tetapi tidak terpakai dalam ruang kerja itu. Atribusi Claude Code sendiri sentiasa dinyahaktifkan
+- Komit anda boleh ditandatangani. Di bawah **Komit yang disahkan** dalam **Tetapan** → **Anda** → **Commit**, pilih **Cipta kunci tandatangan** dan tambah separuh awamnya pada akaun GitHub atau GitLab anda sebagai kunci tandatangan; sejak itu komit larian yang anda minta, dan komit yang anda buat dalam IDE, dipaparkan sebagai disahkan. Separuh peribadi kekal pada pelayan anda, jadi sesiapa yang mengawal pelayan itu boleh menandatangani komit sebagai anda selagi kunci itu berada pada akaun anda, dan pada GitHub komit yang sudah dipaparkan sebagai disahkan kekal disahkan selepas anda membuang kunci itu. Bitbucket tidak mempunyai kunci khusus tandatangan: jangan tambah kunci di sana, dan komit pada Bitbucket tidak ditandatangani. Komit bot tidak pernah ditandatangani
+- Komit yang anda buat dalam panel **Kawalan sumber** IDE melangkau cangkuk Git repositori, seperti `git commit --no-verify`, dan Git pada pelayan mengabaikan pembantu kelayakan, editor, alat diff luaran dan penandatangan yang dikonfigurasikan oleh repositori: ia menjalankan Git pada mesinnya sendiri, dalam pokok yang boleh diubah oleh ejen atau pull request. Lihat [Komit dan tolak dari Kawalan sumber](/ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr/#komit-dan-tolak-daripada-kawalan-sumber)
+- Setiap komit yang ditolak oleh ejen diperiksa dahulu, termasuk lapisan yang ditolak oleh `stack_publish` untuk stack. Push yang menamakan orang lain, membuang atau meminjam sesuatu kredit, menambah sign-off, atau tidak ditandatangani sebagaimana tetapan anda menyatakan ditolak. Komit yang anda push sendiri dari IDE adalah milik anda dan tidak diperiksa dengan cara ini
 - Terminal yang anda buka pada rig menerima log masuk anda sendiri, dihadkan kepada satu repositori, jadi push di sana adalah milik anda
-- Apabila tiada token dapat dicetak (tiada ahli yang bertanggungjawab sedang log masuk, apl tidak dipasang pada pemilik, atau pemasangan digantung), larian bermula tanpa token dan notanya menerangkan sebabnya. Tiada kelayakan sandaran
+- Apabila tiada token dapat dicetak (tiada ahli yang bertanggungjawab sedang log masuk, apl tidak dipasang pada pemilik, atau pemasangan digantung), arahan yang memintanya menerangkan sebabnya. Tiada kelayakan sandaran
 
 ## Penyelesaian masalah
 
 ### Senarai PR kosong dan menyatakan GitHub tidak disambungkan
 
-Anda tidak log masuk ke GitHub pada pelayan ini. Klik **Log masuk ke GitHub** di bawah **Hos kod**.
+Anda tidak log masuk ke GitHub pada pelayan ini. Klik **Log masuk ke GitHub** di bawah **Tetapan → Anda → Profil → Hos kod**.
 Repo pada hos kod lain tidak terjejas.
 
 ### Baris GitHub menyatakan log masuk belum disediakan pada pelayan ini
@@ -111,6 +128,10 @@ Repo pada hos kod lain tidak terjejas.
 Pelayan tiada GitHub App sendiri mahupun Connect. Pemilik pelayan memilih salah satu dalam **Tetapan → Pelayan →
 Daftar masuk tunggal**: **Cipta aplikasi GitHub saya** mengambil masa kira-kira dua minit. Lihat
 [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
+
+Dalam ruang kerja yang menggunakan apl sendiri, baris itu menyatakannya apabila GitHub App ruang kerja tiada atau tidak
+lengkap. Pentadbir ruang kerja melengkapkannya pada kad **Apl GitHub** dalam **Tetapan → Ruang kerja → Integrasi**; lihat
+[Berikan satu ruang kerja app sendiri](/ms-MY/manual-pengguna/panduan-cara/github-app/#berikan-satu-ruang-kerja-app-sendiri).
 
 ### Dialog memaklumkan kod tidak sepadan
 
@@ -120,9 +141,7 @@ log masuk; mulakan semula.
 ### Log masuk memaklumkan apl belum dipasang
 
 GitHub App tidak mempunyai sebarang pemasangan pada akaun yang memiliki repositori. Seorang pentadbir ruang kerja
-memasangnya dari **Tetapan → Ruang kerja → Umum → Pemasangan aplikasi GitHub**. Untuk organisasi yang menggunakan
-App kongsi Control Center, pentadbir organisasi itu mungkin perlu klik **Benarkan pelayan ini**. Lihat
-[Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
+memasangnya dari **Tetapan → Ruang kerja → Integrasi → Pemasangan aplikasi GitHub**.
 
 ### Semua orang perlu log masuk ke GitHub semula
 
@@ -133,8 +152,25 @@ dipulihkan ke mesin lain. Log masuk melalui Connect terikat kepada pelayan yang 
 
 Pendaftaran memerlukan ketiga-tiganya: laluan itu berada di dalam work tree git,
 ia mempunyai remote `origin`, dan remote itu menunjuk ke hos kod yang disokong
-(github.com, gitlab.com atau bitbucket.org). Lihat
+(github.com, gitlab.com atau bitbucket.org). `origin` mestilah repositori yang anda pautkan, dan
+folder di luar storan ruang kerja itu sendiri hanya boleh dipautkan oleh pemilik pelayan. Lihat
 [Tambah repositori ke ruang kerja](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/).
+
+### Saya ada geran tetapi repositori menyatakan akaun saya tidak boleh membacanya
+
+Akaun GitHub anda tidak boleh membaca repositori itu, jadi kodnya kekal tertutup kepada anda walaupun
+dengan geran ruang kerja. Log masuk ke GitHub di bawah **Hos kod**, atau minta akses kepada repositori
+itu di GitHub.
+
+### "Tidak dapat mengesahkan akses GitHub anda"
+
+GitHub tidak dapat dihubungi untuk menyemak akses anda, jadi Control Center menolak dan bukan meneka.
+Cuba lagi sebentar nanti.
+
+### Semakan pada Connect muncul di bawah nama saya, bukan nama bot
+
+Pada app Connect dikongsi, bot hanya menyiarkan semakan untuk pemasangan yang pengendali Connect telah
+senaraikan. Di tempat lain semakan dihantar menggunakan log masuk orang yang bertanggungjawab sendiri. Untuk membolehkan bot menyiarkan semakan, berikan ruang kerja GitHub App sendiri.
 
 ### Semuanya berhenti berfungsi seketika selepas penggunaan berat
 

@@ -2,14 +2,14 @@
 title: Schutzregeln konfigurieren
 description: Setze Regeln für Zulassen, Zuerst fragen und Verweigern bei Agentenaktionen, prüfe sie mit „Was wäre wenn?“ und stelle die Autonomie je Bereich ein.
 slug: de-DE/handbuch/anleitungen/schutzregeln-konfigurieren
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Diese Anleitung zeigt, wie du Schutzregeln konfigurierst: die Regeln, die
 entscheiden, ob die Aktion eines Agenten läuft, zuerst um Freigabe fragt oder
 abgelehnt wird.
 
-Die Schutzregeln decken die dreizehn Effektklassen ab, die jedes verändernde
+Die Schutzregeln decken die vierzehn Effektklassen ab, die jedes verändernde
 Werkzeug deklariert. Durchgesetzt werden sie serverseitig an der Stelle, an
 der das Werkzeug aufgerufen wird, nie durch eine Anweisung im Prompt.
 
@@ -24,7 +24,7 @@ der das Werkzeug aufgerufen wird, nie durch eine Anweisung im Prompt.
    am Ende dieser Zeile (**Auf geerbten Wert zurücksetzen**) — die
    Entscheidung fällt auf den weiteren Geltungsbereich zurück.
 
-Jede Zeile zeigt die wirksame Entscheidung als Status-Tag und ein Badge für
+Jede Zeile zeigt die Einstellung der Aktion als Status-Tag und ein Badge für
 die Herkunft: **Dieser Bereich**, **Geerbt** oder **Standardwert**. Die Matrix
 löst im Modus Agent (`chat`) auf, deshalb erscheint **Modus-Voreinstellung**
 hier nie — nimm die Prüfung „Was wäre wenn?“ mit einem ausgewählten
@@ -38,6 +38,18 @@ Arbeitsbereich auf **Verweigern** und führe danach die Prüfung „Was wäre
 wenn?“ unten für `git push origin main` aus. Das Ergebnis lautet `deny` mit
 Herkunft `workspace`.
 
+## Dauerfreigaben prüfen und widerrufen
+
+Wenn du eine Freigabekarte mit **Für 8 Stunden freigeben** beantwortest, wird eine Dauerfreigabe geschrieben: eine Regel, die dieselbe Art von Aktion ohne Nachfrage durchlässt, bis sie endet. Jede steht auf dieser Seite, unter der Aktion, zu der sie gehört.
+
+1. Öffne **Einstellungen → Arbeitsbereich → Agent-Berechtigungen** und wähle den Geltungsbereich. Eine Freigabe wird für den Bereich geschrieben, aus dem die Frage kam, also wähle **Bereich** und danach diesen Bereich
+2. Lies unter der Zeile der Aktion den Eintrag: was er erlaubt (zum Beispiel Pushes auf Branches, die `feature/**` entsprechen), das Wort **Dauerfreigabe**, wer ihn gegeben hat, wenn es jemand anderes war, und wann er endet
+3. Um ihn sofort zu beenden, bewege den Mauszeiger auf den Eintrag und drücke **Widerrufen**. Die Agenten fragen ab ihrer nächsten Aktion wieder nach
+
+Die Zeile zeigt weiter die eigene Einstellung der Aktion, und eine Zeile darunter zählt, wie viele der unten aufgeführten Fälle trotzdem erlaubt sind. Bedingte Regeln, die eine Vorlage geschrieben hat, erscheinen in derselben Liste, und Befehlsregeln in einer Gruppe **Befehle** nach der letzten Aktion. Auf Arbeitsbereichsebene zählt ein Hinweis unter der Zusammenfassung die Dauerfreigaben, die für einzelne Bereiche oder Agenten gesetzt sind. Auf Bereichs- oder Agentenebene zählt er die des Arbeitsbereichs, die dort ebenfalls gelten.
+
+Eine Dauerfreigabe erspart nur eine Nachfrage. Sie überschreibt nie **Verweigern**: Setzt du eine Aktion auf **Verweigern**, während eine läuft, zeigt ihr Eintrag **ohne Wirkung bei Verweigern**, bis sie endet oder du sie widerrufst. Eine Änderung der Einstellung einer Aktion lässt ihre Dauerfreigaben bestehen, und das Widerrufen einer Dauerfreigabe lässt die Einstellung bestehen.
+
 ## Wie eine Entscheidung aufgelöst wird
 
 Die Auflösung geht **zuerst nach Spezifität, dann nach Strenge**:
@@ -46,7 +58,7 @@ Die Auflösung geht **zuerst nach Spezifität, dann nach Strenge**:
    Geltungsbereich mit einer passenden Regel entscheidet, und die Auflösung
    endet dort.
 2. Trifft keine Regel, gilt die **Modus-Voreinstellung** — ein Nur-Lese-Modus
-   (Plan, Review, Orchestrate) verweigert elf der dreizehn Klassen.
+   (Plan, Review, Orchestrate) verweigert zwölf der vierzehn Klassen.
 3. Hat der Modus nichts zu sagen, gilt der **Standardwert**.
 
 Innerhalb eines einzelnen Geltungsbereichs trifft eine Befehlsregel auf den
@@ -76,7 +88,7 @@ als ein abgelehnter.
 | Einen Commit erstellen                  | Zulassen             |
 | Zu einem Remote pushen                  | Zuerst fragen        |
 | Einen Pull Request öffnen               | Zuerst fragen        |
-| Eine Review veröffentlichen oder mergen | Zuerst fragen        |
+| Einen Pull Request aktualisieren oder zusammenführen | Zuerst fragen        |
 | In einen externen Tracker schreiben     | Zuerst fragen        |
 | Auf das Netzwerk zugreifen              | Zulassen             |
 | Ein Geheimnis lesen                     | Zulassen             |
@@ -84,6 +96,7 @@ als ein abgelehnter.
 | Einen Prozess ausführen                 | Zulassen             |
 | Arbeitsbereichsstruktur ändern          | Zulassen             |
 | Eine Kapsel (Rig) steuern               | Zulassen             |
+| Befehle auf dem Host ausführen          | Zuerst fragen        |
 
 Die Taxonomie ist geschlossen. Ein neues Werkzeug, das ohne deklarierte
 Klassen ausgeliefert wird, fällt in der CI durch einen Ratchet-Test, deshalb
@@ -95,14 +108,14 @@ Bevor du eine Regel änderst, prüfe, wie die aktuelle Richtlinie sie schon
 auflöst.
 
 1. Scrolle auf derselben Seite zu **Was wäre wenn?**.
-2. Wähle eine **Aktion** (eine der dreizehn Klassen).
+2. Wähle eine **Aktion** (eine der vierzehn Klassen).
 3. Fülle bei Bedarf **Befehl (optional)** aus (zum Beispiel
    `git push origin main`), dazu **Agent (optional)**, **Bereich (optional)**
    und **Modus**.
 4. Lies das Ergebnis: die Entscheidung, den Grund und **Quelle:**.
 
 Die Prüfung läuft über dieselbe Auflösung wie der Durchsetzungspfad, gegen
-deine geltenden Regeln, deshalb ist die Antwort exakt. Überrascht sie dich,
+deine geltenden Regeln, deshalb ist die Antwort exakt. Wenn eine Dauerfreigabe entscheidet, lautet die Herkunft **Dauerfreigabe** mit ihrem Geltungsbereich. Überrascht dich die Antwort,
 ändere eine Regel in der Matrix darüber und prüfe erneut.
 
 ## Den Autonomieregler eines Bereichs setzen

@@ -2,7 +2,7 @@
 title: Sandbox-Richtlinien konfigurieren
 description: Was einen Agentenlauf begrenzt, wie du erkennst, ob die Betriebssystem-Sandbox ihn umhüllt, und wie die Aktionsregeln entscheiden, was ein Agent pushen oder erreichen darf.
 slug: de-DE/handbuch/anleitungen/sandbox-richtlinien
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Ob ein Agentenlauf in der Sandbox läuft, entscheidet der Server beim Start
@@ -23,7 +23,7 @@ und sie ist die bedingte — die anderen fünf gelten auf jedem Host.
 
 | Grenze                      | Was sie tut                                                                                                                                                                      |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Die Betriebssystem-Sandbox  | Seatbelt unter macOS, bubblewrap unter Linux und WSL2. Umhüllt die Claude-Code-CLI, ACP-Adapter und das Werkzeug `bash` des Harness. **Fehlt unter Windows und unter Linux ohne `bwrap` und `socat`** |
+| Die Betriebssystem-Sandbox  | Seatbelt unter macOS, bubblewrap unter Linux und WSL2. Umhüllt die Claude-Code-CLI, ACP-Adapter und das Werkzeug `bash` des Harness. **Fehlt unter Windows und unter Linux ohne `bwrap` und `socat`, wo nur die Läufe des Serverinhabers starten** |
 | Der eigene Worktree         | Jede Unterhaltung bekommt einen Copy-on-Write-Checkout. Der ursprüngliche Checkout geht als Schreibverbotspfad in den Lauf ein, und die Sandbox setzt das durch                 |
 | Vermittelte Zugangsdaten    | Der Zugangsdaten-Broker stellt eine Umgebung je Lauf zusammen und widerruft sie beim Abbau. Ihr GitHub-Token kann lesen, aber nicht pushen: Ein Push läuft durch Control Center, das zuerst die Push-Regel fragt |
 | Aktions-Schutzregeln        | Jedes verändernde Werkzeug deklariert seine Effektklassen, und die Schutzregel löst sie auf, bevor der Aufruf läuft. Ein `prompt` ohne verbundene zuständige Person wird abgelehnt |
@@ -43,11 +43,7 @@ Drei Dinge sind schwächer, als sie aussehen:
   sie kein Sandbox-Profil. Nur das Werkzeug `bash` geht durch den gekapselten
   Befehlsrunner. Ihre Grenze sind die eigene Pfadbeschränkung und die
   Aktions-Schutzregeln.
-- Auf einem Host ohne Backend gilt die erste Zeile gar nicht. ACP und das
-  Werkzeug `bash` des Harness fallen auf die Bereinigung der Umgebung plus die
-  Befehlsrichtlinie zurück. Claude Code erbt die Umgebung des Hosts über
-  `NoSandboxAdapter`. Der Server sagt das in seinem Startlog. Deins prüfst du
-  weiter unten.
+- Auf einem Host ohne Backend starten nur Läufe, für die der Serverinhaber verantwortlich ist, und für diese gilt die erste Zeile gar nicht. Alle anderen Läufe werden abgelehnt. Unter `--sandbox off` starten die Läufe jedes Mitglieds ohne die erste Zeile. In beiden Fällen fallen ACP und das Werkzeug `bash` des Harness auf die Bereinigung der Umgebung plus die Befehlsrichtlinie zurück, und Claude Code erbt die Umgebung des Hosts über `NoSandboxAdapter`. Der Server sagt in seinem Startlog, welcher Fall gilt. Deins prüfst du weiter unten.
 
 ## Entscheiden, was ein Agent pushen darf
 
@@ -57,8 +53,8 @@ Netzwerk. Jedes davon ist eine Aktionsregel:
 | Regel                                       | Eingebauter Standard | Was sie abdeckt                                                                  |
 | ------------------------------------------- | -------------------- | -------------------------------------------------------------------------------- |
 | **Zu einem Remote pushen**                  | Zuerst fragen        | Jedes `git push` zu GitHub, egal mit welchem Adapter                             |
-| **Einen Pull Request öffnen**               | Zuerst fragen        | `gh pr create` und die Pull-Request-Werkzeuge                                    |
-| **Eine Review veröffentlichen oder mergen** | Zuerst fragen        | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                    |
+| **Einen Pull Request öffnen**               | Zuerst fragen        | Die Pull-Request-Werkzeuge von Control Center. `gh pr create` funktioniert in einem Lauf nicht                                    |
+| **Einen Pull Request aktualisieren oder zusammenführen** | Zuerst fragen        | Kommentare des Agenten zu seinem Pull Request, Änderungen an dessen Titel oder Beschreibung und veröffentlichte Reviews, über die Werkzeuge von Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` und `gh pr close` funktionieren in einem Lauf nicht                    |
 | **In einen externen Tracker schreiben**     | Zuerst fragen        | Ticket-Schreibvorgänge über die Werkzeuge von Control Center und `gh issue`      |
 | **Auf das Netzwerk zugreifen**              | Zulassen             | Ob die Sandbox überhaupt ein Netzwerk hat, und die Web-Werkzeuge des Harness     |
 
@@ -121,32 +117,29 @@ anbietet und ob `--sandbox` an ist. Prüfe sie in dieser Reihenfolge.
    Einstellung dieses Geräts, nicht die Umhüllung, die der Server wirklich
    nutzt.
 3. Lies das Startlog des Servers. Es schreibt genau eine von drei Zeilen:
-   - `agent sandbox ON` plus die Backend-Notiz — die Läufe sind umhüllt
+   - `agent sandbox ON` plus die Backend-Notiz: die Läufe sind umhüllt
    - `no OS-native agent sandbox on this host` plus einen Installationshinweis,
-     wo es einen gibt — die Läufe sind nicht umhüllt
-   - `agent sandbox DISABLED by --sandbox off` — ein bewusstes Abwählen
+     wo es einen gibt: nur Läufe, für die der Serverinhaber verantwortlich ist, starten, ohne Umhüllung, und alle anderen werden abgelehnt
+   - `agent sandbox DISABLED by --sandbox off`: jeder Lauf eines Mitglieds startet, ohne Umhüllung
+4. Die Expositionszeile beim Start sagt dasselbe in einem Wort: `sandbox=native`, `sandbox=off` oder `sandbox=unavailable`.
 
 `GET /healthz` meldet den Sandbox-Zustand nicht, also ist das Startlog die
 Prüfung.
 
-Um die Sandbox bewusst abzuschalten — der Grund dafür ist ein Host, auf dem
-das Profil sich falsch verhält —, startest du den Server mit `--sandbox off`
-oder setzt `CC_SERVER_SANDBOX=off`. Der Standard ist `on`, und `on` heißt
-„ein Backend nutzen, wenn der Host eines hat“, nie „eines verlangen“.
+Nur der Serverinhaber entscheidet, ohne Sandbox zu laufen. Um es für alle zu tun, startest du den Server mit `--sandbox off` oder setzt `CC_SERVER_SANDBOX=off`. Dann läuft jeder Agent eines Mitglieds auf diesem Rechner ohne Umhüllung; das ist also eine Entscheidung über alle, die den Server nutzen, und wird einmal beim Start getroffen. Der Standard ist `on`: Er umhüllt jeden Lauf, wenn der Host ein Backend hat, und startet andernfalls nur die Läufe des Inhabers.
 
 Zwei Situationen bekommen nie eine native Sandbox-Umhüllung. Unter **Windows**
 meldet die native Prüfung immer, dass keine verfügbar ist, und es gibt nichts
-zu installieren — die Agenten-Ausführung nutzt `none`. Das Backend `microvm`
+zu installieren, also starten nur die Läufe des Serverinhabers, es sei denn, er übergibt `--sandbox off`. Das Backend `microvm`
 ist getrennt (interaktive Terminals und Rigs) und hängt an der Prüfung seiner
 eigenen Laufzeit. Unter **Linux und WSL2** müssen `bwrap` und `socat` auf dem
 `PATH` liegen. Ohne sie meldet die Prüfung, dass keine verfügbar ist, und
-nennt die fehlenden Pakete.
+nennt die fehlenden Pakete, und nur die Läufe des Inhabers starten.
 
 Unter Linux/WSL2 mit installiertem bubblewrap lassen sich die Globs für
 Geheimnisdateien in der Standardrichtlinie nicht für Dateien durchsetzen, die
-ein Agent später anlegt. Ein solcher nativer Lauf scheitert jetzt, statt die
-Regeln still zu ignorieren. Eine positive Prüfung beim Start garantiert
-deshalb nicht, dass eine Ausführung unter Linux starten kann. `--sandbox off`
+ein Agent später anlegt. daher scheitert jeder native Lauf, auch der des Inhabers, statt die
+Regeln still zu ignorieren. Eine positive Prüfung beim Start bedeutet deshalb nicht, dass eine Ausführung unter Linux starten kann: Heute betreibt ein Linux-Server Agenten nur mit `--sandbox off`, oder ohne bubblewrap nur für den Inhaber. `--sandbox off`
 ist ein bewusstes Abwählen ohne Einschränkung, kein Ersatz für eine
 Sicherheitsgrenze.
 
@@ -154,14 +147,14 @@ Sicherheitsgrenze.
 
 Der Modus ist je Bereich gespeichert und speist den Schutzregel-Resolver als
 Schicht **Modus-Voreinstellung**. Drei der vier Modi sind schreibgeschützt,
-und ein Nur-Lese-Modus verweigert elf Effektklassen rundweg:
+und ein Nur-Lese-Modus verweigert zwölf Effektklassen rundweg:
 
 | Modus              | Worktree          | Von der Voreinstellung verweigert                                                                                                                                                                                                 |
 | ------------------ | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`) | Beschreibbar      | Nichts — es gelten die eingebauten Vorgaben                                                                                                                                                                                       |
-| **Plan**           | Schreibgeschützt  | Eine Datei löschen, außerhalb des Arbeitsbaums schreiben, einen Commit erstellen, zu einem Remote pushen, einen Pull Request öffnen, eine Review veröffentlichen oder mergen, in einen externen Tracker schreiben, ein Paket installieren, einen Prozess ausführen, Arbeitsbereichsstruktur ändern, eine Kapsel (Rig) steuern |
-| **Review**         | Schreibgeschützt  | Dieselben elf. Nicht wählbar — der Composer bietet nur Agent, Plan und Orchestrate                                                                                                                                                |
-| **Orchestrate**    | Schreibgeschützt  | Dieselben elf                                                                                                                                                                                                                     |
+| **Plan**           | Schreibgeschützt  | Eine Datei löschen, außerhalb des Arbeitsbaums schreiben, einen Commit erstellen, zu einem Remote pushen, einen Pull Request öffnen, eine Review veröffentlichen oder mergen, in einen externen Tracker schreiben, ein Paket installieren, einen Prozess ausführen, Arbeitsbereichsstruktur ändern, eine Kapsel (Rig) steuern, Befehle auf dem Host ausführen |
+| **Review**         | Schreibgeschützt  | Dieselben zwölf. Nicht wählbar — der Composer bietet nur Agent, Plan und Orchestrate                                                                                                                                                |
+| **Orchestrate**    | Schreibgeschützt  | Dieselben zwölf                                                                                                                                                                                                                     |
 
 **Auf das Netzwerk zugreifen** und **Ein Geheimnis lesen** verweigert ein
 Nur-Lese-Modus absichtlich nicht: Recherche ist der Sinn eines solchen.
@@ -188,18 +181,22 @@ Lies, was git ausgegeben hat. `Control Center policy: …` heißt, eine Regel ha
 den Push verweigert oder ein **Zuerst fragen** blieb unbeantwortet.
 `… is not linked to this workspace` heißt, der Push zielt auf ein Repo, das
 weder das eigene des Worktrees noch mit dem Arbeitsbereich verknüpft ist.
-`Control Center has no GitHub credential that can push …` heißt, die GitHub
-App ist auf diesem Repo nicht installiert und keine Ersatz-Zugangsdaten konnten
-pushen: Installiere die App dort oder verbinde GitHub.
+`Control Center has no GitHub credential that can push …` heißt, es konnte kein Push-Token erzeugt werden: Installiere die GitHub App auf diesem Repo oder melde dich bei GitHub an.
+
+### Mein Agentenlauf wurde mit „Dieser Server hat keine Sandbox“ abgelehnt
+
+Der Lauf zeigt **Agenten brauchen eine Sandbox auf diesem Server** mit „Dieser Server hat keine Sandbox, daher kann hier nur der Serverinhaber Agenten ausführen. Der Inhaber kann die Sandbox installieren oder das Sandboxing für alle ausschalten.“ Der Rechner des Servers hat keine Betriebssystem-Sandbox, und die verantwortliche Person des Laufs ist nicht der Serverinhaber, also wurde nichts gestartet. Bei einem Zeitplan, Webhook oder einer anderen Automatisierung ist die verantwortliche Person diejenige, an die die Automatisierung gebunden ist, nicht wer gerade hinschaut.
+
+Nur der Serverinhaber kann das ändern. Unter Linux und WSL2 installiert er `bubblewrap` und `socat` und startet den Server neu (lies aber zuerst den Hinweis zu Linux oben). Unter Windows gibt es kein Backend zu installieren. Die andere Möglichkeit ist, den Server mit `--sandbox off` neu zu starten, was jeden Agenten der Mitglieder auf diesem Rechner unbegrenzt laufen lässt.
 
 ### Die Karte Sandboxing meldet keine native Sandbox
 
 Dann sind die Agentenläufe auf diesem Host weder von Seatbelt noch von
-bubblewrap umhüllt, und die übrigen Grenzen sind das, was du hast. Unter
+bubblewrap umhüllt: Nur die Läufe des Serverinhabers starten, und die übrigen Grenzen sind das, was sie haben. Unter
 Linux und WSL2 installierst du beide fehlenden Werkzeuge —
 `sudo apt-get install bubblewrap socat` — und startest den Server neu. Das
 Startlog sollte danach sagen, dass die Sandbox an ist. Unter Windows gibt es
-kein natives Backend zum Installieren, also verschärfe stattdessen die
+kein natives Backend zum Installieren, also verschärfe stattdessen für die eigenen Läufe des Inhabers die
 Schutzregeln. Siehe
 [Schutzregeln konfigurieren](/de-DE/handbuch/anleitungen/schutzregeln-konfigurieren/).
 
@@ -215,7 +212,7 @@ ein Backend existiert, und deine registrierten Checkouts sind in dieser
 Umhüllung in jedem Modus schreibgesperrt, einschließlich ihrer über den
 Symlink aufgelösten Schreibweisen (unter macOS löst sich ein Pfad über
 `/tmp` oder `/var/folders` unter `/private` auf, und beide Schreibweisen sind
-jetzt verboten). Auf einem Host ohne Backend gilt davon nichts. So oder so
+verboten). Unter `--sandbox off` oder bei den eigenen Läufen des Inhabers auf einem Host ohne Backend greift davon nichts. So oder so
 können die Schutzregeln **Außerhalb des Arbeitsbaums schreiben** rundweg
 verweigern.
 

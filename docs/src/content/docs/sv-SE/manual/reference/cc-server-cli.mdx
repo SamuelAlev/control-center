@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Varje flagga, miljövariabel, underkommando och datakatalogsökväg hos headless-servern.
 slug: sv-SE/handbok/referens/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Varje processflagga styrs av en CLI-flagga eller en miljövariabel; flaggan vinner,
@@ -47,7 +47,7 @@ standardvärdet. Kontrollera loggraderna vid start när en flagga verkar sakna e
 
 | Flagga                | Miljövariabel                    | Standard | Betydelse                                                                                                                                                    |
 | --------------------- | -------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `--sandbox`           | `CC_SERVER_SANDBOX`              | `on`     | Om agentkörningar lindas in i värdens inbyggda OS-sandlåda när en sådan finns. En opt-out, inte en aktivering – se nedan                                     |
+| `--sandbox`           | `CC_SERVER_SANDBOX`              | `on`     | `on` lindar in agentkörningar i värdens inbyggda OS-sandlåda, och på en värd utan någon startar bara serverägarens körningar. `off` kör alla medlemmars agenter obegränsade på den här värden. Se nedan |
 | `--code-index`        | `CC_SERVER_CODE_INDEX`           | `on`     | Dödarknapp i fält för bakgrundsindexering av kodgrafen. `off` startar rent utan ombyggnad                                                                    |
 | `--code-index-defer`  | `CC_SERVER_CODE_INDEX_DEFER`     | `15`     | Sekunder som det första indexsvepet hålls tillbaka efter redo-bannern (begränsat 0–300)                                                                      |
 | `--tool-deferral`     | `CC_SERVER_TOOL_DEFERRAL`        | `on`     | Om harnesskörningar skickar en liten resident verktygsuppsättning plus ett namnindex och läser in resten vid första användning. Se nedan                     |
@@ -86,22 +86,34 @@ där varje underprocess skulle kunna läsa den. Ifyllningen från `.env` sker en
 gång per fält, så en senare ändring i Inställningar skrivs inte över vid en
 omstart. Ett tomt värde läses som oangivet.
 
-Bakgrundsarbete för GitLab och Bitbucket läser också `GITLAB_TOKEN` /
-`CI_JOB_TOKEN` och `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` med
-`BITBUCKET_EMAIL`. GitHub har ingen autentiseringsuppgift i miljön.
+Ingen kodvärdsautentisering kommer från miljön: GitHub, GitLab och Bitbucket agerar
+alla med en medlems egen inloggning eller token, eller med GitHub-app-tokens för ett
+repo i taget som är begränsade till en sådan.
 
 ### `--sandbox`
 
 Servern sonderar värden en gång vid start och lindar in agentens kommandokörning i
 den inbyggda OS-sandlådan när en backend finns: `sandbox-exec` (Seatbelt) på macOS,
-`bwrap` plus `socat` på Linux och WSL2. Där ingen finns – Windows, eller en Linux-värd
-som saknar de verktygen – faller körningarna tillbaka på miljösanering,
-kommandopolicyn och räckena för åtgärder, och startloggen säger vilket tillstånd som
-gäller.
+`bwrap` plus `socat` på Linux och WSL2. Beslutet fattas en gång och gäller tills
+servern startar om. Det finns tre utfall, och vart och ett visas på startloggens
+exponeringsrad:
 
-`--sandbox off` är dödarknappen i fält för fallet sonden inte kan se: en värd där
-själva sandlådeprofilen beter sig fel. Den kräver ingen ombyggnad och servern loggar
-en varning under hela processens livstid så att tillståndet aldrig är tyst.
+| `sandbox=`    | När                                     | Vems agentkörningar startar                                                      |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | En backend finns och `--sandbox` är `on` | Allas, inlindade                                                                 |
+| `off`         | `--sandbox off`                         | Allas, obegränsade på den här värden                                             |
+| `unavailable` | `--sandbox on` och ingen backend (Windows, eller Linux utan `bwrap` och `socat`) | Bara körningar som serverägaren är ansvarig för, obegränsade. Andra nekas med ”Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här.” |
+
+För automation är den ansvariga personen den som automationen är bunden till. Utan
+registrerad serverägare startar ingen körning på en `unavailable`-värd. På Linux och
+WSL2 med bubblewrap installerat misslyckas inbyggd dispatch för närvarande stängt för
+varje körning; se [Sandlådebackends](/sv-SE/handbok/referens/sandladebackends/#linux-bubblewrap).
+
+`--sandbox off` är serverägarens val för alla som använder servern: den kör varje
+medlems agenter obegränsade på den här maskinen. Använd det på en värd där själva
+sandlådeprofilen beter sig fel, eller för att låta medlemmar köra agenter på en värd
+utan någon backend. Den kräver ingen ombyggnad, och servern loggar en varning under
+hela processens livstid så att tillståndet aldrig är tyst.
 
 ### `--tool-deferral`
 
@@ -181,7 +193,6 @@ körs plockar upp en ändring inom 10 minuter eller vid omstart.
 | `cc_server connect enable`      | Använder Control Centers hostade Connect                                                                         |
 | `cc_server connect enable --url <url>` | Använder en egen Connect på den URL:en (HTTPS, eller `http` på loopback)                                  |
 | `cc_server connect disable`     | Slutar använda Connect. Bara serverns egna appar loggar in personer                                              |
-| `cc_server connect rotate-key --yes` | Skapar en ny installationsnyckel och ett nytt installations-id. Alla som loggade in via Connect loggar in igen. Utan `--yes` varnar den bara och avslutar med `2` |
 
 `status` utan kommando är standard. Varje kommando accepterar `--data-dir`.
 `CC_CONNECT_URL` åsidosätter det som dessa lagrar. Ett okänt kommando avslutar

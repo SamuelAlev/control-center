@@ -2,7 +2,7 @@
 title: Propojte účet Slack
 description: Dokaž, že identita ve Slacku patří tobě, aby agenti podle tvých zpráv jednali a práce se připisovala tobě.
 slug: cs-CZ/prirucka/navody/propojeni-chatoveho-uctu
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Tenhle návod ukazuje, jak propojit chatovou identitu s uživatelem Control Center a jak ji odpojit.
@@ -19,7 +19,7 @@ Nepropojený člen, který bota zmíní, dostane v tom vlákně Slacku odpověď
 
 Propojení potřebuje obě strany: odeslání kódu ze Slacku dokazuje účet Slack a potvrzení v Control Center dokazuje, že ten účet je tvůj.
 
-1. Jdi do **Nastavení → Pracovní prostor → Profil a identita** a sjeď ke kartě **Propojené účty chatu**
+1. Jdi do **Nastavení → Vy → Profil** a najdi kartu **Propojené účty chatu**
 2. V bloku Slack klikni na **Propojit můj účet Slack**. Dialog ukáže jednorázový kód, například:
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Když je to tvůj účet, klikni na **Potvrdit**. Propojení vznikne, dialog to oznámí a bot to potvrdí ve stejné přímé zprávě
 6. Když tvůj není, klikni na **Odmítnout**. Nic se nepropojí a kód přestane fungovat; pro nový pokus klikni na **Získat nový kód**
 
-Zavřením dialogu nárok neztratíš. Kód, který dorazí později, čeká na řádku **Propojit můj účet Slack** na stránce tvého profilu, se stejnými tlačítky **Potvrdit** a **Odmítnout**.
+Zavřením dialogu nárok neztratíš. Kód, který dorazí později, čeká na řádku **Propojit můj účet Slack** v této kartě, se stejnými tlačítky **Potvrdit** a **Odmítnout**.
 
 Proč krok potvrzení: kód, který ti někdo přečte přes rameno a pošle z cizího účtu Slack, by jinak ten účet nechal jednat za tebe. Potvrdit můžeš jen ty a jen přesně ten profil, který kód poslal.
 
@@ -50,18 +50,19 @@ Kód, který je neznámý, prošlý, odmítnutý nebo vystavený pro jiný praco
 
 Když tvůj profil ve Slacku nese potvrzený e-mail shodný s ověřeným e-mailem uživatele Control Center, který je **už členem tohoto pracovního prostoru**, most tě propojí, jakmile s ním poprvé promluvíš. Kód není potřeba.
 
+Na straně Control Center se adresa počítá jako ověřená, když ji nastavilo jednotné přihlášení nebo SCIM, nebo když ji vlastník serveru potvrdil v **Nastavení → Server → Lidé**. Adresa, kterou jsi zadal ve vlastním profilu, ověřená není, takže nic nepropojí, dokud ji vlastník nepotvrdí; mezitím použij postup s kódem.
+
 Obě poloviny jsou důležité: shoda e-mailu dokazuje identitu, přístup ale dává jen členství, takže cizí člověk, jehož e-mail na serveru náhodou existuje, se nepropojí s ničím. Seznam ukazuje, jak každé propojení vzniklo („spárováno podle e-mailu“ nebo „propojeno kódem“).
 
 Automatické propojení potřebuje scope `users:read.email`. Bez něj Slack adresu neprozradí a jedinou cestou zůstane kód.
 
 ## Kdo je propojený
 
-Seznam patří ke správě pracovního prostoru, takže leží na druhé polovině té
-plochy: **Nastavení → Pracovní prostor → Obecné → Mosty chatu → Propojené účty**.
+Seznam patří ke správě pracovního prostoru, takže leží v administrátorské kartě: **Nastavení → Pracovní prostor → Integrace → Mosty chatu → Propojené účty**.
 Vypíše každého propojeného člena pracovního prostoru, účet Slack, na který se
 každý mapuje, a jak propojení vzniklo.
 
-Vlastní stav máš na stránce profilu: řádek **Propojit můj účet Slack** po
+Vlastní stav máš v **Nastavení → Vy → Profil**: řádek **Propojit můj účet Slack** po
 propojení hlásí „Propojeno s _your-slack-id_“ a dokud propojení nemáš, vyzve
 tě, ať se propojíš.
 

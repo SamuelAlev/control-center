@@ -27,10 +27,11 @@ class RemotePairingLifecycle {
   /// The expiry instant for a newly-confirmed credential, given [now].
   static DateTime credentialExpiry(DateTime now) => now.add(credentialLifetime);
 
-  /// Whether [expiresAt] (nullable) is in the past relative to [now]. Null means
-  /// "no expiry recorded" (a legacy row) and is treated as not expired.
+  /// Whether [expiresAt] is in the past relative to [now]. A credential with
+  /// no recorded expiry is expired: every writer stamps one, so its absence
+  /// fails closed.
   static bool isExpired(DateTime? expiresAt, DateTime now) =>
-      expiresAt != null && now.isAfter(expiresAt);
+      expiresAt == null || now.isAfter(expiresAt);
 
   /// Whether an approved device last seen at [lastSeenAt] has been idle long
   /// enough to require re-approval on its next connect.

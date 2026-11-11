@@ -2,7 +2,7 @@
 title: Installer
 description: Utilisez Control Center dans le navigateur ou installez l’application de bureau, configurez un backend d’agent et choisissez où s’exécute son serveur.
 slug: fr-FR/manuel/installer
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center s’exécute de deux façons : en **application web** sur
@@ -131,7 +131,7 @@ Les listes de modèles sont servies en direct par chaque fournisseur connecté 
 
 Un identifiant GitHub est **le vôtre et réside sur le serveur**, indexé par votre identifiant utilisateur — pas dans le trousseau du système d’exploitation du client. Chaque appareil depuis lequel vous vous connectez utilise le même, et aucun autre membre ne peut le lire.
 
-Pour GitHub, il n’y a que la connexion : **Paramètres → Espace de travail → Profil et identité → Hébergement de code** propose **Se connecter à GitHub**, et il n’y a aucun jeton à coller. La connexion passe par la GitHub App propre au serveur ([Créer la GitHub App](/fr-FR/manuel/guides/github-app/)) ou par Control Center Connect, selon le choix du propriétaire du serveur. Avec l’application propre au serveur, le navigateur revient de lui-même vers le serveur ; via Connect, vous saisissez le code de 8 caractères affiché par le navigateur, ou vous le laissez ouvrir Control Center. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/).
+Pour GitHub, il n’y a que la connexion : **Paramètres → Vous → Profil → Hébergement de code** propose **Se connecter à GitHub**, et il n’y a aucun jeton à coller. La connexion passe par la GitHub App propre au serveur ([Créer la GitHub App](/fr-FR/manuel/guides/github-app/)) ou par Control Center Connect, selon le choix du propriétaire du serveur, sauf si un administrateur de l’espace de travail a choisi d’autres applications de connexion pour cet espace dans **Paramètres → Espace de travail → Intégrations**. Avec l’application propre au serveur, le navigateur revient de lui-même vers le serveur ; via Connect, vous saisissez le code de 8 caractères affiché par le navigateur, ou vous le laissez ouvrir Control Center. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/).
 
 La configuration initiale demande cette connexion. Ensuite, c’est sur la même carte que vous vous reconnectez ou vous déconnectez. GitLab et Bitbucket utilisent la même carte, avec un jeton personnel collé ; voir [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/).
 
@@ -153,7 +153,7 @@ Pour héberger vous-même un serveur, suivez [Exécuter un serveur sans interfac
 
 1. **Paramètres → Serveur → Fournisseurs de modèles** liste les deux adaptateurs. « Control Center (built-in) » est indiqué comme trouvé avec la version `built-in` ; Claude Code est indiqué comme trouvé si sa CLI se trouve dans le `PATH` de l’hôte du serveur. Appuyez sur **Actualiser** s’il manque.
 2. **Paramètres → Espace de travail → Dépôts** liste les dépôts de cet espace de travail, et **Ajouter un dépôt** parcourt les dossiers de l’hôte du serveur.
-3. **Paramètres → Espace de travail → Agents** liste les cinq agents amorcés dans votre premier espace de travail. Chacun a besoin d’un **Adaptateur** et d’un **Modèle** définis avant de pouvoir s’exécuter.
+3. **Paramètres → Espace de travail → Agents** liste les six agents amorcés dans votre premier espace de travail. Chacun a besoin d’un **Adaptateur** et d’un **Modèle** définis avant de pouvoir s’exécuter.
 4. **Paramètres → Serveur → Diagnostics et confidentialité** indique les backends de bac à sable proposés par cet hôte, l’état du modèle d’embedding et la journalisation.
 
 ## Compiler à partir des sources

@@ -196,7 +196,7 @@ class _ServiceRow extends ConsumerWidget {
               CcMenuItem(
                 label: l10n.environmentExec,
                 icon: AppIcons.terminal,
-                enabled: enabled,
+                enabled: enabled && environmentOperable(ref, spaceKey),
                 onSelected: () => unawaited(
                   showEnvironmentExecDialog(
                     context,
@@ -208,7 +208,7 @@ class _ServiceRow extends ConsumerWidget {
               CcMenuItem(
                 label: l10n.environmentRestart,
                 icon: AppIcons.rotateCw,
-                enabled: enabled,
+                enabled: enabled && environmentOperable(ref, spaceKey),
                 onSelected: () => unawaited(
                   runEnvironmentAction(
                     context,

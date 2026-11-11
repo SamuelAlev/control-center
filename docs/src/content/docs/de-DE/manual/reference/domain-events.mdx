@@ -2,7 +2,7 @@
 title: Domain-Ereignisse
 description: Vollständiger Katalog der 54 Domain-Ereignisse, ihrer Payloads und der serverseitigen Abonnenten, die sie entgegennehmen.
 slug: de-DE/handbuch/referenz/domain-ereignisse
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Ereignisbus
@@ -148,14 +148,13 @@ Mehrere Subsysteme sehen von außen ereignisgetrieben aus und sind es nicht. Sie
 
 | Subdomäne           | Wie der Zustand stattdessen weitergeht                                                                  |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Gedächtnis          | `record_memory_fact` und Verwandte schreiben und geben zurück; der Abruf liest. Weder auf einem Fakt noch bei einem Konflikt wird etwas veröffentlicht |
+| Gedächtnis          | `propose_fact` und Verwandte schreiben und geben zurück; der Abruf liest. Weder auf einem Fakt noch bei einem Konflikt wird etwas veröffentlicht |
 | Orchestrierung      | Der Vorschlag, seine Freigabe und der erzeugte Pipeline-Lauf sind Zeilen und RPC-Aufrufe                |
 | Plandokumente       | `submit_plan` schreibt eine Revision; die Freigabe materialisiert eine Orchestrierung. Angekündigt wird beides nicht |
 | Artefakte           | `publish_artifact` / `revise_artifact` schreiben Revisionen direkt                                      |
 | Freigaben           | Die Eskalation läuft im Dienst des Freigabe-Workflows                                                   |
 | Ticket-Synchronisierung | Der Anbieter-Koordinator abonniert die Ticket-Ereignisse oben; eingehende Webhooks werden direkt angewandt |
 | Kalenderaktualisierung | Eine Synchronisierung schreibt die Termine per Upsert, der Client liest neu. Eine Broadcast-Aktualisierung gibt es nicht |
-| Worktree-Merges     | In `worktree_merge_log` festgehalten und von dort gelesen                                               |
 
 ## Abonnenten
 
@@ -190,7 +189,7 @@ Jeder Abonnent unten wird in `runCcServer` erzeugt (oder in einem Dienst, den di
 
 `TicketAssigned` ist ein Signal für Audit und Benachrichtigung und ein Pipeline-Trigger. Die Zuweisung an einen Agenten vermerkt die Zuständigkeit und startet keinen Lauf. Einen Ticket-Dispatcher gibt es nicht. Die Ausnahme ist die Zuweisung an ein Team (gesetztes `assignedTeamId`): `TeamRoutingService` startet die Teamleitung.
 
-`TicketRemoteSyncHandler` ist deklariert und wird im Produktionscode nie erzeugt, also abonniert er heute nichts. Der clientseitige `NotificationEventMapper` wird nur in seinem eigenen Test erzeugt. Er ist der Rest des prozessinternen Pfads von vor der Aufteilung in Client und Server. Lebende Toasts kommen aus den Wire-Frames unten.
+Lebende Toasts kommen aus den Wire-Frames unten.
 
 ## Abbildung auf Benachrichtigungen
 

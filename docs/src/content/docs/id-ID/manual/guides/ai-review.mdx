@@ -2,7 +2,7 @@
 title: Gunakan tinjauan bertenaga AI
 description: Jalankan pipeline pr_review pada sebuah PR, baca temuan dan putusannya, lalu publikasikan tinjauan ke GitHub.
 slug: id-ID/panduan-pengguna/panduan-praktis/tinjauan-ai
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Panduan ini menunjukkan cara membuat agen peninjau meninjau sebuah pull request
@@ -122,7 +122,7 @@ atau ditutup dilewati. Tombol ini menyertakan setiap temuan terbuka yang tersisa
 dan, pada **Ship**, mengirimkan `APPROVE`. (Alat MCP `publish_review_to_github`
 secara bawaan hanya menggunakan temuan yang dikonfirmasi rekan dan tidak pernah
 menyetujui: ia menerbitkan sebagai otomatisasi, sehingga `approve_on_ship` tidak
-berpengaruh di sana.) Temuan yang membawa anchor
+berpengaruh di sana. Publikasi otomatis itu diposting oleh bot, kecuali di aplikasi Control Center Connect bersama ketika operator Connect belum mendaftarkan instalasi ini: maka publikasi dikirim melalui proses masuk GitHub pribadi orang yang bertanggung jawab, dengan nama mereka.) Temuan yang membawa anchor
 file dan baris menjadi komentar inline; sisanya dilipat ke badan ringkasan,
 masing-masing dengan footer "— Control Center AI review" agar sumbernya tidak
 ambigu. Putusan **Block** dikirim sebagai `REQUEST_CHANGES`; **Hold** sebagai
@@ -144,9 +144,7 @@ Pengaturan → Ruang kerja → Izin agen jika Anda ingin ini berjalan tanpa
 pengawasan.
 :::
 
-Pipeline bawaan lainnya memang memposting langsung ke GitHub: `cross_review`,
-`pr_triage`, `ticket_to_pr`, dan `pre_merge_gate` masing-masing diakhiri dengan
-langkah komentar. Hanya `pr_review` yang menahan keluarannya untuk Anda.
+Pipeline bawaan lainnya memang memposting langsung ke GitHub: `cross_review`, `pr_triage`, `ticket_to_pr`, dan `pre_merge_gate` masing-masing diakhiri dengan langkah komentar yang diposting oleh server. Hanya `pr_review` yang menahan keluarannya untuk Anda. Tidak ada yang menggabungkan atau menyetujui.
 
 ## Kirim peninjau sendiri
 

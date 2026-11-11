@@ -90,7 +90,7 @@ void main() {
       outputRejections: 1,
       retry: const RetryMeta(),
       role: AgentRunRole.sub,
-      childCostCents: 9,
+      childCostMicros: 90000,
       parentRunId: 'pr2',
     );
 

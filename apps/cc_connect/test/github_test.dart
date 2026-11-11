@@ -12,7 +12,7 @@ const _writePermissions = {
   'pull_requests': 'write',
 };
 
-void _scriptInstallations(FakeUpstream upstream, {String role = 'admin'}) {
+void _scriptInstallations(FakeUpstream upstream) {
   upstream
     ..json('GET', 'https://api.github.com/user/installations', 200, {
       'total_count': 3,
@@ -64,10 +64,6 @@ void _scriptInstallations(FakeUpstream upstream, {String role = 'admin'}) {
       'owner': {'id': 1001, 'login': 'octo'},
       'permissions': {'admin': true, 'push': true, 'pull': true},
     })
-    ..json('GET', 'https://api.github.com/orgs/acme/memberships/octo', 200, {
-      'role': role,
-      'state': 'active',
-    })
     ..on(
       'POST',
       'https://api.github.com/applications/Iv23test/token/scoped',
@@ -92,6 +88,7 @@ Map<String, Object?> _scopeBody(
   required String name,
   required String scope,
   String workspaceId = 'ws1',
+  GitHubMintActor actor = GitHubMintActor.user,
 }) => GitHubScopeRequest(
   seal: seal,
   workspaceId: workspaceId,
@@ -99,7 +96,48 @@ Map<String, Object?> _scopeBody(
   repoOwner: owner,
   repoName: name,
   scope: scope,
+  actor: actor,
 ).toJson();
+
+/// The App's installation on `acme`, as `GET /repos/{o}/{r}/installation`
+/// and `GET /users/{o}/installation` answer it.
+const _acmeInstallation = {
+  'id': 77,
+  'app_id': 4242,
+  'target_type': 'Organization',
+  'account': {'id': 500, 'login': 'acme'},
+  'suspended_at': null,
+};
+
+/// Scripts the App side of an `as: app` mint: the repo's installation and
+/// an access token answering [repositories] (default: just the asked repo).
+void _scriptAppMint(FakeUpstream upstream, {List<int>? repositories}) {
+  upstream
+    ..json(
+      'GET',
+      'https://api.github.com/repos/acme/api/installation',
+      200,
+      _acmeInstallation,
+    )
+    ..on(
+      'POST',
+      'https://api.github.com/app/installations/77/access_tokens',
+      (call) => UpstreamResponse.json(201, {
+        'token': 'ghs_bot_${call.json['repository_ids']}',
+        'expires_at': DateTime.now()
+            .toUtc()
+            .add(const Duration(hours: 1))
+            .toIso8601String(),
+        'permissions': call.json['permissions'],
+        'repository_selection': 'selected',
+        'repositories': [
+          for (final id in repositories ?? call.json['repository_ids']! as List)
+            {'id': id},
+        ],
+      }),
+    )
+    ..json('DELETE', 'https://api.github.com/installation/token', 204, null);
+}
 
 void main() {
   late ConnectInstallIdentity a;
@@ -438,6 +476,15 @@ void main() {
       expect(done.body, isNot(contains('<script')));
       expect(done.body, contains('oauth-done?login_id='));
       expect(done.body, isNot(contains('gh-code')));
+      final consent = flow.consent;
+      final consentPolicy = consent.header('content-security-policy')!;
+      expect(consentPolicy, contains("default-src 'none'"));
+      expect(consentPolicy, contains("form-action 'self'"));
+      expect(consentPolicy, isNot(contains("form-action 'none'")));
+      // The one page whose form posts back: it sends its origin to itself.
+      expect(consent.header('referrer-policy'), 'same-origin');
+      expect(consent.header('x-frame-options'), 'DENY');
+      expect(consent.body, isNot(contains('<script')));
     });
 
     test('needs the login cookie', () async {
@@ -517,10 +564,27 @@ void main() {
         final value = RegExp(
           'cc_connect=([^;]+)',
         ).firstMatch(setCookie)!.group(1)!;
-        final done = await loopback.raw(
+        final consent = await loopback.raw(
           'GET',
           '/oauth/github/done',
           headers: {'cookie': 'cc_connect=$value'},
+        );
+        expect(consent.status, 200);
+        expect(
+          consent.body,
+          contains('action="$loopbackUrl/oauth/github/done"'),
+        );
+        final done = await loopback.raw(
+          'POST',
+          '/oauth/github/done',
+          headers: {
+            'cookie': 'cc_connect=$value',
+            'content-type': 'application/x-www-form-urlencoded',
+            'origin': loopbackUrl,
+          },
+          body: utf8.encode(
+            'action=continue&token=${consentTokenFrom(consent.body)}',
+          ),
         );
         expect(done.status, 200);
         expect(confirmCodeFrom(done.body), isNotNull);
@@ -809,16 +873,6 @@ void main() {
 
     test('a role GitHub demoted mints the lower scope at once', () async {
       final grant = await signInGitHub(harness, a);
-      await harness.call(
-        a,
-        'POST',
-        '/v1/github/authorize_server',
-        body: GitHubAuthorizeServerRequest(
-          seal: grant.seal,
-          workspaceId: 'ws1',
-          installationId: 77,
-        ).toJson(),
-      );
       Future<String> mint() async => GitHubScopedToken.fromJson(
         (await harness.call(
           a,
@@ -850,7 +904,93 @@ void main() {
       expect(await mint(), 'read');
     });
 
-    test('an unbound organization installation is refused', () async {
+    test('any server a member signs in on mints against an org installation, '
+        'clamped to their role', () async {
+      final grant = await signInGitHub(harness, a);
+      final write = await harness.call(
+        a,
+        'POST',
+        '/v1/github/scope',
+        body: _scopeBody(
+          grant.seal,
+          repoId: 9001,
+          owner: 'acme',
+          name: 'api',
+          scope: 'write',
+        ),
+      );
+      expect(write.status, 200, reason: write.body);
+      final token = GitHubScopedToken.fromJson(write.json);
+      expect(token.grantedScope, 'write');
+      expect(token.installationId, 77);
+      expect(token.updatedSeal, isEmpty);
+      final mint = harness.upstream
+          .callsTo(
+            'POST',
+            'https://api.github.com/applications/Iv23test/token/scoped',
+          )
+          .single;
+      expect(mint.json, {
+        'access_token': 'ghu_access1',
+        'target_id': 500,
+        'repository_ids': [9001],
+        'permissions': _writePermissions,
+      });
+      expect(
+        mint.request.headers['authorization'],
+        'Basic ${base64.encode(utf8.encode('Iv23test:gh-secret-2'))}',
+      );
+
+      // A pull-only role asking for write gets read.
+      final clamped = await harness.call(
+        a,
+        'POST',
+        '/v1/github/scope',
+        body: _scopeBody(
+          grant.seal,
+          repoId: 9002,
+          owner: 'acme',
+          name: 'docs',
+          scope: 'write',
+        ),
+      );
+      expect(GitHubScopedToken.fromJson(clamped.json).grantedScope, 'read');
+
+      // A second server mints on the same installation with no admin step:
+      // the organization's install is its consent.
+      final other = await signInGitHub(harness, b);
+      final second = await harness.call(
+        b,
+        'POST',
+        '/v1/github/scope',
+        body: _scopeBody(
+          other.seal,
+          repoId: 9001,
+          owner: 'acme',
+          name: 'api',
+          scope: 'read',
+        ),
+      );
+      expect(second.status, 200, reason: second.body);
+      expect(GitHubScopedToken.fromJson(second.json).installationId, 77);
+
+      // No organization-admin lookup gates a mint.
+      expect(
+        harness.upstream.callsTo(
+          'GET',
+          'https://api.github.com/orgs/acme/memberships/octo',
+        ),
+        isEmpty,
+      );
+
+      // The audit line carries numeric ids only.
+      final audit = harness.logs.firstWhere((l) => l.contains('github.mint'));
+      expect(audit, contains('"repo_id":9001'));
+      expect(audit, isNot(contains('ghu_')));
+      expect(audit, isNot(contains(a.installId)));
+    });
+
+    test('a person\'s token answer proves its coverage', () async {
       final grant = await signInGitHub(harness, a);
       final response = await harness.call(
         a,
@@ -864,126 +1004,85 @@ void main() {
           scope: 'write',
         ),
       );
-      expect(response.status, 409);
-      expect(response.json, {'error': 'installation_bound_elsewhere'});
+      final token = GitHubScopedToken.fromJson(response.json);
+      expect(token.accessToken, startsWith('ghu_'));
+      expect(token.repositorySelection, 'selected');
+      expect(token.repositoryIds, [9001]);
+      expect(token.permissions, _writePermissions);
       expect(
-        harness.upstream.callsTo(
-          'POST',
-          'https://api.github.com/applications/Iv23test/token/scoped',
+        scopedTokenMatches(
+          {
+            'permissions': token.permissions,
+            'repository_selection': token.repositorySelection,
+            'repositories': token.repositoryIds,
+          },
+          repoId: 9001,
+          permissions: GitHubTokenScope.write.permissions,
         ),
-        isEmpty,
+        isTrue,
       );
     });
 
-    test(
-      'an org admin authorizes the server, then mints are clamped',
-      () async {
-        final grant = await signInGitHub(harness, a);
-        final authorize = await harness.call(
-          a,
-          'POST',
-          '/v1/github/authorize_server',
-          body: GitHubAuthorizeServerRequest(
-            seal: grant.seal,
-            workspaceId: 'ws1',
-            installationId: 77,
-          ).toJson(),
-        );
-        expect(authorize.status, 200);
-        expect(authorize.json['ok'], isTrue);
-
-        final write = await harness.call(
-          a,
-          'POST',
-          '/v1/github/scope',
-          body: _scopeBody(
-            grant.seal,
-            repoId: 9001,
-            owner: 'acme',
-            name: 'api',
-            scope: 'write',
-          ),
-        );
-        expect(write.status, 200);
-        final token = GitHubScopedToken.fromJson(write.json);
-        expect(token.grantedScope, 'write');
-        expect(token.installationId, 77);
-        expect(token.updatedSeal, isEmpty);
-        final mint = harness.upstream
-            .callsTo(
-              'POST',
-              'https://api.github.com/applications/Iv23test/token/scoped',
-            )
-            .single;
-        expect(mint.json, {
-          'access_token': 'ghu_access1',
-          'target_id': 500,
-          'repository_ids': [9001],
-          'permissions': _writePermissions,
-        });
-        expect(
-          mint.request.headers['authorization'],
-          'Basic ${base64.encode(utf8.encode('Iv23test:gh-secret-2'))}',
-        );
-
-        // A pull-only role asking for write gets read.
-        final clamped = await harness.call(
-          a,
-          'POST',
-          '/v1/github/scope',
-          body: _scopeBody(
-            grant.seal,
-            repoId: 9002,
-            owner: 'acme',
-            name: 'docs',
-            scope: 'write',
-          ),
-        );
-        expect(GitHubScopedToken.fromJson(clamped.json).grantedScope, 'read');
-
-        // Another server is still refused on the same installation.
-        final other = await signInGitHub(harness, b);
-        final refused = await harness.call(
-          b,
-          'POST',
-          '/v1/github/scope',
-          body: _scopeBody(
-            other.seal,
-            repoId: 9001,
-            owner: 'acme',
-            name: 'api',
-            scope: 'read',
-          ),
-        );
-        expect(refused.json, {'error': 'installation_bound_elsewhere'});
-
-        // The audit line carries numeric ids only.
-        final audit = harness.logs.firstWhere(
-          (l) => l.contains('github.scope'),
-        );
-        expect(audit, contains('"repo_id":9001'));
-        expect(audit, isNot(contains('ghu_')));
-        expect(audit, isNot(contains(a.installId)));
-      },
-    );
-
-    test('a non-admin cannot authorize a server', () async {
-      _scriptInstallations(harness.upstream, role: 'member');
+    test('a live child for the same repository and permissions is reused, '
+        'until it is revoked', () async {
+      harness.upstream.json(
+        'DELETE',
+        'https://api.github.com/applications/Iv23test/token',
+        204,
+        null,
+      );
       final grant = await signInGitHub(harness, a);
-      final authorize = await harness.call(
+      Future<GitHubScopedToken> mint(String scope) async =>
+          GitHubScopedToken.fromJson(
+            (await harness.call(
+              a,
+              'POST',
+              '/v1/github/scope',
+              body: _scopeBody(
+                grant.seal,
+                repoId: 9001,
+                owner: 'acme',
+                name: 'api',
+                scope: scope,
+              ),
+            )).json,
+          );
+      int children() => harness.upstream
+          .callsTo(
+            'POST',
+            'https://api.github.com/applications/Iv23test/token/scoped',
+          )
+          .length;
+
+      final first = await mint('write');
+      final second = await mint('write');
+      expect(second.accessToken, first.accessToken);
+      expect(children(), 1);
+      expect(
+        harness.logs.where((l) => l.contains('"reused":true')),
+        hasLength(1),
+      );
+
+      // Other permissions are another child.
+      await mint('read');
+      expect(children(), 2);
+
+      final revoked = await harness.call(
         a,
         'POST',
-        '/v1/github/authorize_server',
-        body: GitHubAuthorizeServerRequest(
-          seal: grant.seal,
+        '/v1/github/revoke',
+        body: GitHubRevokeRequest(
           workspaceId: 'ws1',
-          installationId: 77,
+          seal: grant.seal,
+          scopedToken: first.accessToken,
         ).toJson(),
       );
-      expect(authorize.json, {'error': 'access_denied'});
+      expect(revoked.json, {'ok': true});
+      await mint('write');
+      expect(children(), 3, reason: 'a revoked child is never handed out');
     });
 
-    test('a personal installation auto-binds its own account', () async {
+    test('a personal installation mints for its account', () async {
       final grant = await signInGitHub(harness, a);
       final response = await harness.call(
         a,
@@ -997,9 +1096,8 @@ void main() {
           scope: 'read',
         ),
       );
-      expect(response.status, 200);
-      final binding = await harness.service.context.bindings.github(78);
-      expect(binding!.installIds, {a.installId});
+      expect(response.status, 200, reason: response.body);
+      expect(GitHubScopedToken.fromJson(response.json).installationId, 78);
     });
 
     test('a repo id that does not match is refused', () async {
@@ -1074,96 +1172,254 @@ void main() {
     );
   });
 
+  group('bot mint (as: app)', () {
+    setUp(() async {
+      // An install the operator listed for review-bot tokens.
+      await harness.close();
+      harness = await Harness.start(
+        allowed: [a, b],
+        env: {'CONNECT_GITHUB_REVIEW_BOT_INSTALLS': a.installId},
+      );
+      github = FakeGitHub(harness.upstream);
+      _scriptInstallations(harness.upstream);
+    });
+
+    Future<TestResponse> mintAsApp(
+      String seal, {
+      int repoId = 9001,
+      String name = 'api',
+      String scope = 'bot',
+    }) => harness.call(
+      a,
+      'POST',
+      '/v1/github/scope',
+      body: _scopeBody(
+        seal,
+        repoId: repoId,
+        owner: 'acme',
+        name: name,
+        scope: scope,
+        actor: GitHubMintActor.app,
+      ),
+    );
+
+    test(
+      'mints a one-repository installation token clamped to the human',
+      () async {
+        _scriptAppMint(harness.upstream);
+        final grant = await signInGitHub(harness, a);
+        final response = await mintAsApp(grant.seal);
+        expect(response.status, 200, reason: response.body);
+        final token = GitHubScopedToken.fromJson(response.json);
+        expect(token.accessToken, startsWith('ghs_'));
+        expect(token.grantedScope, 'bot');
+        expect(token.installationId, 77);
+        expect(token.repositorySelection, 'selected');
+        expect(token.repositoryIds, [9001]);
+        expect(token.permissions, GitHubTokenScope.bot.permissions);
+        final mint = harness.upstream
+            .callsTo(
+              'POST',
+              'https://api.github.com/app/installations/77/access_tokens',
+            )
+            .single;
+        expect(mint.json, {
+          'repository_ids': [9001],
+          'permissions': GitHubTokenScope.bot.permissions,
+        });
+        // Signed by the App, never the person's token.
+        expect(mint.request.headers['authorization'], startsWith('Bearer ey'));
+        // The person's own token read the repository first.
+        expect(
+          harness.upstream.callsTo(
+            'GET',
+            'https://api.github.com/repos/acme/api',
+          ),
+          isNotEmpty,
+        );
+        // No user child was minted.
+        expect(
+          harness.upstream.callsTo(
+            'POST',
+            'https://api.github.com/applications/Iv23test/token/scoped',
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test('the shared App\'s bot never pushes: a write is needs_requester '
+        'before GitHub is asked anything', () async {
+      _scriptAppMint(harness.upstream);
+      final grant = await signInGitHub(harness, a);
+      final before = harness.upstream.calls.length;
+      final response = await mintAsApp(grant.seal, scope: 'write');
+      expect(response.status, 403);
+      expect(response.json, {'error': 'needs_requester'});
+      expect(harness.upstream.calls.length, before);
+    });
+
+    test('a pull-only human gets a read bot token', () async {
+      harness.upstream
+        ..json(
+          'GET',
+          'https://api.github.com/repos/acme/docs/installation',
+          200,
+          _acmeInstallation,
+        )
+        ..on(
+          'POST',
+          'https://api.github.com/app/installations/77/access_tokens',
+          (call) => UpstreamResponse.json(201, {
+            'token': 'ghs_docs',
+            'permissions': call.json['permissions'],
+            'repository_selection': 'selected',
+            'repositories': [
+              {'id': 9002},
+            ],
+          }),
+        );
+      final grant = await signInGitHub(harness, a);
+      final response = await mintAsApp(grant.seal, repoId: 9002, name: 'docs');
+      expect(response.status, 200, reason: response.body);
+      expect(GitHubScopedToken.fromJson(response.json).grantedScope, 'read');
+    });
+
+    test(
+      'a repository the human cannot see is refused before any mint',
+      () async {
+        _scriptAppMint(harness.upstream);
+        harness.upstream.json(
+          'GET',
+          'https://api.github.com/repos/acme/secret',
+          404,
+          {'message': 'Not Found'},
+        );
+        final grant = await signInGitHub(harness, a);
+        final response = await mintAsApp(
+          grant.seal,
+          repoId: 9009,
+          name: 'secret',
+        );
+        expect(response.json, {'error': 'access_denied'});
+        expect(
+          harness.upstream.callsTo(
+            'POST',
+            'https://api.github.com/app/installations/77/access_tokens',
+          ),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'a token covering more than the one repository is revoked and refused',
+      () async {
+        _scriptAppMint(harness.upstream, repositories: [9001, 9002]);
+        final grant = await signInGitHub(harness, a);
+        final response = await mintAsApp(grant.seal);
+        expect(response.json, {'error': 'access_denied'});
+        final revoke = harness.upstream
+            .callsTo('DELETE', 'https://api.github.com/installation/token')
+            .single;
+        expect(revoke.request.headers['authorization'], contains('ghs_bot_'));
+      },
+    );
+
+    test(
+      'a repository left out of the installation is repo_not_selected',
+      () async {
+        harness.upstream
+          ..json(
+            'GET',
+            'https://api.github.com/repos/acme/api/installation',
+            404,
+            {'message': 'Not Found'},
+          )
+          ..json(
+            'GET',
+            'https://api.github.com/users/acme/installation',
+            200,
+            _acmeInstallation,
+          );
+        final grant = await signInGitHub(harness, a);
+        final response = await mintAsApp(grant.seal);
+        expect(response.json, {'error': 'repo_not_selected'});
+      },
+    );
+
+    test('an owner without the App is not_installed', () async {
+      harness.upstream
+        ..json(
+          'GET',
+          'https://api.github.com/repos/acme/api/installation',
+          404,
+          {'message': 'Not Found'},
+        )
+        ..json('GET', 'https://api.github.com/users/acme/installation', 404, {
+          'message': 'Not Found',
+        });
+      final grant = await signInGitHub(harness, a);
+      final response = await mintAsApp(grant.seal);
+      expect(response.json, {'error': 'not_installed'});
+    });
+
+    test('a request without `as` is refused', () async {
+      final grant = await signInGitHub(harness, a);
+      final body = _scopeBody(
+        grant.seal,
+        repoId: 9001,
+        owner: 'acme',
+        name: 'api',
+        scope: 'read',
+      )..remove('as');
+      final response = await harness.call(
+        a,
+        'POST',
+        '/v1/github/scope',
+        body: body,
+      );
+      expect(response.json, {'error': 'invalid_request'});
+    });
+  });
+
   group('installation flows', () {
     setUp(() => _scriptInstallations(harness.upstream));
 
-    test('install/start → GitHub setup redirect binds the server', () async {
-      final grant = await signInGitHub(harness, a);
-      final start = await harness.call(
-        a,
-        'POST',
-        '/v1/github/install/start',
-        body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+    test('the setup redirect records nothing and says what happened', () async {
+      final installed = await harness.browser(
+        '/oauth/github/setup?installation_id=77&setup_action=install',
       );
-      expect(start.status, 200);
-      final install = GitHubInstallStartResponse.fromJson(start.json);
-      expect(install.installUrl.path, '/apps/cc-test/installations/new');
-      final ticket = install.installUrl.queryParameters['state'];
-      final setup = await harness.browser(
-        '/oauth/github/setup?installation_id=77&setup_action=install'
-        '&state=$ticket',
+      expect(installed.status, 200);
+      expect(installed.body, contains('GitHub App installed'));
+      expect(installed.header('content-security-policy'), isNotNull);
+
+      final requested = await harness.browser(
+        '/oauth/github/setup?setup_action=request',
       );
-      expect(setup.status, 200);
-      expect(setup.body, contains('GitHub App installed'));
-      expect(setup.header('content-security-policy'), isNotNull);
-      final binding = await harness.service.context.bindings.github(77);
-      expect(binding!.installIds, {a.installId});
-      final reused = await harness.browser(
-        '/oauth/github/setup?installation_id=77&setup_action=install'
-        '&state=$ticket',
+      expect(requested.body, contains('Installation requested'));
+
+      final updated = await harness.browser(
+        '/oauth/github/setup?installation_id=77&setup_action=update',
       );
-      expect(reused.status, 400);
+      expect(updated.body, contains('Installation updated'));
+      expect(harness.upstream.calls, isEmpty, reason: 'setup calls nothing');
     });
 
-    test('a ticket held by a since-blocked server binds nothing', () async {
-      final blocked = await Harness.start(
-        allowed: [a, b],
-        env: {'CONNECT_DENY_INSTALLS': b.installId},
-      );
-      addTearDown(blocked.close);
-      _scriptInstallations(blocked.upstream);
-      final ticket = 't' * 43;
-      await blocked.service.context.state.set(
-        'ticket:$ticket',
-        jsonEncode({
-          'install_id': b.installId,
-          'workspace_id': 'ws1',
-          'seal': 'v1.unused.unused',
-        }),
-        const Duration(minutes: 15),
-      );
-      final setup = await blocked.browser(
-        '/oauth/github/setup?installation_id=77&setup_action=install'
-        '&state=$ticket',
-      );
-      expect(setup.status, 403);
-      expect(await blocked.service.context.bindings.github(77), isNull);
-    });
-
-    test('install/start hands back the seal it rotates; setup never rotates '
-        '(the browser redirect cannot return a seal)', () async {
-      github.codeExpiresIn = 600;
+    test('install/start and authorize_server are gone', () async {
       final grant = await signInGitHub(harness, a);
-      final start = await harness.call(
-        a,
-        'POST',
+      for (final path in [
         '/v1/github/install/start',
-        body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
-      );
-      expect(start.status, 200);
-      final install = GitHubInstallStartResponse.fromJson(start.json);
-      expect(install.updatedSeal, isNotEmpty);
-      expect(install.updatedSeal, isNot(grant.seal));
-      final issued = github.issued;
-
-      final setup = await harness.browser(
-        '/oauth/github/setup?installation_id=77&setup_action=install'
-        '&state=${install.installUrl.queryParameters['state']}',
-      );
-      expect(setup.body, contains('GitHub App installed'));
-      expect(github.issued, issued, reason: 'no refresh token spent in setup');
-
-      // The seal the server adopted keeps working afterwards.
-      final refreshed = await harness.call(
-        a,
-        'POST',
-        '/v1/github/refresh',
-        body: SealRequest(
-          seal: install.updatedSeal,
-          workspaceId: 'ws1',
-        ).toJson(),
-      );
-      expect(refreshed.status, 200);
+        '/v1/github/authorize_server',
+      ]) {
+        final response = await harness.call(
+          a,
+          'POST',
+          path,
+          body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+        );
+        expect(response.status, 404, reason: path);
+      }
     });
 
     test('installations lists views for the person', () async {
@@ -1179,9 +1435,16 @@ void main() {
         response.json,
       ).installations;
       expect(views.map((v) => v.installationId), [77, 78]);
-      expect(views.first.callerIsAdmin, isTrue);
-      expect(views.first.boundHere, isFalse);
-      expect(views.last.boundHere, isTrue);
+      expect(views.map((v) => v.accountLogin), ['acme', 'octo']);
+      expect(views.every((v) => !v.suspended), isTrue);
+      expect(
+        harness.upstream.callsTo(
+          'GET',
+          'https://api.github.com/orgs/acme/memberships/octo',
+        ),
+        isEmpty,
+        reason: 'listing makes no organization-admin lookups',
+      );
     });
 
     test('a scoped token is revoked only with a seal of the account it was '
@@ -1242,75 +1505,15 @@ void main() {
       );
     });
 
-    test(
-      'organization lookups run in parallel, at most eight at once',
-      () async {
-        final orgs = [for (var i = 0; i < 20; i++) 'org$i'];
-        harness.upstream.json(
-          'GET',
-          'https://api.github.com/user/installations',
-          200,
-          {
-            'installations': [
-              for (var i = 0; i < orgs.length; i++)
-                {
-                  'id': 1000 + i,
-                  'app_id': 4242,
-                  'target_type': 'Organization',
-                  'account': {'id': 5000 + i, 'login': orgs[i]},
-                  'suspended_at': null,
-                },
-            ],
-          },
-        );
-        var inFlight = 0;
-        var peak = 0;
-        for (final org in orgs) {
-          harness.upstream.on(
-            'GET',
-            'https://api.github.com/orgs/$org/memberships/octo',
-            (_) async {
-              inFlight++;
-              peak = inFlight > peak ? inFlight : peak;
-              await Future<void>.delayed(const Duration(milliseconds: 20));
-              inFlight--;
-              return UpstreamResponse.json(200, {
-                'role': 'admin',
-                'state': 'active',
-              });
-            },
-          );
-        }
-        final grant = await signInGitHub(harness, a);
-        final listed = await harness.call(
-          a,
-          'POST',
-          '/v1/github/installations',
-          body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
-        );
-        expect(listed.status, 200, reason: listed.body);
-        final views = GitHubInstallationsResponse.fromJson(listed.json);
-        expect(views.installations, hasLength(orgs.length));
-        expect(views.installations.every((v) => v.callerIsAdmin), isTrue);
-        expect(peak, greaterThan(1));
-        expect(peak, lessThanOrEqualTo(8));
-      },
-    );
-
-    test('revoke deletes the grant or one scoped token', () async {
-      harness.upstream
-        ..json(
-          'DELETE',
-          'https://api.github.com/applications/Iv23test/grant',
-          204,
-          null,
-        )
-        ..json(
-          'DELETE',
-          'https://api.github.com/applications/Iv23test/token',
-          204,
-          null,
-        );
+    test('revoke ends this sign-in only, or one scoped token', () async {
+      harness.upstream.on(
+        'DELETE',
+        'https://api.github.com/applications/Iv23test/token',
+        (call) {
+          github.liveAccess.remove(call.json['access_token']);
+          return UpstreamResponse.json(204, null);
+        },
+      );
       final grant = await signInGitHub(harness, a);
       final minted = GitHubScopedToken.fromJson(
         (await harness.call(
@@ -1379,6 +1582,22 @@ void main() {
             .json,
         {'access_token': minted.accessToken},
       );
+      // A second child, then a disconnect: the sign-in's own token and its
+      // recorded children are revoked, never the person's whole grant.
+      final second = GitHubScopedToken.fromJson(
+        (await harness.call(
+          a,
+          'POST',
+          '/v1/github/scope',
+          body: _scopeBody(
+            grant.seal,
+            repoId: 9001,
+            owner: 'acme',
+            name: 'api',
+            scope: 'read',
+          ),
+        )).json,
+      );
       final full = await harness.call(
         a,
         'POST',
@@ -1389,16 +1608,59 @@ void main() {
         ).toJson(),
       );
       expect(full.json, {'ok': true});
+      final deleted = [
+        for (final call in harness.upstream.callsTo(
+          'DELETE',
+          'https://api.github.com/applications/Iv23test/token',
+        ))
+          call.json['access_token'],
+      ];
+      // The disconnect spent the refresh token once and deleted what that
+      // gave back, then the sign-in's own token, then its children.
+      expect(deleted, hasLength(4));
+      expect(deleted[0], minted.accessToken);
+      expect(deleted[1], startsWith('ghu_access'));
+      expect(deleted[1], isNot(anyOf(grant.accessToken, other.accessToken)));
+      expect(deleted.sublist(2), [grant.accessToken, second.accessToken]);
+      expect(github.liveAccess, isNot(contains(deleted[1])));
+      expect(
+        harness.upstream.callsTo(
+          'DELETE',
+          'https://api.github.com/applications/Iv23test/grant',
+        ),
+        isEmpty,
+      );
       expect(
         harness.upstream
-            .callsTo(
-              'DELETE',
-              'https://api.github.com/applications/Iv23test/grant',
-            )
-            .single
-            .json,
-        {'access_token': 'ghu_access1'},
+            .callsTo('POST', 'https://github.com/login/oauth/access_token')
+            .where((c) => c.form['grant_type'] == 'refresh_token'),
+        hasLength(1),
       );
+      // A copy of the seal kept from before the disconnect is dead.
+      final copy = await harness.call(
+        a,
+        'POST',
+        '/v1/github/refresh',
+        body: SealRequest(seal: grant.seal, workspaceId: 'ws1').toJson(),
+      );
+      expect(copy.json, {'error': 'needs_sign_in'});
+      // b's sign-in for the same person keeps working.
+      expect(github.liveAccess, contains(other.accessToken));
+      expect(github.liveAccess, isNot(contains(grant.accessToken)));
+      final stillThere = await harness.call(
+        b,
+        'POST',
+        '/v1/github/installations',
+        body: SealRequest(seal: other.seal, workspaceId: 'ws1').toJson(),
+      );
+      expect(stillThere.status, 200, reason: stillThere.body);
+      final line = harness.logs
+          .map((l) => jsonDecode(l) as Map<String, Object?>)
+          .firstWhere((l) => l['event'] == 'grant.revoked');
+      expect(line['scope'], 'token');
+      expect(line['reason'], 'refresh_spent');
+      expect(line['count'], 1);
+      expect(line['hashed_token'], githubHashedToken(grant.accessToken));
     });
   });
 }

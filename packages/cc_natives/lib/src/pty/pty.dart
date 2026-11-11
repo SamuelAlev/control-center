@@ -6,6 +6,7 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/features/sandboxing/domain/child_environment.dart';
 import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 import 'package:cc_natives/src/native_unavailable.dart';
 import 'package:cc_natives/src/pty/pty_ffi_bindings.dart';
 import 'package:ffi/ffi.dart';
@@ -43,6 +44,10 @@ class Pty {
   /// chunk (back-pressure). Throws [PtyUnavailable] when `libccpty` cannot be
   /// loaded and [StateError] when the native API table or the PTY fail to
   /// initialize.
+  ///
+  /// A program or a working directory that isn't there does not throw: the
+  /// terminal says why and [exitCode] completes with 127 or 126, as a shell
+  /// would report it.
   Pty.start(
     this.executable, {
     this.arguments = const [],
@@ -145,9 +150,12 @@ class Pty {
   late final Pointer<PtyHandle> _handle;
 
   /// Combined stdout+stderr byte stream (a PTY does not separate them).
+  /// Closes with [exitCode]. On macOS and Linux, what the process wrote
+  /// arrives first.
   Stream<Uint8List> get output => _stdoutPort.cast();
 
-  /// Completes with the process exit code (negative `-signal` if killed).
+  /// Completes with the process exit code (negative `-signal` if killed). On
+  /// macOS and Linux that is after its last output was delivered.
   Future<int> get exitCode => _exitCodeCompleter.future;
 
   /// The OS pid of the process in the pseudo-terminal.

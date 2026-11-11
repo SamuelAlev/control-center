@@ -273,7 +273,7 @@ Future<ThinClientBackend> _connectThinClient({
   // tests, not in the running app" symptom: a new RPC op returns opUnknown).
   // The probe already carries the server's build identity — say so at boot
   // rather than leaving it to be discovered as a mystery failure. Not fatal:
-  // an older server still serves everything it knows how to serve.
+  // a mismatched server still serves everything it knows how to serve.
   if (probe.gitSha != null && probe.gitSha != BuildInfo.buildGitSha) {
     AppLog.w(
       'ThinClientBoot',

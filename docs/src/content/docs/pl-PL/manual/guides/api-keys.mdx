@@ -2,7 +2,7 @@
 title: Zarządzaj kluczami API
 description: Gdzie znajduje się każde poświadczenie — Twoje konto użytkownika na serwerze, sam serwer czy zewnętrzne CLI — oraz jak je ustawić, wymienić i usunąć.
 slug: pl-PL/podrecznik/poradniki/klucze-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Ten poradnik pokazuje, gdzie przechowywane jest każde poświadczenie używane przez
@@ -32,8 +32,7 @@ czy stoi za nim człowiek.
   zrobić odpowiedzialny członek. Nigdy nie jest to całe przekazane Twoje
   logowanie
 
-Twoje ustawia się w karcie **Hosting kodu** w **Ustawienia → Obszar roboczy → Profil
-i tożsamość**; aplikację serwera — w **Aplikacje dostawców** w **Ustawienia →
+Twoje ustawia się w karcie **Hosting kodu** w **Ustawienia → Ty → Profil**; aplikację serwera — w **Aplikacje dostawców** w **Ustawienia →
 Serwer → Logowanie jednokrotne**. Zobacz
 [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/)
 i [Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/).
@@ -42,10 +41,9 @@ GitLab i Bitbucket nadal przyjmują wklejony osobisty token, przechowywany w ten
 sam sposób. Zobacz [Połącz host kodu](/pl-PL/podrecznik/poradniki/podlaczanie-hosta-kodu/).
 
 :::note[Istnieje też ekran dostępny tylko pod adresem URL]
-`/workspaces/<workspaceId>/api-keys` wyświetla te same dwie karty co pierwszy krok
+`/workspaces/<workspaceId>/api-keys` wyświetla te same karty co pierwszy krok
 konfiguracji. **Nie ma żadnego wpisu w nawigacji w całym interfejsie**; można do
-niego trafić tylko, wpisując adres URL. Zamiast tego użyj Ustawienia → Obszar
-roboczy → Profil i tożsamość.
+niego trafić tylko, wpisując adres URL. Do własnych logowań użyj Ustawienia → Ty → Profil, a do dostawcy zgłoszeń — Ustawienia → Obszar roboczy → Integracje.
 :::
 
 ## Ustawianie kluczy dostawców modeli
@@ -64,9 +62,7 @@ w [Zarządzaj adapterami i modelami](/pl-PL/podrecznik/poradniki/adaptery/).
 Te poświadczenia są **globalne dla hosta**: jeden klucz obsługuje każdy obszar
 roboczy w instalacji. Tokeny OAuth są odświeżane, zanim wygasną.
 
-Zewnętrzne CLI adapterów przechowują własne poświadczenia, we własnej konfiguracji,
-na hoście serwera — Control Center nimi nie zarządza. Uwierzytelnij Claude Code tak,
-jak mówi jego własna dokumentacja, na maszynie, na której działa `cc_server`.
+Claude Code loguje się przez **Konta Claude Code** w **Ustawienia → Serwer → Dostawcy modeli**: każde konto dostaje własny katalog konfiguracji na serwerze, a polecenie `claude auth login`, które pokazuje aplikacja, uruchamiasz tam.
 
 Okno **Zmienne środowiskowe** dla danego adaptera wygląda jak miejsce na klucz dla
 jednego z nich, ale nim nie jest: zapisuje dane na Twoim urządzeniu, podczas gdy
@@ -75,16 +71,12 @@ serwer czyta własną kopię i nic ich nie łączy. Zobacz
 
 ## Łączenie dostawcy zgłoszeń
 
-Karta **Zgłoszenia** w **Ustawienia → Obszar roboczy → Ogólne** zawiera obie części
-jednej decyzji: u którego dostawcy znajdują się Twoje zgłoszenia i kim jest
-Control Center, gdy z nim rozmawia. Wybranie opcji **Lokalnie** ukrywa wiersze
+Karta **Zgłoszenia** w **Ustawienia → Obszar roboczy → Integracje** zawiera stronę obszaru roboczego: u którego dostawcy znajdują się Twoje zgłoszenia i kim jest Control Center, gdy działa tam samodzielnie. Wybranie opcji **Lokalnie** ukrywa wiersze
 Linear — lokalne zgłoszenia znajdują się we własnej bazie danych tego serwera
 i nie mają się wobec czego uwierzytelniać.
 
 Linear ma dwa logowania i żadnego wklejanego klucza: **Linear** jest Twoje, dla
-tego, co robisz, a **Automatyzacja Linear** to aplikacja Control Center obszaru
-roboczego, łączona przez administratora, dla synchronizacji zgłoszeń, potoków
-i agentów. Serwer może też przechowywać **Klucz API usługi** (**Aplikacje
+tego, co robisz, i znajduje się w **Ustawienia → Ty → Profil**; **Automatyzacja Linear** to aplikacja Control Center obszaru roboczego, łączona przez administratora na karcie Zgłoszenia, dla synchronizacji zgłoszeń, potoków i agentów. Serwer może też przechowywać **Klucz API usługi** (**Aplikacje
 dostawców**) dla obszarów roboczych bez połączonej automatyzacji. Do sandboxa
 agenta nie jest wstrzykiwane żadne poświadczenie zgłoszeń; agenci zapisują
 zgłoszenia przez narzędzia Control Center, które pytają regułę **Zapis do
@@ -100,10 +92,11 @@ zewnętrznego trackera**. Zobacz
   a następnie unieważnij stary w serwisie
 - **Aplikacja serwera**: wygeneruj nowy klucz prywatny lub sekret klienta na stronie
   aplikacji u dostawcy, wklej go w **Aplikacje dostawców** i naciśnij **Test**
-- **Klucz instalacji Connect**: **Wymień klucz** na karcie **Control Center
-  Connect** albo `cc_server connect rotate-key --yes`. Każdy, kto zalogował się
-  przez Connect, loguje się ponownie. Zobacz
-  [Control Center Connect](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/)
+- **Klucz instalacji Connect**: właściciel serwera naciska **Wymień klucz** na
+  karcie **Control Center Connect**. Każdy, kto zalogował się przez Connect,
+  loguje się ponownie. Jeśli serwer Connect jest nieosiągalny, nic się nie
+  zmienia i pojawia się opcja **Zrotuj mimo to**. Zobacz
+  [Wymień klucz instalacji](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/#wymień-klucz-instalacji)
 - **Dostawca modeli**: w jego wierszu wyloguj się (OAuth) lub usuń klucz, a następnie
   połącz się ponownie
 - **Slack**: w przypadku własnej aplikacji wklej ponownie tokeny w oknie
@@ -116,8 +109,9 @@ zewnętrznego trackera**. Zobacz
 
 ### Token GitLab lub Bitbucket działa w `curl`, ale nie tutaj
 
-Sprawdź podtytuł wiersza **Hosting kodu**. Jeśli widnieje w nim „ze środowiska”,
-odpowiada poświadczenie serwera, a nie Twoje — Twoje nie zostało zapisane.
+Sprawdź wiersz **Hosting kodu**. Jeśli widnieje w nim „Nie połączono” albo prosi
+o ponowne połączenie, token nie został zapisany lub został odrzucony. W przypadku
+Bitbucket wpisz adres e-mail konta Atlassian razem z tokenem API.
 
 ### Token GitLab lub Bitbucket jest akceptowany, ale późniejsze żądania kończą się niepowodzeniem
 

@@ -2,10 +2,10 @@
 title: MCP-eszközök
 description: A cc_server által regisztrált MCP-eszközök teljes katalógusa, eszközcsaládonként.
 slug: hu-HU/kezikonyv/referencia/mcp-eszkozok
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek dinamikus rétegként hidazhatók be ugyanebbe a regiszterbe.
+A `cc_server` egyetlen MCP (JSON-RPC 2.0) eszközregisztert üzemeltet, amely a fő szerverporton (alapértelmezés szerint `9030`) érhető el a `POST /mcp` és a `GET /sse` végponton, `2024-11-05` protokollverzióval. Minden kliens ugyanezt a regisztert éri el: az asztali alkalmazás, a webes build, a külső MCP-kliensek és a beépített ügynökfuttató. A külső MCP-szerverek dinamikus rétegként hidazhatók be ugyanebbe a regiszterbe. A szerver tulajdonosának személyes eszközkonfigurációjában talált szerverek kivételt képeznek: ez a végpont soha nem listázza, nem hívja és nem keresi őket, és csak a beépített harness-futások kapják meg őket, amelyekért a szerver tulajdonosa felel (lásd: [Személyes MCP-szerverek a tulajdonosé maradnak](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/#a-személyes-mcp-szerverek-a-tulajdonosé-maradnak)).
 
 ## A regiszter mérete
 
@@ -23,7 +23,7 @@ Az öt kódgráf-eszköz csak akkor kerül regisztrálásra, ha a gazdagép kód
 A teljes regiszter megjelenik a `tools/list` válaszában, felfedezési kapuzás nélkül. A jegy módosításai típusos eszközök.
 
 :::note[A külső kliensek mindig a teljes katalógust látják]
-A `tools/list` soha nem csonkul. Az MCP-kliensek az eszközneveket a lista saját gyorsítótárazott példányához ellenőrzik, és a szervertől való kérdezés nélkül elutasítanak mindent, ami nem szerepel benne, így az ott elrejtett eszköz nem csupán csendes, hanem elérhetetlen.
+A `tools/list` soha nem csonkul, kivéve a szerver tulajdonosának személyes MCP-szervereit, amelyeket soha nem tartalmaz. Az MCP-kliensek az eszközneveket a lista saját gyorsítótárazott példányához ellenőrzik, és a szervertől való kérdezés nélkül elutasítanak mindent, ami nem szerepel benne, így az ott elrejtett eszköz nem csupán csendes, hanem elérhetetlen.
 
 A **beépített harness** más: kérésenként csak a definíciók egy állandó részhalmazát tölti be, a többit pedig az első használatkor húzza be, ami harness oldali viselkedés, és nem változtatja meg ezt a regisztert. Lásd: [Eszközkontextus és promptgyorsítótár](/hu-HU/kezikonyv/fogalmak/eszkozkontextus).
 :::
@@ -249,7 +249,7 @@ deklarálja (a használati eszközök a `networkEgress` és a `processSpawn`
 osztályt is deklarálják; a `mobile_use` és az `ios_use` a `packageInstall`
 osztályt is), így a csak olvasható módok megtagadják őket. A `rig_list` semmit
 sem deklarál — csak munkaterület-állapotot olvas. A felületenkénti teljes
-igekészletet az [állomások referenciája](/hu-HU/kezikonyv/referencia/allomasok/#action-verbs)
+igekészletet az [állomások referenciája](/hu-HU/kezikonyv/referencia/allomasok/#műveleti-igék)
 tartalmazza.
 
 | Eszköz | Leírás |
@@ -258,8 +258,10 @@ tartalmazza.
 | `browser_use` | Fejetlen Chromiumot, Firefoxot vagy WebKitet vezérel (`engine`): navigálás, kattintás, kitöltés, kinyerés (a11y/DOM/console), vágólap, képernyőkép |
 | `mobile_use` | Androidot vezérel ADB-n keresztül: vizsgálat/bevitel, képernyőképek, alkalmazások telepítése/indítása/leállítása/visszaállítása/eltávolítása, deep linkek és argv alakú eszközparancsok |
 | `ios_use` | iOS Simulatort vezérel WebDriverAgent/CoreSimulatoron keresztül: vizsgálat/bevitel, képernyőképek, alkalmazások telepítése/indítása/leállítása/eltávolítása, deep linkek és argv alakú szimulátorfolyamatok |
-| `rig_list` | Felsorolja egy munkaterület állomásait felülettel, állapottal, kijelzőmérettel és vezérlővel |
+| `rig_list` | Felsorolja a futtatás terének állomásait felülettel, állapottal, kijelzőmérettel és vezérlővel |
 | `rig_close` | Megsemmisít egy állomást, és elveti a birtokolt gépállapotát |
+
+Ezeket az eszközöket csak ügynökfuttatások hívhatják; minden más hívót elutasítanak. A futtatás csak annak a térnek az állomásait éri el, amelyre a futtatást kiadták: a `space_id` a futtatás jogosultságából származik, sosem a hívásból, és egy másik térhez vagy egyik térhez sem tartozó állomás ugyanúgy válaszol, mint a hiányzó.
 
 Az `app_use` egy ötödik use eszköz: egy térben indított asztali alkalmazás ablakait vezérli, közvetlenül a gazdán, nem VM-ben, és a `fileWriteOutsideWorktree` és `fileDelete` osztályokat is deklarálja. Ezt és az `environment_*` eszközöket a [Környezetek beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kornyezetek/) oldal írja le.
 
@@ -304,7 +306,7 @@ tartozik eszköz, így egy máshol hivatkozott név az "unknown tool" értékkel
 | Képesség | Hol él helyette |
 | --- | --- |
 | Ügynök felvétele, elbocsátása vagy szerkesztése | Az Ügynökök felülete. Nincs `hire_agent` / `fire_agent` / `update_agent` eszköz |
-| Munkaterület létrehozása | `workspace.upsert` RPC-n keresztül, amely feltölti és bélyegzi a tulajdonviszonyt |
+| Munkaterület létrehozása | `workspace.create` RPC-n keresztül, csak a szerver tulajdonosának, amely feltölti és bélyegzi a tulajdonviszonyt |
 | Projektek (létrehozás / listázás / frissítés / besorolás) | A Jegyek felülete. A projektek operátori felület — lásd: [Projektek](/hu-HU/kezikonyv/gyakorlati-utmutatok/projektek/) |
 | Blokkoló kérdés feltevése az operátornak | A **harness** `ask_user` eszköze, nem az MCP. Egy űrlapot jelenít meg a beszélgetésben, és a válaszig blokkol |
 | Ügynökönkénti diagnosztika | Semmi. Nincs `doctor` — lásd: [Ügynök diagnosztizálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa/) |

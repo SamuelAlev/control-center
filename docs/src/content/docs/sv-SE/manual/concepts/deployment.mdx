@@ -2,7 +2,7 @@
 title: Driftsättning och klienter
 description: Hur Control Centers arkitektur med tunna klienter skiljer en headless-server från klienterna för dator, webb och mobil.
 slug: sv-SE/handbok/koncept/driftsattning
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center är inte ett enda program. Det är en **arkitektur med tunna
@@ -133,6 +133,8 @@ code-server-backenden. Webbläsaren behöver HTTPS eller en säker
 loopback-kontext för Service Workers. Inbyggda klienter använder en
 kapabilitetsavgränsad loopback-fasad.
 
+Bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren) kan öppna den inbäddade code-server-redigeraren: den körs på servern som serverns egen användare. En session tillhör enheten och personen som öppnade den. Den öppnas med VS Codes arbetsytetillit påslagen, så VS Code frågar innan en mapp litas på, och med automatiska uppgifter avstängda. Alla andra behåller den inbyggda enkelfilredigeraren och filvyerna.
+
 ### Telefonkompanjonen (cc_remote)
 
 **Remote**-appen är en separat, lättare klient – en Flutter-webb-PWA på
@@ -204,8 +206,10 @@ jobb.
 
 De två nivåerna sandlådar inte på samma sätt. `cc_server` kör de körningar den
 utför själv i värdens OS-sandlåda där en backend finns – Seatbelt på macOS,
-bubblewrap på Linux och WSL2 – och faller tillbaka på de andra gränserna på
-Windows eller utan `bwrap` och `socat`. **`cc_worker` sandlådar inte alls.** Den
+bubblewrap på Linux och WSL2. På Windows, eller utan `bwrap` och `socat`, startar
+den bara de körningar som serverägaren svarar för och vägrar alla andras, om inte
+ägaren startade den med `--sandbox off`, vilket kör varje medlems agenter
+osandlådat. **`cc_worker` sandlådar inte alls.** Den
 annonserar en `sandbox`-kapabilitet så att servern kan placera jobb efter
 plattform, men inget i workern tillämpar någon: ett leasat jobb startas direkt,
 begränsat av leasens miljö och den worktree den fick. Att leasa ut arbete
@@ -252,7 +256,7 @@ fingeravtrycks-pin. Vid första anslutningen verifierar du det fingeravtrycket
 genom en betrodd QR-kod eller en annan betrodd kanal: en signerad första kontakt
 ensam kan inte autentisera vem som bidrog med nyckeln. Om identiteten ändras
 faller klienten stängt; parkoppla om genom en betrodd kanal i stället för att
-ignorera avvikelsen. Äldre klienter och klartext-RPC kan inte ansluta. TLS
+ignorera avvikelsen. Klartext-RPC accepteras inte. TLS
 behövs fortfarande för webbläsarorigins, bootstrap och publik metadata;
 `--insecure` påverkar serverns yttre lyssnare, inte den obligatoriska krypterade
 sessionen.

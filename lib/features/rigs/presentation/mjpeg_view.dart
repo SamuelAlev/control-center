@@ -28,7 +28,12 @@ class MjpegView extends StatefulWidget {
     required this.url,
     this.fit = BoxFit.contain,
     this.paused = false,
+    this.onForbidden,
   });
+
+  /// Called when the lane answers 403: the person may no longer watch this
+  /// machine (its space is not readable to them). The view stops asking.
+  final VoidCallback? onForbidden;
 
   /// The signed `/rig/stream/<id>` URL.
   final String url;
@@ -190,6 +195,8 @@ class _MjpegViewState extends State<MjpegView> {
         // that is gone or was never ours.
         if (response.statusCode != 403 && response.statusCode != 404) {
           _scheduleReconnect();
+        } else if (response.statusCode == 403 && mounted) {
+          widget.onForbidden?.call();
         }
         return;
       }

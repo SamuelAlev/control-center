@@ -2,7 +2,7 @@
 title: Tính toán đánh giá (cohort, trục và diff tất định)
 description: Lượt tính toán đánh giá tạo ra những gì ở phía máy chủ — cohort, diff hợp đồng API và diff hình ảnh, cùng các cổng theo từng trục — và cách nó hòa vào tab Đánh giá.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tinh-toan-danh-gia
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Tab **Đánh giá** của PR là tiến trình trực tiếp của quy trình đánh giá trong lúc
@@ -14,8 +14,7 @@ mới là thứ mở nó ra.
 Phía sau tab đó, `cc_server` dựng các cohort theo tệp, chạy các trục tất định và
 phục vụ chúng qua các thao tác RPC `review_studio.*` (`cohorts`, `blastRadius`,
 `cohortImpact`, `ciSignals`, `dependencyDiffs`, `setContractDecision`,
-`approveVisual`, `compute` và các cặp `watch*` tương ứng). Một bố cục được lưu
-trữ vẫn mang tên `pr.reviewStudio` sẽ mở đúng tab Đánh giá này.
+`approveVisual`, `compute` và các cặp `watch*` tương ứng).
 
 Trên tab Đánh giá:
 
@@ -82,6 +81,8 @@ lượt tính toán sẽ kết xuất các thành phần đã thay đổi trư�
 lượt golden `flutter test` không giao diện trong worktree base và head của PR,
 rồi diff các điểm ảnh.
 
+Các bài kiểm thử đó là mã của chính pull request, nên chúng chạy như tiến trình công cụ của một agent: nằm trong sandbox khi máy chủ có sandbox cho agent, không bị giới hạn khi chủ sở hữu máy chủ đã tắt sandbox, và khi không có sandbox thì chỉ với yêu cầu mà chủ sở hữu máy chủ chịu trách nhiệm. Với bất kỳ ai khác, trục báo **unavailable** với lý do "không có sandbox trên máy chủ này, và chỉ chủ sở hữu mới được chạy bài kiểm thử của PR mà không có sandbox".
+
 :::note[Việc này cần Flutter SDK trên máy chủ]
 Máy chủ thuần Dart không thể kết xuất widget Flutter trong cùng tiến trình, nên
 nó gọi ra ngoài tới `flutter test`. SDK phải được cài trên máy đang chạy
@@ -92,9 +93,9 @@ quả đạt mà nó không giành được.
 
 Các ảnh chụp nhanh được đánh dấu **changed** hoặc **removed** sẽ giữ cổng hình
 ảnh cho đến khi được phê duyệt; các ảnh chụp nhanh **unchanged**, **added** và
-**approved** sẽ mở cổng. Trạng thái không khả dụng có một trong bốn lý do: không
+**approved** sẽ mở cổng. Trạng thái không khả dụng có một trong năm lý do: không
 có Flutter SDK trên máy chủ, không có ứng dụng Widgetbook trong kho mã, không có
-use-case nào kiểm thử được bằng golden, hoặc lỗi harness golden.
+use-case nào kiểm thử được bằng golden, lỗi harness golden, hoặc không có sandbox cho một yêu cầu mà chủ sở hữu máy chủ không chịu trách nhiệm.
 
 Phê duyệt một thay đổi có chủ đích là `review_studio.approveVisual`.
 

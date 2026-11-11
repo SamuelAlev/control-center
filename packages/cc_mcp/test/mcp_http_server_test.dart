@@ -3,11 +3,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
-import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/src/mcp_http_server.dart';
+import 'package:cc_mcp/src/mcp_request_handler.dart';
 import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 import 'package:test/test.dart';
 
@@ -43,17 +42,30 @@ class _FakeRegistry extends McpToolRegistry {
   _FakeRegistry() : super([]);
 }
 
-/// Builds an McpConfig for testing.
-McpConfig _testConfig({String? token}) {
-  return McpConfig(token: token, enabled: true);
-}
+/// The server MCP token every request below presents unless it says otherwise.
+const _token = 'test-token';
+
+/// A listener on [port] over [dispatcher] that accepts [token].
+McpHttpServer _server(
+  int port, {
+  McpToolDispatcher? dispatcher,
+  String token = _token,
+  void Function({required bool running})? onRunningChanged,
+}) => McpHttpServer(
+  port: port,
+  handler: McpRequestHandler(
+    token: token,
+    dispatcher: dispatcher ?? _FakeDispatcher(),
+  ),
+  onRunningChanged: onRunningChanged,
+);
 
 /// HTTP helper — sends a POST to `http://127.0.0.1:<port>/mcp` and returns the
 /// raw [HttpClientResponse].
 Future<HttpClientResponse> _post({
   required int port,
   required Map<String, dynamic> body,
-  String? token,
+  String? token = _token,
 }) async {
   final client = HttpClient();
   try {
@@ -73,14 +85,19 @@ Future<HttpClientResponse> _post({
   }
 }
 
-/// HTTP helper — sends OPTIONS to `http://127.0.0.1:<port>/mcp`.
-Future<HttpClientResponse> _options(int port) async {
+/// HTTP helper — sends OPTIONS to `http://127.0.0.1:<port>/mcp` from a page
+/// at [origin].
+Future<HttpClientResponse> _options(
+  int port, {
+  String origin = 'http://localhost:6274',
+}) async {
   final client = HttpClient();
   try {
     final request = await client.openUrl(
       'OPTIONS',
       Uri.parse('http://127.0.0.1:$port/mcp'),
     );
+    request.headers.set('Origin', origin);
     return await request.close();
   } finally {
     client.close();
@@ -88,10 +105,17 @@ Future<HttpClientResponse> _options(int port) async {
 }
 
 /// HTTP helper — sends GET to `http://127.0.0.1:<port>/<path>`.
-Future<HttpClientResponse> _get(int port, String path) async {
+Future<HttpClientResponse> _get(
+  int port,
+  String path, {
+  String? token = _token,
+}) async {
   final client = HttpClient();
   try {
     final request = await client.get('127.0.0.1', port, path);
+    if (token != null) {
+      request.headers.set('Authorization', 'Bearer $token');
+    }
     return await request.close();
   } finally {
     client.close();
@@ -108,19 +132,20 @@ void main() {
   // Lifecycle & state tests (no real server needed for most)
   group('lifecycle', () {
     test('isRunning starts false', () {
-      final server = McpHttpServer(port: 8421, dispatcher: _FakeDispatcher());
+      final server = _server(8421);
       expect(server.isRunning, isFalse);
     });
 
-    test('updateConfig changes active config', () {
-      final server = McpHttpServer(port: 8423, dispatcher: _FakeDispatcher());
-      server.handler.updateConfig(_testConfig());
-      // Updating config doesn't restart; we verify no crash.
-      expect(server.isRunning, isFalse);
+    test('an empty token is refused', () {
+      expect(() => _server(8423, token: ''), throwsArgumentError);
+      expect(
+        () => _server(8424).handler.updateToken(''),
+        throwsArgumentError,
+      );
     });
 
     test('start → stop → isRunning toggles', () async {
-      final server = McpHttpServer(port: 8425, dispatcher: _FakeDispatcher());
+      final server = _server(8425);
       await server.start();
       expect(server.isRunning, isTrue);
       await server.stop();
@@ -128,16 +153,15 @@ void main() {
     });
 
     test('stop when not running is a no-op', () async {
-      final server = McpHttpServer(port: 8426, dispatcher: _FakeDispatcher());
+      final server = _server(8426);
       await server.stop(); // Should not throw
       expect(server.isRunning, isFalse);
     });
 
     test('onRunningChanged fires on start and stop', () async {
       final events = <bool>[];
-      final server = McpHttpServer(
-        port: 8427,
-        dispatcher: _FakeDispatcher(),
+      final server = _server(
+        8427,
         onRunningChanged: ({required bool running}) => events.add(running),
       );
       await server.start();
@@ -146,7 +170,7 @@ void main() {
     });
 
     test('double start is idempotent', () async {
-      final server = McpHttpServer(port: 8428, dispatcher: _FakeDispatcher());
+      final server = _server(8428);
       await server.start();
       expect(server.isRunning, isTrue);
       await server.start(); // Should not throw
@@ -164,16 +188,9 @@ void main() {
     late McpHttpServer server;
     late int port;
 
-    Future<void> startServer({
-      String? token,
-      _FakeDispatcher? dispatcher,
-    }) async {
+    Future<void> startServer({_FakeDispatcher? dispatcher}) async {
       port = nextPort++;
-      server = McpHttpServer(
-        port: port,
-        config: _testConfig(token: token),
-        dispatcher: dispatcher ?? _FakeDispatcher(),
-      );
+      server = _server(port, dispatcher: dispatcher);
       await server.start();
     }
 
@@ -183,7 +200,7 @@ void main() {
 
     // ---- Route registration ----
     group('route registration', () {
-      test('OPTIONS returns 204 with CORS headers', () async {
+      test('OPTIONS from a loopback page returns 204 with CORS', () async {
         await startServer();
         final resp = await _options(port);
         expect(resp.statusCode, 204);
@@ -290,6 +307,9 @@ void main() {
         final client = HttpClient();
         try {
           final request = await client.post('127.0.0.1', port, '/mcp');
+          request.headers
+            ..contentType = ContentType('application', 'json')
+            ..set('Authorization', 'Bearer $_token');
           // Send empty body
           final resp = await request.close();
           expect(resp.statusCode, 400);
@@ -310,6 +330,7 @@ void main() {
             'json',
             charset: 'utf-8',
           );
+          request.headers.set('Authorization', 'Bearer $_token');
           final payload = '{"padding":"${'x' * (5 * 1024 * 1024)}"}';
           // Declaring the length lets the server refuse before reading a byte.
           request.contentLength = payload.length;
@@ -348,6 +369,7 @@ void main() {
             'json',
             charset: 'utf-8',
           );
+          request.headers.set('Authorization', 'Bearer $_token');
           request.write('{not valid json{{{');
           final resp = await request.close();
           expect(resp.statusCode, 400);
@@ -373,6 +395,7 @@ void main() {
             'json',
             charset: 'utf-8',
           );
+          request.headers.set('Authorization', 'Bearer $_token');
           request.write('[1, 2, 3]'); // Valid JSON array, not object
           final resp = await request.close();
           expect(resp.statusCode, 500);
@@ -435,6 +458,7 @@ void main() {
             'json',
             charset: 'utf-8',
           );
+          request.headers.set('Authorization', 'Bearer $_token');
           request.write('invalid');
           final resp = await request.close();
           expect(resp.headers.contentType!.mimeType, 'application/json');
@@ -473,42 +497,49 @@ void main() {
 
     // ---- Auth ----
     group('auth', () {
-      test(
-        'no token configured → request passes without auth header',
-        () async {
-          await startServer(token: null);
-          final resp = await _post(
-            port: port,
-            body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
-          );
-          expect(resp.statusCode, 200);
-        },
-      );
+      test('no credential is refused, from loopback too', () async {
+        await startServer();
+        final resp = await _post(
+          port: port,
+          body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
+          token: null,
+        );
+        expect(resp.statusCode, 401);
+        expect((await _readJson(resp))['error'], 'Unauthorized');
+      });
 
-      test(
-        'GET /sse without a token returns 401 when one is configured',
-        () async {
-          // Regression: the SSE GET skipped auth entirely ("EventSource can't
-          // send headers"), leaving an unauthenticated long-lived endpoint on a
-          // surface whose whole non-loopback posture is "has a token".
-          await startServer(token: 'secret');
-          final resp = await _get(port, '/sse');
-          expect(resp.statusCode, 401);
-          await resp.drain<void>();
-        },
-      );
+      test('GET /sse without a credential returns 401', () async {
+        await startServer();
+        final resp = await _get(port, '/sse', token: null);
+        expect(resp.statusCode, 401);
+        await resp.drain<void>();
+      });
 
-      test('GET /sse accepts the token as a query parameter', () async {
-        await startServer(token: 'secret');
+      test('GET /sse no longer takes the token as a query parameter', () async {
+        await startServer();
         final client = HttpClient();
         try {
           final request = await client.getUrl(
-            Uri.parse('http://127.0.0.1:$port/sse?token=secret'),
+            Uri.parse('http://127.0.0.1:$port/sse?token=$_token'),
           );
+          final resp = await request.close();
+          expect(resp.statusCode, 401);
+          await resp.drain<void>();
+        } finally {
+          client.close();
+        }
+      });
+
+      test('GET /sse with the token opens the stream', () async {
+        await startServer();
+        final client = HttpClient();
+        try {
+          final request = await client.get('127.0.0.1', port, '/sse');
+          request.headers.set('Authorization', 'Bearer $_token');
           final resp = await request.close();
           expect(resp.statusCode, 200);
           expect(resp.headers.contentType?.mimeType, 'text/event-stream');
-          // The stream stays open by design; take the endpoint event and go.
+          expect(resp.headers.value('access-control-allow-origin'), isNull);
           final first = await resp
               .transform(utf8.decoder)
               .take(1)
@@ -520,80 +551,47 @@ void main() {
         }
       });
 
-      test('GET /sse with a wrong query token returns 401', () async {
-        await startServer(token: 'secret');
-        final client = HttpClient();
-        try {
-          final request = await client.getUrl(
-            Uri.parse('http://127.0.0.1:$port/sse?token=nope'),
-          );
-          final resp = await request.close();
-          expect(resp.statusCode, 401);
-          await resp.drain<void>();
-        } finally {
-          client.close();
-        }
-      });
-
-      test('token configured → missing auth header returns 401', () async {
-        await startServer(token: 'secret');
-        final client = HttpClient();
-        try {
-          final request = await client.post('127.0.0.1', port, '/mcp');
-          request.headers.contentType = ContentType(
-            'application',
-            'json',
-            charset: 'utf-8',
-          );
-          // No Authorization header
-          request.write(
-            jsonEncode({'jsonrpc': '2.0', 'method': 'ping', 'id': 1}),
-          );
-          final resp = await request.close();
-          expect(resp.statusCode, 401);
-          final body = await _readJson(resp);
-          expect(body['error'], 'Unauthorized');
-        } finally {
-          client.close();
-        }
-      });
-
-      test('token configured → wrong bearer token returns 401', () async {
-        await startServer(token: 'secret');
-        final client = HttpClient();
-        try {
-          final request = await client.post('127.0.0.1', port, '/mcp');
-          request.headers.contentType = ContentType(
-            'application',
-            'json',
-            charset: 'utf-8',
-          );
-          request.headers.set('Authorization', 'Bearer wrong');
-          request.write(
-            jsonEncode({'jsonrpc': '2.0', 'method': 'ping', 'id': 1}),
-          );
-          final resp = await request.close();
-          expect(resp.statusCode, 401);
-        } finally {
-          client.close();
-        }
-      });
-
-      test('token configured → correct bearer token passes', () async {
-        await startServer(token: 'secret');
+      test('a wrong bearer token returns 401', () async {
+        await startServer();
         final resp = await _post(
           port: port,
           body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
-          token: 'secret',
+          token: 'wrong',
         );
-        expect(resp.statusCode, 200);
-        final body = await _readJson(resp);
-        expect(body['result'], isA<Map>());
+        expect(resp.statusCode, 401);
+        await resp.drain<void>();
       });
 
-      test('token configured → CORS preflight OPTIONS bypasses auth', () async {
-        await startServer(token: 'secret');
-        // OPTIONS should skip auth check
+      test('the correct bearer token passes', () async {
+        await startServer();
+        final resp = await _post(
+          port: port,
+          body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
+        );
+        expect(resp.statusCode, 200);
+        expect((await _readJson(resp))['result'], isA<Map>());
+      });
+
+      test('a rotated token replaces the old one at once', () async {
+        await startServer();
+        server.handler.updateToken('rotated');
+        final old = await _post(
+          port: port,
+          body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
+        );
+        expect(old.statusCode, 401);
+        await old.drain<void>();
+        final fresh = await _post(
+          port: port,
+          body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
+          token: 'rotated',
+        );
+        expect(fresh.statusCode, 200);
+        await fresh.drain<void>();
+      });
+
+      test('a CORS preflight from a loopback page needs no credential', () async {
+        await startServer();
         final resp = await _options(port);
         expect(resp.statusCode, 204);
       });
@@ -601,40 +599,52 @@ void main() {
 
     // ---- CORS ----
     group('CORS', () {
-      test('CORS headers echo request Origin', () async {
-        await startServer();
+      Future<HttpClientResponse> postFrom(String origin) async {
         final client = HttpClient();
         try {
           final request = await client.post('127.0.0.1', port, '/mcp');
-          request.headers.set('Origin', 'https://example.com');
-          request.headers.contentType = ContentType(
-            'application',
-            'json',
-            charset: 'utf-8',
-          );
+          request.headers
+            ..set('Origin', origin)
+            ..contentType = ContentType('application', 'json')
+            ..set('Authorization', 'Bearer $_token');
           request.write(
             jsonEncode({'jsonrpc': '2.0', 'method': 'ping', 'id': 1}),
           );
-          final resp = await request.close();
-          expect(
-            resp.headers.value('access-control-allow-origin'),
-            'https://example.com',
-          );
+          return await request.close();
         } finally {
           client.close();
         }
+      }
+
+      test('a loopback page gets its own origin back', () async {
+        await startServer();
+        for (final origin in [
+          'http://localhost:6274',
+          'http://127.0.0.1:3000',
+          'http://[::1]:8080',
+        ]) {
+          final resp = await postFrom(origin);
+          expect(resp.statusCode, 200, reason: origin);
+          expect(
+            resp.headers.value('access-control-allow-origin'),
+            origin,
+            reason: origin,
+          );
+          await resp.drain<void>();
+        }
       });
 
-      test('CORS headers fall back to * when no Origin', () async {
+      test('a request without an Origin gets no CORS headers', () async {
         await startServer();
         final resp = await _post(
           port: port,
           body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
         );
-        expect(resp.headers.value('access-control-allow-origin'), '*');
+        expect(resp.headers.value('access-control-allow-origin'), isNull);
+        await resp.drain<void>();
       });
 
-      test('CORS echoes Access-Control-Request-Headers', () async {
+      test('requested headers are never echoed back', () async {
         await startServer();
         final client = HttpClient();
         try {
@@ -642,122 +652,40 @@ void main() {
             'OPTIONS',
             Uri.parse('http://127.0.0.1:$port/mcp'),
           );
-          request.headers.set('Access-Control-Request-Headers', 'X-Custom');
+          request.headers
+            ..set('Origin', 'http://localhost:6274')
+            ..set('Access-Control-Request-Headers', 'X-Custom');
           final resp = await request.close();
           expect(
             resp.headers.value('access-control-allow-headers'),
-            'X-Custom',
+            isNot(contains('X-Custom')),
           );
         } finally {
           client.close();
         }
       });
 
-      test('CORS exposes Mcp-Session-Id', () async {
+      test('CORS exposes Mcp-Session-Id to a loopback page', () async {
         await startServer();
-        final resp = await _post(
-          port: port,
-          body: {'jsonrpc': '2.0', 'method': 'ping', 'id': 1},
-        );
+        final resp = await postFrom('http://localhost:6274');
         expect(
           resp.headers.value('access-control-expose-headers'),
           'Mcp-Session-Id',
         );
-      });
-    });
-  });
-
-  group('dispatch identity scope (X-CC-* headers)', () {
-    int nextPort = 8590;
-
-    test(
-      'headers force workspace_id and fill identity args end-to-end',
-      () async {
-        final probe = _ScopeProbeTool();
-        final port = nextPort++;
-        final server = McpHttpServer(
-          port: port,
-          dispatcher: McpToolDispatcher(registry: McpToolRegistry([probe])),
-        );
-        await server.start();
-        try {
-          final client = HttpClient();
-          try {
-            final request = await client.post('127.0.0.1', port, '/mcp');
-            request.headers
-              ..contentType = ContentType(
-                'application',
-                'json',
-                charset: 'utf-8',
-              )
-              ..set('X-CC-Workspace-Id', 'ws-own')
-              ..set('X-CC-Agent-Id', 'agent-1')
-              ..set('X-CC-Conversation-Id', 'conv-1');
-            request.write(
-              jsonEncode({
-                'jsonrpc': '2.0',
-                'method': 'tools/call',
-                'params': {
-                  'name': 'scope_probe',
-                  'arguments': {'workspace_id': 'ws-foreign'},
-                },
-                'id': 7,
-              }),
-            );
-            final resp = await request.close();
-            expect(resp.statusCode, 200);
-            await resp.drain<void>();
-          } finally {
-            client.close();
-          }
-          expect(probe.lastArgs!['workspace_id'], 'ws-own');
-          expect(probe.lastArgs!['agent_id'], 'agent-1');
-          expect(probe.lastArgs!['conversation_id'], 'conv-1');
-        } finally {
-          await server.stop();
-        }
-      },
-    );
-
-    test('without headers, arguments pass through verbatim', () async {
-      final probe = _ScopeProbeTool();
-      final port = nextPort++;
-      final server = McpHttpServer(
-        port: port,
-        dispatcher: McpToolDispatcher(registry: McpToolRegistry([probe])),
-      );
-      await server.start();
-      try {
-        final resp = await _post(
-          port: port,
-          body: {
-            'jsonrpc': '2.0',
-            'method': 'tools/call',
-            'params': {
-              'name': 'scope_probe',
-              'arguments': {'workspace_id': 'ws-any'},
-            },
-            'id': 8,
-          },
-        );
-        expect(resp.statusCode, 200);
         await resp.drain<void>();
-        expect(probe.lastArgs!['workspace_id'], 'ws-any');
-        expect(probe.lastArgs!.containsKey('agent_id'), isFalse);
-      } finally {
-        await server.stop();
-      }
+      });
     });
   });
 
   group('tools/list_changed notification', () {
     test('notifyToolsListChanged reaches connected SSE clients', () async {
       const port = 8610;
-      final server = McpHttpServer(port: port, dispatcher: _FakeDispatcher());
+      final server = _server(port);
       await server.start();
       final client = HttpClient();
       try {
         final request = await client.get('127.0.0.1', port, '/sse');
+        request.headers.set('Authorization', 'Bearer $_token');
         final resp = await request.close();
         expect(resp.statusCode, 200);
 
@@ -785,32 +713,4 @@ void main() {
       }
     });
   });
-}
-
-/// Records the arguments it was called with; declares the scoped ids in its
-/// schema so the dispatcher's scope injection targets them.
-class _ScopeProbeTool extends McpTool {
-  Map<String, dynamic>? lastArgs;
-
-  @override
-  String get name => 'scope_probe';
-
-  @override
-  String get description => 'Records scoped arguments';
-
-  @override
-  Map<String, dynamic> get inputSchema => {
-    'type': 'object',
-    'properties': {
-      'workspace_id': {'type': 'string'},
-      'agent_id': {'type': 'string'},
-      'conversation_id': {'type': 'string'},
-    },
-  };
-
-  @override
-  Future<CallResult> run(Map<String, dynamic> arguments) async {
-    lastArgs = arguments;
-    return CallResult.success('ok');
-  }
 }

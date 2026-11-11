@@ -1,5 +1,9 @@
 {
   "@@locale": "es_MX",
   "scanQrPrompt": "Escanea el código QR de Control Center para emparejar este celular.",
-  "scanQrHelp": "Abre la cámara y apunta al QR que aparece en Control Center. Este celular se conecta directamente por un enlace privado."
+  "scanQrHelp": "Abre la cámara y apunta al QR que aparece en Control Center. Este celular se conecta directamente por un enlace privado.",
+  "credentialsProviderUnreachable": "No se puede contactar con {provider} en este momento. Reintentando.",
+  "repoAccessAddToApp": "Agrega {names} a los repositorios de la GitHub App. Toca para abrir GitHub.",
+  "repoAccessAskAdminAdd": "La GitHub App todavía no ve {names}. Pide a un administrador del espacio de trabajo que los agregue a sus repositorios.",
+  "repoAccessAutomationTokenMissing": "Ningún token de automatización puede leer {names}, así que el trabajo en segundo plano allí está en pausa. Un admin puede agregar uno en Ajustes → Repositorios."
 }

@@ -2,10 +2,10 @@
 title: Instrumente MCP
 description: Catalog complet al instrumentelor MCP pe care le înregistrează cc_server, pe familii.
 slug: ro-RO/manual/referinta/instrumente-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe pot fi conectate în același registru ca un strat dinamic.
+`cc_server` găzduiește un singur registru de instrumente MCP (JSON-RPC 2.0), servit pe portul principal al serverului (implicit `9030`) la `POST /mcp` și `GET /sse`, versiunea de protocol `2024-11-05`. Fiecare client ajunge la același registru: aplicația desktop, versiunea web, clienții MCP externi și runtime-ul de agenți încorporat. Serverele MCP externe pot fi conectate în același registru ca un strat dinamic. Serverele descoperite în configurația personală de unelte a utilizatorului serverului fac excepție: acest endpoint nu le listează, nu le apelează și nu le caută niciodată, iar pe ele le folosesc doar rulările de harness integrat pentru care răspunde proprietarul serverului (vezi [Serverele MCP personale rămân ale proprietarului](/ro-RO/manual/ghiduri-practice/server-mcp/#serverele-mcp-personale-rămân-ale-proprietarului)).
 
 ## Dimensiunea registrului
 
@@ -23,7 +23,7 @@ Cele cinci instrumente de graf de cod sunt înregistrate doar când gazda transm
 Registrul complet este anunțat în `tools/list`, fără restricționare la descoperire. Editările de tichete sunt instrumente tipizate.
 
 :::note[Clienții externi văd mereu catalogul întreg]
-`tools/list` nu este niciodată trunchiat. Clienții MCP validează numele instrumentelor față de propria copie din cache a acelei liste și refuză orice nu apare acolo fără să întrebe serverul, așa că un instrument ascuns este inaccesibil, nu doar tăcut.
+`tools/list` nu este niciodată trunchiat, în afara serverelor MCP personale ale proprietarului serverului, pe care nu le include niciodată. Clienții MCP validează numele instrumentelor față de propria copie din cache a acelei liste și refuză orice nu apare acolo fără să întrebe serverul, așa că un instrument ascuns este inaccesibil, nu doar tăcut.
 
 **Harness-ul încorporat** este diferit: încarcă per cerere doar un subset rezident de definiții și aduce restul la prima utilizare, ceea ce este un comportament de partea harness-ului și nu schimbă acest registru. Vezi [Contextul instrumentelor și cache-ul prompturilor](/ro-RO/manual/concepte/contextul-instrumentelor).
 :::
@@ -248,7 +248,7 @@ utilizare plus `rig_close` declară [clasa de acțiuni](/ro-RO/manual/concepte/g
 `processSpawn`; `mobile_use` și `ios_use` declară și `packageInstall`), așa că
 modurile doar-citire le refuză. `rig_list` nu declară niciuna — citește doar starea
 spațiului de lucru. Vocabularul complet de verbe pentru fiecare suprafață se află în
-[referința stațiilor](/ro-RO/manual/referinta/statii/#action-verbs).
+[referința stațiilor](/ro-RO/manual/referinta/statii/#verbe-de-acțiune).
 
 | Instrument     | Descriere                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------- |
@@ -256,8 +256,10 @@ spațiului de lucru. Vocabularul complet de verbe pentru fiecare suprafață se 
 | `browser_use`  | Conduce un Chromium, Firefox sau WebKit headless (`engine`): navighează, dă clic, completează, extrage (a11y/DOM/consolă), clipboard, captură de ecran |
 | `mobile_use`   | Conduce Android prin ADB: inspectare/intrare, capturi de ecran, instalare/pornire/oprire/resetare/dezinstalare de aplicații, link-uri profunde și comenzi de dispozitiv în forma argv |
 | `ios_use`      | Conduce simulatorul iOS prin WebDriverAgent/CoreSimulator: inspectare/intrare, capturi de ecran, instalare/pornire/oprire/dezinstalare de aplicații, link-uri profunde și procese de simulator în forma argv |
-| `rig_list`     | Listează stațiile unui spațiu de lucru cu suprafața, starea, dimensiunea afișajului și controlerul |
+| `rig_list`     | Listează stațiile spațiului rulării cu suprafața, starea, dimensiunea afișajului și controlerul |
 | `rig_close`    | Distruge o stație și aruncă starea mașinii pe care o deține                                        |
+
+Doar rulările de agent pot apela aceste instrumente; orice alt apelant este refuzat. O rulare ajunge doar la stațiile spațiului pentru care a fost închiriată: `space_id` vine din grantul rulării, niciodată din apel, iar o stație a altui spațiu sau a niciunui spațiu răspunde exact ca una inexistentă.
 
 `app_use` este un al cincilea instrument use: controlează ferestrele unei aplicații desktop lansate într-un spațiu, direct pe gazdă și nu într-o VM, și declară în plus `fileWriteOutsideWorktree` și `fileDelete`. Acesta și instrumentele `environment_*` sunt descrise în [Configurarea mediilor](/ro-RO/manual/ghiduri-practice/medii/).
 
@@ -302,7 +304,7 @@ instrument, așa că un nume pe care poate l-ai văzut menționat altundeva retu
 | Capabilitate                                            | Unde se află în schimb                                                                             |
 | ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Angajarea, concedierea sau editarea unui agent           | Interfața de agenți. Nu există niciun instrument `hire_agent` / `fire_agent` / `update_agent`        |
-| Crearea unui spațiu de lucru                             | `workspace.upsert` prin RPC, care inițializează și aplică proprietatea                                |
+| Crearea unui spațiu de lucru                             | `workspace.create` prin RPC, doar pentru proprietarul serverului, care inițializează și aplică proprietatea               |
 | Proiecte (creare / listare / actualizare / încadrare)    | Interfața de tichete. Proiectele sunt o suprafață de operator — vezi [Organizează munca cu proiecte](/ro-RO/manual/ghiduri-practice/proiecte/) |
 | Adresarea unei întrebări blocante operatorului           | Instrumentul de **harness** `ask_user`, nu MCP. Randează un formular în conversație și așteaptă blocat răspunsul |
 | Diagnosticarea per agent                                 | Nimic. Nu există `doctor` — vezi [Diagnostichează un agent](/ro-RO/manual/ghiduri-practice/diagnosticare-agent/) |

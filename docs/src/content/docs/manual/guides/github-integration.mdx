@@ -25,8 +25,8 @@ it, and signing them in is something they do themselves.
 
 GitHub is sign-in only: there is no token to paste.
 
-1. Go to **Settings → Workspace → Profile & identity → Code hosting** (or the
-   first step of onboarding)
+1. Go to **Settings → You → Profile → Code hosting** (or the first
+   step of onboarding)
 2. On the **GitHub** row, click **Sign in to GitHub**
 3. Your browser opens GitHub. Approve the app
 
@@ -50,15 +50,29 @@ behalf.
 
 ## Who your credential speaks for
 
-- **Anything you do** (opening the PR page, posting a review, approving, merging)
-  runs on **your** sign-in and nothing else. If you are not signed in, the app
-  says so and asks you to sign in. No other credential stands in for you
-- **Work with no one typing** (agent runs, pipelines, PR polling, bot replies,
-  clones) gets a token for one repository, minted from the server's GitHub App
-  or through Connect. It is limited to what an accountable member can do there:
-  the member who asked, else the workspace owner. A member who cannot push
-  bounds the token to read
+Control Center follows GitHub's own split between acting **as a person** and acting **as the app**:
+
+| What happens                                                                 | Shows on GitHub as                                  |
+| ---------------------------------------------------------------------------- | --------------------------------------------------- |
+| Anything you do yourself: comment, review, approve, merge, request reviewers | **You**. GitHub marks a comment in the conversation as made with the Control Center app; a review and its inline comments carry no such mark |
+| AI review, agent replies and comments in PR conversations, labels, pipeline and bot work | **The Control Center bot**. On the shared Connect app, a review is the bot's only for an installation the Connect operator listed; otherwise it shows as the accountable person |
+| A pull request an agent opens for you, its edits to that pull request's title or description, its pushes and its commits            | **You**. Control Center is credited as co-author when co-author credit is on   |
+| Work nobody asked for (schedules, webhooks)                                  | **The Control Center bot**, as author of its commits too. On Control Center Connect it never pushes or opens a pull request |
+
+- **Anything you do** runs on **your** sign-in and nothing else. If you are not signed in, the app asks you to sign in. No other credential stands in for you
+- **Bot work** gets a token for one repository at a time, limited to what an accountable member can do there: the member who asked, else the workspace owner. A member who cannot push bounds it to read. Bot replies that act for someone start with **Control Center (for @login)**
+- **Agents open pull requests through Control Center**, never from their sandbox, so the pull request is yours and GitHub's own rules stop you approving it. Control Center also refuses an approval from the person who asked the agent for it, and from the pull request's author. For a scheduled or webhook run, that covers every admin who armed its trigger or edited its pipeline while it was armed. Someone else must review. If Control Center can't confirm who opened the pull request, or which account on the forge is yours, it refuses and asks you to try again
+- **Agents comment through Control Center too.** The GitHub token an agent run gets only reads. When an agent comments on the pull request it is working on, Control Center posts the comment as the bot, starting with **Control Center (for @login)** when someone asked for the run. An agent can only comment on its own pull request: one in the same repository, never a fork, whose latest commit the agent pushed or is its space branch's current commit. @-mentions in an agent's comment notify no one. An agent can also change the title or description of its own pull request while it is open. That edit is made the way the pull request was opened (as you, when you asked for the run), and asks for approval first by default. A pull request's description keeps its @-mentions, when the agent opens it and when it edits it, so the people it names are notified
+- **On Control Center Connect, the bot never pushes or opens a pull request.** Pushing, creating a branch or opening a pull request there needs a person who asked for it, and runs on that person's sign-in. A scheduled or webhook run that tries to push stops with a message saying so. To let unattended runs push, give the workspace its own GitHub App in **Settings**
+- **What the Connect bot can do.** With the shared Connect app, the bot comments, labels and reacts. It posts a review (an AI review, review comments, reviewer requests) only when the Connect operator has listed this server's installation. Otherwise the review goes out on the accountable person's own sign-in and appears under their name. The bot never opens, edits, closes or retitles a pull request, dismisses a review, or edits or deletes a comment; those need a person who asked, on their own sign-in. Connect does not tie your organization's installation to one Control Center server: any server where a member who can push to a repository signed in through Connect can get the bot's comment token for that repository
+- **A server or workspace with its own GitHub App** keeps the bot for all of the above, reviews included
 - **Automation never approves** a pull request. Approval is a person's act
+
+When you link a repo, Control Center checks that your account can see it, and warns when the GitHub App isn't installed on its organization or doesn't include the repo, with a link to fix it. Linking and unlinking need a workspace admin, and a checkout outside the workspace's own storage can be linked only by the server owner; see [Add repos to a workspace](/manual/guides/add-repos/).
+
+The link follows the repository's permanent GitHub id, so a rename or a transfer needs nothing from you. If the path later names a different repository, Control Center stops sending it anything and shows a notice until a workspace admin clicks **Relink**.
+
+Opening a repository's code (files, diffs, search, a terminal) needs both its grant in the workspace and a GitHub sign-in of yours that can read it. Workspace admins follow the same rule; only the server owner is exempt.
 
 ## What the integration gives you
 
@@ -68,7 +82,7 @@ behalf.
 | Check runs          | The GitHub Checks API                                                                                            |
 | Review publishing   | A user-gated step that posts your review to the PR, as you                                                       |
 | Repo registration   | A checkout is accepted if its `origin` remote points at github.com, or at gitlab.com / bitbucket.org             |
-| Agent GitHub access | A token for the run's one repository as `GH_TOKEN` / `GITHUB_TOKEN`; pushes go through Control Center            |
+| Agent GitHub access | Inside a run, `git fetch` goes through Control Center, which fetches the repositories the run works on with a read-only token the run never holds. `gh` reads them on a read-only token that Control Center hands out when asked and revokes when the run ends. Pushes, pull requests, edits to them and comments go through Control Center |
 | Notification pings  | A server-side poll of your GitHub notification inbox raises "mentioned in pull request" and "review requested"   |
 | User profiles       | Profile hover cards and per-author PR filtering                                                                  |
 
@@ -88,36 +102,73 @@ The statuses refresh on their own every two minutes.
 ## Know how agents act on GitHub
 
 - An agent working in a GitHub worktree gets a token for that one repository.
-  It can read the code and comment on pull requests when the accountable member
-  can push, and only read when they cannot. A push goes through Control Center,
+  It can only read the code, issues and pull requests; comments go through
+  Control Center, as described above. A push goes through Control Center,
   which asks the **Push to a remote** rule and then forwards it on a write token
   the agent never holds. See
   [Configure sandbox policies](/manual/guides/sandbox-policies/)
-- Agent commits always use the requester's Git identity as both author and
-  committer. By default, a `Co-Authored-By: Control Center <hi@usectrl.dev>`
-  trailer credits GitHub `@usectrl` as a co-author. **Settings → You → Commit
-  attribution** can disable this co-author credit without changing your identity.
-  A workspace override in **Settings → Workspace → General** takes precedence
-  and locks that personal toggle. Claude Code's own attribution is always
-  disabled. Commit signing still needs its own valid configuration
+- Work you start is committed as you. When you ask an agent for something,
+  or commit in the IDE, you are the author and committer, under an address
+  your forge verified: your GitHub noreply address from your GitHub sign-in,
+  or on GitLab and Bitbucket the email your sign-in there reports. Your
+  workspace Git identity is used only for a commit you make by hand in a
+  repository where no forge vouches for an address of yours. If you are not
+  signed in to that forge, an agent's commits are the bot's instead and the
+  run's notes say so
+- Work nobody asked for is committed as the bot. A scheduled or webhook run
+  commits as the workspace's GitHub App (`<app>[bot]`, with its GitHub noreply
+  address), or as `Control Center <hi@usectrl.dev>` when there is no GitHub
+  App or the repository is on GitLab or Bitbucket
+- **Credit Control Center as co-author** (**Settings** → **You** →
+  **Commits**) adds a `Co-Authored-By:` trailer for the other party: Control
+  Center on your commits, and on the bot's commits each person who armed the
+  trigger behind the run. It is on unless you turn it off. A workspace admin
+  can decide it for everyone with **Co-author credit** in **Settings** →
+  **Workspace** → **General**; your own choice is then saved but does not
+  apply in that workspace. Claude Code's own attribution is always disabled
+- Your commits can be signed. Under **Verified commits** in **Settings** →
+  **You** → **Commits**, choose **Create signing key** and add its public half to your GitHub or GitLab account as a signing key;
+  from then on the commits of runs you ask for, and the commits you make in
+  the IDE, show as verified. The private half stays on your server, so whoever
+  controls that server can sign commits as you while the key is on your
+  account, and on GitHub a commit already shown as verified stays verified
+  after you remove the key. Bitbucket has no signing-only key: do not add the
+  key there, and commits on Bitbucket are not signed. The bot's commits are
+  never signed
+- Commits you make in the IDE's **Source control** panel skip the
+  repository's Git hooks, as `git commit --no-verify` does, and the server's
+  Git ignores credential helpers, editors, external diff tools and signers the
+  repository configures: it runs Git on its own machine, in a tree an agent or
+  a pull request can change. See
+  [Commit and push from Source control](/manual/guides/review-merge-pr/#commit-and-push-from-source-control)
+- Every commit an agent pushes is checked first, including the layers
+  `stack_publish` pushes for a stack. A push that names someone else, drops or
+  borrows a credit, adds a sign-off, or is not signed the way your settings
+  say is refused. Commits you push yourself from the IDE are yours and are
+  not checked this way
 - A terminal you open on a rig gets your own sign-in, narrowed to the one
   repository, so pushes there are yours
 - When no token can be minted (nobody accountable is signed in, the app is not
-  installed on the owner, or the installation is suspended), the run starts
-  without one and its notes say why. There is no fallback credential
+  installed on the owner, or the installation is suspended), the command
+  that asked for it says why. There is no fallback credential
 
 ## Troubleshooting
 
 ### The PR list is empty and says GitHub is not connected
 
 You are not signed in to GitHub on this server. Click **Sign in to GitHub** under
-**Code hosting**. Repos on other forges are unaffected.
+**Settings → You → Profile → Code hosting**. Repos on other forges are unaffected.
 
 ### The GitHub row says sign-in is not set up on this server
 
 The server has neither its own GitHub App nor Connect. The server owner picks
 one in **Settings → Server → Single sign-on**: **Create my GitHub App** takes
 about two minutes. See [Create the GitHub App](/manual/guides/github-app/).
+
+In a workspace on its own apps, the row says so when the workspace's GitHub App
+is missing or incomplete. A workspace admin fills it in on the **GitHub App**
+card in **Settings → Workspace → Integrations**; see
+[Give one workspace its own app](/manual/guides/github-app/#give-one-workspace-its-own-app).
 
 ### The dialog says the code does not match
 
@@ -127,10 +178,8 @@ codes end the sign-in; start it again.
 ### The sign-in says the app is not installed
 
 The GitHub App has no installation on the account that owns the repository. A
-workspace admin installs it from **Settings → Workspace → General → GitHub App
-installations**. For an organization on Control Center's shared App, an admin of
-that organization may need to click **Authorize this server**. See
-[Create the GitHub App](/manual/guides/github-app/#authorize-this-server-for-an-organization).
+workspace admin installs it from **Settings → Workspace → Integrations → GitHub
+App installations**.
 
 ### Everybody has to sign in to GitHub again
 
@@ -142,8 +191,27 @@ are bound to the server that made them.
 
 Registration requires all three: the path is inside a git work tree, it has an
 `origin` remote, and that remote points at a supported forge (github.com,
-gitlab.com or bitbucket.org). See
-[Add repos to a workspace](/manual/guides/add-repos/).
+gitlab.com or bitbucket.org). The `origin` must be the repository you are
+linking, and a folder outside the workspace's own storage can be linked only by
+the server owner. See [Add repos to a workspace](/manual/guides/add-repos/).
+
+### I have a grant but the repository says my account can't read it
+
+Your GitHub account can't read that repository, so its code stays closed to you
+even with a workspace grant. Sign in to GitHub under **Code hosting**, or ask
+for access to the repository on GitHub.
+
+### "Couldn't confirm your GitHub access"
+
+GitHub could not be reached to check your access, so Control Center refused
+rather than guess. Try again in a moment.
+
+### Reviews on Connect appear under my name, not the bot's
+
+On the shared Connect app, the bot posts reviews only for installations the
+Connect operator has listed. Everywhere else the review goes out on the
+accountable person's own sign-in. To have the bot post
+reviews, give the workspace its own GitHub App.
 
 ### Everything stops working for a while after heavy use
 

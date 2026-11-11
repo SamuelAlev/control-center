@@ -2,7 +2,7 @@
 title: Linear-Integration einrichten
 description: Melde dich bei Linear an, verbinde die Linear-Automatisierung eines Arbeitsbereichs und wähle Linear als Ticketing-Anbieter für neue Tickets.
 slug: de-DE/handbuch/anleitungen/linear-integration
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear hat in Control Center zwei Identitäten, und beide sind Anmeldungen im
@@ -24,7 +24,7 @@ siehe [Tickets erstellen und verwalten](/de-DE/handbuch/anleitungen/tickets-verw
 
 ## Linear für den Arbeitsbereich wählen
 
-1. Geh zu **Einstellungen → Arbeitsbereich → Allgemein** und such die Karte
+1. Geh zu **Einstellungen → Arbeitsbereich → Integrationen** und such die Karte
    **Tickets**
 2. Setze **Ticketing-Anbieter** auf **Linear**
 
@@ -34,7 +34,7 @@ Linear-Zeilen aus: Es gibt nichts, wogegen sich authentifizieren ließe.
 
 ## Bei Linear anmelden
 
-Auf derselben Karte gehört die Zeile **Linear** dir:
+Deine eigene Anmeldung bei Linear liegt unter **Einstellungen → Du → Profil**, auf der Karte **Tickets**:
 
 1. Klicke auf **Bei Linear anmelden**
 2. Bestätige im Browser
@@ -46,9 +46,11 @@ Alles, was du aus Control Center heraus in Linear tust, läuft über diese
 Anmeldung und sonst nichts. Bist du nicht angemeldet, fordert dich die App auf,
 dich anzumelden, statt als jemand anderes zu handeln.
 
+Die Anmeldung gilt in jedem Arbeitsbereich auf dem Server, außer ein Arbeitsbereich hat eigene Anmelde-Apps: Dieser Arbeitsbereich behält dann eine eigene Linear-Anmeldung. Die Karte zeigt, welche gilt.
+
 ## Linear-Automatisierung verbinden
 
-Die Zeile **Linear-Automatisierung** ist die Control-Center-App des
+Die Zeile **Linear-Automatisierung** auf der Karte **Tickets** unter **Einstellungen → Arbeitsbereich → Integrationen** ist die Control-Center-App des
 Arbeitsbereichs in Linear. Ticket-Synchronisierung, Pipelines und Agenten
 schreiben damit, automatisierte Issues und Kommentare erscheinen also als
 Control Center statt als eine Person.
@@ -70,9 +72,9 @@ Nutze eine eigene Anwendung, wenn du **Eigene Apps verwenden** gewählt hast. Di
 Anwendung des Servers gilt nur dann: Mit Apps von Control Center oder einem
 eigenen Connect-Server läuft Connect jede Spur, Linear eingeschlossen, und die
 Anwendung des Servers sowie sein Service-API-Schlüssel bleiben gespeichert, aber
-ungenutzt. Eine Anwendung des Arbeitsbereichs
-([unten](#einem-arbeitsbereich-eine-eigene-linear-anwendung-geben)) gilt weiterhin
-in jedem Modus.
+ungenutzt. Ein Arbeitsbereich mit eigenen Apps
+([unten](#einem-arbeitsbereich-eine-eigene-linear-anwendung-geben)) nutzt stattdessen
+seine eigene Anwendung, unabhängig vom Modus des Servers.
 
 1. Lege eine OAuth-Anwendung an unter
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -100,29 +102,19 @@ Servers bei Linear anmelden. Nur ein Administrator oder Eigentümer des
 Arbeitsbereichs kann das einrichten.
 
 1. Lege eine Linear-OAuth-Anwendung an, wie oben beschrieben
-2. Geh zu **Einstellungen → Arbeitsbereich → Allgemein → Anbieter-Apps** und öffne
-   **Linear**
-3. Wähle **Eigene App dieses Workspace verwenden**
-4. Füge beide Callback-URLs, die die Zeile unter **Callback-URLs** zeigt, wörtlich
-   zur Linear-Anwendung hinzu
-5. Trag ihre **Client id** ein und optional einen **Service-API-Schlüssel** für die
-   Automatisierung dieses Arbeitsbereichs
+2. Geh zu **Einstellungen → Arbeitsbereich → Integrationen**. Wähle auf der Karte **Control Center Connect** die Option **Eigene Apps verwenden** und klicke auf **Anwenden**
+3. Unter Tickets erscheint die Karte **Linear-App**. Füge beide Callback-URLs, die die Karte unter **Callback-URLs** zeigt, wörtlich zur Linear-Anwendung hinzu
+4. Trag ihre **Client-ID** ein und optional einen **Service-API-Schlüssel** für die Automatisierung dieses Arbeitsbereichs
 
 Die Anwendung des Arbeitsbereichs beantwortet dann jede Linear-Anmeldung und jede
 Automatisierungsanfrage in diesem Arbeitsbereich, egal auf welchem Weg der Server
 Personen anmeldet. Sie fällt nie auf die Anwendung des Servers oder auf Connect
 zurück: Solange keine Client-ID gesetzt ist, ist Linear in diesem Arbeitsbereich
-aus, und die Zeile sagt, was fehlt. Ihr Service-API-Schlüssel wird nur hier
+aus, und die Karte sagt, was fehlt. Ihr Service-API-Schlüssel wird nur hier
 verwendet; ohne ihn braucht die Synchronisierung **Linear für Automatisierung
 verbinden**.
 
-Der Wechsel zwischen der Anwendung des Servers und der des Arbeitsbereichs oder
-eine geänderte Client-ID des Arbeitsbereichs meldet alle in diesem Arbeitsbereich
-bei Linear ab und trennt ihre Automatisierung. Sie melden sich über die neue
-Anwendung erneut an. **App dieses Servers verwenden** löscht die gespeicherten
-Felder des Arbeitsbereichs. Geheimnisse sind nur schreibbar: Die Zeile zeigt nur,
-ob eines gespeichert ist. Andere Arbeitsbereiche auf dem Server sind nicht
-betroffen.
+**Eigene Apps verwenden** gilt für alle Anbieter zugleich: GitHub, Google Calendar und die GIF-Suche laufen dann ebenfalls nur über die Apps des Arbeitsbereichs, jeweils mit eigenen Feldern neben ihrem Anbieter auf derselben Seite. Der Wechsel der Anmeldeanwendungen des Arbeitsbereichs oder eine geänderte Client-ID meldet alle in diesem Arbeitsbereich bei Linear ab und trennt ihre Automatisierung. Sie melden sich über die neue Anwendung erneut an. Die gespeicherten Felder bleiben erhalten, wenn der Arbeitsbereich zu einer anderen Wahl wechselt, werden aber nur unter **Eigene Apps verwenden** genutzt. Geheimnisse sind nur schreibbar: Die Karte zeigt nur, ob eines gespeichert ist. Andere Arbeitsbereiche auf dem Server sind nicht betroffen.
 
 ## Fehlersuche
 
@@ -130,10 +122,10 @@ betroffen.
 
 Der Server hat weder eine eigene Linear-Anwendung noch Connect. Der
 Server-Eigentümer wählt eins davon unter **Einstellungen → Server → Single
-sign-on**. Verwendet der Arbeitsbereich seine eigene Anwendung, sagt die Zeile
+sign-on**. Verwendet der Arbeitsbereich seine eigenen Apps, sagt die Zeile
 stattdessen, dass ihre Einrichtung nicht abgeschlossen ist: Ein Administrator des
-Arbeitsbereichs trägt die Client-ID unter **Einstellungen → Arbeitsbereich →
-Allgemein → Anbieter-Apps** ein.
+Arbeitsbereichs trägt die Client-ID auf der Karte **Linear-App** unter **Einstellungen → Arbeitsbereich →
+Integrationen** ein.
 
 ### Die Ticket-Synchronisierung scheitert mit einem Authentifizierungsfehler
 

@@ -92,7 +92,7 @@ class EnvironmentActionButton extends ConsumerWidget {
       size: CcButtonSize.sm,
       tooltip: label,
       loading: running,
-      onPressed: enabled && !running
+      onPressed: enabled && !running && environmentOperable(ref, spaceKey)
           ? () => unawaited(
               runEnvironmentAction(context, ref, spaceKey, actionKey, action),
             )

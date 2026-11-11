@@ -32,7 +32,7 @@ class RpcCacheRepository implements CacheRepository {
       });
       return result['payload'] as String?;
     } on RemoteRpcException catch (e) {
-      // A server that doesn't expose the op (e.g. an older headless host) → no
+      // A server that doesn't expose the op (e.g. a headless host) → no
       // persisted layout, rather than surfacing an error to the editor.
       if (e.code == RpcErrorCodes.opUnknown) {
         return null;

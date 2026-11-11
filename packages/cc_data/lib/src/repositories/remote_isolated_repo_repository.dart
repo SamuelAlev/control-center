@@ -78,14 +78,6 @@ class RemoteIsolatedRepoRepository {
     return _repos(data);
   }
 
-  /// Inserts or updates [repo] (the host owns persistence). The workspace comes
-  /// from [IsolatedRepoDto.workspaceId] — the row's own workspace is the only
-  /// authoritative answer, so it is never threaded separately.
-  Future<void> upsert(IsolatedRepoDto repo) => _client.call(
-    'isolated_repo.upsert',
-    {'workspace_id': repo.workspaceId, 'repo': repo.toJson()},
-  );
-
   /// Deletes the worktree row [id] from [workspaceId].
   Future<void> deleteById(String workspaceId, String id) => _client.call(
     'isolated_repo.deleteById',

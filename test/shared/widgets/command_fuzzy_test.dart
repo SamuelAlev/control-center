@@ -1,3 +1,4 @@
+import 'package:cc_ui/fuzzy.dart';
 import 'package:control_center/shared/widgets/command_fuzzy.dart';
 import 'package:flutter_test/flutter_test.dart';
 

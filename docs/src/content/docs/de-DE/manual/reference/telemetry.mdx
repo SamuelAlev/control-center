@@ -2,7 +2,7 @@
 title: Nutzungsanalysen
 description: Was Control Center bei eingeschalteten Nutzungsanalysen erfasst, wer darüber entscheidet und was nie gesendet wird.
 slug: de-DE/handbuch/referenz/nutzungsanalysen
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center kann **pseudonyme Nutzungsereignisse** an eine [Umami](https://umami.is)-Instanz senden. Nutzungsanalysen sind **ausgeschaltet, bis der Serverbetreiber sie einschaltet**. Die Einstellung gehört zum Server und gilt für jeden damit verbundenen Client: die Desktop-App, die Web-App, das Smartphone und den Server selbst.
@@ -13,7 +13,7 @@ Nutzungsanalysen sind unabhängig von **Absturzberichte teilen**, einer Einstell
 
 | Schalter | Wo | Wirkung |
 | --- | --- | --- |
-| **Nutzungsanalysen teilen** | Onboarding (Sandbox-Schritt) und **Einstellungen → Datenschutz**. Nur der Serverbetreiber kann ihn ändern; andere Mitglieder sehen den aktuellen Wert schreibgeschützt | Serverweit. Gespeichert als `telemetry.usage_analytics` in den Servereinstellungen. Aus, solange er nicht auf `true` gesetzt ist |
+| **Nutzungsanalysen teilen** | Onboarding (Sandbox-Schritt) und **Einstellungen → Server → Diagnose und Datenschutz**. Nur der Serverbetreiber kann ihn ändern; andere Mitglieder sehen den aktuellen Wert schreibgeschützt | Serverweit. Gespeichert als `telemetry.usage_analytics` in den Servereinstellungen. Aus, solange er nicht auf `true` gesetzt ist |
 | Build-Typ | Automatisch | Debug- und Profile-Builds senden nicht. Sie schreiben jedes Ereignis stattdessen ins Debug-Log |
 | `CC_ANALYTICS_DEBUG=1` | Umgebung von `cc_server` oder dessen `.env` | Lässt Debug- und Profile-Builds des Servers und aller damit verbundenen Clients zum Testen tatsächlich senden. Der Schalter oben muss trotzdem an sein |
 | `DO_NOT_TRACK=1` | Umgebung von `cc_server` | Stoppt die eigene Übermittlung des Servers, egal was der Schalter sagt. Clients richten sich weiterhin nach dem Schalter |

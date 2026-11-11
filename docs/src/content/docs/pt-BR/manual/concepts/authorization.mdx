@@ -2,7 +2,7 @@
 title: Autorização — quem pode fazer o quê, e como você comprova isso
 description: O catálogo de permissões por trás dos papéis do Control Center, o registro de auditoria à prova de adulteração em que toda decisão de autorização cai, e os controles de toda a instalação que um operador pode fixar.
 slug: pt-BR/manual/conceitos/autorizacao
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 O Control Center responde a duas perguntas de autorização, e elas são
@@ -64,19 +64,107 @@ existente continua sendo um limite superior válido. Os membros os detêm como
 convidado em vez de adivinhar.
 
 Abaixo dos papéis ficam as **concessões por repositório** (`none` / `read` /
-`review` / `write`): a participação em um espaço de trabalho nunca dá, em
+`review` / `write`, veja [Alterar código exige a concessão de escrita](#alterar-código-exige-a-concessão-de-escrita)): a participação em um espaço de trabalho nunca dá, em
 silêncio, mais privilégios do que o host de código. Toda superfície que expõe
 código as verifica — inclusive as que chegam ao código por vias laterais, como
 um terminal ou uma sessão de editor aberta sobre o worktree de um espaço.
 
-## Autoridade do servidor
+## O código segue a forja
 
-Algumas operações não têm nada a ver com um espaço de trabalho: configurações
-de toda a instalação, configuração de SSO, credenciais de provedores,
-gerenciamento de modelos, backups da instalação inteira. Elas declaram
-**autoridade de servidor** e são recusadas para todo mundo, exceto para o
-operador da instalação (o proprietário de servidor registrado). Existe, de
-propósito, uma única identidade de operador e uma única definição dela.
+Uma concessão sozinha não abre o código de um repositório. Para ver os arquivos,
+diffs ou resultados de busca dele, ou para abrir um terminal nele, o membro
+precisa da concessão do Control Center **e** o próprio login dele na forja
+precisa poder ler o repositório. Admins do espaço de trabalho não estão isentos;
+o proprietário do servidor está, porque o checkout fica na máquina dele. Um
+repositório sem remoto de forja precisa apenas da concessão.
+
+- Quando um admin concede um repositório a alguém cuja conta na forja não
+  consegue lê-lo, a concessão é salva e o admin vê um aviso.
+- Quando a forja não pode ser consultada para verificar, a resposta é não, nunca
+  um palpite: a pessoa vê "Não foi possível confirmar seu acesso em GitHub. Tente
+  novamente." (com o nome da forja dela) e tenta de novo depois.
+- Pull requests e tudo o que é feito a partir deles seguem a mesma regra.
+
+### Alterar código exige a concessão de escrita
+
+Uma concessão de repositório tem três níveis, e cada um inclui o anterior:
+
+- **read**: ver os arquivos, diffs e resultados de busca do repositório, desde que o seu próprio login na forja também consiga lê-lo.
+- **review**: leitura, mais aprovar, pedir alterações e as demais ações de revisão nas pull requests dele.
+- **write**: revisão, mais alterar o código e executar agentes que gravam no repositório. Alterar o código cobre salvar ou reverter arquivos no editor, sincronizar uma worktree com o head da pull request, fazer commit e push, publicar uma branch e as ações de pilha que criam, fazem checkout ou publicam uma parte.
+
+Todo push feito para uma pessoa, por ela mesma ou por uma execução de agente que ela pediu, verifica a concessão de escrita dela naquele repositório no momento do push, no GitHub, no GitLab e no Bitbucket igualmente. Publicar uma pilha verifica todos os repositórios da pilha antes de fazer push de qualquer um deles.
+
+Uma recusa nomeia a concessão que falta. Sem acesso de leitura, o app diz "Você não tem acesso de leitura a este repositório. Um admin do espaço de trabalho pode concedê-lo." Com leitura, mas sem escrita, ele diz "Você pode ler este repositório, mas não alterá-lo. Um admin do espaço de trabalho pode conceder acesso de escrita."
+
+### Espaços seguem seus repositórios
+
+O que os agentes escreveram sobre código segue o código. O conteúdo de um espaço
+(suas mensagens, transcrições e saída de ferramentas, resultados de busca, logs
+de execução, todos, atividade e notificações) carrega o código dos repositórios
+em que ele trabalha; por isso um espaço só abre para um membro que tenha
+concessão de leitura em, e cujo próprio login na forja consiga ler, todos os
+repositórios que o espaço usa. Esses são os repositórios selecionados para ele
+ou, quando nenhuma seleção foi registrada, todos os repositórios do espaço de
+trabalho. Um espaço criado sem repositórios fica aberto a todos os membros.
+
+Um espaço que alguém não consegue abrir não aparece para essa pessoa em lugar
+nenhum, inclusive na busca, nos logs de execução, nos todos, na atividade e nas
+notificações. Admins do espaço de trabalho têm todas as concessões, mas não
+estão isentos da parte da forja; o proprietário do servidor está.
+
+Para uma conversa que todos devem poder ler, crie o espaço sem repositórios ou
+apenas com repositórios que todos possam ler.
+
+## O proprietário do servidor
+
+A pessoa que configurou o servidor é o seu **proprietário**. O servidor a
+registra uma única vez, na primeira inicialização, e nada enviado pela rede
+altera isso. Um admin do espaço de trabalho, ou um proprietário de espaço de
+trabalho, não é o proprietário do servidor: qualquer pessoa pode receber um
+espaço de trabalho, mas a máquina do servidor tem um único proprietário.
+
+**Nada roda na máquina do servidor fora de uma sandbox, a menos que o proprietário
+do servidor tenha iniciado isso ou aprovado esse tipo de execução no host.**
+Concretamente, só o proprietário do servidor pode:
+
+- Criar um espaço de trabalho. Todos os demais veem uma tela pedindo que o
+  proprietário crie um ou que um admin do espaço de trabalho os convide.
+- Abrir o shell do host no terminal hospedado no servidor. Todos os demais
+  recebem um terminal em sandbox, com os limites de um agente, nos diretórios do
+  próprio espaço de trabalho.
+- Abrir o editor de código incorporado. Ele roda como o usuário do próprio
+  servidor, com o terminal, as tarefas e as extensões dele.
+- Abrir uma pull request ou o worktree de uma conversa em um editor nativo. O
+  editor inicia na tela do servidor, como o usuário do servidor.
+- Salvar ou aprovar uma definição de [ambiente](/pt-BR/manual/guias/ambientes/)
+  que execute qualquer coisa no host: posicionamento no host, uma verificação
+  que roda um comando, ou uma tarefa de provisionamento ou de arquivamento.
+- Executar agentes em um servidor cuja máquina não tem sandbox. As execuções de
+  todos os demais são recusadas ali, a menos que o proprietário tenha iniciado o
+  servidor com `--sandbox off`, o que executa os agentes de todos os membros sem
+  confinamento (veja
+  [Agentes em um host sem sandbox](/pt-BR/manual/conceitos/sandbox-e-seguranca/#agentes-em-um-host-sem-sandbox)).
+- Vincular um checkout de repositório que fica fora do armazenamento próprio do
+  espaço de trabalho, confirmar um vinculado antes dessa regra e navegar pelas
+  pastas do servidor ao adicionar um repositório (veja
+  [Adicionar repositórios](/pt-BR/manual/guias/adicionar-repos/)).
+- Ver e encerrar todo processo de agente em execução no servidor. Todos os demais
+  veem e encerram somente execuções ao vivo de agentes nos espaços de trabalho de
+  que participam.
+- Fazer os agentes usarem os servidores MCP configurados nas ferramentas do
+  próprio usuário do servidor (Claude, Codex, Cursor e os demais). Só execuções
+  do harness integrado pelas quais o proprietário é responsável os recebem (veja
+  [Servidores MCP pessoais continuam sendo do proprietário](/pt-BR/manual/guias/servidor-mcp/#servidores-mcp-pessoais-continuam-sendo-do-proprietário)).
+- Confirmar o endereço de e-mail de uma pessoa, para que o single sign-on consiga
+  correspondê-lo (veja
+  [Conectar um provedor OpenID Connect](/pt-BR/manual/guias/sso-oidc/#como-os-logins-correspondem-a-contas-existentes)).
+- Alterar configurações de toda a instalação: SSO, credenciais de provedores, o
+  endpoint MCP e o token dele, gerenciamento de modelos, o Connect e backups da
+  instalação inteira. Essas operações declaram **autoridade de servidor** e são
+  recusadas para todos os demais.
+
+Existe, de propósito, uma única identidade de operador e uma única definição dela.
 
 ## O registro de auditoria
 

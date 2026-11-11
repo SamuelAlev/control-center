@@ -2,7 +2,7 @@
 title: Sao lưu, xuất và nhập
 description: Bố cục ảnh chụp, manifest, mọi thao tác sao lưu và tuyến truyền tải, cùng chính xác những tệp mà một bản sao lưu có và không chứa.
 slug: vi-VN/so-tay/tham-chieu/sao-luu
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Mọi thứ Control Center có thể sao chép, chuyển giao hoặc nhận, cùng hình dạng chính
@@ -109,14 +109,19 @@ hơn cơ sở dữ liệu của nó, và không phần nào khác đi kèm:
 | `models/`                           | Không              | Không                                  |
 | `meetings/<meetingId>/`             | Không              | Không                                  |
 | `rigs/`                             | Không              | Không                                  |
+| `_agent_hooks/`                     | Không              | Không                                  |
 
 Một phần trong đó có thể bỏ đi — `spaces/` chứa các worktree copy-on-write được cấp phát
 lại từ các kho lưu trữ, `pr_clones/` là một bộ nhớ đệm, `models/` tải lại được, `rigs/`
 là trạng thái máy. Một phần thì không: `blobs/` chứa ảnh được dán mà các hàng trong cơ
 sở dữ liệu trỏ tới, `skills/` và `agents/` chứa các tệp mà agent chạy cùng, và
 `secrets.json` chứa mọi khóa ghép nối, thông tin xác thực nhà cung cấp và cài đặt SSO
-trên bản cài đặt. Xem [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/#copy-backups-off-the-machine)
+trên bản cài đặt. Xem [Sao lưu và khôi phục](/vi-VN/so-tay/huong-dan-thuc-hanh/sao-luu-va-khoi-phuc/#sao-chép-bản-sao-lưu-ra-khỏi-máy)
 để bao quát phần còn lại.
+:::caution[Cơ sở dữ liệu không gian làm việc chứa bí mật webhook]
+`workspace.db` là toàn bộ không gian làm việc: các cuộc hội thoại, nhật ký lượt chạy, chỉ mục mã, liên kết kho mã, định nghĩa môi trường và thành viên. Nó cũng giữ ở dạng đọc được các token webhook của pipeline và bí mật webhook đồng bộ ticket của không gian làm việc, nên hãy coi một bản xuất hay bản sao lưu đã tải về là một bí mật. Nó không giữ đăng nhập nhà cung cấp, khóa thiết bị hay bí mật người dùng nào; những thứ đó nằm trong `global.db` và `secrets.json`.
+:::
+
 :::note[Token chat chủ đích ở lại phía sau]
 `chat_credentials/` nằm cạnh cơ sở dữ liệu thay vì bên trong nó là lý do một không gian
 làm việc được giao cho người khác không mang theo token bot đang hoạt động. Xem
@@ -140,7 +145,7 @@ nối cổng sao lưu, chẳng hạn máy chủ demo.
 | `workspace.listBackups` | đọc | Không gian làm việc | `admin` | không có | `{backups: [...]}` |
 | `workspace.deleteBackup` | thay đổi | Không gian làm việc | `owner` | `name` | `{ok}` |
 | `workspace.export`   | đọc    | Không gian làm việc | `admin`     | không có      | `{ok, path}`                  |
-| `workspace.import`   | thay đổi | Không gian làm việc | `owner`   | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | thay đổi | Không gian làm việc | `owner`, và chủ sở hữu bản cài đặt | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | thay đổi | Bản cài đặt* | `owner`      | `id`          | hàng sổ đăng ký được đánh dấu đã xóa |
 
 * `workspace.delete` không thuộc phạm vi nào vì hàng mà nó đánh dấu nằm trong sổ đăng ký
@@ -165,7 +170,11 @@ bản cài đặt (`ServerAuthority.serverOwner`), cùng cổng như `GET /backu
 không gian làm việc thì chưa đủ để quản lý những cái khác. Thao tác xóa chỉ chấp nhận tên
 thư mục dấu thời gian có trong danh sách, không phải một đường dẫn máy chủ tùy ý, và xóa
 toàn bộ ảnh chụp (kể cả ảnh chụp chưa hoàn tất). Xuất/nhập theo từng không gian làm việc
-vẫn ở mức quản trị viên/chủ sở hữu không gian làm việc, không phải chủ sở hữu bản cài đặt.
+vẫn ở mức quản trị viên không gian làm việc.
+:::
+
+:::note[Việc khôi phục thuộc về chủ sở hữu bản cài đặt]
+`workspace.import` và `POST /backup/restore` khiến máy chủ tiếp nhận một tệp cơ sở dữ liệu mà các hàng của nó được xem là của chính máy chủ: liên kết kho mã và người đã tạo ra chúng, định nghĩa môi trường chạy trên máy chủ, đường dẫn worktree và nhật ký. Vì vậy cả hai đều cần chủ sở hữu bản cài đặt (`ServerAuthority.serverOwner`), người cũng phải là chủ sở hữu của không gian làm việc đó. Ai khác, và mọi bên gọi trên một máy không có chủ sở hữu được ghi nhận, đều bị từ chối với `server_owner_required`. Không trigger hay view nào mà tệp mang theo được tiếp nhận.
 :::
 
 ### Phản hồi của `server.listBackups`
@@ -239,7 +248,7 @@ thiết bị trên chuỗi đích của nó bằng PSK ghép nối cùng vai tr�
 | `/backup/workspace`     | GET         | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **quản trị viên** không gian làm việc |
 | `/backup/snapshot`      | GET         | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **chủ sở hữu** bản cài đặt |
 | `/backup/stored`        | GET         | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **quản trị viên** không gian làm việc; **chủ sở hữu** bản cài đặt khi không gian làm việc đã bị xóa |
-| `/backup/restore`       | POST        | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **chủ sở hữu** không gian làm việc |
+| `/backup/restore`       | POST        | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **chủ sở hữu** bản cài đặt, cũng là **chủ sở hữu** không gian làm việc (`403` với `server_owner_required` nếu không) |
 
 `w` là id không gian làm việc, `n` là tên thư mục ảnh chụp hoặc bản sao lưu theo lịch, `d`
 là id thiết bị đang gọi, `s` là chữ ký. Trên `/backup/snapshot`, `n` được phân giải dựa

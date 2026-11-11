@@ -1,10 +1,10 @@
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/features/chat_bridges/presentation/widgets/sections/chat_ticket_drafts_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../helpers/settings_contribution.dart';
 import 'chat_bridge_fixtures.dart';
 
 Map<String, dynamic> _draft(String id, String title, {String? description}) => {
@@ -60,7 +60,11 @@ void main() {
 
   testWidgets('renders nothing until a draft arrives', (tester) async {
     final server = _server();
-    await pumpChat(tester, server, const ChatTicketDraftsSection());
+    await pumpChat(
+      tester,
+      server,
+      const ContributedSection('chat_bridges.ticket-drafts'),
+    );
     expect(find.text(l10n.chatTicketDraftsDescription), findsNothing);
 
     server.host.emit('chat.watchTicketDrafts', _drafts);
@@ -76,7 +80,11 @@ void main() {
     tester,
   ) async {
     final server = _server();
-    await pumpChat(tester, server, const ChatTicketDraftsSection());
+    await pumpChat(
+      tester,
+      server,
+      const ContributedSection('chat_bridges.ticket-drafts'),
+    );
     server.host.emit('chat.watchTicketDrafts', _drafts);
     await settle(tester);
 
@@ -117,7 +125,11 @@ void main() {
 
   testWidgets('discard drops the draft without creating it', (tester) async {
     final server = _server();
-    await pumpChat(tester, server, const ChatTicketDraftsSection());
+    await pumpChat(
+      tester,
+      server,
+      const ContributedSection('chat_bridges.ticket-drafts'),
+    );
     server.host.emit('chat.watchTicketDrafts', _drafts);
     await settle(tester);
 
@@ -133,7 +145,11 @@ void main() {
 
   testWidgets('an empty title cannot become a ticket', (tester) async {
     final server = _server();
-    await pumpChat(tester, server, const ChatTicketDraftsSection());
+    await pumpChat(
+      tester,
+      server,
+      const ContributedSection('chat_bridges.ticket-drafts'),
+    );
     server.host.emit('chat.watchTicketDrafts', _drafts);
     await settle(tester);
 
@@ -149,7 +165,7 @@ void main() {
     await pumpChat(
       tester,
       server,
-      const ChatTicketDraftsSection(),
+      const ContributedSection('chat_bridges.ticket-drafts'),
       role: WorkspaceRole.viewer,
     );
     server.host.emit('chat.watchTicketDrafts', _drafts);

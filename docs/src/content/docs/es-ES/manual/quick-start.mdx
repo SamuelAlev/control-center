@@ -2,7 +2,7 @@
 title: Inicio rápido
 description: Instala Control Center, configura un agente y míralo trabajar en tu repositorio.
 slug: es-ES/manual/inicio-rapido
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Esta es la ruta completa más corta desde cero hasta tener un agente trabajando sobre tu propio código. Síguela en orden; cada paso depende del anterior.
@@ -20,7 +20,7 @@ La misma aplicación funciona en el navegador en [app.usectrl.dev](https://app.u
 mismas funciones. Sin embargo, una pestaña del navegador no puede alojar el servidor, así que
 tendrás que aportar uno: ejecuta `cc_server` en local y conéctate a `ws://localhost:9030`, o
 apúntalo a un servidor de otra máquina. Este inicio rápido sigue la ruta de escritorio porque no
-necesita configurar ningún servidor; consulta [Instalar](/es-ES/manual/instalar/#use-it-in-your-browser) para la ruta del navegador.
+necesita configurar ningún servidor; consulta [Instalar](/es-ES/manual/instalar/#úsalo-en-tu-navegador) para la ruta del navegador.
 :::
 
 ## Paso 2: Completar la incorporación inicial
@@ -29,7 +29,7 @@ La incorporación inicial ejecuta sus pasos en orden: no se puede saltar ninguno
 
 1. **Inicio de sesión** (solo el propietario del servidor): elige cómo inicia este servidor la sesión de las personas en GitHub, Google Calendar y Linear: **Usar las apps de Control Center**, **Usar mis propias apps** o **Usar un servidor Connect propio**. Con tus propias apps, **Crear mi app de GitHub** configura GitHub en un solo paso. Puedes cambiarlo más adelante en **Ajustes → Servidor → Inicio de sesión único**.
 2. **Conectar**: inicia sesión en GitHub, o pega un token de GitLab o Bitbucket. La credencial se guarda en el servidor, asociada a tu cuenta.
-3. **Espacio de trabajo**: pon nombre a tu primer espacio de trabajo y, si quieres, elige un logotipo. Al crearlo se siembran cinco agentes —un CEO más `qa`, `architect`, `engineer` y `librarian`— y las plantillas de pipeline integradas.
+3. **Espacio de trabajo** (solo el propietario del servidor): pon nombre a tu primer espacio de trabajo y, si quieres, elige un logotipo. Los demás esperan en **Todavía no estás en un espacio de trabajo** hasta que el propietario cree uno para ellos o un administrador del espacio de trabajo los invite. Al crearlo se siembran seis agentes —un CEO más `qa`, `architect`, `engineer`, `librarian` y `content-synthesizer`— y las plantillas de pipeline integradas.
 4. **Entorno aislado**: registra una preferencia de aislamiento. Cualquiera de las dos opciones te permite continuar.
 5. **Adaptador**: elige el adaptador y el modelo que los agentes deben usar de forma predeterminada. Selecciona **Control Center (built-in)** y luego usa el selector de proveedores que aparece para iniciar sesión en un proveedor de modelos: la lista de modelos permanece vacía hasta que haya uno conectado. Completar este paso también fija el adaptador y el modelo en el agente CEO del espacio de trabajo.
 6. **Voz (opcional)**: instala un modelo de voz en el dispositivo para el dictado, u omítelo.
@@ -37,7 +37,7 @@ La incorporación inicial ejecuta sus pasos en orden: no se puede saltar ninguno
 Después, Control Center abre la bandeja de entrada de tu espacio de trabajo.
 
 :::note[Qué limita una ejecución de agente]
-Los comandos de los agentes se envuelven en el sandbox nativo del sistema operativo del host cuando hay uno disponible —Seatbelt en macOS, bubblewrap en Linux—. Windows no tiene backend, así que allí las ejecuciones solo quedan limitadas por las demás capas: el worktree propio de la conversación (`git worktree` en Windows; copy-on-write donde se distribuye `rift`), las credenciales negociadas en cada lanzamiento y revocadas al desmontar, y las barandillas de acción. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/).
+Los comandos de los agentes se envuelven en el sandbox nativo del sistema operativo del host cuando hay uno disponible —Seatbelt en macOS, bubblewrap en Linux—. Windows no tiene backend. En un host sin uno, solo arrancan las ejecuciones del propietario del servidor, que quedan limitadas solo por las demás capas: el worktree propio de la conversación (`git worktree` en Windows; copy-on-write donde se distribuye `rift`), las credenciales negociadas en cada lanzamiento y revocadas al desmontar, y las barandillas de acción. Las ejecuciones de los demás se rechazan hasta que el propietario instale el sandbox o desactive el sandboxing para todos. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/).
 :::
 
 ## Paso 3: Añadir un repositorio
@@ -61,7 +61,7 @@ En la pestaña **Ajustes**, define:
 
 Pulsa **Guardar cambios**.
 
-Este paso no es opcional en la práctica. Solo el agente CEO hereda el adaptador elegido durante la incorporación inicial; los cuatro especialistas se crean sin ninguno. Recurren a **Control Center (built-in)** con el modelo predeterminado de Anthropic, así que solo se ejecutan si has conectado una cuenta de Anthropic, y con un modelo que no elegiste si lo has hecho.
+Este paso no es opcional en la práctica. El paso de adaptador de la incorporación inicial asigna su adaptador y su modelo a cada agente que existía en ese momento; un espacio de trabajo creado después siembra los seis sin definir. Un agente sin uno recurre a **Control Center (built-in)** con el modelo predeterminado de Anthropic, así que solo se ejecutan si has conectado una cuenta de Anthropic, y con un modelo que no elegiste si lo has hecho.
 
 ## Paso 5: Enviar una tarea al agente
 

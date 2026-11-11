@@ -133,9 +133,8 @@ class _PipelineTemplateEditorScreenState
       _draft = next;
       _saved = next;
     });
-    // Rows that drifted from the saved graph (a trigger added by an older
-    // build that waited for Save) are repaired now, since the rows already
-    // decide what runs.
+    // Trigger rows that drifted from the saved graph are repaired now, since
+    // the rows already decide what runs.
     await _persistTriggerNodes(def, next, rows);
   }
 

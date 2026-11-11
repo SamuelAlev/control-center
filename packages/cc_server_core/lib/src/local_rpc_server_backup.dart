@@ -32,7 +32,8 @@ typedef BackupStoredFileReader =
 /// This is `workspace.import` reached from the other direction: the RPC op
 /// names a path that already exists on the SERVER, which is unreachable for
 /// anyone whose server is not their own machine. Same validation, same
-/// replacement, different way of getting the bytes there.
+/// replacement, same server-owner gate, different way of getting the bytes
+/// there.
 typedef BackupRestoreReader =
     Future<void> Function({
       required String workspaceId,
@@ -129,8 +130,10 @@ extension _BackupMethods on LocalRpcServer {
     }
     final ownerCheck = isServerOwner;
     final userId = device?.userId;
-    if (ownerCheck != null &&
-        (userId == null || userId.isEmpty || !await ownerCheck(userId))) {
+    if (ownerCheck == null ||
+        userId == null ||
+        userId.isEmpty ||
+        !await ownerCheck(userId)) {
       await _closeProxy(res, HttpStatus.forbidden);
       return;
     }
@@ -262,6 +265,28 @@ extension _BackupMethods on LocalRpcServer {
           sig,
         )) {
       await _closeProxy(res, HttpStatus.forbidden);
+      return;
+    }
+    // Every row of an adopted file counts as server-written (repo links and
+    // who made them, host-running definitions, worktree and log paths), so
+    // restore is the server owner's, the same as `workspace.import`. A host
+    // that knows no owner refuses. The owner must still hold the workspace.
+    final ownerCheck = isServerOwner;
+    final userId = device?.userId;
+    if (ownerCheck == null ||
+        userId == null ||
+        userId.isEmpty ||
+        !await ownerCheck(userId)) {
+      res
+        ..statusCode = HttpStatus.forbidden
+        ..headers.contentType = ContentType.json
+        ..write(
+          jsonEncode({
+            'error': 'Only the server owner can restore a workspace',
+            'kind': serverOwnerRequiredKind,
+          }),
+        );
+      await res.close();
       return;
     }
     if (await _lacksRoleForUser(

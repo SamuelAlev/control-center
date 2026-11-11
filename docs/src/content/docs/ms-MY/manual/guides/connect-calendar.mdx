@@ -2,7 +2,7 @@
 title: Sambungkan Google Calendar
 description: Sambungkan Google Calendar ke ruang kerja, urus berbilang akaun dan sambung semula apabila log masuk luput.
 slug: ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Panduan ini menunjukkan cara menyambungkan Google Calendar ke ruang kerja. Sifatnya bagi setiap
@@ -18,7 +18,7 @@ ruang kerja dan setiap ahli: ia menyegerakkan acara anda untuk ruang kerja itu k
 ## Sambungkan akaun
 
 1. Buka **Kalendar** dalam bar sisi.
-2. Klik **Tambah akaun kalendar** dalam bar sisi kalendar. (Bahagian yang sama juga terletak di **Tetapan → Ruang kerja → Profil & identiti**, di bawah **Google Calendar**.)
+2. Klik **Tambah akaun kalendar** dalam bar sisi kalendar. (Bahagian yang sama juga terletak di **Tetapan → Anda → Profil**, di bawah **Google Calendar**.)
 3. Klik **Sambung Google Calendar**. Pelayar anda membuka halaman kebenaran Google.
 4. Pilih akaun dan luluskan akses kepada acara kalendar dan senarai kalendar anda.
 
@@ -46,8 +46,6 @@ Aliran sambungan meminta `calendar.events` dan `calendar.calendarlist.readonly` 
 - **Padam acara:** buka dan klik ikon tong sampah. Pengesahan menunjukkan siapa yang terjejas: tetamu dimaklumkan bahawa acara yang anda anjurkan dibatalkan, manakala memadam jemputan hanya mengeluarkannya daripada kalendar anda. Memadam satu kejadian acara berulang tidak memadam baki siri itu
 
 Tetamu menerima jemputan, kemas kini atau pembatalan e-mel Google sendiri. Mengalih satu kejadian acara berulang tidak memadam baki siri itu. Anda hanya boleh menempah pada kalendar yang akaun anda dibenarkan tulis, dan hanya dengan akaun anda sendiri: kalendar yang disambungkan milik ahli lain tidak sekali-kali ditawarkan.
-
-## Bagaimana penyegerakan berfungsi
 
 ## Bagaimana penyegerakan berfungsi
 
@@ -84,14 +82,15 @@ direktori data dipulihkan ke mesin lain.
 
 ## Putuskan akaun
 
-Dari bar sisi kalendar (atau **Tetapan → Ruang kerja → Profil & identiti**), klik **Putuskan** pada akaun itu.
+Dari bar sisi kalendar (atau **Tetapan → Anda → Profil**), klik **Putuskan** pada akaun itu.
 Ini memadamkan acara yang disegerakkannya dan membersihkan kelayakan tersimpannya pada pelayan.
 
 ## Bawa klien Google anda sendiri
 
-Jalankan klien Google sendiri hanya apabila anda memilih **Gunakan aplikasi saya sendiri**. Klien pelayan hanya terpakai dalam kes itu: dengan Connect Control Center atau Connect tersuai, Connect menjalankan setiap lorong, termasuk Google, dan klien pelayan kekal disimpan tetapi tidak digunakan. Untuk menjadikan skrin persetujuan menamakan projek anda sambil pelayan menggunakan Connect, berikan ruang kerja itu klien sendiri ([di bawah](#berikan-satu-ruang-kerja-klien-google-sendiri)); ini terpakai dalam semua mod.
+Jalankan klien Google sendiri hanya apabila anda memilih **Gunakan aplikasi saya sendiri**. Klien pelayan hanya terpakai dalam kes itu: dengan Connect Control Center atau Connect tersuai, Connect menjalankan setiap lorong, termasuk Google, dan klien pelayan kekal disimpan tetapi tidak digunakan. Untuk menjadikan skrin persetujuan menamakan projek anda sambil pelayan menggunakan Connect, letakkan ruang kerja itu pada apl sendiri dan berikan klien sendirinya ([di bawah](#berikan-satu-ruang-kerja-klien-google-sendiri)); ini terpakai walau apa pun mod pelayan.
 
-1. Dalam [Google Cloud Console](https://console.cloud.google.com/apis/credentials), dayakan **Google Calendar API** dan konfigurasikan **skrin persetujuan OAuth**, sambil menambah skop `calendar.events`, `calendar.calendarlist.readonly`, `openid` dan `email`. Selagi apl belum disahkan, tambah diri anda sebagai **pengguna ujian**.2. Cipta **ID klien OAuth** dengan jenis aplikasi **Web application**.
+1. Dalam [Google Cloud Console](https://console.cloud.google.com/apis/credentials), dayakan **Google Calendar API** dan konfigurasikan **skrin persetujuan OAuth**, sambil menambah skop `calendar.events`, `calendar.calendarlist.readonly`, `openid` dan `email`. Selagi apl belum disahkan, tambah diri anda sebagai **pengguna ujian**
+2. Cipta **ID klien OAuth** dengan jenis aplikasi **Web application**.
 3. Tambah URI ubah hala yang dibenarkan `<server origin>/oauth/google/callback`. **Tetapan → Pelayan → Daftar masuk tunggal → Apl penyedia → Google** memaparkan URL tepat di bawah **Callback URLs**; salin persis seperti ia.
 4. Tampal **Client id** dan **Client secret** ke dalam blok Google yang sama, atau letakkannya dalam fail `.env` pelayan sebagai `GOOGLE_OAUTH_CLIENT_ID` dan `GOOGLE_OAUTH_CLIENT_SECRET`.
 
@@ -108,14 +107,13 @@ klien yang menerbitkannya.
 Ruang kerja boleh menyambungkan Google Calendar melalui klien sendiri dan bukannya klien pelayan. Hanya pentadbir atau pemilik ruang kerja boleh menyediakannya.
 
 1. Cipta klien Google **Web application** seperti langkah 1 dan 2 di atas
-2. Buka **Tetapan → Ruang kerja → Umum → Apl penyedia** dan buka **Google Calendar**
-3. Pilih **Gunakan apl ruang kerja ini**
-4. Tambahkan URI ubah hala yang dipaparkan oleh baris itu di bawah **URL panggil balik** ke klien, betul-betul seperti yang tertera
-5. Tampal **ID klien** dan **Rahsia klien**
+2. Buka **Tetapan → Ruang kerja → Integrasi**. Pada kad **Control Center Connect**, pilih **Gunakan aplikasi saya sendiri** dan klik **Terapkan**
+3. Di bawah Kalendar, kad **Apl Google Calendar** muncul. Tambahkan URI ubah hala yang dipaparkannya di bawah **URL panggil balik** ke klien, betul-betul seperti yang tertera
+4. Tampal **ID klien** dan **Rahsia klien**
 
-Akaun kalendar yang disambungkan dalam ruang kerja ini melalui klien itu, tanpa mengira cara pelayan mendaftar masuk orang. Ia tidak sekali-kali jatuh kembali kepada klien pelayan atau Connect: sehingga kedua-dua medan diisi, Google Calendar dimatikan dalam ruang kerja ini dan baris itu menyatakan apa yang tiada. Rahsia tidak sekali-kali meninggalkan pelayan.
+Akaun kalendar yang disambungkan dalam ruang kerja ini melalui klien itu, tanpa mengira cara pelayan mendaftar masuk orang. Ia tidak sekali-kali jatuh kembali kepada klien pelayan atau Connect: sehingga kedua-dua medan diisi, Google Calendar dimatikan dalam ruang kerja ini dan kad itu menyatakan apa yang tiada. Rahsia tidak sekali-kali meninggalkan pelayan.
 
-Menukar antara klien pelayan dan klien ruang kerja, atau menukar ID klien ruang kerja, menandakan setiap akaun Google dalam ruang kerja ini untuk disambung semula. **Gunakan apl pelayan ini** memadamkan medan ruang kerja yang disimpan. Ruang kerja lain pada pelayan tidak terjejas.
+**Gunakan aplikasi saya sendiri** meliputi setiap pembekal sekaligus: GitHub, Linear dan carian GIF juga hanya berjalan pada apl ruang kerja itu. Menukar apl log masuk ruang kerja, atau menukar ID klien ruang kerja, menandakan setiap akaun Google dalam ruang kerja ini untuk disambung semula. Medan yang disimpan kekal apabila ruang kerja kembali kepada pilihan lain, tetapi hanya digunakan di bawah **Gunakan aplikasi saya sendiri**. Ruang kerja lain pada pelayan tidak terjejas.
 
 ## Penyelesaian masalah
 
@@ -126,8 +124,8 @@ Menukar antara klien pelayan dan klien ruang kerja, atau menukar ID klien ruang 
 | `invalid_client` daripada Google | Id dan secret daripada dua klien yang berbeza, atau klien itu telah dipadamkan |
 | Kelulusan berjaya tetapi penyegerakan kosong | Akaun anda bukan **pengguna ujian** pada skrin persetujuan, atau salah satu skop yang diminta tidak diberikan |
 | Dialog memaklumkan kod tidak sepadan | Taip 8 aksara tepat seperti yang dipaparkan pelayar. Lima kod salah menamatkan log masuk; mulakan semula |
-| "Tidak dapat mengemas kini jawapan anda" pada RSVP, atau tempahan, peralihan dan pemadaman gagal | Akaun disambungkan dengan skop baca sahaja yang lama. Sambung semula; kalendar yang dikongsi secara baca sahaja juga menolak tulisan |
-| Semua orang perlu menyambung semula | Klien Google pelayan atau ruang kerja berubah, atau pilihan Connect atau kunci pelayan berubah. Lihat [Sambung semula akaun yang luput](#sambung-semula-akaun-yang-luput) |
+| "Tidak dapat mengemas kini jawapan anda" pada RSVP, atau tempahan, peralihan dan pemadaman gagal | Akaun itu tidak memberikan akses tulis kalendar. Sambung semula dan luluskan setiap skop yang diminta; kalendar yang dikongsi secara baca sahaja juga menolak tulisan |
+| Semua orang perlu menyambung semula | Klien Google pelayan atau ruang kerja berubah, atau pilihan Connect pelayan atau ruang kerja, atau kunci pelayan, berubah. Lihat [Sambung semula akaun yang luput](#sambung-semula-akaun-yang-luput) |
 
 ## Panduan berkaitan
 

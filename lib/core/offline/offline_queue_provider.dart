@@ -4,6 +4,7 @@ import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteChannelState, RemoteRpcException;
 import 'package:control_center/core/offline/offline_mutation_queue.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -44,11 +45,32 @@ bool isPermanentFlushFailure(Object error) {
   };
 }
 
+/// The sign-in lane a flush error waits on, when the server refused the
+/// mutation only because the person has no usable sign-in for it:
+/// [RpcErrorCodes.unauthorized] with `data: {kind: 'needs_sign_in', lane}`.
+/// Null for every other failure (including other `unauthorized` refusals,
+/// which stay permanent).
+String? signInLaneOfFlushFailure(Object error) {
+  if (error is! RemoteRpcException ||
+      error.code != RpcErrorCodes.unauthorized) {
+    return null;
+  }
+  final data = error.data;
+  if (data is! Map || data['kind'] != 'needs_sign_in') {
+    return null;
+  }
+  final lane = data['lane'];
+  return lane is String && lane.isNotEmpty ? lane : null;
+}
+
 /// The app's offline mutation queue (PRD 19 §11).
 final offlineMutationQueueProvider = Provider<OfflineMutationQueue>((ref) {
   return OfflineMutationQueue(
     store: _PrefsQueueStore(ref.watch(appPreferencesProvider)),
+    // Only this server's and this user's mutations restore or replay.
+    scope: ref.watch(sessionScopeProvider),
     isPermanentFailure: isPermanentFlushFailure,
+    signInLaneOf: signInLaneOfFlushFailure,
     onDeadLetter: (dropped) {
       // Never silent: a dropped mutation is the one thing this module promises
       // not to do quietly. The controller also surfaces it to the operator.
@@ -87,15 +109,33 @@ class OfflineQueueController extends Notifier<int> {
     // Drain on every (re)connect: a fresh `open` emission means the transport
     // is live again, so the backlog can flush deterministically.
     ref.listen(rpcConnectionStateProvider, (_, next) {
-      if (next.value == RemoteChannelState.open && queue.isNotEmpty) {
+      if (next.value == RemoteChannelState.open && queue.hasRunnable) {
         unawaited(drainNow());
       }
     });
     // Also flush anything already pending if we build while connected.
-    if (ref.read(rpcClientProvider).isOpen && queue.isNotEmpty) {
+    if (ref.read(rpcClientProvider).isOpen && queue.hasRunnable) {
       Future.microtask(drainNow);
     }
     return queue.length;
+  }
+
+  /// Mutations parked until the person signs in to their lane (the server
+  /// refused them with `needs_sign_in`), oldest first.
+  List<QueuedMutation> get awaitingSignIn =>
+      ref.read(offlineMutationQueueProvider).awaitingSignIn;
+
+  /// [lane]'s sign-in just succeeded (a browser lane, or a token saved for a
+  /// token-only forge): the mutations parked for it are released and, when
+  /// connected, flushed now.
+  Future<void> resumeAfterSignIn(String lane) async {
+    final queue = ref.read(offlineMutationQueueProvider);
+    if (queue.resumeAfterSignIn(lane) == 0) {
+      return;
+    }
+    if (ref.read(rpcClientProvider).isOpen) {
+      await drainNow();
+    }
   }
 
   /// Enqueues a mutation to apply on reconnect. Throws
@@ -103,12 +143,14 @@ class OfflineQueueController extends Notifier<int> {
   /// a silent drop). Completes once the entry has actually been persisted, so
   /// "queued" means durable rather than scheduled-to-be-written.
   Future<QueuedMutation> enqueue({
+    required String workspaceId,
     required String idempotencyKey,
     required String op,
     required Map<String, dynamic> args,
   }) async {
     final queue = ref.read(offlineMutationQueueProvider);
     final mutation = queue.enqueue(
+      workspaceId: workspaceId,
       idempotencyKey: idempotencyKey,
       op: op,
       args: args,
@@ -116,6 +158,15 @@ class OfflineQueueController extends Notifier<int> {
     state = queue.length;
     await queue.persisted;
     return mutation;
+  }
+
+  /// The session is ending (sign-out, or a switch to another server): every
+  /// pending mutation is dropped unsent, and the drop has reached the store
+  /// before this completes, so none can replay in the next session.
+  Future<void> discardForSessionEnd() async {
+    final queue = ref.read(offlineMutationQueueProvider)..clear();
+    state = 0;
+    await queue.persisted;
   }
 
   /// Mutations the queue gave up on (server rejection or exhausted retries),

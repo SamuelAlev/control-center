@@ -14,9 +14,12 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
 
-import 'package:cc_data/cc_data.dart' show RemoteTerminalRepository;
+import 'package:cc_data/cc_data.dart'
+    show RemoteTerminalRepository, TerminalBytes, TerminalDriveRight;
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClient, RemoteRpcException;
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/sandboxing/presentation/terminal_access.dart';
 import 'package:control_center/features/sandboxing/presentation/terminal_panel.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -80,7 +83,7 @@ class TerminalSessionController extends ChangeNotifier {
     terminal.onOutput = (data) {
       final repo = _repo;
       final id = _sessionId;
-      if (repo == null || id == null) {
+      if (repo == null || id == null || !_canDrive) {
         return;
       }
       // Forward keystrokes to the server PTY (base64-framed in the repository).
@@ -97,7 +100,7 @@ class TerminalSessionController extends ChangeNotifier {
       }
       final repo = _repo;
       final id = _sessionId;
-      if (repo != null && id != null) {
+      if (repo != null && id != null && _canDrive) {
         unawaited(repo.resize(id, rows, cols));
       }
     };
@@ -235,6 +238,7 @@ class TerminalSessionController extends ChangeNotifier {
 
   bool _booting = false;
   String? _error;
+  TerminalSpawnRefusal? _refusal;
 
   /// True when the connected server hosts no terminal ops — the view then
   /// renders the honest "runs on the server host" message instead of an error.
@@ -268,11 +272,44 @@ class TerminalSessionController extends ChangeNotifier {
   /// The last boot's error message, if any.
   String? get error => _error;
 
+  /// Set when the last boot was refused for a reason the view words itself
+  /// (the host shell is owner-only, a directory outside the workspace); its
+  /// [error] is then the server's own sentence, kept for logs.
+  TerminalSpawnRefusal? get refusal => _refusal;
+
   /// Whether the connected server hosts no terminal ops.
   bool get unavailable => _unavailable;
 
-  /// The `SandboxBackend` name this shell ACTUALLY runs under, or null when
-  /// the server did not say (a build predating the field).
+  /// The space's refusal when watching an environment's terminal was refused
+  /// at subscribe (no grant on a repository the space uses, the forge cannot
+  /// read one, a sign-in it needs); the view shows the space-access notice
+  /// in place of the terminal. Null otherwise.
+  Object? get accessRefusal => _accessRefusal;
+  Object? _accessRefusal;
+
+  /// Watches the terminal again after [accessRefusal], once the person has
+  /// signed in or been granted access.
+  void retryAccess() {
+    final repo = _repo;
+    final id = _sessionId;
+    if (_accessRefusal == null || repo == null || id == null) {
+      return;
+    }
+    _accessRefusal = null;
+    _notify();
+    _attach(repo, id);
+  }
+
+  /// Whether this person may drive the terminal: type into it, resize it,
+  /// restart or kill it. The server says so in the output subscription's
+  /// first frame; false is a read-only view of someone else's terminal (a
+  /// person's own is always true). Until it says, nothing is refused here:
+  /// the server refuses a write it does not allow either way.
+  bool get canDrive => _canDrive;
+  bool _canDrive = true;
+
+  /// The `SandboxBackend` name this shell ACTUALLY runs under, or null until
+  /// the shell has booted.
   ///
   /// Reported by the server rather than inferred from what was requested: a
   /// default backend can step down, and a terminal that claims to be an
@@ -325,6 +362,7 @@ class TerminalSessionController extends ChangeNotifier {
     }
     _booting = true;
     _error = null;
+    _refusal = null;
     _unavailable = false;
     _notify();
     try {
@@ -362,6 +400,10 @@ class TerminalSessionController extends ChangeNotifier {
           _unavailable = true;
         }
       } else if (!_disposed) {
+        _refusal = TerminalSpawnRefusal.of(
+          e,
+          requestedBackend: session.backend,
+        );
         _error = e.message;
       }
     } catch (e) {
@@ -395,7 +437,11 @@ class TerminalSessionController extends ChangeNotifier {
       final repo = _repo;
       final id = _sessionId;
       final input = _pendingInput;
-      if (_disposed || repo == null || id == null || input == null) {
+      if (_disposed ||
+          repo == null ||
+          id == null ||
+          input == null ||
+          !_canDrive) {
         return;
       }
       _pendingInput = null;
@@ -452,7 +498,7 @@ class TerminalSessionController extends ChangeNotifier {
       _resizePending = false;
       final repo = _repo;
       final id = _sessionId;
-      if (repo != null && id != null) {
+      if (repo != null && id != null && _canDrive) {
         unawaited(repo.resize(id, _rows, _cols));
       }
     }
@@ -510,8 +556,8 @@ class TerminalSessionController extends ChangeNotifier {
     final generation = _outputGeneration;
     _titleSub?.cancel();
     // Foreground-process titles ride a separate lane from the byte stream. A
-    // server that predates `terminal.titles` errors the stream — swallowed:
-    // the panel then simply keeps the OSC-only behaviour.
+    // failed title lane is not a failed shell (the byte stream reports that),
+    // so its error leaves the panel on the OSC-only titles.
     _titleSub = repo
         .titles(sessionId)
         .listen(_onProcessTitle, onError: (Object _) {});
@@ -520,11 +566,21 @@ class TerminalSessionController extends ChangeNotifier {
     var lostSession = false;
     _outputSub = repo
         .output(sessionId)
-        .map((bytes) {
-          if (!_disposed && generation == _outputGeneration) {
-            _attachRetries = 0;
+        .expand<List<int>>((frame) {
+          final current = !_disposed && generation == _outputGeneration;
+          switch (frame) {
+            case TerminalDriveRight(:final canDrive):
+              if (current && canDrive != _canDrive) {
+                _canDrive = canDrive;
+                _notify();
+              }
+              return const [];
+            case TerminalBytes(:final bytes):
+              if (current) {
+                _attachRetries = 0;
+              }
+              return [bytes];
           }
-          return bytes;
         })
         .transform(const Utf8Decoder(allowMalformed: true))
         .listen(
@@ -546,6 +602,14 @@ class TerminalSessionController extends ChangeNotifier {
             // delivered before the notice and before the fresh shell starts.
             if (e is RemoteRpcException && e.code == RpcErrorCodes.notFound) {
               lostSession = true;
+              return;
+            }
+            // The space's gate refused watching it: the view says why, by
+            // kind, instead of an error line and a terminal that then
+            // reads as exited.
+            if (isRepoAccessRefusal(e)) {
+              _accessRefusal = e;
+              _notify();
               return;
             }
             _queueOutput(() {
@@ -603,7 +667,7 @@ class TerminalSessionController extends ChangeNotifier {
                 unawaited(_respawn());
                 return;
               }
-              if (_sessionLost || _reattaching) {
+              if (_sessionLost || _reattaching || _accessRefusal != null) {
                 // A scheduled re-attach means this stream died of a transient
                 // failure; reporting shell exit would close a live tab.
                 return;
@@ -643,7 +707,7 @@ class TerminalSessionController extends ChangeNotifier {
   /// Kills the server session, clears the buffer + cursor + titles and boots
   /// a fresh shell — the old header button's "Restart shell".
   Future<void> restart() async {
-    if (session.attachSessionId != null) {
+    if (session.attachSessionId != null || !_canDrive) {
       // Not a shell of ours to replace; its environment restarts it.
       return;
     }
@@ -688,7 +752,8 @@ class TerminalSessionController extends ChangeNotifier {
     final id = _sessionId;
     _repo = null;
     _sessionId = null;
-    if (repo != null && id != null) {
+    // A terminal this person may only watch is not theirs to end.
+    if (repo != null && id != null && _canDrive) {
       try {
         // Best-effort: tell the server to tear the PTY down.
         await repo.kill(id);

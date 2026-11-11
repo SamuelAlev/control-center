@@ -59,11 +59,7 @@ class GitHubReferenceLinkBuilder extends CcNodeBuilder {
     if (!node.autolink && !node.url.startsWith('control-center://')) {
       return null;
     }
-    final reference = parseAnyGitHubReference(
-      node.url,
-      currentOwner: currentOwner,
-      currentRepo: currentRepo,
-    );
+    final reference = parseAnyGitHubReference(node.url);
     if (reference is GitHubPrReference &&
         _isKnownTarget(reference.owner, reference.repo)) {
       return reference;

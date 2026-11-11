@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:cc_data/cc_data.dart' show ConnectModeSetting;
+import 'package:cc_data/cc_data.dart' show ConnectModeSetting, IdentityMe;
+import 'package:cc_domain/cc_domain.dart' show UserDto;
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
@@ -15,15 +17,21 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:control_center/features/auth/presentation/widgets/onboarding_you_step.dart';
+import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/identity/providers/account_profile_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/no_workspace_state.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/widgets/server_activity_panel.dart';
 import 'package:control_center/shared/widgets/server_connect/pre_app_settings.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:riverpod/src/framework.dart' show Override;
 
@@ -52,12 +60,12 @@ void main() {
   // ---------------------------------------------------------------------------
   // Helper: pump a full OnboardingScreen with the given overrides.
   //
-  // Every run starts at step 1, even when a forge is already connected
-  // (`authenticated` only flips the connection fixture, which enables step 1's
-  // Continue). The ONE conditional step is the workspace step, which is
-  // dropped for someone who already belongs to a workspace — see the "invited
-  // member" group. That choice is snapshotted when the flow starts, so it can
-  // never change underneath the person walking it.
+  // The flow shows only the steps a person is missing, snapshotted when it
+  // starts so a step can never vanish underneath them. `authenticated` flips
+  // the connection fixture, which answers AFTER the flow planned (an async
+  // override), so the connect step still shows and its Continue is enabled;
+  // a connection settled before the start drops the step (see "missing
+  // steps").
   // ---------------------------------------------------------------------------
   Future<void> pumpOnboarding(
     WidgetTester tester, {
@@ -67,8 +75,18 @@ void main() {
     // hasAnyForgeConnectedProvider.
     bool deriveAuth = false,
     bool serverOwner = false,
+    // Whether this person finished onboarding before. Most cases here are
+    // about the steps after "You", which only someone who never finished
+    // walks; the "You" group below covers that step.
+    bool finished = true,
+    // Whether this person may create workspaces (`identity.me`).
+    bool canCreate = true,
     List<Override> extraOverrides = const [],
     void Function(String op, Map<String, dynamic> args)? onCall,
+    // Mounts the flow under a router whose workspace picker is the real
+    // no-workspace state, so finishing the flow can be followed to where it
+    // lands.
+    bool routed = false,
   }) async {
     tester.view.physicalSize = const Size(900, 900);
     tester.view.devicePixelRatio = 1.0;
@@ -91,6 +109,9 @@ void main() {
           appPreferencesProvider.overrideWithValue(prefs),
           rpcClientProvider.overrideWithValue(rpc),
           isServerOwnerProvider.overrideWithValue(serverOwner),
+          canCreateWorkspacesProvider.overrideWithValue(canCreate),
+          onboardingFinishedProvider.overrideWithValue(finished),
+          accountProfileProvider.overrideWith(_Profile.new),
           voiceModelCatalogProvider.overrideWith((ref) async => null),
           if (!deriveAuth) ...[
             // The gate is "at least one forge connected", so the fixture is a
@@ -102,7 +123,7 @@ void main() {
                   ? const [
                       ForgeConnection(
                         forge: ForgeHost.github,
-                        authenticated: true,
+                        status: ForgeConnectionStatus.connected,
                         username: 'testuser',
                         source: ForgeCredentialSource.oauth,
                       ),
@@ -112,15 +133,40 @@ void main() {
           ],
           ...extraOverrides,
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          locale: const Locale('en'),
-          home: CcTheme(
-            data: CcThemeData.light(),
-            child: const OnboardingScreen(),
-          ),
-        ),
+        child: routed
+            ? MaterialApp.router(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
+                routerConfig: GoRouter(
+                  initialLocation: onboardingRoute,
+                  routes: [
+                    GoRoute(
+                      path: onboardingRoute,
+                      builder: (context, state) => CcTheme(
+                        data: CcThemeData.light(),
+                        child: const OnboardingScreen(),
+                      ),
+                    ),
+                    GoRoute(
+                      path: workspaceListRoute,
+                      builder: (context, state) => CcTheme(
+                        data: CcThemeData.light(),
+                        child: NoWorkspaceState(onAdd: () {}),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
+                home: CcTheme(
+                  data: CcThemeData.light(),
+                  child: const OnboardingScreen(),
+                ),
+              ),
       ),
     );
     await tester.pump();
@@ -358,24 +404,48 @@ void main() {
   });
 
   // =========================================================================
-  // No skipping — the gate decides onboarding, not individual steps
+  // Missing steps only: a connection settled at the start drops the step
   // =========================================================================
 
-  testWidgets('authenticated users start at step 1 too (no skipping)', (
+  /// A forge connection that has settled before the flow plans.
+  Override settledConnection() => forgeConnectionsProvider.overrideWithValue(
+    const AsyncValue.data([
+      ForgeConnection(
+        forge: ForgeHost.github,
+        status: ForgeConnectionStatus.connected,
+        username: 'testuser',
+        source: ForgeCredentialSource.oauth,
+      ),
+    ]),
+  );
+
+  testWidgets('a forge connected before the flow starts skips connecting', (
     tester,
   ) async {
-    // The screen used to skip step 1 when API access was already set up —
-    // decided from async auth probes, so whether step 1 appeared depended on
-    // probe timing. Now incomplete onboarding always starts from scratch.
+    await pumpOnboarding(
+      tester,
+      deriveAuth: true,
+      serverOwner: true,
+      extraOverrides: [settledConnection()],
+    );
+    expect(find.text('Give your work a home.'), findsOneWidget);
+    expect(find.text("Let's plug in your tools."), findsNothing);
+    expect(find.text('Choose how people sign in'), findsNothing);
+  });
+
+  testWidgets('a connection still loading at the start counts as missing', (
+    tester,
+  ) async {
+    // The gate holds an incomplete verdict until the connections answer, so
+    // this is a flow opened some other way; showing the step costs one
+    // Continue, hiding it could skip a sign-in the person needs.
     await pumpOnboarding(tester, authenticated: true);
     expect(find.text("Let's plug in your tools."), findsOneWidget);
     expect(find.text('Give your work a home.'), findsNothing);
   });
 
-  testWidgets('step indicator shows 5 segments even when authenticated', (
-    tester,
-  ) async {
-    await pumpOnboarding(tester, authenticated: true);
+  testWidgets('a first run shows five steps', (tester) async {
+    await pumpOnboarding(tester);
     expect(
       find.descendant(
         of: find.byKey(const Key('onboarding-step-indicator')),
@@ -384,33 +454,6 @@ void main() {
       findsNWidgets(5),
     );
   });
-
-  testWidgets(
-    'a connection settled before the first frame still shows step 1',
-    (tester) async {
-      // Same contract as "authenticated users start at step 1", exercised
-      // through the REAL derivation (connections → hasAnyForgeConnected) rather
-      // than an override of the derived flag.
-      await pumpOnboarding(
-        tester,
-        deriveAuth: true,
-        extraOverrides: [
-          forgeConnectionsProvider.overrideWith(
-            (ref) async => const [
-              ForgeConnection(
-                forge: ForgeHost.github,
-                authenticated: true,
-                username: 'testuser',
-                source: ForgeCredentialSource.oauth,
-              ),
-            ],
-          ),
-        ],
-      );
-      expect(find.text("Let's plug in your tools."), findsOneWidget);
-      expect(find.text('Give your work a home.'), findsNothing);
-    },
-  );
 
   // =========================================================================
   // Step 2 — workspace
@@ -650,62 +693,197 @@ void main() {
       ]),
     );
 
-    testWidgets('drops the workspace step', (tester) async {
-      // Being invited IS how they got a workspace. Asking them to name their
-      // first one both misdescribes what happened and leaves a stray second
-      // workspace behind.
+    testWidgets('of a ready workspace sees just "You"', (tester) async {
+      // Being invited IS how they got a workspace, and its agents already have
+      // a sandbox and a runner. Asking them to name a workspace leaves a stray
+      // second one behind.
       await pumpOnboarding(
         tester,
-        authenticated: true,
-        extraOverrides: [withWorkspace()],
+        finished: false,
+        deriveAuth: true,
+        extraOverrides: [withWorkspace(), settledConnection()],
       );
 
-      expect(find.text('Workspace'), findsNothing);
-      for (final label in const ['Connect', 'Sandbox', 'Adapter', 'Voice']) {
-        expect(find.text(label), findsOneWidget, reason: 'missing $label');
+      expect(find.byType(OnboardingYouStep), findsOneWidget);
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      expect(
+        find.descendant(of: indicator, matching: find.text('You')),
+        findsOneWidget,
+      );
+      for (final label in const [
+        'Connect',
+        'Workspace',
+        'Sandbox',
+        'Adapter',
+        'Voice',
+      ]) {
+        expect(
+          find.descendant(of: indicator, matching: find.text(label)),
+          findsNothing,
+          reason: 'unexpected $label',
+        );
       }
     });
 
-    testWidgets('continue from step 1 lands on sandbox, not workspace', (
-      tester,
-    ) async {
+    testWidgets('without a forge sign-in still connects one', (tester) async {
       await pumpOnboarding(
         tester,
-        authenticated: true,
+        finished: false,
         extraOverrides: [withWorkspace()],
       );
 
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      for (final label in const ['You', 'Connect']) {
+        expect(
+          find.descendant(of: indicator, matching: find.text(label)),
+          findsOneWidget,
+          reason: 'missing $label',
+        );
+      }
+      expect(
+        find.descendant(of: indicator, matching: find.text('Sandbox')),
+        findsNothing,
+      );
+    });
+  });
+
+  // =========================================================================
+  // No workspace and no right to create one: nothing to set up but themselves
+  // =========================================================================
+  group('someone who may not create workspaces', () {
+    Override noWorkspace() => workspacesProvider.overrideWithValue(
+      const AsyncValue<List<Workspace>>.data([]),
+    );
+
+    testWidgets('is never asked to create one', (tester) async {
+      await pumpOnboarding(
+        tester,
+        finished: false,
+        canCreate: false,
+        deriveAuth: true,
+        extraOverrides: [noWorkspace(), settledConnection()],
+      );
+
+      expect(find.byType(OnboardingYouStep), findsOneWidget);
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      for (final label in const ['Workspace', 'Sandbox', 'Adapter', 'Voice']) {
+        expect(
+          find.descendant(of: indicator, matching: find.text(label)),
+          findsNothing,
+          reason: 'unexpected $label',
+        );
+      }
+    });
+
+    testWidgets('finishing lands on "You are not in a workspace yet"', (
+      tester,
+    ) async {
+      var marked = 0;
+      await pumpOnboarding(
+        tester,
+        finished: false,
+        canCreate: false,
+        deriveAuth: true,
+        routed: true,
+        onCall: (op, _) {
+          if (op == 'users.markOnboardingFinished') {
+            marked++;
+          }
+        },
+        extraOverrides: [
+          noWorkspace(),
+          settledConnection(),
+          currentIdentityProvider.overrideWith(
+            (ref) => Completer<IdentityMe>().future,
+          ),
+        ],
+      );
+
+      // "You" is the whole flow: its Continue finishes it.
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      expect(
+        find.descendant(of: indicator, matching: find.text('Workspace')),
+        findsNothing,
+      );
       final continueButton = find.widgetWithText(CcButton, 'Continue');
       await tester.ensureVisible(continueButton);
-      await tester.pump();
       await tester.tap(continueButton);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.text('Isolate agent execution.'), findsOneWidget);
-      expect(find.text('Give your work a home.'), findsNothing);
+      expect(marked, 1);
+      // The route change animates the flow out.
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(OnboardingScreen), findsNothing);
+      expect(find.text('You are not in a workspace yet'), findsOneWidget);
+      expect(find.text('Add workspace'), findsNothing);
     });
 
-    testWidgets('still gets the rest of the setup', (tester) async {
-      // The point of onboarding them at all: signing in, sandboxing, the model
-      // and dictation are per-person and none of them came with the invite.
+    testWidgets('still connects a forge when none is connected', (
+      tester,
+    ) async {
       await pumpOnboarding(
         tester,
-        authenticated: true,
-        extraOverrides: [withWorkspace()],
+        finished: false,
+        canCreate: false,
+        extraOverrides: [noWorkspace()],
       );
 
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      for (final label in const ['You', 'Connect']) {
+        expect(
+          find.descendant(of: indicator, matching: find.text(label)),
+          findsOneWidget,
+          reason: 'missing $label',
+        );
+      }
       expect(
-        find.byKey(const Key('onboarding-step-indicator')),
-        findsOneWidget,
+        find.descendant(of: indicator, matching: find.text('Workspace')),
+        findsNothing,
       );
-      expect(find.text("Let's plug in your tools."), findsOneWidget);
     });
   });
 
   // =========================================================================
   // Solo first run — no workspace yet
   // =========================================================================
+  group('the "You" step', () {
+    testWidgets('comes first for someone who never finished onboarding', (
+      tester,
+    ) async {
+      await pumpOnboarding(tester, finished: false, serverOwner: true);
+      expect(find.byType(OnboardingYouStep), findsOneWidget);
+      expect(find.text('Choose your username'), findsOneWidget);
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      expect(
+        find.descendant(of: indicator, matching: find.text('You')),
+        findsOneWidget,
+      );
+      // Prefilled with what the server derived.
+      expect(find.text('sam'), findsOneWidget);
+    });
+
+    testWidgets('an unchanged name continues to the next step', (tester) async {
+      await pumpOnboarding(tester, finished: false, authenticated: true);
+      final continueButton = find.widgetWithText(CcButton, 'Continue');
+      await tester.ensureVisible(continueButton);
+      await tester.tap(continueButton);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(OnboardingYouStep), findsNothing);
+    });
+
+    testWidgets('is skipped for someone already onboarded', (tester) async {
+      await pumpOnboarding(tester);
+      expect(find.byType(OnboardingYouStep), findsNothing);
+      final indicator = find.byKey(const Key('onboarding-step-indicator'));
+      expect(
+        find.descendant(of: indicator, matching: find.text('You')),
+        findsNothing,
+      );
+    });
+  });
+
   testWidgets('a first-ever run keeps the workspace step', (tester) async {
     await pumpOnboarding(
       tester,
@@ -726,8 +904,19 @@ void main() {
 /// above pins the continuation of the onboarding flow that used to break).
 class _FakeCreateWorkspaceNotifier extends CreateWorkspaceNotifier {
   @override
-  Future<String?> create({required String name, String? logoPath}) async {
+  Future<String?> create({
+    required String name,
+    Uint8List? logoBytes,
+    String logoExtension = '',
+  }) async {
     state = const AsyncData<String?>('ws-new');
     return 'ws-new';
   }
+}
+
+/// The account row the server derived for a brand-new person.
+class _Profile extends AccountProfileNotifier {
+  @override
+  Future<UserDto> build() async =>
+      UserDto(id: 'u-1', handle: 'sam', displayName: 'Sam');
 }

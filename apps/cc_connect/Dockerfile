@@ -18,22 +18,27 @@
 # builder lays the two packages out at their real relative paths, synthesizes
 # minimal manifests (the real ones carry `resolution: workspace`, which would
 # resolve against the Flutter monorepo root), fetches the pure-Dart packages
-# from pub.dev and AOT-compiles the service and its config tool.
+# from pub.dev against a committed lockfile and AOT-compiles the service and
+# its config tool.
 # =============================================================================
 
 # ---- Build stage: compile native AOT executables ----------------------------
-# Keep in sync with the `environment:` of apps/cc_connect/pubspec.yaml.
-ARG DART_SDK_VERSION=3.13
-FROM dart:${DART_SDK_VERSION}-sdk AS builder
+# Pinned by digest. Keep the tag in sync with the `environment:` of
+# apps/cc_connect/pubspec.yaml.
+FROM dart:3.13-sdk@sha256:854f3c50b1cbd4a5a54c9fa67d4f5b6702ac49b4a26d21a80e7712a72528b215 AS builder
 
 WORKDIR /build
 COPY --from=core lib ./packages/cc_connect_core/lib
 COPY lib ./apps/cc_connect/lib
 COPY bin ./apps/cc_connect/bin
+COPY docker/pubspec.lock ./apps/cc_connect/pubspec.lock
 
 # KEEP IN SYNC with the `dependencies:` of packages/cc_connect_core/pubspec.yaml
-# and apps/cc_connect/pubspec.yaml. Versions are pinned to the monorepo's
-# pubspec.lock so the image runs exactly the code the tests ran.
+# and apps/cc_connect/pubspec.yaml. docker/pubspec.lock pins every package,
+# transitive ones included, to the version and content hash in the monorepo's
+# pubspec.lock (test/docker_test.dart checks both), and `--enforce-lockfile`
+# refuses any other. The tests ran on that resolution, but in the workspace,
+# not on this standalone layout.
 RUN printf '%s\n' \
       'name: cc_connect_core' \
       'publish_to: none' \
@@ -52,10 +57,11 @@ RUN printf '%s\n' \
       '  cc_connect_core:' \
       '    path: ../../packages/cc_connect_core' \
       '  crypto: 3.0.7' \
-      '  cryptography: 2.9.0' > apps/cc_connect/pubspec.yaml \
+      '  cryptography: 2.9.0' \
+      '  dart_jsonwebtoken: 3.4.1' > apps/cc_connect/pubspec.yaml \
  && mkdir -p /out \
  && cd apps/cc_connect \
- && dart pub get \
+ && dart pub get --enforce-lockfile \
  && dart compile exe bin/server.dart -o /out/cc-connect \
  && dart compile exe bin/config_tool.dart -o /out/cc-connect-config
 
@@ -64,10 +70,10 @@ RUN printf '%s\n' \
 # the SDK image's Debian (13, trixie). Connect makes outbound TLS calls (GitHub,
 # Google, Slack, Klipy, Cloud KMS, Firestore, Redis), so it needs the system
 # trust store: `ca-certificates` is the only package added.
-FROM debian:trixie-slim AS runtime
+FROM debian:trixie-slim@sha256:a72b4433de1cf7d6bae0c4cee74d0547f58601a643b3375f070c51600d63b6b2 AS runtime
 
 LABEL org.opencontainers.image.title="Control Center Connect" \
-      org.opencontainers.image.description="Stateless OAuth broker for Control Center servers: provider sign-in, install-bound credential seals, one-repository GitHub tokens, Slack event references and a Klipy proxy" \
+      org.opencontainers.image.description="OAuth broker for Control Center servers: provider sign-in, install-bound credential seals, one-repository GitHub tokens, Slack event references and a Klipy proxy" \
       org.opencontainers.image.source="https://github.com/SamuelAlev/control-center" \
       org.opencontainers.image.licenses="MIT"
 

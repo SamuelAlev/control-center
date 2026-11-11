@@ -1,18 +1,20 @@
 import 'dart:async';
 
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInAttemptStatus, SignInUnavailableReason;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_dialog_parts.dart';
+import 'package:control_center/features/auth/presentation/widgets/sign_in_setup_action.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Runs [lane]'s browser sign-in in [workspaceId]'s scope (null =
-/// server-wide) and resolves with the final attempt once it succeeds, or
+/// Runs [lane]'s browser sign-in from [workspaceId] (null only before any
+/// workspace exists, in onboarding) and resolves with the final attempt once it succeeds, or
 /// null when the dialog is closed first.
 ///
 /// Closing does not cancel anything: an own-mode attempt keeps being polled
@@ -62,7 +64,8 @@ class ProviderSignInDialog extends ConsumerStatefulWidget {
   /// The lane being signed in.
   final ConnectOAuthLane lane;
 
-  /// The scope the sign-in runs in; null is server-wide.
+  /// The workspace the sign-in starts from (the server decides which slot
+  /// the grant lands in); null only before any workspace exists.
   final String? workspaceId;
 
   @override
@@ -152,10 +155,8 @@ class _ProviderSignInDialogState extends ConsumerState<ProviderSignInDialog> {
           );
     final provider = signInProviderName(widget.lane);
     final failed = _beginError != null || (session?.isTerminal ?? false);
-    final awaitingCode =
-        session != null &&
-        !session.isTerminal &&
-        session.attempt.mode == SignInLaneMode.connect;
+    // Both modes end on a browser page that shows a confirmation code.
+    final awaitingCode = session != null && !session.isTerminal;
 
     final Widget body;
     if (_starting || (session == null && _beginError == null)) {
@@ -164,21 +165,18 @@ class _ProviderSignInDialogState extends ConsumerState<ProviderSignInDialog> {
       body = SignInFailureView(
         message:
             _beginError ??
-            signInFailureMessage(l10n, session!.attempt.error, widget.lane),
-      );
-    } else if (awaitingCode) {
-      body = SignInCodeEntry(
-        session: session,
-        controller: _code,
-        onSubmit: _submit,
-        onReopen: () => ref
-            .read(providerSignInControllerProvider.notifier)
-            .reopen(session.loginId),
+            signInFailureDetail(
+              l10n,
+              session!.attempt.error,
+              widget.lane,
+              serverMessage: session.attempt.message,
+            ),
       );
     } else {
-      body = SignInBrowserWait(
+      body = SignInCodeEntry(
         session: session!,
-        provider: provider,
+        controller: _code,
+        onSubmit: _submit,
         onReopen: () => ref
             .read(providerSignInControllerProvider.notifier)
             .reopen(session.loginId),
@@ -209,3 +207,63 @@ class _ProviderSignInDialogState extends ConsumerState<ProviderSignInDialog> {
     );
   }
 }
+
+/// Why [lane] cannot sign anyone in here, in words a person can act on.
+///
+/// [info] is the lane as `oauth.lanes` reported it; null (an unreachable
+/// server) reads as the generic "unavailable".
+String signInUnavailableMessage(
+  AppLocalizations l10n,
+  ConnectOAuthLane lane,
+  SignInLaneInfo? info,
+) {
+  final provider = signInProviderName(lane);
+  return switch (info?.unavailableReason) {
+    SignInUnavailableReason.notConfigured =>
+      l10n.signInUnavailableNotConfigured(provider),
+    SignInUnavailableReason.misconfigured =>
+      info!.error.isEmpty
+          ? l10n.signInErrorMisconfigured(provider)
+          : l10n.signInUnavailableMisconfigured(provider, info.error),
+    SignInUnavailableReason.ownAppMissing =>
+      l10n.signInUnavailableOwnAppMissing(provider),
+    SignInUnavailableReason.connectUnprovisioned =>
+      l10n.signInUnavailableConnectUnprovisioned(provider),
+    SignInUnavailableReason.connectPinsPending =>
+      l10n.signInUnavailableConnectPinsPending,
+    SignInUnavailableReason.connectUnreachable =>
+      l10n.signInUnavailableConnectUnreachable,
+    SignInUnavailableReason.connectUrlInvalid =>
+      l10n.signInUnavailableConnectUrlInvalid,
+    SignInUnavailableReason.blockedByEnvironment =>
+      l10n.signInUnavailableBlockedByEnvironment,
+    SignInUnavailableReason.laneNotOffered =>
+      l10n.signInUnavailableLaneNotOffered(provider),
+    null => l10n.signInUnavailable(provider),
+  };
+}
+
+/// The settings destination (a `kSettingsNav` id) where [reason] is fixed:
+/// the workspace's integrations for its own sign-in choice, the server's
+/// sign-in settings for what only the server's operator controls.
+String? signInUnavailableSettingsId(SignInUnavailableReason? reason) =>
+    switch (reason) {
+      SignInUnavailableReason.connectUnprovisioned ||
+      SignInUnavailableReason.blockedByEnvironment => 'server.sso',
+      null => null,
+      _ => 'workspace.integrations',
+    };
+
+/// The button that takes someone allowed to fix [info]'s lane to where it is
+/// fixed (see [signInSetupAction]), or null while the lane works.
+Widget? signInUnavailableAction(
+  BuildContext context,
+  WidgetRef ref,
+  SignInLaneInfo? info,
+) => info == null || info.mode != SignInLaneMode.unavailable
+    ? null
+    : signInSetupAction(
+        context,
+        ref,
+        signInUnavailableSettingsId(info.unavailableReason),
+      );

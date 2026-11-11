@@ -38,7 +38,6 @@ class _ActorForgeClient {
 
   late final ForgeHttpClientFactory _factory = ForgeHttpClientFactory(
     tokenLookup: (forge) => _creds.tokenFor(forge, userId: _userId),
-    bitbucketUsername: () => _creds.bitbucketEmail,
     buildClient: (baseUrl, settings, interceptors) {
       _interceptors = interceptors;
       // The transport is never reached — the interceptor above is driven
@@ -71,6 +70,8 @@ ProviderToken _signIn(String access) => ProviderToken(
   refreshToken: 'ghr_refresh',
   expiresAt: DateTime.now().toUtc().add(const Duration(hours: 8)),
   source: ForgeCredentialSource.oauth,
+  accountLogin: 'octocat',
+  accountId: '583231',
   appId: 'Iv1.app',
 );
 
@@ -86,10 +87,7 @@ void main() {
     setUp(() {
       dir = Directory.systemTemp.createTempSync('cc_forge_actor_');
       users = UserCredentialsStore(FileSecretsStore(dataDir: dir.path));
-      creds = ForgeCredentials(
-        env: (name) => const {'GITHUB_TOKEN': 'server-env-token'}[name],
-        users: users,
-      );
+      creds = ForgeCredentials(users: users);
     });
 
     tearDown(() => dir.deleteSync(recursive: true));
@@ -109,7 +107,7 @@ void main() {
     });
 
     test(
-      'no actor sends no GitHub credential (never the host token)',
+      'no actor sends no GitHub credential (never anyone else\'s)',
       () async {
         await creds.storeSignIn(ForgeHost.github, alice, _signIn('ghu_alice'));
 

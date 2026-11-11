@@ -1,4 +1,5 @@
-import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/cc_domain.dart'
+    show RpcErrorCodes, ServerOwnerRequiredException;
 import 'package:cc_domain/features/ide/domain/code_server_session.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -228,6 +229,15 @@ class _CodeServerWindowViewState extends ConsumerState<CodeServerWindowView> {
       return _UnavailableCard(
         title: l10n.ideCodeServerUnavailable,
         hint: l10n.ideCodeServerUnavailableHint,
+      );
+    }
+    // The editor runs on the server host outside any sandbox, so only the
+    // server owner may open it. Reached only when the right changed after
+    // the affordance was shown.
+    if (error is ServerOwnerRequiredException) {
+      return _UnavailableCard(
+        title: l10n.serverOwnerOnly,
+        hint: l10n.ideCodeServerOwnerOnlyHint,
       );
     }
     return Center(

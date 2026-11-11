@@ -2,14 +2,13 @@
 title: Conversations de PR
 description: Comment un commentaire de PR GitHub devient un tour d’agent sans webhook, ce qui autorise son auteur, et à qui chaque partie de la conversation est attribuée.
 slug: fr-FR/manuel/concepts/conversations-de-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Une pull request est déjà le lieu où se tient la conversation sur le code. Les
 conversations de PR en font une surface d’un espace de travail Control Center,
 comme une [passerelle de chat](/fr-FR/manuel/concepts/passerelles-de-chat/) fait
-de Slack la sienne : mentionnez `@usectrl` (ou le bot de la GitHub App de
-l’espace de travail) sur une PR, répondez dans ses fils de revue ou ajoutez
+de Slack la sienne : mentionnez `@usectrl` sur une PR, répondez dans ses fils de revue ou ajoutez
 l’étiquette `ai-review`, et le travail se déroule dans l’espace de revue de la
 PR — sous la même attribution et les mêmes garde-fous que tout ce qui est saisi
 dans l’application. Un commentaire et une étiquette sont contrôlés de la même
@@ -27,7 +26,7 @@ Le seul canal push de GitHub pour une application est le webhook, et un webhook
 a besoin d’une URL entrante — la seule chose que cette surface ne requiert
 délibérément jamais. La découverte se fait donc par balayage : une recherche
 aliasée par installation de l’application demande à GitHub les PR qui
-mentionnent le bot (ou son slug court) et les PR ouvertes qui portent
+mentionnent `@usectrl` et les PR ouvertes qui portent
 l’étiquette de revue ; les PR qui ont déjà un espace de revue voient leurs fils
 de commentaires lus, et tout est comparé par identifiant de commentaire à ce qui
 a été vu au balayage précédent. Une application propre balaie toutes les minutes
@@ -77,8 +76,8 @@ n’est publié :
 - **Un membre connecté.** Le compte doit appartenir à un membre de _cet_ espace
   de travail qui s’est connecté à GitHub sur ce serveur
 - **Un rôle en écriture.** `viewer` et `guest` ne peuvent pas lancer de travail
-- **Un accès en push.** Les réponses utilisent un jeton `bot` limité à l’accès
-  de ce membre au dépôt. Si le serveur ne peut pas en émettre un, il ne poursuit
+- **Un accès en push.** Les réponses utilisent un jeton propre à ce seul dépôt, limité à l’accès
+  de ce membre à celui-ci. Si le serveur ne peut pas en émettre un, il ne poursuit
   pas
 
 Chaque contrôle s’exécute avant tout accusé de réception, si bien qu’un inconnu
@@ -102,16 +101,18 @@ Chaque partie de la conversation porte une identité différente, et cette
 différence est la fonctionnalité même :
 
 - **Sur GitHub, la réponse est une automatisation agissant pour vous.** Chaque
-  réponse utilise un jeton `bot` limité à ce seul dépôt et à l’accès du membre
-  qui pose la question. Avec une application propre, l’auteur est le compte
-  `[bot]` de l’application. Via Connect, un jeton de l’App partagée est un jeton
-  utilisateur : la réponse est donc rédigée par le compte du membre qui pose la
-  question, agissant au travers de l’App. Dans les deux cas, chaque réponse
+  réponse utilise un jeton propre à ce seul dépôt, limité à l’accès du membre
+  qui pose la question, et elle est rédigée par le compte `[bot]` de
+  l’application. Une exception : sur l’application partagée Control Center
+  Connect, le bot ne publie dans les fils de revue que si l’opérateur de Connect
+  a listé l’installation ; sauf dans ce cas, une réponse dans un fil de revue : elle est rédigée par le compte propre du membre qui pose la
+  question. Dans les deux cas, chaque réponse
   commence par `**Control Center** (for @login):`, qui indique qui a demandé et
-  sert aussi de protection anti-boucle.
+  sert aussi de protection anti-boucle. Les @-mentions dans les mots de l’agent sont
+  rendues inertes, de sorte qu’une réponse ne notifie jamais un utilisateur ou une équipe.
 - **Dans l’espace, la question est la vôtre.** Le message est attribué au membre
   auquel l’auteur a été résolu, et l’exécution de l’agent se fait en son nom :
-  les commits les désignent comme coauteurs, et le réglage d’autonomie et les
+  ses commits sont les siens, et le réglage d’autonomie et les
   garde-fous d’action de l’espace s’appliquent exactement comme à un message
   saisi dans l’application. Les écritures vers la forge issues de l’exécution
   utilisent des jetons limités à un dépôt et bornés par ce membre, jamais sa
@@ -121,26 +122,17 @@ Publier les constats de revue sur GitHub reste une décision humaine, prise dans
 Control Center. Une mention peut _lancer_ une revue ; seul un humain en publie
 une.
 
-## La protection anti-boucle et le nom court
+## La protection anti-boucle
 
 Tout ce qui est écrit par un compte de bot est écarté avant l’exécution du
 moindre contrôle — le nôtre en particulier, et tout suffixe `[bot]`, afin que le
 bot de revue d’une autre application ne puisse pas non plus réveiller le nôtre —
 de même que tout commentaire qui commence par le préfixe
-`**Control Center** (for @`, puisqu’une réponse via Connect est rédigée par le
-compte d’une personne. Sans cela, les réponses arriveraient comme de nouveaux
+`**Control Center** (for @`, puisqu’une réponse de fil de revue via Connect peut
+être rédigée par le compte d’une personne. Sans cela, les réponses arriveraient comme de nouveaux
 commentaires et redéclencheraient la passerelle sans fin.
 
-Le suffixe `[bot]` explique aussi pourquoi la forme courte existe. GitHub fixe
-l’identifiant de connexion d’un compte d’application à `<slug>[bot]`, n’offre
-aucune autocomplétion pour celui-ci et ne résout jamais `@slug` vers
-l’application — accepter le slug seul relève donc d’une décision de _notre_
-comparateur, et sa découverte exige une voie de recherche sur le **texte** brut
-des commentaires plutôt que sur l’index des mentions de GitHub. Le coût est
-énoncé plutôt que lissé : un utilisateur humain qui partage le slug de
-l’application s’adresse au bot chaque fois qu’il se mentionne lui-même sous
-forme courte. Des noms d’application distinctifs rendent cette collision
-hypothétique.
+Seul `@usectrl` déclenche un travail. L’identifiant de connexion propre à l’App (`<slug>[bot]`) et son slug nu n’adressent rien : GitHub n’offre aucune autocomplétion pour un compte d’application, et un slug nu peut appartenir à un utilisateur humain.
 
 ## Ce qui n’est délibérément pas proposé
 

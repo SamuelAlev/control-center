@@ -3,7 +3,7 @@ part of 'agent_run_gateway.dart';
 /// What one of Claude Code's own file or web tools is about to do, in the
 /// action policy's terms.
 class _NativeToolAction {
-  const _NativeToolAction(this.summary, this.request);
+  const _NativeToolAction(this.summary, this.request, {this.refusal});
 
   /// Reads a hook's `tool_name` and `tool_input`. Null when the tool is not one
   /// the policy governs, or its input does not say what it would touch.
@@ -60,12 +60,17 @@ class _NativeToolAction {
       ...grant.runnerStateDirs,
     ].map(_resolved);
     final inside = owned.any((dir) => p.isWithin(dir, target));
+    final readOnly = ReadOnlyWorktrees.containing(
+      target,
+      grant.readOnlyWorktrees,
+    );
     return _NativeToolAction(
       'write: $target',
       ActionRequest(
         classes: {if (!inside) ActionClass.fileWriteOutsideWorktree},
         paths: [target],
       ),
+      refusal: readOnly == null ? null : ReadOnlyWorktrees.refusal(readOnly),
     );
   }
 
@@ -99,4 +104,8 @@ class _NativeToolAction {
 
   /// What the policy can match on.
   final ActionRequest request;
+
+  /// Why the tool is refused outright, before the policy is asked: a write
+  /// into a worktree the person this run acts for may not change.
+  final String? refusal;
 }

@@ -2,7 +2,7 @@
 title: Beveiligingen — één beleid voor elke actie die iets wijzigt
 description: Waarom Control Center elk neveneffect van een agent door één engine voor toestaan/eerst vragen/weigeren leidt, waarom de ActionClass-taxonomie bewust klein blijft en wat de autonomieschakelaar werkelijk verandert.
 slug: nl-NL/handleiding/concepten/beveiligingen
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agents in Control Center kunnen bestanden verwijderen, branches pushen, pull
@@ -19,10 +19,8 @@ Er is precies één beleidsengine. Die wordt geraadpleegd op elk punt waarop een
 actie het systeem kan verlaten: het toolregister van de ingebouwde harness, de
 poort van de server-side MCP-dispatcher en repo-opmutaties. Een regel die je één
 keer schrijft, geldt dus zowel voor de ingebouwde runtime als voor externe
-agent-CLI's — er is geen tweede, stillere route eromheen. Het oudere
-opdrachtbeleid dat alleen op bash werkt, functioneert nog steeds: een regel kan
-op een opdrachtprefix matchen in plaats van op een actieklasse, en beide vormen
-bestaan naast elkaar in dezelfde opslag.
+agent-CLI's — er is geen tweede, stillere route eromheen. Een regel kan ook op een opdrachtprefix matchen in plaats van op een actieklasse;
+beide vormen bestaan in dezelfde opslag.
 
 De engine is echter geen vervanging van de OS-sandbox, en de sandbox is geen
 vervanging van de engine. Ze beantwoorden verschillende vragen: de beveiligingen
@@ -30,14 +28,16 @@ bepalen of een aanroep die Control Center kan zien wel mag plaatsvinden, terwijl
 de sandbox begrenst waar het resulterende proces mag komen. `cc_server` past de
 sandbox toe waar de host een backend biedt — maar [Windows biedt er geen en Linux
 heeft `bwrap` en `socat` nodig](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/). Op zulke hosts
-vormen de beveiligingen de buitenste handhavingslaag in plaats van een beleid
-boven op een ondergrens, wat je moet weten wanneer je bepaalt hoe ruimhartig je
+starten alleen de runs van de servereigenaar, tenzij de eigenaar de sandbox voor
+iedereen heeft uitgezet met `--sandbox off`. Voor elke run die zonder sandbox
+start, vormen de beveiligingen de buitenste handhavingslaag in plaats van een
+beleid boven op een ondergrens, wat je moet weten wanneer je bepaalt hoe ruimhartig je
 ze instelt.
 
 ## ActionClass: een bewust gesloten taxonomie
 
 Elk hulpmiddel dat iets wijzigt, geeft aan tot welke **ActionClasses** het
-behoort, uit een gesloten set van dertien effectklassen. Vijf ervan vragen
+behoort, uit een gesloten set van veertien effectklassen. Zes ervan vragen
 standaard om goedkeuring; de overige staan toe, en alleen een regel brengt daar
 verandering in.
 
@@ -56,17 +56,18 @@ verandering in.
 | `processSpawn`             | Toestaan                   | Een proces starten (shell en alles wat een shell aanroept)        |
 | `workspaceMutation`        | Toestaan                   | De werkruimtestructuur wijzigen (repos, ruimtes, agents)          |
 | `enclosureControl`         | Toestaan                   | Een omhulling (rig) aansturen: een VM opstarten, er invoer naartoe sturen |
+| `hostExecution`            | **Eerst vragen**           | Een commando uitvoeren op de serverhost buiten elke sandbox, op verzoek van een agent: omgevingstaken, processen, compose-stacks, en `eval` wanneer zijn kernel zonder inperking draait |
 
 De acht klassen die standaard toestaan, zijn gekozen in de veronderstelling dat
 de sandboxondergrens eronder geldt. Dat is het geval waar de host een backend
-biedt, en niet op Windows of op een Linux-machine zonder `bwrap` en `socat` —
-dus als je wilt dat `fileWriteOutsideWorktree` of `packageInstall` daar wordt
+biedt, en niet onder `--sandbox off`, noch voor de eigen runs van de eigenaar op Windows
+of op een Linux-machine zonder `bwrap` en `socat` — dus als je wilt dat `fileWriteOutsideWorktree` of `packageInstall` daar wordt
 afgevangen, moet je die regel zelf schrijven.
 
 De set is bewust gesloten. Een nieuw hulpmiddel dat iets wijzigt en geen klasse
 opgeeft, zakt voor de ratchet-test, dus de taxonomie kan alleen groeien door een
 expliciet, beargumenteerd besluit — "taxonomievervuiling is de dood van deze
-functie." Dertien klassen zijn genoeg om de beleidsregels uit te drukken die
+functie." Veertien klassen zijn genoeg om de beleidsregels uit te drukken die
 mensen daadwerkelijk schrijven (nooit pushen zonder te vragen, nooit buiten een
 worktree verwijderen, leesacties altijd toestaan) en weinig genoeg om de
 instellingen-UI begrijpelijk te houden.
@@ -94,7 +95,7 @@ Twee beslissingen komen met harde garanties:
 
 Er is bewust geen vergrendeling per beurt. Elke toolaanroep lost het beleid
 opnieuw vanaf nul op, dus herhaald vragen om goedkeuring voor dezelfde actie
-wordt begrensd door de "deze beslissing onthouden" van de operator zelf, niet
+wordt begrensd door de eigen doorlopende goedkeuring van de operator zelf, niet
 door iets dat aan een beurt gebonden is.
 
 ## Regels op argumentniveau
@@ -112,6 +113,7 @@ Een beperking kan het volgende benoemen:
   branch behalve main")
 - **hosts** — netwerkbestemmingen, met subdomeinwildcards (`*.internal`)
 - **opdrachten** — opdrachtprefixen, gematcht op een woordgrens
+- **tools** — de exacte tool die een aanroep noemt, zodat een goedkeuring één tool kan dekken in plaats van elke tool met hetzelfde effect
 - **plafonds** — `maxCount` / `maxCents`, zodat "maximaal 50 bestanden
   verwijderen" uitdrukbaar is
 
@@ -154,16 +156,19 @@ onder de beleidsopslag, en de OS-sandbox onder beide. Een opdrachtregel die op
 `allow` uitkomt, verruimt geen van beide — het modusnet draait daarna en zijn
 `deny` is definitief.
 
-## Blijvende goedkeuringen
+## Doorlopende goedkeuringen
 
-Als je een goedkeuringsvraag beantwoordt met "dit onthouden", wordt er een echte
-beleidsregel geschreven: met een bereik (ruimte / agent / werkruimte),
-**beperkt op argumenten** (het goedkeuren van een push naar `feature/login`
-verleent `feature/**`, niet `main`) en **zelfintrekkend** na een expliciete TTL.
-Ja zeggen voor de komende uren is iets anders dan stilletjes je permanente
-beleid herschrijven, en de regels die het schrijft, belanden in dezelfde opslag
-met herkomst `remembered` en een vervaldatum, zodat ze vroegtijdig kunnen worden
-ingetrokken.
+Elke goedkeuringskaart die een actie van een agent oproept, biedt **Goedkeuren voor 8 uur** aan wanneer de actie iets smallers dan zijn klasse kan benoemen. Als je dat kiest, schrijft dat een echte beleidsregel, een doorlopende goedkeuring, in dezelfde opslag als de regels die je instelt, met herkomst `remembered` en een vervaldatum:
+
+- **Afgebakend.** Ze wordt geschreven voor de ruimte waaruit de vraag kwam. Alleen het antwoord van een admin kan voor de hele werkruimte worden geschreven.
+- **Specifiek.** Ze benoemt een branchfamilie (goedkeuren van een push naar `feature/login` dekt `feature/**`, niet `main`), een map, een host, het exacte commando of de tool. Een commit is de enige actie die als klasse voor die ruimte wordt goedgekeurd: er is niets smallers om te benoemen.
+- **Vervalt zelf.** Ze eindigt na acht uur en kan eerder worden ingetrokken op de pagina Agentmachtigingen.
+
+Een doorlopende goedkeuring bespaart alleen een vraag. Ze beantwoordt een actie die bij haar eigen bereik of een breder bereik op “Eerst vragen” staat, en nooit een weigering, uit welk bereik die weigering ook komt. Ze wordt naast de regel opgeslagen die je voor de actie hebt ingesteld, dus als je die regel wijzigt blijft de goedkeuring staan, en als je de goedkeuring intrekt blijft de regel staan.
+
+Sommige poorten vragen zelfstandig, nadat het beleid een aanroep heeft toegestaan: de eigen gedeclareerde goedkeuring van een tool, of het opdrachtnet van een modus. Ze slaan hun vraag alleen over voor een doorlopende goedkeuring die precies die tool of dat commando noemt. De actie op “Toestaan” zetten zet ze niet stil.
+
+Drie kaarten houden twee knoppen, omdat er niets is om door te geven: de sandbox toestaan om programma’s uit een map te draaien (goedkeuren is al een opgeslagen toestemming die je kunt intrekken), een destructieve bewerking die je één keer bevestigt, en een skill-installatie (een gewijzigde skill moet opnieuw vragen).
 
 ## Handhavingsniveaus
 

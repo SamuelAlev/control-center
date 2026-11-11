@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
     show ConnectErrorCode, ConnectException;
@@ -6,6 +7,9 @@ import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_server_core/src/chat/slack_connect.dart';
+import 'package:cc_server_core/src/connect/connect_client.dart';
+import 'package:cc_server_core/src/connect/connect_settings.dart';
+import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:test/test.dart';
 
@@ -368,6 +372,103 @@ void main() {
       expect(s.token.seal, 'seal-2');
     });
   });
+
+  group('the relay hub', () {
+    late _RoutedConnect connect;
+    late ConnectSlackRelayHub hub;
+    late List<(String, String?)> states;
+
+    setUp(() {
+      connect = _RoutedConnect();
+      hub = ConnectSlackRelayHub(
+        connect: connect,
+        sleep: (_) => Completer<void>().future,
+      );
+      states = [];
+    });
+    tearDown(() => hub.close());
+
+    void Function() attach(String workspaceId, String teamId) => hub.attach(
+      workspaceId,
+      teamId,
+      onItem: (_) {},
+      onState: (state, error) => states.add((teamId, error)),
+    );
+
+    Future<void> settle() => Future<void>.delayed(Duration.zero);
+
+    test(
+      'one loop per origin, polled at the workspace-chosen target',
+      () async {
+        connect.targets['ws-a'] = _target('https://a.example', 'ws-a');
+        connect.targets['ws-b'] = _target('https://a.example', '');
+        connect.targets['ws-c'] = _target('https://c.example', 'ws-c');
+        attach('ws-a', 'T-A');
+        attach('ws-b', 'T-B');
+        attach('ws-c', 'T-C');
+        await settle();
+        expect(hub.origins.toSet(), {'https://a.example', 'https://c.example'});
+        // Both teams at a.example share its one queue, through the guarded
+        // target a workspace admin chose.
+        expect(
+          connect.polled.where((t) => t.origin == 'https://a.example'),
+          everyElement(predicate<ConnectTarget>((t) => t.guarded)),
+        );
+      },
+    );
+
+    test('a workspace choice change moves only that workspace', () async {
+      connect.targets['ws-a'] = _target('https://a.example', 'ws-a');
+      connect.targets['ws-b'] = _target('https://a.example', 'ws-b');
+      attach('ws-a', 'T-A');
+      attach('ws-b', 'T-B');
+      await settle();
+
+      connect.targets['ws-a'] = ConnectTarget.none;
+      await hub.rehome('ws-a');
+      expect(states.last, ('T-A', 'connect_changed'));
+
+      connect.targets['ws-a'] = _target('https://c.example', 'ws-a');
+      await hub.rehome('ws-a');
+      await settle();
+      expect(hub.origins.toSet(), {'https://a.example', 'https://c.example'});
+      expect(
+        connect.polled.map((t) => t.origin),
+        contains('https://c.example'),
+      );
+    });
+  });
+}
+
+ConnectTarget _target(String url, String pinScope) => ConnectTarget(
+  mode: ConnectMode.custom,
+  baseUrl: url,
+  pinScope: pinScope,
+  guarded: pinScope.isNotEmpty,
+);
+
+/// A Connect whose per-workspace target the test sets, and whose relay
+/// polls never answer.
+final class _RoutedConnect extends ConnectClient {
+  _RoutedConnect()
+    : super(
+        settings: ConnectSettings(
+          secrets: FileSecretsStore(dataDir: Directory.systemTemp.path),
+        ),
+      );
+
+  final Map<String, ConnectTarget> targets = {};
+  final List<ConnectTarget> polled = [];
+
+  @override
+  Future<ConnectTarget> targetFor(String? workspaceId) async =>
+      targets[workspaceId] ?? ConnectTarget.none;
+
+  @override
+  Future<List<Map<String, Object?>>> pollEvents(ConnectTarget target) {
+    polled.add(target);
+    return Completer<List<Map<String, Object?>>>().future;
+  }
 }
 
 final _connection = ChatBridgeConnection(
@@ -390,7 +491,7 @@ class _Grants implements SlackConnectGrants {
   int renewals = 0;
 
   @override
-  SlackRelayAttach get attach =>
+  SlackRelayAttach attachFor(String workspaceId) =>
       (teamId, {required onItem, required onState}) => () {};
 
   @override

@@ -2,10 +2,10 @@
 title: Outils MCP
 description: Catalogue complet, par famille, des outils MCP que cc_server enregistre.
 slug: fr-CA/manuel/reference/outils-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` héberge un seul registre d’outils MCP (JSON-RPC 2.0), servi sur le port principal du serveur (`9030` par défaut) à `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l’application de bureau, la version web, les clients MCP externes et l’environnement d’exécution d’agents intégré. Les serveurs MCP externes peuvent être raccordés au même registre comme couche dynamique.
+`cc_server` héberge un seul registre d’outils MCP (JSON-RPC 2.0), servi sur le port principal du serveur (`9030` par défaut) à `POST /mcp` et `GET /sse`, version de protocole `2024-11-05`. Tous les clients atteignent le même registre : l’application de bureau, la version web, les clients MCP externes et l’environnement d’exécution d’agents intégré. Les serveurs MCP externes peuvent être raccordés au même registre comme couche dynamique. Les serveurs découverts dans la configuration d’outils personnelle de l’utilisateur du serveur sont l’exception : ce point de terminaison ne les liste, ne les appelle ni ne les recherche jamais, et seuls les exécutions du harnais intégré, dont le propriétaire du serveur répond, peuvent les utiliser (voir [Les serveurs MCP personnels restent ceux du propriétaire](/fr-CA/manuel/guides/serveur-mcp/#les-serveurs-mcp-personnels-restent-ceux-du-propriétaire)).
 
 ## Taille du registre
 
@@ -23,7 +23,7 @@ Les cinq outils de graphe de code ne sont enregistrés que lorsque l’hôte pas
 Le registre complet est annoncé dans `tools/list` sans filtrage de découverte. Les modifications de tickets sont des outils typés.
 
 :::note[Les clients externes voient toujours le catalogue au complet]
-`tools/list` n’est jamais élagué. Les clients MCP valident les noms d’outils contre leur propre copie en cache de cette liste et refusent tout ce qui n’y figure pas sans interroger le serveur, si bien qu’un outil qui y est caché est inatteignable plutôt que simplement discret.
+`tools/list` n’est jamais élagué, sauf pour les serveurs MCP personnels du propriétaire du serveur, qu’il n’inclut jamais. Les clients MCP valident les noms d’outils contre leur propre copie en cache de cette liste et refusent tout ce qui n’y figure pas sans interroger le serveur, si bien qu’un outil qui y est caché est inatteignable plutôt que simplement discret.
 
 Le **harnais intégré** est différent : il ne charge qu’un sous-ensemble résident de définitions par requête et tire le reste au premier usage, ce qui est un comportement propre au harnais et ne change rien à ce registre. Voir [Contexte des outils et cache de prompts](/fr-CA/manuel/concepts/contexte-des-outils).
 :::
@@ -249,7 +249,7 @@ déclarent la [classe d’action](/fr-CA/manuel/concepts/garde-fous/) `enclosure
 `mobile_use` et `ios_use` déclarent en outre `packageInstall`), de sorte que les
 modes en lecture seule les refusent. `rig_list` n’en déclare aucune — il ne fait que
 lire l’état de l’espace de travail. Le vocabulaire complet des verbes par surface se
-trouve dans la [référence des rigs](/fr-CA/manuel/reference/rigs/#action-verbs).
+trouve dans la [référence des rigs](/fr-CA/manuel/reference/rigs/#verbes-daction).
 
 | Outil          | Description                                                                                       |
 | -------------- | ------------------------------------------------------------------------------------------------- |
@@ -257,8 +257,10 @@ trouve dans la [référence des rigs](/fr-CA/manuel/reference/rigs/#action-verbs
 | `browser_use`  | Piloter un Chromium, Firefox ou WebKit sans interface (`engine`) : naviguer, cliquer, remplir, extraire (a11y/DOM/console), presse-papiers, capture d’écran |
 | `mobile_use`   | Piloter Android par ADB : inspecter et saisir, captures d’écran, installer, démarrer, arrêter, réinitialiser et désinstaller des applications, liens profonds et commandes d’appareil au format argv |
 | `ios_use`      | Piloter le simulateur iOS par WebDriverAgent/CoreSimulator : inspecter et saisir, captures d’écran, installer, démarrer, arrêter et désinstaller des applications, liens profonds et processus de simulateur au format argv |
-| `rig_list`     | Lister les rigs d’un espace de travail avec leur surface, leur statut, la taille de l’affichage et le contrôleur |
+| `rig_list`     | Lister les rigs de l’espace de l’exécution avec leur surface, leur statut, la taille de l’affichage et le contrôleur |
 | `rig_close`    | Détruire un rig et jeter l’état des machines qu’il possède                                          |
+
+Seules les exécutions d’agent peuvent appeler ces outils ; tout autre appelant est refusé. Une exécution n’atteint que les rigs de l’espace pour lequel elle a été louée : `space_id` vient de l’autorisation de l’exécution, jamais de l’appel, et un rig d’un autre espace, ou d’aucun espace, répond exactement comme un rig absent.
 
 `app_use` est un cinquième outil use : il pilote les fenêtres d’une application de bureau lancée dans un espace, directement sur l’hôte et non dans une VM, et déclare aussi `fileWriteOutsideWorktree` et `fileDelete`. Lui et les outils `environment_*` sont décrits dans [Configurer des environnements](/fr-CA/manuel/guides/environnements/).
 
@@ -303,7 +305,7 @@ aucun outil, donc un nom que vous auriez vu mentionné ailleurs renvoie « unkno
 | Capacité                                | Où elle se trouve plutôt                                                                                    |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | Embaucher, congédier ou modifier un agent | L’interface des agents. Il n’existe aucun outil `hire_agent` / `fire_agent` / `update_agent`                |
-| Créer un espace de travail              | `workspace.upsert` par RPC, qui amorce l’espace de travail et estampille la propriété                        |
+| Créer un espace de travail              | `workspace.create` par RPC, réservé au propriétaire du serveur, qui amorce l’espace de travail et estampille la propriété |
 | Projets (créer / lister / mettre à jour / classer) | L’interface des tickets. Les projets sont une surface d’opérateur — voir [Projets](/fr-CA/manuel/guides/projets/) |
 | Poser une question bloquante à l’opérateur | L’outil `ask_user` du **harnais**, et non MCP. Il affiche un formulaire dans la conversation et bloque jusqu’à la réponse |
 | Diagnostic par agent                    | Rien. Il n’existe aucun `doctor` — voir [Diagnostic d’un agent](/fr-CA/manuel/guides/diagnostiquer-agent/)   |

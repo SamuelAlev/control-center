@@ -2,12 +2,12 @@
 title: Crear y configurar un agente
 description: Añade un agente a un espacio de trabajo, dale un adaptador, un modelo, skills y permisos, y confirma que se ejecuta.
 slug: es-ES/manual/guias/crear-agente
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Esta guía te muestra cómo añadir un agente a un espacio de trabajo y configurarlo hasta que pueda ejecutarse de verdad.
 
-Cada espacio de trabajo crea de serie cinco agentes —un CEO más `qa`, `architect`, `engineer` y `librarian`—, así que lo normal es tener ya agentes antes de haber configurado ninguno. Los pasos siguientes valen igual para un agente creado de serie que para uno nuevo.
+Cada espacio de trabajo crea de serie seis agentes —un CEO más `qa`, `architect`, `engineer`, `librarian` y `content-synthesizer`—, así que lo normal es tener ya agentes antes de haber configurado ninguno. Los pasos siguientes valen igual para un agente creado de serie que para uno nuevo.
 
 ## Antes de empezar
 
@@ -53,7 +53,7 @@ El desplegable **Modelo** depende del adaptador que hayas elegido. En el caso de
 
 **Habilidades** es un selector de chips sobre los paquetes de skills instalados en este espacio de trabajo. Toca un chip para activarlo o desactivarlo; el glifo de verificación marca los seleccionados. Si el espacio de trabajo no tiene skills, el campo dice «No skills available. Create skills in Settings → Skills first.»
 
-Aquí no eliges las skills propias de un repo. Un repo que las incluya (en `.agents/skills/`, `.claude/skills/` o `.opencode/skills/`) las aporta automáticamente al agente que esté trabajando en él, y se cambian cuando pasa a otro: consulta [Skills con alcance de repo](/es-ES/manual/conceptos/modelo-de-agentes/#repo-scoped-skills).
+Aquí no eliges las skills propias de un repo. Un repo que las incluya (en `.agents/skills/`, `.claude/skills/` o `.opencode/skills/`) las aporta automáticamente al agente que esté trabajando en él, y se cambian cuando pasa a otro: consulta [Skills con alcance de repo](/es-ES/manual/conceptos/modelo-de-agentes/#skills-con-ámbito-de-repositorio).
 
 ## Establecer la línea de reporte y la persona
 
@@ -73,7 +73,7 @@ Un agente no tiene interruptores de permisos propios. Lo que puede enviar, abrir
 El token de GitHub del agente es siempre de solo lectura. Un push pasa por Control Center, que pregunta a la regla **Enviar a un remoto** antes de reenviarlo. Consulta [Configurar políticas del entorno aislado](/es-ES/manual/guias/politicas-de-entorno-aislado/) para ver cómo llega cada regla a una ejecución.
 
 :::note[Las reglas y el sandbox del sistema operativo son capas distintas]
-Las reglas deciden qué puede hacer un agente; el sandbox del sistema operativo acota dónde pueden leer, escribir y conectarse sus procesos. `cc_server` envuelve las ejecuciones de agentes en el sandbox del host cuando existe: Windows no tiene backend nativo, y Linux y WSL2 necesitan `bwrap` y `socat`. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/) para ver el conjunto completo de fronteras.
+Las reglas deciden qué puede hacer un agente; el sandbox del sistema operativo acota dónde pueden leer, escribir y conectarse sus procesos. `cc_server` envuelve las ejecuciones de agentes en el sandbox del host cuando existe: Windows no tiene backend nativo, y Linux y WSL2 necesitan `bwrap` y `socat`. Donde no exista ninguno, solo arrancan las ejecuciones del propietario del servidor, salvo que el propietario haya desactivado el sandbox para todos. Consulta [Entorno aislado y seguridad](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/) para ver el conjunto completo de fronteras.
 :::
 
 ## Comprobar que se ejecuta

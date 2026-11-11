@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cc_data/cc_data.dart' show RigView;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/rigs/presentation/rig_labels.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
@@ -114,10 +115,22 @@ class RunningRow extends ConsumerWidget {
       trailing: CcIconButton(
         icon: AppIcons.power,
         tooltip: l10n.rigStopMachine,
-        onPressed: () => unawaited(
-          ref.read(rigRepositoryProvider).destroy(workspaceId, rig.id),
-        ),
+        onPressed: () => unawaited(_stop(context, ref)),
       ),
     );
+  }
+
+  /// Stops the machine; a refusal (no write grant on its space) is worded.
+  Future<void> _stop(BuildContext context, WidgetRef ref) async {
+    final l10n = AppLocalizations.of(context);
+    final toasts = CcToastScope.maybeOf(context);
+    try {
+      await ref.read(rigRepositoryProvider).destroy(workspaceId, rig.id);
+    } on Object catch (e) {
+      toasts?.show(
+        repoRefusalOf(l10n, e) ?? '$e',
+        variant: CcToastVariant.danger,
+      );
+    }
   }
 }

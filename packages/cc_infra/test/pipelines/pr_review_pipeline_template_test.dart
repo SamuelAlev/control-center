@@ -1,3 +1,6 @@
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
+import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
     show kPipelineRequestedByKey;
@@ -13,9 +16,9 @@ import 'package:test/test.dart';
 
 /// Exercises [registerPrReviewBodies] — the single step body that posts a
 /// consolidated review comment back to a PR. Pure control-flow over an
-/// injectable [GitHubPrClient]: validates the repo slug + PR number, surfaces
-/// failures for missing findings / bad inputs and returns the review id on
-/// success.
+/// injectable [GitHubPrClient]: takes the repo slug + PR number from the
+/// trigger, renders a message's placeholders escaped, surfaces failures for
+/// missing findings / bad inputs and returns the review id on success.
 void main() {
   late _FakeGitHubPrClient prClient;
   late PipelineBodyRegistry registry;
@@ -51,6 +54,8 @@ void main() {
   PipelineContext ctx({
     Map<String, dynamic> state = const {},
     Map<String, dynamic>? trigger,
+    String? message,
+    bool dryRun = false,
   }) => PipelineContext(
     pipelineRunId: 'run-1',
     templateId: 'tpl-1',
@@ -59,13 +64,24 @@ void main() {
     workspaceId: 'ws-1',
     state: state,
     triggerPayload: trigger,
+    dryRun: dryRun,
+    step: message == null
+        ? null
+        : PipelineStepDefinition(
+            id: 'pr-comment',
+            kind: StepKind.listen,
+            bodyKey: BuiltInBodyKeys.prReviewComment,
+            config: PipelineNodeConfig(extras: {kPrCommentMessageKey: message}),
+          ),
   );
 
   Future<StepResult> run({
     Map<String, dynamic> state = const {},
     Map<String, dynamic>? trigger,
+    String? message,
+    bool dryRun = false,
   }) => registry.body(BuiltInBodyKeys.prReviewComment)(
-    ctx(state: state, trigger: trigger),
+    ctx(state: state, trigger: trigger, message: message, dryRun: dryRun),
   );
 
   Future<StepResult> finalizeStep({
@@ -137,65 +153,122 @@ void main() {
     });
   });
 
+  const pr = {'repo_full_name': 'o/r', 'pr_number': 1};
+  const z = '​';
+
   group('registerPrReviewBodies — validation failures', () {
+    test('fails when the trigger names no repository', () async {
+      final res = await run(
+        state: {'consolidated_findings': 'x'},
+        trigger: {'pr_number': 1},
+      );
+      expect(res.errorMessage, contains('names no pull request'));
+    });
+
     test(
-      'throws when repoFullName is missing (requireString is strict)',
+      'fails when prNumber is missing, non-numeric or not positive',
       () async {
-        // requireString raises a StateError before the body reaches its own
-        // repoFullName handling — the pipeline engine surfaces this as a failed
-        // step upstream.
-        expect(
-          () => run(state: {'pr_number': 1, 'consolidated_findings': 'x'}),
-          throwsA(isA<StateError>()),
-        );
+        for (final number in [null, 'abc', 0, -3]) {
+          final res = await run(
+            state: {'consolidated_findings': 'x'},
+            trigger: {'repo_full_name': 'o/r', 'pr_number': ?number},
+          );
+          expect(res.errorMessage, contains('names no pull request'));
+        }
       },
     );
 
-    test('fails when prNumber is missing entirely', () async {
-      final res = await run(
-        state: {'repo_full_name': 'o/r', 'consolidated_findings': 'x'},
-      );
-      expect(res.errorMessage, contains('pr_number missing'));
+    test('fails when repoFullName is not a plain owner/repo', () async {
+      for (final name in [
+        'just-one-part',
+        'o/r/x',
+        'o/r)',
+        '../r',
+        'o/..',
+        'o.x/r',
+      ]) {
+        final res = await run(
+          state: {'consolidated_findings': 'x'},
+          trigger: {'repo_full_name': name, 'pr_number': 1},
+        );
+        expect(res.errorMessage, contains('names no pull request'));
+      }
+      expect(prClient.lastBody, isNull);
     });
 
-    test('fails when prNumber is non-numeric', () async {
+    test('the target comes from the trigger, never from state a step can '
+        'rewrite', () async {
       final res = await run(
         state: {
-          'repo_full_name': 'o/r',
-          'pr_number': 'abc',
+          'repo_full_name': 'o/elsewhere',
+          'pr_number': 99,
           'consolidated_findings': 'x',
         },
       );
-      expect(res.errorMessage, contains('pr_number missing'));
+      expect(res.errorMessage, contains('names no pull request'));
+
+      prClient.reviewToReturn = GitHubReview.fromJson({
+        'id': 2,
+        'state': 'COMMENTED',
+      });
+      await run(
+        state: {
+          'repo_full_name': 'o/elsewhere',
+          'pr_number': 99,
+          'consolidated_findings': 'x',
+        },
+        trigger: pr,
+      );
+      expect(prClient.lastRepo, 'r');
+      expect(prClient.lastPrNumber, 1);
     });
 
     test('fails when findings are missing or empty', () async {
-      final res = await run(state: {'repo_full_name': 'o/r', 'pr_number': 1});
+      final res = await run(trigger: pr);
       expect(res.errorMessage, contains('No consolidated findings'));
 
-      final res2 = await run(
-        state: {
-          'repo_full_name': 'o/r',
-          'pr_number': 1,
-          'consolidated_findings': '',
-        },
-      );
+      final res2 = await run(state: {'consolidated_findings': ''}, trigger: pr);
       expect(res2.errorMessage, contains('No consolidated findings'));
     });
 
-    test('fails when repoFullName is not owner/repo', () async {
+    test('fails on a message placeholder the run cannot fill', () async {
+      final res = await run(trigger: pr, message: 'Hello {{pr_title}}!');
+      expect(res.errorMessage, contains('unresolved placeholders: pr_title'));
+      expect(prClient.lastBody, isNull);
+    });
+
+    test('an author that is not a forge username fails the step', () async {
+      for (final author in [null, '', 'org/team', 'a b', 'x' * 40, '@eve']) {
+        final res = await run(
+          trigger: {...pr, 'author': ?author},
+          message: 'Thanks, @{{author}}!',
+        );
+        expect(res.errorMessage, contains('is not a GitHub username'));
+      }
+      expect(prClient.lastBody, isNull);
+    });
+
+    test('a dry run posts nothing', () async {
       final res = await run(
-        state: {
-          'repo_full_name': 'just-one-part',
-          'pr_number': 1,
-          'consolidated_findings': 'x',
-        },
+        state: {'consolidated_findings': 'f'},
+        trigger: pr,
+        dryRun: true,
       );
-      expect(res.errorMessage, contains('Invalid repo_full_name'));
+      expect(prClient.lastBody, isNull);
+      expect(actingUsers, isEmpty);
+      expect(res.isTerminal, isTrue);
+      expect(res.mutatedState!['comment_dry_run'], 'f');
     });
   });
 
   group('registerPrReviewBodies — success', () {
+    setUp(() {
+      prClient.reviewToReturn = GitHubReview.fromJson({
+        'id': 8,
+        'state': 'COMMENTED',
+      });
+    });
+
     test('submits a COMMENT review and returns the review id', () async {
       prClient.reviewToReturn = GitHubReview.fromJson({
         'id': 99,
@@ -204,11 +277,8 @@ void main() {
         'submitted_at': '2026-01-01T00:00:00Z',
       });
       final res = await run(
-        state: {
-          'repo_full_name': 'acme/widget',
-          'pr_number': 42,
-          'consolidated_findings': 'looks good but nits',
-        },
+        state: {'consolidated_findings': 'looks good but nits'},
+        trigger: {'repo_full_name': 'acme/widget', 'pr_number': 42},
       );
 
       expect(prClient.lastOwner, 'acme');
@@ -221,41 +291,24 @@ void main() {
       expect(res.mutatedState!['commented_at'], isNotNull);
     });
 
-    test(
-      'accepts a numeric-string prNumber from an upstream bash step',
-      () async {
-        prClient.reviewToReturn = GitHubReview.fromJson({
-          'id': 5,
-          'state': 'COMMENTED',
-        });
-        final res = await run(
-          state: {
-            'repo_full_name': 'o/r',
-            'pr_number': '  7 ',
-            'consolidated_findings': 'f',
-          },
-        );
-        expect(prClient.lastPrNumber, 7);
-        expect(res.mutatedState!['comment_review_id'], 5);
-      },
-    );
+    test('accepts a numeric-string prNumber in the trigger', () async {
+      await run(
+        state: {'consolidated_findings': 'f'},
+        trigger: {'repo_full_name': 'o/r', 'pr_number': '  7 '},
+      );
+      expect(prClient.lastPrNumber, 7);
+    });
 
     test('posts bounded by the run\'s requester, never a payload\'s claim of '
         'one', () async {
-      prClient.reviewToReturn = GitHubReview.fromJson({
-        'id': 3,
-        'state': 'COMMENTED',
-      });
       await run(
         state: {
-          'repo_full_name': 'o/r',
-          'pr_number': 1,
           'consolidated_findings': 'f',
           // State is agent-writable: it must not pick who the comment is
           // bounded by.
           kPipelineRequestedByKey: 'mallory',
         },
-        trigger: {kPipelineRequestedByKey: 'alice'},
+        trigger: {...pr, kPipelineRequestedByKey: 'alice'},
       );
       expect(actingUsers, ['alice']);
       expect(attributedFor, ['alice']);
@@ -263,35 +316,79 @@ void main() {
 
     test('names Control Center when the token posts as a person', () async {
       postsAsPerson = true;
-      prClient.reviewToReturn = GitHubReview.fromJson({
-        'id': 4,
-        'state': 'COMMENTED',
-      });
-      await run(
-        state: {
-          'repo_full_name': 'o/r',
-          'pr_number': 1,
-          'consolidated_findings': 'two nits',
-        },
-      );
+      await run(state: {'consolidated_findings': 'two nits'}, trigger: pr);
       expect(prClient.lastBody, '**Control Center** (for @octocat): two nits');
       expect(actingUsers, [null], reason: 'no requester: accountable human');
     });
 
-    test(
-      'reads prNumber from the trigger payload when absent in state',
-      () async {
-        prClient.reviewToReturn = GitHubReview.fromJson({
-          'id': 1,
-          'state': 'COMMENTED',
-        });
-        await run(
-          state: {'repo_full_name': 'o/r', 'consolidated_findings': 'f'},
-          trigger: {'pr_number': 33},
-        );
-        expect(prClient.lastPrNumber, 33);
-      },
-    );
+    test('posts the step message, rendered against the run', () async {
+      final res = await run(
+        state: {'consolidated_findings': 'two nits'},
+        trigger: {
+          'repo_full_name': 'o/r',
+          'pr_number': 12,
+          'author': 'octocat',
+        },
+        message: 'Thanks, @{{author}}!\n\n{{consolidated_findings}}',
+      );
+      expect(prClient.lastBody, 'Thanks, @octocat!\n\ntwo nits');
+      expect(prClient.lastPrNumber, 12);
+      expect(res.mutatedState!['comment_review_id'], 8);
+    });
+
+    test('the author comes from the trigger, never from state', () async {
+      await run(
+        state: {'author': 'mallory'},
+        trigger: {...pr, 'author': 'octocat'},
+        message: 'Thanks, @{{author}}!',
+      );
+      expect(prClient.lastBody, 'Thanks, @octocat!');
+    });
+
+    test('coordinates render from the verified pull request', () async {
+      await run(
+        state: {'repo_owner': 'evil', 'repo_name': 'x'},
+        trigger: {'repo_full_name': 'acme/widget', 'pr_number': 5},
+        message:
+            '[guide](https://github.com/{{repo_owner}}/{{repo_name}}/blob/'
+            'main/CONTRIBUTING.md) for #{{pr_number}}',
+      );
+      expect(
+        prClient.lastBody,
+        '[guide](https://github.com/acme/widget/blob/main/CONTRIBUTING.md) '
+        'for #5',
+      );
+    });
+
+    test('other values are escaped as plain text, mentions inert', () async {
+      await run(
+        trigger: {
+          ...pr,
+          'pr_title': '*Fix* [it](https://evil) @org/team <img src=x>\n# h',
+        },
+        message: 'Reviewed: {{pr_title}}',
+      );
+      expect(
+        prClient.lastBody,
+        r'Reviewed: \*Fix\* \[it\]\(https://evil\) @' +
+            z +
+            r'org/team \<img src=x\> \# h',
+      );
+    });
+
+    test('consolidated findings stay markdown with mentions made inert, in a '
+        'message or posted as is', () async {
+      const findings = '## Findings\n- cc @org/security\n- see `@Override`';
+      const inert = '## Findings\n- cc @${z}org/security\n- see `@Override`';
+      await run(
+        state: {'consolidated_findings': findings},
+        trigger: pr,
+        message: 'Gate:\n\n{{consolidated_findings}}',
+      );
+      expect(prClient.lastBody, 'Gate:\n\n$inert');
+      await run(state: {'consolidated_findings': findings}, trigger: pr);
+      expect(prClient.lastBody, inert);
+    });
   });
 }
 

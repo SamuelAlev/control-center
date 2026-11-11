@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_snapshots_section.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -42,10 +43,12 @@ void main() {
     FakeRpcHost host, {
     List<Workspace> workspaces = const [],
     MediaProxyConfig? proxy,
+    bool owner = true,
   }) {
     return ProviderScope(
       overrides: [
         rpcClientProvider.overrideWithValue(host.client()),
+        canUseHostProvider.overrideWithValue(owner),
         workspacesProvider.overrideWith((ref) => Stream.value(workspaces)),
         mediaProxyConfigProvider.overrideWithValue(proxy),
       ],

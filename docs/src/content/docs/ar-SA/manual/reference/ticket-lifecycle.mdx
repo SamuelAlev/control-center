@@ -2,7 +2,7 @@
 title: دورة حياة التذكرة
 description: حقول التذكرة وحالاتها وانتقالاتها وعلاقاتها ونقطة اختناق التعديل.
 slug: ar-SA/دليل-المستخدم/مرجع/دورة-حياة-التذكرة
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## حالات التذكرة
@@ -112,7 +112,7 @@ Any non-terminal status ──→ cancelled; inReview ──→ failed
 | `projectId`              | `String?`                  | المشروع المالك؛ لا يُدفَع إلى مزوّد بعيد                                                   |
 | `assignedAgentId`        | `String?`                  | معرّف Principal المُسنَد إليه (بيانات وصفية فقط، والإسناد لا يُرسل شيئًا)                  |
 | `assigneeType`           | `PrincipalType`            | أي نوع من Principal يسمّيه `assignedAgentId`، `user` أو `agent` (الافتراضي `agent`)        |
-| `createdByType`          | `PrincipalType?`           | نوع Principal الذي أنشأ التذكرة (`user` أو `agent`)؛ null للصفوف القديمة أو صفوف النظام    |
+| `createdByType`          | `PrincipalType?`           | نوع Principal الذي أنشأ التذكرة (`user` أو `agent`)؛ null للصفوف التي أنشأها النظام    |
 | `createdById`            | `String?`                  | معرّف Principal المنشئ                                                                     |
 | `assignedTeamId`         | `String?`                  | الفريق المُسنَد إليه (بيانات وصفية فقط)                                                    |
 | `delegatedByAgentId`     | `String?`                  | الوكيل الذي فوّض هذه التذكرة                                                               |

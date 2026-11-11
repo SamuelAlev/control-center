@@ -105,7 +105,7 @@ final spaceStatusProvider = Provider.autoDispose.family<SpaceStatus, String>((
 /// row would turn one watch into dozens for a signal the space watch already
 /// carries — and each of those is a server subscription, not a local filter.
 ///
-/// A run with no `conversationId` (an older log, or a space-scoped run) is not
+/// A run with no `conversationId` (a space-scoped run) is not
 /// attributable to a row and is deliberately dropped here: the space row keeps
 /// showing it, which is what [spaceStatusProvider] answers.
 final spaceBusyConversationIdsProvider = Provider.autoDispose

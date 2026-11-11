@@ -60,7 +60,7 @@ void main() {
         r.response.write('gateway');
         r.response.close();
       });
-      final manager = SandboxManager();
+      final manager = SandboxManager(hiddenPaths: const []);
       addTearDown(() async {
         await manager.disposeSession('lo-run');
         await server.close(force: true);

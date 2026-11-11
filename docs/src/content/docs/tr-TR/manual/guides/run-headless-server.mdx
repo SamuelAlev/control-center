@@ -3,7 +3,7 @@ title: Headless bir sunucu çalıştırma
 description: cc_server headless ikilisini ya da Docker imajını çalıştırın, ona bir istemci eşleştirin ve tüm CLI bayrakları ile ortam değişkenleri yüzeyiyle yapılandırın.
 dateModified: 2026-11-08
 slug: tr-TR/kilavuz/nasil-yapilir/headless-sunucu-calistirma
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Sürekli açık kalan bir makinede `cc_server` çalıştırın, ardından masaüstünüzden,
@@ -172,8 +172,10 @@ istemcisidir), `--label` (varsayılanı platform adı artı bu makinenin ana mak
 adıdır), `--host` (URL’de yazdırılacak ana makine; çünkü loopback’e başka bir
 makineden erişilemez) ve `--client-url`. `pair` komutunu yeniden çalıştırmak o
 cihazın anahtarını döndürür ve açık oturumlarını düşürür. Eşleştirme hiçbir
-zaman çalışma alanı oluşturmaz: bağlanan istemcinin ilk kurulum akışı ilkini
-adlandırır ve oluşturur.
+zaman çalışma alanı oluşturmaz. Çalışma alanlarını yalnızca sunucu sahibi oluşturur:
+sahibin istemcisinde ilk kurulum akışı birini adlandırır ve oluşturur; başkaları,
+sahip onlar için bir tane oluşturana ya da bir çalışma alanı yöneticisi onları davet
+edene kadar bekler.
 
 `--client-url` ile ayrıca, web istemcisini önceden doldurulmuş halde açan,
 terminalden taranabilir bir QR kodu yazdırır:
@@ -192,9 +194,7 @@ tarihi); bu, çalışan bir istemcide **Ayarlar → Siz → Cihazlarınız** yol
 eşleştirme](/tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme/).
 :::
 
-`cc_server pair` ile üretilen bir kimlik bilgisinin **son kullanma tarihi
-yoktur**; uygulamada üretilen bir tanesinin ise süresi her zaman 30 gün sonra
-dolar. İşiniz bittiğinde CLI ile üretilmiş bir cihazı **Ayarlar → Siz →
+`cc_server pair` ile üretilen bir kimlik bilgisinin süresi, uygulamada üretilen bir tanesi gibi 30 gün sonra dolar; aynı cihaz için yeni bir tane almak üzere `pair` komutunu yeniden çalıştırın. İşiniz bittiğinde CLI ile üretilmiş bir cihazı **Ayarlar → Siz →
 Cihazlarınız** yolundan iptal edin.
 
 Eşleştirme anahtarı zorunlu Noise el sıkışmasını doğrular; her oturum yeni trafik
@@ -243,6 +243,27 @@ alır; eşleştirilmiş istemciler bunun yerine şifrelenmiş tüneli kullanır.
 
 Sunucu `SIGINT`/`SIGTERM` alana kadar çalışır, ardından temiz biçimde kapanır.
 
+### Başlangıç satırlarını okuyun
+
+İki satır bu sunucunun nasıl kurulduğunu gösterir. Hazır bildirimin yanında
+yazdırılan açığa çıkma satırı `cc_server exposure:` ile başlar ve sunucuya ne kadar
+erişilebildiğini (`bind`, `tls`, `relay`, `tunnel`), bir sunucu sahibinin kaydedilip
+kaydedilmediğini (`owner`) ve bu makinede ajanların nasıl çalıştığını (`sandbox`)
+listeler:
+
+- `sandbox=native`: her ajan çalıştırması işletim sistemi sandbox'ına sarılır.
+- `sandbox=off`: sunucuyu `--sandbox off` ile başlattınız, bu yüzden her üyenin
+  ajanları bu makinede sınırsız çalışır.
+- `sandbox=unavailable`: ana makinede sandbox arka ucu yok (Windows ya da `bwrap` ile
+  `socat` olmayan Linux), bu yüzden yalnızca sunucu sahibinin sorumlu olduğu ajan
+  çalıştırmaları başlar. Diğerlerinin çalıştırmaları "Bu sunucuda sandbox yok, bu
+  yüzden burada ajanları yalnızca sahibi çalıştırabilir." mesajıyla reddedilir.
+
+Günlükte daha önce gelen bir sandbox satırı aynı şeyi sözcüklerle söyler ve bir arka
+uç eksikse neyin kurulacağını adlandırır. Başkalarının ajanlarını sandbox olmadan
+çalıştırmak, sunucu sahibinin herkes için bir kez, `--sandbox off` ile verdiği bir
+karardır. Bkz. [Sandbox ilkelerini yapılandırın](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/#ajan-çalıştırmalarınızın-sandboxa-alınıp-alınmadığını-denetleme).
+
 ## 5. Adım: Bir istemci bağlama
 
 Bir istemciyi 3. adımdaki sunucu URL’sine ve eşleştirme anahtarına yönlendirin:
@@ -270,6 +291,14 @@ kalanıyla aynı kimliği doğrulanmış şifreli oturum üzerinden yönlendirir
 her isteğin şifresini çözer, onu yerel code-server arka ucuna iletir ve yanıtı
 yeniden istemciye şifreler. Dosyalar sunucuya ait kalır.
 
+Düzenleyici, terminali, görevleri ve eklentileriyle birlikte sunucuda sunucunun kendi
+kullanıcısı olarak çalışır; bu yüzden onu yalnızca [sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi)
+açabilir. Bir oturum, onu açan cihaza ve kişiye aittir. VS Code'un çalışma alanı güveni
+açık olarak açılır; böylece VS Code bir klasöre güvenmeden önce sorar ve otomatik
+görevler kapalı olduğundan bir deponun görevleri açılışta hiç başlamaz. Diğerleri
+uygulamanın yerleşik düzenleyicisini ve dosya görünümlerini kullanmayı sürdürür; tam
+düzenleyici onlara sunulmaz.
+
 Service Worker'lar çalışabilsin diye web istemcisini HTTPS ya da güvenli bir loopback
 kaynağı üzerinden barındırın. Olağan web derleme ve sürüm betikleri paylaşılan kaynak
 varlıklarını içerir. Paketi elle derlerseniz, bu varlıkları ardından depo kökünden
@@ -287,7 +316,6 @@ Yerel düzenleyici trafiği bunun yerine yetenekle sınırlandırılmış bir lo
 cephesi kullanır. Sunucunun başlattığı düzenleyici eklentisinin özel loopback
 rapor/komut geçidini genel bir proxy üzerinden açığa çıkarmayın. Hassas genel HTTP
 istekleri reddedilir; kaynaklar kimliği doğrulanmış şifreli bir oturum gerektirir.
-
 
 ## 6. Adım: Kişilerin nasıl oturum açacağını seçme
 
@@ -315,6 +343,8 @@ bu yüzden sunucunun bunlar için genel bir adrese ihtiyacı yoktur. Sunucunun k
 uygulamaları üzerinden yapılan oturum açmalar tarayıcıyı sunucunun genel URL’sine
 geri döndürür; bu yüzden `--public-url` değerini kişilerin tarayıcılarının
 ulaşabileceği bir adrese ayarlayın.
+
+Bu sunucunun varsayılanıdır. Bir çalışma alanı yöneticisi, **Ayarlar → Çalışma alanı → Entegrasyonlar** altında bir çalışma alanına farklı bir seçim verebilir. `CC_CONNECT_URL` ayarlıyken bir çalışma alanı yine kendi uygulamalarına geçebilir, ancak kendi Connect’ine geçemez; bkz. [Çalışma alanı başına seçim](/tr-TR/kilavuz/referans/connect/#çalışma-alanı-başına-seçim).
 
 Bu sunucudan diğer sunucular için Connect barındırmak üzere
 `CC_SERVER_CONNECT_HOST=on` ayarlayın; bkz.
@@ -366,7 +396,7 @@ taşımak değil.
 
 Portu loopback dışına açmadan önce bilmeniz gereken iki şey (tek başına TLS, eşleştirilmiş istemcinin uçtan uca şifrelemesini sağlamaz ve kaynakları yetkilendirmez):
 
-- **MCP, ana makine dışında kapalıya düşer.** Belirteçsiz bir MCP yüzeyi yalnızca loopback’e yanıt verir. `any` adresine bağlanmak bunu genişletmez — ana makine dışından gelen bir istek, siz bir belirteç yapılandırana kadar "MCP requires a bearer token to answer non-loopback clients" ile reddedilir (`mcp.setToken` ya da **Ayarlar → Sunucu → MCP sunucuları**).
+- **MCP her zaman belirtecine ihtiyaç duyar.** Sunucu MCP belirtecini ilk başlatmada oluşturur ve her istek, loopback dahil, bunu `Authorization: Bearer <token>` olarak göndermelidir. Kapatılamaz; sunucu sahibi bunu **Ayarlar → Sunucu → MCP sunucuları** bölümünde okur ve yeniden üretir. Bir web sayfasından, bilinmeyen bir `Host` ile ya da JSON olmayan bir `POST` ile gelen istekler belirteç denetlenmeden önce reddedilir. Bkz. [MCP sunucusunu kullanma](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/).
 - **`GET /healthz` tasarımı gereği kimlik doğrulamasızdır**, joker CORS ile çalışır ve sunucunun kimliğini, adını, kimlik parmak izini ve derleme sürümünü yayımlar. İstemcilerin sunucuyu sabitlemek için parmak izine ihtiyacı vardır, bu yüzden bu kasıtlıdır — ancak bu, erişilebilir herhangi bir `cc_server`’ın soran herkese bu kadarını açıkladığı anlamına gelir.
 
 ## İlgili kılavuzlar

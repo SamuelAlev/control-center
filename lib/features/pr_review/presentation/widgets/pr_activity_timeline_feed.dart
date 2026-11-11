@@ -1,6 +1,6 @@
 part of 'pr_activity_timeline.dart';
 
-/// [_PrActivityTimelineState]'s feed rows and tree-ordered files, memoized
+/// [_PrActivityTimelineState]'s feed rows and changed-file paths, memoized
 /// across builds.
 mixin _FeedRowsMemo {
   // Memoized feed derivation. A rebuild for a press (expanding a thread, a
@@ -8,8 +8,8 @@ mixin _FeedRowsMemo {
   // thread, re-sort the file tree and rebuild the entry list from scratch.
   // Inputs are compared by identity: each is a provider snapshot that is only
   // replaced when the data actually changed.
-  List<PrFile>? _filesIn;
-  List<PrFile> _filesOut = const [];
+  List<PrFile>? _pathsIn;
+  Set<String>? _pathsOut;
   List<_FeedRow> _rowsOut = const [];
   PullRequest? _rowsPr;
   List<PrReviewSubmission>? _rowsReviews;
@@ -18,12 +18,19 @@ mixin _FeedRowsMemo {
   List<PrTimelineEvent>? _rowsEvents;
   List<PrCodeReviewComment>? _rowsCodeComments;
 
-  List<PrFile> _orderedFilesFor(List<PrFile> files) {
-    if (!identical(files, _filesIn)) {
-      _filesIn = files;
-      _filesOut = sortFilesByTreeOrder(files);
+  /// Every path the PR's changed files answer to (a rename answers to its
+  /// old path too), or null while the file index has not loaded.
+  Set<String>? _diffPathsFor(List<PrFile>? files) {
+    if (files == null) {
+      return null;
     }
-    return _filesOut;
+    if (!identical(files, _pathsIn)) {
+      _pathsIn = files;
+      _pathsOut = {
+        for (final f in files) ...[f.filename, ?f.previousFilename],
+      };
+    }
+    return _pathsOut;
   }
 
   List<_FeedRow> _rowsFor({

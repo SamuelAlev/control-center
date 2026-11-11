@@ -2,7 +2,7 @@
 title: Thiết lập tích hợp Slack
 description: Kết nối Slack với một không gian làm việc Control Center, qua app dùng chung của Control Center hoặc một app riêng, để thành viên có thể điều khiển agent ngay từ Slack.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Hướng dẫn này chỉ cho bạn cách kết nối Slack với một không gian làm việc Control Center: bằng cách thêm app dùng chung của Control Center, hoặc bằng một app riêng mà Control Center tạo giúp bạn hoặc tự bạn dựng lấy.
@@ -28,18 +28,18 @@ Một không gian làm việc chỉ chạy trên một trong hai chế độ t�
 
 | Chế độ                        | Cần                                                                                                      | Bạn nhận được                                                                         |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **App dùng chung của Control Center** | Máy chủ dùng Control Center Connect (**Cài đặt → Máy chủ → Đăng nhập một lần**) và Connect phục vụ Slack | Một cú nhấp và một lần đăng nhập Slack. Không cần tạo app, không dán token, không có gì để xoay |
+| **App dùng chung của Control Center** | Các ứng dụng đăng nhập của không gian làm việc chạy qua Control Center Connect (lựa chọn của máy chủ trong **Cài đặt → Máy chủ → Đăng nhập một lần**, hoặc lựa chọn riêng của không gian làm việc trong **Cài đặt → Không gian làm việc → Tích hợp**) và Connect phục vụ Slack | Một cú nhấp và một lần đăng nhập Slack. Không cần tạo app, không dán token, không có gì để xoay |
 | **App riêng của bạn**         | Một app Slack trong không gian Slack của bạn, được tạo theo một trong ba cách bên dưới                  | Tên bot, mô tả và lệnh slash của riêng bạn, có thể chỉnh từ Control Center            |
 
 ### Thêm app dùng chung của Control Center
 
-1. Trong Control Center, vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+1. Trong Control Center, vào **Cài đặt → Không gian làm việc → Tích hợp** và cuộn tới thẻ **Cầu nối chat**
 2. Trên khối Slack, tìm hàng **Thêm Control Center vào Slack** và nhấp **Thêm vào Slack**
 3. Trình duyệt của bạn mở Slack. Đăng nhập Slack, chọn không gian Slack và phê duyệt cài đặt
 4. Khi trình duyệt hiện một mã, hãy nhập nó vào hộp thoại mà Control Center vẫn để mở. Nếu trình duyệt tự đưa bạn quay lại ứng dụng, thì không cần gõ gì
 5. Một thông báo nổi nêu tên không gian Slack đã thêm app, và khối Slack hiển thị kết nối đang chạy trên app dùng chung của Control Center
 
-Chỉ quản trị viên không gian làm việc mới thêm được app. Hàng này nêu lý do khi không khởi động được: khi máy chủ dùng app riêng thay vì Connect, khi Connect của bạn không có app Slack, hoặc khi không gian làm việc này đã kết nối app Slack riêng.
+Chỉ quản trị viên không gian làm việc mới thêm được app. Hàng này nêu lý do khi không khởi động được: khi các ứng dụng đăng nhập của không gian làm việc này là ứng dụng riêng thay vì Connect, khi Connect của bạn không có app Slack, hoặc khi không gian làm việc này đã kết nối app Slack riêng.
 
 Khác với app riêng của bạn:
 
@@ -65,7 +65,7 @@ Sự kiện của app riêng bạn không bao giờ đi qua Connect: Socket Mode
 ## Phương án A: để Control Center tạo app
 
 1. Tạo một cặp token cấu hình app tại [api.slack.com/apps](https://api.slack.com/apps) và sao chép token **làm mới** (`xoxe-…`)
-2. Trong Control Center, vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+2. Trong Control Center, vào **Cài đặt → Không gian làm việc → Tích hợp** và cuộn tới thẻ **Cầu nối chat**
 3. Trên khối Slack, nhấp vào **Tạo app giúp tôi**
 4. Dán token, chỉnh tên app, tên bot, các mô tả và lệnh slash, rồi nhấp vào **Tạo app**
 5. Thực hiện hai bước còn lại mà hộp thoại hiển thị, mỗi bước là một liên kết vào Slack:
@@ -79,7 +79,7 @@ Token cấu hình được xoay vòng sau mỗi lần dùng. Control Center lưu
 
 Vẫn là app đó, không cần token cấu hình — Slack mở cho bạn màn hình tạo app của chính nó với toàn bộ manifest đã điền sẵn.
 
-1. Trong Control Center, vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+1. Trong Control Center, vào **Cài đặt → Không gian làm việc → Tích hợp** và cuộn tới thẻ **Cầu nối chat**
 2. Trên khối Slack, nhấp vào **Tạo app giúp tôi**
 3. Chỉnh tên app, tên bot, các mô tả và lệnh slash — những thông tin này đi kèm theo liên kết
 4. Nhấp vào **Tạo trên Slack**. Trình duyệt của bạn mở trang tạo app của Slack với cấu hình điền sẵn
@@ -133,7 +133,7 @@ message.im
 
 Đây là cách các token của app riêng bạn đến được Control Center. App dùng chung không cần gì trong số này.
 
-1. Vào **Cài đặt → Không gian làm việc → Chung** và cuộn tới thẻ **Cầu nối chat**
+1. Vào **Cài đặt → Không gian làm việc → Tích hợp** và cuộn tới thẻ **Cầu nối chat**
 2. Trên khối Slack, nhấp vào **Kết nối Slack**
 3. Điền vào các trường:
 
@@ -207,7 +207,7 @@ Bất kỳ thành viên đã liên kết nào có vai trò ghi cũng có thể �
 
 Văn bản trước `|` là tiêu đề, văn bản sau đó là mô tả. Bot trả lời rằng nó đã soạn phiếu.
 Chưa có phiếu nào được tạo và không có tự động hóa phiếu nào được kích hoạt: bản nháp chờ
-bạn trong **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Bản nháp phiếu từ chat**,
+bạn trong **Cài đặt → Bạn → Hồ sơ → Bản nháp phiếu từ chat**,
 nơi bạn có thể sửa tiêu đề và mô tả, rồi nhấn **Tạo phiếu** hoặc **Hủy**.
 
 - Chỉ người đã chạy lệnh mới thấy bản nháp

@@ -60,7 +60,7 @@ class AgentsTable extends Table {
   /// mode-based default at dispatch time.
   TextColumn get commandPolicyJson => text().withDefault(const Constant(''))();
 
-  /// Agent role (e.g. 'ceo', 'coder', 'reviewer'). Null for legacy agents.
+  /// Agent role (e.g. 'ceo', 'coder', 'reviewer'). Null when unassigned.
   TextColumn get role => text().nullable()();
 
   /// Monthly budget in US cents for this agent.

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_infra/src/jsonrpc_process/framed_process_channel.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 
 /// An event the adapter pushed: `stopped`, `output`, `terminated`, `exited`, …
 typedef DapEvent = ({String event, Map<String, dynamic> body});
@@ -44,6 +45,7 @@ class DapClient {
 
   /// Spawns [command] and returns a client speaking to it.
   static Future<DapClient> start({
+    required ToolProcessLauncher launcher,
     required String command,
     required List<String> args,
     required String workingDirectory,
@@ -51,6 +53,7 @@ class DapClient {
     String? name,
   }) async => DapClient(
     await FramedProcessChannel.start(
+      launcher: launcher,
       command: command,
       args: args,
       workingDirectory: workingDirectory,

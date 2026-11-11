@@ -1,6 +1,13 @@
 part of '../remote_rpc_catalog.dart';
 
-List<WatchQuery> _rigWatchQueries(RigPort? rigs, RigPortsPort? rigPorts) => [
+// Every stream shows a rig only to a caller who may read its space
+// ([RigAccess]).
+List<WatchQuery> _rigWatchQueries(
+  RigPort? rigs,
+  RigPortsPort? rigPorts,
+  RigAccess? access,
+  TerminalSessionPort? terminals,
+) => [
   // Status, display size and who holds control, pushed on every change. The
   // FRAMES do not come through here — video over a JSON-RPC subscription
   // would put base64 in the same lane as every other message. They ride the
@@ -8,13 +15,7 @@ List<WatchQuery> _rigWatchQueries(RigPort? rigs, RigPortsPort? rigPorts) => [
   if (rigs != null)
     WatchQuery(
       name: 'rig.watchSessions',
-      handler: (ctx) => rigs
-          .watch(ctx.workspaceId!)
-          .map(
-            (list) => {
-              'rigs': [for (final r in list) rigToWire(r)],
-            },
-          ),
+      handler: (ctx) => access!.watchVisible(ctx.workspaceId!, ctx.userId),
     ),
   // The panel's data. One stream per rig, pushed on every port that opens,
   // closes or is forwarded — the discovery poll is server-side, so the
@@ -29,7 +30,9 @@ List<WatchQuery> _rigWatchQueries(RigPort? rigs, RigPortsPort? rigPorts) => [
             'Missing or invalid argument: rig_id',
           );
         }
-        return rigPorts.watchPorts(ctx.workspaceId!, rigId);
+        return Stream.fromFuture(
+          access!.requireView(ctx.workspaceId!, ctx.userId, rigId),
+        ).asyncExpand((_) => rigPorts.watchPorts(ctx.workspaceId!, rigId));
       },
     ),
   if (rigPorts != null)
@@ -48,10 +51,17 @@ List<WatchQuery> _rigWatchQueries(RigPort? rigs, RigPortsPort? rigPorts) => [
             'Missing or invalid argument: space_id',
           );
         }
-        return rigPorts.watchTerminalPorts(
-          ctx.workspaceId!,
-          sessionId,
-          spaceId: spaceId,
+        return Stream.fromFuture(
+          access!.requireSpace(ctx.workspaceId!, spaceId, ctx.userId),
+        ).asyncExpand(
+          // Somebody else's session is silent, exactly as a missing one.
+          (_) => isOthersTerminal(terminals, sessionId, ctx.userId)
+              ? Stream<Map<String, dynamic>>.multi((_) {})
+              : rigPorts.watchTerminalPorts(
+                  ctx.workspaceId!,
+                  sessionId,
+                  spaceId: spaceId,
+                ),
         );
       },
     ),

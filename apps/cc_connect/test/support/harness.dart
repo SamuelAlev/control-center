@@ -6,6 +6,38 @@ import 'dart:typed_data';
 import 'package:cc_connect/cc_connect.dart';
 import 'package:cc_connect_core/cc_connect_core.dart';
 
+/// A 2048-bit RSA key generated for these tests and used nowhere else: the
+/// test App's private key (`CONNECT_GITHUB_APP_PRIVATE_KEY`).
+const String testGitHubAppKey = '''
+-----BEGIN RSA PRIVATE KEY-----
+MIIEpAIBAAKCAQEA1oBppJyKMeYgcjUYMYgsuycTm9rDmhmwxlAWPSvKkU7dudpa
+B7lcgz4shv5qmOZ69MS3E2wlh7ztPUpE2/gmPGGprEvERAwEnOxC2eVzoVX023Va
+yQNdisqWVmsoW/30lVKPCxynVG78cxWE6KzYqbg+ru5plAof7gHt9gKsv55ybJWw
+YptP42DrbFh69A2HRtLaoTrk1yPjBNzT/0xxQO1tf2lZbNbd1Z5LOSt7YSmzaUL/
+R+JnEF3DLhQxOv4DNdwds//CvfuMvgnjMXqdfWxzQlQAWYYEE55QpJfPpCSMKmIn
+7vI16xGoAoyF3yqmp1MNMeulz5ieTe3z/wcGtQIDAQABAoIBAGYJCbfjOx3HcXHC
+bfLJ6zVPvlUqOFeqltuPJzUMCr0afgC1rJP2CdrojXfduElpgd3DYa8ch7HNHjFE
+jgLxRQb+Eh9Cn2cbLGqVPKu4KUv6vpJSfdAXCL1H50HOkZFI+bq6Xg8UH0jbzrzT
+5Lhl2F7LpQ3DnXdtZYjrZA3dcd1oG0BaojY+JnI6HNz/QbPNQQprYkrwykuRcqUF
+Y51fCsdktdmB8vYma3yUfMfMpyrvZ6l7xIGJwjulspIuKQWAnraqRV1fB+V6ZHSt
+PaZr/p91NXn6GnAYmupCdC1/oqVJVjcMmxBp940lra8vW64TJf6z43zsObD9mqz0
+t1Q2rkECgYEA/PCqRj1HOh0YzNbjV1Cv1Y0rtHqT6n2FNM+mXZvNqm0qFR/g2f+G
+wOvfAev2a749NxKr2ljl5xPMTwtA/FvH0JR3RLGXqwSoUR7Ag8m3yozWg4EVdKyK
+ByQrmTQ1RUvmlF5uELnwsA+A3rgTSa6/hpK7X15Q+RcaStsRmI1ww/ECgYEA2Ri0
+6Kw+bNT7+tIoVFERkJXe+5hiPFxuLBTPHwBqYsF4uTIVQk5zQPqZDLaXv+mOYgEU
+D5Shd4I/ROMJ5y8ITxkc0HjfqUF/XPgqF3LqWtLLhLrqoo1JaoeoRQzggb9n6MQe
++KSWHTC4FsLjxEc5SbLXXhFbzQHhCqnoqgndYwUCgYEAsZ09tDzrez9bXtu2oGWk
+U0ziV8WLgKnLlB4MMMdrUDV/y32rIulv8qCu5GaRj27zBW0zCAxMxEr+uLKqW4sH
+cMwQREiAvDJ1DyGNBf3r9WuYZpeKPXe7JPCdPOOQVKzLqXv1xgELplX8pGiWArOX
+AiSfNoTAT2mNqOrUHE+V08ECgYBFCZdWOpgrcduj2rsafSFR0mczqTTsLxSWDhQD
+rtUmDJKAik26ZUo/irGrGlHNpM8zmVYw0jo6z/+gv3aBvzIsPTctkJLHt11ySjTQ
+einOsiQoVGyTPszvBK7dLogimqTHn76doXFfXQPdsSJPY7rzFd1pO6nu2r8e7gNg
+N3zgpQKBgQCm/sXLID74u9VtVlhL0nhv6zaKm3UqcMtdu+ivl/intWZTGbXUxJqq
+L+pzaH8qXpUpjZynoVk8RE8aCqN9h34//JD4u7TOtcHoZmbA+AMdPmc1vknVbvn5
+SVgaUK2148/jd/aKIcXn3k4Hc17BYRgsoeMdfe3jrjOw4SknWBjC5g==
+-----END RSA PRIVATE KEY-----
+''';
+
 /// The public URL every test Connect claims to live at. Requests actually go
 /// to a loopback port; signatures cover this URL, never the Host header.
 const String testPublicUrl = 'https://connect.test';
@@ -96,6 +128,8 @@ final class Harness {
     Duration pollTimeout = const Duration(seconds: 25),
     FakeUpstream? upstream,
     StateStore? state,
+    BindingStore? bindings,
+    DateTime Function()? clock,
   }) async {
     final dir = await Directory.systemTemp.createTemp('cc_connect_test');
     final fake = upstream ?? FakeUpstream();
@@ -110,7 +144,9 @@ final class Harness {
         config,
         upstream: fake,
         state: state,
+        bindings: bindings,
         logSink: logs.add,
+        clock: clock,
         pollTimeout: pollTimeout,
       );
       handle = await serveConnect(service, host: '127.0.0.1', port: 0);
@@ -133,6 +169,7 @@ final class Harness {
     'CONNECT_GITHUB_CLIENT_SECRET': 'gh-secret-2',
     'CONNECT_GITHUB_CLIENT_SECRET_PREVIOUS': 'gh-secret-1',
     'CONNECT_GITHUB_SECRET_GENERATION': '2',
+    'CONNECT_GITHUB_APP_PRIVATE_KEY': testGitHubAppKey,
     'CONNECT_GOOGLE_CLIENT_ID': 'g-client.apps.googleusercontent.com',
     'CONNECT_GOOGLE_CLIENT_SECRET': 'goog-secret',
     'CONNECT_LINEAR_CLIENT_ID': 'lin_client',
@@ -224,7 +261,46 @@ final class Harness {
     '$mount$pathAndQuery',
     headers: {if (cookie != null) 'cookie': '__Host-cc_connect=$cookie'},
   );
+
+  /// The consent page's form post: [action] with the login cookie, sent as
+  /// a same-origin browser form unless [fetchSite] says otherwise, with an
+  /// `Origin` header only when [origin] is given. [token]
+  /// is the page's form token; when null and a [cookie] is given, the
+  /// consent page is loaded first and its token used. An empty [token]
+  /// sends none.
+  Future<TestResponse> consent(
+    ConnectOAuthLane lane,
+    String action, {
+    String? cookie,
+    String? fetchSite = 'same-origin',
+    String? origin,
+    String? token,
+  }) async {
+    var formToken = token;
+    if (formToken == null && cookie != null) {
+      final page = await browser('/oauth/${lane.wire}/done', cookie: cookie);
+      formToken = consentTokenFrom(page.body) ?? '';
+    }
+    return raw(
+      'POST',
+      '$mount/oauth/${lane.wire}/done',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        if (cookie != null) 'cookie': '__Host-cc_connect=$cookie',
+        'sec-fetch-site': ?fetchSite,
+        'origin': ?origin,
+      },
+      body: utf8.encode(
+        'action=$action'
+        '${formToken == null || formToken.isEmpty ? '' : '&token=$formToken'}',
+      ),
+    );
+  }
 }
+
+/// The form token a consent page carries, or null.
+String? consentTokenFrom(String body) =>
+    RegExp(r'name="token" value="([A-Za-z0-9_-]+)"').firstMatch(body)?.group(1);
 
 /// The cookie value a 303 set, or null.
 String? cookieFrom(TestResponse response) {
@@ -343,8 +419,19 @@ final class FakeGitHub {
 /// The parsed query of an authorize URL.
 Map<String, String> queryOf(String url) => Uri.parse(url).queryParameters;
 
-/// Runs start → callback → done for [lane] and returns the claim inputs.
-Future<({String loginId, String confirmCode, PkcePair pkce, TestResponse done})>
+/// Runs start → callback → consent → continue for [lane] and returns the
+/// claim inputs: `done` is the page after continue, `consent` the one
+/// before it.
+Future<
+  ({
+    String loginId,
+    String confirmCode,
+    PkcePair pkce,
+    TestResponse done,
+    TestResponse consent,
+    String cookie,
+  })
+>
 browserFlow(
   Harness harness,
   ConnectInstallIdentity identity,
@@ -376,15 +463,26 @@ browserFlow(
     throw StateError('callback failed: ${callback.status}');
   }
   final cookie = cookieFrom(callback)!;
-  final done = await harness.browser(
+  final consent = await harness.browser(
     '/oauth/${lane.wire}/done',
     cookie: cookie,
+  );
+  if (consent.status != 200 || confirmCodeFrom(consent.body) != null) {
+    throw StateError('consent failed: ${consent.status}');
+  }
+  final done = await harness.consent(
+    lane,
+    'continue',
+    cookie: cookie,
+    token: consentTokenFrom(consent.body),
   );
   return (
     loginId: started.loginId,
     confirmCode: confirmCodeFrom(done.body)!,
     pkce: pkce,
     done: done,
+    consent: consent,
+    cookie: cookie,
   );
 }
 
@@ -427,6 +525,18 @@ final class FlakyStateStore implements StateStore {
   /// `deleteIf` of a key starting with one of these throws.
   final Set<String> failDeletes = {};
 
+  /// `push` to a key starting with one of these throws.
+  final Set<String> failPushes = {};
+
+  /// `putIfAbsent` of a key starting with one of these throws [putError].
+  final Set<String> failPuts = {};
+
+  /// What a failing `putIfAbsent` throws.
+  Object putError = const StateStoreUnavailable('test');
+
+  /// Whether [probe] fails.
+  bool failProbe = false;
+
   bool _fails(Set<String> prefixes, String key) =>
       prefixes.any((p) => key.startsWith(p));
 
@@ -442,8 +552,12 @@ final class FlakyStateStore implements StateStore {
   }
 
   @override
-  Future<bool> putIfAbsent(String key, String value, Duration ttl) =>
-      _inner.putIfAbsent(key, value, ttl);
+  Future<bool> putIfAbsent(String key, String value, Duration ttl) {
+    if (_fails(failPuts, key)) {
+      throw putError;
+    }
+    return _inner.putIfAbsent(key, value, ttl);
+  }
 
   @override
   Future<bool> replace(
@@ -476,11 +590,24 @@ final class FlakyStateStore implements StateStore {
     String value,
     Duration ttl, {
     int maxLength = 1000,
-  }) => _inner.push(key, value, ttl, maxLength: maxLength);
+  }) {
+    if (_fails(failPushes, key)) {
+      throw const StateStoreUnavailable('test');
+    }
+    return _inner.push(key, value, ttl, maxLength: maxLength);
+  }
 
   @override
   Future<List<String>> drain(String key, {int max = 100}) =>
       _inner.drain(key, max: max);
+
+  @override
+  Future<void> probe() {
+    if (failProbe) {
+      throw const StateStoreUnavailable('test');
+    }
+    return _inner.probe();
+  }
 
   @override
   Future<void> close() => _inner.close();

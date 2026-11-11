@@ -2,7 +2,7 @@
 title: Kullanım analizleri
 description: Kullanım analizleri açıkken Control Center'ın neyi kaydettiği, buna kimin karar verdiği ve neyin asla gönderilmediği.
 slug: tr-TR/kilavuz/referans/kullanim-analizleri
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center, bir [Umami](https://umami.is) örneğine **takma adlı kullanım olayları** gönderebilir. Kullanım analizleri **sunucu operatörü açana kadar kapalıdır**. Ayar sunucuya aittir ve ona bağlı her istemci için geçerlidir: masaüstü uygulaması, web uygulaması, telefon ve sunucunun kendisi.
@@ -13,7 +13,7 @@ Kullanım analizleri, çökme ve hata tanıları için cihaz başına bir ayar o
 
 | Anahtar | Nerede | Etkisi |
 | --- | --- | --- |
-| **Kullanım analizlerini paylaş** | İlk kurulum (sandbox adımı) ve **Ayarlar → Gizlilik**. Yalnızca sunucu operatörü değiştirebilir; diğer üyeler geçerli değeri salt okunur olarak görür | Sunucu genelinde. Sunucu ayarlarında `telemetry.usage_analytics` olarak saklanır. `true` olarak ayarlanmadıkça kapalıdır |
+| **Kullanım analizlerini paylaş** | İlk kurulum (sandbox adımı) ve **Ayarlar → Sunucu → Tanılama ve gizlilik**. Yalnızca sunucu operatörü değiştirebilir; diğer üyeler geçerli değeri salt okunur olarak görür | Sunucu genelinde. Sunucu ayarlarında `telemetry.usage_analytics` olarak saklanır. `true` olarak ayarlanmadıkça kapalıdır |
 | Derleme türü | Otomatik | Debug ve profile derlemeleri gönderim yapmaz. Bunun yerine her olayı hata ayıklama günlüğüne yazar |
 | `CC_ANALYTICS_DEBUG=1` | `cc_server` ortamı veya onun `.env` dosyası | Sunucunun ve ona bağlı her istemcinin debug ve profile derlemelerinin test amacıyla gerçekten gönderim yapmasını sağlar. Yukarıdaki anahtarın yine de açık olması gerekir |
 | `DO_NOT_TRACK=1` | `cc_server` ortamı | Anahtar ne derse desin sunucunun kendi raporlamasını durdurur. İstemciler anahtarı izlemeye devam eder |

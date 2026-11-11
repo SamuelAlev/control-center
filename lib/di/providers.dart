@@ -13,6 +13,7 @@ import 'dart:async';
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/activity_entry.dart';
 import 'package:cc_domain/core/domain/entities/github_user.dart';
+import 'package:cc_domain/core/domain/ports/audit_log_port.dart';
 import 'package:cc_domain/core/domain/ports/notification_preferences_port.dart';
 import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
 import 'package:cc_domain/core/domain/ports/run_transcript_relay_port.dart';
@@ -20,14 +21,17 @@ import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/commit_signing_key_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/agent_mention_parser.dart';
 import 'package:cc_domain/core/domain/services/json_schema_validator.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_path_issue.dart';
 import 'package:cc_domain/features/calendar/domain/repositories/calendar_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_lookup_port.dart';
+import 'package:cc_domain/features/connect/domain/repositories/workspace_connect_repository.dart';
 import 'package:cc_domain/features/dictation/domain/dictation_control_port.dart';
 import 'package:cc_domain/features/fonts/fonts.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
@@ -62,6 +66,8 @@ import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/di/audio_capture_bindings.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/settings/data/privacy_preferences.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart'
+    show activeWorkspaceIdProvider;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 // Domain repository interfaces and value objects are pure Dart and web-safe.
@@ -134,6 +140,37 @@ final notificationFeedRepositoryProvider = Provider<NotificationFeedRepository>(
 final workspaceRepositoryProvider = Provider<WorkspaceRepository>((ref) {
   return RpcWorkspaceRepository(ref.watch(rpcClientProvider));
 });
+
+/// Each linked repository's path issue in one workspace, by repo id: the
+/// server keeps listing such a repository but does not serve its checkout
+/// until it is linked again.
+///
+/// Read off the same live list as the repositories (each one's
+/// `path_issue`), never kept on the `Repo` entity: it is the server's verdict
+/// on the stored path, re-sent when a relink clears it.
+final repoPathIssuesProvider =
+    StreamProvider.family<Map<String, RepoPathIssue>, String>(
+      (ref, workspaceId) => ref
+          .watch(rpcClientProvider)
+          .subscribe('workspace.watchReposForWorkspace', {
+            'workspace_id': workspaceId,
+          })
+          .map(
+            (frame) => {
+              for (final repo in (frame['repos'] as List? ?? const []))
+                if (repo is Map && repo['id'] is String)
+                  repo['id'] as String: ?RepoPathIssue.fromWire(
+                    repo['path_issue'],
+                  ),
+            },
+          ),
+    );
+
+/// Provides one workspace's Control Center Connect choice
+/// (`workspaceConnect.*`).
+final workspaceConnectRepositoryProvider = Provider<WorkspaceConnectRepository>(
+  (ref) => RpcWorkspaceConnectRepository(ref.watch(rpcClientProvider)),
+);
 
 /// Provides the [RepoRepository] the UI reads through.
 final repoRepositoryProvider = Provider<RepoRepository>((ref) {
@@ -280,6 +317,12 @@ final calendarRepositoryProvider = Provider<CalendarRepository>(
   (ref) => RpcCalendarRepository(ref.watch(rpcClientProvider)),
 );
 
+/// The signed-in person's own commit signing key (`credentials.*`
+/// CommitSigningKey ops): only its public half ever reaches a client.
+final commitSigningKeyRepositoryProvider = Provider<CommitSigningKeyRepository>(
+  (ref) => RpcCommitSigningKeyRepository(ref.watch(rpcClientProvider)),
+);
+
 /// The latest weather snapshot for the active workspace (`weather.*`). The
 /// live Open-Meteo fetch and persistence run host-side, so refresh and
 /// location changes forward to the server.
@@ -333,6 +376,12 @@ final sandboxDetectorPortProvider = Provider<SandboxDetectorPort>(
   (ref) => RemoteSandboxDetector(ref.watch(rpcClientProvider)),
 );
 
+/// The audit log (`audit.watchLog`): the server trail and every workspace
+/// trail the caller administers, as one live table.
+final auditLogPortProvider = Provider<AuditLogPort>(
+  (ref) => RemoteAuditLog(ref.watch(rpcClientProvider)),
+);
+
 /// Watches the audit trail for one entity, mapped to domain [ActivityEntry]s
 /// so presentation never touches the data layer. Streamed over RPC from the
 /// server that owns the audit trail.
@@ -383,8 +432,8 @@ class _AttemptCounter {
   int value = 0;
 }
 
-/// The raw `github.currentUser` answer (`{user, teams}`), retried until a user
-/// resolves.
+/// The raw `github.currentUser` answer (`{user, teams}`) for the active
+/// workspace, retried until a user resolves.
 ///
 /// GitHub auth lives on the HOST, not this thin client. One fetch backs both
 /// [githubUserProvider] and [viewerGitHubTeamsProvider] so the two never
@@ -414,10 +463,18 @@ final viewerGitHubIdentityProvider = FutureProvider<Map<String, dynamic>>((
     return demo;
   }
 
+  // The identity is the person's GitHub sign-in IN this workspace (a
+  // workspace on its own App signs them in as a different grant), so a
+  // workspace switch re-reads it. No workspace, no identity to ask about.
+  final workspaceId = ref.watch(activeWorkspaceIdProvider);
+  if (workspaceId == null) {
+    return const {};
+  }
+
   try {
-    final data = await ref
-        .watch(rpcClientProvider)
-        .call('github.currentUser', const {});
+    final data = await ref.watch(rpcClientProvider).call('github.currentUser', {
+      'workspace_id': workspaceId,
+    });
     if (data['user'] is! Map) {
       // No viewer yet: the host holds no token, or its own lookup is inside
       // the cool-down it entered after a GitHub failure. Ask again rather than

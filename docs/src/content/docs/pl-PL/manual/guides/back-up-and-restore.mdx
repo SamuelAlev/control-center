@@ -2,7 +2,7 @@
 title: Kopia zapasowa i przywracanie
 description: Wykonaj migawkę instalacji, przenieś obszar roboczy między maszynami, przywróć jeden obszar roboczy lub wszystkie i zachowaj kopie w innym miejscu.
 slug: pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Ten poradnik obejmuje pięć rzeczy, które faktycznie robi się z kopiami zapasowymi:
@@ -18,7 +18,8 @@ przywracanie**.
 
 - **Pełny klient** — aplikacja desktopowa lub webowa. Sparowany telefon celowo nie może wywołać żadnej z tych operacji.
 - Aby wykonać, wyświetlić, pobrać lub usunąć **migawkę instalacji**: rola **właściciela** instalacji.
-- W przypadku działań w obrębie poszczególnych obszarów roboczych: **administrator** tego obszaru roboczego może eksportować go oraz wyświetlać i pobierać jego zaplanowane kopie zapasowe, a **właściciel** — importować go lub usuwać oraz usuwać jego kopie zapasowe.
+- W przypadku działań w obrębie poszczególnych obszarów roboczych: **administrator** tego obszaru roboczego może eksportować go oraz wyświetlać i pobierać jego zaplanowane kopie zapasowe, a **właściciel** — usuwać go lub usuwać jedną z jego kopii zapasowych.
+- Do **przywrócenia** obszaru roboczego, z przesłanego pliku, zaplanowanej kopii zapasowej albo migawki: [właściciel serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera), który musi być też właścicielem tego obszaru roboczego. Przywrócenie sprawia, że serwer przejmuje plik bazy danych jako własny, więc to decyzja właściciela serwera. Wszyscy inni widzą „Tylko właściciel serwera może przywracać kopie zapasowe. Nadal możesz je pobrać.” zamiast działań przywracania.
 - Do pobierania i wysyłania: sparowany pełny klient, w połączeniu bezpośrednim albo przez przekaźnik. Obie ścieżki przenoszą bajty pliku przez ten sam uwierzytelniony, szyfrowany end-to-end tunel zasobów; przekaźnik nie może ich odczytać.
 
 :::caution[Migawki instalacji wykonuje się ręcznie]
@@ -43,12 +44,14 @@ Oba artefakty to **wyłącznie bazy danych**:
 - **Migawka instalacji** to katalog ze znacznikiem czasu: `manifest.json`, `global.db` oraz po jednym pliku `<workspaceId>/workspace.db` na każdy obszar roboczy.
 - **Eksport obszaru roboczego** to właśnie ten pojedynczy plik `workspace.db`.
 
+Baza danych obszaru roboczego to cały obszar roboczy: jego rozmowy, dzienniki uruchomień, indeks kodu, powiązania z repozytoriami, definicje środowisk i członkowie. Zawiera też tokeny webhooków potoków i sekrety webhooków synchronizacji zgłoszeń, w postaci czytelnej. Przechowuj pobraną kopię zapasową obszaru roboczego albo jego eksport tak, jak przechowujesz sekret. Nie ma w niej logowań do dostawców, kluczy urządzeń ani sekretów użytkowników; te znajdują się w globalnej bazie danych i w magazynie sekretów serwera.
+
 Żaden z nich nie przenosi reszty katalogu danych: `secrets.json` (klucze parowania,
 poświadczenia dostawców, SSO), katalogu `blobs/` obszaru roboczego (obrazy wklejane do
 wiadomości), `skills/`, `agents/`, `chat_credentials/`, nagranego dźwięku ze spotkań ani
 obrazów rigów. Część z tego jest zbędna, a część nie — [pełna tabela znajduje się
 w dokumentacji
-referencyjnej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#what-a-backup-does-not-contain),
+referencyjnej](/pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa/#czego-kopia-zapasowa-nie-zawiera),
 a objęcie tych danych kopią to zadanie [sekcji o kopiach poza
 maszyną](#kopiowanie-kopii-zapasowych-poza-maszynę).
 
@@ -76,7 +79,7 @@ którego kopiowanie się nie powiodło — sprawdź dziennik serwera.
 
 ## Planowanie kopii zapasowych obszarów roboczych i retencji
 
-Otwórz **Ustawienia → Potoki → Szablony potoków** dla danego obszaru roboczego i znajdź
+Otwórz **Ustawienia → Obszar roboczy → Szablony potoków** dla danego obszaru roboczego i znajdź
 **Workspace backup**. Jego włączony harmonogram działa w każdą niedzielę o 03:00 UTC:
 **Back up workspace**, a po nim **Delete backups older than** (domyślnie 30 dni). Drugi
 węzeł uruchamia się dopiero po udanej kopii. Liczbę dni retencji możesz zmienić
@@ -101,7 +104,7 @@ zapasowe.
 
 Rozwiń wiersz, aby zobaczyć każdą kopię zapasową, od najnowszej:
 
-- **Przywróć** zastępuje bieżącą bazę danych obszaru roboczego tą kopią zapasową. Najpierw wyeksportuj obszar roboczy, jeśli może to wymagać cofnięcia. Wymaga roli **właściciela**.
+- **Przywróć** zastępuje bieżącą bazę danych obszaru roboczego tą kopią zapasową. Najpierw wyeksportuj obszar roboczy, jeśli może to wymagać cofnięcia. Wymaga właściciela serwera, który musi też być właścicielem obszaru roboczego.
 - **Pobierz** zapisuje plik na maszynie, której używasz. Kopia zapasowa pozostaje na serwerze.
 - **Kopiuj ścieżkę** kopiuje jej lokalizację na serwerze.
 - **Usuń** trwale usuwa tę kopię zapasową po wpisaniu nazwy obszaru roboczego. Wymaga roli **właściciela**.
@@ -115,7 +118,7 @@ liście, oznaczone jako **Obszar roboczy usunięty**, i może je tam pobrać lub
 inny nie widzi tych wierszy.
 
 Nie mają opcji **Przywróć**, bo nie ma obszaru roboczego, do którego można by je przywrócić.
-Aby odzyskać taką kopię, pobierz ją, utwórz obszar roboczy i wyślij plik zgodnie z opisem w
+Aby odzyskać taką kopię, pobierz ją, utwórz obszar roboczy (tylko właściciel serwera) i wyślij plik zgodnie z opisem w
 sekcji
 [Przenoszenie obszaru roboczego do innej instalacji](#przenoszenie-obszaru-roboczego-do-innej-instalacji).
 
@@ -156,9 +159,9 @@ pliku.
 2. Na serwerze **docelowym** utwórz (lub wybierz) obszar roboczy, który go przejmie.
 3. Rozwiń ten obszar roboczy i w sekcji **Przywróć z tego urządzenia** naciśnij **Wybierz plik i wyślij**. Wskaż pobrany plik `.db`.
 
-Jeśli oba serwery to ta sama maszyna, przy której siedzisz, **Zapisz na serwerze** plus
-**Importuj** → **Wybierz plik** daje ten sam efekt bez dodatkowego obiegu; ścieżki
-w oknie importu są rozwiązywane na hoście serwera.
+Krok 3 to przywrócenie, więc wymaga właściciela serwera docelowego, który musi być też właścicielem tego obszaru roboczego.
+
+Jeśli oba serwery to ta sama maszyna, przy której siedzisz, **Zapisz na serwerze** na źródle, a potem ścieżkę pliku w polu **Plik bazy danych obszaru roboczego** i **Importuj** na docelowym daje ten sam efekt bez dodatkowego obiegu; ta ścieżka jest rozwiązywana na hoście serwera.
 
 :::caution[Import zastępuje wszystko]
 Import nadpisuje wszystko, co docelowy obszar roboczy obecnie zawiera, i nie można tego
@@ -174,10 +177,11 @@ z pliku należą do instalacji, z której pochodzi, i nie zostaną rozwiązane w
 — dane samego obszaru roboczego są nienaruszone, ale po jego adopcji ponownie sprawdź
 członkostwo.
 
-Tokeny botów czatu leżą obok bazy danych, a nie w niej, więc obszar roboczy przekazany
-komuś innemu nie zawiera aktywnych poświadczeń. Przyjmująca instalacja podłącza własne.
+Tokeny botów czatu i logowania do dostawców leżą poza bazą danych, więc przyjmująca instalacja podłącza własne. Plik zawiera jednak tokeny webhooków potoków i sekrety webhooków synchronizacji zgłoszeń, więc obszar roboczy przekazany komuś innemu przekazuje im także te. Jeśli odbiorca nie powinien ich mieć, wymień je potem.
 
 ## Przywracanie jednego obszaru roboczego z migawki
+
+Musisz być właścicielem serwera i właścicielem tego obszaru roboczego.
 
 1. W sekcji **Migawki instalacji** rozwiń wybraną migawkę.
 2. Znajdź wiersz tego obszaru roboczego i naciśnij **Przywróć**.
@@ -189,9 +193,9 @@ plik inaczej.
 
 Wiersz może mówić **Nie ma go już na tym serwerze**, a pozycja **Przywróć** jest
 wyłączona: migawka zawiera obszar roboczy, którego ta instalacja już nie ma. Przywróć go
-ręcznie — utwórz obszar roboczy, a następnie w sekcji **Dane obszaru roboczego**
-zaimportuj do niego plik ze ścieżki
-`<snapshot path>/<old workspace id>/workspace.db`. Rozwinięta migawka pokazuje własną
+ręcznie — utwórz obszar roboczy (tylko właściciel serwera), a następnie w sekcji **Dane obszaru roboczego**
+wpisz ścieżkę
+`<snapshot path>/<old workspace id>/workspace.db` w jego polu **Plik bazy danych obszaru roboczego** i naciśnij **Importuj**. Rozwinięta migawka pokazuje własną
 **Ścieżkę na serwerze** w polu do skopiowania, a tytuł wiersza to stary identyfikator
 obszaru roboczego, więc masz przed sobą obie połówki tej ścieżki.
 
@@ -362,9 +366,11 @@ miejsce ich przechowywania.
 | Objaw | Przyczyna i rozwiązanie |
 | --- | --- |
 | Pobieranie albo wysyłanie kończy się niepowodzeniem po zmianie połączenia | Spróbuj ponownie na aktywnym sparowanym połączeniu. Zarówno połączenie bezpośrednie, jak i przez przekaźnik obsługują szyfrowany transfer plików; żadne nie oferuje awaryjnego tekstu jawnego HTTP |
-| „Serwer odmówił” | Rola. Wykonanie lub wyświetlenie migawki instalacji wymaga operatora instalacji. Pobranie obszaru roboczego wymaga roli administratora, przywrócenie go — roli właściciela, a archiwum całej migawki — operatora instalacji |
-| „Ten serwer nie ma powierzchni kopii zapasowych” | Na hoście nie podłączono portu kopii zapasowych — to serwer demonstracyjny. Operacje są nieobecne, a nie odrzucane |
-| „Plik jest większy, niż serwer akceptuje” | Wysyłanie jest ograniczone do 8 GiB. Umieść plik na hoście serwera i użyj zamiast tego **Importuj** → **Wybierz plik** |
+| „Serwer odmówił. Pobranie obszaru roboczego wymaga roli administratora obszaru roboczego. Przywrócenie go wymaga właściciela serwera, który musi być też właścicielem tego obszaru roboczego. Całej migawki wymaga właściciela serwera.” | Rola. Wykonanie, wyświetlenie lub pobranie migawki instalacji wymaga właściciela serwera. Pobranie obszaru roboczego wymaga roli administratora; przywrócenie go wymaga właściciela serwera, który musi być też właścicielem obszaru roboczego |
+| „Przesyłanie plików nie jest jeszcze skonfigurowane dla tego połączenia. Połącz się ponownie z serwerem, aby pobrać lub wysłać kopię zapasową.” | To połączenie z serwerem nie ma kanału transferu plików, więc **Pobierz** i wysyłanie są wyłączone. Połącz się ponownie z serwerem, a potem spróbuj ponownie |
+| „Tylko właściciel serwera może przywracać kopie zapasowe. Nadal możesz je pobrać.” | Przywracanie zastępuje bazę danych obszaru roboczego na hoście serwera, więc przywraca ją tylko właściciel serwera. Pobierz kopię zapasową i poproś go o przywrócenie |
+| „Ten serwer nie ma powierzchni kopii zapasowych.” | Na hoście nie podłączono portu kopii zapasowych — to serwer demonstracyjny. Operacje są nieobecne, a nie odrzucane |
+| „Plik jest większy, niż serwer akceptuje.” | Wysyłanie jest ograniczone do 8 GiB. Umieść plik na hoście serwera i wpisz jego ścieżkę w polu **Plik bazy danych obszaru roboczego** |
 | Import odrzucony: to nie jest baza danych obszaru roboczego Control Center | Plik nie ma wiersza `workspace_meta` — to nie eksport obszaru roboczego albo jest obcięty. Nic nie zostało zastąpione |
 | Migawka jest oznaczona jako **Niekompletna** | Brakuje jej manifestu albo wymienia nieistniejące pliki. Wykonaj nową; w międzyczasie adoptuj z niej pojedyncze pliki obszarów roboczych |
 | Migawka informuje, że nie uwzględniono obszarów roboczych | Te obszary robocze nigdy nie były zapisywane albo ich kopiowanie się nie powiodło. Sprawdź dziennik serwera |

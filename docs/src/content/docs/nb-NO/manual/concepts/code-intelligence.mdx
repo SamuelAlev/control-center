@@ -2,7 +2,7 @@
 title: Kodeintelligens
 description: Hvorfor en agent trenger kompilatoren, en strukturell matcher og en feilsøker — og hva hver av dem svarer på som de andre ikke kan.
 slug: nb-NO/handbok/konsepter/kodeintelligens
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center gir en agent fire måter å forstå kode på utover å lese den. De svarer på genuint forskjellige spørsmål, og grunnen til at det er fire og ikke én, er at ingen enkelt mekanisme svarer på alle.
@@ -31,6 +31,8 @@ Så gevinsten er egentlig ikke `lsp`-verktøyet. Det er at `write`, `edit` og `a
 Ingen server starter ved oppstart. Én starter ved den første forespørselen som trenger den, noe som nesten alltid er den første redigeringen av en fil den gjør krav på, og ledige servere ryddes bort. En vert som aldri rører Dart, starter aldri en analysator.
 
 Gjenkjenning er et **snitt**: en rotmarkør må finnes i utsjekkingen *og* binærfila må kunne løses opp. En markør alene sier «dette prosjektet er Python» og ingenting om hvorvidt serveren er installert; en oppløsbar binærfil alene sier at verten har en verktøykjede, og ingenting om denne utsjekkingen. Bare begge sammen betyr at en spørring kan lykkes, og et verktøy som tilbys og alltid feiler, er verre enn ett som ikke finnes.
+
+Hva et arkiv kan påvirke, holdes bevisst lite. Serverne kommer fra en innebygd tabell, aldri fra en fil i utsjekkingen, og en binærfil inne i prosjektet (`node_modules/.bin`) brukes bare når kjøringen er i sandkasse. En språkserver er et program som kjører på serverens maskin, så et arkiv får ikke navngi en.
 
 ## Hvorfor strukturelt søk når grep finnes
 

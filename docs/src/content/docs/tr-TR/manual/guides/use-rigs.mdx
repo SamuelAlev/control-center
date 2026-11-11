@@ -2,7 +2,7 @@
 title: Bir ajana test için makine verme
 description: Bir ajana atılabilir bir tarayıcı, masaüstü, Android emülatörü ya da iOS Simülatörü verin — canlı izlenir ve denetimini devralabilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/rig-kullanma
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 **Rig**, bir ajanın gerçekten bir şey denemesi gerektiğinde açtığı atılabilir bir
@@ -129,6 +129,41 @@ noktasında reddeder. Yaptığınız her şey adınıza kaydedilir.
 
 Denetim bilinçli olarak tekeldir: tek bir makineye iki aktörün yazması, ikisinin
 de amaçlamadığı girdiler üretir.
+
+### Kimler izleyebilir, kimler yönetebilir
+
+Alanda açılan bir makine, alanın kendisinin yaptığı gibi o alanın depolarını izler
+(bkz. [Alanlar depolarını izler](/tr-TR/kilavuz/kavramlar/yetkilendirme/#alanlar-depolarını-izler)):
+
+- **İzlemek** alana okuma erişimi gerektirir: alanın sunduğu her depo üzerinde okuma
+  izni ve kod barındırıcı oturum açmanızın her birini okuyabilmesi. İzlemek; makine
+  listesini, ekranı, sesi, tarayıcının durumunu, portlarını ve panosunu ile dosyalarını
+  okumayı kapsar.
+- **Yönetmek** bu depolarda ayrıca bir [yazma izni](/tr-TR/kilavuz/kavramlar/yetkilendirme/#kodu-değiştirmek-yazma-izni-gerektirir)
+  gerektirir. Yönetmek; alanda bir makine açmayı, yazmayı ve tıklamayı, kontrolü almayı,
+  makineyi başlatmayı, durdurmayı ve kapatmayı, portlarını yönlendirmeyi, panosuna
+  yazmayı, üzerine dosya bırakmayı ve mikrofonu kullanmayı kapsar.
+
+Yalnızca okuma erişimiyle makine **Yalnızca izleme** gösterir ve "Bu makineyi izleyebilirsiniz.
+Makineyi sürmek, portlarını yönlendirmek, içine yapıştırmak ya da üzerine dosya bırakmak için bu
+alandaki her depoya yazma erişimi gerekir." yazar. Devre dışı **Makineyi başlat** altında sekme
+"Burada bir makine başlatmak için bu alandaki her depoya yazma erişimi gerekir. Bir çalışma
+alanı yöneticisi bunu verebilir." der. Okuma erişimi olmadan makine gösterilmez, yalnızca
+"Bu makineyi görüntüleyemezsiniz. Okuma erişiminiz olmayan bir alana ait." yazar.
+
+Hiçbir alana ait olmayan bir makine hiçbir worktree'ye erişmez ve çalışma alanının her üyesi
+onu izleyebilir ve yönetebilir.
+
+Kendi oturum açmalarını taşıyan bir makine o kişinin süreceği makinedir: kendi terminal makinesi ya da
+ağ erişimi bir kod barındırıcıya ulaşan, onun için açılmış herhangi bir makine. Yalnızca o kişi ve
+yalnızca onun adına hareket eden ajan çalıştırmaları onu sürebilir. Çalışma alanı yöneticileri ve
+sunucu sahibi bunu geçersiz kılmaz. Alanın kabul ettiği diğerleri ekranını, sesini, durumunu ve
+portlarını izleyebilir; ama onu süremez, portlarını yönlendiremez, içine yapıştıramaz, üzerine dosya
+bırakamaz, ondan dosya kopyalayamaz ya da panosunu okuyamaz. Böyle bir makine, bu notla **Yalnızca izleme** gösterir: "Bu makineyi izleyebilirsiniz. Makine, açıldığı kişinin oturum açmalarını kullanır; bu yüzden makineyi yalnızca o kişi sürebilir, portlarını yönlendirebilir, içine yapıştırabilir veya üzerine dosya bırakabilir." Bu nedenle reddedilen bir eylem şunu söyler: "Bu makineyi yalnızca makinenin açıldığı kişi sürebilir. Makine o kişinin kendi oturum açmalarını kullanır."
+Başkasının terminal makinesi size hiç görünmez, tıpkı onların terminal oturumları gibi.
+
+Her makine, onu yönetip yönetemeyeceğinizi gösterir; bu, bir izin ya da kod barındırıcı oturum açmanız
+değiştiğinde kendiliğinden güncellenir.
 
 ## İçeri ve dışarı taşıma
 

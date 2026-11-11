@@ -2,10 +2,10 @@
 title: Ajouter des dépôts à un espace de travail
 description: Enregistrez des copies de travail Git dans un espace de travail pour que les agents puissent y travailler.
 slug: fr-FR/manuel/guides/ajouter-des-depots
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Ce guide vous explique comment enregistrer une copie de travail Git dans un espace de travail, la réindexer puis la retirer.
+Ce guide vous explique comment enregistrer une copie de travail Git dans un espace de travail, la réindexer puis la retirer. Ajouter un dépôt depuis les dossiers du serveur est réservé au propriétaire du serveur ; le retirer est réservé à un administrateur de l’espace de travail.
 
 Les dépôts sont **limités à l’espace de travail**. Il n’existe aucun registre global ni aucune étape de liaison : ajouter un dépôt et le placer dans un espace de travail sont un seul et même acte. La même copie de travail enregistrée dans deux espaces de travail devient deux lignes indépendantes dotées de deux identifiants différents — d’un espace de travail à l’autre, l’identité d’un dépôt est son chemin dans le système de fichiers, jamais son identifiant.
 
@@ -21,9 +21,29 @@ Tout le reste est refusé au moment de l’enregistrement, avec un message expli
 
 L’hébergeur de code est lu depuis le dépôt distant et stocké sur le dépôt — vous ne le choisissez jamais. Un espace de travail peut contenir des dépôts des trois à la fois, et chacun est contacté via sa propre API, avec ses propres identifiants. Les espaces de noms imbriqués de GitLab sont préservés : `gitlab.com/group/subgroup/project` est enregistré avec le propriétaire `group/subgroup` et le nom `project`.
 
-Le dossier doit aussi se trouver sur la machine qui héberge `cc_server`, dans l’un des répertoires `--repo-roots` de ce serveur. Cette liste d’autorisation correspond par défaut au répertoire personnel de l’utilisateur du serveur, et la navigation au-dessus d’une racine est refusée.
+Le dossier doit aussi se trouver sur la machine qui héberge `cc_server`, dans l’un des répertoires `--repo-roots` de ce serveur. Cette liste d’autorisation correspond par défaut au répertoire personnel de l’utilisateur du serveur, et la navigation au-dessus d’une racine est refusée. La navigation dans les dossiers du serveur n’est proposée qu’au [propriétaire du serveur](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur), car elle liste les fichiers propres à la machine. Pour les autres, à la place du bouton **Ajouter un dépôt**, s’affiche « Le propriétaire du serveur ajoute les dépôts depuis les dossiers du serveur. » ; et un lien vers un dépôt qu’aucun de leurs espaces de travail ne possède indique qu’il n’est lié dans aucun de leurs espaces de travail et qu’il faut demander au propriétaire du serveur de l’ajouter.
+
+L’emplacement autorisé de la copie de travail dépend de la personne qui la relie :
+
+- **Dans le stockage propre à l’espace de travail** sur le serveur : tout administrateur de l’espace de travail.
+- **Ailleurs sur le disque du serveur** : seul le [propriétaire du serveur](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur), car seul il peut diriger le serveur vers les fichiers propres à la machine. Les autres voient « Seul le propriétaire du serveur peut relier un dossier situé hors du stockage de cet espace de travail. »
+- **Le dossier de données du serveur**, ou tout ce qu’il contient : jamais.
+
+L’`origin` de la copie de travail doit être le dépôt que vous reliez. Un dossier dont l’`origin` désigne un autre dépôt est refusé avec « L’origine de ce dossier est un autre dépôt. »
+
+### Dossiers que le serveur n’utilise pas encore
+
+Un dépôt dont le dossier est hors du stockage de l’espace de travail, et qui n’a pas été relié par le propriétaire du serveur, comme un dépôt d’un espace de travail importé, affiche « Ce dossier est hors du stockage de l’espace de travail. Confirmez que ce serveur peut l’utiliser. » sous sa ligne, jusqu’à ce que le propriétaire du serveur le confirme. Les autres voient à la place « Ce dossier est hors du stockage de l’espace de travail. Seul le propriétaire du serveur peut le confirmer. »
+
+Le propriétaire le confirme une fois : **Confirmer** sur la ligne, ou **Tout confirmer** dans l’avis au-dessus de la liste lorsque plusieurs dépôts attendent. Chacun est vérifié à nouveau en tant que propriétaire, avec les mêmes contrôles que lors de sa liaison. Jusque-là, il reste dans la liste mais n’est ni ouvert, ni provisionné, ni indexé : aucun éditeur, terminal, environnement ni copie d’espace ne l’utilise, et le graphe de code l’ignore. Ajouter à nouveau le même dossier en tant que propriétaire du serveur a le même effet que le confirmer, et conserve l’identifiant du dépôt.
+
+Une copie de travail qu’un lien symbolique a déplacée ailleurs est traitée de la même façon : elle reste listée et inutilisée jusqu’à ce qu’une personne autorisée à relier le dossier désormais pointé la relie à nouveau.
+
+Vous devez aussi être connecté à la forge du dépôt, et votre propre compte doit pouvoir voir le dépôt.
 
 ## Enregistrer une copie de travail
+
+Vous devez être le propriétaire du serveur pour ces étapes.
 
 1. Ouvrez **Paramètres → Espace de travail → Dépôts** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Cliquez sur **Ajouter un dépôt**.
@@ -56,7 +76,23 @@ Faites glisser la poignée d’une ligne. L’ordre que vous définissez est cel
 
 ## Corriger le lien GitHub
 
-L’icône de lien sur une ligne ouvre un éditeur du propriétaire GitHub et du nom du dépôt — utile lorsque le dépôt distant a été renommé ou transféré.
+L’icône de lien sur une ligne ouvre un éditeur du propriétaire GitHub et du nom du dépôt.
+
+Vous en avez rarement besoin. Un lien est rattaché à l’identifiant permanent du dépôt sur la forge : un renommage ou un transfert est donc suivi automatiquement.
+
+- Renommer un dépôt dans Control Center ne modifie que son nom d’affichage.
+- Changer le dépôt de la forge vers lequel pointe un lien demande un administrateur de l’espace de travail, et cela est vérifié auprès de la forge avec la propre connexion de cet administrateur, comme lors de la liaison.
+- Un dépôt lié ne peut pas devenir un dépôt purement local.
+
+Si le chemin désigne ensuite un **autre** dépôt (l’original a été supprimé puis recréé, ou déplacé et remplacé par un autre), Control Center cesse de lui envoyer quoi que ce soit : ni jetons, ni pushes, ni commentaires, ni requêtes. Cela couvre aussi vos propres actions : une revue, une fusion ou un commentaire que vous faites sur un tel dépôt est refusé, sur GitHub, GitLab et Bitbucket. La ligne et les pull requests du dépôt affichent « _repo_ désigne maintenant un autre dépôt » jusqu’à ce qu’un administrateur de l’espace de travail clique sur **Relier à nouveau**.
+
+## Qui peut ouvrir le code
+
+Un droit d’accès à un dépôt n’ouvre pas à lui seul ses fichiers. Pour ouvrir les fichiers, les diffs, la recherche ou un terminal de ce dépôt, un membre a besoin du droit accordé dans Control Center, et sa propre connexion à la forge doit pouvoir lire le dépôt. Les administrateurs de l’espace de travail ne sont pas exemptés ; le propriétaire du serveur l’est. Voir [Le code suit la forge](/fr-FR/manuel/concepts/autorisation/#le-code-suit-la-forge).
+
+Lorsque vous accordez un dépôt à une personne dont le compte sur la forge ne peut pas le lire, l’autorisation est enregistrée et vous voyez un avertissement, par exemple « Enregistré. Leur compte GitHub ne peut pas encore lire ce dépôt : il reste masqué pour eux. »
+
+La même règle détermine qui peut ouvrir un espace. Un espace ne s’ouvre que pour les membres qui peuvent ouvrir le code de chaque dépôt qu’il utilise, et il est masqué pour les autres, ainsi que ses résultats de recherche, journaux d’exécution, tâches à faire, activité et notifications. Un espace sans dépôt est ouvert à tous les membres. Voir [Les espaces suivent leurs dépôts](/fr-FR/manuel/concepts/autorisation/#les-espaces-suivent-leurs-dépôts).
 
 ## Retirer un dépôt
 
@@ -66,7 +102,31 @@ L’icône de lien sur une ligne ouvre un éditeur du propriétaire GitHub et du
 
 La boîte de dialogue indique ce qu’elle fait : « _nom_ sera retiré de cet espace de travail. Les fichiers locaux sur le disque ne sont pas modifiés. »
 
+Retirer un dépôt nécessite un administrateur de l’espace de travail. Cela oublie aussi les identifiants de forge enregistrés pour ce dépôt, comme un jeton d’automatisation GitLab ou Bitbucket.
+
 La suppression efface la ligne du dépôt de cet espace de travail et supprime en cascade ses lignes de graphe de code — symboles, arêtes, fichiers et points de contrôle d’indexation — ainsi que toutes les autorisations par membre sur ce dépôt, ses liens espace-dépôt et ses enregistrements de copies de travail isolées. La même copie de travail enregistrée dans un autre espace de travail constitue une ligne indépendante et n’est pas affectée. Les arbres de travail sur disque vers lesquels ces enregistrements pointaient ne sont pas détruits par la suppression.
+
+## Dépannage
+
+### J’ai un droit d’accès mais le dépôt indique que mon compte ne peut pas le lire
+
+Votre propre compte sur la forge ne peut pas lire le dépôt, si bien que Control Center vous en cache le code même si l’espace de travail vous l’a accordé. Connectez-vous à la forge dans **Paramètres → Vous → Profil → Hébergement de code** si ce n’est pas déjà fait, ou demandez au propriétaire du dépôt sur la forge de vous donner accès. Le dépôt s’ouvre dès que votre compte sur la forge peut le lire.
+
+### « Ce dossier est hors du stockage de l’espace de travail »
+
+Le dossier du dépôt est hors du stockage de l’espace de travail et le propriétaire du serveur ne l’a pas relié, ou un lien symbolique le fait désormais pointer ailleurs. Il reste listé mais inutilisé jusqu’à ce que le propriétaire du serveur le confirme ou ajoute à nouveau le dossier. Si vous n’êtes pas le propriétaire, demandez-le-lui. Si vous l’êtes, appuyez sur **Confirmer** sur la ligne ou sur **Tout confirmer** au-dessus de la liste ; voir [Dossiers que le serveur n’utilise pas encore](#dossiers-que-le-serveur-nutilise-pas-encore).
+
+### « Il n’existe plus rien à ce chemin sur le serveur »
+
+Le dossier a été déplacé ou supprimé sur la machine du serveur. Remettez-le en place, ou demandez à un administrateur de l’espace de travail de retirer le dépôt avec **Retirer** dans l’avis, puis de l’ajouter à nouveau depuis son dossier actuel.
+
+### « Ce dossier ne peut pas servir de dépôt »
+
+Le dossier enregistré est le dossier de données du serveur, un élément qu’il contient, ou le dossier de stockage de l’espace de travail lui-même. Aucun de ces éléments ne peut être un dépôt. Un administrateur de l’espace de travail le retire avec **Retirer** dans l’avis, puis ajoute à nouveau le dépôt depuis le vrai dossier de la copie de travail.
+
+### « Impossible de confirmer votre accès à la forge »
+
+Control Center n’a pas pu joindre la forge pour vérifier que votre compte peut lire le dépôt ; il a donc refusé plutôt que de deviner. Réessayez dans un instant.
 
 ## Guides connexes
 

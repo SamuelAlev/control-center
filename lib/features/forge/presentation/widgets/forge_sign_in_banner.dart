@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart';
+import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -15,13 +19,40 @@ import 'package:go_router/go_router.dart';
 /// Only a real answer counts: a `forgeConnectionsProvider` that could not ask
 /// the server has no value (or keeps its last one), and an unreachable server
 /// is not evidence that anyone signed out. A real answer lists every
-/// supported forge. A connection the server reports as authenticated but
-/// whose person grant lapsed ([ForgeConnection.needsSignIn]: revoked, expired
-/// or voided by a Connect key rotation) is not a working sign-in either.
+/// supported forge. Only a [ForgeConnection.isUsable] connection is a working
+/// sign-in: a lapsed, paused or unreachable one is not.
 bool needsForgeSignIn(List<ForgeConnection>? connections) =>
     connections != null &&
     connections.isNotEmpty &&
-    !connections.any((c) => c.authenticated && !c.needsSignIn);
+    !connections.any((c) => c.isUsable);
+
+/// What the shell banner says when nothing is usable: the most actionable
+/// state among [connections] decides.
+///
+/// A lapsed grant ([ForgeConnectionStatus.needsSignIn]) is the reader's to
+/// fix and comes first; a paused one is the workspace's sign-in service
+/// having changed; a grant that only failed to renew right now
+/// ([ForgeConnectionStatus.unreachable]) needs nothing from anyone, so a list
+/// of only those shows no banner. Null when nothing needs saying.
+ForgeConnection? forgeSignInBannerSubject(List<ForgeConnection>? connections) {
+  if (!needsForgeSignIn(connections)) {
+    return null;
+  }
+  for (final status in const [
+    ForgeConnectionStatus.needsSignIn,
+    ForgeConnectionStatus.paused,
+  ]) {
+    for (final c in connections!) {
+      if (c.status == status) {
+        return c;
+      }
+    }
+  }
+  if (connections!.any((c) => c.status == ForgeConnectionStatus.unreachable)) {
+    return null;
+  }
+  return connections.first;
+}
 
 /// Workspaces whose missing-sign-in warning was dismissed this session.
 ///
@@ -60,18 +91,45 @@ class ForgeSignInBanner extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final subject = forgeSignInBannerSubject(
+      ref.watch(forgeConnectionsProvider).value,
+    );
     if (workspaceId == null ||
-        !needsForgeSignIn(ref.watch(forgeConnectionsProvider).value) ||
+        subject == null ||
         ref.watch(dismissedForgeSignInProvider).contains(workspaceId)) {
       return const SizedBox.shrink();
     }
-    final signInRoute = settingsProfileRoute(workspaceId);
-    if (GoRouterState.of(context).matchedLocation == signInRoute) {
+    // The page that holds the sign-in needs no warning pointing at itself.
+    if (GoRouterState.of(context).matchedLocation ==
+        settingsAccountProfileRoute(workspaceId)) {
       return const SizedBox.shrink();
     }
+    final signInRoute = settingsAccountsRoute(workspaceId);
 
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
+    final forge = subject.forge.displayName;
+    final lane = signInLaneForForge(subject.forge);
+    final (String title, String body) = switch (subject.status) {
+      ForgeConnectionStatus.needsSignIn => (
+        unusableConnectionLine(
+          l10n,
+          subject.status,
+          forge,
+          account: subject.username,
+        )!,
+        l10n.forgeSignInBannerBody,
+      ),
+      ForgeConnectionStatus.paused => (
+        l10n.connectionPaused,
+        l10n.forgeSignInBannerPausedBody,
+      ),
+      _ => (l10n.forgeSignInBannerTitle, l10n.forgeSignInBannerBody),
+    };
+    // A lapsed browser grant is one click from fixed, so the banner signs in
+    // right here; everything else goes to the card that explains it.
+    final signInHere =
+        subject.status == ForgeConnectionStatus.needsSignIn && lane != null;
     // Part of the shell chrome, like the title bar above it: same fill and a
     // closing hairline, so the panes below start on a clean edge instead of
     // butting against a bare padding strip.
@@ -88,14 +146,28 @@ class ForgeSignInBanner extends ConsumerWidget {
           AppSpacing.sm,
         ),
         child: CcAlert(
-          variant: CcAlertVariant.warning,
-          icon: AppIcons.gitBranch,
-          title: l10n.forgeSignInBannerTitle,
-          description: Text(l10n.forgeSignInBannerBody),
+          variant: subject.status == ForgeConnectionStatus.paused
+              ? CcAlertVariant.info
+              : CcAlertVariant.warning,
+          icon: subject.status == ForgeConnectionStatus.paused
+              ? AppIcons.pause
+              : AppIcons.gitBranch,
+          title: title,
+          description: Text(body),
           trailing: CcButton(
             size: CcButtonSize.sm,
-            onPressed: () => context.go(signInRoute),
-            child: Text(l10n.forgeSignInBannerAction),
+            onPressed: signInHere
+                ? () => unawaited(
+                    showProviderSignInDialog(
+                      context,
+                      lane: lane,
+                      workspaceId: workspaceId,
+                    ),
+                  )
+                : () => context.go(signInRoute),
+            child: Text(
+              signInHere ? l10n.signInAgain : l10n.forgeSignInBannerAction,
+            ),
           ),
           onClose: () => ref
               .read(dismissedForgeSignInProvider.notifier)

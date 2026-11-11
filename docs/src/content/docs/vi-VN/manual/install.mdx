@@ -2,7 +2,7 @@
 title: Cài đặt
 description: Dùng Control Center trong trình duyệt hoặc cài ứng dụng desktop, thiết lập backend agent và chọn nơi máy chủ của nó chạy.
 slug: vi-VN/so-tay/cai-dat
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center chạy theo hai cách: dưới dạng **ứng dụng web** tại
@@ -134,7 +134,7 @@ Danh sách mô hình được phục vụ trực tiếp bởi từng nhà cung c
 
 Thông tin xác thực GitHub **là của bạn và nằm trên máy chủ**, được đánh khóa theo id người dùng của bạn — không nằm trong keychain của hệ điều hành máy khách. Mọi thiết bị bạn đăng nhập đều dùng cùng một thông tin xác thực, và không thành viên nào khác đọc được nó.
 
-GitHub chỉ có đăng nhập: thẻ **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** có **Đăng nhập vào GitHub**, và không có token nào để dán. Luồng đăng nhập chạy qua GitHub App của máy chủ ([Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)) hoặc qua Control Center Connect, tùy theo chủ máy chủ đã chọn. Với app riêng của máy chủ, trình duyệt tự quay về máy chủ; qua Connect, bạn gõ mã 8 ký tự mà trình duyệt hiển thị, hoặc để nó mở Control Center. Xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/).
+GitHub chỉ có đăng nhập: thẻ **Cài đặt → Bạn → Hồ sơ → Lưu trữ mã** có **Đăng nhập vào GitHub**, và không có token nào để dán. Luồng đăng nhập chạy qua GitHub App của máy chủ ([Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/)) hoặc qua Control Center Connect, tùy theo chủ máy chủ đã chọn, trừ khi một quản trị viên không gian làm việc đã chọn ứng dụng đăng nhập khác cho không gian làm việc đó trong **Cài đặt → Không gian làm việc → Tích hợp**. Với app riêng của máy chủ, trình duyệt tự quay về máy chủ; qua Connect, bạn gõ mã 8 ký tự mà trình duyệt hiển thị, hoặc để nó mở Control Center. Xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/).
 
 Quá trình thiết lập ban đầu yêu cầu kết nối này. Sau đó, chính thẻ đó là nơi bạn đăng nhập lại hoặc ngắt kết nối. GitLab và Bitbucket dùng cùng thẻ đó với một token cá nhân được dán vào; xem [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
 
@@ -156,7 +156,7 @@ Thêm hoặc chuyển đổi máy chủ sau này trong **Cài đặt → Máy ch
 
 1. **Cài đặt → Máy chủ → Nhà cung cấp mô hình** liệt kê cả hai adapter. "Control Center (tích hợp sẵn)" hiển thị là đã tìm thấy với phiên bản `built-in`; Claude Code hiển thị là đã tìm thấy nếu CLI của nó nằm trên `PATH` của máy chủ. Nhấn **Làm mới** nếu nó bị thiếu.
 2. **Cài đặt → Không gian làm việc → Kho lưu trữ** liệt kê các kho mã của không gian làm việc này, và **Thêm kho lưu trữ** duyệt các thư mục của máy chủ.
-3. **Cài đặt → Không gian làm việc → Agent** liệt kê năm agent mà không gian làm việc đầu tiên của bạn tạo sẵn. Mỗi agent cần được đặt **Bộ điều hợp** và **Mô hình** trước khi có thể chạy.
+3. **Cài đặt → Không gian làm việc → Agent** liệt kê sáu agent mà không gian làm việc đầu tiên của bạn tạo sẵn. Mỗi agent cần được đặt **Bộ điều hợp** và **Mô hình** trước khi có thể chạy.
 4. **Cài đặt → Máy chủ → Chẩn đoán & quyền riêng tư** báo cáo các backend sandbox mà máy chủ này cung cấp, trạng thái của mô hình embedding, và việc ghi nhật ký.
 
 ## Xây dựng từ mã nguồn

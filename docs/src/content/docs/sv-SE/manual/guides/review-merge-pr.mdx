@@ -2,7 +2,7 @@
 title: Granska och slå ihop en PR
 description: Öppna en PR-arbetsyta, läs diffen, lämna kommentarer inline, skicka in en granskning och slå ihop.
 slug: sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Den här guiden visar hur du granskar och slår ihop en pull request.
@@ -22,9 +22,13 @@ redigerare för en fil i taget, en inbäddad code-server och en webbläsare i ap
 öppnas vid behov; flikar för driftsättningsförhandsvisning läggs in automatiskt
 när en förhandsvisnings-URL upptäcks på PR:en. Din fliklayout sparas per PR.
 
+Den inbäddade code-server erbjuds bara serverägaren, eftersom den körs på servern som serverns egen användare. En session tillhör enheten och personen som öppnade den, öppnas med VS Codes arbetsytetillit på (VS Code frågar innan den litar på en mapp) och kör ingen uppgift automatiskt. Alla andra behåller den enfilsredigerare och filvyerna.
+
 Fliken Översikt innehåller PR:ens metadata (författare, gren, etiketter,
 tilldelade, reaktioner, commits, kontrollstatus) och åtgärdsraden: uppdatera,
-**Granskning**, **Slå samman**, öppna i IDE och en överflödesmeny ⋯.
+**Granskning**, **Slå samman**, en knapp med namnet på din redigerare (till exempel **Öppna i VS Code**) och en överflödesmeny ⋯.
+
+Redigerarknappen startar en inbyggd redigerare på **serverns** egen skärm, som serverns användare och utanför varje sandlåda, så den erbjuds bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren). På en skrivbordsapp som är värd för sin egen server är det personen vid skrivbordet. Detsamma gäller att öppna en konversations worktree i en redigerare. Alla andra använder de inbyggda redigerarvyerna. Även för ägaren öppnas en pull request bara från ett repo som är länkat till arbetsytan.
 
 ### Öppna en PR från en ytas stack
 
@@ -41,7 +45,7 @@ eller mellanslag för att fälla ihop eller expandera den. Orelaterade PR:er fö
 åtskilda, och ofullständiga eller tvetydiga grenlänkar visas inte som en ordnad
 stack.
 
-I **Källkontroll** öppnar **Staplade pull requests (N)** en väljare över stackens
+I PR:ens rubrik öppnar stackmärket (en ikon med lager och antalet pull requests i stacken) **Staplade pull requests**, en väljare över stackens
 publicerade delar, nederst först. Varje post visar PR-numret, delens etikett och
 position; den utcheckade delen är markerad. Välj en post för att öppna dess
 PR-arbetsyta. **Publicera stacken** visas bara när PR-upptäckten har slutförts och
@@ -49,6 +53,21 @@ minst en del saknar PR. Det gäller även grenmenyn. PR:er som skapats utanför
 Control Center räknas också som publicerade. Delvis publicerade stackar erbjuder
 båda åtgärderna; arbete på en enda gren behåller de enskilda åtgärderna för att
 skapa/visa PR.
+
+### Commit och push från Källkontroll
+
+En commit du gör i panelen **Källkontroll** är din: du är dess författare och committer, under den adress din forge verifierade för din inloggning. När du skapade en signeringsnyckel under **Verifierade commits** i **Inställningar** → **Du** → **Commits** signerar servern den med din egen signeringsnyckel innan den pushas. En push bär din egen inloggning, begränsad till just det repot.
+
+Servern kör Git på sin egen maskin, i ett träd som en agent eller en pull request kan ändra, så den kör inga av de program som ett repo kan välja:
+
+- Commits hoppar över repots Git-hookar, precis som `git commit --no-verify` gör. En pre-commit-hook, en commit-msg-hook eller en pre-push-hook körs inte
+- Credential helpers, redigerare, externa diff-verktyg och signeringsprogram som repot konfigurerar ignoreras
+
+Kör dina egna kontroller innan du committar, eller i CI.
+
+Att ändra koden kräver [skrivbehörighet](/sv-SE/handbok/koncept/auktorisering/#ändring-av-kod-kräver-skrivbehörighet) på repot: att spara eller återställa filer i redigeraren, **Hämta senaste PR-commits**, committa och pusha, publicera en gren och de stackåtgärder som skapar, checkar ut eller publicerar en del. Med bara läs- eller granskningsåtkomst ser du filerna och diffarna, och dessa åtgärder svarar "Du kan läsa det här arkivet men inte ändra det. En arbetsytadministratör kan ge skrivåtkomst."
+
+**Hämta senaste PR-commits** uppdaterar granskningsarbetsträdet till pull requestens senaste commits. Det hämtar med din egen GitHub-inloggning och ber dig logga in när du saknar en. Committa eller kassera dina ändringar först: ett arbetsträd med ej committade ändringar synkas inte.
 
 ## Läs diffen
 
@@ -133,7 +152,7 @@ Sammanslagning går inte att ångra: den skickar commits till kodvärden, så de
 ett bekräftelsesteg i stället för en ångra-post. Efteråt ogiltigförklaras PR:ens
 cache, dess status växlar till **Sammanslagen** och en
 `PullRequestStatusChanged`-händelse utlöses med statusen `merged`. Den händelsen
-frigör den efemära worktreen för ”öppna i redigeraren” och startar två
+frigör den efemära worktreen som redigerarknappen öppnade och startar två
 medföljande pipelines: **Stale repository cleanup**, som tar bort PR:ens
 inaktuella worktrees och samtalsmappar, och **Release notes**, som utarbetar en
 post i ändringsloggen.
@@ -160,6 +179,12 @@ för den deterministiska kohort- och axelmodellen.
 Control Center importerar även PR:er som människor öppnar utanför appen.
 Granskningsflödet ovan är identiskt. Externa PR:er upptäcks av
 PR-pollningstjänsten.
+
+## Felsökning
+
+### Min pre-commit-hook kördes inte
+
+Commits som görs i appens panel **Källkontroll** hoppar över repots Git-hookar, precis som `git commit --no-verify` gör. Servern kör Git på sin egen maskin, i ett träd som agenter och pull requests kan ändra, så den kör aldrig ett program som repot väljer. Kör hookens kontroller själv, eller lita på CI.
 
 ## Relaterade guider
 

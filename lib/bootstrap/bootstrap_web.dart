@@ -27,7 +27,6 @@ import 'package:control_center/core/server/server_entry_factory.dart';
 import 'package:control_center/core/server/server_pairing.dart';
 import 'package:control_center/core/server/sso_login_web.dart'
     show openSsoWebFragment;
-import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
 import 'package:control_center/core/storage/web_local_storage_backend.dart';
 import 'package:control_center/l10n/app_locales.dart';
@@ -286,7 +285,6 @@ class _WebRootState extends State<_WebRoot> {
   /// wins; otherwise a saved paired server resumes. Reconnects after drops are
   /// the [ResilientRpcClient]'s job — the gate only handles first connects.
   Future<void> _boot() async {
-    await removeLegacyCalendarSnapshots(AppPreferences(_webBackend));
     final urlHints = await _readUrlHints();
     _stripCredentialFragment();
     final active = _store.readActive();
@@ -678,8 +676,8 @@ class _Creds {
 // connection section writes — so a change in Settings is what the next reload
 // resumes.
 
-/// Reads connection hints from the current URL — a base64url-JSON or
-/// query-string URL FRAGMENT only. Query parameters deliberately carry
+/// Reads connection hints from the current URL — a base64url-JSON URL
+/// FRAGMENT only. Query parameters deliberately carry
 /// nothing: a `?psk=` lands in the static host's access logs, proxies and
 /// the browser's history and the invariant is that the PSK rides in the
 /// fragment so it never reaches a server.
@@ -708,10 +706,10 @@ Future<_Creds> _readUrlHints() async {
       }
     }
     if (parsed != null) {
-      take(parsed['server'] ?? parsed['s'], (v) => server = v);
-      take(parsed['device'] ?? parsed['i'], (v) => device = v);
-      take(parsed['psk'] ?? parsed['k'], (v) => psk = v);
-      take(parsed['invite'] ?? parsed['inv'], (v) => invite = v);
+      take(parsed['s'], (v) => server = v);
+      take(parsed['i'], (v) => device = v);
+      take(parsed['k'], (v) => psk = v);
+      take(parsed['inv'], (v) => invite = v);
     }
   }
   return _Creds(
@@ -740,9 +738,8 @@ void _stripCredentialFragment() {
 
 /// The connection bootstrap: web hosts no server, so it dials a cc-server.
 /// The dialogs are pre-filled by the parent ([initial]): saved creds overlaid
-/// by a fresh pairing deep link (a base64url-JSON or query-string URL
-/// fragment, the PSK riding in the fragment so it never reaches the static
-/// host).
+/// by a fresh pairing deep link (a base64url-JSON URL fragment, the PSK
+/// riding in the fragment so it never reaches the static host).
 class _ConnectGate extends StatefulWidget {
   const _ConnectGate({
     required this.connecting,

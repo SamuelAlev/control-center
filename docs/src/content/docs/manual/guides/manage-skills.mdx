@@ -89,7 +89,7 @@ rollback reference in the lock.
    purpose and an **Adapter**. The built-in harness uses a configured provider
    and tool-capable model. **Claude Code** uses the default managed Claude
    account and a concrete model identifier; sign in under **Settings →
-   Adapters** first. It does not borrow the server operator's personal login.
+   Server → Model providers → Claude Code accounts** first. It does not borrow the server operator's personal login.
 3. Choose a **Comparison** from the table below.
 4. Set **Repeats per task** (1–20) and **Budget (US cents)**. For example,
    `100` means US$1. Select **Start evaluation** to authorize paid provider
@@ -175,9 +175,8 @@ built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
   agent
 - `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
-is always the builtin.
+`/skill:plan` is what reaches a skill named `plan`; `/plan` is always the
+builtin.
 
 ## Repo-scoped skills
 

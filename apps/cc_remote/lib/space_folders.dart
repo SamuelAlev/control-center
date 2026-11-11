@@ -42,7 +42,7 @@ List<SpaceFolder> _decodeFolders(String? raw) {
           !folderIds.add(id)) {
         continue;
       }
-      // The first folder owns a space if older data contains duplicate members.
+      // The first folder owns a space listed in two folders.
       folders.add(
         SpaceFolder(
           id: id,

@@ -128,7 +128,6 @@ class AgentRunLog {
     this.outputRejections = 0,
     RetryMeta? retry,
     this.role = AgentRunRole.main,
-    this.childCostCents = 0,
     this.childCostMicros = 0,
     this.parentRunId,
     this.spawnToolCallId,
@@ -248,21 +247,14 @@ class AgentRunLog {
   /// service maps the registry's `AgentKind` into this when it writes the run.
   final AgentRunRole role;
 
-  /// Cost in US cents rolled up from this run's subagent (child) runs, summed
-  /// concurrency-safely as each child completes (see `SubagentCostPropagator`).
-  /// Rounded projection of [childCostMicros]; use that for arithmetic.
-  /// `cost.estimatedCostCents + childCostCents` is this run's total spend
-  /// including everything it delegated. Zero for leaf runs.
-  final int childCostCents;
-
-  /// Exact cost in micro-USD rolled up from this run's child runs, the precise
-  /// companion to [childCostCents].
-  ///
-  /// A whole-cent child rollup rounds every sub-cent child to zero, so a parent
-  /// that delegated a hundred small subagent calls recorded a child total of
-  /// zero. Writers SHOULD accumulate this axis; [childCostCents] remains for
-  /// historical rows.
+  /// Exact cost in micro-USD rolled up from this run's subagent (child) runs,
+  /// summed concurrency-safely as each child completes (see
+  /// `SubagentCostPropagator`). Zero for leaf runs.
   final int childCostMicros;
+
+  /// Whole-cent display projection of [childCostMicros]; use that for
+  /// arithmetic.
+  int get childCostCents => (childCostMicros / 10000).round();
 
   /// Run id of the parent run that spawned this one as an ephemeral subagent
   /// (via the `task` tool). Null for top-level runs. Distinct from
@@ -325,13 +317,7 @@ class AgentRunLog {
       cost.estimatedCostCents + childCostCents;
 
   /// Total cost in micro-USD for this run including propagated subagent cost.
-  ///
-  /// Prefers the exact [childCostMicros] axis and only widens the whole-cent
-  /// [childCostCents] for historical rows that never recorded micros — so a
-  /// parent's total never loses sub-cent child spend on the way through.
-  int get totalCostMicrosWithChildren =>
-      cost.preciseCostMicros +
-      (childCostMicros != 0 ? childCostMicros : childCostCents * 10000);
+  int get totalCostMicrosWithChildren => cost.costMicros + childCostMicros;
 
   /// True while the run is still active.
   bool get isRunning => status == RunStatus.running;
@@ -380,7 +366,6 @@ class AgentRunLog {
           outputRejections == other.outputRejections &&
           retry == other.retry &&
           role == other.role &&
-          childCostCents == other.childCostCents &&
           childCostMicros == other.childCostMicros &&
           parentRunId == other.parentRunId &&
           spawnToolCallId == other.spawnToolCallId &&
@@ -422,7 +407,6 @@ class AgentRunLog {
     outputRejections,
     retry,
     role,
-    childCostCents,
     childCostMicros,
     parentRunId,
     spawnToolCallId,
@@ -478,7 +462,6 @@ class AgentRunLog {
     int? outputRejections,
     RetryMeta? retry,
     AgentRunRole? role,
-    int? childCostCents,
     int? childCostMicros,
     String? parentRunId,
     String? spawnToolCallId,
@@ -528,7 +511,6 @@ class AgentRunLog {
       outputRejections: outputRejections ?? this.outputRejections,
       retry: retry ?? this.retry,
       role: role ?? this.role,
-      childCostCents: childCostCents ?? this.childCostCents,
       childCostMicros: childCostMicros ?? this.childCostMicros,
       parentRunId: parentRunId ?? this.parentRunId,
       spawnToolCallId: spawnToolCallId ?? this.spawnToolCallId,

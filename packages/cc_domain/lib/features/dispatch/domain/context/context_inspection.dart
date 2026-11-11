@@ -50,8 +50,8 @@ enum ContextSegmentKind {
   /// the built-in harness, the capped history block for Claude Code.
   conversation;
 
-  /// Parses a wire name, or null when unknown (forward compatibility: a client
-  /// on an older build drops a segment it does not know rather than failing).
+  /// Parses a wire name, or null when unknown: a segment this build does not
+  /// read is dropped rather than failing the whole inspection.
   static ContextSegmentKind? fromWire(String? wire) =>
       ContextSegmentKind.values.where((k) => k.name == wire).firstOrNull;
 }
@@ -163,7 +163,6 @@ class ContextSegment {
     'chars': chars,
     'parts': [for (final p in parts) p.toJson()],
   };
-
 }
 
 /// Who assembles the model's context for an agent, which decides what an
@@ -178,11 +177,9 @@ enum ContextRunner {
   /// prompt and tools ([ContextSegmentKind.runner]).
   claudeCode;
 
-  /// Parses a wire name, defaulting to [harness] (what every older server
-  /// inspected).
-  static ContextRunner fromWire(String? wire) =>
-      ContextRunner.values.where((r) => r.name == wire).firstOrNull ??
-      ContextRunner.harness;
+  /// Parses a wire name, or null when unknown.
+  static ContextRunner? fromWire(String? wire) =>
+      ContextRunner.values.where((r) => r.name == wire).firstOrNull;
 }
 
 /// Everything the server knows about what fills a conversation's context window
@@ -212,7 +209,9 @@ class ContextInspection {
     this.hasContent = false,
   });
 
-  /// Rebuilds an inspection from its wire map.
+  /// Rebuilds an inspection from its wire map. Throws [FormatException] when
+  /// the runner is missing or unknown: what the inspection can see depends on
+  /// it.
   factory ContextInspection.fromJson(Map<String, dynamic> json) =>
       ContextInspection(
         workspaceId: json['workspace_id'] as String? ?? '',
@@ -220,7 +219,11 @@ class ContextInspection {
         agentId: json['agent_id'] as String? ?? '',
         agentName: json['agent_name'] as String? ?? '',
         mode: json['mode'] as String? ?? 'chat',
-        runner: ContextRunner.fromWire(json['runner'] as String?),
+        runner:
+            ContextRunner.fromWire(json['runner'] as String?) ??
+            (throw FormatException(
+              'ContextInspection: unknown runner ${json['runner']}',
+            )),
         modelId: json['model_id'] as String?,
         workingDirectory: json['working_directory'] as String?,
         windowTokens: (json['window_tokens'] as num?)?.toInt() ?? 0,

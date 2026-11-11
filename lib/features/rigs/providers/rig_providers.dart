@@ -10,6 +10,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The client adapter for server-hosted enclosures.
@@ -57,16 +58,12 @@ final rigSessionsProvider = StreamProvider.family<List<RigView>, String>(
 /// Whether [rig] is the machine a tab asking for [engine] meant.
 ///
 /// A tab that names no engine takes any rig on its surface — that is the
-/// desktop and phone tabs, which have no engine, and a client talking to a
-/// server too old to report one. A tab that DOES name an engine takes only
-/// that engine's machine: three browser rigs can share one conversation, and
-/// showing a Firefox tab the Chromium machine is the one failure this whole
-/// feature exists to prevent.
+/// desktop and phone tabs, which have no engine. A tab that DOES name an
+/// engine takes only that engine's machine: three browser rigs can share one
+/// conversation, and showing a Firefox tab the Chromium machine is the one
+/// failure this whole feature exists to prevent.
 bool _matchesEngine(RigView rig, RigBrowserEngine? engine) =>
-    engine == null ||
-    rig.browserEngine == engine ||
-    // An older server reports no engine at all and only ever ran Chromium.
-    (rig.browserEngine == null && engine == RigBrowserEngine.chromium);
+    engine == null || rig.browserEngine == engine;
 
 /// Whether [rig] is the machine a tab addressing [slotId] meant.
 ///
@@ -210,3 +207,37 @@ final terminalPortsProvider =
             spaceId: key.spaceId,
           ),
     );
+
+/// [rigAccessFrom] for [rig]: its row's per-caller answer, else [space].
+RigDriveAccess rigAccessOf(RigView rig, RigAccess space) => rigAccessFrom(
+  canDrive: rig.canDrive,
+  holderOnly: rig.holderOnly,
+  space: space,
+);
+
+/// [rigAccessOf] for [rig] in [workspaceId], rebuilt as its row or its
+/// space's state changes.
+RigDriveAccess watchRigAccessFor(
+  WidgetRef ref,
+  String workspaceId,
+  RigView rig,
+) => rigAccessOf(rig, watchRigAccess(ref, workspaceId, rig.conversationId));
+
+/// [rigAccessOf] for [rig], read outside a build.
+RigDriveAccess readRigAccessFor(
+  WidgetRef ref,
+  String workspaceId,
+  RigView rig,
+) {
+  final space = rig.conversationId;
+  return rigAccessOf(
+    rig,
+    space == null || space.isEmpty
+        ? RigAccess.drive
+        : ref
+              .read(
+                rigAccessProvider((workspaceId: workspaceId, spaceId: space)),
+              )
+              .access,
+  );
+}

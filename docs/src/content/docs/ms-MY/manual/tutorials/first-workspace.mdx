@@ -2,7 +2,7 @@
 title: Ruang kerja pertama anda
 description: Cipta ruang kerja, daftarkan repo ke dalamnya dan saksikan sendiri sempadan pengasingannya.
 slug: ms-MY/manual-pengguna/tutorial/ruang-kerja-pertama
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Apa yang akan anda bina
@@ -11,10 +11,12 @@ Menjelang akhir tutorial ini, anda akan mempunyai:
 
 - Ruang kerja yang dinamakan sempena projek anda
 - Repositori Git yang didaftarkan ke dalamnya
-- Lima ejen yang disemai, satu daripadanya telah anda konfigurasikan dengan cukup baik untuk dijalankan
+- Enam ejen yang disemai, satu daripadanya telah anda konfigurasikan dengan cukup baik untuk dijalankan
 - Ruang kerja kedua yang kosong, yang membuktikan sempadan pengasingan
 
 Onboarding sudah mencipta satu ruang kerja untuk anda. Tutorial ini sengaja mencipta satu yang baharu, supaya anda melihat setiap bahagian proses itu.
+
+Mencipta ruang kerja memerlukan pemilik pelayan, orang yang menyediakan pelayan itu. Pada desktop yang menjalankan pelayannya sendiri, itu ialah anda. Pada pelayan orang lain, **Tambah ruang kerja** berkata "Hanya pemilik pelayan boleh mencipta ruang kerja. Minta mereka mencipta satu, atau minta admin ruang kerja menjemput anda." Lakukan salah satu daripada itu dan ikuti baki tutorial dalam ruang kerja tersebut. Mendaftarkan repositori dalam langkah 2 memerlukan admin ruang kerja, dan ruang kerja kedua dalam langkah 4 memerlukan pemilik pelayan sekali lagi.
 
 Sebelum anda mula, pilih checkout Git yang memenuhi ketiga-tiga syarat ini — langkah pendaftaran menolak apa-apa selainnya:
 
@@ -35,12 +37,12 @@ Control Center bertukar ke ruang kerja baharu itu dan membuka peti masuknya (`/w
 Di sebaliknya, pelayan menerbitkan peristiwa `WorkspaceCreated` dan menyemai ruang kerja itu dengan:
 
 - seorang **ejen CEO**, yang personanya ialah penyelarasan dan perwakilan
-- empat pakar — `qa`, `architect`, `engineer` dan `librarian` — masing-masing dengan arahan dan kemahirannya sendiri
+- lima pakar — `qa`, `architect`, `engineer`, `librarian` dan `content-synthesizer` — masing-masing dengan arahan dan kemahirannya sendiri
 - templat pipeline terbina dalam dan baris pencetusnya
 
 Setiap ruang kerja yang anda cipta mendapat semua ini, bukan hanya yang pertama.
 
-Titik semak: buka **Tetapan → Ruang kerja → Ejen**. Lima ejen berada dalam senarai itu, masing-masing dengan cincin status berongga.
+Titik semak: buka **Tetapan → Ruang kerja → Ejen**. Enam ejen berada dalam senarai itu, masing-masing dengan cincin status berongga.
 
 ## Langkah 2: Daftarkan repositori
 
@@ -57,7 +59,7 @@ Titik semak: repo itu muncul dalam senarai bersama `owner/repo` dan cawangan sem
 
 ## Langkah 3: Jadikan seorang ejen boleh dijalankan
 
-Lima ejen yang baru disemai oleh ruang kerja ini tiada penyesuai dan tiada model. Penghantaran menjalankan mereka pada **Control Center (built-in)** dan, dengan tiada model ditetapkan, meminta model lalai daripada Anthropic — jadi mereka berfungsi hanya jika anda telah menyambungkan akaun Anthropic, dan pada model yang anda tidak pilih jika anda telah berbuat demikian. Onboarding kali pertama mengecap pilihannya pada setiap ejen dalam ruang kerja pertama, sekali sahaja; ruang kerja yang anda cipta selepas itu bermula dengan kelima-limanya tidak ditetapkan. Tetapkan satu sekarang.
+Enam ejen yang baru disemai oleh ruang kerja ini tiada penyesuai dan tiada model. Penghantaran menjalankan mereka pada **Control Center (built-in)** dan, dengan tiada model ditetapkan, meminta model lalai daripada Anthropic — jadi mereka berfungsi hanya jika anda telah menyambungkan akaun Anthropic, dan pada model yang anda tidak pilih jika anda telah berbuat demikian. Onboarding kali pertama mengecap pilihannya pada setiap ejen dalam ruang kerja pertama, sekali sahaja; ruang kerja yang anda cipta selepas itu bermula dengan keenam-enamnya tidak ditetapkan. Tetapkan satu sekarang.
 
 1. Buka **Tetapan → Ruang kerja → Ejen**
 2. Pilih `engineer` dalam senarai ejen
@@ -73,7 +75,7 @@ Setiap ejen membawa penyesuai dan modelnya sendiri, jadi ulangi ini untuk mana-m
 Cipta ruang kerja kedua daripada cip bar tajuk, tepat seperti dalam langkah 1. Kemudian perhatikannya:
 
 - **Tetapan → Ruang kerja → Repositori** kosong. Repo yang anda daftarkan sebentar tadi tidak ada di sana.
-- **Tetapan → Ruang kerja → Ejen** mengandungi lima ejen, tetapi ia baris yang berbeza — penyesuai yang anda tetapkan dalam langkah 3 sudah tiada.
+- **Tetapan → Ruang kerja → Ejen** mengandungi enam ejen, tetapi ia baris yang berbeza — penyesuai yang anda tetapkan dalam langkah 3 sudah tiada.
 - Senarai ruang, tiket dan memori semuanya kosong.
 
 Tiada apa-apa yang bocor, kerana tiada apa untuk dibocorkan: baris setiap ruang kerja berada dalam fail pangkalan data ruang kerja itu sendiri. Bacaan merentas ruang kerja bukan pertanyaan yang ditapis, ia pertanyaan yang tiada tempat untuk dijalankan. Memadam ruang kerja ialah menyahpaut satu fail.
@@ -84,6 +86,6 @@ Untuk model penuhnya, baca [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/
 
 ## Ringkasan
 
-Anda mencipta satu ruang kerja, menyaksikannya menyemai seorang CEO dan empat pakar, mendaftarkan repo ke dalamnya, memberikan seorang ejen penyesuai dan model serta mengesahkan bahawa ruang kerja kedua tidak berkongsi satu pun daripadanya.
+Anda mencipta satu ruang kerja, menyaksikannya menyemai seorang CEO dan lima pakar, mendaftarkan repo ke dalamnya, memberikan seorang ejen penyesuai dan model serta mengesahkan bahawa ruang kerja kedua tidak berkongsi satu pun daripadanya.
 
 **Seterusnya:** [Hantar ejen pertama anda](/ms-MY/manual-pengguna/tutorial/ejen-pertama/) untuk menggerakkan ruang kerja itu.

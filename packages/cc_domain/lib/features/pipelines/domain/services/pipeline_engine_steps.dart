@@ -4,23 +4,11 @@ part of 'pipeline_engine.dart';
 /// the concurrency permit with retries and output validation, and turning a
 /// failure into a skip, a retry or a failed step.
 extension _PipelineStepExecution on PipelineEngine {
-  /// The graph [run] executes: the snapshot pinned when it started, or — for
-  /// a run that predates snapshots — the live template.
-  Future<PipelineDefinition?> _definitionFor(PipelineRun run) async {
-    final pinned = run.templateSnapshot;
-    if (pinned != null) {
-      return pinned;
-    }
-    final live = await templates.getById(run.workspaceId, run.templateId);
-    if (live != null && live.version != run.templateVersion) {
-      CcDomainLog.warning(
-        'PipelineEngine: Run ${run.id} predates template snapshots and pinned '
-        '${run.templateId} v${run.templateVersion}; the live template is now '
-        'v${live.version}, so it continues against the live graph.',
-      );
-    }
-    return live;
-  }
+  /// The graph [run] executes: the snapshot pinned when it started. Every
+  /// run the engine admits pins one; a run without it is not the engine's to
+  /// execute, and null tells the caller to leave it alone.
+  Future<PipelineDefinition?> _definitionFor(PipelineRun run) async =>
+      run.templateSnapshot;
 
   Future<PipelineDefinition> _requireTemplate(
     String workspaceId,

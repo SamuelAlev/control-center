@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
@@ -435,12 +436,15 @@ EnvironmentTestCloneProvider environmentTestClones({
   );
 };
 
-/// A PR worktree sync, as [clientPrSync] and the environments use it.
+/// A PR worktree sync, as [clientPrSync] and the environments use it. It
+/// fetches on [actingUserId]'s own sign-in; null is automation (an
+/// environment following its PR head), on a one-repository read token.
 typedef PrWorktreeSync =
     Future<Map<String, dynamic>> Function({
       required String workspaceId,
       required String spaceId,
       required String repoId,
+      required String? actingUserId,
     });
 
 /// `worktree.syncToPrHead` as a client reaches it, or null on a server with no
@@ -467,6 +471,7 @@ PrWorktreeSync guardedPrSync(
       required String workspaceId,
       required String spaceId,
       required String repoId,
+      required String? actingUserId,
     }) async {
       try {
         return await whileHeadMoves(
@@ -476,6 +481,7 @@ PrWorktreeSync guardedPrSync(
             workspaceId: workspaceId,
             spaceId: spaceId,
             repoId: repoId,
+            actingUserId: actingUserId,
           ),
         );
       } on EnvironmentDriverException catch (e) {
@@ -488,22 +494,20 @@ PrWorktreeSync guardedPrSync(
 /// Returns null when a worktree is dirty, which leaves it alone.
 Future<List<String>?> syncEnvironmentWorktrees({
   required IsolatedRepoRepository isolated,
-  required Future<Map<String, dynamic>> Function({
-    required String workspaceId,
-    required String spaceId,
-    required String repoId,
-  })
-  syncPrWorktree,
+  required PrWorktreeSync syncPrWorktree,
   required String workspaceId,
   required String spaceId,
 }) async {
   final changed = <String>[];
   for (final row in await isolated.forSpace(workspaceId, spaceId)) {
     final before = await ServerEnvironmentDirectory._headOf(row.path);
+    // A PR head change from the forge: nobody acts, so the fetch is
+    // automation's.
     final result = await syncPrWorktree(
       workspaceId: workspaceId,
       spaceId: spaceId,
       repoId: row.repoId,
+      actingUserId: null,
     );
     if (result['dirty'] == true || result['ok'] == false) {
       return null;
@@ -551,12 +555,8 @@ EnvironmentService buildServerEnvironmentService({
   required Future<void> Function(String workspaceId, String spaceId) provision,
   required EnvironmentForkLookup isFork,
   required EnvironmentAdminCheck isAdmin,
-  required Future<Map<String, dynamic>> Function({
-    required String workspaceId,
-    required String spaceId,
-    required String repoId,
-  })
-  syncPrWorktree,
+  required Future<String?> Function() serverOwner,
+  required PrWorktreeSync syncPrWorktree,
   required EnvironmentActivityProbe spaceActivity,
 }) {
   final runner = EnvironmentCommandRunner();
@@ -586,6 +586,7 @@ EnvironmentService buildServerEnvironmentService({
       stateDirFor: (workspaceId, environmentId) =>
           p.join(dataDir, workspaceId, 'environments', environmentId),
       isAdmin: isAdmin,
+      serverOwner: serverOwner,
       home: Platform.environment['HOME'] ?? '',
       windows: RigEnvironmentHostWindows(rigs),
       rigHost: RigEnvironmentHost(
@@ -651,12 +652,7 @@ EnvironmentService wireServerEnvironments({
   required GitHubApiClient Function(String workspaceId, String owner)
   githubClientForOwner,
   required CachingWorkspaceMembershipRepository members,
-  required Future<Map<String, dynamic>> Function({
-    required String workspaceId,
-    required String spaceId,
-    required String repoId,
-  })
-  syncPrWorktree,
+  required PrWorktreeSync syncPrWorktree,
   required LateWorktreeTasks worktreeTasks,
   required LateEnvironmentPort environments,
   required SandboxManager sandboxManager,
@@ -701,6 +697,10 @@ EnvironmentService wireServerEnvironments({
       final member = await members.getMember(workspaceId, by.id);
       return member?.role.isAdmin ?? false;
     },
+    // Read each time, never kept: an approval counts only for the owner the
+    // server has now.
+    serverOwner: () =>
+        globalDb.workspaceRouteDao.meta(GlobalDatabase.serverOwnerKey),
     syncPrWorktree: syncPrWorktree,
     spaceActivity: (workspaceId, spaceId) async {
       final rows = await workspaceDbs

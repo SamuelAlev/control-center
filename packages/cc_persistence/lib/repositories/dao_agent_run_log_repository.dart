@@ -283,6 +283,7 @@ class DaoAgentRunLogRepository
       completedAt: drift.Value(completed.completedAt),
       status: drift.Value(completed.status.name),
       summary: drift.Value(completed.summary),
+      errorCode: drift.Value(completed.errorCode),
       livenessClass: drift.Value(completed.liveness?.name),
       latencyJson: drift.Value(
         completed.latency.isEmpty
@@ -365,7 +366,6 @@ class DaoAgentRunLogRepository
         estimatedCostCents: drift.Value(log.cost.estimatedCostCents),
         costMicros: drift.Value(log.cost.costMicros),
         costBasis: drift.Value(log.cost.costBasis.name),
-        childCostCents: drift.Value(log.childCostCents),
         childCostMicros: drift.Value(log.childCostMicros),
         effort: drift.Value.absentIfNull(log.effort),
         taskFamily: drift.Value.absentIfNull(log.taskFamily),
@@ -373,8 +373,7 @@ class DaoAgentRunLogRepository
         resumedNativeSession: drift.Value(log.resumedNativeSession),
         latencyJson: drift.Value.absentIfNull(
           // An empty profile is written as NULL, not `[]`: "no stage was ever
-          // observed" and "the array is empty" are the same fact, and NULL is
-          // what a legacy row has.
+          // observed" and "the array is empty" are the same fact.
           log.latency.isEmpty ? null : jsonEncode(log.latency.toJson()),
         ),
         verificationStatus: drift.Value(log.verification.status.wire),

@@ -30,7 +30,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'The per-workspace manifest of installed skills: for each one its source repository, repo path, the commit it is pinned to and a rolled-up content hash. Installs, updates and uninstalls keep it current; verify_skills checks it against disk.'],
 ['Agent run gateway', 'A loopback endpoint on cc_server that applies the action policy inside an agent\'s sandbox. Every GitHub push an agent makes is routed to it, checked against the Push to a remote rule and forwarded on a write token the agent never holds; Claude Code\'s Bash commands are checked through a hook on the same endpoint.'],
 ['Mode', 'chat, plan, review, or orchestrate. Stored per space, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, sandbox write rules and the MCP tool allowlist.'],
-['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat, so runs there are unwrapped; --sandbox off opts out deliberately.'],
+['SandboxBackend', 'microvm (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), native (OS-native Seatbelt on macOS, bubblewrap on Linux and WSL2) or none. Probed once at boot; native wraps agent dispatch when available. Windows has no native backend and Linux needs bwrap plus socat; on such a host only the server owner\'s runs start, unwrapped, and others are refused. --sandbox off runs every member\'s agents unwrapped.'],
 ['Rig', 'A disposable machine an agent drives in real time: an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and agent tool address one machine.'],
 ['Enclosure', 'The stronger isolation property available to VM-backed rigs: a kernel boundary, throwaway overlay disk, deny-by-default network gate and credential broker. Android and iOS rigs are disposable but use host-managed networking, so they do not claim this boundary. Driving any rig uses the enclosureControl guardrail class.'],
 ['RunCost', 'Token/cost tally (input tokens, output tokens, estimated cost in cents) for a single agent run.'],
@@ -47,7 +47,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Orchestrates run execution: starts runs, schedules steps, persists state, handles routers/joins/continue-on-fail, resumes in-flight runs after restart.'],
 ['PipelineTriggerDispatcher', 'Subscribes to domain events and auto-starts matching pipeline runs for enabled triggers.'],
 ['MemoryAccessPolicy', 'Resolves and enforces agent role memory permissions on domains.'],
-['HarnessCostCalculator', 'Prices built-in harness token usage into a RunCost from the models.dev catalog. Dispatch persists that tally onto the run log.'],
+['HarnessRunAccounting', 'Accounts the built-in harness\'s model calls once, priced from the models.dev catalog, persists them on the owning run and rolls a child run\'s spend up to its parent\'s budget.'],
 ['BudgetEnforcementService', 'Computes per-agent monthly spend and a pre-dispatch block (checkInvocationBlock). That block is consulted only by the recovery reconcilers (OrphanRunReaper, StrandedTicketReconciler), never by ordinary dispatch.'],
 ['BudgetGovernanceService', 'Evaluates per-agent monthly spend after each run: a soft threshold records a warning incident; exhaustion records a hard incident and flips the agent lifecycle to paused.'],
 ['DomainEventBus', 'In-process broadcast publish/subscribe bus for cross-feature communication. Events are typed; subscribers consume on-type streams.'],
@@ -64,7 +64,8 @@ export const glossaryTerms = [
 ['cc_remote', 'The phone thin client — a Flutter web PWA that remote-controls the fleet over the brokered relay with a default-deny tool policy.'],
 ['cc_signaling_server', 'A stateless WebSocket relay broker hosting invite-gated rooms. A dumb relay: it forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.'],
 ['Principal', 'A sealed value unifying humans and agents as the single actor abstraction. UserPrincipal(userId) or AgentPrincipal(agentId). Every message, ticket, review, plan and run log attributes through a Principal.'],
-['User', 'A human identity, stored in global.db and therefore global across workspaces. The principal that creates a workspace becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
+['User', 'A human identity, stored in global.db and therefore global across workspaces. Only the server owner creates a workspace and becomes its owner, stamped on Workspace.ownerUserId with an owner-role membership row; others join by invite or SSO.'],
+['Server owner', 'The person who set the server up, recorded once at first start; nothing sent over the network changes it. A workspace admin or workspace owner is not the server owner. Nothing runs on the server\'s own machine outside a sandbox unless the server owner started it or approved that kind of host execution: creating workspaces, the host shell, the embedded code editor, environments that run on the host and checkouts linked from outside a workspace\'s storage are theirs alone.'],
 ['WorkspaceMember', 'A membership row binding a User to a Workspace at a WorkspaceRole. Membership — not a pairing key — is the access boundary.'],
 ['WorkspaceRole', 'Graduated membership role: owner, admin, member, viewer, or guest. The repo-op chokepoint derives a minimum-role floor per op kind.'],
 ['ParticipantPresence', 'Ephemeral awareness for a Principal (status, locus, cursor, typing, agent live status + running cost). Never persisted; server-hubbed; repo-grant filtered before fan-out.'],
@@ -72,7 +73,7 @@ export const glossaryTerms = [
 ['Autonomy dial', 'A per-space per-agent control — propose-only / act-with-approval / act-freely — implemented as a named profile over the action-guardrail store.'],
 ['cc_worker', 'A headless pure-Dart fleet executor binary. Pairs with a cc_server, declares its capabilities, pulls leased jobs, executes them and streams events back. Holds no durable state.'],
 ['JobSpec', 'The typed spec for everything executable (agent run, pipeline step, code-index, golden-render, benchmark, eval batch): required capabilities, priority, budget, workspace.'],
-['ActionClass', 'A closed set of 13 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
+['ActionClass', 'A closed set of 14 effect classes (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Every mutating tool declares its classes; the guardrail engine resolves allow / prompt / deny per scope.'],
 ['WriteLedger', 'A workspace-scoped idempotency ledger. Every mutation carries a per-logical-action idempotency key; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.'],
 ['Idempotency key', 'A client-generated UUIDv7 minted per logical action (not per attempt). Dedupes retries across reconnects and clients.'],
 ['Needs me inbox', 'A cross-pillar queue with a strict rule: an item appears only if it blocks something (an agent, a merge, a sync) or explicitly requests the operator.'],
@@ -86,11 +87,11 @@ export const glossaryTerms = [
 ['Review verdict', 'ship, hold or block. Any P0 finding with confidence >= 0.7 blocks; any other P0 or any P1 holds; otherwise ship. A gated failing axis forces block and cannot be out-voted by findings.'],
 ['SessionRecording', 'An event stream plus HTTP/LLM cassettes and tool I/O captured for one run, paired with an AgentConfigHash.'],
 ['Golden session', 'A blessed SessionRecording pinned per agent or playbook.'],
-['Control Center Connect', 'An optional service that runs provider sign-ins (GitHub, Google, Linear) for servers without their own apps. Hosted by Control Center, self-hosted, or off. It returns credential seals and one-repository GitHub tokens and never sees repository contents.'],
+['Control Center Connect', 'An optional service that runs provider sign-ins (GitHub, Google, Linear) for servers or workspaces that chose it instead of their own apps. Hosted by Control Center, self-hosted, or off. It returns credential seals and one-repository GitHub tokens and never sees repository contents.'],
 ['Credential seal', 'An encrypted credential that only the Connect that made it can open, bound to the provider, Connect address, install id, workspace, account, app and secret generation. The server stores the seal; access tokens stay in memory.'],
 ['Install id', 'A server\'s identity towards one Connect address, derived from its install key. Connect allowlists servers by install id; rotating the key changes it and signs everyone out of Connect lanes.'],
-['Install binding', 'Connect\'s record of which servers may use a GitHub installation of the shared App. An organization installation needs an admin to authorize each server.'],
-['Sign-in lane', 'One provider\'s browser sign-in: github, google, linear, linear_app or slack. Each lane runs on the server\'s own app when it is complete, else through Connect, else is unavailable.'],
+['Install binding', 'Connect\'s record of the one server a Slack team is bound to. GitHub installations have none: any server a member signs in on can use them.'],
+['Sign-in lane', 'One provider\'s browser sign-in: github, google, linear, linear_app or slack. Under own apps a lane runs on the own app when it is fully configured, else it is unavailable; with a Connect chosen, Connect runs it. Neither falls back to the other.'],
 ];
 
 <StructuredData
@@ -146,7 +147,7 @@ export const glossaryTerms = [
 
 **Mode**: `chat`, `plan`, `review`, or `orchestrate`. Stored **per space**, so one agent can be in different modes in different spaces; every conversation in a space shares it. Gates the system prompt, the sandbox write rules and the MCP tool allowlist. The composer offers only `chat`, `plan` and `orchestrate`; `chat` is labelled "Agent".
 
-**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`, so runs there are unwrapped; `--sandbox off` opts out deliberately.
+**SandboxBackend**: `microvm` (an enclosed VM — the one backend with a kernel boundary, applied to interactive terminals), `native` (Seatbelt on macOS, bubblewrap on Linux and WSL2) or `none`. Probed once at boot; `native` is **applied to agent dispatch** when available, wrapping the Claude Code CLI and the harness `bash` tool. Windows has no native backend and Linux needs `bwrap` plus `socat`; on such a host only the server owner's runs start, unwrapped, and everyone else's are refused. `--sandbox off` runs every member's agents unwrapped.
 
 **Rig**: A disposable machine an agent drives in real time — an enclosed browser or Linux desktop, a host-managed Android emulator or iOS Simulator, or an enclosed terminal. Watched live over its own full-resolution lane, with take-over enforced server-side. Scoped to a conversation so the human tab and the agent's `browser_use` / `computer_use` / `mobile_use` / `ios_use` calls address one default machine. See [Rigs and enclosures](/manual/concepts/rigs/).
 
@@ -184,7 +185,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Resolves and enforces agent role memory permissions on domains.
 
-**HarnessCostCalculator**: Prices built-in harness token usage into a `RunCost` from the models.dev catalog. Dispatch persists that tally onto the run log.
+**HarnessRunAccounting**: Accounts the built-in harness's model calls once, priced from the models.dev catalog, persists them on the owning run and rolls a child run's spend up to its parent's budget.
 
 **BudgetEnforcementService**: Computes per-agent monthly spend and a pre-dispatch block (`checkInvocationBlock`). That block is consulted only by the recovery reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), never by an ordinary user or agent dispatch.
 
@@ -204,7 +205,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Structured outputs extracted by the summary pipeline and stored as discrete rows. Action items can link to a ticket.
 
-**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one via a `MeetingCalendarLink`.
+**CalendarEvent**: A synced Google Calendar entry scoped to a workspace and connected account. Distinct from a Meeting: an event is a scheduled commitment; a Meeting is a recorded session. Linked one-to-one through the `meeting_calendar_links` table.
 
 **CalendarAccount**: A connected Google account, per workspace, member and email (`google:<workspaceId>:<userId>:<email>`). Its credential is stored server-side as a `google_*` key in `<dataDir>/secrets.json` and never reaches a client; the browser sign-in completes on the server. A sign-in through Connect stores only a credential seal. An `authExpiredAt` flag drives the reconnect banner.
 
@@ -222,7 +223,9 @@ export const glossaryTerms = [
 
 **Principal**: A sealed value unifying humans and agents as the single actor abstraction — `UserPrincipal(userId)` or `AgentPrincipal(agentId)`. Every message, ticket, review, plan and run log attributes through a Principal.
 
-**User**: A human identity, stored in `global.db` and therefore global across workspaces. The principal that creates a workspace becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
+**Server owner**: The person who set the server up, recorded once at first start; nothing sent over the network changes it. A workspace admin or workspace owner is not the server owner. Nothing runs on the server's own machine outside a sandbox unless the server owner started it or approved that kind of host execution: creating workspaces, the host shell, the embedded code editor, environments that run on the host and checkouts linked from outside a workspace's storage are theirs alone. See [The server owner](/manual/concepts/authorization/#the-server-owner).
+
+**User**: A human identity, stored in `global.db` and therefore global across workspaces. Only the server owner creates a workspace, and becomes its **owner** — stamped on `Workspace.ownerUserId` with an owner-role membership row in the same operation. Others join by invite or SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: A membership row binding a User to a Workspace at a role (`owner` / `admin` / `member` / `viewer` / `guest`). **Membership — not a pairing key — is the access boundary.** Per-repo grants keep membership from out-privileging the forge.
 
@@ -232,7 +235,7 @@ export const glossaryTerms = [
 
 **Autonomy dial**: A per-space per-agent control — `propose-only` / `act-with-approval` / `act-freely` — implemented as a named profile over the action-guardrail store.
 
-**ActionClass**: A closed set of 13 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: A closed set of 14 effect classes (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Every mutating tool declares its classes; the guardrail engine resolves `allow` / `prompt` / `deny` per scope (space > agent > workspace > mode preset > built-in default).
 
 **WriteLedger** / **idempotency key**: Every mutation carries a client-generated idempotency key (UUIDv7, per logical action). The workspace-scoped ledger dedupes before the handler runs; a replay returns the byte-identical original result. Makes reconnect and multi-client safe by construction.
 
@@ -278,15 +281,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: A stateless WebSocket relay broker hosting invite-gated rooms — a dumb relay that forwards only end-to-end-sealed frames, holds no app data and never sees the pairing PSK.
 
-**Control Center Connect**: An optional service that runs provider sign-ins (GitHub, Google Calendar, Linear) for servers that have not registered their own apps: Control Center's hosted one, one an organization runs (`cc-connect`, or mounted in `cc_server` at `/connect`), or none. It returns credential seals and one-repository GitHub tokens and never sees repository contents. See [Control Center Connect](/manual/reference/connect/).
+**Control Center Connect**: An optional service that runs provider sign-ins (GitHub, Google Calendar, Linear) for servers or workspaces that chose it instead of their own apps: Control Center's hosted one, one an organization runs (`cc-connect`, or mounted in `cc_server` at `/connect`), or none. It returns credential seals and one-repository GitHub tokens and never sees repository contents. See [Control Center Connect](/manual/reference/connect/).
 
 **Credential seal**: An encrypted credential (`credential_seal`) that only the Connect that made it can open, bound to the provider, Connect address, install id, workspace, account, app and secret generation. The server stores the seal and the install id it was made for; access tokens stay in memory. A seal whose install id no longer matches is dropped and its owner signs in again.
 
 **Install id**: A server's identity towards one Connect address (`install_id`), derived from the install key in its secrets file. Connect allowlists servers by install id. Rotating the key gives a new one and signs everyone out of Connect lanes.
 
-**Install binding**: Connect's record (`install_binding`) of which servers may use a GitHub installation of the shared App. Installing through a server binds it; an organization admin's **Authorize this server** binds another.
+**Install binding**: Connect's record (`install_binding`) of the one server a Slack team is bound to. GitHub installations have none: any server a member signs in on can use them.
 
-**Sign-in lane**: One provider's browser sign-in — `github`, `google`, `linear`, `linear_app` or `slack`. A lane runs on the server's own app when that app is complete, else through Connect, else is unavailable; a partly configured own app is an error, never a fall back.
+**Sign-in lane**: One provider's browser sign-in — `github`, `google`, `linear`, `linear_app` or `slack`. Under own apps a lane runs on the (server's or workspace's) own app when that app is fully configured, else it is unavailable; with a Connect chosen, Connect runs it. Neither falls back to the other, and a partly configured own app is an error.
 
 ## See also
 

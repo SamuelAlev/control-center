@@ -78,6 +78,7 @@ class _RecordingMessagingPort implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String content,
+    String? senderUserId,
     List<Map<String, dynamic>> attachments = const [],
   }) async {
     steeredContent = content;
@@ -118,6 +119,7 @@ class _RecordingMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -125,6 +127,7 @@ class _RecordingMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 

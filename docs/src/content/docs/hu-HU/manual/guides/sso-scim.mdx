@@ -2,7 +2,7 @@
 title: Felhasználók provisionálása SCIM-mel
 description: Hagyja, hogy az IdP automatikusan létrehozza, frissítse és deprovisionálja a Control Center-fiókokat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Akkor használja ezt az útmutatót, ha életciklus-vezérlést szeretne — a
@@ -36,8 +36,9 @@ amelyet az IdP-k (Okta, Entra ID és mások) pontosan erre használnak.
    - **Felhasználói azonosító**: `userName` (e-mail) vagy `externalId` — mindkettő megfelel
 4. Tesztelje egyetlen felhasználóval: küldje át a felhasználót az IdP-ből,
    és ellenőrizze, hogy megjelenik (a SCIM-létrehozás rögzíti a szolgáltató
-   `externalId` értékét a fiókon, ugyanazt a rögzítést, amelyet az első
-   SSO-bejelentkezés is elvégez).
+   `externalId` értékét a fiókon, így a későbbi SCIM-hívások ezen találják
+   meg), majd jelentkeztesse be az illetőt SSO-val, mielőtt mindenkinél
+   bevezetné.
 
 ## Mit tesz a deprovisionálás
 
@@ -58,6 +59,7 @@ vagy a bejelentkezéskori automatikus tagsági szabályzatra van szükség.
 
 ## Hibaelhárítás
 
+- **A kiépített személy ezzel az üzenettel kerül elutasításra: „This account is already linked to a different SSO identity”** — ismert korlátozás: a SCIM által `externalId`-val létrehozott fiók ehhez az azonosítóhoz marad kötve, és az első SSO-bejelentkezést elutasítja. Amíg ezt nem javítják, `externalId` nélkül provisionáljon, vagy hagyja, hogy a JIT-provisionálás hozza létre a fiókot az első bejelentkezéskor, a deprovisionáláshoz pedig a SCIM-et használja.
 - **Minden hívásra 401** — a token megváltozott; generáljon újat, és
   frissítse az IdP-t.
 - **A végpont nem érhető el** — az alagút nem működik, vagy a szerver csak

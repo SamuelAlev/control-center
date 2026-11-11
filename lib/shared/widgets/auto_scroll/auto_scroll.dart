@@ -1,7 +1,6 @@
 import 'dart:async';
 
-import 'package:control_center/core/theme/app_shadows.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';

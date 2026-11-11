@@ -2,7 +2,7 @@
 title: Pipelines and automation
 description: Why pipelines separate scheduling from work, what actually starts one and which of the built-in templates are live out of the box.
 slug: en-GB/manual/concepts/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipelines are the deterministic half of Control Center. An agent decides what to
@@ -34,7 +34,7 @@ resuming would be worse than stopping:
   true` — that is the `orchestration.awaitApproval` partial-approval gate.
   `human.gate` is not exempt.
 - A step declared `extras: {'idempotent': false}` that was mid-flight when the
-  server stopped may already have applied its side effect (a squash merge, a
+  server stopped may already have applied its side effect (a workspace backup, a
   worktree cleanup). Re-running it could double-apply, so the engine fails it
   and leaves the retry to you.
 
@@ -133,8 +133,25 @@ meant to be a user choice.
 One more asymmetry worth knowing: the `pr_review` built-in deliberately no
 longer posts to GitHub. Publishing a review is a separate, user-gated step and
 a pipeline that posted directly would double-publish. `cross_review`,
-`ticket_to_pr` and `pr_triage` do still post a comment straight to GitHub when
-they run.
+`ticket_to_pr`, `pr_triage`, `pre_merge_gate` and `external_pr_welcome` do still
+post a comment to GitHub when they run.
+
+They post it from the server, through the **Post PR comment** step
+(`prReview.comment`), never from a shell script: a pipeline's shell steps and
+its agents' sandboxes hold a GitHub token that only reads. The same rule shapes
+the rest:
+
+- `external_pr_welcome` posts its greeting as that step's `message`.
+- `ticket_to_pr` has the coder agent push `agent/<ticket_id>` (through the run
+  gateway) and open the draft PR with `open_pull_request`, on the GitHub sign-in
+  of the person who started the run, or as the bot when nobody did. Both meet
+  the workspace's **Push to a remote** and **Open a pull request** rules. On
+  Control Center Connect a run nobody requested, such as one fired by
+  `TicketAssigned`, cannot push or open the PR: the shared App's bot only reads
+  and comments.
+- `pre_merge_gate` never merges. Approving at its gate posts that the PR is
+  ready for a maintainer to merge; rejecting posts that changes are requested.
+  A person merges from the PR page.
 
 ## What the engine knows
 

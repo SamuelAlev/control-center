@@ -34,7 +34,12 @@ PrUser _toPrUser(GitHubUser? u) {
     return const PrUser(login: '', avatarUrl: '');
   }
 
-  return PrUser(login: u.login, avatarUrl: u.avatarUrl, name: u.name);
+  return PrUser(
+    login: u.login,
+    avatarUrl: u.avatarUrl,
+    name: u.name,
+    accountId: u.id == 0 ? '' : '${u.id}',
+  );
 }
 
 /// Strips a leading `#` so GitHub (no hash) and GitLab (`#RRGGBB`) land on
@@ -167,6 +172,8 @@ PullRequest pullRequestFromGitHub(
     baseRef: gh.baseRef,
     baseSha: gh.baseSha,
     headRef: gh.headRef,
+    baseRepoId: gh.baseRepoId,
+    headRepoId: gh.headRepoId,
     requestedReviewers: gh.requestedReviewers
         .map(_toPrUser)
         .toList(growable: false),
@@ -203,6 +210,14 @@ PrChecksStatus prChecksStatusFromRollup(String? state) {
     default:
       return PrChecksStatus.none;
   }
+}
+
+/// A GraphQL `Repository { databaseId }` as the REST numeric id, '' for none.
+String _graphQlRepoId(Object? repository) {
+  final id = repository is Map<String, dynamic>
+      ? repository['databaseId']
+      : null;
+  return id is num ? '${id.toInt()}' : '';
 }
 
 PrUser _prUserFromGraphQl(Map<String, dynamic>? u) {
@@ -285,6 +300,8 @@ PullRequest pullRequestFromGraphQlNode(
     headSha: node['headRefOid'] as String? ?? '',
     baseRef: node['baseRefName'] as String? ?? '',
     headRef: node['headRefName'] as String? ?? '',
+    baseRepoId: _graphQlRepoId(node['baseRepository']),
+    headRepoId: _graphQlRepoId(node['headRepository']),
     requestedReviewers: requestedReviewers,
     requestedTeamSlugs: requestedTeamSlugs,
     labels: _labelsFromGraphQl(node),

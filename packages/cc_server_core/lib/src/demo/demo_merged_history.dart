@@ -70,7 +70,7 @@ class DemoMergedHistory {
         }
       }
       if (prs.isNotEmpty) {
-        groups.add((repo: repo, prs: prs, hasMore: false));
+        groups.add((repo: repo, prs: prs, hasMore: false, totalCount: null));
       }
     }
     return groups;

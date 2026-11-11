@@ -2,7 +2,7 @@
 title: Statistici de utilizare
 description: Ce înregistrează Control Center când statisticile de utilizare sunt pornite, cine decide și ce nu se trimite niciodată.
 slug: ro-RO/manual/referinta/statistici-de-utilizare
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center poate trimite **evenimente de utilizare pseudonimizate** către o instanță [Umami](https://umami.is). Statisticile de utilizare sunt **oprite până când operatorul serverului le pornește**. Setarea aparține serverului și se aplică fiecărui client conectat la el: aplicația desktop, aplicația web, telefonul și serverul însuși.
@@ -13,7 +13,7 @@ Statisticile de utilizare sunt separate de **Partajează rapoartele de crash**, 
 
 | Comutator | Unde | Efect |
 | --- | --- | --- |
-| **Partajează statisticile de utilizare** | Configurarea inițială (pasul sandbox) și **Setări → Confidențialitate**. Doar operatorul serverului o poate schimba; ceilalți membri văd valoarea curentă doar în citire | La nivelul întregului server. Stocată ca `telemetry.usage_analytics` în setările serverului. Oprită dacă nu este setată la `true` |
+| **Partajează statisticile de utilizare** | Configurarea inițială (pasul sandbox) și **Setări → Server → Diagnosticări și confidențialitate**. Doar operatorul serverului o poate schimba; ceilalți membri văd valoarea curentă doar în citire | La nivelul întregului server. Stocată ca `telemetry.usage_analytics` în setările serverului. Oprită dacă nu este setată la `true` |
 | Tipul build-ului | Automat | Build-urile debug și profile nu trimit nimic. Scriu în schimb fiecare eveniment în jurnalul de depanare |
 | `CC_ANALYTICS_DEBUG=1` | Mediul `cc_server` sau fișierul său `.env` | Permite build-urilor debug și profile ale serverului, și ale fiecărui client conectat la el, să trimită date reale, pentru testare. Comutatorul de mai sus trebuie să fie în continuare pornit |
 | `DO_NOT_TRACK=1` | Mediul `cc_server` | Oprește raportarea proprie a serverului, indiferent de comutator. Clienții urmează în continuare comutatorul |

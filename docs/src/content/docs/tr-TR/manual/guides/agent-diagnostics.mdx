@@ -2,7 +2,7 @@
 title: Bir ajanı tanılama
 description: Bir ajan çalıştırma üretmeyi bıraktığında çalıştırma günlüğü, adaptör yoklaması, sunucu durumu ve ana makine tanılamaları üzerinden ilerleyin.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-tanilama
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Bu kılavuz, bir ajanın neden çalıştırma üretmediğini nasıl bulacağınızı gösterir.
@@ -13,13 +13,13 @@ Yukarıdan aşağıya doğru ilerleyin: önce ajanın kendi çalıştırmaları,
 
 **Ayarlar → Çalışma alanı → Ajanlar** → ajanı seçin → **Loglar**.
 
-Her çalıştırma bir durum rozeti, bir süre (devam ederken "Running…"), başlangıç ve tamamlanma zamanları, PID'si ve kullandığı adaptörü gösterir. **Görünüm**, o çalıştırmanın ham olay akışını açar. **Durdur**, çalışan bir süreci sonlandırır ve çalıştırmayı "Killed by user" olarak işaretler; başlıktaki **Çalışanı sonlandır** ise o ajanın devam eden her çalıştırması için aynısını yapar.
+Her çalıştırma bir durum rozeti, bir süre (devam ederken "Running…"), başlangıç ve tamamlanma zamanları, PID'si ve kullandığı adaptörü gösterir. **Görünüm**, o çalıştırmanın ham olay akışını açar. **Durdur**, çalışan bir süreci sonlandırır ve çalıştırmayı "Killed by user" olarak işaretler; başlıktaki **Çalışanı sonlandır** ise o ajanın bu çalışma alanındaki devam eden her çalıştırması için aynısını yapar. Yalnızca üyesi olduğunuz çalışma alanlarındaki canlı ajan çalıştırmalarını görebilir ve durdurabilirsiniz; sunucu sahibi hepsini görür ve durdurur.
 
 Şöyle okuyun:
 
 - **Hiç çalıştırma yok** — gönderim hiç gerçekleşmedi. Composer'daki anmalar `@` ile sözcük karakterlerinden (harfler, rakamlar, alt çizgi) oluşur. Çözümleme, ajan adı üzerinde tam veya önek eşleşmesidir; bu nedenle `@code-reviewer`, `code` olarak ayrıştırılır ve yine de `code-reviewer` adlı bir ajanı uyandırabilir. Boşluk içeren bir ad, tek bir belirteç olarak anılamaz. Ardından 2. adıma geçin.
-- **Hemen hatayla biten bir çalıştırma** — **Görünüm**'ü açın. Arka ucun başlatılamaması burada bir süreç hatası olarak görünür.
-- **"Running…" durumunda takılı kalan bir çalıştırma** — durdurun, ardından Ayarlar sekmesinde ajanın **Sessizlik zaman aşımı** değerini denetleyin. Ayarlanmamış bir zaman aşımı, moda özgü varsayılanı kullanır.
+- **Hemen hatayla biten bir çalıştırma** — **Görünüm**'ü açın. Arka ucun başlatılamaması burada bir süreç hatası olarak görünür. "Bu sunucuda sandbox yok, bu yüzden burada ajanları yalnızca sahibi çalıştırabilir." ifadesi, sunucunun makinesinde bir işletim sistemi sandbox’ı olmadığını ve sunucu sahibi olmadığınızı gösterir; bkz. [Sandbox ilkelerini yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/#ajanım-bu-sunucuda-sandbox-yok-nedeniyle-reddedildi).
+- **"Running…" durumunda takılı kalan bir çalıştırma** — durdurun, ardından ajanın **Ayarlar** sekmesinde **Sessizlik zaman aşımı (dakika)** değerini denetleyin. Ayarlanmamış bir zaman aşımı, moda özgü varsayılanı kullanır.
 - **İşe yarar çıktısı olmayan tamamlanmış bir çalıştırma** — bildirdiği çıktıyı üretmeden biten bir çalıştırmada çalıştırma günlüğünün durumu `completed` olarak kalır; gerçek gösterge rozet değil, özet metnidir.
 
 Loglar sekmesi maliyet göstermez. Harcama için **Gözlemlenebilirlik → İçgörüler** içindeki ajan başına tabloyu kullanın.
@@ -67,11 +67,11 @@ Bir değişiklik "testlerde çalışıyor ama uygulamada çalışmıyor" olduğu
 - **Gizlilik** — ham diff içeriğinin ajanın modeline iletilip iletilmeyeceği ve çökme raporlarının gönderilip gönderilmeyeceği.
 
 :::caution[Bu bölüm ana makineyi bildirir; denetimleri istemci tarafındadır]
-Algılama ve uygulama artık uyuşuyor: algılayıcı yerel bir arka uç bildiriyorsa, o ana makinedeki ajan çalıştırmaları gerçekten onun içine alınır. Ancak bu bölümdeki tek canlı şey algılayıcıdır. Ana anahtar ve arka uç seçici cihazınızda saklanan tercihlerdir ve sunucu bunların hiçbirini okumaz — sunucunun kendi anahtarı `--sandbox`'tır (varsayılan olarak `on`, vazgeçmek için `off`).
+Algılama ve uygulama uyuşuyor: algılayıcı yerel bir arka uç bildiriyorsa, o ana makinedeki ajan çalıştırmaları gerçekten onun içine alınır. Ancak bu bölümdeki tek canlı şey algılayıcıdır. Ana anahtar ve arka uç seçici cihazınızda saklanan tercihlerdir ve sunucu bunların hiçbirini okumaz — sunucunun kendi anahtarı `--sandbox`'tır (varsayılan olarak `on`, vazgeçmek için `off`).
 
-Dolayısıyla buradaki bir uyarı üzerinde durmaya değer, ancak genellikle bir ajanın başarısız olmasının nedeni değildir. Sunucunun hangi durumda olduğunu doğrulamak için başlangıç günlüğünü okuyun: arka uç notuyla birlikte `agent sandbox ON`, bir kurulum ipucuyla `no OS-native agent sandbox on this host` ya da `agent sandbox DISABLED by --sandbox off` yazar. `GET /healthz` hiçbir sandbox alanı taşımaz.
+Dolayısıyla buradaki bir uyarı üzerinde durmaya değer. Arka ucu olmayan bir ana makinede, sunucu sahibi dışındaki birinin ajan çalıştıramamasının nedeni tam olarak budur. Sunucunun hangi durumda olduğunu doğrulamak için başlangıç günlüğünü okuyun: arka uç notuyla birlikte `agent sandbox ON`, bir kurulum ipucuyla `no OS-native agent sandbox on this host` ya da `agent sandbox DISABLED by --sandbox off` yazar ve sunucunun maruziyet satırı `sandbox=native`, `sandbox=unavailable` ya da `sandbox=off` taşır. `GET /healthz` hiçbir sandbox alanı taşımaz.
 
-Arka ucun olmadığı yerlerde — Windows'ta her zaman, `bwrap` ve `socat` olmadan Linux veya WSL2'de — çalıştırmalar sandbox'a **alınmaz** ve onları sınırlayan şeyler şunlardır: konuşmanın kendi checkout'u, salt okunur forge belirteci ve push ağ geçidi, eylem korumaları, ortam temizliği ve modunun izin verdiği araç yüzeyi.
+Arka ucun olmadığı yerlerde — Windows'ta her zaman, `bwrap` ve `socat` olmadan Linux veya WSL2'de — yalnızca çalıştırmadan sorumlu kişi sunucu sahibi olan çalıştırmalar başlar; diğerlerininki reddedilir. Orada başlayan çalıştırmalar ve `--sandbox off` altındaki her çalıştırma sandbox'a **alınmaz**, ve onları sınırlayan şeyler şunlardır: konuşmanın kendi checkout'u, salt okunur forge belirteci ve push ağ geçidi, eylem korumaları, ortam temizliği ve modunun izin verdiği araç yüzeyi.
 :::
 
 ## Sık karşılaşılan hatalar

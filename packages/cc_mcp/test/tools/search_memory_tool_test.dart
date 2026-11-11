@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/entities/memory_fact.dart';
 import 'package:cc_domain/core/domain/entities/memory_policy.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
+import 'package:cc_domain/core/domain/value_objects/embedding_model_paths.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_fact_repository.dart';
 import 'package:cc_domain/features/memory/domain/repositories/memory_policy_repository.dart';
 import 'package:cc_domain/features/memory/domain/services/memory_repo_scope_resolver.dart';

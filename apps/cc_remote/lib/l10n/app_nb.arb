@@ -94,7 +94,6 @@
   },
   "inboxLoadFailed": "Kunne ikke laste innboksen",
   "allCaughtUp": "Du er à jour",
-  "inboxNoForgeAccount": "Ingen forge-konto er tilkoblet på serveren, så pull requests kan ikke tilskrives deg ennå.",
   "inboxNothingWaiting": "Ingenting er blokkert, og ingen pull request venter på deg.",
   "blocked": "Blokkert",
   "sectionNeedsYourReview": "Trenger gjennomgangen din",
@@ -201,28 +200,6 @@
       }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, =1{{names} er for stor til å sendes over reléen herfra.} other{{names} er for store til å sendes over reléen herfra.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "names": {
-        "type": "String"
-      }
-    }
-  },
-  "attachmentUploadFailed": "Kunne ikke laste opp vedlegget. Prøv på nytt.",
-  "attachmentsLeftOut": "{count, plural, =1{1 vedlegg kunne ikke lastes opp og ble utelatt.} other{{count} vedlegg kunne ikke lastes opp og ble utelatt.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teammate": "Kollega",
   "systemSender": "System",
   "agent": "Agent",
@@ -282,27 +259,6 @@
   "prsEmptyDescription": "Pull requests fra repoene i dette arbeidsområdet vises her.",
   "refreshPullRequests": "Oppdater pull requests",
   "noForgeConnected": "Ingen forge er tilkoblet på serveren, så ingen pull requests kan hentes. Koble til én fra skrivebordsappen.",
-  "reposUnreadable": "{count, plural, =1{1 repo kunne ikke leses.} other{{count} repoer kunne ikke leses.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reposNotReadable": "Ikke lesbare: {names}",
-  "installationSuspendedTitle": "GitHub App-installasjonen er suspendert",
-  "installationSuspendedBody": "Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub.",
-  "installationSuspendedNotice": "GitHub App-installasjonen er suspendert. Viser sist kjente data for {names}. Gjenoppta installasjonen på GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "draft": "Utkast",
   "merged": "Sammenslått",
   "closed": "Lukket",
@@ -740,7 +696,7 @@
   "permissionGitCommit": "Opprett commit",
   "permissionGitPush": "Push committer",
   "permissionPrCreate": "Opprett pull requests",
-  "permissionPrPublish": "Publiser pull requests",
+  "permissionPrPublish": "Oppdater eller slå sammen pull requests",
   "permissionVendorSyncWrite": "Skriv til et eksternt oppfølgingssystem",
   "permissionNetworkEgress": "Få tilgang til nettverket",
   "permissionSecretAccess": "Få tilgang til hemmeligheter",
@@ -752,12 +708,11 @@
   "permissionEffectiveDescription": "Gjelder på dette nivået uten handlingsargumenter. Betingede tillatelser nedenfor gjelder bare forespørsler som oppfyller vilkårene. Serveren tar den endelige avgjørelsen.",
   "permissionSpaceAgentNote": "Ingen agent valgt. Agentspesifikke regler vises ikke før du velger en agent ovenfor.",
   "permissionScopedGrants": "Regler på dette nivået",
-  "permissionRemembered": "Lagret godkjenning",
+  "permissionRemembered": "Stående godkjenning",
   "permissionSetAtThisScope": "{source} · angitt her",
   "permissionInheritedFrom": "{source} · arvet",
   "permissionExpiresAt": "Utløper {date}",
   "permissionSetHere": "Angi en regel her",
-  "permissionRevokeBeforeEdit": "Tilbakekall den avgrensede eller lagrede regelen før du angir en generell regel for denne handlingen.",
   "permissionConfirmRevoke": "Bekreft tilbakekalling",
   "permissionRevokeRule": "Tilbakekall regel",
   "permissionCommandPrefix": "Kommandoprefiks: {prefix}",
@@ -871,9 +826,6 @@
   "activityAgentBlocked": "Agenthandling blokkert",
   "activityMessage": "Ny melding",
   "activityPullRequest": "Oppdatering av pull request",
-  "activityTicket": "Sak oppdatert",
-  "activityMeeting": "Møte oppdatert",
-  "activityCalendar": "Kalendertilkobling",
   "activityRig": "Stasjon oppdatert",
   "activityPrReady": "Pull request klar til sammenslåing",
   "activityPrBlocked": "Sammenslåing av pull request blokkert",
@@ -1025,7 +977,7 @@
   "credentialsApiKeyHint": "Lim inn en API-nøkkel fra leverandøren",
   "credentialsBrowserLogin": "Logg inn med nettleseren",
   "credentialsWaitingForLogin": "Venter på autorisasjon i nettleseren …",
-  "credentialsConnectCodePrompt": "Skriv inn koden som vises i nettleseren",
+  "credentialsConnectCodePrompt": "Bekreftelseskode",
   "credentialsConnectCodeMalformed": "Det ser ikke ut som en påloggingskode. Koder har 8 bokstaver og sifre.",
   "credentialsSignInInvalidCode": "Koden hører ikke til denne påloggingen. Sjekk den og prøv igjen.",
   "credentialsSignInTooManyCodes": "For mange feil koder. Start påloggingen på nytt.",
@@ -1042,11 +994,51 @@
   "credentialsCompleteLogin": "Fullfør pålogging",
   "credentialsPersonalToken": "Personlig tilgangstoken",
   "credentialsPersonalTokenHint": "Lim inn et personlig tilgangstoken",
-  "credentialsHostManaged": "Denne tilkoblingen kommer fra serverappen eller miljøet. Bare servereieren kan endre den der, men du kan fortsatt legge til ditt eget token.",
   "credentialsStopWatching": "Slutt å følge med",
   "transcriptClaudeSignInExpiredTitle": "Innloggingen til Claude Code har utløpt",
   "transcriptClaudeSignInExpiredBody": "Kjøringen stoppet fordi kontoen ikke lenger autentiseres. Logg inn på nytt, og prøv turen igjen.",
   "transcriptSignInExpiredTitle": "Innloggingen til leverandøren har utløpt",
   "transcriptSignInExpiredBody": "Kjøringen stoppet fordi leverandørens legitimasjon ikke lenger virker. Koble den til på nytt under Innstillinger → Leverandører, og prøv turen igjen.",
-  "permissionHostExecution": "Kjør kommandoer på verten"
+  "permissionHostExecution": "Kjør kommandoer på verten",
+  "credentialsSignInLapsed": "Påloggingen din på {provider} er utløpt. Logg inn på nytt.",
+  "credentialsSignInPaused": "Satt på pause: arbeidsområdets påloggingstjeneste er endret. Den virker igjen når tjenesten er tilbake.",
+  "credentialsProviderUnreachable": "Får ikke kontakt med {provider} akkurat nå. Prøver igjen.",
+  "credentialsScopeWorkspace": "Bare dette arbeidsområdet",
+  "credentialsScopeAllWorkspaces": "Alle arbeidsområder",
+  "credentialsRemoveConfirmWorkspace": "Fjerne den lagrede påloggingen din fra dette arbeidsområdet? Andre arbeidsområder beholder sin.",
+  "credentialsRemoveConfirmAllWorkspaces": "Fjerne den lagrede påloggingen din fra alle arbeidsområder som deler den?",
+  "credentialsSignInServerRestarted": "Serveren ble startet på nytt. Start påloggingen igjen.",
+  "repoAccessInstallApp": "Installer GitHub App på {owner} slik at automatiseringen når {names}. Trykk for å åpne GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App er ikke installert på {owner}, så automatiseringen når ikke {names}. Be en administrator for arbeidsområdet om å installere den.",
+  "repoAccessAddToApp": "Legg til {names} i GitHub-appens arkiver. Trykk for å åpne GitHub.",
+  "repoAccessAskAdminAdd": "GitHub App ser ikke {names} ennå. Be en administrator for arbeidsområdet om å legge dem til i arkivene dens.",
+  "repoAccessSuspended": "GitHub App-installasjonen er suspendert. Automatiseringen for {names} er satt på pause til en eier av kontoen gjenopptar installasjonen på GitHub.",
+  "repoAccessOwnerCannotSee": "Personen som er ansvarlig for automatiseringen i dette arbeidsområdet, kan ikke lenger se {names}, så ingenting kjører der på deres vegne.",
+  "repoAccessOwnerNotSignedIn": "Personen som er ansvarlig for automatiseringen i dette arbeidsområdet, er ikke logget inn på forgen, så automatiseringen for {names} venter til de logger inn.",
+  "repoAccessRetrying": "Kunne ikke sjekke tilgangen til {names}. Prøver igjen.",
+  "hiddenReposSignIn": "{count, plural, =1{Logg inn på {forge} for å se pull requests fra 1 arkiv til} other{Logg inn på {forge} for å se pull requests fra {count} arkiver til}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 arkiv er skjult fordi {forge}-kontoen din ikke kan se det} other{{count} arkiver er skjult fordi {forge}-kontoen din ikke kan se dem}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 arkiv er skjult fordi du ikke har tilgang til det i dette arbeidsområdet} other{{count} arkiver er skjult fordi du ikke har tilgang til dem i dette arbeidsområdet}}",
+  "hiddenReposChecking": "{count, plural, =1{Sjekker tilgangen din til 1 arkiv til…} other{Sjekker tilgangen din til {count} arkiver til…}}",
+  "credentialsAtlassianEmail": "E-post for Atlassian-kontoen",
+  "credentialsAtlassianEmailInvalid": "Skriv inn e-postadressen til Atlassian-kontoen din.",
+  "credentialsBitbucketApiToken": "API-token",
+  "repoAccessAutomationTokenMissing": "Ingen automatiseringstoken kan lese {names}, så bakgrunnsarbeidet der er satt på pause. En administrator kan legge til en under Innstillinger → Repositoryer.",
+  "credentialsSignInConfirmInBrowser": "Bekreft i nettleseren, og skriv deretter inn koden den viser.",
+  "credentialsSignInAccountAlreadyBound": "Denne kontoen er allerede koblet til en annen person på denne serveren. Logg inn med en annen konto.",
+  "credentialsTokenUnreachable": "{provider} kunne ikke nås for å sjekke denne tokenen. Prøv igjen om litt.",
+  "credentialsTokenRejected": "{provider} godtar ikke denne tokenen. Kontroller at du kopierte hele, og at den ikke er trukket tilbake.",
+  "credentialsTokenWrongKind": "Dette er ikke en personlig token. Lim inn en personlig tilgangstoken fra din egen {provider}-konto, ikke en prosjekt-, gruppe-, arbeidsområde- eller bottoken.",
+  "credentialsTokenNarrowScope": "Denne tokenen mangler {scope}-tilgangen som gjennomgang og kommentering krever. Lag en token som har den.",
+  "credentialsTokenExpired": "Denne tokenen er utløpt. Lag en ny og lim den inn her.",
+  "credentialsSignInRateLimited": "For mange forespørsler akkurat nå. Vent litt, og prøv igjen.",
+  "credentialsSignInCancelled": "Påloggingen ble avbrutt eller avslått. Start den på nytt når du er klar.",
+  "credentialsSignInNoLongerOpen": "Denne påloggingen er ikke lenger åpen: den ble avbrutt, brukt eller erstattet. Start den på nytt.",
+  "noWorkspacesYetHint": "En administrator for arbeidsområdet må invitere deg, eller serverens eier kan opprette et arbeidsområde for deg.",
+  "repoAccessReplaced": "{repos} peker nå på et annet arkiv på {forge}. Koble det til på nytt fra skrivebords- eller nettappen for å fortsette å bruke det.",
+  "repoAccessAskAdminRelink": "{repos} peker nå på et annet arkiv på {forge}. En administrator for arbeidsområdet må koble det til på nytt før det kan brukes igjen.",
+  "runSandboxUnavailableTitle": "Agenter trenger en sandkasse på denne serveren",
+  "runSandboxUnavailable": "Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her. Eieren kan installere sandkassen eller slå av sandkassing for alle.",
+  "permissionTools": "Verktøy: {tools}",
+  "permissionNotInEffect": "Uten virkning når denne handlingen er nektet"
 }

@@ -2,7 +2,7 @@
 title: Instalar
 description: Use o Control Center no navegador ou instale o aplicativo de desktop, configure um backend de agentes e escolha onde o servidor dele é executado.
 slug: pt-BR/manual/instalar
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 O Control Center é executado de duas formas: como um **aplicativo web** em
@@ -185,11 +185,13 @@ Uma credencial do GitHub é **sua e fica no servidor**, associada ao id do seu
 usuário — não no keychain do sistema operacional do cliente. Todos os dispositivos
 em que você entrar usam a mesma, e nenhum outro membro consegue lê-la.
 
-O GitHub só aceita login: **Configurações → Espaço de trabalho → Perfil e
-identidade → Hospedagem de código** oferece **Entrar no GitHub**, e não há
-nenhum token para colar. O login passa pelo GitHub App do próprio servidor
+O GitHub só aceita login: **Configurações → Você → Perfil →
+Hospedagem de código** oferece **Entrar no GitHub**, e não há nenhum token para
+colar. O login passa pelo GitHub App do próprio servidor
 ([Criar o GitHub App](/pt-BR/manual/guias/github-app/)) ou pelo Control Center
-Connect, o que o proprietário do servidor tiver escolhido. Com o app do próprio
+Connect, o que o proprietário do servidor tiver escolhido, a menos que um
+administrador do espaço de trabalho tenha escolhido outros apps de login para
+esse espaço de trabalho em **Configurações → Espaço de trabalho → Integrações**. Com o app do próprio
 servidor, o navegador volta sozinho para o servidor; pelo Connect, você digita
 o código de 8 caracteres que o navegador mostra, ou deixa que ele abra o
 Control Center. Consulte
@@ -242,7 +244,7 @@ primeira inicialização e as flags `--data-dir` / `--port` / `--bind`.
    servidor. Pressione **Atualizar** se estiver faltando.
 2. **Configurações → Espaço de trabalho → Repositórios** lista os repos deste espaço
    de trabalho, e **Adicionar repositório** navega pelas pastas do host do servidor.
-3. **Configurações → Espaço de trabalho → Agentes** lista os cinco agentes que o seu
+3. **Configurações → Espaço de trabalho → Agentes** lista os seis agentes que o seu
    primeiro espaço de trabalho semeou. Cada um precisa de um **Adaptador** e de um
    **Modelo** definidos antes de poder ser executado.
 4. **Configurações → Servidor → Diagnóstico e privacidade** informa os backends de

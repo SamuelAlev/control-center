@@ -2,7 +2,7 @@
 title: Stasjoner
 description: Alle stasjonsflater, backender, handlingsverb, livssyklustilstander, porter, standardverdier og kontrakter — den fullstendige faktakatalogen.
 slug: nb-NO/handbok/referanse/stasjoner
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Bare fakta. For modellen bak dem, les [Stasjoner og isolerte
@@ -216,8 +216,10 @@ ingen garanti for lyd, mikrofon, filslipp, vertsskall eller isolert nettverk.
 
 | Verktøy | Beskrivelse |
 | --- | --- |
-| `rig_list` | List opp et arbeidsområdes stasjoner med flate, status, skjerm og kontrollør |
+| `rig_list` | List opp stasjonene i kjøringens område med flate, status, skjerm og kontrollør |
 | `rig_close` | Ødelegg en stasjon og forkast disken dens |
+
+Disse verktøyene, som de fire bruksverktøyene, er bare for agentkjøringer; alle andre kallere avvises. En kjøring når bare stasjonene i området den ble leid for: `space_id` kommer fra kjøringens tilgang, aldri fra kallet. En stasjon i et annet område, eller i ingen område, svarer nøyaktig som en som mangler.
 
 ## Livssyklus
 
@@ -267,8 +269,7 @@ ingen garanti for lyd, mikrofon, filslipp, vertsskall eller isolert nettverk.
 | `9222`, `9223` | Gjesten i nettleseren | Automatiseringsreléet og endepunktet (WebKit binder `9222` direkte og bruker ingen relé) |
 | `80`, `443` | Gjestens loopback i nettleseren | HTTP/HTTPS-banene for utviklingsdomener |
 
-- Oppdagelse poller gjestens lyttende TCP-porter i terminalen omtrent hvert
-  4. sekund, på serversiden.
+- Oppdagelse poller gjestens lyttende TCP-porter i terminalen omtrent hvert 4. sekund, på serversiden.
 - Høyst **16** porter videresendes automatisk per stasjon; flere listes opp i
   loggen, men videresendes ikke.
 - Videresendingen på vertssiden binder loopback og foretrekker gjestens eget
@@ -319,7 +320,10 @@ en innstilling for arbeidsområdet.
   og møtelyd allerede bruker.
 - **Autentisering** er det signerte målet `rig-files:<workspaceId>/<rigId>`
   pluss medlemskap i arbeidsområdet — et eget mål, så en URL utstedt for å *se
-  på* en maskin ikke også kan skrive filer inn i den.
+  på* en maskin ikke også kan skrive filer inn i den. For en maskin åpnet i et område
+  krever det å lese utklippstavlen eller en fil også lesetilgang til det området, og å
+  skrive utklippstavlen eller slippe filer krever en skrivetilgang på dets repositorier. På en stasjon som bærer én persons egne innlogginger, er begge kanalene, også lesing, bare den personens. Se
+  [Hvem kan se på maskinen, og hvem kan styre den](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/#hvem-kan-se-på-maskinen-og-hvem-kan-styre-den).
 - **Overtakelse gjelder.** Å skrive til utklippstavlen og å slippe filer er
   muterende og avvises mens noen andre har kontrollen; å lese utklippstavlen og
   å lese en fil ut er observasjon og er det ikke.

@@ -3,16 +3,19 @@ import 'dart:async';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
+import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_head_sync.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/providers/pr_detail_polling_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
@@ -30,23 +33,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 part 'pr_source_control_tab_states.dart';
 
 /// A VS Code-style source-control surface for the PR workbench: a commit
-/// message + "commit & push" split button pinned at the TOP of the left
-/// column, the PR space worktree's changes split into Staged changes (the
-/// git index) and Changes (working tree + untracked) below it and the
-/// focused file's diff on the right. The commit UX lives HERE, not in chat; the
-/// split button's dropdown offers commit-only, amend and commit & sync.
+/// message + "commit & push" split button pinned at the TOP of the left column,
+/// the worktree's Staged changes (the git index) and Changes (working tree +
+/// untracked) below it, and the focused file's diff on the right. The commit
+/// UX lives HERE, not in chat; the dropdown offers commit-only, amend and sync.
 ///
-/// Staging is REAL git (`repos.stage` / `repos.unstage` → `git add` /
-/// `git reset`), so a commit ships exactly the staged index — no client-side
-/// selection fiction. An empty index commits the working tree (smart commit);
-/// a non-empty index is committed as-is.
+/// Staging is REAL git (`repos.stage` / `repos.unstage`), so a commit ships
+/// exactly the staged index. An empty index commits the working tree (smart
+/// commit); a non-empty index is committed as-is.
 class PrSourceControlTab extends ConsumerStatefulWidget {
   /// Creates a [PrSourceControlTab].
   const PrSourceControlTab({
     super.key,
     required this.pr,
     required this.prRef,
-    required this.onOpenInEditor,
+    this.onOpenInEditor,
   });
 
   /// The pull request whose worktree changes are shown.
@@ -55,8 +56,8 @@ class PrSourceControlTab extends ConsumerStatefulWidget {
   /// The PR's identity key (repo coords + number) for PR-keyed providers.
   final PrRef prRef;
 
-  /// Opens the given path in an editable file tab (the quick-edit surface).
-  final void Function(String path) onOpenInEditor;
+  /// Opens the path in the editor; null (no host access) hides the action.
+  final void Function(String path)? onOpenInEditor;
 
   @override
   ConsumerState<PrSourceControlTab> createState() => _PrSourceControlTabState();
@@ -162,40 +163,22 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
   /// Pulls the latest PR commits into the worktree (`worktree.syncToPrHead`).
   /// Skips with a warning when the tree has uncommitted edits.
   Future<void> _syncToPrHead(String spaceId, String repoId) async {
-    final l10n = AppLocalizations.of(context);
     final workspaceId = ref.read(activeWorkspaceIdProvider);
     if (workspaceId == null) {
       return;
     }
-    final res = await syncWorktreeToPrHead(
-      ref.read(rpcClientProvider),
+    final synced = await syncPrWorktreeToHead(
+      context,
+      ref,
       workspaceId: workspaceId,
       spaceId: spaceId,
       repoId: repoId,
     );
-    if (!mounted) {
-      return;
-    }
-    final toast = CcToastScope.maybeOf(context);
-    if (res == null) {
-      toast?.show(l10n.syncPrHeadFailed, variant: CcToastVariant.danger);
-      return;
-    }
-    if (res.dirty) {
-      toast?.show(l10n.syncPrHeadDirty, variant: CcToastVariant.warning);
-      return;
-    }
-    if (res.synced) {
+    if (synced && mounted) {
       _refreshChanges();
       ref
           .read(prDetailPollingProvider(widget.prRef).notifier)
           .notifyDiffStale();
-      toast?.show(l10n.syncedToPrHead, variant: CcToastVariant.success);
-    } else {
-      toast?.show(
-        res.error ?? l10n.syncPrHeadFailed,
-        variant: CcToastVariant.danger,
-      );
     }
   }
 
@@ -289,6 +272,13 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
           variant: CcToastVariant.success,
         );
       }
+    } on RemoteRpcException catch (e) {
+      if (mounted) {
+        CcToastScope.maybeOf(context)?.show(
+          repoRefusalOf(l10n, e) ?? l10n.commitFailed,
+          variant: CcToastVariant.danger,
+        );
+      }
     } finally {
       controller.removeListener(markEdited);
       if (mounted) {
@@ -308,65 +298,44 @@ class _PrSourceControlTabState extends ConsumerState<PrSourceControlTab> {
       return;
     }
     final l10n = AppLocalizations.of(context);
-    final confirmed = await showCcDialog<bool>(
+    final confirmed = await showCcConfirmDialog(
       context: context,
-      builder: (context) {
-        final t = context.designSystem ?? DesignSystemTokens.light();
-        return CcDialog(
-          title: l10n.discardChangesTitle,
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.discardChangesMessage(paths.length),
-                style: TextStyle(fontSize: 13, color: t.textPrimary),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  CcButton(
-                    variant: CcButtonVariant.line,
-                    size: CcButtonSize.sm,
-                    onPressed: () => Navigator.of(context).pop(false),
-                    child: Text(l10n.cancel),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  CcButton(
-                    variant: CcButtonVariant.destructive,
-                    size: CcButtonSize.sm,
-                    onPressed: () => Navigator.of(context).pop(true),
-                    child: Text(l10n.discard),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+      title: l10n.discardChangesTitle,
+      message: l10n.discardChangesMessage(paths.length),
+      confirmLabel: l10n.discard,
+      cancelLabel: l10n.cancel,
+      danger: true,
     );
-    if (confirmed != true || !mounted) {
+    if (!confirmed || !mounted) {
       return;
     }
     final workspaceId = ref.read(activeWorkspaceIdProvider);
     if (workspaceId == null) {
       return;
     }
-    final res = await revertWorktreeFiles(
-      ref.read(rpcClientProvider),
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoId: repoId,
-      paths: paths,
-    );
+    WorktreeRevertResult? res;
+    Object? refusal;
+    try {
+      res = await revertWorktreeFiles(
+        ref.read(rpcClientProvider),
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        repoId: repoId,
+        paths: paths,
+      );
+    } on RemoteRpcException catch (e) {
+      refusal = e;
+    }
     if (!mounted) {
       return;
     }
     _refreshChanges();
     final toast = CcToastScope.maybeOf(context);
     if (res == null) {
-      toast?.show(l10n.discardFailed, variant: CcToastVariant.danger);
+      toast?.show(
+        repoRefusalOf(l10n, refusal) ?? l10n.discardFailed,
+        variant: CcToastVariant.danger,
+      );
       return;
     }
     if (res.skipped.isNotEmpty) {
@@ -559,7 +528,7 @@ class _ChangesList extends StatelessWidget {
     required this.onStage,
     required this.onUnstage,
     required this.onDiscard,
-    required this.onEdit,
+    this.onEdit,
     required this.onStageAll,
     required this.onUnstageAll,
     required this.onDiscardAll,
@@ -581,7 +550,7 @@ class _ChangesList extends StatelessWidget {
   final ValueChanged<String> onStage;
   final ValueChanged<String> onUnstage;
   final ValueChanged<String> onDiscard;
-  final ValueChanged<String> onEdit;
+  final ValueChanged<String>? onEdit;
   final VoidCallback onStageAll;
   final VoidCallback onUnstageAll;
   final VoidCallback onDiscardAll;
@@ -656,11 +625,12 @@ class _ChangesList extends StatelessWidget {
                           selected: focusedIndex == i,
                           onTap: () => onFocus(i),
                           actions: [
-                            (
-                              icon: AppIcons.fileCode,
-                              tooltip: l10n.openInEditor,
-                              onPressed: () => onEdit(staged[i].filename),
-                            ),
+                            if (onEdit case final edit?)
+                              (
+                                icon: AppIcons.fileCode,
+                                tooltip: l10n.openInEditor,
+                                onPressed: () => edit(staged[i].filename),
+                              ),
                             (
                               icon: AppIcons.minus,
                               tooltip: l10n.unstageFile,
@@ -695,11 +665,12 @@ class _ChangesList extends StatelessWidget {
                           selected: focusedIndex == staged.length + j,
                           onTap: () => onFocus(staged.length + j),
                           actions: [
-                            (
-                              icon: AppIcons.fileCode,
-                              tooltip: l10n.openInEditor,
-                              onPressed: () => onEdit(unstaged[j].filename),
-                            ),
+                            if (onEdit case final edit?)
+                              (
+                                icon: AppIcons.fileCode,
+                                tooltip: l10n.openInEditor,
+                                onPressed: () => edit(unstaged[j].filename),
+                              ),
                             (
                               icon: AppIcons.rotateCcw,
                               tooltip: l10n.discard,

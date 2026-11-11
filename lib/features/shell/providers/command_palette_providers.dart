@@ -3,6 +3,7 @@ import 'package:control_center/core/infrastructure/audio/audio_output_settings.d
 import 'package:control_center/core/theme/theme_provider.dart';
 import 'package:control_center/features/focus_mode/presentation/widgets/focus_config_dialog.dart';
 import 'package:control_center/features/focus_mode/providers/focus_mode_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/providers/space_command_source.dart';
 import 'package:control_center/features/plan_studio/providers/playbook_command_source.dart';
 import 'package:control_center/features/pr_review/providers/pr_command_source.dart';
@@ -120,22 +121,23 @@ class _NavigationCommandSource implements CommandSource {
         category: l10n.categoryNavigation,
         onExecute: () => router.go(workspaceListRoute),
       ),
-      CommandItem(
-        id: 'new-workspace',
-        label: l10n.keybindingNewWorkspace,
-        icon: AppIcons.plus,
-        category: l10n.workspaces,
-        onExecute: () async {
-          final ctx = rootNavigatorKey.currentContext;
-          if (ctx == null) {
-            return;
-          }
-          final id = await showAddWorkspaceDialog(ctx);
-          if (id != null) {
-            router.go(inboxRoute(id));
-          }
-        },
-      ),
+      if (ref.read(canCreateWorkspacesProvider))
+        CommandItem(
+          id: 'new-workspace',
+          label: l10n.keybindingNewWorkspace,
+          icon: AppIcons.plus,
+          category: l10n.workspaces,
+          onExecute: () async {
+            final ctx = rootNavigatorKey.currentContext;
+            if (ctx == null) {
+              return;
+            }
+            final id = await showAddWorkspaceDialog(ctx);
+            if (id != null) {
+              router.go(inboxRoute(id));
+            }
+          },
+        ),
     ];
   }
 }

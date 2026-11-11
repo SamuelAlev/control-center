@@ -74,13 +74,13 @@ void main() {
       expect(layout.activeLeaf.controller.selectedIndex, 1);
     });
 
-    test('a bare-kind key from an older link still finds a keyed tab', () {
+    test('a bare kind does not match a keyed tab of that kind', () {
       final layout = layoutWith([
         tab('chat', dedupKey: 'chat:c1'),
         tab('terminal', dedupKey: 'terminal:t1'),
       ]);
-      expect(focusEditorTabByKey(layout, 'terminal'), isTrue);
-      expect(activeEditorTabKey(layout), 'terminal:t1');
+      expect(focusEditorTabByKey(layout, 'terminal'), isFalse);
+      expect(activeEditorTabKey(layout), 'chat:c1');
     });
 
     test('returns false and keeps the selection on a stale key', () {

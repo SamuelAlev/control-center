@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_validator.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/builtin_trigger_seeds.dart';
 import 'package:test/test.dart';
 
 /// Calls each built-in template seed and asserts the returned
@@ -346,12 +347,18 @@ void main() {
       );
     });
 
-    test('external_pr_welcome ships disabled with a greet step', () {
+    test('external_pr_welcome greets through the server comment step', () {
       final welcome = seeds.firstWhere(
         (d) => d.templateId == 'external_pr_welcome',
       );
       expect(welcome.isEnabled, isFalse);
-      expect(welcome.step('greet')?.bodyKey, BuiltInBodyKeys.bashScript);
+      final greet = welcome.step('greet')!;
+      // Not a shell step: a pipeline shell token only reads.
+      expect(greet.bodyKey, BuiltInBodyKeys.prReviewComment);
+      expect(
+        greet.config.extras[kPrCommentMessageKey],
+        contains('@{{author}}'),
+      );
     });
 
     test('pr_merged_cleanup uses the cleanupRepos body', () {
@@ -385,7 +392,15 @@ void main() {
       final t2p = seeds.firstWhere((d) => d.templateId == 'ticket_to_pr');
       expect(t2p.isEnabled, isFalse);
       expect(t2p.step('implement')?.config.agentId, agentIds.coder);
-      expect(t2p.step('open_pr')?.kind, StepKind.listen);
+      // The coder pushes through the run gateway and opens the PR with
+      // open_pull_request: a shell step's forge token cannot do either.
+      final openPr = t2p.step('open_pr')!;
+      expect(openPr.kind, StepKind.listen);
+      expect(openPr.bodyKey, BuiltInBodyKeys.promptAgent);
+      expect(openPr.config.agentId, agentIds.coder);
+      expect(openPr.config.outputKey, 'pr_number');
+      expect(openPr.config.prompt, contains('open_pull_request'));
+      expect(openPr.config.script, isNull);
       expect(t2p.step('self_review')?.config.agentId, agentIds.engineer);
       // Comment joins open_pr + self_review.
       final comment = t2p.step('comment')!;
@@ -429,16 +444,47 @@ void main() {
       });
     });
 
-    test('pre_merge_gate routes approved/rejected then merges or notifies', () {
+    test('pre_merge_gate comments the decision and never merges', () {
       final gate = seeds.firstWhere((d) => d.templateId == 'pre_merge_gate');
       expect(gate.isEnabled, isFalse);
       expect(gate.step('gate')?.bodyKey, BuiltInBodyKeys.humanGate);
       final route = gate.step('route')!;
       expect(route.kind, StepKind.router);
       expect(route.config.extras['cases'], ['approved', 'rejected']);
-      expect(gate.step('merge')?.triggers.single.routeKey, 'approved');
-      expect(gate.step('merge')?.config.extras['idempotent'], false);
-      expect(gate.step('notify_changes')?.triggers.single.routeKey, 'rejected');
+      expect(gate.step('merge'), isNull);
+      final ready = gate.step('notify_ready')!;
+      expect(ready.triggers.single.routeKey, 'approved');
+      expect(ready.bodyKey, BuiltInBodyKeys.prReviewComment);
+      expect(
+        ready.config.extras[kPrCommentMessageKey],
+        contains('ready for a maintainer to merge'),
+      );
+      final changes = gate.step('notify_changes')!;
+      expect(changes.triggers.single.routeKey, 'rejected');
+      expect(changes.bodyKey, BuiltInBodyKeys.prReviewComment);
+    });
+
+    test('no built-in shell step writes to the forge', () {
+      // Pipeline shell steps hold a read-only forge token: a script that
+      // comments, merges, opens a PR or pushes fails on every install.
+      final writes = RegExp(
+        r'gh\s+(pr|issue)\s+(comment|merge|review|create|edit|close|ready)'
+        r'|gh\s+api\b[^\n]*(-X|--method|-f|-F|--field|--raw-field|--input)\b'
+        r'|git\s+push\b',
+      );
+      for (final template in seeds) {
+        for (final step in template.steps) {
+          final script = step.config.script;
+          if (script == null) {
+            continue;
+          }
+          expect(
+            writes.hasMatch(script),
+            isFalse,
+            reason: '${template.templateId}/${step.id}',
+          );
+        }
+      }
     });
 
     test('release_notes collects commits then drafts', () {

@@ -1,18 +1,19 @@
 ---
 title: Rujukan Control Center Connect
-description: Apa yang Connect lihat dan tidak pernah lihat, tiga mod, identiti pemasangan, pemeteraian kelayakan, kepercayaan konfigurasi dan setiap tetapan, operasi serta kod status.
+description: Apa yang Connect lihat dan tidak pernah lihat, tiga mod, pilihan sesebuah ruang kerja, identiti pemasangan, pemeteraian kelayakan, kepercayaan konfigurasi dan setiap tetapan, operasi serta kod status.
 slug: ms-MY/manual-pengguna/rujukan/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect menjalankan log masuk pembekal untuk pelayan yang belum mendaftarkan apl mereka sendiri. Sebuah
 pelayan sama ada menggunakan Connect yang dihoskan oleh Control Center, atau Connect yang dijalankan oleh sebuah organisasi
 ([Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)), atau tiada. Pilihannya terdapat dalam
-**Tetapan → Pelayan → Daftar masuk tunggal → Control Center Connect**, arahan `cc_server connect`, atau `CC_CONNECT_URL`.
+**Tetapan → Pelayan → Daftar masuk tunggal → Control Center Connect**, arahan `cc_server connect`, atau `CC_CONNECT_URL`. Sebuah
+ruang kerja mengikutnya melainkan pentadbir memilih sesuatu yang lain untuk ruang kerja itu di bawah **Tetapan → Ruang kerja → Integrasi** ([Pilihan setiap ruang kerja](#pilihan-setiap-ruang-kerja)).
 
 ## Lorong
 
-Setiap pembekal ialah satu lorong. Di bawah **Gunakan aplikasi saya sendiri** (atau sebelum sesiapa memilih), lorong berjalan pada apl pelayan apabila apl itu dikonfigurasikan sepenuhnya, jika tidak ia tidak tersedia. Dengan Connect Control Center atau Connect tersuai, Connect menjalankan setiap lorong yang dilayaninya: apl pelayan kekal disimpan tetapi tidak digunakan untuk log masuk, automasi pelayan atau status yang dilaporkan pelayan. Apl ruang kerja sentiasa diutamakan dalam semua mod.
+Setiap pembekal ialah satu lorong. Di bawah **Gunakan aplikasi saya sendiri** (atau sebelum sesiapa memilih), lorong berjalan pada apl pelayan apabila apl itu dikonfigurasikan sepenuhnya, jika tidak ia tidak tersedia. Dengan Connect Control Center atau Connect tersuai, Connect menjalankan setiap lorong yang dilayaninya: apl pelayan kekal disimpan tetapi tidak digunakan untuk log masuk, automasi pelayan atau status yang dilaporkan pelayan. Ruang kerja yang memilih pilihannya sendiri menjalankan setiap lorong mengikut pilihan itu sebaliknya.
 
 | Lorong      | Apl sendiri memerlukan                          | Melalui Connect                                           |
 | ----------- | ----------------------------------------------- | --------------------------------------------------------- |
@@ -24,8 +25,8 @@ Setiap pembekal ialah satu lorong. Di bawah **Gunakan aplikasi saya sendiri** (a
 | `klipy`     | `KLIPY_APP_KEY`                                 | Carian GIF, diproksikan oleh Connect                      |
 
 Apl sendiri yang hanya dikonfigurasikan sebahagian menjadikan lorongnya ralat, tidak sekali-kali jatuh kembali kepada Connect
-secara senyap. Ruang kerja yang menggunakan GitHub App sendiri (**Tetapan → Ruang kerja → Umum → Identiti GitHub**) tidak
-sekali-kali melalui Connect untuk GitHub. Ruang kerja yang menggunakan Google, Linear atau Klipy sendiri (**Tetapan → Ruang kerja → Umum → Apl penyedia**) tidak sekali-kali melalui apl pelayan atau Connect untuk pembekal itu. Menukar pilihan Connect tidak mengeluarkan sesiapa daripada apl sendiri ruang kerja.
+secara senyap. Ruang kerja pada **Gunakan aplikasi saya sendiri** tidak sekali-kali melalui apl pelayan atau mana-mana Connect, untuk mana-mana
+pembekal. Menukar pilihan Connect pelayan tidak mengeluarkan sesiapa daripada ruang kerja yang membuat pilihannya sendiri.
 
 ## Apa yang Connect lihat dan tidak pernah lihat
 
@@ -33,16 +34,13 @@ sekali-kali melalui Connect untuk GitHub. Ruang kerja yang menggunakan Google, L
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | ID pemasangan pelayan dan tandatangan permintaan                                              | Kod sumber, kandungan repo, diff atau teks pull request               |
 | Akaun pembekal yang log masuk, semasa log masuk                                               | Tiket, transkrip atau apa-apa dalam pangkalan data ruang kerja        |
-| Ruang kerja mana yang dimiliki oleh sesuatu kelayakan, sebagai id legap di dalam pemeteraian | Kunci peribadi GitHub App: token repo datang daripada log masuk seseorang |
+| Ruang kerja mana yang dimiliki oleh sesuatu kelayakan, sebagai id legap di dalam pemeteraian | Rahsia apl sendiri pelayan: ia tidak pernah meninggalkan pelayan |
 | Repo yang diberi token GitHub satu-repo                                                       | Token muat semula dalam keadaan tersimpan: ia hanya wujud di dalam pemeteraian yang pelayan simpan |
-| Pemasangan GitHub yang terikat kepada pelayan                                                 | Rahsia Linear: pelayan menukar kod Linear sendiri                     |
+| Pasukan Slack yang terikat kepada pelayan                                                     | Rahsia Linear: pelayan menukar kod Linear sendiri                     |
 | Istilah carian GIF, apabila ia memproksikan Klipy                                             | Kata laluan, kunci pemasangan atau kunci pembekal model               |
 | Rujukan peristiwa Slack (pasukan, saluran, ID mesej) dan teks perintah slash                  | Teks mesej Slack: Connect membuangnya sebaik diterima, dan pelayan membaca mesej dari Slack sendiri |
 
-Connect menyimpan keadaan jangka pendek (log masuk yang tertangguh, nonce, cache) selama paling lama 15 minit. Satu-satunya
-rekod jangka panjangnya ialah ikatan pemasangan: pelayan mana boleh menggunakan pemasangan GitHub mana, dan setiap pasukan
-Slack terikat kepada pelayan mana. Ralat membawa kod, tidak sekali-kali respons pembekal, dan log hanya merekodkan ID
-pemasangan sebagai hash berkunci.
+Connect menyimpan log masuk yang tertangguh, nonce dan cache selama paling lama 10 minit, dan kaunter penggunaan setiap jam selama paling lama dua jam. Token GitHub satu-repositori yang dicetak sebagai seseorang kekal direkodkan, dimeterai kepada log masuk yang memintanya, sehingga tamat tempoh (paling lama 8 jam), supaya Connect boleh mengeluarkannya semula dan membatalkannya apabila diputuskan. Satu-satunya rekod jangka panjangnya ialah ikatan Slack (setiap pasukan Slack terikat kepada pelayan mana) dan ID pemasangan yang telah ditarik balik. Ralat membawa kod, tidak sekali-kali respons pembekal. Log hanya merekodkan ID pemasangan sebagai hash berkunci, dan token GitHub hanya sebagai `hashed_token` yang ditunjukkan log audit organisasi GitHub untuknya, supaya pemilik organisasi boleh memadankan kedua-duanya.
 
 ## Mod
 
@@ -59,8 +57,27 @@ kemudian memaparkan kunci dan tidak dapat menukarnya.
 Binaan ini tidak menyertakan kunci konfigurasi hosted, jadi mod hosted melaporkan `hosted_unprovisioned` dan tidak melayani
 mana-mana lorong. Apl sendiri dan Connect tersuai tetap berfungsi.
 
+Connect yang dihoskan berjalan dalam satu bekas. Kunci pemeteraian dan kunci peribadi GitHub App kongsi ialah pembolehubah persekitaran di sana, bukan kunci dalam vault yang hanya menandatangani atau menyahsulit, seperti yang disyorkan GitHub untuk kunci peribadi App. Itu ialah jurang yang diketahui dalam persediaan semasa.
+
 Sebuah pelayan membaca konfigurasi Connect paling kerap setiap 10 minit dan menunggu paling lama 5 saat bagi setiap panggilan.
 Apabila Connect tidak dapat dihubungi, konfigurasi baik terakhir kekal digunakan dan Tetapan menandainya sebagai lapuk.
+
+## Pilihan setiap ruang kerja
+
+**Tetapan → Ruang kerja → Integrasi → Control Center Connect** mengatasi pilihan pelayan untuk satu ruang kerja. Setiap ahli melihatnya dan tempat setiap log masuk berjalan; hanya pentadbir ruang kerja boleh mengubahnya.
+
+| Pilihan                         | Gelagat                                                                                                        |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Sama seperti pelayan ini**    | Lalai. Ruang kerja berjalan pada apa sahaja yang dipilih pemilik pelayan; pilihan itu menamakannya              |
+| **Gunakan aplikasi Control Center** | Connect yang dihoskan oleh Control Center, tanpa mengira apa yang digunakan pelayan                        |
+| **Gunakan aplikasi saya sendiri** | Hanya apl ruang kerja: GitHub App, klien Google, aplikasi Linear, kunci Klipy dan apl Slack. Pembekal tanpa satu pun dimatikan di sini; medan separa ialah ralat persediaan |
+| **Gunakan pelayan Connect tersuai** | Connect pada alamat HTTPS yang dinamakan oleh ruang kerja. Alamat pada rangkaian persendirian atau tempatan ditolak |
+
+- Mana-mana pilihan selain **Sama seperti pelayan ini** menyimpan log masuk GitHub dan Linear setiap orang dalam slot milik ruang kerja itu sendiri, jadi ia tidak sekali-kali bercampur dengan yang digunakan di seluruh pelayan
+- Menukar meminta pengesahan dahulu: semua orang dalam ruang kerja log masuk semula ke GitHub, Linear dan Google Calendar melalui apl baharu
+- Sambungan apl Slack sendiri ruang kerja berfungsi di bawah setiap pilihan; **Tambah Control Center ke Slack** mengikut pilihan itu
+- `CC_CONNECT_URL` juga mengunci ruang kerja daripada Connect sendiri: mereka boleh mengikut pelayan atau menggunakan apl sendiri
+- Connect tersuai sesebuah ruang kerja dipercayai pada penggunaan pertama untuk ruang kerja itu sahaja: **Percayai aplikasi baharu** di sana tidak sekali-kali mengubah apa yang dipercayai oleh pelayan atau ruang kerja lain
 
 ## Identiti pemasangan
 
@@ -86,13 +103,31 @@ mencipta. Ia terikat kepada pembekal, alamat Connect, ID pemasangan, ruang kerja
 
 ## Pemasangan GitHub
 
-Pemasangan GitHub App kongsi hanya boleh digunakan oleh pelayan apabila Connect telah mengikatnya kepada ID pemasangan
-pelayan itu.
+Pemasangan GitHub App kongsi boleh digunakan dari setiap pelayan. Connect tidak menyimpan rekod tentang pelayan mana boleh menggunakannya.
 
-- **Pasang GitHub App** dalam **Tetapan → Ruang kerja → Umum** membuka GitHub dengan tiket 15 minit. Connect mengikat
-  pemasangan baharu apabila pemasangnya memiliki akaun peribadi atau mentadbir organisasi
-- **Benarkan pelayan ini** mengikat pemasangan yang sudah wujud. Hanya pentadbir organisasi boleh melakukannya
-- Pemasangan organisasi boleh diikat kepada beberapa pelayan; setiap pelayan memerlukan kebenaran pentadbir
+- **Pasang GitHub App** dalam **Tetapan → Ruang kerja → Integrasi** membuka halaman pemasangan app di GitHub. Pelayan membina pautan daripada nama app dalam konfigurasi Connect
+- Token satu-repositori memerlukan app dipasang pada pemilik repositori dan akses pengguna yang log masuk kepada repositori itu. Ia token milik orang itu sendiri, dihadkan kepada peranannya, tidak lebih
+- Sesebuah organisasi mengehadkan Control Center di GitHub: dengan membuang pemasangan, menyempitkan repositorinya, atau membuang orang itu
+- Bagi panggilan yang hanya orang boleh buat, seperti menyenaraikan pemasangan mereka, Connect menghantar kepada pelayan token pengguna App peribadi orang itu, bukan token satu-repositori. Log masuk pada pelayan bermakna mempercayai pelayan itu dengan token tersebut
+- Sebuah organisasi yang menguatkuasakan senarai benarkan IP GitHub tidak boleh menggunakan Connect yang dihoskan, kerana alamatnya tidak tetap. Ia mendaftarkan GitHub App sendiri, pada pelayannya atau pada Connect yang dijalankannya
+- **Putuskan** hanya membatalkan log masuk itu: Connect membelanjakan token penyegarnya sekali dan memadam apa yang dikembalikannya, memadam token penggunanya dan token satu-repositori yang Connect cetak untuknya. Salinan pemeteraiannya yang disimpan di mana-mana berhenti berfungsi. Log masuk orang pada pelayan dan ruang kerja lain terus berfungsi. Untuk membuang Control Center daripada akaun GitHub sepenuhnya, batalkannya di GitHub di bawah **Settings → Applications → Authorized GitHub Apps → Revoke**
+
+### Bot yang dikongsi
+
+Token yang dicetak sebagai bot App (`as: app`) menunjukkan bot yang sama di GitHub untuk setiap pelayan yang menggunakan Connect yang sama: GitHub tidak dapat membezakan pelayan-pelayan itu.
+
+- Setiap pelayan boleh membenarkan bot membaca dan mengulas: `read`, `review` dan `comment` (komen, label, penerima tugas dan reaksi pada isu dan pull request)
+- Menyemak pull request sebagai bot (`bot`, yang menulis pull request) hanya dibenarkan untuk pelayan yang disenaraikan oleh pengendali Connect dalam `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Setiap pelayan lain dijawab `needs_requester` dan menyiarkan semakan menggunakan token peribadi orang yang bertanggungjawab, yang GitHub hadkan kepada orang itu: semakan muncul di bawah nama mereka. Ini meliputi penyiaran semakan AI, komen semakan dan permintaan penyemak
+- Menolak, mencipta cawangan dan membuka pull request (`write`) tidak sekali-kali dicetak sebagai bot yang dikongsi. Ia sentiasa menggunakan log masuk pemohon sendiri
+- Meluluskan pull request tidak pernah diautomasikan, pada mana-mana token
+- Pelayan atau ruang kerja dengan GitHub App sendiri mengekalkan bot untuk semua ini, termasuk semakan
+
+### Perkara yang patut diketahui oleh pemilik dan ahli organisasi
+
+- Pelayan tempat seseorang log masuk memegang token pengguna App mereka: sehingga 8 jam bagi setiap token, diperbaharui sehingga mereka memutuskan sambungan. Ia boleh bertindak sebagai mereka pada setiap repositori tempat App kongsi dipasang yang boleh mereka capai. Connect boleh memutuskan pelayan selama-lamanya (pemasangan yang ditarik balik atau ditolak), tetapi token yang telah dikeluarkan kekal sah sehingga tamat tempoh
+- Memasang GitHub App kongsi pada sebuah organisasi memberi persetujuan untuk setiap pelayan Control Center tempat mana-mana ahli log masuk, bukan untuk satu pelayan sahaja
+- Bot itu dikongsi, seperti di atas: sebuah organisasi tidak dapat memberitahu di GitHub pelayan mana yang bertindak sebagai bot
+- Organisasi yang mahukan sempadannya sendiri mendaftarkan GitHub App sendiri dan menjalankan Connect sendiri ([Jalankan pelayan Connect](/ms-MY/manual-pengguna/panduan-cara/jalankan-pelayan-connect/)), atau mengkonfigurasikan App pada pelayannya sendiri
 
 ## Kepercayaan konfigurasi
 
@@ -103,7 +138,7 @@ pelayan itu.
 
 ## Operasi
 
-Semua tetapan Connect hanya untuk pemilik pelayan.
+Tetapan Connect pelayan hanya untuk pemilik pelayan.
 
 | Operasi               | Fungsinya                                                                                      |
 | --------------------- | ---------------------------------------------------------------------------------------------- |
@@ -111,29 +146,41 @@ Semua tetapan Connect hanya untuk pemilik pelayan.
 | `connect.configure`   | Menetapkan `hosted`, `custom` (dengan `url`) atau `off`                                        |
 | `connect.test`        | Mengambil semula konfigurasi dan melaporkan kesihatan                                          |
 | `connect.confirmPins` | Menerima pengecam yang berubah bagi Connect tersuai                                            |
-| `connect.rotateKey`   | Mencipta kunci pemasangan baharu. Setiap log masuk melalui Connect pada pelayan ini berhenti berfungsi |
+| `connect.rotateKey`   | Menjana kunci pemasangan baharu dan ID pemasangan baharu (`force` menggantikannya walaupun Connect tidak dapat membatalkan kunci lama); lihat [Putar kunci pemasangan](#putar-kunci-pemasangan) |
+
+Pilihan sesebuah ruang kerja mempunyai operasinya sendiri, setiap satu menamakan ruang kerja itu:
+
+| Operasi                        | Siapa               | Lakukan                                                                             |
+| ------------------------------ | ------------------- | ----------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Mana-mana ahli      | Pilihan, apa yang ia selesaikan, kesihatan dan sumber setiap pembekal. ID pemasangan dan pin tertunggu untuk pentadbir sahaja |
+| `workspaceConnect.set`         | Pentadbir ruang kerja | Menetapkan `inherit`, `hosted`, `custom` (dengan `url`) atau `own`                 |
+| `workspaceConnect.test`        | Pentadbir ruang kerja | Mengambil semula konfigurasi Connect ruang kerja dan melaporkan kesihatan          |
+| `workspaceConnect.confirmPins` | Pentadbir ruang kerja | Menerima pengecam yang berubah bagi Connect tersuai ruang kerja                    |
 
 Log masuk sendiri menggunakan `oauth.lanes`, `oauth.begin`, `oauth.status`, `oauth.complete`, `oauth.connections` dan
 `oauth.disconnect`. Orang itu sentiasa pemanggil yang telah log masuk.
 
 ## Log masuk melalui Connect
 
-1. Pelayan meminta Connect memulakan lorong dan menerima URL kebenaran pembekal, yang disemaknya sebelum dipaparkan
+1. Pelayan meminta Connect memulakan lorong dan menerima URL kebenaran pembekal, yang disemaknya sebelum dipaparkan. GitHub sentiasa memaparkan pemilih akaunnya
 2. Orang itu meluluskan dalam pelayar. Pembekal menghantar pelayar kembali ke Connect
-3. Connect memaparkan kod 8 aksara dan pautan `control-center://oauth-done`
-4. Orang itu menaip kod ke dalam apl, atau mengikut pautan. Pelayan mengklaim log masuk dengan kod itu bersama bukti
+3. Connect memaparkan apa yang boleh dilakukan oleh pelayan yang memulakan log masuk itu sebagai orang tersebut, dan untuk berapa lama. Connect tidak dapat mengenal pasti siapa yang menjalankan pelayan itu, jadi halaman itu meminta orang tersebut meneruskan hanya jika mereka sendiri yang memulakan log masuk, dan menutupnya jika seseorang menghantar pautan itu kepada mereka. Apabila pelayar berada pada rangkaian lain daripada yang log masuk itu dimulakan, halaman itu menyatakannya: itu normal bagi pelayan yang dihoskan atau peranti lain, dan juga rupa penipuan (phishing). **Batal** menamatkan log masuk: kod pembekal tidak sekali-kali digunakan. Setiap halaman menjawab sekali sahaja; jawapan yang tidak datang daripada halaman yang baru ditunjukkan Connect ditolak
+4. Selepas **Teruskan**, Connect memaparkan kod 8 aksara dan pautan `control-center://oauth-done`. Sesiapa yang mendapat kod itu mendapat akses yang baru diluluskan, jadi ia hanya dihantar ke tempat log masuk itu dimulakan
+5. Orang itu menaip kod ke dalam apl, atau mengikut pautan. Pelayan mengklaim log masuk dengan kod itu bersama bukti
    miliknya tentang permintaan tersebut
 
 Log masuk tamat tempoh selepas 10 minit. Lima kod salah akan menamatkannya. Pautan yang tidak dimulakan oleh apl ini
-akan ditolak dengan **Log masuk tidak dimulakan di sini**.
+akan ditolak dengan **Log masuk tidak dimulakan di sini**. Connect mengehadkan berapa banyak log masuk yang boleh dimulakan oleh satu alamat rangkaian, dan seberapa kerap token GitHub dikeluarkan: bagi setiap orang dan pelayan, bagi setiap orang merentas pelayan, bagi setiap alamat, serta bagi keseluruhan app. Log masuk baharu mempunyai bajet sendiri, jadi ia tidak sekali-kali menahan pembaharuan yang diperlukan orang lain. Melebihi had, panggilan ditolak dengan `rate_limited`, dan pelayan mencuba semula kemudian tanpa mengeluarkan sesiapa daripada log masuk. Log masuk yang melebihi had orang itu dibatalkan di GitHub dan ditolak.
 
 ## Putar kunci pemasangan
 
-**Putar kunci** pada kad Connect, atau `cc_server connect rotate-key --yes`:
+Hanya pemilik pelayan boleh memutar kunci, dengan **Putar kunci** pada kad **Control Center Connect** dalam **Tetapan → Pelayan → Daftar masuk tunggal**. Tiada arahan untuknya. Pemutaran:
 
-- Memberi pelayan kunci pemasangan baharu dan ID pemasangan baharu
-- Mengeluarkan semua orang daripada setiap lorong yang berjalan melalui Connect
-- Tidak menjejaskan log masuk melalui apl pelayan sendiri
+- Mengeluarkan semua orang daripada setiap lorong yang berjalan melalui Connect. Bagi setiap pelayan Connect yang kunci lama digunakan dengannya, pelayan membatalkan log masuk GitHub dan Slack yang dipegangnya dari sana (log masuk Google tiada apa untuk dibatalkan dan akan tamat sendiri)
+- Menarik balik ID pemasangan lama di setiap pelayan Connect tersebut, ditandatangani dengan kunci lama dan dibuktikan dengan satu pemeteraian kelayakan yang dipegang pelayan daripada Connect itu. Selepas itu Connect menolak setiap permintaan yang dibuat dengan kunci lama, jadi pemeteraian atau salinan kunci lama yang diambil dari pelayan ini tidak berguna, dan ruang kerja Slack yang terikat kepada ID lama dilepaskan supaya ia boleh menyambung semula. Token yang telah dikeluarkan kekal sah sehingga tamat tempoh (sejam bagi token bot, lapan jam bagi token seseorang). Pelayan Connect yang tidak mempunyai pemeteraian daripadanya tiada apa untuk ditarik balik dan dilangkau
+- Kemudian memberi pelayan kunci pemasangan baharu dan ID pemasangan baharu
+- Jika pelayan Connect tidak dapat dihubungi, atau enggan menarik balik ID lama, ia berhenti sebelum menukar kunci dan memaparkan **Connect tidak dapat membatalkan kunci lama**. **Jana semula juga** menukar kunci tanpa mengira; ID lama kemudian kekal boleh digunakan di Connect itu sehingga tokennya tamat tempoh, paling lama 8 jam bagi GitHub
+- Membiarkan log masuk melalui apl pelayan sendiri tidak terjejas
 - Memerlukan ID pemasangan baharu ditambah ke senarai benar Connect tersuai
 
 ## Kod status
@@ -144,7 +191,7 @@ akan ditolak dengan **Log masuk tidak dimulakan di sini**.
 | `signature`            | Konfigurasi hosted gagal pemeriksaan tandatangannya                  |
 | `rollback`             | Connect menghidangkan konfigurasi yang lebih lama daripada yang telah dilihat pelayan |
 | `unreachable`          | Pelayan tidak dapat menghubungi Connect                              |
-| `install_blocked`      | Connect tidak membenarkan ID pemasangan ini                          |
+| `install_blocked`      | Connect tidak membenarkan ID pemasangan ini, atau ia telah ditarik balik |
 | `pins_changed`         | Connect tersuai mengumumkan pengecam apl yang berbeza                |
 | `protocol`             | Connect menjawab dalam bentuk yang tidak difahami pelayan ini        |
 

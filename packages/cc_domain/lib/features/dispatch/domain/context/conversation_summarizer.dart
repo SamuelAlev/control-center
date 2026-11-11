@@ -1,11 +1,6 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 
-// The shared system instruction (`compactionSystemPrompt`) moved into the
-// harness kernel (PRD 26.1) so both compaction lanes use one prompt; it is
-// re-exported here because it is part of this file's API surface.
-export 'package:cc_harness/context.dart' show compactionSystemPrompt;
-
 /// Input to a conversation summarizer: the span of messages to fold, plus the
 /// prior anchored summary to update (preserve still-true, drop stale, merge new).
 class CompactionInput {
@@ -67,7 +62,7 @@ String serializeCompactionHistory(
       continue;
     }
     // Other content-bearing messages (plain text, etc.).
-    if (m.content.trim().isNotEmpty && !m.isContextSummary) {
+    if (m.content.trim().isNotEmpty && !m.isCompaction) {
       buf
         ..writeln('# ${m.isUser ? 'User' : selfAgentName}')
         ..writeln(m.content.trim())
@@ -144,7 +139,7 @@ class StructuralConversationSummarizer implements ConversationSummarizerPort {
         if (actions.isNotEmpty) {
           buf.writeln('  - actions: ${actions.join(', ')}');
         }
-      } else if (m.content.trim().isNotEmpty && !m.isContextSummary) {
+      } else if (m.content.trim().isNotEmpty && !m.isCompaction) {
         buf.writeln('- ${_oneLine(m.content)}');
       }
     }

@@ -132,15 +132,19 @@ class ConversationTitleService implements ConversationTitlePort {
   /// the workspace has a content synthesizer, the conversation still carries an
   /// auto-minted default title, and it has a human message to name it from.
   ///
+  /// [requestedByUserId] wrote the message being named from.
+  ///
   /// Never throws: every failure is logged and the current title is kept.
   Future<void> maybeGenerate({
     required String workspaceId,
+    required String? requestedByUserId,
     required String spaceId,
     String? conversationId,
   }) async {
     try {
       await _generate(
         workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
         spaceId: spaceId,
         conversationId: conversationId,
       );
@@ -151,6 +155,7 @@ class ConversationTitleService implements ConversationTitlePort {
 
   Future<void> _generate({
     required String workspaceId,
+    required String? requestedByUserId,
     required String spaceId,
     String? conversationId,
   }) async {
@@ -188,6 +193,7 @@ class ConversationTitleService implements ConversationTitlePort {
     try {
       final renamed = await _completeAndRename(
         workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
         conversation: conversation,
         runner: runner,
         transcript: transcript,
@@ -206,6 +212,7 @@ class ConversationTitleService implements ConversationTitlePort {
   /// Whether a title was written.
   Future<bool> _completeAndRename({
     required String workspaceId,
+    required String? requestedByUserId,
     required Conversation conversation,
     required ContentSynthesizer runner,
     required String transcript,
@@ -213,7 +220,12 @@ class ConversationTitleService implements ConversationTitlePort {
     // Null means the runner cannot run at all (adapter unknown, its CLI not
     // installed, no credential for the harness provider) — a quiet skip, not
     // a failure.
-    final raw = await _complete(runner, transcript);
+    final raw = await _complete(
+      runner,
+      transcript,
+      workspaceId: workspaceId,
+      requestedByUserId: requestedByUserId,
+    );
     if (raw == null) {
       CcInfraLog.debug(
         'messaging: runner "${runner.adapterId}" unavailable; conversation '
@@ -254,6 +266,7 @@ class ConversationTitleService implements ConversationTitlePort {
   Future<ConversationTitleSuggestion> suggestTitle({
     required String workspaceId,
     required String conversationId,
+    String? requestedByUserId,
   }) async {
     final conversation = await _conversationRepo.getById(
       workspaceId: workspaceId,
@@ -270,7 +283,12 @@ class ConversationTitleService implements ConversationTitlePort {
     if (transcript.isEmpty) {
       return const ConversationTitleSuggestion(empty: true);
     }
-    final raw = await _complete(runner, transcript);
+    final raw = await _complete(
+      runner,
+      transcript,
+      workspaceId: workspaceId,
+      requestedByUserId: requestedByUserId,
+    );
     if (raw == null) {
       return const ConversationTitleSuggestion(unavailable: true);
     }
@@ -420,8 +438,14 @@ class ConversationTitleService implements ConversationTitlePort {
 
   /// One tool-less turn of the titling prompt; null when the runner cannot
   /// run.
-  Future<String?> _complete(ContentSynthesizer runner, String transcript) =>
-      _runner.complete(
+  Future<String?> _complete(
+    ContentSynthesizer runner,
+    String transcript, {
+    required String workspaceId,
+    required String? requestedByUserId,
+  }) => _runner.complete(
+        workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
         adapterId: runner.adapterId,
         modelId: runner.modelId,
         systemPrompt: runner.systemPromptFor(_taskPrompt),

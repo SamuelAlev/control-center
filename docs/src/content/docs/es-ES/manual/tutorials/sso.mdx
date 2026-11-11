@@ -2,7 +2,7 @@
 title: Inicia sesión del equipo con SSO
 description: Conecta Okta (SAML) a tu servidor de Control Center y completa un inicio de sesión de principio a fin.
 slug: es-ES/manual/tutoriales/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -89,6 +89,8 @@ Dos políticas deciden qué hace un primer inicio de sesión:
 - **Aprovisionar usuarios desconocidos en el primer inicio de sesión** —
   activada de forma predeterminada; desactívala para rechazar a cualquiera
   cuya cuenta no exista ya.
+
+Si las personas ya tienen cuentas en este servidor, confirma sus direcciones de correo antes de que nadie inicie sesión con SSO: abre **Ajustes → Servidor → Personas** y usa **Confirmar correo** en cada fila marcada como **Correo no confirmado**. Un inicio de sesión asocia una cuenta existente por correo solo cuando esa dirección está confirmada (o la ha establecido SSO o SCIM). Una dirección que alguien escribió en su propio perfil o en una invitación no se asocia con nada, así que sin este paso esa persona obtiene una segunda cuenta, o se le rechaza cuando el aprovisionamiento de usuarios desconocidos está desactivado. Consulta [Cómo asocian los inicios de sesión las cuentas existentes](/es-ES/manual/guias/sso-oidc/#cómo-asocian-los-inicios-de-sesión-las-cuentas-existentes).
 
 De forma opcional, asigna un atributo que lleve nombres de grupo (el de Okta
 suele ser `groups`) y traduce los grupos a roles con la asignación — por

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show AppException;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/git_snapshot_port.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
@@ -14,7 +16,6 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
 import 'package:cc_infra/src/messaging/json_content_extractor.dart';
 import 'package:cc_infra/src/messaging/transcript_folder.dart';
@@ -376,13 +377,8 @@ class AgentStreamProcessor {
       thoughtTokens: base.thoughtTokens,
       cachedReadTokens: base.cachedReadTokens,
       cachedWriteTokens: base.cachedWriteTokens,
-      // The cents field is the legacy projection of the exact figure: for a
-      // cumulative snapshot the adapter leaves it 0 (its cents are a whole-tree
-      // total a cents-summing consumer must not add), so project from micros
-      // when they exist and keep the reported cents otherwise.
-      estimatedCostCents: base.costMicros != 0
-          ? (base.costMicros / 10000).round()
-          : base.estimatedCostCents,
+      // Cents are the display projection of the exact figure.
+      estimatedCostCents: (base.costMicros / 10000).round(),
       costMicros: base.costMicros,
       costBasis: base.costBasis,
       durationMs: base.durationMs,
@@ -474,7 +470,11 @@ class AgentStreamProcessor {
     await ctx.streamRegistry.unregister(ctx.messageId);
 
     if (failure != null) {
-      await ctx.agentDispatchService.failRun(runLog, failure);
+      await ctx.agentDispatchService.failRun(
+        runLog,
+        failure,
+        errorCode: ctx.folder.terminalFailureCode(),
+      );
     } else {
       await ctx.agentDispatchService.completeRun(
         runLog,
@@ -592,7 +592,11 @@ class AgentStreamProcessor {
     );
     await ctx.streamRegistry.unregister(ctx.messageId);
 
-    await ctx.agentDispatchService.failRun(runLog, error.toString());
+    await ctx.agentDispatchService.failRun(
+      runLog,
+      error.toString(),
+      errorCode: error is AppException ? error.code : null,
+    );
     // The turn's message is the only "agent finished" notification, so a
     // crashed turn still sends one — carrying what went wrong.
     await _notifyMessageReceived(ctx, content: content);

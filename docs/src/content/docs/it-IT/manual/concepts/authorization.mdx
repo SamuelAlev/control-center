@@ -2,7 +2,7 @@
 title: Autorizzazione — chi può fare cosa e come lo dimostri
 description: Il catalogo dei permessi alla base dei ruoli di Control Center, il registro di controllo a prova di manomissione in cui finisce ogni decisione di autorizzazione e i controlli a livello di installazione che un operatore può fissare.
 slug: it-IT/manuale/concetti/autorizzazione
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center risponde a due domande di autorizzazione, e sono davvero
@@ -63,19 +63,99 @@ troppo vecchio per capire quel valore ricade su ospite invece di tirare a
 indovinare.
 
 Sotto i ruoli stanno le **concessioni per repository** (`none` / `read` /
-`review` / `write`): l'appartenenza a uno spazio di lavoro non concede mai
+`review` / `write`, vedi [Modificare il codice richiede la concessione di scrittura](#modificare-il-codice-richiede-la-concessione-di-scrittura)): l'appartenenza a uno spazio di lavoro non concede mai
 silenziosamente più privilegi della forge. Ogni superficie che espone codice le
 verifica — comprese quelle che raggiungono il codice di traverso, come un
 terminale o una sessione dell'editor aperta sul worktree di uno spazio.
 
-## Autorità del server
+## Il codice segue la forge
 
-Alcune operazioni non riguardano affatto uno spazio di lavoro: impostazioni a
-livello di installazione, configurazione SSO, credenziali dei provider, gestione
-dei modelli, backup dell'intera installazione. Queste dichiarano **autorità del
-server** e vengono rifiutate a chiunque tranne l'operatore dell'installazione
-(il proprietario del server registrato). Di proposito esistono una sola identità
-di operatore e una sola definizione della stessa.
+Una concessione da sola non apre il codice di un repository. Per vederne i file, i diff o i
+risultati di ricerca, o per aprire un terminale su di esso, un membro deve avere la concessione di
+Control Center **e** il proprio accesso alla forge deve poter leggere il repository. Anche gli
+amministratori dello spazio di lavoro non ne sono esenti; il proprietario del server sì, perché il
+checkout si trova sulla sua macchina. Un repository senza remoto della forge richiede solo la
+concessione.
+
+- Quando un amministratore concede un repository a qualcuno il cui account della forge non può
+  leggerlo, la concessione viene salvata e l'amministratore vede un avviso.
+- Quando la forge non è raggiungibile per il controllo, la risposta è no, mai un'ipotesi: la persona
+  vede "Impossibile confermare il tuo accesso a GitHub. Riprova." (con il nome della sua forge) e
+  riprova più tardi.
+- Pull request e tutto ciò che ne deriva seguono la stessa regola.
+
+### Modificare il codice richiede la concessione di scrittura
+
+Una concessione su un repository ha tre livelli, e ciascuno include quello precedente:
+
+- **read**: vedere i file, i diff e i risultati di ricerca del repository, a condizione che anche il tuo accesso personale alla forge possa leggerlo.
+- **review**: read, più approvare, richiedere modifiche e le altre azioni di review sulle sue pull request.
+- **write**: review, più modificare il codice e avviare esecuzioni di agenti che scrivono nel repository. Modificare il codice comprende salvare o ripristinare file nell'editor, sincronizzare un worktree alla testa della pull request, fare commit e push, pubblicare un branch e le azioni sulla stack che creano, estraggono o pubblicano una parte.
+
+Ogni push fatto per una persona, da lei o da un'esecuzione di agente che ha richiesto, verifica la sua concessione di scrittura su quel repository nel momento del push, su GitHub, GitLab e Bitbucket allo stesso modo. Pubblicare una stack verifica ogni repository della stack prima di pushare uno qualsiasi di essi.
+
+Un rifiuto indica la concessione mancante. Senza accesso in lettura l'app dice "Non hai accesso in lettura a questo repository. Un amministratore dello spazio di lavoro può concederlo." Con lettura ma senza scrittura dice "Puoi leggere questo repository, ma non modificarlo. Un amministratore dello spazio di lavoro può concedere l'accesso in scrittura."
+
+### Gli spazi seguono i loro repository
+
+Ciò che gli agenti scrivono sul codice segue il codice. Il contenuto di uno spazio (i suoi messaggi,
+le trascrizioni e l'output degli strumenti, i risultati di ricerca, i log delle esecuzioni, i todo,
+le attività e le notifiche) porta con sé il codice dei repository su cui lavora. Uno spazio quindi
+si apre solo per un membro che detiene una concessione di lettura su ogni repository che lo spazio
+usa, e il cui accesso personale alla forge può leggerlo. Sono i repository selezionati per lo
+spazio, oppure tutti i repository dello spazio di lavoro quando non è registrata alcuna selezione.
+Uno spazio creato senza repository è aperto a ogni membro.
+
+Uno spazio che qualcuno non può aprire non viene elencato per quella persona in nessun punto, ricerca,
+log delle esecuzioni, todo, attività e notifiche incluse. Gli amministratori dello spazio di lavoro
+detengono ogni concessione ma non sono esentati dalla metà relativa alla forge; il proprietario del
+server sì.
+
+Per una conversazione che tutti devono poter leggere, crea lo spazio senza repository, oppure solo
+con repository che tutti possono leggere.
+
+## Il proprietario del server
+
+La persona che ha configurato il server ne è il **proprietario**. Il server la registra una sola
+volta, al primo avvio, e niente di ciò che arriva dalla rete lo cambia. Un amministratore dello spazio
+di lavoro, o un proprietario di spazio di lavoro, non è il proprietario del server: si può assegnare
+uno spazio di lavoro a chiunque, ma la macchina del server ha un solo proprietario.
+
+**Nulla viene eseguito sulla macchina del server fuori da una sandbox, a meno che il proprietario del
+server non l'abbia avviato o approvato quel tipo di esecuzione sull'host.** In concreto, solo il
+proprietario del server può:
+
+- Creare uno spazio di lavoro. Tutti gli altri vedono una schermata che chiede di farne creare uno al
+  proprietario o di farsi invitare da un amministratore dello spazio di lavoro.
+- Aprire la shell dell'host nel terminale ospitato sul server. Tutti gli altri ottengono un terminale
+  in sandbox, con i limiti di un agente, nelle directory dello spazio di lavoro.
+- Aprire l'editor di codice incorporato. Viene eseguito come utente del server, con il suo terminale,
+  le sue attività ed estensioni.
+- Aprire una pull request o il worktree di una conversazione in un editor nativo. L'editor si avvia
+  sullo schermo del server, come utente del server.
+- Salvare o approvare una definizione di [ambiente](/it-IT/manuale/guide/ambienti/) che esegue qualcosa
+  sull'host: posizionamento sull'host, un controllo che esegue un comando, oppure un'attività di
+  provisioning o di archiviazione.
+- Eseguire agenti su un server la cui macchina non ha una sandbox. Le esecuzioni di tutti gli altri
+  vengono rifiutate lì, a meno che il proprietario non abbia avviato il server con `--sandbox off`, che
+  esegue gli agenti di ogni membro senza confinamento (vedi
+  [Agenti su un host senza sandbox](/it-IT/manuale/concetti/sandbox-e-sicurezza/#agenti-su-un-host-senza-sandbox)).
+- Collegare un checkout di repository che si trova fuori dallo spazio di archiviazione dello spazio di
+  lavoro, confermare un collegamento già esistente prima di quella regola, e sfogliare le cartelle del
+  server quando si aggiunge un repository (vedi [Aggiungi repository](/it-IT/manuale/guide/aggiungi-repo/)).
+- Vedere e terminare ogni processo di agente in esecuzione sul server. Tutti gli altri vedono e
+  terminano solo le esecuzioni dal vivo degli agenti negli spazi di lavoro di cui fanno parte.
+- Far usare agli agenti i server MCP configurati negli strumenti personali dell'utente del server
+  (Claude, Codex, Cursor e gli altri). Solo le esecuzioni dell'harness integrato di cui il proprietario
+  risponde li ottengono; vedi
+  [I server MCP personali restano del proprietario](/it-IT/manuale/guide/server-mcp/#i-server-mcp-personali-restano-del-proprietario).
+- Confermare l'indirizzo e-mail di una persona, perché il single sign-on possa associarlo (vedi
+  [Collega un provider OpenID Connect](/it-IT/manuale/guide/sso-oidc/#come-gli-accessi-associano-gli-account-esistenti)).
+- Modificare le impostazioni a livello di installazione: SSO, credenziali dei provider, endpoint MCP e
+  il suo token, gestione dei modelli, Connect e backup dell'intera installazione. Queste operazioni
+  dichiarano **autorità del server** e vengono rifiutate a chiunque altro.
+
+Di proposito esistono una sola identità di operatore e una sola definizione della stessa.
 
 ## Il registro di controllo
 

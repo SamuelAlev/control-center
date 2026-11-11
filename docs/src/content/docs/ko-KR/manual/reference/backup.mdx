@@ -2,7 +2,7 @@
 title: 백업, 내보내기, 가져오기
 description: 스냅샷 레이아웃, 매니페스트, 모든 백업 연산과 전송 라우트, 그리고 백업에 포함되는 파일과 포함되지 않는 파일을 정확히 설명합니다.
 slug: ko-KR/매뉴얼/레퍼런스/백업
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것과 각 산출물의 정확한
@@ -109,6 +109,7 @@ Control Center가 복사하고, 넘겨주고, 받아들일 수 있는 모든 것
 | `models/`                           | 아니요         | 아니요                 |
 | `meetings/<meetingId>/`             | 아니요         | 아니요                 |
 | `rigs/`                             | 아니요         | 아니요                 |
+| `_agent_hooks/`                     | 아니요         | 아니요                 |
 
 그중 일부는 버려도 됩니다. `spaces/`는 저장소에서 다시 프로비저닝되는
 copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는 다시
@@ -116,8 +117,12 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 데이터베이스의 행이 가리키는 붙여넣은 이미지를 담고, `skills/`와 `agents/`는
 에이전트가 실행에 쓰는 파일을 담고, `secrets.json`은 설치의 모든 페어링 키와
 공급자 자격 증명, SSO 설정을 담습니다. 나머지를 챙기는 방법은
-[백업 및 복원](/ko-KR/매뉴얼/사용-가이드/백업-및-복원/#copy-backups-off-the-machine)을
+[백업 및 복원](/ko-KR/매뉴얼/사용-가이드/백업-및-복원/#백업을-머신-밖으로-복사하기)을
 참고하세요.
+:::caution[워크스페이스 데이터베이스에는 웹훅 시크릿이 들어 있습니다]
+`workspace.db`는 워크스페이스 전체입니다. 대화, 실행 로그, 코드 인덱스, 저장소 링크, 환경 정의, 멤버가 들어 있습니다. 또한 워크스페이스의 파이프라인 웹훅 토큰과 티켓 동기화 웹훅 시크릿을 읽을 수 있는 형태로 담고 있으므로, 내려받은 내보내기나 백업을 시크릿처럼 다루십시오. 공급자 로그인, 기기 키, 사용자 시크릿은 담고 있지 않으며, 그것들은 `global.db`와 `secrets.json`에 있습니다.
+:::
+
 :::note[채팅 토큰은 의도적으로 남겨 둡니다]
 `chat_credentials/`가 데이터베이스 안이 아니라 옆에 있기 때문에, 다른 사람에게
 넘긴 워크스페이스에는 살아 있는 봇 토큰이 실리지 않습니다.
@@ -141,7 +146,7 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 | `workspace.listBackups` | 읽기 | 워크스페이스 | `admin` | 없음 | `{backups: [...]}` |
 | `workspace.deleteBackup` | 변경 | 워크스페이스 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | 읽기   | 워크스페이스 | `admin`      | 없음          | `{ok, path}`                  |
-| `workspace.import`   | 변경   | 워크스페이스 | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | 변경   | 워크스페이스 | `owner` 및 서버 소유자 | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | 변경   | 설치*      | `owner`      | `id`          | 레지스트리 행이 삭제됨으로 표시됨 |
 
 * `workspace.delete`는 표시하는 행이 전역 레지스트리에 있으므로 범위가 없습니다.
@@ -164,9 +169,11 @@ copy-on-write 워크트리를 담고, `pr_clones/`는 캐시이며, `models/`는
 관문을 씁니다. 스냅샷은 모든 워크스페이스의 데이터베이스를 캡처하므로,
 워크스페이스 하나의 관리자인 것만으로는 나머지를 관리하기에 충분하지 않습니다.
 삭제는 나열된 타임스탬프 디렉터리 이름만 받아들이고 임의의 서버 경로는 받지
-않으며, 스냅샷 전체(불완전한 스냅샷 포함)를 제거합니다. 워크스페이스별
-내보내기/가져오기는 설치 소유자가 아니라 워크스페이스 관리자/소유자에게
-남습니다.
+않으며, 스냅샷 전체(불완전한 스냅샷 포함)를 제거합니다. 워크스페이스별 내보내기와 예약 백업 다운로드는 워크스페이스 관리자에게 남습니다.
+:::
+
+:::note[복원은 서버 소유자의 것입니다]
+`workspace.import`와 `POST /backup/restore`는 서버가 데이터베이스 파일을 자기 것으로 받아들이게 합니다. 파일의 행을 서버가 자기 것으로 취급하기 때문입니다. 저장소 링크와 그것을 만든 사람, 호스트에서 실행되는 환경 정의, 워크트리와 로그 경로가 그렇습니다. 따라서 둘 다 서버 소유자(`ServerAuthority.serverOwner`)가 필요하며, 그 사람은 워크스페이스의 소유자이기도 해야 합니다. 그 밖의 사용자와 기록된 소유자가 없는 호스트의 모든 호출자는 `server_owner_required`와 함께 거부됩니다. 파일이 가져오는 트리거나 뷰는 하나도 채택되지 않습니다.
 :::
 
 ### `server.listBackups` 응답
@@ -240,7 +247,7 @@ HTTP 파일 전송 엔드포인트가 아닙니다. 공개 리스너에서 이 �
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | 워크스페이스 **관리자**   |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | 설치 **소유자**     |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | 워크스페이스 **관리자**. 워크스페이스 삭제 후에는 설치 **소유자** |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 워크스페이스 **소유자**   |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 설치 **소유자**이면서 워크스페이스 **소유자**(그 밖에는 `server_owner_required`와 함께 `403`) |
 
 `w`는 워크스페이스 id, `n`은 스냅샷 또는 예약 백업 디렉터리 이름, `d`는 호출 기기 id,
 `s`는 서명입니다. `/backup/snapshot`에서 `n`은 백업 루트에 이어 붙이는 것이 아니라 백업

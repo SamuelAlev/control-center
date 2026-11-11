@@ -4,13 +4,6 @@
 /// (no Flutter) for desktop and `cc_server`.
 library;
 
-// The BM25 index moved to the shared kernel so the harness's own `search_tools`
-// ranks identically to this MCP-facing one. Re-exported so existing importers
-// of this library keep compiling.
-export 'package:cc_domain/features/mcp/domain/services/tool_index.dart';
-
-export 'src/approval/capability_tier.dart';
-export 'src/bridged_resource_prompt.dart';
 export 'src/config/mcp_client_models.dart';
 export 'src/config/mcp_server_config.dart';
 export 'src/connection_manager.dart';

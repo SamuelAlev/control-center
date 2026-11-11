@@ -86,13 +86,13 @@ class ManagedPolicyService {
   }) async {
     invalidate();
     await _global.managedActionPolicyDao.upsert(
-    ManagedActionPoliciesTableCompanion.insert(
-      id: id ?? _uuid.v4(),
-      actionClass: Value(actionClass),
-      commandPrefix: Value(commandPrefix),
-      decision: Value(decision.wire),
-      enforcement: Value(enforcement.wire),
-      constraintJson: Value(constraint?.encode()),
+      ManagedActionPoliciesTableCompanion.insert(
+        id: id ?? _uuid.v4(),
+        actionClass: Value(actionClass),
+        commandPrefix: Value(commandPrefix),
+        decision: Value(decision.wire),
+        enforcement: Value(enforcement.wire),
+        constraintJson: Value(constraint?.encode()),
         updatedBy: Value(updatedBy),
         updatedAt: Value(DateTime.now()),
       ),
@@ -166,8 +166,8 @@ class ManagedPolicyService {
 
   ActionPolicyRule _fromJson(Map<String, dynamic> json) {
     final now = DateTime.now();
-    final cls = json['actionClass'] ?? json['action_class'];
-    final prefix = json['commandPrefix'] ?? json['command_prefix'];
+    final cls = json['actionClass'];
+    final prefix = json['commandPrefix'];
     final rawConstraint = json['constraint'];
     return ActionPolicyRule(
       id: (json['id'] as String?) ?? _uuid.v4(),
@@ -176,7 +176,9 @@ class ManagedPolicyService {
       scopeId: '',
       actionClass: cls is String ? ActionClass.fromWire(cls) : null,
       commandPrefix: prefix is String ? prefix : null,
-      decision: ActionDecision.fromWire((json['decision'] as String?) ?? 'deny'),
+      decision: ActionDecision.fromWire(
+        (json['decision'] as String?) ?? 'deny',
+      ),
       enforcement: EnforcementLevel.fromWire(json['enforcement'] as String?),
       constraint: rawConstraint is Map<String, dynamic>
           ? ActionConstraint.fromJson(rawConstraint)

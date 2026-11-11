@@ -46,8 +46,10 @@ class ConnectSettingsActions {
   /// Accepts Connect's new signing pins.
   Future<ConnectStatus> confirmPins() => _apply(_repo.confirmPins);
 
-  /// Mints a new install key; every Connect sign-in must be redone.
-  Future<ConnectStatus> rotateKey() => _apply(_repo.rotateKey);
+  /// Mints a new install key; every Connect sign-in must be redone. [force]
+  /// replaces it even where a Connect could not retire the old one.
+  Future<ConnectStatus> rotateKey({bool force = false}) =>
+      _apply(() => _repo.rotateKey(force: force));
 
   Future<ConnectStatus> _apply(Future<ConnectStatus> Function() op) async {
     final status = await op();

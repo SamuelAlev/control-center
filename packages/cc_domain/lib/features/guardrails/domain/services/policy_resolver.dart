@@ -15,6 +15,7 @@ class PolicyResolution {
     required this.reason,
     this.rule,
     this.actionClass,
+    this.standingApproval,
   });
 
   /// The resolved decision.
@@ -33,6 +34,12 @@ class PolicyResolution {
 
   /// The action class this resolution is about (null for a command resolution).
   final ActionClass? actionClass;
+
+  /// The live standing approval that covers this request for [actionClass],
+  /// when one does and nothing forbids the action. Set whether it answered
+  /// an ask or the action was allowed anyway, so a gate that asks on its own
+  /// can tell that a person already approved this call.
+  final ActionPolicyRule? standingApproval;
 }
 
 /// One rule considered for a request, with the decision it actually yields.
@@ -58,6 +65,11 @@ class _Candidate {
 /// engine's allow-beats-deny is gone. A multi-class action resolves each class
 /// independently, then combines most-restrictive. Pure and deterministic: the
 /// same inputs always produce the same decision.
+///
+/// Standing approvals ([ActionPolicyRule.isStandingApproval]) are not part of
+/// that chain. They answer an ask that comes from their own scope or a lower
+/// one and never a deny, wherever the deny comes from: one click on an ask
+/// must not outrank a rule that forbids the action.
 class PolicyResolver {
   /// Creates a [PolicyResolver].
   const PolicyResolver();
@@ -73,7 +85,57 @@ class PolicyResolver {
     DateTime? now,
   }) {
     final live = _live(rules, now);
-    for (final scope in _scopeChain(spaceId, agentId)) {
+    final chain = _scopeChain(spaceId, agentId);
+    final base = _resolveRuled(
+      cls,
+      [
+        for (final r in live)
+          if (!r.isStandingApproval) r,
+      ],
+      chain,
+      mode,
+      request,
+    );
+    return _withStandingApproval(base, cls, live, chain, request);
+  }
+
+  /// What [cls] is set to at a scope before any condition is looked at: the
+  /// decision a permissions page shows for the class, with the conditional
+  /// rules and standing approvals listed beside it as its exceptions.
+  ///
+  /// [resolveClass] with no request reads a conditional deny as an ask (nobody
+  /// can tell whether it applies), so a class set to allow with one protected
+  /// branch would read "ask first" there. A standing approval with no
+  /// condition (a commit's) covers the whole class, so while it runs it is
+  /// the setting, and the resolution's rule says so.
+  PolicyResolution resolveClassSetting(
+    ActionClass cls, {
+    required List<ActionPolicyRule> rules,
+    String? spaceId,
+    String? agentId,
+    Mode mode = Mode.chat,
+    DateTime? now,
+  }) => resolveClass(
+    cls,
+    rules: [
+      for (final r in rules)
+        if (r.constraint == null) r,
+    ],
+    spaceId: spaceId,
+    agentId: agentId,
+    mode: mode,
+    now: now,
+  );
+
+  /// [resolveClass] without standing approvals.
+  PolicyResolution _resolveRuled(
+    ActionClass cls,
+    List<ActionPolicyRule> live,
+    List<(ActionScopeType, String)> chain,
+    Mode mode,
+    ActionRequest request,
+  ) {
+    for (final scope in chain) {
       final match = _findClassRule(live, scope.$1, scope.$2, cls, request);
       if (match != null) {
         return PolicyResolution(
@@ -110,9 +172,65 @@ class PolicyResolver {
     );
   }
 
+  /// Lets a live standing approval answer [base] when it may.
+  ///
+  /// A deny stays a deny. So does the ask an unevaluable deny rule raises:
+  /// nobody can tell whether that rule forbids the call, and an approval is
+  /// no answer to that. An ask from a scope that outranks the approval's own
+  /// (a space rule over a workspace approval) is not answered either.
+  PolicyResolution _withStandingApproval(
+    PolicyResolution base,
+    ActionClass cls,
+    List<ActionPolicyRule> live,
+    List<(ActionScopeType, String)> chain,
+    ActionRequest request,
+  ) {
+    if (base.decision == ActionDecision.deny ||
+        (base.decision == ActionDecision.prompt &&
+            base.rule?.decision == ActionDecision.deny)) {
+      return base;
+    }
+    final asks = base.decision == ActionDecision.prompt;
+    final askedAt = chain.indexWhere((s) => s.$1.wire == base.source);
+    final reach = !asks || askedAt < 0 ? chain.length - 1 : askedAt;
+    for (var i = 0; i <= reach; i++) {
+      final (type, id) = chain[i];
+      for (final r in live) {
+        if (!r.isStandingApproval ||
+            r.scopeType != type ||
+            r.scopeId != id ||
+            r.actionClass != cls ||
+            r.commandPrefix != null ||
+            !r.standsFor(request)) {
+          continue;
+        }
+        return asks
+            ? PolicyResolution(
+                decision: ActionDecision.allow,
+                source: type.wire,
+                reason:
+                    'Policy: ${cls.wire} = allow (standing approval, '
+                    '${type.wire}).',
+                rule: r,
+                actionClass: cls,
+                standingApproval: r,
+              )
+            : PolicyResolution(
+                decision: base.decision,
+                source: base.source,
+                reason: base.reason,
+                rule: base.rule,
+                actionClass: cls,
+                standingApproval: r,
+              );
+      }
+    }
+    return base;
+  }
+
   /// Resolves a shell [command] against command-prefix rules in the store.
   /// Returns null when no store rule matches (the caller falls back to the
-  /// legacy `CommandPolicy` command net).
+  /// `CommandPolicy` command net).
   PolicyResolution? resolveCommand(
     String command, {
     required List<ActionPolicyRule> rules,
@@ -123,7 +241,13 @@ class PolicyResolver {
   }) {
     final live = _live(rules, now);
     for (final scope in _scopeChain(spaceId, agentId)) {
-      final match = _findCommandRule(live, scope.$1, scope.$2, command, request);
+      final match = _findCommandRule(
+        live,
+        scope.$1,
+        scope.$2,
+        command,
+        request,
+      );
       if (match != null) {
         return PolicyResolution(
           decision: match.decision,
@@ -153,8 +277,10 @@ class PolicyResolver {
     List<ActionPolicyRule> managedRules = const [],
     DateTime? now,
   }) {
+    request = request.withCommand(command);
     final effectiveCommand =
-        command ?? (request.command?.isNotEmpty ?? false ? request.command : null);
+        command ??
+        (request.command?.isNotEmpty ?? false ? request.command : null);
     final resolutions = <PolicyResolution>[
       for (final c in classes)
         resolveClass(
@@ -191,6 +317,7 @@ class PolicyResolver {
         prompting: [],
       );
     }
+    final classResolutions = resolutions.take(classes.length).toList();
     // Most restrictive drives the combined decision.
     var driving = resolutions.first;
     for (final r in resolutions.skip(1)) {
@@ -203,8 +330,9 @@ class PolicyResolver {
     // of it. A head-of-chain managed `allow` would let the install LOOSEN a
     // workspace's own deny — the exact opposite of what an operator clamp is
     // for.
+    PolicyResolution? managed;
     if (managedRules.isNotEmpty) {
-      final managed = _resolveManaged(
+      managed = _resolveManaged(
         classes,
         managedRules: managedRules,
         command: effectiveCommand,
@@ -219,10 +347,27 @@ class PolicyResolver {
     final prompting = resolutions
         .where((r) => r.decision == ActionDecision.prompt)
         .toList();
+    final standing = [for (final r in classResolutions) ?r.standingApproval];
     return ActionResolution(
       decision: driving.decision,
       driving: driving,
       prompting: prompting,
+      standingApprovals:
+          driving.decision == ActionDecision.allow &&
+              classes.isNotEmpty &&
+              standing.length == classes.length
+          ? standing
+          : const [],
+      // An install-wide ask and a command-prefix ask are not class rules a
+      // standing approval could answer, and neither is an unevaluable deny.
+      rememberable:
+          driving.decision == ActionDecision.prompt &&
+          (managed == null || managed.decision == ActionDecision.allow) &&
+          prompting.every(
+            (r) =>
+                r.actionClass != null &&
+                r.rule?.decision != ActionDecision.deny,
+          ),
     );
   }
 
@@ -454,6 +599,8 @@ class ActionResolution {
     required this.decision,
     required this.driving,
     required this.prompting,
+    this.standingApprovals = const [],
+    this.rememberable = false,
   });
 
   /// The combined (most-restrictive) decision.
@@ -464,4 +611,26 @@ class ActionResolution {
 
   /// Every class that resolved to `prompt` (so ONE confirmation can list them).
   final List<PolicyResolution> prompting;
+
+  /// The live standing approvals that cover this whole call, one per declared
+  /// class, when the call is allowed; empty when any class has none.
+  final List<ActionPolicyRule> standingApprovals;
+
+  /// Whether a standing approval written for the classes that ask here would
+  /// answer this same ask next time.
+  final bool rememberable;
+
+  /// Whether a person's live standing approval covers this whole call: one
+  /// for every declared class, each naming [tool] and [command] exactly when
+  /// given. A gate that asks on its own (an MCP tool's declared approval, a
+  /// mode's command net) skips its ask only then; a plain allow rule does not
+  /// spare it.
+  bool standingApprovalCovers({String? tool, String? command}) =>
+      standingApprovals.isNotEmpty &&
+      standingApprovals.every((r) {
+        final c = r.constraint;
+        return (tool == null || (c?.tools?.contains(tool) ?? false)) &&
+            (command == null ||
+                (c?.commands?.contains(command.trim()) ?? false));
+      });
 }

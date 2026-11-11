@@ -2,7 +2,7 @@
 title: Thiết lập môi trường
 description: Cho mỗi space và pull request một stack đang chạy riêng, với compose, CLI tùy chỉnh, tiến trình được giám sát hoặc ứng dụng máy tính.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 **Môi trường** là stack đang chạy của một space: các dịch vụ mà một nhánh cần, tách biệt với mọi space khác, hiển thị trong thanh bên và agent có thể truy cập. Pull request cũng có một môi trường, vì mỗi PR vốn đã có space riêng.
@@ -11,12 +11,26 @@ Quản trị viên không gian làm việc viết **định nghĩa** một lần
 
 ## Tạo định nghĩa
 
-1. Mở **Cài đặt → Không gian làm việc → Môi trường**. Chỉ quản trị viên không gian làm việc mới có thể thay đổi định nghĩa.
+1. Mở **Cài đặt → Không gian làm việc → Môi trường**. Chỉ quản trị viên không gian làm việc mới có thể thay đổi định nghĩa, và chỉ chủ sở hữu máy chủ mới có thể lưu một định nghĩa chạy trên máy chủ (xem [Ai có thể lưu gì](#ai-có-thể-lưu-gì)).
 2. Nhấp **Định nghĩa mới**, rồi **Định nghĩa trống** hoặc **Tạo bản nháp từ repo**. Bản nháp quét kho mã để tìm tệp compose, `Procfile` và script trong `package.json`, còn bạn xem lại kết quả.
 3. Điền biểu mẫu, hoặc dùng thẻ **JSON**. Các ví dụ trên trang này chính là JSON đó.
 4. Nhấp **Chạy kiểm thử**. Thao tác này khởi động một môi trường dùng một lần, chờ đến khi sẵn sàng rồi hủy nó.
 
-Để lưu định nghĩa trong kho mã, dùng **Liên kết tệp repo**. Control Center chỉ đọc tệp từ nhánh mặc định và chỉ chạy phiên bản đã được quản trị viên phê duyệt. Phiên bản mới hơn hiện **Có bản cập nhật** và không thay đổi gì cho đến khi được phê duyệt.
+Khi lưu, định nghĩa được kiểm tra nghiêm ngặt. Trường không xác định, giá trị sai kiểu hoặc lựa chọn viết sai chính tả đều bị từ chối, kèm theo đường dẫn và tên hợp lệ gần nhất, chẳng hạn `repos.app.requird: Unknown field. Did you mean "required"?`. Khóa `$schema` ở cấp cao nhất được phép.
+
+Để lưu định nghĩa trong kho mã, dùng **Liên kết tệp repo**. Control Center chỉ đọc tệp từ nhánh mặc định và chỉ chạy phiên bản đã được phê duyệt: bởi quản trị viên không gian làm việc, hoặc bởi chủ sở hữu máy chủ khi định nghĩa chạy trên máy chủ. Phiên bản mới hơn hiện **Có bản cập nhật** và không thay đổi gì cho đến khi được phê duyệt.
+
+### Ai có thể lưu gì
+
+Một định nghĩa môi trường có thể chạy lệnh trên máy chủ với tư cách người dùng của máy chủ. Đó là quyết định của chủ sở hữu máy chủ, không phải của một vai trò trong không gian làm việc:
+
+- Một định nghĩa **chạy trên máy chủ** khi nó có vị trí đặt trên host, một kiểm tra chạy một lệnh, hoặc một tác vụ `provision` hoặc `archive`. Những tác vụ đó chạy trong worktree của space trên máy chủ bất kể vị trí đặt là gì.
+- Chỉ [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) mới có thể lưu hoặc phê duyệt một định nghĩa chạy trên máy chủ. Điều đó bao gồm việc phê duyệt một phiên bản mới của tệp repo được liên kết. Quản trị viên không gian làm việc thử làm vậy sẽ thấy "Chỉ chủ sở hữu máy chủ mới có thể lưu hoặc phê duyệt môi trường chạy trên máy chủ. Quản trị viên không gian làm việc có thể dùng môi trường chạy trong rig."
+- Quản trị viên không gian làm việc có thể lưu và phê duyệt một định nghĩa chạy hoàn toàn trong rig: `"placement": "rig"`, không có lệnh kiểm tra và không có tác vụ `provision` hoặc `archive`.
+- Thành viên bắt đầu, dừng và dùng môi trường theo cả hai cách.
+- Một định nghĩa chạy trên máy chủ chỉ chạy sau khi chủ sở hữu máy chủ **hiện tại** đã lưu hoặc phê duyệt nó. Máy chủ tự ghi nhận phê duyệt đó và kiểm tra trước mỗi lần khởi động, kiểm tra, tác vụ và đồng bộ head của pull request. Một định nghĩa mà chủ sở hữu hiện tại chưa phê duyệt, chẳng hạn một định nghĩa do chủ sở hữu trước đó lưu, sẽ chờ dưới dòng của nó trong danh sách môi trường và trong trình soạn thảo. Chủ sở hữu máy chủ thấy "Chạy trên máy chủ này. Hãy phê duyệt để cho phép nó khởi động." cùng **Phê duyệt**, thao tác này lưu nó không đổi; những người khác thấy "Chạy trên máy chủ này. Chủ sở hữu máy chủ cần phê duyệt trước khi nó có thể khởi động."
+- Một môi trường đang chờ phê duyệt đó hiển thị "Chủ sở hữu máy chủ chưa phê duyệt môi trường này, nên nó không thể chạy trên máy chủ này." Thay vào đó, chủ sở hữu máy chủ thấy "Bạn chưa phê duyệt môi trường này. Nó chạy trên máy chủ này, nên sẽ khởi động khi bạn phê duyệt định nghĩa của nó." cùng **Xem xét và phê duyệt**, thao tác này mở định nghĩa.
+- Các terminal tiến trình của môi trường và terminal mà lần khởi động mở khi cần đến bạn đều chạy trên máy chủ. Gõ vào một terminal, đổi kích thước hoặc đóng nó đều cần quyền ghi trên mọi kho mã mà space công bố, đọc được qua đăng nhập forge của chính bạn: giống như khi bắt đầu môi trường. Những người khác hoàn toàn không tiếp cận được các terminal đó.
 
 ## Định nghĩa nhỏ nhất
 
@@ -35,7 +49,7 @@ Mọi thứ khác đều có giá trị mặc định: tệp compose được ph
 
 ## Các loại thành phần
 
-Môi trường là một danh sách thành phần có thứ tự. Mỗi thành phần chờ thành phần trước sẵn sàng, trừ khi `after` chỉ định thành phần khác, và việc dừng diễn ra theo thứ tự ngược lại. `enabledWhen` ràng buộc một thành phần theo một tùy chọn hoặc vai trò, ví dụ `opt.seed`, `!opt.seed` hoặc `repo.web`.
+Môi trường là một danh sách thành phần có thứ tự. Mỗi thành phần chờ thành phần trước sẵn sàng, trừ khi `after` chỉ định thành phần khác, và việc dừng diễn ra theo thứ tự ngược lại. `enabledWhen` ràng buộc một thành phần theo một tùy chọn hoặc vai trò, ví dụ `opt.seed`, `!opt.seed` hoặc `repo.web`. Thành phần có vai trò không bắt buộc và không có trong space cũng bị loại bỏ tương tự, không cần `enabledWhen`: nó không khởi động và không có `{port.*}` hay `{url.*}`, nên thành phần khác đọc các giá trị đó sẽ làm lần khởi động thất bại.
 
 | Loại | Ai chạy | Dùng cho |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Thành phần `task` nhận một danh sách `when`:
 | `manual` | Theo yêu cầu: **Chạy**, `cc-env run <id>` hoặc `environment_run_task` |
 | `archive` | Ngay trước khi worktree bị hủy |
 
-Lệnh viết dưới dạng mảng là argv, nên giá trị tùy chọn không bao giờ đi qua shell. Một chuỗi, hoặc `script` với mảng các dòng, chạy dưới `bash -lc`. Các phần giữ chỗ như `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` và `{url.<role>}` chỉ được mở rộng trong argv. Lệnh shell đọc cùng các giá trị đó qua biến `CC_ENV_*`, ví dụ `$CC_ENV_PORT_WEB`.
+Một tác vụ không có việc gì phải làm khi khởi động sẽ hiển thị **Nhàn rỗi** và không xuất hiện trong danh sách bước hiển thị trong lúc môi trường khởi động: một tác vụ `manual` hoặc `change`, hoặc một tác vụ `create` đã chạy rồi.
 
-Mỗi lệnh và terminal của space còn nhận `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` và, trong space của PR, `CC_PR_NUMBER` cùng `CC_PR_IS_FORK`. Khi có thành phần compose, chúng còn nhận `COMPOSE_PROJECT_NAME` và `COMPOSE_FILE`, nên `docker compose exec` trong tác vụ đến đúng dự án.
+Lệnh viết dưới dạng mảng là argv, nên giá trị tùy chọn không bao giờ đi qua shell. Một chuỗi, hoặc `script` với mảng các dòng, chạy dưới `bash -lc`. Các phần giữ chỗ như `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` và `{url.<role>}` chỉ được mở rộng trong argv. Lệnh shell đọc cùng các giá trị đó qua biến `CC_ENV_*`, ví dụ `$CC_ENV_PORT_WEB`. Một phần giữ chỗ không xác định trong thành phần thuộc space này sẽ dừng lần khởi động trước khi có gì được chạy.
+
+Mỗi lệnh và terminal của space còn nhận `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` và, trong space của PR, `CC_PR_NUMBER` cùng `CC_PR_IS_FORK`. Khi có thành phần compose, chúng còn nhận `COMPOSE_PROJECT_NAME` và `COMPOSE_FILE`, nên `docker compose exec` trong tác vụ đến đúng dự án.
 
 ## Vai trò và thư mục làm việc
 
@@ -77,7 +93,7 @@ Mỗi lệnh và terminal của space còn nhận `CC_ENV_NAME`, `CC_ENV_STATE_D
 - `whenMissing`: điều xảy ra khi space thiếu vai trò. `addToSpace` thêm kho mã ở nhánh mặc định và là mặc định cho vai trò `required`. `useSource` truyền bản checkout đã đăng ký của bạn, cần coi là chỉ đọc. `skip` để biến không được đặt và là mặc định trong các trường hợp khác.
 - Khởi động cần quyền `write` trên một kho mã neo trong space và quyền đọc với mọi kho mã đã gắn khác.
 
-Lệnh chạy trong vai trò đầu tiên của `repos` mà space có, nên định nghĩa một kho mã không cần nhắc đến. Bất kỳ thành phần nào cũng có thể ghi đè bằng `"cwd": { "role": "e2e", "path": "packages/ui" }`. Cả hai trường đều không bắt buộc.
+Lệnh chạy trong vai trò đầu tiên được khai báo trong `repos`, không bao giờ chạy ở vai trò khác mà space tình cờ có, nên định nghĩa một kho mã không cần nhắc đến. Bất kỳ thành phần nào cũng có thể ghi đè bằng `"cwd": { "role": "e2e", "path": "packages/ui" }`. Cả hai trường đều không bắt buộc. Khi vai trò đầu tiên có thể thiếu trong một space, vì nó không phải `required` cũng không phải neo duy nhất, mọi thành phần đều phải nêu rõ vai trò của nó.
 
 ## Cổng và URL
 
@@ -130,6 +146,8 @@ Một ứng dụng web và Postgres từ một tệp compose, với `.env` bị 
 
 `healthchecks` cho phép một dịch vụ không có kiểm tra sức khỏe riêng giữ thành phần tiếp theo lại. Nếu không có, container đang chạy được tính là sẵn sàng, và di chuyển dữ liệu có thể chạy trước cơ sở dữ liệu còn đang khởi động.
 
+Mỗi lần khởi động và làm mới đều chạy `up` với `--remove-orphans`, nên dịch vụ đã bị xóa khỏi tệp compose sẽ dừng và giải phóng cổng của nó. Image được build khi khởi động và khi làm mới, trừ khi thành phần đặt `"build": false`.
+
 ## Ví dụ: CLI tùy chỉnh
 
 Một công cụ giả định `acme` tự quản lý container, tên miền và TLS. Control Center cung cấp `{name}` và biết mọi thứ khác từ `status`. Nó không bao giờ tự suy ra tên máy của công cụ và không bao giờ sửa `/etc/hosts`.
@@ -147,7 +165,8 @@ Một công cụ giả định `acme` tự quản lý container, tên miền và
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Một công cụ giả định `acme` tự quản lý container, tên miền và
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Một công cụ giả định `acme` tự quản lý container, tên miền và
 ```
 
 - `create`, `status` và `destroy` là bắt buộc. Control Center chọn `create` hoặc `start` theo trạng thái đọc được. Bất kỳ động từ nào cũng có thể là `{ "shell": "…" }` thay cho argv.
+- `interactive` liệt kê các động từ, trong số `create`, `start` và `reset`, có thể yêu cầu thông tin cần thiết trên terminal. Khi động từ như vậy thoát với mã 3 đối với người đã nhấn **Start**, Control Center chạy lại đúng động từ đó trên một tab terminal, và lần khởi động tiếp tục khi nó thoát với mã 0. Ở đó, điều kiện `interactive` là đúng và `CC_ENV_INTERACTIVE=1` được đặt, nên `{ "if": "!interactive", "args": ["--json"] }` giữ đầu ra dành cho máy cho đường ống. Lần khởi động bởi agent hoặc lần khởi động tự động không bao giờ mở terminal: môi trường hiển thị **Cần thao tác** và chờ.
+- Lệnh `destroy` bị lỗi vẫn xóa môi trường khi `status` sau đó báo `missing`, nên một môi trường mà công cụ không còn có thể luôn được xóa.
+- `list` cho phép Control Center nhận ra một môi trường mà công cụ đã làm mất. Nó chỉ được đánh dấu là đã mất khi tên của nó không có trong `list` và `status` sau đó báo `missing`. Đầu ra không thể đọc như một danh sách thì không thay đổi gì.
+- `{service}` trong `logs` và `exec` phải là một từ không bắt đầu bằng `-`, và là một trong các dịch vụ mà công cụ báo cáo lần gần nhất khi nó có báo cáo.
 - `statusMap` đọc JSON của công cụ bằng con trỏ JSON, trong đó `*` khớp mọi mục. Các quy tắc trạng thái có thứ tự và kết quả khớp đầu tiên thắng. Điều kiện là `path` với `equals`, hoặc `any` hay `none` với `where`.
 - `keepsDataOnStop: false` tắt dừng khi nhàn rỗi và thêm cảnh báo mất dữ liệu vào **Dừng**. Đặt khi việc dừng làm mất dữ liệu.
 - `routing.mode: "tool"` nối tên máy của công cụ với trình duyệt (VM) và agent. Tên miền phải kết thúc bằng `.test`, `.localhost` hoặc `.internal`, và URL được báo cáo ngoài đó bị loại bỏ.
@@ -229,8 +253,8 @@ Chỉ có tiến trình và tác vụ, không có container. Ứng dụng web t�
 }
 ```
 
-- Mỗi tiến trình là một thẻ terminal mà bạn có thể mở, đọc và gõ vào. Đóng thẻ không dừng tiến trình.
-- `ready` nhận `http`, `tcp` hoặc `logMatch`. `restart` là `on-failure` (mặc định), `always` hoặc `never`. `restartOn` khởi động lại tiến trình khi đường dẫn đã đổi khớp.
+- Mỗi tiến trình là một thẻ terminal mà bạn có thể mở, đọc và gõ vào, nếu bạn có quyền ghi trên mọi kho mã trong space (xem [Ai có thể lưu gì](#ai-có-thể-lưu-gì)). Đóng thẻ không dừng tiến trình.
+- `ready` nhận `http` (URL đầy đủ), `tcp` (`host:port`) hoặc `logMatch` (biểu thức chính quy). `restart` là `on-failure` (mặc định), `always` hoặc `never`. `restartOn` khởi động lại tiến trình khi đường dẫn đã đổi khớp.
 - `options` trở thành biểu mẫu tại **Bắt đầu**, và `agentDefault` áp dụng cho lần chạy do agent khởi động.
 
 ## Ví dụ: ứng dụng máy tính
@@ -251,21 +275,21 @@ Một ứng dụng máy tính có bước build. Ứng dụng hoạt động nh�
 }
 ```
 
-Ứng dụng không khởi động cùng môi trường. Ai đó nhấp **Khởi chạy**, và `prepare` chạy trước. **Dựng lại và khởi chạy lại** chạy lại cặp đó. Thoát sạch hiển thị là đã đóng, sự cố hiện các dòng nhật ký cuối và không khởi động lại, khởi động lại máy chủ không bao giờ mở lại ứng dụng, và dừng khi nhàn rỗi không đụng đến ứng dụng đang chạy.
+Ứng dụng không khởi động cùng môi trường. Ai đó nhấp **Khởi chạy**, và `prepare` chạy trước. **Dựng lại và khởi chạy lại** chạy lại cặp đó. `enabledWhen` áp dụng cho ứng dụng và cho tác vụ `prepare` của nó, và **Khởi chạy** bị từ chối khi một trong hai đang tắt. Ứng dụng được coi là đang chạy khi bất kỳ tiến trình nào trong nhóm tiến trình của nó đang chạy, nên một launcher khởi động ứng dụng rồi thoát vẫn ổn. Nếu tất cả đã biến mất trong khoảng 5 giây sau **Khởi chạy**, ứng dụng hiển thị là lỗi cùng các dòng nhật ký cuối. Sau đó, thoát sạch hiển thị là đã đóng, sự cố hiện các dòng nhật ký cuối, và cả hai đều không khởi động lại ứng dụng. Khởi động lại máy chủ sẽ đóng ứng dụng và không bao giờ mở lại nó, và dừng khi nhàn rỗi không đụng đến ứng dụng đang chạy.
 
 ### Quyền và giới hạn của ứng dụng máy tính
 
 - Trên macOS, cấp cho Control Center **Ghi màn hình** và **Trợ năng** một lần trong Cài đặt hệ thống. Máy chủ cần một phiên đồ họa: máy chủ headless từ chối mở ứng dụng.
-- Mở trực tiếp tệp nhị phân. `open -a` giao ứng dụng cho LaunchServices và ứng dụng rời khỏi cây tiến trình mà Control Center theo dõi. `"window": { "match": { "bundleId": "…" } }` xử lý trường hợp đó, nhưng chỉ an toàn khi có một bản đang chạy.
+- Mở trực tiếp tệp nhị phân. `open -a` giao ứng dụng cho LaunchServices và ứng dụng rời khỏi cây tiến trình mà Control Center theo dõi, nên ứng dụng hiển thị là lỗi ngay sau khi khởi chạy.
 - Cửa sổ ở lại trên một màn hình. macOS không chụp cửa sổ nằm ngoài mọi màn hình, nên ứng dụng mà agent đang dùng hiện trên màn hình của máy chủ. Không cần tiêu điểm.
 - `"isolate": "home"` cho ứng dụng một thư mục home riêng qua `HOME`, `XDG_*` và `CFFIXED_USER_HOME`, để các bản từ hai space chạy song song. `NSUserDefaults` không được cô lập, nên tùy chọn Cocoa và `shared_preferences` của Flutter vẫn dùng chung giữa các bản.
 - `isolate` chỉ áp dụng cho tiến trình được mở. Trình khởi chạy toolchain như `flutter run` cần home thật, nên hãy dùng `isolate` với tệp nhị phân đã build. Nếu ứng dụng có thiết lập riêng, như `--user-data-dir`, hãy ưu tiên nó.
 - Agent điều khiển cửa sổ bằng `app_use`, chỉ có thể chạm tới cây tiến trình của môi trường này. Agent thấy cửa sổ, không thấy màn hình nền. Lần mở do agent đi qua chính sách hành động và mặc định sẽ hỏi, và đầu vào của agent dừng khi có người đang điều khiển.
 - `"input": "background"` (mặc định) gửi sự kiện tới tiến trình. `"foreground"` kích hoạt cửa sổ và chiếm con trỏ.
 
-## Tác vụ worktree thay thế script kho mã
+## Tác vụ worktree
 
-Tác vụ `provision` và `archive` thay thế các script thiết lập và lưu trữ cũ theo từng kho mã. **Các script hiện có đã được di chuyển tự động:** mỗi kho mã có script giờ có một định nghĩa mang tên kho mã, với các tác vụ `setup` và `archive` giữ nguyên nội dung script. Biểu tượng trên hàng của kho mã trong **Cài đặt → Không gian làm việc → Kho lưu trữ** sẽ mở nó. Các lần chạy script trước được giữ lại làm lịch sử chỉ đọc.
+Tác vụ `provision` và `archive` chạy việc thiết lập và dọn dẹp của một kho mã cùng worktree của nó. Biểu tượng trên hàng của kho mã trong **Cài đặt → Không gian làm việc → Kho lưu trữ** mở định nghĩa của kho mã đó.
 
 Các tác vụ này đi theo worktree, không theo môi trường, nên chúng chạy cả trong những space không ai nhấp **Bắt đầu**:
 
@@ -292,7 +316,7 @@ Kho mã không có stack chỉ cần một định nghĩa chứa các tác vụ 
 
 - Chưa có môi trường, nên các tác vụ này không thể dùng `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` hoặc `enabledWhen`, và không nhận `env` của định nghĩa.
 - Chỉ một định nghĩa được giữ tác vụ `provision` và `archive` cho một kho mã. Các định nghĩa khác vẫn có thể gắn nó cho những việc còn lại.
-- `"when": ["provision", "change"]` cũng cài lại khi lockfile thay đổi, điều mà script thiết lập chưa từng làm.
+- `"when": ["provision", "change"]` cũng cài lại khi lockfile thay đổi.
 - Tác vụ chạy cho worktree của vai trò `cwd`, nên định nghĩa nhiều kho mã có thể thiết lập từng kho riêng.
 - Lần chạy thử đặt `CC_SCRIPT_TEST=1`. Lần thử lại bắt đầu từ worktree sạch, nên hãy viết tác vụ chịu được việc chạy lại.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Với thành phần compose, shim `docker` cũng cho phép `docker compose` với `ps`, `logs`, `exec`, `port`, `restart` và `top`. Không được đặt cờ trước động từ, `logs` không thể theo dõi đầu ra và `exec` chỉ nhận `-T`. Mọi thứ khác thoát với mã 5 và "not available in Control Center agent runs".
+Với thành phần compose, shim `docker` cũng cho phép `docker compose` với `ps`, `logs`, `exec`, `port`, `restart` và `top`, và chỉ với dự án compose riêng của môi trường này. Không được đặt cờ trước động từ, và mỗi động từ nhận một danh sách ngắn các tùy chọn: `logs` không thể theo dõi đầu ra, còn `exec` chỉ nhận `-T` (hoặc `--no-tty`). Các tùy chọn trỏ compose tới một tệp hoặc dự án khác (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) đều bị từ chối dù xuất hiện ở đâu. Mọi thứ khác thoát với mã 5 và "not available in Control Center agent runs".
 
-Kho mã có kỹ năng gọi công cụ riêng của nó có thể tiếp tục làm vậy. Khối `agentPassthrough` trên thành phần `cli` khai báo các lệnh agent được phép chạy:
+Kho mã có kỹ năng gọi công cụ riêng của nó có thể tiếp tục làm vậy. Khối `agentPassthrough` trên thành phần `cli` khai báo các lệnh agent được phép chạy. Chỉ những lệnh mà định nghĩa đã phê duyệt khai báo mới được chuyển tiếp, và mỗi lệnh chạy trên máy chủ, nên nó mang quy tắc **Chạy lệnh trên máy chủ**, vốn hỏi trước theo mặc định:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Mã thoát áp dụng cho mọi động từ:
 | Mã | Ý nghĩa |
 | --- | --- |
 | 0 | OK |
-| 3 | Cần thiết lập máy chủ. **Chạy trong terminal** mở terminal của space với lệnh đã gõ nhưng chưa chạy, rồi **Thử lại** thử lại. Control Center không bao giờ chạy `sudo` |
-| 4 | Cần xác thực |
-| 5 | Phụ thuộc không khả dụng |
+| 3 | Cần câu trả lời tại terminal, chẳng hạn mật khẩu `sudo`. Động từ được liệt kê trong `interactive` sẽ chạy lại trên một tab terminal cho người đã nhấn **Start**. Nếu không, **Chạy trong terminal** mở terminal của space với `command` của công cụ đã gõ nhưng chưa chạy, rồi **Thử lại** thử lại. Control Center không bao giờ chạy `sudo` và không bao giờ trả lời prompt |
+| 4 | Cần đăng nhập. `command` của công cụ cho biết cách |
+| 5 | Thứ mà nó phụ thuộc không khả dụng, chẳng hạn runtime container không chạy |
 | Khác | Thất bại |
+
+Mã 3, 4 và 5 không phải là lỗi. Môi trường hiển thị **Cần thao tác** và chờ, và lần khởi động tiếp theo tiếp tục từ chỗ lần trước đã dừng. Tác vụ thoát với một trong các mã này cũng có ý nghĩa tương tự.
 
 Tiến độ được gửi tới stderr dưới dạng JSON phân tách theo dòng:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-Dòng `step` hiển thị thành danh sách bước trực tiếp và dòng `note` hiển thị nguyên trạng. Dòng cuối có loại `error` trở thành lỗi có cấu trúc, với `command` được đề nghị sao chép. Nếu không có, Control Center hiện 20 dòng stderr cuối. Mọi thứ không phải JSON là đầu ra nhật ký thông thường.
+Khi một môi trường đang khởi động, bảng điều khiển liệt kê các thành phần mà quá trình khởi động đi qua, mỗi thành phần kèm một biểu tượng đang xoay, dấu tick hoặc dấu nhân. Dòng `step` cho biết công cụ đang làm gì, và `label` của nó hiển thị dưới dòng riêng của công cụ; bước không bao giờ thêm dòng. `state` của một bước là `pending`, `running`, `done` hoặc `failed`, và bước không có `state` được coi là đang chạy. Một bước báo cáo lại với cùng `id` (chuỗi hoặc số, hoặc cùng `label` nếu không có id) sẽ thay thế nội dung trước đó, nên một công cụ chỉ có một biểu tượng đang xoay có thể giữ nguyên `id` và chỉ đổi `label`. Khi không có id, các bước nối tiếp nhau: bước mới kết thúc bước trước. Khi lệnh thoát, bước còn đang chạy kết thúc theo cách lệnh đã kết thúc.
+
+Dòng `log` chứa một dòng đầu ra mà công cụ đã bọc trong JSON, và được đọc như văn bản đầu ra thông thường. Dòng `note` được đưa vào đầu ra của lần chạy, và dòng có `"level": "warn"` còn được giữ trên môi trường như một cảnh báo. Dòng cuối có loại `error` trở thành lỗi có cấu trúc, với `command` được đề nghị sao chép, và 12 dòng đầu ra cuối cùng hiển thị bên dưới `message`. Nếu không có, Control Center hiện 20 dòng stderr cuối. Mọi thứ không phải JSON là đầu ra nhật ký thông thường.
 
 ## Liên quan
 

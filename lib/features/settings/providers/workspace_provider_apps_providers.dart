@@ -6,28 +6,15 @@ import 'package:control_center/features/settings/providers/provider_apps_provide
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Whose app a workspace uses for one provider.
-enum WorkspaceAppMode {
-  /// This server's app, or Control Center Connect.
-  inherit,
-
-  /// The workspace's own app, with no fallback.
-  own;
-
-  /// Parses a wire value; [inherit] for anything unknown.
-  static WorkspaceAppMode fromWire(Object? wire) =>
-      wire == 'own' ? own : inherit;
-}
-
 /// One provider's workspace app as the server reports it.
 ///
 /// Presence flags only: client secrets and keys never leave the server, so
-/// this class has nowhere to put them.
+/// this class has nowhere to put them. Whether the app is USED is the
+/// workspace's Connect choice (own apps), not a per-provider switch.
 class WorkspaceProviderAppView {
   /// Creates a [WorkspaceProviderAppView].
   const WorkspaceProviderAppView({
     required this.provider,
-    this.mode = WorkspaceAppMode.inherit,
     this.clientId = '',
     this.hasClientSecret = false,
     this.hasApiKey = false,
@@ -41,7 +28,6 @@ class WorkspaceProviderAppView {
   factory WorkspaceProviderAppView.fromJson(Map<String, dynamic> json) =>
       WorkspaceProviderAppView(
         provider: json['provider'] as String? ?? '',
-        mode: WorkspaceAppMode.fromWire(json['mode']),
         clientId: json['client_id'] as String? ?? '',
         hasClientSecret: json['has_client_secret'] as bool? ?? false,
         hasApiKey: json['has_api_key'] as bool? ?? false,
@@ -57,9 +43,6 @@ class WorkspaceProviderAppView {
   /// The provider's wire id (`google`, `linear`, `klipy`).
   final String provider;
 
-  /// Whose app the workspace uses.
-  final WorkspaceAppMode mode;
-
   /// The OAuth client id (not a secret).
   final String clientId;
 
@@ -72,7 +55,8 @@ class WorkspaceProviderAppView {
   /// Whether an app key is stored (Klipy).
   final bool hasAppKey;
 
-  /// How complete the workspace's own app is; `partial` is a setup error.
+  /// How complete the workspace's own app is; `partial` is a setup error
+  /// while the workspace uses its own apps.
   final ProviderAppState state;
 
   /// The callback URLs the workspace's app must register, verbatim.
@@ -83,7 +67,7 @@ class WorkspaceProviderAppView {
 }
 
 /// The active workspace's own provider apps, or empty when the card should
-/// not render (demo, non-admin, no workspace, or an older server).
+/// not render (demo, non-admin, or no workspace).
 final workspaceProviderAppsProvider =
     FutureProvider<List<WorkspaceProviderAppView>>((ref) async {
       if (ref.watch(isDemoServerProvider)) {
@@ -112,28 +96,6 @@ final workspaceProviderAppsProvider =
         return const [];
       }
     });
-
-/// Switches the active workspace between this server's app and its own for
-/// [provider]. Back to the server's app deletes the workspace's fields.
-Future<void> setWorkspaceProviderAppMode(
-  WidgetRef ref,
-  String provider,
-  WorkspaceAppMode mode,
-) async {
-  final workspaceId = ref.read(activeWorkspaceIdProvider);
-  if (workspaceId == null) {
-    return;
-  }
-  await ref.read(rpcClientProvider).call('workspaceProviderApps.setMode', {
-    'workspace_id': workspaceId,
-    'provider': provider,
-    'mode': mode.name,
-  });
-  ref
-    ..invalidate(workspaceProviderAppsProvider)
-    // Which app each sign-in lane uses here changed.
-    ..invalidate(oauthLanesProvider(workspaceId));
-}
 
 /// Saves fields of the active workspace's own [provider] app. A field not in
 /// [fields] is left alone; an empty string clears it.

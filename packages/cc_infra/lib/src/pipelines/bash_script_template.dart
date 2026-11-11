@@ -43,19 +43,17 @@ class BashScriptSandbox {
   /// Creates a [BashScriptSandbox].
   const BashScriptSandbox({
     required this.wrap,
-    required this.deniedPaths,
     required this.broker,
     required this.linkedRepo,
   });
 
   /// The host's OS sandbox, or null when it has none (Windows, a Linux host
   /// without `bwrap`, `--sandbox off`). Null fails every shell step closed.
+  ///
+  /// The server's sandbox manager hides its data directory and `.env` from
+  /// every config it wraps; the step's run directory, which lives under the
+  /// data directory, stays reachable because the config names it.
   final BashScriptSandboxWrap? wrap;
-
-  /// Server-private paths the script must not read or write: the data
-  /// directory and the `.env` file. The step's own run directory, which lives
-  /// under the data directory, is re-allowed.
-  final List<String> deniedPaths;
 
   /// Mints the one-repository `read` token.
   final CredentialBrokerPort broker;
@@ -161,7 +159,6 @@ void registerBashScriptBody(
         sessionId: 'pipeline-${ctx.pipelineRunId}::${ctx.stepId}',
         workspaceId: ctx.workspaceId,
         runDir: runDir.path,
-        deniedPaths: sandbox.deniedPaths,
       );
       final wrapped = await wrap(
         config: config,
@@ -319,18 +316,16 @@ Future<ScopedCredentials?> _mintRepoToken(
 
 /// The sandbox a pipeline shell step runs in: the agent sandbox's policy
 /// (secret paths in `$HOME` denied, the restricted egress allowlist, exec
-/// denies) with [deniedPaths] unreadable and unwritable and [runDir] — which
-/// sits inside the data directory — re-allowed. Visible for tests.
+/// denies) with [runDir] as its working directory and run directory. The
+/// server's private paths are hidden by the sandbox manager that wraps it.
+/// Visible for tests.
 Future<SandboxConfig> bashScriptSandboxConfig({
   required String sessionId,
   required String workspaceId,
   required String runDir,
-  required List<String> deniedPaths,
 }) async {
   // Seatbelt matches the resolved path (`/var/folders` is
-  // `/private/var/folders`), and the denies below are emitted in both
-  // spellings: the run directory's allowances must name the resolved one to
-  // outrank them.
+  // `/private/var/folders`), so the run directory is named by it.
   String real;
   try {
     real = Directory(runDir).resolveSymbolicLinksSync();
@@ -351,30 +346,7 @@ Future<SandboxConfig> bashScriptSandboxConfig({
     loopbackPorts: const [],
     environmentScope: null,
   );
-  final policy = processSandboxPolicy(spec, runDir: real);
-  final config = await buildSandboxConfigFromPolicy(
-    policy.copyWith(
-      denyRead: [...policy.denyRead, ...deniedPaths],
-      // Linux hides a denied directory behind a tmpfs, which already keeps
-      // writes off the real one; a read-only re-bind of it there would make it
-      // readable again. Seatbelt needs the explicit write deny.
-      denyWrite: Platform.isLinux
-          ? policy.denyWrite
-          : [...policy.denyWrite, ...deniedPaths],
-    ),
-  );
-  // Seatbelt is last-match-wins: the run directory's read allowance follows
-  // the data directory's deny (its write and rename allowances are emitted
-  // last by the profile itself). bwrap re-binds the policy run dir after its
-  // tmpfs for the same effect.
-  return config.copyWith(
-    filesystem: FilesystemConfig(
-      denyRead: config.filesystem.denyRead,
-      allowRead: {...config.filesystem.allowRead, runDir, real}.toList(),
-      allowWrite: config.filesystem.allowWrite,
-      denyWrite: config.filesystem.denyWrite,
-    ),
-  );
+  return buildSandboxConfigFromPolicy(processSandboxPolicy(spec, runDir: real));
 }
 
 /// Accumulates stdout/stderr from a bash subprocess and pushes throttled

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
+import 'package:cc_domain/features/environments/domain/services/environment_definition_validator.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 
 import 'package:cc_infra/src/process/child_process.dart';

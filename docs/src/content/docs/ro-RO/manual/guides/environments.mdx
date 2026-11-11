@@ -2,7 +2,7 @@
 title: Configurarea mediilor
 description: Oferă fiecărui spațiu și pull request propriul stack în execuție, cu compose, un CLI propriu, procese supravegheate sau o aplicație desktop.
 slug: ro-RO/manual/ghiduri-practice/medii
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 Un **mediu** este stack-ul în execuție al unui spațiu: serviciile de care are nevoie o ramură, izolate de toate celelalte spații, vizibile în bara laterală și accesibile agenților. Primesc unul și pull request-urile, pentru că un PR are deja propriul spațiu.
@@ -11,12 +11,26 @@ Un administrator al spațiului de lucru scrie o **definiție** o singură dată.
 
 ## Crearea unei definiții
 
-1. Deschide **Setări → Spațiu de lucru → Medii**. Doar administratorii spațiului de lucru pot modifica definițiile.
+1. Deschide **Setări → Spațiu de lucru → Medii**. Doar administratorii spațiului de lucru pot modifica definițiile, iar doar proprietarul serverului poate salva una care rulează pe gazda serverului (vezi [Cine poate salva ce](#cine-poate-salva-ce)).
 2. Apasă **Definiție nouă**, apoi **Definiție goală** sau **Schiță din repo**. O ciornă caută în depozit fișiere compose, un `Procfile` și scripturi `package.json`, iar tu verifici rezultatul.
 3. Completează formularul sau folosește fila **JSON**. Exemplele de pe această pagină sunt acel JSON.
 4. Apasă **Rulează testul**. Pornește un mediu de unică folosință, așteaptă să fie gata și îl distruge.
 
-Pentru a păstra o definiție într-un depozit, folosește **Leagă un fișier din repo**. Control Center citește fișierul doar din ramura implicită și rulează doar versiunea aprobată de un administrator. O versiune mai nouă afișează **Actualizare disponibilă** și nu schimbă nimic până la aprobare.
+Salvarea verifică strict o definiție. Un câmp necunoscut, o valoare de tip greșit sau o opțiune scrisă greșit este refuzat, cu calea lui și numele valid cel mai apropiat, cum ar fi `repos.app.requird: Unknown field. Did you mean "required"?`. Un `$schema` de nivel superior este permis.
+
+Pentru a păstra o definiție într-un depozit, folosește **Leagă un fișier din repo**. Control Center citește fișierul doar din ramura implicită și rulează doar versiunea care a fost aprobată: de un administrator al spațiului de lucru sau, când definiția rulează pe gazdă, de proprietarul serverului. O versiune mai nouă afișează **Actualizare disponibilă** și nu schimbă nimic până la aprobare.
+
+### Cine poate salva ce
+
+O definiție de mediu poate rula comenzi pe gazda serverului, ca utilizatorul propriu al serverului. Decizia aparține proprietarului serverului, nu unui rol din spațiul de lucru:
+
+- O definiție **rulează pe gazdă** atunci când are plasare pe gazdă, o verificare care rulează o comandă sau o sarcină `provision` ori `archive`. Acele sarcini rulează în worktree-ul spațiului de pe gazdă, indiferent de plasare.
+- Doar [proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului) poate salva sau aproba o definiție care rulează pe gazdă. Asta include aprobarea unei versiuni noi a unui fișier legat din repo. Un administrator al spațiului de lucru care încearcă vede „Doar proprietarul serverului poate salva sau aproba un mediu care rulează pe gazda serverului. Un administrator al spațiului de lucru poate folosi unul care rulează într-o stație.”
+- Un administrator al spațiului de lucru poate salva și aproba o definiție care rulează în întregime într-o stație: `"placement": "rig"`, fără comandă de verificare și fără sarcină `provision` sau `archive`.
+- Membrii pornesc, opresc și folosesc mediile în ambele cazuri.
+- O definiție care rulează pe gazdă pornește doar după ce **proprietarul actual** al serverului a salvat-o sau aprobat-o. Serverul înregistrează singur acea aprobare și o verifică înainte de fiecare pornire, verificare, sarcină și sincronizare a capului pull request-ului. O definiție pe care proprietarul actual nu a aprobat-o, cum este una salvată de un proprietar anterior, așteaptă sub rândul ei din lista de medii și în editor. Proprietarul serverului vede „Rulează pe acest server. Aprobă-l ca să poată porni.” cu **Aprobă**, care o salvează neschimbată; ceilalți văd „Rulează pe acest server. Proprietarul serverului trebuie să îl aprobe înainte să poată porni.”
+- Un mediu reținut pentru această aprobare spune „Proprietarul serverului nu a aprobat încă acest mediu, deci nu poate rula pe acest server.” Proprietarul serverului vede în schimb „Nu ai aprobat încă acest mediu. Rulează pe acest server, deci pornește după ce aprobi definiția lui.” cu **Revizuiește și aprobă**, care deschide definiția.
+- Terminalele de procese ale unui mediu, și terminalul pe care o pornire îl deschide când e nevoie de intervenția ta, rulează pe gazda serverului. A scrie în ele, a le redimensiona sau a le închide necesită drept de scriere pe fiecare repository pe care îl expune spațiul, citibil prin propria ta autentificare la forge: la fel ca pornirea mediului. Ceilalți nu pot ajunge deloc la aceste terminale.
 
 ## Cea mai mică definiție
 
@@ -35,7 +49,7 @@ Restul are valori implicite: fișierul compose este descoperit, toate serviciile
 
 ## Tipuri de componente
 
-Un mediu este o listă ordonată de componente. Fiecare așteaptă ca precedenta să fie gata, dacă `after` nu indică altele, iar oprirea are loc în ordine inversă. `enabledWhen` condiționează o componentă de o opțiune sau de un rol, de exemplu `opt.seed`, `!opt.seed` sau `repo.web`.
+Un mediu este o listă ordonată de componente. Fiecare așteaptă ca precedenta să fie gata, dacă `after` nu indică altele, iar oprirea are loc în ordine inversă. `enabledWhen` condiționează o componentă de o opțiune sau de un rol, de exemplu `opt.seed`, `!opt.seed` sau `repo.web`. O componentă al cărei rol este opțional și lipsește din spațiu este lăsată deoparte în același fel, fără să fie nevoie de `enabledWhen`: nu pornește și nu are `{port.*}` sau `{url.*}`, astfel că altă componentă care le citește face pornirea să eșueze.
 
 | Tip | Cine o rulează | La ce folosește |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Componentele `task` primesc o listă `when`:
 | `manual` | La cerere: **Rulează**, `cc-env run <id>` sau `environment_run_task` |
 | `archive` | Chiar înainte de distrugerea worktree-ului |
 
-O comandă dată ca tablou este argv, așa că valorile opțiunilor nu trec niciodată printr-un shell. Un șir, sau `script` cu un tablou de linii, rulează sub `bash -lc`. Substituentele precum `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` și `{url.<role>}` se expandează doar în argv. Comenzile shell citesc aceleași valori ca variabile `CC_ENV_*`, de exemplu `$CC_ENV_PORT_WEB`.
+O sarcină care nu are nimic de făcut la pornire apare cu **Inactiv** și nu este inclusă în lista de pași afișată în timpul pornirii mediului: o sarcină `manual` sau `change`, ori o sarcină `create` care a rulat deja.
 
-Fiecare comandă și terminal de spațiu primește și `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` și, în spațiile de PR, `CC_PR_NUMBER` și `CC_PR_IS_FORK`. Cu o componentă compose primesc și `COMPOSE_PROJECT_NAME` și `COMPOSE_FILE`, astfel că `docker compose exec` într-o sarcină ajunge la proiectul potrivit.
+O comandă dată ca tablou este argv, așa că valorile opțiunilor nu trec niciodată printr-un shell. Un șir, sau `script` cu un tablou de linii, rulează sub `bash -lc`. Substituentele precum `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` și `{url.<role>}` se expandează doar în argv. Comenzile shell citesc aceleași valori ca variabile `CC_ENV_*`, de exemplu `$CC_ENV_PORT_WEB`. Un substituent necunoscut dintr-o componentă care participă oprește pornirea înainte ca orice să ruleze.
+
+Fiecare comandă și terminal de spațiu primește și `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` și, în spațiile de PR, `CC_PR_NUMBER` și `CC_PR_IS_FORK`. Cu o componentă compose primesc și `COMPOSE_PROJECT_NAME` și `COMPOSE_FILE`, astfel că `docker compose exec` într-o sarcină ajunge la proiectul potrivit.
 
 ## Roluri și director de lucru
 
@@ -77,7 +93,7 @@ O definiție leagă **roluri** de depozitele spațiului de lucru, astfel încât
 - `whenMissing`: ce se întâmplă când spațiului îi lipsește rolul. `addToSpace` adaugă depozitul pe ramura implicită și este valoarea implicită pentru rolurile `required`. `useSource` transmite copia ta înregistrată, pe care trebuie să o tratezi ca doar pentru citire. `skip` lasă variabila nesetată și este implicit în celelalte cazuri.
 - Pornirea necesită o permisiune `write` pe un depozit ancoră din spațiu și acces de citire la toate celelalte depozite legate.
 
-O comandă rulează în primul rol din `repos` pe care îl are spațiul, așa că o definiție cu un singur depozit nu îl menționează niciodată. Orice componentă poate schimba asta cu `"cwd": { "role": "e2e", "path": "packages/ui" }`. Ambele câmpuri sunt opționale.
+O comandă rulează în primul rol declarat în `repos`, niciodată într-un alt rol pe care îl are spațiul, așa că o definiție cu un singur depozit nu îl menționează niciodată. Orice componentă poate schimba asta cu `"cwd": { "role": "e2e", "path": "packages/ui" }`. Ambele câmpuri sunt opționale. Când primul rol ar putea lipsi dintr-un spațiu, pentru că nu este `required` și nici singura ancoră, fiecare componentă trebuie să își numească rolul.
 
 ## Porturi și URL-uri
 
@@ -130,6 +146,8 @@ O aplicație web și Postgres dintr-un singur fișier compose, cu un `.env` igno
 
 `healthchecks` permite unui serviciu fără verificare proprie de sănătate să rețină componenta următoare. Fără ea, un container în execuție contează ca gata, iar migrările pot depăși o bază de date care încă pornește.
 
+Fiecare pornire și reîmprospătare rulează `up` cu `--remove-orphans`, astfel că un serviciu scos din fișierul compose se oprește și își eliberează portul. Imaginile sunt construite la pornire și la reîmprospătare, dacă componenta nu setează `"build": false`.
+
 ## Exemplu: CLI propriu
 
 Un instrument inventat, `acme`, care își gestionează containerele, domeniile și TLS-ul. Control Center oferă `{name}` și află restul din `status`. Nu deduce niciodată numele de gazdă ale unui instrument și nu editează niciodată `/etc/hosts`.
@@ -147,7 +165,8 @@ Un instrument inventat, `acme`, care își gestionează containerele, domeniile 
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Un instrument inventat, `acme`, care își gestionează containerele, domeniile 
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Un instrument inventat, `acme`, care își gestionează containerele, domeniile 
 ```
 
 - `create`, `status` și `destroy` sunt obligatorii. Control Center alege `create` sau `start` după starea citită. Orice verb poate fi `{ "shell": "…" }` în loc de argv.
+- `interactive` numește verbele, dintre `create`, `start` și `reset`, care pot cere ce le trebuie la un terminal. Când un astfel de verb se termină cu codul 3 pentru o persoană care a apăsat **Pornește**, Control Center rulează din nou același verb într-un tab de terminal, iar pornirea continuă când acesta se termină cu codul 0. Acolo condiția `interactive` este adevărată și `CC_ENV_INTERACTIVE=1` este setat, astfel că `{ "if": "!interactive", "args": ["--json"] }` păstrează ieșirea pentru mașini pentru pipe. O pornire de către un agent sau una automată nu deschide niciodată un terminal: mediul arată **Necesită acțiune** și așteaptă.
+- Un `destroy` care eșuează tot elimină mediul dacă `status` raportează apoi `missing`, astfel încât un mediu pe care instrumentul nu-l mai are poate fi întotdeauna șters.
+- `list` permite Control Center să observe un mediu pe care unealta l-a pierdut. Este marcat ca dispărut doar când numele lui lipsește din `list` și `status` atunci spune `missing`. Ieșirea care nu poate fi citită ca listă nu schimbă nimic.
+- `{service}` din `logs` și `exec` trebuie să fie un singur cuvânt care nu începe cu `-`, și unul dintre serviciile raportate ultima dată de unealtă, dacă a raportat vreunul.
 - `statusMap` citește JSON-ul instrumentului cu pointeri JSON, unde `*` se potrivește cu fiecare element. Regulile de stare sunt ordonate și câștigă prima potrivire. O condiție este `path` cu `equals`, sau `any` ori `none` cu `where`.
 - `keepsDataOnStop: false` dezactivează oprirea la inactivitate și adaugă la **Oprește** un avertisment de pierdere a datelor. Setează-l când oprirea pierde date.
 - `routing.mode: "tool"` conectează numele de gazdă ale instrumentului la browser (VM) și la agenți. Domeniul trebuie să se termine cu `.test`, `.localhost` sau `.internal`, iar un URL raportat în afara lui este eliminat.
@@ -229,8 +253,8 @@ Doar procese și sarcini, fără containere. Aplicația web găsește API-ul pri
 }
 ```
 
-- Fiecare proces este o filă de terminal pe care o poți deschide, citi și în care poți scrie. Închiderea filei nu îl oprește.
-- `ready` acceptă `http`, `tcp` sau `logMatch`. `restart` este `on-failure` (implicit), `always` sau `never`. `restartOn` repornește procesul când se potrivește o cale modificată.
+- Fiecare proces este o filă de terminal pe care o poți deschide, citi și în care poți scrie, dacă ai drept de scriere pe fiecare repository din spațiu (vezi [Cine poate salva ce](#cine-poate-salva-ce)). Închiderea filei nu îl oprește.
+- `ready` acceptă `http` (un URL complet), `tcp` (`host:port`) sau `logMatch` (o expresie regulată). `restart` este `on-failure` (implicit), `always` sau `never`. `restartOn` repornește procesul când se potrivește o cale modificată.
 - `options` devin un formular la **Pornește**, iar `agentDefault` se aplică rulărilor pornite de un agent.
 
 ## Exemplu: aplicație desktop
@@ -251,21 +275,21 @@ O aplicație desktop cu un pas de compilare. O aplicație funcționează la fel 
 }
 ```
 
-O aplicație nu pornește odată cu mediul. Cineva apasă **Lansează**, iar `prepare` rulează mai întâi. **Recompilează și relansează** rulează din nou această pereche. O ieșire curată apare ca închisă, un crash arată ultimele linii de jurnal fără repornire, o repornire a serverului nu o relansează niciodată, iar oprirea la inactivitate lasă în pace o aplicație care rulează.
+O aplicație nu pornește odată cu mediul. Cineva apasă **Lansează**, iar `prepare` rulează mai întâi. **Recompilează și relansează** rulează din nou această pereche. `enabledWhen` se aplică aplicației și sarcinii ei `prepare`, iar **Lansează** este refuzat cât timp oricare dintre ele este oprită. O aplicație este considerată în rulare cât timp rulează orice proces din grupul ei de procese, așa că un lansator care pornește aplicația și iese este în regulă. Dacă totul dispare în aproximativ 5 secunde de la **Lansează**, aplicația apare ca eșuată, cu ultimele linii de jurnal. După aceea, o ieșire curată apare ca închisă și un crash arată ultimele linii de jurnal, iar niciuna dintre acestea nu o repornește. O repornire a serverului închide aplicația și nu o relansează niciodată, iar oprirea la inactivitate lasă în pace o aplicație care rulează.
 
 ### Permisiunile și limitele aplicațiilor desktop
 
 - Pe macOS, acordă o dată aplicației Control Center **Înregistrare ecran** și **Accesibilitate** în Configurări sistem. Gazda serverului are nevoie de o sesiune grafică: un server headless refuză să lanseze o aplicație.
-- Lansează direct binarul. `open -a` predă aplicația către LaunchServices și aceasta iese din arborele de procese urmărit de Control Center. `"window": { "match": { "bundleId": "…" } }` acoperă acest caz, dar e sigur doar cu o singură copie în execuție.
+- Lansează direct binarul. `open -a` predă aplicația către LaunchServices și aceasta iese din arborele de procese urmărit de Control Center, așa că aplicația apare ca eșuată imediat după lansare.
 - Ferestrele rămân pe un ecran. macOS nu capturează o fereastră plasată în afara tuturor ecranelor, așa că o aplicație folosită de un agent este vizibilă pe ecranul serverului. Nu are nevoie de focus.
 - `"isolate": "home"` oferă aplicației un director personal privat prin `HOME`, `XDG_*` și `CFFIXED_USER_HOME`, astfel încât copii din două spații pot rula în paralel. `NSUserDefaults` nu este izolat, așa că preferințele Cocoa și `shared_preferences` din Flutter rămân comune între copii.
 - `isolate` se aplică doar procesului lansat. Un lansator de toolchain precum `flutter run` are nevoie de directorul personal real, așa că asociază `isolate` cu un binar compilat. Dacă aplicația are o setare proprie, cum e `--user-data-dir`, preferă-o.
 - Agenții controlează fereastra cu `app_use`, care ajunge doar la arborele de procese al acestui mediu. Un agent vede fereastra, nu desktopul. Lansările agenților trec prin politica de acțiuni și implicit cer confirmare, iar intrarea agentului se oprește cât timp o persoană are controlul.
 - `"input": "background"` (implicit) trimite evenimente către proces. `"foreground"` activează fereastra și preia cursorul.
 
-## Sarcinile de worktree înlocuiesc scripturile de depozit
+## Sarcini de worktree
 
-Sarcinile `provision` și `archive` înlocuiesc vechile scripturi de configurare și arhivare per depozit. **Scripturile existente au fost migrate automat:** fiecare depozit cu scripturi are acum o definiție cu numele lui, cu sarcinile `setup` și `archive` care păstrează același text de script. Pictograma de pe rândul unui depozit din **Setări → Spațiu de lucru → Depozite** o deschide. Rulările anterioare rămân ca istoric doar pentru citire.
+Sarcinile `provision` și `archive` rulează configurarea și demontarea unui depozit împreună cu worktree-ul lui. Pictograma de pe rândul unui depozit din **Setări → Spațiu de lucru → Depozite** o deschide.
 
 Aceste sarcini urmează worktree-ul, nu mediul, așa că rulează în spații unde nimeni nu apasă **Pornește**:
 
@@ -292,7 +316,7 @@ Un depozit fără stack are nevoie doar de o definiție cu sarcinile lui. Neavâ
 
 - Nu există încă un mediu, așa că aceste sarcini nu pot folosi `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` sau `enabledWhen` și nu primesc `env` din definiție.
 - O singură definiție poate avea sarcini `provision` și `archive` pentru un depozit. Celelalte îl pot lega în continuare pentru orice altceva.
-- `"when": ["provision", "change"]` reinstalează și când se schimbă un fișier de blocare, lucru pe care scripturile de configurare nu l-au făcut niciodată.
+- `"when": ["provision", "change"]` reinstalează și când se schimbă un fișier de blocare.
 - O sarcină rulează pentru worktree-ul rolului ei `cwd`, așa că o definiție cu mai multe depozite poate configura fiecare depozit separat.
 - O rulare de test setează `CC_SCRIPT_TEST=1`. O reîncercare pornește de la un worktree curat, așa că scrie sarcini care suportă o nouă rulare.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Cu o componentă compose, un shim `docker` permite și `docker compose` cu `ps`, `logs`, `exec`, `port`, `restart` și `top`. Înainte de verb nu pot exista flaguri, `logs` nu poate urmări ieșirea, iar `exec` acceptă doar `-T`. Orice altceva se încheie cu codul 5 și „not available in Control Center agent runs”.
+Cu o componentă compose, un shim `docker` permite și `docker compose` cu `ps`, `logs`, `exec`, `port`, `restart` și `top`, și doar față de proiectul compose propriu al acestui mediu. Înainte de verb nu pot exista flaguri, iar fiecare verb acceptă o listă scurtă de opțiuni: `logs` nu poate urmări ieșirea, iar `exec` acceptă doar `-T` (sau `--no-tty`). Opțiunile care îndreaptă compose spre alt fișier sau alt proiect (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) sunt refuzate oriunde ar apărea. Orice altceva se încheie cu codul 5 și „not available in Control Center agent runs”.
 
-Un depozit ale cărui skill-uri apelează propriul instrument poate continua așa. Un bloc `agentPassthrough` pe o componentă `cli` declară ce comenzi pot rula agenții:
+Un depozit ale cărui skill-uri apelează propriul instrument poate continua așa. Un bloc `agentPassthrough` pe o componentă `cli` declară ce comenzi pot rula agenții. Doar comenzile declarate de definiția aprobată trec prin, iar fiecare rulează pe gazdă, deci respectă regula **Rulează comenzi pe gazdă**, care cere confirmare implicit:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Codurile de ieșire se aplică tuturor verbelor:
 | Cod | Semnificație |
 | --- | --- |
 | 0 | OK |
-| 3 | Este necesară configurarea gazdei. **Rulează în terminal** deschide un terminal de spațiu cu comanda scrisă, dar nerulată, apoi **Reîncearcă** încearcă din nou. Control Center nu rulează niciodată `sudo` |
-| 4 | Este necesară autentificarea |
-| 5 | Dependență indisponibilă |
+| 3 | Este nevoie de un răspuns într-un terminal, cum ar fi o parolă pentru `sudo`. Un verb listat în `interactive` rulează din nou într-un tab de terminal pentru persoana care a apăsat **Pornește**. Altfel, **Rulează în terminal** deschide un terminal de spațiu cu `command` al uneltei scris, dar nerulat, apoi **Reîncearcă** încearcă din nou. Control Center nu rulează niciodată `sudo` și nu răspunde niciodată unei solicitări |
+| 4 | Este necesară autentificarea. Câmpul `command` al uneltei spune cum |
+| 5 | Ceva de care depinde nu este disponibil, cum ar fi un runtime de containere care nu rulează |
 | Altul | Eșec |
+
+Codurile 3, 4 și 5 nu sunt eșecuri. Mediul arată **Necesită acțiune** și așteaptă, iar următoarea pornire continuă de unde s-a oprit cea anterioară. O sarcină care se termină cu unul dintre ele înseamnă același lucru.
 
 Progresul merge pe stderr ca JSON delimitat prin linii noi:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-Liniile `step` apar ca listă de pași în timp real, iar liniile `note` sunt afișate ca atare. O ultimă linie de tip `error` devine o eroare structurată, cu `command` oferit pentru copiere. Fără ea, Control Center arată ultimele 20 de linii din stderr. Tot ce nu este JSON este jurnal obișnuit.
+Cât timp mediul pornește, panoul listează componentele prin care trece pornirea, fiecare cu un indicator rotitor, un semn de bifă sau o cruce. O linie `step` spune ce face instrumentul acum, iar `label`-ul ei apare sub linia proprie a instrumentului; pașii nu adaugă niciodată linii. `state` unui pas este `pending`, `running`, `done` sau `failed`, iar un pas fără `state` este în curs de rulare. Un pas care raportează din nou sub același `id` (un șir sau un număr, ori același `label`, dacă nu are unul) înlocuiește ce spunea înainte, așa că un instrument cu un singur indicator poate păstra un `id` și poate schimba `label`-ul. Fără id-uri, pașii se succed: unul nou îl încheie pe cel dinaintea lui. Când comanda se termină, un pas încă în curs se încheie în același fel în care s-a încheiat comanda.
+
+O linie `log` conține o linie de ieșire pe care instrumentul a împachetat-o în JSON și se citește ca ieșire obișnuită. O linie `note` ajunge în ieșirea rulării, iar una cu `"level": "warn"` rămâne și pe mediu ca avertisment. O ultimă linie de tip `error` devine o eroare structurată, cu `command` oferit pentru copiere, iar ultimele 12 linii de ieșire apar sub `message`. Fără ea, Control Center arată ultimele 20 de linii din stderr. Tot ce nu este JSON este jurnal obișnuit.
 
 ## Conținut asociat
 

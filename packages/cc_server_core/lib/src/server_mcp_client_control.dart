@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_client_control.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:cc_mcp/cc_mcp.dart';
 import 'package:cc_mcp_client/cc_mcp_client.dart';
 import 'package:path/path.dart' as p;

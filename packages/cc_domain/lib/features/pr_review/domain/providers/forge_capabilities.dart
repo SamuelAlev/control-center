@@ -120,7 +120,7 @@ enum ForgeCapability {
   openListPaging;
 
   /// The capability named [name] on the wire, or null for one this build
-  /// does not know (an older client reading a newer server).
+  /// does not know.
   static ForgeCapability? tryParse(String name) {
     for (final c in values) {
       if (c.name == name) {
@@ -148,8 +148,7 @@ class ForgeCapabilities {
   const ForgeCapabilities({required this.forge, required this.supported});
 
   /// Reads a descriptor back off the wire (one bool per capability name).
-  /// Absent or unknown keys read as unsupported, so an older server simply
-  /// reports fewer capabilities rather than failing.
+  /// Absent or unknown keys read as unsupported rather than failing.
   factory ForgeCapabilities.fromJson(Map<String, dynamic> json) =>
       ForgeCapabilities(
         forge: ForgeHost.fromWire(json['forge'] as String?),

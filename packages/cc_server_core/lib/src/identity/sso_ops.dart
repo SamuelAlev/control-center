@@ -6,18 +6,7 @@ import 'package:cc_server_core/src/identity/sso_settings_service.dart';
 
 /// `sso.*` repo-RPC ops. Server-owner only (`serverAuthority`) — SSO is install-wide.
 /// All ops `workspaceScoped: false`.
-List<RepoOp> buildSsoOps({
-  required SsoSettingsService settings,
-  required Future<bool> Function(String userId) isServerOwner,
-}) {
-  Future<void> requireAdmin(String userId) async {
-    if (!await isServerOwner(userId)) {
-      throw const AuthException(
-        'Only the server owner may configure authentication for this install',
-      );
-    }
-  }
-
+List<RepoOp> buildSsoOps({required SsoSettingsService settings}) {
   return [
     RepoOp(
       name: 'sso.getConfig',
@@ -27,7 +16,6 @@ List<RepoOp> buildSsoOps({
       requiredCapability: SessionCapability.fullClient,
       requiredArgs: ['kind'],
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         final kind = SsoProviderKind.fromWire(ctx.args['kind'] as String?);
         if (kind == null) {
           throw const AuthException('Unknown SSO kind');
@@ -51,7 +39,6 @@ List<RepoOp> buildSsoOps({
       audited: true,
       requiredArgs: ['kind', 'enabled'],
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         final saved = await settings.save(
           _fromJson(ctx.args),
           clientSecret: ctx.args['clientSecret'] as String?,
@@ -71,7 +58,6 @@ List<RepoOp> buildSsoOps({
       workspaceScoped: false,
       requiredCapability: SessionCapability.fullClient,
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         return await settings.status();
       },
     ),
@@ -83,7 +69,6 @@ List<RepoOp> buildSsoOps({
       requiredCapability: SessionCapability.fullClient,
       requiredArgs: ['kind'],
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         final kind = SsoProviderKind.fromWire(ctx.args['kind'] as String?);
         if (kind == null) {
           throw const AuthException('Unknown SSO kind');
@@ -104,7 +89,6 @@ List<RepoOp> buildSsoOps({
       workspaceScoped: false,
       requiredCapability: SessionCapability.fullClient,
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         // The ACS the IdP POSTs to must be the origin the USER's browser
         // reaches, hence client-supplied when known; the server's canonical
         // origin (tunnel > publicUrl > loopback) is the fallback. Content is
@@ -136,7 +120,6 @@ List<RepoOp> buildSsoOps({
       audited: true,
       requiredArgs: ['enabled'],
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         await settings.setPairingEnabled(ctx.args['enabled'] == true);
         return await settings.status();
       },
@@ -151,7 +134,6 @@ List<RepoOp> buildSsoOps({
       workspaceScoped: false,
       requiredCapability: SessionCapability.fullClient,
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         final policy = await settings.sessionPolicy();
         return {
           'max_age_minutes': policy.maxAgeMinutes,
@@ -167,7 +149,6 @@ List<RepoOp> buildSsoOps({
       requiredCapability: SessionCapability.fullClient,
       audited: true,
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         await settings.setSessionPolicy(
           maxAgeMinutes: (ctx.args['max_age_minutes'] as num?)?.toInt(),
           idleTimeoutMinutes: (ctx.args['idle_timeout_minutes'] as num?)
@@ -188,7 +169,6 @@ List<RepoOp> buildSsoOps({
       requiredCapability: SessionCapability.fullClient,
       audited: true,
       handler: (ctx) async {
-        await requireAdmin(ctx.userId);
         // Returned exactly once; afterwards only a constant-time check.
         return {'token': await settings.regenerateScimToken()};
       },

@@ -2,7 +2,7 @@
 title: Konfigurera miljöer
 description: Ge varje yta och pull request en egen körande stack, med compose, en egen CLI, övervakade processer eller en skrivbordsapp.
 slug: sv-SE/handbok/how-to-guider/miljoer
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 En **miljö** är den körande stacken för en yta: tjänsterna en gren behöver, isolerade från alla andra ytor, synliga i sidofältet och nåbara för agenter. Pull requests får också en, eftersom en PR redan har en egen yta.
@@ -11,12 +11,26 @@ En administratör för arbetsytan skriver en **definition** en gång. Medlemmar 
 
 ## Skapa en definition
 
-1. Öppna **Inställningar → Arbetsyta → Miljöer**. Bara administratörer för arbetsytan kan ändra definitioner.
+1. Öppna **Inställningar → Arbetsyta → Miljöer**. Bara administratörer för arbetsytan kan ändra definitioner, och bara serverägaren kan spara en som körs på serverns värd (se [Vem kan spara vad](#vem-kan-spara-vad)).
 2. Klicka på **Ny definition** och sedan på **Tom definition** eller **Utkast från repo**. Ett utkast söker igenom repot efter compose-filer, en `Procfile` och `package.json`-skript, och du granskar resultatet.
 3. Fyll i formuläret eller använd fliken **JSON**. Exemplen på den här sidan är den JSON:en.
 4. Klicka på **Kör test**. Det startar en engångsmiljö, väntar tills den är klar och förstör den.
 
-Använd **Länka en repofil** för att ha en definition i ett repo. Control Center läser filen bara från standardgrenen och kör bara den version en administratör har godkänt. En nyare version visar **Uppdatering tillgänglig** och ändrar inget förrän den godkänns.
+Spara kontrollerar en definition strikt. Ett okänt fält, ett värde av fel typ eller ett felstavat val avvisas, med sin sökväg och det närmaste giltiga namnet, till exempel `repos.app.requird: Unknown field. Did you mean "required"?`. Ett `$schema` på översta nivån är tillåtet.
+
+Använd **Länka en repofil** för att ha en definition i ett repo. Control Center läser filen bara från standardgrenen och kör bara den version som godkänts: av en arbetsytadministratör, eller av serverägaren när definitionen körs på värden. En nyare version visar **Uppdatering tillgänglig** och ändrar inget förrän den godkänns.
+
+### Vem kan spara vad
+
+En miljödefinition kan köra kommandon på serverns värd som serverns egen användare. Det är serverägarens beslut, inte en arbetsytaroll:
+
+- En definition **körs på värden** när den har värdplacering, en kontroll som kör ett kommando, eller en `provision`- eller `archive`-uppgift. De uppgifterna körs i ytans worktree på värden oavsett placering.
+- Bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren) kan spara eller godkänna en definition som körs på värden. Det gäller även att godkänna en ny version av en länkad repofil. En arbetsytadministratör som försöker ser "Bara serverägaren kan spara eller godkänna en miljö som körs på serverns värd. En arbetsytadministratör kan använda en som körs i en rigg."
+- En arbetsytadministratör kan spara och godkänna en definition som helt körs i en rigg: `"placement": "rig"`, ingen kontrollkommando och ingen `provision`- eller `archive`-uppgift.
+- Medlemmar startar, stoppar och använder miljöer i båda fallen.
+- En definition som körs på värden körs först efter att den **nuvarande** serverägaren har sparat eller godkänt den. Servern registrerar godkännandet själv och kontrollerar det före varje start, kontroll, uppgift och synkning av PR:ens huvud. En definition som den nuvarande ägaren inte har godkänt, till exempel en som en tidigare ägare sparade, väntar under sin rad i miljölistan och i redigeraren. Serverägaren ser "Körs på den här servern. Godkänn den för att låta den starta." med **Godkänn**, som sparar den oförändrad; alla andra ser "Körs på den här servern. Serverägaren måste godkänna den innan den kan starta."
+- En miljö som hålls för det godkännandet säger "Serverägaren har ännu inte godkänt den här miljön, så den kan inte köras på den här servern." Serverägaren ser i stället "Du har ännu inte godkänt den här miljön. Den körs på den här servern och startar när du godkänner dess definition." med **Granska och godkänn**, som öppnar definitionen.
+- En miljös processterminaler, och terminalen som en start öppnar när den behöver dig, körs på serverns värd. Att skriva i en, ändra dess storlek eller stänga den kräver skrivåtkomst till varje repo som ytan exponerar, läsbar via din egen forge-inloggning: samma krav som för att starta miljön. Andra når inte de terminalerna alls.
 
 ## Den minsta definitionen
 
@@ -35,7 +49,7 @@ Allt annat har ett standardvärde: compose-filen hittas, alla tjänster körs, p
 
 ## Komponenttyper
 
-En miljö är en ordnad lista med komponenter. Varje komponent väntar tills den föregående är klar, om inte `after` anger andra, och stopp sker i omvänd ordning. `enabledWhen` gör en komponent beroende av ett alternativ eller en roll, till exempel `opt.seed`, `!opt.seed` eller `repo.web`.
+En miljö är en ordnad lista med komponenter. Varje komponent väntar tills den föregående är klar, om inte `after` anger andra, och stopp sker i omvänd ordning. `enabledWhen` gör en komponent beroende av ett alternativ eller en roll, till exempel `opt.seed`, `!opt.seed` eller `repo.web`. En komponent vars roll är valfri och saknas i ytan utelämnas på samma sätt, utan att någon `enabledWhen` behövs: den startar inte och har varken `{port.*}` eller `{url.*}`, så en annan komponent som läser dem gör att starten misslyckas.
 
 | Typ | Vem som kör den | Används till |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ En miljö är en ordnad lista med komponenter. Varje komponent väntar tills den
 | `manual` | På begäran: **Kör**, `cc-env run <id>` eller `environment_run_task` |
 | `archive` | Precis innan worktree förstörs |
 
-Ett kommando som anges som en array är argv, så alternativvärden går aldrig genom ett skal. En sträng, eller `script` med en array av rader, körs under `bash -lc`. Platshållare som `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` och `{url.<role>}` expanderas bara i argv. Skalkommandon läser samma värden som `CC_ENV_*`-variabler, till exempel `$CC_ENV_PORT_WEB`.
+En task som inte har något att göra vid en start visar **Overksam** och utelämnas från listan över steg som visas medan miljön startar: en `manual`- eller `change`-task, eller en `create`-task som redan har körts.
 
-Varje kommando och ytterminal får också `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` och, i PR-ytor, `CC_PR_NUMBER` och `CC_PR_IS_FORK`. Med en compose-komponent får de även `COMPOSE_PROJECT_NAME` och `COMPOSE_FILE`, så att `docker compose exec` i en uppgift når rätt projekt.
+Ett kommando som anges som en array är argv, så alternativvärden går aldrig genom ett skal. En sträng, eller `script` med en array av rader, körs under `bash -lc`. Platshållare som `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` och `{url.<role>}` expanderas bara i argv. Skalkommandon läser samma värden som `CC_ENV_*`-variabler, till exempel `$CC_ENV_PORT_WEB`. En okänd platshållare i en komponent som deltar stoppar starten innan något körs.
+
+Varje kommando och ytterminal får också `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` och, i PR-ytor, `CC_PR_NUMBER` och `CC_PR_IS_FORK`. Med en compose-komponent får de även `COMPOSE_PROJECT_NAME` och `COMPOSE_FILE`, så att `docker compose exec` i en uppgift når rätt projekt.
 
 ## Roller och arbetskatalog
 
@@ -77,7 +93,7 @@ En definition binder **roller** till arbetsytans repon, så att en stack kan omf
 - `whenMissing`: vad som händer när ytan saknar rollen. `addToSpace` lägger till repot på standardgrenen och är standard för `required`-roller. `useSource` skickar din registrerade utcheckning, som du bör behandla som skrivskyddad. `skip` lämnar variabeln tom och är annars standard.
 - För att starta krävs en `write`-behörighet på ett ankarrepo i ytan och läsåtkomst till alla andra bundna repon.
 
-Ett kommando körs i den första rollen i `repos` som ytan har, så en definition med ett repo nämner det aldrig. Alla komponenter kan åsidosätta det med `"cwd": { "role": "e2e", "path": "packages/ui" }`. Båda fälten är valfria.
+Ett kommando körs i den första rollen som deklareras i `repos`, aldrig i någon annan roll som ytan råkar ha, så en definition med ett repo nämner det aldrig. Alla komponenter kan åsidosätta det med `"cwd": { "role": "e2e", "path": "packages/ui" }`. Båda fälten är valfria. Om den första rollen kan saknas i en yta, eftersom den varken är `required` eller den enda ankaren, måste varje komponent ange sin roll.
 
 ## Portar och URL:er
 
@@ -130,6 +146,8 @@ En webbapp och Postgres från en compose-fil, med en git-ignorerad `.env`, migre
 
 Med `healthchecks` kan en tjänst utan egen hälsokontroll hålla tillbaka nästa komponent. Utan den räknas en körande container som klar, och migreringar kan hinna före en databas som fortfarande startar.
 
+Varje start och uppdatering kör `up` med `--remove-orphans`, så att en tjänst som tagits bort från compose-filen stoppas och frigör sin port. Images byggs vid start och uppdatering om inte komponenten sätter `"build": false`.
+
 ## Exempel: egen CLI
 
 Ett påhittat verktyg `acme` som äger sina containrar, domäner och TLS. Control Center ger `{name}` och får veta resten från `status`. Det härleder aldrig ett verktygs värdnamn och redigerar aldrig `/etc/hosts`.
@@ -147,7 +165,8 @@ Ett påhittat verktyg `acme` som äger sina containrar, domäner och TLS. Contro
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Ett påhittat verktyg `acme` som äger sina containrar, domäner och TLS. Contro
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Ett påhittat verktyg `acme` som äger sina containrar, domäner och TLS. Contro
 ```
 
 - `create`, `status` och `destroy` krävs. Control Center väljer `create` eller `start` utifrån statusen det läser. Alla verb kan vara `{ "shell": "…" }` i stället för argv.
+- `interactive` anger vilka verb, av `create`, `start` och `reset`, som kan be om det de behöver i en terminal. När ett sådant verb avslutas med kod 3 för en person som tryckte på **Starta**, kör Control Center samma verb igen i en terminalflik, och starten fortsätter när det avslutas med 0. Där är villkoret `interactive` sant och `CC_ENV_INTERACTIVE=1` är satt, så att `{ "if": "!interactive", "args": ["--json"] }` behåller maskinutdata för det icke-interaktiva läget. En start av en agent, eller en automatisk start, öppnar aldrig en terminal: miljön visar **Åtgärd krävs** och väntar.
+- Ett `destroy` som misslyckas tar ändå bort miljön när `status` sedan rapporterar `missing`, så att en miljö som verktyget inte längre har alltid kan tas bort.
+- `list` låter Control Center upptäcka en miljö som verktyget har tappat bort. Den markeras som borta först när dess namn saknas i `list` och `status` då säger `missing`. Utdata som inte kan läsas som en lista ändrar ingenting.
+- `{service}` i `logs` och `exec` måste vara ett enda ord som inte börjar med `-`, och en av de tjänster som verktyget senast rapporterade, när det rapporterade några.
 - `statusMap` läser verktygets egen JSON med JSON-pekare, där `*` matchar varje objekt. Tillståndsregler är ordnade och den första träffen vinner. Ett villkor är `path` med `equals`, eller `any` eller `none` med `where`.
 - `keepsDataOnStop: false` stänger av stopp vid inaktivitet och lägger till en varning om dataförlust på **Stoppa**. Ange det när stopp förlorar data.
 - `routing.mode: "tool"` kopplar verktygets värdnamn till webbläsaren (VM) och agenter. Domänen måste sluta på `.test`, `.localhost` eller `.internal`, och en rapporterad URL utanför den släpps.
@@ -229,8 +253,8 @@ Bara processer och uppgifter, inga containrar. Webbappen hittar API:et via `{url
 }
 ```
 
-- Varje process är en terminalflik som du kan öppna, läsa och skriva i. Att stänga fliken stoppar inte processen.
-- `ready` tar `http`, `tcp` eller `logMatch`. `restart` är `on-failure` (standard), `always` eller `never`. `restartOn` startar om processen när en ändrad sökväg matchar.
+- Varje process är en terminalflik som du kan öppna, läsa och skriva i, om du har skrivåtkomst till varje repo i ytan (se [Vem kan spara vad](#vem-kan-spara-vad)). Att stänga fliken stoppar inte processen.
+- `ready` tar `http` (en fullständig URL), `tcp` (`host:port`) eller `logMatch` (ett reguljärt uttryck). `restart` är `on-failure` (standard), `always` eller `never`. `restartOn` startar om processen när en ändrad sökväg matchar.
 - `options` blir ett formulär vid **Starta**, och `agentDefault` gäller körningar som en agent startar.
 
 ## Exempel: skrivbordsapp
@@ -251,21 +275,21 @@ En skrivbordsapp med ett byggsteg. En app fungerar likadant oavsett vad den är 
 }
 ```
 
-En app startar inte med miljön. Någon klickar på **Öppna**, och `prepare` körs först. **Bygg om och öppna igen** kör det paret igen. En ren avslutning visas som stängd, en krasch visar de sista loggraderna utan omstart, en omstart av servern startar aldrig om appen och stopp vid inaktivitet lämnar en körande app i fred.
+En app startar inte med miljön. Någon klickar på **Öppna**, och `prepare` körs först. **Bygg om och öppna igen** kör det paret igen. `enabledWhen` gäller för appen och för dess `prepare`-uppgift, och **Öppna** nekas så länge något av dem är avstängt. En app räknas som körande så länge någon process i dess processgrupp kör, så en startare som startar appen och avslutas är okej. Om allt är borta inom cirka 5 sekunder efter **Öppna** visas appen som misslyckad med dess sista loggrader. Därefter visas en ren avslutning som stängd och en krasch visar de sista loggraderna, och ingetdera startar om den. En omstart av servern stänger appen och startar den aldrig om, och stopp vid inaktivitet lämnar en körande app i fred.
 
 ### Behörigheter och begränsningar för skrivbordsappar
 
 - På macOS ger du Control Center **Skärminspelning** och **Hjälpmedel** en gång i Systeminställningar. Servervärden behöver en grafisk session: en headless-server vägrar starta en app.
-- Starta binärfilen direkt. `open -a` lämnar över appen till LaunchServices och den lämnar processträdet som Control Center följer. `"window": { "match": { "bundleId": "…" } }` täcker det fallet, men är bara säkert med en körande kopia.
+- Starta binärfilen direkt. `open -a` lämnar över appen till LaunchServices och den lämnar processträdet som Control Center följer, så att appen visas som misslyckad direkt efter starten.
 - Fönster stannar på en skärm. macOS fångar inte ett fönster som ligger utanför alla skärmar, så en app som en agent använder syns på serverns skärm. Den behöver inte fokus.
 - `"isolate": "home"` ger appen en privat hemkatalog via `HOME`, `XDG_*` och `CFFIXED_USER_HOME`, så att kopior från två ytor kan köras sida vid sida. `NSUserDefaults` isoleras inte, så Cocoa-inställningar och Flutters `shared_preferences` förblir delade mellan kopior.
 - `isolate` gäller bara den startade processen. En verktygsstartare som `flutter run` behöver den riktiga hemkatalogen, så kombinera `isolate` med en byggd binärfil. Om appen har en egen inställning, som `--user-data-dir`, är den att föredra.
 - Agenter styr fönstret med `app_use`, som bara når den här miljöns processträd. En agent ser fönstret, inte skrivbordet. Agentstarter går genom åtgärdspolicyn och frågar som standard, och agentinmatning stoppas medan en person har kontrollen.
 - `"input": "background"` (standard) skickar händelser till processen. `"foreground"` aktiverar fönstret och tar över markören.
 
-## Worktree-uppgifter ersätter reposkript
+## Worktree-uppgifter
 
-`provision`- och `archive`-uppgifter ersätter de gamla konfigurations- och arkivskripten per repo. **Befintliga skript migrerades automatiskt:** varje repo med skript har nu en definition med repots namn, med uppgifterna `setup` och `archive` som innehåller samma skripttext. Ikonen på ett repos rad under **Inställningar → Arbetsyta → Arkiv** öppnar den. Tidigare skriptkörningar finns kvar som skrivskyddad historik.
+`provision`- och `archive`-uppgifter kör ett repos uppsättning och nedmontering tillsammans med dess worktree. Ikonen på ett repos rad under **Inställningar → Arbetsyta → Arkiv** öppnar repots definition.
 
 De här uppgifterna följer worktree, inte miljön, så de körs i ytor där ingen klickar på **Starta**:
 
@@ -292,7 +316,7 @@ Ett repo utan stack behöver bara en definition med sina uppgifter. Eftersom det
 
 - Det finns ingen miljö ännu, så de här uppgifterna kan inte använda `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` eller `enabledWhen`, och de får inte definitionens `env`.
 - Bara en definition får ha `provision`- och `archive`-uppgifter för ett repo. Andra får ändå binda det för allt annat.
-- `"when": ["provision", "change"]` installerar också om när en låsfil ändras, något konfigurationsskript aldrig gjorde.
+- `"when": ["provision", "change"]` installerar också om när en låsfil ändras.
 - En uppgift körs för worktree i sin `cwd`-roll, så en definition med flera repon kan konfigurera varje repo separat.
 - En testkörning sätter `CC_SCRIPT_TEST=1`. Ett nytt försök börjar från en ren worktree, så skriv uppgifter som tål att köras om.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Med en compose-komponent tillåter en `docker`-shim också `docker compose` med `ps`, `logs`, `exec`, `port`, `restart` och `top`. Inga flaggor får stå före verbet, `logs` kan inte följa och `exec` tar bara `-T`. Allt annat avslutas med kod 5 och "not available in Control Center agent runs".
+Med en compose-komponent tillåter en `docker`-shim också `docker compose` med `ps`, `logs`, `exec`, `port`, `restart` och `top`, och bara mot den här miljöns egna compose-projekt. Inga flaggor får stå före verbet, och varje verb tar en kort lista med alternativ: `logs` kan inte följa, och `exec` tar bara `-T` (eller `--no-tty`). Alternativ som pekar compose mot en annan fil eller ett annat projekt (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) nekas var de än står. Allt annat avslutas med kod 5 och "not available in Control Center agent runs".
 
-Ett repo vars skills anropar ett eget verktyg kan fortsätta med det. Ett `agentPassthrough`-block på en `cli`-komponent anger vilka kommandon agenter får köra:
+Ett repo vars skills anropar ett eget verktyg kan fortsätta med det. Ett `agentPassthrough`-block på en `cli`-komponent anger vilka kommandon agenter får köra. Bara kommandon som den godkända definitionen deklarerar passerar igenom, och varje ett körs på värden, så det bär regeln **Kör kommandon på värden**, som frågar först som standard:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Slutkoder gäller för alla verb:
 | Kod | Betydelse |
 | --- | --- |
 | 0 | OK |
-| 3 | Värdkonfiguration krävs. **Kör i terminal** öppnar en ytterminal med kommandot inskrivet men inte kört, och **Försök igen** försöker sedan igen. Control Center kör aldrig `sudo` |
-| 4 | Autentisering krävs |
-| 5 | Beroende otillgängligt |
+| 3 | Ett svar krävs i en terminal, till exempel ett `sudo`-lösenord. Ett verb som står i `interactive` körs igen i en terminalflik för personen som tryckte på **Starta**. Annars öppnar **Kör i terminal** en ytterminal med verktygets `command` inskrivet men inte kört, och **Försök igen** försöker sedan igen. Control Center kör aldrig `sudo` och svarar aldrig på en fråga |
+| 4 | Inloggning krävs. Verktygets `command` anger hur |
+| 5 | Något som den är beroende av är inte tillgängligt, till exempel en containerkörning som inte är igång |
 | Annan | Fel |
+
+Koderna 3, 4 och 5 är inte fel. Miljön visar **Åtgärd krävs** och väntar, och nästa start fortsätter där den förra stannade. En uppgift som avslutas med någon av dem betyder samma sak.
 
 Förlopp går till stderr som radavgränsad JSON:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-`step`-rader visas som en live-lista med steg och `note`-rader visas som de är. En sista rad av typen `error` blir ett strukturerat fel, där `command` erbjuds för kopiering. Utan den visar Control Center de sista 20 stderr-raderna. Allt som inte är JSON är vanlig loggutdata.
+Medan en miljö startar visar panelen de komponenter som starten går igenom, var och en med en snurrande indikator, en bock eller ett kryss. En `step`-rad anger vad verktyget gör just nu, och dess `label` visas under verktygets egen rad; steg lägger aldrig till rader. Ett stegs `state` är `pending`, `running`, `done` eller `failed`, och ett steg utan `state` körs. Ett steg som rapporterar igen under samma `id` (en sträng eller ett tal, eller samma `label` om det saknas) ersätter det det sa tidigare, så ett verktyg med en enda snurrande indikator kan behålla samma `id` och ändra `label`. Utan id följer stegen på varandra: ett nytt avslutar det föregående. När kommandot avslutas avslutas ett steg som fortfarande körs på samma sätt som kommandot.
+
+En `log`-rad innehåller en rad utdata som verktyget paketerat i JSON och läses som vanlig utdata. En `note`-rad går till körningens utdata, och en rad med `"level": "warn"` finns också kvar på miljön som en varning. En sista rad av typen `error` blir ett strukturerat fel, där `command` erbjuds för kopiering, och de sista 12 raderna utdata visas under dess `message`. Utan den visar Control Center de sista 20 stderr-raderna. Allt som inte är JSON är vanlig loggutdata.
 
 ## Relaterat
 

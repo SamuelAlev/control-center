@@ -226,7 +226,7 @@ void main() {
     });
 
     test(
-      'a ping opUnknown disables ping and relies on transport-close',
+      'a ping the server answers with an error keeps the path alive',
       () async {
         final c = scriptedConnection();
         final sup = ServerConnectionSupervisor(
@@ -239,8 +239,8 @@ void main() {
         addTearDown(sup.close);
 
         await sup.start();
-        // Server answers every repo/call with an op-unknown error → ping support
-        // disabled (the describe refresh is also swallowed).
+        // Server answers every repo/call with an error: an answer is a live
+        // path (the describe refresh error is also swallowed).
         c.sub = c.server.incoming.listen((frame) async {
           if (frame['method'] == RpcMethods.repoCall) {
             await c.server.send({
@@ -252,7 +252,7 @@ void main() {
         });
 
         await Future<void>.delayed(const Duration(milliseconds: 80));
-        // Still connected — disabled pings never increment misses.
+        // Still connected — an answered ping never counts as a miss.
         expect(sup.current.phase, ServerConnectionPhase.connected);
         await c.sub?.cancel();
       },
@@ -358,28 +358,25 @@ void main() {
       expect(sup.descriptor.paths, original.paths);
     });
 
-    test(
-      'survives a describe error (older server / transient failure)',
-      () async {
-        final c = scriptedConnection();
-        final sup = ServerConnectionSupervisor(
-          descriptor: descriptor(),
-          deviceId: 'dev-1',
-          psk: psk,
-          resolver: resolver([c.connection]),
-          descriptorRefreshInterval: const Duration(milliseconds: 30),
-        );
-        addTearDown(sup.close);
+    test('survives a describe error (transient failure)', () async {
+      final c = scriptedConnection();
+      final sup = ServerConnectionSupervisor(
+        descriptor: descriptor(),
+        deviceId: 'dev-1',
+        psk: psk,
+        resolver: resolver([c.connection]),
+        descriptorRefreshInterval: const Duration(milliseconds: 30),
+      );
+      addTearDown(sup.close);
 
-        await sup.start();
-        // describeResult null → the server returns an op-unknown error, which
-        // the refresh swallows; the stored descriptor stands.
-        c.sub = serveHealthChecks(c.server, describeResult: null);
+      await sup.start();
+      // describeResult null → the server returns an op-unknown error, which
+      // the refresh swallows; the stored descriptor stands.
+      c.sub = serveHealthChecks(c.server, describeResult: null);
 
-        await Future<void>.delayed(const Duration(milliseconds: 120));
-        expect(sup.current.phase, ServerConnectionPhase.connected);
-      },
-    );
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      expect(sup.current.phase, ServerConnectionPhase.connected);
+    });
   });
 
   group('ServerConnectionSupervisor reconnect + identity mismatch', () {

@@ -243,7 +243,7 @@ class ComposerAttachment {
 
   /// The display name of the `@[file:<name>]` reference that points at this
   /// attachment from inside the prompt, or null when it is attached
-  /// out-of-band only (a scratchpad, or a legacy caller that inserts no token).
+  /// out-of-band only (a scratchpad, or a caller that inserts no token).
   ///
   /// This — not [label] — is the identity the text refers to: it is shortened
   /// and de-duplicated so two `index.ts` from different packages stay

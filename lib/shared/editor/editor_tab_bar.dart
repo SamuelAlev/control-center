@@ -645,7 +645,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
     return AnimatedContainer(
       key: ValueKey<int>(index),
       duration: _gapsAnimate
-          ? CcMotion.resolve(context, CcMotion.normal)
+          ? CcMotion.resolve(context, CcMotion.moderate)
           : Duration.zero,
       curve: CcMotion.standard,
       width: _dropIndex == index ? _hoverGapWidth : 0,
@@ -749,7 +749,7 @@ class _EditorTabBarState extends State<EditorTabBar> {
         ? collapsible
         : AnimatedSize(
             key: ValueKey(_settleEpoch),
-            duration: CcMotion.normal,
+            duration: CcMotion.moderate,
             curve: CcMotion.standard,
             alignment: AlignmentDirectional.centerStart,
             child: collapsible,

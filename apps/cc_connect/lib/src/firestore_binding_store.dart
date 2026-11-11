@@ -1,12 +1,17 @@
+import 'dart:convert';
+
 import 'package:cc_connect/src/binding_store.dart';
 import 'package:cc_connect/src/gcp_auth.dart';
 import 'package:cc_connect/src/upstream_http.dart';
 
 /// [BindingStore] on Firestore over its REST API, authenticated with the
 /// runtime service account's metadata-server token. Collections:
-/// `cc_connect_github/{installation_id}` (`install_ids` array, `bound_at`)
-/// and `cc_connect_slack/{team_id}` (`install_id`, `bot_id`, `app_id`,
-/// `bound_at`). Opaque ids only.
+/// `cc_connect_slack/{team_id}` (`install_id`, `bot_id`, `bot_user_id`,
+/// `app_id`, `bound_at`), `cc_connect_retired/{install_id}` (`retired_at`)
+/// and the retired set's size in `cc_connect_retired_count/count`
+/// (`count`). Opaque ids only. A retirement finds the install's teams with
+/// a single-field `install_id` query (Firestore indexes it by default). A document missing a field is corrupt and
+/// answers [BindingStoreUnavailable].
 ///
 /// Wrap it in [CachedBindingStore]; Slack binds use create-if-absent and
 /// `updateTime` preconditions so two instances can never both win a team.
@@ -29,8 +34,9 @@ final class FirestoreBindingStore implements BindingStore {
   final GcpTokenSource _tokens;
   final DateTime Function() _clock;
 
-  static const String _githubCollection = 'cc_connect_github';
   static const String _slackCollection = 'cc_connect_slack';
+  static const String _retiredCollection = 'cc_connect_retired';
+  static const String _retiredCountCollection = 'cc_connect_retired_count';
 
   String get _root => 'projects/$project/databases/$database/documents';
 
@@ -114,70 +120,6 @@ final class FirestoreBindingStore implements BindingStore {
     return fields is Map<String, Object?> ? fields : const {};
   }
 
-  @override
-  Future<GitHubInstallationBinding?> github(
-    int installationId, {
-    bool fresh = false,
-  }) async {
-    final doc = await _get(_githubCollection, '$installationId');
-    if (doc == null) {
-      return null;
-    }
-    final fields = _fields(doc);
-    final ids = <String>{};
-    final array = fields['install_ids'];
-    if (array is Map) {
-      final arrayValue = array['arrayValue'];
-      final values = arrayValue is Map ? arrayValue['values'] : null;
-      if (values is List) {
-        for (final value in values) {
-          final s = value is Map ? value['stringValue'] : null;
-          if (s is String) {
-            ids.add(s);
-          }
-        }
-      }
-    }
-    return GitHubInstallationBinding(
-      installationId: installationId,
-      installIds: ids,
-      boundAt: _time(fields, 'bound_at'),
-    );
-  }
-
-  @override
-  Future<void> addGitHub(int installationId, String installId) async {
-    // Upsert: appendMissingElements is atomic server-side, so concurrent
-    // binds of different servers both land.
-    final ok = await _commit([
-      {
-        'update': {
-          'name': _name(_githubCollection, '$installationId'),
-          'fields': {
-            'installation_id': {'integerValue': '$installationId'},
-          },
-        },
-        'updateMask': {
-          'fieldPaths': ['installation_id'],
-        },
-        'updateTransforms': [
-          {
-            'fieldPath': 'install_ids',
-            'appendMissingElements': {
-              'values': [
-                {'stringValue': installId},
-              ],
-            },
-          },
-          {'fieldPath': 'bound_at', 'setToServerValue': 'REQUEST_TIME'},
-        ],
-      },
-    ]);
-    if (!ok) {
-      throw const BindingStoreUnavailable('firestore github bind');
-    }
-  }
-
   ({SlackTeamBinding binding, String updateTime})? _slackFrom(
     String teamId,
     Map<String, Object?>? doc,
@@ -187,18 +129,26 @@ final class FirestoreBindingStore implements BindingStore {
     }
     final fields = _fields(doc);
     final install = _string(fields, 'install_id');
+    final botId = _string(fields, 'bot_id');
+    final appId = _string(fields, 'app_id');
+    final botUserId = _string(fields, 'bot_user_id');
     final updateTime = doc['updateTime'];
-    if (install == null || updateTime is! String) {
-      return null;
+    if (install == null ||
+        botId == null ||
+        appId == null ||
+        botUserId == null ||
+        botUserId.isEmpty ||
+        updateTime is! String) {
+      throw const BindingStoreUnavailable('firestore binding is corrupt');
     }
     return (
       binding: SlackTeamBinding(
         teamId: teamId,
         installId: install,
-        botId: _string(fields, 'bot_id') ?? '',
-        appId: _string(fields, 'app_id') ?? '',
+        botId: botId,
+        appId: appId,
         boundAt: _time(fields, 'bound_at'),
-        botUserId: _string(fields, 'bot_user_id') ?? '',
+        botUserId: botUserId,
       ),
       updateTime: updateTime,
     );
@@ -267,6 +217,106 @@ final class FirestoreBindingStore implements BindingStore {
         'currentDocument': {'updateTime': existing.updateTime},
       },
     ]);
+  }
+
+  @override
+  Future<List<String>> slackTeamsOf(String installId) async {
+    final response = await _send('POST', '$_root:runQuery', {
+      'structuredQuery': {
+        'from': [
+          {'collectionId': _slackCollection},
+        ],
+        'where': {
+          'fieldFilter': {
+            'field': {'fieldPath': 'install_id'},
+            'op': 'EQUAL',
+            'value': {'stringValue': installId},
+          },
+        },
+        'limit': maxTeamsPerInstall,
+      },
+    });
+    final Object? rows;
+    try {
+      rows = response.ok ? jsonDecode(response.text) : null;
+    } on FormatException {
+      throw const BindingStoreUnavailable('firestore query');
+    }
+    if (rows is! List) {
+      throw const BindingStoreUnavailable('firestore query');
+    }
+    return [
+      for (final row in rows)
+        if (row case {'document': {'name': final String name}})
+          name.substring(name.lastIndexOf('/') + 1),
+    ];
+  }
+
+  @override
+  Future<bool> isRetired(String installId) async =>
+      await _get(_retiredCollection, installId) != null;
+
+  /// Creates the retired document and bumps the count in one commit, under
+  /// preconditions (the document absent, the count unchanged), so two
+  /// instances can neither both count one retirement nor pass the cap.
+  @override
+  Future<bool> retireInstall(String installId) async {
+    for (var attempt = 0; attempt < 3; attempt++) {
+      if (await isRetired(installId)) {
+        return true;
+      }
+      final counter = await _get(_retiredCountCollection, 'count');
+      var count = 0;
+      Object? updateTime;
+      if (counter != null) {
+        final value = _fields(counter)['count'];
+        final raw = value is Map ? value['integerValue'] : null;
+        final parsed = raw is String ? int.tryParse(raw) : null;
+        updateTime = counter['updateTime'];
+        if (parsed == null || updateTime is! String) {
+          throw const BindingStoreUnavailable('firestore retired count');
+        }
+        count = parsed;
+      }
+      if (count >= maxRetiredInstalls) {
+        return false;
+      }
+      final committed = await _commit([
+        {
+          'update': {
+            'name': _name(_retiredCollection, installId),
+            'fields': {
+              'retired_at': {
+                'timestampValue': _clock().toUtc().toIso8601String(),
+              },
+            },
+          },
+          'currentDocument': {'exists': false},
+        },
+        {
+          'update': {
+            'name': _name(_retiredCountCollection, 'count'),
+            'fields': {
+              'count': {'integerValue': '${count + 1}'},
+            },
+          },
+          'currentDocument': updateTime == null
+              ? {'exists': false}
+              : {'updateTime': updateTime},
+        },
+      ]);
+      if (committed) {
+        return true;
+      }
+    }
+    throw const BindingStoreUnavailable('firestore retire contention');
+  }
+
+  /// Reads a document that never exists: proves the metadata-server token,
+  /// the IAM grant and the database (404 and 200 both answer).
+  @override
+  Future<void> probe() async {
+    await _get(_slackCollection, '_probe');
   }
 
   @override

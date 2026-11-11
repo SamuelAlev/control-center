@@ -2,14 +2,14 @@
 title: Beveiligingen configureren
 description: Stel regels voor toestaan, eerst vragen en weigeren in voor agentacties, test ze met de wat-als-probe en stem de autonomie per ruimte af.
 slug: nl-NL/handleiding/gidsen/beveiligingen-configureren
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Deze gids laat je zien hoe je beveiligingen configureert: de regels die bepalen
 of een actie van een agent wordt uitgevoerd, eerst om goedkeuring vraagt of wordt
 geweigerd.
 
-Beveiligingen dekken de dertien effectklassen die elke muterende tool
+Beveiligingen dekken de veertien effectklassen die elke muterende tool
 declareert. Ze worden server-side afgedwongen op het moment dat de tool wordt
 aangeroepen, nooit door een instructie in een prompt.
 
@@ -23,7 +23,7 @@ aangeroepen, nooit door een instructie in een prompt.
    aan het einde van die rij verschijnt (**Terug naar overgenomen waarde**) — de
    beslissing valt dan terug op het bredere bereik
 
-Elke rij toont de effectieve beslissing als een statustag en een badge voor de
+Elke rij toont de instelling van de actie als een statustag en een badge voor de
 herkomst: **Dit bereik**, **Overgenomen** of **Standaardwaarde**. De matrix
 wordt berekend voor de **Agent**-modus (`chat`), dus **Modusvoorinstelling**
 verschijnt hier nooit — gebruik de wat-als-probe met een gekozen alleen-lezen-
@@ -36,6 +36,18 @@ Controlepunt: zet **Naar een remote pushen** op **Weigeren** op het niveau van d
 werkruimte en voer hieronder de wat-als-probe uit voor `git push origin main`.
 Het resultaat luidt `deny` met bron `workspace`.
 
+## Doorlopende goedkeuringen bekijken en intrekken
+
+Een goedkeuringskaart beantwoorden met **Goedkeuren voor 8 uur** schrijft een doorlopende goedkeuring: een regel die dezelfde soort actie zonder vraag doorlaat tot ze eindigt. Elke goedkeuring staat op deze pagina, onder de actie waartoe ze behoort.
+
+1. Ga naar **Instellingen → Werkruimte → Agentmachtigingen** en kies het bereik. Een goedkeuring wordt geschreven voor de ruimte waaruit de vraag kwam, dus kies **Ruimte** en daarna die ruimte
+2. Lees onder de rij van de actie het item: wat het toestaat (bijvoorbeeld pushes naar branches die overeenkomen met `feature/**`), de woorden **Doorlopende goedkeuring**, wie het heeft gegeven als dat iemand anders was, en wanneer het eindigt
+3. Om het nu te beëindigen, wijs je het item aan en druk je op **Intrekken**. Agenten vragen vanaf hun volgende actie opnieuw
+
+De rij toont nog steeds de eigen instelling van de actie, en een regel eronder telt hoeveel van de hieronder vermelde gevallen toch zijn toegestaan. Voorwaardelijke regels die een sjabloon heeft geschreven, verschijnen in dezelfde lijst, en opdrachtregels in een groep **Opdrachten** na de laatste actie. Op het niveau van de werkruimte telt een notitie onder het overzicht de doorlopende goedkeuringen die voor afzonderlijke ruimten of agents zijn ingesteld. Op het niveau van een ruimte of agent telt die de goedkeuringen van de werkruimte, die daar ook gelden.
+
+Een doorlopende goedkeuring bespaart alleen een vraag. Ze overschrijft nooit **Weigeren**: zet je een actie op **Weigeren** terwijl er een loopt, dan toont het item **niet van kracht bij Weigeren** totdat het eindigt of je het intrekt. Het wijzigen van de instelling van een actie laat de doorlopende goedkeuringen daarvan staan, en het intrekken van een goedkeuring laat de instelling staan.
+
 ## Hoe een beslissing wordt bepaald
 
 De bepaling verloopt volgens **eerst specificiteit, dan beperkendheid**:
@@ -43,7 +55,7 @@ De bepaling verloopt volgens **eerst specificiteit, dan beperkendheid**:
 1. **Ruimte**-regels, dan **agent**, dan **werkruimte**. Het eerste bereik met
    een overeenkomende regel beslist en de bepaling stopt
 2. Komt geen regel overeen, dan geldt de **modusvoorinstelling** — een
-   alleen-lezen-modus (plan, review, orkestratie) weigert elf van de dertien
+   alleen-lezen-modus (plan, review, orkestratie) weigert twaalf van de veertien
    klassen
 3. Heeft de modus niets te zeggen, dan geldt de **standaardwaarde**
 
@@ -73,7 +85,7 @@ bewust: een run zonder poortwachter is erger dan een geweigerde run.
 | Een commit maken                     | Toestaan        |
 | Naar een remote pushen               | Eerst vragen    |
 | Een pull request openen              | Eerst vragen    |
-| Een review publiceren of mergen      | Eerst vragen    |
+| Een pull request bijwerken of samenvoegen | Eerst vragen    |
 | Naar een externe tracker schrijven   | Eerst vragen    |
 | Toegang tot het netwerk              | Toestaan        |
 | Een secret lezen                     | Toestaan        |
@@ -81,6 +93,7 @@ bewust: een run zonder poortwachter is erger dan een geweigerde run.
 | Een proces uitvoeren                 | Toestaan        |
 | Werkruimtestructuur wijzigen         | Toestaan        |
 | Een omhulling (rig) aansturen        | Toestaan        |
+| Opdrachten uitvoeren op de host      | Eerst vragen    |
 
 De taxonomie is gesloten. Een nieuwe tool die wordt uitgebracht zonder zijn
 klassen te declareren, faalt op een ratchet-test in CI, zodat niets aankomt met
@@ -91,13 +104,13 @@ een stilzwijgend lege effectverzameling.
 Controleer voordat je een regel wijzigt hoe het huidige beleid deze al bepaalt.
 
 1. Scroll op dezelfde pagina naar **Wat als?**
-2. Kies een **Actie** (een van de dertien klassen)
+2. Kies een **Actie** (een van de veertien klassen)
 3. Vul optioneel **Opdracht** in (bijvoorbeeld `git push origin main`),
    **Agent**, **Ruimte** en **Modus**
 4. Lees het resultaat: de beslissing, de reden en **Bron:**
 
 De probe gebruikt dezelfde resolver als het afdwingingspad, tegen je actuele
-regels, dus het antwoord is exact. Verrast het je, wijzig dan een regel in de
+regels, dus het antwoord is exact. Wanneer een doorlopende goedkeuring beslist, staat als bron **Doorlopende goedkeuring** met het bijbehorende bereik erachter. Verrast het antwoord je, wijzig dan een regel in de
 matrix hierboven en probeer het opnieuw.
 
 ## De autonomieschakelaar van een ruimte instellen

@@ -123,7 +123,7 @@ class _HistoryState extends ConsumerState<ConversationHistoryScreen> {
                             message: message,
                             workspaceId: workspace ?? '',
                             myUserId: me,
-                            userNames: const {},
+                            users: const {},
                             turns: turns,
                           ),
                           CcButton(

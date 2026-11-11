@@ -2,7 +2,7 @@
 title: Comandos slash
 description: Todos os comandos que pode escrever no compositor, o que fazem e onde são executados.
 slug: pt-PT/manual/referencia/comandos-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Comandos escritos no compositor de um espaço. Dividem-se em três grupos conforme o local onde produzem efeito, e a diferença é importante: um comando **local** nunca viaja como mensagem, pelo que não aparece na transcrição nem chega a nenhum agente.
@@ -140,7 +140,7 @@ Ambos têm a mesma forma — pegar na conversa tal como está, fazer uma pergunt
 
 Modelos de substituição: `$1`, `$@`, `$@[start:length]` e `$ARGUMENTS`. O frontmatter pode definir `description` (preenchimento automático do compositor). `allowed-tools` e `model` são analisados a partir do ficheiro, mas atualmente uma invocação de comando de utilizador só substitui argumentos no corpo — não alteram o modelo nem a superfície de ferramentas da execução.
 
-Um comando da autoria do utilizador prevalece sobre uma skill com o mesmo nome — é um atalho que uma pessoa invocou deliberadamente, com argumentos.
+As skills só são alcançadas como `/skill:<name>`, pelo que um comando da autoria do utilizador nunca colide com uma delas.
 
 ---
 

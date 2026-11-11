@@ -16,6 +16,24 @@ class _FakeRepo implements SandboxExecGrantRepository {
   ];
 
   @override
+  Future<SandboxExecGrantPage> searchGrants(
+    String workspaceId, {
+    String? query,
+    required int limit,
+    int offset = 0,
+  }) async {
+    final needle = query?.trim().toLowerCase() ?? '';
+    final matching = [
+      for (final g in await grants(workspaceId))
+        if (g.path.toLowerCase().contains(needle)) g,
+    ];
+    return (
+      grants: matching.skip(offset).take(limit).toList(),
+      total: matching.length,
+    );
+  }
+
+  @override
   Stream<List<SandboxExecGrant>> watchGrants(String workspaceId) =>
       Stream.fromFuture(grants(workspaceId));
 

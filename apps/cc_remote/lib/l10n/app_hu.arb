@@ -94,7 +94,6 @@
   },
   "inboxLoadFailed": "Nem sikerült betölteni a beérkezettet",
   "allCaughtUp": "Minden elolvasva",
-  "inboxNoForgeAccount": "A szerveren nincs csatlakoztatott forge-fiók, ezért a pull requestek még nem rendelhetők Önhöz.",
   "inboxNothingWaiting": "Semmi sincs blokkolva, és egyetlen pull request sem vár Önre.",
   "blocked": "Blokkolva",
   "sectionNeedsYourReview": "Az Ön átnézésére van szükség",
@@ -201,28 +200,6 @@
       }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, =1{{names} túl nagy ahhoz, hogy innen a relén keresztül küldje.} other{{names} túl nagy ahhoz, hogy innen a relén keresztül küldje.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "names": {
-        "type": "String"
-      }
-    }
-  },
-  "attachmentUploadFailed": "Nem sikerült feltölteni a mellékletet. Próbálja újra.",
-  "attachmentsLeftOut": "{count, plural, =1{1 mellékletet nem sikerült feltölteni, ezért kimaradt.} other{{count} mellékletet nem sikerült feltölteni, ezért kimaradt.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teammate": "Csapattárs",
   "systemSender": "Rendszer",
   "agent": "Ügynök",
@@ -282,27 +259,6 @@
   "prsEmptyDescription": "A munkaterület repóinak pull requestjei itt jelennek meg.",
   "refreshPullRequests": "Pull requestek frissítése",
   "noForgeConnected": "A szerveren nincs csatlakoztatott forge, ezért nem lehet pull requesteket lekérni. Csatlakoztasson egyet az asztali alkalmazásból.",
-  "reposUnreadable": "{count, plural, =1{1 repót nem sikerült olvasni.} other{{count} repót nem sikerült olvasni.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reposNotReadable": "Nem olvasható: {names}",
-  "installationSuspendedTitle": "A GitHub App telepítése fel van függesztve",
-  "installationSuspendedBody": "A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.",
-  "installationSuspendedNotice": "A GitHub App telepítése fel van függesztve. A {names} utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "draft": "Piszkozat",
   "merged": "Összefésülve",
   "closed": "Lezárva",
@@ -740,7 +696,7 @@
   "permissionGitCommit": "Módosítások commitolása",
   "permissionGitPush": "Commitok feltöltése",
   "permissionPrCreate": "Pull requestek létrehozása",
-  "permissionPrPublish": "Pull requestek közzététele",
+  "permissionPrPublish": "Pull requestek frissítése vagy egyesítése",
   "permissionVendorSyncWrite": "Szolgáltatói szinkron írása",
   "permissionNetworkEgress": "Hálózati hozzáférés",
   "permissionSecretAccess": "Titkos adatok elérése",
@@ -752,12 +708,11 @@
   "permissionEffectiveDescription": "Ezen a szinten műveleti argumentumok nélkül érvényes. Az alábbi feltételes engedélyek csak az egyező kérésekre vonatkoznak; a végső döntést a szerver hozza meg.",
   "permissionSpaceAgentNote": "Nincs kiválasztott ügynök. Az ügynökspecifikus szabályok a fenti választásig nem láthatók.",
   "permissionScopedGrants": "Szabályok ezen a szinten",
-  "permissionRemembered": "Megjegyzett jóváhagyás",
+  "permissionRemembered": "Időkorlátos jóváhagyás",
   "permissionSetAtThisScope": "{source} · itt beállítva",
   "permissionInheritedFrom": "{source} · örökölt",
   "permissionExpiresAt": "Lejár: {date}",
   "permissionSetHere": "Szabály beállítása itt",
-  "permissionRevokeBeforeEdit": "A művelet általános szabályának beállítása előtt vonja vissza a hatókörhöz kötött vagy megjegyzett szabályt.",
   "permissionConfirmRevoke": "Visszavonás megerősítése",
   "permissionRevokeRule": "Szabály visszavonása",
   "permissionCommandPrefix": "Parancselőtag: {prefix}",
@@ -871,9 +826,6 @@
   "activityAgentBlocked": "Az ügynök művelete blokkolva",
   "activityMessage": "Új üzenet",
   "activityPullRequest": "Pull request frissítése",
-  "activityTicket": "Jegy frissítése",
-  "activityMeeting": "Megbeszélés frissítése",
-  "activityCalendar": "Naptárkapcsolat",
   "activityRig": "Elkülönített környezet frissítése",
   "activityPrReady": "A pull request összefésülhető",
   "activityPrBlocked": "A pull request összefésülése blokkolva",
@@ -1025,7 +977,7 @@
   "credentialsApiKeyHint": "Illessze be a szolgáltató API-kulcsát",
   "credentialsBrowserLogin": "Bejelentkezés böngészővel",
   "credentialsWaitingForLogin": "Várakozás a böngészőben történő engedélyezésre…",
-  "credentialsConnectCodePrompt": "Írd be a böngészőben látható kódot",
+  "credentialsConnectCodePrompt": "Megerősítő kód",
   "credentialsConnectCodeMalformed": "Ez nem bejelentkezési kódnak tűnik. A kódok 8 betűből és számjegyből állnak.",
   "credentialsSignInInvalidCode": "Ez a kód nem ehhez a bejelentkezéshez tartozik. Ellenőrizd, és próbáld újra.",
   "credentialsSignInTooManyCodes": "Túl sok hibás kód. Indítsa újra a bejelentkezést.",
@@ -1042,11 +994,51 @@
   "credentialsCompleteLogin": "Bejelentkezés befejezése",
   "credentialsPersonalToken": "Személyes hozzáférési token",
   "credentialsPersonalTokenHint": "Illesszen be egy személyes hozzáférési tokent",
-  "credentialsHostManaged": "Ez a kapcsolat a szerveralkalmazásból vagy a környezetből származik. Ott csak a szerver tulajdonosa módosíthatja; saját tokent továbbra is hozzáadhat.",
   "credentialsStopWatching": "Figyelés leállítása",
   "transcriptClaudeSignInExpiredTitle": "A Claude Code-bejelentkezés lejárt",
   "transcriptClaudeSignInExpiredBody": "A futás leállt, mert a fiókja már nem hitelesít. Jelentkezz be újra, majd próbáld újra a kört.",
   "transcriptSignInExpiredTitle": "A szolgáltatói bejelentkezés lejárt",
   "transcriptSignInExpiredBody": "A futás leállt, mert a szolgáltató hitelesítő adata már nem működik. Csatlakoztasd újra a Beállítások → Szolgáltatók alatt, majd próbáld újra a kört.",
-  "permissionHostExecution": "Parancsok futtatása a gazdagépen"
+  "permissionHostExecution": "Parancsok futtatása a gazdagépen",
+  "credentialsSignInLapsed": "A(z) {provider} bejelentkezésed lejárt. Jelentkezz be újra.",
+  "credentialsSignInPaused": "Szüneteltetve: a munkaterület bejelentkezési szolgáltatása megváltozott. Újra működik, amint a szolgáltatás visszatér.",
+  "credentialsProviderUnreachable": "A(z) {provider} most nem érhető el. Újrapróbálkozás folyamatban.",
+  "credentialsScopeWorkspace": "Csak ez a munkaterület",
+  "credentialsScopeAllWorkspaces": "Minden munkaterület",
+  "credentialsRemoveConfirmWorkspace": "Eltávolítod a mentett hitelesítő adataidat ebből a munkaterületből? A többi megtartja a sajátját.",
+  "credentialsRemoveConfirmAllWorkspaces": "Eltávolítod a mentett hitelesítő adataidat minden munkaterületből, amely használja őket?",
+  "credentialsSignInServerRestarted": "A szerver újraindult. Kezdd újra a bejelentkezést.",
+  "repoAccessInstallApp": "Telepítsd a GitHub Appot ide: {owner}, hogy az automatizálás elérje ezeket: {names}. Koppints a GitHub megnyitásához.",
+  "repoAccessAskAdminInstall": "A GitHub App nincs telepítve ide: {owner}, ezért az automatizálás nem éri el ezeket: {names}. Kérd meg a munkaterület egyik adminját a telepítésre.",
+  "repoAccessAddToApp": "Add hozzá a GitHub App tárolóihoz: {names}. Koppints a GitHub megnyitásához.",
+  "repoAccessAskAdminAdd": "A GitHub App még nem látja ezeket: {names}. Kérd meg a munkaterület egyik adminját, hogy adja hozzá őket a tárolóihoz.",
+  "repoAccessSuspended": "A GitHub App telepítése fel van függesztve. Az automatizálás szünetel ezekben: {names}, amíg a fiók egyik tulajdonosa folytatja a telepítést a GitHubon.",
+  "repoAccessOwnerCannotSee": "A munkaterület automatizálásáért felelős személy már nem látja ezeket: {names}, ezért ott semmi sem fut a nevében.",
+  "repoAccessOwnerNotSignedIn": "A munkaterület automatizálásáért felelős személy nincs bejelentkezve a forge-ba, ezért az automatizálás ezekben: {names} vár, amíg be nem jelentkezik.",
+  "repoAccessRetrying": "Nem sikerült ellenőrizni a hozzáférést ezekhez: {names}. Újrapróbálkozás folyamatban.",
+  "hiddenReposSignIn": "{count, plural, =1{Jelentkezz be ide: {forge}, hogy további 1 tároló pull requestjeit is lásd} other{Jelentkezz be ide: {forge}, hogy további {count} tároló pull requestjeit is lásd}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 tároló rejtve van, mert a(z) {forge}-fiókod nem látja} other{{count} tároló rejtve van, mert a(z) {forge}-fiókod nem látja őket}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 tároló rejtve van, mert ebben a munkaterületben nincs hozzá hozzáférésed} other{{count} tároló rejtve van, mert ebben a munkaterületben nincs hozzájuk hozzáférésed}}",
+  "hiddenReposChecking": "{count, plural, =1{A hozzáférésed ellenőrzése további 1 tárolóhoz…} other{A hozzáférésed ellenőrzése további {count} tárolóhoz…}}",
+  "credentialsAtlassianEmail": "Az Atlassian-fiók e-mail-címe",
+  "credentialsAtlassianEmailInvalid": "Add meg az Atlassian-fiókod e-mail-címét.",
+  "credentialsBitbucketApiToken": "API-token",
+  "repoAccessAutomationTokenMissing": "Egyetlen automatizálási token sem tudja olvasni ezt: {names}, ezért az ottani háttérmunka szünetel. Egy admin hozzáadhat egyet a Beállítások → Tárolók menüben.",
+  "credentialsSignInConfirmInBrowser": "Erősítse meg a böngészőjében, majd írja be a megjelenő kódot.",
+  "credentialsSignInAccountAlreadyBound": "Ez a fiók már másik személyhez van csatlakoztatva ezen a szerveren. Jelentkezzen be egy másik fiókkal.",
+  "credentialsTokenUnreachable": "A(z) {provider} nem érhető el a token ellenőrzéséhez. Próbálja újra egy pillanat múlva.",
+  "credentialsTokenRejected": "A(z) {provider} nem fogadja el ezt a tokent. Ellenőrizze, hogy mindent átmásolt-e, és hogy nem vonták-e vissza.",
+  "credentialsTokenWrongKind": "Ez nem személyes token. Személyes hozzáférési tokent illesszen be a saját {provider}-fiókjából, ne projekt-, csoport-, munkaterület- vagy botos tokent.",
+  "credentialsTokenNarrowScope": "Ebből a tokenből hiányzik a(z) {scope} hatókör, amely az átnézéshez és a kommentekhez szükséges. Hozzon létre olyat, amelyikben megvan.",
+  "credentialsTokenExpired": "Ez a token lejárt. Hozzon létre egy újat, és illessze be ide.",
+  "credentialsSignInRateLimited": "Most túl sok kérés érkezett. Várjon egy kicsit, majd próbálja újra.",
+  "credentialsSignInCancelled": "A bejelentkezés megszakadt vagy el lett utasítva. Indítsa újra, amikor készen áll.",
+  "credentialsSignInNoLongerOpen": "Ez a bejelentkezés már nincs nyitva: megszakították, felhasználták vagy újabb váltotta fel. Indítsa újra.",
+  "noWorkspacesYetHint": "Egy munkaterület-adminisztrátornak meg kell hívnia Önt, vagy a szerver tulajdonosa létrehozhat Önnek egy munkaterületet.",
+  "repoAccessReplaced": "A(z) {repos} most egy másik tárolóra mutat a(z) {forge} oldalon. Az újrakapcsoláshoz használja az asztali vagy a webes alkalmazást, hogy tovább használhassa.",
+  "repoAccessAskAdminRelink": "A(z) {repos} most egy másik tárolóra mutat a(z) {forge} oldalon. Egy munkaterület-adminisztrátornak újra kell kapcsolnia, mielőtt ismét használható lenne.",
+  "runSandboxUnavailableTitle": "Az ügynökökhöz homokozó kell ezen a szerveren",
+  "runSandboxUnavailable": "Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket. A tulajdonos telepítheti a homokozót, vagy mindenki számára kikapcsolhatja a homokozást.",
+  "permissionTools": "Eszközök: {tools}",
+  "permissionNotInEffect": "Nincs hatálya, amíg ez a művelet Tiltás értékre van állítva"
 }

@@ -2,7 +2,7 @@
 title: Rigs
 description: Chaque surface, backend, verbe d'action, état du cycle de vie, port, valeur par défaut et contrat des rigs — le catalogue factuel complet.
 slug: fr-CA/manuel/reference/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Des faits, rien de plus. Pour le modèle qui les sous-tend, consultez [Rigs et
@@ -232,8 +232,10 @@ enceinte.
 
 | Outil | Description |
 | --- | --- |
-| `rig_list` | Liste les rigs d'un espace de travail avec leur surface, leur état, leur affichage et leur contrôleur |
+| `rig_list` | Liste les rigs de l'espace de l'exécution avec leur surface, leur état, leur affichage et leur contrôleur |
 | `rig_close` | Détruit un rig et jette son disque |
+
+Ces outils, comme les quatre outils d'utilisation, sont réservés aux exécutions d'agent ; tout autre appelant est refusé. Une exécution n'atteint que les rigs de l'espace pour lequel elle a été louée : `space_id` vient de l'autorisation de l'exécution, jamais de l'appel. Un rig d'un autre espace, ou d'aucun espace, répond exactement comme un rig absent.
 
 ## Cycle de vie
 
@@ -343,7 +345,10 @@ de travail.
 - **L'authentification** repose sur la cible signée
   `rig-files:<workspaceId>/<rigId>` plus l'appartenance à l'espace de travail —
   une cible distincte, de sorte qu'une URL émise pour *regarder* une machine ne
-  peut pas aussi y écrire des fichiers.
+  peut pas aussi y écrire des fichiers. Pour un rig ouvert dans un espace, lire le
+  presse-papiers ou un fichier exige aussi un droit de lecture sur cet espace, et
+  écrire dans le presse-papiers ou déposer des fichiers exige une autorisation
+  d'écriture sur ses dépôts. Sur un rig qui porte les connexions d'une seule personne, les deux voies, lecture comprise, sont à cette personne seule. Voir [Qui peut regarder et qui peut piloter](/fr-CA/manuel/guides/utiliser-rigs/#qui-peut-regarder-et-qui-peut-piloter).
 - **La prise de contrôle s'applique.** Écrire dans le presse-papiers et déposer
   des fichiers sont des actions de modification, et elles sont refusées pendant
   que quelqu'un d'autre détient le contrôle; lire le presse-papiers et extraire

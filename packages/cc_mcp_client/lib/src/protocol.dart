@@ -31,14 +31,8 @@ abstract final class McpProtocol {
   /// List resources.
   static const String resourcesList = 'resources/list';
 
-  /// Read a resource.
-  static const String resourcesRead = 'resources/read';
-
   /// List prompts.
   static const String promptsList = 'prompts/list';
-
-  /// Get a prompt.
-  static const String promptsGet = 'prompts/get';
 
   /// Liveness check.
   static const String ping = 'ping';

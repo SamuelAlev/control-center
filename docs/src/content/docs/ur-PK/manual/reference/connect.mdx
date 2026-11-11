@@ -1,15 +1,15 @@
 ---
 title: Control Center Connect کا حوالہ
-description: Connect کیا دیکھتا ہے اور کیا کبھی نہیں دیکھتا، تین modes، install identity، sealed credentials، configuration پر اعتماد، اور ہر setting، operation اور status code۔
+description: Connect کیا دیکھتا ہے اور کیا کبھی نہیں دیکھتا، تین modes، ایک workspace کا اپنا انتخاب، install identity، sealed credentials، configuration پر اعتماد، اور ہر setting، operation اور status code۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
-Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا ہے جنہوں نے اپنی apps رجسٹر نہیں کیں۔ ایک سرور یا تو Control Center کے hosted Connect کو استعمال کرتا ہے، یا اس Connect کو جسے اس کی تنظیم چلاتی ہے ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، یا کوئی نہیں۔ انتخاب **ترتیبات → سرور → سنگل سائن آن → Control Center Connect** میں، `cc_server connect` کمانڈ میں، یا `CC_CONNECT_URL` میں ہوتا ہے۔
+Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا ہے جنہوں نے اپنی apps رجسٹر نہیں کیں۔ ایک سرور یا تو Control Center کے hosted Connect کو استعمال کرتا ہے، یا اس Connect کو جسے اس کی تنظیم چلاتی ہے ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، یا کوئی نہیں۔ انتخاب **ترتیبات → سرور → سنگل سائن آن → Control Center Connect** میں، `cc_server connect` کمانڈ میں، یا `CC_CONNECT_URL` میں ہوتا ہے۔ ایک workspace اس کی پیروی کرتا ہے، جب تک کوئی ایڈمن **ترتیبات → ورک اسپیس → انٹیگریشنز** کے تحت اس workspace کے لیے کوئی اور انتخاب نہ کرے ([ہر workspace کا اپنا انتخاب](#ہر-workspace-کا-اپنا-انتخاب))۔
 
 ## لینیں
 
-**اپنی ایپس استعمال کریں** کے تحت (یا کسی کے انتخاب سے پہلے) ایک lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل طور پر configured ہو؛ ورنہ وہ unavailable ہے۔ Control Center's apps یا custom Connect کے ساتھ، Connect وہ ہر lane چلاتا ہے جو وہ فراہم کرتا ہے: سرور کی اپنی apps محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں، نہ sign-ins کے لیے، نہ سرور automation کے لیے، نہ اس status کے لیے جو سرور رپورٹ کرتا ہے۔ workspace کی اپنی app ہر mode میں فوقیت رکھتی ہے۔
+**اپنی ایپس استعمال کریں** کے تحت (یا کسی کے انتخاب سے پہلے) ایک lane سرور کی اپنی app پر چلتی ہے جب وہ مکمل طور پر configured ہو؛ ورنہ وہ unavailable ہے۔ Control Center's apps یا custom Connect کے ساتھ، Connect وہ ہر lane چلاتا ہے جو وہ فراہم کرتا ہے: سرور کی اپنی apps محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں، نہ sign-ins کے لیے، نہ سرور automation کے لیے، نہ اس status کے لیے جو سرور رپورٹ کرتا ہے۔ جس workspace نے اپنا انتخاب کیا ہو وہ ہر lane اسی انتخاب کے مطابق چلاتا ہے۔
 
 | Lane         | اپنی app کی ضرورت                                  | Connect کے ذریعے                                              |
 | ------------ | -------------------------------------------------- | ------------------------------------------------------------- |
@@ -20,7 +20,7 @@ Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا 
 | `slack`      | workspace کی اپنی Slack app کنکشن                  | workspace admin Slack کو مشترکہ Slack app سے جوڑتا ہے            |
 | `klipy`      | `KLIPY_APP_KEY`                                    | GIF search، Connect کے ذریعے proxy ہوتی ہے                       |
 
-جزوی طور پر configured اپنی app اس کی lane کو error بنا دیتی ہے، کبھی خاموشی سے Connect کی طرف fall back نہیں ہوتی۔ جو workspace اپنی GitHub App استعمال کرتا ہے (**ترتیبات → ورک اسپیس → عام → GitHub شناخت**) وہ GitHub کے لیے کبھی Connect سے نہیں گزرتا۔ اور جو workspace اپنی Google، Linear یا Klipy app استعمال کرتا ہے (**ترتیبات → ورک اسپیس → عام → فراہم کنندہ ایپس**) وہ اس provider کے لیے کبھی سرور کی app یا Connect سے نہیں گزرتا۔ Connect کا انتخاب بدلنے سے کوئی بھی workspace کی اپنی app سے sign out نہیں ہوتا۔
+جزوی طور پر configured اپنی app اس کی lane کو error بنا دیتی ہے، کبھی خاموشی سے Connect کی طرف fall back نہیں ہوتی۔ **اپنی ایپس استعمال کریں** پر ایک workspace کبھی سرور کی apps یا کسی Connect سے نہیں گزرتا، کسی بھی provider کے لیے۔ سرور کا Connect انتخاب بدلنے سے کوئی ایسا workspace sign out نہیں ہوتا جس نے اپنا انتخاب کیا ہو۔
 
 ## Connect کیا دیکھتا ہے اور کیا کبھی نہیں دیکھتا
 
@@ -28,13 +28,13 @@ Control Center Connect ان سرورز کے لیے provider sign-ins چلاتا 
 | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | سرور کا install id اور request signatures                                                          | source code، repository contents، diffs یا pull request کا متن                            |
 | sign-in کے دوران وہ provider account جس نے sign in کیا                                              | tickets، transcripts یا workspace database میں کوئی بھی چیز                              |
-| کون سا workspace کسی credential کا ہے، seal کے اندر ایک opaque id کے طور پر                          | GitHub App کی private key: repository tokens کسی شخص کے sign-in سے آتے ہیں                |
+| کون سا workspace کسی credential کا ہے، seal کے اندر ایک opaque id کے طور پر                          | سرور کے اپنے app secrets: وہ کبھی سرور سے باہر نہیں جاتے                |
 | وہ repository جس کے لیے ایک one-repository GitHub token جاری ہوتا ہے                                 | at rest refresh tokens: وہ صرف ان seals کے اندر ہوتے ہیں جو سرور رکھتا ہے                 |
-| سرور سے منسلک GitHub installation ids                                                              | Linear secrets: سرور Linear کا code خود exchange کرتا ہے                                  |
+| سرور سے منسلک Slack team                                                                           | Linear secrets: سرور Linear کا code خود exchange کرتا ہے                                  |
 | GIF search terms، جب وہ Klipy proxy کرتا ہے                                                         | passwords، pairing keys یا model provider keys                                              |
 | Slack event references (team، channel، message id) اور slash-command text                           | Slack message text: Connect اسے پہنچتے ہی drop کر دیتا ہے اور سرور خود Slack سے message پڑھتا ہے |
 
-Connect کم عمر state (staged sign-ins، nonces، caches) زیادہ سے زیادہ 15 منٹ رکھتا ہے۔ اس کے صرف دیرپا records installation bindings ہیں: کون سے سرورز کون سا GitHub installation استعمال کر سکتے ہیں، اور ہر Slack team کس سرور سے منسلک ہے۔ errors میں صرف ایک code ہوتا ہے، provider کا response کبھی نہیں، اور logs install ids کو صرف keyed hashes کے طور پر ریکارڈ کرتے ہیں۔
+Connect تیار کیے گئے sign-ins، nonces اور caches کو زیادہ سے زیادہ 10 منٹ، اور گھنٹہ وار استعمال کے counters کو زیادہ سے زیادہ دو گھنٹے رکھتا ہے۔ ایک فرد کے طور پر جاری ہونے والا one-repository GitHub token اُس sign-in سے سیل شدہ رہتا ہے جس نے اسے مانگا، جب تک وہ ختم نہ ہو (زیادہ سے زیادہ 8 گھنٹے)، تاکہ Connect اسے دوبارہ دے سکے اور disconnect پر منسوخ کر سکے۔ اس کے صرف دیرپا ریکارڈز Slack bindings ہیں (ہر Slack team کس سرور سے منسلک ہے) اور retired install ids۔ errors میں صرف ایک code ہوتا ہے، provider کا response کبھی نہیں۔ logs install ids کو صرف keyed hashes کے طور پر ریکارڈ کرتے ہیں، اور GitHub token کو صرف وہ `hashed_token` جو GitHub کا organization audit log اس کے لیے دکھاتا ہے، تاکہ کوئی organization owner دونوں کو ملا سکے۔
 
 ## موڈز
 
@@ -49,7 +49,26 @@ Connect کم عمر state (staged sign-ins، nonces، caches) زیادہ سے ز
 
 یہ build کوئی hosted configuration key compile نہیں کرتا، اس لیے hosted mode `hosted_unprovisioned` رپورٹ کرتا ہے اور کوئی lane پیش نہیں کرتا۔ اپنی apps اور custom Connect کام کرتے ہیں۔
 
+hosted Connect کو ایک ہی container میں چلایا جاتا ہے۔ اس کی seal key اور مشترکہ GitHub App کی private key وہاں environment variables ہیں، اُن keys کی طرح نہیں جو ایک vault میں صرف sign یا decrypt کرتی ہیں، جیسا کہ GitHub App کی private key کے لیے تجویز کیا جاتا ہے۔ یہ موجودہ سیٹ اپ کی ایک معلوم کمزوری ہے۔
+
 سرور زیادہ سے زیادہ ہر 10 منٹ میں Connect کی configuration پڑھتا ہے، اور ہر call کے لیے زیادہ سے زیادہ 5 سیکنڈ انتظار کرتا ہے۔ جب Connect تک رسائی نہ ہو تو آخری درست configuration استعمال ہوتی رہتی ہے اور Settings اسے stale نشان زد کرتی ہے۔
+
+## ہر workspace کا اپنا انتخاب
+
+**ترتیبات → ورک اسپیس → انٹیگریشنز → Control Center Connect** سرور کے انتخاب کو ایک workspace کے لیے بدل دیتا ہے۔ ہر رکن اسے اور ہر sign-in کہاں چلتا ہے یہ دیکھتا ہے؛ صرف workspace کا ایڈمن اسے بدلتا ہے۔
+
+| انتخاب                          | رویہ                                                                                                                                          |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **اس سرور جیسا**                | ڈیفالٹ۔ workspace وہی چلاتا ہے جو سرور کے مالک نے چنا ہے؛ آپشن اس کا نام دیتا ہے                                                             |
+| **Control Center کی ایپس استعمال کریں** | Control Center کا hosted Connect، چاہے سرور کچھ بھی استعمال کرے                                                                       |
+| **اپنی ایپس استعمال کریں**      | صرف workspace کی اپنی ایپس: اس کی GitHub App، Google client، Linear application، Klipy key اور Slack app۔ جس provider کی اپنی نہ ہو وہ یہاں بند ہے؛ جزوی ایپ setup کی غلطی ہے |
+| **اپنا Connect سرور استعمال کریں** | ایک HTTPS پتے پر Connect جسے workspace نام دیتا ہے۔ نجی یا مقامی نیٹ ورک کے پتے رد ہوتے ہیں                                                |
+
+- **اس سرور جیسا** کے علاوہ کوئی بھی انتخاب ہر فرد کے GitHub اور Linear sign-ins کو workspace کے اپنے ایک slot میں رکھتا ہے، تاکہ وہ سرور بھر کے sign-ins کے ساتھ کبھی مل نہ جائیں
+- تبدیلی سے پہلے پوچھا جاتا ہے: workspace میں سب کو GitHub، Linear اور Google Calendar میں نئی ایپس کے ذریعے دوبارہ sign in کرنا ہوتا ہے
+- workspace کا اپنا Slack app کنکشن ہر انتخاب کے تحت کام کرتا ہے؛ **⁨Slack⁩ میں Control Center شامل کریں** انتخاب کی پیروی کرتا ہے
+- `CC_CONNECT_URL` workspaces کو اپنا Connect رکھنے سے بھی روکتا ہے: وہ سرور کی پیروی کر سکتے ہیں یا اپنی ایپس استعمال کر سکتے ہیں
+- workspace کا اپنا custom Connect صرف اسی workspace کے لیے پہلی بار استعمال پر trusted ہوتا ہے: وہاں **نئی ایپس پر بھروسہ کریں** کبھی سرور یا کسی دوسرے workspace کے بھروسے کو نہیں بدلتا
 
 ## انسٹال کی شناخت
 
@@ -72,11 +91,31 @@ Connect کے ذریعے sign-in ایک **credential seal** واپس دیتا ہ�
 
 ## GitHub انسٹالز
 
-مشترکہ GitHub App کا installation کسی سرور کے لیے صرف اسی وقت قابلِ استعمال ہے جب Connect اسے اس سرور کے install id سے bind کر چکا ہو۔
+مشترکہ GitHub App کا installation کسی بھی سرور سے استعمال ہو سکتا ہے۔ Connect کوئی ریکارڈ نہیں رکھتا کہ کون سا سرور اسے استعمال کر سکتا ہے۔
 
-- **ترتیبات → ورک اسپیس → عام** میں **GitHub ایپ انسٹال کریں** ایک 15 منٹ کے ticket کے ساتھ GitHub کھولتا ہے۔ Connect نیا installation اس وقت bind کرتا ہے جب installer ذاتی account کا مالک ہو یا organization کا admin ہو
-- **اس سرور کو مجاز کریں** پہلے سے موجود installation کو bind کرتا ہے۔ یہ صرف organization admin کر سکتا ہے
-- ایک organization installation کئی سرورز سے bind ہو سکتا ہے؛ ہر ایک کو کسی admin کی authorization چاہیے
+- **ترتیبات → ورک اسپیس → انٹیگریشنز** میں **GitHub ایپ انسٹال کریں** app کا GitHub پر install page کھولتا ہے۔ سرور لنک Connect کی configuration میں app کے نام سے بناتا ہے
+- ایک repository کے token کے لیے ضروری ہے کہ app repository کے owner پر انسٹال ہو اور sign in کرنے والے شخص کو اس repository تک رسائی ہو۔ یہ اس شخص کا اپنا token ہے، اس کے role تک محدود، اس سے زیادہ کبھی نہیں
+- ایک organization GitHub پر Control Center کو محدود کرتی ہے: installation ہٹا کر، repositories محدود کر کے، یا شخص کو ہٹا کر
+- وہ کالز جو صرف شخص کر سکتا ہے، جیسے اس کی installations کی فہرست، Connect سرور کو شخص کا اپنا App user token دیتا ہے، ایک repository کا token نہیں۔ کسی سرور پر سائن ان کرنا اُس سرور پر اس token کے ساتھ بھروسہ کرنا ہے
+- جو تنظیم GitHub کی IP allow list نافذ کرتی ہے وہ hosted Connect استعمال نہیں کر سکتی، کیونکہ اس کے پتے مقرر نہیں۔ وہ اس کے بجائے اپنی GitHub App رجسٹر کرتی ہے، اپنے سرورز پر یا اس Connect پر جو وہ چلاتی ہے
+- **منقطع کریں** صرف اسی sign-in کو منسوخ کرتا ہے: Connect اپنا refresh token ایک بار استعمال کرتا ہے اور جو واپس آئے اسے حذف کرتا ہے، اپنا user token اور وہ one-repository tokens حذف کرتا ہے جو اس کے لیے جاری کیے گئے تھے۔ اس کے seal کی کوئی بھی نقل، کہیں بھی رکھی ہو، کام کرنا بند کر دیتی ہے۔ شخص کے دوسرے سرورز اور workspaces پر sign-ins کام کرتے رہتے ہیں۔ Control Center کو کسی GitHub اکاؤنٹ سے مکمل طور پر ہٹانے کے لیے، GitHub میں **ترتیبات → Applications → Authorized GitHub Apps → Revoke** کے تحت اسے منسوخ کریں
+
+### مشترکہ بوٹ
+
+App کے بوٹ (`as: app`) کے طور پر جاری ہونے والے tokens ہر اُس سرور کے لیے GitHub پر ایک ہی بوٹ دکھاتے ہیں جو ایک ہی Connect استعمال کرتا ہے: GitHub ان سرورز میں فرق نہیں کر سکتا۔
+
+- ہر سرور بوٹ سے پڑھنے اور تبصرے کرنے دے سکتا ہے: `read`، `review` اور `comment` (issues اور pull requests پر تبصرے، labels، assignees اور reactions)
+- بوٹ کے طور پر pull request کا ریویو (`bot`، جو pull requests لکھتا ہے) صرف اُن سرورز کے لیے اجازت یافتہ ہے جنہیں Connect آپریٹر `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` میں فہرست میں ڈالتا ہے۔ باقی ہر سرور کو `needs_requester` کا جواب ملتا ہے اور ریویو ذمہ دار شخص کے اپنے token پر شائع ہوتا ہے، جسے GitHub اسی شخص تک محدود کرتا ہے: ریویو ان کے نام سے دکھائی دیتا ہے۔ اس میں AI ریویو اشاعت، ریویو کے تبصرے اور ریویورز کی درخواستیں شامل ہیں
+- push کرنا، branch بنانا اور pull request کھولنا (`write`) کبھی مشترکہ بوٹ کے طور پر جاری نہیں ہوتے۔ وہ ہمیشہ درخواست کرنے والے کے اپنے sign-in کو استعمال کرتے ہیں
+- pull request کی منظوری کبھی خودکار نہیں ہوتی، کسی بھی token پر
+- اپنی GitHub App رکھنے والا سرور یا ورک اسپیس یہ سب کچھ بوٹ کے طور پر رکھتا ہے، ریویوز سمیت
+
+### تنظیم کے مالکان اور اراکین کو کیا جاننا چاہیے
+
+- جس سرور پر کوئی سائن ان ہو وہ اس شخص کا App user token رکھتا ہے: ہر token زیادہ سے زیادہ 8 گھنٹے، جب تک وہ disconnect نہ کرے تب تک تجدید ہوتی رہتی ہے۔ یہ اس شخص کے طور پر ہر اُس repository پر عمل کر سکتا ہے جہاں مشترکہ App انسٹال ہو اور جہاں وہ رسائی رکھتا ہو۔ Connect کسی retire شدہ یا رد شدہ install کے لیے سرور کو مستقل طور پر کاٹ سکتا ہے، لیکن جو token پہلے دیا جا چکا ہو وہ ختم ہونے تک درست رہتا ہے
+- مشترکہ GitHub App کو کسی تنظیم پر انسٹال کرنا ہر Control Center سرور کے لیے رضامندی ہے جہاں کوئی رکن سائن ان ہو، کسی ایک سرور کے لیے نہیں
+- بوٹ مشترک ہے، جیسا کہ اوپر: کوئی تنظیم GitHub پر یہ نہیں بتا سکتی کہ کس سرور نے بوٹ کے طور پر عمل کیا
+- جو تنظیم اپنی حد چاہتی ہے وہ اپنی GitHub App رجسٹر کرتی ہے اور اپنا Connect چلاتی ہے ([Connect سرور چلائیں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں/))، یا اپنے سرورز پر App کنفیگر کرتی ہے
 
 ## Configuration پر اعتماد
 
@@ -87,7 +126,7 @@ Connect کے ذریعے sign-in ایک **credential seal** واپس دیتا ہ�
 
 ## عملیات
 
-Connect کی تمام settings صرف سرور owner کے لیے ہیں۔
+سرور کی Connect settings صرف سرور owner کے لیے ہیں۔
 
 | Operation             | کیا کرتا ہے                                                                                    |
 | --------------------- | ---------------------------------------------------------------------------------------------- |
@@ -95,25 +134,37 @@ Connect کی تمام settings صرف سرور owner کے لیے ہیں۔
 | `connect.configure`   | `hosted`، `custom` (`url` کے ساتھ) یا `off` سیٹ کرتا ہے                                       |
 | `connect.test`        | configuration دوبارہ fetch کرتا ہے اور health رپورٹ کرتا ہے                                    |
 | `connect.confirmPins` | custom Connect کے تبدیل شدہ identifiers قبول کرتا ہے                                            |
-| `connect.rotateKey`   | نیا install key بناتا ہے۔ اس سرور پر Connect کے ذریعے ہر sign-in کام کرنا بند کر دیتا ہے            |
+| `connect.rotateKey`   | نیا install key اور نیا install id بناتا ہے (`force` اسے بدل دیتا ہے، حتیٰ کہ جب کوئی Connect پرانی کلید ختم نہ کر سکا ہو)؛ دیکھیں [install key بدلنا](#install-key-rotate-کرنا)            |
+
+ایک workspace کے اپنے انتخاب کی اپنی operations ہیں، ہر ایک workspace کا نام لیتا ہے:
+
+| Operation                      | کون                | کیا کرتا ہے                                                                         |
+| ------------------------------ | ------------------ | ----------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | کوئی بھی رکن       | انتخاب، وہ کیا بنتا ہے، health اور ہر provider کا source۔ Install id اور زیرِ التوا pins صرف ایڈمنز کے لیے |
+| `workspaceConnect.set`         | workspace ایڈمن    | `inherit`، `hosted`، `custom` (`url` کے ساتھ) یا `own` سیٹ کرتا ہے                  |
+| `workspaceConnect.test`        | workspace ایڈمن    | workspace کی Connect configuration دوبارہ fetch کرتا ہے اور health رپورٹ کرتا ہے   |
+| `workspaceConnect.confirmPins` | workspace ایڈمن    | workspace کے custom Connect کے تبدیل شدہ identifiers قبول کرتا ہے                   |
 
 sign-ins خود `oauth.lanes`، `oauth.begin`، `oauth.status`، `oauth.complete`، `oauth.connections` اور `oauth.disconnect` استعمال کرتے ہیں۔ شخص ہمیشہ وہی caller ہوتا ہے جو sign in ہے۔
 
 ## Connect کے ذریعے sign-in
 
-1. سرور Connect سے lane شروع کرنے کو کہتا ہے اور provider کا authorize URL وصول کرتا ہے، جسے وہ دکھانے سے پہلے جانچتا ہے
+1. سرور Connect سے lane شروع کرنے کو کہتا ہے اور provider کا authorize URL وصول کرتا ہے، جسے وہ دکھانے سے پہلے جانچتا ہے۔ GitHub ہمیشہ اپنا account picker دکھاتا ہے
 2. شخص browser میں منظوری دیتا ہے۔ provider شخص کو Connect پر واپس بھیجتا ہے
-3. Connect ایک 8-character code اور ایک `control-center://oauth-done` link دکھاتا ہے
-4. شخص code کو app میں ٹائپ کرتا ہے، یا link پر جاتا ہے۔ سرور code اور request کے اپنے ثبوت کے ساتھ sign-in claim کرتا ہے
+3. Connect دکھاتا ہے کہ وہ سرور جس نے سائن ان شروع کیا شخص کے طور پر کیا کر سکے گا، اور کتنی دیر کے لیے۔ Connect نہیں بتا سکتا کہ وہ سرور کون چلاتا ہے، اس لیے صفحہ شخص سے جاری رکھنے کو تبھی کہتا ہے جب اس نے سائن ان خود شروع کیا ہو، اور اگر کسی نے اسے link بھیجا ہو تو بند کرنے کو کہتا ہے۔ جب براؤزر اُس نیٹ ورک سے مختلف نیٹ ورک پر ہو جہاں سے سائن ان شروع ہوا تھا، تو صفحہ یہ بتاتا ہے: یہ کسی hosted سرور یا کسی دوسرے ڈیوائس کے لیے معمول ہے، اور یہی phishing کی شکل بھی ہے۔ **منسوخ کریں** سائن ان ختم کرتا ہے: provider کا code کبھی استعمال نہیں ہوتا۔ ہر صفحہ ایک بار جواب دیتا ہے: وہ جواب جو اُس صفحے سے نہ آیا ہو جو Connect نے ابھی دکھایا، رد ہو جاتا ہے
+4. **جاری رکھیں** کے بعد Connect ایک 8-character code اور ایک `control-center://oauth-done` link دکھاتا ہے۔ جس کے پاس code پہنچے اسے ابھی منظور کی گئی رسائی مل جاتی ہے، اس لیے یہ صرف اُسی جگہ جانا چاہیے جہاں سائن ان شروع ہوا
+5. شخص code کو app میں ٹائپ کرتا ہے، یا link پر جاتا ہے۔ سرور code اور request کے اپنے ثبوت کے ساتھ sign-in claim کرتا ہے
 
-sign-in 10 منٹ میں ختم ہو جاتا ہے۔ پانچ غلط codes اسے ختم کر دیتے ہیں۔ جو link یہ app شروع نہیں کرتی وہ **یہ سائن اِن یہاں سے شروع نہیں ہوا** کے ساتھ مسترد ہوتا ہے۔
+sign-in 10 منٹ میں ختم ہو جاتا ہے۔ پانچ غلط codes اسے ختم کر دیتے ہیں۔ جو link یہ app شروع نہیں کرتی وہ **یہ سائن اِن یہاں سے شروع نہیں ہوا** کے ساتھ مسترد ہوتا ہے۔ Connect ہر نیٹ ورک پتے سے شروع ہونے والے sign-ins کی، اور GitHub tokens کے ہر شخص اور سرور کے لیے، ہر شخص کے سرورز کے پار، ہر پتے اور پوری ایپ کے لیے جاری ہونے کی حد لگاتا ہے۔ نئے sign-ins کا اپنا بجٹ ہے، اس لیے وہ دوسرے لوگوں کی تجدیدات کو کبھی روکتے نہیں۔ حد سے آگے کوئی کال `rate_limited` کے ساتھ رد ہوتی ہے، اور سرور بعد میں دوبارہ کوشش کرتا ہے، بغیر کسی کو سائن آؤٹ کیے۔ شخص کی حد سے آگے کا sign-in GitHub پر واپس لے لیا جاتا ہے اور رد ہو جاتا ہے۔
 
 ## Install key rotate کرنا
 
-Connect card پر **کلید بدلیں**، یا `cc_server connect rotate-key --yes`:
+صرف سرور کا مالک کلید بدل سکتا ہے، **ترتیبات → سرور → سنگل سائن آن** میں **Control Center Connect** کارڈ پر **کلید بدلیں** سے۔ اس کے لیے کوئی کمانڈ نہیں ہے۔ بدلنے سے:
 
-- سرور کو نیا install key اور نیا install id دیتا ہے
-- اس Connect کے ذریعے چلنے والی ہر lane سے سب کو sign out کر دیتا ہے
+- ہر lane سے سب کو sign out کر دیتا ہے جو اس Connect کے ذریعے چلتی ہے۔ ہر Connect سرور کے لیے جس کے ساتھ پرانی کلید استعمال ہوئی تھی، سرور وہاں سے رکھے ہوئے GitHub اور Slack sign-ins منسوخ کرتا ہے (Google sign-in کے پاس منسوخ کرنے کو کچھ نہیں ہوتا اور وہ خود ختم ہو جاتا ہے)
+- ان میں سے ہر Connect سرور پر پرانا install id retire کرتا ہے، پرانی کلید سے دستخط شدہ اور اُس ایک credential seal سے ثابت شدہ جو سرور اس Connect سے رکھتا ہے۔ اس کے بعد Connect پرانی کلید والی ہر درخواست رد کرتا ہے، اس لیے اس سرور سے لیا گیا seal یا پرانی کلید کی نقل بے کار ہے، اور پرانے id سے منسلک Slack workspaces آزاد ہو جاتے ہیں تاکہ دوبارہ جڑ سکیں۔ جو tokens پہلے ہی جاری ہو چکے ہیں وہ ختم ہونے تک درست رہتے ہیں (بوٹ token کے لیے ایک گھنٹہ، کسی شخص کے لیے آٹھ گھنٹے)۔ جس Connect سرور کا کوئی seal اس کے پاس نہ ہو، اسے retire کرنے کو کچھ نہیں ہوتا اور وہ چھوڑ دیا جاتا ہے
+- پھر سرور کو نئی install key اور نیا install id دیتا ہے
+- اگر کوئی Connect سرور تک نہ پہنچے، یا پرانا id retire کرنے سے انکار کرے، تو کلید بدلنے سے پہلے رک جاتا ہے اور **Connect پرانی کلید ختم نہیں کر سکا** دکھاتا ہے۔ **پھر بھی بدلیں** کلید ہر حال میں بدل دیتا ہے؛ تب پرانا install id اس Connect پر اپنے tokens ختم ہونے تک قابلِ استعمال رہتا ہے، GitHub کے لیے زیادہ سے زیادہ 8 گھنٹے
 - سرور کی اپنی apps کے ذریعے sign-ins کو اپنی حالت پر چھوڑ دیتا ہے
 - custom Connect کی allowlist میں نیا install id شامل کرنے کی ضرورت ہوتی ہے
 
@@ -125,7 +176,7 @@ Connect card پر **کلید بدلیں**، یا `cc_server connect rotate-key -
 | `signature`            | hosted configuration اپنی signature check میں ناکام ہوئی             |
 | `rollback`             | Connect نے وہ configuration پیش کی جو سرور پہلے دیکھ چکا تھا اس سے پرانی ہے |
 | `unreachable`          | سرور Connect تک نہیں پہنچ سکتا                                         |
-| `install_blocked`      | Connect یہ install id allow نہیں کرتا                                  |
+| `install_blocked`      | Connect یہ install id allow نہیں کرتا، یا یہ retire ہو چکا ہے                                  |
 | `pins_changed`         | custom Connect نے مختلف app identifiers کا اعلان کیا                    |
 | `protocol`             | Connect نے ایسے format میں جواب دیا جسے یہ سرور نہیں سمجھتا               |
 

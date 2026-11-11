@@ -201,7 +201,7 @@ class _PanelHeader extends StatelessWidget {
           if (hasEntries)
             CcIconButton(
               icon: AppIcons.trash2,
-              variant: CcButtonVariant.destructive,
+              variant: CcButtonVariant.ghostDestructive,
               size: CcButtonSize.sm,
               onPressed: onClearAll,
               tooltip: l10n.clearAll,

@@ -2,7 +2,7 @@
 title: Back up and restore
 description: Take a snapshot of the install, move a workspace between machines, restore one workspace or all of them, and keep copies somewhere else.
 slug: en-GB/manual/guides/back-up-and-restore
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 This guide covers the five things people actually do with backups: take one, collect it,
@@ -16,7 +16,8 @@ Everything here lives at **Settings → Server → Backup & restore**.
 
 - A **full client** — the desktop or web app. A paired phone can trigger none of this, by design.
 - To take, list, download or delete an **install snapshot**: the install's **owner**.
-- For per-workspace actions: **admin** of that workspace to export it or to list and download its scheduled backups, **owner** to import or delete it or to delete one of its backups.
+- For per-workspace actions: **admin** of that workspace to export it or to list and download its scheduled backups, **owner** to delete it or to delete one of its backups.
+- To **restore** a workspace, from an uploaded file, a scheduled backup or a snapshot: the [server owner](/en-GB/manual/concepts/authorisation/#the-server-owner), who must also be that workspace's owner. A restore makes the server adopt a database file as its own, so it is the server owner's call. Everyone else sees "Only the server owner can restore backups. You can still download them." in place of the restore actions.
 - For downloads and uploads: a paired full client on either a direct or brokered-relay connection. Both paths carry the file bytes through the same authenticated, end-to-end encrypted resource tunnel; the relay cannot read them.
 
 :::caution[Install snapshots are manual]
@@ -39,6 +40,13 @@ Both artefacts are **databases only**:
 
 - An **install snapshot** is a timestamped directory: `manifest.json`, `global.db` and one `<workspaceId>/workspace.db` per workspace.
 - A **workspace export** is that single `workspace.db` file.
+
+A workspace's database is the whole workspace: its conversations, run logs, code
+index, repository links, environment definitions and members. It also holds the
+workspace's pipeline webhook tokens and ticket-sync webhook secrets, in readable
+form. Store a downloaded workspace backup or export the way you store a secret.
+It holds no provider sign-ins, device keys or user secrets; those live in the
+global database and the server's secret store.
 
 Neither carries the rest of the data directory: `secrets.json` (pairing keys, provider
 credentials, SSO), a workspace's `blobs/` (images pasted into messages), `skills/`,
@@ -69,7 +77,7 @@ never written to (there is no file yet), or one whose copy failed — check the 
 
 ## Schedule workspace backups and retention
 
-Open **Settings → Pipelines → Pipeline templates** for the workspace and find
+Open **Settings → Workspace → Pipeline templates** for the workspace and find
 **Workspace backup**. Its enabled schedule runs every Sunday at 03:00 UTC:
 **Back up workspace**, followed by **Delete backups older than** (30 days by
 default). The second node runs only after the backup succeeds. You can change
@@ -92,7 +100,7 @@ A workspace you are not an admin of says so in its row instead of listing its ba
 
 Expand a row to see each backup, newest first:
 
-- **Restore** replaces the workspace's current database with this backup. Export the workspace first if you may need to undo it. Needs **owner**.
+- **Restore** replaces the workspace's current database with this backup. Export the workspace first if you may need to undo it. Needs the server owner, who must also own the workspace.
 - **Download** saves the file on the machine you are using. The backup stays on the server.
 - **Copy path** copies its location on the server.
 - **Delete** removes this backup permanently, once you type the workspace's name. Needs **owner**.
@@ -105,7 +113,7 @@ install **owner** sees them in the same list, marked **Workspace deleted**, and 
 download or delete them there. Nobody else sees those rows.
 
 They have no **Restore**, since there is no workspace to restore into. To bring one
-back, download it, create a workspace, and upload the file as described in
+back, download it, create a workspace (only the server owner can), and upload the file as described in
 [Move a workspace to another install](#move-a-workspace-to-another-install).
 
 ## Delete an install snapshot
@@ -144,9 +152,13 @@ One workspace is one database file, so handing it over is a file operation.
 2. On the **destination** server, create (or pick) the workspace that will receive it.
 3. Expand that workspace, and under **Restore from this device** press **Choose a file and upload**. Pick the `.db` you downloaded.
 
-If both servers are the same machine you are sitting at, **Save on server** plus
-**Import** → **Choose file** does the same thing without the round trip; the import
-dialog's paths resolve on the server host.
+Step 3 is a restore, so it needs the destination's server owner, who must also own
+that workspace.
+
+If both servers are the same machine you are sitting at, **Save on server** on the
+source, then the file's path in **Workspace database file** and **Import** on the
+destination, does the same thing without the round trip; that path resolves on the
+server host.
 
 :::caution[Import replaces everything]
 Importing overwrites everything the target workspace currently holds, and it cannot be
@@ -160,10 +172,14 @@ the file's paired devices and user ids belong to the install it came from and wi
 resolve on this one — the workspace's own data is intact, but re-check membership after
 adopting it.
 
-Chat bot tokens live beside the database, not inside it, so a workspace you hand to
-somebody else carries no live credentials. The receiving install reconnects its own.
+Chat bot tokens and provider sign-ins live outside the database, so the receiving
+install reconnects its own. The file does carry the workspace's pipeline webhook
+tokens and ticket-sync webhook secrets, so a workspace you hand to somebody else
+hands them those too. Rotate them afterwards if the recipient should not have them.
 
 ## Restore one workspace from a snapshot
+
+You need to be the server owner and the workspace's owner.
 
 1. Under **Install snapshots**, expand the snapshot you want.
 2. Find the workspace's row and press **Restore**.
@@ -174,9 +190,10 @@ workspace's file — deliberately, so there is no second mechanism that could tr
 same file differently.
 
 A row may say **Not on this server any more**, with **Restore** disabled: the snapshot
-holds a workspace this install no longer has. Bring it back by hand — create a workspace,
-then under **Workspace data** import into it from
-`<snapshot path>/<old workspace id>/workspace.db`. The expanded snapshot shows its own
+holds a workspace this install no longer has. Bring it back by hand — create a workspace (server owner only),
+then under **Workspace data** enter
+`<snapshot path>/<old workspace id>/workspace.db` in its **Workspace database file**
+field and press **Import**. The expanded snapshot shows its own
 **Path on the server** in a copy field, and the row's title is the old workspace id, so
 you have both halves of that path in front of you.
 
@@ -340,9 +357,11 @@ Do this once when you set backups up, and again whenever you change where they a
 | Symptom                                                                  | Cause and fix                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Download or upload fails after a connection changes                     | Retry on the active paired connection. Direct and relay both support encrypted file transfer; neither exposes a plaintext HTTP fallback |
-| "The server refused"                                                     | Role. Taking or listing an install snapshot needs the install's operator. Downloading a workspace needs admin, restoring one needs owner, a whole snapshot zip needs the install's operator |
-| "This server has no backup surface"                                      | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
-| "The file is larger than the server accepts"                             | Uploads are capped at 8 GiB. Put the file on the server host and use **Import** → **Choose file** instead                 |
+| "The server refused. Downloading a workspace needs the workspace admin role. Restoring one needs the server owner, who must also own the workspace. A whole snapshot needs the server owner." | Role. Taking, listing or downloading an install snapshot needs the server owner. Downloading a workspace needs admin; restoring one needs the server owner, who must also own the workspace |
+| "File transfers aren't set up for this connection yet. Reconnect to the server to download or upload a backup." | This connection to the server has no file transfer lane, so **Download** and the upload are turned off. Reconnect to the server, then try again |
+| "Only the server owner can restore backups. You can still download them." | Restoring replaces a workspace's database on the server host, so only the server owner restores. Download the backup and ask them |
+| "This server has no backup surface."                                     | The host has no backup port wired — a demo server. The operations are absent rather than refused                          |
+| "The file is larger than the server accepts."                            | Uploads are capped at 8 GiB. Put the file on the server host and enter its path in **Workspace database file**           |
 | Import refused: not a Control Center workspace database                  | The file has no `workspace_meta` row — it is not a workspace export, or it is truncated. Nothing was replaced             |
 | A snapshot is listed **Incomplete**                                      | Its manifest is missing or names absent files. Take a fresh one; adopt individual workspace files from it in the meantime |
 | A snapshot says workspaces were not captured                             | Those workspaces have never been written to, or their copy failed. Check the server log                                  |

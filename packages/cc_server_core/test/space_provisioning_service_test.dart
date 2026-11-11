@@ -84,10 +84,6 @@ void main() {
     return SpaceProvisioningService(
       log: log,
       provisioner: provisioner,
-      writeMcpConfig: (cwd, {workspaceId, agentId, conversationId}) async {
-        provisioner.writtenMcpDirs.add(cwd);
-        File('$cwd/.mcp.json').writeAsStringSync('{}');
-      },
       agentRepository: agentRepo,
       messagingRepository: messagingRepo,
       workspaceRepository: workspaceRepo,
@@ -256,10 +252,7 @@ void main() {
     );
   });
 
-  test('a failed overlay writes no .mcp.json in its place', () async {
-    // The agent's own directory is shared by every space it is in. Writing
-    // `.mcp.json` there for an overlay that does not exist would let
-    // verification pass on a space that was never prepared.
+  test('a failed overlay fails the space', () async {
     workspaceRepo.repos = [_repo('r1')];
     messagingRepo.participants = [_participant('a1')];
     agentRepo.agents = {'a1': _agent('a1')};
@@ -272,7 +265,6 @@ void main() {
 
     await service.provision(workspaceId: 'ws', spaceId: 'ch');
 
-    expect(provisioner.writtenMcpDirs, isEmpty);
     expect(statusCalls.last, ('ch', SpaceProvisioningStatus.failed));
   });
 
@@ -287,7 +279,6 @@ void main() {
 
     expect(statusCalls.last, ('ch', SpaceProvisioningStatus.ready));
     expect(provisioner.calls, 1);
-    expect(provisioner.writtenMcpDirs, isNotEmpty);
   });
 
   test('cancel stops the clone and reports stopped, not failed', () async {
@@ -469,7 +460,6 @@ class _RecordingLog implements SpaceProvisioningLogPort {
 
 class _FakeProvisioner implements RepoWorkspaceProvisionerPort {
   int calls = 0;
-  final writtenMcpDirs = <String>[];
 
   /// When set, [ensureSpaceWorkspace] blocks (a hung git fetch) so the
   /// watchdog-timeout path can be exercised. Cancelling the space releases it,

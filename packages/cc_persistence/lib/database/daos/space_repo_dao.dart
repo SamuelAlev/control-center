@@ -31,6 +31,20 @@ class SpaceRepoDao extends DatabaseAccessor<WorkspaceDatabase>
     return rows.map((r) => r.repoId).toList(growable: false);
   }
 
+  /// Every space's explicit repo selection in [workspaceId], by space id. A
+  /// space with no rows is absent (its default: all workspace repos, unless
+  /// its `no_repos` flag says none).
+  Future<Map<String, List<String>>> repoIdsBySpace(String workspaceId) async {
+    final rows = await (select(
+      spaceReposTable,
+    )..where((t) => t.workspaceId.equals(workspaceId))).get();
+    final bySpace = <String, List<String>>{};
+    for (final r in rows) {
+      (bySpace[r.spaceId] ??= []).add(r.repoId);
+    }
+    return bySpace;
+  }
+
   /// The base branch each selected repo's worktree is cut from, for the repos
   /// that pin one. A repo absent from the map takes its own default branch.
   Future<Map<String, String>> repoBranchesForSpace(

@@ -11,8 +11,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// Implements the domain interface over the host's `isolated_repo.*` ops + the
 /// `isolated_repo.watchForWorkspace` subscription, mapping the [IsolatedRepoDto]
 /// wire shape back to [IsolatedRepo]. The host owns persistence; this client
-/// never touches a database. Reads, the watch and the upsert/delete row writes
-/// are served. The two cross-workspace teardown lookups source no workspace and
+/// never touches a database. Reads, the watch and row deletion are served;
+/// only the server's provisioner writes a row, since its path and source
+/// path are what release later archives and destroys. The two cross-workspace teardown lookups source no workspace and
 /// each returned row carries its own — mirrors the documented exemption.
 class RpcIsolatedRepoRepository implements IsolatedRepoRepository {
   /// Creates an [RpcIsolatedRepoRepository] over [client].
@@ -38,19 +39,6 @@ class RpcIsolatedRepoRepository implements IsolatedRepoRepository {
     createdAt: d.createdAt == null
         ? DateTime.fromMillisecondsSinceEpoch(0)
         : DateTime.parse(d.createdAt!),
-  );
-
-  static IsolatedRepoDto _toDto(IsolatedRepo r) => IsolatedRepoDto(
-    id: r.id,
-    workspaceId: r.workspaceId,
-    spaceId: r.spaceId,
-    repoId: r.repoId,
-    path: r.path,
-    branch: r.branch,
-    backend: r.backend.name,
-    sourcePath: r.sourcePath,
-    ticketId: r.ticketId,
-    createdAt: r.createdAt.toIso8601String(),
   );
 
   @override
@@ -97,8 +85,11 @@ class RpcIsolatedRepoRepository implements IsolatedRepoRepository {
   Stream<List<IsolatedRepo>> watchForWorkspace(String workspaceId) =>
       _remote.watch(workspaceId).map((dtos) => dtos.map(_fromDto).toList());
 
+  /// Refused: a worktree row is written only by the server's provisioner.
   @override
-  Future<void> upsert(IsolatedRepo repo) => _remote.upsert(_toDto(repo));
+  Future<void> upsert(IsolatedRepo repo) => throw UnsupportedError(
+    'Worktree rows are written by the server that provisions them',
+  );
 
   @override
   Future<void> deleteById(String workspaceId, String id) =>

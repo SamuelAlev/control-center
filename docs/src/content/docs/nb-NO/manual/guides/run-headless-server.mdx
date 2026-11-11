@@ -3,7 +3,7 @@ title: Kjør en headless server
 description: Kjør den headless binærfilen cc_server eller Docker-imaget dens, par en klient til den og konfigurer den med hele flagg- og miljøflaten i CLI-et.
 dateModified: 2026-11-08
 slug: nb-NO/handbok/slik-gjor-du/kjor-headless-server
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Kjør `cc_server` på en maskin som står på hele tiden, og koble deg deretter til
@@ -170,9 +170,7 @@ enhetskategorien — `desktop`, `ios`, `android`, alt annet er en nettklient),
 `--label` (standard er plattformnavnet pluss vertsnavnet til denne maskinen),
 `--host` (verten som skrives ut i URL-en, siden loopback ikke kan nås fra en
 annen maskin) og `--client-url`. Kjører du `pair` på nytt, roteres nøkkelen til
-den enheten, og de aktive øktene dens avsluttes. Paring oppretter aldri et
-arbeidsområde: onboardingen til klienten som kobler til, navngir og oppretter det
-første.
+den enheten, og de aktive øktene dens avsluttes. Paring oppretter aldri et arbeidsområde. Bare serverens eier oppretter arbeidsområder: på eierens klient navngir og oppretter onboardingen det første, og alle andre venter til eieren oppretter ett for dem, eller en arbeidsområdeadministrator inviterer dem.
 
 Med `--client-url` skriver den også ut en QR-kode som kan skannes fra
 terminalen, og som åpner nettklienten ferdig utfylt:
@@ -190,9 +188,7 @@ nøkkel i URL-fragmentet. **Remote**-telefonappen forventer en annen nyttelast
 byttes om. Se [Koble til en enhet](/nb-NO/handbok/slik-gjor-du/koble-til-enhet/).
 :::
 
-En legitimasjon utstedt av `cc_server pair` har **ingen utløpstid**; en som er
-utstedt i appen, utløper alltid etter 30 dager. Tilbakekall en enhet utstedt fra
-CLI-et fra **Innstillinger → Deg → Dine enheter** når du er ferdig med den.
+En legitimasjon utstedt av `cc_server pair` utløper etter 30 dager, på samme måte som en utstedt i appen; kjør `pair` på nytt for samme enhet for å utstede en ny. Tilbakekall en enhet utstedt fra CLI-et fra **Innstillinger → Deg → Dine enheter** når du er ferdig med den.
 
 Paringsnøkkelen autentiserer det obligatoriske Noise-håndtrykket; hver økt utleder
 ferske trafikknøkler og sjekker serverens signerte identitet. Beskytt
@@ -238,6 +234,16 @@ loopback; parede klienter bruker i stedet den krypterte tunnelen.
 
 Serveren kjører til `SIGINT`/`SIGTERM`, og avsluttes deretter ryddig.
 
+### Les oppstartslinjene
+
+To linjer forteller deg hvordan serveren er satt opp. Eksponeringslinjen, som skrives ut ved siden av klarbanneret, starter med `cc_server exposure:` og lister hvor langt den kan nås (`bind`, `tls`, `relay`, `tunnel`), om en serverens eier er registrert (`owner`), og hvordan agenter kjører på denne maskinen (`sandbox`):
+
+- `sandbox=native`: hver agentkjøring pakkes inn i OS-sandkassen.
+- `sandbox=off`: du startet serveren med `--sandbox off`, så alles agenter kjører uten begrensninger på denne maskinen.
+- `sandbox=unavailable`: verten har ingen sandkasse-backend (Windows, eller Linux uten `bwrap` og `socat`), så bare agentkjøringer serverens eier står ansvarlig for, starter. Alle andres kjøringer avvises med «Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her.»
+
+En sandkasse-linje tidligere i loggen sier det samme med ord, og når en backend mangler, nevner den hva som må installeres. Å kjøre andres agenter uten sandkasse er et valg serverens eier gjør én gang, for alle, med `--sandbox off`. Se [Konfigurer sandkasse-policyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/#sjekk-om-agentkjøringene-dine-er-sandkasset).
+
 ## Trinn 5: Koble til en klient
 
 Pek en klient mot server-URL-en og paringsnøkkelen fra trinn 3:
@@ -263,6 +269,8 @@ origin. Service Workeren dens fører HTTP- og WebSocket-trafikk gjennom den
 samme autentiserte krypterte økten som resten av klienten. `cc_server` dekrypterer
 hver forespørsel, videresender den til sin lokale code-server-backend og
 krypterer svaret tilbake til klienten. Filene forblir eid av serveren.
+
+Editoren kjører på serveren som serverens egen bruker, med terminalen, oppgavene og utvidelsene sine, så bare [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier) kan åpne den. En økt tilhører enheten og personen som åpnet den. Den åpnes med VS Codes arbeidsområdetillit på, så VS Code spør før den stoler på en mappe, og med automatiske oppgaver av, så et repos oppgaver aldri starter når den åpnes. Alle andre beholder appens innebygde editor og filvisninger; den fulle editoren tilbys ikke dem.
 
 Vert nettklienten over HTTPS eller en sikker loopback-origin, slik at Service
 Workere kan kjøre. Det vanlige nettbygget og utgivelsesskriptene inkluderer de
@@ -309,6 +317,8 @@ trenger ingen offentlig adresse for dem. Pålogginger via serverens egne apper
 sender nettleseren tilbake til serverens offentlige URL, så sett `--public-url`
 til en adresse som folks nettlesere kan nå.
 
+Dette er serverens standard. En arbeidsområdeadministrator kan gi ett arbeidsområde et annet valg under **Innstillinger → Arbeidsområde → Integrasjoner**. Med `CC_CONNECT_URL` satt kan et arbeidsområde fortsatt bytte til sine egne apper, men ikke til en Connect-server av sin egen; se [Valg for hvert arbeidsområde](/nb-NO/handbok/referanse/connect/#valg-for-hvert-arbeidsområde).
+
 For å være vert for Connect for andre servere fra denne, setter du
 `CC_SERVER_CONNECT_HOST=on`; se
 [Kjør en Connect-server](/nb-NO/handbok/slik-gjor-du/kjor-connect-server/#monter-connect-i-cc_server).
@@ -346,8 +356,8 @@ finne.
 `cc_server` er hele produktflaten, ikke et utvalg: RPC-datastien og
 abonnementene for repoet, MCP-verktøyendepunktet på `POST /mcp` og `GET /sse` på
 samme port, innkommende webhooker, medie- og skriftproxyene, tilbakekallinger for
-enkel pålogging, flåte-leaseprotokollen, RSS-henting på serversiden hvert
-30. minutt og vektorsøk (`sqlite_vector`-utvidelsen registreres som en
+enkel pålogging, flåte-leaseprotokollen, RSS-henting på serversiden hvert 30.
+minutt og vektorsøk (`sqlite_vector`-utvidelsen registreres som en
 prosessglobal auto-utvidelse og faller ned til fulltekstsøk bare der utvidelsen
 ikke er tilgjengelig).
 
@@ -358,7 +368,7 @@ avgjøres av medlemskapet og rollen den som kaller har i arbeidsområdet — ikk
 
 To ting du bør vite før du eksponerer porten utenfor loopback (TLS alene gir ikke den parede klientens ende-til-ende-kryptering eller autoriserer ressurser):
 
-- **MCP svikter lukket utenfor verten.** En MCP-flate uten token svarer bare på loopback. Å binde `any` utvider den ikke — en forespørsel utenfra avvises med «MCP requires a bearer token to answer non-loopback clients» til du konfigurerer ett (`mcp.setToken`, eller **Innstillinger → Server → MCP-servere**).
+- **MCP krever alltid tokenet sitt.** Serveren oppretter MCP-tokenet ved første oppstart, og hver forespørsel, også fra loopback, må sende det som `Authorization: Bearer <token>`. Det kan ikke slås av; serverens eier leser og roterer det i **Innstillinger → Server → MCP-servere**. Forespørsler fra en nettside, til en ukjent `Host`, eller en `POST` som ikke er JSON, avvises før tokenet sjekkes. Se [Bruk MCP-serveren](/nb-NO/handbok/slik-gjor-du/mcp-server/).
 - **`GET /healthz` er uautentisert med vilje**, med jokertegn i CORS, og publiserer serverens id, navn, identitetsfingeravtrykk og byggeversjon. Klienter trenger fingeravtrykket for å feste serveren, så dette er med vilje — men det betyr at enhver `cc_server` som kan nås, avslører så mye til hvem som helst som spør.
 
 ## Relaterte guider

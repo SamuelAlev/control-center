@@ -160,7 +160,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get guardrailClassPrCreate => 'Άνοιγμα pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Δημοσίευση ανασκόπησης ή συγχώνευση';
+  String get guardrailClassPrPublish => 'Ενημέρωση ή συγχώνευση pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Εγγραφή σε εξωτερικό tracker';
@@ -2576,9 +2576,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get activityToggledMcpServer => 'Εναλλάχθηκε ο διακομιστής MCP';
 
   @override
-  String get activityUpdatedMcpToken => 'Ενημέρωσε το token MCP';
-
-  @override
   String get activitySavedApiKey => 'Αποθήκευσε ένα κλειδί API';
 
   @override
@@ -3210,9 +3207,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Διαγραφή του «$name»;';
   }
-
-  @override
-  String get archiveConversation => 'Αρχειοθέτηση συνομιλίας';
 
   @override
   String get deleteFact => 'Διαγραφή γεγονότος';
@@ -3906,9 +3900,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Ακολουθήστε την εμφάνιση του λειτουργικού ή επιλέξτε σταθερή λειτουργία.';
 
   @override
-  String get mcpAuthToken => 'Token ελέγχου ταυτότητας MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Ο έλεγχος διακομιστή MCP δεν είναι διαθέσιμος στον συνδεδεμένο διακομιστή.';
 
@@ -4128,10 +4119,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Δεν ανιχνεύθηκαν γραμματοσειρές συστήματος.';
-
-  @override
-  String get noTokenSet =>
-      'Δεν έχει οριστεί token — η πρόσβαση είναι απεριόριστη.';
 
   @override
   String get noWorkingMemory =>
@@ -4621,31 +4608,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Τα διαπιστευτήρια GitHub του διακομιστή δεν βλέπουν τα ⁨$repos⁩. Αν ένα αποθετήριο ανήκει σε οργανισμό, εγκαταστήστε εκεί το GitHub App ή συνδέστε token με πρόσβαση.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count αποθετήρια δεν είναι προσβάσιμα',
-      one: 'Ένα αποθετήριο δεν είναι προσβάσιμο',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Η εγκατάσταση του GitHub App έχει ανασταλεί';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$repos⁩. Συνεχίστε την εγκατάσταση στο GitHub ή συνδέστε token με πρόσβαση.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Χωρίς πρόσβαση';
 
   @override
@@ -4759,9 +4721,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Κανόνας';
-
-  @override
-  String get runCompleted => 'Η εκτέλεση ολοκληρώθηκε';
 
   @override
   String get running => 'Σε εκτέλεση';
@@ -4925,9 +4884,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get setLabel => 'Ορισμός';
-
-  @override
-  String get setToken => 'Ορισμός token';
 
   @override
   String get settingsLabel => 'Ρυθμίσεις';
@@ -5126,9 +5082,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get skillOriginManual => 'Χειροκίνητα';
 
   @override
-  String get skillOriginRegistry => 'Registry';
-
-  @override
   String get skillOriginRuntimeLocal => 'Τοπικό περιβάλλον εκτέλεσης';
 
   @override
@@ -5305,10 +5258,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Εναλλαγή θέματος';
-
-  @override
-  String get tokenConfigured =>
-      'Ρυθμίστηκε — οι πελάτες πρέπει να παρουσιάζουν αυτό το token.';
 
   @override
   String get topic => 'Θέμα';
@@ -8903,7 +8852,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Ποιες ενέργειες εργαλείων εκτελούνται χωρίς ερώτηση. Οι αναγνώσεις επιτρέπονται πάντα· υψηλότερα επίπεδα ζητούν επιβεβαίωση.';
+      'Ποιες ενέργειες των δικών εργαλείων του Control Center, που καλούνται μέσω του τελικού σημείου MCP του ή από τους πράκτορές του, εκτελούνται χωρίς ερώτηση. Οι αναγνώσεις επιτρέπονται πάντα· τα υψηλότερα επίπεδα ζητούν επιβεβαίωση. Οι διακομιστές μέσα σε μια εκτέλεση ακολουθούν την πολιτική ενεργειών αυτής της εκτέλεσης.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Ερώτηση πάντα';
@@ -12412,20 +12361,8 @@ class AppLocalizationsEl extends AppLocalizations {
   String get settingsAbout => 'Πληροφορίες';
 
   @override
-  String get settingsScopeBadgeYou => 'ΕΣΕΙΣ';
-
-  @override
-  String get settingsScopeBadgeDevice => 'ΑΥΤΗ Η ΣΥΣΚΕΥΗ';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'ΧΩΡΟΣ ΕΡΓΑΣΙΑΣ';
-
-  @override
-  String get settingsScopeBadgeServer => 'ΔΙΑΚΟΜΙΣΤΗΣ';
-
-  @override
   String get settingsProfileDescription =>
-      'Το όνομα, το email και η ταυτότητα git σας σε αυτόν τον χώρο. Η αλλαγή χώρου αλλάζει αυτή την επικάλυψη· το αναγνωριστικό, η σύνδεση και οι συσκευές μένουν στον λογαριασμό.';
+      'Το όνομα, το email και η ταυτότητα git σας σε αυτόν τον χώρο εργασίας. Η αλλαγή χώρου εργασίας αλλάζει αυτή την επικάλυψη· το όνομα χρήστη, η σύνδεση και οι συσκευές σας μένουν στον λογαριασμό σας στο Εσείς → Προφίλ.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12440,50 +12377,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Ταυτότητα, πολιτική και συμβάσεις που μοιράζονται όλοι σε αυτόν τον χώρο εργασίας.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Απόδοση συνεισφοράς στα commit';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Επιλέξτε αν τα commit των πρακτόρων θα αποδίδουν τη συνεισφορά στο Control Center. Οι διαχειριστές του χώρου εργασίας μπορούν να παρακάμψουν αυτή την επιλογή για όλους.';
-
-  @override
-  String get settingsAgentCoauthorSection =>
-      'Απόδοση συνεισφοράς στον πράκτορα';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Αναφορά του Control Center στα commit των πρακτόρων';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Είστε πάντα ο συντάκτης και ο καταχωριστής των commit. Όταν η επιλογή είναι ενεργή, το Control Center (@usectrl) προστίθεται ως συνδημιουργός. Όταν είναι ανενεργή, τα commit δεν περιλαμβάνουν αναφορά στον πράκτορα.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Η ρύθμιση αυτού του χώρου εργασίας υπερισχύει της προσωπικής σας επιλογής. Η προτίμησή σας παραμένει αποθηκευμένη, αλλά δεν ισχύει εδώ.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Φόρτωση ρυθμίσεων απόδοσης συνεισφοράς…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Επιλέξτε αν τα commit των πρακτόρων θα αποδίδουν τη συνεισφορά στο Control Center. Η επιλογή του χώρου εργασίας υπερισχύει της προσωπικής προτίμησης κάθε μέλους.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Χρήση της προτίμησης κάθε μέλους';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Πάντα απόδοση συνεισφοράς στο Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Ποτέ απόδοση συνεισφοράς στο Control Center';
+      'Πολιτικές και συμβάσεις που μοιράζονται όλοι σε αυτόν τον χώρο εργασίας.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12857,9 +12751,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Έλεγχος σύνδεσης…';
-
-  @override
-  String get fromEnvironment => 'από το περιβάλλον';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13433,14 +13324,14 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Τη χρησιμοποιούν οι χώροι εργασίας που κληρονομούν την εφαρμογή GitHub αυτής της εγκατάστασης. Ένας χώρος εργασίας με δική του εφαρμογή τη ρυθμίζει στο Χώρος εργασίας → Γενικά.';
+      'Χρησιμοποιείται από χώρους εργασίας που ακολουθούν τις εφαρμογές σύνδεσης αυτού του διακομιστή. Ένας χώρος εργασίας με δικές του εφαρμογές ρυθμίζει τη δική του εφαρμογή στο Χώρος εργασίας → Ενσωματώσεις.';
 
   @override
   String get providerAppsGroupPrConversations => 'Συνομιλίες pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Πώς μιλούν οι προγραμματιστές σε αυτόν τον διακομιστή στο GitHub σε κληρονομούμενους χώρους. Ένας χώρος με δικό του App έχει bot στο Χώρος εργασίας → Γενικά. Χωρίς webhook ή δημόσιο URL — ο διακομιστής κάνει polling.';
+      'Πώς μπορούν οι προγραμματιστές να επικοινωνούν με αυτόν τον διακομιστή στο GitHub σε χώρους εργασίας που τον ακολουθούν. Ένας χώρος εργασίας με δικές του εφαρμογές έχει δικό του bot στο Χώρος εργασίας → Ενσωματώσεις. Λειτουργεί χωρίς webhook ή δημόσια διεύθυνση, καθώς ο διακομιστής κάνει έρευνα μόνος του.';
 
   @override
   String get providerAppBotLogin => 'Σύνδεση bot';
@@ -13473,10 +13364,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get portLabel => 'Θύρα';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Χωρίς token, οτιδήποτε φτάνει σε αυτή τη θύρα μπορεί να καλέσει κάθε εργαλείο.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Εργαλεία';
 
   @override
@@ -13503,6 +13390,132 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Εκκαθάριση όλων';
+
+  @override
+  String get guardrailFamilyCommands => 'Εντολές';
+
+  @override
+  String get guardrailStandingApproval => 'Προσωρινή έγκριση';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Επιτρέπεται: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Ερώτηση πρώτα: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Απορρίπτεται: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'κλάδοι $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'διαδρομές $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'κεντρικοί υπολογιστές $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'εντολές $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'εργαλεία $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'εντολές που αρχίζουν από $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'το πολύ $count ταυτόχρονα';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'το πολύ $amount σεντ';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'κάθε ενέργεια αυτού του είδους';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'από $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'λήγει $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'έως ανάκληση';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Ανάκληση: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed =>
+      'Δεν ήταν δυνατή η ανάκληση. Δοκιμάστε ξανά.';
+
+  @override
+  String get guardrailEntryInactive =>
+      'χωρίς ισχύ όσο η ενέργεια είναι σε Απόρριψη';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Επιτρέπεται σε $count περιπτώσεις που αναφέρονται παρακάτω',
+      one: 'Επιτρέπεται σε 1 περίπτωση που αναφέρεται παρακάτω',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count προσωρινές εγκρίσεις για ολόκληρο τον χώρο εργασίας ισχύουν και εδώ.',
+      one: '1 προσωρινή έγκριση για ολόκληρο τον χώρο εργασίας ισχύει και εδώ.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count προσωρινές εγκρίσεις έχουν οριστεί για μεμονωμένους χώρους ή πράκτορες. Επιλέξτε «Χώρος» ή «Πράκτορας» από πάνω για να τις δείτε.',
+      one:
+          '1 προσωρινή έγκριση έχει οριστεί για έναν χώρο ή πράκτορα. Επιλέξτε «Χώρος» ή «Πράκτορας» από πάνω για να τη δείτε.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandboxing';
@@ -14326,6 +14339,13 @@ class AppLocalizationsEl extends AppLocalizations {
       'Θα ρωτηθείτε ξανά την επόμενη φορά που ένας πράκτορας χρειάζεται να τρέξει πρόγραμμα από αυτό το αντίγραφο.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Αναζήτηση διαδρομών';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Καμία χορήγηση δεν ταιριάζει με την αναζήτησή σας';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14683,11 +14703,11 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Αυτή η σύνδεση φτάνει στον διακομιστή μέσω αναμετάδοσης, που δεν μεταφέρει αρχεία. Συνδεθείτε απευθείας στον διακομιστή για λήψη ή μεταφόρτωση αντιγράφου ασφαλείας.';
+      'Η μεταφορά αρχείων δεν έχει ρυθμιστεί ακόμη για αυτή τη σύνδεση. Συνδεθείτε ξανά στον διακομιστή για λήψη ή μεταφόρτωση αντιγράφου ασφαλείας.';
 
   @override
   String get backupTransferForbidden =>
-      'Ο διακομιστής αρνήθηκε. Η λήψη χώρου εργασίας χρειάζεται ρόλο διαχειριστή, η επαναφορά χρειάζεται ιδιοκτήτη και ένα ολόκληρο στιγμιότυπο χρειάζεται τον χειριστή της εγκατάστασης.';
+      'Ο διακομιστής αρνήθηκε. Η λήψη χώρου εργασίας χρειάζεται ρόλο διαχειριστή. Η επαναφορά χρειάζεται τον κάτοχο του διακομιστή, που πρέπει να είναι και κάτοχος του χώρου εργασίας. Ένα ολόκληρο στιγμιότυπο χρειάζεται τον κάτοχο του διακομιστή.';
 
   @override
   String get backupTransferUnsupported =>
@@ -14999,34 +15019,8 @@ class AppLocalizationsEl extends AppLocalizations {
       'Τοποθέτηση περιεχομένου προχείρου από οποιοδήποτε περιβάλλον σε αυτήν τη συσκευή χωρίς ερώτηση.';
 
   @override
-  String get workspaceGitHubIdentity => 'Ταυτότητα GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Πώς ταυτοποιείται η εργασία GitHub στο παρασκήνιο σε αυτόν τον χώρο εργασίας: με την εφαρμογή αυτής της εγκατάστασης ή με δική του εφαρμογή.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'Χρήση του GitHub App αυτής της εγκατάστασης';
-
-  @override
-  String get workspaceGitHubModeApp => 'Χρήση διαφορετικού GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Χρησιμοποιεί το GitHub App στο Διακομιστής → Εφαρμογές παρόχων.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Ταυτότητα bot και polling αυτού του χώρου. Τα μέλη συνδέονται στο Εσείς μέσω αυτού του App.';
-
-  @override
   String get profileOverlayHint =>
       'Αυτά τα πεδία είστε εσείς σε αυτόν τον χώρο. Τα κενά κληρονομούν όνομα και email του λογαριασμού. Η αλλαγή χώρου αλλάζει αυτή την επικάλυψη.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Συνδεθείτε ή επικολλήστε διακριτικό για αυτόν τον χώρο εργασίας.';
 
   @override
   String get stackStartNextPart => 'Έναρξη επόμενου μέρους';
@@ -15843,6 +15837,17 @@ class AppLocalizationsEl extends AppLocalizations {
       'Ο διακομιστής δεν μπόρεσε να δώσει εντολή σύνδεσης για αυτόν τον λογαριασμό.';
 
   @override
+  String get claudeAccountSignedIn => 'Συνδεδεμένος';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Κλείνει μόνο του μόλις ολοκληρωθεί η σύνδεση.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Κλείνει μόνο του μόλις συνδεθούν όλοι οι λογαριασμοί.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Η σύνδεση στο Claude Code έληξε';
 
@@ -15998,7 +16003,7 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
+  String get environmentInputNeeded =>
       'Αυτό πρέπει να ρυθμιστεί στον διακομιστή';
 
   @override
@@ -16611,21 +16616,41 @@ class AppLocalizationsEl extends AppLocalizations {
   String get environmentOpenPanel => 'Άνοιγμα περιβάλλοντος';
 
   @override
-  String get environmentNeedsSetup => 'Χρειάζεται ρύθμιση';
+  String get environmentStatusBlocked => 'Απαιτείται ενέργεια';
+
+  @override
+  String get environmentStateInTerminal => 'Στο τερματικό';
+
+  @override
+  String get environmentWaitingInTerminal => 'Αναμονή για εσάς στο τερματικό';
+
+  @override
+  String get environmentOpenTerminal => 'Άνοιγμα τερματικού';
+
+  @override
+  String get environmentSignInNeeded => 'Απαιτείται σύνδεση';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Κάτι που χρειάζεται δεν είναι διαθέσιμο';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Ολοκληρώθηκε εδώ. Το περιβάλλον εξακολουθεί να εκκινεί';
 
   @override
   String get environmentContinueInTerminal => 'Συνέχεια στο τερματικό';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Το εργαλείο σάς χρειάζεται σε τερματικό για κωδικό ή ερώτηση. Η εκκίνηση συνεχίζεται όταν τελειώσει.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Αυτό το τερματικό άνοιξε επειδή η εκκίνηση σάς χρειάζεται';
 
   @override
-  String get environmentSetupTab => 'Ρύθμιση περιβάλλοντος';
+  String get environmentStartTerminalTab => 'Ρύθμιση περιβάλλοντος';
 
   @override
   String get environmentsNothingRunning =>
@@ -16920,16 +16945,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Εγκρίνετε το αίτημα στη σελίδα του $provider στο πρόγραμμα περιήγησης. Αυτό το παράθυρο καταλαβαίνει μόνο του πότε τελειώσατε.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Αναμονή για το $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Η σύνδεση δεν ολοκληρώθηκε';
 
   @override
@@ -16937,7 +16952,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get signInCodePrompt =>
-      'Εισαγάγετε τον κωδικό που εμφανίζεται στο πρόγραμμα περιήγησης';
+      'Επιβεβαιώστε στο πρόγραμμα περιήγησης, και μετά εισαγάγετε τον κωδικό που εμφανίζει.';
 
   @override
   String get signInCodeMalformed =>
@@ -16980,7 +16995,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Αυτή η σύνδεση δεν είναι πλέον έγκυρη. Ξεκινήστε την ξανά.';
+      'Αυτή η σύνδεση δεν είναι πλέον ανοιχτή: ακυρώθηκε, χρησιμοποιήθηκε ή αντικαταστάθηκε. Ξεκινήστε την ξανά.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16988,7 +17003,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Πάρα πολλές προσπάθειες σύνδεσης αυτή τη στιγμή. Περιμένετε ένα λεπτό και δοκιμάστε ξανά.';
+      'Πάρα πολλά αιτήματα αυτή τη στιγμή. Περιμένετε λίγο και δοκιμάστε ξανά.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -17019,10 +17034,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Η εφαρμογή $provider δεν είναι εγκατεστημένη εκεί που χρειάζεται. Εγκαταστήστε την και δοκιμάστε ξανά.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Αυτή η εγκατάσταση της εφαρμογής GitHub είναι ήδη εξουσιοδοτημένη για άλλον διακομιστή Control Center.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -17081,7 +17092,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Πού είναι εγκατεστημένη η εφαρμογή GitHub, ανάμεσα στους λογαριασμούς στους οποίους ανήκουν τα αποθετήρια αυτού του χώρου εργασίας. Η εγκατάσταση ενός οργανισμού λειτουργεί μόνο σε διακομιστές που εξουσιοδοτούν οι διαχειριστές του.';
+      'Πού είναι εγκατεστημένη η εφαρμογή GitHub, ανάμεσα στους λογαριασμούς στους οποίους ανήκουν τα αποθετήρια αυτού του χώρου εργασίας.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -17091,21 +17102,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get githubInstallApp => 'Εγκατάσταση εφαρμογής GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Εξουσιοδότηση αυτού του διακομιστή';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Αυτός ο διακομιστής μπορεί πλέον να χρησιμοποιεί την εγκατάσταση στο $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Σε αναστολή';
-
-  @override
-  String get githubInstallationAuthorized => 'Εξουσιοδοτημένη';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Μη εξουσιοδοτημένη';
 
   @override
   String get linearAutomationTitle => 'Αυτοματοποίηση Linear';
@@ -17131,7 +17128,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Καταχωρίστε μόνοι σας εφαρμογές GitHub, Google και Linear στις Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση και συνδέστε τη δική του εφαρμογή Slack κάθε χώρου εργασίας στις ρυθμίσεις του. Το «Δημιουργία της εφαρμογής μου GitHub» ρυθμίζει το GitHub σε ένα βήμα.';
+      'Καταχωρίστε μόνοι σας τις εφαρμογές GitHub, Google και Linear στις Ρυθμίσεις → Διακομιστής → Ενιαία σύνδεση, και συνδέστε την εφαρμογή Slack κάθε χώρου εργασίας στο Χώρος εργασίας → Ενσωματώσεις, όπου ένας χώρος εργασίας μπορεί επίσης να επιλέξει δικές του εφαρμογές ή Connect. Το «Δημιουργία της εφαρμογής GitHub μου» ρυθμίζει το GitHub σε ένα βήμα.';
 
   @override
   String get connectModeCustom => 'Χρήση προσαρμοσμένου διακομιστή Connect';
@@ -17267,7 +17264,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Αυτός ο διακομιστής παίρνει νέο κλειδί και νέο αναγνωριστικό εγκατάστασης. Κάθε σύνδεση που έγινε μέσω Connect σταματά να λειτουργεί και όλοι πρέπει να συνδεθούν ξανά. Οι συνδέσεις μέσω των δικών σας εφαρμογών δεν επηρεάζονται.';
+      'Αυτός ο διακομιστής παίρνει νέο κλειδί και νέο αναγνωριστικό εγκατάστασης, και το παλιό αναγνωριστικό αποσύρεται στο Connect: οι συνδέσεις που έχουν κρυπτογραφηθεί με αυτό και το παλιό κλειδί παύουν να λειτουργούν εκεί, οπότε όποιος συνδέθηκε μέσω Connect θα πρέπει να συνδεθεί ξανά. Τα tokens που έχουν ήδη δοθεί συνεχίζουν να λειτουργούν έως ότου λήξουν. Οι συνδέσεις μέσω των δικών σας εφαρμογών δεν επηρεάζονται. Αν δεν είναι δυνατή η επικοινωνία με το Connect, τίποτα δεν αλλάζει και μπορείτε να δοκιμάσετε ξανά.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17401,35 +17398,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Εφαρμογές παρόχων';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Ποιες εφαρμογές Google Calendar, Linear και Klipy χρησιμοποιεί αυτός ο χώρος εργασίας. Από προεπιλογή χρησιμοποιεί τις εφαρμογές αυτού του διακομιστή ή το Control Center Connect. Ένας χώρος εργασίας με τη δική του εφαρμογή δεν επιστρέφει ποτέ σε αυτές.';
-
-  @override
-  String get workspaceProviderAppModeInherit =>
-      'Χρήση της εφαρμογής του διακομιστή';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Οι συνδέσεις και τα αιτήματα χρησιμοποιούν την εφαρμογή αυτού του διακομιστή ή το Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Χρήση της δικής του εφαρμογής του χώρου εργασίας';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Χρησιμοποιείται μόνο η εφαρμογή αυτού του χώρου εργασίας. Όσο δεν είναι πλήρης, ο πάροχος είναι απενεργοποιημένος εδώ και δεν επιστρέφει σε άλλη εφαρμογή.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Εφαρμογή διακομιστή';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Δική του εφαρμογή';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Λείπουν ακόμη: $fields. Μέχρι να συμπληρωθούν όλα τα πεδία, ο πάροχος είναι απενεργοποιημένος σε αυτόν τον χώρο εργασίας. Δεν επιστρέφει στην εφαρμογή του διακομιστή.';
   }
@@ -17446,22 +17414,116 @@ class AppLocalizationsEl extends AppLocalizations {
       'Η αναζήτηση GIF σε αυτόν τον χώρο εργασίας χρησιμοποιεί αυτό το κλειδί.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Αλλαγή της εφαρμογής $provider;';
+  String get settingsWorkspaceIntegrations => 'Ενσωματώσεις';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Φιλοξενία κώδικα, εκδόσεις, ημερολόγιο, συνομιλία και αναζήτηση GIF σε αυτόν τον χώρο εργασίας, και μέσω ποιων εφαρμογών γίνεται η σύνδεση.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Ποιες εφαρμογές χρησιμοποιεί αυτός ο χώρος εργασίας για GitHub, Google Calendar, Linear, Slack και αναζήτηση GIF. Εκτός αν ένας διαχειριστής επιλέξει κάτι άλλο, ακολουθεί αυτόν τον διακομιστή.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Όπως σε αυτόν τον διακομιστή';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Ο διακομιστής χρησιμοποιεί τις εφαρμογές του Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Ο διακομιστής χρησιμοποιεί τον διακομιστή Connect στο $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Όλοι όσοι είναι συνδεδεμένοι με τον $provider σε αυτόν τον χώρο εργασίας μέσω της εφαρμογής του διακομιστή πρέπει να συνδεθούν ξανά με την εφαρμογή του χώρου εργασίας.';
+  String get workspaceConnectInheritOwn =>
+      'Ο διακομιστής χρησιμοποιεί τις δικές του εφαρμογές.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Ο ιδιοκτήτης του διακομιστή δεν έχει επιλέξει ακόμη, επομένως ισχύουν οι δικές του εφαρμογές.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Χρησιμοποιούνται μόνο οι εφαρμογές αυτού του χώρου εργασίας. Προσθέστε καθεμία παρακάτω, δίπλα στον πάροχό της. Ένας πάροχος χωρίς εφαρμογή είναι απενεργοποιημένος εδώ· δεν χρησιμοποιούνται στη θέση του οι εφαρμογές του διακομιστή ή το Connect.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Μόνο HTTPS. Οι διευθύνσεις σε ιδιωτικό ή τοπικό δίκτυο απορρίπτονται.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'Το CC_CONNECT_URL στο περιβάλλον αυτού του διακομιστή ορίζει πού πηγαίνουν οι συνδέσεις, οπότε αυτός ο χώρος εργασίας δεν μπορεί να επιλέξει δικό του Connect. Μπορεί να ακολουθεί αυτόν τον διακομιστή ή να χρησιμοποιεί τις δικές του εφαρμογές.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Αλλαγή των εφαρμογών σύνδεσης αυτού του χώρου εργασίας;';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Όλοι στον χώρο εργασίας πρέπει να συνδεθούν ξανά στα GitHub, Linear και Google Calendar μέσω των νέων εφαρμογών. Οι συνδέσεις που έγιναν μέσω των τρεχουσών εφαρμογών παύουν να λειτουργούν εδώ.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Αλλαγή εφαρμογών';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Ακολουθεί την επιλογή που φαίνεται παραπάνω. Ένας πάροχος δεν επιστρέφει ποτέ σε άλλη εφαρμογή.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Εφαρμογή χώρου εργασίας';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Εφαρμογή διακομιστή';
+
+  @override
+  String get workspaceGitHubAppTitle => 'Εφαρμογή GitHub';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Η δική αυτού του χώρου εργασίας εφαρμογή ενεργεί για τα αποθετήριά του και συνδέει τα μέλη. Δεν επιστρέφει ποτέ στην εφαρμογή του διακομιστή ούτε στο Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Αυτός ο χώρος εργασίας χρησιμοποιεί την εφαρμογή GitHub που παρέχουν οι εφαρμογές σύνδεσής του. Εγκαταστήστε την στους λογαριασμούς στους οποίους ανήκουν τα αποθετήριά σας.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Ενεργεί για αυτόν τον χώρο εργασίας';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Το bot της εφαρμογής σχολιάζει, ελέγχει και κάνει έρευνα για pull requests στα αποθετήρια αυτού του χώρου εργασίας.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Εφαρμογή $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Αυτό διαγράφει τα διαπιστευτήρια του $provider του χώρου εργασίας. Όσοι είναι συνδεδεμένοι μέσω της εφαρμογής του χώρου εργασίας πρέπει να συνδεθούν ξανά.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Οι συνδέσεις και τα αιτήματα του $provider σε αυτόν τον χώρο εργασίας χρησιμοποιούν μόνο αυτήν την εφαρμογή.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Αλλαγή εφαρμογής';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Η αναζήτηση GIF χρησιμοποιεί το κλειδί Klipy αυτού του χώρου εργασίας.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Η αναζήτηση GIF χρησιμοποιεί το κλειδί Klipy αυτού του διακομιστή.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Η αναζήτηση GIF εκτελείται μέσω του Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Η αναζήτηση GIF είναι απενεργοποιημένη σε αυτόν τον χώρο εργασίας.';
 
   @override
   String openOnForge(String forge) {
@@ -17479,7 +17541,7 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Συνδέστε GitHub, GitLab ή Bitbucket στις Ρυθμίσεις → Χώρος εργασίας → Προφίλ και ταυτότητα → Φιλοξενία κώδικα';
+      'Συνδέστε GitHub, GitLab ή Bitbucket στις Ρυθμίσεις → Εσείς → Προφίλ';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17496,4 +17558,1151 @@ class AppLocalizationsEl extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Συνδέστε το $forge για να ανοίξετε pull request σε αυτό το αποθετήριο';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Η σύνδεσή σας στο $provider ως $account έληξε. Συνδεθείτε ξανά.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Σε παύση: η υπηρεσία σύνδεσης αυτού του χώρου εργασίας άλλαξε';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'Δεν είναι δυνατή η επικοινωνία με το $provider αυτή τη στιγμή. Γίνεται νέα προσπάθεια.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Η σύνδεσή σας διατηρείται και θα λειτουργήσει ξανά μόλις επιστρέψει η υπηρεσία. Ένας διαχειριστής του χώρου εργασίας μπορεί να ελέγξει τη ρύθμιση σύνδεσης στις Ενσωματώσεις.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Ο διακομιστής επανεκκινήθηκε. Ξεκινήστε ξανά τη σύνδεση.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Η σύνδεση με $provider δεν έχει ρυθμιστεί για αυτόν τον χώρο εργασίας.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Η σύνδεση με $provider έχει ρυθμιστεί λάθος: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Αυτός ο χώρος εργασίας χρησιμοποιεί δικές του εφαρμογές, αλλά δεν έχει εφαρμογή για $provider.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Αυτή η έκδοση δεν μπορεί να επαληθεύσει το Control Center Connect, οπότε η σύνδεση με $provider είναι απενεργοποιημένη.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Η υπηρεσία σύνδεσης αυτού του χώρου εργασίας άλλαξε ταυτότητα. Ένας διαχειριστής πρέπει να την επιβεβαιώσει.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Δεν είναι δυνατή η επικοινωνία με την υπηρεσία σύνδεσης αυτού του χώρου εργασίας αυτή τη στιγμή.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Η διεύθυνση της υπηρεσίας σύνδεσης αυτού του χώρου εργασίας λείπει ή δεν είναι έγκυρη.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Ο διαχειριστής του διακομιστή όρισε την υπηρεσία σύνδεσης, οπότε η επιλογή αυτού του χώρου εργασίας δεν ισχύει.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Η υπηρεσία σύνδεσης αυτού του χώρου εργασίας δεν προσφέρει $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Άνοιγμα ενσωματώσεων';
+
+  @override
+  String get signInOpenServerSettings => 'Άνοιγμα ρυθμίσεων σύνδεσης';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Αυτό εκτελείται ως εσείς στο $provider και δεν έχετε προσθέσει token. Προσθέστε ένα και δοκιμάστε ξανά.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Αποσύνδεση $provider;';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Θα χρειαστεί να συνδέσετε ξανά το $provider για να εργαστείτε στα αποθετήριά του.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Αυτό αποσυνδέει το $provider μόνο σε αυτόν τον χώρο εργασίας. Οι άλλοι χώροι εργασίας κρατούν τη δική τους σύνδεση.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Αυτό αποσυνδέει το $provider σε κάθε χώρο εργασίας που μοιράζεται αυτή τη σύνδεση.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return 'Το $provider αποσυνδέθηκε από αυτόν τον χώρο εργασίας';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return 'Το $provider αποσυνδέθηκε από όλους τους χώρους εργασίας';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Εγκαταστήστε το GitHub App στο $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Ο αυτοματισμός δεν μπορεί να φτάσει στα $repos μέχρι να εγκατασταθεί εκεί η εφαρμογή.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Προσθέστε τα $repos στα αποθετήρια του GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Η εφαρμογή είναι εγκατεστημένη σε αυτόν τον λογαριασμό, αλλά δεν βλέπει ακόμη αυτά τα αποθετήρια.';
+
+  @override
+  String get repoAccessChooseRepos => 'Επιλογή αποθετηρίων';
+
+  @override
+  String get repoAccessSuspendedTitle =>
+      'Η εγκατάσταση του GitHub App έχει ανασταλεί';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Ο αυτοματισμός για τα $repos είναι σε παύση μέχρι ένας κάτοχος του λογαριασμού να συνεχίσει την εγκατάσταση στο GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Ο αυτοματισμός είναι σε παύση';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Το άτομο που είναι υπεύθυνο για τον αυτοματισμό αυτού του χώρου εργασίας δεν βλέπει πια τα $repos, οπότε τίποτα δεν εκτελείται εκεί για λογαριασμό του.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Το άτομο που είναι υπεύθυνο για τον αυτοματισμό αυτού του χώρου εργασίας δεν έχει συνδεθεί στο forge, οπότε ο αυτοματισμός για τα $repos περιμένει μέχρι να συνδεθεί.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Δεν ήταν δυνατός ο έλεγχος πρόσβασης στα $repos. Γίνεται νέα προσπάθεια.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Ζητήστε από $admins να το διορθώσει.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Ζητήστε από έναν διαχειριστή του χώρου εργασίας να το διορθώσει.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Συνδεθείτε στο $forge για να δείτε pull requests από $count ακόμη αποθετήρια',
+      one:
+          'Συνδεθείτε στο $forge για να δείτε pull requests από 1 ακόμη αποθετήριο',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count αποθετήρια είναι κρυφά επειδή ο λογαριασμός σας στο $forge δεν τα βλέπει',
+      one:
+          '1 αποθετήριο είναι κρυφό επειδή ο λογαριασμός σας στο $forge δεν το βλέπει',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count αποθετήρια είναι κρυφά επειδή δεν έχετε πρόσβαση σε αυτά σε αυτόν τον χώρο εργασίας',
+      one:
+          '1 αποθετήριο είναι κρυφό επειδή δεν έχετε πρόσβαση σε αυτό σε αυτόν τον χώρο εργασίας',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ελέγχεται η πρόσβασή σας σε $count ακόμη αποθετήρια…',
+      one: 'Ελέγχεται η πρόσβασή σας σε 1 ακόμη αποθετήριο…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Συνδέθηκε, αλλά ο αυτοματισμός δεν φτάνει ακόμη παντού';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Εγκατάσταση σε άλλον οργανισμό';
+
+  @override
+  String get forgeTokenEmailLabel => 'Email λογαριασμού Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Εισαγάγετε τη διεύθυνση email του λογαριασμού σας Atlassian.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'Token API';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Τα tokens API του Bitbucket λειτουργούν μαζί με το email του λογαριασμού Atlassian που τα δημιούργησε.';
+
+  @override
+  String get automationTokensTitle => 'Διακριτικά αυτοματοποίησης';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Η εργασία στο παρασκήνιο σε GitLab και Bitbucket, όπως ενημερώσεις pull request, σχόλια ελέγχου AI και merge request που δεν ζήτησε κανείς, χρησιμοποιεί διακριτικό πρόσβασης bot, ποτέ ενός ατόμου. Το δικό διακριτικό ενός αποθετηρίου υπερισχύει αυτού του χώρου εργασίας.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Χρησιμοποιείται για κάθε αποθετήριο GitLab ή Bitbucket σε αυτόν τον χώρο εργασίας που δεν έχει δικό του διακριτικό αυτοματοποίησης. Η εργασία στο παρασκήνιο εκεί εμφανίζεται ως το bot αυτού του διακριτικού.';
+
+  @override
+  String get automationTokenNone =>
+      'Κανένα διακριτικό. Η αυτοματοποίηση είναι σε παύση εδώ.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Χρησιμοποιεί το διακριτικό του χώρου εργασίας';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Ενεργεί ως $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Προστέθηκε διακριτικό πρόσβασης';
+
+  @override
+  String get automationTokenRejected =>
+      'Η πλατφόρμα απέρριψε αυτό το διακριτικό. Αντικαταστήστε το.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Διακριτικό αυτοματοποίησης $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Επικολλήστε διακριτικό πρόσβασης έργου ή ομάδας. Χρειάζεται read_api και read_repository· προσθέστε api και write_repository για σχόλια, merge request και push. Το GitLab δείχνει την εργασία του ως το bot του διακριτικού.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Επικολλήστε διακριτικό πρόσβασης αποθετηρίου, έργου ή χώρου εργασίας με ανάγνωση αποθετηρίου, καθώς και εγγραφή pull request για σχόλια και pull request. Το δικό σας διακριτικό API ανήκει στο Εσείς → Προφίλ, όχι εδώ.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Το διακριτικό αποθηκεύτηκε, αλλά δεν μπορεί να διαβάσει τα $repos. Η αυτοματοποίηση εκεί παραμένει σε παύση.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle =>
+      'Αφαίρεση διακριτικού αυτοματοποίησης;';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Η αυτοματοποίηση που βασίζεται σε αυτό το διακριτικό τίθεται σε παύση μέχρι να προστεθεί άλλο.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Κάθε αποθετήριο $forge χωρίς δικό του διακριτικό';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Κανένα διακριτικό αυτοματοποίησης δεν μπορεί να διαβάσει τα $repos, οπότε η εργασία στο παρασκήνιο εκεί είναι σε παύση.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Τα commit από εργασίες που ξεκινάτε φέρουν το όνομά σας. Επιλέξτε ποιος άλλος πιστώνεται και αν οι πλατφόρμες φιλοξενίας κώδικα θα εμφανίζουν τα commit σας ως επαληθευμένα.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Συγγραφή';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Εργασίες που ξεκινάτε';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Είστε ο συντάκτης και ο υποβολέας, με το email που επαλήθευσε η φιλοξενία κώδικα για τη σύνδεσή σας. Αυτό καλύπτει τις συνομιλίες με πράκτορες, τις ροές (pipelines) που ξεκινάτε και τα commit που κάνετε στον επεξεργαστή.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Αυτοματοποιημένες εκτελέσεις';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Οι εκτελέσεις που ξεκινούν με χρονοπρογραμματισμό ή webhook κάνουν commit ως bot και δεν υπογράφονται ποτέ.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Μέχρι να συνδεθείτε σε μια πλατφόρμα φιλοξενίας κώδικα σε έναν χώρο εργασίας, οι εκτελέσεις σας εκεί κάνουν commit ως bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Αναφορά του Control Center ως συν-συγγραφέα';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Τα commit σας αναφέρουν το Control Center (@usectrl) ως συν-συγγραφέα, και οι αυτοματοποιημένες εκτελέσεις που ενεργοποιήσατε σας αναφέρουν. Όταν είναι κλειστό, δεν προστίθεται καμία από τις δύο γραμμές.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Η ρύθμιση αυτού του χώρου εργασίας υπερισχύει της προσωπικής σας επιλογής. Η προτίμησή σας παραμένει αποθηκευμένη, αλλά δεν ισχύει εδώ.';
+
+  @override
+  String get settingsCoauthorCreditLoading =>
+      'Φόρτωση ρυθμίσεων απόδοσης συνεισφοράς…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Αναφορά συν-συγγραφέα';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Αν τα commit φέρουν γραμμές συν-συγγραφέα: το Control Center στα commit ενός μέλους, και τα μέλη που ενεργοποίησαν αυτοματοποιημένη εκτέλεση στα commit της. Μια επιλογή εδώ υπερισχύει της επιλογής κάθε μέλους.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Χρήση της προτίμησης κάθε μέλους';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Να προστίθεται πάντα αναφορά συν-συγγραφέα';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Να μην προστίθεται ποτέ αναφορά συν-συγγραφέα';
+
+  @override
+  String get settingsCommitSigningSection => 'Επαληθευμένα commit';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Υπογραφή';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Χωρίς υπογραφή';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Ο διακομιστής μπορεί να υπογράφει τα commit σας με δικό σας κλειδί, ώστε το GitHub και το GitLab να τα εμφανίζουν ως επαληθευμένα. Τίποτα δεν υπογράφεται μέχρι να δημιουργήσετε το κλειδί.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Δημιουργία κλειδιού υπογραφής';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Το κλειδί υπογραφής δημιουργήθηκε. Προσθέστε το στον λογαριασμό σας στη φιλοξενία κώδικα.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Δημόσιο κλειδί';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Το δημόσιο κλειδί αντιγράφηκε';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Αποτύπωμα';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Δημιουργήθηκε';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Προσθέστε το στον λογαριασμό σας στη φιλοξενία κώδικα';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Ένα commit εμφανίζεται ως επαληθευμένο μόνο όσο είστε συνδεδεμένοι και σε αυτή τη φιλοξενία κώδικα μέσα στον χώρο εργασίας, ώστε η φιλοξενία να εγγυάται το email σας.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Ορίστε το Key type σε Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Ορίστε το Usage type σε Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Τα commit στο Bitbucket δεν υπογράφονται. Μην προσθέτετε αυτό το κλειδί στον λογαριασμό σας στο Bitbucket: ένα κλειδί SSH εκεί είναι και σύνδεση.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Δεν υποστηρίζεται';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Τι εμπιστεύεστε';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Το ιδιωτικό κλειδί δεν φεύγει ποτέ από αυτόν τον διακομιστή.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Όποιος ελέγχει αυτόν τον διακομιστή μπορεί να υπογράφει commit ως εσείς, όσο το κλειδί βρίσκεται στον λογαριασμό σας στη φιλοξενία κώδικα.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'Στο GitHub, τα commit που εμφανίζονται ήδη ως επαληθευμένα παραμένουν επαληθευμένα αφού αφαιρέσετε το κλειδί.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Διαγραφή κλειδιού';
+
+  @override
+  String get settingsCommitSigningDeleteTitle =>
+      'Διαγραφή του κλειδιού υπογραφής σας;';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Από τώρα τα commit σας δεν θα υπογράφονται. Το κλειδί παραμένει στους λογαριασμούς σας στη φιλοξενία κώδικα μέχρι να το αφαιρέσετε εκεί.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Το κλειδί υπογραφής διαγράφηκε';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Δεν ήταν δυνατή η φόρτωση του κλειδιού υπογραφής σας: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Προφίλ';
+
+  @override
+  String get accountProfileDescription =>
+      'Ποιοι είστε σε κάθε χώρο εργασίας, και οι δικοί σας λογαριασμοί για φιλοξενία κώδικα, εισιτήρια, ημερολόγιο και συνομιλία.';
+
+  @override
+  String get accountSectionTitle => 'Λογαριασμός';
+
+  @override
+  String get accountSectionDescription =>
+      'Το όνομα χρήστη και το όνομά σας σας ακολουθούν σε κάθε χώρο εργασίας. Ένας χώρος εργασίας μπορεί να εμφανίζει διαφορετικό όνομα ή email: ορίστε το στο Χώρος εργασίας → Προφίλ και ταυτότητα.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Δεν ήταν δυνατή η φόρτωση του προφίλ σας: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Το όνομα που βλέπουν οι άλλοι στα μηνύματα και τις αναθεωρήσεις σας.';
+
+  @override
+  String get accountDisplayNameRequired => 'Εισαγάγετε ένα όνομα εμφάνισης.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Μπορεί να αλλάξει, αλλά όχι να αφαιρεθεί.';
+
+  @override
+  String get accountAvatarLabel => 'Εικόνα';
+
+  @override
+  String get accountAvatarHint =>
+      'Σύνδεσμος προς τετράγωνη εικόνα, που ξεκινά με https://.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Χρησιμοποιήστε σύνδεσμο που ξεκινά με https://.';
+
+  @override
+  String get usernameLabel => 'Όνομα χρήστη';
+
+  @override
+  String get usernameRule =>
+      '2 έως 32 μικρά γράμματα, ψηφία, τελείες, παύλες ή κάτω παύλες. Οι άλλοι σας αναφέρουν με αυτό.';
+
+  @override
+  String get usernameAvailable => 'Διαθέσιμο.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Διαθέσιμο. Θα αποθηκευτεί ως $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Χρησιμοποιήστε 2 έως 32 πεζά γράμματα, ψηφία, “.”, “_” ή “-”, που αρχίζουν και τελειώνουν με γράμμα ή ψηφίο.';
+
+  @override
+  String get usernameReserved => 'Αυτό το όνομα χρήστη είναι δεσμευμένο.';
+
+  @override
+  String get usernameTaken => 'Αυτό το όνομα χρήστη χρησιμοποιείται ήδη.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Δεν ήταν δυνατός ο έλεγχος αυτού του ονόματος αυτή τη στιγμή. Μπορείτε να αποθηκεύσετε ούτως ή άλλως· ο διακομιστής αποφασίζει.';
+
+  @override
+  String get linkedAccountsTitle => 'Συνδεδεμένοι λογαριασμοί';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Πάροχος ταυτότητας';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Απαιτείται σύνδεση';
+
+  @override
+  String get linkedAccountStatusPaused => 'Σε παύση';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Μη προσβάσιμο';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Ο πάροχος ταυτότητας μέσω του οποίου συνδέεται ο λογαριασμός σας. Τον διαχειρίζεται όποιος εκτελεί αυτόν τον διακομιστή.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Οι λογαριασμοί που συνδέετε για τον εαυτό σας. Το Control Center ενεργεί για λογαριασμό σας μέσω αυτών, και οι αλλαγές σε αυτούς αφορούν μόνο εσάς.';
+
+  @override
+  String get accountReachServer =>
+      'Χρησιμοποιείται σε κάθε χώρο εργασίας αυτού του διακομιστή.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Χρησιμοποιείται μόνο στο $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'Το GitHub χρησιμοποιείται μόνο στο $workspace, που έχει δικές του εφαρμογές σύνδεσης. Το GitLab και το Bitbucket χρησιμοποιούνται σε κάθε χώρο εργασίας αυτού του διακομιστή.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Ο λογαριασμός σας';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Ο λογαριασμός σας: $status. Ανοίγει το Εσείς → Προφίλ.';
+  }
+
+  @override
+  String get yourForgeAccountNone =>
+      'Δεν έχει συνδεθεί λογαριασμός φιλοξενίας κώδικα';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Δεν έχει συνδεθεί λογαριασμός $provider';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Δεν υπάρχει συνδεδεμένος λογαριασμός $provider';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'Είστε προσωρινός επισκέπτης στην επίδειξη, οπότε δεν υπάρχει λογαριασμός προς αλλαγή: ούτε όνομα χρήστη, ούτε προφίλ, ούτε συνδεδεμένοι λογαριασμοί.';
+
+  @override
+  String get onboardingStepYou => 'Εσείς';
+
+  @override
+  String get onboardingYouTitle => 'Επιλέξτε το όνομα χρήστη σας';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Το όνομα χρήστη σας είναι ο τρόπος που σας αναφέρουν οι άλλοι και πώς επισημαίνεται η δουλειά σας. Μπορείτε να το αλλάξετε αργότερα, μαζί με το όνομα εμφάνισης, στις Ρυθμίσεις → Εσείς → Προφίλ.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Αυτός ο λογαριασμός $provider είναι ήδη συνδεδεμένος με άλλο άτομο σε αυτόν τον διακομιστή. Συνδεθείτε με διαφορετικό λογαριασμό $provider.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Το token λήγει στις $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Το token έληξε στις $date. Επικολλήστε νέο για να συνεχίσετε να λειτουργεί.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'Δεν ήταν δυνατή η επικοινωνία με το $forge για τον έλεγχο αυτού του token. Δοκιμάστε ξανά σε λίγο.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return 'Το $forge δεν αποδέχεται αυτό το token. Ελέγξτε ότι το αντιγράψατε ολόκληρο και ότι δεν έχει ανακληθεί.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Αυτό δεν είναι προσωπικό token. Επικολλήστε ένα προσωπικό access token από τον δικό σας λογαριασμό στο $forge, όχι token έργου, ομάδας, χώρου εργασίας ή bot.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Στο token λείπει το δικαίωμα $scope, που χρειάζονται η αναθεώρηση και τα σχόλια. Δημιουργήστε ένα που το περιλαμβάνει.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Αυτό το token έχει λήξει. Δημιουργήστε ένα νέο και επικολλήστε το εδώ.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Οι πράκτορες που ξεκινάτε μπορούν να κάνουν commit υπογεγραμμένα ως εσείς, σε οποιοδήποτε αποθετήριο κι αν δουλεύουν. Η διαγραφή του κλειδιού εδώ το σταματά αμέσως: οι εκτελέσεις που τρέχουν ήδη δεν υπογράφουν τίποτα άλλο.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Το κλειδί δεν άλλαξε και τίποτα δεν άλλαξε: $error Δοκιμάστε ξανά.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Δεν είστε ακόμη σε χώρο εργασίας';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Ένας διαχειριστής χώρου εργασίας πρέπει να σας προσκαλέσει, ή ο κάτοχος του διακομιστή μπορεί να δημιουργήσει χώρο εργασίας για εσάς. Θα ανοίξει εδώ μόλις προστεθείτε.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Συνδεδεμένος ως $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Έλεγχος ξανά';
+
+  @override
+  String get noWorkspaceSignOut => 'Αποσύνδεση';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Μόνο ο κάτοχος του διακομιστή μπορεί να δημιουργεί χώρους εργασίας. Ζητήστε του να δημιουργήσει έναν, ή ζητήστε από έναν διαχειριστή χώρου εργασίας να σας προσκαλέσει.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return 'Το $repo δεν βρίσκεται σε κανέναν από τους χώρους εργασίας σας, και δεν είστε σε χώρο εργασίας όπου θα μπορούσε να προστεθεί. Ζητήστε από διαχειριστή χώρου εργασίας να σας προσκαλέσει.';
+  }
+
+  @override
+  String get serverOwnerOnly =>
+      'Μόνο ο κάτοχος του διακομιστή μπορεί να το κάνει αυτό';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Ο πλήρης επεξεργαστής τρέχει στον ίδιο τον υπολογιστή του διακομιστή, οπότε μόνο ο κάτοχος του διακομιστή μπορεί να τον ανοίξει. Μπορείτε όμως να ανοίγετε και να επεξεργάζεστε αρχεία από τον Εξερευνητή.';
+
+  @override
+  String get terminalSandboxedBadge => 'Σε sandbox';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Τρέχει σε sandbox μέσα στους φακέλους αυτού του χώρου εργασίας, γι\' αυτό ορισμένα εργαλεία και διαδρομές του κεντρικού υπολογιστή δεν είναι διαθέσιμα εδώ.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Το κέλυφος του κεντρικού υπολογιστή τρέχει στον διακομιστή χωρίς sandbox, γι\' αυτό μόνο ο κάτοχος του διακομιστή μπορεί να ανοίξει ένα. Ένα κανονικό τερματικό τρέχει στο sandbox.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Ένα τερματικό μπορεί να ανοίξει μόνο μέσα στους φακέλους αυτού του χώρου εργασίας.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Μόνο ο κάτοχος του διακομιστή μπορεί να αποθηκεύσει ή να εγκρίνει περιβάλλον που τρέχει στον κεντρικό υπολογιστή του διακομιστή. Ένας διαχειριστής χώρου εργασίας μπορεί να χρησιμοποιεί ένα που τρέχει σε rig.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Τα commit που κάνετε στον επεξεργαστή της ίδιας της εφαρμογής δεν εκτελούν hooks του Git από το αποθετήριο, όπως με το git commit --no-verify: ο διακομιστής τρέχει το Git στον δικό του κεντρικό υπολογιστή, σε δέντρο που μπορούν να αλλάξουν πράκτορες και pull requests.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Οι πελάτες MCP στέλνουν αυτό το token σε κάθε αίτημα, ως κεφαλίδα Authorization: Bearer. Ο διακομιστής το δημιουργεί στην πρώτη εκκίνηση· μπορείτε να το ανανεώσετε, αλλά όχι να το αφαιρέσετε.';
+
+  @override
+  String get mcpShowToken => 'Εμφάνιση token';
+
+  @override
+  String get mcpHideToken => 'Απόκρυψη token';
+
+  @override
+  String get mcpRotateToken => 'Ανανέωση token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Ανανέωση του token MCP;';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Ο διακομιστής μεταβαίνει αμέσως σε νέο token. Κάθε πελάτης MCP που χρησιμοποιεί ακόμη το τρέχον token θα απορρίπτεται μέχρι να του δώσετε το νέο.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Το token ανανεώθηκε. Δώστε στους πελάτες MCP σας το νέο.';
+
+  @override
+  String get mcpOwnerOnlyTitle =>
+      'Το τελικό σημείο MCP προορίζεται για τον κάτοχο του διακομιστή';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Το token του ανοίγει κάθε εργαλείο σε αυτόν τον διακομιστή, γι\' αυτό μόνο ο κάτοχος του διακομιστή μπορεί να το δει, να το ανανεώσει ή να ξεκινήσει και να σταματήσει το τελικό σημείο.';
+
+  @override
+  String get activityRotatedMcpToken => 'Ανανέωσε το token MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Το Connect δεν μπόρεσε να αποσύρει το παλιό κλειδί';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Τίποτα δεν άλλαξε. Αν ανανεώσετε ούτως ή άλλως, ο διακομιστής θα πάρει νέο κλειδί, αλλά η παλιά ταυτότητα θα παραμένει χρησιμοποιήσιμη σε αυτό το Connect μέχρι να λήξουν οι συνδέσεις της.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Ανανέωση ούτως ή άλλως';
+
+  @override
+  String get settingsAuditLog => 'Ημερολόγιο ελέγχου';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Ποιος άλλαξε τι, πού και πώς ολοκληρώθηκε, σε όλο τον διακομιστή και σε κάθε χώρο εργασίας που διαχειρίζεστε. Οι λειτουργίες διακομιστή καταγράφουν μόνο τα ονόματα των ορισμάτων, όχι τις τιμές τους.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Μόνο για διαχειριστές';
+
+  @override
+  String get auditLogNoAccess =>
+      'Το ημερολόγιο ελέγχου καλύπτει τον διακομιστή και τους χώρους εργασίας που διαχειρίζεστε. Δεν διαχειρίζεστε κανέναν χώρο εργασίας, επομένως δεν υπάρχει τίποτα να εμφανιστεί.';
+
+  @override
+  String get auditLogSourceServer => 'Διακομιστής';
+
+  @override
+  String get auditLogSourceWorkspace => 'Χώρος εργασίας';
+
+  @override
+  String get auditLogAddFilter => 'Φίλτρο';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Φίλτρο…';
+
+  @override
+  String get auditLogFilterActor => 'Χρήστης';
+
+  @override
+  String get auditLogFilterSource => 'Χώρος εργασίας';
+
+  @override
+  String get auditLogFilterOutcome => 'Αποτέλεσμα';
+
+  @override
+  String get auditLogFilterTime => 'Χρόνος';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Επιτυχής';
+
+  @override
+  String get auditLogOutcomeDenied => 'Απορρίφθηκε';
+
+  @override
+  String get auditLogOutcomeFailed => 'Απέτυχε';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Την ίδια ώρα ή μετά';
+
+  @override
+  String get auditLogTimeAfter => 'Μετά';
+
+  @override
+  String get auditLogTimeBefore => 'Πριν';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Την ίδια ώρα ή πριν';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Χρόνος $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => 'Πριν από 1 ώρα';
+
+  @override
+  String get auditLogTimePresetDay => 'Πριν από 24 ώρες';
+
+  @override
+  String get auditLogTimePresetWeek => 'Πριν από 7 ημέρες';
+
+  @override
+  String get auditLogTimePresetMonth => 'Πριν από 30 ημέρες';
+
+  @override
+  String get auditLogTimeExact => 'Ακριβής ώρα';
+
+  @override
+  String get auditLogTimeInvalid =>
+      'Χρησιμοποιήστε YYYY-MM-DD, προαιρετικά με HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Προσθήκη';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return 'Το $repo δείχνει πλέον σε διαφορετικό αποθετήριο';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Αυτή η διαδρομή δείχνει πλέον σε διαφορετικό αποθετήριο στο $forge. Συνδέστε την ξανά για να συνεχίσετε να τη χρησιμοποιείτε.';
+  }
+
+  @override
+  String get repoRelink => 'Επανασύνδεση';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Επανασυνδέθηκε το $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Αυτή η διαδρομή δείχνει πλέον σε διαφορετικό αποθετήριο. Ένας διαχειριστής χώρου εργασίας πρέπει να την επανασυνδέσει πριν μπορέσει να χρησιμοποιηθεί.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Ο λογαριασμός σας στο $forge δεν μπορεί να διαβάσει αυτό το αποθετήριο.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Δεν ήταν δυνατή η επιβεβαίωση της πρόσβασής σας στο $forge. Δοκιμάστε ξανά.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Ο λογαριασμός σας στη φιλοξενία κώδικα δεν μπορεί να διαβάσει αυτό το αποθετήριο.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Δεν ήταν δυνατή η επιβεβαίωση της πρόσβασής σας στη φιλοξενία κώδικα. Δοκιμάστε ξανά.';
+
+  @override
+  String get repoPathHostPath =>
+      'Μόνο ο κάτοχος του διακομιστή μπορεί να συνδέσει φάκελο εκτός του αποθηκευτικού χώρου αυτού του χώρου εργασίας.';
+
+  @override
+  String get repoPathMissing =>
+      'Δεν υπάρχει τίποτα σε αυτή τη διαδρομή στον διακομιστή.';
+
+  @override
+  String get repoPathDataDir =>
+      'Ένα αποθετήριο δεν μπορεί να δείχνει μέσα στον φάκελο δεδομένων του διακομιστή.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Ένα αποθετήριο δεν μπορεί να είναι ο ίδιος ο φάκελος του χώρου εργασίας.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Η origin αυτού του φακέλου είναι διαφορετικό αποθετήριο.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Αποθηκεύτηκε. Πρέπει να συνδεθούν στο $forge πριν μπορέσουν να ανοίξουν αυτό το αποθετήριο.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Αποθηκεύτηκε. Ο λογαριασμός τους στο $forge δεν μπορεί ακόμη να διαβάσει αυτό το αποθετήριο, γι\' αυτό παραμένει κρυφό για αυτούς.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Αποθηκεύτηκε. Δεν ήταν δυνατή η επιβεβαίωση της πρόσβασής τους στο $forge αυτή τη στιγμή.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return 'Το $repo δεν είναι συνδεδεμένο σε κανέναν από τους χώρους εργασίας σας. Ζητήστε από τον κάτοχο του διακομιστή να το προσθέσει.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Ο κάτοχος του διακομιστή προσθέτει αποθετήρια από τους φακέλους του διακομιστή.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Μόνο εσείς εισαγάγατε αυτή τη διεύθυνση. Η ενιαία σύνδεση (SSO) δεν θα την αντιστοιχίσει έως ότου την επιβεβαιώσει ο κάτοχος του διακομιστή.';
+
+  @override
+  String get settingsServerPeople => 'Άτομα';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Όλοι όσοι έχουν λογαριασμό σε αυτόν τον διακομιστή, και αν η διεύθυνση email τους έχει επιβεβαιωθεί.';
+
+  @override
+  String get serverPeopleLabel => 'Λογαριασμοί';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Μόνο ο κάτοχος του διακομιστή μπορεί να βλέπει όλους τους λογαριασμούς και να επιβεβαιώνει διευθύνσεις email.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'Το email δεν έχει επιβεβαιωθεί';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Επιβεβαίωση email';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Επιβεβαιώνετε ότι το $email ανήκει στον $name; Η ενιαία σύνδεση (SSO) θα αντιστοιχίσει αυτή τη διεύθυνση στον λογαριασμό του.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Επιβεβαιώθηκε το $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Οι πράκτορες χρειάζονται sandbox σε αυτόν τον διακομιστή';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Αυτός ο διακομιστής δεν έχει sandbox, γι\' αυτό μόνο ο κάτοχός του μπορεί να εκτελεί εδώ πράκτορες. Ο κάτοχος μπορεί να εγκαταστήσει το sandbox ή να απενεργοποιήσει την απομόνωση για όλους.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Αυτός ο φάκελος βρίσκεται εκτός του αποθηκευτικού χώρου του χώρου εργασίας. Επιβεβαιώστε ότι αυτός ο διακομιστής επιτρέπεται να τον χρησιμοποιεί.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Αυτός ο φάκελος βρίσκεται εκτός του αποθηκευτικού χώρου του χώρου εργασίας. Μόνο ο κάτοχος του διακομιστή μπορεί να τον επιβεβαιώσει.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Δεν υπάρχει πλέον τίποτα σε αυτή τη διαδρομή στον διακομιστή. Αφαιρέστε αυτό το αποθετήριο και προσθέστε το ξανά από τον τρέχοντα φάκελό του.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Αυτός ο φάκελος δεν μπορεί να χρησιμοποιηθεί ως αποθετήριο. Αφαιρέστε τον και προσθέστε το αποθετήριο από άλλο φάκελο.';
+
+  @override
+  String get repoPathConfirm => 'Επιβεβαίωση';
+
+  @override
+  String get repoPathConfirmAll => 'Επιβεβαίωση όλων';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count φάκελοι βρίσκονται εκτός του αποθηκευτικού χώρου του χώρου εργασίας',
+      one:
+          '1 φάκελος βρίσκεται εκτός του αποθηκευτικού χώρου του χώρου εργασίας',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Επιβεβαιώστε ότι αυτός ο διακομιστής επιτρέπεται να τους χρησιμοποιεί. Κάθε αποθετήριο ελέγχεται ξανά με τη δική σας πρόσβαση.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Οι διακομιστές που βρέθηκαν στις ρυθμίσεις εργαλείων αυτού του μηχανήματος είναι διαθέσιμοι μόνο σε εκτελέσεις που ξεκινάτε ή για τις οποίες ευθύνεστε. Οι εκτελέσεις άλλων ατόμων δεν τους βλέπουν ποτέ, και δεν προσφέρονται μέσω του τελικού σημείου MCP του Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Συνδεθείτε στο $provider για να δείτε τον κώδικα αυτού του αποθετηρίου.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Σύνδεση';
+
+  @override
+  String get ideContentSearchFailed => 'Δεν ήταν δυνατή η αναζήτηση στα αρχεία';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Αυτό το αρχείο δεν είναι διαθέσιμο σε αυτό το worktree.';
+
+  @override
+  String get ideChangesLoadFailed => 'Δεν ήταν δυνατή η φόρτωση των αλλαγών';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Αυτή η διαδρομή δείχνει πλέον σε διαφορετικό αποθετήριο στο $forge. Ένας διαχειριστής χώρου εργασίας πρέπει να την επανασυνδέσει πριν μπορέσει να χρησιμοποιηθεί.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Μόνο ο κάτοχος του διακομιστή μπορεί να επαναφέρει αντίγραφα ασφαλείας. Μπορείτε όμως ακόμη να τα κατεβάσετε.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Μόνο για ανάγνωση';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Μπορείτε να παρακολουθείτε αυτό το τερματικό. Για να πληκτρολογήσετε, να αλλάξετε μέγεθος ή να το σταματήσετε χρειάζεται δικαίωμα εγγραφής σε κάθε αποθετήριο αυτής της συνομιλίας.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Μπορείτε να παρακολουθείτε αυτό το περιβάλλον. Η εκκίνηση, η διακοπή ή η επανεκκίνησή του χρειάζονται δικαίωμα εγγραφής σε κάθε αποθετήριο της συνομιλίας.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Εκτελείται σε αυτόν τον διακομιστή. Εγκρίνετέ το για να μπορέσει να ξεκινήσει.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Εκτελείται σε αυτόν τον διακομιστή. Ο κάτοχος του διακομιστή πρέπει να το εγκρίνει πριν μπορέσει να ξεκινήσει.';
+
+  @override
+  String get environmentHostApprove => 'Έγκριση';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Εγκρίνετέ το ως διαχειριστής χώρου εργασίας: μόνο το αντίγραφο ενός διαχειριστή εμφανίζει τις μυστικές τιμές του, και η έγκριση τις αποθηκεύει ξανά.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Ο κάτοχος του διακομιστή δεν έχει εγκρίνει ακόμη αυτό το περιβάλλον, γι\' αυτό δεν μπορεί να εκτελεστεί σε αυτόν τον διακομιστή.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Δεν έχετε εγκρίνει ακόμη αυτό το περιβάλλον. Εκτελείται σε αυτόν τον διακομιστή, οπότε θα ξεκινήσει αφού εγκρίνετε τον ορισμό του.';
+
+  @override
+  String get environmentHostApprovalReview => 'Έλεγχος και έγκριση';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Συνδεθείτε στο $provider για να ανοίξετε αυτόν τον χώρο.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Ο λογαριασμός σας στο $forge δεν μπορεί να διαβάσει ένα αποθετήριο που χρησιμοποιεί αυτός ο χώρος.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Ο λογαριασμός σας στη φιλοξενία κώδικα δεν μπορεί να διαβάσει ένα αποθετήριο που χρησιμοποιεί αυτός ο χώρος.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Δεν έχετε δικαίωμα ανάγνωσης σε ένα αποθετήριο που χρησιμοποιεί αυτός ο χώρος. Ένας διαχειριστής χώρου εργασίας μπορεί να σας το χορηγήσει.';
+
+  @override
+  String get spaceAccessFailed => 'Αυτός ο χώρος δεν μπόρεσε να ανοίξει.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Η ανάλυση του πλαισίου δεν είναι διαθέσιμη σε αυτή τη συνεδρία.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Ένα συνδεδεμένο αποθετήριο χρειάζεται και ιδιοκτήτη (οργανισμό) και όνομα αποθετηρίου.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Δεν έχετε πρόσβαση ανάγνωσης σε αυτό το αποθετήριο. Ένας διαχειριστής του χώρου εργασίας μπορεί να τη δώσει.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Μπορείτε να διαβάσετε αυτό το αποθετήριο, αλλά δεν μπορείτε να το αλλάξετε. Ένας διαχειριστής του χώρου εργασίας μπορεί να δώσει πρόσβαση εγγραφής.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Μπορείτε να διαβάσετε αυτό το αποθετήριο, αλλά δεν μπορείτε να το αξιολογήσετε. Ένας διαχειριστής του χώρου εργασίας μπορεί να δώσει πρόσβαση αξιολόγησης.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Μόνο προβολή';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Μπορείτε να παρακολουθείτε αυτό το μηχάνημα. Ο έλεγχός του, η προώθηση των θυρών του, η επικόλληση σε αυτό ή η απόθεση αρχείων πάνω του απαιτούν πρόσβαση εγγραφής σε όλα τα αποθετήρια αυτού του χώρου.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Η εκκίνηση ενός μηχανήματος εδώ απαιτεί πρόσβαση εγγραφής σε όλα τα αποθετήρια αυτού του χώρου. Ένας διαχειριστής του χώρου εργασίας μπορεί να τη δώσει.';
+
+  @override
+  String get rigViewRefused =>
+      'Δεν μπορείτε να δείτε αυτό το μηχάνημα. Ανήκει σε χώρο στον οποίο δεν έχετε πρόσβαση ανάγνωσης.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Η αλλαγή αυτών των θυρών απαιτεί πρόσβαση εγγραφής σε όλα τα αποθετήρια αυτού του χώρου.';
+
+  @override
+  String get rigHolderOnly =>
+      'Μόνο το άτομο για το οποίο άνοιξε αυτό το μηχάνημα μπορεί να το ελέγχει. Χρησιμοποιεί τις δικές του συνδέσεις.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Μπορείτε να παρακολουθείτε αυτό το μηχάνημα. Χρησιμοποιεί τις συνδέσεις του ατόμου για το οποίο ανοίχτηκε, οπότε μόνο εκείνο μπορεί να το ελέγχει, να προωθεί τις θύρες του, να επικολλά σε αυτό ή να αφήνει αρχεία πάνω του.';
 }

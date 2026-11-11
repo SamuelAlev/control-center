@@ -2,14 +2,14 @@
 title: Configura i guardrail
 description: Imposta regole Consenti, Chiedi prima e Nega per le azioni degli agenti, provale con la sonda «E se?» e regola l'autonomia per spazio.
 slug: it-IT/manuale/guide/configura-guardrail
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Questa guida mostra come configurare i guardrail: le regole che stabiliscono se
 l'azione di un agente viene eseguita, richiede prima un'approvazione o viene
 rifiutata.
 
-I guardrail coprono le tredici classi di effetto che ogni strumento che modifica
+I guardrail coprono le quattordici classi di effetto che ogni strumento che modifica
 lo stato dichiara. Vengono applicati lato server nel punto in cui lo strumento
 viene chiamato, mai tramite un'istruzione in un prompt.
 
@@ -23,7 +23,7 @@ viene chiamato, mai tramite un'istruzione in un prompt.
    compare alla fine di quella riga (**Ripristina al valore ereditato**) — la
    decisione torna all'ambito più ampio
 
-Ogni riga mostra la decisione effettiva come tag di stato e un badge per la sua
+Ogni riga mostra l'impostazione dell'azione come tag di stato e un badge per la sua
 provenienza: **Questo ambito**, **Ereditato** o **Predefinito**. La matrice si
 risolve nella modalità Agente (`chat`), quindi **Preimpostazione della modalità**
 non compare mai qui — usa la sonda «E se?» con una modalità di sola lettura
@@ -35,6 +35,18 @@ Verifica: imposta **Eseguire il push a un remoto** su **Nega** nell'ambito dello
 spazio di lavoro, poi esegui la sonda «E se?» qui sotto su `git push origin main`.
 Il risultato è `deny` con origine `workspace`.
 
+## Verifica e revoca le approvazioni temporanee
+
+Rispondere a una scheda di approvazione con **Approva per 8 ore** scrive un'approvazione temporanea: una regola che lascia passare lo stesso tipo di azione senza chiedere fino alla sua scadenza. Ognuna è elencata in questa pagina, sotto l'azione a cui appartiene.
+
+1. Vai su **Impostazioni → Spazio di lavoro → Autorizzazioni degli agenti** e scegli l'ambito. Un'approvazione viene scritta per lo spazio da cui proviene la domanda, quindi scegli **Spazio** e poi quello spazio
+2. Sotto la riga dell'azione leggi la voce: che cosa consente (per esempio, push verso branch che corrispondono a `feature/**`), le parole **Approvazione temporanea**, chi l'ha concessa quando è stata un'altra persona, e quando termina
+3. Per terminarla subito, punta la voce e premi **Revoca**. Gli agenti chiedono di nuovo a partire dalla loro azione successiva
+
+La riga mostra sempre l'impostazione propria dell'azione, e una riga sotto conta i casi elencati più sotto che sono comunque consentiti. Le regole condizionali scritte da un modello di policy compaiono nello stesso elenco, e le regole sui comandi in un gruppo **Comandi** dopo l'ultima azione. Nell'ambito dello spazio di lavoro, una nota sotto il riepilogo conta le approvazioni temporanee impostate per singoli spazi o agenti. In uno spazio o un agente, conta quelle dello spazio di lavoro, che valgono anche lì.
+
+Un'approvazione temporanea risparmia soltanto una domanda. Non scavalca mai **Nega**: se imposti un'azione su **Nega** mentre una è in corso, la sua voce riporta **senza effetto mentre è su Nega** finché non termina o non la revochi. Cambiare l'impostazione di un'azione lascia in vigore le sue approvazioni temporanee, e revocarne una lascia l'impostazione.
+
 ## Capire come si risolve una decisione
 
 La risoluzione segue l'ordine **prima la specificità, poi la restrittività**:
@@ -44,7 +56,7 @@ La risoluzione segue l'ordine **prima la specificità, poi la restrittività**:
    risoluzione si ferma
 2. Se nessuna regola corrisponde, si applica la **preimpostazione della
    modalità** — una modalità di sola lettura (plan, review, orchestrate) rifiuta
-   undici delle tredici classi
+   dodici delle quattordici classi
 3. Se la modalità non ha nulla da dire, si applica il **predefinito integrato**
 
 Dentro un unico ambito, una regola sui comandi si risolve con il prefisso
@@ -74,7 +86,7 @@ peggio di una rifiutata.
 | Creare un commit                             | Consenti              |
 | Eseguire il push a un remoto                 | Chiedi prima          |
 | Aprire una pull request                      | Chiedi prima          |
-| Pubblicare una revisione o unire             | Chiedi prima          |
+| Aggiornare o unire una pull request          | Chiedi prima          |
 | Scrivere su un tracker esterno               | Chiedi prima          |
 | Accedere alla rete                           | Consenti              |
 | Leggere un segreto                           | Consenti              |
@@ -82,6 +94,7 @@ peggio di una rifiutata.
 | Eseguire un processo                         | Consenti              |
 | Modificare la struttura dello spazio di lavoro | Consenti            |
 | Pilotare un recinto (rig)                    | Consenti              |
+| Eseguire comandi sull'host                   | Chiedi prima          |
 
 La tassonomia è chiusa. Un nuovo strumento distribuito senza dichiarare le
 proprie classi non supera un test a cricchetto in CI, quindi nulla arriva con un
@@ -92,15 +105,13 @@ insieme di effetti silenziosamente vuoto.
 Prima di modificare una regola, controlla come la policy attuale la risolve già.
 
 1. Sulla stessa pagina, scorri fino a **E se?**
-2. Scegli un'**Azione** (una delle tredici classi)
+2. Scegli un'**Azione** (una delle quattordici classi)
 3. Se vuoi, compila **Comando** (ad esempio `git push origin main`), **Agente**,
    **Spazio** e **Modalità**
 4. Leggi il risultato: la decisione, il motivo e **Origine:**
 
 La sonda esegue lo stesso motore di risoluzione usato dal percorso di
-applicazione, sulle tue regole attive, quindi la risposta è esatta. Se ti
-sorprende, modifica una regola nella matrice qui sopra ed esegui di nuovo la
-sonda.
+applicazione, sulle tue regole attive, quindi la risposta è esatta. Quando decide un'approvazione temporanea, la fonte riporta **Approvazione temporanea** seguita dal suo ambito. Se la risposta ti sorprende, modifica una regola nella matrice qui sopra ed esegui di nuovo la sonda.
 
 ## Imposta il selettore dell'autonomia di uno spazio
 

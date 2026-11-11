@@ -2,7 +2,7 @@
 title: Installer og administrer skills
 description: Installer og oppdater skills i arbeidsområdet gjennom skanningsporten, og sammenlign deretter lagrede revisjoner med budsjetterte skillevalueringer.
 slug: nb-NO/handbok/slik-gjor-du/administrer-skills
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Denne veiledningen viser hvordan du fyller et arbeidsområde med skills fra
@@ -98,7 +98,7 @@ tilbakerulling i låsen.
    formål, og en **Adapter**. Det innebygde harnesset bruker en konfigurert
    leverandør og en verktøykyndig modell. **Claude Code** bruker den forvaltede
    Claude-kontoen som standard og en konkret modellidentifikator; logg inn under
-   **Innstillinger → Adaptere** først. Den låner ikke serveroperatørens
+   **Innstillinger → Server → Modellleverandører → Claude Code-kontoer** først. Den låner ikke serveroperatørens
    personlige pålogging.
 3. Velg en **Sammenligning** fra tabellen nedenfor.
 4. Angi **Gjentakelser per oppgave** (1–20) og **Budsjett (US cents)**. For
@@ -189,8 +189,7 @@ skråstrekkommandoer (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — en skill som leveres av et repo som er sjekket ut i
   dette området
 
-Et nakent navn som ikke er innebygd, løses fortsatt, for meldinger skrevet før
-navnerommet fantes. Det er `/skill:plan` som når en skill som heter `plan`;
+Det er `/skill:plan` som når en skill som heter `plan`;
 `/plan` er alltid den innebygde.
 
 ## Repo-avgrensede skills

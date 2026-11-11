@@ -2,7 +2,7 @@
 title: Most czatu
 description: Dostawcy, polecenia, dane uwierzytelniające, możliwości, operacje RPC i przechowywanie w moście czatu.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/most-czatu
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Dostawcy
@@ -150,7 +150,7 @@ Karta otwiera się, gdy wzmianka zostanie przyjęta, przed klonowaniem i przed p
 | Wzmianka przyjęta               | `Working on it…`                                               |
 | Krok `repo`                     | `Cloning <repo>…`                                              |
 | Krok `prCheckout`               | `Checking out the pull request in <repo>…`                     |
-| Krok `script`                   | `Running the setup script for <repo>…`                         |
+| Krok `provisionTasks`           | `Running worktree tasks for <repo>…`                           |
 | Krok `agent`                    | `Setting up <agent>…`                                          |
 | `provisioning`, jeszcze bez kroku | `Preparing the workspace…`                                   |
 | `ready`                         | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Istnieje, ponieważ połączenie następuje po _drugiej_ stronie: członek wpisu
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | Dane uwierzytelniające połączenia | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                |
 | Niedokończona konfiguracja z przewodnikiem | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                  |
-| Starsze pliki Slacka           | `<dataDir>/<workspaceId>/slack_credentials.json` oraz `slack_app_setup.json`, odczytane raz i zmigrowane na miejscu |
 
 Dane uwierzytelniające leżą obok bazy danych obszaru roboczego, a nie w niej: usunięcie obszaru roboczego zabiera ze sobą jego tokeny czatu, a `workspace.export` lub kopia zapasowa kopiuje `workspace.db` — obszar roboczy przekazany komuś innemu nie nosi więc aktywnych tokenów bota. Zapisy są atomowe (plik tymczasowy plus zmiana nazwy) i ograniczone do samego właściciela.
 

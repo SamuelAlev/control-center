@@ -9,26 +9,19 @@ enum SkillOrigin {
   runtimeLocal,
 
   /// Fetched from a GitHub repository, pinned to a commit SHA.
-  github,
-
-  /// Legacy: resolved from the old skills.sh registry. No new install carries
-  /// this origin (sources are GitHub now); kept so pre-existing lock files
-  /// still parse and display honestly.
-  registry;
+  github;
 
   /// The `skills-lock.json` storage string.
   String get wire => switch (this) {
     SkillOrigin.manual => 'manual',
     SkillOrigin.runtimeLocal => 'runtime-local',
     SkillOrigin.github => 'github',
-    SkillOrigin.registry => 'registry',
   };
 
   /// Parses a [SkillOrigin] from its storage string, defaulting to [manual].
   static SkillOrigin fromWire(String value) => switch (value) {
     'runtime-local' => SkillOrigin.runtimeLocal,
     'github' => SkillOrigin.github,
-    'registry' => SkillOrigin.registry,
     _ => SkillOrigin.manual,
   };
 }

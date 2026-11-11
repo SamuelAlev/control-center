@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_infra/src/dap/dap_adapter_registry.dart';
 import 'package:cc_infra/src/dap/dap_client.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 
 /// Where a debuggee stopped.
 class DebugStop {
@@ -43,6 +44,7 @@ class DebugSession {
     required this._client,
     required this.workingDirectory,
     this.ttl = const Duration(minutes: 30),
+    this._onEnded,
   }) : startedAt = DateTime.now() {
     _eventSub = _client.events.listen(_onEvent);
     // The adapter asks US to do things — `runInTerminal` above all. An
@@ -81,6 +83,9 @@ class DebugSession {
   >
   _reverseSub;
   Timer? _ttlTimer;
+
+  /// Runs once when the session ends, however it ends.
+  final Future<void> Function()? _onEnded;
 
   Map<String, dynamic> _capabilities = const {};
   final _initialized = Completer<void>();
@@ -263,6 +268,7 @@ class DebugSession {
     await _reverseSub.cancel();
     await _client.close();
     await _stopped.close();
+    await _onEnded?.call();
   }
 
   void _onEvent(DapEvent event) {
@@ -371,11 +377,21 @@ class DebugSessionSupervisor {
       return null;
     }
     if (session.isTerminated) {
+      // An adapter that died on its own still has to end the session, which
+      // releases its sandbox.
       _sessions.remove(key);
+      unawaited(session.terminate());
       return null;
     }
     return session;
   }
+
+  /// Whether the live session for [key] runs under [launcher]: its sandbox
+  /// session is released when the debug session ends, not with the run.
+  bool runsUnder(String key, ToolProcessLauncher launcher) =>
+      identical(_launchers[key], launcher) && sessionFor(key) != null;
+
+  final Map<String, ToolProcessLauncher> _launchers = {};
 
   /// Every live session.
   List<DebugSession> get sessions =>
@@ -383,10 +399,15 @@ class DebugSessionSupervisor {
 
   /// Starts an adapter for [key], replacing nothing: an existing live session
   /// is an error, not something to silently discard.
+  ///
+  /// The adapter, and the debuggee it launches as its child, run through
+  /// [launcher], which is released when the session ends: stopped, past its
+  /// TTL, its adapter gone, or the supervisor disposed.
   Future<DebugSession> start({
     required String key,
     required ResolvedDapAdapter adapter,
     required String workingDirectory,
+    required ToolProcessLauncher launcher,
     Map<String, String>? environment,
   }) async {
     final existing = sessionFor(key);
@@ -397,6 +418,7 @@ class DebugSessionSupervisor {
       );
     }
     final client = await DapClient.start(
+      launcher: launcher,
       command: adapter.executable,
       args: adapter.spec.args,
       workingDirectory: workingDirectory,
@@ -409,8 +431,15 @@ class DebugSessionSupervisor {
       client: client,
       workingDirectory: workingDirectory,
       ttl: ttl,
+      onEnded: () async {
+        if (identical(_launchers[key], launcher)) {
+          _launchers.remove(key);
+        }
+        await launcher.release();
+      },
     );
     _sessions[key] = session;
+    _launchers[key] = launcher;
     try {
       await session.initialize();
     } on Object {

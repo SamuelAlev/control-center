@@ -63,6 +63,7 @@ dev_dependencies:
   # end (server transport ⇄ broker ⇄ a simulated phone peer).
   cc_signaling_server:
     path: ../../apps/cc_signaling_server
+  fake_async: any
   lints: any
   # Used directly by tests that spin up an in-memory SQLite (the runtime
   # tables/DAOs live in cc_persistence; these are test-only here).

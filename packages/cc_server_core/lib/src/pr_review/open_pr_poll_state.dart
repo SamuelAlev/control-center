@@ -52,30 +52,18 @@ class _SweepContext {
   }
 }
 
-/// One repo's access bookkeeping: consecutive access-denied probe failures
-/// and the parked ("inaccessible") state they escalate into.
-class _RepoAccessState {
-  _RepoAccessState({required this.repoFullName});
-
-  /// The repo's `owner/name` at the last observation, for the wire entry.
-  String repoFullName;
-
+/// One repo's probe-failure bookkeeping. The published record of whether a
+/// repo is reachable is the [RepoAccessRegistry]; this only counts the
+/// consecutive failures that escalate into a registry entry, and paces the
+/// slow re-probes of a repo the registry blocks.
+class _RepoProbeState {
   /// Consecutive access-denied probe failures. Reset by any successful probe.
-  int consecutiveFailures = 0;
+  int consecutiveDenials = 0;
 
-  /// Whether the repo is parked: probed on the slow retry cadence only and
-  /// excluded from fetches, because its denial is deterministic until a human
-  /// installs the app there or fixes the access.
-  bool parked = false;
+  /// Consecutive transient probe failures (timeouts, 5xx, rate limits).
+  int consecutiveTransient = 0;
 
-  /// The `NetworkException.code` that parked it (`not_found` /
-  /// `auth_error` / `installation_suspended`).
-  String reason = '';
-
-  /// When the repo was parked.
-  DateTime? since;
-
-  /// Last slow-cadence retry, so parked repos are probed sparsely.
+  /// Last slow-cadence retry of a blocked repo, so it is probed sparsely.
   DateTime? lastRetryAt;
 
   bool isRetryDue(DateTime now, Duration interval) =>
@@ -106,9 +94,9 @@ class _WorkspacePollState {
   /// Last conditional-request ETag per repo id.
   final Map<String, String> etagByRepoId = {};
 
-  /// Access bookkeeping per repo id. A repo is present here once a probe has
-  /// been denied; it leaves the map the moment a probe succeeds again.
-  final Map<String, _RepoAccessState> accessByRepoId = {};
+  /// Probe-failure bookkeeping per repo id. A repo is present here once a
+  /// probe has failed or it has been re-probed while blocked.
+  final Map<String, _RepoProbeState> probesByRepoId = {};
 
   /// The current snapshot in wire form (`{'authenticated', 'repos'}`), or null
   /// before the first successful sweep.
@@ -124,6 +112,16 @@ class _WorkspacePollState {
   /// A forced sweep already queued behind [inflight]. Concurrent forced
   /// refreshes share this one future instead of piling up sweeps.
   Future<void>? queuedForced;
+
+  /// When the last explicit refresh was accepted, and its sweep. Refreshes
+  /// inside `forcedRefreshMinGap` of it join that sweep instead of starting
+  /// another.
+  DateTime? lastForcedAt;
+  Future<void>? lastForced;
+
+  /// Whether a periodic tick has already queued this workspace's sweep (it
+  /// waits for one of the tick's concurrency slots).
+  bool tickQueued = false;
 
   /// Broadcast of sweep in-flight transitions (`true` on start, `false` on
   /// completion). `watchOpenForWorkspace` merges these into its stream so a

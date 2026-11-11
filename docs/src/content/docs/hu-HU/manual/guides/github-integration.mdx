@@ -2,7 +2,7 @@
 title: GitHub-integráció beállítása
 description: Jelentkezzen be a GitHubra, hogy a PR-felület, a repóregisztráció és az ügynökfuttatások működjenek.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Ez az útmutató a beállítás GitHub-specifikus részeit tárgyalja. A GitHub a három
@@ -32,7 +32,7 @@ bejelentkeztetése olyan dolog, amelyet ők maguk végeznek el.
 
 A GitHub kizárólag bejelentkezéssel működik: nincs beillesztendő token.
 
-1. Nyissa meg a **Beállítások → Munkaterület → Profil és identitás → Kódtárhely**
+1. Nyissa meg a **Beállítások → Ön → Profil → Kódtárhely**
    oldalt (vagy a bevezető első lépését)
 2. A **GitHub** sorban kattintson a **Bejelentkezés: GitHub** elemre
 3. A böngészője megnyitja a GitHubot. Hagyja jóvá az alkalmazást
@@ -58,17 +58,29 @@ olyan token is megszűnik, amelyet a szerver az Ön nevében állított ki.
 
 ## Kinek a nevében szól a hitelesítő adata
 
-- **Bármi, amit Ön tesz** (a PR-oldal megnyitása, átnézés közzététele,
-  jóváhagyás, összefésülés), az **Ön** bejelentkezésén fut, és semmi máson. Ha
-  nincs bejelentkezve, az alkalmazás ezt jelzi, és bejelentkezést kér. Semmilyen
-  más hitelesítő adat nem lép az Ön helyébe
-- **Az a munka, amelynél senki sem gépel** (ügynökfutások, pipeline-ok,
-  PR-lekérdezés, botválaszok, klónozás), egyetlen repóra szóló tokent kap,
-  amelyet a szerver GitHub Appja vagy a Connect állít ki. Ez arra korlátozódik,
-  amit egy felelős tag ott megtehet: aki kérte, egyébként a munkaterület
-  tulajdonosa. Az a tag, aki nem pusholhat, olvasásra korlátozza a tokent
-- **Az automatizálás soha nem hagy jóvá** pull requestet. A jóváhagyás egy
-  személy cselekedete
+A Control Center követi a GitHub saját megkülönböztetését személyként és alkalmazásként való működés között:
+
+| Mi történik | Ezen jelenik meg a GitHubon mint |
+| --- | --- |
+| Minden, amit Ön maga tesz: megjegyzés, átnézés, jóváhagyás, összefésülés, átnézők kérése | **Ön**. A GitHub a beszélgetésben lévő megjegyzést a Control Center alkalmazással készítettként jelöli; az átnézésen és a soron belüli megjegyzésein nincs ilyen jelölés |
+| MI-alapú átnézés, ügynökválaszok és -megjegyzések a PR-beszélgetésekben, címkék, pipeline- és botmunka | **A Control Center bot**. A megosztott Connect-alkalmazáson az átnézés csak olyan telepítés esetén a botjáé, amelyet a Connect üzemeltetője felvett a listára; egyébként az elszámoltatható személy nevén látszik |
+| Az ügynök által Önnek nyitott pull request, annak címén vagy leírásán végzett szerkesztései, pushai és commitjai | **Ön**. A Control Center társszerzőként jóváírást kap, ha a társszerzői jóváírás be van kapcsolva |
+| Olyan munka, amelyet senki nem kért (ütemezések, webhookok) | **A Control Center bot**, a commitjai szerzőjeként is. A Control Center Connecten soha nem push-ol és nem nyit pull requestöt |
+
+- **Minden, amit Ön tesz,** kizárólag **az Ön** bejelentkezésén fut, semmi máson. Ha nincs bejelentkezve, az alkalmazás bejelentkezést kér. Semmilyen más hitelesítő adat nem lép az Ön helyébe
+- **A bot munkája** egyszerre egyetlen repóra szóló tokent kap, amely arra korlátozódik, amit egy felelős tag ott megtehet: a kérő tag, egyébként a munkaterület tulajdonosa. Az a tag, aki nem pusholhat, olvasásra korlátozza a tokent. A valaki nevében működő bot-válaszok **Control Center (for @login)** előtaggal kezdődnek
+- **Az ügynökök a Control Centeren keresztül nyitnak pull requestöket**, soha nem a homokozóból, így a pull request az Öné, és a GitHub saját szabályai megakadályozzák, hogy jóváhagyja. A Control Center az olyan jóváhagyást is elutasítja, amelyet az a személy ad, aki az ügynököt a munkára kérte, illetve a pull request szerzője. Ütemezett vagy webhook-futtatás esetén ez minden olyan adminisztrátorra vonatkozik, aki a triggerét aktiválta vagy a pipeline-ját szerkesztette, miközben az aktív volt. Más személynek kell átnéznie. Ha a Control Center nem tudja megerősíteni, ki nyitotta a pull requestöt, vagy melyik forge-fiók az Öné, elutasítja, és arra kéri, próbálja újra
+- **Az ügynökök a megjegyzéseiket is a Control Centeren keresztül írják.** Az ügynökfutás GitHub-tokenje csak olvas. Amikor egy ügynök a saját dolgozott pull requestjére ír megjegyzést, a Control Center botként posztolja azt, a **Control Center (for @login)** előtaggal, ha valaki kérte a futtatást. Az ügynök csak a saját pull requestjére írhat megjegyzést: olyanra, amely ugyanabban a repóban van, nem forkban, és amelynek legutóbbi commitját az ügynök push-olta, vagy az ügynök terének ágának aktuális commitja. Az ügynök megjegyzésében lévő @-említések senkit sem értesítenek. Az ügynök a saját pull requestje címét vagy leírását is módosíthatja, amíg az nyitva van. Ez a módosítás ugyanúgy történik, ahogy a pull request megnyílt (az Ön nevében, ha Ön kérte a futást), és alapértelmezés szerint jóváhagyást kér. A pull request leírása megtartja a benne lévő @-említéseket, amikor az ügynök megnyitja, és amikor szerkeszti, így a megnevezett személyek értesítést kapnak
+- **A Control Center Connecten a bot soha nem push-ol és nem nyit pull requestöt.** Push, ág létrehozása vagy pull request nyitása ott olyan személyt igényel, aki kérte, és az illető bejelentkezésével fut. Az ütemezett vagy webhook-futtatás, amely push-olni próbál, egy erre utaló üzenettel leáll. Ahhoz, hogy a felügyelet nélküli futtatások push-olhassanak, adja meg a munkaterületnek a saját GitHub App-ját a **Beállításokban**
+- **Amit a Connect-bot tehet.** A megosztott Connect-alkalmazással a bot kommentel, címkéz és reagál. Átnézést (MI-átnézést, átnézési megjegyzéseket, átnézőkérést) csak akkor tesz közzé, ha a Connect üzemeltetője felvette ennek a szervernek a telepítését a listára. Egyébként az átnézés az elszámoltatható személy saját bejelentkezésével megy ki, az ő nevén. A bot soha nem nyit, szerkeszt, zár le vagy nevez át pull requestet, nem vet el áttekintést, és nem szerkeszt vagy töröl megjegyzést; ezekhez olyan személy kell, aki kérte, a saját bejelentkezésével. A Connect nem köti a szervezete telepítését egyetlen Control Center szerverhez: bármely szerver, ahol olyan tag jelentkezett be a Connecten keresztül, aki push-olhat az adott repóba, megkaphatja ennek a botnak a megjegyzésekhez használt tokenjét az adott repóhoz
+- **A saját GitHub-alkalmazással rendelkező szerver vagy munkaterület** a fentiek mindegyikét a bot nevében végzi tovább, az átnézéseket is beleértve
+- **Az automatizálás soha nem hagy jóvá** pull requestet. A jóváhagyás egy személy cselekedete
+
+Repó összekapcsolásakor a Control Center ellenőrzi, hogy a fiókja láthatja-e, és figyelmeztet, ha a GitHub App nincs telepítve a szervezetére, vagy nem tartalmazza a repót, a javításhoz vezető hivatkozással. Az összekapcsoláshoz és a leválasztáshoz munkaterület-adminisztrátor kell, a munkaterület saját tárhelyén kívül eső munkapéldányt pedig csak a szerver tulajdonosa köthet össze; lásd: [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/).
+
+Az összekapcsolás a repó állandó GitHub-azonosítóját követi, így az átnevezéshez vagy átadáshoz Önnek nem kell semmit tennie. Ha az útvonal később egy másik repóra mutat, a Control Center nem küld neki semmit, és értesítést jelenít meg, amíg egy munkaterület-adminisztrátor a **Újrakapcsolás** gombra nem kattint.
+
+Egy repó kódjának megnyitásához (fájlok, diffek, keresés, terminál) két dologra van szükség: a munkaterületi hozzáférésre és az Ön olyan GitHub-bejelentkezésére, amely olvashatja a repót. A munkaterület-adminisztrátorokra ugyanez a szabály vonatkozik; csak a szerver tulajdonosa mentesül alól.
 
 ## Mit ad az integráció
 
@@ -78,7 +90,7 @@ olyan token is megszűnik, amelyet a szerver az Ön nevében állított ki.
 | Check-futtatások | A GitHub Checks API |
 | Átnézés közzététele | Felhasználó által indított lépés, amely közzéteszi az átnézését a PR-ben, az Ön nevében |
 | Repóregisztráció | Egy checkout akkor fogadható el, ha az `origin` remote-ja a github.com-ra mutat, vagy a gitlab.com / bitbucket.org oldalra |
-| Ügynök GitHub-hozzáférése | Egy token a futtatás egyetlen repójára `GH_TOKEN` / `GITHUB_TOKEN` néven; a pushok a Control Centeren mennek át |
+| Ügynök GitHub-hozzáférése | Futás közben a `git fetch` a Control Centeren keresztül megy, amely a futás repóit olyan csak olvasási tokennel tölti le, amelyet a futás sosem tart a birtokában. A `gh` csak olvasási tokennel olvassa őket, amelyet a Control Center kérésre kiad, és a futás végén visszavon. A push-ok, pull requestek, ezek szerkesztései és a megjegyzések a Control Centeren keresztül mennek |
 | Értesítési jelzések | A GitHub-értesítési postaládájának szerveroldali lekérdezése „Említve egy pull requestben” és „Átnézést kértek” értesítéseket vált ki |
 | Felhasználói profilok | Profilkártyák rámutatáskor és a PR-ek szerző szerinti szűrése |
 
@@ -100,17 +112,20 @@ kétpercenként.
 ## Hogyan lépnek fel az ügynökök a GitHubon
 
 - Egy GitHub-worktree-ben dolgozó ügynök erre az egy repóra szóló tokent kap.
-  Olvashatja a kódot, és megjegyzést fűzhet a pull requestekhez, ha a felelős
-  tag pusholhat, ha pedig nem, csak olvashat. A push a Control Centeren megy át, amely megkérdezi a
+  Csak a kódot, a hibajegyeket és a pull requestöket olvashatja; a megjegyzések a Control Centeren mennek át, ahogy fent leírtuk. A push a Control Centeren megy át, amely megkérdezi a
   **Küldés távoli tárolóra** szabályt, majd egy olyan írási tokennel továbbítja,
   amely soha nincs az ügynök birtokában. Lásd a
   [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalt
-- Az ügynök commitjai mindig a kérő Git-identitását használják szerzőként és commitolóként is. Alapértelmezés szerint a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer a GitHub `@usectrl` fiókját társszerzőként tünteti fel. A **Beállítások → Ön → Commit-hozzárendelés** oldalon kikapcsolhatja ezt a társszerzői elismerést az identitása megváltoztatása nélkül. A **Beállítások → Munkaterület → Általános** oldalon megadott felülírás elsőbbséget élvez, és zárolja a személyes kapcsolót. A Claude Code saját szerzőségi jelölése mindig ki van kapcsolva. A commitok aláírásához továbbra is külön érvényes konfiguráció szükséges
+- Az Ön által kezdeményezett munka az Ön nevén kerül commitolásra. Ha kér egy ügynöktől valamit, vagy az IDE-ben commitol, Ön a szerző és a commitoló, olyan címmel, amelyet a forge ellenőrzött: a GitHubos bejelentkezésének GitHub noreply-címével, vagy GitLabon és Bitbucketen a bejelentkezésében jelentett e-mail-címmel. A munkaterületen megadott Git-identitását csak olyan kézzel készített commithoz használjuk, amelyet olyan tárolóban készít, ahol egy forge sem igazolja az Ön címét. Ha nincs bejelentkezve arra a forge-ra, az ügynök commitjai helyette a botéi lesznek, és a futtatás jegyzetei ezt elmondják
+- A senki által nem kért munka a bot nevén kerül commitolásra. Egy ütemezett vagy webhook-futtatás a munkaterület GitHub App-jának nevén commitol (`<app>[bot]`, a GitHub noreply-címével), vagy `Control Center <hi@usectrl.dev>` címmel, ha nincs GitHub App, vagy a repó GitLabon vagy Bitbucketen van
+- **A Control Center megjelölése társszerzőként** (**Beállítások → Ön → Commitok**) egy `Co-Authored-By:` sort ad a másik félnek: a Control Center a saját commitjaira, a bot commitjain pedig mindazokra a személyekre, akik a futtatás mögötti triggert beállították. Amíg ki nem kapcsolja, be van kapcsolva; a munkaterület-adminisztrátor a **Beállítások → Munkaterület → Általános** alatt, a **Társszerzői jóváírás** beállítással mindenki számára dönthet, ilyenkor az Ön saját választása elmentődik, de ebben a munkaterületen nem érvényesül. A Claude Code saját szerzőségi sorai mindig le vannak tiltva
+- Commitjait aláírhatja. A **Beállítások → Ön → Commitok** alatt, az **Ellenőrzött commitok** résznél válassza az **Aláírókulcs létrehozása** lehetőséget, és adja hozzá a nyilvános felét a GitHub- vagy GitLab-fiókjához aláírókulcsként; ettől kezdve a kért futtatások commitjai és az IDE-ben készített commitok ellenőrzöttként jelennek meg. A privát fél a szerveren marad, így aki irányítja ezt a szervert, az Ön nevében írhat alá commitokat, amíg a kulcs az Ön fiókjában van; GitHubon egy már ellenőrzöttként megjelenő commit a kulcs eltávolítása után is ellenőrzött marad. A Bitbucketnek nincs csak aláírásra szolgáló kulcsa: ne adja hozzá ott a kulcsot, a Bitbucketen lévő commitok pedig nincsenek aláírva. A bot commitjai soha nincsenek aláírva
+- Az IDE **Verziókezelés** paneljén készített commitok kihagyják a tároló Git-horgait, ahogy a `git commit --no-verify` teszi, a szerver Gitje pedig figyelmen kívül hagyja a tároló által beállított hitelesítő segédeket, szerkesztőket, külső diff-eszközöket és aláírókat: a Git a szerver saját gépén fut, olyan fában, amelyet egy ügynök vagy egy pull request megváltoztathat. Lásd: [Commit és push a Verziókezelés panelről](/hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese/#commit-és-push-a-verziókezelés-panelről)
+- Az ügynök által push-olt minden commit előzetesen ellenőrzésre kerül, beleértve a `stack_publish` által egy stacknek push-olt rétegeket is. Az a push, amely másokat nevez meg, eltünteti vagy kölcsönzi valamelyik jóváírást, aláírási sort ad hozzá, vagy nincs aláírva úgy, ahogy a beállításai előírják, elutasításra kerül. Az Ön által az IDE-ből push-olt commitok az Öné, és nem ilyen módon ellenőrizzük őket
 - Egy állomáson megnyitott terminál az Ön saját bejelentkezését kapja, erre az
   egy repóra szűkítve, így az onnan indított pushok az Önéi
 - Ha nem állítható ki token (senki felelős nincs bejelentkezve, az alkalmazás
-  nincs telepítve a tulajdonosnál, vagy a telepítés fel van függesztve), a futás
-  token nélkül indul, és a jegyzetei megmondják, miért. Nincs tartalék
+  nincs telepítve a tulajdonosnál, vagy a telepítés fel van függesztve), a tokent kérő parancs megmondja, miért. Nincs tartalék
   hitelesítő adat
 
 ## Hibakeresés
@@ -118,7 +133,7 @@ kétpercenként.
 ### A PR-lista üres, és azt írja, hogy a GitHub nincs csatlakoztatva
 
 Nincs bejelentkezve a GitHubra ezen a szerveren. Kattintson a **Bejelentkezés:
-GitHub** elemre a **Kódtárhely** alatt. A más kódhosztokon lévő repók
+GitHub** elemre a **Beállítások → Ön → Profil → Kódtárhely** alatt. A más kódhosztokon lévő repók
 érintetlenek.
 
 ### A GitHub sor azt írja, hogy a bejelentkezés nincs beállítva ezen a szerveren
@@ -128,6 +143,8 @@ a **Beállítások → Szerver → Egyszeri bejelentkezés** helyen választja k
 egyiket: a **Saját GitHub-alkalmazás létrehozása** körülbelül két percet vesz
 igénybe. Lásd a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt.
 
+Egy munkaterületen, amely saját alkalmazásokat használ, a sor jelzi, ha a munkaterület GitHub-alkalmazása hiányzik vagy hiányos. Egy munkaterület-adminisztrátor a **GitHub-alkalmazás** kártyán tölti ki a **Beállítások → Munkaterület → Integrációk** helyen; lásd: [Adjon egy munkaterületnek saját alkalmazást](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/#egy-munkaterület-saját-alkalmazása).
+
 ### A párbeszédablak azt írja, hogy a kód nem egyezik
 
 Írja be a kódot pontosan úgy, ahogy a böngésző mutatja: 8 betű és számjegy. Öt
@@ -136,11 +153,7 @@ hibás kód lezárja a bejelentkezést; kezdje újra.
 ### A bejelentkezés azt írja, hogy az alkalmazás nincs telepítve
 
 A GitHub Appnak nincs telepítése azon a fiókon, amely a repó tulajdonosa. Egy
-munkaterület-adminisztrátor a **Beállítások → Munkaterület → Általános →
-GitHub-alkalmazás telepítései** helyen telepíti. A Control Center megosztott
-Appját használó szervezetnél előfordulhat, hogy a szervezet egyik
-adminisztrátorának a **A szerver engedélyezése** gombra kell kattintania. Lásd:
-[GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/#a-szerver-engedélyezése-egy-szervezet-számára).
+munkaterület-adminisztrátor a **Beállítások → Munkaterület → Integrációk → GitHub-alkalmazás telepítései** helyen telepíti.
 
 ### Mindenkinek újra be kell jelentkeznie a GitHubra
 
@@ -152,8 +165,19 @@ keresztüli bejelentkezések ahhoz a szerverhez kötődnek, amely létrehozta ő
 
 A regisztrációhoz mindhárom feltétel kell: az útvonal egy git-worktree-n belül
 van, van `origin` remote-ja, és ez a remote egy támogatott kódhosztra mutat
-(github.com, gitlab.com vagy bitbucket.org). Lásd a
-[Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/) oldalt.
+(github.com, gitlab.com vagy bitbucket.org). Az `origin` annak a repónak kell lennie, amelyet összekapcsol, a munkaterület saját tárhelyén kívül eső mappát pedig csak a szerver tulajdonosa köthet össze. Lásd a [Repók hozzáadása munkaterülethez](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/) oldalt.
+
+### A hozzáférésem megvan, de a repó szerint a fiókom nem olvashatja
+
+A GitHub-fiókja nem olvashatja ezt a tárolót, ezért a kódja a munkaterületi hozzáférés ellenére is zárva marad Ön előtt. Jelentkezzen be a GitHubra a **Kódtárhely** alatt, vagy kérjen hozzáférést a tárolóhoz a GitHubon.
+
+### „Nem sikerült igazolni a(z) GitHub-hozzáférését”
+
+A GitHubot nem sikerült elérni az ellenőrzéshez, ezért a Control Center megtagadta a választ, ahelyett hogy találgatott volna. Próbálja újra néhány perc múlva.
+
+### A Connecten a bot helyett az Ön neve alatt jelennek meg az átnézések
+
+A megosztott Connect-alkalmazáson a bot csak olyan telepítésekhez tesz közzé átnézéseket, amelyeket a Connect üzemeltetője felvett a listára. Mindenhol máshol az átnézés az elszámoltatható személy saját bejelentkezésével megy ki. Ahhoz, hogy a bot tegye közzé az átnézéseket, adja meg a munkaterületnek a saját GitHub-alkalmazását.
 
 ### Nagy használat után egy időre minden leáll
 

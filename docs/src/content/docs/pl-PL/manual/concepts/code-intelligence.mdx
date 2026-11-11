@@ -2,7 +2,7 @@
 title: Inteligencja kodu
 description: Dlaczego agent potrzebuje kompilatora, dopasowywacza strukturalnego i debuggera — oraz na co odpowiada każde z nich, czego nie potrafią pozostałe.
 slug: pl-PL/podrecznik/koncepcje/inteligencja-kodu
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center daje agentowi cztery sposoby rozumienia kodu poza jego czytaniem. Odpowiadają one na naprawdę różne pytania, a powód, dla którego są cztery, a nie jeden, jest taki, że żaden pojedynczy mechanizm nie odpowiada na wszystkie.
@@ -31,6 +31,8 @@ Powtarzanie tego, co agent już usłyszał, jest gorsze niż milczenie: wypełni
 Żaden serwer nie startuje przy uruchomieniu. Serwer startuje przy pierwszym żądaniu, które go potrzebuje — czyli prawie zawsze przy pierwszej edycji pliku, który obsługuje — a bezczynne są zamykane. Host, który nigdy nie dotyka Darta, nigdy nie uruchamia analizatora.
 
 Wykrywanie to **część wspólna**: znacznik korzenia musi istnieć w kopii roboczej *i* plik binarny musi dać się odnaleźć. Sam znacznik mówi „to projekt w Pythonie” i nic o tym, czy serwer jest zainstalowany; sam odnajdywalny plik binarny mówi, że host ma zestaw narzędzi, i nic o tej kopii roboczej. Dopiero oba razem oznaczają, że zapytanie może się udać, a narzędzie oferowane i zawsze zawodzące jest gorsze od nieobecnego.
+
+To, na co może wpływać repozytorium, celowo ograniczono do minimum. Serwery pochodzą z wbudowanej tabeli, a nie z pliku w kopii roboczej, a plik binarny znajdujący się wewnątrz projektu (`node_modules/.bin`) jest używany tylko wtedy, gdy uruchomienie działa w piaskownicy. Serwer językowy to program działający na maszynie serwera, więc repozytorium nie może wskazać, którego użyć.
 
 ## Po co wyszukiwanie strukturalne, skoro istnieje grep
 

@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/services/agent_mention_parser.dart';
 import 'package:cc_domain/core/domain/services/user_mention_parser.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
@@ -29,9 +30,9 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dar
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
 import 'package:cc_infra/src/dispatch/guided_goal_service.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_responder_resolver.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
+import 'package:cc_infra/src/messaging/agent_turn_retrier.dart';
 import 'package:cc_infra/src/messaging/agent_working_directory.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
 import 'package:cc_infra/src/messaging/conversation_side_channel_service.dart';
@@ -149,6 +150,7 @@ class MessagingService implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async {
     final service = _guidedGoalService;
     if (service == null) {
@@ -156,16 +158,11 @@ class MessagingService implements MessagingPort {
     }
     final step = await service.step(
       workspaceId: workspaceId,
+      requestedByUserId: requestedByUserId,
       roughObjective: rough,
       transcript: transcript,
     );
-    return GuidedGoalStepResult(
-      question: step.question,
-      objective: step.objective,
-      missing: [for (final m in step.missing) m.name],
-      weaknesses: step.weaknesses,
-      unavailable: step.unavailable,
-    );
+    return step.toResult();
   }
 
   /// Backs `/handoff` and `/btw`: one question about the conversation
@@ -373,9 +370,10 @@ class MessagingService implements MessagingPort {
 
   /// Fires the (optional) automatic titling pass for a just-persisted human
   /// message. Fire-and-forget by design — a slow or failing model must never
-  /// sit on the send path.
+  /// sit on the send path. [senderUserId] wrote the message.
   void _maybeGenerateTitle({
     required String workspaceId,
+    required String? senderUserId,
     required String spaceId,
     String? conversationId,
   }) {
@@ -386,6 +384,7 @@ class MessagingService implements MessagingPort {
     unawaited(
       titleService.maybeGenerate(
         workspaceId: workspaceId,
+        requestedByUserId: senderUserId,
         spaceId: spaceId,
         conversationId: conversationId,
       ),
@@ -453,6 +452,7 @@ class MessagingService implements MessagingPort {
       );
       _maybeGenerateTitle(
         workspaceId: workspaceId,
+        senderUserId: senderUserId,
         spaceId: spaceId,
         conversationId: conversationId,
       );
@@ -471,6 +471,7 @@ class MessagingService implements MessagingPort {
       );
       _maybeGenerateTitle(
         workspaceId: workspaceId,
+        senderUserId: senderUserId,
         spaceId: spaceId,
         conversationId: conversationId,
       );
@@ -511,10 +512,14 @@ class MessagingService implements MessagingPort {
 
     final resolvedMentions = <MessageMention>[
       for (final a in mentionedAgents.values)
-        MessageMention(agentId: a.id, raw: '@${a.name}'),
+        MessageMention(
+          principalId: a.id,
+          raw: '@${a.name}',
+          principalType: PrincipalType.agent,
+        ),
       for (final u in mentionedUsers)
         MessageMention(
-          agentId: u.id,
+          principalId: u.id,
           raw: '@${u.handle}',
           principalType: PrincipalType.user,
         ),
@@ -540,6 +545,7 @@ class MessagingService implements MessagingPort {
     // and only ever renames conversations still carrying a default title.
     _maybeGenerateTitle(
       workspaceId: workspaceId,
+      senderUserId: senderUserId,
       spaceId: spaceId,
       conversationId: conversationId,
     );
@@ -879,16 +885,17 @@ class MessagingService implements MessagingPort {
     required String workspaceId,
     required String spaceId,
     required String feedback,
+    String? senderUserId,
   }) async {
-    // The explicit refine action carries feedback no message holds yet, so
-    // this is the one place that stores it. The send path, whose message is
-    // already stored, goes straight to [_refinePlanWithFeedback].
+    // The explicit refine action carries feedback no message holds yet, so it
+    // is stored here, in the plan's own conversation. The send path, whose
+    // message is already stored, goes straight to [_refinePlanWithFeedback].
     final pendingPlan = await _planToRefine(workspaceId, spaceId);
-    // Keep the refinement turn in the same conversation the plan lives in.
     await sendUserMessage(
       workspaceId,
       spaceId,
       feedback,
+      senderUserId: senderUserId,
       conversationId: pendingPlan.conversationId,
     );
     await _refinePlanWithFeedback(
@@ -896,6 +903,7 @@ class MessagingService implements MessagingPort {
       spaceId: spaceId,
       conversationId: pendingPlan.conversationId,
       feedback: feedback,
+      requestedByUserId: senderUserId,
       plan: pendingPlan,
     );
   }
@@ -1325,55 +1333,23 @@ class MessagingService implements MessagingPort {
     );
   }
 
+  /// The one place a failed turn is retried from; see [AgentTurnRetrier].
+  late final _retrier = AgentTurnRetrier(_repo, dispatchAgent);
+
   @override
   Future<void> retryAgentTurn({
     required String workspaceId,
     required String spaceId,
     required String failedMessageId,
     String? modelOverride,
-  }) async {
-    final failed = await _repo.getMessageById(workspaceId, failedMessageId);
-    if (failed == null) {
-      return;
-    }
-    final agentId = failed.senderId;
-    // Mark the failed message as retried so the bubble hides its Retry button.
-    final meta = Map<String, dynamic>.from(failed.metadata ?? {})
-      ..['retried'] = true;
-    await _repo.updateMessage(
-      workspaceId,
-      failedMessageId,
-      content: failed.content,
-      metadata: meta,
-    );
-    // The retry is dispatched with the SAME context as the turn it replaces, or
-    // it becomes a second-class run:
-    //  * a foreign/absent `workspaceId` ⇒ the run log carries the wrong
-    //    workspace, so every workspace-scoped surface misses it (the composer
-    //    never shows "running" and offers no stop, the bubble never shimmers,
-    //    the roster/run tree never lists it) and the ownership check on
-    //    `stopRun`/`pauseRun`/`steer` rejects it — an unstoppable run. It also
-    //    loses the per-conversation isolated worktree and falls back to the
-    //    agent's global config dir.
-    //  * no `conversationId` ⇒ the retry lands in the space's standing
-    //    conversation even when the failed turn belonged to a side one.
-    // What went wrong is worth telling the retry, so it can do something
-    // different rather than repeat the same approach and fail the same way.
-    final failure = (failed.metadata?['errorMessage'] as String?)?.trim();
-    await dispatchAgent(
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      agentId: agentId,
-      prompt:
-          'Your previous attempt in this space failed before finishing'
-          '${failure == null || failure.isEmpty ? '' : ': $failure'}. '
-          'Review the conversation above and re-attempt the task. If the '
-          'previous approach is what failed, try a different one rather than '
-          'repeating it.',
-      conversationId: failed.conversationId,
-      modelOverride: modelOverride,
-    );
-  }
+    String? requestedByUserId,
+  }) => _retrier.retry(
+    workspaceId: workspaceId,
+    spaceId: spaceId,
+    failedMessageId: failedMessageId,
+    modelOverride: modelOverride,
+    requestedByUserId: requestedByUserId,
+  );
 
   /// Stops the in-flight agent run identified by [runLogId] (== the agent
   /// turn's message id) within [workspaceId]. Delegates to the dispatch service,
@@ -1421,6 +1397,7 @@ class MessagingService implements MessagingPort {
     required String spaceId,
     required String conversationId,
     required String content,
+    String? senderUserId,
     List<Map<String, dynamic>> attachments = const [],
   }) async {
     final result = await steeringQueueService?.enqueue(
@@ -1428,7 +1405,7 @@ class MessagingService implements MessagingPort {
       spaceId: spaceId,
       conversationId: conversationId,
       content: content,
-      senderUserId: await _authorUserId(null),
+      senderUserId: await _authorUserId(senderUserId),
       attachments: attachments,
     );
     return result == null
@@ -1522,11 +1499,6 @@ class MessagingService implements MessagingPort {
   /// compaction skips anyway).
   static const int _defaultContextWindowTokens = 200000;
 
-  /// Forces an anchored-compaction pass over the conversation (`/compact`).
-  /// Refuses while a turn is streaming in the space — the prune pass
-  /// read-modify-writes transcript metadata and would race the live turn's
-  /// writes (a lost update on the in-flight message).
-  @override
   @override
   Future<ConversationSideChannelResult> askAside({
     required String workspaceId,
@@ -1534,6 +1506,7 @@ class MessagingService implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async {
     final service = _sideChannelService;
     if (service == null) {
@@ -1553,24 +1526,21 @@ class MessagingService implements MessagingPort {
         );
       }
     }
-    final result = kind == 'handoff'
-        ? await service.handoff(
+    return kind == 'handoff'
+        ? service.handoff(
             workspaceId: workspaceId,
+            requestedByUserId: requestedByUserId,
             spaceId: spaceId,
             conversationId: conversationId,
             focus: input,
           )
-        : await service.aside(
+        : service.aside(
             workspaceId: workspaceId,
+            requestedByUserId: requestedByUserId,
             spaceId: spaceId,
             conversationId: conversationId,
             question: input,
           );
-    return ConversationSideChannelResult(
-      text: result.text,
-      unavailable: result.unavailable,
-      empty: result.empty,
-    );
   }
 
   @override
@@ -1620,6 +1590,10 @@ class MessagingService implements MessagingPort {
     );
   }
 
+  /// Forces an anchored-compaction pass over the conversation (`/compact`).
+  /// Refuses while a turn is streaming in the space — the prune pass
+  /// read-modify-writes transcript metadata and would race the live turn's
+  /// writes (a lost update on the in-flight message).
   @override
   Future<ConversationCompactionResult> compactConversation({
     required String workspaceId,

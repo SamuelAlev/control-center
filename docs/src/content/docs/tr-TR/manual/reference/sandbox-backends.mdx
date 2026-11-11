@@ -2,15 +2,23 @@
 title: Sandbox arka uçları
 description: Sandbox arka uçları, nerede uygulandıkları ve sandbox çalışma zamanının kullandığı her değer nesnesi.
 slug: tr-TR/kilavuz/referans/sandbox-arka-uclari
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Bir çalıştırmanın sandbox'a alınıp alınmadığı ana makineye bağlıdır]
-`cc_server` ana makineyi açılışta bir kez yoklar ve yoklama kullanılabilir bir arka uç bildirdiğinde ve `--sandbox` `off` olmadığında ajan gönderimini yerel arka uca sarar. Her iki gönderim ek noktası da sarılır: Claude Code CLI sandbox portu üzerinden, ACP ile yerleşik harness `bash` aracı ise sandbox yöneticisi üzerinden.
+`cc_server` ana makinede ajanların nasıl çalışacağına açılışta bir kez karar verir ve karar yeniden başlatılana kadar geçerlidir:
 
-Yoklamanın bir arka uç bildirmediği yerlerde — **her zaman Windows** ve `bwrap` ile `socat` bulunmayan Linux ya da WSL2 — ajan çalıştırmaları sandbox'a **alınmaz**. ACP ve harness `bash` aracı yine de ortam arındırmasıyla başlatılır; Claude Code `NoSandboxAdapter` üzerinden gider ve ana makinenin ortamını devralır. Geriye kalan sınırlar şunlardır: çalıştırmanın kendi çalışma ağacı (`rift`in bulunduğu yerde copy-on-write; Windows'ta `git worktree`), başlatma başına broker'la verilip kapatmada iptal edilen salt okunur bir forge token'ı, ajan çalıştırma ağ geçidinde push kuralından geçmesi gereken push'lar, moda özgü komut politikası, birleşik [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) (başarısızlıkta kapalı), ACP ile harness `bash` yollarındaki ortam arındırması ve modun izin verdiği araç yüzeyi.
+- **Sandbox'a alınmış** (`native`): yoklama bir arka uç bulmuş ve `--sandbox` `off` değildir. Her iki gönderim ek noktası da sarılır: Claude Code CLI sandbox portu üzerinden, ACP ile yerleşik harness `bash` aracı ise sandbox yöneticisi üzerinden.
+- **Kapalı** (`off`): sunucu sahibi sunucuyu `--sandbox off` ile başlattı. Her üyenin ajanı, kim başlatmış olursa olsun, bu makinede sınırsız çalışır.
+- **Kullanılamıyor** (`unavailable`): sandbox açık ama yoklama bir arka uç bulamadı (**her zaman Windows** ve `bwrap` ile `socat` olmayan Linux ya da WSL2). Bir çalıştırma yalnızca ondan hesap verilebilir kişi sunucu [sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) olduğunda başlar: çalıştırmayı isteyen kişi ya da otomasyon için ona bağlı kişi. Başkalarının çalıştırması, kimlik bilgisi basılmadan, bir kira alınmadan ya da bir süreç başlamadan reddedilir. Kayıtlı bir sahip yoksa hiçbir çalıştırma başlamaz.
+
+Reddedilen bir çalıştırma `sandbox_unavailable` koduyla başarısız olur. Uygulama bunu **Ajanların bu sunucuda sandbox’a ihtiyacı var** olarak gösterir: "Bu sunucuda sandbox yok, bu yüzden burada ajanları yalnızca sahibi çalıştırabilir. Sahip sandbox’ı kurabilir ya da sandboxing’i herkes için kapatabilir."
+
+Sandbox olmadan başlayan bir çalıştırma (`off` altında ya da `unavailable` altında sahibin kendi çalıştırması) doğrudan ana makinede çalışır. ACP ve harness `bash` aracı yine de ortam arındırmasıyla başlatılır; Claude Code `NoSandboxAdapter` üzerinden gider ve ana makinenin ortamını devralır. Geriye kalan sınırlar şunlardır: çalıştırmanın kendi çalışma ağacı (`rift`in bulunduğu yerde copy-on-write; Windows'ta `git worktree`), başlatma başına broker'la verilip kapatmada iptal edilen salt okunur bir forge token'ı, ajan çalıştırma ağ geçidinde push kuralından geçmesi gereken push'lar, moda özgü komut politikası, birleşik [eylem korumaları](/tr-TR/kilavuz/kavramlar/korumalar/) (başarısızlıkta kapalı), ACP ile harness `bash` yollarındaki ortam arındırması ve modun izin verdiği araç yüzeyi.
 
 Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, search, find, search_files) her ana makinede sandbox'ın dışındadır: sunucu sürecinde çalışırlar, dolayısıyla yalnızca `bash` sarılır.
+
+Ana makine, sandbox'lı bir sunucu için asla bir geri düşüş değildir. Sunucu ajanları sandbox'a alıyorsa ama bir çalıştırmaya verecek bir sandbox yoksa, onun araç süreçleri ve `bash` komutları reddedilir, ana makinede başlatılmaz. Aynı duruş bir çalıştırmanın etrafındaki küçük süreçleri de belirler: ACP tek seferlik yardımcıları (konuşma başlıkları, `/btw`, `/handoff`, `/goal`) ve Review Studio'daki bir pull request'in golden testleri, sunucu ajanları sandbox'a alıyorsa sandbox içinde, `off` altında sınırsız, `unavailable` altında yalnızca sunucu sahibinin sorumlu olduğu bir istek için çalışır; aksi halde atlanır.
 :::
 
 ## Arka uçlara genel bakış
@@ -19,9 +27,9 @@ Harness'ın süreç içi dosya araçları (read, write, edit, apply patch, searc
 | ---------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Kapalı VM  | `microvm` | macOS, Linux, Windows (microVM hipervizörü)   | microVM çalışma zamanındaki yoklamaya bağlıdır; etkileşimli terminaller için geçerlidir — kabuk ana makinede değil, bir [rig](/tr-TR/kilavuz/kavramlar/rigler/) içinde çalışır |
 | Yerel      | `native`  | macOS (Seatbelt), Linux ve WSL2 (bubblewrap)  | Açılışta yoklanır; Linux, bubblewrap'in uygulayamadığı dosya adı glob'uyla yazma retlerini gerektiren bir çalıştırmayı reddeder |
-| Yalıtım yok | `none`   | Tümü                                          | Ayrıştırma varsayılanı, terminalin varsayılanı ve kullanılabilir bir arka uç olmadığında ya da `--sandbox off` ayarlandığında geri düşülen değer |
+| Yalıtım yok | `none`   | Tümü                                          | Ayrıştırma varsayılanı ve terminalin varsayılanı; ajan gönderimi `--sandbox off` altında ve kullanılabilir bir arka uç olmadığında yalnızca sahibin kendi çalıştırmaları için bunu kullanır |
 
-`SandboxBackend.fromName`, null ya da tanınmayan bir saklı değer için `none` döndürür. Saklı bir `"docker"` değeri `native` ile eşlenir.
+`SandboxBackend.fromName`, null ya da tanınmayan bir saklı değer için `none` döndürür.
 
 **`microvm`, çekirdek sınırı olan tek arka uçtur** — iş yükü gerçekten ana
 makinede çalışmaz. Hiçbir yönde sessiz bir geri düşüş değildir: bir VM
@@ -33,7 +41,7 @@ bildirilir ve rozetle gösterilir, böylece bir terminal ana makinede çalışı
 asla kapalı olduğunu iddia edemez. VM'nin kendi yaşam döngüsü, imajları ve
 çıkışı [rig'ler referansında](/tr-TR/kilavuz/referans/rigler/) ele alınır.
 
-**Windows'ta yerel sandbox yoktur.** `NativeSandboxAdapter.probe`, macOS ya da Linux/WSL2 olmayan her ana makinede `available: false` döndürür. Bu nedenle Windows'ta ajan gönderimi `none` kullanır. `microvm` arka ucu ayrıdır: microVM çalışma zamanındaki yoklamaya bağlıdır ve ana makinede `bash` sarmak için değil, etkileşimli terminaller ile rig'ler için geçerlidir.
+**Windows'ta yerel sandbox yoktur.** `NativeSandboxAdapter.probe`, macOS ya da Linux/WSL2 olmayan her ana makinede `available: false` döndürür; bu nedenle Windows sunucusu `unavailable` durumundadır: yalnızca sunucu sahibinin ajan çalıştırmaları, sınırsız olarak başlar ve diğerlerinin çalıştırmaları reddedilir. Her üyenin orada ajan çalıştırabilmesi için sahip sunucuyu `--sandbox off` ile başlatır; bu da hepsini sınırsız çalıştırır. `microvm` arka ucu ayrıdır: microVM çalışma zamanındaki yoklamaya bağlıdır ve ana makinede `bash` sarmak için değil, etkileşimli terminaller ile rig'ler için geçerlidir.
 
 ## Yoklama sonuçları
 
@@ -46,9 +54,9 @@ Kapılamayı yapan şey yoklamadır. Bir kez, sunucu açılışında çalışır
 | Linux ya da WSL2 ve iki araçtan biri eksik   | `false`     | `requiresInstall: true`, eksik paketleri adlandıran bir kurulum ipucuyla                |
 | Diğer tüm platformlar                        | `false`     | Yerel sandbox bu platformda sunulmaz                                                    |
 
-Sunucu sonucu tek bir başlangıç satırına yazar: `agent sandbox ON` artı not, `no OS-native agent sandbox on this host` artı ipucu ya da `agent sandbox DISABLED by --sandbox off`. `GET /healthz` bir sandbox alanı taşımaz.
+Sunucu sonucu bir başlangıç satırına yazar: `agent sandbox ON` artı not; `no OS-native agent sandbox on this host` artı ipucu, bu ipucu yalnızca sahibin hesap verebildiği çalıştırmaların başlayacağını da ekler; ya da `agent sandbox DISABLED by --sandbox off`. Başlangıçta yazdırılan açığa çıkma satırı aynı kararı `sandbox=native`, `sandbox=off` ya da `sandbox=unavailable` olarak taşır. `GET /healthz` bir sandbox alanı taşımaz.
 
-`--sandbox` / `CC_SERVER_SANDBOX`, `on` (varsayılan) ya da `off` kabul eder. Bu bir devre dışı bırakma seçeneğidir, etkinleştirme değil: `on` "ana makine bir arka uç sunduğunda sar" demektir, asla "bir tane şart koş" değil.
+`--sandbox` / `CC_SERVER_SANDBOX`, `on` (varsayılan) ya da `off` kabul eder. `on`, ana makine bir arka uç sunduğunda her çalıştırmayı sarar ve sunmadığında yalnızca sahibin çalıştırmalarını kabul eder. `off`, her üyenin ajanını bu ana makinede sınırsız çalıştırır; bu, çalıştırma başına bir ayar değil, sahibin herkes için verdiği bir karardır.
 
 ## Yerel arka uç
 
@@ -63,6 +71,8 @@ Apple'ın Seatbelt sandbox mekanizmasını kullanır (macOS App Sandbox'ın da k
 - **Süreç**: `process-exec`, her zaman tehlikeli ikilileri reddeder; ayrıca yazılabilir bir dizinden herhangi bir şeyin yürütülmesini engeller. Ana dizininizin altındaki bilinen araç zinciri kurulum ağaçları (corepack, npx ve `pnpm dlx` önbellekleri, node sürüm yöneticileri, Playwright tarayıcıları, rustup ve cargo, Go, fvm ve pub önbelleği, pyenv, uv ve pipx, rbenv, sdkman, mise, asdf ve `~/.local/bin`) bu engelin altında yeniden açılır. Paylaşılan geçici dizinler de engellenir. Bunun yerine her oturuma `/private/tmp` altında özel bir `TMPDIR` verilir; oturumun derlediği programlar (bir `go test` ikilisi, bir cargo derlemesi) orada çalışabilir. Her zaman tehlikeli olan yasaklar bu izinlerden sonra uygulanır
 - **Ağ**: süreç içi proxy portları artı DNS ile kısıtlanır — loopback'e toptan izin verilmez ve TCP dinlemesi yasaktır. Unix soketlerine yalnızca oturumun özel `TMPDIR`'i içinde izin verilir; bu, IPC soketini orada tutan tsx ve Chrome gibi araçları kapsar. SSH agent'ınız ve diğer soketler erişilemez kalır. Proxy'ler oturum başına alan adı izin listesini uygular (bkz. [Ağ çıkışı](#ağ-çıkışı))
 - **Yapılandırma**: profiller her başlatmada `SandboxSpec` üzerinden üretilir
+- **Sunucunun kendi komutları**: sunucunun programlarını çalıştırdığı bir klasörün hiçbir doğrudan alt öğesi (her `PATH` girdisi ve `~/.local/bin` gibi kullanıcıya özgü yaygın araç klasörleri; `~/fvm/default` gibi sürüm yöneticisi bağlantıları çözülerek) oluşturulamaz, değiştirilemez, silinemez ya da yeniden adlandırılamaz; bağlı bir komutun işaret ettiği kurulu paket de öyle. Bkz. [Sunucunun komut klasörleri](#sunucunun-komut-klasörleri)
+- **Başlangıç dosyaları**: profilin okumayı reddettiği her ev yolu yazmayı da reddeder ve sunucu kullanıcısının kabuklarının ve oturumlarının başlangıç dosyaları (`.zshenv`, `.zlogin`, `.bash_login`, fish yapılandırması, systemd kullanıcı birimleri, otomatik başlatma girdileri ve benzeri) her modda yazmaya kapalıdır
 
 Gereksinimler:
 
@@ -75,6 +85,7 @@ Mount ve PID ad alanları oluşturmak için bubblewrap (`bwrap`) kullanır.
 - **Dosya sistemi**: yalnızca bağlanan yolların görünür olduğu bir mount ad alanı oluşturur
 - **Ağ**: paylaşılmayan bir ağ ad alanında çalışır; trafik ana makine proxy'lerine `socat` Unix soket köprüleri üzerinden ulaşır
 - **Süreç**: PID ad alanı yalıtımı
+- **Sunucunun kendi komutları ve başlangıç dosyaları**: macOS'takiyle aynı korumalar, bubblewrap bağlamaları olarak ifade edilir. Linux'ta henüz doğrulanmadılar ve orada eksik bir komut klasörü yine de oluşturulabilir
 
 Gereksinimler:
 
@@ -90,19 +101,71 @@ Linux'ta yerel gönderimi geri getirmek için oluşturma zamanında dosya adı
 kuralları olan bir arka uç gerekir. Sandbox'ı devre dışı bırakmak, eşdeğer bir
 geçici çözüm değil, açık bir kısıtlamasız devre dışı bırakmadır.
 
+Pratikte bugün bir Linux ya da WSL2 sunucusu ajanları iki yoldan birinde çalıştırır.
+`--sandbox off` ile başlatılmışsa her üyenin ajanını sınırsız çalıştırır. bubblewrap
+ya da `socat` kurulu değilse `unavailable` durumundadır ve yalnızca sunucu sahibinin
+ajanlarını, sınırsız olarak çalıştırır. İki araç da kuruluyken ve sandbox açıkken her
+çalıştırma, sahibinki dahil, kapalı biçimde başarısız olur.
+
+## Sunucunun komut klasörleri
+
+Sunucu, başlangıçta bir kez, programlarını çalıştırdığı her klasörü bulur: `PATH`'inin her
+girdisini, yokladığı kullanıcıya özgü araç klasörlerini (`~/.local/bin`, `~/.bun/bin` ve npm,
+yarn ve pnpm genel klasörleri gibi) ve yoldaki her bağlantının arkasındaki gerçek klasörü
+(`~/fvm/default` ya da bir fnm varsayılanı gibi sürüm yöneticisi bağlantıları). Bir sandbox
+içinde ajan, bu klasörlerde bir komutu ekleyemez, değiştiremez, silemez ya da yeniden
+adlandıramaz; o klasörlere giden bağlantıyı ya da bir bağlı komutun işaret ettiği kurulu
+paketi de; üstlerindeki klasörleri de yeniden adlandıramaz. Aksi halde sandbox'lı bir
+çalıştırma, sunucunun ya da kişinin sonradan sandbox dışında başlatacağı bir program
+yerleştirebilirdi.
+
+Bir çalıştırma için bunun getirdikleri:
+
+- Sandbox'lı bir çalıştırmanın içinden yapılan genel kurulumlar "Operation not permitted"
+  ile başarısız olur: `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`,
+  `corepack enable`, `pipx install`, `uv tool install` ve bin klasörü sunucunun `PATH`'indeyse
+  `cargo install`, `go install` ya da `dart pub global activate`.
+- Varsayılan sürümü değiştirmek aynı biçimde başarısız olur (`fnm default`, `nvm alias default`,
+  `fvm global`); bir aracın kendini yerinde güncellemesi de öyle.
+- Projeye özgü kurulumlar (`node_modules/.bin`), `npx`, `pnpm dlx`, corepack'in yönettiği paket
+  yöneticileri, SDK önbellekleri ve normal derlemeler çalışmaya devam eder.
+
+Bir genel aracı ajanlara sunmak için onu sunucunun kendisine, sunucu kullanıcısı olarak kurun ve
+yeni komutun da korunması için sunucuyu yeniden başlatın. Ya da projeye kurun. Sunucu başladıktan
+sonra kurulan bir komut, yalnızca bir sonraki başlatmadan itibaren tam olarak korunur.
+
+macOS'ta uygulanır ve test edilmiştir. Linux'ta aynı kurallar henüz doğrulanmamış bubblewrap
+bağlamalarıdır. Windows'ta sandbox yoktur.
+
 ## Yalıtımsız arka uç
 
-Sandbox yok. Süreç doğrudan ana makinede, ana makinenin dosya sistemi, ağ ve süreç erişimiyle çalışır. ACP ve harness `bash` aracı yine de ortam arındırmasını ve komut politikasını alır; `NoSandboxAdapter` üzerinden Claude Code ana makinenin ortamını devralır. Kullanılabilir bir arka ucu olmayan ya da `--sandbox off` ayarlanmış bir ana makinede ajan gönderiminin geri düştüğü yer burasıdır ve bir istemci `none` adını verdiğinde terminalin varsayılanı budur.
+Sandbox yok. Süreç doğrudan ana makinede, ana makinenin dosya sistemi, ağ ve süreç erişimiyle çalışır. ACP ve harness `bash` aracı yine de ortam arındırmasını ve komut politikasını alır; `NoSandboxAdapter` üzerinden Claude Code ana makinenin ortamını devralır. Ajan gönderimi her çalıştırma için `--sandbox off` altında bunu kullanır; kullanılabilir bir arka ucu olmayan bir ana makinede yalnızca sahibin kendi çalıştırmaları için, başkalarınınki orada reddedilir. Bir terminal için ana makine kabuğudur ve yalnızca sunucu sahibi açabilir.
 
 ## Sunucuda barındırılan terminal
 
-Terminal, gönderim yoklamasıyla değil, kendi koşullarıyla sandbox'a alınır. `TerminalSessionService`'in `defaultBackend` değeri `none`dır ve `cc_server` bunu geçersiz kılmaz; dolayısıyla bir terminal oturumu, istemci açıkça `native` istemedikçe ana makine kabuğunu çalıştırır — masaüstünün terminal paneli istemez.
+Sunucuda barındırılan terminal, ana makine kabuğunu yalnızca sunucunun [sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) için açar. Diğerleri, çalışma alanının kendi dizinlerinde, bir ajanın sınırlarıyla sandbox'lı bir terminal alır.
 
-`native` istendiğinde kabuk, `SandboxManager` üzerinden sabit bir terminal profiliyle sarılır: `$HOME` ve oturumun çalışma dizini yazılabilirdir, ağ açıktır ve `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` ile `~/Library/Keychains` okumaya kapalıdır. Salt okunur forge token'ı ve push ağ geçidi geçerli değildir — bunlar gönderim meseleleridir. Sarmalama desteklenmiyorsa oturum, ana makine kabuğu PTY'sinde yerel bir rozet göstermek yerine başarısız olur.
+Bir oturum için arka ucun nasıl seçildiği:
+
+| İstenen | Sunucu sahibi | Diğerleri |
+| --- | --- | --- |
+| Hiçbir şey | Sunucunun varsayılan arka ucu | Varsayılan; `none` yerine `native` konur |
+| `none` (ana makine kabuğu) | Ana makine kabuğu | Reddedilir: ana makine kabuğu sunucuda sandbox olmadan çalışır |
+| `native` | Yerel sandbox, sahip profili | Yerel sandbox, ajan profili |
+| `microvm` | Kapalı VM | Kapalı VM |
+| Bilinmeyen bir ad | Reddedilir | Reddedilir |
+
+- **Sahip profili.** `$HOME` ve oturumun çalışma dizini yazılabilir, ağ açıktır ve `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` ile `~/Library/Keychains` okumaya kapalıdır.
+- **Ajan profili** (`memberTerminalSandboxConfig`). O çalışma alanındaki bir ajanın altında çalıştığı aynı politika: yazmalar çalışma dizininde, özel bir çalıştırma dizininde, `/tmp` ve bir ajanın yazabildiği `$HOME` kısımlarında kalır; gizli bilgiler okumaya kapalıdır; ağ, ajan çıkış izin listesidir; programlar yalnızca çalışma dizininden ve kurulu araç zincirlerinden çalışır.
+- Bir terminal yalnızca çalışma alanının kendi dizinlerinin içinde açılır. Dışındaki bir çalışma dizini reddedilir, başka bir dizinle değiştirilmez.
+- Bir terminali yalnızca onu açan kişi okuyabilir, ona yazabilir, boyutunu değiştirebilir ya da kapatabilir. Başkaları için kimliği bilinmeyen görünür.
+- Bir rig hizmeti olmayan bir ana makinede açıkça istenen `microvm` geri düşmek yerine başarısız olur. Böyle bir ana makinede `microvm` varsayılanı `native`e iner ve bunu günlükte söyler.
+
+Salt okunur forge token'ı ve push ağ geçidi terminallere uygulanmaz: bunlar gönderim meseleleridir. Sarmalama desteklenmiyorsa oturum, ana makine kabuğu oturumunda bir sandbox rozeti göstermek yerine başarısız olur.
 
 ## Ağ çıkışı
 
-Bir sandbox başlatıldığında, dışa giden ağ erişimi çekirdek güvenlik duvarı kurallarıyla değil, süreç içi proxy'lerle uygulanır. Kullanılabilir arka ucu olmayan bir ana makinede bunların hiçbiri geçerli değildir ve başlatılan bir süreç ağa tam olarak sunucu kullanıcısının erişeceği gibi erişir.
+Bir sandbox başlatıldığında, dışa giden ağ erişimi çekirdek güvenlik duvarı kurallarıyla değil, süreç içi proxy'lerle uygulanır. Sandbox'lanmamış bir çalıştırma (`--sandbox off` altındaki her çalıştırma ya da kullanılabilir bir arka ucu olmayan bir ana makinede sahibin çalıştırması) bunların hiçbirini almaz: başlattığı bir süreç ağa tam olarak sunucu kullanıcısının erişeceği gibi erişir.
 
 - Sandbox çalışma zamanı, `cc_server` sürecinin içinde `127.0.0.1` üzerinde bir HTTP/HTTPS proxy ve bir SOCKS5 proxy çalıştırır, **kısıtlı oturum başına bir çift** (`http_proxy.dart`, `socks_proxy.dart`). Eşzamanlı çalıştırmalar bir çifti paylaşmaz.
 - Sandbox'a alınmış süreçler proxy ortam değişkenlerini alır (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP proxy'si, `ALL_PROXY` → SOCKS proxy'si; `GIT_SSH_COMMAND`, SSH üzerinden git'i SOCKS proxy'sinden geçirir). Linux'ta ağ ad alanı paylaşılmaz, dolayısıyla çıkışın tek yolu proxy'lerdir; macOS'ta sandbox ana makinenin loopback'ini paylaşır ve onlarla doğrudan konuşur.

@@ -2,7 +2,7 @@
 title: Avaliações e qualidade
 description: Suites de avaliação e campanhas de skills fixadas a revisões, e como interpretar as suas evidências.
 slug: pt-PT/manual/conceitos/avaliacoes-e-qualidade
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observabilidade → Qualidade** contém tanto suites de avaliação de tarefa única
@@ -22,7 +22,7 @@ Cinco suites iniciais são inicializadas quando um espaço de trabalho é criado
 Abrangem propostas de orquestração, uma revisão que encontra um bug semeado, o
 modo Plano a permanecer só de leitura, o modo Plano a produzir um plano e uma
 ida e volta de um ticket. A inicialização escuta `WorkspaceCreated`
-(`workspace.upsert` ou `workspace.create`), ignora um nome que já existe e não
+(publicado por `workspace.create`), ignora um nome que já existe e não
 preenche retroativamente espaços de trabalho mais antigos.
 
 ### Onde aparecem

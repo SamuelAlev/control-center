@@ -2,7 +2,7 @@
 title: Conectar um provedor OpenID Connect
 description: Conecte qualquer emissor OIDC — Pocket ID, Keycloak, Auth0, Zitadel — ao login do Control Center.
 slug: pt-BR/manual/guias/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -89,6 +89,58 @@ servidor diretamente, o que exige um túnel ou uma URL pública — veja
 [provisionar usuários com SCIM](/pt-BR/manual/guias/sso-scim).
 :::
 
+## Como os logins correspondem a contas existentes
+
+Um login por meio do provedor de identidade encontra a conta dele nesta ordem:
+
+1. **A identidade fixada.** O primeiro login por SSO fixa o subject do provedor
+   (emissor mais `sub`) à conta. Todo login posterior com esse subject é essa
+   conta.
+2. **Um e-mail verificado dos dois lados.** Do contrário, o login corresponde a
+   uma conta pelo e-mail somente quando o provedor envia `email_verified: true` e
+   o endereço da conta também está verificado. Um endereço é verificado quando o
+   SSO ou o SCIM o definiram, ou quando o proprietário do servidor o confirmou. O
+   endereço do próprio proprietário conta.
+
+Endereços de e-mail são armazenados e exibidos em minúsculas, e a correspondência
+ignora maiúsculas. Um endereço verificado identifica uma conta somente quando
+exatamente uma conta o possui; se duas contas tiverem o mesmo endereço verificado,
+ele não corresponde a nenhuma.
+
+Um endereço que alguém digitou no próprio perfil, ou em um convite, não é
+verificado e não corresponde a nada. Editar um endereço limpa o estado verificado
+dele até que alguém o confirme de novo. Um login nunca corresponde pelo nome de
+usuário.
+
+Quando nada corresponde, o login cria uma nova conta se **Provisionar
+utilizadores desconhecidos na primeira sessão** estiver ativado, e é recusado se
+estiver desativado.
+
+### Antes de ativar o SSO para pessoas que já têm contas
+
+Confirme os endereços delas primeiro. Abra **Configurações → Servidor → Pessoas**,
+em que cada conta mostra **E-mail não confirmado** até que alguém a tenha
+confirmado, e use **Confirmar e-mail** na linha de cada pessoa. Somente o
+proprietário do servidor vê esta lista. Sem isso, cada uma dessas pessoas recebe
+uma segunda conta no primeiro login por SSO, ou é recusada quando o provisionamento
+de utilizadores desconhecidos está desativado.
+
+Uma pessoa vê "Só você informou este endereço. O login único não o reconhecerá até que o proprietário do servidor o confirme." abaixo do campo
+de e-mail do próprio perfil enquanto o endereço não estiver confirmado.
+
+### Provedores que não enviam `email_verified`
+
+Alguns provedores omitem essa declaração. O Microsoft Entra ID omite por padrão.
+Uma declaração ausente não é um sim; por isso, com esse tipo de provedor, um login
+corresponde somente pela identidade fixada, e o primeiro login de uma pessoa nunca
+encontra a conta existente dela pelo e-mail. Provisionar a conta com SCIM não ajuda
+nesse primeiro login por OIDC. Os caminhos práticos são:
+
+- deixar **Provisionar utilizadores desconhecidos na primeira sessão** ativado e
+  deixar o primeiro login criar a conta, ou
+- configurar o provedor para emitir `email_verified`, e então confirmar os
+  endereços correspondentes como descrito acima.
+
 ## Verifique sua configuração nesta página
 
 O verificador abaixo é executado no seu navegador. Ele busca o documento de
@@ -101,3 +153,28 @@ URI de redirecionamento estão registrados. Ele nunca pede o segredo do
 cliente.
 
 <SsoCheck kind="oidc" />
+
+## Solução de problemas
+
+### Alguém ganhou uma segunda conta depois que o SSO foi ativado
+
+A conta existente dessa pessoa não tinha o endereço verificado quando ela fez o
+primeiro login por SSO, então o login não a encontrou e criou uma nova. Isso
+acontece quando o endereço foi digitado no perfil ou em um convite e o proprietário
+do servidor não o tinha confirmado, ou quando o provedor não enviou
+`email_verified: true`. Uma nova conta cujo provedor atestou o endereço fica com
+esse endereço, e a conta mais antiga que só o tinha digitado o perde.
+
+Para evitar isso com a próxima pessoa, confirme os endereços em **Configurações →
+Servidor → Pessoas** antes de elas fazerem login. Para quem já tem duas contas, a
+nova fica fixada à identidade SSO dela, então é a que os logins dela usarão daqui
+em diante.
+
+### "Esta conta já está vinculada a uma identidade de SSO diferente"
+
+O login correspondeu a uma conta pelo e-mail verificado dela, mas essa conta já
+está fixada a outro subject ou a outro emissor: um usuário diferente no provedor, a
+mesma pessoa sob um novo provedor, ou uma conta que o SCIM criou sob o próprio
+identificador. A conta fixada recusa todas as outras identidades, então um
+endereço reciclado no provedor não consegue tomá-la. Faça login com a identidade à
+qual a conta foi vinculada pela primeira vez.

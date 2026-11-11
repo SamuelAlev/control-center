@@ -2,7 +2,7 @@
 title: Rig’ler
 description: Her rig yüzeyi, arka ucu, eylem fiili, yaşam döngüsü durumu, portu, varsayılanı ve sözleşmesi — eksiksiz olgusal katalog.
 slug: tr-TR/kilavuz/referans/rigler
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Yalnızca olgular. Bunların arkasındaki model için [Rig’ler ve yalıtılmış
@@ -219,8 +219,10 @@ mikrofon, dosya bırakma, ana makine kabuğu ya da kapalı ağ garantisi sunmazl
 
 | Araç | Açıklama |
 | --- | --- |
-| `rig_list` | Bir çalışma alanının rig’lerini yüzey, durum, ekran ve denetleyici ile listeler |
+| `rig_list` | Çalıştırmanın alanının rig’lerini yüzey, durum, ekran ve denetleyici ile listeler |
 | `rig_close` | Bir rig’i yok eder ve diskini atar |
+
+Bu araçlar, dört kullanım aracı gibi, yalnızca ajan çalıştırmaları içindir; başka her çağıran reddedilir. Bir çalıştırma yalnızca kendisine kiralandığı alanın rig’lerine ulaşır: `space_id` çağrıdan değil, çalıştırmanın izninden gelir. Başka bir alanın ya da hiçbir alana ait olmayan bir rig, eksik bir rig ile tamamen aynı yanıtı verir.
 
 ## Yaşam döngüsü
 
@@ -326,7 +328,10 @@ ayarı değildir.
   toplantı sesinin zaten kullandığı türden bir yolu kullanır.
 - **Kimlik doğrulama**, imzalı `rig-files:<workspaceId>/<rigId>` hedefi artı
   çalışma alanı üyeliğidir — kendine ait bir hedef, böylece bir makineyi
-  *izlemek* için üretilen bir URL onun içine dosya da yazamaz.
+  *izlemek* için üretilen bir URL onun içine dosya da yazamaz. Bir alanda açılmış
+  bir rig için panodan ya da dosyadan okumak da o alana okuma erişimi gerektirir;
+  panoya yazmak ya da dosya bırakmak ise o alanın depolarında yazma yetkisi
+  gerektirir. Bir kişinin kendi oturum açmalarını taşıyan bir rig’de her iki kanal, okuma dahil, yalnızca o kişinindir; bkz. [Kimler izleyebilir, kimler yönetebilir](/tr-TR/kilavuz/nasil-yapilir/rig-kullanma/#kimler-izleyebilir-kimler-yönetebilir).
 - **Devralma geçerlidir.** Panoya yazmak ve dosya bırakmak değiştiricidir ve
   başka biri kontrolü elinde tutarken reddedilir; panoyu okumak ve bir dosyayı
   dışarı okumak gözlemdir ve reddedilmez.

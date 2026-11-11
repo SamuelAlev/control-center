@@ -2,7 +2,7 @@
 title: Az ügynökmodell
 description: Mi is valójában egy ügynök a Control Centerben, mely mezői változtatják meg a viselkedését, és hogyan dönti el az adapter, amelyen fut, mi érvényesíthető.
 slug: hu-HU/kezikonyv/fogalmak/ugynokmodell
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Mi az ügynök?
@@ -54,7 +54,7 @@ A repókészségek **minden** adapterhez betöltődnek, nem csak a beépített h
 
 Az ügynöknek nincsenek saját jogosultságjelzői. Hogy létrehozhat-e commitot, pusholhat-e, nyithat-e pull requestet, írhat-e követőbe vagy elérheti-e a hálózatot, azt a [műveleti korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) döntik el — engedélyezés, előbb kérdezzen vagy tiltás, munkaterület, ügynök vagy tér hatókörében —, és ugyanazok a szabályok érvényesek, bármelyik adapter futtatja is.
 
-Az, hogy egy futás mit kap _kézhez_, ezektől a szabályoktól nem változik. Egy GitHub-worktree-ben zajló futás mindig csak olvasásra jogosult GitHub-tokent kap, a pushról pedig akkor születik döntés, amikor megtörténik: az ügynök git-konfigurációja minden GitHub-pusht a Control Centeren keresztül küld, amely a továbbítás előtt alkalmazza a **Küldés távoli tárolóra** szabályt.
+Az, hogy egy futás mit kap _kézhez_, ezektől a szabályoktól nem változik. A futás mindig olvashatja a GitHub-repókat, amelyeken dolgozik, csak olvasásra jogosult tokennel, a pushról pedig akkor születik döntés, amikor megtörténik: az ügynök git-konfigurációja minden GitHub-pusht a Control Centeren keresztül küld, amely a továbbítás előtt alkalmazza a **Küldés távoli tárolóra** szabályt.
 
 Hogy ez hogyan működik, és mi érvényesül, illetve mi nem a fájlrendszer szintjén, azt lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
 
@@ -70,16 +70,16 @@ Egy ügynök messze legkövetkezményesebb mezője az adaptere, mert az adapter 
 Konkrétan: **csak a beépített harness támogatja az alügynököket, a futás közbeni irányítást, a szüneteltetést és a folytatást (és így az átvételt), valamint a mód strukturális érvényesítését.** A Claude Code ezek egyikét sem kapja meg.
 
 :::caution[A homokozó egy alsó korlát, nem a módok érvényesítője, és nem minden gazdagépen van ilyen]
-A fenti mátrix arról szól, mit tud a Control Center _látni és szabályozni_. Alatta a `cc_server` a Claude Code CLI-t a gazdagép operációs rendszerének homokozójába csomagolja, ahol van ilyen — Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n —, így egy nem látott `rm` vagy egy nem látott írás is az operációs rendszer korlátai közé esik. **Windowson egyáltalán nincs háttérrendszer**, Linuxon vagy WSL2-n pedig `bwrap` és `socat` nélkül a próba egyet sem jelez, így ott ezek a futások a környezet tisztítására, a közvetített hitelesítő adatokra, a Control Center által látható hívásokra vonatkozó korlátokra és a beszélgetés saját worktree-jére esnek vissza (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`).
+A fenti mátrix arról szól, mit tud a Control Center _látni és szabályozni_. Alatta a `cc_server` a Claude Code CLI-t a gazdagép operációs rendszerének homokozójába csomagolja, ahol van ilyen — Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n —, így egy nem látott `rm` vagy egy nem látott írás is az operációs rendszer korlátai közé esik. **Windowson egyáltalán nincs háttérrendszer**, Linuxon vagy WSL2-n pedig `bwrap` és `socat` nélkül a próba egyet sem jelez. Ott csak a szerver tulajdonosának futtatásai indulnak el, a többi futtatást pedig visszautasítjuk, hacsak a tulajdonos nem a `--sandbox off` kapcsolóval indította a szervert. A homokozó nélkül induló futtatások a környezet tisztítására, a közvetített hitelesítő adatokra, a Control Center által látható hívásokra vonatkozó korlátokra és a beszélgetés saját worktree-jére esnek vissza (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`).
 
 Ami viszont a homokozó nem: egy _kapu_. Behatárolja, hogy egy folyamat hol olvashat, írhat és kapcsolódhat — egy csak olvasható mód el is jut hozzá, csak olvasható bind mountok formájában —, de nem tud elfogni egy hívást, jóváhagyást kérni, vagy utólag megmondani, mit próbált a CLI. Ez, valamint a fentebb nevezett négy képesség az, amije a beépített harnessnek van, a többieknek pedig nincs. Lásd: [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/).
 :::
 
-Egy **adapter nélküli** ügynök a **Control Center (built-in)** adapterre esik vissza — ez a szerveren belüli ciklus, így nincs telepítendő CLI —, a futásnaplója pedig a `cc-harness` értéket rögzíti. Minden előre létrehozott ügynök adapter és modell nélkül jön létre, így egy friss munkaterület öt ügynöke mind ott fut, az Anthropic alapértelmezett modelljén, amíg ügynökönként be nem állítasz egy adaptert és modellt. A bevezető „alapértelmezett adapter” választása egy kliensoldali beállítás, amelyet a szerver soha nem olvas, és nem alkalmazódik visszamenőlegesen a már létrehozott ügynökökre.
+Egy **adapter nélküli** ügynök a **Control Center (built-in)** adapterre esik vissza — ez a szerveren belüli ciklus, így nincs telepítendő CLI —, a futásnaplója pedig a `cc-harness` értéket rögzíti. Minden előre létrehozott ügynök adapter és modell nélkül jön létre, így egy friss munkaterület hat ügynöke mind ott fut, az Anthropic alapértelmezett modelljén, amíg ügynökönként be nem állítasz egy adaptert és modellt. A bevezető adapter-lépése beállítja az adaptert és a modellt minden olyan ügynökön, amelyből még hiányzik, az akkor létező munkaterületeken; munkaterületi alapértelmezett futtató nincs.
 
 ## Honnan származnak az ügynökök
 
-- **A munkaterülettel együtt jönnek létre.** Minden munkaterület — nem csak az első — kap egy CEO-t és négy specialistát (`qa`, `architect`, `engineer`, `librarian`), akik a CEO-nak jelentenek, és akik a munkaterület létrehozásakor idempotensen, a háttérben jönnek létre. Lásd: [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/).
+- **A munkaterülettel együtt jönnek létre.** Minden munkaterület — nem csak az első — kap egy CEO-t és öt specialistát (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`), akik a CEO-nak jelentenek, és akik a munkaterület létrehozásakor idempotensen, a háttérben jönnek létre. Lásd: [Munkaterületek és elszigetelés](/hu-HU/kezikonyv/fogalmak/munkateruletek/).
 - **Kézzel adva hozzá** a Beállítások → Munkaterület → Ügynökök helyen. Ha egy ügynöktől azt kéred, hogy vegyen fel egy kollégát, az nem hoz létre sort; használd azt a képernyőt.
 
 ## Élő állapot

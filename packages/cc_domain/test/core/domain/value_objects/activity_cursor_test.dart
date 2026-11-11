@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/user_activity_entry.dart';
 import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -42,15 +41,5 @@ void main() {
     final token = cursor.encode();
     expect(token, isNot(contains('+')));
     expect(token, isNot(contains('/')));
-  });
-
-  test('UserActivityPage reports the inclusive end index', () {
-    const page = UserActivityPage(entries: [], total: 47, start: 11);
-    expect(page.end, 10);
-    expect(page.hasMore, isFalse);
-    expect(
-      const UserActivityPage(entries: [], total: 0, start: 1),
-      UserActivityPage.empty,
-    );
   });
 }

@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/features/chat_bridge/domain/entities/chat_user_link.dart';
 import 'package:cc_domain/features/chat_bridge/domain/repositories/chat_link_repositories.dart';
@@ -307,6 +308,18 @@ class ChatConnector {
     await _store.clearSetup(workspaceId, provider);
     await _spawn(connection);
     return status(workspaceId, provider);
+  }
+
+  /// Whether [workspaceId] runs its own app on [provider].
+  Future<bool> hasOwnConnection(
+    String workspaceId,
+    ChatProvider provider,
+  ) async {
+    if (!_store.has(workspaceId, provider)) {
+      return false;
+    }
+    final connection = await _store.load(workspaceId, provider);
+    return connection?.mode == ChatConnectionMode.own;
   }
 
   /// Whether any workspace on this server runs its own app on [provider].

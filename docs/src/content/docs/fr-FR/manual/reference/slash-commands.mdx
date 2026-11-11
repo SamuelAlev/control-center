@@ -2,7 +2,7 @@
 title: Commandes slash
 description: Toutes les commandes que vous pouvez saisir dans le compositeur, ce qu’elles font et où elles s’exécutent.
 slug: fr-FR/manuel/reference/commandes-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Commandes saisies dans le compositeur d’un espace. Elles se répartissent en trois groupes selon l’endroit où elles prennent effet, et cette différence compte : une commande **locale** ne circule jamais comme message, si bien qu’elle n’apparaît pas dans la transcription et n’atteint aucun agent.
@@ -127,7 +127,7 @@ Les deux ont la même forme : prendre la conversation telle qu’elle est, lui 
 
 Gabarits : `$1`, `$@`, `$@[start:length]` et `$ARGUMENTS`. Le frontmatter peut définir `description` (autocomplétion du compositeur). `allowed-tools` et `model` sont lus dans le fichier, mais l’invocation d’une commande utilisateur ne fait actuellement que substituer les arguments dans le corps — ils ne changent ni le modèle ni la surface d’outils de l’exécution.
 
-Une commande écrite par un utilisateur l’emporte sur un skill du même nom : c’est un raccourci qu’une personne a invoqué délibérément, avec des arguments.
+Les skills ne sont atteints que par `/skill:<name>`, si bien qu’une commande écrite par un utilisateur n’entre jamais en collision avec l’un d’eux.
 
 ---
 

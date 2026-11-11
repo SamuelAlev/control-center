@@ -156,11 +156,6 @@ class McpClient {
     return resources;
   }
 
-  /// Reads a resource by [uri]. Returns the raw `resources/read` result.
-  Future<Map<String, dynamic>> readResource(String uri, {Duration? timeout}) {
-    return _request(McpProtocol.resourcesRead, {'uri': uri}, timeout: timeout);
-  }
-
   /// Lists the server's prompts (paginated).
   Future<List<McpRemotePrompt>> listPrompts({Duration? timeout}) async {
     if (!_capabilities.prompts) {
@@ -183,19 +178,6 @@ class McpClient {
       cursor = result['nextCursor'] as String?;
     } while (cursor != null && cursor.isNotEmpty);
     return prompts;
-  }
-
-  /// Gets a prompt by [name] with optional [arguments]. Returns the raw
-  /// `prompts/get` result (`{messages: [...]}`).
-  Future<Map<String, dynamic>> getPrompt(
-    String name, {
-    Map<String, String> arguments = const {},
-    Duration? timeout,
-  }) {
-    return _request(McpProtocol.promptsGet, {
-      'name': name,
-      if (arguments.isNotEmpty) 'arguments': arguments,
-    }, timeout: timeout);
   }
 
   Future<Map<String, dynamic>> _request(

@@ -11,8 +11,8 @@ binary and the desktop's embedded server both boot.
   repository/service/DAO, starts the RPC server, wires the event bus,
   reconcilers, pipeline engine, sync, retention and the periodic services.
   Focused wiring lives in same-library `runtime/` parts; for example,
-  `server_viewer_activity_wiring.dart` constructs the owner's GitHub activity
-  poller, while the composition root owns its startup and shutdown.
+  `server_viewer_activity_wiring.dart` constructs a GitHub viewer-activity
+  poller per signed-in person (`ViewerActivityPollers`), while the composition root owns its startup and shutdown.
 - **`local_rpc_server.dart`** (`LocalRpcServer`) — the HTTP/WSS listener,
   signed-identity Noise sessions, repo-RPC catalog, webhooks, `/healthz` and
   static web-bundle serving. Sensitive media/editor/transfer HTTP routes return
@@ -39,7 +39,7 @@ binary and the desktop's embedded server both boot.
 
 `DemoProfile` explicitly inventories mutating operations and watch queries.
 Adding an RPC operation also requires reviewing its permission domain in
-`test/core/permission_catalog_test.dart` and its demo admission policy.
+the repo-root `test/core/permission_catalog_test.dart` and its demo admission policy.
 
 Demo visitors may add an existing workspace member to a space; the handler
 checks both the space's workspace and the participant's membership. Device-global
@@ -78,5 +78,5 @@ overlay check validates existence before membership and binds attempts to the
 authenticated caller.
 
 New periodic service → construct and `.start()` it in `cc_server_runtime` next
-to the others. Rebuild the binary (`cd apps/cc_server && fvm dart build cli`)
+to the others. Rebuild the bundle (`scripts/build_server.sh`)
 so the running app picks up either change.

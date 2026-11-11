@@ -2,7 +2,7 @@
 title: Revisar y fusionar una PR
 description: Abre el banco de trabajo de una PR, lee el diff, deja comentarios en línea, envía una revisión y fusiona.
 slug: es-MX/manual/guias/revisar-y-fusionar-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Esta guía te muestra cómo revisar y fusionar una pull request.
@@ -24,10 +24,25 @@ abren a demanda; las pestañas de despliegue de vista previa se inyectan
 automáticamente cuando se detecta una URL de vista previa en la PR. La
 disposición de tus pestañas se recuerda por PR.
 
+El code-server integrado se ofrece solo al propietario del servidor, porque se
+ejecuta en el servidor como el propio usuario del servidor. Una sesión pertenece
+al dispositivo y a la persona que la abrió, se abre con la confianza del espacio
+de trabajo de VS Code activada (VS Code pregunta antes de confiar en una carpeta)
+y no ejecuta ninguna tarea automáticamente. Todos los demás conservan el editor
+de un solo archivo y las vistas de archivos.
+
 La pestaña Resumen contiene los metadatos de la PR (autor, rama, etiquetas,
 asignados, reacciones, commits, estado de las comprobaciones) y la fila de
-acciones: actualizar, **Revisar**, **Merge**, abrir en el IDE y un menú de
-desbordamiento ⋯.
+acciones: actualizar, **Revisar**, **Merge**, un botón con el nombre de tu
+editor (como **Abrir en VS Code**) y un menú de desbordamiento ⋯.
+
+Ese botón del editor inicia un editor nativo en la **pantalla del servidor**,
+como el usuario del servidor y fuera de cualquier sandbox, así que solo se ofrece
+al [propietario del servidor](/es-MX/manual/conceptos/autorizacion/#el-propietario-del-servidor).
+En un escritorio que aloja su propio servidor, esa es la persona sentada frente
+al equipo. Lo mismo aplica a abrir el worktree de una conversación en un editor.
+Los demás usan las vistas de editor integradas. Incluso para el propietario, una
+PR solo se abre desde un repositorio vinculado al espacio de trabajo.
 
 ### Abrir una PR desde la pila de un espacio
 
@@ -45,7 +60,8 @@ encabezado de una pila y presiona Enter o Espacio para contraerla o expandirla.
 Las PRs no relacionadas se mantienen separadas, y los vínculos de rama
 incompletos o ambiguos no se presentan como una pila ordenada.
 
-En **Control de código fuente**, **Pull requests apiladas (N)** abre un selector
+En el encabezado de la PR, la insignia de la pila (un icono de capas con el
+número de pull requests de la pila) abre **Pull requests apiladas**, un selector
 de las partes publicadas de la pila, de abajo hacia arriba. Cada entrada muestra
 el número de la PR, la etiqueta de la parte y su posición; se marca la parte que
 tienes en checkout. Selecciona una entrada para abrir el banco de trabajo de su
@@ -54,6 +70,40 @@ al menos una parte no tiene PR. Esto también aplica al menú de rama. Las PRs
 creadas fuera de Control Center también cuentan como publicadas. Las pilas
 publicadas parcialmente ofrecen ambas acciones; el trabajo de una sola rama
 mantiene las acciones individuales de crear y ver la PR.
+
+### Hacer commit y push desde Control de código fuente
+
+Un commit que haces en el panel **Control de código fuente** es tuyo: tú eres su
+autor y su committer, con la dirección que tu forja verificó para tu inicio de
+sesión. Cuando creaste una clave de firma en **Commits verificados** dentro de
+**Ajustes** → **Tú** → **Commits**, el servidor lo firma con tu propia clave de
+firma antes de hacer push. Un push lleva tu propio inicio de sesión, limitado a
+ese único repositorio.
+
+El servidor ejecuta Git en su propia máquina, en un árbol que un agente o una
+pull request pueden cambiar, así que no ejecuta ninguno de los programas que un
+repositorio puede elegir:
+
+- Los commits omiten los hooks de Git del repositorio, igual que
+  `git commit --no-verify`. Un hook pre-commit, un hook commit-msg o un hook
+  pre-push no se ejecutan
+- Se ignoran los auxiliares de credenciales, los editores, las herramientas de
+  diff externas y los programas de firma que configure el repositorio
+
+Ejecuta tus comprobaciones tú mismo antes de hacer commit, o en CI.
+
+Cambiar el código requiere una [concesión de escritura](/es-MX/manual/conceptos/autorizacion/#cambiar-código-requiere-la-concesión-de-escritura)
+sobre el repositorio: guardar o revertir archivos en el editor,
+**Obtener los últimos commits de la PR**, hacer commit y push, publicar una rama,
+y las acciones de la pila que cortan, hacen checkout o publican una parte. Con
+solo acceso de lectura o revisión ves los archivos y los diffs, y estas acciones
+responden «Puedes leer este repositorio, pero no modificarlo. Un administrador del espacio de trabajo puede conceder acceso de escritura.»
+
+**Obtener los últimos commits de la PR** trae el worktree de revisión a los
+commits más recientes de la pull request. Lo obtiene con tu propio inicio de
+sesión de GitHub, y te pide que inicies sesión si no tienes ninguno. Confirma o
+descarta tus cambios primero: un worktree con cambios sin confirmar no se
+sincroniza.
 
 ## Leer el diff
 
@@ -143,7 +193,7 @@ Fusionar es irreversible: envía los commits al host de código, por lo que reci
 un paso de confirmación en lugar de una entrada de deshacer. Después, la caché
 de la PR se invalida, su estado pasa a **Fusionado** y se desencadena un evento
 `PullRequestStatusChanged` con el estado `merged`. Ese evento libera el worktree
-efímero de «abrir en el editor» e inicia dos pipelines predefinidos: **Stale
+efímero que abrió el botón del editor e inicia dos pipelines predefinidos: **Stale
 repository cleanup**, que elimina los worktrees obsoletos y las carpetas de
 conversación de la PR, y **Release notes**, que redacta una entrada de
 changelog.
@@ -171,6 +221,16 @@ modelo determinista de cohortes y ejes.
 Control Center también importa PRs abiertas por personas fuera de la aplicación.
 El flujo de revisión anterior es idéntico. El servicio de sondeo de PRs detecta
 las PRs externas.
+
+## Solución de problemas
+
+### Mi hook pre-commit no se ejecutó
+
+Los commits hechos en el panel **Control de código fuente** de la app omiten los
+hooks de Git del repositorio, igual que `git commit --no-verify`. El servidor
+ejecuta Git en su propia máquina, en un árbol que los agentes y las pull requests
+pueden cambiar, así que nunca ejecuta un programa que elija el repositorio.
+Ejecuta tú mismo las comprobaciones del hook, o confía en CI.
 
 ## Guías relacionadas
 

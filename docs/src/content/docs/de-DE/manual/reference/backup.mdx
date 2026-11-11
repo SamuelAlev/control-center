@@ -2,7 +2,7 @@
 title: Backup, Export und Import
 description: Das Layout der Momentaufnahme, das Manifest, jede Sicherungsoperation und jede Transfer-Route, und genau, welche Dateien eine Sicherung enthält und welche nicht.
 slug: de-DE/handbuch/referenz/backup
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Alles, was Control Center kopieren, übergeben oder übernehmen kann, und die genaue Form jedes
@@ -110,6 +110,7 @@ Datenbank, und nichts vom Rest geht mit:
 | `models/`                           | Nein                     | Nein                             |
 | `meetings/<meetingId>/`             | Nein                     | Nein                             |
 | `rigs/`                             | Nein                     | Nein                             |
+| `_agent_hooks/`                     | Nein                     | Nein                             |
 
 Einiges davon ist entbehrlich. `spaces/` hält Copy-on-Write-Worktrees, die aus den Repos neu
 bereitgestellt werden, `pr_clones/` ist ein Cache, `models/` wird neu heruntergeladen, `rigs/`
@@ -117,6 +118,10 @@ ist Maschinenzustand. Anderes nicht: `blobs/` hält eingefügte Bilder, auf die 
 Datenbank zeigen, `skills/` und `agents/` halten die Dateien, mit denen ein Agent läuft, und
 `secrets.json` hält jeden Kopplungsschlüssel, alle Anbieter-Zugangsdaten und alle SSO-Einstellungen der
 Installation. Den Rest deckt [Sichern und wiederherstellen](/de-DE/handbuch/anleitungen/sichern-und-wiederherstellen/#sicherungen-vom-rechner-kopieren) ab.
+:::caution[Eine Arbeitsbereichs-Datenbank enthält Webhook-Geheimnisse]
+`workspace.db` ist der ganze Arbeitsbereich: Unterhaltungen, Laufprotokolle, der Code-Index, Repo-Verknüpfungen, Umgebungsdefinitionen und Mitglieder. Sie enthält außerdem die Pipeline-Webhook-Tokens und die Ticket-Sync-Webhook-Geheimnisse des Arbeitsbereichs in lesbarer Form. Behandle deshalb einen heruntergeladenen Export oder eine Sicherung wie ein Geheimnis. Sie enthält keine Anbieter-Anmeldungen, keine Geräteschlüssel und keine Benutzergeheimnisse; die liegen in `global.db` und `secrets.json`.
+:::
+
 :::note[Chat-Tokens bleiben absichtlich zurück]
 `chat_credentials/` liegt neben der Datenbank und nicht darin. Deshalb trägt ein Arbeitsbereich,
 den du jemand anderem gibst, keine lebenden Bot-Tokens. Siehe die
@@ -139,7 +144,7 @@ fehlen sie ganz. Sie werden nicht abgelehnt, sie sind strukturell nicht da.
 | `workspace.listBackups` | Lesen | Arbeitsbereich | `admin` | keine | `{backups: [...]}` |
 | `workspace.deleteBackup` | Schreiben | Arbeitsbereich | `owner` | `name` | `{ok}` |
 | `workspace.export`    | Lesen     | Arbeitsbereich  | `admin`                         | keine         | `{ok, path}`                          |
-| `workspace.import`    | Schreiben | Arbeitsbereich  | `owner`                         | `source_path` | `{ok, workspace_id}`                  |
+| `workspace.import`    | Schreiben | Arbeitsbereich  | `owner` und Serverinhaber       | `source_path` | `{ok, workspace_id}`                  |
 | `workspace.delete`    | Schreiben | Installation*   | `owner`                         | `id`          | Registry-Zeile als gelöscht markiert  |
 
 * `workspace.delete` hat keinen Geltungsbereich, weil die Zeile, die es markiert, in der globalen
@@ -163,7 +168,11 @@ Zeitstempel-Verzeichnisnamen, keinen Pfad.
 eines einzelnen Arbeitsbereichs zu sein reicht also nicht, um die anderen zu verwalten. Das Löschen
 nimmt nur den gelisteten Verzeichnisnamen mit Zeitstempel an, keinen beliebigen Pfad auf dem
 Server, und entfernt die ganze Momentaufnahme, auch unvollständige.
-Export und Import je Arbeitsbereich bleiben beim Admin und Eigentümer des Arbeitsbereichs, nicht beim Eigentümer der Installation.
+Export und geplante Sicherungs-Downloads je Arbeitsbereich bleiben beim Admin des Arbeitsbereichs.
+:::
+
+:::note[Die Wiederherstellung ist Sache des Serverinhabers]
+`workspace.import` und `POST /backup/restore` lassen den Server eine Datenbankdatei übernehmen, deren Zeilen er danach als eigene behandelt: Repo-Verknüpfungen und wer sie angelegt hat, Umgebungsdefinitionen, die auf dem Host laufen, Worktree- und Log-Pfade. Deshalb brauchen beide den Serverinhaber (`ServerAuthority.serverOwner`), der außerdem Eigentümer des Arbeitsbereichs sein muss. Alle anderen und jeder Aufrufer auf einem Host ohne eingetragenen Eigentümer werden mit `server_owner_required` abgewiesen. Kein Trigger und keine Ansicht, die die Datei mitbringt, wird übernommen.
 :::
 
 ### Antwort von `server.listBackups`
@@ -238,7 +247,7 @@ Zielzeichenkette mit seinem Kopplungs-PSK und die Rolle unten.
 | `/backup/workspace`     | GET     | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Admin** des Arbeitsbereichs        |
 | `/backup/snapshot`      | GET     | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Eigentümer** der Installation      |
 | `/backup/stored`        | GET     | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **Admin** des Arbeitsbereichs; **Eigentümer** der Installation, sobald der Arbeitsbereich gelöscht ist |
-| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Eigentümer** des Arbeitsbereichs   |
+| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Eigentümer** der Installation, der außerdem **Eigentümer** des Arbeitsbereichs ist (sonst `403` mit `server_owner_required`) |
 
 `w` ist eine Arbeitsbereichs-ID, `n` der Verzeichnisname einer Momentaufnahme oder geplanten Sicherung, `d` die Geräte-ID des Aufrufers, `s` die
 Signatur. Bei `/backup/snapshot` wird `n` gegen die Sicherungsliste aufgelöst und nicht an die Wurzel der Sicherungen

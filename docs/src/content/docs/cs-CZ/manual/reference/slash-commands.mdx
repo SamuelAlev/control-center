@@ -2,7 +2,7 @@
 title: Slash příkazy
 description: Každý příkaz, který můžeš napsat do composeru, co dělá a kde běží.
 slug: cs-CZ/prirucka/referencni-prirucka/slash-prikazy
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Příkazy, které se píšou do composeru prostoru. Padají do tří skupin podle toho, kde účinkují, a ten rozdíl je podstatný: **místní** příkaz neputuje jako zpráva, takže se neobjeví v přepisu a k agentovi se nedostane.
@@ -127,7 +127,7 @@ Oba mají stejný tvar: vezmou konverzaci, jak právě stojí, položí k ní je
 
 Dosazování: `$1`, `$@`, `$@[start:length]` a `$ARGUMENTS`. Frontmatter smí nastavit `description` (našeptávání v composeru). `allowed-tools` a `model` se ze souboru přečtou, ale vyvolání uživatelského příkazu dnes do těla jen dosadí argumenty. Model běhu ani plochu nástrojů nemění.
 
-Příkaz od člověka má přednost před skillem stejného jména. Je to zkratka, kterou člověk vyvolal schválně, a nese argumenty.
+Skilly se dosáhnou jen jako `/skill:<name>`, takže příkaz od člověka s nimi nikdy nekoliduje.
 
 ---
 

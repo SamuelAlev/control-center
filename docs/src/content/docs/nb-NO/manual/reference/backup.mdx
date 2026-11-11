@@ -2,7 +2,7 @@
 title: Sikkerhetskopi, eksport og import
 description: Oppsettet av øyeblikksbilder, manifestet, hver sikkerhetskopioperasjon og overføringsrute, og nøyaktig hvilke filer en sikkerhetskopi inneholder og ikke inneholder.
 slug: nb-NO/handbok/referanse/sikkerhetskopi
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Alt Control Center kan kopiere, overlevere eller ta i bruk, og den nøyaktige formen til
@@ -110,6 +110,7 @@ databasen sin, og ingenting av resten blir med:
 | `models/`                           | Nei                  | Nei                        |
 | `meetings/<meetingId>/`             | Nei                  | Nei                        |
 | `rigs/`                             | Nei                  | Nei                        |
+| `_agent_hooks/`                     | Nei                  | Nei                        |
 
 Noe av dette kan kastes — `spaces/` inneholder copy-on-write-worktrees som
 provisjoneres på nytt fra repoene, `pr_clones/` er en cache, `models/` lastes ned på
@@ -119,6 +120,10 @@ kjører med, og `secrets.json` inneholder hver parringsnøkkel, hver
 leverandørlegitimasjon og hver SSO-innstilling i installasjonen. Se
 [Sikkerhetskopier og gjenopprett](/nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett/#kopier-sikkerhetskopier-ut-av-maskinen)
 for å dekke resten.
+:::caution[En arbeidsområdedatabase inneholder webhook-hemmeligheter]
+`workspace.db` er hele arbeidsområdet: samtaler, kjøringslogger, kodeindeksen, repolenker, miljødefinisjoner og medlemmer. Den inneholder også arbeidsområdets pipeline-webhook-tokens og webhook-hemmeligheter for ticket-synkronisering i lesbar form, så behandle en nedlastet eksport eller sikkerhetskopi som en hemmelighet. Den inneholder ingen leverandørpålogginger, enhetsnøkler eller brukerhemmeligheter; de ligger i `global.db` og `secrets.json`.
+:::
+
 :::note[Chat-tokens blir bevisst liggende igjen]
 At `chat_credentials/` ligger ved siden av databasen i stedet for inne i den, er grunnen
 til at et arbeidsområde som overleveres til noen andre, ikke har noen aktive bot-tokens
@@ -142,7 +147,7 @@ for eksempel demoserveren.
 | `workspace.listBackups` | read | Arbeidsområde | `admin` | ingen | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | Arbeidsområde | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Arbeidsområde | `admin`   | ingen         | `{ok, path}`                  |
-| `workspace.import`   | mutate | Arbeidsområde | `owner`   | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | Arbeidsområde | `owner`, og serverens eier | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Installasjon* | `owner`  | `id`          | registerrad merket som slettet |
 
 * `workspace.delete` er uten omfang fordi raden den markerer, ligger i det globale
@@ -166,8 +171,11 @@ installasjons**eieren** (`ServerAuthority.serverOwner`), samme sperre som
 det å være admin i ett arbeidsområde er ikke nok til å administrere de andre. Sletting
 godtar bare det opplistede tidsstempelmappenavnet, ikke en vilkårlig serversti, og
 fjerner hele øyeblikksbildet (inkludert ufullstendige øyeblikksbilder).
-Eksport/import per arbeidsområde holder seg til arbeidsområde-admin/eier, ikke
-installasjonseieren.
+Nedlasting av eksport og planlagte sikkerhetskopier per arbeidsområde holder seg til arbeidsområde-admin.
+:::
+
+:::note[Gjenoppretting er serverens eiers]
+`workspace.import` og `POST /backup/restore` får serveren til å overta en databasefil hvis rader den deretter behandler som sine egne: repolenker og hvem som laget dem, miljødefinisjoner som kjører på verten, worktree- og loggbaner. Derfor krever begge installasjonseieren (`ServerAuthority.serverOwner`), som også må være arbeidsområdets eier. Alle andre, og alle kallere på en vert uten registrert eier, avvises med `server_owner_required`. Ingen utløser eller visning som filen medbringer, blir overtatt.
 :::
 
 ### Svaret fra `server.listBackups`
@@ -241,7 +249,7 @@ enhetens signatur over målstrengen med dens parings-PSK og rollen nedenfor.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Arbeidsområde**admin** |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installasjons**eier**  |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Arbeidsområde**admin**; installasjons**eier** når arbeidsområdet er slettet |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Arbeidsområde**eier**  |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Installasjons**eier** som også er arbeidsområdets **eier** (`403` med `server_owner_required` ellers) |
 
 `w` er en arbeidsområde-id, `n` et mappenavn for et øyeblikksbilde eller en planlagt
 sikkerhetskopi, `d` id-en til enheten som kaller, og `s` signaturen. På `/backup/snapshot`

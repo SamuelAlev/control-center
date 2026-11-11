@@ -1,8 +1,8 @@
 ---
 title: Gunakan pelayan MCP
-description: Halakan klien MCP luaran ke pelayan alat Control Center, tetapkan token pembawa dan ketahui perkara yang didedahkan oleh permukaan itu.
+description: Halakan klien MCP luaran ke pelayan alat Control Center, hantar token pembawanya dan ketahui perkara yang didedahkan oleh permukaan itu.
 slug: ms-MY/manual-pengguna/panduan-cara/pelayan-mcp
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Panduan ini menunjukkan cara menyambungkan klien MCP luaran — Claude Code, editor,
@@ -30,8 +30,8 @@ Jadi pemasangan setempat lalai berada di `http://127.0.0.1:9030/mcp`.
 2. Baca kad **Pelayan MCP** — ia menunjukkan berjalan atau dihentikan serta port
    yang sedang didengarnya
 
-Permukaan ini dihidupkan secara lalai pada pemasangan baharu, jadi klien loopback
-berfungsi tanpa perlu menyentuh tetapan. **Mula pada pelancaran apl** mengawal
+Permukaan ini dihidupkan secara lalai pada pemasangan baharu. Hanya pemilik pelayan melihat
+token kad itu, dan hanya mereka boleh memulakan atau menghentikan titik akhir. **Mula pada pelancaran apl** mengawal
 sama ada ia kembali selepas permulaan semula; **Mula** / **Henti** ialah kawalan
 sesi yang tidak mengubah keutamaan itu.
 
@@ -39,17 +39,30 @@ Pelayan mengikat loopback secara lalai, jadi titik akhir itu hanya boleh dicapai
 dari mesin yang menjalankan `cc_server` melainkan anda memulakannya dengan
 `--bind any`.
 
+## Dapatkan token
+
+Setiap permintaan memerlukan token MCP pelayan, dari mana-mana mesin, termasuk loopback. Pelayan
+mencipta token itu kali pertama ia dimulakan. Tiada cara untuk mematikannya dan tiada cara untuk
+mengosongkannya.
+
+1. Pada **Tetapan → Pelayan → Pelayan MCP**, cari baris **Token pengesahan**
+2. Tekan **Tunjukkan token** dan salinnya
+3. Untuk menggantikannya, tekan **Jana semula token**. Pelayan beralih kepada token baharu serta-merta,
+   dan setiap klien yang masih menggunakan token lama ditolak sehingga anda memberinya token baharu
+
 ## Sambungkan klien
 
-Halakan klien anda ke titik akhir Streamable HTTP. Bentuk konfigurasi yang tepat
-terserah kepada klien anda; URL-nya tetap sama sama ada cara mana pun.
+Halakan klien anda ke titik akhir Streamable HTTP dan hantar token sebagai
+`Authorization: Bearer <token>` pada setiap permintaan, termasuk `GET /sse`. Tiada cara lain untuk
+menghantarnya: token dalam URL tidak diterima. Bentuk konfigurasi yang tepat terserah kepada klien anda.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -72,25 +85,20 @@ yang sama tidak turut ditemui daripada projek dan didaftarkan dua kali.
 Titik semak: minta klien menyenaraikan alatnya. Anda sepatutnya melihat entri
 `mcp__*` yang merangkumi tiket, ruang, memori, graf kod dan semakan.
 
-## Sajikan MCP di luar hos
+## Apa yang ditolak oleh titik akhir
 
-1. Pada **Tetapan → Pelayan → Pelayan MCP**, pada baris **Token pengesahan**,
-   tekan **Tetapkan** dan tampal token
-2. Hantarkannya sebagai `Authorization: Bearer <token>` pada setiap permintaan
-   `POST /mcp`
+Token itu membuka setiap alat pada pelayan, jadi titik akhir juga menolak apa-apa yang mungkin
+dihantar oleh halaman web, sebelum ia memeriksa token:
 
-Permukaan tanpa token menolak mana-mana pemanggil bukan loopback dengan 403. Itu
-memang gagal tertutup mengikut reka bentuk: token itulah yang membolehkan
-perkhidmatan di luar hos sama sekali.
+| Permintaan                                                              | Jawapan |
+| ----------------------------------------------------------------------- | ------- |
+| Pengepala `Origin` yang bukan halaman pada mesin ini (`http://localhost`, `http://127.0.0.1` atau `http://[::1]`, mana-mana port) | `403`, "Permintaan cross-origin tidak diterima" |
+| Pengepala `Host` yang bukan alamat loopback dan port pendengar ini mahupun nama hos awam pelayan | `403`, "Hos tidak diketahui" |
+| `POST` yang badannya bukan `application/json`                           | `415`   |
+| Tiada token, atau yang salah                                            | `401`   |
 
-Perubahan token terpakai pada permukaan langsung dengan serta-merta — tiada
-permulaan semula.
-
-:::note[`GET /sse` mengambil token dalam rentetan pertanyaan]
-Aliran pemberitahuan diperiksa tokennya seperti setiap laluan lain, tetapi
-`EventSource` pelayar tidak boleh menghantar pengepala `Authorization` — jadi
-`/sse` turut menerima token sebagai `?token=<token>`. Tanpanya, ia menjawab 401.
-:::
+Untuk menyajikan MCP di luar hos, mulakan pelayan dengan `--bind any` dan hantar token dari mesin
+lain, dengan menangani pelayan melalui nama hos awamnya.
 
 ## Skopkan setiap panggilan kepada ruang kerja
 
@@ -131,6 +139,29 @@ Katalog penuh diumumkan dalam `tools/list` tanpa gerbang penemuan — klien MCP
 luaran menolak untuk memanggil alat yang tidak berada dalam senarai cache-nya,
 jadi menyembunyikan alat merosakkannya dan bukan mengemaskannya.
 
+## Pelayan MCP peribadi kekal milik pemilik
+
+Panduan ini tentang titik akhir Control Center sendiri. Arah yang sebaliknya, iaitu pelayan MCP yang
+Control Center serahkan kepada ejen yang dijalankannya, disenaraikan di bawah **Tetapan → Pelayan →
+Pelayan MCP → Pelayan MCP luaran**. Pelayan yang dikonfigurasikan pada mesin pelayan untuk Claude,
+Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode atau dalam `.mcp.json` ditemui di situ secara
+automatik.
+
+Pelayan yang ditemui ini datang daripada konfigurasi alat pengguna pelayan itu sendiri dan bertindak
+dengan identiti serta kelayakan pengguna tersebut, jadi ia milik pemilik pelayan:
+
+- Ia hanya tersedia dalam larian harness terbina yang pemilik pelayan mulakan atau bertanggungjawab
+  ke atasnya, termasuk automasi dalam ruang kerja yang pemilik bertanggungjawab ke atasnya.
+- Larian ahli, automasi yang terikat kepada ahli, dan setiap larian pada pelayan tanpa pemilik
+  direkodkan tidak mendapat satu pun daripadanya. Di sana alat itu tidak disenaraikan, tidak boleh
+  dipanggil dan tidak muncul dalam carian alat.
+- Titik akhir ini tidak pernah menyenaraikan, memanggil atau mencarinya, untuk sesiapa pun, termasuk
+  token pemilik, dan ia tidak menyampaikan sumber atau promptnya. Jadi CLI ejen yang sampai ke Control
+  Center melalui MCP, seperti Claude Code, tidak mendapatkannya melalui Control Center juga; ia
+  menggunakan konfigurasinya sendiri.
+
+Pelayan MCP yang dikonfigurasikan untuk ruang kerja tidak terjejas oleh apa-apa daripada ini.
+
 ## Penyelesaian masalah
 
 ### Klien tidak melihat sebarang alat
@@ -140,9 +171,20 @@ jadi menyembunyikan alat merosakkannya dan bukan mengemaskannya.
 - Pada Claude Code, semak sama ada anda memberikan `--mcp-config` dan
   `--strict-mcp-config`
 
-### 403 daripada mesin yang bukan pelayan
+### 401 Unauthorized
 
-Tiada token pembawa dikonfigurasikan. Tetapkan satu dan hantarkannya.
+Permintaan itu tidak membawa token, atau token lama. Salin token semasa daripada baris **Token
+pengesahan** dan hantarkannya sebagai `Authorization: Bearer <token>`. Token dalam URL diabaikan.
+
+### 403 daripada klien yang pernah berfungsi
+
+Permintaan itu membawa `Origin` daripada halaman web, atau `Host` yang tidak dijawab oleh pelayan.
+Panggil titik akhir daripada klien, bukan halaman pelayar, dengan alamat loopback pelayan atau nama
+hos awamnya.
+
+### 415 Unsupported Media Type
+
+Hantar badan `POST /mcp` sebagai `application/json`.
 
 ### Panggilan alat gagal dengan "Missing or invalid argument: workspace_id"
 

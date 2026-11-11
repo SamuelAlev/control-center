@@ -113,7 +113,7 @@ List<RepoOp> _ops({
         onSwr(key);
         return fetch();
       },
-  assertSpaceOwned: (workspaceId, spaceId) async {},
+  assertSpaceOwned: (workspaceId, spaceId, userId) async {},
   messagingRepository: _UnusedMessaging(),
   fetchPrPreview: onPreview,
   fetchCommitPreview: onCommit,

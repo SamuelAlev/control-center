@@ -3,16 +3,15 @@ import 'dart:convert';
 import 'package:control_center/shared/editor/editor_layout_controller.dart';
 import 'package:control_center/shared/editor/editor_layout_node.dart';
 import 'package:control_center/shared/editor/editor_tab.dart';
-import 'package:control_center/shared/editor/host/editor_tab_url_sync.dart';
 import 'package:flutter/widgets.dart' show Axis, IconData;
 
 /// Shared JSON codec for editor split trees.
 ///
 /// Persists shape, weights and tab order, plus the selected tab in each pane
 /// and active pane when [persistFocus] is enabled. A pane's selection is saved
-/// by the tab's [EditorTab.id] (`selKey`), with its index (`sel`) kept for
-/// payloads written before ids were saved. Never persists live PTYs/webviews
-/// or node ids (minted on decode). Malformed → `null`.
+/// by the tab's [EditorTab.id] (`selKey`) and its index (`sel`), which picks
+/// the exact tab when two share an id. Never persists live PTYs/webviews or
+/// node ids (minted on decode). Malformed → `null`.
 class EditorLayoutCodec {
   /// Creates a codec bound to one host's tab vocabulary.
   const EditorLayoutCodec({
@@ -20,7 +19,7 @@ class EditorLayoutCodec {
     required this.iconFor,
     this.dropOnEncode = const {},
     this.requiredStringArgs = const {},
-    this.aliasKind,
+    this.acceptArgs,
     this.rewriteArgsOnDecode,
     this.transientArgs = const {},
     this.persistFocus = false,
@@ -28,7 +27,7 @@ class EditorLayoutCodec {
 
   /// Schema version of the persisted payload. Bumped only on a breaking change
   /// to the JSON shape; a mismatch decodes to `null` (fresh default).
-  static const int schemaVersion = 1;
+  static const int schemaVersion = 2;
 
   /// Arg key meaning "this tab was RESTORED — render its start affordance
   /// rather than doing the expensive thing it does when a user opens it".
@@ -49,8 +48,9 @@ class EditorLayoutCodec {
   /// Per-kind required String args; a decoded tab missing any is dropped.
   final Map<String, List<String>> requiredStringArgs;
 
-  /// Optional decode-time kind rewrite, applied before the whitelist check.
-  final String Function(String kind)? aliasKind;
+  /// Optional decode-time check for args [requiredStringArgs] cannot express
+  /// (one arg required only alongside another); a tab it rejects is dropped.
+  final bool Function(String kind, Map<String, Object?> args)? acceptArgs;
 
   /// Optional decode-time arg rewrite, applied after the required-arg check.
   final Map<String, Object?> Function(String kind, Map<String, Object?> args)?
@@ -193,26 +193,13 @@ class EditorLayoutCodec {
       final selectedKey = persistFocus && raw['selKey'] is String
           ? raw['selKey'] as String
           : null;
-      // The surviving index of the tab saved at `sel`, -1 when it was omitted.
+      // The surviving index of the tab saved at `sel`, -1 when it was dropped.
       var atSavedIndex = -1;
-      final ids = <String>{};
       if (tabsRaw is List) {
         for (var i = 0; i < tabsRaw.length; i++) {
-          var tab = _decodeTab(tabsRaw[i]);
+          final tab = _decodeTab(tabsRaw[i]);
           if (tab == null) {
             continue;
-          }
-          // Same-kind siblings saved without a key would share the kind as
-          // their id; give each later one its own, which the next save keeps.
-          if (!ids.add(tab.id) && tab.dedupKey == null) {
-            tab = EditorTab(
-              kind: tab.kind,
-              label: tab.label,
-              args: tab.args,
-              icon: tab.icon,
-              dedupKey: instanceTabKey(tab.kind),
-            );
-            ids.add(tab.id);
           }
           if (i == selected) {
             atSavedIndex = controller.tabs.length;
@@ -278,12 +265,11 @@ class EditorLayoutCodec {
     if (raw is! Map) {
       return null;
     }
-    final rawKind = raw['kind'];
+    final kind = raw['kind'];
     final label = raw['label'];
-    if (rawKind is! String || label is! String) {
+    if (kind is! String || label is! String) {
       return null;
     }
-    final kind = aliasKind?.call(rawKind) ?? rawKind;
     // Unknown kinds (a future/foreign kind, or a non-restorable transient) are
     // skipped.
     if (!restorableKinds.contains(kind)) {
@@ -307,6 +293,9 @@ class EditorLayoutCodec {
         }
       }
     }
+    if (acceptArgs != null && !acceptArgs!(kind, args)) {
+      return null;
+    }
     final dedup = raw['dedup'];
     return EditorTab(
       kind: kind,
@@ -320,7 +309,7 @@ class EditorLayoutCodec {
   /// Resolves a pane's saved selection against its surviving [tabs]: the tab
   /// at the saved index when its id still agrees with [key] (exact even when
   /// two tabs share an id), else the first tab with id [key], else the saved
-  /// index (a payload written before ids were saved), else the first tab.
+  /// index, else the first tab.
   int _decodedSelection(List<EditorTab> tabs, String? key, int atSavedIndex) {
     if (key == null || (atSavedIndex >= 0 && tabs[atSavedIndex].id == key)) {
       return atSavedIndex < 0 ? 0 : atSavedIndex;

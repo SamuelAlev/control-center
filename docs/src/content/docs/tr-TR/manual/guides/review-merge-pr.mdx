@@ -2,7 +2,7 @@
 title: Bir PR'ı inceleme ve birleştirme
 description: Bir PR çalışma tezgahını açın, farkı okuyun, satır içi yorumlar bırakın, bir inceleme gönderin ve birleştirin.
 slug: tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Bu kılavuz, bir pull request'i nasıl inceleyeceğinizi ve birleştireceğinizi gösterir.
@@ -23,9 +23,23 @@ tarayıcı istek üzerine açılır; PR'da bir önizleme URL'si algılandığın
 önizlemesi sekmeleri otomatik olarak eklenir. Sekme düzeniniz her PR için
 hatırlanır.
 
+Gömülü code-server yalnızca sunucu sahibine sunulur, çünkü sunucuda sunucunun
+kendi kullanıcısı olarak çalışır. Bir oturum, onu açan cihaza ve kişiye aittir;
+VS Code’un çalışma alanı güveni açık olarak açılır (VS Code bir klasöre güvenmeden
+önce sorar) ve hiçbir görevi kendiliğinden çalıştırmaz. Diğer herkes tek dosyalık
+düzenleyiciyi ve dosya görünümlerini kullanmaya devam eder.
+
 Genel bakış sekmesi, PR'ın üst verilerini (yazar, dal, etiketler, atananlar,
 tepkiler, commit'ler, kontrol durumu) ve eylem satırını taşır: yenile, **İncele**,
-**Birleştir**, IDE'de aç ve bir ⋯ taşma menüsü.
+**Birleştir**, düzenleyicinizin adını taşıyan bir düğme (örneğin **VS Code'da aç**) ve bir ⋯ taşma menüsü.
+
+Bu düzenleyici düğmesi, **sunucunun** kendi ekranında, sunucunun kullanıcısı olarak ve hiçbir
+sandbox dışında bir yerel düzenleyici başlatır; bu yüzden yalnızca
+[sunucu sahibine](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) sunulur. Kendi
+sunucusunu barındıran bir masaüstünde bu, masadaki kişidir. Bir konuşmanın çalışma
+ağacını bir düzenleyicide açmak için de aynısı geçerlidir. Diğer herkes yerleşik
+düzenleyici görünümlerini kullanır. Sahip için bile bir pull request yalnızca
+çalışma alanına bağlı bir depodan açılır.
 
 ### Bir alanın yığınından PR açma
 
@@ -42,14 +56,41 @@ tezgahını açmak için tıklayın veya Enter'a basın. Bir yığın başlığ�
 daraltmak veya genişletmek için Enter ya da Space'e basın. İlgisiz PR'lar ayrı
 kalır ve eksik ya da belirsiz dal bağlantıları sıralı bir yığın olarak sunulmaz.
 
-**Kaynak denetimi**'nde **Yığınlanmış pull request'ler (N)**, yığının yayınlanmış
-parçalarını en alttan başlayarak gösteren bir seçici açar. Her girdi PR
+PR başlığındaki yığın rozeti (yığındaki pull request sayısını gösteren bir katman simgesi),
+**Yığınlanmış pull request'ler** başlıklı, yığının yayınlanmış parçalarını en alttan başlayarak
+gösteren bir seçici açar. Her girdi PR
 numarasını, parça etiketini ve konumunu gösterir; checkout edilmiş parça
 işaretlenir. PR çalışma tezgahını açmak için bir girdi seçin. **Yığını yayınla**
 yalnızca PR keşfi tamamlandığında ve en az bir parçanın PR'ı olmadığında görünür.
 Bu, dal menüsü için de geçerlidir. Control Center dışında oluşturulan PR'lar da
 yayınlanmış sayılır. Kısmen yayınlanmış yığınlar her iki eylemi de sunar; tek
 dallı işler ise PR oluşturma/görüntüleme eylemlerini ayrı ayrı korur.
+
+### Kaynak denetiminden commit atın ve gönderin
+
+**Kaynak denetimi** panelinde yaptığınız bir commit size aittir: yazar ve
+committer sizsiniz; forge’unuzun oturum açmanız için doğruladığı adresle. **Ayarlar** → **Siz** → **Commit'ler** altındaki **Doğrulanmış commit'ler** bölümünde
+imzalama anahtarı oluşturduysanız, sunucu push’tan önce onu kendi imzalama anahtarınızla imzalar. Bir push, yalnızca o tek depoya daraltılmış kendi oturum
+açmanızı taşır.
+
+Sunucu Git’i kendi makinesinde, bir ajanın ya da pull request’in değiştirebildiği
+bir ağaçta çalıştırır; bu yüzden bir deponun seçebildiği programların hiçbirini
+çalıştırmaz:
+
+- Commit’ler, `git commit --no-verify` komutunda olduğu gibi deponun Git hook’larını
+  atlar. Bir pre-commit hook’u, bir commit-msg hook’u ya da bir pre-push hook’u
+  çalışmaz
+- Deponun yapılandırdığı kimlik bilgisi yardımcıları, düzenleyiciler, harici diff
+  araçları ve imzalama programları yok sayılır
+
+Commit atmadan önce kontrollerinizi kendiniz çalıştırın ya da CI’da çalıştırın.
+
+Kodu değiştirmek, depoda [yazma izni](/tr-TR/kilavuz/kavramlar/yetkilendirme/#kodu-değiştirmek-yazma-izni-gerektirir) gerektirir: düzenleyicide dosyaları kaydetmek ya da geri almak, **En son PR commit'lerini çek**, commit atmak ve push etmek, bir dalı yayımlamak ve bir parçayı kesen, kontrol eden ya da yayımlayan yığın eylemleri. Yalnızca okuma ya da inceleme erişimiyle dosyaları ve diff’leri görürsünüz; bu eylemler ise "Bu depoyu okuyabilirsiniz ama değiştiremezsiniz. Bir çalışma alanı yöneticisi yazma erişimi verebilir." yanıtını verir.
+
+**En son PR commit'lerini çek**, inceleme ağacını pull request’in en yeni
+commit’lerine getirir. Kendi GitHub oturum açmanızla getirir ve hiç oturum açmanız
+yoksa sizden oturum açmanızı ister. Önce değişikliklerinizi commit’leyin ya da
+atın: commit’lenmemiş değişiklikleri olan bir ağaç eşitlenmez.
 
 ## Farkı okuyun
 
@@ -134,8 +175,8 @@ uygulayan şey forge'un kendi dal korumasıdır.
 Birleştirme geri alınamaz: commit'leri forge'a iter; bu yüzden geri alma girdisi
 yerine bir onay adımı alır. Ardından PR'ın önbelleği geçersiz kılınır, durumu
 **Birleştirildi** olarak değişir ve durumu `merged` olan bir
-`PullRequestStatusChanged` olayı tetiklenir. Bu olay geçici "open in editor"
-çalışma ağacını serbest bırakır ve iki yerleşik pipeline'ı başlatır: PR'ın bayat
+`PullRequestStatusChanged` olayı tetiklenir. Bu olay, düzenleyici düğmesinin açtığı
+geçici çalışma ağacını serbest bırakır ve iki yerleşik pipeline'ı başlatır: PR'ın bayat
 çalışma ağaçlarını ve konuşma klasörlerini kaldıran **Stale repository cleanup**
 ve bir değişiklik günlüğü girdisinin taslağını hazırlayan **Release notes**.
 
@@ -162,6 +203,16 @@ görebilirsiniz.
 Control Center, uygulama dışında insanlar tarafından açılan PR'ları da içe aktarır.
 Yukarıdaki inceleme akışı aynıdır. Harici PR'lar, PR yoklama hizmeti tarafından
 algılanır.
+
+## Sorun giderme
+
+### Pre-commit hook’um çalışmadı
+
+**Kaynak denetimi** panelinde yapılan commit’ler, `git commit --no-verify` komutunda
+olduğu gibi deponun Git hook’larını atlar. Sunucu Git’i, ajanların ve pull
+request’lerin değiştirebildiği bir ağaçta, kendi makinesinde çalıştırır; bu yüzden
+depo tarafından seçilen hiçbir programı çalıştırmaz. Hook’un kontrollerini kendiniz
+çalıştırın ya da CI’a güvenin.
 
 ## İlgili kılavuzlar
 

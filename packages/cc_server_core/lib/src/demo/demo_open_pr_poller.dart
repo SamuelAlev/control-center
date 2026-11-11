@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_server_core/src/forge/repo_access_registry.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 
 /// A fetch port that answers nothing, because a demo container dials nothing.
@@ -88,7 +89,13 @@ class DemoOpenPrPoller extends OpenPrPollingService {
     required super.changeSignals,
     required super.prToWire,
     super.eventBus,
-  }) : super(fetchPort: const _OfflineOpenPrFetchPort());
+  }) : super(
+         fetchPort: const _OfflineOpenPrFetchPort(),
+         // Never written: nothing sweeps, so no repo is ever parked.
+         repoAccess: RepoAccessRegistry(
+           cacheFor: (workspaceId) => workspaceDbs.of(workspaceId).cacheDao,
+         ),
+       );
 
   @override
   void start() {

@@ -2,7 +2,7 @@
 title: Wbudowane narzędzia agentów
 description: Powierzchnia narzędzi, którą wbudowany harness daje agentowi — serwer językowy, wyszukiwanie strukturalne, debugger, kernele i sterowanie workerami — wraz z każdą operacją i jej argumentami.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-agentow
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 To narzędzia **związane z serwerem**, które wbudowane środowisko uruchomieniowe agenta rejestruje bezpośrednio — serwer językowy, wyszukiwanie strukturalne, debugger, kernele, pytania i sterowanie workerami — w odróżnieniu od [narzędzi MCP](/pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp/), które mostkuje, oraz ogólnych narzędzi plikowych, wyszukiwania i powłoki ze środowiska uruchomieniowego harnessu. Nie ma ich w rejestrze MCP: zewnętrzny klient MCP ich nie zobaczy, bo każde jest przypisane do żywego zasobu po stronie serwera — procesu serwera językowego, adaptera debuggera, interpretera — który należy do jednego uruchomienia.
@@ -24,6 +24,8 @@ Każde narzędzie deklaruje poziom, a poziom decyduje o tym, **które powierzchn
 ## `lsp` — zapytania do serwera językowego
 
 Rejestrowane, gdy uruchomienie ma nadzorcę serwera językowego i katalog roboczy. To, czy serwer faktycznie potrafi odpowiedzieć, jest wykrywane w momencie wywołania, jako **część wspólna**: znacznik korzenia musi istnieć *i* plik binarny serwera musi dać się odnaleźć. Każdy z tych warunków osobno oznacza, że żaden serwer nie startuje — `status` tak właśnie mówi — a nie ciche zgadywanie.
+
+Serwery pochodzą wyłącznie z wbudowanej tabeli; plik `lsp.json` z repozytorium nie jest czytany. W uruchomieniu w sandboxie każde uruchomienie ma własną sesję serwera językowego, więc serwery startują ponownie przy każdym uruchomieniu. Lokalne dla projektu pliki binarne (`node_modules/.bin`) są używane tylko w uruchomieniu w sandboxie, a korzeń projektu nigdy nie rozwiązuje się powyżej katalogu roboczego uruchomienia.
 
 Pozycje są adresowane za pomocą `line` oraz podciągu `symbol`, nigdy przez kolumnę. Model poproszony o kolumnę zgaduje, a błędne trafienie wskazuje inny symbol w tym samym wierszu — odpowiedź, która wygląda poprawnie, a dotyczy czegoś innego. Pominięcie `symbol` w akcji nawigacyjnej jest błędem, a nie zgadywaniem pierwszej kolumny.
 
@@ -117,7 +119,7 @@ Każdy plik jest porównywany z treścią zapisaną w momencie przygotowania, a 
 
 Rejestrowane, gdy uruchomienie ma nadzorcę sesji debugowania, katalog roboczy i identyfikator rozmowy. To, czy adapter faktycznie potrafi wystartować, jest wykrywane w momencie wywołania, według tej samej zasady części wspólnej co w przypadku serwera językowego (znacznik korzenia *i* plik binarny). Poziom `exec`; nie jest bezpieczne równolegle (sesja to stan trwający między wywołaniami, więc `continue` wyprzedzające `stack` odczytałoby ramkę, która już się przesunęła).
 
-Jedna sesja na rozmowę, z twardym TTL (30 minut). Drugie `launch` jest odrzucane, zamiast po cichu zastępować pierwsze.
+Jedna sesja na rozmowę, z twardym TTL (30 minut). Drugie `launch` jest odrzucane, zamiast po cichu zastępować pierwsze. W uruchomieniu w sandboxie sesja zachowuje sandbox między turami aż do zakończenia, czyli co najwyżej przez te 30 minut.
 
 | Operacja      | Argumenty                     | Uwagi                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Jedna sesja na rozmowę, z twardym TTL (30 minut). Drugie `launch` jest odrzucan
 | `status`      | —                             | Czy sesja działa i gdzie się zatrzymała        |
 | `breakpoints` | `file`, `lines[]`             | Puste `lines` czyści plik. Można je ustawić **przed** uruchomieniem |
 | `launch`      | `program`, `args[]`           | Uruchamia program zatrzymany na Twoich punktach przerwania |
-| `attach`      | `port`                        | Podłącza się do już działającego debugowanego procesu |
+| `attach`      | `port`                        | Podłącza się do już działającego debugowanego procesu na jednym z przekierowanych portów uruchomienia; każdy inny port jest odrzucany, zanim cokolwiek wystartuje |
 | `continue`    | `thread_id?`                  | Biegnie do następnego zatrzymania              |
 | `pause`       | `thread_id?`                  | Zatrzymuje go tam, gdzie jest                  |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Przesuwa o jeden krok                 |
@@ -146,7 +148,7 @@ Jedna sesja na rozmowę, z twardym TTL (30 minut). Drugie `launch` jest odrzucan
 | `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                    | `go.mod`                                        |
 
-`debugpy` preferuje lokalne dla projektu `.venv/bin` lub `venv/bin` ponad `$PATH`: Python z `$PATH` to inne środowisko, a podłączenie z niewłaściwego zawodzi w sposób, który wygląda jak zepsuty kod.
+`debugpy` preferuje lokalne dla projektu `.venv/bin` lub `venv/bin` ponad `$PATH` tylko w uruchomieniu w sandboxie: Python z `$PATH` to inne środowisko, a podłączenie z niewłaściwego zawodzi w sposób, który wygląda jak zepsuty kod. Poza sandboxem używa wyłącznie `$PATH`, więc repozytorium nie może wybrać interpretera, który działa na hoście.
 
 ---
 
@@ -176,7 +178,7 @@ Most **wchodzi z powrotem do rejestru narzędzi harnessu**, więc guardraile, za
 Limit czasu komórki to budżet *bezczynności* (domyślnie 5 minut), który jest **wstrzymywany**, gdy wywołanie przez most jest w toku, więc komórka rozdzielająca pracę na subagentów nie zostaje zabita w połowie rozdzielania.
 
 :::note[Gdzie działa kernel]
-W odizolowanym środowisku rozmowy, gdy rozmowa je ma; w przeciwnym razie na hoście. Nie uruchamia przy tym odizolowanego środowiska — ta sama zasada, która powstrzymuje kartę riga przed automatycznym startem.
+W odizolowanym środowisku rozmowy, gdy rozmowa je ma; w przeciwnym razie w sandboxie systemu operacyjnego uruchomienia na hoście. Gdy sandbox jest wyłączony lub niedostępny, kernel działa bez ograniczeń, a `eval` prosi o zatwierdzenie wykonania na hoście. Nie uruchamia przy tym odizolowanego środowiska — ta sama zasada, która powstrzymuje kartę riga przed automatycznym startem.
 :::
 
 ---

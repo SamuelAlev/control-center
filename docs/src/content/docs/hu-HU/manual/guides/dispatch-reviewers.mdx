@@ -2,7 +2,7 @@
 title: Átnéző ügynökök indítása
 description: Szakértő átnéző ügynököket küld egy PR-hez a PR nézetéből, egy MCP-eszközzel vagy egy pipeline-lépéssel.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/atnezo-ugynokok-inditasa
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Ez az útmutató bemutatja, hogyan indíthat átnéző ügynököket pull requestek
@@ -94,7 +94,7 @@ Két esemény számít itt, és ezek nem felcserélhetők:
 | Esemény                | Akkor tüzel, amikor                                                                                             | Payload-kulcsok                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | Egy PR **a Control Centeren keresztül** nyílik meg — a PR-összeállító felületen, vagy amikor egy ügynök meghívja a `pr_lifecycle.publish` műveletet | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | A PR-lekérdező szolgáltatás egy közvetlenül a GitHubon megnyitott PR-t talál                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | A PR-lekérdező szolgáltatás egy közvetlenül a GitHubon megnyitott PR-t talál                                     | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 A github.com-on megnyitott PR soha nem váltja ki a `PullRequestPublished`
 eseményt, ezért egy csak ahhoz az eseményhez bekötött sablon nem fogja észlelni.

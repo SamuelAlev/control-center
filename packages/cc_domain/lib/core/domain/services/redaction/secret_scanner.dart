@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/services/redaction/token_patterns.dart';
+
 /// A single secret detected while scanning a value, naming where it was found
 /// and why it was flagged.
 class SecretFinding {
@@ -24,23 +26,15 @@ class SecretFinding {
   String toString() => '$path ($reason)';
 }
 
-/// A named credential pattern matched against string values.
-class _SecretPattern {
-  const _SecretPattern(this.label, this.pattern);
-  final String label;
-  final RegExp pattern;
-}
-
 /// Scans arbitrary JSON-ish values for credentials, returning a [SecretFinding]
 /// for each match. Pure: it never reads the process environment itself — pass
 /// in [environment] (e.g. `Platform.environment`) so the same scanner works in
 /// both pure-Dart and platform contexts.
 ///
-/// Detects Bearer tokens, OpenAI/Anthropic `sk-…` keys, Google `AIza…` keys,
-/// AWS access keys, GitHub `gh[pousr]_…` tokens, PEM private-key blocks and —
-/// crucially — values that match a secret-named environment variable, so a leak
-/// of e.g. `$OPENAI_API_KEY` is caught even if the literal does not match a
-/// known shape.
+/// Detects every shape in [kTokenPatterns] and — crucially — values that
+/// match a secret-named environment variable, so a leak of e.g.
+/// `$OPENAI_API_KEY` is caught even if the literal does not match a known
+/// shape.
 class SecretScanner {
   /// Creates a [SecretScanner].
   const SecretScanner({
@@ -71,43 +65,12 @@ class SecretScanner {
     caseSensitive: false,
   );
 
-  static final List<_SecretPattern> _patterns = [
-    _SecretPattern(
-      'bearer token',
-      RegExp(r'\bBearer\s+[A-Za-z0-9._~+/=-]{16,}', caseSensitive: false),
-    ),
-    _SecretPattern('Anthropic API key', RegExp(r'\bsk-ant-[A-Za-z0-9_-]{20,}')),
-    _SecretPattern('API key', RegExp(r'\bsk-[A-Za-z0-9][A-Za-z0-9_-]{20,}')),
-    _SecretPattern('Google API key', RegExp(r'\bAIza[0-9A-Za-z_-]{20,}')),
-    _SecretPattern('AWS access key', RegExp(r'\b(?:AKIA|ASIA)[0-9A-Z]{16}\b')),
-    _SecretPattern('GitHub token', RegExp(r'\bgh[pousr]_[A-Za-z0-9_]{20,}')),
-    _SecretPattern('GitHub token', RegExp(r'\bgithub_pat_[A-Za-z0-9_]{22,}')),
-    _SecretPattern(
-      'Slack token',
-      RegExp(r'\b(?:xox[abeoprs]|xoxe\.xox[abprs]|xapp)-[A-Za-z0-9-]{8,}'),
-    ),
-    _SecretPattern(
-      'Linear token',
-      RegExp(r'\blin_(?:api|oauth)_[A-Za-z0-9]{16,}'),
-    ),
-    _SecretPattern(
-      'Google OAuth token',
-      RegExp(
-        r'\bya29\.[A-Za-z0-9._-]{20,}|(?<![A-Za-z0-9/:._-])1//[A-Za-z0-9_-]{20,}',
-      ),
-    ),
-    _SecretPattern(
-      'private key',
-      RegExp(r'-----BEGIN [A-Z ]*PRIVATE KEY-----'),
-    ),
-  ];
-
   /// Returns every [SecretFinding] in [value], walking maps, lists and strings.
   List<SecretFinding> scan(Object? value) {
     final findings = <SecretFinding>[];
     final envSecrets = _envSecrets();
     for (final entry in _stringEntries(value)) {
-      for (final pattern in _patterns) {
+      for (final pattern in kTokenPatterns) {
         if (pattern.pattern.hasMatch(entry.value)) {
           findings.add(SecretFinding(path: entry.path, reason: pattern.label));
         }

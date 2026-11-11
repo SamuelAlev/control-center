@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.dart';
 import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
 
@@ -112,11 +113,25 @@ abstract class SpaceStackPort {
 
   /// Pushes every layer and opens a pull request for each one that does not
   /// have one yet. Each pull request targets the branch below it.
+  ///
+  /// [actingUserId] is whose name they carry (null: the bot);
+  /// [approvalOwnerUserIds] are who may not approve them, [actingUserId]
+  /// always among them (for an unrequested agent run: everyone who armed its
+  /// trigger).
+  ///
+  /// Every commit a layer's push sends is inspected first. With
+  /// [agentRunIdentities] (an agent run publishes; the identities of its
+  /// open runs, read server-side, never from the request) each must keep one
+  /// of their rules, as the push gateway holds the run's own pushes. Without
+  /// (a person publishes) their own commits are theirs, and only a commit
+  /// authored as the workspace's agent is held to the agent rule.
   Future<SpaceStackView> publish({
     required String workspaceId,
     required String spaceId,
     String? repoId,
     String? actingUserId,
+    Set<String> approvalOwnerUserIds = const {},
+    List<AgentCommitIdentity>? agentRunIdentities,
     bool draft = true,
   });
 }

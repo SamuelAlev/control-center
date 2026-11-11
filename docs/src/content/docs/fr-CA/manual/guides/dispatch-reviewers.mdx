@@ -2,7 +2,7 @@
 title: Lancer des agents relecteurs
 description: Envoyez des agents relecteurs spécialisés sur une PR depuis la vue de la PR, un outil MCP ou une étape de pipeline.
 slug: fr-CA/manuel/guides/lancer-relecteurs
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Ce guide vous montre comment lancer des agents relecteurs pour relire des demandes
@@ -89,7 +89,7 @@ Deux événements comptent ici, et ils ne sont pas interchangeables :
 | Événement              | Se déclenche quand                                                                                              | Clés de charge utile                                               |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | Une PR est ouverte **par l’entremise de Control Center** — la surface de composition, ou un agent qui appelle `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | Le service d’interrogation des PR trouve une PR ouverte directement sur GitHub                                  | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | Le service d’interrogation des PR trouve une PR ouverte directement sur GitHub                                  | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 Une PR ouverte sur github.com ne déclenche jamais `PullRequestPublished`, de sorte
 qu’un modèle relié uniquement à cet événement ne la verra pas. Notez aussi que

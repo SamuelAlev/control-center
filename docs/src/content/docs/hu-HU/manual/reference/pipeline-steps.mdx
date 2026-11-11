@@ -2,7 +2,7 @@
 title: Pipeline-lépésfajták
 description: Referencia a pipeline-lépések fajtáihoz, a lépéstörzsek kulcsaihoz, azok konfigurációjához és a lépéseredményekhez.
 slug: hu-HU/kezikonyv/referencia/pipeline-lepesek
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Egy pipeline-lépésnek két egymástól független tengelye van:
@@ -61,7 +61,7 @@ A gazdagép operációsrendszer-homokozójában fut, a cwd a `<cc_root>/pipeline
 
 ### `pipeline.condition`
 
-Routertörzs — beolvassa a `config.extras` értéket, kiértékel egy feltételt, és `StepResult.route(key)` értéket ad vissza. A feltételek **nem** JavaScript-kifejezések; három szerzői alak támogatott, elsőbbségi sorrendben:
+Routertörzs — beolvassa a `config.extras` értéket, kiértékel egy feltételt, és `StepResult.route(key)` értéket ad vissza. A feltételek **nem** JavaScript-kifejezések; két szerzői alak támogatott, elsőbbségi sorrendben:
 
 - **Predikátumfa** (`extras.predicate`) — logikai fa, amely `"true"` / `"false"` útvonalra visz. Minden csomópont egy `type` mezővel rendelkező map:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — igaz, ha bármelyik felsorolt útvonal létezik a lemezen; a `negate` megfordítja; a `recursive` az alkönyvtárakat is átkutatja (kihagyva a `.git`, `node_modules`, `build`, `.dart_tool` könyvtárat). A relatív útvonalak a `state[baseKey]`-hez (alapértelmezés: `repo_local_path`) képest oldódnak fel, egyébként a futtatásonkénti munkaterület-könyvtárhoz képest.
@@ -69,21 +69,30 @@ Routertörzs — beolvassa a `config.extras` értéket, kiértékel egy feltéte
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — logikai csoportok.
   - `{"type": "not", "of": <predicate>}` — tagadás.
 - **Kapcsoló** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; arra az első esetre visz, amelyet az állapotérték kis-nagybetűtől függetlenül tartalmaz, egyébként a `default`-ra.
-- **Összehasonlítás** (örökölt, legfelső szintű `extras.left` / `extras.op` / `extras.right`) — egyenértékű egy `comparison` predikátummal, a fa előtt szerződött sablonok miatt megőrizve.
 
 A csomópontból kimenő élek `routeKey`-t hordoznak, amelynek egyeznie kell a visszaadott kulccsal.
 
 ### `prReview.comment`
 
-A konszolidált megállapításokat PR-átnézési hozzászólásként teszi közzé a GitHub PR-kliensen keresztül.
+Az összesített megállapításokat, vagy a lépés saját `extras.message` mezőjét, PR-áttekintési megjegyzésként közzéteszi a GitHub PR-klienssel.
 
-| Állapotkulcs              | Leírás                                        |
-| ------------------------- | --------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (kötelező)                       |
-| `pr_number`               | PR-szám — int vagy numerikus sztring (kötelező) |
-| `consolidated_findings`   | A hozzászólás törzse (kötelező)               |
+| Kulcs                   | Forrás         | Leírás                                                                        |
+| ----------------------- | -------------- | ----------------------------------------------------------------------------- |
+| `repo_full_name`        | triggerpayload | `owner/repo` (kötelező)                                                       |
+| `pr_number`             | triggerpayload | PR-szám, pozitív egész vagy numerikus karakterlánc (kötelező)                 |
+| `consolidated_findings` | állapot        | A megjegyzés törzse, ha a lépésnek nincs `message`-e                          |
 
-`StepResult.terminal` értéket ad vissza, az állapotban `comment_review_id` és `commented_at` kulccsal.
+A pull request csak a futtatás triggerpayloadjából származik, soha nem olyan állapotból, amelyet a futtatás közben egy lépés átírhat. A közzétett szövegben lévő @-említések inaktívak, így a megjegyzés senkit sem értesít.
+
+A `message` a `{{key}}` helyőrzőit az alábbi módon jeleníti meg:
+
+- A `repo_full_name`, `repo_owner`, `repo_name` és `pr_number` azt a pull requestet jeleníti meg, amelyre a lépés közzétesz.
+- Az `author` a triggerpayloadból jelenik meg, változtatás nélkül, csak akkor, ha érvényes felhasználónév a forge-on; egyébként a lépés hibával leáll.
+- A `consolidated_findings` nyers markdownként jelenik meg, az @-említéseivel együtt inaktívvá téve.
+- Minden más érték szó szerinti szövegként jelenik meg: egy sorban, a markdown-írásjelek escape-elésével és az @-említések inaktívvá tételével.
+- Az a helyőrző, amely semmire sem oldódik fel, hibával leállítja a lépést.
+
+Visszaadja a `StepResult.terminal` értéket, a `comment_review_id` és `commented_at` mezőkkel az állapotban.
 
 ### `messaging.postSpace`
 

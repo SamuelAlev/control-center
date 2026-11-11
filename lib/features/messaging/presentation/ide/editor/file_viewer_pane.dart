@@ -1,6 +1,7 @@
 import 'package:cc_markdown/cc_markdown.dart' show CcSelectionRegion;
 import 'package:cc_syntax/syntax_languages.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -91,7 +92,10 @@ class FileViewerPane extends ConsumerWidget {
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Text(
-                  error.toString(),
+                  // A refusal the person can act on (their forge account
+                  // cannot read the repository) in words; anything else as
+                  // the server said it.
+                  repoCodeRefusalMessage(l10n, error) ?? error.toString(),
                   style: TextStyle(color: t.textTertiary),
                   textAlign: TextAlign.center,
                 ),

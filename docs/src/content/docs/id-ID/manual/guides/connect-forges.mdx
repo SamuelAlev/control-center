@@ -2,7 +2,7 @@
 title: Hubungkan host kode
 description: Hubungkan GitHub, GitLab, atau Bitbucket agar permukaan PR, pendaftaran repo, dan eksekusi agen berfungsi — satu ruang kerja dapat memakai ketiganya.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-host-kode
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center bekerja dengan tiga host kode, yang disebut **forge** di seluruh aplikasi: **GitHub**, **GitLab**, dan **Bitbucket Cloud**. Tidak ada yang menjadi default. Hubungkan satu dan semuanya berfungsi; hubungkan beberapa dan satu ruang kerja dapat memuat repo dari semuanya sekaligus.
@@ -11,22 +11,26 @@ Forge adalah properti setiap **repo**, dibaca dari remote `origin`-nya saat Anda
 
 ## Hubungkan forge
 
-1. Buka **Pengaturan → Ruang kerja → Profil & identitas** (`/settings/workspace/profile`).
+1. Buka **Pengaturan → Anda → Profil** (`/settings/you/profile`).
 2. Temukan kartu **Hosting kode**. Setiap forge yang didukung tercantum, terhubung atau tidak.
 3. Pada **GitHub**, tekan **Masuk ke GitHub**. Pada **GitLab** atau **Bitbucket**, tekan **Tambah token** lalu tempelkan salah satu.
 
-**GitHub hanya memakai proses masuk.** Proses masuk berjalan melalui GitHub App milik server atau melalui Control Center Connect, tergantung pengaturan pemilik server (lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)); tidak ada token GitHub untuk ditempel. GitLab dan Bitbucket masih menerima token pribadi.
+**GitHub hanya memakai proses masuk.** Proses masuk berjalan melalui GitHub App milik server atau melalui Control Center Connect, tergantung pengaturan pemilik server, atau melalui aplikasi yang dipilih admin ruang kerja untuk ruang kerja ini di **Pengaturan → Ruang kerja → Integrasi** (lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/)); tidak ada token GitHub untuk ditempel. GitLab dan Bitbucket masih menerima token pribadi.
 
 Apa pun caranya, kredensial itu **milik Anda dan berada di server**, dikunci berdasarkan id pengguna Anda: tidak ada token yang disimpan di mesin tempat Anda mengetiknya, setiap perangkat tempat Anda masuk memakai token yang sama, dan anggota lain tidak dapat membacanya. Kredensial berlaku pada **permintaan berikutnya** — tidak ada yang perlu dimulai ulang, dan memutuskan koneksi langsung menghentikan pengirimannya.
 
-Setiap baris memberi tahu dari mana kredensialnya berasal, karena itulah perbedaan antara "token saya tidak berfungsi" dan "token lain yang menjawab":
+Kartu tersebut menyebutkan di mana akun Anda dipakai. Token GitLab atau Bitbucket adalah milik Anda di **setiap ruang kerja di server**, jadi cukup Anda tempelkan sekali. Proses masuk GitHub Anda juga demikian, kecuali sebuah ruang kerja memiliki aplikasi masuknya sendiri: ruang kerja itu tetap memakai proses masuk GitHub miliknya, dan kartu menyebutkannya.
 
-| Subjudul                         | Arti                                                               |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Masuk sebagai octocat`          | Kredensial Anda sendiri yang dipakai                               |
-| `Masuk sebagai octocat · dari environment` | Hanya GitLab atau Bitbucket: variabel environment server yang menjawab, bukan token Anda |
-| `Tidak terhubung`                | Anda tidak punya kredensial untuk forge ini                        |
-| `Proses masuk GitHub belum disiapkan di server ini.` | Server tidak memiliki GitHub App sendiri maupun Connect; pemilik server menyiapkan salah satunya |
+Setiap baris menampilkan status kredensial **Anda**. Hanya kredensial Anda sendiri yang menjawab untuk Anda; tidak ada yang lain yang menggantikannya:
+
+| Baris menampilkan                                             | Arti                                                                                                                                                                                              |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Masuk sebagai octocat`                                       | Kredensial Anda sendiri yang dipakai                                                                                                                                                              |
+| `Tidak terhubung`                                             | Anda tidak punya kredensial untuk forge ini                                                                                                                                                       |
+| `Sesi GitHub Anda sebagai octocat sudah berakhir. Masuk lagi.` | Proses masuk kedaluwarsa atau dicabut di forge                                                                                                                                                    |
+| `Dijeda: layanan masuk ruang kerja ini berubah`               | Ruang kerja ini beralih ke layanan masuk yang berbeda. Proses masuk Anda tetap disimpan dan berfungsi lagi jika beralih kembali, jadi tidak ada tombol masuk                                    |
+| `GitHub tidak dapat dihubungi saat ini. Mencoba lagi.`        | Gangguan sementara. Control Center terus mencoba lagi; tidak ada yang perlu dilakukan                                                                                                             |
+| Kalimat yang menjelaskan mengapa masuk tidak tersedia         | Misalnya `Masuk dengan GitHub belum disiapkan untuk ruang kerja ini.` atau `Layanan masuk ruang kerja ini mengubah identitasnya. Admin perlu mengonfirmasinya.` Admin mendapat tombol ke pengaturan yang memperbaikinya |
 
 ### Token apa yang dibutuhkan setiap forge
 
@@ -35,7 +39,9 @@ Setiap baris memberi tahu dari mana kredensialnya berasal, karena itulah perbeda
 | **GitLab**    | Token akses pribadi dengan `api`                          | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Token API Atlassian, plus email akun Anda                 | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket mengautentikasi dengan **email akun sebagai nama pengguna** dan token sebagai kata sandi. Setel `BITBUCKET_EMAIL` di environment server agar ia tahu email mana yang dipasangkan dengan token itu.
+Bitbucket mengautentikasi dengan **email akun sebagai nama pengguna** dan token API sebagai kata sandi, sehingga dialog Bitbucket meminta keduanya. Token akses repositori, proyek, atau workspace Bitbucket tidak dimiliki siapa pun, sehingga dialog ini menolaknya: token itu adalah [token otomatisasi](#tambahkan-token-otomatisasi). Hal yang sama berlaku untuk **token akses proyek** atau **grup** GitLab: GitLab ditanya siapa pemilik token sebelum disimpan, dan token bot ditolak di sini.
+
+Token tidak pernah terikat pada satu ruang kerja: Anda memegang satu per forge, dan setiap ruang kerja di server memakainya. **Putuskan** menghapusnya untuk semua ruang kerja.
 
 ### Pekerjaan latar belakang
 
@@ -46,14 +52,34 @@ kredensial, dan setiap forge menjawabnya dengan cara berbeda:
   atau melalui Connect dan dibatasi pada apa yang dapat dilakukan anggota yang bertanggung jawab
   di sana. Itu tidak pernah proses masuk seseorang yang diserahkan utuh, dan tidak ada variabel
   environment atau token tempelan yang menggantikannya. Lihat [Siapkan integrasi GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/#siapa-yang-diwakili-kredensial-anda)
-- **GitLab** — token yang ditempel pemilik server, lalu `GITLAB_TOKEN`, lalu `CI_JOB_TOKEN`
-- **Bitbucket** — token yang ditempel pemilik server, lalu `BITBUCKET_API_TOKEN`, lalu `BITBUCKET_TOKEN` (dengan `BITBUCKET_EMAIL`)
+- **GitLab** dan **Bitbucket** — hanya **token otomatisasi** repositori: token akses bot yang ditambahkan admin ruang kerja untuk repositori itu, atau untuk setiap repositori di forge tersebut dalam ruang kerja. Token milik repositori mengungguli token ruang kerja. Polling pull request, komentar tinjauan AI, serta push dan merge request yang tidak diminta siapa pun semuanya memakai token ini, sehingga di forge tampil sebagai bot itu, bukan sebagai anggota. Tidak ada token pribadi anggota yang menggantikannya, dan tidak ada token tingkat server atau variabel environment. Tanpa token itu, pekerjaan latar belakang pada repositori dijeda dan notifikasi akses repositori akan menyebutkannya.
 
-Variabel environment GitLab dan Bitbucket adalah kredensial **server**, bukan milik Anda: permintaan
-yang dibuat atas nama Anda hanya memakai token Anda, sehingga environment tidak pernah diam-diam
-menggantikan Anda.
+Pekerjaan yang diminta anggota (komentar, tinjauan, merge request agen yang dibuka untuk mereka) tetap memakai token pribadi anggota itu.
 
-Ini adalah kredensial **server**, bukan milik Anda, dan perbedaannya krusial: permintaan yang dibuat atas nama Anda memakai kredensial Anda dan tidak yang lain, sehingga environment tidak pernah diam-diam menggantikan Anda. Pekerjaan tanpa manusia di baliknya — webhook, polling PR, sinkronisasi tiket — menyelesaikan identitas aplikasi server terlebih dahulu, lalu kredensial pemilik server, lalu environment. Urutannya tetap sehingga "saya sudah masuk dan tidak ada yang berubah" tidak pernah menjadi hasil yang didukung.
+## Tambahkan token otomatisasi
+
+Hanya admin ruang kerja yang dapat melihat atau mengubah token otomatisasi. Setiap token diperiksa dengan forge saat disimpan: token pribadi ditolak (token akses pribadi GitLab, token API Atlassian, atau token Bitbucket apa pun yang masuk sebagai akun seseorang), begitu pula token yang tidak dapat membaca repositori yang dituju.
+
+- **Untuk satu repositori:** buka **Pengaturan → Ruang kerja → Repositori**. Kartu **Token otomatisasi** mencantumkan setiap repositori GitLab dan Bitbucket beserta bot yang bekerja di sana, yaitu **Memakai token ruang kerja** atau **Tidak ada token. Otomatisasi dijeda di sini.** Tekan **Tambah token** pada baris repositori.
+- **Untuk setiap repositori di sebuah forge:** buka **Pengaturan → Ruang kerja → Integrasi**, temukan kartu **Token otomatisasi**, lalu tekan **Tambah token** pada baris GitLab atau Bitbucket. Repositori yang tidak dapat dibaca token itu akan disebutkan setelah disimpan dan tetap dijeda.
+
+Jika pekerjaan latar belakang sudah dijeda, admin juga melihat **Tambah token** langsung di notifikasi akses repositori. **Perbarui token** mengganti token; tombol tong sampah menghapusnya, dan repositori yang tersisa tanpa token akan dijeda. Jika forge kemudian menolak token yang tersimpan (dicabut atau kedaluwarsa), barisnya menyatakan demikian, dan repositori yang dicakupnya tetap dijeda sampai Anda menggantinya.
+
+| Forge         | Token otomatisasi                                                                                                                   | Tempat membuatnya                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | **Token akses proyek** atau **grup** dengan `read_api` dan `read_repository`; tambahkan `api` dan `write_repository` untuk komentar, merge request, dan push | Proyek atau grup → Settings → Access tokens                    |
+| **Bitbucket** | **Token akses repositori**, **proyek**, atau **workspace** dengan izin baca repositori, plus tulis pull request untuk komentar dan pull request (tulis repositori untuk push) | Repositori, proyek, atau workspace → Settings → Access tokens |
+
+GitLab menampilkan pekerjaan sebagai pengguna bot token itu; Bitbucket menampilkannya di bawah nama token akses.
+
+### Bitbucket: token akses atau token API
+
+Bitbucket memiliki dua jenis token, dan Control Center memisahkannya:
+
+- **Token API** (id.atlassian.com) milik akun Atlassian Anda dan dipakai bersama email Anda. Ini adalah kredensial **Anda sendiri** dan dimasukkan di bawah **Hosting kode** di **Pengaturan → Anda → Profil**.
+- **Token akses** (dibuat di pengaturan repositori, proyek, atau workspace) milik repositori, proyek, atau workspace itu, bukan milik seseorang. Ini adalah **token otomatisasi** dan dimasukkan di bawah **Token otomatisasi**.
+
+Setiap dialog menolak jenis token yang lain dan menyebutkan tempat yang benar.
 
 ## Anda adalah orang yang berbeda di setiap forge
 
@@ -61,11 +87,26 @@ Manusia yang sama adalah `octocat` di GitHub dan seseorang yang sama sekali berb
 
 Jika identitas sebuah forge belum diselesaikan, repo-nya tidak menyumbang apa pun ke kotak masuk alih-alih mencocokkan semuanya. Kotak masuk menyatakannya alih-alih mengklaim Anda sudah menangani semuanya.
 
+## Anda hanya melihat yang dapat dilihat akun Anda sendiri
+
+Pull request sebuah repo hanya sampai ke Anda ketika peran ruang kerja Anda mengizinkan repo tersebut **dan akun Anda sendiri di forge itu dapat membacanya**. Admin ruang kerja dan pemilik mengikuti aturan yang sama. Ketika beberapa repo disembunyikan, kotak masuk dan antrean PR menyebutkan berapa banyak dan alasannya, tanpa menyebut namanya:
+
+- **Masuk ke GitHub untuk melihat pull request dari 3 repositori lagi**: Anda belum menghubungkan forge itu di sini. Masuk dan repo tersebut akan muncul
+- **3 repositori disembunyikan karena akun GitHub Anda tidak dapat melihatnya**: tanyakan seseorang yang punya akses di forge tersebut
+- **3 repositori disembunyikan karena Anda tidak punya akses di ruang kerja ini**: minta admin ruang kerja untuk memberi akses
+- **Memeriksa akses Anda ke 3 repositori lagi…**: ditampilkan sebentar saat Control Center memastikan apa yang dapat dibaca akun Anda
+
+Kode mengikuti aturan yang sama. Untuk membuka file, diff, atau pencarian sebuah repositori, atau terminal di atasnya, Anda memerlukan grant-nya di ruang kerja ini dan akun forge Anda sendiri harus dapat membacanya; admin ruang kerja juga, hanya pemilik server yang dikecualikan. Ketika forge tidak dapat dihubungi untuk memeriksa, Anda melihat "Tidak dapat memastikan akses forge Anda. Coba lagi." (dengan menyebut forge-nya) Lihat [Kode mengikuti forge](/id-ID/panduan-pengguna/konsep/otorisasi/#kode-mengikuti-forge).
+
+Aturan yang sama berlaku untuk semua yang dibuat dari pull request tersebut. Ruang tinjauan, pesannya, dan run agennya hilang selama Anda tidak dapat melihat pull request-nya, dan ruang tinjauan yang terbuka akan ditutup jika Anda kehilangan akses. Run pipeline untuk pull request yang disembunyikan keluar dari daftar run Anda. Agen yang bekerja untuk Anda juga tidak dapat membaca ruang tinjauan tersebut. Daftar repositori ruang kerja menampilkan setiap repo yang dapat Anda akses di ruang kerja ini, bahkan yang belum dapat dijangkau akun forge Anda.
+
+Jika forge sedang membatasi laju atau sedang down, Control Center terus menampilkan apa yang terakhir dikonfirmasinya selama beberapa menit, lalu menyembunyikan pull request tersebut sampai dapat memeriksanya lagi.
+
 ## Satu kotak masuk untuk semua forge
 
 Kotak masuk dan antrean PR menyebar ke setiap forge yang ada di ruang kerja dan menggabungkan hasilnya menjadi satu aliran — pull request GitHub dan pull request Bitbucket berdampingan, diurutkan berdasarkan waktu alih-alih dikelompokkan menurut vendor.
 
-Kegagalan bersifat terisolasi. Forge yang sedang down, terkena batas laju, atau tidak terhubung tidak menyumbang apa pun dan membiarkan yang lain tidak tersentuh; ia tidak pernah mengosongkan seluruh kotak masuk. Repo-nya sendiri tetap menampilkan status terakhir yang diketahui sampai ia pulih.
+Kegagalan bersifat terisolasi. Forge yang sedang down atau terkena batas laju tidak memengaruhi yang lain, dan repo-nya tetap menampilkan status terakhir yang diketahui sampai ia pulih; ia tidak pernah mengosongkan seluruh kotak masuk. Repo yang tidak lagi dapat dijangkau server akan keluar dari daftar alih-alih menampilkan PR yang sudah usang, dan **notifikasi akses repo** menyebutkannya beserta perbaikannya: pasang GitHub App di organisasinya, tambahkan repo ke repositori App, lanjutkan instalasi yang ditangguhkan, minta anggota yang bertanggung jawab untuk masuk lagi, atau tambahkan token otomatisasi untuk repo GitLab atau Bitbucket. Admin mendapat tombol untuk langkah-langkah GitHub App dan untuk menambahkan token.
 
 ## Apa yang dapat dilakukan setiap forge
 
@@ -101,15 +142,31 @@ GitLab menyebut pull request sebagai **merge request**. Control Center menyebut 
 
 ### Daftar PR kosong dan menyatakan sebuah forge tidak terhubung
 
-Anda tidak punya kredensial untuk forge itu. Masuk ke GitHub, atau tempelkan token GitLab atau Bitbucket, di **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**. Repo di forge lain tidak terpengaruh.
+Anda tidak punya kredensial untuk forge itu. Masuk ke GitHub, atau tempelkan token GitLab atau Bitbucket, di **Pengaturan → Anda → Profil → Hosting kode**. Repo di forge lain tidak terpengaruh.
 
 ### Saya menghubungkan sebuah forge tetapi repo-nya masih tidak menampilkan apa pun
 
-Periksa subjudul barisnya. Jika baris GitLab atau Bitbucket tertulis "dari environment", kredensial yang menjawab berbeda dari yang Anda harapkan — token Anda sendiri yang menang untuk apa pun yang Anda minta, jadi jika tertulis sebaliknya, milik Anda tidak tersimpan. Di GitHub, pastikan GitHub App telah dipasang di akun pemilik repo-repo tersebut.
+Periksa status baris itu, lalu notifikasi di atas daftar PR. "Masuk ke … untuk melihat pull request dari … repositori lagi" berarti akun Anda belum terhubung untuk repo tersebut; "… disembunyikan karena akun … Anda tidak dapat melihatnya" berarti forge tidak memberi Anda akses. Di GitHub, notifikasi akses repo memberi tahu Anda ketika GitHub App tidak dipasang di organisasi repo atau tidak menyertakan repo tersebut.
+
+### Pekerjaan latar belakang pada repo GitLab atau Bitbucket dijeda
+
+Repo tidak memiliki token otomatisasi yang dapat membacanya. Admin ruang kerja perlu menambahkan satu untuk repo itu atau untuk seluruh ruang kerja; lihat [Tambahkan token otomatisasi](#tambahkan-token-otomatisasi). Token pribadi Anda tidak membuka jeda; pekerjaan latar belakang tidak pernah memakai token anggota.
 
 ### Repo tidak dapat didaftarkan
 
-Pendaftaran membutuhkan ketiganya: path berada di dalam git work tree, memiliki remote `origin`, dan remote itu menunjuk ke github.com, gitlab.com, atau bitbucket.org. Lihat [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+Pendaftaran membutuhkan ketiganya: path berada di dalam git work tree, memiliki remote `origin`, dan remote itu menunjuk ke github.com, gitlab.com, atau bitbucket.org. `origin` juga harus merupakan repositori yang sedang Anda tautkan, dan folder di luar penyimpanan ruang kerja sendiri hanya dapat ditautkan oleh pemilik server. Lihat [Tambahkan repo ke ruang kerja](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/).
+
+### Saya memiliki grant tetapi repo menyatakan akun saya tidak dapat membacanya
+
+Akun forge Anda sendiri tidak dapat membaca repositori itu, sehingga kodenya tetap tertutup bagi Anda apa pun yang diberikan ruang kerja. Masuk ke forge di bawah **Hosting kode** di atas, atau dapatkan akses ke repositori itu di forge.
+
+### "Tidak dapat memastikan akses forge Anda"
+
+Forge tidak dapat dihubungi untuk memeriksa akses Anda, sehingga Control Center menolak alih-alih menebak. Coba lagi sebentar lagi.
+
+### Sebuah repositori menyatakan kini mengarah ke repositori lain
+
+Repositori di balik path itu berubah: ia dihapus lalu dibuat ulang, atau dipindahkan dan digantikan. Control Center tidak mengirim apa pun ke sana sampai admin ruang kerja mengklik **Tautkan ulang** pada pemberitahuan atau pada baris repositori. Pengubahan nama atau transfer biasa diikuti dengan sendirinya dan tidak pernah menampilkan ini.
 
 ### Semuanya berhenti berfungsi sementara setelah penggunaan berat
 

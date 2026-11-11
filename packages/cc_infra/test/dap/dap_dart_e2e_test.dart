@@ -4,6 +4,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/dap/dap_adapter_registry.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
 import 'package:cc_infra/src/harness/debug_tool.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -21,6 +22,7 @@ void main() {
   late Directory root;
   late DebugSessionSupervisor supervisor;
   late DebugTool tool;
+  late _Releasing launcher;
 
   setUp(() {
     root = Directory.systemTemp.createTempSync('cc_dap');
@@ -42,10 +44,15 @@ int compute(int a, int b) {
 }
 ''');
     supervisor = DebugSessionSupervisor(ttl: const Duration(minutes: 2));
+    launcher = _Releasing();
     tool = DebugTool(
       supervisor: supervisor,
       workingDirectory: root.path,
       sessionKey: 'conv-1',
+      // Unconfined: this pins the protocol; the sandboxed start is pinned in
+      // `host_process_tools_sandbox_test.dart`.
+      launcher: launcher,
+      attachablePorts: const [],
     );
   });
 
@@ -58,7 +65,7 @@ int compute(int a, int b) {
 
   group('registry', () {
     test('detects the dart adapter in a pub package', () {
-      final found = detectDapAdapters(root.path);
+      final found = detectDapAdapters(root.path, projectLocalBins: true);
       expect(
         found.map((a) => a.spec.id),
         contains('dart'),
@@ -72,6 +79,7 @@ int compute(int a, int b) {
       // tool that always fails is worse than not offering it.
       final found = detectDapAdapters(
         root.path,
+        projectLocalBins: true,
         resolveBinary: (_, _, _) => null,
       );
       expect(found, isEmpty);
@@ -81,7 +89,11 @@ int compute(int a, int b) {
       final empty = Directory.systemTemp.createTempSync('cc_dap_bare');
       addTearDown(() => empty.deleteSync(recursive: true));
       expect(
-        detectDapAdapters(empty.path, resolveBinary: (c, _, _) => '/bin/$c'),
+        detectDapAdapters(
+          empty.path,
+          projectLocalBins: true,
+          resolveBinary: (c, _, _) => '/bin/$c',
+        ),
         isEmpty,
       );
     });
@@ -272,6 +284,21 @@ int compute(int a, int b) {
         expect(supervisor.sessionFor('conv-1'), isNull);
       }, retry: 4);
 
+      test('the session releases its launcher when it ends', () async {
+        await tool.execute({
+          'op': 'breakpoints',
+          'file': 'bin/main.dart',
+          'lines': [8],
+        }, ctx());
+        await tool.execute({'op': 'launch', 'program': 'bin/main.dart'}, ctx());
+        expect(supervisor.runsUnder('conv-1', launcher), isTrue);
+        expect(launcher.released, 0, reason: 'it outlives the run');
+
+        await supervisor.stop('conv-1');
+        expect(launcher.released, 1);
+        expect(supervisor.runsUnder('conv-1', launcher), isFalse);
+      });
+
       test('a second launch is refused, not silently swapped', () async {
         await tool.execute({
           'op': 'breakpoints',
@@ -309,4 +336,28 @@ String? _resolveDart() {
   } on Object {
     return null;
   }
+}
+
+/// Starts on the host and counts releases.
+class _Releasing implements ToolProcessLauncher {
+  int released = 0;
+
+  @override
+  bool get confined => false;
+
+  @override
+  Future<void> release() async => released++;
+
+  @override
+  Future<Process> start(
+    String executable,
+    List<String> args, {
+    required String workingDirectory,
+    Map<String, String>? environment,
+  }) => const HostToolProcessLauncher().start(
+    executable,
+    args,
+    workingDirectory: workingDirectory,
+    environment: environment,
+  );
 }

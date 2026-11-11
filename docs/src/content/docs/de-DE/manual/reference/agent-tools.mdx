@@ -2,7 +2,7 @@
 title: Eingebaute Agenten-Tools
 description: Die Tool-Oberfläche, die der eingebaute Harness einem Agenten gibt — Sprachserver, strukturelle Suche, Debugger, Kernel und Worker-Steuerung — mit jeder Operation und ihren Argumenten.
 slug: de-DE/handbuch/referenz/agenten-tools
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Das sind die **servergebundenen** Tools, die die eingebaute Agentenlaufzeit direkt registriert — Sprachserver, strukturelle Suche, Debugger, Kernel, Fragen und Worker-Steuerung — im Unterschied zu den [MCP-Tools](/de-DE/handbuch/referenz/mcp-tools/), die sie überbrückt, und den generischen Datei-, Such- und Shell-Tools aus der Laufzeit des Harness. Sie stehen nicht in der MCP-Registrierung: Ein externer MCP-Client sieht sie nicht, weil jedes an eine laufende serverseitige Ressource gebunden ist, die zu einem Lauf gehört — einen Sprachserver-Prozess, einen Debug-Adapter, einen Interpreter.
@@ -24,6 +24,8 @@ Jedes Tool deklariert eine Stufe, und die Stufe entscheidet, **welche Oberfläch
 ## `lsp` — Sprachserver-Abfragen
 
 Registriert, wenn der Lauf einen Sprachserver-Supervisor und ein Arbeitsverzeichnis hat. Ob ein Server wirklich antworten kann, wird beim Aufruf erkannt, als **Schnittmenge**: Ein Wurzelmarker muss existieren, *und* die Binärdatei des Servers muss sich auflösen lassen. Liegt nur eines von beiden vor, startet kein Server — `status` sagt das — statt einer stillen Vermutung.
+
+Server kommen nur aus der eingebauten Tabelle; eine `lsp.json` im Repository wird nicht gelesen. In einem Lauf in der Sandbox bekommt jeder Lauf seine eigene Sitzung des Sprachservers, daher starten die Server mit jedem Lauf neu. Projektlokale Binärdateien (`node_modules/.bin`) werden nur benutzt, wenn der Lauf in der Sandbox läuft, und die Projektwurzel löst nie über das Arbeitsverzeichnis des Laufs hinaus auf.
 
 Positionen werden über `line` plus eine Teilzeichenkette `symbol` adressiert, nie über die Spalte. Fragt man ein Modell nach einer Spalte, rät es, und ein falscher Tipp trifft ein anderes Symbol in derselben Zeile — eine Antwort, die richtig aussieht und von etwas anderem handelt. `symbol` bei einer Navigationsaktion wegzulassen ist ein Fehler, keine Vermutung auf die erste Spalte.
 
@@ -117,7 +119,7 @@ Jede Datei wird mit dem Inhalt verglichen, der beim Staging festgehalten wurde, 
 
 Registriert, wenn der Lauf einen Supervisor für die Debug-Sitzung, ein Arbeitsverzeichnis und eine Unterhaltungs-Id hat. Ob ein Adapter wirklich starten kann, wird beim Aufruf erkannt, nach derselben Schnittmengenregel wie beim Sprachserver (Wurzelmarker *und* Binärdatei). Stufe `exec`; nicht parallel-sicher (eine Sitzung ist Zustand über die Aufrufe hinweg, deshalb läse ein `continue`, das `stack` überholt, einen Frame, der sich schon bewegt hat).
 
-Eine Sitzung pro Unterhaltung, mit einer harten TTL (30 Minuten). Ein zweites `launch` wird abgelehnt, statt das erste stillschweigend zu ersetzen.
+Eine Sitzung pro Unterhaltung, mit einer harten TTL (30 Minuten). Ein zweites `launch` wird abgelehnt, statt das erste stillschweigend zu ersetzen. In einem Lauf in der Sandbox behält die Sitzung ihre Sandbox über alle Züge hinweg, bis sie endet, und damit höchstens diese 30 Minuten lang.
 
 | Operation     | Argumente                     | Hinweise                                       |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Eine Sitzung pro Unterhaltung, mit einer harten TTL (30 Minuten). Ein zweites `l
 | `status`      | —                             | Ob eine Sitzung läuft, und wo sie angehalten hat |
 | `breakpoints` | `file`, `lines[]`             | Leeres `lines` leert die Datei. Darf **vor** dem Start gesetzt werden |
 | `launch`      | `program`, `args[]`           | Startet das Programm, angehalten an deinen Haltepunkten |
-| `attach`      | `port`                        | Verbindet sich mit einem schon laufenden Debuggee |
+| `attach`      | `port`                        | Verbindet sich mit einem schon laufenden Debuggee auf einem der eigenen weitergeleiteten Ports des Laufs; jeder andere Port wird abgelehnt, bevor etwas startet |
 | `continue`    | `thread_id?`                  | Läuft bis zum nächsten Halt                    |
 | `pause`       | `thread_id?`                  | Hält es an, wo es gerade steht                 |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Geht einen Schritt                      |
@@ -146,7 +148,7 @@ Eine Sitzung pro Unterhaltung, mit einer harten TTL (30 Minuten). Ein zweites `l
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` bevorzugt ein projektlokales `.venv/bin` oder `venv/bin` gegenüber `$PATH`: Ein Python aus `$PATH` ist eine andere Umgebung, und ein Attach aus der falschen scheitert so, dass es wie kaputter Code wirkt.
+`debugpy` bevorzugt ein projektlokales `.venv/bin` oder `venv/bin` gegenüber `$PATH`, wenn der Lauf in der Sandbox läuft: Ein Python aus `$PATH` ist eine andere Umgebung, und ein Attach aus der falschen scheitert so, dass es wie kaputter Code wirkt. Ohne Sandbox benutzt er nur `$PATH`, sodass ein Repository nicht bestimmen kann, welcher Interpreter auf dem Host läuft.
 
 ---
 
@@ -176,7 +178,7 @@ Die Brücke **steigt wieder in die Tool-Registrierung des Harness ein**, deshalb
 Das Timeout der Zelle ist ein Budget für *Untätigkeit* (Standard 5 Minuten), und es wird **ausgesetzt**, solange ein überbrückter Aufruf aussteht, damit eine Zelle, die sich auf Subagenten auffächert, nicht mitten in der Auffächerung abgebrochen wird.
 
 :::note[Wo der Kernel läuft]
-In der Kapsel der Unterhaltung, wenn sie eine hat, sonst auf dem Host. Er bootet dafür keine Kapsel — dieselbe Regel, die einen Rig-Tab am automatischen Start hindert.
+In der Kapsel der Unterhaltung, wenn sie eine hat, sonst in der OS-Sandbox des Laufs auf dem Host. Ohne Sandbox oder mit einer Sandbox, die nicht verfügbar ist, läuft er unbegrenzt, und `eval` fragt nach der Freigabe für die Ausführung auf dem Host. Er bootet dafür keine Kapsel — dieselbe Regel, die einen Rig-Tab am automatischen Start hindert.
 :::
 
 ---

@@ -2,7 +2,7 @@
 title: Jenis langkah pipeline
 description: Referensi untuk jenis langkah pipeline, kunci badan langkah, konfigurasinya, dan hasil langkah.
 slug: id-ID/panduan-pengguna/referensi/langkah-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Sebuah langkah pipeline memiliki dua sumbu yang independen:
@@ -61,7 +61,7 @@ Node prompt-dan-kirim generik: merender prompt, mengirim agen ke sebuah percakap
 
 ### `pipeline.condition`
 
-Badan router — membaca `config.extras`, mengevaluasi suatu kondisi, dan mengembalikan `StepResult.route(key)`. Kondisi **bukan** ekspresi JavaScript; tiga bentuk penulisan didukung, dalam urutan prioritas:
+Badan router — membaca `config.extras`, mengevaluasi suatu kondisi, dan mengembalikan `StepResult.route(key)`. Kondisi **bukan** ekspresi JavaScript; dua bentuk penulisan didukung, dalam urutan prioritas:
 
 - **Pohon predikat** (`extras.predicate`) — pohon boolean yang merutekan `"true"` / `"false"`. Setiap node adalah peta dengan `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — bernilai true ketika salah satu path yang tercantum ada di disk; `negate` membalikkannya; `recursive` juga menelusuri subdirektori (melewati `.git`, `node_modules`, `build`, `.dart_tool`). Path relatif diselesaikan terhadap `state[baseKey]` (bawaan `repo_local_path`), jika tidak terhadap direktori ruang kerja per eksekusi.
@@ -69,19 +69,28 @@ Badan router — membaca `config.extras`, mengevaluasi suatu kondisi, dan mengem
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — grup boolean.
   - `{"type": "not", "of": <predicate>}` — negasi.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; merutekan ke case pertama yang memuat nilai state tanpa memedulikan huruf besar/kecil, jika tidak maka `default`.
-- **Perbandingan** (warisan tingkat atas `extras.left` / `extras.op` / `extras.right`) — setara dengan predikat `comparison`, dipertahankan untuk templat yang ditulis sebelum pohon itu.
 
 Sisi yang keluar dari node membawa `routeKey` yang harus cocok dengan kunci yang dikembalikan.
 
 ### `prReview.comment`
 
-Memposting temuan gabungan sebagai komentar tinjauan PR melalui klien PR GitHub.
+Mengirim temuan yang sudah dikonsolidasi, atau `extras.message` milik langkah ini sendiri, sebagai komentar tinjauan PR melalui klien PR GitHub.
 
-| Kunci state               | Keterangan                                   |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (wajib)                         |
-| `pr_number`               | Nomor PR — int atau string numerik (wajib)   |
-| `consolidated_findings`   | Isi komentar (wajib)                         |
+| Kunci                   | Dibaca dari    | Deskripsi                                                              |
+| ----------------------- | -------------- | ---------------------------------------------------------------------- |
+| `repo_full_name`        | payload pemicu | `owner/repo` (wajib)                                                   |
+| `pr_number`             | payload pemicu | Nomor PR, int positif atau string numerik (wajib)                      |
+| `consolidated_findings` | state          | Isi komentar ketika langkah tidak memiliki `message`                   |
+
+Pull request hanya berasal dari payload pemicu run, tidak pernah dari state yang dapat ditulis ulang oleh langkah selama run. @-mention dalam teks yang diposting dibuat tidak aktif, sehingga komentar tidak memberi notifikasi kepada siapa pun.
+
+Sebuah `message` merender placeholder `{{key}}`-nya sebagai berikut:
+
+- `repo_full_name`, `repo_owner`, `repo_name`, dan `pr_number` merender pull request tempat langkah memposting.
+- `author` dirender dari payload pemicu, apa adanya, hanya jika merupakan nama pengguna yang valid di forge; selain itu langkah gagal.
+- `consolidated_findings` dirender sebagai markdown mentah, dengan @-mention-nya dibuat tidak aktif.
+- Setiap nilai lain dirender sebagai teks literal: dalam satu baris, dengan tanda baca markdown di-escape dan @-mention dibuat tidak aktif.
+- Placeholder yang tidak menghasilkan apa pun akan menggagalkan langkah.
 
 Mengembalikan `StepResult.terminal` dengan `comment_review_id` dan `commented_at` di state.
 

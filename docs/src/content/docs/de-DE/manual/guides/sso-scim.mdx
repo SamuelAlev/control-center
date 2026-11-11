@@ -2,7 +2,7 @@
 title: Benutzer mit SCIM provisionieren
 description: Lass deinen IdP Control Center-Konten automatisch anlegen, aktualisieren und deprovisionieren.
 slug: de-DE/handbuch/anleitungen/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Nutze diese Anleitung, wenn du den Lebenszyklus steuern willst — beim
@@ -35,8 +35,9 @@ und andere) genau das tun.
    - **Authentication**: `Authorization: Bearer <token>`
    - **User id**: `userName` (E-Mail) oder `externalId` — beides passt
 4. Teste mit einer Person: lege sie per Push vom IdP an und prüfe, dass sie
-   erscheint (ein SCIM-Create schreibt die `externalId` des Anbieters am Konto
-   fest, dieselbe Festschreibung wie die erste SSO-Anmeldung).
+   erscheint (ein SCIM-Create hinterlegt die `externalId` des Anbieters am Konto;
+   darüber findet SCIM es bei späteren Aufrufen wieder), und lass diese Person
+   sich danach per SSO anmelden, bevor du es für alle einführst.
 
 ## Was die Deprovisionierung bewirkt
 
@@ -57,6 +58,7 @@ eine neue Einladung oder die Auto-Member-Richtlinie bei der Anmeldung.
 
 ## Fehlersuche
 
+- **Eine bereitgestellte Person wird mit „Dieses Konto ist bereits mit einer anderen SSO-Identität verknüpft“ abgelehnt** — bekannte Einschränkung: Ein Konto, das SCIM mit einer `externalId` angelegt hat, bleibt an diese ID gebunden, und die erste SSO-Anmeldung daran wird abgelehnt. Bis das behoben ist, stelle ohne `externalId` bereit, oder lass die JIT-Provisionierung das Konto bei der ersten Anmeldung anlegen und nutze SCIM nur für die Deprovisionierung.
 - **401 bei jedem Aufruf** — das Token hat sich geändert; generiere es neu und
   aktualisiere den IdP.
 - **Der Endpoint ist nicht erreichbar** — der Tunnel ist ausgefallen, oder der

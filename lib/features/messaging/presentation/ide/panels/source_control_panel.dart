@@ -3,13 +3,14 @@ import 'dart:async';
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/core/domain/entities/ide_editor.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/text_draft_provider.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/scm_branch_menu.dart';
@@ -527,6 +528,13 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
           variant: CcToastVariant.danger,
         );
       }
+    } on RemoteRpcException catch (e) {
+      if (mounted) {
+        CcToastScope.maybeOf(context)?.show(
+          repoRefusalOf(l10n, e) ?? l10n.commitFailed,
+          variant: CcToastVariant.danger,
+        );
+      }
     } finally {
       controller.removeListener(markEdited);
       if (mounted) {
@@ -539,9 +547,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   /// remote (`36↓ 0↑`); only the outgoing count when it has never been
   /// published.
   String? _syncLabel(RepoChanges changes) {
-    if (!changes.statusKnown) {
-      return null;
-    }
     if (changes.hasUpstream && (changes.ahead > 0 || changes.behind > 0)) {
       return '${changes.behind}↓ ${changes.ahead}↑';
     }
@@ -557,19 +562,6 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   ScmIdleAction? _syncAction(AppLocalizations l10n, RepoChanges changes) {
     if (!widget.repo.hasForgeRemote || widget.branch.isEmpty) {
       return null;
-    }
-    if (!changes.statusKnown) {
-      // An older server does not report ahead/behind. A space scratch branch
-      // is local until it is published — the state a Commit (no push) just
-      // left — so offer the push op that server already has.
-      if (!widget.branch.startsWith(kSpaceScratchBranchPrefix)) {
-        return null;
-      }
-      return ScmIdleAction(
-        label: l10n.scmPublishBranch,
-        icon: AppIcons.upload,
-        onPressed: _runPublish,
-      );
     }
     if (!changes.hasUpstream) {
       return ScmIdleAction(
@@ -591,32 +583,16 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     );
   }
 
-  Future<void> _runPublish() async {
-    final l10n = AppLocalizations.of(context);
-    setState(() => _busy = true);
-    final res = await publishWorktreeBranch(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repo.id,
-    );
+  /// Ends a branch action the server refused, in the app's words when the
+  /// refusal has a kind (no write grant, the forge refusing), else [fallback].
+  void _refused(RemoteRpcException error, String fallback) {
     if (!mounted) {
       return;
     }
     setState(() => _busy = false);
-    _refresh();
-    final toast = CcToastScope.maybeOf(context);
-    if (res == null || !res.pushed) {
-      toast?.show(
-        res?.error ?? l10n.pushFailed,
-        variant: CcToastVariant.danger,
-      );
-      return;
-    }
-    ref.invalidate(spaceBranchPullRequestsProvider(widget.spaceId));
-    toast?.show(
-      l10n.branchPublished(widget.branch),
-      variant: CcToastVariant.success,
+    CcToastScope.maybeOf(context)?.show(
+      repoRefusalOf(AppLocalizations.of(context), error) ?? fallback,
+      variant: CcToastVariant.danger,
     );
   }
 
@@ -625,12 +601,18 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     final behind =
         ref.read(repoChangesGroupedProvider(_args)).value?.behind ?? 0;
     setState(() => _busy = true);
-    final res = await syncWorktreeBranch(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repo.id,
-    );
+    final WorktreeBranchSyncResult? res;
+    try {
+      res = await syncWorktreeBranch(
+        ref.read(rpcClientProvider),
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+        repoId: widget.repo.id,
+      );
+    } on RemoteRpcException catch (e) {
+      _refused(e, l10n.scmSyncFailed);
+      return;
+    }
     if (!mounted) {
       return;
     }
@@ -776,7 +758,9 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
     CcToastScope.maybeOf(context)?.show(
       result.dirty
           ? l10n.stackSwitchDirty
-          : (result.error ?? l10n.stackCutFailed),
+          : (repoRefusalOf(l10n, result.failure) ??
+                result.error ??
+                l10n.stackCutFailed),
       variant: CcToastVariant.danger,
     );
   }
@@ -804,7 +788,9 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
       return;
     }
     CcToastScope.maybeOf(context)?.show(
-      result.dirty ? l10n.stackSwitchDirty : l10n.stackCutFailed,
+      result.dirty
+          ? l10n.stackSwitchDirty
+          : repoRefusalOf(l10n, result.failure) ?? l10n.stackCutFailed,
       variant: CcToastVariant.danger,
     );
   }
@@ -812,13 +798,19 @@ class _RepoSectionState extends ConsumerState<_RepoSection>
   Future<void> _checkout(WorktreeCheckoutRequest request) async {
     final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
-    final res = await checkoutWorktreeBranch(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repo.id,
-      request: request,
-    );
+    final WorktreeCheckoutResult? res;
+    try {
+      res = await checkoutWorktreeBranch(
+        ref.read(rpcClientProvider),
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+        repoId: widget.repo.id,
+        request: request,
+      );
+    } on RemoteRpcException catch (e) {
+      _refused(e, l10n.scmCheckoutFailed);
+      return;
+    }
     if (!mounted) {
       return;
     }

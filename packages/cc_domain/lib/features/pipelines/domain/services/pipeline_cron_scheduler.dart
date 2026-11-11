@@ -80,8 +80,8 @@ class PipelineCronScheduler {
     int intervalSeconds,
   ) {
     if (intervalSeconds <= 0) {
-      // Rejected on write; a row that predates the check must not fire on
-      // every tick.
+      // Rejected on write; a stored row that slipped past it must not fire
+      // on every tick.
       return const CronEvaluation.idle();
     }
     final period = Duration(seconds: intervalSeconds);

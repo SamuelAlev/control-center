@@ -2,6 +2,7 @@ import 'dart:async' show Timer, unawaited;
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
+import 'package:cc_domain/core/domain/value_objects/embedding_model_paths.dart';
 import 'package:cc_infra/src/embedding/embedding_model_manager.dart';
 import 'package:cc_natives/cc_natives.dart';
 

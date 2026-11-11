@@ -2,7 +2,7 @@
 title: Çalışma alanları ve yalıtım
 description: Bir çalışma alanının neden katı bir kiracı sınırı olduğu, veritabanı bölünmesinin bu sınırı nasıl yapısal kıldığı ve onu bilinçli olarak neyin aştığı.
 slug: tr-TR/kilavuz/kavramlar/calisma-alanlari
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Çalışma alanı nedir?
@@ -79,9 +79,11 @@ Bir çalışma alanı dosyası, kendini tanımlamak için yalnızca tek satırl�
 
 ## Çalışma alanı oluşturma
 
+Yalnızca [sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) bir çalışma alanı oluşturabilir; kimliği sunucu üretir. Bir çalışma alanı yöneticisi ya da sahibi bir tane daha oluşturamaz. Henüz hiçbir çalışma alanında olmayan biri **Henüz bir çalışma alanında değilsiniz** mesajını görür; bu mesaj, sunucu sahibinden bir çalışma alanı oluşturmasını ya da bir çalışma alanı yöneticisinden davet almasını ister. **Çalışma alanı ekle** formu diğer herkese aynısını söyler.
+
 Çalışma alanı oluşturmak, bir kayıt satırı eklemekten fazlasını yapar. Sunucu tek bir işlemde, oluşturan kullanıcıyı `ownerUserId` olarak damgalar, o kullanıcının sahip rolündeki üyeliğini kaydeder ve bir `WorkspaceCreated` alan olayı yayımlar. Bu olayı dinleyenler ardından, arka planda ve idempotent biçimde şunları tohumlar:
 
-- bir **CEO ajanı** ve dört uzman — `qa`, `architect`, `engineer`, `librarian` — uzmanlar CEO'ya rapor verir;
+- bir **CEO ajanı** ve beş uzman — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — uzmanlar CEO'ya rapor verir;
 - **yerleşik pipeline şablonları** ve tetikleyicileri (olay ve elle tetikleyiciler etkin olarak gelir; zamanlanmış olanlar, günlük worktree-GC süpürmesi dışında isteğe bağlıdır);
 - **başlangıç eval takımları**.
 
@@ -90,7 +92,7 @@ Bu, yalnızca ilki için değil, _her_ çalışma alanı için gerçekleşir. To
 Sahip üyeliğinin yazımı göründüğünden daha önemlidir: o olmasaydı, yeni oluşturulan çalışma alanının hiç üyesi olmazdı ve oluşturanın sonraki her çalışma alanı kapsamlı çağrısı reddedilirdi.
 
 :::note[Ajanlar çalışma alanı oluşturamaz]
-`create_workspace` diye bir MCP aracı yoktur. İnsanlar bir çalışma alanını `workspace.create` (yalnızca adı alan geçiş noktası) ya da `workspace.upsert` (tam kayıt, güncellemeler için de kullanılır) üzerinden oluşturur. Her ikisi de oluşturan kullanıcıyı `owner` olarak damgalar ve `WorkspaceCreated` yayımlar.
+`create_workspace` diye bir MCP aracı yoktur. Sunucu sahibi, bir çalışma alanını `workspace.create` üzerinden oluşturur; bu, onu çalışma alanının `owner`'ı olarak damgalar ve `WorkspaceCreated` yayımlar. `workspace.upsert` yalnızca var olan bir çalışma alanını günceller; hiçbir zaman yeni bir tane oluşturmaz ve bir çalışma alanının sahibini asla değiştirmez; bunu yalnızca **Sahipliği devret** yapar.
 :::
 
 ## Silme, dışa aktarma, içe aktarma
@@ -119,7 +121,7 @@ yüklemek, anlık görüntünün `<workspaceId>/workspace.db` yolunu gösteren
 `workspace.import` çağrısıdır; kurulumun tamamını geri yüklemek ise anlık
 görüntü dizininin, sunucu durdurulmuşken geri kopyalanması olarak kalır.
 
-Hiçbirinin taşımadığı şey, çalışma alanı dizininin geri kalanıdır. Bir çalışma alanı bir veritabanından fazlasını biriktirir — yapıştırılmış görseller, beceri ve ajan dosyaları, sohbet kimlik bilgileri, worktree'ler — dışa ve içe aktarma ise **dosyayı** taşır; dolayısıyla yanındaki her şey olduğu yerde kalır. Bu, kimlik bilgileri için bilinçli bir tercih, worktree'ler için gözden çıkarılabilir bir durumdur; geri kalanı içinse bir özellik değil, bilinmesi gereken bir sınırlamadır. Tam tablo için [yedekleme referansına](/tr-TR/kilavuz/referans/yedekleme/#what-a-backup-does-not-contain) bakın.
+Hiçbirinin taşımadığı şey, çalışma alanı dizininin geri kalanıdır. Bir çalışma alanı bir veritabanından fazlasını biriktirir — yapıştırılmış görseller, beceri ve ajan dosyaları, sohbet kimlik bilgileri, worktree'ler — dışa ve içe aktarma ise **dosyayı** taşır; dolayısıyla yanındaki her şey olduğu yerde kalır. Bu, kimlik bilgileri için bilinçli bir tercih, worktree'ler için gözden çıkarılabilir bir durumdur; geri kalanı içinse bir özellik değil, bilinmesi gereken bir sınırlamadır. Tam tablo için [yedekleme referansına](/tr-TR/kilavuz/referans/yedekleme/#bir-yedeğin-içermedikleri) bakın.
 
 ## Yedeği sunucu ile cihazınız arasında taşıma
 

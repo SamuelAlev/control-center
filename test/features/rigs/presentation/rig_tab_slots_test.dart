@@ -103,21 +103,6 @@ void main() {
       expect(RigTabSurfaces.allocateSlot(taken), 's3');
     });
 
-    test('a pre-engines browser tab counts as Chromium', () {
-      // Those tabs are Chromium ones — that is all such a layout ever ran — so
-      // a Chromium press must see one as taken rather than opening a second
-      // machine on top of it.
-      const chromium = RigTabTarget(
-        RigTabSurfaces.browser,
-        engine: RigBrowserEngine.chromium,
-      );
-      final taken = RigTabSurfaces.takenSlots(const [
-        {'surface': 'browser'},
-      ], chromium);
-      expect(taken, {null});
-      expect(RigTabSurfaces.allocateSlot(taken), 's2');
-    });
-
     test('desktops of one conversation number together', () {
       const computer = RigTabTarget(RigTabSurfaces.computer);
       final taken = RigTabSurfaces.takenSlots(const [
@@ -252,7 +237,7 @@ void main() {
       ]);
     });
 
-    test('an older server does not advertise an unusable iOS tab', () {
+    test('a server that does not advertise iOS gets no iOS tab', () {
       final targets = RigTabSurfaces.targets({RigBrowserEngine.chromium});
       expect(
         targets.any((target) => target.surface == RigTabSurfaces.ios),

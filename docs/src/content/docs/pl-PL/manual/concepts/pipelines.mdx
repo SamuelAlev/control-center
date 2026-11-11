@@ -2,7 +2,7 @@
 title: Potoki i automatyzacja
 description: Po co potoki rozdzielają planowanie od pracy, co właściwie uruchamia potok i które z wbudowanych szablonów działają od razu po instalacji.
 slug: pl-PL/podrecznik/koncepcje/potoki
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Potoki to deterministyczna połowa Control Center. Agent decyduje, co powiedzieć;
@@ -35,7 +35,7 @@ bo wznowienie byłoby gorsze niż zatrzymanie:
   `orchestration.awaitApproval`. `human.gate` nie jest z niego zwolniony.
 - Krok zadeklarowany jako `extras: {'idempotent': false}`, który był w trakcie
   działania, gdy serwer się zatrzymał, mógł już zastosować swój efekt uboczny
-  (scalanie squash, czyszczenie worktree). Ponowne uruchomienie mogłoby
+  (kopia zapasowa obszaru roboczego, czyszczenie worktree). Ponowne uruchomienie mogłoby
   zastosować go dwa razy, więc silnik kończy go awarią, a ponowienie pozostawia
   do wykonania ręcznie.
 
@@ -139,8 +139,14 @@ nigdy nie miało być wyborem użytkownika.
 Jeszcze jedna asymetria warta poznania: wbudowany `pr_review` celowo nie publikuje
 już na GitHubie. Opublikowanie recenzji to osobny krok wymagający zgody
 użytkownika, a potok, który publikowałby bezpośrednio, publikowałby podwójnie.
-Natomiast `cross_review`, `ticket_to_pr` i `pr_triage` nadal wysyłają komentarz
-prosto na GitHuba, gdy się uruchamiają.
+Natomiast `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` i `external_pr_welcome` nadal wysyłają komentarz
+na GitHuba, gdy się uruchamiają.
+
+Wysyłają go z serwera, przez krok **Post PR comment** (`prReview.comment`), nigdy ze skryptu shell: kroki shell potoku i sandboksy jego agentów zawierają token GitHuba, który tylko odczytuje. Ta sama zasada kształtuje resztę:
+
+- `external_pr_welcome` wysyła swoje powitanie jako `message` tego kroku.
+- `ticket_to_pr` każe agentowi kodującemu wypchnąć `agent/<ticket_id>` (przez bramkę uruchomienia) i otworzyć szkicowy PR za pomocą `open_pull_request`, na logowaniu GitHub osoby, która uruchomiła potok, albo jako bot, gdy nikt tego nie zrobił. Oba podlegają regułom obszaru roboczego **Push do zdalnego repozytorium** i **Otwarcie pull requesta**. W Control Center Connect uruchomienie, o które nikt nie prosił, np. wywołane przez `TicketAssigned`, nie może wypchnąć ani otworzyć PR-a: bot wspólnej aplikacji tylko czyta i komentuje.
+- `pre_merge_gate` nigdy nie scala. Zatwierdzenie na jego bramce zapisuje, że PR jest gotowy do scalenia przez opiekuna; odrzucenie zapisuje, że wymagane są zmiany. Scala osoba ze strony PR-a.
 
 ## Co wie silnik
 

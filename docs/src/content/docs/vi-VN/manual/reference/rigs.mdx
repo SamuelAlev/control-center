@@ -2,7 +2,7 @@
 title: Rigs
 description: Mọi bề mặt rig, backend, động từ hành động, trạng thái vòng đời, cổng, giá trị mặc định và hợp đồng — bản danh mục dữ kiện đầy đủ.
 slug: vi-VN/so-tay/tham-chieu/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Chỉ dữ kiện mà thôi. Để hiểu mô hình đằng sau chúng, hãy đọc [Rigs và môi
@@ -224,8 +224,10 @@ khép kín.
 
 | Công cụ | Mô tả |
 | --- | --- |
-| `rig_list` | Liệt kê các rig của một không gian làm việc kèm bề mặt, trạng thái, màn hình và bộ điều khiển |
+| `rig_list` | Liệt kê các rig của space của lượt chạy kèm bề mặt, trạng thái, màn hình và bộ điều khiển |
 | `rig_close` | Hủy một rig và xóa đĩa của nó |
+
+Các công cụ này, cùng với bốn công cụ use, chỉ dành cho lượt chạy agent; mọi bên gọi khác đều bị từ chối. Một lượt chạy chỉ tiếp cận các rig của space mà nó được cấp để làm việc: `space_id` lấy từ grant của lượt chạy, không bao giờ từ lời gọi. Một rig của space khác, hoặc không thuộc space nào, trả lời y như một rig không tồn tại.
 
 ## Vòng đời
 
@@ -326,7 +328,11 @@ lập với nhau và không bao giờ là một cài đặt của không gian l�
   khung rig và âm thanh cuộc họp vốn đã dùng.
 - **Xác thực** là đích được ký `rig-files:<workspaceId>/<rigId>` cộng với tư cách
   thành viên không gian làm việc — một đích riêng, nên một URL được phát hành để
-  *xem* một cỗ máy không thể đồng thời ghi tệp vào nó.
+  *xem* một cỗ máy không thể đồng thời ghi tệp vào nó. Với một rig được mở trong
+  một space, việc đọc bảng nhớ tạm hoặc một tệp cũng cần quyền đọc space đó, và
+  việc ghi bảng nhớ tạm hoặc thả tệp cần quyền ghi trên các kho mã của nó. Trên một rig
+  mang đăng nhập riêng của một người, cả hai luồng, kể cả đọc, chỉ thuộc về người đó; xem
+  [Ai có thể xem và ai có thể điều khiển](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/#ai-có-thể-xem-và-ai-có-thể-điều-khiển).
 - **Việc chiếm quyền điều khiển vẫn áp dụng.** Ghi vào bảng nhớ tạm và thả tệp là
   hành vi làm thay đổi dữ liệu nên bị từ chối khi người khác đang giữ quyền điều
   khiển; đọc bảng nhớ tạm và đọc một tệp ra là hành vi quan sát nên không bị từ chối.

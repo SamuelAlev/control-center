@@ -76,18 +76,7 @@ class DemoWarmWorkspace {
   const DemoWarmWorkspace({required this.workspaceId, required this.seededAt});
 
   /// Rebuilds an entry from [json].
-  ///
-  /// A bare string is a pre-stamp state file. It is read as seeded at the
-  /// epoch — i.e. already stale — because the workspace it names could be
-  /// arbitrarily old and there is no way to tell. Refreshing one workspace
-  /// needlessly is free; handing out a week-old demo is not.
   factory DemoWarmWorkspace.fromJson(Object? json) {
-    if (json is String) {
-      return DemoWarmWorkspace(
-        workspaceId: json,
-        seededAt: DateTime.fromMillisecondsSinceEpoch(0),
-      );
-    }
     final map = Map<String, dynamic>.from(json! as Map);
     return DemoWarmWorkspace(
       workspaceId: map['workspace_id'] as String,
@@ -350,8 +339,8 @@ class DemoVisitorService {
 
     // Admin of their OWN sandbox. The boundary is the op registry, not the
     // role: `DemoProfile` already removed everything dangerous, and
-    // `requireServerAdmin` still refuses them because they are not the
-    // server owner.
+    // every `ServerAuthority.serverOwner` op still refuses them because they
+    // are not the server owner.
     final member = WorkspaceMember(
       id: _uuid.v4(),
       workspaceId: workspaceId,

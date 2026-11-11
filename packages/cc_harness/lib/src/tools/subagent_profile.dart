@@ -112,7 +112,7 @@ const Map<SubagentType, SubagentProfile> _profiles = {
   ),
   SubagentType.explore: SubagentProfile(
     type: SubagentType.explore,
-    surface: ToolSurfaceSpec.readOnlyLegacy(),
+    surface: ToolSurfaceSpec.readOnly(),
     maxTurns: 30,
     allowedTiers: {ToolApprovalTier.read},
     systemPromptAddendum:
@@ -123,7 +123,7 @@ const Map<SubagentType, SubagentProfile> _profiles = {
   ),
   SubagentType.plan: SubagentProfile(
     type: SubagentType.plan,
-    surface: ToolSurfaceSpec.readOnlyLegacy(),
+    surface: ToolSurfaceSpec.readOnly(),
     maxTurns: 40,
     allowedTiers: {ToolApprovalTier.read},
     systemPromptAddendum:
@@ -264,5 +264,6 @@ class SubagentCatalog {
 
   /// The effective profile for [name], falling back to the built-in parse.
   SubagentProfile profileFor(String? name) =>
-      customFor(name)?.resolve() ?? subagentProfileFor(SubagentType.fromId(name));
+      customFor(name)?.resolve() ??
+      subagentProfileFor(SubagentType.fromId(name));
 }

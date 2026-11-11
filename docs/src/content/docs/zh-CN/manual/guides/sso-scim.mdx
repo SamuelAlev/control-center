@@ -2,7 +2,7 @@
 title: 用 SCIM 预配用户
 description: 让你的 IdP 自动创建、更新和取消预配 Control Center 账户。
 slug: zh-CN/手册/操作指南/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 当你要掌握生命周期控制权时，请使用本指南——员工离职必须自动撤销访问权限，
@@ -30,7 +30,7 @@ sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
    - **身份验证**：`Authorization: Bearer <token>`
    - **用户 ID**：`userName`（电子邮件）或 `externalId`——两者都能匹配
 4. 先用一个用户测试：从 IdP 推送该用户，确认其出现（SCIM 创建会把提供商的
-   `externalId` 固定到该账户上，与首次 SSO 登录所做的固定相同）。
+   `externalId` 记录到该账户上，之后的 SCIM 调用正是借此找到它），然后让该用户通过 SSO 登录，再推广到所有人。
 
 ## 取消预配会做什么
 
@@ -48,6 +48,7 @@ sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
 
 ## 故障排查
 
+- **预配的用户收到 “此账户已关联到另一个 SSO 身份” 的拒绝提示**——已知限制：由 SCIM 使用 `externalId` 创建的账户会一直与该 ID 绑定，而其第一次 SSO 登录会被拒绝。在此问题修复之前，请不带 `externalId` 进行预配，或让即时预配在首次登录时创建账户，并仅用 SCIM 进行取消预配。
 - **每次调用都返回 401**——token 已更改；请重新生成并更新 IdP。
 - **端点无法访问**——隧道已断开，或者服务器只能经中继访问。SCIM 需要直连
   HTTPS；JIT 则不受影响，仍可正常工作。

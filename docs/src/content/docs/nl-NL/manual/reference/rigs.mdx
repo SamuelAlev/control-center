@@ -2,7 +2,7 @@
 title: Rigs
 description: Elk rig-oppervlak, elke backend, elk actiewerkwoord, elke levenscyclusstatus, poort, standaardwaarde en elk contract — de complete, feitelijke catalogus.
 slug: nl-NL/handleiding/referentie/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Alleen feiten. Lees [Rigs en omhullingen](/nl-NL/handleiding/concepten/rigs/)
@@ -230,8 +230,10 @@ microfoon, bestandsdrop, hostshell of ingesloten netwerk.
 
 | Tool | Beschrijving |
 | --- | --- |
-| `rig_list` | Toon de rigs van een werkruimte met oppervlak, status, weergave en besturing |
+| `rig_list` | Toon de rigs van de space van de run met oppervlak, status, weergave en besturing |
 | `rig_close` | Vernietig een rig en gooi de schijf weg |
+
+Deze tools zijn, net als de vier use-tools, alleen voor agentruns; elke andere aanroeper wordt geweigerd. Een run bereikt alleen de rigs van de space waarvoor hij is toegekend: `space_id` komt uit de grant van de run, nooit uit de aanroep. Een rig van een andere space, of van geen space, antwoordt precies als een ontbrekende.
 
 ## Levenscyclus
 
@@ -336,7 +338,10 @@ onafhankelijk en zijn nooit een werkruimte-instelling.
 - **Auth** is het ondertekende doel `rig-files:<workspaceId>/<rigId>` plus
   lidmaatschap van de werkruimte — een eigen doel, zodat een URL die is
   uitgegeven om mee te *kijken* naar een machine niet ook bestanden erin kan
-  schrijven.
+  schrijven. Voor een rig die in een ruimte is geopend, heeft ook het lezen van
+  het klembord of een bestand leestoegang tot die ruimte nodig, en het schrijven
+  van het klembord of het droppen van bestanden een schrijfrecht op de
+  repositories ervan. Op een rig met de eigen aanmeldingen van één persoon zijn beide kanalen, ook het lezen, alleen van die persoon; zie [Wie kan kijken en wie kan aansturen](/nl-NL/handleiding/gidsen/rigs-gebruiken/#wie-kan-kijken-en-wie-kan-aansturen).
 - **Overname geldt.** Het klembord schrijven en bestanden droppen zijn
   wijzigend en worden geweigerd zolang iemand anders de besturing heeft; het
   klembord lezen en een bestand naar buiten lezen zijn observerend en dus niet.

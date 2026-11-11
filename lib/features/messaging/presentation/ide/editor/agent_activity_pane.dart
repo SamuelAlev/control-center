@@ -195,8 +195,7 @@ class _AgentActivityPaneState extends ConsumerState<AgentActivityPane> {
 
     final segments = transcript.requireValue;
     if (segments.isEmpty) {
-      // A terminal run with nothing recorded IS "not recorded" — which is also
-      // how a run predating activity capture degrades.
+      // A terminal run with nothing recorded IS "not recorded".
       return run.isActive
           ? CcEmptyState(
               icon: AppIcons.loaderCircle,

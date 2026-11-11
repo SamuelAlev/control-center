@@ -1,8 +1,8 @@
 ---
 title: Referens för Control Center Connect
-description: Vad Connect ser och aldrig ser, de tre lägena, installationsidentitet, förseglade inloggningsuppgifter, förtroende för konfigurationen och varje inställning, åtgärd och statuskod.
+description: Vad Connect ser och aldrig ser, de tre lägena, arbetsytans eget val, installationsidentitet, förseglade inloggningsuppgifter, förtroende för konfigurationen och varje inställning, åtgärd och statuskod.
 slug: sv-SE/handbok/referens/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect kör leverantörsinloggningar för servrar som inte har
@@ -10,11 +10,14 @@ registrerat egna appar. En server använder antingen Control Centers hostade
 Connect, en Connect som organisationen kör
 ([Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/)),
 eller ingen alls. Valet görs under **Inställningar → Server → Enkel inloggning →
-Control Center Connect**, med `cc_server connect` eller med `CC_CONNECT_URL`.
+Control Center Connect**, med `cc_server connect` eller med `CC_CONNECT_URL`. En
+arbetsyta följer det, om inte en administratör valt något annat för just den
+arbetsytan under **Inställningar → Arbetsyta → Integrationer**
+([Arbetsytans eget val](#arbetsytans-eget-val)).
 
 ## Spår
 
-Under **Använd mina egna appar** (eller innan någon har valt) körs ett spår på serverns egen app när en sådan är fullständigt konfigurerad, annars är det otillgängligt. Med Control Center Connect eller en egen Connect betjänar Connect varje spår det hanterar: serverns egna appar förblir sparade men används inte, varken för inloggningar, serverautomatisering eller den status servern rapporterar. En arbetsytas egna app vinner i varje läge.
+Under **Använd mina egna appar** (eller innan någon har valt) körs ett spår på serverns egen app när en sådan är fullständigt konfigurerad, annars är det otillgängligt. Med Control Center Connect eller en egen Connect betjänar Connect varje spår det hanterar: serverns egna appar förblir sparade men används inte, varken för inloggningar, serverautomatisering eller den status servern rapporterar. En arbetsyta som valt ett eget läge kör varje spår enligt det valet i stället.
 
 | Spår         | En egen app behöver                              | Via Connect                                                    |
 | ------------ | ------------------------------------------------ | -------------------------------------------------------------- |
@@ -26,9 +29,10 @@ Under **Använd mina egna appar** (eller innan någon har valt) körs ett spår 
 | `klipy`      | `KLIPY_APP_KEY`                                  | GIF-sökning, med Connect som proxy                             |
 
 En egen app som bara är delvis konfigurerad gör sitt spår till ett fel, aldrig
-till en tyst återgång till Connect. En arbetsyta som använder sin egen GitHub App
-(**Inställningar → Arbetsyta → Allmänt → GitHub-identitet**) går aldrig via
-Connect för GitHub, och en som använder sin egen Google-, Linear- eller Klipy-app (**Inställningar → Arbetsyta → Allmänt → Leverantörsappar**) går aldrig via serverns app eller Connect för den leverantören. Byte av Connect-valet loggar ingen ut från en arbetsytas egna app.
+till en tyst återgång till Connect. En arbetsyta som väljer **Använd mina egna
+appar** går aldrig via serverns appar eller någon Connect, för någon leverantör.
+Byte av serverns Connect-val loggar ingen ut från en arbetsyta som gjort ett eget
+val.
 
 ## Vad Connect ser och aldrig ser
 
@@ -36,17 +40,21 @@ Connect för GitHub, och en som använder sin egen Google-, Linear- eller Klipy-
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Serverns installations-id och begärandesignaturer                                             | Källkod, repoinnehåll, diffar eller text i pull requests              |
 | Leverantörskontot som loggade in, under inloggningen                                          | Ärenden, transkript eller något i en arbetsytas databas               |
-| Vilken arbetsyta en inloggningsuppgift tillhör, som ett ogenomskinligt id inuti sigillet      | En privat nyckel för en GitHub App: repotoken kommer från en persons inloggning |
+| Vilken arbetsyta en inloggningsuppgift tillhör, som ett ogenomskinligt id inuti sigillet      | Serverns egna app-hemligheter: de lämnar aldrig servern |
 | Repot som en GitHub-token för ett enda repo utfärdas för                                      | Uppdateringstoken i vila: de finns bara inuti sigill som servern behåller |
-| GitHub-installations-id:n som är bundna till servern                                          | Linear-hemligheter: servern byter själv Linears kod                   |
+| Slack-teamet bundet till servern                    | Linear-hemligheter: servern byter själv Linears kod                   |
 | GIF-söktermer, när den är proxy för Klipy                                                     | Lösenord, parkopplingsnycklar eller nycklar till modelleverantörer    |
 | Referenser till Slack-händelser (team, kanal, meddelande-id) och text i slash-kommandon       | Text i Slack-meddelanden: Connect släpper den när den kommer in, och servern läser meddelandet direkt från Slack |
 
-Connect behåller kortlivat tillstånd (påbörjade inloggningar, nonces, cachar) i
-högst 15 minuter. Dess enda varaktiga poster är installationsbindningar: vilka
-servrar som får använda vilken GitHub-installation, och vilken server varje
-Slack-team är bundet till. Fel bär en kod, aldrig leverantörens svar, och
-loggarna registrerar installations-id:n bara som nyckelade hashar.
+Connect behåller påbörjade inloggningar, nonces och cachar i högst 10 minuter, och
+timvisa användningsräknare i högst två timmar. En GitHub-token för ett enda repo som
+utfärdats som person ligger kvar registrerad, förseglad till inloggningen som bad om
+den, tills den går ut (högst 8 timmar), så att Connect kan lämna ut den igen och
+återkalla den vid frånkoppling. Dess enda varaktiga poster är Slack-bindningar (vilken
+server varje Slack-team är bundet till) och utfasade installations-id:n. Fel bär en kod,
+aldrig leverantörens svar. Loggarna registrerar installations-id:n bara som nyckelade
+hashar, och en GitHub-token bara som den `hashed_token` som GitHubs granskningslogg för
+organisationen visar för den, så att en organisationsägare kan matcha de två.
 
 ## Lägen
 
@@ -64,9 +72,37 @@ Den här byggnaden har ingen nyckel för den hostade konfigurationen inkompilera
 så hostat läge rapporterar `hosted_unprovisioned` och betjänar inget spår. Egna
 appar och en egen Connect fungerar.
 
+Den hostade Connect körs i en enda container. Dess sigillnyckel och den delade GitHub-appens privata nyckel är miljövariabler där, inte nycklar i ett valv som bara signerar eller dekrypterar, som GitHub rekommenderar för en apps privata nyckel. Det är en känd brist i den nuvarande uppställningen.
+
 En server läser Connects konfiguration högst var 10:e minut och väntar högst 5
 sekunder på varje anrop. När Connect inte går att nå används den senaste
 fungerande konfigurationen, och inställningarna markerar den som inaktuell.
+
+## Arbetsytans eget val
+
+**Inställningar → Arbetsyta → Integrationer → Control Center Connect** åsidosätter
+serverns val för en arbetsyta. Varje medlem ser det och var varje inloggning körs;
+bara en administratör för arbetsytan ändrar det.
+
+| Val                                 | Beteende                                                                                                       |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Samma som den här servern**       | Standardvalet. Arbetsytan kör på det serverägaren valt; alternativet anger vilket det är                      |
+| **Använd Control Centers appar**    | Control Centers hostade Connect, oavsett vad servern använder                                                  |
+| **Använd mina egna appar**          | Bara arbetsytans egna appar: dess GitHub-app, Google-klient, Linear-applikation, Klipy-nyckel och Slack-app. En leverantör utan egen app är av här; en delvis konfigurerad är ett installationsfel |
+| **Använd en egen Connect-server**   | En Connect på en HTTPS-adress som arbetsytan anger. Adresser på ett privat eller lokalt nätverk avvisas        |
+
+- Alla val utom **Samma som den här servern** håller varje persons GitHub- och
+  Linear-inloggningar i en egen plats för arbetsytan, så de aldrig blandas med de
+  serveromfattande
+- Byte frågar först: alla i arbetsytan loggar in på GitHub, Linear och Google
+  Calendar igen via de nya apparna
+- Arbetsytans egna Slack-appanslutning fungerar under alla val; **Lägg till
+  Control Center i Slack** följer valet
+- `CC_CONNECT_URL` låser också ute arbetsytor från en egen Connect: de kan följa
+  servern eller använda sina egna appar
+- En arbetsytas egna Connect litas på första användningen för just den arbetsytan:
+  **Lita på nya appar** där ändrar aldrig vad servern eller någon annan arbetsyta
+  litar på
 
 ## Installationsidentitet
 
@@ -98,17 +134,63 @@ leverantörskontot, appen och hemlighetens generation.
 
 ## GitHub-installationer
 
-En installation av den delade GitHub-appen kan bara användas av en server när
-Connect har bundit den till serverns installations-id.
+En installation av den delade GitHub-appen kan användas från varje server. Connect
+för ingen förteckning över vilken server som får använda den.
 
-- **Installera GitHub-appen** under **Inställningar → Arbetsyta → Allmänt**
-  öppnar GitHub med en biljett som gäller i 15 minuter. Connect binder den nya
-  installationen när den som installerar äger det personliga kontot eller
-  administrerar organisationen
-- **Auktorisera den här servern** binder en installation som redan finns. Bara
-  en administratör för organisationen kan göra det
-- En organisationsinstallation kan bindas till flera servrar; var och en behöver
-  en administratörs auktorisering
+- **Installera GitHub-appen** under **Inställningar → Arbetsyta → Integrationer**
+  öppnar appens installationssida på GitHub. Servern bygger länken från appens
+  namn i Connects konfiguration
+- En token för ett enda repo kräver att appen är installerad hos repots ägare
+  och att den inloggade personen har åtkomst till repot. Det är personens egen
+  token, begränsad till personens roll, aldrig mer
+- En organisation begränsar Control Center på GitHub: genom att ta bort
+  installationen, begränsa repos eller ta bort personen
+- För anrop som bara personen kan göra, som att lista dess installationer, ger Connect
+  servern personens egna App-användartoken, inte en token för ett enda repo. Att logga in
+  på en server är att lita på den servern med den token
+- En organisation som tillämpar en IP-tillåtelselista för GitHub kan inte använda den
+  hostade Connect, vars adresser inte är fasta. Den registrerar i stället sin egen
+  GitHub-app, på sina servrar eller på en Connect den kör
+- **Koppla från** återkallar bara den inloggningen: Connect använder sin uppdateringstoken
+  en gång och tar bort det som den ger tillbaka, tar bort sin användartoken och de tokens
+  för ett enda repo som Connect utfärdat åt den. En kopia av dess sigill som någonstans
+  sparats slutar fungera. Personens inloggningar på andra servrar och arbetsytor fortsätter
+  att fungera. För att ta bort Control Center från ett GitHub-konto helt, återkalla det på
+  GitHub under **Settings → Applications → Authorized GitHub Apps → Revoke**
+
+### Den delade boten
+
+Tokens utfärdade som appens bot (`as: app`) visar samma bot på GitHub för varje server som
+använder samma Connect: GitHub kan inte skilja de servrarna åt.
+
+- Varje server får låta boten läsa och kommentera: `read`, `review` och `comment`
+  (kommentarer, etiketter, tilldelningar och reaktioner på ärenden och pull requests)
+- Att granska en pull request som boten (`bot`, som skriver pull requests) är bara tillåtet
+  för servrar som Connect-operatören listar i `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Varje
+  annan server får svaret `needs_requester` och publicerar granskningen med den ansvariga
+  personens egen token, som GitHub begränsar till den personen: granskningen visas under
+  hens namn. Det gäller publicering av AI-granskning, granskningskommentarer
+  och granskarbegäranden
+- Att pusha, skapa en gren och öppna en pull request (`write`) utfärdas aldrig som den
+  delade boten. De använder alltid den begärandes egen inloggning
+- Att godkänna en pull request är aldrig automatiserat, med någon token
+- En server eller arbetsyta med en egen GitHub-app behåller boten för allt detta, granskningar
+  inräknade
+
+### Vad organisationsägare och medlemmar bör veta
+
+- En server som någon loggar in på håller deras App-användartoken: upp till 8 timmar per
+  token, förnyad tills de kopplar från. Den kan agera som dem på varje repo som den delade
+  appen är installerad på och som de kan nå. Connect kan stänga av en server för gott (en
+  utfasad eller nekad installation), men en token som redan lämnats ut förblir giltig tills
+  den går ut
+- Att installera den delade GitHub-appen på en organisation ger samtycke för varje
+  Control Center-server som någon medlem loggar in på, inte för en server
+- Boten är delad, enligt ovan: en organisation kan inte se på GitHub vilken server som
+  agerade som boten
+- En organisation som vill ha en egen gräns registrerar sin egen GitHub-app och kör sin egen
+  Connect ([Kör en Connect-server](/sv-SE/handbok/how-to-guider/kor-connect-server/)), eller konfigurerar appen
+  på sina egna servrar
 
 ## Förtroende för konfigurationen
 
@@ -119,7 +201,7 @@ Connect har bundit den till serverns installations-id.
 
 ## Åtgärder
 
-Alla Connect-inställningar är bara för serverns ägare.
+Serverns Connect-inställningar är bara för serverns ägare.
 
 | Åtgärd                | Gör                                                                                    |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -127,7 +209,16 @@ Alla Connect-inställningar är bara för serverns ägare.
 | `connect.configure`   | Anger `hosted`, `custom` (med `url`) eller `off`                                       |
 | `connect.test`        | Hämtar konfigurationen igen och rapporterar hälsan                                     |
 | `connect.confirmPins` | Godtar en egen Connects ändrade identifierare                                          |
-| `connect.rotateKey`   | Skapar en ny installationsnyckel. Varje inloggning via Connect på den här servern slutar fungera |
+| `connect.rotateKey`   | Skapar en ny installationsnyckel och ett nytt installations-id (`force` ersätter det även när en Connect inte kunde fasa ut den gamla); se [Byt installationsnyckeln](#byt-installationsnyckeln) |
+
+Arbetsytans eget val har egna åtgärder, som var och en anger arbetsytan:
+
+| Åtgärd                         | Vem                          | Gör                                                                                 |
+| ------------------------------ | ---------------------------- | ----------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Vilken medlem som helst      | Valet, vad det löser till, hälsa och varje leverantörs källa. Installations-id och väntande fästen bara för administratörer |
+| `workspaceConnect.set`         | Administratör för arbetsytan | Anger `inherit`, `hosted`, `custom` (med `url`) eller `own`                         |
+| `workspaceConnect.test`        | Administratör för arbetsytan | Hämtar arbetsytans Connect-konfiguration igen och rapporterar hälsan               |
+| `workspaceConnect.confirmPins` | Administratör för arbetsytan | Godtar arbetsytans egna Connect-servers ändrade identifierare                       |
 
 Själva inloggningarna använder `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` och `oauth.disconnect`. Personen är alltid
@@ -136,21 +227,38 @@ den inloggade anroparen.
 ## Inloggning via Connect
 
 1. Servern ber Connect att starta spåret och får leverantörens
-   auktoriserings-URL, som den kontrollerar innan den visar den
+   auktoriserings-URL, som den kontrollerar innan den visar den. GitHub visar alltid sin
+   kontoväljare
 2. Personen godkänner i webbläsaren. Leverantören återvänder till Connect
-3. Connect visar en kod på 8 tecken och en länk `control-center://oauth-done`
-4. Personen skriver in koden i appen eller följer länken. Servern hämtar
+3. Connect visar vad servern som startade inloggningen kommer att kunna göra som personen,
+   och hur länge. Connect kan inte avgöra vem som kör den servern, så sidan ber personen
+   fortsätta bara om hen startade inloggningen själv, och att stänga den om någon skickade
+   länken. När webbläsaren är på ett annat nätverk än det inloggningen startades från säger
+   sidan det: det är normalt för en hostad server eller en annan enhet, och det är också vad
+   nätfiske ser ut som. **Avbryt** avslutar inloggningen: leverantörens kod används aldrig.
+   Varje sida svarar en gång; ett svar som inte kom från sidan Connect just visade avvisas
+4. Efter **Fortsätt** visar Connect en kod på 8 tecken och en länk
+   `control-center://oauth-done`. Den som får koden får den just godkända åtkomsten, så den
+   går bara dit inloggningen startades
+5. Personen skriver in koden i appen eller följer länken. Servern hämtar
    inloggningen med koden och sitt eget bevis på begäran
 
 En inloggning går ut efter 10 minuter. Fem felaktiga koder avslutar den. En länk
 som den här appen inte startade avvisas med **Inloggningen startades inte här**.
+Connect begränsar hur många inloggningar en nätadress kan starta, och hur ofta GitHub-tokens
+utfärdas per person och server, per person över servrar, per adress och för hela appen.
+Nya inloggningar har en egen budget, så de aldrig håller upp förnyelser som andra behöver.
+Över en gräns nekas ett anrop med `rate_limited`, och servern försöker igen senare utan
+att logga ut någon. En inloggning över personens gräns ångras hos GitHub och avvisas.
 
 ## Byt installationsnyckeln
 
-**Byt nyckel** på Connect-kortet, eller `cc_server connect rotate-key --yes`:
+Bara serverägaren kan byta nyckeln, med **Byt nyckel** på kortet **Control Center Connect** under **Inställningar → Server → Enkel inloggning**. Det finns inget kommando för det. Vid byte:
 
-- Ger servern en ny installationsnyckel och ett nytt installations-id
-- Loggar ut alla från varje spår som körs via Connect
+- Loggas alla ut från varje spår som körs via Connect. För varje Connect-server som den gamla nyckeln användes med återkallar servern de GitHub- och Slack-inloggningar den har därifrån (en Google-inloggning har inget att återkalla och förfaller)
+- Fasas det gamla installations-id:t ut hos var och en av dessa Connect-servrar, signerat med den gamla nyckeln och styrkt med ett sigill som servern har från den Connect. Därefter avvisar Connect varje begäran som görs med den gamla nyckeln, så ett sigill eller en kopia av den gamla nyckeln som tagits från den här servern är värdelös, och de Slack-arbetsytor som var bundna till det gamla id:t frigörs så att de kan ansluta igen. Tokens som redan lämnats ut förblir giltiga tills de går ut (en timme för en bot-token, åtta timmar för en persons). En Connect-server som servern inte har något sigill från har inget att fasa ut och hoppas över
+- Ger sedan servern en ny installationsnyckel och ett nytt installations-id
+- Om en Connect-server inte går att nå, eller vägrar fasa ut det gamla id:t, stoppas bytet innan nycklarna byts och visar **Connect kunde inte fasa ut den gamla nyckeln**. **Rotera ändå** byter nycklar oavsett; det gamla installations-id:t förblir då användbart hos den Connect tills dess tokens går ut, högst 8 timmar för GitHub
 - Lämnar inloggningar via serverns egna appar orörda
 - Kräver att det nya installations-id:t läggs till i en egen Connects
   tillåtelselista
@@ -163,7 +271,7 @@ som den här appen inte startade avvisas med **Inloggningen startades inte här*
 | `signature`            | Den hostade konfigurationen klarade inte signaturkontrollen          |
 | `rollback`             | Connect serverade en äldre konfiguration än servern redan har sett   |
 | `unreachable`          | Servern kan inte nå Connect                                          |
-| `install_blocked`      | Connect tillåter inte det här installations-id:t                     |
+| `install_blocked`      | Connect tillåter inte det här installations-id:t, eller så har det fasats ut |
 | `pins_changed`         | En egen Connect annonserade andra app-identifierare                  |
 | `protocol`             | Connect svarade i en form som den här servern inte förstår           |
 

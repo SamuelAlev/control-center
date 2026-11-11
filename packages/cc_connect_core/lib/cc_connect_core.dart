@@ -6,6 +6,7 @@
 library;
 
 export 'src/connect_config.dart';
+export 'src/connect_env.dart';
 export 'src/connect_responses.dart';
 export 'src/encoding.dart'
     show
@@ -20,6 +21,8 @@ export 'src/http_signature.dart';
 export 'src/install_identity.dart';
 export 'src/lanes.dart';
 export 'src/oauth_handoff.dart';
+export 'src/oauth_refresh.dart';
 export 'src/sign_in_failure.dart';
 export 'src/sign_in_lane_mode.dart';
+export 'src/sign_in_status.dart';
 export 'src/wire.dart';

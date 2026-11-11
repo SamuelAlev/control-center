@@ -2,7 +2,7 @@
 title: Tham chiếu cấu hình SSO
 description: Mọi tham số điều chỉnh, endpoint, thao tác và mã lỗi của đăng nhập một lần.
 slug: vi-VN/so-tay/tham-chieu/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Mọi thứ có thể cấu hình về đăng nhập một lần, gói gọn trong một trang. Các giá
@@ -34,6 +34,39 @@ nối mà màn hình cài đặt có thể phản đối).
 | `groupRoleMap`         | cả hai      | `{}`           | nhóm → vai trò; các ánh xạ tới chủ sở hữu bị từ chối khi lưu                                                                                           |
 | `autoMember`           | cả hai      | bật            | tự động thêm người dùng vào mọi không gian làm việc ở lần đăng nhập đầu tiên                                                                          |
 | `allowJit`             | cả hai      | bật            | cấp phát người dùng chưa biết khi đăng nhập                                                                                                           |
+
+## Khớp tài khoản
+
+`SsoProvisioner` xác định một lần đăng nhập theo thứ tự sau, và không bao giờ theo
+tên người dùng:
+
+1. `(users.sso_issuer, users.sso_subject)` bằng issuer và subject của lần đăng nhập
+   (SAML NameID / OIDC `sub`).
+2. Một tài khoản có địa chỉ bằng email của lần đăng nhập, chỉ khi cả hai phía cùng
+   xác nhận nó: nhà cung cấp (OIDC `email_verified: true`; một claim bị thiếu không
+   phải là xác nhận; một khẳng định SAML đã ký luôn là xác nhận) và tài khoản
+   (`users.email_verified`). Địa chỉ được lưu sau khi đã cắt khoảng trắng và chuyển
+   thành chữ thường, và được so sánh theo cách đó; một địa chỉ đã xác minh chỉ khớp
+   khi đúng một tài khoản giữ nó ở trạng thái đã xác minh; hai người giữ thì không
+   khớp với ai (được ghi nhật ký mà không kèm địa chỉ), và không tài khoản nào có thể
+   được xác minh cho một biến thể viết hoa/thường của một địa chỉ mà tài khoản khác
+   đã xác minh.
+3. Nếu không, một tài khoản mới khi `allowJit` bật; từ chối khi nó tắt.
+
+`users.email_verified` được đặt bởi một lần đăng nhập SSO hoặc một lần đẩy SCIM có
+mang địa chỉ đó, hoặc bởi chủ sở hữu máy chủ qua `users.vouchEmail`
+(**Cài đặt → Máy chủ → Mọi người → Xác nhận email**, được kiểm toán là
+`user.email_vouched`). Việc chủ sở hữu tự sửa hồ sơ của mình sẽ xác nhận địa chỉ của
+chính họ. Mọi lần sửa hồ sơ khác, và mọi địa chỉ được gõ trong một lời mời, đều để
+nó ở trạng thái chưa xác minh, và việc sửa một địa chỉ sẽ xóa cờ này. Một lần đăng
+nhập đã được xác nhận mà tạo tài khoản sẽ lấy địa chỉ từ những tài khoản chỉ gõ nó
+(được kiểm toán là `user.email_unvouched_cleared`), không bao giờ từ một tài khoản
+đang giữ nó ở trạng thái đã xác minh; trong trường hợp đó tài khoản mới không nhận
+địa chỉ nào.
+
+Một tài khoản đã khớp nhưng đã được ghim với một subject hoặc issuer khác sẽ từ chối
+lần đăng nhập với `This account is already linked to a different SSO identity`. Một
+tài khoản đã bị vô hiệu hóa sẽ từ chối với `This account has been deactivated`.
 
 ## Cấu hình tiến trình
 
@@ -131,6 +164,8 @@ Các lỗi của `cc_saml_verify_response` mang một mã ổn định:
   VIỆC THEO THIẾT KẾ.
 - `users.sso_subject` + `users.sso_issuer` — việc ghim chủ thể của nhà cung
   cấp, duy nhất theo `(issuer, subject)` nhờ một chỉ mục bộ phận.
+- `users.email_verified`: cho biết địa chỉ của tài khoản có được khớp với một lần đăng
+  nhập SSO hoặc một lần đẩy SCIM hay không (xem [Khớp tài khoản](#khớp-tài-khoản)).
 - `users.deactivated_at` — dấu thời gian vô hiệu hóa của SCIM.
 - Bearer token của SCIM và client secret của OIDC nằm trong tệp secrets 0600,
   không bao giờ trong cơ sở dữ liệu.

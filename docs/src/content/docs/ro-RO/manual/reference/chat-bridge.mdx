@@ -2,7 +2,7 @@
 title: Punte de chat
 description: Provideri, comenzi, credențiale, capabilități, operații RPC și stocare pentru puntea de chat.
 slug: ro-RO/manual/referinta/punte-de-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Provideri
@@ -150,7 +150,7 @@ Cardul se deschide când o mențiune este acceptată, înainte de clonare și î
 | Mențiune acceptată          | `Working on it…`                                               |
 | Pasul `repo`                | `Cloning <repo>…`                                              |
 | Pasul `prCheckout`          | `Checking out the pull request in <repo>…`                     |
-| Pasul `script`              | `Running the setup script for <repo>…`                         |
+| Pasul `provisionTasks`              | `Running worktree tasks for <repo>…`                         |
 | Pasul `agent`               | `Setting up <agent>…`                                          |
 | `provisioning`, încă niciun pas | `Preparing the workspace…`                                 |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Există pentru că legarea se întâmplă de _cealaltă_ parte: un membru tastea
 | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Credențialele conexiunii    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Configurarea asistată neterminată | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                       |
-| Fișierele Slack vechi       | `<dataDir>/<workspaceId>/slack_credentials.json` și `slack_app_setup.json`, citite o dată și migrate pe loc |
 
 Credențialele stau lângă baza de date a spațiului de lucru, nu în ea: ștergerea unui spațiu de lucru ia cu el și tokenurile de chat, iar `workspace.export` sau o copie de siguranță copiază `workspace.db` — așa că un spațiu de lucru înmânat altcuiva nu duce cu el tokenuri de bot active. Scrierile sunt atomice (fișier temporar plus redenumire) și restrânse la doar proprietar.
 

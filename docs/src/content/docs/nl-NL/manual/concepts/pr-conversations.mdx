@@ -2,13 +2,13 @@
 title: PR-gesprekken
 description: Hoe een GitHub-PR-opmerking een agentbeurt wordt zonder webhook, wat de auteur autoriseert en aan wie elke kant van het gesprek wordt toegeschreven.
 slug: nl-NL/handleiding/concepten/pr-gesprekken
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Een pull request is al de plek waar het gesprek over code plaatsvindt.
 PR-gesprekken maken er een oppervlak van op een Control Center-werkruimte, net
 zoals een [chatbrug](/nl-NL/handleiding/concepten/chatbruggen/) van Slack er een
-maakt: @-vermeld `@usectrl` (of de GitHub App-bot van de werkruimte) in een PR,
+maakt: @-vermeld `@usectrl` in een PR,
 antwoord binnen zijn reviewthreads of voeg het label `ai-review` toe, en het werk
 gebeurt in de reviewruimte van de PR — onder dezelfde attributie en
 beveiligingen als alles wat in de app wordt getypt. Een opmerking en een label
@@ -26,8 +26,7 @@ wie elke kant wordt toegeschreven**.
 Het enige pushkanaal dat GitHub voor een app biedt, is een webhook, en een
 webhook heeft een inkomende URL nodig — precies het enige dat dit oppervlak
 bewust nooit vereist. Het opsporen gebeurt dus in een pollronde: één per
-appinstallatie gealiaste zoekopdracht vraagt GitHub om PR's die de bot (of zijn
-korte slug) vermelden, en om open PR's die het reviewlabel dragen; van PR's die
+appinstallatie gealiaste zoekopdracht vraagt GitHub om PR's die `@usectrl` vermelden, en om open PR's die het reviewlabel dragen; van PR's die
 al een reviewruimte hebben worden de opmerkingenthreads gelezen, en alles wordt
 op opmerking-id vergeleken met wat de vorige pollronde zag. Een eigen app pollt
 elke minuut over hoogstens 25 PR's. Via Connect gaan de aanroepen ten koste van
@@ -76,8 +75,8 @@ afgewezen — er wordt niets geplaatst:
 - **Een aangemeld lid.** Het account moet horen bij een lid van _deze_
   werkruimte dat zich op deze server bij GitHub heeft aangemeld
 - **Een rol met schrijfrechten.** `viewer` en `guest` kunnen geen werk starten
-- **Pushtoegang.** Antwoorden gebruiken een `bot`-token dat beperkt is tot de
-  toegang van dat lid tot de repository. Kan de server er geen uitgeven, dan gaat
+- **Pushtoegang.** Antwoorden gebruiken een token voor die ene repository, beperkt
+  tot de toegang van dat lid daartoe. Kan de server er geen uitgeven, dan gaat
   hij niet verder
 
 Elke controle draait vóór elke bevestiging, dus een vreemde krijgt geen reactie
@@ -100,15 +99,17 @@ Elke kant van het gesprek draagt een andere identiteit, en dat verschil ís de
 functie:
 
 - **Op GitHub is het antwoord automatisering namens jou.** Elk antwoord rijdt
-  mee op een `bot`-token voor die ene repository, beperkt tot de toegang van het
-  vragende lid. Bij een eigen app is de auteur het `[bot]`-account van de app.
-  Via Connect is een token voor de gedeelde App een gebruikerstoken, dus het
-  antwoord komt van het account van het vragende lid, dat via de App handelt. Hoe
-  dan ook begint elk antwoord met `**Control Center** (for @login):`, wat zegt
-  wie het vroeg en tegelijk als lusbeveiliging dient.
+  mee op een token voor die ene repository, beperkt tot de toegang van het
+  vragende lid, en wordt geschreven door het `[bot]`-account van de app. Eén
+  uitzondering: op de gedeelde Control Center Connect-app plaatst de bot alleen
+  reacties in reviewthreads als de Connect-operator de installatie heeft
+  opgenomen; anders komt een antwoord binnen een reviewthread van het eigen
+  account van het vragende lid. Hoe dan ook begint elk antwoord
+  met `**Control Center** (for @login):`, wat zegt wie het vroeg en tegelijk als
+  lusbeveiliging dient. @-vermeldingen in de woorden van de agent worden onschadelijk gemaakt, zodat een antwoord nooit een gebruiker of team een melding geeft.
 - **In de ruimte is de vraag van jou.** Het bericht wordt toegeschreven aan het
   lid waaraan de auteur is herleid, en de agentrun wordt namens hen uitgevoerd:
-  commits vermelden hen als medeauteur, en de autonomieregelaar en
+  de commits zijn van hen, en de autonomieregelaar en
   actiebeveiligingen van de ruimte gelden precies zoals voor een bericht dat in
   de app is getypt. Schrijfacties naar de codehost vanuit de run gebruiken tokens
   voor één repository, begrensd door dat lid, nooit diens volledige, doorgegeven
@@ -118,25 +119,17 @@ Het publiceren van reviewbevindingen terug naar GitHub blijft een beslissing van
 een persoon, genomen in Control Center. Een vermelding kan een review _starten_;
 alleen een mens publiceert er een.
 
-## De lusbeveiliging en de korte naam
+## De lusbeveiliging
 
 Alles wat door een botaccount is geschreven, wordt weggegooid voordat er welke
 poort dan ook draait — specifiek het onze, en elk achtervoegsel `[bot]`, zodat
 de reviewbot van een andere app de onze ook niet kan wekken — en net zo elke
 opmerking die begint met het voorvoegsel `**Control Center** (for @`, omdat een
-antwoord via Connect van het account van een persoon komt. Zonder dit zouden de
+reactie op een reviewthread via Connect van het account van een persoon kan zijn. Zonder dit zouden de
 antwoorden als nieuwe opmerkingen binnenkomen en de brug voor altijd opnieuw
 activeren.
 
-Het achtervoegsel `[bot]` is ook de reden dat de korte vorm bestaat. GitHub legt
-de login van een appaccount vast op `<slug>[bot]`, biedt daarvoor geen
-automatisch aanvullen en herleidt `@slug` nooit naar de app — dus het accepteren
-van de kale slug is een beslissing van _onze_ matcher, en om die te vinden is
-een aparte zoekroute op de ruwe **tekst** van opmerkingen nodig in plaats van de
-vermeldingsindex van GitHub. De prijs wordt benoemd in plaats van verzwegen: een
-menselijke gebruiker die dezelfde slug heeft als de app, richt elke vermelding
-in korte vorm van zichzelf ook aan de bot. Onderscheidende appnamen maken die
-botsing hypothetisch.
+Alleen `@usectrl` start werk. De eigen login van de app (`<slug>[bot]`) en de kale slug adresseren niets: GitHub biedt geen automatisch aanvullen voor een appaccount, en een kale slug kan bij een menselijke gebruiker horen.
 
 ## Wat bewust niet wordt geboden
 

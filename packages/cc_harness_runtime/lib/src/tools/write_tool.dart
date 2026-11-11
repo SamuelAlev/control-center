@@ -67,6 +67,10 @@ class WriteTool extends HarnessTool {
         ),
       );
     }
+    final refused = readOnlyRefusal(resolved, context.readOnlyRoots);
+    if (refused != null) {
+      return refused;
+    }
     try {
       final file = File(resolved);
       file.parent.createSync(recursive: true);

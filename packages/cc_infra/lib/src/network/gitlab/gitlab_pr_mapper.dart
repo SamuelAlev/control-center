@@ -44,6 +44,7 @@ PrUser prUserFromGitLab(GitLabUser? user) {
     login: user.username,
     avatarUrl: user.avatarUrl,
     name: user.name.isEmpty ? null : user.name,
+    accountId: user.id == 0 ? '' : '${user.id}',
   );
 }
 
@@ -243,6 +244,8 @@ PullRequest pullRequestFromGitLab(
     baseRef: mr.targetBranch,
     baseSha: diffRefs?.baseSha ?? '',
     headRef: mr.sourceBranch,
+    baseRepoId: mr.targetProjectId == 0 ? '' : '${mr.targetProjectId}',
+    headRepoId: mr.sourceProjectId == 0 ? '' : '${mr.sourceProjectId}',
     requestedReviewers: mr.reviewers
         .map(prUserFromGitLab)
         .toList(growable: false),

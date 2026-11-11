@@ -1,8 +1,8 @@
 /// The connected server's build identity, as advertised by its `initialize`
 /// capabilities. This is the client-side half of the stale-binary /
 /// compatibility story: the client compares [version] against its own
-/// `BuildInfo.buildVersion` (an older *server* is the common case — the
-/// desktop spawns a prebuilt `cc_server` that can lag the app) and surfaces
+/// `BuildInfo.buildVersion` (the desktop spawns a prebuilt `cc_server` that
+/// can lag the app) and surfaces
 /// a warning, never a hard block; only the wire-protocol min/max range is
 /// allowed to refuse a connection.
 class ServerBuild {
@@ -24,8 +24,7 @@ class ServerBuild {
     );
   }
 
-  /// The server's release version, or null when it did not advertise one
-  /// (a server built before this field existed).
+  /// The server's release version, or null when it did not advertise one.
   final String? version;
 
   /// The server's build git sha, or null when absent.

@@ -2,7 +2,7 @@
 title: Homokozószabályzatok konfigurálása
 description: Mi korlátozza az ügynökfutást, hogyan állapíthatja meg, hogy az operációs rendszer homokozója becsomagolja-e, és hogyan döntik el a műveleti szabályok, mit pusholhat vagy érhet el egy ügynök.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Hogy egy ügynökfutás homokozóba kerül-e, a szerver dönti el, indításkor
@@ -23,7 +23,7 @@ az, amelyik feltételes — a másik öt minden hoszton tart.
 
 | Határ                            | Mit tesz                                                                                                                                                                                       |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Az operációs rendszer homokozója | Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n. Becsomagolja a Claude Code CLI-t, az ACP-adaptereket és a harness `bash` eszközét. **Windowson és `bwrap` és `socat` nélküli Linuxon nincs** |
+| Az operációs rendszer homokozója | Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n. Becsomagolja a Claude Code CLI-t, az ACP-adaptereket és a harness `bash` eszközét. **Windowson és `bwrap` és `socat` nélküli Linuxon nincs**, ahol csak a szerver tulajdonosának futtatásai indulnak el |
 | A saját worktree-je              | Minden beszélgetés kap egy copy-on-write checkoutot. Az eredeti checkout írásmegtagadási útvonalként kerül a futásba, és a homokozó az, ami érvényesíti                                            |
 | Közvetített hitelesítő adatok    | A hitelesítőadat-közvetítő futásonkénti környezetet állít ki, és a lebontáskor visszavonja. A benne lévő GitHub-token olvasni tud, pusholni nem: a push a Control Centeren megy át, amely előbb a push-szabályt kérdezi meg |
 | Műveleti korlátok                | Minden állapotmódosító eszköz deklarálja a hatásosztályait, és a korlátmotor a hívás lefutása előtt feloldja őket. Egy `prompt`, amelyhez nincs csatlakoztatott jóváhagyó, elutasításra kerül   |
@@ -43,11 +43,14 @@ Három dolog gyengébb marad, mint amilyennek látszik:
   homokozóprofil sem korlátozza őket. Csak a `bash` eszköz megy át a homokozott
   parancsfuttatón. Ezeket az eszközöket a saját útvonal-elkülönítésük és a
   műveleti korlátok szorítják határok közé.
-- Egy háttérrendszer nélküli hoszton az első sor egyáltalán nem érvényes. Az ACP
-  és a harness `bash` eszköze a környezet megtisztítására és a
-  parancsszabályzatra esik vissza; a Claude Code a `NoSandboxAdapter`-en
-  keresztül a hoszt környezetét örökli. A szerver erről az indítási naplójában
-  számol be. Az alábbiakban ellenőrizze a sajátját.
+- Egy háttérrendszer nélküli hoszton csak a szerver tulajdonosának futtatásai
+  indulnak el, és ezeknél az első sor egyáltalán nem érvényes. A többi futtatást
+  visszautasítjuk. A `--sandbox off` melletti futtatásoknál minden tag futtatása
+  az első sor nélkül indul. Mindkét esetben az ACP és a harness `bash` eszköze a
+  környezet megtisztítására és a parancsszabályzatra esik vissza, a Claude Code
+  pedig a `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli. A szerver
+  az indítási naplójában számol be arról, melyik eset áll fenn. Az alábbiakban
+  ellenőrizze a sajátját.
 
 ## Annak eldöntése, mit pusholhat egy ügynök
 
@@ -57,8 +60,8 @@ kapcsoló. Mindegyik egy műveleti szabály:
 | Szabály                                         | Beépített alapértelmezett | Mire vonatkozik                                                         |
 | ----------------------------------------------- | ------------------------- | ----------------------------------------------------------------------- |
 | **Küldés távoli tárolóra**                      | Előbb kérdezzen           | Minden `git push` a GitHubra, bármelyik adapterrel                      |
-| **Pull request megnyitása**                     | Előbb kérdezzen           | `gh pr create` és a pull request-eszközök                               |
-| **Átnézés vagy összefésülés közzététele**       | Előbb kérdezzen           | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`           |
+| **Pull request megnyitása**                     | Előbb kérdezzen           | A Control Center pull request-eszközei. A `gh pr create` nem működik futás közben                               |
+| **Pull request frissítése vagy egyesítése**     | Előbb kérdezzen           | Az ügynök megjegyzései a pull requestjén, annak címének vagy leírásának szerkesztései és a közzétett átnézések a Control Center eszközein keresztül. A `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` és `gh pr close` nem működnek futás közben           |
 | **Írás külső követőbe**                         | Előbb kérdezzen           | Jegyírás a Control Center eszközein keresztül és `gh issue`             |
 | **Hálózati hozzáférés**                         | Engedélyezés              | Van-e egyáltalán hálózata a homokozónak, és a harness webes eszközei    |
 
@@ -120,49 +123,56 @@ Két dolog dönti el, mindkettő a szerveren: hogy a hoszt kínál-e háttérren
    a beállítása, nem az a becsomagolás, amelyet a szerver ténylegesen használ.
 3. Olvassa el a szerver indítási naplóját. Pontosan az alábbi három sor egyikét
    írja ki:
-   - `agent sandbox ON` a háttérrendszer-megjegyzéssel — a futások be vannak
+   - `agent sandbox ON` a háttérrendszer-megjegyzéssel: a futások be vannak
      csomagolva
    - `no OS-native agent sandbox on this host` egy telepítési tippel, ahol van
-     ilyen — a futások nincsenek becsomagolva
-   - `agent sandbox DISABLED by --sandbox off` — szándékos kikapcsolás
+     ilyen: csak azok a futások indulnak el, amelyekért a szerver tulajdonosa
+     felel, becsomagolás nélkül, a többieket pedig visszautasítjuk
+   - `agent sandbox DISABLED by --sandbox off`: minden tag futtatása elindul,
+     becsomagolás nélkül
+4. Az indításkor kiírt kitettségi sor ugyanezt egy szóban mondja el:
+   `sandbox=native`, `sandbox=off` vagy `sandbox=unavailable`.
 
 A `GET /healthz` nem számol be a homokozó állapotáról, így az ellenőrzés az
 indítási napló.
 
-A homokozó szándékos kikapcsolásához — egy hoszt, ahol a profil rosszul
-viselkedik, épp ezért létezik a lehetőség — indítsa a szervert `--sandbox off`
-kapcsolóval, vagy állítsa be a `CC_SERVER_SANDBOX=off` értéket. Az alapértelmezés
-az `on`, és az `on` azt jelenti: „használj háttérrendszert, ha van a hoszton",
-soha nem azt, hogy „követelj meg egyet".
+Homokozó nélküli futtatást csak a szerver tulajdonosa dönthet el. Ha mindenki
+számára szeretné, indítsa a szervert `--sandbox off` kapcsolóval, vagy állítsa be
+a `CC_SERVER_SANDBOX=off` értéket. Ilyenkor minden tag ügynöke homokozó nélkül fut
+ezen a gépen, ezért ez mindenkiről szóló döntés, amelyet indításkor egyszer hoznak
+meg. Az alapértelmezés `on`: ha a gazdagépen van háttérrendszer, minden futtatást
+becsomagol, ha nincs, akkor csak a tulajdonos futtatásait indítja el.
 
 Két helyzet soha nem kap natív homokozóbecsomagolást. **Windowson** a natív
-felmérés mindig elérhetetlent jelent, és nincs mit telepíteni — az
-ügynök-kiosztás a `none` értéket használja. A `microvm` háttérrendszer
-különálló (interaktív terminálok és állomások), és a saját futtatókörnyezetén a
-felmérés kapuzza. **Linuxon és WSL2-n** a `bwrap` és a `socat` egyaránt kell a
-`PATH`-ban; nélkülük a felmérés elérhetetlent jelent, és megnevezi a hiányzó
-csomagokat.
+felmérés mindig elérhetetlent jelent, és nincs mit telepíteni, ezért csak a szerver
+tulajdonosának futtatásai indulnak el, hacsak a tulajdonos nem adja meg a
+`--sandbox off` kapcsolót. A `microvm` háttérrendszer különálló (interaktív
+terminálok és állomások), és a saját futtatókörnyezetén a felmérés kapuzza.
+**Linuxon és WSL2-n** a `bwrap` és a `socat` egyaránt kell a `PATH`-ban; nélkülük a
+felmérés elérhetetlent jelent, megnevezi a hiányzó csomagokat, és csak a tulajdonos
+futtatásai indulnak el.
 
-Linuxon/WSL2-n bubblewrap telepítése esetén a standard szabályzat
+Linuxon/WSL2-n, ha a bubblewrap telepítve van, a standard szabályzat
 titkosfájl-globjai nem érvényesíthetők azokra a fájlokra, amelyeket az ügynök
-később hoz létre. Egy ilyen natív futás most inkább megbukik, ahelyett hogy
-csendben figyelmen kívül hagyná a szabályokat. Egy pozitív indítási felmérés
-ezért nem garantálja, hogy egy Linuxon történő kiosztás el tud indulni. A
-`--sandbox off` szándékos, korlátlan kikapcsolás, nem biztonsági határ
-helyettesítője.
+később hoz létre, ezért minden natív futtatás megbukik a szabályok csendes
+figyelmen kívül hagyása helyett, a tulajdonosé is. Egy pozitív indítási felmérés
+ezért nem jelenti azt, hogy egy Linuxon történő kiosztás el tud indulni: jelenleg
+a Linux-szerver `--sandbox off` kapcsolóval futtat ügynököket, vagy bubblewrap
+nélkül, csak a tulajdonosnak. A `--sandbox off` szándékos, korlátlan kikapcsolás,
+nem biztonsági határ helyettesítője.
 
 ## Tudja, mit tilt már eleve egy mód
 
 A mód térenként tárolódik, és **módkészlet** rétegként táplálja a
 korlátfeloldót. A négy mód közül három csak olvasható, és egy csak olvasható mód
-tizenegy hatásosztályt utasít el eleve:
+tizenkét hatásosztályt utasít el eleve:
 
 | Mód                | Worktree  | A készlet által elutasítva                                                                                                                                                                                                                        |
 | ------------------ | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Ügynök** (`chat`) | Írható    | Semmi — a beépített alapértelmezések érvényesek                                                                                                                                                                                                     |
-| **Terv**           | Csak olvasható | Fájl törlése, írás a worktree-n kívül, commit, push, PR megnyitása, közzététel vagy összefésülés, írás külső követőbe, csomag telepítése, folyamat futtatása, a munkaterület szerkezetének módosítása, elszigetelt környezet (állomás) indítása vagy irányítása |
-| **Átnézés**        | Csak olvasható | Ugyanaz a tizenegy. Nem választható ki a felhasználó által — az üzenetszerkesztő csak az Ügynök, a Terv és az Orchestrálás lehetőséget kínálja                                                                                                     |
-| **Orchestrálás**   | Csak olvasható | Ugyanaz a tizenegy                                                                                                                                                                                                                                  |
+| **Terv**           | Csak olvasható | Fájl törlése, írás a worktree-n kívül, commit, push, PR megnyitása, közzététel vagy összefésülés, írás külső követőbe, csomag telepítése, folyamat futtatása, a munkaterület szerkezetének módosítása, elszigetelt környezet (állomás) indítása vagy irányítása, parancsok futtatása a gazdagépen |
+| **Átnézés**        | Csak olvasható | Ugyanaz a tizenkettő. Nem választható ki a felhasználó által — az üzenetszerkesztő csak az Ügynök, a Terv és az Orchestrálás lehetőséget kínálja                                                                                                     |
+| **Orchestrálás**   | Csak olvasható | Ugyanaz a tizenkettő                                                                                                                                                                                                                                  |
 
 A hálózati hozzáférést és a titkok elérését egy csak olvasható mód szándékosan
 _nem_ utasítja el: épp a kutatás a lényege.
@@ -188,19 +198,23 @@ Nézze meg, mit írt ki a git. A `Control Center policy: …` azt jelenti, hogy 
 szabály elutasította a pusht, vagy egy **Előbb kérdezzen** megválaszolatlan
 maradt. A `… is not linked to this workspace` azt jelenti, hogy a push olyan
 repót céloz, amely sem a worktree sajátja, sem a munkaterülethez kapcsolt. A
-`Control Center has no GitHub credential that can push …` azt jelenti, hogy a
-GitHub App nincs telepítve az adott repóra, és egyetlen tartalék hitelesítő
-adat sem tudott pusholni: telepítse az alkalmazást a repóra, vagy csatlakoztassa
-a GitHubot.
+`Control Center has no GitHub credential that can push …` azt jelenti, hogy nem lehetett push-tokent létrehozni: telepítse a GitHub App-ot az adott repóra, vagy csatlakoztassa a GitHubot.
+
+### Az ügynökfutást visszautasította a szerver homokozó-hiánya
+
+A futás ezt mutatja: **Az ügynökökhöz homokozó kell ezen a szerveren**, alatta: „Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket. A tulajdonos telepítheti a homokozót, vagy mindenki számára kikapcsolhatja a homokozást.” A szerver gépén nincs operációs rendszer szintű homokozó, és a futtatásért felelős személy nem a szerver tulajdonosa, ezért semmi nem indult el. Ütemezés, webhook vagy más automatizálás esetén a felelős személy az, akihez az automatizálás kötve van, nem az, aki éppen nézi.
+
+Ezt csak a szerver tulajdonosa változtathatja meg. Linuxon és WSL2-n telepíti a `bubblewrap` és `socat` csomagokat, majd újraindítja a szervert (de előbb olvassa el a fenti Linuxos megjegyzést). Windowson nincs telepíthető háttérrendszer. A másik lehetőség, hogy a szervert `--sandbox off` kapcsolóval indítja újra, ami minden tag ügynökét homokozó nélkül futtatja ezen a gépen.
 
 ### A Homokozó kártya nem jelez natív homokozót
 
 Akkor azon a hoszton az ügynökfutások nincsenek Seatbeltbe vagy bubblewrapbe
-csomagolva, és a fennmaradó határok azok, amije van. Linuxon és WSL2-n
+csomagolva: csak a szerver tulajdonosának futtatásai indulnak el, és ezeknél a
+fennmaradó határok azok, amijük van. Linuxon és WSL2-n
 telepítse mindkét hiányzó eszközt — `sudo apt-get install bubblewrap socat` —,
 és indítsa újra a szervert; az indítási napló ekkor azt írja majd, hogy a
 homokozó be van kapcsolva. Windowson nincs telepíthető natív háttérrendszer,
-ezért inkább szigorítsa a korlátokat: lásd
+ezért a tulajdonos saját futtatásaira inkább szigorítsa a korlátokat: lásd
 [Korlátok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa/).
 
 ### Az ügynök elért egy fájlt a worktree-jén kívül
@@ -214,8 +228,8 @@ korlátok jelentik. Egy `bash` parancs vagy a Claude Code CLI viszont _be van_
 csomagolva ott, ahol van háttérrendszer, és a regisztrált checkoutjai minden
 módban írásmegtagadás alá esnek a becsomagoláson belül, a symlink-feloldott
 írásmódjukkal együtt (macOS-en a `/tmp` vagy a `/var/folders` felé vezető
-útvonal a `/private` alá oldódik fel, és most már mindkét írásmód tiltva van).
-Egy háttérrendszer nélküli hoszton ebből semmi nem érvényes. Bármelyik esetben a
+útvonal a `/private` alá oldódik fel, és mindkét írásmód tiltva van).
+A `--sandbox off` melletti futtatásokra, vagy a tulajdonos saját futtatásaira háttérrendszer nélküli hoszton ebből semmi nem érvényes. Bármelyik esetben a
 korlátok eleve elutasíthatják az **Írás a worktree-n kívül** műveletet.
 
 ## Kapcsolódó útmutatók

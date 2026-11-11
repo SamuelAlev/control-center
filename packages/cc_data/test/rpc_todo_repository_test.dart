@@ -338,7 +338,7 @@ class _Host {
   final Map<String, Map<String, dynamic>> callResults = {};
 
   /// Scripted `sub/subscribe` snapshots keyed by query. `todos.watchGoal` is
-  /// special-cased by [goalSnapshot] for backwards compatibility.
+  /// special-cased by [goalSnapshot].
   final Map<String, Map<String, dynamic>> snapshots = {};
 
   /// The snapshot pushed to the most-recent `todos.watchGoal` subscription.

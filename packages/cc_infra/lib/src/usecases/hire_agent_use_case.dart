@@ -1,9 +1,9 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:uuid/uuid.dart';
 
 /// Creates (hires) a new agent: writes its `AGENTS.md`, links skills and

@@ -2,10 +2,10 @@
 title: MCP-Tools
 description: Vollständiger Katalog der MCP-Tools, die cc_server registriert, nach Familie.
 slug: de-DE/handbuch/referenz/mcp-tools
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` betreibt eine MCP-Registrierung (JSON-RPC 2.0) und stellt sie auf dem Hauptport des Servers (Standard `9030`) unter `POST /mcp` und `GET /sse` bereit, Protokollversion `2024-11-05`. Jeder Client erreicht dieselbe Registrierung: der Desktop, der Web-Build, externe MCP-Clients und die eingebaute Agentenlaufzeit. Externe MCP-Server lassen sich als dynamische Schicht in dieselbe Registrierung brücken.
+`cc_server` betreibt eine MCP-Registrierung (JSON-RPC 2.0) und stellt sie auf dem Hauptport des Servers (Standard `9030`) unter `POST /mcp` und `GET /sse` bereit, Protokollversion `2024-11-05`. Jeder Client erreicht dieselbe Registrierung: der Desktop, der Web-Build, externe MCP-Clients und die eingebaute Agentenlaufzeit. Externe MCP-Server lassen sich als dynamische Schicht in dieselbe Registrierung brücken. Server aus der eigenen Tool-Konfiguration des Server-Benutzers sind die Ausnahme: Dieser Endpunkt listet, ruft oder durchsucht sie nie, und nur eingebaute Harness-Läufe, für die der Serverinhaber verantwortlich ist, bekommen sie (siehe [Persönliche MCP-Server bleiben beim Eigentümer](/de-DE/handbuch/anleitungen/mcp-server/#persönliche-mcp-server-bleiben-beim-inhaber)).
 
 ## Größe der Registrierung
 
@@ -23,7 +23,7 @@ Die fünf Code-Graph-Tools werden nur registriert, wenn der Host ein Code-Graph-
 Die volle Registrierung wird in `tools/list` ohne Suchfilter angeboten. Ticketbearbeitungen sind typisierte Tools.
 
 :::note[Externe Clients sehen immer den ganzen Katalog]
-`tools/list` wird nie beschnitten. MCP-Clients prüfen Tool-Namen gegen ihre eigene zwischengespeicherte Kopie dieser Liste und lehnen alles ab, was dort fehlt, ohne den Server zu fragen. Ein dort verstecktes Tool ist unerreichbar, nicht bloß still.
+`tools/list` wird nie beschnitten, außer bei den persönlichen MCP-Servern des Serverinhabers, die es nie enthält. MCP-Clients prüfen Tool-Namen gegen ihre eigene zwischengespeicherte Kopie dieser Liste und lehnen alles ab, was dort fehlt, ohne den Server zu fragen. Ein dort verstecktes Tool ist unerreichbar, nicht bloß still.
 
 Der **eingebaute Harness** arbeitet anders: Er lädt je Anfrage nur eine residente Teilmenge der Definitionen und holt den Rest beim ersten Gebrauch nach. Das bleibt Verhalten des Harness und lässt diese Registrierung unangetastet. Siehe [Tool-Kontext und Prompt-Caching](/de-DE/handbuch/konzepte/tool-kontext).
 :::
@@ -259,8 +259,10 @@ Verbvokabular je Oberfläche steht in der
 | `browser_use`  | Steuert ein headless Chromium, Firefox oder WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
 | `mobile_use`   | Steuert Android über ADB: inspect/input, Screenshots, install/start/stop/reset/uninstall von Apps, Deep Links und argv-förmige Gerätebefehle |
 | `ios_use`      | Steuert den iOS-Simulator über WebDriverAgent/CoreSimulator: inspect/input, Screenshots, install/start/stop/uninstall von Apps, Deep Links und argv-förmige Simulatorprozesse |
-| `rig_list`     | Listet die Rigs eines Arbeitsbereichs mit Oberfläche, Status, Anzeigegröße und Controller      |
+| `rig_list`     | Listet die Rigs des Space des Laufs mit Oberfläche, Status, Anzeigegröße und Controller      |
 | `rig_close`    | Zerstört ein Rig und verwirft den Maschinenzustand, den es besitzt                              |
+
+Nur Agentenläufe können diese Werkzeuge aufrufen; jeder andere Aufrufer wird abgewiesen. Ein Lauf erreicht nur die Rigs des Space, für den er vergeben wurde: `space_id` stammt aus der Freigabe des Laufs, nie aus dem Aufruf, und ein Rig eines anderen Space oder ohne Space antwortet genau wie ein fehlendes.
 
 `app_use` ist ein fünftes Use-Tool: Es steuert die Fenster einer in einem Bereich gestarteten Desktop-App direkt auf dem Host statt in einer VM und deklariert zusätzlich `fileWriteOutsideWorktree` und `fileDelete`. Es und die `environment_*`-Tools sind in [Environments einrichten](/de-DE/handbuch/anleitungen/environments/) beschrieben.
 
@@ -306,7 +308,7 @@ könntest, „unknown tool“ zurück:
 | Fähigkeit                              | Wo sie stattdessen liegt                                                                     |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Einen Agenten einstellen, entlassen oder bearbeiten | Die Agenten-Oberfläche. Es gibt kein Tool `hire_agent` / `fire_agent` / `update_agent` |
-| Einen Arbeitsbereich anlegen           | `workspace.upsert` über RPC, das ihn anlegt und die Eigentümerschaft stempelt                 |
+| Einen Arbeitsbereich anlegen           | `workspace.create` über RPC, nur für den Serverinhaber; legt an und stempelt die Eigentümerschaft |
 | Projekte (anlegen / listen / aktualisieren / einordnen) | Die Tickets-Oberfläche. Projekte sind eine Bedienoberfläche — siehe [Arbeit mit Projekten organisieren](/de-DE/handbuch/anleitungen/projekte/) |
 | Dem Betreiber eine blockierende Frage stellen | Das **Harness**-Tool `ask_user`, nicht MCP. Es zeichnet ein Formular in die Unterhaltung und blockiert auf die Antwort |
 | Diagnose je Agent                      | Nichts. Es gibt kein `doctor` — siehe [Einen Agenten diagnostizieren](/de-DE/handbuch/anleitungen/agent-diagnostizieren/) |

@@ -55,6 +55,7 @@ void main() {
             required repo,
             required path,
             String? ref,
+            String? actingUserId,
           }) async => SourceSkillFiles(
             files: const {'SKILL.md': ''},
             ref: ref ?? 'deadbeef',

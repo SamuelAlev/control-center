@@ -2,7 +2,7 @@
 title: Logg inn teamet med SSO
 description: Koble Okta (SAML) til Control Center-serveren din og gjennomfør en pålogging fra ende til annen.
 slug: nb-NO/handbok/veiledninger/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -84,6 +84,8 @@ To policyer avgjør hva en første pålogging gjør:
   invitasjon til arbeidsområdet, som er det tryggere standardvalget.
 - **Provisjoner ukjente brukere ved første innlogging** — på som standard; slå
   den av for å avvise alle hvis konto ikke allerede finnes.
+
+Hvis folk allerede har kontoer på denne serveren, bekreft e-postadressene deres før noen logger inn med SSO: åpne **Innstillinger → Server → Personer** og bruk **Bekreft e-post** på hver rad merket **E-post ikke bekreftet**. En pålogging matcher en eksisterende konto på e-post bare når den adressen er bekreftet (eller er satt av SSO eller SCIM). En adresse noen har skrevet inn i sin egen profil eller på en invitasjon matcher ingenting, så uten dette trinnet får de en ekstra konto, eller blir avvist når provisjonering av ukjente brukere er av. Se [Slik matcher pålogginger eksisterende kontoer](/nb-NO/handbok/slik-gjor-du/sso-oidc/#slik-matcher-pålogginger-eksisterende-kontoer).
 
 Du kan også koble et attributt som bærer gruppenavn (Oktas heter vanligvis
 `groups`) og oversette grupper til roller med koblingen — for eksempel

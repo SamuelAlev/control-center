@@ -11,9 +11,7 @@ void main() {
             accountId: 500,
             accountLogin: 'acme',
             targetType: 'Organization',
-            boundHere: true,
-            suspended: false,
-            callerIsAdmin: true,
+            suspended: true,
           ),
         ],
         updatedSeal: 'v1.a.b',
@@ -26,7 +24,16 @@ void main() {
         ],
       });
       expect(parsed.installations.single.accountLogin, 'acme');
-      expect(parsed.installations.single.boundHere, isTrue);
+      expect(parsed.installations.single.suspended, isTrue);
+      expect(response.toJson()['installations'], [
+        {
+          'installation_id': 77,
+          'account_id': 500,
+          'account_login': 'acme',
+          'target_type': 'Organization',
+          'suspended': true,
+        },
+      ], reason: 'no per-server binding fields on the wire');
       expect(parsed.updatedSeal, 'v1.a.b');
       expect(const GitHubInstallationsResponse(installations: []).toJson(), {
         'installations': <Object?>[],

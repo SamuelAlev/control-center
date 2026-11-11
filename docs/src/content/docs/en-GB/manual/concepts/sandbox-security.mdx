@@ -2,16 +2,18 @@
 title: Sandbox and security
 description: What actually constrains an agent in Control Center today, how far the OS sandbox reaches and which boundaries hold on a host that has no backend.
 slug: en-GB/manual/concepts/sandbox-security
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Where the OS sandbox does and does not reach]
 `cc_server` probes the host at boot and wraps agent command execution in the
 OS-native sandbox when one is available — Seatbelt on macOS, bubblewrap on
 Linux and WSL2 (which needs `bwrap` and `socat` on the `PATH`). Where no
-backend exists — Windows, or a Linux box missing those tools — runs fall back
-to the other boundaries below and the server says so in its startup log.
-`--sandbox off` turns it off deliberately.
+backend exists — Windows, or a Linux box missing those tools — only the server
+owner's agent runs start, unconfined, and everyone else's are refused. The server
+owner can instead start it with `--sandbox off`, which runs every member's agents
+unconfined on that machine. The startup log says which case you are in; see
+[Agents on a host without a sandbox](#agents-on-a-host-without-a-sandbox).
 
 Two gaps survive the sandbox and are worth bearing in mind:
 
@@ -37,7 +39,47 @@ you had not finished reviewing. So the question the product has to answer is not
 Control Center answers that in layers and the layers are independent on
 purpose. If one is missing, the others still hold. That matters, because the
 outermost layer — the OS sandbox — is the only conditional one: it depends on
-the host offering a backend and on Windows no host does.
+the host offering a backend and on Windows no host does. Where it is missing,
+the server does not quietly run everyone's agents without it.
+
+## Agents on a host without a sandbox
+
+The server decides once at boot how agents run on its machine, and keeps that
+decision until it restarts:
+
+- **Sandboxed.** The host has a backend and the sandbox is on. Every run is
+  wrapped.
+- **Off.** The server owner started the server with `--sandbox off`. Every
+  member's agents run unconfined on this machine. That is the owner's choice
+  for everyone who uses the server, not a setting for one run.
+- **Unavailable.** The sandbox is on but the host has no backend. A run starts
+  only when the person accountable for it is the server
+  [owner](/en-GB/manual/concepts/authorisation/#the-server-owner): the person who
+  asked for it, or for a schedule, webhook or other automation, the person it
+  is bound to. Anyone else's run is refused before a credential is minted or a
+  process starts, with "This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone."
+
+The reason is ownership of the machine. An unconfined agent can do whatever
+the server's user account can do, so only the person who owns that account
+runs one, unless they decide otherwise for everybody. A Windows server is
+always in the unavailable case. Linux has its own wrinkle, covered in the
+[sandbox backends reference](/en-GB/manual/reference/sandbox-backends/#linux-bubblewrap):
+native dispatch currently fails closed there even with bubblewrap installed.
+
+The same rule covers the smaller things that start a process for you:
+
+- **Quick helpers that run through an ACP CLI**: conversation titles, `/btw`,
+  `/handoff` and `/goal`. When the server sandboxes agents they run inside the
+  sandbox, in a session of their own. Under `--sandbox off` they run
+  unconfined. With no sandbox available they run only for requests the server
+  owner is accountable for; for anyone else they are skipped, so no title is
+  generated and a side question reports that the Content synthesizer has no
+  working runner. Helpers that start no tool are not affected.
+- **A pull request's golden tests** in Review Studio's visual check follow the
+  same rule.
+- **Tool processes and `bash`** in a run never fall back to the host. If the
+  server is set to sandbox agents but has no sandbox to give a run, they are
+  refused.
 
 ## What actually constrains an agent
 
@@ -106,8 +148,9 @@ The `bash` tool is the other place to be precise. Its commands are evaluated
 against the mode's command policy and then spawned with a sanitised environment
 and the worktree as its working directory. Where a backend exists that spawn is
 wrapped, so the sandbox is what stops a shell command from writing outside the
-worktree; where none does — Windows, or Linux without `bwrap` and `socat` — the
-command policy is the only thing between the command and the rest of the disk.
+worktree; where none does (every run under `--sandbox off`, and the owner's
+own runs on Windows or on Linux without `bwrap` and `socat`) the command
+policy is the only thing between the command and the rest of the disk.
 In `chat` mode the policy hard-denies a fixed list (privilege escalation,
 system and disk destruction, container and namespace escape) and prompts on
 remote-state mutations (`git push`, `gh pr create`, package publishes and
@@ -136,10 +179,10 @@ and the same rules apply whichever adapter runs the agent.
 
 A push is the action that has to hold even against an agent working around a
 rule, so it is enforced by what the agent holds rather than by what it runs.
-A run in a GitHub worktree gets a token for that one repository, minted from
+A run holds no forge token when it starts, and its `git` never gets one. When its `gh` needs one,
+Control Center hands it a token for one GitHub repository the run works on, minted from
 the workspace's GitHub App, the server's own app or Control Center Connect. It
-can read contents and, when the accountable member can push, comment on pull
-requests, but it cannot push. The run's git configuration rewrites every GitHub push URL
+only reads: it cannot push, comment or edit. The run's git configuration rewrites every GitHub push URL
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) to the
 **agent run gateway**, a loopback endpoint on `cc_server`. The gateway reads
 which refs the push updates, asks the **Push to a remote** rule — so a
@@ -152,23 +195,25 @@ never hands to the agent. A refused push shows up in git's own output:
 ```
 
 The gateway forwards pushes only to the worktree's own repo or a GitHub repo
-linked to the workspace. Fetches go straight to GitHub on the read token.
+linked to the workspace. Fetches go through the gateway too, on GitHub, GitLab and Bitbucket: it fetches the repositories the run works on with a credential it keeps and the run never sees. On GitLab and Bitbucket that is your own token when you asked for the run, and the repository's automation token when nobody did. A fetch asks no one, and only a deny on **Access the network** refuses it.
 
 Other shell commands meet a softer gate. The harness `bash` tool, and Claude
 Code's `Bash` tool through a hook, classify each command line and ask the rule
 it falls under: `git commit`, `merge`, `rebase`, `cherry-pick`, `revert` and
 `am` are **Create a commit**; `gh pr create` is **Open a pull request**;
-`gh pr merge`, `review`, `comment` and `close` are **Publish a review or
-merge**; `gh issue create`, `edit`, `comment` and `close` are **Write to an
+`gh pr merge`, `review`, `comment` and `close` are **Update or merge a pull request**; `gh issue create`, `edit`, `comment` and `close` are **Write to an
 external tracker**; package installs are **Install a package**; `curl` and
-`wget` are **Access the network**. This recognises the conventional spelling of
+`wget` are **Access the network**. Writing to GitHub from the shell is the exception: `gh pr create`, `gh pr comment`,
+`gh pr edit`, `gh pr merge` and `gh issue` writes do not work in a run, whose token
+only reads, and the agent is pointed to Control Center's tools, which ask these
+rules. This recognises the conventional spelling of
 an action, and an agent determined to hide one (`eval`, a script file, a raw
 API call) can. Pushes do not depend on it.
 
 Every GitHub token a run receives is bounded twice: to one repository, and to
 what the accountable member (the one who asked, else the workspace owner) can
 do there. There is no fallback credential. When no token can be minted, the
-run starts without one and its notes say why.
+command that asked for it says why.
 
 No ticketing API key is placed in a sandbox. Agents write tickets through
 Control Center's MCP tools, which ask **Write to an external tracker**.
@@ -180,6 +225,16 @@ call. The run's credential handles are released when it tears down. The
 tokens behind them are shared per member and repository and expire within
 about an hour; a member signing out of GitHub or leaving the workspace drops
 every token minted on their behalf at once.
+
+## Repositories an agent can only read
+
+An agent run may change only the checkouts of repositories that the person it acts for holds the [write grant](/en-GB/manual/concepts/authorisation/#changing-code-needs-the-write-grant) on. Workspace admins hold it on every linked repository. A run nobody asked for, such as a schedule or another automation, is judged by the same accountable person its automation token is bounded by.
+
+In a space with a repository that person can only read, the agent can still read and search that repository, but it cannot change its files. Its file tools refuse with a message that starts `<repo> is read-only for this run` and says that changing the checkout takes the write grant, which the person the run acts for does not hold, and that a workspace admin can grant it. Inside a sandbox the checkout is read-only for every process, so a shell command that writes there fails with "Operation not permitted". That includes `git commit` and a build or test that writes its output inside the checkout. Repositories the person can write behave as usual, so admins, and anyone with write access to every repository of the space, see no difference.
+
+This is decided once, when the run starts. A grant change takes effect on the agent's next run, and so does a repository added to the space during a run.
+
+Where the server owner has turned the sandbox off, only the agent's own file tools and Claude Code's write tools are refused, and shell commands can still change the checkout. Nothing can be pushed without the write grant either way, because every push is checked against it. Which processes the sandbox confines on each platform is in [Sandbox backends](/en-GB/manual/reference/sandbox-backends/).
 
 ## What the sandbox adds and where it stops
 
@@ -195,16 +250,16 @@ both of the seams the dispatch path has, because the transports do not share
 one. The first (`SandboxPort`) wraps the Claude Code CLI. The second
 (`SandboxManager`) wraps ACP adapters and the built-in harness's `bash` tool.
 Feeding only one would leave the others spawning unwrapped, which is what used
-to happen. On a host with no backend, or under `--sandbox off`, they all spawn
-unwrapped and the server says which case you are in on its startup line. ACP
+to happen. Under `--sandbox off` they all spawn unwrapped; on a host with no
+backend only the owner's runs start, also unwrapped. The server says which
+case you are in on its startup line. ACP
 and harness `bash` still sanitise the environment; Claude Code through
 `NoSandboxAdapter` inherits the host environment.
 
-One surface deliberately opts out: the server-hosted terminal accepts a backend
-argument per session and `cc_server` constructs it defaulting to the host
-shell, so a terminal you open from the app runs unsandboxed unless a client
-names `native` explicitly. That is a real shell on the server host, not an
-agent run.
+The server-hosted terminal opens the host shell only for the server's
+[owner](/en-GB/manual/concepts/authorisation/#the-server-owner). Everyone else gets a
+sandboxed terminal, with an agent's limits, in the workspace's own directories.
+Only the person who opened a terminal can type into it, read it or close it.
 
 On Linux, `bubblewrap` builds a mount namespace, so the agent genuinely sees
 only what was bound into it. On macOS, `sandbox-exec` applies a Seatbelt
@@ -221,6 +276,22 @@ fvm, uv and similar) stay runnable inside that exec block, so agents can use
 them without workarounds. The always-dangerous denies still apply inside them.
 Each session also gets its own private `TMPDIR`. It is the only temp directory
 where the agent may run programs it built or open Unix sockets.
+
+Two more protections apply in every mode. A sandbox cannot add, replace,
+delete or rename a command in the folders the server runs programs from
+(every folder on its `PATH` and the usual per-user tool folders), so a
+sandboxed run cannot plant a program the server later starts outside the
+sandbox. Global installs and default-version switches from inside a run
+therefore fail with "Operation not permitted", while project-local installs
+and `npx`-style runs keep working; install global tools on the server itself
+and restart it. And every home path a sandbox cannot read it cannot write
+either, with the server user's shell and session start-up files never
+writable. Details and platform limits are in
+[The server's command folders](/en-GB/manual/reference/sandbox-backends/#the-servers-command-folders).
+
+A run's tool sandboxes belong to that run and are released when it ends.
+Language servers start fresh with each sandboxed run. A debug session keeps
+its sandbox across turns until the session ends, for at most 30 minutes.
 
 The practical consequence: on Linux the agent's view of the filesystem is
 narrowed; on macOS the agent can still _read_ most of the host and your

@@ -249,10 +249,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get allCaughtUp => 'Máte všechno přečtené';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Na serveru není připojený účet forge, takže pull requesty k vám zatím nelze přiřadit.';
-
-  @override
   String get inboxNothingWaiting =>
       'Nic není blokováno a žádný pull request na vás nečeká.';
 
@@ -459,34 +455,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names jsou příliš velké na odeslání odtud přes relay.',
-      few: '$names jsou příliš velké na odeslání odtud přes relay.',
-      one: '$names je příliš velký na odeslání odtud přes relay.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Přílohu se nepodařilo nahrát. Zkuste to znovu.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count příloh se nepodařilo nahrát a byly vynechány.',
-      few: '$count přílohy se nepodařilo nahrát a byly vynechány.',
-      one: '1 přílohu se nepodařilo nahrát a byla vynechána.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Spolupracovník';
 
   @override
@@ -623,37 +591,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Na serveru není připojený žádný forge, takže pull requesty nelze načíst. Připojte ho v desktopové aplikaci.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count rep se nepodařilo přečíst.',
-      few: '$count repa se nepodařilo přečíst.',
-      one: '1 repo se nepodařilo přečíst.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Nelze číst: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle =>
-      'Instalace GitHub App je pozastavena';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Zobrazují se naposledy známá data pro $names. Obnovte instalaci na GitHubu.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro $names. Obnovte instalaci na GitHubu.';
-  }
 
   @override
   String get draft => 'Koncept';
@@ -1316,7 +1253,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get permissionPrCreate => 'Vytvářet pull requesty';
 
   @override
-  String get permissionPrPublish => 'Publikovat pull requesty';
+  String get permissionPrPublish => 'Aktualizovat nebo sloučit pull requesty';
 
   @override
   String get permissionVendorSyncWrite =>
@@ -1361,7 +1298,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get permissionBuiltInDefault => 'Vestavěný výchozí';
 
   @override
-  String get permissionRemembered => 'Zapamatované schválení';
+  String get permissionRemembered => 'Schválení na čas';
 
   @override
   String get permissionSource => 'Zdroj';
@@ -1383,10 +1320,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Nastavit zde pravidlo';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Před nastavením obecného pravidla pro tuto akci zrušte pravidlo v daném rozsahu nebo zapamatované pravidlo.';
 
   @override
   String get permissionConfirmRevoke => 'Potvrdit zrušení';
@@ -1438,6 +1371,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Příkazy: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Nástroje: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Bez účinku, dokud je tato akce nastavena na Zakázat';
 
   @override
   String permissionMaxCount(String count) {
@@ -1896,15 +1838,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Aktualizace pull requestu';
-
-  @override
-  String get activityTicket => 'Aktualizace ticketu';
-
-  @override
-  String get activityMeeting => 'Aktualizace schůzky';
-
-  @override
-  String get activityCalendar => 'Připojení kalendáře';
 
   @override
   String get activityRig => 'Aktualizace zařízení';
@@ -2591,8 +2524,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get credentialsWaitingForLogin => 'Čekání na autorizaci v prohlížeči…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Zadejte kód zobrazený v prohlížeči';
+  String get credentialsConnectCodePrompt => 'Potvrzovací kód';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2662,10 +2594,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'Vložte osobní přístupový token';
 
   @override
-  String get credentialsHostManaged =>
-      'Toto připojení pochází ze serverové aplikace nebo jejího prostředí. Změnit ho tam může jen vlastník serveru; vlastní token ale můžete přidat i vy.';
-
-  @override
   String get credentialsStopWatching => 'Přestat sledovat';
 
   @override
@@ -2686,4 +2614,205 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Spouštět příkazy na hostiteli';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Vaše přihlášení k $provider vypršelo. Přihlaste se znovu.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Pozastaveno: přihlašovací služba tohoto pracovního prostoru se změnila. Znovu začne fungovat, jakmile bude služba zpět.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '$provider teď není dostupný. Zkouší se znovu.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Jen tento pracovní prostor';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Všechny pracovní prostory';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Odebrat uložené přihlašovací údaje z tohoto pracovního prostoru? Ostatní si ponechají své.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Odebrat uložené přihlašovací údaje ze všech pracovních prostorů, které je sdílejí?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Server se restartoval. Začněte přihlášení znovu.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Nainstalujte GitHub App na $owner, aby se automatizace dostala k $names. Klepnutím otevřete GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App není na $owner nainstalovaná, takže se automatizace k $names nedostane. Požádejte správce pracovního prostoru o instalaci.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Přidejte $names mezi repozitáře GitHub App. Klepnutím otevřete GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App zatím $names nevidí. Požádejte správce pracovního prostoru, aby je přidal mezi její repozitáře.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Instalace GitHub App je pozastavena. Automatizace pro $names je pozastavená, dokud vlastník účtu neobnoví instalaci na GitHubu.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Osoba odpovědná za automatizaci tohoto pracovního prostoru už $names nevidí, takže tam jejím jménem nic neběží.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Osoba odpovědná za automatizaci tohoto pracovního prostoru není přihlášená ke forge, takže automatizace pro $names čeká, dokud se nepřihlásí.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Přístup k $names se nepodařilo ověřit. Zkouší se znovu.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Přihlaste se k $forge, abyste viděli pull requesty z dalších repozitářů: $count',
+      one:
+          'Přihlaste se k $forge, abyste viděli pull requesty z dalšího repozitáře',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Skryté repozitáře, které váš účet $forge nevidí: $count',
+      one: '1 repozitář je skrytý, protože ho váš účet $forge nevidí',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Skryté repozitáře, ke kterým v tomto pracovním prostoru nemáte přístup: $count',
+      one:
+          '1 repozitář je skrytý, protože k němu v tomto pracovním prostoru nemáte přístup',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ověřuje se váš přístup k dalším repozitářům: $count…',
+      one: 'Ověřuje se váš přístup k dalšímu repozitáři…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'E-mail účtu Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Zadejte e-mailovou adresu svého účtu Atlassian.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Žádný automatizační token nemůže číst $names, takže práce na pozadí je tam pozastavena. Správce může token přidat v Nastavení → Repozitáře.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Potvrďte v prohlížeči a poté zadejte zobrazený kód.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Tento účet je už připojen k jiné osobě na tomto serveru. Přihlaste se jiným účtem.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider nebyl dostupný, takže nelze tento token ověřit. Zkuste to za chvíli znovu.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider tento token nepřijímá. Zkontrolujte, zda jste zkopírovali celý a zda nebyl zrušen.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Toto není osobní token. Vložte osobní přístupový token z vlastního účtu $provider, ne token projektu, skupiny, pracovního prostoru nebo bota.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Tomuto tokenu chybí oprávnění $scope, které je potřeba k revizím a komentářům. Vytvořte token, který ho má.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Platnost tohoto tokenu vypršela. Vytvořte nový a vložte jej sem.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Právě teď je příliš mnoho požadavků. Počkejte chvilku a zkuste to znovu.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Přihlášení bylo zrušeno nebo odmítnuto. Spusťte je znovu, až budete připraveni.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Toto přihlášení už není otevřené: bylo zrušeno, použito nebo nahrazeno. Spusťte je znovu.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Správce pracovního prostoru vás musí pozvat, nebo vám vlastník serveru může pracovní prostor vytvořit.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos nyní ukazuje na jiný repozitář na $forge. Pokud s ním chcete dál pracovat, znovu jej propojte v desktopové nebo webové aplikaci.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos nyní ukazuje na jiný repozitář na $forge. Správce pracovního prostoru jej musí znovu propojit, než půjde znovu použít.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenti na tomto serveru potřebují sandbox';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník. Vlastník může sandbox nainstalovat nebo sandboxing vypnout pro všechny.';
 }

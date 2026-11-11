@@ -44,13 +44,6 @@ String _visibleFrameUrl(Map<dynamic, dynamic> frame) {
   return visibleBrowserUrl(url, fallback: unreachable);
 }
 
-/// What a page said when asked for its clipboard.
-///
-/// An alias of the engine-neutral [BrowserClipboardSnapshot]: the answer is the
-/// same shape whichever browser produced it, and two identical classes would
-/// only mean a conversion at the driver boundary.
-typedef CdpClipboard = BrowserClipboardSnapshot;
-
 /// Host spellings that all name the loopback interface.
 ///
 /// A DevTools endpoint polled at `127.0.0.1` legitimately reports its targets
@@ -491,8 +484,8 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
   final StreamController<CdpEvent> _events =
       StreamController<CdpEvent>.broadcast();
 
-  final StreamController<CdpScreencastFrame> _screencastFrames =
-      StreamController<CdpScreencastFrame>.broadcast();
+  final StreamController<BrowserFrame> _screencastFrames =
+      StreamController<BrowserFrame>.broadcast();
   final StreamController<CdpConnectionState> _states =
       StreamController<CdpConnectionState>.broadcast();
   final List<String> _consoleBuffer = [];
@@ -618,7 +611,7 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
   /// lane extracts the two fields it needs lexically and decodes the base64
   /// straight out of the socket frame, so nothing intermediate is allocated.
   @override
-  Stream<CdpScreencastFrame> get screencastFrames => _screencastFrames.stream;
+  Stream<BrowserFrame> get screencastFrames => _screencastFrames.stream;
 
   /// Whether commands can be sent right now (false while re-attaching).
   bool get isConnected => _state == CdpConnectionState.connected;
@@ -1253,24 +1246,26 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
 
   /// Reads the page's clipboard, or reports why it could not.
   ///
-  /// [CdpClipboard.unavailable] is the honest half. `navigator.clipboard`
+  /// [BrowserClipboardSnapshot.unavailable] is the honest half. `navigator.clipboard`
   /// only exists in a SECURE CONTEXT, so a page served over plain `http://`
   /// has no clipboard to read — and the caller needs to be able to say that
   /// instead of reporting an empty clipboard, which is a different claim.
   @override
-  Future<CdpClipboard> readClipboard() async {
+  Future<BrowserClipboardSnapshot> readClipboard() async {
     await _prepareClipboard();
     final value = await _evaluate(_readClipboardScript);
     if (value == null) {
-      return const CdpClipboard(unavailable: 'the page did not answer');
+      return const BrowserClipboardSnapshot(
+        unavailable: 'the page did not answer',
+      );
     }
     final unavailable = value['unavailable'];
     if (unavailable is String && unavailable.isNotEmpty) {
-      return CdpClipboard(unavailable: unavailable);
+      return BrowserClipboardSnapshot(unavailable: unavailable);
     }
     final image = value['image'];
     final mime = value['mime'];
-    return CdpClipboard(
+    return BrowserClipboardSnapshot(
       text: value['text'] is String ? value['text'] as String : null,
       imageBase64: image is String && image.isNotEmpty ? image : null,
       imageMediaType: mime is String && mime.isNotEmpty ? mime : null,
@@ -1907,7 +1902,6 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
     closePermissionHost();
   }
 
-
   void _bind() {
     final generation = _generation;
     _sub = _socket.stream.listen(
@@ -2189,7 +2183,7 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
     }
     if (!_screencastFrames.isClosed) {
       _screencastFrames.add(
-        CdpScreencastFrame(bytes: parsed.bytes, sessionId: parsed.sessionId),
+        BrowserFrame(bytes: parsed.bytes, sessionId: parsed.sessionId),
       );
     }
     return true;
@@ -2210,7 +2204,7 @@ class CdpClient with BrowserPermissionHost implements BrowserEngineClient {
     }
     if (!_screencastFrames.isClosed) {
       _screencastFrames.add(
-        CdpScreencastFrame(
+        BrowserFrame(
           bytes: bytes,
           sessionId: sessionId is int ? sessionId : -1,
         ),
@@ -2499,11 +2493,3 @@ class CdpEvent {
   /// Its payload.
   final Map<String, dynamic> params;
 }
-
-/// One decoded screencast frame off [CdpClient.screencastFrames].
-///
-/// An alias of the engine-neutral [BrowserFrame]. Chromium is the only engine
-/// that pushes frames, but the watch lane relays bytes from all three, and a
-/// Chromium-only frame type would have forced a conversion in the one place
-/// that must not allocate per frame.
-typedef CdpScreencastFrame = BrowserFrame;

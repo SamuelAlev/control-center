@@ -2,7 +2,7 @@
 title: Hubungkan penyedia OpenID Connect
 description: Sambungkan issuer OIDC apa pun — Pocket ID, Keycloak, Auth0, Zitadel — ke proses masuk Control Center.
 slug: id-ID/panduan-pengguna/panduan-praktis/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -90,6 +90,32 @@ secara langsung, yang memerlukan terowongan atau URL publik — lihat
 [Provision pengguna dengan SCIM](/id-ID/panduan-pengguna/panduan-praktis/sso-scim).
 :::
 
+## Bagaimana login mencocokkan akun yang sudah ada
+
+Sebuah login melalui penyedia identitas menemukan akunnya dengan urutan berikut:
+
+1. **Identitas yang disematkan.** Login SSO pertama menyematkan subjek penyedia (issuer plus `sub`) ke akun. Setiap login berikutnya dengan subjek itu adalah akun tersebut.
+2. **Email yang terverifikasi, di kedua sisi.** Jika tidak, login mencocokkan akun lewat email hanya bila penyedia mengirim `email_verified: true` dan alamat akun juga terverifikasi. Sebuah alamat terverifikasi bila SSO atau SCIM yang mengaturnya, atau bila pemilik server mengonfirmasinya. Alamat pemilik sendiri juga berlaku.
+
+Email disimpan dan ditampilkan dengan huruf kecil, dan pencocokan mengabaikan huruf besar-kecil. Alamat terverifikasi hanya mengidentifikasi sebuah akun bila tepat satu akun memilikinya; jika dua akun memiliki alamat terverifikasi yang sama, alamat itu tidak cocok dengan keduanya.
+
+Alamat yang diketik seseorang di profilnya sendiri, atau yang diketik pada undangan, tidak terverifikasi dan tidak cocok dengan apa pun. Mengubah alamat menghapus status terverifikasinya sampai seseorang menjaminnya lagi. Login tidak pernah cocok berdasarkan nama pengguna.
+
+Bila tidak ada yang cocok, login membuat akun baru jika **Sediakan pengguna yang belum dikenal pada login pertama** aktif, dan ditolak jika nonaktif.
+
+### Sebelum Anda mengaktifkan SSO untuk orang yang sudah memiliki akun
+
+Konfirmasikan alamat mereka terlebih dahulu. Buka **Pengaturan → Server → Orang**, tempat setiap akun menampilkan **Email belum dikonfirmasi** sampai seseorang menjaminnya, lalu gunakan **Konfirmasi email** pada baris masing-masing orang. Hanya pemilik server yang melihat daftar ini. Tanpa langkah ini, masing-masing orang tersebut akan mendapat akun kedua pada login SSO pertama mereka, atau ditolak saat penyediaan pengguna yang belum dikenal dimatikan.
+
+Seseorang melihat "Hanya Anda yang memasukkan alamat ini. Single sign-on tidak akan mencocokkannya sampai pemilik server mengonfirmasinya." di bawah bidang email pada profilnya sendiri selama alamatnya belum dikonfirmasi.
+
+### Penyedia yang tidak mengirim `email_verified`
+
+Beberapa penyedia tidak menyertakan klaim ini. Microsoft Entra ID tidak menyertakannya secara default. Klaim yang hilang bukanlah ya, sehingga dengan penyedia seperti itu sebuah login hanya cocok lewat identitas yang disematkan, dan login pertama seseorang tidak pernah dapat menemukan akun yang sudah ada melalui email. Penyediaan akun dengan SCIM tidak membantu login OIDC pertama itu. Jalan yang praktis adalah:
+
+- biarkan **Sediakan pengguna yang belum dikenal pada login pertama** aktif dan biarkan login pertama membuat akun, atau
+- atur penyedia agar mengirim `email_verified`, lalu konfirmasikan alamat yang cocok seperti di atas.
+
 ## Periksa konfigurasi Anda dari halaman ini
 
 Pemeriksa di bawah ini berjalan di browser Anda. Ia mengambil dokumen
@@ -102,3 +128,15 @@ klien beserta URI pengalihannya sudah terdaftar. Ia tidak pernah meminta
 client secret.
 
 <SsoCheck kind="oidc" />
+
+## Pemecahan masalah
+
+### Seseorang mendapat akun kedua setelah SSO diaktifkan
+
+Akun yang sudah ada belum terverifikasi alamatnya saat orang tersebut pertama kali masuk dengan SSO, sehingga login tidak mencocokkannya dan membuat akun baru. Itu terjadi bila alamat diketik di profilnya atau pada undangan dan pemilik server belum mengonfirmasinya, atau bila penyedia tidak mengirim `email_verified: true`. Akun baru yang alamatnya dijamin oleh penyedia akan mengambil alamat itu, dan akun lama yang hanya memiliki alamat ketikan akan kehilangannya.
+
+Untuk menghindarinya bagi orang berikutnya, konfirmasikan alamat di **Pengaturan → Server → Orang** sebelum mereka masuk. Untuk orang yang sudah memiliki dua akun, akun yang baru disematkan ke identitas SSO mereka, sehingga akun itulah yang akan dipakai login mereka mulai sekarang.
+
+### "Akun ini sudah ditautkan ke identitas SSO yang berbeda"
+
+Login mencocokkan sebuah akun berdasarkan email terverifikasinya, tetapi akun itu sudah disematkan ke subjek atau issuer lain: pengguna berbeda di penyedia, orang yang sama di bawah penyedia baru, atau akun yang dibuat SCIM di bawah pengenalnya sendiri. Akun yang disematkan menolak setiap identitas lain, sehingga alamat yang dipakai ulang di penyedia tidak dapat mengambil alih akun itu. Masuklah dengan identitas tempat akun tersebut pertama kali ditautkan.

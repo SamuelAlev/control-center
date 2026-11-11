@@ -2,7 +2,7 @@
 title: Étapes de pipeline
 description: Référence des types d’étapes de pipeline, des clés de corps d’étape, de leur configuration et des résultats d’étape.
 slug: fr-FR/manuel/reference/etapes-de-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Une étape de pipeline possède deux axes indépendants :
@@ -61,7 +61,7 @@ Nœud générique de prompt et de lancement : il rend le prompt, lance l’agen
 
 ### `pipeline.condition`
 
-Corps de routeur — lit `config.extras`, évalue une condition et renvoie `StepResult.route(key)`. Les conditions ne sont **pas** des expressions JavaScript ; trois formes d’écriture sont prises en charge, par ordre de priorité :
+Corps de routeur — lit `config.extras`, évalue une condition et renvoie `StepResult.route(key)`. Les conditions ne sont **pas** des expressions JavaScript ; deux formes d’écriture sont prises en charge, par ordre de priorité :
 
 - **Arbre de prédicats** (`extras.predicate`) — un arbre booléen qui aiguille vers `"true"` / `"false"`. Chaque nœud est une map dotée d’un `type` :
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — vrai lorsqu’au moins un des chemins listés existe sur le disque ; `negate` inverse le résultat ; `recursive` explore aussi les sous-répertoires (en ignorant `.git`, `node_modules`, `build`, `.dart_tool`). Les chemins relatifs sont résolus par rapport à `state[baseKey]` (par défaut `repo_local_path`), sinon par rapport au répertoire d’espace de travail propre à l’exécution.
@@ -69,21 +69,30 @@ Corps de routeur — lit `config.extras`, évalue une condition et renvoie `Step
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — groupes booléens.
   - `{"type": "not", "of": <predicate>}` — négation.
 - **Aiguillage** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}` ; aiguille vers le premier cas que la valeur d’état contient sans tenir compte de la casse, sinon vers `default`.
-- **Comparaison** (anciennes clés de premier niveau `extras.left` / `extras.op` / `extras.right`) — équivalent à un prédicat `comparison`, conservé pour les modèles écrits avant l’arbre.
 
 Les arêtes sortantes du nœud portent un `routeKey` qui doit correspondre à la clé renvoyée.
 
 ### `prReview.comment`
 
-Publie les remarques consolidées sous forme de commentaire de revue de PR via le client PR GitHub.
+Publie les constats consolidés, ou le `extras.message` propre à l’étape, sous forme de commentaire de revue de PR via le client PR GitHub.
 
-| Clé d’état              | Description                                            |
-| ----------------------- | ------------------------------------------------------ |
-| `repo_full_name`        | `owner/repo` (obligatoire)                             |
-| `pr_number`             | Numéro de PR — entier ou chaîne numérique (obligatoire) |
-| `consolidated_findings` | Corps du commentaire (obligatoire)                     |
+| Clé                     | Lue depuis                  | Description                                                           |
+| ----------------------- | --------------------------- | --------------------------------------------------------------------- |
+| `repo_full_name`        | charge utile du déclencheur | `owner/repo` (obligatoire)                                            |
+| `pr_number`             | charge utile du déclencheur | Numéro de PR, un entier positif ou une chaîne numérique (obligatoire) |
+| `consolidated_findings` | état                        | Corps du commentaire lorsque l’étape n’a pas de `message`             |
 
-Renvoie `StepResult.terminal`, avec `comment_review_id` et `commented_at` dans l’état.
+La pull request provient uniquement de la charge utile du déclencheur de l’exécution, jamais d’un état qu’une étape peut réécrire en cours d’exécution. Les @-mentions du texte publié sont rendues inertes, de sorte que le commentaire n’avertit personne.
+
+Un `message` rend ses marqueurs `{{key}}` comme suit :
+
+- `repo_full_name`, `repo_owner`, `repo_name` et `pr_number` rendent la pull request sur laquelle l’étape publie.
+- `author` est rendu à partir de la charge utile du déclencheur, tel quel, uniquement lorsqu’il s’agit d’un nom d’utilisateur valide sur la forge ; sinon l’étape échoue.
+- `consolidated_findings` est rendu en markdown brut, avec ses @-mentions rendues inertes.
+- Chaque autre valeur est rendue comme texte littéral : sur une ligne, avec la ponctuation markdown échappée et les @-mentions rendues inertes.
+- Un marqueur qui ne se résout à rien fait échouer l’étape.
+
+Renvoie `StepResult.terminal` avec `comment_review_id` et `commented_at` dans l’état.
 
 ### `messaging.postSpace`
 

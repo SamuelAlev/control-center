@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/repositories/run_transcript_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/transcript_folder.dart';
 
 /// Opens per-run transcript recordings.

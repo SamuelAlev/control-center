@@ -44,7 +44,7 @@ void main() {
         File(
           '${stateDir.path}/.credentials.json',
         ).writeAsStringSync('{"claudeAiOauth":{"accessToken":"tok"}}');
-        manager = SandboxManager();
+        manager = SandboxManager(hiddenPaths: const []);
       });
 
       tearDown(() async {

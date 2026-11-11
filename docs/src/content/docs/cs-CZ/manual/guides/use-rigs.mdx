@@ -2,7 +2,7 @@
 title: Dejte agentovi stroj na testování
 description: Dej agentovi jednorázový prohlížeč, plochu, emulátor Androidu nebo simulátor iOS — sleduješ ho živě a řízení můžeš převzít.
 slug: cs-CZ/prirucka/navody/pouziti-stanic
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 **Stanice** je jednorázový stroj, který agent otevře, když má něco opravdu
@@ -126,6 +126,21 @@ Až skončíš, stiskni **Zastavit stroj**.
 
 Řízení je výhradní schválně. Když do jednoho stroje píšou dva, vznikne vstup,
 který nechtěl ani jeden.
+
+### Kdo může sledovat a kdo ovládat
+
+Stroj otevřený v prostoru se řídí repozitáři prostoru stejně jako samotný prostor (viz [Prostory se řídí svými repozitáři](/cs-CZ/prirucka/koncepty/autorizace/#prostory-se-řídí-svými-repozitáři)):
+
+- **Sledování** vyžaduje čtecí přístup k prostoru: čtecí přidělení ke každému repozitáři, který prostor vystavuje, a tvé vlastní přihlášení k hostiteli kódu, které každý z nich může číst. Sledování pokrývá seznam strojů, obraz, zvuk, stav prohlížeče, jeho porty a čtení jeho schránky a souborů.
+- **Ovládání** navíc vyžaduje [zápisové přidělení](/cs-CZ/prirucka/koncepty/autorizace/#změna-kódu-vyžaduje-zápisové-přidělení) k těm repozitářům. Ovládání pokrývá otevření stroje v prostoru, psaní a klikání, převzetí řízení, spuštění, zastavení a zavření stroje, předávání jeho portů, zápis do jeho schránky, puštění souborů na něj a použití mikrofonu.
+
+S pouhým čtecím přístupem stroj ukazuje **Pouze sledování** a hlášku „Tento stroj můžete sledovat. Ovládání, přesměrování jeho portů, vkládání do něj a přetahování souborů na něj vyžaduje přístup pro zápis ke všem repozitářům v tomto prostoru.“ Pod vypnutým **Spustit stroj** karta říká „Spuštění stroje zde vyžaduje přístup pro zápis ke všem repozitářům v tomto prostoru. Správce pracovního prostoru ho může udělit.“ Bez čtecího přístupu stroj vidět není, jen hláška „Tento stroj nemůžete zobrazit. Patří do prostoru, ke kterému nemáte přístup ke čtení.“
+
+Stroj, který k žádnému prostoru nepatří, nedosáhne na žádný worktree a každý člen pracovního prostoru ho může sledovat i ovládat.
+
+Stroj, který nese přihlášení jedné osoby, je jeho k ovládání: jeho terminálový stroj nebo jakýkoli stroj otevřený pro ni, jehož síťový přístup dosáhne na hostitele kódu. Ovládat ho může jen tato osoba a běhy agentů, které jednají jen za ni. Správci pracovního prostoru ani vlastník serveru to nepřebijí. Ostatní, které prostor připouští, mohou sledovat jeho obraz, zvuk, stav a porty, ale nemohou ho ovládat, přesměrovat jeho porty, vkládat do něj, pouštět na něj soubory, kopírovat z něj soubory ani číst jeho schránku. Takový stroj ukazuje **Pouze sledování** s touto poznámkou: „Tento stroj můžete sledovat. Používá přihlášení osoby, pro kterou byl otevřen, takže jen ona ho může ovládat, přesměrovat jeho porty, vkládat do něj nebo na něj přetahovat soubory.“ Akce odmítnutá z tohoto důvodu říká „Stroj může ovládat jen osoba, pro kterou byl otevřen. Používá její vlastní přihlášení.“ Terminálový stroj někoho jiného se ti vůbec nezobrazí, stejně jako jeho terminálové relace.
+
+Každý stroj ukazuje, jestli ho můžeš ovládat, a to se aktualizuje samo, když se změní přidělení nebo tvoje přihlášení k hostiteli kódu.
 
 ## Dovnitř a ven
 

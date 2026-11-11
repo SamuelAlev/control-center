@@ -1,8 +1,8 @@
 ---
 title: Dùng máy chủ MCP
-description: Trỏ một máy khách MCP bên ngoài vào máy chủ công cụ của Control Center, đặt bearer token và hiểu bề mặt này phơi ra những gì.
+description: Trỏ một máy khách MCP bên ngoài vào máy chủ công cụ của Control Center, gửi bearer token của nó và hiểu bề mặt này phơi ra những gì.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Hướng dẫn này chỉ bạn cách kết nối một máy khách MCP bên ngoài — Claude Code, một
@@ -28,25 +28,38 @@ Vậy một bản cài đặt cục bộ mặc định nằm tại `http://127.0
 2. Đọc thẻ **Máy chủ MCP** — thẻ này cho biết đang chạy hay đã dừng và cổng mà nó
    đang lắng nghe
 
-Bề mặt này mặc định bật trên một bản cài đặt mới, nên một máy khách loopback hoạt
-động mà không phải chỉnh gì trong cài đặt. **Khởi động khi mở ứng dụng** quyết định
+Bề mặt này mặc định bật trên một bản cài đặt mới. Chỉ chủ sở hữu máy chủ thấy token trên
+thẻ, và chỉ họ mới có thể bắt đầu hoặc dừng điểm cuối. **Khởi động khi mở ứng dụng** quyết định
 liệu nó có trở lại sau khi khởi động lại hay không; **Bắt đầu** / **Dừng** là các
 điều khiển theo phiên, không làm thay đổi tùy chọn đó.
 
 Máy chủ mặc định bind loopback, nên điểm cuối chỉ với tới được từ máy đang chạy
 `cc_server`, trừ khi bạn khởi động nó với `--bind any`.
 
+## Lấy token
+
+Mọi yêu cầu đều cần token MCP của máy chủ, từ bất kỳ máy nào, kể cả loopback. Máy chủ tạo
+nó lần đầu tiên nó khởi động. Không có cách nào để tắt nó và cũng không có cách nào để xóa nó.
+
+1. Vào **Cài đặt → Máy chủ → Máy chủ MCP**, tìm hàng **Token xác thực**
+2. Nhấn **Hiện token** rồi sao chép nó
+3. Để thay thế nó, nhấn **Đổi token**. Máy chủ chuyển sang token mới ngay lập tức, và mọi
+   máy khách vẫn dùng token cũ sẽ bị từ chối cho tới khi bạn đưa cho nó token mới
+
 ## Kết nối một máy khách
 
-Trỏ máy khách của bạn vào điểm cuối Streamable HTTP. Hình dạng cấu hình cụ thể là
-việc của máy khách; URL thì giống nhau trong cả hai cách.
+Trỏ máy khách của bạn vào điểm cuối Streamable HTTP và gửi token dưới dạng
+`Authorization: Bearer <token>` trong mọi yêu cầu, kể cả `GET /sse`. Không có cách nào khác
+để gửi nó: một token trong URL không được chấp nhận. Hình dạng cấu hình cụ thể là việc của
+máy khách.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -68,23 +81,20 @@ phát hiện thêm từ dự án rồi đăng ký hai lần.
 Điểm kiểm tra: yêu cầu máy khách liệt kê các công cụ của nó. Bạn sẽ thấy các mục
 `mcp__*` bao gồm phiếu, space, bộ nhớ, đồ thị mã và đánh giá.
 
-## Phục vụ MCP ngoài máy chủ nhà
+## Điểm cuối từ chối những gì
 
-1. Trong **Cài đặt → Máy chủ → Máy chủ MCP**, ở hàng **Token xác thực**, nhấn
-   **Đặt** rồi dán một token
-2. Gửi token dưới dạng `Authorization: Bearer <token>` trong mọi yêu cầu `POST /mcp`
+Token mở mọi công cụ trên máy chủ, nên điểm cuối cũng từ chối bất cứ thứ gì một trang web
+có thể đã gửi, trước khi nó xem token:
 
-Một bề mặt không token sẽ từ chối mọi lời gọi không phải loopback bằng mã 403. Đó
-là thiết kế fail-closed: token chính là thứ khiến việc phục vụ ngoài máy chủ nhà trở
-nên khả thi ngay từ đầu.
+| Yêu cầu                                                                 | Phản hồi |
+| ----------------------------------------------------------------------- | -------- |
+| Một header `Origin` không phải là trang trên máy này (`http://localhost`, `http://127.0.0.1` hoặc `http://[::1]`, bất kỳ cổng nào) | `403`, "Không chấp nhận yêu cầu cross-origin" |
+| Một header `Host` không phải địa chỉ loopback và cổng của trình lắng nghe này, cũng không phải tên máy chủ công khai của máy chủ | `403`, "Không rõ máy chủ" |
+| Một `POST` mà phần thân không phải `application/json`                   | `415`    |
+| Không có token, hoặc sai token                                          | `401`    |
 
-Thay đổi token áp dụng tức thì cho bề mặt đang chạy — không cần khởi động lại.
-
-:::note[`GET /sse` nhận token trong chuỗi truy vấn]
-Luồng thông báo cũng được kiểm tra token như mọi tuyến khác, nhưng `EventSource`
-của trình duyệt không thể gửi header `Authorization` — nên `/sse` cũng chấp nhận
-token dưới dạng `?token=<token>`. Không có token thì nó trả lời 401.
-:::
+Để phục vụ MCP ngoài máy chủ nhà, hãy khởi động máy chủ với `--bind any`, rồi gửi token từ
+máy khác và gọi máy chủ bằng tên máy chủ công khai của nó.
 
 ## Giới hạn mọi lời gọi trong một không gian làm việc
 
@@ -125,6 +135,31 @@ Toàn bộ danh mục được quảng bá trong `tools/list` mà không có ch�
 máy khách MCP bên ngoài từ chối gọi công cụ không nằm trong danh sách đã lưu của
 nó, nên việc ẩn công cụ làm chúng hỏng chứ không phải dọn dẹp chúng.
 
+## Máy chủ MCP cá nhân thuộc về chủ sở hữu
+
+Hướng dẫn này nói về điểm cuối riêng của Control Center. Chiều ngược lại, các máy chủ MCP mà
+Control Center giao cho những agent nó chạy, được liệt kê dưới **Cài đặt → Máy chủ → Máy chủ
+MCP → Máy chủ MCP bên ngoài**. Các máy chủ được cấu hình trên máy của máy chủ cho Claude,
+Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode hoặc trong `.mcp.json` sẽ được tìm thấy ở
+đó tự động.
+
+Các máy chủ được phát hiện đó đến từ cấu hình công cụ riêng của người dùng máy chủ và hành
+động với danh tính và thông tin xác thực của người dùng đó, nên chúng thuộc về chủ sở hữu máy chủ:
+
+- Chúng chỉ khả dụng bên trong các lượt chạy harness tích hợp mà chủ sở hữu máy chủ khởi động
+  hoặc chịu trách nhiệm, bao gồm tự động hóa trong một không gian làm việc mà chủ sở hữu chịu
+  trách nhiệm.
+- Lượt chạy của một thành viên, tự động hóa gắn với một thành viên, và mọi lượt chạy trên một
+  máy chủ không có chủ sở hữu được ghi nhận đều không nhận được chúng nào. Ở đó các công cụ
+  không được liệt kê, không thể gọi, và không xuất hiện trong tìm kiếm công cụ.
+- Điểm cuối này không bao giờ liệt kê, gọi hay tìm kiếm chúng, với bất kỳ ai, kể cả token của
+  chủ sở hữu, và nó không chuyển tiếp tài nguyên hay prompt của chúng. Vì vậy một CLI agent kết
+  nối tới Control Center qua MCP, chẳng hạn Claude Code, cũng không nhận được chúng qua Control
+  Center; nó dùng cấu hình riêng của nó.
+
+Các máy chủ MCP được cấu hình cho không gian làm việc không bị ảnh hưởng bởi bất kỳ điều nào
+trong số này.
+
 ## Khắc phục sự cố
 
 ### Máy khách không thấy công cụ nào
@@ -133,9 +168,20 @@ nó, nên việc ẩn công cụ làm chúng hỏng chứ không phải dọn d�
 - Kiểm tra cổng khớp với cổng `cc_server` của bạn
 - Trên Claude Code, kiểm tra bạn đã truyền `--mcp-config` và `--strict-mcp-config`
 
-### Lỗi 403 từ một máy không phải máy chủ
+### 401 Unauthorized
 
-Chưa cấu hình bearer token. Hãy đặt một token và gửi nó.
+Yêu cầu không mang token, hoặc mang một token cũ. Sao chép token hiện tại từ hàng **Token xác
+thực** và gửi nó dưới dạng `Authorization: Bearer <token>`. Một token trong URL bị bỏ qua.
+
+### 403 từ một máy khách từng hoạt động
+
+Yêu cầu mang một `Origin` từ một trang web, hoặc một `Host` mà máy chủ không trả lời. Hãy gọi
+điểm cuối từ một máy khách thay vì một trang trình duyệt, bằng địa chỉ loopback của máy chủ hoặc
+tên máy chủ công khai của nó.
+
+### 415 Unsupported Media Type
+
+Gửi nội dung `POST /mcp` dưới dạng `application/json`.
 
 ### Một lời gọi công cụ thất bại với "Missing or invalid argument: workspace_id"
 

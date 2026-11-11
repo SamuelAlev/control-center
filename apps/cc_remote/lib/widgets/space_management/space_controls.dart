@@ -25,11 +25,20 @@ class SpaceHeading extends StatelessWidget {
 }
 
 class SpacePick extends StatelessWidget {
-  const SpacePick(this.title, this.selected, this.onTap, {super.key});
+  const SpacePick(
+    this.title,
+    this.selected,
+    this.onTap, {
+    this.username,
+    super.key,
+  });
 
   final String title;
   final bool selected;
   final VoidCallback? onTap;
+
+  /// A person's username, shown beside their name.
+  final String? username;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +53,27 @@ class SpacePick extends StatelessWidget {
         trailing: selected
             ? Icon(AppIcons.check, size: 18, color: tokens.accent)
             : null,
-        child: Text(title, textAlign: TextAlign.start),
+        child: switch (username) {
+          final handle? => Row(
+            children: [
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.start,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '@$handle',
+                // RTL carve-out: a username reads left to right.
+                textDirection: TextDirection.ltr,
+                style: TextStyle(color: tokens.textTertiary),
+              ),
+            ],
+          ),
+          null => Text(title, textAlign: TextAlign.start),
+        },
       ),
     );
   }

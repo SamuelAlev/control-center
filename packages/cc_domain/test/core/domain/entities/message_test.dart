@@ -8,25 +8,14 @@ import 'package:test/test.dart';
 void main() {
   group('SenderType.fromWire', () {
     test('decodes each stored value', () {
-      expect(SenderType.fromWire('user', senderId: 'u'), SenderType.user);
-      expect(SenderType.fromWire('agent', senderId: 'a'), SenderType.agent);
-      expect(
-        SenderType.fromWire('system', senderId: 'system'),
-        SenderType.system,
-      );
-    });
-
-    test('an old agent-from-system row decodes as system', () {
-      expect(
-        SenderType.fromWire('agent', senderId: SenderType.systemSenderId),
-        SenderType.system,
-      );
+      expect(SenderType.fromWire('user'), SenderType.user);
+      expect(SenderType.fromWire('agent'), SenderType.agent);
+      expect(SenderType.fromWire('system'), SenderType.system);
     });
 
     test('an unknown or missing value never decodes as a human', () {
-      expect(SenderType.fromWire('robot', senderId: 'a'), SenderType.agent);
-      expect(SenderType.fromWire(null, senderId: 'a'), SenderType.agent);
-      expect(SenderType.fromWire(null, senderId: 'system'), SenderType.system);
+      expect(SenderType.fromWire('robot'), SenderType.agent);
+      expect(SenderType.fromWire(null), SenderType.agent);
     });
   });
 
@@ -145,25 +134,6 @@ void main() {
   });
 
   group('Message metadata-derived accessors', () {
-    test('isContextSummary covers both first-class and legacy compaction', () {
-      expect(
-        make(MessageType.compaction).isContextSummary,
-        isTrue,
-        reason: 'first-class compaction message',
-      );
-      expect(
-        make(
-          MessageType.system,
-          meta: const {'compacted': true},
-        ).isContextSummary,
-        isTrue,
-        reason: 'legacy compacted system summary',
-      );
-      // A non-compaction system summary without the legacy flag is NOT a context
-      // summary.
-      expect(make(MessageType.system).isContextSummary, isFalse);
-    });
-
     test('compaction accessors read metadata keys with fallbacks', () {
       final message = make(
         MessageType.compaction,
@@ -451,7 +421,7 @@ void main() {
       createdAt: DateTime(2025, 6, 1),
     );
 
-    test('mentions decode from metadata.mentions, filtering non-maps', () {
+    test('mentions decode from metadata.mentions, skipping bad entries', () {
       final message = Message(
         id: 'm',
         spaceId: 'c',
@@ -462,15 +432,16 @@ void main() {
         messageType: MessageType.text,
         metadata: const {
           'mentions': [
-            {'agentId': 'a1', 'raw': '@a1'},
-            {'agentId': 'u2', 'raw': '@u2', 'principalType': 'user'},
+            {'principalId': 'a1', 'raw': '@a1', 'principalType': 'agent'},
+            {'principalId': 'u2', 'raw': '@u2', 'principalType': 'user'},
+            {'agentId': 'a3', 'raw': '@a3'},
             'not-a-map',
           ],
         },
         createdAt: DateTime(2025, 6, 1),
       );
       expect(message.mentions.length, 2);
-      expect(message.mentions[0].agentId, 'a1');
+      expect(message.mentions[0].principalId, 'a1');
       expect(message.mentions[1].principalType, PrincipalType.user);
       expect(base.mentions, isEmpty);
       expect(
@@ -635,70 +606,59 @@ void main() {
   });
 
   group('MessageMention', () {
-    test('a const mention carries every field and aliases principalId', () {
+    test('a const mention carries every field', () {
       const mention = MessageMention(
-        agentId: 'a1',
+        principalId: 'a1',
         raw: '@a1',
         resolvedVia: 'roster',
         principalType: PrincipalType.user,
       );
-      expect(mention.agentId, 'a1');
+      expect(mention.principalId, 'a1');
       expect(mention.raw, '@a1');
       expect(mention.resolvedVia, 'roster');
       expect(mention.principalType, PrincipalType.user);
-      expect(mention.principalId, 'a1', reason: 'principalId aliases agentId');
     });
 
-    test('defaults to principalType agent', () {
-      const mention = MessageMention(agentId: 'a', raw: '@a');
-      expect(mention.principalType, PrincipalType.agent);
-      expect(mention.resolvedVia, isNull);
-    });
-
-    test(
-      'toJson omits principalType for the agent default (pre-§15 compat)',
-      () {
-        const mention = MessageMention(agentId: 'a1', raw: '@a1');
-        expect(mention.toJson(), {'agentId': 'a1', 'raw': '@a1'});
-
-        const human = MessageMention(
-          agentId: 'u1',
-          raw: '@u1',
-          resolvedVia: 'roster',
-          principalType: PrincipalType.user,
-        );
-        expect(human.toJson(), {
-          'agentId': 'u1',
-          'raw': '@u1',
-          'resolvedVia': 'roster',
-          'principalType': 'user',
-        });
-      },
-    );
-
-    test('fromJson tolerates a missing principalType (defaults to agent)', () {
-      final mention = MessageMention.fromJson(const {
-        'agentId': 'a1',
+    test('toJson always carries the principal type', () {
+      const mention = MessageMention(
+        principalId: 'a1',
+        raw: '@a1',
+        principalType: PrincipalType.agent,
+      );
+      expect(mention.toJson(), {
+        'principalId': 'a1',
+        'principalType': 'agent',
         'raw': '@a1',
-        'resolvedVia': 'roster',
       });
-      expect(mention.agentId, 'a1');
-      expect(mention.resolvedVia, 'roster');
-      expect(mention.principalType, PrincipalType.agent);
     });
 
-    test('fromJson honors an explicit principalType', () {
-      final mention = MessageMention.fromJson(const {
-        'agentId': 'u1',
-        'raw': '@u1',
-        'principalType': 'user',
-      });
-      expect(mention.principalType, PrincipalType.user);
+    test('fromJson refuses a mention without a known principal type', () {
+      expect(
+        () =>
+            MessageMention.fromJson(const {'principalId': 'a1', 'raw': '@a1'}),
+        throwsFormatException,
+      );
+      expect(
+        MessageMention.tryFromJson(const {
+          'principalId': 'a1',
+          'raw': '@a1',
+          'principalType': 'robot',
+        }),
+        isNull,
+      );
+      expect(
+        MessageMention.tryFromJson(const {
+          'agentId': 'a1',
+          'raw': '@a1',
+          'principalType': 'agent',
+        }),
+        isNull,
+      );
     });
 
     test('a mention round-trips through toJson then fromJson', () {
       const original = MessageMention(
-        agentId: 'u9',
+        principalId: 'u9',
         raw: '@u9',
         resolvedVia: 'roster',
         principalType: PrincipalType.user,
@@ -708,10 +668,18 @@ void main() {
     });
 
     test('equality is by value and hashCode is stable', () {
-      const a = MessageMention(agentId: 'a', raw: '@a');
-      const b = MessageMention(agentId: 'a', raw: '@a');
+      const a = MessageMention(
+        principalId: 'a',
+        raw: '@a',
+        principalType: PrincipalType.agent,
+      );
+      const b = MessageMention(
+        principalId: 'a',
+        raw: '@a',
+        principalType: PrincipalType.agent,
+      );
       const c = MessageMention(
-        agentId: 'a',
+        principalId: 'a',
         raw: '@a',
         principalType: PrincipalType.user,
       );

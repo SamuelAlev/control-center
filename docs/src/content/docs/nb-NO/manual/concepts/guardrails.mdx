@@ -2,7 +2,7 @@
 title: Tillatelsesregler — én policy for hver muterende handling
 description: Hvorfor Control Center fører hver bivirkning fra en agent gjennom én enkelt allow/prompt/deny-motor, hvorfor ActionClass-taksonomien med vilje holdes liten, og hva autonomivriden egentlig endrer.
 slug: nb-NO/handbok/konsepter/tillatelsesregler
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agenter i Control Center kan slette filer, pushe grener, publisere pull
@@ -20,9 +20,8 @@ handling kan forlate systemet: verktøyregisteret til den innebygde harnessen,
 porten i MCP-dispatchseren på serversiden og mutasjoner fra repo-operasjoner.
 En regel som skrives én gang, gjelder derfor både for den innebygde kjøretiden
 og for eksterne agent-CLI-er — det finnes ingen andre, stillere vei rundt den.
-Den eldre kommando-policyen som bare gjaldt bash, fungerer fortsatt: en regel
-kan treffe et kommandoprefiks i stedet for en handlingsklasse, og begge formene
-lever side om side i samme lager.
+En regel kan også treffe et kommandoprefiks i stedet for en handlingsklasse;
+begge formene lever i samme lager.
 
 Motoren er likevel ikke en erstatning for OS-sandkassen, og sandkassen er ikke
 en erstatning for den. De svarer på ulike spørsmål: tillatelsesreglene avgjør om
@@ -30,14 +29,12 @@ et kall Control Center kan se, i det hele tatt får skje, mens sandkassen
 begrenser hvor den resulterende prosessen kan nå. `cc_server` legger på
 sandkassen der verten tilbyr en backend — men [Windows tilbyr ingen, og Linux
 trenger `bwrap` og `socat`](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
-På slike verter er tillatelsesreglene det ytterste håndhevelseslaget i stedet
-for en policy som ligger oppå et gulv, og det er verdt å vite når du bestemmer
-hvor romslig du vil være.
+På slike verter starter bare serverens eiers kjøringer, med mindre eieren slo av sandkassen for alle med `--sandbox off`. For enhver kjøring som starter uten sandkasse, er tillatelsesreglene det ytterste håndhevelseslaget i stedet for en policy som ligger oppå et gulv, og det er verdt å vite når du bestemmer hvor romslig du vil være.
 
 ## ActionClass: en med vilje lukket taksonomi
 
 Hvert muterende verktøy erklærer hvilke **ActionClasses** det hører til, fra et
-lukket sett på tretten effektklasser. Fem av dem spør med én gang; resten
+lukket sett på fjorten effektklasser. Seks av dem spør med én gang; resten
 tillater, og en regel er det som endrer det.
 
 | Klasse                     | Innebygd standard | Hva den dekker                                                   |
@@ -55,17 +52,16 @@ tillater, og en regel er det som endrer det.
 | `processSpawn`             | allow             | Starte en prosess (shell og alt som starter en shell)            |
 | `workspaceMutation`        | allow             | Endre strukturen i arbeidsområdet (repoer, områder, agenter)     |
 | `enclosureControl`         | allow             | Styre et isolert miljø (stasjon): starte en VM, sende den input  |
+| `hostExecution`            | **prompt**        | Kjøre en kommando på serveren utenfor enhver sandkasse på en agents forespørsel: miljøoppgaver, prosesser, compose-stakker, og `eval` når kjernen kjører ubegrenset |
 
 De åtte klassene som tillater som standard, ble valgt ut fra en antagelse om at
 sandkassegulvet gjelder under dem. Det gjør det der verten tilbyr en backend, og
-det gjør det ikke på Windows eller på en Linux-boks som mangler `bwrap` og
-`socat` — så hvis du vil at `fileWriteOutsideWorktree` eller `packageInstall`
-skal styres av en regel der, er det en regel du må skrive selv.
+det gjør det ikke under `--sandbox off`, og heller ikke for eierens egne kjøringer på Windows eller på en Linux-boks som mangler `bwrap` og `socat`. Hvis du vil at `fileWriteOutsideWorktree` eller `packageInstall` skal styres av en regel der, er det en regel du må skrive selv.
 
 Settet er lukket med vilje. Et nytt muterende verktøy som ikke erklærer noen
 klasse, feiler ratchet-testen, så taksonomien kan bare vokse gjennom en
 uttrykkelig, begrunnet beslutning — «villvekst i taksonomien er døden for denne
-funksjonen». Tretten klasser er nok til å uttrykke de policyene folk faktisk
+funksjonen». Fjorten klasser er nok til å uttrykke de policyene folk faktisk
 skriver (aldri push uten å spørre, aldri slett utenfor en worktree, alltid
 tillat lesing), og få nok til at innstillingsgrensesnittet fortsatt er
 forståelig.
@@ -94,7 +90,7 @@ To avgjørelser har harde garantier:
 
 Det finnes med vilje ingen lås per runde. Hvert verktøykall løser opp policyen
 på nytt fra bunnen av, så gjentatt spørring for den samme handlingen begrenses
-av operatørens egen «Godkjenn i 8 timer», ikke av noe som er knyttet til en
+av operatørens egen stående godkjenning, ikke av noe som er knyttet til en
 runde.
 
 ## Regler på argumentnivå
@@ -111,6 +107,7 @@ En begrensning kan navngi:
   som helst gren unntatt main»)
 - **verter** — nettverksmål, med jokertegn for underdomener (`*.internal`)
 - **kommandoer** — kommandoprefikser, matchet på en ordgrense
+- **verktøy** — det nøyaktige verktøyet et kall oppgir, slik at en godkjenning kan gjelde ett verktøy i stedet for alle verktøy med samme virkning
 - **tak** — `maxCount` / `maxCents`, slik at «slett opptil 50 filer» lar seg
   uttrykke
 
@@ -150,15 +147,19 @@ policylageret, og OS-sandkassen under begge. En kommandoregel som løses opp til
 `allow`, løsner aldri noen av dem — modusnettet kjører etterpå, og `deny` er
 endelig.
 
-## Varige godkjenninger
+## Stående godkjenninger
 
-Å svare på en forespørsel med «Godkjenn i 8 timer» skriver en ekte policyregel:
-avgrenset til et omfang (område / agent / arbeidsområde), **bundet til
-argumentene** (å godkjenne en push til `feature/login` gir `feature/**`, ikke
-`main`) og **opphever seg selv** etter en uttrykkelig TTL. Å si ja for de neste
-timene er ikke det samme som å stille skrive om den varige policyen din, og
-reglene den skriver, havner i samme lager med opphavet `remembered` og en
-utløpstid, slik at de kan trekkes tilbake tidlig.
+Hvert godkjenningskort som en agents handling reiser, tilbyr **Godkjenn i 8 timer** når handlingen har noe smalere enn klassen å navngi. Å velge det skriver en ekte policyregel, en stående godkjenning, til det samme lageret som reglene du setter, med opphav `remembered` og en utløpstid:
+
+- **Avgrenset.** Den skrives for området spørsmålet kom fra. Bare en administrators svar kan skrives for hele arbeidsområdet.
+- **Snever.** Den navngir en grenfamilie (å godkjenne en push til `feature/login` dekker `feature/**`, ikke `main`), en mappe, en vert, den nøyaktige kommandoen eller verktøyet. En commit er den eneste handlingen som godkjennes som en klasse, for det området: den har ingenting smalere å navngi.
+- **Selvopphevende.** Den utløper etter åtte timer, og den kan trekkes tilbake tidligere på siden for agenttillatelser.
+
+En stående godkjenning sparer bare for et spørsmål. Den besvarer et Spør først-vedtak satt på sitt eget omfang eller et bredere, og aldri et Nekt, uansett hvilket omfang Nekt kommer fra. Den lagres ved siden av regelen du satte for handlingen, så endring av den regelen lar godkjenningen stå, og å trekke tilbake godkjenningen lar regelen stå.
+
+Noen porter spør av seg selv etter at policyen har tillatt et kall: et verktøys egen erklærte godkjenning, eller modusens kommandonett. De hopper bare over spørsmålet for en stående godkjenning som navngir nøyaktig det verktøyet eller den kommandoen. Å sette handlingen til Tillat stilner dem ikke.
+
+Tre kort beholder to knapper, fordi det ikke er noe å bære videre: å la sandkassen kjøre programmer fra en mappe (godkjenningen er allerede en lagret tillatelse du kan trekke tilbake), en destruktiv operasjon du bekrefter én gang, og en skill-installasjon (en endret skill skal spørre igjen).
 
 ## Håndhevelsesnivåer
 

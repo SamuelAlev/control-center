@@ -120,7 +120,6 @@ void main() {
       final event = TextEvent(content: 'Hello');
       expect(event.type, AgentProcessEventType.text);
       expect(event.content, 'Hello');
-      expect(event.metadata, isNull);
     });
 
     test('ThinkingEvent creates event with correct type and content', () {
@@ -132,26 +131,25 @@ void main() {
     test('ToolCallEvent creates event with structured fields', () {
       final event = ToolCallEvent(toolName: 'read', toolCallId: 'id-1');
       expect(event.type, AgentProcessEventType.toolCall);
-      expect(event.content, 'read');
+      expect(event.toolName, 'read');
       expect(event.metadata, isNotNull);
-      expect(event.metadata!['toolName'], 'read');
-      expect(event.metadata!['toolCallId'], 'id-1');
+      expect(event.metadata['toolName'], 'read');
+      expect(event.metadata['toolCallId'], 'id-1');
     });
 
     test('ToolResultEvent creates event with outputs', () {
       final event = ToolResultEvent(toolCallId: 'id-1', outputs: 'result');
       expect(event.type, AgentProcessEventType.toolResult);
-      expect(event.content, 'result');
-      expect(event.metadata!['toolCallId'], 'id-1');
+      expect(event.outputs, 'result');
+      expect(event.metadata['toolCallId'], 'id-1');
     });
 
     test('UsageEvent creates event with RunUsage', () {
       const usage = RunUsage(inputTokens: 100, outputTokens: 50);
       final event = UsageEvent(usage: usage);
       expect(event.type, AgentProcessEventType.usage);
-      expect(event.content, '');
-      expect(event.metadata!['inputTokens'], 100);
-      expect(event.metadata!['outputTokens'], 50);
+      expect(event.metadata['inputTokens'], 100);
+      expect(event.metadata['outputTokens'], 50);
     });
 
     test('ErrorEvent creates event with correct type and content', () {
@@ -178,7 +176,6 @@ void main() {
     test('DoneEvent creates event with correct type', () {
       final event = DoneEvent();
       expect(event.type, AgentProcessEventType.done);
-      expect(event.content, '');
     });
   });
 

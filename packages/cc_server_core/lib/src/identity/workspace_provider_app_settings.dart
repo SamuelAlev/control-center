@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 
 /// A provider a workspace may bring its own app for, beside GitHub (which has
@@ -29,25 +30,6 @@ enum WorkspaceAppProvider {
   }
 }
 
-/// Whose app a workspace uses for one provider.
-enum WorkspaceAppMode {
-  /// This server's lane: its own app, else Control Center Connect.
-  inherit,
-
-  /// The workspace's own app. Never falls back to the server's lane.
-  own;
-
-  /// The wire spelling.
-  String get wire => name;
-
-  /// Parses a wire value; null when unknown.
-  static WorkspaceAppMode? fromWire(Object? wire) => switch (wire) {
-    'inherit' => inherit,
-    'own' => own,
-    _ => null,
-  };
-}
-
 /// One provider's workspace app as reported to clients.
 ///
 /// Presence flags, never secrets: the client secret and the keys leave the
@@ -56,7 +38,6 @@ class WorkspaceProviderAppStatus {
   /// Creates a [WorkspaceProviderAppStatus].
   const WorkspaceProviderAppStatus({
     required this.provider,
-    required this.mode,
     this.clientId = '',
     this.hasClientSecret = false,
     this.hasApiKey = false,
@@ -65,9 +46,6 @@ class WorkspaceProviderAppStatus {
 
   /// Which provider.
   final WorkspaceAppProvider provider;
-
-  /// Whose app the workspace uses.
-  final WorkspaceAppMode mode;
 
   /// The OAuth client id (not a secret: it rides in every authorize URL).
   final String clientId;
@@ -81,19 +59,24 @@ class WorkspaceProviderAppStatus {
   /// Whether an app key is stored (Klipy).
   final bool hasAppKey;
 
-  /// How complete the workspace's own app is. [OwnAppState.none] while the
-  /// workspace inherits; [OwnAppState.partial] is a setup error that never
-  /// falls back to the server's lane.
+  /// How complete the workspace's own app is, whatever the workspace's
+  /// Connect choice: it applies only while the workspace is on its own apps,
+  /// where [OwnAppState.partial] is a setup error that never falls back and
+  /// [OwnAppState.none] leaves the provider off.
   OwnAppState get state {
-    if (mode == WorkspaceAppMode.inherit) {
-      return OwnAppState.none;
-    }
-    final complete = switch (provider) {
-      WorkspaceAppProvider.google => clientId.isNotEmpty && hasClientSecret,
-      WorkspaceAppProvider.linear => clientId.isNotEmpty,
-      WorkspaceAppProvider.klipy => hasAppKey,
+    final fields = switch (provider) {
+      WorkspaceAppProvider.google => [clientId.isNotEmpty, hasClientSecret],
+      WorkspaceAppProvider.linear => [clientId.isNotEmpty],
+      WorkspaceAppProvider.klipy => [hasAppKey],
     };
-    return complete ? OwnAppState.complete : OwnAppState.partial;
+    if (fields.every((f) => f)) {
+      return OwnAppState.complete;
+    }
+    // A Linear API key alone is a half-set-up Linear app too.
+    final any =
+        fields.any((f) => f) ||
+        (provider == WorkspaceAppProvider.linear && hasApiKey);
+    return any ? OwnAppState.partial : OwnAppState.none;
   }
 
   /// What the admin has to fix, or empty.
@@ -104,7 +87,6 @@ class WorkspaceProviderAppStatus {
   /// The wire shape.
   Map<String, Object?> toJson() => {
     'provider': provider.wire,
-    'mode': mode.wire,
     'client_id': clientId,
     'has_client_secret': hasClientSecret,
     'has_api_key': hasApiKey,
@@ -114,9 +96,9 @@ class WorkspaceProviderAppStatus {
   };
 }
 
-/// Thrown when a workspace uses its own app for a provider but that app is
-/// missing a required field. The lane is unavailable: it never borrows this
-/// server's app or Connect instead.
+/// Thrown when a workspace on its own apps has a provider's app only half
+/// set up. The lane is unavailable: it never borrows this server's app or a
+/// Connect instead.
 final class WorkspaceAppIncomplete implements Exception {
   /// Creates the error.
   const WorkspaceAppIncomplete(this.provider);
@@ -134,7 +116,7 @@ final class WorkspaceAppIncomplete implements Exception {
       'This workspace uses its own Linear app, but its client id is missing. '
           'Linear in this workspace will not fall back to this server\'s app.',
     WorkspaceAppProvider.klipy =>
-      'This workspace uses its own Klipy app key, but none is saved. GIF '
+      'This workspace uses its own apps, but no Klipy app key is saved. GIF '
           'search in this workspace will not fall back to this server\'s key.',
   };
 
@@ -145,13 +127,14 @@ final class WorkspaceAppIncomplete implements Exception {
 /// Per-workspace Google, Linear and Klipy apps.
 ///
 /// Everything lives in [FileSecretsStore] under
-/// `workspace_provider_app_<provider>_<workspaceId>_<field>`, the mode marker
-/// included, so exporting a workspace never carries a secret and the mode
-/// cannot outlive the credentials it describes. Clients get presence flags.
+/// `workspace_provider_app_<provider>_<workspaceId>_<field>`, so exporting a
+/// workspace never carries a secret. Clients get presence flags.
 ///
-/// [WorkspaceAppMode.inherit] (no marker) uses the server's lane. In
-/// [WorkspaceAppMode.own] the workspace's app is the only one: a missing
-/// field throws [WorkspaceAppIncomplete] rather than falling through.
+/// The stored fields apply only while the workspace's Connect choice is
+/// `own` (`ConnectRoute.workspaceOwnApps`, checked by every lane): then a
+/// complete app is used, a partial one throws [WorkspaceAppIncomplete], and
+/// none leaves the provider off. In every other mode they are kept but
+/// unused.
 class WorkspaceProviderAppSettings {
   /// Creates the settings over the server's secrets file.
   WorkspaceProviderAppSettings(this._secrets);
@@ -161,7 +144,7 @@ class WorkspaceProviderAppSettings {
   _listeners = [];
 
   static const String _prefix = 'workspace_provider_app_';
-  static const String _mode = 'mode';
+
   static const String _clientId = 'client_id';
   static const String _clientSecret = 'client_secret';
   static const String _apiKey = 'api_key';
@@ -195,43 +178,25 @@ class WorkspaceProviderAppSettings {
     String workspaceId,
     WorkspaceAppProvider provider,
   ) => {
-    secretKey(workspaceId, provider, _mode),
     for (final field in fieldsOf(provider))
       secretKey(workspaceId, provider, field),
   };
 
-  /// Runs [listener] whenever the app a workspace uses for a provider stops
-  /// being the same app (mode or client id changed, or the Klipy key). Grants
+  /// Runs [listener] whenever the app a workspace stores for a provider
+  /// stops being the same app (client id changed, or the Klipy key). Grants
   /// the previous app issued belong to a different client, so callers drop
   /// them.
   void addListener(
     void Function(String workspaceId, WorkspaceAppProvider provider) listener,
   ) => _listeners.add(listener);
 
-  /// Whose app [workspaceId] uses for [provider].
-  Future<WorkspaceAppMode> mode(
-    String workspaceId,
-    WorkspaceAppProvider provider,
-  ) async =>
-      await _read(workspaceId, provider, _mode) == WorkspaceAppMode.own.wire
-      ? WorkspaceAppMode.own
-      : WorkspaceAppMode.inherit;
-
-  /// Whether [workspaceId] uses its own app for [provider].
-  Future<bool> ownsApp(
-    String workspaceId,
-    WorkspaceAppProvider provider,
-  ) async =>
-      workspaceId.isNotEmpty &&
-      await mode(workspaceId, provider) == WorkspaceAppMode.own;
-
-  /// [provider]'s configuration in [workspaceId], for the settings card.
+  /// [provider]'s stored configuration in [workspaceId], for the settings
+  /// card.
   Future<WorkspaceProviderAppStatus> status(
     String workspaceId,
     WorkspaceAppProvider provider,
   ) async => WorkspaceProviderAppStatus(
     provider: provider,
-    mode: await mode(workspaceId, provider),
     clientId: await _read(workspaceId, provider, _clientId),
     hasClientSecret: (await _read(
       workspaceId,
@@ -249,34 +214,11 @@ class WorkspaceProviderAppSettings {
           await status(workspaceId, provider),
       ];
 
-  /// Switches [workspaceId] between the server's lane and its own app for
-  /// [provider]. Going back to the server's lane deletes the workspace's
-  /// fields, so no secret outlives the choice that used it.
-  Future<WorkspaceProviderAppStatus> setMode(
-    String workspaceId,
-    WorkspaceAppProvider provider,
-    WorkspaceAppMode next,
-  ) async {
-    final before = await _identity(workspaceId, provider);
-    switch (next) {
-      case WorkspaceAppMode.own:
-        await _secrets.writePsk(
-          secretKey(workspaceId, provider, _mode),
-          WorkspaceAppMode.own.wire,
-        );
-      case WorkspaceAppMode.inherit:
-        final keys = _keysOf(workspaceId, provider);
-        await _secrets.deleteMatching(keys.contains);
-    }
-    await _notifyIfChanged(workspaceId, provider, before);
-    return status(workspaceId, provider);
-  }
-
   /// Saves fields of [workspaceId]'s own [provider] app (`client_id`,
   /// `client_secret`, `api_key`, `app_key`). A field that is not in [fields]
-  /// is left alone; an empty string clears it. Saving puts the workspace on
-  /// its own app. Throws [ValidationException] for a field [provider] does
-  /// not have.
+  /// is left alone; an empty string clears it. Saving does not change the
+  /// workspace's Connect choice. Throws [ValidationException] for a field
+  /// [provider] does not have.
   Future<WorkspaceProviderAppStatus> save(
     String workspaceId,
     WorkspaceAppProvider provider,
@@ -292,10 +234,6 @@ class WorkspaceProviderAppSettings {
       }
     }
     final before = await _identity(workspaceId, provider);
-    await _secrets.writePsk(
-      secretKey(workspaceId, provider, _mode),
-      WorkspaceAppMode.own.wire,
-    );
     for (final MapEntry(:key, :value) in fields.entries) {
       final trimmed = value.trim();
       final secret = secretKey(workspaceId, provider, key);
@@ -306,13 +244,20 @@ class WorkspaceProviderAppSettings {
       }
     }
     await _notifyIfChanged(workspaceId, provider, before);
+    forgeAudit(ForgeAuditEvent.providerAppSaved, {
+      'provider': provider.wire,
+      'scope': 'workspace',
+      'workspace_id': workspaceId,
+      // Names only: which fields this save set or cleared.
+      'fields': (fields.keys.toList()..sort()).join(','),
+    });
     return status(workspaceId, provider);
   }
 
   /// The OAuth client [workspaceId] signs people in to [provider] with
-  /// (Google or Linear): null while it inherits; throws
-  /// [WorkspaceAppIncomplete] when its own app is missing a field. Linear's
-  /// secret is empty (public PKCE client).
+  /// (Google or Linear) while it is on its own apps: null when none is
+  /// stored; throws [WorkspaceAppIncomplete] when it is half set up.
+  /// Linear's secret is empty (public PKCE client).
   Future<OAuthAppCredentials?> oauthCredentials(
     String workspaceId,
     WorkspaceAppProvider provider,
@@ -320,50 +265,40 @@ class WorkspaceProviderAppSettings {
     if (provider == WorkspaceAppProvider.klipy) {
       throw ArgumentError.value(provider, 'provider', 'not an OAuth client');
     }
-    if (!await ownsApp(workspaceId, provider)) {
-      return null;
-    }
     final current = await status(workspaceId, provider);
-    if (current.state != OwnAppState.complete) {
-      throw WorkspaceAppIncomplete(provider);
+    switch (current.state) {
+      case OwnAppState.none:
+        return null;
+      case OwnAppState.partial:
+        throw WorkspaceAppIncomplete(provider);
+      case OwnAppState.complete:
+        return (
+          clientId: current.clientId,
+          clientSecret: provider == WorkspaceAppProvider.google
+              ? await _read(workspaceId, provider, _clientSecret)
+              : '',
+        );
     }
-    return (
-      clientId: current.clientId,
-      clientSecret: provider == WorkspaceAppProvider.google
-          ? await _read(workspaceId, provider, _clientSecret)
-          : '',
-    );
   }
 
-  /// The client id a grant in [workspaceId] must have been issued to when it
-  /// uses its own [provider] app, even half-configured (empty when the id is
-  /// missing). Null while it inherits.
-  Future<String?> ownClientId(
+  /// The client id a grant in [workspaceId] must have been issued to while
+  /// it is on its own [provider] app, even half-configured: empty when none
+  /// is stored.
+  Future<String> ownClientId(
     String workspaceId,
     WorkspaceAppProvider provider,
-  ) async => await ownsApp(workspaceId, provider)
-      ? _read(workspaceId, provider, _clientId)
-      : null;
+  ) => _read(workspaceId, provider, _clientId);
 
-  /// The Linear service API key automation in [workspaceId] may use: null
-  /// while it inherits (the server's key applies), else the workspace's own
-  /// key or empty when it has none. Never the server's key in own mode.
-  Future<String?> linearApiKey(String workspaceId) async =>
-      await ownsApp(workspaceId, WorkspaceAppProvider.linear)
-      ? _read(workspaceId, WorkspaceAppProvider.linear, _apiKey)
-      : null;
+  /// The Linear service API key [workspaceId] stores for its own app, or
+  /// empty. Used only while it is on its own apps.
+  Future<String> linearApiKey(String workspaceId) =>
+      _read(workspaceId, WorkspaceAppProvider.linear, _apiKey);
 
-  /// [workspaceId]'s own Klipy app key: null while it inherits; throws
-  /// [WorkspaceAppIncomplete] when it uses its own key but none is saved.
+  /// [workspaceId]'s own Klipy app key, or null when none is stored. Used
+  /// only while it is on its own apps.
   Future<String?> klipyAppKey(String workspaceId) async {
-    if (!await ownsApp(workspaceId, WorkspaceAppProvider.klipy)) {
-      return null;
-    }
     final key = await _read(workspaceId, WorkspaceAppProvider.klipy, _appKey);
-    if (key.isEmpty) {
-      throw const WorkspaceAppIncomplete(WorkspaceAppProvider.klipy);
-    }
-    return key;
+    return key.isEmpty ? null : key;
   }
 
   /// Deletes every Google, Linear and Klipy app field of [workspaceId].
@@ -376,16 +311,9 @@ class WorkspaceProviderAppSettings {
   Future<String> _identity(
     String workspaceId,
     WorkspaceAppProvider provider,
-  ) async {
-    final mode = await this.mode(workspaceId, provider);
-    if (mode == WorkspaceAppMode.inherit) {
-      return '';
-    }
-    final id = provider == WorkspaceAppProvider.klipy
-        ? (await _read(workspaceId, provider, _appKey)).hashCode.toString()
-        : await _read(workspaceId, provider, _clientId);
-    return 'own:$id';
-  }
+  ) async => provider == WorkspaceAppProvider.klipy
+      ? (await _read(workspaceId, provider, _appKey)).hashCode.toString()
+      : await _read(workspaceId, provider, _clientId);
 
   Future<void> _notifyIfChanged(
     String workspaceId,

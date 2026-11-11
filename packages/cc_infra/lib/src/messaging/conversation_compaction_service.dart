@@ -196,8 +196,6 @@ class ConversationCompactionService {
       messageType: 'compaction',
       conversationId: conversationId,
       metadata: {
-        // `compacted: true` keeps legacy summary-detection paths working.
-        'compacted': true,
         'compactionReason': plan.reason == CompactionReason.manual
             ? 'manual'
             : 'auto',

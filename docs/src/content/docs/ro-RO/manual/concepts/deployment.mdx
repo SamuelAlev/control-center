@@ -2,7 +2,7 @@
 title: Implementare și clienți
 description: Cum separă arhitectura thin-client a Control Center un server headless de clienții săi desktop, web și mobil.
 slug: ro-RO/manual/concepte/implementare
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center nu este un singur program. Este o **arhitectură thin-client**: un
@@ -137,6 +137,8 @@ deține fișierele și backendul code-server. Browserul are nevoie de HTTPS sau 
 un context loopback securizat pentru service worker-e. Clienții nativi folosesc o
 fațadă de loopback cu arie de capabilitate.
 
+Doar [proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului) poate deschide editorul code-server încorporat: rulează pe server ca utilizatorul propriu al serverului. O sesiune aparține dispozitivului și persoanei care a deschis-o. Se deschide cu Workspace Trust-ul VS Code pornit, deci VS Code întreabă înainte să aibă încredere într-un folder, și cu sarcinile automate oprite. Ceilalți păstrează editorul integrat cu un singur fișier și vizualizările de fișiere.
+
 ### Companionul pentru telefon (cc_remote)
 
 Aplicația **Remote** este un client separat, mai ușor — o PWA Flutter web la
@@ -209,9 +211,11 @@ execută joburi concesionate.
 
 Cele două niveluri nu izolează la fel. `cc_server` înfășoară rulările pe care le
 execută el însuși în sandbox-ul de sistem de operare al gazdei, acolo unde există
-un backend — Seatbelt pe macOS, bubblewrap pe Linux și WSL2 — și revine la
-celelalte granițe pe Windows sau fără `bwrap` și `socat`. **`cc_worker` nu
-izolează deloc.** Anunță o capabilitate `sandbox` pentru ca serverul să poată
+un backend — Seatbelt pe macOS, bubblewrap pe Linux și WSL2. Pe Windows sau fără
+`bwrap` și `socat` pornește doar rulările pentru care proprietarul serverului
+răspunde și le refuză pe ale celorlalți, dacă proprietarul nu l-a pornit cu
+`--sandbox off`, caz în care rulează agenții tuturor membrilor fără izolare.
+**`cc_worker` nu izolează deloc.** Anunță o capabilitate `sandbox` pentru ca serverul să poată
 plasa joburi în funcție de platformă, dar nimic din worker nu aplică vreuna: un
 job concesionat este lansat direct, delimitat de mediul concesiunii și de
 worktree-ul care i-a fost dat. Externalizarea muncii prin concesionare mută astfel
@@ -260,7 +264,7 @@ salvate. La prima conectare, verifică acea amprentă printr-un cod QR de încre
 sau un alt canal de încredere: un prim contact semnat, singur, nu poate
 autentifica cine a furnizat cheia. Dacă identitatea se schimbă, clientul eșuează
 închis; asociază din nou printr-un canal de încredere, în loc să ignori
-neconcordanța. Clienții mai vechi și RPC-ul în clar nu se pot conecta. TLS rămâne
+neconcordanța. RPC-ul în clar nu este acceptat. TLS rămâne
 necesar pentru originile de browser, bootstrap și metadatele publice; `--insecure`
 afectează listenerul extern al serverului, nu sesiunea criptată obligatorie.
 

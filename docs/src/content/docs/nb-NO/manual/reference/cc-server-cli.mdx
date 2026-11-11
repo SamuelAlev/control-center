@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Alle flagg, miljøvariabler, underkommandoer og stier i datamappen til headless-serveren.
 slug: nb-NO/handbok/referanse/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Hvert prosessflagg tar et CLI-flagg eller en miljøvariabel; flagget vinner,
@@ -48,7 +48,7 @@ ikke ha noen effekt.
 
 | Flagg                | Miljøvariabel                  | Standard                              | Betydning                                                                                                                       |
 | -------------------- | ------------------------------ | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`          | `CC_SERVER_SANDBOX`            | `on`                                  | Om agentkjøringer pakkes inn i vertens OS-native sandkasse når en finnes. En utmelding, ikke en aktivering — se nedenfor       |
+| `--sandbox`          | `CC_SERVER_SANDBOX`            | `on`                                  | `on` pakker agentkjøringer inn i vertens OS-native sandkasse, og på en vert uten en starter bare serverens eiers kjøringer. `off` kjører alle medlemmers agenter uten avgrensning på denne verten. Se nedenfor |
 | `--code-index`       | `CC_SERVER_CODE_INDEX`         | `on`                                  | Kill-bryter i felt for indeksering av kodegrafen i bakgrunnen. `off` starter rent uten å bygge på nytt                        |
 | `--code-index-defer` | `CC_SERVER_CODE_INDEX_DEFER`   | `15`                                  | Sekunder å vente med den første indeksgjennomgangen etter klar-banneret (begrenset til 0–300)                                 |
 | `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`      | `on`                                  | Om harnesskjøringer sender et lite fast verktøysett pluss en navneindeks, og laster resten ved første bruk. Se nedenfor       |
@@ -87,23 +87,25 @@ hver underprosess kunne lese den. Fyllingen fra `.env` skjer én gang per felt, 
 en senere redigering i Innstillinger blir ikke overskrevet av en omstart. En tom
 verdi leses som ikke satt.
 
-Bakgrunnsarbeid for GitLab og Bitbucket leser også `GITLAB_TOKEN` /
-`CI_JOB_TOKEN` og `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` med
-`BITBUCKET_EMAIL`. GitHub har ingen legitimasjon i miljøet.
+Ingen forge-legitimasjon kommer fra miljøet: GitHub, GitLab og Bitbucket handler alle på et medlems
+egen pålogging eller token, eller på GitHub App-tokener for ett repo som er begrenset til et
+ansvarlig medlem.
 
 ### `--sandbox`
 
 Serveren sonderer verten én gang ved oppstart og pakker agentens kommandokjøring
 inn i den OS-native sandkassen når en backend finnes: `sandbox-exec` (Seatbelt) på
-macOS, `bwrap` pluss `socat` på Linux og WSL2. Der ingen finnes — Windows, eller en
-Linux-vert som mangler disse verktøyene — faller kjøringene tilbake på
-miljøsanering, kommandopolicyen og tillatelsesreglene for handlinger, og
-oppstartsloggen sier hvilken tilstand som gjelder.
+macOS, `bwrap` pluss `socat` på Linux og WSL2. Beslutningen tas én gang og gjelder til serveren startes på nytt. Det finnes tre utfall, og hvert vises på oppstartslinjen for eksponering:
 
-`--sandbox off` er kill-bryteren i felt for tilfellet sonderingen ikke kan se: en
-vert der selve sandkasseprofilen oppfører seg feil. Den krever ingen ny bygging,
-og serveren logger en advarsel så lenge prosessen lever, slik at tilstanden aldri
-er taus.
+| `sandbox=`    | Når                                                                             | Hvems agentkjøringer starter                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `native`      | En backend finnes og `--sandbox` er `on`                                        | Alles, innpakket                                                                                                                                             |
+| `off`         | `--sandbox off`                                                                 | Alles, uten avgrensning på denne verten                                                                                                                      |
+| `unavailable` | `--sandbox on` og ingen backend (Windows, eller Linux uten `bwrap` og `socat`) | Bare kjøringer serverens eier er ansvarlig for, uten avgrensning. Andre avvises med «Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her.» |
+
+For automatisering er den ansvarlige personen den automatiseringen er knyttet til. Uten en registrert serverens eier starter ingen kjøring på en `unavailable`-vert. På Linux og WSL2 med bubblewrap installert feiler native utsending for alle kjøringer lukket akkurat nå; se [Sandbox-backender](/nb-NO/handbok/referanse/sandkasse-backender/#linux-bubblewrap).
+
+`--sandbox off` er serverens eiers valg for alle som bruker serveren: den kjører alle medlemmers agenter uten avgrensning på denne maskinen. Bruk det på en vert der selve sandkasseprofilen oppfører seg feil, eller for å la medlemmer kjøre agenter på en vert uten backend. Den krever ingen ny bygging, og serveren logger en advarsel så lenge prosessen lever, slik at tilstanden aldri er taus.
 
 ### `--tool-deferral`
 
@@ -182,7 +184,6 @@ kjører, plukker opp en endring innen 10 minutter eller ved omstart.
 | `cc_server connect enable`      | Bruker den hostede Connect-tjenesten til Control Center                                                          |
 | `cc_server connect enable --url <url>` | Bruker en egen Connect på den URL-en (HTTPS, eller `http` på loopback)                                   |
 | `cc_server connect disable`     | Slutter å bruke Connect. Bare serverens egne apper logger inn folk                                               |
-| `cc_server connect rotate-key --yes` | Lager en ny installasjonsnøkkel og en ny installasjons-ID. Alle som logget inn via Connect, logger inn på nytt. Uten `--yes` advarer den bare og avslutter med `2` |
 
 `status` uten kommando er standard. Hver kommando godtar `--data-dir`.
 `CC_CONNECT_URL` overstyrer det disse lagrer. En ukjent kommando avslutter med

@@ -745,22 +745,23 @@ void main() {
       expect(fetched!.cost.costMicros, 4321);
       expect(fetched.cost.estimatedCostCents, 0);
       expect(fetched.cost.costBasis, CostBasis.subscription);
-      expect(fetched.cost.preciseCostMicros, 4321);
     });
 
-    test('a legacy cents-only row reads as an estimated cost', () async {
+    test('a cost of unknown provenance reads as estimated', () async {
       final log = _makeLog(
-        id: 'legacy-cost',
-        cost: const RunCost(inputTokens: 5, estimatedCostCents: 12),
+        id: 'unknown-basis',
+        cost: const RunCost(
+          inputTokens: 5,
+          estimatedCostCents: 12,
+          costMicros: 120000,
+        ),
       );
       await repo.upsert(log);
 
-      final fetched = await repo.getById('ws-1', 'legacy-cost');
-      expect(fetched!.cost.costMicros, 0);
+      final fetched = await repo.getById('ws-1', 'unknown-basis');
       // Unknown provenance must NOT be read as provider-reported/billed.
-      expect(fetched.cost.costBasis, CostBasis.estimated);
-      // The cents figure is still authoritative for that historical row.
-      expect(fetched.cost.preciseCostMicros, 120000);
+      expect(fetched!.cost.costBasis, CostBasis.estimated);
+      expect(fetched.cost.costMicros, 120000);
     });
 
     test('child cost micros, effort and task family round-trip', () async {
@@ -915,22 +916,6 @@ void main() {
       expect(row.childCostMicros, 15000);
       expect(row.childCostCents, 2);
       expect(row.status, RunStatus.running);
-    });
-
-    test('first increment widens legacy cents before adding micros', () async {
-      await repo.upsert(_makeLog(status: RunStatus.running));
-      await dbs
-          .of('ws-1')
-          .agentDao
-          .updateLogCost(
-            'ws-1',
-            'log-1',
-            const AgentRunLogsTableCompanion(childCostCents: Value(7)),
-          );
-      await repo.addChildCostMicros('ws-1', 'log-1', 5500);
-      final row = (await repo.getById('ws-1', 'log-1'))!;
-      expect(row.childCostMicros, 75500);
-      expect(row.childCostCents, 8);
     });
 
     test(

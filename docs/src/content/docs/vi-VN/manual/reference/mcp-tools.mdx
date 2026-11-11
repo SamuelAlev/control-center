@@ -2,10 +2,10 @@
 title: Công cụ MCP
 description: Danh mục đầy đủ các công cụ MCP mà cc_server đăng ký, theo từng nhóm.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Các máy chủ MCP bên ngoài có thể được bắc cầu vào cùng sổ đăng ký như một lớp động.
+`cc_server` vận hành một sổ đăng ký công cụ MCP (JSON-RPC 2.0), được phục vụ trên cổng chính của máy chủ (mặc định `9030`) tại `POST /mcp` và `GET /sse`, phiên bản giao thức `2024-11-05`. Mọi máy khách đều tiếp cận cùng một sổ đăng ký: ứng dụng desktop, bản web, các máy khách MCP bên ngoài và runtime agent tích hợp. Các máy chủ MCP bên ngoài có thể được bắc cầu vào cùng sổ đăng ký như một lớp động. Các máy chủ được phát hiện trong cấu hình công cụ cá nhân của người dùng máy chủ là ngoại lệ: endpoint này không bao giờ liệt kê, gọi hay tìm kiếm chúng, và chỉ harness tích hợp sẵn — thứ mà chủ sở hữu máy chủ chịu trách nhiệm — mới dùng được chúng (xem [MCP server cá nhân thuộc về chủ sở hữu](/vi-VN/so-tay/huong-dan-thuc-hanh/may-chu-mcp/#máy-chủ-mcp-cá-nhân-thuộc-về-chủ-sở-hữu)).
 
 ## Quy mô sổ đăng ký
 
@@ -23,7 +23,7 @@ Năm công cụ đồ thị mã chỉ được đăng ký khi máy chủ truyề
 Toàn bộ sổ đăng ký được quảng bá trong `tools/list` mà không có cổng gác khám phá nào. Các thao tác chỉnh sửa phiếu là công cụ có kiểu.
 
 :::note[Máy khách bên ngoài luôn thấy toàn bộ danh mục]
-`tools/list` không bao giờ bị cắt gọn. Các máy khách MCP đối chiếu tên công cụ với bản sao đã lưu trong bộ nhớ đệm của chính chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ bị giấu ở đó là không thể tiếp cận chứ không chỉ đơn thuần là im lặng.
+`tools/list` không bao giờ bị cắt gọn, ngoại trừ các máy chủ MCP cá nhân của chủ sở hữu máy chủ, thứ nó không bao giờ mang theo. Các máy khách MCP đối chiếu tên công cụ với bản sao đã lưu trong bộ nhớ đệm của chính chúng và từ chối mọi thứ không có trong danh sách mà không hề hỏi máy chủ, nên một công cụ bị giấu ở đó là không thể tiếp cận chứ không chỉ đơn thuần là im lặng.
 
 **Harness tích hợp** thì khác: nó chỉ nạp một tập định nghĩa thường trú cho mỗi yêu cầu và kéo phần còn lại vào ở lần dùng đầu tiên, đó là hành vi phía harness và không thay đổi sổ đăng ký này. Xem [Ngữ cảnh công cụ và bộ nhớ đệm prompt](/vi-VN/so-tay/khai-niem/ngu-canh-cong-cu).
 :::
@@ -249,7 +249,7 @@ dùng còn khai báo `networkEgress` và `processSpawn`; `mobile_use` và `ios_u
 còn khai báo `packageInstall`), nên các chế độ chỉ đọc từ chối chúng. `rig_list`
 không khai báo lớp nào — nó chỉ đọc trạng thái không gian làm việc. Toàn bộ từ
 vựng động từ cho từng bề mặt nằm trong
-[tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/#action-verbs).
+[tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/#động-từ-hành-động).
 
 | Công cụ | Mô tả |
 | --- | --- |
@@ -257,8 +257,10 @@ vựng động từ cho từng bề mặt nằm trong
 | `browser_use` | Điều khiển Chromium, Firefox hoặc WebKit không giao diện (`engine`): điều hướng, nhấp, điền, trích xuất (a11y/DOM/console), clipboard, chụp màn hình |
 | `mobile_use` | Điều khiển Android qua ADB: kiểm tra/đầu vào, ảnh chụp màn hình, cài/chạy/dừng/đặt lại/gỡ ứng dụng, deep link và các lệnh thiết bị dạng argv |
 | `ios_use` | Điều khiển iOS Simulator qua WebDriverAgent/CoreSimulator: kiểm tra/đầu vào, ảnh chụp màn hình, cài/chạy/dừng/gỡ ứng dụng, deep link và các tiến trình simulator dạng argv |
-| `rig_list` | Liệt kê các rig của một không gian làm việc kèm bề mặt, trạng thái, kích thước màn hình và bộ điều khiển |
+| `rig_list` | Liệt kê các rig của space của lượt chạy kèm bề mặt, trạng thái, kích thước màn hình và bộ điều khiển |
 | `rig_close` | Hủy một rig và vứt bỏ trạng thái cỗ máy thuộc sở hữu của nó |
+
+Chỉ các lượt chạy agent mới gọi được những công cụ này; mọi bên gọi khác đều bị từ chối. Một lượt chạy chỉ tiếp cận các rig của space mà nó được cấp để làm việc: `space_id` lấy từ grant của lượt chạy, không bao giờ từ lời gọi, và một rig của space khác, hoặc không thuộc space nào, trả lời y như một rig không tồn tại.
 
 `app_use` là công cụ use thứ năm: nó điều khiển cửa sổ của ứng dụng máy tính được mở trong space, trực tiếp trên máy chủ thay vì trong VM, và cũng khai báo `fileWriteOutsideWorktree` và `fileDelete`. Công cụ này và các công cụ `environment_*` được mô tả trong [Thiết lập môi trường](/vi-VN/so-tay/huong-dan-thuc-hanh/moi-truong/).
 
@@ -303,7 +305,7 @@ nên một cái tên bạn có thể đã thấy được nhắc tới ở đâu
 | Năng lực | Nơi nó thực sự nằm |
 | --- | --- |
 | Tuyển, sa thải hoặc sửa một agent | Giao diện agent. Không có công cụ `hire_agent` / `fire_agent` / `update_agent` |
-| Tạo một không gian làm việc | `workspace.upsert` qua RPC, thao tác này gieo tạo và đóng dấu quyền sở hữu |
+| Tạo một không gian làm việc | `workspace.create` qua RPC, chỉ dành cho chủ sở hữu máy chủ, thao tác này gieo tạo và đóng dấu quyền sở hữu |
 | Dự án (tạo / liệt kê / cập nhật / xếp vào) | Giao diện phiếu. Dự án là một bề mặt dành cho người vận hành — xem [Dự án](/vi-VN/so-tay/huong-dan-thuc-hanh/du-an/) |
 | Hỏi người vận hành một câu hỏi chặn | Công cụ `ask_user` của **harness**, không phải MCP. Nó hiển thị một biểu mẫu ngay trong cuộc hội thoại và chặn chờ câu trả lời |
 | Chẩn đoán theo từng agent | Không có gì. Không có `doctor` — xem [Chẩn đoán agent](/vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent/) |

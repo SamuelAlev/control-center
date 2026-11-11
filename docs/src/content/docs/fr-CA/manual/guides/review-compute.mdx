@@ -2,7 +2,7 @@
 title: Calcul de révision (cohortes, axes et diffs déterministes)
 description: Ce que produit la passe de calcul de révision côté serveur — cohortes, diffs de contrat d’API et visuels, verrous par axe — et comment le tout se fond dans l’onglet Revue.
 slug: fr-CA/manuel/guides/calcul-de-revision
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 L’onglet **Revue** d’une PR, c’est la progression en direct du pipeline de
@@ -16,8 +16,6 @@ Derrière cet onglet, `cc_server` construit les cohortes de fichiers, exécute l
 axes déterministes et les expose par les opérations RPC `review_studio.*`
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` et leurs jumelles `watch*`).
-Une disposition persistée qui nomme encore `pr.reviewStudio` ouvre ce même
-onglet Revue.
 
 Dans l’onglet Revue :
 
@@ -89,6 +87,8 @@ appli Widgetbook, la passe de calcul rend les composants modifiés avant et apr�
 au moyen d’une passe golden `flutter test` sans interface, dans les arbres de
 travail de base et de tête de la PR, puis compare les pixels.
 
+Ces tests sont le code propre à la demande de tirage : ils s’exécutent comme le processus d’outil d’un agent, à l’intérieur du bac à sable lorsque le serveur isole les agents, sans confinement lorsque le propriétaire du serveur a désactivé le bac à sable, et sans bac à sable uniquement pour une requête dont le propriétaire du serveur est responsable. Pour les autres, l’axe signale **unavailable** avec la raison « aucun bac à sable sur ce serveur, et seul son propriétaire peut exécuter les tests d’une PR sans bac à sable ».
+
 :::note[Un SDK Flutter est requis sur l’hôte du serveur]
 Le serveur en Dart pur ne peut pas rendre les widgets Flutter dans son propre
 processus ; il lance donc `flutter test` comme processus externe. Le SDK doit
@@ -99,9 +99,10 @@ host ». Il ne signale jamais une réussite qu’il n’a pas méritée.
 
 Les instantanés marqués **changed** ou **removed** maintiennent le verrou visuel
 jusqu’à leur approbation ; les instantanés **unchanged**, **added** et
-**approved** le lèvent. L’indisponibilité a l’une de quatre causes : « no Flutter
-SDK on host », « no Widgetbook app in repo », « no golden-testable use-cases » ou
-« golden harness error ».
+**approved** le lèvent. L’indisponibilité a l’une de cinq causes : « no Flutter
+SDK on host », « no Widgetbook app in repo », « no golden-testable use-cases »,
+« golden harness error » ou l’absence de bac à sable pour une requête dont le
+propriétaire du serveur n’est pas responsable.
 
 Approuver un changement souhaité, c’est `review_studio.approveVisual`.
 

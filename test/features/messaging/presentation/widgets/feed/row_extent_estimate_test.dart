@@ -29,9 +29,7 @@ double _estimate(Message m, {bool collapseHeader = false}) =>
 void main() {
   group('estimateMessageRowExtent', () {
     test('grows with the amount of prose', () {
-      final short = _estimate(
-        _message(type: MessageType.text, content: 'ok'),
-      );
+      final short = _estimate(_message(type: MessageType.text, content: 'ok'));
       final long = _estimate(
         _message(type: MessageType.text, content: 'word ' * 400),
       );
@@ -43,17 +41,23 @@ void main() {
         _message(type: MessageType.text, content: 'x' * 40),
       );
       final broken = _estimate(
-        _message(type: MessageType.text, content: List.filled(8, 'x').join('\n')),
+        _message(
+          type: MessageType.text,
+          content: List.filled(8, 'x').join('\n'),
+        ),
       );
       expect(broken, greaterThan(wrapped));
     });
 
-    test('caps a pathological paste instead of returning a five-figure extent', () {
-      final huge = _estimate(
-        _message(type: MessageType.text, content: 'x' * 2000000),
-      );
-      expect(huge, lessThan(5000));
-    });
+    test(
+      'caps a pathological paste instead of returning a five-figure extent',
+      () {
+        final huge = _estimate(
+          _message(type: MessageType.text, content: 'x' * 2000000),
+        );
+        expect(huge, lessThan(5000));
+      },
+    );
 
     test('a collapsed header is shorter than a full one', () {
       final message = _message(type: MessageType.text, content: 'hello');
@@ -95,22 +99,6 @@ void main() {
         metadata: const {'segments_elided': true, 'segment_count': 3},
       );
       expect(_estimate(full), _estimate(elidedSame));
-    });
-
-    test('falls back to a guess for an elided row the server did not count', () {
-      // Rows written before `segment_count` existed still have to be given a
-      // height that is not "one line of prose".
-      final uncounted = _estimate(
-        _message(
-          type: MessageType.agentTurn,
-          content: 'done',
-          metadata: const {'segments_elided': true},
-        ),
-      );
-      final none = _estimate(
-        _message(type: MessageType.agentTurn, content: 'done'),
-      );
-      expect(uncounted, greaterThan(none));
     });
 
     test('card-shaped kinds take a fixed extent, not their text length', () {

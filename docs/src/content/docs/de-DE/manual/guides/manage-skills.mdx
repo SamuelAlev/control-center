@@ -2,7 +2,7 @@
 title: Skills installieren und verwalten
 description: Installiere und aktualisiere Skills im Arbeitsbereich über das Scan-Tor und vergleiche dann gespeicherte Revisionen mit budgetierten Skill-Evaluierungen.
 slug: de-DE/handbuch/anleitungen/skills-verwalten
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Diese Anleitung zeigt dir, wie du einen Arbeitsbereich mit Skills von GitHub
@@ -100,7 +100,7 @@ Version bleibt in der Lock-Datei als Referenz für ein Rollback.
    Zweck des Skills passt, und einen **Adapter**. Das eingebaute Harness nutzt
    einen konfigurierten Anbieter und ein werkzeugfähiges Modell. **Claude Code**
    nutzt das standardmäßig verwaltete Claude-Konto und eine konkrete
-   Modellkennung; melde dich zuerst unter **Einstellungen → Adapter** an. Es
+   Modellkennung; melde dich zuerst unter **Einstellungen → Server → Modellanbieter → Claude-Code-Konten** an. Es
    borgt sich nicht die persönliche Anmeldung des Serverbetreibers.
 3. Wähle einen **Vergleich** aus der Tabelle unten.
 4. Setze **Wiederholungen pro Aufgabe** (1–20) und **Budget (US-Cent)**. Zum
@@ -198,8 +198,7 @@ eingebauten Slash-Befehlen kollidieren (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — ein Skill, den ein in diesem Bereich ausgechecktes
   Repo mitbringt
 
-Ein bloßer Name, der kein eingebauter Befehl ist, wird weiter aufgelöst, für
-Nachrichten aus der Zeit vor dem Namensraum. `/skill:plan` erreicht einen
+`/skill:plan` erreicht einen
 Skill namens `plan`; `/plan` ist immer der eingebaute Befehl.
 
 ## Repo-bezogene Skills

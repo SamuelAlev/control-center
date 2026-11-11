@@ -2,7 +2,7 @@
 title: Se connecter à un serveur distant
 description: Pointez l'application de bureau ou le client web vers un cc_server exécuté ailleurs et basculez d'un serveur à l'autre sans redémarrer.
 slug: fr-FR/manuel/guides/connecter-serveur-distant
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Tout client est un moteur de rendu au-dessus d'un `cc_server` qui détient les
@@ -93,6 +93,8 @@ worker achemine les requêtes par la session chiffrée authentifiée vers le bac
 code-server sur `cc_server`. Hébergez le client web en HTTPS ou sur une boucle
 locale sécurisée pour que les service workers soient disponibles. Les clients
 natifs utilisent une façade en boucle locale à portée de capacités.
+
+Seul le propriétaire du serveur peut ouvrir l'éditeur code-server intégré : il s'exécute sur le serveur, sous l'utilisateur propre au serveur. Une session appartient à l'appareil et à la personne qui l'ont ouverte. Elle s'ouvre avec la confiance dans l'espace de travail de VS Code activée, si bien que VS Code demande avant de faire confiance à un dossier, et avec les tâches automatiques désactivées. Les autres conservent l'éditeur intégré à fichier unique et les vues de fichiers.
 :::
 
 ### Ce que le navigateur ne fait pas
@@ -107,9 +109,8 @@ surfaces nécessitent une fenêtre native ou les périphériques propres à la m
 
 Deux fonctions se comportent différemment plutôt que d'être absentes.
 L'**enregistrement** de réunion fonctionne dans le navigateur, en capturant votre
-microphone ainsi qu'un partage d'écran comportant une piste audio. **Ouvrir dans
-l'IDE** fonctionne aussi, mais demande au serveur de lancer l'éditeur sur
-l'affichage du _serveur_, si bien que le bouton se masque face à un hôte sans
+microphone ainsi qu'un partage d'écran comportant une piste audio. Le bouton portant le nom de votre éditeur (par exemple **Ouvrir dans VS Code**) demande au serveur de lancer l'éditeur sur
+l'affichage du _serveur_, il n'est donc proposé qu'au propriétaire du serveur, et le bouton se masque face à un hôte sans
 interface où aucun éditeur n'est installé.
 
 ## Résolution des problèmes

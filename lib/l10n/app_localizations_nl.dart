@@ -155,7 +155,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get guardrailClassPrCreate => 'Een pull request openen';
 
   @override
-  String get guardrailClassPrPublish => 'Een review publiceren of mergen';
+  String get guardrailClassPrPublish =>
+      'Een pull request bijwerken of samenvoegen';
 
   @override
   String get guardrailClassVendorSyncWrite =>
@@ -2559,9 +2560,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get activityToggledMcpServer => 'MCP-server omgeschakeld';
 
   @override
-  String get activityUpdatedMcpToken => 'MCP-token bijgewerkt';
-
-  @override
   String get activitySavedApiKey => 'API-sleutel opgeslagen';
 
   @override
@@ -3190,9 +3188,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String deleteConfirmName(String name) {
     return '\\\"$name\\\" verwijderen?';
   }
-
-  @override
-  String get archiveConversation => 'Gesprek archiveren';
 
   @override
   String get deleteFact => 'Feit verwijderen';
@@ -3881,9 +3876,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Pas het uiterlijk aan aan je OS of kies een vaste modus.';
 
   @override
-  String get mcpAuthToken => 'MCP-authenticatietoken';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'MCP-serverbeheer is niet beschikbaar op de verbonden server.';
 
@@ -4100,9 +4092,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Geen systeemlettertypen gedetecteerd.';
-
-  @override
-  String get noTokenSet => 'Geen token ingesteld — toegang is onbeperkt.';
 
   @override
   String get noWorkingMemory => 'Nog geen werkgeheugennotities.';
@@ -4592,31 +4581,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'De GitHub-inloggegevens van de server kunnen $repos niet zien. Als een repository bij een organisatie hoort, installeer daar de GitHub App of koppel een token met toegang.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repositories zijn niet toegankelijk',
-      one: 'Eén repository is niet toegankelijk',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'GitHub App-installatie is opgeschort';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Laatst bekende gegevens voor $repos worden getoond. Hervat de installatie op GitHub, of koppel een token met toegang.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Geen toegang';
 
   @override
@@ -4732,9 +4696,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Regel';
-
-  @override
-  String get runCompleted => 'Uitvoering voltooid';
 
   @override
   String get running => 'Actief';
@@ -4896,9 +4857,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get setLabel => 'Instellen';
-
-  @override
-  String get setToken => 'Token instellen';
 
   @override
   String get settingsLabel => 'Instellingen';
@@ -5096,9 +5054,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get skillOriginManual => 'Handmatig';
 
   @override
-  String get skillOriginRegistry => 'Registry';
-
-  @override
   String get skillOriginRuntimeLocal => 'Lokale runtime';
 
   @override
@@ -5273,10 +5228,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Thema wisselen';
-
-  @override
-  String get tokenConfigured =>
-      'Geconfigureerd — clients moeten dit token presenteren.';
 
   @override
   String get topic => 'Onderwerp';
@@ -8851,7 +8802,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Welke acties zonder vragen worden uitgevoerd. Lezen is altijd toegestaan; hogere niveaus vragen om bevestiging.';
+      'Welke acties van de eigen tools van Control Center, aangeroepen via het MCP-eindpunt of door de agents, zonder vragen draaien. Lezen is altijd toegestaan; hogere niveaus vragen om bevestiging. Servers binnen een run volgen het actiebeleid van die run.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Altijd vragen';
@@ -12346,20 +12297,8 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsAbout => 'Over';
 
   @override
-  String get settingsScopeBadgeYou => 'JIJ';
-
-  @override
-  String get settingsScopeBadgeDevice => 'DIT APPARAAT';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'WERKRUIMTE';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Je naam, e-mail en git-identiteit in deze werkruimte. Van werkruimte wisselen wisselt deze overlay; handle, aanmelden en apparaten blijven op het account.';
+      'Je naam, e-mail en git-identiteit in deze werkruimte. Van werkruimte wisselen wisselt deze overlay; je gebruikersnaam, inlog en apparaten blijven op je account in Jij → Profiel.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12374,49 +12313,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identiteit, beleid en conventies die iedereen in deze werkruimte deelt.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Toeschrijving van commits';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Kies of Control Center wordt vermeld bij commits van agents. Beheerders van de werkruimte kunnen deze keuze voor iedereen in een werkruimte overschrijven.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Vermelding van de agent';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Vermeld Control Center bij commits van agents';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Je bent altijd de auteur en committer van commits. Als dit is ingeschakeld, wordt Control Center (@usectrl) toegevoegd als mede-auteur. Als dit is uitgeschakeld, bevatten commits geen vermelding van de agent.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Deze werkruimte heeft voorrang op je persoonlijke keuze. Je voorkeur blijft opgeslagen, maar geldt hier niet.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Instellingen voor toeschrijving laden…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Kies of Control Center wordt vermeld bij commits van agents. De instelling van de werkruimte heeft voorrang op de persoonlijke voorkeur van elk lid.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Gebruik de voorkeur van elk lid';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Vermeld Control Center altijd';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Vermeld Control Center nooit';
+      'Beleid en afspraken die iedereen in deze werkruimte deelt.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12786,9 +12683,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Verbinding controleren…';
-
-  @override
-  String get fromEnvironment => 'uit de omgeving';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13355,14 +13249,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Gebruikt door werkruimtes die de GitHub-app van deze installatie erven. Een werkruimte met een eigen app stelt die in onder Werkruimte → Algemeen.';
+      'Gebruikt door werkruimten die de aanmeldapps van deze server volgen. Een werkruimte met eigen apps stelt haar App in onder Werkruimte → Integraties.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pullrequest-gesprekken';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Hoe ontwikkelaars met deze server op GitHub praten in ervende werkruimten. Een werkruimte met eigen App heeft zijn bot onder Werkruimte → Algemeen. Werkt zonder webhook of openbare URL — de server polt.';
+      'Hoe ontwikkelaars via GitHub met deze server kunnen praten in werkruimten die deze server volgen. Een werkruimte met eigen apps heeft een eigen bot onder Werkruimte → Integraties. Werkt zonder webhook of openbare URL; de server pollt.';
 
   @override
   String get providerAppBotLogin => 'Bot-login';
@@ -13395,10 +13289,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get portLabel => 'Poort';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Zonder token kan alles wat deze poort bereikt elke tool aanroepen.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Tools';
 
   @override
@@ -13425,6 +13315,131 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Alles wissen';
+
+  @override
+  String get guardrailFamilyCommands => 'Opdrachten';
+
+  @override
+  String get guardrailStandingApproval => 'Doorlopende goedkeuring';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Toegestaan: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Eerst vragen: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Geweigerd: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'branches $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'paden $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'hosts $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'opdrachten $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'tools $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'opdrachten die beginnen met $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'maximaal $count tegelijk';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'maximaal $amount cent';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'elke actie van dit soort';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'door $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'eindigt $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'tot intrekking';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Intrekken: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed =>
+      'Intrekken lukte niet. Probeer het opnieuw.';
+
+  @override
+  String get guardrailEntryInactive => 'niet van kracht bij Weigeren';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Toegestaan in $count gevallen hieronder',
+      one: 'Toegestaan in 1 geval hieronder',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count doorlopende goedkeuringen voor de hele werkruimte gelden hier ook.',
+      one: '1 doorlopende goedkeuring voor de hele werkruimte geldt hier ook.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count doorlopende goedkeuringen zijn ingesteld voor afzonderlijke ruimtes of agents. Kies hierboven Ruimte of Agent om ze te zien.',
+      one:
+          '1 doorlopende goedkeuring is ingesteld voor één ruimte of agent. Kies hierboven Ruimte of Agent om die te zien.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandboxing';
@@ -14241,6 +14256,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je wordt opnieuw gevraagd wanneer een agent de volgende keer een programma vanuit deze kopie moet uitvoeren.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Paden zoeken';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Geen rechten komen overeen met je zoekopdracht';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14596,11 +14618,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Deze verbinding bereikt de server via een relay, dat geen bestanden vervoert. Verbind rechtstreeks met de server om een back-up te downloaden of te uploaden.';
+      'Bestandsoverdracht is voor deze verbinding nog niet ingesteld. Verbind opnieuw met de server om een back-up te downloaden of te uploaden.';
 
   @override
   String get backupTransferForbidden =>
-      'De server weigerde. Een werkruimte downloaden vereist de rol admin, er een herstellen vereist owner, en een hele momentopname vereist de beheerder van de installatie.';
+      'De server weigerde. Een werkruimte downloaden vereist de rol admin. Er een herstellen vereist de serverbeheerder, die ook eigenaar van de werkruimte moet zijn. Een hele momentopname vereist de serverbeheerder.';
 
   @override
   String get backupTransferUnsupported =>
@@ -14909,34 +14931,8 @@ class AppLocalizationsNl extends AppLocalizations {
       'Plaats klembordinhoud uit elke omgeving zonder vragen op dit apparaat.';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub-identiteit';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Hoe GitHub-achtergrondwerk in deze werkruimte zich authenticeert: met de app van deze installatie of met een eigen app van de werkruimte.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'GitHub App van deze installatie gebruiken';
-
-  @override
-  String get workspaceGitHubModeApp => 'Een andere GitHub App gebruiken';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Gebruikt de GitHub App onder Server → Provider-apps.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Bot- en polling-identiteit van deze werkruimte. Leden melden zich aan bij Jij via deze App.';
-
-  @override
   String get profileOverlayHint =>
       'Deze velden ben jij in deze werkruimte. Lege velden erven naam en e-mail van het account. Van werkruimte wisselen wisselt deze overlay.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Meld je aan of plak een token voor deze werkruimte.';
 
   @override
   String get stackStartNextPart => 'Volgend deel starten';
@@ -15743,6 +15739,17 @@ class AppLocalizationsNl extends AppLocalizations {
       'De server kon geen aanmeldopdracht voor dit account leveren.';
 
   @override
+  String get claudeAccountSignedIn => 'Ingelogd';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Dit venster sluit zelf zodra het aanmelden is voltooid.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Dit venster sluit zelf zodra alle accounts zijn aangemeld.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Aanmelding bij Claude Code verlopen';
 
@@ -15898,8 +15905,7 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
-      'Dit moet op de server worden ingesteld';
+  String get environmentInputNeeded => 'Dit moet op de server worden ingesteld';
 
   @override
   String get environmentKindApp => 'App';
@@ -16503,21 +16509,41 @@ class AppLocalizationsNl extends AppLocalizations {
   String get environmentOpenPanel => 'Omgeving openen';
 
   @override
-  String get environmentNeedsSetup => 'Instelling vereist';
+  String get environmentStatusBlocked => 'Actie nodig';
+
+  @override
+  String get environmentStateInTerminal => 'In de terminal';
+
+  @override
+  String get environmentWaitingInTerminal => 'Wacht op jou in een terminal';
+
+  @override
+  String get environmentOpenTerminal => 'Terminal openen';
+
+  @override
+  String get environmentSignInNeeded => 'Je moet opnieuw inloggen';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Iets wat hiervoor nodig is, is niet beschikbaar';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Hier klaar. De omgeving wordt nog gestart';
 
   @override
   String get environmentContinueInTerminal => 'Doorgaan in terminal';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'De tool heeft je nodig in een terminal voor een wachtwoord of een vraag. Het starten gaat daarna verder.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Deze terminal is geopend omdat het starten je nodig heeft';
 
   @override
-  String get environmentSetupTab => 'Omgeving instellen';
+  String get environmentStartTerminalTab => 'Omgeving instellen';
 
   @override
   String get environmentsNothingRunning =>
@@ -16811,23 +16837,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Keur het verzoek goed op de pagina van $provider in je browser. Dit venster merkt vanzelf wanneer je klaar bent.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Wachten op $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Inloggen is niet afgerond';
 
   @override
   String get signInReopenPage => 'Inlogpagina opnieuw openen';
 
   @override
-  String get signInCodePrompt => 'Voer de code in die je browser toont';
+  String get signInCodePrompt =>
+      'Bevestig in je browser en voer daarna de code in die hij toont.';
 
   @override
   String get signInCodeMalformed =>
@@ -16871,7 +16888,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Deze inlogpoging is niet meer geldig. Start hem opnieuw.';
+      'Deze inlogpoging is niet meer open: ze is geannuleerd, gebruikt of vervangen. Start opnieuw.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16879,7 +16896,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Er zijn nu te veel inlogpogingen. Wacht een minuut en probeer het opnieuw.';
+      'Er zijn nu te veel verzoeken. Wacht even en probeer het dan opnieuw.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16910,10 +16927,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'De $provider-app is niet geïnstalleerd waar dit hem nodig heeft. Installeer hem en probeer het opnieuw.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Deze installatie van de GitHub-app is al geautoriseerd voor een andere Control Center-server.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16972,7 +16985,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Waar de GitHub-app is geïnstalleerd, binnen de accounts waartoe de repositories van deze werkruimte behoren. De installatie van een organisatie werkt alleen op servers die de beheerders ervan autoriseren.';
+      'Waar de GitHub-app is geïnstalleerd, binnen de accounts waartoe de repositories van deze werkruimte behoren.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16982,21 +16995,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get githubInstallApp => 'GitHub-app installeren';
 
   @override
-  String get githubAuthorizeServer => 'Deze server autoriseren';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Deze server kan nu de installatie op $account gebruiken.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Opgeschort';
-
-  @override
-  String get githubInstallationAuthorized => 'Geautoriseerd';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Niet geautoriseerd';
 
   @override
   String get linearAutomationTitle => 'Linear-automatisering';
@@ -17022,7 +17021,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Registreer zelf apps voor GitHub, Google en Linear onder Instellingen → Server → Single sign-on, en koppel de eigen Slack-app van elke werkruimte in de instellingen daarvan. ‘Mijn GitHub-app maken’ stelt GitHub in één stap in.';
+      'Registreer zelf de apps voor GitHub, Google en Linear onder Instellingen → Server → Single sign-on, en koppel de eigen Slack-app van elke werkruimte onder Werkruimte → Integraties, waar een werkruimte ook eigen apps of Connect kan kiezen. «Mijn GitHub-app maken» zet GitHub in één stap klaar.';
 
   @override
   String get connectModeCustom => 'Een eigen Connect-server gebruiken';
@@ -17158,7 +17157,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Deze server krijgt een nieuwe sleutel en installatie-ID. Elke login via Connect werkt niet meer en iedereen moet opnieuw inloggen. Logins via je eigen apps blijven werken.';
+      'Deze server krijgt een nieuwe sleutel en installatie-ID, en het oude ID wordt bij Connect uitgeschakeld: inlogs die eronder zijn versleuteld, en de oude sleutel werken daar niet meer, dus iedereen die via Connect is ingelogd, moet opnieuw inloggen. Tokens die al zijn uitgegeven, blijven werken tot ze verlopen. Inloggen via je eigen apps blijft ongewijzigd. Als Connect niet bereikbaar is, verandert er niets en kun je het opnieuw proberen.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17292,34 +17291,6 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Provider-apps';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Welke Google Agenda-, Linear- en Klipy-apps deze werkruimte gebruikt. Standaard gebruikt ze de apps van deze server of Control Center Connect. Een werkruimte met een eigen app valt er nooit op terug.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'App van deze server gebruiken';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Aanmeldingen en verzoeken gebruiken de app van deze server of Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Eigen app van deze werkruimte gebruiken';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Alleen de app van deze werkruimte wordt gebruikt. Zolang die onvolledig is, staat deze provider hier uit in plaats van terug te vallen op een andere app.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'App van de server';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Eigen app';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Nog te doen: $fields. Zolang niet alle velden zijn ingevuld, staat deze provider uit in deze werkruimte. Er wordt niet teruggevallen op de app van deze server.';
   }
@@ -17336,22 +17307,115 @@ class AppLocalizationsNl extends AppLocalizations {
       'GIF-zoeken in deze werkruimte gebruikt deze sleutel.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'De app van $provider wisselen?';
+  String get settingsWorkspaceIntegrations => 'Integraties';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Codehosting, tickets, agenda, chat en gif-zoekopdrachten in deze werkruimte, en via welke apps mensen inloggen.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Welke apps deze werkruimte gebruikt voor GitHub, Google Agenda, Linear, Slack en gif-zoeken. Tenzij een beheerder iets anders kiest, volgt deze de server.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Zoals deze server';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Deze server gebruikt de apps van Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Deze server gebruikt de Connect-server op $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Iedereen die in deze werkruimte via de app van deze server met $provider is verbonden, moet zich opnieuw aanmelden met de app van de werkruimte.';
+  String get workspaceConnectInheritOwn =>
+      'Deze server gebruikt zijn eigen apps.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'De eigenaar van de server heeft nog niets gekozen, dus gelden de eigen apps van de server.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Alleen de apps van deze werkruimte worden gebruikt. Voeg hieronder elk ervan toe, naast de provider. Een provider zonder app staat hier uit; de apps van deze server en Connect worden niet in de plaats gebruikt.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Alleen HTTPS. Adressen op een privé- of lokaal netwerk worden geweigerd.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL in de omgeving van deze server bepaalt waar aanmeldingen naartoe gaan, dus deze werkruimte kan geen eigen Connect kiezen. Ze kan deze server volgen of haar eigen apps gebruiken.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'De aanmeldapps van deze werkruimte wisselen?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Iedereen in deze werkruimte moet opnieuw inloggen op GitHub, Linear en Google Agenda via de nieuwe apps. Aanmeldingen via de huidige apps werken hier niet meer.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Apps wisselen';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Volgt de keuze hierboven. Een provider valt nooit terug op een andere app.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'App van de werkruimte';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'App van de server';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub-app';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'De eigen app van deze werkruimte handelt namens de repositories en logt leden in. Er wordt nooit teruggevallen op de app van deze server of op Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Deze werkruimte gebruikt de GitHub-app die de aanmeldapps leveren. Installeer hem op de accounts waartoe jouw repositories behoren.';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'Handelt namens deze werkruimte';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'De bot van de app becommentarieert, beoordeelt en peilt pull requests in de repositories van deze werkruimte.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider-app';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Hiermee worden de $provider-inloggegevens van de werkruimte verwijderd. Iedereen die via de app van de werkruimte is verbonden, moet zich opnieuw aanmelden.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Aanmeldingen en verzoeken voor $provider in deze werkruimte gebruiken alleen deze app.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'App wisselen';
+  String get workspaceGifsTitle => 'GIF\'s';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Gif-zoeken gebruikt de Klipy-sleutel van deze werkruimte.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Gif-zoeken gebruikt de Klipy-sleutel van deze server.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Gif-zoeken loopt via Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Gif-zoeken staat uit in deze werkruimte.';
 
   @override
   String openOnForge(String forge) {
@@ -17369,7 +17433,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Koppel GitHub, GitLab of Bitbucket in Instellingen → Werkruimte → Profiel en identiteit → Codehosting';
+      'Koppel GitHub, GitLab of Bitbucket in Instellingen → Jij → Profiel';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17386,4 +17450,1142 @@ class AppLocalizationsNl extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Koppel $forge om in deze repository een pull request te openen';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Je login bij $provider als $account is verlopen. Log opnieuw in.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Gepauzeerd: de inlogdienst van deze werkruimte is gewijzigd';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '$provider is nu niet bereikbaar. Wordt opnieuw geprobeerd.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Je login blijft bewaard en werkt weer zodra de dienst terug is. Een beheerder van de werkruimte kan de inlogconfiguratie controleren onder Integraties.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'De server is opnieuw gestart. Begin opnieuw met inloggen.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Inloggen met $provider is niet ingesteld voor deze werkruimte.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Inloggen met $provider is verkeerd ingesteld: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Deze werkruimte gebruikt eigen apps, maar heeft geen $provider-app.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Deze build kan Control Center Connect niet verifiëren, dus inloggen met $provider staat uit.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'De inlogdienst van deze werkruimte heeft zijn identiteit gewijzigd. Een beheerder moet dit bevestigen.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'De inlogdienst van deze werkruimte is nu niet bereikbaar.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Het adres van de inlogdienst van deze werkruimte ontbreekt of is ongeldig.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'De beheerder van de server heeft de inlogdienst vastgelegd, dus de keuze van deze werkruimte geldt niet.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'De inlogdienst van deze werkruimte biedt $provider niet aan.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Integraties openen';
+
+  @override
+  String get signInOpenServerSettings => 'Inloginstellingen openen';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Dit draait als jou op $provider, en je hebt geen token toegevoegd. Voeg er een toe en probeer het opnieuw.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '$provider loskoppelen?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Je moet $provider opnieuw koppelen om aan de repository\'s te werken.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Hiermee koppel je $provider alleen in deze werkruimte los. Andere werkruimtes houden hun eigen verbinding.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Hiermee koppel je $provider los in elke werkruimte die deze verbinding deelt.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider losgekoppeld van deze werkruimte';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider losgekoppeld van alle werkruimtes';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Installeer de GitHub App op $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Automatisering kan $repos pas bereiken als de App daar is geïnstalleerd.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Voeg $repos toe aan de repository\'s van de GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'De App is op dit account geïnstalleerd, maar ziet deze repository\'s nog niet.';
+
+  @override
+  String get repoAccessChooseRepos => 'Repository\'s kiezen';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App-installatie opgeschort';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Automatisering voor $repos is gepauzeerd tot een eigenaar van het account de installatie op GitHub hervat.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Automatisering is gepauzeerd';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'De persoon die verantwoordelijk is voor de automatisering van deze werkruimte ziet $repos niet meer, dus daar draait niets namens hem of haar.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'De persoon die verantwoordelijk is voor de automatisering van deze werkruimte is niet ingelogd bij de forge, dus automatisering voor $repos wacht tot die inlogt.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Kon toegang tot $repos niet controleren. Wordt opnieuw geprobeerd.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Vraag $admins om dit op te lossen.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Vraag een beheerder van de werkruimte om dit op te lossen.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Log in bij $forge om pull requests uit nog $count repository\'s te zien',
+      one: 'Log in bij $forge om pull requests uit nog 1 repository te zien',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repository\'s zijn verborgen omdat je $forge-account ze niet kan zien',
+      one:
+          '1 repository is verborgen omdat je $forge-account die niet kan zien',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repository\'s zijn verborgen omdat je er in deze werkruimte geen toegang toe hebt',
+      one:
+          '1 repository is verborgen omdat je er in deze werkruimte geen toegang toe hebt',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Je toegang tot nog $count repository\'s wordt gecontroleerd…',
+      one: 'Je toegang tot nog 1 repository wordt gecontroleerd…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Gekoppeld, maar automatisering kan nog niet overal bij';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Op een andere organisatie installeren';
+
+  @override
+  String get forgeTokenEmailLabel => 'E-mailadres van het Atlassian-account';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Voer het e-mailadres van je Atlassian-account in.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API-token';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket-API-tokens werken samen met het e-mailadres van het Atlassian-account dat ze heeft gemaakt.';
+
+  @override
+  String get automationTokensTitle => 'Automatiseringstokens';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Achtergrondwerk op GitLab en Bitbucket, zoals pull-request-updates, AI-reviewopmerkingen en merge requests waar niemand om vroeg, gebruikt een toegangstoken van een bot, nooit dat van een persoon. Het eigen token van een repository gaat voor dat van de workspace.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Gebruikt voor elke GitLab- of Bitbucket-repository in deze workspace zonder eigen automatiseringstoken. Achtergrondwerk daar verschijnt als de bot van dit token.';
+
+  @override
+  String get automationTokenNone =>
+      'Geen token. Automatisering is hier gepauzeerd.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Gebruikt het token van de workspace';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Handelt als $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Toegangstoken toegevoegd';
+
+  @override
+  String get automationTokenRejected =>
+      'Het platform heeft dit token geweigerd. Vervang het.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge-automatiseringstoken';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Plak een project- of groepstoegangstoken. Het heeft read_api en read_repository nodig; voeg api en write_repository toe voor opmerkingen, merge requests en pushes. GitLab toont het werk als de bot van het token.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Plak een repository-, project- of workspacetoegangstoken met leesrecht op de repository, plus schrijfrecht op pull requests voor opmerkingen en pull requests. Je eigen API-token hoort onder Jij → Profiel, niet hier.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token opgeslagen, maar het kan $repos niet lezen. Automatisering blijft daar gepauzeerd.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Automatiseringstoken verwijderen?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Automatisering die op dit token rust, pauzeert tot er een ander is toegevoegd.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Elke $forge-repository zonder eigen token';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Geen automatiseringstoken kan $repos lezen, dus achtergrondwerk daar is gepauzeerd.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commits van werk dat je zelf start, krijgen jouw naam. Kies wie er verder wordt genoemd en of forges je commits als geverifieerd tonen.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Auteurschap';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Werk dat je start';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Jij bent de auteur en committer, met het e-mailadres dat je forge heeft geverifieerd bij je inlog. Dit geldt voor chats met agents, pipelines die je start en commits die je in de editor maakt.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Geautomatiseerde runs';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Runs die een schema of een webhook start, committen als de bot en worden nooit ondertekend.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Totdat je je in een werkruimte bij een forge aanmeldt, committen je runs daar als de bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Control Center als co-auteur vermelden';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Je commits noemen Control Center (@usectrl) als co-auteur, en geautomatiseerde runs die je hebt ingeschakeld noemen jou. Als dit uit staat, wordt geen van beide regels toegevoegd.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Deze werkruimte heeft voorrang op je persoonlijke keuze. Je voorkeur blijft opgeslagen, maar geldt hier niet.';
+
+  @override
+  String get settingsCoauthorCreditLoading =>
+      'Instellingen voor toeschrijving laden…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Co-auteurvermelding';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Of commits co-auteurregels bevatten: Control Center bij de eigen commits van een lid, en de leden die een geautomatiseerde run hebben ingeschakeld bij de commits daarvan. Een keuze hier overschrijft de voorkeur van elk lid.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Gebruik de voorkeur van elk lid';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Altijd co-auteurvermelding toevoegen';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Nooit co-auteurvermelding toevoegen';
+
+  @override
+  String get settingsCommitSigningSection => 'Geverifieerde commits';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Ondertekenen';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Niet ondertekenen';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Deze server kan je commits ondertekenen met een eigen sleutel, zodat GitHub en GitLab ze als geverifieerd tonen. Er wordt niets ondertekend totdat je de sleutel aanmaakt.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Ondertekeningssleutel aanmaken';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Ondertekeningssleutel aangemaakt. Voeg hem toe aan je forge-account.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Publieke sleutel';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Publieke sleutel gekopieerd';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Vingerafdruk';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Aangemaakt';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Voeg hem toe aan je forge-account';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Een commit wordt alleen als geverifieerd getoond zolang je in de werkruimte ook bij die forge bent ingelogd, zodat de forge je e-mailadres bevestigt.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Zet Key type op Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Zet Usage type op Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commits op Bitbucket worden niet ondertekend. Voeg deze sleutel niet toe aan je Bitbucket-account: een SSH-sleutel daar is ook een inlog.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Niet ondersteund';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Waar je op vertrouwt';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'De privésleutel verlaat deze server nooit.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Wie deze server beheert, kan zolang de sleutel op je forge-account staat in jouw naam commits ondertekenen.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'Op GitHub blijven commits die al als geverifieerd zijn getoond, geverifieerd nadat je de sleutel verwijdert.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Sleutel verwijderen';
+
+  @override
+  String get settingsCommitSigningDeleteTitle =>
+      'Je ondertekeningssleutel verwijderen?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Je commits worden vanaf nu niet meer ondertekend. De sleutel blijft op je forge-accounts staan totdat je hem daar verwijdert.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Ondertekeningssleutel verwijderd';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Je ondertekeningssleutel kon niet worden geladen: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profiel';
+
+  @override
+  String get accountProfileDescription =>
+      'Wie je bent in elke werkruimte, en je eigen accounts voor codehosting, tickets, agenda en chat.';
+
+  @override
+  String get accountSectionTitle => 'Account';
+
+  @override
+  String get accountSectionDescription =>
+      'Je gebruikersnaam en naam gaan met je mee naar elke werkruimte. Een werkruimte kan een andere naam of e-mail tonen: stel dat in via Werkruimte → Profiel en identiteit.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Je profiel kon niet worden geladen: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'De naam die anderen zien bij je berichten en reviews.';
+
+  @override
+  String get accountDisplayNameRequired => 'Voer een weergavenaam in.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Dit kan worden gewijzigd, maar niet worden verwijderd.';
+
+  @override
+  String get accountAvatarLabel => 'Foto';
+
+  @override
+  String get accountAvatarHint =>
+      'Een link naar een vierkante afbeelding, beginnend met https://.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Gebruik een link die begint met https://.';
+
+  @override
+  String get usernameLabel => 'Gebruikersnaam';
+
+  @override
+  String get usernameRule =>
+      '2 tot 32 kleine letters, cijfers, punten, koppeltekens of underscores. Mensen noemen je hiermee.';
+
+  @override
+  String get usernameAvailable => 'Beschikbaar.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Beschikbaar. Hij wordt opgeslagen als $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Gebruik 2 tot 32 kleine letters, cijfers, “.”, “_” of “-”, beginnend en eindigend met een letter of cijfer.';
+
+  @override
+  String get usernameReserved => 'Deze gebruikersnaam is gereserveerd.';
+
+  @override
+  String get usernameTaken => 'Deze gebruikersnaam is al in gebruik.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Deze naam kan nu niet worden gecontroleerd. Je kunt toch opslaan; de server beslist.';
+
+  @override
+  String get linkedAccountsTitle => 'Gekoppelde accounts';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Identiteitsprovider';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Inloggen nodig';
+
+  @override
+  String get linkedAccountStatusPaused => 'Gepauzeerd';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Niet bereikbaar';
+
+  @override
+  String get ssoIdentityDescription =>
+      'De identiteitsprovider waarmee je account inlogt. Wie deze server beheert, beheert deze ook.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'De accounts die je voor jezelf koppelt. Control Center handelt via die accounts namens jou, en wijzigingen daarin raken alleen jou.';
+
+  @override
+  String get accountReachServer =>
+      'Wordt gebruikt in elke werkruimte op deze server.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Alleen gebruikt in $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub wordt alleen gebruikt in $workspace, die eigen inlogapps heeft. GitLab en Bitbucket worden gebruikt in elke werkruimte op deze server.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Jouw account';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Jouw account: $status. Opent Jij → Profiel.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Geen codehosting-account gekoppeld';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Geen $provider-account gekoppeld';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Geen $provider-account gekoppeld';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'In de demo ben je een tijdelijke gast, dus er is geen account om te wijzigen: geen gebruikersnaam, profiel of gekoppelde accounts.';
+
+  @override
+  String get onboardingStepYou => 'Jij';
+
+  @override
+  String get onboardingYouTitle => 'Kies je gebruikersnaam';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Je gebruikersnaam is hoe mensen je noemen en hoe je werk wordt gelabeld. Je kunt hem en je weergavenaam later wijzigen via Instellingen → Jij → Profiel.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Dit $provider-account is al gekoppeld aan een andere persoon op deze server. Log in met een ander $provider-account.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token verloopt op $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token verlopen op $date. Plak een nieuwe om door te kunnen gaan.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge kon niet worden bereikt om dit token te controleren. Probeer het zo nog eens.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge accepteert dit token niet. Controleer of je alles hebt gekopieerd en of het niet is ingetrokken.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Dit is geen persoonlijk token. Plak een persoonlijk toegangstoken uit je eigen $forge-account, geen token van een project, groep, werkruimte of bot.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Aan dit token ontbreekt de scope $scope, die nodig is voor reviews en opmerkingen. Maak er een aan die die heeft.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Dit token is verlopen. Maak een nieuw aan en plak het hier.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agents die je start, kunnen commits ondertekend als jou maken, in elke repository waarin ze werken. Als je de sleutel hier verwijdert, stopt dat meteen: runs die al bezig zijn, ondertekenen niets meer.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'De sleutel is niet vernieuwd en er is niets veranderd: $error Probeer het opnieuw.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Je zit nog niet in een werkruimte';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Een werkruimte-admin moet je uitnodigen, of de serverbeheerder kan een werkruimte voor je aanmaken. Hij opent hier zodra je bent toegevoegd.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Ingelogd als $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Opnieuw controleren';
+
+  @override
+  String get noWorkspaceSignOut => 'Uitloggen';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Alleen de serverbeheerder kan werkruimtes aanmaken. Vraag hem er een aan te maken, of vraag een werkruimte-admin je uit te nodigen.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo staat in geen van je werkruimtes, en je zit in geen werkruimte waaraan je het kunt toevoegen. Vraag een werkruimte-admin je uit te nodigen.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Alleen de serverbeheerder kan dit doen';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'De volledige editor draait op de machine van de server, dus alleen de serverbeheerder kan hem openen. Je kunt bestanden wel nog openen en bewerken vanuit de Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'Sandbox';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Draait in een sandbox binnen de mappen van deze werkruimte, dus sommige hosttools en paden zijn hier niet beschikbaar.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'De hostshell draait op de server zonder sandbox, dus alleen de serverbeheerder kan er een openen. Een gewone terminal draait in de sandbox.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Een terminal kan alleen worden geopend binnen de eigen mappen van deze werkruimte.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Alleen de serverbeheerder kan een omgeving opslaan of goedkeuren die op de serverhost draait. Een werkruimte-admin kan er een gebruiken die in een rig draait.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commits die je in de eigen editor van de app maakt, draaien geen Git-hooks uit de repository, zoals bij git commit --no-verify: de server draait Git op de eigen host, in een map die agents en pull requests kunnen wijzigen.';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP-clients sturen dit token bij elk verzoek mee als Authorization: Bearer-header. De server maakt het bij de eerste start aan; je kunt het vernieuwen, maar niet verwijderen.';
+
+  @override
+  String get mcpShowToken => 'Token tonen';
+
+  @override
+  String get mcpHideToken => 'Token verbergen';
+
+  @override
+  String get mcpRotateToken => 'Token vernieuwen';
+
+  @override
+  String get mcpRotateTokenTitle => 'MCP-token vernieuwen?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'De server schakelt meteen over op een nieuw token. Elke MCP-client die nog het huidige gebruikt, wordt geweigerd totdat je hem het nieuwe geeft.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Token vernieuwd. Geef je MCP-clients het nieuwe.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'Het MCP-eindpunt is voor de serverbeheerder';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Het token opent elke tool op deze server, dus alleen de serverbeheerder kan het zien, vernieuwen, of het eindpunt starten en stoppen.';
+
+  @override
+  String get activityRotatedMcpToken => 'MCP-token vernieuwd';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect kon de oude sleutel niet uitschakelen';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Er is niets veranderd. Als je toch vernieuwt, krijgt deze server zijn nieuwe sleutel, maar de oude identiteit blijft bij die Connect bruikbaar tot de inloggen verlopen.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Toch vernieuwen';
+
+  @override
+  String get settingsAuditLog => 'Auditlogboek';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Wie wat heeft gewijzigd, waar en hoe het afliep, op de server en in elke workspace die je beheert. Serverbewerkingen leggen argumentnamen vast, nooit hun waarden.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Alleen voor beheerders';
+
+  @override
+  String get auditLogNoAccess =>
+      'Het auditlogboek dekt de server en de workspaces die je beheert. Je beheert geen workspace, dus er is niets om te tonen.';
+
+  @override
+  String get auditLogSourceServer => 'Server';
+
+  @override
+  String get auditLogSourceWorkspace => 'Workspace';
+
+  @override
+  String get auditLogAddFilter => 'Filter';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filteren…';
+
+  @override
+  String get auditLogFilterActor => 'Persoon';
+
+  @override
+  String get auditLogFilterSource => 'Workspace';
+
+  @override
+  String get auditLogFilterOutcome => 'Resultaat';
+
+  @override
+  String get auditLogFilterTime => 'Tijd';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Geslaagd';
+
+  @override
+  String get auditLogOutcomeDenied => 'Geweigerd';
+
+  @override
+  String get auditLogOutcomeFailed => 'Mislukt';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Op of na';
+
+  @override
+  String get auditLogTimeAfter => 'Na';
+
+  @override
+  String get auditLogTimeBefore => 'Voor';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Op of voor';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Tijd $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 uur geleden';
+
+  @override
+  String get auditLogTimePresetDay => '24 uur geleden';
+
+  @override
+  String get auditLogTimePresetWeek => '7 dagen geleden';
+
+  @override
+  String get auditLogTimePresetMonth => '30 dagen geleden';
+
+  @override
+  String get auditLogTimeExact => 'Exacte tijd';
+
+  @override
+  String get auditLogTimeInvalid => 'Gebruik YYYY-MM-DD, eventueel met HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Toevoegen';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo verwijst nu naar een andere repository';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Dit pad verwijst nu naar een andere repository op $forge. Koppel het opnieuw om het te blijven gebruiken.';
+  }
+
+  @override
+  String get repoRelink => 'Opnieuw koppelen';
+
+  @override
+  String repoRelinked(String repo) {
+    return '$repo opnieuw gekoppeld.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Dit pad verwijst nu naar een andere repository. Een werkruimte-admin moet hem opnieuw koppelen voordat hij gebruikt kan worden.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Je $forge-account kan deze repository niet lezen.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Je $forge-toegang kon niet worden bevestigd. Probeer het opnieuw.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Je forge-account kan deze repository niet lezen.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Je forge-toegang kon niet worden bevestigd. Probeer het opnieuw.';
+
+  @override
+  String get repoPathHostPath =>
+      'Alleen de serverbeheerder kan een map koppelen die buiten de opslag van deze werkruimte ligt.';
+
+  @override
+  String get repoPathMissing => 'Op dat pad op de server staat niets.';
+
+  @override
+  String get repoPathDataDir =>
+      'Een repository kan niet naar de datamap van de server verwijzen.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Een repository kan niet de eigen map van de werkruimte zijn.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'De origin van die map is een andere repository.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Opgeslagen. Die persoon moet inloggen bij $forge voordat hij deze repository kan openen.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Opgeslagen. Het $forge-account van die persoon kan deze repository nog niet lezen, dus blijft hij verborgen voor haar.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Opgeslagen. Hun $forge-toegang kon nu niet worden bevestigd.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo is in geen van je werkruimtes gekoppeld. Vraag de serverbeheerder hem toe te voegen.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'De serverbeheerder voegt repository\'s toe vanuit de mappen van de server.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Alleen jij hebt dit adres ingevoerd. Single sign-on past het niet toe totdat de serverbeheerder het bevestigt.';
+
+  @override
+  String get settingsServerPeople => 'Mensen';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Iedereen met een account op deze server, en of hun e-mailadres is bevestigd.';
+
+  @override
+  String get serverPeopleLabel => 'Accounts';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Alleen de serverbeheerder kan alle accounts zien en e-mailadressen bevestigen.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-mail niet bevestigd';
+
+  @override
+  String get serverPeopleConfirmEmail => 'E-mail bevestigen';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Bevestigen dat $email bij $name hoort? Single sign-on koppelt dit adres aan hun account.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '$email bevestigd.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agents hebben een sandbox nodig op deze server';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren. De beheerder kan de sandbox installeren of sandboxing voor iedereen uitzetten.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Deze map ligt buiten de opslag van de werkruimte. Bevestig dat deze server hem mag gebruiken.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Deze map ligt buiten de opslag van de werkruimte. Alleen de serverbeheerder kan dit bevestigen.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Op dit pad op de server staat niets meer. Verwijder deze repository en voeg hem opnieuw toe vanuit de huidige map.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Deze map kan niet als repository worden gebruikt. Verwijder hem en voeg de repository toe vanuit een andere map.';
+
+  @override
+  String get repoPathConfirm => 'Bevestigen';
+
+  @override
+  String get repoPathConfirmAll => 'Alles bevestigen';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mappen liggen buiten de opslag van de werkruimte',
+      one: '1 map ligt buiten de opslag van de werkruimte',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Bevestig dat deze server ze mag gebruiken. Elke repository wordt opnieuw gecontroleerd met jouw toegang.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Servers die in de tool-instellingen van deze machine staan, zijn alleen beschikbaar in runs die je start of waarvoor je verantwoordelijk bent. Runs van anderen zien ze nooit, en ze worden niet aangeboden via het MCP-eindpunt van Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Log in bij $provider om de code van deze repository te zien.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Inloggen';
+
+  @override
+  String get ideContentSearchFailed => 'Zoeken in bestanden is mislukt';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Dit bestand is niet beschikbaar in deze worktree.';
+
+  @override
+  String get ideChangesLoadFailed =>
+      'De wijzigingen konden niet worden geladen';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Dit pad verwijst nu naar een andere repository op $forge. Een werkruimte-admin moet hem opnieuw koppelen voordat hij gebruikt kan worden.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Alleen de serverbeheerder kan back-ups herstellen. Je kunt ze nog wel downloaden.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Alleen lezen';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Je kunt deze terminal bekijken. Typen erin, het formaat wijzigen of stoppen vereist schrijftoegang tot elke repository in dit gesprek.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Je kunt deze omgeving bekijken. Starten, stoppen of opnieuw starten vereist schrijftoegang tot elke repository in dit gesprek.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Draait op deze server. Keur hem goed om het starten toe te staan.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Draait op deze server. De serverbeheerder moet hem goedkeuren voordat hij kan starten.';
+
+  @override
+  String get environmentHostApprove => 'Goedkeuren';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Keur hem goed als werkruimte-admin: alleen de kopie van een admin toont geheime waarden, en bij goedkeuren worden die teruggeschreven.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'De serverbeheerder heeft deze omgeving nog niet goedgekeurd, dus hij kan niet op deze server draaien.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Je hebt deze omgeving nog niet goedgekeurd. Hij draait op deze server en start zodra je de definitie goedkeurt.';
+
+  @override
+  String get environmentHostApprovalReview => 'Bekijken en goedkeuren';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Log in bij $provider om deze ruimte te openen.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Je $forge-account kan een repository die deze ruimte gebruikt niet lezen.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Je forge-account kan een repository die deze ruimte gebruikt niet lezen.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Je hebt geen leestoegang tot een repository die deze ruimte gebruikt. Een werkruimte-admin kan die toekennen.';
+
+  @override
+  String get spaceAccessFailed => 'Deze ruimte kon niet worden geopend.';
+
+  @override
+  String get contextExplorerRefused =>
+      'De contextuitsplitsing is niet beschikbaar in deze sessie.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Een gekoppelde repository heeft zowel een eigenaar als een repositorynaam nodig.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Je hebt geen leestoegang tot deze repository. Een werkruimtebeheerder kan die toekennen.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Je kunt deze repository lezen maar niet wijzigen. Een werkruimtebeheerder kan schrijftoegang toekennen.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Je kunt deze repository lezen maar niet beoordelen. Een werkruimtebeheerder kan beoordelingstoegang toekennen.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Alleen kijken';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Je kunt deze machine bekijken. Hem bedienen, zijn poorten doorsturen, erin plakken of er bestanden op neerzetten vereist schrijftoegang tot elke repository in deze space.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Hier een machine starten vereist schrijftoegang tot elke repository in deze space. Een werkruimtebeheerder kan die toekennen.';
+
+  @override
+  String get rigViewRefused =>
+      'Je kunt deze machine niet bekijken. Hij hoort bij een space waarvoor je geen leestoegang hebt.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Deze poorten wijzigen vereist schrijftoegang tot elke repository in deze space.';
+
+  @override
+  String get rigHolderOnly =>
+      'Alleen de persoon voor wie deze machine is geopend, kan hem bedienen. Hij gebruikt diens eigen inloggegevens.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Je kunt deze machine bekijken. Hij gebruikt de inloggegevens van de persoon voor wie hij is geopend, dus alleen die persoon kan hem bedienen, zijn poorten doorsturen, erin plakken of er bestanden op neerzetten.';
 }

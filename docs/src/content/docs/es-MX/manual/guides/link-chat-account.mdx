@@ -2,7 +2,7 @@
 title: Vincular tu cuenta de Slack
 description: Demuestra que una identidad de Slack es tuya para que los agentes actúen sobre tus mensajes y tu trabajo se te atribuya.
 slug: es-MX/manual/guias/vincular-cuenta-de-chat
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Esta guía muestra cómo vincular tu identidad de chat con tu usuario de Control
@@ -29,7 +29,7 @@ Vincular requiere de los dos lados: enviar un código desde Slack demuestra la
 cuenta de Slack, y confirmarlo en Control Center demuestra que esa cuenta es
 tuya.
 
-1. Ve a **Ajustes → Espacio de trabajo → Perfil e identidad** y desplázate hasta
+1. Ve a **Ajustes → Tú → Perfil** y busca
    la tarjeta **Cuentas de chat vinculadas**
 2. En el bloque de Slack, haz clic en **Vincular mi cuenta de Slack**. El diálogo
    muestra un código de un solo uso, por ejemplo:
@@ -49,7 +49,7 @@ K7M2QP
    de funcionar; haz clic en **Obtener un código nuevo** para intentarlo de nuevo
 
 Cerrar el diálogo no hace que se pierda una solicitud. Un código que llegue más
-tarde espera en la fila **Vincular mi cuenta de Slack** de tu página de perfil,
+tarde espera en la fila **Vincular mi cuenta de Slack** de esa tarjeta,
 con los mismos **Confirmar** y **Rechazar**.
 
 Por qué existe el paso de confirmación: un código leído por encima de tu hombro y
@@ -80,6 +80,8 @@ Si tu perfil de Slack incluye un correo confirmado que coincide con el correo
 verificado de un usuario de Control Center que **ya es miembro de este espacio de trabajo**, el puente te
 vincula la primera vez que le escribes. No hace falta ningún código.
 
+El lado de Control Center cuenta como verificado cuando el inicio de sesión único o SCIM establecen la dirección, o cuando el propietario del servidor la confirma en **Ajustes → Servidor → Personas**. Una dirección que escribiste en tu propio perfil no está verificada, así que no vincula nada hasta que el propietario la confirme; mientras tanto, usa el flujo con código.
+
 Las dos mitades importan: la coincidencia del correo demuestra la identidad, pero
 solo la pertenencia concede acceso, así que un desconocido cuyo correo exista por
 casualidad en el servidor no queda vinculado a nada. La lista muestra cómo se
@@ -90,13 +92,13 @@ revela la dirección y el flujo con código es el único camino.
 
 ## Ver quién está vinculado
 
-La lista es administración del espacio de trabajo, así que vive en la otra mitad
-de la superficie: **Ajustes → Espacio de trabajo → General → Puentes de chat →
+La lista es administración del espacio de trabajo, así que vive en la tarjeta de administración:
+**Ajustes → Espacio de trabajo → Integraciones → Puentes de chat →
 Cuentas vinculadas**. Enumera a todos los miembros vinculados del espacio de
 trabajo, con la cuenta de Slack a la que corresponde cada uno y cómo se hizo el
 vínculo.
 
-Tu propio estado está en tu página de perfil: la fila **Vincular mi cuenta de
+Tu propio estado está en **Ajustes → Tú → Perfil**: la fila **Vincular mi cuenta de
 Slack** dice "Vinculado a _your-slack-id_" una vez que estás vinculado y te pide
 que vincules cuando no lo estás.
 

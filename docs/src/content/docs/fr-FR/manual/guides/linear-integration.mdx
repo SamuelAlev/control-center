@@ -2,7 +2,7 @@
 title: Configurer l’intégration Linear
 description: Connectez-vous à Linear, connectez l’automatisation Linear d’un espace de travail et choisissez Linear comme fournisseur de tickets pour les nouveaux tickets.
 slug: fr-FR/manuel/guides/integration-linear
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear a deux identités dans Control Center, et toutes deux passent par une
@@ -25,7 +25,7 @@ Control Center, sans qu’aucun service externe ne soit nécessaire — voir
 
 ## Choisir Linear pour l’espace de travail
 
-1. Allez dans **Paramètres → Espace de travail → Général** et repérez la carte
+1. Allez dans **Paramètres → Espace de travail → Intégrations** et repérez la carte
    **Tickets**
 2. Réglez **Fournisseur de tickets** sur **Linear**
 
@@ -35,7 +35,7 @@ les lignes Linear : il n’y a rien à authentifier.
 
 ## Se connecter à Linear
 
-Sur la même carte, la ligne **Linear** est la vôtre :
+Votre connexion Linear se trouve dans **Paramètres → Vous → Profil**, sur la carte **Tickets** :
 
 1. Cliquez sur **Se connecter à Linear**
 2. Approuvez dans votre navigateur
@@ -48,9 +48,11 @@ Tout ce que vous faites dans Linear depuis Control Center s’exécute avec cett
 connexion et rien d’autre. Si vous n’êtes pas connecté, l’application vous
 invite à vous connecter plutôt que d’agir sous l’identité de quelqu’un d’autre.
 
+La connexion fonctionne dans chaque espace de travail du serveur, sauf si un espace de travail dispose de ses propres applications de connexion : cet espace conserve alors une connexion Linear propre. La carte indique laquelle s’applique.
+
 ## Connecter l’automatisation Linear
 
-La ligne **Automatisation Linear** correspond à l’application Control Center de
+La ligne **Automatisation Linear**, sur la carte **Tickets** dans **Paramètres → Espace de travail → Intégrations**, correspond à l’application Control Center de
 l’espace de travail dans Linear. La synchronisation des tickets, les pipelines et
 les agents écrivent avec elle, si bien que les tickets et commentaires
 automatisés apparaissent au nom de Control Center plutôt que d’une personne.
@@ -73,9 +75,9 @@ Utilisez votre propre application lorsque vous avez choisi **Utiliser mes
 propres applications**. L’application du serveur ne s’applique que dans ce cas :
 avec Control Center ou un Connect personnalisé, Connect exécute chaque voie, Linear
 compris, et l’application du serveur ainsi que sa clé API de service restent
-enregistrées mais inutilisées. Une application propre à l’espace de travail
-([plus bas](#donner-à-un-espace-de-travail-sa-propre-application-linear)) s’applique
-toujours, quel que soit le mode.
+enregistrées mais inutilisées. Un espace de travail sur ses propres applications
+([plus bas](#donner-à-un-espace-de-travail-sa-propre-application-linear)) utilise sa
+propre application à la place, quel que soit le mode du serveur.
 
 1. Créez une application OAuth sur
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -104,26 +106,28 @@ propre, au lieu de celle du serveur. Seul un administrateur ou le propriétaire 
 l’espace de travail peut la configurer.
 
 1. Créez une application OAuth Linear comme indiqué ci-dessus
-2. Allez dans **Paramètres → Espace de travail → Général → Applications fournisseur** et ouvrez **Linear**
-3. Choisissez **Utiliser l’application propre à cet espace de travail**
-4. Ajoutez à l’identique, à l’application Linear, les deux URL de rappel affichées sous **URL de rappel** dans la ligne
-5. Collez son **Identifiant client**, et éventuellement une **Clé API de service** pour l’automatisation de cet espace de travail
+2. Allez dans **Paramètres → Espace de travail → Intégrations**. Sur la carte **Control Center Connect**, choisissez **Utiliser mes propres applications** puis cliquez sur **Appliquer**
+3. Sous Tickets, la carte **Application Linear** apparaît. Ajoutez à l’identique, à l’application Linear, les deux URL de rappel affichées sous **URL de rappel** sur cette carte
+4. Collez son **Identifiant client**, et éventuellement une **Clé API de service** pour l’automatisation de cet espace de travail
 
 L’application de l’espace de travail répond alors à chaque demande de connexion et
 d’automatisation Linear de cet espace, quelle que soit la façon dont le serveur
 connecte les personnes. Elle ne se rabat jamais sur l’application du serveur ni sur
 Connect : tant qu’aucun identifiant client n’est renseigné, Linear est désactivé
-dans cet espace de travail, et la ligne indique ce qui manque. Sa clé API de
+dans cet espace de travail, et la carte indique ce qui manque. Sa clé API de
 service n’est utilisée qu’ici ; sans elle, la synchronisation nécessite
 **Connecter Linear pour l’automatisation**.
 
-Changer d’application entre celle du serveur et celle de l’espace de travail, ou
-modifier l’identifiant client de l’espace de travail, déconnecte de Linear toutes
-les personnes de cet espace et détache son automatisation. Elles se reconnectent
-via la nouvelle application. **Utiliser l’application de ce serveur** supprime les
-champs enregistrés de l’espace de travail. Les secrets ne sont qu’en écriture : la
-ligne indique seulement si l’un d’eux est enregistré. Les autres espaces de travail
-du serveur ne sont pas concernés.
+**Utiliser mes propres applications** couvre tous les fournisseurs à la fois : GitHub,
+Google Calendar et la recherche de GIF ne fonctionnent aussi qu’avec les applications
+propres à l’espace de travail, chacune configurée à côté de son fournisseur sur la même
+page. Changer les applications de connexion de l’espace de travail, ou modifier son
+identifiant client, déconnecte de Linear toutes les personnes de cet espace et détache
+son automatisation. Elles se reconnectent via la nouvelle application. Les champs
+enregistrés restent lorsque l’espace de travail revient à un autre choix, mais ne servent
+qu’avec **Utiliser mes propres applications**. Les secrets ne sont qu’en écriture : la
+carte indique seulement si l’un d’eux est enregistré. Les autres espaces de travail du
+serveur ne sont pas concernés.
 
 ## Dépannage
 
@@ -131,10 +135,10 @@ du serveur ne sont pas concernés.
 
 Le serveur n’a ni application Linear propre ni Connect. Le propriétaire du
 serveur choisit l’un ou l’autre dans **Paramètres → Serveur → Authentification
-unique**. Lorsque l’espace de travail utilise sa propre application, la ligne
+unique**. Lorsque l’espace de travail utilise ses propres applications, la ligne
 indique à la place que sa configuration n’est pas terminée : un administrateur de
-l’espace de travail renseigne l’identifiant client dans **Paramètres → Espace de
-travail → Général → Applications fournisseur**.
+l’espace de travail renseigne l’identifiant client sur la carte **Application Linear**
+dans **Paramètres → Espace de travail → Intégrations**.
 
 ### La synchronisation des tickets échoue avec une erreur d’authentification
 

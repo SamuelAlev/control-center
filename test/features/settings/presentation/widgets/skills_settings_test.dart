@@ -854,9 +854,7 @@ void main() {
       expect(find.text('code-review'), findsOneWidget);
       expect(find.text('Not available in the demo'), findsNothing);
       expect(
-        tester
-            .widget<CcButton>(find.widgetWithText(CcButton, 'New'))
-            .onPressed,
+        tester.widget<CcButton>(find.widgetWithText(CcButton, 'New')).onPressed,
         isNull,
       );
 
@@ -2667,7 +2665,7 @@ void main() {
               content: '# s',
               description: 'Suspicious skill',
               lockState: InstalledSkillLockState.drifted,
-              origin: SkillOrigin.registry,
+              origin: SkillOrigin.github,
               scanVerdict: SkillScanVerdict.quarantine,
             ),
             const SkillInfo(

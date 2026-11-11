@@ -1,4 +1,4 @@
-import 'package:control_center/core/theme/design_system_palette.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 
 /// GitHub-fidelity status colors shared by the PR detail's CI/review surfaces:

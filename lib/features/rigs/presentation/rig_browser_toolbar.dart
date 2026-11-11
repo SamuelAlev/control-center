@@ -18,6 +18,7 @@ import 'package:cc_data/cc_data.dart' show RigBrowserStateView, RigView;
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_permission.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_url.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/rigs/presentation/rig_browser_toolbar_trailing.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -40,7 +41,17 @@ class RigBrowserToolbar extends ConsumerStatefulWidget {
     this.onToggleAudio,
     this.microphoneOn = false,
     this.onToggleMicrophone,
+    this.watchOnly = false,
+    this.onRefused,
   });
+
+  /// Whether the person may only watch: the page shows where it is, but
+  /// back, forward, reload, the address bar and permission answers are off.
+  final bool watchOnly;
+
+  /// Told about a failed `rig.act` or `rig.browserState`, so a refusal by
+  /// kind lowers the space's rig access.
+  final ValueChanged<Object>? onRefused;
 
   /// The owning workspace.
   final String workspaceId;
@@ -102,6 +113,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
     _poller = _BrowserStatePoller(
       readState: ref.read(rigRepositoryProvider).browserState,
       onState: _receiveState,
+      onRefused: (e) => widget.onRefused?.call(e),
       workspaceId: widget.workspaceId,
       rigId: widget.rig.id,
     );
@@ -156,9 +168,10 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
   }
 
   Future<void> _act(Map<String, dynamic> action) async {
-    if (_busy) {
+    if (_busy || widget.watchOnly) {
       return;
     }
+    final l10n = AppLocalizations.of(context);
     setState(() => _busy = true);
     try {
       final result = await ref
@@ -175,7 +188,10 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
       }
     } on Object catch (e) {
       if (mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
+        widget.onRefused?.call(e);
+        CcToastScope.of(
+          context,
+        ).show(repoRefusalOf(l10n, e) ?? '$e', variant: CcToastVariant.danger);
       }
     } finally {
       if (mounted) {
@@ -209,6 +225,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
     _visibleInTree =
         Visibility.of(context) && TickerMode.valuesOf(context).enabled;
     _syncPolling();
+    final drive = !_busy && !widget.watchOnly;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -224,7 +241,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
               CcIconButton(
                 icon: AppIcons.arrowLeft,
                 size: CcButtonSize.sm,
-                onPressed: _canGoBack && !_busy
+                onPressed: _canGoBack && drive
                     ? () => unawaited(
                         _act(const {'action': 'history', 'delta': -1}),
                       )
@@ -234,7 +251,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
               CcIconButton(
                 icon: AppIcons.arrowRight,
                 size: CcButtonSize.sm,
-                onPressed: _canGoForward && !_busy
+                onPressed: _canGoForward && drive
                     ? () => unawaited(
                         _act(const {'action': 'history', 'delta': 1}),
                       )
@@ -244,7 +261,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
               CcIconButton(
                 icon: _loading ? AppIcons.x : AppIcons.refreshCw,
                 size: CcButtonSize.sm,
-                onPressed: _busy
+                onPressed: !drive
                     ? null
                     : () => unawaited(
                         _act(
@@ -260,6 +277,7 @@ class _RigBrowserToolbarState extends ConsumerState<RigBrowserToolbar>
                 child: CcTextField(
                   controller: _address,
                   focusNode: _addressFocus,
+                  readOnly: widget.watchOnly,
                   size: CcTextFieldSize.sm,
                   hintText: l10n.ideBrowserAddressHint,
                   prefix: Icon(AppIcons.globe, size: 14, color: t.textTertiary),

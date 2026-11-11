@@ -3,7 +3,7 @@ title: Executar um servidor headless
 description: Execute o binário headless cc_server ou a sua imagem Docker, emparelhe um cliente com ele e configure-o com toda a superfície de flags da CLI e de variáveis de ambiente.
 dateModified: 2026-11-08
 slug: pt-PT/manual/guias/executar-servidor-headless
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Execute o `cc_server` numa máquina que fique ligada e depois ligue-se a ele a
@@ -174,8 +174,7 @@ web), `--label` (a predefinição é o nome da plataforma mais o hostname desta
 máquina), `--host` (o anfitrião a imprimir no URL, uma vez que o loopback não é
 acessível a partir de outra máquina) e `--client-url`. Voltar a executar `pair`
 roda a chave desse dispositivo e termina as suas sessões ativas. O emparelhamento
-nunca cria um espaço de trabalho: o onboarding do cliente que se liga dá-lhe nome
-e cria o primeiro.
+nunca cria um espaço de trabalho. Só o proprietário do servidor cria espaços de trabalho: no cliente do proprietário, o onboarding dá-lhe nome e cria o primeiro, e qualquer outra pessoa espera até que o proprietário crie um para ela ou que um admin do espaço de trabalho a convide.
 
 Com `--client-url` imprime também um QR que pode ser lido pelo terminal e que abre
 o cliente web já preenchido:
@@ -194,8 +193,8 @@ execução. Os dois não são intercambiáveis. Consulte
 [Emparelhar um dispositivo](/pt-PT/manual/guias/emparelhar-dispositivo/).
 :::
 
-Uma credencial gerada por `cc_server pair` **não tem validade**; uma gerada na
-aplicação expira sempre ao fim de 30 dias. Revogue um dispositivo gerado pela CLI
+Uma credencial gerada por `cc_server pair` expira ao fim de 30 dias, tal como uma gerada na
+aplicação; execute `pair` de novo para o mesmo dispositivo para emitir uma nova. Revogue um dispositivo gerado pela CLI
 em **Definições → Você → Seus dispositivos** quando já não precisar dele.
 
 A chave de emparelhamento autentica o handshake Noise obrigatório; cada sessão
@@ -247,6 +246,16 @@ túnel cifrado em vez disso.
 O servidor é executado até receber `SIGINT`/`SIGTERM` e depois encerra de forma
 limpa.
 
+### Leia as linhas de arranque
+
+Duas linhas indicam como este servidor está configurado. A linha de exposição, impressa junto ao banner de pronto, começa por `cc_server exposure:` e lista até onde pode ser alcançado (`bind`, `tls`, `relay`, `tunnel`), se um proprietário do servidor está registado (`owner`) e como os agentes são executados nesta máquina (`sandbox`):
+
+- `sandbox=native`: cada execução de agente é envolvida na sandbox do sistema operativo.
+- `sandbox=off`: iniciou o servidor com `--sandbox off`, por isso os agentes de todos os membros correm sem confinamento nesta máquina.
+- `sandbox=unavailable`: o anfitrião não tem backend de sandbox (Windows, ou Linux sem `bwrap` e `socat`), por isso só arrancam as execuções de agentes pelas quais o proprietário do servidor é responsável. As dos restantes são recusadas com "Este servidor não tem sandbox, por isso apenas o proprietário pode executar agentes aqui."
+
+Uma linha de sandbox anterior no registo diz o mesmo por extenso e, quando falta um backend, indica o que instalar. Executar agentes de outras pessoas sem sandbox é uma escolha que o proprietário do servidor faz uma vez, para todos, com `--sandbox off`. Consulte [Configurar políticas de sandbox](/pt-PT/manual/guias/politicas-de-sandbox/#verificar-se-as-suas-execuções-de-agente-correm-em-sandbox).
+
 ## Passo 5: Ligar um cliente
 
 Aponte um cliente ao URL do servidor e à chave de emparelhamento do passo 3:
@@ -272,6 +281,8 @@ aplicação web. O seu service worker encaminha o tráfego HTTP e WebSocket pela
 sessão cifrada autenticada que o resto do cliente. O `cc_server` decifra cada
 pedido, reencaminha-o para o seu backend code-server local e cifra a resposta de
 volta ao cliente. Os ficheiros continuam a pertencer ao servidor.
+
+O editor corre no servidor como o próprio utilizador do servidor, com o seu terminal, tarefas e extensões, por isso só o [proprietário do servidor](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor) o pode abrir. Uma sessão pertence ao dispositivo e à pessoa que a abriu. Abre com a confiança do espaço de trabalho do VS Code ativada, por isso o VS Code pergunta antes de confiar numa pasta, e com as tarefas automáticas desligadas, para que as tarefas de um repositório nunca arranquem ao abrir. Os restantes mantêm o editor integrado da aplicação e as vistas de ficheiros; o editor completo não lhes é oferecido.
 
 Aloje o cliente web por HTTPS ou numa origem de loopback segura para que os service
 workers possam correr. A build web normal e os scripts de publicação incluem os
@@ -320,6 +331,12 @@ mostra, pelo que o servidor não precisa de endereço público para eles. Os
 inícios de sessão através das apps do próprio servidor devolvem o navegador ao
 URL público do servidor, por isso defina `--public-url` com um endereço que os
 navegadores das pessoas consigam alcançar.
+
+Esta é a predefinição do servidor. Um administrador do espaço de trabalho pode dar a um
+espaço de trabalho outra escolha em **Definições → Espaço de trabalho → Integrações**.
+Com `CC_CONNECT_URL` definido, um espaço de trabalho ainda pode mudar para as próprias
+apps, mas não para um Connect próprio; consulte
+[Escolha por espaço de trabalho](/pt-PT/manual/referencia/connect/#escolha-por-espaço-de-trabalho).
 
 Para alojar o Connect para outros servidores a partir deste, defina
 `CC_SERVER_CONNECT_HOST=on`; consulte
@@ -374,7 +391,7 @@ Duas coisas a saber antes de expor a porta para além do loopback (o TLS, por si
 só, não fornece a cifragem ponto a ponto do cliente emparelhado nem autoriza
 recursos):
 
-- **O MCP falha em modo fechado fora do anfitrião.** Uma superfície MCP sem token responde apenas a loopback. Vincular `any` não a amplia — um pedido de fora do anfitrião é recusado com "MCP requires a bearer token to answer non-loopback clients" até configurar um token (`mcp.setToken`, ou **Definições → Servidor → Servidores MCP**).
+- **O MCP exige sempre o seu token.** O servidor cria o token MCP no primeiro arranque e todos os pedidos, incluindo os de loopback, têm de o enviar como `Authorization: Bearer <token>`. Não pode ser desligado; o proprietário do servidor lê-o e roda-o em **Definições → Servidor → Servidores MCP**. Os pedidos vindos de uma página web, para um `Host` desconhecido, ou um `POST` que não seja JSON são recusados antes de o token ser verificado. Consulte [Usar o servidor MCP](/pt-PT/manual/guias/servidor-mcp/).
 - **`GET /healthz` não tem autenticação por conceção**, tem CORS com wildcard e publica o id, o nome, a impressão digital de identidade e a versão de compilação do servidor. Os clientes precisam da impressão digital para fixar o servidor, por isso isto é deliberado — mas significa que qualquer `cc_server` acessível divulga tudo isso a quem o pedir.
 
 ## Guias relacionados

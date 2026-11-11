@@ -8,12 +8,6 @@ import 'package:cc_infra/src/util/http_file_download.dart';
 import 'package:path/path.dart' as p;
 import 'package:rhttp/rhttp.dart';
 
-// Re-export the relocated value type so existing consumers that import this
-// manager keep naming `EmbeddingModelPaths` without a churned import. The
-// canonical definition lives in cc_domain.
-export 'package:cc_domain/core/domain/value_objects/embedding_model_paths.dart'
-    show EmbeddingModelPaths;
-
 /// Description of an installable embedding model.
 class EmbeddingModelInfo {
   /// Creates [EmbeddingModelInfo].

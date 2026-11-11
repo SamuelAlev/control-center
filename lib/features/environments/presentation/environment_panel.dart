@@ -6,6 +6,7 @@ import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/environments/presentation/environment_panel_sections.dart';
 import 'package:control_center/features/environments/presentation/environment_setup_prompt.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_endpoint_rows.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_live_panel.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_section.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_start.dart';
@@ -74,6 +75,15 @@ class EnvironmentPanel extends ConsumerWidget {
         const <EnvironmentRun>[];
     return EnvironmentPanelFrame(
       children: [
+        EnvironmentOperateNote(
+          spaceKey: key,
+          padding: const EdgeInsetsDirectional.fromSTEB(
+            AppSpacing.sm,
+            AppSpacing.md,
+            AppSpacing.sm,
+            0,
+          ),
+        ),
         if (environment != null)
           ..._live(context, ref, key, environment, runs)
         else
@@ -111,7 +121,6 @@ class EnvironmentPanel extends ConsumerWidget {
         child: EnvironmentSummary(
           spaceKey: key,
           environment: environment,
-          runs: runs,
           menu: true,
         ),
       ),
@@ -197,6 +206,7 @@ class EnvironmentPanel extends ConsumerWidget {
         ),
         workspaceId: workspaceId,
         busy: ref.watch(environmentActionsProvider(key)).contains('start'),
+        enabled: environmentOperable(ref, key),
       ),
     );
   }

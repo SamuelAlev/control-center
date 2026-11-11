@@ -2,7 +2,7 @@
 title: Spravujte API klíče
 description: Kde který přihlašovací údaj leží, u tvého účtu na serveru, u serveru samotného nebo u externího CLI, a jak ho nastavit, obměnit a odebrat.
 slug: cs-CZ/prirucka/navody/api-klice
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Tenhle návod ukazuje, kde leží každý přihlašovací údaj, který Control Center
@@ -31,8 +31,7 @@ stojí člověk.
   Control Center Connect a omezený na to, co tam smí odpovědný člen. Nikdy to
   není celé předané tvoje přihlášení
 
-Tvoje nastavíš na kartě **Hostování kódu** v **Nastavení → Pracovní prostor →
-Profil a identita**; aplikaci serveru v **Aplikace poskytovatelů** v **Nastavení →
+Tvoje nastavíš na kartě **Hostování kódu** v **Nastavení → Vy → Profil**; aplikaci serveru v **Aplikace poskytovatelů** v **Nastavení →
 Server → Jednotné přihlášení**. Viz
 [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/) a
 [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/).
@@ -41,9 +40,9 @@ GitLab a Bitbucket pořád berou vložený osobní token, uložený stejným zp�
 Viz [Připojte hostitele kódu](/cs-CZ/prirucka/navody/pripojeni-hostitele-kodu/).
 
 :::note[Je tu i obrazovka jen přes URL]
-`/workspaces/<workspaceId>/api-keys` vykreslí tytéž dvě karty jako první krok
+`/workspaces/<workspaceId>/api-keys` vykreslí tytéž karty jako první krok
 onboardingu. **V navigaci uživatelského rozhraní nikde položku nemá**; dostaneš
-se na ni jen zadáním URL. Použij Nastavení → Pracovní prostor → Profil a identita.
+se na ni jen zadáním URL. Pro svá přihlášení použij Nastavení → Vy → Profil a pro dodavatele ticketů Nastavení → Pracovní prostor → Integrace.
 :::
 
 ## Nastav klíče poskytovatelů modelů
@@ -62,9 +61,7 @@ Celý seznam a přidání vlastního endpointu jsou v
 Tyhle přihlašovací údaje platí **pro celého hostitele**: jeden klíč obslouží
 každý pracovní prostor na instalaci. Tokeny OAuth se obnoví dřív, než vyprší.
 
-CLI externích adaptérů si drží vlastní přihlašovací údaje ve vlastní konfiguraci
-na hostiteli serveru. Control Center je nespravuje. Claude Code ověř tak, jak
-říká jeho dokumentace, na stroji, kde běží `cc_server`.
+Claude Code se přihlašuje přes **Účty Claude Code** v **Nastavení → Server → Poskytovatelé modelů**: každý účet dostane vlastní konfigurační adresář na serveru a příkaz `claude auth login`, který ti aplikace ukáže, spustíš tam.
 
 Dialog **Proměnné prostředí** u jednotlivých adaptérů vypadá jako místo, kam
 klíč pro některé z nich vložíš, ale není. Zapisuje na tvoje zařízení, server
@@ -73,14 +70,14 @@ klíč pro některé z nich vložíš, ale není. Zapisuje na tvoje zařízení,
 
 ## Připoj ticketovací službu
 
-Karta **Ticketing** v **Nastavení → Pracovní prostor → Obecné** drží obě
-poloviny jednoho rozhodnutí: ve které službě tickety žijí a kým je Control
-Center, když s ní mluví. Když zvolíš **Místní**, řádky Linear zmizí. Místní
+Karta **Ticketing** v **Nastavení → Pracovní prostor → Integrace** drží stranu
+pracovního prostoru: ve které službě tickety žijí a kým je Control
+Center, když v ní pracuje samo. Když zvolíš **Místní**, řádky Linear zmizí. Místní
 tickety žijí v databázi tohoto serveru a není k čemu se ověřovat.
 
-Linear má dvě přihlášení a žádný vkládaný klíč: **Linear** je tvoje, pro to, co
+Linear má dvě přihlášení a žádný vkládaný klíč: **Linear** (v **Nastavení → Vy → Profil**) je tvoje, pro to, co
 děláš ty, a **Automatizace Linear** je aplikace Control Center pracovního
-prostoru, kterou připojí admin, pro synchronizaci ticketů, pipelines a agenty.
+prostoru, kterou na kartě Ticketing připojí admin, pro synchronizaci ticketů, pipelines a agenty.
 Server může navíc držet **Servisní klíč API** (**Aplikace poskytovatelů**) pro
 pracovní prostory bez připojené automatizace. Do sandboxu agenta se žádné
 pověření ticketingu nevkládá; agenti zapisují tickety přes nástroje Control
@@ -97,10 +94,11 @@ Center, které se ptají pravidla **Zápis do externího trackeru**. Viz
 - **Aplikace serveru**: na stránce aplikace u poskytovatele vygeneruj nový
   soukromý klíč nebo client secret, vlož ho do **Aplikace poskytovatelů**
   a stiskni **Test**
-- **Instalační klíč Connect**: **Vyměnit klíč** na kartě **Control Center
-  Connect**, nebo `cc_server connect rotate-key --yes`. Každý, kdo se přihlásil
-  přes Connect, se přihlásí znovu. Viz
-  [Control Center Connect](/cs-CZ/prirucka/referencni-prirucka/connect/)
+- **Instalační klíč Connect**: vlastník serveru stiskne **Vyměnit klíč** na kartě
+  **Control Center Connect**. Každý, kdo se přihlásil přes Connect, se přihlásí
+  znovu. Pokud nejde spojit se serverem Connect, nic se nezmění a nabídne se
+  **Otočit i tak**. Viz
+  [Otočení instalačního klíče](/cs-CZ/prirucka/referencni-prirucka/connect/#výměna-instalačního-klíče)
 - **Poskytovatel modelu**: na jeho řádku se odhlas (OAuth) nebo klíč odeber,
   pak se připoj znovu
 - **Slack**: u vlastní aplikace vlož tokeny znovu v dialogu připojení. Sdílená
@@ -112,8 +110,9 @@ Center, které se ptají pravidla **Zápis do externího trackeru**. Viz
 
 ### Token GitLabu nebo Bitbucketu funguje v `curl`, ale tady ne
 
-Podívej se na podtitul řádku **Hostování kódu**. Když v něm stojí „z prostředí“,
-odpovídá přihlašovací údaj serveru, ne tvůj. Tvůj se neuložil.
+Podívej se na řádek **Hostování kódu**. Když tam stojí „Nepřipojeno“ nebo tě vyzve,
+abys se připojil znovu, tvůj token se neuložil nebo byl odmítnut. U Bitbucketu zadej
+e-mail svého účtu Atlassian spolu s API tokenem.
 
 ### Token GitLabu nebo Bitbucketu projde, ale pozdější požadavky selžou
 

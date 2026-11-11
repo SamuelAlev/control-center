@@ -88,10 +88,13 @@ class RpcConversationRepository
     'title': title,
   });
 
+  /// [requestedByUserId] is not sent: the server takes it from the
+  /// connection.
   @override
   Future<ConversationTitleSuggestion> suggestTitle({
     required String workspaceId,
     required String conversationId,
+    String? requestedByUserId,
   }) async {
     final data = await _client.call('conversation.suggestTitle', {
       'workspace_id': workspaceId,

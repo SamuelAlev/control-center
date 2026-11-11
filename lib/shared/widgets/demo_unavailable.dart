@@ -50,6 +50,10 @@ enum DemoCapability {
   /// Space environments — `environment.*` and `environments.*` run real
   /// processes on the host.
   environments,
+
+  /// The visitor's own account — `users.*`: username, profile and linked
+  /// accounts. A demo visitor is a throwaway guest.
+  account,
 }
 
 /// The honest notice a demo shows where a capability has been removed.
@@ -96,6 +100,7 @@ class DemoUnavailable extends StatelessWidget {
       DemoCapability.serverAdmin => l10n.demoUnavailableServerAdmin,
       DemoCapability.pipelines => l10n.demoUnavailablePipelines,
       DemoCapability.environments => l10n.demoUnavailableEnvironments,
+      DemoCapability.account => l10n.demoUnavailableAccount,
     };
 
     if (compact) {

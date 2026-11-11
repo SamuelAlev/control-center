@@ -8,17 +8,12 @@ void main() {
   late GlobalDatabase global;
   late WorkspaceDatabaseManager dbs;
 
-  /// The workspace whose rows the sentinel-adoption tests seed and assert on.
-  /// Identity itself is global; everything it re-attributes lives in a workspace.
-  late WorkspaceDatabase db;
-
   setUp(() async {
     global = createTestGlobalDatabase();
     dbs = createTestWorkspaceDatabases(global: global);
     // Force beforeOpen pragmas/index setup before raw inserts.
     await global.customSelect('SELECT 1').get();
     await seedTestWorkspace(global, dbs, workspaceId);
-    db = dbs.of(workspaceId);
   });
 
   tearDown(() async {
@@ -56,146 +51,72 @@ void main() {
     expect(await global.userDao.count(), 1);
   });
 
-  test('workspaces get ownerUserId + an owner membership', () async {
+  test('the minted owner is recorded, and a later account with an earlier '
+      'creation time never replaces it', () async {
+    final ownerId = await run();
+    expect(
+      await global.workspaceRouteDao.meta(GlobalDatabase.serverOwnerKey),
+      ownerId,
+    );
+    // An account created while the clock was wrong (or by a restore) sorts
+    // before the owner by creation time; the record still answers.
+    await global.userDao.upsert(
+      UsersTableCompanion.insert(
+        id: 'user-early',
+        handle: 'early',
+        displayName: 'Early',
+        createdAt: Value(DateTime(2000)),
+      ),
+    );
+    expect((await global.userDao.getAll()).first.id, 'user-early');
+    expect(await run(), ownerId);
+  });
+
+  test('accounts without a recorded owner never become the owner', () async {
+    await global.userDao.upsert(
+      UsersTableCompanion.insert(
+        id: 'user-first',
+        handle: 'first',
+        displayName: 'First',
+        createdAt: Value(DateTime(2024)),
+      ),
+    );
+    final ownerId = await run();
+    expect(ownerId, isNot('user-first'));
+    expect(
+      await global.workspaceRouteDao.meta(GlobalDatabase.serverOwnerKey),
+      ownerId,
+    );
+    expect(await global.userDao.count(), 2);
+  });
+
+  test("a workspace's recorded owner gets an owner membership; an ownerless "
+      'workspace grants nobody', () async {
+    final ownerId = await run();
     await global.workspaceRegistryDao.upsertWorkspace(
-      WorkspacesTableCompanion.insert(id: 'ws-1', name: 'One'),
+      WorkspacesTableCompanion.insert(
+        id: 'ws-1',
+        name: 'One',
+        ownerUserId: Value(ownerId),
+      ),
     );
     await global.workspaceRegistryDao.upsertWorkspace(
       WorkspacesTableCompanion.insert(id: 'ws-2', name: 'Two'),
     );
-    final ownerId = await run();
-    for (final wsId in ['ws-1', 'ws-2']) {
-      final rows = await global.select(global.workspacesTable).get();
-      expect(
-        rows.firstWhere((w) => w.id == wsId).ownerUserId,
-        ownerId,
-        reason: wsId,
-      );
-      // The membership row lives in that workspace's OWN database, so the
-      // assertion has to open the right one — reading `ws-1`'s file would find
-      // nothing for `ws-2` no matter what the bootstrap did.
-      final member = await dbs
-          .of(wsId)
-          .workspaceMemberDao
-          .getMember(wsId, ownerId);
-      expect(member, isNotNull, reason: wsId);
-      expect(member!.role, 'owner', reason: wsId);
-    }
-  });
+    await run();
 
-  test('legacy devices with no user binding are bound to the owner', () async {
-    await global.pairedDeviceDao.upsert(
-      PairedDevicesTableCompanion.insert(
-        id: 'dev-legacy',
-        label: 'Old phone',
-        pskRef: 'file',
-      ),
+    // The membership row lives in that workspace's OWN database.
+    final member = await dbs
+        .of('ws-1')
+        .workspaceMemberDao
+        .getMember('ws-1', ownerId);
+    expect(member?.role, 'owner');
+
+    final rows = await global.select(global.workspacesTable).get();
+    expect(rows.firstWhere((w) => w.id == 'ws-2').ownerUserId, isNull);
+    expect(
+      await dbs.of('ws-2').workspaceMemberDao.getMember('ws-2', ownerId),
+      isNull,
     );
-    final ownerId = await run();
-    final device = await global.pairedDeviceDao.getById('dev-legacy');
-    expect(device!.userId, ownerId);
-  });
-
-  test('sentinel rows are re-attributed to the owner', () async {
-    await global.workspaceRegistryDao.upsertWorkspace(
-      WorkspacesTableCompanion.insert(id: 'ws-1', name: 'One'),
-    );
-    await db
-        .into(db.spacesTable)
-        .insert(
-          const SpacesTableCompanion(
-            id: Value('c1'),
-            name: Value('General'),
-            workspaceId: Value('ws-1'),
-          ),
-        );
-    // The space's conversation, keyed on its own id (never the space id) —
-    // messages carry a required conversation_id FK, so it must exist first.
-    await db
-        .into(db.conversationsTable)
-        .insert(
-          ConversationsTableCompanion.insert(
-            id: 'conv-c1',
-            spaceId: 'c1',
-            workspaceId: const Value('ws-1'),
-          ),
-        );
-    // The 'user' participant sentinel.
-    await db
-        .into(db.spaceParticipantsTable)
-        .insert(
-          const SpaceParticipantsTableCompanion(
-            id: Value('p1'),
-            spaceId: Value('c1'),
-            principalId: Value('user'),
-            participantType: Value('agent'),
-          ),
-        );
-    // A human message written before identity existed: senderType 'user',
-    // senderId the literal sentinel — and one stamped with a device id.
-    for (final (id, sender) in [('m1', 'user'), ('m2', 'desktop-thin-local')]) {
-      await db
-          .into(db.conversationMessagesTable)
-          .insert(
-            ConversationMessagesTableCompanion(
-              id: Value(id),
-              spaceId: const Value('c1'),
-              conversationId: const Value('conv-c1'),
-              senderId: Value(sender),
-              senderType: const Value('user'),
-              content: const Value('hello'),
-            ),
-          );
-    }
-    // An agent message must stay untouched.
-    await db
-        .into(db.conversationMessagesTable)
-        .insert(
-          const ConversationMessagesTableCompanion(
-            id: Value('m3'),
-            spaceId: Value('c1'),
-            conversationId: Value('conv-c1'),
-            senderId: Value('agent-7'),
-            senderType: Value('agent'),
-            content: Value('report'),
-          ),
-        );
-    // A ticket assigned to the sentinel + a sentinel collaborator.
-    await db.ticketDao.insert(
-      TicketsTableCompanion.insert(
-        id: 't1',
-        workspaceId: 'ws-1',
-        title: 'Fix it',
-        assignedAgentId: const Value('user'),
-      ),
-    );
-    await db.ticketDao.addCollaborator(
-      const TicketCollaboratorsTableCompanion(
-        id: Value('tc1'),
-        ticketId: Value('t1'),
-        principalId: Value('user'),
-        collaboratorType: Value('agent'),
-      ),
-    );
-
-    final ownerId = await run();
-
-    final participants = await db.select(db.spaceParticipantsTable).get();
-    expect(participants.single.principalId, ownerId);
-    expect(participants.single.participantType, 'user');
-
-    final messages = await db.select(db.conversationMessagesTable).get();
-    final byId = {for (final m in messages) m.id: m};
-    expect(byId['m1']!.senderId, ownerId);
-    expect(byId['m2']!.senderId, ownerId);
-    expect(byId['m3']!.senderId, 'agent-7');
-
-    final tickets = await db.select(db.ticketsTable).get();
-    expect(tickets.single.assignedAgentId, ownerId);
-    expect(tickets.single.assigneeType, 'user');
-
-    final collaborators = await db.ticketDao.getCollaborators('t1');
-    expect(collaborators.single.principalId, ownerId);
-    expect(collaborators.single.collaboratorType, 'user');
   });
 }

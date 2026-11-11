@@ -30,7 +30,7 @@ class ReviewVerdict {
   /// Final ship/hold/block call.
   final ReviewVerdictOverall overall;
 
-  /// Per-axis results (PRD 18 §7). Empty for the legacy single-axis path.
+  /// Per-axis results (PRD 18 §7). Empty for the single-axis path.
   /// The overall verdict is upgraded (never downgraded) by a blocking axis:
   /// a gated `fail` forces `block`; a gated axis that could not run
   /// (`partial`/`unavailable`) forces at least `hold`.

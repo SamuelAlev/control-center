@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/core/domain/entities/agent.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition.dart';
@@ -8,8 +9,8 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.da
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_trigger_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
+import 'package:cc_domain/features/pipelines/domain/templates/builtin_trigger_seeds.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/workspaces/create_ceo_agent.dart';
 import 'package:cc_infra/src/workspaces/create_specialist_agents.dart';
 import 'package:uuid/uuid.dart';

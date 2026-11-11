@@ -190,11 +190,7 @@ void main() {
       final reminder = createReminder(now)
         ..update([
           wait('msg-1', createdAt: now(), kind: 'question'),
-          wait(
-            'x',
-            createdAt: now(),
-            method: 'notifications/agent_run_completed',
-          ),
+          wait('x', createdAt: now(), method: 'notifications/message_received'),
         ]);
 
       async.elapse(const Duration(minutes: 3));

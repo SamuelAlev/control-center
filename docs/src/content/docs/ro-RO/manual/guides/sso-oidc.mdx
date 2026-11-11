@@ -2,7 +2,7 @@
 title: Conectează un provider OpenID Connect
 description: Leagă orice emitent OIDC — Pocket ID, Keycloak, Auth0, Zitadel — de autentificarea în Control Center.
 slug: ro-RO/manual/ghiduri-practice/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -91,6 +91,32 @@ tunel sau un URL public — vezi [Provisionă utilizatori cu
 SCIM](/ro-RO/manual/ghiduri-practice/sso-scim).
 :::
 
+## Cum se potrivesc autentificările cu conturile existente
+
+O autentificare prin furnizorul de identitate găsește contul în această ordine:
+
+1. **Identitatea fixată.** Prima autentificare SSO fixează subiectul furnizorului (emitentul plus `sub`) de cont. Fiecare autentificare ulterioară cu acel subiect este același cont.
+2. **Un e-mail verificat, de ambele părți.** În caz contrar, autentificarea se potrivește cu un cont după e-mail doar când furnizorul trimite `email_verified: true` și adresa contului este și ea verificată. O adresă este verificată când a setat-o SSO sau SCIM ori când proprietarul serverului a confirmat-o. Adresa proprietarului însuși contează.
+
+Adresele de e-mail sunt stocate și afișate cu litere mici, iar potrivirea ignoră majusculele. O adresă verificată identifică un cont doar când exact un cont o deține; dacă două conturi dețin aceeași adresă verificată, nu se potrivește niciunul.
+
+O adresă pe care cineva a scris-o în propriul profil sau la o invitație nu este verificată și nu se potrivește cu nimic. Modificarea unei adrese îi șterge starea de verificată până când cineva o garantează din nou. O autentificare nu se potrivește niciodată după nume de utilizator.
+
+Când nimic nu se potrivește, autentificarea creează un cont nou dacă **Provisionare utilizatori necunoscuți la prima autentificare** este activat și este refuzată dacă este dezactivat.
+
+### Înainte să activezi SSO pentru persoane care au deja conturi
+
+Confirmă mai întâi adresele lor. Deschide **Setări → Server → Persoane**, unde fiecare cont afișează **E-mail neconfirmat** până când cineva l-a garantat, și apasă **Confirmă e-mailul** pe rândul fiecărei persoane. Doar proprietarul serverului vede această listă. Fără asta, fiecare dintre acele persoane primește fie un al doilea cont la prima autentificare SSO, fie este refuzată când provisionarea utilizatorilor necunoscuți este dezactivată.
+
+Cât timp adresa ei nu este confirmată, o persoană vede sub câmpul de e-mail din propriul profil mesajul „Doar tu ai introdus această adresă. Single sign-on nu o va potrivi până când proprietarul serverului o confirmă.”
+
+### Furnizori care nu trimit `email_verified`
+
+Unii furnizori omit cererea. Microsoft Entra ID o face implicit. O cerere lipsă nu înseamnă da, așa că la un astfel de furnizor autentificarea se potrivește doar prin identitatea fixată, iar prima autentificare a unei persoane nu își poate găsi niciodată contul existent după e-mail. Provisionarea contului cu SCIM nu ajută la acea primă autentificare OIDC. Căile practice sunt:
+
+- lași **Provisionare utilizatori necunoscuți la prima autentificare** activat și lași prima autentificare să creeze contul, sau
+- configurezi furnizorul să emită `email_verified`, apoi confirmi adresele care se potrivesc, ca mai sus.
+
 ## Verifică-ți configurația din această pagină
 
 Verificatorul de mai jos rulează în browserul tău. Preia direct documentul
@@ -103,3 +129,15 @@ care arată dacă clientul și URI-ul lui de redirect sunt înregistrate. Nu
 cere niciodată client secret-ul.
 
 <SsoCheck kind="oidc" />
+
+## Depanare
+
+### Cineva a primit un al doilea cont după ce SSO a fost activat
+
+Adresa contului existent nu era verificată când persoana s-a autentificat prima dată prin SSO, deci autentificarea nu a potrivit-o și a creat un cont nou. Asta se întâmplă când adresa a fost scrisă în profil sau la o invitație, iar proprietarul serverului nu a confirmat-o, sau când furnizorul nu a trimis `email_verified: true`. Un cont nou a cărui adresă este garantată de furnizor preia acea adresă, iar contul mai vechi, care avea doar adresa scrisă, o pierde.
+
+Ca să eviți asta pentru următoarea persoană, confirmă adresele în **Setări → Server → Persoane** înainte să se autentifice. Pentru cineva care are deja două conturi, contul nou este fixat de identitatea lui SSO, deci acesta este cel pe care vor folosi autentificările lui de acum înainte.
+
+### „Acest cont este deja legat de o altă identitate SSO”
+
+Autentificarea a potrivit un cont după e-mailul lui verificat, dar contul este deja fixat de alt subiect sau alt emitent: un alt utilizator la furnizor, aceeași persoană sub un furnizor nou, sau un cont creat de SCIM sub propriul identificator. Contul fixat refuză orice altă identitate, deci o adresă reciclată la furnizor nu îl poate prelua. Autentifică-te cu identitatea de care a fost legat contul prima dată.

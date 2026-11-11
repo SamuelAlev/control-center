@@ -2,7 +2,7 @@
 title: Événements de domaine
 description: Catalogue complet des 54 événements de domaine, de leurs charges utiles et des abonnés côté serveur qui les consomment.
 slug: fr-CA/manuel/reference/evenements-de-domaine
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bus d’événements
@@ -148,14 +148,13 @@ Plusieurs sous-systèmes qui, de l’extérieur, semblent pilotés par les évé
 
 | Sous-domaine        | Comment l’état progresse à la place                                                                     |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Mémoire             | `record_memory_fact` et ses acolytes écrivent et retournent; le rappel lit. Rien ne publie sur un fait ou un conflit |
+| Mémoire             | `propose_fact` et ses acolytes écrivent et retournent; le rappel lit. Rien ne publie sur un fait ou un conflit |
 | Orchestration       | La proposition, son approbation et l’exécution de pipeline générée sont des lignes et des appels RPC    |
 | Documents de plan   | `submit_plan` écrit une révision; l’approbation matérialise une orchestration. Ni l’un ni l’autre n’est annoncé |
 | Artéfacts           | `publish_artifact` / `revise_artifact` écrivent les révisions directement                               |
 | Approbations        | L’escalade est traitée à l’intérieur du service de flux d’approbation                                   |
 | Synchronisation des tickets | Le coordinateur de fournisseurs s’abonne aux événements de ticket ci-dessus; les webhooks entrants sont appliqués directement |
 | Actualisation du calendrier | Une synchronisation insère ou met à jour les événements et le client les relit; il n’y a aucune diffusion d’actualisation |
-| Fusions d’arbres de travail | Consignées dans `worktree_merge_log` et lues à partir de là                                     |
 
 ## Abonnés
 
@@ -190,7 +189,7 @@ Chaque abonné ci-dessous est construit à l’intérieur de `runCcServer` (ou d
 
 `TicketAssigned` est un signal d’audit et de notification, et un déclencheur de pipeline. L’assignation à un agent consigne la propriété et ne démarre aucune exécution — il n’existe pas de répartiteur de tickets. L’assignation à une équipe (`assignedTeamId` défini) est l’exception : `TeamRoutingService` lance le chef d’équipe.
 
-`TicketRemoteSyncHandler` est déclaré mais jamais construit dans le code de production, il ne s’abonne donc à rien aujourd’hui. Le `NotificationEventMapper` côté client n’est construit que dans son propre test — c’est le vestige du chemin intra-processus d’avant la séparation client/serveur. Les toasts en direct proviennent des trames ci-dessous.
+Les toasts en direct proviennent des trames ci-dessous.
 
 ## Mappage des notifications
 

@@ -2,7 +2,7 @@
 title: Etapas de pipeline
 description: Referência dos tipos de etapa de pipeline, das chaves de corpo das etapas, da configuração e dos resultados das etapas.
 slug: pt-BR/manual/referencia/etapas-de-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Uma etapa de pipeline tem dois eixos independentes:
@@ -61,7 +61,7 @@ Nó genérico de prompt e despacho: renderiza o prompt, despacha o agente para u
 
 ### `pipeline.condition`
 
-Corpo de roteador — lê `config.extras`, avalia uma condição e retorna `StepResult.route(key)`. As condições **não** são expressões JavaScript; três formas de escrita são aceitas, em ordem de prioridade:
+Corpo de roteador — lê `config.extras`, avalia uma condição e retorna `StepResult.route(key)`. As condições **não** são expressões JavaScript; duas formas de escrita são aceitas, em ordem de prioridade:
 
 - **Árvore de predicados** (`extras.predicate`) — uma árvore booleana que roteia `"true"` / `"false"`. Cada nó é um mapa com um `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — verdadeiro quando qualquer caminho listado existe no disco; `negate` o inverte; `recursive` também pesquisa subdiretórios (ignorando `.git`, `node_modules`, `build`, `.dart_tool`). Caminhos relativos são resolvidos em relação a `state[baseKey]` (padrão `repo_local_path`) ou, na ausência dele, ao diretório do espaço de trabalho por execução.
@@ -69,19 +69,28 @@ Corpo de roteador — lê `config.extras`, avalia uma condição e retorna `Step
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — grupos booleanos.
   - `{"type": "not", "of": <predicate>}` — negação.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; roteia para o primeiro caso que o valor de estado contém, sem diferenciar maiúsculas de minúsculas, ou, na ausência dele, para `default`.
-- **Comparação** (campos legados de nível superior `extras.left` / `extras.op` / `extras.right`) — equivalente a um predicado `comparison`, mantido para modelos criados antes da árvore.
 
 As arestas que saem do nó carregam um `routeKey` que precisa corresponder à chave retornada.
 
 ### `prReview.comment`
 
-Publica os achados consolidados como um comentário de revisão de PR pelo cliente de PR do GitHub.
+Publica os achados consolidados, ou o `extras.message` próprio da etapa, como um comentário de revisão de PR pelo cliente de PR do GitHub.
 
-| Chave de estado           | Descrição                                    |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (obrigatório)                   |
-| `pr_number`               | Número da PR — int ou string numérica (obrigatório) |
-| `consolidated_findings`   | Corpo do comentário (obrigatório)            |
+| Chave                   | Lido de            | Descrição                                                     |
+| ----------------------- | ------------------ | ------------------------------------------------------------- |
+| `repo_full_name`        | Payload do gatilho | `owner/repo` (obrigatório)                                    |
+| `pr_number`             | Payload do gatilho | Número da PR — int positivo ou string numérica (obrigatório)  |
+| `consolidated_findings` | Estado             | Corpo do comentário quando a etapa não tem uma `message`      |
+
+A pull request vem somente do payload do gatilho da execução, nunca de um estado que uma etapa possa reescrever no meio da execução. As @-menções no texto publicado são neutralizadas, então o comentário não notifica ninguém.
+
+Uma `message` renderiza os seus marcadores `{{key}}` assim:
+
+- `repo_full_name`, `repo_owner`, `repo_name` e `pr_number` renderizam a pull request em que a etapa publica.
+- `author` é renderizado a partir do payload do gatilho, como está, somente quando é um nome de usuário válido no forge; qualquer outro valor faz a etapa falhar.
+- `consolidated_findings` é renderizado como markdown bruto, com as suas @-menções neutralizadas.
+- Todo outro valor é renderizado como texto literal: em uma linha, com a pontuação de markdown escapada e as @-menções neutralizadas.
+- Um marcador que não resolve para nada faz a etapa falhar.
 
 Retorna `StepResult.terminal` com `comment_review_id` e `commented_at` no estado.
 

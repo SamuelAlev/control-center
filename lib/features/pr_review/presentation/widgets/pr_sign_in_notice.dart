@@ -1,15 +1,18 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_prompts.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart'
-    show needsSignInLane;
-import 'package:control_center/features/forge/providers/forge_providers.dart';
+    show LaneSignInNeed, SignInNeed;
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart'
     show prEditProvider;
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,7 +39,7 @@ class PrSignInNotice extends ConsumerWidget {
     }
     return SignInRequiredBanner(
       lane: ConnectOAuthLane.github,
-      workspaceId: ref.watch(githubSignInScopeProvider),
+      workspaceId: ref.watch(activeWorkspaceIdProvider),
       bottomGap: 16,
     );
   }
@@ -47,8 +50,8 @@ class PrSignInNotice extends ConsumerWidget {
 /// reports as before.
 ///
 /// The lane is the one the server's refusal names. A refusal that names none
-/// falls back to the sign-in lane of [prRef]'s forge — never to GitHub for a
-/// GitLab or Bitbucket PR, whose credential is a token with no sign-in flow.
+/// falls back to [prRef]'s forge: its browser sign-in for GitHub, its token
+/// dialog for GitLab or Bitbucket, which have no sign-in flow.
 bool offerPrSignIn(
   BuildContext context,
   WidgetRef ref,
@@ -56,23 +59,44 @@ bool offerPrSignIn(
   PrRef? prRef,
 }) {
   final repo = prRef == null ? null : ref.read(prRepoRowProvider(prRef));
-  final lane =
-      needsSignInLane(error) ??
-      (repo == null ? null : signInLaneForForge(repo.forge));
-  if (lane == null) {
-    return false;
-  }
+  final fallback = repo == null
+      ? const LaneSignInNeed(ConnectOAuthLane.github)
+      : SignInNeed.forForge(repo.forge);
   return offerSignInForRefusal(
     context,
     error,
-    lane: lane,
-    workspaceId: ref.read(githubSignInScopeProvider),
+    fallback: fallback,
+    workspaceId: ref.read(activeWorkspaceIdProvider),
   );
+}
+
+/// What a refused pull request action says: the server's own words when it
+/// refused the person (no access on the forge, approving a pull request an
+/// agent opened at their request), else [message].
+String prErrorMessage(
+  AppLocalizations l10n,
+  Object error,
+  String Function(AppLocalizations l10n) message,
+) {
+  // The repository replaced on its forge (from any action: a review, a
+  // merge, a comment) or unreadable by the person's own account, by kind.
+  final refusal = repoCodeRefusalMessage(l10n, error);
+  if (refusal != null) {
+    return refusal;
+  }
+  if (error is RemoteRpcException &&
+      error.message.isNotEmpty &&
+      (error.code == RpcErrorCodes.unauthorized ||
+          error.code == RpcErrorCodes.validation)) {
+    return error.message;
+  }
+  return message(l10n);
 }
 
 /// Reports a failed pull request action from a mounted [context]: a sign-in
 /// offer when [error] was a refusal for want of the reader's own sign-in
-/// (see [offerPrSignIn]), else a danger toast saying [message].
+/// (see [offerPrSignIn]), else a danger toast saying [message] (or the
+/// server's refusal, see [prErrorMessage]).
 void showPrError(
   BuildContext context,
   WidgetRef ref,
@@ -82,7 +106,7 @@ void showPrError(
 }) {
   if (!offerPrSignIn(context, ref, error, prRef: prRef)) {
     CcToastScope.of(context).show(
-      message(AppLocalizations.of(context)),
+      prErrorMessage(AppLocalizations.of(context), error, message),
       variant: CcToastVariant.danger,
     );
   }
@@ -96,13 +120,13 @@ void listenForPrEditSignIn(BuildContext context, WidgetRef ref, PrRef prRef) {
     previous,
     next,
   ) {
-    final lane = ref.read(prEditProvider(prRef)).refusedLane;
-    if (next > (previous ?? 0) && lane != null && context.mounted) {
+    final need = ref.read(prEditProvider(prRef)).refusedNeed;
+    if (next > (previous ?? 0) && need != null && context.mounted) {
       unawaited(
         showSignInRequiredDialog(
           context,
-          lane: lane,
-          workspaceId: ref.read(githubSignInScopeProvider),
+          need: need,
+          workspaceId: ref.read(activeWorkspaceIdProvider),
         ),
       );
     }

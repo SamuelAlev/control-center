@@ -38,6 +38,14 @@ final class ConnectErrorContext {
   final String account;
 }
 
+/// Why automation on a Control Center Connect lane does not push, create a
+/// branch or open a pull request by itself.
+const String kGitHubNeedsRequesterMessage =
+    'On Control Center Connect the GitHub App never pushes, creates a branch '
+    'or opens a pull request on its own; that needs a person who asked for '
+    'it. Run this for someone (it then uses their own GitHub sign-in), or '
+    'give the workspace its own GitHub App in Settings.';
+
 /// The one table from a Connect failure to what a person reads. Server-side
 /// operator and log copy; clients localize from the stable code instead.
 String connectErrorMessage(ConnectErrorCode code, ConnectErrorContext context) {
@@ -57,16 +65,17 @@ String connectErrorMessage(ConnectErrorCode code, ConnectErrorContext context) {
         'Control Center Connect answered with an unexpected sign-in link, so '
             'it was not opened.',
     },
+    ConnectErrorCode.needsRequester => kGitHubNeedsRequesterMessage,
     ConnectErrorCode.codeMismatch =>
       'That code did not match. Check it and retry.',
     ConnectErrorCode.notAdmin =>
       'Only an administrator of that account can do this.',
     ConnectErrorCode.notInstalled =>
       'The Control Center GitHub App is not installed $where.',
-    ConnectErrorCode.installationBoundElsewhere =>
-      'The GitHub App installation $where belongs to another Control Center '
-          'server. An admin of that account can authorize this server in '
-          'Settings.',
+    ConnectErrorCode.repoNotSelected =>
+      'The Control Center GitHub App is installed $where, but this '
+          'repository is not among the ones it may reach. Add it in the '
+          "installation's repository settings.",
     ConnectErrorCode.teamBoundElsewhere =>
       'That Slack workspace is connected to another Control Center server.',
     ConnectErrorCode.suspended =>

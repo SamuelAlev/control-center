@@ -2,15 +2,23 @@
 title: Backendy sandboxu
 description: Backendy sandboxu, kde se uplatňují, a každý hodnotový objekt, který runtime sandboxu používá.
 slug: cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Jestli je běh v sandboxu, záleží na hostiteli]
-`cc_server` hostitele při startu jednou osondá a odeslání agenta obalí nativním backendem, když sonda hlásí, že nějaký je k dispozici a `--sandbox` není `off`. Obalí se oba švy odeslání: CLI Claude Code přes port sandboxu a ACP plus nástroj `bash` vestavěného harnessu přes správce sandboxu.
+`cc_server` při startu jednou rozhodne, jak běží agenti na tomto hostiteli, a rozhodnutí platí až do restartu:
 
-Kde sonda nehlásí backend — **na Windows vždy** a na Linuxu nebo WSL2 bez `bwrap` a `socat` — běhy agenta v sandboxu **nejsou**. ACP a nástroj `bash` harnessu se pořád spouštějí s očištěním prostředí; Claude Code jde přes `NoSandboxAdapter` a dědí prostředí hostitele. Zbývající hranice jsou vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), token forge jen pro čtení, který broker vystaví pro každý start a při úklidu odebere, pushe, které musí projít pravidlem pro push v bráně běhů agentů, politika příkazů podle režimu, sjednocené [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) (selžou uzavřeně), očištění prostředí na cestách ACP a `bash` harnessu a plocha nástrojů, kterou režim dovolí.
+- **V sandboxu** (`native`): sonda našla backend a `--sandbox` není `off`. Obalí se oba švy odeslání: CLI Claude Code přes port sandboxu a ACP plus nástroj `bash` vestavěného harnessu přes správce sandboxu.
+- **Vypnuto** (`off`): vlastník serveru ho spustil s `--sandbox off`. Agent každého člena na tomto stroji běží bez omezení, ať ho spustil kdokoli.
+- **Nedostupné** (`unavailable`): sandbox je zapnutý, ale sonda nenašla žádný backend (**na Windows vždy**, a na Linuxu nebo WSL2 bez `bwrap` a `socat`). Běh začne jen tehdy, když za něj odpovídá vlastník serveru ([vlastník](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru)): člověk, který o něj požádal, nebo u automatizace člověk, na kterého je navázaná. Běh kohokoli jiného se odmítne dřív, než se vydá přihlašovací údaj, převezme lease nebo spustí proces. Když není zaznamenán žádný vlastník, nezačne žádný běh.
+
+Odmítnutý běh skončí s kódem `sandbox_unavailable`. Aplikace ho ukáže jako **Agenti na tomto serveru potřebují sandbox**: „Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník. Vlastník může sandbox nainstalovat nebo sandboxing vypnout pro všechny.“
+
+Běh bez sandboxu (pod `off`, nebo vlastníkův vlastní běh pod `unavailable`) běží přímo na hostiteli. ACP a nástroj `bash` harnessu se pořád spouštějí s očištěním prostředí; Claude Code jde přes `NoSandboxAdapter` a dědí prostředí hostitele. Zbývající hranice jsou vlastní worktree běhu (copy-on-write tam, kde se dodává `rift`; `git worktree` na Windows), token forge jen pro čtení, který broker vystaví pro každý start a při úklidu odebere, pushe, které musí projít pravidlem pro push v bráně běhů agentů, politika příkazů podle režimu, sjednocené [guardraily akcí](/cs-CZ/prirucka/koncepty/guardraily/) (selžou uzavřeně), očištění prostředí na cestách ACP a `bash` harnessu a plocha nástrojů, kterou režim dovolí.
 
 Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search, find, search_files) jsou mimo sandbox na každém hostiteli: běží v procesu serveru, takže se obalí jen `bash`.
+
+Hostitel nikdy není záloha pro server se sandboxem. Pokud server agenty sandboxuje, ale běhu nemá sandbox, kterým by ho obalil, jeho nástrojové procesy a příkazy `bash` se odmítnou, nespustí se na hostiteli. Stejný postoj rozhoduje i o malých procesech kolem běhu: jednorázové pomocné procesy ACP (názvy konverzací, `/btw`, `/handoff`, `/goal`) a golden testy pull requestu v Review Studio běží v sandboxu, když server agenty sandboxuje, bez omezení pod `off`, a pod `unavailable` jen u požadavku, za který odpovídá vlastník serveru; jinak se přeskočí.
 :::
 
 ## Přehled backendů
@@ -19,9 +27,9 @@ Souborové nástroje harnessu v procesu (read, write, edit, apply patch, search,
 | ------------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | Izolované VM  | `microvm` | macOS, Linux, Windows (hypervizor microVM)   | Řízeno sondou runtime microVM; platí pro interaktivní terminály — shell běží uvnitř [stanice](/cs-CZ/prirucka/koncepty/stanice/), ne na hostiteli |
 | Nativní       | `native`  | macOS (Seatbelt), Linux a WSL2 (bubblewrap)   | Sonda při startu; Linux odmítne běh, který vyžaduje zákazy zápisu podle globu názvu souboru, a ty bubblewrap vynutit neumí   |
-| Žádný         | `none`    | Vše                                           | Výchozí hodnota při parsování, výchozí stav terminálu a náhrada, když není backend k dispozici nebo je nastaveno `--sandbox off` |
+| Žádný         | `none`    | Vše                                           | Výchozí hodnota při parsování a výchozí stav terminálu; odeslání agenta ho používá pod `--sandbox off` a pro běhy vlastníka, když žádný backend není dostupný |
 
-`SandboxBackend.fromName` vrací `none` pro null nebo nerozpoznanou uloženou hodnotu. Uložené `"docker"` se mapuje na `native`.
+`SandboxBackend.fromName` vrací `none` pro null nebo nerozpoznanou uloženou hodnotu.
 
 **`microvm` je jediný backend s hranicí jádra** — zátěž
 opravdu neběží na hostiteli. Tichá záloha to není ani jedním
@@ -33,7 +41,7 @@ zpátky klientovi a dostane odznak, takže terminál se nikdy nemůže vydávat 
 když běží na hostiteli. Životní cyklus, obrazy a odchozí provoz samotného VM
 pokrývá [reference stanic](/cs-CZ/prirucka/referencni-prirucka/stanice/).
 
-**Windows nemá nativní sandbox.** `NativeSandboxAdapter.probe` vrací `available: false` na každém hostiteli, který není macOS ani Linux/WSL2. Odeslání agenta na Windows proto používá `none`. Backend `microvm` je zvlášť: řídí ho sonda podle runtime microVM a platí pro interaktivní terminály a stanice, ne pro obalení `bash` na hostiteli.
+**Windows nemá nativní sandbox.** `NativeSandboxAdapter.probe` vrací `available: false` na každém hostiteli, který není macOS ani Linux/WSL2, takže Windows server je `unavailable`: startují jen běhy agentů vlastníka serveru, bez omezení, a běhy všech ostatních se odmítnou. Aby tam mohl agenty spouštět každý člen, vlastník spustí server s `--sandbox off`, což všechny spustí bez omezení. Backend `microvm` je zvlášť: řídí ho sonda podle runtime microVM a platí pro interaktivní terminály a stanice, ne pro obalení `bash` na hostiteli.
 
 ## Výsledky sondy
 
@@ -46,9 +54,9 @@ Vynucování pouští sonda. Běží jednou, při startu serveru.
 | Linux nebo WSL2, chybí jeden z nástrojů | `false`    | `requiresInstall: true`, s nápovědou k instalaci, která pojmenuje chybějící balíčky |
 | Jakákoli jiná platforma                | `false`     | Nativní sandbox se na téhle platformě nenabízí                            |
 
-Server výsledek zapíše na jeden startovací řádek: `agent sandbox ON` a k tomu poznámka, `no OS-native agent sandbox on this host` a k tomu nápověda, nebo `agent sandbox DISABLED by --sandbox off`. `GET /healthz` pole sandboxu nenese.
+Server výsledek zapíše na jeden startovací řádek: `agent sandbox ON` a k tomu poznámka; `no OS-native agent sandbox on this host` a k tomu nápověda, která doplňuje, že začnou jen běhy, za které odpovídá vlastník serveru; nebo `agent sandbox DISABLED by --sandbox off`. Řádek o vystavení vypsaný při startu nese stejné rozhodnutí jako `sandbox=native`, `sandbox=off` nebo `sandbox=unavailable`. `GET /healthz` pole sandboxu nenese.
 
-`--sandbox` / `CC_SERVER_SANDBOX` bere `on` (výchozí) nebo `off`. Je to vypnutí, ne zapnutí: `on` znamená „obal, když hostitel nabízí backend“, nikdy „vyžaduj ho“.
+`--sandbox` / `CC_SERVER_SANDBOX` bere `on` (výchozí) nebo `off`. `on` obalí každý běh, když hostitel nabízí backend, a když ho nenabízí, připustí jen běhy vlastníka. `off` spustí agenty každého člena na tomto hostiteli bez omezení; je to volba vlastníka pro všechny, ne nastavení pro jednotlivý běh.
 
 ## Nativní backend
 
@@ -63,6 +71,8 @@ Vygenerovaný profil je **ve výchozím stavu permisivní** (`(allow default)`) 
 - **Proces**: `process-exec` zakazuje binárky, které jsou vždy nebezpečné, a k tomu blokuje spuštění čehokoli ze zapisovatelného adresáře. Známé stromy instalací nástrojů ve vašem domovském adresáři (cache corepacku, npx a `pnpm dlx`, správci verzí node, prohlížeče Playwright, rustup a cargo, Go, fvm a cache pubu, pyenv, uv a pipx, rbenv, sdkman, mise, asdf a `~/.local/bin`) jsou pod tímto blokem znovu otevřené. Sdílené dočasné adresáře jsou také blokované. Každá relace místo toho dostane soukromý `TMPDIR` pod `/private/tmp`, kde mohou běžet programy, které sestaví (binárka `go test`, sestavení cargo). Zákazy pro vždy nebezpečné binárky se uplatní až po těchto povoleních
 - **Síť**: omezená na porty proxy v procesu a na DNS — loopback není povolený plošně a TCP naslouchání je zakázané. Unix sockety jsou povolené jen uvnitř soukromého `TMPDIR` relace, což pokrývá nástroje jako tsx a Chrome, které tam drží IPC socket; váš SSH agent a ostatní sockety zůstávají nedosažitelné. Proxy vynucují seznam povolených domén dané relace (viz [Odchozí síť](#odchozí-síť))
 - **Konfigurace**: profily se generují pro každý start ze `SandboxSpec`
+- **Vlastní příkazy serveru**: žádný přímý potomek složky, ze které server spouští programy (každý záznam `PATH` a obvyklé složky nástrojů uživatele, například `~/.local/bin`, s vyřešenými odkazy správců verzí jako `~/fvm/default`), nelze vytvořit, nahradit, smazat ani přejmenovat, ani nainstalovaný balíček, do kterého ukazuje připojený příkaz. Viz [Složky příkazů serveru](#složky-příkazů-serveru)
+- **Spouštěcí soubory**: každá domovská cesta, u které profil zakazuje čtení, je zakázaná i pro zápis, a spouštěcí soubory shellů a relací uživatele serveru (`.zshenv`, `.zlogin`, `.bash_login`, konfigurace fish, uživatelské jednotky systemd, položky autostartu a podobně) mají v každém režimu zákaz zápisu
 
 Požadavky:
 
@@ -75,6 +85,7 @@ Používá bubblewrap (`bwrap`) k vytvoření jmenných prostorů připojení a 
 - **Souborový systém**: vytvoří jmenný prostor připojení, ve kterém jsou vidět jen navázané cesty
 - **Síť**: běží v nesdíleném síťovém jmenném prostoru; provoz se k proxy na hostiteli dostane přes mosty `socat` na Unix socketech
 - **Proces**: izolace jmenného prostoru PID
+- **Vlastní příkazy serveru a spouštěcí soubory**: stejné ochrany jako na macOS, vyjádřené jako připojení bubblewrap. Na Linuxu zatím nejsou ověřené a chybějící složka příkazů tam ještě může vzniknout
 
 Požadavky:
 
@@ -89,19 +100,51 @@ s potichu slabší politikou. K obnovení nativního odeslání na Linuxu je pot
 backend s pravidly názvů souborů v okamžiku vytvoření. Vypnutí sandboxu je
 výslovné vypnutí bez omezení, ne rovnocenné náhradní řešení.
 
+V praxi Linux nebo WSL2 server dnes spouští agenty jedním ze dvou způsobů. Spuštěný s `--sandbox off` spouští agenty každého člena bez omezení. Bez nainstalovaného bubblewrap nebo `socat` je `unavailable` a spouští jen agenty vlastníka serveru, bez omezení. S oběma nástroji nainstalovanými a sandboxem zapnutým selže každý běh zavřeně, i vlastníkův.
+
+## Složky příkazů serveru
+
+Server jednou při startu najde každou složku, ze které spouští programy: každý záznam svého `PATH`, složky nástrojů uživatele, které sonduje (například `~/.local/bin`, `~/.bun/bin` a globální složky npm, yarn a pnpm), a skutečnou složku za každým odkazem na cestě (odkazy správců verzí jako `~/fvm/default` nebo výchozí verze fnm). Uvnitř sandboxu agent nemůže v těchto složkách přidat, nahradit, smazat ani přejmenovat příkaz, odkaz, který na něj vede, nebo nainstalovaný balíček, do kterého ukazuje připojený příkaz, a nemůže přejmenovat složky nad nimi. Jinak by běh v sandboxu mohl podstrčit program, který server nebo člověk později spustí mimo sandbox.
+
+Co to mění pro běh:
+
+- Globální instalace z běhu v sandboxu selžou s „Operation not permitted“: `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, a `cargo install`, `go install` nebo `dart pub global activate`, když je jejich složka binárek na `PATH` serveru.
+- Přepnutí výchozí verze selže stejně (`fnm default`, `nvm alias default`, `fvm global`), stejně jako když se nástroj aktualizuje sám na místě.
+- Instalace lokální pro projekt (`node_modules/.bin`), `npx`, `pnpm dlx`, správci balíčků řízení přes corepack, cache SDK a běžná sestavení fungují dál.
+
+Aby byl globální nástroj agentům dostupný, nainstaluj ho na samotném serveru, jako uživatel serveru, a restartuj server, aby byl nový příkaz chráněn také. Nebo ho nainstaluj do projektu. Příkaz nainstalovaný po startu serveru je plně chráněný až od dalšího startu.
+
+Vynuceno a otestováno na macOS. Na Linuxu jsou stejná pravidla připojení bubblewrap, která zatím nejsou ověřena. Windows nemá sandbox.
+
 ## Žádný backend
 
-Bez sandboxu. Proces běží přímo na hostiteli s jeho souborovým systémem, sítí a přístupem k procesům. ACP a nástroj `bash` harnessu pořád dostanou očištění prostředí a politiku příkazů; Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele. Sem spadne odeslání agenta na hostiteli bez dostupného backendu nebo s `--sandbox off` a je to výchozí stav terminálu, když klient uvede none.
+Bez sandboxu. Proces běží přímo na hostiteli s jeho souborovým systémem, sítí a přístupem k procesům. ACP a nástroj `bash` harnessu pořád dostanou očištění prostředí a politiku příkazů; Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele. Odeslání agenta ho používá pro každý běh pod `--sandbox off` a na hostiteli bez dostupného backendu jen pro běhy vlastníka serveru; běh kohokoli jiného se tam odmítne. U terminálu je to hostitelský shell, který smí otevřít jen vlastník serveru.
 
 ## Terminál hostovaný na serveru
 
-Terminál má vlastní pravidla sandboxu, ne ta ze sondy odeslání. `defaultBackend` u `TerminalSessionService` je `none` a `cc_server` ho nepřepisuje, takže relace terminálu spouští shell hostitele, dokud klient výslovně nepožádá o `native` — panel terminálu v aplikaci na počítači o to nežádá.
+Terminál hostovaný na serveru otevře hostitelský shell jen pro [vlastníka](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru) serveru. Každý ostatní dostane sandboxovaný terminál s omezeními agenta v adresářích pracovního prostoru.
 
-Když je požadovaný `native`, shell se obalí přes `SandboxManager` pevným profilem terminálu: `$HOME` a pracovní adresář relace jsou zapisovatelné, síť je otevřená a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` a `~/Library/Keychains` mají zákaz čtení. Token forge jen pro čtení a brána pro push se neuplatní — to řeší odeslání. Když obal není podporovaný, relace selže, místo aby na PTY shellu hostitele ukázala odznak nativního sandboxu.
+Jak se pro relaci vybírá backend:
+
+| Požadováno | Vlastník serveru | Kdokoli jiný |
+| --- | --- | --- |
+| Nic | Výchozí backend serveru | Výchozí, s `none` nahrazeným `native` |
+| `none` (hostitelský shell) | Hostitelský shell | Odmítnuto: hostitelský shell běží na serveru bez sandboxu |
+| `native` | Nativní sandbox, profil vlastníka | Nativní sandbox, profil agenta |
+| `microvm` | Izolovaná VM | Izolovaná VM |
+| Neznámý název | Odmítnuto | Odmítnuto |
+
+- **Profil vlastníka.** `$HOME` a pracovní adresář relace jsou zapisovatelné, síť je otevřená a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` a `~/Library/Keychains` mají zákaz čtení.
+- **Profil agenta** (`memberTerminalSandboxConfig`). Stejná politika, jakou v tom pracovním prostoru běží agent: zápisy zůstanou v pracovním adresáři, soukromém adresáři běhu, `/tmp` a v částech `$HOME`, do kterých smí agent psát; tajemství mají zákaz čtení; síť je seznam povolených egressu agenta; programy se spouštějí jen z pracovního adresáře a nainstalovaných nástrojů.
+- Terminál se otevře jen uvnitř adresářů pracovního prostoru. Pracovní adresář mimo ně se odmítne, nikdy se nenahradí jiným.
+- Číst, psát do něj, měnit jeho velikost ani ho zavřít může jen člověk, který terminál otevřel. Každému jinému jeho id vypadá jako neznámé.
+- `microvm` vyžádané výslovně na hostiteli bez služby stanic selže místo záložního řešení. Výchozí `microvm` na takovém hostiteli přejde na `native` a řekne to v logu.
+
+Token forge jen pro čtení a brána pro push se na terminály neuplatní: to jsou záležitosti odeslání. Když obal není podporovaný, relace selže, místo aby na relaci hostitelského shellu ukázala odznak sandboxu.
 
 ## Odchozí síť
 
-Když se sandbox spustí, odchozí přístup k síti vynucují proxy v procesu, ne pravidla firewallu v jádře. Na hostiteli bez dostupného backendu nic z toho neplatí a spuštěný proces se k síti dostane přesně tak, jako by se k ní dostal uživatel serveru.
+Když se sandbox spustí, odchozí přístup k síti vynucují proxy v procesu, ne pravidla firewallu v jádře. Běh, který není v sandboxu (každý běh pod `--sandbox off`, nebo běh vlastníka na hostiteli bez backendu), tohle vůbec nedostane: proces, který spustí, se k síti dostane přesně tak, jako by se k ní dostal uživatel serveru.
 
 - Runtime sandboxu spouští HTTP/HTTPS proxy a SOCKS5 proxy na `127.0.0.1` uvnitř procesu `cc_server`, **jeden pár na každou omezenou relaci** (`http_proxy.dart`, `socks_proxy.dart`). Souběžné běhy pár nesdílejí.
 - Sandboxované procesy dostanou proměnné prostředí proxy (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP proxy, `ALL_PROXY` → SOCKS proxy; `GIT_SSH_COMMAND` vede git přes SSH skrz SOCKS proxy). Na Linuxu je síťový jmenný prostor nesdílený, takže proxy jsou jediná cesta ven; na macOS sandbox sdílí loopback hostitele a mluví s nimi přímo.

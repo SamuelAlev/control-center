@@ -2,7 +2,7 @@
 title: Glossario
 description: Definizioni dei termini chiave usati in Control Center.
 slug: it-IT/manuale/riferimento/glossario
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Il manifest per spazio di lavoro delle skill installate: per ognuna, il repository di origine, il percorso nel repo, il commit a cui è fissata e un hash dei contenuti aggregato. Installazioni, aggiornamenti e disinstallazioni lo tengono aggiornato; verify_skills lo verifica rispetto al disco.'],
 ['Gateway delle esecuzioni degli agenti', 'Un endpoint di loopback su cc_server che applica la policy delle azioni dentro il sandbox di un agente. Ogni push GitHub di un agente viene instradato lì, verificato con la regola Eseguire il push a un remoto e inoltrato con un token di scrittura che l\'agente non possiede mai; i comandi Bash di Claude Code vengono verificati tramite un hook sullo stesso endpoint.'],
 ['Modalità', 'chat, plan, review o orchestrate. Memorizzata per spazio, quindi un agente può trovarsi in modalità diverse in spazi diversi; ogni conversazione di uno spazio la condivide. Vincola il prompt di sistema, le regole di scrittura del sandbox e la lista di autorizzazione degli strumenti MCP.'],
-['SandboxBackend', 'microvm (una VM racchiusa — l\'unico backend con un confine a livello di kernel, applicato ai terminali interattivi), native (Seatbelt nativo del sistema operativo su macOS, bubblewrap su Linux e WSL2) o none. Sondato una volta all\'avvio; native avvolge l\'invio degli agenti quando è disponibile. Windows non ha un backend nativo e Linux richiede bwrap più socat, quindi le esecuzioni lì sono senza involucro; --sandbox off rinuncia deliberatamente.'],
+['SandboxBackend', 'microvm (una VM racchiusa — l\'unico backend con un confine a livello di kernel, applicato ai terminali interattivi), native (Seatbelt nativo del sistema operativo su macOS, bubblewrap su Linux e WSL2) o none. Sondato una volta all\'avvio; native avvolge l\'invio degli agenti quando è disponibile. Windows non ha un backend nativo e Linux richiede bwrap più socat; su un host del genere partono solo le esecuzioni del proprietario del server, senza involucro, e le altre vengono rifiutate. --sandbox off esegue senza involucro le esecuzioni di ogni membro.'],
 ['Rig', 'Una macchina usa e getta che un agente pilota in tempo reale: un browser o un desktop Linux racchiuso, un emulatore Android o un simulatore iOS gestito dall\'host, oppure un terminale racchiuso. Osservata dal vivo su una corsia dedicata a piena risoluzione, con la presa di controllo imposta lato server. Con ambito di conversazione, così la scheda umana e lo strumento dell\'agente si rivolgono a un\'unica macchina.'],
 ['Recinto', 'La più forte proprietà di isolamento disponibile per i rig supportati da VM: un confine a livello di kernel, un disco overlay usa e getta, un gate di rete che nega per impostazione predefinita e un broker delle credenziali. I rig Android e iOS sono usa e getta ma usano la rete gestita dall\'host, quindi non rivendicano questo confine. Pilotare un rig usa la classe di guardrail enclosureControl.'],
 ['RunCost', 'Il conteggio di token e costi (token di input, token di output, costo stimato in centesimi) per una singola esecuzione di agente.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Orchestra l\'esecuzione delle esecuzioni: avvia le esecuzioni, pianifica i passaggi, persiste lo stato, gestisce router/join/continue-on-fail e riprende le esecuzioni in corso dopo un riavvio.'],
 ['PipelineTriggerDispatcher', 'Si sottoscrive agli eventi di dominio e avvia automaticamente le esecuzioni di pipeline corrispondenti per i trigger abilitati.'],
 ['MemoryAccessPolicy', 'Risolve e applica i permessi di memoria del ruolo di un agente sui domini.'],
-['HarnessCostCalculator', 'Calcola il prezzo dell\'uso di token dell\'harness integrato in un RunCost a partire dal catalogo models.dev. L\'invio persiste quel conteggio nel log di esecuzione.'],
+['HarnessRunAccounting', 'Conteggia una volta le chiamate ai modelli dell\'harness integrato, valutate in base al catalogo models.dev, le persiste sull\'esecuzione proprietaria e somma la spesa di un\'esecuzione figlia al budget dell\'esecuzione genitore.'],
 ['BudgetEnforcementService', 'Calcola la spesa mensile per agente e un blocco pre-invio (checkInvocationBlock). Quel blocco viene consultato solo dai riconciliatori di ripristino (OrphanRunReaper, StrandedTicketReconciler), mai dall\'invio ordinario.'],
 ['BudgetGovernanceService', 'Valuta la spesa mensile per agente dopo ogni esecuzione: una soglia morbida registra un incidente di avviso; l\'esaurimento registra un incidente grave e porta il ciclo di vita dell\'agente a paused.'],
 ['DomainEventBus', 'Bus publish/subscribe in-process con broadcast per la comunicazione tra feature. Gli eventi sono tipizzati; gli abbonati consumano flussi sul tipo.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Il client leggero per il telefono — una PWA web Flutter che controlla la flotta da remoto tramite il relay con broker, con una policy degli strumenti che nega per impostazione predefinita.'],
 ['cc_signaling_server', 'Un broker relay WebSocket stateless che ospita stanze ad accesso su invito. Un relay semplice: inoltra solo frame sigillati end-to-end, non detiene dati dell\'applicazione e non vede mai la PSK di associazione.'],
 ['Principal', 'Un valore sealed che unifica esseri umani e agenti nell\'unica astrazione di attore. UserPrincipal(userId) o AgentPrincipal(agentId). Ogni messaggio, ticket, revisione, piano e log di esecuzione viene attribuito attraverso un Principal.'],
-['Utente', 'Un\'identità umana, conservata in global.db e quindi globale tra gli spazi di lavoro. Il principal che crea uno spazio di lavoro ne diventa il proprietario, registrato su Workspace.ownerUserId con una riga di appartenenza con ruolo di proprietario; gli altri si uniscono per invito o tramite SSO.'],
+['Utente', 'Un\'identità umana, conservata in global.db e quindi globale tra gli spazi di lavoro. Solo il proprietario del server crea uno spazio di lavoro e ne diventa il proprietario, registrato su Workspace.ownerUserId con una riga di appartenenza con ruolo di proprietario; gli altri si uniscono per invito o tramite SSO.'],
+['Proprietario del server', 'La persona che ha configurato il server, registrata una sola volta al primo avvio; nulla di ciò che arriva dalla rete la modifica. Un amministratore o un proprietario dello spazio di lavoro non è il proprietario del server. Nulla viene eseguito sulla macchina del server fuori da una sandbox, a meno che non l\'abbia avviato il proprietario del server o non abbia approvato quel tipo di esecuzione sull\'host: la creazione di spazi di lavoro, la shell dell\'host, l\'editor di codice incorporato, gli ambienti eseguiti sull\'host e i checkout collegati dall\'esterno dello spazio di archiviazione di uno spazio di lavoro sono di sua esclusiva competenza.'],
 ['WorkspaceMember', 'Una riga di appartenenza che lega un Utente a uno Spazio di lavoro con un WorkspaceRole. Il confine di accesso è l\'appartenenza — non una chiave di associazione.'],
 ['WorkspaceRole', 'Ruolo di appartenenza graduato: owner, admin, member, viewer o guest. Il punto di strozzatura delle operazioni sui repository deriva una soglia minima di ruolo per tipo di operazione.'],
 ['ParticipantPresence', 'Consapevolezza effimera per un Principal (stato, posizione, cursore, digitazione, stato dal vivo dell\'agente e costo in corso). Mai persistita; concentrata sul server; filtrata per concessione di repository prima della diffusione.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Quadrante dell\'autonomia', 'Un controllo per spazio e per agente — propose-only / act-with-approval / act-freely — implementato come profilo con nome sopra l\'archivio dei guardrail delle azioni.'],
 ['cc_worker', 'Un binario esecutore di flotta headless in Dart puro. Si associa a un cc_server, dichiara le proprie capacità, preleva i lavori in lease, li esegue e rinvia in streaming gli eventi. Non detiene alcuno stato durevole.'],
 ['JobSpec', 'La specifica tipizzata di tutto ciò che è eseguibile (esecuzione di agente, passaggio di pipeline, code-index, golden-render, benchmark, lotto di eval): capacità richieste, priorità, budget, spazio di lavoro.'],
-['ActionClass', 'Un insieme chiuso di 13 classi di effetto (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Ogni strumento che modifica lo stato dichiara le proprie classi; il motore dei guardrail risolve allow / prompt / deny per ambito.'],
+['ActionClass', 'Un insieme chiuso di 14 classi di effetto (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Ogni strumento che modifica lo stato dichiara le proprie classi; il motore dei guardrail risolve allow / prompt / deny per ambito.'],
 ['WriteLedger', 'Un registro di idempotenza con ambito di spazio di lavoro. Ogni mutazione porta con sé una chiave di idempotenza per azione logica; un replay restituisce il risultato originale identico byte per byte. Rende la riconnessione e il lavoro con più client sicuri per costruzione.'],
 ['Chiave di idempotenza', 'Un UUIDv7 generato dal client, coniato per azione logica (non per tentativo). Deduplica i tentativi ripetuti tra riconnessioni e client.'],
 ['Posta in arrivo «Needs me»', 'Una coda trasversale ai pilastri con una regola ferrea: una voce compare solo se blocca qualcosa (un agente, una fusione, una sincronizzazione) o chiede esplicitamente l\'intervento dell\'operatore.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Verdetto di revisione', 'ship, hold o block. Qualunque rilievo P0 con confidenza >= 0.7 blocca; qualunque altro P0 o qualunque P1 trattiene; altrimenti ship. Un asse con gate in errore forza block e non può essere messo in minoranza dai rilievi.'],
 ['SessionRecording', 'Un flusso di eventi più le cassette HTTP/LLM e l\'I/O degli strumenti catturati per una singola esecuzione, abbinato a un AgentConfigHash.'],
 ['Sessione golden', 'Una SessionRecording approvata e fissata per agente o playbook.'],
-['Control Center Connect', 'Un servizio facoltativo che esegue gli accessi ai provider (GitHub, Google, Linear) per i server senza app proprie. Ospitato da Control Center, self-hosted o disattivato. Restituisce sigilli delle credenziali e token GitHub limitati a un repository e non vede mai il contenuto dei repository.'],
+['Control Center Connect', 'Un servizio facoltativo che esegue gli accessi ai provider (GitHub, Google, Linear) per i server o gli spazi di lavoro che hanno scelto questo servizio invece delle proprie app. Ospitato da Control Center, self-hosted o disattivato. Restituisce sigilli delle credenziali e token GitHub limitati a un repository e non vede mai il contenuto dei repository.'],
 ['Sigillo della credenziale', 'Una credenziale cifrata che solo il Connect che l\'ha creata può aprire, legata al provider, all\'indirizzo di Connect, all\'id di installazione, allo spazio di lavoro, all\'account, all\'app e alla generazione del secret. Il server conserva il sigillo; i token di accesso restano in memoria.'],
 ['Id di installazione', 'L\'identità di un server verso un indirizzo Connect, derivata dalla sua chiave di installazione. Connect autorizza i server per id di installazione; ruotare la chiave lo cambia e disconnette tutti dai canali Connect.'],
-['Associazione dell\'installazione', 'Il registro di Connect dei server che possono usare un\'installazione GitHub dell\'App condivisa. Un\'installazione di un\'organizzazione richiede che un amministratore autorizzi ogni server.'],
-['Canale di accesso', 'L\'accesso dal browser di un provider: github, google, linear, linear_app o slack. Ogni canale usa l\'app del server quando è completa, altrimenti passa da Connect, altrimenti non è disponibile.'],
+['Associazione dell\'installazione', 'Il registro di Connect (install_binding) del solo server a cui è associato un team Slack. Le installazioni GitHub non ne hanno: qualsiasi server su cui un membro accede può usarle.'],
+['Canale di accesso', 'L\'accesso dal browser di un provider: github, google, linear, linear_app o slack. Con app proprie un canale usa l\'app propria quando è completamente configurata, altrimenti non è disponibile; con un Connect scelto, è Connect a eseguirlo. Nessuno dei due ripiega sull\'altro.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Modalità**: `chat`, `plan`, `review` o `orchestrate`. Memorizzata **per spazio**, quindi un agente può trovarsi in modalità diverse in spazi diversi; ogni conversazione di uno spazio la condivide. Vincola il prompt di sistema, le regole di scrittura del sandbox e la lista di autorizzazione degli strumenti MCP. Il composer offre solo `chat`, `plan` e `orchestrate`; `chat` è etichettata «Agente».
 
-**SandboxBackend**: `microvm` (una VM racchiusa — l'unico backend con un confine a livello di kernel, applicato ai terminali interattivi), `native` (Seatbelt su macOS, bubblewrap su Linux e WSL2) o `none`. Sondato una volta all'avvio; `native` viene **applicato all'invio degli agenti** quando è disponibile, avvolgendo la CLI di Claude Code e lo strumento `bash` dell'harness. Windows non ha un backend nativo e Linux richiede `bwrap` più `socat`, quindi le esecuzioni lì sono senza involucro; `--sandbox off` rinuncia deliberatamente.
+**SandboxBackend**: `microvm` (una VM racchiusa — l'unico backend con un confine a livello di kernel, applicato ai terminali interattivi), `native` (Seatbelt su macOS, bubblewrap su Linux e WSL2) o `none`. Sondato una volta all'avvio; `native` viene **applicato all'invio degli agenti** quando è disponibile, avvolgendo la CLI di Claude Code e lo strumento `bash` dell'harness. Windows non ha un backend nativo e Linux richiede `bwrap` più `socat`; su un host del genere partono solo le esecuzioni del proprietario del server, senza involucro, e quelle di tutti gli altri vengono rifiutate. `--sandbox off` esegue senza involucro le esecuzioni di ogni membro.
 
 **Rig**: Una macchina usa e getta che un agente pilota in tempo reale — un browser o un desktop Linux racchiuso, un emulatore Android o un simulatore iOS gestito dall'host, oppure un terminale racchiuso. Osservata dal vivo su una corsia dedicata a piena risoluzione, con la presa di controllo imposta lato server. Con ambito di conversazione, così la scheda umana e le chiamate `browser_use` / `computer_use` / `mobile_use` / `ios_use` dell'agente si rivolgono a un'unica macchina predefinita. Vedi [Rig e recinti](/it-IT/manuale/concetti/rig/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Risolve e applica i permessi di memoria del ruolo di un agente sui domini.
 
-**HarnessCostCalculator**: Calcola il prezzo dell'uso di token dell'harness integrato in un `RunCost` a partire dal catalogo models.dev. L'invio persiste quel conteggio nel log di esecuzione.
+**HarnessRunAccounting**: Conteggia una volta le chiamate ai modelli dell'harness integrato, valutate in base al catalogo models.dev, le persiste sull'esecuzione proprietaria e somma la spesa di un'esecuzione figlia al budget dell'esecuzione genitore.
 
 **BudgetEnforcementService**: Calcola la spesa mensile per agente e un blocco pre-invio (`checkInvocationBlock`). Quel blocco viene consultato solo dai riconciliatori di ripristino (`OrphanRunReaper`, `StrandedTicketReconciler`), mai da un invio ordinario di un utente o di un agente.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Output strutturati estratti dalla pipeline di riepilogo e memorizzati come righe distinte. Le attività possono essere collegate a un ticket.
 
-**CalendarEvent**: Una voce di Google Calendar sincronizzata, con ambito di spazio di lavoro e account collegato. Diversa da una Riunione: un evento è un impegno programmato; una Riunione è una sessione registrata. Collegata uno a uno tramite un `MeetingCalendarLink`.
+**CalendarEvent**: Una voce di Google Calendar sincronizzata, con ambito di spazio di lavoro e account collegato. Diversa da una Riunione: un evento è un impegno programmato; una Riunione è una sessione registrata. Collegata uno a uno tramite la tabella `meeting_calendar_links`.
 
 **CalendarAccount**: Un account Google collegato, per spazio di lavoro, membro e indirizzo email (`google:<workspaceId>:<userId>:<email>`). La sua credenziale è conservata lato server come chiave `google_*` in `<dataDir>/secrets.json` e non raggiunge mai un client; l'accesso dal browser si completa sul server. Un accesso tramite Connect memorizza solo un sigillo della credenziale. Un flag `authExpiredAt` pilota il banner di riconnessione.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: Un valore sealed che unifica esseri umani e agenti nell'unica astrazione di attore — `UserPrincipal(userId)` o `AgentPrincipal(agentId)`. Ogni messaggio, ticket, revisione, piano e log di esecuzione viene attribuito attraverso un Principal.
 
-**Utente**: Un'identità umana, conservata in `global.db` e quindi globale tra gli spazi di lavoro. Il principal che crea uno spazio di lavoro ne diventa il **proprietario** — registrato su `Workspace.ownerUserId` con una riga di appartenenza con ruolo di proprietario nella stessa operazione. Gli altri si uniscono per invito o tramite SSO.
+**Proprietario del server**: La persona che ha configurato il server, registrata una sola volta al primo avvio; nulla di ciò che arriva dalla rete la modifica. Un amministratore o un proprietario dello spazio di lavoro non è il proprietario del server. Nulla viene eseguito sulla macchina del server fuori da una sandbox, a meno che non l'abbia avviato il proprietario del server o non abbia approvato quel tipo di esecuzione sull'host: la creazione di spazi di lavoro, la shell dell'host, l'editor di codice incorporato, gli ambienti eseguiti sull'host e i checkout collegati dall'esterno dello spazio di archiviazione di uno spazio di lavoro sono di sua esclusiva competenza. Vedi [Il proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server).
+
+**Utente**: Un'identità umana, conservata in `global.db` e quindi globale tra gli spazi di lavoro. Solo il proprietario del server crea uno spazio di lavoro e ne diventa il **proprietario** — registrato su `Workspace.ownerUserId` con una riga di appartenenza con ruolo di proprietario nella stessa operazione. Gli altri si uniscono per invito o tramite SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Una riga di appartenenza che lega un Utente a uno Spazio di lavoro con un ruolo (`owner` / `admin` / `member` / `viewer` / `guest`). **Il confine di accesso è l'appartenenza — non una chiave di associazione.** Le concessioni per repository impediscono all'appartenenza di dare più privilegi di quanti ne conceda la forge.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Quadrante dell'autonomia**: Un controllo per spazio e per agente — `propose-only` / `act-with-approval` / `act-freely` — implementato come profilo con nome sopra l'archivio dei guardrail delle azioni.
 
-**ActionClass**: Un insieme chiuso di 13 classi di effetto (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Ogni strumento che modifica lo stato dichiara le proprie classi; il motore dei guardrail risolve `allow` / `prompt` / `deny` per ambito (spazio > agente > spazio di lavoro > preset di modalità > valore predefinito integrato).
+**ActionClass**: Un insieme chiuso di 14 classi di effetto (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Ogni strumento che modifica lo stato dichiara le proprie classi; il motore dei guardrail risolve `allow` / `prompt` / `deny` per ambito (spazio > agente > spazio di lavoro > preset di modalità > valore predefinito integrato).
 
 **WriteLedger** / **chiave di idempotenza**: Ogni mutazione porta con sé una chiave di idempotenza generata dal client (UUIDv7, per azione logica). Il registro con ambito di spazio di lavoro deduplica prima che il gestore venga eseguito; un replay restituisce il risultato originale identico byte per byte. Rende la riconnessione e il lavoro con più client sicuri per costruzione.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Un broker relay WebSocket stateless che ospita stanze ad accesso su invito — un relay semplice che inoltra solo frame sigillati end-to-end, non detiene alcun dato dell'applicazione e non vede mai la PSK di associazione.
 
-**Control Center Connect**: Un servizio facoltativo che esegue gli accessi ai provider (GitHub, Google Calendar, Linear) per i server che non hanno registrato app proprie: quello ospitato da Control Center, uno gestito da un'organizzazione (`cc-connect`, oppure montato in `cc_server` su `/connect`), o nessuno. Restituisce sigilli delle credenziali e token GitHub limitati a un repository e non vede mai il contenuto dei repository. Vedi [Control Center Connect](/it-IT/manuale/riferimento/connect/).
+**Control Center Connect**: Un servizio facoltativo che esegue gli accessi ai provider (GitHub, Google Calendar, Linear) per i server o gli spazi di lavoro che hanno scelto questo servizio invece delle proprie app: quello ospitato da Control Center, uno gestito da un'organizzazione (`cc-connect`, oppure montato in `cc_server` su `/connect`), o nessuno. Restituisce sigilli delle credenziali e token GitHub limitati a un repository e non vede mai il contenuto dei repository. Vedi [Control Center Connect](/it-IT/manuale/riferimento/connect/).
 
 **Sigillo della credenziale**: Una credenziale cifrata (`credential_seal`) che solo il Connect che l'ha creata può aprire, legata al provider, all'indirizzo di Connect, all'id di installazione, allo spazio di lavoro, all'account, all'app e alla generazione del secret. Il server conserva il sigillo e l'id di installazione per cui è stato creato; i token di accesso restano in memoria. Un sigillo il cui id di installazione non corrisponde più viene eliminato e il suo proprietario accede di nuovo.
 
 **Id di installazione**: L'identità di un server verso un indirizzo Connect (`install_id`), derivata dalla chiave di installazione nel suo file dei segreti. Connect autorizza i server per id di installazione. Ruotare la chiave ne genera uno nuovo e disconnette tutti dai canali Connect.
 
-**Associazione dell'installazione**: Il registro di Connect (`install_binding`) dei server che possono usare un'installazione GitHub dell'App condivisa. Installare tramite un server associa quel server; **Autorizza questo server**, premuto da un amministratore dell'organizzazione, ne associa un altro.
+**Associazione dell'installazione**: Il registro di Connect (`install_binding`) del solo server a cui è associato un team Slack. Le installazioni GitHub non ne hanno: qualsiasi server su cui un membro accede può usarle.
 
-**Canale di accesso**: L'accesso dal browser di un provider — `github`, `google`, `linear`, `linear_app` o `slack`. Un canale usa l'app del server quando quell'app è completa, altrimenti passa da Connect, altrimenti non è disponibile; un'app propria configurata solo in parte è un errore, mai un ripiego.
+**Canale di accesso**: L'accesso dal browser di un provider — `github`, `google`, `linear`, `linear_app` o `slack`. Con app proprie un canale usa l'app propria (del server o dello spazio di lavoro) quando è completamente configurata, altrimenti non è disponibile; con un Connect scelto, è Connect a eseguirlo. Nessuno dei due ripiega sull'altro, e un'app propria configurata solo in parte è un errore.
 
 ## Vedi anche
 

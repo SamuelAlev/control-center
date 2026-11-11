@@ -1,29 +1,11 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/side_channel_render.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
-
-/// What a side-channel request produced.
-class SideChannelResult {
-  /// Creates a [SideChannelResult].
-  const SideChannelResult({
-    this.text,
-    this.unavailable = false,
-    this.empty = false,
-  });
-
-  /// The answer, or null when there is none.
-  final String? text;
-
-  /// Whether the workspace has no content synthesizer to answer with.
-  final bool unavailable;
-
-  /// Whether the conversation had nothing to work from.
-  final bool empty;
-}
 
 /// Asks the current conversation a question WITHOUT adding to it.
 ///
@@ -69,14 +51,17 @@ class ConversationSideChannelService {
   final Duration _timeout;
   final int _maxPromptChars;
 
-  /// Generates a handoff document for the conversation.
-  Future<SideChannelResult> handoff({
+  /// Generates a handoff document for the conversation, for
+  /// [requestedByUserId], the person who asked.
+  Future<ConversationSideChannelResult> handoff({
     required String workspaceId,
+    required String? requestedByUserId,
     required String spaceId,
     String? conversationId,
     String? focus,
   }) => _ask(
     workspaceId: workspaceId,
+    requestedByUserId: requestedByUserId,
     spaceId: spaceId,
     conversationId: conversationId,
     question: focus == null || focus.trim().isEmpty
@@ -85,22 +70,26 @@ class ConversationSideChannelService {
     maxTokens: 2048,
   );
 
-  /// Answers an ephemeral side question about the work so far.
-  Future<SideChannelResult> aside({
+  /// Answers an ephemeral side question about the work so far, for
+  /// [requestedByUserId], the person who asked.
+  Future<ConversationSideChannelResult> aside({
     required String workspaceId,
+    required String? requestedByUserId,
     required String spaceId,
     String? conversationId,
     required String question,
   }) => _ask(
     workspaceId: workspaceId,
+    requestedByUserId: requestedByUserId,
     spaceId: spaceId,
     conversationId: conversationId,
     question: sideQuestionPrompt(question),
     maxTokens: 1024,
   );
 
-  Future<SideChannelResult> _ask({
+  Future<ConversationSideChannelResult> _ask({
     required String workspaceId,
+    required String? requestedByUserId,
     required String spaceId,
     String? conversationId,
     required String question,
@@ -111,7 +100,7 @@ class ConversationSideChannelService {
     // than the operator configured would be a surprise on their bill.
     final synthesizer = await _synthesizer.forWorkspace(workspaceId);
     if (synthesizer == null) {
-      return const SideChannelResult(unavailable: true);
+      return const ConversationSideChannelResult(unavailable: true);
     }
 
     final load = _sideChannelMessages;
@@ -128,7 +117,7 @@ class ConversationSideChannelService {
             maxChars: _maxPromptChars,
           );
     if (messages.isEmpty) {
-      return const SideChannelResult(empty: true);
+      return const ConversationSideChannelResult(empty: true);
     }
 
     final transcript = renderConversationForSideChannel(
@@ -137,6 +126,8 @@ class ConversationSideChannelService {
     );
     try {
       final answer = await _runner.complete(
+        workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
         adapterId: synthesizer.adapterId,
         modelId: synthesizer.modelId,
         systemPrompt: synthesizer.systemPromptFor(
@@ -150,12 +141,12 @@ class ConversationSideChannelService {
         maxTokens: maxTokens,
       );
       final text = answer?.trim();
-      return SideChannelResult(
+      return ConversationSideChannelResult(
         text: text == null || text.isEmpty ? null : text,
       );
     } on Object catch (e) {
       CcInfraLog.warning('side-channel request failed: $e');
-      return const SideChannelResult();
+      return const ConversationSideChannelResult();
     }
   }
 }

@@ -2,7 +2,7 @@
 title: Arbetsytor och isolering
 description: Varför en arbetsyta är en hård tenant-gräns, hur databasuppdelningen gör gränsen strukturell och vad som medvetet korsar den.
 slug: sv-SE/handbok/koncept/arbetsytor
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Vad är en arbetsyta?
@@ -79,9 +79,11 @@ En arbetsytefil bär bara en enkelradig `workspace_meta` för självidentifierin
 
 ## Skapa en arbetsyta
 
+Bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren) kan skapa en arbetsyta; servern tilldelar dess id. En arbetsytadministratör eller ägare kan inte skapa en till. Någon som ännu inte är i någon arbetsyta ser **Du är inte i någon arbetsyta än**, med uppmaningen att be serverägaren skapa en eller att en arbetsytadministratör bjuder in dem, och formuläret **Lägg till arbetsyta** säger samma sak till alla andra.
+
 Att skapa en arbetsyta gör mer än att infoga en rad i registret. I en och samma operation stämplar servern den skapande användaren som `ownerUserId`, registrerar den användarens medlemskap med ägarrollen och publicerar en domänhändelse `WorkspaceCreated`. Lyssnare på den händelsen sår sedan, idempotent och i bakgrunden:
 
-- en **CEO-agent** plus fyra specialister — `qa`, `architect`, `engineer`, `librarian` — där specialisterna rapporterar till CEO-agenten;
+- en **CEO-agent** plus fem specialister — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — där specialisterna rapporterar till CEO-agenten;
 - de **inbyggda pipelinemallarna** och deras triggers (händelse- och manuella triggers levereras aktiverade; schemalagda är opt-in utom det dagliga worktree-GC-svepet);
 - **start-evalsviterna**.
 
@@ -90,7 +92,7 @@ Det här sker för _varje_ arbetsyta, inte bara den första. De sådda agenterna
 Skrivningen av ägarmedlemskapet betyder mer än den ser ut: utan den skulle den ny skapade arbetsytan inte ha några medlemmar, och varje arbetsytespecifikt anrop skaparen gör därefter skulle nekas.
 
 :::note[Agenter kan inte skapa en arbetsyta]
-Det finns inget MCP-verktyg `create_workspace`. Människor skapar en arbetsyta via `workspace.create` (kontrollpunkt som bara tar ett namn) eller `workspace.upsert` (fullständig post, används även för uppdateringar). Båda stämplar den skapande användaren som `owner` och publicerar `WorkspaceCreated`.
+Det finns inget MCP-verktyg `create_workspace`. Serverägaren skapar en arbetsyta via `workspace.create`, som stämplar dem som dess `owner` och publicerar `WorkspaceCreated`. `workspace.upsert` uppdaterar bara en arbetsyta som redan finns; den skapar aldrig en, och ändrar aldrig en arbetsytas ägare, vilket bara **Överför ägarskap** gör.
 :::
 
 ## Radera, exportera, importera

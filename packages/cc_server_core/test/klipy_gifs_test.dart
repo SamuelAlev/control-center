@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/cc_domain.dart'
-    show NetworkException, ValidationException;
+import 'package:cc_domain/cc_domain.dart' show NetworkException;
+import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/connect/connect_settings.dart';
@@ -57,8 +57,20 @@ void main() {
     dir.deleteSync(recursive: true);
   });
 
-  Future<ConnectClient> connectFor({Map<String, Object?>? klipyLane}) async {
-    final settings = ConnectSettings(secrets: secrets);
+  Future<ConnectClient> connectFor({
+    Map<String, Object?>? klipyLane,
+    Set<String> ownWorkspaces = const {},
+  }) async {
+    final settings = ConnectSettings(secrets: secrets)
+      ..workspaceLookup = (id) async => Workspace(
+        id: id,
+        name: id,
+        createdAt: DateTime.utc(2026),
+        updatedAt: DateTime.utc(2026),
+        connectMode: ownWorkspaces.contains(id)
+            ? WorkspaceConnectMode.own
+            : WorkspaceConnectMode.inherit,
+      );
     if (klipyLane != null) {
       fakeConnect.klipyLane = klipyLane;
       await settings.setChoice(ConnectMode.custom, url: fakeConnect.base);
@@ -154,7 +166,7 @@ void main() {
     final gifs = KlipyGifs(connect: client, transport: () => klipy);
     await gifs.trending('ws-1');
     fakeConnect.failConfig = true;
-    await client.configState(refresh: true);
+    await client.configState(await client.serverTarget(), refresh: true);
     await gifs.trending('ws-1');
     expect(
       [for (final r in klipy.requests) httpRequestUri(r).path],
@@ -185,12 +197,18 @@ void main() {
 
     setUp(() => workspaceApps = WorkspaceProviderAppSettings(secrets));
 
-    test('wins for that workspace only', () async {
+    test('applies to that workspace on its own apps only', () async {
       await workspaceApps.save('ws-own', WorkspaceAppProvider.klipy, {
         'app_key': 'WS-KEY',
       });
+      await workspaceApps.save('ws-other', WorkspaceAppProvider.klipy, {
+        'app_key': 'OTHER-KEY',
+      });
       final gifs = KlipyGifs(
-        connect: await connectFor(klipyLane: {'mode': 'proxy'}),
+        connect: await connectFor(
+          klipyLane: {'mode': 'proxy'},
+          ownWorkspaces: {'ws-own'},
+        ),
         ownAppKey: 'OWN-KEY',
         workspaceApps: workspaceApps,
         transport: () => klipy,
@@ -201,26 +219,23 @@ void main() {
         [for (final r in klipy.requests) httpRequestUri(r).path],
         ['/api/v1/WS-KEY/gifs/search'],
       );
-      // The other workspace inherits: the chosen Connect, not the own key.
+      // The other workspace inherits: the chosen Connect, not its stored
+      // key.
       expect(fakeConnect.searches, 1);
     });
 
-    test('missing is an error, never the server key or Connect', () async {
-      await workspaceApps.setMode(
-        'ws-own',
-        WorkspaceAppProvider.klipy,
-        WorkspaceAppMode.own,
-      );
+    test('missing is off, never the server key or Connect', () async {
       final gifs = KlipyGifs(
-        connect: await connectFor(klipyLane: {'mode': 'proxy'}),
+        connect: await connectFor(
+          klipyLane: {'mode': 'proxy'},
+          ownWorkspaces: {'ws-own'},
+        ),
         ownAppKey: 'OWN-KEY',
         workspaceApps: workspaceApps,
         transport: () => klipy,
       );
-      await expectLater(
-        gifs.search('ws-own', 'cats'),
-        throwsA(isA<ValidationException>()),
-      );
+      expect(await gifs.source('ws-own'), KlipyLaneSource.off);
+      expect(await gifs.search('ws-own', 'cats'), isEmpty);
       expect(klipy.requests, isEmpty);
       expect(fakeConnect.searches, 0);
     });

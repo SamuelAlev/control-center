@@ -1,3 +1,5 @@
+import 'package:cc_domain/features/environments/domain/services/environment_definition_reader.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_template.dart';
 import 'package:collection/collection.dart';
 
@@ -13,32 +15,89 @@ sealed class EnvironmentCommand {
 
   /// Parses the `command` / `script` / verb forms.
   ///
-  /// A list of strings and `{if, args}` objects is argv, a string is shell, and
-  /// `{"shell": "…"}` or `{"script": [...]}` is shell.
+  /// Throws [EnvironmentDefinitionException] listing every issue.
   factory EnvironmentCommand.fromJson(Object? json, {required String path}) {
+    final issues = <EnvironmentDefinitionIssue>[];
+    final command = read(json, path, issues);
+    if (command == null || issues.isNotEmpty) {
+      throw EnvironmentDefinitionException(issues);
+    }
+    return command;
+  }
+
+  /// Reads the `command` / `script` / verb forms at [path] into [issues].
+  ///
+  /// A list of strings and `{if, args}` objects is argv, a string is shell, and
+  /// `{"shell": "…"}` or `{"script": [...]}` is shell. Null when it can't be
+  /// built.
+  static EnvironmentCommand? read(
+    Object? json,
+    String path,
+    List<EnvironmentDefinitionIssue> issues,
+  ) {
+    void add(String at, String message) =>
+        issues.add(EnvironmentDefinitionIssue(at, message));
     if (json is String) {
       if (json.trim().isEmpty) {
-        throw FormatException('$path must not be empty');
+        add(path, 'Must not be empty');
+        return null;
       }
       return ShellEnvironmentCommand(json);
     }
     if (json is List) {
-      return ArgvEnvironmentCommand([
+      if (json.isEmpty) {
+        add(path, 'Must not be empty');
+        return null;
+      }
+      final items = [
         for (final (index, item) in json.indexed)
-          EnvironmentArgvItem.fromJson(item, path: '$path[$index]'),
-      ]);
+          EnvironmentArgvItem.read(item, '$path[$index]', issues),
+      ];
+      return items.contains(null)
+          ? null
+          : ArgvEnvironmentCommand(items.cast<EnvironmentArgvItem>());
     }
     if (json is Map) {
-      final shell = json['shell'];
-      if (shell is String) {
-        return EnvironmentCommand.fromJson(shell, path: '$path.shell');
+      final reader = EnvironmentJsonReader.of(json, path, issues)!;
+      final hasShell = reader.has('shell');
+      final hasScript = reader.has('script');
+      EnvironmentCommand? command;
+      if (hasShell && hasScript) {
+        reader.reportHere('Use shell or script, not both');
+      } else if (hasShell) {
+        final shell = reader.string('shell', nonEmpty: true);
+        command = shell == null ? null : ShellEnvironmentCommand(shell);
+      } else if (hasScript) {
+        command = scriptLines(reader, 'script');
+      } else {
+        reader.reportHere('Needs shell or script');
       }
-      final script = json['script'];
-      if (script is List) {
-        return ShellEnvironmentCommand(script.join('\n'));
-      }
+      reader.finish();
+      return command;
     }
-    throw FormatException('$path must be an argv array or a shell string');
+    add(path, 'Must be an argv array or a shell string');
+    return null;
+  }
+
+  /// The `script` lines at [key] of [reader] as one shell command.
+  static EnvironmentCommand? scriptLines(
+    EnvironmentJsonReader reader,
+    String key,
+  ) {
+    if (reader.raw(key) is String) {
+      reader.report(key, 'Must be a list of lines. For one line, use command');
+      return null;
+    }
+    final lines = reader.strings(key, nonEmpty: true);
+    if (lines == null) {
+      return null;
+    }
+    final body = lines.join('\n');
+    if (body.trim().isEmpty) {
+      reader.report(key, 'Must not be empty');
+      return null;
+    }
+    return ShellEnvironmentCommand(body);
   }
 
   /// JSON form.
@@ -101,18 +160,29 @@ class EnvironmentArgvItem {
     required this.args,
   });
 
-  /// Parses one entry.
-  factory EnvironmentArgvItem.fromJson(Object? json, {required String path}) {
+  /// Reads one entry at [path] into [issues], or null.
+  static EnvironmentArgvItem? read(
+    Object? json,
+    String path,
+    List<EnvironmentDefinitionIssue> issues,
+  ) {
     if (json is String) {
       return EnvironmentArgvItem.plain(json);
     }
-    if (json is Map && json['if'] is String && json['args'] is List) {
-      return EnvironmentArgvItem.conditional(
-        condition: json['if'] as String,
-        args: [for (final arg in json['args'] as List) '$arg'],
+    if (json is! Map) {
+      issues.add(
+        EnvironmentDefinitionIssue(path, 'Must be a string or {if, args}'),
       );
+      return null;
     }
-    throw FormatException('$path must be a string or {if, args}');
+    final reader = EnvironmentJsonReader.of(json, path, issues)!;
+    final condition = reader.string('if', required: true, nonEmpty: true);
+    final args = reader.strings('args', required: true);
+    reader.finish();
+    if (condition == null || args == null) {
+      return null;
+    }
+    return EnvironmentArgvItem.conditional(condition: condition, args: args);
   }
 
   /// The condition, or null for a plain argument.

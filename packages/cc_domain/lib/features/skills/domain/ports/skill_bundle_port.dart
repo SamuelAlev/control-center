@@ -96,6 +96,10 @@ abstract interface class SkillBundlePort {
   /// PRD 24 action policy (in [spaceId]/[agentId] scope) before the write: a
   /// skill demanding a capability the workspace policy denies is blocked
   /// *before* install, not at runtime (PRD 23 §2 ties PRD 24).
+  ///
+  /// [actingUserId] is the person who asked, when one did: a repository the
+  /// workspace's GitHub App cannot read is then fetched with their own
+  /// sign-in. Without one only the App reads.
   Future<SkillLockEntry> installFromGitHub({
     required String workspaceId,
     required String slug,
@@ -106,6 +110,7 @@ abstract interface class SkillBundlePort {
     bool allowQuarantineOverride,
     String? spaceId,
     String? agentId,
+    String? actingUserId,
   });
 
   /// Records an already-present skill ([SkillOrigin.manual] /
@@ -124,14 +129,18 @@ abstract interface class SkillBundlePort {
   /// Checks each GitHub-origin pinned skill for a newer upstream version on its
   /// tracking branch (PRD 23 §4). Best-effort per skill: a network error for
   /// one skill is skipped, not fatal. Returns only skills that actually have an
-  /// update available.
-  Future<List<SkillUpdateCandidate>> checkUpdates(String workspaceId);
+  /// update available. [actingUserId] as for [installFromGitHub].
+  Future<List<SkillUpdateCandidate>> checkUpdates(
+    String workspaceId, {
+    String? actingUserId,
+  });
 
   /// Re-fetches the skill [slug] at [ref], re-runs the FULL scan gate over the
   /// new bytes (PRD 23 §4, TOCTOU-safe) and re-pins it — recording the old
   /// hash as `previousHash` for rollback. Same fail-closed semantics as install:
   /// a quarantine verdict (without [allowQuarantineOverride]) or a scanner
   /// error throws and leaves the currently-installed version untouched.
+  /// [actingUserId] as for [installFromGitHub].
   Future<SkillLockEntry> applyUpdate({
     required String workspaceId,
     required String slug,
@@ -139,6 +148,7 @@ abstract interface class SkillBundlePort {
     bool allowQuarantineOverride,
     String? spaceId,
     String? agentId,
+    String? actingUserId,
   });
 
   /// Re-scans installed skills whose recorded scan is verdict-stale (produced

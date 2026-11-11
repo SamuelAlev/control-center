@@ -2,7 +2,7 @@
 title: Inicie sessão da sua equipa com SSO
 description: Ligue o Okta (SAML) ao seu servidor do Control Center e percorra um início de sessão de ponta a ponta.
 slug: pt-PT/manual/tutoriais/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -88,6 +88,8 @@ Duas políticas determinam o que faz um primeiro início de sessão:
 - **Provisionar utilizadores desconhecidos na primeira sessão** — ativada por
   predefinição; desative-a para rejeitar qualquer pessoa cuja conta ainda não
   exista.
+
+Se as pessoas já tiverem contas neste servidor, confirme os seus endereços de e-mail antes de alguém iniciar sessão com SSO: abra **Definições → Servidor → Pessoas** e use **Confirmar e-mail** em cada linha marcada com **E-mail não confirmado**. Um início de sessão associa uma conta existente pelo e-mail apenas quando esse endereço está confirmado (ou foi definido pelo SSO ou pelo SCIM). Um endereço que alguém escreveu no próprio perfil ou num convite não corresponde a nada, por isso, sem este passo, essas pessoas ficam com uma segunda conta ou são recusadas quando o provisionamento de utilizadores desconhecidos está desativado. Consulte [Como os inícios de sessão correspondem a contas existentes](/pt-PT/manual/guias/sso-oidc/#como-os-inícios-de-sessão-correspondem-a-contas-existentes).
 
 Opcionalmente, mapeie um atributo que transporte nomes de grupos (no Okta é
 habitualmente `groups`) e traduza os grupos em funções com o mapeamento — por

@@ -112,9 +112,8 @@ class _Chip extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
+            style: CcTypography.caption.copyWith(
+              fontWeight: CcTypography.mediumWeight,
               color: t.textPrimary,
             ),
           ),
@@ -130,10 +129,9 @@ class _Chip extends StatelessWidget {
                 child: Icon(
                   AppIcons.x,
                   size: 13,
-                  color:
-                      states.contains(WidgetState.hovered)
-                          ? t.textSecondary
-                          : t.fgQuaternary,
+                  color: states.contains(WidgetState.hovered)
+                      ? t.textSecondary
+                      : t.fgQuaternary,
                 ),
               ),
             ),
@@ -246,7 +244,7 @@ class _ComposeAssigneePickerState
         child: Center(
           child: Text(
             l10n.noMatchingUsers,
-            style: TextStyle(fontSize: 13, color: t.textQuaternary),
+            style: CcTypography.bodySm.copyWith(color: t.textTertiary),
           ),
         ),
       );
@@ -381,7 +379,7 @@ class _ComposeReviewerPickerState
         child: Center(
           child: Text(
             l10n.noMatchingUsers,
-            style: TextStyle(fontSize: 13, color: t.textQuaternary),
+            style: CcTypography.bodySm.copyWith(color: t.textTertiary),
           ),
         ),
       );
@@ -445,31 +443,30 @@ class _UserRow extends StatelessWidget {
         final hovered = states.contains(WidgetState.hovered);
         return Container(
           color: hovered ? t.bgPrimaryHover : const Color(0x00000000),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
           child: Row(
             children: [
               PickerCheck(selected: selected),
-              const SizedBox(width: 8),
+              AppSpacing.hGapSm,
               if (isTeam)
-                GitHubTeamAvatar(name: label, avatarUrl: avatarUrl, size: 22)
+                GitHubTeamAvatar(name: label, avatarUrl: avatarUrl, size: 20)
               else
                 GitHubUserAvatar(
                   login: login,
                   avatarUrl: avatarUrl,
-                  size: 22,
+                  size: 20,
                   showHoverCard: false,
                 ),
-              const SizedBox(width: 10),
+              AppSpacing.hGapSm,
               Expanded(
                 child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w600,
-                    color: t.textPrimary,
-                  ),
+                  style: CcTypography.bodySm.copyWith(color: t.textPrimary),
                 ),
               ),
             ],

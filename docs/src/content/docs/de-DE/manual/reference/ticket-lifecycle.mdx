@@ -2,7 +2,7 @@
 title: Ticket-Lebenszyklus
 description: Ticketfelder, Status, Übergänge, Beziehungen und der Mutations-Engpass.
 slug: de-DE/handbuch/referenz/ticket-lebenszyklus
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Ticket-Status
@@ -118,7 +118,7 @@ Das Aggregat umfasst zwei Belange in einer Zeile. Der **Spiegel** (Anbieter, Sch
 | `projectId`              | `String?`                  | Zugehöriges Projekt; wird nie an einen entfernten Anbieter übertragen                      |
 | `assignedAgentId`        | `String?`                  | ID des zugewiesenen Prinzipals (nur Metadaten — die Zuweisung startet nichts)              |
 | `assigneeType`           | `PrincipalType`            | Welche Art Prinzipal `assignedAgentId` benennt — `user` oder `agent` (Standard `agent`)    |
-| `createdByType`          | `PrincipalType?`           | Art des Prinzipals, der das Ticket angelegt hat (`user` oder `agent`); null bei Bestands- und Systemzeilen |
+| `createdByType`          | `PrincipalType?`           | Art des Prinzipals, der das Ticket angelegt hat (`user` oder `agent`); null bei systemseitig angelegten Zeilen |
 | `createdById`            | `String?`                  | ID des anlegenden Prinzipals                                                                |
 | `assignedTeamId`         | `String?`                  | Zugewiesenes Team (nur Metadaten)                                                           |
 | `delegatedByAgentId`     | `String?`                  | Agent, der dieses Ticket delegiert hat                                                     |

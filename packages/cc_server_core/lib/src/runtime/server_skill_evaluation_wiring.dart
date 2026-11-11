@@ -36,11 +36,66 @@ import 'package:cc_infra/cc_infra.dart'
         resolveBinaryPath,
         SkillComparison;
 import 'package:cc_persistence/cc_persistence.dart' show GlobalDatabase;
+import 'package:cc_server_core/src/catalog/repo_forge_read.dart';
 import 'package:cc_server_core/src/evals/skill_evaluation_evidence.dart';
 import 'package:cc_server_core/src/evals/skill_evaluation_model_policy.dart';
 import 'package:cc_server_core/src/evals/skill_evaluation_service.dart';
 import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
+
+/// Who may run or read a skill evaluation in a workspace: a registered
+/// workspace, a user whose role holds the `evals` permission (on the
+/// repository's grant for a repository-backed skill), and, for such a skill,
+/// a linked repository their own forge sign-in can read ([forgeRead], the
+/// code ops' check and refusals).
+Future<void> Function(
+  String workspaceId,
+  Principal actor, {
+  required bool write,
+  String? repoId,
+})
+skillEvaluationAuthorizer({
+  required Future<bool> Function(String workspaceId) workspaceExists,
+  required WorkspaceMembershipRepository memberships,
+  required WorkspaceRoleRepository roles,
+  required WorkspaceRepository workspaces,
+  required RepoForgeReadCheck forgeRead,
+}) => (workspaceId, actor, {required write, repoId}) async {
+  // Opening a workspace DAO creates its file: registry must precede even
+  // the membership lookup, including on event/restart/background paths.
+  if (!actor.isUser || !await workspaceExists(workspaceId)) {
+    throw const AuthException('Unknown workspace or actor');
+  }
+  final member = await memberships.getMember(workspaceId, actor.id);
+  final customId = RoleDefinition.customIdOf(member?.roleWire);
+  final role = member == null
+      ? null
+      : customId == null
+      ? RoleDefinition.preset(member.role)
+      : await roles.byId(workspaceId, customId);
+  final verdict = const PermissionResolver().can(
+    PermissionPrincipal(
+      userId: actor.id,
+      role: role,
+      repoGrants: repoId == null
+          ? const {}
+          : await memberships.getRepoGrants(workspaceId, actor.id),
+    ),
+    Permission('evals', write ? PermissionTier.write : PermissionTier.read),
+    resource: repoId == null ? null : ResourceRef.repo(repoId),
+  );
+  if (!verdict.allowed) {
+    throw AuthException(verdict.reason ?? 'Evaluation access denied');
+  }
+  if (repoId == null) {
+    return;
+  }
+  if (!await workspaces.isRepoLinkedToWorkspace(workspaceId, repoId)) {
+    throw const AuthException('Repository is not linked to this workspace');
+  }
+  // A repository-backed skill is that repository's code.
+  await forgeRead(workspaceId: workspaceId, userId: actor.id, repoId: repoId);
+};
 
 /// Server authority, credentials, pricing and native isolation share the same
 /// production dependencies as dispatch, but never its permissive fallback.
@@ -51,6 +106,7 @@ SkillEvaluationService buildSkillEvaluationService({
   required WorkspaceRoleRepository roles,
   required WorkspaceRepository workspaces,
   required RepoRepository repositories,
+  required RepoForgeReadCheck forgeRead,
   required WorkspaceFilesystemPort filesystem,
   required SkillBundlePort bundles,
   required SkillScanPort scanner,
@@ -71,43 +127,13 @@ SkillEvaluationService buildSkillEvaluationService({
   Future<bool> workspaceExists(String id) async =>
       await globalDb.workspaceRegistryDao.getById(id) != null;
 
-  Future<void> authorize(
-    String workspaceId,
-    Principal actor, {
-    required bool write,
-    String? repoId,
-  }) async {
-    // Opening a workspace DAO creates its file: registry must precede even
-    // the membership lookup, including on event/restart/background paths.
-    if (!actor.isUser || !await workspaceExists(workspaceId)) {
-      throw const AuthException('Unknown workspace or actor');
-    }
-    final member = await memberships.getMember(workspaceId, actor.id);
-    final customId = RoleDefinition.customIdOf(member?.roleWire);
-    final role = member == null
-        ? null
-        : customId == null
-        ? RoleDefinition.preset(member.role)
-        : await roles.byId(workspaceId, customId);
-    final verdict = const PermissionResolver().can(
-      PermissionPrincipal(
-        userId: actor.id,
-        role: role,
-        repoGrants: repoId == null
-            ? const {}
-            : await memberships.getRepoGrants(workspaceId, actor.id),
-      ),
-      Permission('evals', write ? PermissionTier.write : PermissionTier.read),
-      resource: repoId == null ? null : ResourceRef.repo(repoId),
-    );
-    if (!verdict.allowed) {
-      throw AuthException(verdict.reason ?? 'Evaluation access denied');
-    }
-    if (repoId != null &&
-        !await workspaces.isRepoLinkedToWorkspace(workspaceId, repoId)) {
-      throw const AuthException('Repository is not linked to this workspace');
-    }
-  }
+  final authorize = skillEvaluationAuthorizer(
+    workspaceExists: workspaceExists,
+    memberships: memberships,
+    roles: roles,
+    workspaces: workspaces,
+    forgeRead: forgeRead,
+  );
 
   Future<ProviderCredential> credential(String providerId) async {
     final selected = await credentials.activeCredential(providerId);

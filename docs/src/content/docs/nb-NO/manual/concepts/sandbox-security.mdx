@@ -2,16 +2,18 @@
 title: Sandkasse og sikkerhet
 description: Hva som faktisk begrenser en agent i Control Center i dag, hvor langt OS-sandkassen rekker, og hvilke grenser som holder på en vert uten backend.
 slug: nb-NO/handbok/konsepter/sandkasse-og-sikkerhet
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Hvor OS-sandkassen rekker, og hvor den ikke rekker]
 `cc_server` sonderer verten ved oppstart og pakker agentens kommandokjøring inn i
 den OS-native sandkassen når en finnes — Seatbelt på macOS, bubblewrap på
 Linux og WSL2 (som krever `bwrap` og `socat` på `PATH`). Der ingen backend
-finnes — Windows, eller en Linux-boks som mangler disse verktøyene — faller
-kjøringene tilbake på de andre grensene nedenfor, og serveren sier fra om det i
-oppstartsloggen. `--sandbox off` slår den bevisst av.
+finnes — Windows, eller en Linux-boks som mangler disse verktøyene — starter bare
+serverens eiers agentkjøringer, uten sandkasse, og alle andres avvises. Serverens
+eier kan i stedet starte den med `--sandbox off`, som kjører alle medlemmers
+agenter uten sandkasse på den maskinen. Oppstartsloggen sier hvilket tilfelle du
+er i; se [Agenter på en vert uten sandkasse](#agenter-på-en-vert-uten-sandkasse).
 
 To hull overlever sandkassen, og de er verdt å ha i bakhodet:
 
@@ -35,7 +37,23 @@ agenten til å stole på», men «hvor stor er skadradiusen når den tar feil».
 Control Center svarer på det i lag, og lagene er uavhengige med vilje. Mangler
 ett, holder de andre fortsatt. Det betyr noe, for det ytterste laget —
 OS-sandkassen — er det eneste som er betinget: det avhenger av at verten tilbyr
-en backend, og på Windows gjør ingen det.
+en backend, og på Windows gjør ingen det. Der den mangler, kjører ikke serveren stille alles agenter uten den.
+
+## Agenter på en vert uten sandkasse
+
+Serveren avgjør én gang ved oppstart hvordan agenter kjører på maskinen, og beholder den avgjørelsen til den startes på nytt:
+
+- **Med sandkasse.** Verten har en backend, og sandkassen er på. Hver kjøring pakkes inn.
+- **Av.** Serverens eier startet serveren med `--sandbox off`. Alle medlemmers agenter kjører uten avgrensning på denne maskinen. Det er eierens valg for alle som bruker serveren, ikke en innstilling for én kjøring.
+- **Utilgjengelig.** Sandkassen er på, men verten har ingen backend. En kjøring starter bare når personen som er ansvarlig for den, er [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier): personen som ba om den, eller for en tidsplan, webhook eller annen automatisering, personen den er knyttet til. Alles andres kjøringer avvises før et legitimasjonstoken utstedes eller en prosess starter, med «Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her. Eieren kan installere sandkassen eller slå av sandkassing for alle.»
+
+Grunnen er eierskap av maskinen. En agent uten sandkasse kan gjøre alt serverens brukerkonto kan gjøre, så bare den som eier den kontoen, kjører en, med mindre de bestemmer noe annet for alle. En Windows-server er alltid i det utilgjengelige tilfellet. Linux har en egen detalj, dekket i [sandkasse-backendreferansen](/nb-NO/handbok/referanse/sandkasse-backender/#linux-bubblewrap): native utsending feiler lukket der for øyeblikket, selv med bubblewrap installert.
+
+Samme regel dekker de mindre tingene som starter en prosess for deg:
+
+- **Hurtighjelpere som kjører gjennom en ACP-CLI**: samtaletitler, `/btw`, `/handoff` og `/goal`. Når serveren pakker agenter inn i sandkasse, kjører de inne i sandkassen, i en egen økt. Under `--sandbox off` kjører de uten avgrensning. Uten tilgjengelig sandkasse kjører de bare for forespørsler serverens eier er ansvarlig for; for alle andre hoppes de over, så ingen tittel genereres, og et sidespørsmål melder at Content synthesizer ikke har en fungerende kjører. Hjelpere som ikke starter noe verktøy, berøres ikke.
+- **Golden-tester i den visuelle sjekken for en pull request i Review Studio** følger samme regel.
+- **Verktøyprosesser og `bash`** i en kjøring faller aldri tilbake til verten. Hvis serveren er satt til å pakke agenter inn i sandkasse, men det ikke finnes noen sandkasse å gi en kjøring, avvises de.
 
 ## Hva som faktisk begrenser en agent
 
@@ -104,8 +122,9 @@ en ekstra forsvarslinje.
 dets vurderes mot modusens kommandopolicy og startes deretter med et sanert
 miljø og worktreet som arbeidskatalog. Der en backend finnes, pakkes den
 oppstarten inn, så sandkassen er det som hindrer en skallkommando i å skrive
-utenfor worktreet; der ingen finnes — Windows, eller Linux uten `bwrap` og
-`socat` — er kommandopolicyen det eneste som står mellom kommandoen og resten av
+utenfor worktreet; der ingen finnes (hver kjøring under `--sandbox off`, og eierens
+egne kjøringer på Windows eller på Linux uten `bwrap` og `socat`) er
+kommandopolicyen det eneste som står mellom kommandoen og resten av
 disken. I `chat`-modus nekter policyen kontant en fast liste (privilegieheving,
 system- og diskødeleggelse, container- og navneromsflukt) og spør ved endringer
 i ekstern tilstand (`git push`, `gh pr create`, publisering og installasjon av
@@ -131,11 +150,7 @@ tillat, spør først eller nekt — og de samme reglene gjelder uansett hvilken
 adapter som kjører agenten.
 
 En push er handlingen som må holde selv mot en agent som prøver å omgå en regel,
-så den håndheves gjennom det agenten har, ikke det den kjører. En kjøring i en
-GitHub-worktree får et token for det ene repoet, utstedt fra arbeidsområdets
-GitHub App, serverens egen app eller Control Center Connect. Det kan lese
-innhold og, når det ansvarlige medlemmet kan pushe, kommentere på pull requests,
-men det kan ikke pushe. Kjøringens git-konfigurasjon skriver om hver push-URL til GitHub
+så den håndheves gjennom det agenten har, ikke det den kjører. En kjøring har ikke noe forge-token når den starter, og `git` får aldri ett. Når `gh` trenger et, gir Control Center den et token for ett GitHub-repo kjøringen jobber med, utstedt fra arbeidsområdets GitHub App, serverens egen app eller Control Center Connect. Tokenet kan bare lese: det kan ikke pushe, kommentere eller endre. Kjøringens git-konfigurasjon skriver om hver push-URL til GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) til
 **agentkjøringsgatewayen**, et loopback-endepunkt på `cc_server`. Gatewayen
 leser hvilke refs pushen oppdaterer, spør regelen **Push til en remote** — så en
@@ -148,25 +163,24 @@ for formålet og aldri gir til agenten. En avvist push vises i gits egen utdata:
 ```
 
 Gatewayen sender bare pusher videre til worktreens eget repo eller til et
-GitHub-repo som er koblet til arbeidsområdet. Fetch går rett til GitHub med
-lesetokenet.
+GitHub-repo som er koblet til arbeidsområdet. Fetch går også gjennom gatewayen, på GitHub, GitLab og Bitbucket: den henter repoene kjøringen jobber med, med en legitimasjon den selv beholder og som kjøringen aldri ser. På GitLab og Bitbucket er det ditt eget token når du ba om kjøringen, og repoets automasjonstoken når ingen gjorde det. En fetch spør ingen, og bare et Nekt på **Bruk nettverket** stopper den.
 
 Andre skallkommandoer møter en mykere port. Harnessens `bash`-verktøy og,
 gjennom en hook, Claude Codes `Bash`-verktøy klassifiserer hver kommandolinje
 og spør regelen den hører inn under: `git commit`, `merge`, `rebase`,
 `cherry-pick`, `revert` og `am` er **Opprett en commit**; `gh pr create` er
 **Åpne en pull request**; `gh pr merge`, `review`, `comment` og `close` er
-**Publiser en gjennomgang eller sammenslåing**; `gh issue create`, `edit`,
+**Oppdater eller slå sammen en pull request**; `gh issue create`, `edit`,
 `comment` og `close` er **Skriv til et eksternt oppfølgingssystem**;
 pakkeinstallasjoner er **Installer en pakke**; `curl` og `wget` er **Bruk
-nettverket**. Dette kjenner igjen den vanlige skrivemåten for en handling, og en
+nettverket**. Å skrive til GitHub fra skallet er unntaket: `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` og skriving med `gh issue` fungerer ikke i en kjøring, der tokenet bare kan lese, og agenten blir henvist til Control Centers verktøy, som spør disse reglene. Dette kjenner igjen den vanlige skrivemåten for en handling, og en
 agent som er fast bestemt på å skjule en (`eval`, en skriptfil, et direkte
 API-kall), klarer det. Pusher er ikke avhengige av det.
 
 Hvert GitHub-token en kjøring får, er begrenset to ganger: til ett repo, og til
 det det ansvarlige medlemmet (den som spurte, ellers eieren av arbeidsområdet)
 kan gjøre der. Det finnes ingen reservelegitimasjon. Når det ikke kan utstedes
-noe token, starter kjøringen uten, og notatene forklarer hvorfor.
+noe token, forklarer kommandoen som ba om det hvorfor.
 
 Ingen API-nøkkel for saker legges i en sandkasse. Agenter skriver saker gjennom
 Control Centers MCP-verktøy, som spør **Skriv til et eksternt
@@ -179,6 +193,16 @@ fortsatt ved hvert kall. Kjøringens legitimasjonshåndtak frigis når den
 avsluttes. Tokenene bak dem deles per medlem og repo og utløper innen omtrent en
 time; et medlem som logger ut av GitHub eller forlater arbeidsområdet, fjerner
 med én gang alle tokener som er utstedt på vegne av vedkommende.
+
+## Repositorier en agent bare kan lese
+
+En agentkjøring kan bare endre sjekkutene av repositorier som personen den handler for, har [skrivetilgangen](/nb-NO/handbok/konsepter/autorisasjon/#endring-av-kode-krever-skrivetilgang) på. Arbeidsområdeadministratorer har den på hvert koblede repositorium. En kjøring ingen ba om, for eksempel en tidsplan eller en annen automatisering, bedømmes av den samme ansvarlige personen som automatiseringens token er avgrenset til.
+
+I et område med et repositorium den personen bare kan lese, kan agenten fortsatt lese og søke i det repositoriet, men den kan ikke endre filene. Filverktøyene dens avviser med en melding som begynner `<repo> is read-only for this run` og sier at endring av sjekkuten krever skrivetilgangen, som personen kjøringen handler for, ikke har, og at en administrator for arbeidsområdet kan gi den. Inne i en sandkasse er sjekkuten skrivebeskyttet for alle prosesser, så en skallkommando som skriver dit, mislykkes med «Operation not permitted». Det gjelder også `git commit` og et bygg eller en test som skriver utdata inne i sjekkuten. Repositorier personen kan skrive til, oppfører seg som vanlig, så administratorer, og alle med skrivetilgang til hvert repositorium i området, ser ingen forskjell.
+
+Dette avgjøres én gang, når kjøringen starter. En endring i tilgangen gjelder først neste kjøring, og det samme gjelder et repositorium lagt til i området under en kjøring.
+
+Der serverens eier har slått av sandkassen, er det bare agentens egne filverktøy og Claude Codes skrivverktøy som avvises, og skallkommandoer kan fortsatt endre sjekkuten. Ingenting kan pushes uten skrivetilgangen uansett, fordi hver push sjekkes mot den. Hvilke prosesser sandkassen begrenser på hver plattform, står i [Sandkasse-backender](/nb-NO/handbok/referanse/sandkasse-backender/).
 
 ## Hva sandkassen tilfører, og hvor den stopper
 
@@ -194,16 +218,16 @@ den begge skjøtene i utsendingstråden, fordi transportene ikke deler én. Den
 første (`SandboxPort`) pakker inn Claude Code-CLI-et. Den andre
 (`SandboxManager`) pakker inn ACP-adaptere og den innebygde harnessens
 `bash`-verktøy. Å fôre bare én ville la de andre starte upakket, og det var det
-som pleide å skje. På en vert uten backend, eller under `--sandbox off`,
-starter de alle upakket, og serveren sier hvilket tilfelle du er i, på
+som pleide å skje. Under `--sandbox off` starter de alle upakket; på en vert uten backend starter bare
+eierens kjøringer, også upakket. Serveren sier hvilket tilfelle du er i, på
 oppstartslinjen sin. ACP og harnessens `bash` sanerer fortsatt miljøet; Claude
 Code gjennom `NoSandboxAdapter` arver vertens miljø.
 
-Én flate velger bevisst bort dette: terminalen som hostes av serveren, godtar et
-backend-argument per økt, og `cc_server` konstruerer det med vertens skall som
-standard, så en terminal du åpner fra appen, kjører uten sandkasse med mindre en
-klient eksplisitt angir `native`. Det er et ekte skall på serververten, ikke en
-agentkjøring.
+Terminalen som serveren er vert for, åpner vertens skall bare for serverens
+[eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier). Alle andre får en
+sandkassert terminal, med en agents begrensninger, i arbeidsområdets egne
+kataloger. Bare personen som åpnet en terminal, kan skrive i den, lese den eller
+lukke den.
 
 På Linux bygger `bubblewrap` et mount-navnerom, så agenten faktisk bare ser det
 som ble bundet inn i det. På macOS bruker `sandbox-exec` en Seatbelt-profil som
@@ -215,6 +239,10 @@ med eksplisitte tillatelser på toppen, blokkering av unlink på hver nektet sti
 og dens overordnede, så en omdøping ikke kan omgå en skrivenekt, exec-nekt for
 alltid-farlige binærer og for alt som kopieres inn i en skrivbar katalog, og
 nettverk begrenset til loopback-proxyportene pluss DNS. Verktøykjeder installert under hjemmekatalogen din (pnpm fra corepack, versjonsbehandlere for node, Playwright-nettlesere, rustup, fvm, uv og lignende) kan fortsatt kjøres innenfor den exec-blokkeringen, slik at agenter kan bruke dem uten omveier. De alltid-farlige nektene gjelder fortsatt innenfor dem. Hver økt får også sin egen private `TMPDIR`. Det er den eneste midlertidige katalogen der agenten får kjøre programmer den har bygget eller åpne Unix-sokler.
+
+To beskyttelser til gjelder i alle moduser. En sandkasse kan ikke legge til, erstatte, slette eller gi nytt navn til en kommando i mappene serveren kjører programmer fra (hver mappe på `PATH` og de vanlige verktøymappene for hver bruker), så en sandkassert kjøring kan ikke plante et program som serveren senere starter utenfor sandkassen. Globale installasjoner og bytte av standardversjon fra innsiden av en kjøring feiler derfor med «Operation not permitted», mens prosjektlokale installasjoner og `npx`-lignende kjøringer fungerer fortsatt; installer globale verktøy på selve serveren og start den på nytt. Og hver hjemmesti en sandkasse ikke kan lese, kan den heller ikke skrive til, og serverbrukerens skall- og oppstartsfiler for økter kan aldri skrives. Detaljer og plattformbegrensninger står i [Serverens kommandomapper](/nb-NO/handbok/referanse/sandkasse-backender/#serverens-kommandomapper).
+
+En kjørings verktøysandkasser tilhører den kjøringen og frigis når den avsluttes. Språkservere starter på nytt med hver sandkassert kjøring. En feilsøkingsøkt beholder sandkassen sin på tvers av runder til økten avsluttes, i høyst 30 minutter.
 
 Den praktiske konsekvensen: på Linux blir agentens syn på filsystemet smalere;
 på macOS kan agenten fortsatt _lese_ mesteparten av verten, og de registrerte

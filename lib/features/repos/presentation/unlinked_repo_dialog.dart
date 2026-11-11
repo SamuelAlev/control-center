@@ -17,17 +17,20 @@ enum UnlinkedRepoAction {
 /// repository: add it to [currentWorkspace], create a workspace for it, or
 /// nothing.
 ///
-/// Without a [currentWorkspace] only creating one is offered. Resolves to null
-/// when dismissed.
+/// Without a [currentWorkspace] only creating one is offered; creating is
+/// offered only when [canCreateWorkspace]. The caller must not open it with
+/// neither. Resolves to null when dismissed.
 Future<UnlinkedRepoAction?> showUnlinkedRepoDialog({
   required BuildContext context,
   required String repoFullName,
   required Workspace? currentWorkspace,
+  required bool canCreateWorkspace,
 }) => showCcDialog<UnlinkedRepoAction>(
   context: context,
   builder: (_) => UnlinkedRepoDialog(
     repoFullName: repoFullName,
     currentWorkspace: currentWorkspace,
+    canCreateWorkspace: canCreateWorkspace,
   ),
 );
 
@@ -38,6 +41,7 @@ class UnlinkedRepoDialog extends StatefulWidget {
     super.key,
     required this.repoFullName,
     required this.currentWorkspace,
+    required this.canCreateWorkspace,
   });
 
   /// The repository the link names, as `owner/name`.
@@ -45,6 +49,9 @@ class UnlinkedRepoDialog extends StatefulWidget {
 
   /// The workspace the user is in, offered as the place to add the repository.
   final Workspace? currentWorkspace;
+
+  /// Whether creating a workspace for the repository is offered.
+  final bool canCreateWorkspace;
 
   @override
   State<UnlinkedRepoDialog> createState() => _UnlinkedRepoDialogState();
@@ -85,17 +92,22 @@ class _UnlinkedRepoDialogState extends State<UnlinkedRepoDialog> {
               title: l10n.repoLinkUnlinkedAddTo(current.name),
               hint: l10n.repoLinkUnlinkedAddToHint,
             ),
-          _ActionTile(
-            action: UnlinkedRepoAction.createWorkspace,
-            selected: _selected,
-            onSelect: _select,
-            icon: SizedBox.square(
-              dimension: 20,
-              child: Icon(CcIcons.plus, size: 16, color: tokens?.textSecondary),
+          if (widget.canCreateWorkspace)
+            _ActionTile(
+              action: UnlinkedRepoAction.createWorkspace,
+              selected: _selected,
+              onSelect: _select,
+              icon: SizedBox.square(
+                dimension: 20,
+                child: Icon(
+                  CcIcons.plus,
+                  size: 16,
+                  color: tokens?.textSecondary,
+                ),
+              ),
+              title: l10n.repoLinkUnlinkedCreate,
+              hint: l10n.repoLinkUnlinkedCreateHint,
             ),
-            title: l10n.repoLinkUnlinkedCreate,
-            hint: l10n.repoLinkUnlinkedCreateHint,
-          ),
         ],
       ),
       actions: [

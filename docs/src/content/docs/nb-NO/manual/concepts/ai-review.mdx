@@ -2,7 +2,7 @@
 title: AI-gjennomgang
 description: Hvordan en pull request blir gjennomgått – gjennomgangsområder, gjennomgangsknoder og peer-konsensus, kohorter og akser, dommen Ship/Hold/Block, og hvorfor publisering fortsatt er et steg du tar selv.
 slug: nb-NO/handbok/konsepter/ai-gjennomgang
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Strukturen i en gjennomgang
@@ -205,8 +205,7 @@ brukeren, slik at en gjennomgang aldri kan publiseres dobbelt. Når du trykker
   trykket på den, med personens egen GitHub-pålogging: utgivelsesporten er
   deres, og da er gjennomgangen det også. En publisering uten en person bak seg
   er automatisering, og automatisering godkjenner aldri: Ship sendes da som
-  `COMMENT`, og på Control Center Connect krediteres innlegget med prefikset
-  `**Control Center** (for @login):`.
+  `COMMENT`, og @-nevnelser i funnene gjøres virkningsløse, så innlegget ikke varsler noen. Det legges ut av boten, unntatt i den delte Control Center Connect-appen når Connect-operatøren ikke har oppført denne installasjonen: da legges det ut på den ansvarlige personens egen pålogging, under deres navn, og krediteres med prefikset `**Control Center** (for @login):`. En server eller et arbeidsområde med sin egen GitHub-app legger alltid ut innlegget som boten. En agent som kaller MCP-verktøyet, kan bare publisere gjennomgangen i sitt eget område.
 
 Publiseringen deklarerer handlingsklassen `prPublish`, så kontrollpunktet i
 tillatelsesreglene behandler den som enhver muterende handling – den ber om

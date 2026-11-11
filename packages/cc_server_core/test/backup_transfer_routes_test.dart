@@ -603,6 +603,82 @@ void main() {
       expect(adopted, isFalse);
     });
 
+    test('a workspace owner who is not the server owner is refused, and '
+        'nothing is adopted or staged', () async {
+      var adopted = false;
+      final uploadDir = '${tmp.path}/transfer';
+      final server = await serve(
+        restore: ({required workspaceId, required sourcePath}) async {
+          adopted = true;
+        },
+        role: WorkspaceRole.owner,
+        owner: 'someone-else',
+        uploadDir: uploadDir,
+      );
+
+      final resp = await post(
+        server,
+        '/backup/restore?w=$workspaceId&d=$deviceId'
+        '&s=${sign('backup-restore:$workspaceId')}',
+        const [1, 2, 3],
+      );
+      final body = await utf8.decoder.bind(resp.body).join();
+
+      expect(resp.statusCode, 403);
+      // Told apart from a bad signature, which answers a bare 403.
+      expect(jsonDecode(body), containsPair('kind', 'server_owner_required'));
+      expect(adopted, isFalse);
+      final staging = Directory(uploadDir);
+      expect(staging.existsSync() ? staging.listSync() : const [], isEmpty);
+    });
+
+    test('a host that knows no server owner refuses restore and the '
+        'install snapshot', () async {
+      var adopted = false;
+      var archived = false;
+      final server = LocalRpcServer(
+        dispatcher: _StubDispatcher(),
+        devicesDao: _StubDevicesDao(deviceId: deviceId, userId: userId),
+        secrets: _StubSecrets(psk: psk),
+        eventBus: DomainEventBus(),
+        workspaceResolver: (user) async => const [
+          (id: workspaceId, name: 'Test workspace'),
+        ],
+        resolveRole: (workspace, user) async => WorkspaceRole.owner,
+        backupSnapshotArchive: ({required name}) async {
+          archived = true;
+          return null;
+        },
+        backupRestore: ({required workspaceId, required sourcePath}) async {
+          adopted = true;
+        },
+        backupUploadDir: '${tmp.path}/transfer',
+        identity: await ServerIdentityStore.load(tmp.path),
+        address: InternetAddress.loopbackIPv4,
+        port: 0,
+      );
+      addTearDown(server.stop);
+      await server.start();
+
+      final restore = await post(
+        server,
+        '/backup/restore?w=$workspaceId&d=$deviceId'
+        '&s=${sign('backup-restore:$workspaceId')}',
+        const [1, 2, 3],
+      );
+      await restore.body.drain<void>();
+      final snapshot = await get(
+        server,
+        '/backup/snapshot?n=snap&d=$deviceId&s=${sign('backup-snapshot:snap')}',
+      );
+      await snapshot.body.drain<void>();
+
+      expect(restore.statusCode, 403);
+      expect(snapshot.statusCode, 403);
+      expect(adopted, isFalse);
+      expect(archived, isFalse);
+    });
+
     test('reports what the adopter refused, and stages nothing', () async {
       String? stagedPath;
       final server = await serve(

@@ -161,11 +161,8 @@ class ClaudeUsage {
   /// How many turns the call had run, when reported.
   final int? numTurns;
 
-  /// [costUsd] in whole cents — the unit the legacy run-log axis stores.
-  int get costCents => (costUsd * 100).round();
-
-  /// [costUsd] in exact micro-USD (USD × 1e6), the unit the precise axis
-  /// stores. Integer maths, so no float drift is introduced here.
+  /// [costUsd] in exact micro-USD (USD × 1e6), the unit run costs are
+  /// stored in. Integer maths, so no float drift is introduced here.
   int get costMicros => (costUsd * 1000000).round();
 
   /// Whether every cost/token counter on this result is zero.
@@ -790,9 +787,6 @@ class ClaudeTurnAccounting {
 
   /// The result subtype this turn came from.
   final String? subtype;
-
-  /// [costDeltaUsd] in whole cents (legacy axis).
-  int get costDeltaCents => (costDeltaUsd * 100).round();
 
   /// [costDeltaUsd] in exact micro-USD.
   int get costDeltaMicros => (costDeltaUsd * 1000000).round();

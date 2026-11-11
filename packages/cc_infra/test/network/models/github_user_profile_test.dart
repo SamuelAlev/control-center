@@ -1,4 +1,4 @@
-import 'package:cc_infra/src/network/models/github_user_profile.dart';
+import 'package:cc_domain/core/domain/entities/github_user_profile.dart';
 import 'package:test/test.dart';
 
 /// Round-trips the GitHub user-profile DTOs against their wire shapes — these

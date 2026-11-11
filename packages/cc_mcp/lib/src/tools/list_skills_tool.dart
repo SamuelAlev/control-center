@@ -1,7 +1,7 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
-import 'package:cc_infra/cc_infra.dart';
 
 /// MCP tool that lists all skill slugs available in a workspace.
 class ListSkillsTool extends McpTool {

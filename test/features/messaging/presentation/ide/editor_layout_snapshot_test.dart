@@ -39,6 +39,7 @@ void main() {
       const term = EditorTab(
         kind: MessagingTabKinds.terminal,
         label: 'Terminal',
+        args: {'termSessionId': 't1'},
       );
       const browser = EditorTab(
         kind: MessagingTabKinds.browser,
@@ -135,11 +136,13 @@ void main() {
     const terminal = EditorTab(
       kind: MessagingTabKinds.terminal,
       label: 'Terminal',
+      args: {'termSessionId': 'one'},
       dedupKey: 'terminal:one',
     );
     const otherTerminal = EditorTab(
       kind: MessagingTabKinds.terminal,
       label: 'Terminal',
+      args: {'termSessionId': 'two'},
       dedupKey: 'terminal:two',
     );
     const transient = EditorTab(
@@ -190,11 +193,14 @@ void main() {
 
     test('skipping an invalid cached tab does not shift focus', () {
       const payload = '''
-        {"v":1,"root":{"t":"leaf","sel":2,"active":true,"tabs":[
+        {"v":2,"root":{"t":"leaf","sel":2,"selKey":"terminal:one",
+          "active":true,"tabs":[
           {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
           {"kind":"chat","label":"Invalid","args":{}},
-          {"kind":"terminal","label":"Terminal","dedup":"terminal:one"},
-          {"kind":"terminal","label":"Terminal","dedup":"terminal:two"}
+          {"kind":"terminal","label":"Terminal",
+           "args":{"termSessionId":"one"},"dedup":"terminal:one"},
+          {"kind":"terminal","label":"Terminal",
+           "args":{"termSessionId":"two"},"dedup":"terminal:two"}
         ]}}
       ''';
       final restored = messagingLayoutCodec.decode(payload)!;
@@ -215,9 +221,10 @@ void main() {
 
     test('a dropped selection with no history falls back to the first tab', () {
       const payload = '''
-        {"v":1,"root":{"t":"leaf","sel":0,"active":true,"tabs":[
+        {"v":2,"root":{"t":"leaf","sel":0,"active":true,"tabs":[
           {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
-          {"kind":"terminal","label":"Terminal","dedup":"terminal:one"}
+          {"kind":"terminal","label":"Terminal",
+           "args":{"termSessionId":"one"},"dedup":"terminal:one"}
         ]}}
       ''';
       final restored = messagingLayoutCodec.decode(payload)!;
@@ -236,40 +243,20 @@ void main() {
     });
 
     test('the saved tab id wins over a stale index', () {
-      // Saved with tab ids, then the index drifted (a tab inserted before it
-      // by a client that predates ids, or a hand-edited payload).
       const payload = '''
-        {"v":1,"root":{"t":"leaf","sel":0,"selKey":"terminal:two",
+        {"v":2,"root":{"t":"leaf","sel":0,"selKey":"terminal:two",
           "active":true,"tabs":[
           {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
-          {"kind":"terminal","label":"Terminal","dedup":"terminal:one"},
-          {"kind":"terminal","label":"Terminal","dedup":"terminal:two"}
+          {"kind":"terminal","label":"Terminal",
+           "args":{"termSessionId":"one"},"dedup":"terminal:one"},
+          {"kind":"terminal","label":"Terminal",
+           "args":{"termSessionId":"two"},"dedup":"terminal:two"}
         ]}}
       ''';
       final restored = messagingLayoutCodec.decode(payload)!;
       addTearDown(restored.dispose);
 
       expect(activeEditorTabKey(restored), 'terminal:two');
-    });
-
-    test('same-kind tabs saved without ids each get their own', () {
-      const payload = '''
-        {"v":1,"root":{"t":"leaf","sel":2,"active":true,"tabs":[
-          {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
-          {"kind":"terminal","label":"Terminal","args":{"termSessionId":"a"}},
-          {"kind":"terminal","label":"Terminal","args":{"termSessionId":"b"}}
-        ]}}
-      ''';
-      final restored = messagingLayoutCodec.decode(payload)!;
-      addTearDown(restored.dispose);
-
-      final tabs = restored.activeLeaf.controller.tabs;
-      expect(tabs.map((t) => t.id).toSet(), hasLength(3));
-      final focused = activeEditorTabKey(restored);
-      expect(restored.activeLeaf.controller.selectedIndex, 2);
-      expect(focused, startsWith('${MessagingTabKinds.terminal}:'));
-      // The minted id is saved, so the next restore lands on the same tab.
-      expect(activeEditorTabKey(reopen(restored)), focused);
     });
 
     test('an unrestorable focused pane falls back to a populated pane', () {
@@ -287,9 +274,10 @@ void main() {
 
     test('layouts saved without focus still open a usable tab', () {
       const payload = '''
-        {"v":1,"root":{"t":"leaf","tabs":[
+        {"v":2,"root":{"t":"leaf","tabs":[
           {"kind":"chat","label":"Chat","args":{"spaceId":"space-1"}},
-          {"kind":"terminal","label":"Terminal","dedup":"terminal:one"}
+          {"kind":"terminal","label":"Terminal",
+           "args":{"termSessionId":"one"},"dedup":"terminal:one"}
         ]}}
       ''';
       final restored = messagingLayoutCodec.decode(payload)!;
@@ -381,7 +369,7 @@ void main() {
 
     test('a chat tab missing its spaceId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"chat","label":"Chat","args":{}}]}}';
       expect(messagingLayoutCodec.decode(json), isNull);
     });
@@ -435,7 +423,7 @@ void main() {
 
     test('a tab missing its runId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"agentActivity","label":"scout","args":'
           '{"workspaceId":"ws-1","spaceId":"c-1"}}]}}';
 
@@ -444,7 +432,7 @@ void main() {
 
     test('a tab missing its workspaceId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"agentActivity","label":"scout","args":'
           '{"spaceId":"c-1","runId":"run-1"}}]}}';
 
@@ -453,7 +441,7 @@ void main() {
 
     test('a tab missing its spaceId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"agentActivity","label":"scout","args":'
           '{"workspaceId":"ws-1","runId":"run-1"}}]}}';
 
@@ -485,7 +473,7 @@ void main() {
 
     test('a tab missing its workProductId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"artifact","label":"Rollout plan","args":'
           '{"workspaceId":"ws-1"}}]}}';
 
@@ -496,7 +484,7 @@ void main() {
       // The pane refuses to render without a workspace to check against, so a
       // payload without one must not come back as a tab at all.
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"artifact","label":"Rollout plan","args":'
           '{"workProductId":"wp-1"}}]}}';
 
@@ -540,9 +528,9 @@ void main() {
       expect(tabs.map((tab) => tab.args['agentId']), ['ag-1', 'ag-1']);
     });
 
-    test('an older tab missing its conversationId is dropped', () {
+    test('a tab missing its conversationId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"contextExplorer","label":"Context","args":'
           '{"workspaceId":"ws-1","spaceId":"sp-1","agentId":"ag-1"}}]}}';
 
@@ -551,7 +539,7 @@ void main() {
 
     test('a tab missing its agentId is dropped', () {
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"contextExplorer","label":"Context","args":'
           '{"workspaceId":"ws-1","spaceId":"sp-1",'
           '"conversationId":"cv-1"}}]}}';
@@ -563,7 +551,7 @@ void main() {
       // The pane refuses to render without a workspace to check against, so a
       // payload without one must not come back as a tab at all.
       const json =
-          '{"v":1,"root":{"t":"leaf","tabs":['
+          '{"v":2,"root":{"t":"leaf","tabs":['
           '{"kind":"contextExplorer","label":"Context","args":'
           '{"spaceId":"sp-1","conversationId":"cv-1",'
           '"agentId":"ag-1"}}]}}';

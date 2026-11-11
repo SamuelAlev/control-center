@@ -2,7 +2,7 @@
 title: Pengiraan semakan (kohort, paksi dan diff deterministik)
 description: Apa yang dihasilkan oleh laluan pengiraan semakan di pihak pelayan — kohort, diff kontrak API dan visual, pintu bagi setiap paksi — dan cara ia dilipat masuk ke dalam tab Semakan.
 slug: ms-MY/manual-pengguna/panduan-cara/pengiraan-semakan
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Tab **Semakan** PR itu ialah kemajuan langsung pipeline semakan semasa ia
@@ -15,8 +15,6 @@ Di sebalik tab itu, `cc_server` membina kohort fail, menjalankan paksi
 deterministik dan menyajikannya melalui operasi RPC `review_studio.*`
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` dan kembar `watch*`-nya).
-Susun atur kekal yang masih menamakan `pr.reviewStudio` membuka tab Semakan
-yang sama ini.
 
 Pada tab Semakan:
 
@@ -85,6 +83,13 @@ Widgetbook, laluan pengiraan merender komponen yang berubah sebelum dan
 selepas melalui laluan golden `flutter test` tanpa kepala dalam worktree base
 dan head PR, kemudian melakukan diff pada pikselnya.
 
+Ujian tersebut ialah kod PR itu sendiri, jadi ia dijalankan seperti proses alat
+ejen: di dalam sandbox apabila pelayan mensandbox ejen, tanpa sandbox apabila
+pemilik pelayan mematikan sandbox, dan tanpa sandbox hanya untuk permintaan yang
+pemilik pelayan bertanggungjawab ke atasnya. Untuk orang lain, paksi itu
+melaporkan **tidak tersedia** dengan sebab "tiada sandbox pada pelayan ini, dan
+hanya pemiliknya boleh menjalankan ujian PR tanpa sandbox".
+
 :::note[Ini memerlukan Flutter SDK pada hos pelayan]
 Pelayan Dart tulen tidak dapat merender widget Flutter dalam proses, jadi ia
 memanggil `flutter test` sebagai proses luar. SDK itu perlu dipasang pada mesin
@@ -95,9 +100,10 @@ pernah melaporkan kelulusan yang tidak diraihnya.
 
 Snapshot yang ditandakan **changed** atau **removed** menahan pintu visual
 sehingga diluluskan; snapshot **unchanged**, **added** dan **approved**
-membukanya. Ketidaktersediaan mempunyai salah satu daripada empat sebab: tiada
+membukanya. Ketidaktersediaan mempunyai salah satu daripada lima sebab: tiada
 Flutter SDK pada hos, tiada aplikasi Widgetbook dalam repo, tiada kes penggunaan
-yang boleh diuji golden, atau ralat harness golden.
+yang boleh diuji golden, ralat harness golden, atau tiada sandbox untuk
+permintaan yang pemilik pelayan tidak bertanggungjawab ke atasnya.
 
 Meluluskan perubahan yang dimaksudkan ialah `review_studio.approveVisual`.
 

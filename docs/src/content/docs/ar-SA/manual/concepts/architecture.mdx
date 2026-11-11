@@ -3,7 +3,7 @@ title: البنية
 description: كيف تنتظم Control Center حول نموذج عميل خفيف فوق خادم بلا واجهة، وبنية نظيفة حسب الميزة، ونمط المنافذ والمحوّلات.
 dateModified: 2026-09-19
 slug: ar-SA/دليل-المستخدم/مفاهيم/بنية
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## نظرة عامة
@@ -60,7 +60,7 @@ feature_name/
 - كيانات الذاكرة: `MemoryFact`، `MemoryPolicy`، `AgentWorkingMemory`، `MemoryAccessGrant`
 - كائنات القيمة المشتركة: `AgentSkills`، `AgentRole`، `Mode`، `SandboxBackend`، `SandboxSpec`، `RunCost`
 - المنافذ المشتركة: `SandboxPort`، `CredentialBrokerPort`، `WorkspaceFilesystemPort`، `GitRepoInspectorPort`، `EmbeddingPort`
-- خدمات النطاق: `MemoryAccessPolicy`، `ActivityLogger`، `MentionResolver`، `RunLivenessClassifier`
+- خدمات النطاق: `MemoryAccessPolicy`، `ActivityLogger`، `AgentMentionParser`، `UserMentionParser`، `RunLivenessClassifier`
 - `DomainEventBus` وأنواع الأحداث (مساحة العمل/الوكيل، طلب السحب/المراجعة، المراسلة، التذاكر، خط الأنابيب، التنسيق، الذاكرة، التقويم/الاجتماعات، الهوية والعضوية، الرصد)
 
 ## الهوية وتعدد اللاعبين
@@ -132,7 +132,6 @@ Control Center متعدد المستخدمين: البشر والوكلاء فا
 
 - الأسرار في `flutter_secure_storage` (سلسلة مفاتيح macOS، ومدير بيانات الاعتماد في Windows، وlibsecret على Linux): بيانات اعتماد جهاز العميل ومفاتيح الاقتران البعيد، لا رموز المزوّدين
 - `shared_preferences` للتفضيلات غير الحساسة فقط (السمة والخط والتخطيط)
-- تُسلَّم أسرار المزوّدين المتبقية من تثبيتات أقدم إلى الخادم مرة واحدة عبر `features/auth/providers/credential_migration.dart`، ثم تُحذف من سلسلة مفاتيح العميل
 
 ## فرض البنية
 

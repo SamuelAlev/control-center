@@ -2,7 +2,7 @@
 title: Rigs
 description: Toda superfície de rig, backend, verbo de ação, estado do ciclo de vida, porta, padrão e contrato — o catálogo factual completo.
 slug: pt-BR/manual/referencia/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Apenas fatos. Para o modelo por trás deles, leia [Rigs e
@@ -230,8 +230,10 @@ nem garantia de rede isolada.
 
 | Ferramenta | Descrição |
 | --- | --- |
-| `rig_list` | Lista os rigs de um espaço de trabalho com superfície, status, tela e controlador |
+| `rig_list` | Lista os rigs do espaço da execução com superfície, status, tela e controlador |
 | `rig_close` | Destrói um rig e descarta o seu disco |
+
+Estas ferramentas, como as quatro ferramentas de uso, são somente para execuções de agentes; qualquer outro chamador é recusado. Uma execução alcança apenas os rigs do espaço para o qual recebeu a concessão: `space_id` vem da concessão da execução, nunca da chamada. Um rig de outro espaço, ou de nenhum espaço, responde exatamente como um rig inexistente.
 
 ## Ciclo de vida
 
@@ -336,7 +338,7 @@ são independentes e nunca são uma configuração de espaço de trabalho.
   que os quadros do rig e o áudio de reunião já usam.
 - A **autenticação** é o alvo assinado `rig-files:<workspaceId>/<rigId>` mais
   a associação ao espaço de trabalho — um alvo próprio, então uma URL emitida
-  para *assistir* a uma máquina não pode também gravar arquivos nela.
+  para *assistir* a uma máquina não pode também gravar arquivos nela. Para um rig aberto em um espaço, ler a área de transferência ou um arquivo também exige acesso de leitura a esse espaço, e gravar na área de transferência ou soltar arquivos exige uma concessão de escrita nos repositórios dele. Em um rig que carrega os logins próprios de uma pessoa, as duas vias, inclusive a leitura, são somente dela. Veja [Quem pode observar e quem pode controlar](/pt-BR/manual/guias/usar-rigs/#quem-pode-observar-e-quem-pode-controlar).
 - **A assunção de controle se aplica.** Gravar na área de transferência e
   soltar arquivos são mutações e são recusados enquanto outra pessoa detém o
   controle; ler a área de transferência e ler um arquivo para fora são

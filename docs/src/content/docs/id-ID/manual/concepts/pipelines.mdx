@@ -2,7 +2,7 @@
 title: Pipeline dan otomatisasi
 description: Mengapa pipeline memisahkan penjadwalan dari pekerjaan, apa yang sebenarnya memulai sebuah eksekusi, dan templat bawaan mana yang langsung aktif sejak awal.
 slug: id-ID/panduan-pengguna/konsep/pipeline
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipeline adalah separuh deterministik dari Control Center. Agen memutuskan apa
@@ -40,7 +40,7 @@ sebuah langkah, karena melanjutkan akan lebih buruk daripada berhenti:
   dikecualikan.
 - Langkah yang dideklarasikan `extras: {'idempotent': false}` dan sedang
   berjalan ketika server berhenti mungkin sudah menerapkan efek sampingnya
-  (squash merge, pembersihan worktree). Menjalankannya ulang dapat
+  (backup ruang kerja, pembersihan worktree). Menjalankannya ulang dapat
   menerapkannya dua kali, jadi mesin menggagalkannya dan menyerahkan percobaan
   ulang kepada Anda.
 
@@ -148,11 +148,13 @@ pengumpulan sampah. Tanpa itu, baris worktree, partisi graf kode, dan salinan
 copy-on-write akan menumpuk, dan hal itu memang tidak pernah dimaksudkan sebagai
 pilihan pengguna.
 
-Satu lagi asimetri yang perlu diketahui: bawaan `pr_review` sengaja tidak lagi
-memposting ke GitHub. Memublikasikan tinjauan adalah langkah terpisah yang
-digrebangi pengguna, dan pipeline yang memposting langsung akan
-memublikasikan ganda. `cross_review`, `ticket_to_pr`, dan `pr_triage` masih
-memposting komentar langsung ke GitHub saat dijalankan.
+Satu lagi asimetri yang perlu diketahui: bawaan `pr_review` sengaja tidak lagi memposting ke GitHub. Memublikasikan tinjauan adalah langkah terpisah yang digrebangi pengguna, dan pipeline yang memposting langsung akan memublikasikan ganda. `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate`, dan `external_pr_welcome` tetap memposting komentar ke GitHub saat dijalankan.
+
+Mereka memposting dari server, melalui langkah **Post PR comment** (`prReview.comment`), tidak pernah dari skrip shell: langkah shell pipeline dan sandbox agennya memegang token GitHub yang hanya dapat membaca. Aturan yang sama berlaku untuk sisanya:
+
+- `external_pr_welcome` memposting sapaannya sebagai `message` langkah tersebut.
+- `ticket_to_pr` meminta agen coder mendorong `agent/<ticket_id>` (melalui gateway run) dan membuka draft PR dengan `open_pull_request`, memakai sign-in GitHub orang yang memulai run, atau sebagai bot jika tidak ada yang memulai. Keduanya mengikuti aturan **Push ke remote** dan **Buka pull request** di ruang kerja. Di Control Center Connect, run yang tidak diminta siapa pun, seperti yang dipicu `TicketAssigned`, tidak dapat melakukan push atau membuka PR: bot aplikasi bersama hanya dapat membaca dan berkomentar.
+- `pre_merge_gate` tidak pernah menggabungkan. Menyetujui di gerbangnya memposting bahwa PR siap digabungkan oleh maintainer; menolak memposting bahwa perubahan diminta. Orang menggabungkan dari halaman PR.
 
 ## Apa yang diketahui mesin
 

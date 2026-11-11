@@ -25,6 +25,7 @@ class SpaceMessageBubble extends ConsumerWidget {
     required this.message,
     this.collapseHeader = false,
     this.inlineMessages = const [],
+    this.canRetry = false,
     this.onStartThread,
     this.onOpenThread,
   });
@@ -37,6 +38,9 @@ class SpaceMessageBubble extends ConsumerWidget {
 
   /// Steering and resolved questions placed inside this agent turn's transcript.
   final List<Message> inlineMessages;
+
+  /// Whether a failed agent turn offers Retry (see `MessageItem.canRetry`).
+  final bool canRetry;
 
   /// Hover-rail "start thread" affordance, forwarded to text bubbles only —
   /// cards (ticket/plan/artifact/question/review/orchestration/system) never
@@ -97,6 +101,7 @@ class SpaceMessageBubble extends ConsumerWidget {
             codeFont: codeFont,
             collapseHeader: collapseHeader,
             inlineMessages: inlineMessages,
+            canRetry: canRetry,
             onStartThread: onStartThread,
           );
 

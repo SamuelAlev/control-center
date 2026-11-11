@@ -2,7 +2,7 @@
 title: Rào chắn — một chính sách cho mọi hành động gây thay đổi
 description: Vì sao Control Center đưa mọi tác động phụ của agent qua một cỗ máy cho phép/hỏi trước/từ chối duy nhất, cách hệ phân loại ActionClass cố ý giữ nhỏ, và núm tự chủ thực sự thay đổi điều gì.
 slug: vi-VN/so-tay/khai-niem/rao-chan
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agent trong Control Center có thể xóa tệp, push nhánh, xuất bản pull request
@@ -18,9 +18,8 @@ Chỉ có đúng một cỗ máy chính sách. Nó được hỏi ý kiến tạ
 động có thể rời khỏi hệ thống: sổ đăng ký công cụ của harness tích hợp, cổng
 điều phối MCP phía máy chủ và các thao tác thay đổi repo. Nhờ vậy, một quy tắc
 viết một lần sẽ áp dụng cho cả runtime tích hợp lẫn các CLI agent bên ngoài —
-không có con đường thứ hai nào lặng lẽ vòng qua nó. Chính sách lệnh chỉ dành
-cho bash trước đây vẫn hoạt động: một quy tắc có thể khớp theo tiền tố lệnh
-thay vì theo lớp hành động, và hai dạng này cùng tồn tại trong cùng một kho.
+không có con đường thứ hai nào lặng lẽ vòng qua nó. Một quy tắc cũng có thể khớp theo tiền tố lệnh
+thay vì theo lớp hành động; cả hai dạng cùng tồn tại trong cùng một kho.
 
 Tuy nhiên, cỗ máy này không thay thế sandbox của hệ điều hành, và sandbox cũng
 không thay thế nó. Chúng trả lời những câu hỏi khác nhau: rào chắn quyết định
@@ -28,14 +27,16 @@ liệu một lời gọi mà Control Center nhìn thấy có được phép xả
 còn sandbox giới hạn phạm vi mà tiến trình sinh ra có thể vươn tới. `cc_server`
 áp dụng sandbox khi máy chủ có sẵn một backend — nhưng [Windows không có backend
 nào và Linux cần `bwrap` cùng `socat`](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
-Trên những máy chủ đó, rào chắn là lớp thực thi ngoài cùng chứ không phải một
-chính sách ngồi trên một cái sàn, điều đáng biết khi bạn quyết định nới rộng
-đến mức nào.
+Trên những máy chủ đó, chỉ các lượt chạy của chủ sở hữu máy chủ mới bắt đầu, trừ khi
+chủ sở hữu đã tắt sandbox cho tất cả mọi người bằng `--sandbox off`. Với mọi lượt
+chạy bắt đầu mà không có sandbox, rào chắn là lớp thực thi ngoài cùng chứ không phải
+một chính sách ngồi trên một cái sàn, điều đáng biết khi bạn quyết định nới rộng đến
+mức nào.
 
 ## ActionClass: một hệ phân loại đóng có chủ đích
 
 Mỗi công cụ gây thay đổi đều khai báo mình thuộc những **ActionClass** nào,
-trong một tập đóng gồm mười ba lớp hiệu ứng. Năm lớp trong số đó hỏi trước ngay
+trong một tập đóng gồm mười bốn lớp hiệu ứng. Sáu lớp trong số đó hỏi trước ngay
 từ đầu; số còn lại cho phép, và chỉ một quy tắc mới thay đổi được điều đó.
 
 | Lớp                        | Mặc định tích hợp | Nội dung bao phủ                                                 |
@@ -53,17 +54,19 @@ từ đầu; số còn lại cho phép, và chỉ một quy tắc mới thay đ�
 | `processSpawn`             | cho phép          | Khởi tạo một tiến trình (shell và mọi thứ gọi ra shell)          |
 | `workspaceMutation`        | cho phép          | Thay đổi cấu trúc không gian làm việc (repo, space, agent)       |
 | `enclosureControl`         | cho phép          | Điều khiển một enclosure (rig): khởi động máy ảo, gửi đầu vào cho nó |
+| `hostExecution`            | **hỏi trước**     | Chạy một lệnh trên máy chủ, ngoài mọi sandbox, theo yêu cầu của agent: tác vụ môi trường, tiến trình, stack compose, và `eval` khi kernel của nó chạy không bị giới hạn |
 
 Tám lớp mặc định cho phép được chọn dựa trên giả định rằng sàn sandbox hiện
-diện bên dưới chúng. Điều đó đúng khi máy chủ có sẵn backend, và không đúng
-trên Windows hay trên một máy Linux thiếu `bwrap` và `socat` — nên nếu bạn
-muốn có cổng kiểm soát cho `fileWriteOutsideWorktree` hay `packageInstall` ở
-đó, bạn phải tự viết một quy tắc.
+diện bên dưới chúng. Điều đó đúng khi máy chủ có sẵn backend, và không đúng khi
+chạy với `--sandbox off`, cũng như với các lượt chạy của chính chủ sở hữu trên
+Windows hoặc trên một máy Linux thiếu `bwrap` và `socat`. Nếu bạn muốn có cổng
+kiểm soát cho `fileWriteOutsideWorktree` hay `packageInstall` ở đó, bạn phải tự
+viết một quy tắc.
 
 Tập hợp này được đóng lại có chủ đích. Một công cụ gây thay đổi mới không khai
 báo lớp nào sẽ trượt bài kiểm thử ratchet, nên hệ phân loại chỉ có thể lớn lên
 bằng một quyết định tường minh và có lập luận — "sự phình to của hệ phân loại
-chính là cái chết của tính năng này." Mười ba lớp là đủ để diễn đạt những chính
+chính là cái chết của tính năng này." Mười bốn lớp là đủ để diễn đạt những chính
 sách mà người ta thực sự viết (không bao giờ push mà không hỏi, không bao giờ
 xóa ra ngoài worktree, luôn cho phép đọc) và đủ ít để giao diện cài đặt vẫn
 dễ hiểu.
@@ -93,7 +96,7 @@ Hai quyết định mang bảo đảm cứng:
 
 Cố ý không có chốt ghi nhớ theo từng lượt. Mỗi lời gọi công cụ đều phân giải
 lại chính sách từ đầu, nên việc hỏi lặp lại cho cùng một hành động chỉ bị giới
-hạn bởi chính lựa chọn "ghi nhớ quyết định này" của người vận hành, chứ không
+hạn bởi chính phê duyệt có thời hạn của người vận hành, chứ không
 bởi bất cứ thứ gì thuộc phạm vi theo lượt.
 
 ## Quy tắc ở cấp đối số
@@ -111,6 +114,7 @@ Một ràng buộc có thể nêu tên:
   nhánh trừ main")
 - **host** — các đích mạng, với ký tự đại diện tên miền con (`*.internal`)
 - **lệnh** — các tiền tố lệnh, khớp trên ranh giới từ
+- **công cụ** — công cụ chính xác mà một lời gọi nêu tên, nhờ đó một phê duyệt có thể chỉ áp dụng cho một công cụ thay vì mọi công cụ có cùng hiệu ứng
 - **mức trần** — `maxCount` / `maxCents`, nhờ đó có thể diễn đạt "xóa tối đa 50
   tệp"
 
@@ -153,15 +157,19 @@ của hệ điều hành nằm dưới cả hai. Một quy tắc lệnh phân gi
 không bao giờ nới lỏng bất kỳ thứ nào trong hai thứ đó — lưới chế độ chạy sau
 đó và lệnh `deny` của nó là quyết định cuối cùng.
 
-## Phê duyệt thường trực
+## Phê duyệt có thời hạn
 
-Trả lời một yêu cầu phê duyệt bằng "ghi nhớ điều này" sẽ ghi ra một quy tắc
-chính sách thật: có phạm vi (space / agent / không gian làm việc), **có ràng
-buộc đối số** (phê duyệt một lần push tới `feature/login` cấp quyền cho
-`feature/**`, không phải `main`) và **tự thu hồi** theo một TTL tường minh.
-Đồng ý trong vài giờ tới không giống với việc âm thầm viết lại chính sách vĩnh
-viễn của bạn, và những quy tắc nó ghi ra nằm trong cùng một kho với nguồn gốc
-`remembered` và một thời điểm hết hạn, nên chúng có thể bị thu hồi sớm.
+Mọi thẻ phê duyệt do hành động của một agent đưa ra đều có **Phê duyệt trong 8 giờ** khi hành động có thể nêu một đối tượng hẹp hơn lớp của nó. Chọn nó sẽ ghi ra một quy tắc chính sách thật, tức phê duyệt có thời hạn, vào cùng kho với các quy tắc bạn đặt, với nguồn gốc `remembered` và một thời điểm hết hạn:
+
+- **Giới hạn theo space.** Nó được ghi cho space mà câu hỏi xuất phát từ đó. Chỉ câu trả lời của quản trị viên mới có thể được ghi cho toàn bộ không gian làm việc.
+- **Hẹp.** Nó nêu một nhóm nhánh (phê duyệt một lần push tới `feature/login` cấp quyền cho `feature/**`, không phải `main`), một thư mục, một host, lệnh chính xác hoặc công cụ. Commit là hành động duy nhất được phê duyệt theo lớp, cho space đó: nó không có gì hẹp hơn để nêu.
+- **Tự thu hồi.** Nó kết thúc sau tám giờ, và có thể bị thu hồi sớm hơn trên trang quyền của agent.
+
+Phê duyệt có thời hạn chỉ miễn một câu hỏi. Nó trả lời một Hỏi trước được đặt ở chính phạm vi của nó hoặc phạm vi rộng hơn, và không bao giờ trả lời một Từ chối, bất kể lệnh từ chối đến từ phạm vi nào. Nó được lưu cạnh quy tắc bạn đặt cho hành động, nên thay đổi quy tắc đó sẽ giữ nguyên phê duyệt, và thu hồi phê duyệt sẽ giữ nguyên quy tắc.
+
+Một số cổng tự hỏi sau khi chính sách đã cho phép một lời gọi: phê duyệt do công cụ tự khai báo, hoặc lưới lệnh của chế độ. Chúng chỉ bỏ qua câu hỏi với một phê duyệt có thời hạn nêu đúng công cụ hoặc lệnh đó. Đặt hành động thành cho phép không làm chúng im lặng.
+
+Ba loại thẻ chỉ giữ hai nút, vì không có gì để mang sang: cho phép sandbox chạy chương trình từ một thư mục (phê duyệt nó vốn đã là một grant đã lưu mà bạn có thể thu hồi), một thao tác phá hủy mà bạn xác nhận một lần, và việc cài kỹ năng (một kỹ năng đã thay đổi nên hỏi lại).
 
 ## Các mức thực thi
 

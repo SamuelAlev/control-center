@@ -247,10 +247,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get allCaughtUp => 'Bạn đã xem hết';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Máy chủ chưa kết nối tài khoản forge, nên chưa gắn được pull request cho bạn.';
-
-  @override
   String get inboxNothingWaiting =>
       'Không có gì bị chặn và không có pull request nào đang chờ bạn.';
 
@@ -459,32 +455,6 @@ class AppLocalizationsVi extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names quá lớn để gửi qua relay từ đây.',
-      one: '$names quá lớn để gửi qua relay từ đây.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Không thể tải lên tệp đính kèm. Thử lại.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Không tải lên được $count tệp đính kèm nên đã bỏ qua.',
-      one: 'Không tải lên được 1 tệp đính kèm nên đã bỏ qua.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Đồng nghiệp';
 
   @override
@@ -621,35 +591,6 @@ class AppLocalizationsVi extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Máy chủ chưa kết nối forge nên không lấy được pull request. Hãy kết nối từ ứng dụng desktop.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Không đọc được $count repo.',
-      one: 'Không đọc được 1 repo.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Không đọc được: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'Cài đặt GitHub App đã bị tạm ngưng';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Đang hiển thị dữ liệu đã biết gần nhất cho $names. Tiếp tục cài đặt trên GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Cài đặt GitHub App đã bị tạm ngưng. Đang hiển thị dữ liệu đã biết gần nhất cho $names. Tiếp tục cài đặt trên GitHub.';
-  }
 
   @override
   String get draft => 'Bản nháp';
@@ -1300,7 +1241,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get permissionPrCreate => 'Tạo pull request';
 
   @override
-  String get permissionPrPublish => 'Xuất bản pull request';
+  String get permissionPrPublish => 'Cập nhật hoặc hợp nhất pull request';
 
   @override
   String get permissionVendorSyncWrite => 'Ghi khi đồng bộ nhà cung cấp';
@@ -1344,7 +1285,7 @@ class AppLocalizationsVi extends AppLocalizations {
   String get permissionBuiltInDefault => 'Mặc định tích hợp';
 
   @override
-  String get permissionRemembered => 'Phê duyệt đã ghi nhớ';
+  String get permissionRemembered => 'Phê duyệt có thời hạn';
 
   @override
   String get permissionSource => 'Mã nguồn';
@@ -1366,10 +1307,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Đặt quy tắc tại đây';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Thu hồi quy tắc theo phạm vi hoặc quy tắc đã ghi nhớ trước khi đặt quy tắc chung cho hành động này.';
 
   @override
   String get permissionConfirmRevoke => 'Xác nhận thu hồi';
@@ -1422,6 +1359,15 @@ class AppLocalizationsVi extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Lệnh: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Công cụ: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Không có hiệu lực khi thao tác này bị từ chối';
 
   @override
   String permissionMaxCount(String count) {
@@ -1879,15 +1825,6 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Cập nhật pull request';
-
-  @override
-  String get activityTicket => 'Cập nhật phiếu';
-
-  @override
-  String get activityMeeting => 'Cập nhật cuộc họp';
-
-  @override
-  String get activityCalendar => 'Kết nối lịch';
 
   @override
   String get activityRig => 'Cập nhật enclosure';
@@ -2576,8 +2513,7 @@ class AppLocalizationsVi extends AppLocalizations {
       'Đang chờ bạn cấp quyền trong trình duyệt…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Nhập mã hiển thị trong trình duyệt';
+  String get credentialsConnectCodePrompt => 'Mã xác nhận';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2646,10 +2582,6 @@ class AppLocalizationsVi extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'Dán token truy cập cá nhân';
 
   @override
-  String get credentialsHostManaged =>
-      'Kết nối này đến từ ứng dụng máy chủ hoặc môi trường. Chỉ chủ máy chủ mới có thể thay đổi ở đó; bạn vẫn có thể thêm token của riêng mình.';
-
-  @override
   String get credentialsStopWatching => 'Ngừng theo dõi';
 
   @override
@@ -2670,4 +2602,199 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Chạy lệnh trên máy chủ';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Phiên đăng nhập $provider của bạn đã hết hạn. Hãy đăng nhập lại.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Đã tạm dừng: dịch vụ đăng nhập của không gian làm việc này đã thay đổi. Sẽ hoạt động trở lại khi dịch vụ quay lại.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'Hiện không kết nối được với $provider. Đang thử lại.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Chỉ không gian làm việc này';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Tất cả không gian làm việc';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Xóa thông tin xác thực đã lưu khỏi không gian làm việc này? Các không gian làm việc khác vẫn giữ của chúng.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Xóa thông tin xác thực đã lưu khỏi mọi không gian làm việc dùng chung nó?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Máy chủ đã khởi động lại. Hãy bắt đầu đăng nhập lại.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Cài GitHub App trên $owner để tự động hóa truy cập được $names. Chạm để mở GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App chưa được cài trên $owner, nên tự động hóa không truy cập được $names. Hãy nhờ quản trị viên không gian làm việc cài đặt.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Thêm $names vào các kho lưu trữ của GitHub App. Chạm để mở GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App chưa thấy $names. Hãy nhờ quản trị viên không gian làm việc thêm chúng vào các kho lưu trữ của App.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Cài đặt GitHub App đã bị tạm ngưng. Tự động hóa cho $names đang tạm dừng cho đến khi chủ sở hữu tài khoản tiếp tục cài đặt trên GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Người chịu trách nhiệm về tự động hóa của không gian làm việc này không còn thấy $names, nên không có gì chạy ở đó thay mặt họ.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Người chịu trách nhiệm về tự động hóa của không gian làm việc này chưa đăng nhập vào forge, nên tự động hóa cho $names chờ đến khi họ đăng nhập.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Không kiểm tra được quyền truy cập vào $names. Đang thử lại.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Đăng nhập vào $forge để xem pull request từ $count kho lưu trữ nữa',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count kho lưu trữ bị ẩn vì tài khoản $forge của bạn không thấy chúng',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count kho lưu trữ bị ẩn vì bạn không có quyền truy cập trong không gian làm việc này',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Đang kiểm tra quyền truy cập của bạn vào $count kho lưu trữ nữa…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Email tài khoản Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Nhập địa chỉ email của tài khoản Atlassian của bạn.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Không token tự động hóa nào đọc được $names, nên công việc chạy nền ở đó đang tạm dừng. Quản trị viên có thể thêm một token trong Cài đặt → Kho mã.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Xác nhận trong trình duyệt của bạn, sau đó nhập mã mà nó hiển thị.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Tài khoản này đã được kết nối với người khác trên máy chủ này. Hãy đăng nhập bằng một tài khoản khác.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'Không thể kết nối tới $provider để kiểm tra token này. Vui lòng thử lại sau.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider không chấp nhận token này. Hãy kiểm tra xem bạn đã sao chép đầy đủ và token chưa bị thu hồi.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Đây không phải token cá nhân. Hãy dán personal access token từ tài khoản $provider của chính bạn, không phải token của dự án, nhóm, không gian làm việc hoặc bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Token này thiếu quyền $scope, thứ cần cho việc đánh giá và bình luận. Hãy tạo một token có quyền đó.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Token này đã hết hạn. Hãy tạo token mới và dán vào đây.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Hiện có quá nhiều yêu cầu. Hãy đợi một chút rồi thử lại.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Đăng nhập đã bị hủy hoặc bị từ chối. Hãy bắt đầu lại khi bạn sẵn sàng.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Lượt đăng nhập này không còn mở: nó đã bị hủy, đã dùng hoặc đã được thay thế. Hãy bắt đầu lại.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Quản trị viên không gian làm việc cần mời bạn, hoặc chủ sở hữu máy chủ có thể tạo không gian làm việc cho bạn.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos giờ trỏ tới một kho lưu trữ khác trên $forge. Hãy liên kết lại từ ứng dụng máy tính hoặc web để tiếp tục sử dụng.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos giờ trỏ tới một kho lưu trữ khác trên $forge. Quản trị viên không gian làm việc cần liên kết lại trước khi có thể sử dụng tiếp.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => 'Agent cần sandbox trên máy chủ này';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Máy chủ này không có sandbox, nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây. Chủ sở hữu có thể cài đặt sandbox hoặc tắt sandboxing cho tất cả mọi người.';
 }

@@ -2,7 +2,7 @@
 title: Sözlük
 description: Control Center genelinde kullanılan temel terimlerin tanımları.
 slug: tr-TR/kilavuz/referans/sozluk
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Kurulu becerilerin çalışma alanı başına manifestosu: her biri için kaynak deposu, depo yolu, sabitlendiği commit ve toplanmış bir içerik karması. Kurulumlar, güncellemeler ve kaldırmalar onu güncel tutar; verify_skills onu diskle karşılaştırır.'],
 ['Ajan çalıştırma ağ geçidi', 'Eylem politikasını bir ajanın sandbox\'ı içinde uygulayan, cc_server üzerindeki bir loopback uç noktası. Bir ajanın yaptığı her GitHub push\'u buraya yönlendirilir, Uzak depoya push et kuralına göre denetlenir ve ajanın asla elinde tutmadığı bir yazma token\'ıyla iletilir; Claude Code\'un Bash komutları aynı uç noktadaki bir hook aracılığıyla denetlenir.'],
 ['Mode', 'chat, plan, review veya orchestrate. Alan başına saklanır, böylece bir ajan farklı alanlarda farklı modlarda olabilir; bir alandaki her konuşma bunu paylaşır. Sistem istemini, sandbox yazma kurallarını ve MCP araç izin listesini kapılar.'],
-['SandboxBackend', 'microvm (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), native (macOS’ta işletim sistemine özgü Seatbelt, Linux ve WSL2’de bubblewrap) veya none. Önyüklemede bir kez yoklanır; native, kullanılabilir olduğunda ajan gönderimini sarar. Windows’ta yerel bir arka uç yoktur ve Linux bwrap artı socat gerektirir; bu yüzden oradaki çalıştırmalar sarılmaz; --sandbox off bilinçli olarak vazgeçer.'],
+['SandboxBackend', 'microvm (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), native (macOS’ta işletim sistemine özgü Seatbelt, Linux ve WSL2’de bubblewrap) veya none. Önyüklemede bir kez yoklanır; native, kullanılabilir olduğunda ajan gönderimini sarar. Windows’ta yerel bir arka uç yoktur ve Linux bwrap artı socat gerektirir; böyle bir ana makinede yalnızca sunucu sahibinin çalıştırmaları başlar, sarılmadan, diğerlerinin çalıştırmaları reddedilir. --sandbox off her üyenin ajanlarını sarılmadan çalıştırır.'],
 ['Rig', 'Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine: kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajan aracı tek bir makineyi adresler.'],
 ['Enclosure', 'VM destekli rig’lerin sahip olduğu daha güçlü yalıtım özelliği: bir çekirdek sınırı, tek kullanımlık overlay diski, varsayılan olarak reddeden ağ kapısı ve kimlik bilgisi broker’ı. Android ve iOS rig’leri atılabilirdir, ancak ana makine tarafından yönetilen ağ kullanır; bu yüzden bu sınırı talep etmezler. Herhangi bir rig’i yönetmek enclosureControl koruma sınıfını kullanır.'],
 ['RunCost', 'Tek bir ajan çalıştırması için jeton/maliyet dökümü (girdi jetonları, çıktı jetonları, sent cinsinden tahmini maliyet).'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Çalıştırma yürütmesini orkestre eder: çalıştırmaları başlatır, adımları zamanlar, durumu kalıcılaştırır, yönlendiricileri/birleşmeleri/başarısızlıkta devamı yönetir, yeniden başlatmanın ardından uçuştaki çalıştırmaları sürdürür.'],
 ['PipelineTriggerDispatcher', 'Alan olaylarına abone olur ve etkin tetikleyiciler için eşleşen pipeline çalıştırmalarını otomatik başlatır.'],
 ['MemoryAccessPolicy', 'Ajan rolü bellek izinlerini alanlar üzerinde çözer ve uygular.'],
-['HarnessCostCalculator', 'Yerleşik harness jeton kullanımını models.dev kataloğundan bir RunCost’a fiyatlandırır. Gönderim bu dökümü çalıştırma günlüğüne yazar.'],
+['HarnessRunAccounting', 'Yerleşik harness’ın model çağrılarını bir kez hesaplar, models.dev kataloğundan fiyatlandırır, bunları sahip çalıştırmaya kaydeder ve bir alt çalıştırmanın harcamasını üst çalıştırmanın bütçesine yansıtır.'],
 ['BudgetEnforcementService', 'Ajan başına aylık harcamayı ve gönderim öncesi bir bloğu (checkInvocationBlock) hesaplar. Bu bloğa yalnızca kurtarma uzlaştırıcıları (OrphanRunReaper, StrandedTicketReconciler) başvurur; sıradan gönderim asla.'],
 ['BudgetGovernanceService', 'Her çalıştırmadan sonra ajan başına aylık harcamayı değerlendirir: yumuşak bir eşik bir uyarı olayı kaydeder; tükenme katı bir olay kaydeder ve ajanın yaşam döngüsünü paused durumuna çevirir.'],
 ['DomainEventBus', 'Özellikler arası iletişim için süreç içi yayın tabanlı publish/subscribe veri yolu. Olaylar tiplidir; aboneler türe göre filtrelenmiş akışları tüketir.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Telefon ince istemcisi — varsayılan olarak reddeden bir araç politikasıyla filoyu aracılı relay üzerinden uzaktan kontrol eden bir Flutter web PWA’sı.'],
 ['cc_signaling_server', 'Davetle kapılanan odalar barındıran durumsuz bir WebSocket relay broker’ı. Aptal bir relay: yalnızca uçtan uca mühürlenmiş çerçeveleri iletir, hiçbir uygulama verisi tutmaz ve eşleştirme PSK’sını asla görmez.'],
 ['Principal', 'İnsanları ve ajanları tek aktör soyutlaması olarak birleştiren mühürlü bir değer. UserPrincipal(userId) veya AgentPrincipal(agentId). Her ileti, bilet, inceleme, plan ve çalıştırma günlüğü bir Principal üzerinden atfedilir.'],
-['User', 'global.db içinde saklanan ve dolayısıyla çalışma alanları arasında global olan bir insan kimliği. Bir çalışma alanını oluşturan principal onun sahibi olur; Workspace.ownerUserId üzerine ve sahip rolünde bir üyelik satırıyla damgalanır; diğerleri davetle ya da SSO ile katılır.'],
+['User', 'global.db içinde saklanan ve dolayısıyla çalışma alanları arasında global olan bir insan kimliği. Yalnızca sunucu sahibi bir çalışma alanı oluşturur ve onun sahibi olur; Workspace.ownerUserId üzerine ve sahip rolünde bir üyelik satırıyla damgalanır; diğerleri davetle ya da SSO ile katılır.'],
+['Server owner', 'Sunucuyu kuran kişi; ilk başlatmada bir kez kaydedilir, ağ üzerinden gönderilen hiçbir şey bunu değiştirmez. Bir çalışma alanı yöneticisi ya da çalışma alanı sahibi sunucu sahibi değildir. Sunucu sahibinin onayladığı ya da başlattığı tür bir ana makine çalıştırması dışında, sunucunun kendi makinesinde sandbox dışında hiçbir şey çalışmaz: çalışma alanları oluşturma, ana makine kabuğu, gömülü kod düzenleyicisi, ana makinede çalışan ortamlar ve bir çalışma alanının depolama alanının dışından bağlanan checkout’lar yalnızca onlara aittir.'],
 ['WorkspaceMember', 'Bir User’ı bir Workspace’e bir WorkspaceRole ile bağlayan üyelik satırı. Erişim sınırı, bir eşleştirme anahtarı değil, üyeliktir.'],
 ['WorkspaceRole', 'Kademeli üyelik rolü: owner, admin, member, viewer veya guest. Depo işlemi geçiş noktası, işlem türü başına bir asgari rol tabanı türetir.'],
 ['ParticipantPresence', 'Bir Principal için geçici farkındalık (durum, konum, imleç, yazıyor olma, ajanın canlı durumu ve çalışan maliyeti). Hiçbir zaman kalıcılaştırılmaz; sunucu merkezlidir; dağıtımdan önce depo yetkisiyle filtrelenir.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Özerklik kadranı', 'Alan başına ve ajan başına bir denetim — propose-only / act-with-approval / act-freely — eylem koruma deposu üzerinde adlandırılmış bir profil olarak uygulanır.'],
 ['cc_worker', 'Headless, saf Dart bir filo yürütücüsü ikilisi. Bir cc_server ile eşleşir, yeteneklerini bildirir, kiralanmış işleri çeker, yürütür ve olayları geri akıtır. Kalıcı durum tutmaz.'],
 ['JobSpec', 'Yürütülebilir her şeyin tipli spesifikasyonu (ajan çalıştırması, pipeline adımı, kod indeksi, golden render, kıyaslama, eval partisi): gerekli yetenekler, öncelik, bütçe, çalışma alanı.'],
-['ActionClass', '13 etki sınıfından oluşan kapalı bir küme (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Değiştirici her araç sınıflarını bildirir; koruma motoru kapsam başına allow / prompt / deny kararını verir.'],
+['ActionClass', '14 etki sınıfından oluşan kapalı bir küme (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Değiştirici her araç sınıflarını bildirir; koruma motoru kapsam başına allow / prompt / deny kararını verir.'],
 ['WriteLedger', 'Çalışma alanına özel bir idempotency defteri. Her mutasyon mantıksal eylem başına bir idempotency anahtarı taşır; bir yeniden oynatma, bayt bayt aynı özgün sonucu döndürür. Yeniden bağlanmayı ve çok istemcili çalışmayı yapısı gereği güvenli kılar.'],
 ['Idempotency anahtarı', 'Mantıksal eylem başına (deneme başına değil) üretilen, istemci tarafından oluşturulmuş UUIDv7. Yeniden bağlanmalar ve istemciler arasında yeniden denemeleri tekilleştirir.'],
 ['“Needs me” gelen kutusu', 'Katı bir kuralı olan, tüm sütunları kapsayan bir kuyruk: bir öğe yalnızca bir şeyi engelliyorsa (bir ajanı, bir birleştirmeyi, bir eşitlemeyi) ya da açıkça operatörü istiyorsa görünür.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Review verdict', 'ship, hold veya block. Güveni >= 0.7 olan herhangi bir P0 bulgusu block verir; diğer herhangi bir P0 ya da herhangi bir P1 hold verir; aksi hâlde ship. Kapılanan ve başarısız olan bir eksen block’u zorlar ve bulgular tarafından alt edilemez.'],
 ['SessionRecording', 'Tek bir çalıştırma için yakalanan bir olay akışı artı HTTP/LLM kasetleri ve araç G/Ç’si; bir AgentConfigHash ile eşleştirilir.'],
 ['Altın oturum', 'Ajan ya da playbook başına sabitlenmiş, kutsanmış bir SessionRecording.'],
-['Control Center Connect', 'Kendi uygulamaları olmayan sunucular için sağlayıcı oturum açmalarını (GitHub, Google, Linear) yürüten isteğe bağlı bir hizmet. Control Center tarafından barındırılır, kendiniz barındırırsınız ya da kapalıdır. Kimlik bilgisi mühürleri ve tek depoluk GitHub token’ları döndürür ve depo içeriklerini asla görmez.'],
+['Control Center Connect', 'Kendi uygulamaları yerine bunu seçen sunucular ya da çalışma alanları için sağlayıcı oturum açmalarını (GitHub, Google, Linear) yürüten isteğe bağlı bir hizmet. Control Center tarafından barındırılır, kendiniz barındırırsınız ya da kapalıdır. Kimlik bilgisi mühürleri ve tek depoluk GitHub token’ları döndürür ve depo içeriklerini asla görmez.'],
 ['Kimlik bilgisi mührü', 'Yalnızca onu oluşturan Connect’in açabildiği, sağlayıcıya, Connect adresine, kurulum kimliğine, çalışma alanına, hesaba, uygulamaya ve gizli anahtar kuşağına bağlı şifrelenmiş bir kimlik bilgisi. Sunucu mührü saklar; erişim token’ları bellekte kalır.'],
 ['Kurulum kimliği', 'Bir sunucunun tek bir Connect adresine karşı kimliği; kurulum anahtarından türetilir. Connect sunuculara kurulum kimliğine göre izin verir; anahtarı değiştirmek kimliği değiştirir ve herkesin Connect hatlarındaki oturumunu kapatır.'],
-['Kurulum bağlaması', 'Connect’in, hangi sunucuların paylaşılan App’in bir GitHub kurulumunu kullanabileceğine dair kaydı. Bir kuruluş kurulumunda her sunucuyu bir yöneticinin yetkilendirmesi gerekir.'],
-['Oturum açma hattı', 'Bir sağlayıcının tarayıcıda oturum açması: github, google, linear, linear_app ya da slack. Her hat, tamamlanmışsa sunucunun kendi uygulamasında, değilse Connect üzerinden çalışır; ikisi de yoksa kullanılamaz.'],
+['Kurulum bağlaması', 'Connect’in, bir Slack ekibinin bağlı olduğu tek sunucuya dair kaydı (install_binding). GitHub kurulumlarının böyle bir kaydı yoktur: bir üyenin oturum açtığı herhangi bir sunucu bunları kullanabilir.'],
+['Oturum açma hattı', 'Bir sağlayıcının tarayıcıda oturum açması: github, google, linear, linear_app ya da slack. Kendi uygulamalarıyla bir hat, kendi uygulaması tamamen yapılandırılmışsa onda çalışır, değilse kullanılamaz; bir Connect seçildiyse hattı Connect çalıştırır. İkisi de birbirine geri dönmez.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Mode**: `chat`, `plan`, `review` veya `orchestrate`. **Alan başına** saklanır, böylece bir ajan farklı alanlarda farklı modlarda olabilir; bir alandaki her konuşma bunu paylaşır. Sistem istemini, sandbox yazma kurallarını ve MCP araç izin listesini kapılar. Composer yalnızca `chat`, `plan` ve `orchestrate` sunar; `chat` "Ajan" olarak etiketlenir.
 
-**SandboxBackend**: `microvm` (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), `native` (macOS’ta Seatbelt, Linux ve WSL2’de bubblewrap) veya `none`. Önyüklemede bir kez yoklanır; `native`, kullanılabilir olduğunda **ajan gönderimine uygulanır** ve Claude Code CLI’yi ile harness’ın `bash` aracını sarar. Windows’ta yerel bir arka uç yoktur ve Linux `bwrap` artı `socat` gerektirir; bu yüzden oradaki çalıştırmalar sarılmaz; `--sandbox off` bilinçli olarak vazgeçer.
+**SandboxBackend**: `microvm` (kapalı bir VM — çekirdek sınırı olan tek arka uç, etkileşimli terminallere uygulanır), `native` (macOS’ta Seatbelt, Linux ve WSL2’de bubblewrap) veya `none`. Önyüklemede bir kez yoklanır; `native`, kullanılabilir olduğunda **ajan gönderimine uygulanır** ve Claude Code CLI’yi ile harness’ın `bash` aracını sarar. Windows’ta yerel bir arka uç yoktur ve Linux `bwrap` artı `socat` gerektirir; böyle bir ana makinede yalnızca sunucu sahibinin çalıştırmaları başlar, sarılmadan, diğerlerinin çalıştırmaları reddedilir. `--sandbox off` her üyenin ajanlarını sarılmadan çalıştırır.
 
 **Rig**: Bir ajanın gerçek zamanlı olarak yönettiği atılabilir bir makine — kapalı bir tarayıcı ya da Linux masaüstü, ana makine tarafından yönetilen bir Android emülatörü ya da iOS Simülatörü veya kapalı bir terminal. Kendi tam çözünürlüklü kanalından canlı izlenir ve devralma sunucu tarafında uygulanır. Bir konuşmaya kapsamlıdır; böylece insan sekmesi ile ajanın `browser_use` / `computer_use` / `mobile_use` / `ios_use` çağrıları tek bir varsayılan makineyi adresler. Bkz. [Rig’ler ve yalıtılmış ortamlar](/tr-TR/kilavuz/kavramlar/rigler/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Ajan rolü bellek izinlerini alanlar üzerinde çözer ve uygular.
 
-**HarnessCostCalculator**: Yerleşik harness’ın jeton kullanımını models.dev kataloğundan bir `RunCost` olarak fiyatlandırır. Gönderim bu dökümü çalıştırma günlüğüne yazar.
+**HarnessRunAccounting**: Yerleşik harness’ın model çağrılarını bir kez hesaplar, models.dev kataloğundan fiyatlandırır, bunları sahip çalıştırmaya kaydeder ve bir alt çalıştırmanın harcamasını üst çalıştırmanın bütçesine yansıtır.
 
 **BudgetEnforcementService**: Ajan başına aylık harcamayı ve gönderim öncesi bir bloğu (`checkInvocationBlock`) hesaplar. Bu bloğa yalnızca kurtarma uzlaştırıcıları (`OrphanRunReaper`, `StrandedTicketReconciler`) başvurur; sıradan bir kullanıcı ya da ajan gönderimi asla.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Özet pipeline’ı tarafından çıkarılan ve ayrı satırlar olarak saklanan yapılandırılmış çıktılar. Eylem öğeleri bir bilete bağlanabilir.
 
-**CalendarEvent**: Bir çalışma alanına ve bağlı hesaba kapsamlı, eşitlenmiş bir Google Calendar girdisi. Bir Toplantıdan farklıdır: bir etkinlik planlanmış bir taahhüttür; bir Toplantı kaydedilmiş bir oturumdur. Bir `MeetingCalendarLink` ile bire bir bağlanır.
+**CalendarEvent**: Bir çalışma alanına ve bağlı hesaba kapsamlı, eşitlenmiş bir Google Calendar girdisi. Bir Toplantıdan farklıdır: bir etkinlik planlanmış bir taahhüttür; bir Toplantı kaydedilmiş bir oturumdur. `meeting_calendar_links` tablosu üzerinden bire bir bağlanır.
 
 **CalendarAccount**: Çalışma alanı, üye ve e-posta başına bir bağlı Google hesabı (`google:<workspaceId>:<userId>:<email>`). Kimlik bilgisi sunucu tarafında `<dataDir>/secrets.json` içinde bir `google_*` anahtarı olarak saklanır ve hiçbir zaman bir istemciye ulaşmaz; tarayıcıda oturum açma sunucuda tamamlanır. Connect üzerinden yapılan bir oturum açma yalnızca bir kimlik bilgisi mührü saklar. Bir `authExpiredAt` bayrağı yeniden bağlanma şeridini yönetir.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: İnsanları ve ajanları tek aktör soyutlaması olarak birleştiren mühürlü bir değer — `UserPrincipal(userId)` veya `AgentPrincipal(agentId)`. Her ileti, bilet, inceleme, plan ve çalıştırma günlüğü bir Principal üzerinden atfedilir.
 
-**User**: `global.db` içinde saklanan ve dolayısıyla çalışma alanları arasında global olan bir insan kimliği. Bir çalışma alanını oluşturan principal onun **sahibi** olur — aynı işlemde `Workspace.ownerUserId` üzerine ve sahip rolünde bir üyelik satırıyla damgalanır. Diğerleri davetle ya da SSO ile katılır.
+**Server owner**: Sunucuyu kuran kişi; ilk başlatmada bir kez kaydedilir, ağ üzerinden gönderilen hiçbir şey bunu değiştirmez. Bir çalışma alanı yöneticisi ya da çalışma alanı sahibi sunucu sahibi değildir. Sunucu sahibinin onayladığı ya da başlattığı tür bir ana makine çalıştırması dışında, sunucunun kendi makinesinde sandbox dışında hiçbir şey çalışmaz: çalışma alanları oluşturma, ana makine kabuğu, gömülü kod düzenleyicisi, ana makinede çalışan ortamlar ve bir çalışma alanının depolama alanının dışından bağlanan checkout’lar yalnızca onlara aittir. Bkz. [Sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi).
+
+**User**: `global.db` içinde saklanan ve dolayısıyla çalışma alanları arasında global olan bir insan kimliği. Yalnızca sunucu sahibi bir çalışma alanı oluşturur ve onun **sahibi** olur — aynı işlemde `Workspace.ownerUserId` üzerine ve sahip rolünde bir üyelik satırıyla damgalanır. Diğerleri davetle ya da SSO ile katılır.
 
 **WorkspaceMember** / **WorkspaceRole**: Bir User’ı bir Workspace’e bir rolle (`owner` / `admin` / `member` / `viewer` / `guest`) bağlayan bir üyelik satırı. **Erişim sınırı, bir eşleştirme anahtarı değil, üyeliktir.** Depo başına yetkiler, üyeliğin forge’dan daha fazla ayrıcalık kazanmasını engeller.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Özerklik kadranı**: Alan başına ve ajan başına bir denetim — `propose-only` / `act-with-approval` / `act-freely` — eylem koruma deposu üzerinde adlandırılmış bir profil olarak uygulanır.
 
-**ActionClass**: 13 etki sınıfından oluşan kapalı bir küme (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Değiştirici her araç sınıflarını bildirir; koruma motoru kapsam başına `allow` / `prompt` / `deny` kararını verir (alan > ajan > çalışma alanı > mod ön ayarı > yerleşik varsayılan).
+**ActionClass**: 14 etki sınıfından oluşan kapalı bir küme (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Değiştirici her araç sınıflarını bildirir; koruma motoru kapsam başına `allow` / `prompt` / `deny` kararını verir (alan > ajan > çalışma alanı > mod ön ayarı > yerleşik varsayılan).
 
 **WriteLedger** / **idempotency anahtarı**: Her mutasyon, istemci tarafından üretilen bir idempotency anahtarı taşır (UUIDv7, mantıksal eylem başına). Çalışma alanına özel defter, işleyici çalışmadan önce tekilleştirir; bir yeniden oynatma, bayt bayt aynı özgün sonucu döndürür. Yeniden bağlanmayı ve çok istemcili çalışmayı yapısı gereği güvenli kılar.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Davetle kapılanan odalar barındıran durumsuz bir WebSocket relay broker’ı — yalnızca uçtan uca mühürlenmiş çerçeveleri ileten, hiçbir uygulama verisi tutmayan ve eşleştirme PSK’sını asla görmeyen aptal bir relay.
 
-**Control Center Connect**: Kendi uygulamalarını kaydetmemiş sunucular için sağlayıcı oturum açmalarını (GitHub, Google Calendar, Linear) yürüten isteğe bağlı bir hizmet: Control Center’ın barındırdığı, bir kuruluşun çalıştırdığı (`cc-connect` ya da `cc_server` içinde `/connect` yoluna bağlanmış) ya da hiçbiri. Kimlik bilgisi mühürleri ve tek depoluk GitHub token’ları döndürür ve depo içeriklerini asla görmez. Bkz. [Control Center Connect](/tr-TR/kilavuz/referans/connect/).
+**Control Center Connect**: Kendi uygulamaları yerine bunu seçen sunucular ya da çalışma alanları için sağlayıcı oturum açmalarını (GitHub, Google Calendar, Linear) yürüten isteğe bağlı bir hizmet: Control Center’ın barındırdığı, bir kuruluşun çalıştırdığı (`cc-connect` ya da `cc_server` içinde `/connect` yoluna bağlanmış) ya da hiçbiri. Kimlik bilgisi mühürleri ve tek depoluk GitHub token’ları döndürür ve depo içeriklerini asla görmez. Bkz. [Control Center Connect](/tr-TR/kilavuz/referans/connect/).
 
 **Kimlik bilgisi mührü**: Yalnızca onu oluşturan Connect’in açabildiği, sağlayıcıya, Connect adresine, kurulum kimliğine, çalışma alanına, hesaba, uygulamaya ve gizli anahtar kuşağına bağlı şifrelenmiş bir kimlik bilgisi (`credential_seal`). Sunucu mührü ve onun oluşturulduğu kurulum kimliğini saklar; erişim token’ları bellekte kalır. Kurulum kimliği artık eşleşmeyen bir mühür atılır ve sahibi yeniden oturum açar.
 
 **Kurulum kimliği**: Bir sunucunun tek bir Connect adresine karşı kimliği (`install_id`); gizli anahtarlar dosyasındaki kurulum anahtarından türetilir. Connect sunuculara kurulum kimliğine göre izin verir. Anahtarı değiştirmek yeni bir kimlik verir ve herkesin Connect hatlarındaki oturumunu kapatır.
 
-**Kurulum bağlaması**: Connect’in, hangi sunucuların paylaşılan App’in bir GitHub kurulumunu kullanabileceğine dair kaydı (`install_binding`). Bir sunucu üzerinden kurmak onu bağlar; bir kuruluş yöneticisinin **Bu sunucuyu yetkilendir** eylemi başka birini bağlar.
+**Kurulum bağlaması**: Connect’in, bir Slack ekibinin bağlı olduğu tek sunucuya dair kaydı (`install_binding`). GitHub kurulumlarının böyle bir kaydı yoktur: bir üyenin oturum açtığı herhangi bir sunucu bunları kullanabilir.
 
-**Oturum açma hattı**: Bir sağlayıcının tarayıcıda oturum açması — `github`, `google`, `linear`, `linear_app` ya da `slack`. Bir hat, sunucunun kendi uygulaması tamamlanmışsa onda, değilse Connect üzerinden çalışır; ikisi de yoksa kullanılamaz. Kısmen yapılandırılmış bir kendi uygulama bir hatadır, asla bir geri dönüş değildir.
+**Oturum açma hattı**: Bir sağlayıcının tarayıcıda oturum açması — `github`, `google`, `linear`, `linear_app` ya da `slack`. Kendi uygulamalarıyla bir hat, (sunucunun ya da çalışma alanının) kendi uygulaması tamamen yapılandırılmışsa onda çalışır, değilse kullanılamaz; bir Connect seçildiyse hattı Connect çalıştırır. İkisi de birbirine geri dönmez; kısmen yapılandırılmış bir kendi uygulama ise bir hatadır.
 
 ## Ayrıca bakınız
 

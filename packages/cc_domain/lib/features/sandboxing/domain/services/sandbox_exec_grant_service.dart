@@ -199,6 +199,10 @@ class SandboxExecGrantService {
       // operator never made.
       return false;
     }
+    // Built by hand and offers no "Approve for 8 hours" on purpose: the
+    // Approve below is already a stored, revocable grant for this folder,
+    // asked once, so there is no later prompt for a standing approval to
+    // spare.
     final approved = await port.requestApproval(
       ConfirmationRequest(
         spaceId: spaceId ?? '',

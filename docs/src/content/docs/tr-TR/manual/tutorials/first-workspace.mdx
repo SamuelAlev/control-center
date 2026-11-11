@@ -2,7 +2,7 @@
 title: İlk çalışma alanınız
 description: Bir çalışma alanı oluşturun, içine bir depo kaydedin ve yalıtım sınırını kendiniz görün.
 slug: tr-TR/kilavuz/ogreticiler/ilk-calisma-alani
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Neler oluşturacaksınız
@@ -11,10 +11,12 @@ Bu öğreticinin sonunda şunlara sahip olacaksınız:
 
 - Projenizin adını taşıyan bir çalışma alanı
 - İçine kaydedilmiş bir Git deposu
-- Beş tohumlanmış ajan; bunlardan birini çalıştırabilecek kadar iyi yapılandırmış olacaksınız
+- Altı tohumlanmış ajan; bunlardan birini çalıştırabilecek kadar iyi yapılandırmış olacaksınız
 - Yalıtım sınırını kanıtlayan ikinci, boş bir çalışma alanı
 
 İlk kurulum sizin için zaten bir çalışma alanı oluşturdu. Bu öğretici, sürecin her parçasını görmeniz için bilinçli olarak yeni bir tane oluşturur.
+
+Çalışma alanı oluşturmak, sunucuyu kuran kişi olan sunucu sahibini gerektirir. Kendi sunucusunu çalıştıran bir masaüstünde bu sizsiniz. Başkasının sunucusunda **Çalışma alanı ekle** "Çalışma alanlarını yalnızca sunucu sahibi oluşturabilir. Ondan bir tane oluşturmasını isteyin ya da bir çalışma alanı yöneticisinden sizi davet etmesini isteyin." der. Bunlardan birini yapın ve öğreticinin geri kalanını o çalışma alanında izleyin. 2. adımda bir depo kaydetmek bir çalışma alanı yöneticisi gerektirir; 4. adımdaki ikinci çalışma alanı ise yine sunucu sahibini gerektirir.
 
 Başlamadan önce, şu üç koşulu da karşılayan bir Git checkout'u seçin — kayıt adımı başka hiçbir şeyi kabul etmez:
 
@@ -35,12 +37,12 @@ Control Center yeni çalışma alanına geçer ve onun gelen kutusuna (`/workspa
 Bunun arkasında, sunucu bir `WorkspaceCreated` olayı yayımlar ve çalışma alanını şunlarla tohumlar:
 
 - personası koordinasyon ve devretme olan bir **CEO ajanı**
-- `qa`, `architect`, `engineer` ve `librarian` olmak üzere dört uzman — her biri kendi talimatlarına ve becerilerine sahip
+- `qa`, `architect`, `engineer`, `librarian` ve `content-synthesizer` olmak üzere beş uzman — her biri kendi talimatlarına ve becerilerine sahip
 - yerleşik pipeline şablonları ve bunların tetikleyici satırları
 
 Oluşturduğunuz her çalışma alanı, yalnızca ilki değil, bunların tümünü alır.
 
-Doğrulayın: **Ayarlar → Çalışma alanı → Ajanlar** bölümünü açın. Kadroda, her biri içi boş bir durum halkası taşıyan beş ajan vardır.
+Doğrulayın: **Ayarlar → Çalışma alanı → Ajanlar** bölümünü açın. Kadroda, her biri içi boş bir durum halkası taşıyan altı ajan vardır.
 
 ## 2. Adım: Bir depo kaydedin
 
@@ -57,7 +59,7 @@ Doğrulayın: depo, listede `owner/repo` ve geçerli dalıyla birlikte görünü
 
 ## 3. Adım: Bir ajanı çalıştırılabilir yapın
 
-Bu çalışma alanının az önce tohumladığı beş ajanın adaptörü de modeli de yok. Gönderim onları **Control Center (built-in)** üzerinde çalıştırır ve model ayarlanmadığında Anthropic'ten varsayılan modelini ister — yani yalnızca bir Anthropic hesabı bağladıysanız çalışırlar ve bağladıysanız da seçmediğiniz bir model üzerinde çalışırlar. İlk kurulum, seçimini ilk çalışma alanındaki her ajana bir kez işler; sonrasında oluşturduğunuz bir çalışma alanı ise beşini de ayarsız olarak başlatır. Şimdi birini ayarlayın.
+Bu çalışma alanının az önce tohumladığı altı ajanın adaptörü de modeli de yok. Gönderim onları **Control Center (built-in)** üzerinde çalıştırır ve model ayarlanmadığında Anthropic'ten varsayılan modelini ister — yani yalnızca bir Anthropic hesabı bağladıysanız çalışırlar ve bağladıysanız da seçmediğiniz bir model üzerinde çalışırlar. İlk kurulum, seçimini ilk çalışma alanındaki her ajana bir kez işler; sonrasında oluşturduğunuz bir çalışma alanı ise altısını da ayarsız olarak başlatır. Şimdi birini ayarlayın.
 
 1. **Ayarlar → Çalışma alanı → Ajanlar** bölümünü açın
 2. Kadroda `engineer` ajanını seçin
@@ -73,7 +75,7 @@ Her ajan kendi adaptörünü ve modelini taşır; bu yüzden kullanmayı düşü
 Başlık çubuğundaki çipten, tıpkı 1. adımdaki gibi ikinci bir çalışma alanı oluşturun. Ardından ona bakın:
 
 - **Ayarlar → Çalışma alanı → Depolar** boştur. Bir dakika önce kaydettiğiniz depo orada değildir.
-- **Ayarlar → Çalışma alanı → Ajanlar** beş ajan barındırır, ama bunlar farklı satırlardır — 3. adımda ayarladığınız adaptör gitmiştir.
+- **Ayarlar → Çalışma alanı → Ajanlar** altı ajan barındırır, ama bunlar farklı satırlardır — 3. adımda ayarladığınız adaptör gitmiştir.
 - Alanlar listesi, biletler ve bellek tümüyle boştur.
 
 Hiçbir şey sızmadı, çünkü sızacak bir şey yok: her çalışma alanının satırları o çalışma alanının kendi veritabanı dosyasında yaşar. Çalışma alanları arası bir okuma, filtrelenen bir sorgu değil, çalışacak yeri olmayan bir sorgudur. Bir çalışma alanını silmek, bir dosyanın bağlantısını kaldırmaktır.
@@ -84,6 +86,6 @@ Tam model için [Çalışma alanları ve yalıtım](/tr-TR/kilavuz/kavramlar/cal
 
 ## Özet
 
-Bir çalışma alanı oluşturdunuz, bir CEO ile dört uzmanı tohumladığını izlediniz, içine bir depo kaydettiniz, bir ajana adaptör ve model verdiniz ve ikinci bir çalışma alanının bunların hiçbirini paylaşmadığını doğruladınız.
+Bir çalışma alanı oluşturdunuz, bir CEO ile beş uzmanı tohumladığını izlediniz, içine bir depo kaydettiniz, bir ajana adaptör ve model verdiniz ve ikinci bir çalışma alanının bunların hiçbirini paylaşmadığını doğruladınız.
 
 **Sonraki:** Çalışma alanını işe koşmak için [İlk ajanınızı gönderin](/tr-TR/kilavuz/ogreticiler/ilk-ajan/).

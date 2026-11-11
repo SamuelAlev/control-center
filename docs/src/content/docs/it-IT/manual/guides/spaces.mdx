@@ -2,7 +2,7 @@
 title: Usa gli spazi
 description: Crea spazi, impostane la modalità, gestisci partecipanti e autonomia e apri conversazioni e thread.
 slug: it-IT/manuale/guide/spazi
-sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
+sourceHash: c588f695c796a2ddce571d4870ef5c7d3594fe07
 ---
 
 Questa guida mostra come usare gli spazi. Uno **spazio** è la superficie di
@@ -27,6 +27,14 @@ agente-agente](#spazi-agente-agente) qui sotto.
    ogni repo si crea uno spazio senza nulla estratto
 6. Conferma
 
+I repo che scegli decidono anche chi può aprire lo spazio. Solo i membri che
+hanno l'accesso in lettura su tutti e la cui autenticazione al forge può leggerli
+tutti vedono lo spazio e tutto ciò che contiene: messaggi, risultati di ricerca,
+log delle esecuzioni, to-do, attività e notifiche. Uno spazio senza repo è
+aperto a ogni membro. Per una conversazione che tutto lo spazio di lavoro deve
+poter leggere, deseleziona ogni repo, oppure tieni solo repo che tutti possono
+leggere. Vedi [Gli spazi seguono i loro repository](/it-IT/manuale/concetti/autorizzazione/#gli-spazi-seguono-i-loro-repository).
+
 Solo un agente risponde a un messaggio, quindi uno spazio senza agenti non avvia
 nulla: il compositore lo segnala e conserva il tuo messaggio finché non menzioni
 un agente con @, che lo aggiunge allo spazio e invia il messaggio. Non esiste
@@ -40,7 +48,7 @@ Ogni repo viene estratto in `repos/<name>/` all'interno dello spazio. Un repo ch
 fornisce le proprie skill per gli agenti le mette a disposizione dell'agente che
 vi sta lavorando — un set di un repo alla volta, che cambia man mano che l'agente
 si sposta. Dal composer puoi raggiungerle tutte con `/skill:<repo>:<name>`. Vedi
-[Skill con ambito di repository](/it-IT/manuale/concetti/modello-agenti/#repo-scoped-skills).
+[Skill con ambito di repository](/it-IT/manuale/concetti/modello-agenti/#skill-con-ambito-di-repository).
 
 La superficie si trova in `/workspaces/<id>/spaces`, e un singolo spazio in
 `/workspaces/<id>/spaces/<spaceId>`.

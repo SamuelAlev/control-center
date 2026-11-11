@@ -2,7 +2,7 @@
 title: Installazione
 description: Usa Control Center nel browser oppure installa l'app desktop, configura un backend per gli agenti e scegli dove viene eseguito il suo server.
 slug: it-IT/manuale/installazione
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center funziona in due modi: come **app web** su
@@ -135,7 +135,7 @@ Gli elenchi dei modelli sono serviti in tempo reale da ogni fornitore collegato;
 
 Una credenziale GitHub è **tua e risiede sul server**, indicizzata per il tuo ID utente — non nel portachiavi del sistema operativo del client. Ogni dispositivo da cui accedi usa la stessa, e nessun altro membro può leggerla.
 
-GitHub prevede solo l'accesso: **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del codice** offre **Accedi a GitHub**, e non c'è alcun token da incollare. L'accesso passa dalla GitHub App del server ([Crea la GitHub App](/it-IT/manuale/guide/github-app/)) o da Control Center Connect, a seconda di cosa ha scelto il proprietario del server. Con l'app del server, il browser torna da solo al server; tramite Connect, digiti il codice di 8 caratteri che mostra il browser, oppure lasci che apra Control Center. Vedi [Configura l'integrazione GitHub](/it-IT/manuale/guide/integrazione-github/).
+GitHub prevede solo l'accesso: **Impostazioni → Tu → Profilo → Hosting del codice** offre **Accedi a GitHub**, e non c'è alcun token da incollare. L'accesso passa dalla GitHub App del server ([Crea la GitHub App](/it-IT/manuale/guide/github-app/)) o da Control Center Connect, a seconda di cosa ha scelto il proprietario del server, a meno che un amministratore dello spazio di lavoro non abbia scelto altre app di accesso per quello spazio di lavoro in **Impostazioni → Spazio di lavoro → Integrazioni**. Con l'app del server, il browser torna da solo al server; tramite Connect, digiti il codice di 8 caratteri che mostra il browser, oppure lasci che apra Control Center. Vedi [Configura l'integrazione GitHub](/it-IT/manuale/guide/integrazione-github/).
 
 L'onboarding chiede questa connessione. Dopodiché la stessa scheda è dove accedi di nuovo o ti disconnetti. GitLab e Bitbucket usano la stessa scheda con un token personale incollato; vedi [Collega un host di codice](/it-IT/manuale/guide/collega-host-di-codice/).
 
@@ -157,7 +157,7 @@ Per ospitare tu stesso un server, segui [Esegui un server headless](/it-IT/manua
 
 1. **Impostazioni → Server → Fornitori di modelli** elenca entrambi gli adattatori. «Control Center (built-in)» risulta trovato con versione `built-in`; Claude Code risulta trovato se la sua CLI è nel `PATH` dell'host del server. Premi **Aggiorna** se manca.
 2. **Impostazioni → Spazio di lavoro → Repository** elenca i repo di questo spazio di lavoro, e **Aggiungi repository** sfoglia le cartelle dell'host del server.
-3. **Impostazioni → Spazio di lavoro → Agenti** elenca i cinque agenti creati dal tuo primo spazio di lavoro. Ognuno deve avere un **Adattatore** e un **Modello** impostati prima di poter essere eseguito.
+3. **Impostazioni → Spazio di lavoro → Agenti** elenca i sei agenti creati dal tuo primo spazio di lavoro. Ognuno deve avere un **Adattatore** e un **Modello** impostati prima di poter essere eseguito.
 4. **Impostazioni → Server → Diagnostica e privacy** riporta i backend del sandbox offerti da questo host, lo stato del modello di embedding e la registrazione dei log.
 
 ## Esegui la build dai sorgenti

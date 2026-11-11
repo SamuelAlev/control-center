@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart' show AuthException;
 import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 
 /// A provider the server can hold its own app identity for.
 ///
@@ -226,30 +227,37 @@ class ProviderAppSettings {
     }
   }
 
-  /// Seeds unset fields from [env] (the server's `.env` file).
+  /// Seeds each field from [env] (the server's `.env` file) once.
   ///
-  /// Runs once at boot, before the HTTP listener starts, so the first inbound
-  /// request already sees a configured app. Also drops the Linear client
-  /// secret older builds stored: Linear is a public PKCE client now.
+  /// Runs at boot, before the HTTP listener starts, so the first inbound
+  /// request already sees a configured app. A field `.env` names is written
+  /// only when it is unset, and only the first time `.env` names it: a
+  /// marker per field records that, so a value an owner cleared or replaced
+  /// in Settings stays that way across restarts.
   Future<void> loadAndApply({Map<String, String> env = const {}}) async {
-    Future<void> seedSetting(String key, String? value) async {
-      if (value == null || value.trim().isEmpty) {
+    Future<void> seed(
+      String key,
+      String? value, {
+      required Future<String?> Function(String key) read,
+      required Future<void> Function(String key, String value) write,
+    }) async {
+      final marker = '$_envSeededPrefix$key';
+      if (value == null ||
+          value.trim().isEmpty ||
+          await _readSetting(marker) != null) {
         return;
       }
-      if ((await _readSetting(key)) == null) {
-        await _writeSetting(key, value.trim());
+      final existing = await read(key);
+      if (existing == null || existing.isEmpty) {
+        await write(key, value.trim());
       }
+      await _writeSetting(marker, '1');
     }
 
-    Future<void> seedSecret(String key, String? value) async {
-      if (value == null || value.trim().isEmpty) {
-        return;
-      }
-      final existing = await _secrets.readPsk(key);
-      if (existing == null || existing.isEmpty) {
-        await _secrets.writePsk(key, value.trim());
-      }
-    }
+    Future<void> seedSetting(String key, String? value) =>
+        seed(key, value, read: _readSetting, write: _writeSetting);
+    Future<void> seedSecret(String key, String? value) =>
+        seed(key, value, read: _secrets.readPsk, write: _secrets.writePsk);
 
     await seedSetting(_githubAppIdKey, env['GITHUB_APP_ID']);
     await seedSecret(_githubPrivateKeySecret, env['GITHUB_APP_PRIVATE_KEY']);
@@ -259,9 +267,11 @@ class ProviderAppSettings {
     await seedSecret(_googleClientSecret, env['GOOGLE_OAUTH_CLIENT_SECRET']);
     await seedSetting(_linearClientIdKey, env['LINEAR_CLIENT_ID']);
     await seedSecret(_linearApiKeySecret, env['LINEAR_API_KEY']);
-    await _secrets.deletePsk('provider_app_linear_client_secret');
     _invalidate();
   }
+
+  /// Settings key prefix of the per-field "seeded from `.env`" markers.
+  static const String _envSeededPrefix = 'provider_app_env_seeded:';
 
   /// The live GitHub App client, or null unless the server's own GitHub App
   /// is complete (app id, key, client id and secret). A partial app never
@@ -430,6 +440,18 @@ class ProviderAppSettings {
         await _applySetting(_linearClientIdKey, clientId);
         await _applySecret(_linearApiKeySecret, apiKey);
     }
+    forgeAudit(ForgeAuditEvent.providerAppSaved, {
+      'provider': provider.name,
+      'scope': 'server',
+      // Names only: which fields this save set or cleared.
+      'fields': [
+        if (appId != null) 'app_id',
+        if (clientId != null) 'client_id',
+        if (clientSecret != null) 'client_secret',
+        if (privateKeyPem != null) 'private_key',
+        if (apiKey != null) 'api_key',
+      ].join(','),
+    });
     _invalidate();
     for (final listener in List.of(_listeners)) {
       listener(provider);

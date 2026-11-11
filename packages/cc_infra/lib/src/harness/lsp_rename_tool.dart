@@ -1,10 +1,13 @@
 import 'dart:io';
 
 import 'package:cc_harness/tools.dart';
+import 'package:cc_harness_runtime/cc_harness_runtime.dart'
+    show readOnlyRefusal;
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_client.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/lsp/lsp_symbol_position.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
 /// Renames a symbol across the project through the language server.
@@ -26,11 +29,13 @@ class LspRenameTool extends HarnessTool {
     required this._supervisor,
     required this._ledger,
     required this._workingDirectory,
+    required this._launcher,
   });
 
   final LspSupervisor _supervisor;
   final DiagnosticsLedger _ledger;
   final String _workingDirectory;
+  final ToolProcessLauncher _launcher;
 
   @override
   String get name => 'lsp_rename';
@@ -45,9 +50,11 @@ class LspRenameTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.write;
 
+  /// Host execution too when the language server would run unconfined.
   @override
-  Set<ActionClass> get actionClasses => const {
+  Set<ActionClass> get actionClasses => {
     ActionClass.fileWriteOutsideWorktree,
+    if (!_launcher.confined) ActionClass.hostExecution,
   };
 
   @override
@@ -87,10 +94,14 @@ class LspRenameTool extends HarnessTool {
     if (!file.existsSync()) {
       return HarnessToolResult.error('No such file: $rawFile');
     }
-    final root = findProjectRoot(_workingDirectory);
+    final root = findProjectRoot(
+      _workingDirectory,
+      ceiling: _workingDirectory,
+    );
     final client = await _supervisor.clientForFile(
       root,
       path,
+      _launcher,
       typeIntelligenceOnly: true,
     );
     if (client == null) {
@@ -104,7 +115,14 @@ class LspRenameTool extends HarnessTool {
     if (column is String) {
       return HarnessToolResult.error(column);
     }
-    return _rename(client, path, line, column as int, args['new_name'] as String?);
+    return _rename(
+      client,
+      path,
+      line,
+      column as int,
+      args['new_name'] as String?,
+      context.readOnlyRoots,
+    );
   }
 
   Future<HarnessToolResult> _rename(
@@ -113,6 +131,7 @@ class LspRenameTool extends HarnessTool {
     int line,
     int column,
     String? newName,
+    List<ReadOnlyRoot> readOnlyRoots,
   ) async {
     if (newName == null || newName.isEmpty) {
       return HarnessToolResult.error('rename requires `new_name`.');
@@ -130,6 +149,14 @@ class LspRenameTool extends HarnessTool {
     final edits = _collectEdits(result);
     if (edits.isEmpty) {
       return HarnessToolResult.error('The rename produced no edits.');
+    }
+    // A rename reaches every file that names the symbol: refused whole when
+    // any of them is read-only for this run, before anything is written.
+    for (final target in edits.keys) {
+      final refused = readOnlyRefusal(target, readOnlyRoots);
+      if (refused != null) {
+        return refused;
+      }
     }
     // Apply from a single snapshot, and apply each file's edits from the END
     // backwards so earlier offsets stay valid as later ones are rewritten.

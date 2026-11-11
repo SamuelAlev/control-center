@@ -1,9 +1,16 @@
 import 'dart:convert';
 
+import 'package:control_center/core/providers/session_scope_provider.dart';
+
 /// One mutation held while the client is offline (PRD 19 §11). It carries the
 /// idempotency key minted when the operator committed the intent, so a
 /// reconnect flush applies exactly once (dedup at the server write ledger) —
 /// no duplicates, no lost intent.
+///
+/// It is bound to who queued it: the server ([serverId]), the signed-in user
+/// ([userId]) and the workspace ([workspaceId]). A mutation only ever replays
+/// in that same session; anywhere else it is dropped, never sent as someone
+/// else.
 class QueuedMutation {
   /// Creates a [QueuedMutation].
   const QueuedMutation({
@@ -11,17 +18,33 @@ class QueuedMutation {
     required this.op,
     required this.args,
     required this.enqueuedAtEpochMs,
+    required this.serverId,
+    required this.userId,
+    required this.workspaceId,
     this.attempts = 0,
+    this.awaitingSignIn,
   });
 
-  /// Deserializes from persisted JSON.
-  factory QueuedMutation.fromJson(Map<String, dynamic> json) => QueuedMutation(
-    idempotencyKey: json['k'] as String,
-    op: json['op'] as String,
-    args: (json['args'] as Map?)?.cast<String, dynamic>() ?? const {},
-    enqueuedAtEpochMs: (json['at'] as num?)?.toInt() ?? 0,
-    attempts: (json['n'] as num?)?.toInt() ?? 0,
-  );
+  /// Deserializes from persisted JSON. Throws [FormatException] for an entry
+  /// that does not name its server, user and workspace: an unbound entry can
+  /// never be replayed safely.
+  factory QueuedMutation.fromJson(Map<String, dynamic> json) {
+    String bound(String key) => switch (json[key]) {
+      final String v when v.isNotEmpty => v,
+      _ => throw FormatException('Queued mutation without "$key"'),
+    };
+    return QueuedMutation(
+      idempotencyKey: bound('k'),
+      op: bound('op'),
+      args: (json['args'] as Map?)?.cast<String, dynamic>() ?? const {},
+      enqueuedAtEpochMs: (json['at'] as num?)?.toInt() ?? 0,
+      serverId: bound('srv'),
+      userId: bound('usr'),
+      workspaceId: bound('ws'),
+      attempts: (json['n'] as num?)?.toInt() ?? 0,
+      awaitingSignIn: json['s'] as String?,
+    );
+  }
 
   /// The per-logical-action idempotency key (stable across the flush).
   final String idempotencyKey;
@@ -32,13 +55,34 @@ class QueuedMutation {
   /// The op args (already workspace-scoped by the caller).
   final Map<String, dynamic> args;
 
-  /// When it was enqueued (epoch ms) — FIFO order + staleness display.
+  /// When it was enqueued (epoch ms) — FIFO order, staleness display and
+  /// the [OfflineMutationQueue.maxAge] cut-off.
   final int enqueuedAtEpochMs;
+
+  /// The identity of the server it was queued against.
+  final String serverId;
+
+  /// The user signed in on [serverId] who queued it.
+  final String userId;
+
+  /// The workspace it acts in.
+  final String workspaceId;
+
+  /// Whether it belongs to [scope] (same server, same user).
+  bool belongsTo(SessionScope scope) =>
+      serverId == scope.serverId && userId == scope.userId;
 
   /// How many flush attempts this mutation has already failed. Persisted so a
   /// mutation that fails on every boot still reaches the dead-letter ceiling
   /// instead of blocking the queue head forever.
   final int attempts;
+
+  /// The sign-in lane (`github`, `linear`, `gitlab` …) the server said the
+  /// person must sign in to before this mutation can run (`needs_sign_in`).
+  /// A parked mutation is not retried, does not spend attempts and does not
+  /// block the rest of the queue; [OfflineMutationQueue.resumeAfterSignIn]
+  /// releases it once that sign-in succeeds. Null for a runnable mutation.
+  final String? awaitingSignIn;
 
   /// This mutation with one more recorded failed attempt.
   QueuedMutation withFailedAttempt() => QueuedMutation(
@@ -46,7 +90,26 @@ class QueuedMutation {
     op: op,
     args: args,
     enqueuedAtEpochMs: enqueuedAtEpochMs,
+    serverId: serverId,
+    userId: userId,
+    workspaceId: workspaceId,
     attempts: attempts + 1,
+    awaitingSignIn: awaitingSignIn,
+  );
+
+  /// This mutation parked until [lane]'s sign-in succeeds (null: runnable
+  /// again). Attempts are unchanged: a missing sign-in is not a failure of
+  /// the mutation.
+  QueuedMutation withAwaitingSignIn(String? lane) => QueuedMutation(
+    idempotencyKey: idempotencyKey,
+    op: op,
+    args: args,
+    enqueuedAtEpochMs: enqueuedAtEpochMs,
+    serverId: serverId,
+    userId: userId,
+    workspaceId: workspaceId,
+    attempts: attempts,
+    awaitingSignIn: lane,
   );
 
   /// Serializes for persistence.
@@ -55,7 +118,11 @@ class QueuedMutation {
     'op': op,
     'args': args,
     'at': enqueuedAtEpochMs,
+    'srv': serverId,
+    'usr': userId,
+    'ws': workspaceId,
     if (attempts > 0) 'n': attempts,
+    if (awaitingSignIn != null) 's': awaitingSignIn,
   };
 
   /// Approximate serialized size in bytes, for the byte cap.
@@ -105,6 +172,34 @@ class OfflineQueueFullException implements Exception {
   String toString() => 'OfflineQueueFullException: $reason';
 }
 
+/// Thrown by [OfflineMutationQueue.enqueue] when the mutation cannot be bound
+/// to a session: the queue has no [SessionScope] (the signed-in user could
+/// not be named), or its `args` name a different workspace than the one
+/// given.
+class OfflineQueueUnboundException implements Exception {
+  /// Creates an [OfflineQueueUnboundException].
+  const OfflineQueueUnboundException(this.reason);
+
+  /// Why the mutation could not be queued.
+  final String reason;
+
+  @override
+  String toString() => 'OfflineQueueUnboundException: $reason';
+}
+
+/// Why a queued mutation was dropped without being sent (the
+/// [DeadLetteredMutation.error] of such a drop).
+class QueuedMutationDiscarded implements Exception {
+  /// Creates a [QueuedMutationDiscarded].
+  const QueuedMutationDiscarded(this.reason);
+
+  /// Why it was dropped (expired, or bound to another session or workspace).
+  final String reason;
+
+  @override
+  String toString() => 'QueuedMutationDiscarded: $reason';
+}
+
 /// Persistence boundary for the queue (web = localStorage; desktop = a file /
 /// prefs). Synchronous string get/set keeps the queue's own API simple.
 abstract interface class OfflineQueueStore {
@@ -134,24 +229,50 @@ class OfflineMutationQueue {
   /// and the entry keeps its place. [onDeadLetter] is notified for every
   /// dropped mutation so the operator can be told rather than watching a
   /// pending count sit still forever.
+  ///
+  /// [signInLaneOf] recognises a refusal that only a sign-in can lift (the
+  /// server's `needs_sign_in`) and names its lane: such a mutation is parked
+  /// ([QueuedMutation.awaitingSignIn]) rather than dead-lettered, checked
+  /// before [isPermanentFailure].
+  ///
+  /// [scope] is the session the queue serves. Only its own mutations are
+  /// restored, flushed or resumed; another server's or user's are dropped
+  /// unsent, and so is any older than [maxAge]. Without a scope (the signed-in
+  /// user could not be named) the queue restores nothing and refuses
+  /// [enqueue].
   OfflineMutationQueue({
     required this._store,
+    required this.scope,
+    this.maxAge = const Duration(hours: 24),
     this.maxEntries = 200,
     this.maxBytes = 256 * 1024,
     this.maxAttempts = 5,
     int Function()? now,
     bool Function(Object error)? isPermanentFailure,
+    String? Function(Object error)? signInLaneOf,
     this.onDeadLetter,
   }) : _now = now ?? (() => DateTime.now().millisecondsSinceEpoch),
-       _isPermanentFailure = isPermanentFailure ?? _neverPermanent {
+       _isPermanentFailure = isPermanentFailure ?? _neverPermanent,
+       _signInLaneOf = signInLaneOf ?? _noSignIn {
     _restore();
   }
 
   static bool _neverPermanent(Object error) => false;
 
+  static String? _noSignIn(Object error) => null;
+
   final OfflineQueueStore _store;
+
+  /// The session whose mutations this queue holds (null: none can be bound).
+  final SessionScope? scope;
+
+  /// How long a mutation may wait before it is dropped instead of sent: a
+  /// change replayed a day later is no longer the intent it captured.
+  final Duration maxAge;
+
   final int Function() _now;
   final bool Function(Object error) _isPermanentFailure;
+  final String? Function(Object error) _signInLaneOf;
 
   /// Notified for every mutation the queue gives up on.
   final void Function(DeadLetteredMutation dropped)? onDeadLetter;
@@ -186,11 +307,95 @@ class OfflineMutationQueue {
   List<DeadLetteredMutation> get deadLettered =>
       List.unmodifiable(_deadLettered);
 
-  /// How many mutations are waiting to flush.
+  /// How many mutations are waiting to flush (parked ones included: they
+  /// are still pending, just not runnable yet).
   int get length => _entries.length;
 
   /// Whether anything is pending.
   bool get isNotEmpty => _entries.isNotEmpty;
+
+  /// Whether anything is pending that a flush would try now (not parked for
+  /// a sign-in).
+  bool get hasRunnable => _entries.any((e) => e.awaitingSignIn == null);
+
+  /// Mutations parked until a sign-in succeeds, oldest first.
+  List<QueuedMutation> get awaitingSignIn => List.unmodifiable([
+    for (final e in _entries)
+      if (e.awaitingSignIn != null) e,
+  ]);
+
+  /// Releases every mutation of this session parked for [lane] (its sign-in
+  /// just succeeded): they keep their place and the next [flush] tries them.
+  /// Expired or foreign entries are dropped first, never released. Returns
+  /// how many were released.
+  int resumeAfterSignIn(String lane) {
+    final session = scope;
+    if (session == null) {
+      return 0;
+    }
+    var released = 0;
+    var dirty = _dropUnsendable();
+    for (var i = 0; i < _entries.length; i++) {
+      if (_entries[i].awaitingSignIn == lane &&
+          _entries[i].belongsTo(session)) {
+        _replaceEntryAt(i, _entries[i].withAwaitingSignIn(null));
+        released++;
+        dirty = true;
+      }
+    }
+    if (dirty) {
+      _persist();
+    }
+    return released;
+  }
+
+  /// Why [mutation] must not be sent in this session, or null when it may.
+  String? _unsendableReason(QueuedMutation mutation) {
+    final session = scope;
+    if (session == null || !mutation.belongsTo(session)) {
+      return 'queued by another server or user';
+    }
+    final argsWorkspace = mutation.args['workspace_id'];
+    if (argsWorkspace != null && argsWorkspace != mutation.workspaceId) {
+      return 'bound to another workspace';
+    }
+    if (_now() - mutation.enqueuedAtEpochMs > maxAge.inMilliseconds) {
+      return 'waited longer than ${maxAge.inHours}h';
+    }
+    return null;
+  }
+
+  /// Drops every entry [_unsendableReason] refuses. This session's own are
+  /// dead-lettered (the operator learns the change was lost); another
+  /// session's leave no trace here (they were never this person's to see).
+  /// Returns whether anything was dropped; the caller persists.
+  bool _dropUnsendable() {
+    var dropped = false;
+    for (var i = _entries.length - 1; i >= 0; i--) {
+      final entry = _entries[i];
+      final reason = _unsendableReason(entry);
+      if (reason == null) {
+        continue;
+      }
+      _removeEntryAt(i);
+      dropped = true;
+      final session = scope;
+      if (session != null && entry.belongsTo(session)) {
+        _deadLetter(
+          DeadLetteredMutation(entry, QueuedMutationDiscarded(reason), true),
+        );
+      }
+    }
+    return dropped;
+  }
+
+  void _deadLetter(DeadLetteredMutation dropped) {
+    _deadLettered.add(dropped);
+    if (_deadLettered.length > 20) {
+      _deadLettered.removeAt(0);
+    }
+    onDeadLetter?.call(dropped);
+  }
 
   /// Running total of [QueuedMutation.sizeBytes] across [_entries].
   ///
@@ -219,19 +424,39 @@ class OfflineMutationQueue {
     _entries[index] = next;
   }
 
-  /// Enqueues a mutation with its logical-action [idempotencyKey]. Throws
-  /// [OfflineQueueFullException] when a cap would be exceeded — the caller
-  /// surfaces the message and the mutation is NOT applied (never a silent drop).
+  /// Enqueues a mutation with its logical-action [idempotencyKey], bound to
+  /// this session and [workspaceId]. Throws [OfflineQueueFullException] when a
+  /// cap would be exceeded, and [OfflineQueueUnboundException] when it cannot
+  /// be bound (no session, or [args] naming another workspace) — the caller
+  /// surfaces the message and the mutation is NOT applied (never a silent
+  /// drop).
   QueuedMutation enqueue({
+    required String workspaceId,
     required String idempotencyKey,
     required String op,
     required Map<String, dynamic> args,
   }) {
+    final session = scope;
+    if (session == null) {
+      throw const OfflineQueueUnboundException(
+        'no signed-in session to queue changes for',
+      );
+    }
+    final argsWorkspace = args['workspace_id'];
+    if (workspaceId.isEmpty ||
+        (argsWorkspace != null && argsWorkspace != workspaceId)) {
+      throw const OfflineQueueUnboundException(
+        'the change names a different workspace',
+      );
+    }
     final mutation = QueuedMutation(
       idempotencyKey: idempotencyKey,
       op: op,
       args: args,
       enqueuedAtEpochMs: _now(),
+      serverId: session.serverId,
+      userId: session.userId,
+      workspaceId: workspaceId,
     );
     if (_entries.length >= maxEntries) {
       throw OfflineQueueFullException(
@@ -255,7 +480,10 @@ class OfflineMutationQueue {
   /// attempt, so order and exactly-once semantics hold across a mid-flush
   /// disconnect. A permanently-rejected entry (or one past [maxAttempts]) is
   /// dead-lettered and the flush continues with the tail — a poisoned head must
-  /// not block every later mutation. Returns the number applied.
+  /// not block every later mutation. One refused for a missing sign-in is
+  /// parked (kept, not retried) and the flush continues past it; parked
+  /// entries are skipped until [resumeAfterSignIn]. Returns the number
+  /// applied.
   ///
   /// Concurrent calls are SERIALIZED: a second `flush` chains onto the drain
   /// already in flight rather than racing it over the same entries.
@@ -278,28 +506,44 @@ class OfflineMutationQueue {
     // guarantee the keys exist for.
     var dirty = false;
     try {
-      while (_entries.isNotEmpty) {
-        final next = _entries.first;
+      while (true) {
+        final next = _entries
+            .where((e) => e.awaitingSignIn == null)
+            .firstOrNull;
+        if (next == null) {
+          break;
+        }
+        // Expired, or not this session's: dropped, never replayed.
+        final unsendable = _unsendableReason(next);
+        if (unsendable != null) {
+          if (_dropUnsendable()) {
+            dirty = true;
+          }
+          continue;
+        }
         try {
           await apply(next);
         } on Object catch (error) {
-          final permanent = _isPermanentFailure(error);
-          final attempted = next.withFailedAttempt();
           // Remove by IDENTITY, never by index: another drain (or an enqueue)
           // may have reshaped the list while `apply` was in flight.
           final at = _indexOf(next);
           if (at < 0) {
             continue; // Already handled by a concurrent drain.
           }
+          // Only a sign-in can lift it: park it (no attempt spent, never
+          // dead-lettered) and keep draining the rest.
+          final lane = _signInLaneOf(error);
+          if (lane != null) {
+            _replaceEntryAt(at, next.withAwaitingSignIn(lane));
+            dirty = true;
+            continue;
+          }
+          final permanent = _isPermanentFailure(error);
+          final attempted = next.withFailedAttempt();
           if (permanent || attempted.attempts >= maxAttempts) {
             _removeEntryAt(at);
             dirty = true;
-            final dropped = DeadLetteredMutation(attempted, error, permanent);
-            _deadLettered.add(dropped);
-            if (_deadLettered.length > 20) {
-              _deadLettered.removeAt(0);
-            }
-            onDeadLetter?.call(dropped);
+            _deadLetter(DeadLetteredMutation(attempted, error, permanent));
             continue; // The tail is not this entry's fault — keep draining.
           }
           _replaceEntryAt(at, attempted);
@@ -328,8 +572,9 @@ class OfflineMutationQueue {
   int _indexOf(QueuedMutation mutation) =>
       _entries.indexWhere((e) => identical(e, mutation));
 
-  /// Clears the queue (e.g. workspace switch — those pending edits aren't valid
-  /// in another workspace's context). Rarely needed; the flush is the norm.
+  /// Drops every pending mutation unsent: the session is ending (sign-out or
+  /// a switch to another server), and nothing queued in it may replay in the
+  /// next one.
   void clear() {
     _entries.clear();
     _sizeBytes = 0;
@@ -357,18 +602,32 @@ class OfflineMutationQueue {
   }
 
   void _restore() {
+    // No session to bind to: load nothing, so nothing can replay as anyone.
+    if (scope == null) {
+      return;
+    }
     final raw = _store.load();
     if (raw == null || raw.isEmpty) {
       return;
     }
     try {
       final list = jsonDecode(raw);
+      var dropped = list is! List;
       if (list is List) {
         for (final e in list) {
-          if (e is Map) {
-            _addEntry(QueuedMutation.fromJson(e.cast<String, dynamic>()));
+          // An unbound or malformed entry is dropped: it cannot prove whose
+          // it is.
+          final entry = e is Map ? _parse(e.cast<String, dynamic>()) : null;
+          if (entry == null) {
+            dropped = true;
+          } else {
+            _addEntry(entry);
           }
         }
+      }
+      // Another session's (a different server or user), or expired.
+      if (_dropUnsendable() || dropped) {
+        _persist();
       }
     } catch (_) {
       // Corrupt persisted queue: drop it rather than crash on boot. Losing an
@@ -377,6 +636,14 @@ class OfflineMutationQueue {
       _entries.clear();
       _sizeBytes = 0;
       _persist();
+    }
+  }
+
+  static QueuedMutation? _parse(Map<String, dynamic> json) {
+    try {
+      return QueuedMutation.fromJson(json);
+    } on Object {
+      return null;
     }
   }
 }

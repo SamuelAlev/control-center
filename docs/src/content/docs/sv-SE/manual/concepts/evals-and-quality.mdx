@@ -2,7 +2,7 @@
 title: Utvärderingar och kvalitet
 description: Eval-sviter och revisionsfästa skillkampanjer, och hur du tolkar deras bevis.
 slug: sv-SE/handbok/koncept/utvarderingar-och-kvalitet
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observability → Kvalitet** innehåller både eval-sviter för enskilda uppgifter
@@ -21,7 +21,7 @@ Fem startsviter sås in när en arbetsyta skapas. De täcker
 orkestreringsförslag, en granskning som hittar en inplanterad bugg, att
 planläge förblir skrivskyddat, att planläge tar fram en plan och en tur och
 retur för ett ärende. Inplanteringen lyssnar på `WorkspaceCreated`
-(`workspace.upsert` eller `workspace.create`), hoppar över ett namn som redan
+(publiceras av `workspace.create`), hoppar över ett namn som redan
 finns och fyller inte på äldre arbetsytor i efterhand.
 
 ### Var de visas

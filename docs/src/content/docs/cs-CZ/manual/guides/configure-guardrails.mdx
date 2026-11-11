@@ -2,13 +2,13 @@
 title: Nastavte guardraily
 description: Nastav pravidla Povolit, Nejdřív se zeptat a Zakázat pro akce agenta, vyzkoušej je sondou Co kdyby a vylaď autonomii na prostor.
 slug: cs-CZ/prirucka/navody/nastaveni-guardrailu
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Tenhle návod ukazuje, jak nastavit guardraily: pravidla, která rozhodují, jestli
 akce agenta proběhne, nejdřív si vyžádá schválení, nebo se odmítne.
 
-Guardraily pokrývají třináct tříd efektů, které deklaruje každý měnící nástroj.
+Guardraily pokrývají čtrnáct tříd efektů, které deklaruje každý měnící nástroj.
 Vynucují se na serveru v okamžiku volání nástroje, ne instrukcí v promptu.
 
 ## Nastav rozhodnutí pro třídu akce
@@ -20,7 +20,7 @@ Vynucují se na serveru v okamžiku volání nástroje, ne instrukcí v promptu.
 4. Pravidlo, které jsi nastavil, zrušíš tlačítkem na konci toho řádku
    (**Obnovit zděděné**) — rozhodnutí spadne na širší rozsah
 
-Každý řádek ukáže platné rozhodnutí jako štítek stavu a odznak, odkud přišlo:
+Každý řádek ukáže nastavení akce jako štítek stavu a odznak, odkud přišlo:
 **Tento rozsah**, **Zděděno** nebo **Vestavěný výchozí**. Matice se vyhodnocuje
 v režimu Agent (`chat`), takže se tu **Předvolba režimu** nikdy neukáže. Tuhle
 vrstvu uvidíš v **Co kdyby?**, když vybereš režim jen pro čtení.
@@ -31,6 +31,18 @@ Kontrolní bod: v rozsahu pracovního prostoru nastav **Odeslat na remote** na
 **Zakázat** a níž spusť **Co kdyby?** na `git push origin main`. Výsledek je
 `deny` se zdrojem `workspace`.
 
+## Kontrola a odvolání schválení na čas
+
+Odpověď na kartu schválení volbou **Schválit na 8 hodin** zapíše schválení na čas: pravidlo, které pustí stejný druh akce bez dotazu, dokud neskončí. Každé z nich je uvedeno na této stránce pod akcí, ke které patří.
+
+1. Jdi do **Nastavení → Pracovní prostor → Oprávnění agentů** a vyber rozsah. Schválení se zapíše pro prostor, ze kterého otázka přišla, takže vyber **Prostor** a pak ten prostor
+2. Pod řádkem akce přečti položku: co povoluje (například odeslání do větví odpovídajících `feature/**`), slova **Schválení na čas**, kdo ho udělil, pokud to byl někdo jiný, a kdy skončí
+3. Chceš-li ho ukončit hned, najeď na položku a stiskni **Odvolat**. Agenti se ptají znovu od své další akce
+
+Řádek dál ukazuje vlastní nastavení akce a řádek pod ním počítá případy uvedené níže, které se přesto povolí. Podmíněná pravidla, která zapsala šablona, se objeví ve stejném seznamu a příkazová pravidla ve skupině **Příkazy** za poslední akcí. Na úrovni pracovního prostoru poznámka pod souhrnem počítá schválení na čas nastavená pro jednotlivé prostory nebo agenty. Na prostoru nebo u agenta počítá ta z pracovního prostoru, která tam také platí.
+
+Schválení na čas jen ušetří otázku. Nikdy nepřepisuje **Zakázat**: když nastavíš akci na **Zakázat**, zatímco nějaké schválení na čas ještě platí, jeho položka ukazuje **bez účinku, když je nastaveno Zakázat**, dokud neskončí nebo ho neodvoláš. Změna nastavení akce nechá její schválení na čas v platnosti a odvolání jednoho z nich nechá nastavení.
+
 ## Pochop, jak se rozhodnutí vyhodnotí
 
 Vyhodnocení jde **nejdřív podle konkrétnosti, pak podle přísnosti**:
@@ -38,7 +50,7 @@ Vyhodnocení jde **nejdřív podle konkrétnosti, pak podle přísnosti**:
 1. Pravidla **Prostor**, pak **Agent**, pak **Pracovní prostor**. První rozsah
    s odpovídajícím pravidlem rozhodne a vyhodnocení tam končí
 2. Když žádné pravidlo nesedí, platí **předvolba režimu** — režim jen pro čtení
-   (plan, review, orchestrate) odmítne jedenáct ze třinácti tříd
+   (plan, review, orchestrate) odmítne dvanáct ze čtrnácti tříd
 3. Když režim nic neříká, platí **vestavěný výchozí**
 
 Uvnitř jednoho rozsahu se pravidlo příkazu vyhodnotí podle nejdelšího shodného
@@ -66,7 +78,7 @@ nehlídaný běh je horší než odmítnutý.
 | Vytvořit commit                       | Povolit           |
 | Odeslat na remote                     | Nejdřív se zeptat |
 | Otevřít pull request                  | Nejdřív se zeptat |
-| Zveřejnit kontrolu nebo sloučení      | Nejdřív se zeptat |
+| Aktualizovat nebo sloučit pull request | Nejdřív se zeptat |
 | Zápis do externího trackeru           | Nejdřív se zeptat |
 | Přístup k síti                        | Povolit           |
 | Číst tajemství                        | Povolit           |
@@ -74,6 +86,7 @@ nehlídaný běh je horší než odmítnutý.
 | Spustit proces                        | Povolit           |
 | Změnit strukturu pracovního prostoru  | Povolit           |
 | Ovládat izolované prostředí (stanici) | Povolit           |
+| Spouštět příkazy na hostiteli         | Nejdřív se zeptat |
 
 Taxonomie je uzavřená. Nový nástroj, který se dodá bez deklarace svých tříd,
 neprojde testem západky v CI, takže nic nepřijde s tiše prázdnou sadou efektů.
@@ -83,14 +96,13 @@ neprojde testem západky v CI, takže nic nepřijde s tiše prázdnou sadou efek
 Než pravidlo změníš, ověř, jak ho současná politika už vyhodnocuje.
 
 1. Na stejné stránce sjeď k **Co kdyby?**
-2. V **Akce** vyber jednu ze třinácti tříd
+2. V **Akce** vyber jednu ze čtrnácti tříd
 3. Volitelně vyplň **Příkaz** (třeba `git push origin main`), **Agent**,
    **Prostor** a **Režim**
 4. Přečti výsledek: rozhodnutí, důvod a **Zdroj:**
 
 Sonda spustí stejný vyhodnocovač jako cesta vynucení, na tvých živých
-pravidlech, takže odpověď sedí přesně. Když tě překvapí, změň pravidlo v matici
-výš a sondu spusť znovu.
+pravidlech, takže odpověď sedí přesně. Když rozhodne schválení na čas, zdroj ukáže **Schválení na čas** a za ním jeho rozsah. Když tě odpověď překvapí, změň pravidlo v matici výš a sondu spusť znovu.
 
 ## Nastav volič autonomie prostoru
 

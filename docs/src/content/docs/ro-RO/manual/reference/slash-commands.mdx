@@ -2,7 +2,7 @@
 title: Comenzi slash
 description: Fiecare comandă pe care o poți tasta în composer, ce face și unde rulează.
 slug: ro-RO/manual/referinta/comenzi-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Comenzi tastate în composerul unui spațiu. Ele se împart în trei grupuri după locul unde își fac efectul, iar diferența contează: o comandă **locală** nu circulă niciodată ca mesaj, așa că nu apare în transcript și nu ajunge la niciun agent.
@@ -127,7 +127,7 @@ Ambele au aceeași formă — ia conversația așa cum este, pune o singură în
 
 Șabloane: `$1`, `$@`, `$@[start:length]` și `$ARGUMENTS`. Frontmatter-ul poate seta `description` (completare automată în composer). `allowed-tools` și `model` se citesc din fișier, dar o invocare de comandă de utilizator momentan doar substituie argumentele în corp — nu schimbă modelul sau suprafața de instrumente a rulării.
 
-O comandă scrisă de un utilizator are prioritate în fața unui skill cu același nume — este o scurtătură pe care un om a invocat-o deliberat, cu argumente.
+Skill-urile se ating doar ca `/skill:<name>`, așa că o comandă scrisă de un utilizator nu se ciocnește niciodată cu ele.
 
 ---
 

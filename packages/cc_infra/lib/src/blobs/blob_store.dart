@@ -85,7 +85,7 @@ class BlobStore {
   )?
   onArtifactStored;
 
-  /// Catalog lookup for optional cache eviction; legacy and active rows are
+  /// Catalog lookup for optional cache eviction; cataloged content is
   /// protected while disposable PR image blobs can still be reclaimed.
   final Future<bool> Function(String workspaceId, String hash)? isProtectedHash;
 

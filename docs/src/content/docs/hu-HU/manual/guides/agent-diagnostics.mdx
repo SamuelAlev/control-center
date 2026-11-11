@@ -2,7 +2,7 @@
 title: Ügynök diagnosztizálása
 description: Járja körbe a futtatási naplót, az adapterpróbát, a szerver állapotát és a gazdagép diagnosztikáját, amikor egy ügynök nem produkál futtatásokat.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-diagnosztizalasa
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Ez az útmutató bemutatja, hogyan derítheti ki, miért nem készít futtatásokat egy ügynök.
@@ -13,13 +13,13 @@ Haladjon felülről lefelé: először az ügynök saját futtatásai, aztán a 
 
 **Beállítások → Munkaterület → Ügynökök** → válassza ki az ügynököt → **Naplók**.
 
-Minden futtatás mutat egy állapotjelvényt, egy időtartamot („Running…”, amíg tart), a kezdési és befejezési időpontját, a PID-jét és a használt adaptert. A **Nézet** megnyitja az adott futtatás nyers eseményfolyamát. A **Leállítás** leállít egy futó folyamatot, és a futtatást „Killed by user” jelzéssel látja el; a fejlécben lévő **Futó leállítása** ugyanezt teszi az ügynök minden futó futtatásával.
+Minden futtatás mutat egy állapotjelvényt, egy időtartamot („Running…”, amíg tart), a kezdési és befejezési időpontját, a PID-jét és a használt adaptert. A **Nézet** megnyitja az adott futtatás nyers eseményfolyamát. A **Leállítás** leállít egy futó folyamatot, és a futtatást „Killed by user” jelzéssel látja el; a fejlécben lévő **Futó leállítása** ugyanezt teszi az ügynök minden futó futtatásával ebben a munkaterületen. Csak azon munkaterületek élő ügynökfuttatásait látja és állíthatja le, amelyeknek a tagja; a szerver tulajdonosa mindegyiket látja és leállíthatja.
 
 Olvassa így:
 
 - **Egyáltalán nincsenek futtatások** — az indítás sosem történt meg. A composer említései `@` plusz szókarakterek (betűk, számjegyek, aláhúzás). A feloldás pontos vagy előtag-egyezés az ügynök nevén, így a `@code-reviewer` `code`-ként értelmeződik, és így is felébreszthet egy `code-reviewer` nevű ügynököt. A szóközt tartalmazó nevet nem lehet egyetlen tokenként megemlíteni. Ezután lépjen tovább a 2. lépésre.
-- **Egy azonnal hibával végződött futtatás** — nyissa meg a **Nézet** elemet. A háttérrendszer indításának sikertelensége itt folyamathibaként jelenik meg.
-- **Egy „Running…” állapotban ragadt futtatás** — állítsa le, majd ellenőrizze az ügynök **Csend időtúllépés (perc)** beállítását a Beállítások lapon. A beállítatlan időtúllépés a módonkénti alapértelmezettet használja.
+- **Egy azonnal hibával végződött futtatás** — nyissa meg a **Nézet** elemet. A háttérrendszer indításának sikertelensége itt folyamathibaként jelenik meg. Az „Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket.” üzenet azt jelenti, hogy a szerver gépén nincs operációs rendszer szintű homokozó, és Ön nem a szerver tulajdonosa; lásd: [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/#az-ügynökfutást-visszautasította-a-szerver-homokozó-hiánya).
+- **Egy „Running…” állapotban ragadt futtatás** — állítsa le, majd ellenőrizze az ügynök **Csend időtúllépés (perc)** beállítását az ügynök **Beállítások** lapján. A beállítatlan időtúllépés a módonkénti alapértelmezettet használja.
 - **Egy befejezett futtatás hasznos kimenet nélkül** — a futtatási napló állapota `completed` marad egy olyan futtatásnál, amely a deklarált szállítandó nélkül ért véget; az őszinte jelzés az összefoglaló szövege, nem a jelvény.
 
 A Naplók lap nem mutat költséget. A költéseket a **Megfigyelhetőség → Betekintések** ügynökönkénti táblázatában nézheti meg.
@@ -67,11 +67,11 @@ A **Beállítások → Szerver → Diagnosztika és adatvédelem** (`/settings/s
 - **Adatvédelem** — hogy a nyers diff-tartalom továbbítható-e az ügynök modelljének, és hogy elküldésre kerülnek-e a hibajelentések.
 
 :::caution[Ez a szakasz a gazdagépről jelent, a vezérlői pedig kliensoldaliak]
-Az észlelés és a kikényszerítés mára megegyezik: ahol az észlelő natív háttérrendszert jelent, az adott gazdagépen az ügynökfuttatások valóban abba vannak csomagolva. De ebben a szakaszban az észlelő az egyetlen élő dolog. A főkapcsoló és a háttérrendszer-választó az eszközén tárolt beállítások, és a szerver egyiket sem olvassa — a szerver saját kapcsolója a `--sandbox` (`on` az alapértelmezett, `off` a kikapcsoláshoz).
+Az észlelés és a kikényszerítés megegyezik: ahol az észlelő natív háttérrendszert jelent, az adott gazdagépen az ügynökfuttatások valóban abba vannak csomagolva. De ebben a szakaszban az észlelő az egyetlen élő dolog. A főkapcsoló és a háttérrendszer-választó az eszközén tárolt beállítások, és a szerver egyiket sem olvassa — a szerver saját kapcsolója a `--sandbox` (`on` az alapértelmezett, `off` a kikapcsoláshoz).
 
-Tehát az itteni figyelmeztetést érdemes komolyan venni, de általában nem ez az oka annak, hogy egy ügynök meghibásodik. Ha meg akarja erősíteni, milyen állapotban van a szerver, olvassa el az indítási naplóját: kiírja, hogy `agent sandbox ON` a háttérrendszer-megjegyzéssel, `no OS-native agent sandbox on this host` egy telepítési tippel, vagy `agent sandbox DISABLED by --sandbox off`. A `GET /healthz` nem tartalmaz homokozómezőt.
+Tehát az itteni figyelmeztetést érdemes komolyan venni. Háttérrendszer nélküli gazdagépen ez az oka annak, hogy a szerver tulajdonosától eltérő valaki egyáltalán nem tud ügynököket futtatni. Ha meg akarja erősíteni, milyen állapotban van a szerver, olvassa el az indítási naplóját: kiírja, hogy `agent sandbox ON` a háttérrendszer-megjegyzéssel, `no OS-native agent sandbox on this host` egy telepítési tippel, vagy `agent sandbox DISABLED by --sandbox off`, a kitettségi sora pedig `sandbox=native`, `sandbox=unavailable` vagy `sandbox=off` értéket tartalmaz. A `GET /healthz` nem tartalmaz homokozómezőt.
 
-Ahol nincs háttérrendszer — Windows esetén mindig, Linuxon vagy WSL2-ben `bwrap` és `socat` nélkül —, a futtatások **nincsenek** homokozóba zárva, és amit korlátoz, az a beszélgetés saját munkapéldánya, a csak olvasásra jogosult kódhosting-token és a push-átjáró, a műveleti korlátok, a környezet tisztítása és a mód által engedett eszközfelszín.
+Ahol nincs háttérrendszer — Windows esetén mindig, Linuxon vagy WSL2-ben `bwrap` és `socat` nélkül —, csak azok futtatásai indulnak el, amelyekért a szerver tulajdonosa felel, a többiekét visszautasítjuk. Az ott elinduló futtatások, és minden `--sandbox off` melletti futtatás **nincsenek** homokozóba zárva, és amit korlátoz, az a beszélgetés saját munkapéldánya, a csak olvasásra jogosult kódhosting-token és a push-átjáró, a műveleti korlátok, a környezet tisztítása és a mód által engedett eszközfelszín.
 :::
 
 ## Gyakori hibák

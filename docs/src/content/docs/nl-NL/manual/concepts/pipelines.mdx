@@ -2,7 +2,7 @@
 title: Pipelines en automatisering
 description: Waarom pipelines planning en werk scheiden, wat een run daadwerkelijk start en welke van de ingebouwde sjablonen er direct werken.
 slug: nl-NL/handleiding/concepten/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipelines zijn de deterministische helft van Control Center. Een agent beslist wat
@@ -35,8 +35,8 @@ hervatten, omdat hervatten erger zou zijn dan stoppen:
   true` — dat is de poort voor gedeeltelijke goedkeuring
   `orchestration.awaitApproval`. `human.gate` valt niet onder de uitzondering.
 - Een stap die is gedeclareerd als `extras: {'idempotent': false}` en nog liep toen
-  de server stopte, heeft zijn neveneffect misschien al toegepast (een squash-merge,
-  een worktree-opruiming). Opnieuw uitvoeren zou het dubbel kunnen toepassen, dus
+  de server stopte, heeft zijn neveneffect misschien al toegepast (een back-up van de
+  werkruimte, een worktree-opruiming). Opnieuw uitvoeren zou het dubbel kunnen toepassen, dus
   zet de engine de stap op mislukt en laat hij de herkansing aan jou over.
 
 ## Het kind bepaalt de planning, de body doet het werk
@@ -143,8 +143,14 @@ de gebruiker.
 Nog een asymmetrie die je moet kennen: de ingebouwde `pr_review` plaatst bewust
 niet langer berichten op GitHub. Een review publiceren is een aparte stap waarvoor
 de gebruiker goedkeuring moet geven, en een pipeline die rechtstreeks zou plaatsen,
-zou dubbel publiceren. `cross_review`, `ticket_to_pr` en `pr_triage` plaatsen bij
+zou dubbel publiceren. `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` en `external_pr_welcome` plaatsen bij
 het draaien nog wel rechtstreeks een opmerking op GitHub.
+
+Ze plaatsen die vanaf de server, via de stap **Post PR comment** (`prReview.comment`), nooit vanuit een shellscript: de shellstappen van een pipeline en de sandboxes van zijn agents bevatten een GitHub-token dat alleen kan lezen. Dezelfde regel bepaalt de rest:
+
+- `external_pr_welcome` plaatst zijn begroeting als de `message` van die stap.
+- `ticket_to_pr` laat de codeeragent `agent/<ticket_id>` pushen (via de run-gateway) en de concept-PR openen met `open_pull_request`, met de GitHub-aanmelding van de persoon die de run startte, of als de bot wanneer niemand dat deed. Beide raken de regels **Naar een remote pushen** en **Een pull request openen** van de werkruimte. Op Control Center Connect kan een run die niemand heeft aangevraagd, zoals een run die door `TicketAssigned` wordt getriggerd, niet pushen of de PR openen: de bot van de gedeelde App leest en plaatst alleen opmerkingen.
+- `pre_merge_gate` voegt nooit samen. Goedkeuren bij zijn poort plaatst dat de PR klaar is om door een beheerder te worden samengevoegd; afwijzen plaatst dat er wijzigingen worden gevraagd. Een persoon voegt samen vanaf de PR-pagina.
 
 ## Wat de engine weet
 

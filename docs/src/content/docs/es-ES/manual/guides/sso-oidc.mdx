@@ -2,7 +2,7 @@
 title: Conectar un proveedor OpenID Connect
 description: Conecta cualquier emisor OIDC —Pocket ID, Keycloak, Auth0, Zitadel— al inicio de sesión de Control Center.
 slug: es-ES/manual/guias/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -90,6 +90,32 @@ llama directamente a tu servidor, lo que exige un túnel o una URL pública;
 consulta [aprovisionar usuarios con SCIM](/es-ES/manual/guias/sso-scim/).
 :::
 
+## Cómo asocian los inicios de sesión las cuentas existentes
+
+Un inicio de sesión a través del proveedor de identidad busca su cuenta en este orden:
+
+1. **La identidad fijada.** El primer inicio de sesión SSO fija el sujeto del proveedor (emisor más `sub`) a la cuenta. Todo inicio de sesión posterior con ese sujeto es esa cuenta.
+2. **Un correo verificado, en ambos lados.** Si no, el inicio de sesión asocia una cuenta por correo solo cuando el proveedor envía `email_verified: true` y la dirección de la cuenta también está verificada. Una dirección está verificada cuando la establecieron SSO o SCIM, o cuando el propietario del servidor la confirmó. La dirección del propietario también cuenta.
+
+Las direcciones de correo se guardan y se muestran en minúsculas, y la comparación no distingue mayúsculas. Una dirección verificada identifica una cuenta solo cuando exactamente una cuenta la tiene; si dos cuentas tienen la misma dirección verificada, no se asocia con ninguna.
+
+Una dirección que alguien escribió en su propio perfil, o en una invitación, no está verificada y no se asocia con nada. Editar una dirección borra su estado de verificada hasta que alguien la avale de nuevo. Un inicio de sesión nunca se asocia por nombre de usuario.
+
+Si no se asocia nada, el inicio de sesión crea una cuenta nueva si **Aprovisionar usuarios desconocidos en el primer inicio de sesión** está activado, y se rechaza si está desactivado.
+
+### Antes de activar SSO para personas que ya tienen cuenta
+
+Confirma primero sus direcciones. Abre **Ajustes → Servidor → Personas**, donde cada cuenta muestra **Correo no confirmado** hasta que alguien la avale, y usa **Confirmar correo** en la fila de cada persona. Solo el propietario del servidor ve esta lista. Sin ese paso, cada una de esas personas obtiene una segunda cuenta en su primer inicio de sesión SSO, o se le rechaza cuando el aprovisionamiento de usuarios desconocidos está desactivado.
+
+Una persona ve «Solo tú has introducido esta dirección. El inicio de sesión único no la reconocerá hasta que el propietario del servidor la confirme.» bajo el campo de correo de su propio perfil mientras su dirección no esté confirmada.
+
+### Proveedores que no envían `email_verified`
+
+Algunos proveedores omiten esa declaración. Microsoft Entra ID lo hace por defecto. Una declaración ausente no equivale a un sí, así que con ese tipo de proveedor un inicio de sesión solo se asocia por la identidad fijada, y el primer inicio de sesión de una persona nunca encuentra su cuenta existente por correo. Aprovisionar la cuenta con SCIM no ayuda en ese primer inicio de sesión OIDC. Las vías prácticas son:
+
+- dejar **Aprovisionar usuarios desconocidos en el primer inicio de sesión** activado y dejar que el primer inicio de sesión cree la cuenta, o
+- configurar el proveedor para que emita `email_verified` y, después, confirmar las direcciones correspondientes como se ha explicado antes.
+
 ## Comprueba tu configuración desde esta página
 
 El comprobador de abajo se ejecuta en tu navegador. Obtiene directamente el
@@ -102,3 +128,15 @@ muestra si el cliente y su URI de redirección están registrados. Nunca pide el
 secreto de cliente.
 
 <SsoCheck kind="oidc" />
+
+## Solución de problemas
+
+### Alguien tiene una segunda cuenta tras activar SSO
+
+La dirección de su cuenta existente no estaba verificada cuando inició sesión por primera vez con SSO, así que el inicio de sesión no la asoció y creó una cuenta nueva. Eso ocurre cuando la dirección se escribió en su perfil o en una invitación y el propietario del servidor no la había confirmado, o cuando el proveedor no envió `email_verified: true`. Una cuenta nueva cuyo proveedor avaló la dirección se queda con ella, y la cuenta anterior que solo la tenía escrita la pierde.
+
+Para evitarlo con la siguiente persona, confirma las direcciones en **Ajustes → Servidor → Personas** antes de que inicien sesión. En el caso de alguien que ya tiene dos cuentas, la nueva queda fijada a su identidad SSO, así que es la que usarán sus inicios de sesión a partir de ahora.
+
+### «Esta cuenta ya está vinculada a una identidad SSO distinta»
+
+El inicio de sesión asoció la cuenta por su correo verificado, pero esa cuenta ya está fijada a otro sujeto u otro emisor: otro usuario del proveedor, la misma persona bajo un proveedor nuevo, o una cuenta que SCIM creó con su propio identificador. La cuenta fijada rechaza cualquier otra identidad, así que una dirección reutilizada en el proveedor no puede apropiarse de ella. Inicia sesión con la identidad a la que se vinculó la cuenta por primera vez.

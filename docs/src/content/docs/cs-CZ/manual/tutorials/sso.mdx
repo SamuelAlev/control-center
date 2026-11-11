@@ -2,7 +2,7 @@
 title: Přihlaste tým přes SSO
 description: Připoj Okta (SAML) k serveru Control Center a projdi přihlášení od začátku do konce.
 slug: cs-CZ/prirucka/tutorialy/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -84,6 +84,8 @@ O tom, co udělá první přihlášení, rozhodují dvě politiky:
 - **Provisionovat neznámé uživatele při prvním přihlášení** — ve výchozím
   stavu zapnuto; vypni to, když chceš odmítnout každého, jehož účet ještě
   neexistuje.
+
+Pokud už lidé na tomto serveru mají účty, potvrďte jejich e-mailové adresy dřív, než se kdokoli přihlásí přes SSO: otevřete **Nastavení → Server → Lidé** a u každého řádku označeného **E-mail nepotvrzen** použijte **Potvrdit e-mail**. Přihlášení najde existující účet podle e-mailu jen tehdy, když je ta adresa potvrzena (nebo ji nastavilo SSO či SCIM). Adresa, kterou někdo zadal ve svém profilu nebo u pozvánky, neodpovídá žádnému účtu, takže bez tohoto kroku dostane druhý účet, nebo bude odmítnut, když je provisionování neznámých uživatelů vypnuté. Viz [Jak se přihlášení páruje s existujícími účty](/cs-CZ/prirucka/navody/sso-oidc/#jak-se-přihlášení-páruje-s-existujícími-účty).
 
 Volitelně namapuj atribut s názvy skupin (u Okta to bývá
 `groups`) a mapou je převeď na role — třeba

@@ -2,7 +2,7 @@
 title: Triển khai và máy khách
 description: Cách kiến trúc máy khách mỏng của Control Center tách một máy chủ không giao diện khỏi các máy khách máy tính, web và di động.
 slug: vi-VN/so-tay/khai-niem/trien-khai
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center không phải là một chương trình duy nhất. Nó là một **kiến trúc máy
@@ -134,6 +134,8 @@ phiên đã mã hóa sẵn có tới `cc_server`, nơi sở hữu các tệp và
 code-server. Trình duyệt cần HTTPS hoặc một ngữ cảnh loopback bảo mật để dùng
 Service Worker. Máy khách gốc dùng một mặt tiền loopback giới hạn theo năng lực.
 
+Chỉ [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) mới có thể mở trình soạn thảo code-server nhúng: nó chạy trên máy chủ với tư cách người dùng riêng của máy chủ. Một phiên thuộc về thiết bị và người đã mở nó. Nó mở với tính năng tin cậy workspace của VS Code được bật, nên VS Code sẽ hỏi trước khi tin cậy một thư mục, và với các tác vụ tự động tắt. Những người khác vẫn dùng trình soạn thảo một tệp tích hợp sẵn và các chế độ xem tệp.
+
 ### Ứng dụng đồng hành trên điện thoại (cc_remote)
 
 Ứng dụng **Remote** là một máy khách riêng, nhẹ hơn — một PWA Flutter web tại
@@ -205,8 +207,11 @@ thi các công việc được thuê.
 
 Hai tầng không sandbox giống nhau. `cc_server` bọc những lượt chạy mà nó tự thực
 thi trong sandbox của hệ điều hành máy chủ nhà khi có backend — Seatbelt trên
-macOS, bubblewrap trên Linux và WSL2 — và lùi về các ranh giới khác trên Windows
-hoặc khi thiếu `bwrap` và `socat`. **`cc_worker` hoàn toàn không sandbox.** Nó
+macOS, bubblewrap trên Linux và WSL2. Trên Windows, hoặc khi thiếu `bwrap` và
+`socat`, nó chỉ khởi chạy những lượt chạy mà chủ sở hữu máy chủ chịu trách nhiệm và
+từ chối lượt chạy của những người khác, trừ khi chủ sở hữu đã khởi động nó với
+`--sandbox off`, khi đó mọi agent của thành viên đều chạy không bị giới hạn.
+**`cc_worker` hoàn toàn không sandbox.** Nó
 quảng bá một năng lực `sandbox` để máy chủ có thể xếp việc theo nền tảng, nhưng
 không có gì trong worker áp dụng năng lực đó: một công việc được thuê được sinh
 thẳng ra, chỉ bị giới hạn bởi môi trường của hợp đồng thuê và worktree mà nó được
@@ -251,8 +256,7 @@ Máy khách kiểm tra danh tính đã ký của máy chủ dựa trên ghim d�
 Ở lần kết nối đầu tiên, hãy xác minh dấu vân tay đó qua một mã QR tin cậy hoặc một
 kênh tin cậy khác: một lần liên hệ đầu được ký tự nó không thể xác thực ai đã cung
 cấp khóa. Nếu danh tính thay đổi, máy khách hỏng theo hướng đóng; hãy ghép nối lại
-qua một kênh tin cậy thay vì bỏ qua sự không khớp. Máy khách cũ hơn và RPC bản rõ
-không thể kết nối. TLS vẫn cần cho origin của trình duyệt, bước khởi tạo và metadata
+qua một kênh tin cậy thay vì bỏ qua sự không khớp. RPC bản rõ không được chấp nhận. TLS vẫn cần cho origin của trình duyệt, bước khởi tạo và metadata
 công khai; `--insecure` tác động tới trình lắng nghe bên ngoài của máy chủ, không
 tác động tới phiên mã hóa bắt buộc.
 

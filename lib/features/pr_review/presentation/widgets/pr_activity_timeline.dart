@@ -15,7 +15,6 @@ import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_header_section.dart';
-import 'package:control_center/features/pr_review/presentation/utils/diff_file_tree.dart';
 import 'package:control_center/features/pr_review/presentation/utils/pr_activity_entries.dart';
 import 'package:control_center/features/pr_review/presentation/utils/review_status_palette.dart';
 import 'package:control_center/features/pr_review/presentation/utils/server_review_threads.dart';
@@ -65,7 +64,7 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
     super.key,
     required this.pr,
     required this.prRef,
-    this.onOpenFileInDiff,
+    this.onOpenCommentInDiff,
     this.onOpenCommit,
   });
 
@@ -75,10 +74,10 @@ class PrActivityTimeline extends ConsumerStatefulWidget {
   /// The PR number (data lookups).
   final PrRef prRef;
 
-  /// Called with a changed file's tree-order index when a conversation's
-  /// "view in diff" action is pressed, so the detail screen can focus the
-  /// Diff tab and jump to that file.
-  final ValueChanged<int>? onOpenFileInDiff;
+  /// Called with a conversation's root comment id when its "view in diff"
+  /// action is pressed, so the detail screen can focus the Diff tab with that
+  /// conversation open and scrolled to its line.
+  final ValueChanged<int>? onOpenCommentInDiff;
 
   /// Called with a commit SHA when its hash or title is tapped, so the
   /// detail screen can focus the Diff tab on that commit's changes.
@@ -117,6 +116,15 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
       _resolvedOverride[t.id] ?? t.isResolved;
 
   /// Open unless the conversation is resolved — same default as the Diff.
+  /// Whether [t] has no line left in the diff: the forge says so (no anchor
+  /// line), or its file is not among the PR's changed files any more — the
+  /// change was reverted, or the file was dropped from the branch. The forge
+  /// keeps the line number in that second case, so it is not enough on its
+  /// own. [diffPaths] is null until the file index loads; until then the
+  /// forge's word stands.
+  bool _isOutdated(ServerReviewThread t, Set<String>? diffPaths) =>
+      t.isOutdated || (diffPaths != null && !diffPaths.contains(t.path));
+
   bool _isOpen(ServerReviewThread t) => _open[t.id] ?? !_isResolved(t);
 
   /// Measures every row's real height so the Overview thumb does not resize
@@ -191,16 +199,6 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
     }
   }
 
-  /// Focuses the Diff tab on the file a conversation is anchored in.
-  ///
-  /// Falls back to the top of the diff when the file is no longer in it.
-  /// [orderedFiles] is the tree-order file list the Diff tab's jump indices
-  /// are defined over.
-  void _openThreadInDiff(List<PrFile> orderedFiles, ServerReviewThread thread) {
-    final i = orderedFiles.indexWhere((f) => f.filename == thread.path);
-    widget.onOpenFileInDiff?.call(i >= 0 ? i : 0);
-  }
-
   @override
   Widget build(BuildContext context) {
     final pr = widget.pr;
@@ -226,9 +224,9 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
     final codeComments =
         ref.watch(prReviewCommentIndexProvider(prRef)).value ??
         const <PrCodeReviewComment>[];
-    final files =
-        ref.watch(prFileIndexProvider(prRef)).value ?? const <PrFile>[];
-    final orderedFiles = _orderedFilesFor(files);
+    final diffPaths = _diffPathsFor(
+      ref.watch(prFileIndexProvider(prRef)).value,
+    );
     final rows = _rowsFor(
       pr: pr,
       reviews: reviews,
@@ -358,9 +356,10 @@ class _PrActivityTimelineState extends ConsumerState<PrActivityTimeline>
               onToggleCollapsed: () =>
                   setState(() => _open[thread.id] = !_isOpen(thread)),
               onSetResolved: (v) => _setResolved(thread, v),
-              onOpenInDiff: thread.isOutdated
+              outdated: _isOutdated(thread, diffPaths),
+              onOpenInDiff: _isOutdated(thread, diffPaths)
                   ? null
-                  : () => _openThreadInDiff(orderedFiles, thread),
+                  : () => widget.onOpenCommentInDiff?.call(thread.root.id),
             ),
           },
         );
@@ -1171,6 +1170,7 @@ class _TimelineThreadCard extends StatelessWidget {
     required this.focused,
     required this.onToggleCollapsed,
     required this.onSetResolved,
+    required this.outdated,
     required this.onOpenInDiff,
   });
 
@@ -1185,6 +1185,10 @@ class _TimelineThreadCard extends StatelessWidget {
   final bool focused;
   final VoidCallback onToggleCollapsed;
   final ValueChanged<bool> onSetResolved;
+
+  /// Whether the conversation has no line left in the diff (see
+  /// [_PrActivityTimelineState._isOutdated]).
+  final bool outdated;
   final VoidCallback? onOpenInDiff;
 
   @override
@@ -1208,7 +1212,11 @@ class _TimelineThreadCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _ThreadFileHeader(thread: thread, onOpenInDiff: onOpenInDiff),
+          _ThreadFileHeader(
+            thread: thread,
+            outdated: outdated,
+            onOpenInDiff: onOpenInDiff,
+          ),
           // The forge's own hunk, not the live diff: for an outdated
           // conversation this is the only surviving picture of the code it was
           // about, and for a current one it saves a trip to the Diff tab.
@@ -1238,9 +1246,14 @@ class _TimelineThreadCard extends StatelessWidget {
 /// The file a conversation was left on, with its line range, an outdated badge
 /// when the line is gone, and a jump to the Diff tab when it is not.
 class _ThreadFileHeader extends StatelessWidget {
-  const _ThreadFileHeader({required this.thread, required this.onOpenInDiff});
+  const _ThreadFileHeader({
+    required this.thread,
+    required this.outdated,
+    required this.onOpenInDiff,
+  });
 
   final ServerReviewThread thread;
+  final bool outdated;
   final VoidCallback? onOpenInDiff;
 
   @override
@@ -1281,7 +1294,7 @@ class _ThreadFileHeader extends StatelessWidget {
               style: CcTypography.caption.copyWith(color: t.textTertiary),
             ),
           ],
-          if (thread.isOutdated) ...[
+          if (outdated) ...[
             const SizedBox(width: 8),
             CcBadge(
               label: l10n.outdated,

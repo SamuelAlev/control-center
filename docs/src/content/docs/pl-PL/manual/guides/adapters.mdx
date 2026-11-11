@@ -2,7 +2,7 @@
 title: Zarządzaj adapterami i modelami
 description: Połącz dostawców modeli, wybierz model, na którym działa agent, i sprawdź, jakie CLI runnerów agenta ma host serwera.
 slug: pl-PL/podrecznik/poradniki/adaptery
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Ten poradnik pokazuje, jak połączyć dostawców modeli i wybrać, na czym działa agent.
@@ -80,6 +80,8 @@ Ukończenie kroku adaptera w onboardingu uzupełnia **każdego** agenta, którem
 
 Agent **Content synthesizer** pisze tekst, który Control Center generuje wokół rozmowy: tytuł, odpowiedzi `/btw`, dokumenty `/handoff` i wywiad o celu `/goal`. Za każdym razem wykonuje jedno dopełnienie bez narzędzi, na własnym adapterze i modelu, więc przydziel mu mały, szybki model.
 
+Gdy ten adapter jest adapterem CLI ACP, dopełnienie jest procesem na maszynie serwera i podlega [regule piaskownicy](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/#agenty-na-hoście-bez-sandboxa): działa w piaskownicy, gdy serwer uruchamia agentów w piaskownicy, a bez piaskownicy tylko dla żądań, za które odpowiada właściciel serwera. Dla wszystkich innych te funkcje są pomijane: tytuł nie jest generowany, a `/btw` odpowiada „Brak agenta Content synthesizer albo nie ma on działającego runnera”.
+
 Edytuj jego **personę** w **Ustawienia → Obszar roboczy → Agenci**, aby zmienić sposób, w jaki brzmi ten tekst: długość tytułu, język, ton, przykłady, których się trzyma. Format odpowiedzi, który każda funkcja analizuje (jednowierszowy tytuł, sekcje celu), jest stały i stosowany po Twojej personie. Usuń agenta, aby wyłączyć te funkcje; nie zostanie on przywrócony automatycznie.
 
 ## Zainstaluj CLI runnera
@@ -92,7 +94,7 @@ npm install -g @anthropic-ai/claude-code
 
 Następnie naciśnij **Odśwież** u góry strony. Każdy wykryty wiersz pokazuje ustaloną wersję i ścieżkę oraz plakietki informujące, czy obsługuje tryb JSON i wybór modelu.
 
-Zewnętrzne CLI przechowuje własne poświadczenia, we własnej konfiguracji, na hoście serwera. Control Center nimi nie zarządza.
+Logowania Claude Code są wymienione w **Konta Claude Code** na runnerze Claude Code. Control Center tworzy katalog konfiguracji każdego konta na serwerze i podaje polecenie `claude auth login` do uruchomienia tam; nigdy nie loguje się za Ciebie.
 
 :::caution[Dodatkowe argumenty adaptera i zmienne środowiskowe zostają na tym urządzeniu]
 Każdy wiersz adaptera oferuje pole **Dodatkowe argumenty** i okno **Zmienne środowiskowe**. Te wartości są przechowywane na Twoim urządzeniu. Serwer odczytuje argv i zmienne środowiskowe uruchomienia z własnego magazynu ustawień. Klucze dostawców umieść na serwerze (OAuth albo pole klucza na stronie Dostawcy modeli), a nie w tych dwóch polach.

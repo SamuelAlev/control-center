@@ -121,6 +121,46 @@ void main() {
       expect(await repo.loginCommand('work'), isNull);
     });
   });
+
+  group('signInStates', () {
+    test('maps each account by id and names none itself', () async {
+      host.callResults['claude_accounts.signInStates'] = {
+        'accounts': [
+          {
+            'id': 'work',
+            'signed_in': true,
+            'credential_expires_at': '2026-11-11T05:17:04.000Z',
+          },
+          {'id': 'personal', 'signed_in': false},
+        ],
+      };
+
+      final states = await repo.signInStates();
+
+      expect(states.keys, ['work', 'personal']);
+      expect(states['work']!.signedIn, isTrue);
+      expect(
+        states['work']!.credentialExpiresAt,
+        DateTime.utc(2026, 11, 11, 5, 17, 4),
+      );
+      expect(states['personal']!.signedIn, isFalse);
+      expect(states['personal']!.credentialExpiresAt, isNull);
+      // The server reads its own registry; the client sends no account ids.
+      expect(host.lastCall('claude_accounts.signInStates')!.args, isEmpty);
+    });
+
+    test('degrades to empty on a missing or malformed payload', () async {
+      host.callResults['claude_accounts.signInStates'] = const {};
+      expect(await repo.signInStates(), isEmpty);
+      host.callResults['claude_accounts.signInStates'] = {
+        'accounts': [
+          'nope',
+          {'signed_in': true},
+        ],
+      };
+      expect(await repo.signInStates(), isEmpty);
+    });
+  });
 }
 
 /// Records a `repo/call` invocation.

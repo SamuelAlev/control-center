@@ -3,7 +3,7 @@ title: Architectuur
 description: Hoe Control Center is opgebouwd met een thin-client-servermodel, feature-first Clean Architecture en poorten en adapters.
 dateModified: 2026-09-19
 slug: nl-NL/handleiding/concepten/architectuur
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Overzicht
@@ -60,7 +60,7 @@ De feature **`guardrails`** legt zijn domeinlaag in `cc_domain/features/guardrai
 - Geheugenentiteiten: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Gedeelde value objects: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Gedeelde poorten: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domeinservices: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Domeinservices: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + gebeurtenistypen (werkruimte/agent, PR/review, berichten, ticketing, pipeline, orkestratie, geheugen, agenda/vergaderingen, identiteit en lidmaatschap, observability)
 
 ## Identiteit en multiplayer
@@ -132,7 +132,6 @@ De server bezit de referenties die ertoe doen: GitHub- en ticketingtokens voor h
 
 - Secrets in `flutter_secure_storage` (macOS-keychain, Windows Credential Manager, Linux libsecret) — de apparaatreferentie van de client en koppelingssleutels voor een externe server, geen providertokens
 - `shared_preferences` alleen voor niet-gevoelige voorkeuren (thema, lettertype, layout)
-- Overgebleven providersecrets uit oudere installaties worden één keer aan de server overhandigd door `features/auth/providers/credential_migration.dart` en daarna uit de keychain van de client verwijderd
 
 ## Architectuurhandhaving
 

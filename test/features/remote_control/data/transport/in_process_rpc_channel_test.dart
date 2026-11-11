@@ -57,7 +57,18 @@ void main() {
         final responses = <Map<String, dynamic>>[];
         final sub = client.incoming.listen(responses.add);
 
-        await client.send(JsonRpcRequest(method: 'initialize', id: 1).toJson());
+        await client.send(
+          JsonRpcRequest(
+            method: 'initialize',
+            id: 1,
+            params: {
+              'protocol': {
+                'min': RepoRpcProtocol.min,
+                'max': RepoRpcProtocol.max,
+              },
+            },
+          ).toJson(),
+        );
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
         expect(responses, hasLength(1));
@@ -95,7 +106,18 @@ void main() {
 
         final responses = <Map<String, dynamic>>[];
         final sub = client.incoming.listen(responses.add);
-        await client.send(JsonRpcRequest(method: 'initialize', id: 1).toJson());
+        await client.send(
+          JsonRpcRequest(
+            method: 'initialize',
+            id: 1,
+            params: {
+              'protocol': {
+                'min': RepoRpcProtocol.min,
+                'max': RepoRpcProtocol.max,
+              },
+            },
+          ).toJson(),
+        );
         await Future<void>.delayed(const Duration(milliseconds: 20));
 
         final caps = (responses.single['result'] as Map)['capabilities'] as Map;

@@ -157,7 +157,8 @@ void main() {
     test('the deny list wins over the allow list', () async {
       final response = await harness.call(b, 'GET', '/v1/config');
       expect(response.json, {'error': 'install_blocked'});
-      final log = harness.logs.firstWhere((l) => l.contains('install.blocked'));
+      final log = harness.logs.firstWhere((l) => l.contains('auth.refused'));
+      expect(log, contains('"reason":"blocked"'));
       expect(log, isNot(contains(b.installId)));
     });
 

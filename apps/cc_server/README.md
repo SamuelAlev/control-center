@@ -16,7 +16,9 @@ Use `scripts/build_server.sh` rather than raw `dart build cli` or `dart compile`
 
 CMake must be on `PATH` for the Web Crypto native build hook. Apply repository patches after every pub get. The CLI bundle includes `libwebcrypto` for VAPID signing and Web Push encryption, not a second inference runtime.
 
-The server refuses to boot without required natives; rift is exempt only on Windows, which uses `git worktree`. See [cc_natives](../../packages/cc_natives/README.md) for staging, overrides and compile-only exceptions. On-device embedding, diarization and selected speech models download into `<data-dir>/models` at boot; speech recording operations require a restart after download. Code-server is also downloaded at runtime.
+The server refuses to boot without required natives; on Windows, `rift` (Windows uses `git worktree`) and, for now, `cc_window` are exempt (`scripts/lib/natives.sh`). See [cc_natives](../../packages/cc_natives/README.md) for staging, overrides and compile-only exceptions. On-device embedding, diarization and selected speech models download into `<data-dir>/models` at boot; speech recording operations require a restart after download. Code-server is also downloaded at runtime.
+
+`cc_server agent-run <verb>` is internal: the client an agent run's shims and Claude Code's permission hook start inside the run's sandbox to reach the server's loopback [agent run gateway](../../SECURITY.md#agent-run-gateway). It takes the run's token from its environment and holds no other secret, and it is why nothing in a run depends on `curl`.
 
 CLI flags override environment variables, which override defaults:
 

@@ -2,7 +2,7 @@
 title: Záloha, export a import
 description: Rozložení snímku, manifest, každá operace zálohy a trasa přenosu a přesně které soubory záloha obsahuje a které ne.
 slug: cs-CZ/prirucka/referencni-prirucka/zaloha
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Všechno, co Control Center umí zkopírovat, předat nebo převzít, a přesný tvar každého
@@ -109,6 +109,7 @@ databázi a nic z toho zbytku se nepřenáší:
 | `models/`                           | Ne         | Ne                             |
 | `meetings/<meetingId>/`             | Ne         | Ne                             |
 | `rigs/`                             | Ne         | Ne                             |
+| `_agent_hooks/`                     | Ne         | Ne                             |
 
 Část z toho se dá zahodit. `spaces/` drží copy-on-write worktree a ty se
 znovu připraví z repozitářů, `pr_clones/` je mezipaměť, `models/` se stáhne znovu a `rigs/`
@@ -116,6 +117,15 @@ je stav stroje. Část ne: `blobs/` drží vložené obrázky, na které ukazuj�
 databázi, `skills/` a `agents/` drží soubory, se kterými agent běží, a
 `secrets.json` drží každý klíč párování, přihlašovací údaje poskytovatele a nastavení SSO na
 instalaci. Zbytek pokrývá [Záloha a obnovení](/cs-CZ/prirucka/navody/zaloha-a-obnoveni/#kopíruj-zálohy-mimo-stroj).
+:::caution[Databáze pracovního prostoru drží tajemství webhooků]
+`workspace.db` je celý pracovní prostor: konverzace, záznamy běhů, index kódu,
+propojení repozitářů, definice prostředí a členové. Drží také tokeny webhooků
+pipeline a tajemství webhooků synchronizace ticketů v čitelné podobě, takže
+staženého exportu nebo zálohy zacházejte jako s tajemstvím. Nedrží žádné
+přihlášení poskytovatele, klíč zařízení ani uživatelské tajemství; ty jsou v
+`global.db` a `secrets.json`.
+:::
+
 :::note[Tokeny chatu schválně zůstávají stranou]
 `chat_credentials/` leží vedle databáze, ne v ní, a proto pracovní prostor
 předaný někomu jinému nenese živé tokeny bota. Viz
@@ -138,7 +148,7 @@ demo server, chybí úplně. Neodmítají se, ve struktuře nejsou.
 | `workspace.listBackups` | čtení | Pracovní prostor | `admin` | žádné | `{backups: [...]}` |
 | `workspace.deleteBackup` | zápis | Pracovní prostor | `owner` | `name` | `{ok}` |
 | `workspace.export`    | čtení  | Pracovní prostor | `admin`          | žádné         | `{ok, path}`                       |
-| `workspace.import`    | zápis  | Pracovní prostor | `owner`          | `source_path` | `{ok, workspace_id}`               |
+| `workspace.import`    | zápis  | Pracovní prostor | `owner` a vlastník serveru | `source_path` | `{ok, workspace_id}`               |
 | `workspace.delete`    | zápis  | Instalace*  | `owner`               | `id`          | řádek registru označený jako smazaný |
 
 * `workspace.delete` je bez rozsahu, protože řádek, který označuje, žije v globálním
@@ -161,7 +171,11 @@ operace přijímají jen vypsané jméno adresáře s časovým razítkem, ne ce
 admin jednoho pracovního prostoru nestačí na správu ostatních. Smazání
 přijme jen uvedené jméno adresáře s časovým razítkem, ne libovolnou cestu na
 serveru, a odstraní celý snímek, včetně neúplných.
-Export a import jednoho pracovního prostoru zůstávají na adminovi a vlastníkovi pracovního prostoru, ne na vlastníkovi instalace.
+Export jednoho pracovního prostoru a stahování plánovaných záloh zůstávají na adminovi pracovního prostoru.
+:::
+
+:::note[Obnovení patří vlastníkovi serveru]
+`workspace.import` a `POST /backup/restore` přinutí server převzít databázový soubor, jehož řádky pak bere jako své: propojení repozitářů a to, kdo je vytvořil, definice prostředí, které běží na hostiteli, cesty worktree a logů. Proto obojí vyžaduje vlastníka serveru (`ServerAuthority.serverOwner`), který musí být zároveň vlastníkem pracovního prostoru. Kdokoli jiný a každý volající na hostiteli bez zaznamenaného vlastníka je odmítnut s `server_owner_required`. Žádný spouštěč ani pohled, který soubor přinese, se nepřevezme.
 :::
 
 ### Odpověď `server.listBackups`
@@ -235,7 +249,7 @@ PSK a roli níže.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** pracovního prostoru    |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **vlastník** instalace           |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** pracovního prostoru; po smazání pracovního prostoru **vlastník** instalace |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **vlastník** pracovního prostoru |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **vlastník** instalace, který je zároveň **vlastníkem** pracovního prostoru (jinak `403` s `server_owner_required`) |
 
 `w` je id pracovního prostoru, `n` jméno adresáře snímku nebo plánované zálohy, `d` id volajícího zařízení a `s`
 podpis. U `/backup/snapshot` se `n` vyřeší proti výpisu záloh, ne spojením cesty ke kořeni záloh,

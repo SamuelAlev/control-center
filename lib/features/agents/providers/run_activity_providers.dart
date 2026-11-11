@@ -136,8 +136,8 @@ final runToolCountProvider = Provider.autoDispose.family<int, RunKey>((
   return segments?.whereType<ToolSegment>().length ?? 0;
 });
 
-/// The run that a parent's `task` tool call spawned, or null when the parent's
-/// transcript predates spawn correlation (or the child row is gone).
+/// The run that a parent's `task` tool call spawned, or null when no child
+/// run records that call (or the child row is gone).
 ///
 /// Lets the `task` cell rendered in a parent's timeline open the child's own
 /// activity. Matched on the recorded [AgentRunLog.spawnToolCallId] rather than by

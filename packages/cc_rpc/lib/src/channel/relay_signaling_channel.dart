@@ -175,31 +175,6 @@ class RelaySignalingChannel {
     });
   }
 
-  /// Requests short-lived TURN credentials from the broker.
-  ///
-  /// ARCHITECTURE NOTE — this is a broker WebSocket relay, not a WebRTC+TURN data channel.
-  /// The broker routes opaque records; the authenticated Noise session between peers
-  /// encrypts application frames and flow-control records before relay delivery.
-  Future<RelayTurnCredentials?> requestTurnCredentials({
-    Duration timeout = const Duration(seconds: 10),
-  }) async {
-    final reply = _incoming.stream
-        .firstWhere((f) => f['type'] == 'turn-credentials')
-        .timeout(timeout);
-    send({'type': 'turn-request', 'room': room});
-    final frame = await reply;
-    final uris = (frame['uris'] as List?)?.cast<String>() ?? const [];
-    if (uris.isEmpty) {
-      return null;
-    }
-    return RelayTurnCredentials(
-      uris: uris,
-      username: frame['username'] as String? ?? '',
-      credential: frame['credential'] as String? ?? '',
-      ttl: Duration(seconds: (frame['ttlSeconds'] as num?)?.toInt() ?? 0),
-    );
-  }
-
   /// Sends a `bye` (best-effort), then closes the socket.
   Future<void> close() async {
     if (_closed) {
@@ -267,30 +242,6 @@ class RelayJoinAck {
 
   /// How many other peers were already in the room.
   final int peers;
-}
-
-/// Short-lived TURN credentials minted by the signaling tier (coturn
-/// `static-auth-secret` scheme). Never persisted.
-class RelayTurnCredentials {
-  /// Creates a [RelayTurnCredentials].
-  const RelayTurnCredentials({
-    required this.uris,
-    required this.username,
-    required this.credential,
-    required this.ttl,
-  });
-
-  /// TURN server URIs.
-  final List<String> uris;
-
-  /// Ephemeral username (`<expiry>:<label>`).
-  final String username;
-
-  /// Ephemeral credential (base64 HMAC-SHA1 of the username).
-  final String credential;
-
-  /// Credential lifetime.
-  final Duration ttl;
 }
 
 /// Thrown when the signaling broker refuses a join or is unreachable.

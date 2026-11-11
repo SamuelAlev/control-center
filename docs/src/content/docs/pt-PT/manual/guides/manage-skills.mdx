@@ -2,7 +2,7 @@
 title: Instalar e gerir skills
 description: Instale e atualize skills do espaço de trabalho através do portão de análise e compare depois revisões guardadas com avaliações de skills dentro de um orçamento.
 slug: pt-PT/manual/guias/gerir-skills
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Este guia mostra-lhe como encher um espaço de trabalho com skills do GitHub:
@@ -104,7 +104,7 @@ de reversão no ficheiro de lock.
    ao propósito da skill e um **Adaptador**. O harness integrado usa um
    fornecedor configurado e um modelo capaz de usar ferramentas. O **Claude Code**
    usa a conta Claude gerida predefinida e um identificador de modelo concreto;
-   inicie sessão primeiro em **Definições → Adaptadores**. Não toma de empréstimo
+   inicie sessão primeiro em **Definições → Servidor → Fornecedores de modelos → Contas do Claude Code**. Não toma de empréstimo
    o início de sessão pessoal do operador do servidor.
 3. Escolha uma **Comparação** na tabela abaixo.
 4. Defina **Repetições por tarefa** (1–20) e **Orçamento (centavos de US$)**. Por
@@ -200,8 +200,7 @@ colidem com os comandos slash integrados (`/plan`, `/goal`, `/loop`,
 - `/skill:<repo>:<name>` — uma skill fornecida por um repo com checkout neste
   espaço
 
-Um nome simples que não seja integrado continua a ser resolvido, para mensagens
-escritas antes de o espaço de nomes existir. `/skill:plan` é o que alcança uma
+`/skill:plan` é o que alcança uma
 skill chamada `plan`; `/plan` é sempre o integrado.
 
 ## Skills com âmbito de repo

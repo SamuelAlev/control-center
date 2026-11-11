@@ -2,7 +2,7 @@
 title: Yetkilendirme — kimin neyi yapabileceği ve bunu nasıl kanıtladığınız
 description: Control Center rollerinin arkasındaki izin kataloğu, her yetkilendirme kararının düştüğü kurcalamayı açığa çıkaran denetim kaydı ve bir operatörün sabitleyebileceği kurulum geneli kontroller.
 slug: tr-TR/kilavuz/kavramlar/yetkilendirme
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center iki yetkilendirme sorusunu yanıtlar ve bu ikisi gerçekten
@@ -60,17 +60,105 @@ bunları `custom:<id>` olarak taşır ve bu değeri anlayamayacak kadar eski bir
 istemci, tahmin yürütmek yerine misafire geri düşer.
 
 Rollerin altında **depo başına izinler** (`none` / `read` / `review` /
-`write`) yer alır: çalışma alanı üyeliği, kod barındırıcısının verdiğinden
+`write`, bkz. [Kodu değiştirmek yazma izni gerektirir](#kodu-değiştirmek-yazma-izni-gerektirir)) yer alır: çalışma alanı üyeliği, kod barındırıcısının verdiğinden
 fazla ayrıcalığı asla sessizce sağlamaz. Kodu açığa çıkaran her yüzey bunları
 denetler — koda dolaylı yollardan erişenler de dahil: bir alanın çalışma
 ağacı üzerinde açılan terminal ya da düzenleyici oturumu gibi.
 
-## Sunucu yetkisi
+## Kod, kod barındırıcısını izler
 
-Bazı işlemler hiçbir şekilde bir çalışma alanıyla ilgili değildir: kurulum
-geneli ayarlar, SSO yapılandırması, sağlayıcı kimlik bilgileri, model yönetimi,
-kurulumun tamamının yedekleri. Bunlar **sunucu yetkisi** bildirir ve
-kurulumun operatörü (kayıtlı sunucu sahibi) dışındaki herkes için reddedilir.
+Tek başına bir depo izni, bir deponun kodunu açmaz. Dosyalarını, diff'lerini ya da
+arama sonuçlarını görmek veya üzerinde bir terminal açmak için bir üyenin Control
+Center iznine **ve** kendi kod barındırıcı oturum açmasının o depoyu okuyabilmesi
+gerekir. Çalışma alanı yöneticileri muaf değildir; sunucu sahibi muaftır, çünkü
+çalışma kopyası onun makinesindedir. Kod barındırıcı bağlantısı olmayan bir depo
+yalnızca izne ihtiyaç duyar.
+
+- Bir yönetici, kod barındırıcı hesabı depoyu okuyamayan birine bir depo izni
+  verdiğinde, izin kaydedilir ve yönetici bir uyarı görür.
+- Kod barındırıcıya denetim için ulaşılamadığında cevap hayırdır, asla tahmin
+  değildir: kişi, kod barındırıcısının adıyla birlikte "GitHub erişiminiz doğrulanamadı.
+  Yeniden deneyin." mesajını görür ve daha sonra tekrar dener.
+- Pull request’ler ve onlardan yapılan her şey aynı kuralı izler.
+
+### Kodu değiştirmek yazma izni gerektirir
+
+Bir depo izni üç düzeydedir ve her biri bir öncekini içerir:
+
+- **read**: deponun dosyalarını, diff’lerini ve arama sonuçlarını görmek; kendi kod barındırıcı
+  oturum açmanızın da onu okuyabilmesi koşuluyla.
+- **review**: read, artı pull request’lerinde onaylama, değişiklik isteme ve diğer inceleme eylemleri.
+- **write**: review, artı kodu değiştirmek ve depoya yazan ajan çalıştırmalarını yönetmek. Kodu
+  değiştirmek; düzenleyicide dosyaları kaydetmeyi ya da geri almayı, bir worktree’yi pull request’in
+  head’ine eşitlemeyi, commit atmayı ve push etmeyi, bir dalı yayımlamayı ve bir parçayı kesen,
+  kontrol eden ya da yayımlayan yığın eylemlerini kapsar.
+
+Bir kişi adına yapılan her push (kişinin kendisi ya da onun istediği bir ajan çalıştırması tarafından) o anda, GitHub, GitLab ve Bitbucket'ta aynı biçimde, o depodaki yazma iznini denetler. Bir yığını yayımlamak, bunlardan herhangi birini push etmeden önce yığındaki her depoyu denetler.
+
+Bir red, eksik izni adlandırır. Okuma erişimi olmadan uygulama şunu söyler: "Bu depoyu okuma
+erişiminiz yok. Bir çalışma alanı yöneticisi erişim verebilir." Okuma erişimi var ama yazma
+erişimi yoksa şunu söyler: "Bu depoyu okuyabilirsiniz ama değiştiremezsiniz. Bir çalışma alanı
+yöneticisi yazma erişimi verebilir."
+
+### Alanlar depolarını izler
+
+Ajanların koda dair yazdıkları, kodu izler. Bir alanın içeriği (mesajları,
+transkriptleri ve araç çıktıları, arama sonuçları, çalıştırma günlükleri, yapılacaklar,
+etkinlik ve bildirimleri), üzerinde çalıştığı depoların kodunu taşır; bu yüzden bir
+alan, yalnızca kullandığı her depoda okuma izni olan ve kendi kod barındırıcı oturum
+açması bu depoları okuyabilen bir üye için açılır. Bunlar alan için seçilmiş
+depolardır ya da alanda bir seçim kaydedilmemişse çalışma alanının tüm depolarıdır.
+Hiç depo olmadan oluşturulan bir alan her üyeye açıktır.
+
+Açamadıkları bir alan, onlar için hiçbir yerde listelenmez; arama, çalıştırma
+günlükleri, yapılacaklar, etkinlik ve bildirimler dahil. Çalışma alanı yöneticileri
+her izne sahiptir ama kod barındırıcı yarısından muaf değildir; sunucu sahibi ise
+muaftır.
+
+Herkesin okuyabilmesi gereken bir konuşma için alanı depo olmadan ya da yalnızca
+herkesin okuyabildiği depolarla oluşturun.
+
+## Sunucu sahibi
+
+Sunucuyu kuran kişi sunucunun **sahibidir**. Sunucu bunu ilk başlatmada bir kez
+kaydeder ve ağ üzerinden gönderilen hiçbir şey bunu değiştirmez. Bir çalışma alanı
+yöneticisi ya da bir çalışma alanı sahibi sunucu sahibi değildir: herkese bir çalışma
+alanı verilebilir, ama sunucunun makinesinin tek bir sahibi vardır.
+
+**Sunucunun kendi makinesinde, sunucu sahibi başlatmadıkça ya da bu tür bir ana makine
+çalıştırmasını onaylamadıkça, hiçbir şey sandbox dışında çalışmaz.** Somut olarak
+yalnızca sunucu sahibi şunları yapabilir:
+
+- Çalışma alanı oluşturmak. Diğerleri, sahibin bir tane oluşturmasını ya da bir
+  çalışma alanı yöneticisinin onları davet etmesini isteyen bir ekran görür.
+- Sunucuda barındırılan terminalde ana makine kabuğunu açmak. Diğerleri, çalışma
+  alanının kendi dizinlerinde, bir ajanın sınırlarıyla, sandbox'lı bir terminal alır.
+- Gömülü kod düzenleyicisini açmak. Sunucunun kendi kullanıcısı olarak çalışır; terminali,
+  görevleri ve eklentileriyle birlikte.
+- Bir pull request'i ya da bir konuşmanın worktree'sini yerel bir düzenleyicide açmak.
+  Düzenleyici, sunucunun kendi ekranında, sunucunun kullanıcısı olarak başlar.
+- Ana makinede herhangi bir şey çalıştıran bir [ortam](/tr-TR/kilavuz/nasil-yapilir/ortamlar/)
+  tanımını kaydetmek ya da onaylamak: ana makinede yerleştirme, bir komut çalıştıran bir
+  denetim ya da bir sağlama ya da arşivleme görevi.
+- Sandbox'ı olmayan bir makinede çalışan bir sunucuda ajan çalıştırmak. Diğerlerinin
+  çalıştırmaları orada reddedilir; sahip sunucuyu `--sandbox off` ile başlatmadıkça,
+  bu da her üyenin ajanlarını sınırsız çalıştırır (bkz.
+  [Sandbox olmayan bir ana makinede ajanlar](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/#sandbox-olmayan-bir-ana-makinedeki-ajanlar)).
+- Çalışma alanının kendi depolama alanının dışındaki bir depo çalışma kopyasını
+  bağlamak, bu kuraldan önce bağlanmış birini onaylamak ve bir depo eklerken sunucunun
+  klasörlerine göz atmak (bkz. [Depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/)).
+- Sunucudaki her çalışan ajan sürecini görmek ve durdurmak. Diğerleri yalnızca
+  üyesi oldukları çalışma alanlarındaki canlı ajan çalıştırmalarını görür ve durdurur.
+- Ajanların sunucu kullanıcısının kendi araçlarında yapılandırılmış MCP sunucularını
+  kullanmasını sağlamak (Claude, Codex, Cursor ve diğerleri). Yalnızca sahibin sorumlu
+  olduğu yerleşik harness çalıştırmaları bunları alır; bkz.
+  [Kişisel MCP sunucuları sahibinde kalır](/tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu/#kişisel-mcp-sunucuları-sahibinde-kalır).
+- Bir kişinin e-posta adresini onaylamak, böylece tek oturum açma onu eşleştirebilsin
+  (bkz. [Bir OpenID Connect sağlayıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/sso-oidc/#oturum-açmaların-mevcut-hesaplarla-nasıl-eşleştiği)).
+- Kurulum genelindeki ayarları değiştirmek: SSO, sağlayıcı kimlik bilgileri, MCP
+  uç noktası ve belirteci, model yönetimi, Connect ve kurulumun tamamının yedekleri.
+  Bu işlemler **sunucu yetkisi** bildirir ve diğerleri için reddedilir.
+
 Kasıtlı olarak tek bir operatör kimliği ve onun tek bir tanımı vardır.
 
 ## Denetim kaydı

@@ -1,4 +1,4 @@
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 
 String slugify(String name) {
   return name

@@ -2,7 +2,7 @@
 title: Vytvořte šablonu pipeline
 description: Napiš v editoru pipeline šablonu postupu jako DAG. Přidej uzly, propoj je, deklaruj vstupy a udělej ji spustitelnou.
 slug: cs-CZ/prirucka/navody/vytvoreni-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Šablony pipeline se píšou v nastavení pracovního prostoru. Položka **Pipelines**
@@ -38,7 +38,7 @@ a nemá žádnou příchozí hranu.
 | **Bash script**                 | listen     | Spustí shell skript s dosazením `{{state}}`; žádný agent se neodesílá                    |
 | **Open conversation**           | listen     | Otevře jediný viditelný prostor běhu a jeho checkout; uzly agentů vstoupí do téhle místnosti |
 | **Clone PR branch**             | listen     | Zjistí větev hlavy PR přes `gh pr view` a naklonuje ji do adresáře běhu                  |
-| **Post PR comment**             | listen     | Pošle sloučená zjištění do PR jako komentář revize na GitHubu                            |
+| **Post PR comment**             | listen     | Pošle ze serveru komentář revize do PR: zjištění, nebo jeho `message`                    |
 | **Reviewer (prompt)**           | listen     | Odešle specializovaného review agenta; pozastaví se, dokud agent neodešle výsledek      |
 | **Consolidate (join)**          | join       | Počká na několik předchozích větví a pak požádá agenta, aby jejich výstupy sloučil      |
 | **Custom prompt**               | listen     | Obecný uzel řízený promptem, vedený tělem `promptAgent`                                  |
@@ -133,6 +133,12 @@ protože ani jedno nejde nastavit:
   `GITHUB_TOKEN` obsahují token, který smí číst jen tento jeden repozitář, takže
   `gh` a `git clone` proti němu fungují bez dalšího nastavení. Jinak žádný token
   GitHubu není.
+- Skript nemůže psát na GitHub: `gh pr comment`, `gh pr merge`, `gh pr create` a
+  `git push` na tomto tokenu selžou. Komentuj místo toho uzlem **Post PR comment**
+  (nastav `extras.message`, pokud chceš poslat vlastní text s zástupnými `{{key}}`,
+  místo sloučených zjištění). Push a pull requesty dělej z uzlu agenta: jeho
+  `git push` jde přes bránu běhů a PR otevře nástrojem `open_pull_request`.
+  Sloučí člověk; žádný uzel nesloučí.
 - Pipeline s bash krokem smí vytvořit nebo upravit jen admin pracovního prostoru.
 - Skript se spouští jako doslovný spustitelný soubor `bash`, takže `bash` musí
   být na `PATH` hostitele serveru.

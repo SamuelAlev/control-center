@@ -2,7 +2,7 @@
 title: 工单生命周期
 description: 工单字段、状态、转换、关系，以及变更收口点。
 slug: zh-CN/手册/参考/工单生命周期
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## 工单状态
@@ -112,7 +112,7 @@ Any non-terminal status ──→ cancelled; inReview ──→ failed
 | `projectId`              | `String?`                  | 所属项目；绝不会推送到远程                                                                 |
 | `assignedAgentId`        | `String?`                  | 被分配主体的 id（仅元数据——分配不会派发任何东西）                                          |
 | `assigneeType`           | `PrincipalType`            | `assignedAgentId` 所指主体的种类——`user` 或 `agent`（默认 `agent`）                        |
-| `createdByType`          | `PrincipalType?`           | 创建该工单的主体种类（`user` 或 `agent`）；对遗留／系统行为 null                           |
+| `createdByType`          | `PrincipalType?`           | 创建该工单的主体种类（`user` 或 `agent`）；对系统创建的行为 null                           |
 | `createdById`            | `String?`                  | 创建该工单的主体 id                                                                        |
 | `assignedTeamId`         | `String?`                  | 被分配的团队（仅元数据）                                                                   |
 | `delegatedByAgentId`     | `String?`                  | 委派该工单的智能体                                                                         |

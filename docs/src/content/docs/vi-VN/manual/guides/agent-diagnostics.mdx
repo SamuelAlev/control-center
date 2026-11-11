@@ -2,7 +2,7 @@
 title: Chẩn đoán một agent
 description: Lần theo nhật ký chạy, thăm dò adapter, trạng thái máy chủ và chẩn đoán máy đang chạy khi một agent không còn tạo ra lần chạy nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chan-doan-agent
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Hướng dẫn này chỉ cách tìm ra vì sao một agent không tạo ra lần chạy nào.
@@ -13,13 +13,13 @@ Hãy làm từ trên xuống: các lần chạy của chính agent trước, r�
 
 **Cài đặt → Không gian làm việc → Agent** → chọn agent → **Nhật ký**.
 
-Mỗi lần chạy hiển thị nhãn trạng thái, thời lượng ("Running…" khi đang thực hiện), thời điểm bắt đầu và hoàn tất, PID và adapter đã dùng. **Xem** mở luồng sự kiện thô của lần chạy đó. **Dừng** buộc kết thúc một tiến trình đang chạy và đánh dấu lần chạy là "Killed by user"; **Hủy đang chạy** ở phần đầu trang làm điều tương tự với mọi lần chạy đang thực hiện của agent đó.
+Mỗi lần chạy hiển thị nhãn trạng thái, thời lượng ("Running…" khi đang thực hiện), thời điểm bắt đầu và hoàn tất, PID và adapter đã dùng. **Xem** mở luồng sự kiện thô của lần chạy đó. **Dừng** buộc kết thúc một tiến trình đang chạy và đánh dấu lần chạy là "Killed by user"; **Hủy đang chạy** ở phần đầu trang làm điều tương tự với mọi lần chạy đang thực hiện của agent đó trong không gian làm việc này. Bạn chỉ thấy và dừng được các lần chạy agent đang hoạt động trong những không gian làm việc mà bạn là thành viên; chủ sở hữu máy chủ thấy và dừng được tất cả.
 
 Hãy đọc như sau:
 
 - **Không có lần chạy nào** — việc điều phối đã không xảy ra. Lượt mention trong ô soạn thảo gồm `@` cộng các ký tự từ (chữ cái, chữ số, dấu gạch dưới). Việc phân giải khớp chính xác hoặc khớp tiền tố với tên agent, nên `@code-reviewer` bị phân tích thành `code` và vẫn có thể đánh thức một agent tên `code-reviewer`. Tên có dấu cách không thể được mention như một token duy nhất. Sau đó chuyển sang bước 2.
-- **Một lần chạy kết thúc ngay lập tức với lỗi** — mở **Xem**. Lỗi không khởi chạy được backend hiện ra ở đây dưới dạng lỗi tiến trình.
-- **Một lần chạy kẹt ở "Running…"** — hãy dừng nó, rồi kiểm tra **Hết hạn im lặng** của agent trong tab Cài đặt. Nếu không đặt hết hạn, hệ thống dùng mặc định theo từng chế độ.
+- **Một lần chạy kết thúc ngay lập tức với lỗi** — mở **Xem**. Lỗi không khởi chạy được backend hiện ra ở đây dưới dạng lỗi tiến trình. "Máy chủ này không có sandbox, nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây." có nghĩa là máy của máy chủ không có sandbox của hệ điều hành và bạn không phải chủ sở hữu của nó; xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/#lượt-chạy-agent-của-tôi-bị-từ-chối-với-máy-chủ-này-không-có-sandbox).
+- **Một lần chạy kẹt ở "Running…"** — hãy dừng nó, rồi kiểm tra **Hết hạn im lặng (phút)** của agent trong tab **Cài đặt** của nó. Nếu không đặt hết hạn, hệ thống dùng mặc định theo từng chế độ.
 - **Một lần chạy đã hoàn tất nhưng không có đầu ra hữu ích** — trạng thái trong nhật ký chạy vẫn là `completed` với một lần chạy kết thúc mà không có kết quả giao đã khai báo; tín hiệu đáng tin là phần văn bản tóm tắt, chứ không phải nhãn.
 
 Tab Nhật ký không hiển thị chi phí. Muốn xem chi tiêu, hãy dùng bảng theo từng agent trong **Quan sát → Phân tích**.
@@ -67,11 +67,11 @@ Hai điều đáng biết khi một thay đổi "chạy được trong kiểm th
 - **Quyền riêng tư** — liệu nội dung diff thô có được chuyển tiếp tới mô hình của agent hay không và liệu báo cáo sự cố có được gửi đi hay không.
 
 :::caution[Phần này báo cáo về máy đang chạy, còn các điều khiển của nó nằm ở phía máy khách]
-Việc phát hiện và việc thực thi giờ đã khớp với nhau: ở nơi bộ phát hiện báo có backend gốc, các lần chạy agent trên máy đó thực sự được bao bọc trong backend ấy. Nhưng bộ phát hiện là thứ duy nhất còn sống trong phần này. Công tắc tổng và bộ chọn backend là những tùy chọn được lưu trên thiết bị của bạn và máy chủ không đọc thứ nào trong số đó — công tắc riêng của máy chủ là `--sandbox` (`on` theo mặc định, `off` để từ chối).
+Việc phát hiện và việc thực thi khớp với nhau: ở nơi bộ phát hiện báo có backend gốc, các lần chạy agent trên máy đó thực sự được bao bọc trong backend ấy. Nhưng bộ phát hiện là thứ duy nhất còn sống trong phần này. Công tắc tổng và bộ chọn backend là những tùy chọn được lưu trên thiết bị của bạn và máy chủ không đọc thứ nào trong số đó — công tắc riêng của máy chủ là `--sandbox` (`on` theo mặc định, `off` để từ chối).
 
-Vì vậy một cảnh báo ở đây vẫn đáng để xử lý, nhưng thường thì đó không phải lý do khiến agent thất bại. Để xác nhận máy chủ đang ở trạng thái nào, hãy đọc nhật ký khởi động của nó: nhật ký in `agent sandbox ON` kèm ghi chú về backend, `no OS-native agent sandbox on this host` kèm gợi ý cài đặt, hoặc `agent sandbox DISABLED by --sandbox off`. `GET /healthz` không chứa trường sandbox nào.
+Vì vậy một cảnh báo ở đây đáng để xử lý. Trên một máy chủ không có backend, đó chính là lý do khiến người không phải chủ sở hữu máy chủ không chạy được agent nào. Để xác nhận máy chủ đang ở trạng thái nào, hãy đọc nhật ký khởi động của nó: nhật ký in `agent sandbox ON` kèm ghi chú về backend, `no OS-native agent sandbox on this host` kèm gợi ý cài đặt, hoặc `agent sandbox DISABLED by --sandbox off`, và dòng exposure của nó mang `sandbox=native`, `sandbox=unavailable` hoặc `sandbox=off`. `GET /healthz` không chứa trường sandbox nào.
 
-Ở nơi không có backend — Windows luôn vậy, còn Linux hay WSL2 khi thiếu `bwrap` và `socat` — các lần chạy **không** được sandbox, và thứ giới hạn chúng là checkout của chính cuộc hội thoại, token forge chỉ đọc của nó và cổng push, các rào chắn hành động, việc làm sạch môi trường và bề mặt công cụ mà chế độ của nó cho phép.
+Ở nơi không có backend (Windows luôn vậy, còn Linux hay WSL2 khi thiếu `bwrap` và `socat`), chỉ các lần chạy mà chủ sở hữu máy chủ chịu trách nhiệm mới bắt đầu, và các lần chạy của người khác bị từ chối. Các lần chạy bắt đầu ở đó, cùng mọi lần chạy dưới `--sandbox off`, đều **không** được sandbox, và thứ giới hạn chúng là checkout của chính cuộc hội thoại, token forge chỉ đọc của nó và cổng push, các rào chắn hành động, việc làm sạch môi trường và bề mặt công cụ mà chế độ của nó cho phép.
 :::
 
 ## Các lỗi thường gặp

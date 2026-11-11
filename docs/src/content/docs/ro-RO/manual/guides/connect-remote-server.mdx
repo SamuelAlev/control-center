@@ -2,7 +2,7 @@
 title: Conectează-te la un server remote
 description: Îndreaptă aplicația desktop sau clientul web către un cc_server care rulează în altă parte și comută între servere fără repornire.
 slug: ro-RO/manual/ghiduri-practice/conectare-la-server-remote
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Fiecare client este un renderer peste un `cc_server` care deține datele. Aplicația
@@ -88,6 +88,8 @@ sesiunea criptată autentificată către backendul code-server de pe `cc_server`
 Găzduiește clientul web prin HTTPS sau loopback securizat, ca service worker-ele
 să fie disponibile. Clienții nativi folosesc o fațadă de loopback cu arie de
 capabilitate.
+
+Doar proprietarul serverului poate deschide editorul code-server încorporat: el rulează pe server, ca utilizatorul propriu al serverului. O sesiune aparține dispozitivului și persoanei care a deschis-o. Se deschide cu workspace trust al VS Code activat, deci VS Code întreabă înainte să aibă încredere într-un folder, și cu sarcinile automate dezactivate. Toți ceilalți păstrează editorul integrat de un singur fișier și vizualizările de fișiere.
 :::
 
 ### Ce nu face browserul
@@ -103,9 +105,7 @@ mașinii:
 
 Două se comportă diferit, în loc să lipsească. **Înregistrarea** întâlnirilor
 funcționează în browser, captând microfonul tău plus o partajare de ecran care
-include o pistă audio. **Deschide în IDE** funcționează și el, dar cere
-serverului să lanseze editorul pe ecranul _serverului_, așa că butonul se
-ascunde pe o gazdă headless fără editoare instalate.
+include o pistă audio. Butonul care poartă numele editorului tău (cum este **Deschide în VS Code**) cere serverului să lanseze editorul pe ecranul _serverului_, așa că este oferit doar proprietarului serverului, iar butonul se ascunde pe o gazdă headless fără editoare instalate.
 
 ## Depanare
 

@@ -2,7 +2,7 @@
 title: Instalar
 description: Utilize o Control Center no navegador ou instale a aplicação de ambiente de trabalho, configure um backend de agentes e escolha onde é executado o servidor.
 slug: pt-PT/manual/instalar
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 O Control Center funciona de duas formas: como **aplicação web** em
@@ -188,11 +188,13 @@ utilizador — não no porta-chaves do sistema operativo do cliente. Todos os
 dispositivos a partir dos quais inicia sessão usam a mesma, e nenhum outro membro a
 consegue ler.
 
-O GitHub só aceita início de sessão: **Definições → Espaço de trabalho → Perfil e
-identidade → Hospedagem de código** oferece **Entrar no GitHub**, e não há
+O GitHub só aceita início de sessão: **Definições → Você → Perfil →
+Hospedagem de código** oferece **Entrar no GitHub**, e não há
 nenhum token para colar. O início de sessão passa pela GitHub App do próprio
 servidor ([Criar a GitHub App](/pt-PT/manual/guias/github-app/)) ou pelo Control
-Center Connect, conforme o que o proprietário do servidor escolheu. Com a app do
+Center Connect, conforme o que o proprietário do servidor escolheu, a menos que um
+administrador do espaço de trabalho tenha escolhido outros apps de início de sessão
+para esse espaço de trabalho em **Definições → Espaço de trabalho → Integrações**. Com a app do
 próprio servidor, o navegador volta sozinho ao servidor; através do Connect,
 escreve o código de 8 caracteres que o navegador mostra, ou deixa-o abrir o
 Control Center. Consulte
@@ -249,7 +251,7 @@ primeiro arranque e as flags `--data-dir` / `--port` / `--bind`.
 2. **Definições → Espaço de trabalho → Repositórios** lista os repos deste espaço
    de trabalho, e **Adicionar repositório** permite navegar pelas pastas do
    anfitrião do servidor.
-3. **Definições → Espaço de trabalho → Agentes** lista os cinco agentes que o seu
+3. **Definições → Espaço de trabalho → Agentes** lista os seis agentes que o seu
    primeiro espaço de trabalho criou. Cada um precisa de um **Adaptador** e de um
    **Modelo** definidos antes de poder ser executado.
 4. **Definições → Servidor → Diagnóstico e privacidade** indica os backends de

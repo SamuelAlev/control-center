@@ -11,12 +11,7 @@ import 'package:cc_host/cc_host.dart';
 /// derived from the session's `userId`, never from an argument, so no caller
 /// can name another person's row. Only [EditorLayoutCacheKinds.all] are
 /// reachable: the same `caches` table holds server-owned rows (PR payloads,
-/// collaboration and legacy policy state) that clients must not read or forge.
-///
-/// Layouts written before rows were per person live under the bare key. A
-/// read with no row of the caller's own falls back to that shared row once;
-/// the caller's next write creates their own row, and the shared one is never
-/// written again.
+/// collaboration and escalation state) that clients must not read or forge.
 List<RepoOp> buildEditorLayoutCacheOps(CacheRepository cache) => [
   RepoOp(
     name: 'cache.read',
@@ -24,13 +19,13 @@ List<RepoOp> buildEditorLayoutCacheOps(CacheRepository cache) => [
     requiredArgs: const ['kind', 'key'],
     handler: (ctx) async {
       final (:kind, :key) = _layoutAddress(ctx);
-      final workspaceId = ctx.workspaceId!;
-      final own = await cache.read(
-        workspaceId,
-        kind,
-        editorLayoutOwnerKey(ctx.userId, key),
-      );
-      return {'payload': own ?? await cache.read(workspaceId, kind, key)};
+      return {
+        'payload': await cache.read(
+          ctx.workspaceId!,
+          kind,
+          editorLayoutOwnerKey(ctx.userId, key),
+        ),
+      };
     },
   ),
   RepoOp(
@@ -64,8 +59,8 @@ const String _ownerPrefix = 'user:';
 
 /// Validates the client's `kind` and `key`.
 ///
-/// A key carrying the owner prefix is refused: the legacy fallback reads the
-/// bare key, so accepting one would read another person's row through it.
+/// A key carrying the owner prefix is refused so a stored key always names
+/// exactly one owner.
 ({String kind, String key}) _layoutAddress(RepoOpContext ctx) {
   final kind = ctx.args['kind'];
   final key = ctx.args['key'];

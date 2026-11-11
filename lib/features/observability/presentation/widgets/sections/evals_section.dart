@@ -280,7 +280,7 @@ ObsTone _passRateTone(double rate) {
 
 CcStatusTone _runStatusTone(String status) => switch (status) {
   'running' => CcStatusTone.info,
-  'passed' || 'succeeded' || 'completed' => CcStatusTone.positive,
+  'done' => CcStatusTone.positive,
   'failed' => CcStatusTone.negative,
   _ => CcStatusTone.neutral,
 };
@@ -289,7 +289,7 @@ String _runStatusLabel(AppLocalizations l10n, String status) =>
     switch (status) {
       'queued' => l10n.evalsStatusQueued,
       'running' => l10n.evalsStatusRunning,
-      'passed' || 'succeeded' || 'completed' => l10n.evalsStatusPassed,
+      'done' => l10n.evalsStatusPassed,
       'failed' => l10n.evalsStatusFailed,
       _ => status,
     };

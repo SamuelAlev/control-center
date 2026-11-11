@@ -1,5 +1,34 @@
 import 'package:cc_connect_core/src/wire.dart';
 
+/// Whose token a `/v1/github/scope` mint is.
+enum GitHubMintActor {
+  /// A one-repository child of the person's own user token
+  /// (`/applications/{client_id}/token/scoped`): what GitHub shows as the
+  /// person "via" the App. For what a person does, or an agent does in their
+  /// name (pull requests it opens for them, pushes to them).
+  user('user'),
+
+  /// A one-repository installation token of the App (`ghs_`): GitHub shows
+  /// the App's bot. Authorized by the person's sealed grant (they must see
+  /// the repository with the asked permission), never broader than them.
+  app('app');
+
+  const GitHubMintActor(this.wire);
+
+  /// The wire spelling (`as`).
+  final String wire;
+
+  /// Parses a wire value; null when unknown.
+  static GitHubMintActor? fromWire(Object? wire) {
+    for (final actor in values) {
+      if (actor.wire == wire) {
+        return actor;
+      }
+    }
+    return null;
+  }
+}
+
 /// `POST /v1/github/scope`.
 final class GitHubScopeRequest {
   /// Creates the request.
@@ -10,6 +39,7 @@ final class GitHubScopeRequest {
     required this.repoOwner,
     required this.repoName,
     required this.scope,
+    required this.actor,
   });
 
   /// Parses the body; throws [FormatException].
@@ -20,7 +50,9 @@ final class GitHubScopeRequest {
     final owner = json['repo_owner'];
     final name = json['repo_name'];
     final scope = json['scope'];
-    if (seal is! String ||
+    final actor = GitHubMintActor.fromWire(json['as']);
+    if (actor == null ||
+        seal is! String ||
         seal.isEmpty ||
         workspace is! String ||
         !isWorkspaceScope(workspace) ||
@@ -38,6 +70,7 @@ final class GitHubScopeRequest {
       repoOwner: owner,
       repoName: name,
       scope: scope,
+      actor: actor,
     );
   }
 
@@ -59,6 +92,9 @@ final class GitHubScopeRequest {
   /// The requested scope wire value.
   final String scope;
 
+  /// Whose token to mint (`as`).
+  final GitHubMintActor actor;
+
   /// The wire body.
   Map<String, Object?> toJson() => {
     'seal': seal,
@@ -67,6 +103,7 @@ final class GitHubScopeRequest {
     'repo_owner': repoOwner,
     'repo_name': repoName,
     'scope': scope,
+    'as': actor.wire,
   };
 }
 
@@ -79,6 +116,9 @@ final class GitHubScopedToken {
     required this.expiresAt,
     this.updatedSeal = '',
     this.installationId = 0,
+    this.repositorySelection = '',
+    this.repositoryIds = const [],
+    this.permissions = const {},
   });
 
   /// Parses the body; throws [FormatException].
@@ -89,10 +129,21 @@ final class GitHubScopedToken {
     final parsedExpiry = expires is String ? DateTime.tryParse(expires) : null;
     final updated = json['updated_seal'];
     final installation = json['installation_id'];
+    final selection = json['repository_selection'];
+    final repositories = json['repositories'];
+    final permissions = json['permissions'];
     if (access is! String ||
         access.isEmpty ||
         granted is! String ||
-        parsedExpiry == null) {
+        parsedExpiry == null ||
+        (selection != null && selection is! String) ||
+        (repositories != null &&
+            (repositories is! List || repositories.any((r) => r is! int))) ||
+        (permissions != null &&
+            (permissions is! Map ||
+                permissions.entries.any(
+                  (e) => e.key is! String || e.value is! String,
+                )))) {
       throw const FormatException('github scoped token');
     }
     return GitHubScopedToken(
@@ -101,6 +152,15 @@ final class GitHubScopedToken {
       expiresAt: parsedExpiry.toUtc(),
       updatedSeal: updated is String ? updated : '',
       installationId: installation is int ? installation : 0,
+      repositorySelection: selection as String? ?? '',
+      repositoryIds: [
+        if (repositories is List)
+          for (final r in repositories) r as int,
+      ],
+      permissions: {
+        if (permissions is Map)
+          for (final e in permissions.entries) e.key as String: e.value as String,
+      },
     );
   }
 
@@ -120,6 +180,27 @@ final class GitHubScopedToken {
   /// The installation the token was minted through.
   final int installationId;
 
+  /// An installation token's (`as: app`) `repository_selection` as GitHub
+  /// answered the mint; empty for a user child.
+  final String repositorySelection;
+
+  /// The repository ids an installation token covers, as GitHub answered
+  /// the mint; empty for a user child.
+  final List<int> repositoryIds;
+
+  /// The permissions an installation token carries, as GitHub answered the
+  /// mint; empty for a user child.
+  final Map<String, String> permissions;
+
+  /// The GitHub mint answer's coverage, in the shape `scopedTokenMatches`
+  /// reads: the server proves an installation token covers exactly one
+  /// repository with exactly the granted permissions before using it.
+  Map<String, Object?> get coverage => {
+    'repository_selection': repositorySelection,
+    'repositories': repositoryIds,
+    'permissions': permissions,
+  };
+
   /// The wire body.
   Map<String, Object?> toJson() => {
     'access_token': accessToken,
@@ -127,6 +208,10 @@ final class GitHubScopedToken {
     'expires_at': expiresAt.toUtc().toIso8601String(),
     if (updatedSeal.isNotEmpty) 'updated_seal': updatedSeal,
     if (installationId > 0) 'installation_id': installationId,
+    if (repositorySelection.isNotEmpty)
+      'repository_selection': repositorySelection,
+    if (repositoryIds.isNotEmpty) 'repositories': repositoryIds,
+    if (permissions.isNotEmpty) 'permissions': permissions,
   };
 }
 
@@ -175,107 +260,11 @@ final class GitHubRevokeRequest {
   };
 }
 
-/// `POST /v1/github/install/start`: a signed-in person asks for a GitHub App
-/// install link whose post-install redirect binds the new installation to
-/// this server (the person's own seal proves who installs).
-final class GitHubInstallStartResponse {
-  /// Creates the response.
-  const GitHubInstallStartResponse({
-    required this.installUrl,
-    required this.expiresAt,
-    this.updatedSeal = '',
-  });
-
-  /// Parses the body; throws [FormatException].
-  factory GitHubInstallStartResponse.fromJson(Map<String, Object?> json) {
-    final url = json['install_url'];
-    final expires = json['expires_at'];
-    final updated = json['updated_seal'];
-    final parsedUrl = url is String ? Uri.tryParse(url) : null;
-    final parsedExpiry = expires is String ? DateTime.tryParse(expires) : null;
-    if (parsedUrl == null ||
-        parsedUrl.scheme != 'https' ||
-        parsedUrl.host != 'github.com' ||
-        parsedExpiry == null) {
-      throw const FormatException('github install start');
-    }
-    return GitHubInstallStartResponse(
-      installUrl: parsedUrl,
-      expiresAt: parsedExpiry.toUtc(),
-      updatedSeal: updated is String ? updated : '',
-    );
-  }
-
-  /// `https://github.com/apps/<slug>/installations/new?state=<ticket>`.
-  final Uri installUrl;
-
-  /// When the ticket in [installUrl] expires.
-  final DateTime expiresAt;
-
-  /// A rotated seal the server must persist: the ticket carries a parent
-  /// token fresh enough to outlive it, because the browser-side setup
-  /// redirect has no way to hand a rotated seal back.
-  final String updatedSeal;
-
-  /// The wire body.
-  Map<String, Object?> toJson() => {
-    'install_url': installUrl.toString(),
-    'expires_at': expiresAt.toUtc().toIso8601String(),
-    if (updatedSeal.isNotEmpty) 'updated_seal': updatedSeal,
-  };
-}
-
-/// `POST /v1/github/authorize_server`: an organization admin (or the owner
-/// of a personal installation) adds this server to an installation's
-/// binding.
-final class GitHubAuthorizeServerRequest {
-  /// Creates the request.
-  const GitHubAuthorizeServerRequest({
-    required this.seal,
-    required this.workspaceId,
-    required this.installationId,
-  });
-
-  /// Parses the body; throws [FormatException].
-  factory GitHubAuthorizeServerRequest.fromJson(Map<String, Object?> json) {
-    final seal = json['seal'];
-    final workspace = json['workspace_id'];
-    final installation = json['installation_id'];
-    if (seal is! String ||
-        seal.isEmpty ||
-        workspace is! String ||
-        !isWorkspaceScope(workspace) ||
-        installation is! int ||
-        installation <= 0) {
-      throw const FormatException('github authorize server');
-    }
-    return GitHubAuthorizeServerRequest(
-      seal: seal,
-      workspaceId: workspace,
-      installationId: installation,
-    );
-  }
-
-  /// The admin's seal.
-  final String seal;
-
-  /// The workspace the seal belongs to.
-  final String workspaceId;
-
-  /// The installation to bind this server to.
-  final int installationId;
-
-  /// The wire body.
-  Map<String, Object?> toJson() => {
-    'seal': seal,
-    'workspace_id': workspaceId,
-    'installation_id': installationId,
-  };
-}
-
-/// One installation of the shared GitHub App the signed-in person can see,
-/// with whether this server may mint against it
-/// (`POST /v1/github/installations`, body: [SealRequest]).
+/// One installation of the shared GitHub App the signed-in person can see
+/// (`POST /v1/github/installations`, body: [SealRequest]). Any server a
+/// member of the account signs in on may mint against it: the org's install
+/// is its consent, and every token is the member's own, clamped to their
+/// repository role.
 final class GitHubInstallationView {
   /// Creates the view.
   const GitHubInstallationView({
@@ -283,9 +272,7 @@ final class GitHubInstallationView {
     required this.accountId,
     required this.accountLogin,
     required this.targetType,
-    required this.boundHere,
     required this.suspended,
-    required this.callerIsAdmin,
   });
 
   /// Parses one item; null when malformed.
@@ -308,9 +295,7 @@ final class GitHubInstallationView {
       accountId: accountId,
       accountLogin: login,
       targetType: type,
-      boundHere: json['bound_here'] == true,
       suspended: json['suspended'] == true,
-      callerIsAdmin: json['caller_is_admin'] == true,
     );
   }
 
@@ -326,15 +311,8 @@ final class GitHubInstallationView {
   /// `Organization` or `User`.
   final String targetType;
 
-  /// Whether this server is in the installation's binding (always true for
-  /// the caller's own personal installation).
-  final bool boundHere;
-
   /// Whether the installation is suspended.
   final bool suspended;
-
-  /// Whether the caller may authorize servers on it.
-  final bool callerIsAdmin;
 
   /// The wire body.
   Map<String, Object?> toJson() => {
@@ -342,8 +320,6 @@ final class GitHubInstallationView {
     'account_id': accountId,
     'account_login': accountLogin,
     'target_type': targetType,
-    'bound_here': boundHere,
     'suspended': suspended,
-    'caller_is_admin': callerIsAdmin,
   };
 }

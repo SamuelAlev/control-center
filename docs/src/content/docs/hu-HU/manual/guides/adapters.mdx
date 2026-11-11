@@ -2,7 +2,7 @@
 title: Adapterek és modellek kezelése
 description: Csatlakoztassa a modellszolgáltatókat, válassza ki, melyik modellen fut az ügynök, és nézze meg, milyen ügynökfuttató CLI-k vannak a szervergépen.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/adapterek
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Ez az útmutató bemutatja, hogyan csatlakoztathat modellszolgáltatókat, és hogyan
@@ -122,6 +122,8 @@ kifejezetten az adaptert és a modellt.
 
 A **Content synthesizer** ügynök írja azt a szöveget, amelyet a Control Center a beszélgetés körül generál: a címét, a `/btw` válaszait, a `/handoff` dokumentumokat és a `/goal` célinterjút. Minden alkalommal egyetlen, eszközök nélküli kiegészítést futtat a saját adapterén és modelljén, ezért adjon neki egy kicsi, gyors modellt.
 
+Ha ez az adapter ACP CLI, a kiegészítés a szerver gépén futó folyamat, és a [homokozószabályt](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/#ügynökök-homokozó-nélküli-hoszton) követi: homokozóban fut, ha a szerver homokozóban futtatja az ügynököket, homokozó nélkül pedig csak olyan kérésekre, amelyekért a szerver tulajdonosa felel. Másoknak ezek a funkciók kimaradnak: nem készül cím, a `/btw` pedig ezt válaszolja: „A Content synthesizer ügynök hiányzik, vagy nincs működő futtatója.”
+
 Szerkessze a **Persona** beállítását a **Beállítások → Munkaterület → Ügynökök** alatt, ha meg szeretné változtatni, hogyan fogalmazza meg ezt a szöveget: a cím hosszát, a nyelvet, a hangnemet és a követett példákat. Az egyes funkciók által feldolgozott válaszformátum (egysoros cím, a cél szakaszai) rögzített, és a persona-beállítás után alkalmazódik. Az ügynök törlésével kikapcsolhatja ezeket a funkciókat; nem kerül vissza automatikusan.
 
 ## Futtató CLI telepítése
@@ -137,8 +139,7 @@ Ezután nyomja meg az oldal tetején a **Frissítés** gombot. Minden felismert 
 mutatja a feloldott verziót és útvonalat, valamint jelzőcímkéket arról, hogy
 támogatja-e a JSON módot és a modellválasztást.
 
-A külső CLI a saját hitelesítő adatait a saját konfigurációjában, a szervergépen
-tartja. A Control Center nem kezeli ezeket.
+A Claude Code-bejelentkezések a Claude Code futtatóján, a **Claude Code-fiókok** alatt vannak felsorolva. A Control Center minden fiók konfigurációs könyvtárát létrehozza a szerveren, és megadja a `claude auth login` parancsot, amelyet ott kell futtatni; soha nem jelentkezik be Ön helyett.
 
 :::caution[Az adapter extra argumentumai és környezeti változói ezen az eszközön maradnak]
 Minden adaptersor kínál egy **Extra argumentumok** mezőt és egy **Környezeti

@@ -56,8 +56,8 @@ void main() {
     'takeover', 'team', 'telemetry', 'terminal', 'ticket_link',
     'ticket_sync', 'ticketing', 'tickets', 'todos',
     'usage', 'users', 'voice_profile', 'weather',
-    'workProduct', 'workspace', 'workspaceGitHub', 'workspaceProviderApps',
-    'workspace_settings',
+    'workProduct', 'workspace', 'workspaceConnect', 'workspaceGitHub',
+    'workspaceProviderApps', 'workspace_settings',
     'worktree',
   };
 

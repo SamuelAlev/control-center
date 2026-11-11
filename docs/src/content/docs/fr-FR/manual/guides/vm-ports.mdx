@@ -2,7 +2,7 @@
 title: Transférer des ports depuis un terminal
 description: Atteignez un serveur de développement lancé dans un Terminal (VM) ou un shell hôte — depuis votre machine, depuis le Navigateur (VM), depuis Android, sur votre réseau, ou sous un domaine de développement avec HTTPS.
 slug: fr-FR/manuel/guides/ports-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Un serveur que vous démarrez dans le terminal d’une conversation n’est publié que pour **cet espace**. Le panneau des ports repère les ports en écoute que cette application a démarrés là, les mappe et vous donne une adresse pour chaque endroit depuis lequel vous pourriez vouloir les joindre. Deux espaces peuvent tous deux écouter sur `5173` ; leurs mappages ne se mélangent jamais.
@@ -11,7 +11,7 @@ Rien ici n’ouvre la machine : chaque chemin est créé par le serveur, à la 
 
 ## Voir ce qui écoute
 
-1. Ouvrez le **Terminal (VM)** ou un shell hôte de la conversation (dans un espace ou sur une page de PR).
+1. Dans l’éditeur de la conversation (dans un espace ou sur une page de PR), ouvrez **Terminal** depuis le menu `+` : sous **Machines** pour un shell dans la VM de la conversation, ou sous **Outils** pour un terminal sur le serveur. Seul le propriétaire du serveur peut ouvrir un shell hôte ; le terminal de tout autre utilisateur est dans le bac à sable.
 2. Démarrez votre serveur — `pnpm dev`, `python -m http.server 8000`, n’importe quoi.
 3. En quelques secondes, l’**icône de prise** dans le coin supérieur droit du terminal
    se dote d’un point. Cliquez dessus.
@@ -116,6 +116,10 @@ pendant que votre serveur redémarre — la ligne affiche *n'écoute pas* jusqu�
 alors que les transferts automatiques disparaissent quand leur port disparaît. Sur un shell
 hôte, vous pouvez aussi définir un port local différent.
 
+Modifier les transferts exige un accès en écriture à tous les dépôts que l’espace expose. Avec un accès en lecture, vous voyez toujours les ports, et le panneau affiche « Modifier ces ports nécessite un accès en écriture à tous les dépôts de cet espace. » à la place de **Ajouter un port**. Voir [Qui peut regarder et qui peut piloter](/fr-FR/manuel/guides/utiliser-rigs/#qui-peut-regarder-et-qui-peut-piloter).
+
+Un terminal ouvert par quelqu’un pour lui-même garde ses ports pour cette personne : pour les autres, sa liste de ports et ses modifications de ports répondent comme si la session n’existait pas, exactement comme la session elle-même. Les terminaux partagés dans un espace suivent la règle de l’espace décrite plus haut.
+
 ## Comment cela reste confiné
 
 Les ports sont indexés par espace de travail et par espace. La table de ports de
@@ -126,9 +130,9 @@ tunnels inverses que le serveur maintient ouverts pour le Navigateur (VM) et And
 shell hôte ne scanne jamais toute la machine. Aucun écouteur n’est jamais créé dans un
 invité que le serveur n’y a pas mis, et tout est démonté avec le terminal ou le rig. La
 conception est expliquée dans [Rigs et
-enceintes](/fr-FR/manuel/concepts/rigs/#ports-without-holes) ; les ports réservés exacts et
+enceintes](/fr-FR/manuel/concepts/rigs/#des-ports-sans-brèche) ; les ports réservés exacts et
 les règles de domaine se trouvent dans la
-[référence des rigs](/fr-FR/manuel/reference/rigs/#ports-and-dev-domains).
+[référence des rigs](/fr-FR/manuel/reference/rigs/#ports-et-domaines-de-développement).
 
 ## Voir aussi
 

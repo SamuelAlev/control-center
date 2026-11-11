@@ -9,12 +9,26 @@ A workspace admin writes a **definition** once. Members then press **Start** in 
 
 ## Create a definition
 
-1. Open **Settings → Workspace → Environments**. Only workspace admins can change definitions.
+1. Open **Settings → Workspace → Environments**. Only workspace admins can change definitions, and only the server owner can save one that runs on the server host (see [Who can save what](#who-can-save-what)).
 2. Click **New definition**, then **Blank definition** or **Draft from repo**. A draft scans the repo for compose files, a `Procfile` and `package.json` scripts, and you review the result.
 3. Fill in the form, or use the **JSON** tab. The examples on this page are that JSON.
 4. Click **Run test**. It starts a throwaway environment, waits until it is ready and destroys it.
 
-To keep a definition in a repo, use **Link a repo file**. Control Center reads the file from the default branch only and runs only the version an admin approved. A newer version shows **Update available** and changes nothing until it is approved.
+Saving checks a definition strictly. An unknown field, a value of the wrong type or a misspelt choice is refused, with its path and the closest valid name, such as `repos.app.requird: Unknown field. Did you mean "required"?`. A top-level `$schema` is allowed.
+
+To keep a definition in a repo, use **Link a repo file**. Control Center reads the file from the default branch only and runs only the version that was approved: by a workspace admin, or by the server owner when the definition runs on the host. A newer version shows **Update available** and changes nothing until it is approved.
+
+### Who can save what
+
+An environment definition can run commands on the server host as the server's own user. That is the server owner's call, not a workspace role's:
+
+- A definition **runs on the host** when it has host placement, a check that runs a command, or a `provision` or `archive` task. Those tasks run in the space's worktree on the host whatever the placement.
+- Only the [server owner](/manual/concepts/authorization/#the-server-owner) can save or approve a definition that runs on the host. That includes approving a new version of a linked repo file. A workspace admin who tries sees "Only the server owner can save or approve an environment that runs on the server host. A workspace admin can use one that runs in a rig."
+- A workspace admin can save and approve a definition that runs entirely in a rig: `"placement": "rig"`, no check command and no `provision` or `archive` task.
+- Members start, stop and use environments either way.
+- A definition that runs on the host runs only after the **current** server owner has saved or approved it. The server records that approval itself and checks it before every start, check, task and pull request head sync. A definition the current owner has not approved, such as one a previous owner saved, waits under its row in the environment list and in the editor. The server owner sees "Runs on this server. Approve it to let it start." with **Approve**, which saves it unchanged; everyone else sees "Runs on this server. The server owner has to approve it before it can start."
+- An environment held for that approval says "The server owner hasn't approved this environment yet, so it can't run on this server." The server owner instead sees "You haven't approved this environment yet. It runs on this server, so it starts once you approve its definition." with **Review and approve**, which opens the definition.
+- An environment's process terminals, and the terminal a start opens when it needs you, run on the server host. Typing into one, resizing it or closing it needs write access to every repository the space exposes, readable through your own forge sign-in: the same as starting the environment. Anyone else can't reach those terminals at all.
 
 ## The smallest definition
 
@@ -33,7 +47,7 @@ Everything else has a default: the compose file is discovered, every service run
 
 ## Component kinds
 
-An environment is an ordered list of components. Each waits for the previous one to be ready, unless `after` names others, and stop runs in reverse. `enabledWhen` gates a component on an option or a role, for example `opt.seed`, `!opt.seed` or `repo.web`.
+An environment is an ordered list of components. Each waits for the previous one to be ready, unless `after` names others, and stop runs in reverse. `enabledWhen` gates a component on an option or a role, for example `opt.seed`, `!opt.seed` or `repo.web`. A component whose role is optional and missing from the space is left out the same way, with no `enabledWhen` needed: it doesn't start and has no `{port.*}` or `{url.*}`, so another component that reads those fails the start.
 
 | Kind | Who runs it | Use it for |
 | --- | --- | --- |
@@ -54,9 +68,11 @@ An environment is an ordered list of components. Each waits for the previous one
 | `manual` | On request: **Run**, `cc-env run <id>` or `environment_run_task` |
 | `archive` | Just before the worktree is destroyed |
 
-A command given as an array is argv, so option values never pass through a shell. A string, or `script` with an array of lines, runs under `bash -lc`. Placeholders such as `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` and `{url.<role>}` expand in argv only. Shell commands read the same values as `CC_ENV_*` variables, such as `$CC_ENV_PORT_WEB`.
+A task with nothing to do in a start reads **Idle** and is left out of the list of steps shown while the environment starts: a `manual` or `change` task, or a `create` task that already ran.
 
-Every command and space terminal also gets `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` and, in PR spaces, `CC_PR_NUMBER` and `CC_PR_IS_FORK`. With a compose component they get `COMPOSE_PROJECT_NAME` and `COMPOSE_FILE` too, so `docker compose exec` in a task reaches the right project.
+A command given as an array is argv, so option values never pass through a shell. A string, or `script` with an array of lines, runs under `bash -lc`. Placeholders such as `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` and `{url.<role>}` expand in argv only. Shell commands read the same values as `CC_ENV_*` variables, such as `$CC_ENV_PORT_WEB`. An unknown placeholder in a component that takes part stops the start before anything runs.
+
+Every command and space terminal also gets `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` and, in PR spaces, `CC_PR_NUMBER` and `CC_PR_IS_FORK`. With a compose component they get `COMPOSE_PROJECT_NAME` and `COMPOSE_FILE` too, so `docker compose exec` in a task reaches the right project.
 
 ## Roles and working directory
 
@@ -75,7 +91,7 @@ A definition binds **roles** to workspace repos, so one stack can span several r
 - `whenMissing`: what happens when the space lacks the role. `addToSpace` adds the repo at its default branch and is the default for `required` roles. `useSource` passes your registered checkout, which you should treat as read-only. `skip` leaves the variable unset and is the default otherwise.
 - Starting needs a `write` grant on an anchor repo in the space and read access to every other bound repo.
 
-A command runs in the first role in `repos` that the space has, so a single-repo definition never mentions it. Any component can override that with `"cwd": { "role": "e2e", "path": "packages/ui" }`. Both fields are optional.
+A command runs in the first role declared in `repos`, never in another role the space happens to have, so a single-repo definition never mentions it. Any component can override that with `"cwd": { "role": "e2e", "path": "packages/ui" }`. Both fields are optional. When the first role could be missing from a space, because it is neither `required` nor the only anchor, every component has to name its role.
 
 ## Ports and URLs
 
@@ -128,6 +144,8 @@ A web app and Postgres from one compose file, with a gitignored `.env`, migratio
 
 `healthchecks` lets a service with no healthcheck of its own gate the next component. Without one, a running container counts as ready, and migrations can race a database that is still starting.
 
+Every start and refresh runs `up` with `--remove-orphans`, so a service that was removed from the compose file stops and frees its port. Images are built on start and on refresh unless the component sets `"build": false`.
+
 ## Example: custom CLI
 
 A made-up `acme` tool that owns its containers, domains and TLS. Control Center supplies `{name}` and learns everything else from `status`. It never derives a tool's hostnames and never edits `/etc/hosts`.
@@ -145,7 +163,8 @@ A made-up `acme` tool that owns its containers, domains and TLS. Control Center 
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -159,6 +178,7 @@ A made-up `acme` tool that owns its containers, domains and TLS. Control Center 
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -186,6 +206,10 @@ A made-up `acme` tool that owns its containers, domains and TLS. Control Center 
 ```
 
 - `create`, `status` and `destroy` are required. Control Center picks `create` or `start` from the status it reads. Any verb may be `{ "shell": "…" }` instead of argv.
+- `interactive` names the verbs, out of `create`, `start` and `reset`, that can ask for what they need on a terminal. When such a verb exits 3 for a person who pressed **Start**, Control Center runs the same verb again on a terminal tab, and the start carries on once it exits 0. There the condition `interactive` is true and `CC_ENV_INTERACTIVE=1` is set, so `{ "if": "!interactive", "args": ["--json"] }` keeps machine output for the pipe. A start by an agent, or an automatic one, never opens a terminal: the environment reads **Action needed** and waits.
+- A `destroy` that fails still removes the environment when `status` then reports `missing`, so an environment the tool no longer has can always be removed.
+- `list` lets Control Center notice an environment the tool has lost. It is marked gone only when its name is missing from `list` and `status` then says `missing`. Output that can't be read as a list changes nothing.
+- `{service}` in `logs` and `exec` must be one word that doesn't start with `-`, and one of the services the tool last reported when it reported any.
 - `statusMap` reads the tool's own JSON with JSON pointers, where `*` matches every item. State rules are ordered and the first match wins. A condition is `path` with `equals`, or `any` or `none` with `where`.
 - `keepsDataOnStop: false` turns off idle stop and adds a data-loss warning to **Stop**. Set it when stopping loses data.
 - `routing.mode: "tool"` connects the tool's hostnames to the Browser (VM) and agents. The domain must end in `.test`, `.localhost` or `.internal`, and a reported URL outside it is dropped.
@@ -227,8 +251,8 @@ Processes and tasks only, with no containers. The web app finds the API through 
 }
 ```
 
-- Each process is a terminal tab you can open, read and type into. Closing the tab doesn't stop it.
-- `ready` takes `http`, `tcp` or `logMatch`. `restart` is `on-failure` (the default), `always` or `never`. `restartOn` restarts the process when a changed path matches.
+- Each process is a terminal tab you can open, read and type into, if you have write access to every repository in the space (see [Who can save what](#who-can-save-what)). Closing the tab doesn't stop it.
+- `ready` takes `http` (a full URL), `tcp` (`host:port`) or `logMatch` (a regular expression). `restart` is `on-failure` (the default), `always` or `never`. `restartOn` restarts the process when a changed path matches.
 - `options` become a form on **Start**, and `agentDefault` applies to runs started by an agent.
 
 ## Example: desktop app
@@ -249,21 +273,21 @@ A desktop app with a build step. An app works the same whatever it is built with
 }
 ```
 
-An app does not start with the environment. Someone clicks **Launch**, and `prepare` runs first. **Rebuild & relaunch** runs that pair again. A clean exit shows as closed, a crash shows the last log lines and does not restart, a server restart never relaunches it, and idle stop leaves a running app alone.
+An app does not start with the environment. Someone clicks **Launch**, and `prepare` runs first. **Rebuild & relaunch** runs that pair again. `enabledWhen` applies to the app and to its `prepare` task, and **Launch** is refused while either is off. An app counts as running while any process in its process group runs, so a launcher that starts the app and exits is fine. If everything is gone within about 5 seconds of **Launch**, the app shows as failed with its last log lines. After that, a clean exit shows as closed and a crash shows the last log lines, and neither restarts it. A server restart closes the app and never relaunches it, and idle stop leaves a running app alone.
 
 ### Desktop app permissions and limits
 
 - On macOS, grant Control Center **Screen Recording** and **Accessibility** once in System Settings. The server host needs a GUI session: a headless server refuses to launch an app.
-- Launch the binary directly. `open -a` hands the app to LaunchServices and it leaves the process tree Control Center tracks. `"window": { "match": { "bundleId": "…" } }` covers that case, but it is only safe with one running copy.
+- Launch the binary directly. `open -a` hands the app to LaunchServices and it leaves the process tree Control Center tracks, so the app shows as failed right after launch.
 - Windows stay on a display. macOS won't capture a window parked off every display, so an app an agent is using is visible on the server's screen. It doesn't need focus.
 - `"isolate": "home"` gives the app a private home through `HOME`, `XDG_*` and `CFFIXED_USER_HOME`, so copies from two spaces can run side by side. `NSUserDefaults` is not isolated, so Cocoa preferences and Flutter's `shared_preferences` stay shared between copies.
 - `isolate` applies to the launched process only. A toolchain launcher such as `flutter run` needs the real home, so pair `isolate` with a built binary. If the app has its own setting, such as `--user-data-dir`, prefer that.
 - Agents drive the window with `app_use`, which can only reach this environment's process tree. An agent sees the window, not the desktop. Agent launches go through the action policy and default to ask, and agent input stops while a person has control.
 - `"input": "background"` (the default) posts events to the process. `"foreground"` activates the window and takes over the cursor.
 
-## Worktree tasks replace repo scripts
+## Worktree tasks
 
-`provision` and `archive` tasks replace the old per-repo setup and archive scripts. **Existing scripts were migrated automatically:** each repo that had scripts now has a definition named after the repo, with tasks `setup` and `archive` holding the same script text. The icon on a repo's row in **Settings → Workspace → Repositories** opens it. Past script runs stay as read-only history.
+`provision` and `archive` tasks run a repo's setup and teardown with its worktree. The icon on a repo's row in **Settings → Workspace → Repositories** opens the repo's definition.
 
 These tasks follow the worktree, not the environment, so they run in spaces where nobody presses **Start**:
 
@@ -290,7 +314,7 @@ A repo with no stack only needs a definition holding its tasks. With nothing to 
 
 - There is no environment yet, so these tasks can't use `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` or `enabledWhen`, and they don't get the definition's `env`.
 - Only one definition may hold `provision` and `archive` tasks for a repo. Others may still bind it for everything else.
-- `"when": ["provision", "change"]` also reinstalls when a lockfile moves, which setup scripts never did.
+- `"when": ["provision", "change"]` also reinstalls when a lockfile moves.
 - A task runs for the worktree of its `cwd` role, so a multi-repo definition can set up each repo separately.
 - A test run sets `CC_SCRIPT_TEST=1`. A retry starts from a clean worktree, so write tasks that survive a re-run.
 
@@ -310,9 +334,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-With a compose component, a `docker` shim also allows `docker compose` with `ps`, `logs`, `exec`, `port`, `restart` and `top`. No flags may come before the verb, `logs` can't follow, and `exec` takes only `-T`. Anything else exits 5 with "not available in Control Center agent runs".
+With a compose component, a `docker` shim also allows `docker compose` with `ps`, `logs`, `exec`, `port`, `restart` and `top`, and only against this environment's own compose project. No flags may come before the verb, and each verb takes a short list of options: `logs` can't follow, and `exec` takes only `-T` (or `--no-tty`). Options that point compose at another file or project (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) are refused wherever they appear. Anything else exits 5 with "not available in Control Center agent runs".
 
-A repo whose skills call its own tool can keep doing so. An `agentPassthrough` block on a `cli` component declares which commands agents may run:
+A repo whose skills call its own tool can keep doing so. An `agentPassthrough` block on a `cli` component declares which commands agents may run. Only commands the approved definition declares pass through, and each one runs on the host, so it carries the **Run commands on the host** rule, which asks first by default:
 
 ```jsonc
 "agentPassthrough": {
@@ -386,20 +410,26 @@ Exit codes apply to every verb:
 | Code | Meaning |
 | --- | --- |
 | 0 | OK |
-| 3 | Host setup required. **Run in terminal** opens a space terminal with the command typed but not run, then **Retry** tries again. Control Center never runs `sudo` |
-| 4 | Authentication required |
-| 5 | Dependency unavailable |
+| 3 | An answer is needed at a terminal, such as a `sudo` password. A verb listed in `interactive` runs again on a terminal tab for the person who pressed **Start**. Otherwise **Run in terminal** opens a space terminal with the tool's `command` typed but not run, then **Retry** tries again. Control Center never runs `sudo` and never answers a prompt |
+| 4 | Sign-in required. The tool's `command` says how |
+| 5 | Something it depends on isn't available, such as a container runtime that isn't running |
 | Other | Failure |
+
+Codes 3, 4 and 5 are not failures. The environment reads **Action needed** and waits, and the next start picks up where that one stopped. A task that exits with one of them means the same.
 
 Progress goes to stderr as newline-delimited JSON:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-`step` lines render as a live step list and `note` lines are shown as they are. A last line of type `error` becomes a structured error, with `command` offered to copy. Without one, Control Center shows the last 20 stderr lines. Anything that isn't JSON is plain log output.
+While an environment starts, the panel lists the components that start goes through, each with a spinner, a check or a cross. A `step` line says what the tool is doing now, and its `label` shows under the tool's own row; steps never add rows. A step's `state` is `pending`, `running`, `done` or `failed`, and a step with no `state` is running. A step that reports again under the same `id` (a string or a number, or the same `label` without one) replaces what it said before, so a tool with one spinner can keep one `id` and change the `label`. Without ids, steps follow each other: a new one ends the one before. When the command exits, a step still running ends the way the command did.
+
+A `log` line carries one line of output the tool wrapped in JSON, and reads as plain output. A `note` goes to the run's output, and one with `"level": "warn"` also stays on the environment as a warning. A last line of type `error` becomes a structured error, with `command` offered to copy, and the last 12 lines of output show under its `message`. Without one, Control Center shows the last 20 stderr lines. Anything that isn't JSON is plain log output.
 
 ## Related
 

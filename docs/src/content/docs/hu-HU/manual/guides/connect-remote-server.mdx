@@ -2,7 +2,7 @@
 title: Csatlakozás távoli szerverhez
 description: Irányítsa az asztali alkalmazást vagy a webes klienst egy máshol futó cc_server felé, és váltson szerverek között újraindítás nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csatlakozas-tavoli-szerverhez
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Minden kliens csupán megjelenítő réteg egy `cc_server` fölött, amely az adatokat
@@ -91,6 +91,8 @@ kéréseket a hitelesített titkosított munkameneten keresztül a `cc_server`
 code-server-hátteréhez továbbítja. A webes klienst HTTPS-en vagy biztonságos
 loopbacken hostolja, hogy a Service Workerek elérhetők legyenek. A natív
 kliensek egy képesség-hatókörű loopback-homlokzatot használnak.
+
+Csak a szerver tulajdonosa nyithatja meg a beágyazott code-server szerkesztőt: ez a szerveren, a szerver saját felhasználójaként fut. A munkamenet ahhoz az eszközhöz és személyhez tartozik, amely megnyitotta. A VS Code munkaterület-megbízhatósága be van kapcsolva, így a VS Code megkérdezi, mielőtt megbízna egy mappában, az automatikus feladatok pedig ki vannak kapcsolva. Mindenki más a beépített, egyfájlos szerkesztőt és a fájlnézeteket használja.
 :::
 
 ### Amit a böngésző nem tesz meg
@@ -105,9 +107,8 @@ de néhány felülethez natív ablakra vagy a gép saját eszközeire van szüks
 
 Két dolog nem hiányzik, hanem másképp viselkedik. A megbeszélések **felvétele** a
 böngészőben is működik: rögzíti a mikrofonját, valamint egy képmegosztást, amely
-hangpályát is tartalmaz. A **Megnyitás IDE-ben** szintén működik, de a szervertől
-azt kéri, hogy a szerkesztőt _a szerver_ képernyőjén indítsa el, ezért a gomb
-elrejti magát egy olyan headless hoszton, ahol nincs telepítve szerkesztő.
+hangpályát is tartalmaz. A szerkesztőjéről elnevezett gomb (például **Megnyitás VS Code-ban**) a szervertől
+azt kéri, hogy a szerkesztőt _a szerver_ képernyőjén indítsa el, ezért csak a szerver tulajdonosának kínáljuk fel, a gomb pedig elrejti magát egy olyan headless hoszton, ahol nincs telepítve szerkesztő.
 
 ## Hibaelhárítás
 

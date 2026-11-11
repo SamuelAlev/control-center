@@ -2,7 +2,7 @@
 title: Instalujte a spravujte skilly
 description: Nainstaluj a aktualizuj skilly pracovního prostoru přes bránu skenu a pak porovnej uložené revize s vyhodnocením skillů s rozpočtem.
 slug: cs-CZ/prirucka/navody/sprava-skillu
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Tenhle návod ukazuje, jak do pracovního prostoru dostat skilly z GitHubu:
@@ -96,7 +96,7 @@ pro návrat.
    skillu, a **adaptér**. Vestavěný harness použije nakonfigurovaného
    poskytovatele a model schopný používat nástroje. **Claude Code** použije
    výchozí spravovaný účet Claude a konkrétní identifikátor modelu; nejdřív se
-   přihlas v **Nastavení → Adaptéry**. Nevypůjčuje si osobní přihlášení
+   přihlas v **Nastavení → Server → Poskytovatelé modelů → Účty Claude Code**. Nevypůjčuje si osobní přihlášení
    operátora serveru.
 3. Zvol **Porovnání** z tabulky níže.
 4. Nastav **Opakování na úlohu** (1–20) a **Rozpočet (US cents)**. Například
@@ -185,8 +185,7 @@ s vestavěnými slash příkazy (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — skill, který si veze repozitář vycheckoutovaný
   v tomhle prostoru
 
-Holé jméno, které není vestavěný příkaz, se pořád vyřeší. Jde o zprávy
-napsané předtím, než jmenný prostor existoval. `/skill:plan` je to, co se
+`/skill:plan` je to, co se
 dostane ke skillu jménem `plan`; `/plan` je vždycky vestavěný příkaz.
 
 ## Skilly vázané na repozitář

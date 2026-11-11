@@ -45,6 +45,7 @@ void main() {
       approvedBlobHash: 'abc123',
       overridesJson: '{"policy":{"maxRunning":2}}',
       createdBy: 'user-1',
+      hostApprovedBy: 'owner-1',
       createdAt: at,
       updatedAt: at,
     );

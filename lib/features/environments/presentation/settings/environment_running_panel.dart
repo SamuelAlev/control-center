@@ -87,7 +87,7 @@ class _InstanceRow extends ConsumerWidget {
     final environment = instance.environment;
     final key = (workspaceId: workspaceId, spaceId: environment.spaceId);
     final inFlight = ref.watch(environmentActionsProvider(key));
-    final (status, tone) = environmentDisplay(l10n, environment);
+    final (status, tone) = environmentStatusDisplay(l10n, environment.status);
     final destroying =
         inFlight.contains('destroy') ||
         environment.status == EnvironmentStatus.destroying;

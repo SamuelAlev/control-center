@@ -2,7 +2,7 @@
 title: Associer un appareil
 description: Associez votre téléphone (ou un second navigateur ou poste de bureau) à votre serveur Control Center pour suivre la flotte à distance.
 slug: fr-FR/manuel/guides/associer-appareil
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Ce guide explique comment associer un téléphone à Control Center, afin de lire
@@ -63,8 +63,7 @@ Il n’y a pas d’étape en attente puis d’approbation : un appareil émis es
 sa création et la barrière de connexion vérifie uniquement que l’identifiant est
 actif et non expiré. Traitez le QR code et la clé d’appairage comme un mot de passe
 et révoquez tout ce que vous ne vouliez pas distribuer. Les sessions client
-directes comme relayées exigent le chiffrement de bout en bout ; les anciens clients
-ne peuvent pas se rabattre sur du RPC en clair.
+directes comme relayées exigent le chiffrement de bout en bout ; il n’existe pas de RPC en clair.
 :::
 
 ## Gérer les appareils associés
@@ -79,9 +78,7 @@ immédiate et irréversible du point de vue de l’appareil.
 
 Les identifiants émis depuis ce panneau sont à durée limitée : ils expirent
 30 jours après leur émission et la barrière de connexion les refuse ensuite en
-mode fermé. Un identifiant émis avec `cc_server pair` en ligne de commande ne
-comporte **aucune expiration** — révoquez-le à la main lorsque la machine à
-laquelle il était destiné est retirée du service.
+mode fermé. Un identifiant émis avec `cc_server pair` en ligne de commande expire de la même manière ; relancez `pair` pour en émettre un nouveau, et révoquez-le à la main lorsque la machine à laquelle il était destiné est retirée du service.
 
 ## Changer d’espace de travail depuis le téléphone
 

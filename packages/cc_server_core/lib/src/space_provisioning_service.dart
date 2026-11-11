@@ -30,8 +30,8 @@ typedef PrProvisionContext = ({
 });
 
 /// Background-provisions a space's conversation workspace at creation time:
-/// repo worktrees + per-agent overlay + derived `.mcp.json`, so the first agent
-/// turn doesn't pay the setup cost.
+/// repo worktrees + per-agent overlay, so the first agent turn doesn't pay the
+/// setup cost.
 ///
 /// Provisioning runs **unawaited** off the `SpaceCreated` domain event
 /// (the user can keep using the app). Message dispatch is gated on the
@@ -39,12 +39,11 @@ typedef PrProvisionContext = ({
 ///
 /// `ensureSpaceWorkspace` is best-effort and never throws, so success is
 /// verified post-hoc: every linked repo must have an on-disk worktree row and
-/// every agent overlay must contain `.mcp.json`.
+/// every agent overlay must exist.
 class SpaceProvisioningService {
   /// Creates a [SpaceProvisioningService].
   SpaceProvisioningService({
     required this._provisioner,
-    required this._writeMcpConfig,
     required this._agentRepository,
     required this._messagingRepository,
     required this._workspaceRepository,
@@ -61,13 +60,6 @@ class SpaceProvisioningService {
   });
 
   final RepoWorkspaceProvisionerPort _provisioner;
-  final Future<void> Function(
-    String cwd, {
-    String? workspaceId,
-    String? agentId,
-    String? conversationId,
-  })
-  _writeMcpConfig;
   final AgentRepository _agentRepository;
   final MessagingRepository _messagingRepository;
   final WorkspaceRepository _workspaceRepository;
@@ -371,7 +363,7 @@ class SpaceProvisioningService {
       return;
     }
 
-    // Provision each agent's overlay + write its derived `.mcp.json`.
+    // Provision each agent's overlay.
     final overlays = <String>[];
     // An agent left without an overlay fails the run: it has nowhere of its
     // own to work, whatever the worktrees say.
@@ -423,25 +415,18 @@ class SpaceProvisioningService {
             reason: SpaceWorkspaceUnavailableReason.noRepos ||
                 SpaceWorkspaceUnavailableReason.cancelled,
           ):
-            // No repo: the agent works in its own directory, whose
-            // `.mcp.json` dispatch derives. Stopped: [_isStale] ends the run.
+            // No repo: the agent works in its own directory. Stopped:
+            // [_isStale] ends the run.
             continue;
           case SpaceWorkspaceUnavailable(:final message):
             // Not the agent's own directory in its place: that one is shared
-            // by every space the agent is in, and a `.mcp.json` written there
-            // would pass verification for an overlay that does not exist.
+            // by every space the agent is in, so it would pass verification
+            // for an overlay that does not exist.
             throw StateError(message ?? 'the overlay was not prepared');
         }
-        // Track the overlay before writing `.mcp.json` so verification always
-        // checks it — a failed write leaves `.mcp.json` absent, which `_verify`
-        // catches and reports as `failed`.
+        // No `.mcp.json` here: a run's MCP config carries that run's own
+        // secret, so dispatch writes it when the run starts.
         overlays.add(overlay);
-        await _writeMcpConfig(
-          overlay,
-          workspaceId: workspaceId,
-          agentId: agent.id,
-          conversationId: spaceId,
-        );
       } on Object catch (e, st) {
         CcHostLog.error(
           'space provisioning: overlay failed for agent ${agent.id}: $e',
@@ -468,8 +453,8 @@ class SpaceProvisioningService {
       return;
     }
 
-    // Verify: every TARGET repo has a worktree row AND every overlay has
-    // `.mcp.json`. A repo that failed inside `ensureSpaceWorkspace` still
+    // Verify: every TARGET repo has a worktree row AND every overlay exists.
+    // A repo that failed inside `ensureSpaceWorkspace` still
     // returns an overlay, so this is the authoritative success signal.
     final ready =
         !agentFailed &&
@@ -648,11 +633,11 @@ class SpaceProvisioningService {
       return false;
     }
     for (final overlay in overlays) {
-      if (!File('$overlay/.mcp.json').existsSync()) {
+      if (!Directory(overlay).existsSync()) {
         CcHostLog.warning(
-          'space provisioning: $spaceId overlay $overlay missing .mcp.json',
+          'space provisioning: $spaceId overlay $overlay does not exist',
         );
-        _log?.write(workspaceId, spaceId, 'Agent setup left no .mcp.json');
+        _log?.write(workspaceId, spaceId, 'Agent setup left no directory');
         return false;
       }
     }

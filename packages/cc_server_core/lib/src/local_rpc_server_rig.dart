@@ -23,6 +23,17 @@ ContentType relayContentType(String value) {
   }
 }
 
+// The clipboard and file lanes are HTTP routes, not RPC ops: the RPC socket
+// caps an inbound frame at 256 KB and CLOSES the connection past it
+// (`WsRemoteTransport`), a DoS guard that is right for JSON commands and fatal
+// for a pasted screenshot. Putting a base64 image or a dropped file on that
+// lane would not be slow, it would drop the client's whole session. So bytes
+// ride HTTP, exactly as rig frames, meeting audio and proxied media already
+// do, and the RPC lane stays small.
+//
+// Every lane asks [RigAccess] after the signed target and membership: a GET
+// sees the rig (its space's read gate), a POST drives it (operating its
+// space's environment).
 const int _maxRigTransferBody = 700 * 1024 * 1024;
 const int _maxRigMicrophoneChunk = 128 * 1024;
 
@@ -68,9 +79,24 @@ extension _RigMethods on LocalRpcServer {
       await _closeProxy(res, HttpStatus.forbidden);
       return;
     }
+    // A host without this lane answers that first: there is no rig to ask
+    // about.
+    if ((request.method == 'POST' ? rigAudioInput : rigStream) == null) {
+      await _closeProxy(res, HttpStatus.notFound);
+      return;
+    }
+    final userId = device?.userId;
+    if (!await _rigLaneAllowed(
+      workspaceId,
+      userId,
+      rigId,
+      request.method == 'POST' ? _RigLaneRight.drive : _RigLaneRight.view,
+    )) {
+      await _closeProxy(res, HttpStatus.forbidden);
+      return;
+    }
 
     if (request.method == 'POST') {
-      final userId = device?.userId;
       final input = rigAudioInput;
       if (q['lane'] != 'microphone' || userId == null || userId.isEmpty) {
         await _closeProxy(res, HttpStatus.forbidden);
@@ -177,6 +203,25 @@ extension _RigMethods on LocalRpcServer {
     }
   }
 
+  /// Whether [userId] holds [right] on rig [rigId] of [workspaceId].
+  /// Refused without a [LocalRpcServer.rigAccess] or a user.
+  Future<bool> _rigLaneAllowed(
+    String workspaceId,
+    String? userId,
+    String rigId,
+    _RigLaneRight right,
+  ) async {
+    final access = rigAccess;
+    if (access == null || userId == null || userId.isEmpty) {
+      return false;
+    }
+    return switch (right) {
+      _RigLaneRight.view => access.mayView(workspaceId, userId, rigId),
+      _RigLaneRight.read => access.mayReadContents(workspaceId, userId, rigId),
+      _RigLaneRight.drive => access.mayDrive(workspaceId, userId, rigId),
+    };
+  }
+
   void _setRigTransferCors(HttpRequest request, HttpResponse response) {
     final origin = request.headers.value('origin') ?? '*';
     response.headers
@@ -230,6 +275,18 @@ extension _RigMethods on LocalRpcServer {
     }
     if (rigTransfer == null) {
       await _closeProxy(res, HttpStatus.notFound);
+      return null;
+    }
+    // Reading the guest's clipboard or files is the holder's alone on a rig
+    // carrying somebody's credentials; frames and sound are anyone's the
+    // space admits.
+    if (!await _rigLaneAllowed(
+      workspaceId,
+      userId,
+      rigId,
+      request.method == 'POST' ? _RigLaneRight.drive : _RigLaneRight.read,
+    )) {
+      await _closeProxy(res, HttpStatus.forbidden);
       return null;
     }
     return (
@@ -446,4 +503,16 @@ extension _RigMethods on LocalRpcServer {
     res.add(bytes);
     await res.close();
   }
+}
+
+/// What a rig lane asks of [RigLaneAccess].
+enum _RigLaneRight {
+  /// Frames and sound.
+  view,
+
+  /// The guest's clipboard and files.
+  read,
+
+  /// Input, microphone, clipboard writes and drops.
+  drive,
 }

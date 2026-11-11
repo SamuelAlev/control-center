@@ -112,6 +112,12 @@ around a conversation: its title, `/btw` answers, `/handoff` documents and the
 `/goal` objective interview. It runs one tool-less completion each time, on its
 own adapter and model, so give it a small, fast model.
 
+When that adapter is an ACP CLI, the completion is a process on the server's
+machine and follows the [sandbox rule](/manual/concepts/sandbox-security/#agents-on-a-host-without-a-sandbox):
+inside the sandbox when the server sandboxes agents, and with no sandbox only
+for requests the server owner is accountable for. For anyone else these
+features are skipped: no title is generated, and `/btw` answers "The Content synthesizer agent is missing or has no working runner".
+
 Edit its **persona** in **Settings → Workspace → Agents** to change how that
 text reads — title length, language, tone, the examples it follows. The reply
 format each feature parses (a single-line title, the objective's sections) is
@@ -131,8 +137,10 @@ Then press **Refresh** at the top of the page. Each detected row shows the
 resolved version and path, plus chips for whether it supports JSON mode and model
 selection.
 
-An external CLI keeps its own credentials, in its own configuration, on the
-server host. Control Center does not manage them.
+Claude Code logins are listed under **Claude Code accounts** on the Claude Code
+runner. Control Center creates each account's configuration directory on the
+server and gives you the `claude auth login` command to run there; it never
+signs in for you.
 
 :::caution[Adapter Arguments and Environment variables stay on this device]
 Each adapter row offers an **Arguments** field and an **Environment variables**

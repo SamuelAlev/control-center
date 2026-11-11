@@ -10,6 +10,7 @@ class _FakeBroker implements CredentialBrokerPort {
   _FakeBroker();
 
   static const String token = 'ghp_fake';
+  Map<String, String> environment = const {'GITHUB_TOKEN': token};
   bool fail = false;
   int mints = 0;
   final List<String> revoked = [];
@@ -32,7 +33,7 @@ class _FakeBroker implements CredentialBrokerPort {
     mintedFor.add(actingUserId);
     return ScopedCredentials(
       handle: 'handle-$mints',
-      environment: {'GITHUB_TOKEN': token},
+      environment: environment,
       expiresAt: DateTime.utc(2030),
     );
   }
@@ -68,14 +69,15 @@ void main() {
     String rigId = 'rig-1',
     String secret = 's3cret',
     Set<String> hosts = const {'github.com'},
-    String? actingUserId,
+    String? actingUserId = 'user-opener',
+    ForgeTokenScope scope = ForgeTokenScope.write,
   }) => service.registerRig(
     rigId: rigId,
     workspaceId: 'ws-1',
     conversationId: 'conv-1',
     secret: secret,
     allowedHosts: hosts,
-    scope: ForgeTokenScope.write,
+    scope: scope,
     actingUserId: actingUserId,
   );
 
@@ -112,6 +114,25 @@ void main() {
       expect(body['username'], 'x-access-token');
       expect(body['password'], 'ghp_fake');
       expect(broker.mints, 1);
+    });
+
+    test('GitLab and Bitbucket get no credential: a guest holds none for '
+        'them and publishes through the server', () async {
+      register(hosts: const {'bitbucket.org', 'gitlab.com'});
+      broker.environment = {
+        'GITHUB_TOKEN': 'ghs_fake',
+        'GITLAB_TOKEN': 'glpat-fake',
+        'BITBUCKET_API_TOKEN': 'jdoe@example.com:ATATT3x',
+      };
+      for (final host in ['bitbucket.org', 'gitlab.com']) {
+        final response = await post({
+          'rig_id': 'rig-1',
+          'secret': 's3cret',
+          'host': host,
+        });
+        expect(response.statusCode, HttpStatus.notFound, reason: host);
+        await response.drain<void>();
+      }
     });
 
     test('the answer is never cached', () async {
@@ -394,9 +415,22 @@ void main() {
       expect(broker.mintedFor, ['user-alice']);
     });
 
-    test('falls back to the server when nobody opened it', () async {
-      // A rig opened by background work is the server acting as itself.
-      register();
+    test('a write rig nobody opened gets no token: there is nobody to push '
+        'as, and nobody else stands in', () async {
+      register(actingUserId: null);
+      final response = await post({
+        'rig_id': 'rig-1',
+        'secret': 's3cret',
+        'host': 'github.com',
+      });
+      expect(response.statusCode, HttpStatus.forbidden);
+      await response.drain<void>();
+
+      expect(broker.mints, 0);
+    });
+
+    test('a read rig nobody opened still reads', () async {
+      register(actingUserId: null, scope: ForgeTokenScope.read);
       final response = await post({
         'rig_id': 'rig-1',
         'secret': 's3cret',

@@ -3,7 +3,7 @@ title: สถาปัตยกรรม
 description: โครงสร้างของ Control Center ด้วยโมเดลเซิร์ฟเวอร์และไคลเอนต์แบบบาง สถาปัตยกรรมแบบคลีนที่ยึดฟีเจอร์เป็นหลัก และพอร์ตกับอะแดปเตอร์
 dateModified: 2026-09-19
 slug: th-TH/คู่มือ/แนวคิด/สถาปัตยกรรม
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## ภาพรวม
@@ -60,7 +60,7 @@ feature_name/
 - เอนทิตีหน่วยความจำ: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - ออบเจกต์ค่าที่ใช้ร่วมกัน: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - พอร์ตที่ใช้ร่วมกัน: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- บริการโดเมน: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- บริการโดเมน: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + ชนิดเหตุการณ์ (เวิร์กสเปซ/เอเจนต์, PR/รีวิว, การส่งข้อความ, ตั๋วงาน, ไปป์ไลน์, การประสานงาน, หน่วยความจำ, ปฏิทิน/การประชุม, ตัวตนและสมาชิกภาพ, การสังเกตการณ์)
 
 ## ตัวตนและการทำงานร่วมกันแบบหลายคน
@@ -132,7 +132,6 @@ HTTP ภายนอกทั้งหมดอยู่ที่เซิร์
 
 - ความลับใน `flutter_secure_storage` (พวงกุญแจ macOS, ตัวจัดการข้อมูลรับรอง Windows, libsecret บน Linux) — ข้อมูลรับรองของอุปกรณ์ฝั่งไคลเอนต์และคีย์จับคู่ระยะไกล ไม่ใช่โทเค็นของผู้ให้บริการ
 - `shared_preferences` สำหรับค่ากำหนดที่ไม่ละเอียดอ่อนเท่านั้น (ธีม ฟอนต์ เลย์เอาต์)
-- ความลับของผู้ให้บริการที่ตกค้างจากการติดตั้งเวอร์ชันเก่าจะถูกส่งมอบให้เซิร์ฟเวอร์หนึ่งครั้งโดย `features/auth/providers/credential_migration.dart` แล้วลบออกจากพวงกุญแจของไคลเอนต์
 
 ## การบังคับใช้สถาปัตยกรรม
 

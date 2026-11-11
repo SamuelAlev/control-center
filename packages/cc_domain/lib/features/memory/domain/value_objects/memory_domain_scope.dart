@@ -57,7 +57,7 @@ class MemoryDomainScope {
   ///
   /// A slug carrying the prefix but no separator (`repo:orphan`) is malformed —
   /// it is returned as a global domain whose name is the whole raw string, so
-  /// a hand-written or legacy value is displayed verbatim rather than crashing
+  /// a hand-written value is displayed verbatim rather than crashing
   /// or silently losing its text.
   static MemoryDomainScope parse(String slug) {
     if (!slug.startsWith(kRepoDomainPrefix)) {

@@ -2,7 +2,7 @@
 title: Din första arbetsyta
 description: Skapa en arbetsyta, registrera ett repo i den och se isoleringsgränsen med egna ögon.
 slug: sv-SE/handbok/guider/forsta-arbetsyta
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Det här bygger du
@@ -11,10 +11,12 @@ När du är klar med den här guiden har du:
 
 - En arbetsyta namngiven efter ditt projekt
 - Ett Git-repo registrerat i den
-- Fem seedade agenter, varav en du har konfigurerat tillräckligt för att kunna köra
+- Sex seedade agenter, varav en du har konfigurerat tillräckligt för att kunna köra
 - En andra, tom arbetsyta som bevisar isoleringsgränsen
 
 Onboardingen har redan skapat en arbetsyta åt dig. Den här guiden skapar en ny medvetet, så att du ser varje del av processen.
+
+Att skapa en arbetsyta kräver serverägaren, personen som satte upp servern. På en desktop som kör sin egen server är det du. På någon annans server står det **Lägg till arbetsyta** "Bara serverägaren kan skapa arbetsytor. Be om att få en skapad, eller be en arbetsytadministratör att bjuda in dig." Gör ett av dem och följ resten av guiden i den arbetsytan. Att registrera ett arkiv i steg 2 kräver en arbetsytadministratör, och den andra arbetsytan i steg 4 kräver serverägaren igen.
 
 Innan du börjar, välj en git-utcheckning som uppfyller alla tre villkoren – registreringssteget avvisar allt annat:
 
@@ -35,12 +37,12 @@ Control Center byter till den nya arbetsytan och landar i dess inkorg (`/workspa
 Bakom kulisserna publicerar servern en `WorkspaceCreated`-händelse och seedar arbetsytan med:
 
 - en **CEO-agent** vars persona är samordning och delegering
-- fyra specialister – `qa`, `architect`, `engineer` och `librarian` – var och en med egna instruktioner och skills
+- fem specialister – `qa`, `architect`, `engineer`, `librarian` och `content-synthesizer` – var och en med egna instruktioner och skills
 - de inbyggda pipelinemallarna och deras triggerrader
 
 Varje arbetsyta du skapar får allt detta, inte bara den första.
 
-**Kontrollpunkt.** Öppna **Inställningar → Arbetsyta → Agenter**. Fem agenter finns i personallistan, var och en med en ihålig statusring.
+**Kontrollpunkt.** Öppna **Inställningar → Arbetsyta → Agenter**. Sex agenter finns i personallistan, var och en med en ihålig statusring.
 
 ## Steg 2: Registrera ett repo
 
@@ -57,7 +59,7 @@ Att registrera samma utcheckning i en annan arbetsyta senare skapar en andra, ob
 
 ## Steg 3: Gör en agent körbar
 
-De fem agenter som den här arbetsytan nyss seedade har ingen adapter och ingen modell. Dispatchningen kör dem på **Control Center (built-in)** och frågar, när ingen modell är angiven, Anthropic efter dennes standardmodell – så de fungerar bara om du har anslutit ett Anthropic-konto, och i så fall på en modell du inte valde. Onboardingen vid första körningen skriver sitt val på varje agent i den första arbetsytan, en gång; en arbetsyta du skapar efteråt startar med alla fem oinställda. Ange en nu.
+De sex agenter som den här arbetsytan nyss seedade har ingen adapter och ingen modell. Dispatchningen kör dem på **Control Center (built-in)** och frågar, när ingen modell är angiven, Anthropic efter dennes standardmodell – så de fungerar bara om du har anslutit ett Anthropic-konto, och i så fall på en modell du inte valde. Onboardingen vid första körningen skriver sitt val på varje agent i den första arbetsytan, en gång; en arbetsyta du skapar efteråt startar med alla sex oinställda. Ange en nu.
 
 1. Öppna **Inställningar → Arbetsyta → Agenter**
 2. Välj `engineer` i personallistan
@@ -73,7 +75,7 @@ Varje agent har sin egen adapter och modell, så upprepa detta för varje annan 
 Skapa en andra arbetsyta från chipen i titelraden, precis som i steg 1. Titta sedan på den:
 
 - **Inställningar → Arbetsyta → Arkiv** är tom. Repot du registrerade för en minut sedan finns inte där.
-- **Inställningar → Arbetsyta → Agenter** innehåller fem agenter, men de är andra rader – adaptern du ställde in i steg 3 är borta.
+- **Inställningar → Arbetsyta → Agenter** innehåller sex agenter, men de är andra rader – adaptern du ställde in i steg 3 är borta.
 - Listan över ytor, ärenden och minnet är alla tomma.
 
 Inget läckte, för det finns inget att läcka från: varje arbetsytas rader ligger i arbetsytans egen databasfil. En läsning mellan arbetsytor är inte en fråga som filtreras, det är en fråga som inte har någonstans att köra. Att ta bort en arbetsyta är att avlänka en fil.
@@ -84,6 +86,6 @@ Läs [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/) för hela mo
 
 ## Sammanfattning
 
-Du skapade en arbetsyta, såg den seeda en CEO och fyra specialister, registrerade ett repo i den, gav en agent en adapter och en modell och bekräftade att en andra arbetsyta inte delar något av det.
+Du skapade en arbetsyta, såg den seeda en CEO och fem specialister, registrerade ett repo i den, gav en agent en adapter och en modell och bekräftade att en andra arbetsyta inte delar något av det.
 
 **Nästa:** [Starta din första agent](/sv-SE/handbok/guider/forsta-agent/) för att sätta arbetsytan i arbete.

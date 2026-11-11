@@ -9,7 +9,7 @@ import 'package:cc_rpc/cc_rpc.dart';
 /// Reads/mutates the Plan Studio surface (PRD 17) over the RPC client.
 ///
 /// Backs the web build and the desktop in remote mode. Keyed phone callers
-/// pass `workspace_id` explicitly; legacy desktop callers use the RPC client's
+/// pass `workspace_id` explicitly; desktop callers use the RPC client's
 /// ambient workspace. The host enforces membership and row ownership.
 /// Mirrors `orchestration.*` (revision/partial-approval), `plan.*` and `playbook.*`
 /// ops + their watch queries in the host catalog. Parses wire maps straight

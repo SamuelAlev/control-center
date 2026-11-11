@@ -20,7 +20,8 @@ class WorkspaceMapper {
       updatedAt: row.updatedAt,
       reviewConcurrency: row.reviewConcurrency,
       autoPublishReview: row.autoPublishReview,
-      githubAuthMode: GithubAuthMode.fromWire(row.githubAuthMode),
+      connectMode: WorkspaceConnectMode.fromWire(row.connectMode),
+      connectUrl: row.connectUrl,
       githubAppId: row.githubAppId,
       deletedAt: row.deletedAt,
     );

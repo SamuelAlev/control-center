@@ -2,7 +2,7 @@
 title: Kroki potoku
 description: Dokumentacja referencyjna rodzajów kroków potoku, kluczy ciał kroków, ich konfiguracji oraz wyników kroków.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kroki-potoku
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Krok potoku ma dwie niezależne osie:
@@ -61,7 +61,7 @@ Ogólny węzeł promptu i wysyłki: renderuje prompt, wysyła agenta do rozmowy 
 
 ### `pipeline.condition`
 
-Ciało routera — odczytuje `config.extras`, ocenia warunek i zwraca `StepResult.route(key)`. Warunki to **nie** wyrażenia JavaScript; obsługiwane są trzy sposoby ich tworzenia, w kolejności priorytetu:
+Ciało routera — odczytuje `config.extras`, ocenia warunek i zwraca `StepResult.route(key)`. Warunki to **nie** wyrażenia JavaScript; obsługiwane są dwa sposoby ich tworzenia, w kolejności priorytetu:
 
 - **Drzewo predykatów** (`extras.predicate`) — drzewo logiczne, które kieruje do `"true"` / `"false"`. Każdy węzeł to mapa z polem `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true, gdy dowolna z wymienionych ścieżek istnieje na dysku; `negate` odwraca wynik; `recursive` przeszukuje także podkatalogi (pomijając `.git`, `node_modules`, `build`, `.dart_tool`). Ścieżki względne są rozwiązywane względem `state[baseKey]` (domyślnie `repo_local_path`), a w przeciwnym razie względem katalogu obszaru roboczego danego uruchomienia.
@@ -69,19 +69,28 @@ Ciało routera — odczytuje `config.extras`, ocenia warunek i zwraca `StepResul
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — grupy logiczne.
   - `{"type": "not", "of": <predicate>}` — negacja.
 - **Przełącznik** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; kieruje do pierwszego przypadku, który wartość stanu zawiera bez rozróżniania wielkości liter, a w przeciwnym razie do `default`.
-- **Porównanie** (starsze, najwyższego poziomu `extras.left` / `extras.op` / `extras.right`) — równoważne predykatowi `comparison`, zachowane dla szablonów utworzonych przed wprowadzeniem drzewa.
 
 Krawędzie wychodzące z węzła niosą `routeKey`, który musi się zgadzać ze zwróconym kluczem.
 
 ### `prReview.comment`
 
-Zamieszcza skonsolidowane ustalenia jako komentarz recenzji PR przez klienta GitHub PR.
+Zamieszcza skonsolidowane ustalenia lub własne `extras.message` kroku jako komentarz recenzji PR przez klienta GitHub PR.
 
-| Klucz stanu               | Opis                                         |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (wymagany)                      |
-| `pr_number`               | Numer PR — liczba całkowita lub ciąg liczbowy (wymagany) |
-| `consolidated_findings`   | Treść komentarza (wymagana)                  |
+| Klucz                   | Odczytywany z     | Opis                                                               |
+| ----------------------- | ----------------- | ------------------------------------------------------------------ |
+| `repo_full_name`        | Payload wyzwalacza | `owner/repo` (wymagany)                                           |
+| `pr_number`             | Payload wyzwalacza | Numer PR — dodatnia liczba całkowita lub ciąg liczbowy (wymagany) |
+| `consolidated_findings` | Stan              | Treść komentarza, gdy krok nie ma `message`                        |
+
+Pull request pochodzi wyłącznie z payloadu wyzwalacza uruchomienia, nigdy ze stanu, który krok może przepisać w trakcie działania. @-wzmianki w opublikowanym tekście są unieszkodliwiane, więc komentarz nikogo nie powiadamia.
+
+`message` renderuje swoje symbole zastępcze `{{key}}` następująco:
+
+- `repo_full_name`, `repo_owner`, `repo_name` i `pr_number` renderują pull request, pod którym krok publikuje.
+- `author` renderowany jest z payloadu wyzwalacza bez zmian, tylko gdy jest poprawną nazwą użytkownika w forge; w przeciwnym razie krok kończy się błędem.
+- `consolidated_findings` renderowane jest jako surowy markdown, z unieszkodliwionymi @-wzmiankami.
+- Każda inna wartość renderowana jest jako dosłowny tekst: w jednym wierszu, z zescapowanymi znakami markdown i unieszkodliwionymi @-wzmiankami.
+- Symbol zastępczy, który nie rozwiązuje się do niczego, powoduje błąd kroku.
 
 Zwraca `StepResult.terminal` z `comment_review_id` i `commented_at` w stanie.
 

@@ -1,24 +1,23 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
-import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_access_banner.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_automation_tokens_card.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart'
     show repoAccessForWorkspaceProvider;
-import 'package:control_center/features/repos/presentation/widgets/repo_index_button.dart';
+import 'package:control_center/features/repos/presentation/settings/repo_path_issue_notice.dart';
+import 'package:control_center/features/repos/presentation/settings/repo_settings_row.dart';
+import 'package:control_center/features/repos/presentation/settings/repos_empty_states.dart';
 import 'package:control_center/features/repos/presentation/widgets/show_add_repo_dialog.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
-import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:control_center/features/settings/settings_shortcuts.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_scope.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
-import 'package:control_center/shared/widgets/github_user_avatar.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
-import 'package:control_center/shared/widgets/repo_access_banner.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
-import 'package:control_center/shared/widgets/workspace_avatar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -36,17 +35,21 @@ class ReposSettingsView extends ConsumerWidget {
     // `GoRouterState.of` keeps this null-safe outside a router and consistent
     // with the sibling settings panes (agents/skills).
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    // Adding a repository browses the server's folders, which only the
+    // server owner may do (`can_use_host`): nobody else is offered it.
+    final canAdd = ref.watch(canUseHostProvider);
 
     return SettingsShortcuts(
       extraBindings: {
-        if (workspaceId != null && !ref.read(isDemoServerProvider))
-          'settings.repos-add': () => _addRepo(context, ref, workspaceId),
+        if (workspaceId != null && canAdd && !ref.read(isDemoServerProvider))
+          'settings.repos-add': () =>
+              addReposAndReport(context, ref, workspaceId),
       },
       child: PageWrapper(
         title: l10n.repositories,
         subtitle: l10n.reposDescription,
         actions: [
-          if (workspaceId != null)
+          if (workspaceId != null && canAdd)
             Builder(
               builder: (context) {
                 final isDemo = ref.watch(isDemoServerProvider);
@@ -56,7 +59,7 @@ class ReposSettingsView extends ConsumerWidget {
                     // demo: the repository list is a fixture — read-only.
                     onPressed: isDemo
                         ? null
-                        : () => _addRepo(context, ref, workspaceId),
+                        : () => addReposAndReport(context, ref, workspaceId),
                     size: CcButtonSize.sm,
                     icon: AppIcons.plus,
                     child: Text(l10n.addRepository),
@@ -66,7 +69,7 @@ class ReposSettingsView extends ConsumerWidget {
             ),
         ],
         child: workspaceId == null
-            ? const _NoWorkspaceState()
+            ? const ReposNoWorkspaceState()
             : _ReposList(workspaceId: workspaceId),
       ),
     );
@@ -95,28 +98,30 @@ class _ReposList extends ConsumerWidget {
         ),
       ),
       data: (repos) {
-        // Repos the SERVER's credential cannot access (typically a GitHub App
-        // not installed on the repo's org). The fix is an action on the forge,
+        // Repos automation cannot reach (typically the GitHub App not
+        // installed on the repo's owner). The fix is an action on the forge,
         // so it surfaces here — where repos are managed — not just on the PR
         // list.
-        final inaccessible =
+        final access =
             ref.watch(repoAccessForWorkspaceProvider(workspaceId)).value ??
             const [];
         return ListView(
           padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
           children: [
-            RepoAccessBanner(repos: inaccessible),
+            RepoAccessBanner(issues: access),
+            RepoPathConfirmAllBar(workspaceId: workspaceId, repos: repos),
             SectionCard(
               label: l10n.reposCount(repos.length),
               padding: const EdgeInsets.only(top: AppSpacing.md),
               headerPadding: const EdgeInsets.symmetric(horizontal: 16),
               child: repos.isEmpty
-                  ? const _EmptyState()
+                  ? ReposEmptyState(canAdd: ref.watch(canUseHostProvider))
                   : _ReorderableRepoList(
                       workspaceId: workspaceId,
                       repos: repos,
                     ),
             ),
+            RepoAutomationTokensCard(workspaceId: workspaceId, repos: repos),
           ],
         );
       },
@@ -192,405 +197,14 @@ class _ReorderableRepoListState extends ConsumerState<_ReorderableRepoList> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (i > 0) const CcDivider(),
-          _RepoRow(
+          RepoSettingsRow(
             repo: _repos[i],
             workspaceId: widget.workspaceId,
             dragIndex: i,
           ),
+          RepoPathIssueNotice(repo: _repos[i], workspaceId: widget.workspaceId),
         ],
       ),
     );
   }
-}
-
-Future<void> _addRepo(
-  BuildContext context,
-  WidgetRef ref,
-  String workspaceId,
-) async {
-  // One dialog on every platform: it browses the SERVER's filesystem (the
-  // desktop is a thin client — the checkout lives wherever cc_server runs),
-  // registers the selected checkouts directly into this workspace and
-  // returns the batch outcome to report here.
-  final outcome = await addRepos(context, ref, workspaceId);
-  if (outcome == null || !context.mounted) {
-    return;
-  }
-  final toasts = CcToastScope.maybeOf(context);
-  if (toasts == null) {
-    return;
-  }
-  final l10n = AppLocalizations.of(context);
-  if (outcome.added.isNotEmpty) {
-    toasts.show(
-      l10n.repositoriesAdded(outcome.added.length),
-      variant: CcToastVariant.success,
-    );
-  }
-  if (outcome.failed.isNotEmpty) {
-    final first = outcome.failed.entries.first;
-    toasts.show(
-      l10n.repositoriesAddFailed(
-        outcome.failed.length,
-        '${first.key}: ${first.value}',
-      ),
-      variant: CcToastVariant.danger,
-    );
-  }
-}
-
-class _RepoRow extends ConsumerWidget {
-  const _RepoRow({
-    required this.repo,
-    required this.workspaceId,
-    this.dragIndex,
-  });
-
-  final Repo repo;
-  final String workspaceId;
-
-  /// This row's index in the reorderable list; when non-null a leading drag
-  /// handle appears that starts a reorder for this row.
-  final int? dragIndex;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    final inaccessible =
-        ref.watch(repoAccessForWorkspaceProvider(workspaceId)).value ??
-        const [];
-    final noAccess = inaccessible.any((r) => r.repoId == repo.id);
-    final demo = ref.watch(isDemoServerProvider);
-    final workspace = demo ? ref.watch(activeWorkspaceDisplayProvider) : null;
-
-    // The whole row edits the link. Demo rows are a fixture, so they neither
-    // open it nor report hover, and their disabled actions stay in view to
-    // carry the reason in a tooltip.
-    return CcTappable(
-      onPressed: demo ? null : () => _editGitHubLink(context, ref),
-      semanticLabel: repo.name,
-      semanticButton: !demo,
-      builder: (context, states) {
-        final active =
-            demo ||
-            states.contains(WidgetState.hovered) ||
-            states.contains(WidgetState.focused);
-        return AnimatedContainer(
-          duration: CcMotion.fast,
-          color: states.contains(WidgetState.hovered)
-              ? tokens.hover
-              : const Color(0x00000000),
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
-          child: Row(
-            children: [
-              if (dragIndex != null) ...[
-                ReorderableDragStartListener(
-                  index: dragIndex!,
-                  // Claims the tap, so a click on the handle that never
-                  // becomes a drag does not fall through and open the row.
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () {},
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.grab,
-                      child: Icon(
-                        AppIcons.gripVertical,
-                        size: 16,
-                        color: tokens.fgTertiary,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-              ],
-              // The demo org is named `helix`, which is also a real GitHub account.
-              // `github.com/helix.png` is that person's photo, so the demo shows
-              // the workspace mark (the Helix logo) instead of fetching it.
-              if (demo && repo.hasForgeRemote)
-                WorkspaceAvatar(
-                  name: workspace?.name ?? repo.remoteOwner,
-                  workspaceId: workspace?.workspaceId ?? workspaceId,
-                  hasLogo: workspace?.hasLogo ?? false,
-                  size: 32,
-                )
-              // `github.com/<owner>.png` is a GitHub-only convention; the other
-              // forges have no equivalent guessable owner avatar, so they fall back
-              // to initials rather than requesting a URL that 404s.
-              else if (repo.hasForgeRemote)
-                GitHubUserAvatar(
-                  login: repo.remoteOwner,
-                  avatarUrl: repo.forge == ForgeHost.github
-                      ? 'https://github.com/${repo.remoteOwner}.png'
-                      : '',
-                  size: 32,
-                )
-              else
-                const CcAvatar(size: 32, icon: AppIcons.folder),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            repo.name,
-                            style: CcTypography.body.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: tokens.textPrimary,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        // Which forge this repo lives on. A workspace may mix
-                        // them, and the name alone cannot say — two repos can be
-                        // `acme/web` on different forges and behave differently
-                        // (what a review can do, where a link goes).
-                        if (repo.hasForgeRemote) ...[
-                          const SizedBox(width: 8),
-                          CcBadge(label: repo.forge.displayName),
-                        ],
-                        // The server's credential cannot see this repo (see the
-                        // banner above the list for the fix).
-                        if (noAccess) ...[
-                          const SizedBox(width: 8),
-                          CcBadge(
-                            label: l10n.repoNoAccessBadge,
-                            variant: CcBadgeVariant.warning,
-                            icon: AppIcons.lock,
-                          ),
-                        ],
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      repo.path,
-                      style: CcTypography.caption.copyWith(
-                        color: tokens.textTertiary,
-                        height: 1.4,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              RepoIndexButton(
-                repo: repo,
-                workspaceId: workspaceId,
-                rowActive: active,
-              ),
-              const SizedBox(width: AppSpacing.xs),
-              SettingsHoverReveal(
-                active: active,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: AppSpacing.xs,
-                  children: [
-                    CcIconButton(
-                      icon: AppIcons.link,
-                      color: tokens.fgTertiary,
-                      size: CcButtonSize.sm,
-                      tooltip: demo
-                          ? l10n.demoUnavailableRepos
-                          : l10n.githubLink,
-                      semanticLabel: l10n.githubLink,
-                      // demo: the repository list is a fixture — read-only.
-                      onPressed: demo
-                          ? null
-                          : () => _editGitHubLink(context, ref),
-                    ),
-                    CcIconButton(
-                      icon: AppIcons.trash2,
-                      variant: CcButtonVariant.destructive,
-                      size: CcButtonSize.sm,
-                      tooltip: demo ? l10n.demoUnavailableRepos : l10n.remove,
-                      semanticLabel: l10n.remove,
-                      // demo: the repository list is a fixture — read-only.
-                      onPressed: demo
-                          ? null
-                          : () => _confirmRemove(context, ref),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Future<void> _confirmRemove(BuildContext context, WidgetRef ref) async {
-    final l10n = AppLocalizations.of(context);
-    final confirmed = await showCcDialog<bool>(
-      context: context,
-      builder: (ctx) => CcDialog(
-        title: l10n.removeRepoFromWorkspace,
-        content: Text(l10n.repoRemovedFromWorkspace(repo.name)),
-        actions: [
-          CcButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            variant: CcButtonVariant.secondary,
-            child: Text(AppLocalizations.of(context).cancel),
-          ),
-          CcButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            variant: CcButtonVariant.destructive,
-            child: Text(AppLocalizations.of(context).remove),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true) {
-      return;
-    }
-
-    await ref
-        .read(workspaceRepositoryProvider)
-        .unlinkRepoFromWorkspace(workspaceId, repo.id);
-    await ref.read(repoRepositoryProvider).delete(workspaceId, repo.id);
-  }
-
-  Future<void> _editGitHubLink(BuildContext context, WidgetRef ref) async {
-    final result = await showEditGitHubLinkDialog(context, repo: repo);
-    if (result == null) {
-      return;
-    }
-
-    await ref
-        .read(repoRepositoryProvider)
-        .upsert(
-          ref.requireWorkspaceId(),
-          repo.copyWith(
-            remoteOwner: result.$1,
-            remoteName: result.$2,
-            name: result.$1.isNotEmpty && result.$2.isNotEmpty
-                ? '${result.$1}/${result.$2}'
-                : repo.name,
-          ),
-        );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    return SizedBox(
-      height: 200,
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(AppIcons.gitBranch, size: 32, color: tokens.fgTertiary),
-            const SizedBox(height: 12),
-            Text(
-              AppLocalizations.of(context).noReposInWorkspaceYet,
-              style: CcTypography.body.copyWith(color: tokens.textPrimary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              AppLocalizations.of(context).addLocalCheckoutDescription,
-              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _NoWorkspaceState extends StatelessWidget {
-  const _NoWorkspaceState();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(AppIcons.layoutGrid, size: 32, color: tokens.fgTertiary),
-            const SizedBox(height: 12),
-            Text(
-              l10n.noActiveWorkspaceCreate,
-              style: CcTypography.body.copyWith(color: tokens.textPrimary),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              l10n.createOrSelectWorkspace,
-              style: CcTypography.caption.copyWith(color: tokens.textTertiary),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Shows a dialog for editing a repository's GitHub owner and name.
-Future<(String, String)?> showEditGitHubLinkDialog(
-  BuildContext context, {
-  required Repo repo,
-}) {
-  final ownerCtrl = TextEditingController(text: repo.remoteOwner);
-  final repoNameCtrl = TextEditingController(text: repo.remoteName);
-  final l10n = AppLocalizations.of(context);
-
-  return showCcDialog<(String, String)?>(
-    context: context,
-    builder: (dialogContext) => CcDialog(
-      title: l10n.githubLink,
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              l10n.setGithubLinkDescription(repo.name),
-              style: CcTypography.caption.copyWith(
-                color: context.designSystem?.textTertiary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            CcTextField(
-              controller: ownerCtrl,
-              label: l10n.ownerOrganization,
-              hintText: l10n.egSamuelAlev,
-            ),
-            const SizedBox(height: 12),
-            CcTextField(
-              controller: repoNameCtrl,
-              label: l10n.repositoryName,
-              hintText: l10n.egControlCenter,
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        CcButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          variant: CcButtonVariant.ghost,
-          child: Text(AppLocalizations.of(context).cancel),
-        ),
-        CcButton(
-          onPressed: () => Navigator.pop(dialogContext, (
-            ownerCtrl.text.trim(),
-            repoNameCtrl.text.trim(),
-          )),
-          child: Text(AppLocalizations.of(context).save),
-        ),
-      ],
-    ),
-  );
 }

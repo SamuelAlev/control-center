@@ -2,7 +2,7 @@
 title: Slack entegrasyonunu kurma
 description: Üyelerin ajanları Slack'ten yönlendirebilmesi için Slack'i paylaşılan Control Center uygulaması ya da kendi uygulamalarınızdan biri üzerinden bir Control Center çalışma alanına bağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/slack-entegrasyonu
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Bu kılavuz, Slack'i bir Control Center çalışma alanına nasıl bağlayacağınızı gösterir: paylaşılan Control Center uygulamasını ekleyerek ya da Control Center'ın sizin için oluşturduğu veya kendiniz oluşturduğunuz kendi uygulamanızla.
@@ -27,18 +27,18 @@ Bir çalışma alanı aynı anda bunlardan yalnızca biriyle çalışır.
 
 | Mod                                       | Gerekenler                                                                                                                     | Elde ettikleriniz                                                                                      |
 | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| **Paylaşılan Control Center uygulaması**  | Sunucu Control Center Connect kullanır (**Ayarlar → Sunucu → Tek oturum açma**) ve Connect Slack'e hizmet verir                 | Tek tıklama ve bir Slack oturum açması. Oluşturulacak uygulama, yapıştırılacak token, değiştirilecek bir şey yok |
+| **Paylaşılan Control Center uygulaması**  | Çalışma alanının oturum açma uygulamaları Control Center Connect üzerinden çalışır (sunucunun seçimi **Ayarlar → Sunucu → Tek oturum açma** altında, ya da çalışma alanının kendi seçimi **Ayarlar → Çalışma alanı → Entegrasyonlar** altında) ve Connect Slack'e hizmet verir                 | Tek tıklama ve bir Slack oturum açması. Oluşturulacak uygulama, yapıştırılacak token, değiştirilecek bir şey yok |
 | **Kendi uygulamanız**                     | Slack çalışma alanınızda, aşağıdaki üç yoldan biriyle yapılmış bir Slack uygulaması                                             | Control Center'dan düzenlenebilen kendi bot adınız, açıklamalarınız ve slash komutunuz                  |
 
 ### Paylaşılan Control Center uygulamasını ekleme
 
-1. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+1. Control Center'da **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
 2. Slack bloğunda **Control Center’ı Slack çalışma alanına ekle** satırını bulun ve **Slack çalışma alanına ekle**'ye tıklayın
 3. Tarayıcınız Slack'i açar. Slack ile oturum açın, Slack çalışma alanını seçin ve kurulumu onaylayın
 4. Tarayıcı bir kod gösterdiğinde, onu Control Center'ın açık bıraktığı iletişim kutusuna girin. Tarayıcı sizi uygulamaya kendiliğinden geri gönderirse yazacak bir şey yoktur
 5. Bir bildirim, uygulamanın eklendiği Slack çalışma alanını belirtir ve Slack bloğu bağlantının paylaşılan Control Center uygulamasında çalıştığını gösterir
 
-Uygulamayı yalnızca bir çalışma alanı yöneticisi ekleyebilir. Sunucu Connect yerine kendi uygulamalarını kullandığında, Connect'inizin Slack uygulaması olmadığında ya da bu çalışma alanında zaten kendi Slack uygulaması bağlı olduğunda satır neden başlayamadığını söyler.
+Uygulamayı yalnızca bir çalışma alanı yöneticisi ekleyebilir. Bu çalışma alanının oturum açma uygulamaları Connect yerine kendi uygulamalarıysa, Connect'inizin Slack uygulaması olmadığında ya da bu çalışma alanında zaten kendi Slack uygulaması bağlı olduğunda satır neden başlayamadığını söyler.
 
 Kendi uygulamanızdan farkları:
 
@@ -64,7 +64,7 @@ Kendi uygulamanızın olayları asla Connect'ten geçmez: Socket Mode onları do
 ## Seçenek A: uygulamayı Control Center oluştursun
 
 1. [api.slack.com/apps](https://api.slack.com/apps) adresinde bir uygulama yapılandırma jeton çifti oluşturun ve **yenileme** jetonunu (`xoxe-…`) kopyalayın
-2. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+2. Control Center'da **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
 3. Slack bloğunda **Uygulamayı benim için oluştur**'a tıklayın
 4. Jetonu yapıştırın, uygulama adını, bot adını, açıklamaları ve slash komutunu ayarlayın, ardından **Uygulama oluştur**'a tıklayın
 5. İletişim kutusunun gösterdiği iki kalan adımı izleyin; her biri Slack'e açılan bir bağlantıdır:
@@ -78,7 +78,7 @@ Yapılandırma jetonu her kullanımda rotasyona uğrar. Control Center rotasyona
 
 Aynı uygulama, yapılandırma jetonu yok — Slack kendi oluşturma ekranını, manifestin tamamı önceden doldurulmuş halde sunar.
 
-1. Control Center'da **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+1. Control Center'da **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
 2. Slack bloğunda **Uygulamayı benim için oluştur**'a tıklayın
 3. Uygulama adını, bot adını, açıklamaları ve slash komutunu ayarlayın — bunlar bağlantıyla birlikte taşınır
 4. **Slack içinde oluştur**'a tıklayın. Tarayıcınız, yapılandırma önceden doldurulmuş olarak Slack'in uygulama oluşturma sayfasını açar
@@ -132,7 +132,7 @@ message.im
 
 Kendi uygulamanızın token'ları Control Center'a bu şekilde ulaşır. Paylaşılan uygulamanın bunların hiçbirine ihtiyacı yoktur.
 
-1. **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
+1. **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin ve **Sohbet köprüleri** kartına kaydırın
 2. Slack bloğunda **Slack bağla**'ya tıklayın
 3. Alanları doldurun:
 
@@ -204,7 +204,7 @@ Yazma rolüne sahip bağlı herhangi bir üye Slack'ten bir bilet önerebilir:
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-`|` işaretinden önceki metin başlık, sonraki metin açıklamadır. Bot, bileti taslak olarak oluşturduğunu yanıtlar. Henüz hiçbir şey oluşturulmaz ve hiçbir bilet otomasyonu tetiklenmez: taslak sizi **Ayarlar → Çalışma alanı → Profil ve kimlik → Sohbetten bilet taslakları** bölümünde bekler; orada başlığı ve açıklamayı düzeltebilir, ardından **Bilet oluştur**'a ya da **At**'a tıklayabilirsiniz.
+`|` işaretinden önceki metin başlık, sonraki metin açıklamadır. Bot, bileti taslak olarak oluşturduğunu yanıtlar. Henüz hiçbir şey oluşturulmaz ve hiçbir bilet otomasyonu tetiklenmez: taslak sizi **Ayarlar → Siz → Profil → Sohbetten bilet taslakları** bölümünde bekler; orada başlığı ve açıklamayı düzeltebilir, ardından **Bilet oluştur**'a ya da **At**'a tıklayabilirsiniz.
 
 - Taslağı yalnızca komutu çalıştıran üye görür
 - Bıraktığınız bir taslak bir gün sonra atılır. Taslaklar bellekte tutulur; bu yüzden sunucunun yeniden başlatılması da onları atar

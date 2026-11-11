@@ -2,7 +2,7 @@
 title: Glosarium
 description: Definisi istilah-istilah penting yang digunakan di seluruh Control Center.
 slug: id-ID/panduan-pengguna/referensi/glosarium
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Manifest per ruang kerja berisi skill yang terpasang: untuk masing-masing, repositori sumbernya, jalur di dalam repo, commit tempat ia dipatok, dan hash konten gabungan. Pemasangan, pembaruan, dan penghapusan menjaganya tetap mutakhir; verify_skills memeriksanya terhadap disk.'],
 ['Gateway run agen', 'Endpoint loopback di cc_server yang menerapkan kebijakan aksi di dalam sandbox agen. Setiap push GitHub yang dilakukan agen dialihkan ke sana, diperiksa terhadap aturan Push ke remote, dan diteruskan dengan token tulis yang tidak pernah dipegang agen; perintah Bash milik Claude Code diperiksa melalui hook di endpoint yang sama.'],
 ['Mode', 'chat, plan, review, atau orchestrate. Disimpan per space, sehingga satu agen dapat berada dalam mode berbeda di space berbeda; setiap percakapan di satu space berbagi mode itu. Menggerbangi prompt sistem, aturan tulis sandbox, dan daftar izin alat MCP.'],
-['SandboxBackend', 'microvm (VM tertutup — satu-satunya backend dengan batas kernel, diterapkan pada terminal interaktif), native (Seatbelt bawaan OS di macOS, bubblewrap di Linux dan WSL2), atau none. Diprobe sekali saat boot; native membungkus pengiriman agen bila tersedia. Windows tidak memiliki backend native dan Linux membutuhkan bwrap plus socat, sehingga run di sana tidak terbungkus; --sandbox off memilih keluar secara sengaja.'],
+['SandboxBackend', 'microvm (VM tertutup — satu-satunya backend dengan batas kernel, diterapkan pada terminal interaktif), native (Seatbelt bawaan OS di macOS, bubblewrap di Linux dan WSL2), atau none. Diprobe sekali saat boot; native membungkus pengiriman agen bila tersedia. Windows tidak memiliki backend native dan Linux membutuhkan bwrap plus socat; di host seperti itu hanya run milik pemilik server yang dimulai, tanpa terbungkus, dan run orang lain ditolak. --sandbox off menjalankan agen setiap anggota tanpa terbungkus.'],
 ['Rig', 'Mesin sekali pakai yang dikendalikan agen secara real time: browser atau desktop Linux tertutup, emulator Android atau Simulator iOS yang dikelola host, atau terminal tertutup. Dipantau langsung melalui jalur resolusi penuhnya sendiri, dengan pengambilalihan yang ditegakkan di sisi server. Bercakupan satu percakapan sehingga tab manusia dan alat agen menuju satu mesin yang sama.'],
 ['Lingkungan terisolasi', 'Properti isolasi yang lebih kuat yang tersedia bagi rig berbasis VM: batas kernel, disk overlay sekali pakai, gerbang jaringan yang menolak secara default, dan broker kredensial. Rig Android dan iOS bersifat sekali pakai tetapi memakai jaringan yang dikelola host, sehingga tidak mengklaim batas ini. Mengendalikan rig apa pun memakai kelas pagar pengaman enclosureControl.'],
 ['RunCost', 'Rekap token/biaya (token masukan, token keluaran, perkiraan biaya dalam sen) untuk satu run agen.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Mengorkestrasi eksekusi run: memulai run, menjadwalkan langkah, mempersistenkan status, menangani router/join/continue-on-fail, dan melanjutkan run yang sedang berjalan setelah mulai ulang.'],
 ['PipelineTriggerDispatcher', 'Berlangganan peristiwa domain dan otomatis memulai run pipeline yang cocok untuk pemicu yang aktif.'],
 ['MemoryAccessPolicy', 'Meresolusi dan menegakkan izin memori peran agen pada domain.'],
-['HarnessCostCalculator', 'Menghitung pemakaian token harness bawaan menjadi RunCost dari katalog models.dev. Pengiriman mempersistenkan rekap itu ke log run.'],
+['HarnessRunAccounting', 'Mencatat panggilan model harness bawaan sekali, dihargai dari katalog models.dev, mempersistenkannya pada run pemiliknya, dan menggulirkan pengeluaran run anak ke anggaran induknya.'],
 ['BudgetEnforcementService', 'Menghitung pengeluaran bulanan per agen dan blokir pra-pengiriman (checkInvocationBlock). Blokir itu hanya dikonsultasikan oleh rekonsiliator pemulihan (OrphanRunReaper, StrandedTicketReconciler), tidak pernah oleh pengiriman biasa.'],
 ['BudgetGovernanceService', 'Mengevaluasi pengeluaran bulanan per agen setelah setiap run: ambang lunak mencatat insiden peringatan; habisnya anggaran mencatat insiden keras dan mengubah siklus hidup agen menjadi paused.'],
 ['DomainEventBus', 'Bus publish/subscribe siaran dalam proses untuk komunikasi antarfitur. Peristiwa bertipe; pelanggan mengonsumsi aliran per tipe.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Klien tipis ponsel — PWA web Flutter yang mengendalikan fleet dari jarak jauh melalui relay dengan perantara, dengan kebijakan alat yang menolak secara default.'],
 ['cc_signaling_server', 'Broker relay WebSocket tanpa status yang menghosting ruang bergerbang undangan. Relay sederhana: ia hanya meneruskan frame tersegel ujung ke ujung, tidak memegang data aplikasi, dan tidak pernah melihat PSK pemasangan.'],
 ['Principal', 'Nilai tersegel yang menyatukan manusia dan agen sebagai satu abstraksi aktor. UserPrincipal(userId) atau AgentPrincipal(agentId). Setiap pesan, tiket, tinjauan, rencana, dan log run diatribusikan melalui sebuah Principal.'],
-['Pengguna', 'Identitas manusia, disimpan di global.db dan karenanya global di semua ruang kerja. Principal yang membuat sebuah ruang kerja menjadi pemiliknya, distempel pada Workspace.ownerUserId bersama baris keanggotaan berperan owner; yang lain bergabung melalui undangan atau SSO.'],
+['Pengguna', 'Identitas manusia, disimpan di global.db dan karenanya global di semua ruang kerja. Hanya pemilik server yang membuat ruang kerja, dan ia menjadi pemiliknya, distempel pada Workspace.ownerUserId bersama baris keanggotaan berperan owner; yang lain bergabung melalui undangan atau SSO.'],
+['Pemilik server', 'Orang yang menyiapkan server, dicatat sekali saat server pertama kali dimulai; tidak ada yang dikirim lewat jaringan yang dapat mengubahnya. Admin ruang kerja atau pemilik ruang kerja bukan pemilik server. Tidak ada yang berjalan di mesin server sendiri di luar sandbox kecuali pemilik server memulainya atau menyetujui jenis eksekusi host tersebut: membuat ruang kerja, shell host, editor kode tertanam, lingkungan yang berjalan di host, dan checkout yang ditautkan dari luar penyimpanan ruang kerja sepenuhnya milik pemilik server.'],
 ['WorkspaceMember', 'Baris keanggotaan yang mengikat seorang Pengguna ke sebuah Ruang kerja pada sebuah WorkspaceRole. Keanggotaan — bukan kunci pemasangan — adalah batas aksesnya.'],
 ['WorkspaceRole', 'Peran keanggotaan bertingkat: owner, admin, member, viewer, atau guest. Titik pengunci op repo menurunkan batas bawah peran minimum per jenis op.'],
 ['ParticipantPresence', 'Kesadaran efemeral untuk sebuah Principal (status, lokus, kursor, sedang mengetik, status langsung agen + biaya berjalan). Tidak pernah dipersistenkan; dihubungkan lewat server; difilter berdasarkan pemberian izin repo sebelum disebarkan.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Pengatur otonomi', 'Kontrol per space dan per agen — propose-only / act-with-approval / act-freely — diimplementasikan sebagai profil bernama di atas penyimpanan pagar pengaman tindakan.'],
 ['cc_worker', 'Biner eksekutor fleet Dart murni tanpa antarmuka. Berpasangan dengan cc_server, mendeklarasikan kemampuannya, menarik pekerjaan yang disewakan, mengeksekusinya, dan mengalirkan peristiwa kembali. Tidak memegang status persisten.'],
 ['JobSpec', 'Spesifikasi bertipe untuk segala hal yang dapat dieksekusi (run agen, langkah pipeline, indeks kode, render golden, benchmark, batch eval): kemampuan yang dibutuhkan, prioritas, anggaran, ruang kerja.'],
-['ActionClass', 'Himpunan tertutup berisi 13 kelas efek (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Setiap alat yang memutasi mendeklarasikan kelasnya; mesin pagar pengaman meresolusi allow / prompt / deny per cakupan.'],
+['ActionClass', 'Himpunan tertutup berisi 14 kelas efek (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Setiap alat yang memutasi mendeklarasikan kelasnya; mesin pagar pengaman meresolusi allow / prompt / deny per cakupan.'],
 ['WriteLedger', 'Ledger idempotensi bercakupan ruang kerja. Setiap mutasi membawa kunci idempotensi per tindakan logis; pengulangan mengembalikan hasil asli yang identik byte demi byte. Membuat penyambungan ulang dan multi-klien aman secara desain.'],
 ['Kunci idempotensi', 'UUIDv7 yang dibuat klien, dicetak per tindakan logis (bukan per percobaan). Menghilangkan duplikasi percobaan ulang lintas penyambungan ulang dan lintas klien.'],
 ['Kotak masuk "Needs me"', 'Antrean lintas pilar dengan aturan ketat: sebuah item muncul hanya jika ia memblokir sesuatu (agen, penggabungan, sinkronisasi) atau secara eksplisit meminta operator.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Putusan tinjauan', 'ship, hold, atau block. Setiap temuan P0 dengan keyakinan >= 0.7 memblokir; P0 lain atau P1 mana pun menahan; selain itu ship. Sumbu bergerbang yang gagal memaksa block dan tidak dapat dikalahkan suara oleh temuan.'],
 ['SessionRecording', 'Aliran peristiwa ditambah kaset HTTP/LLM dan I/O alat yang ditangkap untuk satu run, dipasangkan dengan sebuah AgentConfigHash.'],
 ['Sesi golden', 'SessionRecording yang disahkan dan dipatok per agen atau playbook.'],
-['Control Center Connect', 'Layanan opsional yang menjalankan proses masuk penyedia (GitHub, Google, Linear) untuk server tanpa aplikasi sendiri. Dihosting oleh Control Center, di-self-host, atau dimatikan. Mengembalikan segel kredensial dan token GitHub satu-repositori, dan tidak pernah melihat isi repositori.'],
+['Control Center Connect', 'Layanan opsional yang menjalankan proses masuk penyedia (GitHub, Google, Linear) untuk server atau ruang kerja yang memilihnya alih-alih aplikasi sendiri. Dihosting oleh Control Center, di-self-host, atau dimatikan. Mengembalikan segel kredensial dan token GitHub satu-repositori, dan tidak pernah melihat isi repositori.'],
 ['Segel kredensial', 'Kredensial terenkripsi yang hanya dapat dibuka oleh Connect yang membuatnya, terikat pada penyedia, alamat Connect, id instalasi, ruang kerja, akun, app, dan generasi secret. Server menyimpan segelnya; access token tetap berada di memori.'],
 ['Id instalasi', 'Identitas sebuah server terhadap satu alamat Connect, diturunkan dari kunci instalasinya. Connect mengizinkan server berdasarkan id instalasi; memutar kunci mengubahnya dan mengeluarkan semua orang dari jalur Connect.'],
-['Pengikatan instalasi', 'Catatan Connect tentang server mana yang boleh memakai instalasi GitHub dari App bersama. Instalasi organisasi memerlukan admin untuk mengotorisasi setiap server.'],
-['Jalur proses masuk', 'Proses masuk peramban satu penyedia: `github`, `google`, `linear`, `linear_app`, atau `slack`. Setiap jalur berjalan di app milik server ketika app itu lengkap, jika tidak melalui Connect, dan jika tidak keduanya, tidak tersedia.'],
+['Pengikatan instalasi', 'Catatan Connect tentang satu server tempat sebuah tim Slack terikat. Instalasi GitHub tidak memilikinya: server mana pun tempat anggota masuk dapat memakainya.'],
+['Jalur proses masuk', 'Proses masuk peramban satu penyedia: `github`, `google`, `linear`, `linear_app`, atau `slack`. Di bawah app milik sendiri, sebuah jalur berjalan di app milik sendiri ketika app itu terkonfigurasi lengkap, jika tidak tidak tersedia; dengan Connect yang dipilih, Connect yang menjalankannya. Keduanya tidak saling menjadi cadangan.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Mode**: `chat`, `plan`, `review`, atau `orchestrate`. Disimpan **per space**, sehingga satu agen dapat berada dalam mode berbeda di space berbeda; setiap percakapan di satu space berbagi mode itu. Menggerbangi prompt sistem, aturan tulis sandbox, dan daftar izin alat MCP. Composer hanya menawarkan `chat`, `plan`, dan `orchestrate`; `chat` diberi label "Agen".
 
-**SandboxBackend**: `microvm` (VM tertutup — satu-satunya backend dengan batas kernel, diterapkan pada terminal interaktif), `native` (Seatbelt di macOS, bubblewrap di Linux dan WSL2), atau `none`. Diprobe sekali saat boot; `native` **diterapkan pada pengiriman agen** bila tersedia, membungkus CLI Claude Code dan alat `bash` harness. Windows tidak memiliki backend native dan Linux membutuhkan `bwrap` plus `socat`, sehingga run di sana tidak terbungkus; `--sandbox off` memilih keluar secara sengaja.
+**SandboxBackend**: `microvm` (VM tertutup — satu-satunya backend dengan batas kernel, diterapkan pada terminal interaktif), `native` (Seatbelt di macOS, bubblewrap di Linux dan WSL2), atau `none`. Diprobe sekali saat boot; `native` **diterapkan pada pengiriman agen** bila tersedia, membungkus CLI Claude Code dan alat `bash` harness. Windows tidak memiliki backend native dan Linux membutuhkan `bwrap` plus `socat`; di host seperti itu hanya run milik pemilik server yang dimulai, tanpa terbungkus, dan run orang lain ditolak. `--sandbox off` menjalankan agen setiap anggota tanpa terbungkus.
 
 **Rig**: Mesin sekali pakai yang dikendalikan agen secara real time — browser atau desktop Linux tertutup, emulator Android atau Simulator iOS yang dikelola host, atau terminal tertutup. Dipantau langsung melalui jalur resolusi penuhnya sendiri, dengan pengambilalihan yang ditegakkan di sisi server. Bercakupan satu percakapan sehingga tab manusia dan panggilan `browser_use` / `computer_use` / `mobile_use` / `ios_use` milik agen menuju satu mesin default yang sama. Lihat [Rigs dan lingkungan terisolasi](/id-ID/panduan-pengguna/konsep/rigs/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Meresolusi dan menegakkan izin memori peran agen pada domain.
 
-**HarnessCostCalculator**: Menghitung pemakaian token harness bawaan menjadi `RunCost` dari katalog models.dev. Pengiriman mempersistenkan rekap itu ke log run.
+**HarnessRunAccounting**: Mencatat panggilan model harness bawaan sekali, dihargai dari katalog models.dev, mempersistenkannya pada run pemiliknya, dan menggulirkan pengeluaran run anak ke anggaran induknya.
 
 **BudgetEnforcementService**: Menghitung pengeluaran bulanan per agen dan blokir pra-pengiriman (`checkInvocationBlock`). Blokir itu hanya dikonsultasikan oleh rekonsiliator pemulihan (`OrphanRunReaper`, `StrandedTicketReconciler`), tidak pernah oleh pengiriman pengguna atau agen yang biasa.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Keluaran terstruktur yang diekstrak oleh pipeline ringkasan dan disimpan sebagai baris tersendiri. Item tindakan dapat ditautkan ke sebuah tiket.
 
-**CalendarEvent**: Entri Google Calendar yang disinkronkan, bercakupan satu ruang kerja dan akun yang terhubung. Berbeda dari Rapat: event adalah komitmen terjadwal; Rapat adalah sesi yang direkam. Ditautkan satu-ke-satu melalui `MeetingCalendarLink`.
+**CalendarEvent**: Entri Google Calendar yang disinkronkan, bercakupan satu ruang kerja dan akun yang terhubung. Berbeda dari Rapat: event adalah komitmen terjadwal; Rapat adalah sesi yang direkam. Ditautkan satu-ke-satu melalui tabel `meeting_calendar_links`.
 
 **CalendarAccount**: Akun Google yang terhubung, per ruang kerja, anggota, dan email (`google:<workspaceId>:<userId>:<email>`). Kredensialnya disimpan di sisi server sebagai kunci `google_*` di `<dataDir>/secrets.json` dan tidak pernah sampai ke klien; proses masuk melalui Connect hanya menyimpan segel kredensial. Flag `authExpiredAt` menggerakkan banner hubungkan ulang.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: Nilai tersegel yang menyatukan manusia dan agen sebagai satu abstraksi aktor — `UserPrincipal(userId)` atau `AgentPrincipal(agentId)`. Setiap pesan, tiket, tinjauan, rencana, dan log run diatribusikan melalui sebuah Principal.
 
-**Pengguna**: Identitas manusia, disimpan di `global.db` dan karenanya global di semua ruang kerja. Principal yang membuat sebuah ruang kerja menjadi **pemiliknya** — distempel pada `Workspace.ownerUserId` bersama baris keanggotaan berperan owner dalam operasi yang sama. Yang lain bergabung melalui undangan atau SSO.
+**Pemilik server**: Orang yang menyiapkan server, dicatat sekali saat server pertama kali dimulai; tidak ada yang dikirim lewat jaringan yang dapat mengubahnya. Admin ruang kerja atau pemilik ruang kerja bukan pemilik server. Tidak ada yang berjalan di mesin server sendiri di luar sandbox kecuali pemilik server memulainya atau menyetujui jenis eksekusi host tersebut: membuat ruang kerja, shell host, editor kode tertanam, lingkungan yang berjalan di host, dan checkout yang ditautkan dari luar penyimpanan ruang kerja sepenuhnya milik pemilik server. Lihat [Pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server).
+
+**Pengguna**: Identitas manusia, disimpan di `global.db` dan karenanya global di semua ruang kerja. Hanya pemilik server yang membuat sebuah ruang kerja, dan ia menjadi **pemiliknya** — distempel pada `Workspace.ownerUserId` bersama baris keanggotaan berperan owner dalam operasi yang sama. Yang lain bergabung melalui undangan atau SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Baris keanggotaan yang mengikat seorang Pengguna ke sebuah Ruang kerja pada sebuah peran (`owner` / `admin` / `member` / `viewer` / `guest`). **Keanggotaan — bukan kunci pemasangan — adalah batas aksesnya.** Pemberian izin per repo mencegah keanggotaan melampaui hak istimewa forge.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Pengatur otonomi**: Kontrol per space dan per agen — `propose-only` / `act-with-approval` / `act-freely` — diimplementasikan sebagai profil bernama di atas penyimpanan pagar pengaman tindakan.
 
-**ActionClass**: Himpunan tertutup berisi 13 kelas efek (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Setiap alat yang memutasi mendeklarasikan kelasnya; mesin pagar pengaman meresolusi `allow` / `prompt` / `deny` per cakupan (space > agen > ruang kerja > preset mode > default bawaan).
+**ActionClass**: Himpunan tertutup berisi 14 kelas efek (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Setiap alat yang memutasi mendeklarasikan kelasnya; mesin pagar pengaman meresolusi `allow` / `prompt` / `deny` per cakupan (space > agen > ruang kerja > preset mode > default bawaan).
 
 **WriteLedger** / **kunci idempotensi**: Setiap mutasi membawa kunci idempotensi yang dibuat klien (UUIDv7, per tindakan logis). Ledger bercakupan ruang kerja menghilangkan duplikasi sebelum handler berjalan; pengulangan mengembalikan hasil asli yang identik byte demi byte. Membuat penyambungan ulang dan multi-klien aman secara desain.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Broker relay WebSocket tanpa status yang menghosting ruang bergerbang undangan — relay sederhana yang hanya meneruskan frame tersegel ujung ke ujung, tidak memegang data aplikasi, dan tidak pernah melihat PSK pemasangan.
 
-**Control Center Connect**: Layanan opsional yang menjalankan proses masuk penyedia (GitHub, Google Calendar, Linear) untuk server yang belum mendaftarkan app sendiri: versi yang dihosting Control Center, versi yang dijalankan sebuah organisasi (`cc-connect`, atau dipasang di `cc_server` pada `/connect`), atau tidak ada. Connect mengembalikan segel kredensial dan token GitHub satu-repositori, dan tidak pernah melihat isi repositori. Lihat [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/).
+**Control Center Connect**: Layanan opsional yang menjalankan proses masuk penyedia (GitHub, Google Calendar, Linear) untuk server atau ruang kerja yang memilihnya alih-alih app sendiri: versi yang dihosting Control Center, versi yang dijalankan sebuah organisasi (`cc-connect`, atau dipasang di `cc_server` pada `/connect`), atau tidak ada. Connect mengembalikan segel kredensial dan token GitHub satu-repositori, dan tidak pernah melihat isi repositori. Lihat [Control Center Connect](/id-ID/panduan-pengguna/referensi/connect/).
 
 **Segel kredensial** (`credential_seal`): Kredensial terenkripsi yang hanya dapat dibuka oleh Connect yang membuatnya, terikat pada penyedia, alamat Connect, id instalasi, ruang kerja, akun, app, dan generasi secret. Server menyimpan segel dan id instalasi tempat segel itu dibuat; access token tetap berada di memori. Segel yang id instalasinya tidak lagi cocok akan dibuang dan pemiliknya masuk ulang.
 
 **Id instalasi** (`install_id`): Identitas sebuah server terhadap satu alamat Connect, diturunkan dari kunci instalasi di berkas secret-nya. Connect mengizinkan server berdasarkan id instalasi. Memutar kunci menghasilkan id baru dan mengeluarkan semua orang dari jalur Connect.
 
-**Pengikatan instalasi** (`install_binding`): Catatan Connect tentang server mana yang boleh memakai instalasi GitHub dari App bersama. Memasang melalui sebuah server akan mengikatnya; **Otorisasi server ini** oleh admin organisasi akan mengikat server lain.
+**Pengikatan instalasi** (`install_binding`): Catatan Connect tentang satu server tempat sebuah tim Slack terikat. Instalasi GitHub tidak memilikinya: server mana pun tempat anggota masuk dapat memakainya.
 
-**Jalur proses masuk**: Proses masuk peramban satu penyedia — `github`, `google`, `linear`, `linear_app`, atau `slack`. Sebuah jalur berjalan di app milik server ketika app itu sudah lengkap, jika tidak melalui Connect, dan jika tidak keduanya, tidak tersedia. App milik sendiri yang dikonfigurasi sebagian adalah galat, tidak pernah jatuh kembali ke Connect.
+**Jalur proses masuk**: Proses masuk peramban satu penyedia — `github`, `google`, `linear`, `linear_app`, atau `slack`. Di bawah app milik sendiri, sebuah jalur berjalan di app milik sendiri (server atau ruang kerja) ketika app itu terkonfigurasi lengkap, jika tidak ia tidak tersedia; dengan Connect yang dipilih, Connect yang menjalankannya. Keduanya tidak saling menjadi cadangan, dan app milik sendiri yang dikonfigurasi sebagian adalah galat.
 
 ## Lihat juga
 

@@ -54,8 +54,7 @@ class _SidebarFooter extends ConsumerWidget {
         label: l10n.navSettings,
         logicalPath: '/settings',
         match: ShellNavMatch.prefix,
-        // The settings landing is Appearance, the first item in You.
-        target: settingsAppearanceRoute(workspaceId),
+        target: settingsLandingRoute(workspaceId),
       ),
     ];
     return Column(

@@ -2,20 +2,20 @@
 title: Barandillas — una sola política para cada acción que muta el estado
 description: Por qué Control Center canaliza todos los efectos secundarios de un agente por un único motor de permitir/preguntar/denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia realmente el dial de autonomía.
 slug: es-MX/manual/conceptos/barandillas
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Los agentes de Control Center pueden eliminar archivos, hacer push de ramas, publicar pull requests y llamar a API externas. Cada una de esas acciones es un _tipo_ de riesgo distinto y, durante mucho tiempo, solo una de ellas —los comandos de shell— tenía una política. Las barandillas existen para responder de forma uniforme una sola pregunta, para toda acción que muta el estado que un agente pueda realizar, sin importar qué runtime o herramienta la proponga: **¿se permite, requiere una aprobación o se deniega?**
 
 ## Un solo motor, todos los puntos de control
 
-Existe exactamente un motor de políticas. Se consulta en cada punto donde una acción puede salir del sistema: el registro de herramientas del arnés integrado, la compuerta del despachador de MCP en el servidor y las mutaciones de operaciones de repositorio. Por eso, una regla escrita una sola vez aplica tanto al runtime integrado como a las CLI de agentes externos: no hay un segundo camino, más silencioso, que la rodee. La antigua política de comandos, limitada a bash, sigue funcionando: una regla puede hacer coincidir un prefijo de comando en lugar de una clase de acción, y ambas formas conviven en el mismo almacén.
+Existe exactamente un motor de políticas. Se consulta en cada punto donde una acción puede salir del sistema: el registro de herramientas del arnés integrado, la compuerta del despachador de MCP en el servidor y las mutaciones de operaciones de repositorio. Por eso, una regla escrita una sola vez aplica tanto al runtime integrado como a las CLI de agentes externos: no hay un segundo camino, más silencioso, que la rodee. Una regla también puede hacer coincidir un prefijo de comando en lugar de una clase de acción; ambas formas conviven en el mismo almacén.
 
-El motor no sustituye, sin embargo, al sandbox del sistema operativo, ni el sandbox lo sustituye a él. Responden a preguntas distintas: las barandillas deciden si una llamada que Control Center alcanza a ver puede ocurrir siquiera, mientras que el sandbox delimita hasta dónde puede llegar el proceso resultante. `cc_server` aplica el sandbox donde el host ofrece un backend, pero [Windows no ofrece ninguno y Linux necesita `bwrap` y `socat`](/es-MX/manual/conceptos/sandbox-y-seguridad/). En esos hosts, las barandillas son la capa de aplicación más externa en lugar de una política que se apoya sobre un piso, algo que conviene saber cuando decides qué tan permisivo ser.
+El motor no sustituye, sin embargo, al sandbox del sistema operativo, ni el sandbox lo sustituye a él. Responden a preguntas distintas: las barandillas deciden si una llamada que Control Center alcanza a ver puede ocurrir siquiera, mientras que el sandbox delimita hasta dónde puede llegar el proceso resultante. `cc_server` aplica el sandbox donde el host ofrece un backend, pero [Windows no ofrece ninguno y Linux necesita `bwrap` y `socat`](/es-MX/manual/conceptos/sandbox-y-seguridad/). En esos hosts solo arrancan las ejecuciones del propietario del servidor, a menos que el propietario haya desactivado el sandbox para todos con `--sandbox off`. Para cualquier ejecución que arranca sin sandbox, las barandillas son la capa de aplicación más externa en lugar de una política que se apoya sobre un piso, algo que conviene saber cuando decides qué tan permisivo ser.
 
 ## ActionClass: una taxonomía cerrada a propósito
 
-Toda herramienta que muta el estado declara cuáles **ActionClasses** le corresponden, de un conjunto cerrado de trece clases de efecto. Cinco de ellas preguntan de forma predeterminada; el resto permite, y lo que cambia eso es una regla.
+Toda herramienta que muta el estado declara cuáles **ActionClasses** le corresponden, de un conjunto cerrado de catorce clases de efecto. Seis de ellas preguntan de forma predeterminada; el resto permite, y lo que cambia eso es una regla.
 
 | Clase                      | Valor predeterminado  | Qué abarca                                                                       |
 | -------------------------- | --------------------- | -------------------------------------------------------------------------------- |
@@ -32,10 +32,11 @@ Toda herramienta que muta el estado declara cuáles **ActionClasses** le corresp
 | `processSpawn`             | Permitir              | Lanzar un proceso (la shell y todo lo que invoque a la shell)                     |
 | `workspaceMutation`        | Permitir              | Mutar la estructura del espacio de trabajo (repos, espacios, agentes)            |
 | `enclosureControl`         | Permitir              | Controlar un recinto (rig): arrancar una VM, enviarle entrada                     |
+| `hostExecution`            | **Preguntar primero** | Ejecutar un comando en el host del servidor fuera de cualquier sandbox a petición de un agente: tareas de entorno, procesos, stacks de compose, y `eval` cuando su kernel se ejecuta sin confinar |
 
-Las ocho clases que permiten de forma predeterminada se eligieron bajo el supuesto de que el piso del sandbox se aplica por debajo de ellas. Así ocurre donde el host ofrece un backend, y no ocurre en Windows ni en una máquina Linux a la que le falten `bwrap` y `socat`; por eso, si quieres que `fileWriteOutsideWorktree` o `packageInstall` tengan compuerta ahí, esa es una regla que tienes que escribir.
+Las ocho clases que permiten de forma predeterminada se eligieron bajo el supuesto de que el piso del sandbox se aplica por debajo de ellas. Así ocurre donde el host ofrece un backend, y no ocurre con `--sandbox off`, ni para las ejecuciones del propietario en Windows o en una máquina Linux a la que le falten `bwrap` y `socat`; por eso, si quieres que `fileWriteOutsideWorktree` o `packageInstall` tengan compuerta ahí, esa es una regla que tienes que escribir.
 
-El conjunto es cerrado a propósito. Una nueva herramienta que muta el estado y no declara ninguna clase falla la prueba de trinquete, así que la taxonomía solo puede crecer mediante una decisión explícita y argumentada: «la proliferación de taxonomías es la muerte de esta funcionalidad». Trece clases bastan para expresar las políticas que la gente escribe de verdad (nunca hacer push sin preguntar, nunca eliminar fuera de un worktree, permitir siempre las lecturas) y son lo bastante pocas para que la interfaz de ajustes siga siendo comprensible.
+El conjunto es cerrado a propósito. Una nueva herramienta que muta el estado y no declara ninguna clase falla la prueba de trinquete, así que la taxonomía solo puede crecer mediante una decisión explícita y argumentada: «la proliferación de taxonomías es la muerte de esta funcionalidad». Catorce clases bastan para expresar las políticas que la gente escribe de verdad (nunca hacer push sin preguntar, nunca eliminar fuera de un worktree, permitir siempre las lecturas) y son lo bastante pocas para que la interfaz de ajustes siga siendo comprensible.
 
 ## Reglas y resolución de ámbitos
 
@@ -50,7 +51,7 @@ Dos decisiones conllevan garantías firmes:
 - **Solicitudes con denegación por defecto.** Una decisión `prompt` sin ningún aprobador conectado se resuelve como _denegada_. Una pregunta sin responder nunca es un sí.
 - **Combinación más restrictiva.** Una acción que abarca varias clases las combina del modo más restrictivo; cuando varias clases preguntan, una sola confirmación las enumera todas.
 
-No hay, de forma deliberada, ninguna aprobación que persista por turno. Cada llamada de herramienta vuelve a resolver la política desde cero, así que las preguntas repetidas para la misma acción quedan acotadas por el propio «recordar esta decisión» del operador, y no por algo ceñido al turno.
+No hay, de forma deliberada, ninguna aprobación que persista por turno. Cada llamada de herramienta vuelve a resolver la política desde cero, así que las preguntas repetidas para la misma acción quedan acotadas por la aprobación temporal propia del operador, y no por algo ceñido al turno.
 
 ## Reglas a nivel de argumentos
 
@@ -62,6 +63,7 @@ Una restricción puede nombrar:
 - **refs** — referencias de git, con negación `!` (`['**', '!main']` se lee como «cualquier rama excepto main»)
 - **hosts** — destinos de red, con comodines de subdominio (`*.internal`)
 - **comandos** — prefijos de comando, que coinciden en un límite de palabra
+- **herramientas** — la herramienta exacta que nombra una llamada, para que una aprobación pueda cubrir una sola herramienta en lugar de todas las que tienen el mismo efecto
 - **techos** — `maxCount` / `maxCents`, de modo que «eliminar hasta 50 archivos» sea expresable
 
 Tres propiedades se derivan de mantener la gramática cerrada y sin bucles, y las tres son justamente lo importante: toda regla se expresa como una frase que puedes releer, toda denegación puede nombrar la restricción que coincidió y la política completa se puede enumerar: puedes ver lo que un agente puede hacer *antes* de que se ejecute.
@@ -78,9 +80,19 @@ Una regla de `commandPrefix` coincide en un límite de palabra: `git push` cubre
 
 Ese es un límite real y se declara en lugar de disimularse: las reglas de comando son una comodidad para el operador que sirve para moldear el comportamiento habitual de un agente, **no** una frontera contra uno adversarial. Las fronteras son las clases de efecto (que una herramienta declara y no puede reescribir), la red de comandos del modo que hay bajo el almacén de políticas y el sandbox del sistema operativo que hay bajo ambas. Una regla de comando que se resuelve en `allow` nunca afloja ninguna de las dos: la red del modo se ejecuta después y su `deny` es definitivo.
 
-## Aprobaciones permanentes
+## Aprobaciones temporales
 
-Responder a una solicitud con «recordar esto» escribe una regla de política real: con ámbito (espacio / agente / espacio de trabajo), **restringida por argumentos** (aprobar un push a `feature/login` concede `feature/**`, no `main`) y **autorevocable** mediante un TTL explícito. Decir sí durante las próximas horas no es lo mismo que reescribir en silencio tu política permanente, y las reglas que escribe caen en el mismo almacén con procedencia `remembered` y una fecha de expiración, así que se pueden revocar antes de tiempo.
+Cada tarjeta de aprobación que provoca una acción de un agente ofrece **Aprobar durante 8 horas** cuando la acción tiene algo más concreto que su clase para nombrar. Al elegirlo se escribe una regla de política real, una aprobación temporal, en el mismo almacén que las reglas que tú defines, con procedencia `remembered` y una fecha de expiración:
+
+- **Con ámbito.** Se escribe para el espacio del que viene la pregunta. Solo la respuesta de un administrador puede escribirse para todo el espacio de trabajo.
+- **Restringida.** Nombra una familia de ramas (aprobar un push a `feature/login` concede `feature/**`, no `main`), una carpeta, un host, el comando exacto o la herramienta. Un commit es la única acción que se aprueba como clase, para ese espacio: no tiene nada más concreto que nombrar.
+- **Autorrevocable.** Expira tras ocho horas y puede revocarse antes en la página de permisos de agentes.
+
+Una aprobación temporal solo evita una pregunta. Responde a una decisión de Preguntar primero fijada en su propio ámbito o en uno más amplio, y nunca a una denegación, sin importar de qué ámbito venga la denegación. Se guarda junto a la regla que defines para la acción, así que cambiar esa regla deja la aprobación en su lugar, y revocar la aprobación deja la regla.
+
+Algunos controles preguntan por su cuenta después de que la política haya permitido una llamada: la aprobación que declara una herramienta, o la red de comandos de un modo. Solo se saltan su pregunta con una aprobación temporal que nombre esa herramienta o ese comando exacto. Poner la acción en permitir no los silencia.
+
+Tres tarjetas mantienen dos botones, porque no hay nada que llevar hacia adelante: permitir que el sandbox ejecute programas desde una carpeta (aprobarlo ya es una concesión guardada que puedes revocar), una operación destructiva que confirmas una vez, y la instalación de una skill (una skill cambiada debe volver a preguntar).
 
 ## Niveles de aplicación
 

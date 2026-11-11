@@ -2,7 +2,7 @@
 title: Cấp phát người dùng bằng SCIM
 description: Để IdP của bạn tự động tạo, cập nhật và hủy cấp phát tài khoản Control Center.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Hãy dùng hướng dẫn này khi bạn muốn kiểm soát vòng đời — quy trình cho nhân sự
@@ -34,8 +34,9 @@ cung cấp khác) dùng đúng cho mục đích đó.
    - **Xác thực**: `Authorization: Bearer <token>`
    - **ID người dùng**: `userName` (email) hoặc `externalId` — cả hai đều khớp
 4. Kiểm thử với một người dùng: đẩy họ từ IdP, xác nhận họ xuất hiện (thao tác
-   tạo của SCIM ghim `externalId` của nhà cung cấp lên tài khoản, đúng kiểu ghim
-   mà lần đăng nhập SSO đầu tiên thiết lập).
+   tạo của SCIM ghi nhận `externalId` của nhà cung cấp trên tài khoản, và đó là
+   cách các lệnh gọi SCIM sau này tìm thấy tài khoản), rồi để người đó đăng nhập
+   qua SSO trước khi triển khai cho tất cả mọi người.
 
 ## Việc hủy cấp phát làm gì
 
@@ -56,6 +57,7 @@ chính sách tự động kết nạp thành viên lúc đăng nhập.
 
 ## Xử lý sự cố
 
+- **Một người được cấp phát bị từ chối với thông báo "Tài khoản này đã được liên kết với một danh tính SSO khác"** — giới hạn đã biết: một tài khoản do SCIM tạo với `externalId` sẽ gắn chặt với mã đó, và lần đăng nhập SSO đầu tiên vào tài khoản đó sẽ bị từ chối. Cho tới khi lỗi này được sửa, hãy cấp phát mà không dùng `externalId`, hoặc để cấp phát JIT tạo tài khoản khi đăng nhập lần đầu và chỉ dùng SCIM cho việc hủy cấp phát.
 - **Lỗi 401 ở mọi lệnh gọi** — token đã thay đổi; hãy tạo lại rồi cập nhật IdP.
 - **Không thể tiếp cận endpoint** — tunnel đã ngừng hoạt động, hoặc máy chủ chỉ
   dùng relay. SCIM cần HTTPS trực tiếp; JIT vẫn tiếp tục hoạt động bất kể điều đó.

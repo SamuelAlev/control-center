@@ -122,8 +122,17 @@ class RigInputSurface extends ConsumerStatefulWidget {
     required this.rig,
     required this.enabled,
     this.active = true,
+    this.onRefused,
+    this.onLaneForbidden,
     required this.child,
   });
+
+  /// Told about a failed `rig.act`, so a refusal by kind (no write grant on
+  /// the rig's space) turns the surface off instead of failing each event.
+  final ValueChanged<Object>? onRefused;
+
+  /// Told when a clipboard or file lane answers 403 (`drive` for a write).
+  final void Function({required bool drive})? onLaneForbidden;
 
   /// The owning workspace.
   final String workspaceId;
@@ -211,11 +220,20 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
 
   /// Actions waiting to be sent, in input order.
   late final RigActionQueue _actions = RigActionQueue(
-    send: (action) => _rigs.act(
-      workspaceId: widget.workspaceId,
-      rigId: widget.rig.id,
-      action: action,
-    ),
+    send: (action) async {
+      try {
+        await _rigs.act(
+          workspaceId: widget.workspaceId,
+          rigId: widget.rig.id,
+          action: action,
+        );
+      } on Object catch (e) {
+        if (mounted) {
+          widget.onRefused?.call(e);
+        }
+        rethrow;
+      }
+    },
   );
 
   bool _leftDown = false;
@@ -273,7 +291,12 @@ class _RigInputSurfaceState extends ConsumerState<RigInputSurface> {
       return;
     }
     _transferClient?.close();
-    final client = rigTransferClientFor(context);
+    final client = rigTransferClientFor(context)
+      ?..onForbidden = ({required bool drive}) {
+        if (mounted) {
+          widget.onLaneForbidden?.call(drive: drive);
+        }
+      };
     _transferClient = client;
     _bindClipboardBridge();
   }

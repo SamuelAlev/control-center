@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_server_core/src/catalog/catalog_wire.dart';
@@ -13,7 +14,12 @@ import 'package:cc_server_core/src/catalog/catalog_wire.dart';
 /// worktrees). Sync fetches and may push, and never commits. Listing and
 /// checkout stay inside the isolated tree: no fetch, no push, no write to
 /// the source checkout.
+///
+/// A space's worktree is its code: each op needs the repository's grant
+/// (read to list, write to change) and forge read, and [requireSpace] (the
+/// space read gate) first.
 List<RepoOp> buildWorktreeBranchOps({
+  required Future<void> Function(RepoOpContext ctx) requireSpace,
   required WorktreeSyncBranchFn? sync,
   required WorktreeListBranchesFn? listBranches,
   required WorktreeCheckoutFn? checkout,
@@ -24,7 +30,9 @@ List<RepoOp> buildWorktreeBranchOps({
       kind: RepoOpKind.mutate,
       actionClasses: const {ActionClass.networkEgress, ActionClass.gitPush},
       requiredArgs: const ['workspace_id', 'space_id', 'repo_id'],
+      repoAccess: RepoGrantLevel.write,
       handler: (ctx) async {
+        await requireSpace(ctx);
         final res = await sync(
           workspaceId: ctx.workspaceId!,
           spaceId: ctx.args['space_id'] as String,
@@ -42,7 +50,9 @@ List<RepoOp> buildWorktreeBranchOps({
       name: 'worktree.listBranches',
       kind: RepoOpKind.read,
       requiredArgs: const ['workspace_id', 'space_id', 'repo_id'],
+      repoAccess: RepoGrantLevel.read,
       handler: (ctx) async {
+        await requireSpace(ctx);
         final res = await listBranches(
           workspaceId: ctx.workspaceId!,
           spaceId: ctx.args['space_id'] as String,
@@ -59,7 +69,9 @@ List<RepoOp> buildWorktreeBranchOps({
       name: 'worktree.checkout',
       kind: RepoOpKind.mutate,
       requiredArgs: const ['workspace_id', 'space_id', 'repo_id'],
+      repoAccess: RepoGrantLevel.write,
       handler: (ctx) async {
+        await requireSpace(ctx);
         final res = await checkout(
           workspaceId: ctx.workspaceId!,
           spaceId: ctx.args['space_id'] as String,

@@ -18,6 +18,29 @@ void main() {
 
     File secretsFile() => File('${tmp.path}/${FileSecretsStore.fileName}');
 
+    test('a missed key is not re-read until the file changes', () async {
+      final store = FileSecretsStore(dataDir: tmp.path);
+      await store.writePsk('aaaaaaa', '1');
+      expect(await store.readFresh('missing'), isNull);
+      // Rewritten with the same length and time: nothing a stamp can see,
+      // so the remembered miss answers without reading the file again.
+      final file = secretsFile();
+      final modified = file.lastModifiedSync();
+      file
+        ..writeAsStringSync(jsonEncode({'missing': '1'}))
+        ..setLastModifiedSync(modified);
+      expect(await store.readFresh('missing'), isNull);
+
+      // Another process adding the key changes the file: it is seen.
+      await FileSecretsStore(dataDir: tmp.path).writePsk('missing', 'now');
+      expect(await store.readFresh('missing'), 'now');
+
+      // So is this process's own write after a miss.
+      expect(await store.readFresh('later'), isNull);
+      await store.writePsk('later', 'here');
+      expect(await store.readFresh('later'), 'here');
+    });
+
     test('every tenant round-trips through one secrets.json', () async {
       // Device PSKs, the provider app identity, per-user tokens and the SSO
       // secrets share this file behind namespaced keys — the store itself is
@@ -42,20 +65,15 @@ void main() {
       );
     });
     test(
-      'secrets are written owner-only and a legacy temporary copy is removed',
+      'secrets are written owner-only, with no staged copy left behind',
       () async {
         if (Platform.isWindows) {
           return;
         }
-        // Flushes used to stage through a fixed `<file>.tmp`; one left behind
-        // by a crashed former write may hold old secrets.
-        final legacy = File('${secretsFile().path}.tmp')
-          ..writeAsStringSync('old');
         await FileSecretsStore(
           dataDir: tmp.path,
         ).writePsk('web_push_vapid_v1', 'private-vapid-key');
         expect(secretsFile().statSync().mode & 0x1ff, 0x180); // 0600
-        expect(legacy.existsSync(), isFalse);
         // No staged temporary is left beside the live file.
         expect(tmp.listSync().map((e) => e.path.split('/').last), [
           FileSecretsStore.fileName,

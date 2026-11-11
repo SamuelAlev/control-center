@@ -2,7 +2,7 @@
 title: Pornire rapidă
 description: Instalează Control Center, configurează un agent și urmărește-l cum lucrează pe repo-ul tău.
 slug: ro-RO/manual/pornire-rapida
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Aceasta este cea mai scurtă cale completă de la nimic la un agent care rulează pe propriul tău cod. Urmeaz-o în ordine; fiecare pas depinde de cel dinaintea lui.
@@ -21,7 +21,7 @@ aceleași funcționalități. Un tab de browser nu poate însă găzdui serverul
 furnizezi tu — rulează `cc_server` local și conectează-te la `ws://localhost:9030`
 sau indică-l spre un server de pe altă mașină. Această pornire rapidă urmează calea
 desktop pentru că nu are nevoie de configurarea vreunui server; vezi
-[Instalare](/ro-RO/manual/instalare/#use-it-in-your-browser) pentru varianta din browser.
+[Instalare](/ro-RO/manual/instalare/#folosește-o-în-browser) pentru varianta din browser.
 :::
 
 ## Pasul 2: Parcurge onboardingul
@@ -30,7 +30,7 @@ Onboardingul își desfășoară pașii în ordine — nu se poate sări înaint
 
 1. **Autentificare** (doar proprietarul serverului): alege cum autentifică acest server oamenii în GitHub, Google Calendar și Linear — **Folosește aplicațiile Control Center**, **Folosește aplicațiile mele** sau **Folosește un server Connect propriu**. Cu aplicațiile tale, **Creează aplicația mea GitHub** configurează GitHub într-un singur pas. Poți schimba asta mai târziu în **Setări → Server → Autentificare unică**.
 2. **Conectează**: autentifică-te în GitHub sau lipește un token GitLab ori Bitbucket. Acreditarea este stocată pe server, atașată de contul tău.
-3. **Spațiu de lucru**: dă un nume primului tău spațiu de lucru și, opțional, alege un logo. Crearea lui generează cinci agenți — un CEO plus `qa`, `architect`, `engineer` și `librarian` — și șabloanele de pipeline încorporate.
+3. **Spațiu de lucru** (doar proprietarul serverului): dă un nume primului tău spațiu de lucru și, opțional, alege un logo. Ceilalți așteaptă la **Nu ești încă într-un spațiu de lucru** până când proprietarul creează unul pentru ei sau un administrator al spațiului de lucru îi invită. Crearea lui generează șase agenți — un CEO plus `qa`, `architect`, `engineer`, `librarian` și `content-synthesizer` — și șabloanele de pipeline încorporate.
 4. **Sandbox**: înregistrează o preferință de sandbox. Oricare alegere îți permite să continui.
 5. **Adaptor**: alege adaptorul și modelul care ar trebui să fie implicite pentru agenți. Alege **Control Center (built-in)**, apoi folosește selectorul de provideri care apare pentru a te autentifica la un provider de modele — lista de modele rămâne goală până când unul este conectat. Finalizarea acestui pas aplică adaptorul și modelul și pe agentul CEO al spațiului de lucru.
 6. **Voce (opțional)**: instalează un model vocal pe dispozitiv pentru dictare sau sari peste acest pas.
@@ -38,7 +38,7 @@ Onboardingul își desfășoară pașii în ordine — nu se poate sări înaint
 Control Center deschide apoi inbox-ul spațiului tău de lucru.
 
 :::note[Ce limitează o rulare de agent]
-Comenzile agenților sunt învelite în sandbox-ul nativ al sistemului de operare al gazdei atunci când există unul — Seatbelt pe macOS, bubblewrap pe Linux. Windows nu are backend, așa că rulările de acolo sunt limitate doar de celelalte straturi: worktree-ul propriu al conversației (`git worktree` pe Windows; copy-on-write acolo unde vine `rift`), acreditările intermediate la fiecare lansare și revocate la finalizare, și guardrail-urile de acțiuni. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
+Comenzile agenților sunt învelite în sandbox-ul nativ al sistemului de operare al gazdei atunci când există unul — Seatbelt pe macOS, bubblewrap pe Linux. Windows nu are backend. Pe o gazdă fără unul, pornesc doar rulările agenților proprietarului serverului, iar acestea sunt limitate doar de celelalte straturi: worktree-ul propriu al conversației (`git worktree` pe Windows; copy-on-write acolo unde vine `rift`), acreditările intermediate la fiecare lansare și revocate la finalizare, și guardrail-urile de acțiuni. Rulările tuturor celorlalți sunt refuzate până când proprietarul instalează sandbox-ul sau dezactivează sandboxing-ul pentru toată lumea. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
 :::
 
 ## Pasul 3: Adaugă un depozit
@@ -62,7 +62,7 @@ Pe fila **Setări**, setează:
 
 Apasă **Salvează modificările**.
 
-Acest pas nu este opțional în practică. Doar agentul CEO moștenește adaptorul ales în timpul onboardingului; cei patru specialiști sunt creați fără unul. Ei recurg la **Control Center (built-in)** cu modelul implicit al Anthropic, așa că rulează doar dacă ai conectat un cont Anthropic — și pe un model pe care nu l-ai ales, dacă ai făcut-o.
+Acest pas nu este opțional în practică. Pasul de adaptor din onboarding setează adaptorul și modelul pe fiecare agent care exista atunci; un spațiu de lucru creat mai târziu îi populează pe toți șase nesetați. Un agent fără unul recurge la **Control Center (built-in)** cu modelul implicit al Anthropic, așa că rulează doar dacă ai conectat un cont Anthropic — și pe un model pe care nu l-ai ales, dacă ai făcut-o.
 
 ## Pasul 5: Trimite agentului o sarcină
 

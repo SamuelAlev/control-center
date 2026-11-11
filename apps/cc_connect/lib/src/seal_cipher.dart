@@ -92,21 +92,38 @@ String newSealKeyEntry({DateTime? now}) {
 /// source (file-backed sources refresh every 30 s), so adding a key and then
 /// moving it first rotates without a restart.
 final class LocalAeadSealCipher implements SealCipher {
-  /// Creates the cipher over a keyring source.
-  LocalAeadSealCipher(this._keys) {
+  /// Creates the cipher over a keyring source. [onReloadFailed] runs once
+  /// per unparseable keyring value read after boot (the last good keyring
+  /// stays in use).
+  LocalAeadSealCipher(this._keys, {this.onReloadFailed}) {
     _parsed(); // Fail fast at boot on a malformed keyring.
   }
 
+  /// Called when a changed keyring does not parse.
+  final void Function()? onReloadFailed;
   final SecretSource _keys;
   final AesGcm _aead = AesGcm.with256bits();
   String _lastRaw = '';
+  String _lastBad = '';
   List<({String kid, List<int> key})> _ring = const [];
 
   List<({String kid, List<int> key})> _parsed() {
     final raw = _keys.value;
-    if (raw != _lastRaw || _ring.isEmpty) {
+    if (raw == _lastRaw && _ring.isNotEmpty) {
+      return _ring;
+    }
+    try {
       _ring = parseSealKeyring(raw);
       _lastRaw = raw;
+    } on FormatException {
+      if (_ring.isEmpty) {
+        rethrow;
+      }
+      // A half-written or mistyped rotation must not stop every seal.
+      if (raw != _lastBad) {
+        _lastBad = raw;
+        onReloadFailed?.call();
+      }
     }
     return _ring;
   }

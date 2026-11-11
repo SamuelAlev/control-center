@@ -146,14 +146,13 @@ Several subsystems that look event-driven from the outside are not. They are lis
 
 | Subdomain           | How state moves instead                                                                                 |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memory              | `record_memory_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
+| Memory              | `propose_fact` and friends write and return; recall reads. Nothing publishes on a fact or conflict |
 | Orchestration       | The proposal, its approval and the generated pipeline run are rows and RPC calls                        |
 | Plan documents      | `submit_plan` writes a revision; approval materializes an orchestration. Neither is announced           |
 | Artifacts           | `publish_artifact` / `revise_artifact` write revisions directly                                          |
 | Approvals           | Escalation is handled inside the approval workflow service                                              |
 | Ticket sync         | The vendor coordinator subscribes to the ticket events above; inbound webhooks are applied directly     |
 | Calendar refresh    | A sync upserts events and the client re-reads; there is no refresh broadcast                            |
-| Worktree merges     | Recorded in `worktree_merge_log` and read from there                                                    |
 
 ## Subscribers
 
@@ -188,7 +187,7 @@ Every subscriber below is constructed inside `runCcServer` (or a service it buil
 
 `TicketAssigned` is an audit and notification signal and a pipeline trigger. Assignment to an agent records ownership and starts no run — there is no ticket dispatcher. Assignment to a team (`assignedTeamId` set) is the exception: `TeamRoutingService` dispatches the team leader.
 
-`TicketRemoteSyncHandler` is declared but never constructed in production code, so it subscribes to nothing today. The client-side `NotificationEventMapper` is constructed only in its own test — it is the remnant of the in-process path from before the client/server split. Live toasts come from the wire frames below.
+Live toasts come from the wire frames below.
 
 ## Notification mapping
 

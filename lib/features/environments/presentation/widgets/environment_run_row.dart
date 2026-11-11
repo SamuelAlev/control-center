@@ -154,6 +154,13 @@ class _RunStatusIcon extends StatelessWidget {
         color: t.danger,
         semanticLabel: label,
       ),
+      // Nothing broke: it stopped for someone.
+      EnvironmentRunStatus.blocked => CcIcon(
+        AppIcons.pauseCircle,
+        size: 14,
+        color: t.textWarningPrimary,
+        semanticLabel: label,
+      ),
     };
   }
 }

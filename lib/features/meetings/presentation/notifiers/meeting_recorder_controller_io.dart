@@ -462,12 +462,9 @@ class MeetingRecorderController extends Notifier<MeetingRecorderState> {
             'title': meeting.title,
             'user_notes': meeting.userNotes,
             'transcript': transcript,
-            // Reproduce the template captured when the meeting was recorded; fall
-            // back to the current active template for meetings recorded before the
-            // snapshot existed (null summaryInstructions).
-            'summary_instructions':
-                meeting.summaryInstructions ??
-                ref.read(activeMeetingTemplateProvider).instructions,
+            // Reproduce the template captured when the meeting was recorded,
+            // exactly as the first summary run read it.
+            'summary_instructions': meeting.summaryInstructions ?? '',
           },
           dedupKey: meetingId,
         );

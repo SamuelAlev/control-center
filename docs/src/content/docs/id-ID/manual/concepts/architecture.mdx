@@ -3,7 +3,7 @@ title: Arsitektur
 description: Bagaimana Control Center disusun dengan model server klien tipis, Clean Architecture yang mengutamakan fitur, serta port dan adapter.
 dateModified: 2026-09-19
 slug: id-ID/panduan-pengguna/konsep/arsitektur
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Ringkasan
@@ -60,7 +60,7 @@ Fitur **`guardrails`** menempatkan lapisan domainnya di `cc_domain/features/guar
 - Entitas memori: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Objek nilai bersama: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Port bersama: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Layanan domain: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Layanan domain: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + jenis peristiwa (ruang kerja/agen, PR/tinjauan, perpesanan, tiket, pipeline, orkestrasi, memori, kalender/rapat, identitas & keanggotaan, observabilitas)
 
 ## Identitas dan multiplayer
@@ -132,7 +132,6 @@ Server memegang kredensial yang penting: token GitHub dan tiket untuk peluncuran
 
 - Rahasia di `flutter_secure_storage` (keychain macOS, credential manager Windows, libsecret Linux) — kredensial perangkat klien dan kunci pemasangan jarak jauh, bukan token penyedia
 - `shared_preferences` hanya untuk preferensi tidak sensitif (tema, font, tata letak)
-- Rahasia penyedia sisa dari instalasi lama diserahkan ke server sekali oleh `features/auth/providers/credential_migration.dart`, lalu dihapus dari keychain klien
 
 ## Penegakan arsitektur
 

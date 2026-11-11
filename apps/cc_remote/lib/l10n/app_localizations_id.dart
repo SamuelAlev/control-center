@@ -249,10 +249,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get allCaughtUp => 'Semua sudah tertangani';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Tidak ada akun forge yang terhubung di server, jadi pull request belum dapat dikaitkan ke Anda.';
-
-  @override
   String get inboxNothingWaiting =>
       'Tidak ada yang terblokir dan tidak ada pull request yang menunggu Anda.';
 
@@ -460,32 +456,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names terlalu besar untuk dikirim lewat relay dari sini.',
-      one: '$names terlalu besar untuk dikirim lewat relay dari sini.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Tidak dapat mengunggah lampiran. Coba lagi.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count lampiran tidak dapat diunggah dan dikecualikan.',
-      one: '1 lampiran tidak dapat diunggah dan dikecualikan.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Rekan tim';
 
   @override
@@ -621,35 +591,6 @@ class AppLocalizationsId extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Tidak ada forge yang terhubung di server, jadi pull request tidak dapat diambil. Hubungkan dari aplikasi desktop.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repo tidak dapat dibaca.',
-      one: '1 repo tidak dapat dibaca.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Tidak dapat dibaca: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'Instalasi GitHub App ditangguhkan';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Menampilkan data terakhir yang diketahui untuk $names. Lanjutkan instalasi di GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Instalasi GitHub App ditangguhkan. Menampilkan data terakhir yang diketahui untuk $names. Lanjutkan instalasi di GitHub.';
-  }
 
   @override
   String get draft => 'Draf';
@@ -1302,7 +1243,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get permissionPrCreate => 'Buat pull request';
 
   @override
-  String get permissionPrPublish => 'Publikasikan pull request';
+  String get permissionPrPublish => 'Perbarui atau gabungkan pull request';
 
   @override
   String get permissionVendorSyncWrite => 'Tulis sinkronisasi penyedia';
@@ -1346,7 +1287,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get permissionBuiltInDefault => 'Default bawaan';
 
   @override
-  String get permissionRemembered => 'Persetujuan tersimpan';
+  String get permissionRemembered => 'Persetujuan sementara';
 
   @override
   String get permissionSource => 'Sumber';
@@ -1368,10 +1309,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Tetapkan aturan di sini';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Cabut aturan bercakupan atau aturan tersimpan sebelum menetapkan aturan umum untuk tindakan ini.';
 
   @override
   String get permissionConfirmRevoke => 'Konfirmasi pencabutan';
@@ -1424,6 +1361,14 @@ class AppLocalizationsId extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Perintah: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Tool: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect => 'Tidak berlaku saat tindakan ini ditolak';
 
   @override
   String permissionMaxCount(String count) {
@@ -1881,15 +1826,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Pembaruan pull request';
-
-  @override
-  String get activityTicket => 'Pembaruan tiket';
-
-  @override
-  String get activityMeeting => 'Pembaruan rapat';
-
-  @override
-  String get activityCalendar => 'Koneksi kalender';
 
   @override
   String get activityRig => 'Pembaruan lingkungan terisolasi';
@@ -2574,8 +2510,7 @@ class AppLocalizationsId extends AppLocalizations {
       'Menunggu otorisasi di browser Anda…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Masukkan kode yang ditampilkan di browser';
+  String get credentialsConnectCodePrompt => 'Kode konfirmasi';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2644,10 +2579,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'Tempel token akses pribadi';
 
   @override
-  String get credentialsHostManaged =>
-      'Koneksi ini berasal dari aplikasi server atau lingkungannya. Hanya pemilik server yang dapat mengubahnya di sana; Anda tetap dapat menambahkan token sendiri.';
-
-  @override
   String get credentialsStopWatching => 'Berhenti memantau';
 
   @override
@@ -2667,4 +2598,200 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Jalankan perintah di host';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Sesi $provider Anda sudah berakhir. Masuk lagi.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Dijeda: layanan masuk ruang kerja ini berubah. Akan berfungsi lagi setelah layanan kembali.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '$provider tidak dapat dihubungi saat ini. Mencoba lagi.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Hanya ruang kerja ini';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Semua ruang kerja';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Hapus kredensial tersimpan Anda dari ruang kerja ini? Ruang kerja lain tetap menyimpan miliknya.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Hapus kredensial tersimpan Anda dari setiap ruang kerja yang membagikannya?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Server dimulai ulang. Mulai proses masuk lagi.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Pasang GitHub App di $owner agar otomatisasi dapat menjangkau $names. Ketuk untuk membuka GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App belum dipasang di $owner, jadi otomatisasi tidak dapat menjangkau $names. Minta admin ruang kerja untuk memasangnya.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Tambahkan $names ke repositori GitHub App. Ketuk untuk membuka GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App belum dapat melihat $names. Minta admin ruang kerja untuk menambahkannya ke repositorinya.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Instalasi GitHub App ditangguhkan. Otomatisasi untuk $names dijeda sampai pemilik akun melanjutkan instalasi di GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Orang yang bertanggung jawab atas otomatisasi ruang kerja ini tidak lagi dapat melihat $names, jadi tidak ada yang berjalan di sana atas namanya.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Orang yang bertanggung jawab atas otomatisasi ruang kerja ini belum masuk ke forge, jadi otomatisasi untuk $names menunggu sampai mereka masuk.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Tidak dapat memeriksa akses ke $names. Mencoba lagi.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Masuk ke $forge untuk melihat pull request dari $count repositori lagi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositori disembunyikan karena akun $forge Anda tidak dapat melihatnya',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositori disembunyikan karena Anda tidak punya akses di ruang kerja ini',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Memeriksa akses Anda ke $count repositori lagi…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Email akun Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Masukkan alamat email akun Atlassian Anda.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Tidak ada token otomatisasi yang bisa membaca $names, jadi pekerjaan latar belakang di sana dijeda. Admin bisa menambahkannya di Pengaturan → Repositori.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Konfirmasi di browser Anda, lalu masukkan kode yang ditampilkannya.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Akun ini sudah terhubung ke orang lain di server ini. Masuk dengan akun yang berbeda.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider tidak dapat dihubungi untuk memeriksa token ini. Coba lagi sebentar.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider tidak menerima token ini. Periksa bahwa Anda sudah menyalin seluruhnya dan token itu belum dicabut.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Ini bukan token pribadi. Tempel token akses pribadi dari akun $provider Anda sendiri, bukan token proyek, grup, ruang kerja, atau bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Token ini tidak memiliki cakupan $scope, yang dibutuhkan untuk meninjau dan mengomentari. Buat token yang memilikinya.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Token ini sudah berakhir. Buat yang baru dan tempel di sini.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Terlalu banyak permintaan saat ini. Tunggu sebentar, lalu coba lagi.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Proses masuk dibatalkan atau ditolak. Mulai lagi saat Anda siap.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Proses masuk ini sudah tidak terbuka: dibatalkan, sudah dipakai, atau diganti. Mulai lagi.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Admin ruang kerja harus mengundang Anda, atau pemilik server dapat membuatkan ruang kerja untuk Anda.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos sekarang mengarah ke repositori lain di $forge. Tautkan ulang dari aplikasi desktop atau web agar tetap bisa digunakan.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos sekarang mengarah ke repositori lain di $forge. Admin ruang kerja harus menautkannya ulang sebelum dapat digunakan lagi.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agen memerlukan sandbox di server ini';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Server ini tidak memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini. Pemilik dapat memasang sandbox atau mematikan sandboxing untuk semua orang.';
 }

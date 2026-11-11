@@ -2,7 +2,7 @@
 title: Puentes de chat
 description: Por qué la integración con Slack marca hacia fuera en lugar de escuchar, qué autoriza realmente un mensaje que llega desde el chat y cómo un solo puente sirve para cualquier producto de chat.
 slug: es-MX/manual/conceptos/puentes-de-chat
-sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
+sourceHash: ee6f53efdb43f53c70c6e267108813985fb39a91
 ---
 
 Un puente de chat convierte a un producto de chat externo —hoy Slack— en una vía
@@ -18,11 +18,7 @@ Discord, Telegram, Teams o Matrix en todo el producto. La función está escrita
 deliberadamente sin conocer al proveedor —agregar un segundo producto es un valor
 de enum, un adaptador y un plugin—, pero hoy «chat» significa Slack.
 
-Dos superficies lo cubren y pertenecen a personas distintas. Conectar un espacio
-de trabajo a Slack y personalizar el bot son acciones de **administrador**, en
-Ajustes → Espacio de trabajo → General. Vincular tu propia cuenta de chat con tu
-identidad de Control Center es una acción de **miembro**, en
-Ajustes → Espacio de trabajo → Perfil e identidad.
+Dos superficies lo cubren y pertenecen a personas distintas. Conectar un espacio de trabajo a Slack y personalizar el bot son acciones de **administrador** en la tarjeta **Puentes de chat**, en Ajustes → Espacio de trabajo → Integraciones. Vincular tu propia cuenta de chat con tu identidad de Control Center es una acción de **miembro** en la tarjeta **Cuentas de chat vinculadas**, en Ajustes → Tú → Perfil.
 
 Tres decisiones dan forma a toda la función: **en qué dirección corre la
 conexión**, **qué autoriza un mensaje que llega desde fuera** y **dónde puede

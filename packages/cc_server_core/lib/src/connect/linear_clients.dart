@@ -1,11 +1,15 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_domain/cc_domain.dart' show NeedsSignInException;
 import 'package:cc_domain/core/utils/single_flight.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
-import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_infra/cc_infra.dart' show createHttpClient;
+import 'package:cc_server_core/src/connect/connect_settings.dart';
 import 'package:cc_server_core/src/connect/linear_sign_in_lane.dart';
+import 'package:cc_server_core/src/connect/sign_in_service.dart'
+    show errorKindOf;
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
@@ -23,16 +27,19 @@ typedef LinearGrantRefresh =
 /// Every Linear credential this server uses, and who it acts as.
 ///
 /// * [personAuthorization]: a member's own Linear sign-in (`linear` lane),
-///   for actions that member takes. No sign-in, no credential: the caller
-///   refuses with "Sign in to Linear". A workspace on its own Linear app
-///   reads the member's grant from its own slot, never the global one.
+///   for actions that member takes. No sign-in, no credential:
+///   [requirePersonAuthorization] and [personHttp] refuse with
+///   `NeedsSignInException` (lane `linear`). A workspace that overrides the
+///   server's Connect choice reads the member's grant from its own slot,
+///   never the global one.
 /// * [appAuthorization]: the workspace's Control Center app actor
 ///   (`linear_app`, `actor=app`) for ticket sync, pipelines and agents, so
-///   automated issues and comments appear as Control Center. The operator
-///   may instead configure a service `LINEAR_API_KEY` (a workspace on its
-///   own app: only its own key); nothing else.
+///   automated issues and comments appear as Control Center. Without one, a
+///   service API key: the workspace's own while it is on its own apps, the
+///   server's `LINEAR_API_KEY` only while it inherits a server on its own
+///   apps; nothing else.
 ///
-/// In a workspace on its own app, a grant issued to any other client id is
+/// In a workspace on its own apps, a grant issued to any other client id is
 /// cleared on read: it answers "sign in again", never as the other app.
 ///
 /// OAuth tokens are sent as `Bearer <token>`, an API key raw. Expiring
@@ -45,6 +52,7 @@ class LinearClients {
     required this._workspaces,
     required this._apps,
     required this._workspaceApps,
+    required this._route,
     required this._refresh,
     this._revoke,
     DateTime Function()? now,
@@ -54,6 +62,7 @@ class LinearClients {
   final LinearAppGrants _workspaces;
   final ProviderAppSettings _apps;
   final WorkspaceProviderAppSettings _workspaceApps;
+  final Future<ConnectRoute> Function(String? workspaceId) _route;
   final LinearGrantRefresh _refresh;
   final Future<void> Function(String accessToken)? _revoke;
   final DateTime Function() _now;
@@ -62,16 +71,20 @@ class LinearClients {
   static const Duration refreshAge = Duration(days: 20);
 
   final SingleFlight<String, ProviderToken?> _refreshing = SingleFlight();
+
+  /// Renewed grants whose write failed, by grant key, with the stored grant
+  /// they replace (`parent`). Linear rotates refresh tokens, so the renewed
+  /// grant is the only one that still works: it is served from here and
+  /// written again on the next use, until a new sign-in replaces `parent`.
+  final Map<String, ({ProviderToken parent, ProviderToken token})> _unsaved =
+      {};
   final Map<String, RhttpClient> _appHttp = {};
   final Map<String, RhttpClient> _personHttp = {};
 
   /// `Bearer <token>` for [userId]'s own Linear sign-in as seen from
   /// [workspaceId], or null.
   Future<String?> personAuthorization(String userId, String workspaceId) async {
-    final slot =
-        await _workspaceApps.ownsApp(workspaceId, WorkspaceAppProvider.linear)
-        ? workspaceId
-        : null;
+    final slot = (await _route(workspaceId)).workspaceSlot ? workspaceId : null;
     final token = await _live(
       'person:$userId@${slot ?? ''}',
       read: () => _readOwned(
@@ -105,8 +118,9 @@ class LinearClients {
   }
 
   /// The credential automation in [workspaceId] writes to Linear with: the
-  /// workspace's app actor, else its service API key (the workspace's own
-  /// when it uses its own app, else the server's), else null.
+  /// workspace's app actor, else a service API key (the workspace's own on
+  /// its own apps, the server's while it inherits a server on its own
+  /// apps), else null.
   Future<String?> appAuthorization(String workspaceId) async {
     if (workspaceId.isEmpty) {
       return null;
@@ -126,9 +140,12 @@ class LinearClients {
     if (token != null) {
       return 'Bearer ${token.accessToken}';
     }
-    final key =
-        await _workspaceApps.linearApiKey(workspaceId) ??
-        await _apps.linearApiKey();
+    final route = await _route(workspaceId);
+    final key = route.workspaceOwnApps
+        ? await _workspaceApps.linearApiKey(workspaceId)
+        : route.serverOwnApps
+        ? await _apps.linearApiKey()
+        : '';
     return key.isEmpty ? null : key;
   }
 
@@ -140,17 +157,60 @@ class LinearClients {
     () => _client(() => appAuthorization(workspaceId)),
   );
 
-  /// A GraphQL client acting as [userId] in [workspaceId].
+  /// [personAuthorization], or [NeedsSignInException] (lane `linear`) when
+  /// [userId] has no usable Linear sign-in in [workspaceId]: an action a
+  /// person takes never goes out unauthenticated or as anyone else.
+  Future<String> requirePersonAuthorization(
+    String userId,
+    String workspaceId,
+  ) async {
+    final value = userId.isEmpty
+        ? null
+        : await personAuthorization(userId, workspaceId);
+    if (value == null) {
+      throw NeedsSignInException(
+        ConnectOAuthLane.linear.wire,
+        'Sign in to Linear to do this as yourself.',
+      );
+    }
+    return value;
+  }
+
+  /// A GraphQL client acting as [userId] in [workspaceId]. Without their own
+  /// Linear sign-in a request fails locally with [NeedsSignInException]
+  /// (wrapped by rhttp in an `RhttpInterceptorException`, which the RPC
+  /// mapper unwraps); nothing is sent.
   RhttpClient personHttp(String userId, String workspaceId) =>
       _personHttp.putIfAbsent(
         '$userId@$workspaceId',
-        () => _client(() => personAuthorization(userId, workspaceId)),
+        () => _client(() => requirePersonAuthorization(userId, workspaceId)),
       );
+
+  /// Drops (and revokes, best effort) every member's Linear grant kept in
+  /// [workspaceId]'s own slot, leaving its app actor alone. Runs when the
+  /// server's choice changed and the workspace no longer owns a slot: its
+  /// members' global grants apply there now, and the slot is never read.
+  Future<void> resetPersonSlot(String workspaceId) async {
+    final removed = await _people.clearWorkspaceTicketTokens(
+      workspaceId,
+      TicketProvider.linear,
+    );
+    final revoke = _revoke;
+    if (revoke == null) {
+      return;
+    }
+    for (final token in removed) {
+      if (token.accessToken.isNotEmpty) {
+        await revoke(token.accessToken);
+      }
+    }
+  }
 
   /// Drops every Linear grant [workspaceId]'s previous app issued: its app
   /// actor and its members' grants in its own slot, revoked upstream best
-  /// effort. Runs when the workspace changes or leaves its own Linear app;
-  /// the global grants of people who also sign in elsewhere are untouched.
+  /// effort. Runs when the workspace's own Linear app or its Connect choice
+  /// changes; the global grants of people who also sign in elsewhere are
+  /// untouched.
   Future<void> resetWorkspace(String workspaceId) async {
     final removed = [
       ?await _workspaces.read(workspaceId),
@@ -171,8 +231,8 @@ class LinearClients {
     }
   }
 
-  /// The stored grant from [read], unless [workspaceId] uses its own Linear
-  /// app and the grant was issued to another client: then it is cleared.
+  /// The stored grant from [read], unless [workspaceId] is on its own apps
+  /// and the grant was issued to another client: then it is cleared.
   Future<ProviderToken?> _readOwned(
     String workspaceId,
     Future<ProviderToken?> Function() read, {
@@ -182,15 +242,18 @@ class LinearClients {
     if (token == null) {
       return null;
     }
-    final expected = await _workspaceApps.ownClientId(
-      workspaceId,
-      WorkspaceAppProvider.linear,
-    );
+    final expected = (await _route(workspaceId)).workspaceOwnApps
+        ? await _workspaceApps.ownClientId(
+            workspaceId,
+            WorkspaceAppProvider.linear,
+          )
+        : null;
     if (expected != null && expected != token.appId) {
-      CcHostLog.info(
-        'linear: a grant in workspace $workspaceId came from another app; '
-        'sign in again',
-      );
+      forgeAudit(ForgeAuditEvent.grantCleared, {
+        'lane': 'linear',
+        'workspace_id': workspaceId,
+        'reason': 'app_changed',
+      });
       await clear();
       return null;
     }
@@ -221,8 +284,13 @@ class LinearClients {
       );
 
   /// Renews every stored Linear grant obtained more than [refreshAge] ago (or
-  /// at an unknown time). Returns how many were renewed.
-  Future<int> refreshAging() async {
+  /// at an unknown time). Returns how many were renewed. A workspace grant is
+  /// renewed only while [isLiveWorkspace] says its workspace is still
+  /// registered and not deleted: a deleted workspace's grant is never kept
+  /// alive.
+  Future<int> refreshAging({
+    required Future<bool> Function(String workspaceId) isLiveWorkspace,
+  }) async {
     var renewed = 0;
     bool aging(ProviderToken token) {
       final at = token.issuedAt;
@@ -231,7 +299,9 @@ class LinearClients {
 
     for (final workspaceId in await _workspaces.workspaces()) {
       final token = await _workspaces.read(workspaceId);
-      if (token == null || !aging(token)) {
+      if (token == null ||
+          !aging(token) ||
+          !await isLiveWorkspace(workspaceId)) {
         continue;
       }
       final fresh = await _renew(
@@ -255,7 +325,9 @@ class LinearClients {
         TicketProvider.linear,
         workspaceId: workspaceId,
       );
-      if (token == null || !aging(token)) {
+      if (token == null ||
+          !aging(token) ||
+          !await isLiveWorkspace(workspaceId)) {
         continue;
       }
       final fresh = await _renew(
@@ -313,9 +385,13 @@ class LinearClients {
     required ConnectOAuthLane lane,
     required String? slot,
   }) async {
-    final token = await read();
+    final onDisk = await read();
+    final token = _effective(key, onDisk);
     if (token == null) {
       return null;
+    }
+    if (!identical(token, onDisk)) {
+      await _save(key, onDisk!, token, write, lane);
     }
     if (!token.isExpired) {
       return token;
@@ -329,6 +405,39 @@ class LinearClients {
       lane: lane,
       slot: slot,
     );
+  }
+
+  /// The grant in force for [key]: a renewed one whose write failed while
+  /// [onDisk] is still the grant it replaced, else [onDisk].
+  ProviderToken? _effective(String key, ProviderToken? onDisk) {
+    final kept = _unsaved[key];
+    if (onDisk == null || kept == null || !_sameGrant(kept.parent, onDisk)) {
+      _unsaved.remove(key);
+      return onDisk;
+    }
+    return kept.token;
+  }
+
+  /// Writes the renewed [token] (replacing [parent], the stored grant); on
+  /// failure keeps it in memory to serve and write again on the next use.
+  Future<void> _save(
+    String key,
+    ProviderToken parent,
+    ProviderToken token,
+    Future<void> Function(ProviderToken token) write,
+    ConnectOAuthLane lane,
+  ) async {
+    try {
+      await write(token);
+      _unsaved.remove(key);
+    } on Object catch (e) {
+      _unsaved[key] = (parent: parent, token: token);
+      forgeAudit(ForgeAuditEvent.grantPersistFailed, {
+        'lane': lane.wire,
+        'reason': errorKindOf(e),
+        'kept_in_memory': true,
+      }, token: token.accessToken);
+    }
   }
 
   /// One refresh per grant at a time: Linear rotates refresh tokens, so two
@@ -349,7 +458,7 @@ class LinearClients {
     required ConnectOAuthLane lane,
     required String? slot,
   }) => _refreshing.run(key, () async {
-    final stored = await read();
+    final stored = _effective(key, await read());
     if (stored == null) {
       return null;
     }
@@ -357,7 +466,8 @@ class LinearClients {
       return stored.isExpired ? null : stored;
     }
     final outcome = await _refresh(lane, stored, slot: slot);
-    final current = await read();
+    final onDisk = await read();
+    final current = _effective(key, onDisk);
     if (current == null) {
       return null;
     }
@@ -366,10 +476,15 @@ class LinearClients {
     }
     switch (outcome) {
       case Refreshed(:final token):
-        await write(token);
+        await _save(key, onDisk!, token, write, lane);
         return token;
       case RefreshRejected():
-        CcHostLog.info('linear: ${lane.wire} grant refused; sign in again');
+        forgeAudit(ForgeAuditEvent.grantCleared, {
+          'lane': lane.wire,
+          'workspace_id': slot,
+          'reason': 'refresh_rejected',
+        });
+        _unsaved.remove(key);
         await clear();
         return null;
       case RefreshUnavailable():

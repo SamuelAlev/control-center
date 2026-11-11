@@ -275,8 +275,8 @@ class NotificationWait {
   /// The server's wait id, the same `wait_id` the feed row carries.
   final String id;
 
-  /// What the agent waits for. Null for a kind this client does not know (a
-  /// newer server). Such a wait still notifies, but without actions.
+  /// What the agent waits for. Null for a kind this client does not know.
+  /// Such a wait still notifies, but without actions.
   final AgentInputKind? kind;
 
   /// Whether the notification can answer the wait with Approve and Deny.

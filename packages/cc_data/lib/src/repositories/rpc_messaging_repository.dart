@@ -69,15 +69,15 @@ class RpcMessagingRepository
   );
 
   /// Rebuilds a [Message] from its wire DTO. The DTO carries the parent
-  /// space id; when absent (a lossy older surface) it falls back to
-  /// [fallbackSpaceId] so the non-empty-spaceId invariant holds.
+  /// space id; when a surface omits it, the space the caller asked about
+  /// ([fallbackSpaceId]) keeps the non-empty-spaceId invariant.
   static Message _messageFromDto(MessageDto d, {String? fallbackSpaceId}) {
     final metadata = d.metadata;
     return Message(
       id: d.id,
       spaceId: d.spaceId ?? fallbackSpaceId ?? '',
       senderId: d.senderId,
-      senderType: SenderType.fromWire(d.senderType, senderId: d.senderId),
+      senderType: SenderType.fromWire(d.senderType),
       content: d.content,
       messageType: _spaceMessageTypeByName[d.messageType] ?? MessageType.text,
       metadata: metadata is Map ? metadata.cast<String, dynamic>() : null,

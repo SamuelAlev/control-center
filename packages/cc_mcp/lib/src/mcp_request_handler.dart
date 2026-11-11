@@ -4,15 +4,25 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 
 /// Transport-independent MCP request handler: the Streamable HTTP transport
 /// routing (POST /mcp for requests, GET /sse for server→client notifications,
-/// DELETE /mcp for session teardown, OPTIONS preflight), bearer-token auth,
-/// CORS and SSE fan-out — decoupled from any socket binding.
+/// DELETE /mcp for session teardown, OPTIONS preflight), caller
+/// authentication, CORS and SSE fan-out — decoupled from any socket binding.
+///
+/// Every request answers to one of two callers, loopback included:
+///  * an agent run, proven by its live run secret ([McpCallScope.runGrantHeader])
+///    from a loopback peer. Its scope is the gateway's attested grant and
+///    nothing the request says;
+///  * the server owner's own tooling, proven by the server's MCP token
+///    (`Authorization: Bearer`). It carries no scope.
+///
+/// Before either is checked, a request a web page could have made is refused:
+/// a foreign `Origin`, a `Host` that is not this listener's loopback address
+/// or the server's public host (DNS rebinding), or a POST that is not JSON.
 ///
 /// One handler serves every listener the host mounts it on: the standalone
 /// loopback `McpHttpServer` and the main cc_server HTTP listener (the
@@ -20,18 +30,20 @@ import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 /// the same instance, so SSE clients on either listener receive the same
 /// `tools/list_changed` fan-out and every request hits the same auth posture.
 class McpRequestHandler {
-  /// Creates a handler over [dispatcher] with the given auth [config].
+  /// Creates a handler over [dispatcher] that accepts the server MCP
+  /// [token] and the run secrets [attestRun] proves.
   ///
   /// [streamAfter] and [streamHeartbeat] tune streamed `tools/call` replies;
   /// see [defaultStreamAfter].
   McpRequestHandler({
-    required McpConfig config,
+    required String token,
     required this.dispatcher,
     this.agentRoutes,
     this.attestRun,
+    this.publicHosts,
     this.streamAfter = defaultStreamAfter,
     this.streamHeartbeat = defaultStreamHeartbeat,
-  }) : _activeConfig = config;
+  }) : _token = _checkedToken(token);
 
   /// Dispatcher that routes incoming JSON-RPC tool requests.
   final McpToolDispatcher dispatcher;
@@ -46,7 +58,12 @@ class McpRequestHandler {
   /// run. Null means this server can attest nobody.
   final McpCallScope? Function(String secret)? attestRun;
 
-  McpConfig _activeConfig;
+  /// The host names, besides this listener's loopback address, that a request
+  /// may name in its `Host` header: the server's configured public host. Read
+  /// per request. Null or empty means loopback only.
+  final Iterable<String> Function()? publicHosts;
+
+  String _token;
 
   /// Active SSE connections (for fan-out of server→client notifications).
   final Set<HttpResponse> _sseConnections = {};
@@ -89,30 +106,27 @@ class McpRequestHandler {
   /// caller stops waiting (`notifications/cancelled` or a closed stream).
   final Map<String, Completer<void>> _inFlightCalls = {};
 
-  /// Request headers that identify one caller when it sends no
-  /// `Mcp-Session-Id`: dispatch writes them per run into the agent's MCP
-  /// config.
-  static const List<String> _callerHeaders = [
-    'X-CC-Workspace-Id',
-    'X-CC-Agent-Id',
-    'X-CC-Conversation-Id',
-    'X-CC-Space-Id',
-  ];
+  /// The request headers a browser may send on a cross-origin call from a
+  /// loopback page (the MCP Inspector). Fixed: a requested header is never
+  /// echoed back.
+  static const String _allowedHeaders =
+      'Content-Type, Authorization, Accept, MCP-Protocol-Version, '
+      'Mcp-Session-Id, Last-Event-ID';
 
-  /// Whether a bearer token is configured. The host's non-loopback guard
-  /// reads this to fail closed: a tokenless MCP surface must never answer
-  /// off-host clients (the pre-unification standalone listener bound
-  /// loopback-only and mounting on a LAN/Tailscale listener must not widen
-  /// that exposure silently).
-  bool get hasToken {
-    final token = _activeConfig.token;
-    return token != null && token.isNotEmpty;
+  /// The host names a loopback request may carry.
+  static const Set<String> _loopbackHosts = {'localhost', '127.0.0.1', '::1'};
+
+  /// Replaces the server's MCP token (a rotation). Takes effect on the next
+  /// request — no rebind required.
+  void updateToken(String token) {
+    _token = _checkedToken(token);
   }
 
-  /// Updates the active configuration (e.g. after a token change). Takes
-  /// effect on the next request — no rebind required.
-  void updateConfig(McpConfig config) {
-    _activeConfig = config;
+  static String _checkedToken(String token) {
+    if (token.isEmpty) {
+      throw ArgumentError.value(token, 'token', 'must not be empty');
+    }
+    return token;
   }
 
   /// Whether [path] is served by this handler: the MCP transport plus the
@@ -128,6 +142,22 @@ class McpRequestHandler {
       return;
     }
 
+    final refusal = _browserRefusal(request);
+    if (refusal != null) {
+      CcMcpLog.w(
+        'MCP-HTTP',
+        'refused ${request.method} ${request.uri.path}: '
+            '$refusal',
+      );
+      request.response
+        ..statusCode = refusal == _unsupportedMediaType
+            ? HttpStatus.unsupportedMediaType
+            : HttpStatus.forbidden
+        ..write(jsonEncode({'error': refusal}));
+      unawaited(request.response.close());
+      return;
+    }
+
     _addCorsHeaders(request, request.response);
 
     if (request.method == 'OPTIONS') {
@@ -136,25 +166,8 @@ class McpRequestHandler {
       return;
     }
 
-    // SSE connection (GET /sse). This used to skip auth entirely, on the
-    // grounds that `EventSource` cannot send an Authorization header — but
-    // `hasToken` is the documented fail-closed posture for a non-loopback
-    // mount, so an unauthenticated, uncapped, long-lived GET was a hole in it.
-    // EventSource CAN carry a query parameter, so the token is accepted from
-    // `?token=` as well as the header.
-    if (request.method == 'GET' && request.uri.path == '/sse') {
-      if (!_checkAuth(request, allowQueryToken: true)) {
-        request.response
-          ..statusCode = HttpStatus.unauthorized
-          ..write(jsonEncode({'error': 'Unauthorized'}));
-        unawaited(request.response.close());
-        return;
-      }
-      _handleSse(request);
-      return;
-    }
-
-    if (!_checkAuth(request)) {
+    final caller = _authenticate(request);
+    if (caller == null) {
       request.response
         ..statusCode = HttpStatus.unauthorized
         ..write(jsonEncode({'error': 'Unauthorized'}));
@@ -162,8 +175,13 @@ class McpRequestHandler {
       return;
     }
 
+    if (request.method == 'GET' && request.uri.path == '/sse') {
+      _handleSse(request);
+      return;
+    }
+
     if (request.method == 'POST' && request.uri.path == '/mcp') {
-      await _handlePost(request);
+      await _handlePost(request, caller.scope);
       return;
     }
 
@@ -218,23 +236,86 @@ class McpRequestHandler {
   static String _diagnosticId() =>
       DateTime.now().microsecondsSinceEpoch.toRadixString(36);
 
-  bool _checkAuth(HttpRequest request, {bool allowQueryToken = false}) {
-    final token = _activeConfig.token;
-    if (token == null || token.isEmpty) {
-      return true;
+  static const String _unsupportedMediaType =
+      'A POST to /mcp must be application/json';
+
+  /// Why [request] is refused before authentication, or null to go on.
+  ///
+  /// These stop a web page in a browser on this machine: it cannot choose its
+  /// `Origin`, it reaches loopback through a rebound DNS name only with that
+  /// name in `Host`, and a form or `no-cors` fetch cannot send JSON.
+  String? _browserRefusal(HttpRequest request) {
+    final origin = request.headers.value('Origin');
+    if (origin != null && !isLoopbackOrigin(origin)) {
+      return 'Cross-origin requests are not accepted';
     }
-    var auth = request.headers.value('Authorization');
-    if (auth == null && allowQueryToken) {
-      final query = request.uri.queryParameters['token'];
-      if (query != null && query.isNotEmpty) {
-        auth = 'Bearer $query';
-      }
+    if (!_hostAllowed(request)) {
+      return 'Unknown host';
     }
-    if (auth == null) {
+    if (request.method == 'POST' &&
+        request.headers.contentType?.mimeType != 'application/json') {
+      return _unsupportedMediaType;
+    }
+    return null;
+  }
+
+  /// Whether [origin] is a page served from this machine's loopback address
+  /// (`http://localhost`, `http://127.0.0.1` or `http://[::1]`, any port).
+  static bool isLoopbackOrigin(String origin) {
+    final uri = Uri.tryParse(origin);
+    return uri != null &&
+        uri.scheme == 'http' &&
+        uri.path.isEmpty &&
+        !uri.hasQuery &&
+        _loopbackHosts.contains(uri.host.toLowerCase());
+  }
+
+  /// Whether the `Host` header names this listener on loopback, or the
+  /// server's public host.
+  bool _hostAllowed(HttpRequest request) {
+    final raw = request.headers.value(HttpHeaders.hostHeader);
+    if (raw == null || raw.isEmpty) {
       return false;
     }
-    final expected = 'Bearer $token';
-    final a = Uint8List.fromList(utf8.encode(auth));
+    final Uri uri;
+    try {
+      uri = Uri.parse('http://$raw');
+    } on FormatException {
+      return false;
+    }
+    final host = uri.host.toLowerCase();
+    if (_loopbackHosts.contains(host)) {
+      return uri.port == request.connectionInfo?.localPort;
+    }
+    final public = publicHosts?.call() ?? const <String>[];
+    return public.any((h) => h.isNotEmpty && h.toLowerCase() == host);
+  }
+
+  /// The caller [request] proves, or null to refuse it.
+  ///
+  /// A run secret is checked first and alone: one that names no live run, or
+  /// arrives from off this host, is refused even if a token is also sent.
+  _Caller? _authenticate(HttpRequest request) {
+    final secret = request.headers.value(McpCallScope.runGrantHeader);
+    if (secret != null) {
+      final loopback =
+          request.connectionInfo?.remoteAddress.isLoopback ?? false;
+      final scope = loopback ? attestRun?.call(secret) : null;
+      final ws = scope?.workspaceId;
+      if (scope == null || !scope.attested || ws == null || ws.isEmpty) {
+        return null;
+      }
+      return _Caller(scope);
+    }
+    final auth = request.headers.value(HttpHeaders.authorizationHeader);
+    if (auth != null && _equalsConstantTime(auth, 'Bearer $_token')) {
+      return const _Caller(null);
+    }
+    return null;
+  }
+
+  static bool _equalsConstantTime(String given, String expected) {
+    final a = Uint8List.fromList(utf8.encode(given));
     final b = Uint8List.fromList(utf8.encode(expected));
     if (a.length != b.length) {
       return false;
@@ -246,22 +327,19 @@ class McpRequestHandler {
     return result == 0;
   }
 
+  /// CORS for a page on this machine's loopback address (the MCP Inspector).
+  /// Any other origin was refused already; a request without one is not a
+  /// browser's cross-origin call and gets no CORS headers.
   void _addCorsHeaders(HttpRequest request, HttpResponse response) {
-    final origin = request.headers.value('Origin') ?? '*';
-    // Echo back whatever headers the client preflight-requested so browser
-    // clients (MCP Inspector, web UIs) can send MCP-specific headers like
-    // MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID without us having
-    // to hard-code every variant.
-    final requested = request.headers.value('Access-Control-Request-Headers');
+    final origin = request.headers.value('Origin');
+    if (origin == null) {
+      return;
+    }
     response.headers
       ..set('Access-Control-Allow-Origin', origin)
+      ..set('Vary', 'Origin')
       ..set('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS')
-      ..set(
-        'Access-Control-Allow-Headers',
-        requested ??
-            'Content-Type, Authorization, Accept, '
-                'MCP-Protocol-Version, Mcp-Session-Id, Last-Event-ID',
-      )
+      ..set('Access-Control-Allow-Headers', _allowedHeaders)
       // Inspector reads Mcp-Session-Id off responses to resume sessions.
       ..set('Access-Control-Expose-Headers', 'Mcp-Session-Id')
       ..set('Access-Control-Max-Age', '600');
@@ -297,8 +375,7 @@ class McpRequestHandler {
     response.headers
       ..set('Content-Type', 'text/event-stream')
       ..set('Cache-Control', 'no-cache')
-      ..set('Connection', 'keep-alive')
-      ..set('Access-Control-Allow-Origin', '*');
+      ..set('Connection', 'keep-alive');
 
     // Add to active connections for fan-out
     _sseConnections.add(response);
@@ -387,7 +464,7 @@ class McpRequestHandler {
     unawaited(request.response.close());
   }
 
-  Future<void> _handlePost(HttpRequest request) async {
+  Future<void> _handlePost(HttpRequest request, McpCallScope? scope) async {
     final sw = Stopwatch()..start();
     String label = 'POST /mcp';
     try {
@@ -424,7 +501,6 @@ class McpRequestHandler {
         return;
       }
 
-      final scope = _scopeFromHeaders(request);
       if (rpcRequest.method == 'tools/call' && rpcRequest.id != null) {
         await _handleToolsCall(request, rpcRequest, scope, label, sw);
         return;
@@ -717,42 +793,20 @@ class McpRequestHandler {
 
   /// Identifies a JSON-RPC request within its caller. Request ids are unique
   /// per client, not per server: every agent counts from zero. The MCP session
-  /// id names the client when it sends one; otherwise the identity headers
-  /// dispatch writes per run stand in for it.
+  /// id names the client when it sends one; otherwise the run secret does.
   static String _callKey(HttpRequest request, Object? id) {
-    final session = request.headers.value('Mcp-Session-Id');
     final caller =
-        session ??
-        [
-          for (final name in _callerHeaders) request.headers.value(name) ?? '',
-        ].join('|');
+        request.headers.value('Mcp-Session-Id') ??
+        request.headers.value(McpCallScope.runGrantHeader) ??
+        '';
     return '$caller#${jsonEncode(id)}';
   }
+}
 
-  /// Builds the trusted identity scope from the `X-CC-*` headers dispatch
-  /// writes into each agent's `.mcp.json`. Requests without them (MCP
-  /// Inspector, user tooling) get no scope and arguments pass through
-  /// verbatim. These headers ride the same bearer-token-authenticated,
-  /// loopback-only channel as the request itself, so they are exactly as
-  /// trustworthy as the call, which is not very: a process in the sandbox can
-  /// read them and send others. A run's secret therefore replaces them all.
-  McpCallScope? _scopeFromHeaders(HttpRequest request) {
-    String? header(String name) {
-      final value = request.headers.value(name);
-      return (value == null || value.isEmpty) ? null : value;
-    }
+/// Who a request proved to be: an agent run ([scope] is its attested grant)
+/// or the server owner's tooling ([scope] is null).
+final class _Caller {
+  const _Caller(this.scope);
 
-    final secret = header(McpCallScope.runGrantHeader);
-    final attested = secret == null ? null : attestRun?.call(secret);
-    if (attested != null) {
-      return attested;
-    }
-    final scope = McpCallScope(
-      workspaceId: header('X-CC-Workspace-Id'),
-      agentId: header('X-CC-Agent-Id'),
-      conversationId: header('X-CC-Conversation-Id'),
-      spaceId: header('X-CC-Space-Id'),
-    );
-    return scope.isEmpty ? null : scope;
-  }
+  final McpCallScope? scope;
 }

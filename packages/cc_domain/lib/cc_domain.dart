@@ -10,6 +10,7 @@ export 'core/domain/ports/confirmation_port.dart';
 export 'core/domain/ports/run_credential_gate_port.dart';
 export 'core/domain/services/redaction/redactor.dart';
 export 'core/domain/services/redaction/secret_scanner.dart';
+export 'core/domain/services/redaction/token_patterns.dart';
 export 'core/domain/value_objects/connection_descriptor.dart';
 export 'core/domain/value_objects/file_search_hit.dart';
 export 'src/build_info.dart';

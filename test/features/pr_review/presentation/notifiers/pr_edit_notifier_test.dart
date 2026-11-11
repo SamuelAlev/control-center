@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
+import 'package:control_center/features/auth/providers/oauth_providers.dart'
+    show LaneSignInNeed, TokenSignInNeed;
 import 'package:control_center/features/pr_review/presentation/notifiers/pr_edit_notifier.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -147,7 +150,23 @@ void main() {
 
     final state = container.read(prEditProvider(prRef));
     expect(state.signInRefusals, 2);
-    expect(state.refusedLane, ConnectOAuthLane.github);
+    expect(state.refusedNeed, const LaneSignInNeed(ConnectOAuthLane.github));
+  });
+
+  test('a refusal naming a token-only forge asks for its token', () async {
+    final notifier = container.read(prEditProvider(prRef).notifier);
+    repo.refuseWith = RemoteRpcException(
+      RpcErrorCodes.unauthorized,
+      'Add a GitLab token',
+      {'kind': 'needs_sign_in', 'lane': 'gitlab'},
+    );
+
+    expect(await notifier.saveTitle('t'), isNotNull);
+
+    expect(
+      container.read(prEditProvider(prRef)).refusedNeed,
+      const TokenSignInNeed(ForgeHost.gitlab),
+    );
   });
 
   test('any other failure asks for nothing', () async {

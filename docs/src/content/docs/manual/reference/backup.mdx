@@ -107,6 +107,7 @@ database, and none of the rest travels:
 | `models/`                           | No             | No                     |
 | `meetings/<meetingId>/`             | No             | No                     |
 | `rigs/`                             | No             | No                     |
+| `_agent_hooks/`                     | No             | No                     |
 
 Some of that is disposable — `spaces/` holds copy-on-write worktrees that are
 re-provisioned from the repos, `pr_clones/` is a cache, `models/` re-downloads, `rigs/`
@@ -115,6 +116,14 @@ database point at, `skills/` and `agents/` hold the files an agent runs with, an
 `secrets.json` holds every pairing key, provider credential and SSO setting on the
 install. See [Back up and restore](/manual/guides/back-up-and-restore/#copy-backups-off-the-machine)
 for covering the rest.
+:::caution[A workspace database holds webhook secrets]
+`workspace.db` is the whole workspace: conversations, run logs, the code index,
+repository links, environment definitions and members. It also holds the workspace's
+pipeline webhook tokens and ticket-sync webhook secrets in readable form, so treat a
+downloaded export or backup as a secret. It holds no provider sign-in, device key or
+user secret; those are in `global.db` and `secrets.json`.
+:::
+
 :::note[Chat tokens deliberately stay behind]
 `chat_credentials/` sitting beside the database rather than inside it is why a workspace
 handed to somebody else carries no live bot tokens. See the
@@ -137,7 +146,7 @@ missing — on a server with no backup port wired, such as the demo server.
 | `workspace.listBackups` | read | Workspace | `admin` | none | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | Workspace | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Workspace | `admin`      | none          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Workspace | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | Workspace | `owner`, and the server owner | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Install*  | `owner`      | `id`          | registry row marked deleted   |
 
 * `workspace.delete` is unscoped because the row it marks lives in the global
@@ -160,7 +169,17 @@ install **owner** (`ServerAuthority.serverOwner`), the same gate as
 being an admin of one workspace is not enough to manage the others. Deletion
 accepts only the listed timestamp directory name, not an arbitrary server
 path, and removes the whole snapshot (including incomplete snapshots).
-Per-workspace export/import stay on workspace admin/owner, not the install owner.
+Per-workspace export and scheduled-backup downloads stay on workspace admin.
+:::
+
+:::note[Restore is the server owner's]
+`workspace.import` and `POST /backup/restore` make the server adopt a database
+file whose rows it then treats as its own: repository links and who made them,
+environment definitions that run on the host, worktree and log paths. So both
+need the server owner (`ServerAuthority.serverOwner`), who must also be the
+workspace's owner. Anyone else, and every caller on a host with no recorded owner,
+is refused with `server_owner_required`. No trigger or view the file brings is
+adopted.
 :::
 
 ### `server.listBackups` response
@@ -234,7 +253,7 @@ device's signature over its target string using its pairing PSK and the role bel
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Workspace **admin**   |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Install **owner**     |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Workspace **admin**; install **owner** once the workspace is deleted |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Workspace **owner**   |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Install **owner** who is also workspace **owner** (`403` with `server_owner_required` otherwise) |
 
 `w` is a workspace id, `n` a snapshot or scheduled backup directory name, `d` the calling
 device id, `s` the signature. On `/backup/snapshot`, `n` is resolved against the backup

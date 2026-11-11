@@ -22,6 +22,10 @@ enum SignInFailure {
   /// The attempt is no longer known (already used, replaced or forgotten).
   staleRequest('stale_request'),
 
+  /// The server does not know this attempt (it restarted, or the attempt
+  /// was evicted): start a new sign-in.
+  attemptUnknown('attempt_unknown'),
+
   /// The request could not be read.
   invalidRequest('invalid_request'),
 
@@ -47,11 +51,12 @@ enum SignInFailure {
   /// The app is not installed where it is needed.
   notInstalled('not_installed'),
 
-  /// A GitHub organization installation is bound to another server.
-  installationBoundElsewhere('installation_bound_elsewhere'),
-
   /// A Slack workspace is bound to another server.
   teamBoundElsewhere('team_bound_elsewhere'),
+
+  /// The provider account that just signed in is already linked to another
+  /// Control Center user on this server; nothing was stored.
+  accountAlreadyBound('account_already_bound'),
 
   /// Connecting a Slack workspace the first time takes one of its admins.
   notAdmin('not_admin'),
@@ -86,10 +91,12 @@ enum SignInFailure {
   /// The failure a Connect refusal of a sign-in means.
   static SignInFailure fromConnect(ConnectErrorCode code) => switch (code) {
     ConnectErrorCode.needsSignIn => needsSignIn,
-    ConnectErrorCode.accessDenied => accessDenied,
+    // A mint refusal; never answered to a sign-in.
+    ConnectErrorCode.accessDenied ||
+    ConnectErrorCode.needsRequester => accessDenied,
     ConnectErrorCode.codeMismatch => codeMismatch,
-    ConnectErrorCode.notInstalled => notInstalled,
-    ConnectErrorCode.installationBoundElsewhere => installationBoundElsewhere,
+    ConnectErrorCode.notInstalled ||
+    ConnectErrorCode.repoNotSelected => notInstalled,
     ConnectErrorCode.teamBoundElsewhere => teamBoundElsewhere,
     ConnectErrorCode.notAdmin => notAdmin,
     ConnectErrorCode.suspended => suspended,

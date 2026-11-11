@@ -2,10 +2,10 @@
 title: Tambahkan repo ke ruang kerja
 description: Daftarkan checkout Git ke ruang kerja agar agen dapat mengerjakannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/tambah-repo
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Panduan ini menunjukkan cara mendaftarkan checkout Git ke sebuah ruang kerja, mengindeksnya ulang, dan menghapusnya lagi.
+Panduan ini menunjukkan cara mendaftarkan checkout Git ke sebuah ruang kerja, mengindeksnya ulang, dan menghapusnya lagi. Menambahkan repositori dari folder server memerlukan pemilik server; menghapusnya memerlukan admin ruang kerja.
 
 Repo bersifat **bercakupan ruang kerja**. Tidak ada registri global dan tidak ada langkah penautan: menambahkan repo dan menaruhnya di ruang kerja adalah tindakan yang sama. Checkout yang sama yang didaftarkan di dua ruang kerja menjadi dua baris independen dengan dua id yang berbeda — lintas ruang kerja, identitas sebuah repo adalah jalur sistem berkasnya, tidak pernah id-nya.
 
@@ -21,9 +21,29 @@ Apa pun selain itu ditolak pada saat pendaftaran dengan pesan eksplisit: "Folder
 
 Forge-nya dibaca dari remote dan disimpan pada repo — Anda tidak pernah memilihnya. Sebuah ruang kerja dapat memuat repo dari ketiganya sekaligus, dan masing-masing diajak berkomunikasi melalui API-nya sendiri dengan kredensialnya sendiri. Namespace bertingkat milik GitLab dipertahankan, sehingga `gitlab.com/group/subgroup/project` terdaftar dengan owner `group/subgroup`, name `project`.
 
-Folder itu juga harus berada di mesin yang menghosting `cc_server`, di dalam salah satu direktori `--repo-roots` milik server tersebut. Daftar izin itu default-nya adalah direktori home pengguna server, dan menelusuri di atas sebuah root akan ditolak.
+Folder itu juga harus berada di mesin yang menghosting `cc_server`, di dalam salah satu direktori `--repo-roots` milik server tersebut. Daftar izin itu default-nya adalah direktori home pengguna server, dan menelusuri di atas sebuah root akan ditolak. Menelusuri folder server ditawarkan hanya kepada [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server), karena daftar itu memperlihatkan berkas mesin itu sendiri. Orang lain melihat "Pemilik server menambahkan repositori dari folder server." di tempat tombol **Tambah repositori** seharusnya berada, dan tautan ke repositori yang tidak dimiliki ruang kerja mana pun milik mereka menyatakan bahwa repositori itu belum tertaut di salah satu ruang kerja mereka dan meminta mereka untuk meminta pemilik server menambahkannya.
+
+Lokasi checkout boleh berada di mana pun, bergantung pada siapa yang menautkannya:
+
+- **Di dalam penyimpanan ruang kerja** di server: admin ruang kerja mana pun.
+- **Di mana pun lain di disk server**: hanya [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server), karena hanya merekalah yang boleh mengarahkan server ke berkas mesin itu sendiri. Orang lain melihat "Hanya pemilik server yang dapat menautkan folder di luar penyimpanan ruang kerja ini."
+- **Folder data server**, atau apa pun di dalamnya: tidak pernah.
+
+`origin` checkout harus merupakan repositori yang Anda tautkan. Folder yang `origin`-nya menyebut repositori lain ditolak dengan "Origin folder itu adalah repositori lain."
+
+### Folder yang belum dipakai server
+
+Repositori yang folder-nya berada di luar penyimpanan ruang kerja dan tidak ditautkan oleh pemilik server, misalnya yang berada di ruang kerja yang diimpor, menampilkan "Folder ini berada di luar penyimpanan ruang kerja. Pastikan server ini boleh menggunakannya." di bawah barisnya sampai pemilik server mengonfirmasinya. Orang lain melihat "Folder ini berada di luar penyimpanan ruang kerja. Hanya pemilik server yang dapat mengonfirmasinya." sebagai gantinya.
+
+Pemilik mengonfirmasinya sekali: **Konfirmasi** pada baris, atau **Konfirmasi semua** pada pemberitahuan di atas daftar ketika beberapa repositori menunggu. Setiap repositori diperiksa ulang sebagai pemilik, dengan pemeriksaan yang sama seperti saat menautkannya. Hingga saat itu repositori tetap ada di daftar tetapi tidak dibuka, disiapkan, atau diindeks: tidak ada editor, terminal, lingkungan, atau checkout space yang menggunakannya, dan graf kode melewatinya. Menambahkan folder yang sama lagi sebagai pemilik server sama dengan mengonfirmasinya, dan mempertahankan id repositori.
+
+Checkout yang tautan simboliknya dipindahkan ke tempat lain diperlakukan dengan cara yang sama: ia tetap tercantum dan tidak digunakan sampai ditautkan ulang oleh seseorang yang berhak menautkan folder yang kini ditunjuknya.
+
+Anda juga harus masuk ke forge repositori tersebut, dan akun Anda sendiri harus dapat melihat repositori itu.
 
 ## Daftarkan checkout
+
+Anda harus menjadi pemilik server untuk langkah-langkah ini.
 
 1. Buka **Pengaturan → Ruang kerja → Repositori** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Klik **Tambah repositori**.
@@ -56,7 +76,23 @@ Seret tuas pada sebuah baris. Urutan yang Anda tetapkan adalah urutan yang dibac
 
 ## Perbaiki tautan GitHub
 
-Ikon tautan pada sebuah baris membuka editor untuk owner dan nama repositori GitHub milik repo tersebut — berguna ketika remote-nya diganti nama atau dialihkan.
+Ikon tautan pada sebuah baris membuka editor untuk owner dan nama repositori GitHub milik repo tersebut.
+
+Anda jarang membutuhkannya. Sebuah tautan terikat pada id permanen repositori di forge, sehingga pengubahan nama atau transfer diikuti secara otomatis.
+
+- Mengganti nama repositori di Control Center hanya mengubah nama tampilannya.
+- Mengubah repositori forge yang ditunjuk sebuah tautan memerlukan admin ruang kerja, dan diperiksa terhadap forge dengan proses masuk admin tersebut, sama seperti saat menautkannya.
+- Repositori yang tertaut tidak dapat diubah menjadi repositori yang hanya lokal.
+
+Jika jalurnya kemudian menyebut repositori **yang berbeda** (yang asli dihapus lalu dibuat ulang, atau dipindahkan dan digantikan oleh yang lain), Control Center berhenti mengirim apa pun ke sana: tidak ada token, push, komentar, atau permintaan. Itu juga berlaku untuk tindakan Anda sendiri: tinjauan, penggabungan, atau komentar yang Anda buat di repositori semacam itu ditolak, di GitHub, GitLab, dan Bitbucket. Baris dan pull request repositori menampilkan "_repo_ sekarang mengarah ke repositori lain" sampai admin ruang kerja mengklik **Tautkan ulang**.
+
+## Siapa yang dapat membuka kode
+
+Sebuah grant repositori saja tidak membuka berkas repositori. Untuk membuka berkas, diff, pencarian, atau terminal untuknya, anggota memerlukan grant Control Center dan proses masuk forge miliknya harus dapat membaca repositori tersebut. Admin ruang kerja tidak dikecualikan; pemilik server dikecualikan. Lihat [Kode mengikuti forge](/id-ID/panduan-pengguna/konsep/otorisasi/#kode-mengikuti-forge).
+
+Ketika Anda memberikan sebuah repositori kepada seseorang yang akun forge-nya tidak dapat membacanya, grant tersimpan dan Anda melihat peringatan, seperti "Tersimpan. Akun GitHub mereka belum dapat membaca repositori ini, jadi repositori tetap tersembunyi bagi mereka."
+
+Aturan yang sama menentukan siapa yang dapat membuka sebuah space. Space hanya terbuka bagi anggota yang dapat membuka kode setiap repositori yang dipakainya, dan tersembunyi dari semua orang lain, beserta hasil pencariannya, log run, todo, aktivitas, dan notifikasinya. Space tanpa repositori terbuka bagi setiap anggota. Lihat [Space mengikuti repositorinya](/id-ID/panduan-pengguna/konsep/otorisasi/#space-mengikuti-repositorinya).
 
 ## Hapus repo
 
@@ -66,7 +102,31 @@ Ikon tautan pada sebuah baris membuka editor untuk owner dan nama repositori Git
 
 Dialog itu menjelaskan apa yang dilakukannya: "_name_ akan dihapus dari ruang kerja ini. File lokal di disk tidak diubah."
 
+Menghapus repositori memerlukan admin ruang kerja. Ia juga melupakan kredensial forge yang tersimpan untuk repositori itu, seperti token otomatisasi GitLab atau Bitbucket.
+
 Penghapusan akan menghapus baris repo dari ruang kerja ini dan menggugurkan baris-baris graf kodenya secara berantai — simbol, edge, berkas, dan checkpoint indeks — plus setiap pemberian izin repo per anggota padanya, tautan space-repo miliknya, dan catatan checkout terisolasinya. Checkout yang sama yang terdaftar di ruang kerja lain adalah baris independen dan tidak terpengaruh. Worktree di disk yang ditunjuk oleh catatan tersebut tidak dibongkar oleh penghapusan ini.
+
+## Pemecahan masalah
+
+### Saya punya grant tetapi repositori menyatakan akun saya tidak dapat membacanya
+
+Akun forge Anda sendiri tidak dapat membaca repositori tersebut, sehingga Control Center menyembunyikan kodenya dari Anda meskipun ruang kerja memberikan grant. Masuk ke forge di **Pengaturan → Anda → Profil → Hosting kode** jika Anda belum masuk, atau minta pemilik repositori di forge untuk memberi akses. Repositori terbuka segera setelah akun forge Anda dapat membacanya.
+
+### "Folder ini berada di luar penyimpanan ruang kerja"
+
+Folder repositori itu berada di luar penyimpanan ruang kerja dan tidak ditautkan oleh pemilik server, atau sebuah tautan simbolik kini mengarahkannya ke tempat lain. Ia tetap tercantum tetapi tidak digunakan sampai pemilik server mengonfirmasinya atau menambahkan folder itu lagi. Jika Anda bukan pemilik, minta mereka. Jika Anda pemiliknya, tekan **Konfirmasi** pada baris atau **Konfirmasi semua** di atas daftar; lihat [Folder yang belum dipakai server](#folder-yang-belum-dipakai-server).
+
+### "Tidak ada apa pun di path ini di server lagi"
+
+Folder itu dipindahkan atau dihapus di mesin server. Kembalikan, atau minta admin ruang kerja menghapus repositori dengan **Hapus** di pemberitahuan lalu menambahkannya lagi dari folder yang sekarang.
+
+### "Folder ini tidak dapat digunakan sebagai repositori"
+
+Folder yang tersimpan adalah folder data server itu sendiri, sesuatu di dalamnya, atau folder penyimpanan ruang kerja itu sendiri. Tidak satu pun dari itu dapat menjadi repositori. Admin ruang kerja menghapusnya dengan **Hapus** di pemberitahuan, lalu menambahkan repositori lagi dari folder checkout yang sebenarnya.
+
+### "Tidak dapat memastikan akses forge Anda"
+
+Control Center tidak dapat menghubungi forge untuk memeriksa bahwa akun Anda dapat membaca repositori, sehingga ia menolak alih-alih menebak. Coba lagi sebentar lagi.
 
 ## Panduan terkait
 

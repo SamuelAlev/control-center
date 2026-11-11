@@ -1,11 +1,20 @@
 import 'dart:convert';
 
+import 'package:cc_data/src/server_owner_failure.dart';
+import 'package:cc_domain/cc_domain.dart' show ServerOwnerRequiredException;
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
 import 'package:cc_domain/features/environments/domain/entities/environment_run.dart';
 import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+
+/// One `environment.watch` frame: a space's environments, and whether this
+/// person may operate them.
+typedef SpaceEnvironmentsFrame = ({
+  List<SpaceEnvironment> environments,
+  bool canOperate,
+});
 
 /// A proposed definition, not stored until an admin saves it.
 class EnvironmentDraft {
@@ -73,8 +82,10 @@ typedef EnvironmentLogLine = ({String line, int? seq});
 /// How long the server may take, per kind of work. The RPC default is 30 s,
 /// and a compose build or a CLI's create runs for minutes.
 abstract final class EnvironmentCallBudgets {
-  /// Start, reset, refresh, recreate and destroy: whole stacks.
-  static const lifecycle = Duration(minutes: 30);
+  /// Start, reset, refresh, recreate and destroy: whole stacks. A start may
+  /// also wait for a person at a terminal, and that wait has its own limit on
+  /// the server.
+  static const lifecycle = Duration(minutes: 60);
 
   /// One task, or a desktop app's prepare task.
   static const task = Duration(minutes: 30);
@@ -104,6 +115,8 @@ EnvironmentDefinitionRecord environmentDefinitionRecordFromWire(
     approvedBlobHash: json['approved_blob_hash'] as String?,
     overridesJson: overrides == null ? null : jsonEncode(overrides),
     createdBy: json['created_by'] as String?,
+    runsOnHost: json['runs_on_host'] == true,
+    hostApproved: json['host_approved'] == true,
     createdAt: DateTime.parse(json['created_at'] as String),
     updatedAt: DateTime.parse(json['updated_at'] as String),
   );
@@ -191,12 +204,16 @@ class RpcEnvironmentRepository {
   );
 
   /// Validates and stores [definition], creating one without [definitionId].
+  ///
+  /// A definition that places anything on the server host is owner-only: for
+  /// anyone else this throws [ServerOwnerRequiredException]. One that runs
+  /// entirely in a rig an admin may save.
   Future<EnvironmentDefinitionRecord> setDefinition(
     String workspaceId,
     Map<String, dynamic> definition, {
     String? definitionId,
   }) async => environmentDefinitionRecordFromWire(
-    await _client.call('environments.setDefinition', {
+    await _client.callAsOwner('environments.setDefinition', {
       'workspace_id': workspaceId,
       'definition_id': ?definitionId,
       'definition': definition,
@@ -226,7 +243,8 @@ class RpcEnvironmentRepository {
   }
 
   /// Links a definition to a file on a repo's default branch and approves the
-  /// blob it holds now.
+  /// blob it holds now. Host-placed definitions are owner-only, as for
+  /// [setDefinition].
   ///
   /// [blobHash] pins the approval to a blob the admin has seen: saving
   /// overrides passes the already approved hash, so it can't also approve a
@@ -239,7 +257,7 @@ class RpcEnvironmentRepository {
     Map<String, dynamic>? overrides,
     String? blobHash,
   }) async => environmentDefinitionRecordFromWire(
-    await _client.call('environments.approveSource', {
+    await _client.callAsOwner('environments.approveSource', {
       'workspace_id': workspaceId,
       'definition_id': ?definitionId,
       'repo_id': repoId,
@@ -333,19 +351,25 @@ class RpcEnvironmentRepository {
     }),
   );
 
-  /// Live environments of a space.
-  Stream<List<SpaceEnvironment>> watch(String workspaceId, String spaceId) =>
+  /// Live environments of a space, with whether this person may operate
+  /// them (`can_operate`: start, stop, restart, launch and the other
+  /// controls). Every frame carries both; a frame without the right reads
+  /// as not allowed.
+  Stream<SpaceEnvironmentsFrame> watch(String workspaceId, String spaceId) =>
       _client
           .subscribe('environment.watch', {
             'workspace_id': workspaceId,
             'space_id': spaceId,
           })
           .map(
-            (data) => [
-              for (final raw in (data['environments'] as List?) ?? const [])
-                if (raw is Map)
-                  SpaceEnvironment.fromJson(raw.cast<String, dynamic>()),
-            ],
+            (data) => (
+              environments: [
+                for (final raw in (data['environments'] as List?) ?? const [])
+                  if (raw is Map)
+                    SpaceEnvironment.fromJson(raw.cast<String, dynamic>()),
+              ],
+              canOperate: data['can_operate'] == true,
+            ),
           );
 
   /// Recent runs of a space, live.
@@ -387,45 +411,54 @@ class RpcEnvironmentRepository {
   Future<SpaceEnvironment> _environment(
     String op,
     String workspaceId,
-    String spaceId,
-  ) async => SpaceEnvironment.fromJson(
+    String spaceId, {
+    bool attended = false,
+  }) async => SpaceEnvironment.fromJson(
     await _client.call(op, {
       'workspace_id': workspaceId,
       'space_id': spaceId,
+      if (attended) 'attended': true,
     }, timeout: EnvironmentCallBudgets.lifecycle),
   );
 
   /// Starts, or reuses, the space's environment.
+  ///
+  /// [attended] says the person is at a surface that can show them a
+  /// terminal: a verb that needs an answer then runs on one, and this start
+  /// carries on from it. The environment's `interactiveComponent` names the
+  /// session while it does. Without it, the start stops there and the
+  /// environment reads `blocked`.
   Future<SpaceEnvironment> ensure(
     String workspaceId,
     String spaceId, {
     String? definitionId,
     Map<String, dynamic>? options,
+    bool attended = false,
   }) async => SpaceEnvironment.fromJson(
     await _client.call('environment.ensure', {
       'workspace_id': workspaceId,
       'space_id': spaceId,
       'definition_id': ?definitionId,
       'options': ?options,
+      if (attended) 'attended': true,
     }, timeout: EnvironmentCallBudgets.lifecycle),
   );
-
-  /// Runs the tool's `setup` verb on a terminal, returning its session id.
-  Future<String> startSetup(String workspaceId, String spaceId) async {
-    final result = await _client.call('environment.startSetup', {
-      'workspace_id': workspaceId,
-      'space_id': spaceId,
-    });
-    return result['session_id'] as String;
-  }
 
   /// Stops it, keeping what its tools keep.
   Future<SpaceEnvironment> down(String workspaceId, String spaceId) =>
       _environment('environment.down', workspaceId, spaceId);
 
-  /// Returns its data to the baseline.
-  Future<SpaceEnvironment> reset(String workspaceId, String spaceId) =>
-      _environment('environment.reset', workspaceId, spaceId);
+  /// Returns its data to the baseline. [attended] as in [ensure].
+  Future<SpaceEnvironment> reset(
+    String workspaceId,
+    String spaceId, {
+    bool attended = false,
+  }) => _environment(
+    'environment.reset',
+    workspaceId,
+    spaceId,
+    attended: attended,
+  );
 
   /// Re-applies the worktree's current state.
   Future<SpaceEnvironment> refresh(String workspaceId, String spaceId) =>

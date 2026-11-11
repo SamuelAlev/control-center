@@ -82,17 +82,6 @@ class _FakeIdeRepository implements RemoteIdeRepository {
   Future<List<IdeEditor>> detectEditors() async => const [];
 
   @override
-  Future<String> ensureWorktree({
-    required String repoFullName,
-    required int prNumber,
-    required String prExternalId,
-    String? repoId,
-    String title = '',
-  }) async {
-    throw UnimplementedError('desktop OpenInIde uses openPrInEditor');
-  }
-
-  @override
   Future<void> openSpaceWorktree({
     required String workspaceId,
     required String spaceId,

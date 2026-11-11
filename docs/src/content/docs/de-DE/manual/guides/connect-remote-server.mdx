@@ -2,7 +2,7 @@
 title: Mit einem Remote-Server verbinden
 description: Richte die Desktop-App oder den Web-Client auf einen cc_server aus, der woanders läuft, und wechsle zwischen Servern, ohne neu zu starten.
 slug: de-DE/handbuch/anleitungen/remote-server-verbinden
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Jeder Client ist eine Darstellung über einem `cc_server`, dem die Daten gehören. Der
@@ -90,6 +90,8 @@ läuft auf der eigenen Origin der Web-App; sein Service Worker leitet Anfragen
 `cc_server` weiter. Hoste den Web-Client über HTTPS oder sicheres Loopback,
 damit Service Worker verfügbar sind. Native Clients nutzen eine Fassade mit
 Capability-Begrenzung auf Loopback.
+
+Nur der Serverinhaber kann den eingebetteten code-server-Editor öffnen: Er läuft auf dem Server unter dem eigenen Benutzer des Servers. Eine Sitzung gehört dem Gerät und der Person, die sie geöffnet hat. Sie öffnet sich mit eingeschaltetem Arbeitsbereichsvertrauen von VS Code, sodass VS Code nachfragt, bevor er einem Ordner vertraut, und mit ausgeschalteten automatischen Tasks. Alle anderen behalten den integrierten Editor für einzelne Dateien und die Dateiansichten.
 :::
 
 ### Was der Browser nicht tut
@@ -104,9 +106,7 @@ Oberflächen brauchen ein natives Fenster oder die eigenen Geräte der Maschine:
 
 Zwei verhalten sich anders, statt zu fehlen. Die **Aufnahme** einer Besprechung
 funktioniert im Browser: Sie erfasst dein Mikrofon plus eine Bildschirmfreigabe
-mit Audiospur. **Im Editor öffnen** funktioniert ebenfalls, bittet den Server aber,
-den Editor auf der Anzeige _des Servers_ zu starten. Auf einem Headless-Host ohne
-installierte Editoren blendet sich die Schaltfläche deshalb aus.
+mit Audiospur. Die Schaltfläche mit dem Namen deines Editors (etwa **In VS Code öffnen**) bittet den Server, den Editor auf der Anzeige _des Servers_ zu starten, daher wird sie nur dem Serverinhaber angeboten und blendet sich auf einem Headless-Host ohne installierte Editoren aus.
 
 ## Fehlerbehebung
 

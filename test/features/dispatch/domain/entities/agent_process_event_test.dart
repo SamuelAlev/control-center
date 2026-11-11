@@ -137,11 +137,6 @@ void main() {
       expect(e.content, 'output text');
     });
 
-    test('metadata is null', timeout: const Timeout.factor(2), () {
-      final e = TextEvent(content: 'x');
-      expect(e.metadata, isNull);
-    });
-
     test('accepts custom timestamp', timeout: const Timeout.factor(2), () {
       final ts = DateTime(2025, 1, 1);
       final e = TextEvent(content: 'x', timestamp: ts);
@@ -162,13 +157,16 @@ void main() {
   // ---- ToolCallEvent ------------------------------------------------------
 
   group('ToolCallEvent', () {
-    test('content is the tool name', timeout: const Timeout.factor(2), () {
-      final e = ToolCallEvent(toolName: 'read_file', toolCallId: 'tc-1');
-      expect(e.type, AgentProcessEventType.toolCall);
-      expect(e.content, 'read_file');
-      expect(e.toolName, 'read_file');
-      expect(e.toolCallId, 'tc-1');
-    });
+    test(
+      'carries the tool name and call id',
+      timeout: const Timeout.factor(2),
+      () {
+        final e = ToolCallEvent(toolName: 'read_file', toolCallId: 'tc-1');
+        expect(e.type, AgentProcessEventType.toolCall);
+        expect(e.toolName, 'read_file');
+        expect(e.toolCallId, 'tc-1');
+      },
+    );
 
     test('includes inputs in metadata', timeout: const Timeout.factor(2), () {
       final e = ToolCallEvent(
@@ -177,9 +175,9 @@ void main() {
         inputs: {'path': '/tmp/x.txt', 'content': 'hi'},
       );
       expect(e.metadata, isNotNull);
-      expect(e.metadata!['toolName'], 'write_file');
-      expect(e.metadata!['toolCallId'], 'tc-2');
-      expect(e.metadata!['inputs'], isA<Map>());
+      expect(e.metadata['toolName'], 'write_file');
+      expect(e.metadata['toolCallId'], 'tc-2');
+      expect(e.metadata['inputs'], isA<Map>());
     });
 
     test(
@@ -187,7 +185,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final e = ToolCallEvent(toolName: 'bash', toolCallId: 'tc-3');
-        expect(e.metadata!['inputs'], isNull);
+        expect(e.metadata['inputs'], isNull);
       },
     );
   });
@@ -195,18 +193,14 @@ void main() {
   // ---- ToolResultEvent ----------------------------------------------------
 
   group('ToolResultEvent', () {
-    test(
-      'has correct type and content is outputs',
-      timeout: const Timeout.factor(2),
-      () {
-        final e = ToolResultEvent(toolCallId: 'tc-1', outputs: 'file contents');
-        expect(e.type, AgentProcessEventType.toolResult);
-        expect(e.content, 'file contents');
-        expect(e.toolCallId, 'tc-1');
-        expect(e.isError, isFalse);
-        expect(e.isPartial, isFalse);
-      },
-    );
+    test('has correct type and outputs', timeout: const Timeout.factor(2), () {
+      final e = ToolResultEvent(toolCallId: 'tc-1', outputs: 'file contents');
+      expect(e.type, AgentProcessEventType.toolResult);
+      expect(e.outputs, 'file contents');
+      expect(e.toolCallId, 'tc-1');
+      expect(e.isError, isFalse);
+      expect(e.isPartial, isFalse);
+    });
 
     test(
       'metadata includes error and partial flags',
@@ -219,9 +213,9 @@ void main() {
           isPartial: true,
           toolName: 'bash',
         );
-        expect(e.metadata!['isError'], isTrue);
-        expect(e.metadata!['partial'], isTrue);
-        expect(e.metadata!['toolName'], 'bash');
+        expect(e.metadata['isError'], isTrue);
+        expect(e.metadata['partial'], isTrue);
+        expect(e.metadata['toolName'], 'bash');
       },
     );
 
@@ -230,7 +224,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final e = ToolResultEvent(toolCallId: 'tc-3', outputs: 'ok');
-        expect(e.metadata!.containsKey('toolName'), isFalse);
+        expect(e.metadata.containsKey('toolName'), isFalse);
       },
     );
 
@@ -239,7 +233,7 @@ void main() {
       timeout: const Timeout.factor(2),
       () {
         final e = ToolResultEvent(toolCallId: 'tc-4', outputs: 'ok');
-        expect(e.metadata!.containsKey('partial'), isFalse);
+        expect(e.metadata.containsKey('partial'), isFalse);
       },
     );
   });
@@ -247,16 +241,12 @@ void main() {
   // ---- UsageEvent ---------------------------------------------------------
 
   group('UsageEvent', () {
-    test(
-      'has correct type and empty content',
-      timeout: const Timeout.factor(2),
-      () {
-        const usage = RunUsage(inputTokens: 100, outputTokens: 50);
-        final e = UsageEvent(usage: usage);
-        expect(e.type, AgentProcessEventType.usage);
-        expect(e.content, '');
-      },
-    );
+    test('has correct type and usage', timeout: const Timeout.factor(2), () {
+      const usage = RunUsage(inputTokens: 100, outputTokens: 50);
+      final e = UsageEvent(usage: usage);
+      expect(e.type, AgentProcessEventType.usage);
+      expect(e.usage, usage);
+    });
 
     test(
       'metadata includes token counts',
@@ -271,7 +261,7 @@ void main() {
           estimatedCostCents: 42,
         );
         final e = UsageEvent(usage: usage, durationMs: 1500);
-        final meta = e.metadata!;
+        final meta = e.metadata;
         expect(meta['inputTokens'], 100);
         expect(meta['outputTokens'], 50);
         expect(meta['thoughtTokens'], 10);
@@ -288,10 +278,10 @@ void main() {
       () {
         const usage = RunUsage(inputTokens: 100);
         final e = UsageEvent(usage: usage);
-        expect(e.metadata!.containsKey('thoughtTokens'), isFalse);
-        expect(e.metadata!.containsKey('cachedReadTokens'), isFalse);
-        expect(e.metadata!.containsKey('cachedWriteTokens'), isFalse);
-        expect(e.metadata!.containsKey('durationMs'), isFalse);
+        expect(e.metadata.containsKey('thoughtTokens'), isFalse);
+        expect(e.metadata.containsKey('cachedReadTokens'), isFalse);
+        expect(e.metadata.containsKey('cachedWriteTokens'), isFalse);
+        expect(e.metadata.containsKey('durationMs'), isFalse);
       },
     );
   });
@@ -324,16 +314,16 @@ void main() {
           action: 'file-read',
           target: '/etc/passwd',
         );
-        expect(e.metadata!['action'], 'file-read');
-        expect(e.metadata!['target'], '/etc/passwd');
-        expect(e.metadata!.containsKey('suggestedCapability'), isFalse);
+        expect(e.metadata['action'], 'file-read');
+        expect(e.metadata['target'], '/etc/passwd');
+        expect(e.metadata.containsKey('suggestedCapability'), isFalse);
       },
     );
 
     test('metadata omits null fields', timeout: const Timeout.factor(2), () {
       final e = SandboxViolationEvent(content: 'denied');
       expect(e.metadata, isNotNull);
-      expect(e.metadata!.isEmpty, isTrue);
+      expect(e.metadata.isEmpty, isTrue);
     });
   });
 
@@ -350,15 +340,10 @@ void main() {
   // ---- DoneEvent ----------------------------------------------------------
 
   group('DoneEvent', () {
-    test(
-      'has correct type and empty content',
-      timeout: const Timeout.factor(2),
-      () {
-        final e = DoneEvent();
-        expect(e.type, AgentProcessEventType.done);
-        expect(e.content, '');
-      },
-    );
+    test('has correct type', timeout: const Timeout.factor(2), () {
+      final e = DoneEvent();
+      expect(e.type, AgentProcessEventType.done);
+    });
   });
 
   // ---- Timestamp defaults -------------------------------------------------

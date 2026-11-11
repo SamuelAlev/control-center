@@ -2,7 +2,7 @@
 title: Yedekleme, dışa ve içe aktarma
 description: Anlık görüntü düzeni, manifest, her yedekleme işlemi ve aktarım rotası ile bir yedeğin hangi dosyaları içerdiği ve içermediği.
 slug: tr-TR/kilavuz/referans/yedekleme
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Control Center'ın kopyalayabileceği, devredebileceği ya da devralabileceği her şey ve
@@ -110,6 +110,7 @@ fazlasını tutar ve geri kalanın hiçbiri taşınmaz:
 | `models/`                           | Hayır            | Hayır                           |
 | `meetings/<meetingId>/`             | Hayır            | Hayır                           |
 | `rigs/`                             | Hayır            | Hayır                           |
+| `_agent_hooks/`                     | Hayır            | Hayır                           |
 
 Bunun bir kısmı gözden çıkarılabilir — `spaces/` depolar üzerinden yeniden sağlanan
 kopyala-üzerine-yaz çalışma ağaçlarını tutar, `pr_clones/` bir önbellektir, `models/`
@@ -117,8 +118,17 @@ yeniden indirilir, `rigs/` makine durumudur. Bir kısmı ise değildir: `blobs/`
 veritabanındaki satırların işaret ettiği yapıştırılmış görselleri tutar, `skills/` ve
 `agents/` bir ajanın çalıştığı dosyaları tutar ve `secrets.json` kurulumdaki her eşleme
 anahtarını, sağlayıcı kimlik bilgisini ve SSO ayarını tutar. Geri kalanı kapsamak için
-[Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/#copy-backups-off-the-machine)
+[Yedekleme ve geri yükleme](/tr-TR/kilavuz/nasil-yapilir/yedekleme-ve-geri-yukleme/#yedekleri-makinenin-dışına-kopyalama)
 sayfasına bakın.
+:::caution[Çalışma alanı veritabanı webhook sırlarını tutar]
+`workspace.db` çalışma alanının bütünüdür: sohbetler, çalıştırma günlükleri, kod
+indeksi, depo bağlantıları, ortam tanımları ve üyeler. Ayrıca çalışma alanının
+pipeline webhook token'larını ve ticket-sync webhook sırlarını okunabilir biçimde
+tutar; bu yüzden indirilen bir dışa aktarımı ya da yedeği bir sır gibi ele alın.
+Hiçbir sağlayıcı oturum açmasını, cihaz anahtarını ya da kullanıcı sırrını tutmaz;
+bunlar `global.db` ve `secrets.json` içindedir.
+:::
+
 :::note[Sohbet token'ları bilinçli olarak geride kalır]
 `chat_credentials/` dizininin veritabanının içinde değil de yanında durması, başkasına
 devredilen bir çalışma alanının canlı bot token'ı taşımamasının nedenidir.
@@ -142,7 +152,7 @@ olarak eksiktirler.
 | `workspace.listBackups` | read | Çalışma alanı | `admin` | yok | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | Çalışma alanı | `owner` | `name` | `{ok}` |
 | `workspace.export`    | read   | Çalışma alanı  | `admin`                | yok           | `{ok, path}`                  |
-| `workspace.import`    | mutate | Çalışma alanı  | `owner`                | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`    | mutate | Çalışma alanı  | `owner`, ayrıca kurulum sahibi | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`    | mutate | Kurulum*       | `owner`                | `id`          | kayıt defteri satırı silinmiş olarak işaretlenir |
 
 * `workspace.delete` kapsamsızdır; çünkü işaretlediği satır genel kayıt defterinde yaşar.
@@ -166,7 +176,17 @@ geçer. Bir anlık görüntü her çalışma alanının veritabanını yakalar; 
 çalışma alanının yöneticisi olmak diğerlerini yönetmeye yetmez. Silme, rastgele bir
 sunucu yolunu değil, yalnızca listede görünen zaman damgalı dizin adını kabul eder ve
 anlık görüntünün tamamını (eksik olanlar dahil) kaldırır. Çalışma alanı başına
-dışa/içe aktarma, kurulum sahibinde değil, çalışma alanı yöneticisi/sahibinde kalır.
+dışa aktarma ve zamanlanmış yedek indirmeleri yalnızca çalışma alanı yöneticisinde kalır.
+:::
+
+:::note[Geri yükleme kurulum sahibinindir]
+`workspace.import` ve `POST /backup/restore`, sunucunun satırlarını kendi saydığı
+bir veritabanı dosyasını benimsemesini sağlar: depo bağlantıları ve bunları kimin
+yaptığı, ana makinede çalışan ortam tanımları, worktree ve log yolları. Bu yüzden
+ikisi de kurulum sahibini (`ServerAuthority.serverOwner`) gerektirir; sahibin aynı
+zamanda çalışma alanının sahibi de olması gerekir. Başkaları ve kaydedilmiş bir
+sahibi olmayan ana makinedeki her çağıran `server_owner_required` ile reddedilir.
+Dosyanın getirdiği hiçbir tetikleyici ya da görünüm benimsenmez.
 :::
 
 ### `server.listBackups` yanıtı
@@ -241,7 +261,7 @@ eşleştirme PSK'si ve aşağıdaki rolle denetler.
 | `/backup/workspace` | GET    | `w`, `d`, `s` | `backup-workspace:<workspaceId>` | Çalışma alanı **yöneticisi** |
 | `/backup/snapshot`  | GET    | `n`, `d`, `s` | `backup-snapshot:<name>`         | Kurulum **sahibi**        |
 | `/backup/stored`    | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Çalışma alanı **yöneticisi**; çalışma alanı silindikten sonra kurulum **sahibi** |
-| `/backup/restore`   | POST   | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Çalışma alanı **sahibi**  |
+| `/backup/restore`   | POST   | `w`, `d`, `s` | `backup-restore:<workspaceId>`   | Kurulum **sahibi** ve aynı zamanda çalışma alanı **sahibi** (aksi halde `403` ile `server_owner_required`) |
 
 `w` bir çalışma alanı kimliği, `n` bir anlık görüntü veya zamanlanmış yedek dizini adı,
 `d` çağıran cihazın kimliği, `s` ise imzadır. `/backup/snapshot` üzerinde `n`, yedekleme

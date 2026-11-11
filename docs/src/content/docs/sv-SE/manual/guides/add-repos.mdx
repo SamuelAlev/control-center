@@ -2,10 +2,10 @@
 title: Lägg till repos i en arbetsyta
 description: Registrera Git-utcheckningar i en arbetsyta så att agenter kan arbeta med dem.
 slug: sv-SE/handbok/how-to-guider/lagg-till-repos
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Den här guiden visar hur du registrerar en Git-utcheckning i en arbetsyta, indexerar om den och tar bort den igen.
+Den här guiden visar hur du registrerar en Git-utcheckning i en arbetsyta, indexerar om den och tar bort den igen. Att lägga till ett arkiv från serverns mappar kräver serverägaren; att ta bort ett kräver en arbetsytadministratör.
 
 Repos är **knutna till arbetsytan**. Det finns inget globalt register och inget länkningssteg: att lägga till ett repo och att placera det i en arbetsyta är samma handling. Samma utcheckning som registreras i två arbetsytor blir två oberoende rader med två olika id:n — mellan arbetsytor är ett repos identitet dess filsökväg, aldrig dess id.
 
@@ -21,9 +21,29 @@ Allt annat avvisas vid registreringen med ett uttryckligt meddelande: "Folder is
 
 Forgen läses från remoten och lagras på repot — du väljer den aldrig själv. En arbetsyta kan innehålla repos från alla tre samtidigt, och var och en kontaktas via sitt eget API med sin egen autentiseringsuppgift. GitLabs nästlade namnrymder bevaras, så `gitlab.com/group/subgroup/project` registreras med ägaren `group/subgroup` och namnet `project`.
 
-Mappen måste också ligga på den maskin som kör `cc_server`, inuti en av serverns `--repo-roots`-kataloger. Den tillåtelselistan har som standard hemkatalogen för serverns användare, och att bläddra ovanför en rot avvisas.
+Mappen måste också ligga på den maskin som kör `cc_server`, inuti en av serverns `--repo-roots`-kataloger. Den tillåtelselistan har som standard hemkatalogen för serverns användare, och att bläddra ovanför en rot avvisas. Att bläddra bland serverns mappar erbjuds bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren), eftersom det listar maskinens egna filer. Alla andra ser "Serverägaren lägger till arkiv från serverns mappar." där knappen **Lägg till arkiv** skulle vara, och en länk till ett arkiv som ingen av deras arbetsytor har säger att det inte är länkat i någon av deras arbetsytor och att de ska be serverägaren att lägga till det.
+
+Var utcheckningen får ligga beror på vem som länkar den:
+
+- **Inuti arbetsytans egen lagring** på servern: vilken arbetsytadministratör som helst.
+- **Någon annanstans på serverns disk**: bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren), eftersom bara de får peka servern mot maskinens egna filer. Alla andra ser "Bara serverägaren kan koppla en mapp som ligger utanför den här arbetsytans lagring."
+- **Serverns datamapp**, eller något inuti den: aldrig.
+
+Utcheckningens `origin` måste vara det repo du länkar. En mapp vars `origin` anger ett annat repo avvisas med "Den mappens origin är ett annat arkiv."
+
+### Mappar servern inte använder än
+
+Ett arkiv vars mapp ligger utanför arbetsytans lagring och som inte länkades av serverägaren, till exempel ett i en importerad arbetsyta, visar "Den här mappen ligger utanför arbetsytans lagring. Bekräfta att den här servern får använda den." under sin rad tills serverägaren bekräftar det. Alla andra ser i stället "Den här mappen ligger utanför arbetsytans lagring. Bara serverägaren kan bekräfta den."
+
+Ägaren bekräftar en gång: **Bekräfta** på raden, eller **Bekräfta alla** i aviseringen ovanför listan när flera arkiv väntar. Varje ett kontrolleras igen som ägaren, med samma kontroller som vid länkningen. Tills dess ligger det kvar i listan men öppnas, etableras eller indexeras inte: ingen redigerare, terminal, miljö eller ytutcheckning använder det, och kodgrafen hoppar över det. Att lägga till samma mapp igen som serverägaren gör samma sak som att bekräfta den, och behåller repots id.
+
+En utcheckning som en symbolisk länk har flyttat någon annanstans behandlas på samma sätt: den ligger kvar i listan och används inte förrän någon som får länka mappen den nu pekar på länkar den igen.
+
+Du behöver också vara inloggad på repots forge, och ditt eget konto måste kunna se repot.
 
 ## Registrera en utcheckning
+
+Du måste vara serverägaren för de här stegen.
 
 1. Öppna **Inställningar → Arbetsyta → Arkiv** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Klicka på **Lägg till arkiv**.
@@ -56,7 +76,23 @@ Dra i handtaget på en rad. Ordningen du ställer in är den ordning som varje r
 
 ## Åtgärda GitHub-länken
 
-Länkikonen på en rad öppnar en redigerare för repots GitHub-ägare och reponamn — användbart när remoten har bytt namn eller flyttats.
+Länkikonen på en rad öppnar en redigerare för repots GitHub-ägare och reponamn.
+
+Du behöver den sällan. En länk är knuten till repots permanenta id hos forgen, så ett byte av namn eller en överföring följs automatiskt.
+
+- Att byta namn på ett repo i Control Center ändrar bara dess visningsnamn.
+- Att ändra vilket forge-repo en länk pekar på kräver en arbetsytadministratör, och det kontrolleras mot forgen med administratörens egen inloggning, på samma sätt som vid länkningen.
+- Ett länkat repo kan inte göras om till ett enbart lokalt.
+
+Om sökvägen senare pekar på ett **annat** repo (originalet raderades och skapades på nytt, eller flyttades och ersattes av ett annat), slutar Control Center skicka något till det: inga tokens, pushar, kommentarer eller förfrågningar. Det gäller även personens egna åtgärder: en granskning, sammanslagning eller kommentar du gör på ett sådant repo nekas, på GitHub, GitLab och Bitbucket lika. Raden och repots pull requests visar "_repo_ pekar nu på ett annat arkiv" tills en arbetsytadministratör klickar på **Koppla om**.
+
+## Vem kan öppna koden
+
+En repobehörighet ensam öppnar inte ett repos filer. För att öppna filer, diffar, sökning eller en terminal för det behöver en medlem behörigheten i Control Center, och deras egen inloggning hos forgen måste kunna läsa repot. Arbetsytans administratörer är inte undantagna; serverägaren är det. Se [Kod följer forge](/sv-SE/handbok/koncept/auktorisering/#kod-följer-forge-tjänsten).
+
+När du ger någon behörighet till ett repo vars forge-konto inte kan läsa det sparas behörigheten, och du ser en varning, till exempel "Sparat. Deras GitHub-konto kan inte läsa arkivet ännu, så det döljs för dem."
+
+Samma regel avgör vem som kan öppna en yta. En yta öppnas bara för medlemmar som kan öppna koden i varje repo den använder, och den döljs för alla andra, tillsammans med dess sökresultat, körloggar, uppgifter, aktivitet och aviseringar. En yta utan några repon är öppen för varje medlem. Se [Ytor följer sina repon](/sv-SE/handbok/koncept/auktorisering/#ytor-följer-sina-repon).
 
 ## Ta bort ett repo
 
@@ -66,7 +102,31 @@ Länkikonen på en rad öppnar en redigerare för repots GitHub-ägare och repon
 
 Dialogen säger vad den gör: "_name_ tas bort från den här arbetsytan. De lokala filerna på disk rörs inte."
 
+Att ta bort ett repo kräver en arbetsytadministratör. Det glömmer också de forge-uppgifter som lagrats för repot, såsom en GitLab- eller Bitbucket-automationstoken.
+
 Borttagningen tar bort reporaden från den här arbetsytan och kaskaderar bort dess rader i kodgrafen — symboler, kanter, filer och indexkontrollpunkter — plus varje repobehörighet per medlem på den, dess yta-repo-kopplingar och dess poster för isolerade utcheckningar. Samma utcheckning som är registrerad i en annan arbetsyta är en oberoende rad och påverkas inte. De worktrees på disk som posterna pekade på rivs inte ner av borttagningen.
+
+## Felsökning
+
+### Jag har en behörighet men arkivet säger att mitt konto inte kan läsa det
+
+Ditt eget kodvärdskonto kan inte läsa repot, så Control Center håller dess kod stängd för dig trots att arbetsytan gav behörigheten. Logga in på kodvärden under **Inställningar → Du → Profil → Kodvärd** om du inte redan gjort det, eller be repots ägare på kodvärden om åtkomst. Repot öppnas så snart ditt kodvärdskonto kan läsa det.
+
+### "Den här mappen ligger utanför arbetsytans lagring"
+
+Repots mapp ligger utanför arbetsytans lagring och serverägaren har inte länkat den, eller så pekar en symbolisk länk nu någon annanstans. Det står kvar i listan men används inte förrän serverägaren bekräftar det eller lägger till mappen igen. Om du inte är ägaren, be dem. Om du är det, tryck på **Bekräfta** på raden eller **Bekräfta alla** ovanför listan; se [Mappar servern inte använder än](#mappar-servern-inte-använder-än).
+
+### "Det finns inget på den här sökvägen på servern längre"
+
+Mappen flyttades eller togs bort på serverns maskin. Lägg tillbaka den, eller låt en arbetsytadministratör ta bort repot med **Ta bort** i aviseringen och lägga till det igen från dess nuvarande mapp.
+
+### "Den här mappen kan inte användas som arkiv"
+
+Den lagrade mappen är serverns egen datamapp, något inuti den, eller själva arbetsytans lagringsmapp. Ingen av dem kan vara ett repo. En arbetsytadministratör tar bort den med **Ta bort** i aviseringen och lägger till repot igen från utcheckningens riktiga mapp.
+
+### "Kunde inte bekräfta din åtkomst till forge"
+
+Control Center kunde inte nå forgen för att kontrollera att ditt konto kan läsa repot, så den vägrade i stället för att gissa. Försök igen om en stund.
 
 ## Relaterade guider
 

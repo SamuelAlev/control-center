@@ -2,7 +2,7 @@
 title: Logga in teamet med SSO
 description: Anslut Okta (SAML) till din Control Center-server och kör en inloggning från början till slut.
 slug: sv-SE/handbok/guider/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -86,6 +86,8 @@ Två regler avgör vad en första inloggning gör:
   standardvalet.
 - **Provisionera okända användare vid första inloggningen** — på som
   standard; slå av den för att avvisa alla vars konto inte redan finns.
+
+Om personer redan har konton på den här servern ska du bekräfta deras e-postadresser innan någon loggar in med SSO: öppna **Inställningar → Server → Personer** och använd **Bekräfta e-post** på varje rad som är markerad **E-post ej bekräftad**. En inloggning matchar ett befintligt konto via e-post bara när adressen är bekräftad (eller har satts av SSO eller SCIM). En adress som någon skrivit in i sin egen profil eller i en inbjudan matchar ingenting, så utan det här steget får de ett andra konto, eller nekas när provisionering av okända användare är avslagen. Se [Hur inloggningar matchar befintliga konton](/sv-SE/handbok/how-to-guider/sso-oidc/#hur-inloggningar-matchar-befintliga-konton).
 
 Du kan också mappa ett attribut som bär gruppnamn (Oktas är vanligtvis
 `groups`) och översätta grupper till roller med mappningen — till exempel

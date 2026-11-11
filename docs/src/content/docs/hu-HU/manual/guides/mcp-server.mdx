@@ -1,8 +1,8 @@
 ---
 title: Az MCP-szerver használata
-description: Irányítson egy külső MCP-klienst a Control Center eszközszerverére, állítson be bearer tokent, és ismerje, mit tesz elérhetővé a felület.
+description: Irányítson egy külső MCP-klienst a Control Center eszközszerverére, küldje el a bearer tokenjét, és ismerje, mit tesz elérhetővé a felület.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Ez az útmutató megmutatja, hogyan csatlakoztasson egy külső MCP-klienst — a
@@ -31,27 +31,43 @@ Egy alapértelmezett helyi telepítés tehát a `http://127.0.0.1:9030/mcp` cím
 2. Olvassa le az **MCP-szerver** kártyát — mutatja, hogy fut vagy leállt, és
    hogy melyik porton figyel
 
-A felület friss telepítésen alapértelmezés szerint be van kapcsolva, így egy
-loopback kliens a beállítások megérintése nélkül működik. Az **Indítás az
-alkalmazás indításakor** szabályozza, hogy visszatér-e újraindítás után; az
-**Indítás** / **Leállítás** munkamenet-vezérlők, amelyek nem változtatják meg
-ezt a beállítást.
+A felület friss telepítésen alapértelmezés szerint be van kapcsolva. Csak a szerver
+tulajdonosa látja a kártya tokenjét, és csak ő indíthatja vagy állíthatja le a
+végpontot. Az **Indítás az alkalmazás indításakor** szabályozza, hogy visszatér-e
+újraindítás után; az **Indítás** / **Leállítás** munkamenet-vezérlők, amelyek nem
+változtatják meg ezt a beállítást.
 
 A szerver alapértelmezés szerint loopbackre köt, így a végpont csak arról a
 gépről érhető el, amelyen a `cc_server` fut, kivéve, ha `--bind any`
 kapcsolóval indította.
 
+## Token beszerzése
+
+Minden kérésnek szüksége van a szerver MCP-tokenjére, bárhonnan is érkezik, a
+loopbacket is beleértve. A szerver az első indításkor hozza létre. Nincs mód a
+kikapcsolására, és nincs mód a törlésére.
+
+1. A **Beállítások → Szerver → MCP-szerverek** oldalon keresse meg a **Hitelesítési
+   token** sort
+2. Nyomja meg a **Token megjelenítése** gombot, és másolja ki
+3. A cseréhez nyomja meg a **Token cseréje** gombot. A szerver azonnal az új tokenre
+   vált, és minden, a régit használó kliens elutasításra kerül, amíg meg nem kapja az
+   újat
+
 ## Kliens csatlakoztatása
 
-Irányítsa a klienst a Streamable HTTP végpontra. A konfiguráció pontos formája
-a kliensének a dolga; az URL mindkét esetben ugyanaz.
+Irányítsa a klienst a Streamable HTTP végpontra, és minden kérésnél küldje el a
+tokent `Authorization: Bearer <token>` formában, a `GET /sse` kéréseket is beleértve.
+Másképp nem küldhető el: az URL-be írt token nem elfogadott. A konfiguráció pontos
+formája a kliensének a dolga.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -75,25 +91,20 @@ Ellenőrzőpont: kérje meg a klienst, hogy listázza az eszközeit. `mcp__*`
 bejegyzéseket kell látnia, amelyek a jegyeket, a tereket, a memóriát, a
 kódgráfot és az átnézést fedik le.
 
-## MCP kiszolgálása a hoszton túl
+## Mit utasít el a végpont
 
-1. A **Beállítások → Szerver → MCP-szerverek** oldalon a **Hitelesítési token**
-   sorban nyomja meg a **Beállítás** gombot, és illesszen be egy tokent
-2. Küldje el `Authorization: Bearer <token>` fejlécként minden `POST /mcp`
-   kérésnél
+A token minden eszközt megnyit a szerveren, ezért a végpont a webes oldal által
+küldhető kéréseket is elutasítja, még mielőtt a tokent megvizsgálná:
 
-A token nélküli felület minden nem loopback hívót 403-mal utasít el. Ez
-szándékosan zárt hibamódú: épp a token teszi egyáltalán lehetővé a hoszton
-kívüli kiszolgálást.
+| Kérés | Válasz |
+| --- | --- |
+| `Origin` fejléc, amely nem ezen a gépen lévő oldal (`http://localhost`, `http://127.0.0.1` vagy `http://[::1]`, bármely porttal) | `403`, „Keresztoldali kérések nem fogadhatók el” |
+| `Host` fejléc, amely sem ennek a figyelőnek a loopback-címe és portja, sem a szerver nyilvános hosztneve | `403`, „Ismeretlen hoszt” |
+| `POST`, amelynek törzse nem `application/json` | `415` |
+| Nincs token, vagy hibás | `401` |
 
-A token módosításai azonnal érvényesülnek az élő felületen — újraindítás nélkül.
-
-:::note[`GET /sse` a tokent a lekérdezési sztringben fogadja]
-Az értesítési folyamot a rendszer ugyanúgy token alapján ellenőrzi, mint minden
-más útvonalat, de a böngésző `EventSource` nem tud `Authorization` fejlécet
-küldeni — ezért a `/sse` a tokent `?token=<token>` formában is elfogadja.
-Enélkül 401-gyel válaszol.
-:::
+A hoszton túli kiszolgáláshoz indítsa a szervert `--bind any` kapcsolóval, és a
+másik gépről küldje a tokent, a szervert pedig a nyilvános hosztnevén címezve.
 
 ## Minden hívás munkaterülethez kötése
 
@@ -137,6 +148,31 @@ külső MCP-kliens megtagadja egy olyan eszköz hívását, amely nem szerepel a
 gyorsítótárazott listájában, így az eszközök elrejtése inkább elrontja őket,
 mintsem rendbe tenné.
 
+## A személyes MCP-szerverek a tulajdonosé maradnak
+
+Ez az útmutató a Control Center saját végpontjáról szól. A másik irány, vagyis azok az
+MCP-szerverek, amelyeket a Control Center az általa futtatott ügynököknek ad át, a
+**Beállítások → Szerver → MCP-szerverek → Külső MCP-szerverek** alatt találhatók. A
+szerver gépén a Claude, a Codex, a Cursor, a Gemini, a VS Code, a Windsurf, az
+OpenCode vagy a `.mcp.json` számára beállított szerverek ott automatikusan megjelennek.
+
+Ezek a felfedezett szerverek a szerver felhasználójának saját eszközkonfigurációjából
+származnak, és annak a felhasználónak az identitásával és hitelesítő adataival
+működnek, ezért a szerver tulajdonosáé:
+
+- Csak olyan beépített harness-futtatásokon belül érhetők el, amelyeket a szerver
+  tulajdonosa indít, vagy amelyekért felel, beleértve a munkaterületen belüli
+  automatizálást is, ha a tulajdonos felel érte.
+- Egy tag futtatása, egy taghoz kötött automatizálás és minden futtatás olyan szerveren,
+  ahol nincs rögzített tulajdonos, egyiket sem kapja meg. Ott az eszközök nem jelennek
+  meg, nem hívhatók, és az eszközkeresésben sem bukkannak fel.
+- Ez a végpont senki számára nem listázza, nem hívja és nem keresi őket, még a tulajdonos
+  tokenjével sem, és nem továbbítja az erőforrásaikat vagy promptjaikat. Így az MCP-n
+  keresztül a Control Center-hez csatlakozó ügynök-CLI, például a Claude Code, a Control
+  Center révén sem kapja meg őket; a saját konfigurációját használja.
+
+A munkaterületre beállított MCP-szervereket ez nem érinti.
+
 ## Hibaelhárítás
 
 ### A kliens egyetlen eszközt sem lát
@@ -146,9 +182,21 @@ mintsem rendbe tenné.
 - A Claude Code esetében ellenőrizze, hogy átadta-e a `--mcp-config` és a
   `--strict-mcp-config` kapcsolót
 
-### 403 egy olyan gépről, amely nem a szerver
+### 401 Nincs hitelesítve
 
-Nincs beállítva bearer token. Állítson be egyet, és küldje el.
+A kérés nem tartalmazott tokent, vagy régit tartalmazott. Másolja ki az aktuális tokent a
+**Hitelesítési token** sorból, és küldje el `Authorization: Bearer <token>` formában. Az
+URL-ben lévő token figyelmen kívül marad.
+
+### 403 egy olyan klienstől, amely korábban működött
+
+A kérés webes oldaltól érkező `Origin` fejlécet vagy olyan `Host` fejlécet tartalmazott,
+amelyre a szerver nem válaszol. Hívja a végpontot kliensből, ne böngészőoldalról, a
+szerver loopback-címén vagy nyilvános hosztnevén.
+
+### 415 Nem támogatott médiatípus
+
+Küldje a `POST /mcp` törzseket `application/json` típusban.
 
 ### Egy eszközhívás a következő hibával hiúsul meg: „Missing or invalid argument: workspace_id”
 

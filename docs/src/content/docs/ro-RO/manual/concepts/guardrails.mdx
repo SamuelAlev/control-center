@@ -2,7 +2,7 @@
 title: Guardrail-uri — o politică pentru fiecare acțiune care modifică starea
 description: De ce Control Center trece fiecare efect secundar al agenților printr-un singur motor de tip permite/întreabă/refuză, de ce taxonomia ActionClass rămâne mică în mod deliberat și ce schimbă cu adevărat cadranul de autonomie.
 slug: ro-RO/manual/concepte/guardrail-uri
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agenții din Control Center pot șterge fișiere, pot face push pe ramuri, pot
@@ -20,8 +20,7 @@ acțiune poate ieși din sistem: registrul de instrumente al harness-ului
 încorporat, poarta dispecerului MCP de pe server și mutațiile operațiunilor pe
 repo. O regulă scrisă o dată se aplică deci atât runtime-ului încorporat, cât
 și CLI-urilor de agent externe — nu există o a doua cale, mai tăcută, pe lângă
-ea. Politica mai veche, doar pentru comenzi bash, încă funcționează: o regulă
-poate potrivi un prefix de comandă în loc de o clasă de acțiune, iar cele două
+ea. O regulă poate și potrivi un prefix de comandă în loc de o clasă de acțiune; ambele
 forme coexistă în același depozit.
 
 Motorul nu este însă un substitut pentru sandbox-ul sistemului de operare, iar
@@ -29,15 +28,17 @@ sandbox-ul nu este un substitut pentru el. Ele răspund la întrebări diferite:
 guardrail-urile decid dacă un apel pe care Control Center îl poate vedea are
 voie să se întâmple, în timp ce sandbox-ul limitează unde poate ajunge procesul
 rezultat. `cc_server` aplică sandbox-ul acolo unde gazda oferă un backend — dar
-[Windows nu oferă niciunul, iar Linux are nevoie de `bwrap` și `socat`](/ro-RO/manual/concepte/sandbox-si-securitate/). Pe acele gazde,
-guardrail-urile sunt stratul de aplicare cel mai exterior, nu o politică
-așezată deasupra unui prag, ceea ce merită știut când decizi cât de permisiv
-să fii.
+[Windows nu oferă niciunul, iar Linux are nevoie de `bwrap` și `socat`](/ro-RO/manual/concepte/sandbox-si-securitate/). Pe acele gazde
+pornesc doar rulările proprietarului serverului, dacă proprietarul nu a
+dezactivat sandbox-ul pentru toată lumea cu `--sandbox off`. Pentru orice
+rulare care pornește fără sandbox, guardrail-urile sunt stratul de aplicare cel
+mai exterior, nu o politică așezată deasupra unui prag, ceea ce merită știut
+când decizi cât de permisiv să fii.
 
 ## ActionClass: o taxonomie închisă în mod deliberat
 
 Fiecare instrument care modifică starea declară căror **ActionClasses**
-aparține, dintr-un set închis de treisprezece clase de efect. Cinci dintre ele
+aparține, dintr-un set închis de paisprezece clase de efect. Șase dintre ele
 întreabă întâi din start; restul permit, iar o regulă este ce schimbă asta.
 
 | Clasă                      | Implicit încorporat | Ce acoperă                                                                 |
@@ -55,17 +56,19 @@ aparține, dintr-un set închis de treisprezece clase de efect. Cinci dintre ele
 | `processSpawn`             | permite             | Pornirea unui proces (shell și orice apelează shell-ul)                    |
 | `workspaceMutation`        | permite             | Modificarea structurii spațiului de lucru (repo-uri, spații, agenți)       |
 | `enclosureControl`         | permite             | Conducerea unui mediu izolat (stație): pornirea unei VM, trimiterea de input către ea |
+| `hostExecution`            | **întreabă întâi**  | Rularea unei comenzi pe gazda serverului în afara oricărui sandbox, la cererea unui agent: sarcini de mediu, procese, stive compose și `eval` când nucleul său rulează neizolat |
 
 Cele opt clase permise implicit au fost alese pornind de la premisa că pragul
 sandbox-ului se aplică sub ele. Se aplică acolo unde gazda oferă un backend și
-nu se aplică pe Windows sau pe o mașină Linux căreia îi lipsesc `bwrap` și
-`socat` — așa că, dacă vrei ca `fileWriteOutsideWorktree` sau `packageInstall`
-să fie controlate acolo, este o regulă pe care trebuie să o scrii.
+nu se aplică sub `--sandbox off`, nici pentru rulările proprietarului pe
+Windows sau pe o mașină Linux căreia îi lipsesc `bwrap` și `socat`. Dacă vrei ca
+`fileWriteOutsideWorktree` sau `packageInstall` să fie controlate acolo, este o
+regulă pe care trebuie să o scrii.
 
 Setul este închis în mod deliberat. Un instrument nou care modifică starea și
 nu declară nicio clasă pică testul cu clichet, așa că taxonomia poate crește
 doar printr-o decizie explicită și argumentată — „inflația taxonomiei este
-moartea acestei funcții". Treisprezece clase sunt destule ca să exprime
+moartea acestei funcții". Paisprezece clase sunt destule ca să exprime
 politicile pe care oamenii chiar le scriu (niciodată push fără să întrebi,
 niciodată ștergere în afara unui worktree, permite mereu citirile) și destul de
 puține ca interfața de setări să rămână comprehensibilă.
@@ -94,8 +97,7 @@ Două decizii au garanții stricte:
 
 Nu există în mod deliberat nicio zăvorâre pe durata unei ture. Fiecare apel de
 instrument re-rezolvă politica de la zero, așa că întrebarea repetată pentru
-aceeași acțiune este limitată de „reține această decizie" al operatorului, nu
-de ceva legat de tură.
+aceeași acțiune este limitată de aprobarea temporară a operatorului, nu de ceva legat de tură.
 
 ## Reguli la nivel de argumente
 
@@ -111,6 +113,7 @@ O constrângere poate numi:
   ca „orice ramură în afară de main")
 - **gazde** — destinații de rețea, cu wildcard-uri de subdomeniu (`*.internal`)
 - **comenzi** — prefixe de comandă, potrivite pe o limită de cuvânt
+- **instrumente** — instrumentul exact pe care îl numește un apel, astfel încât o aprobare să poată acoperi un singur instrument, nu toate instrumentele cu același efect
 - **plafoane** — `maxCount` / `maxCents`, așa încât „șterge până la 50 de
   fișiere" devine exprimabil
 
@@ -155,15 +158,19 @@ sistemului de operare de sub ambele. O regulă de comandă care se rezolvă în
 `allow` nu slăbește niciuna dintre ele — plasa modului rulează după aceea, iar
 `deny`-ul ei este final.
 
-## Aprobări permanente
+## Aprobări temporare
 
-Răspunsul la o întrebare cu „reține asta" scrie o regulă de politică reală: cu
-domeniu (spațiu / agent / spațiu de lucru), **cu constrângeri pe argumente**
-(aprobarea unui push către `feature/login` acordă `feature/**`, nu `main`) și
-**auto-revocabilă** după un TTL explicit. A spune da pentru următoarele câteva
-ore nu este același lucru cu a-ți rescrie în tăcere politica permanentă, iar
-regulile pe care le scrie ajung în același depozit cu proveniența `remembered`
-și o expirare, așa că pot fi revocate mai devreme.
+Fiecare card de aprobare generat de o acțiune a unui agent oferă **Aprobă pentru 8 ore** atunci când acțiunea are ceva mai restrâns decât clasa ei de numit. Alegerea lui scrie o regulă de politică reală, o aprobare temporară, în același depozit cu regulile pe care le setezi, cu proveniența `remembered` și o expirare:
+
+- **Cu domeniu.** Este scrisă pentru spațiul din care vine întrebarea. Doar răspunsul unui administrator poate fi scris pentru întregul spațiu de lucru.
+- **Restrânsă.** Numește o familie de ramuri (aprobarea unui push către `feature/login` acordă `feature/**`, nu `main`), un dosar, o gazdă, comanda exactă sau instrumentul. Un commit este singura acțiune aprobată ca clasă, pentru spațiul respectiv: nu are nimic mai restrâns de numit.
+- **Auto-revocabilă.** Se termină după opt ore și poate fi revocată mai devreme pe pagina de permisiuni ale agenților.
+
+O aprobare temporară scutește doar o întrebare. Răspunde unei decizii Întreabă întâi setate la propriul domeniu sau la unul mai larg și niciodată unui Refuză, indiferent de domeniul din care provine refuzul. Este stocată alături de regula pe care ai setat-o pentru acțiune, așa că schimbarea acelei reguli lasă aprobarea la locul ei, iar revocarea aprobării lasă regula.
+
+Unele porți cer confirmare singure, după ce politica a permis un apel: aprobarea declarată de instrumentul însuși sau plasa de comenzi a unui mod. Sar peste întrebarea lor doar pentru o aprobare temporară care numește exact acel instrument sau acea comandă. Setarea acțiunii pe Permite nu le face să tacă.
+
+Trei tipuri de carduri păstrează doar două butoane (refuză și aprobă), pentru că nu există nimic de dus mai departe: lăsarea sandbox-ului să ruleze programe dintr-un dosar (aprobarea lui este deja o permisiune stocată pe care o poți revoca), o operațiune distructivă pe care o confirmi o singură dată și instalarea unui skill (un skill modificat trebuie să ceară din nou).
 
 ## Niveluri de aplicare
 

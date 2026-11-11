@@ -96,6 +96,7 @@ class _AgentTranscriptState extends State<AgentTranscript> {
         t,
         s,
       ),
+      ErrorSegment(isSandboxUnavailable: true) => _sandboxUnavailable(context),
       final ErrorSegment s => _mono(
         t,
         s.message,

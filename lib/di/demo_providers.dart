@@ -53,7 +53,7 @@ final demoForgeConnectionsProvider = Provider<List<ForgeConnection>?>(
       ? const [
           ForgeConnection(
             forge: ForgeHost.github,
-            authenticated: true,
+            status: ForgeConnectionStatus.connected,
             username: kDemoViewerLogin,
             source: ForgeCredentialSource.oauth,
           ),

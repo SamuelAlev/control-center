@@ -1,7 +1,8 @@
+import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
+    show ForgeRemote;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
 import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
@@ -10,6 +11,7 @@ import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
@@ -30,6 +32,7 @@ import 'package:cc_infra/src/blobs/blob_store.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
 import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
 import 'package:cc_infra/src/harness/cc_natives_file_search_port.dart';
@@ -38,6 +41,7 @@ import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 
 /// Holds the environment service until the runtime has built it: dispatch
 /// exists long before terminals and rigs do.
@@ -51,7 +55,7 @@ class SandboxDispatchDeps {
   /// Creates [SandboxDispatchDeps].
   SandboxDispatchDeps({
     required this.sandbox,
-    required this.broker,
+    required this.hostExecution,
     required this.agentRepo,
     required this.runLogRepo,
     this.llmCallRecordRepo,
@@ -62,6 +66,8 @@ class SandboxDispatchDeps {
     this.mcpConfigPathResolver,
     this.mcpServersResolver,
     this.protectedPathsResolver,
+    this.writableWorktrees,
+    this.spaceRepos,
     this.sandboxManager,
     this.confirmationPort,
     this.execGrantService,
@@ -69,6 +75,7 @@ class SandboxDispatchDeps {
     this.blobStore,
     this.mediaRenderer,
     this.lspSupervisor,
+    this.agentHooksRoot,
     this.astParsers,
     this.transcriptStore,
     this.toolOutputStore,
@@ -93,7 +100,6 @@ class SandboxDispatchDeps {
     this.harnessProviderFactory = const HarnessProviderFactory(),
     this.agentLoop = const AgentLoopRunner(),
     this.resolveCommitIdentity,
-    this.resolveAgentAttribution,
     this.repoInspector,
     this.autonomyResolver,
     this.processControl,
@@ -136,15 +142,16 @@ class SandboxDispatchDeps {
   /// The sandbox port isolating this dispatch session.
   final SandboxPort sandbox;
 
+  /// Admits a run under the server's host execution posture, before anything
+  /// of it starts.
+  final HostExecutionGate hostExecution;
+
   /// Kills the agent's OS process on terminate / silence-watchdog expiry.
   ///
   /// Optional: a host that wires none still tears the SANDBOX down (which
   /// takes the child with it on the isolating backends), it just cannot stop a
   /// single pid inside a shared one.
   final ProcessControlPort? processControl;
-
-  /// Credential broker that mints per-run scoped tokens.
-  final CredentialBrokerPort broker;
 
   /// Agent repository used by dispatch and delegated runs.
   final AgentRepository agentRepo;
@@ -215,6 +222,29 @@ class SandboxDispatchDeps {
   final Future<List<String>> Function(String workspaceId)?
   protectedPathsResolver;
 
+  /// The worktrees of a space that a run acting for `actingUserId` (null: a
+  /// run nobody asked for) may change, answered by the server from grants:
+  /// those of the repositories its accountable person holds the write grant
+  /// on. Every other worktree in the space's `repos/` is read-only for the
+  /// run (`ReadOnlyWorktrees`), and a lookup that fails leaves them all
+  /// read-only. Null: the host keeps no grants and every worktree is
+  /// writable.
+  final Future<List<String>> Function(
+    String workspaceId,
+    String spaceId,
+    String? actingUserId,
+  )?
+  writableWorktrees;
+
+  /// The forge repositories of a space's checkouts, answered by the server
+  /// from its own record of them. They are what a run in the space works on:
+  /// its commits are attributed for their forge, and on GitHub the agent run
+  /// gateway hands the run a read token for them and no other. A checkout's
+  /// `origin` is the agent's to rewrite and is never asked. Null: the host
+  /// keeps no such record, and a run in a space works on none.
+  final Future<List<ForgeRemote>> Function(String workspaceId, String spaceId)?
+  spaceRepos;
+
   /// Maps CLI names to their execution backend. The session resolves a backend
   /// per dispatch and switches on its transport (acp / claudeCli / harness).
   final BackendRegistry backendRegistry;
@@ -247,6 +277,10 @@ class SandboxDispatchDeps {
   /// so a per-run supervisor would re-index the project on every dispatch.
   final LspSupervisor? lspSupervisor;
 
+  /// The server-owned folder agents' shell hooks are read from
+  /// (`agentHooksRoot`), or null: no run gets shell hooks.
+  final String? agentHooksRoot;
+
   /// Shared tree-sitter parser for the structural tools, or null when the
   /// grammars are not staged (the tools are then simply not registered).
   final AstParserProvider? astParsers;
@@ -260,8 +294,11 @@ class SandboxDispatchDeps {
   /// A factory rather than a launcher because the decision is per
   /// conversation and is made when a cell is first run, not when the tool
   /// surface is assembled.
+  ///
+  /// `hostProcesses` is the run's launcher, for a kernel on the host.
   final Future<KernelLauncher> Function({
     required String workingDirectory,
+    required ToolProcessLauncher hostProcesses,
     String? workspaceId,
     String? conversationId,
   })?
@@ -414,25 +451,22 @@ class SandboxDispatchDeps {
   final Future<AgentCommitIdentity?> Function(
     String? userId, {
     String? workspaceId,
+    String? runLogId,
+    ForgeHost? forge,
   })?
   resolveCommitIdentity;
 
-  /// Whether this run credits Control Center as a co-author. Workspace policy
-  /// overrides the user's preference; absent wiring defaults on. Resolution
-  /// failures stop dispatch rather than silently ignoring an opt-out.
-  final Future<bool> Function(String? userId, {String? workspaceId})?
-  resolveAgentAttribution;
-
-  /// Inspects a run's working directory for its `origin` forge coordinates so
-  /// the credential broker can mint a fine-grained GitHub App installation
-  /// token scoped to exactly that repository. Null — or a cwd that is not a
-  /// forge checkout — mints with no coordinates, which skips the App mint and
-  /// leaves the broker's environment fallback.
+  /// Reads the `origin` forge coordinates of the checkout a run outside a
+  /// space starts in: the one repository it works on (a run in a space works
+  /// on [spaceRepos]). Null, or a cwd that is not a forge checkout, leaves
+  /// the run with no repository, and so with no GitHub token at all (there is
+  /// no environment or owner fallback).
   ///
-  /// A run's GitHub credential is deliberately never a member's personal
-  /// token: agent work is authored on the forge as the server's App identity,
-  /// and only a write a human drives from the UI rides that human's own
-  /// credential (the per-actor RPC lane in `cc_server_runtime`). The
-  /// requesting human remains the Git author and committer.
+  /// The token a run reads GitHub with is deliberately never a member's own:
+  /// what the agent does on the forge from its sandbox shows as the App, and
+  /// a person's token there could approve as them. Only the pushes the
+  /// gateway forwards for a requester, and the pull requests the server opens
+  /// for them, ride that person's own one-repository sign-in; they never
+  /// enter the sandbox.
   final GitRepoInspectorPort? repoInspector;
 }

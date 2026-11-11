@@ -10,9 +10,16 @@ import 'package:cc_server_core/cc_server_core.dart';
 ///
 /// Subcommands: `pair` (device + PSK, optional QR); `update` (stage/apply
 /// standalone release; never silent); `connect` (which Connect this server
-/// uses); default runs until SIGINT/SIGTERM.
+/// uses); `agent-run` (internal: the agent run client a run's shims start);
+/// default runs until SIGINT/SIGTERM.
 /// Config: `--data-dir`, `--port`, `--bind` (see [CcServerConfig]).
 Future<void> main(List<String> args) async {
+  // Before anything else: an agent run's shims and hooks start this binary
+  // inside the run's sandbox, many times a turn, to ask the gateway one thing.
+  if (args.isNotEmpty && args.first == 'agent-run') {
+    exit(await runAgentRunClient(args.sublist(1)));
+  }
+
   if (args.isNotEmpty && (args.first == '--help' || args.first == '-h')) {
     stdout.writeln('''
 Usage: cc_server [--data-dir PATH] [--port PORT] [--bind loopback|any]
@@ -24,11 +31,15 @@ Commands:
   pair               Provision a paired device; stop the server first.
   update             Stage or apply a standalone server release.
   connect            Show or change which Control Center Connect this server
-                     uses (status | enable [--url URL] | disable | rotate-key).
+                     uses (status | enable [--url URL] | disable).
 
 Information (does not open databases or start services):
   --help, -h         Show this help.
   --version, -v      Print the build version.
+
+Internal:
+  agent-run          The agent run client that an agent run's shims start
+                     inside its sandbox. Not for direct use.
 
 Configuration and pairing:
 https://github.com/SamuelAlev/control-center/tree/main/apps/cc_server

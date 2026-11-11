@@ -1,8 +1,8 @@
 ---
 title: Referenz zu Control Center Connect
-description: Was Connect sieht und nie sieht, die drei Modi, die Installationsidentität, versiegelte Zugangsdaten, das Vertrauen in die Konfiguration und jede Einstellung, Operation und jeder Statuscode.
+description: Was Connect sieht und nie sieht, die drei Modi, die Wahl je Arbeitsbereich, die Installationsidentität, versiegelte Zugangsdaten, das Vertrauen in die Konfiguration und jede Einstellung, Operation und jeder Statuscode.
 slug: de-DE/handbuch/referenz/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect führt Anbieter-Anmeldungen für Server aus, die keine
@@ -10,7 +10,7 @@ eigenen Apps registriert haben. Ein Server nutzt entweder das gehostete Connect
 von Control Center, ein Connect, das seine Organisation betreibt
 ([Einen Connect-Server betreiben](/de-DE/handbuch/anleitungen/connect-server-betreiben/)),
 oder keines. Die Wahl liegt unter **Einstellungen → Server → Single sign-on →
-Control Center Connect**, bei `cc_server connect` oder in `CC_CONNECT_URL`.
+Control Center Connect**, bei `cc_server connect` oder in `CC_CONNECT_URL`. Ein Arbeitsbereich folgt ihr, außer ein Administrator wählt für ihn unter **Einstellungen → Arbeitsbereich → Integrationen** etwas anderes ([Die Wahl je Arbeitsbereich](#die-wahl-je-arbeitsbereich)).
 
 ## Spuren
 
@@ -20,7 +20,7 @@ vollständig konfiguriert ist, sonst ist sie nicht verfügbar. Mit Apps von Cont
 Center oder einem eigenen Connect-Server läuft Connect jede Spur, die es bedient:
 Die eigenen Apps des Servers bleiben gespeichert, werden aber weder für
 Anmeldungen, Automatisierung auf dem Server noch für den Status genutzt, den der
-Server meldet. Eine eigene App eines Arbeitsbereichs gilt in jedem Modus.
+Server meldet. Ein Arbeitsbereich mit eigener Wahl führt jede Spur nach dieser Wahl aus.
 
 | Spur         | Eigene App braucht                               | Über Connect                                              |
 | ------------ | ------------------------------------------------ | --------------------------------------------------------- |
@@ -32,13 +32,7 @@ Server meldet. Eine eigene App eines Arbeitsbereichs gilt in jedem Modus.
 | `klipy`      | `KLIPY_APP_KEY`                                  | GIF-Suche, über Connect weitergeleitet                    |
 
 Eine eigene App, die nur teilweise konfiguriert ist, macht ihre Spur zu einem
-Fehler, nie zu einem stillen Rückfall auf Connect. Ein Arbeitsbereich, der
-seine eigene GitHub App nutzt (**Einstellungen → Arbeitsbereich → Allgemein →
-GitHub-Identität**), geht für GitHub nie über Connect, und einer, der eine eigene
-Google-, Linear- oder Klipy-App nutzt (**Einstellungen → Arbeitsbereich →
-Allgemein → Anbieter-Apps**), geht für diesen Anbieter nie über die App des
-Servers oder über Connect. Ein Wechsel der Connect-Wahl meldet niemanden aus der
-eigenen App eines Arbeitsbereichs ab.
+Fehler, nie zu einem stillen Rückfall auf Connect. Ein Arbeitsbereich mit **Eigene Apps verwenden** geht nie über die Apps des Servers oder über irgendeinen Connect, für keinen Anbieter. Ein Wechsel der Connect-Wahl des Servers meldet niemanden aus einem Arbeitsbereich ab, der seine eigene Wahl getroffen hat.
 
 ## Was Connect sieht und nie sieht
 
@@ -46,18 +40,23 @@ eigenen App eines Arbeitsbereichs ab.
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Die Installations-ID des Servers und die Signaturen der Anfragen                              | Quellcode, Repository-Inhalte, Diffs oder Text von Pull Requests      |
 | Das Anbieterkonto, das sich anmeldet, während der Anmeldung                                   | Tickets, Transkripte oder irgendetwas in einer Datenbank eines Arbeitsbereichs |
-| Zu welchem Arbeitsbereich ein Zugangsdatum gehört, als opake ID im Siegel                     | Einen privaten Schlüssel einer GitHub App: Repository-Tokens entstehen aus der Anmeldung einer Person |
+| Zu welchem Arbeitsbereich ein Zugangsdatum gehört, als opake ID im Siegel                     | Die eigenen App-Geheimnisse des Servers: Sie verlassen den Server nie |
 | Das Repository, für das ein GitHub-Token für ein einzelnes Repository ausgestellt wird        | Gespeicherte Refresh-Tokens: Sie existieren nur in Siegeln, die der Server aufbewahrt |
-| Die an den Server gebundenen GitHub-Installations-IDs                                         | Linear-Secrets: Der Server tauscht den Code von Linear selbst aus     |
+| Das Slack-Team, das an den Server gebunden ist                                                | Linear-Secrets: Der Server tauscht den Code von Linear selbst aus     |
 | Suchbegriffe für GIFs, wenn es Klipy weiterleitet                                             | Passwörter, Kopplungsschlüssel oder Schlüssel von Modellanbietern     |
 | Verweise auf Slack-Ereignisse (Team, Kanal, Nachrichten-ID) und den Text von Slash-Befehlen   | Den Text von Slack-Nachrichten: Connect verwirft ihn beim Eintreffen, und der Server liest die Nachricht selbst bei Slack |
 
-Connect hält kurzlebigen Zustand (vorbereitete Anmeldungen, Nonces, Caches)
-höchstens 15 Minuten. Seine einzigen dauerhaften Einträge sind
-Installationsbindungen: welche Server welche GitHub-Installation nutzen dürfen
-und an welchen Server jedes Slack-Team gebunden ist. Fehler tragen einen Code,
-nie die Antwort des Anbieters, und Logs halten Installations-IDs nur als
-schlüsselbasierte Hashes fest.
+Connect hält vorbereitete Anmeldungen, Nonces und Caches höchstens 10 Minuten
+und stündliche Nutzungszähler höchstens zwei Stunden. Ein GitHub-Token für ein
+einzelnes Repository, das als Person ausgestellt wurde, bleibt, an die Anmeldung
+gesiegelt, die es angefordert hat, bis es abläuft (höchstens 8 Stunden), damit
+Connect es erneut ausgeben und beim Trennen widerrufen kann. Seine einzigen
+dauerhaften Einträge sind Slack-Bindungen (an welchen Server jedes Slack-Team
+gebunden ist) und zurückgezogene Installations-IDs. Fehler tragen einen Code,
+nie die Antwort des Anbieters. Logs halten Installations-IDs nur als
+schlüsselbasierte Hashes fest, und ein GitHub-Token nur als den `hashed_token`,
+den das Audit-Protokoll der GitHub-Organisation dafür zeigt, damit ein
+Organisationsinhaber beides zuordnen kann.
 
 ## Modi
 
@@ -76,12 +75,32 @@ In diesen Build ist kein Schlüssel für die gehostete Konfiguration einkompilie
 deshalb meldet der gehostete Modus `hosted_unprovisioned` und bedient keine Spur.
 Eigene Apps und ein eigenes Connect funktionieren.
 
+Das gehostete Connect läuft in einem einzelnen Container. Sein Siegelschlüssel und der private Schlüssel der gemeinsamen GitHub App sind dort Umgebungsvariablen, keine Schlüssel in einem Tresor, der nur signiert oder entschlüsselt, wie GitHub es für den privaten Schlüssel einer App empfiehlt. Das ist eine bekannte Lücke der aktuellen Einrichtung.
+
 Ein Server liest die Konfiguration von Connect höchstens alle 10 Minuten und
 wartet auf jeden Aufruf höchstens 5 Sekunden. Ist Connect nicht erreichbar,
 bleibt die letzte gültige Konfiguration in Gebrauch, und die Einstellungen
 markieren sie als veraltet.
 
+## Die Wahl je Arbeitsbereich
+
+**Einstellungen → Arbeitsbereich → Integrationen → Control Center Connect** überschreibt die Wahl des Servers für einen Arbeitsbereich. Jedes Mitglied sieht die Wahl und wo jede Anmeldung läuft; nur ein Administrator des Arbeitsbereichs ändert sie.
+
+| Wahl | Verhalten |
+| --- | --- |
+| **Wie auf diesem Server** | Der Standard. Der Arbeitsbereich läuft mit dem, was der Server-Eigentümer gewählt hat; die Option nennt es |
+| **Apps von Control Center verwenden** | Connect von Control Center, egal was der Server nutzt |
+| **Eigene Apps verwenden** | Nur die eigenen Apps des Arbeitsbereichs: seine GitHub App, sein Google-Client, seine Linear-Anwendung, sein Klipy-Schlüssel und seine Slack-App. Ein Anbieter ohne eigene App ist hier aus, eine teilweise App ist ein Setup-Fehler |
+| **Eigenen Connect-Server verwenden** | Ein Connect unter einer HTTPS-Adresse, die der Arbeitsbereich angibt. Adressen in einem privaten oder lokalen Netz werden abgelehnt |
+
+- Jede Wahl außer **Wie auf diesem Server** hält die GitHub- und Linear-Anmeldungen jeder Person in einem eigenen Bereich des Arbeitsbereichs, damit sie sich nicht mit den serverweiten mischen
+- Ein Wechsel fragt vorher nach: Alle im Arbeitsbereich melden sich bei GitHub, Linear und Google Calendar erneut über die neuen Apps an
+- Die eigene Slack-App-Verbindung eines Arbeitsbereichs funktioniert unter jeder Wahl; **Control Center zu Slack hinzufügen** folgt der Wahl
+- `CC_CONNECT_URL` sperrt Arbeitsbereiche ebenfalls von einem eigenen Connect aus: Sie können dem Server folgen oder ihre eigenen Apps nutzen
+- Ein eigener Connect-Server eines Arbeitsbereichs wird nur für diesen Arbeitsbereich beim ersten Gebrauch als vertrauenswürdig eingestuft: **Neuen Apps vertrauen** ändert dort nie, was der Server oder ein anderer Arbeitsbereich vertraut
+
 ## Installationsidentität
+
 
 | Element        | Was es ist                                                                                                       |
 | -------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -112,17 +131,38 @@ Arbeitsbereich, das Anbieterkonto, die App und die Secret-Generation gebunden.
 
 ## GitHub-Installationen
 
-Eine Installation der gemeinsamen GitHub App kann ein Server nur nutzen, wenn
-Connect sie an die Installations-ID dieses Servers gebunden hat.
+Eine Installation der gemeinsamen GitHub App ist von jedem Server aus nutzbar.
+Connect führt keinen Eintrag darüber, welcher Server sie nutzen darf.
 
 - **GitHub-App installieren** unter **Einstellungen → Arbeitsbereich →
-  Allgemein** öffnet GitHub mit einem 15-Minuten-Ticket. Connect bindet die neue
-  Installation, wenn die installierende Person das persönliche Konto besitzt oder
-  die Organisation verwaltet
-- **Diesen Server autorisieren** bindet eine Installation, die schon existiert.
-  Das kann nur ein Administrator der Organisation
-- Die Installation einer Organisation kann an mehrere Server gebunden sein; jeder
-  braucht die Autorisierung eines Administrators
+  Integrationen** öffnet die Installationsseite der App auf GitHub. Der Server
+  baut den Link aus dem App-Namen in der Konfiguration von Connect
+- Ein Token für ein einzelnes Repository braucht die App auf dem Konto, dem das
+  Repository gehört, und den Zugriff der angemeldeten Person auf dieses
+  Repository. Es ist das eigene Token dieser Person, auf ihre Rolle begrenzt,
+  nie mehr
+- Eine Organisation begrenzt Control Center auf GitHub: durch Entfernen der
+  Installation, Verengen ihrer Repositories oder Entfernen der Person
+- Für Aufrufe, die nur die Person selbst machen kann, etwa das Auflisten ihrer Installationen, gibt Connect dem Server das eigene App-Benutzertoken der Person aus, nicht ein Token für ein einzelnes Repository. Sich auf einem Server anzumelden heißt, diesem Server dieses Token anzuvertrauen.
+- Eine Organisation, die eine GitHub-IP-Allowlist erzwingt, kann das gehostete Connect nicht nutzen, dessen Adressen nicht fest sind. Sie registriert stattdessen eine eigene GitHub App, auf ihren Servern oder auf einem Connect, das sie betreibt.
+- **Trennen** widerruft nur diese Anmeldung: Connect verbraucht sein Refresh-Token einmal und löscht, was dabei zurückkommt, löscht sein Benutzertoken und die Tokens für einzelne Repositorys, die Connect dafür ausgestellt hat. Eine Kopie seines Siegels, wo auch immer sie liegt, funktioniert nicht mehr. Die Anmeldungen der Person auf anderen Servern und in anderen Arbeitsbereichen funktionieren weiter. Um Control Center ganz von einem GitHub-Konto zu entfernen, widerrufe es in GitHub unter **Einstellungen → Anwendungen → Autorisierte GitHub Apps → Widerrufen**.
+
+### Der geteilte Bot
+
+Tokens, die als Bot der App (`as: app`) ausgestellt werden, zeigen auf GitHub für jeden Server, der dasselbe Connect nutzt, denselben Bot: GitHub kann diese Server nicht unterscheiden.
+
+- Jeder Server darf den Bot lesen und kommentieren lassen: `read`, `review` und `comment` (Kommentare, Labels, Zuweisungen und Reaktionen an Issues und Pull Requests)
+- Einen Pull Request als Bot zu reviewen (`bot`, was Pull Requests schreibt) ist nur für Server erlaubt, die der Connect-Betreiber in `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` auflistet. Jeder andere Server bekommt `needs_requester` als Antwort und veröffentlicht das Review über das eigene Token der verantwortlichen Person, das GitHub auf diese Person begrenzt: Das Review erscheint unter ihrem Namen. Das betrifft die Veröffentlichung von KI-Reviews, Review-Kommentare und Reviewer-Anfragen
+- Pushen, einen Branch anlegen und einen Pull Request öffnen (`write`) werden nie als geteilter Bot ausgestellt. Sie nutzen immer die eigene Anmeldung des Anfragenden
+- Einen Pull Request zu genehmigen ist nie automatisiert, mit keinem Token
+- Ein Server oder Arbeitsbereich mit einer eigenen GitHub App behält den Bot für all das, einschließlich der Reviews
+
+### Was Organisationsinhaber und Mitglieder wissen sollten
+
+- Ein Server, auf dem sich jemand anmeldet, hält dessen App-Benutzertoken: bis zu 8 Stunden je Token, erneuert, bis die Person sich trennt. Damit kann er als die Person auf jedem Repository handeln, auf dem die geteilte App installiert ist und das die Person erreicht. Connect kann einen Server endgültig abschneiden (eine zurückgezogene oder verweigerte Installation), aber ein bereits ausgegebenes Token bleibt gültig, bis es abläuft
+- Die Installation der geteilten GitHub App auf einer Organisation stimmt für jeden Control-Center-Server zu, auf dem sich ein Mitglied anmeldet, nicht nur für einen Server
+- Der Bot ist geteilt, wie oben: Eine Organisation kann auf GitHub nicht erkennen, welcher Server als Bot gehandelt hat
+- Eine Organisation, die eine eigene Grenze will, registriert eine eigene GitHub App und betreibt ein eigenes Connect ([Einen Connect-Server betreiben](/de-DE/handbuch/anleitungen/connect-server-betreiben/)), oder konfiguriert die App auf ihren eigenen Servern
 
 ## Vertrauen in die Konfiguration
 
@@ -133,7 +173,7 @@ Connect sie an die Installations-ID dieses Servers gebunden hat.
 
 ## Operationen
 
-Alle Einstellungen für Connect sind dem Server-Eigentümer vorbehalten.
+Die Connect-Einstellungen des Servers sind dem Server-Eigentümer vorbehalten.
 
 | Operation             | Wirkung                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -141,7 +181,16 @@ Alle Einstellungen für Connect sind dem Server-Eigentümer vorbehalten.
 | `connect.configure`   | Setzt `hosted`, `custom` (mit `url`) oder `off`                                         |
 | `connect.test`        | Holt die Konfiguration erneut und meldet den Zustand                                    |
 | `connect.confirmPins` | Akzeptiert die geänderten Kennungen eines eigenen Connect                               |
-| `connect.rotateKey`   | Erzeugt einen neuen Installationsschlüssel. Jede Anmeldung über Connect auf diesem Server hört auf zu funktionieren |
+| `connect.rotateKey`   | Erzeugt einen neuen Installationsschlüssel und eine neue Installations-ID (`force` ersetzt sie, auch wenn ein Connect die alte nicht zurückziehen konnte); siehe [Den Installationsschlüssel rotieren](#den-installationsschlüssel-rotieren) |
+
+Die eigene Wahl eines Arbeitsbereichs hat eigene Operationen, jede nennt den Arbeitsbereich:
+
+| Operation | Wer | Wirkung |
+| --- | --- | --- |
+| `workspaceConnect.status` | Jedes Mitglied | Wahl, Auflösung, Zustand und die Quelle jedes Anbieters. Installations-ID und ausstehende Pins nur für Administratoren |
+| `workspaceConnect.set` | Administrator des Arbeitsbereichs | Setzt `inherit`, `hosted`, `custom` (mit `url`) oder `own` |
+| `workspaceConnect.test` | Administrator des Arbeitsbereichs | Holt die Connect-Konfiguration des Arbeitsbereichs erneut und meldet den Zustand |
+| `workspaceConnect.confirmPins` | Administrator des Arbeitsbereichs | Akzeptiert die geänderten Kennungen des eigenen Connect-Servers des Arbeitsbereichs |
 
 Die Anmeldungen selbst nutzen `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` und `oauth.disconnect`. Die Person ist
@@ -150,24 +199,64 @@ immer der angemeldete Aufrufer.
 ## Anmeldung über Connect
 
 1. Der Server bittet Connect, die Spur zu starten, und erhält die
-   Autorisierungs-URL des Anbieters, die er prüft, bevor er sie anzeigt
+   Autorisierungs-URL des Anbieters, die er prüft, bevor er sie anzeigt. GitHub
+   zeigt immer seine Kontoauswahl
 2. Die Person bestätigt im Browser. Der Anbieter kehrt zu Connect zurück
-3. Connect zeigt einen 8-stelligen Code und einen Link `control-center://oauth-done`
-4. Die Person tippt den Code in die App ein oder folgt dem Link. Der Server
+3. Connect zeigt, was der Server, der die Anmeldung gestartet hat, als die
+   Person tun kann und wie lange. Connect kann nicht erkennen, wer diesen Server
+   betreibt; deshalb bittet die Seite die Person nur dann um Fortsetzung, wenn
+   sie die Anmeldung selbst gestartet hat, und sonst die Seite zu schließen,
+   falls ihr jemand den Link geschickt hat. Liegt der Browser in einem anderen
+   Netz als dem, in dem die Anmeldung gestartet wurde, sagt die Seite das: Bei
+   einem gehosteten Server oder einem anderen Gerät ist das normal, und genau so
+   sieht auch Phishing aus. **Abbrechen** beendet die Anmeldung: Der Code des
+   Anbieters wird nie verwendet. Jede Seite antwortet einmal; eine Antwort, die
+   nicht von der Seite kam, die Connect gerade gezeigt hat, wird abgelehnt
+4. Nach **Weiter** zeigt Connect einen 8-stelligen Code und einen Link
+   `control-center://oauth-done`. Wer den Code bekommt, erhält den eben
+   bestätigten Zugriff, daher geht er nur dorthin, wo die Anmeldung gestartet
+   wurde
+5. Die Person tippt den Code in die App ein oder folgt dem Link. Der Server
    übernimmt die Anmeldung mit dem Code und seinem eigenen Nachweis der Anfrage
 
 Eine Anmeldung läuft nach 10 Minuten ab. Fünf falsche Codes beenden sie. Einen
 Link, den diese App nicht gestartet hat, lehnt sie mit **Anmeldung nicht hier
-gestartet** ab.
+gestartet** ab. Connect begrenzt, wie viele Anmeldungen eine Netzwerkadresse
+starten kann, und wie oft GitHub-Tokens ausgestellt werden: je Person und
+Server, je Person über alle Server, je Adresse und für die ganze App. Neue
+Anmeldungen haben ein eigenes Budget, damit sie die Erneuerungen anderer
+Personen nie aufhalten. Über einem Limit wird ein Aufruf mit `rate_limited`
+abgelehnt, und der Server versucht es später erneut, ohne jemanden abzumelden.
+Eine Anmeldung über dem Limit der Person wird bei GitHub rückgängig gemacht und
+abgelehnt.
 
 ## Den Installationsschlüssel rotieren
 
-**Schlüssel rotieren** auf der Connect-Karte oder
-`cc_server connect rotate-key --yes`:
+Nur der Serverinhaber kann den Schlüssel rotieren, mit **Schlüssel rotieren** auf
+der Karte **Control Center Connect** unter **Einstellungen → Server → Single
+sign-on**. Dafür gibt es keinen Befehl. Das Rotieren:
 
-- Gibt dem Server einen neuen Installationsschlüssel und eine neue
+- Meldet alle von jeder Spur ab, die über Connect läuft. Für jeden
+  Connect-Server, mit dem der alte Schlüssel genutzt wurde, widerruft der Server
+  die GitHub- und Slack-Anmeldungen, die er von dort hält (eine Google-Anmeldung
+  hat nichts zu widerrufen und läuft aus)
+- Zieht die alte Installations-ID bei jedem dieser Connect-Server zurück,
+  signiert mit dem alten Schlüssel und nachgewiesen mit einem Zugangsdaten-Siegel,
+  das der Server von diesem Connect hält. Ab dann lehnt Connect jede Anfrage mit
+  dem alten Schlüssel ab, daher ist ein Siegel oder eine Kopie des alten
+  Schlüssels von diesem Server nutzlos, und die Slack-Arbeitsbereiche, die an die
+  alte ID gebunden waren, werden frei, damit sie sich erneut verbinden können.
+  Bereits ausgegebene Tokens bleiben gültig, bis sie ablaufen (eine Stunde für
+  ein Bot-Token, acht Stunden für das einer Person). Ein Connect-Server, von dem
+  dieser Server kein Siegel hält, hat nichts zurückzuziehen und wird übersprungen
+- Gibt dem Server danach einen neuen Installationsschlüssel und eine neue
   Installations-ID
-- Meldet alle von jeder Spur ab, die über Connect läuft
+- Ist ein Connect-Server nicht erreichbar oder verweigert er das Zurückziehen der
+  alten ID, hält der Vorgang an, bevor die Schlüssel gewechselt werden, und zeigt
+  **Connect konnte den alten Schlüssel nicht deaktivieren**. **Trotzdem
+  erneuern** wechselt die Schlüssel in jedem Fall; die alte Installations-ID bleibt
+  dann bei diesem Connect nutzbar, bis ihre Tokens ablaufen, bei GitHub höchstens
+  8 Stunden
 - Lässt Anmeldungen über die eigenen Apps des Servers unberührt
 - Erfordert, dass die neue Installations-ID in die Zulassungsliste eines eigenen
   Connect eingetragen wird
@@ -180,7 +269,7 @@ gestartet** ab.
 | `signature`            | Die gehostete Konfiguration hat ihre Signaturprüfung nicht bestanden |
 | `rollback`             | Connect hat eine ältere Konfiguration ausgeliefert, als der Server schon gesehen hat |
 | `unreachable`          | Der Server erreicht Connect nicht                                    |
-| `install_blocked`      | Connect lässt diese Installations-ID nicht zu                        |
+| `install_blocked`      | Connect lässt diese Installations-ID nicht zu, oder sie wurde zurückgezogen |
 | `pins_changed`         | Ein eigenes Connect hat andere App-Kennungen angekündigt             |
 | `protocol`             | Connect hat in einer Form geantwortet, die dieser Server nicht versteht |
 

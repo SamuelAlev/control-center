@@ -2,7 +2,7 @@
 title: Lệnh slash
 description: Mọi lệnh bạn có thể gõ trong trình soạn, nó làm gì và chạy ở đâu.
 slug: vi-VN/so-tay/tham-chieu/lenh-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Các lệnh được gõ trong trình soạn của một space. Chúng chia thành ba nhóm theo nơi chúng có hiệu lực, và sự khác biệt này rất quan trọng: một lệnh **cục bộ** không bao giờ được truyền đi dưới dạng tin nhắn, nên nó không xuất hiện trong bản ghi và cũng không tới được agent nào.
@@ -139,7 +139,7 @@ Cả hai cùng một dạng — lấy cuộc hội thoại nguyên trạng, hỏ
 
 Tạo mẫu: `$1`, `$@`, `$@[start:length]` và `$ARGUMENTS`. Frontmatter có thể đặt `description` (tự động hoàn thành của trình soạn). `allowed-tools` và `model` được phân tích từ tệp nhưng hiện tại việc gọi một lệnh người dùng chỉ thay tham số vào phần thân — chúng không thay đổi mô hình hay bề mặt công cụ của lượt chạy.
 
-Một lệnh do người dùng tạo sẽ thắng một skill cùng tên — đó là lối tắt mà một con người cố ý gọi kèm tham số.
+Các skill chỉ được truy cập dưới dạng `/skill:<name>`, nên một lệnh do người dùng tạo không bao giờ xung đột với một skill.
 
 ---
 

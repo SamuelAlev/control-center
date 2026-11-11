@@ -8,8 +8,12 @@
 /// and blobs.
 library;
 
-/// Keys that name a credential — stored as `[REDACTED]` so the trail
-/// records that a secret moved, not what it was.
+import 'package:cc_domain/core/domain/services/redaction/token_patterns.dart';
+
+/// Keys that name a credential, at any depth — stored as `[REDACTED]` so the
+/// trail records that a secret moved, not what it was. Values under any
+/// other key are still scrubbed of anything token-shaped
+/// ([kTokenPatterns]).
 const Set<String> kAuditRedactedKeys = {
   'token',
   'access_token',
@@ -25,6 +29,12 @@ const Set<String> kAuditRedactedKeys = {
   'bearer',
   'psk',
   'pairing_key',
+  'code',
+  'confirm_code',
+  'verifier',
+  'code_verifier',
+  'state',
+  'seal',
 };
 
 /// Keys that name a blob (base64 PTY bytes, file bodies). Omitted
@@ -75,7 +85,7 @@ Map<String, Object?>? auditDetailsOf({
       out[key] = '[REDACTED]';
       return;
     }
-    final sanitized = _sanitizeValue(value);
+    final sanitized = _sanitizeValue(value, redactSecrets: redactSecrets);
     if (sanitized == null && value != null) {
       return;
     }
@@ -108,15 +118,17 @@ bool _isSecretKey(String key) {
       (k.endsWith('_key') && k != 'key');
 }
 
-Object? _sanitizeValue(Object? value) {
+Object? _sanitizeValue(Object? value, {required bool redactSecrets}) {
   if (value == null || value is bool || value is num) {
     return value;
   }
   if (value is String) {
-    if (value.length <= _maxValueChars) {
-      return value;
+    // Scrubbed before it is cut, so a cut never leaves half a token behind.
+    final clean = redactTokens(value);
+    if (clean.length <= _maxValueChars) {
+      return clean;
     }
-    return '${value.substring(0, _maxValueChars)}…';
+    return '${clean.substring(0, _maxValueChars)}…';
   }
   if (value is List) {
     if (value.length > 8) {
@@ -124,7 +136,7 @@ Object? _sanitizeValue(Object? value) {
     }
     final items = <Object?>[];
     for (final item in value) {
-      final sanitized = _sanitizeValue(item);
+      final sanitized = _sanitizeValue(item, redactSecrets: redactSecrets);
       if (sanitized == null && item != null) {
         return '[${value.length} items]';
       }
@@ -138,11 +150,19 @@ Object? _sanitizeValue(Object? value) {
     }
     final out = <String, Object?>{};
     for (final entry in value.entries) {
-      final sanitized = _sanitizeValue(entry.value);
+      final key = '${entry.key}';
+      if (redactSecrets && _isSecretKey(key)) {
+        out[key] = '[REDACTED]';
+        continue;
+      }
+      final sanitized = _sanitizeValue(
+        entry.value,
+        redactSecrets: redactSecrets,
+      );
       if (sanitized == null && entry.value != null) {
         continue;
       }
-      out['${entry.key}'] = sanitized;
+      out[key] = sanitized;
     }
     return out;
   }

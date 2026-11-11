@@ -2,7 +2,7 @@
 title: Dein Slack-Konto verknüpfen
 description: Weise nach, dass eine Slack-Identität dir gehört, damit Agenten auf deine Nachrichten hin handeln und deine Arbeit dir zugeordnet wird.
 slug: de-DE/handbuch/anleitungen/chat-konto-verknuepfen
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Diese Anleitung zeigt dir, wie du deine Chat-Identität mit deinem Nutzer in Control Center verknüpfst und wie du eine Verknüpfung wieder löst.
@@ -19,7 +19,7 @@ Ein nicht verknüpftes Mitglied, das den Bot erwähnt, bekommt in diesem Slack-T
 
 Zum Verknüpfen gehören beide Seiten: Einen Code aus Slack zu schicken beweist das Slack-Konto, und ihn in Control Center zu bestätigen beweist, dass dieses Konto dir gehört.
 
-1. Geh zu **Einstellungen → Arbeitsbereich → Profil und Identität** und scrolle zur Karte **Verknüpfte Chat-Konten**
+1. Geh zu **Einstellungen → Du → Profil** und such die Karte **Verknüpfte Chat-Konten**
 2. Klicke im Slack-Block auf **Mein Slack-Konto verknüpfen**. Der Dialog zeigt einen Einmalcode, zum Beispiel:
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Ist es dein Konto, klicke auf **Bestätigen**. Die Verknüpfung entsteht, der Dialog meldet das, und der Bot bestätigt in derselben Direktnachricht
 6. Ist es nicht deins, klicke auf **Ablehnen**. Nichts wird verknüpft, und der Code funktioniert nicht mehr; klicke auf **Neuen Code holen**, um es noch einmal zu versuchen
 
-Schließt du den Dialog, geht ein Anspruch nicht verloren. Ein Code, der später ankommt, wartet in der Zeile **Mein Slack-Konto verknüpfen** auf deiner Profilseite, mit denselben Schaltflächen **Bestätigen** und **Ablehnen**.
+Schließt du den Dialog, geht ein Anspruch nicht verloren. Ein Code, der später ankommt, wartet in der Zeile **Mein Slack-Konto verknüpfen** auf dieser Karte, mit denselben Schaltflächen **Bestätigen** und **Ablehnen**.
 
 Warum es den Bestätigungsschritt gibt: Ein Code, den jemand über deine Schulter liest und von einem anderen Slack-Konto schickt, würde dieses Konto sonst als dich handeln lassen. Nur du kannst bestätigen, und nur genau das Profil, das den Code geschickt hat.
 
@@ -50,15 +50,17 @@ Ein Code, der unbekannt, abgelaufen, abgelehnt oder für einen anderen Arbeitsbe
 
 Trägt dein Slack-Profil eine bestätigte E-Mail, die zur verifizierten E-Mail eines Nutzers in Control Center passt, der **bereits Mitglied dieses Arbeitsbereichs** ist, verknüpft die Brücke dich beim ersten Gespräch. Kein Code nötig.
 
+Die Control-Center-Seite gilt als verifiziert, wenn Single sign-on oder SCIM die Adresse gesetzt haben oder der Serverinhaber sie unter **Einstellungen → Server → Personen** bestätigt hat. Eine Adresse, die du in deinem eigenen Profil eingetragen hast, ist nicht verifiziert und verknüpft daher nichts, bis der Serverinhaber sie bestätigt. Nutze bis dahin den Code-Ablauf.
+
 Beide Hälften zählen: Der E-Mail-Abgleich beweist die Identität, aber nur die Mitgliedschaft gewährt Zugang, sodass ein Fremder, dessen E-Mail zufällig auf dem Server liegt, mit nichts verknüpft wird. Die Liste zeigt, wie jede Verknüpfung entstanden ist („per E-Mail zugeordnet“ oder „mit einem Code verknüpft“).
 
 Die automatische Verknüpfung braucht den Scope `users:read.email`. Ohne ihn gibt Slack die Adresse nicht preis, und der Weg über den Code ist der einzige.
 
 ## Sehen, wer verknüpft ist
 
-Die Liste gehört zur Verwaltung des Arbeitsbereichs, sie liegt also auf der anderen Hälfte der Oberfläche: **Einstellungen → Arbeitsbereich → Allgemein → Chat-Brücken → Verknüpfte Konten**. Sie führt jedes verknüpfte Mitglied des Arbeitsbereichs auf, mit dem Slack-Konto, auf das es abbildet, und damit, wie die Verknüpfung entstanden ist.
+Die Liste gehört zur Verwaltung des Arbeitsbereichs, sie steht also auf der Verwaltungskarte: **Einstellungen → Arbeitsbereich → Integrationen → Chat-Brücken → Verknüpfte Konten**. Sie führt jedes verknüpfte Mitglied des Arbeitsbereichs auf, mit dem Slack-Konto, auf das es abbildet, und damit, wie die Verknüpfung entstanden ist.
 
-Deinen eigenen Stand siehst du auf deiner Profilseite: Die Zeile **Mein Slack-Konto verknüpfen** liest „Verknüpft mit _your-slack-id_“, sobald du verknüpft bist, und fordert dich zum Verknüpfen auf, solange du es nicht bist.
+Deinen eigenen Stand siehst du unter **Einstellungen → Du → Profil**: Die Zeile **Mein Slack-Konto verknüpfen** liest „Verknüpft mit _your-slack-id_“, sobald du verknüpft bist, und fordert dich zum Verknüpfen auf, solange du es nicht bist.
 
 Die Liste und der Anspruch sind Live-Abonnements, weil die Änderung auf der anderen Seite geschieht: Du schickst den Code in Slack, also kann keine Anfrage aus der App die Antwort zurücktragen.
 

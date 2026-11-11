@@ -158,4 +158,45 @@ void main() {
       expect(threadCommentIdsAuthoredBy(const [], isOctocat), isEmpty);
     });
   });
+
+  group('neutralizeMentions', () {
+    const z = mentionBreak;
+
+    test('user, team and group mentions become inert', () {
+      expect(
+        neutralizeMentions('cc @alice, @org/security and @all.'),
+        'cc @${z}alice, @${z}org/security and @${z}all.',
+      );
+      // At the start of a line, after punctuation, Bitbucket's @{id} form.
+      expect(neutralizeMentions('@bob (@carol) @{557058:x}'),
+          '@${z}bob (@${z}carol) @$z{557058:x}');
+    });
+
+    test('entity-encoded @ is caught too', () {
+      expect(
+        neutralizeMentions('&#64;org/team &#x40;eve &commat;all'),
+        '@${z}org/team @${z}eve @${z}all',
+      );
+    });
+
+    test('code, URLs and e-mail addresses are left alone', () {
+      const body =
+          'mail dev@example.com, see https://host/@alice and `@Override`\n'
+          '```java\n@Inject\nFoo foo;\n```\n'
+          '``a `@x` b``';
+      expect(neutralizeMentions(body), body);
+    });
+
+    test('an escaped backtick does not hide a mention as code', () {
+      expect(
+        neutralizeMentions(r'\`@org/team\`'),
+        '\\`@${z}org/team\\`',
+      );
+    });
+
+    test('is idempotent', () {
+      final once = neutralizeMentions('hi @alice');
+      expect(neutralizeMentions(once), once);
+    });
+  });
 }

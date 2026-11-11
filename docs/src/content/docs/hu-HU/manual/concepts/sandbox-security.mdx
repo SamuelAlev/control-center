@@ -2,7 +2,7 @@
 title: Homokozó és biztonság
 description: Mi korlátozza valójában ma az ügynököt a Control Centerben, milyen messzire ér el az operációs rendszer homokozója, és mely határok tartanak egy olyan hoszton, amelynek nincs háttérrendszere.
 slug: hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Hová ér el az operációs rendszer homokozója, és hová nem]
@@ -10,9 +10,11 @@ A `cc_server` indításkor felméri a hosztot, és az ügynökparancsok végreha
 az operációs rendszer saját homokozójába csomagolja, amikor van ilyen — macOS-en
 Seatbelt, Linuxon és WSL2-n bubblewrap (utóbbihoz `bwrap` és `socat` kell a
 `PATH`-ban). Ahol nem létezik háttérrendszer — Windowson, vagy egy olyan
-Linux-gépen, amelyről hiányoznak ezek az eszközök —, a futások visszaesnek az
-alábbi többi határra, és a szerver erről az indítási naplójában is beszámol. A
-`--sandbox off` szándékosan kapcsolja ki.
+Linux-gépen, amelyről hiányoznak ezek az eszközök —, csak a szerver tulajdonosának
+ügynökfutásai indulnak el, homokozó nélkül, a többieket pedig visszautasítjuk. A
+szerver tulajdonosa ehelyett a `--sandbox off` kapcsolóval is indíthatja a szervert,
+ami minden tag ügynökét homokozó nélkül futtatja ezen a gépen. Az indítási napló
+megmondja, melyik esetben van; lásd: [Ügynökök homokozó nélküli hoszton](#ügynökök-homokozó-nélküli-hoszton).
 
 Két rés fennmarad a homokozó mellett is, és érdemes észben tartani őket:
 
@@ -38,7 +40,23 @@ A Control Center ezt rétegekben válaszolja meg, és a rétegek szándékosan
 függetlenek. Ha az egyik hiányzik, a többi akkor is tart. Ez azért fontos, mert
 a legkülső réteg — az operációs rendszer homokozója — az egyetlen feltételes:
 azon múlik, hogy a hoszt nyújt-e háttérrendszert, Windowson pedig egyetlen hoszt
-sem tesz ilyet.
+sem tesz ilyet. Ahol hiányzik, a szerver nem futtat csendben mindenki ügynökeit homokozó nélkül.
+
+## Ügynökök homokozó nélküli hoszton
+
+A szerver indításkor egyszer eldönti, hogyan futnak az ügynökök a gépén, és ezt a döntést az újraindításig megtartja:
+
+- **Homokozóban.** A gazdagépen van háttérrendszer, és a homokozó be van kapcsolva. Minden futtatás be van csomagolva.
+- **Kikapcsolva.** A szerver tulajdonosa a `--sandbox off` kapcsolóval indította a szervert. Minden tag ügynöke homokozó nélkül fut ezen a gépen. Ez a tulajdonos döntése mindenki számára, aki a szervert használja, nem egyetlen futtatás beállítása.
+- **Nem elérhető.** A homokozó be van kapcsolva, de a gazdagépen nincs háttérrendszer. Futtatás csak akkor indul, ha az azért felelős személy a szerver [tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa): aki kérte, vagy ütemezés, webhook vagy más automatizálás esetén az, akihez az kötve van. Mindenki más futtatását azonnal visszautasítjuk, még mielőtt hitelesítő adat készülne vagy folyamat indulna, ezzel az üzenettel: „Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket. A tulajdonos telepítheti a homokozót, vagy mindenki számára kikapcsolhatja a homokozást.”
+
+Az ok a gép tulajdonjoga. Egy homokozó nélküli ügynök mindent megtehet, amit a szerver felhasználói fiókja megtehet, ezért csak az a személy futtat ilyet, aki ezt a fiókot birtokolja, hacsak mindenki másra nézve másként nem döntenek. Egy Windows-szerver mindig a nem elérhető esetben van. A Linuxnak saját sajátossága van, lásd: [Homokozó-háttérrendszerek](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/#linux-bubblewrap): a natív indítás ott jelenleg akkor is hibára zár, ha a bubblewrap telepítve van.
+
+Ugyanez a szabály vonatkozik a kisebb dolgokra is, amelyek az Ön helyett indítanak folyamatot:
+
+- **Gyors segédek, amelyek ACP CLI-n át futnak**: beszélgetéscímek, `/btw`, `/handoff` és `/goal`. Ha a szerver homokozza az ügynököket, ezek a homokozón belül, saját munkamenetben futnak. `--sandbox off` mellett homokozó nélkül futnak. Homokozó nélkül csak azoknak a kéréseknek futnak le, amelyekért a szerver tulajdonosa felel; másoknál kimaradnak, így nem készül cím, a mellékkérdés pedig jelenti, hogy a Content synthesizernek nincs működő futtatója. Azokat a segédeket, amelyek nem indítanak eszközt, ez nem érinti.
+- **Egy pull request golden tesztjei** a Review Studio vizuális ellenőrzésében ugyanezt a szabályt követik.
+- **Eszközfolyamatok és a `bash`** egy futtatásban soha nem esnek vissza a gazdagépre. Ha a szerver úgy van beállítva, hogy homokozza az ügynököket, de a futtatásnak nincs homokozója, azok visszautasításra kerülnek.
 
 ## Mi korlátozza valójában az ügynököt
 
@@ -111,9 +129,10 @@ A `bash` eszköz a másik hely, ahol pontosan kell fogalmazni. Parancsai a mód
 parancsszabályzata alapján értékelődnek ki, majd megtisztított környezettel és a
 worktree-t munkakönyvtárként használva indulnak el. Ahol létezik háttérrendszer,
 az az indítás be van csomagolva, így a homokozó az, ami megakadályozza, hogy egy
-shellparancs a worktree-n kívülre írjon; ahol nincs — Windows, vagy Linux
-`bwrap` és `socat` nélkül —, a parancsszabályzat az egyetlen dolog a parancs és
-a lemez többi része között. `chat` módban a szabályzat egy rögzített listát
+shellparancs a worktree-n kívülre írjon; ahol nincs (minden `--sandbox off` melletti
+futtatás, valamint a tulajdonos saját futtatásai Windowson vagy Linuxon `bwrap` és
+`socat` nélkül), a parancsszabályzat az egyetlen dolog a parancs és a lemez többi
+része között. `chat` módban a szabályzat egy rögzített listát
 tilt keményen (jogosultságnövelés, rendszer- és lemezrombolás, konténer- és
 névtérkitörés), és rákérdez a távoli állapotot módosító műveletekre (`git push`,
 `gh pr create`, csomagközzététel és -telepítés). Ami egyik listán sem szerepel,
@@ -127,7 +146,7 @@ Olvasási, írási és szerkesztési hívásai a saját folyamatában történne
 háttérrendszer, azok a láthatatlan hívások is a homokozóba csomagolva mennek
 végbe, így az operációs rendszer a körülöttük lévő határ. Ahol nincs, ott semmi.
 Minden adapter elmondja ezt a saját érvényesítési mátrixában — lásd
-[az adapterek őszinteségi mátrixát](/hu-HU/kezikonyv/fogalmak/korlatok/#the-adapter-honesty-matrix).
+[az adapterek őszinteségi mátrixát](/hu-HU/kezikonyv/fogalmak/korlatok/#az-adapterek-őszinteségi-mátrixa).
 
 ## A pushok a Control Centeren mennek át
 
@@ -139,11 +158,7 @@ engedélyezés, előbb kérdezzen vagy tiltás —, és ugyanazok a szabályok
 
 A push az a művelet, amelynek akkor is tartania kell, ha az ügynök megpróbál
 megkerülni egy szabályt, ezért azzal érvényesítjük, ami az ügynök birtokában
-van, nem azzal, amit futtat. Egy GitHub-worktree-ben zajló
-futás tokent kap erre az egy repóra, amelyet a munkaterület GitHub Appja, a
-szerver saját alkalmazása vagy a Control Center Connect állít ki. Tartalmat
-olvashat, és ha a felelős tag pusholhat, megjegyzést fűzhet a pull requestekhez,
-de pusholni nem tud. A futás git-konfigurációja
+van, nem azzal, amit futtat. A futás kezdetén nincs forge-tokenje, és a `git`-je soha nem kap egyet. Amikor a `gh` tokent igényel, a Control Center egyetlen GitHub-repóhoz ad tokent, amellyel a futás dolgozik, amelyet a munkaterület GitHub Appja, a szerver saját alkalmazása vagy a Control Center Connect állít ki. Csak olvasni tud: nem pusholhat, nem fűzhet megjegyzést és nem szerkeszthet. A futás git-konfigurációja
 minden GitHub-push URL-t (`https://github.com/`, `git@github.com:`,
 `ssh://git@github.com/`) átír az **ügynökfuttatási átjáróra**, egy loopback
 végpontra a `cc_server`-en. Az átjáró kiolvassa, mely refeket frissíti a push,
@@ -158,25 +173,24 @@ kimenetében jelenik meg:
 ```
 
 Az átjáró csak a worktree saját repójába vagy a munkaterülethez kapcsolt
-GitHub-repóba továbbít pusht. A fetch az olvasási tokennel közvetlenül a
-GitHubra megy.
+GitHub-repóba továbbít pusht. A fetch-eket is az átjáró intézi GitHubon, GitLabon és Bitbucketen: olyan hitelesítő adattal tölti le a futás repóit, amelyet az átjáró őriz, és amelyet a futás sosem lát. GitLabon és Bitbucketen ez az Ön saját tokenje, ha Ön kérte a futást, a repó automatizálási tokenje pedig, ha senki sem kérte. A fetch senkit sem kérdez meg, és csak a **Hálózati hozzáférés** műveletre állított Tiltás utasítja el.
 
 A többi shellparancs lazább kapuba ütközik. A harness `bash` eszköze és – egy
 hookon keresztül – a Claude Code `Bash` eszköze minden parancssort besorol, és
 megkérdezi azt a szabályt, amely alá tartozik: a `git commit`, `merge`,
 `rebase`, `cherry-pick`, `revert` és `am` a **Commit létrehozása**; a
 `gh pr create` a **Pull request megnyitása**; a `gh pr merge`, `review`,
-`comment` és `close` az **Átnézés vagy összefésülés közzététele**; a
+`comment` és `close` az **Pull request frissítése vagy egyesítése**; a
 `gh issue create`, `edit`, `comment` és `close` az **Írás külső követőbe**; a
 csomagtelepítések a **Csomag telepítése**; a `curl` és a `wget` a **Hálózati
-hozzáférés**. Ez a művelet szokásos leírását ismeri fel, és egy ügynök, amely
+hozzáférés**. A GitHubra írás a shellből kivétel: a `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` és a `gh issue` írások nem működnek futás közben, mert a token csak olvas, az ügynököt pedig a Control Center eszközeire irányítjuk, amelyek megkérdezik ezeket a szabályokat. Ez a művelet szokásos leírását ismeri fel, és egy ügynök, amely
 el akarja rejteni (`eval`, szkriptfájl, közvetlen API-hívás), képes rá. A
 pushok nem függenek tőle.
 
 Minden GitHub-token, amelyet egy futás kap, kétszeresen korlátozott: egyetlen
 repóra, és arra, amit a felelős tag (aki kérte, egyébként a munkaterület
 tulajdonosa) ott megtehet. Nincs tartalék hitelesítő adat. Ha nem állítható ki
-token, a futás token nélkül indul, és a jegyzetei megmondják, miért.
+token, a tokent kérő parancs megmondja, miért.
 
 A homokozóba nem kerül jegykezelő API-kulcs. Az ügynökök a Control Center MCP
 eszközein keresztül írnak jegyeket, amelyek az **Írás külső követőbe**
@@ -190,6 +204,16 @@ hitelesítőadat-fogantyúi a lebontáskor felszabadulnak. A mögöttük álló 
 tagonként és repónként közösek, és körülbelül egy órán belül lejárnak; ha egy tag
 kijelentkezik a GitHubról vagy elhagyja a munkaterületet, a nevében kiállított
 összes token egyszerre megszűnik.
+
+## Olyan repók, amelyeket egy ügynök csak olvashat
+
+Egy ügynökfuttatás csak azoknak a tárolóknak a checkoutját módosíthatja, amelyekre a személynek, akinek nevében eljár, [írási joga](/hu-HU/kezikonyv/fogalmak/jogosultsag/#kódmódosításhoz-írási-jog-kell) van. A munkaterület-adminisztrátorok minden csatolt tárolón rendelkeznek vele. Olyan futtatást, amelyet senki nem kért, például ütemezést vagy másik automatizálást, ugyanaz az azért felelős személy ítél meg, akihez az automatizálási token kötve van.
+
+Olyan térben, amelyben van olyan tároló, amelyet az a személy csak olvashat, az ügynök továbbra is olvashatja és kereshet benne, de a fájljait nem módosíthatja. A fájleszközei ilyenkor ezzel az üzenettel utasítanak el: a `<repo> is read-only for this run` szöveggel kezdődő üzenet, amely szerint a checkout módosításához írási jog kell, amelyet a személy, akinek nevében a futtatás eljár, nem birtokol, és amelyet a munkaterület-adminisztrátor megadhat. Homokozóban a checkout minden folyamat számára csak olvasható, ezért az oda író shell-parancs „Operation not permitted” hibával hiúsul meg. Ide tartozik a `git commit`, valamint az olyan build vagy teszt, amely a checkouton belülre ír. Azok a tárolók, amelyekbe az illető írhat, a szokásos módon működnek, így az adminisztrátorok és mindenki, akinek a tér minden tárolójához írási joga van, nem lát különbséget.
+
+Ez egyszer dől el, a futtatás indulásakor. Az írási jog változása az ügynök következő futtatásán lép életbe, ahogy a futtatás közben a térhez adott tároló is.
+
+Ahol a szerver tulajdonosa kikapcsolta a homokozót, csak az ügynök saját fájleszközeit és a Claude Code írási eszközeit utasítják el, a shell-parancsok pedig továbbra is módosíthatják a checkoutot. Írási jog nélkül egyik esetben sem lehet push-olni, mert minden push ellenőrzésre kerül. Azt, hogy a homokozó platformonként mely folyamatokat korlátozza, a [Homokozó-háttérrendszerek](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/) oldal írja le.
 
 ## Mit ad hozzá a homokozó, és hol áll meg
 
@@ -205,17 +229,13 @@ válaszol, az indítási útvonal mindkét illesztési pontját ellátja, mert a
 átvitelek nem osztoznak egyen. Az első (`SandboxPort`) a Claude Code CLI-t
 csomagolja. A második (`SandboxManager`) az ACP-adaptereket és a beépített
 harness `bash` eszközét csomagolja. Csak az egyik ellátása a többieket
-csomagolatlanul hagyná indulni, ami korábban meg is történt. Egy háttérrendszer
-nélküli hoszton, vagy `--sandbox off` esetén, mind csomagolatlanul indul, és a
-szerver az indítási sorában megmondja, melyik esetben van. Az ACP és a harness
+csomagolatlanul hagyná indulni, ami korábban meg is történt. `--sandbox off` esetén
+mind csomagolatlanul indul; háttérrendszer nélküli hoszton csak a tulajdonos futtatásai
+indulnak el, szintén csomagolatlanul. A szerver az indítási sorában megmondja, melyik esetben van. Az ACP és a harness
 `bash` továbbra is megtisztítja a környezetet; a Claude Code a
 `NoSandboxAdapter`-en keresztül a hoszt környezetét örökli.
 
-Egy felület szándékosan kimarad: a szerveren hosztolt terminál munkamenetenként
-elfogad egy háttérrendszer-argumentumot, és a `cc_server` a hoszt shellre
-alapértelmezve építi fel, így az alkalmazásból megnyitott terminál homokozó
-nélkül fut, hacsak egy kliens kifejezetten meg nem nevezi a `native`-ot. Az egy
-valódi shell a szerver hosztján, nem ügynökfutás.
+A szerveren hosztolt terminál csak a szerver [tulajdonosának](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) nyit hoszt shellt. Mindenki más homokozott terminált kap, az ügynökökre érvényes korlátokkal, a munkaterület saját könyvtáraiban. Egy terminálba csak az írhat be, és azt is csak az olvashatja vagy zárhatja le, aki megnyitotta.
 
 Linuxon a `bubblewrap` mountnévtért épít, így az ügynök valóban csak azt látja,
 amit belecsatoltak. macOS-en a `sandbox-exec` egy Seatbelt-profilt alkalmaz,
@@ -228,6 +248,10 @@ tiltott útvonalon és annak ősein, hogy egy átnevezés ne kerülhesse meg az 
 tiltást, exec-tiltások a mindig veszélyes binárisokra és bármire, amit egy
 írható könyvtárba másoltak, valamint a hálózat a loopback proxy portjaira és a
 DNS-re korlátozva. A felhasználói könyvtáradban található eszköztelepítések (corepack pnpm, node-verziókezelők, Playwright-böngészők, rustup, fvm, uv és hasonlók) a homokozón belül is futtathatók maradnak az exec-tiltásokon belül, így az ügynökök megkerülő megoldások nélkül használhatják őket. A mindig veszélyes binárisokra vonatkozó tiltások továbbra is érvényesek bennük. Minden munkamenet kap egy saját, privát `TMPDIR` könyvtárat is. Ez az egyetlen ideiglenes könyvtár, ahol az ügynök a saját maga által épített programokat futtathatja, vagy Unix-socketeket nyithat.
+
+Két további védelem minden módban érvényes. A homokozó nem adhat hozzá, nem cserélhet le, nem törölhet és nem nevezhet át parancsot azokban a mappákban, ahonnan a szerver programokat indít (minden mappa a `PATH`-on és a szokásos felhasználónkénti eszközmappák), így egy homokozott futtatás nem tud olyan programot elhelyezni, amelyet a szerver később homokozón kívül indít. Globális telepítések és alapértelmezett verzióváltások egy futtatáson belülről ezért „Operation not permitted” hibával hiúsulnak meg, míg a projekten belüli telepítések és az `npx`-stílusú futtatások tovább működnek; globális eszközöket magán a szerveren telepítsen, majd indítsa újra. Amit a homokozó nem olvashat, azt nem is írhatja, a szerver felhasználójának shell- és munkamenet-indítófájljai pedig soha nem írhatók. A részletek és a platformkorlátok itt találhatók: [A szerver parancsmappái](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/#a-szerver-parancsmappái).
+
+A futtatás eszköz-homokozói az adott futtatáshoz tartoznak, és a futtatás végén felszabadulnak. A nyelvi szerverek minden homokozott futtatással újra indulnak. A hibakereső-munkamenet a körök között a végéig megtartja a homokozóját, legfeljebb 30 percig.
 
 A gyakorlati következmény: Linuxon az ügynök fájlrendszer-képe szűkül; macOS-en
 az ügynök még mindig _olvashatja_ a hoszt nagy részét, és a regisztrált

@@ -2,7 +2,7 @@
 title: SSO configuration reference
 description: Every knob, endpoint, op and error code of single sign-on.
 slug: en-GB/manual/reference/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Everything configurable about single sign-on, in one place. Values live in
@@ -33,6 +33,36 @@ places is one the settings screen can disagree with).
 | `groupRoleMap`         | both       | `{}`            | group → role; owner mappings are refused at save                                                                                                     |
 | `autoMember`           | both       | on              | auto-add users to every workspace on first login                                                                                                     |
 | `allowJit`             | both       | on              | provision unknown users at login                                                                                                                     |
+
+## Account matching
+
+`SsoProvisioner` resolves a login in this order and never by username:
+
+1. `(users.sso_issuer, users.sso_subject)` equal to the login's issuer and
+   subject (SAML NameID / OIDC `sub`).
+2. An account whose address equals the login's email, only when both ends
+   vouch for it: the provider (OIDC `email_verified: true`; a missing claim is
+   not a vouch; a signed SAML assertion always is) and the account
+   (`users.email_verified`). Addresses are stored trimmed and lower-cased and
+   compared that way, and a verified address matches only when exactly one
+   account holds it verified; two holders match nothing (logged without the
+   address), and no account can be verified for a case variant of an address
+   another account holds verified.
+3. Otherwise a new account when `allowJit` is on; a refusal when it is off.
+
+`users.email_verified` is set by an SSO login or a SCIM push that carries the
+address, or by the server owner with `users.vouchEmail` (**Settings → Server →
+People → Confirm email**, audited `user.email_vouched`). The owner's own
+profile edit vouches for their own address. Any other profile edit, and any
+address typed on an invite, leaves it unverified, and editing an address
+clears the flag. A vouched login that creates an account takes the address
+from accounts that only typed it (audited `user.email_unvouched_cleared`),
+never from one that holds it verified; in that case the new account gets no
+address.
+
+A matched account already pinned to a different subject or issuer refuses the
+login with `This account is already linked to a different SSO identity`. A
+deactivated account refuses with `This account has been deactivated`.
 
 ## Process configuration
 
@@ -130,6 +160,8 @@ not enough; pairing alone never grants them.
   DESIGN.
 - `users.sso_subject` + `users.sso_issuer` — the provider-subject pin,
   unique per `(issuer, subject)` via a partial index.
+- `users.email_verified`: whether the account's address may match an SSO
+  login or a SCIM push (see [Account matching](#account-matching)).
 - `users.deactivated_at` — the SCIM deactivation stamp.
 - The SCIM bearer token and the OIDC client secret live in the 0600
   secrets file, never the database.

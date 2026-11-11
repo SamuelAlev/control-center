@@ -24,6 +24,7 @@ import 'package:cc_infra/src/network/bitbucket/bitbucket_api_client.dart';
 import 'package:cc_infra/src/network/bitbucket/bitbucket_pr_mapper.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_pull_request.dart';
 import 'package:cc_infra/src/network/bitbucket/models/bitbucket_user.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/forge_cancel_bridge.dart';
 import 'package:rhttp/rhttp.dart';
 
@@ -36,12 +37,17 @@ import 'package:rhttp/rhttp.dart';
 /// reactions, stacks, CI job detail, attachment upload, or draft PRs.
 /// [owner] is the Bitbucket workspace slug.
 class BitbucketForgePrClient
-    implements ForgePrClient, ForgeBranchPrHistoryClient {
+    implements
+        ForgePrClient,
+        ForgeBranchPrHistoryClient,
+        ForgeOpenPrChangeProbeClient {
   /// Creates a [BitbucketForgePrClient] for `owner/repo` over [_client].
+  /// [_approvalGuard] is consulted before any approval is sent.
   BitbucketForgePrClient({
     required this._client,
     required this.owner,
     required this.repo,
+    required this._approvalGuard,
   }) {
     if (owner.isEmpty || repo.isEmpty) {
       throw ArgumentError('owner and repo must not be empty');
@@ -49,6 +55,7 @@ class BitbucketForgePrClient
   }
 
   final BitbucketApiClient _client;
+  final ForgeApprovalGuard _approvalGuard;
 
   /// The Bitbucket workspace slug.
   @override
@@ -106,6 +113,20 @@ class BitbucketForgePrClient
       prs: page.items.map(_toDomain).toList(growable: false),
       hasMore: page.hasMore,
     );
+  }
+
+  @override
+  Future<String> openPullRequestsFingerprint() async {
+    try {
+      final probe = await _client.probeOpenPullRequests(owner, repo);
+      return '${probe.total ?? '?'}|${probe.topId ?? 0}|'
+          '${probe.topUpdatedOn ?? ''}';
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
   }
 
   @override
@@ -812,6 +833,10 @@ class BitbucketForgePrClient
     List<PendingReviewComment> comments = const [],
     ForgeCancelToken? cancelToken,
   }) async {
+    // Before the comments too: a refused approval sends nothing at all.
+    if (verdict == ForgeReviewVerdict.approve) {
+      await _approvalGuard(this, prNumber);
+    }
     final token = _token(cancelToken);
     // Bitbucket has no pending-review state at all (`pendingReviewBatching` is
     // false), so a batched review is unbundled here: every inline comment is

@@ -2,7 +2,7 @@
 title: 派送審查代理
 description: 從 PR 檢視畫面、MCP 工具或管線步驟，把專業審查代理派送到某個 PR。
 slug: zh-TW/手冊/操作指南/派送審查代理
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 本指南說明如何派送審查代理來審查 pull request。
@@ -76,7 +76,7 @@ dispatch_reviewers(
 | 事件                   | 觸發時機                                                                                                        | 承載鍵                                                             |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | 某個 PR **透過 Control Center** 開啟 — 撰寫介面，或代理呼叫 `pr_lifecycle.publish`                              | `pr_id`、`workspace_id`、`repo_owner`、`repo_name`                 |
-| `ExternalPrDetected`   | PR 輪詢服務發現某個 PR 直接在 GitHub 上開啟                                                                      | `repo_owner`、`repo_name`、`pr_number`、`pr_title`、`author`       |
+| `ExternalPrDetected`   | PR 輪詢服務發現某個 PR 直接在 GitHub 上開啟                                                                      | `repo_owner`、`repo_name`、`repo_full_name`、`pr_number`、`pr_title`、`author`       |
 
 在 github.com 上開啟的 PR 永遠不會引發 `PullRequestPublished`，因此只接到該事件的
 範本不會看到它。另外請注意，`PullRequestPublished` 不帶 `pr_number` — 指令碼或

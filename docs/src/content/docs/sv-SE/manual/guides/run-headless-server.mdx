@@ -3,7 +3,7 @@ title: Kör en headless-server
 description: Kör headless-binären cc_server eller dess Docker-avbildning, parkoppla en klient mot den och konfigurera den med hela ytan av CLI-flaggor och miljövariabler.
 dateModified: 2026-11-08
 slug: sv-SE/handbok/how-to-guider/kor-headless-server
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Kör `cc_server` på en maskin som står på, och anslut sedan till den från
@@ -169,7 +169,7 @@ enhetsnivån – `desktop`, `ios`, `android`, allt annat är en webbklient),
 `--host` (värden som skrivs ut i URL:en, eftersom loopback inte är nåbar från en
 annan maskin) och `--client-url`. Att köra `pair` igen roterar den enhetens
 nyckel och släpper dess live-sessioner. Parkoppling skapar aldrig någon
-arbetsyta: den anslutande klientens onboarding namnger och skapar den första.
+arbetsyta. Bara serverägaren skapar arbetsytor: på ägarens klient namnger och skapar onboardingen den första, och alla andra väntar tills ägaren skapar en åt dem eller en arbetsytadministratör bjuder in dem.
 
 Med `--client-url` skriver det också ut en QR-kod som går att skanna i
 terminalen och som öppnar webbklienten redan ifylld:
@@ -187,10 +187,7 @@ nyckel i URL-fragmentet. **Remote**-telefonappen förväntar sig en annan nyttol
 byta mot varandra. Se [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/).
 :::
 
-En autentiseringsuppgift som skapats av `cc_server pair` har **ingen utgång**; en
-som skapats i appen löper alltid ut efter 30 dagar. Återkalla en enhet som
-skapats i CLI:t från **Inställningar → Du → Dina enheter** när du är klar med
-den.
+En autentiseringsuppgift som skapats av `cc_server pair` löper ut efter 30 dagar, precis som en som skapats i appen; kör `pair` igen för samma enhet för att utfärda en ny. Återkalla en enhet som skapats i CLI:t från **Inställningar → Du → Dina enheter** när du är klar med den.
 
 Parkopplingsnyckeln autentiserar den obligatoriska Noise-handskakningen; varje
 session härleder färska trafiknycklar och kontrollerar serverns signerade
@@ -238,6 +235,16 @@ klienter använder i stället den krypterade tunneln.
 Servern kör tills den får `SIGINT`/`SIGTERM` och stängs sedan av på ett rent
 sätt.
 
+### Läs startraderna
+
+Två rader visar hur den här servern är uppsatt. Exponeringsraden, som skrivs ut bredvid startbannern, börjar med `cc_server exposure:` och visar hur långt den kan nås (`bind`, `tls`, `relay`, `tunnel`), om en serverägare är registrerad (`owner`) och hur agenter körs på den här maskinen (`sandbox`):
+
+- `sandbox=native`: varje agentkörning är inslagen i OS-sandlådan.
+- `sandbox=off`: du startade servern med `--sandbox off`, så varje medlems agenter körs osandlådat på den här maskinen.
+- `sandbox=unavailable`: värden har ingen sandlådebackend (Windows, eller Linux utan `bwrap` och `socat`), så bara agentkörningar som serverägaren svarar för startar. Alla andras körningar nekas med "Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här."
+
+En sandlåderad tidigare i loggen säger samma sak med ord och, när en backend saknas, anger vad som ska installeras. Att köra andras agenter utan sandlåda är ett val som serverägaren gör en gång, för alla, med `--sandbox off`. Se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/#kontrollera-om-dina-agentkörningar-är-sandlådade).
+
 ## Steg 5: Anslut en klient
 
 Rikta en klient mot serverns URL och parkopplingsnyckeln från steg 3:
@@ -247,8 +254,8 @@ Rikta en klient mot serverns URL och parkopplingsnyckeln från steg 3:
 - **Telefon**: parkoppla **Remote**-appen från en körande klient – se [Para en enhet](/sv-SE/handbok/how-to-guider/para-enhet/).
 
 :::note[cc_server betjänar ingen webbundle]
-En fristående `cc_server` monterar aldrig någon webbrot, så `GET /` returnerar
-404. Webbklienten hostas separat – använd `app.usectrl.dev`, eller hosta
+En fristående `cc_server` monterar aldrig någon webbrot, så `GET /` returnerar 404.
+Webbklienten hostas separat – använd `app.usectrl.dev`, eller hosta
 webbbygget själv hos valfri statisk HTTPS-värd (`cc-webapp`-avbildningen ovan är
 precis det). En webbläsarorigin som inte är loopback måste finnas med i
 `--allowed-origins`, annars avvisas WebSocket-uppgraderingen till `/rpc`;
@@ -263,6 +270,8 @@ Dess Service Worker dirigerar HTTP- och WebSocket-trafik genom samma
 autentiserade krypterade session som resten av klienten. `cc_server` dekrypterar
 varje förfrågan, vidarebefordrar den till sin lokala code-server-backend och
 krypterar svaret tillbaka till klienten. Filerna förblir serverns egendom.
+
+Redigeraren körs på servern som serverns egen användare, med dess terminal, uppgifter och tillägg, så bara [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren) kan öppna den. En session tillhör enheten och personen som öppnade den. Den öppnas med VS Codes arbetsytetillit påslagen, så VS Code frågar innan en mapp litas på, och med automatiska uppgifter avstängda, så ett repos uppgifter startar aldrig vid öppning. Alla andra behåller appens inbyggda redigerare och filvyer; den fullständiga redigeraren erbjuds inte dem.
 
 Hosta webbklienten över HTTPS eller en säker loopback-origin så att Service
 Workers kan köra. Det vanliga webbbygget och utgivningsskripten innehåller de
@@ -308,6 +317,12 @@ Inloggningar via Connect avslutas med en kod som webbläsaren visar, så servern
 behöver ingen offentlig adress för dem. Inloggningar via serverns egna appar
 skickar tillbaka webbläsaren till serverns offentliga URL, så ange `--public-url`
 till en adress som personernas webbläsare kan nå.
+
+Det här är serverns standard. En administratör för arbetsytan kan ge en arbetsyta
+ett annat val under **Inställningar → Arbetsyta → Integrationer**. Med
+`CC_CONNECT_URL` satt kan en arbetsyta fortfarande byta till sina egna appar, men
+inte till en egen Connect; se
+[Arbetsytans eget val](/sv-SE/handbok/referens/connect/#arbetsytans-eget-val).
 
 För att vara värd för Connect åt andra servrar från den här anger du
 `CC_SERVER_CONNECT_HOST=on`; se
@@ -357,7 +372,7 @@ parkopplingsnyckel.
 
 Två saker att känna till innan du exponerar porten utanför loopback:
 
-- **MCP faller stängt för anrop från andra värdar.** En MCP-yta utan token svarar bara på loopback. Att binda `any` vidgar den inte – en begäran från en annan värd avvisas med ”MCP requires a bearer token to answer non-loopback clients” tills du konfigurerar en token (`mcp.setToken`, eller **Inställningar → Server → MCP-servrar**).
+- **MCP behöver alltid sin token.** Servern skapar MCP-token vid första start, och varje begäran, även från loopback, måste skicka den som `Authorization: Bearer <token>`. Den kan inte stängas av; serverägaren läser och roterar den under **Inställningar → Server → MCP-servrar**. Begäranden från en webbsida, till ett okänt `Host`, eller en `POST` som inte är JSON avvisas innan token kontrolleras. Se [Använd MCP-servern](/sv-SE/handbok/how-to-guider/mcp-server/).
 - **`GET /healthz` är oautentiserad avsiktligt**, med CORS för jokertecken, och publicerar serverns ID, namn, identitetsfingeravtryck och byggversion. Klienter behöver fingeravtrycket för att fästa servern, så det är avsiktligt – men det innebär att varje nåbar `cc_server` avslöjar så mycket för vem som helst som frågar.
 
 ## Relaterade guider

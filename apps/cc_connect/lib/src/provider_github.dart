@@ -4,6 +4,7 @@ import 'package:cc_connect/src/provider_support.dart';
 import 'package:cc_connect/src/service_config.dart';
 import 'package:cc_connect/src/upstream_http.dart';
 import 'package:cc_connect_core/cc_connect_core.dart';
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 /// A GitHub App user token pair.
 final class GitHubTokens {
@@ -12,8 +13,6 @@ final class GitHubTokens {
     required this.access,
     required this.accessExpiresAt,
     required this.refresh,
-    required this.refreshExpiresAt,
-    required this.generation,
   });
 
   /// The `ghu_` user token.
@@ -24,12 +23,6 @@ final class GitHubTokens {
 
   /// The single-use `ghr_` refresh token.
   final String refresh;
-
-  /// When [refresh] expires, or null when GitHub did not say.
-  final DateTime? refreshExpiresAt;
-
-  /// The client-secret generation that obtained the pair.
-  final int generation;
 }
 
 /// The authenticated GitHub user.
@@ -101,9 +94,6 @@ final class GitHubInstallation {
   /// Whether it is suspended.
   final bool suspended;
 
-  /// Whether it is on an organization.
-  bool get isOrganization => targetType == 'Organization';
-
   /// The cache form.
   Map<String, Object?> toJson() => {
     'id': id,
@@ -164,26 +154,67 @@ final class GitHubRepo {
 
   /// The caller's role flags.
   final Map<String, bool> permissions;
-
-  /// The cache form.
-  Map<String, Object?> toJson() => {
-    'id': id,
-    'owner': {'id': ownerId},
-    'private': isPrivate,
-    'permissions': permissions,
-  };
 }
 
-/// A child token from `POST /applications/{client_id}/token/scoped`.
+/// A child token from `POST /applications/{client_id}/token/scoped`, whose
+/// answer proved a `selected` repository selection and exactly the requested
+/// permissions.
 final class GitHubScopedMint {
   /// Creates the mint.
-  const GitHubScopedMint({required this.token, required this.expiresAt});
+  const GitHubScopedMint({
+    required this.token,
+    required this.expiresAt,
+    required this.requestId,
+  });
 
   /// The one-repository `ghu_`.
   final String token;
 
   /// When it expires, or null when GitHub did not say.
   final DateTime? expiresAt;
+
+  /// GitHub's `x-github-request-id` for the mint, when shaped like one.
+  final String? requestId;
+}
+
+/// A one-repository installation token from `POST
+/// /app/installations/{id}/access_tokens`, with GitHub's own account of what
+/// it covers.
+final class GitHubInstallationMint {
+  /// Creates the mint.
+  const GitHubInstallationMint({
+    required this.token,
+    required this.expiresAt,
+    required this.repositorySelection,
+    required this.repositoryIds,
+    required this.permissions,
+    required this.requestId,
+  });
+
+  /// The `ghs_` token.
+  final String token;
+
+  /// When it expires, or null when GitHub did not say.
+  final DateTime? expiresAt;
+
+  /// `selected`.
+  final String repositorySelection;
+
+  /// The repository ids it covers (exactly one).
+  final List<int> repositoryIds;
+
+  /// The permissions it carries.
+  final Map<String, String> permissions;
+
+  /// GitHub's `x-github-request-id` for the mint, when shaped like one.
+  final String? requestId;
+}
+
+final RegExp _requestIdShape = RegExp(r'^[A-Fa-f0-9:]{1,64}$');
+
+String? _requestId(UpstreamResponse response) {
+  final id = response.headers['x-github-request-id'];
+  return id != null && _requestIdShape.hasMatch(id) ? id : null;
 }
 
 /// GitHub calls, all to fixed hosts. Error bodies are read only to pick a
@@ -196,6 +227,10 @@ final class GitHubApi {
   final UpstreamHttp _http;
   final GitHubCredentials _creds;
   final DateTime Function() _clock;
+  String _keyPem = '';
+  RSAPrivateKey? _key;
+  String _jwt = '';
+  DateTime? _jwtIssuedAt;
 
   static final Uri _tokenUrl = Uri.parse(
     'https://github.com/login/oauth/access_token',
@@ -210,69 +245,62 @@ final class GitHubApi {
   String _basic(String secret) =>
       'Basic ${base64.encode(utf8.encode('${_creds.clientId}:$secret'))}';
 
-  Future<GitHubTokens> _token(Map<String, String> fields) => withDualSecret(
-    _creds.clientSecret,
-    (secret, generation) async {
-      final response = await sendUpstream(
-        _http,
-        UpstreamRequest.form(_tokenUrl, {
-          'client_id': _creds.clientId,
-          'client_secret': secret,
-          ...fields,
-        }),
-      );
-      final json = response.jsonObject;
-      final error = json?['error'];
-      if (error is String) {
-        switch (error) {
-          case 'incorrect_client_credentials' || 'invalid_client':
-            throw const InvalidClientCredentials();
-          case 'bad_verification_code' ||
-              'bad_refresh_token' ||
-              'invalid_grant' ||
-              'expired_token' ||
-              'unauthorized_client':
-            throw GrantRejected(logSlug([error, json?['error_description']]));
-          default:
-            throw const ConnectException(ConnectErrorCode.providerUnavailable);
-        }
-      }
-      if (!response.ok || json == null) {
-        throw const ConnectException(ConnectErrorCode.providerUnavailable);
-      }
-      final access = json['access_token'];
-      final expiresIn = intField(json['expires_in']);
-      final refresh = json['refresh_token'];
-      final refreshIn = intField(json['refresh_token_expires_in']);
-      // Non-expiring tokens mean the App has expiry switched off: refuse
-      // rather than seal a token that can never be rotated.
-      if (access is! String ||
-          !access.startsWith('ghu_') ||
-          expiresIn == null ||
-          expiresIn <= 0 ||
-          refresh is! String ||
-          !refresh.startsWith('ghr_')) {
-        // No refresh token is the App's "Expire user authorization tokens"
-        // switched off.
-        throw ConnectException(
-          ConnectErrorCode.accessDenied,
-          reason: refresh is String && refresh.startsWith('ghr_')
-              ? 'github_token_shape'
-              : 'github_token_expiry_off',
+  Future<GitHubTokens> _token(Map<String, String> fields) =>
+      withDualSecret(_creds.clientSecret, (secret, _) async {
+        final response = await sendUpstream(
+          _http,
+          UpstreamRequest.form(_tokenUrl, {
+            'client_id': _creds.clientId,
+            'client_secret': secret,
+            ...fields,
+          }),
         );
-      }
-      final now = _clock().toUtc();
-      return GitHubTokens(
-        access: access,
-        accessExpiresAt: now.add(Duration(seconds: expiresIn)),
-        refresh: refresh,
-        refreshExpiresAt: refreshIn == null
-            ? null
-            : now.add(Duration(seconds: refreshIn)),
-        generation: generation,
-      );
-    },
-  );
+        final json = response.jsonObject;
+        final error = json?['error'];
+        if (error is String) {
+          if (error == 'incorrect_client_credentials' ||
+              error == 'invalid_client') {
+            throw const InvalidClientCredentials();
+          }
+          // GitHub's own codes for a dead code or token, besides the shared
+          // refresh table.
+          if (oauthRefreshRejectedErrors.contains(error) ||
+              error == 'bad_verification_code' ||
+              error == 'expired_token') {
+            throw GrantRejected(logSlug([error, json?['error_description']]));
+          }
+          throw const ConnectException(ConnectErrorCode.providerUnavailable);
+        }
+        if (!response.ok || json == null) {
+          throw const ConnectException(ConnectErrorCode.providerUnavailable);
+        }
+        final access = json['access_token'];
+        final expiresIn = intField(json['expires_in']);
+        final refresh = json['refresh_token'];
+        // Non-expiring tokens mean the App has expiry switched off: refuse
+        // rather than seal a token that can never be rotated.
+        if (access is! String ||
+            !access.startsWith('ghu_') ||
+            expiresIn == null ||
+            expiresIn <= 0 ||
+            refresh is! String ||
+            !refresh.startsWith('ghr_')) {
+          // No refresh token is the App's "Expire user authorization tokens"
+          // switched off.
+          throw ConnectException(
+            ConnectErrorCode.accessDenied,
+            reason: refresh is String && refresh.startsWith('ghr_')
+                ? 'github_token_shape'
+                : 'github_token_expiry_off',
+          );
+        }
+        final now = _clock().toUtc();
+        return GitHubTokens(
+          access: access,
+          accessExpiresAt: now.add(Duration(seconds: expiresIn)),
+          refresh: refresh,
+        );
+      });
 
   /// Exchanges an authorization code (claim). A rejected code answers
   /// `access_denied`.
@@ -391,20 +419,6 @@ final class GitHubApi {
     return repo;
   }
 
-  /// Whether [login] is an active admin of [org]
-  /// (`GET /orgs/{org}/memberships/{username}`).
-  Future<bool> isActiveOrgAdmin(String token, String org, String login) async {
-    if (!isGitHubSegment(org) || !isGitHubSegment(login)) {
-      return false;
-    }
-    final response = await _api('GET', '/orgs/$org/memberships/$login', token);
-    if (!response.ok) {
-      return false;
-    }
-    final json = response.jsonObject;
-    return json?['role'] == 'admin' && json?['state'] == 'active';
-  }
-
   /// Mints a one-repository child of [parent]. GitHub intersects the
   /// person's role, SSO, rulesets and the installation with the request.
   /// The answer must name exactly [permissions] (and, when it lists them,
@@ -454,7 +468,14 @@ final class GitHubApi {
     if (json == null || token is! String || !token.startsWith('ghu_')) {
       throw const ConnectException(ConnectErrorCode.providerUnavailable);
     }
-    if (!scopedTokenMatches(json, repoId: repoId, permissions: permissions)) {
+    // GitHub's answer names the selection and permissions (under
+    // `installation`) but no repository list; the request named [repoId].
+    if (!scopedTokenMatches(
+      json,
+      repoId: repoId,
+      permissions: permissions,
+      requireRepositories: false,
+    )) {
       try {
         await deleteToken(token);
       } on Object {
@@ -466,6 +487,7 @@ final class GitHubApi {
     return GitHubScopedMint(
       token: token,
       expiresAt: expires is String ? DateTime.tryParse(expires)?.toUtc() : null,
+      requestId: _requestId(response),
     );
   });
 
@@ -494,12 +516,220 @@ final class GitHubApi {
         throw const ConnectException(ConnectErrorCode.providerUnavailable);
       });
 
-  /// Revokes one token (`DELETE /applications/{client_id}/token`).
+  // ------------------------------------------------------ App installations
+
+  /// How long one App JWT is reused: it lives nine minutes.
+  static const Duration appJwtReuse = Duration(minutes: 8);
+
+  /// The App JWT (RS256, `iss` = app id, issued a minute in the past for
+  /// clock skew, nine minutes of life: GitHub caps it at ten), reused for
+  /// [appJwtReuse]. The parsed key is kept until the key's value changes
+  /// (a file-backed key is re-read on rotation).
+  String _appJwt() {
+    final pem = _creds.privateKey.value;
+    if (pem.isEmpty) {
+      throw const ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'github_app_key_missing',
+      );
+    }
+    final now = _clock().toUtc();
+    final issued = _jwtIssuedAt;
+    if (pem == _keyPem &&
+        issued != null &&
+        now.difference(issued) < appJwtReuse &&
+        !now.isBefore(issued)) {
+      return _jwt;
+    }
+    try {
+      var key = _key;
+      if (key == null || pem != _keyPem) {
+        key = RSAPrivateKey(normalizePem(pem));
+        _key = key;
+        _keyPem = pem;
+      }
+      final seconds = now.millisecondsSinceEpoch ~/ 1000;
+      _jwt = JWT({
+        'iss': '${_creds.appId}',
+        'iat': seconds - 60,
+        'exp': seconds + 9 * 60,
+      }).sign(key, algorithm: JWTAlgorithm.RS256, noIssueAt: true);
+      _jwtIssuedAt = now;
+      return _jwt;
+    } on Object {
+      _key = null;
+      _keyPem = '';
+      _jwtIssuedAt = null;
+      throw const ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'github_app_key_unreadable',
+      );
+    }
+  }
+
+  Future<UpstreamResponse> _app(String method, String path, {Object? json}) =>
+      sendUpstream(
+        _http,
+        json == null
+            ? UpstreamRequest(
+                method,
+                Uri.https('api.github.com', path),
+                headers: _apiHeaders(_appJwt()),
+              )
+            : UpstreamRequest.json(
+                method,
+                Uri.https('api.github.com', path),
+                json,
+                headers: _apiHeaders(_appJwt()),
+              ),
+      );
+
+  GitHubInstallation? _ownInstallation(UpstreamResponse response) {
+    final installation = GitHubInstallation.tryParse(response.jsonObject);
+    if (installation == null || installation.appId != _creds.appId) {
+      throw const ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'github_installation_shape',
+      );
+    }
+    return installation;
+  }
+
+  /// The installation of this App that covers [owner]/[name]
+  /// (`GET /repos/{o}/{r}/installation`, App JWT), or null when none does:
+  /// not installed on the owner, or installed without this repository.
+  Future<GitHubInstallation?> repoInstallation(
+    String owner,
+    String name,
+  ) async {
+    final response = await _app('GET', '/repos/$owner/$name/installation');
+    if (response.status == 404) {
+      return null;
+    }
+    if (!response.ok) {
+      throw ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'github_repo_installation_http_${response.status}',
+      );
+    }
+    return _ownInstallation(response);
+  }
+
+  /// The installation of this App on the account [owner]
+  /// (`GET /users/{owner}/installation`, App JWT; organizations included),
+  /// or null when it is not installed there.
+  Future<GitHubInstallation?> accountInstallation(String owner) async {
+    final response = await _app('GET', '/users/$owner/installation');
+    if (response.status == 404) {
+      return null;
+    }
+    if (!response.ok) {
+      throw ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'github_account_installation_http_${response.status}',
+      );
+    }
+    return _ownInstallation(response);
+  }
+
+  /// Mints an installation token for exactly repository [repoId] with
+  /// exactly [permissions]. An answer that covers anything else is revoked
+  /// (`DELETE /installation/token`) and refused.
+  Future<GitHubInstallationMint> installationToken({
+    required int installationId,
+    required int repoId,
+    required Map<String, String> permissions,
+  }) async {
+    final response = await _app(
+      'POST',
+      '/app/installations/$installationId/access_tokens',
+      json: {
+        'repository_ids': [repoId],
+        'permissions': permissions,
+      },
+    );
+    final json = response.jsonObject;
+    switch (response.status) {
+      case 200 || 201:
+        break;
+      case 403:
+        final message = '${json?['message'] ?? ''}'.toLowerCase();
+        throw message.contains('suspended')
+            ? const ConnectException(ConnectErrorCode.suspended)
+            : const ConnectException(
+                ConnectErrorCode.accessDenied,
+                reason: 'github_installation_token_forbidden',
+              );
+      case 404:
+        throw const ConnectException(ConnectErrorCode.notInstalled);
+      case 422:
+        // The repository is not in the installation, or the App lacks a
+        // permission the scope asks for (an App misconfiguration).
+        final message = '${json?['message'] ?? ''}'.toLowerCase();
+        throw message.contains('permission')
+            ? const ConnectException(
+                ConnectErrorCode.accessDenied,
+                reason: 'github_app_permission_missing',
+              )
+            : const ConnectException(ConnectErrorCode.repoNotSelected);
+      default:
+        throw ConnectException(
+          ConnectErrorCode.providerUnavailable,
+          reason: 'github_installation_token_http_${response.status}',
+        );
+    }
+    final token = json?['token'];
+    if (json == null || token is! String || !token.startsWith('ghs_')) {
+      throw const ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'github_installation_token_shape',
+      );
+    }
+    if (!scopedTokenMatches(json, repoId: repoId, permissions: permissions) ||
+        json['repository_selection'] != 'selected') {
+      await revokeInstallationToken(token);
+      throw const ConnectException(
+        ConnectErrorCode.accessDenied,
+        reason: 'github_installation_token_too_wide',
+      );
+    }
+    final listed = json['repositories'];
+    final expires = json['expires_at'];
+    return GitHubInstallationMint(
+      token: token,
+      expiresAt: expires is String ? DateTime.tryParse(expires)?.toUtc() : null,
+      repositorySelection: 'selected',
+      repositoryIds: listed is List
+          ? [
+              for (final r in listed)
+                if (r is Map && r['id'] is int) r['id'] as int,
+            ]
+          : [repoId],
+      permissions: permissions,
+      requestId: _requestId(response),
+    );
+  }
+
+  /// Revokes an installation token with itself (`DELETE
+  /// /installation/token`), best effort: it expires within the hour.
+  Future<void> revokeInstallationToken(String token) async {
+    try {
+      await sendUpstream(
+        _http,
+        UpstreamRequest(
+          'DELETE',
+          Uri.https('api.github.com', '/installation/token'),
+          headers: _apiHeaders(token),
+        ),
+      );
+    } on Object {
+      // Refused either way.
+    }
+  }
+
+  /// Revokes one token (`DELETE /applications/{client_id}/token`). Never the
+  /// whole authorization: on a shared App that would sign the person out of
+  /// every other server too.
   Future<void> deleteToken(String token) =>
       _delete('/applications/${_creds.clientId}/token', token);
-
-  /// Revokes the whole authorization (`DELETE
-  /// /applications/{client_id}/grant`).
-  Future<void> deleteGrant(String token) =>
-      _delete('/applications/${_creds.clientId}/grant', token);
 }

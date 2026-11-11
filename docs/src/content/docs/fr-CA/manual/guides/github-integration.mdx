@@ -2,7 +2,7 @@
 title: Configurer l’intégration GitHub
 description: Connectez-vous à GitHub pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent.
 slug: fr-CA/manuel/guides/integration-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Ce guide couvre les volets propres à GitHub de la configuration. GitHub est l’un
@@ -31,7 +31,7 @@ connecter est une chose qu’il fait lui-même.
 
 Pour GitHub, on ne fait que se connecter : il n’y a aucun jeton à coller.
 
-1. Allez dans **Paramètres → Espace de travail → Profil et identité → Hébergement de code** (ou à la première
+1. Allez dans **Paramètres → Vous → Profil → Hébergement de code** (ou à la première
    étape de la configuration initiale)
 2. Sur la ligne **GitHub**, cliquez sur **Se connecter à GitHub**
 3. Votre navigateur ouvre GitHub. Approuvez l’app
@@ -59,18 +59,29 @@ le serveur a émis en votre nom.
 
 ## Pour qui parle votre identifiant
 
-- **Tout ce que vous faites** (ouvrir la page de la PR, publier une révision,
-  approuver, fusionner) s’exécute avec **votre** connexion et rien d’autre. Si
-  vous n’êtes pas connecté, l’app vous le dit et vous demande de vous connecter.
-  Aucun autre identifiant ne vous remplace
-- **Le travail que personne ne tape** (exécutions d’agents, pipelines,
-  interrogation périodique des PR, réponses du robot, clonages) reçoit un jeton
-  pour un seul dépôt, émis à partir de la GitHub App du serveur ou par Connect.
-  Il est limité à ce qu’un membre responsable peut y faire : le membre qui a fait
-  la demande, sinon le propriétaire de l’espace de travail. Un membre qui ne peut
-  pas pousser restreint le jeton à la lecture
-- **L’automatisation n’approuve jamais** une demande de tirage. L’approbation est
-  un geste humain
+Control Center suit la séparation de GitHub entre agir **en tant que personne** et agir **en tant qu’app** :
+
+| Ce qui se passe | Apparaît sur GitHub comme |
+| --- | --- |
+| Tout ce que vous faites vous-même : commenter, réviser, approuver, fusionner, demander des relecteurs | **Vous**. GitHub marque un commentaire de la conversation comme fait avec l’app Control Center; une révision et ses commentaires en ligne ne portent pas cette marque |
+| Revue par IA, réponses et commentaires des agents dans les conversations de PR, étiquettes, travail des pipelines et du robot | **Le robot Control Center**. Sur l’application partagée Control Center Connect, une revue n’est celle du robot que pour une installation que l’opérateur de Connect a inscrite ; sinon elle apparaît au nom de la personne responsable |
+| Une pull request qu’un agent ouvre pour vous, ses modifications du titre ou de la description de cette pull request, ses push et ses commits | **Vous**. Control Center est crédité comme coauteur lorsque le crédit de coauteur est activé |
+| Travail que personne n’a demandé (planifications, webhooks) | **Le robot Control Center**, auteur aussi de ses commits. Sur Control Center Connect, il ne pousse jamais et n’ouvre jamais de pull request |
+
+- **Tout ce que vous faites** s’exécute avec **votre** connexion et rien d’autre. Si vous n’êtes pas connecté, l’app vous demande de vous connecter. Aucun autre identifiant ne vous remplace
+- **Le travail du robot** reçoit un jeton pour un seul dépôt à la fois, borné à ce qu’un membre responsable peut y faire : le membre qui a fait la demande, sinon le propriétaire de l’espace de travail. Un membre qui ne peut pas pousser restreint le jeton à la lecture. Les réponses du robot qui agissent pour quelqu’un commencent par **Control Center (for @login)**
+- **Les agents ouvrent des pull requests via Control Center**, jamais depuis leur bac à sable : la pull request est donc à vous, et les règles propres à GitHub vous empêchent de l’approuver vous-même. Control Center refuse aussi une approbation de la personne qui a demandé le travail à l’agent et de l’auteur de la pull request. Pour une exécution planifiée ou déclenchée par un webhook, cela vaut pour chaque administrateur qui a armé son déclencheur ou modifié son pipeline pendant qu’il était armé. Une autre personne doit relire. Si Control Center ne peut pas confirmer qui a ouvert la pull request, ni quel compte sur la forge est le vôtre, il refuse et vous demande de réessayer
+- **Les agents commentent aussi via Control Center.** Le jeton GitHub qu’obtient une exécution d’agent ne fait que lire. Lorsqu’un agent commente la pull request sur laquelle il travaille, Control Center publie le commentaire en tant que robot, en commençant par **Control Center (for @login)** lorsqu’une personne a demandé l’exécution. Un agent ne peut commenter que sa propre pull request : une dans le même dépôt, jamais un fork, dont le dernier commit a été poussé par l’agent ou correspond au commit courant de la branche de son espace. Les @-mentions dans le commentaire d’un agent ne notifient personne. Un agent peut aussi modifier le titre ou la description de sa propre pull request tant qu’elle est ouverte. Cette modification se fait de la même façon que la pull request a été ouverte (en votre nom, lorsque vous avez demandé l’exécution), et demande d’abord une approbation par défaut. La description d’une pull request conserve ses @-mentions, à l’ouverture comme à chaque modification, de sorte que les personnes qu’elle nomme sont notifiées
+- **Sur Control Center Connect, le robot ne pousse jamais et n’ouvre jamais de pull request.** Pousser, créer une branche ou ouvrir une pull request y exige une personne qui l’a demandé, et s’exécute avec la connexion de cette personne. Une exécution planifiée ou déclenchée par un webhook qui tente de pousser s’arrête avec un message qui l’indique. Pour permettre aux exécutions sans surveillance de pousser, donnez à l’espace de travail sa propre GitHub App dans **Paramètres**
+- **Ce que peut faire le robot Connect.** Avec l’application partagée Connect, le robot commente, étiquette et réagit. Il publie une revue (une revue par IA, des commentaires de revue, des demandes de relecteurs) seulement lorsque l’opérateur de Connect a inscrit l’installation de ce serveur. Sinon, la revue part avec la connexion propre à la personne responsable et apparaît sous son nom. Le robot n’ouvre, ne modifie, ne ferme ni ne renomme jamais une pull request, ne rejette jamais une revue et ne modifie ni ne supprime jamais un commentaire ; ces actions exigent une personne qui les a demandées, avec sa propre connexion. Connect ne lie pas l’installation de votre organisation à un seul serveur Control Center : tout serveur où un membre pouvant pousser sur un dépôt s’est connecté via Connect peut obtenir le jeton de commentaire du robot pour ce dépôt
+- **Un serveur ou un espace de travail disposant de sa propre GitHub App** garde le robot pour tout ce qui précède, revues comprises
+- **L’automatisation n’approuve jamais** une demande de tirage. L’approbation est un geste humain
+
+Lorsque vous liez un dépôt, Control Center vérifie que votre compte peut le voir, et signale lorsque la GitHub App n’est pas installée sur son organisation ou ne l’inclut pas, avec un lien pour corriger. La liaison et la déliaison exigent un administrateur d’espace de travail, et une copie de travail située hors du stockage propre à l’espace de travail ne peut être liée que par le propriétaire du serveur ; voir [Ajouter des dépôts à un espace de travail](/fr-CA/manuel/guides/ajouter-des-depots/).
+
+La liaison suit l’identifiant GitHub permanent du dépôt, donc un renommage ou un transfert ne demande rien de votre part. Si le chemin désigne plus tard un autre dépôt, Control Center cesse de lui envoyer quoi que ce soit et affiche un avis jusqu’à ce qu’un administrateur d’espace de travail clique sur **Relier à nouveau**.
+
+L’ouverture du code d’un dépôt (fichiers, différences, recherche, terminal) exige à la fois son autorisation dans l’espace de travail et une connexion GitHub à vous capable de le lire. Les administrateurs d’espace de travail suivent la même règle ; seul le propriétaire du serveur en est exempté.
 
 ## Ce que l’intégration vous apporte
 
@@ -80,7 +91,7 @@ le serveur a émis en votre nom.
 | Exécutions de vérification | L’API Checks de GitHub                                                                                        |
 | Publication des révisions | Une étape nécessitant une action de l’utilisateur, qui publie votre révision dans la PR, en votre nom         |
 | Enregistrement des dépôts | Un checkout est accepté si son dépôt distant `origin` pointe vers github.com, ou vers gitlab.com / bitbucket.org |
-| Accès des agents à GitHub | Un jeton pour l’unique dépôt de l’exécution, sous forme de `GH_TOKEN` / `GITHUB_TOKEN`; les poussées passent par Control Center |
+| Accès des agents à GitHub | Dans une exécution, `git fetch` passe par Control Center, qui récupère les dépôts sur lesquels travaille l’exécution avec un jeton en lecture seule que l’exécution ne détient jamais. `gh` les lit avec un jeton en lecture seule que Control Center remet sur demande et révoque à la fin de l’exécution. Les push, les pull requests, leurs modifications et les commentaires passent par Control Center |
 | Notifications             | Une interrogation côté serveur de votre boîte de réception GitHub déclenche « Mentionné dans une pull request » et « Revue demandée » |
 | Profils d’utilisateur     | Cartes de profil au survol et filtrage des PR par auteur                                                       |
 
@@ -102,18 +113,23 @@ toutes les deux minutes.
 ## Savoir comment les agents agissent sur GitHub
 
 - Un agent qui travaille dans un arbre de travail GitHub reçoit un jeton pour ce
-  seul dépôt. Il peut lire le code et commenter les demandes de tirage quand le
-  membre responsable peut pousser, et seulement lire sinon. Un push passe par
+  seul dépôt. Il ne peut que lire le code, les tickets et les demandes de tirage ;
+  les commentaires passent par Control Center, comme décrit plus haut. Un push passe par
   Control Center, qui interroge la règle **Pousser vers un dépôt distant** puis
   le transmet avec un jeton d’écriture que l’agent ne détient jamais. Voir
   [Configurer les politiques de bac à sable](/fr-CA/manuel/guides/politiques-de-bac-a-sable/)
-- Les commits des agents utilisent toujours l’identité Git de la personne qui a fait la demande, à la fois comme auteur et comme committer. Par défaut, la ligne `Co-Authored-By: Control Center <hi@usectrl.dev>` crédite le compte GitHub `@usectrl` comme coauteur. Dans **Paramètres → Vous → Attribution des commits**, désactivez cette mention de coauteur sans changer votre identité. La règle de **Paramètres → Espace de travail → Général** prévaut et verrouille le commutateur personnel. L’attribution propre à Claude Code est toujours désactivée. La signature des commits nécessite toujours sa propre configuration valide
+- Le travail que vous lancez est commité à votre nom. Lorsque vous demandez quelque chose à un agent, ou que vous commitez dans l’IDE, vous êtes l’auteur et le committer, sous une adresse vérifiée par votre forge : votre adresse noreply GitHub depuis votre connexion GitHub, ou sur GitLab et Bitbucket l’e-mail que votre connexion là-bas signale. L’identité Git de votre espace de travail n’est utilisée que pour un commit que vous faites à la main dans un dépôt où aucune forge n’atteste une adresse à vous. Si vous n’êtes pas connecté à cette forge, les commits de l’agent sont ceux du robot, et les notes de l’exécution le disent
+- Le travail que personne n’a demandé est commité par le robot. Une exécution planifiée ou déclenchée par un webhook commite au nom de la GitHub App de l’espace de travail (`<app>[bot]`, avec son adresse noreply GitHub), ou sous `Control Center <hi@usectrl.dev>` lorsqu’il n’y a pas de GitHub App ou que le dépôt est sur GitLab ou Bitbucket
+- **Créditer Control Center comme co-auteur** (**Paramètres** → **Vous** → **Commits**) ajoute une ligne `Co-Authored-By:` pour l’autre partie : Control Center sur vos commits, et sur les commits du robot chaque personne qui a armé le déclencheur à l’origine de l’exécution. Cette option est activée tant que vous ne la désactivez pas. Un administrateur d’espace de travail peut trancher pour tout le monde avec **Crédit de co-auteur** dans **Paramètres** → **Espace de travail** → **Général** ; votre propre choix est alors enregistré mais ne s’applique pas dans cet espace de travail. L’attribution propre à Claude Code est toujours désactivée
+- Vos commits peuvent être signés. Sous **Commits vérifiés** dans **Paramètres** → **Vous** → **Commits**, choisissez **Créer la clé de signature** et ajoutez sa moitié publique à votre compte GitHub ou GitLab comme clé de signature ; à partir de là, les commits des exécutions que vous demandez, et les commits que vous faites dans l’IDE, apparaissent comme vérifiés. La moitié privée reste sur votre serveur : quiconque contrôle ce serveur peut donc signer des commits à votre nom tant que la clé figure sur votre compte, et sur GitHub, un commit déjà affiché comme vérifié le reste après que vous avez retiré la clé. Bitbucket n’a pas de clé réservée à la signature : n’ajoutez pas la clé là-bas, et les commits sur Bitbucket ne sont pas signés. Les commits du robot ne sont jamais signés
+- Les commits que vous faites dans le panneau **Contrôle de source** de l’IDE ignorent les crochets Git du dépôt, comme le fait `git commit --no-verify`, et le Git du serveur ignore les assistants d’identification, les éditeurs, les outils externes de différence et les signataires que le dépôt configure : il exécute Git sur sa propre machine, dans un arbre qu’un agent ou une demande de tirage peut modifier. Voir [Valider et envoyer depuis le contrôle de source](/fr-CA/manuel/guides/examiner-et-fusionner-pr/#commiter-et-pousser-depuis-contrôle-de-source)
+- Chaque commit poussé par un agent est vérifié au préalable, y compris les couches que `stack_publish` pousse pour une pile. Un push qui nomme quelqu’un d’autre, supprime ou emprunte un crédit, ajoute une ligne de validation, ou n’est pas signé comme vos paramètres l’exigent est refusé. Les commits que vous poussez vous-même depuis l’IDE vous appartiennent et ne sont pas vérifiés de cette façon
 - Un terminal que vous ouvrez sur un rig reçoit votre propre connexion,
   restreinte à ce seul dépôt, de sorte que les poussées qui en partent sont les
   vôtres
 - Quand aucun jeton ne peut être émis (personne de responsable n’est connecté,
   l’app n’est pas installée chez le propriétaire, ou l’installation est
-  suspendue), l’exécution démarre sans jeton et ses notes expliquent pourquoi.
+  suspendue), la commande qui l’a demandé explique pourquoi.
   Il n’y a aucun identifiant de repli
 
 ## Dépannage
@@ -121,7 +137,7 @@ toutes les deux minutes.
 ### La liste des PR est vide et indique que GitHub n’est pas connecté
 
 Vous n’êtes pas connecté à GitHub sur ce serveur. Cliquez sur **Se connecter à
-GitHub** sous **Hébergement de code**. Les dépôts sur d’autres hébergeurs ne sont
+GitHub** sous **Paramètres → Vous → Profil → Hébergement de code**. Les dépôts sur d’autres hébergeurs ne sont
 pas touchés.
 
 ### La ligne GitHub indique que la connexion n’est pas configurée sur ce serveur
@@ -130,6 +146,12 @@ Le serveur n’a ni sa propre GitHub App ni Connect. Le propriétaire du serveur
 choisit l’un ou l’autre dans **Paramètres → Serveur → Authentification
 unique** : **Créer mon application GitHub** prend environ deux minutes. Voir
 [Créer la GitHub App](/fr-CA/manuel/guides/github-app/).
+
+Dans un espace de travail sur ses propres applications, la ligne le signale
+lorsque l’app GitHub de l’espace de travail manque ou est incomplète. Un
+administrateur de l’espace de travail la complète sur la carte **Application
+GitHub** dans **Paramètres → Espace de travail → Intégrations** ; voir
+[Donner à un espace de travail sa propre app](/fr-CA/manuel/guides/github-app/#donner-à-un-espace-de-travail-sa-propre-app).
 
 ### La boîte de dialogue indique que le code ne correspond pas
 
@@ -140,10 +162,7 @@ Cinq codes erronés mettent fin à la connexion ; recommencez-la.
 
 La GitHub App n’a aucune installation sur le compte propriétaire du dépôt. Un
 administrateur de l’espace de travail l’installe à partir de **Paramètres →
-Espace de travail → Général → Installations de l’application GitHub**. Pour une
-organisation sur l’App partagée de Control Center, un administrateur de cette
-organisation pourrait devoir cliquer sur **Autoriser ce serveur**. Voir
-[Créer la GitHub App](/fr-CA/manuel/guides/github-app/#autoriser-ce-serveur-pour-une-organisation).
+Espace de travail → Intégrations → Installations de l’application GitHub**.
 
 ### Tout le monde doit se reconnecter à GitHub
 
@@ -156,8 +175,19 @@ machine. Les connexions par Connect sont liées au serveur qui les a établies.
 L’enregistrement exige les trois conditions suivantes : le chemin se trouve à
 l’intérieur d’un arbre de travail git, il possède un dépôt distant `origin`, et
 ce dépôt distant pointe vers un hébergeur pris en charge (github.com, gitlab.com
-ou bitbucket.org). Voir
-[Ajouter des dépôts à un espace de travail](/fr-CA/manuel/guides/ajouter-des-depots/).
+ou bitbucket.org). Le `origin` doit être le dépôt que vous liez, et un dossier situé hors du stockage propre à l’espace de travail ne peut être lié que par le propriétaire du serveur. Voir [Ajouter des dépôts à un espace de travail](/fr-CA/manuel/guides/ajouter-des-depots/).
+
+### J’ai une autorisation, mais le dépôt indique que mon compte ne peut pas le lire
+
+Votre compte GitHub ne peut pas lire ce dépôt, si bien que son code vous reste fermé même avec une autorisation d’espace de travail. Connectez-vous à GitHub sous **Hébergement de code**, ou demandez l’accès au dépôt sur GitHub.
+
+### « Impossible de confirmer votre accès à GitHub »
+
+GitHub n’a pas pu être joint pour vérifier votre accès ; Control Center a donc refusé plutôt que de deviner. Réessayez dans un instant.
+
+### Les revues sur Connect apparaissent à mon nom, et non à celui du robot
+
+Sur l’application partagée Connect, le robot ne publie les revues que pour les installations que l’opérateur de Connect a inscrites. Partout ailleurs, la revue part avec la connexion propre à la personne responsable. Pour que le robot publie les revues, donnez à l’espace de travail sa propre GitHub App.
 
 ### Tout cesse de fonctionner pendant un certain temps après un usage intensif
 

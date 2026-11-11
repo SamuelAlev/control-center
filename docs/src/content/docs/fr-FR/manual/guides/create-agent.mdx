@@ -2,14 +2,14 @@
 title: Créer et configurer un agent
 description: Ajoutez un agent à un espace de travail, attribuez-lui un adaptateur, un modèle, des skills et des autorisations, puis vérifiez qu’il s’exécute.
 slug: fr-FR/manuel/guides/creer-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Ce guide vous montre comment ajouter un agent à un espace de travail et le
 configurer jusqu’à ce qu’il puisse réellement s’exécuter.
 
-Chaque espace de travail est amorcé avec cinq agents — un CEO, plus `qa`,
-`architect`, `engineer` et `librarian` — vous disposez donc en général d’agents
+Chaque espace de travail est amorcé avec six agents — un CEO, plus `qa`,
+`architect`, `engineer`, `librarian` et `content-synthesizer` — vous disposez donc en général d’agents
 avant d’en avoir configuré un seul. Les étapes ci-dessous s’appliquent de la même
 façon à un agent amorcé qu’à un nouvel agent.
 
@@ -94,7 +94,7 @@ Vous ne choisissez pas ici les skills propres à un dépôt. Un dépôt qui en f
 (dans `.agents/skills/`, `.claude/skills/` ou `.opencode/skills/`) les apporte
 automatiquement à l’agent qui travaille dans ce dépôt, et ils sont échangés
 lorsqu’il passe à un autre — voir [Skills limités au
-dépôt](/fr-FR/manuel/concepts/modele-agent/#repo-scoped-skills).
+dépôt](/fr-FR/manuel/concepts/modele-agent/#skills-limités-au-dépôt).
 
 ## Définir la ligne hiérarchique et la persona
 
@@ -141,7 +141,7 @@ Les règles décident de ce qu’un agent peut faire ; le bac à sable de l’OS
 l’endroit où ses processus peuvent lire, écrire et se connecter. `cc_server`
 enveloppe les exécutions d’agents dans le bac à sable de l’hôte lorsqu’il en
 existe un — Windows n’a aucun backend natif, et Linux et WSL2 ont besoin de
-`bwrap` et `socat`. Voir [Bac à sable et
+`bwrap` et `socat`. Là où il n’en existe aucun, seules les exécutions du propriétaire du serveur démarrent, à moins que celui-ci n’ait désactivé le bac à sable pour tout le monde. Voir [Bac à sable et
 sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) pour l’ensemble complet des
 frontières.
 :::

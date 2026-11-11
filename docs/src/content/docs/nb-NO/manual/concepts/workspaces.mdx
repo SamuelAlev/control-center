@@ -2,7 +2,7 @@
 title: Arbeidsområder og isolasjon
 description: Hvorfor et arbeidsområde er en hard leietakergrense, hvordan databasedelingen gjør grensen strukturell, og hva som bevisst krysser den.
 slug: nb-NO/handbok/konsepter/arbeidsomrader
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Hva er et arbeidsområde?
@@ -79,9 +79,11 @@ En arbeidsområdefil inneholder bare én enkelt rad `workspace_meta` for selvide
 
 ## Opprette et arbeidsområde
 
+Bare [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier) kan opprette et arbeidsområde; serveren lager id-en. En administrator eller eier for arbeidsområdet kan ikke opprette et annet. Den som ikke er i noe arbeidsområde ennå, ser **Du er ikke i et arbeidsområde ennå**, som ber dem få serverens eier til å opprette et, eller en administrator for arbeidsområdet til å invitere dem. Skjemaet **Legg til arbeidsområde** forteller alle andre det samme.
+
 Å opprette et arbeidsområde gjør mer enn å sette inn en registerrad. I én operasjon stempler serveren brukeren som oppretter det, som `ownerUserId`, registrerer eierrolle-medlemskapet til den brukeren og publiserer en `WorkspaceCreated`-domenehendelse. Lyttere på den hendelsen forhåndsfyller deretter, idempotent og i bakgrunnen:
 
-- en **CEO-agent** pluss fire spesialister — `qa`, `architect`, `engineer`, `librarian` — der spesialistene rapporterer til CEO-en;
+- en **CEO-agent** pluss fem spesialister — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — der spesialistene rapporterer til CEO-en;
 - de **innebygde pipeline-malene** og utløserne deres (hendelses- og manuelle utløsere er slått på fra start; planlagte er valgfrie, bortsett fra den daglige worktree-GC-oppryddingen);
 - **start-suitene med evals**.
 
@@ -90,7 +92,7 @@ Dette skjer for _hvert_ arbeidsområde, ikke bare det første. De forhåndsoppre
 Skrivingen av eier-medlemskapet betyr mer enn det ser ut som: uten den ville det nyopprettede arbeidsområdet ikke ha noen medlemmer, og hvert kall med arbeidsområdeomfang som oppretteren gjør etterpå, ville bli avvist.
 
 :::note[Agenter kan ikke opprette et arbeidsområde]
-Det finnes ikke noe `create_workspace`-MCP-verktøy. Mennesker oppretter et arbeidsområde gjennom `workspace.create` (kontrollpunkt med bare navn) eller `workspace.upsert` (fullstendig post, også brukt til oppdateringer). Begge stempler brukeren som oppretter det, som `owner` og publiserer `WorkspaceCreated`.
+Det finnes ikke noe `create_workspace`-MCP-verktøy. Serverens eier oppretter et arbeidsområde gjennom `workspace.create`, som stempler dem som `owner` og publiserer `WorkspaceCreated`. `workspace.upsert` oppdaterer bare et arbeidsområde som allerede finnes; den oppretter aldri ett, og den endrer aldri eieren til et arbeidsområde, noe bare **Overfør eierskap** gjør.
 :::
 
 ## Slette, eksportere, importere

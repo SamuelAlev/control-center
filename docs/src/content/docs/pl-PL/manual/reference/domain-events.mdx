@@ -2,7 +2,7 @@
 title: Zdarzenia domenowe
 description: Pełny katalog 54 zdarzeń domenowych, ich ładunków oraz działających po stronie serwera subskrybentów, którzy je konsumują.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/zdarzenia-domenowe
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Szyna zdarzeń
@@ -148,14 +148,13 @@ Kilka podsystemów, które z zewnątrz wyglądają na sterowane zdarzeniami, tak
 
 | Podobszar               | Jak zamiast tego zmienia się stan                                                                       |
 | ----------------------- | --------------------------------------------------------------------------------------------------------- |
-| Pamięć                  | `record_memory_fact` i pokrewne zapisują i zwracają; przywoływanie czyta. Nic nie publikuje przy fakcie ani konflikcie |
+| Pamięć                  | `propose_fact` i pokrewne zapisują i zwracają; przywoływanie czyta. Nic nie publikuje przy fakcie ani konflikcie |
 | Orkiestracja            | Propozycja, jej zatwierdzenie i wygenerowane uruchomienie potoku to wiersze i wywołania RPC             |
 | Dokumenty planu         | `submit_plan` zapisuje wersję; zatwierdzenie materializuje orkiestrację. Żadne z nich nie jest ogłaszane |
 | Artefakty               | `publish_artifact` / `revise_artifact` zapisują wersje bezpośrednio                                      |
 | Zatwierdzenia           | Eskalacja jest obsługiwana wewnątrz usługi przepływu zatwierdzeń                                        |
 | Synchronizacja zgłoszeń | Koordynator dostawców subskrybuje powyższe zdarzenia zgłoszeń; przychodzące webhooki są stosowane bezpośrednio |
 | Odświeżanie kalendarza  | Synchronizacja wykonuje upsert wydarzeń, a klient czyta je ponownie; nie ma rozgłaszania odświeżenia    |
-| Scalanie worktree       | Zapisywane w `worktree_merge_log` i stamtąd odczytywane                                                 |
 
 ## Subskrybenci
 
@@ -190,7 +189,7 @@ Każdy z poniższych subskrybentów jest konstruowany wewnątrz `runCcServer` (a
 
 `TicketAssigned` to sygnał audytowy i powiadomienie oraz wyzwalacz potoku. Przypisanie do agenta zapisuje własność i nie rozpoczyna żadnego uruchomienia — nie istnieje dyspozytor zgłoszeń. Wyjątkiem jest przypisanie do zespołu (ustawione `assignedTeamId`): `TeamRoutingService` wysyła lidera zespołu.
 
-`TicketRemoteSyncHandler` jest zadeklarowany, ale nigdy nie jest konstruowany w kodzie produkcyjnym, więc dziś nie subskrybuje niczego. `NotificationEventMapper` po stronie klienta jest konstruowany tylko we własnym teście — to pozostałość ścieżki wewnątrzprocesowej sprzed podziału na klienta i serwer. Powiadomienia typu toast na żywo pochodzą z poniższych ramek transmisyjnych.
+Powiadomienia typu toast na żywo pochodzą z poniższych ramek transmisyjnych.
 
 ## Mapowanie powiadomień
 

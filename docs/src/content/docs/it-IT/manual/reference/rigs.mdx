@@ -2,7 +2,7 @@
 title: Rig
 description: Tutte le superfici, i backend, i verbi di azione, gli stati del ciclo di vita, le porte, i valori predefiniti e i contratti dei rig — il catalogo fattuale completo.
 slug: it-IT/manuale/riferimento/rig
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Solo fatti. Per il modello che sta dietro, leggi [Rig e
@@ -228,8 +228,10 @@ dell'host né alcuna garanzia di rete isolata.
 
 | Strumento | Descrizione |
 | --- | --- |
-| `rig_list` | Elenca i rig di uno spazio di lavoro con superficie, stato, display e controller |
+| `rig_list` | Elenca i rig dello spazio dell'esecuzione con superficie, stato, display e controller |
 | `rig_close` | Distrugge un rig e ne scarta il disco |
+
+Questi strumenti, come i quattro strumenti d'uso, sono solo per le esecuzioni di agenti; qualsiasi altro chiamante viene rifiutato. Un'esecuzione raggiunge solo i rig dello spazio per cui le è stato concesso l'accesso: `space_id` proviene dalla concessione dell'esecuzione, mai dalla chiamata. Un rig di un altro spazio, o di nessuno spazio, risponde esattamente come un rig inesistente.
 
 ## Ciclo di vita
 
@@ -336,7 +338,12 @@ indipendenti e non sono mai un'impostazione dello spazio di lavoro.
   tipo di percorso già usato dai frame dei rig e dall'audio delle riunioni.
 - L'**autenticazione** è il target firmato `rig-files:<workspaceId>/<rigId>`
   più l'appartenenza allo spazio di lavoro — un target a sé, quindi un URL
-  coniato per *guardare* una macchina non può anche scrivervi file.
+  coniato per *guardare* una macchina non può anche scrivervi file. Per un rig
+  aperto in uno spazio, leggere gli appunti o un file richiede anche l'accesso
+  in lettura a quello spazio, e scrivere negli appunti o rilasciare file richiede
+  una concessione di scrittura sui suoi repository. Su un rig che porta le
+  credenziali personali di una persona, entrambi i canali, lettura compresa, sono
+  solo suoi. Vedi [Chi può guardare e chi può pilotare](/it-IT/manuale/guide/usa-rig/#chi-può-guardare-e-chi-può-pilotare).
 - **La presa in carico si applica.** Scrivere negli appunti e rilasciare file
   sono operazioni mutative e vengono rifiutate mentre qualcun altro detiene il
   controllo; leggere gli appunti e prelevare un file sono osservazione e non lo

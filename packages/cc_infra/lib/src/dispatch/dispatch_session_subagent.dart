@@ -93,6 +93,7 @@ extension _DispatchSessionSubagent on DispatchSession {
           ? Mode.chat
           : Mode.plan,
       env: env,
+      personalMcp: await _personalMcpAllowed(),
     );
 
     var childProvider = parentProvider;
@@ -289,6 +290,7 @@ extension _DispatchSessionSubagent on DispatchSession {
     final childContext = HarnessToolContext(
       workingDirectory: agentDirHostPath,
       sharedRoots: _workspaceSharedRoots(),
+      readOnlyRoots: _readOnlyRoots,
       agentId: childAgentId,
       workspaceId: ws,
       conversationId: conversationId,

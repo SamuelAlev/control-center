@@ -2,7 +2,7 @@
 title: Sandbox e segurança
 description: O que de fato restringe um agente no Control Center hoje, até onde o sandbox do sistema operacional chega e quais fronteiras se sustentam em um host sem backend.
 slug: pt-BR/manual/conceitos/sandbox-e-seguranca
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Onde o sandbox do sistema operacional chega e onde não chega]
@@ -10,8 +10,11 @@ O `cc_server` sonda o host na inicialização e envolve a execução de comandos
 agentes no sandbox nativo do sistema operacional quando há um disponível —
 Seatbelt no macOS, bubblewrap no Linux e no WSL2 (que precisa de `bwrap` e
 `socat` no `PATH`). Onde não existe backend — Windows, ou uma máquina Linux sem
-essas ferramentas —, as execuções caem nas outras fronteiras abaixo e o servidor
-informa isso no log de inicialização. `--sandbox off` o desliga de propósito.
+essas ferramentas —, só começam as execuções de agentes do proprietário do servidor, sem
+sandbox, e as de todos os outros são recusadas. O proprietário do servidor pode, em vez
+disso, iniciá-lo com `--sandbox off`, o que executa os agentes de todos os membros sem
+confinamento nessa máquina. O log de inicialização informa em qual caso você está; consulte
+[Agentes em um host sem sandbox](#agentes-em-um-host-sem-sandbox).
 
 Duas brechas sobrevivem ao sandbox e vale mantê-las em mente:
 
@@ -35,7 +38,23 @@ quando ele erra".
 O Control Center responde a isso em camadas, e as camadas são independentes de
 propósito. Se uma delas faltar, as outras continuam valendo. Isso importa, porque
 a camada mais externa — o sandbox do sistema operacional — é a única condicional:
-ela depende de o host oferecer um backend, e no Windows nenhum host oferece.
+ela depende de o host oferecer um backend, e no Windows nenhum host oferece. Onde ele falta, o servidor não executa silenciosamente os agentes de todos sem ele.
+
+## Agentes em um host sem sandbox
+
+O servidor decide uma vez, na inicialização, como os agentes rodam na máquina dele, e mantém essa decisão até reiniciar:
+
+- **Em sandbox.** O host tem um backend e o sandbox está ligado. Toda execução é envolvida.
+- **Desligado.** O proprietário do servidor iniciou o servidor com `--sandbox off`. As execuções de agentes de todos os membros rodam sem confinamento nesta máquina. Essa é a escolha do proprietário para todos que usam o servidor, não uma configuração de uma execução.
+- **Indisponível.** O sandbox está ligado, mas o host não tem backend. Uma execução só começa quando a pessoa responsável por ela é o [proprietário](/pt-BR/manual/conceitos/autorizacao/#o-proprietário-do-servidor) do servidor: quem a pediu ou, para um agendamento, webhook ou outra automação, a pessoa à qual ela está vinculada. As execuções de qualquer outra pessoa são recusadas antes de uma credencial ser emitida ou um processo iniciado, com "Este servidor não tem sandbox, então somente o proprietário pode executar agentes aqui. O proprietário pode instalar a sandbox ou desligar o sandboxing para todos."
+
+A razão é a propriedade da máquina. Um agente sem confinamento pode fazer tudo o que a conta de usuário do servidor pode fazer, então só a pessoa dona dessa conta executa um, a menos que ela decida diferente para todos. Um servidor Windows está sempre no caso indisponível. O Linux tem uma particularidade própria, tratada na [referência de backends de sandbox](/pt-BR/manual/referencia/backends-de-sandbox/#linux-bubblewrap): o despacho nativo atualmente falha fechado ali, mesmo com o bubblewrap instalado.
+
+A mesma regra vale para as coisas menores que iniciam um processo por você:
+
+- **Ajudantes rápidos executados por uma CLI ACP**: títulos de conversa, `/btw`, `/handoff` e `/goal`. Quando o servidor coloca os agentes em sandbox, eles rodam dentro dele, em uma sessão própria. Com `--sandbox off`, rodam sem confinamento. Sem nenhum sandbox disponível, rodam apenas para pedidos pelos quais o proprietário do servidor responde; para os demais, são ignorados: nenhum título é gerado, e uma pergunta paralela informa que o Content synthesizer não tem um runner funcionando. Ajudantes que não iniciam nenhuma ferramenta não são afetados.
+- **Os testes golden de um pull request** na verificação visual do Review Studio seguem a mesma regra.
+- **Processos de ferramentas e o `bash`** em uma execução nunca recorrem ao host. Se o servidor está configurado para colocar agentes em sandbox mas não tem um sandbox para dar a uma execução, ela é recusada.
 
 ## O que de fato restringe um agente
 
@@ -108,8 +127,7 @@ A ferramenta `bash` é o outro ponto que exige precisão. Seus comandos são
 avaliados em relação à política de comandos do modo e então iniciados com um
 ambiente higienizado e a worktree como diretório de trabalho. Onde existe um
 backend, esse início é envolvido, então é o sandbox que impede um comando de shell
-de gravar fora da worktree; onde não existe — Windows, ou Linux sem `bwrap` e
-`socat` —, a política de comandos é a única coisa entre o comando e o resto do
+de gravar fora da worktree; onde não existe (todas as execuções sob `--sandbox off`, e as execuções do proprietário no Windows ou em Linux sem `bwrap` e `socat`), a política de comandos é a única coisa entre o comando e o resto do
 disco. No modo `chat`, a política nega sumariamente uma lista fixa (escalada de
 privilégios, destruição do sistema e do disco, escape de contêiner e de
 namespace) e pede confirmação em mutações de estado remoto (`git push`,
@@ -125,7 +143,7 @@ aprovação. Suas chamadas de leitura, escrita e edição acontecem dentro do pr
 do envelope do sandbox, então o sistema operacional é a fronteira em volta delas.
 Onde não existe, nada é. Cada adaptador declara isso na própria matriz de
 aplicação — consulte [a matriz de honestidade dos
-adaptadores](/pt-BR/manual/conceitos/barreiras/#the-adapter-honesty-matrix).
+adaptadores](/pt-BR/manual/conceitos/barreiras/#a-matriz-de-honestidade-dos-adaptadores).
 
 ## Os pushes passam pelo Control Center
 
@@ -137,11 +155,7 @@ executa o agente.
 
 O push é a ação que precisa resistir até a um agente que tenta contornar uma
 regra, então ele é aplicado pelo que o agente tem, e não pelo que ele executa.
-Uma execução em uma worktree do GitHub recebe um token para aquele único
-repositório, emitido a partir do GitHub App do espaço de trabalho, do app
-próprio do servidor ou do Control Center Connect. Ele pode ler conteúdo e,
-quando o membro responsável pode fazer push, comentar em pull requests, mas não
-pode fazer push. A configuração do git da execução
+Uma execução não tem token de forge quando começa, e o `git` dela nunca recebe um. Quando o `gh` dela precisa de um, o Control Center entrega a ela um token para um repositório do GitHub com que a execução trabalha, emitido a partir do GitHub App do espaço de trabalho, do app próprio do servidor ou do Control Center Connect. Ele só lê: não pode fazer push, comentar nem editar. A configuração do git da execução
 reescreve toda URL de push do GitHub (`https://github.com/`, `git@github.com:`,
 `ssh://git@github.com/`) para o **gateway de execuções de agentes**, um endpoint
 de loopback no `cc_server`. O gateway lê quais refs o push atualiza, pergunta à
@@ -155,26 +169,24 @@ push recusado aparece na própria saída do git:
 ```
 
 O gateway só encaminha pushes para o repositório da própria worktree ou para um
-repositório do GitHub vinculado ao espaço de trabalho. Os fetches vão direto ao
-GitHub com o token de leitura.
+repositório do GitHub vinculado ao espaço de trabalho. Os fetches também passam pelo gateway, no GitHub, no GitLab e no Bitbucket: eles buscam os repositórios com que a execução trabalha com uma credencial que o gateway guarda e que a execução nunca vê. No GitLab e no Bitbucket, é o seu próprio token quando você pediu a execução, e o token de automação do repositório quando ninguém pediu. Um fetch não pergunta a ninguém, e só uma negação em **Aceder à rede** o impede.
 
 Os demais comandos de shell encontram um portão mais brando. A ferramenta `bash`
 do harness e, por meio de um hook, a ferramenta `Bash` do Claude Code
 classificam cada linha de comando e perguntam à regra em que ela se encaixa:
 `git commit`, `merge`, `rebase`, `cherry-pick`, `revert` e `am` são **Criar um
 commit**; `gh pr create` é **Abrir um pull request**; `gh pr merge`, `review`,
-`comment` e `close` são **Publicar uma revisão ou fazer merge**;
+`comment` e `close` são **Atualizar ou fazer merge de um pull request**;
 `gh issue create`, `edit`, `comment` e `close` são **Escrever em um rastreador
 externo**; instalações de pacotes são **Instalar um pacote**; `curl` e `wget`
-são **Acessar a rede**. Isso reconhece a grafia convencional de uma ação, e um
+são **Acessar a rede**. Escrever no GitHub pelo shell é a exceção: `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` e as escritas de `gh issue` não funcionam em uma execução, cujo token só lê, e o agente é direcionado às ferramentas do Control Center, que consultam essas regras. Isso reconhece a grafia convencional de uma ação, e um
 agente determinado a escondê-la (`eval`, um arquivo de script, uma chamada
 direta à API) consegue. Os pushes não dependem disso.
 
 Todo token do GitHub que uma execução recebe é limitado duas vezes: a um único
 repositório e ao que o membro responsável (quem pediu ou, caso contrário, o
 proprietário do espaço de trabalho) pode fazer nele. Não existe credencial
-substituta. Quando nenhum token pode ser emitido, a execução começa sem um e as
-notas dela explicam o motivo.
+substituta. Quando nenhum token pode ser emitido, o comando que o pediu explica o motivo.
 
 Nenhuma chave de API de tickets é colocada em um sandbox. Os agentes escrevem
 tickets pelas ferramentas MCP do Control Center, que perguntam a **Escrever em
@@ -188,6 +200,16 @@ identificadores de credencial da execução são liberados quando ela é
 desmontada. Os tokens por trás deles são compartilhados por membro e
 repositório e expiram em cerca de uma hora; um membro que sai do GitHub ou deixa
 o espaço de trabalho derruba de uma vez todos os tokens emitidos em nome dele.
+
+## Repositórios que um agente só pode ler
+
+Uma execução de agente só pode alterar os checkouts dos repositórios sobre os quais a pessoa em nome de quem ele age tem a [concessão de escrita](/pt-BR/manual/conceitos/autorizacao/#alterar-código-exige-a-concessão-de-escrita). Admins do espaço de trabalho a têm em todos os repositórios vinculados. Uma execução que ninguém pediu, como um agendamento ou outra automação, é julgada pela mesma pessoa responsável que delimita o token da automação.
+
+Em um espaço com um repositório que essa pessoa só pode ler, o agente ainda pode ler e pesquisar esse repositório, mas não pode alterar os arquivos dele. As suas ferramentas de arquivo recusam com uma mensagem que começa com `<repo> is read-only for this run` e diz que alterar o checkout exige a concessão de escrita, que a pessoa em nome de quem a execução age não tem, e que um admin do espaço de trabalho pode concedê-la. Dentro de uma sandbox, o checkout é somente leitura para todo processo, então um comando de shell que grava ali falha com "Operation not permitted". Isso inclui `git commit` e um build ou teste que grava a saída dentro do checkout. Repositórios em que a pessoa pode escrever se comportam como de costume, então admins, e quem tem acesso de escrita a todos os repositórios do espaço, não veem diferença.
+
+Isso é decidido uma vez, quando a execução começa. Uma mudança de concessão tem efeito na próxima execução do agente, e o mesmo vale para um repositório adicionado ao espaço durante uma execução.
+
+Onde o proprietário do servidor desligou o sandbox, somente as ferramentas de arquivo do próprio agente e as ferramentas de escrita do Claude Code são recusadas, e comandos de shell ainda podem alterar o checkout. Nada pode ser enviado sem a concessão de escrita de qualquer forma, porque todo push é verificado contra ela. Quais processos o sandbox confina em cada plataforma está em [Backends de sandbox](/pt-BR/manual/referencia/backends-de-sandbox/).
 
 ## O que o sandbox acrescenta e onde ele para
 
@@ -203,16 +225,11 @@ alimenta as duas costuras do caminho de despacho, porque os transportes não
 compartilham uma só. A primeira (`SandboxPort`) envolve a CLI do Claude Code. A
 segunda (`SandboxManager`) envolve adaptadores ACP e a ferramenta `bash` do
 harness embutido. Alimentar só uma deixaria as outras iniciando sem envelope, que
-é o que costumava acontecer. Em um host sem backend, ou sob `--sandbox off`, todas
-iniciam sem envelope, e o servidor diz em qual caso você está na sua linha de
+é o que costumava acontecer. Sob `--sandbox off`, todas iniciam sem envelope; em um host sem backend, só iniciam as execuções do proprietário do servidor, também sem envelope. O servidor diz em qual caso você está na sua linha de
 inicialização. ACP e o `bash` do harness ainda higienizam o ambiente; o Claude
 Code via `NoSandboxAdapter` herda o ambiente do host.
 
-Uma superfície fica deliberadamente de fora: o terminal hospedado no servidor
-aceita um argumento de backend por sessão, e o `cc_server` o constrói com o padrão
-do shell do host, então um terminal que você abre no app roda sem sandbox, a menos
-que um cliente nomeie `native` explicitamente. Esse é um shell de verdade no host
-do servidor, não uma execução de agente.
+O terminal hospedado no servidor abre o shell do host somente para o [proprietário](/pt-BR/manual/conceitos/autorizacao/#o-proprietário-do-servidor) do servidor. Os demais recebem um terminal em sandbox, com os limites de um agente, nos diretórios próprios do espaço de trabalho. Só quem abriu um terminal consegue digitar nele, lê-lo ou fechá-lo.
 
 No Linux, o `bubblewrap` monta um namespace de montagem, então o agente de fato vê
 apenas o que foi vinculado nele. No macOS, o `sandbox-exec` aplica um perfil
@@ -225,6 +242,10 @@ unlink em todo caminho negado e em seus ancestrais, para que um rename não
 contorne uma negação de escrita, negações de exec para binários sempre perigosos
 e para qualquer coisa copiada para um diretório gravável, e rede restrita às
 portas do proxy de loopback mais o DNS. Instalações de toolchain sob o seu home (pnpm do corepack, gerenciadores de versão do node, navegadores do Playwright, rustup, fvm, uv e similares) continuam executáveis dentro desse bloco de exec, então os agentes podem usá-las sem contornos. As negações sempre perigosas continuam valendo dentro dele. Cada sessão também recebe seu próprio `TMPDIR` privado. Ele é o único diretório temporário onde o agente pode executar programas que compilou ou abrir sockets Unix.
+
+Duas proteções adicionais valem em todos os modos. Um sandbox não consegue adicionar, substituir, excluir nem renomear um comando nas pastas de que o servidor executa programas (cada pasta no `PATH` dele e as pastas comuns de ferramentas por usuário), então uma execução em sandbox não consegue plantar um programa que o servidor inicie depois, fora do sandbox. Por isso, instalações globais e trocas de versão padrão feitas de dentro de uma execução falham com "Operation not permitted", enquanto instalações locais ao projeto e execuções no estilo `npx` continuam funcionando; instale ferramentas globais no próprio servidor e reinicie-o. E todo caminho da home que um sandbox não consegue ler também não consegue gravar, e os arquivos de inicialização do shell e da sessão do usuário do servidor nunca são graváveis. Detalhes e limites de cada plataforma estão em [Os diretórios de comandos do servidor](/pt-BR/manual/referencia/backends-de-sandbox/#as-pastas-de-comandos-do-servidor).
+
+Os sandboxes de ferramentas de uma execução pertencem a ela e são liberados quando ela termina. Os servidores de linguagem iniciam do zero a cada execução em sandbox. Uma sessão de depuração mantém o sandbox entre os turnos até a sessão terminar, por no máximo 30 minutos.
 
 A consequência prática: no Linux, a visão do agente sobre o sistema de arquivos é
 estreitada; no macOS, o agente ainda consegue _ler_ a maior parte do host, e seus

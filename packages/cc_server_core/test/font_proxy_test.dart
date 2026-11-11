@@ -9,6 +9,8 @@ import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
+import 'package:cc_server_core/src/media_proxy_guard.dart'
+    show pinnedConnectionVia;
 import 'package:test/test.dart';
 
 /// Proof of `/proxy/font`: a client asks for one variant BY NAME and the host
@@ -68,6 +70,14 @@ void main() {
         resolveRole: (_, _) async => null,
         workspaceResolver: (_) async => const [],
         fontCacheDir: '${tmp.path}/font_cache',
+        // The catalogue names a public host; only this test's resolver and
+        // dialer send it to the loopback fixture, so the production SSRF
+        // rules still judge the address.
+        mediaConnectionFactory: pinnedConnectionVia(
+          lookup: (_) async => [InternetAddress('93.184.216.34')],
+          dial: (_, _) =>
+              Socket.startConnect(InternetAddress.loopbackIPv4, upstream.port),
+        ),
         // Stands in for the catalogue: only 'Inter' exists and the snapped
         // variant is recorded so the parse can be asserted.
         fontFile:
@@ -81,9 +91,7 @@ void main() {
               if (family != 'Inter') {
                 return null;
               }
-              return Uri.parse(
-                'http://127.0.0.1:${upstream.port}/inter-$weight.ttf',
-              );
+              return Uri.parse('http://fonts.test/inter-$weight.ttf');
             },
         address: InternetAddress.loopbackIPv4,
         port: 0,

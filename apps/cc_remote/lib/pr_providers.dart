@@ -62,7 +62,7 @@ final viewerLoginsProvider = FutureProvider<Map<ForgeHost, String>>((
     ).list(workspaceId: workspaceId);
     // Nothing connected yet: the host may still be resolving credentials.
     // Ask again rather than settling into a permanently empty identity.
-    if (!connections.any((c) => c.authenticated)) {
+    if (!connections.any((c) => c.isUsable)) {
       retryLater();
     }
     return RemoteForgeConnections.viewerLogins(connections);
@@ -93,7 +93,15 @@ final viewerTeamsProvider = FutureProvider<Map<String, Set<String>>>((
     return const {};
   }
   try {
-    final data = await client.call('github.currentUser', const {});
+    // The person's GitHub identity in THIS workspace: a workspace on its own
+    // App signs them in through a different grant, so a switch re-reads.
+    final workspaceId = await ref.watch(activeWorkspaceIdProvider.future);
+    if (workspaceId == null) {
+      return const {};
+    }
+    final data = await client.call('github.currentUser', {
+      'workspace_id': workspaceId,
+    });
     if (data['user'] is! Map) {
       retryLater();
     }
@@ -190,23 +198,29 @@ final prInboxProvider = Provider<AsyncValue<PrInboxData>>((ref) {
       );
 });
 
-/// The number on the Inbox tab: blocked agents plus PRs that name the
-/// operator as a reviewer or have come back to them.
+/// The server's live "needs your review" count for the active workspace
+/// (`pr.watchNeedsMyReviewCount`) — the same number the desktop badge shows,
+/// across every forge, without holding the PR list.
+final needsMyReviewCountProvider = StreamProvider<NeedsMyReviewCount>((ref) {
+  final client = ref.watch(rpcClientProvider).value;
+  final workspaceId = ref.watch(activeWorkspaceIdProvider).value;
+  if (client == null || workspaceId == null) {
+    return Stream.value(NeedsMyReviewCount.zero);
+  }
+  return RpcOpenPrListRepository(client).watchNeedsMyReviewCount(workspaceId);
+});
+
+/// The number on the Inbox tab: blocked agents plus the server's count of
+/// PRs waiting on the operator's review.
 ///
 /// Deliberately NOT "everything in the inbox". A badge counts things the
 /// operator has to act on; folding in "waiting for reviewers" and "recently
 /// merged" would make it a number that is never zero, which is the same as no
-/// badge at all. It is derived from feeds the app already holds, so the badge
-/// costs no extra subscription.
+/// badge at all. The PR part is the server's count, so phone and desktop
+/// always agree.
 final inboxAttentionCountProvider = Provider<int>((ref) {
   final blocked = ref.watch(requestActionableCountProvider);
-  final inbox = ref.watch(prInboxProvider).value;
-  if (inbox == null) {
-    return blocked;
-  }
-  return blocked +
-      inbox.of(PrInboxSection.needsYourReview).length +
-      inbox.of(PrInboxSection.returnedToYou).length;
+  return blocked + (ref.watch(needsMyReviewCountProvider).value?.count ?? 0);
 });
 
 /// Coordinates identifying one PR across the phone's routes: the workspace's

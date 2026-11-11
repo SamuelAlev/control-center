@@ -20,9 +20,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-export 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
-export 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
-
 part 'space_sidebar_item_route.dart';
 part 'space_sidebar_item_repo_dialog.dart';
 

@@ -2,7 +2,7 @@
 title: Telepítés és kliensek
 description: Hogyan választja szét a Control Center vékonykliens-architektúrája a headless szervert az asztali, webes és mobil klienseitől.
 slug: hu-HU/kezikonyv/fogalmak/telepites
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 A Control Center nem egyetlen program. **Vékonykliens-architektúra**: egy
@@ -139,6 +139,8 @@ böngészőnek HTTPS-re vagy biztonságos loopback-környezetre van szüksége a
 Service Workerekhez. A natív kliensek egy képesség-hatókörű
 loopback-homlokzatot használnak.
 
+Csak a [szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) nyithatja meg a beágyazott code-server szerkesztőt: az a szerveren fut, a szerver saját felhasználójaként. A munkamenet ahhoz az eszközhöz és személyhez tartozik, amely megnyitotta. A VS Code a munkaterület megbízhatóságával indul, így a VS Code a mappa megbízása előtt kérdez, és az automatikus feladatok ki vannak kapcsolva. Mindenki más a beépített egyfájlos szerkesztőt és a fájlnézeteket használja.
+
 ### Telefonos társalkalmazás (cc_remote)
 
 A **Remote** alkalmazás külön, könnyebb kliens — egy Flutter webes PWA a
@@ -213,8 +215,7 @@ egy valódi `cc_worker` hajt végre lízingelt feladatokat.
 
 A két szint homokozása nem egyforma. A `cc_server` az általa maga végrehajtott
 futásokat a gazdagép operációs rendszerének homokozójába csomagolja, ahol van
-ilyen háttérrendszer — Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n —, és
-Windowson vagy `bwrap` és `socat` hiányában a többi korlátra esik vissza. **A
+ilyen háttérrendszer — Seatbelt macOS-en, bubblewrap Linuxon és WSL2-n. Windowson, vagy `bwrap` és `socat` hiányában csak azokat a futásokat indítja, amelyekért a szerver tulajdonosa felel, a többiekét elutasítja, kivéve ha a tulajdonos `--sandbox off` kapcsolóval indította, ami minden tag ügynökét korlátozás nélkül futtatja. **A
 `cc_worker` egyáltalán nem homokozó.** Hirdet egy `sandbox` képességet, hogy a
 szerver platform szerint helyezhesse el a feladatokat, de a workerben semmi nem
 alkalmaz ilyet: egy lízingelt feladat közvetlenül indul, csak a lízing környezete
@@ -265,8 +266,7 @@ szemben. Az első csatlakozáskor ellenőrizze ezt az ujjlenyomatot egy megbízh
 QR-kódon vagy más megbízható csatornán keresztül: egy aláírt első kapcsolat
 önmagában nem hitelesítheti, ki biztosította a kulcsot. Ha az identitás
 megváltozik, a kliens zártan hibázik; párosítson újra egy megbízható csatornán
-keresztül, ahelyett hogy figyelmen kívül hagyná az eltérést. A régebbi kliensek
-és a nyílt szöveges RPC nem tudnak csatlakozni. A TLS továbbra is szükséges a
+keresztül, ahelyett hogy figyelmen kívül hagyná az eltérést. A nyílt szöveges RPC-t nem fogadják el. A TLS továbbra is szükséges a
 böngésző-origineken, a bootstraphez és a nyilvános metaadatokhoz; a `--insecure`
 a szerver külső listenerjét érinti, nem a megkövetelt titkosított munkamenetet.
 

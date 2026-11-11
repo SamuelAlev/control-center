@@ -5,11 +5,13 @@
 abstract interface class ConversationTitlePort {
   /// Suggests a title for [conversationId] in [workspaceId].
   ///
-  /// Throws `NotFoundException` when the conversation is not in the
-  /// workspace. Never renames anything.
+  /// [requestedByUserId] is who asked, set by the server only, from the
+  /// connection that asked; a client sends none. Throws `NotFoundException`
+  /// when the conversation is not in the workspace. Never renames anything.
   Future<ConversationTitleSuggestion> suggestTitle({
     required String workspaceId,
     required String conversationId,
+    String? requestedByUserId,
   });
 
   /// The ids of [spaceId]'s conversations whose automatic title is being

@@ -346,6 +346,9 @@ class ComposeDriver {
         plan.context.overridePath,
         'up',
         '-d',
+        // A service dropped from the file would otherwise keep running, and
+        // keep its port, with nothing left to manage it.
+        '--remove-orphans',
         if (build ?? plan.context.component.build) '--build',
         ...plan.services,
       ],
@@ -673,7 +676,8 @@ class ComposeDriver {
     if (removeLocalImages) ...['--rmi', 'local'],
   ], 'compose-destroy-failed');
 
-  /// Plans again, keeping every port, and applies the result if it changed.
+  /// Plans again, keeping every port, and applies the result if it changed,
+  /// building only when the component builds.
   ///
   /// Compose leaves containers with an unchanged config hash running.
   Future<ComposeRefreshResult> refresh(
@@ -691,7 +695,7 @@ class ComposeDriver {
     if (applied == next.configHash) {
       return ComposeRefreshResult(plan: next, changed: false);
     }
-    await up(next, build: true);
+    await up(next);
     return ComposeRefreshResult(plan: next, changed: true);
   }
 

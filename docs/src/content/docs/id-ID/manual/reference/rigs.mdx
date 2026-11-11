@@ -2,7 +2,7 @@
 title: Rigs
 description: Setiap permukaan rig, backend, verb tindakan, status siklus hidup, port, default, dan kontrak — katalog faktual yang lengkap.
 slug: id-ID/panduan-pengguna/referensi/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Hanya fakta. Untuk model di baliknya, baca [Rigs dan
@@ -227,8 +227,10 @@ host, maupun jaminan jaringan yang terkurung.
 
 | Alat | Deskripsi |
 | --- | --- |
-| `rig_list` | Daftar rig milik sebuah ruang kerja beserta permukaan, status, tampilan, dan pengendalinya |
+| `rig_list` | Daftar rig dari space run ini beserta permukaan, status, tampilan, dan pengendalinya |
 | `rig_close` | Hancurkan rig dan buang disknya |
+
+Alat-alat ini, seperti empat alat use, hanya untuk run agen; pemanggil lain ditolak. Sebuah run hanya menjangkau rig dari space yang diberikan kepadanya: `space_id` berasal dari grant run, tidak pernah dari pemanggilan. Rig dari space lain, atau dari tanpa space, dijawab sama persis seperti rig yang tidak ada.
 
 ## Siklus hidup
 
@@ -333,7 +335,10 @@ ruang kerja.
 - **Autentikasi** adalah target bertanda tangan `rig-files:<workspaceId>/<rigId>`
   plus keanggotaan ruang kerja — target tersendiri, sehingga URL yang dicetak
   untuk *menonton* sebuah mesin tidak dapat sekaligus menulis berkas ke
-  dalamnya.
+  dalamnya. Untuk rig yang dibuka di sebuah space, membaca papan klip atau berkas
+  juga memerlukan akses baca ke space itu, dan menulis papan klip atau menjatuhkan
+  berkas memerlukan izin tulis atas repositorinya. Pada rig yang membawa proses masuk milik satu orang, kedua jalur, termasuk membaca, hanya milik orang itu. Lihat
+  [Siapa yang dapat menonton dan siapa yang dapat mengemudikan](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/#siapa-yang-dapat-menonton-dan-siapa-yang-dapat-mengemudikan).
 - **Pengambilalihan berlaku.** Menulis papan klip dan menjatuhkan berkas
   bersifat memutasi dan ditolak selama orang lain memegang kendali; membaca
   papan klip dan membaca berkas keluar bersifat pengamatan dan tidak ditolak.

@@ -43,8 +43,7 @@ class _LiveRig {
   /// Capture session currently allowed to feed the guest microphone.
   ///
   /// Set before forwarding `start=1`, so every later chunk/end is checked at
-  /// the authoritative server even when the installed guest image predates
-  /// guest-side session gating.
+  /// the authoritative server, whatever gating the guest image does itself.
   String? microphoneSessionId;
 
   /// Completion tail for guest microphone writes.

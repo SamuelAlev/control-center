@@ -9,12 +9,14 @@
 // mutation ops.
 library;
 
-import 'package:cc_data/cc_data.dart' show RigPortsView;
+import 'package:cc_data/cc_data.dart' show RigPortsView, RigView;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_endpoint_rows.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
+import 'package:control_center/features/messaging/presentation/space_access_refusal.dart';
 import 'package:control_center/features/rigs/presentation/rig_port_rows.dart';
+import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -70,7 +72,11 @@ class RigPortsButton extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     return _PortsTrigger(
-      target: PortsTarget.rig(workspaceId: workspaceId, rigId: rig.id),
+      target: PortsTarget.rig(
+        workspaceId: workspaceId,
+        rigId: rig.id,
+        spaceId: conversationId,
+      ),
       spaceId: conversationId,
     );
   }
@@ -161,6 +167,23 @@ AsyncValue<RigPortsView> _watchPorts(WidgetRef ref, PortsTarget target) {
   );
 }
 
+/// How far the person may use [target]'s rig: its row when the session list
+/// has it, else its space's state.
+RigDriveAccess _rigAccess(WidgetRef ref, PortsTarget target) {
+  final rows = ref
+      .watch(rigSessionsProvider(target.workspaceId))
+      .maybeWhen(data: (rigs) => rigs, orElse: () => const <RigView>[]);
+  for (final rig in rows) {
+    if (rig.id == target.rigId) {
+      return watchRigAccessFor(ref, target.workspaceId, rig);
+    }
+  }
+  return (
+    access: watchRigAccess(ref, target.workspaceId, target.spaceId),
+    holderOnly: false,
+  );
+}
+
 class _PortsPopover extends ConsumerWidget {
   const _PortsPopover({
     required this.target,
@@ -178,6 +201,14 @@ class _PortsPopover extends ConsumerWidget {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final async = _watchPorts(ref, target);
     final view = async.maybeWhen(data: (v) => v, orElse: () => null);
+    // Watching ports runs the space's gate first: a refusal there is worded
+    // in place of a spinner that would never end.
+    final refused = async.hasError ? async.error : null;
+    // A rig's ports change only for whoever may drive it (its row says so,
+    // else its space does); whoever may only watch sees them without the
+    // controls, and why.
+    final access = target.isSession ? null : _rigAccess(ref, target);
+    final readOnly = access != null && access.access != RigAccess.drive;
     final empty = target.isSession ? l10n.rigPortsEmptyHost : l10n.rigPortsEmpty;
     final endpoints =
         ref.watch(spaceEnvironmentProvider(spaceKey))?.endpoints ?? const [];
@@ -217,7 +248,18 @@ class _PortsPopover extends ConsumerWidget {
             const CcDivider(),
           ],
           Flexible(
-            child: view == null
+            child: refused != null
+                ? Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Text(
+                      spaceAccessFailureOf(l10n, refused)?.message ??
+                          l10n.failedWithError('$refused'),
+                      style: CcTypography.caption.copyWith(
+                        color: t.textTertiary,
+                      ),
+                    ),
+                  )
+                : view == null
                 ? const Padding(
                     padding: EdgeInsets.all(AppSpacing.lg),
                     child: Center(child: CcSpinner()),
@@ -245,6 +287,7 @@ class _PortsPopover extends ConsumerWidget {
                         PortRow(
                           target: target,
                           port: port,
+                          readOnly: readOnly,
                           domainTls: view.tlsEnabled,
                           browserReachable: view.browserReachable,
                           androidReachable: view.androidReachable,
@@ -253,11 +296,30 @@ class _PortsPopover extends ConsumerWidget {
                   ),
           ),
           const CcDivider(),
-          AddPortRow(target: target),
-          AutoForwardRow(
-            target: target,
-            enabled: view?.autoForward ?? true,
-          ),
+          if (refused == null) ...[
+            if (readOnly)
+              Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  AppSpacing.md,
+                  AppSpacing.sm,
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                ),
+                child: Text(
+                  access.holderOnly
+                      ? l10n.rigHolderOnly
+                      : l10n.rigPortsWatchOnly,
+                  style: CcTypography.caption.copyWith(color: t.textTertiary),
+                ),
+              )
+            else
+              AddPortRow(target: target),
+            AutoForwardRow(
+              target: target,
+              enabled: view?.autoForward ?? true,
+              readOnly: readOnly,
+            ),
+          ],
         ],
       ),
     );

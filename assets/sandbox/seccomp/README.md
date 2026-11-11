@@ -1,6 +1,6 @@
 # Vendored `apply-seccomp` binaries
 
-`apply-seccomp-x64` / `apply-seccomp-arm64` come from `@anthropic-ai/sandbox-runtime` (release binaries on npm or `vendor/seccomp-src/apply-seccomp.c` in that project's source). When the current Linux architecture has an executable binary here, the sandbox wraps commands to block `socket(AF_UNIX, …)` at the syscall level, matching that runtime's default. Without it, the sandbox still runs with kernel/filesystem isolation but **allows all Unix sockets**; Settings → Sandboxing shows a warning. Do not describe that fallback as equivalent security.
+`apply-seccomp-x64` / `apply-seccomp-arm64` come from `@anthropic-ai/sandbox-runtime` (release binaries on npm or `vendor/seccomp-src/apply-seccomp.c` in that project's source). When the current Linux architecture has an executable binary here, the sandbox wraps commands to block `socket(AF_UNIX, …)` at the syscall level, matching that runtime's default. Without it, the sandbox still runs with kernel/filesystem isolation but **allows all Unix sockets**; nothing in the app warns about it today, and no binaries are vendored here yet. Do not describe that fallback as equivalent security.
 
 Build statically for the matching Linux architecture (from the upstream C source, with libseccomp):
 

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/ports/mode_resolver.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/modes/mode_capability_profile.dart';
@@ -97,6 +98,14 @@ class ContextInspectionService {
   /// Cap on one skill body read for the explorer (the scanner's autoload only
   /// ever reads frontmatter; the full body is an on-demand drill-in).
   static const int _maxSkillBodyChars = 64000;
+
+  /// The repositories [spaceId] selects in [workspaceId], as
+  /// `MessagingRepository.spaceRepoSelection` answers it (the input of the
+  /// space read gate `context.inspect` declares).
+  Future<List<String>?> spaceRepoSelection(
+    String workspaceId,
+    String spaceId,
+  ) => _messagingRepository.spaceRepoSelection(workspaceId, spaceId);
 
   /// Inspects [conversationId] in [spaceId] for [agentId] in [workspaceId].
   ///

@@ -2,7 +2,7 @@
 title: גשר צ'אט
 description: ספקים, פקודות, פרטי גישה, יכולות, פעולות RPC ואחסון עבור גשר הצ'אט.
 slug: he-IL/מדריך-למשתמש/עזר/גשר-צאט
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## ספקים
@@ -150,7 +150,7 @@ message.im
 | האזכור התקבל            | `Working on it…`                                               |
 | שלב `repo`                 | `Cloning <repo>…`                                              |
 | שלב `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| שלב `script`               | `Running the setup script for <repo>…`                         |
+| שלב `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | שלב `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, עדיין בלי שלב | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ message.im
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | פרטי גישה של חיבור     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | הקמה מודרכת שנותרה באמצע | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| קובצי Slack מדורות קודמים         | `<dataDir>/<workspaceId>/slack_credentials.json` ו-`slack_app_setup.json`, נקראים פעם אחת ומומרים במקום |
 
 פרטי הגישה יושבים לצד מסד הנתונים של סביבת העבודה, לא בתוכו: מחיקת סביבת עבודה מסירה איתה את אסימוני הצ'אט שלה, ו-`workspace.export` או גיבוי מעתיקים את `workspace.db` — כך שסביבת עבודה שנמסרת למישהו אחר אינה נושאת אסימוני בוט חיים. הכתיבות אטומיות (קובץ זמני ובנוסף שינוי שם) ומוקשחות להרשאת בעלים בלבד.
 

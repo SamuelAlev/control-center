@@ -440,7 +440,7 @@ class _DaySection extends StatelessWidget {
             ),
             CcCollapsible(
               expanded: !collapsed,
-              duration: CcMotion.normal,
+              duration: CcMotion.moderate,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 mainAxisSize: MainAxisSize.min,

@@ -2,7 +2,7 @@
 title: Penerapan dan klien
 description: Bagaimana seni bina klien nipis Control Center memisahkan pelayan tanpa kepala daripada klien desktop, web dan mudah alihnya.
 slug: ms-MY/manual-pengguna/konsep/penerapan
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center bukan satu program tunggal. Ia ialah **seni bina klien nipis**:
@@ -138,6 +138,8 @@ sudah ada ke `cc_server`, yang memiliki fail dan backend code-server. Penyemak i
 memerlukan HTTPS atau konteks loopback yang selamat untuk Service Worker. Klien
 natif menggunakan fasad loopback yang dihadkan oleh keupayaan.
 
+Hanya [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) boleh membuka editor code-server terbenam: ia berjalan pada pelayan sebagai pengguna pelayan itu sendiri. Sesi tergolong kepada peranti dan orang yang membukanya. Ia dibuka dengan kepercayaan ruang kerja VS Code dihidupkan, jadi VS Code bertanya sebelum mempercayai folder, dan dengan tugas automatik dimatikan. Orang lain kekal dengan editor fail tunggal terbina dan paparan fail.
+
 ### Pendamping telefon (cc_remote)
 
 Aplikasi **Remote** ialah klien berasingan yang lebih ringan — PWA web Flutter di
@@ -211,8 +213,11 @@ pekerja setempat akan gagal dan bukannya dilaksanakan. Hari ini, hanya
 
 Kedua-dua lapisan tidak mengasingkan dengan cara yang sama. `cc_server` membalut
 larian yang dilaksanakannya sendiri dalam kotak pasir OS hos di mana ada bahagian
-belakangnya — Seatbelt pada macOS, bubblewrap pada Linux dan WSL2 — dan kembali
-kepada sempadan lain pada Windows atau tanpa `bwrap` dan `socat`. **`cc_worker`
+belakangnya — Seatbelt pada macOS, bubblewrap pada Linux dan WSL2. Pada Windows, atau
+tanpa `bwrap` dan `socat`, ia hanya memulakan larian yang pemilik pelayan
+bertanggungjawab ke atasnya dan menolak larian orang lain, melainkan pemilik
+memulakannya dengan `--sandbox off`, yang menjalankan ejen setiap ahli tanpa
+sekatan. **`cc_worker`
 tidak mengasingkan sama sekali.** Ia menghebahkan keupayaan `sandbox` supaya
 pelayan boleh menempatkan tugas mengikut platform, tetapi tiada apa-apa dalam
 pekerja itu yang menerapkannya: tugas pajakan dilahirkan secara langsung,
@@ -256,8 +261,8 @@ disimpannya. Pada sambungan pertama, sahkan cap jari itu melalui kod QR yang
 dipercayai atau saluran dipercayai yang lain: sentuhan pertama yang bertandatangan
 sahaja tidak dapat mengesahkan siapa yang membekalkan kunci itu. Jika identiti
 berubah, klien gagal secara tertutup; gandingkan semula melalui saluran dipercayai
-daripada mengabaikan ketidakpadanan itu. Klien lama dan RPC teks biasa tidak boleh
-bersambung. TLS masih diperlukan untuk asalan penyemak imbas, butstrap dan
+daripada mengabaikan ketidakpadanan itu. RPC teks biasa tidak diterima.
+TLS masih diperlukan untuk asalan penyemak imbas, butstrap dan
 metadata awam; `--insecure` menjejaskan pendengar luar pelayan, bukan sesi tersulit
 yang diwajibkan.
 

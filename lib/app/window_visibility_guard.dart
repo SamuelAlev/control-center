@@ -3,12 +3,11 @@ library;
 
 import 'dart:async';
 
-import 'package:control_center/app/window_chrome.dart' show isMainWindowTitle;
+import 'package:control_center/app/main_window_nudger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-import 'package:nativeapi_flutter/nativeapi_flutter.dart'
-    show SizeToNative, WindowManager;
+import 'package:nativeapi_flutter/nativeapi_flutter.dart' show WindowManager;
 
 /// Repairs stale [AppLifecycleState.hidden] that leaves a visible window black.
 ///
@@ -21,7 +20,7 @@ import 'package:nativeapi_flutter/nativeapi_flutter.dart'
 ///
 /// Push synthetic `resumed` only when a main window holds keyboard focus —
 /// never invent frontmost over a genuine `hidden` ([ForegroundTickerGate]).
-/// When focus cannot be proven (invite/SSO), [_nativeNudgeMainWindow] issues a
+/// When focus cannot be proven (invite/SSO), [MainWindowNudger] issues a
 /// real 1px resize so AppKit recomputes occlusion and
 /// `handleMetricsChanged` forces a frame past `framesEnabled`.
 class WindowVisibilityGuard with WidgetsBindingObserver {
@@ -30,13 +29,13 @@ class WindowVisibilityGuard with WidgetsBindingObserver {
   /// [mainWindowFocused] answers "does one of this app's main windows hold
   /// keyboard focus right now"; it defaults to asking the platform and is
   /// injectable for tests. [nudgeMainWindow] performs the real-window resize
-  /// nudge described on [_nativeNudgeMainWindow] and reports whether it found
+  /// nudge described on [MainWindowNudger] and reports whether it found
   /// a window to nudge; also injectable for tests.
   WindowVisibilityGuard({
     bool Function()? mainWindowFocused,
     bool Function()? nudgeMainWindow,
   }) : _mainWindowFocused = mainWindowFocused ?? _nativeMainWindowFocused,
-       _nudgeMainWindow = nudgeMainWindow ?? _nativeNudgeMainWindow;
+       _nudgeMainWindow = nudgeMainWindow ?? mainWindowNudger.nudge;
 
   /// The process-wide guard the desktop bootstrap installs.
   static final WindowVisibilityGuard instance = WindowVisibilityGuard();
@@ -239,55 +238,3 @@ bool _nativeMainWindowFocused() {
   }
   return false;
 }
-
-/// How long a nudge holds its +1px size before restoring it.
-///
-/// An out-and-back issued within a single Dart turn can be a complete no-op:
-/// the engine may coalesce the two metric updates into "nothing changed", and
-/// the window server may never flush the intermediate size — which is exactly
-/// a repair that runs and does nothing. Holding the new size for a beat makes
-/// the resize REAL (metrics delivered, occlusion recomputed) before the
-/// restore, at a duration the eye cannot see. It also cannot be persisted by
-/// the geometry watcher, which only writes a frame two of its one-second
-/// polls agree on — a 120ms blip never spans two polls.
-const Duration _nudgeHoldDuration = Duration(milliseconds: 120);
-
-/// Real 1px resize when focus cannot prove the app is frontmost (invite/SSO).
-///
-/// Dart `resumed` cannot clear the engine's AppKit occlusion latch; a resize
-/// does, and `handleMetricsChanged` forces a frame past `framesEnabled`. Hold
-/// [_nudgeHoldDuration], re-resolve the window, skip full-screen and minimized.
-/// Returns whether a window was nudged.
-bool _nativeNudgeMainWindow() {
-  // One at a time: `dressKnownWindows` reports every main window on every
-  // show, so a single hook can reach here twice within one turn — and two
-  // stacked nudges capture different baselines for their restores, leaving
-  // the window permanently 1px wider.
-  final now = DateTime.now();
-  if (_lastNudgeAt != null &&
-      now.difference(_lastNudgeAt!) < _nudgeHoldDuration) {
-    return true;
-  }
-  for (final window in WindowManager.instance.getAll()) {
-    if (!isMainWindowTitle(window.title)) {
-      continue;
-    }
-    if (!window.isVisible || window.isMinimized || window.isFullScreen) {
-      continue;
-    }
-    final size = window.contentSize;
-    window.contentSize = Size(size.width + 1, size.height).toNative();
-    final windowId = window.id;
-    Timer(_nudgeHoldDuration, () {
-      final stillOpen = WindowManager.instance.get(windowId);
-      if (stillOpen != null) {
-        stillOpen.contentSize = size;
-      }
-    });
-    _lastNudgeAt = now;
-    return true;
-  }
-  return false;
-}
-
-DateTime? _lastNudgeAt;

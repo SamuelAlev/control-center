@@ -2,10 +2,10 @@
 title: Ferramentas MCP
 description: Catálogo completo das ferramentas MCP que o cc_server regista, por família.
 slug: pt-PT/manual/referencia/ferramentas-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-O `cc_server` aloja um único registo de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (predefinida: `9030`) em `POST /mcp` e `GET /sse`, com a versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registo: a aplicação de ambiente de trabalho, a build web, os clientes MCP externos e o runtime de agentes integrado. Os servidores MCP externos podem ser ligados ao mesmo registo como uma camada dinâmica.
+O `cc_server` aloja um único registo de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (predefinida: `9030`) em `POST /mcp` e `GET /sse`, com a versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registo: a aplicação de ambiente de trabalho, a build web, os clientes MCP externos e o runtime de agentes integrado. Os servidores MCP externos podem ser ligados ao mesmo registo como uma camada dinâmica. Os servidores descobertos na configuração de ferramentas do próprio utilizador do servidor são a exceção: este endpoint nunca os lista, chama nem pesquisa, e apenas as execuções do harness incorporado, de que o proprietário do servidor é responsável, os obtêm (veja [Os servidores MCP pessoais continuam a ser do proprietário](/pt-PT/manual/guias/servidor-mcp/#os-servidores-mcp-pessoais-continuam-a-ser-do-proprietário)).
 
 ## Dimensão do registo
 
@@ -23,7 +23,7 @@ As cinco ferramentas de grafo de código só são registadas quando o anfitrião
 O registo completo é anunciado em `tools/list`, sem restrição de deteção. As edições de tickets são ferramentas tipadas.
 
 :::note[Os clientes externos veem sempre o catálogo completo]
-O `tools/list` nunca é reduzido. Os clientes MCP validam os nomes das ferramentas face à sua própria cópia em cache dessa lista e recusam tudo o que não esteja listado sem perguntar ao servidor, pelo que uma ferramenta aí oculta é inalcançável, e não apenas silenciosa.
+O `tools/list` nunca é reduzido, exceto pelos servidores MCP pessoais do proprietário do servidor, que nunca são incluídos. Os clientes MCP validam os nomes das ferramentas face à sua própria cópia em cache dessa lista e recusam tudo o que não esteja listado sem perguntar ao servidor, pelo que uma ferramenta aí oculta é inalcançável, e não apenas silenciosa.
 
 O **harness integrado** é diferente: carrega apenas um subconjunto residente de definições por pedido e vai buscar o resto no primeiro uso, o que é um comportamento do lado do harness e não altera este registo. Ver [Contexto de ferramentas e cache de prompts](/pt-PT/manual/conceitos/contexto-de-ferramentas/).
 :::
@@ -234,7 +234,7 @@ Só são registadas quando o anfitrião fornece um repositório de grafo de cód
 
 ## Ferramentas de recinto (rig)
 
-Controlam máquinas descartáveis — um navegador ou ambiente de trabalho Linux em recinto fechado, um emulador Android ou um iOS Simulator — a partir de dentro de uma execução. Registadas após o arranque, incondicionalmente: saber se uma máquina consegue de facto arrancar é uma questão de sondagem que as ferramentas respondem a cada chamada. Chamadas repetidas numa mesma conversa reutilizam a mesma máquina; as capturas de ecrã são devolvidas como conteúdo de imagem, com um orçamento de uma imagem por resultado, e o conteúdo de página/interface extraído é delimitado como dados não fidedignos. As quatro ferramentas de utilização, mais a `rig_close`, declaram a [classe de ação](/pt-PT/manual/conceitos/barreiras/) `enclosureControl` (as ferramentas de utilização declaram também `networkEgress` e `processSpawn`; a `mobile_use` e a `ios_use` declaram ainda `packageInstall`), pelo que os modos só de leitura as negam. A `rig_list` não declara nenhuma — apenas lê o estado do espaço de trabalho. O vocabulário completo de verbos por superfície está na [referência de Rigs](/pt-PT/manual/referencia/rigs/#action-verbs).
+Controlam máquinas descartáveis — um navegador ou ambiente de trabalho Linux em recinto fechado, um emulador Android ou um iOS Simulator — a partir de dentro de uma execução. Registadas após o arranque, incondicionalmente: saber se uma máquina consegue de facto arrancar é uma questão de sondagem que as ferramentas respondem a cada chamada. Chamadas repetidas numa mesma conversa reutilizam a mesma máquina; as capturas de ecrã são devolvidas como conteúdo de imagem, com um orçamento de uma imagem por resultado, e o conteúdo de página/interface extraído é delimitado como dados não fidedignos. As quatro ferramentas de utilização, mais a `rig_close`, declaram a [classe de ação](/pt-PT/manual/conceitos/barreiras/) `enclosureControl` (as ferramentas de utilização declaram também `networkEgress` e `processSpawn`; a `mobile_use` e a `ios_use` declaram ainda `packageInstall`), pelo que os modos só de leitura as negam. A `rig_list` não declara nenhuma — apenas lê o estado do espaço de trabalho. O vocabulário completo de verbos por superfície está na [referência de Rigs](/pt-PT/manual/referencia/rigs/#verbos-de-ação).
 
 | Ferramenta     | Descrição                                                                                       |
 | -------------- | ----------------------------------------------------------------------------------------------- |
@@ -242,8 +242,10 @@ Controlam máquinas descartáveis — um navegador ou ambiente de trabalho Linux
 | `browser_use`  | Controla um Chromium, Firefox ou WebKit headless (`engine`): navegar, clicar, preencher, extrair (a11y/DOM/consola), área de transferência, captura de ecrã |
 | `mobile_use`   | Controla o Android através de ADB: inspecionar/introduzir, capturas de ecrã, instalar/iniciar/parar/reiniciar/desinstalar aplicações, links diretos e comandos de dispositivo em formato argv |
 | `ios_use`      | Controla o iOS Simulator através de WebDriverAgent/CoreSimulator: inspecionar/introduzir, capturas de ecrã, instalar/iniciar/parar/desinstalar aplicações, links diretos e processos de simulador em formato argv |
-| `rig_list`     | Lista os rigs de um espaço de trabalho com a superfície, o estado, o tamanho do ecrã e o controlador |
+| `rig_list`     | Lista os rigs do espaço da execução com a superfície, o estado, o tamanho do ecrã e o controlador |
 | `rig_close`    | Destrói um rig e descarta o estado da máquina que lhe pertence                                  |
+
+Só as execuções de agentes podem chamar estas ferramentas; qualquer outro chamador é recusado. Uma execução chega apenas aos rigs do espaço para o qual foi autorizada: `space_id` vem da concessão da execução, nunca da chamada, e um rig de outro espaço, ou de nenhum espaço, responde exatamente como um rig inexistente.
 
 `app_use` é uma quinta ferramenta use: controla as janelas de uma aplicação de ambiente de trabalho aberta num espaço, diretamente no host e não numa VM, e também declara `fileWriteOutsideWorktree` e `fileDelete`. Ela e as ferramentas `environment_*` estão descritas em [Configurar ambientes](/pt-PT/manual/guias/ambientes/).
 
@@ -287,7 +289,7 @@ Nem todas as capacidades do produto são acessíveis a um agente. Estas não tê
 | Capacidade                                  | Onde reside em alternativa                                                                                |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | Contratar, despedir ou editar um agente     | A interface de agentes. Não existe a ferramenta `hire_agent` / `fire_agent` / `update_agent`              |
-| Criar um espaço de trabalho                 | `workspace.upsert` por RPC, que inicializa e marca a propriedade                                          |
+| Criar um espaço de trabalho                 | `workspace.create` por RPC, apenas o proprietário do servidor, que inicializa e marca a propriedade       |
 | Projetos (criar / listar / atualizar / colocar um ticket) | A interface de tickets. Os projetos são uma superfície do operador — ver [Projetos](/pt-PT/manual/guias/projetos/) |
 | Colocar ao operador uma pergunta bloqueante | A ferramenta `ask_user` do **harness**, não o MCP. Apresenta um formulário na conversa e bloqueia à espera da resposta |
 | Diagnósticos por agente                     | Nada. Não existe `doctor` — ver [Diagnóstico de um agente](/pt-PT/manual/guias/diagnosticar-agente/)       |

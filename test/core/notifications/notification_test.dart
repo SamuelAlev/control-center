@@ -396,6 +396,7 @@ void main() {
         service.show(
           mapNotificationFrame('notifications/agent_awaiting_input', {
             ...params,
+            'wait_id': 'wait-1',
             'kind': 'approval',
           }, l10n: l10n)!,
         );

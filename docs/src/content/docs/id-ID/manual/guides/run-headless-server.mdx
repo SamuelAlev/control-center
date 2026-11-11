@@ -3,7 +3,7 @@ title: Jalankan server headless
 description: Jalankan biner headless cc_server atau image Docker-nya, pasangkan klien ke sana, dan konfigurasikan dengan seluruh permukaan flag CLI dan variabel lingkungannya.
 dateModified: 2026-11-08
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-server-headless
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Jalankan `cc_server` di mesin yang tetap menyala, lalu hubungkan ke sana dari
@@ -165,8 +165,10 @@ tingkat perangkat — `desktop`, `ios`, `android`, selain itu dianggap klien web
 `--label` (bawaannya nama platform plus hostname mesin ini), `--host` (host yang
 dicetak di URL, karena loopback tidak dapat dijangkau dari mesin lain) dan
 `--client-url`. Menjalankan ulang `pair` memutar kunci perangkat itu dan memutus
-sesi aktifnya. Pemasangan tidak pernah membuat ruang kerja: onboarding klien
-yang terhubung yang menamai dan membuat ruang kerja pertama.
+sesi aktifnya. Pemasangan tidak pernah membuat ruang kerja. Hanya pemilik server
+yang membuat ruang kerja: di klien pemilik, onboarding menamai dan membuat ruang
+kerja pertama, dan orang lain menunggu sampai pemilik membuatkannya untuk mereka
+atau admin ruang kerja mengundang mereka.
 
 Dengan `--client-url`, perintah ini juga mencetak QR yang dapat dipindai dari
 terminal dan membuka klien web yang sudah terisi:
@@ -185,9 +187,7 @@ Keduanya tidak dapat saling ditukar. Lihat
 [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
 :::
 
-Kredensial yang dibuat oleh `cc_server pair` **tidak memiliki masa
-kedaluwarsa**; kredensial yang dibuat di aplikasi selalu kedaluwarsa setelah 30
-hari. Cabut perangkat yang dibuat melalui CLI dari
+Kredensial yang dibuat oleh `cc_server pair` kedaluwarsa setelah 30 hari, seperti yang dibuat di aplikasi; jalankan `pair` lagi untuk perangkat yang sama guna menerbitkan yang baru. Cabut perangkat yang dibuat melalui CLI dari
 **Pengaturan → Anda → Perangkat Anda** setelah selesai menggunakannya.
 
 Kunci pairing mengautentikasi jabat tangan Noise yang diwajibkan; setiap sesi
@@ -237,6 +237,16 @@ memakai terowongan terenkripsi sebagai gantinya.
 
 Server berjalan sampai `SIGINT`/`SIGTERM`, lalu mati dengan bersih.
 
+### Baca baris startup
+
+Dua baris memberi tahu Anda bagaimana server ini diatur. Baris exposure, yang dicetak di sebelah banner siap, dimulai dengan `cc_server exposure:` dan mencantumkan seberapa jauh server dapat dijangkau (`bind`, `tls`, `relay`, `tunnel`), apakah pemilik server tercatat (`owner`), serta bagaimana agen dijalankan di mesin ini (`sandbox`):
+
+- `sandbox=native`: setiap run agen dibungkus dalam sandbox OS.
+- `sandbox=off`: Anda memulai server dengan `--sandbox off`, sehingga agen setiap anggota berjalan tanpa pembatasan di mesin ini.
+- `sandbox=unavailable`: host tidak memiliki backend sandbox (Windows, atau Linux tanpa `bwrap` dan `socat`), sehingga hanya run agen yang dipertanggungjawabkan kepada pemilik server yang dapat dimulai. Run milik orang lain ditolak dengan "Server ini tidak memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini."
+
+Baris sandbox sebelumnya di log mengatakan hal yang sama dengan kata-kata, dan ketika sebuah backend tidak ada, baris itu menyebut apa yang perlu dipasang. Menjalankan agen milik orang lain tanpa sandbox adalah pilihan yang dibuat pemilik server sekali, untuk semua orang, dengan `--sandbox off`. Lihat [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/#periksa-apakah-run-agen-anda-di-sandbox).
+
 ## Langkah 5: Hubungkan klien
 
 Arahkan klien ke URL server dan kunci pairing dari langkah 3:
@@ -246,8 +256,8 @@ Arahkan klien ke URL server dan kunci pairing dari langkah 3:
 - **Ponsel**: pasangkan aplikasi **Remote** dari klien yang sedang berjalan — lihat [Pasangkan perangkat](/id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat/).
 
 :::note[cc_server tidak menyajikan bundle web]
-`cc_server` mandiri tidak pernah memasang web root, sehingga `GET /` mengembalikan
-404. Klien web dihosting secara terpisah — gunakan `app.usectrl.dev`, atau
+`cc_server` mandiri tidak pernah memasang web root, sehingga `GET /` mengembalikan 404.
+Klien web dihosting secara terpisah — gunakan `app.usectrl.dev`, atau
 hosting sendiri build web di host HTTPS statis mana pun (image `cc-webapp` di
 atas persis untuk itu). Origin peramban selain loopback harus ada di
 `--allowed-origins`, jika tidak upgrade WebSocket ke `/rpc` akan ditolak; daftar
@@ -262,6 +272,8 @@ itu sendiri. Service Worker-nya merutekan lalu lintas HTTP dan WebSocket melalui
 sesi terenkripsi terautentikasi yang sama seperti bagian klien lainnya. `cc_server`
 mendekripsi setiap permintaan, meneruskannya ke backend code-server lokalnya, lalu
 mengenkripsi respons kembali ke klien. Berkasnya tetap dimiliki server.
+
+Editor berjalan di server sebagai pengguna server itu sendiri, dengan terminal, tugas, dan ekstensinya, sehingga hanya [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server) yang dapat membukanya. Sesi dimiliki oleh perangkat dan orang yang membukanya. Editor dibuka dengan kepercayaan ruang kerja VS Code aktif, sehingga VS Code meminta izin sebelum mempercayai sebuah folder, dan dengan tugas otomatis dimatikan, sehingga tugas sebuah repositori tidak pernah berjalan saat dibuka. Orang lain tetap memakai editor bawaan aplikasi dan tampilan berkas; editor penuh tidak ditawarkan kepada mereka.
 
 Hosting klien web melalui HTTPS atau origin loopback yang aman agar Service Worker
 dapat berjalan. Skrip build dan rilis web yang biasa sudah menyertakan aset sumber
@@ -280,7 +292,6 @@ Lalu lintas editor native memakai fasad loopback yang dibatasi kapabilitas sebag
 gantinya. Jangan mengekspos gerbang laporan/perintah loopback privat milik ekstensi
 editor yang dijalankan server melalui proxy publik. Permintaan HTTP publik yang
 sensitif ditolak; sumber daya memerlukan sesi terenkripsi yang terautentikasi.
-
 
 ## Langkah 6: Pilih cara pengguna masuk
 
@@ -304,6 +315,8 @@ diekspor. Lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github
 Proses masuk melalui Connect selesai dengan kode yang ditampilkan peramban, sehingga server tidak
 memerlukan alamat publik untuk itu. Proses masuk melalui app server sendiri mengembalikan peramban ke
 URL publik server, jadi atur `--public-url` ke alamat yang dapat dijangkau peramban pengguna.
+
+Ini adalah default server. Seorang admin ruang kerja dapat memberi satu ruang kerja pilihan yang berbeda di **Pengaturan → Ruang kerja → Integrasi**. Dengan `CC_CONNECT_URL` diatur, ruang kerja tetap dapat beralih ke aplikasinya sendiri tetapi tidak ke Connect miliknya sendiri; lihat [Pilihan per ruang kerja](/id-ID/panduan-pengguna/referensi/connect/#pilihan-per-ruang-kerja).
 
 Untuk menjadi host Connect bagi server lain dari server ini, atur `CC_SERVER_CONNECT_HOST=on`; lihat
 [Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/#pasang-connect-di-dalam-cc_server).
@@ -354,7 +367,7 @@ memegang kunci pairing.
 
 Dua hal yang perlu diketahui sebelum Anda mengekspos port di luar loopback (TLS saja tidak menyediakan enkripsi ujung ke ujung klien yang dipasangkan atau memberi otorisasi sumber daya):
 
-- **MCP gagal secara tertutup di luar host.** Permukaan MCP tanpa token hanya menjawab loopback. Mengikat `any` tidak melebarkannya — permintaan dari luar host ditolak dengan "MCP requires a bearer token to answer non-loopback clients" sampai Anda mengonfigurasi token (`mcp.setToken`, atau **Pengaturan → Server → Server MCP**).
+- **MCP selalu memerlukan tokennya.** Server membuat token MCP saat pertama kali dijalankan, dan setiap permintaan, termasuk dari loopback, harus mengirimkannya sebagai `Authorization: Bearer <token>`. Token ini tidak dapat dimatikan; pemilik server membacanya dan memutarnya di **Pengaturan → Server → Server MCP**. Permintaan dari halaman web, ke `Host` yang tidak dikenal, atau `POST` yang bukan JSON ditolak sebelum token diperiksa. Lihat [Gunakan server MCP](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/).
 - **`GET /healthz` tidak diautentikasi secara sengaja**, memakai CORS wildcard dan memublikasikan id, nama, sidik jari identitas, dan versi build server. Klien memerlukan sidik jari itu untuk mematok server, jadi ini disengaja — tetapi artinya setiap `cc_server` yang dapat dijangkau mengungkapkan sebanyak itu kepada siapa pun yang bertanya.
 
 ## Panduan terkait

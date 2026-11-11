@@ -2,7 +2,7 @@
 title: Carte des routes
 description: Toutes les routes que Control Center enregistre, avec leur écran et ses paramètres de requête.
 slug: fr-FR/manuel/reference/carte-des-routes
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Coquille de l’application
@@ -11,7 +11,7 @@ La coquille de l’application (`ControlCenterLayout`) enveloppe chaque route d�
 
 La porte est franchie lorsqu’au moins une forge est connectée **pour l’utilisateur connecté** et qu’au moins un espace de travail existe.
 
-L’absence d’identifiant et l’absence de configuration sont traitées différemment, et le discriminant est `users.onboarding_finished_at`, lu sur le `identity.me` de l’appelant lui-même — jamais « des espaces de travail existent », ce qui devient faux dès que quelqu’un est invité dans un espace de travail qu’il n’a jamais créé. Sans forge connectée, un compte qui a terminé son onboarding reste dans l’application : la coquille de l’espace de travail affiche un avertissement avec un lien vers Paramètres → Espace de travail → Profil et identité, où se trouve la connexion. Un compte qui ne l’a pas terminé va vers `/onboarding`. Tant que l’indicateur reste inconnu, le garde retient l’écran de démarrage plutôt que de deviner, car il ne redirige jamais en arrière hors de l’onboarding.
+L’absence d’identifiant et l’absence de configuration sont traitées différemment, et le discriminant est `users.onboarding_finished_at`, lu sur le `identity.me` de l’appelant lui-même — jamais « des espaces de travail existent », ce qui devient faux dès que quelqu’un est invité dans un espace de travail qu’il n’a jamais créé. Sans forge connectée, un compte qui a terminé son onboarding reste dans l’application : la coquille de l’espace de travail affiche un avertissement avec un lien vers Paramètres → Vous → Profil, où se trouve la connexion. Un compte qui ne l’a pas terminé va vers `/onboarding`. Tant que l’indicateur reste inconnu, le garde retient l’écran de démarrage plutôt que de deviner, car il ne redirige jamais en arrière hors de l’onboarding.
 
 ## Routes sans préfixe
 
@@ -65,7 +65,7 @@ Il n’existe **aucun élément « Plans » dans la barre latérale**. Plan St
 
 ## Routes des paramètres
 
-`/settings` redirige vers `/settings/you/appearance`. Le bouton de paramètres de la barre latérale et `Cmd/Ctrl + ,` mènent tous deux à `/settings/you/appearance`.
+`/settings` redirige vers `/settings/you/profile`. Le bouton de paramètres de la barre latérale et `Cmd/Ctrl + ,` mènent tous deux à `/settings/you/profile`.
 
 Les chemins des paramètres sont répartis par **portée** — `you/`, `workspace/`, `server/` — car le segment indique qui une modification concerne. Deux chemins sont antérieurs à cette répartition et ne portent pas de portée dans l’URL : `/settings/memory` et `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Les chemins des paramètres sont répartis par **portée** — `you/`, `workspac
 
 | Chemin                        | Écran                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Thème, langue, typographie, thème de l’éditeur (l’écran d’accueil des paramètres) |
-| `/settings/you/notifications` | Activation par événement, heures calmes                                    |
+| `/settings/you/profile` | Votre compte sur ce serveur : nom, nom d’utilisateur, photo et connexion (l’écran d’accueil des paramètres) |
+| `/settings/you/profile?section=accounts` | Comptes connectés : vos propres connexions d’hébergement de code, de tickets, de calendrier et de messagerie, et les brouillons de tickets depuis le chat |
+| `/settings/you/appearance`    | Thème, langue, typographie, thème de l’éditeur |
 | `/settings/you/audio`         | Microphone, dictée, détection des réunions et sortie des ambiances sonores  |
+| `/settings/you/notifications` | Activation par événement, heures calmes                                    |
+| `/settings/you/commits` | Qui est crédité dans les commits issus de travaux que vous lancez, et votre clé de signature des commits |
+| `/settings/you/desktop` | Application de bureau uniquement : icône de la barre d’état système, fermeture de la fenêtre et ouverture au démarrage de session
 | `/settings/you/devices`       | Téléphones appairés et contrôle à distance                                  |
-| `/settings/you/newsfeed`      | Gestion du fil : sources, actualisation, état de lecture                    |
+| `/settings/you/newsfeed`      | Gestion du fil : sources, actualisation, état de lecture  |
+| `/settings/you/links` | Où s’ouvrent les liens provenant de l’extérieur de Control Center                    |
 
 ### Espace de travail
 
 | Chemin                              | Écran                                                                                               |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`       | Profil et identité dans cet espace de travail : nom, auteur git, hébergement de code, calendrier    |
-| `/settings/workspace/general`       | Nom, logo, chemins de secrets exclus, concurrence des relecteurs, nommage des branches, état de la synchronisation, passerelles de chat, zone sensible |
+| `/settings/workspace/profile`       | Profil et identité dans cet espace de travail : nom, courriel, auteur git |
+| `/settings/workspace/general`       | Nom, logo, chemins de secrets exclus, concurrence des relecteurs, nommage des branches, zone sensible |
+| `/settings/workspace/integrations`  | Choix de Control Center Connect, GitHub App et jetons d’automatisation, fournisseur de tickets et automatisation, état de la synchronisation, applications de fournisseur propres à l’espace de travail, passerelles de chat, GIF. Chaque groupe de fournisseur nomme votre propre compte et renvoie vers Comptes connectés |
 | `/settings/workspace/meetings`      | Modèles de notes de réunion et profils vocaux enregistrés                                            |
-| `/settings/workspace/members`       | Effectif, invitations, piste d’audit. La piste d’audit se pagine avec `?cursor=` facultatif          |
+| `/settings/workspace/members`       | Effectif et invitations          |
 | `/settings/workspace/repositories`  | Dépôts enregistrés dans cet espace de travail                                                        |
 | `/settings/workspace/environments` | Définitions d’environnement : ce que les espaces peuvent démarrer et les tâches de leurs arbres de travail |
 | `/settings/workspace/agents`        | Identités d’agents enregistrées                                                                      |
@@ -108,6 +114,8 @@ Les chemins des paramètres sont répartis par **portée** — `you/`, `workspac
 | `/settings/server/rigs`        | Rigs : ce que cet hôte peut démarrer, images de base, images personnalisées, machines en cours d’exécution |
 | `/settings/server/sandbox`     | Autorisations d’exécution du bac à sable : programmes que les agents peuvent lancer depuis leur copie de travail de vos dépôts |
 | `/settings/server/diagnostics` | Diagnostics et confidentialité : isolation, indexation, journalisation, rapports d’erreur |
+| `/settings/server/people`      | Personnes de ce serveur et confirmation de chaque adresse (propriétaire du serveur uniquement)       |
+| `/settings/server/audit`       | Journal d’audit : celui du serveur et celui des espaces de travail que vous administrez                            |
 | `/settings/server/backup`      | Sauvegarde et restauration : instantanés de l’installation, export par espace de travail, import et suppression |
 | `/settings/server/about`       | À propos et mises à jour                                                                |
 

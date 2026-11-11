@@ -2,7 +2,7 @@
 title: Instalare
 description: Folosește Control Center în browser sau instalează aplicația desktop, configurează un backend de agenți și alege unde rulează serverul.
 slug: ro-RO/manual/instalare
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center rulează în două moduri: ca **aplicație web** la
@@ -124,7 +124,7 @@ Listele de modele sunt servite live de fiecare provider conectat; [models.dev](h
 
 O acreditare GitHub este **a ta și trăiește pe server**, indexată după id-ul tău de utilizator — nu în keychainul sistemului de operare al clientului. Fiecare dispozitiv de pe care te autentifici o folosește pe aceeași, iar niciun alt membru nu o poate citi.
 
-GitHub funcționează doar prin autentificare: **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod** oferă **Autentifică-te în GitHub** și nu există niciun token de lipit. Autentificarea rulează prin GitHub App proprie a serverului ([Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)) sau prin Control Center Connect, după cum a ales proprietarul serverului. Cu aplicația proprie a serverului, browserul revine singur la server; prin Connect, tastezi codul de 8 caractere pe care îl afișează browserul sau îl lași să deschidă Control Center. Vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/).
+GitHub funcționează doar prin autentificare: **Setări → Tu → Profil → Găzduire de cod** oferă **Autentifică-te în GitHub** și nu există niciun token de lipit. Autentificarea rulează prin GitHub App proprie a serverului ([Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/)) sau prin Control Center Connect, după cum a ales proprietarul serverului, cu excepția cazului în care un administrator al spațiului de lucru a ales alte aplicații de autentificare pentru acel spațiu de lucru, din **Setări → Spațiu de lucru → Integrări**. Cu aplicația proprie a serverului, browserul revine singur la server; prin Connect, tastezi codul de 8 caractere pe care îl afișează browserul sau îl lași să deschidă Control Center. Vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/).
 
 Onboardingul îți cere această conexiune. După aceea, același card este locul unde te autentifici din nou sau te deconectezi. GitLab și Bitbucket folosesc același card, cu un token personal lipit; vezi [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
 
@@ -146,7 +146,7 @@ Pentru a găzdui singur un server, urmează [Rulează un server headless](/ro-RO
 
 1. **Setări → Server → Provideri de modele** listează ambele adaptoare. „Control Center (built-in)” apare ca găsit, cu versiunea `built-in`; Claude Code apare ca găsit dacă CLI-ul său se află în `PATH`-ul gazdei serverului. Apasă **Reîmprospătează** dacă lipsește.
 2. **Setări → Spațiu de lucru → Depozite** listează repo-urile acestui spațiu de lucru, iar **Adaugă depozit** răsfoiește folderele gazdei serverului.
-3. **Setări → Spațiu de lucru → Agenți** listează cei cinci agenți creați implicit în primul tău spațiu de lucru. Fiecare are nevoie de un **Adaptor** și de un **Model** setate înainte de a putea rula.
+3. **Setări → Spațiu de lucru → Agenți** listează cei șase agenți creați implicit în primul tău spațiu de lucru. Fiecare are nevoie de un **Adaptor** și de un **Model** setate înainte de a putea rula.
 4. **Setări → Server → Diagnosticări și confidențialitate** raportează backend-urile sandbox oferite de această gazdă, starea modelului de embedding și jurnalizarea.
 
 ## Construiește din sursă

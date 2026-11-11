@@ -7,6 +7,7 @@ class _BrowserStatePoller {
   _BrowserStatePoller({
     required this.readState,
     required this.onState,
+    required this.onRefused,
     required this._workspaceId,
     required this._rigId,
   });
@@ -14,6 +15,10 @@ class _BrowserStatePoller {
   final Future<RigBrowserStateView> Function(String workspaceId, String rigId)
   readState;
   final void Function(RigBrowserStateView state) onState;
+
+  /// Told when a read is refused by kind; polling then stops for good, since
+  /// asking again every tick would only be refused again.
+  final void Function(Object error) onRefused;
   static const _interval = Duration(milliseconds: 400);
 
   String _workspaceId;
@@ -23,6 +28,7 @@ class _BrowserStatePoller {
   bool _reading = false;
   bool _pending = false;
   bool _disposed = false;
+  bool _refused = false;
   int _generation = 0;
 
   void setActive(bool active) {
@@ -57,7 +63,7 @@ class _BrowserStatePoller {
   }
 
   void refresh() {
-    if (_disposed || !_active) {
+    if (_disposed || !_active || _refused) {
       return;
     }
     _timer?.cancel();
@@ -80,11 +86,16 @@ class _BrowserStatePoller {
       if (!_disposed && _active && generation == _generation) {
         onState(state);
       }
-    } on Object {
-      // Preserve the last known controls when the browser is unreachable.
+    } on Object catch (e) {
+      // Preserve the last known controls when the browser is unreachable;
+      // a refusal of the person's access ends the polling instead.
+      if (isRepoAccessRefusal(e)) {
+        _refused = true;
+        onRefused(e);
+      }
     } finally {
       _reading = false;
-      if (!_disposed && _active) {
+      if (!_disposed && _active && !_refused) {
         if (_pending) {
           _pending = false;
           unawaited(_read());

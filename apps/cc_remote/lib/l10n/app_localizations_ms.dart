@@ -249,10 +249,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get allCaughtUp => 'Anda sudah mengejar semuanya';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Tiada akaun forge disambungkan pada pelayan, jadi pull request belum dapat dikaitkan kepada anda.';
-
-  @override
   String get inboxNothingWaiting =>
       'Tiada yang disekat dan tiada pull request menunggu anda.';
 
@@ -460,32 +456,6 @@ class AppLocalizationsMs extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names terlalu besar untuk dihantar melalui relay dari sini.',
-      one: '$names terlalu besar untuk dihantar melalui relay dari sini.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Tidak dapat memuat naik lampiran. Cuba lagi.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count lampiran tidak dapat dimuat naik dan dikecualikan.',
-      one: '1 lampiran tidak dapat dimuat naik dan dikecualikan.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Rakan sepasukan';
 
   @override
@@ -621,35 +591,6 @@ class AppLocalizationsMs extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Tiada forge disambungkan pada pelayan, jadi pull request tidak dapat diambil. Sambungkan satu dari apl desktop.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repo tidak dapat dibaca.',
-      one: '1 repo tidak dapat dibaca.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Tidak dapat dibaca: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'Pemasangan GitHub App digantung';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Memaparkan data terakhir diketahui untuk $names. Sambung semula pemasangan di GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Pemasangan GitHub App digantung. Memaparkan data terakhir diketahui untuk $names. Sambung semula pemasangan di GitHub.';
-  }
 
   @override
   String get draft => 'Draf';
@@ -1304,7 +1245,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get permissionPrCreate => 'Cipta pull request';
 
   @override
-  String get permissionPrPublish => 'Terbitkan pull request';
+  String get permissionPrPublish => 'Kemas kini atau gabungkan pull request';
 
   @override
   String get permissionVendorSyncWrite => 'Tulis penyegerakan penyedia';
@@ -1348,7 +1289,7 @@ class AppLocalizationsMs extends AppLocalizations {
   String get permissionBuiltInDefault => 'Lalai terbina';
 
   @override
-  String get permissionRemembered => 'Kelulusan yang diingati';
+  String get permissionRemembered => 'Kelulusan sementara';
 
   @override
   String get permissionSource => 'Sumber';
@@ -1370,10 +1311,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Tetapkan peraturan di sini';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Tarik balik peraturan berskop atau yang diingati sebelum menetapkan peraturan umum untuk tindakan ini.';
 
   @override
   String get permissionConfirmRevoke => 'Sahkan penarikan balik';
@@ -1426,6 +1363,15 @@ class AppLocalizationsMs extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Arahan: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Alat: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Tidak berkuat kuasa semasa tindakan ini ditolak';
 
   @override
   String permissionMaxCount(String count) {
@@ -1883,15 +1829,6 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Kemas kini pull request';
-
-  @override
-  String get activityTicket => 'Kemas kini tiket';
-
-  @override
-  String get activityMeeting => 'Kemas kini mesyuarat';
-
-  @override
-  String get activityCalendar => 'Sambungan kalendar';
 
   @override
   String get activityRig => 'Kemas kini kepungan';
@@ -2575,8 +2512,7 @@ class AppLocalizationsMs extends AppLocalizations {
       'Menunggu kebenaran dalam pelayar anda…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Masukkan kod yang dipaparkan dalam pelayar';
+  String get credentialsConnectCodePrompt => 'Kod pengesahan';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2645,10 +2581,6 @@ class AppLocalizationsMs extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'Tampal token akses peribadi';
 
   @override
-  String get credentialsHostManaged =>
-      'Sambungan ini datang daripada aplikasi atau persekitaran pelayan. Hanya pemilik pelayan boleh mengubahnya di sana; anda masih boleh menambah token sendiri.';
-
-  @override
   String get credentialsStopWatching => 'Berhenti memantau';
 
   @override
@@ -2669,4 +2601,200 @@ class AppLocalizationsMs extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Jalankan arahan pada hos';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Log masuk $provider anda telah tamat. Log masuk semula.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Dijeda: perkhidmatan log masuk ruang kerja ini telah berubah. Ia berfungsi semula apabila perkhidmatan kembali.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '$provider tidak dapat dihubungi sekarang. Mencuba semula.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Ruang kerja ini sahaja';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Semua ruang kerja';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Alih keluar kelayakan tersimpan anda daripada ruang kerja ini? Ruang kerja lain mengekalkan milik mereka.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Alih keluar kelayakan tersimpan anda daripada setiap ruang kerja yang berkongsinya?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Pelayan telah dimulakan semula. Mulakan log masuk sekali lagi.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Pasang GitHub App pada $owner supaya automasi dapat mencapai $names. Ketik untuk membuka GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App belum dipasang pada $owner, jadi automasi tidak dapat mencapai $names. Minta pentadbir ruang kerja memasangnya.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Tambah $names pada repositori GitHub App. Ketik untuk membuka GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App belum dapat melihat $names. Minta pentadbir ruang kerja menambahnya pada repositorinya.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Pemasangan GitHub App digantung. Automasi untuk $names dijeda sehingga pemilik akaun menyambung semula pemasangan di GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Orang yang bertanggungjawab atas automasi ruang kerja ini tidak lagi dapat melihat $names, jadi tiada apa-apa berjalan di sana bagi pihaknya.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Orang yang bertanggungjawab atas automasi ruang kerja ini belum log masuk ke forge, jadi automasi untuk $names menunggu sehingga mereka log masuk.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Tidak dapat menyemak akses ke $names. Mencuba semula.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Log masuk ke $forge untuk melihat pull request daripada $count lagi repositori',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositori disembunyikan kerana akaun $forge anda tidak dapat melihatnya',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositori disembunyikan kerana anda tiada akses dalam ruang kerja ini',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Menyemak akses anda ke $count lagi repositori…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'E-mel akaun Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Masukkan alamat e-mel akaun Atlassian anda.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Tiada token automasi yang dapat membaca $names, jadi kerja latar belakang di sana dijeda. Pentadbir boleh menambahnya di Tetapan → Repositori.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Sahkan dalam pelayar anda, kemudian masukkan kod yang dipaparkannya.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Akaun ini sudah disambungkan kepada orang lain pada pelayan ini. Log masuk dengan akaun yang berbeza.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider tidak dapat dihubungi untuk menyemak token ini. Cuba sebentar lagi.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider tidak menerima token ini. Semak sama ada anda menyalin semuanya dan ia belum dibatalkan.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Ini bukan token peribadi. Tampal token akses peribadi daripada akaun $provider anda sendiri, bukan token projek, kumpulan, ruang kerja atau bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Token ini tidak mempunyai skop $scope, yang diperlukan untuk semakan dan ulasan. Cipta satu yang mempunyainya.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Token ini telah tamat tempoh. Cipta yang baharu dan tampalkannya di sini.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Terlalu banyak permintaan sekarang. Tunggu sebentar, kemudian cuba lagi.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Log masuk dibatalkan atau ditolak. Mulakannya semula apabila anda sudah bersedia.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Log masuk ini tidak lagi dibuka: ia telah dibatalkan, digunakan atau digantikan. Mulakannya semula.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Admin ruang kerja perlu menjemput anda, atau pemilik pelayan boleh mencipta ruang kerja untuk anda.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos kini menunjuk kepada repositori yang berbeza pada $forge. Pautkannya semula dari apl desktop atau web untuk terus menggunakannya.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos kini menunjuk kepada repositori yang berbeza pada $forge. Admin ruang kerja perlu memautkannya semula sebelum ia boleh digunakan semula.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Ejen memerlukan kotak pasir pada pelayan ini';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini. Pemilik boleh memasang kotak pasir atau mematikan kotak pasir untuk semua orang.';
 }

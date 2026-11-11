@@ -2,7 +2,7 @@
 title: Pipelines und Automatisierung
 description: Warum Pipelines das Einplanen von der Arbeit trennen, was einen Lauf wirklich startet und welche der mitgelieferten Vorlagen von Anfang an aktiv sind.
 slug: de-DE/handbuch/konzepte/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipelines sind die deterministische Hälfte von Control Center. Ein Agent entscheidet,
@@ -38,7 +38,7 @@ Schritt fortzusetzen, weil Fortsetzen schlimmer wäre als Anhalten:
   `orchestration.awaitApproval`. `human.gate` ist davon nicht ausgenommen.
 - Ein Schritt mit `extras: {'idempotent': false}`, der mitten in der Ausführung
   war, als der Server anhielt, kann seinen Seiteneffekt schon angewandt haben
-  (ein Squash-Merge, ein Aufräumen des Worktrees). Ihn noch einmal auszuführen
+  (eine Sicherung des Arbeitsbereichs, ein Aufräumen des Worktrees). Ihn noch einmal auszuführen
   könnte den Effekt doppelt anwenden, also lässt die Engine ihn scheitern und
   überlässt den erneuten Versuch dir.
 
@@ -146,8 +146,27 @@ an, und das Abschalten war nie als Wahl für dich gedacht.
 Noch eine Asymmetrie: Die mitgelieferte `pr_review` postet absichtlich nicht
 mehr nach GitHub. Eine Review zu veröffentlichen ist ein eigener Schritt, den du
 freigibst, und eine Pipeline, die direkt postete, würde doppelt veröffentlichen.
-`cross_review`, `ticket_to_pr` und `pr_triage` posten bei einem Lauf weiterhin
-einen Kommentar direkt nach GitHub.
+`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` und
+`external_pr_welcome` posten bei einem Lauf weiterhin einen Kommentar nach
+GitHub.
+
+Sie posten ihn vom Server aus, über den Schritt **Post PR comment**
+(`prReview.comment`), nie aus einem Shell-Skript: Die Shell-Schritte einer
+Pipeline und die Sandboxes ihrer Agenten halten ein GitHub-Token, das nur lesen
+kann. Dieselbe Regel prägt den Rest:
+
+- `external_pr_welcome` postet seine Begrüßung als `message` dieses Schritts.
+- `ticket_to_pr` lässt den Coding-Agenten `agent/<ticket_id>` pushen (über das
+  Run-Gateway) und öffnet den Entwurfs-PR mit `open_pull_request`, mit der
+  GitHub-Anmeldung der Person, die den Lauf gestartet hat, oder als Bot, wenn
+  niemand ihn gestartet hat. Beides unterliegt den Arbeitsbereichsregeln
+  **Zu einem Remote pushen** und **Einen Pull Request öffnen**. Bei Control
+  Center Connect kann ein Lauf, den niemand angefragt hat, etwa einer, der durch
+  `TicketAssigned` ausgelöst wurde, weder pushen noch den PR öffnen: Der
+  gemeinsame App-Bot liest nur und kommentiert.
+- `pre_merge_gate` führt nie einen Merge aus. Eine Freigabe an seinem Tor meldet,
+  dass der PR für einen Maintainer bereit zum Mergen ist, eine Ablehnung, dass
+  Änderungen angefordert werden. Gemergt wird von einer Person auf der PR-Seite.
 
 ## Was die Engine weiß
 

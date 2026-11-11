@@ -2,7 +2,7 @@
 title: Diagnosis ejen
 description: Telusuri log larian, pemeriksaan penyesuai, status pelayan dan diagnostik hos apabila ejen berhenti menghasilkan larian.
 slug: ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Panduan ini menunjukkan cara mengetahui mengapa sesuatu ejen tidak menghasilkan larian.
@@ -13,13 +13,13 @@ Bekerja dari atas ke bawah: larian ejen itu sendiri dahulu, kemudian bahagian be
 
 **Tetapan → Ruang kerja → Ejen** → pilih ejen itu → **Log**.
 
-Setiap larian menunjukkan lencana status, tempoh ("Running…" semasa masih berjalan), masa mula dan tamatnya, PID-nya dan penyesuai yang digunakannya. **Lihat** membuka strim peristiwa mentah larian itu. **Henti** menghentikan paksa proses yang sedang berjalan dan menandakan larian itu "Killed by user"; **Henti paksa yang berjalan** dalam pengepala melakukan perkara yang sama untuk setiap larian ejen itu yang sedang berjalan.
+Setiap larian menunjukkan lencana status, tempoh ("Running…" semasa masih berjalan), masa mula dan tamatnya, PID-nya dan penyesuai yang digunakannya. **Lihat** membuka strim peristiwa mentah larian itu. **Henti** menghentikan paksa proses yang sedang berjalan dan menandakan larian itu "Killed by user"; **Henti paksa yang berjalan** dalam pengepala melakukan perkara yang sama untuk setiap larian ejen itu yang sedang berjalan dalam ruang kerja ini. Anda hanya boleh melihat dan menghentikan larian ejen langsung dalam ruang kerja yang anda sertai; pemilik pelayan melihat dan menghentikan kesemuanya.
 
 Baca seperti ini:
 
 - **Tiada larian langsung** — penghantaran tidak pernah berlaku. Sebutan dalam penggubah ialah `@` campur aksara perkataan (huruf, digit, garis bawah). Peleraiannya ialah padanan tepat atau awalan pada nama ejen, jadi `@code-reviewer` dihuraikan sebagai `code` dan masih boleh membangkitkan ejen bernama `code-reviewer`. Nama yang mengandungi ruang tidak boleh disebut sebagai satu token. Kemudian pergi ke langkah 2.
-- **Larian yang tamat serta-merta dengan ralat** — buka **Lihat**. Kegagalan melancarkan bahagian belakang muncul di sini sebagai ralat proses.
-- **Larian yang tersekat pada "Running…"** — hentikannya, kemudian semak **Tamat masa senyap** ejen itu pada tab Tetapan. Tamat masa yang tidak ditetapkan menggunakan lalai setiap modus.
+- **Larian yang tamat serta-merta dengan ralat** — buka **Lihat**. Kegagalan melancarkan bahagian belakang muncul di sini sebagai ralat proses. "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini." bermakna mesin pelayan tiada kotak pasir OS dan anda bukan pemiliknya; lihat [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/#ejen-saya-ditolak-dengan-pelayan-ini-tiada-kotak-pasir).
+- **Larian yang tersekat pada "Running…"** — hentikannya, kemudian semak **Tamat masa senyap (minit)** dalam tab **Tetapan** ejen itu. Tamat masa yang tidak ditetapkan menggunakan lalai setiap modus.
 - **Larian selesai tanpa output berguna** — status log larian kekal `completed` bagi larian yang tamat tanpa hasil yang diisytiharkannya; isyarat jujurnya ialah teks ringkasan, bukan lencana.
 
 Tab Log tidak menunjukkan kos. Untuk perbelanjaan, gunakan jadual setiap ejen dalam **Kebolehcerapan → Wawasan**.
@@ -67,11 +67,11 @@ Dua perkara yang wajar diketahui apabila sesuatu perubahan "berfungsi dalam ujia
 - **Privasi** — sama ada kandungan diff mentah boleh diteruskan kepada model ejen dan sama ada laporan ranap dihantar.
 
 :::caution[Bahagian ini melaporkan hos dan kawalannya berada di pihak klien]
-Pengesanan dan penguatkuasaan kini sependapat: apabila pengesan melaporkan bahagian belakang natif, larian ejen pada hos itu memang benar-benar dibalut dengannya. Tetapi pengesan ialah satu-satunya perkara yang langsung dalam bahagian ini. Togel induk dan pemilih bahagian belakang ialah keutamaan yang disimpan pada peranti anda dan pelayan tidak membaca mana-mana daripadanya — suis pelayan sendiri ialah `--sandbox` (`on` secara lalai, `off` untuk menarik diri).
+Pengesanan dan penguatkuasaan sependapat: apabila pengesan melaporkan bahagian belakang natif, larian ejen pada hos itu memang benar-benar dibalut dengannya. Tetapi pengesan ialah satu-satunya perkara yang langsung dalam bahagian ini. Togel induk dan pemilih bahagian belakang ialah keutamaan yang disimpan pada peranti anda dan pelayan tidak membaca mana-mana daripadanya — suis pelayan sendiri ialah `--sandbox` (`on` secara lalai, `off` untuk menarik diri).
 
-Jadi amaran di sini wajar ditindaklanjuti, tetapi ia biasanya bukan sebab sesuatu ejen gagal. Untuk mengesahkan keadaan pelayan itu, baca log permulaannya: ia mencetak `agent sandbox ON` dengan nota bahagian belakang, `no OS-native agent sandbox on this host` dengan petunjuk pemasangan, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tiada medan kotak pasir.
+Jadi amaran di sini wajar ditindaklanjuti. Pada hos tanpa bahagian belakang, ia ialah sebab sebenar mengapa sesiapa selain pemilik pelayan tidak dapat menjalankan ejen langsung. Untuk mengesahkan keadaan pelayan itu, baca log permulaannya: ia mencetak `agent sandbox ON` dengan nota bahagian belakang, `no OS-native agent sandbox on this host` dengan petunjuk pemasangan, atau `agent sandbox DISABLED by --sandbox off`, dan baris pendedahannya membawa `sandbox=native`, `sandbox=unavailable` atau `sandbox=off`. `GET /healthz` tiada medan kotak pasir.
 
-Di mana tiada bahagian belakang — Windows sentiasa, Linux atau WSL2 tanpa `bwrap` dan `socat` — larian **tidak** dikotak pasirkan dan apa yang membataskannya ialah checkout perbualan itu sendiri, token hos kod baca sahajanya dan gerbang push, guardrail tindakan, sanitasi persekitaran dan permukaan alat yang dibenarkan oleh modusnya.
+Di mana tiada bahagian belakang (Windows sentiasa, Linux atau WSL2 tanpa `bwrap` dan `socat`), hanya larian yang pemilik pelayan bertanggungjawab ke atasnya dimulakan, dan larian orang lain ditolak. Larian yang dimulakan di sana, dan setiap larian di bawah `--sandbox off`, **tidak** dikotak pasirkan dan apa yang membataskannya ialah checkout perbualan itu sendiri, token hos kod baca sahajanya dan gerbang push, guardrail tindakan, sanitasi persekitaran dan permukaan alat yang dibenarkan oleh modusnya.
 :::
 
 ## Kegagalan biasa

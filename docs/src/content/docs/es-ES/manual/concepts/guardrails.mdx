@@ -2,7 +2,7 @@
 title: Barandillas — una política para cada acción mutadora
 description: Por qué Control Center canaliza cada efecto secundario de un agente a través de un único motor de permitir, preguntar o denegar, por qué la taxonomía de ActionClass se mantiene pequeña a propósito y qué cambia de verdad el dial de autonomía.
 slug: es-ES/manual/conceptos/barandillas
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Los agentes de Control Center pueden eliminar archivos, enviar ramas, publicar
@@ -20,10 +20,8 @@ que una acción puede salir del sistema: el registro de herramientas del arnés
 integrado, la puerta del despachador MCP del lado del servidor y las mutaciones
 de operaciones de repositorio. Una regla escrita una vez se aplica, por tanto,
 tanto al entorno de ejecución integrado como a los CLIs de agentes externos: no
-hay una segunda vía, más silenciosa, que la eluda. La antigua política de
-comandos, limitada a bash, sigue funcionando: una regla puede coincidir con un
-prefijo de comando en lugar de con una clase de acción, y ambas formas conviven
-en el mismo almacén.
+hay una segunda vía, más silenciosa, que la eluda. Una regla también puede coincidir con un prefijo de comando en lugar de con una
+clase de acción; ambas formas conviven en el mismo almacén.
 
 El motor no sustituye, sin embargo, al entorno aislado del sistema operativo,
 ni el entorno aislado lo sustituye a él. Responden a preguntas distintas: las
@@ -31,15 +29,14 @@ barandillas deciden si una llamada que Control Center puede ver llega a
 producirse, mientras que el entorno aislado acota hasta dónde puede llegar el
 proceso resultante. `cc_server` aplica el entorno aislado allí donde el host
 ofrece un backend, pero [Windows no ofrece ninguno y Linux
-necesita `bwrap` y `socat`](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/). En esos hosts, las
-barandillas son la capa de aplicación más externa en lugar de una política
+necesita `bwrap` y `socat`](/es-ES/manual/conceptos/entorno-aislado-y-seguridad/). En esos hosts solo arrancan las ejecuciones del propietario del servidor, salvo que el propietario haya desactivado el sandbox para todos con `--sandbox off`. En cualquier ejecución que arranque sin sandbox, las barandillas son la capa de aplicación más externa en lugar de una política
 sentada sobre un suelo, algo que conviene saber cuando decides cuán permisivo
 ser.
 
 ## ActionClass: una taxonomía deliberadamente cerrada
 
 Cada herramienta mutadora declara a qué **ActionClasses** pertenece, dentro de
-un conjunto cerrado de trece clases de efecto. Cinco de ellas preguntan de
+un conjunto cerrado de catorce clases de efecto. Seis de ellas preguntan de
 serie; el resto permiten, y es una regla lo que cambia eso.
 
 | Clase                      | Valor predeterminado | Qué cubre                                                       |
@@ -57,18 +54,16 @@ serie; el resto permiten, y es una regla lo que cambia eso.
 | `processSpawn`             | allow                | Lanzar un proceso (shell y cualquier cosa que invoque un shell)  |
 | `workspaceMutation`        | allow                | Modificar la estructura del espacio de trabajo (repos, espacios, agentes) |
 | `enclosureControl`         | allow                | Controlar un recinto (rig): arrancar una VM, enviarle entrada    |
+| `hostExecution`            | **prompt**           | Ejecutar un comando en el host del servidor fuera de cualquier sandbox a petición de un agente: tareas de entorno, procesos, stacks de compose, y `eval` cuando su kernel se ejecuta sin confinar |
 
 Las ocho clases permitidas de forma predeterminada se eligieron partiendo de la
 premisa de que bajo ellas actúa el suelo del entorno aislado. Así ocurre allí
-donde el host ofrece un backend, y no ocurre en Windows ni en una máquina Linux
-a la que le falten `bwrap` y `socat`; por eso, si quieres que
-`fileWriteOutsideWorktree` o `packageInstall` queden restringidas ahí, esa es
-una regla que tienes que escribir.
+donde el host ofrece un backend, y no ocurre con `--sandbox off`, ni en las ejecuciones del propietario en Windows o en una máquina Linux a la que le falten `bwrap` y `socat`. Si quieres que `fileWriteOutsideWorktree` o `packageInstall` queden restringidas ahí, esa es una regla que tienes que escribir.
 
 El conjunto es cerrado a propósito. Una nueva herramienta mutadora que no
 declare ninguna clase no supera el test de trinquete, de modo que la taxonomía
 solo puede crecer mediante una decisión explícita y argumentada: «la dispersión
-de la taxonomía es la muerte de esta función». Trece clases bastan para
+de la taxonomía es la muerte de esta función». Catorce clases bastan para
 expresar las políticas que la gente escribe de verdad (no enviar nunca sin
 preguntar, no eliminar nunca fuera de un worktree, permitir siempre las
 lecturas) y son lo bastante pocas para que la interfaz de ajustes siga siendo
@@ -99,8 +94,7 @@ Dos decisiones conllevan garantías firmes:
 
 Deliberadamente no hay ningún enclavamiento por turno. Cada llamada a una
 herramienta vuelve a resolver la política desde cero, de modo que la repetición
-de avisos para una misma acción está acotada por el propio «recuerda esta
-decisión» del operador, y no por nada ligado al turno.
+de avisos para una misma acción está acotada por la aprobación temporal propia del operador, y no por nada ligado al turno.
 
 ## Reglas a nivel de argumentos
 
@@ -117,6 +111,7 @@ Una restricción puede nombrar:
   «cualquier rama excepto main»)
 - **hosts** — destinos de red, con comodines de subdominio (`*.internal`)
 - **comandos** — prefijos de comando, que coinciden en un límite de palabra
+- **herramientas** — la herramienta exacta que nombra una llamada, para que una aprobación pueda cubrir una sola herramienta en lugar de todas las que tienen el mismo efecto
 - **topes** — `maxCount` / `maxCents`, de modo que «eliminar hasta 50 archivos»
   es expresable
 
@@ -160,15 +155,19 @@ el entorno aislado del sistema operativo bajo ambos. Una regla de comando que
 se resuelve como `allow` nunca relaja ninguna de esas dos capas: la red del modo
 se ejecuta después y su `deny` es definitivo.
 
-## Aprobaciones permanentes
+## Aprobaciones temporales
 
-Responder a un aviso con «recuerda esto» escribe una regla de política real: con
-ámbito (espacio / agente / espacio de trabajo), **restringida por argumentos**
-(aprobar un envío a `feature/login` concede `feature/**`, no `main`) y
-**autorrevocable** según un TTL explícito. Decir sí durante las próximas horas
-no es lo mismo que reescribir en silencio tu política permanente, y las reglas
-que escribe acaban en el mismo almacén con procedencia `remembered` y una
-caducidad, de modo que se pueden revocar antes de tiempo.
+Cada tarjeta de aprobación que provoca una acción de un agente ofrece **Aprobar durante 8 horas** cuando la acción tiene algo más concreto que su clase para nombrar. Al elegirlo se escribe una regla de política real, una aprobación temporal, en el mismo almacén que las reglas que tú defines, con procedencia `remembered` y una caducidad:
+
+- **Con ámbito.** Se escribe para el espacio del que procede la pregunta. Solo la respuesta de un administrador puede escribirse para todo el espacio de trabajo.
+- **Restringida.** Nombra una familia de ramas (aprobar un push a `feature/login` cubre `feature/**`, no `main`), una carpeta, un host, el comando exacto o la herramienta. Un commit es la única acción que se aprueba como clase, para ese espacio: no tiene nada más concreto que nombrar.
+- **Autorrevocable.** Termina tras ocho horas y puede revocarse antes en la página de permisos de agentes.
+
+Una aprobación temporal solo evita una pregunta. Responde a una decisión de Preguntar primero fijada en su propio ámbito o en uno más amplio, y nunca a una denegación, sea cual sea el ámbito de esta. Se guarda junto a la regla que defines para la acción, así que cambiar esa regla deja la aprobación en su sitio, y revocar la aprobación deja la regla.
+
+Algunos controles preguntan por su cuenta después de que la política haya permitido una llamada: la aprobación que declara una herramienta, o la red de comandos de un modo. Solo se saltan su pregunta con una aprobación temporal que nombre esa herramienta o ese comando exacto. Poner la acción en permitir no los silencia.
+
+Tres tarjetas mantienen dos botones, porque no hay nada que llevar hacia delante: permitir que el entorno aislado ejecute programas desde una carpeta (aprobarlo ya es una concesión guardada que puedes revocar), una operación destructiva que confirmas una vez, y la instalación de una skill (una skill cambiada debe volver a preguntar).
 
 ## Niveles de aplicación
 

@@ -94,7 +94,6 @@
   },
   "inboxLoadFailed": "Nu s-a putut încărca inboxul",
   "allCaughtUp": "Ești la zi",
-  "inboxNoForgeAccount": "Niciun cont forge nu este conectat pe server, deci pull request-urile nu îți pot fi atribuite încă.",
   "inboxNothingWaiting": "Nimic nu este blocat și niciun pull request nu te așteaptă.",
   "blocked": "Blocat",
   "sectionNeedsYourReview": "Necesită revizuirea ta",
@@ -201,28 +200,6 @@
       }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, one{{names} este prea mare pentru a fi trimis prin relay de aici.} few{{names} sunt prea mari pentru a fi trimise prin relay de aici.} other{{names} sunt prea mari pentru a fi trimise prin relay de aici.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "names": {
-        "type": "String"
-      }
-    }
-  },
-  "attachmentUploadFailed": "Nu s-a putut încărca atașamentul. Încearcă din nou.",
-  "attachmentsLeftOut": "{count, plural, one{1 atașament nu a putut fi încărcat și a fost omis.} few{{count} atașamente nu au putut fi încărcate și au fost omise.} other{{count} de atașamente nu au putut fi încărcate și au fost omise.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teammate": "Coleg",
   "systemSender": "Sistem",
   "agent": "Agent",
@@ -282,27 +259,6 @@
   "prsEmptyDescription": "Pull request-urile din repo-urile acestui spațiu de lucru apar aici.",
   "refreshPullRequests": "Reîmprospătează pull request-urile",
   "noForgeConnected": "Niciun forge nu este conectat pe server, deci nu se pot prelua pull request-uri. Conectează unul din aplicația desktop.",
-  "reposUnreadable": "{count, plural, one{1 repo nu a putut fi citit.} few{{count} repo-uri nu au putut fi citite.} other{{count} de repo-uri nu au putut fi citite.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reposNotReadable": "Ilizibile: {names}",
-  "installationSuspendedTitle": "Instalarea GitHub App este suspendată",
-  "installationSuspendedBody": "Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub.",
-  "installationSuspendedNotice": "Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru {names}. Reia instalarea pe GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "draft": "Ciornă",
   "merged": "Fuzionat",
   "closed": "Închis",
@@ -740,7 +696,7 @@
   "permissionGitCommit": "Creează commituri",
   "permissionGitPush": "Trimite commituri",
   "permissionPrCreate": "Creează pull request-uri",
-  "permissionPrPublish": "Publică pull request-uri",
+  "permissionPrPublish": "Actualizează sau unește pull request-uri",
   "permissionVendorSyncWrite": "Scrie sincronizări cu furnizorii",
   "permissionNetworkEgress": "Accesează rețeaua",
   "permissionSecretAccess": "Accesează secrete",
@@ -752,12 +708,11 @@
   "permissionEffectiveDescription": "Valabil la acest nivel fără argumente pentru acțiune. Permisiunile condiționate de mai jos se aplică doar solicitărilor corespunzătoare; serverul ia decizia finală.",
   "permissionSpaceAgentNote": "Niciun agent selectat. Regulile specifice agentului nu sunt afișate până când alegi unul mai sus.",
   "permissionScopedGrants": "Reguli la acest nivel",
-  "permissionRemembered": "Aprobare reținută",
+  "permissionRemembered": "Aprobare temporară",
   "permissionSetAtThisScope": "{source} · stabilită aici",
   "permissionInheritedFrom": "{source} · moștenită",
   "permissionExpiresAt": "Expiră la {date}",
   "permissionSetHere": "Stabilește o regulă aici",
-  "permissionRevokeBeforeEdit": "Revocă regula specifică sau reținută înainte de a stabili o regulă generală pentru această acțiune.",
   "permissionConfirmRevoke": "Confirmă revocarea",
   "permissionRevokeRule": "Revocă regula",
   "permissionCommandPrefix": "Prefixul comenzii: {prefix}",
@@ -871,9 +826,6 @@
   "activityAgentBlocked": "Acțiunea agentului este blocată",
   "activityMessage": "Mesaj nou",
   "activityPullRequest": "Actualizare pull request",
-  "activityTicket": "Actualizare tichet",
-  "activityMeeting": "Actualizare întâlnire",
-  "activityCalendar": "Conexiune la calendar",
   "activityRig": "Actualizare mediu izolat",
   "activityPrReady": "Pull request gata de fuzionare",
   "activityPrBlocked": "Fuzionarea pull request-ului este blocată",
@@ -1025,7 +977,7 @@
   "credentialsApiKeyHint": "Lipește o cheie API a furnizorului",
   "credentialsBrowserLogin": "Autentifică-te în browser",
   "credentialsWaitingForLogin": "Se așteaptă autorizarea în browser…",
-  "credentialsConnectCodePrompt": "Introdu codul afișat în browser",
+  "credentialsConnectCodePrompt": "Cod de confirmare",
   "credentialsConnectCodeMalformed": "Nu pare un cod de autentificare. Codurile au 8 litere și cifre.",
   "credentialsSignInInvalidCode": "Codul nu corespunde acestei autentificări. Verifică-l și încearcă din nou.",
   "credentialsSignInTooManyCodes": "Prea multe coduri greșite. Pornește din nou autentificarea.",
@@ -1042,11 +994,51 @@
   "credentialsCompleteLogin": "Finalizează autentificarea",
   "credentialsPersonalToken": "Token de acces personal",
   "credentialsPersonalTokenHint": "Lipește un token de acces personal",
-  "credentialsHostManaged": "Această conexiune provine din aplicația sau mediul serverului. Doar proprietarul serverului o poate modifica acolo; poți totuși să adaugi propriul token.",
   "credentialsStopWatching": "Oprește monitorizarea",
   "transcriptClaudeSignInExpiredTitle": "Autentificarea Claude Code a expirat",
   "transcriptClaudeSignInExpiredBody": "Rularea s-a oprit deoarece contul ei nu se mai autentifică. Conectează-te din nou, apoi reîncearcă tura.",
   "transcriptSignInExpiredTitle": "Autentificarea furnizorului a expirat",
   "transcriptSignInExpiredBody": "Rularea s-a oprit deoarece datele de acces ale furnizorului nu mai funcționează. Reconectează-l în Setări → Furnizori, apoi reîncearcă tura.",
-  "permissionHostExecution": "Rulează comenzi pe gazdă"
+  "permissionHostExecution": "Rulează comenzi pe gazdă",
+  "credentialsSignInLapsed": "Autentificarea ta în {provider} a expirat. Autentifică-te din nou.",
+  "credentialsSignInPaused": "În pauză: serviciul de autentificare al acestui spațiu de lucru s-a schimbat. Funcționează din nou când serviciul revine.",
+  "credentialsProviderUnreachable": "{provider} nu poate fi contactat acum. Se reîncearcă.",
+  "credentialsScopeWorkspace": "Doar acest spațiu de lucru",
+  "credentialsScopeAllWorkspaces": "Toate spațiile de lucru",
+  "credentialsRemoveConfirmWorkspace": "Elimini datele de autentificare salvate din acest spațiu de lucru? Celelalte și le păstrează pe ale lor.",
+  "credentialsRemoveConfirmAllWorkspaces": "Elimini datele de autentificare salvate din toate spațiile de lucru care le folosesc?",
+  "credentialsSignInServerRestarted": "Serverul a repornit. Începe din nou autentificarea.",
+  "repoAccessInstallApp": "Instalează GitHub App pe {owner} ca automatizarea să ajungă la {names}. Atinge pentru a deschide GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App nu este instalată pe {owner}, așa că automatizarea nu ajunge la {names}. Cere unui administrator al spațiului de lucru să o instaleze.",
+  "repoAccessAddToApp": "Adaugă {names} la depozitele GitHub App. Atinge pentru a deschide GitHub.",
+  "repoAccessAskAdminAdd": "GitHub App încă nu vede {names}. Cere unui administrator al spațiului de lucru să le adauge la depozitele ei.",
+  "repoAccessSuspended": "Instalarea GitHub App este suspendată. Automatizarea pentru {names} este în pauză până când un proprietar al contului reia instalarea pe GitHub.",
+  "repoAccessOwnerCannotSee": "Persoana responsabilă de automatizarea acestui spațiu de lucru nu mai vede {names}, așa că acolo nu rulează nimic în numele ei.",
+  "repoAccessOwnerNotSignedIn": "Persoana responsabilă de automatizarea acestui spațiu de lucru nu este autentificată în forge, așa că automatizarea pentru {names} așteaptă până se autentifică.",
+  "repoAccessRetrying": "Accesul la {names} nu a putut fi verificat. Se reîncearcă.",
+  "hiddenReposSignIn": "{count, plural, =1{Autentifică-te în {forge} ca să vezi pull request-urile din încă 1 depozit} other{Autentifică-te în {forge} ca să vezi pull request-urile din alte depozite: {count}}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 depozit este ascuns pentru că contul tău {forge} nu îl vede} other{Depozite ascunse pentru că contul tău {forge} nu le vede: {count}}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 depozit este ascuns pentru că nu ai acces la el în acest spațiu de lucru} other{Depozite ascunse la care nu ai acces în acest spațiu de lucru: {count}}}",
+  "hiddenReposChecking": "{count, plural, =1{Se verifică accesul tău la încă 1 depozit…} other{Se verifică accesul tău la alte depozite: {count}…}}",
+  "credentialsAtlassianEmail": "E-mailul contului Atlassian",
+  "credentialsAtlassianEmailInvalid": "Introdu adresa de e-mail a contului tău Atlassian.",
+  "credentialsBitbucketApiToken": "Token API",
+  "repoAccessAutomationTokenMissing": "Niciun token de automatizare nu poate citi {names}, așa că munca din fundal de acolo este în pauză. Un admin poate adăuga unul în Setări → Depozite.",
+  "credentialsSignInConfirmInBrowser": "Confirmă în browser, apoi introdu codul afișat.",
+  "credentialsSignInAccountAlreadyBound": "Acest cont este deja conectat la altă persoană de pe acest server. Autentifică-te cu alt cont.",
+  "credentialsTokenUnreachable": "{provider} nu a putut fi contactat pentru a verifica acest token. Încearcă din nou peste puțin.",
+  "credentialsTokenRejected": "{provider} nu acceptă acest token. Verifică dacă l-ai copiat complet și dacă nu a fost revocat.",
+  "credentialsTokenWrongKind": "Acesta nu este un token personal. Lipește un token de acces personal din contul tău {provider}, nu un token de proiect, grup, spațiu de lucru sau bot.",
+  "credentialsTokenNarrowScope": "Acestui token îi lipsește scope-ul {scope}, necesar pentru revizuire și comentarii. Creează unul care îl are.",
+  "credentialsTokenExpired": "Acest token a expirat. Creează unul nou și lipește-l aici.",
+  "credentialsSignInRateLimited": "Prea multe cereri acum. Așteaptă puțin, apoi încearcă din nou.",
+  "credentialsSignInCancelled": "Autentificarea a fost anulată sau refuzată. Pornește-o din nou când ești gata.",
+  "credentialsSignInNoLongerOpen": "Această autentificare nu mai este deschisă: a fost anulată, folosită sau înlocuită. Pornește-o din nou.",
+  "noWorkspacesYetHint": "Un administrator al spațiului de lucru trebuie să te invite, sau proprietarul serverului poate crea un spațiu de lucru pentru tine.",
+  "repoAccessReplaced": "{repos} indică acum către un alt depozit de pe {forge}. Reconectează-l din aplicația desktop sau web ca să-l poți folosi în continuare.",
+  "repoAccessAskAdminRelink": "{repos} indică acum către un alt depozit de pe {forge}. Un administrator al spațiului de lucru trebuie să îl reconecteze înainte de a putea fi folosit din nou.",
+  "runSandboxUnavailableTitle": "Agenții au nevoie de un sandbox pe acest server",
+  "runSandboxUnavailable": "Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți. Proprietarul poate instala sandbox-ul sau poate dezactiva sandboxing-ul pentru toată lumea.",
+  "permissionTools": "Instrumente: {tools}",
+  "permissionNotInEffect": "Fără efect cât această acțiune este setată pe Refuză"
 }

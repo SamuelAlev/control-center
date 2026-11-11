@@ -94,7 +94,6 @@
   },
   "inboxLoadFailed": "Doručenou poštu se nepodařilo načíst",
   "allCaughtUp": "Máte všechno přečtené",
-  "inboxNoForgeAccount": "Na serveru není připojený účet forge, takže pull requesty k vám zatím nelze přiřadit.",
   "inboxNothingWaiting": "Nic není blokováno a žádný pull request na vás nečeká.",
   "blocked": "Blokováno",
   "sectionNeedsYourReview": "Potřebuje vaši kontrolu",
@@ -201,28 +200,6 @@
       }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, one{{names} je příliš velký na odeslání odtud přes relay.} few{{names} jsou příliš velké na odeslání odtud přes relay.} other{{names} jsou příliš velké na odeslání odtud přes relay.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "names": {
-        "type": "String"
-      }
-    }
-  },
-  "attachmentUploadFailed": "Přílohu se nepodařilo nahrát. Zkuste to znovu.",
-  "attachmentsLeftOut": "{count, plural, one{1 přílohu se nepodařilo nahrát a byla vynechána.} few{{count} přílohy se nepodařilo nahrát a byly vynechány.} other{{count} příloh se nepodařilo nahrát a byly vynechány.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teammate": "Spolupracovník",
   "systemSender": "Systém",
   "agent": "Agent",
@@ -282,27 +259,6 @@
   "prsEmptyDescription": "Pull requesty z repozitářů tohoto pracovního prostoru se zobrazí tady.",
   "refreshPullRequests": "Obnovit pull requesty",
   "noForgeConnected": "Na serveru není připojený žádný forge, takže pull requesty nelze načíst. Připojte ho v desktopové aplikaci.",
-  "reposUnreadable": "{count, plural, one{1 repo se nepodařilo přečíst.} few{{count} repa se nepodařilo přečíst.} other{{count} rep se nepodařilo přečíst.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reposNotReadable": "Nelze číst: {names}",
-  "installationSuspendedTitle": "Instalace GitHub App je pozastavena",
-  "installationSuspendedBody": "Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu.",
-  "installationSuspendedNotice": "Instalace GitHub App je pozastavena. Zobrazují se naposledy známá data pro {names}. Obnovte instalaci na GitHubu.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "draft": "Koncept",
   "merged": "Sloučeno",
   "closed": "Zavřeno",
@@ -740,7 +696,7 @@
   "permissionGitCommit": "Potvrzovat změny commitem",
   "permissionGitPush": "Odesílat commity",
   "permissionPrCreate": "Vytvářet pull requesty",
-  "permissionPrPublish": "Publikovat pull requesty",
+  "permissionPrPublish": "Aktualizovat nebo sloučit pull requesty",
   "permissionVendorSyncWrite": "Zapisovat při synchronizaci dodavatele",
   "permissionNetworkEgress": "Přistupovat k síti",
   "permissionSecretAccess": "Přistupovat k tajným údajům",
@@ -752,12 +708,11 @@
   "permissionEffectiveDescription": "Platí pro tento rozsah bez argumentů akce. Podmíněná povolení níže platí jen pro odpovídající požadavky; konečné rozhodnutí dělá server.",
   "permissionSpaceAgentNote": "Není vybrán žádný agent. Pravidla pro konkrétního agenta se zobrazí až po jeho výběru výše.",
   "permissionScopedGrants": "Pravidla v tomto rozsahu",
-  "permissionRemembered": "Zapamatované schválení",
+  "permissionRemembered": "Schválení na čas",
   "permissionSetAtThisScope": "{source} · nastaveno zde",
   "permissionInheritedFrom": "{source} · zděděno",
   "permissionExpiresAt": "Platnost vyprší {date}",
   "permissionSetHere": "Nastavit zde pravidlo",
-  "permissionRevokeBeforeEdit": "Před nastavením obecného pravidla pro tuto akci zrušte pravidlo v daném rozsahu nebo zapamatované pravidlo.",
   "permissionConfirmRevoke": "Potvrdit zrušení",
   "permissionRevokeRule": "Zrušit pravidlo",
   "permissionCommandPrefix": "Předpona příkazu: {prefix}",
@@ -871,9 +826,6 @@
   "activityAgentBlocked": "Akce agenta byla zablokována",
   "activityMessage": "Nová zpráva",
   "activityPullRequest": "Aktualizace pull requestu",
-  "activityTicket": "Aktualizace ticketu",
-  "activityMeeting": "Aktualizace schůzky",
-  "activityCalendar": "Připojení kalendáře",
   "activityRig": "Aktualizace zařízení",
   "activityPrReady": "Pull request připraven ke sloučení",
   "activityPrBlocked": "Sloučení pull requestu zablokováno",
@@ -1025,7 +977,7 @@
   "credentialsApiKeyHint": "Vložte API klíč poskytovatele",
   "credentialsBrowserLogin": "Přihlásit se v prohlížeči",
   "credentialsWaitingForLogin": "Čekání na autorizaci v prohlížeči…",
-  "credentialsConnectCodePrompt": "Zadejte kód zobrazený v prohlížeči",
+  "credentialsConnectCodePrompt": "Potvrzovací kód",
   "credentialsConnectCodeMalformed": "To nevypadá jako přihlašovací kód. Kódy mají 8 písmen a číslic.",
   "credentialsSignInInvalidCode": "Tento kód k tomuto přihlášení nepatří. Zkontrolujte ho a zkuste to znovu.",
   "credentialsSignInTooManyCodes": "Příliš mnoho chybných kódů. Spusťte přihlášení znovu.",
@@ -1042,11 +994,51 @@
   "credentialsCompleteLogin": "Dokončit přihlášení",
   "credentialsPersonalToken": "Osobní přístupový token",
   "credentialsPersonalTokenHint": "Vložte osobní přístupový token",
-  "credentialsHostManaged": "Toto připojení pochází ze serverové aplikace nebo jejího prostředí. Změnit ho tam může jen vlastník serveru; vlastní token ale můžete přidat i vy.",
   "credentialsStopWatching": "Přestat sledovat",
   "transcriptClaudeSignInExpiredTitle": "Přihlášení ke Claude Code vypršelo",
   "transcriptClaudeSignInExpiredBody": "Běh se zastavil, protože jeho účet se už neověřuje. Přihlaste se znovu a pak tah zopakujte.",
   "transcriptSignInExpiredTitle": "Přihlášení k poskytovateli vypršelo",
   "transcriptSignInExpiredBody": "Běh se zastavil, protože přihlašovací údaje poskytovatele už nefungují. Znovu jej připojte v Nastavení → Poskytovatelé a pak tah zopakujte.",
-  "permissionHostExecution": "Spouštět příkazy na hostiteli"
+  "permissionHostExecution": "Spouštět příkazy na hostiteli",
+  "credentialsSignInLapsed": "Vaše přihlášení k {provider} vypršelo. Přihlaste se znovu.",
+  "credentialsSignInPaused": "Pozastaveno: přihlašovací služba tohoto pracovního prostoru se změnila. Znovu začne fungovat, jakmile bude služba zpět.",
+  "credentialsProviderUnreachable": "{provider} teď není dostupný. Zkouší se znovu.",
+  "credentialsScopeWorkspace": "Jen tento pracovní prostor",
+  "credentialsScopeAllWorkspaces": "Všechny pracovní prostory",
+  "credentialsRemoveConfirmWorkspace": "Odebrat uložené přihlašovací údaje z tohoto pracovního prostoru? Ostatní si ponechají své.",
+  "credentialsRemoveConfirmAllWorkspaces": "Odebrat uložené přihlašovací údaje ze všech pracovních prostorů, které je sdílejí?",
+  "credentialsSignInServerRestarted": "Server se restartoval. Začněte přihlášení znovu.",
+  "repoAccessInstallApp": "Nainstalujte GitHub App na {owner}, aby se automatizace dostala k {names}. Klepnutím otevřete GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App není na {owner} nainstalovaná, takže se automatizace k {names} nedostane. Požádejte správce pracovního prostoru o instalaci.",
+  "repoAccessAddToApp": "Přidejte {names} mezi repozitáře GitHub App. Klepnutím otevřete GitHub.",
+  "repoAccessAskAdminAdd": "GitHub App zatím {names} nevidí. Požádejte správce pracovního prostoru, aby je přidal mezi její repozitáře.",
+  "repoAccessSuspended": "Instalace GitHub App je pozastavena. Automatizace pro {names} je pozastavená, dokud vlastník účtu neobnoví instalaci na GitHubu.",
+  "repoAccessOwnerCannotSee": "Osoba odpovědná za automatizaci tohoto pracovního prostoru už {names} nevidí, takže tam jejím jménem nic neběží.",
+  "repoAccessOwnerNotSignedIn": "Osoba odpovědná za automatizaci tohoto pracovního prostoru není přihlášená ke forge, takže automatizace pro {names} čeká, dokud se nepřihlásí.",
+  "repoAccessRetrying": "Přístup k {names} se nepodařilo ověřit. Zkouší se znovu.",
+  "hiddenReposSignIn": "{count, plural, =1{Přihlaste se k {forge}, abyste viděli pull requesty z dalšího repozitáře} other{Přihlaste se k {forge}, abyste viděli pull requesty z dalších repozitářů: {count}}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 repozitář je skrytý, protože ho váš účet {forge} nevidí} other{Skryté repozitáře, které váš účet {forge} nevidí: {count}}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 repozitář je skrytý, protože k němu v tomto pracovním prostoru nemáte přístup} other{Skryté repozitáře, ke kterým v tomto pracovním prostoru nemáte přístup: {count}}}",
+  "hiddenReposChecking": "{count, plural, =1{Ověřuje se váš přístup k dalšímu repozitáři…} other{Ověřuje se váš přístup k dalším repozitářům: {count}…}}",
+  "credentialsAtlassianEmail": "E-mail účtu Atlassian",
+  "credentialsAtlassianEmailInvalid": "Zadejte e-mailovou adresu svého účtu Atlassian.",
+  "credentialsBitbucketApiToken": "Token API",
+  "repoAccessAutomationTokenMissing": "Žádný automatizační token nemůže číst {names}, takže práce na pozadí je tam pozastavena. Správce může token přidat v Nastavení → Repozitáře.",
+  "credentialsSignInConfirmInBrowser": "Potvrďte v prohlížeči a poté zadejte zobrazený kód.",
+  "credentialsSignInAccountAlreadyBound": "Tento účet je už připojen k jiné osobě na tomto serveru. Přihlaste se jiným účtem.",
+  "credentialsTokenUnreachable": "{provider} nebyl dostupný, takže nelze tento token ověřit. Zkuste to za chvíli znovu.",
+  "credentialsTokenRejected": "{provider} tento token nepřijímá. Zkontrolujte, zda jste zkopírovali celý a zda nebyl zrušen.",
+  "credentialsTokenWrongKind": "Toto není osobní token. Vložte osobní přístupový token z vlastního účtu {provider}, ne token projektu, skupiny, pracovního prostoru nebo bota.",
+  "credentialsTokenNarrowScope": "Tomuto tokenu chybí oprávnění {scope}, které je potřeba k revizím a komentářům. Vytvořte token, který ho má.",
+  "credentialsTokenExpired": "Platnost tohoto tokenu vypršela. Vytvořte nový a vložte jej sem.",
+  "credentialsSignInRateLimited": "Právě teď je příliš mnoho požadavků. Počkejte chvilku a zkuste to znovu.",
+  "credentialsSignInCancelled": "Přihlášení bylo zrušeno nebo odmítnuto. Spusťte je znovu, až budete připraveni.",
+  "credentialsSignInNoLongerOpen": "Toto přihlášení už není otevřené: bylo zrušeno, použito nebo nahrazeno. Spusťte je znovu.",
+  "noWorkspacesYetHint": "Správce pracovního prostoru vás musí pozvat, nebo vám vlastník serveru může pracovní prostor vytvořit.",
+  "repoAccessReplaced": "{repos} nyní ukazuje na jiný repozitář na {forge}. Pokud s ním chcete dál pracovat, znovu jej propojte v desktopové nebo webové aplikaci.",
+  "repoAccessAskAdminRelink": "{repos} nyní ukazuje na jiný repozitář na {forge}. Správce pracovního prostoru jej musí znovu propojit, než půjde znovu použít.",
+  "runSandboxUnavailableTitle": "Agenti na tomto serveru potřebují sandbox",
+  "runSandboxUnavailable": "Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník. Vlastník může sandbox nainstalovat nebo sandboxing vypnout pro všechny.",
+  "permissionTools": "Nástroje: {tools}",
+  "permissionNotInEffect": "Bez účinku, dokud je tato akce nastavena na Zakázat"
 }

@@ -2,7 +2,7 @@
 title: Pipeline-ok és automatizálás
 description: Miért választja el a pipeline az ütemezést a munkától, mi indít el valójában egy futtatást, és mely beépített sablonok működnek rögtön a telepítés után.
 slug: hu-HU/kezikonyv/fogalmak/pipeline-ok
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 A pipeline a Control Center determinisztikus fele. Az ügynök eldönti, mit
@@ -39,7 +39,7 @@ folytatna egy lépést, mert a folytatás rosszabb lenne a leállásnál:
   nem kivétel.
 - Egy lépés, amely `extras: {'idempotent': false}` beállítással van
   deklarálva, és éppen futott, amikor a szerver leállt, már alkalmazhatta a
-  mellékhatását (egy squash merge, egy worktree-takarítás). Az újrafuttatása
+  mellékhatását (egy munkaterület-biztonsági mentés, egy worktree-takarítás). Az újrafuttatása
   kétszer alkalmazhatná, ezért a motor megbuktatja, és az újrapróbálkozást
   Önre hagyja.
 
@@ -147,8 +147,28 @@ fel, és ez soha nem is volt felhasználói döntés tárgya.
 Még egy aszimmetria, amit érdemes tudni: a beépített `pr_review` szándékosan már
 nem tesz közzé semmit a GitHubon. Egy átnézés közzététele külön, felhasználói
 jóváhagyáshoz kötött lépés, és egy közvetlenül posztoló pipeline kétszer tenné
-közzé. A `cross_review`, a `ticket_to_pr` és a `pr_triage` viszont futásukkor
-továbbra is egyenesen a GitHubra tesz közzé egy hozzászólást.
+közzé. A `cross_review`, a `ticket_to_pr`, a `pr_triage`, a `pre_merge_gate` és az
+`external_pr_welcome` viszont futásukkor továbbra is tesz közzé egy hozzászólást a
+GitHubon.
+
+Ezt a szerver teszi meg, a **Post PR comment** lépésen (`prReview.comment`)
+keresztül, soha nem shell-szkriptből: a pipeline shell-lépéseinek és az ügynökei
+homokozóinak csak olvasási jogú GitHub-tokenjük van. Ugyanez a szabály határozza
+meg a többit is:
+
+- Az `external_pr_welcome` az üdvözlő szövegét a lépés `message` mezőjeként teszi
+  közzé.
+- A `ticket_to_pr` azt kéri a kódoló ügynöktől, hogy a `agent/<ticket_id>` ágat (a
+  futtatási átjárón keresztül) tolja fel, majd a `open_pull_request` eszközzel
+  nyisson vázlat PR-t, a futtatást elindító személy GitHub-bejelentkezésével, vagy
+  botként, ha senki nem indította. Mindkét lépésre vonatkoznak a munkaterület
+  **Küldés távoli tárolóra** és **Pull request megnyitása** szabályai. A Control
+  Center Connectben egy senki által nem kért futtatás, például a `TicketAssigned`
+  által indított, nem tud pusholni vagy PR-t nyitni: a megosztott alkalmazás botja
+  csak olvas és hozzászól.
+- A `pre_merge_gate` soha nem olvaszt össze. A kapuján tett jóváhagyás közzéteszi,
+  hogy a PR készen áll arra, hogy egy karbantartó összefésülje; az elutasítás azt,
+  hogy módosítások szükségesek. Az összefésülést egy személy végzi a PR oldalán.
 
 ## Mit tud a motor
 

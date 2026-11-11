@@ -1,14 +1,14 @@
-import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
-import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
-import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/notifications/domain/entities/notification_feed_item.dart';
 import 'package:cc_server_core/src/catalog/notification_feed_visibility.dart';
+import 'package:cc_server_core/src/catalog/pr_data_gate.dart'
+    show SpaceReadGate;
+import 'package:cc_server_core/src/catalog/pr_repo_visibility.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -53,6 +53,7 @@ void main() {
               'acme/private': 'repo-private',
             },
             readableRepoIds: {'repo-api'},
+            prVisibleRepoIds: {'repo-api'},
             canReadSpace: (spaceId) async {
               spaceReads++;
               return spaceId == 'room-ok';
@@ -69,6 +70,55 @@ void main() {
   );
 
   test(
+    'a PR-derived row needs its repo in the viewer\'s PR visibility',
+    () async {
+      NotificationFeedItem row(
+        String id,
+        String method,
+        Map<String, dynamic> p,
+      ) => NotificationFeedItem(
+        id: id,
+        workspaceId: 'ws-a',
+        method: method,
+        params: p,
+        createdAt: DateTime.utc(2026, 10, 16),
+      );
+      final items = [
+        // Granted, but the viewer's own forge sign-in cannot read acme/api.
+        row('pr', 'notifications/pr_review_requested', {
+          'repo_owner': 'Acme',
+          'repo_name': 'api',
+        }),
+        row('stale', 'notifications/review_stale', {'repo_id': 'repo-api'}),
+        row('external', 'notifications/external_pr_merged', {
+          'repo_owner': 'Acme',
+          'repo_name': 'api',
+        }),
+        // Not PR data: the grant alone decides, as before.
+        row('rig', 'notifications/rig_reaped', {'repo_id': 'repo-api'}),
+        // A published agent PR by lifecycle id names no repository.
+        row('merged', 'notifications/pr_merged', {'pr_id': 'pr-1'}),
+        // Visible on both counts.
+        row('web', 'notifications/pr_review_requested', {
+          'repo_owner': 'Acme',
+          'repo_name': 'web',
+        }),
+      ];
+      final result = await filterNotificationFeedItems(
+        workspaceId: 'ws-a',
+        userId: 'user-a',
+        items: items,
+        isMember: true,
+        repoIdsByCoordinate: {'acme/api': 'repo-api', 'acme/web': 'repo-web'},
+        readableRepoIds: {'repo-api', 'repo-web'},
+        prVisibleRepoIds: {'repo-web'},
+        canReadSpace: (_) async => true,
+      );
+      expect(result.map((r) => r.id), ['rig', 'merged', 'web']);
+    },
+  );
+
+  test(
     'row addressed to another principal never becomes visible with repo grant',
     () async {
       final result = await filterNotificationFeedItems(
@@ -80,6 +130,7 @@ void main() {
         isMember: true,
         repoIdsByCoordinate: {'acme/api': 'repo-api'},
         readableRepoIds: {'repo-api'},
+        prVisibleRepoIds: {'repo-api'},
         canReadSpace: (_) async => true,
       );
       expect(result, isEmpty);
@@ -107,19 +158,14 @@ void main() {
         updatedAt: now,
       ),
     ]);
-    final isolated = _Isolated([
-      IsolatedRepo(
-        id: 'isolated-a',
-        workspaceId: 'ws-a',
-        spaceId: 'room-secret',
-        repoId: 'repo-api',
-        path: '/spaces/room-secret/repos/api',
-        branch: 'test',
-        backend: RepoIsolationBackend.rift,
-        sourcePath: '/repo/api',
-        createdAt: now,
-      ),
-    ]);
+    // `room-secret` exposes `repo-api`: the space read gate withholds it
+    // while the viewer may not read that repository.
+    final spaceRead = _SpaceRead(
+      (_) async =>
+          (members.grants['repo-api'] ?? RepoGrantLevel.none).allowsRead
+          ? const {}
+          : const {'room-secret'},
+    );
     final rows = [
       item('repo', {'repo_owner': 'Acme', 'repo_name': 'api'}),
       item('space', {'space_id': 'room-secret'}),
@@ -131,7 +177,11 @@ void main() {
           items: rows,
           members: members,
           workspaces: workspaces,
-          isolatedRepos: isolated,
+          spaceRead: spaceRead,
+          prVisibility: RepoVisibility(
+            visible: {workspaces.repos.single.id: workspaces.repos.single},
+            hidden: const {},
+          ),
         );
 
     expect(await visible(), isEmpty);
@@ -142,6 +192,41 @@ void main() {
     members.member = null;
     expect(await visible(), isEmpty);
   });
+
+  test(
+    'the space read gate alone decides a space row, admins included',
+    () async {
+      final now = DateTime.utc(2026, 11, 10);
+      final members = _Members()
+        ..member = WorkspaceMember(
+          id: 'membership-admin',
+          workspaceId: 'ws-a',
+          userId: 'admin-a',
+          role: WorkspaceRole.admin,
+          joinedAt: now,
+        );
+      var withheld = <String>{'room-secret'};
+      Future<List<String>> visible() async => [
+        for (final row in await visibleNotificationItemsForUser(
+          workspaceId: 'ws-a',
+          userId: 'admin-a',
+          items: [
+            item('space', {'space_id': 'room-secret'}),
+            item('open', {'space_id': 'room-open'}),
+          ],
+          members: members,
+          workspaces: _Workspaces(const []),
+          spaceRead: _SpaceRead((_) async => withheld),
+          prVisibility: RepoVisibility.empty,
+        ))
+          row.id,
+      ];
+
+      expect(await visible(), ['open']);
+      withheld = {};
+      expect(await visible(), ['space', 'open']);
+    },
+  );
 }
 
 class _Members implements WorkspaceMembershipRepository {
@@ -176,20 +261,18 @@ class _Workspaces implements WorkspaceRepository {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _Isolated implements IsolatedRepoRepository {
-  _Isolated(this.repos);
-  final List<IsolatedRepo> repos;
+class _SpaceRead implements SpaceReadGate {
+  _SpaceRead(this._unreadable);
+  final Future<Set<String>> Function(String userId) _unreadable;
 
   @override
-  Future<List<IsolatedRepo>> forSpace(
+  Future<void> require(
     String workspaceId,
+    String userId,
     String spaceId,
-  ) async => repos
-      .where(
-        (repo) => repo.workspaceId == workspaceId && repo.spaceId == spaceId,
-      )
-      .toList();
+  ) async {}
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  Future<Set<String>> unreadable(String workspaceId, String userId) =>
+      _unreadable(userId);
 }

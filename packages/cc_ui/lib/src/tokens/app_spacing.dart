@@ -1,11 +1,8 @@
 import 'package:flutter/widgets.dart';
 
 /// Canonical spacing scale (4px base) for consistent vertical and horizontal
-/// rhythm across the app.
-///
-/// Before this existed, spacing was ad-hoc `EdgeInsets`/`SizedBox` literals
-/// with a long tail of one-off values. New chrome (sidebar, top bar, cockpit)
-/// is built on these tokens; older surfaces migrate opportunistically.
+/// rhythm across the app. Prefer these tokens over one-off `EdgeInsets` /
+/// `SizedBox` literals.
 abstract final class AppSpacing {
   const AppSpacing._();
 

@@ -2,12 +2,12 @@
 title: Een agent maken en configureren
 description: Voeg een agent toe aan een werkruimte, geef hem een adapter, model, skills en machtigingen en controleer dat hij draait.
 slug: nl-NL/handleiding/gidsen/agent-maken
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Deze gids laat je zien hoe je een agent aan een werkruimte toevoegt en hem configureert tot hij echt kan draaien.
 
-Elke werkruimte begint met vijf agents — een CEO plus `qa`, `architect`, `engineer` en `librarian` — dus je hebt meestal al agents voordat je er zelf een hebt geconfigureerd. De stappen hieronder gelden net zo goed voor een meegeleverde agent als voor een nieuwe.
+Elke werkruimte begint met zes agents — een CEO plus `qa`, `architect`, `engineer`, `librarian` en `content-synthesizer` — dus je hebt meestal al agents voordat je er zelf een hebt geconfigureerd. De stappen hieronder gelden net zo goed voor een meegeleverde agent als voor een nieuwe.
 
 ## Voordat je begint
 
@@ -73,7 +73,7 @@ Een agent heeft geen eigen machtigingsschakelaars. Wat hij mag pushen, openen, m
 Het GitHub-token van de agent heeft altijd alleen leesrechten. Een push loopt via Control Center, dat de regel **Naar een remote pushen** raadpleegt voordat het hem doorstuurt. Zie [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/) voor hoe elke regel een run bereikt.
 
 :::note[Regels en de OS-sandbox zijn aparte lagen]
-De regels bepalen wat een agent mag doen; de OS-sandbox begrenst waar zijn processen kunnen lezen, schrijven en verbinden. `cc_server` wikkelt agentruns in de sandbox van de host waar die bestaat — Windows heeft geen native backend, en Linux en WSL2 hebben `bwrap` en `socat` nodig. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor alle grenzen.
+De regels bepalen wat een agent mag doen; de OS-sandbox begrenst waar zijn processen kunnen lezen, schrijven en verbinden. `cc_server` wikkelt agentruns in de sandbox van de host waar die bestaat — Windows heeft geen native backend, en Linux en WSL2 hebben `bwrap` en `socat` nodig. Waar er geen bestaat, starten alleen de runs van de serverbeheerder, tenzij de beheerder de sandbox voor iedereen heeft uitgezet. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor alle grenzen.
 :::
 
 ## Controleren of hij draait

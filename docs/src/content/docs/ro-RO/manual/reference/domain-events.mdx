@@ -2,7 +2,7 @@
 title: Evenimente de domeniu
 description: Catalog complet al celor 54 de evenimente de domeniu, al payload-urilor lor și al abonaților din partea serverului care le consumă.
 slug: ro-RO/manual/referinta/evenimente-de-domeniu
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bus-ul de evenimente
@@ -148,14 +148,13 @@ Mai multe subsisteme care par conduse de evenimente din exterior nu sunt. Sunt e
 
 | Subdomeniu          | Cum se propagă starea în schimb                                                                          |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memorie             | `record_memory_fact` și cele înrudite scriu și returnează; rechemarea citește. Nimic nu publică la un fapt sau un conflict |
+| Memorie             | `propose_fact` și cele înrudite scriu și returnează; rechemarea citește. Nimic nu publică la un fapt sau un conflict |
 | Orchestrare         | Propunerea, aprobarea ei și rularea de pipeline generată sunt rânduri și apeluri RPC                     |
 | Documente de plan   | `submit_plan` scrie o revizie; aprobarea materializează o orchestrare. Niciuna nu este anunțată          |
 | Artefacte           | `publish_artifact` / `revise_artifact` scriu revizii direct                                              |
 | Aprobări            | Escaladarea este gestionată în interiorul serviciului de flux de aprobare                                |
 | Sincronizarea tichetelor | Coordonatorul de furnizori se abonează la evenimentele de tichet de mai sus; webhook-urile primite sunt aplicate direct |
 | Reîmprospătarea calendarului | O sincronizare inserează sau actualizează evenimente, iar clientul recitește; nu există nicio difuzare de reîmprospătare |
-| Îmbinări de worktree-uri | Înregistrate în `worktree_merge_log` și citite de acolo                                              |
 
 ## Abonați
 
@@ -190,7 +189,7 @@ Fiecare abonat de mai jos este construit în interiorul `runCcServer` (sau al un
 
 `TicketAssigned` este un semnal de audit și de notificare și un trigger de pipeline. Atribuirea către un agent înregistrează proprietatea și nu pornește nicio rulare — nu există niciun dispecer de tichete. Atribuirea către o echipă (`assignedTeamId` setat) este excepția: `TeamRoutingService` trimite liderul echipei.
 
-`TicketRemoteSyncHandler` este declarat, dar nu este construit niciodată în codul de producție, așa că în prezent nu se abonează la nimic. `NotificationEventMapper` din partea de client este construit doar în propriul test — este rămășița căii în proces de dinainte de separarea dintre client și server. Toast-urile live vin din cadrele JSON-RPC de mai jos.
+Toast-urile live vin din cadrele JSON-RPC de mai jos.
 
 ## Maparea notificărilor
 

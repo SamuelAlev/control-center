@@ -82,7 +82,25 @@ class InMemoryRuns implements EnvironmentRunRepository {
     String workspaceId,
     String id,
     String output,
-  ) async => outputWrites.add(output);
+  ) async {
+    outputWrites.add(output);
+    final run = runs[id];
+    if (run != null) {
+      runs[id] = EnvironmentRun(
+        id: run.id,
+        workspaceId: run.workspaceId,
+        spaceId: run.spaceId,
+        environmentId: run.environmentId,
+        definitionId: run.definitionId,
+        repoId: run.repoId,
+        kind: run.kind,
+        label: run.label,
+        status: run.status,
+        startedAt: run.startedAt,
+        output: output,
+      );
+    }
+  }
 
   @override
   Future<void> finish(
@@ -169,6 +187,9 @@ class FakeCommandRunner extends EnvironmentCommandRunner {
 
   /// Awaited before answering, so a test can hold a command open.
   Future<void> Function(FakeCall call)? beforeAnswer;
+
+  /// What a command says while it runs, before it answers.
+  Iterable<EnvironmentCommandEvent> Function(FakeCall call)? events;
   final List<FakeStream> streams = [];
 
   /// The calls whose argv contains [word].
@@ -185,8 +206,15 @@ class FakeCommandRunner extends EnvironmentCommandRunner {
   }) async {
     final call = FakeCall(argv, environment, workingDirectory, timeout);
     calls.add(call);
+    for (final event
+        in events?.call(call) ?? const <EnvironmentCommandEvent>[]) {
+      onEvent?.call(event);
+    }
     await beforeAnswer?.call(call);
-    return handler(call);
+    final result = handler(call);
+    // As the real runner does: the exit is the last thing a command says.
+    onEvent?.call(EnvironmentCommandExit(result.exitCode));
+    return result;
   }
 
   @override

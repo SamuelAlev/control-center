@@ -75,6 +75,7 @@ class EnvironmentContractInput {
     required this.spaceName,
     required this.spaceKind,
     required this.repos,
+    this.defaultRole,
     this.ports = const {},
     this.urls = const {},
     this.primaryUrl,
@@ -110,6 +111,11 @@ class EnvironmentContractInput {
 
   /// Roles present, in definition order.
   final List<EnvironmentContractRepo> repos;
+
+  /// The role a command that names none runs in: the definition's first
+  /// declared role, whether or not the space has it. Null when it declares
+  /// none.
+  final String? defaultRole;
 
   /// Allocated ports by key: `web`, `postgres.5432`.
   final Map<String, int> ports;
@@ -172,8 +178,7 @@ class EnvironmentContract {
             'opt.${entry.key}': environmentOptionText(entry.value),
       });
 
-  /// The variables for a command running in [role], or in the first role the
-  /// space has.
+  /// The variables for a command running in [role], or in the default role.
   ///
   /// The contract is written last, so a definition can never shadow it even if
   /// a stored row got past the validator.
@@ -217,7 +222,6 @@ class EnvironmentContract {
         'CC_ROOT_PATH': repo.sourcePath,
       },
       for (final item in input.repos) ...{
-        'CC_REPO_PATH_${environmentVariableKey(item.role)}': item.path,
         'CC_ENV_REPO_${environmentVariableKey(item.role)}': item.path,
         'CC_ENV_SOURCE_${environmentVariableKey(item.role)}': item.sourcePath,
       },
@@ -259,12 +263,13 @@ class EnvironmentContract {
   /// Throws `EnvironmentTemplateException` when the space has no such role or
   /// no role at all, and refuses a path that climbs out of the worktree.
   String workingDirectory(EnvironmentCwd? cwd) {
-    final repo = _repo(cwd?.role);
+    final role = cwd?.role ?? input.defaultRole;
+    final repo = _repo(role);
     if (repo == null) {
       throw EnvironmentTemplateException(
-        cwd?.role == null
+        role == null
             ? 'This space has no repo to run in'
-            : 'This space has no repo for the role ${cwd?.role}',
+            : 'This space has no repo for the role $role',
       );
     }
     final relative = cwd?.path;
@@ -280,9 +285,11 @@ class EnvironmentContract {
     return joined;
   }
 
+  /// Never another role the space happens to have: that is a different repo.
   EnvironmentContractRepo? _repo(String? role) {
+    final key = role ?? input.defaultRole;
     for (final repo in input.repos) {
-      if (role == null || repo.role == role) {
+      if (repo.role == key) {
         return repo;
       }
     }

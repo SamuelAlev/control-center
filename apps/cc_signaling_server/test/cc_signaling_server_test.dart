@@ -543,66 +543,6 @@ void main() {
     );
   });
 
-  group('TURN credentials', () {
-    test(
-      'an admitted member gets HMAC credentials; a non-member is refused',
-      () async {
-        final broker = SignalingBroker(
-          turnSecret: 'coturn-shared-secret',
-          turnUris: const ['turn:turn.example.com:3478'],
-          turnTtl: const Duration(hours: 2),
-        )..start();
-        handle = await serveSignaling(
-          host: 'localhost',
-          port: 0,
-          broker: broker,
-        );
-        final server = await _joinOwner(handle.port);
-        final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
-
-        a.send({'type': 'turn-request', 'room': 'alpha'});
-        final creds = await a.next((m) => m['type'] == 'turn-credentials');
-        expect(creds['uris'], ['turn:turn.example.com:3478']);
-        expect(creds['ttlSeconds'], 7200);
-        final username = creds['username'] as String;
-        final expiry = int.parse(username.split(':').first);
-        expect(
-          expiry,
-          greaterThan(DateTime.now().millisecondsSinceEpoch ~/ 1000),
-        );
-        // coturn static-auth-secret scheme: base64(HMAC-SHA1(secret, username)).
-        final expected = base64.encode(
-          Hmac(
-            sha1,
-            utf8.encode('coturn-shared-secret'),
-          ).convert(utf8.encode(username)).bytes,
-        );
-        expect(creds['credential'], expected);
-
-        final outsider = await _Client.connect(handle.port);
-        outsider.send({'type': 'turn-request', 'room': 'alpha'});
-        expect(
-          (await outsider.next((m) => m['type'] == 'error'))['error'],
-          'not a member',
-        );
-        await outsider.close();
-
-        await a.close();
-        await server.close();
-      },
-    );
-
-    test('an unconfigured broker answers with empty uris', () async {
-      handle = await serveSignaling(host: 'localhost', port: 0);
-      final server = await _joinOwner(handle.port);
-      server.send({'type': 'turn-request', 'room': 'alpha'});
-      final creds = await server.next((m) => m['type'] == 'turn-credentials');
-      expect(creds['uris'], isEmpty);
-      expect(creds.containsKey('credential'), isFalse);
-      await server.close();
-    });
-  });
-
   group('hardening', () {
     test(
       'per-room control budget drops floods but preserves membership',
@@ -620,8 +560,8 @@ void main() {
         final server = await _joinOwner(handle.port);
         final a = await _joinClient(handle.port, from: 'A', token: _tokenA);
 
-        // These are deliberately not secure records; legacy/control traffic
-        // still consumes the strict frame budget.
+        // These are deliberately not secure records: control signals (the
+        // hello and Noise handshake frames) consume the strict frame budget.
         for (var i = 0; i < 60; i++) {
           a.send({
             'type': 'signal',
@@ -664,8 +604,10 @@ void main() {
           from: 'A',
           token: _tokenA,
         );
+        // A non-owner admit is a cheap control round trip: each one the
+        // budget lets through is answered with `not owner`.
         for (var i = 0; i < 20; i++) {
-          client.send({'type': 'turn-request', 'room': 'alpha'});
+          client.send({'type': 'admit'});
         }
         client.send({
           'type': 'signal',
@@ -683,7 +625,7 @@ void main() {
         );
         await Future<void>.delayed(const Duration(milliseconds: 100));
         expect(
-          client.received.where((m) => m['type'] == 'turn-credentials').length,
+          client.received.where((m) => m['type'] == 'error').length,
           lessThan(20),
         );
         expect(broker.peerCount('alpha'), 2);
@@ -789,8 +731,8 @@ void main() {
           'kind': 'close',
           'payload': {},
         });
-        server.send({'type': 'turn-request'});
-        await server.next((frame) => frame['type'] == 'turn-credentials');
+        server.send({'type': 'admit'});
+        await server.next((frame) => frame['type'] == 'admit-ok');
         final received = <Map<String, dynamic>>[];
         for (var i = 0; i < 3; i++) {
           received.add(await client.next((frame) => frame['type'] == 'signal'));
@@ -841,8 +783,11 @@ void main() {
               broker.peerCount('alpha') == 1,
         );
         final b = await _joinClient(handle.port, from: 'B', token: _tokenB);
-        b.send({'type': 'turn-request', 'room': 'alpha'});
-        await b.next((frame) => frame['type'] == 'turn-credentials');
+        b.send({'type': 'admit'});
+        expect(
+          (await b.next((frame) => frame['type'] == 'error'))['error'],
+          'not owner',
+        );
         expect(b.isClosed, isFalse);
         await b.close();
         await server.close();

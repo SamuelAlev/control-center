@@ -2,7 +2,7 @@
 title: Pipelines et automatisation
 description: Pourquoi les pipelines séparent l’ordonnancement du travail, ce qui démarre réellement une exécution et lesquels des modèles intégrés sont actifs dès l’installation.
 slug: fr-CA/manuel/concepts/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Les pipelines forment la moitié déterministe de Control Center. Un agent décide
@@ -37,8 +37,8 @@ reprendre une étape, car une reprise serait pire qu’un arrêt :
   `extras['awaitApproval'] == true` — c’est la porte d’approbation partielle
   `orchestration.awaitApproval`. `human.gate` n’est pas exempté.
 - Une étape déclarée `extras: {'idempotent': false}` qui était en cours au moment
-  de l’arrêt du serveur peut avoir déjà appliqué son effet de bord (une fusion
-  squash, un nettoyage d’arbre de travail). La réexécuter pourrait appliquer
+  de l’arrêt du serveur peut avoir déjà appliqué son effet de bord (une sauvegarde
+  de l’espace de travail, un nettoyage d’arbre de travail). La réexécuter pourrait appliquer
   l’effet deux fois; le moteur la met donc en échec et vous laisse décider de la
   nouvelle tentative.
 
@@ -150,9 +150,29 @@ l’utilisateur.
 Une autre asymétrie vaut la peine d’être connue : le modèle intégré `pr_review`
 ne publie délibérément plus dans GitHub. Publier une révision est une étape
 distincte, soumise à l’approbation de l’utilisateur, et un pipeline qui publierait
-directement ferait une double publication. `cross_review`, `ticket_to_pr` et
-`pr_triage` publient toujours un commentaire directement dans GitHub lorsqu’ils
-s’exécutent.
+directement ferait une double publication. `cross_review`, `ticket_to_pr`,
+`pr_triage`, `pre_merge_gate` et `external_pr_welcome` publient toujours un
+commentaire dans GitHub lorsqu’ils s’exécutent.
+
+Ils le font depuis le serveur, par l’étape **Post PR comment** (`prReview.comment`),
+jamais depuis un script shell : les étapes shell d’un pipeline et les bacs à sable
+de ses agents détiennent un jeton GitHub en lecture seule. La même règle façonne
+le reste :
+
+- `external_pr_welcome` publie son message d’accueil comme `message` de cette
+  étape.
+- `ticket_to_pr` demande à l’agent développeur de pousser `agent/<ticket_id>`
+  (via la passerelle d’exécution), puis d’ouvrir la PR en brouillon avec
+  `open_pull_request`, sous la connexion GitHub de la personne qui a lancé
+  l’exécution, ou sous l’identité du robot si personne ne l’a fait. Ces deux
+  actions respectent les règles de l’espace de travail **Pousser vers un dépôt
+  distant** et **Ouvrir une pull request**. Sur Control Center Connect, une
+  exécution que personne n’a demandée, comme celle déclenchée par
+  `TicketAssigned`, ne peut ni pousser ni ouvrir la PR : le robot de l’application
+  partagée ne fait que lire et commenter.
+- `pre_merge_gate` ne fusionne jamais. Une approbation à sa barrière indique que
+  la PR est prête pour qu’un mainteneur la fusionne ; un rejet indique que des
+  modifications sont demandées. Une personne fusionne depuis la page de la PR.
 
 ## Ce que le moteur sait
 

@@ -100,19 +100,15 @@ abstract final class RigTabSurfaces {
   /// for its whole life), and the reason to open a second browser rig is
   /// almost always to compare it against the first.
   ///
-  /// An engine the server did not report is not offered. A server that names
-  /// none at all still gets Chromium — that is an older server, which had
-  /// exactly one browser and no way to say so.
+  /// An engine the server did not report is not offered, so no browser is
+  /// offered until the rig probe has answered.
   static List<RigTabTarget> targets(
     Set<RigBrowserEngine> engines, {
     Set<String> advertisedSurfaces = const {},
   }) {
-    final available = engines.isEmpty
-        ? const {RigBrowserEngine.chromium}
-        : engines;
     return [
       for (final engine in RigBrowserEngine.values)
-        if (available.contains(engine)) RigTabTarget(browser, engine: engine),
+        if (engines.contains(engine)) RigTabTarget(browser, engine: engine),
       const RigTabTarget(mobile),
       if (advertisedSurfaces.contains(ios)) const RigTabTarget(ios),
       // The desktop is last: it is the heavyweight machine a conversation
@@ -192,28 +188,22 @@ abstract final class RigTabSurfaces {
   /// Reads a tab's `slot` arg: WHICH machine of its kind it addresses.
   ///
   /// Null — the conversation's default machine — for every tab that names no
-  /// slot, which includes every tab in a layout written before slots existed.
-  /// That is what keeps a restored layout pointing at the machine it opened.
+  /// slot.
   static String? slotFromArgs(Map<String, Object?> args) {
     final slot = args['slot'];
     return slot is String && slot.isNotEmpty ? slot : null;
   }
 
-  /// The engine a BROWSER tab addresses, resolving an absent one.
-  ///
-  /// A browser tab always names an engine, even when its args do not: a
-  /// layout written before engines existed is a Chromium tab, because
-  /// Chromium is the only browser those rigs ever ran. Leaving it null would
-  /// make such a tab match ANY browser rig in the conversation — which is how
-  /// closing an old tab could shut down the Firefox machine next to it.
-  ///
-  /// Null for the surfaces that have no engine at all.
-  static RigBrowserEngine? browserEngineOf(Map<String, Object?> args) {
-    if (args['surface'] != browser) {
-      return null;
-    }
-    return engineFromArgs(args) ?? RigBrowserEngine.chromium;
-  }
+  /// The engine a BROWSER tab addresses. Null for the surfaces that have no
+  /// engine at all.
+  static RigBrowserEngine? browserEngineOf(Map<String, Object?> args) =>
+      args['surface'] == browser ? engineFromArgs(args) : null;
+
+  /// Whether a persisted rig tab's [args] are complete enough to restore: a
+  /// browser tab must name its engine, or it would match ANY browser rig in
+  /// the conversation — and closing it could shut down the wrong machine.
+  static bool restorable(Map<String, Object?> args) =>
+      args['surface'] != browser || engineFromArgs(args) != null;
 
   /// The tab-strip icon for [surface].
   ///

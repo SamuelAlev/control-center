@@ -4,11 +4,14 @@ import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus;
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
-import 'package:cc_host/cc_host.dart' show CcHostLog;
 import 'package:cc_server_core/src/connect/bounded_body.dart';
+import 'package:cc_server_core/src/connect/connect_settings.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/provider_token.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
@@ -69,10 +72,11 @@ final class LinearAppGrants {
 /// Linear client id, otherwise Connect relays only the one-time code and this
 /// server exchanges it directly, so Connect never sees a Linear token.
 ///
-/// A workspace on its own Linear app signs its members in to that app and
-/// keeps each person's grant in the workspace's slot, apart from the global
-/// grant every inheriting workspace shares; it never routes through Connect
-/// or this server's app.
+/// A workspace on its own apps signs its members in to its own Linear app
+/// only (none saved: the lane is off); one on a Connect of its own signs them
+/// in there. Either keeps each person's grant in the workspace's slot, apart
+/// from the global grant every inheriting workspace shares, and never uses
+/// this server's app.
 final class LinearSignInLane implements SignInLaneBinding {
   /// Creates one of the two lanes.
   LinearSignInLane({
@@ -81,6 +85,7 @@ final class LinearSignInLane implements SignInLaneBinding {
     required this._workspaceApps,
     required this._people,
     required this._workspaces,
+    required this._route,
     HttpClient? httpClient,
     Uri? graphQlEndpoint,
     Uri? revokeEndpoint,
@@ -102,26 +107,26 @@ final class LinearSignInLane implements SignInLaneBinding {
   final WorkspaceProviderAppSettings _workspaceApps;
   final UserCredentialsStore _people;
   final LinearAppGrants _workspaces;
+  final Future<ConnectRoute> Function(String? workspaceId) _route;
   final HttpClient _http;
   final Uri _graphQl;
   final Uri _revoke;
 
   bool get _isApp => lane == ConnectOAuthLane.linearApp;
 
-  Future<bool> _workspaceOwnsApp(String? workspaceId) async =>
-      workspaceId != null &&
-      await _workspaceApps.ownsApp(workspaceId, WorkspaceAppProvider.linear);
-
   @override
   Future<OwnOAuthApp?> ownApp(String? workspaceId) async {
+    final route = await _route(workspaceId);
     final OAuthAppCredentials? credentials;
     try {
-      credentials = await _workspaceOwnsApp(workspaceId)
+      credentials = route.workspaceOwnApps
           ? await _workspaceApps.oauthCredentials(
               workspaceId!,
               WorkspaceAppProvider.linear,
             )
-          : await _apps.oauthCredentials(ProviderApp.linear);
+          : route.serverOwnApps
+          ? await _apps.oauthCredentials(ProviderApp.linear)
+          : null;
     } on OwnAppIncomplete catch (e) {
       throw SignInMisconfigured(e.message);
     } on WorkspaceAppIncomplete catch (e) {
@@ -144,12 +149,12 @@ final class LinearSignInLane implements SignInLaneBinding {
 
   @override
   Future<bool> allowsConnect(String? workspaceId) async =>
-      !await _workspaceOwnsApp(workspaceId);
+      !(await _route(workspaceId)).workspaceOwnApps;
 
   @override
   Future<String?> slotFor(String? workspaceId) async {
     if (!_isApp) {
-      return await _workspaceOwnsApp(workspaceId) ? workspaceId : null;
+      return (await _route(workspaceId)).workspaceSlot ? workspaceId : null;
     }
     if (workspaceId == null || workspaceId.isEmpty) {
       throw const AuthException(
@@ -193,6 +198,39 @@ final class LinearSignInLane implements SignInLaneBinding {
           : (name is String ? name : ''),
     );
   }
+
+  @override
+  Future<Set<String>> accountHolders(String accountId) async {
+    if (_isApp) {
+      // The app actor's account is the workspace's, not a person's.
+      return const {};
+    }
+    final holders = <String>{};
+    for (final userId in await _people.ticketUsers(TicketProvider.linear)) {
+      final token = await _people.ticketToken(userId, TicketProvider.linear);
+      if (token?.accountId == accountId) {
+        holders.add(userId);
+      }
+    }
+    for (final (:workspaceId, :userId) in await _people.workspaceTicketSlots(
+      TicketProvider.linear,
+    )) {
+      final token = await _people.ticketToken(
+        userId,
+        TicketProvider.linear,
+        workspaceId: workspaceId,
+      );
+      if (token?.accountId == accountId) {
+        holders.add(userId);
+      }
+    }
+    return holders;
+  }
+
+  /// A Linear token is revoked with itself, whichever client issued it.
+  @override
+  Future<void> revokeOwnGrant(ProviderToken token, String? slot) =>
+      revoke(token.accessToken);
 
   @override
   Future<void> store(SignInResult result) async {
@@ -250,34 +288,43 @@ final class LinearSignInLane implements SignInLaneBinding {
       );
     }
     if (token == null) {
-      return LaneConnection(lane: lane, connected: false);
+      return LaneConnection(
+        lane: lane,
+        status: ForgeConnectionStatus.notConnected,
+        workspaceSlot: slot != null,
+      );
     }
+    final route = await _route(workspaceId);
     final String? ownClientId;
-    final workspaceOwn = await _workspaceOwnsApp(workspaceId);
+    final workspaceOwn = route.workspaceOwnApps;
     if (workspaceOwn) {
       ownClientId = await _workspaceApps.ownClientId(
         workspaceId!,
         WorkspaceAppProvider.linear,
       );
-    } else {
+    } else if (route.serverOwnApps) {
       final server = await _apps.status(ProviderApp.linear);
       ownClientId = server.effectiveState == OwnAppState.complete
           ? server.clientId
           : null;
+    } else {
+      ownClientId = null;
     }
+    // A grant another app issued is not this workspace's to use.
+    final lapsed =
+        (!token.canRefresh && token.isExpired) ||
+        (workspaceOwn && ownClientId != token.appId);
     return LaneConnection(
       lane: lane,
-      connected: true,
+      status: lapsed
+          ? ForgeConnectionStatus.needsSignIn
+          : ForgeConnectionStatus.connected,
       account: token.accountLogin,
       accountId: token.accountId,
       workspaceSlot: slot != null,
       source: ownClientId != null && ownClientId == token.appId
-          ? SignInMode.own
-          : SignInMode.connect,
-      // A grant another app issued is not this workspace's to use.
-      needsSignIn:
-          (!token.canRefresh && token.isExpired) ||
-          (workspaceOwn && ownClientId != token.appId),
+          ? SignInLaneMode.own
+          : SignInLaneMode.connect,
     );
   }
 
@@ -309,9 +356,59 @@ final class LinearSignInLane implements SignInLaneBinding {
     }
   }
 
+  /// Connect relays only Linear's one-time code, so no Linear grant is
+  /// sealed.
+  @override
+  Future<List<SealRequest>> connectSeals(
+    String connectOrigin,
+    List<String> workspaceIds,
+  ) async => const [];
+
+  /// The app actor goes only with its workspace ([userId] null); a person's
+  /// grants go from the slots [userId] and [workspaceId] name.
+  @override
+  Future<int> offboard({String? userId, String? workspaceId}) async {
+    assert(userId != null || workspaceId != null, 'offboard whom?');
+    if (_isApp) {
+      if (userId != null || workspaceId == null) {
+        return 0;
+      }
+      final token = await _workspaces.read(workspaceId);
+      await _workspaces.delete(workspaceId);
+      await revoke(token?.accessToken ?? '');
+      return token == null ? 0 : 1;
+    }
+    final held = <({String userId, String? slot})>[
+      if (workspaceId == null)
+        for (final id in await _people.ticketUsers(TicketProvider.linear))
+          if (id == userId) (userId: id, slot: null),
+      for (final s in await _people.workspaceTicketSlots(TicketProvider.linear))
+        if ((userId == null || s.userId == userId) &&
+            (workspaceId == null || s.workspaceId == workspaceId))
+          (userId: s.userId, slot: s.workspaceId),
+    ];
+    for (final (:userId, :slot) in held) {
+      final token = await _people.ticketToken(
+        userId,
+        TicketProvider.linear,
+        workspaceId: slot,
+      );
+      await _people.clearTicketToken(
+        userId,
+        TicketProvider.linear,
+        workspaceId: slot,
+      );
+      await revoke(token?.accessToken ?? '');
+    }
+    return held.length;
+  }
+
   /// Revokes [accessToken] at Linear. Best effort: a token that cannot be
   /// revoked still expires.
   Future<void> revoke(String accessToken) async {
+    if (accessToken.isEmpty) {
+      return;
+    }
     try {
       final request = await _http.postUrl(_revoke).timeout(_timeout);
       request.followRedirects = false;
@@ -321,8 +418,17 @@ final class LinearSignInLane implements SignInLaneBinding {
       request.write(Uri(queryParameters: {'token': accessToken}).query);
       final response = await request.close().timeout(_timeout);
       await response.drain<void>().timeout(_timeout);
+      if (response.statusCode >= 300) {
+        forgeAudit(ForgeAuditEvent.grantRevokeSkipped, {
+          'lane': lane.wire,
+          'reason': 'http_${response.statusCode}',
+        }, token: accessToken);
+      }
     } on Object catch (e) {
-      CcHostLog.warning('linear: revoke failed ($e)');
+      forgeAudit(ForgeAuditEvent.grantRevokeSkipped, {
+        'lane': lane.wire,
+        'reason': 'revoke_failed:${errorKindOf(e)}',
+      }, token: accessToken);
     }
   }
 }

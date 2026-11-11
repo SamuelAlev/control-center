@@ -90,6 +90,8 @@ class CcIconButton extends StatelessWidget {
         return CcButtonTokens.success(t);
       case CcButtonVariant.destructive:
         return CcButtonTokens.destructive(t);
+      case CcButtonVariant.ghostDestructive:
+        return CcButtonTokens.ghostDestructive(t);
     }
   }
 

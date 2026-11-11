@@ -2,7 +2,7 @@
 title: Routenkarte
 description: Jede Route, die Control Center registriert, mit Bildschirm und Query-Parametern.
 slug: de-DE/handbuch/referenz/routenkarte
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## App-Shell
@@ -11,7 +11,7 @@ Die App-Shell (`ControlCenterLayout`) umschließt jede Route im Arbeitsbereich �
 
 Das Gate ist vollständig, wenn mindestens eine Forge **für den angemeldeten User** verbunden ist und mindestens ein Arbeitsbereich existiert.
 
-Fehlende Zugangsdaten und ein fehlendes Setup werden unterschiedlich behandelt, und das Unterscheidungsmerkmal ist `users.onboarding_finished_at`, gelesen vom eigenen `identity.me` des Aufrufers — nie „Arbeitsbereiche existieren“, was in dem Moment falsch ist, in dem jemand in einen Arbeitsbereich eingeladen wird, den diese Person nie angelegt hat. Ohne verbundene Forge bleibt ein Konto, das das Onboarding abgeschlossen hat, in der App: Die Shell des Arbeitsbereichs zeigt eine Warnung mit einem Link zu Einstellungen → Arbeitsbereich → Profil und Identität, wo die Anmeldung liegt. Eines, das es nicht abgeschlossen hat, geht nach `/onboarding`. Solange das Flag noch unbekannt ist, hält der Guard den Splash, statt zu raten, weil er nie aus dem Onboarding wieder herausleitet.
+Fehlende Zugangsdaten und ein fehlendes Setup werden unterschiedlich behandelt, und das Unterscheidungsmerkmal ist `users.onboarding_finished_at`, gelesen vom eigenen `identity.me` des Aufrufers — nie „Arbeitsbereiche existieren“, was in dem Moment falsch ist, in dem jemand in einen Arbeitsbereich eingeladen wird, den diese Person nie angelegt hat. Ohne verbundene Forge bleibt ein Konto, das das Onboarding abgeschlossen hat, in der App: Die Shell des Arbeitsbereichs zeigt eine Warnung mit einem Link zu Einstellungen → Du → Profil, wo die Anmeldung liegt. Eines, das es nicht abgeschlossen hat, geht nach `/onboarding`. Solange das Flag noch unbekannt ist, hält der Guard den Splash, statt zu raten, weil er nie aus dem Onboarding wieder herausleitet.
 
 ## Routen ohne Präfix
 
@@ -65,7 +65,7 @@ Es gibt **keinen Seitenleisteneintrag „Pläne“**. Plan Studio öffnet sich a
 
 ## Einstellungsrouten
 
-`/settings` leitet auf `/settings/you/appearance` um. Die Schaltfläche Einstellungen in der Seitenleiste und `Cmd/Ctrl + ,` führen beide nach `/settings/you/appearance`.
+`/settings` leitet auf `/settings/you/profile` um. Die Schaltfläche Einstellungen in der Seitenleiste und `Cmd/Ctrl + ,` führen beide nach `/settings/you/profile`.
 
 Einstellungspfade sind nach **Geltungsbereich** benannt — `you/`, `workspace/`, `server/` — weil das Segment sagt, wen eine Änderung betrifft. Zwei Pfade sind älter als diese Benennung und in der URL keinem Geltungsbereich zugeordnet: `/settings/memory` und `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Einstellungspfade sind nach **Geltungsbereich** benannt — `you/`, `workspace/`
 
 | Pfad                          | Bildschirm                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Thema, Sprache, Typografie, Editor-Thema (die Einstiegsseite der Einstellungen)          |
-| `/settings/you/notifications` | Schalter je Ereignis, Quiet hours                                             |
+| `/settings/you/profile`       | Dein Konto auf diesem Server: Name, Benutzername, Bild und Anmeldung (die Einstiegsseite der Einstellungen) |
+| `/settings/you/profile?section=accounts` | Verbundene Konten: deine eigenen Anmeldungen für Code-Hosting, Tickets, Kalender und Chat sowie Ticketentwürfe aus dem Chat |
+| `/settings/you/appearance`    | Thema, Sprache, Typografie, Editor-Thema |
 | `/settings/you/audio`         | Mikrofon, Diktat, Besprechungserkennung und Klanglandschafts-Ausgabe             |
+| `/settings/you/notifications` | Schalter je Ereignis, Quiet hours                                             |
+| `/settings/you/commits`       | Wer bei Commits aus Arbeit, die du startest, als Autor geführt wird, und dein Commit-Signaturschlüssel |
+| `/settings/you/desktop`       | Nur Desktop-App: das Tray-Symbol, Schließen des Fensters und Öffnen beim Anmelden   |
 | `/settings/you/devices`       | Gekoppelte Telefone und Fernsteuerung                                           |
 | `/settings/you/newsfeed`      | Feed-Verwaltung: Quellen, Aktualisierung, Lesestatus                              |
+| `/settings/you/links`         | Wohin Links von außerhalb von Control Center geöffnet werden                               |
 
 ### Arbeitsbereich
 
 | Pfad                               | Bildschirm                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil und Identität in diesem Arbeitsbereich: Name, Git-Autor, Code-Hosting, Kalender |
-| `/settings/workspace/general`      | Name, Logo, ausgeschlossene Geheimnispfade, parallele Prüfer, Vorlage für Branch-Namen, Sync-Status, Chat-Brücken, Gefahrenzone |
+| `/settings/workspace/profile`      | Profil und Identität in diesem Arbeitsbereich: Name, E-Mail, Git-Autor |
+| `/settings/workspace/general`      | Name, Logo, ausgeschlossene Geheimnispfade, parallele Prüfer, Vorlage für Branch-Namen, Gefahrenzone |
+| `/settings/workspace/integrations` | Connect-Wahl, die GitHub App und Automatisierungstoken, Ticket-Anbieter und Automatisierung, Sync-Status, die eigenen Provider-Apps des Arbeitsbereichs, Chat-Brücken, GIFs. Jede Anbietergruppe nennt dein eigenes Konto und verlinkt auf Verbundene Konten |
 | `/settings/workspace/meetings`     | Vorlagen für Besprechungsnotizen und gespeicherte Stimmprofile                                                     |
-| `/settings/workspace/members`      | Mitgliederliste, Einladungen, Prüfprotokoll. Das Prüfprotokoll paginiert optional mit `?cursor=`                    |
+| `/settings/workspace/members`      | Mitgliederliste und Einladungen                    |
 | `/settings/workspace/repositories` | In diesem Arbeitsbereich registrierte Repositorys                                                           |
 | `/settings/workspace/environments` | Environment-Definitionen: was Bereiche starten können und welche Tasks ihre Worktrees ausführen |
 | `/settings/workspace/agents`       | Registrierte Agentenidentitäten                                                                         |
@@ -108,6 +114,8 @@ Einstellungspfade sind nach **Geltungsbereich** benannt — `you/`, `workspace/`
 | `/settings/server/rigs`        | Rigs: was dieser Host starten kann, Basis-Images, eigene Images, laufende Maschinen           |
 | `/settings/server/sandbox`     | Ausführungsberechtigungen der Sandbox: Programme, die Agenten aus ihrer Arbeitskopie deiner Repositorys ausführen dürfen |
 | `/settings/server/diagnostics` | Diagnose und Datenschutz: Sandboxing, Embedding, Logging, Absturzberichte |
+| `/settings/server/people`      | Personen auf diesem Server und ob jede Adresse bestätigt ist (nur Serverinhaber)       |
+| `/settings/server/audit`       | Prüfprotokoll: das des Servers und der Arbeitsbereiche, die du verwaltest                            |
 | `/settings/server/backup`      | Sicherung und Wiederherstellung: Momentaufnahmen der Installation, Export, Import und Löschen je Arbeitsbereich        |
 | `/settings/server/about`       | Über und Updates                                                                     |
 

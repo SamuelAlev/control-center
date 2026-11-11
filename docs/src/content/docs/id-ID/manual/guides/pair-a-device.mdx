@@ -2,7 +2,7 @@
 title: Pasangkan perangkat
 description: Pasangkan ponsel Anda (atau peramban atau desktop kedua) dengan server Control Center Anda agar Anda dapat mengikuti fleet dari jarak jauh.
 slug: id-ID/panduan-pengguna/panduan-praktis/pasangkan-perangkat
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Panduan ini menunjukkan cara memasangkan ponsel dengan Control Center, sehingga
@@ -60,8 +60,7 @@ Tidak ada langkah menunggu-lalu-menyetujui: perangkat yang dibuat langsung aktif
 sejak saat dibuat dan gerbang koneksi hanya memeriksa bahwa kredensialnya aktif
 dan belum kedaluwarsa. Perlakukan QR dan kunci pemasangan seperti kata sandi,
 lalu cabut apa pun yang tidak ingin Anda berikan. Sesi klien langsung maupun
-melalui relay sama-sama memerlukan enkripsi ujung ke ujung; klien lama tidak dapat
-beralih ke RPC teks polos.
+melalui relay sama-sama memerlukan enkripsi ujung ke ujung; tidak ada RPC teks polos.
 :::
 
 ## Kelola perangkat yang dipasangkan
@@ -77,8 +76,8 @@ dibatalkan.
 
 Kredensial yang dibuat dari panel ini dibatasi waktu: kredensial kedaluwarsa 30
 hari setelah diterbitkan dan gerbang koneksi menolaknya secara tertutup setelah
-itu. Kredensial yang dibuat dengan `cc_server pair` di baris perintah **sama
-sekali tidak memiliki masa kedaluwarsa** — cabut secara manual saat mesin yang
+itu. Kredensial yang dibuat dengan `cc_server pair` di baris perintah juga kedaluwarsa dengan cara yang sama; jalankan `pair` lagi
+untuk menerbitkan yang baru, dan cabut secara manual saat mesin yang
 dituju sudah tidak digunakan lagi.
 
 ## Beralih ruang kerja dari ponsel

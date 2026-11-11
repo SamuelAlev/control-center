@@ -2,7 +2,7 @@
 title: Configurează integrarea GitHub
 description: Autentifică-te în GitHub pentru ca zona PR, înregistrarea repo-urilor și rulările agenților să funcționeze.
 slug: ro-RO/manual/ghiduri-practice/integrare-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Acest ghid acoperă părțile specifice GitHub ale configurării. GitHub este unul
@@ -31,7 +31,7 @@ ce face singur.
 
 GitHub funcționează doar prin autentificare: nu există niciun token de lipit.
 
-1. Mergi la **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**
+1. Mergi la **Setări → Tu → Profil → Găzduire de cod**
    (sau la primul pas al onboardingului)
 2. Pe rândul **GitHub**, apasă **Autentifică-te în GitHub**
 3. Browserul deschide GitHub. Aprobă aplicația
@@ -57,30 +57,41 @@ care serverul le-a emis în numele tău.
 
 ## Pentru cine vorbește acreditarea ta
 
-- **Orice faci tu** (deschiderea paginii PR, publicarea unei revizuiri,
-  aprobarea, îmbinarea) rulează pe autentificarea **ta** și pe nimic altceva.
-  Dacă nu ești autentificat, aplicația îți spune asta și îți cere să te
-  autentifici. Nicio altă acreditare nu ține locul tău
-- **Munca pe care nu o tastează nimeni** (rulări de agenți, pipeline-uri,
-  interogarea PR-urilor, răspunsurile botului, clonări) primește un token pentru
-  un singur depozit, emis din GitHub App a serverului sau prin Connect. Este
-  limitat la ce poate face acolo un membru responsabil: membrul care a cerut,
-  altfel proprietarul spațiului de lucru. Un membru care nu poate face push
-  limitează tokenul la citire
-- **Automatizarea nu aprobă niciodată** un pull request. Aprobarea este actul
-  unei persoane
+Control Center urmează separarea GitHub între a acționa **ca persoană** și a acționa **ca aplicație**:
+
+| Ce se întâmplă                                                                | Apare pe GitHub ca                                  |
+| ----------------------------------------------------------------------------- | --------------------------------------------------- |
+| Orice faci tu: comentariu, revizuire, aprobare, îmbinare, cererea de revizori | **Tu**. GitHub marchează un comentariu din conversație ca fiind făcut cu aplicația Control Center; o revizuire și comentariile ei inline nu poartă niciun astfel de marcaj |
+| Revizuirea AI, răspunsurile și comentariile agenților din conversațiile PR, etichete, munca pipeline-urilor și a botului | **Botul Control Center**. Pe aplicația partajată Connect, o revizuire este a botului doar pentru o instalare pe care operatorul Connect a trecut-o pe listă; altfel apare ca persoana responsabilă |
+| Un pull request pe care un agent îl deschide pentru tine, modificările aduse titlului sau descrierii acelui pull request, push-urile și commiturile lui | **Tu**. Control Center este creditat ca coautor când creditul de co-autor este activ |
+| Munca pe care nu a cerut-o nimeni (programări, webhook-uri)                   | **Botul Control Center**, și ca autor al commiturilor lui. Pe Control Center Connect nu face niciodată push și nu deschide pull request-uri |
+
+- **Orice faci tu** rulează pe autentificarea **ta** și pe nimic altceva. Dacă nu ești autentificat, aplicația îți cere să te autentifici. Nicio altă acreditare nu ține locul tău
+- **Munca botului** primește un token pentru câte un singur depozit, limitat la ce poate face acolo un membru responsabil: membrul care a cerut, altfel proprietarul spațiului de lucru. Un membru care nu poate face push limitează tokenul la citire. Răspunsurile botului care acționează în numele cuiva încep cu **Control Center (for @login)**
+- **Agenții deschid pull request-uri prin Control Center**, niciodată din sandbox-ul lor, deci pull request-ul este al tău, iar regulile GitHub însele te împiedică să-l aprobi. Control Center refuză și o aprobare de la persoana care i-a cerut agentului munca și de la autorul pull request-ului. Pentru o rulare programată sau declanșată de un webhook, aceasta include fiecare administrator care a activat declanșatorul sau a editat pipeline-ul cât timp acesta era activ. Trebuie să revizuiască altcineva. Dacă Control Center nu poate confirma cine a deschis pull request-ul sau care cont de pe forge este al tău, refuză și te roagă să încerci din nou
+- **Agenții comentează și ei prin Control Center.** Tokenul GitHub pe care îl primește o rulare de agent doar citește. Când un agent comentează pe pull request-ul la care lucrează, Control Center postează comentariul ca bot, începând cu **Control Center (for @login)** atunci când cineva a cerut rularea. Un agent poate comenta doar pe un pull request din același depozit (nu un fork) al cărui ultim commit l-a trimis agentul prin push sau care este commitul curent al ramurii spațiului său. @-mențiunile din comentariul unui agent nu notifică pe nimeni. Un agent poate, de asemenea, să modifice titlul sau descrierea propriului pull request cât timp acesta este deschis. Această modificare se face la fel ca la deschiderea pull request-ului (în numele tău, atunci când ai cerut rularea), și cere aprobare mai întâi în mod implicit. Descrierea unui pull request își păstrează @-mențiunile, la deschidere și la fiecare modificare, astfel că persoanele pe care le numește sunt notificate
+- **Pe Control Center Connect, botul nu face niciodată push și nu deschide pull request-uri.** Push-ul, crearea unei ramuri sau deschiderea unui pull request acolo cer o persoană care a solicitat-o și rulează cu autentificarea acelei persoane. O rulare programată sau declanșată de un webhook care încearcă push-ul se oprește cu un mesaj care spune asta. Ca rulările nesupravegheate să poată face push, dă spațiului de lucru propria aplicație GitHub din **Setări**
+- **Ce poate face botul Connect.** Cu aplicația partajată Connect, botul comentează, etichetează și reacționează. Postează o revizuire (o revizuire AI, comentarii de revizuire, cereri de revizori) doar când operatorul Connect a trecut pe listă instalarea acestui server. Altfel, revizuirea pleacă pe propria autentificare a persoanei responsabile și apare sub numele ei. Botul nu deschide, nu editează, nu închide și nu reintitulează niciodată un pull request, nu anulează o revizuire și nu editează sau nu șterge un comentariu; acestea cer o persoană care a solicitat, pe propria autentificare. Connect nu leagă instalarea organizației tale de un singur server Control Center: orice server pe care un membru care poate face push într-un repo s-a autentificat prin Connect poate obține tokenul de comentarii al botului pentru acel repo.
+- **Un server sau un spațiu de lucru cu propria aplicație GitHub** păstrează botul pentru tot ce este mai sus, inclusiv revizuirile.
+- **Automatizarea nu aprobă niciodată** un pull request. Aprobarea este actul unei persoane
+
+Când conectezi un repo, Control Center verifică dacă contul tău îl poate vedea și te avertizează când GitHub App nu este instalată pe organizația repo-ului sau nu îl include, cu un link către remediere. Legarea și dezlegarea cer un administrator al spațiului de lucru, iar un checkout din afara spațiului de stocare al spațiului de lucru poate fi legat doar de proprietarul serverului; vezi [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+
+Legătura urmează id-ul GitHub permanent al repository-ului, deci o redenumire sau un transfer nu cere nimic de la tine. Dacă, mai târziu, calea numește un alt repository, Control Center nu îi mai trimite nimic și afișează un anunț până când un administrator al spațiului de lucru apasă **Reconectează**.
+
+Deschiderea codului unui repository (fișiere, diff-uri, căutare, un terminal) cere atât grantul lui în spațiul de lucru, cât și o autentificare GitHub a ta care îl poate citi. Administratorii spațiului de lucru urmează aceeași regulă; doar proprietarul serverului este scutit.
 
 ## Ce îți oferă integrarea
 
-| Funcție                      | Cum                                                                                                              |
-| ---------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Lista și detaliile PR-urilor | API-ul GitHub REST, de pe server, cu propria ta autentificare                                                    |
-| Rulările de verificare       | API-ul GitHub Checks                                                                                             |
-| Publicarea revizuirilor      | Un pas care necesită aprobarea utilizatorului și care publică revizuirea ta pe PR, ca tine                       |
-| Înregistrarea repo-urilor    | Un checkout este acceptat dacă remote-ul său `origin` indică spre github.com, sau spre gitlab.com / bitbucket.org |
-| Accesul agenților la GitHub  | Un token pentru singurul depozit al rulării ca `GH_TOKEN` / `GITHUB_TOKEN`; push-urile trec prin Control Center |
-| Notificări                   | O interogare pe server a inbox-ului tău de notificări GitHub generează „menționat într-un pull request” și „revizuire solicitată” |
-| Profilurile utilizatorilor   | Carduri de profil la hover și filtrarea PR-urilor după autor                                                     |
+| Funcție                      | Cum                                                                                                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Lista și detaliile PR-urilor | API-ul GitHub REST, de pe server, cu propria ta autentificare                                                                                                                                    |
+| Rulările de verificare       | API-ul GitHub Checks                                                                                                                                                                             |
+| Publicarea revizuirilor      | Un pas care necesită aprobarea utilizatorului și care publică revizuirea ta pe PR, ca tine                                                                                                       |
+| Înregistrarea repo-urilor    | Un checkout este acceptat dacă remote-ul său `origin` indică spre github.com, sau spre gitlab.com / bitbucket.org                                                                                |
+| Accesul agenților la GitHub  | În interiorul unei rulări, `git fetch` trece prin Control Center, care preia depozitele cu care lucrează rularea cu un token doar de citire pe care rularea nu îl deține niciodată. `gh` le citește cu un token doar de citire pe care Control Center îl dă la cerere și îl revocă la sfârșitul rulării. Push-urile, pull request-urile, modificările aduse acestora și comentariile trec prin Control Center |
+| Notificări                   | O interogare pe server a inbox-ului tău de notificări GitHub generează „menționat într-un pull request” și „revizuire solicitată”                                                                |
+| Profilurile utilizatorilor   | Carduri de profil la hover și filtrarea PR-urilor după autor                                                                                                                                     |
 
 Unele căi folosesc API-ul GraphQL în loc de REST acolo unde este mai ieftin:
 activitatea de ramuri pentru selectorul de compunere a PR-urilor și starea de
@@ -99,18 +110,19 @@ fiecare două minute.
 
 ## Află cum acționează agenții pe GitHub
 
-- Un agent care lucrează într-un worktree GitHub primește un token pentru acel
-  singur depozit. Poate citi codul și comenta pe pull request-uri când membrul
-  responsabil poate face push, și doar citi când nu poate. Un push trece prin Control Center, care întreabă
-  regula **Push către un remote** și apoi îl transmite cu un token de scriere pe
-  care agentul nu îl deține niciodată. Vezi
+- Un agent care lucrează într-un worktree GitHub primește un token doar pentru acel singur depozit. Poate citi doar codul, issues și pull request-urile. Comentariile trec prin Control Center, așa cum este descris mai sus. Un push trece prin Control Center, care întreabă regula **Push către un remote** și apoi îl transmite cu un token de scriere pe care agentul nu îl deține niciodată. Vezi
   [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/)
-- Commiturile agentului folosesc întotdeauna identitatea Git a solicitantului atât ca autor, cât și ca persoană care face commitul. În mod implicit, trailerul `Co-Authored-By: Control Center <hi@usectrl.dev>` creditează contul GitHub `@usectrl` drept coautor. Din **Setări → Tu → Atribuirea autorului commiturilor** poți dezactiva acest credit de coautor fără să-ți schimbi identitatea. O setare a spațiului de lucru din **Setări → Spațiu de lucru → General** are prioritate și blochează comutatorul personal. Atribuirea proprie a Claude Code este întotdeauna dezactivată. Semnarea commiturilor necesită în continuare propria configurație validă
+- Munca pe care o pornești tu este comisă în numele tău. Când ceri unui agent ceva sau comiți din IDE, ești autorul și committerul, sub o adresă verificată de forge-ul tău: adresa ta GitHub noreply din autentificarea GitHub sau, pe GitLab și Bitbucket, adresa de e-mail pe care o raportează acolo autentificarea ta. Identitatea ta Git din spațiul de lucru este folosită doar pentru un commit pe care îl faci manual, într-un repository unde niciun forge nu garantează o adresă de-a ta. Dacă nu ești autentificat pe acel forge, commiturile agentului sunt ale botului, iar notele rulării spun asta
+- Munca pe care nu a cerut-o nimeni este comisă ca bot. O rulare programată sau declanșată de un webhook comite ca aplicația GitHub a spațiului de lucru (`<app>[bot]`, cu adresa lui GitHub noreply) sau ca `Control Center <hi@usectrl.dev>` când nu există aplicație GitHub ori repo-ul este pe GitLab sau Bitbucket
+- **Creditează Control Center ca co-autor** (**Setări** → **Tu** → **Commit-uri**) adaugă un trailer `Co-Authored-By:` pentru cealaltă parte: Control Center pe commiturile tale și, pe cele ale botului, fiecare persoană care a armat declanșatorul din spatele rulării. Este activă până o dezactivezi. Un administrator al spațiului de lucru poate decide asta pentru toți cu **Credit de co-autor** din **Setări** → **Spațiu de lucru** → **General**; alegerea ta proprie este salvată, dar nu se aplică în acel spațiu de lucru. Atribuirea proprie a Claude Code este întotdeauna dezactivată
+- Commiturile tale pot fi semnate. Sub **Commit-uri verificate** din **Setări** → **Tu** → **Commit-uri**, alege **Creează cheia de semnare** și adaugă jumătatea ei publică în contul tău GitHub sau GitLab ca cheie de semnare; de atunci commiturile rulărilor pe care le ceri și commiturile pe care le faci în IDE apar ca verificate. Jumătatea privată rămâne pe serverul tău, deci cine controlează acel server poate semna commituri în numele tău cât timp cheia este în contul tău, iar pe GitHub un commit deja afișat ca verificat rămâne verificat după ce elimini cheia. Bitbucket nu are chei doar de semnare: nu adăuga cheia acolo, iar commiturile de pe Bitbucket nu sunt semnate. Commiturile botului nu sunt semnate niciodată
+- Commiturile pe care le faci în panoul **Control sursă** al IDE-ului ocolesc hook-urile Git ale repository-ului, ca `git commit --no-verify`, iar Git-ul serverului ignoră helperele de credențiale, editorii, uneltele externe de diff și semnătarii configurați de repository: rulează Git pe propria lui mașină, într-un arbore pe care un agent sau un pull request îl poate modifica. Vezi [Comite și trimite din Control sursă](/ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr/#commit-și-push-din-control-sursă)
+- Fiecare commit pe care un agent îl trimite prin push este verificat mai întâi, inclusiv straturile pe care `stack_publish` le trimite pentru un stack. Un push care numește pe altcineva, elimină sau împrumută un credit, adaugă un sign-off ori nu este semnat cum spun setările tale este refuzat. Commiturile pe care le trimiți tu prin push din IDE sunt ale tale și nu trec prin această verificare
 - Un terminal pe care îl deschizi pe o stație primește propria ta autentificare,
   restrânsă la singurul depozit, așa că push-urile de acolo sunt ale tale
 - Când nu se poate emite niciun token (nicio persoană responsabilă nu este
   autentificată, aplicația nu este instalată pe proprietar sau instalarea este
-  suspendată), rularea pornește fără, iar notele ei spun de ce. Nu există nicio
+  suspendată), comanda care a cerut-o spune de ce. Nu există nicio
   acreditare de rezervă
 
 ## Depanare
@@ -118,7 +130,7 @@ fiecare două minute.
 ### Lista de PR-uri este goală și spune că GitHub nu este conectat
 
 Nu ești autentificat în GitHub pe acest server. Apasă **Autentifică-te în GitHub**
-la **Găzduire de cod**. Repo-urile de pe alte forge-uri nu sunt afectate.
+la **Setări → Tu → Profil → Găzduire de cod**. Repo-urile de pe alte forge-uri nu sunt afectate.
 
 ### Rândul GitHub spune că autentificarea nu este configurată pe acest server
 
@@ -126,6 +138,8 @@ Serverul nu are nici GitHub App proprie, nici Connect. Proprietarul serverului
 alege una dintre ele în **Setări → Server → Autentificare unică**:
 **Creează aplicația mea GitHub** durează aproximativ două minute. Vezi
 [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/).
+
+Într-un spațiu de lucru pe propriile aplicații, rândul spune asta atunci când GitHub App-ul spațiului de lucru lipsește sau este incomplet. Un administrator al spațiului de lucru completează câmpurile pe cardul **Aplicația GitHub**, din **Setări → Spațiu de lucru → Integrări**; vezi [Dă unui spațiu de lucru propria aplicație](/ro-RO/manual/ghiduri-practice/github-app/#dă-unui-spațiu-de-lucru-propria-aplicație).
 
 ### Dialogul spune că codul nu se potrivește
 
@@ -136,10 +150,7 @@ greșite încheie autentificarea; pornește-o din nou.
 
 GitHub App nu are nicio instalare pe contul care deține repozitoriul. Un
 administrator al spațiului de lucru o instalează din **Setări → Spațiu de lucru
-→ General → Instalări ale aplicației GitHub**. Pentru o organizație pe aplicația
-partajată a Control Center, un administrator al acelei organizații poate fi
-nevoit să apese **Autorizează acest server**. Vezi
-[Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/#autorizează-acest-server-pentru-o-organizație).
+→ Integrări → Instalări ale aplicației GitHub**.
 
 ### Toată lumea trebuie să se autentifice din nou în GitHub
 
@@ -151,8 +162,22 @@ Autentificările prin Connect sunt legate de serverul care le-a făcut.
 
 Înregistrarea le necesită pe toate trei: calea este în interiorul unui arbore de
 lucru git, are un remote `origin`, iar acel remote indică spre un forge acceptat
-(github.com, gitlab.com sau bitbucket.org). Vezi
+(github.com, gitlab.com sau bitbucket.org). `origin` trebuie să fie repository-ul
+pe care îl legi, iar un folder din afara spațiului de stocare al spațiului de
+lucru poate fi legat doar de proprietarul serverului. Vezi
 [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+
+### Am un grant, dar repo-ul spune că contul meu nu îl poate citi
+
+Contul tău GitHub nu poate citi repository-ul respectiv, deci codul lui rămâne închis pentru tine chiar și cu un grant în spațiul de lucru. Autentifică-te în GitHub din **Găzduire de cod**, sau cere acces la repository pe GitHub.
+
+### „Nu s-a putut confirma accesul tău la GitHub”
+
+GitHub nu a putut fi contactat ca să îți verifice accesul, deci Control Center a refuzat în loc să ghicească. Încearcă din nou peste puțin timp.
+
+### Revizuirile de pe Connect apar sub numele meu, nu sub al botului
+
+Pe aplicația partajată Connect, botul postează revizuiri doar pentru instalările pe care operatorul Connect le-a trecut pe listă. Peste tot în altă parte, revizuirea pleacă pe propria autentificare a persoanei responsabile. Ca botul să posteze revizuiri, dă spațiului de lucru propria aplicație GitHub.
 
 ### Totul se oprește pentru o vreme după utilizare intensă
 

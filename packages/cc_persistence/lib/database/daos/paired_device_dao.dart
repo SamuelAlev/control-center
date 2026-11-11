@@ -68,13 +68,6 @@ class PairedDeviceDao extends DatabaseAccessor<GlobalDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.pairedAt)]))
           .watch();
 
-  /// Binds a device to its owning user (bootstrap backfill / invite
-  /// redemption).
-  Future<int> setUserId(String id, String userId) =>
-      (update(pairedDevicesTable)..where((t) => t.id.equals(id))).write(
-        PairedDevicesTableCompanion(userId: Value(userId)),
-      );
-
   /// Watches only active (confirmed) devices.
   Stream<List<PairedDevicesTableData>> watchActive() => (select(
     pairedDevicesTable,

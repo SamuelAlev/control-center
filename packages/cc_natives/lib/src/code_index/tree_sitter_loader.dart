@@ -1,6 +1,7 @@
 import 'dart:ffi';
 
 import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 
 /// Loads the `libtree-sitter` runtime and per-language grammar libraries via
 /// `DynamicLibrary`.

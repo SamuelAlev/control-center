@@ -108,7 +108,6 @@ List<RepoOp> buildAgentRunLogWriteOps(
             runId,
             pid: (ctx.args['pid'] as num?)?.toInt(),
             markRunning: markRunning == true,
-            logPath: ctx.args['log_path'] as String?,
             contextSnapshotJson: ctx.args['context_snapshot_json'] as String?,
             lastOutputAt: lastOutput,
             liveness: parsedLiveness,

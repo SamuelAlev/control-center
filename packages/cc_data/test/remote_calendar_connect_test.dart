@@ -1,6 +1,10 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInAttemptStatus, SignInUnavailableReason;
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/connect/domain/value_objects/connect_health_error.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -138,6 +142,102 @@ void main() {
       expect(parsed.status.isTerminal, isTrue);
     });
 
+    test('lanes carry why an unavailable lane cannot sign in', () async {
+      host.callResults['oauth.lanes'] = {
+        'lanes': [
+          {
+            'lane': 'github',
+            'mode': 'unavailable',
+            'unavailable_reason': 'connect_pins_pending',
+          },
+          {
+            'lane': 'google',
+            'mode': 'unavailable',
+            'error': 'Add the client secret.',
+            'unavailable_reason': 'misconfigured',
+          },
+          {'lane': 'linear', 'mode': 'connect'},
+          {
+            'lane': 'slack',
+            'mode': 'unavailable',
+            'unavailable_reason': 'from_the_future',
+          },
+        ],
+      };
+      final lanes = await RemoteProviderSignIn(
+        client,
+      ).lanes(workspaceId: 'ws-1');
+      expect(
+        lanes[0].unavailableReason,
+        SignInUnavailableReason.connectPinsPending,
+      );
+      expect(lanes[1].unavailableReason, SignInUnavailableReason.misconfigured);
+      expect(lanes[1].error, 'Add the client secret.');
+      expect(lanes[2].unavailableReason, isNull);
+      expect(lanes[3].unavailableReason, SignInUnavailableReason.notConfigured);
+    });
+
+    test('an attempt the server forgot reads as attempt_unknown', () async {
+      host.callResults['oauth.status'] = {
+        'login_id': 'AAAAAAAAAAAAAAAAAAAAAA',
+        'mode': 'unavailable',
+        'url': '',
+        'expires_at': '2026-11-09T10:00:00.000Z',
+        'status': 'failed',
+        'error': 'attempt_unknown',
+      };
+      final polled = await RemoteProviderSignIn(client).status(
+        'AAAAAAAAAAAAAAAAAAAAAA',
+        workspaceId: 'ws-1',
+        lane: ConnectOAuthLane.github,
+      );
+      expect(host.lastCall('oauth.status')!.args, {
+        'login_id': 'AAAAAAAAAAAAAAAAAAAAAA',
+        'workspace_id': 'ws-1',
+        'lane': 'github',
+      });
+      expect(polled.lane, ConnectOAuthLane.github);
+      expect(polled.status, SignInAttemptStatus.failed);
+      expect(polled.error, SignInFailure.attemptUnknown);
+    });
+
+    test(
+      'forge connections read status and scope with no oauth overlay',
+      () async {
+        host.callResults['forge.listConnections'] = {
+          'connections': [
+            {
+              'forge': 'github',
+              'status': 'paused',
+              'scope': 'workspace',
+              'username': 'octo',
+              'source': 'connect',
+            },
+            {
+              'forge': 'gitlab',
+              'status': 'connected',
+              'scope': 'global',
+              'username': 'Lab',
+              'source': 'settings',
+            },
+            {'forge': 'bitbucket', 'status': 'whatever'},
+          ],
+        };
+        final list = await RemoteForgeConnections(
+          client,
+        ).list(workspaceId: 'ws-1');
+        expect(host.lastCall('oauth.connections')!.op, isEmpty);
+        expect(list[0].status, ForgeConnectionStatus.paused);
+        expect(list[0].scope, ForgeCredentialScope.workspace);
+        expect(list[0].isUsable, isFalse);
+        expect(list[1].isUsable, isTrue);
+        expect(list[2].status, ForgeConnectionStatus.notConnected);
+        expect(RemoteForgeConnections.viewerLogins(list), {
+          ForgeHost.gitlab: 'lab',
+        });
+      },
+    );
+
     test(
       'connections parse every field and disconnect names the lane',
       () async {
@@ -145,18 +245,16 @@ void main() {
           'connections': [
             {
               'lane': 'linear',
-              'connected': true,
+              'status': 'connected',
               'account': 'Sam',
               'account_id': 42,
               'slot': 'global',
               'source': 'connect',
-              'needs_sign_in': false,
             },
             {
               'lane': 'linear_app',
-              'connected': false,
+              'status': 'needs_sign_in',
               'slot': 'workspace',
-              'needs_sign_in': true,
             },
           ],
         };
@@ -165,8 +263,10 @@ void main() {
         expect(list.first.account, 'Sam');
         expect(list.first.accountId, '42');
         expect(list.first.source, SignInLaneMode.connect);
+        expect(list.first.isUsable, isTrue);
         expect(list.last.slot, SignInSlot.workspace);
-        expect(list.last.needsSignIn, isTrue);
+        expect(list.last.status, ForgeConnectionStatus.needsSignIn);
+        expect(list.last.isUsable, isFalse);
 
         await sign.disconnect(ConnectOAuthLane.linearApp, workspaceId: 'ws-1');
         expect(host.lastCall('oauth.disconnect')!.args, {
@@ -233,11 +333,17 @@ void main() {
         'connect.confirmPins',
         'connect.rotateKey',
       ]);
+      expect(host.lastCall('connect.rotateKey')!.args, isEmpty);
+    });
+
+    test('a forced rotation says so', () async {
+      await RemoteConnectSettings(client).rotateKey(force: true);
+      expect(host.lastCall('connect.rotateKey')!.args, {'force': true});
     });
   });
 
   group('RemoteGitHubAppSetup', () {
-    test('installations decode and say who can authorize', () async {
+    test('installations decode', () async {
       host.callResults['github.installations'] = {
         'installations': [
           {
@@ -245,29 +351,22 @@ void main() {
             'account_id': 5,
             'account_login': 'acme',
             'target_type': 'Organization',
-            'bound_here': false,
-            'suspended': false,
-            'caller_is_admin': true,
+            'suspended': true,
           },
           {
             'installation_id': 10,
             'account_login': 'sam',
             'target_type': 'User',
-            'bound_here': true,
           },
         ],
       };
       final setup = RemoteGitHubAppSetup(client);
       final list = await setup.installations(workspaceId: 'ws-1');
       expect(list.first.installationId, '9');
-      expect(list.first.canAuthorizeHere, isTrue);
-      expect(list.last.canAuthorizeHere, isFalse);
-
-      await setup.authorizeServer(workspaceId: 'ws-1', installationId: '9');
-      expect(host.lastCall('github.authorizeServer')!.args, {
-        'workspace_id': 'ws-1',
-        'installation_id': 9,
-      });
+      expect(list.first.isOrganization, isTrue);
+      expect(list.first.suspended, isTrue);
+      expect(list.last.isOrganization, isFalse);
+      expect(list.last.suspended, isFalse);
     });
 
     test('manifest and install return their urls', () async {

@@ -2,7 +2,7 @@
 title: Backup și restaurare
 description: Fă un snapshot al instalării, mută un spațiu de lucru între mașini, restaurează un spațiu de lucru sau toate, și păstrează copii în altă parte.
 slug: ro-RO/manual/ghiduri-practice/backup-si-restaurare
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Acest ghid acoperă cele cinci lucruri pe care oamenii le fac de fapt cu backup-urile:
@@ -16,7 +16,8 @@ Tot ce este aici se află în **Setări → Server → Backup și restaurare**.
 
 - Un **client complet** — aplicația desktop sau cea web. Un telefon asociat nu poate declanșa nimic din toate acestea, prin design.
 - Pentru a face, lista, descărca sau șterge un **snapshot de instalare**: **proprietarul** instalării.
-- Pentru acțiunile pe spațiu de lucru: **admin** al acelui spațiu de lucru pentru a-l exporta sau pentru a-i lista și descărca backup-urile programate, **proprietar** pentru a-l importa sau șterge ori pentru a șterge unul dintre backup-urile sale.
+- Pentru acțiunile pe spațiu de lucru: **admin** al acelui spațiu de lucru pentru a-l exporta sau pentru a-i lista și descărca backup-urile programate, **proprietar** pentru a-l șterge sau pentru a șterge unul dintre backup-urile sale.
+- Pentru a **restaura** un spațiu de lucru, dintr-un fișier încărcat, dintr-un backup programat sau dintr-un snapshot: [proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului), care trebuie să fie și proprietarul acelui spațiu de lucru. O restaurare face ca serverul să adopte un fișier de bază de date drept al său, deci este decizia proprietarului serverului. Ceilalți văd „Doar proprietarul serverului poate restaura copiile de rezervă. Le poți descărca în continuare.” în locul acțiunilor de restaurare.
 - Pentru descărcări și încărcări: un client complet asociat, pe o conexiune directă sau prin releul intermediat. Ambele căi cară octeții fișierului prin același tunel de resurse autentificat și criptat cap la cap; releul nu îi poate citi.
 
 :::caution[Snapshot-urile de instalare sunt manuale]
@@ -42,11 +43,20 @@ Ambele artefacte sunt **doar baze de date**:
 - Un **snapshot de instalare** este un director cu marcă de timp: `manifest.json`, `global.db` și un `<workspaceId>/workspace.db` pentru fiecare spațiu de lucru.
 - Un **export de spațiu de lucru** este acel singur fișier `workspace.db`.
 
+Baza de date a unui spațiu de lucru este întregul spațiu de lucru: conversațiile,
+jurnalele rulărilor, indexul de cod, legăturile cu repository-urile, definițiile
+de medii și membrii. Ea conține și token-urile webhook ale pipeline-urilor și
+secretele webhook ale sincronizării de tichete, în formă citibilă. Păstrează un
+backup descărcat sau un export al spațiului de lucru la fel cum păstrezi un secret.
+Nu conține autentificările la provideri, cheile dispozitivelor sau secretele
+utilizatorilor; acestea trăiesc în baza de date globală și în magazinul de secrete
+al serverului.
+
 Niciunul nu include restul directorului de date: `secrets.json` (chei de asociere,
 acreditări de provider, SSO), `blobs/` al unui spațiu de lucru (imagini lipite în mesaje),
 `skills/`, `agents/`, `chat_credentials/`, audio-ul întâlnirilor înregistrate sau
 imaginile de rig. O parte din asta este de unică folosință, iar o parte nu —
-[tabelul complet este în referință](/ro-RO/manual/referinta/backup/#what-a-backup-does-not-contain),
+[tabelul complet este în referință](/ro-RO/manual/referinta/backup/#ce-nu-conține-un-backup),
 iar acoperirea lui este scopul [secțiunii despre copiile din afara mașinii](#copiază-backup-urile-în-afara-mașinii).
 
 ## Fă un snapshot al întregii instalări
@@ -73,7 +83,7 @@ unul a cărui copiere a eșuat — verifică jurnalul serverului.
 
 ## Programează backup-uri de spațiu de lucru și retenția
 
-Deschide **Setări → Pipeline-uri → Șabloane pipeline** pentru spațiul de lucru și găsește
+Deschide **Setări → Spațiu de lucru → Șabloane pipeline** pentru spațiul de lucru și găsește
 **Workspace backup**. Programarea lui activată rulează în fiecare duminică la 03:00 UTC:
 **Back up workspace**, urmat de **Delete backups older than** (30 de zile implicit). Al
 doilea nod rulează doar după ce backup-ul reușește. Poți schimba zilele de retenție la
@@ -97,7 +107,7 @@ backup-urile.
 
 Extinde un rând pentru a vedea fiecare backup, cele mai noi primele:
 
-- **Restaurează** înlocuiește baza de date actuală a spațiului de lucru cu acest backup. Exportă mai întâi spațiul de lucru dacă s-ar putea să ai nevoie să anulezi operația. Necesită **proprietar**.
+- **Restaurează** înlocuiește baza de date actuală a spațiului de lucru cu acest backup. Exportă mai întâi spațiul de lucru dacă s-ar putea să ai nevoie să anulezi operația. Necesită proprietarul serverului, care trebuie să fie și proprietarul spațiului de lucru.
 - **Descarcă** salvează fișierul pe mașina pe care o folosești. Backup-ul rămâne pe server.
 - **Copiază calea** copiază locația lui de pe server.
 - **Șterge** elimină definitiv acest backup, după ce tastezi numele spațiului de lucru. Necesită **proprietar**.
@@ -111,7 +121,7 @@ când cineva le elimină. **Proprietarul** instalării le vede în aceeași list
 vede acele rânduri.
 
 Nu au **Restaurează**, pentru că nu există un spațiu de lucru în care să fie restaurate.
-Pentru a aduce unul înapoi, descarcă-l, creează un spațiu de lucru și încarcă fișierul
+Pentru a aduce unul înapoi, descarcă-l, creează un spațiu de lucru (doar proprietarul serverului poate), și încarcă fișierul
 așa cum este descris în
 [Mută un spațiu de lucru într-o altă instalare](#mută-un-spațiu-de-lucru-într-o-altă-instalare).
 
@@ -153,9 +163,10 @@ pe fișiere.
 2. Pe serverul **destinație**, creează (sau alege) spațiul de lucru care îl va primi.
 3. Extinde acel spațiu de lucru și, la **Restaurează de pe acest dispozitiv**, apasă **Alege un fișier și încarcă**. Alege `.db`-ul pe care l-ai descărcat.
 
+Pasul 3 este o restaurare, deci are nevoie de proprietarul serverului destinației, care trebuie să fie și proprietarul acelui spațiu de lucru.
+
 Dacă ambele servere sunt aceeași mașină la care stai, **Salvează pe server** plus
-**Importă** → **Alege fișier** fac același lucru fără drumul dus-întors; căile din
-dialogul de import se rezolvă pe hostul serverului.
+**Salvează pe server** de pe sursă, apoi calea fișierului din **Fișier bază de date a spațiului de lucru** și **Importă** pe destinație fac același lucru fără drumul dus-întors; calea respectivă se rezolvă pe hostul serverului.
 
 :::caution[Importul înlocuiește tot]
 Importul suprascrie tot ce conține în prezent spațiul de lucru țintă și nu poate fi
@@ -169,11 +180,15 @@ instalare**. În al doilea caz, dispozitivele asociate și id-urile de utilizato
 fișierului aparțin instalării din care provine și nu se vor rezolva pe aceasta — datele
 proprii ale spațiului de lucru sunt intacte, dar reverifică apartenența după ce îl adopți.
 
-Token-urile botului de chat stau lângă baza de date, nu în ea, așa că un spațiu de lucru
-pe care îl predai altcuiva nu conține acreditări active. Instalarea primitoare le
-reconectează pe ale sale.
+Token-urile botului de chat și autentificările providerilor stau în afara bazei de date,
+deci instalarea primitoare le reconectează pe ale sale. Fișierul conține însă
+token-urile webhook ale pipeline-urilor și secretele webhook ale sincronizării de
+tichete ale spațiului de lucru, deci un spațiu de lucru pe care îl predai altcuiva
+le predă și pe acestea. Rotește-le după aceea, dacă destinatarul nu ar trebui să le aibă.
 
 ## Restaurează un spațiu de lucru dintr-un snapshot
+
+Ai nevoie să fii proprietarul serverului și proprietarul spațiului de lucru.
 
 1. La **Snapshot-uri de instalare**, extinde snapshot-ul dorit.
 2. Găsește rândul spațiului de lucru și apasă **Restaurează**.
@@ -185,8 +200,8 @@ mecanism care ar putea trata diferit același fișier.
 
 Un rând poate spune **Nu mai e pe acest server**, cu **Restaurează** dezactivat:
 snapshot-ul conține un spațiu de lucru pe care această instalare nu îl mai are. Readu-l
-manual — creează un spațiu de lucru, apoi, la **Date spațiu de lucru**, importă în el din
-`<snapshot path>/<old workspace id>/workspace.db`. Snapshot-ul extins își arată propria
+manual — creează un spațiu de lucru (doar proprietarul serverului poate), apoi, la **Date spațiu de lucru**, introdu în el, în câmpul **Fișier bază de date a spațiului de lucru**, calea
+`<snapshot path>/<old workspace id>/workspace.db` și apasă **Importă**. Snapshot-ul extins își arată propria
 **Cale pe server** într-un câmp de copiere, iar titlul rândului este id-ul vechiului
 spațiu de lucru, așa că ai ambele jumătăți ale acelei căi în față.
 
@@ -360,9 +375,11 @@ sunt stocate.
 | Simptom                                                                  | Cauză și soluție                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Descărcarea sau încărcarea eșuează după o schimbare de conexiune | Reîncearcă pe conexiunea asociată activă. Atât conexiunea directă, cât și cea prin releu acceptă transfer de fișiere criptat; niciuna nu expune o variantă de rezervă HTTP în clar |
-| „Serverul a refuzat”                                                     | Rol. Crearea sau listarea unui snapshot de instalare necesită operatorul instalării. Descărcarea unui spațiu de lucru necesită admin, restaurarea unuia necesită proprietar, un zip cu snapshot complet necesită operatorul instalării |
-| „Acest server nu are o suprafață de backup”                              | Hostul nu are conectat niciun port de backup — un server demo. Operațiunile lipsesc, în loc să fie refuzate                          |
-| „Fișierul e mai mare decât acceptă serverul”                             | Încărcările sunt limitate la 8 GiB. Pune fișierul pe hostul serverului și folosește în schimb **Importă** → **Alege fișier**                 |
+| „Serverul a refuzat. Descărcarea unui spațiu de lucru necesită rolul de admin al spațiului de lucru. Restaurarea unuia necesită proprietarul serverului, care trebuie să fie și proprietarul acelui spațiu de lucru. Un snapshot întreg necesită proprietarul serverului.” | Rol. Crearea, listarea sau descărcarea unui snapshot de instalare necesită proprietarul serverului. Descărcarea unui spațiu de lucru necesită admin; restaurarea unuia necesită proprietarul serverului, care trebuie să fie și proprietarul spațiului de lucru |
+| „Transferul de fișiere nu este configurat încă pentru această conexiune. Reconectează-te la server ca să descarci sau să încarci un backup.” | Această conexiune la server nu are o cale pentru transferul de fișiere, deci **Descarcă** și încărcarea sunt dezactivate. Reconectează-te la server, apoi încearcă din nou |
+| „Doar proprietarul serverului poate restaura copiile de rezervă. Le poți descărca în continuare.” | Restaurarea înlocuiește baza de date a unui spațiu de lucru pe hostul serverului, deci doar proprietarul serverului restaurează. Descarcă backup-ul și cere-i lui |
+| „Acest server nu are o suprafață de backup.”                              | Hostul nu are conectat niciun port de backup — un server demo. Operațiunile lipsesc, în loc să fie refuzate                          |
+| „Fișierul e mai mare decât acceptă serverul.”                            | Încărcările sunt limitate la 8 GiB. Pune fișierul pe hostul serverului și introdu calea lui în **Fișier bază de date a spațiului de lucru**           |
 | Import refused: not a Control Center workspace database                  | Fișierul nu are niciun rând `workspace_meta` — nu este un export de spațiu de lucru sau este trunchiat. Nu s-a înlocuit nimic             |
 | Un snapshot este listat **Incomplet**                                    | Manifestul lui lipsește sau numește fișiere absente. Fă unul nou; între timp, adoptă din el fișierele individuale de spațiu de lucru |
 | Un snapshot spune că nu au fost capturate spații de lucru                | În acele spații de lucru nu s-a scris niciodată sau copierea lor a eșuat. Verifică jurnalul serverului                                  |

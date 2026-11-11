@@ -2,7 +2,7 @@
 title: Analytika používání
 description: Co Control Center zaznamenává, když je analytika používání zapnutá, kdo o tom rozhoduje a co se nikdy neodesílá.
 slug: cs-CZ/prirucka/referencni-prirucka/analytika-pouzivani
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center umí odesílat **pseudonymní události o používání** do instance [Umami](https://umami.is). Analytika používání je **vypnutá, dokud ji provozovatel serveru nezapne**. Nastavení patří serveru a platí pro každého klienta, který je k němu připojený: desktopovou aplikaci, webovou aplikaci, telefon i samotný server.
@@ -13,7 +13,7 @@ Analytika používání je oddělená od **Sdílet hlášení pádů**, což je 
 
 | Přepínač | Kde | Účinek |
 | --- | --- | --- |
-| **Sdílet analytiku používání** | Úvodní nastavení (krok sandboxu) a **Nastavení → Soukromí**. Změnit ho může jen provozovatel serveru; ostatní členové vidí aktuální hodnotu jen pro čtení | Pro celý server. Uloženo jako `telemetry.usage_analytics` v nastavení serveru. Vypnuto, dokud není nastaveno na `true` |
+| **Sdílet analytiku používání** | Úvodní nastavení (krok sandboxu) a **Nastavení → Server → Diagnostika a soukromí**. Změnit ho může jen provozovatel serveru; ostatní členové vidí aktuální hodnotu jen pro čtení | Pro celý server. Uloženo jako `telemetry.usage_analytics` v nastavení serveru. Vypnuto, dokud není nastaveno na `true` |
 | Typ sestavení | Automaticky | Sestavení debug a profile nic neodesílají. Každou událost místo toho zapíšou do debug logu |
 | `CC_ANALYTICS_DEBUG=1` | Prostředí `cc_server` nebo jeho `.env` | Kvůli testování umožní sestavením debug a profile serveru i všech k němu připojených klientů skutečně odesílat. Přepínač výše musí být i tak zapnutý |
 | `DO_NOT_TRACK=1` | Prostředí `cc_server` | Zastaví vlastní hlášení serveru bez ohledu na přepínač. Klienti se přepínačem řídí dál |

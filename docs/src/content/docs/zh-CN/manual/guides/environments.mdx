@@ -2,7 +2,7 @@
 title: 设置环境
 description: 借助 compose、自定义 CLI、受监管的进程或桌面应用，为每个空间和拉取请求提供各自运行中的技术栈。
 slug: zh-CN/手册/操作指南/环境
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 **环境**是一个空间运行中的技术栈：分支所需的服务，与所有其他空间隔离，显示在侧边栏中，智能体可以访问。拉取请求也有环境，因为 PR 本来就有自己的空间。
@@ -11,12 +11,26 @@ sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
 
 ## 创建定义
 
-1. 打开 **设置 → 工作区 → 环境**。只有工作区管理员可以更改定义。
+1. 打开 **设置 → 工作区 → 环境**。只有工作区管理员可以更改定义，并且只有服务器所有者可以保存在服务器主机上运行的定义（参见[谁可以保存什么](#谁可以保存什么)）。
 2. 点击 **新建定义**，然后选择 **空白定义** 或 **从仓库生成草稿**。草稿会在仓库中查找 compose 文件、`Procfile` 和 `package.json` 脚本，由你审阅结果。
 3. 填写表单，或使用 **JSON** 选项卡。本页的示例就是该 JSON。
 4. 点击 **运行测试**。它会启动一个一次性环境，等待就绪后将其销毁。
 
-要把定义保存在仓库中，请使用 **关联仓库文件**。Control Center 只从默认分支读取该文件，并且只运行管理员批准的版本。较新的版本会显示 **有可用更新**，在批准之前不会改变任何内容。
+保存时会严格检查定义。未知字段、类型错误的值或拼写错误的选项都会被拒绝，并给出其路径和最接近的有效名称，例如 `repos.app.requird: Unknown field. Did you mean "required"?`。顶层允许使用 `$schema`。
+
+要把定义保存在仓库中，请使用 **关联仓库文件**。Control Center 只从默认分支读取该文件，并且只运行已批准的版本：由工作区管理员批准，或当定义在主机上运行时由服务器所有者批准。较新的版本会显示 **有可用更新**，在批准之前不会改变任何内容。
+
+### 谁可以保存什么
+
+环境定义可以以服务器自身用户的身份在服务器主机上运行命令。这是服务器所有者的决定，而不是工作区角色的决定：
+
+- 当定义具有主机放置方式、包含运行命令的检查，或包含 `provision` 或 `archive` 任务时，它会**在主机上运行**。无论放置方式如何，这些任务都会在主机上的空间工作树中运行。
+- 只有[服务器所有者](/zh-CN/手册/概念/授权/#服务器所有者)可以保存或批准在主机上运行的定义。这包括批准关联仓库文件的新版本。工作区管理员如果尝试这样做，会看到“只有服务器所有者才能保存或批准在服务器主机上运行的环境。工作区管理员可以使用在 rig 中运行的环境。”
+- 工作区管理员可以保存并批准完全在 rig 中运行的定义：`"placement": "rig"`，没有检查命令，也没有 `provision` 或 `archive` 任务。
+- 无论哪种方式，成员都可以启动、停止和使用环境。
+- 在主机上运行的定义，只有在**当前**服务器所有者保存或批准之后才会运行。服务器自己记录该批准，并在每次启动、检查、任务以及拉取请求 head 同步之前进行检查。当前所有者尚未批准的定义（例如由前任所有者保存的定义）会在环境列表和编辑器中它所在的行下等待。服务器所有者会看到“在此服务器上运行。批准后即可启动。”以及**批准**按钮，点击它会在不作改动的情况下保存该定义；其他人则会看到“在此服务器上运行。服务器所有者须先批准，才能启动。”
+- 因等待该批准而被搁置的环境会显示“服务器所有者尚未批准此环境，因此它无法在此服务器上运行。”服务器所有者看到的则是“你尚未批准此环境。它在此服务器上运行，因此你批准其定义后才会启动。”以及**审阅并批准**按钮，点击它会打开该定义。
+- 环境的进程终端，以及启动在需要你时打开的终端，都运行在服务器主机上。在这些终端中输入、调整大小或关闭它们，都需要对空间所暴露的每个仓库具有写入权限，且该权限须通过你自己的代码托管平台登录来读取：与启动环境相同。其他任何人都无法访问这些终端。
 
 ## 最小的定义
 
@@ -35,7 +49,7 @@ sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
 
 ## 组件类型
 
-环境是一个有序的组件列表。除非 `after` 指定了其他组件，否则每个组件都会等待前一个就绪，停止时按相反顺序进行。`enabledWhen` 让组件取决于某个选项或角色，例如 `opt.seed`、`!opt.seed` 或 `repo.web`。
+环境是一个有序的组件列表。除非 `after` 指定了其他组件，否则每个组件都会等待前一个就绪，停止时按相反顺序进行。`enabledWhen` 让组件取决于某个选项或角色，例如 `opt.seed`、`!opt.seed` 或 `repo.web`。若组件的角色为可选且在空间中缺失，同样会被排除，无需 `enabledWhen`：它不会启动，也没有 `{port.*}` 或 `{url.*}`，因此读取这些占位符的其他组件会导致启动失败。
 
 | 类型 | 由谁运行 | 用途 |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
 | `manual` | 按需：**运行**、`cc-env run <id>` 或 `environment_run_task` |
 | `archive` | 工作树销毁前 |
 
-以数组形式给出的命令是 argv，因此选项值绝不会经过 shell。字符串，或带行数组的 `script`，在 `bash -lc` 下运行。`{name}`、`{branch}`、`{stateDir}`、`{repo.<role>}`、`{port.<key>}`、`{opt.<key>}` 和 `{url.<role>}` 等占位符只在 argv 中展开。shell 命令通过 `CC_ENV_*` 变量读取相同的值，例如 `$CC_ENV_PORT_WEB`。
+启动时无事可做的任务会显示 **空闲**，并且不会出现在环境启动时显示的步骤列表中：即 `manual` 或 `change` 任务，或已经运行过的 `create` 任务。
 
-每条命令和空间终端还会获得 `CC_ENV_NAME`、`CC_ENV_STATE_DIR`、`CC_ENV_URL`、`CC_SPACE_ID`、`CC_REPO_PATH_<ROLE>`，在 PR 空间中还有 `CC_PR_NUMBER` 和 `CC_PR_IS_FORK`。有 compose 组件时还会获得 `COMPOSE_PROJECT_NAME` 和 `COMPOSE_FILE`，因此任务中的 `docker compose exec` 能到达正确的项目。
+以数组形式给出的命令是 argv，因此选项值绝不会经过 shell。字符串，或带行数组的 `script`，在 `bash -lc` 下运行。`{name}`、`{branch}`、`{stateDir}`、`{repo.<role>}`、`{port.<key>}`、`{opt.<key>}` 和 `{url.<role>}` 等占位符只在 argv 中展开。shell 命令通过 `CC_ENV_*` 变量读取相同的值，例如 `$CC_ENV_PORT_WEB`。在本空间环境中的组件里若出现未知占位符，启动会在任何内容运行之前停止。
+
+每条命令和空间终端还会获得 `CC_ENV_NAME`、`CC_ENV_STATE_DIR`、`CC_ENV_URL`、`CC_SPACE_ID`、`CC_ENV_REPO_<ROLE>`，在 PR 空间中还有 `CC_PR_NUMBER` 和 `CC_PR_IS_FORK`。有 compose 组件时还会获得 `COMPOSE_PROJECT_NAME` 和 `COMPOSE_FILE`，因此任务中的 `docker compose exec` 能到达正确的项目。
 
 ## 角色和工作目录
 
@@ -77,7 +93,7 @@ sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
 - `whenMissing`：空间缺少该角色时的处理方式。`addToSpace` 以默认分支添加仓库，是 `required` 角色的默认值。`useSource` 传入你注册的检出，应将其视为只读。`skip` 不设置变量，是其他情况下的默认值。
 - 启动需要对空间内某个锚点仓库拥有 `write` 授权，并对所有其他绑定的仓库拥有读取权限。
 
-命令在 `repos` 中空间拥有的第一个角色里运行，因此单仓库定义无需提及。任何组件都可以用 `"cwd": { "role": "e2e", "path": "packages/ui" }` 覆盖。两个字段都是可选的。
+命令在 `repos` 中声明的第一个角色里运行，绝不会在空间恰好拥有的其他角色里运行，因此单仓库定义无需提及。任何组件都可以用 `"cwd": { "role": "e2e", "path": "packages/ui" }` 覆盖。两个字段都是可选的。当第一个角色可能在某个空间中缺失（即它既不是 `required`，也不是唯一的锚点角色）时，每个组件都必须指明其角色。
 
 ## 端口和 URL
 
@@ -130,6 +146,8 @@ http://web--fix-login--shop.localhost:7355
 
 `healthchecks` 让没有自带健康检查的服务也能阻塞下一个组件。没有它，运行中的容器就算就绪，迁移可能抢在仍在启动的数据库之前运行。
 
+每次启动和刷新都会以 `--remove-orphans` 运行 `up`，因此从 compose 文件中删除的服务会停止并释放其端口。除非组件设置了 `"build": false`，否则启动和刷新时都会构建镜像。
+
 ## 示例：自定义 CLI
 
 一个虚构的 `acme` 工具，自行管理容器、域名和 TLS。Control Center 提供 `{name}`，其余一切从 `status` 获知。它绝不推导工具的主机名，也绝不编辑 `/etc/hosts`。
@@ -147,7 +165,8 @@ http://web--fix-login--shop.localhost:7355
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ http://web--fix-login--shop.localhost:7355
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ http://web--fix-login--shop.localhost:7355
 ```
 
 - `create`、`status` 和 `destroy` 是必需的。Control Center 根据读取的状态选择 `create` 或 `start`。任何动词都可以用 `{ "shell": "…" }` 代替 argv。
+- `interactive` 列出可在终端中请求所需输入的动词，选自 `create`、`start` 和 `reset`。当此类动词因按下 **开始** 的人而以退出码 3 结束时，Control Center 会在终端标签页中再次运行同一动词，待其以 0 退出后，启动继续进行。在那里，条件 `interactive` 为真，并设置了 `CC_ENV_INTERACTIVE=1`，因此 `{ "if": "!interactive", "args": ["--json"] }` 会为管道保留机器输出。由智能体发起的启动或自动启动绝不会打开终端：环境显示 **需要处理** 并等待。
+- `destroy` 失败后，若 `status` 随后报告 `missing`，环境仍会被删除，因此工具已不再拥有的环境总能被删除。
+- `list` 让 Control Center 察觉工具已丢失的环境。只有当其名称不再出现在 `list` 中且 `status` 随后显示 `missing` 时，它才会被标记为已消失。无法读取为列表的输出不会产生任何改变。
+- `logs` 和 `exec` 中的 `{service}` 必须是一个不以 `-` 开头的单词，并且是工具最近一次报告的服务之一（如果工具报告过服务）。
 - `statusMap` 用 JSON 指针读取工具自身的 JSON，其中 `*` 匹配每一项。状态规则有序，第一个匹配的规则生效。条件是 `path` 加 `equals`，或 `any`、`none` 加 `where`。
 - `keepsDataOnStop: false` 关闭空闲停止，并在 **停止** 上添加数据丢失警告。当停止会丢失数据时设置它。
 - `routing.mode: "tool"` 把工具的主机名连接到浏览器 (VM) 和智能体。域名必须以 `.test`、`.localhost` 或 `.internal` 结尾，超出范围的 URL 会被丢弃。
@@ -229,8 +253,8 @@ http://web--fix-login--shop.localhost:7355
 }
 ```
 
-- 每个进程都是一个终端选项卡，可以打开、阅读和输入。关闭选项卡不会停止进程。
-- `ready` 接受 `http`、`tcp` 或 `logMatch`。`restart` 为 `on-failure`（默认）、`always` 或 `never`。`restartOn` 在已更改的路径匹配时重启进程。
+- 每个进程都是一个终端选项卡，只要你对空间中的每个仓库都有写入权限，即可打开、阅读和输入（参见[谁可以保存什么](#谁可以保存什么)）。关闭选项卡不会停止进程。
+- `ready` 接受 `http`（完整 URL）、`tcp`（`host:port`）或 `logMatch`（正则表达式）。`restart` 为 `on-failure`（默认）、`always` 或 `never`。`restartOn` 在已更改的路径匹配时重启进程。
 - `options` 会变成 **开始** 上的表单，`agentDefault` 适用于智能体启动的运行。
 
 ## 示例：桌面应用
@@ -251,21 +275,21 @@ http://web--fix-login--shop.localhost:7355
 }
 ```
 
-应用不会随环境启动。有人点击 **启动应用** 后，先运行 `prepare`。**重新构建并启动** 会再次运行这一组合。正常退出显示为已关闭，崩溃会显示最后的日志行且不重启，服务器重启绝不会重新启动应用，空闲停止也不会动运行中的应用。
+应用不会随环境启动。有人点击 **启动应用** 后，先运行 `prepare`。**重新构建并启动** 会再次运行这一组合。`enabledWhen` 同时作用于应用及其 `prepare` 任务，两者中任一关闭时，**启动应用** 都会被拒绝。只要进程组中有任何进程在运行，应用就算作正在运行，因此启动应用后立即退出的启动器没有问题。若在点击 **启动应用** 后约 5 秒内所有进程都已消失，应用会显示为失败，并给出最后的日志行。此后，正常退出显示为已关闭，崩溃显示最后的日志行，两者都不会重启应用。服务器重启会关闭应用且绝不会重新启动它，空闲停止也不会动运行中的应用。
 
 ### 桌面应用的权限和限制
 
 - 在 macOS 上，在系统设置中为 Control Center 授予一次**屏幕录制**和**辅助功能**权限。服务器主机需要图形会话：无头服务器会拒绝启动应用。
-- 直接启动二进制文件。`open -a` 会把应用交给 LaunchServices，应用随之离开 Control Center 跟踪的进程树。`"window": { "match": { "bundleId": "…" } }` 可处理这种情况，但只有一个运行中的副本时才安全。
+- 直接启动二进制文件。`open -a` 会把应用交给 LaunchServices，应用随之离开 Control Center 跟踪的进程树，因此应用在启动后会立即显示为失败。
 - 窗口留在显示器上。macOS 不会捕获位于所有显示器之外的窗口，因此智能体使用的应用在服务器屏幕上可见。它不需要焦点。
 - `"isolate": "home"` 通过 `HOME`、`XDG_*` 和 `CFFIXED_USER_HOME` 为应用提供私有主目录，让两个空间的副本可以并行运行。`NSUserDefaults` 不隔离，因此 Cocoa 偏好设置和 Flutter 的 `shared_preferences` 仍在副本之间共享。
 - `isolate` 只作用于启动的进程。`flutter run` 之类的工具链启动器需要真实的主目录，所以请把 `isolate` 与构建好的二进制文件搭配使用。如果应用有自己的设置，例如 `--user-data-dir`，请优先使用。
 - 智能体用 `app_use` 操作窗口，它只能触及此环境的进程树。智能体看到的是窗口，不是桌面。智能体的启动要经过操作策略，默认会询问，而在有人掌握控制权时，智能体的输入会暂停。
 - `"input": "background"`（默认）将事件发送给进程。`"foreground"` 激活窗口并接管光标。
 
-## 工作树任务取代仓库脚本
+## 工作树任务
 
-`provision` 和 `archive` 任务取代了过去按仓库配置的设置和归档脚本。**现有脚本已自动迁移：**每个有脚本的仓库现在都有一个以仓库命名的定义，其中的 `setup` 和 `archive` 任务保存着相同的脚本文本。**设置 → 工作区 → 仓库** 中仓库行上的图标可以打开它。过去的脚本运行记录保留为只读历史。
+`provision` 和 `archive` 任务随仓库的工作树运行该仓库的设置与拆除。**设置 → 工作区 → 仓库** 中仓库行上的图标会打开该仓库的定义。
 
 这些任务跟随工作树而不是环境，因此在没有人点击 **开始** 的空间中也会运行：
 
@@ -292,7 +316,7 @@ http://web--fix-login--shop.localhost:7355
 
 - 此时还没有环境，因此这些任务不能使用 `{name}`、`{port.*}`、`{url.*}`、`{opt.*}` 或 `enabledWhen`，也不会获得定义的 `env`。
 - 一个仓库的 `provision` 和 `archive` 任务只能由一个定义持有。其他定义仍可为其他用途绑定它。
-- `"when": ["provision", "change"]` 还会在锁文件变化时重新安装，这是设置脚本从未做到的。
+- `"when": ["provision", "change"]` 还会在锁文件变化时重新安装。
 - 任务针对其 `cwd` 角色的工作树运行，因此多仓库定义可以分别设置每个仓库。
 - 测试运行会设置 `CC_SCRIPT_TEST=1`。重试从干净的工作树开始，所以任务要能承受重新运行。
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-有 compose 组件时，`docker` shim 还允许 `docker compose` 使用 `ps`、`logs`、`exec`、`port`、`restart` 和 `top`。动词之前不能有标志，`logs` 不能跟踪输出，`exec` 只接受 `-T`。其他情况以代码 5 退出，并显示“not available in Control Center agent runs”。
+有 compose 组件时，`docker` shim 还允许 `docker compose` 使用 `ps`、`logs`、`exec`、`port`、`restart` 和 `top`，并且只能作用于该环境自己的 compose 项目。动词之前不能有标志，每个动词只接受一小组选项：`logs` 不能跟踪输出，`exec` 只接受 `-T`（或 `--no-tty`）。任何把 compose 指向其他文件或项目的选项（`-f`、`-p`、`--project-directory`、`--env-file`、`--profile`）无论出现在哪里都会被拒绝。其他情况以代码 5 退出，并显示“not available in Control Center agent runs”。
 
-技能调用自身工具的仓库可以继续这样做。`cli` 组件上的 `agentPassthrough` 块声明智能体可以运行哪些命令：
+技能调用自身工具的仓库可以继续这样做。`cli` 组件上的 `agentPassthrough` 块声明智能体可以运行哪些命令。只有已批准的定义所声明的命令才会被放行，并且每条命令都在主机上运行，因此它受**在主机上运行命令**规则约束，该规则默认会先询问：
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ cc-env run <task> -- <args>
 | 代码 | 含义 |
 | --- | --- |
 | 0 | 成功 |
-| 3 | 需要设置主机。**在终端中运行** 打开空间终端，命令已输入但未运行，然后用 **重试** 重试。Control Center 绝不运行 `sudo` |
-| 4 | 需要身份验证 |
-| 5 | 依赖项不可用 |
+| 3 | 需要在终端中作答，例如输入 `sudo` 密码。`interactive` 中列出的动词会在按下 **开始** 的人的终端标签页中再次运行。否则 **在终端中运行** 会打开空间终端，并输入工具的 `command`（但不运行），然后用 **重试** 重试。Control Center 绝不运行 `sudo`，也绝不替代回答提示 |
+| 4 | 需要登录。工具的 `command` 说明方法 |
+| 5 | 其依赖的内容不可用，例如容器运行时未在运行 |
 | 其他 | 失败 |
+
+退出码 3、4 和 5 都不是失败。环境会显示 **需要处理** 并等待，下一次启动会从上次停止的地方继续。以其中任一退出码结束的任务含义相同。
 
 进度以换行分隔的 JSON 输出到 stderr：
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-`step` 行显示为实时步骤列表，`note` 行按原样显示。最后一行类型为 `error` 时会成为结构化错误，并提供 `command` 供复制。否则 Control Center 显示 stderr 的最后 20 行。非 JSON 内容都是普通日志输出。
+环境启动期间，面板会列出启动所经过的各个组件，每项带有旋转指示器、对勾或叉号。`step` 行说明工具当前正在做什么，其 `label` 显示在工具自身那一行下方；步骤从不新增行。步骤的 `state` 为 `pending`、`running`、`done` 或 `failed`，没有 `state` 的步骤视为正在运行。以相同 `id`（字符串或数字，或无 id 时相同的 `label`）再次报告的步骤会替换之前的内容，因此只有一个旋转指示器的工具可以保持同一 `id` 并只更改 `label`。没有 id 时，步骤依次衔接，新步骤会结束前一个。命令退出时，仍在运行的步骤会按命令的结果结束。
+
+`log` 行承载工具以 JSON 包装的一行输出，并按普通输出文本读取。`note` 会输出到本次运行的输出中，带有 `"level": "warn"` 的那一条还会作为警告保留在环境上。最后一行类型为 `error` 时会成为结构化错误，并提供 `command` 供复制，其 `message` 下方会显示输出的最后 12 行。否则 Control Center 显示 stderr 的最后 20 行。非 JSON 内容都是普通日志输出。
 
 ## 相关内容
 

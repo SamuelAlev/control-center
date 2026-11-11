@@ -159,9 +159,6 @@ PipelineTemplatesTableCompanion pipelineDefinitionToCompanion(
 
 StepKind _kindFromString(String s) => switch (s) {
   'trigger' => StepKind.trigger,
-  // Legacy templates persisted the entry node as 'start'; load it as the
-  // trigger node so older rows keep deserializing.
-  'start' => StepKind.trigger,
   'listen' => StepKind.listen,
   'join' => StepKind.join,
   'router' => StepKind.router,

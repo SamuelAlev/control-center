@@ -2,7 +2,7 @@
 title: Công cụ agent tích hợp
 description: Bề mặt công cụ mà harness tích hợp trao cho một agent — máy chủ ngôn ngữ, tìm kiếm cấu trúc, trình gỡ lỗi, kernel và điều khiển worker — cùng mọi thao tác và tham số của chúng.
 slug: vi-VN/so-tay/tham-chieu/cong-cu-agent
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Đây là những công cụ **gắn với máy chủ** mà runtime agent tích hợp đăng ký trực tiếp — máy chủ ngôn ngữ, tìm kiếm cấu trúc, trình gỡ lỗi, kernel, câu hỏi và điều khiển worker — khác với các [công cụ MCP](/vi-VN/so-tay/tham-chieu/cong-cu-mcp/) mà nó bắc vào và những công cụ tệp, tìm kiếm và shell chung từ runtime của harness. Chúng không nằm trên sổ đăng ký MCP: một máy khách MCP bên ngoài sẽ không thấy chúng, bởi mỗi công cụ đều gắn với một tài nguyên phía máy chủ đang sống — một tiến trình máy chủ ngôn ngữ, một bộ điều hợp gỡ lỗi, một trình thông dịch — thuộc về đúng một lượt chạy.
@@ -24,6 +24,8 @@ Mỗi công cụ khai báo một cấp, và cấp đó quyết định **những
 ## `lsp` — truy vấn máy chủ ngôn ngữ
 
 Được đăng ký khi lượt chạy có một bộ giám sát máy chủ ngôn ngữ và một thư mục làm việc. Việc một máy chủ có thực sự trả lời được hay không được phát hiện ở thời điểm gọi, dưới dạng một phép **giao**: một dấu hiệu gốc phải tồn tại *và* tệp nhị phân của máy chủ phải phân giải được. Chỉ riêng một trong hai thì không máy chủ nào khởi động — `status` sẽ nói rõ điều đó — thay vì đoán mò trong im lặng.
+
+Máy chủ chỉ đến từ bảng dựng sẵn; một `lsp.json` của kho mã không được đọc. Trong một lượt chạy có sandbox, mỗi lượt chạy có một phiên máy chủ ngôn ngữ riêng, nên máy chủ khởi động lại theo từng lượt. Tệp nhị phân cục bộ của dự án (`node_modules/.bin`) chỉ được dùng khi lượt chạy có sandbox, và gốc dự án không bao giờ phân giải lên trên thư mục làm việc của lượt chạy.
 
 Vị trí được xác định bằng `line` cộng với một chuỗi con `symbol`, không bao giờ bằng cột. Một mô hình bị yêu cầu cho một cột sẽ đoán, và một lần đoán sai sẽ phân giải thành một ký hiệu khác trên cùng dòng — một câu trả lời trông có vẻ đúng nhưng lại nói về thứ khác. Bỏ qua `symbol` trong một hành động điều hướng là một lỗi, chứ không phải một lần đoán lấy cột đầu tiên.
 
@@ -117,7 +119,7 @@ Mỗi tệp đều được đối chiếu với nội dung đã ghi nhận tạ
 
 Được đăng ký khi lượt chạy có một bộ giám sát phiên gỡ lỗi, một thư mục làm việc và một id hội thoại. Việc một bộ điều hợp có thực sự khởi động được hay không được phát hiện ở thời điểm gọi, theo cùng quy tắc giao như với máy chủ ngôn ngữ (dấu hiệu gốc *và* tệp nhị phân). Cấp `exec`; không an toàn khi chạy song song (một phiên là trạng thái xuyên suốt các lần gọi, nên `continue` vượt mặt `stack` sẽ đọc một khung đã di chuyển).
 
-Mỗi cuộc hội thoại chỉ có một phiên, với TTL cứng (30 phút). Lệnh `launch` thứ hai sẽ bị từ chối thay vì âm thầm thay thế lệnh đầu tiên.
+Mỗi cuộc hội thoại chỉ có một phiên, với TTL cứng (30 phút). Lệnh `launch` thứ hai sẽ bị từ chối thay vì âm thầm thay thế lệnh đầu tiên. Trong một lượt chạy có sandbox, phiên giữ sandbox của nó qua các lượt cho đến khi kết thúc, nên tối đa là trong chính 30 phút đó.
 
 | Thao tác      | Tham số                       | Ghi chú                                        |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Mỗi cuộc hội thoại chỉ có một phiên, với TTL cứng (30 phút). 
 | `status`      | —                             | Liệu một phiên có đang chạy không, và nó dừng ở đâu |
 | `breakpoints` | `file`, `lines[]`             | `lines` rỗng sẽ xóa tệp. Có thể đặt **trước** khi khởi chạy |
 | `launch`      | `program`, `args[]`           | Khởi động chương trình và dừng lại tại các điểm dừng của bạn |
-| `attach`      | `port`                        | Kết nối tới một chương trình được gỡ lỗi đang chạy sẵn |
+| `attach`      | `port`                        | Kết nối tới một chương trình được gỡ lỗi đang chạy sẵn trên một trong các cổng được chuyển tiếp riêng của lượt chạy; mọi cổng khác bị từ chối trước khi bất cứ thứ gì khởi động |
 | `continue`    | `thread_id?`                  | Chạy cho đến lần dừng kế tiếp                  |
 | `pause`       | `thread_id?`                  | Dừng nó ngay tại chỗ                            |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Di chuyển một bước                   |
@@ -146,7 +148,7 @@ Mỗi cuộc hội thoại chỉ có một phiên, với TTL cứng (30 phút). 
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` ưu tiên `.venv/bin` hoặc `venv/bin` cục bộ trong dự án hơn `$PATH`: một python trên `$PATH` là một môi trường khác, và việc gắn vào từ nhầm môi trường sẽ thất bại theo cách trông như mã hỏng.
+`debugpy` ưu tiên `.venv/bin` hoặc `venv/bin` cục bộ trong dự án hơn `$PATH` khi lượt chạy có sandbox: một python trên `$PATH` là một môi trường khác, và việc gắn vào từ nhầm môi trường sẽ thất bại theo cách trông như mã hỏng. Khi không có sandbox, nó chỉ dùng `$PATH`, nên một kho mã không thể chọn trình thông dịch chạy trên máy chủ.
 
 ---
 
@@ -176,7 +178,7 @@ Cầu nối **đi vào lại sổ đăng ký công cụ của harness**, nên r�
 Thời gian chờ của ô là một ngân sách *không hoạt động* (mặc định 5 phút) và ngân sách đó bị **tạm ngưng** trong khi một lệnh gọi qua cầu còn đang chờ xử lý, nên một ô tỏa ra tới các subagent không bị giết giữa lúc tỏa ra.
 
 :::note[Kernel chạy ở đâu]
-Trong enclosure của cuộc hội thoại nếu cuộc hội thoại có một cái, còn không thì trên host. Nó không khởi động một enclosure để làm được điều đó — cùng quy tắc khiến một tab rig không tự khởi động.
+Trong enclosure của cuộc hội thoại nếu cuộc hội thoại có một cái, còn không thì trong sandbox hệ điều hành của lượt chạy trên host. Khi tắt sandbox hoặc sandbox không khả dụng, nó chạy không bị giới hạn và `eval` yêu cầu phê duyệt thực thi trên host. Nó không khởi động một enclosure để làm được điều đó — cùng quy tắc khiến một tab rig không tự khởi động.
 :::
 
 ---

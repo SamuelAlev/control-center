@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart' show RepoOpKind;
+import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart';
@@ -11,12 +12,20 @@ import 'package:cc_host/cc_host.dart';
 /// Cut and checkout stay inside the isolated copy (the same containment as
 /// `worktree.checkout`) and declare no effect class. Publish pushes and opens
 /// pull requests, so it declares both.
-List<RepoOp> buildSpaceStackOps({required SpaceStackPort? stack}) => [
+///
+/// A stack is the space's code: [requireSpace] (the space read gate) runs
+/// first, and a mutation naming a `repo_id` needs that repository's write
+/// grant.
+List<RepoOp> buildSpaceStackOps({
+  required SpaceStackPort? stack,
+  required Future<void> Function(RepoOpContext ctx) requireSpace,
+}) => [
   RepoOp(
     name: 'stack.list',
     kind: RepoOpKind.read,
     requiredArgs: const ['workspace_id', 'space_id'],
     handler: (ctx) async {
+      await requireSpace(ctx);
       if (stack == null) {
         return const {'ok': true, 'entries': <Object>[], 'dirty': false};
       }
@@ -31,7 +40,9 @@ List<RepoOp> buildSpaceStackOps({required SpaceStackPort? stack}) => [
     name: 'stack.cut',
     kind: RepoOpKind.mutate,
     requiredArgs: const ['workspace_id', 'space_id', 'name'],
+    repoAccess: RepoGrantLevel.write,
     handler: (ctx) async {
+      await requireSpace(ctx);
       if (stack == null) {
         return const {'ok': false, 'error': 'stacks are not available'};
       }
@@ -49,7 +60,9 @@ List<RepoOp> buildSpaceStackOps({required SpaceStackPort? stack}) => [
     name: 'stack.checkout',
     kind: RepoOpKind.mutate,
     requiredArgs: const ['workspace_id', 'space_id', 'branch'],
+    repoAccess: RepoGrantLevel.write,
     handler: (ctx) async {
+      await requireSpace(ctx);
       if (stack == null) {
         return const {'ok': false, 'error': 'stacks are not available'};
       }
@@ -67,7 +80,9 @@ List<RepoOp> buildSpaceStackOps({required SpaceStackPort? stack}) => [
     kind: RepoOpKind.mutate,
     actionClasses: const {ActionClass.gitPush, ActionClass.prCreate},
     requiredArgs: const ['workspace_id', 'space_id'],
+    repoAccess: RepoGrantLevel.write,
     handler: (ctx) async {
+      await requireSpace(ctx);
       if (stack == null) {
         return const {'ok': false, 'error': 'stacks are not available'};
       }

@@ -26,6 +26,7 @@ class PrOverviewTab extends ConsumerStatefulWidget {
     required this.pr,
     required this.prRef,
     required this.onOpenFileInDiff,
+    required this.onOpenCommentInDiff,
     required this.onOpenCommit,
     required this.onOpenReview,
     this.onOpenEnvironment,
@@ -40,6 +41,10 @@ class PrOverviewTab extends ConsumerStatefulWidget {
   /// Called with a changed file's tree-order index when its sidebar row is
   /// tapped, so the detail screen can focus the Diff tab and jump to it.
   final ValueChanged<int> onOpenFileInDiff;
+
+  /// Called with a review conversation's root comment id when the timeline's
+  /// "view in diff" is pressed, so the detail screen can reveal that thread.
+  final ValueChanged<int> onOpenCommentInDiff;
 
   /// Called with a commit SHA when that commit is tapped in the activity
   /// timeline, so the detail screen can focus the Diff tab on its changes.
@@ -107,7 +112,7 @@ class _PrOverviewTabState extends ConsumerState<PrOverviewTab> {
       key: _timelineKey,
       pr: pr,
       prRef: prRef,
-      onOpenFileInDiff: widget.onOpenFileInDiff,
+      onOpenCommentInDiff: widget.onOpenCommentInDiff,
       onOpenCommit: widget.onOpenCommit,
     );
     final sidebar = PrSidebar(

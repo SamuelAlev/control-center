@@ -26,19 +26,18 @@ class DaoActionPolicyRepository implements ActionPolicyRepository {
     // The rule carries its own workspace, so the file is picked from the entity
     // rather than from a second parameter that could disagree with it.
     final dao = _dao(rule.workspaceId);
-    // Enforce "at most one rule per (scope, actionClass|commandPrefix)" at this
-    // chokepoint: SQLite treats the NULL-bearing table unique key as distinct
-    // (actionClass/commandPrefix are mutually-exclusive nullables), so the DB
-    // won't reject a logical duplicate — delete any existing match first.
+    // A rule replaces only rules with its identity (see
+    // [ActionPolicyRule.sharesIdentityWith]). Enforced here because SQLite
+    // never applies the table's unique key: one of actionClass/commandPrefix
+    // is always NULL, and NULLs compare distinct.
     final existing = await dao.rulesForScope(
       rule.workspaceId,
       rule.scopeType.wire,
       rule.scopeId,
     );
     for (final row in existing) {
-      final sameClass = row.actionClass == rule.actionClass?.wire;
-      final samePrefix = row.commandPrefix == rule.commandPrefix;
-      if (row.id != rule.id && sameClass && samePrefix) {
+      if (row.id != rule.id &&
+          _mapper.ruleFromRow(row).sharesIdentityWith(rule)) {
         await dao.deleteRule(rule.workspaceId, row.id);
       }
     }

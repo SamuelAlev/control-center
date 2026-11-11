@@ -2,7 +2,7 @@
 title: Connect-szerver futtatása
 description: Futtassa a saját Control Center Connectjét a cc-connect Docker-image-ből, vagy csatolja a cc_server-be, hogy a szerverei az Ön által regisztrált szolgáltatói alkalmazásokon keresztül jelentkeztessék be az embereket.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 A Control Center Connect futtatja a szolgáltatói bejelentkezéseket (GitHub,
@@ -53,10 +53,10 @@ a szerverek nem elérhetőnek látják. Az alábbi `<base>` az Ön
 
 | Szolgáltató    | Regisztrálandó                                                                                                                                                                                                                                                       | Megőrzendő                              |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL: `<base>/oauth/github/callback`. Setup URL: `<base>/oauth/github/setup`, bekapcsolt **Redirect on update** mellett. Hagyja kikapcsolva a **Request user authorization (OAuth) during installation** beállítást: bekapcsolva a GitHub figyelmen kívül hagyja a setup URL-t. Hagyja bekapcsolva az **Expire user authorization tokens** beállítást | Alkalmazás-ID, slug, kliens-ID, kliens titok |
+| **GitHub App** | Callback URL: `<base>/oauth/github/callback`. Setup URL: `<base>/oauth/github/setup`, bekapcsolt **Redirect on update** mellett. Hagyja kikapcsolva a **Request user authorization (OAuth) during installation** beállítást: bekapcsolva a GitHub figyelmen kívül hagyja a setup URL-t. Hagyja bekapcsolva az **Expire user authorization tokens** beállítást | Alkalmazás-ID, slug, kliens-ID, kliens titok, privát kulcs |
 | **Google**     | Egy **Web application** típusú OAuth-kliens a `<base>/oauth/google/callback` átirányítási URI-val, engedélyezett Google Calendar API mellett                                                                                                                          | Kliens-ID, kliens titok                 |
 | **Linear**     | Egy OAuth-alkalmazás a `<base>/oauth/linear/callback` és a `<base>/oauth/linear_app/callback` visszahívási URL-ekkel                                                                                                                                                | Csak a kliens-ID                        |
-| **Slack**      | Redirect URLs: `<base>/oauth/slack_oidc/callback` és `<base>/oauth/slack/callback`. Event Subscriptions: `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash commands: `<base>/v1/hooks/slack/commands`. Bekapcsolt tokenrotáció | Alkalmazás-ID, kliens-ID, kliens titok, signing secret |
+| **Slack**      | Redirect URL-ek: `<base>/oauth/slack_oidc/callback` és `<base>/oauth/slack/callback`. Event Subscriptions a `<base>/v1/hooks/slack/events` címen (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash commands a `<base>/v1/hooks/slack/commands` címen. Tokenrotáció bekapcsolva | Alkalmazás-ID, kliens-ID, kliens titok, signing secret |
 
 Adja meg a GitHub Appnak ezeket a repójogosultságokat: **Metadata** olvasás,
 **Contents** olvasás és írás, **Pull requests** olvasás és írás, **Issues**
@@ -64,10 +64,22 @@ olvasás és írás, **Checks**, **Actions** és **Commit statuses** olvasás. A
 csapatoktól kért átnézésekhez adja hozzá a szervezeti **Members** olvasását. A
 webhookok kikapcsolva maradhatnak: a szerverek lekérdeznek.
 
-A Connectnek soha nincs szüksége a GitHub App privát kulcsára. Az egyetlen
-repóra szóló tokeneket ehelyett egy személy saját bejelentkezéséből állítja ki.
-A Linearnek sincs szüksége titokra: a Connect visszaadja a kódot a szervernek,
-amely maga fejezi be a cserét.
+A Connectnek szüksége van a GitHub App privát kulcsára (**Generate a private key** az
+alkalmazás beállításaiban). Ezzel írja alá az alkalmazás kéréseit, amelyek megkeresik
+azt a telepítést, amely lefedi a repót (ha a repónak nincs ilyen, a tulajdonos
+telepítését), és ezekkel állítja ki az egyetlen repóra szóló telepítési tokent, de
+csak miután a kérdező személy saját bejelentkezése igazolta a hozzáférést ahhoz a
+repóhoz.
+
+A Connectre csatlakozó minden szerver megosztja az alkalmazás botját. Ez bármelyikükért
+olvashat, kommentelhet, címkézhet és reagálhat botként. Pull requestek átnézése botként
+csak azoknak a szervereknek engedélyezett, amelyeket felsorol a
+`CONNECT_GITHUB_REVIEW_BOT_INSTALLS` változóban (vesszővel elválasztott telepítési
+azonosítóik); minden más szerver az átnéző saját tokenjével teszi közzé az
+átnézéseket. Push-t soha nem botként végeznek. Ha a saját szerverének botként kell
+átnéznie, vegye fel a telepítési azonosítóját ide, és indítsa újra. A kulcsfájlt
+titokként kezelje, akárcsak a pecsétkulcsot. A Linearnek nincs szüksége titokra: a
+Connect visszaadja a kódot a szervernek, amely maga fejezi be a cserét.
 
 ## 3. lépés: A telepítési azonosítók összegyűjtése
 
@@ -125,14 +137,28 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Irányítsa a reverse proxyt a `8790`-es portra. Az image jogosultság nélküli
-felhasználóként fut, az állapotát a `/data` kötetben tartja, és beépített
-állapotellenőrzéssel rendelkezik (`cc-connect --healthcheck`, amely a `/healthz`
-végpontot vizsgálja).
+Irányítsa a reverse proxyt a `8790`-es portra, és állítsa be a `CONNECT_TRUST_PROXY`
+értékét a Connect előtt álló proxyk számára, hogy a címenkénti korlát minden kliens
+címét lássa. Az image jogosultság nélküli felhasználóként fut, az állapotát a `/data`
+kötetben tartja, és beépített állapotellenőrzéssel rendelkezik (`cc-connect --healthcheck`, amely a `/healthz` végpontot vizsgálja: a folyamat válaszol). A
+`/readyz` végpont azt is ellenőrzi, hogy az állapot- és kötéstárolói válaszolnak-e, és
+hogy a Redis, ha használják, még `maxmemory-policy noeviction` beállítással fut-e; ide
+irányítsa az orchesztrátor készenléti ellenőrzését.
+
+A bejelentkezési hozzájárulási oldal egy űrlapküldésre válaszol, amelyet a Connect csak
+a saját oldaláról fogad el: a `Sec-Fetch-Site`, ha küldik, `same-origin` kell legyen, az
+`Origin`, ha küldik, pedig a `CONNECT_PUBLIC_URL` originje kell legyen; ha egyik sincs
+jelen, a küldést elutasítja. Ezért a proxynak mindkét fejlécet változatlanul kell
+továbbítania, a `CONNECT_PUBLIC_URL` pedig azt a címet kell tartalmazza, amelyet az
+emberek böngészői ténylegesen használnak. Ha a folytatás az oldalon mindig a „Ez a
+hivatkozás lejárt” üzenetet mutatja, és a naplóban `oauth.done_refused` látható
+`origin` vagy `no_origin` okkal, ez a két dolog egyike nincs rendben.
 
 A Connect nem indul el (`78`-as kilépési kód), ha a konfigurációja nyitott,
 nem biztonságos vagy félkész, és kiírja, melyik változó a hibás. Megállítja a
@@ -149,8 +175,9 @@ Ellenőrzőpont: minden szerveren a Connect kártya ezt mutatja: **Működik**, 
 Egy szerver külön konténer helyett maga is üzemeltetheti a Connectet. A csatolt
 szolgáltatás ugyanaz, amelyet az image futtat.
 
-1. Tegye a `CONNECT_*` változókat a szerver `.env` fájljába (vagy a
-   környezetébe), az 5. lépés szerint
+1. Tegye a `CONNECT_*` változókat a szerver `.env` fájljába, az 5. lépés szerint.
+   A szerver nem indul el, ha valamelyik Connect-titok, a `CONNECT_SENTRY_DSN` is
+   beleértve, a környezetében van exportálva
 2. Adja hozzá a `CC_SERVER_CONNECT_HOST=on` beállítást
 3. Indítsa újra a szervert. A naplója ezt írja ki: `embedded Connect at <url>`
 
@@ -162,6 +189,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 A Connect ezután a `<server>/connect` címen érhető el:
@@ -197,9 +225,10 @@ fájlból is: a `NAME` helyett adja meg a `NAME_FILE` változót. A Connect legf
 | `CONNECT_PUBLIC_URL`            | kötelező  | A kanonikus nyilvános URL. HTTPS, vagy `http` csak loopbacken. Az útvonal csatolást jelent. Lekérdezés és fragmens nélkül        |
 | `CONNECT_ALLOWED_INSTALLS`      | kötelező  | Vesszővel elválasztott telepítési azonosítók. A `*` csak a `CONNECT_SIGNED_CONFIG_FILE` mellett fogadható el                    |
 | `CONNECT_DENY_INSTALLS`         |           | Telepítési azonosítók, amelyeket akkor is elutasít, ha engedélyezettek                                                           |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numerikus GitHub-tulajdonosazonosítók. Ha meg van adva, repótokenek csak az ő repóikhoz állíthatók ki                            |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numerikus GitHub-tulajdonosazonosítók. Ha meg van adva, repótokenek csak az ő repóikhoz állíthatók ki. Nem korlátozza, ki jelentkezhet be: aki használhatja ezt a Connectet, az továbbra is megkapja a saját App-felhasználói tokenjét. Ha csak egy szervezetet szeretne kiszolgálni, tartsa az App-ot annak privátnak                            |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Telepítési azonosítók, amelyek botként átnézhetnek pull requesteket. Alapértelmezés szerint üres; a `*` nem fogadható el, és minden azonosítónak engedélyezettnek is kell lennie |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Kötési cím és port                                                                                                       |
-| `CONNECT_TRUST_PROXY`           | `0`       | Megbízható proxyugrások az `X-Forwarded-For` fejlécben (0–8). Csak a címenkénti sebességkorláthoz használatos                    |
+| `CONNECT_TRUST_PROXY`           | `0`       | Megbízható proxyugrások az `X-Forwarded-For` fejlécben (0–8). Csak a címenkénti korlátokhoz, a bejelentkezési oldal hálózati tippjéhez és a naplózott címhez használatos. Proxy mögött a `0` minden kliensnek a proxyt számolja, és a napló erről egyszer üzen                    |
 
 ### Szolgáltatói sávok
 
@@ -207,6 +236,7 @@ fájlból is: a `NAME` helyett adja meg a `NAME_FILE` változót. A Connect legf
 | --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | A GitHub App                                                                |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | Titok, kettős                                                               |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY` | | Titok. Az App privát kulcsa (PEM) |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | A Google-kliens. A titok kettős                                             |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |         | A Linear-alkalmazás. Titok nélkül                                           |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | A Slack-alkalmazás                                                          |
@@ -224,12 +254,12 @@ fájlból is: a `NAME` helyett adja meg a `NAME_FILE` változót. A Connect legf
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` vagy `gcp-kms`                                                                                     |
 | `CONNECT_SEAL_KEYS`                                       |                            | Titok, a `local` esetén kötelező. Vesszővel elválasztott `kid:key` bejegyzések, a legújabb elöl; a régebbi bejegyzések továbbra is visszafejtenek |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, a `gcp-kms` esetén kötelező                              |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` egy példányhoz, `redis` többhöz                                                                   |
-| `CONNECT_REDIS_URL`                                       |                            | Titok. `redis://` vagy `rediss://`                                                                         |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` egy példányhoz, `redis` többhöz. Egy tele memóriatároló új bejelentkezéseket és kéréseket utasít el ahelyett, hogy egy élő bejegyzést elfelejtene                                                                   |
+| `CONNECT_REDIS_URL`                                       |                            | Titok. `redis://` vagy `rediss://`. Redis 6.2 vagy újabb, `maxmemory-policy noeviction` beállítással; mindkettőt induláskor ellenőrzi                                                                         |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | CA-csomag a `rediss://` számára                                                                            |
-| `CONNECT_BINDINGS`                                        | `file`                     | Hol élnek a GitHub-telepítési kötések: `file` vagy `firestore`                                             |
-| `CONNECT_DATA_DIR`                                        | `data` (az image-ben `/data`) | A `bindings.json` helye                                                                                 |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` adatbázis      | A `CONNECT_BINDINGS=firestore` beállításhoz                                                                |
+| `CONNECT_BINDINGS`                                        | `file`                     | Hol élnek a Slack-csapat-kötések: `file` vagy `firestore`                                                  |
+| `CONNECT_DATA_DIR`                                        | `data` (az image-ben `/data`) | A `bindings.json` helye. Egy Connect zárolja: egy második, ugyanabban a könyvtárban indított példány nem indul el                                                                                 |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` adatbázis      | A `CONNECT_BINDINGS=firestore` beállításhoz. A Connect nem indul el, ha a Firestore nem válaszol                                                                |
 
 ### Konfiguráció, naplók és korlátok
 
@@ -239,19 +269,41 @@ fájlból is: a `NAME` helyett adja meg a `NAME_FILE` változót. A Connect legf
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Kulcsok, amelyekkel az aláírt konfigurációnak ellenőrizhetőnek kell lennie                          |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | A saját üzemeltetésű Connect által generált konfiguráció epochja                                    |
 | `CONNECT_LOG_HMAC_KEY`                  | folyamatonként véletlen | Titok. Adja meg, hogy a telepítési azonosítókat helyettesítő címkék újraindítások és példányok között is stabilak maradjanak |
+| `CONNECT_SENTRY_DSN` | | Titok. Egy https Sentry DSN, amelyre a hibasorok jelentésre kerülnek: a hibatípus, a veremkeretek, az útvonal és a kérésazonosító, soha nem üzenet, törzs vagy fejléc |
+| `CONNECT_SENTRY_ENVIRONMENT` | `self-hosted` | A Sentry-környezet |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | A `/v1/version` jelenti                                                                             |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Kérések telepítésenként                                                                             |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Kérések címenként                                                                                   |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Kérések a teljes szolgáltatásra                                                                     |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Kérések címenként (IPv6-címeknél /64-enként)                                                                                   |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Kérések a teljes példányra                                                                     |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600` | Slack-esemény- és parancskézbesítések címenként, a többi kéréstől külön számolva |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100` | Slack-esemény- és parancskézbesítések a teljes példányra |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-események csapatonként                                                                       |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-keresések telepítésenként                                                                       |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE` | `240` | GIF-keresések címenként, a szervereken átívelve |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60` | Elindított bejelentkezések címenként |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30` | GitHub-tokenek GitHub-fiókonként egy szerveren (bejelentkezések, frissítések, repótokenek) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × a fenti (`120`) | Ugyanaz GitHub-fiókonként, az összes szerveren |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600` | GitHub-tokenek címenként |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500` | Új GitHub-bejelentkezések az egész alkalmazásra |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120` | Bot-tokenek szerverenként |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240` | Bot-tokenek kérő GitHub-fiókonként, a szervereken átívelve |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000` | Bot-tokenek az egész alkalmazásra |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500` | Frissítések és repótokenek az egész alkalmazásra. Az új bejelentkezéseknek a fenti saját korlátjuk van |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN` | `10` | Élő repótokenek, amelyeket egy GitHub-fiók tarthat, mielőtt a Connect figyelmeztetést naplóz |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR` | `10` | Visszavont telepítési azonosítók címenként (IPv6-nál /48-anként) |
+
+Ha egy korlátot túllépnek, a válasz `rate_limited`. A szerverek később újrapróbálkoznak, és soha nem jelentkeztetik ki emiatt az embereket.
 
 ## Több példány futtatása
 
 A legtöbb szervezetnek elég egy példány `CONNECT_STATE=memory` beállítással. Egy
-cím mögötti több példányhoz `CONNECT_STATE=redis` kell, valamint vagy közös
-`CONNECT_DATA_DIR`, vagy `CONNECT_BINDINGS=firestore`, hogy az egyik példányon
-elkezdett bejelentkezés egy másikon is befejeződhessen.
+cím mögötti több példányhoz `CONNECT_STATE=redis` és `CONNECT_BINDINGS=firestore` kell,
+hogy az egyik példányon elkezdett bejelentkezés egy másikon is befejeződhessen, és minden
+példány ugyanazokat a Slack-kötéseket és visszavont telepítési azonosítókat lássa. Közös
+`CONNECT_DATA_DIR` nem működik: az első Connect zárolja. A telepítésenkénti, címenkénti és
+példányszintű kérési korlátok példányonként érvényesek; a bejelentkezések, a GitHub-tokenek,
+a bot-tokenek, a címenkénti GIF-keresések, a visszavonások és a Slack-csapatok korlátai az
+állapottáron keresztül közösek.
 
 ## Szolgáltatói titok cseréje
 
@@ -281,21 +333,23 @@ szervertulajdonosoknak, hogy tudják: a felszólítás Öntől származik.
 
 Adja hozzá a telepítési azonosítóját a `CONNECT_DENY_INSTALLS` változóhoz, és
 indítsa újra. A tulajdonosa ezt látja: „A Connect letiltotta a szerver telepítési
-azonosítóját”, és minden Connectes bejelentkezés leáll rajta.
+azonosítóját. Fordulj a Connect-szervered üzemeltetőjéhez.”, és minden Connectes bejelentkezés leáll rajta.
+
+A szerver a saját régi telepítési azonosítóját is visszavonja, amikor a tulajdonosa lecseréli a kulcsot. Igazolja, hogy az azonosító az övé, egy pecsétjével, amelyet ez a Connect készített hozzá, így csak az a szerver vonhat vissza azonosítót, amely már bejelentkeztetett valakit. A Connect a visszavont azonosítókat véglegesen megőrzi, így a régi kulcs és az ahhoz készült összes pecsét nem működik többé, és felszabadítja a régi azonosítóhoz kötött Slack-munkaterületeket. A már kiadott tokenek maguktól lejárnak: egy személyé legfeljebb 8 órán belül, egy boté 1 órán belül. A Connect legfeljebb 100 000 visszavont azonosítót tart nyilván; ennél többnél a rotáció elutasításra kerül, és a napló hibaszinten ezt jelzi.
 
 ## Hibaelhárítás
 
 ### Egy szerver azt írja, hogy a Connect letiltotta
 
 A telepítési azonosítója nem szerepel a `CONNECT_ALLOWED_INSTALLS` változóban,
-vagy szerepel a `CONNECT_DENY_INSTALLS` változóban. Az azonosító megváltozik,
+szerepel a `CONNECT_DENY_INSTALLS` változóban, vagy egy kulcscsere visszavonta. Az azonosító megváltozik,
 amikor a tulajdonosa lecseréli a kulcsot; kérje el az újat.
 
-### Egy szolgáltató nem elérhetőként jelenik meg
+### Egy szolgáltatóhoz tartozó minden bejelentkezés sikertelen
 
-Hiányzik az egyik változója, ezért a Connect kihagyta a sávot. Ellenőrizze az
-indítási naplót és a fenti táblázatokat. A GitHubnak mind a négy kell: az
-alkalmazás-ID, a slug, a kliens-ID és a kliens titok; a Google-nak a kliens-ID és
+Lehet, hogy hiányzik az egyik változója, ezért a Connect kihagyta a sávot. Ellenőrizze az
+indítási naplót és a fenti táblázatokat. A GitHubnak mind az öt kell: az
+alkalmazás-ID, a slug, a kliens-ID, a kliens titok és a privát kulcs; a Google-nak a kliens-ID és
 a titok is.
 
 ### A bejelentkezések átirányítási eltéréssel meghiúsulnak

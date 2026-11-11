@@ -248,10 +248,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get allCaughtUp => 'ตามทันหมดแล้ว';
 
   @override
-  String get inboxNoForgeAccount =>
-      'เซิร์ฟเวอร์ยังไม่ได้เชื่อมต่อบัญชี forge จึงยังระบุพูลรีเควสต์ให้คุณไม่ได้';
-
-  @override
   String get inboxNothingWaiting =>
       'ไม่มีรายการถูกบล็อก และไม่มีพูลรีเควสต์รอคุณ';
 
@@ -456,31 +452,6 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names มีขนาดใหญ่เกินไปที่จะส่งผ่านรีเลย์จากที่นี่',
-      one: '$names มีขนาดใหญ่เกินไปที่จะส่งผ่านรีเลย์จากที่นี่',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed => 'อัปโหลดไฟล์แนบไม่ได้ ลองอีกครั้ง';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'อัปโหลดไฟล์แนบ $count รายการไม่ได้จึงถูกตัดออก',
-      one: 'อัปโหลดไฟล์แนบ 1 รายการไม่ได้จึงถูกตัดออก',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'เพื่อนร่วมทีม';
 
   @override
@@ -615,35 +586,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'เซิร์ฟเวอร์ยังไม่ได้เชื่อมต่อ forge จึงดึงพูลรีเควสต์ไม่ได้ เชื่อมต่อจากแอปเดสก์ท็อป';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'อ่านรีโป $count รายการไม่ได้',
-      one: 'อ่านรีโป 1 รายการไม่ได้',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'อ่านไม่ได้: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'การติดตั้ง GitHub App ถูกระงับ';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'กำลังแสดงข้อมูลล่าสุดที่ทราบของ $names โปรดดำเนินการติดตั้งต่อบน GitHub';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'การติดตั้ง GitHub App ถูกระงับ. กำลังแสดงข้อมูลล่าสุดที่ทราบของ $names โปรดดำเนินการติดตั้งต่อบน GitHub';
-  }
 
   @override
   String get draft => 'ฉบับร่าง';
@@ -1292,7 +1234,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get permissionPrCreate => 'สร้าง pull request';
 
   @override
-  String get permissionPrPublish => 'เผยแพร่ pull request';
+  String get permissionPrPublish => 'อัปเดตหรือรวม pull request';
 
   @override
   String get permissionVendorSyncWrite => 'เขียนไปยังตัวติดตามภายนอก';
@@ -1336,7 +1278,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get permissionBuiltInDefault => 'ค่าเริ่มต้นในตัว';
 
   @override
-  String get permissionRemembered => 'การอนุมัติที่จดจำไว้';
+  String get permissionRemembered => 'การอนุมัติที่มีผลต่อเนื่อง';
 
   @override
   String get permissionSource => 'ต้นฉบับ';
@@ -1358,10 +1300,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'ตั้งกฎที่นี่';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'เพิกถอนกฎเฉพาะขอบเขตหรือกฎที่จดจำไว้ก่อนตั้งกฎทั่วไปสำหรับการกระทำนี้';
 
   @override
   String get permissionConfirmRevoke => 'ยืนยันการเพิกถอน';
@@ -1413,6 +1351,14 @@ class AppLocalizationsTh extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'คำสั่ง: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'เครื่องมือ: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect => 'ไม่มีผลขณะที่การกระทำนี้ถูกปฏิเสธ';
 
   @override
   String permissionMaxCount(String count) {
@@ -1866,15 +1812,6 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'อัปเดต pull request';
-
-  @override
-  String get activityTicket => 'อัปเดตตั๋วงาน';
-
-  @override
-  String get activityMeeting => 'อัปเดตการประชุม';
-
-  @override
-  String get activityCalendar => 'การเชื่อมต่อปฏิทิน';
 
   @override
   String get activityRig => 'อัปเดตริก';
@@ -2556,7 +2493,7 @@ class AppLocalizationsTh extends AppLocalizations {
       'กำลังรอการอนุญาตในเบราว์เซอร์ของคุณ…';
 
   @override
-  String get credentialsConnectCodePrompt => 'ป้อนรหัสที่แสดงในเบราว์เซอร์';
+  String get credentialsConnectCodePrompt => 'รหัสยืนยัน';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2625,10 +2562,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'วางโทเค็นการเข้าถึงส่วนบุคคล';
 
   @override
-  String get credentialsHostManaged =>
-      'การเชื่อมต่อนี้มาจากแอปเซิร์ฟเวอร์หรือสภาพแวดล้อมของเซิร์ฟเวอร์ เฉพาะเจ้าของเซิร์ฟเวอร์เท่านั้นที่เปลี่ยนได้ที่นั่น แต่คุณยังเพิ่มโทเค็นของตนเองได้';
-
-  @override
   String get credentialsStopWatching => 'หยุดติดตาม';
 
   @override
@@ -2649,4 +2582,199 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'รันคำสั่งบนโฮสต์';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'การลงชื่อเข้าใช้ $provider ของคุณหมดอายุแล้ว ลงชื่อเข้าใช้อีกครั้ง';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'หยุดชั่วคราว: บริการลงชื่อเข้าใช้ของเวิร์กสเปซนี้เปลี่ยนไป จะใช้งานได้อีกครั้งเมื่อบริการกลับมา';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'ติดต่อ $provider ไม่ได้ในขณะนี้ กำลังลองใหม่';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'เฉพาะเวิร์กสเปซนี้';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'ทุกเวิร์กสเปซ';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'ลบข้อมูลรับรองที่บันทึกไว้ออกจากเวิร์กสเปซนี้หรือไม่ เวิร์กสเปซอื่นยังคงเก็บของตัวเองไว้';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'ลบข้อมูลรับรองที่บันทึกไว้ออกจากทุกเวิร์กสเปซที่ใช้ร่วมกันหรือไม่';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'เซิร์ฟเวอร์รีสตาร์ตแล้ว เริ่มลงชื่อเข้าใช้ใหม่อีกครั้ง';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'ติดตั้ง GitHub App บน $owner เพื่อให้ระบบอัตโนมัติเข้าถึง $names ได้ แตะเพื่อเปิด GitHub';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'ยังไม่ได้ติดตั้ง GitHub App บน $owner ระบบอัตโนมัติจึงเข้าถึง $names ไม่ได้ ขอให้ผู้ดูแลเวิร์กสเปซติดตั้ง';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'เพิ่ม $names ในรีโพสิทอรีของ GitHub App แตะเพื่อเปิด GitHub';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App ยังมองไม่เห็น $names ขอให้ผู้ดูแลเวิร์กสเปซเพิ่มลงในรีโพสิทอรีของแอป';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'การติดตั้ง GitHub App ถูกระงับ ระบบอัตโนมัติสำหรับ $names หยุดชั่วคราวจนกว่าเจ้าของบัญชีจะกลับมาใช้การติดตั้งบน GitHub';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'ผู้รับผิดชอบระบบอัตโนมัติของเวิร์กสเปซนี้มองไม่เห็น $names อีกต่อไป จึงไม่มีอะไรทำงานที่นั่นในนามของเขา';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'ผู้รับผิดชอบระบบอัตโนมัติของเวิร์กสเปซนี้ยังไม่ได้ลงชื่อเข้าใช้ forge ระบบอัตโนมัติสำหรับ $names จึงรอจนกว่าเขาจะลงชื่อเข้าใช้';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'ตรวจสอบสิทธิ์เข้าถึง $names ไม่ได้ กำลังลองใหม่';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'ลงชื่อเข้าใช้ $forge เพื่อดู pull request จากรีโพสิทอรีอีก $count รายการ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'ซ่อนรีโพสิทอรี $count รายการ เพราะบัญชี $forge ของคุณมองไม่เห็น',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'ซ่อนรีโพสิทอรี $count รายการ เพราะคุณไม่มีสิทธิ์เข้าถึงในเวิร์กสเปซนี้',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'กำลังตรวจสอบสิทธิ์เข้าถึงรีโพสิทอรีอีก $count รายการ…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'อีเมลบัญชี Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'ป้อนที่อยู่อีเมลของบัญชี Atlassian ของคุณ';
+
+  @override
+  String get credentialsBitbucketApiToken => 'โทเค็น API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'ไม่มีโทเค็นระบบอัตโนมัติใดอ่าน $names ได้ งานเบื้องหลังในนั้นจึงหยุดชั่วคราว ผู้ดูแลระบบเพิ่มโทเค็นได้ที่ การตั้งค่า → รีโพสิทอรี';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'ยืนยันในเบราว์เซอร์ของคุณ แล้วป้อนรหัสที่แสดงขึ้นมา';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'บัญชีนี้เชื่อมต่ออยู่กับผู้ใช้อีกคนบนเซิร์ฟเวอร์นี้แล้ว ลงชื่อเข้าใช้ด้วยบัญชีอื่น';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'ติดต่อ $provider เพื่อตรวจสอบโทเค็นนี้ไม่ได้ ลองอีกครั้งในอีกสักครู่';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider ไม่ยอมรับโทเค็นนี้ ตรวจสอบว่าคุณคัดลอกครบทั้งหมดและยังไม่ถูกเพิกถอน';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'นี่ไม่ใช่โทเค็นส่วนตัว วางโทเค็นการเข้าถึงส่วนตัวจากบัญชี $provider ของคุณเอง ไม่ใช่โทเค็นของโปรเจกต์ กลุ่ม เวิร์กสเปซ หรือบอท';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'โทเค็นนี้ไม่มีสิทธิ์ $scope ซึ่งจำเป็นสำหรับการรีวิวและแสดงความคิดเห็น สร้างโทเค็นที่มีสิทธิ์นั้น';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'โทเค็นนี้หมดอายุแล้ว สร้างโทเค็นใหม่และวางที่นี่';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'มีคำขอมากเกินไปในตอนนี้ รอสักครู่แล้วลองอีกครั้ง';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'การลงชื่อเข้าใช้ถูกยกเลิกหรือถูกปฏิเสธ เริ่มใหม่เมื่อคุณพร้อม';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'การลงชื่อเข้าใช้นี้ไม่เปิดอยู่แล้ว: ถูกยกเลิก ใช้ไปแล้ว หรือถูกแทนที่ เริ่มใหม่อีกครั้ง';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'ผู้ดูแลเวิร์กสเปซต้องเชิญคุณ หรือเจ้าของเซิร์ฟเวอร์สามารถสร้างเวิร์กสเปซให้คุณได้';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos ตอนนี้ชี้ไปยังรีโพสิทอรีอื่นบน $forge เชื่อมโยงใหม่จากแอปเดสก์ท็อปหรือเว็บเพื่อใช้งานต่อ';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos ตอนนี้ชี้ไปยังรีโพสิทอรีอื่นบน $forge ผู้ดูแลเวิร์กสเปซต้องเชื่อมโยงใหม่ก่อนจึงจะใช้ได้อีก';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'เอเจนต์ต้องมีแซนด์บ็อกซ์บนเซิร์ฟเวอร์นี้';
+
+  @override
+  String get runSandboxUnavailable =>
+      'เซิร์ฟเวอร์นี้ไม่มีแซนด์บ็อกซ์ ดังนั้นมีเพียงเจ้าของเท่านั้นที่รันเอเจนต์ที่นี่ได้ เจ้าของสามารถติดตั้งแซนด์บ็อกซ์หรือปิดการใช้แซนด์บ็อกซ์สำหรับทุกคนได้';
 }

@@ -3,7 +3,7 @@ title: "Архитектура"
 description: "Как устроен Control Center: модель тонкого клиента с сервером, Clean Architecture с приоритетом функций и порты и адаптеры."
 dateModified: 2026-09-19
 slug: ru-RU/руководство/понятия/архитектура
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Обзор
@@ -60,7 +60,7 @@ feature_name/
 - Сущности памяти: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Общие объекты-значения: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Общие порты: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Доменные сервисы: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Доменные сервисы: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + типы событий (рабочее пространство/агент, PR/ревью, сообщения, тикеты, конвейер, оркестрация, память, календарь/встречи, идентичность и членство, наблюдаемость)
 
 ## Идентичность и совместная работа
@@ -132,7 +132,6 @@ Control Center многопользовательский: люди и аген�
 
 - Секреты в `flutter_secure_storage` (связка ключей macOS, диспетчер учётных данных Windows, libsecret в Linux) — учётные данные устройства клиента и ключи сопряжения для удалённого сервера, а не токены провайдеров
 - `shared_preferences` только для нечувствительных настроек (тема, шрифт, вёрстка)
-- Оставшиеся секреты провайдеров от старых установок однажды передаются серверу через `features/auth/providers/credential_migration.dart`, а затем удаляются из связки ключей клиента
 
 ## Обеспечение архитектуры
 

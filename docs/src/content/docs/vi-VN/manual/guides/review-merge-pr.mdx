@@ -2,7 +2,7 @@
 title: Xem xét và merge một PR
 description: Mở bàn làm việc PR, đọc diff, để lại bình luận nội tuyến, gửi một review và hợp nhất.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Hướng dẫn này chỉ cho bạn cách xem xét và hợp nhất một pull request.
@@ -22,9 +22,13 @@ khi ai đó yêu cầu, nên **Hỏi AI** mới mở nó. Một terminal, một 
 các tab xem trước triển khai được chèn tự động khi phát hiện URL xem trước trên
 PR. Bố cục tab của bạn được ghi nhớ theo từng PR.
 
+Code-server nhúng chỉ được cung cấp cho chủ sở hữu máy chủ, vì nó chạy trên máy chủ dưới chính người dùng của máy chủ. Một phiên thuộc về thiết bị và người đã mở nó, mở với chế độ tin cậy workspace của VS Code được bật (VS Code hỏi trước khi tin cậy một thư mục) và không tự động chạy tác vụ nào. Những người khác vẫn dùng trình soạn thảo đơn tệp và các chế độ xem tệp.
+
 Tab Tổng quan mang siêu dữ liệu của PR (tác giả, nhánh, nhãn, người được giao,
 reaction, commit, trạng thái kiểm tra) và hàng hành động: làm mới, **Đánh giá**,
-**Hợp nhất**, mở trong IDE và một menu tràn ⋯.
+**Hợp nhất**, một nút mang tên trình soạn thảo của bạn (chẳng hạn **Mở trong VS Code**) và một menu tràn ⋯.
+
+Nút trình soạn thảo đó khởi động một trình soạn thảo gốc trên **màn hình của máy chủ**, dưới người dùng của máy chủ và bên ngoài mọi sandbox, nên nó chỉ được cung cấp cho [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ). Trên một máy tính để bàn tự chạy máy chủ của nó, đó là người đang ngồi trước máy. Điều tương tự áp dụng cho việc mở worktree của một cuộc hội thoại trong một trình soạn thảo. Những người khác dùng các chế độ xem trình soạn thảo tích hợp. Ngay cả với chủ sở hữu, một pull request chỉ mở từ một kho mã được liên kết với không gian làm việc.
 
 ### Mở một PR từ stack của một space
 
@@ -41,7 +45,7 @@ làm việc PR. Đưa tiêu điểm tới tiêu đề của stack rồi nhấn E
 gọn hoặc mở rộng nó. Các PR không liên quan vẫn tách riêng, và những liên kết
 nhánh chưa hoàn chỉnh hoặc mập mờ không được trình bày như một stack có thứ tự.
 
-Trong **Kiểm soát mã nguồn**, **Pull request xếp chồng (N)** mở một trình chọn
+Trong tiêu đề của PR, huy hiệu stack (một biểu tượng các lớp kèm số pull request trong stack) mở **Pull request xếp chồng**, một trình chọn
 các phần đã xuất bản của stack, phần dưới cùng trước. Mỗi mục hiển thị số PR,
 nhãn phần và vị trí; phần đang được checkout sẽ được đánh dấu. Chọn một mục để mở
 bàn làm việc PR của nó. **Xuất bản ngăn xếp** chỉ xuất hiện khi quá trình phát
@@ -49,6 +53,21 @@ hiện PR đã hoàn tất và có ít nhất một phần chưa có PR. Điều
 menu nhánh. Các PR được tạo bên ngoài Control Center cũng được tính là đã xuất
 bản. Những stack được xuất bản một phần cung cấp cả hai hành động; công việc trên
 một nhánh đơn vẫn giữ các hành động tạo/xem PR riêng lẻ.
+
+### Commit và push từ Kiểm soát mã nguồn
+
+Một commit bạn tạo trong bảng **Kiểm soát mã nguồn** là của bạn: bạn là tác giả và người commit của nó, dưới địa chỉ mà forge xác minh cho đăng nhập của bạn. Khi bạn đã tạo một khóa ký dưới **Commit đã xác minh** trong **Cài đặt** → **Bạn** → **Commit**, máy chủ ký nó bằng khóa ký riêng của bạn trước khi push. Một lần push mang theo đăng nhập của chính bạn, được thu hẹp vào đúng một kho mã đó.
+
+Máy chủ chạy Git trên máy của chính nó, trong một cây mà một agent hoặc pull request có thể thay đổi, nên nó không chạy chương trình nào mà một repository có thể chọn:
+
+- Commit bỏ qua các Git hook của repository, như `git commit --no-verify`. Một hook pre-commit, hook commit-msg hoặc hook pre-push sẽ không chạy
+- Các credential helper, trình soạn thảo, công cụ diff ngoài và chương trình ký mà repository cấu hình đều bị bỏ qua
+
+Hãy tự chạy các kiểm tra của bạn trước khi commit, hoặc chạy trong CI.
+
+Thay đổi mã cần [quyền ghi](/vi-VN/so-tay/khai-niem/uy-quyen/#thay-đổi-mã-cần-quyền-ghi) trên kho mã: lưu hoặc hoàn tác tệp trong trình soạn thảo, **Kéo các commit PR mới nhất**, commit và push, xuất bản một nhánh, và các hành động stack để cắt, checkout hoặc xuất bản một phần. Chỉ với quyền đọc hoặc đánh giá, bạn thấy các tệp và diff, còn các hành động này trả lời "Bạn có thể đọc kho lưu trữ này nhưng không thể thay đổi. Quản trị viên không gian làm việc có thể cấp quyền ghi."
+
+**Kéo các commit PR mới nhất** đưa worktree đánh giá lên các commit mới nhất của pull request. Nó fetch bằng đăng nhập GitHub của chính bạn, và yêu cầu bạn đăng nhập khi bạn chưa có. Hãy commit hoặc hủy các thay đổi của bạn trước: một worktree có thay đổi chưa commit sẽ không được đồng bộ.
 
 ## Đọc diff
 
@@ -130,7 +149,7 @@ Hợp nhất là không thể đảo ngược: thao tác này đẩy commit lên
 có một bước xác nhận thay vì một mục hoàn tác. Sau đó bộ nhớ đệm của PR bị vô
 hiệu hóa, trạng thái của nó chuyển thành **Đã merge** và một sự kiện
 `PullRequestStatusChanged` được phát với trạng thái `merged`. Sự kiện đó giải
-phóng worktree tạm thời của “mở trong trình soạn thảo” và khởi động hai quy trình
+phóng worktree tạm thời mà nút trình soạn thảo đã mở và khởi động hai quy trình
 có sẵn: **Stale repository cleanup**, quy trình này xóa các worktree cũ và thư mục
 hội thoại của PR, và **Release notes**, quy trình này soạn một mục trong nhật ký
 thay đổi.
@@ -155,6 +174,12 @@ hiểu mô hình cohort và trục tất định.
 
 Control Center cũng nhập các PR do con người mở bên ngoài ứng dụng. Quy trình
 review ở trên là như nhau. Các PR bên ngoài được dịch vụ thăm dò PR phát hiện.
+
+## Khắc phục sự cố
+
+### Hook pre-commit của tôi không chạy
+
+Commit được tạo trong bảng **Kiểm soát mã nguồn** của ứng dụng bỏ qua Git hook của repository, như `git commit --no-verify`. Máy chủ chạy Git trên máy của chính nó, trong một cây mà agent và pull request có thể thay đổi, nên nó không bao giờ chạy một chương trình mà repository chọn. Hãy tự chạy các kiểm tra của hook, hoặc dựa vào CI.
 
 ## Hướng dẫn liên quan
 

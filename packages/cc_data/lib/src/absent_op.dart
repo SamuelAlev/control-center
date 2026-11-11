@@ -3,11 +3,9 @@ import 'package:cc_rpc/cc_rpc.dart';
 
 /// Reads that tolerate a server which does not have the op at all.
 ///
-/// Not every server exposes every op.
-/// A demo server removes whole families by wiring no port; a server built before a feature
-/// landed has never heard of it.
-/// Silently reporting success for a write the server never performed is worse than the
-/// error.
+/// Not every server exposes every op: a demo server removes whole families by wiring no
+/// port. Only reads tolerate it; silently reporting success for a write the server never
+/// performed is worse than the error.
 extension AbsentOpTolerance on RemoteRpcClient {
   /// Calls [op], answering [ifAbsent] when the server does not have it.
   Future<Map<String, dynamic>> readOr(

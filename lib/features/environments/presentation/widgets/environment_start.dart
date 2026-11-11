@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
-import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_attended_start.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
-import 'package:control_center/features/environments/presentation/widgets/environment_host_setup.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_start_dialog.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -22,26 +21,33 @@ typedef EnvironmentStartCallback =
     );
 
 /// Forwards Start for a space that already exists.
+///
+/// The person pressing is here to answer, so a step of the start that needs
+/// them runs on a terminal this opens: see [AttendedStart].
 Future<void> forwardEnsure(
   BuildContext context,
   WidgetRef ref,
   EnvironmentSpaceKey key, {
   required String definitionId,
   required Map<String, dynamic> options,
-}) async {
-  final followUp = HostSetupFollowUp.of(context, ref);
-  SpaceEnvironment? started;
-  await runEnvironmentAction(context, ref, key, 'start', (repository) async {
-    started = await repository.ensure(
-      key.workspaceId,
-      key.spaceId,
-      definitionId: definitionId,
-      options: options,
-    );
-  });
-  if (started != null) {
-    await followUp.after(key, started!);
-  }
+}) {
+  final attendance = AttendedStart.of(context, ref);
+  return attendance.follow(
+    key,
+    () => runEnvironmentAction(
+      context,
+      ref,
+      key,
+      'start',
+      (repository) => repository.ensure(
+        key.workspaceId,
+        key.spaceId,
+        definitionId: definitionId,
+        options: options,
+        attended: attendance.attended,
+      ),
+    ),
+  );
 }
 
 /// The checks of [definitionId] that fail, or none when they can't be read.
@@ -107,6 +113,7 @@ class EnvironmentStartPanel extends ConsumerStatefulWidget {
     required this.definitions,
     required this.onStart,
     this.busy = false,
+    this.enabled = true,
   });
 
   /// The owning workspace.
@@ -120,6 +127,10 @@ class EnvironmentStartPanel extends ConsumerStatefulWidget {
 
   /// Shows Start's spinner.
   final bool busy;
+
+  /// Whether Start may be pressed: false for someone who may not operate
+  /// the space's environment.
+  final bool enabled;
 
   @override
   ConsumerState<EnvironmentStartPanel> createState() =>
@@ -181,7 +192,9 @@ class _EnvironmentStartPanelState extends ConsumerState<EnvironmentStartPanel> {
           size: CcButtonSize.sm,
           icon: AppIcons.play,
           loading: widget.busy,
-          onPressed: busy ? null : () => unawaited(_start(startable)),
+          onPressed: busy || !widget.enabled
+              ? null
+              : () => unawaited(_start(startable)),
           child: Text(l10n.startLabel),
         ),
       ],

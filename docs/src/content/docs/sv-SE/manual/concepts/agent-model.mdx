@@ -2,7 +2,7 @@
 title: Agentmodellen
 description: Vad en agent faktiskt är i Control Center, vilka av dess fält som förändrar beteendet och hur adaptern den körs på avgör vad som kan framtvingas.
 slug: sv-SE/handbok/koncept/agentmodell
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Vad är en agent?
@@ -54,7 +54,7 @@ Repo-skills laddas för **varje** adapter, inte bara den inbyggda harnessen. Det
 
 En agent bär inga egna behörighetsflaggor. Om den får skapa en commit, pusha, öppna en pull request, skriva till ett ärendesystem eller nå nätverket avgörs av [åtgärdsräckena](/sv-SE/handbok/koncept/racken/) — tillåt, fråga först eller neka, i omfånget arbetsyta, agent eller yta — och samma regler gäller oavsett vilken adapter som kör den.
 
-Vad en körning _tilldelas_ ändras inte av de reglerna. En körning i en GitHub-worktree får alltid en GitHub-token som bara kan läsa, och en push frågas om i samma stund som den sker: agentens git-konfiguration skickar varje GitHub-push genom Control Center, som tillämpar regeln **Pusha till en remote** innan pushen skickas vidare.
+Vad en körning _tilldelas_ ändras inte av de reglerna. En körning kan alltid läsa de GitHub-repon den arbetar med, med en token som bara kan läsa, och en push frågas om i samma stund som den sker: agentens git-konfiguration skickar varje GitHub-push genom Control Center, som tillämpar regeln **Pusha till en remote** innan pushen skickas vidare.
 
 Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för hur det fungerar, inklusive vad som framtvingas och inte framtvingas på filsystemsnivå.
 
@@ -70,16 +70,16 @@ Det enskilt mest konsekvensrika fältet på en agent är dess adapter, eftersom 
 Konkret: **endast den inbyggda harnessen stöder subagenter, styrning under körning, pausa och återuppta (och därmed övertagande) samt strukturell lägestillämpning.** Claude Code får inget av detta.
 
 :::caution[OS-sandlådan är ett golv, inte en lägestillämpare, och inte varje värd har en]
-Matrisen ovan handlar om vad Control Center kan _se och grinda_. Under den lindar `cc_server` in Claude Code-CLI:n i värdens OS-sandlåda där en sådan finns — Seatbelt på macOS, bubblewrap på Linux och WSL2 — så ett osynligt `rm` eller en osynlig skrivning begränsas fortfarande av OS:et. På **Windows finns ingen backend alls** och på Linux eller WSL2 utan `bwrap` och `socat` rapporterar sonden ingen, så där faller de körningarna tillbaka på miljösanering, förmedlade inloggningsuppgifter, räckena på de anrop Control Center kan se och samtalets egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows).
+Matrisen ovan handlar om vad Control Center kan _se och grinda_. Under den lindar `cc_server` in Claude Code-CLI:n i värdens OS-sandlåda där en sådan finns — Seatbelt på macOS, bubblewrap på Linux och WSL2 — så ett osynligt `rm` eller en osynlig skrivning begränsas fortfarande av OS:et. På **Windows finns ingen backend alls** och på Linux eller WSL2 utan `bwrap` och `socat` rapporterar sonden ingen. Där startar bara serverägarens körningar, och alla andras nekas om inte ägaren startade servern med `--sandbox off`. En körning som startar utan sandlåda faller tillbaka på miljösanering, förmedlade inloggningsuppgifter, räckena på de anrop Control Center kan se och samtalets egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows).
 
 Vad sandlådan inte är är en _grind_. Den begränsar var en process får läsa, skriva och ansluta — ett skrivskyddat läge når den verkligen, som skrivskyddade bind-monteringar — men den kan inte fånga upp ett anrop, resa ett godkännande eller i efterhand berätta vad CLI:n försökte göra. Det, plus de fyra förmågor som just nämndes, är fortfarande vad den inbyggda harnessen har och de andra inte. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/).
 :::
 
-En agent **utan** adapter faller tillbaka på **Control Center (inbyggd)** — loopen inuti servern, så det finns ingen CLI att installera — och dess körningslogg registrerar `cc-harness`. Varje seedad agent skapas utan adapter och modell, så en ny arbetsytas fem agenter körs alla där, på Anthropics standardmodell, tills du anger en adapter och modell per agent. Onboardingens val av "standardadapter" är en klientinställning som servern aldrig läser och den tillämpas inte i efterhand på redan skapade agenter.
+En agent **utan** adapter faller tillbaka på **Control Center (inbyggd)** — loopen inuti servern, så det finns ingen CLI att installera — och dess körningslogg registrerar `cc-harness`. Varje seedad agent skapas utan adapter och modell, så en ny arbetsytas sex agenter körs alla där, på Anthropics standardmodell, tills du anger en adapter och modell per agent. Att slutföra onboardingens adaptersteg anger dess adapter och modell för varje agent som fortfarande saknar en, i de arbetsytor som finns i samma stund; det finns ingen standardkörare för arbetsytan.
 
 ## Var agenter kommer ifrån
 
-- **Seeds med arbetsytan.** Varje arbetsyta — inte bara den första — får en VD plus fyra specialister (`qa`, `architect`, `engineer`, `librarian`) som rapporterar till den, skapade idempotent i bakgrunden när arbetsytan skapas. Se [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/).
+- **Seeds med arbetsytan.** Varje arbetsyta — inte bara den första — får en VD plus fem specialister (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) som rapporterar till den, skapade idempotent i bakgrunden när arbetsytan skapas. Se [Arbetsytor och isolering](/sv-SE/handbok/koncept/arbetsytor/).
 - **Läggs till manuellt** under Inställningar → Arbetsyta → Agenter. Att be en agent anställa en kollega skapar ingen rad; använd den skärmen.
 
 ## Live-tillstånd

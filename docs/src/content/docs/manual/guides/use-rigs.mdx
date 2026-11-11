@@ -126,6 +126,42 @@ Press **Stop the machine** when you are done.
 Control is exclusive on purpose: two actors typing into one machine produces
 input neither of them meant.
 
+### Who can watch and who can drive
+
+A machine opened in a space follows that space's repositories, the same way the
+space itself does (see [Spaces follow their repositories](/manual/concepts/authorization/#spaces-follow-their-repositories)):
+
+- **Watching it** needs read access to the space: a read grant on every
+  repository the space exposes, and your own forge sign-in able to read each
+  of them. Watching covers the list of machines, the screen, the sound, the
+  browser's state, its ports, and reading its clipboard and files.
+- **Driving it** also needs a [write grant](/manual/concepts/authorization/#changing-code-needs-the-write-grant)
+  on those repositories. Driving covers opening a machine in the space, typing
+  and clicking, taking control, starting, stopping and closing it, forwarding
+  its ports, writing to its clipboard, dropping files on it and using the
+  microphone.
+
+With read access only, the machine shows **Watch only** and "You can watch this machine. Driving it, forwarding its ports, pasting into it or dropping files on it needs write access to every repository in this space." Under a
+disabled **Start the machine** the tab says "Starting a machine here needs write access to every repository in this space. A workspace admin can grant it." Without read access the machine is not shown, only "You can't view this machine. It belongs to a space you don't have read access to."
+
+A machine that belongs to no space reaches no worktree, and every member of
+the workspace can watch and drive it.
+
+A machine that carries one person's own sign-ins is theirs to drive: their
+terminal machine, or any machine opened for them whose network access reaches
+a forge. Only that person, and agent runs that act for them alone, can drive
+it. Workspace admins and the server owner do not override this. Others the
+space admits can still watch its screen, sound, state and ports, but cannot
+drive it, forward its ports, paste into it, drop files on it, copy files out of
+it or read its clipboard. Such a machine shows **Watch only** with this note:
+"You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it."
+An action refused for this reason says "Only the person this machine was opened for can drive it. It uses their own sign-ins."
+Someone else's terminal machine does not appear for you at all, just like
+their terminal sessions.
+
+Each machine shows whether you can drive it, and that updates by itself when
+a grant or your forge sign-in changes.
+
 ## Move things in and out
 
 Copy and paste work in both directions across the rig canvas, and so does

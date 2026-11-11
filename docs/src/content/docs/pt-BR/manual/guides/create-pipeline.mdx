@@ -2,7 +2,7 @@
 title: Criar um modelo de pipeline
 description: Crie um modelo de fluxo de trabalho em DAG no editor de pipelines — adicione nós, conecte-os, declare entradas e torne-o executável.
 slug: pt-BR/manual/guias/criar-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Os modelos de pipeline são criados nas configurações do espaço de trabalho. A
@@ -35,25 +35,25 @@ A barra lateral **Biblioteca de nós** fica permanentemente à esquerda do edito
 Filtre-a com a caixa **Pesquisar nós** e arraste uma entrada até o canvas — o nó
 cai onde você o solta, sem nenhuma conexão de entrada.
 
-| Nó da paleta | Tipo de etapa | O que faz |
-| --- | --- | --- |
-| **Bash script** | listen | Executa um script de shell com substituição de `{{state}}`; nenhum agente é despachado |
-| **Open conversation** | listen | Abre o único espaço visível da execução e o checkout dele; os nós de agente entram nessa sala |
-| **Clone PR branch** | listen | Descobre o branch de head da PR via `gh pr view` e o clona no diretório da execução |
-| **Post PR comment** | listen | Publica os achados consolidados na PR como um comentário de revisão do GitHub |
-| **Reviewer (prompt)** | listen | Despacha um agente revisor especialista; suspende até que o agente envie o resultado dele |
-| **Consolidate (join)** | join | Aguarda vários ramos a montante e então pede a um agente que consolide as saídas deles |
-| **Custom prompt** | listen | Nó genérico guiado por prompt, roteado pelo corpo `promptAgent` |
-| **Post to space** | listen | Envia uma mensagem para um espaço de mensagens |
-| **Condition / switch (router)** | router | Ramifica o fluxo com base em um valor do estado |
-| **If file exists (router)** | router | Roteia `"true"` quando um caminho existe sob o clone, senão `"false"` |
-| **Any file exists (OR router)** | router | Roteia `"true"` quando qualquer caminho listado existe |
-| **All conditions (AND router)** | router | Roteia `"true"` somente quando todos os caminhos listados existem |
-| **Team dispatch** | listen | Despacha uma equipe inteira e suspende até que ela termine |
-| **Approval gate** | listen | Pausa para uma decisão de aprovação |
-| **For each (map)** | forEach | Renderiza um prompt por item e então despacha o agente uma vez com esses prompts reunidos |
-| **Call sub-pipeline** | listen | Executa outro modelo como uma etapa aninhada |
-| **Clean up worktrees** | listen | Remove worktrees isoladas obsoletas; determinístico, nenhum agente é despachado |
+| Nó da paleta                    | Tipo de etapa | O que faz                                                                                     |
+| ------------------------------- | ------------- | --------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen        | Executa um script de shell com substituição de `{{state}}`; nenhum agente é despachado        |
+| **Open conversation**           | listen        | Abre o único espaço visível da execução e o checkout dele; os nós de agente entram nessa sala |
+| **Clone PR branch**             | listen        | Descobre o branch de head da PR via `gh pr view` e o clona no diretório da execução           |
+| **Post PR comment**             | listen        | Publica um comentário de revisão na PR, pelo servidor: os achados ou o `message` da etapa     |
+| **Reviewer (prompt)**           | listen        | Despacha um agente revisor especialista; suspende até que o agente envie o resultado dele     |
+| **Consolidate (join)**          | join          | Aguarda vários ramos a montante e então pede a um agente que consolide as saídas deles        |
+| **Custom prompt**               | listen        | Nó genérico guiado por prompt, roteado pelo corpo `promptAgent`                               |
+| **Post to space**               | listen        | Envia uma mensagem para um espaço de mensagens                                                |
+| **Condition / switch (router)** | router        | Ramifica o fluxo com base em um valor do estado                                               |
+| **If file exists (router)**     | router        | Roteia `"true"` quando um caminho existe sob o clone, senão `"false"`                         |
+| **Any file exists (OR router)** | router        | Roteia `"true"` quando qualquer caminho listado existe                                        |
+| **All conditions (AND router)** | router        | Roteia `"true"` somente quando todos os caminhos listados existem                             |
+| **Team dispatch**               | listen        | Despacha uma equipe inteira e suspende até que ela termine                                    |
+| **Approval gate**               | listen        | Pausa para uma decisão de aprovação                                                           |
+| **For each (map)**              | forEach       | Renderiza um prompt por item e então despacha o agente uma vez com esses prompts reunidos     |
+| **Call sub-pipeline**           | listen        | Executa outro modelo como uma etapa aninhada                                                  |
+| **Clean up worktrees**          | listen        | Remove worktrees isoladas obsoletas; determinístico, nenhum agente é despachado               |
 
 A biblioteca agrupa tudo isso em **Fluxo e lógica**, **Revisão de PR**,
 **Agentes**, **Mensagens** e **Código**. Não há grupo Demo.
@@ -139,6 +139,13 @@ porque nenhum dos dois é configurável:
   `GITHUB_TOKEN` contêm um token que só pode ler aquele repo, então `gh` e
   `git clone` contra ele funcionam sem configuração. Caso contrário, não há
   token do GitHub.
+- Um script não consegue escrever no GitHub: `gh pr comment`, `gh pr merge`,
+  `gh pr create` e `git push` falham com esse token. Comente com um nó **Post PR
+  comment** no lugar (defina `extras.message` para publicar o seu próprio texto,
+  com placeholders `{{key}}`, em vez dos achados consolidados). Faça push e abra
+  pull requests a partir de um nó de agente: o `git push` dele passa pelo gateway
+  de execuções, e ele abre a PR com a ferramenta `open_pull_request`. O merge fica
+  com uma pessoa; nenhum nó faz merge.
 - Só um administrador do espaço de trabalho pode criar ou editar um pipeline
   com uma etapa bash.
 - O script é iniciado como o executável literal `bash`, então `bash` deve estar

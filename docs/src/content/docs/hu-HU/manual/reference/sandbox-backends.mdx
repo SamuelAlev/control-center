@@ -2,15 +2,23 @@
 title: Homokozó-háttérrendszerek
 description: A homokozó-háttérrendszerek, alkalmazási helyeik, és minden értékobjektum, amelyet a homokozó-futtatókörnyezet használ.
 slug: hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Hogy egy futtatás homokozóba kerül-e, a gazdagéptől függ]
-A `cc_server` indításkor egyszer felméri a gazdagépet, és a natív háttérrendszerbe csomagolja az ügynökindítást, ha az észlelés elérhetőnek jelenti azt, és a `--sandbox` nincs `off` értéken. Az indítás mindkét illesztési pontja be van csomagolva: a Claude Code CLI a homokozóporton keresztül, valamint az ACP és a beépített harness `bash` eszköze a homokozókezelőn keresztül.
+A `cc_server` indításkor egyszer eldönti, hogyan futnak az ügynökök ezen a gazdagépen, és a döntés az újraindításig érvényes:
 
-Ahol az észlelés nem jelez háttérrendszert — **Windows esetén mindig**, Linuxon vagy WSL2-n pedig `bwrap` és `socat` nélkül —, az ügynökfuttatások **nincsenek** homokozóba zárva. Az ACP és a harness `bash` eszköze továbbra is megtisztított környezettel indul; a Claude Code a `NoSandboxAdapter`-en keresztül a gazdagép környezetét örökli. A fennmaradó határok: a futtatás saját worktree-je (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`), az indításonként brókerezett, a lebontáskor visszavont, csak olvasásra jogosult kódhosting-token, az ügynökfuttatási átjárón a push-szabályon átengedett pushok, a módonkénti parancsszabályzat, az egységes [műveleti korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) (fail-closed), a környezet tisztítása az ACP és a harness `bash` útvonalain, valamint a módja által engedett eszközfelszín.
+- **Homokozóban** (`native`): az észlelés talált háttérrendszert, és a `--sandbox` nincs `off` értéken. Az indítás mindkét illesztési pontja be van csomagolva: a Claude Code CLI a homokozóporton keresztül, valamint az ACP és a beépített harness `bash` eszköze a homokozókezelőn keresztül.
+- **Kikapcsolva** (`off`): a szerver tulajdonosa a `--sandbox off` kapcsolóval indította. Minden tag ügynöke korlátozás nélkül fut ezen a gépen, függetlenül attól, ki indította.
+- **Nem elérhető** (`unavailable`): a homokozó be van kapcsolva, de az észlelés nem talált háttérrendszert (**Windows esetén mindig**, és Linuxon vagy WSL2-n `bwrap` és `socat` nélkül). Futtatás csak akkor indul, ha az érte felelős személy a szerver [tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa): az, aki kérte, vagy automatizálásnál az, akihez az kötve van. Bárki másé előtt hitelesítő adat kiállítása, lease vétele vagy folyamatindítás nélkül elutasításra kerül. Ha nincs rögzített tulajdonos, senkié nem indul.
+
+Az elutasított futtatás a(z) `sandbox_unavailable` kóddal hiúsul meg. Az alkalmazás ezt az **Az ügynökökhöz homokozó kell ezen a szerveren** üzenettel jeleníti meg: „Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket. A tulajdonos telepítheti a homokozót, vagy mindenki számára kikapcsolhatja a homokozást.”
+
+A homokozó nélkül induló futtatás (`off` alatt, vagy a tulajdonos saját futtatása `unavailable` alatt) közvetlenül a gazdagépen fut. Az ACP és a harness `bash` eszköze továbbra is megtisztított környezettel indul; a Claude Code a `NoSandboxAdapter`-en keresztül a gazdagép környezetét örökli. A fennmaradó határok: a futtatás saját worktree-je (copy-on-write ott, ahol a `rift` elérhető; Windowson `git worktree`), az indításonként brókerezett, a lebontáskor visszavont, csak olvasásra jogosult kódhosting-token, az ügynökfuttatási átjárón a push-szabályon átengedett pushok, a módonkénti parancsszabályzat, az egységes [műveleti korlátok](/hu-HU/kezikonyv/fogalmak/korlatok/) (fail-closed), a környezet tisztítása az ACP és a harness `bash` útvonalain, valamint a módja által engedett eszközfelszín.
 
 A harness folyamaton belüli fájleszközei (read, write, edit, apply patch, search, find, search_files) minden gazdagépen a homokozón kívül vannak: a szerverfolyamatban futnak, így csak a `bash` van becsomagolva.
+
+A gazdagép soha nem tartalék egy homokozós szerver számára. Ha a szerver homokozóban futtatja az ügynökeit, de nincs homokozó, amelyet egy futtatásnak adhatna, akkor annak eszközfolyamatait és `bash` parancsait elutasítja, nem pedig a gazdagépen indítja el. Ugyanez a magatartás dönt a futtatás körüli kis folyamatokról is: az ACP egyszeri segédei (beszélgetéscímek, `/btw`, `/handoff`, `/goal`) és egy pull request golden-tesztjei a Review Studióban homokozóban futnak, ha a szerver homokozóban futtatja az ügynököket, `off` alatt korlátozás nélkül, `unavailable` alatt pedig csak olyan kérésre, amelyért a szerver tulajdonosa felel; egyébként kimaradnak.
 :::
 
 ## Háttérrendszerek áttekintése
@@ -19,13 +27,13 @@ A harness folyamaton belüli fájleszközei (read, write, edit, apply patch, sea
 | -------------- | --------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Elszigetelt VM | `microvm` | macOS, Linux, Windows (microVM hypervisor)   | A microVM futásidejének észlelése kapuzza; interaktív terminálokra vonatkozik — a shell egy [állomás](/hu-HU/kezikonyv/fogalmak/allomasok/) belsejében fut, nem a gazdagépen |
 | Natív          | `native`  | macOS (Seatbelt), Linux és WSL2 (bubblewrap) | Indításkor észleljük; a Linux elutasítja azt a futtatást, amely fájlnév-glob írási tiltásokat igényel, mert a bubblewrap ezt nem tudja érvényesíteni                         |
-| Nincs          | `none`    | Mind                                         | Az értelmezés alapértelmezése, a terminál alapértelmezése, és a visszaesés, amikor nincs elérhető háttérrendszer, vagy be van állítva a `--sandbox off`                      |
+| Nincs          | `none`    | Mind                                         | Az értelmezés alapértelmezése és a terminál alapértelmezése; az ügynökindítás `--sandbox off` alatt használja, a tulajdonos saját futtatásai pedig akkor, ha nincs elérhető háttérrendszer |
 
-A `SandboxBackend.fromName` `none` értéket ad vissza null vagy fel nem ismert tárolt érték esetén. A tárolt `"docker"` a `native` értékre képeződik.
+A `SandboxBackend.fromName` `none` értéket ad vissza null vagy fel nem ismert tárolt érték esetén.
 
 **A `microvm` az egyetlen kernelhatárral rendelkező háttérrendszer** — a munkaterhelés valóban nem a gazdagépen fut. Egyik irányban sem csendes visszaesés: ha egy VM indítására képtelen gazdagépen kifejezetten kérjük, hangosan meghiúsul („VM-et kértem, és a laptopomat kaptam” az az egyetlen visszaesés, amelyet az elszigetelés nem engedhet meg magának), és csak egy *meghatározatlan alapértelmezés* lép le a `native` értékre, ezt egy naplósor is jelzi. A munkamenet tényleges háttérrendszere visszajelzésre kerül a kliensnek és jelvényt kap, így egy terminál soha nem állíthatja, hogy elszigetelt, miközben a gazdagépen fut. Magának a VM-nek az életciklusát, lemezképeit és kimenő forgalmát az [állomások referenciája](/hu-HU/kezikonyv/referencia/allomasok/) tárgyalja.
 
-**A Windowsnak nincs natív homokozója.** A `NativeSandboxAdapter.probe` minden olyan gazdagépen `available: false` értéket ad vissza, amely nem macOS vagy Linux/WSL2. A Windowson folyó ügynökindítás ezért a `none` háttérrendszert használja. A `microvm` háttérrendszer ettől független: a microVM futásidejének észlelése kapuzza, és az interaktív terminálokra és az állomásokra vonatkozik, nem pedig a `bash` gazdagépen való becsomagolására.
+**A Windowsnak nincs natív homokozója.** A `NativeSandboxAdapter.probe` minden olyan gazdagépen `available: false` értéket ad vissza, amely nem macOS vagy Linux/WSL2, ezért a Windows-szerver `unavailable` állapotú: csak a szerver tulajdonosának ügynökfuttatásai indulnak el, korlátozás nélkül, a többiekét pedig elutasítja. Ahhoz, hogy ott minden tag futtathasson ügynököket, a tulajdonos `--sandbox off` kapcsolóval indítja a szervert, ami mindegyiket korlátozás nélkül futtatja. A `microvm` háttérrendszer ettől független: a microVM futásidejének észlelése kapuzza, és az interaktív terminálokra és az állomásokra vonatkozik, nem pedig a `bash` gazdagépen való becsomagolására.
 
 ## Az észlelés eredményei
 
@@ -38,9 +46,9 @@ Az észlelés kapuzza a kikényszerítést. Egyszer fut le, a szerver indítása
 | Linux vagy WSL2, amelyből valamelyik eszköz hiányzik | `false`     | `requiresInstall: true`, a hiányzó csomagokat megnevező telepítési tippel |
 | Bármely más platform                                 | `false`     | A natív homokozó ezen a platformon nem érhető el                          |
 
-A szerver az eredményt egyetlen indítási sorban naplózza: `agent sandbox ON` és a megjegyzés, `no OS-native agent sandbox on this host` és a tipp, vagy `agent sandbox DISABLED by --sandbox off`. A `GET /healthz` nem tartalmaz homokozómezőt.
+A szerver az eredményt egyetlen indítási sorban naplózza: `agent sandbox ON` és a megjegyzés; `no OS-native agent sandbox on this host` és a tipp, amely hozzáteszi, hogy csak olyan futtatások indulnak el, amelyekért a szerver tulajdonosa felel; vagy `agent sandbox DISABLED by --sandbox off`. Az indításkor kiírt kitettségi sor ugyanezt a döntést hordozza `sandbox=native`, `sandbox=off` vagy `sandbox=unavailable` alakban. A `GET /healthz` nem tartalmaz homokozómezőt.
 
-A `--sandbox` / `CC_SERVER_SANDBOX` az `on` (alapértelmezett) vagy az `off` értéket fogadja el. Ez kikapcsolási lehetőség, nem engedélyezés: az `on` azt jelenti, hogy „csomagolj, ha a gazdagép kínál háttérrendszert”, és soha nem azt, hogy „követelj meg egyet”.
+A `--sandbox` / `CC_SERVER_SANDBOX` az `on` (alapértelmezett) vagy az `off` értéket fogadja el. Az `on` minden futtatást becsomagol, ha a gazdagép kínál háttérrendszert, és ha nem kínál, csak a tulajdonos futtatásait engedi át. Az `off` minden tag ügynökét korlátozás nélkül futtatja ezen a gazdagépen; ez a tulajdonos döntése mindenki számára, nem futtatásonkénti beállítás.
 
 ## Natív háttérrendszer
 
@@ -55,6 +63,8 @@ A generált profil **alapértelmezés szerint megengedő** (`(allow default)`), 
 - **Folyamat**: `process-exec` tiltások a mindig veszélyes binárisokra, valamint blokk bárminek az írható könyvtárból való végrehajtására. A felhasználói könyvtáradban lévő ismert eszköztelepítési fák (corepack-, npx- és `pnpm dlx`-gyorsítótárak, node-verziókezelők, Playwright-böngészők, rustup és cargo, Go, fvm és a pub-gyorsítótár, pyenv, uv és pipx, rbenv, sdkman, mise, asdf és `~/.local/bin`) ezen blokk alatt újra megnyílnak. A megosztott ideiglenes könyvtárak is blokkolva vannak. Helyette minden munkamenet kap egy privát `TMPDIR`-t a `/private/tmp` alatt, ahol futhatnak az általa épített programok (egy `go test` bináris, egy cargo-build). A mindig veszélyes binárisokra vonatkozó tiltások ezen engedélyek után alkalmazódnak
 - **Hálózat**: a folyamaton belüli proxyportokra és a DNS-re korlátozva — a loopback nincs általánosan engedélyezve, a TCP-figyelés tiltott. A Unix-socketek csak a munkamenet privát `TMPDIR`-jén belül engedélyezettek, ami olyan eszközöket fed le, mint a tsx és a Chrome, amelyek ott tartanak IPC-socketet; az SSH-ügynököd és a többi socket elérhetetlen marad. A proxyk érvényesítik a munkamenetenkénti domain-engedélylistát (lásd [Hálózati kimenő forgalom](#hálózati-kimenő-forgalom))
 - **Konfiguráció**: a profilok indításonként, a `SandboxSpec` alapján generálódnak
+- **A szerver saját parancsai**: a szerver által programok futtatására használt mappák egyikének sem lehet közvetlen gyermeke, amelyet létrehozni, lecserélni, törölni vagy átnevezni lehetne (minden `PATH`-bejegyzés és a szokásos felhasználói eszközmappák, mint a `~/.local/bin`, a verziókezelő-linkekkel, mint a `~/fvm/default`, feloldva), és nem lehet a linkelt parancs által mutatott telepített csomagot sem módosítani. Lásd: [A szerver parancsmappái](#a-szerver-parancsmappái)
+- **Indítófájlok**: minden olyan otthoni útvonal, amelynek olvasását a profil tiltja, írását is tiltja, és a szerver felhasználójának shelljeinek és munkameneteinek indítófájljai (`.zshenv`, `.zlogin`, `.bash_login`, a fish-konfiguráció, a systemd-felhasználói unitok, az automatikus indítási bejegyzések és hasonlók) minden módban írásra tiltottak
 
 Követelmények:
 
@@ -67,6 +77,7 @@ A bubblewrap (`bwrap`) segítségével mount- és PID-névtereket hoz létre.
 - **Fájlrendszer**: olyan mountnévtért hoz létre, amelyben csak a becsatolt útvonalak láthatók
 - **Hálózat**: nem megosztott hálózati névtérben fut; a forgalom `socat` Unix-socket hidakon keresztül éri el a gazdagép proxyit
 - **Folyamat**: PID-névtér-elszigetelés
+- **A szerver saját parancsai és indítófájljai**: ugyanazok a védelmek, mint macOS-en, bubblewrap-csatolásokként kifejezve. Linuxon még nincsenek ellenőrizve, és a hiányzó parancsmappa ott még létrehozható
 
 Követelmények:
 
@@ -75,19 +86,51 @@ Követelmények:
 
 A bubblewrap el tud fedni egy meglévő útvonalat, de nem tud megtiltani egy *új* `.env`, `*.key` vagy `*.pem` fájlt egy írható bindon belül. A standard indítási szabályzat megköveteli ezeket a fájlnév-glob tiltásokat, ezért a natív ügynökindítás jelenleg **Linuxon/WSL2-n fail-closed módon meghiúsul még akkor is, ha az észlelés megtalálja a bubblewrapet**. Nem fut csendben gyengébb szabályzattal. A Linux natív indításának helyreállításához olyan háttérrendszer kell, amely létrehozás idejű fájlnévszabályokat támogat. A homokozó kikapcsolása explicit, korlátok nélküli kikapcsolás, nem egyenértékű megoldás.
 
+A gyakorlatban egy Linux- vagy WSL2-szerver ma kétféleképpen futtat ügynököket. `--sandbox off` kapcsolóval indítva minden tag ügynökét korlátozás nélkül futtatja. Ha a bubblewrap vagy a `socat` nincs telepítve, `unavailable` állapotú, és csak a szerver tulajdonosának ügynökeit futtatja, korlátozás nélkül. Ha mindkét eszköz telepítve van és a homokozó be van kapcsolva, minden futtatás zártan meghiúsul, a tulajdonosé is.
+
+## A szerver parancsmappái
+
+A szerver indításkor egyszer megkeresi az összes mappát, ahonnan programokat futtat: a `PATH` minden bejegyzését, a felhasználónként ellenőrzött eszközmappákat (mint a `~/.local/bin`, a `~/.bun/bin` és az npm, yarn és pnpm globális mappái), valamint minden útközbeni link mögötti valódi mappát (verziókezelő-linkek, mint a `~/fvm/default` vagy egy fnm-alapértelmezés). Homokozón belül egy ügynök nem tud parancsot hozzáadni, lecserélni, törölni vagy átnevezni ezekben a mappákban, nem tud olyan linket létrehozni vagy módosítani, amely egyhez vezet, és nem tudja a linkelt parancs által mutatott telepített csomagot módosítani, és a fölöttük lévő mappákat sem tudja átnevezni. Különben egy homokozós futtatás olyan programot ültethetne el, amelyet a szerver vagy a személy később a homokozón kívül indít el.
+
+Ez a következőket változtatja meg egy futtatás számára:
+
+- A homokozós futtatásból végzett globális telepítések ezzel hiúsulnak meg: „Operation not permitted”: `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, valamint a `cargo install`, `go install` vagy `dart pub global activate`, ha a bin mappájuk a szerver `PATH`-ján van.
+- Az alapértelmezett verzió váltása ugyanígy hiúsul meg (`fnm default`, `nvm alias default`, `fvm global`), ahogy az is, ha egy eszköz helyben frissíti magát.
+- A projekten belüli telepítések (`node_modules/.bin`), az `npx`, a `pnpm dlx`, a corepack által kezelt csomagkezelők, az SDK-gyorsítótárak és a szokásos buildek továbbra is működnek.
+
+Ahhoz, hogy egy globális eszköz elérhető legyen az ügynökök számára, telepítse a szerveren magán, a szerver felhasználójaként, és indítsa újra a szervert, hogy az új parancs is védve legyen. Vagy telepítse a projektbe. A szerver indítása után telepített parancs csak a következő indítástól kap teljes védelmet.
+
+A macOS-en kényszerítve és tesztelve. Linuxon ugyanezek a szabályok bubblewrap-csatolásokként vannak, amelyek még nincsenek ellenőrizve. A Windowsnak nincs homokozója.
+
 ## A `none` háttérrendszer
 
-Nincs homokozó. A folyamat közvetlenül a gazdagépen fut, a gazdagép fájlrendszer-, hálózat- és folyamathozzáférésével. Az ACP és a harness `bash` eszköze továbbra is kap környezettisztítást és a parancsszabályzatot; a Claude Code a `NoSandboxAdapter`-en keresztül a gazdagép környezetét örökli. Erre esik vissza az ügynökindítás olyan gazdagépen, ahol nincs elérhető háttérrendszer, vagy ahol `--sandbox off` van beállítva, és ez a terminál alapértelmezése is, amikor a kliens egyet sem nevez meg.
+Nincs homokozó. A folyamat közvetlenül a gazdagépen fut, a gazdagép fájlrendszer-, hálózat- és folyamathozzáférésével. Az ACP és a harness `bash` eszköze továbbra is kap környezettisztítást és a parancsszabályzatot; a Claude Code a `NoSandboxAdapter`-en keresztül a gazdagép környezetét örökli. Az ügynökindítás minden futtatáshoz ezt használja `--sandbox off` alatt, egy elérhető háttérrendszer nélküli gazdagépen pedig csak a szerver tulajdonosának saját futtatásaihoz; mindenki másének futtatását ott elutasítja. Terminál esetén ez a gazdagép shellje, amelyet csak a szerver tulajdonosa nyithat meg.
 
 ## Szerveren hosztolt terminál
 
-A terminál a saját szabályai szerint kerül homokozóba, nem az indítási észlelés szerint. A `TerminalSessionService` `defaultBackend` értéke `none`, és a `cc_server` nem írja felül, így egy terminálmunkamenet a gazdagép shelljét futtatja, hacsak a kliens kifejezetten nem kéri a `native` értéket — az asztali alkalmazás terminálpanelje nem kéri.
+A szerveren hosztolt terminál csak a szerver [tulajdonosának](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) nyitja meg a gazdagép shelljét. Mindenki más egy homokozós terminált kap, az ügynökök korlátaival, a munkaterület saját könyvtáraiban.
 
-Amikor a `native` értéket kérik, a shellt a `SandboxManager` csomagolja be egy rögzített terminálprofil alá: a `$HOME` és a munkamenet munkakönyvtára írható, a hálózat nyitott, a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` és `~/Library/Keychains` pedig olvasásra tiltott. A csak olvasásra jogosult kódhosting-token és a push-átjáró nem érvényesül — az az indítás dolga. Ha a becsomagolás nem támogatott, a munkamenet meghiúsul, ahelyett hogy natív jelvényt mutatna egy gazdagépshell-PTY-n.
+Hogy egy munkamenethez melyik háttérrendszer készül, az így dől el:
+
+| Kért | A szerver tulajdonosa | Bárki más |
+| --- | --- | --- |
+| Semmit | A szerver alapértelmezett háttérrendszere | Az alapértelmezett, a `none` helyett `native` értékkel |
+| `none` (a gazdagép shellje) | Gazdagép-shell | Elutasítva: a gazdagép shellje homokozó nélkül fut a szerveren |
+| `native` | Natív homokozó, tulajdonosi profil | Natív homokozó, ügynökprofil |
+| `microvm` | Elszigetelt VM | Elszigetelt VM |
+| Ismeretlen név | Elutasítva | Elutasítva |
+
+- **Tulajdonosi profil.** A `$HOME` és a munkamenet munkakönyvtára írható, a hálózat nyitott, a `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` és `~/Library/Keychains` pedig olvasásra tiltott.
+- **Ügynökprofil** (`memberTerminalSandboxConfig`). Ugyanaz a szabályzat, mint amelyen egy ügynök az adott munkaterületen fut: az írások a munkakönyvtárban, egy privát futtatási könyvtárban, a `/tmp`-ben és a `$HOME` azon részeiben maradnak, amelyekbe az ügynök írhat; a titkos adatok olvasása tiltott; a hálózat az ügynök kimenő forgalmi engedélylistája; a programok csak a munkakönyvtárból és a telepített eszközláncokból futnak.
+- A terminál csak a munkaterület saját könyvtárain belül nyílik meg. Az azokon kívüli munkakönyvtárat elutasítja, és soha nem cseréli le másikra.
+- Csak az a személy olvashatja, írhatja, átméretezheti vagy zárhatja be a terminált, aki megnyitotta. Mindenki más számára az azonosítója ismeretlennek látszik.
+- A `microvm` kifejezett kérésre olyan gazdagépen, ahol nincs állomásszolgáltatás, meghiúsul, ahelyett hogy visszaesne. Egy ilyen gazdagépen a `microvm` alapértelmezés `native`-re lép vissza, és ezt a napló jelzi.
+
+A csak olvasásra jogosult kódhosting-token és a push-átjáró a terminálokra nem vonatkozik: ezek az indítás dolgai. Ha a becsomagolás nem támogatott, a munkamenet meghiúsul, ahelyett hogy natív jelvényt mutatna egy gazdagépshell-munkameneten.
 
 ## Hálózati kimenő forgalom
 
-Amikor egy homokozó elindul, a kimenő hálózati hozzáférést folyamaton belüli proxyk érvényesítik, nem kernel tűzfalszabályok. Olyan gazdagépen, ahol nincs elérhető háttérrendszer, mindez nem érvényesül, és egy elindított folyamat pontosan úgy éri el a hálózatot, ahogy a szerver felhasználója tenné.
+Amikor egy homokozó elindul, a kimenő hálózati hozzáférést folyamaton belüli proxyk érvényesítik, nem kernel tűzfalszabályok. Egy nem homokozott futtatás (minden futtatás `--sandbox off` alatt, vagy a tulajdonos futtatása háttérrendszer nélküli gazdagépen) ezek közül semmit nem kap: az általa indított folyamat pontosan úgy éri el a hálózatot, ahogy a szerver felhasználója tenné.
 
 - A homokozó-futtatókörnyezet egy HTTP/HTTPS proxyt és egy SOCKS5 proxyt futtat a `127.0.0.1` címen, a `cc_server` folyamatán belül, **korlátozott munkamenetenként egy párt** (`http_proxy.dart`, `socks_proxy.dart`). Az egyidejű futtatások nem osztoznak egy páron.
 - A homokozóba zárt folyamatok proxy környezeti változókat kapnak (`HTTP_PROXY`/`HTTPS_PROXY` → a HTTP-proxy, `ALL_PROXY` → a SOCKS-proxy; a `GIT_SSH_COMMAND` a git-over-SSH forgalmat a SOCKS-proxyn keresztül vezeti). Linuxon a hálózati névtér nem megosztott, így a proxyk jelentik az egyetlen kivezető utat; macOS-en a homokozó a gazdagép loopbackjét használja, és közvetlenül beszél velük.

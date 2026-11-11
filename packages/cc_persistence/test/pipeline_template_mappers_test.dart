@@ -105,7 +105,6 @@ void main() {
     test('maps all valid kind strings correctly', () {
       final cases = {
         'trigger': StepKind.trigger,
-        'start': StepKind.trigger, // legacy compatibility
         'listen': StepKind.listen,
         'join': StepKind.join,
         'router': StepKind.router,
@@ -582,7 +581,7 @@ void main() {
       expect(result.inputs.first.label, 'Title');
     });
 
-    test('parses legacy "start" kind as trigger', () {
+    test('refuses an unknown "start" kind', () {
       final nodesJson = jsonEncode([
         {
           'stepId': 'entry',
@@ -606,8 +605,7 @@ void main() {
         updatedAt: DateTime(2025, 6, 1),
       );
 
-      final result = pipelineDefinitionFromRow(row);
-      expect(result.steps.first.kind, StepKind.trigger);
+      expect(() => pipelineDefinitionFromRow(row), throwsArgumentError);
     });
   });
 

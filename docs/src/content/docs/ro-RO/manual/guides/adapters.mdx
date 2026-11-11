@@ -2,7 +2,7 @@
 title: Gestionează adaptoarele și modelele
 description: Conectează provideri de modele, alege modelul pe care rulează un agent și verifică ce CLI-uri de runner are mașina gazdă a serverului.
 slug: ro-RO/manual/ghiduri-practice/adaptoare
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Acest ghid îți arată cum să conectezi provideri de modele și cum să alegi pe ce
@@ -120,6 +120,8 @@ intenționezi să îl folosești.
 
 Agentul **Content synthesizer** scrie textul pe care Control Center îl generează în jurul unei conversații: titlul, răspunsurile `/btw`, documentele `/handoff` și interviul de obiectiv `/goal`. Rulează câte o singură completare fără unelte de fiecare dată, pe propriul adaptor și model, așa că atribuie-i un model mic și rapid.
 
+Când acel adaptor este un CLI ACP, completarea este un proces de pe mașina serverului și urmează [regula sandbox-ului](/ro-RO/manual/concepte/sandbox-si-securitate/#agenți-pe-o-gazdă-fără-sandbox): în interiorul sandbox-ului când serverul izolează agenții în sandbox, iar fără sandbox doar pentru cererile pentru care proprietarul serverului răspunde. Pentru oricine altcineva, aceste funcții sunt omise: nu se generează niciun titlu, iar `/btw` răspunde „Agentul Content synthesizer lipsește sau nu are un runner funcțional”.
+
 Editează **personajul** lui în **Setări → Spațiu de lucru → Agenți** pentru a schimba felul în care sună textul: lungimea titlurilor, limba, tonul și exemplele pe care le urmează. Formatul de răspuns pe care îl analizează fiecare funcție (un titlu pe un rând, secțiunile obiectivului) este fix și se aplică după personajul tău. Șterge agentul pentru a dezactiva aceste funcții; nu va fi recreat automat.
 
 ## Instalează un CLI de runner
@@ -136,8 +138,7 @@ Apoi apasă **Reîmprospătează** în partea de sus a paginii. Fiecare rând de
 arată versiunea și calea rezolvate, plus etichete pentru dacă suportă modul JSON
 și selectarea modelului.
 
-Un CLI extern își păstrează propriile credențiale, în propria configurare, pe
-mașina gazdă a serverului. Control Center nu le gestionează.
+Autentificările Claude Code sunt listate la **Conturi Claude Code**, pe runner-ul Claude Code. Control Center creează directorul de configurare al fiecărui cont pe server și îți oferă comanda `claude auth login` de rulat acolo; nu se autentifică niciodată în locul tău.
 
 :::caution[Argumentele adaptorului și variabilele de mediu rămân pe acest dispozitiv]
 Fiecare rând de adaptor oferă un câmp **Argumente** și un dialog **Variabile de

@@ -2,7 +2,7 @@
 title: Domain-Ereignisse
 description: Warum Features über einen prozessinternen Ereignisbus sprechen, statt einander zu importieren, wofür der Bus Quelle der Wahrheit ist und wofür nicht, und welche Ereignisse Automatisierung wirklich antreiben.
 slug: de-DE/handbuch/konzepte/domain-ereignisse
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Was ein Domain-Ereignis ist
@@ -40,8 +40,6 @@ Laufergebnisse zusammen, ohne in die Ausführung zu greifen.
 
 Der Preis ist der übliche: Ein Publisher erkennt nicht, ob jemand zuhört, und
 ein Listener, der nie erzeugt wird, bleibt still untätig.
-`TicketRemoteSyncHandler` ist das bleibende Beispiel. Er ist deklariert, von
-Tests abgedeckt und in der Produktion nie verdrahtet.
 
 ## Was der Bus nicht ist
 

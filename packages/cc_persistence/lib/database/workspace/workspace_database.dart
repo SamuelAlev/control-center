@@ -69,7 +69,6 @@ import 'package:cc_persistence/database/daos/workspace_role_dao.dart';
 import 'package:cc_persistence/database/daos/workspace_setting_dao.dart';
 import 'package:cc_persistence/database/daos/write_ledger_dao.dart';
 import 'package:cc_persistence/database/migration_steps.dart';
-import 'package:cc_persistence/database/repo_scripts_migration.dart';
 import 'package:cc_persistence/database/tables/action_policies_table.dart';
 import 'package:cc_persistence/database/tables/activity_log_table.dart';
 import 'package:cc_persistence/database/tables/agent_goal_runs_table.dart';
@@ -170,6 +169,7 @@ import 'package:cc_persistence/database/tables/workspace_meta_table.dart';
 import 'package:cc_persistence/database/tables/workspace_roles_table.dart';
 import 'package:cc_persistence/database/tables/workspace_settings_table.dart';
 import 'package:cc_persistence/database/tables/write_ledger_table.dart';
+import 'package:cc_persistence/database/workspace/workspace_partial_indexes.dart';
 import 'package:drift/drift.dart';
 
 part 'workspace_database.g.dart';
@@ -436,7 +436,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   /// The current workspace schema version, as a const so non-database code
   /// (the server's /healthz build/compat block) can report it without
   /// instantiating a database. Keep in lockstep with [schemaVersion].
-  static const int currentSchemaVersion = 23;
+  static const int currentSchemaVersion = 29;
 
   @override
   int get schemaVersion => currentSchemaVersion;
@@ -481,9 +481,8 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         conversationsTable.leafMessageId,
       );
     }),
-    // v3 → v4: per-repo lifecycle scripts, since moved into environment
-    // definitions (v21) and dropped (v22). A file replaying this has none to
-    // move, so the step no longer builds anything.
+    // v3 → v4: no schema change (it added per-repo lifecycle scripts, which
+    // v22 drops).
     MigrationStep(3, 4, (m) async {}),
     // v4 → v5: sandbox exec grants. Records whether the operator allowed
     // running binaries from inside a worktree, which the macOS writable-dir
@@ -527,22 +526,9 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         actionPoliciesTable.enforcement,
       );
     }),
-    // v6 → v7: code-graph reference-edge cleanup. Unresolved reference edges
-    // (target_symbol_id NULL) are write-only rows — no graph query can see
-    // them, they exist only as retry input for the name-resolution pass — and
-    // measured on a real index 80% of them referenced external packages
-    // (`react`, `vitest`, vendor namespaces) that can never resolve, at ~500MB
-    // with their indexes. The indexer now prunes them after every resolution
-    // pass and the extractor no longer emits package imports at all; this step
-    // removes the ones already on disk, because a quiet repo's checkpoint
-    // short-circuits every future run and the organic prune would never fire.
-    // Bound edges are untouched.
-    MigrationStep(6, 7, (m) async {
-      await m.database.customStatement(
-        'DELETE FROM code_edges '
-        'WHERE target_symbol_id IS NULL AND target_name IS NOT NULL',
-      );
-    }),
+    // v6 → v7: no schema change (it pruned unresolved code-graph edges,
+    // which the indexer now prunes itself after every resolution pass).
+    MigrationStep(6, 7, (m) async {}),
     // v7 → v8: richer user-activity rows. A single conventional target id
     // could not say which setting changed or which space a rig lived in;
     // `details` is the sanitized argument snapshot that can.
@@ -612,23 +598,19 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       await _createConversationActivityIndexes();
     }),
     // v11 → v12: integer character counts for the context meter. Fresh files
-    // build the columns in onCreate; this step carries existing files forward
-    // and backfills them once. See [_backfillConversationCharCounts].
+    // build the columns in onCreate; this step carries existing files forward.
     MigrationStep(11, 12, (m) async {
       await _addConversationCharColumns();
-      await _backfillConversationCharCounts();
       await _createConversationCharIndex();
     }),
     // v12 → v13: stored list metadata. Fresh files build the column in
-    // onCreate; this step carries existing files forward and fills it once.
-    // See [_backfillListMetadata].
+    // onCreate; this step carries existing files forward.
     MigrationStep(12, 13, (m) async {
       await _addColumnIfMissing(
         m,
         conversationMessagesTable,
         conversationMessagesTable.listMetadata,
       );
-      await _backfillListMetadata();
     }),
     // v13 → v14: stacked branches inside one space's checkout. Fresh files
     // build the table in onCreate; this step carries existing files forward.
@@ -669,10 +651,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       await _createContextReadingIndex();
     }),
     // v17 → v18: precise cost accounting, run-stage latency and independent
-    // verification. All purely additive and nullable/defaulted — a legacy row
-    // reads as "cents only, unverified, no timings", which is what it is.
-    // `costMicros = 0` is deliberate: readers fall back to the widened cents
-    // projection rather than treating a historical cost as zero.
+    // verification. All purely additive and nullable/defaulted.
     MigrationStep(17, 18, (m) async {
       await _addColumnIfMissing(
         m,
@@ -742,46 +721,17 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       await _createTableIfMissing(m, catalogFilesTable);
       await _createIndexIfMissing(m, idxCatalogFilesLifecycle);
       await _createIndexIfMissing(m, idxCatalogFilesPath);
-      // Historic message refs remain readable without fileId. Index them as
-      // already-attached logical files; never treat pre-catalog bytes as
-      // removable content. json_valid guards malformed legacy metadata.
-      await customStatement(
-        r'''
-          INSERT OR IGNORE INTO catalog_files
-            (id, workspace_id, uploader_user_id, name, path, media_type,
-             bytes, source, state, owned_bytes, created_at, updated_at)
-          SELECT 'legacy-' || m.id || '-' || a.key, ?, m.sender_id,
-            COALESCE(json_extract(a.value, '$.name'), 'attachment'),
-            json_extract(a.value, '$.path'),
-            COALESCE(json_extract(a.value, '$.mediaType'),
-              'application/octet-stream'),
-            COALESCE(json_extract(a.value, '$.size'), 0),
-            'upload', 'attached', 0,
-            CAST(strftime('%s', 'now') AS INTEGER),
-            CAST(strftime('%s', 'now') AS INTEGER)
-          FROM conversation_messages m,
-            json_each(CASE WHEN json_valid(m.metadata) THEN m.metadata
-              ELSE '{}' END, '$.attachments') a
-          WHERE json_valid(a.value)
-            AND json_extract(a.value, '$.path') LIKE 'blob:sha256:%'
-        ''',
-        [workspaceId],
-      );
     }),
-    // v20 → v21: space environments, and the one-off move of per-repo lifecycle
-    // scripts into generated definitions.
+    // v20 → v21: space environments.
     MigrationStep(20, 21, (m) async {
       await _createTableIfMissing(m, environmentDefinitionsTable);
       await _createTableIfMissing(m, spaceEnvironmentsTable);
       await _createTableIfMissing(m, environmentRunsTable);
       await _createIndexIfMissing(m, idxEnvironmentRunsSpace);
       await _createIndexIfMissing(m, idxEnvironmentRunsDefinition);
-      await _migrateRepoScripts();
     }),
-    // v21 → v22: what v21 moved goes. A definition is now the only place a
-    // worktree task lives, and environment runs the only history, so nothing
-    // is left to drift from them. Its own step so a file already at v21 is
-    // cleaned too.
+    // v21 → v22: per-repo lifecycle scripts go. A definition is the only
+    // place a worktree task lives, and environment runs the only history.
     MigrationStep(21, 22, (m) async {
       await customStatement('DROP TABLE IF EXISTS repo_script_runs');
       for (final column in const ['setup_script', 'archive_script']) {
@@ -790,10 +740,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         }
       }
     }),
-    // v22 → v23: a run pins the graph it started with. Nullable, not
-    // backfilled: an older run never recorded which graph it ran, and a null
-    // snapshot is what tells the engine to fall back to the live template.
-    // Also: server-authored messages get their own sender type, the wait-id
+    // v22 → v23: a run pins the graph it started with. Also: the wait-id
     // lookup gets an index, the never-written step branch index goes and
     // projection runs get an explicit flag.
     MigrationStep(22, 23, (m) async {
@@ -802,26 +749,60 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         pipelineRunsTable,
         pipelineRunsTable.templateSnapshotJson,
       );
-      // Rows written before `SenderType.system` carried the server's own
-      // notices as `agent` from sender `system`.
-      await customStatement(
-        "UPDATE conversation_messages SET sender_type = 'system' "
-        "WHERE sender_type = 'agent' AND sender_id = 'system'",
-      );
       await _createNotificationFeedIndexes();
       await _dropColumnIfPresent('pipeline_step_runs', 'branch_index');
-      // Projection runs are flagged instead of recognised by their trigger
-      // markers. Backfilled from those markers (the code-graph watcher's and
-      // the skill scans'), the only rows that ever carried them.
       await _addColumnIfMissing(
         m,
         pipelineRunsTable,
         pipelineRunsTable.isProjection,
       );
-      await customStatement(
-        'UPDATE pipeline_runs SET is_projection = 1 WHERE trigger_event_type '
-        "IN ('CodeGraphWatch', 'SkillAnalysisManual', 'SkillAnalysisUpdate')",
+    }),
+    // v23 → v24: who armed each trigger, recorded on its runs so they
+    // cannot approve a pull request their agents open. Existing armed
+    // triggers record nobody until an admin saves them again.
+    MigrationStep(23, 24, (m) async {
+      await _addColumnIfMissing(
+        m,
+        pipelineTriggersTable,
+        pipelineTriggersTable.armedByUserIdsJson,
       );
+    }),
+    // v24 → v25: everyone who armed a trigger, not only the last; the
+    // single-armer column goes.
+    MigrationStep(24, 25, (m) async {
+      await _addColumnIfMissing(
+        m,
+        pipelineTriggersTable,
+        pipelineTriggersTable.armedByUserIdsJson,
+      );
+      await _dropColumnIfPresent('pipeline_triggers', 'armed_by_user_id');
+    }),
+    // v25 → v26: who linked each repository's path. Existing rows record
+    // nobody, so a checkout outside the workspace's own storage is not served
+    // until the server owner links it again.
+    MigrationStep(25, 26, (m) async {
+      await _addColumnIfMissing(m, reposTable, reposTable.linkedByUserId);
+    }),
+    // v26 → v27: the forge's durable id for each linked repository. Existing
+    // rows hold none until the first authorized read of the repository pins
+    // it.
+    MigrationStep(26, 27, (m) async {
+      await _addColumnIfMissing(m, reposTable, reposTable.forgeRepoId);
+    }),
+    // v27 → v28: which server owner approved a definition that runs on the
+    // host. Existing rows record nobody, so one that runs there waits for the
+    // server owner to save it again.
+    MigrationStep(27, 28, (m) async {
+      await _addColumnIfMissing(
+        m,
+        environmentDefinitionsTable,
+        environmentDefinitionsTable.hostApprovedBy,
+      );
+    }),
+    // v28 → v29: a run's child rollup is kept in micro-USD only; the cents
+    // column goes.
+    MigrationStep(28, 29, (m) async {
+      await _dropColumnIfPresent('agent_run_logs', 'child_cost_cents');
     }),
   ];
 
@@ -838,42 +819,6 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
   Future<bool> _reposHasColumn(String name) async {
     final columns = await customSelect('PRAGMA table_info(repos)').get();
     return columns.any((row) => row.read<String>('name') == name);
-  }
-
-  /// Writes a definition for every repo with a lifecycle script.
-  ///
-  /// Raw SQL on both sides because this replays against old files: a typed read
-  /// would name every column `repos` has in the CURRENT schema. Re-entering is
-  /// safe, since the id comes from the repo and an existing row is left alone,
-  /// edits included.
-  Future<void> _migrateRepoScripts() async {
-    // A file from before v4 never had any.
-    if (!await _reposHasColumn('setup_script')) {
-      return;
-    }
-    final repos = await customSelect(
-      'SELECT id, name, setup_script, archive_script FROM repos '
-      'WHERE setup_script IS NOT NULL OR archive_script IS NOT NULL',
-    ).get();
-    // Drift stores a DateTime as unix seconds.
-    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-    for (final repo in repos) {
-      final definition = repoScriptsDefinition(
-        repoId: repo.read<String>('id'),
-        repoName: repo.read<String>('name'),
-        setup: repo.readNullable<String>('setup_script'),
-        archive: repo.readNullable<String>('archive_script'),
-      );
-      if (definition == null) {
-        continue;
-      }
-      await customStatement(
-        'INSERT OR IGNORE INTO environment_definitions '
-        '(id, name, definition_json, created_at, updated_at) '
-        'VALUES (?, ?, ?, ?, ?)',
-        [definition.id, definition.name, definition.json, now, now],
-      );
-    }
   }
 
   Future<void> _createTableIfMissing(
@@ -934,10 +879,10 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       await m.createAll();
       await _createFts5Tables();
       await _createTicketIndexes();
-      await _createPipelineIndexes();
-      await _createCronIndexes();
+      await createPipelineIndexes(this);
+      await createCronIndexes(this);
       await _createHotPathIndexes();
-      await _createChatIndexes();
+      await createChatIndexes(this);
       await into(workspaceMetaTable).insert(
         WorkspaceMetaTableCompanion.insert(
           workspaceId: workspaceId,
@@ -955,7 +900,7 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
         }
       }
     },
-    beforeOpen: (details) async {
+    beforeOpen: (_) async {
       await customStatement('PRAGMA foreign_keys = ON');
       await customStatement('PRAGMA journal_mode = WAL');
       // Wait up to 5s for a lock instead of failing a contended write
@@ -1001,27 +946,6 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
       // otherwise never rebuilt and the failure is silent — inserts stop
       // reaching the index and search just returns less and less.
       await _createFts5Tables();
-      // One-time compaction after the v6→v7 edge cleanup: that step deletes
-      // what was ~500MB of unresolved reference edges on graph-heavy
-      // workspaces, and SQLite never returns freed pages to the OS on its own
-      // — without this the file keeps its old size as empty freelist pages
-      // forever. VACUUM cannot run inside the migration transaction, which is
-      // why it lives here: `beforeOpen` runs after the steps, outside any
-      // transaction. Rewrites the file once, then never again.
-      final upgradedFrom = details.versionBefore;
-      if (upgradedFrom != null && upgradedFrom < 7) {
-        final startedAt = DateTime.now();
-        await customStatement('VACUUM');
-        final elapsed = DateTime.now().difference(startedAt);
-        if (elapsed > const Duration(seconds: 2)) {
-          onWarn?.call(
-            'WorkspaceDatabase',
-            'post-migration VACUUM took ${elapsed.inMilliseconds}ms for '
-                'workspace $workspaceId — this workspace is large enough that '
-                'opening it is a visible pause',
-          );
-        }
-      }
       // Corruption check on open — `quick_check`, NOT `integrity_check`.
       //
       // `integrity_check` verifies every b-tree page in the file, so its cost scales with the
@@ -1278,50 +1202,6 @@ class WorkspaceDatabase extends _$WorkspaceDatabase {
     }
   }
 
-  /// One-time copy of the counts the meter used to compute on every read.
-  ///
-  /// The sync-update trigger would otherwise record a change for every
-  /// message, so it is dropped first; v15 removes the rest of the sync feed.
-  /// The FTS trigger only watches `content` and `space_id`, so this update
-  /// does not touch the search index.
-  Future<void> _backfillConversationCharCounts() async {
-    await customStatement(
-      'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
-    );
-    await customStatement(r'''
-UPDATE conversation_messages
-SET content_chars = LENGTH(content),
-    transcript_chars = CAST(
-      COALESCE(json_extract(metadata, '$.transcriptChars'), 0) AS INTEGER
-    )
-''');
-  }
-
-  /// One-time copy of the metadata text list watches read.
-  ///
-  /// The select used to strip segments with json_remove on every row,
-  /// every flush. Doing it here means a later flush reads the stored column
-  /// and leaves the transcript blobs alone. The sync-update trigger is
-  /// dropped for the same reason as [_backfillConversationCharCounts]: one
-  /// UPDATE of every message must not record one change per message. The
-  /// FTS trigger only watches content and space_id.
-  Future<void> _backfillListMetadata() async {
-    await customStatement(
-      'DROP TRIGGER IF EXISTS trg_sync_conversation_messages_update',
-    );
-    await customStatement(r'''
-UPDATE conversation_messages
-SET list_metadata = CASE
-  WHEN json_type(metadata, '$.segments') IS NULL THEN metadata
-  ELSE json_set(
-    json_remove(metadata, '$.segments'),
-    '$.segments_elided', json('true'),
-    '$.segment_count', json_array_length(metadata, '$.segments')
-  )
-END
-''');
-  }
-
   /// Covering index for [MessagingDao.conversationCharCountsSql].
   ///
   /// The partial predicate matches the meter's filter, so the sum never
@@ -1428,66 +1308,6 @@ END
       'ON notification_feed ('
       "json_extract(params_json, '\$.${NotificationFeedDao.waitIdKey}')"
       ') WHERE json_valid(params_json)',
-    );
-  }
-
-  /// Chat-bridge indexes, including a partial-unique DM index (SQLite NULLs are
-  /// distinct in UNIQUE, so conversation-level links need `WHERE`). Other
-  /// indexes repeated with `IF NOT EXISTS` for migration `createTable` paths.
-  Future<void> _createChatIndexes() async {
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS '
-      'uq_chat_space_links_ws_provider_space_thread '
-      'ON chat_space_links '
-      '(workspace_id, provider, external_channel_id, external_thread_id)',
-    );
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_chat_space_links_ccSpaceId '
-      'ON chat_space_links (cc_space_id)',
-    );
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS '
-      'uq_chat_user_links_ws_provider_team_user '
-      'ON chat_user_links '
-      '(workspace_id, provider, external_team_id, external_user_id)',
-    );
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_user_links_ws_provider_user '
-      'ON chat_user_links (workspace_id, provider, user_id)',
-    );
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS uq_chat_space_links_ws_provider_dm '
-      'ON chat_space_links (workspace_id, provider, external_channel_id) '
-      'WHERE external_thread_id IS NULL',
-    );
-  }
-
-  /// Creates the unique index that makes a cron fire idempotent: at most one
-  /// `cron_executions` row may exist per `(trigger_id, planned_at)` slot, so a
-  /// re-fire of the same scheduled instant (after a restart, or from
-  /// overlapping ticks) is a no-op.
-  Future<void> _createCronIndexes() async {
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS uq_cron_executions_slot '
-      'ON cron_executions (trigger_id, planned_at)',
-    );
-  }
-
-  /// Creates the partial-unique index that enforces idempotency for
-  /// event-triggered pipeline runs: at most one non-terminal run may exist per
-  /// `(template_id, dedup_key)` tuple.
-  Future<void> _createPipelineIndexes() async {
-    await customStatement(
-      'CREATE UNIQUE INDEX IF NOT EXISTS uq_pipeline_runs_active_dedup '
-      'ON pipeline_runs (template_id, dedup_key) '
-      'WHERE dedup_key IS NOT NULL '
-      "AND status IN ('pending','queued','running','suspended')",
-    );
-    // Admission reads exactly this shape on every run completion: count the
-    // slot holders of one template, then find its oldest queued row.
-    await customStatement(
-      'CREATE INDEX IF NOT EXISTS idx_pipeline_runs_template_status '
-      'ON pipeline_runs (workspace_id, template_id, status, started_at)',
     );
   }
 }

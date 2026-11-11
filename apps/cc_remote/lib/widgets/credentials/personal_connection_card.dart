@@ -1,20 +1,23 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, normaliseConfirmCode;
+    show ConnectOAuthLane, SignInAttemptStatus, normaliseConfirmCode;
 import 'package:cc_data/cc_data.dart'
     show
         RemoteProviderSignIn,
         SignInAttempt,
-        SignInAttemptStatus,
         SignInFailure,
         SignInLaneInfo,
         SignInLaneMode,
         signInFailureOfRpcError;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus, ForgeCredentialScope;
+import 'package:cc_domain/core/domain/value_objects/person_token_refusal.dart';
 import 'package:cc_remote/credential_providers.dart';
 import 'package:cc_remote/external_link.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
 import 'package:cc_remote/providers.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -39,7 +42,8 @@ class PersonalConnectionCard extends ConsumerStatefulWidget {
     this.lane,
     this.laneInfo,
     this.statusError,
-    this.hostManaged = false,
+    this.status,
+    this.scope,
     super.key,
   });
 
@@ -57,7 +61,27 @@ class PersonalConnectionCard extends ConsumerStatefulWidget {
   /// How this server runs [lane]'s sign-in; null while unknown.
   final SignInLaneInfo? laneInfo;
   final String? statusError;
-  final bool hostManaged;
+
+  /// Where the sign-in stands, when the server reports it (forges); null
+  /// for a provider described by [connected] alone.
+  final ForgeConnectionStatus? status;
+
+  /// Where the credential in effect lives (forges), shown so "Disconnect"
+  /// never surprises; null when unknown.
+  final ForgeCredentialScope? scope;
+
+  /// Whether a grant is held at all, usable or not (a paused or
+  /// unreachable one can still be disconnected).
+  bool get hasGrant =>
+      connected ||
+      (status != null && status != ForgeConnectionStatus.notConnected);
+
+  /// Whether starting a sign-in makes sense: never for a paused grant (it
+  /// comes back with the workspace's sign-in service, and a fresh sign-in
+  /// would replace it) or one that is only retrying.
+  bool get offersSignIn =>
+      status != ForgeConnectionStatus.paused &&
+      status != ForgeConnectionStatus.unreachable;
 
   @override
   ConsumerState<PersonalConnectionCard> createState() =>

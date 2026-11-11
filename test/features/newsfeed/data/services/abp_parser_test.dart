@@ -1,4 +1,4 @@
-import 'package:cc_infra/src/newsfeed/abp_parser.dart';
+import 'package:cc_domain/features/newsfeed/domain/helpers/abp_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

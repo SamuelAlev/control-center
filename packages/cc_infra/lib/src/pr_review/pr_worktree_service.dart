@@ -6,10 +6,11 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/ports/pr_worktree_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_domain/features/environments/domain/ports/worktree_task_port.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/repos/worktree_release.dart';
 import 'package:path/path.dart' as p;
 import 'package:uuid/uuid.dart';
@@ -100,7 +101,7 @@ class PrWorktreeService implements PrWorktreePort {
         destParentDir: parentDir,
         name: dirName,
         branch: branch,
-        fetchUrl: 'https://github.com/$owner/$repoName.git',
+        fetchUrl: 'https://${ForgeHost.github.gitHost}/$owner/$repoName.git',
         fetchToken: token,
         headRef: 'refs/pull/$prNumber/head',
       );

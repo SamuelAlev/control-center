@@ -2,7 +2,7 @@
 title: Sichern und wiederherstellen
 description: Erstelle eine Momentaufnahme der Installation, verschiebe einen Arbeitsbereich zwischen Rechnern, stelle einen oder alle wieder her und bewahre Kopien an einem anderen Ort auf.
 slug: de-DE/handbuch/anleitungen/sichern-und-wiederherstellen
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Diese Anleitung deckt die fünf Dinge ab, die du mit Sicherungen tatsächlich tust:
@@ -17,7 +17,8 @@ Alles hier liegt unter **Einstellungen → Server → Sicherung und Wiederherste
 
 - Ein **vollständiger Client**, also die Desktop- oder Web-App. Ein gekoppeltes Telefon löst davon nichts aus. Das ist so gewollt.
 - Eine **Momentaufnahme der Installation** erstellen, auflisten, herunterladen oder löschen darf der **Eigentümer** der Installation.
-- Bei Aktionen an einem Arbeitsbereich: **Admin** dieses Arbeitsbereichs für den Export oder um seine geplanten Sicherungen aufzulisten und herunterzuladen, **Eigentümer** für Import oder Löschen oder um eine seiner Sicherungen zu löschen.
+- Bei Aktionen an einem Arbeitsbereich: **Admin** dieses Arbeitsbereichs für den Export oder um seine geplanten Sicherungen aufzulisten und herunterzuladen, **Eigentümer** zum Löschen oder um eine seiner Sicherungen zu löschen.
+- Um einen **Arbeitsbereich wiederherzustellen**, aus einer hochgeladenen Datei, einer geplanten Sicherung oder einer Momentaufnahme: der [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber), der außerdem Eigentümer dieses Arbeitsbereichs sein muss. Eine Wiederherstellung lässt den Server eine Datenbankdatei als seine eigene übernehmen, daher entscheidet darüber der Serverinhaber. Alle anderen sehen „Nur der Serverinhaber kann Backups wiederherstellen. Herunterladen kannst du sie weiterhin.“ statt der Wiederherstellen-Aktionen.
 - Zum Herunterladen und Hochladen: ein gekoppelter vollständiger Client, entweder direkt oder über das vermittelte Relay verbunden. Beide Wege tragen die Dateibytes durch denselben authentifizierten, Ende-zu-Ende verschlüsselten Ressourcen-Tunnel; das Relay kann sie nicht lesen.
 
 :::caution[Momentaufnahmen der Installation sind manuell]
@@ -43,6 +44,8 @@ Beide Artefakte sind **nur Datenbanken**:
 
 - Eine **Momentaufnahme der Installation** ist ein Verzeichnis mit Zeitstempel: `manifest.json`, `global.db` und pro Arbeitsbereich eine `<workspaceId>/workspace.db`.
 - Ein **Arbeitsbereichs-Export** ist genau diese eine Datei `workspace.db`.
+
+Die Datenbank eines Arbeitsbereichs ist der ganze Arbeitsbereich: seine Unterhaltungen, Lauf-Logs, der Code-Index, die Repo-Verknüpfungen, Environment-Definitionen und Mitglieder. Sie enthält außerdem die Webhook-Tokens der Pipelines und die Webhook-Geheimnisse der Ticket-Synchronisierung, und zwar in lesbarer Form. Bewahre eine heruntergeladene Arbeitsbereichssicherung oder einen Export so auf wie ein Geheimnis. Sie enthält keine Anbieter-Anmeldungen, Gerätschlüssel oder Benutzergeheimnisse; die liegen in der globalen Datenbank und im Geheimnisspeicher des Servers.
 
 Den Rest des Datenverzeichnisses tragen beide nicht: `secrets.json`
 (Kopplungsschlüssel, Anbieter-Zugangsdaten, SSO), die `blobs/` eines
@@ -79,7 +82,7 @@ keine Datei), oder einer, dessen Kopie fehlgeschlagen ist. Sieh ins Server-Log.
 
 ## Arbeitsbereichssicherungen und Aufbewahrung planen
 
-Öffne **Einstellungen → Pipelines → Pipeline-Vorlagen** für den Arbeitsbereich
+Öffne **Einstellungen → Arbeitsbereich → Pipeline-Vorlagen** für den Arbeitsbereich
 und suche **Workspace backup**. Der aktivierte Zeitplan läuft jeden Sonntag um
 03:00 UTC: **Back up workspace**, danach **Delete backups older than**
 (standardmäßig 30 Tage). Der zweite Schritt läuft nur, wenn die Sicherung
@@ -106,7 +109,7 @@ Sicherungen werden nicht aufgelistet.
 
 Klappe eine Zeile auf, um jede Sicherung zu sehen, die neueste zuerst:
 
-- **Wiederherstellen** ersetzt die aktuelle Datenbank des Arbeitsbereichs durch diese Sicherung. Exportiere den Arbeitsbereich vorher, wenn du das rückgängig machen können willst. Erfordert **Eigentümer**.
+- **Wiederherstellen** ersetzt die aktuelle Datenbank des Arbeitsbereichs durch diese Sicherung. Exportiere den Arbeitsbereich vorher, wenn du das rückgängig machen können willst. Erfordert den Serverinhaber, der außerdem Eigentümer des Arbeitsbereichs sein muss.
 - **Herunterladen** speichert die Datei auf dem Rechner, den du gerade benutzt. Die Sicherung bleibt auf dem Server.
 - **Pfad kopieren** kopiert ihren Speicherort auf dem Server.
 - **Löschen** entfernt diese Sicherung endgültig, sobald du den Namen des Arbeitsbereichs eingibst. Erfordert **Eigentümer**.
@@ -121,7 +124,7 @@ Sonst sieht niemand diese Zeilen.
 
 Sie haben kein **Wiederherstellen**, weil es keinen Arbeitsbereich gibt, in den sich
 wiederherstellen ließe. Um eine davon zurückzuholen, lade sie herunter, erstelle einen
-Arbeitsbereich und lade die Datei hoch, wie unter
+Arbeitsbereich (das kann nur der Serverinhaber) und lade die Datei hoch, wie unter
 [Einen Arbeitsbereich auf eine andere Installation verschieben](#einen-arbeitsbereich-auf-eine-andere-installation-verschieben)
 beschrieben.
 
@@ -164,9 +167,12 @@ Ein Arbeitsbereich ist eine Datenbankdatei, die Übergabe also eine Dateioperati
 2. Auf dem **Zielserver** den Arbeitsbereich anlegen oder auswählen, der die Datei aufnehmen soll.
 3. Diesen Arbeitsbereich aufklappen und unter **Von diesem Gerät wiederherstellen** **Datei auswählen und hochladen** drücken. Wähle die heruntergeladene `.db`.
 
+Schritt 3 ist eine Wiederherstellung, daher braucht er den Serverinhaber des Zielservers, der außerdem Eigentümer dieses Arbeitsbereichs sein muss.
+
 Sitzen beide Server auf dem Rechner, an dem du gerade bist, tun **Auf dem
-Server speichern** plus **Importieren** → **Datei auswählen** dasselbe ohne den
-Umweg. Die Pfade im Import-Dialog werden auf dem Server-Host aufgelöst.
+Server speichern** auf der Quelle und danach der Pfad der Datei in
+**Arbeitsbereichs-Datenbankdatei** plus **Importieren** auf dem Ziel dasselbe
+ohne den Umweg. Dieser Pfad wird auf dem Server-Host aufgelöst.
 
 :::caution[Ein Import ersetzt alles]
 Ein Import überschreibt alles, was der Ziel-Arbeitsbereich gerade enthält, und
@@ -183,11 +189,11 @@ zur Installation, von der sie stammt, und lösen sich hier nicht auf. Die
 eigenen Daten des Arbeitsbereichs sind intakt. Die Mitgliedschaft prüfst du
 nach dem Übernehmen.
 
-Chatbot-Token liegen neben der Datenbank, nicht darin. Ein Arbeitsbereich, den
-du jemand anderem gibst, trägt keine lebenden Zugangsdaten. Die empfangende
-Installation verbindet ihre eigenen neu.
+Chatbot-Token und Anbieter-Anmeldungen liegen außerhalb der Datenbank, daher verbindet die empfangende Installation ihre eigenen neu. Die Datei enthält aber die Webhook-Tokens der Pipelines und die Webhook-Geheimnisse der Ticket-Synchronisierung des Arbeitsbereichs, daher gibst du sie mit einem Arbeitsbereich, den du jemand anderem übergibst, ebenfalls weiter. Rotiere sie danach, wenn der Empfänger sie nicht haben soll.
 
 ## Einen Arbeitsbereich aus einer Momentaufnahme wiederherstellen
+
+Du musst der Serverinhaber und der Eigentümer des Arbeitsbereichs sein.
 
 1. Klappe unter **Momentaufnahmen der Installation** die Momentaufnahme auf, die du willst.
 2. Suche die Zeile des Arbeitsbereichs und drücke **Wiederherstellen**.
@@ -200,8 +206,8 @@ zweiten Mechanismus gibt, der dieselbe Datei anders behandeln könnte.
 Eine Zeile kann **Nicht mehr auf diesem Server** sagen, mit deaktiviertem
 **Wiederherstellen**: die Momentaufnahme enthält einen Arbeitsbereich, den
 diese Installation nicht mehr hat. Hol ihn von Hand zurück. Lege einen
-Arbeitsbereich an und importiere unter **Arbeitsbereichsdaten** aus
-`<snapshot path>/<old workspace id>/workspace.db`. Die aufgeklappte
+Arbeitsbereich an (nur der Serverinhaber kann das) und trage unter **Arbeitsbereichsdaten** in dessen Feld
+**Arbeitsbereichs-Datenbankdatei** den Pfad `<snapshot path>/<old workspace id>/workspace.db` ein und drücke **Importieren**. Die aufgeklappte
 Momentaufnahme zeigt ihren **Pfad auf dem Server** in einem Kopierfeld, und
 der Titel der Zeile ist die alte Arbeitsbereichs-ID. Beide Hälften des Pfads
 liegen damit vor dir.
@@ -384,9 +390,11 @@ Mach das einmal, wenn du Sicherungen einrichtest, und wieder, sobald du
 | Anzeichen | Ursache und Abhilfe |
 | --- | --- |
 | Herunterladen oder Hochladen schlägt nach einem Verbindungswechsel fehl | Versuche es über die aktive gekoppelte Verbindung erneut. Direkt und über das Relay wird der verschlüsselte Dateitransfer beide unterstützt; keiner davon bietet einen Klartext-HTTP-Fallback |
-| „Der Server hat abgelehnt“ | Rolle. Eine Momentaufnahme der Installation zu erstellen oder aufzulisten braucht den Betreiber der Installation. Einen Arbeitsbereich herunterzuladen braucht Admin, ihn wiederherzustellen Eigentümer, ein Zip der ganzen Momentaufnahme den Betreiber der Installation |
-| „Dieser Server bietet keine Sicherungsschnittstelle“ | Auf dem Host ist kein Backup-Port verdrahtet, ein Demo-Server. Die Operationen fehlen, sie werden nicht abgelehnt |
-| „Die Datei ist größer, als der Server annimmt“ | Uploads sind auf 8 GiB begrenzt. Lege die Datei auf den Server-Host und nimm **Importieren** → **Datei auswählen** |
+| „Der Server hat abgelehnt. Einen Arbeitsbereich herunterzuladen erfordert die Rolle admin. Ihn wiederherzustellen erfordert den Serverinhaber, der außerdem Inhaber des Arbeitsbereichs sein muss. Eine vollständige Momentaufnahme erfordert den Serverinhaber.“ | Rolle. Eine Momentaufnahme der Installation zu erstellen, aufzulisten oder herunterzuladen braucht den Serverinhaber. Einen Arbeitsbereich herunterzuladen braucht Admin; ihn wiederherzustellen braucht den Serverinhaber, der außerdem Eigentümer des Arbeitsbereichs sein muss |
+| „Dateiübertragungen sind für diese Verbindung noch nicht eingerichtet. Verbinde dich erneut mit dem Server, um eine Sicherung herunter- oder hochzuladen.“ | Diese Verbindung zum Server hat keine Dateiübertragungsbahn, daher sind **Herunterladen** und das Hochladen ausgeschaltet. Verbinde dich erneut mit dem Server und versuche es dann noch einmal |
+| „Nur der Serverinhaber kann Backups wiederherstellen. Herunterladen kannst du sie weiterhin.“ | Eine Wiederherstellung ersetzt die Datenbank eines Arbeitsbereichs auf dem Server-Host, daher stellt nur der Serverinhaber wieder her. Lade die Sicherung herunter und bitte ihn darum |
+| „Dieser Server bietet keine Sicherungsschnittstelle.“ | Auf dem Host ist kein Backup-Port verdrahtet, ein Demo-Server. Die Operationen fehlen, sie werden nicht abgelehnt |
+| „Die Datei ist größer, als der Server annimmt.“ | Uploads sind auf 8 GiB begrenzt. Lege die Datei auf den Server-Host und trage ihren Pfad in **Arbeitsbereichs-Datenbankdatei** ein |
 | Import abgelehnt: keine Arbeitsbereichsdatenbank von Control Center | Die Datei hat keine Zeile `workspace_meta`. Sie ist kein Arbeitsbereichs-Export, oder sie ist abgeschnitten. Nichts wurde ersetzt |
 | Eine Momentaufnahme steht als **Unvollständig** in der Liste | Das Manifest fehlt oder nennt Dateien, die nicht da sind. Erstelle eine neue und übernimm in der Zwischenzeit einzelne Arbeitsbereichsdateien daraus |
 | Eine Momentaufnahme meldet, Arbeitsbereiche seien nicht erfasst worden | Diese Arbeitsbereiche wurden noch nie beschrieben, oder ihre Kopie ist fehlgeschlagen. Sieh ins Server-Log |

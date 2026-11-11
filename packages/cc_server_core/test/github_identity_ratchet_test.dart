@@ -2,8 +2,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// CI ratchet for the server's GitHub identity and child-process boundaries
-/// (CONNECT_PLAN §5.14, I6, I23).
+/// CI ratchet for the server's forge identity and child-process boundaries.
 ///
 /// Server code never:
 ///
@@ -18,7 +17,14 @@ import 'package:test/test.dart';
 ///    that carry a minted one-repo token;
 /// 5. builds an authenticated GitHub client, a `ForgeHttpClientFactory`, or
 ///    a hand-rolled authenticated request to a GitHub host outside
-///    `GitHubClients` and the cc_infra transport primitives.
+///    `GitHubClients` and the cc_infra transport primitives;
+/// 6. builds a `ForgeHttpClientFactory` without a `requestGuard`, except a
+///    person's own client (a person may approve; automation may not);
+/// 7. builds git's HTTP credentials by hand (a Basic `x-access-token`
+///    header, an `extraHeader` Authorization) instead of through
+///    `forgeGitAuthConfigParameter`/`forgeGitHttpAuth`, hard-codes a
+///    `https://github.com/<owner>/<repo>.git` remote, or builds a GitLab or
+///    Bitbucket API client over anything but an authenticated forge client.
 ///
 /// Every allowlist entry says why. An entry that no longer matches anything
 /// fails too, so the lists only shrink.
@@ -148,6 +154,53 @@ void main() {
         reason: 'Ask GitHubClients (asPerson / forOwner) for a client.',
       );
     });
+
+    test('git credentials, GitHub remotes and GitLab/Bitbucket clients are '
+        'built only at their chokepoints', () {
+      final offenders = <String>[];
+      for (final MapEntry(key: path, value: text) in sources.entries) {
+        for (final (rule, detector, allowlist) in _forgeChokepoints) {
+          if (detector.hasMatch(text) && !allowlist.containsKey(path)) {
+            offenders.add('$path: $rule');
+          }
+        }
+      }
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'Git credentials go through forgeGitAuthConfigParameter (one '
+            'username per forge, every token shape); remotes through '
+            "the forge's gitHost; GitLab/Bitbucket clients through "
+            'forge_provider_factories over the per-actor or automation client.',
+      );
+    });
+
+    test('every automation client is built with a request guard', () {
+      final offenders = <String>[];
+      for (final MapEntry(key: path, value: text) in sources.entries) {
+        final built = _factoryConstruction.allMatches(text).length;
+        if (built == 0) {
+          continue;
+        }
+        final guarded = _requestGuard.allMatches(text).length;
+        final unguarded = _unguardedFactoryAllowlist[path]?.count ?? 0;
+        if (built - guarded > unguarded) {
+          offenders.add(
+            '$path: $built factories, $guarded guarded, $unguarded allowed '
+            'without one',
+          );
+        }
+      }
+      expect(
+        offenders,
+        isEmpty,
+        reason:
+            'An automation client confines its requests to its repository and '
+            'never approves: pass requestGuard (refuseForgeAutomationRequest, '
+            'or the GitHub request policy).',
+      );
+    });
   });
 
   test('every allowlist entry still matches, so the lists only shrink', () {
@@ -177,6 +230,18 @@ void main() {
       (t) => _githubHost.hasMatch(t) && _authHeader.hasMatch(t),
       'hand-rolled auth',
     );
+    for (final (rule, detector, allowlist) in _forgeChokepoints) {
+      check(allowlist, detector.hasMatch, rule);
+    }
+    for (final MapEntry(key: path, value: allowed)
+        in _unguardedFactoryAllowlist.entries) {
+      final text = sources[path] ?? '';
+      if (_factoryConstruction.allMatches(text).length -
+              _requestGuard.allMatches(text).length <
+          allowed.count) {
+        stale.add('unguarded factory: $path');
+      }
+    }
     expect(stale, isEmpty, reason: 'Remove the entries that no longer apply.');
   });
 
@@ -226,6 +291,40 @@ void main() {
         _hostGitHubTokenRead.hasMatch("minted.environment['GH_TOKEN']"),
         isFalse,
       );
+    });
+
+    test('git credentials, GitHub remotes and forge clients', () {
+      expect(
+        _handBuiltGitAuth.hasMatch("utf8.encode('x-access-token:\$token')"),
+        isTrue,
+      );
+      expect(
+        _handBuiltGitAuth.hasMatch(
+          "'http.https://gitlab.com/.extraHeader=Authorization: Basic \$b'",
+        ),
+        isTrue,
+      );
+      expect(
+        _handBuiltGitAuth.hasMatch("('http.\$base.extraHeader', header)"),
+        isTrue,
+      );
+      expect(_handBuiltGitAuth.hasMatch('forgeGitHttpAuth(forge, t)'), isFalse);
+      expect(
+        _githubGitRemote.hasMatch("'https://github.com/\$owner/\$repo.git'"),
+        isTrue,
+      );
+      expect(
+        _githubGitRemote.hasMatch(
+          "'https://github.com/\${repo.remoteOwner}/\${repo.remoteName}.git'",
+        ),
+        isTrue,
+      );
+      expect(
+        _githubGitRemote.hasMatch("'https://github.com/\$owner/\$repo'"),
+        isFalse,
+      );
+      expect(_forgeApiClient.hasMatch('GitLabApiClient(http)'), isTrue);
+      expect(_forgeApiClient.hasMatch('BitbucketApiClient(\n'), isTrue);
     });
 
     test('client construction and hand-rolled auth', () {
@@ -279,6 +378,12 @@ final RegExp _clientConstruction = RegExp(
   r'|ForgeHttpClientFactory)\s*\(',
 );
 
+/// Construction of the forge HTTP factory (or its declaration).
+final RegExp _factoryConstruction = RegExp(r'\bForgeHttpClientFactory\s*\(');
+
+/// A request guard handed to that factory.
+final RegExp _requestGuard = RegExp(r'\brequestGuard\s*:');
+
 /// A GitHub API host.
 final RegExp _githubHost = RegExp(
   r'api\.github\.com|uploads\.github\.com|raw\.githubusercontent\.com'
@@ -290,7 +395,57 @@ final RegExp _authHeader = RegExp(
   r'''['"]Authorization['"]|authorizationHeader|['"]Bearer |['"]token \$''',
 );
 
+/// Git HTTP credentials built by hand.
+final RegExp _handBuiltGitAuth = RegExp(
+  r'''x-access-token:|extraHeader=Authorization|\.extraHeader['"]''',
+);
+
+/// A GitHub git remote spelled out with its owner and repository.
+final RegExp _githubGitRemote = RegExp(
+  r'https://github\.com/\$\{?[\w.]+\}?/\$\{?[\w.]+\}?\.git',
+);
+
+/// Construction of a GitLab or Bitbucket API client.
+final RegExp _forgeApiClient = RegExp(
+  r'\b(?:GitLabApiClient|BitbucketApiClient)\s*\(',
+);
+
 // --- Allowlists ------------------------------------------------------------
+
+/// Each forge chokepoint: the rule, its detector and the files allowed to
+/// match it (and why).
+final List<(String, RegExp, Map<String, String>)> _forgeChokepoints = [
+  ('hand-built git credentials', _handBuiltGitAuth, _handBuiltGitAuthAllowlist),
+  ('hard-coded GitHub remote', _githubGitRemote, _githubGitRemoteAllowlist),
+  ('GitLab/Bitbucket client', _forgeApiClient, _forgeApiClientAllowlist),
+];
+
+const Map<String, String> _handBuiltGitAuthAllowlist = {
+  'packages/cc_infra/lib/src/util/command_redaction.dart':
+      'Redacts such credentials from logged command lines.',
+  'packages/cc_infra/lib/src/dispatch/agent_run_gateway.dart':
+      "The run's lease secret rides an extraHeader scoped to the gateway's "
+      'own URL; it carries no forge credential.',
+};
+
+const Map<String, String> _githubGitRemoteAllowlist = {
+  'packages/cc_infra/lib/src/pr_review/pr_clone_manager.dart':
+      'Pull request clones are GitHub-only by design; the remote is clean '
+      '(no credential), auth rides forgeGitAuthConfigParameter.',
+};
+
+const Map<String, String> _forgeApiClientAllowlist = {
+  'packages/cc_infra/lib/src/network/gitlab/gitlab_api_client.dart':
+      'The class itself.',
+  'packages/cc_infra/lib/src/network/bitbucket/bitbucket_api_client.dart':
+      'The class itself.',
+  'packages/cc_server_core/lib/src/forge/forge_provider_factories.dart':
+      'Wraps the RhttpClient its caller authenticated (per-actor or '
+      'automation); holds no credential of its own.',
+  'packages/cc_server_core/lib/src/runtime/server_forge_wiring.dart':
+      "GitLab's merged-history search over the person's own per-actor "
+      'client.',
+};
 
 const String _isolatedGit = 'packages/cc_natives/lib/src/git/isolated_git.dart';
 
@@ -317,12 +472,6 @@ const Map<String, _Spawn> _rawSpawnAllowlist = {
     exactEnvironment: true,
     why: 'pkill for the MCP child tree; ChildEnvironment base only.',
   ),
-  'packages/cc_harness_runtime/lib/src/shell_agent_loop_hooks.dart': (
-    exactEnvironment: true,
-    why:
-        'cc_harness_runtime has no cc_domain dependency: the caller hands '
-        'the hook its whole ChildEnvironment.',
-  ),
   'packages/cc_harness_runtime/lib/src/file_provider_credential_store.dart': (
     exactEnvironment: true,
     why: '/bin/chmod with an empty environment.',
@@ -339,9 +488,10 @@ const Map<String, _Spawn> _rawSpawnAllowlist = {
 const Map<String, String> _githubTokenNameAllowlist = {
   'packages/cc_domain/lib/features/sandboxing/domain/child_environment.dart':
       'The strip list: host GitHub tokens never reach a child.',
-  'packages/cc_infra/lib/src/dispatch/agent_run_gateway.dart':
-      "The name of the broker's minted token in a run's env; read from the "
-      'minted ScopedCredentials, never the host.',
+  'packages/cc_infra/lib/src/dispatch/agent_run_forge_tokens.dart':
+      "The key of the broker's minted token; read from the minted "
+      'ScopedCredentials, never the host, and never placed in a run\'s '
+      'environment.',
   'packages/cc_server_core/lib/src/forge/github_scoped_broker.dart':
       'Places a minted one-repo token in the child environment it is for.',
   'packages/cc_infra/lib/src/rigs/guest_credential_service.dart':
@@ -365,8 +515,9 @@ const Map<String, String> _clientConstructionAllowlist = {
   'packages/cc_server_core/lib/src/forge/forge_provider_factories.dart':
       'Wraps an RhttpClient its caller already authenticated (GitHubClients '
       'or the per-actor factory); holds no credential of its own.',
-  'packages/cc_server_core/lib/src/cc_server_runtime.dart':
-      'forgeHttpClientFactoryForActor: GitLab and Bitbucket only. Its GitHub '
+  'packages/cc_server_core/lib/src/runtime/server_forge_wiring.dart':
+      "_ForgeHttpClients.forActor (the runtime's "
+      'forgeHttpClientFactoryForActor): GitLab and Bitbucket only. Its GitHub '
       'lookup always returns null; a person reaches GitHub through '
       'GitHubClients.personHttp and automation through httpForOwner.',
 };
@@ -378,12 +529,29 @@ const Map<String, String> _handRolledAuthAllowlist = {
       'hand it the credential GitHubClients chose.',
   'packages/cc_infra/lib/src/network/github/github_app_client.dart':
       'Transport primitive: App JWT requests.',
-  'packages/cc_server_core/lib/src/forge/forge_viewer_probe.dart':
-      'Identifies the bearer of a token a person just supplied, before it '
-      'is stored.',
-  'packages/cc_server_core/lib/src/cc_server_runtime.dart':
+  'packages/cc_server_core/lib/src/runtime/server_helpers.dart':
       "The media proxy fetches a private GitHub attachment with the viewer's "
-      'own person token, for GitHub hosts only.',
+      'own person token in effect for the viewed workspace, for GitHub hosts '
+      'only.',
+};
+
+/// Files that build a `ForgeHttpClientFactory` without a request guard, and
+/// how many.
+const Map<String, ({int count, String why})> _unguardedFactoryAllowlist = {
+  'packages/cc_infra/lib/src/network/forge_http_client_factory.dart': (
+    count: 1,
+    why: 'The class itself.',
+  ),
+  'packages/cc_server_core/lib/src/forge/github_clients.dart': (
+    count: 1,
+    why: "personHttp: a person's own GitHub client (a person may approve).",
+  ),
+  'packages/cc_server_core/lib/src/runtime/server_forge_wiring.dart': (
+    count: 1,
+    why:
+        "forActor: a person's own GitLab/Bitbucket client; without a person "
+        'it sends nothing.',
+  ),
 };
 
 // --- Sources ---------------------------------------------------------------

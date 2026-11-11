@@ -2,7 +2,7 @@
 title: 管線步驟
 description: 管線步驟種類、步驟主體鍵、其設定與步驟結果的參考。
 slug: zh-TW/手冊/參考/管線步驟
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 一個管線步驟有兩條彼此獨立的軸：
@@ -61,7 +61,7 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 
 ### `pipeline.condition`
 
-路由器主體 —— 讀取 `config.extras`、評估一個條件並傳回 `StepResult.route(key)`。條件**不是** JavaScript 運算式；支援三種撰寫形式，依優先順序如下：
+路由器主體 —— 讀取 `config.extras`、評估一個條件並傳回 `StepResult.route(key)`。條件**不是** JavaScript 運算式；支援兩種撰寫形式，依優先順序如下：
 
 - **述詞樹**（`extras.predicate`） —— 一棵會路由到 `"true"` / `"false"` 的布林樹。每個節點都是一個帶有 `type` 的映射：
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` —— 當列出的任一路徑存在於磁碟上時為 true；`negate` 會將它反轉；`recursive` 也會搜尋子目錄（略過 `.git`、`node_modules`、`build`、`.dart_tool`）。相對路徑會對照 `state[baseKey]`（預設 `repo_local_path`）解析，否則對照該次執行的工作區目錄。
@@ -69,19 +69,28 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` —— 布林群組。
   - `{"type": "not", "of": <predicate>}` —— 否定。
 - **切換**（`extras.switchKey`） —— `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`；會路由到狀態值以不分大小寫方式包含的第一個案例，否則路由到 `default`。
-- **比較**（舊版的頂層 `extras.left` / `extras.op` / `extras.right`） —— 等同於 `comparison` 述詞，保留給在述詞樹之前撰寫的範本。
 
 從該節點出發的邊帶有一個 `routeKey`，必須與傳回的鍵相符。
 
 ### `prReview.comment`
 
-透過 GitHub PR 用戶端，把彙整後的發現張貼成一則 PR 審查留言。
+透過 GitHub PR 用戶端，把彙整後的發現，或步驟自己的 `extras.message`，張貼成一則 PR 審查留言。
 
-| 狀態鍵                 | 說明                             |
-| ---------------------- | -------------------------------- |
-| `repo_full_name`       | `owner/repo`（必填）             |
-| `pr_number`            | PR 編號 —— 整數或數字字串（必填） |
-| `consolidated_findings`| 留言內容（必填）                 |
+| 鍵                      | 讀取自       | 說明                                       |
+| ----------------------- | ------------ | ------------------------------------------ |
+| `repo_full_name`        | 觸發器承載   | `owner/repo`（必填）                       |
+| `pr_number`             | 觸發器承載   | PR 編號，正整數或數字字串（必填）          |
+| `consolidated_findings` | 狀態         | 當步驟沒有 `message` 時的留言內容          |
+
+pull request 只來自執行的觸發器承載，從不來自步驟可能在執行途中改寫的狀態。張貼文字中的 @ 提及會被停用，因此留言不會通知任何人。
+
+`message` 依下列方式轉譯其 `{{key}}` 佔位符：
+
+- `repo_full_name`、`repo_owner`、`repo_name` 與 `pr_number` 轉譯步驟所張貼到的那個 pull request。
+- `author` 原樣取自觸發器承載，且僅當它是託管平台上有效的使用者名稱時才會轉譯；否則步驟失敗。
+- `consolidated_findings` 以原始 markdown 轉譯，其中的 @ 提及會被停用。
+- 其他所有值都轉譯為字面文字：單行顯示，markdown 標點會被跳脫，@ 提及會被停用。
+- 解析為空值的佔位符會使步驟失敗。
 
 傳回 `StepResult.terminal`，並在狀態中帶有 `comment_review_id` 與 `commented_at`。
 

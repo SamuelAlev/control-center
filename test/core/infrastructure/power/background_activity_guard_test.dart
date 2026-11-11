@@ -44,7 +44,7 @@ void main() {
       expect(calls.single.method, 'endBackgroundActivity');
     });
 
-    test('a missing native handler is swallowed (older build)', () async {
+    test('a missing native handler is swallowed', () async {
       // No mock handler registered → MissingPluginException, must not throw.
       const guard = MacosBackgroundActivityGuard(channel);
       await expectLater(guard.begin('x'), completes);

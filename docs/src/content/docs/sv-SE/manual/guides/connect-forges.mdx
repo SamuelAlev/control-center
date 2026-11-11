@@ -2,7 +2,7 @@
 title: Anslut en kodvärd
 description: Anslut GitHub, GitLab eller Bitbucket så att PR-ytan, reporegistreringen och agentkörningar fungerar — en arbetsyta kan använda alla tre.
 slug: sv-SE/handbok/how-to-guider/anslut-kodvard
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center arbetar med tre kodvärdar — så kallar appen dem genomgående: **GitHub**, **GitLab** och **Bitbucket Cloud**. Ingen av dem är standard. Anslut en och allt fungerar; anslut flera och en och samma arbetsyta kan hålla repos från alla tre samtidigt.
@@ -11,22 +11,26 @@ Kodvärden är en egenskap hos varje **repo** och läses från dess `origin`-rem
 
 ## Anslut en kodvärd
 
-1. Öppna **Inställningar → Arbetsyta → Profil och identitet** (`/settings/workspace/profile`).
+1. Öppna **Inställningar → Du → Profil** (`/settings/you/profile`).
 2. Hitta kortet **Kodvärd**. Varje kodvärd som stöds listas, ansluten eller inte.
 3. På **GitHub** trycker du **Logga in på GitHub**. På **GitLab** eller **Bitbucket** trycker du **Lägg till token** och klistrar in en.
 
-**GitHub har bara inloggning.** Inloggningen går via serverns egen GitHub-app eller via Control Center Connect, beroende på vad serverägaren har konfigurerat (se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)); det finns ingen GitHub-token att klistra in. GitLab och Bitbucket tar fortfarande emot en personlig token.
+**GitHub har bara inloggning.** Inloggningen går via serverns egen GitHub-app eller via Control Center Connect, beroende på vad serverägaren har konfigurerat, eller via de appar som en administratör för arbetsytan valt för just den arbetsytan i **Inställningar → Arbetsyta → Integrationer** (se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/)); det finns ingen GitHub-token att klistra in. GitLab och Bitbucket tar fortfarande emot en personlig token.
 
 Hur som helst är inloggningsuppgiften **din och ligger på servern**, knuten till ditt användar-id: ingen token lagras på maskinen du skrev in den på, varje enhet du loggar in från använder samma, och ingen annan medlem kan läsa den. Den börjar gälla vid **nästa begäran** — det finns inget att starta om, och kopplar du från slutar den skickas omedelbart.
 
-Varje rad berättar varifrån dess inloggningsuppgift kommer, för det är skillnaden mellan ”min token fungerar inte” och ”en annan token svarar”:
+Kortet anger var dina konton används. En GitLab- eller Bitbucket-token är din i **alla arbetsytor på den här servern**, så du klistrar in den en gång. Din GitHub-inloggning gäller också, om inte en arbetsyta har egna inloggningsappar: den arbetsytan har då en egen GitHub-inloggning, och kortet anger den.
 
-| Undertext                                     | Betydelse                                                             |
-| --------------------------------------------- | --------------------------------------------------------------------- |
-| `Inloggad som octocat`                        | Din egen inloggningsuppgift används                                   |
-| `Inloggad som octocat · från miljön`          | Bara GitLab eller Bitbucket: en miljövariabel på servern svarar, inte din token |
-| `Inte ansluten`                               | Du har ingen inloggningsuppgift för den här kodvärden                 |
-| `Inloggning på GitHub är inte konfigurerad på den här servern än.` | Servern har varken en egen GitHub-app eller Connect; serverägaren konfigurerar en av dem |
+Varje rad visar tillståndet för **din** inloggningsuppgift. Bara din egen inloggningsuppgift svarar för dig; ingenting annat träder in:
+
+| Raden säger                                                        | Betydelse                                                                                                                                  |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Inloggad som octocat`                                             | Din egen inloggningsuppgift används                                                                                                        |
+| `Inte ansluten`                                                    | Du har ingen inloggningsuppgift för den här kodvärden                                                                                      |
+| `Din inloggning på GitHub som octocat har gått ut. Logga in igen.` | Din inloggning gick ut eller återkallades hos kodvärden                                                                                     |
+| `Pausad: arbetsytans inloggningstjänst har ändrats`                | Arbetsytan bytte till en annan inloggningstjänst. Din inloggning behålls och fungerar igen om den byts tillbaka, så det finns ingen inloggningsknapp |
+| `Det går inte att nå GitHub just nu. Försöker igen.`               | Ett tillfälligt avbrott. Control Center fortsätter försöka; du behöver inte göra något                                                     |
+| En mening som förklarar varför inloggning inte är tillgänglig      | Till exempel `Inloggning med GitHub är inte konfigurerad för den här arbetsytan.` eller `Arbetsytans inloggningstjänst har bytt identitet. En administratör måste bekräfta den.` Administratörer får en knapp till inställningen som åtgärdar det |
 
 ### Vilken token varje kodvärd vill ha
 
@@ -35,17 +39,43 @@ Varje rad berättar varifrån dess inloggningsuppgift kommer, för det är skill
 | **GitLab**    | En personlig åtkomsttoken med `api`                       | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | En Atlassian-API-token plus din kontos e-postadress       | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket autentiserar med din **kontos e-postadress som användarnamn** och token som lösenord. Ange `BITBUCKET_EMAIL` i serverns miljö så att den vet vilken e-postadress som ska paras ihop med token.
+Bitbucket autentiserar med din **kontos e-postadress som användarnamn** och API-token som lösenord, så Bitbucket-dialogen frågar efter båda. En åtkomsttoken för ett Bitbucket-repo, -projekt eller -arbetsyta tillhör ingen person, så dialogen vägrar den: den är i stället en [automatiseringstoken](#lägg-till-en-automatiseringstoken). Detsamma gäller en GitLab-**projekt-** eller **gruppåtkomsttoken**: GitLab frågas vem token tillhör innan den sparas, och en bot-token avvisas här.
+
+En token är aldrig knuten till en enda arbetsyta: du har en per kodvärd, och varje arbetsyta på servern använder den. **Koppla från** tar bort den för alla.
 
 ### Bakgrundsarbete
 
 Arbete utan en människa bakom sig (agentkörningar, pipelines, PR-pollning) behöver också en inloggningsuppgift, och varje kodvärd löser det på sitt sätt:
 
 - **GitHub** — en token för ett repo i taget, utfärdad från serverns GitHub-app eller via Connect och begränsad till vad en ansvarig medlem kan göra där. Det är aldrig en persons inloggning överlämnad i sin helhet, och ingen miljövariabel eller inklistrad token kliver in i dess ställe. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/#vem-din-inloggningsuppgift-talar-för)
-- **GitLab** — serverägarens inklistrade token, sedan `GITLAB_TOKEN`, sedan `CI_JOB_TOKEN`
-- **Bitbucket** — serverägarens inklistrade token, sedan `BITBUCKET_API_TOKEN`, sedan `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
+- **GitLab** och **Bitbucket** — bara repots **automatiseringstoken**: en bot-åtkomsttoken som en administratör för arbetsytan lägger till för det repot, eller för varje repo på den kodvärden i arbetsytan. Repots egen token går före arbetsytans. Pollning av pull requests, AI-granskningskommentarer och pushar och merge requests som ingen bett om använder den, så de syns på kodvärden som boten, aldrig som en medlem. Ingen medlems personliga token träder in, och det finns ingen serveromfattande token eller miljövariabel. Utan en pausas bakgrundsarbetet för repot, och aviseringen om arkivåtkomst säger det.
 
-Miljövariablerna för GitLab och Bitbucket är **serverns** inloggningsuppgift, inte din: en begäran som görs för din räkning använder din token och inget annat, så miljön kliver aldrig tyst in i ditt ställe.
+Arbete som en medlem ber om (en kommentar, en granskning, en merge request som en agent öppnat åt dem) använder fortfarande medlemmens egen token.
+
+## Lägg till en automatiseringstoken
+
+Bara administratörer för arbetsytan ser eller ändrar automatiseringstokens. Varje token kontrolleras mot kodvärden när du sparar den: en token som agerar som en person avvisas (en personlig GitLab-åtkomsttoken, en Atlassian-API-token eller en Bitbucket-token som loggar in som någons konto), och så gör en token som inte kan läsa repot den är till för.
+
+- **För ett repo:** öppna **Inställningar → Arbetsyta → Arkiv**. Kortet **Automatiseringstoken** listar varje GitLab- och Bitbucket-repo med boten som agerar där, **Använder arbetsytans token**, eller **Ingen token. Automatiseringen är pausad här.** Tryck på **Lägg till token** på repots rad.
+- **För varje repo på en kodvärd:** öppna **Inställningar → Arbetsyta → Integrationer**, hitta kortet **Automatiseringstoken** och tryck på **Lägg till token** på raden för GitLab eller Bitbucket. Repon som token inte kan läsa namnges när du sparat och förblir pausade.
+
+När bakgrundsarbetet redan är pausat får administratörer också **Lägg till token** direkt på aviseringen om arkivåtkomst. **Uppdatera token** ersätter en token; papperskorgsknappen tar bort den, och varje repo som blir utan en pausas. Om kodvärden senare vägrar en sparad token (återkallad eller utgången) säger dess rad det, och repona den täckte pausas tills du ersätter den.
+
+| Kodvärd       | Automatiseringstoken                                                                                                                                                     | Var du skapar den                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
+| **GitLab**    | En **projekt-** eller **gruppåtkomsttoken** med `read_api` och `read_repository`; lägg till `api` och `write_repository` för kommentarer, merge requests och pushar       | Projektet eller gruppen → Settings → Access tokens              |
+| **Bitbucket** | En **repository-**, **projekt-** eller **arbetsytans åtkomsttoken** med läsning av repository, plus skrivning av pull requests för kommentarer och pull requests (skrivning av repository för pushar) | Repositoryt, projektet eller arbetsytan → Settings → Access tokens |
+
+GitLab visar arbetet som tokenens botanvändare; Bitbucket visar det under åtkomsttokenens namn.
+
+### Bitbucket: åtkomsttoken eller API-token
+
+Bitbucket har två sorters token, och Control Center håller isär dem:
+
+- En **API-token** (id.atlassian.com) tillhör ditt Atlassian-konto och används tillsammans med din e-postadress. Den är **din** inloggningsuppgift och hör under **Kodvärd** i **Inställningar → Du → Profil**.
+- En **åtkomsttoken** (skapad i ett repos, projekts eller arbetsytas inställningar) tillhör det repot, projektet eller arbetsytan, inte en person. Den är en **automatiseringstoken** och hör under **Automatiseringstoken**.
+
+Varje dialog avvisar den andra sorten och säger var den hör hemma.
 
 ## Du är en annan person på varje kodvärd
 
@@ -53,11 +83,26 @@ Samma människa är `octocat` på GitHub och något helt annat på GitLab. Contr
 
 Om en kodvärds identitet inte har lösts upp bidrar dess repos inte med något till inkorgen i stället för att matcha allt. Inkorgen säger det i stället för att påstå att du är ikapp.
 
+## Du ser bara det ditt eget konto kan se
+
+En repos pull requests når dig bara när din roll i arbetsytan tillåter repot **och ditt eget konto på kodvärden kan läsa det**. Arbetsytans administratörer och ägaren följer samma regel. När vissa repos är dolda säger inkorgen och PR-kön hur många och varför, utan att nämna dem vid namn:
+
+- **Logga in på GitHub för att se pull requests från 3 arkiv till**: du har inte anslutit den kodvärden här än. Logga in så visas de
+- **3 arkiv är dolda eftersom ditt GitHub-konto inte kan se dem**: be någon med åtkomst på kodvärden om hjälp
+- **3 arkiv är dolda eftersom du saknar åtkomst till dem i den här arbetsytan**: be en administratör för arbetsytan om åtkomst
+- **Kontrollerar din åtkomst till 3 arkiv till…**: visas en kort stund medan Control Center bekräftar vad ditt konto kan läsa
+
+Kod följer samma regel. För att öppna ett repos filer, diffar eller sökning, eller en terminal på det, behöver du dess behörighet i den här arbetsytan, och ditt eget kodvärdskonto måste kunna läsa det; arbetsytans administratörer omfattas, bara serverägaren är undantagen. När kodvärden inte kan nås för att kontrollera det ser du "Kunde inte bekräfta din åtkomst till forge. Försök igen." (med kodvärdens namn) Se [Kod följer forge](/sv-SE/handbok/koncept/auktorisering/#kod-följer-forge-tjänsten).
+
+Samma regel omfattar allt som görs från de pull requesterna. En granskningsyta, dess meddelanden och dess agentkörningar försvinner medan du inte kan se dess pull request, och en öppen granskningsyta stängs om du förlorar åtkomsten. Pipelinekörningar om en dold pull request faller bort från din körlista. Agenter som arbetar för dig kan inte heller läsa de granskningsytorna. Arbetsytans repolista visar varje repo du har åtkomst till i den här arbetsytan, även ett som ditt kodvärdskonto ännu inte kan nå.
+
+Om kodvärden begränsar anrop eller är nere visar Control Center en stund det den senast bekräftade och döljer sedan de pull requesterna tills den kan kontrollera igen.
+
 ## En inkorg, alla kodvärdar
 
 Inkorgen och PR-kön frågar ut varje kodvärd som finns i arbetsytan och slår samman resultaten till en enda ström — en pull request från GitHub och en från Bitbucket ligger sida vid sida, sorterade efter tid i stället för grupperade efter leverantör.
 
-Fel isoleras. En kodvärd som ligger nere, har nått sin hastighetsgräns eller inte är ansluten bidrar inte med något och lämnar de andra orörda; den tömmer aldrig hela inkorgen. Dess egna repos fortsätter visa sitt senast kända tillstånd tills den är tillbaka.
+Fel isoleras. En kodvärd som ligger nere eller har nått sin hastighetsgräns lämnar de andra orörda, och dess egna repos behåller sitt senast kända tillstånd tills den är tillbaka; den tömmer aldrig hela inkorgen. Ett repo som servern inte längre når försvinner i stället för att visa inaktuella pull requests, och **aviseringen om arkivåtkomst** nämner det med åtgärden: installera GitHub-appen på dess organisation, lägg till repot i appens arkiv, återuppta en pausad installation, låt den ansvariga medlemmen logga in igen eller lägg till en automatiseringstoken för ett GitLab- eller Bitbucket-repo. Administratörer får en knapp till stegen för GitHub-appen och för att lägga till token.
 
 ## Vad varje kodvärd kan göra
 
@@ -93,15 +138,31 @@ GitLab kallar en pull request för en **merge request**. Control Center säger �
 
 ### PR-listan är tom och säger att en kodvärd inte är ansluten
 
-Du har ingen inloggningsuppgift för den kodvärden. Logga in på GitHub, eller klistra in en GitLab- eller Bitbucket-token, under **Inställningar → Arbetsyta → Profil och identitet → Kodvärd**. Andra kodvärdars repos påverkas inte.
+Du har ingen inloggningsuppgift för den kodvärden. Logga in på GitHub, eller klistra in en GitLab- eller Bitbucket-token, under **Inställningar → Du → Profil → Kodvärd**. Andra kodvärdars repos påverkas inte.
 
 ### Jag anslöt en kodvärd men dess repos visar fortfarande inget
 
-Kontrollera radens undertext. Om det står ”från miljön” på en GitLab- eller Bitbucket-rad svarar en annan inloggningsuppgift än den du förväntade dig — din egen token vinner för allt du begär, så står det något annat sparades inte din. På GitHub kontrollerar du att GitHub-appen är installerad på kontot som äger repona.
+Kontrollera radens tillstånd och sedan aviseringarna ovanför PR-listan. ”Logga in på … för att se pull requests från … arkiv till” betyder att ditt eget konto inte är anslutet för de repona; ”… dolda eftersom ditt … konto inte kan se dem” betyder att kodvärden inte ger dig åtkomst. På GitHub berättar aviseringen om arkivåtkomst när GitHub-appen inte är installerad på repots organisation eller inte omfattar repot.
+
+### Bakgrundsarbete på ett GitLab- eller Bitbucket-repo är pausat
+
+Repot har ingen automatiseringstoken som kan läsa det. En administratör för arbetsytan lägger till en för repot eller för hela arbetsytan; se [Lägg till en automatiseringstoken](#lägg-till-en-automatiseringstoken). Din egna personliga token avpausar det inte: bakgrundsarbete använder aldrig en medlems token.
 
 ### Ett repo går inte att registrera
 
-Registreringen kräver alla tre: sökvägen ligger i ett git-arbetsträd, den har en `origin`-remote, och den remoten pekar på github.com, gitlab.com eller bitbucket.org. Se [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
+Registreringen kräver alla tre: sökvägen ligger i ett git-arbetsträd, den har en `origin`-remote, och den remoten pekar på github.com, gitlab.com eller bitbucket.org. `origin` måste dessutom vara det repo du länkar, och en mapp utanför arbetsytans egen lagring kan bara länkas av serverägaren. Se [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
+
+### Jag har en behörighet men arkivet säger att mitt konto inte kan läsa det
+
+Ditt eget kodvärdskonto kan inte läsa det repot, så dess kod är stängd för dig oavsett vad arbetsytan ger. Logga in på kodvärden under **Kodvärd** ovan, eller få åtkomst till repot hos kodvärden.
+
+### Kunde inte bekräfta din åtkomst till forge
+
+Kodvärden kunde inte nås för att kontrollera din åtkomst, så Control Center vägrade i stället för att gissa. Försök igen om en stund.
+
+### Ett repo säger att det nu pekar på ett annat arkiv
+
+Repot bakom den sökvägen har ändrats: det har tagits bort och skapats på nytt, eller flyttats och ersatts. Control Center skickar ingenting till det förrän en arbetsytadministratör klickar på **Koppla om** i aviseringen eller på repots rad. En vanlig namnändring eller överföring följs av sig själv och visar aldrig det här.
 
 ### Allt slutar fungera en stund efter hård användning
 

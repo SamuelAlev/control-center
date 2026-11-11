@@ -5,6 +5,7 @@ mixin _LifecycleOps
     on
         _EnvironmentServiceBase,
         _DefinitionOps,
+        _TerminalOps,
         _ComponentOps,
         _StackOps,
         _EnsureOps,
@@ -52,6 +53,10 @@ mixin _LifecycleOps
   Future<void> stopListening() async {
     _timer?.cancel();
     _timer = null;
+    for (final notice in _runNotices.values) {
+      notice.cancel();
+    }
+    _runNotices.clear();
     for (final subscription in _subscriptions) {
       await subscription.cancel();
     }
@@ -148,6 +153,13 @@ mixin _LifecycleOps
       }
       if (sync == null) {
         CcInfraLog.warning('no worktree sync is wired: PR head change ignored');
+        continue;
+      }
+      // Following the head runs the new code: only an approved definition.
+      try {
+        await _requireHostApproval(loaded);
+      } on EnvironmentHostUnapprovedException catch (e) {
+        await _exclusive(_lockOf(row), () => _holdForApproval(row, e.error));
         continue;
       }
       await _exclusive(_lockOf(row), () async {
@@ -304,11 +316,10 @@ mixin _LifecycleOps
 
   Future<void> _onProcessState(EnvironmentProcessStateChange change) async {
     final state = change.state;
-    if (state.kind == 'app' &&
-        const {
-          EnvironmentComponentPhase.closed,
-          EnvironmentComponentPhase.crashed,
-        }.contains(state.phase)) {
+    // A down app takes its viewer with it, or "Open viewer" targets a rig
+    // that is gone.
+    final appDown = state.kind == 'app' && (state.phase?.isDown ?? false);
+    if (appDown) {
       await _closeWindow(change.environmentId, state.id);
     }
     await _update(change.workspaceId, change.environmentId, (row) {
@@ -321,12 +332,17 @@ mixin _LifecycleOps
           if (item.id != state.id)
             item
           else
+            // The supervisor's snapshot is the whole truth: no detail means
+            // the last one no longer holds, no session means no terminal.
             item.copyWith(
               state: state.state,
               detail: state.detail,
+              clearDetail: state.detail == null,
               restarts: state.restarts,
               sessionId: state.sessionId,
+              clearSessionId: state.sessionId == null,
               lastExitCode: state.lastExitCode,
+              services: appDown ? const [] : null,
             ),
       ];
       return row.copyWith(
@@ -429,7 +445,10 @@ mixin _LifecycleOps
 
   /// Asks the tools and Docker how things stand, and records what changed.
   Future<void> _poll(SpaceEnvironment env) async {
-    if (!env.status.isRunning && env.status != EnvironmentStatus.failed) {
+    // A start owns its row until it ends: a report landing in the middle of
+    // one would overwrite where the start says it is.
+    if (env.status.isBusy ||
+        (!env.status.isRunning && !env.status.needsAttention)) {
       return;
     }
     if (env.placement == EnvironmentPlacement.rig.name) {
@@ -448,13 +467,14 @@ mixin _LifecycleOps
       }
       if (component is CliEnvironmentComponent) {
         final report = await _d.cli.status(_cliContext(stack, component));
-        // A create that failed left the tool nothing to report on. The failure
-        // says why, and what to do about it, so it stays until someone acts.
-        if (env.status == EnvironmentStatus.failed &&
+        // A create that failed, or stopped for a person, left the tool
+        // nothing to report on. The row says why, and what to do about it, so
+        // it stays until someone acts.
+        if (env.status.needsAttention &&
             report.state == EnvironmentReportedState.missing) {
           continue;
         }
-        await _applyCliReport(env, component, report);
+        await _applyCliReport(env, component, report, polled: true);
         missing |= report.state == EnvironmentReportedState.missing;
         healthy &= report.state == EnvironmentReportedState.ready;
       } else if (component is ComposeEnvironmentComponent) {
@@ -473,10 +493,7 @@ mixin _LifecycleOps
       }
     }
     final row = await _update(env.workspaceId, env.id, (row) {
-      if (row.status.isBusy) {
-        return row;
-      }
-      if (row.status == EnvironmentStatus.failed) {
+      if (row.status.isBusy || row.status.needsAttention) {
         return row;
       }
       if (missing) {
@@ -531,7 +548,7 @@ mixin _LifecycleOps
     final healthy =
         services.isNotEmpty && services.every((service) => service.isSettled);
     await _update(env.workspaceId, env.id, (row) {
-      if (row.status.isBusy || row.status == EnvironmentStatus.failed) {
+      if (row.status.isBusy || row.status.needsAttention) {
         return row;
       }
       return row.copyWith(
@@ -726,6 +743,16 @@ mixin _LifecycleOps
               code: 'interrupted',
               message: 'The server stopped while this was starting',
             ),
+            components: [
+              for (final state in row.components)
+                // Its terminal went with the server.
+                state.phase == EnvironmentComponentPhase.interactive
+                    ? state.copyWith(
+                        state: EnvironmentComponentPhase.failed.wire,
+                        clearSessionId: true,
+                      )
+                    : state,
+            ],
           ),
         );
       case EnvironmentStatus.stopping:
@@ -740,6 +767,7 @@ mixin _LifecycleOps
           await _restartProcesses(env);
         }
       case EnvironmentStatus.failed:
+      case EnvironmentStatus.blocked:
       case EnvironmentStatus.stopped:
       case EnvironmentStatus.gone:
       case EnvironmentStatus.destroying:
@@ -823,7 +851,12 @@ mixin _LifecycleOps
     );
   }
 
-  /// A tool that no longer lists an environment has lost it.
+  /// A tool that no longer knows an environment has lost it.
+  ///
+  /// `list` only says where to look: a name missing from it is asked about
+  /// with `status`, and only a tool that then says `missing` loses its row. A
+  /// list that could not be read, or that spells names another way, must not
+  /// take every environment with it.
   Future<void> _reconcileCliLists(String workspaceId) async {
     final rows = await _d.environments.list(workspaceId);
     for (final loaded in await _loadAll(workspaceId)) {
@@ -831,6 +864,8 @@ mixin _LifecycleOps
         (row) =>
             row.definitionId == loaded.id &&
             row.status != EnvironmentStatus.gone &&
+            // One that never reached its tool holds the reason why.
+            !row.status.needsAttention &&
             row.placement == 'host',
       );
       if (mine.isEmpty) {
@@ -842,22 +877,27 @@ mixin _LifecycleOps
         if (!component.verbs.containsKey('list')) {
           continue;
         }
-        final row = mine.first;
         try {
-          final stack = await _stackOf(row);
-          final names = await _d.cli.list(_cliContext(stack, component));
+          final names = await _d.cli.list(
+            _cliContext(await _stackOf(mine.first), component),
+          );
           for (final item in mine) {
-            if (!names.contains(item.name)) {
-              await _update(
-                workspaceId,
-                item.id,
-                // A failed row may never have reached the tool, and it holds
-                // the reason.
-                (current) => current.status == EnvironmentStatus.failed
-                    ? current
-                    : current.copyWith(status: EnvironmentStatus.gone),
-              );
+            if (names.contains(item.name)) {
+              continue;
             }
+            final report = await _d.cli.status(
+              _cliContext(await _stackOf(item), component),
+            );
+            if (report.state != EnvironmentReportedState.missing) {
+              continue;
+            }
+            await _update(
+              workspaceId,
+              item.id,
+              (current) => current.status.needsAttention
+                  ? current
+                  : current.copyWith(status: EnvironmentStatus.gone),
+            );
           }
         } on Object catch (e) {
           CcInfraLog.warning('could not list ${component.id}: $e');

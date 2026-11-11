@@ -8,7 +8,7 @@
 #
 # The signaling server is a pure-Dart WebSocket relay — a workspace member of a
 # larger Flutter monorepo with a single pure-Dart dependency (`crypto`, for
-# admission-hash verification + coturn HMAC-SHA1 credential minting). We build
+# admission-hash verification). We build
 # it STANDALONE here: no Flutter SDK, no monorepo build context. `dart pub get`
 # fetches `crypto` from pub.dev, then `dart compile exe` produces a
 # self-contained AOT executable shipped in a minimal glibc image.

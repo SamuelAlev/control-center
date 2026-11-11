@@ -2,7 +2,7 @@
 title: Gerenciar chaves de API
 description: Onde cada credencial fica — sua conta de usuário no servidor, o próprio servidor, ou uma CLI externa — e como defini-la, rotacioná-la e removê-la.
 slug: pt-BR/manual/guias/chaves-de-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Este guia mostra onde fica armazenada cada credencial usada pelo Control Center
@@ -32,8 +32,7 @@ depende de haver uma pessoa por trás dela ou não.
   GitHub App do servidor ou pelo Control Center Connect, e limitado ao que um
   membro responsável pode fazer ali. Nunca é o seu login entregue por inteiro
 
-O seu é definido no cartão **Hospedagem de código** em **Configurações → Espaço
-de trabalho → Perfil e identidade**; o app do servidor, em **Apps do
+O seu é definido no cartão **Hospedagem de código** em **Configurações → Você → Perfil**; o app do servidor, em **Apps do
 fornecedor**, em **Configurações → Servidor → Início de sessão único**. Consulte
 [Configurar a integração com o GitHub](/pt-BR/manual/guias/integracao-github/)
 e [Criar o GitHub App](/pt-BR/manual/guias/github-app/).
@@ -43,10 +42,11 @@ da mesma forma. Consulte
 [Conectar um host de código](/pt-BR/manual/guias/conectar-host-de-codigo/).
 
 :::note[Também existe uma tela que só aceita URL]
-`/workspaces/<workspaceId>/api-keys` renderiza os mesmos dois cartões do
+`/workspaces/<workspaceId>/api-keys` renderiza os mesmos cartões do
 primeiro passo do onboarding. Ela **não tem entrada de navegação em lugar
 nenhum da interface**; só dá para chegar até ela digitando a URL. Prefira
-**Configurações → Espaço de trabalho → Perfil e identidade**.
+**Configurações → Você → Perfil** para os seus próprios logins, e
+**Configurações → Espaço de trabalho → Integrações** para o fornecedor de tickets.
 :::
 
 ## Definir chaves de provedores de modelos
@@ -66,10 +66,7 @@ Essas credenciais são **globais do host**: uma única chave atende todos os
 espaços de trabalho da instalação. Os tokens OAuth são renovados antes de
 expirarem.
 
-As CLIs de adaptadores externos mantêm as próprias credenciais, na própria
-configuração, no host do servidor — o Control Center não as gerencia. Autentique
-o Claude Code como a documentação dele orienta, na máquina em que o `cc_server`
-roda.
+O Claude Code entra por meio de **Contas do Claude Code** em **Configurações → Servidor → Provedores de modelos**: cada conta recebe o próprio diretório de configuração no servidor, e você executa lá o comando `claude auth login` que o app mostra.
 
 A caixa de diálogo **Variáveis de ambiente** de cada adaptador parece um lugar
 para colocar a chave de um deles, mas não é: ela grava no seu dispositivo,
@@ -78,15 +75,15 @@ enquanto o servidor lê a própria cópia e nada liga as duas. Consulte
 
 ## Conectar um fornecedor de tickets
 
-O cartão **Tickets** em **Configurações → Espaço de trabalho → Geral** reúne as
-duas metades de uma mesma decisão: em qual fornecedor ficam seus tickets e quem
-o Control Center é quando fala com ele. Escolher **Local** oculta as linhas do
+O cartão **Tickets** em **Configurações → Espaço de trabalho → Integrações** reúne o lado do
+espaço de trabalho: em qual fornecedor ficam seus tickets e quem
+o Control Center é quando trabalha lá por conta própria. Escolher **Local** oculta as linhas do
 Linear — os tickets locais ficam no banco de dados do próprio servidor e não há
 nada a autenticar.
 
 O Linear tem dois logins e nenhuma chave para colar: **Linear** é o seu, para o
-que você faz, e **Automação do Linear** é o app do Control Center do espaço de
-trabalho, conectado por um administrador, para a sincronização de tickets, os
+que você faz, e fica em **Configurações → Você → Perfil**; **Automação do Linear** é o app do Control Center do espaço de
+trabalho, conectado por um administrador no cartão **Tickets**, para a sincronização de tickets, os
 pipelines e os agentes. O servidor também pode ter uma **Chave de API de
 serviço** (**Apps do fornecedor**) para os espaços de trabalho sem a automação
 conectada. Nenhuma credencial de tickets é injetada no sandbox de um agente; os
@@ -104,10 +101,11 @@ integração com o Linear](/pt-BR/manual/guias/integracao-linear/).
 - **O app do servidor**: gere uma nova chave privada ou um novo client secret na
   página do app no provedor, cole em **Apps do fornecedor** e clique em
   **Testar**
-- **A chave de instalação do Connect**: **Trocar a chave** no cartão
-  **Control Center Connect**, ou `cc_server connect rotate-key --yes`. Todo
-  mundo que entrou pelo Connect precisa entrar de novo. Consulte
-  [Control Center Connect](/pt-BR/manual/referencia/connect/)
+- **A chave de instalação do Connect**: o proprietário do servidor clica em
+  **Trocar a chave** no cartão **Control Center Connect**. Todo mundo que
+  entrou pelo Connect precisa entrar de novo. Se um servidor do Connect não
+  puder ser acessado, nada muda e é oferecido o botão **Rotacionar mesmo
+  assim**. Consulte [Trocar a chave de instalação](/pt-BR/manual/referencia/connect/#trocar-a-chave-de-instalação)
 - **Um provedor de modelos**: na linha dele, saia (OAuth) ou remova a chave e
   conecte de novo
 - **Slack**: no caso do seu próprio app, cole os tokens novamente na caixa de
@@ -120,9 +118,9 @@ integração com o Linear](/pt-BR/manual/guias/integracao-linear/).
 
 ### Um token do GitLab ou do Bitbucket funciona no `curl`, mas não aqui
 
-Confira o subtítulo da linha **Hospedagem de código**. Se ele indicar "do
-ambiente", a credencial que está respondendo é a do servidor, não a sua — a sua
-não foi salva.
+Confira a linha **Hospedagem de código**. Se ela indicar "Não conectado" ou pedir
+para conectar de novo, o seu token não foi salvo ou foi recusado. No Bitbucket,
+informe o e-mail da sua conta Atlassian junto com o token de API.
 
 ### Um token do GitLab ou do Bitbucket é aceito, mas as requisições seguintes falham
 

@@ -1,13 +1,15 @@
 ---
 title: Control Center Connect reference
-description: What Connect sees and never sees, the three modes, install identity, sealed credentials, configuration trust and every setting, operation and status code.
+description: What Connect sees and never sees, the three modes, a workspace's own choice, install identity, sealed credentials, configuration trust and every setting, operation and status code.
 ---
 
 Control Center Connect runs provider sign-ins for servers that have not
 registered their own apps. A server either uses Control Center's hosted Connect,
 a Connect its organization runs ([Run a Connect server](/manual/guides/run-connect/)),
 or none. The choice lives in **Settings → Server → Single sign-on → Control
-Center Connect**, `cc_server connect`, or `CC_CONNECT_URL`.
+Center Connect**, `cc_server connect`, or `CC_CONNECT_URL`. A workspace follows
+it unless an admin picks something else for that workspace under **Settings →
+Workspace → Integrations** ([Per-workspace choice](#per-workspace-choice)).
 
 ## Lanes
 
@@ -15,8 +17,8 @@ Each provider is a lane. Under **Use my own apps** (or before anyone chooses),
 a lane runs on the server's own app when one is fully configured, else it is
 unavailable. With Control Center's or a custom Connect, Connect runs every lane
 it serves: the server's own apps stay saved but are not used, for sign-ins,
-server automation or the status the server reports. A workspace's own app wins
-in every mode.
+server automation or the status the server reports. A workspace that picked its
+own choice runs every lane by that choice instead.
 
 | Lane         | Own app needs                                    | Through Connect                                           |
 | ------------ | ------------------------------------------------ | --------------------------------------------------------- |
@@ -28,12 +30,10 @@ in every mode.
 | `klipy`      | `KLIPY_APP_KEY`                                  | GIF search, proxied by Connect                            |
 
 An own app that is only partly configured makes its lane an error, never a
-silent fall back to Connect. A workspace that uses its own GitHub App
-(**Settings → Workspace → General → GitHub identity**) never goes through
-Connect for GitHub, and one that uses its own Google, Linear or Klipy app
-(**Settings → Workspace → General → Provider apps**) never goes through the
-server's app or Connect for that provider. Changing the Connect choice signs
-nobody out of a workspace's own app.
+silent fall back to Connect. A workspace on **Use my own apps** never goes
+through the server's apps or any Connect, for any provider. Changing the
+server's Connect choice signs nobody out of a workspace that made its own
+choice.
 
 ## What Connect sees and never sees
 
@@ -41,17 +41,21 @@ nobody out of a workspace's own app.
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | The server's install id and request signatures                                                | Source code, repository contents, diffs or pull request text          |
 | The provider account that signed in, during the sign-in                                       | Tickets, transcripts or anything in a workspace database              |
-| Which workspace a credential belongs to, as an opaque id inside the seal                      | A GitHub App private key: repository tokens come from a person's sign-in |
+| Which workspace a credential belongs to, as an opaque id inside the seal                      | The server's own app secrets: they never leave the server             |
 | The repository a one-repository GitHub token is minted for                                    | Refresh tokens at rest: they exist only inside seals the server keeps |
-| GitHub installation ids bound to the server                                                   | Linear secrets: the server exchanges Linear's code itself             |
+| The Slack team bound to the server                                                            | Linear secrets: the server exchanges Linear's code itself             |
 | GIF search terms, when it proxies Klipy                                                       | Passwords, pairing keys or model provider keys                        |
 | Slack event references (team, channel, message id) and slash-command text                     | Slack message text: Connect drops it on arrival and the server reads the message from Slack itself |
 
-Connect keeps short-lived state (staged sign-ins, nonces, caches) for at most
-15 minutes. Its only lasting records are installation bindings: which servers
-may use which GitHub installation, and which server each Slack team is bound
-to. Errors carry a code, never the provider's
-response, and logs record install ids only as keyed hashes.
+Connect keeps staged sign-ins, nonces and caches for at most 10 minutes, and
+hourly usage counters for at most two hours. A one-repository GitHub token
+minted as a person stays recorded, sealed to the sign-in that asked for it,
+until it expires (at most 8 hours), so Connect can hand it out again and revoke
+it on disconnect. Its only lasting records are Slack bindings (which server
+each Slack team is bound to) and retired install ids. Errors carry a code,
+never the provider's response. Logs record install ids only as keyed hashes,
+and a GitHub token only as the `hashed_token` GitHub's organization audit log
+shows for it, so an organization owner can match the two.
 
 ## Modes
 
@@ -68,9 +72,40 @@ response, and logs record install ids only as keyed hashes.
 This build compiles in no hosted configuration key, so hosted mode reports
 `hosted_unprovisioned` and serves no lane. Own apps and a custom Connect work.
 
+The hosted Connect runs as a single container. Its seal key and the shared
+GitHub App's private key are environment variables there, not keys in a vault
+that only signs or decrypts, as GitHub recommends for an App's private key. That is a
+known gap of the current setup.
+
 A server reads Connect's configuration at most every 10 minutes and waits at most
 5 seconds for each call. When Connect is unreachable, the last good
 configuration stays in use and Settings marks it stale.
+
+## Per-workspace choice
+
+**Settings → Workspace → Integrations → Control Center Connect** overrides the
+server's choice for one workspace. Every member sees it and where each sign-in
+runs; only a workspace admin changes it.
+
+| Choice                          | Behavior                                                                                                       |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Same as this server**         | The default. The workspace runs on whatever the server owner chose; the option names it                        |
+| **Use Control Center's apps**   | Control Center's hosted Connect, whatever the server uses                                                      |
+| **Use my own apps**             | Only the workspace's own apps: its GitHub App, Google client, Linear application, Klipy key and Slack app. A provider without one is off here; a partial one is a setup error |
+| **Use a custom Connect server** | A Connect at an HTTPS address the workspace names. Addresses on a private or local network are refused        |
+
+- Any choice other than **Same as this server** keeps each person's GitHub and
+  Linear sign-ins in a slot of the workspace's own, so they never mix with the
+  server-wide ones
+- Switching asks first: everyone in the workspace signs in to GitHub, Linear
+  and Google Calendar again through the new apps
+- A workspace's own Slack app connection works under every choice; **Add
+  Control Center to Slack** follows the choice
+- `CC_CONNECT_URL` also locks workspaces out of a Connect of their own: they can
+  follow the server or use their own apps
+- A workspace's custom Connect is trusted on first use for that workspace only:
+  **Trust new apps** there never changes what the server or another workspace
+  trusts
 
 ## Install identity
 
@@ -102,16 +137,67 @@ secret generation.
 
 ## GitHub installations
 
-An installation of the shared GitHub App is usable by a server only when Connect
-has bound it to that server's install id.
+An installation of the shared GitHub App is usable from every server. Connect
+keeps no record of which server may use it.
 
-- **Install GitHub App** in **Settings → Workspace → General** opens GitHub with
-  a 15-minute ticket. Connect binds the new installation when the installer
-  owns the personal account or administers the organization
-- **Authorize this server** binds an installation that already exists. Only an
-  organization admin can do it
-- An organization installation can be bound to several servers; each one needs
-  an admin's authorization
+- **Install GitHub App** in **Settings → Workspace → Integrations** opens the
+  app's install page on GitHub. The server builds the link from the app name in
+  Connect's configuration
+- A one-repository token needs the app installed on the repository's owner and
+  the signed-in person's access to the repository. It is that person's own
+  token, clamped to their role, never more
+- An organization limits Control Center on GitHub: by removing the installation,
+  narrowing its repositories, or removing the person
+- For calls only the person can make, such as listing their installations,
+  Connect hands the server the person's own App user token, not a
+  one-repository token. Signing in on a server is trusting that server with
+  that token
+- An organization that enforces a GitHub IP allow list cannot use the hosted
+  Connect, whose addresses are not fixed. It registers its own GitHub App
+  instead, on its servers or on a Connect it runs
+- **Disconnect** revokes only that sign-in: Connect spends its refresh token
+  once and deletes what that returns, deletes its user token and the
+  one-repository tokens Connect minted for it. A copy of its seal kept anywhere
+  stops working. The person's sign-ins on other servers and workspaces keep
+  working. To remove Control Center from a GitHub account entirely, revoke it in
+  GitHub under **Settings → Applications → Authorized GitHub Apps → Revoke**
+
+### The shared bot
+
+Tokens minted as the App's bot (`as: app`) show the same bot on GitHub for
+every server that uses the same Connect: GitHub cannot tell those servers
+apart.
+
+- Every server may have the bot read and comment: `read`, `review` and
+  `comment` (comments, labels, assignees and reactions on issues and pull
+  requests)
+- Reviewing a pull request as the bot (`bot`, which writes pull requests) is
+  allowed only for servers the Connect operator lists in
+  `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Every other server is answered
+  `needs_requester` and publishes the review on the accountable person's own
+  token, which GitHub clamps to that person: the review appears under their
+  name. This covers AI review publishing, review comments
+  and reviewer requests
+- Pushing, creating a branch and opening a pull request (`write`) are never
+  minted as the shared bot. They always use the requester's own sign-in
+- Approving a pull request is never automated, on any token
+- A server or workspace with its own GitHub App keeps the bot for all of this,
+  reviews included
+
+### What organization owners and members should know
+
+- A server someone signs in on holds their App user token: up to 8 hours per
+  token, renewed until they disconnect. It can act as them on every repository
+  the shared App is installed on that they can reach. Connect can cut a server
+  off for good (a retired or denied install), but a token already handed out
+  stays valid until it expires
+- Installing the shared GitHub App on an organization consents for every
+  Control Center server any member signs in on, not for one server
+- The bot is shared, as above: an organization cannot tell on GitHub which
+  server acted as the bot
+- An organization that wants its own boundary registers its own GitHub App and
+  runs its own Connect ([Run a Connect server](/manual/guides/run-connect/)), or
+  configures the App on its own servers
 
 ## Configuration trust
 
@@ -122,7 +208,7 @@ has bound it to that server's install id.
 
 ## Operations
 
-All Connect settings are server-owner only.
+The server's Connect settings are server-owner only.
 
 | Operation             | Does                                                                                   |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -130,7 +216,16 @@ All Connect settings are server-owner only.
 | `connect.configure`   | Sets `hosted`, `custom` (with `url`) or `off`                                           |
 | `connect.test`        | Fetches the configuration again and reports health                                      |
 | `connect.confirmPins` | Accepts a custom Connect's changed identifiers                                          |
-| `connect.rotateKey`   | Mints a new install key. Every sign-in through Connect on this server stops working    |
+| `connect.rotateKey`   | Mints a new install key and a new install id (`force` replaces it even when a Connect could not retire the old one); see [Rotate the install key](#rotate-the-install-key) |
+
+A workspace's own choice has its own operations, each naming the workspace:
+
+| Operation                      | Who                | Does                                                                                |
+| ------------------------------ | ------------------ | ----------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Any member         | The choice, what it resolves to, health and each provider's source. Install id and pending pins for admins only |
+| `workspaceConnect.set`         | Workspace admin    | Sets `inherit`, `hosted`, `custom` (with `url`) or `own`                            |
+| `workspaceConnect.test`        | Workspace admin    | Fetches the workspace's Connect configuration again and reports health             |
+| `workspaceConnect.confirmPins` | Workspace admin    | Accepts the workspace's custom Connect's changed identifiers                       |
 
 Sign-ins themselves use `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` and `oauth.disconnect`. The person is
@@ -139,21 +234,56 @@ always the signed-in caller.
 ## Sign-in through Connect
 
 1. The server asks Connect to start the lane and receives the provider's
-   authorize URL, which it checks before showing it
+   authorize URL, which it checks before showing it. GitHub always shows its
+   account picker
 2. The person approves in the browser. The provider returns to Connect
-3. Connect shows an 8-character code and a `control-center://oauth-done` link
-4. The person types the code into the app, or follows the link. The server
+3. Connect shows what the server that started the sign-in will be able to do
+   as the person, and for how long. Connect cannot tell who runs that server,
+   so the page asks the person to continue only if they started the sign-in
+   themselves, and to close it if someone sent them the link. When the browser
+   is on another network than the one the sign-in was started from, the page
+   says so: that is normal for a hosted server or another device, and it is
+   also what phishing looks like. **Cancel** ends the sign-in: the provider's
+   code is never used. Each page answers once: an answer that did not come
+   from the page Connect just showed is refused
+4. After **Continue**, Connect shows an 8-character code and a
+   `control-center://oauth-done` link. Anyone who gets the code gets the access
+   just approved, so it goes only where the sign-in was started
+5. The person types the code into the app, or follows the link. The server
    claims the sign-in with the code and its own proof of the request
 
 A sign-in expires after 10 minutes. Five wrong codes end it. A link that this app
-did not start is refused with **Sign-in not started here**.
+did not start is refused with **Sign-in not started here**. Connect limits how
+many sign-ins one network address can start, and how often GitHub tokens are
+issued per person and server, per person across servers, per address and for
+the whole app. New sign-ins have a budget of their own, so they never hold up
+the renewals other people need. Past a limit a call is refused with
+`rate_limited`, and the server tries again later without signing anyone out. A
+sign-in past the person's limit is undone at GitHub and refused.
 
 ## Rotate the install key
 
-**Rotate key** on the Connect card, or `cc_server connect rotate-key --yes`:
+Only the server owner can rotate the key, with **Rotate key** on the
+**Control Center Connect** card in **Settings → Server → Single sign-on**.
+There is no command for it. Rotating:
 
-- Gives the server a new install key and a new install id
-- Signs everybody out of every lane that runs through Connect
+- Signs everybody out of every lane that runs through Connect. For each
+  Connect server the old key was used with, the server revokes the GitHub and
+  Slack sign-ins it holds from there (a Google sign-in has nothing to revoke
+  and lapses)
+- Retires the old install id at each of those Connect servers, signed with the
+  old key and proven with one credential seal the server holds from that
+  Connect. From then on Connect refuses every request made with the old key, so
+  a seal or a copy of the old key taken from this server is useless, and the
+  Slack workspaces bound to the old id are released so they can connect again.
+  Tokens already handed out stay valid until they expire (an hour for a bot
+  token, eight hours for a person's). A Connect server this server holds no
+  seal from has nothing to retire and is skipped
+- Then gives the server a new install key and a new install id
+- If a Connect server cannot be reached, or refuses to retire the old id, stops
+  before switching keys and shows **Connect could not retire the old key**.
+  **Rotate anyway** switches keys regardless; the old install id then stays
+  usable at that Connect until its tokens expire, at most 8 hours for GitHub
 - Leaves sign-ins through the server's own apps untouched
 - Needs the new install id added to a custom Connect's allowlist
 
@@ -165,7 +295,7 @@ did not start is refused with **Sign-in not started here**.
 | `signature`            | The hosted configuration failed its signature check                  |
 | `rollback`             | Connect served an older configuration than the server already saw    |
 | `unreachable`          | The server cannot reach Connect                                      |
-| `install_blocked`      | Connect does not allow this install id                               |
+| `install_blocked`      | Connect does not allow this install id, or it was retired            |
 | `pins_changed`         | A custom Connect announced different app identifiers                 |
 | `protocol`             | Connect answered in a form this server does not understand           |
 

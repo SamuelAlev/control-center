@@ -2,7 +2,7 @@
 title: Rutekart
 description: Alle ruter Control Center registrerer, med tilhørende skjermbilde og spørringsparametere.
 slug: nb-NO/handbok/referanse/rutekart
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Appskallet
@@ -11,7 +11,7 @@ Appskallet (`ControlCenterLayout`) omslutter hver rute inne i et arbeidsområde 
 
 Porten er oppfylt når minst én forge er tilkoblet **for den påloggede brukeren**, og minst ett arbeidsområde finnes.
 
-Manglende påloggingsinformasjon og et manglende oppsett behandles forskjellig, og skillet går ved `users.onboarding_finished_at` lest fra kalleren sin egen `identity.me` — aldri «arbeidsområder finnes», som er feil i det øyeblikket noen blir invitert inn i et arbeidsområde de aldri har opprettet. Når ingen forge er tilkoblet, blir en konto som har fullført onboarding i appen, og arbeidsområdeskallet viser en advarsel med lenke til Innstillinger → Arbeidsområde → Profil og identitet, der pålogging ligger; en konto som ikke har det, går til `/onboarding`. Så lenge flagget fortsatt er ukjent, holder vakten splash-skjermen i stedet for å gjette, fordi den aldri omdirigerer tilbake ut av onboarding.
+Manglende påloggingsinformasjon og et manglende oppsett behandles forskjellig, og skillet går ved `users.onboarding_finished_at` lest fra kalleren sin egen `identity.me` — aldri «arbeidsområder finnes», som er feil i det øyeblikket noen blir invitert inn i et arbeidsområde de aldri har opprettet. Når ingen forge er tilkoblet, blir en konto som har fullført onboarding i appen, og arbeidsområdeskallet viser en advarsel med lenke til Innstillinger → Deg → Profil, der pålogging ligger; en konto som ikke har det, går til `/onboarding`. Så lenge flagget fortsatt er ukjent, holder vakten splash-skjermen i stedet for å gjette, fordi den aldri omdirigerer tilbake ut av onboarding.
 
 ## Ruter uten prefiks
 
@@ -65,7 +65,7 @@ Det finnes **ingen «Planer»-oppføring i sidefeltet**. Plan Studio åpnes som 
 
 ## Innstillingsruter
 
-`/settings` omdirigerer til `/settings/you/appearance`. Innstillingsknappen i sidefeltet og `Cmd/Ctrl + ,` går begge til `/settings/you/appearance`.
+`/settings` omdirigerer til `/settings/you/profile`. Innstillingsknappen i sidefeltet og `Cmd/Ctrl + ,` går begge til `/settings/you/profile`.
 
 Innstillingsstiene er inndelt i navnerom etter **omfang** — `you/`, `workspace/`, `server/` — fordi segmentet sier hvem en endring påvirker. To stier er eldre enn navneromsinndelingen og har ikke omfang i URL-en: `/settings/memory` og `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Innstillingsstiene er inndelt i navnerom etter **omfang** — `you/`, `workspace
 
 | Sti                           | Skjerm                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Tema, språk, typografi, editortema (innstillingenes landingsside)          |
-| `/settings/you/notifications` | Varsler per hendelse, stille timer                                          |
+| `/settings/you/profile`       | Din konto på denne serveren: navn, brukernavn, bilde og pålogging (innstillingenes landingsside) |
+| `/settings/you/profile?section=accounts` | Koblede kontoer: dine egne pålogginger for kodehosting, saker, kalender og chat, og sakutkast fra chat |
+| `/settings/you/appearance`    | Tema, språk, typografi, editortema |
 | `/settings/you/audio`         | Mikrofon, diktering, møtedeteksjon og lydlandskapsutdata                    |
+| `/settings/you/notifications` | Varsler per hendelse, stille timer                                          |
+| `/settings/you/commits`       | Hvem som krediteres på commits fra arbeid du starter, og signeringsnøkkelen din |
+| `/settings/you/desktop`       | Bare skrivebordsappen: ikonet i systemstatusfeltet, lukking av vinduet og åpning ved innlogging |
 | `/settings/you/devices`       | Parede telefoner og fjernkontroll                                           |
 | `/settings/you/newsfeed`      | Håndtering av strømmen: kilder, oppdatering, lesestatus                     |
+| `/settings/you/links`         | Hvor lenker utenfra åpnes                                                   |
 
 ### Arbeidsområde
 
 | Sti                                | Skjerm                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil og identitet i dette arbeidsområdet: navn, git-forfatter, kodehosting, kalender |
-| `/settings/workspace/general`      | Navn, logo, hemmelige glob-mønstre, samtidige gjennomganger, grennavngiving, synkroniseringshelse, chatbroer, faresone |
+| `/settings/workspace/profile`      | Profil og identitet i dette arbeidsområdet: navn, e-post, git-forfatter |
+| `/settings/workspace/general`      | Navn, logo, hemmelige glob-mønstre, samtidige gjennomganger, grennavngiving, faresone |
+| `/settings/workspace/integrations` | Connect-valg, GitHub-appen og automasjonstokener, saksleverandør og automatisering, synkroniseringshelse, arbeidsområdets egne leverandørapper, chatbroer, GIF-er. Hver leverandørgruppe nevner din egen konto og lenker til Koblede kontoer |
 | `/settings/workspace/meetings`     | Møtenotatmaler og lagrede stemmeprofiler                                                     |
-| `/settings/workspace/members`      | Medlemsliste, invitasjoner, revisjonslogg. Revisjonsloggen pagineres med valgfri `?cursor=`  |
+| `/settings/workspace/members`      | Medlemsliste og invitasjoner                                                                 |
 | `/settings/workspace/repositories` | Repoer registrert i dette arbeidsområdet                                                     |
 | `/settings/workspace/environments` | Miljødefinisjoner: hva områder kan starte og hvilke oppgaver worktreene deres kjører |
 | `/settings/workspace/agents`       | Registrerte agentidentiteter                                                                 |
@@ -108,6 +114,8 @@ Innstillingsstiene er inndelt i navnerom etter **omfang** — `you/`, `workspace
 | `/settings/server/rigs`        | Stasjoner: hva denne verten kan starte, grunnavbilder, egendefinerte avbildninger, kjørende maskiner |
 | `/settings/server/sandbox`     | Sandkasse-tillatelser: programmer agenter kan kjøre fra sin egen arbeidskopi av repoene dine |
 | `/settings/server/diagnostics` | Diagnostikk og personvern: sandkassing, embedding, logging, krasjrapportering |
+| `/settings/server/people`      | Personer på denne serveren, og om hver adresse er bekreftet (bare serverens eier)       |
+| `/settings/server/audit`       | Revisjonslogg for serveren og for arbeidsområdene du administrerer                       |
 | `/settings/server/backup`      | Sikkerhetskopi og gjenoppretting: installasjonssnapshots, eksport per arbeidsområde, import og sletting |
 | `/settings/server/about`       | Om og oppdateringer                                                                   |
 

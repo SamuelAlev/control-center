@@ -1,3 +1,6 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+
 /// Base exception for all application errors.
 sealed class AppException implements Exception {
   /// Creates an [AppException] with the given [message] and optional [code].
@@ -35,6 +38,77 @@ class NetworkException extends AppException {
 class AuthException extends AppException {
   /// Creates an [AuthException].
   const AuthException(super.message, {super.code});
+}
+
+/// The acting person has no usable sign-in of their own for [lane], so the
+/// action they asked for cannot run as them.
+///
+/// [lane] is the sign-in lane wire (`github`, `linear`, `google`) or, for a
+/// token-only forge, the forge wire (`gitlab`, `bitbucket`). RPC maps it to
+/// `unauthorized` with `data: {kind: 'needs_sign_in', lane: <lane>}` so the
+/// client can offer that sign-in instead of showing an error.
+class NeedsSignInException extends AuthException {
+  /// Creates a [NeedsSignInException] for [lane].
+  const NeedsSignInException(this.lane, [String? message])
+    : super(message ?? 'Sign in to continue.', code: 'needs_sign_in');
+
+  /// The lane (or token-only forge) the person has to sign in to.
+  final String lane;
+}
+
+/// Only the server owner may do this. RPC maps it to `unauthorized` with
+/// `data: {kind: 'server_owner_required'}`, the refusal the dispatcher gives
+/// an op that declares `ServerAuthority.serverOwner`, so a client can say "ask
+/// this server's operator" instead of reporting a failure. Clients read the
+/// wire shape back with `serverOwnerRequiredFromRpc`.
+class ServerOwnerRequiredException extends AuthException {
+  /// Creates a [ServerOwnerRequiredException].
+  const ServerOwnerRequiredException(super.message)
+    : super(code: 'server_owner_required');
+}
+
+/// The `data.kind` a server answers, with its unauthorized code and a `level`,
+/// when the caller lacks the per-repository grant an op needs.
+const String repoGrantRequiredKind = 'repo_grant_required';
+
+/// The error `data` of a [RepoGrantRequiredException] refusal: the one wire
+/// shape both the dispatcher's grant gates and handler refusals answer.
+Map<String, Object?> repoGrantRequiredData(RepoGrantLevel level) => {
+  'kind': repoGrantRequiredKind,
+  'level': level.wireName,
+};
+
+/// The caller holds less than [level] on a repository the op reads or
+/// changes. RPC maps it to `unauthorized` with
+/// `data: {kind: 'repo_grant_required', level: <RepoGrantLevel.wireName>}`,
+/// the refusal the dispatcher's grant gates give, so a client can say "ask
+/// for access to this repository" instead of guessing from an uncoded
+/// refusal.
+class RepoGrantRequiredException extends AuthException {
+  /// Creates a [RepoGrantRequiredException] for [level].
+  const RepoGrantRequiredException(this.level, super.message)
+    : super(code: repoGrantRequiredKind);
+
+  /// The grant the op needs.
+  final RepoGrantLevel level;
+}
+
+/// A repository's [forge] refused the acting person, or the link no longer
+/// names the repository it was made for: their sign-in cannot read it
+/// (`forge_cannot_read`), the forge could not confirm that it can
+/// (`forge_unconfirmed`), or the owner/name now names another repository
+/// (`repo_replaced`). RPC maps it to `unauthorized` with
+/// `data: {kind: <code>, forge: <forge wire>}`, so a client names the forge.
+class ForgeAccessRefusedException extends AuthException {
+  /// Creates a [ForgeAccessRefusedException] on [forge].
+  const ForgeAccessRefusedException(
+    super.message, {
+    required String super.code,
+    required this.forge,
+  });
+
+  /// The forge the repository lives on.
+  final ForgeHost forge;
 }
 
 /// Exception thrown when a requested resource is not found.

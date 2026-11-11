@@ -2,7 +2,7 @@
 title: Espaces de travail et isolation
 description: Pourquoi un espace de travail constitue une frontière de locataire stricte, comment la séparation des bases de données rend cette frontière structurelle et ce qui la franchit délibérément.
 slug: fr-FR/manuel/concepts/espaces-de-travail
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Qu’est-ce qu’un espace de travail ?
@@ -195,14 +195,16 @@ espace de travail se trouve dans le registre.
 
 ## Créer un espace de travail
 
+Seul le [propriétaire du serveur](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur) peut créer un espace de travail ; c’est le serveur qui en génère l’identifiant. Un administrateur ou un propriétaire d’espace de travail ne peut pas en créer un autre. Une personne qui n’appartient encore à aucun espace de travail voit **Vous ne faites pas encore partie d’un espace de travail**, qui lui demande de faire créer un espace de travail par le propriétaire du serveur ou de se faire inviter par un administrateur ; le formulaire **Ajouter un espace de travail** indique la même chose à toute autre personne.
+
 Créer un espace de travail ne se limite pas à insérer une ligne dans le registre.
 En une seule opération, le serveur inscrit l’utilisateur créateur comme
 `ownerUserId`, enregistre l’appartenance de cet utilisateur au rôle de
 propriétaire et publie un événement de domaine `WorkspaceCreated`. Les écouteurs
 de cet événement amorcent ensuite, de façon idempotente et en arrière-plan :
 
-- un **agent CEO** et quatre spécialistes — `qa`, `architect`, `engineer`,
-  `librarian` — les spécialistes étant rattachés au CEO ;
+- un **agent CEO** et cinq spécialistes — `qa`, `architect`, `engineer`,
+  `librarian`, `content-synthesizer` — les spécialistes étant rattachés au CEO ;
 - les **modèles de pipeline intégrés** et leurs déclencheurs (les déclencheurs
   événementiels et manuels sont activés d’origine ; les déclencheurs planifiés
   sont à activer, sauf le balayage quotidien de GC des arbres de travail) ;
@@ -220,11 +222,11 @@ sans elle, l’espace de travail tout juste créé n’aurait aucun membre et ch
 appel limité à un espace de travail que ferait ensuite le créateur serait refusé.
 
 :::note[Les agents ne peuvent pas créer d’espace de travail]
-Il n’existe pas d’outil MCP `create_workspace`. Les humains créent un espace de
-travail via `workspace.create` (point de passage limité au nom) ou
-`workspace.upsert` (enregistrement complet, également utilisé pour les mises à
-jour). Les deux inscrivent l’utilisateur créateur comme `owner` et publient
-`WorkspaceCreated`.
+Il n’existe pas d’outil MCP `create_workspace`. Le propriétaire du serveur crée un
+espace de travail via `workspace.create`, qui l’inscrit comme `owner` et publie
+`WorkspaceCreated`. `workspace.upsert` ne met à jour qu’un espace de travail
+existant ; il n’en crée jamais, et ne modifie jamais le propriétaire d’un espace
+de travail, ce que seule l’action **Transférer la propriété** permet.
 :::
 
 ## Supprimer, exporter, importer
@@ -281,7 +283,7 @@ collées, des fichiers de skills et d’agents, des identifiants de chat, des ar
 de travail — et l’export et l’import déplacent le **fichier**, si bien que tout ce
 qui l’entoure reste où il est. C’est délibéré pour les identifiants et jetable
 pour les arbres de travail ; pour le reste, c’est une limite à connaître plutôt
-qu’une fonctionnalité. La [référence sur la sauvegarde](/fr-FR/manuel/reference/sauvegarde/#what-a-backup-does-not-contain)
+qu’une fonctionnalité. La [référence sur la sauvegarde](/fr-FR/manuel/reference/sauvegarde/#ce-quune-sauvegarde-ne-contient-pas)
 contient le tableau complet.
 
 ## Déplacer une sauvegarde entre le serveur et votre appareil

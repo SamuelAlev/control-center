@@ -2,7 +2,7 @@
 title: Recenzja AI
 description: Jak pull request staje się zrecenzowanym pull requestem — przestrzenie recenzji, węzły recenzji i konsensus recenzentów, kohorty i osie, werdykt Ship/Hold/Block oraz dlaczego publikowanie pozostaje krokiem, który wykonujesz sam.
 slug: pl-PL/podrecznik/koncepcje/recenzja-ai
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Kształt recenzji
@@ -106,7 +106,7 @@ Potok celowo nie zamieszcza niczego na GitHubie; publikowanie jest uzależnione 
 - Ustalenia zakotwiczone w pliku i wierszu stają się komentarzami w linii; wszystko inne trafia do treści podsumowania, a każde niesie stopkę „— Control Center AI review”, żeby źródło było jednoznaczne.
 - Kotwice są ponownie weryfikowane wobec _bieżącego_ diffu PR-a w momencie publikowania. Komentarz do kodu, który został już przepisany, to najbardziej niszcząca zaufanie rzecz, jaką recenzent może zostawić; jeśli GitHub i tak odrzuci kotwicę w linii, cała recenzja jest wysyłana ponownie, a każde ustalenie trafia do treści, żeby nic nie zniknęło po cichu.
 - Werdykt **Block** jest przesyłany jako `REQUEST_CHANGES`; **Hold** jako `COMMENT`; **Ship** jako `APPROVE` z przycisku (`approve_on_ship: true`). Narzędzie MCP publikuje jako automatyzacja i zawsze zostawia Ship jako `COMMENT`.
-- Przycisk **Opublikuj na GitHubie** zamieszcza recenzję jako osoba, która go nacisnęła, na jej własnym logowaniu do GitHuba: bramka wydania należy do niej, więc recenzja też. Publikacja, za którą nie stoi żadna osoba, jest automatyzacją, a ta nigdy nie zatwierdza: Ship trafia wtedy jako `COMMENT`, a w Control Center Connect wpis jest podpisywany prefiksem `**Control Center** (for @login):`.
+- Przycisk **Opublikuj na GitHubie** zamieszcza recenzję jako osoba, która go nacisnęła, na jej własnym logowaniu do GitHuba: bramka wydania należy do niej, więc recenzja też. Publikacja, za którą nie stoi żadna osoba, jest automatyzacją, a ta nigdy nie zatwierdza: Ship trafia wtedy jako `COMMENT`, a @-wzmianki w ustaleniach są unieszkodliwiane, więc wpis nikogo nie powiadamia. Publikuje go bot, z wyjątkiem współdzielonej aplikacji Control Center Connect, gdy operator Connect nie umieścił tej instalacji na liście: wtedy wpis idzie na logowaniu odpowiedzialnej osoby, pod jej nazwiskiem, z prefiksem `**Control Center** (for @login):`. Serwer lub obszar roboczy z własną aplikacją GitHub zawsze publikuje jako bot. Agent wywołujący narzędzie MCP może opublikować wyłącznie recenzję we własnej przestrzeni.
 
 Publikowanie deklaruje klasę akcji `prPublish`, więc punkt kontrolny guardraili traktuje je jak każdą akcję zmieniającą stan — domyślnie pyta o zgodę, a gdy nie jest podłączony żaden zatwierdzający, odmawia działania. Zobacz [Guardraile](/pl-PL/podrecznik/koncepcje/guardraile/).
 

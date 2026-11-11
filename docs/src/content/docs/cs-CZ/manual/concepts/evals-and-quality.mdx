@@ -2,7 +2,7 @@
 title: Evaly a kvalita
 description: Sady eval a kampaně skillů připnuté k revizím a jak vykládat jejich důkazy.
 slug: cs-CZ/prirucka/koncepty/evaly-a-kvalita
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observabilita → Kvalita** obsahuje sady eval pro jednu úlohu i párové kampaně
@@ -20,8 +20,8 @@ vyjádřit.
 Pět startovních sad se založí při vytvoření pracovního prostoru. Pokrývají
 návrhy orchestrace, revizi, která najde zasetou chybu, setrvání režimu plánu
 jen u čtení, vytvoření plánu v režimu plánu a cestu ticketu tam a zpět.
-Zakládání naslouchá `WorkspaceCreated` (`workspace.upsert` nebo
-`workspace.create`), přeskočí název, který už existuje, a starší pracovní
+Zakládání naslouchá `WorkspaceCreated` (publikuje ji `workspace.create`),
+přeskočí název, který už existuje, a starší pracovní
 prostory zpětně nedoplní.
 
 ### Kde se objeví

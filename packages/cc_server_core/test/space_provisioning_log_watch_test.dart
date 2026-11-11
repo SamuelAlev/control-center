@@ -37,7 +37,7 @@ void main() {
               throw const AuthException('No read access to this repo');
             }
           },
-      assertSpaceOwned: (workspaceId, spaceId) async {
+      assertSpaceOwned: (workspaceId, spaceId, userId) async {
         if (workspaceId == 'ws-other') {
           throw const WorkspaceMismatchException('Not this workspace');
         }

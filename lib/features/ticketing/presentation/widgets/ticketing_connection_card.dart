@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
-import 'package:cc_data/cc_data.dart' show ProviderConnection, SignInLaneMode;
+import 'package:cc_data/cc_data.dart'
+    show ProviderConnection, SignInLaneInfo, SignInLaneMode;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus;
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart';
@@ -18,16 +21,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Where this workspace's tickets live, and who Control Center is when it
-/// talks to them.
+/// talks to them on the workspace's behalf.
 ///
-/// The vendor is workspace-scoped (admin-gated). Linear then has two
-/// identities, each a browser sign-in and never a pasted token:
-///
-/// * the signed-in person's own account (`linear` lane), which every
-///   interactive action they take runs as; and
-/// * the workspace's Control Center app actor (`linear_app` lane), which
-///   ticket sync, pipelines and agents use so automated issues appear as
-///   Control Center. Connecting it is an admin decision.
+/// The vendor is workspace-scoped (admin-gated). With Linear, the
+/// workspace's Control Center app actor (`linear_app` lane) is here too:
+/// ticket sync, pipelines and agents use it so automated issues appear as
+/// Control Center, and connecting it is an admin decision. The person's own
+/// Linear account, which every interactive action they take runs as, is
+/// theirs and lives on You → Profile (`LinearAccountCard`).
 ///
 /// No credential row for [TicketProvider.local] — local tickets live in this
 /// server's own database and have nothing to authenticate to.
@@ -81,29 +82,18 @@ class TicketingConnectionCard extends ConsumerWidget {
               ),
             ),
           ),
-          if (provider == TicketProvider.linear) ...[
+          // The automation actor belongs to a workspace; before one exists
+          // there is nothing for it to act in.
+          if (provider == TicketProvider.linear && workspaceId != null) ...[
             const SizedBox(height: 8),
             LinearSignInRow(
-              lane: ConnectOAuthLane.linear,
+              lane: ConnectOAuthLane.linearApp,
               workspaceId: workspaceId,
-              connection: connections.value?[ConnectOAuthLane.linear],
+              connection: connections.value?[ConnectOAuthLane.linearApp],
               loading: connections.isLoading && !connections.hasValue,
-              laneMode: lanes[ConnectOAuthLane.linear]?.mode,
-              canManage: true,
+              laneInfo: lanes[ConnectOAuthLane.linearApp],
+              canManage: isAdmin,
             ),
-            // The automation actor belongs to a workspace; before one exists
-            // there is nothing for it to act in.
-            if (workspaceId != null) ...[
-              const SizedBox(height: 8),
-              LinearSignInRow(
-                lane: ConnectOAuthLane.linearApp,
-                workspaceId: workspaceId,
-                connection: connections.value?[ConnectOAuthLane.linearApp],
-                loading: connections.isLoading && !connections.hasValue,
-                laneMode: lanes[ConnectOAuthLane.linearApp]?.mode,
-                canManage: isAdmin,
-              ),
-            ],
           ],
           if (workspaceId != null && !isAdmin) ...[
             const SizedBox(height: 8),
@@ -163,7 +153,7 @@ class LinearSignInRow extends ConsumerWidget {
     required this.workspaceId,
     required this.connection,
     required this.loading,
-    required this.laneMode,
+    required this.laneInfo,
     required this.canManage,
   });
 
@@ -179,8 +169,9 @@ class LinearSignInRow extends ConsumerWidget {
   /// Whether the connection list is still loading.
   final bool loading;
 
-  /// Who runs this lane's sign-in, or null before the server answers.
-  final SignInLaneMode? laneMode;
+  /// Who runs this lane's sign-in (and why nobody can, when nobody can), or
+  /// null before the server answers.
+  final SignInLaneInfo? laneInfo;
 
   /// Whether the reader may change it (the automation actor is admin-only).
   final bool canManage;
@@ -189,23 +180,42 @@ class LinearSignInRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final c = connection;
-    final connected = c != null && c.connected && !c.needsSignIn;
+    final status = c?.status ?? ForgeConnectionStatus.notConnected;
+    final connected = status == ForgeConnectionStatus.connected;
+    final hasGrant = status != ForgeConnectionStatus.notConnected;
     final automation = lane == ConnectOAuthLane.linearApp;
-    final available = laneMode != null && laneMode != SignInLaneMode.unavailable;
+    final laneMode = laneInfo?.mode;
+    final available =
+        laneMode != null && laneMode != SignInLaneMode.unavailable;
+    // A paused grant comes back with the workspace's sign-in service and an
+    // unreachable one retries on its own: a fresh sign-in would only replace
+    // the grant that is about to work again.
+    final offerSignIn =
+        status != ForgeConnectionStatus.paused &&
+        status != ForgeConnectionStatus.unreachable;
+    final setupAction = hasGrant
+        ? null
+        : signInUnavailableAction(context, ref, laneInfo);
 
     final String subtitle;
+    final problem = unusableConnectionLine(
+      l10n,
+      status,
+      'Linear',
+      account: c?.account ?? '',
+    );
     if (loading) {
       subtitle = l10n.checkingConnection;
-    } else if (c != null && c.needsSignIn) {
-      subtitle = l10n.signInErrorNeedsSignIn('Linear');
+    } else if (problem != null) {
+      subtitle = problem;
     } else if (connected) {
-      subtitle = c.account.isEmpty
+      subtitle = c!.account.isEmpty
           ? l10n.signedIn
           : (automation
                 ? l10n.linearAutomationConnectedAs(c.account)
                 : l10n.signedInAs(c.account));
     } else if (!available && laneMode != null) {
-      subtitle = l10n.signInUnavailable('Linear');
+      subtitle = signInUnavailableMessage(l10n, lane, laneInfo);
     } else {
       subtitle = automation ? l10n.linearAutomationHint : l10n.notConnected;
     }
@@ -220,7 +230,7 @@ class LinearSignInRow extends ConsumerWidget {
           : Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (connected) ...[
+                if (hasGrant) ...[
                   CcButton(
                     onPressed: () => unawaited(_disconnect(context, ref)),
                     variant: CcButtonVariant.ghost,
@@ -228,21 +238,30 @@ class LinearSignInRow extends ConsumerWidget {
                   ),
                   const SizedBox(width: 8),
                 ],
-                CcButton(
-                  onPressed: available
-                      ? () => unawaited(
-                          showProviderSignInDialog(
-                            context,
-                            lane: lane,
-                            workspaceId: workspaceId,
-                          ),
-                        )
-                      : null,
-                  variant: CcButtonVariant.secondary,
-                  child: Text(
-                    connected ? l10n.signInAgain : signInActionLabel(l10n, lane),
+                if (setupAction != null) ...[
+                  setupAction,
+                  const SizedBox(width: 8),
+                ],
+                if (offerSignIn)
+                  CcButton(
+                    onPressed: available
+                        ? () => unawaited(
+                            showProviderSignInDialog(
+                              context,
+                              lane: lane,
+                              workspaceId: workspaceId,
+                            ),
+                          )
+                        : null,
+                    variant: status == ForgeConnectionStatus.needsSignIn
+                        ? CcButtonVariant.primary
+                        : CcButtonVariant.secondary,
+                    child: Text(
+                      hasGrant
+                          ? l10n.signInAgain
+                          : signInActionLabel(l10n, lane),
+                    ),
                   ),
-                ),
               ],
             ),
     );

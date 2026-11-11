@@ -2,7 +2,7 @@
 title: Encaminhar portas a partir de um terminal
 description: Alcance um servidor de desenvolvimento iniciado num Terminal (VM) ou num shell do anfitrião — a partir da sua máquina, do Navegador (VM), do Android, na sua rede ou sob um domínio de desenvolvimento com HTTPS.
 slug: pt-PT/manual/guias/portas-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Um servidor que inicie no terminal de uma conversa é publicado apenas para
@@ -16,7 +16,7 @@ pedido, e morrem com o terminal ou o rig.
 
 ## Ver o que está à escuta
 
-1. Abra o **Terminal (VM)** da conversa ou o shell do anfitrião (num espaço ou numa página de PR).
+1. No editor da conversa (num espaço ou numa página de PR), abra o **Terminal** a partir do menu `+`: em **Máquinas** para um shell na VM da conversa, ou em **Ferramentas** para um terminal no servidor. Só o proprietário do servidor pode abrir um shell do anfitrião; o terminal de qualquer outra pessoa fica em sandbox.
 2. Inicie o seu servidor — `pnpm dev`, `python -m http.server 8000`, o que quiser.
 3. Dentro de alguns segundos, o **ícone de ficha** no canto superior direito do terminal
    ganha um ponto. Clique nele.
@@ -130,6 +130,12 @@ o seu endereço enquanto o servidor reinicia — a linha mostra
 automáticos desaparecem quando a respetiva porta desaparece. Num shell do
 anfitrião, também pode definir uma porta local diferente.
 
+Alterar os encaminhamentos requer uma concessão de escrita em todos os repositórios que o espaço expõe. Com acesso de leitura continua a ver as portas,
+e o painel diz "Alterar estas portas exige acesso de escrita a todos os repositórios deste espaço." em vez de **Adicionar porta**. Veja
+[Quem pode observar e quem pode conduzir](/pt-PT/manual/guias/usar-rigs/#quem-pode-observar-e-quem-pode-operar).
+
+Um terminal que alguém abriu para si próprio mantém as suas portas só para essa pessoa: para qualquer outra, a lista de portas e as alterações às portas respondem como se a sessão não existisse, exatamente como a própria sessão. Os terminais partilhados num espaço seguem a regra do espaço acima.
+
 ## Como se mantém contido
 
 As portas têm como chave o espaço de trabalho e o espaço. O próprio mapa de
@@ -141,9 +147,9 @@ servidor mantém abertos para o Navegador (VM) e o Android. Um shell do
 anfitrião nunca analisa a máquina inteira. Nunca é criado um serviço à escuta
 dentro de um convidado que o servidor não tenha lá colocado, e tudo é desmontado
 com o terminal ou o rig. O desenho está explicado em
-[Rigs e recintos](/pt-PT/manual/conceitos/rigs/#ports-without-holes);
+[Rigs e recintos](/pt-PT/manual/conceitos/rigs/#portas-sem-furos);
 as portas reservadas exatas e as regras de domínio estão na
-[referência de rigs](/pt-PT/manual/referencia/rigs/#ports-and-dev-domains).
+[referência de rigs](/pt-PT/manual/referencia/rigs/#portas-e-domínios-de-desenvolvimento).
 
 ## Relacionado
 

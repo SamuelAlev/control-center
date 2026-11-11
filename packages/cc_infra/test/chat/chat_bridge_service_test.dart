@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
@@ -181,6 +182,27 @@ void main() {
     test('an unverified Control Center email links nothing', () async {
       h.adapter.profiles['U3'] = _fullMember('U3', 'dana@example.com');
       h.users.add(_user('user-3', 'dana'));
+      h.member('user-3', WorkspaceRole.member);
+      await h.bridge.start();
+
+      await h.mention('U3', text: 'hello');
+
+      expect(h.userLinks.rows, isEmpty);
+      expect(h.messaging.dispatched, isEmpty);
+    });
+
+    test('an address the person typed about themselves links nothing', () async {
+      h.adapter.profiles['U3'] = _fullMember('U3', 'dana@example.com');
+      h.users.add(
+        User(
+          id: 'user-3',
+          handle: 'dana',
+          displayName: 'dana',
+          email: 'dana@example.com',
+          createdAt: DateTime(2026),
+        ),
+      );
+      h.verifiedUsers.add('user-3');
       h.member('user-3', WorkspaceRole.member);
       await h.bridge.start();
 
@@ -1547,6 +1569,7 @@ User _user(String id, String handle) => User(
   handle: handle,
   displayName: handle,
   email: '$handle@example.com',
+  emailVerified: true,
   createdAt: DateTime(2026),
 );
 
@@ -2102,6 +2125,7 @@ class _FakeMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -2109,6 +2133,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 
@@ -2301,8 +2326,8 @@ class _FakeUsers implements UserRepository {
       rows.where((u) => u.id == id).firstOrNull;
 
   @override
-  Future<User?> getByEmail(String email) async =>
-      rows.where((u) => u.email == email).firstOrNull;
+  Future<User?> getByVerifiedEmail(String email) async =>
+      rows.where((u) => u.email == email && u.emailVerified).firstOrNull;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

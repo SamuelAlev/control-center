@@ -1,8 +1,8 @@
 ---
 title: Dokumentacja referencyjna Control Center Connect
-description: Co Connect widzi, a czego nigdy, trzy tryby, tożsamość instalacji, zapieczętowane poświadczenia, zaufanie do konfiguracji oraz każde ustawienie, operacja i kod stanu.
+description: Co Connect widzi, a czego nigdy, trzy tryby, wybór każdego obszaru roboczego, tożsamość instalacji, zapieczętowane poświadczenia, zaufanie do konfiguracji oraz każde ustawienie, operacja i kod stanu.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect obsługuje logowanie do dostawców dla serwerów, które nie
@@ -11,7 +11,7 @@ Control Center, albo Connect prowadzonego przez jego organizację
 ([Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/)),
 albo żadnego. Wybór znajduje się w **Ustawienia → Serwer → Logowanie
 jednokrotne → Control Center Connect**, w `cc_server connect` albo
-w `CC_CONNECT_URL`.
+w `CC_CONNECT_URL`. Obszar roboczy się do niego stosuje, chyba że administrator wybierze dla niego coś innego w **Ustawienia → Obszar roboczy → Integracje** ([Wybór dla każdego obszaru roboczego](#wybór-dla-każdego-obszaru-roboczego)).
 
 ## Ścieżki logowania
 
@@ -20,8 +20,7 @@ ktokolwiek dokona wyboru) ścieżka działa na własnej aplikacji serwera, gdy j
 w pełni skonfigurowana, w przeciwnym razie jest niedostępna. Przy aplikacjach Control
 Center albo własnym serwerze Connect Connect obsługuje każdą ścieżkę, którą obsługuje:
 własne aplikacje serwera pozostają zapisane, ale nie są używane do logowania, do
-automatyzacji serwera ani do statusu, który serwer zgłasza. Aplikacja obszaru roboczego
-obowiązuje we wszystkich trybach.
+automatyzacji serwera ani do statusu, który serwer zgłasza. Obszar roboczy, który wybrał własny wybór, prowadzi każdą ścieżkę zgodnie z tym wyborem.
 
 | Ścieżka      | Własna aplikacja wymaga                          | Przez Connect                                                   |
 | ------------ | ------------------------------------------------ | --------------------------------------------------------------- |
@@ -33,12 +32,7 @@ obowiązuje we wszystkich trybach.
 | `klipy`      | `KLIPY_APP_KEY`                                  | Wyszukiwanie GIF-ów przez proxy Connect                         |
 
 Własna aplikacja skonfigurowana tylko częściowo zamienia swoją ścieżkę w błąd,
-nigdy w ciche przejście na Connect. Obszar roboczy, który używa własnej GitHub
-App (**Ustawienia → Obszar roboczy → Ogólne → Tożsamość GitHub**), nigdy nie
-korzysta z Connect dla GitHuba, a ten, który używa własnej aplikacji Google, Linear lub
-Klipy (**Ustawienia → Obszar roboczy → Ogólne → Aplikacje dostawców**), nigdy nie korzysta
-z aplikacji serwera ani z Connect dla tego dostawcy. Zmiana wyboru Connect nikogo nie
-wylogowuje z własnej aplikacji obszaru roboczego.
+nigdy w ciche przejście na Connect. Obszar roboczy na **Użyj własnych aplikacji** nigdy nie przechodzi przez aplikacje serwera ani przez żaden Connect, dla żadnego dostawcy. Zmiana wyboru Connect serwera nikogo nie wylogowuje z obszaru roboczego, który dokonał własnego wyboru.
 
 ## Co Connect widzi, a czego nigdy
 
@@ -46,18 +40,13 @@ wylogowuje z własnej aplikacji obszaru roboczego.
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Identyfikator instalacji serwera i podpisy żądań                                              | Kodu źródłowego, zawartości repozytoriów, diffów ani tekstu pull requestów |
 | Konto dostawcy, które się zalogowało, w trakcie logowania                                     | Zgłoszeń, transkryptów ani niczego z bazy danych obszaru roboczego    |
-| Do którego obszaru roboczego należy poświadczenie, jako nieprzejrzysty identyfikator w pieczęci | Klucza prywatnego GitHub App: tokeny repozytoriów pochodzą z logowania osoby |
+| Do którego obszaru roboczego należy poświadczenie, jako nieprzejrzysty identyfikator w pieczęci | Sekretów własnych aplikacji serwera: nie opuszczają serwera |
 | Repozytorium, dla którego tworzony jest token GitHub dla jednego repozytorium                 | Tokenów odświeżania w spoczynku: istnieją tylko w pieczęciach, które trzyma serwer |
-| Identyfikatory instalacji GitHub powiązane z serwerem                                         | Sekretów Linear: kod od Linear serwer wymienia sam                    |
+| Zespół Slack powiązany z serwerem                                                             | Sekretów Linear: kod od Linear serwer wymienia sam                    |
 | Wyszukiwane frazy GIF-ów, gdy działa jako proxy dla Klipy                                     | Haseł, kluczy parowania ani kluczy dostawców modeli                   |
 | Odnośniki do zdarzeń Slack (zespół, kanał, identyfikator wiadomości) i tekst poleceń z ukośnikiem | Tekstu wiadomości Slack: Connect odrzuca go po odebraniu, a serwer sam odczytuje wiadomość ze Slacka |
 
-Krótkotrwały stan (rozpoczęte logowania, wartości nonce, pamięci podręczne)
-Connect trzyma najwyżej 15 minut. Jego jedyne trwałe zapisy to powiązania
-instalacji: które serwery mogą używać której instalacji GitHub i z którym
-serwerem powiązany jest każdy zespół Slack. Błędy niosą kod, nigdy odpowiedź
-dostawcy, a dzienniki zapisują identyfikatory instalacji tylko jako skróty
-z kluczem.
+Connect trzyma rozpoczęte logowania, wartości nonce i pamięci podręczne najwyżej przez 10 minut, a godzinowe liczniki użycia najwyżej przez dwie godziny. Token GitHub dla jednego repozytorium, wydany jako osoba, pozostaje zapisany, zapieczętowany dla logowania, które o niego poprosiło, aż do wygaśnięcia (najwyżej 8 godzin), dzięki czemu Connect może wydać go ponownie i cofnąć przy rozłączeniu. Jego jedyne trwałe zapisy to powiązania Slack (z którym serwerem powiązany jest każdy zespół Slack) i wycofane identyfikatory instalacji. Błędy niosą kod, nigdy odpowiedź dostawcy. Dzienniki zapisują identyfikatory instalacji tylko jako skróty z kluczem, a token GitHub tylko jako `hashed_token`, który pokazuje dla niego dziennik audytu organizacji GitHub, dzięki czemu właściciel organizacji może oba dopasować.
 
 ## Tryby
 
@@ -76,9 +65,28 @@ Ta kompilacja nie zawiera żadnego klucza konfiguracji hostowanej, więc tryb
 hostowany zgłasza `hosted_unprovisioned` i nie obsługuje żadnej ścieżki. Własne
 aplikacje i własny Connect działają.
 
+Hostowany Connect działa w jednym kontenerze. Jego klucz pieczętowania i klucz prywatny współdzielonej GitHub App są tam zmiennymi środowiskowymi, a nie kluczami w sejfie, który tylko podpisuje lub odszyfrowuje, jak GitHub zaleca dla klucza prywatnego App. To znana luka obecnej konfiguracji.
+
 Serwer odczytuje konfigurację Connect najwyżej co 10 minut i czeka na każde
 wywołanie najwyżej 5 sekund. Gdy Connect jest nieosiągalny, nadal obowiązuje
 ostatnia poprawna konfiguracja, a Ustawienia oznaczają ją jako nieaktualną.
+
+## Wybór dla każdego obszaru roboczego
+
+**Ustawienia → Obszar roboczy → Integracje → Control Center Connect** zastępuje wybór serwera dla jednego obszaru roboczego. Każdy członek widzi wybór i miejsce, w którym działa każde logowanie; zmienia go tylko administrator obszaru roboczego.
+
+| Wybór                              | Zachowanie                                                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tak samo jak ten serwer**        | Domyślnie. Obszar roboczy działa na tym, co wybrał właściciel serwera; opcja podaje, co to jest                                             |
+| **Użyj aplikacji Control Center**  | Hostowany Connect Control Center, bez względu na to, czego używa serwer                                                                     |
+| **Użyj własnych aplikacji**        | Tylko aplikacje obszaru roboczego: aplikacja GitHub, klient Google, aplikacja Linear, klucz Klipy i aplikacja Slack. Dostawca bez niej jest tu wyłączony; częściowa aplikacja to błąd konfiguracji |
+| **Użyj własnego serwera Connect**  | Connect pod adresem HTTPS podanym przez obszar roboczy. Adresy w sieci prywatnej lub lokalnej są odrzucane                                |
+
+- Każdy wybór inny niż **Tak samo jak ten serwer** trzyma logowania do GitHuba i Linear każdej osoby w miejscu należącym do obszaru roboczego, więc nigdy nie mieszają się z ogólnoserwerowymi
+- Zmiana najpierw pyta o potwierdzenie: wszyscy w obszarze roboczym logują się ponownie do GitHuba, Linear i Kalendarza Google przez nowe aplikacje
+- Własne połączenie aplikacji Slack obszaru roboczego działa przy każdym wyborze; **Dodaj Control Center do Slack** podąża za wyborem
+- `CC_CONNECT_URL` blokuje też obszary robocze przed własnym Connect: mogą podążać za serwerem albo używać własnych aplikacji
+- Własny Connect obszaru roboczego jest zaufany przy pierwszym użyciu tylko dla tego obszaru roboczego: **Zaufaj nowym aplikacjom** tam nigdy nie zmienia tego, czemu ufa serwer albo inny obszar roboczy
 
 ## Tożsamość instalacji
 
@@ -110,16 +118,31 @@ kontem dostawcy, aplikacją i generacją sekretu.
 
 ## Instalacje GitHub
 
-Instalacji współdzielonej GitHub App serwer może używać tylko wtedy, gdy Connect
-powiązał ją z identyfikatorem instalacji tego serwera.
+Instalacji współdzielonej GitHub App może używać każdy serwer. Connect nie prowadzi zapisu, który serwer może z niej korzystać.
 
-- **Zainstaluj aplikację GitHub** w **Ustawienia → Obszar roboczy → Ogólne**
-  otwiera GitHuba z 15-minutowym biletem. Connect wiąże nową instalację, gdy
-  instalujący jest właścicielem konta osobistego albo administruje organizacją
-- **Autoryzuj ten serwer** wiąże instalację, która już istnieje. Może to zrobić
-  tylko administrator organizacji
-- Instalacja organizacji może być powiązana z kilkoma serwerami; każdy wymaga
-  autoryzacji administratora
+- **Zainstaluj aplikację GitHub** w **Ustawienia → Obszar roboczy → Integracje** otwiera stronę instalacji aplikacji na GitHubie. Serwer buduje link z nazwy aplikacji w konfiguracji Connect
+- Token dla jednego repozytorium wymaga, by aplikacja była zainstalowana u właściciela repozytorium, a zalogowana osoba miała dostęp do tego repozytorium. To własny token tej osoby, ograniczony do jej roli, nigdy szerszy
+- Organizacja ogranicza Control Center na GitHubie: usuwając instalację, zawężając repozytoria albo usuwając osobę
+- Do wywołań, które może wykonać tylko osoba, na przykład listowania jej instalacji, Connect przekazuje serwerowi osobisty token użytkownika App tej osoby, a nie token dla jednego repozytorium. Zalogowanie się na serwerze to powierzenie mu tego tokenu
+- Organizacja egzekwująca listę dozwolonych adresów IP GitHub nie może korzystać z hostowanego Connect, którego adresy nie są stałe. Zamiast tego rejestruje własną GitHub App, na swoich serwerach albo w Connect, który sama prowadzi
+- **Rozłącz** cofa tylko to logowanie: Connect zużywa token odświeżania raz i usuwa to, co on zwróci, usuwa swój token użytkownika oraz tokeny dla jednego repozytorium, które dla niego wydał. Kopia jego pieczęci, gdziekolwiek przechowywana, przestaje działać. Logowania tej osoby na innych serwerach i w innych obszarach roboczych dalej działają. Aby całkowicie usunąć Control Center z konta GitHub, cofnij dostęp w GitHubie w **Settings → Applications → Authorized GitHub Apps → Revoke**
+
+### Wspólny bot
+
+Tokeny wydane jako bot App (`as: app`) pokazują ten sam bot na GitHubie dla każdego serwera, który korzysta z tego samego Connect: GitHub nie potrafi rozróżnić tych serwerów.
+
+- Każdy serwer może dać botowi odczyt i komentowanie: `read`, `review` i `comment` (komentarze, etykiety, osoby przypisane i reakcje w issues i pull requestach)
+- Recenzowanie pull requesta jako bot (`bot`, który zapisuje pull requesty) jest dozwolone tylko dla serwerów, które operator Connect umieszcza w `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Każdy inny serwer dostaje odpowiedź `needs_requester` i publikuje recenzję tokenem osobistym odpowiedzialnej osoby, który GitHub ogranicza do tej osoby: recenzja pojawia się pod jej nazwiskiem. Dotyczy to publikowania recenzji AI, komentarzy do recenzji i próśb o recenzentów
+- Push, tworzenie gałęzi i otwieranie pull requesta (`write`) nigdy nie są wydawane jako wspólny bot. Zawsze używają własnego logowania osoby zlecającej
+- Zatwierdzanie pull requesta nigdy nie jest zautomatyzowane, na żadnym tokenie
+- Serwer lub obszar roboczy z własną GitHub App zachowuje bota we wszystkim powyższym, łącznie z recenzjami
+
+### Co właściciele i członkowie organizacji powinni wiedzieć
+
+- Serwer, na którym ktoś się zalogował, przechowuje jego osobisty token użytkownika App: do 8 godzin na token, odnawiany, aż osoba się rozłączy. Może działać jako ona w każdym repozytorium, na którym zainstalowana jest wspólna App i do którego ta osoba ma dostęp. Connect może odciąć serwer na stałe (wycofana lub odrzucona instalacja), ale token już wydany pozostaje ważny do wygaśnięcia
+- Zainstalowanie wspólnej GitHub App w organizacji wyraża zgodę dla każdego serwera Control Center, na którym zaloguje się członek, a nie dla jednego serwera
+- Bot jest wspólny, jak wyżej: organizacja nie może sprawdzić na GitHubie, który serwer działał jako bot
+- Organizacja, która chce własnej granicy, rejestruje własną GitHub App i prowadzi własny Connect ([Uruchom serwer Connect](/pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect/)) albo konfiguruje App na własnych serwerach
 
 ## Zaufanie do konfiguracji
 
@@ -130,7 +153,7 @@ powiązał ją z identyfikatorem instalacji tego serwera.
 
 ## Operacje
 
-Wszystkie ustawienia Connect może zmieniać tylko właściciel serwera.
+Ustawienia Connect serwera może zmieniać tylko właściciel serwera.
 
 | Operacja              | Co robi                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -138,7 +161,16 @@ Wszystkie ustawienia Connect może zmieniać tylko właściciel serwera.
 | `connect.configure`   | Ustawia `hosted`, `custom` (z `url`) albo `off`                                        |
 | `connect.test`        | Ponownie pobiera konfigurację i zgłasza stan                                           |
 | `connect.confirmPins` | Akceptuje zmienione identyfikatory własnego Connect                                    |
-| `connect.rotateKey`   | Tworzy nowy klucz instalacji. Każde logowanie przez Connect na tym serwerze przestaje działać |
+| `connect.rotateKey`   | Tworzy nowy klucz instalacji i nowy identyfikator instalacji (`force` zastępuje go nawet wtedy, gdy Connect nie mógł wycofać starego); zobacz [Wymień klucz instalacji](#wymień-klucz-instalacji) |
+
+Wybór obszaru roboczego ma własne operacje, a każda nazywa obszar roboczy:
+
+| Operacja                       | Kto                          | Co robi                                                                                             |
+| ------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Każdy członek                | Wybór, na co się rozwiązuje, stan i źródło każdej ścieżki. Identyfikator instalacji i oczekujące przypięcia tylko dla administratorów |
+| `workspaceConnect.set`         | Administrator obszaru roboczego | Ustawia `inherit`, `hosted`, `custom` (z `url`) albo `own`                                       |
+| `workspaceConnect.test`        | Administrator obszaru roboczego | Ponownie pobiera konfigurację Connect obszaru roboczego i zgłasza stan                           |
+| `workspaceConnect.confirmPins` | Administrator obszaru roboczego | Akceptuje zmienione identyfikatory własnego Connect obszaru roboczego                            |
 
 Same logowania używają `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` i `oauth.disconnect`. Osobą jest zawsze
@@ -147,22 +179,34 @@ zalogowany wywołujący.
 ## Logowanie przez Connect
 
 1. Serwer prosi Connect o rozpoczęcie ścieżki i dostaje adres URL autoryzacji
-   dostawcy, który sprawdza, zanim go pokaże
+   dostawcy, który sprawdza, zanim go pokaże. GitHub zawsze pokazuje swój wybór konta
 2. Osoba zatwierdza w przeglądarce. Dostawca wraca do Connect
-3. Connect pokazuje 8-znakowy kod i link `control-center://oauth-done`
-4. Osoba wpisuje kod w aplikacji albo otwiera link. Serwer odbiera logowanie
+3. Connect pokazuje, co serwer, który rozpoczął logowanie, będzie mógł robić jako ta osoba
+   i jak długo. Connect nie potrafi stwierdzić, kto obsługuje ten serwer, więc strona prosi
+   osobę o kontynuację tylko wtedy, gdy sama rozpoczęła logowanie, a o zamknięcie jej, gdy
+   ktoś przysłał jej link. Gdy przeglądarka jest w innej sieci niż ta, z której rozpoczęto
+   logowanie, strona o tym mówi: to normalne dla hostowanego serwera lub innego urządzenia,
+   ale też tak wygląda phishing. **Anuluj** kończy logowanie: kod dostawcy nigdy nie jest
+   używany. Każda strona odpowiada raz: odpowiedź, która nie pochodzi ze strony, którą Connect
+   właśnie pokazał, jest odrzucana
+4. Po **Kontynuuj** Connect pokazuje 8-znakowy kod i link `control-center://oauth-done`.
+   Każdy, kto dostanie kod, dostaje dostęp, który właśnie zatwierdzono, więc kod trafia tylko
+   tam, gdzie rozpoczęto logowanie
+5. Osoba wpisuje kod w aplikacji albo otwiera link. Serwer odbiera logowanie
    z tym kodem i z własnym dowodem żądania
 
 Logowanie wygasa po 10 minutach. Pięć błędnych kodów je kończy. Link, którego ta
 aplikacja nie rozpoczęła, jest odrzucany komunikatem **Logowanie nie zostało
-rozpoczęte tutaj**.
+rozpoczęte tutaj**. Connect ogranicza, ile logowań jeden adres sieciowy może rozpocząć i jak często tokeny GitHub są wydawane: na osobę i serwer, na osobę we wszystkich serwerach, na adres oraz dla całej aplikacji. Nowe logowania mają własny budżet, więc nigdy nie wstrzymują odnowień, na których zależy innym osobom. Po przekroczeniu limitu wywołanie jest odrzucane kodem `rate_limited`, a serwer ponawia je później, nie wylogowując nikogo. Logowanie ponad limit osoby jest cofane w GitHubie i odrzucane.
 
 ## Wymień klucz instalacji
 
-**Wymień klucz** na karcie Connect albo `cc_server connect rotate-key --yes`:
+Tylko właściciel serwera może wymienić klucz, przyciskiem **Wymień klucz** na karcie **Control Center Connect** w **Ustawienia → Serwer → Logowanie jednokrotne**. Nie ma do tego polecenia. Wymiana:
 
-- Daje serwerowi nowy klucz instalacji i nowy identyfikator instalacji
-- Wylogowuje wszystkich ze wszystkich ścieżek, które działają przez Connect
+- Wylogowuje wszystkich ze wszystkich ścieżek, które działają przez Connect. Dla każdego serwera Connect, z którym używano starego klucza, serwer cofa logowania GitHub i Slack, które od tego miejsca trzyma (logowanie Google nie ma czego cofać i po prostu wygasa)
+- Wycofuje stary identyfikator instalacji na każdym z tych serwerów Connect, podpisując go starym kluczem i dowodząc jedną pieczęcią poświadczenia, którą serwer trzyma z tego Connect. Od tej chwili Connect odrzuca każde żądanie złożone starym kluczem, więc pieczęć albo kopia starego klucza pobrana z tego serwera jest bezużyteczna, a obszary robocze Slack powiązane ze starym identyfikatorem zostają zwolnione, by mogły połączyć się ponownie. Tokeny już wydane pozostają ważne do wygaśnięcia (godzina dla tokenu bota, osiem godzin dla tokenu osoby). Serwer Connect, z którym ten serwer nie ma żadnej pieczęci, nie ma czego wycofać i jest pomijany
+- Następnie daje serwerowi nowy klucz instalacji i nowy identyfikator instalacji
+- Jeśli serwer Connect jest nieosiągalny albo odmawia wycofania starego identyfikatora, zatrzymuje się przed zmianą kluczy i pokazuje **Connect nie mógł wycofać starego klucza**. **Zrotuj mimo to** zmienia klucze mimo wszystko; stary identyfikator instalacji pozostaje wtedy użyteczny w tym Connect, dopóki jego tokeny nie wygasną, najwyżej 8 godzin dla GitHub
 - Nie zmienia logowań przez własne aplikacje serwera
 - Wymaga dodania nowego identyfikatora instalacji do listy dozwolonych
   własnego Connect
@@ -175,7 +219,7 @@ rozpoczęte tutaj**.
 | `signature`            | Konfiguracja hostowana nie przeszła weryfikacji podpisu              |
 | `rollback`             | Connect udostępnił starszą konfigurację niż ta, którą serwer już widział |
 | `unreachable`          | Serwer nie może połączyć się z Connect                               |
-| `install_blocked`      | Connect nie zezwala na ten identyfikator instalacji                  |
+| `install_blocked`      | Connect nie zezwala na ten identyfikator instalacji albo został wycofany |
 | `pins_changed`         | Własny Connect ogłosił inne identyfikatory aplikacji                 |
 | `protocol`             | Connect odpowiedział w formie, której ten serwer nie rozumie         |
 

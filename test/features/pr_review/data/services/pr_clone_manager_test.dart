@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_harness/cancellation.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/pr_review/pr_clone_manager.dart';
 import 'package:cc_natives/cc_natives.dart';
 import 'package:flutter_test/flutter_test.dart';

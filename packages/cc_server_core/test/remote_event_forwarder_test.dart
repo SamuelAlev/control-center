@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/events/agent_events.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
+import 'package:cc_domain/core/domain/events/pr_events.dart';
 import 'package:cc_domain/core/domain/events/ticketing_events.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -174,6 +175,46 @@ void main() {
 
     // The turn's MessageReceived is the completion notification; the run
     // event fires before the reply is persisted, so it never reaches the wire.
+    test('a member gets a PR frame only for a repo they may see', () async {
+      final asked = <(String, String, String)>[];
+      final f = RemoteEventForwarder(
+        eventBus: bus,
+        space: space,
+        deviceId: 'phone-1',
+        userId: 'user-1',
+        isMember: (_) async => true,
+        // PR visibility: grant AND the user's own forge sign-in. Only
+        // acme/api passes for this user.
+        canView: (workspaceId, userId, method, params) async {
+          asked.add((workspaceId, userId, method));
+          return params['repo_name'] == 'api';
+        },
+      )..start();
+      addTearDown(f.dispose);
+
+      PrReviewRequested requested(String repo) => PrReviewRequested(
+        workspaceId: 'ws-mine',
+        repoOwner: 'acme',
+        repoName: repo,
+        prNumber: 7,
+        prTitle: 'Secret plan',
+        occurredAt: DateTime(2026),
+      );
+      bus
+        ..publish(requested('vault'))
+        ..publish(requested('api'));
+      await pumpEventQueue(times: 10);
+
+      expect(space.sent, hasLength(1));
+      final params = space.sent.single['params'] as Map;
+      expect(params['repo_name'], 'api');
+      expect(space.sent.toString(), isNot(contains('vault')));
+      expect(asked, [
+        ('ws-mine', 'user-1', 'notifications/pr_review_requested'),
+        ('ws-mine', 'user-1', 'notifications/pr_review_requested'),
+      ]);
+    });
+
     test('AgentRunCompleted is not forwarded, even to a member', () async {
       forwarder(isMember: (_) async => true);
       bus.publish(

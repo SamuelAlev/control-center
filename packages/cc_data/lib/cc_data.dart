@@ -3,7 +3,7 @@
 /// Repository adapters that satisfy reads/writes over the `cc_rpc` client
 /// (`repo/call` + `sub/subscribe`) instead of a local database — the data
 /// source for the full web build and the desktop in REMOTE mode. They return
-/// shared-domain DTOs. Most legacy adapters use session-bound workspace scope;
+/// shared-domain DTOs. Most adapters use session-bound workspace scope;
 /// skill evaluation campaign calls carry an explicit `workspace_id`, and the
 /// server enforces membership per call.
 
@@ -18,6 +18,7 @@ export 'src/repositories/remote_activity_log.dart';
 export 'src/repositories/remote_agent_repository.dart';
 export 'src/repositories/remote_agent_run_log_repository.dart';
 export 'src/repositories/remote_agent_working_memory_repository.dart';
+export 'src/repositories/remote_audit_log.dart';
 export 'src/repositories/remote_calendar_connect.dart';
 export 'src/repositories/remote_calendar_repository.dart';
 export 'src/repositories/remote_confirmation_repository.dart';
@@ -81,6 +82,7 @@ export 'src/repositories/rpc_calendar_repository.dart';
 export 'src/repositories/rpc_chat_client.dart';
 export 'src/repositories/rpc_claude_accounts_repository.dart';
 export 'src/repositories/rpc_code_graph_lookup_repository.dart';
+export 'src/repositories/rpc_commit_signing_key_repository.dart';
 export 'src/repositories/rpc_conversation_repository.dart';
 export 'src/repositories/rpc_dictation_control.dart';
 export 'src/repositories/rpc_directory_browser_port.dart';
@@ -128,6 +130,8 @@ export 'src/repositories/rpc_usage_repository.dart';
 export 'src/repositories/rpc_voice_profile_repository.dart';
 export 'src/repositories/rpc_weather_repository.dart';
 export 'src/repositories/rpc_work_product_repository.dart';
+export 'src/repositories/rpc_workspace_connect_repository.dart';
 export 'src/repositories/rpc_workspace_filesystem_port.dart';
 export 'src/repositories/rpc_workspace_repository.dart';
 export 'src/repositories/skill_campaign_views.dart';
+export 'src/server_owner_failure.dart';

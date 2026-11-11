@@ -167,8 +167,10 @@ class TranscriptFolder {
 
   void _appendText(AgentProcessEvent event, {required bool reasoning}) {
     final extracted = contentExtractor.extractContent(
-      content: event.content,
-      metadata: event.metadata,
+      content: switch (event) {
+        TextEvent(:final content) || ThinkingEvent(:final content) => content,
+        _ => '',
+      },
     );
     if (extracted.isEmpty) {
       return;
@@ -526,17 +528,28 @@ class TranscriptFolder {
   ///
   /// Walks the transcript backwards and stops at the first visible answer, so an
   /// error the agent recovered from mid-run never marks the whole turn failed.
-  String? terminalFailure() {
+  String? terminalFailure() => switch (_terminalFailure()) {
+    final ErrorSegment s => s.message.trim(),
+    final ViolationSegment s => s.message.trim(),
+    _ => null,
+  };
+
+  /// The code of the error [terminalFailure] reports, when it has one (a
+  /// refusal such as `sandbox_unavailable`).
+  String? terminalFailureCode() => switch (_terminalFailure()) {
+    final ErrorSegment s => s.code,
+    _ => null,
+  };
+
+  TranscriptSegment? _terminalFailure() {
     for (var i = _segments.length - 1; i >= 0; i--) {
       final seg = _segments[i];
       if (seg is TextSegment && seg.text.trim().isNotEmpty) {
         return null;
       }
-      if (seg is ErrorSegment && seg.message.trim().isNotEmpty) {
-        return seg.message.trim();
-      }
-      if (seg is ViolationSegment && seg.message.trim().isNotEmpty) {
-        return seg.message.trim();
+      if ((seg is ErrorSegment && seg.message.trim().isNotEmpty) ||
+          (seg is ViolationSegment && seg.message.trim().isNotEmpty)) {
+        return seg;
       }
     }
     return null;

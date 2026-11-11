@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/features/messaging/domain/services/agent_turn_retry_policy.dart';
 
 /// One rendered row in the feed: a message (with optional paired thinking),
 /// a day separator, or the unread divider.
@@ -13,10 +14,15 @@ class MessageItem extends FeedItem {
     this.message, {
     this.collapseHeader = false,
     this.inlineMessages = const [],
+    this.canRetry = false,
   });
 
   /// The message to render.
   final Message message;
+
+  /// Whether this is a failed agent turn the server would still retry
+  /// ([AgentTurnRetryPolicy]): the only row that offers Retry.
+  final bool canRetry;
 
   /// Whether to hide the avatar/name because the previous row is the same sender.
   final bool collapseHeader;
@@ -64,6 +70,9 @@ List<FeedItem> buildFeedItems(
 }) {
   final out = <FeedItem>[];
   final inlineByRun = _inlineMessagesByRun(messages);
+  // The feed is the newest messages of one conversation, which is all the
+  // retry rule needs: a turn is judged against the turns after it.
+  final retryable = const AgentTurnRetryPolicy().retryableIn(messages);
   final inlineIds = inlineByRun.isEmpty
       ? const <String>{}
       : {
@@ -119,6 +128,7 @@ List<FeedItem> buildFeedItems(
         display,
         collapseHeader: collapse,
         inlineMessages: inlineByRun[display.id] ?? const [],
+        canRetry: retryable.contains(display.id),
       ),
     );
     prevSender = display;

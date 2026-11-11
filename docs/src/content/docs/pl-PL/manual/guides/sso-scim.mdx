@@ -2,7 +2,7 @@
 title: Provisionuj użytkowników przez SCIM
 description: Pozwól dostawcy tożsamości (IdP) automatycznie tworzyć, aktualizować i cofać aprowizację kont Control Center.
 slug: pl-PL/podrecznik/poradniki/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Skorzystaj z tego poradnika, gdy chcesz kontrolować cykl życia kont —
@@ -34,8 +34,9 @@ dostawcy tożsamości (Okta, Entra ID i inni) używają dokładnie w tym celu.
    - **Uwierzytelnianie**: `Authorization: Bearer <token>`
    - **Identyfikator użytkownika**: `userName` (adres e-mail) albo `externalId` — oba pasują
 4. Przetestuj na jednym użytkowniku: wypchnij go z IdP i potwierdź, że się
-   pojawił (utworzenie przez SCIM przypina do konta `externalId` dostawcy —
-   to samo przypięcie, które ustawia pierwsze logowanie SSO).
+   pojawił (utworzenie przez SCIM zapisuje na koncie `externalId` dostawcy, dzięki
+   czemu późniejsze wywołania SCIM go znajdują), a następnie poproś tę osobę o
+   zalogowanie się przez SSO, zanim wdrożysz to dla wszystkich.
 
 ## Co robi cofanie aprowizacji
 
@@ -57,6 +58,7 @@ polityki automatycznego członkostwa stosowanej przy logowaniu.
 
 ## Rozwiązywanie problemów
 
+- **Aprowizowana osoba dostaje odmowę z komunikatem „To konto jest już powiązane z inną tożsamością SSO”** — znane ograniczenie: konto utworzone przez SCIM z `externalId` pozostaje powiązane z tym identyfikatorem, a pierwsze logowanie SSO na nie jest odrzucane. Dopóki to nie zostanie naprawione, aprowizuj bez `externalId` albo pozwól, by aprowizacja just-in-time utworzyła konto przy pierwszym logowaniu, a SCIM używaj tylko do cofania aprowizacji.
 - **401 przy każdym wywołaniu** — token się zmienił; wygeneruj go ponownie
   i zaktualizuj konfigurację IdP.
 - **Punkt końcowy jest nieosiągalny** — tunel nie działa albo serwer

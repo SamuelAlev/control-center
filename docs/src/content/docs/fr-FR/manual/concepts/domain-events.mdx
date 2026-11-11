@@ -2,7 +2,7 @@
 title: Événements de domaine
 description: Pourquoi les fonctionnalités dialoguent par un bus d’événements interne au processus plutôt que de s’importer mutuellement, ce dont le bus est — et n’est pas — la source de vérité, et quels événements peuvent réellement piloter l’automatisation.
 slug: fr-FR/manuel/concepts/evenements-de-domaine
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Ce qu’est un événement de domaine
@@ -35,8 +35,7 @@ tickets ni des réunions. L’observabilité agrège les résultats d’exécuti
 la répartition.
 
 Le coût est le coût habituel : un éditeur ne peut pas savoir si quelqu’un écoute, et un écouteur
-jamais construit reste silencieusement inerte. `TicketRemoteSyncHandler` en est l’exemple
-permanent : il est déclaré, couvert par des tests, et jamais câblé en production.
+jamais construit reste silencieusement inerte.
 
 ## Ce que le bus n’est pas
 

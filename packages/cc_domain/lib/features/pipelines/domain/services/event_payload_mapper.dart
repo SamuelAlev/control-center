@@ -41,6 +41,8 @@ class EventPayloadMapper {
       return {
         'repo_owner': event.repoOwner,
         'repo_name': event.repoName,
+        // The key the PR steps (`prReview.comment`) address the repo by.
+        'repo_full_name': '${event.repoOwner}/${event.repoName}',
         'pr_number': event.prNumber,
         'pr_title': event.prTitle,
         'author': event.author,
@@ -82,10 +84,7 @@ class EventPayloadMapper {
       };
     }
     if (event is TicketCreated) {
-      return {
-        'ticket_id': event.ticketId,
-        'workspace_id': event.workspaceId,
-      };
+      return {'ticket_id': event.ticketId, 'workspace_id': event.workspaceId};
     }
     if (event is TicketStatusChanged) {
       return {

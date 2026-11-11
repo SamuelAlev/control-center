@@ -2,7 +2,7 @@
 title: Gestionează cheile API
 description: Unde se află fiecare credențial — contul tău de utilizator de pe server, serverul însuși sau un CLI extern — și cum să îl setezi, să îl rotești și să îl elimini.
 slug: ro-RO/manual/ghiduri-practice/chei-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Acest ghid îți arată unde este stocat fiecare credențial folosit de Control Center
@@ -33,8 +33,7 @@ server; care dintre ele răspunde la o anumită cerere depinde de existența unu
   limitat la ce poate face acolo un membru responsabil. Nu este niciodată
   autentificarea ta predată întreagă
 
-Al tău se setează în cardul **Găzduire de cod** din **Setări → Spațiu de lucru →
-Profil și identitate**; aplicația serverului, în **Aplicații provider** din **Setări →
+Al tău se setează în cardul **Găzduire de cod** din **Setări → Tu → Profil**; aplicația serverului, în **Aplicații provider** din **Setări →
 Server → Autentificare unică**. Vezi
 [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)
 și [Creează GitHub App](/ro-RO/manual/ghiduri-practice/github-app/).
@@ -43,10 +42,11 @@ GitLab și Bitbucket primesc în continuare un token personal lipit, stocat la f
 Vezi [Conectează un host de cod](/ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod/).
 
 :::note[Există și un ecran accesibil doar prin URL]
-`/workspaces/<workspaceId>/api-keys` afișează aceleași două carduri ca primul pas
-al onboarding-ului. Nu are **nicio intrare de navigare nicăieri în interfață**;
-este accesibil doar tastând URL-ul. Folosește în schimb Setări → Spațiu de lucru →
-Profil și identitate.
+`/workspaces/<workspaceId>/api-keys` afișează aceleași carduri ca primul pas al
+onboarding-ului. Nu are **nicio intrare de navigare nicăieri în interfață**; este
+accesibil doar tastând URL-ul. Folosește în schimb Setări → Tu → Profil
+pentru propriile autentificări și Setări → Spațiu de lucru → Integrări pentru
+furnizorul de tichete.
 :::
 
 ## Setează cheile providerilor de modele
@@ -66,10 +66,7 @@ Aceste credențiale sunt **globale la nivel de host**: o singură cheie deserve�
 fiecare spațiu de lucru din instalare. Tokenurile OAuth sunt reîmprospătate
 înainte de a expira.
 
-CLI-urile adaptoarelor externe își păstrează propriile credențiale, în propria
-configurație, pe hostul serverului — Control Center nu le gestionează. Autentifică
-Claude Code așa cum prevede propria sa documentație, pe mașina pe care rulează
-`cc_server`.
+Claude Code se autentifică prin **Conturi Claude Code**, din **Setări → Server → Furnizori de modele**: fiecare cont primește propriul director de configurare pe server, iar tu rulezi acolo comanda `claude auth login` pe care ți-o arată aplicația.
 
 Dialogul **Variabile de mediu** al fiecărui adaptor pare un loc potrivit pentru a
 pune o cheie pentru unul dintre ele, dar nu este: scrie pe dispozitivul tău, în
@@ -78,16 +75,17 @@ timp ce serverul citește propria copie și nimic nu le face legătura. Vezi
 
 ## Conectează un furnizor de tichete
 
-Cardul **Ticketing** din **Setări → Spațiu de lucru → General** conține ambele
-jumătăți ale unei singure decizii: la ce furnizor îți stau tichetele și cine
-este Control Center când vorbește cu el. Alegerea **Local** ascunde rândurile
+Cardul **Ticketing** din **Setări → Spațiu de lucru → Integrări** conține partea
+spațiului de lucru: la ce furnizor îți stau tichetele și cine este Control Center
+când lucrează acolo de unul singur. Alegerea **Local** ascunde rândurile
 Linear — tichetele locale se află în baza de date proprie a acestui server și nu
 au la ce să se autentifice.
 
 Linear are două autentificări și nicio cheie de lipit: **Linear** este a ta,
-pentru ce faci tu, iar **Automatizare Linear** este aplicația Control Center a
-spațiului de lucru, conectată de un administrator, pentru sincronizarea
-tichetelor, pipeline-uri și agenți. Serverul poate deține și o **Cheie API de
+pentru ce faci tu, și se află în **Setări → Tu → Profil**; **Automatizare
+Linear** este aplicația Control Center a spațiului de lucru, conectată de un
+administrator din cardul Ticketing, pentru sincronizarea tichetelor, pipeline-uri
+și agenți. Serverul poate deține și o **Cheie API de
 serviciu** (**Aplicații provider**) pentru spațiile de lucru fără automatizare
 conectată. Niciun credențial de ticketing nu este injectat în sandbox-ul unui
 agent; agenții scriu tichete prin instrumentele Control Center, care întreabă
@@ -104,10 +102,11 @@ regula **Scrie într-un tracker extern**. Vezi
 - **Aplicația serverului**: generează o cheie privată sau un client secret nou în
   pagina aplicației la provider, lipește-l în **Aplicații provider** și apasă
   **Test**
-- **Cheia de instalare Connect**: **Schimbă cheia** pe cardul **Control Center
-  Connect** sau `cc_server connect rotate-key --yes`. Toți cei care s-au
-  autentificat prin Connect se autentifică din nou. Vezi
-  [Control Center Connect](/ro-RO/manual/referinta/connect/)
+- **Cheia de instalare Connect**: proprietarul serverului apasă **Schimbă cheia**
+  pe cardul **Control Center Connect**. Toți cei care s-au autentificat prin
+  Connect se autentifică din nou. Dacă serverul Connect nu poate fi contactat,
+  nu se schimbă nimic și ți se oferă **Rotește oricum**. Vezi
+  [Rotește cheia de instalare](/ro-RO/manual/referinta/connect/#schimbă-cheia-de-instalare)
 - **Un provider de modele**: pe rândul său, deconectează-te (OAuth) sau elimină
   cheia, apoi conectează-te din nou
 - **Slack**: pentru propria ta aplicație, lipește din nou tokenurile în dialogul
@@ -120,9 +119,9 @@ regula **Scrie într-un tracker extern**. Vezi
 
 ### Un token GitLab sau Bitbucket funcționează în `curl`, dar nu aici
 
-Verifică subtitlul rândului **Găzduire de cod**. Dacă scrie „din mediu”,
-credențialul care răspunde este al serverului, nu al tău — al tău nu a fost
-salvat.
+Verifică rândul **Găzduire de cod**. Dacă scrie „Neconectat” sau îți cere să te
+conectezi din nou, tokenul tău nu a fost salvat sau a fost refuzat. Pentru
+Bitbucket, introdu adresa de e-mail a contului Atlassian împreună cu tokenul API.
 
 ### Un token GitLab sau Bitbucket este acceptat, dar cererile ulterioare eșuează
 

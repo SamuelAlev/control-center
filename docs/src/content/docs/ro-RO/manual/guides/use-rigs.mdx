@@ -2,7 +2,7 @@
 title: Oferă unui agent o mașină pe care să testeze
 description: Oferă unui agent un browser, un desktop, un emulator Android sau un Simulator iOS de unică folosință — urmărite live, cu controale pe care le poți prelua.
 slug: ro-RO/manual/ghiduri-practice/foloseste-statii
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 O **stație** este o mașină de unică folosință pe care un agent o deschide când
@@ -136,6 +136,21 @@ Apasă **Oprește mașina** când ai terminat.
 
 Controlul este exclusiv intenționat: doi actori care tastează într-o singură
 mașină produc intrare pe care niciunul nu a intenționat-o.
+
+### Cine poate privi și cine poate conduce
+
+O mașină deschisă într-un spațiu urmează depozitele acelui spațiu, la fel cum o face și spațiul însuși (vezi [Spațiile urmează depozitele lor](/ro-RO/manual/concepte/autorizare/#spațiile-urmează-repository-urile-lor)):
+
+- **Privitul** necesită acces de citire la spațiu: un grant de citire pe fiecare depozit pe care îl expune spațiul și autentificarea ta în forge capabilă să le citească pe toate. Privitul acoperă lista de mașini, ecranul, sunetul, starea browserului, porturile ei și citirea clipboardului și a fișierelor ei.
+- **Conducerea** necesită și un [grant de scriere](/ro-RO/manual/concepte/autorizare/#modificarea-codului-necesită-grantul-de-scriere) pe acele depozite. Conducerea acoperă deschiderea unei mașini din spațiu, tastarea și clicurile, preluarea controlului, pornirea, oprirea și închiderea ei, redirecționarea porturilor, scrierea în clipboardul ei, depunerea de fișiere pe ea și folosirea microfonului.
+
+Cu acces doar de citire, mașina afișează **Doar vizualizare** și „Poți urmări această mașină. Controlarea ei, redirecționarea porturilor, lipirea în ea sau plasarea fișierelor pe ea necesită acces de scriere la toate depozitele din acest spațiu.” Sub un buton **Pornește mașina** dezactivat, fila spune „Pornirea unei mașini aici necesită acces de scriere la toate depozitele din acest spațiu. Un administrator al spațiului de lucru îl poate acorda.” Fără acces de citire, mașina nu este afișată, ci doar „Nu poți vedea această mașină. Aparține unui spațiu la care nu ai acces de citire.”
+
+O mașină care nu aparține niciunui spațiu nu ajunge la niciun worktree, iar fiecare membru al spațiului de lucru o poate privi și conduce.
+
+O mașină care poartă propriile autentificări ale unei persoane este a ei de condus: terminalul ei de mașină sau orice mașină deschisă pentru ea al cărei acces la rețea ajunge la un forge. Doar acea persoană și rulările de agent care acționează doar în numele ei pot conduce mașina. Administratorii spațiului de lucru și proprietarul serverului nu fac excepție de la asta. Ceilalți pe care îi admite spațiul pot în continuare să urmărească ecranul, sunetul, starea și porturile mașinii, dar nu pot să o conducă, să-i redirecționeze porturile, să lipească în ea, să depună fișiere pe ea, să copieze fișiere din ea sau să-i citească clipboardul. O astfel de mașină afișează **Doar vizualizare** cu această notă: „Poți urmări această mașină. Folosește conectările persoanei pentru care a fost deschisă, așa că doar ea poate controla mașina, redirecționa porturile ei, lipi conținut în ea sau plasa fișiere pe ea.” O acțiune refuzată din acest motiv spune „Doar persoana pentru care a fost deschisă această mașină o poate controla. Mașina folosește conectările proprii ale acesteia.” Terminalul altcuiva nu apare deloc pentru tine, la fel ca sesiunile lui de terminal.
+
+Fiecare mașină arată dacă o poți conduce, iar asta se actualizează singură când se schimbă un grant sau autentificarea ta în forge.
 
 ## Mută lucruri înăuntru și în afară
 

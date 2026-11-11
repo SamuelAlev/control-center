@@ -80,7 +80,7 @@ class _SsoSectionState extends ConsumerState<SsoSection> {
         _error = null;
       });
     } on Object catch (e) {
-      // Unknown op (an older server binary) or the admin gate refusing —
+      // Unknown op (a demo) or the admin gate refusing —
       // either way this surface is not usable from here.
       if (!mounted) {
         return;

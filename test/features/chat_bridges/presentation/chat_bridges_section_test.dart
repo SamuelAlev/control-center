@@ -1,4 +1,5 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInUnavailableReason;
 import 'package:cc_data/cc_data.dart' show SignInLaneInfo, SignInLaneMode;
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_ui/cc_ui.dart';
@@ -130,11 +131,14 @@ void main() {
         ConnectOAuthLane.slack: SignInLaneInfo(
           lane: ConnectOAuthLane.slack,
           mode: SignInLaneMode.unavailable,
-          error: 'This Connect server has no Slack app.',
+          unavailableReason: SignInUnavailableReason.laneNotOffered,
         ),
       },
     );
-    expect(find.text('This Connect server has no Slack app.'), findsOneWidget);
+    expect(
+      find.text(l10n.signInUnavailableLaneNotOffered('Slack')),
+      findsOneWidget,
+    );
     final add = tester.widget<CcButton>(
       find.widgetWithText(CcButton, l10n.chatAddToProvider('Slack')),
     );

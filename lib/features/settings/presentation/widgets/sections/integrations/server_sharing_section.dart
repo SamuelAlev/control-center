@@ -18,7 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// invites embed the server's current addresses automatically (descriptor
 /// refresh), so a new tunnel URL propagates without re-pairing. Renders a
 /// quiet "not available" row when the server doesn't expose the
-/// `connectivity.*` ops (older binary, or no network runtime).
+/// `connectivity.*` ops (a demo, or no network runtime).
 class ServerSharingSection extends ConsumerStatefulWidget {
   /// Creates a [ServerSharingSection].
   const ServerSharingSection({super.key});
@@ -62,8 +62,7 @@ class _ServerSharingSectionState extends ConsumerState<ServerSharingSection> {
         _unavailable = false;
       });
     } on Object {
-      // Unknown op (-33006 on an older server), no network runtime, or a
-      // transport failure — either way there is nothing to control here.
+      // Unknown op (-33006), no network runtime, or a transport failure — either way there is nothing to control here.
       if (!mounted) {
         return;
       }

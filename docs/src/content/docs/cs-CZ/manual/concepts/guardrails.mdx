@@ -2,7 +2,7 @@
 title: Guardraily — jedna politika pro každou měnící akci
 description: Proč Control Center vede každý vedlejší efekt agenta jedním enginem allow/prompt/deny, proč taxonomie ActionClass zůstává schválně malá a co volič autonomie skutečně mění.
 slug: cs-CZ/prirucka/koncepty/guardraily
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agenti v Control Center mohou mazat soubory, odesílat větve, publikovat pull
@@ -18,22 +18,20 @@ Engine politiky je právě jeden. Konzultuje se na každém místě, kde může 
 systém opustit: v registru nástrojů vestavěného harnessu, na bráně serverového
 dispatcheru MCP a u mutací repo operací. Pravidlo zapsané jednou proto platí
 pro vestavěný runtime i pro externí CLI agentů. Žádná druhá, tišší cesta okolo
-nevede. Starší politika jen pro bash pořád platí: pravidlo může místo třídy
-akce odpovídat prefixu příkazu a obě podoby žijí ve stejném úložišti.
+nevede. Pravidlo může také odpovídat prefixu příkazu místo třídy akce; obě podoby žijí ve stejném úložišti.
 
 Engine ale nenahrazuje sandbox operačního systému a sandbox nenahrazuje jeho.
 Každý odpovídá na jinou otázku. Guardraily rozhodují, jestli se volání, které
 Control Center vidí, smí vůbec stát. Sandbox omezuje, kam smí výsledný proces
 dosáhnout. `cc_server` použije sandbox tam, kde hostitel nabízí backend, ale
 [Windows žádný nenabízí a Linux potřebuje `bwrap` a `socat`](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
-Na těch hostitelích jsou guardraily nejvnější vrstvou vynucení, ne politikou
-položenou na podlahu. To se hodí vědět, když se rozhoduješ, jak volné
+Na těch hostitelích startují jen běhy vlastníka serveru, pokud vlastník nevypnul sandbox pro všechny přepínačem `--sandbox off`. U každého běhu, který startuje bez sandboxu, jsou guardraily nejvnější vrstvou vynucení, ne politikou položenou na podlahu. To se hodí vědět, když se rozhoduješ, jak volné
 nastavení zvolit.
 
 ## ActionClass: schválně uzavřená taxonomie
 
 Každý měnící nástroj deklaruje, do kterých **ActionClasses** patří, z uzavřené
-sady třinácti tříd efektů. Pět z nich má z výroby **prompt**, zbytek allow
+sady čtrnácti tříd efektů. Šest z nich má z výroby **prompt**, zbytek allow
 a mění to až pravidlo.
 
 | Třída                      | Vestavěný výchozí | Co pokrývá                                                        |
@@ -51,16 +49,16 @@ a mění to až pravidlo.
 | `processSpawn`             | allow             | Spuštění procesu (shell a všechno, co si přes shell zavolá)       |
 | `workspaceMutation`        | allow             | Změna struktury pracovního prostoru (repozitáře, prostory, agenti) |
 | `enclosureControl`         | allow             | Ovládání izolovaného prostředí (stanice): start VM, poslání vstupu |
+| `hostExecution`            | **prompt**        | Spuštění příkazu na hostiteli serveru mimo jakýkoli sandbox na žádost agenta: úlohy prostředí, procesy, compose stacky a `eval`, když jeho jádro běží bez omezení |
 
 Osm tříd s výchozím allow počítá s tím, že pod nimi leží podlaha sandboxu.
-Leží tam, kde hostitel nabízí backend. Na Windows a na Linuxu bez `bwrap`
-a `socat` ne. Chceš-li tam hlídat `fileWriteOutsideWorktree` nebo
+Leží tam, kde hostitel nabízí backend, ale ne při `--sandbox off` a ne pro běhy vlastníka na Windows nebo na Linuxu bez `bwrap` a `socat`. Chceš-li tam hlídat `fileWriteOutsideWorktree` nebo
 `packageInstall`, musíš to pravidlo napsat.
 
 Sada je uzavřená schválně. Nový měnící nástroj, který nedeklaruje žádnou
 třídu, neprojde testem západky, takže taxonomie roste jen výslovným
 a zdůvodněným rozhodnutím. „Rozbujení taxonomie je pro tuhle funkci konec.“
-Třináct tříd stačí na politiky, které lidé opravdu píšou (nikdy neodesílat
+Čtrnáct tříd stačí na politiky, které lidé opravdu píšou (nikdy neodesílat
 bez dotazu, nikdy nemazat mimo worktree, čtení vždy povolit), a je jich dost
 málo na to, aby nastavení zůstalo srozumitelné.
 
@@ -87,8 +85,7 @@ Dvě rozhodnutí nesou tvrdé záruky:
   Když se ptá několik tříd, jedno potvrzení je vypíše všechny.
 
 Schválně tu není západka na tah. Každé volání nástroje vyhodnotí politiku
-znovu od začátku, takže opakované dotazování na stejnou akci omezuje jen to,
-že si rozhodnutí pamatuješ volbou „Schválit na 8 hodin“, ne nic vázaného
+znovu od začátku, takže opakované dotazování na stejnou akci omezuje jen vlastní schválení na čas operátora, ne nic vázaného
 na tah.
 
 ## Pravidla na úrovni argumentů
@@ -105,6 +102,7 @@ Omezení může jmenovat:
   větev kromě main“)
 - **hostitelé** – síťové cíle, se zástupnými znaky subdomén (`*.internal`)
 - **příkazy** – prefixy příkazů, párované na hranici slova
+- **nástroje** – přesný nástroj, který volání uvádí, takže schválení může krýt jeden nástroj a ne všechny nástroje se stejným účinkem
 - **stropy** – `maxCount` / `maxCents`, takže „smazat až 50 souborů“ jde
   vyjádřit
 
@@ -144,14 +142,19 @@ příkazová síť režimu pod úložištěm politiky a sandbox operačního sys
 obojím. Pravidlo příkazu, které se vyhodnotí jako `allow`, žádnou z těch dvou
 neuvolní. Příkazová síť režimu běží až potom a její `deny` je konečné.
 
-## Zapamatovaná schválení
+## Schválení na čas
 
-Odpověď na výzvu volbou „Schválit na 8 hodin“ zapíše skutečné pravidlo
-politiky. Má rozsah (prostor / agent / pracovní prostor), je **vázané na
-argumenty** (schválení odeslání na `feature/login` udělí `feature/**`, ne
-`main`) a **samo se zruší** po explicitním TTL. Ano na pár následujících hodin
-není tiché přepsání trvalé politiky. Vzniklá pravidla spadnou do stejného
-úložiště s proveniencí `remembered` a s expirací, takže je můžeš odvolat dřív.
+Každá karta schválení, kterou vyvolá akce agenta, nabízí **Schválit na 8 hodin**, když akce má něco užšího než svou třídu, co by mohla pojmenovat. Volba zapíše skutečné pravidlo politiky, schválení na čas, do stejného úložiště jako pravidla, která nastavuješ, s proveniencí `remembered` a expirací:
+
+- **Vymezené.** Platí pro prostor, ze kterého otázka přišla. Jen odpověď správce může být zapsána pro celý pracovní prostor.
+- **Úzké.** Pojmenuje rodinu větví (schválení odeslání na `feature/login` kryje `feature/**`, ne `main`), složku, hostitele, přesný příkaz nebo nástroj. Commit je jediná akce schválená jako třída, pro daný prostor: nemá nic užšího, co by se dalo pojmenovat.
+- **Samo se ruší.** Končí po osmi hodinách a dá se zrušit dřív na stránce oprávnění agentů.
+
+Schválení na čas jen ušetří otázku. Odpovídá na rozhodnutí Nejdřív se zeptat nastavené na svém vlastním rozsahu nebo širším, nikdy na Zakázat, ať zákaz pochází z jakéhokoli rozsahu. Ukládá se vedle pravidla nastaveného pro akci, takže změna toho pravidla schválení nechá v platnosti a zrušení schválení nechá pravidlo.
+
+Některé brány se ptají samy, poté co politika volání povolila: vlastní deklarované schválení nástroje nebo příkazová síť režimu. Svou otázku přeskočí jen u schválení na čas, které pojmenuje přesně ten nástroj nebo příkaz. Nastavení akce na Povolit je neutiší.
+
+Tři karty mají dvě tlačítka, protože není co přenášet dál: povolení, aby sandbox spouštěl programy ze složky (schválení je už uložené přidělení, který můžeš odvolat), destruktivní operace, kterou potvrdíš jednou, a instalace skillu (změněný skill se má ptát znovu).
 
 ## Úrovně vynucení
 

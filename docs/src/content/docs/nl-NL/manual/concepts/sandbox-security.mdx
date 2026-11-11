@@ -2,7 +2,7 @@
 title: Sandbox en beveiliging
 description: Wat een agent in Control Center vandaag daadwerkelijk beperkt, hoe ver de OS-sandbox reikt en welke grenzen standhouden op een host die geen backend heeft.
 slug: nl-NL/handleiding/concepten/sandbox-en-beveiliging
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Waar de OS-sandbox wel en niet reikt]
@@ -10,9 +10,7 @@ sourceHash: ac926eb1b2447d93207802824742f121d232f171
 agentopdrachten in de OS-native sandbox wanneer er een beschikbaar is — Seatbelt
 op macOS, bubblewrap op
 Linux en WSL2 (dat `bwrap` en `socat` op het `PATH` nodig heeft). Waar geen
-backend bestaat — Windows, of een Linux-machine zonder die tools — vallen runs
-terug op de andere grenzen hieronder en zegt de server dat in zijn opstartlog.
-`--sandbox off` zet de sandbox bewust uit.
+backend bestaat — Windows, of een Linux-machine zonder die tools — starten alleen de runs van de servereigenaar, zonder sandbox, en worden die van alle anderen geweigerd. De servereigenaar kan de server ook starten met `--sandbox off`, wat de agents van elk lid op die machine zonder sandbox laat draaien. Het opstartlog zegt in welk geval je zit; zie [Agents op een host zonder sandbox](#agents-op-een-host-zonder-sandbox).
 
 Twee hiaten overleven de sandbox en zijn het waard om in gedachten te houden:
 
@@ -37,7 +35,23 @@ groot is het impactbereik als hij het mis heeft”.
 Control Center antwoordt daarop in lagen, en de lagen zijn bewust onafhankelijk.
 Ontbreekt er één, dan houden de andere nog stand. Dat is belangrijk, want de
 buitenste laag — de OS-sandbox — is de enige voorwaardelijke: hij hangt ervan af
-of de host een backend biedt, en op Windows doet geen enkele host dat.
+of de host een backend biedt, en op Windows doet geen enkele host dat. Waar hij ontbreekt, voert de server de agents van iedereen niet stilzwijgend zonder hem uit.
+
+## Agents op een host zonder sandbox
+
+De server beslist één keer bij het opstarten hoe agents op zijn machine draaien, en houdt die beslissing tot hij herstart:
+
+- **Gesandboxed.** De host heeft een backend en de sandbox staat aan. Elke run wordt omhuld.
+- **Uit.** De servereigenaar heeft de server met `--sandbox off` gestart. De agents van elk lid draaien op deze machine zonder sandbox. Dat is de keuze van de eigenaar voor iedereen die de server gebruikt, geen instelling voor één run.
+- **Niet beschikbaar.** De sandbox staat aan, maar de host heeft geen backend. Een run start alleen wanneer de persoon die er verantwoordelijk voor is de [eigenaar](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) van de server is: de persoon die erom vroeg, of voor een schema, webhook of andere automatisering de persoon waaraan die is gebonden. Bij alle anderen wordt de run geweigerd voordat een credential wordt geminted of een proces start, met "Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren. De beheerder kan de sandbox installeren of sandboxing voor iedereen uitzetten."
+
+De reden is het eigendom van de machine. Een agent zonder sandbox kan alles wat het serveraccount van de server kan, dus draait alleen de persoon die dat account bezit er een, tenzij die voor iedereen anders beslist. Een Windows-server bevindt zich altijd in het geval niet beschikbaar. Linux heeft een eigen bijzonderheid, behandeld in de [sandboxbackends-referentie](/nl-NL/handleiding/referentie/sandboxbackends/#linux-bubblewrap): native dispatch faalt daar momenteel gesloten, zelfs met bubblewrap geïnstalleerd.
+
+Dezelfde regel geldt voor de kleinere dingen die voor je een proces starten:
+
+- **Snelle hulpjes die via een ACP-CLI draaien**: gesprekstitels, `/btw`, `/handoff` en `/goal`. Wanneer de server agents in een sandbox draait, draaien ze binnen de sandbox, in een eigen sessie. Onder `--sandbox off` draaien ze zonder inperking. Zonder beschikbare sandbox draaien ze alleen voor verzoeken waarvoor de servereigenaar verantwoordelijk is; voor anderen worden ze overgeslagen, dus er wordt geen titel gegenereerd en een zijvraag meldt dat de Content synthesizer geen werkende runner heeft. Hulpjes die geen tool starten, worden hier niet door geraakt.
+- **De golden tests van een pull request** in de visuele controle van Review Studio volgen dezelfde regel.
+- **Toolprocessen en `bash`** in een run vallen nooit terug op de host. Als de server agents in een sandbox wil draaien maar er voor een run geen sandbox beschikbaar is, worden ze geweigerd.
 
 ## Wat een agent daadwerkelijk beperkt
 
@@ -107,7 +121,7 @@ De `bash`-tool is de andere plek waar precisie loont. De opdrachten ervan worden
 getoetst aan het opdrachtbeleid van de modus en daarna gestart met een gesaneerde
 omgeving en de worktree als werkmap. Waar een backend bestaat, wordt die start
 omhuld, dus houdt de sandbox een shellopdracht tegen die buiten de worktree wil
-schrijven; waar dat niet zo is — Windows, of Linux zonder `bwrap` en `socat` — is
+schrijven; waar dat niet zo is (elke run onder `--sandbox off`, en de eigen runs van de eigenaar op Windows of op Linux zonder `bwrap` en `socat`) is
 het opdrachtbeleid het enige tussen de opdracht en de rest van de schijf. In de
 modus `chat` weigert het beleid hard een vaste lijst (rechtenescalatie,
 vernietiging van systeem en schijf, ontsnapping uit containers en namespaces) en
@@ -136,11 +150,7 @@ agent ook draait.
 
 Een push is de actie die moet standhouden, zelfs tegen een agent die een regel
 probeert te omzeilen. Daarom wordt hij afgedwongen via wat de agent bezit, niet
-via wat hij uitvoert. Een run in een GitHub-worktree krijgt een token voor die
-ene repository, uitgegeven via de GitHub App van de werkruimte, de eigen app van
-de server of Control Center Connect. Het kan inhoud lezen en, als het
-verantwoordelijke lid mag pushen, opmerkingen plaatsen op pull requests, maar het
-kan niet pushen. De git-configuratie van de
+via wat hij uitvoert. Een run heeft bij de start geen token voor de codehost, en zijn `git` krijgt er nooit een. Wanneer zijn `gh` er een nodig heeft, geeft Control Center hem een token voor één GitHub-repository waarmee de run werkt, uitgegeven via de GitHub App van de werkruimte, de eigen app van de server of Control Center Connect. Het kan alleen lezen: het kan niet pushen, opmerkingen plaatsen of iets wijzigen. De git-configuratie van de
 run herschrijft elke GitHub-push-URL (`https://github.com/`,
 `git@github.com:`, `ssh://git@github.com/`) naar de **agentrun-gateway**, een
 loopback-eindpunt op `cc_server`. De gateway leest welke refs de push bijwerkt,
@@ -155,26 +165,24 @@ git:
 ```
 
 De gateway stuurt pushes alleen door naar de eigen repo van de worktree of naar
-een GitHub-repo die aan de werkruimte is gekoppeld. Fetches gaan met het
-leestoken rechtstreeks naar GitHub.
+een GitHub-repo die aan de werkruimte is gekoppeld. Fetches lopen ook via de gateway, bij GitHub, GitLab en Bitbucket: die haalt de repositories waarmee de run werkt op met een inloggegeven dat hij zelf bewaart en dat de run nooit ziet. Bij GitLab en Bitbucket is dat je eigen token als je om de run hebt gevraagd, en het automatiseringstoken van de repo als niemand erom heeft gevraagd. Een fetch vraagt niemand om toestemming, en alleen een weigering op **Toegang tot het netwerk** blokkeert hem.
 
 Andere shellopdrachten stuiten op een zachtere poort. De `bash`-tool van de
 harness en, via een hook, de `Bash`-tool van Claude Code delen elke
 opdrachtregel in en raadplegen de regel waaronder die valt: `git commit`,
 `merge`, `rebase`, `cherry-pick`, `revert` en `am` zijn **Een commit maken**;
 `gh pr create` is **Een pull request openen**; `gh pr merge`, `review`,
-`comment` en `close` zijn **Een review publiceren of mergen**;
+`comment` en `close` zijn **Een pull request bijwerken of samenvoegen**;
 `gh issue create`, `edit`, `comment` en `close` zijn **Naar een externe tracker
 schrijven**; pakketinstallaties zijn **Een pakket installeren**; `curl` en
-`wget` zijn **Toegang tot het netwerk**. Dit herkent de gebruikelijke schrijfwijze
+`wget` zijn **Toegang tot het netwerk**. Schrijven naar GitHub vanuit de shell is de uitzondering: `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` en schrijfacties met `gh issue` werken niet in een run, waarvan het token alleen kan lezen, en de agent wordt verwezen naar de tools van Control Center, die deze regels raadplegen. Dit herkent de gebruikelijke schrijfwijze
 van een actie, en een agent die er een wil verbergen (`eval`, een scriptbestand,
 een directe API-aanroep) kan dat. Pushes zijn er niet van afhankelijk.
 
 Elk GitHub-token dat een run krijgt, is dubbel begrensd: tot één repository, en
 tot wat het verantwoordelijke lid (degene die het vroeg, anders de eigenaar van
 de werkruimte) daar mag doen. Er zijn geen reserve-inloggegevens. Als er geen
-token kan worden uitgegeven, start de run zonder, en zijn notities vermelden
-waarom.
+token kan worden uitgegeven, vermeldt het commando dat erom vroeg waarom.
 
 In een sandbox wordt geen ticketing-API-sleutel gezet. Agenten schrijven tickets
 via de MCP-tools van Control Center, die **Naar een externe tracker schrijven**
@@ -188,6 +196,16 @@ inloggegevens van de run worden vrijgegeven wanneer de run wordt afgebroken. De
 tokens erachter worden per lid en repository gedeeld en verlopen binnen ongeveer
 een uur; een lid dat zich afmeldt bij GitHub of de werkruimte verlaat, laat in
 één keer elk token vervallen dat namens hem is uitgegeven.
+
+## Repositories die een agent alleen kan lezen
+
+Een agentrun mag alleen de checkouts wijzigen van repositories waarop de persoon voor wie hij handelt de [schrijfgrant](/nl-NL/handleiding/concepten/autorisatie/#code-wijzigen-vereist-de-schrijfgrant) heeft. Werkruimtebeheerders hebben die op elke gekoppelde repository. Een run waar niemand om heeft gevraagd, zoals een schema of andere automatisering, wordt beoordeeld door dezelfde verantwoordelijke persoon waaraan zijn automatiseringstoken is gebonden.
+
+In een space met een repository die die persoon alleen kan lezen, kan de agent die repository nog steeds lezen en doorzoeken, maar kan hij de bestanden ervan niet wijzigen. Zijn bestandstools weigeren met een melding die begint met `<repo> is read-only for this run` en zegt dat het wijzigen van de checkout de schrijfgrant vereist, die de persoon voor wie de run handelt niet heeft, en dat een werkruimtebeheerder die kan toekennen. Binnen een sandbox is de checkout voor elk proces alleen-lezen, dus een shellcommando dat daar schrijft mislukt met "Operation not permitted". Dat geldt ook voor `git commit` en een build of test die zijn uitvoer binnen de checkout schrijft. Repositories die de persoon wel kan schrijven, werken zoals gewoonlijk, dus beheerders, en wie schrijftoegang heeft tot elke repository van de space, zien geen verschil.
+
+Dit wordt één keer beslist, wanneer de run start. Een wijziging van een grant werkt pas bij de volgende run van de agent, en dat geldt ook voor een repository die tijdens een run aan de space wordt toegevoegd.
+
+Waar de serverbeheerder de sandbox heeft uitgezet, worden alleen de bestandstools van de agent zelf en de schrijftools van Claude Code geweigerd, en shellcommando's kunnen de checkout nog steeds wijzigen. Er kan in beide gevallen niets zonder de schrijfgrant worden gepusht, omdat elke push tegen die grant wordt gecontroleerd. Welke processen de sandbox per platform beperkt, staat in [Sandboxbackends](/nl-NL/handleiding/referentie/sandboxbackends/).
 
 ## Wat de sandbox toevoegt en waar hij stopt
 
@@ -203,17 +221,11 @@ backend antwoordt, beide aansluitpunten die het dispatchpad heeft, omdat de
 transporten er geen delen. Het eerste (`SandboxPort`) omhult de Claude Code CLI.
 Het tweede (`SandboxManager`) omhult ACP-adapters en de `bash`-tool van de
 ingebouwde harness. Slechts één ervan voeden zou de andere ongehuld laten
-starten, en dat gebeurde vroeger ook. Op een host zonder backend, of onder
-`--sandbox off`, starten ze allemaal ongehuld en zegt de server op zijn
-opstartregel in welke situatie je zit. ACP en de `bash` van de harness saneren de
+starten, en dat gebeurde vroeger ook. Onder `--sandbox off` starten ze allemaal ongehuld; op een host zonder backend starten alleen de runs van de eigenaar, ook ongehuld. De server zegt op zijn opstartregel in welk geval je zit. ACP en de `bash` van de harness saneren de
 omgeving nog steeds; Claude Code via `NoSandboxAdapter` erft de omgeving van de
 host.
 
-Eén oppervlak stapt er bewust buiten: de door de server gehoste terminal
-accepteert een backend-argument per sessie en `cc_server` construeert die met de
-hostshell als standaard, dus een terminal die je vanuit de app opent, draait
-zonder sandbox tenzij een client expliciet `native` noemt. Dat is een echte shell
-op de serverhost, geen agentrun.
+De door de server gehoste terminal opent de hostshell alleen voor de [eigenaar](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) van de server. Iedereen anders krijgt een gesandboxde terminal, met de beperkingen van een agent, in de eigen mappen van de werkruimte. Alleen wie een terminal heeft geopend, kan erin typen, hem lezen of sluiten.
 
 Op Linux bouwt `bubblewrap` een mount-namespace, dus ziet de agent echt alleen
 wat erin is gebonden. Op macOS past `sandbox-exec` een Seatbelt-profiel toe dat
@@ -226,6 +238,10 @@ daarbovenop, blokkering van unlink op elk geweigerd pad en zijn voorouders zodat
 een rename een schrijfweigering niet kan omzeilen, exec-weigeringen voor altijd
 gevaarlijke binaries en voor alles wat naar een beschrijfbare map is gekopieerd,
 en een netwerk dat beperkt blijft tot de loopback-proxypoorten plus DNS. Toolchain-installaties onder je thuismap (pnpm via corepack, node-versiebeheerders, Playwright-browsers, rustup, fvm, uv en vergelijkbare) blijven binnen dat exec-blok uitvoerbaar, zodat agents ze zonder omwegen kunnen gebruiken. De altijd-gevaarlijke weigeringen blijven er binnen wel van kracht. Elke sessie krijgt bovendien een eigen privé-`TMPDIR`. Dat is de enige tijdelijke map waarin de agent zelf gebouwde programma's mag uitvoeren of Unix-sockets mag openen.
+
+Twee extra beschermingen gelden in elke modus. Een sandbox kan geen commando toevoegen, vervangen, verwijderen of hernoemen in de mappen waaruit de server programma's start (elke map op zijn `PATH` en de gebruikelijke per-gebruiker-toolmappen), dus een gesandboxde run kan geen programma plaatsen dat de server later buiten de sandbox start. Globale installaties en wisselingen van de standaardversie vanuit een run mislukken daarom met "Operation not permitted", terwijl installaties binnen het project en `npx`-achtige runs blijven werken; installeer globale tools op de server zelf en start hem opnieuw. En elk thuispad dat een sandbox niet kan lezen, kan hij ook niet schrijven, waarbij de opstartbestanden van de shell en de sessie van de servergebruiker nooit schrijfbaar zijn. Details en platformgrenzen staan in [De opdrachtmappen van de server](/nl-NL/handleiding/referentie/sandboxbackends/#de-commandomappen-van-de-server).
+
+Een tool-sandbox van een run hoort bij die run en wordt vrijgegeven wanneer hij eindigt. Language servers starten opnieuw bij elke gesandboxde run. Een debugsessie behoudt zijn sandbox over de beurten heen tot de sessie eindigt, hooguit 30 minuten.
 
 De praktische consequentie: op Linux wordt het beeld dat de agent van het
 bestandssysteem heeft smaller; op macOS kan de agent nog steeds het grootste deel

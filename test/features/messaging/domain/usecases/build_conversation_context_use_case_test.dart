@@ -613,9 +613,8 @@ void main() {
         id: 's1',
         senderId: 'system',
         content: 'Summary here',
-        type: MessageType.system,
-        senderType: SenderType.agent,
-        metadata: {'compacted': true},
+        type: MessageType.compaction,
+        senderType: SenderType.system,
       );
       final bigMsg = _msg(id: '2', senderId: 'user', content: 'X' * 200);
 

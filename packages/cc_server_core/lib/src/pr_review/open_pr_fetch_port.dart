@@ -2,8 +2,15 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 
 /// One repo's enriched open-PR group (checks already overlaid), matching the
-/// catalog's `OpenPrListFetcher` result shape.
-typedef OpenPrGroup = ({Repo repo, List<PullRequest> prs, bool hasMore});
+/// catalog's `OpenPrListFetcher` result shape. `totalCount` is the repo's open
+/// PR count across every page (the forge's own figure), or null when the forge
+/// does not report one; `prs` holds only the first page.
+typedef OpenPrGroup = ({
+  Repo repo,
+  List<PullRequest> prs,
+  bool hasMore,
+  int? totalCount,
+});
 
 /// One fetch's result: the enriched groups plus the ids of the repos GitHub
 /// actually answered for.

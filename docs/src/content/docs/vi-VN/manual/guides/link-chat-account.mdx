@@ -2,7 +2,7 @@
 title: Liên kết tài khoản Slack của bạn
 description: Chứng minh một danh tính Slack là của bạn để agent hành động dựa trên tin nhắn của bạn và công việc của bạn được ghi nhận cho bạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/lien-ket-tai-khoan-chat
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Hướng dẫn này chỉ cho bạn cách liên kết danh tính chat của mình với người dùng
@@ -27,8 +27,7 @@ luồng Slack đó, giải thích cách liên kết. Không có gì được đi
 Liên kết cần cả hai phía: gửi mã từ Slack chứng minh tài khoản Slack, còn xác nhận
 trong Control Center chứng minh tài khoản đó là của bạn.
 
-1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính** và cuộn đến thẻ
-   **Tài khoản chat đã liên kết**
+1. Mở **Cài đặt → Bạn → Hồ sơ** và tìm thẻ **Tài khoản chat đã liên kết**
 2. Trong mục Slack, nhấn **Liên kết tài khoản Slack của tôi**. Hộp thoại hiển thị một
    mã dùng một lần, ví dụ:
 
@@ -47,7 +46,7 @@ K7M2QP
    động; nhấn **Lấy mã mới** để thử lại
 
 Đóng hộp thoại không làm mất một yêu cầu liên kết. Một mã đến sau sẽ chờ ở dòng
-**Liên kết tài khoản Slack của tôi** trên trang hồ sơ của bạn, với cùng **Xác nhận**
+**Liên kết tài khoản Slack của tôi** trên thẻ đó, với cùng **Xác nhận**
 và **Từ chối**.
 
 Vì sao có bước xác nhận: một mã bị người khác đọc trộm và gửi từ tài khoản Slack của
@@ -75,6 +74,8 @@ Nếu hồ sơ Slack của bạn mang một email đã được xác nhận kh�
 một người dùng Control Center **đã là thành viên của không gian làm việc này**, cầu nối
 sẽ liên kết bạn ngay lần đầu bạn trò chuyện với nó. Không cần mã.
 
+Phía Control Center được coi là đã xác minh khi đăng nhập một lần hoặc SCIM đặt địa chỉ đó, hoặc khi chủ sở hữu máy chủ đã xác nhận nó trong **Cài đặt → Máy chủ → Mọi người**. Địa chỉ bạn tự nhập trong hồ sơ của mình không được xác minh, nên nó không liên kết được gì cho đến khi chủ sở hữu xác nhận; trong lúc đó hãy dùng luồng mã.
+
 Cả hai nửa đều quan trọng: việc khớp email chứng minh danh tính, nhưng chỉ tư cách
 thành viên mới cấp quyền truy cập, nên một người lạ có email tình cờ tồn tại trên
 máy chủ sẽ không liên kết được gì. Danh sách thành viên cho thấy mỗi liên kết được
@@ -85,12 +86,10 @@ tiết lộ địa chỉ và luồng dùng mã là con đường duy nhất.
 
 ## Xem ai đã liên kết
 
-Danh sách thành viên thuộc phần quản trị không gian làm việc, nên nó nằm ở nửa còn
-lại của bề mặt giao diện: **Cài đặt → Không gian làm việc → Chung → Cầu nối chat →
-Tài khoản đã liên kết**. Nó liệt kê mọi thành viên đã liên kết trong không gian
+Danh sách thành viên thuộc phần quản trị không gian làm việc, nên nó nằm ở thẻ quản trị: **Cài đặt → Không gian làm việc → Tích hợp → Cầu nối chat → Tài khoản đã liên kết**. Nó liệt kê mọi thành viên đã liên kết trong không gian
 làm việc, cùng tài khoản Slack mà mỗi người ánh xạ tới và cách liên kết được tạo.
 
-Trạng thái của riêng bạn nằm trên trang hồ sơ của bạn: dòng **Liên kết tài khoản
+Trạng thái của riêng bạn nằm trong **Cài đặt → Bạn → Hồ sơ**: dòng **Liên kết tài khoản
 Slack của tôi** hiển thị "Đã liên kết với _your-slack-id_" sau khi bạn đã liên kết
 và nhắc bạn liên kết khi bạn chưa liên kết.
 

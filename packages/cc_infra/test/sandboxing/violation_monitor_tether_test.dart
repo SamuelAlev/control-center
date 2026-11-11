@@ -143,29 +143,4 @@ Future<void> main(List<String> args) async {
       await expectGone(monitor.pid);
     }, testOn: 'mac-os');
   });
-
-  group('orphanedTapPids', () {
-    const tap =
-        '/usr/bin/log stream --style ndjson --predicate sender == "Sandbox" '
-        'OR subsystem BEGINSWITH "com.apple.sandbox"';
-
-    test('finds exact taps adopted by launchd', () {
-      final ps = [
-        '  101     1 $tap',
-        '  102  4242 $tap',
-        '  103     1 /usr/bin/log stream --style ndjson',
-        '  104     1 /usr/bin/log show --predicate sender == "Sandbox"',
-        '  105    11 $tap',
-        '  106     1 $tap  ',
-        'garbage',
-        '',
-      ].join('\n');
-
-      expect(SandboxViolationMonitor.orphanedTapPids(ps), [101, 106]);
-    });
-
-    test('finds nothing in an empty listing', () {
-      expect(SandboxViolationMonitor.orphanedTapPids(''), isEmpty);
-    });
-  });
 }

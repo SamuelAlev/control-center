@@ -2,7 +2,7 @@
 title: Doménové události
 description: Úplný katalog 54 doménových událostí, jejich payloadů a serverových odběratelů, kteří je konzumují.
 slug: cs-CZ/prirucka/referencni-prirucka/domenove-udalosti
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Sběrnice událostí
@@ -148,14 +148,13 @@ Několik subsystémů vypadá zvenku jako řízených událostmi. Nejsou. Jsou t
 
 | Subdoména           | Jak se stav hýbe místo toho                                                                                 |
 | ------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Paměť               | `record_memory_fact` a spol. zapíšou a vrátí se. Vyvolání jen čte. Na fakt ani na konflikt se nic nepublikuje |
+| Paměť               | `propose_fact` a spol. zapíšou a vrátí se. Vyvolání jen čte. Na fakt ani na konflikt se nic nepublikuje |
 | Orchestrace         | Návrh, jeho schválení a vygenerovaný běh pipeline jsou řádky a volání RPC                                  |
 | Dokumenty plánu     | `submit_plan` zapíše revizi. Schválení zhmotní orchestraci. Ani jedno se neoznamuje                        |
 | Artefakty           | `publish_artifact` / `revise_artifact` zapisují revize přímo                                                |
 | Schválení           | Eskalaci řeší služba workflow schválení                                                                     |
 | Synchronizace ticketů | Koordinátor dodavatele se přihlásí k událostem ticketu výše. Příchozí webhooky se aplikují přímo         |
 | Obnovení kalendáře  | Synchronizace události upsertuje a klient si je znovu přečte. Broadcast obnovení neexistuje                |
-| Sloučení worktree   | Zapisuje se do `worktree_merge_log` a čte se odtud                                                         |
 
 ## Odběratelé
 
@@ -190,7 +189,7 @@ Každý odběratel níže se konstruuje uvnitř `runCcServer` (nebo ve službě,
 
 `TicketAssigned` je signál auditu i oznámení a zároveň spouštěč pipeline. Přiřazení agentovi zapíše vlastnictví a nespustí běh. Dispečer ticketů neexistuje. Výjimka je přiřazení týmu (nastavené `assignedTeamId`): `TeamRoutingService` odešle vedoucího týmu.
 
-`TicketRemoteSyncHandler` je deklarovaný, ale v produkčním kódu se nikdy nekonstruuje, takže dnes neodebírá nic. Klientský `NotificationEventMapper` se konstruuje jen ve vlastním testu. Je to zbytek cesty uvnitř procesu z doby před rozdělením klienta a serveru. Živé toasty přicházejí z rámců na drátě níže.
+Živé toasty přicházejí z rámců na drátě níže.
 
 ## Mapování oznámení
 

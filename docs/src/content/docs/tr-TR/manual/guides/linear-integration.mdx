@@ -2,7 +2,7 @@
 title: Linear entegrasyonunu kurma
 description: Linear’a oturum açın, bir çalışma alanının Linear otomasyonunu bağlayın ve yeni biletler için bilet sağlayıcısı olarak Linear’ı seçin.
 slug: tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear’ın Control Center’da iki kimliği vardır ve ikisi de tarayıcıda oturum
@@ -23,7 +23,7 @@ yönetme](/tr-TR/kilavuz/nasil-yapilir/biletleri-yonetme/).
 
 ## Çalışma alanı için Linear’ı seçme
 
-1. **Ayarlar → Çalışma alanı → Genel** bölümüne gidin ve **Biletler** kartını
+1. **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin ve **Biletler** kartını
    bulun
 2. **Bilet sağlayıcısı** değerini **Linear** olarak ayarlayın
 
@@ -33,7 +33,7 @@ gizler: kimlik doğrulanacak bir şey yoktur.
 
 ## Linear’a oturum açma
 
-Aynı kartta **Linear** satırı size aittir:
+Kendi Linear oturum açmanız **Ayarlar → Siz → Profil** bölümünde, **Biletler** kartındadır:
 
 1. **Linear hesabıyla oturum aç**’a tıklayın
 2. Tarayıcınızda onaylayın
@@ -45,9 +45,11 @@ Control Center’dan Linear’da yaptığınız her şey bu oturum açmayla ve b
 şeyle çalışmaz. Oturum açmadıysanız uygulama, başka biri olarak hareket etmek
 yerine oturum açmanızı ister.
 
+Oturum açma, çalışma alanının kendi oturum açma uygulamaları olmadığı sürece sunucudaki her çalışma alanında geçerlidir: o çalışma alanı kendi Linear oturum açmasını korur ve kart hangisinin geçerli olduğunu söyler.
+
 ## Linear otomasyonunu bağlama
 
-**Linear otomasyonu** satırı, çalışma alanının Linear’daki Control Center
+**Linear otomasyonu** satırı, **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümündeki **Biletler** kartında, çalışma alanının Linear’daki Control Center
 uygulamasıdır. Bilet senkronizasyonu, pipeline’lar ve ajanlar onunla yazar;
 böylece otomatik issue’lar ve yorumlar bir kişi olarak değil, Control Center
 olarak görünür.
@@ -65,7 +67,7 @@ araçlarıyla yazar.
 ## Kendi Linear uygulamanızı kaydetme
 
 **Kendi uygulamalarımı kullan** seçeneğini seçtiyseniz kendi uygulamanızı
-kullanın. Sunucunun kendi uygulaması yalnızca o durumda kullanılır: Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, Linear dahil; sunucunun uygulaması ve servis API anahtarı kayıtlı kalır ama kullanılmaz. Çalışma alanının kendi uygulaması ([aşağıda](#bir-çalışma-alanına-kendi-linear-uygulamasını-verme)) her modda geçerlidir.
+kullanın. Sunucunun kendi uygulaması yalnızca o durumda kullanılır: Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, Linear dahil; sunucunun uygulaması ve servis API anahtarı kayıtlı kalır ama kullanılmaz. Kendi uygulamalarını kullanan bir çalışma alanı ([aşağıda](#bir-çalışma-alanına-kendi-linear-uygulamasını-verme)) sunucunun modu ne olursa olsun kendi uygulamasını kullanır.
 
 1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
    adresinde bir OAuth uygulaması oluşturun
@@ -90,21 +92,20 @@ başlamayı reddeder.
 Bir çalışma alanı, Linear’a sunucunun uygulaması yerine kendi uygulaması üzerinden oturum açabilir. Bunu yalnızca bir çalışma alanı yöneticisi veya sahibi ayarlayabilir.
 
 1. Yukarıdaki adımlarda olduğu gibi bir Linear OAuth uygulaması oluşturun
-2. **Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları** bölümüne gidin ve **Linear**’ı açın
-3. **Bu çalışma alanının kendi uygulamasını kullan**’ı seçin
-4. Satırın **Geri çağırma URL’leri** altında gösterdiği her iki callback URL’sini Linear uygulamasına birebir ekleyin
-5. Uygulamanın **İstemci id**’sini ve isteğe bağlı olarak bu çalışma alanının otomasyonu için bir **Hizmet API anahtarı**nı yapıştırın
+2. **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin. **Control Center Connect** kartında **Kendi uygulamalarımı kullan** seçeneğini seçin ve **Uygula**’ya tıklayın
+3. Biletler altında **Linear uygulaması** kartı görünür. Kartın **Geri çağırma URL’leri** altında gösterdiği her iki callback URL’sini Linear uygulamasına birebir ekleyin
+4. Uygulamanın **İstemci id**’sini ve isteğe bağlı olarak bu çalışma alanının otomasyonu için bir **Hizmet API anahtarı**nı yapıştırın
 
-Çalışma alanının uygulaması, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak bu çalışma alanındaki her Linear oturum açmasını ve otomasyon isteğini yanıtlar. Sunucunun uygulamasına ya da Connect’e asla geri dönmez: bir istemci id’si ayarlanana kadar Linear bu çalışma alanında kapalıdır ve satır neyin eksik olduğunu söyler. Hizmet API anahtarı yalnızca burada kullanılır; anahtar yoksa senkronizasyon için **Otomasyon için Linear’ı bağla** gerekir.
+Çalışma alanının uygulaması, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak bu çalışma alanındaki her Linear oturum açmasını ve otomasyon isteğini yanıtlar. Sunucunun uygulamasına ya da Connect’e asla geri dönmez: bir istemci id’si ayarlanana kadar Linear bu çalışma alanında kapalıdır ve kart neyin eksik olduğunu söyler. Hizmet API anahtarı yalnızca burada kullanılır; anahtar yoksa senkronizasyon için **Otomasyon için Linear’ı bağla** gerekir.
 
-Sunucunun uygulamasıyla çalışma alanınınki arasında geçiş yapmak ya da çalışma alanının istemci id’sini değiştirmek, bu çalışma alanındaki herkesin Linear oturumunu kapatır ve otomasyonlarının bağlantısını keser. Yeni uygulama üzerinden yeniden oturum açarlar. **Bu sunucunun uygulamasını kullan** çalışma alanının kayıtlı alanlarını siler. Gizli anahtarlar yalnızca yazılabilir: satır yalnızca birinin kaydedilip kaydedilmediğini gösterir. Sunucudaki diğer çalışma alanları etkilenmez.
+**Kendi uygulamalarımı kullan** tüm sağlayıcıları aynı anda kapsar: GitHub, Google Calendar ve GIF araması da yalnızca çalışma alanının kendi uygulamaları üzerinde çalışır; her biri kendi alanlarıyla, sağlayıcısının yanında aynı sayfada yer alır. Çalışma alanının oturum açma uygulamalarını ya da istemci id’sini değiştirmek, bu çalışma alanındaki herkesin Linear oturumunu kapatır ve otomasyonlarının bağlantısını keser. Yeni uygulama üzerinden yeniden oturum açarlar. Kayıtlı alanlar, çalışma alanı başka bir seçeneğe döndüğünde korunur; ancak yalnızca **Kendi uygulamalarımı kullan** altında kullanılır. Gizli anahtarlar yalnızca yazılabilir: kart yalnızca birinin kaydedilip kaydedilmediğini gösterir. Sunucudaki diğer çalışma alanları etkilenmez.
 
 ## Sorun giderme
 
 ### Linear satırı oturum açmanın ayarlanmadığını söylüyor
 
 Sunucunun ne kendi Linear uygulaması ne de Connect’i var. Sunucu sahibi
-**Ayarlar → Sunucu → Tek oturum açma** bölümünde birini seçer. Çalışma alanı kendi uygulamasını kullandığında satır bunun yerine kurulumunun tamamlanmadığını söyler: bir çalışma alanı yöneticisi istemci id’sini **Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları** bölümünde ekler.
+**Ayarlar → Sunucu → Tek oturum açma** bölümünde birini seçer. Çalışma alanı kendi uygulamalarını kullandığında satır bunun yerine kurulumunun tamamlanmadığını söyler: bir çalışma alanı yöneticisi istemci id’sini **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümünde, **Linear uygulaması** kartına ekler.
 
 ### Bilet senkronizasyonu bir kimlik doğrulama hatasıyla başarısız oluyor
 

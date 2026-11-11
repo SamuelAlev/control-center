@@ -2,7 +2,7 @@
 title: The agent model
 description: What an agent actually is in Control Center, which of its fields change behaviour and how the adapter it runs on decides what can be enforced.
 slug: en-GB/manual/concepts/agent-model
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## What is an agent?
@@ -54,7 +54,7 @@ Repo skills are loaded for **every** adapter, not just the built-in harness. The
 
 An agent carries no permission flags of its own. Whether it may commit, push, open a pull request, write to a tracker or reach the network is decided by the [action guardrails](/en-GB/manual/concepts/guardrails/) — allow, ask first or deny, at the workspace, agent or space scope — and the same rules apply whichever adapter runs it.
 
-What a run is _handed_ does not change with those rules. A run in a GitHub worktree always gets a read-only GitHub token, and a push is asked about when it happens: the agent's git configuration sends every GitHub push through Control Center, which applies the **Push to a remote** rule before forwarding it.
+What a run is _handed_ does not change with those rules. A run can always read the GitHub repositories it works on, on a read-only token, and a push is asked about when it happens: the agent's git configuration sends every GitHub push through Control Center, which applies the **Push to a remote** rule before forwarding it.
 
 See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for how that works, including what is and is not enforced at the filesystem level.
 
@@ -70,16 +70,16 @@ The single most consequential field on an agent is its adapter, because the adap
 Concretely, **only the built-in harness supports subagents, mid-run steering, pause and resume (and therefore take-over) and structural mode enforcement.** Claude Code gets none of those.
 
 :::caution[The OS sandbox is a floor, not a mode enforcer and not every host has one]
-The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none, so there those runs fall back to environment sanitisation, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
+The matrix above is about what Control Center can _see and gate_. Underneath it, `cc_server` wraps the Claude Code CLI in the host's OS sandbox where one exists — Seatbelt on macOS, bubblewrap on Linux and WSL2 — so an unseen `rm` or an unseen write is still bounded by the OS. On **Windows there is no backend at all** and on Linux or WSL2 without `bwrap` and `socat` the probe reports none. There only the server owner's runs start, and everyone else's are refused unless the owner started the server with `--sandbox off`. A run that starts without a sandbox falls back to environment sanitisation, brokered credentials, the guardrails on the calls Control Center can see and the conversation's own worktree (copy-on-write where `rift` ships; `git worktree` on Windows).
 
 What the sandbox is not is a _gate_. It bounds where a process may read, write and connect — a read-only mode does reach it, as read-only bind mounts — but it cannot intercept a call, raise an approval, or tell you afterwards what the CLI tried. That, plus the four capabilities named just above, is still what the built-in harness has and the others do not. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/).
 :::
 
-An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's five agents all run there, on Anthropic's default model, until you set an adapter and model per agent. The onboarding "default adapter" choice is a client-side preference the server never reads and it does not retro-apply to already-created agents.
+An agent with **no** adapter falls back to **Control Center (built-in)** — the loop inside the server, so there is no CLI to install — and its run log records `cc-harness`. Every seeded agent is created without an adapter or a model, so a fresh workspace's six agents all run there, on Anthropic's default model, until you set an adapter and model per agent. Finishing onboarding's adapter step sets its pair on every agent still missing one in the workspaces that exist at that moment; there is no workspace default runner.
 
 ## Where agents come from
 
-- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus four specialists (`qa`, `architect`, `engineer`, `librarian`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/en-GB/manual/concepts/workspaces/).
+- **Seeded with the workspace.** Every workspace — not only the first — gets a CEO plus five specialists (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) reporting to it, created idempotently in the background when the workspace is created. See [Workspaces and isolation](/en-GB/manual/concepts/workspaces/).
 - **Added by hand** at Settings → Workspace → Agents. Asking an agent to hire a colleague does not create a row; use that screen.
 
 ## Live state

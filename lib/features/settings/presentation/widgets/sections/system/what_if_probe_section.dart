@@ -157,6 +157,7 @@ class _WhatIfProbeSectionState extends ConsumerState<WhatIfProbeSection> {
             spaceId: spaceId,
             agentId: agentId,
             mode: _mode,
+            now: DateTime.now(),
           )
           .driving;
     }
@@ -166,7 +167,23 @@ class _WhatIfProbeSectionState extends ConsumerState<WhatIfProbeSection> {
       spaceId: spaceId,
       agentId: agentId,
       mode: _mode,
+      now: DateTime.now(),
     );
+  }
+
+  /// Where the answer came from, named the way the matrix names it, and
+  /// "Standing approval · Space" when an approval given for a while decided.
+  String _sourceLabel(AppLocalizations l10n, PolicyResolution resolution) {
+    final scope = switch (resolution.source) {
+      'workspace' => l10n.guardrailScopeWorkspace,
+      'agent' => l10n.guardrailScopeAgent,
+      'space' => l10n.guardrailScopeSpace,
+      'preset' => l10n.guardrailSourcePreset,
+      _ => l10n.guardrailSourceDefault,
+    };
+    return resolution.rule?.isStandingApproval ?? false
+        ? '${l10n.guardrailStandingApproval} · $scope'
+        : scope;
   }
 
   Widget _buildResult(
@@ -174,7 +191,6 @@ class _WhatIfProbeSectionState extends ConsumerState<WhatIfProbeSection> {
     DesignSystemTokens t,
     PolicyResolution resolution,
   ) {
-    final provenance = resolution.rule?.provenanceLabel;
     return DecoratedBox(
       decoration: BoxDecoration(
         color: t.bgSecondary,
@@ -212,7 +228,7 @@ class _WhatIfProbeSectionState extends ConsumerState<WhatIfProbeSection> {
                 ),
                 const SizedBox(width: AppSpacing.xs),
                 Text(
-                  provenance ?? resolution.source,
+                  _sourceLabel(l10n, resolution),
                   style: CcTypography.caption.copyWith(color: t.textSecondary),
                 ),
               ],

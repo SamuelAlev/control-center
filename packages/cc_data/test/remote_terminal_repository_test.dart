@@ -46,6 +46,9 @@ void main() {
       final secondOutput = StringBuffer();
       final first = repository
           .output('pty-1')
+          .expand<List<int>>(
+            (frame) => frame is TerminalBytes ? [frame.bytes] : const [],
+          )
           .transform(utf8.decoder)
           .listen(firstOutput.write);
       addTearDown(first.cancel);
@@ -71,6 +74,9 @@ void main() {
       await emit('old prompt\r\n');
       final second = repository
           .output('pty-1')
+          .expand<List<int>>(
+            (frame) => frame is TerminalBytes ? [frame.bytes] : const [],
+          )
           .transform(utf8.decoder)
           .listen(secondOutput.write);
       addTearDown(second.cancel);

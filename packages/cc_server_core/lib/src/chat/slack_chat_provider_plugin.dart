@@ -290,7 +290,7 @@ class SlackChatProviderPlugin implements ChatProviderPlugin {
             workspaceId: workspaceId,
             teamId: connection.teamId,
             api: api,
-            attach: grants.attach,
+            attach: grants.attachFor(workspaceId),
             onEnvelope: onEnvelope,
             onStateChanged: onStateChanged,
           ),

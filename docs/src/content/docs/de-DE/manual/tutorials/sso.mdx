@@ -2,7 +2,7 @@
 title: Dein Team mit SSO anmelden
 description: Verbinde Okta (SAML) mit deinem Control Center-Server und nimm eine Anmeldung von Anfang bis Ende durch.
 slug: de-DE/handbuch/tutorials/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -90,6 +90,8 @@ Zwei Richtlinien entscheiden, was die erste Anmeldung bewirkt:
   Arbeitsbereich, und das ist die sicherere Vorgabe.
 - **Unbekannte Benutzer bei der ersten Anmeldung bereitstellen** — standardmäßig
   an; schalte sie aus, um alle abzuweisen, deren Konto noch nicht existiert.
+
+Haben Personen bereits Konten auf diesem Server, bestätige ihre E-Mail-Adressen, bevor sich jemand per SSO anmeldet: öffne **Einstellungen → Server → Personen** und nutze bei jeder Zeile mit **E-Mail nicht bestätigt** die Schaltfläche **E-Mail bestätigen**. Eine Anmeldung findet ein bestehendes Konto nur dann über die E-Mail-Adresse, wenn diese Adresse bestätigt ist (oder durch SSO oder SCIM gesetzt wurde). Eine Adresse, die jemand in seinem eigenen Profil oder bei einer Einladung eingegeben hat, passt auf kein Konto. Ohne diesen Schritt entsteht daher ein zweites Konto, oder die Anmeldung wird abgewiesen, wenn das Bereitstellen unbekannter Benutzer ausgeschaltet ist. Siehe [Wie Anmeldungen zu bestehenden Konten passen](/de-DE/handbuch/anleitungen/sso-oidc/#wie-anmeldungen-zu-bestehenden-konten-passen).
 
 Optional ordnest du ein Attribut zu, das die Gruppennamen trägt (bei Okta ist
 das üblicherweise `groups`), und übersetzt Gruppen mit der Zuordnung in

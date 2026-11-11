@@ -1,11 +1,8 @@
-import 'package:cc_domain/cc_domain.dart'
-    show NotFoundException, RepoOpKind, ValidationException;
+import 'package:cc_domain/cc_domain.dart' show NotFoundException, RepoOpKind;
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_host/cc_host.dart' show RepoOp, RepoOpContext;
-import 'package:cc_server_core/src/catalog/sign_in_ops.dart'
-    show providerOAuthHttpOrigin;
 import 'package:cc_server_core/src/connect/sign_in_service.dart'
-    show providerOAuthRedirectUri;
+    show providerOAuthHttpOrigin, providerOAuthRedirectUri;
 import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 
 /// The callback URLs a workspace's own [provider] app must register, under
@@ -31,7 +28,9 @@ List<String> workspaceAppRedirectUris(
 }
 
 /// A workspace's own Google, Linear and Klipy apps
-/// (`workspaceProviderApps.*`).
+/// (`workspaceProviderApps.*`). They apply while the workspace's Connect
+/// choice is its own apps (`workspaceConnect.set`); `state` is how complete
+/// each is, whatever the choice.
 ///
 /// Admin of the bound workspace (the dispatcher checks the workspace exists
 /// and the caller's role before the handler runs). Secrets are write-only:
@@ -71,23 +70,6 @@ List<RepoOp> buildWorkspaceProviderAppOps({
           for (final status in await apps.statuses(ctx.workspaceId!))
             wire(status),
         ],
-      },
-    ),
-    RepoOp(
-      name: 'workspaceProviderApps.setMode',
-      kind: RepoOpKind.mutate,
-      minRole: WorkspaceRole.admin,
-      requiredArgs: ['provider', 'mode'],
-      handler: (ctx) async {
-        final mode = WorkspaceAppMode.fromWire(ctx.args['mode']);
-        if (mode == null) {
-          throw const ValidationException(
-            'mode must be "inherit" or "own".',
-          );
-        }
-        return wire(
-          await apps.setMode(ctx.workspaceId!, providerOf(ctx), mode),
-        );
       },
     ),
     RepoOp(

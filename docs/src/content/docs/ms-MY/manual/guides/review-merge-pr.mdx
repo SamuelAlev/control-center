@@ -2,7 +2,7 @@
 title: Semak dan cantumkan PR
 description: Buka meja kerja PR, baca diff, tinggalkan komen sebaris, hantar semakan dan cantumkan.
 slug: ms-MY/manual-pengguna/panduan-cara/semak-dan-cantumkan-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Panduan ini menunjukkan cara menyemak dan mencantumkan pull request.
@@ -23,9 +23,13 @@ dalam apl terbuka mengikut keperluan; tab pratonton penerapan disuntik secara
 automatik apabila URL pratonton dikesan pada PR itu. Susun atur tab anda diingati
 bagi setiap PR.
 
+Editor kod terbenam hanya ditawarkan kepada pemilik pelayan, kerana ia berjalan pada pelayan sebagai pengguna pelayan itu sendiri. Sesi itu milik peranti dan orang yang membukanya, dibuka dengan kepercayaan ruang kerja VS Code dihidupkan (VS Code bertanya sebelum mempercayai folder) dan tidak menjalankan sebarang tugas secara automatik. Orang lain kekal dengan editor satu fail dan paparan fail.
+
 Tab Gambaran keseluruhan membawa metadata PR itu (pengarang, cawangan, label,
 penerima tugasan, tindak balas, commit, status pemeriksaan) dan baris tindakan:
-muat semula, **Semakan**, **Cantum**, buka dalam IDE dan menu limpahan ⋯.
+muat semula, **Semakan**, **Cantum**, butang yang dinamakan sempena editor anda (seperti **Buka dalam VS Code**) dan menu limpahan ⋯.
+
+Butang editor itu memulakan editor natif pada skrin **pelayan** sendiri, sebagai pengguna pelayan dan di luar sebarang kotak pasir, jadi ia ditawarkan kepada [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) sahaja. Pada desktop yang menjadi hos pelayannya sendiri, itu ialah orang yang duduk di meja itu. Perkara yang sama berlaku untuk membuka worktree perbualan dalam editor. Orang lain menggunakan paparan editor terbina. Walaupun bagi pemilik, PR hanya dibuka daripada repositori yang dipautkan kepada ruang kerja.
 
 ### Buka PR daripada tindanan sesuatu ruang
 
@@ -44,8 +48,7 @@ Enter atau Space untuk meruntuhkan atau mengembangkannya. PR yang tidak berkaita
 kekal berasingan, dan pautan cawangan yang tidak lengkap atau kabur tidak
 dipaparkan sebagai tindanan tersusun.
 
-Dalam **Kawalan sumber**, **Pull request bertindan (N)** membuka pemilih bahagian
-tindanan yang telah diterbitkan, bermula dari bawah. Setiap entri memaparkan
+Dalam tajuk PR, lencana tindanan (ikon lapisan dengan bilangan PR dalam tindanan) membuka **Pull request bertindan**, pemilih bahagian tindanan yang telah diterbitkan, bermula dari bawah. Setiap entri memaparkan
 nombor PR, label bahagian dan kedudukan; bahagian yang di-checkout ditandakan.
 Pilih satu entri untuk membuka meja kerja PR itu. **Terbitkan tindanan** muncul
 hanya apabila penemuan PR telah selesai dan sekurang-kurangnya satu bahagian
@@ -53,6 +56,21 @@ tiada PR. Ini turut terpakai pada menu cawangan. PR yang dicipta di luar Control
 Center juga dikira sebagai diterbitkan. Tindanan yang diterbitkan sebahagiannya
 menawarkan kedua-dua tindakan; kerja cawangan tunggal mengekalkan tindakan
 cipta/lihat PR individu.
+
+### Komit dan tolak daripada Kawalan sumber
+
+Komit yang anda buat dalam panel **Kawalan sumber** ialah milik anda: anda pengarang dan pengkomitnya, di bawah alamat yang disahkan forge anda untuk log masuk anda. Apabila anda mencipta kunci penandatanganan di bawah **Komit yang disahkan** dalam **Tetapan** → **Anda** → **Commit**, pelayan menandatanganinya dengan kunci penandatangan anda sendiri sebelum ia ditolak. Tolakan membawa log masuk anda sendiri, disempitkan kepada repositori itu sahaja.
+
+Pelayan menjalankan Git pada mesinnya sendiri, dalam pepohon yang boleh diubah oleh ejen atau pull request, jadi ia tidak menjalankan sebarang program yang boleh dipilih oleh repositori:
+
+- Komit melangkau cangkuk Git repositori, seperti yang dilakukan oleh `git commit --no-verify`. Cangkuk pre-commit, cangkuk commit-msg atau cangkuk pre-push tidak berjalan
+- Pembantu kelayakan, editor, alat diff luaran dan program penandatanganan yang dikonfigurasi oleh repositori diabaikan
+
+Jalankan semakan anda sendiri sebelum mengkomit, atau dalam CI.
+
+Mengubah kod memerlukan [geran tulis](/ms-MY/manual-pengguna/konsep/kebenaran/#mengubah-kod-memerlukan-geran-tulis) pada repositori: menyimpan atau membatalkan fail dalam editor, **Pull commit PR terkini**, mengkomit dan menolak, menerbitkan cawangan, dan tindakan tindanan yang memotong, memeriksa atau menerbitkan bahagian. Dengan akses baca atau semakan sahaja anda melihat fail dan diff, dan tindakan ini menjawab "Anda boleh membaca repositori ini tetapi tidak boleh mengubahnya. Admin ruang kerja boleh memberikan akses tulis."
+
+**Pull commit PR terkini** membawa worktree semakan kepada commit terbaharu pull request itu. Ia mengambil dengan log masuk GitHub anda sendiri, dan meminta anda log masuk apabila anda belum mempunyainya. Komit atau buang perubahan anda dahulu: worktree yang mempunyai perubahan tidak disegerakkan.
 
 ## Baca diff
 
@@ -138,7 +156,7 @@ Mencantum tidak boleh dipulihkan: ia menolak commit ke forge, jadi ia mendapat
 langkah pengesahan dan bukannya entri buat asal. Selepas itu, cache PR itu
 dilumpuhkan, statusnya bertukar kepada **Dicantum** dan acara
 `PullRequestStatusChanged` tercetus dengan status `merged`. Acara itu melepaskan
-worktree "buka dalam editor" yang efemeral dan memulakan dua pipeline yang
+worktree efemeral yang dibuka oleh butang editor dan memulakan dua pipeline yang
 dibenihkan: **Stale repository cleanup**, yang membuang worktree dan folder
 perbualan PR yang sudah usang, dan **Release notes**, yang merangka entri log
 perubahan.
@@ -165,6 +183,12 @@ paksi yang deterministik.
 
 Control Center turut mengimport PR yang dibuka oleh manusia di luar apl. Aliran
 semakan di atas adalah sama. PR luaran dikesan oleh perkhidmatan pengundian PR.
+
+## Penyelesaian masalah
+
+### Hook pre-commit saya tidak berjalan
+
+Komit yang dibuat dalam panel **Kawalan sumber** apl melangkau cangkuk Git repositori, seperti yang dilakukan oleh `git commit --no-verify`. Pelayan menjalankan Git pada mesinnya sendiri, dalam pepohon yang boleh diubah oleh ejen dan pull request, jadi ia tidak pernah menjalankan sebarang program yang dipilih oleh repositori. Jalankan semakan cangkuk itu sendiri, atau bergantung pada CI.
 
 ## Panduan berkaitan
 

@@ -2,7 +2,7 @@
 title: Nastavte integraci Slack
 description: Připoj Slack k pracovnímu prostoru Control Center, přes sdílenou aplikaci Control Center nebo přes vlastní, aby ze Slacku členové mohli řídit agenty.
 slug: cs-CZ/prirucka/navody/integrace-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Tenhle návod ukazuje, jak Slack připojit k pracovnímu prostoru Control Center: přidáním sdílené aplikace Control Center, nebo vlastní aplikací, kterou ti vytvoří Control Center nebo kterou postavíš sám.
@@ -27,18 +27,18 @@ Pracovní prostor běží vždy právě na jedné z nich.
 
 | Režim | Co potřebuje | Co dostaneš |
 | --- | --- | --- |
-| **Sdílená aplikace Control Center** | Server používá Control Center Connect (**Nastavení → Server → Jednotné přihlášení**) a Connect obsluhuje Slack | Jedno kliknutí a přihlášení přes Slack. Žádnou aplikaci nevytváříš, žádný token nevkládáš, nic neobměňuješ |
+| **Sdílená aplikace Control Center** | Přihlašovací aplikace pracovního prostoru běží přes Control Center Connect (volba serveru v **Nastavení → Server → Jednotné přihlášení**, nebo vlastní volba pracovního prostoru v **Nastavení → Pracovní prostor → Integrace**) a Connect obsluhuje Slack | Jedno kliknutí a přihlášení přes Slack. Žádnou aplikaci nevytváříš, žádný token nevkládáš, nic neobměňuješ |
 | **Vlastní aplikace** | Aplikace Slack ve tvém pracovním prostoru Slacku, vytvořená jednou ze tří cest níže | Vlastní jméno bota, popisy a slash příkaz, upravitelné z Control Center |
 
 ### Přidej sdílenou aplikaci Control Center
 
-1. V Control Center jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+1. V Control Center jdi do **Nastavení → Pracovní prostor → Integrace** a sjeď ke kartě **Mosty chatu**
 2. V bloku Slack najdi řádek **Přidat Control Center do Slack** a klikni na **Přidat do Slack**
 3. Prohlížeč otevře Slack. Přihlas se přes Slack, vyber pracovní prostor Slacku a instalaci schval
 4. Když prohlížeč ukáže kód, zadej ho do dialogu, který nechal Control Center otevřený. Když tě prohlížeč do aplikace vrátí sám, není co opisovat
 5. Toast pojmenuje pracovní prostor Slacku, do kterého se aplikace přidala, a blok Slack ukáže, že spojení běží na sdílené aplikaci Control Center
 
-Aplikaci smí přidat jen admin pracovního prostoru. Řádek řekne, proč nejde spustit, když server používá vlastní aplikace místo Connect, když tvůj Connect nemá aplikaci Slack, nebo když má tenhle pracovní prostor už připojenou vlastní aplikaci Slack.
+Aplikaci smí přidat jen admin pracovního prostoru. Řádek řekne, proč nejde spustit, když přihlašovací aplikace tohoto pracovního prostoru jsou vlastní místo Connect, když tvůj Connect nemá aplikaci Slack, nebo když má tenhle pracovní prostor už připojenou vlastní aplikaci Slack.
 
 Čím se liší od vlastní aplikace:
 
@@ -64,7 +64,7 @@ Události vlastní aplikace přes Connect nikdy nejdou: Socket Mode je doručuje
 ## Varianta A: aplikaci vytvoří Control Center
 
 1. Na [api.slack.com/apps](https://api.slack.com/apps) vygeneruj pár tokenů konfigurace aplikace a zkopíruj **refresh** token (`xoxe-…`)
-2. V Control Center jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+2. V Control Center jdi do **Nastavení → Pracovní prostor → Integrace** a sjeď ke kartě **Mosty chatu**
 3. V bloku Slack klikni na **Vytvořit aplikaci za mě**
 4. Vlož token, uprav název aplikace, jméno bota, popisy a slash příkaz, pak klikni na **Vytvořit aplikaci**
 5. Dokonči dva zbývající kroky, které dialog ukáže, každý jako odkaz do Slacku:
@@ -78,7 +78,7 @@ Token konfigurace se při každém použití otočí. Control Center si otočeno
 
 Stejná aplikace, bez tokenu konfigurace. Slack ti otevře vlastní obrazovku vytvoření s celým manifestem už vyplněným.
 
-1. V Control Center jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+1. V Control Center jdi do **Nastavení → Pracovní prostor → Integrace** a sjeď ke kartě **Mosty chatu**
 2. V bloku Slack klikni na **Vytvořit aplikaci za mě**
 3. Uprav název aplikace, jméno bota, popisy a slash příkaz. Tyhle hodnoty jedou s odkazem
 4. Klikni na **Vytvořit v Slack**. Prohlížeč otevře stránku Slacku pro vytvoření aplikace s předvyplněnou konfigurací
@@ -132,7 +132,7 @@ message.im
 
 Takhle se tokeny vlastní aplikace dostanou do Control Center. Sdílená aplikace nic z toho nepotřebuje.
 
-1. Jdi do **Nastavení → Pracovní prostor → Obecné** a sjeď ke kartě **Mosty chatu**
+1. Jdi do **Nastavení → Pracovní prostor → Integrace** a sjeď ke kartě **Mosty chatu**
 2. V bloku Slack klikni na **Připojit Slack**
 3. Vyplň pole:
 
@@ -201,7 +201,7 @@ Každý propojený člen s rolí s právem zápisu může ze Slacku navrhnout ti
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-Text před `|` je název, text za ním popis. Bot odpoví, že ticket připravil jako návrh. Zatím se nic nevytvoří a žádná automatizace ticketů se nespustí: návrh na tebe čeká v **Nastavení → Pracovní prostor → Profil a identita → Návrhy ticketů z chatu**, kde můžeš opravit název a popis a pak kliknout na **Vytvořit ticket** nebo **Zahodit**.
+Text před `|` je název, text za ním popis. Bot odpoví, že ticket připravil jako návrh. Zatím se nic nevytvoří a žádná automatizace ticketů se nespustí: návrh na tebe čeká v **Nastavení → Vy → Profil → Návrhy ticketů z chatu**, kde můžeš opravit název a popis a pak kliknout na **Vytvořit ticket** nebo **Zahodit**.
 
 - Návrh vidí jen člen, který příkaz spustil
 - Návrh, který necháš ležet, se po dni zahodí. Návrhy žijí v paměti, takže je zahodí i restart serveru

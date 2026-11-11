@@ -2,7 +2,7 @@
 title: 路由图
 description: Control Center 注册的每一条路由，及其界面与查询参数。
 slug: zh-CN/手册/参考/路由图
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## 应用外壳
@@ -11,7 +11,7 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 当**已登录用户**至少连接了一个代码托管平台，并且至少存在一个工作区时，这道门槛才算通过。
 
-缺少凭据与缺少设置是分开处理的，区分依据是 `users.onboarding_finished_at`，它读自调用者自己的 `identity.me`——绝不是“工作区存在”这一条件，因为一旦有人被邀请进一个并非自己创建的工作区，该条件立刻就错了。在未连接任何代码托管平台时，已完成入门的账户会留在应用内：工作区外壳会显示一条警告，并附上通往 **设置 → 工作区 → 个人资料与身份** 的链接，登录即位于该处。尚未完成的则前往 `/onboarding`。在该标志仍未知期间，守卫会停留在启动画面上，而不是凭空猜测，因为它绝不会把人从入门流程中重定向出去。
+缺少凭据与缺少设置是分开处理的，区分依据是 `users.onboarding_finished_at`，它读自调用者自己的 `identity.me`——绝不是“工作区存在”这一条件，因为一旦有人被邀请进一个并非自己创建的工作区，该条件立刻就错了。在未连接任何代码托管平台时，已完成入门的账户会留在应用内：工作区外壳会显示一条警告，并附上通往 **设置 → 你 → 个人资料** 的链接，登录即位于该处。尚未完成的则前往 `/onboarding`。在该标志仍未知期间，守卫会停留在启动画面上，而不是凭空猜测，因为它绝不会把人从入门流程中重定向出去。
 
 ## 无前缀路由
 
@@ -65,7 +65,7 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 ## 设置路由
 
-`/settings` 会重定向到 `/settings/you/appearance`。侧边栏的设置按钮和 `Cmd/Ctrl + ,` 都会前往 `/settings/you/appearance`。
+`/settings` 会重定向到 `/settings/you/profile`。侧边栏的设置按钮和 `Cmd/Ctrl + ,` 都会前往 `/settings/you/profile`。
 
 设置路径按**作用域**划分命名空间——`you/`、`workspace/`、`server/`——因为该段说明了改动会影响谁。有两条路径早于这一命名空间划分，在 URL 中不带作用域：`/settings/memory` 和 `/settings/pipelines`。
 
@@ -73,20 +73,26 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 | 路径                          | 界面                                                                       |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | 主题、语言、字体排印、编辑器主题（设置的落地页）                           |
-| `/settings/you/notifications` | 按事件开关、免打扰时段                                                     |
+| `/settings/you/profile`       | 你在此服务器上的账户：姓名、用户名、头像和登录（设置的落地页） |
+| `/settings/you/profile?section=accounts` | 已连接的账户：你自己的代码托管、工单系统、日历和聊天登录，以及来自聊天的工单草稿 |
+| `/settings/you/appearance`    | 主题、语言、字体排印、编辑器主题 |
 | `/settings/you/audio`         | 麦克风、听写、会议检测和声景输出                                           |
+| `/settings/you/notifications` | 按事件开关、免打扰时段                                                     |
+| `/settings/you/commits`       | 你发起的工作所产生提交的署名，以及你的提交签名密钥                         |
+| `/settings/you/desktop`       | 仅桌面应用：托盘图标、关闭窗口和登录时打开                                 |
 | `/settings/you/devices`       | 已配对的手机与远程控制                                                     |
 | `/settings/you/newsfeed`      | 信息流管理：订阅源、刷新、阅读状态                                         |
+| `/settings/you/links`         | Control Center 外部链接的打开位置                                          |
 
 ### 工作区
 
 | 路径                               | 界面                                                                                                |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | 此工作区中的个人资料与身份：姓名、git 作者、代码托管、日历 |
-| `/settings/workspace/general`      | 名称、徽标、敏感 glob、审阅并发数、分支命名、同步健康状况、聊天桥接、危险区域 |
+| `/settings/workspace/profile`      | 此工作区中的个人资料与身份：姓名、邮箱、git 作者 |
+| `/settings/workspace/general`      | 名称、徽标、敏感 glob、审阅并发数、分支命名、危险区域 |
+| `/settings/workspace/integrations` | Connect 选择、GitHub 应用和自动化令牌、工单系统供应商与自动化、同步健康状况、此工作区自己的提供方应用、聊天桥接、GIF。每个提供方分组都会注明你自己的账户，并链接到已连接的账户 |
 | `/settings/workspace/meetings`     | 会议笔记模板和保存的声纹档案                                                                        |
-| `/settings/workspace/members`      | 名册、邀请、审计追踪。审计追踪用可选的 `?cursor=` 分页                                               |
+| `/settings/workspace/members`      | 名册与邀请                                                                                           |
 | `/settings/workspace/repositories` | 此工作区中注册的仓库                                                                                |
 | `/settings/workspace/environments` | 环境定义：空间可以启动什么，以及工作树运行哪些任务 |
 | `/settings/workspace/agents`       | 已注册的智能体身份                                                                                  |
@@ -108,6 +114,8 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 | `/settings/server/rigs`        | 机台：此主机能启动什么、基础镜像、自定义镜像、运行中的机器                             |
 | `/settings/server/sandbox`     | 沙盒执行授权：智能体可从你仓库的工作副本中运行的程序 |
 | `/settings/server/diagnostics` | 诊断与隐私：沙盒、嵌入、日志记录、崩溃报告 |
+| `/settings/server/people`      | 服务器上的成员，以及每个地址是否已确认（仅服务器所有者） |
+| `/settings/server/audit`       | 审计日志：服务器的，以及你管理的各工作区的 |
 | `/settings/server/backup`      | 备份与恢复：安装快照、按工作区导出、导入与删除                                        |
 | `/settings/server/about`       | 关于与更新                                                                            |
 

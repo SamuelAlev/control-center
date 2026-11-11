@@ -24,11 +24,8 @@ class RoleDefinition {
   });
 
   /// A built-in preset role.
-  factory RoleDefinition.preset(WorkspaceRole role) => RoleDefinition(
-    id: role.wireName,
-    name: role.wireName,
-    basePreset: role,
-  );
+  factory RoleDefinition.preset(WorkspaceRole role) =>
+      RoleDefinition(id: role.wireName, name: role.wireName, basePreset: role);
 
   /// Stable id: the preset's wire name, or the custom role's row id.
   final String id;
@@ -55,9 +52,8 @@ class RoleDefinition {
   /// The wire value stored in `workspace_members.role`: the preset's name, or
   /// `custom:<id>`.
   ///
-  /// An old client parsing `custom:<id>` gets null from
-  /// `WorkspaceRole.fromWire` and every caller fails safe to guest — that
-  /// fail-safe is load-bearing for rolling this out.
+  /// `WorkspaceRole.fromWire` reads `custom:<id>` as null, and every caller
+  /// fails safe to guest.
   String get wire => isCustom ? 'custom:$id' : basePreset.wireName;
 
   /// The `custom:<id>` id carried by [wire], or null when it names a preset.

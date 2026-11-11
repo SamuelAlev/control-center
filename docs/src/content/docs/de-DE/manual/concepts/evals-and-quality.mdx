@@ -2,7 +2,7 @@
 title: Evals und Qualität
 description: Eval-Suites und revisionsgebundene Skill-Kampagnen und wie ihre Nachweise zu deuten sind.
 slug: de-DE/handbuch/konzepte/evals-und-qualitaet
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observability → Qualität** enthält sowohl Eval-Suites für einzelne Aufgaben
@@ -23,7 +23,7 @@ Fünf Starter-Suites werden angelegt, wenn ein Arbeitsbereich entsteht. Sie
 decken Orchestrierungsvorschläge ab, ein Review, das einen eingebrachten
 Fehler findet, den Planmodus, der schreibgeschützt bleibt, den Planmodus, der
 einen Plan erzeugt, und einen Ticket-Roundtrip. Das Seeding hört auf
-`WorkspaceCreated` (`workspace.upsert` oder `workspace.create`), überspringt
+`WorkspaceCreated` (von `workspace.create` veröffentlicht), überspringt
 einen Namen, der schon existiert, und zieht ältere Arbeitsbereiche nicht nach.
 
 ### Wo sie erscheinen

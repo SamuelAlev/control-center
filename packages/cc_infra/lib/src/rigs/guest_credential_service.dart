@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/network/forge_git_auth.dart';
 
 /// A request body that went past the endpoint's cap.
 class _RequestTooLarge implements Exception {
@@ -258,6 +259,20 @@ class GuestCredentialService {
       return;
     }
 
+    // A write rig pushes as the person who opened it, through their own
+    // sign-in. With nobody behind it there is nobody to push as: the mint
+    // is refused here rather than falling back to anyone else.
+    final opener = grant.actingUserId;
+    if (grant.scope == ForgeTokenScope.write &&
+        (opener == null || opener.isEmpty)) {
+      CcInfraLog.warning(
+        'rig/credentials: rig $rigId asked for a write token with no opener',
+      );
+      response.statusCode = HttpStatus.forbidden;
+      await response.close();
+      return;
+    }
+
     final ScopedCredentials credentials;
     try {
       credentials = await _broker.mint(
@@ -336,37 +351,25 @@ class GuestCredentialService {
   /// sends nothing must not hold a server slot indefinitely.
   static const Duration _bodyTimeout = Duration(seconds: 10);
 
-  /// Maps a forge host to the `(username, password)` pair git expects.
+  /// The `(username, password)` pair git expects for [host], from the
+  /// minted one-repository GitHub token.
   ///
-  /// The username half is not cosmetic — each forge treats a different literal
-  /// as significant (`x-access-token`, `oauth2`, the account's own name), so a
-  /// shared placeholder authenticates on exactly one of the three.
+  /// GitHub only: the broker mints nothing for GitLab or Bitbucket, so a
+  /// guest holds no credential for them and publishes through the server
+  /// (`stack_publish`).
   (String, String)? _forgeCredentialFor(
     String host,
     ScopedCredentials credentials,
   ) {
-    final forge = _forgeForHost(host);
-    if (forge == null) {
+    if (_forgeForHost(host) != ForgeHost.github) {
       return null;
     }
-    final envKey = switch (forge) {
-      ForgeHost.github => 'GITHUB_TOKEN',
-      ForgeHost.gitlab => 'GITLAB_TOKEN',
-      ForgeHost.bitbucket => 'BITBUCKET_API_TOKEN',
-      ForgeHost.local => null,
-    };
-    final token = envKey == null ? null : credentials.environment[envKey];
+    final token = credentials.environment['GITHUB_TOKEN'];
     if (token == null || token.isEmpty) {
       return null;
     }
-    final username = switch (forge) {
-      ForgeHost.github => 'x-access-token',
-      ForgeHost.gitlab => 'oauth2',
-      ForgeHost.bitbucket =>
-        credentials.environment['BITBUCKET_EMAIL'] ?? 'x-token-auth',
-      ForgeHost.local => 'git',
-    };
-    return (username, token);
+    final auth = forgeGitHttpAuth(ForgeHost.github, token);
+    return (auth.username, auth.password);
   }
 
   static ForgeHost? _forgeForHost(String host) {

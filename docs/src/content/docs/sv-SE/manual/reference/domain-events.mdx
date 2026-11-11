@@ -2,7 +2,7 @@
 title: Domänhändelser
 description: Fullständig katalog över de 54 domänhändelserna, deras nyttolaster och prenumeranterna på serversidan som konsumerar dem.
 slug: sv-SE/handbok/referens/domanhandelser
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Händelsebussen
@@ -173,14 +173,13 @@ leta efter en hook:
 
 | Deldomän            | Hur tillståndet i stället rör sig                                                                       |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Minne               | `record_memory_fact` och liknande skriver och returnerar; recall läser. Ingenting publicerar vid ett faktum eller en konflikt |
+| Minne               | `propose_fact` och liknande skriver och returnerar; recall läser. Ingenting publicerar vid ett faktum eller en konflikt |
 | Orkestrering        | Förslaget, dess godkännande och den genererade pipelinekörningen är rader och RPC-anrop                 |
 | Plandokument        | `submit_plan` skriver en revision; godkännandet materialiserar en orkestrering. Inget av dem annonseras |
 | Artefakter          | `publish_artifact` / `revise_artifact` skriver revisioner direkt                                        |
 | Godkännanden        | Eskalering hanteras inuti arbetsflödestjänsten för godkännanden                                         |
 | Ärendesynk          | Leverantörskoordinatorn prenumererar på ärendehändelserna ovan; inkommande webhooks tillämpas direkt    |
 | Kalenderuppdatering | En synk upsertar händelser och klienten läser om; det finns ingen uppdateringsutsändning                |
-| Worktree-sammanslagningar | Registreras i `worktree_merge_log` och läses därifrån                                             |
 
 ## Prenumeranter
 
@@ -219,11 +218,7 @@ Tilldelning till en agent registrerar ägarskap och startar ingen körning – d
 finns ingen ärendedispatch. Tilldelning till ett team (`assignedTeamId` satt) är
 undantaget: `TeamRoutingService` dispatchar teamledaren.
 
-`TicketRemoteSyncHandler` är deklarerad men konstrueras aldrig i
-produktionskoden, så den prenumererar inte på något i dag. `NotificationEventMapper`
-på klientsidan konstrueras bara i sitt eget test – den är kvarlevan av vägen i
-samma process från tiden före uppdelningen i klient och server. Live-toastar
-kommer från ramarna på tråden nedan.
+Live-toastar kommer från ramarna på tråden nedan.
 
 ## Aviseringsmappning
 

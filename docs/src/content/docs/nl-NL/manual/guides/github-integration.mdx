@@ -2,7 +2,7 @@
 title: GitHub-integratie instellen
 description: Meld je aan bij GitHub zodat het PR-oppervlak, reporegistratie en agentruns werken.
 slug: nl-NL/handleiding/gidsen/github-integratie
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Deze gids behandelt de GitHub-specifieke delen van de installatie. GitHub is een
@@ -31,7 +31,7 @@ zich.
 
 GitHub kent alleen aanmelden: er is geen token om te plakken.
 
-1. Ga naar **Instellingen → Werkruimte → Profiel en identiteit → Codehosting** (of
+1. Ga naar **Instellingen → Jij → Profiel → Codehosting** (of
    de eerste stap van de onboarding)
 2. Klik in de rij **GitHub** op **Inloggen bij GitHub**
 3. Je browser opent GitHub. Keur de app goed
@@ -56,17 +56,30 @@ server namens jou heeft uitgegeven.
 
 ## Namens wie je inloggegevens spreken
 
-- **Alles wat jij doet** (de PR-pagina openen, een review plaatsen, goedkeuren,
-  mergen) draait op **jouw** aanmelding en niets anders. Ben je niet aangemeld,
-  dan zegt de app dat en vraagt je je aan te melden. Geen ander inloggegeven
-  springt voor je in
-- **Werk waarbij niemand typt** (agentruns, pipelines, PR-polling,
-  botantwoorden, clones) krijgt een token voor één repository, uitgegeven via de
-  GitHub App van de server of via Connect. Het is beperkt tot wat een
-  verantwoordelijk lid daar mag doen: het lid dat het vroeg, anders de eigenaar
-  van de werkruimte. Een lid dat niet mag pushen, beperkt het token tot lezen
+Control Center volgt GitHubs eigen onderscheid tussen handelen **als persoon** en handelen **als de app**:
+
+| Wat er gebeurt                                                               | Zichtbaar op GitHub als                             |
+| ---------------------------------------------------------------------------- | --------------------------------------------------- |
+| Alles wat je zelf doet: reageren, reviewen, goedkeuren, mergen, reviewers aanvragen | **Jij**. GitHub markeert een reactie in het gesprek als gemaakt met de Control Center-app; een review en de inline reacties daarvan dragen geen zodanige markering |
+| AI-review, antwoorden en reacties van agenten in PR-gesprekken, labels, pipeline- en botwerk | **De Control Center-bot**. Op de gedeelde Connect-app is een review alleen van de bot voor een installatie die de Connect-beheerder heeft opgenomen; anders wordt hij getoond als de verantwoordelijke persoon |
+| Een pull request die een agent voor jou opent, zijn wijzigingen aan de titel of beschrijving van die pull request, zijn pushes en zijn commits   | **Jij**. Control Center wordt als mede-auteur vermeld wanneer co-auteurvermelding aan staat |
+| Werk waar niemand om heeft gevraagd (schema's, webhooks)                     | **De Control Center-bot**, ook als auteur van zijn commits. Op Control Center Connect pusht of opent hij nooit een pull request |
+
+- **Alles wat jij doet** draait op **jouw** aanmelding en niets anders. Ben je niet aangemeld, dan vraagt de app je aan te melden. Geen ander inloggegeven springt voor je in
+- **Botwerk** krijgt een token voor één repository tegelijk, beperkt tot wat een verantwoordelijk lid daar mag doen: het lid dat het vroeg, anders de eigenaar van de werkruimte. Een lid dat niet mag pushen, beperkt het token tot lezen. Botantwoorden die namens iemand handelen beginnen met **Control Center (for @login)**
+- **Agenten openen pull requests via Control Center**, nooit vanuit hun sandbox, dus de pull request is van jou en de regels van GitHub zelf beletten je hem goed te keuren. Control Center weigert ook een goedkeuring van de persoon die de agent erom vroeg en van de auteur van de pull request. Bij een geplande of webhook-run gaat dat om elke beheerder die de trigger heeft ingeschakeld of de pipeline heeft bewerkt terwijl die actief was. Iemand anders moet reviewen. Als Control Center niet kan bevestigen wie de pull request heeft geopend, of welk account op de forge van jou is, weigert het en vraagt het je het opnieuw te proberen
+- **Agenten reageren ook via Control Center.** Het GitHub-token dat een run van een agent krijgt, kan alleen lezen. Wanneer een agent reageert op de pull request waaraan hij werkt, plaatst Control Center de reactie als de bot, beginnend met **Control Center (for @login)** wanneer iemand de run heeft gevraagd. Een agent kan alleen reageren op een pull request in dezelfde repository (geen fork) waarvan de laatste commit door de agent is gepusht of die de huidige commit van de branch van de ruimte is. @-vermeldingen in de reactie van een agent melden niemand. Een agent kan ook de titel of beschrijving van zijn eigen pull request wijzigen zolang die open is. Die wijziging gebeurt op dezelfde manier als waarop de pull request is geopend (onder jouw naam, wanneer je om de run hebt gevraagd) en vraagt standaard eerst om goedkeuring. De beschrijving van een pull request behoudt haar @-vermeldingen, zowel wanneer de agent de pull request opent als wanneer hij de beschrijving bewerkt, zodat de genoemde personen een melding krijgen
+- **Op Control Center Connect pusht en opent de bot nooit pull requests.** Pushen, een branch maken of een pull request openen vereist daar een persoon die erom heeft gevraagd, en draait onder de aanmelding van die persoon. Een geplande of webhook-run die probeert te pushen, stopt met een melding die dat zegt. Wil je dat onbemande runs kunnen pushen, geef de werkruimte dan een eigen GitHub App onder **Instellingen**
+- **Wat de Connect-bot kan.** Met de gedeelde Connect-app plaatst de bot reacties, labels en reacties. Hij plaatst een review (een AI-review, reviewopmerkingen, reviewerverzoeken) alleen wanneer de Connect-beheerder de installatie van deze server heeft opgenomen. Anders gaat de review uit onder de eigen aanmelding van de verantwoordelijke persoon en verschijnt hij onder zijn naam. De bot opent, bewerkt, sluit of hernoemt nooit een pull request, verwerpt geen review, en bewerkt of verwijdert geen reactie; daarvoor is een persoon nodig die erom heeft gevraagd, met zijn eigen aanmelding. Connect koppelt de installatie van je organisatie niet aan één Control Center-server: elke server waar een lid dat naar een repository kan pushen zich via Connect heeft aangemeld, kan het reactietoken van de bot voor die repository krijgen.
+- **Een server of werkruimte met een eigen GitHub-app** houdt de bot voor alles hierboven, ook de reviews.
 - **Automatisering keurt nooit** een pull request goed. Goedkeuren is een
   handeling van een persoon
+
+Wanneer je een repo koppelt, controleert Control Center of je account hem kan zien, en waarschuwt het als de GitHub-app niet is geïnstalleerd op de organisatie van de repo of de repo niet bevat, met een link om dat op te lossen. Koppelen en ontkoppelen vereist een werkruimtebeheerder, en een checkout buiten de eigen opslag van de werkruimte kan alleen de serverbeheerder koppelen; zie [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+
+De koppeling volgt het permanente GitHub-id van de repository, dus een hernoeming of overdracht vraagt niets van jou. Als het pad later een andere repository aanduidt, stuurt Control Center er niets meer naartoe en toont het een melding totdat een werkruimtebeheerder op **Opnieuw koppelen** klikt.
+
+Code van een repository openen (bestanden, diffs, zoeken, een terminal) vereist zowel de grant in de werkruimte als een GitHub-aanmelding van jou die hem kan lezen. Werkruimtebeheerders volgen dezelfde regel; alleen de serverbeheerder is vrijgesteld.
 
 ## Wat de integratie je oplevert
 
@@ -76,7 +89,7 @@ server namens jou heeft uitgegeven.
 | Check-runs                 | De GitHub Checks API                                                                                           |
 | Review publiceren          | Een door de gebruiker gestarte stap die je review namens jou op de PR plaatst                                   |
 | Reporegistratie            | Een checkout wordt geaccepteerd als zijn `origin`-remote naar github.com wijst, of naar gitlab.com / bitbucket.org |
-| GitHub-toegang voor agenten | Een token voor de ene repository van de run als `GH_TOKEN` / `GITHUB_TOKEN`; pushes lopen via Control Center |
+| GitHub-toegang voor agenten | Binnen een run haalt `git fetch` de repositories waar de run mee werkt op via Control Center, met een token met alleen leesrechten dat de run nooit bezit. `gh` leest ze via een token met alleen leesrechten dat Control Center uitgeeft wanneer erom wordt gevraagd en intrekt zodra de run eindigt. Pushes, pull requests, wijzigingen daaraan en opmerkingen lopen via Control Center |
 | Meldingspings              | Een poll aan de serverkant van je GitHub-meldingspostvak levert "Vermeld in een pull request" en "Review aangevraagd" op |
 | Gebruikersprofielen        | Profielkaarten bij hover en PR-filtering per auteur                                                            |
 
@@ -95,19 +108,19 @@ knop om te vernieuwen. De statussen vernieuwen vanzelf elke twee minuten.
 
 ## Weet hoe agenten op GitHub handelen
 
-- Een agent die in een GitHub-worktree werkt, krijgt een token voor die ene
-  repository. Het kan de code lezen en opmerkingen plaatsen op pull requests als
-  het verantwoordelijke lid mag pushen, en alleen lezen als dat niet zo is. Een
-  push loopt via Control Center, dat de regel **Naar een
-  remote pushen** raadpleegt en hem daarna doorstuurt met een schrijftoken dat
-  de agent nooit in handen heeft. Zie
+- Een agent die in een GitHub-worktree werkt, krijgt een token voor die ene repository. Het kan alleen de code, issues en pull requests lezen. Reacties lopen via Control Center, zoals hierboven beschreven. Een push loopt via Control Center, dat de regel **Naar een remote pushen** raadpleegt en hem daarna doorstuurt met een schrijftoken dat de agent nooit in handen heeft. Zie
   [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/)
-- Commits van agents gebruiken altijd de Git-identiteit van de aanvrager als auteur én committer. Standaard vermeldt de trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` als mede-auteur. Via **Instellingen → Jij → Toeschrijving van commits** kun je deze mede-auteursvermelding uitschakelen zonder je identiteit te wijzigen. Een werkruimte-instelling onder **Instellingen → Werkruimte → Algemeen** gaat voor en vergrendelt de persoonlijke knop. De eigen auteursvermelding van Claude Code is altijd uitgeschakeld. Voor commitondertekening blijft een eigen geldige configuratie nodig
+- Werk dat je zelf start, wordt als jezelf gecommit. Wanneer je een agent om iets vraagt, of in de IDE commit, ben jij de auteur en committer, onder een adres dat je forge heeft geverifieerd: je GitHub-noreply-adres uit je GitHub-aanmelding, of op GitLab en Bitbucket het e-mailadres dat je aanmelding daar meldt. Je Git-identiteit van de werkruimte wordt alleen gebruikt voor een commit die je met de hand maakt in een repository waar geen forge een adres van jou bevestigt. Als je niet bij die forge bent aangemeld, zijn de commits van een agent in plaats daarvan van de bot, en zeggen de notities van de run dat zo.
+- Werk waar niemand om heeft gevraagd, wordt als de bot gecommit. Een geplande of webhook-run commit als de GitHub App van de werkruimte (`<app>[bot]`, met zijn GitHub-noreply-adres), of als `Control Center <hi@usectrl.dev>` wanneer er geen GitHub App is of de repo op GitLab of Bitbucket staat
+- **Control Center als co-auteur vermelden** (**Instellingen** → **Jij** → **Commits**) voegt een `Co-Authored-By:`-trailer toe voor de andere partij: Control Center bij je eigen commits, en bij de commits van de bot elke persoon die de trigger achter de run heeft ingeschakeld. Hij staat aan tenzij je hem uitzet. Een werkruimtebeheerder kan dat voor iedereen bepalen met **Co-auteurvermelding** onder **Instellingen** → **Werkruimte** → **Algemeen**; je eigen keuze wordt dan wel opgeslagen, maar geldt niet in die werkruimte. De eigen auteursvermelding van Claude Code is altijd uitgeschakeld
+- Je commits kunnen worden ondertekend. Kies onder **Geverifieerde commits** in **Instellingen** → **Jij** → **Commits** **Ondertekeningssleutel aanmaken** en voeg het publieke deel toe aan je GitHub- of GitLab-account als ondertekeningssleutel; vanaf dan worden de commits van runs die je vraagt, en de commits die je in de IDE maakt, als geverifieerd getoond. Het private deel blijft op je server, dus wie die server beheert, kan commits als jou ondertekenen zolang de sleutel op je account staat, en op GitHub blijft een commit die al als geverifieerd wordt getoond, geverifieerd nadat je de sleutel verwijdert. Bitbucket kent geen sleutel die alleen voor ondertekening dient: voeg de sleutel daar niet toe, en commits op Bitbucket worden niet ondertekend. Commits van de bot worden nooit ondertekend
+- Commits die je maakt in het paneel **Broncodebeheer** van de IDE slaan de Git-hooks van de repository over, zoals `git commit --no-verify` doet, en de Git van de server negeert credential helpers, editors, externe diff-tools en ondertekenaars die de repository instelt: hij draait Git op zijn eigen machine, in een worktree die een agent of een pull request kan wijzigen. Zie [Committen en pushen vanuit Broncodebeheer](/nl-NL/handleiding/gidsen/pr-reviewen-en-mergen/#commit-en-push-vanuit-broncodebeheer)
+- Elke commit die een agent pusht, wordt eerst gecontroleerd, ook de lagen die `stack_publish` voor een stack pusht. Een push die iemand anders noemt, een vermelding laat vallen of leent, een sign-off toevoegt, of niet ondertekend is zoals je instellingen dat vragen, wordt geweigerd. Commits die je zelf vanuit de IDE pusht, zijn van jou en worden niet op deze manier gecontroleerd
 - Een terminal die je op een rig opent, krijgt je eigen aanmelding, beperkt tot
   die ene repository, dus pushes daar zijn van jou
 - Als er geen token kan worden uitgegeven (niemand die verantwoordelijk is, is
   aangemeld, de app is niet geïnstalleerd bij de eigenaar, of de installatie is
-  opgeschort), start de run zonder, en zijn notities vermelden waarom. Er zijn
+  opgeschort), vermeldt het commando dat erom vroeg waarom. Er zijn
   geen reserve-inloggegevens
 
 ## Problemen oplossen
@@ -115,7 +128,7 @@ knop om te vernieuwen. De statussen vernieuwen vanzelf elke twee minuten.
 ### De PR-lijst is leeg en zegt dat GitHub niet is verbonden
 
 Je bent op deze server niet bij GitHub aangemeld. Klik op **Inloggen bij GitHub**
-onder **Codehosting**. Repos op andere forges blijven onaangetast.
+onder **Instellingen → Jij → Profiel → Codehosting**. Repos op andere forges blijven onaangetast.
 
 ### De rij GitHub zegt dat aanmelden op deze server niet is ingesteld
 
@@ -123,6 +136,8 @@ De server heeft geen eigen GitHub App en ook geen Connect. De servereigenaar kie
 er een in **Instellingen → Server → Single sign-on**: **Mijn GitHub-app maken**
 kost ongeveer twee minuten. Zie
 [De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/).
+
+In een werkruimte op eigen apps zegt de regel dat wanneer de GitHub-app van de werkruimte ontbreekt of onvolledig is. Een beheerder van de werkruimte vult die in op de kaart **GitHub-app** onder **Instellingen → Werkruimte → Integraties**; zie [Geef één werkruimte een eigen app](/nl-NL/handleiding/gidsen/github-app/#eén-werkruimte-een-eigen-app-geven).
 
 ### Het dialoogvenster zegt dat de code niet klopt
 
@@ -133,10 +148,7 @@ codes beëindigen de aanmelding; start hem opnieuw.
 
 De GitHub App heeft geen installatie op het account dat eigenaar is van de
 repository. Een beheerder van de werkruimte installeert hem via **Instellingen →
-Werkruimte → Algemeen → Installaties van de GitHub-app**. Voor een organisatie op
-de gedeelde App van Control Center moet een beheerder van die organisatie
-mogelijk op **Deze server autoriseren** klikken. Zie
-[De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/#deze-server-autoriseren-voor-een-organisatie).
+Werkruimte → Integraties → Installaties van de GitHub-app**.
 
 ### Iedereen moet zich opnieuw aanmelden bij GitHub
 
@@ -148,8 +160,19 @@ Aanmeldingen via Connect zijn gebonden aan de server die ze heeft gemaakt.
 
 Registratie vereist alle drie: het pad ligt binnen een git-worktree, er is een
 `origin`-remote, en die remote wijst naar een ondersteunde forge (github.com,
-gitlab.com of bitbucket.org). Zie
-[Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+gitlab.com of bitbucket.org). De `origin` moet de repository zijn die je koppelt, en een map buiten de eigen opslag van de werkruimte kan alleen de serverbeheerder koppelen. Zie [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+
+### Ik heb een grant, maar de repository zegt dat mijn account hem niet kan lezen
+
+Je GitHub-account kan die repository niet lezen, dus de code blijft voor jou gesloten, ook met een grant in de werkruimte. Meld je aan bij GitHub onder **Codehosting**, of vraag toegang tot de repository aan op GitHub.
+
+### "Je GitHub-toegang kon niet worden bevestigd"
+
+GitHub kon niet worden bereikt om je toegang te controleren, dus Control Center weigerde in plaats van te gokken. Probeer het over een ogenblik opnieuw.
+
+### Reviews op Connect verschijnen onder mijn naam, niet onder die van de bot
+
+Met de gedeelde Connect-app plaatst de bot reviews alleen voor installaties die de Connect-beheerder heeft opgenomen. Overal anders gaat de review uit onder de eigen aanmelding van de verantwoordelijke persoon. Wil je dat de bot reviews plaatst, geef de werkruimte dan een eigen GitHub-app.
 
 ### Alles stopt een tijdje met werken na zwaar gebruik
 

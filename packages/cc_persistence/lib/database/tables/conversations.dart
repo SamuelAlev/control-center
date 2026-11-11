@@ -13,9 +13,8 @@ class ConversationsTable extends Table {
   /// Conversation id — its own uuid, never the owning space's.
   TextColumn get id => text()();
 
-  /// Owning workspace (isolation scope). Nullable to mirror [SpacesTable]
-  /// (a conversation can never be more strictly scoped than its space; some
-  /// system/legacy spaces carry a null workspace).
+  /// Owning workspace (isolation scope). Nullable to mirror [SpacesTable]: a
+  /// conversation can never be more strictly scoped than its space.
   TextColumn get workspaceId => text().nullable()();
 
   /// The space this conversation belongs to.

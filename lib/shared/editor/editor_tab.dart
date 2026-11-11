@@ -41,8 +41,7 @@ class EditorTab {
   /// It names the tab in a `?tab=` link and in a persisted layout's saved
   /// selection, so it must survive a restart and another device's restore.
   /// The kind fallback is only unique for singleton kinds; a kind that can
-  /// stack mints a per-tab [dedupKey] (`instanceTabKey`), and a layout decode
-  /// mints one for same-kind siblings saved without it.
+  /// stack mints a per-tab [dedupKey] (`instanceTabKey`).
   String get id => dedupKey ?? kind;
 }
 

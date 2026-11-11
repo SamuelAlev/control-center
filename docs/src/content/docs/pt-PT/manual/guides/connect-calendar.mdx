@@ -2,7 +2,7 @@
 title: Ligar um Google Calendar
 description: Ligue o Google Calendar a um espaço de trabalho, gira várias contas e volte a ligar quando um início de sessão expirar.
 slug: pt-PT/manual/guias/ligar-calendario
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Este guia mostra-lhe como ligar o Google Calendar a um espaço de trabalho. É por
@@ -23,7 +23,7 @@ agendamento](/pt-PT/manual/conceitos/calendario/) para o panorama completo.
 ## Ligar uma conta
 
 1. Abra **Calendário** na barra lateral.
-2. Clique em **Adicionar conta de calendário** na barra lateral do calendário. (A mesma secção encontra-se em **Definições → Espaço de trabalho → Perfil e identidade**, em **Google Calendar**.)
+2. Clique em **Adicionar conta de calendário** na barra lateral do calendário. (A mesma secção encontra-se em **Definições → Você → Perfil**, em **Google Calendar**.)
 3. Clique em **Ligar o Google Calendar**. O navegador abre a página de consentimento da Google.
 4. Escolha a conta e aprove o acesso aos eventos do seu calendário e à lista de calendários.
 
@@ -113,8 +113,8 @@ dados foi restaurado noutra máquina.
 
 ## Desligar uma conta
 
-Na barra lateral do calendário (ou em **Definições → Espaço de trabalho → Perfil
-e identidade**), clique em **Desligar** na conta. Isto elimina os eventos
+Na barra lateral do calendário (ou em **Definições → Você → Perfil**),
+clique em **Desligar** na conta. Isto elimina os eventos
 sincronizados e limpa a credencial guardada no servidor.
 
 ## Traga o seu próprio cliente Google
@@ -123,10 +123,10 @@ Use o seu próprio cliente Google quando tiver escolhido **Usar as minhas
 próprias apps**. O cliente do próprio servidor só se aplica nesse caso: com as apps do
 Control Center ou um Connect próprio, o Connect executa todas as faixas, incluindo a da
 Google, e o cliente do servidor continua guardado, mas sem uso. Para que o ecrã de
-consentimento apresente o nome do seu projeto enquanto o servidor usa o Connect, dê ao
-espaço de trabalho um cliente próprio
-([abaixo](#dê-ao-espaço-de-trabalho-o-seu-próprio-cliente-google)); isto aplica-se em
-todos os modos.
+consentimento apresente o nome do seu projeto enquanto o servidor usa o Connect,
+coloque o espaço de trabalho nas próprias apps e dê-lhe um cliente próprio
+([abaixo](#dê-ao-espaço-de-trabalho-o-seu-próprio-cliente-google)); isto aplica-se
+qualquer que seja o modo do servidor.
 
 1. Na [Google Cloud Console](https://console.cloud.google.com/apis/credentials), ative a **Google Calendar API** e configure o **ecrã de consentimento OAuth**, adicionando os âmbitos `calendar.events`, `calendar.calendarlist.readonly`, `openid` e `email`. Enquanto a aplicação não estiver verificada, adicione-se como **utilizador de teste**.
 2. Crie um **ID de cliente OAuth** do tipo de aplicação **Aplicação Web**.
@@ -150,21 +150,17 @@ do cliente do servidor. Só um administrador ou proprietário do espaço de trab
 configurar isto.
 
 1. Crie um cliente Google do tipo **Aplicação Web** como nos passos 1 e 2 acima
-2. Vá a **Definições → Espaço de trabalho → Geral → Aplicativos de provedores** e abra **Google Calendar**
-3. Escolha **Usar o aplicativo próprio deste espaço de trabalho**
-4. Adicione ao cliente o URI de redirecionamento que a linha mostra em **URL de retorno**, tal como está
-5. Cole o **Id de cliente** e o **Segredo de cliente**
+2. Vá a **Definições → Espaço de trabalho → Integrações**. No cartão **Control Center Connect**, escolha **Usar as minhas próprias apps** e clique em **Aplicar**
+3. Em Calendário, aparece o cartão da app **Google Calendar**. Adicione ao cliente o URI de redirecionamento que ele mostra em **URLs de callback**, tal como está
+4. Cole o **Id de cliente** e o **Segredo de cliente**
 
 As contas de calendário ligadas neste espaço de trabalho passam então por esse cliente,
 seja qual for a forma como o servidor inicia a sessão das pessoas. Nunca recorrem ao
 cliente do servidor nem ao Connect: enquanto os dois campos não estiverem preenchidos,
-o Google Calendar fica desativado neste espaço de trabalho, e a linha indica o que falta.
+o Google Calendar fica desativado neste espaço de trabalho, e o cartão indica o que falta.
 O segredo nunca sai do servidor.
 
-Trocar entre o cliente do servidor e o do espaço de trabalho, ou alterar o id de cliente
-do espaço de trabalho, marca todas as contas Google deste espaço de trabalho para nova
-ligação. **Usar o aplicativo deste servidor** apaga os campos guardados do espaço de
-trabalho. Os outros espaços de trabalho do servidor não são afetados.
+**Usar as minhas próprias apps** vale para todos os provedores ao mesmo tempo: GitHub, Linear e a pesquisa de GIFs também funcionam apenas com as apps próprias do espaço de trabalho. Trocar os apps de início de sessão do espaço de trabalho, ou alterar o id de cliente do espaço de trabalho, marca todas as contas Google deste espaço de trabalho para nova ligação. Os campos guardados permanecem quando o espaço de trabalho volta a outra escolha, mas só são usados em **Usar as minhas próprias apps**. Os outros espaços de trabalho do servidor não são afetados.
 
 ## Resolução de problemas
 
@@ -175,8 +171,8 @@ trabalho. Os outros espaços de trabalho do servidor não são afetados.
 | `invalid_client` devolvido pela Google                       | O ID e o segredo são de clientes diferentes, ou o cliente foi eliminado                                                                |
 | A aprovação é bem-sucedida mas a sincronização está vazia    | A sua conta não é um **utilizador de teste** no ecrã de consentimento, ou não foi concedido um dos âmbitos pedidos                    |
 | A caixa de diálogo diz que o código não corresponde          | Escreva os 8 caracteres exatamente como o navegador os mostra. Cinco códigos errados terminam o início de sessão; recomece             |
-| "Não foi possível atualizar a sua resposta", ou criar, mover ou eliminar um evento falha | A conta foi ligada com o antigo âmbito só de leitura. Volte a ligá-la; um calendário partilhado consigo só de leitura também recusa alterações |
-| Toda a gente tem de voltar a ligar                           | O cliente Google do servidor ou do espaço de trabalho mudou, ou a escolha ou a chave do Connect do servidor mudaram. Consulte [Voltar a ligar uma conta expirada](#voltar-a-ligar-uma-conta-expirada) |
+| "Não foi possível atualizar a sua resposta", ou criar, mover ou eliminar um evento falha | A conta não concedeu acesso de escrita ao calendário. Volte a ligá-la e aprove todos os âmbitos pedidos; um calendário partilhado consigo só de leitura também recusa alterações |
+| Toda a gente tem de voltar a ligar                           | O cliente Google do servidor ou do espaço de trabalho mudou, ou a escolha do Connect do servidor ou do espaço de trabalho, ou a chave do servidor, mudou. Consulte [Voltar a ligar uma conta expirada](#voltar-a-ligar-uma-conta-expirada) |
 
 ## Guias relacionados
 

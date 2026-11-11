@@ -2,12 +2,13 @@ import 'dart:async';
 
 import 'package:cc_domain/features/telemetry/telemetry.dart';
 import 'package:control_center/core/providers/analytics_providers.dart';
-import 'package:control_center/features/auth/presentation/screens/onboarding_chrome.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_model_steps.dart';
+import 'package:control_center/features/auth/presentation/screens/onboarding_steps.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_adapter_step.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_connect_step.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_connection_steps.dart';
 import 'package:control_center/features/auth/presentation/widgets/onboarding_flow_view.dart';
+import 'package:control_center/features/auth/presentation/widgets/onboarding_you_step.dart';
 import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
@@ -19,41 +20,17 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-/// One first-run step. The flow is a LIST of these rather than a fixed count,
-/// because the workspace step does not apply to everyone — an invited member
-/// already has one.
-enum _StepId {
-  /// Choose whose provider apps sign people in (server owner only).
-  signIn,
-
-  /// Connect a code-hosting forge (and optionally a ticketing vendor).
-  connect,
-
-  /// Name the first workspace.
-  workspace,
-
-  /// Turn on sandboxed agent execution.
-  sandbox,
-
-  /// Pick the default adapter + model.
-  adapter,
-
-  /// Install the on-device speech model for dictation.
-  voice,
-}
-
-/// First-run onboarding: (for the server owner) choose whose provider apps
-/// sign people in, configure API access, add a workspace, set up agent
-/// sandboxing, choose a default adapter + model, then optionally fetch the
-/// local voice transcription model. The embedding and diarization models have
-/// no step — the server force-installs both at boot.
+/// First-run onboarding: confirm a username, (for the server owner) choose
+/// whose provider apps sign people in, connect a forge, add a workspace, set
+/// up agent sandboxing, choose a default adapter + model, then optionally
+/// fetch the local voice transcription model. The embedding and diarization
+/// models have no step: the server force-installs both at boot.
 ///
-/// The workspace step is skipped for someone who already belongs to one, which
-/// is how an INVITED member arrives: they were added to somebody else's
-/// workspace, so asking them to name their first one both misdescribes what
-/// happened and leaves them with a stray second workspace. Everything else —
-/// signing in, sandboxing, the model, dictation — is per-person setup they
-/// still need.
+/// Every account walks it once, but only through the steps it is missing. An
+/// INVITED member of a ready workspace sees just "You": they were added to
+/// somebody else's workspace, so asking them to name one, or to set up the
+/// sandbox and runner its agents already have, misdescribes what happened and
+/// leaves them with a stray second workspace.
 class OnboardingScreen extends ConsumerStatefulWidget {
   /// Creates the [OnboardingScreen].
   const OnboardingScreen({super.key});
@@ -65,7 +42,7 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   /// The steps this particular operator will walk, fixed for the whole flow.
-  late final List<_StepId> _steps = _planSteps();
+  late final List<OnboardingStepId> _steps = _planSteps();
 
   int _step = 0;
 
@@ -85,29 +62,47 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
   );
 
-  /// Chooses the steps ONCE, at flow start.
+  /// Chooses the steps ONCE, at flow start: only the ones this person is
+  /// missing.
   ///
   /// Snapshotting is the whole discipline here. An earlier version derived
   /// skips from async auth probes on every build, which made the flow depend on
-  /// frame timing — a step could vanish underneath the person walking it. The
-  /// gate only routes here after the workspace list has settled, so a single
-  /// read is both correct and stable.
+  /// frame timing: a step could vanish underneath the person walking it. The
+  /// gate only routes here after the finished flag, the forge connections and
+  /// the workspace list have settled, so a single read is both correct and
+  /// stable. An input that has still not settled counts as missing: the step
+  /// then shows, which costs one Continue.
   ///
-  /// Only the sign-in and workspace steps are conditional. Sign-in is the
-  /// server owner's alone and decides whose apps every later forge sign-in
-  /// uses, so it comes first. The connect step always shows, even with a
-  /// forge connected: the gate requires it, so it stays visible.
-  List<_StepId> _planSteps() {
-    final hasWorkspace =
-        ref.read(workspacesProvider).value?.isNotEmpty ?? false;
-    return [
-      if (ref.read(isServerOwnerProvider)) _StepId.signIn,
-      _StepId.connect,
-      if (!hasWorkspace) _StepId.workspace,
-      _StepId.sandbox,
-      _StepId.adapter,
-      _StepId.voice,
+  /// * "You" comes first for anyone who has not finished onboarding: the
+  ///   server derived a username for them (an OS account, an invite hint, an
+  ///   IdP claim) and this is where they confirm or change it.
+  /// * Without a connected forge, the server owner first decides whose apps
+  ///   every forge sign-in uses, then the connect step signs in.
+  /// * Without a workspace, the workspace step creates one, and the sandbox,
+  ///   runner and voice steps set up what its agents run with. Someone who may
+  ///   not create workspaces gets none of these: they wait for an invite on
+  ///   the workspace picker instead.
+  List<OnboardingStepId> _planSteps() {
+    final needsWorkspace =
+        !(ref.read(workspacesProvider).value?.isNotEmpty ?? false) &&
+        ref.read(canCreateWorkspacesProvider);
+    final hasForge =
+        ref.read(forgeConnectionsProvider).hasValue &&
+        ref.read(hasAnyForgeConnectedProvider);
+    final steps = [
+      if (ref.read(onboardingFinishedProvider) != true) OnboardingStepId.you,
+      if (!hasForge && ref.read(isServerOwnerProvider)) OnboardingStepId.signIn,
+      if (!hasForge) OnboardingStepId.connect,
+      if (needsWorkspace) ...[
+        OnboardingStepId.workspace,
+        OnboardingStepId.sandbox,
+        OnboardingStepId.adapter,
+        OnboardingStepId.voice,
+      ],
     ];
+    // Reached with nothing missing (the route opened directly): "You" is the
+    // one step that is always safe to walk again.
+    return steps.isEmpty ? const [OnboardingStepId.you] : steps;
   }
 
   void _goTo(int step) {
@@ -115,73 +110,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _trackStep();
   }
 
-  /// The progress-bar labels, one per step. Every step is named, not just the
-  /// current one — the bar has to read as a map of the whole flow.
-  List<String> _stepLabels(AppLocalizations l10n) => [
-    for (final step in _steps)
-      switch (step) {
-        _StepId.signIn => l10n.onboardingStepSignIn,
-        _StepId.connect => l10n.onboardingStepConnect,
-        _StepId.workspace => l10n.onboardingStepWorkspace,
-        _StepId.sandbox => l10n.onboardingStepSandbox,
-        _StepId.adapter => l10n.onboardingStepAdapter,
-        _StepId.voice => l10n.onboardingStepVoice,
-      },
-  ];
-
-  OnboardingStepCopy _copyFor(_StepId step, AppLocalizations l10n) {
-    switch (step) {
-      case _StepId.signIn:
-        return OnboardingStepCopy(
-          title: l10n.onboardingConnectTitle,
-          subtitle: l10n.onboardingConnectSubtitle,
-        );
-      case _StepId.connect:
-        return OnboardingStepCopy(
-          title: l10n.letsPluginTools,
-          subtitle: l10n.connectGitHubAndTicketing,
-        );
-      case _StepId.workspace:
-        return OnboardingStepCopy(
-          title: l10n.giveYourWorkAHome,
-          subtitle:
-              'Name your first workspace — a project, team, or initiative. '
-              'You can add a logo now or link repositories later from '
-              'Settings → Repositories.',
-        );
-      case _StepId.sandbox:
-        return OnboardingStepCopy(
-          title: l10n.isolateAgentExecution,
-          subtitle:
-              'Agents will run inside disposable containers so they can\'t '
-              'touch the rest of your machine. You can fine-tune token '
-              'access per conversation later — or skip this for now and '
-              're-enable it from Settings → Security.',
-        );
-      case _StepId.adapter:
-        return OnboardingStepCopy(
-          title: l10n.chooseRunner,
-          subtitle:
-              'Select the default adapter and model for agent conversations. '
-              'You can change this later in Settings → Adapters.',
-        );
-      case _StepId.voice:
-        return OnboardingStepCopy(
-          title: l10n.talkToControlCenter,
-          subtitle:
-              'Pick a speech model and install it to dictate messages '
-              'straight into the composer. Parakeet TDT v3 is the '
-              'recommended default — fast and multilingual. Runs fully '
-              'on-device — or skip and turn it on later in Settings.',
-        );
-    }
-  }
-
   Future<void> _finishOnboarding() async {
-    // Recorded before navigating, and for everyone who reaches the end —
-    // including an invited member who never created a workspace. It is what
-    // tells a later credential lapse to ask for a sign-in instead of running
-    // this flow again.
+    // Recorded before navigating, and for everyone who reaches the end,
+    // including an invited member who never created a workspace. It is the
+    // only write of the flag, and what lets the gate open.
     await markOnboardingFinishedFromWidget(ref);
     if (!mounted) {
       return;
@@ -208,23 +140,25 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     void next() => isLast ? unawaited(_finishOnboarding()) : _goTo(index + 1);
 
     switch (_steps[index]) {
-      case _StepId.signIn:
+      case OnboardingStepId.you:
+        return OnboardingYouStep(onContinue: next);
+      case OnboardingStepId.signIn:
         return OnboardingConnectStep(onContinue: next);
-      case _StepId.connect:
+      case OnboardingStepId.connect:
         return OnboardingForgeStep(
           isAuthed: ref.watch(hasAnyForgeConnectedProvider),
           onContinue: next,
         );
-      case _StepId.workspace:
+      case OnboardingStepId.workspace:
         return OnboardingWorkspaceStep(
           onBack: index == 0 ? null : back,
           onContinue: next,
         );
-      case _StepId.sandbox:
+      case OnboardingStepId.sandbox:
         return OnboardingStepSandbox(onBack: back, onContinue: next);
-      case _StepId.adapter:
+      case OnboardingStepId.adapter:
         return OnboardingAdapterStep(onBack: back, onContinue: next);
-      case _StepId.voice:
+      case OnboardingStepId.voice:
         return OnboardingVoiceStep(
           onBack: back,
           onFinish: () => unawaited(_finishOnboarding()),
@@ -235,15 +169,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final copy = _copyFor(_steps[_step], l10n);
+    final copy = _steps[_step].copy(l10n);
 
     return OnboardingFlowView(
       copy: copy,
       body: _bodyFor(_step),
-      labels: _stepLabels(l10n),
+      labels: [for (final step in _steps) step.label(l10n)],
       currentStep: _step,
       canManageModels: ref.watch(isServerOwnerProvider),
-      hideVoiceActivity: _steps[_step] == _StepId.voice,
+      hideVoiceActivity: _steps[_step] == OnboardingStepId.voice,
     );
   }
 }

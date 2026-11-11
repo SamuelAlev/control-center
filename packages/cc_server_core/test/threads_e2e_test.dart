@@ -44,19 +44,23 @@ void main() {
     const workspaceId = 'ws-threads';
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Threads'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Threads'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('threads e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('threads e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();

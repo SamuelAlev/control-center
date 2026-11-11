@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/domain_matcher.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 
 /// In-process HTTP/HTTPS proxy used by the native sandbox to enforce a
 /// per-domain allowlist on outbound traffic.

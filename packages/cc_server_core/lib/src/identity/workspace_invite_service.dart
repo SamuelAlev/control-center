@@ -10,6 +10,7 @@ import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_invite_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/remote_control/domain/services/pairing_payload.dart';
 import 'package:cc_rpc/cc_rpc.dart';
@@ -131,32 +132,23 @@ class WorkspaceInviteService {
     String? handle,
     String? displayName,
     String? email,
-    String? existingUserId,
   }) async {
     final invite = await _invites.getByCodeHash(hashInviteCode(code));
     if (invite == null || !invite.isRedeemableAt(_now())) {
       throw const AuthException('Invite is invalid or expired');
     }
 
-    // Resolve an explicitly requested user before claiming the one-use code:
-    // a nonexistent id must not consume a valid invite.
-    final existingUser = existingUserId == null
-        ? null
-        : await _users.getById(existingUserId);
-    if (existingUserId != null && existingUser == null) {
-      throw const AuthException('Invite is invalid or expired');
-    }
     final now = _now();
     if (!await _invites.consume(invite, now)) {
       throw const AuthException('Invite is invalid or expired');
     }
-    final user =
-        existingUser ??
-        await _provisionUser(
-          handle: handle,
-          displayName: displayName,
-          email: email,
-        );
+    // A redeemed invite always provisions a new account: it never yields
+    // an existing one, the server owner included.
+    final user = await _provisionUser(
+      handle: handle,
+      displayName: displayName,
+      email: email,
+    );
 
     final existing = await _members.getMember(invite.workspaceId, user.id);
     final member =
@@ -200,40 +192,31 @@ class WorkspaceInviteService {
     );
   }
 
+  /// Creates the redeemer's account under a suggested username (the hint,
+  /// else their name, else `member`, then the next free one). They choose
+  /// their own in onboarding's first step.
   Future<User> _provisionUser({
     String? handle,
     String? displayName,
     String? email,
-  }) async {
-    final base = _sanitizeHandle(handle ?? displayName ?? 'member');
-    var candidate = base;
-    var suffix = 1;
-    while (await _users.getByHandle(candidate) != null) {
-      suffix += 1;
-      candidate = '$base$suffix';
-    }
-    final user = User(
-      id: _uuid.v4(),
-      handle: candidate,
-      displayName: (displayName?.isNotEmpty ?? false)
-          ? displayName!
-          : candidate,
-      email: email,
-      createdAt: _now(),
+  }) {
+    final suggested = Username.fromFreeText(
+      handle ?? displayName ?? '',
+      fallback: 'member',
     );
-    await _users.upsert(user);
-    return user;
+    final name = displayName?.trim() ?? '';
+    return _users.insertWithFreeHandle(
+      User(
+        id: _uuid.v4(),
+        handle: suggested.value,
+        displayName: name.isNotEmpty ? name : suggested.value,
+        email: email,
+        createdAt: _now(),
+      ),
+    );
   }
 
   /// SHA-256 hex of an invite code — the only form that is ever stored.
   static String hashInviteCode(String code) =>
       sha256.convert(utf8.encode(code)).toString();
-
-  static String _sanitizeHandle(String raw) {
-    final cleaned = raw
-        .toLowerCase()
-        .replaceAll(RegExp('[^a-z0-9_.-]+'), '-')
-        .replaceAll(RegExp('^-+|-+\$'), '');
-    return cleaned.isEmpty ? 'member' : cleaned;
-  }
 }

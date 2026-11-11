@@ -2,7 +2,7 @@
 title: Dokumentacja referencyjna konfiguracji SSO
 description: Każde ustawienie, punkt końcowy, operacja i kod błędu logowania jednokrotnego.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Wszystko, co da się skonfigurować w logowaniu jednokrotnym, w jednym miejscu.
@@ -34,6 +34,18 @@ którego ekran ustawień może się nie zgadzać).
 | `groupRoleMap`         | oba     | `{}`            | grupa → rola; mapowania na właściciela są odrzucane przy zapisie                                                                                       |
 | `autoMember`           | oba     | włączone        | automatycznie dodawaj użytkowników do każdego obszaru roboczego przy pierwszym logowaniu                                                                |
 | `allowJit`             | oba     | włączone        | aprowizuj nieznanych użytkowników przy logowaniu                                                                                                       |
+
+## Dopasowywanie kont
+
+`SsoProvisioner` rozstrzyga logowanie w tej kolejności i nigdy nie robi tego po nazwie użytkownika:
+
+1. `(users.sso_issuer, users.sso_subject)` równa się wystawcy i podmiotowi logowania (SAML NameID / OIDC `sub`).
+2. Konto, którego adres równa się e-mailowi z logowania, tylko wtedy, gdy obie strony za nim ręczą: dostawca (OIDC `email_verified: true`; brak roszczenia nie jest poręczeniem; podpisana asercja SAML zawsze nim jest) i konto (`users.email_verified`). Adresy są zapisywane bez spacji na brzegach i małymi literami i tak też są porównywane. Zweryfikowany adres pasuje tylko wtedy, gdy dokładnie jedno konto trzyma go jako zweryfikowany; dwaj posiadacze oznaczają brak dopasowania (zapisywane w logu bez adresu), a żadne konto nie może zostać zweryfikowane dla wariantu wielkości liter adresu, który inne konto trzyma jako zweryfikowany.
+3. W przeciwnym razie nowe konto, gdy `allowJit` jest włączone; odmowa, gdy jest wyłączone.
+
+`users.email_verified` ustawia logowanie SSO albo push SCIM, który niesie adres, albo właściciel serwera poleceniem `users.vouchEmail` (**Ustawienia → Serwer → Osoby → Potwierdź e-mail**, audytowane jako `user.email_vouched`). Edycja własnego profilu przez właściciela serwera poręcza za jego własny adres. Każda inna edycja profilu oraz każdy adres wpisany w zaproszeniu pozostawiają go niezweryfikowanym, a zmiana adresu zdejmuje flagę. Poręczone logowanie, które tworzy konto, pobiera adres od kont, które go tylko wpisały (audytowane jako `user.email_unvouched_cleared`), nigdy od konta, które trzyma go jako zweryfikowany; w takim przypadku nowe konto nie dostaje adresu.
+
+Dopasowane konto, już przypięte do innego podmiotu lub wystawcy, odrzuca logowanie komunikatem `This account is already linked to a different SSO identity`. Konto dezaktywowane odrzuca logowanie komunikatem `This account has been deactivated`.
 
 ## Konfiguracja procesu
 
@@ -136,6 +148,7 @@ Awarie `cc_saml_verify_response` niosą stabilny kod:
   DLA WSZYSTKICH OBSZARÓW ROBOCZYCH.
 - `users.sso_subject` + `users.sso_issuer` — przypięcie podmiotu dostawcy,
   unikalne dla pary `(issuer, subject)` dzięki indeksowi częściowemu.
+- `users.email_verified`: czy adres konta może dopasować się do logowania SSO lub push SCIM (zob. [Dopasowywanie kont](#dopasowywanie-kont)).
 - `users.deactivated_at` — znacznik dezaktywacji przez SCIM.
 - Token bearer SCIM i sekret klienta OIDC znajdują się w pliku sekretów z
   uprawnieniami 0600, nigdy w bazie danych.

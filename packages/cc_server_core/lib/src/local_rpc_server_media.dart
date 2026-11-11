@@ -1,5 +1,10 @@
 part of 'local_rpc_server.dart';
 
+/// The credential the media proxy presents for [userId] viewing
+/// [workspaceId] when it fetches [target], or null for an anonymous fetch.
+typedef MediaCredentialResolver =
+    Future<String?> Function(String userId, Uri target, String workspaceId);
+
 extension _MediaMethods on LocalRpcServer {
   Future<void> _serveMediaProxy(HttpRequest request) async {
     final res = request.response;
@@ -50,8 +55,9 @@ extension _MediaMethods on LocalRpcServer {
       await _closeProxy(res, HttpStatus.badRequest);
       return;
     }
-    if (isBlockedProxyTarget(target) ||
-        await resolvesToBlockedAddress(target)) {
+    // An early 403 for a literal or a reserved name; a hostname is judged by
+    // the pinned connection every fetch goes through.
+    if (isBlockedProxyTarget(target)) {
       _w('Media proxy refusing blocked target host: ${target.host}');
       await _closeProxy(res, HttpStatus.forbidden);
       return;
@@ -60,10 +66,22 @@ extension _MediaMethods on LocalRpcServer {
     final clientRange = request.headers.value(HttpHeaders.rangeHeader);
     final maxBytes = mediaProxyMaxBytes ?? 96 * 1024 * 1024;
 
+    // `ws` (the viewer's active workspace) picks which of the viewer's own
+    // sign-ins a private forge asset is fetched with: the one in effect in
+    // that workspace, never a global slot. Unsigned on purpose: it only
+    // chooses among the viewer's own credentials, and membership is checked.
+    // Without it the fetch is anonymous.
     final userId = device?.userId;
-    final authorization = userId == null
+    final workspaceId = q['ws'];
+    final scoped = workspaceId != null && workspaceId.isNotEmpty;
+    if (scoped && await _lacksMembershipForUser(userId, workspaceId)) {
+      await _closeProxy(res, HttpStatus.forbidden);
+      return;
+    }
+    // A credential rides only https.
+    final authorization = userId == null || !scoped || target.scheme != 'https'
         ? null
-        : await mediaCredential?.call(userId, target);
+        : await mediaCredential?.call(userId, target, workspaceId);
 
     final cache = _mediaCache;
     if (cache != null &&
@@ -119,9 +137,7 @@ extension _MediaMethods on LocalRpcServer {
 
     HttpClient? client;
     try {
-      client = HttpClient()
-        ..connectionTimeout = const Duration(seconds: 10)
-        ..userAgent = 'control-center-media-proxy';
+      client = _mediaHttpClient();
       final outbound = client;
       _abortMediaClientOnCancellation(
         outbound,
@@ -252,9 +268,7 @@ extension _MediaMethods on LocalRpcServer {
     bool Function()? isCancelled,
   }) async {
     final maxBytes = bufferCap ?? mediaProxyMaxBytes ?? 96 * 1024 * 1024;
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 10)
-      ..userAgent = 'control-center-media-proxy';
+    final client = _mediaHttpClient();
     _abortMediaClientOnCancellation(
       client,
       cancelled: cancelled,
@@ -364,6 +378,15 @@ extension _MediaMethods on LocalRpcServer {
     }
   }
 
+  /// A client for one upstream fetch: it connects only through
+  /// [mediaConnectionFactory] (the address it judged, never a second DNS
+  /// answer) and never through a proxy, which would connect by name.
+  HttpClient _mediaHttpClient() => HttpClient()
+    ..connectionTimeout = const Duration(seconds: 10)
+    ..userAgent = 'control-center-media-proxy'
+    ..findProxy = ((_) => 'DIRECT')
+    ..connectionFactory = mediaConnectionFactory;
+
   Future<_UpstreamOpen> _openUpstream(
     HttpClient client,
     Uri target, {
@@ -423,14 +446,17 @@ extension _MediaMethods on LocalRpcServer {
       if (next.scheme != 'http' && next.scheme != 'https') {
         return const _UpstreamError(HttpStatus.badRequest);
       }
-      if (isBlockedProxyTarget(next) || await resolvesToBlockedAddress(next)) {
+      if (isBlockedProxyTarget(next)) {
         if (isCancelled?.call() ?? false) {
           return const _UpstreamError(HttpStatus.badGateway);
         }
         _w('Media proxy refusing blocked redirect host: ${next.host}');
         return const _UpstreamError(HttpStatus.forbidden);
       }
-      if (next.host.toLowerCase() != current.host.toLowerCase()) {
+      // The viewer's credential rides only https, and only to the host it
+      // was chosen for.
+      if (next.scheme != 'https' ||
+          next.host.toLowerCase() != current.host.toLowerCase()) {
         sendAuth = false;
       }
       current = next;

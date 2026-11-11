@@ -1,8 +1,8 @@
 ---
 title: Control Center Connect referencia
-description: Mit lát a Connect és mit soha, a három mód, a telepítési identitás, a lepecsételt hitelesítő adatok, a konfigurációs bizalom, valamint minden beállítás, művelet és állapotkód.
+description: Mit lát a Connect és mit soha, a három mód, a munkaterületenkénti választás, a telepítési identitás, a lepecsételt hitelesítő adatok, a konfigurációs bizalom, valamint minden beállítás, művelet és állapotkód.
 slug: hu-HU/kezikonyv/referencia/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 A Control Center Connect futtatja a szolgáltatói bejelentkezéseket azoknak a
@@ -11,7 +11,9 @@ Control Center által üzemeltetett Connectet használja, vagy egy olyat, amelye
 szervezete futtat ([Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/)),
 vagy egyiket sem. A választás a **Beállítások → Szerver → Egyszeri
 bejelentkezés → Control Center Connect** helyen, a `cc_server connect`
-paranccsal vagy a `CC_CONNECT_URL` változóval adható meg.
+paranccsal vagy a `CC_CONNECT_URL` változóval adható meg. Egy munkaterület ezt követi, hacsak egy
+adminisztrátor másikat nem választ az adott munkaterületre a **Beállítások → Munkaterület →
+Integrációk** alatt ([Munkaterületenkénti választás](#munkaterületenkénti-választás)).
 
 ## Sávok
 
@@ -20,7 +22,7 @@ választás) alatt egy sáv a szerver saját alkalmazásán fut, ha az teljesen 
 egyébként nem érhető el. A Control Center vagy egyéni Connect esetén a Connect minden
 általa kiszolgált sávot kezel: a szerver saját alkalmazásai mentve maradnak, de nem
 használatosak sem bejelentkezéshez, sem szerveroldali automatizáláshoz, sem a szerver
-által jelentett állapothoz. A munkaterület saját alkalmazása minden módban elsőbbséget élvez.
+által jelentett állapothoz. A munkaterület, amely saját választást tett, minden sávot a saját választása szerint futtat.
 
 | Sáv          | Saját alkalmazáshoz kell                         | A Connecten keresztül                                      |
 | ------------ | ------------------------------------------------ | ---------------------------------------------------------- |
@@ -32,12 +34,10 @@ használatosak sem bejelentkezéshez, sem szerveroldali automatizáláshoz, sem 
 | `klipy`      | `KLIPY_APP_KEY`                                  | GIF-keresés a Connect proxyján keresztül                   |
 
 A csak részben beállított saját alkalmazás hibává teszi a sávját, soha nem vált
-csendben a Connectre. Az a munkaterület, amely saját GitHub Appot használ
-(**Beállítások → Munkaterület → Általános → GitHub-azonosító**), GitHubhoz soha
-nem megy a Connecten keresztül. Ha a munkaterület saját Google-, Linear- vagy Klipy-alkalmazást
-használ (**Beállítások → Munkaterület → Általános → Szolgáltatói alkalmazások**), az adott
-szolgáltató soha nem megy a szerver alkalmazásán vagy a Connecten keresztül. A Connect-választás
-megváltoztatása senkit sem jelentkeztet ki a munkaterület saját alkalmazásából.
+csendben a Connectre. A **Saját alkalmazások használata** alatt álló munkaterület soha nem
+megy át a szerver alkalmazásain vagy bármely Connecten, egyetlen szolgáltatóhoz sem. A
+szerver Connect-választásának megváltoztatása senkit sem jelentkeztet ki olyan
+munkaterületről, amely saját választást tett.
 
 ## Mit lát a Connect és mit soha
 
@@ -45,18 +45,23 @@ megváltoztatása senkit sem jelentkeztet ki a munkaterület saját alkalmazás�
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | A szerver telepítési azonosítóját és a kérésaláírásokat                                       | A forráskódot, a repók tartalmát, a diffeket vagy a pull requestek szövegét |
 | A bejelentkezett szolgáltatói fiókot, a bejelentkezés alatt                                   | A jegyeket, az átiratokat vagy bármit egy munkaterület adatbázisában  |
-| Hogy egy hitelesítő adat melyik munkaterülethez tartozik, átlátszatlan azonosítóként a pecséten belül | A GitHub App privát kulcsát: a repótokenek egy személy bejelentkezéséből származnak |
+| Hogy egy hitelesítő adat melyik munkaterülethez tartozik, átlátszatlan azonosítóként a pecséten belül | A szerver saját alkalmazásainak titkai: soha nem hagyják el a szervert |
 | A repót, amelyhez egy egyetlen repóra szóló GitHub-token készül                               | A frissítő tokeneket nyugalmi állapotban: csak a szerver által őrzött pecsétekben léteznek |
-| A szerverhez kötött GitHub-telepítési azonosítókat                                            | A Linear-titkokat: a Linear kódját a szerver maga cseréli be          |
+| A szerverhez kötött Slack-csapat                                                              | A Linear-titkokat: a Linear kódját a szerver maga cseréli be          |
 | A GIF-keresési kifejezéseket, amikor a Klipy proxyjaként működik                              | A jelszavakat, a párosítási kulcsokat vagy a modellszolgáltatói kulcsokat |
 | A Slack-eseményhivatkozásokat (csapat, csatorna, üzenetazonosító) és a slash-parancsok szövegét | A Slack-üzenetek szövegét: a Connect érkezéskor eldobja, és a szerver maga olvassa ki az üzenetet a Slackből |
 
-A rövid élettartamú állapotot (folyamatban lévő bejelentkezések, nonce-ok,
-gyorsítótárak) a Connect legfeljebb 15 percig őrzi. Egyetlen tartós nyilvántartása
-a telepítési kötések: mely szerverek használhatják melyik GitHub-telepítést, és
-melyik szerverhez kötődik az egyes Slack-csapatok. A hibák kódot hordoznak, soha
-nem a szolgáltató válaszát, a naplók pedig a telepítési azonosítókat csak kulcsolt
-hashként rögzítik.
+A folyamatban lévő bejelentkezéseket, a nonce-okat és a gyorsítótárakat a Connect
+legfeljebb 10 percig őrzi, az óránkénti használati számlálókat pedig legfeljebb két
+óráig. Az egy repóra szóló, személyként kiállított GitHub-token addig marad
+nyilvántartva, lepecsételve ahhoz a bejelentkezéshez, amely kérte, amíg le nem jár
+(legfeljebb 8 óra), így a Connect újra kiadhatja, és leválasztáskor visszavonhatja.
+Egyetlen tartós nyilvántartása a Slack-kötések (melyik szerverhez kötődik az egyes
+Slack-csapatok) és a visszavont telepítési azonosítók. A hibák kódot hordoznak, soha
+nem a szolgáltató válaszát. A naplók a telepítési azonosítókat csak kulcsolt hashként
+rögzítik, a GitHub-tokent pedig csak a `hashed_token` értékként, amelyet a GitHub
+szervezeti audit-naplója mutat hozzá, így a szervezet tulajdonosa össze tudja
+párosítani a kettőt.
 
 ## Módok
 
@@ -75,9 +80,39 @@ Ebbe a buildbe nincs befordítva üzemeltetett konfigurációs kulcs, így az
 üzemeltetett mód `hosted_unprovisioned` állapotot jelez, és egyetlen sávot sem
 szolgál ki. A saját alkalmazások és az egyéni Connect működnek.
 
+Az üzemeltetett Connect egyetlen konténerben fut. A lepecsételő kulcsa és a közös GitHub App
+privát kulcsa ott környezeti változók, nem olyan kulcstárban lévő kulcsok, amelyek
+csak aláírásra vagy visszafejtésre szolgálnak, ahogy a GitHub egy App privát
+kulcsához javasolja. Ez a jelenlegi beállítás ismert hiányossága.
+
 A szerver legfeljebb 10 percenként olvassa a Connect konfigurációját, és
 hívásonként legfeljebb 5 másodpercet vár. Ha a Connect nem érhető el, az utolsó
 jó konfiguráció marad használatban, és a Beállítások elavultként jelölik.
+
+## Munkaterületenkénti választás
+
+A **Beállítások → Munkaterület → Integrációk → Control Center Connect** felülbírálja a szerver
+választását egyetlen munkaterületen. Minden tag látja, és azt is, hol fut az egyes
+bejelentkezések; csak a munkaterület adminisztrátora módosíthatja.
+
+| Választás                              | Működés                                                                                                                                                                       |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Mint ez a szerver**                  | Az alapértelmezés. A munkaterület arra a választásra támaszkodik, amit a szerver tulajdonosa beállított; a választás neve megjelenik                                         |
+| **A Control Center alkalmazásainak használata** | A Control Center üzemeltetett Connectje, függetlenül attól, mit használ a szerver                                                                    |
+| **Saját alkalmazások használata**      | Csak a munkaterület saját alkalmazásai: GitHub App, Google-kliens, Linear-alkalmazás, Klipy-kulcs és Slack-alkalmazás. Szolgáltató saját alkalmazás nélkül itt ki van kapcsolva; részben beállított alkalmazás beállítási hiba |
+| **Egyéni Connect-szerver használata**  | Connect a munkaterület által megadott HTTPS-címen. Privát vagy helyi hálózaton lévő címek elutasítva                                                                       |
+
+- A **Mint ez a szerver** választástól eltérő bármely választás minden személy GitHub- és
+  Linear-bejelentkezését a munkaterület saját terében tartja, így azok sosem keverednek a
+  szerverszintű bejelentkezésekkel
+- A váltás előzetes megerősítést kér: a munkaterület minden tagjának újra be kell jelentkeznie
+  GitHubra, Linearba és a Google Calendarba az új alkalmazásokon keresztül
+- A munkaterület saját Slack-kapcsolata minden választás mellett működik; a **A Control Center hozzáadása ide: Slack** a választást követi
+- A `CC_CONNECT_URL` a munkaterületeknek sem enged saját Connectet: követhetik a szervert,
+  vagy használhatják saját alkalmazásaikat
+- A munkaterület egyéni Connectje csak az adott munkaterületen bizalmi az első használatkor:
+  az **Új alkalmazások elfogadása** ott sosem változtat azon, amit a szerver vagy más
+  munkaterület megbízhatónak tart
 
 ## Telepítési identitás
 
@@ -111,17 +146,31 @@ kötött.
 
 ## GitHub-telepítések
 
-A megosztott GitHub App egy telepítését egy szerver csak akkor használhatja, ha a
-Connect a szerver telepítési azonosítójához kötötte.
+A megosztott GitHub App egy telepítését bármely szerverről lehet használni. A Connect nem vezet nyilvántartást arról, mely szerver használhatja.
 
-- A **GitHub-alkalmazás telepítése** a **Beállítások → Munkaterület →
-  Általános** helyen egy 15 perces jeggyel nyitja meg a GitHubot. A Connect akkor
-  köti meg az új telepítést, ha a telepítő a személyes fiók tulajdonosa, vagy a
-  szervezet adminisztrátora
-- **A szerver engedélyezése** egy már létező telepítést köt meg. Csak szervezeti
-  adminisztrátor végezheti el
-- Egy szervezeti telepítés több szerverhez is köthető; mindegyikhez egy
-  adminisztrátor engedélye kell
+- A **GitHub-alkalmazás telepítése** a **Beállítások → Munkaterület → Integrációk** helyen megnyitja az alkalmazás telepítési oldalát a GitHubon. A hivatkozást a szerver a Connect konfigurációjában szereplő alkalmazásnévből állítja össze
+- Egy egyetlen repóra szóló tokenhez szükséges, hogy az alkalmazás telepítve legyen a repó tulajdonosánál, és a bejelentkezett személynek legyen hozzáférése a repóhoz. Ez a személy saját tokenje, a szerepköréhez igazítva, soha nem többet
+- Egy szervezet a GitHubon korlátozza a Control Centert: a telepítés eltávolításával, a repóinak szűkítésével vagy a személy eltávolításával
+- Olyan hívásokhoz, amelyeket csak a személy tehet meg, például a telepítéseinek listázásához, a Connect a személy saját App-felhasználói tokenjét adja át a szervernek, nem egy egyetlen repóra szóló tokent. Egy szerveren való bejelentkezés azt jelenti, hogy megbízik abban a szerverben ezzel a tokennel.
+- Az a szervezet, amely GitHub IP-engedélylistát érvényesít, nem használhatja az üzemeltetett Connectet, mert annak címei nem rögzítettek. Helyette a saját GitHub-alkalmazását regisztrálja, a saját szerverein vagy az általa futtatott Connecten.
+- **Leválasztás** csak azt a bejelentkezést vonja vissza: a Connect egyszer felhasználja a frissítő tokenjét, és törli, amit az visszaad, törli a felhasználói tokenjét, valamint a Connect által neki kiállított, egy repóra szóló tokeneket. Bárhol megőrzött másolata a pecsétjéről működésképtelenné válik. A személy bejelentkezései más szervereken és munkaterületeken továbbra is működnek. Ha a Control Centert egy GitHub-fiókból teljesen el akarja távolítani, a GitHubon vonja vissza a **Beállítások → Alkalmazások → Engedélyezett GitHub-alkalmazások → Visszavonás** alatt.
+
+### A közös bot
+
+A bot nevében (`as: app`) kiállított tokenek ugyanazt a botot mutatják a GitHubon minden olyan szerverhez, amely ugyanazt a Connectet használja: a GitHub nem tudja megkülönböztetni ezeket a szervereket.
+
+- Minden szerver engedélyezheti a botnak az olvasást és a kommentelést: `read`, `review` és `comment` (megjegyzések, címkék, felelősök és reakciók hibajegyeken és pull requesteken)
+- Pull request átnézése botként (`bot`, amely pull requesteket ír) csak azoknak a szervereknek engedélyezett, amelyeket a Connect üzemeltetője a `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` listára vett fel. Minden más szerver `needs_requester` választ kap, és az átnézést az elszámoltatható személy saját tokenjével teszi közzé, amelyet a GitHub az illetőre korlátoz: az átnézés az ő nevén jelenik meg. Ez fedi az MI-átnézés közzétételét, az átnézési megjegyzéseket és az átnézőkéréseket.
+- Push, ágak létrehozása és pull request nyitása (`write`) soha nem a közös botként kerülnek kiállításra. Mindig a kérő saját bejelentkezését használják.
+- Pull request jóváhagyása soha nincs automatizálva, egyik tokennel sem.
+- A saját GitHub App-pal rendelkező szerver vagy munkaterület ezek mindegyikében megtartja a botot, az átnézéseket is beleértve.
+
+### Amit a szervezet tulajdonosainak és tagjainak tudniuk kell
+
+- Az a szerver, amelyen valaki bejelentkezik, az ő App-felhasználói tokenjét tartja: tokenenként legfeljebb 8 óra, leválasztásig megújítva. Azokon a repókon, amelyeken a közös App telepítve van, és amelyeket elér, a nevükben tud eljárni. A Connect véglegesen levághatja a szervert (visszavont vagy megtagadott telepítés), de a már kiadott token addig érvényes, amíg le nem jár.
+- A közös GitHub App szervezetbe telepítése minden olyan Control Center-szerverre kiterjedő hozzájárulás, amelyre bármely tag bejelentkezik, nem csak egy szerverre.
+- A bot megosztott, ahogy fent is: a szervezet a GitHubon nem tudja megállapítani, melyik szerver járt el botként.
+- Az a szervezet, amely saját határt akar, saját GitHub-alkalmazást regisztrál, és saját Connectet futtat ([Connect-szerver futtatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/connect-szerver-futtatasa/)), vagy az alkalmazást a saját szerverein állítja be.
 
 ## Konfigurációs bizalom
 
@@ -132,7 +181,7 @@ Connect a szerver telepítési azonosítójához kötötte.
 
 ## Műveletek
 
-Minden Connect-beállítás csak a szerver tulajdonosának érhető el.
+A szerver Connect-beállításai csak a szerver tulajdonosának érhetők el.
 
 | Művelet               | Mit tesz                                                                               |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -140,7 +189,16 @@ Minden Connect-beállítás csak a szerver tulajdonosának érhető el.
 | `connect.configure`   | Beállítja a `hosted`, a `custom` (`url`-lel) vagy az `off` értéket                      |
 | `connect.test`        | Újra lekéri a konfigurációt, és jelenti az állapotot                                    |
 | `connect.confirmPins` | Elfogadja egy egyéni Connect megváltozott azonosítóit                                   |
-| `connect.rotateKey`   | Új telepítési kulcsot állít ki. Minden Connecten keresztüli bejelentkezés leáll ezen a szerveren |
+| `connect.rotateKey`   | Új telepítési kulcsot és új telepítési azonosítót állít ki (a `force` akkor is lecseréli, ha a Connect nem tudta visszavonni a régit); lásd: [A telepítési kulcs cseréje](#a-telepítési-kulcs-cseréje) |
+
+A munkaterület saját választásának saját műveletei vannak, mindegyik megnevezi a munkaterületet:
+
+| Művelet                        | Ki                  | Mit tesz                                                                                                                  |
+| ------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Bármely tag         | A választás, mire oldódik fel, a sávok állapota és forrása. A telepítési azonosító és a függőben lévő kulcsok csak adminisztrátoroknak |
+| `workspaceConnect.set`         | Munkaterület-adminisztrátor | Beállítja az `inherit`, `hosted`, `custom` (`url`-lel) vagy `own` értéket                                       |
+| `workspaceConnect.test`        | Munkaterület-adminisztrátor | Újra lekéri a munkaterület Connect-konfigurációját, és jelenti az állapotot                                   |
+| `workspaceConnect.confirmPins` | Munkaterület-adminisztrátor | Elfogadja a munkaterület egyéni Connectjének megváltozott azonosítóit                                         |
 
 Maguk a bejelentkezések az `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` és `oauth.disconnect` műveletet használják.
@@ -149,23 +207,56 @@ A személy mindig a bejelentkezett hívó.
 ## Bejelentkezés a Connecten keresztül
 
 1. A szerver megkéri a Connectet a sáv elindítására, és megkapja a szolgáltató
-   engedélyezési URL-jét, amelyet megjelenítés előtt ellenőriz
+   engedélyezési URL-jét, amelyet megjelenítés előtt ellenőriz. A GitHub mindig
+   megmutatja a fiókválasztóját
 2. A személy jóváhagyja a böngészőben. A szolgáltató visszatér a Connecthez
-3. A Connect egy 8 karakteres kódot és egy `control-center://oauth-done`
-   hivatkozást mutat
-4. A személy beírja a kódot az alkalmazásba, vagy megnyitja a hivatkozást. A
-   szerver a kóddal és a kérés saját bizonyítékával veszi át a bejelentkezést
+3. A Connect megmutatja, mit tehet a szerver, amely a bejelentkezést indította, a személy
+   nevében, és meddig. A Connect nem tudja megállapítani, ki futtatja azt a szervert, ezért
+   az oldal csak akkor kéri a személyt a folytatásra, ha ő maga indította a bejelentkezést,
+   és arra kéri, zárja be, ha valaki küldte neki a hivatkozást. Ha a böngésző másik
+   hálózaton van, mint ahonnan a bejelentkezés indult, az oldal ezt jelzi: ez egy üzemeltetett
+   szervernél vagy másik eszköznél normális, de adathalászatra is ez jellemző. A **Mégse**
+   megszakítja a bejelentkezést: a szolgáltató kódját soha nem használják fel. Minden oldal
+   egyszer válaszol: az a válasz, amely nem a Connect által épp megmutatott oldalról érkezett,
+   elutasításra kerül.
+4. A **Folytatás** után a Connect egy 8 karakteres kódot és egy `control-center://oauth-done`
+   hivatkozást mutat. Aki megkapja a kódot, az épp jóváhagyott hozzáférést kapja meg, ezért a
+   kód csak oda kerülhet, ahol a bejelentkezést indították
+5. A személy beírja a kódot az alkalmazásba, vagy megnyitja a hivatkozást. A szerver a kóddal
+   és a kérés saját bizonyítékával veszi át a bejelentkezést
 
 A bejelentkezés 10 perc után lejár. Öt hibás kód lezárja. Az a hivatkozás,
 amelyet nem ez az alkalmazás indított, elutasításra kerül ezzel az üzenettel:
-**A bejelentkezést nem innen indították**.
+**A bejelentkezést nem innen indították**. A Connect korlátozza, hány bejelentkezést indíthat
+egy hálózati cím, és hány GitHub-tokent állít ki személyenként és szerverenként, személyenként
+a szervereken át, címenként és az egész alkalmazásra nézve. Az új bejelentkezéseknek saját
+keretük van, így soha nem tartják fel azokat a megújításokat, amelyekre mások várnak. A korlát
+túllépése esetén a hívás `rate_limited` hibával utasítódik el, a szerver később újrapróbálkozik,
+és senkit nem jelentkeztet ki. A személy korlátját túllépő bejelentkezést a GitHubon visszavonják,
+és elutasítják.
 
 ## A telepítési kulcs cseréje
 
-**Kulcs cseréje** a Connect kártyán, vagy `cc_server connect rotate-key --yes`:
+Csak a szerver tulajdonosa cserélheti a kulcsot, a **Control Center Connect** kártyán a
+**Beállítások → Szerver → Egyszeri bejelentkezés** alatt található **Kulcs cseréje** gombbal.
+Erre nincs parancs. A csere:
 
-- Új telepítési kulcsot és új telepítési azonosítót ad a szervernek
-- Mindenkit kijelentkeztet minden olyan sávból, amely a Connecten keresztül fut
+- Mindenkit kijelentkeztet minden olyan sávból, amely a Connecten keresztül fut. Minden olyan
+  Connect-szerverhez, amelyhez a régi kulcsot használták, a szerver visszavonja az onnan tartott
+  GitHub- és Slack-bejelentkezéseket (a Google-bejelentkezésnek nincs mit visszavonnia, lejár)
+- Visszavonja a régi telepítési azonosítót minden ilyen Connect-szervernél: a régi kulccsal
+  aláírva, és egy olyan hitelesítőadat-pecséttel igazolva, amelyet a szerver az adott Connecttől
+  tart. Ettől kezdve a Connect minden, a régi kulccsal küldött kérést elutasít, így a pecsét vagy a
+  régi kulcs egy másolata, amelyet ettől a szervertől vettek, használhatatlan, a régi azonosítóhoz
+  kötött Slack-munkaterületek pedig felszabadulnak, hogy újra csatlakozhassanak. A már kiadott
+  tokenek addig érvényesek, amíg le nem járnak (a bottokené egy óra, a személyeké nyolc óra). Ha a
+  szerver nem tart pecsétet egy Connect-szervertől, annál nincs mit visszavonni, azt kihagyja
+- Ezután a szerver új telepítési kulcsot és új telepítési azonosítót kap
+- Ha egy Connect-szerver nem érhető el, vagy megtagadja a régi azonosító visszavonását, a szerver
+  a kulcscsere előtt megáll, és megjeleníti a **A Connect nem tudta visszavonni a régi kulcsot**
+  üzenetet. A **Mindenképpen cserél** gomb a kulcsot akkor is lecseréli; ekkor a régi telepítési
+  azonosító az adott Connecten addig használható marad, amíg a tokenjei le nem járnak, GitHubnál
+  legfeljebb 8 óráig
 - A szerver saját alkalmazásain keresztüli bejelentkezéseket érintetlenül hagyja
 - Az új telepítési azonosítót fel kell venni egy egyéni Connect engedélylistájára
 
@@ -177,7 +268,7 @@ amelyet nem ez az alkalmazás indított, elutasításra kerül ezzel az üzenett
 | `signature`            | Az üzemeltetett konfiguráció nem ment át az aláírás-ellenőrzésen     |
 | `rollback`             | A Connect régebbi konfigurációt szolgált ki, mint amit a szerver már látott |
 | `unreachable`          | A szerver nem éri el a Connectet                                     |
-| `install_blocked`      | A Connect nem engedélyezi ezt a telepítési azonosítót                |
+| `install_blocked`      | A Connect nem engedélyezi ezt a telepítési azonosítót, vagy visszavonták |
 | `pins_changed`         | Egy egyéni Connect más alkalmazásazonosítókat közölt                 |
 | `protocol`             | A Connect olyan formában válaszolt, amelyet ez a szerver nem ért     |
 

@@ -2,7 +2,7 @@
 title: Otorisasi — siapa yang boleh melakukan apa, dan bagaimana Anda membuktikannya
 description: Katalog izin di balik peran Control Center, jejak audit yang dapat mendeteksi manipulasi tempat setiap keputusan otorisasi bermuara, dan kontrol tingkat instalasi yang dapat ditetapkan operator.
 slug: id-ID/panduan-pengguna/konsep/otorisasi
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center menjawab dua pertanyaan otorisasi, dan keduanya sungguh
@@ -63,19 +63,58 @@ sebagai `custom:<id>`, dan klien yang terlalu lama untuk memahami nilai
 tersebut kembali ke Tamu daripada menebak.
 
 Di bawah peran terdapat **pemberian izin per repo** (`none` / `read` /
-`review` / `write`): keanggotaan ruang kerja tidak pernah diam-diam
+`review` / `write`, lihat [Mengubah kode membutuhkan izin tulis](#mengubah-kode-membutuhkan-izin-tulis)): keanggotaan ruang kerja tidak pernah diam-diam
 melampaui hak istimewa host kode. Setiap permukaan yang mengekspos kode
 memeriksanya — termasuk yang menjangkau kode dari samping, seperti terminal
 atau sesi editor yang dibuka pada worktree sebuah space.
 
-## Kewenangan server
+## Kode mengikuti forge
 
-Sebagian operasi sama sekali bukan tentang ruang kerja: pengaturan seluruh
-instalasi, konfigurasi SSO, kredensial penyedia, pengelolaan model, cadangan
-seluruh instalasi. Operasi tersebut mendeklarasikan **kewenangan server** dan
-ditolak untuk semua orang kecuali operator instalasi (pemilik server yang
-tercatat). Identitas operator sengaja hanya satu, dengan satu definisi untuk
-itu.
+Izin saja tidak membuka kode sebuah repositori. Untuk melihat berkasnya, diff, atau hasil pencariannya, atau membuka terminal di atasnya, anggota memerlukan izin Control Center **dan** proses masuk forge mereka sendiri harus dapat membaca repositori tersebut. Admin ruang kerja tidak dikecualikan; pemilik server dikecualikan, karena checkout-nya berada di mesin mereka. Repositori tanpa remote forge hanya memerlukan izin.
+
+- Ketika admin memberikan izin repositori kepada seseorang yang akun forge-nya tidak dapat membacanya, izin tetap disimpan dan admin melihat peringatan.
+- Ketika forge tidak dapat dihubungi untuk memeriksa, jawabannya adalah tidak, bukan tebakan: orang itu melihat "Tidak dapat memastikan akses GitHub Anda. Coba lagi." (dengan nama forge mereka) dan mencoba lagi nanti.
+- Pull request dan semua yang dibuat darinya mengikuti aturan yang sama.
+
+### Mengubah kode membutuhkan izin tulis
+
+Izin repositori memiliki tiga tingkat, dan setiap tingkat mencakup tingkat sebelumnya:
+
+- **read**: melihat berkas, diff, dan hasil pencarian repositori, dengan syarat proses masuk forge Anda sendiri juga dapat membacanya.
+- **review**: read, ditambah menyetujui, meminta perubahan, dan tindakan tinjauan lainnya pada pull request-nya.
+- **write**: review, ditambah mengubah kode dan menjalankan run agen yang menulis ke repositori. Mengubah kode mencakup menyimpan atau membatalkan berkas di editor, menyinkronkan worktree ke head pull request-nya, commit dan push, menerbitkan cabang, serta tindakan stack yang membuat, memeriksa, atau menerbitkan sebuah bagian.
+
+Setiap push yang dibuat untuk seseorang, baik oleh dirinya sendiri maupun oleh run agen yang dia minta, memeriksa izin tulisnya pada repositori itu saat push dilakukan, di GitHub, GitLab, dan Bitbucket sama saja. Menerbitkan stack memeriksa setiap repositori dalam stack sebelum mendorong salah satunya.
+
+Penolakan menyebut izin yang kurang. Tanpa akses baca, aplikasi menampilkan "Anda tidak memiliki akses baca ke repositori ini. Admin ruang kerja dapat memberikannya." Dengan akses baca tetapi tanpa akses tulis, aplikasi menampilkan "Anda dapat membaca repositori ini tetapi tidak dapat mengubahnya. Admin ruang kerja dapat memberikan akses tulis."
+
+### Space mengikuti repositorinya
+
+Apa yang ditulis agen tentang kode ikut mengikuti kode itu. Konten sebuah space (pesan, transkrip dan keluaran alat, hasil pencarian, log run, todo, aktivitas, dan notifikasi) membawa kode dari repositori yang dikerjakannya, sehingga sebuah space hanya terbuka bagi anggota yang memegang izin baca atas setiap repositori yang digunakan space itu, dan yang proses masuk forge-nya sendiri dapat membaca repositori tersebut. Itu adalah repositori yang dipilih untuk space itu, atau seluruh repositori ruang kerja bila tidak ada pilihan yang tercatat. Space yang dibuat tanpa repositori terbuka bagi setiap anggota.
+
+Space yang tidak dapat dibuka seseorang tidak ditampilkan kepadanya di mana pun, termasuk pencarian, log run, todo, aktivitas, dan notifikasi. Admin ruang kerja memegang setiap izin tetapi tidak dikecualikan dari bagian forge; pemilik server dikecualikan.
+
+Untuk percakapan yang harus dapat dibaca semua orang, buat space tanpa repositori, atau hanya dengan repositori yang dapat dibaca semua orang.
+
+## Pemilik server
+
+Orang yang menyiapkan server adalah **pemiliknya**. Server mencatatnya sekali, pada start pertama, dan tidak ada yang dikirim melalui jaringan yang dapat mengubahnya. Admin ruang kerja, atau pemilik ruang kerja, bukanlah pemilik server: siapa pun dapat diberi ruang kerja, tetapi mesin server hanya memiliki satu pemilik.
+
+**Tidak ada yang berjalan di mesin server itu sendiri di luar sandbox kecuali pemilik server memulainya atau menyetujui jenis eksekusi host tersebut.** Secara konkret, hanya pemilik server yang dapat:
+
+- Membuat ruang kerja. Orang lain melihat layar yang meminta mereka agar pemilik membuatnya atau admin ruang kerja mengundang mereka.
+- Membuka shell host di terminal yang dihosting server. Orang lain mendapat terminal dalam sandbox, dengan batasan agen, di dalam direktori milik ruang kerja.
+- Membuka editor kode tertanam. Editor berjalan sebagai pengguna server itu sendiri, dengan terminal, tugas, dan ekstensinya.
+- Membuka pull request atau worktree percakapan di editor native. Editor dimulai di layar server itu sendiri, sebagai pengguna server.
+- Menyimpan atau menyetujui definisi [lingkungan](/id-ID/panduan-pengguna/panduan-praktis/lingkungan/) yang menjalankan apa pun di host: penempatan host, pemeriksaan yang menjalankan perintah, atau tugas provisi atau arsip.
+- Menjalankan agen di server yang mesinnya tidak memiliki sandbox. Run milik orang lain ditolak di sana, kecuali pemilik memulai server dengan `--sandbox off`, yang menjalankan agen setiap anggota tanpa pembatasan (lihat [Agen di host tanpa sandbox](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/#agen-di-host-tanpa-sandbox)).
+- Menautkan checkout repositori yang berada di luar penyimpanan ruang kerja, mengonfirmasi tautan yang sudah ada sebelum aturan itu, dan menelusuri folder server saat menambahkan repositori (lihat [Tambahkan repositori](/id-ID/panduan-pengguna/panduan-praktis/tambah-repo/)).
+- Melihat dan menghentikan setiap proses agen yang berjalan di server. Orang lain hanya melihat dan menghentikan run agen langsung di ruang kerja yang mereka ikuti.
+- Membuat agen menggunakan server MCP yang dikonfigurasi di alat pengguna server itu sendiri (Claude, Codex, Cursor, dan lainnya). Hanya run harness bawaan yang dipertanggungjawabkan pemilik yang mendapatkannya; lihat [Server MCP pribadi tetap milik pemilik](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-mcp-pribadi-tetap-milik-pemilik).
+- Mengonfirmasi alamat email seseorang, agar single sign-on dapat mencocokkannya (lihat [Hubungkan penyedia OpenID Connect](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc/#bagaimana-login-mencocokkan-akun-yang-sudah-ada)).
+- Mengubah pengaturan seluruh instalasi: SSO, kredensial penyedia, endpoint MCP dan tokennya, pengelolaan model, Connect, dan cadangan seluruh instalasi. Operasi ini mendeklarasikan **kewenangan server** dan ditolak untuk semua orang selain pemilik.
+
+Ada satu identitas operator yang memang sengaja dibuat, dengan satu definisi untuk itu.
 
 ## Jejak audit
 

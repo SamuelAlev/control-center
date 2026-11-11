@@ -2,7 +2,7 @@
 title: Thiết lập tích hợp GitHub
 description: Đăng nhập GitHub để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Hướng dẫn này đề cập đến những phần dành riêng cho GitHub trong quá trình thiết
@@ -29,8 +29,7 @@ máy chủ không thể dùng nó, và việc đăng nhập cho họ là việc 
 
 GitHub chỉ có đăng nhập: không có token nào để dán.
 
-1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã** (hoặc bước đầu
-   tiên của quá trình thiết lập ban đầu)
+1. Mở **Cài đặt → Bạn → Hồ sơ → Lưu trữ mã** (hoặc bước đầu tiên của quá trình thiết lập ban đầu)
 2. Trên hàng **GitHub**, nhấn **Đăng nhập vào GitHub**
 3. Trình duyệt của bạn mở GitHub. Hãy phê duyệt ứng dụng
 
@@ -53,15 +52,29 @@ một không gian làm việc, cũng hủy mọi token mà máy chủ đã cấp
 
 ## Đăng nhập của bạn đại diện cho ai
 
-- **Mọi việc bạn làm** (mở trang PR, đăng đánh giá, phê duyệt, merge) chạy dưới đăng
-  nhập **của bạn** và không dưới gì khác. Nếu bạn chưa đăng nhập, ứng dụng sẽ báo và yêu
-  cầu bạn đăng nhập. Không có thông tin xác thực nào khác đứng thay bạn
-- **Công việc không có ai gõ** (lần chạy agent, pipeline, thăm dò PR, câu trả lời của bot,
-  clone) nhận một token cho đúng một kho mã, được cấp từ GitHub App của máy chủ hoặc qua
-  Connect. Token bị giới hạn trong những gì một thành viên chịu trách nhiệm được làm ở đó:
-  người đã yêu cầu, nếu không thì là chủ không gian làm việc. Một thành viên không thể push
-  sẽ giới hạn token ở mức chỉ đọc
+Control Center tuân theo cách GitHub tự phân tách giữa việc hành động **với tư cách một người** và việc hành động **với tư cách ứng dụng**.
+
+| Điều xảy ra                                                                     | Hiển thị trên GitHub là                                                 |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Mọi việc bạn tự làm: bình luận, đánh giá, phê duyệt, merge, yêu cầu người đánh giá | **Bạn**. GitHub đánh dấu bình luận trong hội thoại là được thực hiện bằng ứng dụng Control Center; một đánh giá và các bình luận nội tuyến của nó không có dấu hiệu nào như vậy |
+| Đánh giá AI, phản hồi và bình luận của agent trong hội thoại PR, nhãn, công việc pipeline và bot | **Bot Control Center**. Trên ứng dụng Connect dùng chung, một đánh giá chỉ thuộc về bot khi cài đặt đó đã được nhà vận hành Connect liệt kê; nếu không, nó hiển thị là người chịu trách nhiệm |
+| Pull request mà agent mở cho bạn, các lần chỉnh sửa tiêu đề hoặc mô tả của pull request đó, các lần push và commit của nó                    | **Bạn**. Control Center được ghi nhận là đồng tác giả khi ghi công đồng tác giả được bật |
+| Công việc không ai yêu cầu (lịch chạy, webhook)                                  | **Bot Control Center**, đồng thời là tác giả các commit của nó. Trên Control Center Connect, bot không bao giờ push hoặc mở pull request |
+
+- **Mọi việc bạn làm** chạy dưới đăng nhập **của bạn** và không dưới gì khác. Nếu bạn chưa đăng nhập, ứng dụng sẽ yêu cầu bạn đăng nhập. Không có thông tin xác thực nào khác đứng thay bạn
+- **Công việc của bot** nhận một token cho đúng một kho mã tại một thời điểm, được giới hạn trong những gì một thành viên chịu trách nhiệm có thể làm ở đó: người đã yêu cầu, nếu không thì là chủ không gian làm việc. Thành viên không thể push sẽ giới hạn token ở mức chỉ đọc. Phản hồi của bot thay mặt ai đó sẽ bắt đầu bằng **Control Center (for @login)**
+- **Agent mở pull request qua Control Center**, không bao giờ từ sandbox của chúng, nên pull request thuộc về bạn và quy tắc riêng của GitHub ngăn bạn tự phê duyệt nó. Control Center cũng từ chối phê duyệt từ chính người đã yêu cầu agent làm việc đó, và từ tác giả của pull request. Với lượt chạy theo lịch hoặc webhook, điều này bao gồm mọi quản trị viên đã bật trigger của nó hoặc chỉnh sửa pipeline của nó khi nó đang bật. Phải có người khác đánh giá. Nếu Control Center không thể xác nhận ai đã mở pull request, hoặc tài khoản nào trên forge là của bạn, nó sẽ từ chối và yêu cầu bạn thử lại
+- **Agent cũng bình luận qua Control Center.** Token GitHub mà một lượt chạy của agent nhận được chỉ đọc. Khi agent bình luận trên pull request mà nó đang xử lý, Control Center đăng bình luận dưới danh nghĩa bot, bắt đầu bằng **Control Center (for @login)** khi có người yêu cầu lượt chạy. Agent chỉ có thể bình luận trên pull request của chính nó: trong cùng kho mã, không phải fork, và có commit mới nhất do agent push hoặc là commit hiện tại của nhánh không gian của nó. Các lượt nhắc @ trong bình luận của agent không thông báo cho ai. Agent cũng có thể thay đổi tiêu đề hoặc mô tả của chính pull request của nó trong khi pull request còn mở. Việc sửa đổi đó được thực hiện theo cách pull request đã được mở (dưới danh nghĩa bạn, khi bạn yêu cầu lượt chạy), và mặc định yêu cầu phê duyệt trước. Mô tả pull request giữ nguyên các lượt nhắc @ khi agent mở và khi nó chỉnh sửa, nên những người được nêu tên trong đó sẽ nhận được thông báo
+- **Trên Control Center Connect, bot không bao giờ push hoặc mở pull request.** Push, tạo nhánh hoặc mở pull request ở đó cần một người đã yêu cầu, và chạy bằng đăng nhập của người đó. Lượt chạy theo lịch hoặc webhook cố gắng push sẽ dừng lại kèm thông báo. Để cho phép các lượt chạy không có người giám sát được push, hãy cấp cho không gian làm việc một GitHub App riêng trong **Cài đặt**
+- **Bot Connect làm được gì.** Với ứng dụng Connect dùng chung, bot bình luận, gắn nhãn và thả cảm xúc. Nó đăng một đánh giá (đánh giá AI, bình luận đánh giá, yêu cầu người đánh giá) chỉ khi nhà vận hành Connect đã liệt kê cài đặt của máy chủ này. Nếu không, đánh giá được gửi bằng đăng nhập riêng của người chịu trách nhiệm và hiển thị dưới tên họ. Bot không bao giờ mở, sửa, đóng hay đổi tiêu đề một pull request, hủy một đánh giá, hoặc sửa hay xóa một bình luận; những việc đó cần một người đã yêu cầu, bằng đăng nhập của chính họ. Connect không ràng buộc cài đặt của tổ chức bạn với một máy chủ Control Center duy nhất: bất kỳ máy chủ nào có thành viên có thể push vào kho mã và đã đăng nhập qua Connect đều có thể lấy token bình luận của bot cho kho mã đó
+- **Máy chủ hoặc không gian làm việc có GitHub App riêng** giữ bot cho mọi việc nêu trên, kể cả đánh giá
 - **Tự động hóa không bao giờ phê duyệt** một pull request. Phê duyệt là hành động của một người
+
+Khi bạn liên kết một kho mã, Control Center kiểm tra rằng tài khoản của bạn nhìn thấy nó, và cảnh báo khi GitHub App chưa được cài trên tổ chức của nó hoặc không bao gồm kho mã đó, kèm liên kết để sửa. Liên kết và hủy liên kết cần quản trị viên không gian làm việc, còn một checkout nằm ngoài bộ nhớ riêng của không gian làm việc chỉ có thể được liên kết bởi chủ sở hữu máy chủ; xem [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+
+Liên kết đi theo id GitHub vĩnh viễn của kho mã, nên đổi tên hay chuyển nhượng không cần bạn làm gì. Nếu về sau đường dẫn trỏ tới một kho mã khác, Control Center ngừng gửi bất cứ thứ gì tới nó và hiển thị một thông báo cho đến khi quản trị viên không gian làm việc nhấn **Liên kết lại**.
+
+Mở mã của một kho (tệp, diff, tìm kiếm, hoặc một terminal) cần cả grant của nó trong không gian làm việc lẫn một đăng nhập GitHub của chính bạn có thể đọc được nó. Quản trị viên không gian làm việc tuân theo cùng quy tắc; chỉ chủ sở hữu máy chủ là được miễn.
 
 ## Tích hợp này mang lại cho bạn những gì
 
@@ -71,7 +84,7 @@ một không gian làm việc, cũng hủy mọi token mà máy chủ đã cấp
 | Các lượt chạy kiểm tra      | API GitHub Checks                                                                                                |
 | Xuất bản đánh giá           | Một bước do người dùng xác nhận, đăng đánh giá của bạn lên PR, dưới danh nghĩa bạn                               |
 | Đăng ký kho mã              | Một bản checkout được chấp nhận nếu remote `origin` của nó trỏ tới github.com, hoặc tới gitlab.com / bitbucket.org |
-| Quyền truy cập GitHub của agent | Một token cho đúng kho mã của lượt chạy dưới dạng `GH_TOKEN` / `GITHUB_TOKEN`; push đi qua Control Center       |
+| Quyền truy cập GitHub của agent | Trong lượt chạy, `git fetch` đi qua Control Center, nơi lấy các kho mã mà lượt chạy đang xử lý bằng một token chỉ đọc mà lượt chạy không bao giờ giữ. `gh` đọc chúng bằng một token chỉ đọc mà Control Center cấp khi được yêu cầu và thu hồi khi lượt chạy kết thúc. Push, pull request, các lần chỉnh sửa chúng và bình luận đi qua Control Center |
 | Tín hiệu thông báo          | Một lượt thăm dò phía máy chủ vào hộp thư thông báo GitHub của bạn tạo ra “Được nhắc trong pull request” và “Đã yêu cầu review” |
 | Hồ sơ người dùng            | Thẻ hồ sơ khi rê chuột và lọc PR theo từng tác giả                                                               |
 
@@ -90,27 +103,29 @@ cùng nút làm mới. Các trạng thái tự làm mới sau mỗi hai phút.
 
 ## Cách agent hành động trên GitHub
 
-- Một agent làm việc trong worktree GitHub nhận một token cho đúng kho mã đó. Nó có thể
-  đọc mã và bình luận trên pull request khi thành viên chịu trách nhiệm có quyền push, và
-  chỉ đọc khi họ không có quyền đó. Một lần push đi qua Control Center, nơi hỏi quy tắc
-  **Push lên remote** rồi chuyển tiếp nó bằng một token ghi mà agent không bao giờ nắm
-  giữ. Xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
-- Các commit của agent luôn dùng danh tính Git của người yêu cầu làm cả tác giả lẫn người thực hiện commit. Theo mặc định, trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` ghi nhận GitHub `@usectrl` là đồng tác giả. Tại **Cài đặt → Bạn → Ghi công trong commit**, bạn có thể tắt việc ghi nhận đồng tác giả này mà không thay đổi danh tính của mình. Thiết lập không gian làm việc tại **Cài đặt → Không gian làm việc → Chung** được ưu tiên và khóa công tắc cá nhân. Việc ghi công riêng của Claude Code luôn bị tắt. Ký commit vẫn cần có cấu hình hợp lệ riêng
+- Một agent làm việc trong worktree GitHub nhận một token cho đúng kho mã đó. Nó chỉ có thể đọc mã, issue và pull request; bình luận đi qua Control Center, như mô tả ở trên. Một lần push đi qua Control Center, nơi hỏi quy tắc **Push lên remote** rồi chuyển tiếp nó bằng một token ghi mà agent không bao giờ nắm giữ. Xem [Cấu hình chính sách sandbox](/vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox/)
+- Công việc bạn bắt đầu được commit dưới tên bạn. Khi bạn yêu cầu agent làm gì đó, hoặc commit trong IDE, bạn là tác giả và người commit, dưới một địa chỉ mà forge của bạn đã xác minh: địa chỉ noreply GitHub của bạn từ đăng nhập GitHub, hoặc trên GitLab và Bitbucket là email mà đăng nhập của bạn ở đó báo cáo. Danh tính Git của không gian làm việc chỉ được dùng cho một commit bạn tự làm trong một kho mã mà không forge nào xác nhận địa chỉ nào của bạn. Nếu bạn chưa đăng nhập vào forge đó, các commit của agent thay vào đó là của bot và ghi chú của lượt chạy nói như vậy
+- Công việc không ai yêu cầu được commit dưới tên bot. Một lượt chạy theo lịch hoặc webhook commit dưới tên GitHub App của không gian làm việc (`<app>[bot]`, với địa chỉ noreply GitHub của nó), hoặc dưới tên `Control Center <hi@usectrl.dev>` khi không có GitHub App hoặc kho mã nằm trên GitLab hay Bitbucket
+- **Ghi công Control Center là đồng tác giả** (**Cài đặt** → **Bạn** → **Commit**) thêm một trailer `Co-Authored-By:` cho bên kia: Control Center trên commit của bạn, và trên commit của bot là từng người đã kích hoạt trigger đứng sau lượt chạy. Tùy chọn này được bật trừ khi bạn tắt nó. Quản trị viên không gian làm việc có thể quyết định điều này cho tất cả mọi người với **Ghi công đồng tác giả** trong **Cài đặt** → **Không gian làm việc** → **Chung**; khi đó lựa chọn của bạn vẫn được lưu nhưng không áp dụng trong không gian làm việc đó. Claude Code có thuộc tính riêng luôn bị tắt
+- Commit của bạn có thể được ký. Dưới **Commit đã xác minh** trong **Cài đặt** → **Bạn** → **Commit**, chọn **Tạo khóa ký** và thêm nửa công khai của nó vào tài khoản GitHub hoặc GitLab của bạn dưới dạng khóa ký; từ đó trở đi, các commit của những lượt chạy bạn yêu cầu, và các commit bạn tạo trong IDE, hiển thị là đã xác minh. Nửa riêng tư nằm trên máy chủ của bạn, nên bất kỳ ai kiểm soát máy chủ đó đều có thể ký commit dưới tên bạn khi khóa còn nằm trên tài khoản của bạn, và trên GitHub một commit đã hiển thị là đã xác minh vẫn được xác minh sau khi bạn gỡ khóa. Bitbucket không có khóa chỉ dùng để ký: đừng thêm khóa vào đó, và các commit trên Bitbucket không được ký. Commit của bot không bao giờ được ký
+- Commit bạn tạo trong bảng **Kiểm soát mã nguồn** của IDE bỏ qua các Git hook của kho mã, như `git commit --no-verify`, và Git của máy chủ bỏ qua các credential helper, trình soạn thảo, công cụ diff bên ngoài và các bộ ký mà kho mã cấu hình: nó chạy Git trên máy của chính nó, trong một cây mà agent hoặc pull request có thể thay đổi. Xem [Commit và push từ Kiểm soát mã nguồn](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/#commit-và-push-từ-kiểm-soát-mã-nguồn)
+- Mọi commit mà agent push đều được kiểm tra trước, kể cả các lớp mà `stack_publish` push cho một stack. Một lần push nêu người khác, bỏ hoặc mượn một ghi công, thêm một sign-off, hoặc không được ký đúng như cài đặt của bạn yêu cầu sẽ bị từ chối. Các commit bạn tự push từ IDE thuộc về bạn và không được kiểm tra theo cách này
 - Một terminal bạn mở trên một rig nhận đăng nhập của chính bạn, được thu hẹp vào đúng một kho mã, nên các lần push ở đó là của bạn
-- Khi không cấp được token (không có thành viên chịu trách nhiệm nào đăng nhập, app chưa được cài trên chủ sở hữu, hoặc cài đặt bị tạm ngưng), lượt chạy bắt đầu mà không có token và ghi chú của nó nói rõ lý do. Không có thông tin xác thực dự phòng nào
+- Khi không cấp được token (không có thành viên chịu trách nhiệm nào đăng nhập, app chưa được cài trên chủ sở hữu, hoặc cài đặt bị tạm ngưng), lệnh đã yêu cầu token đó sẽ nói rõ lý do. Không có thông tin xác thực dự phòng nào
 
 ## Xử lý sự cố
 
 ### Danh sách PR trống và báo rằng GitHub chưa được kết nối
 
 Bạn chưa đăng nhập GitHub trên máy chủ này. Hãy nhấn **Đăng nhập vào GitHub** trong
-**Lưu trữ mã**. Các kho mã trên những forge khác không bị ảnh hưởng.
+**Cài đặt → Bạn → Hồ sơ → Lưu trữ mã**. Các kho mã trên những forge khác không bị ảnh hưởng.
 
 ### Hàng GitHub báo chưa thiết lập đăng nhập trên máy chủ này
 
 Máy chủ không có GitHub App riêng cũng không có Connect. Chủ máy chủ chọn một trong hai
-trong **Cài đặt → Máy chủ → Đăng nhập một lần**: **Tạo ứng dụng GitHub của tôi** mất khoảng
-hai phút. Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
+trong **Cài đặt → Máy chủ → Đăng nhập một lần**: **Tạo ứng dụng GitHub của tôi** mất khoảng hai phút. Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
+
+Trong một không gian làm việc dùng ứng dụng riêng, hàng sẽ báo khi GitHub App của không gian làm việc thiếu hoặc chưa đầy đủ. Quản trị viên không gian làm việc điền vào thẻ **Ứng dụng GitHub** trong **Cài đặt → Không gian làm việc → Tích hợp**; xem [Cấp cho một không gian làm việc app riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/#cấp-cho-một-không-gian-làm-việc-app-riêng).
 
 ### Hộp thoại báo mã không khớp
 
@@ -119,10 +134,7 @@ thúc đăng nhập; hãy bắt đầu lại.
 
 ### Đăng nhập báo ứng dụng chưa được cài
 
-GitHub App không có cài đặt nào trên tài khoản sở hữu kho mã. Một quản trị viên không gian
-làm việc cài nó từ **Cài đặt → Không gian làm việc → Chung → Các bản cài đặt ứng dụng GitHub**. Với một
-tổ chức dùng App dùng chung của Control Center, quản trị viên của tổ chức đó có thể cần
-nhấn **Ủy quyền máy chủ này**. Xem [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
+GitHub App không có cài đặt nào trên tài khoản sở hữu kho mã. Một quản trị viên không gian làm việc cài nó từ **Cài đặt → Không gian làm việc → Tích hợp → Các bản cài đặt ứng dụng GitHub**.
 
 ### Mọi người phải đăng nhập GitHub lại
 
@@ -134,8 +146,26 @@ máy chủ đã tạo ra chúng.
 
 Việc đăng ký cần cả ba điều kiện: đường dẫn nằm trong một worktree git, nó có
 remote `origin`, và remote đó trỏ tới một forge được hỗ trợ (github.com,
-gitlab.com hoặc bitbucket.org). Xem
-[Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+gitlab.com hoặc bitbucket.org). `origin` phải là kho mã bạn đang liên kết, và một thư mục
+nằm ngoài bộ nhớ riêng của không gian làm việc chỉ có thể được liên kết bởi chủ sở hữu máy
+chủ. Xem [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+
+### Tôi có grant nhưng kho mã báo tài khoản của tôi không đọc được
+
+Tài khoản GitHub của bạn không đọc được kho mã đó, nên mã của nó vẫn đóng với bạn ngay cả khi
+có grant trong không gian làm việc. Hãy đăng nhập GitHub trong **Lưu trữ mã**, hoặc yêu cầu
+quyền truy cập kho mã đó trên GitHub.
+
+### "Không thể xác nhận quyền truy cập GitHub của bạn"
+
+GitHub không thể được kết nối để kiểm tra quyền truy cập của bạn, nên Control Center từ chối
+thay vì đoán. Hãy thử lại sau ít phút.
+
+### Đánh giá trên Connect hiện dưới tên tôi, không phải tên bot
+
+Trên ứng dụng Connect dùng chung, bot chỉ đăng đánh giá cho các cài đặt mà nhà vận hành Connect
+đã liệt kê. Ở mọi nơi khác, đánh giá được gửi bằng đăng nhập riêng của người chịu trách nhiệm. Để bot đăng đánh giá, hãy cấp cho không gian làm việc GitHub App riêng
+của nó.
 
 ### Mọi thứ ngừng hoạt động một lúc sau khi dùng nhiều
 

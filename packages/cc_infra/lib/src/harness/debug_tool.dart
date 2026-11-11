@@ -4,6 +4,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/dap/dap_adapter_registry.dart';
 import 'package:cc_infra/src/dap/dap_client.dart';
 import 'package:cc_infra/src/dap/debug_session.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
 /// Drives a real debugger: breakpoints, stepping, stack frames, variables.
@@ -26,12 +27,21 @@ class DebugTool extends HarnessTool {
     required this._supervisor,
     required this._workingDirectory,
     required this._sessionKey,
+    required this._launcher,
+    required this._attachablePorts,
     this._environment,
   });
 
   final DebugSessionSupervisor _supervisor;
   final String _workingDirectory;
   final String _sessionKey;
+
+  /// Starts the adapter (and so the debuggee it launches).
+  final ToolProcessLauncher _launcher;
+
+  /// The loopback ports this run may reach, and so the only ports `attach`
+  /// connects to.
+  final List<int> _attachablePorts;
   final Map<String, String>? _environment;
 
   /// Max children returned per `variables` call.
@@ -59,8 +69,12 @@ class DebugTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.exec;
 
+  /// A process spawn, and host execution when the adapter runs unconfined.
   @override
-  Set<ActionClass> get actionClasses => const {ActionClass.processSpawn};
+  Set<ActionClass> get actionClasses => {
+    ActionClass.processSpawn,
+    if (!_launcher.confined) ActionClass.hostExecution,
+  };
 
   /// A debug session is stateful across calls, so two `debug` calls in one
   /// turn must not race: `continue` overtaking `stack` reads a frame that has
@@ -177,7 +191,7 @@ class DebugTool extends HarnessTool {
   }
 
   HarnessToolResult _adapters() {
-    final found = detectDapAdapters(_workingDirectory);
+    final found = _detect();
     if (found.isEmpty) {
       return HarnessToolResult.success(
         'No debug adapter is usable here. An adapter needs BOTH a project '
@@ -188,6 +202,11 @@ class DebugTool extends HarnessTool {
       'Available: ${found.map((a) => '${a.spec.id} (${a.executable})').join(', ')}.',
     );
   }
+
+  List<ResolvedDapAdapter> _detect() => detectDapAdapters(
+    _workingDirectory,
+    projectLocalBins: _launcher.confined,
+  );
 
   HarnessToolResult _status() {
     final session = _supervisor.sessionFor(_sessionKey);
@@ -208,7 +227,7 @@ class DebugTool extends HarnessTool {
     if (program is! String || program.isEmpty) {
       return HarnessToolResult.error('launch needs `program`.');
     }
-    final adapters = detectDapAdapters(_workingDirectory);
+    final adapters = _detect();
     final adapter =
         adapterForPath(program, adapters) ??
         (adapters.isEmpty ? null : adapters.first);
@@ -223,6 +242,7 @@ class DebugTool extends HarnessTool {
       key: _sessionKey,
       adapter: adapter,
       workingDirectory: _workingDirectory,
+      launcher: _launcher,
       environment: _environment,
     );
     // The DAP configuration sequence, in the order the spec requires:
@@ -264,7 +284,18 @@ class DebugTool extends HarnessTool {
     if (port is! int) {
       return HarnessToolResult.error('attach needs `port`.');
     }
-    final adapters = detectDapAdapters(_workingDirectory);
+    // Refused before an adapter starts: the debuggee must be one this run can
+    // already reach, not any process listening on the host.
+    if (!_attachablePorts.contains(port)) {
+      return HarnessToolResult.error(
+        _attachablePorts.isEmpty
+            ? 'attach is not available here: this run may not reach any '
+                  'local port.'
+            : 'attach may only connect to a port this run can reach '
+                  '(${_attachablePorts.join(', ')}); $port is not one of them.',
+      );
+    }
+    final adapters = _detect();
     if (adapters.isEmpty) {
       return HarnessToolResult.error('No debug adapter is usable here.');
     }
@@ -272,6 +303,7 @@ class DebugTool extends HarnessTool {
       key: _sessionKey,
       adapter: adapters.first,
       workingDirectory: _workingDirectory,
+      launcher: _launcher,
       environment: _environment,
     );
     await session.client.request('attach', {

@@ -2,7 +2,7 @@
 enum CatalogFileSource { upload, artifact }
 
 /// Lifecycle of a logical file. Physical bytes may be shared with other files
-/// or legacy transcripts, so a tombstone does not imply unlinking the blob.
+/// or transcripts, so a tombstone does not imply unlinking the blob.
 enum CatalogFileState { draft, attached, artifact, discarded }
 
 /// Durable logical identity of an upload or generated artifact.
@@ -39,8 +39,8 @@ class CatalogFile {
   /// Agent or human principal that generated this artifact, when known.
   final String? creatorId;
 
-  /// Whether this upload created the bytes. Existing legacy hashes must never
-  /// be unlinked by a later draft upload that deduplicated against them.
+  /// Whether this upload created the bytes. Existing hashes must never be
+  /// unlinked by a later draft upload that deduplicated against them.
   final bool ownedBytes;
 
   @override

@@ -4,10 +4,14 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/enriched_pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_user.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
+import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart'
+    show NeedsMyReviewCount;
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_domain/features/ticketing/domain/sync/ticket_sync_log_entry.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart'
+    show currentUserIdProvider;
 import 'package:control_center/features/inbox/presentation/models/inbox_attention_item.dart';
 import 'package:control_center/features/messaging/providers/pending_confirmations_provider.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
@@ -126,9 +130,10 @@ class _SyncFailureSource implements InboxAttentionSource {
           icon: AppIcons.cloudOff,
           actionLabel: l10n.inboxOpen,
           waitingSince: f.createdAt,
-          // Sync health is a workspace concern and lives on Workspace →
-          // General alongside the ticket-sync configuration it reports on.
-          onAction: () => router.go(settingsWorkspaceGeneralRoute(workspaceId)),
+          // Sync health lives on Workspace → Integrations, beside the
+          // ticketing card whose sync it reports on.
+          onAction: () =>
+              router.go(settingsWorkspaceIntegrationsRoute(workspaceId)),
         ),
     ];
   }
@@ -156,17 +161,19 @@ List<InboxAttentionItem> buildInboxAttentionItems(
 
 // Sidebar badge count
 
-/// Live count of open PRs awaiting my review across the active workspace,
-/// computed SERVER-SIDE from the open-PR poller's snapshot.
+/// Live count of open PRs awaiting my review across every forge of the
+/// active workspace, computed SERVER-SIDE (`pr.watchNeedsMyReviewCount`):
+/// the same number the phone shows.
 ///
 /// The sidebar badge is always on, so it must not pin the full PR list
 /// (titles, bodies, checks) in client memory the way watching
-/// [prsByRepoProvider] would — this subscribes to a single int instead. The
-/// full list loads only while a PR surface (list, inbox, palette) is open.
-final needsMyReviewCountProvider = StreamProvider<int>((ref) {
+/// [prsByRepoProvider] would — this subscribes to the count alone. The
+/// server keeps it open with a zero while the reader has no forge sign-in,
+/// and re-counts once they sign in.
+final needsMyReviewCountProvider = StreamProvider<NeedsMyReviewCount>((ref) {
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId == null) {
-    return Stream.value(0);
+    return Stream.value(NeedsMyReviewCount.zero);
   }
   return ref
       .watch(openPrListRepositoryProvider)
@@ -179,7 +186,7 @@ final needsMyReviewCountProvider = StreamProvider<int>((ref) {
 final inboxCountProvider = Provider<int>((ref) {
   final pending = ref.watch(pendingConfirmationsProvider).value ?? const [];
   var count = pending.length;
-  count += ref.watch(needsMyReviewCountProvider).value ?? 0;
+  count += ref.watch(needsMyReviewCountProvider).value?.count ?? 0;
   final workspaceId = ref.watch(activeWorkspaceIdProvider);
   if (workspaceId != null) {
     final logs =
@@ -382,7 +389,7 @@ final collapsedInboxSectionsProvider =
 
 // Data
 
-/// The last merged-history page per `workspace|login`, seeded into
+/// The last merged-history page per `workspace|userId`, seeded into
 /// [recentlyMergedPrsProvider] on revisit (see `LastGoodStore`).
 final lastGoodMergedPrsProvider =
     NotifierProvider<
@@ -412,8 +419,12 @@ class RecentlyMergedPrsNotifier extends AsyncNotifier<List<RepoPullRequests>> {
   @override
   Future<List<RepoPullRequests>> build() async {
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
-    final login = ref.watch(currentUserLoginProvider);
-    if (workspaceId == null || login.isEmpty) {
+    // The server resolves "me" on each forge; the client only needs some
+    // forge to be usable, and a signed-in user to key the cache by, so one
+    // person's page never seeds another's on a shared device.
+    final userId = ref.watch(currentUserIdProvider);
+    final anyForge = ref.watch(hasAnyForgeConnectedProvider);
+    if (workspaceId == null || userId == null || !anyForge) {
       return const [];
     }
     // Watched (not read) so the build re-runs when the repos stream emits:
@@ -421,9 +432,9 @@ class RecentlyMergedPrsNotifier extends AsyncNotifier<List<RepoPullRequests>> {
     // the re-run joins against the real repos. See the stamp guard in
     // [_fetch].
     ref.watch(reposForWorkspaceProvider(workspaceId));
-    final key = '$workspaceId|$login';
+    final key = '$workspaceId|$userId';
     final lastGood = ref.read(lastGoodMergedPrsProvider)[key];
-    final fresh = _fetch(workspaceId, login, key);
+    final fresh = _fetch(workspaceId, key);
     if (lastGood == null) {
       return fresh;
     }
@@ -446,14 +457,10 @@ class RecentlyMergedPrsNotifier extends AsyncNotifier<List<RepoPullRequests>> {
 
   /// The server-side `author:<me> is:merged` search, joined back to the
   /// workspace's canonical `Repo` entities and stamped into the store.
-  Future<List<RepoPullRequests>> _fetch(
-    String workspaceId,
-    String login,
-    String key,
-  ) async {
+  Future<List<RepoPullRequests>> _fetch(String workspaceId, String key) async {
     final groups = await ref
         .read(openPrListRepositoryProvider)
-        .closedByAuthorForWorkspace(workspaceId, login);
+        .closedByAuthorForWorkspace(workspaceId);
     // Read the repos stream's CURRENT value: a still-loading stream joins
     // to an empty page — joinable only after the real repos arrive, so the
     // empty page is never stamped as the workspace's last-good snapshot
@@ -478,14 +485,14 @@ class RecentlyMergedPrsNotifier extends AsyncNotifier<List<RepoPullRequests>> {
   /// affordance spins on its own `_refreshing` flag for the duration).
   Future<void> refreshNow() async {
     final workspaceId = ref.read(activeWorkspaceIdProvider);
-    final login = ref.read(currentUserLoginProvider);
-    if (workspaceId == null || login.isEmpty) {
+    final userId = ref.read(currentUserIdProvider);
+    if (workspaceId == null ||
+        userId == null ||
+        !ref.read(hasAnyForgeConnectedProvider)) {
       return;
     }
     try {
-      state = AsyncData(
-        await _fetch(workspaceId, login, '$workspaceId|$login'),
-      );
+      state = AsyncData(await _fetch(workspaceId, '$workspaceId|$userId'));
     } catch (_) {
       // Keep the last good page — the surface shows its own error affordance.
     }

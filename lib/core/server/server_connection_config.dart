@@ -11,11 +11,10 @@ import 'package:control_center/core/storage/client_snapshot_store.dart';
 /// paired servers elsewhere ([remote]). Both paths end in a `RemoteRpcClient`
 /// the whole UI talks to over RPC.
 ///
-/// VESTIGIAL FIRST-RUN GATE — this enum predates the descriptor-driven
-/// [ServerConnectionStore]. It survives only because the first-run setup screen
-/// (`_ServerSetupScreen` in `server_backend.dart`) uses it to choose between
-/// spawning a local server vs connecting to a remote one. The actual,
-/// ongoing connection state is descriptor-driven: a [ServerEntry] holds a full
+/// A FIRST-RUN GATE only: the first-run setup screen (`_ServerSetupScreen` in
+/// `server_backend.dart`) uses it to choose between spawning a local server
+/// vs connecting to a remote one. The actual, ongoing connection state is
+/// descriptor-driven ([ServerConnectionStore]): a [ServerEntry] holds a full
 /// `ConnectionDescriptor` and the enum is NOT consulted for connection
 /// management after setup. It is a setup-time UX toggle, not a second source
 /// of truth for connection state.

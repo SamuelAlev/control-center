@@ -2,7 +2,7 @@
 title: Odešlete prvního agenta
 description: Vytvoř agenta, dej mu prostor a úkol a sleduj, jak se běh vrací do konverzace.
 slug: cs-CZ/prirucka/tutorialy/prvni-agent
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Co postavíš
@@ -76,7 +76,7 @@ Co běh ohraničuje: vlastní copy-on-write worktree, pověření vydaná při s
 
 **Kontrolní bod.** Jeden řádek běhu, se stavem, dobou trvání, časy začátku a konce a adaptérem, na kterém běžel.
 
-Změny agenta se commitují na větvi konverzace, v jeho worktree. Autorem i committerem jsi vždy ty se svou Git identitou z pracovního prostoru. Ve výchozím nastavení trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` připisuje spoluautorství účtu GitHub `@usectrl`. Toto spoluautorství můžeš vypnout v **Nastavení → Vy → Připisování autorství commitů**, pokud tuto volbu správce pracovního prostoru nepřepsal v **Nastavení → Pracovní prostor → Obecné**.
+Změny agenta se commitují do větve konverzace, ve svém worktree. Protože běh jste si vyžádali vy, commity patří vám: autorem a committerem jste vy, pod adresou, kterou vaše platforma ověřila (vaší noreply adresou GitHubu z přihlášení na GitHub), a trailer `Co-Authored-By:` připisuje zásluhu Control Center, pokud jste to nevypnuli. Pokud k platformě přihlášeni nejste, commity patří místo toho botovi Control Center a poznámky běhu to uvedou.
 
 ## Jak získat pull request
 

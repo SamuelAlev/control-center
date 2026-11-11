@@ -27,8 +27,9 @@ class InboxScreen extends ConsumerWidget {
     final credentials = ref.watch(workspaceCredentialBlocksProvider);
     final sync = ref.watch(failedTicketSyncProvider);
     final inbox = ref.watch(prInboxProvider);
-    final inaccessible =
-        ref.watch(openPrsProvider).value?.inaccessibleRepos ?? const [];
+    final snapshot = ref.watch(openPrsProvider).value;
+    final access = snapshot?.repoAccess ?? const [];
+    final hidden = snapshot?.hiddenRepos ?? const [];
     final approvalItems = approvals.value ?? const [];
     final questionItems = questions.value ?? const <PendingQuestion>[];
     final credentialItems =
@@ -83,8 +84,8 @@ class InboxScreen extends ConsumerWidget {
               description: '${inbox.error}',
             )
           else ...[
-            if (inaccessible.isNotEmpty)
-              InaccessibleReposNotice(repos: inaccessible),
+            HiddenReposNotice(hidden: hidden),
+            RepoAccessNotice(issues: access),
             for (final section in sections) ...[
               InboxSectionHeader(
                 label: _sectionLabel(l10n, section),

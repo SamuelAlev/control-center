@@ -2,16 +2,18 @@
 title: Sandbox a zabezpečení
 description: Co dnes agenta v Control Center skutečně omezuje, kam až sahá sandbox operačního systému a které hranice drží na hostiteli bez backendu.
 slug: cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Kam sandbox operačního systému sahá a kam ne]
 `cc_server` hostitele při startu osondá a provádění příkazů agenta obalí
 nativním sandboxem operačního systému, když nějaký je: Seatbelt na macOS,
 bubblewrap na Linuxu a na WSL2 (ten potřebuje `bwrap` a `socat` na `PATH`).
-Kde backend není, na Windows nebo na Linuxu bez těch nástrojů, běhy spadnou
-na ostatní hranice níže a server to řekne ve startovacím logu.
-`--sandbox off` ho vypne schválně.
+Kde backend není, na Windows nebo na Linuxu bez těch nástrojů, startují jen běhy
+vlastníka serveru, bez omezení, a ostatní se odmítnou. Vlastník serveru může
+místo toho spustit server s `--sandbox off`, což spustí agenty všech členů na tom
+stroji bez omezení. Log při startu řekne, v jakém případu jsi; viz
+[Agenti na hostiteli bez sandboxu](#agenti-na-hostiteli-bez-sandboxu).
 
 Dvě skuliny zůstanou i se sandboxem a stojí za to si je podržet:
 
@@ -35,7 +37,23 @@ neměl zkontrolovanou. Otázka, na kterou produkt musí odpovědět, tedy není
 Control Center na to odpovídá vrstvami a vrstvy jsou nezávislé schválně. Když
 jedna chybí, ostatní pořád drží. Na tom záleží, protože vnější vrstva, sandbox
 operačního systému, je jediná podmíněná: záleží na tom, jestli hostitel backend
-nabídne, a na Windows ho nenabídne žádný.
+nabídne, a na Windows ho nenabídne žádný. Kde chybí, server agenty všech tiše nespustí bez něj.
+
+## Agenti na hostiteli bez sandboxu
+
+Server rozhodne jednou při startu, jak na jeho stroji běží agenti, a toto rozhodnutí drží až do restartu:
+
+- **V sandboxu.** Hostitel má backend a sandbox je zapnutý. Každý běh je obalený.
+- **Vypnuto.** Vlastník serveru spustil server s `--sandbox off`. Agenti všech členů běží na tom stroji bez omezení. Je to volba vlastníka pro všechny, kdo server používají, ne nastavení jednoho běhu.
+- **Nedostupné.** Sandbox je zapnutý, ale hostitel nemá backend. Běh startuje jen tehdy, když za něj odpovídá člověk, který je [vlastníkem serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru): ten, kdo o běh požádal, nebo u plánu, webhooku nebo jiné automatizace ten, ke kterému je navázaná. Běh kohokoli jiného se odmítne dřív, než se vydá pověření nebo začne proces, s hláškou „Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník. Vlastník může sandbox nainstalovat nebo sandboxing vypnout pro všechny.“
+
+Důvod je vlastnictví stroje. Agent bez omezení může dělat cokoli, co smí uživatelský účet serveru, takže ho spouští jen člověk, který ten účet vlastní, pokud nerozhodne jinak pro všechny. Windows server je vždy v případu nedostupný. Linux má vlastní zvláštnost, popsanou v [referenci backendů sandboxu](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/#linux-bubblewrap): nativní spouštění tam právě teď selhává uzavřeně, i když je `bubblewrap` nainstalovaný.
+
+Stejné pravidlo platí pro menší věci, které za tebe spouští proces:
+
+- **Rychlí pomocníci běžící přes CLI ACP**: názvy konverzací, `/btw`, `/handoff` a `/goal`. Když server agenty obaluje sandboxem, běží uvnitř sandboxu, ve vlastní relaci. Při `--sandbox off` běží bez omezení. Bez dostupného sandboxu běží jen u požadavků, za které odpovídá vlastník serveru; u ostatních se přeskočí, takže nevznikne žádný název konverzace a postranní otázka ohlásí, že Content synthesizer nemá funkční runner. Pomocníci, kteří nespouštějí žádný nástroj, se nedotknou.
+- **Golden testy pull requestu** ve vizuální kontrole Review Studia se řídí stejným pravidlem.
+- **Procesy nástrojů a `bash`** v běhu se nikdy nevracejí na hostitele. Pokud je server nastaven tak, aby agenty obaloval sandboxem, ale běhu sandbox dát nemůže, jsou odmítnuty.
 
 ## Co agenta skutečně omezuje
 
@@ -101,8 +119,8 @@ cest popsaná výš a ta kontrola je proto nosná, ne druhá linie obrany.
 U nástroje `bash` je třeba být stejně přesný. Jeho příkazy se vyhodnotí proti
 politice příkazů režimu a pak se spustí s očištěným prostředím a s worktree
 jako pracovním adresářem. Kde backend je, ten start se obalí, takže zápis
-příkazu shellu mimo worktree zastaví sandbox. Kde není, na Windows nebo na
-Linuxu bez `bwrap` a `socat`, je politika příkazů jediné, co stojí mezi
+příkazu shellu mimo worktree zastaví sandbox. Kde není (každý běh pod
+`--sandbox off` a běhy vlastníka na Windows nebo na Linuxu bez `bwrap` a `socat`), je politika příkazů jediné, co stojí mezi
 příkazem a zbytkem disku. V režimu `chat` politika natvrdo zamítá pevný seznam
 (eskalace oprávnění, destrukce systému a disku, únik z kontejneru a jmenného
 prostoru) a u změn vzdáleného stavu se ptá (`git push`, `gh pr create`,
@@ -128,11 +146,9 @@ zeptat nebo zakázat — a stejná pravidla platí bez ohledu na to, který adap
 agenta spouští.
 
 Push je akce, která musí vydržet i proti agentovi, který se snaží pravidlo
-obejít, takže se vynucuje tím, co agent drží, ne tím, co spouští. Běh ve
-worktree GitHubu dostane token pro tento jediný repozitář, vydaný z GitHub App
+obejít, takže se vynucuje tím, co agent drží, ne tím, co spouští. Běh při startu nedrží žádný forge token a jeho `git` jej nikdy nedostane. Když jeho `gh` nějaký potřebuje, Control Center mu vydá token pro jeden repozitář GitHubu, se kterým běh pracuje, vydaný z GitHub App
 pracovního prostoru, z vlastní aplikace serveru nebo přes Control Center
-Connect. Umí číst obsah a, když odpovědný člen smí pushovat, komentovat pull
-requesty, ale pushovat neumí. Konfigurace gitu běhu přepíše každou URL pro push na GitHub
+Connect. Umí pouze číst: nemůže pushovat, komentovat ani upravovat. Konfigurace gitu běhu přepíše každou URL pro push na GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) na **bránu
 běhů agentů**, loopback endpoint na `cc_server`. Brána přečte, které refy push
 aktualizuje, zeptá se pravidla **Odeslat na remote** — takže platí i pravidlo
@@ -145,24 +161,25 @@ nikdy nedá. Odmítnutý push se ukáže přímo ve výstupu gitu:
 ```
 
 Brána předává push jen do vlastního repozitáře worktree nebo do repozitáře na
-GitHubu propojeného s pracovním prostorem. Fetch jde přímo na GitHub se
-čtecím tokenem.
+GitHubu propojeného s pracovním prostorem. Fetch také jde přes bránu, na GitHubu, GitLabu i Bitbucketu: stahuje repozitáře, se kterými běh pracuje, pomocí přihlašovacích údajů, které brána drží a běh je nikdy nevidí. Na GitLabu a Bitbucketu je to tvůj vlastní token, když jsi o běh požádal, a automatizační token repozitáře, když o něj nikdo nepožádal. Fetch se nikoho neptá a odmítne ho jen Zakázat u **Přístup k síti**.
 
 Ostatní příkazy shellu narazí na měkčí bránu. Nástroj `bash` harnessu a přes
 hook i nástroj `Bash` v Claude Code zařadí každý příkazový řádek a zeptají se
 pravidla, pod které spadá: `git commit`, `merge`, `rebase`, `cherry-pick`,
 `revert` a `am` jsou **Vytvořit commit**; `gh pr create` je **Otevřít pull
-request**; `gh pr merge`, `review`, `comment` a `close` jsou **Zveřejnit
-kontrolu nebo sloučení**; `gh issue create`, `edit`, `comment` a `close` jsou
+request**; `gh pr merge`, `review`, `comment` a `close` jsou **Aktualizovat nebo sloučit pull request**; `gh issue create`, `edit`, `comment` a `close` jsou
 **Zápis do externího trackeru**; instalace balíčků jsou **Nainstalovat
-balíček**; `curl` a `wget` jsou **Přístup k síti**. Pozná to běžný zápis akce
+balíček**; `curl` a `wget` jsou **Přístup k síti**. Zápis na GitHub ze shellu je výjimka: `gh pr create`, `gh pr comment`,
+`gh pr edit`, `gh pr merge` a zápisy `gh issue` v běhu nefungují, protože jeho token
+jen čte, a agent je nasměrován na nástroje Control Center, které
+se těchto pravidel ptají. Pozná to běžný zápis akce
 a agent odhodlaný ji schovat (`eval`, soubor se skriptem, přímé volání API) to
 dokáže. Push na tom nezávisí.
 
 Každý token GitHubu, který běh dostane, je ohraničený dvakrát: na jeden
 repozitář a na to, co tam smí odpovědný člen (ten, kdo požádal, jinak vlastník
 pracovního prostoru). Žádné záložní pověření neexistuje. Když se token vydat
-nedá, běh nastartuje bez něj a jeho poznámky uvedou proč.
+nedá, příkaz, který si ho vyžádal, uvede proč.
 
 Do sandboxu se nevkládá žádný API klíč ticketingu. Agenti zapisují tickety přes
 nástroje MCP v Control Center, které se ptají pravidla **Zápis do externího
@@ -176,6 +193,16 @@ uvolní. Tokeny za nimi se sdílejí podle člena a repozitáře a vyprší zhru
 hodiny; když se člen odhlásí z GitHubu nebo opustí pracovní prostor, všechny
 tokeny vydané jeho jménem najednou zaniknou.
 
+## Repozitáře, které agent může jen číst
+
+Běh agenta smí měnit jen checkouty těch repozitářů, na které má osoba, za kterou jedná, [zápisové přidělení](/cs-CZ/prirucka/koncepty/autorizace/#změna-kódu-vyžaduje-zápisové-přidělení). Správci pracovního prostoru ho mají na každém propojeném repozitáři. Běh, o který nikdo nepožádal, například plán nebo jiná automatizace, se posuzuje podle stejné odpovědné osoby, ke které je navázaný token automatizace.
+
+V prostoru s repozitářem, který ta osoba jen může číst, agent takový repozitář čte a prohledává, ale nemůže měnit jeho soubory. Jeho nástroje pro soubory odmítnou zprávou začínající `<repo> is read-only for this run` a řeknou, že změna checkoutu vyžaduje zápisové přidělení, které osoba, za kterou běh jedná, nemá, a že ho může udělit správce pracovního prostoru. Uvnitř sandboxu je checkout pro každý proces jen pro čtení, takže shellový příkaz, který tam zapisuje, selže hláškou „Operation not permitted“. Patří sem i `git commit` a build nebo test, který zapisuje svůj výstup do checkoutu. Repozitáře, do kterých osoba může zapisovat, fungují jako obvykle, takže správci a každý, kdo má zápis do všech repozitářů prostoru, nic nepozná.
+
+Toto se rozhodne jednou, na začátku běhu. Změna přidělení se projeví až v dalším běhu agenta, stejně jako repozitář přidaný do prostoru během běhu.
+
+Tam, kde vlastník serveru sandbox vypnul, se odmítnou jen nástroje agenta pro soubory a zápisové nástroje Claude Code a shellové příkazy mohou checkout změnit i tak. Pushnout se ale bez zápisového přidělení nedá nikdy, protože každý push se proti němu kontroluje. Které procesy sandbox omezuje na jednotlivých platformách, je popsáno v [Backendy sandboxu](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/).
+
 ## Co sandbox přidává a kde končí
 
 Enum `SandboxBackend` má tři hodnoty: `native` (Seatbelt na macOS, bubblewrap
@@ -188,16 +215,15 @@ vysvětluje, co získáš tam, kde je připojený, a co ti nikdy dát neměl.
 oba švy cesty odeslání, protože transporty jeden nesdílejí. První
 (`SandboxPort`) obalí CLI Claude Code. Druhý (`SandboxManager`) obalí adaptéry
 ACP a nástroj `bash` vestavěného harnessu. Napojit jen jeden by nechal ostatní
-startovat bez obalu, a přesně to se dřív dělo. Na hostiteli bez backendu, nebo
-pod `--sandbox off`, startují všechny bez obalu a server na startovním řádku
+startovat bez obalu, a přesně to se dřív dělo. Při `--sandbox off` se všechny
+spouštějí bez obalu; na hostiteli bez backendu se spouštějí jen běhy vlastníka, také bez obalu. Server na startovním řádku
 řekne, ve kterém případě jsi. ACP a `bash` harnessu prostředí pořád čistí.
 Claude Code přes `NoSandboxAdapter` dědí prostředí hostitele.
 
-Jedna plocha se záměrně vynechává. Terminál hostovaný na serveru bere argument
-backendu pro každou relaci a `cc_server` ho sestaví s výchozím shellem
-hostitele, takže terminál, který z aplikace otevřeš, běží bez sandboxu, dokud
-klient výslovně neuvede `native`. Je to skutečný shell na hostiteli serveru,
-ne běh agenta.
+Terminál hostovaný na serveru otevírá hostitelský shell jen pro
+[vlastníka serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru). Ostatní dostanou terminál v sandboxu s omezeními agenta, v adresářích
+vlastního pracovního prostoru. Do terminálu může psát, číst z něj nebo ho zavřít
+jen člověk, který ho otevřel.
 
 Na Linuxu `bubblewrap` postaví jmenný prostor připojení, takže agent opravdu
 vidí jen to, co se do něj navázalo. Na macOS `sandbox-exec` aplikuje profil
@@ -209,6 +235,10 @@ vrácenou na zákaz s výslovnými povoleními nad ní, blokování unlink na ka
 zakázané cestě a jejích předcích, aby přejmenování neobešlo zákaz zápisu,
 zákazy exec pro binárky, které jsou vždy nebezpečné, a pro cokoli zkopírované
 do zapisovatelného adresáře, a síť omezenou na porty loopback proxy plus DNS. Toolchainy nainstalované ve vašem domovském adresáři (pnpm z corepacku, správci verzí node, prohlížeče Playwright, rustup, fvm, uv a podobné) zůstanou spustitelné i uvnitř těchto zákazů exec, takže je agenti mohou používat bez obcházení. Zákazy pro vždy nebezpečné binárky zůstávají platné i uvnitř nich. Každá relace navíc dostane vlastní soukromý `TMPDIR`. Je to jediný dočasný adresář, kde smí agent spouštět programy, které sestavil, nebo otevírat Unix sockety.
+
+Ještě dvě ochrany platí v každém režimu. Sandbox nesmí přidat, nahradit, smazat ani přejmenovat příkaz ve složkách, ze kterých server spouští programy (každá složka v jeho `PATH` a obvyklé složky nástrojů jednotlivých uživatelů), takže sandboxovaný běh nemůže podstrčit program, který server později spustí mimo sandbox. Globální instalace a přepínání výchozí verze zevnitř běhu proto selžou hláškou „Operation not permitted“, zatímco lokální instalace projektu a spuštění typu `npx` dál fungují; globální nástroje instaluj na samotném serveru a server restartuj. A každá domovská cesta, kterou sandbox nemůže číst, nejde ani zapisovat, přičemž spouštěcí soubory shellu a relace uživatele serveru nejsou nikdy zapisovatelné. Podrobnosti a limity platforem jsou v [Složky příkazů serveru](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/#složky-příkazů-serveru).
+
+Nástroje sandboxu běhu patří tomuto běhu a uvolní se, když skončí. Jazykové servery se startují znovu s každým sandboxovaným během. Ladicí relace si sandbox drží přes všechny tahy až do konce relace, nejdéle 30 minut.
 
 Praktický důsledek: na Linuxu je pohled agenta na souborový systém zúžený, na
 macOS agent pořád může _číst_ většinu hostitele a tvoje registrované checkouty

@@ -12,6 +12,7 @@ void main() {
     'LANG': 'en_US.UTF-8',
     'LC_ALL': 'en_US.UTF-8',
     'https_proxy': 'http://proxy.corp:3128',
+    'NIX_SSL_CERT_FILE': '/etc/ssl/certs/ca-certificates.crt',
     // Secrets and ambient identity that must never reach a child.
     'GH_TOKEN': 'ghp_host',
     'GITHUB_TOKEN': 'ghp_host',
@@ -51,6 +52,7 @@ void main() {
         'LANG': 'en_US.UTF-8',
         'LC_ALL': 'en_US.UTF-8',
         'https_proxy': 'http://proxy.corp:3128',
+        'NIX_SSL_CERT_FILE': '/etc/ssl/certs/ca-certificates.crt',
       });
     });
 

@@ -1,14 +1,19 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_mcp/src/tools/hidden_spaces_for_caller.dart';
 
 /// List spaces tool.
 class ListSpacesTool extends McpTool {
   /// Creates a new [List spaces tool].
-  ListSpacesTool({required this._repository});
+  ListSpacesTool({required this._repository, required this._hiddenSpaces});
 
   final MessagingRepository _repository;
+
+  /// Review spaces of pull requests the run's requester cannot see.
+  final HiddenSpacesForCaller _hiddenSpaces;
 
   @override
   String get name => 'list_spaces';
@@ -24,6 +29,7 @@ class ListSpacesTool extends McpTool {
         'type': 'string',
         'description': 'Workspace ID to list spaces for.',
       },
+      McpCallScope.callerConversationKey: callerConversationProperty,
       'limit': {
         'type': 'integer',
         'description': 'Maximum number of spaces to return (default 50).',
@@ -51,8 +57,14 @@ class ListSpacesTool extends McpTool {
     // Archived spaces are hidden from agents too: the operator shelved them,
     // so they are not rooms to list (or nudge work into). The rows still
     // exist — restore is a human action from the archive dialog.
+    // An agent acts for its requester: review spaces of pull requests that
+    // person cannot see are left out.
+    final hidden = await _hiddenSpaces(
+      workspaceId: workspaceId,
+      callerConversationId: callerConversationOf(arguments),
+    );
     final list = filtered
-        .where((c) => !c.isArchived)
+        .where((c) => !c.isArchived && !hidden.contains(c.id))
         .take(limit)
         .map(
           (c) => {

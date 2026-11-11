@@ -2,7 +2,7 @@
 title: Inoltra porte da un terminale
 description: Raggiungi un dev server avviato in un Terminale (VM) o in una shell sull'host — dalla tua macchina, dal Browser (VM), da Android, sulla tua rete o sotto un dominio di sviluppo con HTTPS.
 slug: it-IT/manuale/guide/porte-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Un server che avvii nel terminale di una conversazione viene pubblicato solo per **quello spazio**. Il pannello delle porte rileva i processi in ascolto che questa app ha avviato lì, li mappa e ti fornisce un indirizzo per ogni luogo da cui potresti volerli raggiungere. Due spazi possono ascoltare entrambi su `5173`; le loro mappe non si mescolano mai.
@@ -11,7 +11,7 @@ Nulla di tutto questo apre la macchina: ogni percorso viene creato dal server, s
 
 ## Vedi cosa è in ascolto
 
-1. Apri il **Terminale (VM)** o una shell sull'host della conversazione (in uno spazio o in una pagina di PR).
+1. Nell'editor della conversazione (in uno spazio o in una pagina di PR), apri **Terminale** dal menu `+`: sotto **Macchine** per una shell nella VM della conversazione, o sotto **Strumenti** per un terminale sul server. Solo il proprietario del server può aprire una shell sull'host; il terminale di chiunque altro è in sandbox.
 2. Avvia il tuo server — `pnpm dev`, `python -m http.server 8000`, qualsiasi cosa.
 3. In pochi secondi l'**icona della spina** nell'angolo in alto a destra del
    terminale riceve un puntino. Cliccala.
@@ -122,6 +122,10 @@ indirizzo mentre il tuo server si riavvia — la riga mostra *non in ascolto* fi
 non torna — mentre gli inoltri automatici scompaiono quando scompare la loro
 porta. Su una shell sull'host puoi anche impostare una porta locale diversa.
 
+Modificare gli inoltri richiede una concessione di scrittura su ogni repository che lo spazio espone. Con il solo accesso in lettura vedi comunque le porte, e il pannello mostra "Modificare queste porte richiede accesso in scrittura a tutti i repository di questo spazio." al posto di **Aggiungi porta**. Vedi [Chi può guardare e chi può pilotare](/it-IT/manuale/guide/usa-rig/#chi-può-guardare-e-chi-può-pilotare).
+
+Un terminale che qualcuno ha aperto per sé mantiene le sue porte solo per quella persona: per chiunque altro, il suo elenco di porte e le sue modifiche alle porte rispondono come se la sessione non esistesse, esattamente come la sessione stessa. I terminali condivisi in uno spazio seguono la regola dello spazio descritta sopra.
+
 ## Come resta circoscritto
 
 Le porte sono indicizzate per spazio di lavoro e per spazio. La mappa delle porte
@@ -133,9 +137,9 @@ aperti per il Browser (VM) e Android. Una shell sull'host non scansiona mai
 l'intera macchina. Nessun listener viene mai creato dentro un guest se non è il
 server a metterlo lì, e tutto viene smantellato con il terminale o il rig. Il
 design è spiegato in
-[Rig e recinti](/it-IT/manuale/concetti/rig/#ports-without-holes);
+[Rig e recinti](/it-IT/manuale/concetti/rig/#porte-senza-buchi);
 le porte riservate esatte e le regole sui domini sono nel
-[riferimento sui rig](/it-IT/manuale/riferimento/rig/#ports-and-dev-domains).
+[riferimento sui rig](/it-IT/manuale/riferimento/rig/#porte-e-domini-di-sviluppo).
 
 ## Correlati
 

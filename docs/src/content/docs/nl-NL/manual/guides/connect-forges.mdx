@@ -2,7 +2,7 @@
 title: Een codehost verbinden
 description: Verbind GitHub, GitLab of Bitbucket zodat het PR-oppervlak, reporegistratie en agent-runs werken — één werkruimte kan alle drie gebruiken.
 slug: nl-NL/handleiding/gidsen/codehost-verbinden
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center werkt met drie codehosts, die in de hele app **forges** heten: **GitHub**, **GitLab** en **Bitbucket Cloud**. Geen van de drie is de standaard. Verbind er één en alles werkt; verbind er meerdere en één werkruimte kan tegelijk repo's van alle drie bevatten.
@@ -11,22 +11,26 @@ De forge is een eigenschap van elke **repo**, uitgelezen uit de `origin`-remote 
 
 ## Een forge verbinden
 
-1. Open **Instellingen → Werkruimte → Profiel en identiteit** (`/settings/workspace/profile`).
+1. Open **Instellingen → Jij → Profiel** (`/settings/you/profile`).
 2. Zoek de kaart **Codehosting**. Elke ondersteunde forge staat erin, verbonden of niet.
 3. Druk bij **GitHub** op **Inloggen bij GitHub**. Druk bij **GitLab** of **Bitbucket** op **Token toevoegen** en plak er een.
 
-**GitHub kent alleen aanmelden.** De aanmelding loopt via de eigen GitHub App van de server of via Control Center Connect, afhankelijk van wat de servereigenaar heeft ingesteld (zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/)); er is geen GitHub-token om te plakken. GitLab en Bitbucket nemen nog steeds een persoonlijk token.
+**GitHub kent alleen aanmelden.** De aanmelding loopt via de eigen GitHub App van de server of via Control Center Connect, afhankelijk van wat de servereigenaar heeft ingesteld, of via de apps die een werkruimtebeheerder voor deze werkruimte heeft gekozen in **Instellingen → Werkruimte → Integraties** (zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/)); er is geen GitHub-token om te plakken. GitLab en Bitbucket nemen nog steeds een persoonlijk token.
 
 Hoe dan ook zijn de inloggegevens **van jou en staan ze op de server**, gekoppeld aan je gebruikers-id: er wordt geen token opgeslagen op de machine waarop je hem hebt ingevoerd, elk apparaat waarop je inlogt gebruikt hetzelfde token, en geen ander lid kan het lezen. Ze gaan in bij de **volgende aanvraag** — er valt niets te herstarten, en loskoppelen stopt het versturen onmiddellijk.
 
-Elke rij vertelt waar de inloggegevens vandaan komen, want dat is het verschil tussen “mijn token werkt niet” en “een ander token antwoordt”:
+De kaart zegt waar je accounts worden gebruikt. Een GitLab- of Bitbucket-token is van jou in **elke werkruimte op de server**, dus je plakt het één keer. Je GitHub-aanmelding geldt daar ook voor, tenzij een werkruimte eigen inlogapps heeft: die werkruimte houdt een eigen GitHub-aanmelding, en de kaart noemt die.
 
-| Ondertitel                                    | Betekenis                                                          |
-| --------------------------------------------- | ------------------------------------------------------------------ |
-| `Ingelogd als octocat`                        | Je eigen inloggegevens worden gebruikt                             |
-| `Ingelogd als octocat · uit de omgeving`      | Alleen GitLab of Bitbucket: een omgevingsvariabele van de server antwoordt, niet je token |
-| `Niet verbonden`                              | Je hebt geen inloggegevens voor deze forge                         |
-| `Inloggen bij GitHub is op deze server nog niet ingesteld.` | De server heeft geen eigen GitHub App en ook geen Connect; de servereigenaar stelt er een in |
+Elke rij toont de status van **jouw** inloggegevens. Alleen je eigen inloggegevens antwoorden voor jou; niets anders springt in:
+
+| De rij zegt                                                    | Betekenis                                                                                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Ingelogd als octocat`                                         | Je eigen inloggegevens worden gebruikt                                                                                                      |
+| `Niet verbonden`                                               | Je hebt geen inloggegevens voor deze forge                                                                                                 |
+| `Je login bij GitHub als octocat is verlopen. Log opnieuw in.` | Je aanmelding is verlopen of ingetrokken bij de forge                                                                                      |
+| `Gepauzeerd: de inlogdienst van deze werkruimte is gewijzigd`  | Deze werkruimte is overgestapt op een andere inlogdienst. Je aanmelding blijft bewaard en werkt weer als er wordt teruggeschakeld, dus er is geen inlogknop |
+| `GitHub is nu niet bereikbaar. Wordt opnieuw geprobeerd.`     | Een tijdelijke storing. Control Center blijft opnieuw proberen; je hoeft niets te doen                                                     |
+| Een zin die uitlegt waarom inloggen niet beschikbaar is        | Bijvoorbeeld `Inloggen met GitHub is niet ingesteld voor deze werkruimte.` of `De inlogdienst van deze werkruimte heeft zijn identiteit gewijzigd. Een beheerder moet dit bevestigen.` Beheerders krijgen een knop naar de instelling die dit oplost |
 
 ### Welk token elke forge nodig heeft
 
@@ -35,7 +39,9 @@ Elke rij vertelt waar de inloggegevens vandaan komen, want dat is het verschil t
 | **GitLab**    | Een persoonlijk toegangstoken met `api`                   | gitlab.com → User settings → Access tokens                |
 | **Bitbucket** | Een Atlassian API-token, plus je account-e-mailadres      | id.atlassian.com → Security → API tokens                  |
 
-Bitbucket authenticeert met je **account-e-mailadres als gebruikersnaam** en het token als wachtwoord. Zet `BITBUCKET_EMAIL` in de serveromgeving, zodat duidelijk is welk e-mailadres bij het token hoort.
+Bitbucket authenticeert met je **account-e-mailadres als gebruikersnaam** en het API-token als wachtwoord, dus het Bitbucket-dialoogvenster vraagt om beide. Een Bitbucket-**toegangstoken** voor een werkruimte, project of repository hoort bij niemand en wordt in dit dialoogvenster geweigerd: het is in plaats daarvan een [automatiseringstoken](#een-automatiseringstoken-toevoegen). Hetzelfde geldt voor een GitLab-project- of groepstoegangstoken: GitLab vraagt wie het token is voordat het wordt opgeslagen, en een bottoken wordt hier geweigerd.
+
+Een token is nooit aan één werkruimte gekoppeld: je hebt er één per forge, en elke werkruimte op de server gebruikt het. **Loskoppelen** verwijdert het voor alle werkruimtes.
 
 ### Achtergrondwerk
 
@@ -43,10 +49,34 @@ Werk zonder mens erachter (agentruns, pipelines, PR-polling) heeft ook
 inloggegevens nodig, en elke forge regelt dat anders:
 
 - **GitHub** — een token voor telkens één repository, uitgegeven via de GitHub App van de server of via Connect en beperkt tot wat een verantwoordelijk lid daar mag doen. Het is nooit de volledige, doorgegeven aanmelding van een persoon, en geen omgevingsvariabele of geplakt token neemt die plaats in. Zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/#namens-wie-je-inloggegevens-spreken)
-- **GitLab** — het geplakte token van de servereigenaar, dan `GITLAB_TOKEN`, dan `CI_JOB_TOKEN`
-- **Bitbucket** — het geplakte token van de servereigenaar, dan `BITBUCKET_API_TOKEN`, dan `BITBUCKET_TOKEN` (met `BITBUCKET_EMAIL`)
+- **GitLab** en **Bitbucket** — alleen het **automatiseringstoken** van de repo: een bottoegangstoken dat een werkruimtebeheerder voor die repo toevoegt, of voor elke repo op die forge in de werkruimte. Het eigen token van de repo wint van dat van de werkruimte. PR-polling, AI-reviewopmerkingen, en pushes en merge requests waar niemand om vroeg gebruiken allemaal dat token, dus op de forge zien ze eruit als die bot, nooit als een lid. Het persoonlijke token van een lid springt niet in, en er is geen token op serverniveau of uit een omgevingsvariabele. Zonder een automatiseringstoken wordt achtergrondwerk op de repo gepauzeerd en zegt de melding over repotoegang dat zo.
 
-De omgevingsvariabelen voor GitLab en Bitbucket zijn de inloggegevens van de **server**, niet die van jou: een aanvraag die namens jou wordt gedaan, gebruikt jouw token en niets anders, dus de omgeving neemt het nooit stilletjes van je over.
+Werk waar een lid om vraagt (een opmerking, een review, een merge request van een agent die voor hen is geopend) gebruikt nog steeds het eigen token van dat lid.
+
+## Een automatiseringstoken toevoegen
+
+Alleen werkruimtebeheerders zien of wijzigen automatiseringstokens. Elk token wordt bij het opslaan bij de forge gecontroleerd: een persoonlijk token wordt geweigerd (een persoonlijk GitLab-toegangstoken, een Atlassian-API-token, of elk Bitbucket-token dat zich als het account van iemand aanmeldt), en ook een token dat de repo waarvoor het bedoeld is niet kan lezen.
+
+- **Voor één repo:** open **Instellingen → Werkruimte → Repository's**. De kaart **Automatiseringstokens** toont elke GitLab- en Bitbucket-repo met de bot die daar handelt, **Gebruikt het token van de workspace**, of **Geen token. Automatisering is hier gepauzeerd.** Druk op **Token toevoegen** in de rij van die repo.
+- **Voor elke repo op een forge:** open **Instellingen → Werkruimte → Integraties**, zoek de kaart **Automatiseringstokens** en druk op **Token toevoegen** bij de GitLab- of Bitbucket-rij. Repo's die het token niet kan lezen worden na het opslaan genoemd en blijven gepauzeerd.
+
+Wanneer achtergrondwerk al is gepauzeerd, krijgen beheerders ook **Token toevoegen** direct op de melding over repotoegang. **Token bijwerken** vervangt een token; het prullenbakpictogram verwijdert het, en elke repo die daarna zonder token blijft, wordt gepauzeerd. Als de forge een opgeslagen token later weigert (ingetrokken of verlopen), zegt de rij dat, en blijven de repo's die het dekte gepauzeerd tot je het vervangt.
+
+| Forge         | Automatiseringstoken                                                                                     | Waar je hem aanmaakt                                           |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | Een **project- of groepstoegangstoken** met `read_api` en `read_repository`; voeg `api` en `write_repository` toe voor opmerkingen, merge requests en pushes | Het project of de groep → Settings → Access tokens             |
+| **Bitbucket** | Een **repository-, project- of werkruimtetoegangstoken** met lezen van de repository, plus schrijven van pull requests voor opmerkingen en pull requests (schrijven van de repository voor pushes) | De repository, het project of de werkruimte → Settings → Access tokens |
+
+GitLab toont het werk als de botgebruiker van het token; Bitbucket toont het onder de naam van het toegangstoken.
+
+### Bitbucket: toegangstoken of API-token
+
+Bitbucket kent twee soorten tokens, en Control Center houdt ze gescheiden:
+
+- Een **API-token** (id.atlassian.com) hoort bij je Atlassian-account en wordt samen met je e-mailadres gebruikt. Het is **jouw** inloggegeven en hoort onder **Codehosting** in **Instellingen → Jij → Profiel**.
+- Een **toegangstoken** (aangemaakt in de instellingen van een repository, project of werkruimte) hoort bij die repository, dat project of die werkruimte, niet bij een persoon. Het is een **automatiseringstoken** en hoort onder **Automatiseringstokens**.
+
+Elk dialoogvenster weigert de andere soort en zegt waar die thuishoort.
 
 ## Je bent een ander persoon op elke forge
 
@@ -54,11 +84,26 @@ Dezelfde persoon is `octocat` op GitHub en iets heel anders op GitLab. Control C
 
 Als de identiteit voor een forge niet is bepaald, dragen de repo's ervan niets bij aan het postvak in plaats van alles te matchen. Het postvak zegt dat, in plaats van te beweren dat je helemaal bij bent.
 
+## Je ziet alleen wat je eigen account kan zien
+
+Een pull request van een repo bereikt je alleen als je werkruimterol die repo toestaat **en je eigen account op die forge hem kan lezen**. Beheerders en de eigenaar van de werkruimte volgen dezelfde regel. Zijn er repo's verborgen, dan zeggen het postvak en de PR-wachtrij hoeveel en waarom, zonder ze te noemen:
+
+- **Log in bij GitHub om pull requests uit nog 3 repository's te zien**: je hebt die forge hier nog niet gekoppeld. Log in en ze verschijnen
+- **3 repository's zijn verborgen omdat je GitHub-account ze niet kan zien**: vraag iemand met toegang op de forge
+- **3 repository's zijn verborgen omdat je er in deze werkruimte geen toegang toe hebt**: vraag een werkruimtebeheerder om toegang
+- **Je toegang tot nog 3 repository's wordt gecontroleerd…**: kort zichtbaar terwijl Control Center nagaat wat je account kan lezen
+
+Voor code geldt dezelfde regel. Om de bestanden, diffs of zoekresultaten van een repository te openen, of een terminal erop, heb je het leesrecht ervan in deze werkruimte nodig, en je eigen forge-account moet hem kunnen lezen; werkruimtebeheerders ook, alleen de serverbeheerder is uitgezonderd. Als de forge niet bereikbaar is om dat te controleren, zie je "Je forge-toegang kon niet worden bevestigd. Probeer het opnieuw." (met de naam van de forge). Zie [Code volgt de forge](/nl-NL/handleiding/concepten/autorisatie/#code-volgt-de-codehost).
+
+Dezelfde regel geldt voor alles wat uit die pull requests wordt gemaakt. Een reviewruimte, haar berichten en agentruns verdwijnen zolang je de pull request niet kunt zien, en een open reviewruimte sluit als je de toegang verliest. Pipeline-runs over een verborgen pull request vallen uit je lijst met runs. Agents die voor jou werken, kunnen die reviewruimtes ook niet lezen. De repolijst van de werkruimte toont elke repo waar je in deze werkruimte toegang toe hebt, zelfs een repo die je forgeaccount nog niet kan bereiken.
+
+Als de forge de limiet bereikt of uitvalt, blijft Control Center een paar minuten tonen wat het laatst had bevestigd, en verbergt die pull requests daarna totdat het weer kan controleren.
+
 ## Één postvak, elke forge
 
 Het postvak en de PR-wachtrij waaieren uit over elke forge die in de werkruimte voorkomt en voegen de resultaten samen tot één stroom — een GitHub-pull request en een Bitbucket-pull request staan naast elkaar, geordend op tijd in plaats van gegroepeerd per leverancier.
 
-Storingen blijven geïsoleerd. Een forge die platligt, tegen een limiet is aangelopen of niet verbonden is, draagt niets bij en laat de andere ongemoeid; hij maakt nooit het hele postvak leeg. De eigen repo's blijven hun laatst bekende status tonen tot hij weer werkt.
+Storingen blijven geïsoleerd. Een forge die platligt of tegen een limiet aanloopt, laat de andere ongemoeid, en zijn repo's behouden hun laatst bekende status tot hij weer werkt; hij maakt nooit het hele postvak leeg. Een repo die de server niet meer kan bereiken, valt weg in plaats van verouderde pull requests te tonen, en de **melding over repotoegang** noemt die met de oplossing: installeer de GitHub-app op de organisatie, voeg de repo toe aan de repositories van de app, hervat een opgeschorte installatie, laat het verantwoordelijke lid opnieuw inloggen, of voeg een automatiseringstoken toe voor een GitLab- of Bitbucket-repo. Beheerders krijgen een knop voor de stappen van de GitHub-app en voor het toevoegen van het token.
 
 ## Wat elke forge kan
 
@@ -94,15 +139,31 @@ GitLab noemt een pull request een **merge request**. Control Center zegt in zijn
 
 ### De PR-lijst is leeg en zegt dat een forge niet verbonden is
 
-Je hebt geen inloggegevens voor die forge. Meld je aan bij GitHub, of plak een GitLab- of Bitbucket-token, in **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**. De repo's van andere forges blijven onaangetast.
+Je hebt geen inloggegevens voor die forge. Meld je aan bij GitHub, of plak een GitLab- of Bitbucket-token, in **Instellingen → Jij → Profiel → Codehosting**. De repo's van andere forges blijven onaangetast.
 
 ### Ik heb een forge verbonden, maar de repo's tonen nog niets
 
-Controleer de ondertitel van de rij. Staat bij een GitLab- of Bitbucket-rij “uit de omgeving”, dan antwoorden andere inloggegevens dan je verwachtte — voor alles wat jij opvraagt, wint je eigen token, dus als er iets anders staat, is dat van jou niet opgeslagen. Controleer bij GitHub of de GitHub App is geïnstalleerd op het account dat eigenaar is van de repo's.
+Controleer de status van de rij, en dan de meldingen boven de PR-lijst. “Log in bij … om pull requests uit … extra repository's te zien” betekent dat je eigen account voor die repo's niet is gekoppeld; “… verborgen omdat je … account ze niet kan zien” betekent dat de forge je geen toegang geeft. Bij GitHub zegt de melding over repotoegang je wanneer de GitHub-app niet is geïnstalleerd op de organisatie van de repo, of de repo niet bevat.
+
+### Achtergrondwerk op een GitLab- of Bitbucket-repo is gepauzeerd
+
+De repo heeft geen automatiseringstoken dat hem kan lezen. Een werkruimtebeheerder voegt er een toe voor de repo of voor de hele werkruimte; zie [Een automatiseringstoken toevoegen](#een-automatiseringstoken-toevoegen). Je eigen persoonlijke token heft de pauze niet op: achtergrondwerk gebruikt nooit het token van een lid.
 
 ### Een repo laat zich niet registreren
 
-Registratie vereist alle drie: het pad ligt binnen een git-worktree, er is een `origin`-remote, en die remote wijst naar github.com, gitlab.com of bitbucket.org. Zie [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+Registratie vereist alle drie: het pad ligt binnen een git-worktree, er is een `origin`-remote, en die remote wijst naar github.com, gitlab.com of bitbucket.org. De `origin` moet ook de repository zijn die je koppelt, en een map buiten de eigen opslag van de werkruimte kan alleen door de serverbeheerder worden gekoppeld. Zie [Repos toevoegen aan een werkruimte](/nl-NL/handleiding/gidsen/repos-toevoegen/).
+
+### Ik heb toegang maar de repository zegt dat mijn account hem niet kan lezen
+
+Je eigen forge-account kan die repository niet lezen, dus de code blijft voor jou gesloten, ongeacht wat de werkruimte toekent. Meld je aan bij de forge onder **Codehosting** hierboven, of vraag toegang tot de repository op de forge.
+
+### "Je forge-toegang kon niet worden bevestigd"
+
+De forge kon niet worden bereikt om je toegang te controleren, dus Control Center weigerde in plaats van te gokken. Probeer het over een moment opnieuw.
+
+### Een repository verwijst nu naar een andere repository
+
+De repository achter dat pad is veranderd: hij is verwijderd en opnieuw aangemaakt, of verplaatst en vervangen. Control Center stuurt er niets naar totdat een werkruimte-admin op de melding of op de rij van de repository op **Opnieuw koppelen** klikt. Een gewone hernoeming of overdracht wordt vanzelf gevolgd en toont dit nooit.
 
 ### Alles stopt een tijdje na zwaar gebruik
 

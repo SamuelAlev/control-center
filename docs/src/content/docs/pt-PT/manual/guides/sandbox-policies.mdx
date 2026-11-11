@@ -2,7 +2,7 @@
 title: Configurar políticas de sandbox
 description: O que limita uma execução de agente, como saber se a sandbox do sistema operativo a está a envolver e como as regras de ação decidem o que um agente pode enviar ou alcançar.
 slug: pt-PT/manual/guias/politicas-de-sandbox
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Se uma execução de agente corre em sandbox decide-se no servidor, no arranque
@@ -23,7 +23,7 @@ Seis coisas limitam um agente. A primeira é a sandbox do sistema operativo e é
 
 | Fronteira                       | O que faz                                                                                                                                                                                                                                        |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A sandbox do sistema operativo  | Seatbelt no macOS, bubblewrap no Linux e no WSL2. Envolve a CLI do Claude Code, os adaptadores ACP e a ferramenta `bash` do harness. **Ausente no Windows e no Linux sem `bwrap` e `socat`** |
+| A sandbox do sistema operativo  | Seatbelt no macOS, bubblewrap no Linux e no WSL2. Envolve a CLI do Claude Code, os adaptadores ACP e a ferramenta `bash` do harness. **Ausente no Windows e no Linux sem `bwrap` e `socat`, onde só arrancam as execuções do proprietário do servidor** |
 | A sua própria worktree          | Cada conversa recebe um checkout copy-on-write. O checkout original é incorporado na execução como um caminho de negação de escrita e é a sandbox que o aplica                                                                                   |
 | Credenciais intermediadas       | O corretor de credenciais emite um ambiente por execução e revoga-o quando a execução termina. O seu token do GitHub pode ler, mas não fazer push: um push passa pelo Control Center, que pergunta primeiro à regra de push |
 | Barreiras de ação               | Cada ferramenta que altera o estado declara as suas classes de efeito e o motor de políticas resolve-as antes de a chamada ser executada. Um `prompt` sem nenhum aprovador ligado é negado                                                           |
@@ -43,11 +43,7 @@ Três coisas permanecem mais fracas do que parecem:
   que nenhum perfil de sandbox as limita. Só a ferramenta `bash` passa pelo
   executor de comandos em sandbox. O que limita essas ferramentas é o seu próprio
   confinamento de caminhos, mais as barreiras de ação.
-- Num anfitrião sem backend, a primeira linha não se aplica de todo. O ACP e a
-  ferramenta `bash` do harness recaem na sanitização do ambiente mais a política
-  de comandos; o Claude Code herda o ambiente do anfitrião através do
-  `NoSandboxAdapter`. O servidor di-lo no seu registo de arranque. Verifique o seu
-  abaixo.
+- Num anfitrião sem backend, só arrancam as execuções pelas quais o proprietário do servidor é responsável, e para essas a primeira linha não se aplica. As dos restantes são recusadas. Com `--sandbox off`, as execuções de todos os membros arrancam sem a primeira linha. De qualquer forma, o ACP e a ferramenta `bash` do harness recaem na sanitização do ambiente mais a política de comandos, e o Claude Code herda o ambiente do anfitrião através do `NoSandboxAdapter`. O servidor indica qual dos casos se aplica no seu registo de arranque. Verifique o seu abaixo.
 
 ## Decidir o que um agente pode enviar
 
@@ -57,8 +53,8 @@ rede. Cada um é uma regra de ação:
 | Regra                                     | Predefinição       | O que abrange                                                                 |
 | ----------------------------------------- | ------------------ | ----------------------------------------------------------------------------- |
 | **Fazer push para um remoto**             | Perguntar primeiro | Cada `git push` para o GitHub, seja qual for o adaptador                      |
-| **Abrir um pull request**                 | Perguntar primeiro | `gh pr create` e as ferramentas de pull request                               |
-| **Publicar uma revisão ou fazer merge**   | Perguntar primeiro | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                 |
+| **Abrir um pull request**                 | Perguntar primeiro | As ferramentas de pull request do Control Center. `gh pr create` não funciona numa execução                               |
+| **Atualizar ou fazer merge de um pull request** | Perguntar primeiro | Os comentários de um agente na sua pull request, as edições ao seu título ou descrição e as revisões publicadas, através das ferramentas do Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` e `gh pr close` não funcionam numa execução                 |
 | **Escrever num rastreador externo**       | Perguntar primeiro | Escritas de tickets através das ferramentas do Control Center e `gh issue`    |
 | **Aceder à rede**                         | Permitir           | Se a sandbox tem rede, e as ferramentas web do harness                        |
 
@@ -119,45 +115,55 @@ o `--sandbox` está ligado. Verifique-as por essa ordem.
    isolation**. O dado **Em vigor** é a preferência deste dispositivo, não o
    invólucro que o servidor usa de facto.
 3. Leia o registo de arranque do servidor. Imprime exatamente uma de três linhas:
-   - `agent sandbox ON` mais a nota do backend — as execuções são envolvidas
+   - `agent sandbox ON` mais a nota do backend: as execuções são envolvidas
    - `no OS-native agent sandbox on this host` mais uma sugestão de instalação,
-     quando existe — as execuções não são envolvidas
-   - `agent sandbox DISABLED by --sandbox off` — uma exclusão deliberada
+     quando existe: só arrancam as execuções pelas quais o proprietário do servidor
+     é responsável, sem envolvimento, e as dos restantes são recusadas
+   - `agent sandbox DISABLED by --sandbox off`: arrancam as execuções de todos os
+     membros, sem envolvimento
+4. A linha de exposição impressa no arranque diz o mesmo numa palavra:
+   `sandbox=native`, `sandbox=off` ou `sandbox=unavailable`.
 
 O `GET /healthz` não reporta o estado da sandbox, pelo que o registo de arranque
 é a verificação.
 
-Para desligar a sandbox deliberadamente — um anfitrião onde o perfil se comporta
-mal é a razão pela qual ela existe —, inicie o servidor com `--sandbox off`, ou
-defina `CC_SERVER_SANDBOX=off`. A predefinição é `on` e `on` significa "usar um
-backend se o anfitrião tiver um", nunca "exigir um".
+Só o proprietário do servidor decide executar sem sandbox. Para o fazer para todos,
+inicie o servidor com `--sandbox off`, ou defina `CC_SERVER_SANDBOX=off`. As
+execuções de todos os membros passam então a correr sem confinamento nessa máquina,
+por isso é uma decisão sobre todos os que usam o servidor, tomada uma vez no
+arranque. A predefinição é `on`: envolve todas as execuções quando o anfitrião tem um
+backend e, quando não tem, arrancam apenas as execuções do proprietário.
 
 Há duas situações que nunca recebem um invólucro de sandbox nativa. No
 **Windows**, a sonda nativa reporta sempre indisponível e não há nada para
-instalar — o despacho de agentes usa `none`. O backend `microvm` é separado
+instalar, por isso só arrancam as execuções do proprietário do servidor, a menos
+que o proprietário use `--sandbox off`. O backend `microvm` é separado
 (terminais interativos e rigs) e está sujeito a sonda no seu próprio runtime. No
 **Linux e no WSL2**, tanto o `bwrap` como o `socat` têm de estar no `PATH`; sem
-eles, a sonda reporta indisponível e nomeia os pacotes em falta.
+eles, a sonda reporta indisponível e nomeia os pacotes em falta, e só arrancam as
+execuções do proprietário.
 
 No Linux/WSL2 com o bubblewrap instalado, os globs de ficheiros de segredos da
 política padrão não podem ser aplicados a ficheiros que um agente crie mais
-tarde. Uma execução nativa nessas condições agora falha, em vez de ignorar as
-regras em silêncio. Uma sonda de arranque positiva não garante, por isso, que um
-despacho em Linux consiga arrancar. O `--sandbox off` é uma exclusão deliberada
-sem confinamento, não uma fronteira de segurança substituta.
+tarde, por isso cada execução nativa falha, em vez de ignorar as regras em
+silêncio, incluindo as do proprietário. Uma sonda de arranque positiva não
+significa, por isso, que um despacho em Linux consiga arrancar: hoje um servidor
+Linux executa agentes com `--sandbox off`, ou sem bubblewrap, apenas para o
+proprietário. O `--sandbox off` é uma exclusão deliberada sem confinamento, não
+uma fronteira de segurança substituta.
 
 ## Saber o que um modo já proíbe
 
 O modo é guardado por espaço e alimenta o resolvedor de barreiras como a camada
 **predefinição do modo**. Três dos quatro modos são só de leitura e um modo só de
-leitura recusa onze classes de efeito de imediato:
+leitura recusa doze classes de efeito de imediato:
 
 | Modo                     | Worktree      | Recusado pela predefinição                                                                                                                                                                                                                       |
 | ------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Agente** (`chat`)      | Gravável      | Nada — aplicam-se as predefinições incorporadas                                                                                                                                                                                                   |
-| **Plano**                | Só de leitura | Eliminar um ficheiro, escrever fora da árvore de trabalho, criar um commit, fazer push, abrir uma PR, publicar ou fazer merge, escrever num rastreador externo, instalar um pacote, executar um processo, alterar a estrutura do espaço de trabalho, iniciar ou controlar um recinto |
-| **Revisão**              | Só de leitura | As mesmas onze. Não é selecionável pelo utilizador — o compositor oferece apenas Agente, Plano e Orquestração                                                                                                                                     |
-| **Orquestração**         | Só de leitura | As mesmas onze                                                                                                                                                                                                                                    |
+| **Plano**                | Só de leitura | Eliminar um ficheiro, escrever fora da árvore de trabalho, criar um commit, fazer push, abrir uma PR, publicar ou fazer merge, escrever num rastreador externo, instalar um pacote, executar um processo, alterar a estrutura do espaço de trabalho, iniciar ou controlar um recinto, executar comandos no host |
+| **Revisão**              | Só de leitura | As mesmas doze. Não é selecionável pelo utilizador — o compositor oferece apenas Agente, Plano e Orquestração                                                                                                                                     |
+| **Orquestração**         | Só de leitura | As mesmas doze                                                                                                                                                                                                                                    |
 
 O acesso à rede e o acesso a segredos _não_ são deliberadamente recusados por um
 modo só de leitura: a investigação é o propósito de um deles.
@@ -182,19 +188,23 @@ Leia o que o git mostrou. `Control Center policy: …` significa que uma regra
 negou o push ou que um **Perguntar primeiro** ficou sem resposta.
 `… is not linked to this workspace` significa que o push visa um repositório que
 não é o da worktree nem está associado ao espaço de trabalho.
-`Control Center has no GitHub credential that can push …` significa que a
-GitHub App não está instalada nesse repositório e nenhuma credencial
-alternativa conseguiu fazer push: instale a App nesse repositório ou ligue o
-GitHub.
+`Control Center has no GitHub credential that can push …` significa que não foi possível gerar nenhum token de push: instale a GitHub App nesse repositório ou inicie sessão no GitHub.
+
+### A minha execução de agente foi recusada com «Este servidor não tem sandbox»
+
+A execução mostra **Agentes precisam de uma sandbox neste servidor** com “Este servidor não tem sandbox, por isso apenas o proprietário pode executar agentes aqui. O proprietário pode instalar a sandbox ou desligar o sandboxing para todos.” O anfitrião do servidor não tem sandbox do sistema operativo, e a pessoa responsável pela execução não é o proprietário do servidor, por isso nada foi iniciado. Num agendamento, webhook ou outra automação, a pessoa responsável é aquela a que a automação está associada, e não quem estiver a vê-la.
+
+Só o proprietário do servidor pode mudar isto. No Linux e no WSL2, instale o `bubblewrap` e o `socat` e reinicie o servidor (mas leia primeiro a nota sobre o Linux acima). No Windows não há nenhum backend para instalar. A outra escolha é reiniciar o servidor com `--sandbox off`, que executa as execuções de todos os membros sem confinamento nessa máquina.
 
 ### O cartão Sandbox não reporta nenhuma sandbox nativa
 
 Então as execuções de agentes nesse anfitrião não são envolvidas pelo Seatbelt
-nem pelo bubblewrap e as fronteiras restantes são tudo o que tem. No Linux e no
-WSL2, instale ambas as ferramentas em falta — `sudo apt-get install bubblewrap
-socat` — e reinicie o servidor; o registo de arranque deverá então indicar que a
-sandbox está ligada. No Windows não há nenhum backend nativo para instalar, pelo
-que deve reforçar antes as barreiras: consulte
+nem pelo bubblewrap: só arrancam as execuções do proprietário do servidor, e as
+fronteiras restantes são tudo o que elas têm. No Linux e no WSL2, instale ambas as
+ferramentas em falta (`sudo apt-get install bubblewrap socat`) e reinicie o
+servidor; o registo de arranque deverá então indicar que a sandbox está ligada. No
+Windows não há nenhum backend nativo para instalar, por isso deve reforçar antes as
+barreiras das execuções do próprio proprietário: consulte
 [Configurar guardrails](/pt-PT/manual/guias/configurar-guardrails/).
 
 ### Um agente chegou a um ficheiro fora da sua worktree
@@ -208,9 +218,8 @@ de caminhos, mais as barreiras. Um comando `bash` ou a CLI do Claude Code _é_
 envolvido onde existe um backend, e os seus checkouts registados ficam com a
 escrita negada dentro desse invólucro em todos os modos, incluindo as suas
 grafias resolvidas por ligação simbólica (no macOS, um caminho alcançado através
-de `/tmp` ou `/var/folders` resolve-se em `/private` e ambas as grafias são agora
-negadas). Num anfitrião sem backend, nada disto se aplica. De qualquer forma, as
-barreiras conseguem recusar **Escrever fora da árvore de trabalho** de imediato.
+de `/tmp` ou `/var/folders` resolve-se em `/private` e ambas as grafias são
+negadas). Com `--sandbox off`, ou para as execuções do próprio proprietário num anfitrião sem backend, nada disto se aplica. De qualquer forma, as barreiras conseguem recusar **Escrever fora da árvore de trabalho** de imediato.
 
 ## Guias relacionados
 

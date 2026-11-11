@@ -248,10 +248,6 @@ class AppLocalizationsTr extends AppLocalizations {
   String get allCaughtUp => 'Hepsi güncel';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Sunucuda bağlı forge hesabı yok; pull request’ler henüz size atanamıyor.';
-
-  @override
   String get inboxNothingWaiting =>
       'Bloke bir iş yok ve sizi bekleyen pull request yok.';
 
@@ -460,31 +456,6 @@ class AppLocalizationsTr extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names buradan relay üzerinden gönderilemeyecek kadar büyük.',
-      one: '$names buradan relay üzerinden gönderilemeyecek kadar büyük.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed => 'Ek yüklenemedi. Tekrar deneyin.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ek yüklenemedi ve dahil edilmedi.',
-      one: '1 ek yüklenemedi ve dahil edilmedi.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Ekip arkadaşı';
 
   @override
@@ -620,35 +591,6 @@ class AppLocalizationsTr extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Sunucuda bağlı bir forge yok, bu yüzden çekme isteği alınamıyor. Masaüstü uygulamasından birini bağla.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repo okunamadı.',
-      one: '1 repo okunamadı.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Okunamıyor: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'GitHub App kurulumu askıya alındı';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return '$names için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'GitHub App kurulumu askıya alındı. $names için son bilinen veriler gösteriliyor. GitHub’da kurulumu sürdürün.';
-  }
 
   @override
   String get draft => 'Taslak';
@@ -1298,7 +1240,8 @@ class AppLocalizationsTr extends AppLocalizations {
   String get permissionPrCreate => 'Pull request oluştur';
 
   @override
-  String get permissionPrPublish => 'Pull request yayımla';
+  String get permissionPrPublish =>
+      'Pull request\'leri güncelle veya birleştir';
 
   @override
   String get permissionVendorSyncWrite => 'Sağlayıcı eşitlemesine yaz';
@@ -1342,7 +1285,7 @@ class AppLocalizationsTr extends AppLocalizations {
   String get permissionBuiltInDefault => 'Yerleşik varsayılan';
 
   @override
-  String get permissionRemembered => 'Hatırlanan onay';
+  String get permissionRemembered => 'Süreli onay';
 
   @override
   String get permissionSource => 'Kaynak';
@@ -1364,10 +1307,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Burada kural belirle';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Bu işlem için genel bir kural belirlemeden önce kapsamlı veya hatırlanan kuralı iptal edin.';
 
   @override
   String get permissionConfirmRevoke => 'İptali onayla';
@@ -1419,6 +1358,15 @@ class AppLocalizationsTr extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Komutlar: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Araçlar: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Bu eylem reddedildiği sürece geçerli değil';
 
   @override
   String permissionMaxCount(String count) {
@@ -1875,15 +1823,6 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Pull request güncellemesi';
-
-  @override
-  String get activityTicket => 'Bilet güncellemesi';
-
-  @override
-  String get activityMeeting => 'Toplantı güncellemesi';
-
-  @override
-  String get activityCalendar => 'Takvim bağlantısı';
 
   @override
   String get activityRig => 'Kapsayıcı güncellemesi';
@@ -2567,7 +2506,7 @@ class AppLocalizationsTr extends AppLocalizations {
       'Tarayıcıda yetkilendirme bekleniyor…';
 
   @override
-  String get credentialsConnectCodePrompt => 'Tarayıcında gösterilen kodu gir';
+  String get credentialsConnectCodePrompt => 'Onay kodu';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2638,10 +2577,6 @@ class AppLocalizationsTr extends AppLocalizations {
       'Kişisel erişim token\'ını yapıştırın';
 
   @override
-  String get credentialsHostManaged =>
-      'Bu bağlantı sunucu uygulamasından veya ortamından geliyor. Orada yalnızca sunucu sahibi değişiklik yapabilir; yine de kendi token\'ınızı ekleyebilirsiniz.';
-
-  @override
   String get credentialsStopWatching => 'İzlemeyi durdur';
 
   @override
@@ -2662,4 +2597,203 @@ class AppLocalizationsTr extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Ana makinede komut çalıştır';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return '$provider oturumunun süresi doldu. Yeniden oturum aç.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Duraklatıldı: bu çalışma alanının oturum açma hizmeti değişti. Hizmet geri geldiğinde yeniden çalışır.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '$provider şu anda erişilemiyor. Yeniden deneniyor.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Yalnızca bu çalışma alanı';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Tüm çalışma alanları';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Kayıtlı kimlik bilgin bu çalışma alanından kaldırılsın mı? Diğerleri kendi bilgilerini korur.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Kayıtlı kimlik bilgin onu paylaşan tüm çalışma alanlarından kaldırılsın mı?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Sunucu yeniden başlatıldı. Oturum açmayı yeniden başlat.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Otomasyonun $names depolarına erişmesi için GitHub App\'i $owner hesabına yükle. GitHub\'ı açmak için dokun.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App $owner hesabında yüklü değil, bu yüzden otomasyon $names depolarına erişemiyor. Yüklemesi için çalışma alanının bir yöneticisine başvur.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return '$names depolarını GitHub App\'in depolarına ekle. GitHub\'ı açmak için dokun.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App $names depolarını henüz göremiyor. Onları uygulamanın depolarına eklemesi için çalışma alanının bir yöneticisine başvur.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App kurulumu askıya alındı. Hesabın bir sahibi kurulumu GitHub\'da sürdürene kadar $names için otomasyon duraklatıldı.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Bu çalışma alanının otomasyonundan sorumlu kişi artık $names depolarını göremiyor, bu yüzden orada onun adına hiçbir şey çalışmıyor.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Bu çalışma alanının otomasyonundan sorumlu kişi forge\'da oturum açmamış, bu yüzden $names için otomasyon o oturum açana kadar bekliyor.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return '$names erişimi kontrol edilemedi. Yeniden deneniyor.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count depodaki pull request\'leri de görmek için $forge hizmetinde oturum aç',
+      one:
+          '1 depodaki pull request\'leri de görmek için $forge hizmetinde oturum aç',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$forge hesabın göremediği için $count depo gizlendi',
+      one: '$forge hesabın göremediği için 1 depo gizlendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Bu çalışma alanında erişimin olmadığı için $count depo gizlendi',
+      one: 'Bu çalışma alanında erişimin olmadığı için 1 depo gizlendi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count depoya daha erişimin kontrol ediliyor…',
+      one: '1 depoya daha erişimin kontrol ediliyor…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Atlassian hesabının e-postası';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Atlassian hesabının e-posta adresini gir.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API token\'ı';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Hiçbir otomasyon belirteci $names deposunu okuyamıyor, bu yüzden oradaki arka plan işleri duraklatıldı. Bir yönetici Ayarlar → Depolar bölümünden bir tane ekleyebilir.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Tarayıcınızda onaylayın, ardından gösterdiği kodu aşağıdaki alana girin.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Bu hesap bu sunucuda başka bir kişiye zaten bağlı. Farklı bir hesapla oturum açın.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'Bu token’ı kontrol etmek için $provider ulaşılamadı. Birazdan yeniden deneyin.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider bu token’ı kabul etmiyor. Tamamını kopyaladığınızı ve iptal edilmediğini kontrol edin.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Bu kişisel bir token değil. Kendi $provider hesabınızdan kişisel bir erişim token’ı yapıştırın; proje, grup, çalışma alanı veya bot token’ı değil.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Bu token’da $scope kapsamı yok; inceleme ve yorum için bu gerekli. Bunu içeren bir tane oluşturun.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Bu token’ın süresi dolmuş. Yeni bir tane oluşturup buraya yapıştırın.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Şu anda çok fazla istek var. Bir süre bekleyip yeniden deneyin.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Oturum açma iptal edildi veya reddedildi. Hazır olduğunuzda yeniden başlatın.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Bu oturum açma artık açık değil: iptal edildi, kullanıldı veya yenisiyle değiştirildi. Yeniden başlatın.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Bir çalışma alanı yöneticisinin sizi davet etmesi gerekir ya da sunucu sahibi sizin için bir çalışma alanı oluşturabilir.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos artık $forge üzerinde farklı bir depoyu gösteriyor. Kullanmaya devam etmek için masaüstü ya da web uygulamasından yeniden bağlayın.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos artık $forge üzerinde farklı bir depoyu gösteriyor. Tekrar kullanılabilmesi için bir çalışma alanı yöneticisinin yeniden bağlaması gerekir.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Ajanların bu sunucuda sandbox’a ihtiyacı var';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Bu sunucuda sandbox yok, bu yüzden burada ajanları yalnızca sahibi çalıştırabilir. Sahip sandbox’ı kurabilir ya da herkes için sandboxing’i kapatabilir.';
 }

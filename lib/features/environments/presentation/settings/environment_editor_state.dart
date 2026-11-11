@@ -1,7 +1,9 @@
 import 'dart:convert';
 
 import 'package:cc_data/cc_data.dart' show environmentIssuesFromMessage;
+import 'package:cc_domain/cc_domain.dart' show ServerOwnerRequiredException;
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
+import 'package:cc_domain/features/environments/domain/services/environment_definition_validator.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/di/providers.dart';
@@ -30,6 +32,7 @@ class EnvironmentEditorState {
     this.saving = false,
     this.revision = 0,
     this.jsonError,
+    this.ownerOnly = false,
   });
 
   /// The JSON as edited. Forms touch only the keys they own, so anything else
@@ -61,6 +64,10 @@ class EnvironmentEditorState {
   /// A save is in flight.
   final bool saving;
 
+  /// The last save was refused because the definition places something on
+  /// the server host, which only the server owner may save or approve.
+  final bool ownerOnly;
+
   /// Bumps when list items move, so fields keyed by index rebuild.
   final int revision;
 
@@ -70,36 +77,24 @@ class EnvironmentEditorState {
       : jsonEncode(draft) != saved;
 
   /// The draft as an entity, or null while it doesn't parse.
-  EnvironmentDefinition? get parsed {
-    try {
-      return EnvironmentDefinition.fromJson(draft);
-    } on FormatException {
-      return null;
-    }
-  }
+  EnvironmentDefinition? get parsed =>
+      parseEnvironmentDefinition(draft).definition;
 
-  /// Every known problem: the shape, the validator, then the server.
+  /// Every known problem, each at its path: the shape, the validator, then
+  /// what only the server knows.
   ///
   /// [linkedRepoIds] are the workspace's repos, so a role bound to a repo the
   /// workspace no longer links shows as an error rather than at Start.
   List<EnvironmentDefinitionIssue> issuesFor(Set<String>? linkedRepoIds) {
-    final List<EnvironmentDefinitionIssue> local;
     final effective = linked
         ? mergeEnvironmentOverrides(draft, overrides)
         : draft;
-    try {
-      local = validateEnvironmentDefinition(
-        EnvironmentDefinition.fromJson(effective),
-        linkedRepoIds: linkedRepoIds,
-      );
-    } on FormatException catch (error) {
-      // The server refuses the same shape; once is enough.
-      return [
-        EnvironmentDefinitionIssue('', error.message),
-        ...serverIssues.where((issue) => issue.message != error.message),
-      ];
-    }
-    return [...local, ...serverIssues];
+    final local = checkEnvironmentDefinition(
+      effective,
+      linkedRepoIds: linkedRepoIds,
+    );
+    // The server refuses the same issues; once is enough.
+    return [...local, ...serverIssues.where((issue) => !local.contains(issue))];
   }
 
   /// This state with fields replaced.
@@ -112,6 +107,7 @@ class EnvironmentEditorState {
     int? revision,
     String? jsonError,
     bool clearJsonError = false,
+    bool? ownerOnly,
   }) => EnvironmentEditorState(
     draft: draft ?? this.draft,
     saved: saved ?? this.saved,
@@ -122,6 +118,7 @@ class EnvironmentEditorState {
     saving: saving ?? this.saving,
     revision: revision ?? this.revision,
     jsonError: clearJsonError ? null : jsonError ?? this.jsonError,
+    ownerOnly: ownerOnly ?? this.ownerOnly,
   );
 }
 
@@ -221,7 +218,11 @@ class EnvironmentEditorNotifier extends Notifier<EnvironmentEditorState> {
     if (state.jsonError != null) {
       return false;
     }
-    state = state.copyWith(saving: true, serverIssues: const []);
+    state = state.copyWith(
+      saving: true,
+      serverIssues: const [],
+      ownerOnly: false,
+    );
     final repository = ref.read(environmentRepositoryProvider);
     final current = state.record;
     try {
@@ -249,6 +250,9 @@ class EnvironmentEditorNotifier extends Notifier<EnvironmentEditorState> {
           .read(environmentEditorSelectionProvider.notifier)
           .open(EnvironmentEditorSeed.record(record));
       return true;
+    } on ServerOwnerRequiredException {
+      state = state.copyWith(saving: false, ownerOnly: true);
+      return false;
     } on RemoteRpcException catch (error) {
       state = state.copyWith(
         saving: false,

@@ -225,7 +225,7 @@ class SettingsEntityRow extends StatelessWidget {
         header,
         CcCollapsible(
           expanded: onExpandedChanged == null || expanded,
-          duration: CcMotion.normal,
+          duration: CcMotion.moderate,
           child: Padding(padding: detailPadding, child: detail),
         ),
       ],

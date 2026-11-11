@@ -191,6 +191,7 @@ class _FakeMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -198,6 +199,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 

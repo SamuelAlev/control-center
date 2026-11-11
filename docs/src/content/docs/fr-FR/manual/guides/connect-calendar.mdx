@@ -2,7 +2,7 @@
 title: Connecter un Google Calendar
 description: Connectez Google Calendar à un espace de travail, gérez plusieurs comptes et reconnectez un compte lorsqu’une connexion expire.
 slug: fr-FR/manuel/guides/connecter-calendrier
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Ce guide explique comment connecter Google Calendar à un espace de travail. La
@@ -25,7 +25,7 @@ pour une vue d’ensemble.
 ## Connecter un compte
 
 1. Ouvrez **Calendrier** dans la barre latérale.
-2. Cliquez sur **Ajouter un compte de calendrier** dans la barre latérale du calendrier. (La même section se trouve dans **Paramètres → Espace de travail → Profil et identité**, sous **Google Calendar**.)
+2. Cliquez sur **Ajouter un compte de calendrier** dans la barre latérale du calendrier. (La même section se trouve dans **Paramètres → Vous → Profil**, sous **Google Calendar**.)
 3. Cliquez sur **Connecter Google Calendar**. Votre navigateur ouvre la page de consentement de Google.
 4. Choisissez le compte et approuvez l’accès à vos événements et à la liste de vos calendriers.
 
@@ -118,8 +118,7 @@ données a été restauré sur une autre machine.
 
 ## Déconnecter un compte
 
-Dans la barre latérale du calendrier (ou **Paramètres → Espace de travail → Profil
-et identité**), cliquez sur **Déconnecter** pour le compte. Cette action supprime
+Dans la barre latérale du calendrier (ou **Paramètres → Vous → Profil**), cliquez sur **Déconnecter** pour le compte. Cette action supprime
 ses événements synchronisés et efface l’identifiant stocké sur le serveur.
 
 ## Utiliser votre propre client Google
@@ -129,9 +128,9 @@ propres applications**. Le client du serveur ne s’applique que dans ce cas : a
 Control Center ou un Connect personnalisé, Connect exécute chaque voie, Google
 compris, et le client du serveur reste enregistré mais inutilisé. Pour que
 l’écran de consentement porte le nom de votre projet tout en utilisant Connect
-côté serveur, donnez à l’espace de travail son propre client
-([plus bas](#donner-à-un-espace-de-travail-son-propre-client-google)) ; cela vaut
-dans tous les modes.
+côté serveur, placez l’espace de travail sur ses propres applications et donnez-lui
+son propre client ([plus bas](#donner-à-un-espace-de-travail-son-propre-client-google)) ;
+cela vaut quel que soit le mode du serveur.
 
 1. Dans la [Google Cloud Console](https://console.cloud.google.com/apis/credentials), activez l’**API Google Calendar** et configurez l’**écran de consentement OAuth** en ajoutant les portées `calendar.events`, `calendar.calendarlist.readonly`, `openid` et `email`. Tant que l’application n’est pas vérifiée, ajoutez-vous comme **utilisateur test**.
 2. Créez un **ID client OAuth** dont le type d’application est **Web application**.
@@ -155,21 +154,24 @@ propre, au lieu de celui du serveur. Seul un administrateur ou le propriétaire 
 l’espace de travail peut le configurer.
 
 1. Créez un client Google de type **Web application**, comme aux étapes 1 et 2 ci-dessus
-2. Allez dans **Paramètres → Espace de travail → Général → Applications fournisseur** et ouvrez **Google Calendar**
-3. Choisissez **Utiliser l’application propre à cet espace de travail**
-4. Ajoutez à l’identique, au client, l’URI de redirection affiché sous **URL de rappel** dans la ligne
-5. Collez l’**Identifiant client** et le **Secret client**
+2. Allez dans **Paramètres → Espace de travail → Intégrations**. Sur la carte **Control Center Connect**, choisissez **Utiliser mes propres applications** puis cliquez sur **Appliquer**
+3. Sous Calendrier, la carte **Application Google Calendar** apparaît. Ajoutez à l’identique, au client, l’URI de redirection affiché sous **URL de rappel** sur cette carte
+4. Collez l’**Identifiant client** et le **Secret client**
 
 Les comptes de calendrier connectés dans cet espace de travail passent alors par ce
 client, quelle que soit la façon dont le serveur connecte les personnes. Il ne se
 rabat jamais sur le client du serveur ni sur Connect : tant que les deux champs ne
 sont pas renseignés, Google Calendar est désactivé dans cet espace de travail, et
-la ligne indique ce qui manque. Le secret ne quitte jamais le serveur.
+la carte indique ce qui manque. Le secret ne quitte jamais le serveur.
 
-Passer du client du serveur à celui de l’espace de travail, ou modifier l’identifiant
-client de l’espace de travail, oblige tous les comptes Google de cet espace à se
-reconnecter. **Utiliser l’application de ce serveur** supprime les champs enregistrés
-de l’espace de travail. Les autres espaces de travail du serveur ne sont pas concernés.
+**Utiliser mes propres applications** couvre tous les fournisseurs à la fois : GitHub,
+Linear et la recherche de GIF ne fonctionnent aussi qu’avec les applications propres à
+l’espace de travail, chacune configurée à côté de son fournisseur sur la même page.
+Changer les applications de connexion de l’espace de travail, ou modifier son identifiant
+client, oblige tous les comptes Google de cet espace à se reconnecter. Les champs
+enregistrés restent lorsque l’espace de travail revient à un autre choix, mais ne servent
+qu’avec **Utiliser mes propres applications**. Les autres espaces de travail du serveur ne
+sont pas concernés.
 
 ## Dépannage
 
@@ -180,8 +182,8 @@ de l’espace de travail. Les autres espaces de travail du serveur ne sont pas c
 | `invalid_client` renvoyé par Google                                          | L’identifiant et le secret proviennent de clients différents, ou le client a été supprimé                                                                                |
 | L’approbation réussit mais la synchronisation reste vide                     | Votre compte n’est pas un **utilisateur test** sur l’écran de consentement, ou l’une des portées demandées n’a pas été accordée                                                   |
 | La boîte de dialogue indique que le code ne correspond pas                   | Saisissez les 8 caractères exactement tels que le navigateur les affiche. Cinq codes erronés mettent fin à la connexion ; recommencez                                    |
-| « Impossible de mettre à jour votre réponse », ou la réservation, le déplacement ou la suppression échoue | Le compte a été connecté avec l’ancienne portée en lecture seule. Reconnectez-le ; un calendrier partagé avec vous en lecture seule refuse aussi les écritures |
-| Tout le monde doit se reconnecter                                            | Le client Google du serveur ou de l’espace de travail a changé, ou le choix ou la clé Connect du serveur a changé. Voir [Reconnecter un compte expiré](#reconnecter-un-compte-expiré)                       |
+| « Impossible de mettre à jour votre réponse », ou la réservation, le déplacement ou la suppression échoue | Le compte n’a pas accordé l’accès en écriture au calendrier. Reconnectez-le et approuvez toutes les portées demandées ; un calendrier partagé avec vous en lecture seule refuse aussi les écritures |
+| Tout le monde doit se reconnecter                                            | Le client Google du serveur ou de l’espace de travail a changé, ou le choix Connect du serveur ou de l’espace de travail, ou la clé du serveur, a changé. Voir [Reconnecter un compte expiré](#reconnecter-un-compte-expiré)                       |
 
 ## Guides connexes
 

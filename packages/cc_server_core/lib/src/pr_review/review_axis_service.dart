@@ -58,6 +58,7 @@ class ReviewAxisService {
   /// result (honest `unavailable` when no Flutter SDK / no Widgetbook).
   Future<ReviewAxisResult> runVisualAxis({
     required String workspaceId,
+    required String? requestedByUserId,
     required String repoId,
     required String prExternalId,
     required String repoPath,
@@ -67,6 +68,7 @@ class ReviewAxisService {
   }) async {
     final outcome = await _visual.compute(
       workspaceId: workspaceId,
+      requestedByUserId: requestedByUserId,
       repoId: repoId,
       prExternalId: prExternalId,
       repoPath: repoPath,

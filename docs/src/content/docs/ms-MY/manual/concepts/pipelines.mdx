@@ -2,7 +2,7 @@
 title: Pipeline dan automasi
 description: Mengapa pipeline memisahkan penjadualan daripada kerja, apa yang sebenarnya memulakan satu larian dan templat terbina dalam yang manakah sudah aktif sebaik sahaja dipasang.
 slug: ms-MY/manual-pengguna/konsep/pipeline
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipeline ialah separuh deterministik Control Center. Ejen menentukan apa yang
@@ -39,7 +39,7 @@ berhenti:
   `orchestration.awaitApproval`. `human.gate` tidak dikecualikan.
 - Satu langkah yang diisytiharkan `extras: {'idempotent': false}` yang berada di
   pertengahan pelaksanaan apabila pelayan berhenti mungkin sudah menerapkan
-  kesan sampingannya (squash merge, pembersihan worktree). Menjalankannya semula
+  kesan sampingannya (sandaran ruang kerja, pembersihan worktree). Menjalankannya semula
   boleh menerapkannya dua kali, jadi enjin menggagalkannya dan menyerahkan
   percubaan semula kepada anda.
 
@@ -146,8 +146,17 @@ terkumpul dan itu tidak pernah dimaksudkan sebagai pilihan pengguna.
 Satu lagi asimetri yang wajar diketahui: templat terbina dalam `pr_review`
 sengaja tidak lagi menghantar ke GitHub. Menerbitkan semakan ialah langkah
 berasingan yang digerbangi pengguna dan pipeline yang menghantar secara terus
-akan menerbitkan dua kali. `cross_review`, `ticket_to_pr` dan `pr_triage` masih
-menghantar komen terus ke GitHub apabila dijalankan.
+akan menerbitkan dua kali. `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` dan `external_pr_welcome` masih
+menghantar komen ke GitHub apabila dijalankan.
+
+Mereka menghantarnya dari pelayan, melalui langkah **Post PR comment**
+(`prReview.comment`), tidak sekali-kali dari skrip shell: langkah shell pipeline
+dan kotak pasir ejennya memegang token GitHub yang hanya boleh membaca. Peraturan
+yang sama membentuk yang selebihnya:
+
+- `external_pr_welcome` menghantar ucapan alu-aluannya sebagai `message` langkah itu.
+- `ticket_to_pr` meminta ejen pengekodnya push `agent/<ticket_id>` (melalui gerbang larian) dan membuka PR draf dengan `open_pull_request`, menggunakan log masuk GitHub orang yang memulakan larian itu, atau sebagai bot jika tiada sesiapa berbuat demikian. Kedua-duanya menemui peraturan **Push ke remote** dan **Buka pull request** ruang kerja. Pada Control Center Connect, larian yang tiada sesiapa minta, seperti yang dicetuskan oleh `TicketAssigned`, tidak boleh push atau membuka PR: bot App yang dikongsi hanya membaca dan mengulas.
+- `pre_merge_gate` tidak pernah mencantum. Meluluskan pada gerbangnya menghantar bahawa PR sedia untuk dicantum oleh penyelenggara; menolak menghantar bahawa perubahan diminta. Seseorang mencantum daripada halaman PR.
 
 ## Apa yang diketahui oleh enjin
 

@@ -122,6 +122,37 @@ class BitbucketApiClient {
     );
   }
 
+  /// One small read of `workspace/repo`'s open pull requests: the open count
+  /// Bitbucket reports in `size` (null when it leaves it out) and the most
+  /// recently updated one's id and `updated_on`. Failures propagate as
+  /// [RhttpException].
+  Future<({int? total, int? topId, String? topUpdatedOn})>
+  probeOpenPullRequests(
+    String workspace,
+    String repo, {
+    CancelToken? cancelToken,
+  }) async {
+    _requireCoordinate(workspace, repo);
+    final response = await _httpClient.get(
+      '/repositories/$workspace/$repo/pullrequests',
+      query: const <String, String>{
+        'state': 'OPEN',
+        'sort': '-updated_on',
+        'pagelen': '1',
+        'fields': 'size,values.id,values.updated_on',
+      },
+      cancelToken: cancelToken,
+    );
+    final body = asJsonMap(_decoded(response));
+    final values = body?['values'];
+    final first = values is List && values.isNotEmpty ? values.first : null;
+    return (
+      total: (body?['size'] as num?)?.toInt(),
+      topId: first is Map ? (first['id'] as num?)?.toInt() : null,
+      topUpdatedOn: first is Map ? first['updated_on'] as String? : null,
+    );
+  }
+
   /// Exhaustive branch-scoped PR history across all Bitbucket states. The
   /// collection defaults to OPEN; four state queries are required to include
   /// merged, declined and superseded PRs. Follow opaque next-page cursors

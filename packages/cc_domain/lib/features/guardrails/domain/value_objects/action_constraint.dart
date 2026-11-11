@@ -22,7 +22,8 @@ enum ConstraintMatch {
   miss,
 }
 
-/// Argument-level condition on a policy rule (paths, refs, hosts, magnitude).
+/// Argument-level condition on a policy rule (paths, refs, hosts, commands,
+/// tools, magnitude).
 ///
 /// Closed typed grammar (not a DSL): UI-renderable, explainable denials,
 /// statically enumerable. Glob-ish, case-sensitive: `*` within a segment,
@@ -36,6 +37,7 @@ class ActionConstraint {
     this.refs,
     this.hosts,
     this.commands,
+    this.tools,
     this.maxCount,
     this.maxCents,
   });
@@ -55,6 +57,9 @@ class ActionConstraint {
   /// Command prefixes this rule covers (`git push`, `rm -rf`).
   final List<String>? commands;
 
+  /// Tool names this rule covers, matched exactly.
+  final List<String>? tools;
+
   /// The largest countable magnitude this rule tolerates; a request above it
   /// does not match (so a more restrictive rule decides).
   final int? maxCount;
@@ -68,6 +73,7 @@ class ActionConstraint {
       refs == null &&
       hosts == null &&
       commands == null &&
+      tools == null &&
       maxCount == null &&
       maxCents == null;
 
@@ -92,10 +98,7 @@ class ActionConstraint {
   /// A facet the request says nothing about is unknown for a restrictive
   /// rule (the caller escalates) and a miss for a permissive one (an allow
   /// never applies on faith).
-  ConstraintMatch evaluate(
-    ActionRequest request, {
-    required bool restrictive,
-  }) {
+  ConstraintMatch evaluate(ActionRequest request, {required bool restrictive}) {
     if (isUnconstrained) {
       return ConstraintMatch.hit;
     }
@@ -115,6 +118,13 @@ class ActionConstraint {
         if (request.command == null || request.command!.isEmpty)
           ConstraintMatch.unknown
         else if (_matchesCommand(request.command!, commands!))
+          ConstraintMatch.hit
+        else
+          ConstraintMatch.miss,
+      if (tools != null)
+        if (request.tool == null || request.tool!.isEmpty)
+          ConstraintMatch.unknown
+        else if (tools!.contains(request.tool))
           ConstraintMatch.hit
         else
           ConstraintMatch.miss,
@@ -166,7 +176,11 @@ class ActionConstraint {
 
   /// A ceiling reads differently either way round: on an allow it is "up to
   /// this much"; on a deny it is "anything above this much".
-  static ConstraintMatch _ceilingFacet(int? value, int ceiling, bool restrictive) {
+  static ConstraintMatch _ceilingFacet(
+    int? value,
+    int ceiling,
+    bool restrictive,
+  ) {
     if (value == null) {
       return ConstraintMatch.unknown;
     }
@@ -281,6 +295,7 @@ class ActionConstraint {
       if (refs != null) 'refs=${refs!.join(",")}',
       if (hosts != null) 'hosts=${hosts!.join(",")}',
       if (commands != null) 'commands=${commands!.join(",")}',
+      if (tools != null) 'tools=${tools!.join(",")}',
       if (maxCount != null) 'maxCount=$maxCount',
       if (maxCents != null) 'maxCents=$maxCents',
     ];
@@ -293,6 +308,7 @@ class ActionConstraint {
     if (refs != null) 'refs': refs,
     if (hosts != null) 'hosts': hosts,
     if (commands != null) 'commands': commands,
+    if (tools != null) 'tools': tools,
     if (maxCount != null) 'maxCount': maxCount,
     if (maxCents != null) 'maxCents': maxCents,
   };
@@ -301,9 +317,8 @@ class ActionConstraint {
   /// which reads as "no constraint", i.e. the rule matches everything, which
   /// is the pre-constraint meaning of every existing row.
   static ActionConstraint? fromJson(Map<String, dynamic> json) {
-    List<String>? strings(Object? raw) => raw is List
-        ? [for (final e in raw) e.toString()]
-        : null;
+    List<String>? strings(Object? raw) =>
+        raw is List ? [for (final e in raw) e.toString()] : null;
     int? number(Object? raw) => raw is int
         ? raw
         : raw is num
@@ -314,6 +329,7 @@ class ActionConstraint {
       refs: strings(json['refs']),
       hosts: strings(json['hosts']),
       commands: strings(json['commands']),
+      tools: strings(json['tools']),
       maxCount: number(json['maxCount']),
       maxCents: number(json['maxCents']),
     );

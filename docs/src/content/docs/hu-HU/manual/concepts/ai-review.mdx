@@ -2,7 +2,7 @@
 title: MI-átnézés
 description: Hogyan lesz egy pull requestből átnézett pull request — átnézési terek, átnézési csomópontok és társi konszenzus, kohorszok és tengelyek, a Ship/Hold/Block ítélet, és hogy miért marad a közzététel egy Ön által megtett lépés.
 slug: hu-HU/kezikonyv/fogalmak/mi-atnezes
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Egy átnézés felépítése
@@ -217,8 +217,7 @@ kapuzott, így egy átnézés soha nem tehető közzé kétszer. Amikor megnyomj
   átnézést, aki megnyomta, az ő saját GitHub-bejelentkezésével: a kiadási kapu az
   övé, így az átnézés is. Az olyan közzététel, amely mögött nincs személy,
   automatizálás, és az soha nem hagy jóvá: a Ship ilyenkor `COMMENT`-ként megy
-  ki, a Control Center Connecten keresztül pedig a bejegyzés a
-  `**Control Center** (for @login):` előtaggal jelöli a forrást.
+  ki, az eredményekben lévő @-említések pedig inaktívak, így a bejegyzés senkit sem értesít. A bejegyzést a bot teszi közzé, kivéve a megosztott Control Center Connect alkalmazást, ha a Connect üzemeltetője nem vette fel ezt a telepítést a listájára: ilyenkor a bejegyzés a felelős személy saját bejelentkezésével megy ki, az ő nevén, és a `**Control Center** (for @login):` előtaggal jelöli a forrást. Saját GitHub-alkalmazással rendelkező szerver vagy munkaterület a bejegyzést mindig botként teszi közzé. Az MCP-eszközt hívó ügynök csak a saját terének áttekintését teheti közzé.
 
 A közzététel a `prPublish` műveletosztályt deklarálja, így a korlátok központi
 ellenőrzési pontja ugyanúgy kapuzza, mint bármely módosító műveletet —

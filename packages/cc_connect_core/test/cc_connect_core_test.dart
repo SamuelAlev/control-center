@@ -58,16 +58,34 @@ void main() {
     });
   });
 
+  group('claimedInstallId', () {
+    test('names the keyid install before verification, or null', () async {
+      final identity = await ConnectInstallIdentity.derive(
+        masterSeed: _seed(7),
+        connectUrl: 'https://connect.test',
+      );
+      final headers = await ConnectRequestSigner(identity).sign(
+        method: 'GET',
+        targetUri: Uri.parse('https://connect.test/v1/config'),
+        body: const [],
+      );
+      expect(claimedInstallId(headers['signature-input']), identity.installId);
+      expect(claimedInstallId('garbage'), isNull);
+      expect(claimedInstallId(null), isNull);
+    });
+  });
+
   group('OAuthStartRequest', () {
-    test('accepts an older server\'s sign_in purpose, refuses any other', () {
+    test('refuses any purpose, even sign_in', () {
       final base = const OAuthStartRequest(
         workspaceId: 'ws1',
         codeChallenge: 'c',
       ).toJson();
       expect(base.containsKey('purpose'), isFalse);
+      expect(OAuthStartRequest.fromJson(base).workspaceId, 'ws1');
       expect(
-        OAuthStartRequest.fromJson({...base, 'purpose': 'sign_in'}).workspaceId,
-        'ws1',
+        () => OAuthStartRequest.fromJson({...base, 'purpose': 'sign_in'}),
+        throwsFormatException,
       );
       expect(
         () => OAuthStartRequest.fromJson({
@@ -388,7 +406,7 @@ void main() {
           'state': 'x' * 43,
           'code_challenge': pkce.challenge,
           'code_challenge_method': 'S256',
-          'prompt': 'consent',
+          'prompt': 'select_account',
           ...override,
         });
 
@@ -423,6 +441,16 @@ void main() {
         () => check(github(override: {'scope': 'repo'})),
         throwsA(isA<AuthorizeUrlRejected>()),
       );
+    });
+
+    test('github asks for the documented account picker only', () {
+      for (final prompt in ['consent', 'none', '']) {
+        expect(
+          () => check(github(override: {'prompt': prompt})),
+          throwsA(isA<AuthorizeUrlRejected>()),
+          reason: prompt,
+        );
+      }
     });
 
     test('google scope must match exactly', () {
@@ -522,11 +550,216 @@ void main() {
       );
     });
 
+    test('the sandbox scope reads only, so a reader keeps it', () {
+      expect(GitHubTokenScope.review.writes, isFalse);
+      expect(GitHubTokenScope.review.permissions.values.toSet(), {'read'});
+      expect(
+        clampGitHubScope(
+          requested: GitHubTokenScope.review,
+          role: GitHubRepoRole.pull,
+          repoIsPublic: false,
+        ),
+        GitHubTokenScope.review,
+      );
+      expect(
+        clampGitHubScope(
+          requested: GitHubTokenScope.bot,
+          role: GitHubRepoRole.pull,
+          repoIsPublic: false,
+        ),
+        GitHubTokenScope.read,
+      );
+    });
+
+    test('a shared App\'s bot holds nothing that writes beyond issues', () {
+      expect(GitHubTokenScope.read.connectBotMayHold, isTrue);
+      expect(GitHubTokenScope.review.connectBotMayHold, isTrue);
+      expect(GitHubTokenScope.comment.connectBotMayHold, isTrue);
+      expect(GitHubTokenScope.bot.connectBotMayHold, isFalse);
+      expect(GitHubTokenScope.write.connectBotMayHold, isFalse);
+      for (final scope in GitHubTokenScope.values) {
+        final writesCode =
+            scope.permissions['pull_requests'] == 'write' ||
+            scope.permissions['contents'] == 'write';
+        expect(scope.connectBotMayHold, !writesCode, reason: scope.wire);
+      }
+      expect(
+        [
+          for (final scope in GitHubTokenScope.values)
+            if (scope.connectBotNeedsListing) scope,
+        ],
+        [GitHubTokenScope.bot],
+      );
+    });
+
+    test('comment writes issues only, so it needs push', () {
+      expect(GitHubTokenScope.comment.permissions, {
+        'metadata': 'read',
+        'issues': 'write',
+      });
+      expect(GitHubTokenScope.fromWire('comment'), GitHubTokenScope.comment);
+      expect(
+        clampGitHubScope(
+          requested: GitHubTokenScope.comment,
+          role: GitHubRepoRole.triage,
+          repoIsPublic: false,
+        ),
+        GitHubTokenScope.read,
+      );
+      expect(
+        clampGitHubScope(
+          requested: GitHubTokenScope.comment,
+          role: GitHubRepoRole.push,
+          repoIsPublic: false,
+        ),
+        GitHubTokenScope.comment,
+      );
+    });
+
+    test('a mint answer proves its selection, permissions and repository', () {
+      final permissions = GitHubTokenScope.read.permissions;
+      Map<String, Object?> answer({
+        Object? selection = 'selected',
+        Object? repositories = const [
+          {'id': 7},
+        ],
+        Map<String, String>? granted,
+      }) => {
+        'permissions': granted ?? permissions,
+        'repository_selection': ?selection,
+        'repositories': ?repositories,
+      };
+      bool matches(Map<String, Object?> json, {bool require = true}) =>
+          scopedTokenMatches(
+            json,
+            repoId: 7,
+            permissions: permissions,
+            requireRepositories: require,
+          );
+
+      expect(matches(answer()), isTrue);
+      expect(matches(answer(selection: null)), isFalse);
+      expect(matches(answer(selection: 'all')), isFalse);
+      expect(matches(answer(repositories: null)), isFalse);
+      expect(matches(answer(repositories: null), require: false), isTrue);
+      expect(
+        matches(
+          answer(
+            repositories: const [
+              {'id': 8},
+            ],
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        matches(
+          answer(
+            repositories: const [
+              {'id': 7},
+              {'id': 8},
+            ],
+          ),
+        ),
+        isFalse,
+      );
+      expect(
+        matches(answer(granted: GitHubTokenScope.write.permissions)),
+        isFalse,
+      );
+    });
+
     test('segments refuse traversal', () {
       expect(isGitHubSegment('.github'), isTrue);
       expect(isGitHubSegment('a..b'), isFalse);
       expect(isGitHubSegment('a/b'), isFalse);
       expect(isGitHubSegment('%2e'), isFalse);
+    });
+  });
+
+  group('shared sign-in names', () {
+    test('account_already_bound is its own failure', () {
+      expect(
+        SignInFailure.fromWire('account_already_bound'),
+        SignInFailure.accountAlreadyBound,
+      );
+      expect(SignInFailure.accountAlreadyBound.wire, 'account_already_bound');
+    });
+
+    test('SignInUnavailableReason keeps its wire spellings', () {
+      expect(
+        {for (final r in SignInUnavailableReason.values) r: r.wire},
+        {
+          SignInUnavailableReason.notConfigured: 'not_configured',
+          SignInUnavailableReason.misconfigured: 'misconfigured',
+          SignInUnavailableReason.ownAppMissing: 'own_app_missing',
+          SignInUnavailableReason.connectUnprovisioned: 'connect_unprovisioned',
+          SignInUnavailableReason.connectPinsPending: 'connect_pins_pending',
+          SignInUnavailableReason.connectUnreachable: 'connect_unreachable',
+          SignInUnavailableReason.connectUrlInvalid: 'connect_url_invalid',
+          SignInUnavailableReason.blockedByEnvironment:
+              'blocked_by_environment',
+          SignInUnavailableReason.laneNotOffered: 'lane_not_offered',
+        },
+      );
+      for (final reason in SignInUnavailableReason.values) {
+        expect(SignInUnavailableReason.fromWire(reason.wire), reason);
+      }
+      expect(SignInUnavailableReason.fromWire(null), isNull);
+      expect(SignInUnavailableReason.fromWire(''), isNull);
+      expect(SignInUnavailableReason.fromWire(7), isNull);
+      expect(
+        SignInUnavailableReason.fromWire('something_new'),
+        SignInUnavailableReason.notConfigured,
+      );
+    });
+
+    test('SignInAttemptStatus reads anything unknown as failed', () {
+      for (final status in SignInAttemptStatus.values) {
+        expect(status.wire, status.name);
+        expect(SignInAttemptStatus.fromWire(status.wire), status);
+      }
+      expect(SignInAttemptStatus.fromWire('done'), SignInAttemptStatus.failed);
+      expect(SignInAttemptStatus.fromWire(null), SignInAttemptStatus.failed);
+      expect(SignInAttemptStatus.pending.isTerminal, isFalse);
+      expect(SignInAttemptStatus.succeeded.isTerminal, isTrue);
+      expect(SignInAttemptStatus.failed.isTerminal, isTrue);
+    });
+
+    test('the refresh-rejection table is the three dead-credential codes', () {
+      expect(oauthRefreshRejectedErrors, {
+        'invalid_grant',
+        'bad_refresh_token',
+        'unauthorized_client',
+      });
+    });
+
+    test('isConnectSecretEnvKey: secrets and their rotations, any case; '
+        'never identifiers, flags or file paths', () {
+      for (final key in connectSecretEnvKeys) {
+        expect(isConnectSecretEnvKey(key), isTrue, reason: key);
+        expect(isConnectSecretEnvKey(key.toLowerCase()), isTrue, reason: key);
+        expect(isConnectSecretEnvKey('${key}_FILE'), isFalse, reason: key);
+      }
+      expect(isConnectSecretEnvKey('connect_github_client_secret'), isTrue);
+      expect(isConnectSecretEnvKey('CONNECT_KLIPY_APP_KEY_PREVIOUS'), isTrue);
+      for (final key in [
+        'CONNECT_GITHUB_CLIENT_ID',
+        'CONNECT_GITHUB_APP_ID',
+        'CONNECT_GITHUB_SECRET_GENERATION',
+        'CONNECT_SLACK_APP_ID',
+        'CONNECT_ALLOWED_INSTALLS',
+        'CONNECT_SIGNED_CONFIG',
+        'CONNECT_CONFIG_PUBLIC_KEYS',
+        'CONNECT_REDIS_CA_FILE',
+        'CONNECT_SEAL_KEYS_FILE',
+        'CONNECT_KMS_KEY',
+        'CONNECT_PUBLIC_URL',
+        'GITHUB_CLIENT_SECRET',
+        '',
+      ]) {
+        expect(isConnectSecretEnvKey(key), isFalse, reason: key);
+      }
     });
   });
 
@@ -539,6 +772,21 @@ void main() {
       );
       expect(ConnectErrorCode.providerUnavailable.clearsGrant, isFalse);
       expect(ConnectErrorCode.needsSignIn.clearsGrant, isTrue);
+    });
+
+    test('only needs_sign_in drops a grant; rate_limited never does', () {
+      expect(
+        [
+          for (final code in ConnectErrorCode.values)
+            if (code.clearsGrant) code,
+        ],
+        [ConnectErrorCode.needsSignIn],
+      );
+      expect(
+        SignInFailure.fromConnect(ConnectErrorCode.rateLimited),
+        SignInFailure.rateLimited,
+      );
+      expect(ConnectErrorCode.rateLimited.httpStatus, 429);
     });
 
     test('klipy items off the CDN are dropped', () {
@@ -561,6 +809,84 @@ void main() {
       expect(isSlackResponseUrl('https://hooks.slack.com/commands/x'), isTrue);
       expect(isSlackResponseUrl('https://hooks.slack.com.evil/x'), isFalse);
       expect(isSlackResponseUrl('http://hooks.slack.com/x'), isFalse);
+    });
+
+    test('a scope request names who the token is for, and must', () {
+      const request = GitHubScopeRequest(
+        seal: 'seal',
+        workspaceId: 'ws1',
+        repoId: 9001,
+        repoOwner: 'acme',
+        repoName: 'api',
+        scope: 'bot',
+        actor: GitHubMintActor.app,
+      );
+      final json = request.toJson();
+      expect(json['as'], 'app');
+      expect(GitHubScopeRequest.fromJson(json).actor, GitHubMintActor.app);
+      expect(
+        GitHubScopeRequest.fromJson({...json, 'as': 'user'}).actor,
+        GitHubMintActor.user,
+      );
+      expect(
+        () => GitHubScopeRequest.fromJson({...json}..remove('as')),
+        throwsFormatException,
+      );
+      expect(
+        () => GitHubScopeRequest.fromJson({...json, 'as': 'server'}),
+        throwsFormatException,
+      );
+    });
+
+    test('an installation token carries the coverage the server checks', () {
+      final token = GitHubScopedToken(
+        accessToken: 'ghs_x',
+        grantedScope: 'read',
+        expiresAt: DateTime.utc(2030),
+        installationId: 77,
+        repositorySelection: 'selected',
+        repositoryIds: const [9001],
+        permissions: const {'metadata': 'read', 'contents': 'read'},
+      );
+      final parsed = GitHubScopedToken.fromJson(token.toJson());
+      expect(parsed.repositoryIds, [9001]);
+      expect(parsed.repositorySelection, 'selected');
+      expect(
+        scopedTokenMatches(
+          parsed.coverage,
+          repoId: 9001,
+          permissions: const {'metadata': 'read', 'contents': 'read'},
+        ),
+        isTrue,
+      );
+      expect(
+        scopedTokenMatches(
+          GitHubScopedToken.fromJson({
+            ...token.toJson(),
+            'repositories': [9001, 9002],
+          }).coverage,
+          repoId: 9001,
+          permissions: const {'metadata': 'read', 'contents': 'read'},
+        ),
+        isFalse,
+      );
+      // A user child carries none of it.
+      final child = GitHubScopedToken.fromJson(
+        GitHubScopedToken(
+          accessToken: 'ghu_x',
+          grantedScope: 'read',
+          expiresAt: DateTime.utc(2030),
+        ).toJson(),
+      );
+      expect(child.repositoryIds, isEmpty);
+      expect(child.toJson().containsKey('repositories'), isFalse);
+    });
+
+    test('repo_not_selected reads as its own code', () {
+      expect(
+        ConnectErrorCode.fromWire('repo_not_selected'),
+        ConnectErrorCode.repoNotSelected,
+      );
     });
   });
 }

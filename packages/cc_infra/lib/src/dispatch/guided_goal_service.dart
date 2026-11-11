@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
@@ -31,6 +32,15 @@ class GuidedGoalStep {
 
   /// Whether the interview is finished.
   bool get isReady => objective != null;
+
+  /// This step as the client sees it.
+  GuidedGoalStepResult toResult() => GuidedGoalStepResult(
+    question: question,
+    objective: objective,
+    missing: [for (final m in missing) m.name],
+    weaknesses: weaknesses,
+    unavailable: unavailable,
+  );
 }
 
 /// Turns a rough request into an unsupervised agent objective via interview.
@@ -59,9 +69,11 @@ class GuidedGoalService {
   /// the human sees the gap rather than an interview that will not end.
   final int maxTurns;
 
-  /// Runs one interview step against [transcript] so far.
+  /// Runs one interview step against [transcript] so far, for
+  /// [requestedByUserId], the person running the interview.
   Future<GuidedGoalStep> step({
     required String workspaceId,
+    required String? requestedByUserId,
     required String roughObjective,
     List<String> transcript = const [],
   }) async {
@@ -73,6 +85,8 @@ class GuidedGoalService {
     final String? answer;
     try {
       answer = await _runner.complete(
+        workspaceId: workspaceId,
+        requestedByUserId: requestedByUserId,
         adapterId: synthesizer.adapterId,
         modelId: synthesizer.modelId,
         systemPrompt: synthesizer.systemPromptFor(guidedGoalSystemPrompt),

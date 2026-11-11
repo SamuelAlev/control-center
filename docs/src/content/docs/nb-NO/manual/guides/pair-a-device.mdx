@@ -2,7 +2,7 @@
 title: Koble til en enhet
 description: Koble telefonen din (eller en ekstra nettleser eller skrivebordsapp) til Control Center-serveren din, slik at du kan følge flåten eksternt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-enhet
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Denne guiden viser deg hvordan du parer en telefon med Control Center, slik at
@@ -61,8 +61,7 @@ Det finnes ikke noe trinn med vent-til-godkjenning: en utstedt enhet er aktiv fr
 det øyeblikket den opprettes, og tilkoblingssperren sjekker bare at
 legitimasjonen er aktiv og ikke utløpt. Behandle QR-koden og paringsnøkkelen som
 et passord, og tilbakekall alt du ikke mente å dele ut. Både direkte og reléerte
-klientøkter krever ende-til-ende-kryptering; eldre klienter kan ikke falle
-tilbake på klartekst-RPC.
+klientøkter krever ende-til-ende-kryptering; det finnes ingen klartekst-RPC.
 :::
 
 ## Administrer parede enheter
@@ -75,11 +74,7 @@ Fra **Innstillinger → Deg → Dine enheter** kan du:
 Tilbakekalling er det riktige å gjøre med en telefon som er mistet eller byttet
 ut. Det skjer umiddelbart og er irreversibelt sett fra enhetens side.
 
-Legitimasjon utstedt fra dette panelet er tidsbegrenset: den utløper 30 dager
-etter at den er utstedt, og tilkoblingssperren svikter lukket etter det. En
-legitimasjon utstedt med `cc_server pair` på kommandolinjen har **ingen
-utløpstid i det hele tatt** — tilbakekall den manuelt når maskinen den var ment
-for, tas ut av drift.
+Legitimasjon utstedt fra dette panelet er tidsbegrenset: den utløper 30 dager etter at den er utstedt, og tilkoblingssperren svikter lukket etter det. En legitimasjon utstedt med `cc_server pair` på kommandolinjen utløper på samme måte; kjør `pair` på nytt for å utstede en ny, og tilbakekall den manuelt når maskinen den var ment for, tas ut av drift.
 
 ## Bytt arbeidsområde fra telefonen
 

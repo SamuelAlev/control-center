@@ -9,8 +9,16 @@ enum EnvironmentComponentPhase {
   /// Not started yet.
   pending,
 
+  /// A task with nothing to do in this start: it runs on another trigger, or
+  /// already ran its one time.
+  idle,
+
   /// Coming up.
   starting,
+
+  /// Coming up on a terminal, where its tool can ask a person what it could
+  /// not ask through a pipe. The session is the state's `sessionId`.
+  interactive,
 
   /// A container that runs but has not passed its healthcheck.
   waiting,
@@ -50,7 +58,11 @@ enum EnvironmentComponentPhase {
   }
 
   /// Something runs, or is on its way up.
-  bool get isLive => this == running || this == ready || this == starting;
+  bool get isLive =>
+      this == running ||
+      this == ready ||
+      this == starting ||
+      this == interactive;
 
   /// Something runs and can be opened or used now.
   bool get isUp => this == running || this == ready;
@@ -77,6 +89,7 @@ class EnvironmentComponentState {
     this.sessionId,
     this.lastRunAt,
     this.lastExitCode,
+    this.steps = const [],
   }) {
     if (id.isEmpty || kind.isEmpty) {
       throw ArgumentError('A component state needs an id and a kind');
@@ -101,6 +114,10 @@ class EnvironmentComponentState {
             ? null
             : DateTime.parse(json['last_run_at'] as String),
         lastExitCode: (json['last_exit_code'] as num?)?.toInt(),
+        steps: [
+          for (final step in (json['steps'] as List?) ?? const [])
+            ?EnvironmentProgress.tryFromJson(step),
+        ],
       );
 
   /// Component id.
@@ -129,7 +146,8 @@ class EnvironmentComponentState {
   /// Compose or tool services: `{name, state, health, ports}`.
   final List<Map<String, dynamic>> services;
 
-  /// The terminal session of a process or app.
+  /// The terminal session of a process or app, or the one a tool's verb is
+  /// running on while the state is [EnvironmentComponentPhase.interactive].
   final String? sessionId;
 
   /// A task's last run.
@@ -138,27 +156,87 @@ class EnvironmentComponentState {
   /// A task's last exit code.
   final int? lastExitCode;
 
-  /// This state with [state] and optional fields replaced.
+  /// The steps its tool reported during the last start, in the order they
+  /// first appeared.
+  final List<EnvironmentProgress> steps;
+
+  /// This state with [state] and optional fields replaced. [clearDetail] and
+  /// [clearSessionId] drop what a `null` argument would keep.
   EnvironmentComponentState copyWith({
     String? state,
     String? detail,
+    bool clearDetail = false,
     int? restarts,
     List<Map<String, dynamic>>? services,
     String? sessionId,
+    bool clearSessionId = false,
     DateTime? lastRunAt,
     int? lastExitCode,
+    List<EnvironmentProgress>? steps,
   }) => EnvironmentComponentState(
     id: id,
     kind: kind,
     state: state ?? this.state,
     label: label,
-    detail: detail ?? this.detail,
+    detail: clearDetail ? null : detail ?? this.detail,
     restarts: restarts ?? this.restarts,
     services: services ?? this.services,
-    sessionId: sessionId ?? this.sessionId,
+    sessionId: clearSessionId ? null : sessionId ?? this.sessionId,
     lastRunAt: lastRunAt ?? this.lastRunAt,
     lastExitCode: lastExitCode ?? this.lastExitCode,
+    steps: steps ?? this.steps,
   );
+
+  /// This state with [step] recorded: in place when a step of the same
+  /// [EnvironmentProgress.key] already reported, at the end otherwise.
+  ///
+  /// A step with no id can't report again, so nothing ever says it finished.
+  /// The next step beginning says it: without ids, steps come one at a time.
+  EnvironmentComponentState withStep(EnvironmentProgress step) {
+    final key = step.key;
+    if (key == null) {
+      return this;
+    }
+    final known = steps.any((item) => item.key == key);
+    return copyWith(
+      steps: [
+        for (final item in steps)
+          if (item.key == key)
+            step
+          else if (!known &&
+              item.id == null &&
+              item.stepState == EnvironmentStepState.running)
+            item.ended(failed: false)
+          else
+            item,
+        if (!known) step,
+      ],
+    );
+  }
+
+  /// This state once the command that reported its steps has exited: a step
+  /// still under way went the way the command did.
+  EnvironmentComponentState withStepsEnded({required bool failed}) =>
+      steps.any((step) => step.stepState == EnvironmentStepState.running)
+      ? copyWith(
+          steps: [
+            for (final step in steps)
+              step.stepState == EnvironmentStepState.running
+                  ? step.ended(failed: failed)
+                  : step,
+          ],
+        )
+      : this;
+
+  /// The step under way, the latest when a tool runs several at once.
+  EnvironmentProgress? get currentStep {
+    for (final step in steps.reversed) {
+      if (step.stepState == EnvironmentStepState.running) {
+        return step;
+      }
+    }
+    return null;
+  }
 
   /// Wire form.
   Map<String, dynamic> toJson() => {
@@ -172,6 +250,7 @@ class EnvironmentComponentState {
     if (sessionId != null) 'session_id': sessionId,
     if (lastRunAt != null) 'last_run_at': lastRunAt!.toUtc().toIso8601String(),
     if (lastExitCode != null) 'last_exit_code': lastExitCode,
+    if (steps.isNotEmpty) 'steps': [for (final step in steps) step.toJson()],
   };
 
   @override
@@ -185,6 +264,7 @@ class EnvironmentComponentState {
       other.sessionId == sessionId &&
       other.lastRunAt == lastRunAt &&
       other.lastExitCode == lastExitCode &&
+      const ListEquality<EnvironmentProgress>().equals(other.steps, steps) &&
       const DeepCollectionEquality().equals(other.services, services);
 
   @override
@@ -197,6 +277,7 @@ class EnvironmentComponentState {
     sessionId,
     lastRunAt,
     lastExitCode,
+    const ListEquality<EnvironmentProgress>().hash(steps),
     const DeepCollectionEquality().hash(services),
   );
 }
@@ -324,6 +405,23 @@ class SpaceEnvironment {
 
   /// When it last saw activity.
   final DateTime lastUsedAt;
+
+  /// The component whose tool is on a terminal right now, waiting on a
+  /// person, or null.
+  EnvironmentComponentState? get interactiveComponent =>
+      components.firstWhereOrNull(
+        (component) =>
+            component.phase == EnvironmentComponentPhase.interactive &&
+            component.sessionId != null,
+      );
+
+  /// What a start goes through, in order: its components, without an app
+  /// (someone launches those) and without a task this start has nothing for.
+  Iterable<EnvironmentComponentState> get startComponents => components.where(
+    (component) =>
+        component.kind != 'app' &&
+        component.phase != EnvironmentComponentPhase.idle,
+  );
 
   /// The primary endpoint, or the first one.
   EnvironmentEndpoint? get primaryEndpoint =>

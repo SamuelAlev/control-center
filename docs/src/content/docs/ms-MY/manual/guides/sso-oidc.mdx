@@ -2,7 +2,7 @@
 title: Sambungkan pembekal OpenID Connect
 description: Sambungkan mana-mana penerbit OIDC — Pocket ID, Keycloak, Auth0, Zitadel — kepada log masuk Control Center.
 slug: ms-MY/manual-pengguna/panduan-cara/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -89,6 +89,32 @@ anda secara terus, yang memerlukan terowong atau URL awam — lihat
 [peruntukkan pengguna dengan SCIM](/ms-MY/manual-pengguna/panduan-cara/sso-scim).
 :::
 
+## Bagaimana log masuk memadankan akaun sedia ada
+
+Log masuk melalui pembekal identiti mencari akaunnya mengikut susunan ini:
+
+1. **Identiti yang dipinkan.** Log masuk SSO pertama memasang subjek pembekal (penerbit dan `sub`) pada akaun itu. Setiap log masuk seterusnya dengan subjek itu ialah akaun tersebut.
+2. **E-mel yang disahkan, di kedua-dua belah.** Jika tidak, log masuk memadankan akaun mengikut e-mel hanya apabila pembekal menghantar `email_verified: true` dan alamat akaun itu juga disahkan. Alamat disahkan apabila SSO atau SCIM menetapkannya, atau apabila pemilik pelayan mengesahkannya. Alamat pemilik sendiri turut dikira.
+
+Alamat e-mel disimpan dan dipaparkan dalam huruf kecil, dan pemadanan tidak mengambil kira huruf besar atau kecil. Alamat yang disahkan hanya mengenal pasti satu akaun apabila tepat satu akaun memegangnya; jika dua akaun memegang alamat disahkan yang sama, ia tidak memadankan mana-mana.
+
+Alamat yang ditaip seseorang dalam profil mereka sendiri, atau yang ditaip pada jemputan, tidak disahkan dan tidak memadankan apa-apa. Menyunting alamat mengosongkan status disahkannya sehingga seseorang mengesahkannya semula. Log masuk tidak pernah memadankan mengikut nama pengguna.
+
+Apabila tiada yang dipadankan, log masuk itu mencipta akaun baharu jika **Peruntukkan pengguna tidak diketahui pada log masuk pertama** dihidupkan, dan ditolak jika ia dimatikan.
+
+### Sebelum anda menghidupkan SSO untuk orang yang sudah mempunyai akaun
+
+Sahkan alamat mereka dahulu. Buka **Tetapan → Pelayan → Orang**, di mana setiap akaun memaparkan **E-mel belum disahkan** sehingga seseorang mengesahkannya, dan gunakan **Sahkan e-mel** pada baris setiap orang. Hanya pemilik pelayan melihat senarai ini. Tanpa langkah ini, setiap orang tersebut sama ada mendapat akaun kedua pada log masuk SSO pertama mereka, atau ditolak apabila peruntukan pengguna tidak diketahui dimatikan.
+
+Orang melihat "Hanya anda yang memasukkan alamat ini. Log masuk tunggal tidak akan memadankannya sehingga pemilik pelayan mengesahkannya." di bawah medan e-mel dalam profil mereka sendiri semasa alamat mereka belum disahkan.
+
+### Pembekal yang tidak menghantar `email_verified`
+
+Sesetengah pembekal tidak menyertakan tuntutan itu. Microsoft Entra ID tidak menyertakannya secara lalai. Tuntutan yang hilang bukan satu ya, jadi dengan pembekal sebegini log masuk hanya memadankan mengikut identiti yang dipinkan, dan log masuk pertama seseorang tidak akan pernah menemui akaun sedia ada mereka mengikut e-mel. Memperuntukkan akaun dengan SCIM tidak membantu log masuk OIDC pertama itu. Laluan praktikal ialah:
+
+- biarkan **Peruntukkan pengguna tidak diketahui pada log masuk pertama** dihidupkan dan biarkan log masuk pertama mencipta akaun, atau
+- konfigurasikan pembekal untuk mengeluarkan `email_verified`, kemudian sahkan alamat yang sepadan seperti di atas.
+
 ## Semak konfigurasi anda dari halaman ini
 
 Pemeriksa di bawah berjalan dalam penyemak imbas anda. Ia mengambil dokumen
@@ -101,3 +127,15 @@ klien itu dan URI ubah halanya didaftarkan. Ia tidak pernah meminta rahsia
 klien.
 
 <SsoCheck kind="oidc" />
+
+## Penyelesaian masalah
+
+### Seseorang mendapat akaun kedua selepas SSO dihidupkan
+
+Alamat akaun sedia ada mereka tidak disahkan ketika mereka mula-mula log masuk dengan SSO, jadi log masuk itu tidak memadankannya dan mencipta akaun baharu. Ini berlaku apabila alamat itu ditaip dalam profil mereka atau pada jemputan dan pemilik pelayan belum mengesahkannya, atau apabila pembekal tidak menghantar `email_verified: true`. Akaun baharu yang pembekalnya menjamin alamat itu mengambil alamat tersebut, dan akaun lama yang hanya mempunyai alamat yang ditaip kehilangannya.
+
+Untuk mengelakkannya bagi orang seterusnya, sahkan alamat dalam **Tetapan → Pelayan → Orang** sebelum mereka log masuk. Bagi seseorang yang sudah mempunyai dua akaun, akaun baharu itu dipinkan kepada identiti SSO mereka, jadi itulah yang akan digunakan oleh log masuk mereka mulai sekarang.
+
+### "Akaun ini sudah dipautkan kepada identiti SSO yang lain"
+
+Log masuk itu memadankan akaun mengikut e-mel yang disahkan, tetapi akaun itu sudah dipinkan kepada subjek atau penerbit lain: pengguna berbeza di pembekal, orang yang sama di bawah pembekal baharu, atau akaun yang SCIM cipta di bawah pengenal sendiri. Akaun yang dipinkan menolak setiap identiti lain, jadi alamat yang diguna semula di pembekal tidak boleh mengambil alihnya. Log masuk dengan identiti yang pada mulanya dipautkan kepada akaun itu.

@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_harness/tools.dart';
 import 'package:path/path.dart' as p;
 
 /// Resolves [relative] against [workspaceRoot]; returns absolute path only if
@@ -45,6 +46,38 @@ String? resolveInsideWorkspace(
     return null;
   }
   return resolved;
+}
+
+/// The refusal for changing [path] when it lies under one of [roots], else
+/// null. [path] is a path the tool already resolved inside the workspace.
+///
+/// Both the written path and its canonical form are checked, so a link the
+/// agent made in its own directory cannot carry a write into a read-only one.
+/// Every file-changing tool asks this right before it writes.
+HarnessToolResult? readOnlyRefusal(String path, List<ReadOnlyRoot> roots) {
+  if (roots.isEmpty) {
+    return null;
+  }
+  final written = p.normalize(p.absolute(path));
+  final String real;
+  try {
+    real = _canonicalizeDeepest(written);
+  } on FileSystemException {
+    return HarnessToolResult.refused(
+      '${roots.first.reason} (could not resolve $path)',
+      roots.first.refusal,
+    );
+  }
+  for (final root in roots) {
+    final dir = p.normalize(p.absolute(root.path));
+    final realDir = _canonicalize(dir) ?? dir;
+    bool under(String base, String target) =>
+        p.equals(base, target) || p.isWithin(base, target);
+    if (under(dir, written) || under(realDir, real)) {
+      return HarnessToolResult.refused('${root.reason} ($path)', root.refusal);
+    }
+  }
+  return null;
 }
 
 /// Whether [path], resolved through symlinks, lands inside one of [roots]

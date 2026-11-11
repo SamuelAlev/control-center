@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: A headless szerver minden kapcsolója, környezeti változója, alparancsa és adatkönyvtár-útvonala.
 slug: hu-HU/kezikonyv/referencia/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Minden folyamatszintű beállítás megadható parancssori kapcsolóként vagy környezeti
@@ -48,7 +48,7 @@ ellenőrizze az indítási napló sorait.
 
 | Kapcsoló                 | Környezeti változó              | Alapértelmezés                        | Jelentés                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Hogy az ügynökfutások a gazdagép OS-natív homokozójába kerülnek-e, ha van elérhető háttérrendszer. Kikapcsolási lehetőség, nem engedélyezés — lásd alább |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` az ügynökfutásokat a gazdagép OS-natív homokozójába csomagolja, háttérrendszer nélküli gazdagépen pedig csak a szerver tulajdonosának futtatásait indítja el. `off` minden tag ügynökét homokozó nélkül futtatja ezen a gépen. Lásd alább |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Helyszíni vészkapcsoló a háttérbeli kódgráf-indexeléshez. Az `off` újraépítés nélkül, tisztán indít                                     |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Hány másodpercig várakozik az első indexelési kör a kész jelzősáv után (0–300 közé szorítva)                                  |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Hogy a harness-futások egy kis rezidens eszközkészletet és egy névindexet küldenek-e, a többit az első használatkor betöltve. Lásd alább |
@@ -89,21 +89,31 @@ exportálva, ahol minden gyermekfolyamat kiolvashatná. A `.env` fájlból való
 feltöltés mezőnként egyszer történik, így egy későbbi szerkesztést a Beállításokban
 nem vonja vissza egy újraindítás. Az üres érték beállítatlanként értelmeződik.
 
-A GitLab és a Bitbucket háttérmunkája a `GITLAB_TOKEN` / `CI_JOB_TOKEN`, valamint a
-`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` és a `BITBUCKET_EMAIL` változót is
-olvassa. A GitHubnak nincs környezeti hitelesítő adata.
+Egyik kódtárhely-hitelesítő adat sem a környezetből származik: a GitHub, a GitLab és a Bitbucket mind egy tag saját bejelentkezésével vagy tokenjével, illetve egyetlen tárolóra szóló, egy felelős taggal korlátozott GitHub-alkalmazás-tokenekkel működik.
 
 ### `--sandbox`
 
 A szerver indításkor egyszer megvizsgálja a gazdagépet, és ha van elérhető
 háttérrendszer, az ügynökparancsok végrehajtását az OS-natív homokozóba csomagolja:
-macOS-en `sandbox-exec` (Seatbelt), Linuxon és WSL2-ben `bwrap` plusz `socat`. Ahol
-ilyen nincs — Windows, vagy egy ezeket az eszközöket nélkülöző Linux-gazdagép —, a
-futások a környezettisztításra, a parancsszabályzatra és a műveleti korlátokra esnek
-vissza, és az indítási napló megmondja, melyik állapot érvényes.
+macOS-en `sandbox-exec` (Seatbelt), Linuxon és WSL2-ben `bwrap` plusz `socat`. A
+döntés egyszer születik meg, és a szerver újraindításáig érvényes. Három kimenetel
+van, mindegyik megjelenik az indítási kitettségi sorban:
 
-A `--sandbox off` az a helyszíni vészkapcsoló arra az esetre, amelyet a vizsgálat nem
-lát: egy gazdagép, ahol maga a homokozóprofil viselkedik hibásan. Nem igényel
+| `sandbox=`    | Mikor                                    | Kinek az ügynökfuttatásai indulnak el                                                                                                                                 |
+| ------------- | ---------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Van háttérrendszer, és a `--sandbox` értéke `on` | Mindenkiéi, becsomagolva                                                                                                                 |
+| `off`         | `--sandbox off`                          | Mindenkiéi, homokozó nélkül ezen a gazdagépen                                                                                              |
+| `unavailable` | `--sandbox on`, és nincs háttérrendszer (Windows, vagy Linux `bwrap` és `socat` nélkül) | Csak azoké, amelyekért a szerver tulajdonosa felel, homokozó nélkül. A többieket visszautasítjuk: „Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket.” |
+
+Automatizálásnál a felelős személy az, akihez az automatizálás kötve van. Ha nincs
+rögzített szerver-tulajdonos, `unavailable` gazdagépen egyetlen futtatás sem indul.
+Linuxon és WSL2-n, ha a bubblewrap telepítve van, a natív indítás jelenleg minden
+futtatásra hibával zár; lásd: [Homokozó-háttérrendszerek](/hu-HU/kezikonyv/referencia/homokozo-hatterrendszerek/#linux-bubblewrap).
+
+A `--sandbox off` a szerver tulajdonosának döntése mindenki számára, aki a szervert
+használja: ilyenkor minden tag ügynöke homokozó nélkül fut ezen a gépen. Akkor
+használja, ha a homokozóprofil hibásan viselkedik egy gazdagépen, vagy ha a tagok
+háttérrendszer nélküli gazdagépen szeretnének ügynököket futtatni. Nem igényel
 újraépítést, és a szerver a folyamat teljes élettartama alatt figyelmeztetést naplóz,
 így az állapot soha nem marad csendben.
 
@@ -185,7 +195,6 @@ változást.
 | `cc_server connect enable`      | A Control Center által üzemeltetett Connectet használja                                                          |
 | `cc_server connect enable --url <url>` | Egyéni Connectet használ az adott URL-en (HTTPS, vagy `http` loopbacken)                               |
 | `cc_server connect disable`     | Abbahagyja a Connect használatát. Csak a szerver saját alkalmazásai jelentkeztetik be az embereket              |
-| `cc_server connect rotate-key --yes` | Új telepítési kulcsot és telepítési azonosítót állít ki. Mindenki, aki a Connecten keresztül jelentkezett be, újra bejelentkezik. `--yes` nélkül csak figyelmeztet, és `2`-es kóddal lép ki |
 
 Parancs nélkül a `status` az alapértelmezett. Minden parancs elfogadja a
 `--data-dir` kapcsolót. A `CC_CONNECT_URL` felülírja azt, amit ezek tárolnak. Egy

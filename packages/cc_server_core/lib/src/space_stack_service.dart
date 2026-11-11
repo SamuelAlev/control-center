@@ -1,16 +1,19 @@
-import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/cc_domain.dart' show RepoGrantRequiredException;
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
-import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.dart';
 import 'package:cc_domain/features/messaging/domain/ports/space_stack_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_domain/features/messaging/domain/services/stack_branch_names.dart';
+import 'package:cc_infra/cc_infra.dart' show forgeGitAuthConfigParameter;
 import 'package:cc_natives/cc_natives.dart' show IsolatedGit, RigWorktreeGuard;
+import 'package:cc_server_core/src/space_stack_push.dart';
 import 'package:uuid/uuid.dart';
 
 /// Runs `git` in a checkout. Tests pass a stand-in; production uses [Process].
@@ -29,6 +32,11 @@ typedef StackPinnedBase =
       String repoId,
     );
 
+/// Whether `userId` holds Control Center's write grant on `repo` in
+/// `workspaceId`: asked before a publish made for a person pushes anything.
+typedef StackPushGrant =
+    Future<bool> Function(String workspaceId, Repo repo, String userId);
+
 /// A token for `repo` on its forge, attributed to `actingUserId` when the call
 /// has one.
 typedef StackForgeToken =
@@ -39,6 +47,8 @@ typedef StackForgeToken =
     );
 
 /// Opens one pull request. The service never writes a review-space row.
+/// [approvalOwnerUserIds] are who may not approve it (the person it is opened
+/// for, or everyone who armed the trigger behind an unrequested run).
 typedef OpenStackPullRequest =
     Future<({int number, String externalId})> Function({
       required Repo repo,
@@ -49,6 +59,7 @@ typedef OpenStackPullRequest =
       required String base,
       required bool draft,
       String? actingUserId,
+      required Set<String> approvalOwnerUserIds,
     });
 
 /// Groups [prNumbers] (bottom to top) on a forge that has _stacks.
@@ -73,10 +84,13 @@ class SpaceStackService implements SpaceStackPort {
     required RepoRepository repos,
     required StackPinnedBase pinnedBase,
     required StackForgeToken tokenFor,
+    required StackPushGrant mayPush,
     required OpenStackPullRequest openPullRequest,
     required GroupStackPullRequests groupStack,
     required bool Function(Repo repo) stacksSupported,
+    required Future<List<GitPerson>> Function(String workspaceId) agentsOf,
     StackGit? git,
+    String Function(Repo repo)? remoteUrl,
     String Function()? newId,
     DateTime Function()? now,
   }) : _isolated = isolatedRepos,
@@ -91,12 +105,20 @@ class SpaceStackService implements SpaceStackPort {
        // ignore: prefer_initializing_formals
        _tokenFor = tokenFor,
        // ignore: prefer_initializing_formals
+       _mayPush = mayPush,
+       // ignore: prefer_initializing_formals
        _openPullRequest = openPullRequest,
        // ignore: prefer_initializing_formals
        _groupStack = groupStack,
        // ignore: prefer_initializing_formals
        _stacksSupported = stacksSupported,
+       // ignore: prefer_initializing_formals
+       _agentsOf = agentsOf,
        _git = git ?? _processGit,
+       _pusher = StackLayerPusher(
+         git: git ?? _processGit,
+         remoteUrl: remoteUrl,
+       ),
        _newId = newId ?? const Uuid().v4,
        _now = now ?? DateTime.now;
 
@@ -105,10 +127,16 @@ class SpaceStackService implements SpaceStackPort {
   final RepoRepository _repos;
   final StackPinnedBase _pinnedBase;
   final StackForgeToken _tokenFor;
+  final StackPushGrant _mayPush;
   final OpenStackPullRequest _openPullRequest;
   final GroupStackPullRequests _groupStack;
   final bool Function(Repo repo) _stacksSupported;
+
+  /// Every identity that is "the agent" in a workspace: what a person's
+  /// publish holds agent-authored commits to.
+  final Future<List<GitPerson>> Function(String workspaceId) _agentsOf;
   final StackGit _git;
+  final StackLayerPusher _pusher;
   final String Function() _newId;
   final DateTime Function() _now;
 
@@ -352,11 +380,16 @@ class SpaceStackService implements SpaceStackPort {
     required String spaceId,
     String? repoId,
     String? actingUserId,
+    Set<String> approvalOwnerUserIds = const {},
+    List<AgentCommitIdentity>? agentRunIdentities,
     bool draft = true,
   }) async {
     if (workspaceId.isEmpty || spaceId.isEmpty) {
       return const SpaceStackView(ok: false, error: 'missing workspace or space');
     }
+    final StackPushRule rule = agentRunIdentities != null
+        ? AgentRunStackPush(agentRunIdentities)
+        : PersonStackPush(await _agentsOf(workspaceId));
     final wanted = repoId?.trim() ?? '';
     final byRepo = <String, List<SpaceStackEntry>>{};
     for (final entry in await _stacks.forSpace(workspaceId, spaceId)) {
@@ -368,6 +401,22 @@ class SpaceStackService implements SpaceStackPort {
     if (byRepo.isEmpty) {
       return _fail(workspaceId, spaceId, 'this space has no stack yet');
     }
+    // A publish for a person pushes only where they hold the write grant,
+    // on every forge, asked now and for every repository before any push:
+    // the RPC op names no repository when it publishes the whole stack, and
+    // a run's `stack_publish` bypasses the GitHub push gateway (it is the
+    // only push path for GitLab and Bitbucket).
+    if (actingUserId != null && actingUserId.isNotEmpty) {
+      for (final repoId in byRepo.keys) {
+        final repo = await _repos.getById(workspaceId, repoId);
+        if (repo != null && !await _mayPush(workspaceId, repo, actingUserId)) {
+          throw RepoGrantRequiredException(
+            RepoGrantLevel.write,
+            'No write access to ${repo.fullName}',
+          );
+        }
+      }
+    }
     var opened = 0;
     var grouped = false;
     String? stackError;
@@ -377,6 +426,11 @@ class SpaceStackService implements SpaceStackPort {
         spaceId: spaceId,
         entries: repoEntries,
         actingUserId: actingUserId,
+        approvalOwnerUserIds: {
+          ...approvalOwnerUserIds,
+          if (actingUserId != null && actingUserId.isNotEmpty) actingUserId,
+        },
+        rule: rule,
         draft: draft,
       );
       if (!outcome.ok) {
@@ -412,6 +466,8 @@ class SpaceStackService implements SpaceStackPort {
     required String spaceId,
     required List<SpaceStackEntry> entries,
     required String? actingUserId,
+    required Set<String> approvalOwnerUserIds,
+    required StackPushRule rule,
     required bool draft,
   }) async {
     final repo = await _repos.getById(workspaceId, entries.first.repoId);
@@ -463,20 +519,19 @@ class SpaceStackService implements SpaceStackPort {
     final env = await _authEnv(repo, actingUserId, workspaceId);
     for (var i = 0; i <= lastNeeded; i++) {
       final entry = entries[i];
-      final args = <String>[
-        '-c',
-        'credential.helper=',
-        'push',
-        '-u',
-        if (entry.rewritten) '--force-with-lease',
-        'origin',
-        '${entry.branch}:refs/heads/${entry.branch}',
-      ];
-      final pushed = await _git(root, args, environment: env);
-      if (pushed.exitCode != 0) {
+      // Every commit the push sends is inspected first (StackLayerPusher).
+      final refused = await _pusher.push(
+        root: root,
+        repo: repo,
+        branch: entry.branch,
+        force: entry.rewritten,
+        auth: env,
+        rule: rule,
+      );
+      if (refused != null) {
         return (
           ok: false,
-          error: _gitError(pushed),
+          error: refused,
           opened: 0,
           grouped: false,
           stackError: null,
@@ -505,6 +560,7 @@ class SpaceStackService implements SpaceStackPort {
           base: entry.baseBranch,
           draft: draft,
           actingUserId: actingUserId,
+          approvalOwnerUserIds: approvalOwnerUserIds,
         );
         final recorded = entry.copyWith(
           prNumber: pr.number,
@@ -808,17 +864,8 @@ class SpaceStackService implements SpaceStackPort {
     if (token == null || token.isEmpty || repo.forge.gitHost.isEmpty) {
       return const {};
     }
-    final user = switch (repo.forge) {
-      ForgeHost.github => 'x-access-token',
-      ForgeHost.gitlab => 'oauth2',
-      ForgeHost.bitbucket => 'x-token-auth',
-      ForgeHost.local => 'x-access-token',
-    };
-    final encoded = base64Encode(utf8.encode('$user:$token'));
-    final host = repo.forge.gitHost;
     return {
-      'GIT_CONFIG_PARAMETERS':
-          "'http.https://$host/.extraHeader=Authorization: Basic $encoded'",
+      'GIT_CONFIG_PARAMETERS': forgeGitAuthConfigParameter(repo.forge, token),
     };
   }
 

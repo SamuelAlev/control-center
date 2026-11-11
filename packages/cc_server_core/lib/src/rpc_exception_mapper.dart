@@ -3,11 +3,21 @@ import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
     show GitRepoInspectionException;
 import 'package:cc_domain/core/domain/ports/directory_browser_port.dart'
     show DirectoryAccessException;
+import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart'
+    show serverOwnerRequiredKind;
+import 'package:cc_domain/core/domain/value_objects/username.dart'
+    show UsernameRefusedException;
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart'
     show ForgeUnsupportedError;
 import 'package:cc_host/cc_host.dart';
 import 'package:cc_infra/cc_infra.dart'
-    show kGitHubInstallationSuspendedCode, mapHttpException;
+    show
+        kGitHubInstallationSuspendedCode,
+        kNeedsSignInCode,
+        kRepoReplacedCode,
+        mapHttpException,
+        needsSignInLaneOf,
+        repoReplacedForgeOf;
 import 'package:rhttp/rhttp.dart';
 
 /// Maps the app's domain exceptions to stable [RpcErrorCodes] for the cc_host
@@ -28,8 +38,56 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
   if (error is ConcurrencyConflictException) {
     return RpcErrorMapping(RpcErrorCodes.conflict, error.message);
   }
+  // A person action with no usable sign-in of their own: the client offers
+  // that sign-in (`needs_sign_in`) instead of reporting a failure.
+  if (error is NeedsSignInException) {
+    return _needsSignIn(error.message, error.lane);
+  }
+  // The same refusal raised inside an HTTP client's interceptor (a person's
+  // token lookup), which rhttp wraps.
+  if (error is RhttpInterceptorException &&
+      error.error is NeedsSignInException) {
+    final inner = error.error as NeedsSignInException;
+    return _needsSignIn(inner.message, inner.lane);
+  }
+  // A forge client that already classified a local refusal: the missing
+  // sign-in (`ForgeCredentialUnavailable.needsSignIn`), or a linked
+  // repository whose path now names another one
+  // (`ForgeCredentialUnavailable.repoReplaced`).
+  if (error is NetworkException &&
+      (error.code == kNeedsSignInCode || error.code == kRepoReplacedCode)) {
+    return _mapNetworkFailure(error);
+  }
+  // An op only the server owner may run, refused inside its handler: the same
+  // wire shape the dispatcher's server-authority gate answers, so a client
+  // maps one thing.
+  if (error is ServerOwnerRequiredException) {
+    return RpcErrorMapping(RpcErrorCodes.unauthorized, error.message, const {
+      'kind': serverOwnerRequiredKind,
+    });
+  }
+  // A forge refusal names its forge, so a client can say which account.
+  if (error is ForgeAccessRefusedException) {
+    return RpcErrorMapping(RpcErrorCodes.unauthorized, error.message, {
+      'kind': error.code,
+      'forge': error.forge.wire,
+    });
+  }
+  // A missing per-repo grant: the same `{kind, level}` the dispatcher's grant
+  // gates answer.
+  if (error is RepoGrantRequiredException) {
+    return RpcErrorMapping(
+      RpcErrorCodes.unauthorized,
+      error.message,
+      repoGrantRequiredData(error.level),
+    );
+  }
   if (error is AuthException) {
-    return RpcErrorMapping(RpcErrorCodes.unauthorized, error.message);
+    return RpcErrorMapping(
+      RpcErrorCodes.unauthorized,
+      error.message,
+      _kindOf(error),
+    );
   }
   // A merge the forge refused carries the forge's own reason, and whether it
   // was a conflict, so the merge button can offer to resolve it.
@@ -38,8 +96,18 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
       'has_conflicts': error.hasConflicts,
     });
   }
+  // A refused username names why, so the client can localise it.
+  if (error is UsernameRefusedException) {
+    return RpcErrorMapping(RpcErrorCodes.validation, error.message, {
+      'kind': error.reason.errorKind,
+    });
+  }
   if (error is ValidationException) {
-    return RpcErrorMapping(RpcErrorCodes.validation, error.message);
+    return RpcErrorMapping(
+      RpcErrorCodes.validation,
+      error.message,
+      _kindOf(error),
+    );
   }
   // A surface the repo's forge does not have. Named, so a client can tell it
   // from a failure and hide the affordance instead of reporting an error.
@@ -87,6 +155,17 @@ RpcErrorMapping? mapAppExceptionToRpc(Object error) {
 /// so the dispatcher records them locally and reports a generic internal error.
 RpcErrorMapping? _mapNetworkFailure(NetworkException error) {
   switch (error.code) {
+    case kNeedsSignInCode:
+      final lane = needsSignInLaneOf(error.responseBody);
+      return lane == null
+          ? RpcErrorMapping(RpcErrorCodes.unauthorized, error.message)
+          : _needsSignIn(error.message, lane);
+    // The same `{kind, forge}` a `ForgeAccessRefusedException` answers.
+    case kRepoReplacedCode:
+      return RpcErrorMapping(RpcErrorCodes.unauthorized, error.message, {
+        'kind': kRepoReplacedCode,
+        'forge': ?repoReplacedForgeOf(error.responseBody)?.wire,
+      });
     case 'bad_request':
     case 'not_acceptable':
     case 'diff_too_large':
@@ -123,3 +202,18 @@ RpcErrorMapping? _mapNetworkFailure(NetworkException error) {
       return null;
   }
 }
+
+/// A refusal's authored code (`forge_cannot_read`, `repo_replaced`,
+/// `repo_path.host_path`), as the `kind` a client localizes by instead of
+/// reading the message. Null when the refusal names none.
+Map<String, Object?>? _kindOf(AppException error) {
+  final code = error.code;
+  return code == null || code.isEmpty ? null : {'kind': code};
+}
+
+/// A person action with no usable sign-in of their own for [lane].
+RpcErrorMapping _needsSignIn(String message, String lane) =>
+    RpcErrorMapping(RpcErrorCodes.unauthorized, message, {
+      'kind': 'needs_sign_in',
+      'lane': lane,
+    });

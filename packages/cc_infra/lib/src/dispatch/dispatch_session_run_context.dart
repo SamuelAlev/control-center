@@ -37,25 +37,67 @@ final class _RunContext {
 
 /// The run's policy-owned Git identity and co-author credit.
 final class _RunIdentity {
-  const _RunIdentity({
-    required this.commitIdentity,
-    required this.gitEnv,
-    required this.coAuthorTrailer,
-  });
+  const _RunIdentity({required this.commitIdentity, required this.gitEnv});
 
-  static const none = _RunIdentity(
-    commitIdentity: null,
-    gitEnv: {},
-    coAuthorTrailer: null,
-  );
+  static const none = _RunIdentity(commitIdentity: null, gitEnv: {});
 
-  /// Who the run's commits name; the gateway holds every pushed commit to it.
+  /// Who the run's commits name, whom they credit and which key signs them;
+  /// the gateway holds every pushed commit to it.
   final AgentCommitIdentity? commitIdentity;
 
   /// The run's Git identity variables plus the co-author trailer key
-  /// (empty when credit is off). Unmodifiable.
+  /// (empty when the run credits nobody). Unmodifiable.
   final Map<String, String> gitEnv;
 
-  /// Control Center's co-author trailer, only when attribution is enabled.
-  final String? coAuthorTrailer;
+  /// The run's `Co-Authored-By:` lines, one per line; empty when it credits
+  /// nobody.
+  String get coAuthorTrailers =>
+      commitIdentity?.coAuthorTrailers.join('\n') ?? '';
+}
+
+extension _RunIdentityResolution on DispatchSession {
+  /// Resolves policy-owned identity before any transport starts, for a run
+  /// whose worktree is on [forge] (null: not a forge checkout). Forge
+  /// credentials remain the broker's, never the member's PAT.
+  Future<_RunIdentity> _resolveRunIdentity(ForgeHost? forge) async {
+    final resolved = await deps.resolveCommitIdentity?.call(
+      requestedByUserId,
+      workspaceId: workspaceId,
+      runLogId: runLogId,
+      forge: forge,
+    );
+    if (resolved == null) {
+      throw StateError('The requester has no Git identity.');
+    }
+    // Commits are signed only where the run's git can reach the signer: the
+    // gateway signs, and the sign shim runs (it is a shell script).
+    final signs = (deps.agentRunGateway?.signs ?? false) && !Platform.isWindows;
+    final identity = signs ? resolved : resolved.unsigned;
+    final requester = requestedByUserId;
+    if (!identity.isPerson && requester != null && requester.isNotEmpty) {
+      // A person asked, but no forge vouches for an address of theirs: the
+      // commits are the agent's, and name nobody.
+      addEvent(
+        DebugEvent(
+          content:
+              '[identity] Commits from this run are the agent\'s, not '
+              'those of the person who asked for it: no forge has verified '
+              'an email for them here. Signing in to '
+              '${forge == null || forge == ForgeHost.local ? 'GitHub' : forge.displayName} '
+              'in this workspace makes them the author.',
+        ),
+      );
+    }
+    return _RunIdentity(
+      commitIdentity: identity,
+      gitEnv: Map.unmodifiable({
+        ...identity.environment,
+        // This policy-owned key also masks stale caller and inherited
+        // trailers.
+        DispatchSession.coAuthorTrailerEnvKey: identity.coAuthorTrailers.join(
+          '\n',
+        ),
+      }),
+    );
+  }
 }

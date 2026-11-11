@@ -558,7 +558,7 @@ void main() {
         expect(usage.cacheReadTokens, 15894);
         expect(usage.cacheWriteTokens, 5844);
         expect(usage.costUsd, closeTo(0.067079, 1e-9));
-        expect(usage.costCents, 7);
+        expect(usage.costMicros, 67079);
         // `duration_ms` wins over `duration_api_ms`: the run log wants the
         // whole turn, not just the time on the wire.
         expect(usage.durationMs, 4210);
@@ -1219,7 +1219,6 @@ void main() {
       expect(usage.cacheReadTokens, 2);
       expect(usage.cacheWriteTokens, 3);
       expect(usage.costUsd, 1.0);
-      expect(usage.costCents, 100);
       expect(usage.costMicros, 1000000);
       expect(usage.subtype, 'success');
       expect(usage.sessionId, 'sess-1');

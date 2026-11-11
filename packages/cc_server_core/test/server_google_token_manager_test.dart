@@ -25,7 +25,9 @@ void main() {
   late List<ProviderToken> refreshCalls;
   late FutureOr<RefreshOutcome> Function(ProviderToken) onRefresh;
   late Future<String?> Function() currentOwnClientId;
-  late bool connectAllowed;
+  // The install id the workspace's current Connect knows this server by;
+  // null while the workspace uses no Connect or another one.
+  late String? currentInstallId;
 
   ServerGoogleTokenManager manager() => ServerGoogleTokenManager(
     store: store,
@@ -34,12 +36,14 @@ void main() {
       refreshCalls.add(token);
       return onRefresh(token);
     },
-    installId: (_) async => installId,
+    installId: (origin, workspaceId) async {
+      expect(workspaceId, 'ws-1');
+      return origin == 'https://connect.example' ? currentInstallId : null;
+    },
     ownClientId: (workspaceId) {
       expect(workspaceId, 'ws-1');
       return currentOwnClientId();
     },
-    allowsConnect: (_) async => connectAllowed,
     onInvalidGrant: (id) async => flagged.add(id),
   );
 
@@ -76,7 +80,7 @@ void main() {
     refreshCalls = [];
     onRefresh = (_) => const RefreshUnavailable();
     currentOwnClientId = () async => ownClientId;
-    connectAllowed = true;
+    currentInstallId = installId;
   });
 
   tearDown(() => dir.deleteSync(recursive: true));
@@ -194,9 +198,8 @@ void main() {
       final tokens = ServerGoogleTokenManager(
         store: store,
         refresh: (token, workspaceId) async => onRefresh(token),
-        installId: (_) async => '',
+        installId: (_, _) async => null,
         ownClientId: (_) => currentOwnClientId(),
-        allowsConnect: (_) async => true,
         onInvalidGrant: (id) async => flagged.add(id),
       );
       await store.save(accountId, sealed());
@@ -255,12 +258,20 @@ void main() {
   });
 
   group('a workspace on its own Google client', () {
-    test('drops a Connect seal and flags the account', () async {
-      connectAllowed = false;
+    test('parks a Connect seal: unusable, kept, and usable again once the '
+        'workspace returns to that Connect', () async {
+      currentInstallId = null;
       await store.save(accountId, sealed());
       expect(await manager().accessTokenFor(accountId), isNull);
-      expect(await store.raw(accountId), isNull);
-      expect(flagged, [accountId]);
+      expect(await store.raw(accountId), isNotNull);
+      expect(flagged, isEmpty);
+      expect(refreshCalls, isEmpty);
+
+      currentInstallId = installId;
+      onRefresh = (token) =>
+          Refreshed(token.copyWith(accessToken: 'renewed', expiresAt: future));
+      expect(await manager().accessTokenFor(accountId), 'renewed');
+      expect(refreshCalls, hasLength(1));
     });
 
     test('revalidateWorkspace drops grants of the previous client only in '

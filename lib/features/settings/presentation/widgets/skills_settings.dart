@@ -1,9 +1,7 @@
-import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/features/skills/domain/entities/skill_lock.dart';
 import 'package:cc_domain/features/skills/domain/scanner/installed_skill_status.dart';
 import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
-import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart';
@@ -29,8 +27,8 @@ part 'skills_settings_rail.dart';
 
 /// Parsed skill metadata (name, content, description) plus its antivirus
 /// posture (PRD 23): lock provenance and the freshest scan verdict for the
-/// CURRENT on-disk bytes. Security fields are nullable — a server without the
-/// `skills.*` scan surface (or the legacy fallback path) reports them absent.
+/// CURRENT on-disk bytes. Security fields are nullable: an unmanaged skill has
+/// no lock state, origin or trust tier, and unscanned bytes have no verdict.
 class SkillInfo {
   /// Creates a [SkillInfo].
   const SkillInfo({
@@ -56,16 +54,16 @@ class SkillInfo {
   /// Skill description extracted from YAML front-matter.
   final String description;
 
-  /// Exact current package hash supplied by the catalog; unavailable on legacy hosts.
+  /// Exact current package hash supplied by the catalog.
   final String computedHash;
 
-  /// How the skill relates to `skills-lock.json` (null on the legacy path).
+  /// How the skill relates to `skills-lock.json`.
   final InstalledSkillLockState? lockState;
 
-  /// Lock-recorded origin (null when unmanaged / legacy path).
+  /// Lock-recorded origin (null when unmanaged).
   final SkillOrigin? origin;
 
-  /// Lock-recorded provenance trust tier (null when unmanaged / legacy path).
+  /// Lock-recorded provenance trust tier (null when unmanaged).
   final SkillTrustTier? trustTier;
 
   /// The freshest cached scan verdict for the current bytes (null = these
@@ -84,72 +82,34 @@ class SkillInfo {
 
 /// Provides the list of skills for a workspace with their antivirus posture.
 ///
-/// Prefers the `skills.installedList` op (one round trip: metadata + content +
-/// verdicts). Falls back to the plain `fs.*` reads (no verdicts) when the
-/// connected server predates the scan surface (`opUnknown`), so an older host
-/// keeps the editor working.
+/// One `skills.installedList` round trip: metadata + content + verdicts.
 final skillListProvider = FutureProvider.family<List<SkillInfo>, String>((
   ref,
   workspaceId,
 ) async {
-  try {
-    final dtos = await ref
-        .watch(skillSecurityControlProvider)
-        .listInstalled(workspaceId);
-    final skills = <SkillInfo>[
-      for (final d in dtos)
-        if (d.content != null)
-          SkillInfo(
-            name: d.slug,
-            computedHash: d.computedHash,
-            content: d.content!,
-            description: extractYamlField(d.content!, 'description') ?? '',
-            lockState: d.lockState,
-            origin: d.origin,
-            trustTier: d.trustTier,
-            scanVerdict: d.scanVerdict,
-            scanFindings: d.scanFindings,
-            scanLlmReviewed: d.scanLlmReviewed,
-            scanRulesStale: d.scanRulesStale,
-          ),
-    ];
-    skills.sort((a, b) => a.name.compareTo(b.name));
-    return skills;
-  } on RemoteRpcException catch (e) {
-    if (e.code == RpcErrorCodes.opUnknown) {
-      return _legacySkillList(ref, workspaceId);
-    }
-    rethrow;
-  }
-});
-
-Future<List<SkillInfo>> _legacySkillList(Ref ref, String workspaceId) async {
-  final fs = ref.read(workspaceFilesystemPortProvider);
-  // The caller falls back here when the modern skills op is absent — but on a
-  // host with no workspace-filesystem port either (a demo server), the legacy
-  // path is absent too and its `opUnknown` escaped as a raw transport error.
-  // A fallback that fails differently is not a fallback.
-  final List<String> slugs;
-  try {
-    slugs = await fs.listSkillSlugs(workspaceId);
-  } on RemoteRpcException catch (e) {
-    if (e.code == RpcErrorCodes.opUnknown) {
-      return const [];
-    }
-    rethrow;
-  }
-  final skills = <SkillInfo>[];
-  for (final slug in slugs) {
-    final content = await fs.readSkillFile(workspaceId, slug);
-    if (content == null) {
-      continue;
-    }
-    final desc = extractYamlField(content, 'description') ?? '';
-    skills.add(SkillInfo(name: slug, content: content, description: desc));
-  }
+  final dtos = await ref
+      .watch(skillSecurityControlProvider)
+      .listInstalled(workspaceId);
+  final skills = <SkillInfo>[
+    for (final d in dtos)
+      if (d.content != null)
+        SkillInfo(
+          name: d.slug,
+          computedHash: d.computedHash,
+          content: d.content!,
+          description: extractYamlField(d.content!, 'description') ?? '',
+          lockState: d.lockState,
+          origin: d.origin,
+          trustTier: d.trustTier,
+          scanVerdict: d.scanVerdict,
+          scanFindings: d.scanFindings,
+          scanLlmReviewed: d.scanLlmReviewed,
+          scanRulesStale: d.scanRulesStale,
+        ),
+  ];
   skills.sort((a, b) => a.name.compareTo(b.name));
   return skills;
-}
+});
 
 /// Extracts the value of [field] from a YAML front-matter block.
 String? extractYamlField(String content, String field) {
@@ -300,40 +260,29 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
 
   /// Writes the composed skill content through the antivirus gate
   /// (`skills.saveLocal`: scan → policy → write → pin). A quarantine verdict
-  /// blocks the write and surfaces the findings + an explicit override; the
-  /// legacy `fs.writeSkillFile` path remains only for servers without the scan
-  /// surface. Returns true when the bytes reached disk.
+  /// blocks the write and surfaces the findings + an explicit override.
+  /// Returns true when the bytes reached disk.
   Future<bool> _writeSkillGated(String name, String content) async {
     final control = ref.read(skillSecurityControlProvider);
-    try {
-      var result = await control.saveLocal(widget.workspaceId, name, content);
+    var result = await control.saveLocal(widget.workspaceId, name, content);
+    if (result.blocked) {
+      final override = await _confirmQuarantinedSave(result);
+      if (override != true) {
+        return false;
+      }
+      result = await control.saveLocal(
+        widget.workspaceId,
+        name,
+        content,
+        allowQuarantineOverride: true,
+      );
       if (result.blocked) {
-        final override = await _confirmQuarantinedSave(result);
-        if (override != true) {
-          return false;
-        }
-        result = await control.saveLocal(
-          widget.workspaceId,
-          name,
-          content,
-          allowQuarantineOverride: true,
-        );
-        if (result.blocked) {
-          // The override was refused (e.g. a policy block, not the verdict) —
-          // surface why instead of silently dropping the save.
-          throw StateError(result.reason ?? result.verdict?.wire ?? 'blocked');
-        }
+        // The override was refused (e.g. a policy block, not the verdict) —
+        // surface why instead of silently dropping the save.
+        throw StateError(result.reason ?? result.verdict?.wire ?? 'blocked');
       }
-      return true;
-    } on RemoteRpcException catch (e) {
-      if (e.code == RpcErrorCodes.opUnknown) {
-        // Older server: the ungated legacy write is all it has.
-        final fs = ref.read(workspaceFilesystemPortProvider);
-        await fs.writeSkillFile(widget.workspaceId, name, content);
-        return true;
-      }
-      rethrow;
     }
+    return true;
   }
 
   /// The explicit "save anyway" acknowledgement for a quarantined save:
@@ -467,17 +416,8 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
 
     try {
       // Server-side uninstall: deletes the directory AND drops the lock pin
-      // (the raw fs delete left a dangling pin). Falls back to the plain fs
-      // path on a host that predates the op.
-      try {
-        await ref.read(skillSourceControlProvider).uninstall(_selectedSkill!);
-      } on RemoteRpcException catch (e) {
-        if (e.code != RpcErrorCodes.opUnknown) {
-          rethrow;
-        }
-        final fs = ref.read(workspaceFilesystemPortProvider);
-        await fs.deleteSkillDir(widget.workspaceId, _selectedSkill!);
-      }
+      // (a raw fs delete would leave a dangling pin).
+      await ref.read(skillSourceControlProvider).uninstall(_selectedSkill!);
       ref.invalidate(skillListProvider(widget.workspaceId));
       if (mounted) {
         _startNew();
@@ -524,8 +464,7 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
 
   /// Re-scans every installed skill and toasts the tally. One server-side
   /// `skills.analyze` pass (recorded as a skill_analysis pipeline run when the
-  /// template is enabled); falls back to the per-slug scan loop on servers
-  /// predating the op. One skill's failure never aborts the pass.
+  /// template is enabled). One skill's failure never aborts the pass.
   Future<void> _scanAll() async {
     if (_scanning || ref.read(isDemoServerProvider)) {
       return;
@@ -537,50 +476,24 @@ class _SkillsBodyState extends ConsumerState<_SkillsBody> {
     }
     setState(() => _scanning = true);
     try {
-      final control = ref.read(skillSecurityControlProvider);
-      try {
-        final summary = await control.analyze(widget.workspaceId);
-        ref.invalidate(skillListProvider(widget.workspaceId));
-        if (mounted) {
-          _toastScanTally(
-            summary.passCount,
-            summary.warnCount +
-                summary.results.where((r) => r.error != null).length,
-            summary.quarantineCount,
-          );
-        }
-        return;
-      } on RemoteRpcException catch (e) {
-        if (e.code != RpcErrorCodes.opUnknown) {
-          rethrow;
-        }
-        // Older server: scan each skill over the single-skill op instead.
-      }
-      var pass = 0;
-      var warn = 0;
-      var quarantined = 0;
-      for (final skill in skills) {
-        try {
-          final report = await control.scanInstalled(
-            widget.workspaceId,
-            skill.name,
-          );
-          switch (report.verdict) {
-            case SkillScanVerdict.pass:
-              pass++;
-            case SkillScanVerdict.warn:
-              warn++;
-            case SkillScanVerdict.quarantine:
-              quarantined++;
-          }
-        } on Object {
-          // Count a failed scan as a warning-level outcome for the tally.
-          warn++;
-        }
-      }
+      final summary = await ref
+          .read(skillSecurityControlProvider)
+          .analyze(widget.workspaceId);
       ref.invalidate(skillListProvider(widget.workspaceId));
       if (mounted) {
-        _toastScanTally(pass, warn, quarantined);
+        _toastScanTally(
+          summary.passCount,
+          summary.warnCount +
+              summary.results.where((r) => r.error != null).length,
+          summary.quarantineCount,
+        );
+      }
+    } on Object catch (e) {
+      if (mounted) {
+        CcToastScope.of(context).show(
+          AppLocalizations.of(context).failedWithError('$e'),
+          variant: CcToastVariant.danger,
+        );
       }
     } finally {
       if (mounted) {

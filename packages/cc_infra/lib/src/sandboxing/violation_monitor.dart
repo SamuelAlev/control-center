@@ -24,11 +24,10 @@ import 'package:meta/meta.dart';
 ///    surfaces once.
 ///
 /// `log stream` never notices its reader is gone: a server that is killed,
-/// crashes or restarts without [close] used to leave its tap running under
-/// launchd forever, and every one stays a `logd` client filtering the whole
-/// machine's log traffic. Hundreds piled up and the machine crawled. So the
-/// tap runs under [tetherScript], which ends it when the server's end of its
-/// stdin closes, as it does however the server dies.
+/// crashes or restarts without [close] would leave its tap running under
+/// launchd forever, each one a `logd` client filtering the whole machine's
+/// log traffic. So the tap runs under [tetherScript], which ends it when the
+/// server's end of its stdin closes, as it does however the server dies.
 class SandboxViolationMonitor {
   SandboxViolationMonitor._(this._process, this.stream);
 
@@ -73,45 +72,6 @@ kill "$watch" 2>/dev/null
 exit "$status"
 ''';
 
-  /// The pids in `ps -wwxo pid=,ppid=,args=` [psOutput] that are taps an
-  /// earlier, untethered server left behind: [_logCommand] exactly, adopted
-  /// by launchd. A live server's tap is a child of its tether, never pid 1.
-  @visibleForTesting
-  static List<int> orphanedTapPids(String psOutput) {
-    final command = _logCommand.join(' ');
-    final pids = <int>[];
-    for (final line in LineSplitter.split(psOutput)) {
-      final match = RegExp(r'^\s*(\d+)\s+(\d+)\s+(.*?)\s*$').firstMatch(line);
-      if (match == null || match.group(2) != '1') {
-        continue;
-      }
-      if (match.group(3) == command) {
-        pids.add(int.parse(match.group(1)!));
-      }
-    }
-    return pids;
-  }
-
-  /// Ends the taps servers from before [tetherScript] leaked, so upgrading
-  /// clears an already clogged machine without a reboot. Best effort.
-  static Future<void> _reapOrphanedTaps() async {
-    try {
-      // `-ww`: never truncate the command line the match depends on.
-      final ps = await ChildProcess.run('/bin/ps', [
-        '-wwxo',
-        'pid=,ppid=,args=',
-      ]);
-      if (ps.exitCode != 0) {
-        return;
-      }
-      for (final pid in orphanedTapPids(ps.stdout as String)) {
-        Process.killPid(pid);
-      }
-    } on Object catch (_) {
-      // Leftovers cost performance, not correctness; never block the tap.
-    }
-  }
-
   /// Closes the tether's stdin, which ends the tap.
   static Future<void> _release(Process process) async {
     try {
@@ -134,7 +94,6 @@ exit "$status"
     if (!Platform.isMacOS) {
       return null;
     }
-    await _reapOrphanedTaps();
     final controller = StreamController<SandboxViolation>.broadcast();
     final process = await ChildProcess.start('/bin/sh', [
       '-c',

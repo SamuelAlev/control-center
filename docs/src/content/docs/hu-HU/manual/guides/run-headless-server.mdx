@@ -3,7 +3,7 @@ title: Headless szerver futtatása
 description: Futtassa a cc_server headless binárisát vagy annak Docker-image-ét, párosítson hozzá egy klienst, és konfigurálja a teljes CLI-kapcsoló- és környezetiváltozó-felülettel.
 dateModified: 2026-11-08
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/headless-szerver-futtatasa
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Futtassa a `cc_server`-t egy folyamatosan bekapcsolt gépen, majd csatlakozzon
@@ -173,8 +173,11 @@ eszközszintet is meghatározza — `desktop`, `ios`, `android`, bármi más web
 kliens), `--label` (alapértelmezésben a platform neve plusz e gép hosztneve),
 `--host` (az URL-be írandó hoszt, mivel a loopback egy másik gépről nem érhető el)
 és `--client-url`. A `pair` újbóli futtatása lecseréli az adott eszköz kulcsát, és
-eldobja annak élő munkameneteit. A párosítás soha nem hoz létre munkaterületet: a
-csatlakozó kliens bevezető folyamata nevezi el és hozza létre az elsőt.
+eldobja annak élő munkameneteit. A párosítás soha nem hoz létre munkaterületet.
+Munkaterületet csak a szerver tulajdonosa hozhat létre: a tulajdonos kliensén a
+bevezető folyamat nevezi el és hozza létre az elsőt, mindenki más pedig addig vár,
+amíg a tulajdonos nem hoz létre neki egyet, vagy egy munkaterület-adminisztrátor meg
+nem hívja.
 
 A `--client-url` kapcsolóval ezen kívül egy terminálból beolvasható QR-kódot is
 kiír, amely a már kitöltött webes klienst nyitja meg:
@@ -192,8 +195,7 @@ szerver teljes kapcsolatleíróját és egy lejáratot), amelyet egy futó klien
 cserélhető fel egymással. Lásd: [Eszköz párosítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/eszkoz-parositasa/).
 :::
 
-A `cc_server pair` által kiállított hitelesítő adat **soha nem jár le**; az
-alkalmazásban kiállított viszont mindig 30 nap után lejár. Ha végzett egy
+A `cc_server pair` által kiállított hitelesítő adat az alkalmazásban kiállítotthoz hasonlóan 30 nap után lejár; ugyanarra az eszközre a `pair` parancsot újra futtatva új adatot kérhet. Ha végzett egy
 CLI-vel kiállított eszközzel, vonja vissza a **Beállítások → Ön → Az Ön
 eszközei** alatt.
 
@@ -246,6 +248,16 @@ loopbackről is; a párosított kliensek helyette a titkosított alagutat haszn�
 
 A szerver a `SIGINT`/`SIGTERM` jelig fut, majd tisztán leáll.
 
+### Az indítási sorok elolvasása
+
+Két sor mutatja meg, hogyan van beállítva ez a szerver. A kitettségi sor, amely a kész-banner mellett jelenik meg, a `cc_server exposure:` szöveggel kezdődik, és felsorolja, milyen messzire érhető el (`bind`, `tls`, `relay`, `tunnel`), hogy van-e rögzített szerver-tulajdonos (`owner`), és hogyan futnak az ügynökök ezen a gépen (`sandbox`):
+
+- `sandbox=native`: minden ügynökfuttatás az operációs rendszer homokozójába van csomagolva.
+- `sandbox=off`: a szervert `--sandbox off` kapcsolóval indította, így minden tag ügynökei korlátozás nélkül futnak ezen a gépen.
+- `sandbox=unavailable`: a hoszton nincs homokozó-háttérrendszer (Windows, vagy Linux `bwrap` és `socat` nélkül), ezért csak azok az ügynökfuttatások indulnak, amelyekért a szerver tulajdonosa felel. Mindenki másét ezzel az üzenettel utasítják el: „Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket.”
+
+A napló egy korábbi homokozó-sora ugyanezt szavakban mondja el, és ha háttérrendszer hiányzik, megnevezi, mit kell telepíteni. Mások ügynökeinek homokozó nélküli futtatása olyan döntés, amelyet a szerver tulajdonosa egyszer hoz meg mindenki számára a `--sandbox off` kapcsolóval. Lásd: [Homokozó-szabályzatok beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/#ellenőrizze-hogy-az-ügynökfutásai-homokozóba-vannak-e-zárva).
+
 ## 5. lépés: Kliens csatlakoztatása
 
 Irányítson egy klienst a 3. lépésben kapott szerver URL-re és párosítási kulcsra:
@@ -273,6 +285,8 @@ munkameneten keresztül irányítja a HTTP- és WebSocket-forgalmat, mint a klie
 többi része. A `cc_server` visszafejti az egyes kéréseket, továbbítja őket a
 helyi code-server-hátterének, majd visszatitkosítja a választ a kliens felé. A
 fájlok a szerver tulajdonában maradnak.
+
+A szerkesztő a szerveren fut a szerver saját felhasználójaként, a termináljával, feladataival és bővítményeivel együtt, ezért csak a [szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) nyithatja meg. A munkamenet ahhoz az eszközhöz és személyhez tartozik, amely megnyitotta. A VS Code a munkaterület megbízhatóságával indul, így a VS Code a mappa megbízása előtt kérdez, és az automatikus feladatok ki vannak kapcsolva, így egy tároló feladatai megnyitáskor nem indulnak el. Mindenki más az alkalmazás beépített szerkesztőjét és fájlnézeteit használja; a teljes szerkesztő nem érhető el számukra.
 
 A webes klienst HTTPS-en vagy biztonságos loopback-originen hostolja, hogy a
 Service Workerek futni tudjanak. A szokásos webes build és a kiadási szkriptek
@@ -321,6 +335,8 @@ fejeződnek be, így a szervernek nincs szüksége hozzájuk nyilvános címre. 
 szerver saját alkalmazásain keresztüli bejelentkezések a böngészőt a szerver
 nyilvános URL-jére küldik vissza, ezért a `--public-url` értékét olyan címre
 állítsa, amelyet az emberek böngészői elérnek.
+
+Ez a szerver alapértelmezése. Egy munkaterület-adminisztrátor más választást adhat egy munkaterületnek a **Beállítások → Munkaterület → Integrációk** alatt. Ha a `CC_CONNECT_URL` be van állítva, egy munkaterület továbbra is átválthat saját alkalmazásokra, de nem saját Connectre; lásd: [Munkaterületenkénti választás](/hu-HU/kezikonyv/referencia/connect/#munkaterületenkénti-választás).
 
 Ha erről a szerverről más szervereknek is Connectet szeretne üzemeltetni,
 állítsa be a `CC_SERVER_CONNECT_HOST=on` értéket; lásd:
@@ -375,7 +391,7 @@ Két dolgot érdemes tudni, mielőtt a portot a loopbacken túlra nyitná (a TLS
 önmagában nem biztosítja a párosított kliens végponttól végpontig terjedő
 titkosítását, és nem engedélyez erőforrásokat):
 
-- **Az MCP a hoszton kívül zártan hiúsul meg.** A token nélküli MCP-felület csak a loopbackre válaszol. Az `any` bind ezt nem tágítja ki — a hoszton kívüli kérést a „MCP requires a bearer token to answer non-loopback clients” üzenettel utasítja el, amíg be nem állít egy tokent (`mcp.setToken`, vagy **Beállítások → Szerver → MCP-szerverek**).
+- **Az MCP-nek mindig szüksége van a tokenjére.** A szerver az MCP-tokent az első indításkor hozza létre, és minden kérésnek, a loopbacket is beleértve, el kell küldenie `Authorization: Bearer <token>` formában. Ez nem kapcsolható ki; a szerver tulajdonosa a **Beállítások → Szerver → MCP-szerverek** alatt olvassa és cseréli. A szerver a webes oldalról, ismeretlen `Host`-ra vagy nem JSON-`POST`-ra érkező kéréseket a token ellenőrzése előtt elutasítja. Lásd: [Az MCP-szerver használata](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/).
 - **A `GET /healthz` szándékosan hitelesítés nélküli**, helyettesítő karakteres CORS-szal, és közzéteszi a szerver azonosítóját, nevét, identitás-ujjlenyomatát és buildverzióját. A klienseknek szükségük van az ujjlenyomatra a szerver rögzítéséhez, tehát ez szándékos — de azt is jelenti, hogy bármely elérhető `cc_server` ennyit felfed bárkinek, aki kérdezi.
 
 ## Kapcsolódó útmutatók

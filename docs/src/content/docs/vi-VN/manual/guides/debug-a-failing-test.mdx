@@ -2,7 +2,7 @@
 title: Gỡ lỗi bài kiểm thử thất bại bằng agent
 description: Cho một agent đặt điểm dừng, khởi chạy dưới trình gỡ lỗi và đọc một khung ngăn xếp thật thay vì thêm các câu lệnh in.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/go-loi-kiem-thu-that-bai
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Hướng dẫn này chỉ cho bạn cách để một agent dùng trình gỡ lỗi cho một lỗi mà các câu lệnh in không giải thích được.
@@ -31,8 +31,8 @@ Nó trả lời bằng những gì tìm thấy, hoặc giải thích rằng mộ
 | Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Đi kèm LLVM                        |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python chọn trình thông dịch của dự án]
-`debugpy` được tìm trong `.venv/bin` hoặc `venv/bin` trước `$PATH`. Một python trên `$PATH` là một môi trường khác, và việc gắn vào từ nhầm môi trường sẽ thất bại theo cách trông như mã hỏng chứ không phải như nhầm trình thông dịch.
+:::note[Python chọn trình thông dịch của dự án khi lần chạy có sandbox]
+Trong một lần chạy có sandbox, `debugpy` được tìm trong `.venv/bin` hoặc `venv/bin` trước `$PATH`. Một python trên `$PATH` là một môi trường khác, và việc gắn vào từ nhầm môi trường sẽ thất bại theo cách trông như mã hỏng chứ không phải như nhầm trình thông dịch. Trong một lần chạy không có sandbox, nó chỉ dùng `$PATH`, nên một repository không thể chọn trình thông dịch chạy trên máy của máy chủ.
 :::
 
 ## Đặt điểm dừng trước, rồi khởi chạy
@@ -106,6 +106,8 @@ Dành cho một tiến trình bị kẹt thay vì một tiến trình bạn đan
 debug(op: "attach", port: 5858)
 ```
 
+Cổng phải là một trong các cổng được chuyển tiếp của chính lần chạy. Mọi cổng khác đều bị từ chối trước khi bất cứ thứ gì khởi động, nên một agent không thể gắn vào một tiến trình thuộc về người khác trên máy của máy chủ.
+
 ## Kết thúc
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Luôn kết thúc phiên. Một bộ điều hợp gỡ lỗi sở hữu một **tiến trình bị dừng** đang giữ bất cứ thứ gì tiến trình đó giữ — một cổng, một khóa, một kết nối cơ sở dữ liệu.
 
 :::note[Nó không thể vượt khỏi tầm kiểm soát của bạn]
-Mọi phiên đều có một TTL cứng mà nó không thể gia hạn, mỗi cuộc hội thoại có đúng một phiên, và mọi thứ đều bị dọn sạch khi máy chủ dừng. Lệnh `launch` thứ hai sẽ bị từ chối thay vì thay thế lệnh đầu tiên: một agent khởi chạy phiên mới mà không kết thúc phiên cũ gần như chắc chắn đã mất dấu phiên đầu tiên.
+Mọi phiên đều có một TTL cứng mà nó không thể gia hạn (30 phút), mỗi cuộc hội thoại có đúng một phiên, và mọi thứ đều bị dọn sạch khi máy chủ dừng. Trong một lần chạy có sandbox, phiên giữ sandbox của nó qua các lượt trong tối đa chừng ấy thời gian. Lệnh `launch` thứ hai sẽ bị từ chối thay vì thay thế lệnh đầu tiên: một agent khởi chạy phiên mới mà không kết thúc phiên cũ gần như chắc chắn đã mất dấu phiên đầu tiên.
 :::
 
 ## Đầu ra có giới hạn

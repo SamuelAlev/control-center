@@ -1,8 +1,8 @@
 ---
 title: GitHub App létrehozása
-description: Adjon a szerverének saját GitHub Appot egyetlen kattintással, telepítse oda, ahol a repói vannak, és engedélyezze a szervert egy szervezet telepítéséhez.
+description: Adjon a szerverének saját GitHub Appot egyetlen kattintással, telepítse oda, ahol a repói vannak, hogy a szervezet bármely tagja bármely szerverről használhassa.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Ez az útmutató bemutatja, hogyan adhat a szerverének saját GitHub Appot.
@@ -39,8 +39,8 @@ automatizálás soha nem hagy jóvá pull requestet.
 A szerver saját alkalmazása csak a **Saját alkalmazások használata** esetén érvényes. A
 Control Center vagy egyéni Connect esetén a Connect kezeli az összes sávot, a GitHubot is,
 a szerver alkalmazása pedig mentve marad, de nincs használatban, amíg vissza nem vált. A
-munkaterület saját alkalmazása ([Másik alkalmazás egyetlen munkaterületnek](#másik-alkalmazás-egyetlen-munkaterületnek))
-minden módban érvényes. Az az alkalmazás, amelynek egyes mezői hiányoznak, hiba, nem
+saját alkalmazásokat használó munkaterület ([Egy munkaterület saját alkalmazása](#egy-munkaterület-saját-alkalmazása))
+a saját alkalmazását használja a szerver módjától függetlenül. Az az alkalmazás, amelynek egyes mezői hiányoznak, hiba, nem
 tartalékra váltás: a GitHub-bejelentkezések elutasításra kerülnek, amíg minden mező be nincs állítva.
 
 ## Előfeltételek
@@ -102,26 +102,18 @@ embereket, de semmit nem olvas.
    amelyeket ennek a szervernek látnia kell
 
 Ha később egy másik fiókra szeretné telepíteni, egy munkaterület-adminisztrátor
-a **Beállítások → Munkaterület → Általános** oldalra lép, a GitHub-identitás
-kártyán megkeresi a **GitHub-alkalmazás telepítései** részt, és a
+a **Beállítások → Munkaterület → Integrációk** oldalra lép, a **GitHub-alkalmazás**
+kártyán (a Kódtárhely alatt) megkeresi a **GitHub-alkalmazás telepítései** részt, és a
 **GitHub-alkalmazás telepítése** elemre kattint. A lista minden fiókot mutat,
 amelyre az alkalmazás telepítve van, és jelöli a felfüggesztett telepítést.
 
-## A szerver engedélyezése egy szervezet számára
+## Egy szervezet telepítésének megosztása
 
-A Control Center megosztott Appjánál egy szervezet telepítése csak azokat a
-szervereket szolgálja ki, amelyeket az adminisztrátorai engedélyeztek. A
-**GitHub-alkalmazás telepítése** útján történő telepítés azt a szervert
-engedélyezi, amely elindította. Egy már létező telepítésnél:
+Egy szervezet egyszer telepíti a GitHub Appot. Ezután a szervezet bármely tagja, aki bejelentkezik a GitHubra egy Control Center szerveren, használhatja a telepítést, bárhol is legyen az a szerver: az Öné, egy munkatársáé vagy a sajátja. Szerverenként nincs mit engedélyezni.
 
-1. A szervezet egyik adminisztrátora bejelentkezik a GitHubra ezen a szerveren
-2. Megnyitja a **Beállítások → Munkaterület → Általános → GitHub-alkalmazás
-   telepítései** részt
-3. A szervezet sora ezt mutatja: **Nincs engedélyezve**. A **A szerver
-   engedélyezése** elemre kattint
+A szerver minden tokenje a bejelentkezett személyé, egyetlen repóra és az ott betöltött szerepére korlátozva, így soha nem terjedhet tovább annál, mint amit a GitHubon maga is megtehetne. A GitHub naplója ezt a személyt mutatja, aki az alkalmazáson keresztül jár el.
 
-A sor ezután ezt mutatja: **Engedélyezve**. A saját alkalmazásnak erre nincs
-szüksége: minden telepítése az Ön szerveréhez tartozik.
+Hogy a Control Center ne érhessen el egy szervezetet, a szervezet tulajdonosa eltávolítja a telepítést a GitHubon, vagy szűkíti a repóit. A személy szervezetből való eltávolítása az ő hozzáférését is megszünteti.
 
 ## Regisztrálás inkább kézzel
 
@@ -160,21 +152,21 @@ fájlban (Dockerben csatolja a `/app/bin/.env` helyre). A feltöltés **mezőnk�
 egyszer** történik, így a Beállításokban végzett szerkesztést a következő
 újraindítás nem vonja vissza.
 
-## Másik alkalmazás egyetlen munkaterületnek
+## Egy munkaterület saját alkalmazása
 
-Egy munkaterület a szerverén helyett saját alkalmazást is használhat. Egy
-munkaterület-adminisztrátor a **Beállítások → Munkaterület → Általános** oldalra
-lép, a **GitHub-azonosító** kártyán a **Másik GitHub App használata**
-lehetőséget választja, és megadja annak az alkalmazásnak az azonosítóját, privát
-kulcsát, kliens-ID-ját és kliens titkát. A tagok ezután ehhez a munkaterülethez
-ebbe az alkalmazásba jelentkeznek be. A saját alkalmazáson futó munkaterület
-soha nem vált a szerver alkalmazására vagy a Connectre: amíg a mezői nem
-teljesek, a GitHub-munkája elutasításra kerül. Ez attól függetlenül érvényes, hogy a szerver
-hogyan jelentkezteti be az embereket, a Connectet is beleértve.
+Egy munkaterület a szerver alkalmazása helyett saját alkalmazást is használhat:
 
-A **Szolgáltatói alkalmazások** kártya ugyanezt elvégzi a Google Calendarra, a Linearra és a
-GIF-keresésre. Lásd: [Egy munkaterület saját Linear-alkalmazásának beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/#egy-munkaterület-saját-linear-alkalmazásának-beállítása)
+1. Egy munkaterület-adminisztrátor a **Beállítások → Munkaterület → Integrációk** oldalra lép
+2. A **Control Center Connect** kártyán a **Saját alkalmazások használata** lehetőséget választja, majd az **Alkalmazás** gombra kattint. Mindenki a munkaterületen ezután a munkaterület alkalmazásain keresztül jelentkezik be
+3. A **GitHub-alkalmazás** kártya a Kódtárhely alatt mostantól tartalmazza az alkalmazás mezőit: az **Alkalmazás-ID** és a **Privát kulcs** az **Ennek a munkaterületnek nevében jár el** alatt, a **Kliens-ID** és a **Kliens titok** az **Emberek bejelentkeztetése** alatt. Miután ezek be vannak állítva, kattintson a **Teszt** gombra
+
+A tagok ezután ehhez a munkaterülethez ebbe az alkalmazásba jelentkeznek be. A saját alkalmazásokat
+használó munkaterület soha nem vált a szerver alkalmazására vagy a Connectre: amíg a mezői nem
+teljesek, a GitHub-munkája elutasításra kerül.
+Ugyanez a választás vonatkozik a Google Calendarra, a Linearra és a GIF-keresésre is, mindegyik a
+saját mezőivel a szolgáltatója mellett ugyanazon az oldalon. Lásd: [Egy munkaterület saját Linear-alkalmazásának beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio/#egy-munkaterület-saját-linear-alkalmazásának-beállítása)
 és [Egy munkaterület saját Google-kliensének beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/naptar-csatlakoztatasa/#egy-munkaterület-saját-google-kliensének-beállítása).
+A többi választást és azok hatását a [Munkaterületenkénti választás](/hu-HU/kezikonyv/referencia/connect/#munkaterületenkénti-választás) szakasz írja le.
 
 ## Hibaelhárítás
 
@@ -193,7 +185,7 @@ Az egyszer használatos oldalt már felhasználták, vagy eltelt tíz perc. Kezd
 
 A regisztráció és a telepítés külön lépés. Nyissa meg az alkalmazás telepítési
 oldalát, vagy használja a **GitHub-alkalmazás telepítése** elemet a Munkaterület
-→ Általános helyen.
+→ Integrációk helyen.
 
 ### A teszt szerint a privát kulcs nem olvasható
 

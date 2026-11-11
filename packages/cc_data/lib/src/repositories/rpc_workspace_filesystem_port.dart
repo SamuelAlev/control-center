@@ -158,19 +158,6 @@ class RpcWorkspaceFilesystemPort implements WorkspaceFilesystemPort {
         'agent_slug': agentSlug,
       });
 
-  // NOTE: `ensureMcpSymlink` is intentionally NOT an override — it was removed
-  // from [WorkspaceFilesystemPort] when MCP config consolidation moved the
-  // derived `.mcp.json` into the per-agent cwd (written by cc_server, not the
-  // filesystem port). The server-side `fs.ensureMcpSymlink` RPC handler is kept
-  // as dead-but-callable surface for a separate presentation-only cleanup, so
-  // this client method stays too (no breaking wire change).
-  /// Ensures the MCP-server symlink for [agentSlug] exists in the workspace.
-  Future<void> ensureMcpSymlink(String workspaceId, String agentSlug) =>
-      _client.call('fs.ensureMcpSymlink', {
-        'workspace_id': workspaceId,
-        'agent_slug': agentSlug,
-      });
-
   @override
   Future<void> writeAgentFile(
     String workspaceId,

@@ -1,18 +1,27 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_domain/cc_domain.dart' show NeedsSignInException;
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/session_diff_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/features/dispatch/domain/ports/commit_signing_port.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+// ignore: implementation_imports
+import 'package:cc_infra/src/dispatch/pushed_commit_inspector.dart';
+// ignore: implementation_imports
+import 'package:cc_infra/src/git/ssh_commit_signature.dart';
 // The pure-Dart engine is now injected explicitly: `fileSearch` is a required
 // parameter so a missing `libfff_c` can never silently degrade in production.
 import 'package:cc_natives/cc_natives.dart'
     show DartFileSearch, RigWorktreeGuard, RigWorktreeTampered;
+import 'package:cc_server_core/src/commit_resigner.dart';
 import 'package:cc_server_core/src/repo_ide_data_service.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -1334,6 +1343,7 @@ void main() {
         'repo1',
         headRef: 'refs/pull/1/head',
         branch: 'pr/1',
+        actingUserId: 'u-ada',
       );
 
       expect(res, isNotNull);
@@ -1357,6 +1367,7 @@ void main() {
           'repo1',
           headRef: 'refs/pull/1/head',
           branch: 'pr/1',
+          actingUserId: 'u-ada',
         ),
         isNull,
       );
@@ -1410,6 +1421,7 @@ void main() {
       'repo1',
       headRef: 'refs/pull/1/head',
       branch: 'pr/1',
+      actingUserId: 'u-ada',
     );
 
     Future<Map<String, dynamic>?> commit() => svc.commitAndPush(
@@ -1525,6 +1537,433 @@ void main() {
     });
   });
 
+  // A commit a person makes in the IDE is theirs: their forge-verified
+  // identity (their profile's where no forge vouches for one), Control
+  // Center's credit when attribution is on, and their own signing key. It is
+  // the same identity an agent run they ask for commits under, so a run can
+  // later push what they committed by hand.
+  group('whose commit an IDE commit is', () {
+    const ada = (name: 'Ada', email: '7+ada@users.noreply.github.com');
+    const ccTrailer = 'Co-Authored-By: Control Center <hi@usectrl.dev>';
+    late SshSigningKey key;
+    late _SigningKeys signing;
+
+    Future<String> git(List<String> args, String root) async {
+      final r = await Process.run('git', args, workingDirectory: root);
+      if (r.exitCode != 0) {
+        throw StateError('git ${args.join(' ')} failed: ${r.stderr}');
+      }
+      return '${r.stdout}'.trim();
+    }
+
+    /// A worktree on `main` whose `origin` (a local bare repository) already
+    /// has `main`.
+    Future<String> publishedWorktree(String name) async {
+      final root = makeRepoDir(name, {'src/app.dart': 'void main() {}\n'});
+      await git(['init', '-q'], root);
+      await git(['checkout', '-q', '-b', 'main'], root);
+      await git(['config', 'core.autocrlf', 'false'], root);
+      await git(['config', 'user.email', 'test@example.com'], root);
+      await git(['config', 'user.name', 'Test'], root);
+      await git(['config', 'commit.gpgsign', 'false'], root);
+      await git(['add', '-A'], root);
+      await git(['commit', '-q', '-m', 'init'], root);
+      final origin = Directory(p.join(tmp.path, '$name-origin.git'))
+        ..createSync(recursive: true);
+      await git(['init', '-q', '--bare', '-b', 'main'], origin.path);
+      await git(['remote', 'add', 'origin', origin.path], root);
+      await git(['push', '-q', '-u', 'origin', 'main'], root);
+      return root;
+    }
+
+    Future<PushedGitObject> head(String root, [String rev = 'HEAD']) async {
+      final r = await Process.run(
+        'git',
+        ['cat-file', 'commit', rev],
+        workingDirectory: root,
+        stdoutEncoding: null,
+      );
+      expect(r.exitCode, 0);
+      return PushedCommitInspector.read('commit', rev, r.stdout as List<int>);
+    }
+
+    RepoIdeDataService svcWith(
+      String wt, {
+      AgentCommitIdentity? Function(GitPerson? unverified)? identity,
+      bool sign = true,
+      List<(String, String, ForgeHost)>? asked,
+    }) => RepoIdeDataService(
+      repoRepository: _FakeRepoRepo({'repo1': repo('repo1', wt)}),
+      workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+      isolatedRepoRepository: _FakeIsolatedRepoRepo()
+        ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
+      fileSearch: DartFileSearch(),
+      commitIdentity: identity == null
+          ? null
+          : ({
+              required workspaceId,
+              required userId,
+              required forge,
+              unverified,
+            }) async {
+              asked?.add((workspaceId, userId, forge));
+              return identity(unverified);
+            },
+      signing: sign ? signing : null,
+    );
+
+    Future<Map<String, dynamic>?> commit(
+      RepoIdeDataService svc, {
+      bool push = false,
+      bool sync = false,
+      bool amend = false,
+      String message = 'edit app',
+      String? actingUserId = 'u-ada',
+    }) => svc.commitAndPush(
+      workspaceId: 'ws',
+      spaceId: 'ch',
+      repoId: 'repo1',
+      message: message,
+      paths: const ['src/app.dart'],
+      push: push,
+      sync: sync,
+      amend: amend,
+      authorName: 'Ada Profile',
+      authorEmail: 'ada@profile.example',
+      actingUserId: actingUserId,
+    );
+
+    setUp(() async {
+      key = await SshSigningKey.generate();
+      signing = _SigningKeys({'u-ada': key});
+    });
+
+    test('it names the person under their verified identity, credits '
+        'Control Center and is signed with their key', () async {
+      final wt = await publishedWorktree('wt');
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      final asked = <(String, String, ForgeHost)>[];
+      final identity = AgentCommitIdentity.person(
+        ada,
+        creditAgent: true,
+        signingKey: key.publicKey,
+      );
+      final svc = svcWith(wt, identity: (_) => identity, asked: asked);
+
+      final res = await commit(svc);
+
+      expect(res!['committed'], isTrue);
+      expect(asked, [('ws', 'u-ada', ForgeHost.github)]);
+      expect(
+        await git(['log', '-1', '--format=%an <%ae>|%cn <%ce>'], wt),
+        'Ada <7+ada@users.noreply.github.com>|'
+        'Ada <7+ada@users.noreply.github.com>',
+      );
+      expect(
+        await git(['log', '-1', '--format=%B'], wt),
+        'edit app\n\n$ccTrailer',
+      );
+      final object = await head(wt);
+      expect(object.signedBy, key.publicKey);
+      expect(res['headSha'], await git(['rev-parse', 'HEAD'], wt));
+      // The very commit an agent run for the same person may push.
+      expect(PushedCommitInspector.violation([object], identity), isNull);
+    });
+
+    test('the profile identity is what the resolver falls back to, and such '
+        'a commit is not signed', () async {
+      final wt = await publishedWorktree('wt');
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      GitPerson? offered;
+      final svc = svcWith(
+        wt,
+        identity: (unverified) {
+          offered = unverified;
+          return AgentCommitIdentity.person(unverified!);
+        },
+      );
+
+      expect((await commit(svc))!['committed'], isTrue);
+
+      expect(offered, (name: 'Ada Profile', email: 'ada@profile.example'));
+      expect(
+        await git(['log', '-1', '--format=%an <%ae>%n%B'], wt),
+        'Ada Profile <ada@profile.example>\nedit app',
+      );
+      expect((await head(wt)).signed, isFalse);
+    });
+
+    test(
+      'with no resolver wired the commit is the profile identity alone',
+      () async {
+        final wt = await publishedWorktree('wt');
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+
+        expect((await commit(svcWith(wt)))!['committed'], isTrue);
+
+        expect(
+          await git(['log', '-1', '--format=%an <%ae>%n%B'], wt),
+          'Ada Profile <ada@profile.example>\nedit app',
+        );
+        expect((await head(wt)).signed, isFalse);
+      },
+    );
+
+    test('an amend keeps the credit once and is signed again', () async {
+      final wt = await publishedWorktree('wt');
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      final svc = svcWith(
+        wt,
+        identity: (_) => AgentCommitIdentity.person(
+          ada,
+          creditAgent: true,
+          signingKey: key.publicKey,
+        ),
+      );
+      await commit(svc);
+
+      final res = await commit(svc, amend: true, message: '');
+
+      expect(res!['committed'], isTrue);
+      expect(
+        await git(['log', '-1', '--format=%B'], wt),
+        'edit app\n\n$ccTrailer',
+      );
+      expect((await head(wt)).signedBy, key.publicKey);
+      expect(await git(['rev-list', '--count', 'origin/main..HEAD'], wt), '1');
+    });
+
+    test('commit and sync re-signs what the rebase re-created, then pushes '
+        'it', () async {
+      final wt = await publishedWorktree('wt');
+      final origin = p.join(tmp.path, 'wt-origin.git');
+      // Someone else pushed to the branch meanwhile.
+      final other = p.join(tmp.path, 'other');
+      await git(['clone', '-q', origin, other], tmp.path);
+      await git(['config', 'user.email', 'eve@example.com'], other);
+      await git(['config', 'user.name', 'Eve'], other);
+      await git(['config', 'commit.gpgsign', 'false'], other);
+      File(p.join(other, 'other.txt')).writeAsStringSync('theirs\n');
+      await git(['add', '-A'], other);
+      await git(['commit', '-q', '-m', 'theirs'], other);
+      await git(['push', '-q', 'origin', 'main'], other);
+      final theirs = await git(['rev-parse', 'HEAD'], other);
+
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      final svc = svcWith(
+        wt,
+        identity: (_) => AgentCommitIdentity.person(
+          ada,
+          creditAgent: true,
+          signingKey: key.publicKey,
+        ),
+      );
+
+      final res = await commit(svc, push: true, sync: true);
+
+      expect(res!['pushed'], isTrue, reason: '${res['error']}');
+      final tip = await git(['rev-parse', 'HEAD'], wt);
+      expect(res['headSha'], tip);
+      expect(await git(['rev-parse', 'HEAD~1'], wt), theirs);
+      expect((await head(wt)).signedBy, key.publicKey);
+      expect(
+        (await head(wt, 'HEAD~1')).signed,
+        isFalse,
+        reason: 'not theirs to sign',
+      );
+      expect(await git(['rev-parse', 'main'], origin), tip);
+    });
+
+    test('a pull re-commits the person\'s local commits as them and signs '
+        'them again', () async {
+      final wt = await publishedWorktree('wt');
+      final origin = p.join(tmp.path, 'wt-origin.git');
+      final identity = AgentCommitIdentity.person(
+        ada,
+        creditAgent: true,
+        signingKey: key.publicKey,
+      );
+      final svc = svcWith(wt, identity: (_) => identity);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      await commit(svc);
+      final other = p.join(tmp.path, 'other');
+      await git(['clone', '-q', origin, other], tmp.path);
+      await git(['config', 'user.email', 'eve@example.com'], other);
+      await git(['config', 'user.name', 'Eve'], other);
+      await git(['config', 'commit.gpgsign', 'false'], other);
+      File(p.join(other, 'other.txt')).writeAsStringSync('theirs\n');
+      await git(['add', '-A'], other);
+      await git(['commit', '-q', '-m', 'theirs'], other);
+      await git(['push', '-q', 'origin', 'main'], other);
+
+      final res = await svc.syncBranch(
+        workspaceId: 'ws',
+        spaceId: 'ch',
+        repoId: 'repo1',
+        actingUserId: 'u-ada',
+      );
+
+      expect(res!['pulled'], isTrue, reason: '${res['error']}');
+      expect(res['pushed'], isTrue, reason: '${res['error']}');
+      final object = await head(wt);
+      expect(object.signedBy, key.publicKey);
+      expect(PushedCommitInspector.violation([object], identity), isNull);
+      expect(
+        await git(['rev-parse', 'main'], origin),
+        await git(['rev-parse', 'HEAD'], wt),
+      );
+    });
+
+    test(
+      'a commit that should be signed and cannot be is not pushed',
+      () async {
+        final wt = await publishedWorktree('wt');
+        final origin = p.join(tmp.path, 'wt-origin.git');
+        final before = await git(['rev-parse', 'main'], origin);
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+        final svc = svcWith(
+          wt,
+          identity: (_) =>
+              AgentCommitIdentity.person(ada, signingKey: key.publicKey),
+        );
+        // The key was deleted between resolving the identity and signing.
+        signing.keys.clear();
+
+        final res = await commit(svc, push: true);
+
+        expect(res!['committed'], isTrue);
+        expect(res['pushed'], isFalse);
+        expect(res['error'], contains('Could not sign the commit'));
+        expect(await git(['rev-parse', 'main'], origin), before);
+      },
+    );
+
+    test(
+      'without a signer nothing is signed, whatever the identity says',
+      () async {
+        final wt = await publishedWorktree('wt');
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+        final svc = svcWith(
+          wt,
+          sign: false,
+          identity: (_) =>
+              AgentCommitIdentity.person(ada, signingKey: key.publicKey),
+        );
+
+        expect((await commit(svc))!['committed'], isTrue);
+        expect((await head(wt)).signed, isFalse);
+      },
+    );
+
+    /// A commit made with plain git in [root], unsigned, as [who].
+    Future<String> rawCommit(String root, String file, GitPerson who) async {
+      File(p.join(root, file)).writeAsStringSync('$file\n');
+      await git(['add', '-A'], root);
+      await git([
+        '-c',
+        'user.name=${who.name}',
+        '-c',
+        'user.email=${who.email}',
+        'commit',
+        '-q',
+        '-m',
+        file,
+      ], root);
+      return git(['rev-parse', 'HEAD'], root);
+    }
+
+    Future<Map<String, dynamic>?> publish(RepoIdeDataService svc) =>
+        svc.publishBranch(
+          workspaceId: 'ws',
+          spaceId: 'ch',
+          repoId: 'repo1',
+          actingUserId: 'u-ada',
+        );
+
+    const eve = (name: 'Eve', email: 'eve@example.com');
+
+    test('publishing signs the person\'s own unsigned commits before they '
+        'leave, and no one else\'s', () async {
+      final wt = await publishedWorktree('wt');
+      final origin = p.join(tmp.path, 'wt-origin.git');
+      await rawCommit(wt, 'mine.txt', ada);
+      await rawCommit(wt, 'hers.txt', eve);
+      final svc = svcWith(
+        wt,
+        identity: (_) =>
+            AgentCommitIdentity.person(ada, signingKey: key.publicKey),
+      );
+
+      final res = await publish(svc);
+
+      expect(res!['pushed'], isTrue, reason: '${res['error']}');
+      expect(await git(['rev-parse', 'main'], origin), res['headSha']);
+      expect((await head(wt)).signed, isFalse, reason: "Eve's");
+      expect((await head(wt, 'HEAD~1')).signedBy, key.publicKey);
+    });
+
+    test('a push whose own commits sit below someone else\'s signature is '
+        'refused, and nothing is rewritten', () async {
+      final wt = await publishedWorktree('wt');
+      final origin = p.join(tmp.path, 'wt-origin.git');
+      final before = await git(['rev-parse', 'main'], origin);
+      await rawCommit(wt, 'mine.txt', ada);
+      await rawCommit(wt, 'hers.txt', eve);
+      final eveKey = await SshSigningKey.generate();
+      final hers = await CommitResigner(_SigningKeys({'u-eve': eveKey})).sign(
+        root: wt,
+        userId: 'u-eve',
+        identity: AgentCommitIdentity.person(eve, signingKey: eveKey.publicKey),
+      );
+      final svc = svcWith(
+        wt,
+        identity: (_) =>
+            AgentCommitIdentity.person(ada, signingKey: key.publicKey),
+      );
+
+      final res = await publish(svc);
+
+      expect(res!['pushed'], isFalse);
+      expect(res['error'], contains('Nothing was pushed'));
+      expect(res['error'], contains('below a commit someone else signed'));
+      expect(await git(['rev-parse', 'main'], origin), before);
+      expect(await git(['rev-parse', 'HEAD'], wt), hers);
+      expect((await head(wt)).signedBy, eveKey.publicKey);
+    });
+
+    test('the host\'s git signing setup never reaches an IDE commit or the '
+        'rebase of a sync', () async {
+      final wt = await publishedWorktree('wt');
+      final origin = p.join(tmp.path, 'wt-origin.git');
+      // A checkout configured to sign with a program that always fails: any
+      // commit git tried to sign would fail.
+      for (final (k, v) in [
+        ('commit.gpgsign', 'true'),
+        ('gpg.format', 'ssh'),
+        ('gpg.ssh.program', 'false'),
+        ('user.signingkey', key.publicKey),
+      ]) {
+        await git(['config', k, v], wt);
+      }
+      final other = p.join(tmp.path, 'other');
+      await git(['clone', '-q', origin, other], tmp.path);
+      await rawCommit(other, 'other.txt', eve);
+      await git(['push', '-q', 'origin', 'main'], other);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// edited\n');
+      final svc = svcWith(
+        wt,
+        identity: (_) =>
+            AgentCommitIdentity.person(ada, signingKey: key.publicKey),
+      );
+
+      final res = await commit(svc, push: true, sync: true);
+
+      expect(res!['pushed'], isTrue, reason: '${res['error']}');
+      expect((await head(wt)).signedBy, key.publicKey);
+      expect(await git(['rev-parse', 'main'], origin), res['headSha']);
+    });
+  });
+
   // A push a human clicks must ride THAT human's credential (the per-actor
   // lane), so GitHub attributes it to them and not to the server's App. These
   // pin that the service threads the acting user into every token lookup on
@@ -1616,6 +2055,90 @@ void main() {
       expect(res, isNotNull);
       expect(res!['pushed'], isTrue);
       expect(seen, ['user-9']);
+    });
+
+    group('syncToPrHead fetches on the acting person', () {
+      late String wt;
+      late String origin;
+
+      // The PR head lives in the local bare origin; a repo-local rewrite
+      // sends the GitHub fetch URL there, so a fetch that runs is visible.
+      setUp(() async {
+        wt = await gitWorktreeWithOrigin('wt-sync');
+        origin = p.join(tmp.path, 'wt-sync-origin.git');
+        File(p.join(wt, 'src/app.dart')).writeAsStringSync('// pr head\n');
+        await git(['commit', '-qam', 'pr head'], wt);
+        await git(['push', '-q', 'origin', 'HEAD:refs/pull/1/head'], wt);
+        await git(['reset', '-q', '--hard', 'HEAD~1'], wt);
+        await git([
+          'config',
+          'url.$origin.insteadOf',
+          'https://github.com/owner/repo1.git',
+        ], wt);
+      });
+
+      RepoIdeDataService syncing(Future<String?> Function(String?) token) =>
+          RepoIdeDataService(
+            repoRepository: _FakeRepoRepo({'repo1': repo('repo1', wt)}),
+            workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
+            isolatedRepoRepository: _FakeIsolatedRepoRepo()
+              ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
+            fileSearch: DartFileSearch(),
+            githubToken:
+                ({
+                  required workspaceId,
+                  required owner,
+                  required repo,
+                  actingUserId,
+                  write = false,
+                }) => token(actingUserId),
+          );
+
+      Future<Map<String, dynamic>?> sync(RepoIdeDataService svc) =>
+          svc.syncToPrHead(
+            'ws',
+            'ch',
+            'repo1',
+            headRef: 'refs/pull/1/head',
+            branch: 'pr/1',
+            actingUserId: 'user-9',
+          );
+
+      bool fetched() => File(p.join(wt, '.git', 'FETCH_HEAD')).existsSync();
+
+      test('with their sign-in it reaches the PR head', () async {
+        final asked = <String?>[];
+        final res = await sync(
+          syncing((user) async {
+            asked.add(user);
+            return 'token-of-$user';
+          }),
+        );
+        expect(res?['synced'], isTrue, reason: '$res');
+        expect(asked, ['user-9']);
+        expect(fetched(), isTrue);
+        expect(
+          File(p.join(wt, 'src/app.dart')).readAsStringSync(),
+          contains('pr head'),
+        );
+      });
+
+      test('without a usable sign-in no fetch is attempted', () async {
+        await expectLater(
+          sync(
+            syncing(
+              (user) async =>
+                  throw const NeedsSignInException('github', 'sign in'),
+            ),
+          ),
+          throwsA(isA<NeedsSignInException>()),
+        );
+        expect(fetched(), isFalse);
+        expect(
+          File(p.join(wt, 'src/app.dart')).readAsStringSync(),
+          isNot(contains('pr head')),
+        );
+      });
     });
 
     test('a local commit with no upstream is counted as ahead', () async {
@@ -1750,10 +2273,11 @@ void main() {
           required workspaceId,
           required repoId,
           required branch,
+          required viewerId,
         }) async {
           asked = branch;
           return head;
-        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch', viewerId: 'ada');
 
         // The forge has the branch (the pull request says so) but this
         // worktree never fetched origin/space/abc, so git has no upstream.
@@ -1764,6 +2288,47 @@ void main() {
         expect(grouped.aheadOfBase, 2);
       },
     );
+
+    test('the pull request head is asked for the viewer, and without one only '
+        'local refs count', () async {
+      final wt = await gitWorktreeWithOrigin('wt-pr-viewer');
+      await git(['push', 'origin', 'HEAD:refs/heads/main'], wt);
+      await git(['checkout', '-q', '-b', 'space/abc'], wt);
+      File(p.join(wt, 'src/app.dart')).writeAsStringSync('// one\n');
+      await git(['add', '-A'], wt);
+      await git(['commit', '-q', '-m', 'one'], wt);
+      final head = await headSha(wt);
+      final viewers = <String>[];
+      final svc = svcWithPublishedHead(wt, ({
+        required workspaceId,
+        required repoId,
+        required branch,
+        required viewerId,
+      }) async {
+        viewers.add(viewerId);
+        // Only ada may see this repo's pull requests.
+        return viewerId == 'ada' ? head : null;
+      });
+
+      final ada = await svc.repoChangesGrouped(
+        'ws',
+        'repo1',
+        spaceId: 'ch',
+        viewerId: 'ada',
+      );
+      final nora = await svc.repoChangesGrouped(
+        'ws',
+        'repo1',
+        spaceId: 'ch',
+        viewerId: 'nora',
+      );
+      final nobody = await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+
+      expect(viewers, ['ada', 'nora'], reason: 'no viewer, no forge read');
+      expect(ada.hasUpstream, isTrue);
+      expect(nora.hasUpstream, isFalse);
+      expect(nobody.hasUpstream, isFalse);
+    });
 
     test(
       'commits after the pull request head stay ahead of the published branch',
@@ -1783,9 +2348,10 @@ void main() {
           required workspaceId,
           required repoId,
           required branch,
+          required viewerId,
         }) async {
           return published;
-        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch', viewerId: 'ada');
 
         expect(grouped.hasUpstream, isTrue);
         expect(grouped.ahead, 1);
@@ -1808,9 +2374,10 @@ void main() {
           required workspaceId,
           required repoId,
           required branch,
+          required viewerId,
         }) async {
           return 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch', viewerId: 'ada');
 
         expect(grouped.hasUpstream, isTrue);
         expect(grouped.ahead, 0);
@@ -1835,10 +2402,11 @@ void main() {
           required workspaceId,
           required repoId,
           required branch,
+          required viewerId,
         }) async {
           asked = true;
           return parent;
-        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        }).repoChangesGrouped('ws', 'repo1', spaceId: 'ch', viewerId: 'ada');
 
         expect(asked, isFalse);
         expect(grouped.hasUpstream, isTrue);
@@ -1910,13 +2478,28 @@ void main() {
     });
 
     group('background fetch', () {
-      RepoIdeDataService autoFetching(String wt) => RepoIdeDataService(
-        repoRepository: _FakeRepoRepo(),
+      RepoIdeDataService autoFetching(
+        String wt, {
+        Map<String, String> tokens = const {},
+        List<String?>? asked,
+      }) => RepoIdeDataService(
+        repoRepository: _FakeRepoRepo({'repo1': repo('repo1', wt)}),
         workspaceRepository: _FakeWorkspaceRepo()..linked['ws'] = {'repo1'},
         isolatedRepoRepository: _FakeIsolatedRepoRepo()
           ..bySpace['ws:ch'] = [_worktree('repo1', wt)],
         fileSearch: DartFileSearch(),
         autoFetchInterval: const Duration(minutes: 3),
+        githubToken:
+            ({
+              required workspaceId,
+              required owner,
+              required repo,
+              actingUserId,
+              write = false,
+            }) async {
+              asked?.add(actingUserId);
+              return tokens[actingUserId];
+            },
       );
 
       /// Pushes one commit to [name]'s origin `main` from a second clone.
@@ -1947,6 +2530,7 @@ void main() {
           'ws',
           'repo1',
           spaceId: 'ch',
+          viewerId: 'u-ada',
         );
         expect(first.behind, 0);
         await svc.autoFetchesSettled();
@@ -1955,6 +2539,7 @@ void main() {
           'ws',
           'repo1',
           spaceId: 'ch',
+          viewerId: 'u-ada',
         );
         expect(second.hasUpstream, isTrue);
         expect(second.ahead, 0);
@@ -1970,13 +2555,19 @@ void main() {
         await pushFromElsewhere('wt-autofetch-track', '// remote\n');
         final svc = autoFetching(wt);
 
-        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+          viewerId: 'u-ada',
+        );
         await svc.autoFetchesSettled();
 
         final grouped = await svc.repoChangesGrouped(
           'ws',
           'repo1',
           spaceId: 'ch',
+          viewerId: 'u-ada',
         );
         expect(grouped.behind, 1);
       });
@@ -1986,19 +2577,101 @@ void main() {
         await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
         await pushFromElsewhere('wt-autofetch-throttle', '// one\n');
         final svc = autoFetching(wt);
-        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+          viewerId: 'u-ada',
+        );
         await svc.autoFetchesSettled();
 
         await pushFromElsewhere('wt-autofetch-throttle', '// two\n');
-        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+          viewerId: 'u-ada',
+        );
         await svc.autoFetchesSettled();
 
         final grouped = await svc.repoChangesGrouped(
           'ws',
           'repo1',
           spaceId: 'ch',
+          viewerId: 'u-ada',
         );
         expect(grouped.behind, 1);
+      });
+
+      test('a poll nobody is named on fetches nothing', () async {
+        final wt = await gitWorktreeWithOrigin('wt-autofetch-anon');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        await pushFromElsewhere('wt-autofetch-anon', '// remote\n');
+        final svc = autoFetching(wt);
+        await svc.repoChangesGrouped('ws', 'repo1', spaceId: 'ch');
+        await svc.autoFetchesSettled();
+        final grouped = await svc.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+          viewerId: 'u-ada',
+        );
+        expect(grouped.behind, 0);
+      });
+
+      test('a GitHub remote is fetched on the viewer\'s own sign-in, and not '
+          'at all without one', () async {
+        final wt = await gitWorktreeWithOrigin('wt-autofetch-gh');
+        await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
+        await pushFromElsewhere('wt-autofetch-gh', '// remote\n');
+        // The remote is GitHub by its URL; git reaches the local origin.
+        const url = 'https://github.com/owner/repo1.git';
+        final origin = p.join(tmp.path, 'wt-autofetch-gh-origin.git');
+        await git(['remote', 'set-url', 'origin', url], wt);
+        await git(['config', 'url.$origin.insteadOf', url], wt);
+
+        final asked = <String?>[];
+        final unsigned = autoFetching(wt, asked: asked);
+        await unsigned.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+          viewerId: 'u-mo',
+        );
+        await unsigned.autoFetchesSettled();
+        expect(asked, ['u-mo']);
+        expect(
+          (await unsigned.repoChangesGrouped(
+            'ws',
+            'repo1',
+            spaceId: 'ch',
+            viewerId: 'u-mo',
+          )).behind,
+          0,
+        );
+
+        final signedIn = autoFetching(
+          wt,
+          tokens: {'u-ada': 'tok-ada'},
+          asked: asked..clear(),
+        );
+        await signedIn.repoChangesGrouped(
+          'ws',
+          'repo1',
+          spaceId: 'ch',
+          viewerId: 'u-ada',
+        );
+        await signedIn.autoFetchesSettled();
+        expect(asked, ['u-ada']);
+        expect(
+          (await signedIn.repoChangesGrouped(
+            'ws',
+            'repo1',
+            spaceId: 'ch',
+            viewerId: 'u-ada',
+          )).behind,
+          1,
+        );
       });
     });
 
@@ -2102,17 +2775,16 @@ void main() {
     );
 
     test(
-      'syncBranch reports a pre-push hook refusal and does not publish',
+      'syncBranch publishes past a pre-push hook in the worktree: server git '
+      'runs no repository hook',
       () async {
         final wt = await gitWorktreeWithOrigin('wt-pre-push');
         await git(['push', '-u', 'origin', 'HEAD:refs/heads/main'], wt);
         final origin = p.join(tmp.path, 'wt-pre-push-origin.git');
-        final published = await headSha(wt);
         File(p.join(wt, 'src/app.dart')).writeAsStringSync('local\n');
         await git(['add', '-A'], wt);
         await git(['commit', '-q', '-m', 'local'], wt);
-        // stdout, not stderr: that is where a hook's explanation usually lands,
-        // and reading only stderr used to drop it and report the sync as done.
+        final local = await headSha(wt);
         await _installHook(
           p.join(wt, '.git', 'hooks', 'pre-push'),
           '#!/bin/sh\necho "branch is protected"\nexit 1\n',
@@ -2123,15 +2795,12 @@ void main() {
           [],
         ).syncBranch(workspaceId: 'ws', spaceId: 'ch', repoId: 'repo1');
 
-        expect(res!['pushed'], isFalse);
-        expect(res['pushRefused'], isTrue);
-        expect(res['pulled'], isNot(true));
-        expect('${res['error']}', contains('branch is protected'));
+        expect(res!['pushed'], isTrue, reason: '$res');
         final remote = await Process.run('git', [
           'rev-parse',
           'refs/heads/main',
         ], workingDirectory: origin);
-        expect((remote.stdout as String).trim(), published);
+        expect((remote.stdout as String).trim(), local);
       },
     );
 
@@ -2368,6 +3037,25 @@ IsolatedRepo _worktree(String repoId, String path) => IsolatedRepo(
   sourcePath: '/src/$repoId',
   createdAt: DateTime(2025),
 );
+
+/// Signs with the keys it was given, as the server's key store does.
+class _SigningKeys implements CommitSigningPort {
+  _SigningKeys(this.keys);
+
+  final Map<String, SshSigningKey> keys;
+
+  @override
+  Future<String?> publicKeyOf(String userId) async => keys[userId]?.publicKey;
+
+  @override
+  Future<String> sign(String userId, String publicKey, List<int> commit) async {
+    final key = keys[userId];
+    if (key == null || key.publicKey != publicKey) {
+      throw const CommitSigningUnavailable('you have no signing key.');
+    }
+    return key.sign(commit);
+  }
+}
 
 class _FakeRepoRepo implements RepoRepository {
   _FakeRepoRepo([this._byId = const {}]);

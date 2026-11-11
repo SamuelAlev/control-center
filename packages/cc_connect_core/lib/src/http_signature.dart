@@ -234,6 +234,18 @@ Future<VerifiedConnectRequest> verifyConnectRequest({
   );
 }
 
+/// The install id a `signature-input` header names, before anything is
+/// verified, or null when the header does not parse. It proves nothing: use
+/// it only to refuse an install early (before the Ed25519 check), never to
+/// admit one.
+String? claimedInstallId(String? signatureInput) {
+  final params = signatureInput == null
+      ? null
+      : _parseSignatureInput(signatureInput.trim());
+  final publicKey = params == null ? null : publicKeyFromKeyId(params.keyId);
+  return publicKey == null ? null : installIdForPublicKey(publicKey);
+}
+
 /// Parses exactly the `signature-input` this package emits. Anything else —
 /// another label, a different component list, a missing or extra parameter, a
 /// different `alg` or `tag` — is refused rather than interpreted.

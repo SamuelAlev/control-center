@@ -248,6 +248,85 @@ class GitLabApiClient {
     return (items: items, hasMore: hasMore);
   }
 
+  /// The merge requests [authorUsername] got merged, across every project the
+  /// token can see, in ONE request (`GET /merge_requests?scope=all`), most
+  /// recently updated first, updated after [updatedAfter] when given. Each
+  /// comes back with its project's full path, read off
+  /// `references.full` (`group/sub/project!42`). Failures propagate as
+  /// [RhttpException].
+  Future<List<({String projectPath, GitLabMergeRequest mr})>>
+  listMergedMergeRequestsByAuthor(
+    String authorUsername, {
+    DateTime? updatedAfter,
+    int perPage = 50,
+    CancelToken? cancelToken,
+  }) async {
+    final handle = authorUsername.trim().replaceAll(RegExp('^@'), '');
+    if (handle.isEmpty) {
+      return const [];
+    }
+    final response = await _httpClient.get(
+      '/merge_requests',
+      query: <String, String>{
+        'scope': 'all',
+        'state': 'merged',
+        'author_username': handle,
+        'order_by': 'updated_at',
+        'sort': 'desc',
+        'per_page': '${perPage.clamp(1, kGitLabMaxPerPage)}',
+        'updated_after': ?updatedAfter?.toUtc().toIso8601String(),
+      },
+      cancelToken: cancelToken,
+    );
+    final decoded = _decoded(response);
+    final out = <({String projectPath, GitLabMergeRequest mr})>[];
+    if (decoded is! List) {
+      return out;
+    }
+    for (final item in decoded) {
+      if (item is! Map<String, dynamic>) {
+        continue;
+      }
+      final references = item['references'];
+      final full = references is Map ? references['full'] as String? : null;
+      final bang = full?.lastIndexOf('!') ?? -1;
+      if (full == null || bang <= 0) {
+        continue;
+      }
+      out.add((
+        projectPath: full.substring(0, bang),
+        mr: GitLabMergeRequest.fromJson(item),
+      ));
+    }
+    return out;
+  }
+
+  /// One small read of [projectId]'s open merge requests: the open count
+  /// GitLab reports in `X-Total` (null on instances that omit it for large
+  /// sets) and the most recently updated one's `iid` and `updated_at`.
+  /// Failures propagate as [RhttpException].
+  Future<({int? total, int? topIid, String? topUpdatedAt})>
+  probeOpenMergeRequests(String projectId, {CancelToken? cancelToken}) async {
+    final response = await _httpClient.get(
+      '/projects/$projectId/merge_requests',
+      query: const <String, String>{
+        'state': 'opened',
+        'order_by': 'updated_at',
+        'sort': 'desc',
+        'per_page': '1',
+        'page': '1',
+      },
+      cancelToken: cancelToken,
+    );
+    final decoded = _decoded(response);
+    final first = decoded is List && decoded.isNotEmpty ? decoded.first : null;
+    return (
+      total: int.tryParse(_header(response, 'x-total') ?? ''),
+      topIid: first is Map ? (first['iid'] as num?)?.toInt() : null,
+      topUpdatedAt: first is Map ? first['updated_at'] as String? : null,
+    );
+  }
+
   /// The per-file diffs of merge request [iid].
   ///
   /// Prefers the paginated `/diffs` endpoint (GitLab 15.7+) and falls back to

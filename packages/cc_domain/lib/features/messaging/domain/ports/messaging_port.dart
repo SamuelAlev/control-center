@@ -237,10 +237,14 @@ abstract interface class MessagingPort {
   });
 
   /// Marks a pending plan as refining and re-dispatches with feedback.
+  ///
+  /// [senderUserId] wrote the feedback: the stored message is theirs and the
+  /// refining run acts for them, as a reply typed in the space would.
   Future<void> refinePlan({
     required String workspaceId,
     required String spaceId,
     required String feedback,
+    String? senderUserId,
   });
 
   /// Re-dispatches the agent of a failed turn ([failedMessageId] carries
@@ -249,11 +253,16 @@ abstract interface class MessagingPort {
   /// [workspaceId] must be the space's workspace (else the run is invisible /
   /// unstoppable). [modelOverride] re-runs on a different model (same-model
   /// retry often fails the same way).
+  ///
+  /// [requestedByUserId] asked for the retry, and the new run acts for them
+  /// (see [dispatchAgent]): never for whoever asked for the failed turn, and
+  /// never for nobody, which would make a person's retry the bot's work.
   Future<void> retryAgentTurn({
     required String workspaceId,
     required String spaceId,
     required String failedMessageId,
     String? modelOverride,
+    String? requestedByUserId,
   });
 
   /// Stops the in-flight agent turn identified by [runLogId] (which equals the
@@ -293,12 +302,14 @@ abstract interface class MessagingPort {
   /// or null when no run is active (the caller falls through to a normal
   /// send). [attachments] are the uploaded `metadata['attachments']` entries
   /// a normal send would carry; they ride the card and reach the agent with
-  /// it.
+  /// it. [senderUserId] wrote the card: it is stored as theirs, and the turn
+  /// it becomes when no run takes it acts for them.
   Future<({String messageId, bool steerable})?> enqueueSteering({
     required String workspaceId,
     required String spaceId,
     required String conversationId,
     required String content,
+    String? senderUserId,
     List<Map<String, dynamic>> attachments = const [],
   });
 
@@ -388,10 +399,14 @@ abstract interface class MessagingPort {
   /// Persists nothing: the objective becomes real only when the human
   /// dispatches it, and an interview that wrote as it went would leave a
   /// half-specified goal behind every abandoned attempt.
+  ///
+  /// [requestedByUserId] is set by the server only, from the connection that
+  /// asked; a client sends none.
   Future<GuidedGoalStepResult> guidedGoalStep({
     required String workspaceId,
     required String rough,
     List<String> transcript,
+    String? requestedByUserId,
   });
 
   /// Asks the conversation a question WITHOUT adding to it (`/handoff`,
@@ -401,12 +416,16 @@ abstract interface class MessagingPort {
   /// respectively. The conversation is never mutated: the agent's next real
   /// turn sees exactly what it would have seen anyway, which is the entire
   /// value of a side question.
+  ///
+  /// [requestedByUserId] is set by the server only, from the connection that
+  /// asked; a client sends none.
   Future<ConversationSideChannelResult> askAside({
     required String workspaceId,
     required String spaceId,
     String? conversationId,
     required String kind,
     String input,
+    String? requestedByUserId,
   });
 }
 

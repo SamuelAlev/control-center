@@ -2,7 +2,7 @@
 title: Používejte AI kontrolu
 description: Spusť na PR pipeline pr_review, přečti zjištění a verdikt a kontrolu zveřejni na GitHub.
 slug: cs-CZ/prirucka/navody/ai-kontrola
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Tenhle návod ukazuje, jak nechat recenzenty zkontrolovat pull request a jak
@@ -114,7 +114,10 @@ Control Center odešle **jednu** revizi na GitHub. Zjištění už vyřešená n
 zamítnutá se přeskočí. Tlačítko zahrne každé zbývající otevřené zjištění a při
 **Ship** odešle `APPROVE`. (Nástroj MCP `publish_review_to_github` má ve
 výchozím stavu jen zjištění potvrzená kolegou a nikdy neschvaluje: zveřejňuje
-jako automatizace, takže `approve_on_ship` tam nemá žádný účinek.) Zjištění s kotvou na soubor a řádek se stanou vloženými
+jako automatizace, takže `approve_on_ship` tam nemá žádný účinek. Toto automatické
+zveřejnění zveřejní bot, s výjimkou sdílené aplikace Control Center Connect, když
+provozovatel Connectu tuto instalaci neuvedl: pak jde přes přihlášení odpovědného
+člena ke GitHubu, pod jeho jménem.) Zjištění s kotvou na soubor a řádek se stanou vloženými
 komentáři. Všechno ostatní splyne do těla shrnutí a každé nese patičku
 "— Control Center AI review", aby byl zdroj jednoznačný. Verdikt **Block** se
 odešle jako `REQUEST_CHANGES`, **Hold** jako `COMMENT` a **Ship** jako
@@ -135,8 +138,9 @@ pokud má běžet bez dohledu.
 :::
 
 Ostatní vestavěné pipeline na GitHub posílají rovnou: `cross_review`,
-`pr_triage`, `ticket_to_pr` a `pre_merge_gate` končí krokem komentáře. Jen
-`pr_review` výstup podrží pro tebe.
+`pr_triage`, `ticket_to_pr` a `pre_merge_gate` končí krokem komentáře, který
+posílá server. Jen `pr_review` výstup podrží pro tebe. Žádný z nich nic nesloučí
+ani neschválí.
 
 ## Recenzenty odešli sám
 

@@ -54,9 +54,7 @@ class ChatSharedAppRow extends ConsumerWidget {
       subtitle = l10n.chatSharedAppHint(providerName);
     } else {
       // A sign-in nobody can start must say why, not just grey out.
-      subtitle = info.error.isNotEmpty
-          ? info.error
-          : l10n.signInUnavailable(signInProviderName(lane));
+      subtitle = signInUnavailableMessage(l10n, lane, info);
     }
     return SettingsRow(
       icon: AppIcons.sparkles,

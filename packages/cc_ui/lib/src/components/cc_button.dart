@@ -38,6 +38,12 @@ enum CcButtonVariant {
   /// Solid red — destructive actions (delete, remove) and the negative half
   /// of a verdict pair (request changes).
   destructive,
+
+  /// Transparent with red text/icon and a soft red hover wash — a
+  /// destructive action that sits in a toolbar or header beside [ghost]
+  /// siblings, where a solid [destructive] block would outshout the content.
+  /// The confirm dialog it opens still uses [destructive].
+  ghostDestructive,
 }
 
 /// Height/padding scale for a [CcButton] — the 32/40/48 control ramp.
@@ -125,6 +131,8 @@ class CcButton extends StatelessWidget {
         return CcButtonTokens.success(t);
       case CcButtonVariant.destructive:
         return CcButtonTokens.destructive(t);
+      case CcButtonVariant.ghostDestructive:
+        return CcButtonTokens.ghostDestructive(t);
     }
   }
 

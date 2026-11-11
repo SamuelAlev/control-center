@@ -8,6 +8,8 @@ import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_anchor_index.dart';
+import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
+    show neutralizeMentions;
 import 'package:cc_domain/features/pr_review/domain/usecases/build_github_review_use_case.dart';
 import 'package:cc_domain/features/pr_review/domain/usecases/compute_review_verdict_use_case.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/github_review_plan.dart';
@@ -153,10 +155,9 @@ class ReviewPublisherService implements ReviewPublisherPort {
     );
     final plan = _withinCapabilities(built, client.capabilities);
 
-    // A person pressing publish posts their own review, unattributed;
-    // automation names itself when it posts under somebody's account. Only
-    // GitHub's Connect lane posts automation under a person's account (its
-    // one-repository tokens are children of the accountable human's grant).
+    // A person pressing publish posts their own review, unattributed.
+    // Automation posts as the App's bot on every GitHub lane; it names the
+    // person it acts for only when the attribution hook finds one.
     final attribute = actingUserId == null && client.forge == ForgeHost.github
         ? await _automatedAttribution?.call(
             workspaceId: workspaceId,
@@ -167,7 +168,11 @@ class ReviewPublisherService implements ReviewPublisherPort {
       client: client,
       prNumber: association.prNumber,
       plan: plan,
-      attribute: attribute ?? _unattributed,
+      // The bot's words (automation) never page anyone; a person's own
+      // review says what they publish.
+      attribute: actingUserId != null
+          ? _unattributed
+          : (body) => (attribute ?? _unattributed)(neutralizeMentions(body)),
     );
 
     if (association.status != ReviewSpaceStatus.completed) {
@@ -240,7 +245,10 @@ class ReviewPublisherService implements ReviewPublisherPort {
   /// an empty index would treat every finding as out-of-diff and silently
   /// publish a review with no inline comments, turning one failed API call
   /// into a review that looks like it found nothing.
-  Future<DiffAnchorIndex> _anchorIndex(ForgePrClient client, int prNumber) async {
+  Future<DiffAnchorIndex> _anchorIndex(
+    ForgePrClient client,
+    int prNumber,
+  ) async {
     try {
       final files = (await client.listFiles(prNumber)).files;
       if (files.isEmpty) {
@@ -273,9 +281,8 @@ class ReviewPublisherService implements ReviewPublisherPort {
       : plan;
 
   /// The finding ids the finalizer demoted into the nitpick group, from the
-  /// latest `review_summary` metadata. Empty when the review predates levels
-  /// or nothing was demoted — in both cases every finding publishes inline,
-  /// which is what happened before.
+  /// latest `review_summary` metadata. Empty when the summary records no
+  /// demotions: every finding then publishes inline.
   Set<String> _nitpickIds(Map<String, dynamic>? metadata) {
     final raw = metadata?['nitpickMessageIds'];
     return raw is List ? raw.whereType<String>().toSet() : const {};

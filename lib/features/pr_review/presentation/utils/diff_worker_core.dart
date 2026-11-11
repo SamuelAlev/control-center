@@ -81,7 +81,7 @@ abstract final class DiffWire {
   static const String bgs = 'bg';
 
   /// tok: flattened token kinds ([DiffTokenKind] ints), parallel to [texts].
-  /// Older payloads omit this; the decoder treats a missing array as zeros.
+  /// The decoder reads a missing array as all [DiffTokenKind.none].
   static const String kinds = 'k';
 
   /// err: human-readable message.
@@ -259,7 +259,6 @@ void diffWorker(dynamic params) {
   );
 }
 
-
 Map<String, dynamic> _encodeTok(int startIndex, List<List<DiffToken>> lines) {
   final lineLens = <int>[];
   final texts = <String>[];
@@ -285,7 +284,6 @@ Map<String, dynamic> _encodeTok(int startIndex, List<List<DiffToken>> lines) {
     DiffWire.kinds: kinds,
   };
 }
-
 
 bool _tokensEqual(List<DiffToken> a, List<DiffToken> b) {
   if (a.length != b.length) {

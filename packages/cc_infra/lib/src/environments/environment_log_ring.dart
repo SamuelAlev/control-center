@@ -65,6 +65,9 @@ class EnvironmentLogRing {
   /// New lines as they complete.
   Stream<String> get lines => _lines.stream;
 
+  /// Whether anything listens to [lines].
+  bool get hasListeners => _lines.hasListener;
+
   /// Loads what earlier runs left on disk.
   Future<void> load() async {
     final current = File(path);

@@ -2,7 +2,7 @@
 title: Konfigurasikan polisi kotak pasir
 description: Apa yang mengekang sesuatu larian ejen, cara mengetahui sama ada kotak pasir OS membalutnya dan bagaimana peraturan tindakan menentukan apa yang boleh di-push atau dicapai oleh ejen.
 slug: ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Sama ada sesuatu larian ejen dikotak pasirkan ditentukan pada pelayan, semasa boot
@@ -23,7 +23,7 @@ itulah yang bersyarat — lima yang lain bertahan pada setiap hos.
 
 | Sempadan                 | Apa yang dilakukannya                                                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Kotak pasir OS           | Seatbelt pada macOS, bubblewrap pada Linux dan WSL2. Membalut CLI Claude Code, penyesuai ACP dan alat `bash` harness. **Tiada pada Windows dan pada Linux tanpa `bwrap` dan `socat`** |
+| Kotak pasir OS           | Seatbelt pada macOS, bubblewrap pada Linux dan WSL2. Membalut CLI Claude Code, penyesuai ACP dan alat `bash` harness. **Tiada pada Windows dan pada Linux tanpa `bwrap` dan `socat`, di mana hanya larian pemilik pelayan dimulakan** |
 | Worktree-nya sendiri     | Setiap perbualan mendapat checkout salin-semasa-tulis. Checkout asal dilipat ke dalam larian sebagai laluan tolak-tulis dan kotak pasirlah yang menguatkuasakannya                                            |
 | Kelayakan melalui broker | Broker kelayakan menempa persekitaran setiap larian dan membatalkannya semasa pembongkaran. Token GitHub di dalamnya boleh membaca tetapi tidak boleh push: push melalui Control Center, yang bertanya kepada peraturan push terlebih dahulu |
 | Guardrail tindakan       | Setiap alat yang mengubah keadaan mengisytiharkan kelas kesannya dan pengawal menyelesaikannya sebelum panggilan itu dijalankan. `prompt` tanpa pelulus yang bersambung ditolak                                                 |
@@ -43,11 +43,7 @@ Tiga perkara kekal lebih lemah daripada yang kelihatan:
   pasir mengekangnya. Hanya alat `bash` melalui pelari perintah berkotak pasir.
   Alat-alat itu dibatasi oleh kekangan laluan mereka sendiri serta guardrail
   tindakan.
-- Pada hos tanpa bahagian belakang, baris pertama tidak terpakai sama sekali. ACP
-  dan alat `bash` harness berpatah balik kepada pensanitasi persekitaran serta
-  polisi perintah; Claude Code mewarisi persekitaran hos melalui
-  `NoSandboxAdapter`. Pelayan menyatakan hal itu dalam log permulaannya. Semak
-  milik anda di bawah.
+- Pada hos tanpa bahagian belakang, hanya larian yang pemilik pelayan bertanggungjawab ke atasnya dimulakan, dan bagi larian itu baris pertama tidak terpakai. Larian orang lain ditolak. Di bawah `--sandbox off` setiap larian ahli dimulakan tanpa baris pertama. Sama ada cara, ACP dan alat `bash` harness menggunakan pensanitasi persekitaran serta polisi perintah, dan Claude Code mewarisi persekitaran hos melalui `NoSandboxAdapter`. Pelayan menyatakan kes yang anda alami dalam log permulaannya. Semak milik anda di bawah.
 
 ## Tentukan apa yang boleh di-push oleh ejen
 
@@ -57,8 +53,8 @@ Setiap satunya ialah peraturan tindakan:
 | Peraturan                              | Lalai terbina | Apa yang diliputinya                                                        |
 | -------------------------------------- | ------------- | --------------------------------------------------------------------------- |
 | **Push ke remote**                     | Tanya dahulu  | Setiap `git push` ke GitHub, apa jua penyesuainya                           |
-| **Buka pull request**                  | Tanya dahulu  | `gh pr create` dan alat pull request                                        |
-| **Terbitkan semakan atau cantuman**    | Tanya dahulu  | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`               |
+| **Buka pull request**                  | Tanya dahulu  | Alat pull request Control Center. `gh pr create` tidak berfungsi dalam larian                                        |
+| **Kemas kini atau gabungkan pull request** | Tanya dahulu  | Komen ejen pada pull requestnya, suntingan pada tajuk atau keterangannya dan semakan yang diterbitkan, melalui alat Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` dan `gh pr close` tidak berfungsi dalam larian               |
 | **Tulis ke penjejak luaran**           | Tanya dahulu  | Penulisan tiket melalui alat Control Center dan `gh issue`                  |
 | **Akses rangkaian**                    | Benarkan      | Sama ada kotak pasir mempunyai rangkaian langsung, dan alat web harness     |
 
@@ -76,6 +72,9 @@ kelulusan yang menamakan repo dan ref; dengan **Tolak**, git mencetak
 Bagaimana setiap peraturan sampai kepada larian:
 
 - **Push** dikuatkuasakan melalui apa yang dipegang larian. Token GitHub-nya hanya meliputi satu repositori larian dan tidak boleh push: ia boleh membaca kandungan dan, apabila ahli yang bertanggungjawab boleh push, mengulas pada pull request. Konfigurasi git-nya menghantar setiap push GitHub ke gerbang loopback pada `cc_server`, yang bertanya kepada peraturan dan barulah memajukan push dengan token tulis yang tidak pernah dilihat ejen. Gerbang itu hanya memajukan ke repo worktree itu sendiri atau ke repo GitHub yang dipautkan kepada ruang kerja. Ini terpakai bagi setiap penyesuai.
+- **Pull request dan isu daripada shell** dikenali mengikut baris perintah, dalam alat `bash` harness dan, melalui hook, dalam alat `Bash` Claude Code. Ejen yang menyembunyikan perintah (skrip, `eval`, panggilan API mentah) melepasi semakan ini, tetapi tidak melepasi gerbang push.
+- **Penjejakan tiket**: kunci tidak pernah diletakkan dalam kotak pasir. Ejen menulis tiket melalui alat MCP Control Center, yang bertanya kepada peraturan.
+- **Akses rangkaian** diselesaikan sekali, apabila larian bermula. **Tolak** mematikan rangkaian kotak pasir; **Benarkan** dan **Tanya dahulu** membiarkannya hidup, dan di bawah **Tanya dahulu** alat `web_fetch` dan `web_search` harness masih bertanya bagi setiap panggilan. Apabila rangkaian hidup, GitHub sentiasa berada dalam senarai benarkan egress.
 
 :::note[Dari mana token GitHub larian berasal]
 Token dicetak untuk larian daripada GitHub App ruang kerja, app pelayan, atau Control Center Connect, dan dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab (yang meminta, atau jika tidak, pemilik ruang kerja) pada repositori itu. Ia tidak pernah log masuk GitHub seorang ahli yang diserahkan sepenuhnya, dan tiada token sandaran: apabila token tidak dapat dicetak, larian berjalan tanpa token dan notanya menerangkan sebabnya.
@@ -94,45 +93,38 @@ mengikut urutan itu.
    Linux dan WSL2) atau **Tiada pengasingan**. Fakta **Berkuat kuasa** ialah
    keutamaan peranti ini, bukan balutan yang sebenarnya digunakan oleh pelayan.
 3. Baca log permulaan pelayan. Ia mencetak tepat satu daripada tiga baris:
-   - `agent sandbox ON` serta nota bahagian belakang — larian dibalut
+   - `agent sandbox ON` serta nota bahagian belakang: larian dibalut
    - `no OS-native agent sandbox on this host` serta petunjuk pemasangan di mana
-     ada — larian tidak dibalut
-   - `agent sandbox DISABLED by --sandbox off` — tarik diri yang disengajakan
+     ada: hanya larian yang pemilik pelayan bertanggungjawab ke atasnya dimulakan, tanpa balutan, dan larian orang lain ditolak
+   - `agent sandbox DISABLED by --sandbox off`: setiap larian ahli dimulakan, tanpa balutan
+4. Baris pendedahan yang dicetak semasa permulaan menyatakan perkara yang sama dalam satu perkataan: `sandbox=native`, `sandbox=off` atau `sandbox=unavailable`.
 
 `GET /healthz` tidak melaporkan keadaan kotak pasir, jadi log permulaan ialah
 cara semaknya.
 
-Untuk mematikan kotak pasir secara sengaja — hos tempat profil itu berkelakuan
-buruk ialah sebab kewujudannya — mulakan pelayan dengan `--sandbox off`, atau
-tetapkan `CC_SERVER_SANDBOX=off`. Lalainya ialah `on` dan `on` bermaksud
-"gunakan bahagian belakang jika hos ada satu", tidak pernah "wajibkan satu".
+Hanya pemilik pelayan boleh memutuskan untuk berjalan tanpa kotak pasir. Untuk melakukannya bagi semua orang, mulakan pelayan dengan `--sandbox off`, atau tetapkan `CC_SERVER_SANDBOX=off`. Setiap ejen ahli kemudian berjalan tanpa kurungan pada mesin itu, jadi ini ialah keputusan tentang semua orang yang menggunakan pelayan, dibuat sekali semasa boot. Lalainya ialah `on`: ia membalut setiap larian apabila hos mempunyai bahagian belakang dan, apabila tidak, hanya memulakan larian pemilik.
 
 Dua situasi tidak pernah mendapat balutan kotak pasir natif. Pada **Windows**
-kuar natif sentiasa melaporkan tidak tersedia dan tiada apa yang perlu dipasang —
-penghantaran ejen menggunakan `none`. Bahagian belakang `microvm` adalah
+kuar natif sentiasa melaporkan tidak tersedia dan tiada apa yang perlu dipasang, jadi hanya larian pemilik pelayan dimulakan melainkan pemilik menghantar `--sandbox off`. Bahagian belakang `microvm` adalah
 berasingan (terminal interaktif dan stesen) dan dipagari kuar pada runtime-nya
 sendiri. Pada **Linux dan WSL2** kedua-dua `bwrap` dan `socat` mesti berada pada
-`PATH`; tanpanya kuar melaporkan tidak tersedia dan menamakan pakej yang hilang.
+`PATH`; tanpanya kuar melaporkan tidak tersedia dan menamakan pakej yang hilang, dan hanya larian pemilik dimulakan.
 
 Pada Linux/WSL2 dengan bubblewrap dipasang, glob fail rahsia polisi standard tidak
-boleh dikuatkuasakan untuk fail yang dicipta oleh ejen kemudiannya. Larian natif
-sebegitu kini gagal dan bukannya secara senyap mengabaikan peraturan itu. Oleh
-itu, kuar boot yang positif tidak menjamin bahawa penghantaran Linux boleh
-bermula. `--sandbox off` ialah tarik diri tanpa kekangan yang disengajakan, bukan
-sempadan keselamatan ganti.
+boleh dikuatkuasakan untuk fail yang dicipta oleh ejen kemudiannya, jadi setiap larian natif gagal dan bukannya secara senyap mengabaikan peraturan itu, termasuk larian pemilik. Kuar boot yang positif oleh itu tidak bermakna penghantaran Linux boleh bermula: setakat ini pelayan Linux menjalankan ejen dengan `--sandbox off`, atau tanpa bubblewrap untuk pemilik sahaja. `--sandbox off` ialah tarik diri tanpa kurungan yang disengajakan, bukan sempadan keselamatan ganti.
 
 ## Ketahui apa yang sudah dilarang oleh sesuatu modus
 
 Modus disimpan per ruang dan menyuap penyelesai guardrail sebagai lapisan **praset
 modus**. Tiga daripada empat modus adalah baca sahaja dan modus baca sahaja
-menolak sebelas kelas kesan terus:
+menolak dua belas kelas kesan terus:
 
 | Modus                  | Worktree  | Ditolak oleh praset                                                                                                                                                            |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Ejen** (`chat`)  | Boleh tulis  | Tiada — lalai terbina terpakai                                                                                                                                            |
-| **Rancang**        | Baca sahaja | Padam fail, tulis di luar worktree, commit, push, buka PR, terbitkan atau cantumkan, tulis ke penjejak luaran, pasang pakej, jalankan proses, ubah struktur ruang kerja, boot atau kendalikan kepungan |
-| **Semak**          | Baca sahaja | Sebelas yang sama. Tidak boleh dipilih oleh pengguna — penggubah hanya menawarkan Ejen, Rancang dan Orkestrakan                                                                                         |
-| **Orkestrakan**    | Baca sahaja | Sebelas yang sama                                                                                                                                                                     |
+| **Rancang**        | Baca sahaja | Padam fail, tulis di luar worktree, commit, push, buka PR, terbitkan atau cantumkan, tulis ke penjejak luaran, pasang pakej, jalankan proses, ubah struktur ruang kerja, boot atau kendalikan kepungan, jalankan arahan pada hos |
+| **Semak**          | Baca sahaja | Dua belas yang sama. Tidak boleh dipilih oleh pengguna — penggubah hanya menawarkan Ejen, Rancang dan Orkestrakan                                                                                         |
+| **Orkestrakan**    | Baca sahaja | Dua belas yang sama                                                                                                                                                                     |
 
 Akses rangkaian dan akses rahsia sengaja _tidak_ ditolak oleh modus baca sahaja:
 penyelidikan ialah tujuan sesuatu modus itu.
@@ -157,19 +149,18 @@ Baca apa yang dicetak oleh git. `Control Center policy: …` bermakna satu
 peraturan menolak push itu atau **Tanya dahulu** tidak dijawab.
 `… is not linked to this workspace` bermakna push itu menyasarkan repo yang
 bukan repo worktree itu sendiri dan tidak dipautkan kepada ruang kerja.
-`Control Center has no GitHub credential that can push …` bermakna GitHub App
-tidak dipasang pada repo itu dan tiada kelayakan sandaran yang boleh push:
-pasang App pada repo itu atau sambungkan GitHub.
+`Control Center has no GitHub credential that can push …` bermakna tiada token push
+boleh dijana: pasang GitHub App pada repo itu, atau log masuk ke GitHub.
+
+### Ejen saya ditolak dengan "Pelayan ini tiada kotak pasir"
+
+Larian itu memaparkan **Ejen memerlukan kotak pasir pada pelayan ini** dengan "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini. Pemilik boleh memasang kotak pasir atau mematikan kotak pasir untuk semua orang." Hos pelayan tiada kotak pasir OS, dan orang yang bertanggungjawab ke atas larian itu bukan pemilik pelayan, jadi tiada apa yang dimulakan. Bagi jadual, webhook atau automasi lain, orang yang bertanggungjawab ialah orang yang automasi itu terikat kepadanya, bukan sesiapa yang sedang melihatnya.
+
+Hanya pemilik pelayan boleh menukar perkara ini. Pada Linux dan WSL2 mereka memasang `bubblewrap` dan `socat` dan memulakan semula pelayan (tetapi baca nota Linux di atas dahulu). Pada Windows tiada bahagian belakang untuk dipasang. Pilihan lain ialah memulakan semula pelayan dengan `--sandbox off`, yang menjalankan ejen setiap ahli tanpa kurungan pada mesin itu.
 
 ### Kad Kotak pasir melaporkan tiada kotak pasir natif
 
-Maka larian ejen pada hos itu tidak dibalut oleh Seatbelt atau bubblewrap dan
-sempadan selebihnya ialah apa yang anda ada. Pada Linux dan WSL2, pasang
-kedua-dua alat yang hilang — `sudo apt-get install bubblewrap socat` — dan
-mulakan semula pelayan; log permulaan kemudiannya sepatutnya menyatakan kotak
-pasir dihidupkan. Pada Windows tiada bahagian belakang natif untuk dipasang, jadi
-ketatkan guardrail sebaliknya: lihat
-[Konfigurasikan guardrail](/ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail/).
+Maka larian ejen pada hos itu tidak dibalut oleh Seatbelt atau bubblewrap: hanya larian pemilik pelayan dimulakan, dan sempadan selebihnya ialah apa yang mereka ada. Pada Linux dan WSL2, pasang kedua-dua alat yang hilang (`sudo apt-get install bubblewrap socat`) dan mulakan semula pelayan; log permulaan kemudiannya sepatutnya menyatakan kotak pasir dihidupkan. Pada Windows tiada bahagian belakang natif untuk dipasang, jadi ketatkan guardrail bagi larian pemilik sendiri sebaliknya: lihat [Konfigurasikan guardrail](/ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail/).
 
 ### Ejen mencapai fail di luar worktree-nya
 
@@ -182,7 +173,7 @@ guardrail. Perintah `bash` atau CLI Claude Code _memang_ dibalut di mana bahagia
 belakang wujud dan checkout berdaftar anda ditolak-tulis di dalam balutan itu
 dalam setiap modus, termasuk ejaan yang diselesaikan melalui symlink (pada macOS
 laluan yang dicapai melalui `/tmp` atau `/var/folders` diselesaikan di bawah
-`/private` dan kedua-dua ejaan kini ditolak). Pada hos tanpa bahagian belakang,
+`/private` dan kedua-dua ejaan ditolak). Di bawah `--sandbox off`, atau bagi larian pemilik sendiri pada hos tanpa bahagian belakang,
 tiada satu pun daripadanya terpakai. Sama ada cara, guardrail boleh menolak
 **Tulis di luar worktree** terus.
 

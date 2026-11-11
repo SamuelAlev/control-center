@@ -1,4 +1,6 @@
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/review_code_pane.dart';
@@ -31,12 +33,22 @@ PrFile _file(String filename) {
 
 final _files = <PrFile>[];
 
+/// When set, the changeset load fails with it instead of answering [_files].
+Object? _failure;
+
 Widget _pane(String anchor) {
   return ProviderScope(
+    retry: (_, _) => null,
     overrides: [
       codeFontFamilyProvider.overrideWithValue('monospace'),
       codeFontLigaturesProvider.overrideWithValue(false),
-      repoChangesProvider.overrideWith((ref, args) async => _files),
+      repoChangesProvider.overrideWith((ref, args) async {
+        final failure = _failure;
+        if (failure != null) {
+          throw failure;
+        }
+        return _files;
+      }),
     ],
     child: MaterialApp(
       localizationsDelegates: [
@@ -91,6 +103,7 @@ void main() {
   tearDownAll(() => DiffWorkerPool.debugForceInline = false);
 
   setUp(() {
+    _failure = null;
     _files
       ..clear()
       ..addAll(files);
@@ -137,5 +150,33 @@ void main() {
       expect(atSecond, greaterThan(atFirst + 400));
       expect(find.text('second.dart'), findsOneWidget);
     });
+  });
+
+  testWidgets('a diff refused by the forge says so, not "no changes"', (
+    tester,
+  ) async {
+    _failure = RemoteRpcException(RpcErrorCodes.unauthorized, 'refused', {
+      'kind': 'forge_cannot_read',
+      'forge': 'github',
+    });
+    await tester.pumpWidget(_pane('first.dart'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.text("Your GitHub account can't read this repository."),
+      findsOneWidget,
+    );
+    expect(find.text('No changes to review'), findsNothing);
+  });
+
+  testWidgets('a diff that fails otherwise offers a retry', (tester) async {
+    _failure = StateError('boom');
+    await tester.pumpWidget(_pane('first.dart'));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text("Couldn't load the changes"), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
   });
 }

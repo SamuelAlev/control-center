@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/shared/utils/open_url.dart';
@@ -35,10 +36,10 @@ typedef BackupProgress = void Function(int transferred, int? total);
 
 /// Whether this client can move backup bytes at all.
 ///
-/// False on a relay-only connection, where the RPC socket rides the broker and
-/// there is no HTTP origin to reach — the same lane the composer's image upload
-/// degrades on. The UI disables the transfer controls and says why rather than
-/// offering a button that cannot work.
+/// True on every connected session, direct or relayed: the bytes ride the
+/// encrypted resource facade inside the RPC channel, like the composer's image
+/// upload. False only when the session has no media proxy at all; the UI then
+/// disables the transfer controls and says why.
 final backupTransferAvailableProvider = Provider<bool>(
   (ref) => ref.watch(mediaProxyConfigProvider) != null,
 );
@@ -243,16 +244,34 @@ class BackupTransfer {
   /// BuildContext to write them from.
   BackupTransferException _failure(int status, String body) {
     final trimmed = body.trim();
+    // A refusal the app words itself arrives as JSON with a `kind`
+    // (`{"error": ..., "kind": "server_owner_required"}`); anything else is
+    // the server's plain sentence.
+    final decoded = _jsonObject(trimmed);
+    final error = decoded?['error'];
+    final text = decoded == null ? trimmed : (error is String ? error : '');
+    final kind = decoded?['kind'];
     return BackupTransferException(
       statusCode: status,
+      kind: kind is String ? kind : null,
       // The restore route answers with the adopter's own message ("this is not
       // a workspace database"), which is the only useful thing to say and the
       // only thing the server knows. Bounded: a stray HTML error page is not a
       // sentence to put in a toast.
-      serverMessage: trimmed.isNotEmpty && trimmed.length < 500
-          ? trimmed
-          : null,
+      serverMessage: text.isNotEmpty && text.length < 500 ? text : null,
     );
+  }
+
+  static Map<String, dynamic>? _jsonObject(String body) {
+    if (!body.startsWith('{')) {
+      return null;
+    }
+    try {
+      final decoded = jsonDecode(body);
+      return decoded is Map<String, dynamic> ? decoded : null;
+    } on FormatException {
+      return null;
+    }
   }
 }
 
@@ -262,10 +281,18 @@ class BackupTransfer {
 /// own message. The UI decides the words; see `describeBackupTransferError`.
 class BackupTransferException implements Exception {
   /// Creates a [BackupTransferException].
-  const BackupTransferException({required this.statusCode, this.serverMessage});
+  const BackupTransferException({
+    required this.statusCode,
+    this.serverMessage,
+    this.kind,
+  });
 
   /// The HTTP status the server answered with.
   final int statusCode;
+
+  /// The refusal's `kind`, when the server named one (such as
+  /// `server_owner_required` for a restore by anyone but the server owner).
+  final String? kind;
 
   /// The server's own explanation, when it gave one.
   final String? serverMessage;

@@ -2,7 +2,7 @@
 title: Hartă de rute
 description: Fiecare rută pe care o înregistrează Control Center, cu ecranul și parametrii ei de interogare.
 slug: ro-RO/manual/referinta/harta-de-rute
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Shell-ul aplicației
@@ -11,7 +11,7 @@ Shell-ul aplicației (`ControlCenterLayout`) învelește fiecare rută din inter
 
 Poarta este completă atunci când cel puțin un forge este conectat **pentru utilizatorul autentificat** și există cel puțin un spațiu de lucru.
 
-O acreditare lipsă și o configurare lipsă sunt tratate diferit, iar discriminatorul este `users.onboarding_finished_at`, citit din `identity.me` al apelantului — niciodată „există spații de lucru”, ceea ce este greșit din momentul în care cineva este invitat într-un spațiu de lucru pe care nu l-a creat. Fără niciun forge conectat, un cont care a trecut prin onboarding rămâne în aplicație: shell-ul spațiului de lucru afișează un avertisment cu un link către **Setări → Spațiu de lucru → Profil și identitate**, unde se află autentificarea. Unul care nu a trecut prin onboarding merge la `/onboarding`. Cât timp indicatorul este încă necunoscut, garda ține splash-ul în loc să ghicească, pentru că nu redirecționează niciodată înapoi din onboarding.
+O acreditare lipsă și o configurare lipsă sunt tratate diferit, iar discriminatorul este `users.onboarding_finished_at`, citit din `identity.me` al apelantului — niciodată „există spații de lucru”, ceea ce este greșit din momentul în care cineva este invitat într-un spațiu de lucru pe care nu l-a creat. Fără niciun forge conectat, un cont care a trecut prin onboarding rămâne în aplicație: shell-ul spațiului de lucru afișează un avertisment cu un link către **Setări → Tu → Profil**, unde se află autentificarea. Unul care nu a trecut prin onboarding merge la `/onboarding`. Cât timp indicatorul este încă necunoscut, garda ține splash-ul în loc să ghicească, pentru că nu redirecționează niciodată înapoi din onboarding.
 
 ## Rute fără prefix
 
@@ -65,7 +65,7 @@ Nu există **niciun element „Planuri” în bara laterală**. Plan Studio se d
 
 ## Rute de setări
 
-`/settings` redirecționează către `/settings/you/appearance`. Atât butonul de setări din bara laterală, cât și `Cmd/Ctrl + ,` duc la `/settings/you/appearance`.
+`/settings` redirecționează către `/settings/you/profile`. Atât butonul de setări din bara laterală, cât și `Cmd/Ctrl + ,` duc la `/settings/you/profile`.
 
 Căile de setări sunt grupate pe **domenii de aplicare** — `you/`, `workspace/`, `server/` — pentru că segmentul arată pe cine afectează o modificare. Două căi preced această grupare și nu au domeniu de aplicare în URL: `/settings/memory` și `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Căile de setări sunt grupate pe **domenii de aplicare** — `you/`, `workspace
 
 | Cale                          | Ecran                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Temă, limbă, tipografie, tema editorului (pagina de aterizare a setărilor) |
-| `/settings/you/notifications` | Comutatoare per eveniment, orele de liniște                                |
+| `/settings/you/profile`       | Contul tău pe acest server: nume, nume de utilizator, poză și autentificare (pagina de aterizare a setărilor) |
+| `/settings/you/profile?section=accounts` | Conturi conectate: autentificările tale proprii pentru găzduirea de cod, ticketing, calendar și chat, plus ciornele de tichete din chat |
+| `/settings/you/appearance`    | Temă, limbă, tipografie, tema editorului |
 | `/settings/you/audio`         | Microfon, dictare, detectarea întâlnirilor și ieșirea de peisaj sonor      |
+| `/settings/you/notifications` | Comutatoare per eveniment, orele de liniște                                |
+| `/settings/you/commits`       | Cine este creditat la commit-urile din munca pe care o pornești și cheia ta de semnare a commit-urilor |
+| `/settings/you/desktop`       | Doar aplicația desktop: pictograma din tavă, închiderea ferestrei și deschiderea la pornirea sistemului |
 | `/settings/you/devices`       | Telefoane asociate și control remote                                       |
 | `/settings/you/newsfeed`      | Gestionarea fluxului: surse, reîmprospătare, stare de citire               |
+| `/settings/you/links`         | Unde se deschid linkurile din afara Control Center                          |
 
 ### Spațiu de lucru
 
 | Cale                               | Ecran                                                                                               |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profilul și identitatea în acest spațiu de lucru: nume, autor git, găzduire de cod, calendar |
-| `/settings/workspace/general`      | Nume, logo, globuri de secrete, concurența revizuirilor, denumirea branch-urilor, sănătatea sincronizării, punți de chat, zona periculoasă |
+| `/settings/workspace/profile`      | Profilul și identitatea în acest spațiu de lucru: nume, e-mail, autor git |
+| `/settings/workspace/general`      | Nume, logo, globuri de secrete, concurența revizuirilor, denumirea branch-urilor, zona periculoasă |
+| `/settings/workspace/integrations` | Alegerea Connect, aplicația GitHub și tokenurile de automatizare, furnizorul de ticketing și automatizarea lui, sănătatea sincronizării, aplicațiile de provider ale spațiului de lucru, punțile de chat, GIF-urile. Fiecare grup de provideri își numește propriul cont și trimite la Conturi conectate |
 | `/settings/workspace/meetings`     | Șabloane de note de întâlnire și profiluri vocale salvate                                           |
-| `/settings/workspace/members`      | Lista membrilor, invitații, jurnal de audit. Jurnalul de audit se paginează cu `?cursor=` opțional   |
+| `/settings/workspace/members`      | Lista membrilor și invitațiile   |
 | `/settings/workspace/repositories` | Repo-urile înregistrate în acest spațiu de lucru                                                    |
 | `/settings/workspace/environments` | Definiții de mediu: ce pot porni spațiile și ce sarcini rulează worktree-urile lor |
 | `/settings/workspace/agents`       | Identitățile de agent înregistrate                                                                  |
@@ -108,6 +114,8 @@ Căile de setări sunt grupate pe **domenii de aplicare** — `you/`, `workspace
 | `/settings/server/rigs`        | Stații: ce poate porni această gazdă, imagini de bază, imagini personalizate, mașini în rulare |
 | `/settings/server/sandbox`     | Acordări de execuție în sandbox: programe pe care agenții le pot rula din copia lor de lucru a repo-urilor tale |
 | `/settings/server/diagnostics` | Diagnosticări și confidențialitate: sandbox, embedding, jurnalizare, raportarea crash-urilor |
+| `/settings/server/people`      | Persoanele de pe acest server și dacă fiecare adresă este confirmată (doar proprietarul serverului)       |
+| `/settings/server/audit`       | Jurnalul de audit: al serverului și al spațiilor de lucru pe care le administrezi                            |
 | `/settings/server/backup`      | Backup și restaurare: snapshot-uri de instalare, export per spațiu de lucru, import și ștergere |
 | `/settings/server/about`       | Despre și actualizări                                                                 |
 

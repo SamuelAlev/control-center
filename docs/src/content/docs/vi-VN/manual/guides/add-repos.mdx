@@ -2,10 +2,10 @@
 title: Thêm kho mã vào không gian làm việc
 description: Đăng ký các bản checkout Git vào một không gian làm việc để agent có thể làm việc trên chúng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Hướng dẫn này chỉ cho bạn cách đăng ký một bản checkout Git vào một không gian làm việc, lập chỉ mục lại nó và gỡ nó đi.
+Hướng dẫn này chỉ cho bạn cách đăng ký một bản checkout Git vào một không gian làm việc, lập chỉ mục lại nó và gỡ nó đi. Thêm một kho mã từ các thư mục của máy chủ cần chủ sở hữu máy chủ; gỡ một kho mã cần quản trị viên không gian làm việc.
 
 Kho mã được **giới hạn theo không gian làm việc**. Không có sổ đăng ký toàn cục và không có bước liên kết: thêm một kho mã và đưa nó vào một không gian làm việc là cùng một hành động. Cùng một bản checkout khi được đăng ký trong hai không gian làm việc sẽ trở thành hai hàng độc lập với hai id khác nhau — xuyên suốt các không gian làm việc, danh tính của một kho mã là đường dẫn hệ thống tệp của nó, không bao giờ là id.
 
@@ -21,9 +21,29 @@ Mọi trường hợp khác đều bị từ chối ngay khi đăng ký với m�
 
 Máy chủ mã được đọc từ remote và lưu trên kho mã — bạn không bao giờ tự chọn nó. Một không gian làm việc có thể chứa kho mã từ cả ba máy chủ cùng lúc, và mỗi máy chủ được giao tiếp qua API riêng với thông tin xác thực riêng. Các namespace lồng nhau của GitLab được giữ nguyên, nên `gitlab.com/group/subgroup/project` được đăng ký với owner `group/subgroup` và tên `project`.
 
-Thư mục cũng phải nằm trên máy đang chạy `cc_server`, bên trong một trong các thư mục `--repo-roots` của máy chủ đó. Danh sách cho phép đó mặc định là thư mục home của người dùng máy chủ, và việc duyệt vượt lên trên một gốc trong danh sách bị từ chối.
+Thư mục cũng phải nằm trên máy đang chạy `cc_server`, bên trong một trong các thư mục `--repo-roots` của máy chủ đó. Danh sách cho phép đó mặc định là thư mục home của người dùng máy chủ, và việc duyệt vượt lên trên một gốc trong danh sách bị từ chối. Duyệt các thư mục của máy chủ chỉ được cung cấp cho [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ), vì nó liệt kê các tệp của chính máy đó. Những người khác thấy “Chủ sở hữu máy chủ thêm kho lưu trữ từ các thư mục của máy chủ.” ở chỗ nút **Thêm kho lưu trữ** lẽ ra xuất hiện, và một liên kết tới một kho mã mà không có không gian làm việc nào của họ có sẽ thông báo rằng kho đó chưa được liên kết trong bất kỳ không gian làm việc nào của họ, và yêu cầu họ nhờ chủ sở hữu máy chủ thêm nó.
+
+Vị trí được phép của bản checkout phụ thuộc vào người liên kết nó:
+
+- **Bên trong bộ nhớ riêng của không gian làm việc** trên máy chủ: bất kỳ quản trị viên không gian làm việc nào.
+- **Bất kỳ nơi nào khác trên đĩa của máy chủ**: chỉ [chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ), vì chỉ họ mới được trỏ máy chủ tới các tệp của chính máy. Những người khác thấy “Chỉ chủ sở hữu máy chủ mới có thể liên kết thư mục nằm ngoài bộ nhớ của không gian làm việc này.”
+- **Thư mục dữ liệu của máy chủ**, hoặc bất cứ thứ gì bên trong nó: không bao giờ.
+
+`origin` của bản checkout phải là kho mã bạn đang liên kết. Một thư mục có `origin` gọi tên một kho khác sẽ bị từ chối với thông báo “Origin của thư mục đó là một kho lưu trữ khác.”
+
+### Thư mục máy chủ chưa sử dụng
+
+Một kho mã có thư mục nằm ngoài bộ nhớ của không gian làm việc và không do chủ sở hữu máy chủ liên kết, chẳng hạn một kho mã trong không gian làm việc được nhập, sẽ hiện “Thư mục này nằm ngoài bộ nhớ của không gian làm việc. Hãy xác nhận rằng máy chủ này được phép sử dụng nó.” dưới hàng của nó, cho đến khi chủ sở hữu máy chủ xác nhận. Những người khác thấy “Thư mục này nằm ngoài bộ nhớ của không gian làm việc. Chỉ chủ sở hữu máy chủ mới có thể xác nhận.” thay vào đó.
+
+Chủ sở hữu xác nhận một lần: **Xác nhận** trên hàng, hoặc **Xác nhận tất cả** trong thông báo phía trên danh sách khi có nhiều kho đang chờ. Mỗi kho được kiểm tra lại dưới tư cách chủ sở hữu, bằng các kiểm tra giống như khi liên kết nó. Cho tới đó, kho vẫn nằm trong danh sách nhưng không được mở, cấp phát hay lập chỉ mục: không trình soạn thảo, terminal, môi trường hay bản checkout của space nào dùng nó, và đồ thị mã bỏ qua nó. Thêm lại cùng thư mục đó với tư cách chủ sở hữu máy chủ có tác dụng giống như xác nhận, và giữ nguyên id của kho mã.
+
+Một bản checkout mà một liên kết tượng trưng đã chuyển đi nơi khác cũng được xử lý tương tự: nó vẫn được liệt kê và không được dùng cho tới khi có người được phép liên kết thư mục mà nó hiện trỏ tới liên kết lại nó.
+
+Bạn cũng cần đăng nhập vào forge của kho mã, và tài khoản của chính bạn phải thấy được kho mã đó.
 
 ## Đăng ký một bản checkout
+
+Bạn cần là chủ sở hữu máy chủ cho các bước này.
 
 1. Mở **Cài đặt → Không gian làm việc → Kho lưu trữ** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Nhấp vào **Thêm kho lưu trữ**.
@@ -56,7 +76,23 @@ Kéo tay nắm trên một hàng. Thứ tự bạn đặt là thứ tự mà m�
 
 ## Sửa liên kết GitHub
 
-Biểu tượng liên kết trên một hàng mở trình chỉnh sửa owner GitHub và tên kho mã của kho đó — hữu ích khi remote bị đổi tên hoặc chuyển đi.
+Biểu tượng liên kết trên một hàng mở trình chỉnh sửa owner GitHub và tên kho mã của kho đó .
+
+Bạn hiếm khi cần nó. Một liên kết gắn với id vĩnh viễn của kho mã trên forge, nên việc đổi tên hay chuyển nhượng được theo dõi tự động.
+
+- Đổi tên một kho mã trong Control Center chỉ thay đổi tên hiển thị của nó.
+- Thay đổi kho mã trên forge mà một liên kết trỏ tới cần quản trị viên không gian làm việc, và được kiểm tra bằng đăng nhập của quản trị viên đó trên forge, giống như khi liên kết nó.
+- Một kho mã đã liên kết không thể biến thành kho chỉ cục bộ.
+
+Nếu đường dẫn sau đó chỉ tới một kho mã **khác** (bản gốc bị xóa rồi tạo lại, hoặc bị chuyển đi và thay bằng một kho khác), Control Center ngừng gửi bất cứ thứ gì tới nó: không token, push, bình luận hay yêu cầu nào. Điều đó cũng bao gồm các hành động của chính bạn: một đánh giá, merge hay bình luận bạn thực hiện trên kho như vậy sẽ bị từ chối, trên GitHub, GitLab và Bitbucket như nhau. Hàng và các pull request của kho hiển thị “_repo_ giờ trỏ tới một kho lưu trữ khác” cho tới khi quản trị viên không gian làm việc nhấn **Liên kết lại**.
+
+## Ai có thể mở mã
+
+Quyền kho mã riêng một mình không mở các tệp của kho mã. Để mở tệp, diff, tìm kiếm hay một terminal cho nó, một thành viên cần quyền kho mã của Control Center và đăng nhập forge của chính họ phải đọc được kho mã đó. Quản trị viên không gian làm việc không được miễn; chủ sở hữu máy chủ thì được miễn. Xem [Mã đi theo forge](/vi-VN/so-tay/khai-niem/uy-quyen/#mã-đi-theo-forge).
+
+Khi bạn cấp một kho mã cho người có tài khoản forge không đọc được nó, quyền vẫn được lưu và bạn thấy một cảnh báo, chẳng hạn “Đã lưu. Tài khoản GitHub của họ chưa thể đọc kho lưu trữ này, nên nó vẫn bị ẩn đối với họ.”
+
+Quy tắc đó cũng quyết định ai có thể mở một space. Một space chỉ mở cho các thành viên có thể mở mã của mọi kho mã mà nó dùng, và bị ẩn với những người khác, cùng với kết quả tìm kiếm, nhật ký chạy, todo, hoạt động và thông báo của nó. Một space không có kho mã nào thì mở cho mọi thành viên. Xem [Space đi theo kho mã của chúng](/vi-VN/so-tay/khai-niem/uy-quyen/#space-đi-theo-kho-mã-của-chúng).
 
 ## Gỡ một kho mã
 
@@ -66,7 +102,31 @@ Biểu tượng liên kết trên một hàng mở trình chỉnh sửa owner Gi
 
 Hộp thoại nói rõ điều nó làm: “_name_ sẽ bị gỡ khỏi không gian làm việc này. Tệp cục bộ trên đĩa không bị thay đổi.”
 
+Gỡ một kho mã cần quản trị viên không gian làm việc. Thao tác này cũng quên các thông tin xác thực forge được lưu cho kho đó, như token tự động hóa GitLab hoặc Bitbucket.
+
 Việc gỡ sẽ xóa hàng kho mã khỏi không gian làm việc này và xóa theo tầng các hàng đồ thị mã của nó — ký hiệu, cạnh, tệp và điểm kiểm tra lập chỉ mục — cùng mọi cấp quyền kho mã theo từng thành viên trên nó, các liên kết giữa space và kho mã của nó, và các bản ghi checkout cách ly của nó. Cùng bản checkout đó khi được đăng ký trong một không gian làm việc khác là một hàng độc lập và không bị ảnh hưởng. Các worktree trên đĩa mà những bản ghi đó trỏ tới không bị xóa bởi thao tác gỡ.
+
+## Khắc phục sự cố
+
+### Tôi có quyền nhưng kho báo tài khoản của tôi không thể đọc nó
+
+Tài khoản forge của chính bạn không thể đọc kho mã đó, nên Control Center giữ mã của nó tránh xa bạn dù không gian làm việc đã cấp quyền. Hãy đăng nhập vào forge trong **Cài đặt → Bạn → Hồ sơ → Lưu trữ mã** nếu bạn chưa đăng nhập, hoặc xin quyền truy cập từ chủ sở hữu kho mã trên forge. Kho mã sẽ mở ngay khi tài khoản forge của bạn đọc được nó.
+
+### “Thư mục này nằm ngoài bộ nhớ của không gian làm việc”
+
+Thư mục của kho mã nằm ngoài bộ nhớ của không gian làm việc và chủ sở hữu máy chủ không liên kết nó, hoặc một liên kết tượng trưng giờ trỏ nó tới nơi khác. Nó vẫn được liệt kê nhưng không dùng tới cho đến khi chủ sở hữu máy chủ xác nhận nó hoặc thêm lại thư mục. Nếu bạn không phải chủ sở hữu, hãy hỏi họ. Nếu bạn là chủ sở hữu, hãy nhấn **Xác nhận** trên hàng hoặc **Xác nhận tất cả** phía trên danh sách; xem [Thư mục máy chủ chưa sử dụng](#thư-mục-máy-chủ-chưa-sử-dụng).
+
+### “Hiện không còn gì tồn tại tại đường dẫn này trên máy chủ”
+
+Thư mục đã bị chuyển đi hoặc xóa trên máy của máy chủ. Hãy đặt nó trở lại, hoặc nhờ quản trị viên không gian làm việc gỡ kho mã bằng **Xóa** trong thông báo rồi thêm lại từ thư mục hiện tại.
+
+### “Thư mục này không thể dùng làm kho lưu trữ”
+
+Thư mục được lưu là thư mục dữ liệu riêng của máy chủ, một thứ bên trong nó, hoặc chính thư mục bộ nhớ của không gian làm việc. Không thứ nào trong số đó có thể là kho mã. Quản trị viên không gian làm việc gỡ nó bằng **Xóa** trong thông báo, rồi thêm lại kho mã từ thư mục thật của bản checkout.
+
+### “Không thể xác nhận quyền truy cập forge của bạn”
+
+Control Center không thể kết nối tới forge để kiểm tra rằng tài khoản của bạn đọc được kho mã, nên nó từ chối thay vì đoán. Hãy thử lại sau một lát.
 
 ## Hướng dẫn liên quan
 

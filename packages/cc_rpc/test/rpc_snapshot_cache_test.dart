@@ -215,14 +215,14 @@ void main() {
       'meetings': [2],
     });
   });
-  test('flush writes the version-1 document older builds decode', () async {
+  test('flush writes a version-1 document the full decode reads', () async {
     final store = _Store();
     final cache = RpcSnapshotCache(store: store);
     cache.write('a "quoted" key', {'text': 'line\nbreak "q" é', 'n': 1});
     cache.write('empty', {});
     await cache.flush();
 
-    // Exactly what the old decode-everything path produced and reads back.
+    // Exactly what a decode-everything encode would produce.
     expect(jsonDecode(store.payload!), {
       'version': 1,
       'entries': [

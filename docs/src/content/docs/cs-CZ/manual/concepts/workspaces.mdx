@@ -2,7 +2,7 @@
 title: Pracovní prostory a izolace
 description: Proč je pracovní prostor tvrdá hranice tenanta, jak rozdělení databází tu hranici dělá strukturální a co ji záměrně překračuje.
 slug: cs-CZ/prirucka/koncepty/pracovni-prostory
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Co je pracovní prostor?
@@ -79,9 +79,11 @@ Soubor pracovního prostoru nese jen jednořádkové `workspace_meta` pro sebeid
 
 ## Vytvoření pracovního prostoru
 
+Pracovní prostor může vytvořit jen [vlastník serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru); ID přiřadí server. Správce nebo vlastník pracovního prostoru další vytvořit nemůže. Kdo zatím není v žádném pracovním prostoru, uvidí **Zatím nejste v pracovním prostoru**, což ho vyzve, aby vlastník serveru pracovní prostor založil, nebo aby ho správce pozval. Formulář **Přidat pracovní prostor** říká totéž každému jinému.
+
 Vytvoření pracovního prostoru je víc než vložení řádku do registru. V jedné operaci server zapíše zakládajícího uživatele jako `ownerUserId`, zaznamená jeho členství v roli vlastníka a publikuje doménovou událost `WorkspaceCreated`. Posluchači té události pak nasadí, idempotentně a na pozadí:
 
-- **agenta CEO** a čtyři specialisty, `qa`, `architect`, `engineer`, `librarian`, přičemž specialisté se zodpovídají CEO;
+- **agenta CEO** a pět specialistů, `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`, přičemž specialisté se zodpovídají CEO;
 - **vestavěné šablony pipeline** a jejich spouštěče (spouštěče na událost a ruční se dodávají zapnuté; plánované jsou volitelné, kromě denního úklidu worktree přes GC);
 - **startovací sady evalů**.
 
@@ -90,7 +92,7 @@ Děje se to u _každého_ pracovního prostoru, ne jen u prvního. Nasazení age
 Zápis členství vlastníka je důležitější, než vypadá: bez něj by čerstvý pracovní prostor neměl členy a každé další volání vázané na pracovní prostor, které tvůrce udělá, by bylo odmítnuté.
 
 :::note[Agenti pracovní prostor vytvořit neumí]
-Nástroj MCP `create_workspace` neexistuje. Člověk pracovní prostor zakládá přes `workspace.create` (kontrolní bod jen se jménem) nebo `workspace.upsert` (celý záznam, slouží i k úpravám). Obojí zapíše zakládajícího uživatele jako `owner` a publikuje `WorkspaceCreated`.
+Nástroj MCP `create_workspace` neexistuje. Pracovní prostor zakládá vlastník serveru přes `workspace.create`, který ho zapíše jako `owner` a publikuje `WorkspaceCreated`. `workspace.upsert` jen upraví existující pracovní prostor; nikdy žádný nevytvoří a nikdy nemění jeho vlastníka, což dělá jen **Přenést vlastnictví**.
 :::
 
 ## Mazání, export a import

@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_list_providers.dart';
@@ -32,9 +33,9 @@ enum InboxEmptyCaveat {
   /// of how many pull requests are actually waiting.
   identityUnresolved,
 
-  /// The GitHub App installation covering linked repos is suspended, so the
-  /// poller has parked them and this empty inbox is last-known data (or never
-  /// fetched), not a trustworthy clear queue.
+  /// The GitHub App installation covering linked repos is suspended, so
+  /// their pull requests are left out and this empty inbox is not a
+  /// trustworthy clear queue.
   installationSuspended,
 }
 
@@ -71,11 +72,10 @@ class InboxEmptyState extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final status = ref.watch(githubStatusProvider).value;
-    final inaccessible =
-        ref.watch(prsByRepoProvider).value?.inaccessibleRepos ?? const [];
+    final access = ref.watch(prsByRepoProvider).value?.repoAccess ?? const [];
     final suspended = [
-      for (final repo in inaccessible)
-        if (repo.isInstallationSuspended) repo,
+      for (final issue in access)
+        if (issue.state == RepoAccessState.installationSuspended) issue,
     ];
     final caveat = resolveInboxEmptyCaveat(
       indicator: status?.indicator,
@@ -91,8 +91,8 @@ class InboxEmptyState extends ConsumerWidget {
         );
       case InboxEmptyCaveat.installationSuspended:
         return EmptyState(
-          message: l10n.repoAccessNoticeSuspendedTitle,
-          description: l10n.repoAccessNoticeSuspendedBody(
+          message: l10n.repoAccessSuspendedTitle,
+          description: l10n.repoAccessSuspendedBody(
             suspended.map((r) => r.repoFullName).join(', '),
           ),
           icon: AppIcons.alertTriangle,

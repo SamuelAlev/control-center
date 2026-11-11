@@ -2,7 +2,7 @@
 title: Utwórz szablon potoku
 description: Napisz szablon przepływu pracy DAG w edytorze potoków — dodaj węzły, połącz je, zadeklaruj dane wejściowe i spraw, aby dał się uruchomić.
 slug: pl-PL/podrecznik/poradniki/tworzenie-potoku
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Szablony potoków tworzy się w ustawieniach obszaru roboczego. Pozycja **Potoki**
@@ -40,7 +40,7 @@ węzeł wyląduje tam, gdzie go upuścisz, bez połączenia przychodzącego.
 | **Bash script**                 | listen       | Uruchamia skrypt powłoki z podstawianiem `{{state}}`; agent nie jest wysyłany                   |
 | **Open conversation**           | listen       | Otwiera jedną widoczną przestrzeń uruchomienia i jej checkout; węzły agentów dołączają do tego pokoju |
 | **Clone PR branch**             | listen       | Odnajduje gałąź źródłową PR przez `gh pr view` i klonuje ją do katalogu uruchomienia            |
-| **Post PR comment**             | listen       | Publikuje scalone ustalenia w PR jako komentarz recenzji GitHub                                 |
+| **Post PR comment**             | listen       | Publikuje komentarz recenzji w PR z poziomu serwera: ustalenia albo jego `message`                                 |
 | **Reviewer (prompt)**           | listen       | Wysyła wyspecjalizowanego agenta recenzenta; wstrzymuje krok, aż agent zgłosi swój wynik         |
 | **Consolidate (join)**          | join         | Czeka na kilka gałęzi nadrzędnych, a następnie prosi agenta o scalenie ich wyników              |
 | **Custom prompt**               | listen       | Ogólny węzeł sterowany promptem, kierowany przez treść `promptAgent`                            |
@@ -139,6 +139,7 @@ Dodaje pole **Skrypt bash**. Nie ma pól katalogu roboczego ani środowiska, bo
   i `GITHUB_TOKEN` zawierają token, który może tylko odczytywać to jedno
   repozytorium, więc `gh` i `git clone` działają na nim bez dodatkowej
   konfiguracji. W przeciwnym razie tokenu GitHub nie ma.
+- Skrypt nie może zapisywać do GitHuba: `gh pr comment`, `gh pr merge`, `gh pr create` i `git push` kończą się błędem z tym tokenem. Komentuj zamiast tego węzłem **Post PR comment** (ustaw `extras.message`, aby opublikować własny tekst z symbolami `{{key}}`, zamiast scalonych ustaleń). Wypychaj i otwieraj pull requesty z węzła agenta: jego `git push` przechodzi przez bramkę uruchomienia, a PR otwiera narzędzie `open_pull_request`. Scalanie pozostaje po stronie człowieka; żaden węzeł nie scala.
 - Potok z krokiem bash może utworzyć lub edytować tylko administrator obszaru
   roboczego.
 - Skrypt jest uruchamiany jako dosłowny plik wykonywalny `bash`, więc `bash` musi

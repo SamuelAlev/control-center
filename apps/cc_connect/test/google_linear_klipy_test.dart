@@ -231,6 +231,31 @@ void main() {
         expect(refreshed.body, isNot(contains('expired or revoked')));
       },
     );
+
+    test('every shared refresh-rejection code needs sign-in; another error '
+        'keeps the grant', () async {
+      _scriptGoogle(harness.upstream);
+      final good = SealedGrant.fromJson(
+        (await _claim(harness, a, ConnectOAuthLane.google)).json,
+      );
+      Future<Object?> refreshAnswering(String error) async {
+        harness.upstream.json('POST', _googleToken, 400, {'error': error});
+        return (await harness.call(
+          a,
+          'POST',
+          '/v1/google/refresh',
+          body: SealRequest(seal: good.seal, workspaceId: 'ws1').toJson(),
+        )).json['error'];
+      }
+
+      for (final error in oauthRefreshRejectedErrors) {
+        expect(await refreshAnswering(error), 'needs_sign_in', reason: error);
+      }
+      expect(
+        await refreshAnswering('temporarily_unavailable'),
+        'provider_unavailable',
+      );
+    });
   });
 
   group('linear', () {

@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_domain/core/domain/entities/workspace.dart'
+    show WorkspaceConnectMode;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/features/calendar/domain/entities/calendar_event.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -39,12 +41,28 @@ void main() {
   late List<String> synced;
   late _FakeGoogle google;
   late GoogleSignInLane lane;
+  // Workspaces on their own apps; every other one inherits a server on its
+  // own apps.
+  late Set<String> ownWorkspaces;
+
+  Future<ConnectRoute> route(String? ws) async => ownWorkspaces.contains(ws)
+      ? const ConnectRoute(
+          mode: WorkspaceConnectMode.own,
+          target: ConnectTarget.none,
+          serverOwnApps: false,
+        )
+      : const ConnectRoute(
+          mode: WorkspaceConnectMode.inherit,
+          target: ConnectTarget.none,
+          serverOwnApps: true,
+        );
 
   setUp(() async {
     dir = Directory.systemTemp.createTempSync('cc_google_lane_');
     secrets = FileSecretsStore(dataDir: dir.path);
     apps = ProviderAppSettings(secrets: secrets);
     workspaceApps = WorkspaceProviderAppSettings(secrets);
+    ownWorkspaces = {};
     global = createTestGlobalDatabase();
     workspaces = createTestWorkspaceDatabases(global: global);
     await seedTestWorkspace(global, workspaces, workspaceId);
@@ -53,13 +71,18 @@ void main() {
     tokens = ServerGoogleTokenManager(
       store: store,
       refresh: (_, _) async => const RefreshUnavailable(),
-      installId: (origin) async =>
+      installId: (origin, _) async =>
           origin == 'https://connect.example' ? 'inst-1' : '',
-      ownClientId: (ws) async =>
-          await workspaceApps.ownClientId(ws, WorkspaceAppProvider.google) ??
-          (await apps.oauthCredentials(ProviderApp.google))?.clientId,
-      allowsConnect: (ws) async =>
-          !await workspaceApps.ownsApp(ws, WorkspaceAppProvider.google),
+      ownClientId: (ws) async {
+        if (!ownWorkspaces.contains(ws)) {
+          return (await apps.oauthCredentials(ProviderApp.google))?.clientId;
+        }
+        final id = await workspaceApps.ownClientId(
+          ws,
+          WorkspaceAppProvider.google,
+        );
+        return id.isEmpty ? null : id;
+      },
     );
     synced = [];
     accounts = CalendarAccountService(
@@ -73,8 +96,10 @@ void main() {
       apps: apps,
       workspaceApps: workspaceApps,
       accounts: accounts,
+      route: route,
       tokenEndpoint: google.uri('/token'),
       userinfoEndpoint: google.uri('/userinfo'),
+      revokeEndpoint: google.uri('/revoke'),
     );
   });
 
@@ -110,6 +135,7 @@ void main() {
           apps: apps,
           workspaceApps: workspaceApps,
           accounts: accounts,
+          route: route,
         ).ownApp(workspaceId))!;
         expect(own.authorize, googleAuthorizeEndpoint);
         expect(own.token, googleTokenEndpoint);
@@ -125,6 +151,8 @@ void main() {
   });
 
   group("a workspace's own Google client", () {
+    setUp(() => ownWorkspaces.add(workspaceId));
+
     test(
       'wins over the server client and never routes through Connect',
       () async {
@@ -153,11 +181,9 @@ void main() {
         clientId: clientId,
         clientSecret: 'server-secret',
       );
-      await workspaceApps.setMode(
-        workspaceId,
-        WorkspaceAppProvider.google,
-        WorkspaceAppMode.own,
-      );
+      await workspaceApps.save(workspaceId, WorkspaceAppProvider.google, {
+        'client_id': 'ws.apps.googleusercontent.com',
+      });
       expect(
         () => lane.ownApp(workspaceId),
         throwsA(isA<SignInMisconfigured>()),
@@ -233,6 +259,14 @@ void main() {
       '?state=${attempt.url.queryParameters['state']}&code=the-code',
     );
 
+    /// The browser comes back, then the person who began it confirms.
+    Future<SignInAttempt> finish(SignInAttempt attempt) => service.complete(
+      loginId: attempt.loginId,
+      confirmCode: service.handleCallback(callback(attempt)).confirmCode,
+      userId: 'user-1',
+      workspaceId: workspaceId,
+    );
+
     test('the authorize URL asks for the exact scopes and consent', () async {
       final attempt = await begin();
       final q = attempt.url.queryParameters;
@@ -246,11 +280,7 @@ void main() {
     test('a narrower grant is refused and stores nothing', () async {
       google.grantedScope = 'openid email';
       final attempt = await begin();
-      await expectLater(
-        service.handleCallback(callback(attempt)),
-        throwsA(isA<AuthException>()),
-      );
-      expect(attempt.error, SignInFailure.scopeMismatch);
+      expect((await finish(attempt)).error, SignInFailure.scopeMismatch);
       expect(await calendar.getAccounts(workspaceId), isEmpty);
       expect(
         await store.raw(
@@ -268,29 +298,20 @@ void main() {
       google.grantedScope =
           'openid email https://www.googleapis.com/auth/calendar.readonly';
       final attempt = await begin();
-      await expectLater(
-        service.handleCallback(callback(attempt)),
-        throwsA(isA<AuthException>()),
-      );
-      expect(attempt.error, SignInFailure.scopeMismatch);
+      expect((await finish(attempt)).error, SignInFailure.scopeMismatch);
     });
 
     test('a wider grant is refused as firmly', () async {
       google.grantedScope =
           'openid email https://www.googleapis.com/auth/calendar';
       final attempt = await begin();
-      await expectLater(
-        service.handleCallback(callback(attempt)),
-        throwsA(isA<AuthException>()),
-      );
-      expect(attempt.error, SignInFailure.scopeMismatch);
+      expect((await finish(attempt)).error, SignInFailure.scopeMismatch);
     });
 
     test('the exact grant becomes the member\'s calendar account', () async {
-      final attempt = await begin();
-      await service.handleCallback(callback(attempt));
-      expect(attempt.status, SignInStatus.succeeded);
-      expect(attempt.account, 'me@example.com');
+      final done = await finish(await begin());
+      expect(done.status, SignInAttemptStatus.succeeded);
+      expect(done.account, 'me@example.com');
       expect(google.tokenForm['client_secret'], 'shh');
       expect(google.tokenForm['code_verifier'], isNotEmpty);
 
@@ -353,62 +374,67 @@ void main() {
     },
   );
 
-  group('dropLegacy', () {
-    test('removes member-less rows and flags old-shape credentials', () async {
-      const legacyPool = 'google:ws-1:pool@example.com';
-      final member = serverGoogleAccountId(
-        workspaceId,
-        'old@example.com',
-        userId: 'user-1',
+  group('offboard', () {
+    Future<String> account(
+      String user,
+      String email, {
+      String ws = workspaceId,
+      bool credential = true,
+    }) async {
+      final id = serverGoogleAccountId(ws, email, userId: user);
+      await calendar.upsertAccount(
+        CalendarAccount(
+          id: id,
+          workspaceId: ws,
+          userId: user,
+          providerId: 'google',
+          accountEmail: email,
+        ),
       );
-      final healthy = serverGoogleAccountId(
-        workspaceId,
-        'new@example.com',
-        userId: 'user-2',
-      );
-      for (final (id, user, email) in [
-        (legacyPool, '', 'pool@example.com'),
-        (member, 'user-1', 'old@example.com'),
-        (healthy, 'user-2', 'new@example.com'),
-      ]) {
-        await calendar.upsertAccount(
-          CalendarAccount(
-            id: id,
-            workspaceId: workspaceId,
-            userId: user,
-            providerId: 'google',
-            accountEmail: email,
+      if (credential) {
+        await store.save(
+          id,
+          ProviderToken(
+            accessToken: 'access-$user',
+            refreshToken: 'refresh-$user',
+            source: ForgeCredentialSource.oauth,
+            appId: clientId,
           ),
         );
       }
-      final deviceShape = jsonEncode({
-        'accessToken': 'a',
-        'refreshToken': 'r',
-        'usesBuiltinClient': true,
-      });
-      await secrets.writePsk('google_$legacyPool', deviceShape);
-      await secrets.writePsk('google_$member', deviceShape);
-      await store.save(
-        healthy,
-        const ProviderToken(
-          accessToken: 'a',
-          refreshToken: 'r',
-          source: ForgeCredentialSource.oauth,
-          appId: clientId,
-        ),
+      return id;
+    }
+
+    test('a member who left loses every calendar account there, revoked at '
+        'Google; nobody else does', () async {
+      final mine = await account('user-1', 'me@example.com');
+      final flagged = await account(
+        'user-1',
+        'old@example.com',
+        credential: false,
+      );
+      final theirs = await account('user-2', 'them@example.com');
+
+      expect(
+        await lane.offboard(userId: 'user-1', workspaceId: workspaceId),
+        1,
       );
 
-      await accounts.dropLegacy([workspaceId]);
+      final rows = [for (final a in await calendar.getAccounts(workspaceId)) a.id];
+      expect(rows, [theirs]);
+      expect(await store.raw(mine), isNull);
+      expect(await store.raw(flagged), isNull);
+      expect(await store.raw(theirs), isNotNull);
+      expect(google.revoked, ['refresh-user-1']);
+    });
 
-      final rows = {
-        for (final a in await calendar.getAccounts(workspaceId)) a.id: a,
-      };
-      expect(rows.keys, unorderedEquals([member, healthy]));
-      expect(rows[member]!.needsReauth, isTrue);
-      expect(rows[healthy]!.needsReauth, isFalse);
-      expect(await store.raw(legacyPool), isNull);
-      expect(await store.raw(member), isNull);
-      expect(await store.raw(healthy), isNotNull);
+    test('a deleted workspace loses every member\'s accounts', () async {
+      await account('user-1', 'me@example.com');
+      await account('user-2', 'them@example.com');
+
+      expect(await lane.offboard(workspaceId: workspaceId), 2);
+      expect(await calendar.getAccounts(workspaceId), isEmpty);
+      expect(google.revoked.toSet(), {'refresh-user-1', 'refresh-user-2'});
     });
   });
 }
@@ -435,6 +461,9 @@ class _FakeGoogle {
   /// The last userinfo request's Authorization header.
   String userinfoAuth = '';
 
+  /// Every token revoked, in order.
+  final List<String> revoked = [];
+
   Uri uri(String path) =>
       Uri.parse('http://${_server.address.address}:${_server.port}$path');
 
@@ -458,6 +487,13 @@ class _FakeGoogle {
         userinfoAuth = request.headers.value('authorization') ?? '';
         response.write(
           jsonEncode({'sub': 'google-sub-1', 'email': 'me@example.com'}),
+        );
+      case '/revoke':
+        revoked.add(
+          Uri.splitQueryString(
+                await utf8.decoder.bind(request).join(),
+              )['token'] ??
+              '',
         );
       default:
         response.statusCode = HttpStatus.notFound;

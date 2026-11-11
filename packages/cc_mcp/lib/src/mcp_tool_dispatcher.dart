@@ -2,7 +2,7 @@ import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_request_extractor.dart';
-import 'package:cc_domain/features/mcp/domain/ports/mcp_resource_prompt_ports.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/services/mode_tool_guard.dart';
@@ -33,17 +33,7 @@ class McpToolDispatcher implements RpcDispatcher {
     this.commandPolicy,
     this.actionGuard,
     this.approvalMode = ApprovalMode.alwaysAsk,
-    this.resourceProvider,
-    this.promptProvider,
   });
-
-  /// Optional provider exposing MCP resources (`resources/list` + `read`).
-  /// When null, the server omits the `resources` capability.
-  final McpResourceProvider? resourceProvider;
-
-  /// Optional provider exposing MCP prompts (`prompts/list` + `get`).
-  /// When null, the server omits the `prompts` capability.
-  final McpPromptProvider? promptProvider;
 
   /// Registry of available MCP tools used to handle incoming requests.
   final McpToolRegistry registry;
@@ -90,11 +80,12 @@ class McpToolDispatcher implements RpcDispatcher {
 
   /// Like [handleRequest], but with a transport-derived identity [scope].
   ///
-  /// The loopback MCP HTTP server extracts the scope from the `X-CC-*` headers
-  /// dispatch writes into each agent's `.mcp.json`, so `tools/call` arguments
-  /// are workspace-forced / identity-filled exactly like the built-in
-  /// harness's `McpToolBridge`. Callers without a scope (RPC transport, MCP
-  /// Inspector) pass none and arguments flow through verbatim.
+  /// The MCP HTTP transport passes the attested grant of the agent run whose
+  /// secret the request carried, so `tools/call` arguments are
+  /// workspace-forced / identity-filled exactly like the built-in harness's
+  /// `McpToolBridge`, and a tool that names no workspace is refused. Callers
+  /// without a scope (RPC transport, the server owner's token) pass none and
+  /// arguments flow through verbatim.
   ///
   /// [abandoned] completes when the caller stops waiting for a `tools/call`
   /// result (it cancelled the request or hung up); the tool sees it through
@@ -113,14 +104,6 @@ class McpToolDispatcher implements RpcDispatcher {
         return _handleToolsList(request);
       case 'tools/call':
         return _handleToolsCall(request, scope, abandoned);
-      case 'resources/list':
-        return _handleResourcesList(request);
-      case 'resources/read':
-        return _handleResourcesRead(request);
-      case 'prompts/list':
-        return _handlePromptsList(request);
-      case 'prompts/get':
-        return _handlePromptsGet(request);
       case 'ping':
         return {'jsonrpc': '2.0', 'id': request.id, 'result': {}};
       default:
@@ -149,9 +132,6 @@ class McpToolDispatcher implements RpcDispatcher {
         },
         'capabilities': {
           'tools': {'listChanged': true},
-          if (resourceProvider != null)
-            'resources': {'listChanged': false, 'subscribe': false},
-          if (promptProvider != null) 'prompts': {'listChanged': false},
         },
         'instructions':
             'Control Center MCP server. Use tools to manage workspaces, agents, messages and more.',
@@ -161,8 +141,12 @@ class McpToolDispatcher implements RpcDispatcher {
   }
 
   Map<String, dynamic> _handleToolsList(JsonRpcRequest request) {
+    // Never the registry's personal layer (the server OS user's own MCP
+    // servers): this surface serves agent runs, paired devices and the
+    // owner's token alike, and only an owner-accountable harness run may have
+    // them (`buildHarnessToolRegistry(includePersonalMcp:)`).
     final definitions = registry
-        .listDefinitions()
+        .listDefinitions(includePersonal: false)
         .map((d) => d.toJson())
         .toList();
     return {
@@ -170,80 +154,6 @@ class McpToolDispatcher implements RpcDispatcher {
       'id': request.id,
       'result': {'tools': definitions},
     };
-  }
-
-  Future<Map<String, dynamic>> _handleResourcesList(
-    JsonRpcRequest request,
-  ) async {
-    final provider = resourceProvider;
-    if (provider == null) {
-      return _errorResponse(-32601, 'Resources not supported', request.id);
-    }
-    final resources = await provider.listResources();
-    return {
-      'jsonrpc': '2.0',
-      'id': request.id,
-      'result': {'resources': resources.map((r) => r.toJson()).toList()},
-    };
-  }
-
-  Future<Map<String, dynamic>> _handleResourcesRead(
-    JsonRpcRequest request,
-  ) async {
-    final provider = resourceProvider;
-    if (provider == null) {
-      return _errorResponse(-32601, 'Resources not supported', request.id);
-    }
-    final uri = request.params['uri'];
-    if (uri is! String || uri.isEmpty) {
-      return _errorResponse(-32602, 'Missing resource uri', request.id);
-    }
-    final contents = await provider.readResource(uri);
-    if (contents == null) {
-      return _errorResponse(-32602, 'Unknown resource: $uri', request.id);
-    }
-    return {
-      'jsonrpc': '2.0',
-      'id': request.id,
-      'result': {
-        'contents': [contents.toJson()],
-      },
-    };
-  }
-
-  Future<Map<String, dynamic>> _handlePromptsList(
-    JsonRpcRequest request,
-  ) async {
-    final provider = promptProvider;
-    if (provider == null) {
-      return _errorResponse(-32601, 'Prompts not supported', request.id);
-    }
-    final prompts = await provider.listPrompts();
-    return {
-      'jsonrpc': '2.0',
-      'id': request.id,
-      'result': {'prompts': prompts.map((p) => p.toJson()).toList()},
-    };
-  }
-
-  Future<Map<String, dynamic>> _handlePromptsGet(JsonRpcRequest request) async {
-    final provider = promptProvider;
-    if (provider == null) {
-      return _errorResponse(-32601, 'Prompts not supported', request.id);
-    }
-    final name = request.params['name'];
-    if (name is! String || name.isEmpty) {
-      return _errorResponse(-32602, 'Missing prompt name', request.id);
-    }
-    final rawArgs = request.params['arguments'];
-    final arguments = rawArgs is Map
-        ? rawArgs.map((k, v) => MapEntry(k.toString(), '$v'))
-        : <String, String>{};
-    final result = await provider.getPrompt(name, arguments);
-    if (result == null) {
-      return _errorResponse(-32602, 'Unknown prompt: $name', request.id);
-    }
-    return {'jsonrpc': '2.0', 'id': request.id, 'result': result.toJson()};
   }
 
   /// Caps what one tool call can hand back.
@@ -319,6 +229,13 @@ class McpToolDispatcher implements RpcDispatcher {
     return CallResult(content: kept, isError: result.isError);
   }
 
+  /// Whether [tool]'s input schema takes a `workspace_id`: the argument the
+  /// dispatcher forces for an agent run.
+  static bool declaresWorkspace(McpTool tool) {
+    final props = tool.inputSchema['properties'];
+    return props is Map && props.containsKey('workspace_id');
+  }
+
   Future<Map<String, dynamic>> _handleToolsCall(
     JsonRpcRequest request,
     McpCallScope? scope,
@@ -329,9 +246,23 @@ class McpToolDispatcher implements RpcDispatcher {
       return _errorResponse(-32602, 'Missing tool name', request.id);
     }
 
-    final tool = registry.resolve(toolName);
+    final tool = registry.resolve(toolName, includePersonal: false);
     if (tool == null) {
       return _errorResponse(-32602, _unknownToolMessage(toolName), request.id);
+    }
+    // An agent run acts only in its grant's workspace. A tool that names no
+    // workspace reads or changes something wider (every workspace, the server
+    // owner's own data), so a run may not call it at all; every other tool
+    // has its `workspace_id` forced from the grant below.
+    if (scope != null && scope.attested && !declaresWorkspace(tool)) {
+      return {
+        'jsonrpc': '2.0',
+        'id': request.id,
+        'result': CallResult.error(
+          '${tool.name} is not available to an agent run: it is not confined '
+          'to one workspace.',
+        ).toJson(),
+      };
     }
     if (tool.requiresRunGrant && scope?.attested != true) {
       return {
@@ -442,9 +373,21 @@ class McpToolDispatcher implements RpcDispatcher {
     // gate handles the residual per-args capability tier. Pure-read tools
     // (empty `actionClasses`) skip this gate entirely.
     var guardPrompted = false;
+    GuardVerdict? guardVerdict;
+    final guardRequest = const ActionRequestExtractor().extract(
+      arguments,
+      classes: tool.actionClasses,
+      tool: tool.name,
+    );
+    final spaceArg = arguments['space_id'];
+    final agentArg = arguments['agent_id'];
+    final scopeSpaceId = scope?.spaceId;
+    final guardSpaceId = scopeSpaceId != null && scopeSpaceId.isNotEmpty
+        ? scopeSpaceId
+        : (spaceArg is String && spaceArg.isNotEmpty ? spaceArg : null);
+    final guardAgentId =
+        scope?.agentId ?? (agentArg is String ? agentArg : null);
     if (actionGuard != null && tool.actionClasses.isNotEmpty) {
-      final spaceArg = arguments['space_id'];
-      final agentArg = arguments['agent_id'];
       // The SPACE, not the conversation: `ActionScopeType.space` policy rules
       // key off a space id, and a conversation id is always its own uuid (the
       // "the main conversation's id IS the space id" convention is dead), so
@@ -452,26 +395,21 @@ class McpToolDispatcher implements RpcDispatcher {
       // inert for MCP calls. The transport-derived scope wins over the
       // model-supplied argument — a policy the agent could re-scope by editing
       // an argument is not a policy.
-      final scopeSpaceId = scope?.spaceId;
       final verdict = await actionGuard!.check(
         workspaceId: guardWorkspaceId,
         classes: tool.actionClasses,
-        spaceId: scopeSpaceId != null && scopeSpaceId.isNotEmpty
-            ? scopeSpaceId
-            : (spaceArg is String && spaceArg.isNotEmpty ? spaceArg : null),
+        spaceId: guardSpaceId,
         conversationId: scope?.conversationId,
-        agentId: scope?.agentId ?? (agentArg is String ? agentArg : null),
+        agentId: guardAgentId,
         mode: conversationMode ?? Mode.chat,
         actionSummary: tool.name,
         // Argument-level authorization: the paths, refs and hosts this call
         // actually names, so a rule can be about "push to feature/*" rather
         // than only about "push". The arguments were always here — they were
         // simply never handed to the resolver.
-        request: const ActionRequestExtractor().extract(
-          arguments,
-          classes: tool.actionClasses,
-        ),
+        request: guardRequest,
       );
+      guardVerdict = verdict;
       if (!verdict.allowed) {
         CcMcpLog.w(
           'MCP',
@@ -487,7 +425,10 @@ class McpToolDispatcher implements RpcDispatcher {
       }
       // The guard already asked the operator and they approved — record it so
       // the tier gate below does not surface a redundant SECOND confirmation.
-      guardPrompted = verdict.prompted;
+      // A person's live standing approval of this tool for these arguments
+      // spares it too; a plain allow rule does not.
+      guardPrompted =
+          verdict.prompted || verdict.standingApprovalCovers(tool: tool.name);
     }
 
     // Capability-tier approval gate (PRD 01 phase 1.5). Each tool resolves a
@@ -508,7 +449,43 @@ class McpToolDispatcher implements RpcDispatcher {
       final payload = tool.buildConfirmationRequest(arguments);
       // A null payload means the tool opts out of confirmation for THESE
       // specific args (e.g. an internal-only space) — proceed silently.
-      if (payload != null) {
+      //
+      // A tool that declares no effect class (an external server's tool) was
+      // not put to the guard above. Policy is read for it here only to find a
+      // person's standing approval of this tool, filed under
+      // [ActionGuardService.undeclaredEffect]; a deny there does not refuse
+      // the call and a plain allow does not spare the ask.
+      var askClasses = tool.actionClasses;
+      var resolution = guardVerdict?.resolution;
+      var spared = false;
+      final guard = actionGuard;
+      if (payload != null &&
+          askClasses.isEmpty &&
+          guard != null &&
+          guardWorkspaceId.isNotEmpty) {
+        askClasses = ActionGuardService.undeclaredEffect;
+        resolution = await guard.resolve(
+          workspaceId: guardWorkspaceId,
+          classes: askClasses,
+          spaceId: guardSpaceId,
+          agentId: guardAgentId,
+          mode: conversationMode ?? Mode.chat,
+          request: guardRequest,
+        );
+        spared = resolution.standingApprovalCovers(tool: tool.name);
+        if (spared) {
+          guard.recordOutcome(
+            workspaceId: guardWorkspaceId,
+            resolution: resolution,
+            applied: ActionDecision.allow,
+            classes: askClasses,
+            agentId: guardAgentId,
+            spaceId: guardSpaceId,
+            actionSummary: tool.name,
+          );
+        }
+      }
+      if (payload != null && !spared) {
         // Fail closed when there is no approver (a headless cc-server has no GUI
         // confirmation port): an approval-gated tool must NEVER run unconfirmed.
         // The local desktop always wires a port and the remote allow-list
@@ -526,8 +503,6 @@ class McpToolDispatcher implements RpcDispatcher {
             ).toJson(),
           };
         }
-        final spaceId = arguments['space_id'];
-        final wsId = arguments['workspace_id'];
         final reason = approval.reason;
         final detail =
             reason != null &&
@@ -535,16 +510,26 @@ class McpToolDispatcher implements RpcDispatcher {
                 !reason.startsWith('Policy:')
             ? '${payload.detail}\n\n$reason'
             : payload.detail;
+        // The tool asks on its own after policy let the call through. The
+        // space and agent are the ones the guard resolved under, so an
+        // "Approve for 8 hours" lands where the next call looks for it.
         final approved = await confirmationPort!.requestApproval(
-          ConfirmationRequest(
-            spaceId: spaceId is String ? spaceId : '',
+          ActionGuardService.approvalRequest(
+            resolution: resolution,
+            classes: askClasses,
+            askedByPolicy: false,
+            request: guardRequest,
+            spaceId: guardSpaceId,
             conversationId: scope?.conversationId,
-            workspaceId: wsId is String && wsId.isNotEmpty ? wsId : null,
+            workspaceId: guardWorkspaceId.isEmpty ? null : guardWorkspaceId,
+            agentId: guardAgentId,
+            actionSummary: tool.name,
             title: payload.title,
             detail: detail,
             severity: payload.isDestructive
                 ? ConfirmationSeverity.destructive
                 : ConfirmationSeverity.warning,
+            kind: ConfirmationKind.command,
           ),
         );
         if (!approved) {
@@ -594,7 +579,10 @@ class McpToolDispatcher implements RpcDispatcher {
   /// points at the discovery tools and explains the bare-name/prefix
   /// convention — so a wrong name is a one-shot correction, not a dead end.
   String _unknownToolMessage(String requested) {
-    final names = registry.listDefinitions().map((d) => d.name).toList();
+    final names = registry
+        .listDefinitions(includePersonal: false)
+        .map((d) => d.name)
+        .toList();
     final wanted = _nameTokens(requested);
     final lowered = requested.toLowerCase();
     final scored = <MapEntry<String, int>>[];

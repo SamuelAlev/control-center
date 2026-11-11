@@ -1,4 +1,6 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart'
+    show RepoGrantAccessWarning;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -26,7 +28,9 @@ Future<void> showMemberRepoAccessDialog(
 /// current grants and applied immediately per change (like the roster's role
 /// dropdown). Unchecking a repo sends `none`, which removes the grant row
 /// server-side. A failed write is toasted and the picker reloaded from the
-/// server so the UI never shows a grant the server rejected.
+/// server so the UI never shows a grant the server rejected. A saved grant the
+/// member still cannot use (their own forge sign-in cannot read the
+/// repository) says so under its row.
 class MemberRepoAccessDialog extends ConsumerStatefulWidget {
   /// Creates a [MemberRepoAccessDialog] for [userId] in [workspaceId].
   const MemberRepoAccessDialog({
@@ -57,6 +61,9 @@ class _MemberRepoAccessDialogState
 
   /// Set when the initial grant load failed.
   Object? _loadError;
+
+  /// repo id → why the member still cannot read it, after its last save.
+  final Map<String, RepoGrantAccessWarning> _warnings = {};
 
   @override
   void initState() {
@@ -96,7 +103,7 @@ class _MemberRepoAccessDialogState
       }
     });
     try {
-      await ref
+      final warning = await ref
           .read(identityRepositoryProvider)
           .setRepoGrant(
             widget.workspaceId,
@@ -104,6 +111,15 @@ class _MemberRepoAccessDialogState
             repoId,
             level ?? 'none',
           );
+      if (mounted) {
+        setState(() {
+          if (warning == null || level == null) {
+            _warnings.remove(repoId);
+          } else {
+            _warnings[repoId] = warning;
+          }
+        });
+      }
     } on Object catch (e) {
       if (!mounted) {
         return;
@@ -156,6 +172,7 @@ class _MemberRepoAccessDialogState
                     _RepoGrantRow(
                       repo: repo,
                       level: grants[repo.id],
+                      warning: _warnings[repo.id],
                       onChanged: (level) => _apply(repo.id, level),
                     ),
                 ],
@@ -185,10 +202,14 @@ class _RepoGrantRow extends StatelessWidget {
   const _RepoGrantRow({
     required this.repo,
     required this.level,
+    required this.warning,
     required this.onChanged,
   });
 
   final Repo repo;
+
+  /// Why the member cannot use the grant yet, after it was saved.
+  final RepoGrantAccessWarning? warning;
 
   /// The granted level wire name (`read` / `review` / `write`), or null when
   /// the repo is not shared.
@@ -199,7 +220,14 @@ class _RepoGrantRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final checked = level != null;
-    return Padding(
+    final forge = repo.forge.displayName;
+    final note = switch (warning) {
+      RepoGrantAccessWarning.notSignedIn => l10n.repoGrantNeedsSignIn(forge),
+      RepoGrantAccessWarning.cannotRead => l10n.repoGrantCannotRead(forge),
+      RepoGrantAccessWarning.unconfirmed => l10n.repoGrantUnconfirmed(forge),
+      null => null,
+    };
+    final row = Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
@@ -229,6 +257,23 @@ class _RepoGrantRow extends StatelessWidget {
           ],
         ],
       ),
+    );
+    if (note == null) {
+      return row;
+    }
+    final t = context.designSystem ?? DesignSystemTokens.light();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        row,
+        Padding(
+          padding: const EdgeInsetsDirectional.only(start: 28, bottom: 4),
+          child: Text(
+            note,
+            style: CcTypography.caption.copyWith(color: t.textWarningPrimary),
+          ),
+        ),
+      ],
     );
   }
 }

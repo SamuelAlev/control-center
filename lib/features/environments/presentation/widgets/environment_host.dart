@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 
 /// Marks a terminal tab as where a stopped start finishes, so it can say why it
 /// opened. Kept in the tab's args, which survive a restored layout.
-const kEnvironmentSetupTabArg = 'environmentSetup';
+const kEnvironmentStartTerminalTabArg = 'environmentStartTerminal';
 
 /// What the surface hosting an environment section can open.
 ///
@@ -18,7 +18,7 @@ class EnvironmentHost {
     required this.openLogs,
     required this.openProvisioningLogs,
     required this.openProcess,
-    required this.openSetup,
+    required this.openStartTerminal,
     required this.openViewer,
     required this.openPrefilledTerminal,
     required this.showsSpace,
@@ -56,7 +56,7 @@ class EnvironmentHost {
     required String sessionId,
     required String label,
   })
-  openSetup;
+  openStartTerminal;
 
   /// Opens the viewer tab of a desktop app.
   final void Function({

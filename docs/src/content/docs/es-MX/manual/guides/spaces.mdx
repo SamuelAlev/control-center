@@ -2,7 +2,7 @@
 title: Usar espacios
 description: Crea espacios, define su modo, gestiona a los participantes y la autonomía, y abre conversaciones e hilos.
 slug: es-MX/manual/guias/espacios
-sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
+sourceHash: c588f695c796a2ddce571d4870ef5c7d3594fe07
 ---
 
 Esta guía muestra cómo usar los espacios. Un **espacio** es la superficie de
@@ -27,6 +27,15 @@ espacios que los agentes abren para hablar entre ellos; consulta
    deseleccionar todos los repos crea un espacio sin ningún checkout
 6. Confirma
 
+Los repos que elijas también deciden quién puede abrir el espacio. Solo los
+miembros que tengan una concesión de lectura sobre todos ellos, y cuyo propio
+inicio de sesión en la forja pueda leer todos, ven el espacio y todo lo que
+contiene: mensajes, resultados de búsqueda, registros de ejecución, pendientes,
+actividad y notificaciones. Un espacio sin repos está abierto a todos los
+miembros. Para una conversación que todo el espacio de trabajo debe poder leer,
+deselecciona todos los repos o deja solo los repos que todos pueden leer. Consulta
+[Los espacios siguen a sus repositorios](/es-MX/manual/conceptos/autorizacion/#los-espacios-siguen-a-sus-repositorios).
+
 Solo un agente responde a un mensaje, así que un espacio sin agentes no inicia nada: el campo de mensaje lo indica y conserva tu mensaje hasta que menciones a un agente con @, lo que lo agrega al espacio y envía el mensaje. Detrás de un espacio vacío no hay ningún ejecutor predeterminado.
 
 Los espacios tienen alcance de espacio de trabajo: solo ves agentes del espacio
@@ -37,7 +46,7 @@ incluye sus propias skills de agente las aporta al agente que esté trabajando e
 él: el conjunto de un repo a la vez, que se intercambia a medida que el agente se
 mueve. Desde el compositor puedes llegar a cualquiera de ellas con
 `/skill:<repo>:<name>`. Consulta
-[Skills con alcance de repositorio](/es-MX/manual/conceptos/modelo-de-agentes/#repo-scoped-skills).
+[Skills con alcance de repositorio](/es-MX/manual/conceptos/modelo-de-agentes/#skills-con-alcance-de-repositorio).
 
 La superficie vive en `/workspaces/<id>/spaces`, y un espacio individual en
 `/workspaces/<id>/spaces/<spaceId>`.

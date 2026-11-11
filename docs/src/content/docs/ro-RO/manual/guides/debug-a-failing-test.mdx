@@ -2,7 +2,7 @@
 title: Depanează un test eșuat cu un agent
 description: Pune un agent să seteze un punct de întrerupere, să lanseze sub un depanator și să citească un cadru de stivă real, în loc să adauge instrucțiuni de tipărire.
 slug: ro-RO/manual/ghiduri-practice/depaneaza-test-esuat
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Acest ghid arată cum să pui un agent să folosească un depanator pentru o defecțiune pe care instrucțiunile de tipărire nu o explică.
@@ -31,8 +31,8 @@ Răspunde cu ce a găsit sau explică faptul că un adaptor are nevoie de ambele
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Vine cu LLVM                       |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python alege interpretorul proiectului]
-`debugpy` este căutat în `.venv/bin` sau `venv/bin` înainte de `$PATH`. Un Python din `$PATH` este un mediu diferit, iar atașarea din mediul greșit eșuează într-un fel care pare a fi cod stricat, nu un interpretor greșit.
+:::note[Python alege interpretorul proiectului când rularea este în sandbox]
+Într-o rulare în sandbox, `debugpy` este căutat în `.venv/bin` sau `venv/bin` înainte de `$PATH`. Un Python din `$PATH` este un mediu diferit, iar atașarea din mediul greșit eșuează într-un fel care pare a fi cod stricat, nu un interpretor greșit. Într-o rulare fără sandbox folosește doar `$PATH`, astfel încât un repository nu poate alege interpretorul care rulează pe mașina serverului.
 :::
 
 ## Setează mai întâi punctul de întrerupere, apoi lansează
@@ -106,6 +106,8 @@ Pentru un proces blocat, nu pentru unul pe care îl pornești:
 debug(op: "attach", port: 5858)
 ```
 
+Portul trebuie să fie unul dintre porturile redirecționate ale rulării. Orice alt port este refuzat înainte să pornească ceva, astfel încât un agent nu se poate atașa la un proces care aparține altcuiva de pe mașina serverului.
+
 ## Încheiere
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Încheie întotdeauna sesiunea. Un adaptor de depanare deține un **proces oprit** care ține tot ce ține procesul respectiv — un port, o blocare, o conexiune la baza de date.
 
 :::note[Nu poate scăpa de sub controlul tău]
-Fiecare sesiune are un TTL strict pe care nu îl poate prelungi, există exact una per conversație, iar totul este desființat când se oprește serverul. Un al doilea `launch` este refuzat în loc să îl înlocuiască pe primul: un agent care pornește unul fără să îl încheie pe celălalt și-a pierdut aproape sigur urma primului.
+Fiecare sesiune are un TTL strict de 30 de minute pe care nu îl poate prelungi, există exact una per conversație, iar totul este desființat când se oprește serverul. Într-o rulare în sandbox, sesiunea își păstrează sandbox-ul între ture cel mult atât de mult. Un al doilea `launch` este refuzat în loc să îl înlocuiască pe primul: un agent care pornește unul fără să îl încheie pe celălalt și-a pierdut aproape sigur urma primului.
 :::
 
 ## Ieșire delimitată

@@ -2,7 +2,7 @@
 title: Bir pipeline şablonu oluşturma
 description: Pipeline düzenleyicisinde bir DAG iş akışı şablonu yazın — düğümler ekleyin, onları bağlayın, girdileri bildirin ve çalıştırılabilir hale getirin.
 slug: tr-TR/kilavuz/nasil-yapilir/pipeline-olusturma
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Pipeline şablonları çalışma alanı ayarlarında yazılır. Çalışma alanı kenar
@@ -40,7 +40,7 @@ bıraktığınız yere ve hiçbir gelen bağlantısı olmadan yerleşir.
 | **Bash betiği**                 | listen    | Bir kabuk betiğini `{{state}}` yerine koyarak çalıştırır; hiçbir ajan gönderilmez                                 |
 | **Konuşma aç**                  | listen    | Çalıştırmanın tek görünür alanını ve onun checkout’unu açar; ajan düğümleri bu odaya katılır                     |
 | **PR dalını klonla**            | listen    | PR baş dalını `gh pr view` ile bulur ve çalıştırma dizinine klonlar                                               |
-| **PR yorumu gönder**            | listen    | Birleştirilmiş bulguları PR’a GitHub inceleme yorumu olarak gönderir                                              |
+| **PR yorumu gönder**            | listen    | Sunucudan PR’a bir inceleme yorumu gönderir: bulgular ya da `message` alanı                                              |
 | **İnceleyici (prompt)**         | listen    | Uzman bir inceleyici ajanı gönderir; ajan sonucunu gönderene kadar askıda kalır                                  |
 | **Birleştir (join)**            | join      | Birkaç üst dalı bekler, ardından bir ajandan çıktılarını birleştirmesini ister                                   |
 | **Özel prompt**                 | listen    | `promptAgent` gövdesi üzerinden yönlendirilen, prompt güdümlü genel düğüm                                         |
@@ -140,6 +140,7 @@ yapılandırılamaz:
   da tetikleyici yükünde `repo_full_name`), `GH_TOKEN` ve `GITHUB_TOKEN` yalnızca
   o tek depoyu okuyabilen bir token taşır; böylece ona karşı `gh` ve `git clone`
   ek bir kurulum olmadan çalışır. Aksi halde GitHub token’ı yoktur.
+- Bir betik GitHub’a yazamaz: `gh pr comment`, `gh pr merge`, `gh pr create` ve `git push` bu token ile başarısız olur. Bunun yerine bir **PR yorumu gönder** düğümüyle yorum yapın (kendi metninizi göndermek için `extras.message` ayarlayın; birleştirilmiş bulgular yerine `{{key}}` yer tutucuları kullanabilirsiniz). Push ve pull request açma işlemlerini bir ajan düğümünden yapın: `git push` çalıştırma geçidinden geçer ve PR’ı `open_pull_request` aracıyla açar. Birleştirme bir kişiye bırakılır; hiçbir düğüm birleştirmez.
 - Bash adımı içeren bir pipeline’ı yalnızca çalışma alanı yöneticisi oluşturabilir
   ya da düzenleyebilir.
 - Betik, birebir `bash` yürütülebilir dosyası olarak başlatılır; bu yüzden

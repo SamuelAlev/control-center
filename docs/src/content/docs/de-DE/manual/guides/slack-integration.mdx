@@ -2,7 +2,7 @@
 title: Slack-Integration einrichten
 description: Verbinde Slack mit einem Arbeitsbereich von Control Center, über die gemeinsame App von Control Center oder eine eigene, damit Mitglieder Agenten aus Slack steuern können.
 slug: de-DE/handbuch/anleitungen/slack-integration
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Diese Anleitung zeigt dir, wie du Slack mit einem Arbeitsbereich von Control Center verbindest: indem du die gemeinsame App von Control Center hinzufügst, oder mit einer eigenen App, die Control Center für dich anlegt oder die du selbst baust.
@@ -28,18 +28,18 @@ Ein Arbeitsbereich läuft immer auf genau einer der beiden.
 
 | Modus                                 | Braucht                                                                                                       | Du bekommst                                                                                   |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| **Gemeinsame App von Control Center** | Der Server nutzt Control Center Connect (**Einstellungen → Server → Single sign-on**), und Connect bedient Slack | Einen Klick und eine Slack-Anmeldung. Keine App anzulegen, kein Token einzufügen, nichts zu rotieren |
+| **Gemeinsame App von Control Center** | Die Anmeldeanwendungen des Arbeitsbereichs laufen über Control Center Connect (Wahl des Servers unter **Einstellungen → Server → Single sign-on** oder eigene Wahl des Arbeitsbereichs unter **Einstellungen → Arbeitsbereich → Integrationen**), und Connect bedient Slack | Einen Klick und eine Slack-Anmeldung. Keine App anzulegen, kein Token einzufügen, nichts zu rotieren |
 | **Deine eigene App**                  | Eine Slack-App in deinem Slack-Workspace, auf einem der drei Wege unten angelegt                               | Eigenen Bot-Namen, eigene Beschreibungen und eigenen Slash-Befehl, aus Control Center bearbeitbar |
 
 ### Die gemeinsame App von Control Center hinzufügen
 
-1. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+1. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Integrationen** und weiter zur Karte **Chat-Brücken**
 2. Such im Slack-Block die Zeile **Control Center zu Slack hinzufügen** und klicke auf **Zu Slack hinzufügen**
 3. Dein Browser öffnet Slack. Melde dich mit Slack an, wähle den Slack-Workspace und genehmige die Installation
 4. Zeigt der Browser einen Code, tippe ihn in den Dialog ein, den Control Center offen gelassen hat. Gibt dich der Browser von selbst an die App zurück, gibt es nichts einzutippen
 5. Eine Meldung nennt den Slack-Workspace, dem die App hinzugefügt wurde, und der Slack-Block zeigt, dass die Verbindung über die gemeinsame App von Control Center läuft
 
-Nur ein Admin des Arbeitsbereichs kann die App hinzufügen. Die Zeile sagt, warum sie nicht starten kann, wenn der Server seine eigenen Apps statt Connect nutzt, wenn dein Connect keine Slack-App hat oder wenn dieser Arbeitsbereich schon eine eigene Slack-App verbunden hat.
+Nur ein Admin des Arbeitsbereichs kann die App hinzufügen. Die Zeile sagt, warum sie nicht starten kann, wenn die Anmeldeanwendungen dieses Arbeitsbereichs eigene Apps statt Connect sind, wenn dein Connect keine Slack-App hat oder wenn dieser Arbeitsbereich schon eine eigene Slack-App verbunden hat.
 
 So unterscheidet sie sich von deiner eigenen App:
 
@@ -65,7 +65,7 @@ Die Ereignisse deiner eigenen App laufen nie durch Connect: Socket Mode liefert 
 ## Option A: Control Center die App anlegen lassen
 
 1. Erzeuge auf [api.slack.com/apps](https://api.slack.com/apps) ein Paar App-Konfigurationstoken und kopiere das **Refresh-Token** (`xoxe-…`)
-2. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+2. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Integrationen** und weiter zur Karte **Chat-Brücken**
 3. Klicke im Slack-Block auf **App für mich erstellen**
 4. Füge das Token ein, passe App-Name, Bot-Name, Beschreibungen und Slash-Befehl an, und klicke auf **App erstellen**
 5. Folge den beiden restlichen Schritten, die der Dialog zeigt, jeder ein Link nach Slack:
@@ -79,7 +79,7 @@ Das Konfigurationstoken rotiert bei jeder Verwendung. Control Center speichert d
 
 Dieselbe App, kein Konfigurationstoken — Slack öffnet dir seinen eigenen Erstellbildschirm, das Manifest ist schon ausgefüllt.
 
-1. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+1. Geh in Control Center zu **Einstellungen → Arbeitsbereich → Integrationen** und weiter zur Karte **Chat-Brücken**
 2. Klicke im Slack-Block auf **App für mich erstellen**
 3. Passe App-Name, Bot-Name, Beschreibungen und Slash-Befehl an — die gehen mit dem Link mit
 4. Klicke auf **In Slack erstellen**. Dein Browser öffnet die Erstellseite von Slack mit der vorausgefüllten Konfiguration
@@ -133,7 +133,7 @@ message.im
 
 So erreichen die Tokens deiner eigenen App Control Center. Die gemeinsame App braucht nichts davon.
 
-1. Geh zu **Einstellungen → Arbeitsbereich → Allgemein** und weiter zur Karte **Chat-Brücken**
+1. Geh zu **Einstellungen → Arbeitsbereich → Integrationen** und weiter zur Karte **Chat-Brücken**
 2. Klicke im Slack-Block auf **Slack verbinden**
 3. Fülle die Felder aus:
 
@@ -205,7 +205,7 @@ Jedes verknüpfte Mitglied mit einer schreibenden Rolle kann aus Slack ein Ticke
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-Der Text vor dem `|` ist der Titel, der Text danach die Beschreibung. Der Bot antwortet, dass er das Ticket entworfen hat. Noch wird nichts angelegt, und keine Ticket-Automatisierung springt an: Der Entwurf wartet unter **Einstellungen → Arbeitsbereich → Profil und Identität → Ticketentwürfe aus dem Chat** auf dich. Dort kannst du Titel und Beschreibung korrigieren und dann auf **Ticket erstellen** oder **Verwerfen** klicken.
+Der Text vor dem `|` ist der Titel, der Text danach die Beschreibung. Der Bot antwortet, dass er das Ticket entworfen hat. Noch wird nichts angelegt, und keine Ticket-Automatisierung springt an: Der Entwurf wartet unter **Einstellungen → Du → Profil → Ticketentwürfe aus dem Chat** auf dich. Dort kannst du Titel und Beschreibung korrigieren und dann auf **Ticket erstellen** oder **Verwerfen** klicken.
 
 - Nur das Mitglied, das den Befehl ausgeführt hat, sieht den Entwurf
 - Einen liegen gelassenen Entwurf verwirft der Server nach einem Tag. Entwürfe liegen nur im Arbeitsspeicher, also verwirft auch ein Neustart des Servers sie

@@ -238,6 +238,12 @@ A rig is deliberately **not** a global destination. The live view is a tab in
 the space or PR where the work is happening, scoped to that conversation —
 so your tab and the agent's `browser_use` calls address *one* machine (one
 per engine, on the browser surface).
+A rig opened in a space is the space's machine, with the space's worktrees in
+reach, so it follows the space's repositories: read access to the space lets
+you watch it, and a write grant on those repositories lets you drive it. A rig
+that belongs to no space reaches no worktree, and every workspace member can
+use it. [Who can watch and who can drive](/manual/guides/use-rigs/#who-can-watch-and-who-can-drive)
+lists what each covers.
 Whether rigs can boot at all is a host property, so capabilities, images,
 per-workspace custom images and the running-machine list live under
 **Settings → Server → Rigs**. Driving an enclosure is its own

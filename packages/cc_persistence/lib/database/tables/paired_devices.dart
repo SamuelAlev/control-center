@@ -8,8 +8,8 @@ class PairedDevicesTable extends Table {
   /// Unique device id (generated at pairing).
   TextColumn get id => text()();
 
-  /// The user this device authenticates as. Nullable in SQL only until the
-  /// identity bootstrap backfills legacy rows to the owner; required in code.
+  /// The user this device authenticates as. Every writer sets it; a row
+  /// without one is refused at authentication.
   TextColumn get userId => text().nullable()();
 
   /// Workspace active at pairing time (seed for the session binding).

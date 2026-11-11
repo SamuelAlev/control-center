@@ -109,9 +109,8 @@ PipelineRun pipelineRunFromRow(PipelineRunsTableData row) {
   );
 }
 
-/// Decodes `template_snapshot_json`. A run that predates snapshots has none,
-/// and a malformed one degrades to none: the engine then falls back to the
-/// live template, exactly as it did before snapshots existed.
+/// Decodes `template_snapshot_json`. A malformed one degrades to none, and the
+/// engine does not execute a run without one.
 PipelineDefinition? _snapshotFromJson(String? json) {
   if (json == null || json.isEmpty) {
     return null;

@@ -7,6 +7,8 @@
 /// desktop also uses it for its in-process server until Fork A spawns cc_server.
 library;
 
+// A compiled server is its own agent run client (`cc_server agent-run …`).
+export 'package:cc_infra/agent_run_client.dart' show runAgentRunClient;
 export 'src/activity_log_persister.dart';
 export 'src/backfill_embeddings_use_case.dart';
 export 'src/backup_archive.dart';

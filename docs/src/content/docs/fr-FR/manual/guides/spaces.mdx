@@ -2,7 +2,7 @@
 title: Utiliser les espaces
 description: Créez des espaces, définissez leur mode, gérez les participants et l’autonomie, et ouvrez des conversations et des fils.
 slug: fr-FR/manuel/guides/espaces
-sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
+sourceHash: c588f695c796a2ddce571d4870ef5c7d3594fe07
 ---
 
 Ce guide vous montre comment utiliser les espaces. Un **espace** est la surface
@@ -27,6 +27,8 @@ agents](#espaces-entre-agents) ci-dessous.
    désélectionner tous les dépôts crée un espace où rien n’est extrait
 6. Confirmez
 
+Les dépôts que vous choisissez déterminent aussi qui peut ouvrir l’espace. Seuls les membres qui ont un droit de lecture sur chacun d’eux, et dont la connexion à la forge peut lire chacun d’eux, voient l’espace et tout ce qu’il contient : messages, résultats de recherche, journaux d’exécution, tâches à faire, activité et notifications. Un espace sans dépôt est ouvert à tous les membres. Pour une conversation que tout l’espace de travail doit pouvoir lire, désélectionnez tous les dépôts, ou ne gardez que les dépôts que tout le monde peut lire. Voir [Les espaces suivent leurs dépôts](/fr-FR/manuel/concepts/autorisation/#les-espaces-suivent-leurs-dépôts).
+
 Seul un agent répond à un message, donc un espace sans agent ne lance rien : le compositeur l’indique et conserve votre message jusqu’à ce que vous mentionniez un agent avec @, ce qui l’ajoute à l’espace et envoie le message. Il n’existe aucun exécuteur par défaut derrière un espace vide.
 
 Les espaces sont rattachés à un espace de travail : vous ne voyez que les agents
@@ -38,7 +40,7 @@ dépôt qui embarque ses propres skills d’agent les met à la disposition de
 l’agent qui y travaille — un seul ensemble de dépôt à la fois, permuté au fil
 des déplacements de l’agent. Depuis le compositeur, vous pouvez atteindre
 n’importe lequel d’entre eux avec `/skill:<repo>:<name>`. Voir
-[Skills limités au dépôt](/fr-FR/manuel/concepts/modele-agent/#repo-scoped-skills).
+[Skills limités au dépôt](/fr-FR/manuel/concepts/modele-agent/#skills-limités-au-dépôt).
 
 La surface se trouve à l’adresse `/workspaces/<id>/spaces`, et un espace donné à
 `/workspaces/<id>/spaces/<spaceId>`.

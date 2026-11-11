@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/presentation/widgets/show_add_workspace_dialog.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -123,21 +124,19 @@ class _TitleBarWorkspaceChipState extends ConsumerState<TitleBarWorkspaceChip> {
       controller: _controller,
       toggleOnTargetTap: false,
       // The workspace list and the active row are watched *inside* the overlay,
-      // not in the chip's own build: the chip renders nothing but the display
-      // info, so watching them here would rebuild the whole title-bar chip on
-      // every workspaces-stream emission and pull two more derived providers
-      // into its build.
+      // not in the chip's own build (which renders only the display info), so
+      // a workspaces-stream emission does not rebuild the whole title-bar chip.
       overlayBuilder: (context, _) => Consumer(
         builder: (context, ref, _) {
           final workspaces = ref.watch(workspacesProvider).value ?? const [];
+          final canCreate = ref.watch(canCreateWorkspacesProvider);
           final active = widget.forcePlaceholder
               ? null
               : ref.watch(activeWorkspaceProvider);
           return ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 260, minWidth: 220),
-            // Carbon-style menu: rows sit flush against the panel's edges —
-            // no vertical insets at the top/bottom and no breathing room
-            // around the divider (the panel's ClipRRect clips the corners).
+            // Carbon-style menu: rows sit flush against the panel's edges and
+            // the divider (the panel's ClipRRect clips the corners).
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -147,12 +146,13 @@ class _TitleBarWorkspaceChipState extends ConsumerState<TitleBarWorkspaceChip> {
                     _buildWorkspaceTile(w, active?.id == w.id),
                   const CcDivider(),
                 ],
-                CcTile(
-                  leading: const Icon(AppIcons.plus, size: 16),
-                  title: l10n.addWorkspaceEllipsis,
-                  onTap: _add,
-                ),
-                if (workspaces.isNotEmpty)
+                if (canCreate)
+                  CcTile(
+                    leading: const Icon(AppIcons.plus, size: 16),
+                    title: l10n.addWorkspaceEllipsis,
+                    onTap: _add,
+                  ),
+                if (workspaces.isNotEmpty || !canCreate)
                   CcTile(
                     leading: const Icon(AppIcons.settings, size: 16),
                     title: l10n.manageWorkspaces,

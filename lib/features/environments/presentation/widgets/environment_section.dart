@@ -3,6 +3,7 @@ import 'package:cc_domain/features/environments/domain/entities/space_environmen
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_controls.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_live_panel.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_start.dart';
 import 'package:control_center/features/environments/providers/environment_actions.dart';
@@ -77,6 +78,7 @@ class EnvironmentSection extends ConsumerWidget {
               ),
               workspaceId: workspaceId,
               busy: starting,
+              enabled: environmentOperable(ref, key),
             )
           : EnvironmentLivePanel(spaceKey: key, environment: environment),
     );
@@ -150,7 +152,21 @@ class EnvironmentSectionShell extends StatelessWidget {
           horizontal: AppSpacing.sm,
           vertical: AppSpacing.xs,
         ),
-        child: child,
+        child: spaceKey == null
+            ? child
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  child,
+                  EnvironmentOperateNote(
+                    spaceKey: spaceKey,
+                    padding: const EdgeInsetsDirectional.only(
+                      top: AppSpacing.xs,
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }

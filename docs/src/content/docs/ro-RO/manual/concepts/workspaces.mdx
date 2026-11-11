@@ -2,7 +2,7 @@
 title: Spații de lucru și izolare
 description: De ce un spațiu de lucru este o graniță strictă de tenant, cum separarea bazelor de date face această graniță structurală și ce o traversează în mod deliberat.
 slug: ro-RO/manual/concepte/spatii-de-lucru
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Ce este un spațiu de lucru?
@@ -79,9 +79,11 @@ Un fișier de spațiu de lucru conține doar un `workspace_meta` cu un singur r�
 
 ## Crearea unui spațiu de lucru
 
+Doar [proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului) poate crea un spațiu de lucru; serverul îi generează id-ul. Un administrator sau proprietar de spațiu de lucru nu poate crea altul. Cineva care nu se află încă în niciun spațiu de lucru vede **Nu ești încă într-un spațiu de lucru**, care îi cere fie să-i ceară proprietarului serverului să creeze unul, fie ca un administrator de spațiu de lucru să-l invite; formularul **Adaugă spațiu de lucru** le spune același lucru oricui altcuiva.
+
 Crearea unui spațiu de lucru face mai mult decât să insereze un rând în registru. Într-o singură operație, serverul îl marchează pe utilizatorul care creează drept `ownerUserId`, înregistrează apartenența acelui utilizator cu rol de proprietar și publică un eveniment de domeniu `WorkspaceCreated`. Ascultătorii acelui eveniment populează apoi, idempotent și în fundal:
 
-- un **agent CEO** plus patru specialiști — `qa`, `architect`, `engineer`, `librarian` — specialiștii raportând CEO-ului;
+- un **agent CEO** plus cinci specialiști — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — specialiștii raportând CEO-ului;
 - **șabloanele de pipeline încorporate** și trigger-ele lor (trigger-ele de eveniment și cele manuale vin activate; cele programate sunt opționale, cu excepția curățării zilnice de GC a worktree-urilor);
 - **suitele eval de pornire**.
 
@@ -90,7 +92,7 @@ Acest lucru se întâmplă pentru _fiecare_ spațiu de lucru, nu doar pentru pri
 Scrierea apartenenței de proprietar contează mai mult decât pare: fără ea, spațiul de lucru abia creat nu ar avea niciun membru, iar fiecare apel limitat la spațiul de lucru pe care îl face în continuare creatorul ar fi refuzat.
 
 :::note[Agenții nu pot crea un spațiu de lucru]
-Nu există niciun instrument MCP `create_workspace`. Oamenii creează un spațiu de lucru prin `workspace.create` (punct de trecere doar cu numele) sau `workspace.upsert` (înregistrare completă, folosită și pentru actualizări). Ambele îl marchează pe utilizatorul care creează ca `owner` și publică `WorkspaceCreated`.
+Nu există niciun instrument MCP `create_workspace`. Proprietarul serverului creează un spațiu de lucru prin `workspace.create`, care îl marchează ca `owner` și publică `WorkspaceCreated`. `workspace.upsert` actualizează doar un spațiu de lucru existent; nu creează niciodată unul și nu schimbă niciodată proprietarul unui spațiu de lucru, lucru pe care îl face doar **Transferă proprietatea**.
 :::
 
 ## Ștergerea, exportul, importul
@@ -106,7 +108,7 @@ Pentru că un spațiu de lucru este un singur fișier, a da un spațiu de lucru 
 
 Operațiile de backup se află sub **Setări → Server → Backup și restaurare**: **Fă backup acum** ia un snapshot al instalării, lista arată ce snapshoturi sunt complete și îi permite proprietarului instalării să șteargă unul după confirmare, iar fiecare spațiu de lucru oferă export și import. Pipeline-ul încorporat **Workspace backup** ia doar baza de date a acelui spațiu de lucru, după un program săptămânal, și își șterge propriile backupuri mai vechi decât vârsta de retenție configurată. Aceste backupuri sunt listate pe aceeași pagină, pe spații de lucru, unde fiecare poate fi restaurat, descărcat sau șters. Ștergerea unui spațiu de lucru îi lasă backupurile în urmă, pentru ca proprietarul instalării să le preia sau să le elimine, deoarece programul și retenția lui se opresc odată cu el. Restaurarea unui spațiu de lucru dintr-un snapshot al instalării este `workspace.import` îndreptat către `<workspaceId>/workspace.db` al snapshotului; restaurarea întregii instalări rămâne o copiere înapoi, cu serverul oprit, a directorului snapshotului.
 
-Ce nu transportă niciuna dintre ele este restul directorului spațiului de lucru. Un spațiu de lucru acumulează mai mult decât o bază de date — imagini lipite, fișiere de skill-uri și de agenți, acreditări de chat, worktree-uri — iar exportul și importul mută **fișierul**, așa că tot ce stă alături de el rămâne acolo unde este. Acest lucru este deliberat pentru acreditări și de unică folosință pentru worktree-uri; pentru restul este o limită de cunoscut, nu o funcționalitate. [Referința pentru backup](/ro-RO/manual/referinta/backup/#what-a-backup-does-not-contain) are tabelul complet.
+Ce nu transportă niciuna dintre ele este restul directorului spațiului de lucru. Un spațiu de lucru acumulează mai mult decât o bază de date — imagini lipite, fișiere de skill-uri și de agenți, acreditări de chat, worktree-uri — iar exportul și importul mută **fișierul**, așa că tot ce stă alături de el rămâne acolo unde este. Acest lucru este deliberat pentru acreditări și de unică folosință pentru worktree-uri; pentru restul este o limită de cunoscut, nu o funcționalitate. [Referința pentru backup](/ro-RO/manual/referinta/backup/#ce-nu-conține-un-backup) are tabelul complet.
 
 ## Mutarea unui backup între server și dispozitivul tău
 

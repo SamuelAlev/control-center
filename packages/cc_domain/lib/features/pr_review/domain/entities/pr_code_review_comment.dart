@@ -27,7 +27,7 @@ class PrCodeReviewComment {
   final int id;
 
   /// Id of the review submission this comment was posted with (GitHub's
-  /// `pull_request_review_id`); null when unknown (legacy cache rows).
+  /// `pull_request_review_id`); null when unknown.
   final int? reviewId;
 
   /// Body.

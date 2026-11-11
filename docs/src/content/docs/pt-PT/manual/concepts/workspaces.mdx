@@ -2,7 +2,7 @@
 title: Espaços de trabalho e isolamento
 description: Porque é que um espaço de trabalho é uma fronteira rígida entre inquilinos, como a divisão da base de dados torna essa fronteira estrutural e o que a atravessa deliberadamente.
 slug: pt-PT/manual/conceitos/espacos-de-trabalho
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## O que é um espaço de trabalho?
@@ -79,9 +79,11 @@ Um ficheiro de espaço de trabalho transporta apenas um `workspace_meta` de linh
 
 ## Criar um espaço de trabalho
 
+Só o [proprietário do servidor](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor) pode criar um espaço de trabalho; é o servidor que gera o seu identificador. Um administrador ou proprietário de espaço de trabalho não pode criar outro. Quem ainda não está em nenhum espaço de trabalho vê **Ainda não está num espaço de trabalho**, que lhe pede que o proprietário do servidor crie um ou que um administrador do espaço de trabalho o convide, e o formulário **Adicionar espaço de trabalho** diz o mesmo a qualquer outra pessoa.
+
 Criar um espaço de trabalho faz mais do que inserir uma linha no registo. Numa única operação, o servidor marca o utilizador criador como `ownerUserId`, regista a pertença desse utilizador com a função de proprietário e publica um evento de domínio `WorkspaceCreated`. Os ouvintes desse evento semeiam então, de forma idempotente e em segundo plano:
 
-- um **agente CEO** e mais quatro especialistas — `qa`, `architect`, `engineer`, `librarian` — com os especialistas a reportar ao CEO;
+- um **agente CEO** e mais cinco especialistas — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — com os especialistas a reportar ao CEO;
 - os **modelos de pipeline integrados** e os respetivos disparadores (os disparadores de evento e manuais vêm ativados; os agendados são opcionais, exceto a varredura diária de GC de worktrees);
 - as **suites de avaliação iniciais**.
 
@@ -90,7 +92,7 @@ Isto acontece em _todos_ os espaços de trabalho, não apenas no primeiro. Os ag
 A escrita da pertença do proprietário importa mais do que parece: sem ela, o espaço de trabalho acabado de criar não teria membros e todas as chamadas com âmbito de espaço de trabalho que o criador fizesse a seguir seriam recusadas.
 
 :::note[Os agentes não podem criar um espaço de trabalho]
-Não existe nenhuma ferramenta MCP `create_workspace`. Os seres humanos criam um espaço de trabalho através de `workspace.create` (ponto de estrangulamento só com o nome) ou de `workspace.upsert` (registo completo, também usado para atualizações). Ambos marcam o utilizador criador como `owner` e publicam `WorkspaceCreated`.
+Não existe nenhuma ferramenta MCP `create_workspace`. O proprietário do servidor cria um espaço de trabalho através de `workspace.create`, que o marca como `owner` e publica `WorkspaceCreated`. `workspace.upsert` apenas atualiza um espaço de trabalho que já existe; nunca cria um, e nunca altera o proprietário de um espaço de trabalho, o que só **Transferir a propriedade** faz.
 :::
 
 ## Eliminar, exportar e importar
@@ -118,7 +120,7 @@ instalação é apontar `workspace.import` ao `<workspaceId>/workspace.db` do in
 restaurar uma instalação completa continua a ser uma cópia de volta do diretório do
 instantâneo com o servidor parado.
 
-O que nenhuma delas transporta é o resto do diretório do espaço de trabalho. Um espaço de trabalho acumula mais do que uma base de dados — imagens coladas, ficheiros de skills e de agentes, credenciais de chat, worktrees — e a exportação e a importação movem o **ficheiro**, pelo que tudo o que está ao seu lado fica onde está. Isso é deliberado para as credenciais e descartável para as worktrees; quanto ao resto, é um limite que convém conhecer e não uma funcionalidade. A [referência da cópia de segurança](/pt-PT/manual/referencia/copia-de-seguranca/#what-a-backup-does-not-contain) tem a tabela completa.
+O que nenhuma delas transporta é o resto do diretório do espaço de trabalho. Um espaço de trabalho acumula mais do que uma base de dados — imagens coladas, ficheiros de skills e de agentes, credenciais de chat, worktrees — e a exportação e a importação movem o **ficheiro**, pelo que tudo o que está ao seu lado fica onde está. Isso é deliberado para as credenciais e descartável para as worktrees; quanto ao resto, é um limite que convém conhecer e não uma funcionalidade. A [referência da cópia de segurança](/pt-PT/manual/referencia/copia-de-seguranca/#o-que-uma-cópia-de-segurança-não-contém) tem a tabela completa.
 
 ## Mover uma cópia de segurança entre o servidor e o seu dispositivo
 

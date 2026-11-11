@@ -157,7 +157,8 @@ class AppLocalizationsHu extends AppLocalizations {
   String get guardrailClassPrCreate => 'Pull request megnyitása';
 
   @override
-  String get guardrailClassPrPublish => 'Átnézés vagy összefésülés közzététele';
+  String get guardrailClassPrPublish =>
+      'Pull request frissítése vagy egyesítése';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Írás külső követőbe';
@@ -2559,9 +2560,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get activityToggledMcpServer => 'MCP-szerver átkapcsolva';
 
   @override
-  String get activityUpdatedMcpToken => 'MCP-token frissítve';
-
-  @override
   String get activitySavedApiKey => 'API-kulcs mentve';
 
   @override
@@ -3189,9 +3187,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Törli: „$name”?';
   }
-
-  @override
-  String get archiveConversation => 'Beszélgetés archiválása';
 
   @override
   String get deleteFact => 'Tény törlése';
@@ -3885,9 +3880,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'Kövesse a rendszer megjelenését, vagy válasszon rögzített módot.';
 
   @override
-  String get mcpAuthToken => 'MCP hitelesítési token';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Az MCP-szerver vezérlése nem érhető el a csatlakoztatott szerveren.';
 
@@ -4101,9 +4093,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Nem találhatók rendszerbetűtípusok.';
-
-  @override
-  String get noTokenSet => 'Nincs beállított token — a hozzáférés korlátlan.';
 
   @override
   String get noWorkingMemory => 'Még nincsenek munkamemória-jegyzetek.';
@@ -4591,31 +4580,6 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'A szerver GitHub-hitelesítő adatai nem látják: $repos. Ha a tároló szervezethez tartozik, telepítse ott a GitHub Appet, vagy csatlakoztasson hozzáféréssel rendelkező tokent.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tároló nem érhető el',
-      one: 'Egy tároló nem érhető el',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'A GitHub App telepítése fel van függesztve';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'A $repos utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon, vagy csatlakoztasson hozzáféréssel rendelkező tokent.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Nincs hozzáférés';
 
   @override
@@ -4730,9 +4694,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Szabály';
-
-  @override
-  String get runCompleted => 'Futtatás befejezve';
 
   @override
   String get running => 'Fut';
@@ -4894,9 +4855,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get setLabel => 'Beállítás';
-
-  @override
-  String get setToken => 'Token beállítása';
 
   @override
   String get settingsLabel => 'Beállítások';
@@ -5095,9 +5053,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get skillOriginManual => 'Kézi';
 
   @override
-  String get skillOriginRegistry => 'Registry';
-
-  @override
   String get skillOriginRuntimeLocal => 'Helyi futtatókörnyezet';
 
   @override
@@ -5273,10 +5228,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Téma váltása';
-
-  @override
-  String get tokenConfigured =>
-      'Beállítva — a klienseknek be kell mutatniuk ezt a tokent.';
 
   @override
   String get topic => 'Téma';
@@ -8851,7 +8802,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Mely eszközműveletek futnak kérdés nélkül. Az olvasás mindig engedélyezett; a magasabb szintek rákérdeznek.';
+      'A Control Center saját eszközeinek mely műveletei futnak kérdés nélkül, amikor az MCP-végponton vagy az ügynökein keresztül hívják őket. Az olvasás mindig engedélyezett; a magasabb szintek rákérdeznek. A futtatáson belüli szerverek az adott futtatás műveleti szabályzatát követik.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Mindig kérdezzen';
@@ -12348,20 +12299,8 @@ class AppLocalizationsHu extends AppLocalizations {
   String get settingsAbout => 'Névjegy';
 
   @override
-  String get settingsScopeBadgeYou => 'ÖN';
-
-  @override
-  String get settingsScopeBadgeDevice => 'EZ AZ ESZKÖZ';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'MUNKATERÜLET';
-
-  @override
-  String get settingsScopeBadgeServer => 'SZERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Neved, e-mailed és git-identitásod ebben a munkaterületen. Váltáskor ez a réteg is vált; a kezelőnév, bejelentkezés és eszközök a fiókon maradnak.';
+      'Az Ön neve, e-mail-címe és git-identitása ebben a munkaterületen. Munkaterületet váltva ez a réteg is vált; a felhasználóneve, a bejelentkezése és az eszközei a fiókján maradnak, a Beállítások → Ön → Profil menüpontban.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12376,49 +12315,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identitás, szabályzat és konvenciók, amelyeket a munkaterület minden tagja megoszt.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Commit-hozzárendelés';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Válaszd ki, hogy az ügynökök commitjai feltüntessék-e a Control Centert. A munkaterület adminisztrátorai ezt a beállítást mindenkinél felülírhatják.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Ügynök feltüntetése';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'A Control Center feltüntetése az ügynökök commitjainál';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Mindig te vagy a commitok szerzője és rögzítője. Bekapcsolva a Control Center (@usectrl) társszerzőként szerepel. Kikapcsolva a commitok nem tartalmaznak ügynökkreditet.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'A munkaterület beállítása felülírja a személyes választásodat. A beállításod megmarad, de itt nem érvényesül.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Hozzárendelési beállítások betöltése…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Válaszd ki, hogy az ügynökök commitjai feltüntessék-e a Control Centert. A munkaterületi beállítás felülírja az egyes tagok személyes beállítását.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Az egyes tagok beállításának használata';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'A Control Center mindig legyen feltüntetve';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'A Control Center soha ne legyen feltüntetve';
+      'A munkaterület minden tagja számára közös szabályok és konvenciók.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12788,9 +12685,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Kapcsolat ellenőrzése…';
-
-  @override
-  String get fromEnvironment => 'a környezetből';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13360,14 +13254,14 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Azok a munkaterületek használják, amelyek öröklik ennek a telepítésnek a GitHub-alkalmazását. A saját alkalmazással rendelkező munkaterület itt állítja be: Munkaterület → Általános.';
+      'Azok a munkaterületek használják, amelyek a szerver bejelentkezési alkalmazásait követik. Egy saját alkalmazásokat használó munkaterület a sajátját a Munkaterület → Integrációk menüpontban állítja be.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request beszélgetések';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Hogyan beszélnek a fejlesztők a szerverrel GitHubon az öröklő munkaterületeken. Saját App-os munkaterület botja a Munkaterület → Általános alatt van. Webhook és nyilvános URL nélkül — a szerver lekérdez.';
+      'Hogyan léphetnek kapcsolatba a fejlesztők ezzel a szerverrel a GitHubon azokban a munkaterületekben, amelyek ezt a szervert követik. A saját alkalmazásokat használó munkaterületnek saját botja van a Munkaterület → Integrációk alatt. Webhook vagy nyilvános URL nélkül is működik, a szerver lekérdez.';
 
   @override
   String get providerAppBotLogin => 'Bot bejelentkezési név';
@@ -13400,10 +13294,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Token nélkül minden, ami eléri ezt a portot, minden eszközt meghívhat.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Eszközök';
 
   @override
@@ -13430,6 +13320,132 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Mind törlése';
+
+  @override
+  String get guardrailFamilyCommands => 'Parancsok';
+
+  @override
+  String get guardrailStandingApproval => 'Időkorlátos jóváhagyás';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Engedélyezve: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Előbb kérdezzen: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Tiltva: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'ágak $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'útvonalak $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'hosztok $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'parancsok $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'eszközök $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'parancsok, amelyek ezzel kezdődnek: $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'legfeljebb $count egyszerre';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'legfeljebb $amount cent';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'az ilyen típusú összes művelet';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'adta: $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'lejár: $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'visszavonásig';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Visszavonás: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed =>
+      'Nem sikerült visszavonni. Próbálja újra.';
+
+  @override
+  String get guardrailEntryInactive =>
+      'nincs hatálya, amíg Tiltás van beállítva';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Engedélyezve az alábbi $count esetben',
+      one: 'Engedélyezve az alábbi 1 esetben',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count időkorlátos jóváhagyás a teljes munkaterületre itt is érvényes.',
+      one: '1 időkorlátos jóváhagyás a teljes munkaterületre itt is érvényes.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count időkorlátos jóváhagyás egyetlen térhez vagy ügynökhöz van beállítva. A megtekintésükhöz válassza a fenti Tér vagy Ügynök lehetőséget.',
+      one:
+          '1 időkorlátos jóváhagyás egyetlen térhez vagy ügynökhöz van beállítva. A megtekintéséhez válassza a fenti Tér vagy Ügynök lehetőséget.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Homokozó';
@@ -14246,6 +14262,13 @@ class AppLocalizationsHu extends AppLocalizations {
       'Újra kérdezünk, amikor egy ügynök következő alkalommal programot akar futtatni ebből a példányból.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Útvonalak keresése';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Nincs a keresésnek megfelelő engedély';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14601,11 +14624,11 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Ez a kapcsolat relén keresztül éri el a szervert, amely nem visz fájlátvitelt. Csatlakozzon közvetlenül a szerverhez a biztonsági mentés letöltéséhez vagy feltöltéséhez.';
+      'A fájlátvitel ehhez a kapcsolathoz még nincs beállítva. Csatlakozzon újra a szerverhez a biztonsági mentés letöltéséhez vagy feltöltéséhez.';
 
   @override
   String get backupTransferForbidden =>
-      'A szerver elutasította. Egy munkaterület letöltéséhez admin szerep kell, a visszaállításához tulajdonos, egy teljes pillanatképhez pedig a telepítés üzemeltetője.';
+      'A szerver elutasította. Munkaterület letöltéséhez a munkaterület adminja szerep kell. Visszaállításához a szerver tulajdonosa kell, akinek a munkaterület tulajdonosának is lennie kell. Egy teljes pillanatkép letöltéséhez a szerver tulajdonosa kell.';
 
   @override
   String get backupTransferUnsupported =>
@@ -14914,34 +14937,8 @@ class AppLocalizationsHu extends AppLocalizations {
       'Vágólaptartalom elhelyezése bármely környezetből ezen az eszközön rákérdezés nélkül.';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub-azonosító';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Hogyan hitelesít a munkaterület háttérben futó GitHub-munkája: ennek a telepítésnek az alkalmazásával vagy a munkaterület saját alkalmazásával.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'Az installáció GitHub Appjának használata';
-
-  @override
-  String get workspaceGitHubModeApp => 'Másik GitHub App használata';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'A GitHub Appot a Szerver → Szolgáltatói alkalmazások alatt használja.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'A munkaterület bot- és lekérdezési identitása. A tagok a Te felületen ezen az App-on keresztül jelentkeznek be.';
-
-  @override
   String get profileOverlayHint =>
       'Ezek a mezők te vagy ebben a munkaterületen. Az üresek öröklik a fiók nevét és e-mailjét. Munkaterület váltása ezt a réteget is váltja.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Jelentkezz be, vagy illessz be tokent ehhez a munkaterülethez.';
 
   @override
   String get stackStartNextPart => 'Következő rész indítása';
@@ -15750,6 +15747,17 @@ class AppLocalizationsHu extends AppLocalizations {
       'A szerver nem tudott bejelentkezési parancsot adni ehhez a fiókhoz.';
 
   @override
+  String get claudeAccountSignedIn => 'Bejelentkezve';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Ez a párbeszédablak magától bezárul, amint a bejelentkezés befejeződik.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Ez a párbeszédablak magától bezárul, amint minden fiók bejelentkezett.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'A Claude Code-bejelentkezés lejárt';
 
@@ -15905,7 +15913,7 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'Ezt a szerveren kell beállítani';
+  String get environmentInputNeeded => 'Ezt a szerveren kell beállítani';
 
   @override
   String get environmentKindApp => 'Alkalmazás';
@@ -16508,21 +16516,40 @@ class AppLocalizationsHu extends AppLocalizations {
   String get environmentOpenPanel => 'Környezet megnyitása';
 
   @override
-  String get environmentNeedsSetup => 'Beállítás szükséges';
+  String get environmentStatusBlocked => 'Teendő van';
+
+  @override
+  String get environmentStateInTerminal => 'Terminálban';
+
+  @override
+  String get environmentWaitingInTerminal => 'Terminálban rád vár';
+
+  @override
+  String get environmentOpenTerminal => 'Terminál megnyitása';
+
+  @override
+  String get environmentSignInNeeded => 'Be kell jelentkezned';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Valami, amire szükség van, nem érhető el';
+
+  @override
+  String get environmentStartTerminalDone => 'Itt kész. A környezet még indul';
 
   @override
   String get environmentContinueInTerminal => 'Folytatás a terminálban';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Az eszköznek szüksége van rád egy terminálban jelszó vagy kérdés miatt. Az indítás utána folytatódik.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Ez a terminál azért nyílt meg, mert az indításhoz szükség van rád';
 
   @override
-  String get environmentSetupTab => 'Környezet beállítása';
+  String get environmentStartTerminalTab => 'Környezet beállítása';
 
   @override
   String get environmentsNothingRunning =>
@@ -16816,23 +16843,14 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Hagyd jóvá a kérést a(z) $provider oldalán a böngészőben. Ez az ablak magától észreveszi, ha végeztél.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Várakozás erre: $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'A bejelentkezés nem fejeződött be';
 
   @override
   String get signInReopenPage => 'Bejelentkezési oldal újbóli megnyitása';
 
   @override
-  String get signInCodePrompt => 'Írd be a böngészőben látható kódot';
+  String get signInCodePrompt =>
+      'Erősítse meg a böngészőjében, majd írja be a megjelenő kódot.';
 
   @override
   String get signInCodeMalformed =>
@@ -16875,7 +16893,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Ez a bejelentkezés már nem érvényes. Indítsa újra.';
+      'Ez a bejelentkezés már nincs nyitva: megszakították, felhasználták vagy újabb váltotta fel. Indítsa újra.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16883,7 +16901,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Most túl sok a bejelentkezési kísérlet. Várjon egy percet, majd próbálja újra.';
+      'Most túl sok kérés érkezett. Várjon egy kicsit, majd próbálja újra.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16914,10 +16932,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'A(z) $provider-alkalmazás nincs telepítve ott, ahol szükség van rá. Telepítsd, majd próbáld újra.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Ez a GitHub-alkalmazástelepítés már egy másik Control Center-szerverhez van engedélyezve.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16976,7 +16990,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Hol van telepítve a GitHub-alkalmazás, azok a fiókok között, amelyekhez ennek a munkaterületnek a tárolói tartoznak. Egy szervezet telepítése csak azokon a szervereken működik, amelyeket az adminisztrátorai engedélyeznek.';
+      'Hol van telepítve a GitHub-alkalmazás, azok a fiókok között, amelyekhez ennek a munkaterületnek a tárolói tartoznak.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16986,21 +17000,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get githubInstallApp => 'GitHub-alkalmazás telepítése';
 
   @override
-  String get githubAuthorizeServer => 'A szerver engedélyezése';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Ez a szerver mostantól használhatja a(z) $account telepítését.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Felfüggesztve';
-
-  @override
-  String get githubInstallationAuthorized => 'Engedélyezve';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Nincs engedélyezve';
 
   @override
   String get linearAutomationTitle => 'Linear-automatizálás';
@@ -17026,7 +17026,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Regisztráld magad a GitHub-, Google- és Linear-alkalmazásokat itt: Beállítások → Szerver → Egyszeri bejelentkezés, az egyes munkaterületek saját Slack-alkalmazását pedig azok beállításaiban kapcsold be. A „Saját GitHub-alkalmazás létrehozása” egy lépésben beállítja a GitHubot.';
+      'Regisztrálja maga a GitHub-, Google- és Linear-alkalmazásokat a Beállítások → Szerver → Egyszeri bejelentkezés menüpontban, és csatlakoztassa az egyes munkaterületek saját Slack-alkalmazását a Munkaterület → Integrációk alatt, ahol a munkaterület saját alkalmazásokat vagy Connectet is választhat. A „GitHub-alkalmazás létrehozása” egy lépésben beállítja a GitHubot.';
 
   @override
   String get connectModeCustom => 'Egyéni Connect-szerver használata';
@@ -17161,7 +17161,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'A szerver új kulcsot és új telepítési azonosítót kap. Minden Connecten keresztüli bejelentkezés megszűnik, és mindenkinek újra be kell jelentkeznie. A saját alkalmazásaidon keresztüli bejelentkezéseket ez nem érinti.';
+      'A szerver új kulcsot és új telepítési azonosítót kap. A régi azonosító visszavonásra kerül a Connectnél: a régi azonosítóval lezárt bejelentkezések, és a régi kulcs ott már nem működnek, ezért mindenkinek, aki a Connecten keresztül jelentkezett be, újra be kell jelentkeznie. A már kiadott tokenek a lejáratukig működnek. Az Ön saját alkalmazásain keresztüli bejelentkezéseket ez nem érinti. Ha a Connect nem érhető el, semmi sem változik, és újra próbálkozhat.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17296,35 +17296,6 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Szolgáltatói alkalmazások';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Hogy a munkaterület a Google Calendar, a Linear és a Klipy melyik alkalmazását használja. Alapértelmezés szerint a szerver alkalmazásait vagy a Control Center Connectet használja. A saját alkalmazással rendelkező munkaterület soha nem tér vissza ezekhez.';
-
-  @override
-  String get workspaceProviderAppModeInherit =>
-      'A szerver alkalmazásának használata';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'A bejelentkezések és a kérések a szerver saját alkalmazását vagy a Control Center Connectet használják.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'A munkaterület saját alkalmazásának használata';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Csak a munkaterület alkalmazása használatos. Amíg hiányos, ez a szolgáltató itt ki van kapcsolva, és nem tér vissza más alkalmazáshoz.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'A szerver alkalmazása';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Saját alkalmazás';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Még hiányzik: $fields. Amíg minden mező nincs kitöltve, ez a szolgáltató ki van kapcsolva ebben a munkaterületen. Nem tér vissza a szerver alkalmazásához.';
   }
@@ -17341,22 +17312,116 @@ class AppLocalizationsHu extends AppLocalizations {
       'A GIF-keresés ebben a munkaterületen ezt a kulcsot használja.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Váltja a(z) $provider alkalmazást?';
+  String get settingsWorkspaceIntegrations => 'Integrációk';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Ebben a munkaterületen a kódtárhely, a feladatok, a naptár, a csevegés és a GIF-keresés, valamint az, hogy mely alkalmazásokon keresztül jelentkeznek be.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Mely alkalmazásokat használja ez a munkaterület a GitHubhoz, a Google Naptárhoz, a Linearhoz, a Slackhez és a GIF-kereséshez. Ha egy rendszergazda mást nem választ, ez a szerver határozza meg.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Mint ez a szerver';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Ez a szerver a Control Center alkalmazásait használja.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Ez a szerver a Connect-szervert használja itt: $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'A munkaterületen a szerver alkalmazásán keresztül $provider-fiókhoz kapcsolódóknak újra be kell jelentkezniük a munkaterület alkalmazásával.';
+  String get workspaceConnectInheritOwn =>
+      'Ez a szerver saját alkalmazásait használja.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'A szerver tulajdonosa még nem választott, ezért a szerver saját alkalmazásai érvényesek.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Csak ennek a munkaterületnek az alkalmazásai használatosak. Mindegyiket adja hozzá lent, a szolgáltatója mellé. Az alkalmazás nélküli szolgáltató itt ki van kapcsolva; a szerver alkalmazásai és a Connect nem használatosak helyette.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Csak HTTPS. A privát vagy helyi hálózaton lévő címek elutasításra kerülnek.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'A szerver környezetében lévő CC_CONNECT_URL határozza meg, hová mennek a bejelentkezések, ezért ez a munkaterület nem választhat saját Connect-szervert. Követheti ezt a szervert, vagy használhatja saját alkalmazásait.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Átváltja a munkaterület bejelentkezési alkalmazásait?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'A munkaterület minden tagjának újra be kell jelentkeznie a GitHubba, a Linearba és a Google Naptárba az új alkalmazásokon keresztül. A jelenlegi alkalmazásokkal végzett bejelentkezések itt megszűnnek működni.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Alkalmazások váltása';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'A fenti választást követi. Egy szolgáltató soha nem tér vissza másik alkalmazásra.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'A munkaterület alkalmazása';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'A szerver alkalmazása';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub-alkalmazás';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Ennek a munkaterületnek a saját alkalmazása jár el a tárolói nevében, és jelentkezteti be a tagokat. Soha nem tér vissza a szerver alkalmazásához vagy a Connecthez.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Ez a munkaterület a bejelentkezési alkalmazásai által biztosított GitHub-alkalmazást használja. Telepítse arra a fiókra, amelyhez a tárolói tartoznak.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Ennek a munkaterületnek nevében jár el';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Az alkalmazás botja kommentel, átnéz és szavazást indít a pull requestekben ennek a munkaterületnek a tárolóiban.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider-alkalmazás';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Ez törli a munkaterület $provider-hitelesítő adatait. A munkaterület alkalmazásán keresztül kapcsolódóknak újra be kell jelentkezniük.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Az ebben a munkaterületen lévő $provider-bejelentkezések és -kérések kizárólag ezt az alkalmazást használják.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Alkalmazás váltása';
+  String get workspaceGifsTitle => 'GIF-ek';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'A GIF-keresés ennek a munkaterületnek a Klipy-kulcsát használja.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'A GIF-keresés ennek a szervernek a Klipy-kulcsát használja.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'A GIF-keresés a Control Center Connecten keresztül működik.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'A GIF-keresés ki van kapcsolva ebben a munkaterületen.';
 
   @override
   String openOnForge(String forge) {
@@ -17374,7 +17439,7 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Csatlakoztassa a GitHubot, GitLabot vagy Bitbucketet itt: Beállítások → Munkaterület → Profil és identitás → Kódtárhely';
+      'Csatlakoztassa a GitHubot, GitLabot vagy Bitbucketet itt: Beállítások → Ön → Profil';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17391,4 +17456,1142 @@ class AppLocalizationsHu extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Csatlakoztassa ezt: $forge, hogy pull requestet nyisson ebben a tárolóban';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'A(z) $provider bejelentkezésed ($account) lejárt. Jelentkezz be újra.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Szüneteltetve: a munkaterület bejelentkezési szolgáltatása megváltozott';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'A(z) $provider most nem érhető el. Újrapróbálkozás folyamatban.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'A bejelentkezésed megmarad, és újra működik, amint a szolgáltatás visszatér. A munkaterület egyik adminja az Integrációk alatt ellenőrizheti a bejelentkezés beállítását.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'A szerver újraindult. Kezdd újra a bejelentkezést.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'A(z) $provider bejelentkezés nincs beállítva ehhez a munkaterülethez.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'A(z) $provider bejelentkezés hibásan van beállítva: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Ez a munkaterület saját alkalmazásokat használ, de nincs $provider-alkalmazása.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Ez a build nem tudja ellenőrizni a Control Center Connectet, ezért a(z) $provider bejelentkezés ki van kapcsolva.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'A munkaterület bejelentkezési szolgáltatása megváltoztatta az azonosságát. Egy adminnak meg kell erősítenie.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'A munkaterület bejelentkezési szolgáltatása most nem érhető el.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'A munkaterület bejelentkezési szolgáltatásának címe hiányzik vagy érvénytelen.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'A szerver üzemeltetője rögzítette a bejelentkezési szolgáltatást, ezért a munkaterület saját választása nem érvényes.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'A munkaterület bejelentkezési szolgáltatása nem kínálja a(z) $provider szolgáltatást.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Integrációk megnyitása';
+
+  @override
+  String get signInOpenServerSettings =>
+      'Bejelentkezési beállítások megnyitása';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Ez a te nevedben fut a(z) $provider szolgáltatásban, és nem adtál meg tokent. Adj meg egyet, majd próbáld újra.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Leválasztod: $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'A(z) $provider tárolóin való munkához újra csatlakoztatnod kell.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Ez csak ebben a munkaterületben választja le a(z) $provider szolgáltatást. A többi munkaterület megtartja a saját kapcsolatát.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Ez minden olyan munkaterületben leválasztja a(z) $provider szolgáltatást, amely ezt a kapcsolatot használja.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider leválasztva erről a munkaterületről';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider leválasztva minden munkaterületről';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Telepítsd a GitHub Appot ide: $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Az automatizálás addig nem éri el ezeket: $repos, amíg az alkalmazás nincs ott telepítve.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Add hozzá a GitHub App tárolóihoz: $repos';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Az alkalmazás telepítve van ezen a fiókon, de még nem látja ezeket a tárolókat.';
+
+  @override
+  String get repoAccessChooseRepos => 'Tárolók kiválasztása';
+
+  @override
+  String get repoAccessSuspendedTitle =>
+      'A GitHub App telepítése fel van függesztve';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Az automatizálás szünetel ezekben: $repos, amíg a fiók egyik tulajdonosa folytatja a telepítést a GitHubon.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Az automatizálás szünetel';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'A munkaterület automatizálásáért felelős személy már nem látja ezeket: $repos, ezért ott semmi sem fut a nevében.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'A munkaterület automatizálásáért felelős személy nincs bejelentkezve a forge-ba, ezért az automatizálás ezekben: $repos vár, amíg be nem jelentkezik.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Nem sikerült ellenőrizni a hozzáférést ezekhez: $repos. Újrapróbálkozás folyamatban.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Kérd meg őket a javításra: $admins.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Kérd meg a munkaterület egyik adminját a javításra.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Jelentkezz be ide: $forge, hogy további $count tároló pull requestjeit is lásd',
+      one:
+          'Jelentkezz be ide: $forge, hogy további 1 tároló pull requestjeit is lásd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tároló rejtve van, mert a(z) $forge-fiókod nem látja őket',
+      one: '1 tároló rejtve van, mert a(z) $forge-fiókod nem látja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count tároló rejtve van, mert ebben a munkaterületben nincs hozzájuk hozzáférésed',
+      one:
+          '1 tároló rejtve van, mert ebben a munkaterületben nincs hozzá hozzáférésed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'A hozzáférésed ellenőrzése további $count tárolóhoz…',
+      one: 'A hozzáférésed ellenőrzése további 1 tárolóhoz…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Összekapcsolva, de az automatizálás még nem ér el mindent';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Telepítés másik szervezetben';
+
+  @override
+  String get forgeTokenEmailLabel => 'Az Atlassian-fiók e-mail-címe';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Add meg az Atlassian-fiókod e-mail-címét.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API-token';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'A Bitbucket API-tokenek az őket létrehozó Atlassian-fiók e-mail-címével együtt működnek.';
+
+  @override
+  String get automationTokensTitle => 'Automatizálási tokenek';
+
+  @override
+  String get automationTokensRepoHint =>
+      'A GitLabon és a Bitbucketen futó háttérmunka, például a pull requestek frissítése, az MI-áttekintési megjegyzések és a senki által nem kért merge requestek, egy bot hozzáférési tokenjét használja, soha nem egy személyét. A tároló saját tokenje elsőbbséget élvez a munkaterületével szemben.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'A munkaterület minden olyan GitLab- vagy Bitbucket-tárolójához, amelynek nincs saját automatizálási tokenje. Az ottani háttérmunka e token botjaként jelenik meg.';
+
+  @override
+  String get automationTokenNone =>
+      'Nincs token. Az automatizálás itt szünetel.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'A munkaterület tokenjét használja';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '$name nevében jár el';
+  }
+
+  @override
+  String get automationTokenStored => 'Hozzáférési token hozzáadva';
+
+  @override
+  String get automationTokenRejected =>
+      'A platform elutasította ezt a tokent. Cseréld le.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge automatizálási token';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Illessz be egy projekt- vagy csoport-hozzáférési tokent. Szüksége van a read_api és read_repository jogra; megjegyzésekhez, merge requestekhez és pusholáshoz add hozzá az api és write_repository jogot. A GitLab a munkáját a token botjaként mutatja.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Illessz be egy tároló-, projekt- vagy munkaterület-hozzáférési tokent tárolóolvasási joggal, valamint pull request írási joggal a megjegyzésekhez és pull requestekhez. A saját API-tokened az Ön → Profil alatt érhető el, nem itt.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'A token elmentve, de nem tudja olvasni ezt: $repos. Az automatizálás ott szünetel.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle =>
+      'Eltávolítod az automatizálási tokent?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Az erre a tokenre épülő automatizálás szünetel, amíg nem adsz hozzá egy másikat.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Minden saját token nélküli $forge-tároló';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Egyetlen automatizálási token sem tudja olvasni ezt: $repos, ezért az ottani háttérmunka szünetel.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Az Ön által indított munkák commitjai az Ön nevét viselik. Válassza ki, kik kapjanak még jóváírást, és hogy a forge-ok ellenőrzöttként jelöljék-e az Ön commitjait.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Szerzőség';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Ön által indított munkák';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Ön a szerző és a committer, azzal az e-mail-címmel, amelyet a forge ellenőrzött az Ön bejelentkezéséhez. Ide tartoznak az ügynökökkel folytatott csevegések, az Ön által indított folyamatok és a szerkesztőben készített commitok.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Automatizált futtatások';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Az ütemezés vagy webhook által indított futtatások a bot nevében commitolnak, és soha nincsenek aláírva.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Amíg nincs bejelentkezve egy forge-ba a munkaterületen, az Ön futtatásai ott a bot nevében commitolnak.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'A Control Center megjelölése társszerzőként';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Az Ön commitjai társszerzőként megnevezik a Control Center-t (@usectrl), az Ön által beállított automatizált futtatások pedig Önt. Ha ki van kapcsolva, egyik sor sem kerül hozzáadásra.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'A munkaterület beállítása felülírja a személyes választásodat. A beállításod megmarad, de itt nem érvényesül.';
+
+  @override
+  String get settingsCoauthorCreditLoading =>
+      'Hozzárendelési beállítások betöltése…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Társszerzői jóváírás';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Hogy a commitok tartalmaznak-e társszerzői sorokat: a Control Center a tagok saját commitjain, és azok a tagok, akik beállítottak egy automatizált futtatást, annak commitjain. Az itt megadott választás felülírja minden tag saját beállítását.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Az egyes tagok beállításának használata';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Társszerzői jóváírás mindig hozzáadása';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Társszerzői jóváírás soha ne kerüljön hozzáadásra';
+
+  @override
+  String get settingsCommitSigningSection => 'Ellenőrzött commitok';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Aláírás';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Nincs aláírás';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Ez a szerver az Ön saját kulcsával képes aláírni a commitjait, így a GitHub és a GitLab ellenőrzöttként jeleníti meg őket. Addig semmi sem kerül aláírásra, amíg nem hoz létre kulcsot.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Aláírókulcs létrehozása';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Aláírókulcs létrehozva. Adja hozzá a forge-fiókjához.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Nyilvános kulcs';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'A nyilvános kulcs másolva';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Ujjlenyomat';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Létrehozva';
+
+  @override
+  String get settingsCommitSigningAddTitle => 'Adja hozzá a forge-fiókjához';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'A commit csak akkor jelenik meg ellenőrzöttként, ha a munkaterületen emellett a forge-ba is be van jelentkezve, így a forge igazolja az e-mail-címét.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. A Key type mezőt állítsa Signing Key-re.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. A Usage type mezőt állítsa Signing-re.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'A commitok a Bitbucketen nincsenek aláírva. Ne adja hozzá ezt a kulcsot a Bitbucket-fiókjához: ott az SSH-kulcs egyben bejelentkezést is jelent.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Nem támogatott';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Amit megbízik';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'A privát kulcs soha nem hagyja el ezt a szervert.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Aki a szervert irányítja, az Ön nevében írhat alá commitokat mindaddig, amíg a kulcs a forge-fiókjában van.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'A GitHubon a már ellenőrzöttként megjelenő commitok a kulcs eltávolítása után is ellenőrzöttek maradnak.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Kulcs törlése';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Törli az aláírókulcsát?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'A commitjai mostantól nincsenek aláírva. A kulcs addig marad a forge-fiókjain, amíg ott el nem távolítja.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Aláírókulcs törölve';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Nem sikerült betölteni az aláírókulcsát: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Ki Ön minden munkaterületen, és saját kódtárhely-, jegykezelési, naptár- és csevegési fiókjai.';
+
+  @override
+  String get accountSectionTitle => 'Fiók';
+
+  @override
+  String get accountSectionDescription =>
+      'A felhasználóneve és a neve követi Önt minden munkaterületen. Egy munkaterületen más név vagy e-mail-cím jelenhet meg: ezt a Munkaterület → Profil és identitás menüpontban állíthatja be.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Nem sikerült betölteni a profilját: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'A név, amelyet mások az üzeneteiben és átnézéseiben látnak.';
+
+  @override
+  String get accountDisplayNameRequired => 'Adjon meg megjelenítendő nevet.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Ez módosítható, de eltávolítani nem lehet.';
+
+  @override
+  String get accountAvatarLabel => 'Kép';
+
+  @override
+  String get accountAvatarHint =>
+      'Egy négyzet alakú kép hivatkozása, https://-sel kezdve.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Használjon https://-sel kezdődő hivatkozást.';
+
+  @override
+  String get usernameLabel => 'Felhasználónév';
+
+  @override
+  String get usernameRule =>
+      '2–32 kisbetű, számjegy, pont, kötőjel vagy aláhúzás. Az emberek ezzel említik meg Önt.';
+
+  @override
+  String get usernameAvailable => 'Elérhető.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Elérhető. Így lesz mentve: $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Használjon 2–32 kisbetűt, számjegyet, „.”, „_” vagy „-” karaktert, betűvel vagy számjeggyel kezdve és végezve.';
+
+  @override
+  String get usernameReserved => 'Ez a felhasználónév fenntartott.';
+
+  @override
+  String get usernameTaken => 'Ez a felhasználónév foglalt.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Most nem lehet ellenőrizni ezt a nevet. Még menthet; a szerver dönt.';
+
+  @override
+  String get linkedAccountsTitle => 'Csatlakoztatott fiókok';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Identitásszolgáltató';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Bejelentkezés szükséges';
+
+  @override
+  String get linkedAccountStatusPaused => 'Szüneteltetve';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Nem elérhető';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Az identitásszolgáltató, amelyen keresztül a fiókja bejelentkezik. A szervert üzemeltető személy kezeli.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'A fiókok, amelyeket saját magának csatlakoztat. A Control Center ezeken keresztül az Ön nevében jár el, a változtatások csak Önt érintik.';
+
+  @override
+  String get accountReachServer =>
+      'Ezen a szerveren minden munkaterületen használatos.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Csak a(z) $workspace munkaterületen használatos.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'A GitHub csak a(z) $workspace munkaterületen használatos, amelynek saját bejelentkezési alkalmazásai vannak. A GitLab és a Bitbucket ezen a szerveren minden munkaterületen használatos.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Az Ön fiókja';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Az Ön fiókja: $status. Ezt nyitja meg: Ön → Profil.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Nincs csatlakoztatott kódtárhely-fiók';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Nincs csatlakoztatott $provider-fiók';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Nincs összekapcsolt $provider-fiók';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'A demóban Ön átmeneti vendég, ezért nincs fiók, amelyet módosíthatna: sem felhasználónév, sem profil, sem csatlakoztatott fiók.';
+
+  @override
+  String get onboardingStepYou => 'Ön';
+
+  @override
+  String get onboardingYouTitle => 'Válassza ki a felhasználónevét';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'A felhasználóneve az, ahogyan az emberek megemlítik, és ez alapján lesz megjelölve a munkája. Később a Beállítások → Ön → Profil menüpontban módosíthatja a felhasználónevét és a megjelenítendő nevét.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Ez a(z) $provider-fiók már másik személyhez van csatlakoztatva ezen a szerveren. Jelentkezzen be egy másik $provider-fiókkal.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'A token lejár: $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'A token lejárt: $date. Illessze be az újat, hogy tovább működjön.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'A(z) $forge nem érhető el a token ellenőrzéséhez. Próbálja újra egy pillanat múlva.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return 'A(z) $forge nem fogadja el ezt a tokent. Ellenőrizze, hogy mindent átmásolt-e, és hogy nem vonták-e vissza.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Ez nem személyes token. Személyes hozzáférési tokent illesszen be a saját $forge-fiókjából, ne projekt-, csoport-, munkaterület- vagy botos tokent.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Ebből a tokenből hiányzik a(z) $scope hatókör, amely az átnézéshez és a kommentekhez szükséges. Hozzon létre olyat, amelyikben megvan.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Ez a token lejárt. Hozzon létre egy újat, és illessze be ide.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Az Ön által indított ügynökök bármely tárolóban, ahol dolgoznak, az Ön nevében aláírt commitokat készíthetnek. Ha itt törli a kulcsot, ez azonnal leáll: a már futó futtatások további semmit nem írnak alá.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'A kulcs nem lett cserélve, és semmi sem változott: $error Próbálja újra.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Még nincs munkaterületen';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Egy munkaterület-adminisztrátornak meg kell hívnia Önt, vagy a szerver tulajdonosa létrehozhat Önnek egy munkaterületet. Amint hozzáadják, itt meg fog nyílni.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Bejelentkezve mint $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Újraellenőrzés';
+
+  @override
+  String get noWorkspaceSignOut => 'Kijelentkezés';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Csak a szerver tulajdonosa hozhat létre munkaterületet. Kérje meg, hogy hozzon létre egyet, vagy kérjen meghívást egy munkaterület-adminisztrátortól.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return 'A(z) $repo nincs egyik munkaterületén sem, Ön pedig nincs olyan munkaterületen, amelyhez hozzáadhatná. Kérjen meghívást egy munkaterület-adminisztrátortól.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Csak a szerver tulajdonosa teheti meg ezt';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'A teljes szerkesztő a szerver saját gépén fut, ezért csak a szerver tulajdonosa nyithatja meg. A fájlokat az Explorerből továbbra is megnyithatja és szerkesztheti.';
+
+  @override
+  String get terminalSandboxedBadge => 'Homokozóban';
+
+  @override
+  String get terminalSandboxedHint =>
+      'A munkaterület mappáin belül, homokozóban fut, ezért néhány gazdagép-eszköz és elérési út itt nem érhető el.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'A gazdagép-héj homokozó nélkül fut a szerveren, ezért csak a szerver tulajdonosa nyithatja meg. A rendes terminál a homokozóban fut.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Terminál csak ennek a munkaterületnek a saját mappáin belül nyitható meg.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Csak a szerver tulajdonosa menthet vagy hagyhat jóvá olyan környezetet, amely a szerver gépén fut. A munkaterület-adminisztrátor egy állomáson futót is használhat.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Az alkalmazás saját szerkesztőjében készített commitok nem futtatnak a tárolóból származó Git-horgokat, ahogy a git commit --no-verify sem: a szerver a saját gépén futtatja a Git-et, egy olyan fában, amelyet az ügynökök és a pull requestek módosíthatnak.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Az MCP-kliensek minden kéréssel elküldik ezt a tokent Authorization: Bearer fejlécként. A szerver az első indításkor hozza létre; cserélhető, de eltávolítani nem lehet.';
+
+  @override
+  String get mcpShowToken => 'Token megjelenítése';
+
+  @override
+  String get mcpHideToken => 'Token elrejtése';
+
+  @override
+  String get mcpRotateToken => 'Token cseréje';
+
+  @override
+  String get mcpRotateTokenTitle => 'Lecseréli az MCP-tokent?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'A szerver azonnal új tokenre vált. Minden MCP-kliens, amely a jelenlegit használja, elutasításra kerül, amíg meg nem kapja az újat.';
+
+  @override
+  String get mcpTokenRotated =>
+      'A token cserélve. Adja meg az MCP-klienseinek az újat.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'Az MCP-végpont a szerver tulajdonosáé';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'A token az összes eszközt megnyitja ezen a szerveren, ezért csak a szerver tulajdonosa láthatja, cserélheti, illetve indíthatja és leállíthatja a végpontot.';
+
+  @override
+  String get activityRotatedMcpToken => 'Lecserélte az MCP-tokent';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'A Connect nem tudta visszavonni a régi kulcsot';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Semmi sem változott. Ha mégis cserél, ez a szerver új kulcsot kap, de a régi azonosító a Connectnél használható marad, amíg a bejelentkezései le nem járnak.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Mindenképpen cserél';
+
+  @override
+  String get settingsAuditLog => 'Auditnapló';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Ki mit változtatott, hol és milyen eredménnyel – a szerveren és minden munkaterületen, amelyet adminisztrál. A szerveroperációk az argumentumok neveit rögzítik, az értékeket nem.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Csak adminisztrátoroknak';
+
+  @override
+  String get auditLogNoAccess =>
+      'Az auditnapló a szervert és az Ön által adminisztrált munkaterületeket fedi le. Ön nem adminisztrál munkaterületet, ezért nincs megjeleníthető adat.';
+
+  @override
+  String get auditLogSourceServer => 'Szerver';
+
+  @override
+  String get auditLogSourceWorkspace => 'Munkaterület';
+
+  @override
+  String get auditLogAddFilter => 'Szűrő';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Szűrés…';
+
+  @override
+  String get auditLogFilterActor => 'Felhasználó';
+
+  @override
+  String get auditLogFilterSource => 'Munkaterület';
+
+  @override
+  String get auditLogFilterOutcome => 'Eredmény';
+
+  @override
+  String get auditLogFilterTime => 'Idő';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Sikeres';
+
+  @override
+  String get auditLogOutcomeDenied => 'Megtagadva';
+
+  @override
+  String get auditLogOutcomeFailed => 'Sikertelen';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Ekkor vagy később';
+
+  @override
+  String get auditLogTimeAfter => 'Után';
+
+  @override
+  String get auditLogTimeBefore => 'Előtt';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Ekkor vagy korábban';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Idő $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 órával ezelőtt';
+
+  @override
+  String get auditLogTimePresetDay => '24 órával ezelőtt';
+
+  @override
+  String get auditLogTimePresetWeek => '7 nappal ezelőtt';
+
+  @override
+  String get auditLogTimePresetMonth => '30 nappal ezelőtt';
+
+  @override
+  String get auditLogTimeExact => 'Pontos időpont';
+
+  @override
+  String get auditLogTimeInvalid =>
+      'Használja ezt: YYYY-MM-DD, opcionálisan HH:MM megadásával';
+
+  @override
+  String get auditLogTimeAdd => 'Hozzáadás';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return 'A(z) $repo most egy másik tárolóra mutat';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Ez az elérési út most egy másik tárolóra mutat a(z) $forge oldalon. Újra kell kapcsolnia, hogy tovább használhassa.';
+  }
+
+  @override
+  String get repoRelink => 'Újrakapcsolás';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Újrakapcsolva: $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Ez az elérési út most egy másik tárolóra mutat. Egy munkaterület-adminisztrátornak újra kell kapcsolnia, mielőtt használható lenne.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'A(z) $forge-fiókja nem olvashatja ezt a tárolót.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Nem sikerült igazolni a(z) $forge-hozzáférését. Próbálja újra.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'A forge-fiókja nem olvashatja ezt a tárolót.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Nem sikerült igazolni a forge-hozzáférését. Próbálja újra.';
+
+  @override
+  String get repoPathHostPath =>
+      'Csak a szerver tulajdonosa köthet össze olyan mappát, amely a munkaterület tárhelyén kívül esik.';
+
+  @override
+  String get repoPathMissing => 'A szerveren nincs semmi ezen az elérési úton.';
+
+  @override
+  String get repoPathDataDir =>
+      'A tároló nem mutathat a szerver adatmappájába.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'A tároló nem lehet maga a munkaterület mappája.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Ennek a mappának az origin-je egy másik tárolóra mutat.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Mentve. Be kell jelentkezniük a(z) $forge-ba, mielőtt megnyithatják ezt a tárolót.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Mentve. A(z) $forge-fiókjuk még nem olvashatja ezt a tárolót, ezért előttük rejtve marad.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Mentve. Most nem sikerült igazolni a(z) $forge-hozzáférésüket.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return 'A(z) $repo egyik munkaterületén sincs összekapcsolva. Kérje meg a szerver tulajdonosát, hogy adja hozzá.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'A szerver tulajdonosa adja hozzá a tárolókat a szerver mappáiból.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Csak Ön adta meg ezt a címet. Az egyszeri bejelentkezés nem illeszti hozzá, amíg a szerver tulajdonosa meg nem erősíti.';
+
+  @override
+  String get settingsServerPeople => 'Személyek';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Mindenki, akinek fiókja van ezen a szerveren, és hogy az e-mail-címe meg van-e erősítve.';
+
+  @override
+  String get serverPeopleLabel => 'Fiókok';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Csak a szerver tulajdonosa láthatja mindenki fiókját, és erősítheti meg az e-mail-címeket.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-mail nincs megerősítve';
+
+  @override
+  String get serverPeopleConfirmEmail => 'E-mail megerősítése';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Megerősíti, hogy a(z) $email cím a(z) $name személyé? Az egyszeri bejelentkezés ezt a címet fogja a fiókjához párosítani.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Megerősítve: $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Az ügynökökhöz homokozó kell ezen a szerveren';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket. A tulajdonos telepítheti a homokozót, vagy mindenki számára kikapcsolhatja a homokozást.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Ez a mappa a munkaterület tárhelyén kívül esik. Erősítse meg, hogy ez a szerver használhatja-e.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Ez a mappa a munkaterület tárhelyén kívül esik. Csak a szerver tulajdonosa erősítheti meg.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'A szerveren már nincs semmi ezen az elérési úton. Távolítsa el ezt a tárolót, és adja hozzá újra a jelenlegi mappájából.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Ez a mappa nem használható tárolóként. Távolítsa el, és adja hozzá a tárolót egy másik mappából.';
+
+  @override
+  String get repoPathConfirm => 'Megerősítés';
+
+  @override
+  String get repoPathConfirmAll => 'Összes megerősítése';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mappa a munkaterület tárhelyén kívül esik',
+      one: '1 mappa a munkaterület tárhelyén kívül esik',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Erősítse meg, hogy ez a szerver használhatja-e őket. Minden tárolót újra ellenőriz az Ön hozzáférésével.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'A gép saját eszközbeállításaiban talált szerverek csak olyan futtatásokban érhetők el, amelyeket Ön indít, vagy amelyekért Ön felel. Mások futtatásai sosem látják őket, és a Control Center MCP-végpontján keresztül sem kínálják fel őket.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Jelentkezzen be a(z) $provider szolgáltatásba a tároló kódjának megtekintéséhez.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Bejelentkezés';
+
+  @override
+  String get ideContentSearchFailed => 'A fájlokban nem lehet keresni';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Ez a fájl nem érhető el ebben a munkafában.';
+
+  @override
+  String get ideChangesLoadFailed => 'A módosításokat nem sikerült betölteni';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Ez az elérési út most egy másik tárolóra mutat a(z) $forge oldalon. Egy munkaterület-adminisztrátornak újra kell kapcsolnia, mielőtt használható lenne.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Csak a szerver tulajdonosa állíthat vissza biztonsági mentést. A mentéseket továbbra is letöltheti.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Csak olvasható';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Megnézheti ezt a terminált, de beírni, átméretezni vagy leállítani csak a beszélgetés minden tárolójához tartozó írási hozzáféréssel lehet.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Megtekintheti ezt a környezetet, de elindítani, leállítani vagy újraindítani csak a beszélgetés minden tárolójához tartozó írási hozzáféréssel lehet.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'A szerver gépén fut. Hagyja jóvá, hogy elindulhasson.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'A szerver gépén fut. A szerver tulajdonosának jóvá kell hagynia, mielőtt elindulhat.';
+
+  @override
+  String get environmentHostApprove => 'Jóváhagyás';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Hagyja jóvá munkaterület-adminisztrátorként: csak az adminisztrátor példánya mutatja a titkos értékeket, és a jóváhagyás ezeket menti vissza.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'A szerver tulajdonosa még nem hagyta jóvá ezt a környezetet, ezért nem futhat ezen a szerveren.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Ön még nem hagyta jóvá ezt a környezetet. A szerver gépén fut, ezért a definíció jóváhagyása után indul el.';
+
+  @override
+  String get environmentHostApprovalReview => 'Átnézés és jóváhagyás';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Jelentkezzen be a(z) $provider szolgáltatásba a tér megnyitásához.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'A(z) $forge-fiókja nem olvas egy, a térben használt tárolót.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'A forge-fiókja nem olvas egy, a térben használt tárolót.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Nincs olvasási hozzáférése a térben használt egyik tárolóhoz. Egy munkaterület-adminisztrátor megadhatja.';
+
+  @override
+  String get spaceAccessFailed => 'Ezt a teret nem sikerült megnyitni.';
+
+  @override
+  String get contextExplorerRefused =>
+      'A kontextusbontás nem érhető el ebben a munkamenetben.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Az összekapcsolt tárolóhoz tulajdonos és tárolónév is szükséges.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Nincs olvasási hozzáférésed ehhez a tárolóhoz. A munkaterület adminisztrátora megadhatja.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Olvashatod ezt a tárolót, de nem módosíthatod. A munkaterület adminisztrátora írási hozzáférést adhat.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Olvashatod ezt a tárolót, de nem átnézheted. A munkaterület adminisztrátora átnézési hozzáférést adhat.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Csak megfigyelés';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Megfigyelheted ezt a gépet. Vezérléséhez, portjainak továbbításához, beillesztéshez vagy fájlok ráhúzásához a tér minden tárolójához írási hozzáférés szükséges.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'A gép itt történő indításához a tér minden tárolójához írási hozzáférés szükséges. A munkaterület adminisztrátora megadhatja.';
+
+  @override
+  String get rigViewRefused =>
+      'Nem tekintheted meg ezt a gépet. Olyan térhez tartozik, amelyhez nincs olvasási hozzáférésed.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'A portok módosításához a tér minden tárolójához írási hozzáférés szükséges.';
+
+  @override
+  String get rigHolderOnly =>
+      'Csak az a személy vezérelheti ezt a gépet, akinek megnyitották. A saját bejelentkezéseit használja.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Megfigyelheted ezt a gépet. Annak a személynek a bejelentkezéseit használja, akinek megnyitották, ezért csak ő vezérelheti, továbbíthatja a portjait, tartalmat illeszthet bele, vagy fájlokat húzhat rá.';
 }

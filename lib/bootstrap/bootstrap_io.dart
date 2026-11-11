@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcClientClosedException;
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/app/app_windows.dart'
     show runBootFailureWindow, runDesktopBootWindow;
 import 'package:control_center/app/tray/launch_context.dart';
@@ -23,10 +24,8 @@ import 'package:control_center/core/observability/sentry_bootstrap.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/server/server_connection_config.dart';
 import 'package:control_center/core/storage/app_support_path_provider.dart';
-import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:control_center/core/storage/native_key_value_backend.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/core/utils/app_log.dart';
 import 'package:control_center/core/utils/cc_domain_logging.dart';
 import 'package:control_center/core/utils/cc_infra_logging.dart';
@@ -342,7 +341,6 @@ Future<void> _prepareDesktop(List<String> arguments) async {
   if (!Platform.isMacOS) {
     await localNotifier.setup(appName: 'Control Center');
   }
-  await removeLegacyCalendarSnapshots(prefs);
   // The desktop opens NO database. It connects to a
   // `cc_server` that owns the data over loopback/WSS RPC — the same path the web
   // build uses. The user's persisted choice decides which server:

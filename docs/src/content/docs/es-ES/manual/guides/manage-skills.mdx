@@ -2,7 +2,7 @@
 title: Instalar y gestionar skills
 description: Instala y actualiza las skills del espacio de trabajo a través del filtro del análisis y luego compara revisiones guardadas con evaluaciones de skills con presupuesto.
 slug: es-ES/manual/guias/gestionar-skills
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Esta guía te muestra cómo llenar un espacio de trabajo con skills de GitHub:
@@ -104,7 +104,7 @@ de bloqueo.
    con el propósito de la skill y un **Adaptador**. El harness integrado usa un
    proveedor configurado y un modelo con capacidad de herramientas. **Claude
    Code** usa la cuenta gestionada predeterminada de Claude y un identificador
-   de modelo concreto; inicia sesión primero en **Ajustes → Adaptadores**. No
+   de modelo concreto; inicia sesión primero en **Ajustes → Servidor → Proveedores de modelos → Cuentas de Claude Code**. No
    toma prestado el inicio de sesión personal del operador del servidor.
 3. Elige una **Comparación** en la tabla de abajo.
 4. Define **Repeticiones por tarea** (1–20) y **Presupuesto (centavos de US)**.
@@ -200,8 +200,7 @@ con los comandos slash integrados (`/plan`, `/goal`, `/loop`, `/compact`):
   al agente
 - `/skill:<repo>:<name>` — una skill que aporta un repo clonado en este espacio
 
-Un nombre simple que no sea integrado todavía se resuelve, para los mensajes
-escritos antes de que existiera el espacio de nombres. `/skill:plan` es lo que
+`/skill:plan` es lo que
 llega a una skill llamada `plan`; `/plan` es siempre el integrado.
 
 ## Skills con alcance de repo
@@ -218,7 +217,7 @@ Las skills de repo pasan por el mismo análisis que bloquea ante la duda
 prompt. `warn` se admite; `quarantine` se retiene, sin ninguna anulación del
 operador en esa ruta.
 
-Consulta [Skills con alcance de repo](/es-ES/manual/conceptos/modelo-de-agentes/#repo-scoped-skills) y
+Consulta [Skills con alcance de repo](/es-ES/manual/conceptos/modelo-de-agentes/#skills-con-ámbito-de-repositorio) y
 [Comandos slash](/es-ES/manual/referencia/comandos-slash/).
 
 ## Guías relacionadas

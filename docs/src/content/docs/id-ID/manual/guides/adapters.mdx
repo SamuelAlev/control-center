@@ -2,7 +2,7 @@
 title: Kelola adapter dan model
 description: Hubungkan penyedia model, pilih model yang dijalankan agen, dan periksa CLI runner agen mana yang tersedia di host server.
 slug: id-ID/panduan-pengguna/panduan-praktis/adapter
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Panduan ini menunjukkan cara menghubungkan penyedia model dan memilih apa yang
@@ -121,6 +121,13 @@ wawancara tujuan `/goal`. Agen ini menjalankan satu penyelesaian tanpa alat
 setiap kali, pada adapter dan modelnya sendiri, jadi berikan model yang kecil
 dan cepat.
 
+Bila adapter itu adalah CLI ACP, penyelesaian tersebut berupa proses di mesin
+server dan mengikuti [aturan sandbox](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/#agen-di-host-tanpa-sandbox):
+di dalam sandbox bila server menjalankan agen di sandbox, dan tanpa sandbox hanya
+untuk permintaan yang dipertanggungjawabkan kepada pemilik server. Bagi orang lain,
+fitur-fitur ini dilewati: tidak ada judul yang dibuat, dan `/btw` menjawab "Agen Content
+synthesizer tidak ada atau tidak memiliki runner yang berfungsi".
+
 Sunting **persona**-nya di **Pengaturan → Ruang kerja → Agen** untuk mengubah
 cara teks itu dibaca — panjang judul, bahasa, nada, contoh yang diikutinya.
 Format balasan yang diurai setiap fitur (judul satu baris, bagian-bagian tujuan)
@@ -140,8 +147,7 @@ Lalu tekan **Segarkan** di bagian atas halaman. Setiap baris yang terdeteksi
 menampilkan versi dan jalur yang diselesaikan, plus chip yang menunjukkan apakah
 mendukung mode JSON dan pemilihan model.
 
-CLI eksternal menyimpan kredensialnya sendiri, dalam konfigurasinya sendiri, di
-host server. Control Center tidak mengelolanya.
+Login Claude Code tercantum di bawah **Akun Claude Code** pada runner Claude Code. Control Center membuat direktori konfigurasi tiap akun di server dan memberi Anda perintah `claude auth login` untuk dijalankan di sana; ia tidak pernah masuk untuk Anda.
 
 :::caution[Argumen adapter dan Variabel lingkungan tetap di perangkat ini]
 Setiap baris adapter menawarkan kolom **Argumen** dan dialog **Variabel

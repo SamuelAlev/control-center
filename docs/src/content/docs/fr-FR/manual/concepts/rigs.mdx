@@ -2,7 +2,7 @@
 title: Rigs et enceintes
 description: Pourquoi les agents obtiennent des machines jetables plutôt que votre ordinateur — les frontières d’isolation, les voies d’affichage, les identifiants, les ports et le cycle de vie.
 slug: fr-FR/manuel/concepts/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Un **rig** est une machine jetable qu’un agent pilote en temps réel — un navigateur, un
@@ -243,7 +243,7 @@ au lieu de faire silencieusement autre chose.
 Un rig n’est délibérément **pas** une destination globale. La vue en direct est un onglet dans
 l’espace ou la PR où le travail se déroule, rattaché à cette conversation : votre onglet et les
 appels `browser_use` de l’agent s’adressent donc à *une* machine (une par moteur, sur la
-surface navigateur). Le fait que les rigs puissent démarrer ou non est une propriété de
+surface navigateur). Un rig ouvert dans un espace est la machine de cet espace, avec les worktrees de l’espace à portée ; il suit donc les dépôts de l’espace : la lecture de l’espace permet de le regarder, et une autorisation d’écriture sur ces dépôts permet de le piloter. Un rig qui n’appartient à aucun espace n’atteint aucun worktree, et chaque membre de l’espace de travail peut l’utiliser. [Qui peut regarder et qui peut piloter](/fr-FR/manuel/guides/utiliser-rigs/#qui-peut-regarder-et-qui-peut-piloter) détaille ce que couvre chacun. Le fait que les rigs puissent démarrer ou non est une propriété de
 l’hôte : les capacités, les images, les images personnalisées par espace de travail et la
 liste des machines en cours se trouvent donc sous **Paramètres → Serveur → Rigs**. Piloter une
 enceinte constitue sa propre [classe d’actions de garde-fou](/fr-FR/manuel/concepts/garde-fous/),

@@ -25,6 +25,8 @@ class GitHubPullRequest {
     this.headRef = '',
     this.headRepoFullName,
     this.baseRepoFullName,
+    this.headRepoId = '',
+    this.baseRepoId = '',
     this.requestedReviewers = const <GitHubUser>[],
     this.assignees = const <GitHubUser>[],
     this.labels = const <GitHubLabel>[],
@@ -81,6 +83,8 @@ class GitHubPullRequest {
           (head is Map<String, dynamic> ? head['ref'] as String? : null) ?? '',
       headRepoFullName: _repoFullName(head),
       baseRepoFullName: _repoFullName(json['base']),
+      headRepoId: _repoId(head),
+      baseRepoId: _repoId(base),
       requestedReviewers: _parseUsers(json['requested_reviewers']),
       assignees: _parseUsers(json['assignees']),
       labels: _parseLabels(json['labels']),
@@ -137,12 +141,20 @@ class GitHubPullRequest {
     'head': <String, dynamic>{
       'sha': headSha,
       'ref': headRef,
-      if (headRepoFullName != null) 'repo': {'full_name': headRepoFullName},
+      if (headRepoFullName != null || headRepoId.isNotEmpty)
+        'repo': {
+          'full_name': ?headRepoFullName,
+          if (headRepoId.isNotEmpty) 'id': int.tryParse(headRepoId),
+        },
     },
     'base': <String, dynamic>{
       'ref': baseRef,
       'sha': baseSha,
-      if (baseRepoFullName != null) 'repo': {'full_name': baseRepoFullName},
+      if (baseRepoFullName != null || baseRepoId.isNotEmpty)
+        'repo': {
+          'full_name': ?baseRepoFullName,
+          if (baseRepoId.isNotEmpty) 'id': int.tryParse(baseRepoId),
+        },
     },
     'requested_reviewers': requestedReviewers
         .map((u) => u.toJson())
@@ -221,6 +233,13 @@ class GitHubPullRequest {
   /// `owner/name` of the base repo.
   final String? baseRepoFullName;
 
+  /// GitHub's numeric id of the head repo ('' when GitHub reports none).
+  final String headRepoId;
+
+  /// GitHub's numeric id of the base repo: durable across renames and
+  /// transfers ('' when the payload carried none).
+  final String baseRepoId;
+
   /// Whether this pull request's code comes from outside the base repo.
   ///
   /// Anything short of a positive match counts as a fork: this gates what runs
@@ -239,6 +258,15 @@ class GitHubPullRequest {
     }
     final repo = side['repo'];
     return repo is Map<String, dynamic> ? repo['full_name'] as String? : null;
+  }
+
+  static String _repoId(Object? side) {
+    if (side is! Map<String, dynamic>) {
+      return '';
+    }
+    final repo = side['repo'];
+    final id = repo is Map<String, dynamic> ? repo['id'] : null;
+    return id is num ? '${id.toInt()}' : '';
   }
 
   /// Reviewers that have been requested but have not yet reviewed.

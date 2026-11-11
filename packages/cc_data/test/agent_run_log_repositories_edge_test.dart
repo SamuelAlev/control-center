@@ -2,6 +2,9 @@ import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/value_objects/run_cost.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
+import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event_codec.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -190,6 +193,43 @@ void main() {
         expect(host.lastSubscribe!.args['conversation_id'], 'conv-1');
       },
     );
+  });
+
+  // The server marks a run refused for want of a sandbox by code, never by
+  // its sentence: `error_code` on the run log, `code` on the turn's error
+  // event and segment. The client reads exactly these names.
+  group('sandbox_unavailable', () {
+    test('the run log carries error_code through to errorCode', () async {
+      host.callResults['agent_run_log.get'] = {
+        'log': {...logWire, 'error_code': 'sandbox_unavailable'},
+      };
+      final run = await RpcAgentRunLogRepository(client).getById('ws1', 'rl1');
+      expect(run!.errorCode, ErrorSegment.sandboxUnavailableCode);
+    });
+
+    test("the turn's error event and segment carry code", () {
+      final event = AgentProcessEventCodec.fromWire({
+        'kind': 'error',
+        'ts': 0,
+        'content': 'No sandbox is available on this server.',
+        'code': 'sandbox_unavailable',
+      });
+      expect((event as ErrorEvent).code, ErrorSegment.sandboxUnavailableCode);
+
+      final segment = TranscriptSegment.fromJson({
+        'type': 'error',
+        'ts': 0,
+        'message': 'No sandbox is available on this server.',
+        'code': 'sandbox_unavailable',
+      });
+      expect((segment as ErrorSegment).isSandboxUnavailable, isTrue);
+      final other = TranscriptSegment.fromJson({
+        'type': 'error',
+        'ts': 0,
+        'message': 'No sandbox is available on this server.',
+      });
+      expect((other as ErrorSegment).isSandboxUnavailable, isFalse);
+    });
   });
 
   group('RpcAgentRunLogRepository', () {

@@ -9,6 +9,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:cc_server_core/src/catalog/rig_access.dart' show RigLaneAccess;
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:cc_server_core/src/local_rpc_server.dart';
 import 'package:cc_server_core/src/paired_device_secrets_port.dart';
@@ -114,6 +115,7 @@ void main() {
               required String rigId,
               required Map<String, dynamic> request,
             }) async => (bytes: audio.stream, contentType: 'audio/mpeg'),
+        rigAccess: const _SeesEverything(),
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
@@ -205,6 +207,29 @@ void main() {
   });
 }
 
+/// The rig gate is not under test here.
+class _SeesEverything implements RigLaneAccess {
+  const _SeesEverything();
+
+  @override
+  Future<bool> mayView(String workspaceId, String userId, String rigId) async =>
+      true;
+
+  @override
+  Future<bool> mayReadContents(
+    String workspaceId,
+    String userId,
+    String rigId,
+  ) async => true;
+
+  @override
+  Future<bool> mayDrive(
+    String workspaceId,
+    String userId,
+    String rigId,
+  ) async => true;
+}
+
 class _StreamDispatcher implements RpcDispatcher {
   @override
   Future<Map<String, dynamic>> handleRequest(JsonRpcRequest request) async =>
@@ -229,6 +254,7 @@ class _StreamDeviceDao implements PairedDeviceDao {
           status: 'active',
           pairedAt: DateTime.now(),
           lastSeenAt: DateTime.now(),
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
         )
       : null;
 

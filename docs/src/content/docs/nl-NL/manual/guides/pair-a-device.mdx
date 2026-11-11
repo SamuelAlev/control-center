@@ -2,7 +2,7 @@
 title: Een apparaat koppelen
 description: Koppel je telefoon (of een tweede browser of desktop) aan je Control Center-server, zodat je de fleet op afstand kunt volgen.
 slug: nl-NL/handleiding/gidsen/apparaat-koppelen
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Deze gids laat zien hoe je een telefoon aan Control Center koppelt, zodat je
@@ -62,8 +62,7 @@ goedgekeurd: een aangemaakt apparaat is actief vanaf het moment dat het wordt
 gemaakt en de verbindingscontrole kijkt alleen of de referentie actief en niet
 verlopen is. Behandel de QR en de koppelingssleutel als een wachtwoord en trek
 alles in wat je niet van plan was weg te geven. Zowel directe als via een relay
-verlopen clientsessies vereisen end-to-end-encryptie; oudere clients kunnen niet
-terugvallen op plaintext-RPC.
+verlopen clientsessies vereisen end-to-end-encryptie; er is geen plaintext-RPC.
 :::
 
 ## Gekoppelde apparaten beheren
@@ -78,9 +77,7 @@ onmiddellijk en onomkeerbaar vanuit het perspectief van het apparaat.
 
 Referenties die via dit paneel worden aangemaakt, zijn tijdgebonden: ze verlopen
 30 dagen na afgifte en de verbindingscontrole faalt daarna gesloten. Een
-referentie die met `cc_server pair` op de opdrachtregel is aangemaakt, heeft
-**helemaal geen vervaldatum** — trek hem handmatig in wanneer de machine waarvoor
-hij bedoeld was, buiten gebruik gaat.
+referentie die met `cc_server pair` op de opdrachtregel is aangemaakt, verloopt op dezelfde manier; voer `pair` opnieuw uit om een nieuwe uit te geven, en trek hem handmatig in wanneer de machine waarvoor hij bedoeld was, buiten gebruik gaat.
 
 ## Van werkruimte wisselen vanaf de telefoon
 

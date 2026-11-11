@@ -46,6 +46,7 @@ export 'review_studio_dao.dart';
 export 'rig_dao.dart';
 export 'rss_dao.dart';
 export 'runtime_profile_dao.dart';
+export 'server_audit_dao.dart';
 export 'server_setting_dao.dart';
 export 'skill_scan_dao.dart';
 export 'skill_source_dao.dart';

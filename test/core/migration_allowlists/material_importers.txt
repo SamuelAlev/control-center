@@ -2,6 +2,8 @@
 # Regenerated to the current baseline (list had drifted again).
 # Shrinking allowlist: files still importing package:material_ui/material_ui.dart.
 # Updated 2026-09-19 after routing + calendar host Material shows.
+# 2026-11-09: compose_tab_bar.dart holds the Material TabBar moved verbatim
+# out of compose_pull_request_screen.dart (size-budget split).
 lib/app/control_center_app.dart
 lib/bootstrap/bootstrap_io.dart
 lib/core/theme/app_fonts.dart
@@ -24,6 +26,7 @@ lib/features/newsfeed/presentation/widgets/article_list_row.dart
 lib/features/orchestration/presentation/widgets/orchestration_proposal_bubble.dart
 lib/features/pr_review/presentation/notifiers/pr_checks_ui_notifier.dart
 lib/features/pr_review/presentation/screens/compose_pull_request_screen.dart
+lib/features/pr_review/presentation/widgets/compose/compose_tab_bar.dart
 lib/features/pr_review/presentation/widgets/mention_autocomplete_field.dart
 lib/features/pr_review/presentation/widgets/merge_flyout_button.dart
 lib/features/pr_review/presentation/widgets/open_in_ide_button.dart

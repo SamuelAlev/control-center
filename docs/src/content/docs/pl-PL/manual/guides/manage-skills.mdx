@@ -2,7 +2,7 @@
 title: Instaluj i zarządzaj skillami
 description: Instaluj i aktualizuj skille w obszarze roboczym przez bramkę skanu, a następnie porównuj zapisane wersje z ocenami umiejętności w ramach budżetu.
 slug: pl-PL/podrecznik/poradniki/zarzadzanie-skillami
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Ten poradnik pokazuje, jak zapełnić obszar roboczy skillami z GitHuba: dodaj
@@ -98,7 +98,7 @@ zachowywany w pliku lock jako referencja do wycofania.
    umiejętności oraz **Adapter**. Wbudowany harness używa skonfigurowanego
    dostawcy i modelu obsługującego narzędzia. **Claude Code** używa domyślnego
    zarządzanego konta Claude i konkretnego identyfikatora modelu; najpierw
-   zaloguj się w **Ustawienia → Adaptery**. Nie pożycza osobistego logowania
+   zaloguj się w **Ustawienia → Serwer → Dostawcy modeli → Konta Claude Code**. Nie pożycza osobistego logowania
    operatora serwera.
 3. Wybierz **Porównanie** z tabeli poniżej.
 4. Ustaw **Powtórzenia na zadanie** (1–20) i **Budżet (centy amerykańskie)**.
@@ -189,8 +189,7 @@ z wbudowanymi poleceniami slash (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — skill dostarczany przez repozytorium
   wyewidencjonowane w tej przestrzeni
 
-Nazwa bez prefiksu, o ile nie jest wbudowana, nadal się rozwiązuje — dla
-wiadomości napisanych, zanim powstała ta przestrzeń nazw. `/skill:plan` to
+`/skill:plan` to
 sposób, by dotrzeć do skilla o nazwie `plan`; `/plan` zawsze oznacza polecenie
 wbudowane.
 

@@ -2,7 +2,7 @@
 title: Ponte de chat
 description: Fornecedores, comandos, credenciais, capacidades, operações RPC e armazenamento da ponte de chat.
 slug: pt-PT/manual/referencia/ponte-de-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Fornecedores
@@ -150,7 +150,7 @@ O cartão abre quando uma menção é aceite, antes do clone e antes do primeiro
 | Menção aceite            | `Working on it…`                                               |
 | Passo `repo`                 | `Cloning <repo>…`                                              |
 | Passo `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Passo `script`               | `Running the setup script for <repo>…`                         |
+| Passo `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | Passo `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, ainda sem passo | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Existe porque a associação acontece no _outro_ lado: um membro escreve o códi
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Credenciais da ligação     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Configuração guiada a meio | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Ficheiros do Slack antigos         | `<dataDir>/<workspaceId>/slack_credentials.json` e `slack_app_setup.json`, lidos uma vez e migrados no local |
 
 As credenciais vivem ao lado da base de dados do espaço de trabalho, não dentro dela: eliminar um espaço de trabalho leva consigo os seus tokens de chat, e `workspace.export` ou uma cópia de segurança copiam `workspace.db` — por isso um espaço de trabalho entregue a outra pessoa não transporta tokens de bot ativos. As escritas são atómicas (ficheiro temporário mais renomeação) e ficam restritas ao proprietário.
 

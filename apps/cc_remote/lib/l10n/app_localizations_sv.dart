@@ -249,10 +249,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get allCaughtUp => 'Du är ikapp';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Inget forge-konto är anslutet på servern, så pull requests kan inte tillskrivas dig ännu.';
-
-  @override
   String get inboxNothingWaiting =>
       'Inget är blockerat och ingen pull request väntar på dig.';
 
@@ -459,32 +455,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names är för stora för att skickas över relän härifrån.',
-      one: '$names är för stor för att skickas över relän härifrån.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Kunde inte ladda upp bilagan. Försök igen.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count bilagor kunde inte laddas upp och utelämnades.',
-      one: '1 bilaga kunde inte laddas upp och utelämnades.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Kollega';
 
   @override
@@ -621,36 +591,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Ingen forge är ansluten på servern, så inga pull requests kan hämtas. Anslut en från desktopappen.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repon kunde inte läsas.',
-      one: '1 repo kunde inte läsas.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Går inte att läsa: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle =>
-      'GitHub App-installationen är avstängd';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Visar senast kända data för $names. Återuppta installationen på GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'GitHub App-installationen är avstängd. Visar senast kända data för $names. Återuppta installationen på GitHub.';
-  }
 
   @override
   String get draft => 'Utkast';
@@ -1307,7 +1247,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get permissionPrCreate => 'Skapa pull requests';
 
   @override
-  String get permissionPrPublish => 'Publicera pull requests';
+  String get permissionPrPublish => 'Uppdatera eller slå ihop pull requests';
 
   @override
   String get permissionVendorSyncWrite => 'Skriv till ett externt ärendesystem';
@@ -1351,7 +1291,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get permissionBuiltInDefault => 'Inbyggd standard';
 
   @override
-  String get permissionRemembered => 'Sparat godkännande';
+  String get permissionRemembered => 'Stående godkännande';
 
   @override
   String get permissionSource => 'Källa';
@@ -1373,10 +1313,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Ange en regel här';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Återkalla den nivåspecifika eller sparade regeln innan du anger en allmän regel för åtgärden.';
 
   @override
   String get permissionConfirmRevoke => 'Bekräfta återkallande';
@@ -1429,6 +1365,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Kommandon: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Verktyg: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Inte i kraft medan den här åtgärden är nekad';
 
   @override
   String permissionMaxCount(String count) {
@@ -1889,15 +1834,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Uppdatering av pull request';
-
-  @override
-  String get activityTicket => 'Ärendeuppdatering';
-
-  @override
-  String get activityMeeting => 'Mötesuppdatering';
-
-  @override
-  String get activityCalendar => 'Kalenderanslutning';
 
   @override
   String get activityRig => 'Stationsuppdatering';
@@ -2585,8 +2521,7 @@ class AppLocalizationsSv extends AppLocalizations {
       'Väntar på godkännande i din webbläsare…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Ange koden som visas i webbläsaren';
+  String get credentialsConnectCodePrompt => 'Bekräftelsekod';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2657,10 +2592,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Klistra in en personlig åtkomsttoken';
 
   @override
-  String get credentialsHostManaged =>
-      'Anslutningen kommer från serverappen eller serverns miljö. Bara serverägaren kan ändra den där, men du kan lägga till en egen token.';
-
-  @override
   String get credentialsStopWatching => 'Sluta bevaka';
 
   @override
@@ -2681,4 +2612,204 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Kör kommandon på värden';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Din inloggning på $provider har gått ut. Logga in igen.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Pausad: arbetsytans inloggningstjänst har ändrats. Den fungerar igen när tjänsten är tillbaka.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'Det går inte att nå $provider just nu. Försöker igen.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Bara den här arbetsytan';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Alla arbetsytor';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Ta bort dina sparade inloggningsuppgifter från den här arbetsytan? Andra arbetsytor behåller sina.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Ta bort dina sparade inloggningsuppgifter från alla arbetsytor som delar dem?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Servern startades om. Börja inloggningen igen.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Installera GitHub App på $owner så att automatiseringen når $names. Tryck för att öppna GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App är inte installerad på $owner, så automatiseringen når inte $names. Be en administratör för arbetsytan att installera den.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Lägg till $names bland GitHub Appens arkiv. Tryck för att öppna GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App ser inte $names ännu. Be en administratör för arbetsytan att lägga till dem bland dess arkiv.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App-installationen är avstängd. Automatiseringen för $names är pausad tills en ägare av kontot återupptar installationen på GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Personen som ansvarar för arbetsytans automatisering kan inte längre se $names, så inget körs där för deras räkning.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Personen som ansvarar för arbetsytans automatisering är inte inloggad på forgen, så automatiseringen för $names väntar tills de loggar in.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Kunde inte kontrollera åtkomsten till $names. Försöker igen.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Logga in på $forge för att se pull requests från $count arkiv till',
+      one: 'Logga in på $forge för att se pull requests från 1 arkiv till',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arkiv är dolda eftersom ditt $forge-konto inte kan se dem',
+      one: '1 arkiv är dolt eftersom ditt $forge-konto inte kan se det',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count arkiv är dolda eftersom du saknar åtkomst till dem i den här arbetsytan',
+      one:
+          '1 arkiv är dolt eftersom du saknar åtkomst till det i den här arbetsytan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Kontrollerar din åtkomst till $count arkiv till…',
+      one: 'Kontrollerar din åtkomst till 1 arkiv till…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'E-post för Atlassian-kontot';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Ange e-postadressen för ditt Atlassian-konto.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API-token';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Ingen automatiseringstoken kan läsa $names, så bakgrundsarbetet där är pausat. En administratör kan lägga till en under Inställningar → Repositoryn.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Bekräfta i webbläsaren och ange sedan koden den visar i fältet nedan.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Det här kontot är redan anslutet till en annan person på den här servern. Logga in med ett annat konto.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider kunde inte nås för att kontrollera token. Försök igen om en stund.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider godkänner inte token. Kontrollera att du kopierat hela den och att den inte har återkallats.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Det här är ingen personlig token. Klistra in en personlig åtkomsttoken från ditt eget $provider-konto, inte en token för ett projekt, en grupp, en arbetsyta eller en bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Token saknar behörigheten $scope, som granskning och kommentarer kräver. Skapa en som har den.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Token har gått ut. Skapa en ny och klistra in den här.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'För många förfrågningar just nu. Vänta en stund och försök igen.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Inloggningen avbröts eller nekades. Starta den igen när du är redo.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Den här inloggningen är inte längre öppen: den avbröts, användes eller ersattes. Starta den igen.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'En arbetsytadministratör måste bjuda in dig, eller så kan serverägaren skapa en arbetsyta åt dig.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos pekar nu på ett annat arkiv på $forge. Koppla om det från skrivbordsappen eller webbappen för att fortsätta använda det.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos pekar nu på ett annat arkiv på $forge. En arbetsytadministratör måste koppla om det innan det kan användas igen.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenter behöver en sandlåda på den här servern';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här. Ägaren kan installera sandlådan eller stänga av sandlådan för alla.';
 }

@@ -2,7 +2,7 @@
 title: Ajan yapılandırması
 description: Ajan varlığındaki her alan ve kullandığı enum'lar.
 slug: tr-TR/kilavuz/referans/ajan-yapilandirmasi
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Bu referans, ajan varlığındaki her alanı ve ajanın kullandığı enum'ları ve bayrakları listeler. Uygulamada bir ajan oluşturma ya da düzenlemenin adım adım anlatımı için [Ajan oluşturma ve yapılandırma](/tr-TR/kilavuz/nasil-yapilir/ajan-olusturma/) sayfasına bakın.
@@ -78,6 +78,35 @@ Değişmez, büyük/küçük harf duyarsız bir beceri tanımlayıcıları küme
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Shell hook’ları
+
+Shell hook’ları, sunucu sahibinin yerleşik bir harness çalıştırması etrafında kendi betiklerini çalıştırmasına izin verir: oturum başında bir kez, her araç çağrısından önce ve her araç çağrısından sonra. Bir hook rastgele koddur; bu yüzden hook’lar ana makine yapılandırmasıdır. Yalnızca sunucu sahibi, bunları sunucunun makinesinde elle kurar. Uygulamada bunun için bir ayar yoktur ve bunları yazan bir işlem de yoktur.
+
+Bir ajan için hook’lar, sunucunun veri dizini altındaki kendi klasöründe durur:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>`, ajanın çalışma alanındaki klasörünün adıdır (`agents/<slug>/`). Bu klasör her çalışma alanının depolama alanının dışında durur ve her sandbox veri dizinini gizler; bu yüzden hiçbir üye, çalıştırma ya da terminal onu yazamaz.
+
+`hooks.json`, üç anahtardan herhangi birini, hook klasörüne göre bir yolla bir betiğe eşler:
+
+| Anahtar        | Ne zaman çalışır            | Çıkış kodunun anlamı                                           |
+| -------------- | --------------------------- | -------------------------------------------------------------- |
+| `sessionStart` | Bir kez, çalıştırma başladığında | Hiçbir şey; hook yalnızca gözlemler                       |
+| `preTool`      | Her araç çağrısından önce   | `0` çağrıya izin verir; başka her değer reddeder               |
+| `postTool`     | Her araç çağrısından sonra  | Hiçbir şey; hook yalnızca gözlemler                            |
+
+- Her betik, kendi başına bir çalıştırılabilir dosya olarak, kabuk ve argüman olmadan başlatılır; bu yüzden çalıştırılabilir olmalı ve bir shebang satırıyla başlamalıdır. Olayı stdin üzerinden JSON olarak alır: olayın adını ve araç hook’ları için aracın adını, argümanlarıyla birlikte (`preTool`) ya da sonucuyla birlikte (`postTool`).
+- Bir hook, çalıştırmanın araç süreçlerinden biri olarak, çalıştırma için ajanın klasöründe çalışır. Sunucu ajanları sandbox’a alıyorsa, çalıştırmanın sandbox’ı içinde çalışır. Minimal bir ortam alır ve çalıştırmanın kimlik bilgilerinin hiçbirini almaz: forge ya da sağlayıcı token’ı yoktur ve ağ geçidi erişimi yoktur.
+- Her hook’un 30 saniyesi vardır. Çıktısı okunur ve atılır.
+- `preTool` kapalı başarısız olur. Sıfır olmayan bir çıkış, bir zaman aşımı ya da başlatılamayan bir betik araç çağrısını reddeder.
+- Mutlak, eksik ya da hook klasöründen çıkan bir yol (bağlantılar çözümlenerek) reddedilir; çalıştırmanın günlüğü hangi hook’un neden reddedildiğini söyler. Reddedilen ya da okunamayan bir `preTool` hook’u, düzeltilene kadar her araç çağrısını reddeder.
+- `.agents/harness.json` içindeki bir `hooks` bloğu, ister bir depoda ister ajanın kendi klasöründe olsun, yok sayılır. Bir depo çoğu zaman başkasının kodudur ve ajanın klasörü üyeler ve çalıştırmalar tarafından yazılabilir. Çalıştırmanın günlüğü bloğun yok sayıldığını ve hook’ların bunun yerine nereden okunduğunu söyler.
+
+Shell hook’ları yalnızca yerleşik harness için geçerlidir. Yapılandırılmış bir `preTool` ya da `postTool` hook’u, çalıştırmanın araçlarını tek tek çağırmasına neden olur.
 
 ## AgentLiveState (türetilmiş)
 

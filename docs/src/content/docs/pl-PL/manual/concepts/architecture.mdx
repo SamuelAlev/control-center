@@ -3,7 +3,7 @@ title: Architektura
 description: Jak zbudowany jest Control Center — model serwera z cienkim klientem, Clean Architecture w podejściu feature-first oraz porty i adaptery.
 dateModified: 2026-09-19
 slug: pl-PL/podrecznik/koncepcje/architektura
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Przegląd
@@ -60,7 +60,7 @@ Funkcja **`guardrails`** umieszcza swoją warstwę domenową w `cc_domain/featur
 - Encje pamięci: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Współdzielone obiekty wartości: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Współdzielone porty: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Usługi domenowe: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Usługi domenowe: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + typy zdarzeń (obszar roboczy/agent, PR/recenzja, wiadomości, zgłoszenia, potok, orkiestracja, pamięć, kalendarz/spotkania, tożsamość i członkostwo, obserwowalność)
 
 ## Tożsamość i wieloosobowość
@@ -132,7 +132,6 @@ Serwer przechowuje poświadczenia, które mają znaczenie: tokeny GitHub i syste
 
 - Sekrety w `flutter_secure_storage` (pęk kluczy macOS, menedżer poświadczeń Windows, libsecret w Linuksie) — poświadczenie urządzenia klienta i klucze parowania ze zdalnym serwerem, a nie tokeny dostawców
 - `shared_preferences` wyłącznie do niewrażliwych preferencji (motyw, czcionka, układ)
-- Pozostałe sekrety dostawców ze starszych instalacji są jednorazowo przekazywane serwerowi przez `features/auth/providers/credential_migration.dart`, a następnie usuwane z pęku kluczy klienta
 
 ## Egzekwowanie architektury
 

@@ -1,5 +1,5 @@
 import 'package:cc_data/cc_data.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_connect_mode.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
@@ -20,19 +20,21 @@ class WorkspaceGitHubStatusView {
   factory WorkspaceGitHubStatusView.fromJson(Map<String, dynamic> json) =>
       WorkspaceGitHubStatusView(
         app: ProviderAppStatusView.fromJson(json),
-        mode: GithubAuthMode.fromWire(json['github_auth_mode'] as String?),
+        mode: WorkspaceConnectMode.fromWire(json['connect_mode'] as String?),
       );
 
-  /// App credentials for the workspace App (empty in inherit mode).
+  /// The workspace's own App credentials (used only in
+  /// [WorkspaceConnectMode.own]).
   final ProviderAppStatusView app;
 
-  /// Whether the workspace inherits the server's GitHub lane or has its own
-  /// App.
-  final GithubAuthMode mode;
+  /// Whose apps the workspace uses; its own App applies only in
+  /// [WorkspaceConnectMode.own].
+  final WorkspaceConnectMode mode;
 }
 
 /// The current workspace's GitHub identity, or null when the card should not
-/// render (demo, non-admin, or an older server).
+/// render (demo, non-admin). Completes with the server's error when it
+/// cannot answer.
 final workspaceGitHubStatusProvider =
     FutureProvider<WorkspaceGitHubStatusView?>((ref) async {
       if (ref.watch(isDemoServerProvider)) {
@@ -46,14 +48,10 @@ final workspaceGitHubStatusProvider =
       if (role == null || !role.isAdmin) {
         return null;
       }
-      try {
-        final data = await ref
-            .watch(rpcClientProvider)
-            .call('workspaceGitHub.status', overlayWorkspaceArgs(workspaceId));
-        return WorkspaceGitHubStatusView.fromJson(data);
-      } on Object {
-        return null;
-      }
+      final data = await ref
+          .watch(rpcClientProvider)
+          .call('workspaceGitHub.status', overlayWorkspaceArgs(workspaceId));
+      return WorkspaceGitHubStatusView.fromJson(data);
     });
 
 /// Saves one field of this workspace's GitHub App credentials.
@@ -72,10 +70,9 @@ Future<void> saveWorkspaceGitHubApp(
 /// Asks GitHub whether this workspace's App credentials actually work.
 Future<WorkspaceGitHubStatusView> testWorkspaceGitHubApp(WidgetRef ref) async {
   final workspaceId = ref.read(activeWorkspaceIdProvider);
-  final data = await ref.read(rpcClientProvider).call(
-    'workspaceGitHub.test',
-    overlayWorkspaceArgs(workspaceId),
-  );
+  final data = await ref
+      .read(rpcClientProvider)
+      .call('workspaceGitHub.test', overlayWorkspaceArgs(workspaceId));
   ref.invalidate(workspaceGitHubStatusProvider);
   return WorkspaceGitHubStatusView.fromJson(data);
 }
@@ -85,18 +82,44 @@ final githubAppSetupProvider = Provider<RemoteGitHubAppSetup>(
   (ref) => RemoteGitHubAppSetup(ref.watch(rpcClientProvider)),
 );
 
-/// The installations a workspace's GitHub lane can see. Never completes
-/// with an error: a failure reads as "none yet".
+/// The installations a workspace's GitHub lane can see, from the App's
+/// cached listing. Never completes with an error: a failure reads as "none
+/// yet".
 final githubInstallationsProvider =
-    FutureProvider.family<List<GitHubInstallationView>, String>((
-      ref,
-      workspaceId,
-    ) async {
-      try {
-        return await ref
-            .watch(githubAppSetupProvider)
-            .installations(workspaceId: workspaceId);
-      } on Object {
-        return const [];
-      }
-    });
+    AsyncNotifierProvider.family<
+      GitHubInstallationsNotifier,
+      List<GitHubInstallationView>,
+      String
+    >(GitHubInstallationsNotifier.new);
+
+/// Reads one workspace's GitHub App installations, and asks GitHub afresh on
+/// an admin's explicit refresh.
+class GitHubInstallationsNotifier
+    extends AsyncNotifier<List<GitHubInstallationView>> {
+  /// Creates the notifier for [workspaceId].
+  GitHubInstallationsNotifier(this.workspaceId);
+
+  /// The workspace whose GitHub lane is listed.
+  final String workspaceId;
+
+  @override
+  Future<List<GitHubInstallationView>> build() async {
+    try {
+      return await ref
+          .watch(githubAppSetupProvider)
+          .installations(workspaceId: workspaceId);
+    } on Object {
+      return const [];
+    }
+  }
+
+  /// Asks GitHub afresh (after installing the App somewhere). The server
+  /// honours it only for a workspace admin; a failure throws to the caller
+  /// and keeps the listing shown.
+  Future<void> refresh() async {
+    final fresh = await ref
+        .read(githubAppSetupProvider)
+        .installations(workspaceId: workspaceId, refresh: true);
+    state = AsyncData(fresh);
+  }
+}

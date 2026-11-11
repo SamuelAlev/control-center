@@ -2,7 +2,7 @@
 title: Cấu hình chính sách sandbox
 description: Điều gì ràng buộc một lượt chạy agent, làm sao biết sandbox hệ điều hành có đang bọc nó hay không và các quy tắc hành động quyết định agent được push hay truy cập những gì ra sao.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chinh-sach-sandbox
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Việc một lượt chạy agent có được sandbox hay không được quyết định trên máy chủ,
@@ -23,7 +23,7 @@ Sáu thứ ràng buộc một agent. Thứ nhất là sandbox hệ điều hành
 
 | Ranh giới                 | Nó làm gì                                                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sandbox hệ điều hành           | Seatbelt trên macOS, bubblewrap trên Linux và WSL2. Bọc CLI Claude Code, các adapter ACP và công cụ `bash` của harness. **Không có trên Windows và trên Linux thiếu `bwrap` và `socat`** |
+| Sandbox hệ điều hành           | Seatbelt trên macOS, bubblewrap trên Linux và WSL2. Bọc CLI Claude Code, các adapter ACP và công cụ `bash` của harness. **Không có trên Windows và trên Linux thiếu `bwrap` và `socat`, nơi chỉ các lượt chạy của chủ sở hữu máy chủ bắt đầu** |
 | Cây làm việc riêng của nó         | Mỗi cuộc hội thoại nhận một bản checkout copy-on-write. Bản checkout gốc được đưa vào lượt chạy như một đường dẫn từ chối ghi và chính sandbox là thứ thực thi điều đó                                            |
 | Thông tin xác thực qua broker     | Broker thông tin xác thực tạo mới một môi trường theo từng lượt chạy rồi thu hồi nó khi lượt chạy kết thúc. Token GitHub trong đó có thể đọc nhưng không thể push: một lần push đi qua Control Center, nơi hỏi quy tắc push trước |
 | Rào chắn hành động        | Mọi công cụ thay đổi trạng thái đều khai báo các lớp hiệu ứng của nó và bộ gác phân giải chúng trước khi lệnh gọi chạy. Một `prompt` không có người phê duyệt nào kết nối sẽ bị từ chối                                                 |
@@ -42,10 +42,13 @@ Ba thứ vẫn yếu hơn vẻ ngoài của chúng:
   sandbox nào ràng buộc chúng. Chỉ công cụ `bash` đi qua bộ chạy lệnh đã được
   sandbox. Những công cụ đó bị ràng buộc bởi giới hạn đường dẫn của chính chúng
   cùng với rào chắn hành động.
-- Trên một máy chủ không có backend, hàng đầu tiên hoàn toàn không áp dụng. ACP
-  và công cụ `bash` của harness quay về việc làm sạch môi trường cùng chính sách
-  lệnh; Claude Code kế thừa môi trường của máy chủ qua `NoSandboxAdapter`. Máy
-  chủ nói rõ điều đó trong log khởi động. Hãy kiểm tra máy của bạn ở bên dưới.
+- Trên một máy chủ không có backend, chỉ các lượt chạy mà chủ sở hữu máy chủ chịu trách
+  nhiệm mới bắt đầu, và với những lượt chạy đó hàng đầu tiên hoàn toàn không áp dụng.
+  Lượt chạy của người khác bị từ chối. Dưới `--sandbox off`, mọi lượt chạy của thành viên
+  bắt đầu mà không có hàng đầu tiên. Dù thế nào, ACP và công cụ `bash` của harness vẫn
+  quay về việc làm sạch môi trường cùng chính sách lệnh, và Claude Code kế thừa môi
+  trường của máy chủ qua `NoSandboxAdapter`. Máy chủ nói rõ bạn đang ở trường hợp nào
+  trên log khởi động. Hãy kiểm tra máy của bạn ở bên dưới.
 
 ## Quyết định agent được push những gì
 
@@ -55,8 +58,8 @@ là một quy tắc hành động:
 | Quy tắc                               | Mặc định tích hợp | Bao gồm những gì                                                            |
 | ------------------------------------- | ----------------- | --------------------------------------------------------------------------- |
 | **Push lên remote**                   | Hỏi trước         | Mọi `git push` lên GitHub, bất kể adapter nào                               |
-| **Mở một pull request**               | Hỏi trước         | `gh pr create` và các công cụ pull request                                  |
-| **Xuất bản review hoặc merge**        | Hỏi trước         | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`               |
+| **Mở một pull request**               | Hỏi trước         | Các công cụ pull request của Control Center. `gh pr create` không hoạt động trong một lượt chạy                                  |
+| **Cập nhật hoặc hợp nhất một pull request** | Hỏi trước         | Bình luận của agent trên pull request của nó, các lần chỉnh sửa tiêu đề hoặc mô tả và các review đã xuất bản, qua công cụ của Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` và `gh pr close` không hoạt động trong một lượt chạy               |
 | **Ghi vào tracker bên ngoài**         | Hỏi trước         | Việc ghi phiếu qua các công cụ của Control Center và `gh issue`             |
 | **Truy cập mạng**                     | Cho phép          | Sandbox có mạng hay không, và các công cụ web của harness                   |
 
@@ -111,45 +114,48 @@ hay không và `--sandbox` có bật hay không. Hãy kiểm tra theo đúng th�
    trên macOS, bubblewrap trên Linux và WSL2) hoặc **Không cô lập**. Mục **Đang
    áp dụng** là tùy chọn của thiết bị này, không phải lớp bọc mà máy chủ thực sự dùng.
 3. Đọc log khởi động của máy chủ. Nó in đúng một trong ba dòng:
-   - `agent sandbox ON` cùng ghi chú backend — các lượt chạy được bọc
-   - `no OS-native agent sandbox on this host` cùng một gợi ý cài đặt nếu có —
-     các lượt chạy không được bọc
-   - `agent sandbox DISABLED by --sandbox off` — một sự chọn không dùng có chủ đích
+   - `agent sandbox ON` cùng ghi chú backend: các lượt chạy được bọc
+   - `no OS-native agent sandbox on this host` cùng một gợi ý cài đặt nếu có: chỉ các lượt chạy mà chủ sở hữu máy chủ chịu trách nhiệm mới bắt đầu, không được bọc, và lượt chạy của người khác bị từ chối
+   - `agent sandbox DISABLED by --sandbox off`: mọi lượt chạy của thành viên bắt đầu, không được bọc
+4. Dòng exposure in ra khi khởi động nói cùng điều đó bằng một từ: `sandbox=native`, `sandbox=off` hoặc `sandbox=unavailable`.
 
 `GET /healthz` không báo cáo trạng thái sandbox, nên log khởi động chính là cách
 kiểm tra.
 
-Để tắt sandbox một cách có chủ đích — một máy chủ nơi profile hành xử sai chính là
-lý do tính năng này tồn tại — hãy khởi động máy chủ với `--sandbox off`, hoặc đặt
-`CC_SERVER_SANDBOX=off`. Mặc định là `on` và `on` nghĩa là "dùng backend nếu máy
-chủ có một cái", chứ không bao giờ là "bắt buộc phải có một cái".
+Chỉ chủ sở hữu máy chủ mới quyết định chạy mà không có sandbox. Để làm điều đó cho mọi
+người, hãy khởi động máy chủ với `--sandbox off`, hoặc đặt `CC_SERVER_SANDBOX=off`. Khi
+đó mọi agent của thành viên chạy không bị giới hạn trên máy đó, nên đây là một quyết định
+về tất cả những ai dùng máy chủ, được đưa ra một lần khi khởi động. Mặc định là `on`: nó
+bọc mọi lượt chạy khi máy chủ có backend và, khi không có, chỉ khởi động các lượt chạy
+của chủ sở hữu.
 
 Hai tình huống không bao giờ được bọc bằng sandbox gốc. Trên **Windows**, phép dò
-native luôn báo không khả dụng và không có gì để cài — việc điều phối agent dùng
-`none`. Backend `microvm` là riêng biệt (terminal tương tác và rig) và được đặt
-cổng dò theo runtime của chính nó. Trên **Linux và WSL2**, cả `bwrap` và `socat`
-đều phải có trên `PATH`; thiếu chúng thì phép dò báo không khả dụng và nêu tên các
-gói còn thiếu.
+native luôn báo không khả dụng và không có gì để cài, nên chỉ các lượt chạy của chủ sở
+hữu máy chủ bắt đầu trừ khi chủ sở hữu truyền `--sandbox off`. Backend `microvm` là riêng
+biệt (terminal tương tác và rig) và được đặt cổng dò theo runtime của chính nó. Trên
+**Linux và WSL2**, cả `bwrap` và `socat` đều phải có trên `PATH`; thiếu chúng thì phép dò
+báo không khả dụng và nêu tên các gói còn thiếu, và chỉ các lượt chạy của chủ sở hữu bắt đầu.
 
 Trên Linux/WSL2 có cài bubblewrap, các mẫu glob tệp bí mật của chính sách chuẩn
-không thể được thực thi với những tệp mà agent tạo về sau. Một lượt chạy native
-như vậy giờ thất bại thay vì âm thầm bỏ qua các quy tắc. Vì vậy một phép dò khởi
-động thành công không bảo đảm rằng một lần điều phối trên Linux có thể bắt đầu.
-`--sandbox off` là một sự chọn không dùng không-giới-hạn có chủ đích, không phải
-một ranh giới bảo mật thay thế.
+không thể được thực thi với những tệp mà agent tạo về sau, nên mọi lượt chạy native đều
+thất bại thay vì âm thầm bỏ qua các quy tắc, kể cả của chủ sở hữu. Vì vậy một phép dò
+khởi động thành công không có nghĩa là một lần điều phối trên Linux có thể bắt đầu: hiện
+tại một máy chủ Linux chạy agent với `--sandbox off`, hoặc không có bubblewrap riêng cho
+chủ sở hữu. `--sandbox off` là một sự chọn không dùng không giới hạn có chủ đích, không
+phải một ranh giới bảo mật thay thế.
 
 ## Biết điều một chế độ vốn đã cấm
 
 Chế độ được lưu theo từng space và được đưa vào bộ giải quyết rào chắn với vai trò
 lớp **preset chế độ**. Ba trong bốn chế độ là chỉ đọc và một chế độ chỉ đọc từ
-chối thẳng mười một lớp hiệu ứng:
+chối thẳng mười hai lớp hiệu ứng:
 
 | Chế độ               | Cây làm việc  | Bị preset từ chối                                                                                                                                                            |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`) | Có thể ghi  | Không gì cả — các mặc định tích hợp được áp dụng                                                                                                                                            |
-| **Kế hoạch**           | Chỉ đọc | Xóa một tệp, ghi bên ngoài cây làm việc, tạo commit, push, mở một PR, xuất bản hoặc merge, ghi vào tracker bên ngoài, cài một gói, chạy một tiến trình, thay đổi cấu trúc không gian làm việc, khởi động hoặc điều khiển một enclosure |
-| **Rà soát**         | Chỉ đọc | Cùng mười một lớp đó. Người dùng không thể tự chọn — trình soạn chỉ đưa ra Agent, Kế hoạch và Điều phối                                                                                         |
-| **Điều phối**    | Chỉ đọc | Cùng mười một lớp đó                                                                                                                                                                     |
+| **Kế hoạch**           | Chỉ đọc | Xóa một tệp, ghi bên ngoài cây làm việc, tạo commit, push, mở một PR, xuất bản hoặc merge, ghi vào tracker bên ngoài, cài một gói, chạy một tiến trình, thay đổi cấu trúc không gian làm việc, khởi động hoặc điều khiển một enclosure, chạy lệnh trên host |
+| **Rà soát**         | Chỉ đọc | Cùng mười hai lớp đó. Người dùng không thể tự chọn — trình soạn chỉ đưa ra Agent, Kế hoạch và Điều phối                                                                                         |
+| **Điều phối**    | Chỉ đọc | Cùng mười hai lớp đó                                                                                                                                                                     |
 
 Truy cập mạng và truy cập secret cố tình _không_ bị một chế độ chỉ đọc từ chối:
 nghiên cứu chính là ý nghĩa của một chế độ như vậy.
@@ -174,17 +180,31 @@ Hãy đọc những gì git in ra. `Control Center policy: …` nghĩa là một
 từ chối lần push hoặc một **Hỏi trước** không được trả lời.
 `… is not linked to this workspace` nghĩa là lần push nhắm tới một kho mã không
 phải của chính worktree và cũng không được liên kết với không gian làm việc.
-`Control Center has no GitHub credential that can push …` nghĩa là GitHub App
-chưa được cài trên kho mã đó và không có thông tin xác thực dự phòng nào push
-được: hãy cài App lên kho mã đó hoặc kết nối GitHub.
+`Control Center has no GitHub credential that can push …` nghĩa là không thể tạo
+token push nào: hãy cài App lên kho mã đó hoặc đăng nhập vào GitHub.
+
+### Lượt chạy agent của tôi bị từ chối với "Máy chủ này không có sandbox"
+
+Lượt chạy hiển thị **Agent cần sandbox trên máy chủ này** kèm "Máy chủ này không có sandbox,
+nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây. Chủ sở hữu có thể cài đặt sandbox
+hoặc tắt sandboxing cho tất cả mọi người." Máy chủ của máy này không có sandbox của hệ điều
+hành, và người chịu trách nhiệm cho lượt chạy không phải chủ sở hữu máy chủ, nên không có gì
+được khởi động. Với lịch, webhook hay tự động hóa khác, người chịu trách nhiệm là người mà
+tự động hóa được gắn với, chứ không phải bất kỳ ai đang xem nó.
+
+Chỉ chủ sở hữu máy chủ mới thay đổi được điều này. Trên Linux và WSL2, họ cài `bubblewrap`
+và `socat` rồi khởi động lại máy chủ (nhưng hãy đọc phần ghi chú về Linux ở trên trước).
+Trên Windows không có backend nào để cài. Lựa chọn khác là khởi động lại máy chủ với
+`--sandbox off`, điều này chạy mọi agent của thành viên không bị giới hạn trên máy đó.
 
 ### Thẻ Sandbox báo không có sandbox gốc
 
-Thì các lượt chạy agent trên máy chủ đó không được Seatbelt hay bubblewrap bọc, và
-những ranh giới còn lại là tất cả những gì bạn có. Trên Linux và WSL2, hãy cài cả
-hai công cụ còn thiếu — `sudo apt-get install bubblewrap socat` — rồi khởi động
-lại máy chủ; log khởi động sau đó phải cho biết sandbox đang bật. Trên Windows
-không có backend gốc nào để cài, nên thay vào đó hãy siết chặt rào chắn: xem
+Thì các lượt chạy agent trên máy chủ đó không được Seatbelt hay bubblewrap bọc: chỉ các
+lượt chạy của chủ sở hữu máy chủ bắt đầu, và những ranh giới còn lại là tất cả những gì họ
+có. Trên Linux và WSL2, hãy cài cả hai công cụ còn thiếu (`sudo apt-get install bubblewrap socat`)
+rồi khởi động lại máy chủ; log khởi động sau đó phải cho biết sandbox đang bật. Trên Windows
+không có backend gốc nào để cài, nên thay vào đó hãy siết chặt rào chắn cho các lượt chạy
+của chính chủ sở hữu: xem
 [Cấu hình rào chắn](/vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan/).
 
 ### Một agent với tới được một tệp bên ngoài cây làm việc của nó
@@ -198,9 +218,9 @@ cùng với rào chắn. Một lệnh `bash` hoặc CLI Claude Code thì _có_ �
 tồn tại backend, và các bản checkout đã đăng ký của bạn nằm trong nhóm từ chối ghi
 bên trong lớp bọc đó ở mọi chế độ, kể cả những cách viết đã phân giải symlink của
 chúng (trên macOS, một đường dẫn đi qua `/tmp` hoặc `/var/folders` được phân giải
-dưới `/private` và cả hai cách viết giờ đều bị từ chối). Trên một máy chủ không có
-backend thì không điều nào trong số đó áp dụng. Dù thế nào, rào chắn vẫn có thể từ
-chối thẳng **Ghi bên ngoài cây làm việc**.
+dưới `/private` và cả hai cách viết đều bị từ chối). Dưới `--sandbox off`, hoặc với các
+lượt chạy của chính chủ sở hữu trên một máy chủ không có backend, không điều nào trong số đó
+áp dụng. Dù thế nào, rào chắn vẫn có thể từ chối thẳng **Ghi bên ngoài cây làm việc**.
 
 ## Hướng dẫn liên quan
 

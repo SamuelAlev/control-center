@@ -2,7 +2,7 @@
 title: Livssyklus for saker
 description: Saksfelt, statuser, overganger, relasjoner og knutepunktet for endringer.
 slug: nb-NO/handbok/referanse/livssyklus-for-saker
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Saksstatuser
@@ -116,7 +116,7 @@ Aggregatet dekker to forhold på én rad. **Speilet** (leverandør, nøkler, tit
 | `projectId`              | `String?`                  | Prosjektet den tilhører; sendes aldri til en ekstern leverandør                            |
 | `assignedAgentId`        | `String?`                  | Id-en til den tildelte principalen (bare metadata — en tildeling sender ikke ut noe)       |
 | `assigneeType`           | `PrincipalType`            | Hva slags principal `assignedAgentId` navngir — `user` eller `agent` (standard `agent`)    |
-| `createdByType`          | `PrincipalType?`           | Typen principal som opprettet saken (`user` eller `agent`); null for eldre rader og systemrader |
+| `createdByType`          | `PrincipalType?`           | Typen principal som opprettet saken (`user` eller `agent`); null for systemopprettede rader     |
 | `createdById`            | `String?`                  | Id-en til principalen som opprettet saken                                                  |
 | `assignedTeamId`         | `String?`                  | Tildelt team (bare metadata)                                                               |
 | `delegatedByAgentId`     | `String?`                  | Agenten som delegerte denne saken                                                          |

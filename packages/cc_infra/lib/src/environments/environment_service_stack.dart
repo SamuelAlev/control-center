@@ -196,13 +196,58 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     bool expandDefinitionEnv = true,
   }) {
     final definition = loaded.definition;
+    final pr = space.prNumber;
+    EnvironmentContractInput input({
+      required Map<String, int> ports,
+      Map<String, String> urls = const {},
+      String? primaryUrl,
+      Map<String, String> definitionEnv = const {},
+    }) => EnvironmentContractInput(
+      name: name,
+      id: id,
+      stateDir: stateDir,
+      home: _d.home,
+      branch: space.branch,
+      spaceId: space.id,
+      spaceName: space.name,
+      spaceKind: space.kind,
+      repos: [for (final role in roles) role.repo],
+      defaultRole: definition.repos.firstOrNull?.key,
+      ports: ports,
+      urls: urls,
+      primaryUrl: primaryUrl,
+      options: options,
+      definitionEnv: definitionEnv,
+      pr: pr == null
+          ? null
+          : EnvironmentContractPr(
+              number: pr,
+              repo: space.prRepo ?? '',
+              headSha: space.prHeadSha ?? '',
+              isFork: space.isFork,
+            ),
+      compose: compose,
+    );
+    // Which components take part decides which ports and URLs exist, so that
+    // is judged on every other value first. A component left out gets no
+    // `{port.*}` or `{url.*}`: a reference to one is a mistake to report, not
+    // an address nothing listens on.
+    final draft = EnvironmentContract(input(ports: ports)).values;
+    final leftOut = {
+      for (final component in definition.components)
+        if (!_takesPart(definition, roles, draft, component)) component.id,
+    };
+    final hidden = {
+      for (final component in definition.components)
+        if (leftOut.contains(component.id)) ...component.ports,
+    };
     final urls = <String, String>{};
     String? primary;
     if (routerPort != null) {
       for (final process
           in definition.components.whereType<ProcessEnvironmentComponent>()) {
         final endpoint = process.endpoint;
-        if (endpoint != null) {
+        if (endpoint != null && !leftOut.contains(process.id)) {
           final url = _routerUrl(definition, name, endpoint.role, routerPort);
           urls[endpoint.role] = url;
           if (endpoint.primary) {
@@ -218,34 +263,17 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
         );
       }
     }
-    final pr = space.prNumber;
     return EnvironmentContract(
-      EnvironmentContractInput(
-        name: name,
-        id: id,
-        stateDir: stateDir,
-        home: _d.home,
-        branch: space.branch,
-        spaceId: space.id,
-        spaceName: space.name,
-        spaceKind: space.kind,
-        repos: [for (final role in roles) role.repo],
-        ports: ports,
+      input(
+        ports: {
+          for (final entry in ports.entries)
+            if (!hidden.contains(entry.key)) entry.key: entry.value,
+        },
         urls: urls,
         primaryUrl: primary ?? urls.values.firstOrNull,
-        options: options,
         definitionEnv: expandDefinitionEnv
             ? {...definition.env, ...extraEnvironment}
             : const {},
-        pr: pr == null
-            ? null
-            : EnvironmentContractPr(
-                number: pr,
-                repo: space.prRepo ?? '',
-                headSha: space.prHeadSha ?? '',
-                isFork: space.isFork,
-              ),
-        compose: compose,
       ),
     );
   }
@@ -290,6 +318,7 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
   /// compose has to be planned before the ports exist.
   EnvironmentContract _bareContract(
     EnvironmentSpaceInfo space,
+    EnvironmentDefinition definition,
     List<_BoundRole> roles,
   ) => EnvironmentContract(
     EnvironmentContractInput(
@@ -302,11 +331,13 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
       spaceName: space.name,
       spaceKind: space.kind,
       repos: [for (final role in roles) role.repo],
+      defaultRole: definition.repos.firstOrNull?.key,
     ),
   );
 
   ComposeContext _composeContext(
     EnvironmentSpaceInfo space,
+    EnvironmentDefinition definition,
     List<_BoundRole> roles,
     ComposeEnvironmentComponent component,
     String environmentId,
@@ -320,6 +351,7 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     stateDir: stateDir,
     workingDirectory: _bareContract(
       space,
+      definition,
       roles,
     ).workingDirectory(component.cwd),
     environment: environment,
@@ -338,6 +370,7 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     required SpaceEnvironment? existing,
     required EnvironmentPlacement placement,
     required _StartMode mode,
+    bool attended = false,
     Map<String, String> extraEnvironment = const {},
   }) async {
     final ws = space.workspaceId;
@@ -375,12 +408,6 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
       if (onHost) {
         for (final component
             in definition.components.whereType<ComposeEnvironmentComponent>()) {
-          final role = component.cwd?.role;
-          if (role != null && !roles.any((item) => item.role.key == role)) {
-            // Only a disabled component may get here: starting an enabled one
-            // finds no plan and says so.
-            continue;
-          }
           // A first pass finds the ports. Its variables can't be complete,
           // since ports are what it is for, so unknown ones stand in as `0`:
           // a `${VAR:?}` in the file must not fail on a value CC hasn't
@@ -395,8 +422,20 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
             ports: assigned,
             options: options,
           );
+          // Planning runs `docker compose config` on the file, and a
+          // component that is not part of this environment may have neither.
+          // Its options and roles are known already.
+          if (!_takesPart(
+            definition,
+            roles,
+            EnvironmentValues(draft),
+            component,
+          )) {
+            continue;
+          }
           final context = _composeContext(
             space,
+            definition,
             roles,
             component,
             id,
@@ -436,6 +475,7 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
         contract: contract,
         stateDir: stateDir,
       );
+      _checkPlaceholders(stack);
       final enabledPlans = <String, ComposePlan>{};
       for (final component
           in definition.components.whereType<ComposeEnvironmentComponent>()) {
@@ -447,6 +487,7 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
         final full = await _d.compose.plan(
           _composeContext(
             space,
+            definition,
             roles,
             component,
             id,
@@ -478,13 +519,12 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
       ports = assigned;
     } on Exception catch (e) {
       if (existing != null && !_isRefusal(e)) {
+        final failure = _EnvironmentServiceBase._errorOf(e);
         await _update(
           ws,
           id,
-          (row) => row.copyWith(
-            status: EnvironmentStatus.failed,
-            lastError: _EnvironmentServiceBase._errorOf(e),
-          ),
+          (row) =>
+              row.copyWith(status: _statusAfter(failure), lastError: failure),
         );
       }
       if (existing == null) {
@@ -526,9 +566,7 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
             id: component.id,
             kind: component.kind,
             label: component.label,
-            state: component is AppEnvironmentComponent
-                ? EnvironmentComponentPhase.closed.wire
-                : EnvironmentComponentPhase.pending.wire,
+            state: _phaseBeforeStart(stack, component),
           ),
       ],
       options: options,
@@ -542,7 +580,6 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     await _d.environments.save(initial);
     _announce(existing, initial);
 
-    final log = <String>[];
     final run = await _beginRun(
       initial,
       mode == _StartMode.reset
@@ -555,7 +592,12 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
       if (placement == EnvironmentPlacement.rig) {
         await _startRig(initial, stack);
       }
-      await _startComponents(initial, stack, startable, mode, log);
+      await _startComponents(
+        initial,
+        stack,
+        startable,
+        _StartRun(mode: mode, by: by, attended: attended, log: run),
+      );
       final row = await _d.environments.get(ws, id);
       if (row != null) {
         await _applyRoutes(row, stack);
@@ -566,15 +608,13 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
         CcInfraLog.error('environment $id failed to start', e, st);
       }
     }
-    await _endRun(initial, run, failure: failure, log: log);
+    await _endRun(initial, run, failure: failure);
 
     final done = await _update(
       ws,
       id,
       (row) => row.copyWith(
-        status: failure == null
-            ? EnvironmentStatus.ready
-            : EnvironmentStatus.failed,
+        status: _statusAfter(failure),
         lastError: failure,
         clearLastError: failure == null,
         lastUsedAt: _d.now(),
@@ -593,6 +633,74 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     }
     return done ?? initial;
   }
+
+  /// What a tool's verb is handed besides the contract, standing in for the
+  /// dry run in [_checkPlaceholders]: these exist only once a verb runs.
+  static const Map<String, String> _verbOnlyValues = {
+    'service': '',
+    'tail': '',
+    'follow': '',
+    'command': '',
+    CliEnvironmentComponent.interactiveValue: '',
+  };
+
+  /// Expands what each component of [stack] that starts with it will be
+  /// handed: `env`, argv and readiness probes.
+  ///
+  /// The validator can't know which `{port.<service>.<n>}` a compose file
+  /// publishes, so a typo there would otherwise fail only when its component's
+  /// turn came, after the components before it were up. Shell bodies are left
+  /// alone, since placeholders never expand there, and so is an `{if, args}`
+  /// item whose condition is false. A condition on a verb's own value can't be
+  /// decided yet, so its arguments are checked.
+  void _checkPlaceholders(_Stack stack) {
+    for (final component in stack.definition.components) {
+      if (!stack.isEnabled(component) ||
+          (component is TaskEnvironmentComponent &&
+              component.when.every((trigger) => trigger.isWorktreeTrigger))) {
+        continue;
+      }
+      final verbOnly = component is CliEnvironmentComponent
+          ? _verbOnlyValues
+          : const <String, String>{};
+      final values = stack.contract.values.withAll(verbOnly);
+      final templates = <String>[
+        ...component.env.values,
+        if (component is ProcessEnvironmentComponent) ...[
+          ?component.ready?.http,
+          ?component.ready?.tcp,
+        ],
+        for (final command
+            in component.commands.whereType<ArgvEnvironmentCommand>())
+          for (final item in command.items)
+            if (item.condition == null ||
+                verbOnly.containsKey(
+                  environmentConditionKey(item.condition!),
+                ) ||
+                values.evaluate(item.condition!))
+              ...item.args,
+      ];
+      for (final template in templates) {
+        try {
+          values.expand(template);
+        } on EnvironmentTemplateException catch (e) {
+          throw _EnvironmentServiceBase._failure(
+            'unknown-placeholder',
+            '${component.displayName}: ${e.message}',
+          );
+        }
+      }
+    }
+  }
+
+  /// Where a start that ended with [failure] leaves its environment: `ready`
+  /// without one, `blocked` when only a person can take it further, `failed`
+  /// when something broke.
+  EnvironmentStatus _statusAfter(EnvironmentError? failure) => failure == null
+      ? EnvironmentStatus.ready
+      : failure.blocker != null
+      ? EnvironmentStatus.blocked
+      : EnvironmentStatus.failed;
 
   /// Whether [error] is a verdict on the request rather than on the stack.
   bool _isRefusal(Exception error) =>
@@ -627,14 +735,14 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     var compose = const <String, String>{};
     final bound = {for (final role in roles) role.role.key};
     final usable = composes.where(
-      (component) =>
-          component.cwd?.role == null || bound.contains(component.cwd!.role),
+      (component) => definition.roleFor(component, bound) != null,
     );
     if (usable.isNotEmpty && env.placement == 'host') {
       final component = usable.first;
       try {
         final context = _composeContext(
           space,
+          definition,
           roles,
           component,
           env.id,
@@ -771,14 +879,17 @@ mixin _StackOps on _EnvironmentServiceBase, _DefinitionOps, _ComponentOps {
     if (cached != null) {
       return cached.services;
     }
-    final reported = [
-      for (final state in env.components)
-        if (state.id == component.id)
-          for (final service in state.services)
-            if (service['name'] case final String name) name,
-    ];
+    final reported = _reportedServices(env, component.id);
     return reported.isNotEmpty ? reported : component.services;
   }
+
+  /// The services [env]'s last report listed for [componentId].
+  List<String> _reportedServices(SpaceEnvironment env, String componentId) => [
+    for (final state in env.components)
+      if (state.id == componentId)
+        for (final service in state.services)
+          if (service['name'] case final String name) name,
+  ];
 
   /// Seed files, for every role with a worktree. Never for a fork PR.
   Future<void> _seed(

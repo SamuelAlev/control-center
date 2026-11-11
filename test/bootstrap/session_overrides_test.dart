@@ -2,6 +2,8 @@ import 'package:cc_domain/cc_domain.dart'
     show ConnectionDescriptor, LoopbackPath;
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/bootstrap/session_overrides.dart';
+import 'package:control_center/core/offline/offline_queue_provider.dart';
+import 'package:control_center/core/providers/server_switch_provider.dart';
 import 'package:control_center/core/providers/session_scope_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/storage/observable_key_value_backend.dart';
@@ -198,6 +200,64 @@ void main() {
         ),
         scopeA,
       );
+    });
+  });
+  group('leaving the session drops the offline queue', () {
+    late ObservableKeyValueBackend backend;
+    late List<String> left;
+
+    ProviderContainer session() {
+      final container = ProviderContainer(
+        overrides: sessionOverrides(
+          client: fakeRpcClient(),
+          supervisor: _supervisor('srv-a'),
+          mediaProxy: null,
+          prefsBackend: backend,
+          secureStore: SecureStore.inMemory(),
+          scope: scopeA,
+          switchServer: (id) async => left.add('switch:$id'),
+          returnToSignIn: () async => left.add('sign-in'),
+        ),
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    Future<void> queueOne(ProviderContainer c) => c
+        .read(offlineQueueControllerProvider.notifier)
+        .enqueue(
+          workspaceId: 'ws',
+          idempotencyKey: 'k1',
+          op: 'tickets.patch',
+          args: const {'workspace_id': 'ws'},
+        );
+
+    setUp(() {
+      backend = ObservableKeyValueBackend(InMemoryStorage());
+      left = [];
+    });
+
+    test('a server switch drops it before switching', () async {
+      final a = session();
+      await queueOne(a);
+      expect(a.read(offlineQueueControllerProvider), 1);
+
+      await a.read(serverSwitchHandlerProvider)('srv-b');
+
+      expect(left, ['switch:srv-b']);
+      expect(a.read(offlineQueueControllerProvider), 0);
+      // Even the same user back on the same server finds nothing to replay.
+      expect(session().read(offlineMutationQueueProvider).length, 0);
+    });
+
+    test('returning to sign-in drops it', () async {
+      final a = session();
+      await queueOne(a);
+
+      await a.read(returnToServerSignInProvider)!();
+
+      expect(left, ['sign-in']);
+      expect(session().read(offlineMutationQueueProvider).length, 0);
     });
   });
 }

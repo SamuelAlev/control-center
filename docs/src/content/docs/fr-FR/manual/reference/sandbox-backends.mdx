@@ -2,15 +2,23 @@
 title: Backends de bac à sable
 description: Les backends de bac à sable, où ils s’appliquent et chaque objet valeur utilisé par le runtime du bac à sable.
 slug: fr-FR/manuel/reference/backends-de-bac-a-sable
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Qu’un lancement soit isolé dans un bac à sable dépend de l’hôte]
-`cc_server` sonde l’hôte une fois au démarrage et encapsule le lancement des agents dans le backend natif lorsque la sonde en signale un disponible et que `--sandbox` n’est pas `off`. Les deux jointures du lancement sont encapsulées : la CLI Claude Code via le port de bac à sable, et ACP ainsi que l’outil `bash` du harnais intégré via le gestionnaire de bac à sable.
+`cc_server` décide une fois, au démarrage, de la manière dont les agents s’exécutent sur cet hôte, et cette décision tient jusqu’au redémarrage 
 
-Là où la sonde ne signale aucun backend — **Windows toujours**, et Linux ou WSL2 sans `bwrap` ni `socat` — les exécutions d’agent ne sont **pas** isolées dans un bac à sable. ACP et l’outil `bash` du harnais démarrent tout de même avec un environnement assaini ; Claude Code passe par `NoSandboxAdapter` et hérite de l’environnement de l’hôte. Les frontières restantes sont l’arbre de travail propre à l’exécution (copie sur écriture là où `rift` est livré ; `git worktree` sous Windows), un jeton de forge en lecture seule, délivré par lancement et révoqué au démontage, des push qui doivent passer la règle de push à la passerelle d’exécution d’agent, la politique de commandes propre au mode, les [garde-fous d’action](/fr-FR/manuel/concepts/garde-fous/) unifiés (à échec fermé), l’assainissement de l’environnement sur les chemins ACP et `bash` du harnais, et la surface d’outils que son mode autorise.
+- **Dans le bac à sable** (`native`) — la sonde a trouvé un backend et `--sandbox` n’est pas `off`. Les deux jointures du lancement sont encapsulées, la CLI Claude Code via le port de bac à sable, et ACP ainsi que l’outil `bash` du harnais intégré via le gestionnaire de bac à sable.
+- **Hors bac à sable** (`off`) — le propriétaire du serveur l’a lancé avec `--sandbox off`. Chaque agent de chaque membre s’exécute sans confinement sur cette machine, quelle que soit la personne qui l’a lancé.
+- **Indisponible** (`unavailable`) — le bac à sable est activé, mais la sonde n’a trouvé aucun backend (**Windows toujours**, et Linux ou WSL2 sans `bwrap` ni `socat`). Une exécution ne démarre que si la personne qui en est responsable est le [propriétaire](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur) du serveur : celle qui l’a demandée, ou, pour l’automatisation, la personne à laquelle elle est rattachée. L’exécution de toute autre personne est refusée avant qu’un identifiant soit émis, qu’un bail soit pris ou qu’un processus démarre. Sans propriétaire enregistré, aucune exécution ne démarre.
+
+Une exécution refusée échoue avec le code `sandbox_unavailable`. L’application l’affiche sous **Les agents ont besoin d’un bac à sable sur ce serveur** : « Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents. Le propriétaire peut installer le bac à sable ou le désactiver pour tout le monde. »
+
+Une exécution qui démarre sans bac à sable (sous `off`, ou l’exécution propre du propriétaire sous `unavailable`) s’exécute directement sur l’hôte. ACP et l’outil `bash` du harnais démarrent tout de même avec un environnement assaini ; Claude Code passe par `NoSandboxAdapter` et hérite de l’environnement de l’hôte. Les frontières restantes sont l’arbre de travail propre à l’exécution (copie sur écriture là où `rift` est livré ; `git worktree` sous Windows), un jeton de forge en lecture seule, délivré par lancement et révoqué au démontage, des push qui doivent passer la règle de push à la passerelle d’exécution d’agent, la politique de commandes propre au mode, les [garde-fous d’action](/fr-FR/manuel/concepts/garde-fous/) unifiés (à échec fermé), l’assainissement de l’environnement sur les chemins ACP et `bash` du harnais, et la surface d’outils que son mode autorise.
 
 Les outils de fichiers in-process du harnais (read, write, edit, apply patch, search, find, search_files) sont hors du bac à sable sur tout hôte : ils s’exécutent dans le processus du serveur, si bien que seul `bash` est encapsulé.
+
+L’hôte n’est jamais un repli pour un serveur qui isole les agents. Si le serveur isole les agents mais n’a aucun bac à sable à donner à une exécution, ses processus d’outils et ses commandes `bash` sont refusés, et non lancés sur l’hôte. La même règle décide des petits processus autour d’une exécution : les complétions ACP ponctuelles (titres de conversation, `/btw`, `/handoff`, `/goal`) et les tests golden d’une PR dans Review Studio s’exécutent dans le bac à sable lorsque le serveur isole les agents, sans confinement sous `off`, et sous `unavailable` seulement pour une requête dont le propriétaire du serveur est responsable. Sinon, ils sont ignorés.
 :::
 
 ## Vue d’ensemble des backends
@@ -19,9 +27,9 @@ Les outils de fichiers in-process du harnais (read, write, edit, apply patch, se
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | VM cloisonnée | `microvm` | macOS, Linux, Windows (hyperviseur microVM) | Conditionnée à la sonde du runtime microVM ; s’applique aux terminaux interactifs — le shell s’exécute dans un [rig](/fr-FR/manuel/concepts/rigs/), pas sur l’hôte |
 | Natif      | `native`  | macOS (Seatbelt), Linux et WSL2 (bubblewrap) | Sondé au démarrage ; Linux refuse une exécution qui exige des refus d’écriture fondés sur des globs de noms de fichiers, que bubblewrap ne sait pas appliquer |
-| Aucun      | `none`    | Tous                                          | La valeur par défaut à l’analyse, celle du terminal et le repli lorsqu’aucun backend n’est disponible ou que `--sandbox off` est défini |
+| Aucun      | `none`    | Tous                                          | La valeur par défaut à l’analyse et celle du terminal. L’exécution d’agent l’utilise sous `--sandbox off`, et pour les exécutions propres du propriétaire lorsqu’aucun backend n’est disponible |
 
-`SandboxBackend.fromName` renvoie `none` pour une valeur stockée nulle ou non reconnue. Un `"docker"` stocké est associé à `native`.
+`SandboxBackend.fromName` renvoie `none` pour une valeur stockée nulle ou non reconnue.
 
 **`microvm` est le seul backend doté d’une frontière de noyau** — la charge de
 travail ne s’exécute véritablement pas sur l’hôte. Il n’est jamais un repli
@@ -35,7 +43,7 @@ prétendre être cloisonné tout en s’exécutant sur l’hôte. Le cycle de vi
 images et la sortie réseau de la VM elle-même sont traités dans la
 [référence des rigs](/fr-FR/manuel/reference/rigs/).
 
-**Windows n’a pas de bac à sable natif.** `NativeSandboxAdapter.probe` renvoie `available: false` sur tout hôte qui n’est ni macOS ni Linux/WSL2. Le lancement d’agents sous Windows utilise donc `none`. Le backend `microvm` est distinct : il est conditionné par la sonde du runtime microVM et s’applique aux terminaux interactifs et aux rigs, pas à l’encapsulation de `bash` sur l’hôte.
+**Windows n’a pas de bac à sable natif.** `NativeSandboxAdapter.probe` renvoie `available: false` sur tout hôte qui n’est ni macOS ni Linux/WSL2. Un serveur Windows est donc en état `unavailable`. Seules les exécutions du propriétaire du serveur démarrent, sans confinement, et celles de tous les autres sont refusées. Pour permettre à chaque membre d’y lancer des agents, le propriétaire démarre le serveur avec `--sandbox off`, ce qui fait tourner tous les agents sans confinement. Le backend `microvm` est distinct : il est conditionné par la sonde du runtime microVM et s’applique aux terminaux interactifs et aux rigs, pas à l’encapsulation de `bash` sur l’hôte.
 
 ## Résultats de la sonde
 
@@ -48,9 +56,9 @@ C’est la sonde qui conditionne l’application. Elle s’exécute une fois, au
 | Linux ou WSL2 auquel il manque l’un des deux outils | `false`     | `requiresInstall: true`, avec un indice d’installation nommant les paquets manquants |
 | Toute autre plateforme                 | `false`     | Le bac à sable natif n’est pas proposé sur cette plateforme                            |
 
-Le serveur consigne le résultat sur une seule ligne de démarrage : `agent sandbox ON` suivi de la remarque, `no OS-native agent sandbox on this host` suivi de l’indice, ou `agent sandbox DISABLED by --sandbox off`. `GET /healthz` ne comporte aucun champ de bac à sable.
+Le serveur consigne le résultat sur une seule ligne de démarrage : `agent sandbox ON` suivi de la remarque, `no OS-native agent sandbox on this host` suivi de l’indice, qui précise que seules les exécutions dont le propriétaire du serveur est responsable démarreront, ou `agent sandbox DISABLED by --sandbox off`. La ligne d’exposition imprimée au démarrage porte la même décision sous la forme `sandbox=native`, `sandbox=off` ou `sandbox=unavailable`. `GET /healthz` ne comporte aucun champ de bac à sable.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepte `on` (par défaut) ou `off`. C’est un désengagement, pas une activation : `on` signifie « encapsuler lorsque l’hôte offre un backend », jamais « en exiger un ».
+`--sandbox` / `CC_SERVER_SANDBOX` accepte `on` (par défaut) ou `off`. `on` encapsule chaque exécution lorsque l’hôte offre un backend, et n’admet que les exécutions du propriétaire lorsque ce n’est pas le cas. `off` fait tourner toutes les exécutions des membres sans confinement sur cet hôte, et c’est le choix du propriétaire pour tout le monde, non un réglage par exécution.     
 
 ## Backend natif
 
@@ -65,6 +73,8 @@ Le profil généré est **permissif par défaut** (`(allow default)`) et y défi
 - **Processus** : des refus `process-exec` pour les binaires toujours dangereux, plus un blocage de l’exécution de tout binaire depuis un répertoire inscriptible. Les arbres d’installation d’outils connus sous votre répertoire personnel (caches de corepack, de npx et de `pnpm dlx`, gestionnaires de versions de Node, navigateurs Playwright, rustup et cargo, Go, fvm et le cache de pub, pyenv, uv et pipx, rbenv, sdkman, mise, asdf et `~/.local/bin`) sont rouverts sous ce blocage. Les répertoires temporaires partagés sont aussi bloqués. Chaque session reçoit à la place un `TMPDIR` privé sous `/private/tmp`, où peuvent s’exécuter les programmes qu’elle compile (un binaire `go test`, une compilation cargo). Les refus visant les binaires toujours dangereux sont appliqués après ces autorisations
 - **Réseau** : limité aux ports des proxys in-process plus le DNS — la boucle locale n’est pas autorisée en bloc et l’écoute TCP est refusée. Les sockets Unix ne sont autorisées qu’à l’intérieur du `TMPDIR` privé de la session, ce qui couvre des outils comme tsx et Chrome qui gardent un socket IPC à cet endroit ; votre agent SSH et les autres sockets restent inaccessibles. Les proxys appliquent la liste d’autorisation de domaines propre à la session (voir [Sortie réseau](#sortie-réseau))
 - **Configuration** : les profils sont générés à chaque lancement à partir de la `SandboxSpec`
+- **Commandes propres au serveur.** Aucun enfant direct d’un dossier d’où le serveur lance des programmes (chaque entrée de `PATH` et les dossiers d’outils usuels propres à chaque utilisateur, comme `~/.local/bin`, les liens des gestionnaires de versions tels que `~/fvm/default` étant résolus) ne peut être créé, remplacé, supprimé ou renommé, ni le paquet installé vers lequel pointe une commande liée. Voir [Les dossiers de commandes du serveur](#les-dossiers-de-commandes-du-serveur)
+- **Fichiers de démarrage.** Chaque chemin de l’accueil dont le profil refuse la lecture est aussi refusé en écriture, et les fichiers de démarrage des shells et sessions de l’utilisateur du serveur (`.zshenv`, `.zlogin`, `.bash_login`, configuration de fish, unités utilisateur systemd, entrées d’autodémarrage et similaires) sont refusés en écriture dans tous les modes
 
 Prérequis :
 
@@ -77,6 +87,7 @@ Utilise bubblewrap (`bwrap`) pour créer des espaces de noms de montage et de PI
 - **Système de fichiers** : crée un espace de noms de montage où seuls les chemins liés sont visibles
 - **Réseau** : s’exécute dans un espace de noms réseau non partagé ; le trafic atteint les proxys de l’hôte via des ponts de sockets Unix `socat`
 - **Processus** : isolation par espace de noms de PID
+- **Commandes propres au serveur et fichiers de démarrage.** Les mêmes protections que sous macOS, exprimées sous forme de liaisons bubblewrap. Elles ne sont pas encore vérifiées sous Linux, et un dossier de commandes manquant peut encore y être créé
 
 Prérequis :
 
@@ -93,19 +104,51 @@ de fichiers au moment de la création est nécessaire pour rétablir le lancemen
 sous Linux. Désactiver le bac à sable est un désengagement explicite et sans
 confinement, pas un contournement équivalent.
 
+Dans la pratique, un serveur Linux ou WSL2 fait tourner aujourd’hui ses agents de l’une de deux manières. Lancé avec `--sandbox off`, il fait tourner les agents de chaque membre sans confinement. Sans bubblewrap ni `socat` installés, il est `unavailable` et ne fait tourner que les agents du propriétaire du serveur, sans confinement. Avec les deux outils installés et le bac à sable activé, chaque exécution échoue en mode fermé, celle du propriétaire comprise.
+
+## Les dossiers de commandes du serveur
+
+Le serveur repère, une fois au démarrage, chaque dossier dont il lance des programmes : chaque entrée de son `PATH`, les dossiers d’outils propres à chaque utilisateur qu’il sonde (comme `~/.local/bin`, `~/.bun/bin` et les dossiers globaux de npm, yarn et pnpm), et le dossier réel derrière chaque lien rencontré en chemin (liens des gestionnaires de versions tels que `~/fvm/default` ou une version par défaut de fnm). Dans un bac à sable, un agent ne peut ajouter, remplacer, supprimer ou renommer une commande de ces dossiers, ni le lien qui mène à l’une d’elles, ni le paquet installé vers lequel pointe une commande liée, et il ne peut pas renommer les dossiers qui les contiennent. Sinon, une exécution isolée pourrait déposer un programme que le serveur, ou la personne, lancerait ensuite hors du bac à sable.
+
+Ce que cela change pour une exécution :
+
+- Les installations globales depuis une exécution isolée échouent avec « Operation not permitted » : `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, ainsi que `cargo install`, `go install` ou `dart pub global activate` lorsque leur dossier de binaires figure dans le `PATH` du serveur.
+- Changer une version par défaut échoue de la même façon (`fnm default`, `nvm alias default`, `fvm global`), comme une mise à jour d’outil qui se réinstalle sur place.
+- Les installations locales au projet (`node_modules/.bin`), `npx`, `pnpm dlx`, les gestionnaires de paquets gérés par corepack, les caches de SDK et les compilations normales continuent de fonctionner.
+
+Pour rendre un outil global accessible aux agents, installez-le sur le serveur lui-même, sous l’utilisateur du serveur, puis redémarrez le serveur afin que la nouvelle commande soit protégée aussi. Ou installez-le dans le projet. Une commande installée après le démarrage du serveur n’est entièrement protégée qu’à partir du redémarrage suivant.
+
+Appliqué et testé sous macOS. Sous Linux, les mêmes règles sont des liaisons bubblewrap qui ne sont pas encore vérifiées. Windows n’a pas de bac à sable.
+
 ## Backend `none`
 
-Aucun bac à sable. Le processus s’exécute directement sur l’hôte, avec l’accès de l’hôte au système de fichiers, au réseau et aux processus. ACP et l’outil `bash` du harnais bénéficient tout de même de l’assainissement de l’environnement et de la politique de commandes ; Claude Code, via `NoSandboxAdapter`, hérite de l’environnement de l’hôte. C’est sur cela que retombe le lancement des agents sur un hôte dépourvu de backend disponible ou avec `--sandbox off`, et c’est la valeur par défaut du terminal lorsqu’un client n’en nomme aucun.
+Aucun bac à sable. Le processus s’exécute directement sur l’hôte, avec l’accès de l’hôte au système de fichiers, au réseau et aux processus. ACP et l’outil `bash` du harnais bénéficient tout de même de l’assainissement de l’environnement et de la politique de commandes ; Claude Code, via `NoSandboxAdapter`, hérite de l’environnement de l’hôte. Le lancement des agents l’utilise pour chaque exécution sous `--sandbox off`. Sur un hôte sans backend disponible, il ne sert qu’aux exécutions propres au propriétaire du serveur, l’exécution de quiconque d’autre y étant refusée. Pour un terminal, c’est le shell de l’hôte, que seul le propriétaire du serveur peut ouvrir.
 
 ## Terminal hébergé par le serveur
 
-Le terminal est isolé selon ses propres règles, et non par la sonde de lancement. Le `defaultBackend` de `TerminalSessionService` vaut `none` et `cc_server` ne le remplace pas, si bien qu’une session de terminal exécute le shell de l’hôte à moins que le client ne demande explicitement `native` — le panneau de terminal de l’application de bureau ne le fait pas.
+Le terminal hébergé par le serveur n’ouvre le shell de l’hôte que pour le [propriétaire](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur) du serveur. Les autres obtiennent un terminal isolé, avec les limites d’un agent, dans les dossiers propres à l’espace de travail.
 
-Lorsque `native` est demandé, le shell est encapsulé via `SandboxManager` sous un profil de terminal fixe : `$HOME` et le répertoire de travail de la session sont inscriptibles, le réseau est ouvert et la lecture de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` et `~/Library/Keychains` est refusée. Le jeton de forge en lecture seule et la passerelle de push ne s’appliquent pas — ils relèvent du lancement. Si l’encapsulation n’est pas prise en charge, la session échoue au lieu d’afficher un badge natif sur un PTY de shell hôte.
+Le backend choisi pour une session dépend de la demande et de la personne qui la fait :
+
+| Demandé | Propriétaire du serveur | Les autres |
+| --- | --- | --- |
+| Rien | Le backend par défaut du serveur | Le défaut, avec `none` remplacé par `native` |
+| `none` (le shell de l’hôte) | Shell de l’hôte | Refusé : le shell de l’hôte tourne sur le serveur sans bac à sable |
+| `native` | Bac à sable natif, profil propriétaire | Bac à sable natif, profil agent |
+| `microvm` | VM cloisonnée | VM cloisonnée |
+| Un nom inconnu | Refusé | Refusé |
+
+- **Profil propriétaire.** `$HOME` et le répertoire de travail de la session sont inscriptibles, le réseau est ouvert, et la lecture de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` et `~/Library/Keychains` est refusée.
+- **Profil agent** (`memberTerminalSandboxConfig`). La même politique que celle d’un agent de cet espace de travail : les écritures restent dans le répertoire de travail, un répertoire d’exécution privé, `/tmp` et les parties de `$HOME` qu’un agent peut écrire ; les secrets sont refusés en lecture ; le réseau est la liste d’autorisation de sortie des agents ; les programmes ne s’exécutent que depuis le répertoire de travail et les chaînes d’outils installées.
+- Un terminal ne s’ouvre qu’à l’intérieur des dossiers propres à l’espace de travail. Un répertoire de travail situé en dehors est refusé, jamais remplacé par un autre.
+- Seule la personne qui a ouvert un terminal peut le lire, y écrire, le redimensionner ou le fermer. Pour toute autre, son identifiant semble inconnu.
+- `microvm` demandé explicitement sur un hôte sans service de rig échoue au lieu de retomber sur un autre backend. Un défaut `microvm` sur un tel hôte bascule sur `native` et le consigne dans le journal.
+
+Le jeton de forge en lecture seule et la passerelle de push ne s’appliquent pas aux terminaux, qui relèvent du lancement. Si l’encapsulation n’est pas prise en charge, la session échoue au lieu d’afficher un badge de bac à sable sur une session de shell hôte. 
 
 ## Sortie réseau
 
-Quand un bac à sable est lancé, l’accès réseau sortant est appliqué par des proxys in-process, et non par des règles de pare-feu du noyau. Sur un hôte dépourvu de backend disponible, rien de tout cela ne s’applique et un processus lancé atteint le réseau exactement comme le ferait l’utilisateur du serveur.
+Quand un bac à sable est lancé, l’accès réseau sortant est appliqué par des proxys in-process, et non par des règles de pare-feu du noyau. Une exécution qui n’est pas isolée (chaque exécution sous `--sandbox off`, ou l’exécution du propriétaire sur un hôte sans backend) n’en reçoit aucune : un processus qu’elle lance atteint le réseau exactement comme le ferait l’utilisateur du serveur.
 
 - Le runtime du bac à sable exécute un proxy HTTP/HTTPS et un proxy SOCKS5 sur `127.0.0.1` à l’intérieur du processus `cc_server`, **une paire par session restreinte** (`http_proxy.dart`, `socks_proxy.dart`). Les exécutions concurrentes ne partagent pas de paire.
 - Les processus isolés reçoivent des variables d’environnement de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → le proxy HTTP, `ALL_PROXY` → le proxy SOCKS ; `GIT_SSH_COMMAND` achemine git-over-SSH via le proxy SOCKS). Sous Linux, l’espace de noms réseau n’est pas partagé, si bien que les proxys sont la seule sortie ; sous macOS, le bac à sable partage la boucle locale de l’hôte et leur parle directement.

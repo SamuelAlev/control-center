@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/pr_review/domain/ports/review_publisher_port.dart';
 import 'package:cc_mcp/src/tools/publish_review_to_github_tool.dart';
 import 'package:test/test.dart';
@@ -84,6 +85,41 @@ void main() {
       });
       test('requiresApproval defaults to false', () {
         expect(tool.requiresApproval, isFalse);
+      });
+
+      test('only an agent run calls it, for its own space', () {
+        expect(tool.requiresRunGrant, isTrue);
+        expect(tool.forcedScopeKeys, contains('space_id'));
+        expect(
+          tool.requiredScopeKeys,
+          containsAll(['workspace_id', 'space_id']),
+        );
+      });
+
+      test('the run\'s own space wins over the one the model names', () async {
+        service.stubResult(
+          const PublishReviewResult(
+            reviewId: 1,
+            event: 'COMMENT',
+            findingCount: 0,
+            inlineCount: 0,
+            usedFallback: false,
+          ),
+        );
+        const scope = McpCallScope(
+          workspaceId: 'ws-1',
+          spaceId: 'own-review',
+          attested: true,
+        );
+        await tool.call(
+          scope.apply(
+            {'workspace_id': 'ws-other', 'space_id': 'someone-elses-review'},
+            tool.inputSchema,
+            force: tool.forcedScopeKeys,
+          ),
+        );
+        expect(service.lastWorkspaceId, 'ws-1');
+        expect(service.lastSpaceId, 'own-review');
       });
     });
 

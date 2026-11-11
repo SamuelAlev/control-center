@@ -1,12 +1,5 @@
 import 'dart:ffi';
 
-// The pure path-building policy lives in `native_library_paths.dart` (FFI-free
-// so web-reachable consumers can import it without dragging in dart:ffi). It is
-// re-exported here so the `cc_natives.dart` barrel and existing consumers keep
-// getting `nativeLibraryCandidates` / `platformLibraryFileName` /
-// `bundledLibraryCandidates` / `nativeLibDirEnvVar` from this one library.
-export 'native_library_paths.dart';
-
 /// Shared dylib *loader* for the runtime-loaded natives.
 ///
 /// Every native (rift, fff, tree-sitter + its grammars, aec, lame, pty,

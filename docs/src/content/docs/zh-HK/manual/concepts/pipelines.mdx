@@ -2,7 +2,7 @@
 title: 管線與自動化
 description: 為何管線會把排程與工作分開、實際上是甚麼啟動一次執行，以及哪些內建範本開箱即用。
 slug: zh-HK/手冊/概念/管線
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 管線是 Control Center 中確定性的一半。代理決定要說甚麼；管線決定接下來發生
@@ -28,7 +28,7 @@ sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
   豁免情況是 `extras['awaitApproval'] == true` — 也就是
   `orchestration.awaitApproval` 部分核准閘門。`human.gate` 不獲豁免。
 - 若某個步驟宣告了 `extras: {'idempotent': false}`，而在伺服器停止時仍執行到
-  一半，它可能已經套用了副作用（squash 合併、worktree 清理）。重新執行它可能會
+  一半，它可能已經套用了副作用（工作區備份、worktree 清理）。重新執行它可能會
   重複套用，因此引擎會讓它失敗，並把重試留給你決定。
 
 ## 種類負責排程，主體負責工作
@@ -108,7 +108,13 @@ Webhook 權杖同時用作 HMAC 密鑰：請求的 `X-Hub-Signature-256: sha256=
 
 還有一個值得知道的不對稱之處：內建的 `pr_review` 刻意不再發佈到 GitHub。發佈審查
 是另一個需經使用者核准的步驟，而直接發佈的管線會造成重複發佈。`cross_review`、
-`ticket_to_pr` 與 `pr_triage` 在執行時仍然會直接將留言發佈到 GitHub。
+`ticket_to_pr`、`pr_triage`、`pre_merge_gate` 與 `external_pr_welcome` 在執行時仍會把一則留言發佈到 GitHub。
+
+它們由伺服器發佈，透過 **Post PR comment** 步驟（`prReview.comment`），絕不從 shell 腳本發佈：管線的 shell 步驟與其代理的沙箱所持有的 GitHub 權杖只能讀取。同一規則也決定了其餘部分：
+
+- `external_pr_welcome` 會以該步驟的 `message` 發佈它的問候語。
+- `ticket_to_pr` 讓 coder 代理（透過執行閘道）推送 `agent/<ticket_id>`，並以 `open_pull_request` 工具開啟草稿 PR，使用啟動該次執行之人的 GitHub 登入；若無人啟動，則以機器人身分執行。兩者都符合工作區的**推送到遠端**與**建立 pull request**規則。在 Control Center Connect 上，由 `TicketAssigned` 觸發等沒有人請求的執行無法推送或開啟 PR：共用 App 的機器人只能讀取與留言。
+- `pre_merge_gate` 絕不合併。在其閘門批准時會發佈該 PR 已準備好讓維護者合併；拒絕時則發佈要求變更。合併由人在 PR 頁面上進行。
 
 ## 引擎知道甚麼
 

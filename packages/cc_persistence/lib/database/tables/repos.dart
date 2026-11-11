@@ -39,6 +39,13 @@ class ReposTable extends Table {
   /// Repository name parsed from the repo's `origin` remote.
   TextColumn get remoteName => text().withDefault(const Constant(''))();
 
+  /// The user who linked [path] (`Repo.linkedBy`); empty when not recorded.
+  TextColumn get linkedByUserId => text().withDefault(const Constant(''))();
+
+  /// The forge's durable id for the linked repository (`Repo.forgeRepoId`);
+  /// empty until it is first read.
+  TextColumn get forgeRepoId => text().withDefault(const Constant(''))();
+
   /// The operator's manual order within the workspace (drag-to-reorder in
   /// settings). Ascending, 0-based; the single ordering every repo list reads,
   /// with [linkedAt] as the stable tiebreak.

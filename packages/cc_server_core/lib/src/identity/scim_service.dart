@@ -6,10 +6,13 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
-import 'package:cc_server_core/src/identity/sso_provisioner.dart';
+import 'package:cc_server_core/src/identity/sso_provisioner.dart'
+    show claimEmailFor;
+import 'package:cc_server_core/src/identity/user_profile_change.dart';
 import 'package:uuid/uuid.dart';
 
 /// A SCIM 2.0 (RFC 7644) provisioning endpoint for the IdP to push users
@@ -182,18 +185,20 @@ class ScimService {
   ) async {
     final email = _userNameOf(body);
     final displayName =
-        _displayNameOf(body) ?? (email?.split('@').first ?? 'scim-user');
+        _displayNameOf(body) ??
+        Username.fromFreeText(email ?? '', fallback: 'member').value;
     final externalId = body['externalId'] as String?;
     final active = body['active'] as bool? ?? true;
 
     var matched = externalId == null
         ? null
         : await _users.getBySsoSubject(scimIssuer, externalId);
-    // Match by email only among SSO-managed accounts: a bare email collision
-    // must never let a SCIM push adopt (and then modify or deactivate) a
-    // local/bootstrap account the IdP does not own.
-    if (matched == null && email != null) {
-      final byEmail = await _users.getByEmail(email);
+    // Match by email only a VOUCHED address of an SSO-managed account: a
+    // bare email collision must never let a SCIM push adopt (and then modify
+    // or deactivate) a local/bootstrap account the IdP does not own, nor one
+    // whose address a person typed about themselves.
+    if (matched == null && email != null && email.isNotEmpty) {
+      final byEmail = await _users.getByVerifiedEmail(email);
       if (byEmail != null && _isScimVisible(byEmail)) {
         matched = byEmail;
       }
@@ -207,20 +212,32 @@ class ScimService {
     }
     var created = false;
     if (matched == null) {
-      final user = User(
-        id: _uuid.v4(),
-        handle: await _uniqueHandleFor(email ?? 'scim-user'),
-        displayName: displayName,
+      // SCIM vouches for the address it pushes: it takes it from accounts
+      // that merely typed it, never from one holding it vouched.
+      final id = _uuid.v4();
+      final seedEmail = await claimEmailFor(
+        _users,
+        userId: id,
         email: email,
-        ssoSubject: externalId,
-        // Always mark the account SCIM-managed (even without an externalId) so
-        // it stays in [_isScimVisible] scope and is never confused with a
-        // locally-provisioned account.
-        ssoIssuer: scimIssuer,
-        createdAt: _now(),
+        vouched: true,
       );
-      await _users.upsert(user);
-      matched = user;
+      // The address's local part is only the suggested username; the person
+      // picks their own in onboarding's first step.
+      matched = await _users.insertWithFreeHandle(
+        User(
+          id: id,
+          handle: Username.fromFreeText(email ?? '', fallback: 'member').value,
+          displayName: displayName,
+          email: seedEmail,
+          emailVerified: seedEmail != null,
+          ssoSubject: externalId,
+          // Always mark the account SCIM-managed (even without an externalId)
+          // so it stays in [_isScimVisible] scope and is never confused with
+          // a locally-provisioned account.
+          ssoIssuer: scimIssuer,
+          createdAt: _now(),
+        ),
+      );
       created = true;
     }
     if (!active && matched.deactivatedAt == null) {
@@ -240,9 +257,22 @@ class ScimService {
       return _error(404, 'User not found');
     }
     final active = body['active'] as bool? ?? true;
+    final pushed = _userNameOf(body);
+    // SCIM vouches for an address it pushes (taking it from accounts that
+    // merely typed it, never from one holding it vouched); one it leaves out
+    // keeps its standing.
+    final email = pushed == null || normalizeEmail(pushed) == user.email
+        ? pushed
+        : await claimEmailFor(
+            _users,
+            userId: user.id,
+            email: pushed,
+            vouched: true,
+          );
     var updated = user.copyWith(
       displayName: _displayNameOf(body) ?? user.displayName,
-      email: _userNameOf(body) ?? user.email,
+      email: email,
+      emailVerified: email == null || email.isEmpty ? null : true,
     );
     if (active && updated.deactivatedAt != null) {
       updated = updated.copyWith(reactivate: true);
@@ -250,6 +280,7 @@ class ScimService {
       updated = await _deactivateUser(updated);
     }
     await _users.upsert(updated);
+    announceUserProfileChange(_eventBus, user, updated, at: _now());
     return (status: 200, body: _userJson(updated));
   }
 
@@ -440,16 +471,5 @@ class ScimService {
     }
     final raw = body['displayName'];
     return raw is String && raw.isNotEmpty ? raw : null;
-  }
-
-  Future<String> _uniqueHandleFor(String seed) async {
-    final base = SsoProvisioner.sanitizeHandle(seed.split('@').first);
-    var candidate = base;
-    var suffix = 1;
-    while (await _users.getByHandle(candidate) != null) {
-      suffix += 1;
-      candidate = '$base$suffix';
-    }
-    return candidate;
   }
 }

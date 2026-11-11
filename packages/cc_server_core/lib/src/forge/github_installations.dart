@@ -5,6 +5,7 @@ import 'package:cc_server_core/src/forge/github_client_types.dart';
 import 'package:cc_server_core/src/forge/github_lane_resolver.dart';
 import 'package:cc_server_core/src/forge/github_minter.dart';
 import 'package:cc_server_core/src/forge/github_rest.dart';
+import 'package:meta/meta.dart';
 
 /// Where a workspace's GitHub App is installed, how to install it, and the
 /// bot it converses as.
@@ -88,7 +89,9 @@ final class GitHubInstallations {
           },
         );
       case GitHubLane.connect:
-        final config = await lanes.connectGitHub();
+        final config = await lanes.connectGitHub(
+          await connect.targetFor(workspaceId),
+        );
         if (config == null) {
           return null;
         }
@@ -96,7 +99,7 @@ final class GitHubInstallations {
         if (token == null) {
           return null;
         }
-        final installs = await _userInstallations(token, config.appId);
+        final installs = await userInstallations(token, config.appId);
         return GitHubBotPresence(
           botLogin: '${config.appSlug}[bot]',
           slug: config.appSlug,
@@ -109,40 +112,54 @@ final class GitHubInstallations {
     }
   }
 
-  Future<List<({String account, bool suspended})>> _userInstallations(
+  /// The installations of App [appId] the bearer of [token] can see,
+  /// every page of them (up to [_maxInstallationPages] of 100).
+  @visibleForTesting
+  Future<List<({String account, bool suspended})>> userInstallations(
     String token,
     int appId,
   ) async {
-    final response = await rest.send(
-      'GET',
-      '/user/installations',
-      query: {'per_page': '100'},
-      bearer: token,
-    );
-    final json = response.json;
-    final list = json is Map ? json['installations'] : null;
-    if (response.status != 200 || list is! List) {
-      CcHostLog.warning(
-        'github: listing installations failed (HTTP ${response.status})',
+    final out = <({String account, bool suspended})>[];
+    for (var page = 1; page <= _maxInstallationPages; page++) {
+      final response = await rest.send(
+        'GET',
+        '/user/installations',
+        query: {'per_page': '100', 'page': '$page'},
+        bearer: token,
       );
-      return const [];
+      final json = response.json;
+      final list = json is Map ? json['installations'] : null;
+      if (response.status != 200 || list is! List) {
+        CcHostLog.warning(
+          'github: listing installations failed (HTTP ${response.status})',
+        );
+        return const [];
+      }
+      out.addAll([
+        for (final item in list)
+          if (item is Map && item['app_id'] == appId)
+            if (item['account'] case {
+              'login': final String login,
+            } when login.isNotEmpty)
+              (account: login, suspended: item['suspended_at'] != null),
+      ]);
+      final total = json is Map ? json['total_count'] : null;
+      if (list.length < 100 || (total is int && page * 100 >= total)) {
+        break;
+      }
     }
-    return [
-      for (final item in list)
-        if (item is Map && item['app_id'] == appId)
-          if (item['account'] case {
-            'login': final String login,
-          } when login.isNotEmpty)
-            (account: login, suspended: item['suspended_at'] != null),
-    ];
+    return out;
   }
 
-  /// The link that installs [workspaceId]'s GitHub App, opened by [userId].
+  static const int _maxInstallationPages = 10;
+
+  /// The link that installs [workspaceId]'s GitHub App.
   ///
-  /// On Connect the link carries a ticket that binds the new installation to
-  /// this server (Connect verifies the installer before it records the
-  /// binding). An own App needs no binding: it belongs to this server.
-  Future<Uri> installLink(String workspaceId, String userId) async {
+  /// Nothing is bound on the way: once an account installs the App, any
+  /// server a member of it signs in on may mint (each token is the member's
+  /// own, clamped to their role). Connect's App is named by its signed
+  /// config's slug; an own App by GitHub's answer for it.
+  Future<Uri> installLink(String workspaceId) async {
     final lane = (await lanes.resolve(workspaceId)).lane;
     switch (lane) {
       case GitHubLane.none:
@@ -151,12 +168,18 @@ final class GitHubInstallations {
           'This workspace has no GitHub App to install.',
         );
       case GitHubLane.connect:
-        final seal = await seals.sealFor(userId, workspaceId);
-        final started = await connect.githubInstallStart(
-          SealRequest(seal: seal.seal, workspaceId: seal.scope),
+        final config = await lanes.connectGitHub(
+          await connect.targetFor(workspaceId),
         );
-        await seals.adopt(userId, seal.scope, started.updatedSeal);
-        return started.installUrl;
+        final slug = config?.appSlug ?? '';
+        if (slug.isEmpty) {
+          throw const GitHubScopeRefused(
+            GitHubRefusal.providerUnavailable,
+            'Control Center Connect did not name its GitHub App. Test the '
+            'Connect settings first.',
+          );
+        }
+        return Uri.https('github.com', '/apps/$slug/installations/new');
       case GitHubLane.workspaceApp || GitHubLane.ownApp:
         final slug = (await (await lanes.appFor(
           workspaceId,
@@ -174,22 +197,27 @@ final class GitHubInstallations {
 
   /// The installations [workspaceId]'s App has that [userId] may see.
   ///
-  /// On Connect that is the installations the person can see on GitHub,
-  /// each saying whether it is bound to this server and whether the person
-  /// can bind it. An own App lists every installation; all are this
-  /// server's. The `github.installations` op narrows either list to the
+  /// On Connect that is the installations the person can see on GitHub; an
+  /// own App lists every installation. Either way every listed installation
+  /// is usable from this server. The `github.installations` op narrows either list to the
   /// accounts owning this workspace's linked repositories.
+  ///
+  /// An own App's listing is the App client's cached one (renewed when it
+  /// lapses or the App changes); [refresh] asks GitHub afresh.
   Future<List<GitHubInstallationView>> installationsFor(
     String workspaceId,
-    String userId,
-  ) async {
+    String userId, {
+    bool refresh = false,
+  }) async {
     final lane = (await lanes.resolve(workspaceId)).lane;
     switch (lane) {
       case GitHubLane.none:
         return const [];
       case GitHubLane.connect:
-        final seal = await seals.sealFor(userId, workspaceId);
+        final target = await connect.targetFor(workspaceId);
+        final seal = await seals.sealFor(userId, workspaceId, target);
         final listed = await connect.githubInstallations(
+          target,
           SealRequest(seal: seal.seal, workspaceId: seal.scope),
         );
         await seals.adopt(userId, seal.scope, listed.updatedSeal);
@@ -200,44 +228,15 @@ final class GitHubInstallations {
           return const [];
         }
         return [
-          for (final i in await app.installations(refresh: true))
+          for (final i in await app.installations(refresh: refresh))
             GitHubInstallationView(
               installationId: i.id,
               accountId: i.accountId,
               accountLogin: i.account,
               targetType: i.targetType,
-              boundHere: true,
               suspended: i.isSuspended,
-              callerIsAdmin: false,
             ),
         ];
     }
-  }
-
-  /// Binds an installation of Connect's shared App that already exists (an
-  /// organization installed it on GitHub directly) to this server. Connect
-  /// checks that [userId] administers the account.
-  Future<void> authorizeServer(
-    String workspaceId,
-    String userId,
-    int installationId,
-  ) async {
-    if ((await lanes.resolve(workspaceId)).lane != GitHubLane.connect) {
-      throw const GitHubScopeRefused(
-        GitHubRefusal.invalidRequest,
-        'Only the shared Connect App needs authorizing; this workspace uses '
-        'its own.',
-      );
-    }
-    final seal = await seals.sealFor(userId, workspaceId);
-    final ack = await connect.githubAuthorizeServer(
-      GitHubAuthorizeServerRequest(
-        seal: seal.seal,
-        workspaceId: seal.scope,
-        installationId: installationId,
-      ),
-    );
-    await seals.adopt(userId, seal.scope, ack.updatedSeal);
-    _presence.remove(workspaceId);
   }
 }

@@ -3,7 +3,7 @@ title: Architektura
 description: "Jak je Control Center složený: tenký klient nad serverem, Clean Architecture podle domén a porty s adaptéry."
 dateModified: 2026-09-19
 slug: cs-CZ/prirucka/koncepty/architektura
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Přehled
@@ -60,7 +60,7 @@ Doména **`guardrails`** má doménovou vrstvu v `cc_domain/features/guardrails/
 - Entity paměti: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Sdílené hodnotové objekty: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Sdílené porty: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Doménové služby: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Doménové služby: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` a typy událostí (pracovní prostor/agent, PR/revize, zprávy, tickety, pipeline, orchestrace, paměť, kalendář/schůzky, identita a členství, pozorovatelnost)
 
 ## Identita a multiplayer
@@ -132,7 +132,6 @@ Server drží přihlašovací údaje, na kterých záleží: tokeny GitHubu a ti
 
 - Tajemství ve `flutter_secure_storage` (klíčenka macOS, Správce pověření Windows, libsecret na Linuxu): přihlašovací údaj zařízení klienta a párovací klíče ke vzdálenému serveru, ne tokeny poskytovatelů
 - `shared_preferences` jen pro necitlivé předvolby (motiv, písmo, rozložení)
-- Zbytky tajemství poskytovatelů ze starších instalací jednou předá serveru `features/auth/providers/credential_migration.dart` a potom je z klíčenky klienta smaže
 
 ## Vynucení architektury
 

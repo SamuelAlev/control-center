@@ -10,8 +10,7 @@ import 'package:path/path.dart' as p;
 /// settings screen pulls in) can import it without dragging the FFI subtree —
 /// and therefore `dart:ffi`/onnxruntime — into `flutter build web`. The actual
 /// loader (`tryOpenFirst`, which needs `DynamicLibrary`) lives in
-/// `native_library.dart`, which re-exports everything here so barrel consumers
-/// are unaffected. Guarded by the web-reachability test in
+/// `native_library.dart`; the `cc_natives.dart` barrel exports both. Guarded by the web-reachability test in
 /// test/core/architecture_constraints_test.dart.
 
 /// Environment variable a host process reads to locate the DIRECTORY that holds

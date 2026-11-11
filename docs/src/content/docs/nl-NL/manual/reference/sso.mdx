@@ -2,7 +2,7 @@
 title: Referentie voor de SSO-configuratie
 description: Elke instelknop, elk endpoint, elke bewerking en elke foutcode van eenmalige aanmelding.
 slug: nl-NL/handleiding/referentie/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Alles wat instelbaar is aan eenmalige aanmelding, op één plek. De waarden
@@ -34,6 +34,18 @@ kan zijn).
 | `groupRoleMap`         | beide      | `{}`            | groep → rol; toewijzingen aan owner worden bij het opslaan geweigerd                                                                                                                         |
 | `autoMember`           | beide      | aan             | voegt gebruikers bij de eerste aanmelding automatisch toe aan elke werkruimte                                                                                                                |
 | `allowJit`             | beide      | aan             | provisioneert onbekende gebruikers bij het aanmelden                                                                                                                                         |
+
+## Accountkoppeling
+
+`SsoProvisioner` zoekt een login op in deze volgorde en nooit op gebruikersnaam:
+
+1. `(users.sso_issuer, users.sso_subject)` gelijk aan de issuer en het subject van de login (SAML NameID / OIDC `sub`).
+2. Een account waarvan het adres gelijk is aan het e-mailadres van de login, maar alleen wanneer beide kanten dat bevestigen: de provider (OIDC `email_verified: true`; een ontbrekende claim is geen bevestiging; een ondertekende SAML-assertie is dat altijd) en het account (`users.email_verified`). Adressen worden opgeslagen zonder witruimte aan de randen en in kleine letters, en zo vergeleken; een geverifieerd adres komt alleen overeen wanneer precies één account het geverifieerd heeft. Twee houders komen met niets overeen (gelogd zonder het adres), en geen account kan worden geverifieerd voor een andere schrijfwijze (hoofdletters) van een adres dat een ander account geverifieerd heeft.
+3. Anders een nieuw account wanneer `allowJit` aan staat; een weigering wanneer het uit staat.
+
+`users.email_verified` wordt ingesteld door een SSO-login of een SCIM-push die het adres meestuurt, of door de servereigenaar met `users.vouchEmail` (**Instellingen → Server → Personen → E-mail bevestigen**, geauditeerd als `user.email_vouched`). De profielbewerking van de eigenaar zelf bevestigt zijn eigen adres. Elke andere profielbewerking, en elk adres dat bij een uitnodiging is ingetypt, laat het ongeverifieerd, en het bewerken van een adres wist de vlag. Een bevestigde login die een account aanmaakt, neemt het adres over van accounts die het alleen hebben ingetypt (geauditeerd als `user.email_unvouched_cleared`), nooit van een account dat het geverifieerd heeft; in dat geval krijgt het nieuwe account geen adres.
+
+Een gekoppeld account dat al is vastgemaakt aan een ander subject of een andere issuer, weigert de login met `This account is already linked to a different SSO identity`. Een gedeactiveerd account weigert met `This account has been deactivated`.
 
 ## Procesconfiguratie
 
@@ -136,6 +148,7 @@ Fouten van `cc_saml_verify_response` dragen een stabiele code:
   WERKRUIMTEOVERSCHRIJDEND.
 - `users.sso_subject` + `users.sso_issuer` — de vastzetting van het
   providersubject, uniek per `(issuer, subject)` via een partiële index.
+- `users.email_verified`: of het adres van het account mag overeenkomen met een SSO-login of een SCIM-push (zie [Accountkoppeling](#accountkoppeling)).
 - `users.deactivated_at` — de SCIM-deactiveringsstempel.
 - Het SCIM-bearer-token en het clientsecret van OIDC staan in het
   secrets-bestand met modus 0600, nooit in de database.

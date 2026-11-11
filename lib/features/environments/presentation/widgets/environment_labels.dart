@@ -9,23 +9,13 @@ import 'package:flutter/widgets.dart';
 
 /// Whether an environment has anything to exec into or restart.
 ///
-/// Failed counts: restarting the one part that broke is the reason to be here,
-/// and the rest of the stack is usually still up.
+/// Failed and blocked count: restarting the one part that broke is the reason
+/// to be here, and the rest of the stack is usually still up.
 bool environmentHasLiveParts(EnvironmentStatus status) =>
-    status.isRunning || status == EnvironmentStatus.failed;
+    status.isRunning || status.needsAttention;
 
-/// What a status capsule shows for [environment]: a start that stopped for a
-/// person to do something on the host isn't broken, so it doesn't read as such.
-(String, CcStatusTone) environmentDisplay(
-  AppLocalizations l10n,
-  SpaceEnvironment environment,
-) =>
-    environment.status == EnvironmentStatus.failed &&
-        (environment.lastError?.needsHostSetup ?? false)
-    ? (l10n.environmentNeedsSetup, CcStatusTone.caution)
-    : environmentStatusDisplay(l10n, environment.status);
-
-/// What a status capsule shows for an environment.
+/// What a status capsule shows for an environment. One that waits for a
+/// person isn't broken, so it doesn't read as such.
 (String, CcStatusTone) environmentStatusDisplay(
   AppLocalizations l10n,
   EnvironmentStatus status,
@@ -38,6 +28,10 @@ bool environmentHasLiveParts(EnvironmentStatus status) =>
     CcStatusTone.caution,
   ),
   EnvironmentStatus.failed => (l10n.failed, CcStatusTone.negative),
+  EnvironmentStatus.blocked => (
+    l10n.environmentStatusBlocked,
+    CcStatusTone.caution,
+  ),
   EnvironmentStatus.stopped => (l10n.stopped, CcStatusTone.neutral),
   EnvironmentStatus.stopping => (
     l10n.environmentStatusStopping,
@@ -59,8 +53,13 @@ bool environmentHasLiveParts(EnvironmentStatus status) =>
     l10n.pipelineStatusPending,
     CcStatusTone.neutral,
   ),
+  EnvironmentComponentPhase.idle => (l10n.idle, CcStatusTone.neutral),
   EnvironmentComponentPhase.starting || EnvironmentComponentPhase.waiting => (
     l10n.rigPhaseStarting,
+    CcStatusTone.caution,
+  ),
+  EnvironmentComponentPhase.interactive => (
+    l10n.environmentStateInTerminal,
     CcStatusTone.caution,
   ),
   EnvironmentComponentPhase.ready => (
@@ -90,6 +89,10 @@ bool environmentHasLiveParts(EnvironmentStatus status) =>
   EnvironmentRunStatus.running => (l10n.running, CcStatusTone.caution),
   EnvironmentRunStatus.succeeded => (l10n.passed, CcStatusTone.positive),
   EnvironmentRunStatus.failed => (l10n.failed, CcStatusTone.negative),
+  EnvironmentRunStatus.blocked => (
+    l10n.environmentStatusBlocked,
+    CcStatusTone.caution,
+  ),
   EnvironmentRunStatus.timedOut => (
     l10n.agentQuestionTimedOutLabel,
     CcStatusTone.negative,

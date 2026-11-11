@@ -77,6 +77,35 @@ An immutable, case-insensitive set of skill identifiers. At dispatch those slugs
 {'flutter', 'dart', 'rest-api'}
 ```
 
+## Shell hooks
+
+Shell hooks let the server owner run their own scripts around a built-in harness run: once at session start, before each tool call, and after each tool call. A hook is arbitrary code, so hooks are host configuration. Only the server owner sets them up, by hand, on the server's machine. There is no setting in the app and no operation that writes them.
+
+For an agent, the hooks live in its own folder under the server's data directory:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` is the name of the agent's folder in the workspace (`agents/<slug>/`). That folder sits outside every workspace's storage, and every sandbox hides the data directory, so no member, run or terminal can write it.
+
+`hooks.json` maps any of three keys to a script, by a path relative to the hook folder:
+
+| Key            | When it runs              | What its exit code means                                       |
+| -------------- | ------------------------- | -------------------------------------------------------------- |
+| `sessionStart` | Once, when the run starts | Nothing; the hook only observes                                |
+| `preTool`      | Before every tool call    | `0` allows the call; anything else denies it                   |
+| `postTool`     | After every tool call     | Nothing; the hook only observes                                |
+
+- Each script is started as its own executable, with no shell and no arguments, so it must be executable and start with a shebang line. It receives the event as JSON on stdin: the event name, and for the tool hooks the tool's name with its arguments (`preTool`) or its result (`postTool`).
+- A hook runs as one of the run's tool processes, in the agent's directory for the run. When the server sandboxes agents it runs inside the run's sandbox. It gets a minimal environment and none of the run's credentials: no forge or provider token and no gateway access.
+- Each hook has 30 seconds. Its output is read and discarded.
+- `preTool` fails closed. A non-zero exit, a timeout or a script that cannot start denies the tool call.
+- A path that is absolute, missing, or that leaves the hook folder (links resolved) is refused, and the run's log says which hook was refused and why. A refused or unreadable `preTool` hook denies every tool call until it is fixed.
+- A `hooks` block in `.agents/harness.json`, whether in a repository or in the agent's own folder, is ignored. A repository is often someone else's code and the agent's folder can be written by members and by runs. The run's log says the block was ignored and where hooks are read from instead.
+
+Shell hooks apply to the built-in harness only. A configured `preTool` or `postTool` hook makes the run call its tools one at a time.
+
 ## AgentLiveState (derived)
 
 Not stored. Seven values. Declaration order is priority order (`sortPriority`, pinned by a test), which is the order the roster sorts by:

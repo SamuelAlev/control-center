@@ -2,7 +2,7 @@
 title: Connect to a remote server
 description: Point the desktop app or the web client at a cc_server running somewhere else and switch between servers without restarting.
 slug: en-GB/manual/guides/connect-remote-server
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Every client is a renderer over a `cc_server` that owns the data. The desktop can
@@ -82,6 +82,12 @@ Worker carries requests through the authenticated encrypted session to the
 code-server backend on `cc_server`. Host the web client over HTTPS or secure
 loopback so Service Workers are available. Native clients use a
 capability-scoped loopback facade.
+
+Only the server owner can open the embedded code-server editor: it runs on the
+server as the server's own user. A session belongs to the device and person
+that opened it. It opens with VS Code's workspace trust on, so VS Code asks
+before trusting a folder, and with automatic tasks off. Everyone else keeps the
+built-in single-file editor and file views.
 :::
 
 ### What the browser does not do
@@ -96,8 +102,9 @@ surfaces need a native window or the machine's own devices:
 
 Two behave differently rather than being missing. Meeting **recording** works in
 the browser, capturing your microphone plus a screenshare that includes an audio
-track. **Open in IDE** works too, but asks the server to launch the editor on the
-_server's_ display, so the button hides itself against a headless host with no
+track. The button named after your editor (such as **Open in VS Code**) asks
+the server to launch the editor on the _server's_ display, so it is offered only
+to the server owner, and the button hides itself against a headless host with no
 editors installed.
 
 ## Troubleshooting

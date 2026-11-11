@@ -2,7 +2,7 @@
 title: Een Google Calendar verbinden
 description: Verbind Google Calendar met een werkruimte, beheer meerdere accounts en verbind opnieuw wanneer een aanmelding verloopt.
 slug: nl-NL/handleiding/gidsen/agenda-verbinden
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Deze gids laat zien hoe je Google Calendar met een werkruimte verbindt. De
@@ -22,7 +22,7 @@ beeld.
 ## Een account verbinden
 
 1. Open **Agenda** in de sidebar.
-2. Klik in de sidebar van de agenda op **Agenda-account toevoegen**. (Dezelfde sectie staat ook onder **Instellingen → Werkruimte → Profiel en identiteit**, onder **Google Agenda**.)
+2. Klik in de sidebar van de agenda op **Agenda-account toevoegen**. (Dezelfde sectie staat ook onder **Instellingen → Jij → Profiel**, onder **Google Agenda**.)
 3. Klik op **Google Agenda verbinden**. Je browser opent de toestemmingspagina van Google.
 4. Kies het account en keur toegang tot je afspraken en agendalijst goed.
 
@@ -63,8 +63,6 @@ heeft alleen de alleen-lezen-scope; het vraagt je opnieuw te verbinden, en de ni
 Gasten krijgen de eigen e-mail van Google met de uitnodiging, wijziging of annulering. Het verplaatsen van één exemplaar van een terugkerende afspraak laat de rest van de reeks staan. Je kunt alleen boeken in
 agenda's waar je account schrijfrechten op heeft, en alleen met je eigen accounts: de verbonden agenda van een ander
 lid wordt nooit aangeboden.
-
-## Hoe synchronisatie werkt
 
 ## Hoe synchronisatie werkt
 
@@ -109,8 +107,7 @@ de gegevensmap is op een andere machine hersteld.
 
 ## Een account loskoppelen
 
-Klik in de sidebar van de agenda (of onder **Instellingen → Werkruimte → Profiel
-en identiteit**) bij het account op **Verbinding verbreken**. Hiermee worden de
+Klik in de sidebar van de agenda (of onder **Instellingen → Jij → Profiel**) bij het account op **Verbinding verbreken**. Hiermee worden de
 gesynchroniseerde afspraken verwijderd en de opgeslagen inloggegevens op de
 server gewist.
 
@@ -119,10 +116,11 @@ server gewist.
 Draai je eigen Google-client alleen als je **Mijn eigen apps gebruiken** hebt gekozen. De client van de server
 geldt alleen in dat geval: met de Connect van Control Center of een eigen Connect voert Connect elke route uit,
 Google inbegrepen, en blijft de client van de server opgeslagen maar ongebruikt. Om het toestemmingsscherm de naam
-van je project te laten tonen terwijl de server Connect gebruikt, geef je de werkruimte een eigen client
-([hieronder](#geef-één-werkruimte-een-eigen-google-client)); dit geldt in elke modus.
+van je project te laten tonen terwijl de server Connect gebruikt, zet je de werkruimte op eigen apps en geef je haar een eigen client
+([hieronder](#geef-één-werkruimte-een-eigen-google-client)); dit geldt ongeacht de modus van de server.
 
 1. Schakel in de [Google Cloud Console](https://console.cloud.google.com/apis/credentials) de **Google Calendar API** in en configureer het **OAuth-toestemmingsscherm**, waarbij je de scopes `calendar.events`, `calendar.calendarlist.readonly`, `openid` en `email` toevoegt. Zolang de app niet is geverifieerd, voeg je jezelf toe als **testgebruiker**.2. Maak een **OAuth-client-ID** aan van het applicatietype **Webapplicatie**.
+2. Maak een **OAuth-client-ID** aan van het toepassingstype **Webapplicatie**.
 3. Voeg de geautoriseerde redirect-URI `<server origin>/oauth/google/callback` toe. **Instellingen → Server → Single sign-on → Provider-apps → Google** toont de exacte URL onder **Callback-URL’s**; kopieer die letterlijk.
 4. Plak de **Client-id** en het **Client-secret** in datzelfde Google-blok, of zet ze in het `.env`-bestand van de server als `GOOGLE_OAUTH_CLIENT_ID` en `GOOGLE_OAUTH_CLIENT_SECRET`.
 
@@ -142,18 +140,15 @@ Een werkruimte kan Google Agenda verbinden via een eigen client in plaats van di
 of eigenaar van de werkruimte kan dit instellen.
 
 1. Maak een Google-client van het type **Webapplicatie** aan zoals in stap 1 en 2 hierboven
-2. Ga naar **Instellingen → Werkruimte → Algemeen → Provider-apps** en open **Google Agenda**
-3. Kies **Eigen app van deze werkruimte gebruiken**
-4. Voeg de redirect-URI die de regel onder **Callback-URL** toont toe aan de client, precies zoals die er staat
-5. Plak de **Client-id** en het **Client-secret**
+2. Ga naar **Instellingen → Werkruimte → Integraties**. Kies op de kaart **Control Center Connect** **Mijn eigen apps gebruiken** en klik op **Toepassen**
+3. Onder Agenda verschijnt de kaart **Google Agenda-app**. Voeg de redirect-URI die de kaart onder **Callback-URL** toont toe aan de client, precies zoals die er staat
+4. Plak de **Client-id** en het **Client-secret**
 
 Agenda-accounts die in deze werkruimte worden verbonden, lopen via die client, ongeacht hoe de server mensen aanmeldt.
 Er wordt nooit teruggevallen op de client van de server of op Connect: zolang beide velden niet zijn ingevuld, staat
-Google Agenda uit in deze werkruimte en zegt de regel wat er ontbreekt. Het secret verlaat de server nooit.
+Google Agenda uit in deze werkruimte en de kaart zegt wat er ontbreekt. Het secret verlaat de server nooit.
 
-Overschakelen tussen de client van de server en die van de werkruimte, of het wijzigen van het client-id van de
-werkruimte, markeert elk Google-account in deze werkruimte voor opnieuw verbinden. **App van deze server gebruiken**
-verwijdert de opgeslagen velden van de werkruimte. Andere werkruimten op de server worden niet beïnvloed.
+**Mijn eigen apps gebruiken** dekt alle providers tegelijk: GitHub, Linear en GIF-zoeken draaien ook alleen op de eigen apps van de werkruimte. Het wisselen van de aanmeldapps van de werkruimte, of het wijzigen van het client-id van de werkruimte, markeert elk Google-account in deze werkruimte voor opnieuw verbinden. De opgeslagen velden blijven staan wanneer de werkruimte terugschakelt naar een andere keuze, maar worden alleen gebruikt onder **Mijn eigen apps gebruiken**. Andere werkruimten op de server worden niet beïnvloed.
 
 ## Problemen oplossen
 
@@ -164,8 +159,8 @@ verwijdert de opgeslagen velden van de werkruimte. Andere werkruimten op de serv
 | `invalid_client` van Google                         | De id en het secret komen uit verschillende clients, of de client is verwijderd                                                     |
 | Goedkeuring lukt, maar de synchronisatie blijft leeg | Je account is op het toestemmingsscherm geen **testgebruiker**, of een van de gevraagde scopes is niet toegekend                            |
 | Het dialoogvenster meldt dat de code niet klopt     | Typ de 8 tekens precies zoals de browser ze toont. Vijf foute codes beëindigen de aanmelding; begin opnieuw                         |
-| "Kon je reactie niet bijwerken" bij een RSVP, of boeken, verplaatsen en verwijderen mislukt | Het account is verbonden met de oude alleen-lezen-scope. Verbind het opnieuw; een alleen-lezen gedeelde agenda weigert ook schrijfacties                                                                      |
-| Iedereen moet opnieuw verbinden                     | De Google-client van de server of de werkruimte is gewijzigd, of de Connect-keuze of -sleutel van de server. Zie [Een verlopen account opnieuw verbinden](#een-verlopen-account-opnieuw-verbinden) |
+| "Kon je reactie niet bijwerken" bij een RSVP, of boeken, verplaatsen en verwijderen mislukt | Het account heeft geen schrijftoegang tot de agenda gekregen. Verbind het opnieuw en keur elke gevraagde scope goed; een alleen-lezen gedeelde agenda weigert ook schrijfacties                                                                      |
+| Iedereen moet opnieuw verbinden                     | De Google-client van de server of de werkruimte is gewijzigd, of de Connect-keuze van de server of de werkruimte, of de sleutel van de server. Zie [Een verlopen account opnieuw verbinden](#een-verlopen-account-opnieuw-verbinden) |
 
 ## Gerelateerde gidsen
 

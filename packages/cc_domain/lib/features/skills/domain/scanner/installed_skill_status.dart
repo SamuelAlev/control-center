@@ -8,7 +8,7 @@ enum InstalledSkillLockState {
   managed,
 
   /// On disk with no lock entry — authored outside the gated install paths
-  /// (legacy editor saves, hand-copies), so no pin and no recorded verdict.
+  /// (hand-copies, other tools), so no pin and no recorded verdict.
   unmanaged,
 
   /// Pinned but the on-disk content no longer matches the pinned hash —

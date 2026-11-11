@@ -340,7 +340,7 @@ class _ReviewerPickerHeaderState extends ConsumerState<ReviewerPickerHeader> {
           child: Center(
             child: Text(
               l10n.noMatchingReviewers,
-              style: TextStyle(fontSize: 13, color: t.textQuaternary),
+              style: CcTypography.bodySm.copyWith(color: t.textTertiary),
             ),
           ),
         );
@@ -486,7 +486,7 @@ class _ReviewerFlyoutRow extends StatelessWidget {
               color: hovered && !locked
                   ? t.bgPrimaryHover
                   : const Color(0x00000000),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
                   PickerCheckBox(
@@ -494,44 +494,42 @@ class _ReviewerFlyoutRow extends StatelessWidget {
                     hovered: hovered,
                     locked: locked,
                   ),
-                  const SizedBox(width: 10),
+                  AppSpacing.hGapSm,
                   // The name follows; the avatar's initial would only repeat it.
                   ExcludeSemantics(
                     child: isTeam
                         ? GitHubTeamAvatar(
                             name: candidate.label,
                             avatarUrl: candidate.avatarUrl ?? '',
-                            size: 22,
+                            size: 20,
                           )
                         : GitHubUserAvatar(
                             login: candidate.key,
                             avatarUrl: candidate.avatarUrl,
-                            size: 22,
+                            size: 20,
                             showHoverCard: false,
                           ),
                   ),
-                  const SizedBox(width: 10),
+                  AppSpacing.hGapSm,
                   Expanded(
                     child: Text(
                       candidate.label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                        color: t.textPrimary,
-                      ),
+                      style: CcTypography.bodySm.copyWith(color: t.textPrimary),
                     ),
                   ),
                   if (statusLabel != null) ...[
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSm,
                     Text(
                       statusLabel,
-                      style: TextStyle(fontSize: 12, color: t.textTertiary),
+                      style: CcTypography.caption.copyWith(
+                        color: t.textTertiary,
+                      ),
                     ),
                   ],
                   if (locked) ...[
-                    const SizedBox(width: 8),
+                    AppSpacing.hGapSm,
                     CcTooltip(
                       message: l10n.requiredByCodeOwners,
                       child: Icon(

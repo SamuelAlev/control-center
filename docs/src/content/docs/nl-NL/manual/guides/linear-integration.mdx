@@ -2,7 +2,7 @@
 title: Linear-integratie instellen
 description: Meld je aan bij Linear, verbind de Linear-automatisering van een werkruimte en kies Linear als ticketingprovider voor nieuwe tickets.
 slug: nl-NL/handleiding/gidsen/linear-integratie
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear heeft in Control Center twee identiteiten, en beide zijn aanmeldingen in
@@ -23,7 +23,7 @@ Control Center, zonder dat er een externe dienst nodig is — zie
 
 ## Linear kiezen voor de werkruimte
 
-1. Ga naar **Instellingen → Werkruimte → Algemeen** en zoek de kaart **Tickets**
+1. Ga naar **Instellingen → Werkruimte → Integraties** en zoek de kaart **Tickets**
 2. Zet **Ticketingprovider** op **Linear**
 
 Tickets die je vanaf dan aanmaakt, krijgen het stempel `provider: linear`.
@@ -32,7 +32,7 @@ Linear-rijen: er valt niets te authenticeren.
 
 ## Inloggen bij Linear
 
-Op dezelfde kaart is de rij **Linear** van jou:
+Je eigen Linear-aanmelding staat op **Instellingen → Jij → Profiel**, op de kaart **Tickets**:
 
 1. Klik op **Inloggen bij Linear**
 2. Keur goed in je browser
@@ -44,9 +44,11 @@ Alles wat je vanuit Control Center in Linear doet, draait op deze aanmelding en
 niets anders. Ben je niet aangemeld, dan vraagt de app je om je aan te melden in
 plaats van als iemand anders te handelen.
 
+De aanmelding werkt in elke werkruimte op de server, tenzij een werkruimte eigen aanmeldapps heeft: die werkruimte houdt een eigen Linear-aanmelding. De kaart zegt welke van toepassing is.
+
 ## Linear-automatisering verbinden
 
-De rij **Linear-automatisering** is de Control Center-app van de werkruimte in
+De rij **Linear-automatisering** op de kaart **Tickets** in **Instellingen → Werkruimte → Integraties** is de Control Center-app van de werkruimte in
 Linear. Ticketsynchronisatie, pipelines en agenten schrijven ermee, dus
 geautomatiseerde issues en opmerkingen verschijnen als Control Center in plaats
 van als een persoon.
@@ -66,7 +68,7 @@ externe tracker schrijven** raadplegen.
 ## Je eigen Linear-applicatie registreren
 
 Gebruik je eigen applicatie als je **Mijn eigen apps gebruiken** hebt gekozen.
-De applicatie van de server geldt alleen onder **Mijn eigen apps gebruiken**. Met de Connect van Control Center of een eigen Connect verzorgt Connect Linear, en de applicatie van de server en de service-API-sleutel blijven opgeslagen maar ongebruikt. Een applicatie van de werkruimte ([hieronder](#geef-één-werkruimte-een-eigen-linear-app)) geldt in alle modi.
+De applicatie van de server geldt alleen onder **Mijn eigen apps gebruiken**. Met de Connect van Control Center of een eigen Connect verzorgt Connect Linear, en de applicatie van de server en de service-API-sleutel blijven opgeslagen maar ongebruikt. Een werkruimte op eigen apps ([hieronder](#geef-één-werkruimte-een-eigen-linear-app)) gebruikt in plaats daarvan de eigen applicatie, ongeacht de modus van de server.
 
 1. Maak een OAuth-applicatie aan op
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -92,28 +94,23 @@ Een werkruimte kan zich bij Linear aanmelden via een eigen applicatie in plaats 
 beheerder of eigenaar van de werkruimte kan dit instellen.
 
 1. Maak een Linear OAuth-applicatie aan zoals hierboven
-2. Ga naar **Instellingen → Werkruimte → Algemeen → Provider-apps** en open **Linear**
-3. Kies **Eigen app van deze werkruimte gebruiken**
-4. Voeg beide callback-URL's die de regel onder **Callback-URL’s** toont toe aan de Linear-applicatie, precies zoals ze er staan
-5. Plak de **Client-id** en eventueel de **Service-API-sleutel** voor de automatisering van deze werkruimte
+2. Ga naar **Instellingen → Werkruimte → Integraties**. Kies op de kaart **Control Center Connect** **Mijn eigen apps gebruiken** en klik op **Toepassen**
+3. Onder Tickets verschijnt de kaart **Linear-app**. Voeg beide callback-URL's die de kaart onder **Callback-URL’s** toont toe aan de Linear-applicatie, precies zoals ze er staan
+4. Plak de **Client-id** en eventueel de **Service-API-sleutel** voor de automatisering van deze werkruimte
 
 De applicatie van de werkruimte beantwoordt elke Linear-aanmelding en automatiseringsaanvraag in deze werkruimte,
 ongeacht hoe de server mensen aanmeldt. Er wordt nooit teruggevallen op de applicatie van de server of op Connect:
-zolang er geen client-id is, staat Linear uit in deze werkruimte en zegt de regel wat er ontbreekt. De
+zolang er geen client-id is, staat Linear uit in deze werkruimte en zegt de kaart wat er ontbreekt. De
 service-API-sleutel wordt alleen hier gebruikt; zonder die sleutel vereist synchronisatie **Linear verbinden voor automatisering**.
 
-Overschakelen tussen de applicatie van de server en die van de werkruimte, of het wijzigen van het client-id van de
-werkruimte, meldt iedereen in deze werkruimte af bij Linear en koppelt de automatisering los. Zij melden zich opnieuw
-aan via de nieuwe applicatie. **App van deze server gebruiken** verwijdert de opgeslagen velden van de werkruimte.
-Geheimen zijn alleen schrijfbaar: de regel toont alleen of er een is opgeslagen. Andere werkruimten op de server
-worden niet beïnvloed.
+**Mijn eigen apps gebruiken** dekt alle providers tegelijk: GitHub, Google Agenda en GIF-zoeken draaien ook alleen op de eigen apps van de werkruimte, elk ingesteld naast de provider op dezelfde pagina. Het wisselen van de aanmeldapps van de werkruimte, of het wijzigen van het client-id van de werkruimte, meldt iedereen in deze werkruimte af bij Linear en koppelt de automatisering los. Zij melden zich opnieuw aan via de nieuwe applicatie. De opgeslagen velden blijven staan wanneer de werkruimte terugschakelt naar een andere keuze, maar worden alleen gebruikt onder **Mijn eigen apps gebruiken**. Geheimen zijn alleen schrijfbaar: de kaart toont alleen of er een is opgeslagen. Andere werkruimten op de server worden niet beïnvloed.
 
 ## Problemen oplossen
 
 ### De rij Linear zegt dat aanmelden niet is ingesteld
 
 De server heeft geen eigen Linear-applicatie en ook geen Connect. De
-servereigenaar kiest er een in **Instellingen → Server → Single sign-on**. Gebruikt de werkruimte een eigen applicatie, dan staat er in de regel in plaats daarvan dat de installatie niet is voltooid: een beheerder van de werkruimte voegt het client-id toe onder **Instellingen → Werkruimte → Algemeen → Provider-apps**.
+servereigenaar kiest er een in **Instellingen → Server → Single sign-on**. Gebruikt de werkruimte eigen apps, dan staat er in de regel in plaats daarvan dat de installatie niet is voltooid: een beheerder van de werkruimte voegt het client-id toe op de kaart **Linear-app** onder **Instellingen → Werkruimte → Integraties**.
 
 ### Ticketsynchronisatie mislukt met een authenticatiefout
 

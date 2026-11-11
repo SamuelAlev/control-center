@@ -480,320 +480,411 @@ void main() {
       expect(window.map((m) => m.content), ['first', 'second', 'third']);
     });
 
-    test('list watches drop transcript segments and one-shot reads keep them',
-        () async {
-      await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(id: 'ch-lite', name: 'lite'),
-      );
-      await seedConv('ch-lite');
-      await db.messagingDao.insertMessage(
-        ConversationMessagesTableCompanion.insert(
-          id: 'm-lite',
-          spaceId: 'ch-lite',
-          conversationId: 'ch-lite',
-          senderId: 'agent',
-          senderType: 'agent',
-          content: 'answer',
-          messageType: const Value('agent_turn'),
-          metadata: const Value(
-            '{"keep":"yes","segments":[{"t":"text","text":"blob"}]}',
-          ),
-        ),
-      );
-      await db.messagingDao.insertMessage(
-        ConversationMessagesTableCompanion.insert(
-          id: 'm-plain',
-          spaceId: 'ch-lite',
-          conversationId: 'ch-lite',
-          senderId: 'user',
-          senderType: 'user',
-          content: 'hi',
-          metadata: const Value('{"keep":"only"}'),
-        ),
-      );
-
-      Map<String, dynamic> decoded(String? raw) =>
-          jsonDecode(raw!) as Map<String, dynamic>;
-
-      final watched = await db.messagingDao.watchMessages('ch-lite').first;
-      final lite = decoded(watched.firstWhere((m) => m.id == 'm-lite').metadata);
-      expect(lite.containsKey('segments'), isFalse);
-      expect(lite['segments_elided'], isTrue);
-      expect(lite['segment_count'], 1);
-      expect(lite['keep'], 'yes');
-      final plain = decoded(
-        watched.firstWhere((m) => m.id == 'm-plain').metadata,
-      );
-      expect(plain, {'keep': 'only'});
-
-      final window = await db.messagingDao
-          .watchMessagesWindow('ch-lite', limit: 10)
-          .first;
-      final windowLite = decoded(
-        window.firstWhere((m) => m.id == 'm-lite').metadata,
-      );
-      expect(windowLite['segment_count'], 1);
-      expect(windowLite.containsKey('segments'), isFalse);
-
-      final spaceWatch = await db.messagingDao
-          .watchMessagesForSpace('ch-lite')
-          .first;
-      expect(
-        decoded(spaceWatch.firstWhere((m) => m.id == 'm-lite').metadata)
-            .containsKey('segments'),
-        isFalse,
-      );
-
-      final full = await db.messagingDao.getMessageById('m-lite');
-      expect(decoded(full!.metadata)['segments'], isA<List<dynamic>>());
-      final oneShot = await db.messagingDao.getMessages('ch-lite');
-      expect(
-        decoded(oneShot.firstWhere((m) => m.id == 'm-lite').metadata)['segments'],
-        isA<List<dynamic>>(),
-      );
-
-      final page = await db.messagingDao.getMessagePageRows(
-        'ch-lite',
-        'ch-lite',
-        limit: 10,
-      );
-      final pageLite = decoded(
-        page.firstWhere((r) => r.data.id == 'm-lite').data.metadata,
-      );
-      expect(pageLite.containsKey('segments'), isFalse);
-      expect(pageLite['segment_count'], 1);
-      expect(pageLite['keep'], 'yes');
-
-      final hits = await db.messagingDao.searchInSpace('ch-lite', 'answer');
-      final hit = hits.firstWhere((m) => m.id == 'm-lite');
-      final hitMeta = decoded(hit.metadata);
-      expect(hitMeta.containsKey('segments'), isFalse);
-      expect(hitMeta['keep'], 'yes');
-      expect(hit.embedding, isNull);
-
-      final columns = db.messagingDao.messageListSelectColumns;
-      expect(
-        columns,
-        contains('WHEN list_metadata IS NOT NULL THEN list_metadata'),
-      );
-      expect(
-        columns,
-        contains('json_type(metadata, \'\$.segments\')'),
-      );
-
-      await db.messagingDao.updateMessage('m-lite', content: 'answer2');
-      final kept = await db
-          .customSelect(
-            'SELECT list_metadata, metadata, content FROM conversation_messages WHERE id = \'m-lite\'',
-          )
-          .getSingle();
-      expect(kept.read<String>('content'), 'answer2');
-      expect(
-        decoded(kept.read<String>('list_metadata')).containsKey('segments'),
-        isFalse,
-      );
-      expect(
-        decoded(kept.read<String>('metadata'))['segments'],
-        isA<List<dynamic>>(),
-      );
-
-      await db.messagingDao.updateMessage(
-        'm-lite',
-        metadata: <String, dynamic>{
-          'keep': 'yes',
-          'segments': <Map<String, dynamic>>[
-            <String, dynamic>{'t': 'text'},
-          ],
-        },
-      );
-      final typed = await db
-          .customSelect(
-            'SELECT list_metadata, metadata FROM conversation_messages WHERE id = \'m-lite\'',
-          )
-          .getSingle();
-      final typedLite = decoded(typed.read<String>('list_metadata'));
-      expect(typedLite.containsKey('segments'), isFalse);
-      expect(typedLite['segment_count'], 1);
-      expect(typedLite['keep'], 'yes');
-      expect(
-        decoded(typed.read<String>('metadata'))['segments'],
-        isA<List<dynamic>>(),
-      );
-
-      await db.customStatement(
-        'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [
-          'm-raw',
-          'ch-lite',
-          'ch-lite',
-          'agent',
-          'agent',
-          'raw',
-          '{"keep":"raw","segments":[{"t":"text"}]}',
-        ],
-      );
-      final rawStored = await db
-          .customSelect(
-            'SELECT list_metadata FROM conversation_messages WHERE id = \'m-raw\'',
-          )
-          .getSingle();
-      expect(rawStored.read<String?>('list_metadata'), isNull);
-      final rawWatch = await db.messagingDao.watchMessages('ch-lite').first;
-      final rawLite = decoded(
-        rawWatch.firstWhere((m) => m.id == 'm-raw').metadata,
-      );
-      expect(rawLite.containsKey('segments'), isFalse);
-      expect(rawLite['segments_elided'], isTrue);
-      expect(rawLite['keep'], 'raw');
-    });
-    test('pending questions include old and archived conversations; first answer wins',
-        () async {
-      await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(
-          id: 'questions-space', name: 'Questions',
-          workspaceId: const Value('test-workspace'),
-        ),
-      );
-      await db.into(db.conversationsTable).insert(
-        ConversationsTableCompanion.insert(
-          id: 'archived-thread', spaceId: 'questions-space',
-          status: const Value('archived'),
-        ),
-      );
-      await db.messagingDao.insertMessage(
-        ConversationMessagesTableCompanion.insert(
-          id: 'early-question', spaceId: 'questions-space',
-          conversationId: 'archived-thread', senderId: 'agent',
-          senderType: 'agent', content: 'Choose a deployment target?',
-          messageType: const Value('user_question'),
-          metadata: Value(jsonEncode({
-            'question': 'Choose a deployment target?',
-            'options': [{'label': 'staging'}],
-            'answered': false,
-          })),
-        ),
-      );
-      for (var i = 0; i < 70; i++) {
+    test(
+      'list watches drop transcript segments and one-shot reads keep them',
+      () async {
+        await db.messagingDao.insertSpace(
+          SpacesTableCompanion.insert(id: 'ch-lite', name: 'lite'),
+        );
+        await seedConv('ch-lite');
         await db.messagingDao.insertMessage(
           ConversationMessagesTableCompanion.insert(
-            id: 'recent-$i', spaceId: 'questions-space',
-            conversationId: 'archived-thread', senderId: 'agent',
-            senderType: 'agent', content: '$i',
+            id: 'm-lite',
+            spaceId: 'ch-lite',
+            conversationId: 'ch-lite',
+            senderId: 'agent',
+            senderType: 'agent',
+            content: 'answer',
+            messageType: const Value('agent_turn'),
+            metadata: const Value(
+              '{"keep":"yes","segments":[{"t":"text","text":"blob"}]}',
+            ),
           ),
         );
-      }
-      final pending = await db.messagingDao
-          .watchPendingQuestions('test-workspace').first;
-      expect(pending.map((row) => row.id), ['early-question']);
-      expect(await db.messagingDao.watchPendingQuestions('other').first, isEmpty);
-      expect(await db.messagingDao.answerQuestion(
-        'early-question', {'selected': ['staging']},
-      ), isTrue);
-      expect(await db.messagingDao.answerQuestion(
-        'early-question', {'selected': ['production']},
-      ), isFalse);
-      await db.messagingDao.updateMessage('early-question',
-        metadata: {'answered': true, 'expired': true});
-      final answered = await db.messagingDao.getMessageById('early-question');
-      final metadata = jsonDecode(answered!.metadata!) as Map<String, dynamic>;
-      expect(metadata['answer'], {'selected': ['staging']});
-      expect(metadata['expired'], isNull);
-      expect(await db.messagingDao.watchPendingQuestions('test-workspace').first,
-        isEmpty);
-    });
+        await db.messagingDao.insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: 'm-plain',
+            spaceId: 'ch-lite',
+            conversationId: 'ch-lite',
+            senderId: 'user',
+            senderType: 'user',
+            content: 'hi',
+            metadata: const Value('{"keep":"only"}'),
+          ),
+        );
 
-    test('expiry is conditional and the boot sweep closes only older questions',
-        () async {
-      await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(
-          id: 'expiry-space', name: 'Expiry',
-          workspaceId: const Value('test-workspace'),
-        ),
-      );
-      await db.into(db.conversationsTable).insert(
-        ConversationsTableCompanion.insert(id: 'expiry-thread', spaceId: 'expiry-space'),
-      );
-      Future<void> question(String id, DateTime createdAt) =>
-          db.messagingDao.insertMessage(
+        Map<String, dynamic> decoded(String? raw) =>
+            jsonDecode(raw!) as Map<String, dynamic>;
+
+        final watched = await db.messagingDao.watchMessages('ch-lite').first;
+        final lite = decoded(
+          watched.firstWhere((m) => m.id == 'm-lite').metadata,
+        );
+        expect(lite.containsKey('segments'), isFalse);
+        expect(lite['segments_elided'], isTrue);
+        expect(lite['segment_count'], 1);
+        expect(lite['keep'], 'yes');
+        final plain = decoded(
+          watched.firstWhere((m) => m.id == 'm-plain').metadata,
+        );
+        expect(plain, {'keep': 'only'});
+
+        final window = await db.messagingDao
+            .watchMessagesWindow('ch-lite', limit: 10)
+            .first;
+        final windowLite = decoded(
+          window.firstWhere((m) => m.id == 'm-lite').metadata,
+        );
+        expect(windowLite['segment_count'], 1);
+        expect(windowLite.containsKey('segments'), isFalse);
+
+        final spaceWatch = await db.messagingDao
+            .watchMessagesForSpace('ch-lite')
+            .first;
+        expect(
+          decoded(
+            spaceWatch.firstWhere((m) => m.id == 'm-lite').metadata,
+          ).containsKey('segments'),
+          isFalse,
+        );
+
+        final full = await db.messagingDao.getMessageById('m-lite');
+        expect(decoded(full!.metadata)['segments'], isA<List<dynamic>>());
+        final oneShot = await db.messagingDao.getMessages('ch-lite');
+        expect(
+          decoded(
+            oneShot.firstWhere((m) => m.id == 'm-lite').metadata,
+          )['segments'],
+          isA<List<dynamic>>(),
+        );
+
+        final page = await db.messagingDao.getMessagePageRows(
+          'ch-lite',
+          'ch-lite',
+          limit: 10,
+        );
+        final pageLite = decoded(
+          page.firstWhere((r) => r.data.id == 'm-lite').data.metadata,
+        );
+        expect(pageLite.containsKey('segments'), isFalse);
+        expect(pageLite['segment_count'], 1);
+        expect(pageLite['keep'], 'yes');
+
+        final hits = await db.messagingDao.searchInSpace('ch-lite', 'answer');
+        final hit = hits.firstWhere((m) => m.id == 'm-lite');
+        final hitMeta = decoded(hit.metadata);
+        expect(hitMeta.containsKey('segments'), isFalse);
+        expect(hitMeta['keep'], 'yes');
+        expect(hit.embedding, isNull);
+
+        final columns = db.messagingDao.messageListSelectColumns;
+        expect(columns, contains('list_metadata AS metadata'));
+        expect(columns, isNot(contains('json_type(')));
+
+        await db.messagingDao.updateMessage('m-lite', content: 'answer2');
+        final kept = await db
+            .customSelect(
+              'SELECT list_metadata, metadata, content FROM conversation_messages WHERE id = \'m-lite\'',
+            )
+            .getSingle();
+        expect(kept.read<String>('content'), 'answer2');
+        expect(
+          decoded(kept.read<String>('list_metadata')).containsKey('segments'),
+          isFalse,
+        );
+        expect(
+          decoded(kept.read<String>('metadata'))['segments'],
+          isA<List<dynamic>>(),
+        );
+
+        await db.messagingDao.updateMessage(
+          'm-lite',
+          metadata: <String, dynamic>{
+            'keep': 'yes',
+            'segments': <Map<String, dynamic>>[
+              <String, dynamic>{'t': 'text'},
+            ],
+          },
+        );
+        final typed = await db
+            .customSelect(
+              'SELECT list_metadata, metadata FROM conversation_messages WHERE id = \'m-lite\'',
+            )
+            .getSingle();
+        final typedLite = decoded(typed.read<String>('list_metadata'));
+        expect(typedLite.containsKey('segments'), isFalse);
+        expect(typedLite['segment_count'], 1);
+        expect(typedLite['keep'], 'yes');
+        expect(
+          decoded(typed.read<String>('metadata'))['segments'],
+          isA<List<dynamic>>(),
+        );
+
+        await db.customStatement(
+          'INSERT INTO conversation_messages (id, space_id, conversation_id, sender_id, sender_type, content, metadata) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          [
+            'm-raw',
+            'ch-lite',
+            'ch-lite',
+            'agent',
+            'agent',
+            'raw',
+            '{"keep":"raw","segments":[{"t":"text"}]}',
+          ],
+        );
+        final rawStored = await db
+            .customSelect(
+              'SELECT list_metadata FROM conversation_messages WHERE id = \'m-raw\'',
+            )
+            .getSingle();
+        expect(rawStored.read<String?>('list_metadata'), isNull);
+        final rawWatch = await db.messagingDao.watchMessages('ch-lite').first;
+        // A row written past the DAO has no list projection: list reads show
+        // no metadata rather than deriving one.
+        expect(rawWatch.firstWhere((m) => m.id == 'm-raw').metadata, isNull);
+      },
+    );
+    test(
+      'pending questions include old and archived conversations; first answer wins',
+      () async {
+        await db.messagingDao.insertSpace(
+          SpacesTableCompanion.insert(
+            id: 'questions-space',
+            name: 'Questions',
+            workspaceId: const Value('test-workspace'),
+          ),
+        );
+        await db
+            .into(db.conversationsTable)
+            .insert(
+              ConversationsTableCompanion.insert(
+                id: 'archived-thread',
+                spaceId: 'questions-space',
+                status: const Value('archived'),
+              ),
+            );
+        await db.messagingDao.insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: 'early-question',
+            spaceId: 'questions-space',
+            conversationId: 'archived-thread',
+            senderId: 'agent',
+            senderType: 'agent',
+            content: 'Choose a deployment target?',
+            messageType: const Value('user_question'),
+            metadata: Value(
+              jsonEncode({
+                'question': 'Choose a deployment target?',
+                'options': [
+                  {'label': 'staging'},
+                ],
+                'answered': false,
+              }),
+            ),
+          ),
+        );
+        for (var i = 0; i < 70; i++) {
+          await db.messagingDao.insertMessage(
             ConversationMessagesTableCompanion.insert(
-              id: id, spaceId: 'expiry-space', conversationId: 'expiry-thread',
-              senderId: 'agent', senderType: 'agent', content: 'Which?',
-              messageType: const Value('user_question'),
-              metadata: Value(jsonEncode({'question': 'Which?', 'answered': false})),
-              createdAt: Value(createdAt),
+              id: 'recent-$i',
+              spaceId: 'questions-space',
+              conversationId: 'archived-thread',
+              senderId: 'agent',
+              senderType: 'agent',
+              content: '$i',
             ),
           );
-      Future<Map<String, dynamic>> meta(String id) async => jsonDecode(
-            (await db.messagingDao.getMessageById(id))!.metadata!,
-          ) as Map<String, dynamic>;
+        }
+        final pending = await db.messagingDao
+            .watchPendingQuestions('test-workspace')
+            .first;
+        expect(pending.map((row) => row.id), ['early-question']);
+        expect(
+          await db.messagingDao.watchPendingQuestions('other').first,
+          isEmpty,
+        );
+        expect(
+          await db.messagingDao.answerQuestion('early-question', {
+            'selected': ['staging'],
+          }),
+          isTrue,
+        );
+        expect(
+          await db.messagingDao.answerQuestion('early-question', {
+            'selected': ['production'],
+          }),
+          isFalse,
+        );
+        await db.messagingDao.updateMessage(
+          'early-question',
+          metadata: {'answered': true, 'expired': true},
+        );
+        final answered = await db.messagingDao.getMessageById('early-question');
+        final metadata =
+            jsonDecode(answered!.metadata!) as Map<String, dynamic>;
+        expect(metadata['answer'], {
+          'selected': ['staging'],
+        });
+        expect(metadata['expired'], isNull);
+        expect(
+          await db.messagingDao.watchPendingQuestions('test-workspace').first,
+          isEmpty,
+        );
+      },
+    );
 
-      await question('answered-first', DateTime.utc(2026, 1, 1));
-      expect(await db.messagingDao.answerQuestion(
-        'answered-first', {'selected': ['a']},
-      ), isTrue);
-      // The waiter's expiry lost the race: the answer must survive it.
-      expect(await db.messagingDao.expireQuestion('answered-first'), isFalse);
-      expect((await meta('answered-first'))['expired'], isNull);
-      expect((await meta('answered-first'))['answer'], {'selected': ['a']});
+    test(
+      'expiry is conditional and the boot sweep closes only older questions',
+      () async {
+        await db.messagingDao.insertSpace(
+          SpacesTableCompanion.insert(
+            id: 'expiry-space',
+            name: 'Expiry',
+            workspaceId: const Value('test-workspace'),
+          ),
+        );
+        await db
+            .into(db.conversationsTable)
+            .insert(
+              ConversationsTableCompanion.insert(
+                id: 'expiry-thread',
+                spaceId: 'expiry-space',
+              ),
+            );
+        Future<void> question(String id, DateTime createdAt) =>
+            db.messagingDao.insertMessage(
+              ConversationMessagesTableCompanion.insert(
+                id: id,
+                spaceId: 'expiry-space',
+                conversationId: 'expiry-thread',
+                senderId: 'agent',
+                senderType: 'agent',
+                content: 'Which?',
+                messageType: const Value('user_question'),
+                metadata: Value(
+                  jsonEncode({'question': 'Which?', 'answered': false}),
+                ),
+                createdAt: Value(createdAt),
+              ),
+            );
+        Future<Map<String, dynamic>> meta(String id) async =>
+            jsonDecode((await db.messagingDao.getMessageById(id))!.metadata!)
+                as Map<String, dynamic>;
 
-      await question('open', DateTime.utc(2026, 1, 1));
-      expect(await db.messagingDao.expireQuestion('open'), isTrue);
-      expect((await meta('open'))['expired'], isTrue);
-      expect((await meta('open'))['answered'], isTrue);
+        await question('answered-first', DateTime.utc(2026, 1, 1));
+        expect(
+          await db.messagingDao.answerQuestion('answered-first', {
+            'selected': ['a'],
+          }),
+          isTrue,
+        );
+        // The waiter's expiry lost the race: the answer must survive it.
+        expect(await db.messagingDao.expireQuestion('answered-first'), isFalse);
+        expect((await meta('answered-first'))['expired'], isNull);
+        expect((await meta('answered-first'))['answer'], {
+          'selected': ['a'],
+        });
 
-      await question('orphan', DateTime.utc(2026, 1, 1));
-      await question('after-boot', DateTime.utc(2026, 1, 3));
-      expect(
-        await db.messagingDao.expireQuestionsCreatedBefore(DateTime.utc(2026, 1, 2)),
-        1,
-      );
-      expect((await meta('orphan'))['expired'], isTrue);
-      expect((await meta('after-boot'))['answered'], isFalse);
-      expect((await meta('answered-first'))['expired'], isNull);
-    });
+        await question('open', DateTime.utc(2026, 1, 1));
+        expect(await db.messagingDao.expireQuestion('open'), isTrue);
+        expect((await meta('open'))['expired'], isTrue);
+        expect((await meta('open'))['answered'], isTrue);
 
-    test('patchSteering merges onto the current row only in the expected state',
-        () async {
-      await db.messagingDao.insertSpace(
-        SpacesTableCompanion.insert(
-          id: 'steer-space', name: 'Steer',
-          workspaceId: const Value('test-workspace'),
-        ),
-      );
-      await db.into(db.conversationsTable).insert(
-        ConversationsTableCompanion.insert(id: 'steer-thread', spaceId: 'steer-space'),
-      );
-      await db.messagingDao.insertMessage(
-        ConversationMessagesTableCompanion.insert(
-          id: 'card', spaceId: 'steer-space', conversationId: 'steer-thread',
-          senderId: 'u1', senderType: 'user', content: 'nudge',
-          messageType: const Value('steering'),
-          metadata: Value(jsonEncode({'steerState': 'queued', 'steerOrder': 0})),
-        ),
-      );
-      Future<Map<String, dynamic>> meta() async => jsonDecode(
-            (await db.messagingDao.getMessageById('card'))!.metadata!,
-          ) as Map<String, dynamic>;
+        await question('orphan', DateTime.utc(2026, 1, 1));
+        await question('after-boot', DateTime.utc(2026, 1, 3));
+        expect(
+          await db.messagingDao.expireQuestionsCreatedBefore(
+            DateTime.utc(2026, 1, 2),
+          ),
+          1,
+        );
+        expect((await meta('orphan'))['expired'], isTrue);
+        expect((await meta('after-boot'))['answered'], isFalse);
+        expect((await meta('answered-first'))['expired'], isNull);
+      },
+    );
 
-      // A live run drains the card...
-      expect(await db.messagingDao.patchSteering('card',
-          fromState: 'queued', patch: {'steerState': 'injected'}), isTrue);
-      // ...and a reorder that read it as queued must not revert that.
-      expect(await db.messagingDao.patchSteering('card',
-          fromState: 'queued', patch: {'steerOrder': 3, 'steerState': 'queued'}),
-          isFalse);
-      expect(await meta(), {'steerState': 'injected', 'steerOrder': 0});
+    test(
+      'patchSteering merges onto the current row only in the expected state',
+      () async {
+        await db.messagingDao.insertSpace(
+          SpacesTableCompanion.insert(
+            id: 'steer-space',
+            name: 'Steer',
+            workspaceId: const Value('test-workspace'),
+          ),
+        );
+        await db
+            .into(db.conversationsTable)
+            .insert(
+              ConversationsTableCompanion.insert(
+                id: 'steer-thread',
+                spaceId: 'steer-space',
+              ),
+            );
+        await db.messagingDao.insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: 'card',
+            spaceId: 'steer-space',
+            conversationId: 'steer-thread',
+            senderId: 'u1',
+            senderType: 'user',
+            content: 'nudge',
+            messageType: const Value('steering'),
+            metadata: Value(
+              jsonEncode({'steerState': 'queued', 'steerOrder': 0}),
+            ),
+          ),
+        );
+        Future<Map<String, dynamic>> meta() async =>
+            jsonDecode(
+                  (await db.messagingDao.getMessageById('card'))!.metadata!,
+                )
+                as Map<String, dynamic>;
 
-      expect(await db.messagingDao.patchSteering('card',
-          fromState: 'injected', patch: {'steerRunId': 'r1'},
-          content: 'edited', messageType: 'text'), isTrue);
-      final row = (await db.messagingDao.getMessageById('card'))!;
-      expect(row.content, 'edited');
-      expect(row.messageType, 'text');
-      expect((await meta())['steerRunId'], 'r1');
-      expect(await db.messagingDao.patchSteering('missing',
-          fromState: 'queued', patch: const {}), isFalse);
-    });
+        // A live run drains the card...
+        expect(
+          await db.messagingDao.patchSteering(
+            'card',
+            fromState: 'queued',
+            patch: {'steerState': 'injected'},
+          ),
+          isTrue,
+        );
+        // ...and a reorder that read it as queued must not revert that.
+        expect(
+          await db.messagingDao.patchSteering(
+            'card',
+            fromState: 'queued',
+            patch: {'steerOrder': 3, 'steerState': 'queued'},
+          ),
+          isFalse,
+        );
+        expect(await meta(), {'steerState': 'injected', 'steerOrder': 0});
 
+        expect(
+          await db.messagingDao.patchSteering(
+            'card',
+            fromState: 'injected',
+            patch: {'steerRunId': 'r1'},
+            content: 'edited',
+            messageType: 'text',
+          ),
+          isTrue,
+        );
+        final row = (await db.messagingDao.getMessageById('card'))!;
+        expect(row.content, 'edited');
+        expect(row.messageType, 'text');
+        expect((await meta())['steerRunId'], 'r1');
+        expect(
+          await db.messagingDao.patchSteering(
+            'missing',
+            fromState: 'queued',
+            patch: const {},
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 }

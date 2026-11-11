@@ -343,7 +343,7 @@ class _JobRowState extends State<_JobRow> {
                     AnimatedRotation(
                       duration: CcMotion.resolveToggle(
                         context,
-                        CcMotion.normal,
+                        CcMotion.moderate,
                       ),
                       curve: CcMotion.standard,
                       turns: _expanded ? 0 : -0.25,
@@ -375,7 +375,7 @@ class _JobRowState extends State<_JobRow> {
           ),
           CcCollapsible(
             expanded: _expanded,
-            duration: CcMotion.normal,
+            duration: CcMotion.moderate,
             child: Padding(
               padding: const EdgeInsetsDirectional.only(
                 start: 24,
@@ -486,19 +486,19 @@ String _workerStatusLabel(AppLocalizations l10n, WorkerStatus status) =>
     };
 
 CcStatusTone _jobStatusTone(String status) => switch (status) {
-  'running' => CcStatusTone.info,
-  'succeeded' || 'completed' => CcStatusTone.positive,
+  'leased' || 'running' => CcStatusTone.info,
+  'done' => CcStatusTone.positive,
   'failed' => CcStatusTone.negative,
   _ => CcStatusTone.neutral,
 };
 
 String _jobStatusLabel(AppLocalizations l10n, String status) =>
     switch (status) {
-      'queued' => l10n.fleetJobStatusQueued,
-      'running' => l10n.fleetJobStatusRunning,
-      'succeeded' || 'completed' => l10n.fleetJobStatusSucceeded,
+      'queued' || 'reaped' => l10n.fleetJobStatusQueued,
+      'leased' || 'running' => l10n.fleetJobStatusRunning,
+      'done' => l10n.fleetJobStatusSucceeded,
       'failed' => l10n.fleetJobStatusFailed,
-      'cancelled' || 'canceled' => l10n.fleetJobStatusCancelled,
+      'cancelled' => l10n.fleetJobStatusCancelled,
       _ => status,
     };
 

@@ -33,6 +33,7 @@ class EnvironmentMapper {
     approvedBlobHash: row.approvedBlobHash,
     overridesJson: row.overridesJson,
     createdBy: row.createdBy,
+    hostApprovedBy: row.hostApprovedBy,
     createdAt: row.createdAt.toUtc(),
     updatedAt: row.updatedAt.toUtc(),
   );
@@ -49,6 +50,7 @@ class EnvironmentMapper {
     approvedBlobHash: Value(record.approvedBlobHash),
     overridesJson: Value(record.overridesJson),
     createdBy: Value(record.createdBy),
+    hostApprovedBy: Value(record.hostApprovedBy),
     createdAt: Value(record.createdAt),
     updatedAt: Value(record.updatedAt),
   );

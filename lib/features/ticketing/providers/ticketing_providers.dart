@@ -134,7 +134,7 @@ final projectServiceProvider = Provider<ProjectService>(
 ///
 /// The CREDENTIAL for that vendor stays per-user (server-side, keyed by user
 /// id) — everyone signs in as themself against the one vendor the workspace
-/// chose, through the `linear` sign-in lane (see `TicketingConnectionCard`).
+/// chose, through the `linear` sign-in lane (see `LinearAccountCard`).
 final activeTicketProviderProvider = Provider<TicketProvider>(
   (ref) => TicketProvider.fromStorage(
     ref.watch(workspaceSettingProvider(ticketingProviderSettingKey)),

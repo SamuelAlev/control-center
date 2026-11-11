@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -11,10 +12,12 @@ import 'package:cc_connect/src/gcp_auth.dart';
 import 'package:cc_connect/src/grant_routes.dart';
 import 'package:cc_connect/src/http_io.dart';
 import 'package:cc_connect/src/oauth_routes.dart';
+import 'package:cc_connect/src/quota.dart';
 import 'package:cc_connect/src/rate_limiter.dart';
 import 'package:cc_connect/src/redis_state_store.dart';
 import 'package:cc_connect/src/relay_routes.dart';
 import 'package:cc_connect/src/seal_cipher.dart';
+import 'package:cc_connect/src/sentry_reporter.dart';
 import 'package:cc_connect/src/service_config.dart';
 import 'package:cc_connect/src/state_store.dart';
 import 'package:cc_connect/src/upstream_http.dart';
@@ -52,8 +55,18 @@ final class ConnectService {
          capacity: context.config.rateLimits.globalPerSecond,
          per: const Duration(seconds: 1),
          clock: context.clock,
+       ),
+       _hookIpLimiter = TokenBucketLimiter(
+         capacity: context.config.rateLimits.slackHookPerIpPerMinute,
+         per: const Duration(minutes: 1),
+         clock: context.clock,
+       ),
+       _hookGlobalLimiter = TokenBucketLimiter(
+         capacity: context.config.rateLimits.slackHookGlobalPerSecond,
+         per: const Duration(seconds: 1),
+         clock: context.clock,
        ) {
-    _oauth = OAuthRoutes(context, _grants);
+    _oauth = OAuthRoutes(context);
   }
 
   /// Builds a service from [config]. Backends default to what the config
@@ -61,7 +74,9 @@ final class ConnectService {
   /// seals) over a real [IoUpstreamHttp]; tests inject their own.
   ///
   /// Throws [ConnectConfigException] when the signed config does not match
-  /// the credentials, or a backend cannot be reached at boot.
+  /// the credentials, the seal cipher fails a round trip, or the state or
+  /// binding backend fails its probe ([StateStore.probe],
+  /// [BindingStore.probe]).
   static Future<ConnectService> start(
     ConnectServiceConfig config, {
     UpstreamHttp? upstream,
@@ -73,13 +88,35 @@ final class ConnectService {
     Duration pollTimeout = const Duration(seconds: 25),
   }) async {
     final now = clock ?? DateTime.now;
-    final http = upstream ?? IoUpstreamHttp();
     final hmacKey = config.logHmacKey?.value ?? '';
     final log = ConnectLog(
       sink: logSink,
       hmacKey: hmacKey.isEmpty ? null : utf8.encode(hmacKey),
       clock: now,
     );
+    final rawDsn = config.sentryDsn?.value;
+    final dsn = rawDsn == null ? null : SentryDsn.tryParse(rawDsn);
+    final rawHttp =
+        upstream ??
+        IoUpstreamHttp(
+          allowedHosts: {
+            ...connectUpstreamHosts,
+            if (dsn != null) dsn.host: 'https',
+          },
+        );
+    if (dsn != null) {
+      log.reporter = SentryReporter(
+        dsn: dsn,
+        http: rawHttp,
+        log: log,
+        release: config.version,
+        environment: config.sentryEnvironment.isNotEmpty
+            ? config.sentryEnvironment
+            : (config.servesSignedConfig ? 'hosted' : 'self-hosted'),
+        clock: now,
+      ).report;
+    }
+    final http = ObservedUpstream(rawHttp, log, clock: now);
     final tokens = GcpMetadataTokenSource(http, clock: now);
 
     final SealCipher sealCipher;
@@ -93,7 +130,14 @@ final class ConnectService {
       );
     } else {
       try {
-        sealCipher = LocalAeadSealCipher(config.sealKeys!);
+        sealCipher = LocalAeadSealCipher(
+          config.sealKeys!,
+          onReloadFailed: () => log.event(
+            'seal.keyring_reload_failed',
+            const {},
+            ConnectLogLevel.error,
+          ),
+        );
       } on FormatException catch (error) {
         throw ConnectConfigException('CONNECT_SEAL_KEYS: ${error.message}');
       }
@@ -119,7 +163,39 @@ final class ConnectService {
         tlsContext: tls,
       );
     } else {
-      stateStore = MemoryStateStore(clock: now);
+      stateStore = MemoryStateStore(
+        clock: now,
+        onFull: () => log.sampled('state.full', '', const {
+          'backend': 'memory',
+        }, ConnectLogLevel.error),
+      );
+    }
+    try {
+      await stateStore.probe();
+    } on StateStoreUnavailable catch (error) {
+      throw ConnectConfigException(
+        'CONNECT_REDIS_URL: Redis failed its boot probe (${error.reason}): '
+        'AUTH/SELECT and a SET + GETDEL round trip must succeed, which '
+        'needs Redis 6.2 or later',
+      );
+    }
+    if (stateStore is RedisStateStore) {
+      // Logins, nonces, quotas and leases must never be evicted to make
+      // room: an evicted nonce is a replay, an evicted quota a fresh budget.
+      final String? policy;
+      try {
+        policy = await stateStore.evictionPolicy();
+      } on StateStoreUnavailable catch (error) {
+        throw ConnectConfigException(
+          'CONNECT_REDIS_URL: INFO memory failed (${error.reason})',
+        );
+      }
+      if (policy != 'noeviction') {
+        throw ConnectConfigException(
+          'CONNECT_REDIS_URL: Redis maxmemory-policy is '
+          '${policy ?? 'unknown'}; it must be noeviction',
+        );
+      }
     }
 
     final BindingStore bindingStore;
@@ -138,12 +214,21 @@ final class ConnectService {
       );
     } else {
       try {
-        bindingStore = await FileBindingStore.open(config.dataDir, clock: now);
+        bindingStore = await FileBindingStore.open(config.dataDir);
       } on FileSystemException {
         throw const ConnectConfigException('CONNECT_DATA_DIR is not writable');
       } on BindingStoreUnavailable catch (error) {
         throw ConnectConfigException('CONNECT_DATA_DIR: ${error.reason}');
       }
+    }
+    try {
+      await bindingStore.probe();
+    } on BindingStoreUnavailable catch (error) {
+      throw ConnectConfigException(
+        'CONNECT_FIRESTORE_PROJECT: Firestore failed its boot probe '
+        '(${error.reason}); check the database id and the service '
+        "account's datastore.user grant",
+      );
     }
 
     final served = ServedConfig(
@@ -153,6 +238,12 @@ final class ConnectService {
       clock: now,
     );
     await served.load();
+    if (config.access.allowAll && served.signedByOperatorKey) {
+      // Every install on the internet may use this Connect's apps and
+      // secrets, under a config signed by the operator's own key rather
+      // than Control Center's hosted root.
+      log.event('config.open_to_any_install', const {}, ConnectLogLevel.error);
+    }
 
     final context = ConnectContext(
       config: config,
@@ -161,6 +252,7 @@ final class ConnectService {
       sealer: CredentialSealer(
         connectOrigin: config.publicBaseUrl,
         cipher: sealCipher,
+        log: log,
       ),
       http: http,
       log: log,
@@ -229,6 +321,16 @@ final class ConnectService {
   final TokenBucketLimiter _installLimiter;
   final TokenBucketLimiter _ipLimiter;
   final TokenBucketLimiter _globalLimiter;
+  final TokenBucketLimiter _hookIpLimiter;
+  final TokenBucketLimiter _hookGlobalLimiter;
+  DateTime? _readyAt;
+  bool _ready = false;
+  bool _forwardedWarned = false;
+  Future<bool>? _readyCheck;
+
+  /// The Redis eviction policy the last readiness check saw (boot refused
+  /// any other).
+  String _evictionPolicy = 'noeviction';
 
   ConnectServiceConfig get _config => context.config;
 
@@ -250,13 +352,56 @@ final class ConnectService {
     // path itself; signatures still cover the full public URL.
     return path.startsWith('/v1/') ||
             path.startsWith('/oauth/') ||
-            path == '/healthz'
+            path == '/healthz' ||
+            path == '/readyz'
         ? path
         : null;
   }
 
+  /// The per-IP bucket key: the address for IPv4, and for IPv6 its first
+  /// [ipv6Groups] groups (four, a /64, by default: one host usually holds a
+  /// whole /64).
+  static String ipBucketKey(String ip, {int ipv6Groups = 4}) {
+    final address = InternetAddress.tryParse(ip);
+    if (address == null || address.type != InternetAddressType.IPv6) {
+      return ip;
+    }
+    final raw = address.rawAddress;
+    return [
+      for (var i = 0; i < ipv6Groups * 2; i += 2)
+        ((raw[i] << 8) | raw[i + 1]).toRadixString(16),
+    ].join(':');
+  }
+
+  bool _take(
+    TokenBucketLimiter limiter,
+    String bucket,
+    String key, {
+    String? ip,
+    String? install,
+  }) {
+    if (limiter.tryTake(key)) {
+      return true;
+    }
+    context.log.sampled('ratelimit.hit', '$bucket/$key', {
+      'bucket': bucket,
+      'ip': ?ip,
+      'install': ?install,
+    });
+    return false;
+  }
+
   String _clientIp(HttpRequest request) {
     final hops = _config.trustProxyHops;
+    if (hops == 0 &&
+        !_forwardedWarned &&
+        request.headers['x-forwarded-for'] != null) {
+      // Behind a proxy, every client shares the proxy's per-address budget.
+      _forwardedWarned = true;
+      context.log.event('config.trust_proxy_unset', const {
+        'reason': 'forwarded_header_ignored',
+      }, ConnectLogLevel.warn);
+    }
     if (hops > 0) {
       final forwarded = request.headers['x-forwarded-for'];
       if (forwarded != null && forwarded.isNotEmpty) {
@@ -274,26 +419,64 @@ final class ConnectService {
   }
 
   /// Handles one request and closes its response.
-  Future<void> handle(HttpRequest request) async {
+  Future<void> handle(HttpRequest request) {
+    final scope = ConnectRequestScope();
+    return scope.run(() => _handle(request, scope));
+  }
+
+  Future<void> _handle(HttpRequest request, ConnectRequestScope scope) async {
     final started = DateTime.now();
     final response = request.response;
-    var route = 'unknown';
     try {
-      applyBaseHeaders(response);
+      applyBaseHeaders(
+        response,
+        https: _config.publicBaseUrl.startsWith('https://'),
+      );
+      response.headers.set('x-request-id', scope.requestId);
       final path = _relative(request.uri.path);
       if (path == null) {
         return await _notFound(response);
       }
-      route = _routeLabel(path);
-      if (!_globalLimiter.tryTake('*')) {
+      scope.route = _routeLabel(path);
+      // Probes spend no token: a flood must not fail the platform's health
+      // check.
+      if (path == '/healthz') {
+        return await (request.method == 'GET'
+            ? sendJson(response, 200, {'ok': true})
+            : _methodNotAllowed(response));
+      }
+      if (path == '/readyz') {
+        if (request.method != 'GET') {
+          return await _methodNotAllowed(response);
+        }
+        final ready = await _readiness();
+        return await sendJson(response, ready ? 200 : 503, {'ok': ready});
+      }
+      final ip = _clientIp(request);
+      final logIp = truncateIp(ip);
+      final hook =
+          path == '/v1/hooks/slack/events' ||
+          path == '/v1/hooks/slack/commands';
+      // Per IP first: one address cannot drain the instance-wide bucket.
+      if (!_take(
+            hook ? _hookIpLimiter : _ipLimiter,
+            hook ? 'hook_ip' : 'ip',
+            ipBucketKey(ip),
+            ip: logIp,
+          ) ||
+          !_take(
+            hook ? _hookGlobalLimiter : _globalLimiter,
+            hook ? 'hook_global' : 'global',
+            '*',
+          )) {
+        response.persistentConnection = false;
         return await sendError(response, ConnectErrorCode.rateLimited);
       }
-      await _dispatch(request, path);
-    } on Object catch (error) {
-      await _fail(response, error, route);
+      await _dispatch(request, path, ip, logIp);
+    } on Object catch (error, stack) {
+      await _fail(response, error, stack);
     } finally {
       context.log.event('http.request', {
-        'route': route,
         'method': request.method,
         'status': response.statusCode,
         'ms': DateTime.now().difference(started).inMilliseconds,
@@ -301,19 +484,105 @@ final class ConnectService {
     }
   }
 
-  Future<void> _fail(HttpResponse response, Object error, String route) async {
-    final code = switch (error) {
-      ConnectException(:final code) => code,
-      StateStoreUnavailable() ||
-      BindingStoreUnavailable() ||
-      UpstreamUnavailable() => ConnectErrorCode.providerUnavailable,
-      _ => null,
-    };
-    if (code == null) {
-      context.log.event('http.internal_error', {'route': route});
+  /// Whether the state and binding backends answer (and Redis still runs
+  /// `noeviction`), cached for 5 s.
+  Future<bool> _readiness() {
+    final at = _readyAt;
+    if (at != null &&
+        context.clock().difference(at) < const Duration(seconds: 5)) {
+      return Future.value(_ready);
+    }
+    return _readyCheck ??= _probeBackends().whenComplete(
+      () => _readyCheck = null,
+    );
+  }
+
+  Future<bool> _probeBackends() async {
+    var ready = true;
+    try {
+      await context.state.probe();
+      ready = await _evictionPolicyHolds();
+      await context.bindings.probe();
+    } on StateStoreUnavailable catch (error) {
+      ready = false;
+      context.log.sampled('readyz.failed', 'state', {
+        'backend': 'state',
+        'reason': _slug(error.reason),
+      });
+    } on BindingStoreUnavailable catch (error) {
+      ready = false;
+      context.log.sampled('readyz.failed', 'bindings', {
+        'backend': 'bindings',
+        'reason': _slug(error.reason),
+      });
+    }
+    _ready = ready;
+    _readyAt = context.clock();
+    return ready;
+  }
+
+  /// Whether Redis still runs `noeviction`, as boot required: a policy
+  /// changed since would let it evict nonces and quotas. Logged once per
+  /// change.
+  Future<bool> _evictionPolicyHolds() async {
+    final state = context.state;
+    if (state is! RedisStateStore) {
+      return true;
+    }
+    final policy = await state.evictionPolicy() ?? 'unknown';
+    if (policy != _evictionPolicy) {
+      _evictionPolicy = policy;
+      final holds = policy == 'noeviction';
+      context.log.event('readyz.eviction_policy', {
+        'backend': 'state',
+        'reason': _slug(policy),
+      }, holds ? ConnectLogLevel.info : ConnectLogLevel.error);
+    }
+    return policy == 'noeviction';
+  }
+
+  static String _slug(String reason) =>
+      reason.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '_');
+
+  /// Answers [error] and writes one line for it: `http.refused` (warn) for a
+  /// refusal or an outage with its fixed reason, `http.error` (error, type
+  /// only, reported to Sentry) for anything unexpected.
+  Future<void> _fail(
+    HttpResponse response,
+    Object error,
+    StackTrace stack,
+  ) async {
+    final log = context.log;
+    switch (error) {
+      case ConnectException(:final code, :final reason):
+        log.event('http.refused', {
+          'error': code.wire,
+          if (reason.isNotEmpty) 'reason': _slug(reason),
+        }, ConnectLogLevel.warn);
+      case StateStoreUnavailable(:final reason) ||
+          BindingStoreUnavailable(:final reason) ||
+          UpstreamUnavailable(:final reason):
+        log.event('http.refused', {
+          'error': ConnectErrorCode.providerUnavailable.wire,
+          'backend': switch (error) {
+            StateStoreUnavailable() => 'state',
+            BindingStoreUnavailable() => 'bindings',
+            _ => 'upstream',
+          },
+          'reason': _slug(reason),
+        }, ConnectLogLevel.warn);
+      default:
+        log.exception('http.error', error, stack, {
+          'error': ConnectErrorCode.providerUnavailable.wire,
+        });
     }
     try {
-      await sendError(response, code ?? ConnectErrorCode.providerUnavailable);
+      await sendError(
+        response,
+        error is ConnectException
+            ? error.code
+            : ConnectErrorCode.providerUnavailable,
+      );
     } on Object {
       // Headers already sent or the socket is gone.
     }
@@ -334,16 +603,16 @@ final class ConnectService {
     return RegExp(r'^[a-z0-9_/]+$').hasMatch(label) ? label : 'other';
   }
 
-  Future<void> _dispatch(HttpRequest request, String path) async {
+  Future<void> _dispatch(
+    HttpRequest request,
+    String path,
+    String rawIp,
+    String ip,
+  ) async {
     final method = request.method;
     final response = request.response;
     final segments = path.split('/').skip(1).toList();
 
-    if (path == '/healthz') {
-      return method == 'GET'
-          ? sendJson(response, 200, {'ok': true})
-          : _methodNotAllowed(response);
-    }
     if (path == '/v1/version') {
       return method == 'GET'
           ? sendJson(response, 200, {
@@ -354,28 +623,30 @@ final class ConnectService {
             })
           : _methodNotAllowed(response);
     }
-    // Slack's own servers: signed by Slack, exempt from the per-IP budget.
+    // Slack's own servers, on their own buckets (see [_handle]).
     if (path == '/v1/hooks/slack/events' ||
         path == '/v1/hooks/slack/commands') {
       if (method != 'POST') {
         return _methodNotAllowed(response);
       }
       return path.endsWith('events')
-          ? _relay.slackEvents(request)
-          : _relay.slackCommands(request);
-    }
-
-    if (!_ipLimiter.tryTake(_clientIp(request))) {
-      return sendError(response, ConnectErrorCode.rateLimited);
+          ? _relay.slackEvents(request, ip: ip)
+          : _relay.slackCommands(request, ip: ip);
     }
 
     // Browser routes.
     if (segments.length == 3 && segments[0] == 'oauth') {
+      final segment = segments[1];
+      final step = segments[2];
+      final doneLane = step == 'done'
+          ? ConnectOAuthLane.fromWire(segment)
+          : null;
+      if (doneLane != null && method == 'POST') {
+        return _oauth.doneAction(request, doneLane);
+      }
       if (method != 'GET') {
         return _methodNotAllowed(response);
       }
-      final segment = segments[1];
-      final step = segments[2];
       if (segment == 'github' && step == 'setup') {
         return _oauth.githubSetup(request);
       }
@@ -384,9 +655,8 @@ final class ConnectService {
           ConnectOAuthLane.fromCallbackSegment(segment) != null) {
         return _oauth.callback(request, segment);
       }
-      final lane = ConnectOAuthLane.fromWire(segment);
-      if (step == 'done' && lane != null) {
-        return _oauth.done(request, lane);
+      if (doneLane != null) {
+        return _oauth.done(request, doneLane, network: ip);
       }
       return _notFound(response);
     }
@@ -398,7 +668,7 @@ final class ConnectService {
     if (handler.$1 != method) {
       return _methodNotAllowed(response);
     }
-    return _signed(request, path, handler.$2);
+    return _signed(request, path, handler.$2, rawIp, ip);
   }
 
   (String, _SignedHandler)? _signedRoute(String method, List<String> s) {
@@ -423,18 +693,16 @@ final class ConnectService {
         return ('POST', (c, b) => _grants.refresh(c, b, ConnectProvider.slack));
       case 'github/scope':
         return ('POST', _grants.githubScope);
-      case 'github/install/start':
-        return ('POST', _grants.githubInstallStart);
       case 'github/installations':
         return ('POST', _grants.githubInstallations);
-      case 'github/authorize_server':
-        return ('POST', _grants.githubAuthorizeServer);
       case 'github/revoke':
         return ('POST', _grants.githubRevoke);
       case 'slack/revoke':
         return ('POST', _grants.slackRevoke);
       case 'events/poll':
         return ('POST', _relay.poll);
+      case 'install/retire':
+        return ('POST', _retire);
       case 'klipy/search':
         return ('POST', (c, b) => _relay.klipy(c, b, search: true));
       case 'klipy/trending':
@@ -456,18 +724,38 @@ final class ConnectService {
     return null;
   }
 
-  /// RFC 9421 verification, nonce replay cache, allow/deny list and the
-  /// per-install budget, then [handler].
+  /// The allow/deny list (on the install the request claims, before the
+  /// Ed25519 check), RFC 9421 verification, the allow/deny list and the
+  /// retired set on the verified install, the nonce replay cache and the
+  /// per-install budget, then [handler]. [rawIp] keys budgets; [ip] is its
+  /// truncated form for logs.
   Future<void> _signed(
     HttpRequest request,
     String path,
     _SignedHandler handler,
+    String rawIp,
+    String ip,
   ) async {
     final response = request.response;
+    final log = context.log;
+    void refused(String reason, {String? install}) => log.sampled(
+      'auth.refused',
+      '$reason/$ip',
+      {'reason': reason, 'ip': ip, 'install': ?install},
+    );
+
     final body = await readCappedBody(request, connectMaxRequestBytes);
     if (body == null) {
       response.persistentConnection = false;
       return sendError(response, ConnectErrorCode.invalidRequest);
+    }
+    // A claimed install that may not call is refused before the costly
+    // verification: the verified id below is derived from the same keyid,
+    // so this never admits anyone.
+    final claimed = claimedInstallId(singleHeader(request, 'signature-input'));
+    if (claimed != null && !_config.access.permits(claimed)) {
+      refused('blocked', install: log.tag(claimed));
+      return sendError(response, ConnectErrorCode.installBlocked);
     }
     final query = request.uri.hasQuery ? '?${request.uri.query}' : '';
     final target = Uri.parse('${_config.publicBaseUrl}$path$query');
@@ -483,6 +771,7 @@ final class ConnectService {
         ),
       );
     } on ConnectSignatureException catch (error) {
+      refused(error.failure.name);
       return sendError(
         response,
         error.failure == ConnectSignatureFailure.stale
@@ -491,14 +780,20 @@ final class ConnectService {
       );
     }
     if (verified == null) {
+      log.sampled('ratelimit.hit', 'verify', const {'bucket': 'verify'});
       return sendError(response, ConnectErrorCode.rateLimited);
     }
-    // The allow/deny list runs before the nonce write so a blocked install
-    // cannot fill the replay cache.
+    final install = log.tag(verified.installId);
+    // The allow/deny list again on the verified id, before the nonce write
+    // so a blocked install cannot fill the replay cache.
     if (!_config.access.permits(verified.installId)) {
-      context.log.event('install.blocked', {
-        'install': context.log.tag(verified.installId),
-      });
+      refused('blocked', install: install);
+      return sendError(response, ConnectErrorCode.installBlocked);
+    }
+    ConnectRequestScope.current?.install = install;
+    // Retired by its own key: refused for good, on every route.
+    if (await context.bindings.isRetired(verified.installId)) {
+      refused('retired', install: install);
       return sendError(response, ConnectErrorCode.installBlocked);
     }
     if (!await context.state.putIfAbsent(
@@ -506,15 +801,26 @@ final class ConnectService {
       '1',
       nonceTtl,
     )) {
+      refused('replay', install: install);
       return sendError(response, ConnectErrorCode.staleRequest);
     }
-    if (!_installLimiter.tryTake(verified.installId)) {
+    if (!_take(
+      _installLimiter,
+      'install',
+      verified.installId,
+      install: install,
+    )) {
       return sendError(response, ConnectErrorCode.rateLimited);
     }
     final json = body.isEmpty
         ? const <String, Object?>{}
         : decodeJsonObject(body);
-    final caller = ConnectCaller(installId: verified.installId);
+    final caller = ConnectCaller(
+      installId: verified.installId,
+      address: ipBucketKey(rawIp),
+      wideAddress: ipBucketKey(rawIp, ipv6Groups: 3),
+      network: ip,
+    );
     final result = await handler(caller, json);
     if (result is _Verbatim) {
       response
@@ -525,6 +831,80 @@ final class ConnectService {
       return response.close();
     }
     return sendJson(response, 200, result);
+  }
+
+  /// `POST /v1/install/retire` ([connectInstallRetirePath]): retires the
+  /// install that signed it, for good. The body is a [SealRequest] naming
+  /// any credential seal of that install: it retires only when the seal
+  /// opens under the caller's own binding (any lane, any generation the
+  /// keyring still opens), so only an install that holds something to
+  /// contain reaches the retired set. Nothing is asked upstream. Reachable
+  /// only through [_signed], on a budget of its own per client address (an
+  /// IPv6 /48), and refused (logged at error) once the retired set is full.
+  /// The install's Slack team bindings are released.
+  Future<Object?> _retire(
+    ConnectCaller caller,
+    Map<String, Object?> body,
+  ) async {
+    final SealRequest request;
+    try {
+      request = SealRequest.fromJson(body);
+    } on FormatException {
+      throw const ConnectException(ConnectErrorCode.invalidRequest);
+    }
+    final install = context.log.tag(caller.installId);
+    await context.quotas.admit([
+      Quota(
+        'retire_ip',
+        caller.wideAddress,
+        window: const Duration(hours: 1),
+        limit: _config.rateLimits.retiresPerIpPerHour,
+        logFields: {'ip': caller.network},
+      ),
+    ]);
+    final header = context.sealer.header(request.seal);
+    // Throws access_denied for a seal of another install or workspace.
+    await context.sealer.open(
+      request.seal,
+      provider: header.provider,
+      binding: caller.binding(request.workspaceId),
+    );
+    if (!await context.bindings.retireInstall(caller.installId)) {
+      context.log.event('install.retire_refused', {
+        'reason': 'retired_set_full',
+        'install': install,
+      }, ConnectLogLevel.error);
+      throw const ConnectException(
+        ConnectErrorCode.providerUnavailable,
+        reason: 'retired_set_full',
+      );
+    }
+    context.log.event('install.retired', {'install': install});
+    // The install cannot sign a retry from here on, so a failure is logged
+    // rather than answered.
+    try {
+      for (final team in await context.bindings.slackTeamsOf(
+        caller.installId,
+      )) {
+        if (await context.bindings.releaseSlack(
+          team,
+          installId: caller.installId,
+        )) {
+          context.log.event('slack.released', {
+            'team': context.log.tag(team),
+            'install': install,
+            'reason': 'retired',
+          });
+        }
+      }
+    } on Exception {
+      // BindingStoreUnavailable, or the transport under it.
+      context.log.event('slack.release_failed', {
+        'install': install,
+        'reason': 'retired',
+      }, ConnectLogLevel.error);
+    }
+    return const ConnectAck().toJson();
   }
 
   /// `GET /v1/config`.
@@ -595,4 +975,105 @@ Future<ConnectServerHandle> serveConnect(
   server.defaultResponseHeaders.clear();
   server.listen((request) => unawaited(service.handle(request)));
   return ConnectServerHandle._(server, service);
+}
+
+/// [UpstreamHttp] that writes `upstream.failed` for every provider call that
+/// fails (transport error or a non-2xx other than 404), with GitHub's
+/// `x-github-request-id`, and tracks the shared GitHub App's OAuth token
+/// budget: GitHub allows 2,000 token requests per App per hour, shared by
+/// every server on a hosted App.
+final class ObservedUpstream implements UpstreamHttp {
+  /// Wraps [_inner].
+  ObservedUpstream(this._inner, this._log, {DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now;
+
+  final UpstreamHttp _inner;
+  final ConnectLog _log;
+  final DateTime Function() _clock;
+  final Queue<DateTime> _tokenCalls = Queue();
+  DateTime? _budgetLoggedAt;
+
+  /// Token requests in the last hour above which `github.token_budget` is
+  /// written at warn (and at error above [budgetError]).
+  static const int budgetWarn = 1000;
+
+  /// See [budgetWarn].
+  static const int budgetError = 1800;
+
+  static const Map<String, String> _names = {
+    'github.com': 'github',
+    'api.github.com': 'github_api',
+    'oauth2.googleapis.com': 'google',
+    'slack.com': 'slack',
+    'api.klipy.com': 'klipy',
+    'cloudkms.googleapis.com': 'kms',
+    'firestore.googleapis.com': 'firestore',
+    'metadata.google.internal': 'metadata',
+  };
+
+  static final RegExp _githubRequestId = RegExp(r'^[A-Fa-f0-9:]{1,64}$');
+
+  /// The `x-github-request-id` of [response] when it is shaped like one.
+  static String? githubRequestId(UpstreamResponse response) {
+    final id = response.headers['x-github-request-id'];
+    return id != null && _githubRequestId.hasMatch(id) ? id : null;
+  }
+
+  static bool _isTokenCall(UpstreamRequest request) {
+    final url = request.url;
+    return request.method == 'POST' &&
+        (url.host == 'github.com' && url.path == '/login/oauth/access_token' ||
+            url.host == 'api.github.com' &&
+                url.path.startsWith('/applications/') &&
+                url.path.endsWith('/token/scoped'));
+  }
+
+  void _countTokenCall() {
+    final now = _clock();
+    _tokenCalls.add(now);
+    final hourAgo = now.subtract(const Duration(hours: 1));
+    while (_tokenCalls.isNotEmpty && !_tokenCalls.first.isAfter(hourAgo)) {
+      _tokenCalls.removeFirst();
+    }
+    final count = _tokenCalls.length;
+    final last = _budgetLoggedAt;
+    if (count > budgetWarn &&
+        (last == null || now.difference(last) >= const Duration(minutes: 10))) {
+      _budgetLoggedAt = now;
+      _log.event('github.token_budget', {
+        'count': count,
+      }, count > budgetError ? ConnectLogLevel.error : ConnectLogLevel.warn);
+    }
+  }
+
+  @override
+  Future<UpstreamResponse> send(UpstreamRequest request) async {
+    final name = _names[request.url.host];
+    if (_isTokenCall(request)) {
+      _countTokenCall();
+    }
+    final UpstreamResponse response;
+    try {
+      response = await _inner.send(request);
+    } on UpstreamUnavailable catch (error) {
+      if (name != null) {
+        _log.event('upstream.failed', {
+          'upstream': name,
+          'reason': error.reason.replaceAll(' ', '_'),
+        }, ConnectLogLevel.warn);
+      }
+      rethrow;
+    }
+    if (name != null && !response.ok && response.status != 404) {
+      _log.event('upstream.failed', {
+        'upstream': name,
+        'upstream_status': response.status,
+        'github_request_id': githubRequestId(response),
+      }, response.isTransient ? ConnectLogLevel.warn : ConnectLogLevel.info);
+    }
+    return response;
+  }
+
+  @override
+  void close() => _inner.close();
 }

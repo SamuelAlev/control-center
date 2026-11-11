@@ -49,21 +49,24 @@ void main() {
     bool compacted = false,
     Uint8List? embedding,
   }) {
-    return dbs.of('ws-1').messagingDao.insertMessage(
-      ConversationMessagesTableCompanion.insert(
-        id: id,
-        spaceId: 's',
-        conversationId: 'c',
-        senderId: senderId ?? id,
-        senderType: senderType,
-        content: content,
-        messageType: Value(messageType),
-        createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
-        metadata: Value(metadata),
-        compacted: Value(compacted),
-        embedding: Value(embedding),
-      ),
-    );
+    return dbs
+        .of('ws-1')
+        .messagingDao
+        .insertMessage(
+          ConversationMessagesTableCompanion.insert(
+            id: id,
+            spaceId: 's',
+            conversationId: 'c',
+            senderId: senderId ?? id,
+            senderType: senderType,
+            content: content,
+            messageType: Value(messageType),
+            createdAt: Value(DateTime.utc(2026, 1, 1, 0, 0, second)),
+            metadata: Value(metadata),
+            compacted: Value(compacted),
+            embedding: Value(embedding),
+          ),
+        );
   }
 
   test('dispatch history stops before older transcripts', () async {
@@ -84,12 +87,13 @@ void main() {
       content: 'OLD-TURN',
       metadata: blob,
     );
+    // Only `compaction` rows are summaries; a compacted system notice is not.
     await message(
-      id: 'sum-legacy',
+      id: 'compacted-system',
       senderType: 'agent',
       messageType: 'system',
       second: 3,
-      content: 'SUM-LEGACY',
+      content: 'COMPACTED-SYSTEM',
       metadata: '{"compacted":true}',
       compacted: true,
     );
@@ -123,11 +127,11 @@ void main() {
     );
 
     expect(history.messages.map((m) => m.id).toList(), ['u13', 'u14', 'u15']);
-    expect(history.messages.every((m) => m.metadata?['segments'] == null), isTrue);
-    expect(history.summaries.map((m) => m.content).toList(), [
-      'SUM-OLD',
-      'SUM-LEGACY',
-    ]);
+    expect(
+      history.messages.every((m) => m.metadata?['segments'] == null),
+      isTrue,
+    );
+    expect(history.summaries.map((m) => m.content).toList(), ['SUM-OLD']);
     expect(history.lastAgentTurn?.id, 'latest-turn');
     final segments = history.lastAgentTurn?.metadata?['segments'];
     expect(segments, isA<List<dynamic>>());
@@ -142,7 +146,10 @@ void main() {
         )
         .get();
     final tailText = tailPlan.map((r) => r.data.values.join(' ')).join('\n');
-    expect(tailText, contains('idx_conversation_messages_conversation_created'));
+    expect(
+      tailText,
+      contains('idx_conversation_messages_conversation_created'),
+    );
     expect(dao.contextTailSql(hasCursor: false), contains('list_metadata'));
     expect(
       MessagingDao.latestContextAgentTurnIdSql.contains('metadata'),

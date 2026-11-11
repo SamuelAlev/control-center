@@ -2,7 +2,7 @@
 title: Examiner et fusionner une PR
 description: Ouvrez l’espace de travail d’une PR, lisez le diff, laissez des commentaires en ligne, soumettez une revue et fusionnez.
 slug: fr-FR/manuel/guides/examiner-et-fusionner-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Ce guide vous montre comment examiner et fusionner une demande de tirage.
@@ -23,9 +23,13 @@ intégré s’ouvrent à la demande ; les onglets d’aperçu de déploiement s
 automatiquement lorsqu’une URL de prévisualisation est détectée sur la PR. La
 disposition de vos onglets est mémorisée par PR.
 
+Le code-server embarqué n’est proposé qu’au propriétaire du serveur, car il s’exécute sur le serveur, sous le compte utilisateur du serveur lui-même. Une session appartient à l’appareil et à la personne qui l’ont ouverte, s’ouvre avec la confiance de l’espace de travail de VS Code activée (VS Code demande avant de faire confiance à un dossier) et n’exécute aucune tâche automatiquement. Les autres personnes gardent l’éditeur mono-fichier et les vues de fichiers.
+
 L’onglet Aperçu porte les métadonnées de la PR (auteur, branche, étiquettes,
 personnes assignées, réactions, commits, statut des vérifications) et la rangée
-d’actions : actualiser, **Revue**, **Merge**, ouvrir dans l’IDE et un menu ⋯.
+d’actions : actualiser, **Revue**, **Merge**, un bouton portant le nom de votre éditeur (par exemple **Ouvrir dans VS Code**) et un menu ⋯.
+
+Ce bouton d’éditeur démarre un éditeur natif sur l’écran du serveur lui-même, sous le compte utilisateur du serveur et hors de tout bac à sable ; il n’est donc proposé qu’au [propriétaire du serveur](/fr-FR/manuel/concepts/autorisation/#le-propriétaire-du-serveur). Sur un bureau qui héberge son propre serveur, c’est la personne devant l’écran. Il en va de même pour l’ouverture de l’arbre de travail d’une conversation dans un éditeur. Les autres utilisent les vues d’éditeur intégrées. Même pour le propriétaire, une PR ne s’ouvre que depuis un dépôt lié à l’espace de travail.
 
 ### Ouvrir une PR depuis la pile d’un espace
 
@@ -43,8 +47,7 @@ focus sur l’en-tête d’une pile et appuyez sur Entrée ou Espace pour la rep
 la déplier. Les PR sans lien entre elles restent séparées, et les liens de branche
 incomplets ou ambigus ne sont pas présentés comme une pile ordonnée.
 
-Dans **Contrôle de source**, **Pull requests empilées (N)** ouvre un sélecteur des
-parties publiées de la pile, de la base vers le sommet. Chaque entrée affiche le
+Dans l’en-tête de la PR, le badge de pile (une icône de calques avec le nombre de pull requests de la pile) ouvre **Pull requests empilées**, un sélecteur des parties publiées de la pile, de la base vers le sommet. Chaque entrée affiche le
 numéro de la PR, le nom de la partie et sa position ; la partie extraite est
 signalée. Sélectionnez une entrée pour ouvrir l’espace de travail de sa PR.
 **Publier la pile** n’apparaît que lorsque la découverte des PR est terminée et
@@ -52,6 +55,21 @@ qu’au moins une partie n’a pas de PR. Cela vaut aussi pour le menu de branch
 PR créées en dehors de Control Center comptent elles aussi comme publiées. Les
 piles partiellement publiées proposent les deux actions ; un travail sur une seule
 branche conserve les actions individuelles de création et d’ouverture de PR.
+
+### Valider et pousser depuis Contrôle de source
+
+Un commit que vous créez dans le panneau **Contrôle de source** vous appartient : vous en êtes l’auteur et le committer, sous l’adresse que votre forge a vérifiée pour votre connexion. Lorsque vous avez créé une clé de signature sous **Commits vérifiés** dans **Paramètres** → **Vous** → **Commits**, le serveur le signe avec votre propre clé de signature avant de le pousser. Un push utilise votre propre connexion, restreinte à ce seul dépôt.
+
+Le serveur exécute Git sur sa propre machine, dans un arbre qu’un agent ou une PR peut modifier ; il n’exécute donc aucun des programmes qu’un dépôt peut choisir :
+
+- Les commits ignorent les hooks Git du dépôt, comme le fait `git commit --no-verify`. Un hook pre-commit, commit-msg ou pre-push ne s’exécute pas
+- Les assistants d’identifiants, éditeurs, outils de diff externes et programmes de signature configurés par le dépôt sont ignorés
+
+Lancez vos vérifications vous-même avant de valider, ou en CI.
+
+Modifier le code exige l’[autorisation d’écriture](/fr-FR/manuel/concepts/autorisation/#changer-du-code-exige-lautorisation-décriture) sur le dépôt : enregistrer ou annuler des fichiers dans l’éditeur, **Récupérer les derniers commits de la PR**, valider et pousser, publier une branche, et les actions sur les piles qui créent, extraient ou publient une partie. Avec un accès en lecture ou en revue seulement, vous voyez les fichiers et les diff, et ces actions répondent « Vous pouvez lire ce dépôt, mais pas le modifier. Un administrateur de l'espace de travail peut accorder l'accès en écriture. »
+
+**Récupérer les derniers commits de la PR** met l’arbre de revue à jour avec les commits les plus récents de la pull request. Il récupère avec votre propre connexion GitHub, et vous demande de vous connecter si vous n’en avez pas. Validez ou abandonnez d’abord vos modifications : un arbre de travail comportant des modifications non validées n’est pas synchronisé.
 
 ## Lire le diff
 
@@ -139,7 +157,7 @@ La fusion est irréversible : elle pousse des commits vers la forge, elle a don
 droit à une étape de confirmation plutôt qu’à une entrée d’annulation. Ensuite, le
 cache de la PR est invalidé, son statut passe à **Fusionné** et un événement
 `PullRequestStatusChanged` est déclenché avec le statut `merged`. Cet événement
-libère l’arbre de travail éphémère « ouvrir dans l’éditeur » et démarre deux
+libère l’arbre de travail éphémère ouvert par le bouton d’éditeur et démarre deux
 pipelines fournis d’origine : **Stale repository cleanup**, qui supprime les arbres
 de travail et dossiers de conversation obsolètes de la PR, et **Release notes**,
 qui rédige une entrée de changelog.
@@ -167,6 +185,12 @@ cohortes et d’axes.
 Control Center importe aussi les PR ouvertes par des humains en dehors de
 l’application. Le flux de revue ci-dessus est identique. Les PR externes sont
 détectées par le service d’interrogation des PR.
+
+## Dépannage
+
+### Mon hook pre-commit ne s’est pas exécuté
+
+Les commits créés dans le panneau **Contrôle de source** de l’application ignorent les hooks Git du dépôt, comme le fait `git commit --no-verify`. Le serveur exécute Git sur sa propre machine, dans un arbre que des agents et des pull requests peuvent modifier, si bien qu’il n’exécute jamais un programme choisi par le dépôt. Lancez vous-même les vérifications du hook, ou appuyez-vous sur la CI.
 
 ## Guides liés
 

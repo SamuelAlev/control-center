@@ -2,15 +2,23 @@
 title: Sandboxbackends
 description: De sandboxbackends, waar ze worden toegepast en elk waardeobject dat de sandboxruntime gebruikt.
 slug: nl-NL/handleiding/referentie/sandboxbackends
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Of een run gesandboxed is, hangt af van de host]
-`cc_server` probeert de host één keer bij het opstarten en omhult het dispatchen van agenten in de native backend wanneer de probe er een beschikbaar meldt en `--sandbox` niet `off` is. Beide aansluitpunten van het dispatchpad worden omhuld: de Claude Code CLI via de sandboxpoort, en ACP plus de `bash`-tool van de ingebouwde harness via de sandboxmanager.
+`cc_server` bepaalt één keer bij het opstarten hoe agenten op deze host draaien, en die beslissing blijft gelden tot de server opnieuw start:
 
-Waar de probe geen backend meldt — **altijd Windows**, en Linux of WSL2 zonder `bwrap` en `socat` — zijn agentruns **niet** gesandboxed. ACP en de `bash`-tool van de harness starten nog steeds met omgevingssanering; Claude Code gaat via `NoSandboxAdapter` en erft de omgeving van de host. De grenzen die overblijven zijn de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), een forge-token met alleen leesrechten dat per start wordt bemiddeld en bij het afbreken wordt ingetrokken, pushes die bij de agentrun-gateway langs de pushregel moeten, het opdrachtbeleid per modus, de uniforme [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) (fail-closed), omgevingssanering op de ACP- en harness-`bash`-paden, en het tooloppervlak dat zijn modus toestaat.
+- **Gesandboxed** (`native`): de probe heeft een backend gevonden en `--sandbox` is niet `off`. Beide aansluitpunten van het dispatchpad worden omhuld: de Claude Code CLI via de sandboxpoort, en ACP plus de `bash`-tool van de ingebouwde harness via de sandboxmanager.
+- **Uit** (`off`): de serverbeheerder heeft hem met `--sandbox off` gestart. De agents van elk lid draaien op deze machine onbeperkt, wie ze ook heeft gestart.
+- **Niet beschikbaar** (`unavailable`): de sandbox staat aan, maar de probe vond geen backend (**altijd Windows**, en Linux of WSL2 zonder `bwrap` en `socat`). Een run start alleen wanneer de verantwoordelijke persoon de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) is: de persoon die erom vroeg, of voor automatisering de persoon waaraan die is gebonden. Andermans run wordt geweigerd voordat een inloggegeven wordt uitgegeven, een lease wordt genomen of een proces start. Zonder vastgelegde eigenaar start niemands run.
+
+Een geweigerde run mislukt met de code `sandbox_unavailable`. De app toont die als **Agents hebben een sandbox nodig op deze server**: "Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren. De beheerder kan de sandbox installeren of sandboxing voor iedereen uitzetten."
+
+Een run die zonder sandbox wel start (onder `off`, of de eigen run van de eigenaar onder `unavailable`), draait rechtstreeks op de host. ACP en de `bash`-tool van de harness starten nog steeds met omgevingssanering; Claude Code gaat via `NoSandboxAdapter` en erft de omgeving van de host. De grenzen die overblijven zijn de eigen worktree van de run (copy-on-write waar `rift` meelevert; `git worktree` op Windows), een forge-token met alleen leesrechten dat per start wordt bemiddeld en bij het afbreken wordt ingetrokken, pushes die bij de agentrun-gateway langs de pushregel moeten, het opdrachtbeleid per modus, de uniforme [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) (fail-closed), omgevingssanering op de ACP- en harness-`bash`-paden, en het tooloppervlak dat zijn modus toestaat.
 
 De in-process bestandstools van de harness (read, write, edit, apply patch, search, find, search_files) vallen op elke host buiten de sandbox: ze draaien in het serverproces, dus alleen `bash` wordt omhuld.
+
+De host is nooit een terugval voor een server die agents in een sandbox draait. Als de server agents sandboxt maar geen sandbox kan geven aan een run, worden de toolprocessen en `bash`-opdrachten geweigerd, niet op de host gestart. Dezelfde houding bepaalt de kleine processen rond een run: ACP-eenmalige helpers (gesprekstitels, `/btw`, `/handoff`, `/goal`) en de golden tests van een pull request in Review Studio draaien in de sandbox wanneer de server agents sandboxt, onbeperkt onder `off`, en onder `unavailable` alleen voor een verzoek waarvoor de serverbeheerder verantwoordelijk is; anders worden ze overgeslagen.
 :::
 
 ## Backendoverzicht
@@ -19,9 +27,9 @@ De in-process bestandstools van de harness (read, write, edit, apply patch, sear
 | ---------- | --------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | Omhulde VM | `microvm` | macOS, Linux, Windows (microVM-hypervisor)    | Alleen als de probe op de microVM-runtime slaagt; geldt voor interactieve terminals — de shell draait in een [rig](/nl-NL/handleiding/concepten/rigs/), niet op de host |
 | Native     | `native`  | macOS (Seatbelt), Linux en WSL2 (bubblewrap)  | Bij het opstarten geprobeerd; Linux weigert een run die schrijfweigeringen op bestandsnaamglobs vereist, wat bubblewrap niet kan afdwingen |
-| Geen       | `none`    | Alle                                          | De standaardwaarde bij het parsen, de standaardwaarde van de terminal en de terugval wanneer er geen backend beschikbaar is of `--sandbox off` is ingesteld |
+| Geen       | `none`    | Alle                                          | De standaardwaarde bij het parsen en de standaardwaarde van de terminal; agentdispatch gebruikt hem onder `--sandbox off`, en voor de eigen runs van de eigenaar wanneer er geen backend beschikbaar is |
 
-`SandboxBackend.fromName` geeft `none` terug voor een null-waarde of een niet-herkende opgeslagen waarde. Een opgeslagen `"docker"` wordt toegewezen aan `native`.
+`SandboxBackend.fromName` geeft `none` terug voor een null-waarde of een niet-herkende opgeslagen waarde.
 
 **`microvm` is de enige backend met een kernelgrens** — de workload
 draait echt niet op de host. Hij is nooit een stille terugval, in geen van beide
@@ -33,7 +41,7 @@ aan de client teruggerapporteerd en van een badge voorzien, zodat een terminal n
 beweren omhuld te zijn terwijl hij op de host draait. Levenscyclus, images en uitgaand
 verkeer van de VM zelf staan in de [rigs-referentie](/nl-NL/handleiding/referentie/rigs/).
 
-**Windows heeft geen native sandbox.** `NativeSandboxAdapter.probe` geeft `available: false` terug op elke host die geen macOS of Linux/WSL2 is. Het dispatchen van agenten op Windows gebruikt daarom `none`. De `microvm`-backend staat apart: hij is alleen beschikbaar als de probe op de microVM-runtime slaagt en geldt voor interactieve terminals en rigs, niet voor het omhullen van `bash` op de host.
+**Windows heeft geen native sandbox.** `NativeSandboxAdapter.probe` geeft `available: false` terug op elke host die geen macOS of Linux/WSL2 is, dus een Windows-server is `unavailable`: alleen de agentruns van de serverbeheerder starten, onbeperkt, en die van iedereen anders worden geweigerd. Om elk lid agents daar te laten draaien, start de eigenaar de server met `--sandbox off`, wat ze allemaal onbeperkt uitvoert. De `microvm`-backend staat apart: hij is alleen beschikbaar als de probe op de microVM-runtime slaagt en geldt voor interactieve terminals en rigs, niet voor het omhullen van `bash` op de host.
 
 ## Probe-resultaten
 
@@ -46,9 +54,9 @@ De probe bepaalt de afdwinging. Hij draait één keer, bij het opstarten van de 
 | Linux of WSL2 zonder een van beide tools | `false`     | `requiresInstall: true`, met een installatiehint die de ontbrekende pakketten noemt |
 | Elk ander platform                       | `false`     | Native sandbox wordt op dit platform niet aangeboden                      |
 
-De server logt de uitkomst op één opstartregel: `agent sandbox ON` plus de opmerking, `no OS-native agent sandbox on this host` plus de hint, of `agent sandbox DISABLED by --sandbox off`. `GET /healthz` bevat geen sandboxveld.
+De server logt de uitkomst op één opstartregel: `agent sandbox ON` plus de opmerking; `no OS-native agent sandbox on this host` plus de hint, die toevoegt dat alleen runs waarvoor de serverbeheerder verantwoordelijk is, starten; of `agent sandbox DISABLED by --sandbox off`. De blootstellingsregel die bij het opstarten wordt afgedrukt, bevat dezelfde beslissing als `sandbox=native`, `sandbox=off` of `sandbox=unavailable`. `GET /healthz` bevat geen sandboxveld.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepteert `on` (standaard) of `off`. Het is een afmelding, geen aanmelding: `on` betekent “omhullen wanneer de host een backend biedt”, nooit “er een vereisen”.
+`--sandbox` / `CC_SERVER_SANDBOX` accepteert `on` (standaard) of `off`. `on` omhult elke run wanneer de host een backend biedt, en laat bij geen backend alleen de runs van de eigenaar toe. `off` voert elke agent van elk lid onbeperkt uit op deze host; het is de keuze van de eigenaar voor iedereen, geen instelling per run.
 
 ## Native backend
 
@@ -63,6 +71,8 @@ Het gegenereerde profiel is **standaard toestaan** (`(allow default)`) en haalt 
 - **Proces**: `process-exec`-weigeringen voor de altijd gevaarlijke binaries, plus een blokkade op het uitvoeren van alles uit een beschrijfbare map. Bekende toolchain-installatiemappen onder je thuismap (corepack, `npx`- en `pnpm dlx`-caches, node-versiebeheerders, Playwright-browsers, rustup en cargo, Go, fvm en de pub-cache, pyenv, uv en pipx, rbenv, sdkman, mise, asdf en `~/.local/bin`) worden onder die blokkade weer opengezet. Gedeelde tijdelijke mappen worden ook geblokkeerd. Elke sessie krijgt in plaats daarvan een privé-`TMPDIR` onder `/private/tmp`, waar programma's die de agent bouwt (een `go test`-binary, een cargo-build) kunnen draaien. De altijd-gevaarlijke weigeringen worden na deze toestemmingen toegepast
 - **Netwerk**: beperkt tot de in-process proxypoorten plus DNS — loopback is niet in het algemeen toegestaan en TCP-luisteren is geweigerd. Unix-sockets zijn alleen toegestaan binnen de privé-`TMPDIR` van de sessie, wat tools dekt zoals tsx en Chrome die daar een IPC-socket aanhouden; je SSH-agent en andere sockets blijven onbereikbaar. De proxies dwingen de domein-allowlist per sessie af (zie [Netwerk-egress](#netwerk-egress))
 - **Configuratie**: profielen worden per start gegenereerd uit de `SandboxSpec`
+- **De eigen commando's van de server**: geen directe kind-map van een map waaruit de server programma's draait (elk `PATH`-item en de gebruikelijke mappen met tools per gebruiker, zoals `~/.local/bin`, met versiebeheerderlinks zoals `~/fvm/default` opgelost) kan worden aangemaakt, vervangen, verwijderd of hernoemd, noch het geïnstalleerde pakket waar een gekoppeld commando naartoe wijst. Zie [De commandomappen van de server](#de-commandomappen-van-de-server)
+- **Opstartbestanden**: elk thuispad dat het profiel weigert te lezen, wordt ook geweigerd om te schrijven, en de opstartbestanden van de shells en sessies van de servergebruiker (`.zshenv`, `.zlogin`, `.bash_login`, fish-config, systemd-user-units, autostart-items en dergelijke) zijn in elke modus geweigerd voor schrijven
 
 Vereisten:
 
@@ -75,6 +85,7 @@ Gebruikt bubblewrap (`bwrap`) om mount- en PID-namespaces te maken.
 - **Bestandssysteem**: maakt een mount-namespace waarin alleen de gebonden paden zichtbaar zijn
 - **Netwerk**: draait in een niet-gedeelde netwerknamespace; verkeer bereikt de host-proxies via `socat`-Unix-socketbruggen
 - **Proces**: PID-namespace-isolatie
+- **De eigen commando's van de server en opstartbestanden**: dezelfde beveiligingen als op macOS, uitgedrukt als bubblewrap-binds. Die zijn op Linux nog niet geverifieerd, en een ontbrekende commandomap kan daar nog steeds worden aangemaakt
 
 Vereisten:
 
@@ -90,19 +101,51 @@ regels op bestandsnaam bij aanmaak nodig om native dispatch op Linux te herstell
 Sandboxing uitschakelen is een expliciete onbeperkte afmelding, geen gelijkwaardige
 workaround.
 
+In de praktijk draait een Linux- of WSL2-server agents vandaag op een van twee manieren. Gestart met `--sandbox off` voert hij de agents van elk lid onbeperkt uit. Zonder bubblewrap of `socat` geïnstalleerd is hij `unavailable` en draait hij alleen de agents van de serverbeheerder, onbeperkt. Met beide tools geïnstalleerd en de sandbox aan, faalt elke run gesloten, ook die van de eigenaar.
+
+## De commandomappen van de server
+
+De server vindt bij het opstarten één keer elke map waaruit hij programma's draait: elk item van zijn `PATH`, de mappen met tools per gebruiker die hij controleert (zoals `~/.local/bin`, `~/.bun/bin` en de globale mappen van npm, yarn en pnpm), en de echte map achter elke link onderweg (versiebeheerderlinks zoals `~/fvm/default` of een fnm-standaard). Binnen een sandbox kan een agent geen commando in die mappen toevoegen, vervangen, verwijderen of hernoemen, ook niet de link die ernaar wijst, of het geïnstalleerde pakket waar een gekoppeld commando naartoe wijst, en ook de mappen erboven niet hernoemen. Anders zou een gesandboxde run een programma kunnen plaatsen dat de server, of de persoon, later buiten de sandbox start.
+
+Dit verandert het volgende voor een run:
+
+- Globale installaties vanuit een gesandboxde run mislukken met "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, en `cargo install`, `go install` of `dart pub global activate` wanneer hun bin-map op het `PATH` van de server staat.
+- Een standaardversie wisselen mislukt op dezelfde manier (`fnm default`, `nvm alias default`, `fvm global`), net als een tool die zichzelf ter plekke bijwerkt.
+- Projectlokale installaties (`node_modules/.bin`), `npx`, `pnpm dlx`, pakketbeheerders die door corepack worden beheerd, SDK-caches en normale builds blijven werken.
+
+Om een globale tool voor agents beschikbaar te maken, installeer je hem op de server zelf, als de gebruiker van de server, en herstart je de server zodat het nieuwe commando ook beschermd is. Of installeer hem in het project. Een commando dat is geïnstalleerd nadat de server is gestart, is pas vanaf de volgende start volledig beschermd.
+
+Afgedwongen en getest op macOS. Op Linux zijn dezelfde regels bubblewrap-binds die nog niet zijn geverifieerd. Windows heeft geen sandbox.
+
 ## None-backend
 
-Geen sandboxing. Het proces draait rechtstreeks op de host, met de bestandssysteem-, netwerk- en procestoegang van de host. ACP en de `bash`-tool van de harness krijgen nog steeds omgevingssanering en het opdrachtbeleid; Claude Code via `NoSandboxAdapter` erft de omgeving van de host. Hierop valt het dispatchen van agenten terug op een host zonder beschikbare backend of met `--sandbox off`, en het is de standaardwaarde van de terminal wanneer een client er geen noemt.
+Geen sandboxing. Het proces draait rechtstreeks op de host, met de bestandssysteem-, netwerk- en procestoegang van de host. ACP en de `bash`-tool van de harness krijgen nog steeds omgevingssanering en het opdrachtbeleid; Claude Code via `NoSandboxAdapter` erft de omgeving van de host. Agentdispatch gebruikt hem voor elke run onder `--sandbox off`, en op een host zonder beschikbare backend alleen voor de eigen runs van de serverbeheerder; andermans run wordt daar geweigerd. Voor een terminal is het de hostshell, die alleen de serverbeheerder mag openen.
 
 ## Door de server gehoste terminal
 
-De terminal wordt gesandboxed op zijn eigen voorwaarden, niet door de dispatchprobe. `defaultBackend` van `TerminalSessionService` is `none` en `cc_server` overschrijft dat niet, dus een terminalsessie draait de hostshell tenzij de client expliciet `native` vraagt — het terminalpaneel van de desktop doet dat niet.
+De door de server gehoste terminal opent de hostshell alleen voor de [eigenaar](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) van de server. Iedereen anders krijgt een terminal in een sandbox, met de beperkingen van een agent, in de eigen mappen van de werkruimte.
 
-Wanneer `native` wordt gevraagd, wordt de shell omhuld via `SandboxManager` onder een vast terminalprofiel: `$HOME` en de werkmap van de sessie zijn beschrijfbaar, het netwerk staat open en `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` en `~/Library/Keychains` krijgen leesweigering. Het forge-token met alleen leesrechten en de push-gateway zijn hier niet van toepassing — dat zijn dispatchzaken. Als het omhullen niet wordt ondersteund, mislukt de sessie in plaats van een native badge te tonen op een PTY met de hostshell.
+Zo wordt het backend voor een sessie gekozen:
+
+| Gevraagd | Serverbeheerder | Iedereen anders |
+| --- | --- | --- |
+| Niets | Het standaardbackend van de server | De standaard, met `none` vervangen door `native` |
+| `none` (de hostshell) | Hostshell | Geweigerd: de hostshell draait op de server zonder sandbox |
+| `native` | Native sandbox, eigenaarsprofiel | Native sandbox, agentprofiel |
+| `microvm` | Ingesloten VM | Ingesloten VM |
+| Een onbekende naam | Geweigerd | Geweigerd |
+
+- **Eigenaarsprofiel.** `$HOME` en de werkmap van de sessie zijn beschrijfbaar, het netwerk staat open, en `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` en `~/Library/Keychains` zijn leesgeweigerd.
+- **Agentprofiel** (`memberTerminalSandboxConfig`). Hetzelfde beleid waaronder een agent in die werkruimte draait: schrijven blijft in de werkmap, een privé-runmap, `/tmp` en de delen van `$HOME` die een agent mag beschrijven; geheimen zijn leesgeweigerd; het netwerk is de egress-allowlist van agents; programma's draaien alleen vanuit de werkmap en geïnstalleerde toolchains.
+- Een terminal opent alleen binnen de eigen mappen van de werkruimte. Een werkmap daarbuiten wordt geweigerd, nooit door een andere vervangen.
+- Alleen de persoon die een terminal heeft geopend, kan hem lezen, erin typen, het formaat wijzigen of hem sluiten. Voor iedereen anders lijkt zijn id onbekend.
+- `microvm` expliciet vragen op een host zonder rig-service mislukt in plaats van terug te vallen. Een `microvm`-standaard op zo'n host valt terug op `native` en zegt dat in het log.
+
+Het forge-token met alleen leesrechten en de push-gateway zijn niet van toepassing op terminals: dat zijn dispatchzaken. Als het omhullen niet wordt ondersteund, mislukt de sessie in plaats van een sandboxbadge te tonen op een sessie met de hostshell.
 
 ## Netwerk-egress
 
-Wanneer een sandbox wordt gestart, wordt uitgaande netwerktoegang afgedwongen door in-process proxies, niet door kernel-firewallregels. Op een host zonder beschikbare backend geldt niets hiervan en bereikt een gestart proces het netwerk precies zoals de servergebruiker dat zou doen.
+Wanneer een sandbox wordt gestart, wordt uitgaande netwerktoegang afgedwongen door in-process proxies, niet door kernel-firewallregels. Een run die niet gesandboxed is (elke run onder `--sandbox off`, of de run van de eigenaar op een host zonder backend) krijgt hier niets van: een proces dat hij start, bereikt het netwerk precies zoals de servergebruiker dat zou doen.
 
 - De sandboxruntime draait een HTTP/HTTPS-proxy en een SOCKS5-proxy op `127.0.0.1` binnen het `cc_server`-proces, **één paar per beperkte sessie** (`http_proxy.dart`, `socks_proxy.dart`). Gelijktijdige runs delen geen paar.
 - Gesandboxte processen krijgen proxy-omgevingsvariabelen (`HTTP_PROXY`/`HTTPS_PROXY` → de HTTP-proxy, `ALL_PROXY` → de SOCKS-proxy; `GIT_SSH_COMMAND` leidt git-over-SSH via de SOCKS-proxy). Op Linux is de netwerknamespace niet gedeeld, dus zijn de proxies de enige uitweg; op macOS deelt de sandbox de loopback van de host en praat hij er rechtstreeks mee.

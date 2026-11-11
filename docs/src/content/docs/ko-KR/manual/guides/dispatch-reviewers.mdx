@@ -2,7 +2,7 @@
 title: 리뷰어 에이전트 디스패치
 description: PR 뷰, MCP 도구 또는 파이프라인 단계에서 전문 리뷰어 에이전트를 PR로 보냅니다.
 slug: ko-KR/매뉴얼/사용-가이드/리뷰어-디스패치
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 이 가이드에서는 리뷰어 에이전트를 디스패치해 풀 리퀘스트를 리뷰하도록 하는 방법을 설명합니다.
@@ -60,7 +60,7 @@ dispatch_reviewers(
 | 이벤트                 | 발생 시점                                                                                                        | 페이로드 키                                                        |
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | **Control Center를 통해** PR이 열림 — 작성 화면 또는 `pr_lifecycle.publish`를 호출하는 에이전트                 | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | PR 폴링 서비스가 GitHub에서 직접 열린 PR을 발견함                                                                | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | PR 폴링 서비스가 GitHub에서 직접 열린 PR을 발견함                                                                | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 github.com에서 열린 PR은 결코 `PullRequestPublished`를 발생시키지 않으므로, 그 이벤트에만 연결된 템플릿은 그 PR을 보지 못합니다. 또한 `PullRequestPublished`에는 `pr_number`가 없습니다. 스크립트나 프롬프트가 `{{pr_number}}`를 참조하는 단계는 `ExternalPrDetected`가, 또는 그 값을 제공하는 수동 실행이 입력을 공급해야 합니다.
 

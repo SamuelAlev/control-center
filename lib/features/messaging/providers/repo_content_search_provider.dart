@@ -29,9 +29,9 @@ typedef RepoContentSearchArgs = ({
 });
 
 /// Toggleable content-search options, mirroring VS Code's search controls.
-/// Defaults reproduce the legacy case-insensitive literal behaviour.
+/// Defaults to a case-insensitive literal search.
 class ContentSearchOptions {
-  /// Creates [ContentSearchOptions] with the legacy defaults.
+  /// Creates [ContentSearchOptions]; every toggle defaults to off.
   const ContentSearchOptions({
     this.caseSensitive = false,
     this.regex = false,

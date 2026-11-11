@@ -77,8 +77,7 @@ class RigFrameReader {
 
   /// A reader for the lane the stream's [contentType] declares.
   ///
-  /// Defaults to JPEG: that is what every lane but WebKit's serves, and it is
-  /// also the honest fallback for a server too old to declare anything else.
+  /// Defaults to JPEG: that is what every lane but WebKit's serves.
   factory RigFrameReader.forContentType(String? contentType) =>
       (contentType ?? '').contains('png')
       ? RigFrameReader(startPattern: kPngSignature, endPattern: kPngIend)

@@ -1,4 +1,5 @@
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
@@ -15,10 +16,24 @@ import 'package:flutter/widgets.dart';
 /// restore was not a workspace database.
 String describeBackupTransferError(AppLocalizations l10n, Object error) {
   if (error is RemoteRpcException) {
-    return l10n.failedWithError(error.message);
+    // An owner-only op (a restore through `workspace.import`) refused by
+    // kind, in the app's words; this path also serves export and delete.
+    final ownerOnly = serverOwnerRequiredFromRpc(
+      code: error.code,
+      message: error.message,
+      data: error.data,
+    );
+    return ownerOnly != null
+        ? l10n.serverOwnerOnly
+        : l10n.failedWithError(error.message);
   }
   if (error is! BackupTransferException) {
     return l10n.failedWithError('$error');
+  }
+  // The upload restore refuses anyone but the server owner by kind; its
+  // sentence is the server's English.
+  if (error.kind == serverOwnerRequiredKind) {
+    return l10n.backupRestoreServerOwnerOnly;
   }
   final message = error.serverMessage;
   if (message != null) {

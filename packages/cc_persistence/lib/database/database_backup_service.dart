@@ -623,6 +623,7 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
       } finally {
         snapshot?.close();
       }
+      _dropTriggersAndViews(stagedPath);
       if (meta.workspaceId != workspaceId) {
         _rekeyWorkspace(stagedPath, meta.workspaceId, workspaceId);
         _onWarn?.call(
@@ -708,6 +709,28 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
     }
   }
 
+  /// Drops every trigger and view from the staged copy at [path], before any
+  /// statement writes to it.
+  ///
+  /// The file came from outside the server, and a trigger in it would fire on
+  /// the server's own later writes. Nothing legitimate is lost: the workspace
+  /// schema defines no view, and its triggers (the FTS sync triggers) are
+  /// installed on every open.
+  void _dropTriggersAndViews(String path) {
+    final db = sqlite.sqlite3.open(path);
+    try {
+      for (final row in db.select(
+        "SELECT type, name FROM sqlite_master WHERE type IN ('trigger', 'view')",
+      )) {
+        final name = (row['name'] as String).replaceAll('"', '""');
+        final kind = row['type'] == 'view' ? 'VIEW' : 'TRIGGER';
+        db.execute('DROP $kind IF EXISTS "$name"');
+      }
+    } finally {
+      db.close();
+    }
+  }
+
   /// A cloned snapshot must identify its new workspace in every scoped row.
   /// Update only the staging file; the exported source is never modified.
   void _rekeyWorkspace(String path, String oldId, String newId) {
@@ -716,16 +739,8 @@ class AppDatabaseBackupService implements DatabaseBackupPort {
       db.execute('PRAGMA foreign_keys = OFF');
       db.execute('BEGIN IMMEDIATE');
       try {
-        // Reinstalled on open; avoid populating a bogus change feed while
-        // rewriting historical rows to their new workspace identity.
-        final syncTriggers = db.select(
-          "SELECT name FROM sqlite_master WHERE type = 'trigger' "
-          "AND name LIKE 'trg_sync_%'",
-        );
-        for (final row in syncTriggers) {
-          final name = (row['name'] as String).replaceAll('"', '""');
-          db.execute('DROP TRIGGER "$name"');
-        }
+        // The staged copy holds no trigger by now (`_dropTriggersAndViews`),
+        // so the rewrite below fires nothing.
         for (final row in db.select(
           "SELECT name FROM sqlite_master WHERE type = 'table' "
           "AND name NOT LIKE 'sqlite_%' AND sql NOT LIKE 'CREATE VIRTUAL TABLE%'",

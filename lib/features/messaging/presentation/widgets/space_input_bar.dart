@@ -19,15 +19,6 @@ import 'package:control_center/shared/widgets/composer/composer_models.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// The mention-source factory and its `#` token helper moved out so this file
-// is the input bar and nothing else. Re-exported rather than relocated in
-// every caller: they are the same public surface, just no longer written here.
-export 'package:control_center/features/messaging/presentation/widgets/composer/messaging_mention_sources.dart'
-    show
-        buildMessagingMentionSources,
-        entityMentionToken,
-        entityRefsFromMentions;
-
 /// Composer bar with mode selector for sending space messages.
 class SpaceInputBar extends ConsumerStatefulWidget {
   /// Creates a [SpaceInputBar].

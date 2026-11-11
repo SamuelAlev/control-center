@@ -97,7 +97,7 @@ class Agent {
   /// window in charge.
   final int? contextSize;
 
-  /// Agent role (e.g. ceo, coder, reviewer). Null for legacy agents.
+  /// Agent role (e.g. ceo, coder, reviewer). Null when unassigned.
   final AgentRole? role;
 
   /// Monthly budget in cents. Defaults to zero (unlimited).

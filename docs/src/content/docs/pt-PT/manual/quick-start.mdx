@@ -2,7 +2,7 @@
 title: Início rápido
 description: Instale o Control Center, configure um agente e veja-o a trabalhar no seu repo.
 slug: pt-PT/manual/inicio-rapido
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Este é o caminho completo mais curto entre o nada e um agente a correr sobre o seu próprio código. Siga-o pela ordem indicada; cada passo depende do anterior.
@@ -21,7 +21,7 @@ mesmas funcionalidades. No entanto, um separador do navegador não consegue aloj
 servidor, por isso é você que o disponibiliza — execute o `cc_server` localmente e ligue-se
 a `ws://localhost:9030`, ou aponte-o para um servidor noutra máquina. Este início rápido
 segue o caminho da aplicação de ambiente de trabalho porque não exige configurar um
-servidor; consulte [Instalar](/pt-PT/manual/instalar/#use-it-in-your-browser) para a via do navegador.
+servidor; consulte [Instalar](/pt-PT/manual/instalar/#utilize-o-no-navegador) para a via do navegador.
 :::
 
 ## Passo 2: percorrer o onboarding
@@ -30,7 +30,7 @@ O onboarding executa os seus passos por ordem — não há como saltar passos. O
 
 1. **Login** (apenas o proprietário do servidor): escolha como este servidor inicia a sessão das pessoas no GitHub, no Google Calendar e no Linear — **Usar os apps do Control Center**, **Usar as minhas próprias apps** ou **Usar um servidor Connect próprio**. Com as suas próprias apps, **Criar a minha app do GitHub** configura o GitHub num único passo. Pode mudar isto mais tarde em **Definições → Servidor → Início de sessão único**.
 2. **Ligar**: inicie sessão no GitHub, ou cole um token do GitLab ou do Bitbucket. A credencial é guardada no servidor, associada à sua conta.
-3. **Espaço de trabalho**: dê um nome ao seu primeiro espaço de trabalho e, opcionalmente, escolha um logótipo. Criá-lo semeia cinco agentes — um CEO, mais `qa`, `architect`, `engineer` e `librarian` — e os modelos de pipeline integrados.
+3. **Espaço de trabalho** (apenas o proprietário do servidor): dê um nome ao seu primeiro espaço de trabalho e, opcionalmente, escolha um logótipo. Os restantes utilizadores ficam em **Ainda não está num espaço de trabalho** até o proprietário criar um para si ou um administrador do espaço de trabalho o convidar. Criá-lo semeia seis agentes — um CEO, mais `qa`, `architect`, `engineer`, `librarian` e `content-synthesizer` — e os modelos de pipeline integrados.
 4. **Sandbox**: regista uma preferência de sandbox. Qualquer das opções permite continuar.
 5. **Adaptador**: escolha o adaptador e o modelo predefinidos dos agentes. Escolha **Control Center (built-in)** e, em seguida, use o seletor de fornecedores que aparece para iniciar sessão num fornecedor de modelos — a lista de modelos fica vazia enquanto não houver um ligado. Concluir este passo também fixa o adaptador e o modelo no agente CEO do espaço de trabalho.
 6. **Voz (opcional)**: instale um modelo de voz no dispositivo para ditado ou ignore este passo.
@@ -38,7 +38,7 @@ O onboarding executa os seus passos por ordem — não há como saltar passos. O
 O Control Center abre então a caixa de entrada do seu espaço de trabalho.
 
 :::note[O que limita uma execução de agente]
-Os comandos dos agentes são envolvidos na sandbox nativa do sistema operativo do anfitrião, quando existe — Seatbelt no macOS, bubblewrap no Linux. O Windows não tem backend nenhum, pelo que aí as execuções são limitadas apenas pelas restantes camadas: a worktree da própria conversa (`git worktree` no Windows; copy-on-write onde o `rift` existe), as credenciais negociadas em cada lançamento e revogadas no desmantelamento e as guardrails de ação. Consulte [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/).
+Os comandos dos agentes são envolvidos na sandbox nativa do sistema operativo do anfitrião, quando existe — Seatbelt no macOS, bubblewrap no Linux. O Windows não tem backend nenhum. Num anfitrião sem nenhum, só arrancam as execuções de agentes do proprietário do servidor, e essas são limitadas apenas pelas restantes camadas: a worktree da própria conversa (`git worktree` no Windows; copy-on-write onde o `rift` existe), as credenciais negociadas em cada lançamento e revogadas no desmantelamento e as guardrails de ação. As execuções de todos os outros são recusadas até o proprietário instalar a sandbox ou desligar o sandboxing para todos. Consulte [Sandbox e segurança](/pt-PT/manual/conceitos/sandbox-e-seguranca/).
 :::
 
 ## Passo 3: adicionar um repositório
@@ -62,7 +62,7 @@ No separador **Definições**, defina:
 
 Clique em **Guardar alterações**.
 
-Na prática, este passo não é opcional. Só o agente CEO herda o adaptador escolhido durante o onboarding; os quatro especialistas são criados sem nenhum. Recorrem ao **Control Center (built-in)** com o modelo predefinido da Anthropic, pelo que só são executados se tiver ligado uma conta Anthropic — e, nesse caso, num modelo que não escolheu.
+Na prática, este passo não é opcional. O passo de adaptador do onboarding define o adaptador e o modelo em todos os agentes que já existiam nessa altura; um espaço de trabalho criado mais tarde semeia os seis sem nada definido. Um agente sem adaptador recorre ao **Control Center (built-in)** com o modelo predefinido da Anthropic, pelo que só são executados se tiver ligado uma conta Anthropic — e, nesse caso, num modelo que não escolheu.
 
 ## Passo 5: enviar uma tarefa ao agente
 

@@ -2,7 +2,7 @@
 title: Chattbryggor
 description: Varför Slack-integrationen kopplar upp utåt i stället för att lyssna, vad som faktiskt auktoriserar ett meddelande som kommer in från chatten och hur en enda brygga kan betjäna vilken chattprodukt som helst.
 slug: sv-SE/handbok/koncept/chattbryggor
-sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
+sourceHash: ee6f53efdb43f53c70c6e267108813985fb39a91
 ---
 
 En chattbrygga gör en extern chattprodukt — i dag Slack — till en
@@ -17,11 +17,9 @@ för Discord, Telegram, Teams eller Matrix någonstans i produkten. Funktionen
 är medvetet skriven leverantörsblind — att lägga till en andra produkt är ett
 enum-värde, en adapter och en plugin — men i dag betyder ”chatt” Slack.
 
-Två ytor täcker det, och de tillhör olika personer. Att ansluta en arbetsyta
-till Slack och att anpassa boten är **admin**-åtgärder under
-Inställningar → Arbetsyta → Allmänt. Att länka sitt eget chattkonto till sin
-identitet i Control Center är en **medlems**åtgärd under
-Inställningar → Arbetsyta → Profil och identitet.
+Två ytor täcker det, och de tillhör olika personer. Att ansluta en arbetsyta till Slack
+och att anpassa boten är **admin**-åtgärder på kortet **Chattbryggor** i Inställningar → Arbetsyta → Integrationer. Att
+länka sitt eget chattkonto till sin identitet i Control Center är en **medlems**åtgärd på kortet **Länkade chattkonton** i Inställningar → Du → Profil.
 
 Tre beslut formar hela funktionen: **vilken riktning anslutningen går i**,
 **vad som auktoriserar ett meddelande som kommer utifrån** och **var den

@@ -37,9 +37,8 @@ class IdeRigCapabilities {
         orElse: () => const IdeRigCapabilities(),
       );
 
-  /// The browsers the server can boot. Empty when the probe has not answered
-  /// or the server is too old to report engines; [RigTabSurfaces.targets]
-  /// reads that as Chromium, which is what such a server runs.
+  /// The browsers the server can boot. Empty until the probe has answered,
+  /// which [RigTabSurfaces.targets] reads as "offer no browser yet".
   final Set<RigBrowserEngine> browserEngines;
 
   /// The rig surfaces the server advertises.

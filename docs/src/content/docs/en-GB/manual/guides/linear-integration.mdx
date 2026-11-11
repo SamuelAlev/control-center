@@ -2,7 +2,7 @@
 title: Set up Linear integration
 description: Sign in to Linear, connect a workspace's Linear automation, and choose Linear as the ticketing provider for new tickets.
 slug: en-GB/manual/guides/linear-integration
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear has two identities in Control Center, and both are browser sign-ins:
@@ -22,7 +22,7 @@ service required — see [Create and manage tickets](/en-GB/manual/guides/manage
 
 ## Choose Linear for the workspace
 
-1. Go to **Settings → Workspace → General** and find the **Ticketing** card
+1. Go to **Settings → Workspace → Integrations** and find the **Ticketing** card
 2. Set **Ticketing provider** to **Linear**
 
 Tickets you create from then on are stamped `provider: linear`. **Local** keeps
@@ -31,7 +31,7 @@ nothing to authenticate to.
 
 ## Sign in to Linear
 
-On the same card, the **Linear** row is yours:
+Your own Linear sign-in is on **Settings → You → Profile**, in the **Ticketing** card:
 
 1. Click **Sign in to Linear**
 2. Approve in your browser
@@ -43,9 +43,14 @@ Anything you do in Linear from Control Center runs on this sign-in and nothing
 else. If you are not signed in, the app asks you to sign in rather than acting
 as somebody else.
 
+The sign-in works in every workspace on the server, unless a workspace has its
+own sign-in apps: that workspace keeps a Linear sign-in of its own. The card
+says which applies.
+
 ## Connect Linear automation
 
-The **Linear automation** row is the workspace's Control Center app in Linear.
+The **Linear automation** row, on the **Ticketing** card in **Settings →
+Workspace → Integrations**, is the workspace's Control Center app in Linear.
 Ticket sync, pipelines and agents write with it, so automated issues and
 comments appear as Control Center rather than as a person.
 
@@ -61,7 +66,7 @@ tracker** rule first.
 
 ## Register your own Linear application
 
-Use your own application when you chose **Use my own apps**. The server's own application applies only then: with Control Center's or a custom Connect, Connect runs every lane, Linear included, and the server's application and service API key stay saved but unused. A workspace's own application ([below](#give-one-workspace-its-own-linear-application)) still applies in every mode.
+Use your own application when you chose **Use my own apps**. The server's own application applies only then: with Control Center's or a custom Connect, Connect runs every lane, Linear included, and the server's application and service API key stay saved but unused. A workspace on its own apps ([below](#give-one-workspace-its-own-linear-application)) uses its own application instead, whatever the server's mode.
 
 1. Create an OAuth application at
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -86,21 +91,20 @@ in its process environment.
 A workspace can sign in to Linear through an application of its own instead of the server's. Only a workspace admin or owner can set it up.
 
 1. Create a Linear OAuth application as in the steps above
-2. Go to **Settings → Workspace → General → Provider apps** and open **Linear**
-3. Choose **Use this workspace's own app**
-4. Add both callback URLs the row shows under **Callback URLs** to the Linear application, verbatim
-5. Paste its **Client id**, and optionally a **Service API key** for this workspace's automation
+2. Go to **Settings → Workspace → Integrations**. On the **Control Center Connect** card, choose **Use my own apps** and click **Apply**
+3. Under Tickets, the **Linear app** card appears. Add both callback URLs it shows under **Callback URLs** to the Linear application, verbatim
+4. Paste its **Client id**, and optionally a **Service API key** for this workspace's automation
 
-The workspace's application then answers every Linear sign-in and automation request in this workspace, whichever way the server signs people in. It never falls back to the server's application or to Connect: until a client id is set, Linear is off in this workspace and the row says what is missing. Its service API key is used only here; without one, sync needs **Connect Linear for automation**.
+The workspace's application then answers every Linear sign-in and automation request in this workspace, whichever way the server signs people in. It never falls back to the server's application or to Connect: until a client id is set, Linear is off in this workspace and the card says what is missing. Its service API key is used only here; without one, sync needs **Connect Linear for automation**.
 
-Switching between the server's application and the workspace's, or changing the workspace's client id, signs everyone in this workspace out of Linear and disconnects its automation. They sign in again through the new application. **Use this server's app** deletes the workspace's saved fields. Secrets are write-only: the row shows only whether one is saved. Other workspaces on the server are not affected.
+**Use my own apps** covers every provider at once: GitHub, Google Calendar and GIF search also run only on the workspace's own apps, each set up beside its provider on the same page. Switching the workspace's sign-in apps, or changing the workspace's client id, signs everyone in this workspace out of Linear and disconnects its automation. They sign in again through the new application. The saved fields stay when the workspace switches back to another choice, but are used only under **Use my own apps**. Secrets are write-only: the card shows only whether one is saved. Other workspaces on the server are not affected.
 
 ## Troubleshooting
 
 ### The Linear row says sign-in isn't set up
 
 The server has neither its own Linear application nor Connect. The server owner
-picks one in **Settings → Server → Single sign-on**. When the workspace uses its own application, the row instead says its setup isn't finished: a workspace admin adds the client id in **Settings → Workspace → General → Provider apps**.
+picks one in **Settings → Server → Single sign-on**. When the workspace uses its own apps, the row instead says its setup isn't finished: a workspace admin adds the client id on the **Linear app** card in **Settings → Workspace → Integrations**.
 
 ### Ticket sync fails with an authentication error
 

@@ -239,9 +239,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get allCaughtUp => '你已全部看完';
 
   @override
-  String get inboxNoForgeAccount => '服务器上未连接 forge 账户，因此还无法将拉取请求归属到你。';
-
-  @override
   String get inboxNothingWaiting => '没有事项被阻塞，也没有拉取请求在等待你处理。';
 
   @override
@@ -440,31 +437,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names 太大，无法从此处通过中继发送。',
-      one: '$names 太大，无法从此处通过中继发送。',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed => '无法上传附件。请重试。';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '有 $count 个附件无法上传，已排除。',
-      one: '有 1 个附件无法上传，已排除。',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => '队友';
 
   @override
@@ -596,35 +568,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noForgeConnected => '服务器上未连接 forge，因此无法获取拉取请求。请从桌面应用连接。';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '有 $count 个仓库无法读取。',
-      one: '有 1 个仓库无法读取。',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return '无法读取：$names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'GitHub App 安装已被暂停';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return '正在显示 $names 的上次已知数据。请在 GitHub 上恢复安装。';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'GitHub App 安装已被暂停。正在显示 $names 的上次已知数据。请在 GitHub 上恢复安装。';
-  }
 
   @override
   String get draft => '草稿';
@@ -1253,7 +1196,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get permissionPrCreate => '创建 pull request';
 
   @override
-  String get permissionPrPublish => '发布 pull request';
+  String get permissionPrPublish => '更新或合并 pull request';
 
   @override
   String get permissionVendorSyncWrite => '写入供应商同步';
@@ -1296,7 +1239,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get permissionBuiltInDefault => '内置默认值';
 
   @override
-  String get permissionRemembered => '已记住的批准';
+  String get permissionRemembered => '持续批准';
 
   @override
   String get permissionSource => '源码';
@@ -1318,9 +1261,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get permissionSetHere => '在此设置规则';
-
-  @override
-  String get permissionRevokeBeforeEdit => '请先撤销此范围内的规则或已记住的规则，再为此操作设置通用规则。';
 
   @override
   String get permissionConfirmRevoke => '确认撤销';
@@ -1370,6 +1310,14 @@ class AppLocalizationsZh extends AppLocalizations {
   String permissionCommands(String commands) {
     return '命令：$commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return '工具：$tools';
+  }
+
+  @override
+  String get permissionNotInEffect => '拒绝此操作时不生效';
 
   @override
   String permissionMaxCount(String count) {
@@ -1801,15 +1749,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Pull request 更新';
-
-  @override
-  String get activityTicket => '工单更新';
-
-  @override
-  String get activityMeeting => '会议更新';
-
-  @override
-  String get activityCalendar => '日历连接';
 
   @override
   String get activityRig => '设备舱更新';
@@ -2463,7 +2402,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get credentialsWaitingForLogin => '正在等待浏览器授权…';
 
   @override
-  String get credentialsConnectCodePrompt => '输入浏览器中显示的代码';
+  String get credentialsConnectCodePrompt => '确认码';
 
   @override
   String get credentialsConnectCodeMalformed => '这看起来不像登录代码。代码由 8 个字母和数字组成。';
@@ -2523,10 +2462,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get credentialsPersonalTokenHint => '粘贴个人访问令牌';
 
   @override
-  String get credentialsHostManaged =>
-      '此连接来自服务器应用或环境。只有服务器所有者能在那里更改；你仍可添加自己的令牌。';
-
-  @override
   String get credentialsStopWatching => '停止监测';
 
   @override
@@ -2545,6 +2480,188 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get permissionHostExecution => '在主机上运行命令';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return '你的 $provider 登录已失效。请重新登录。';
+  }
+
+  @override
+  String get credentialsSignInPaused => '已暂停：此工作区的登录服务已更改。服务恢复后即可再次使用。';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '暂时无法连接 $provider，正在重试。';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => '仅此工作区';
+
+  @override
+  String get credentialsScopeAllWorkspaces => '所有工作区';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      '要从此工作区移除你保存的凭据吗？其他工作区会保留各自的凭据。';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces => '要从共享它的所有工作区移除你保存的凭据吗？';
+
+  @override
+  String get credentialsSignInServerRestarted => '服务器已重启。请重新开始登录。';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return '在 $owner 上安装 GitHub App，让自动化可以访问 $names。轻点即可打开 GitHub。';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return '$owner 上未安装 GitHub App，因此自动化无法访问 $names。请联系工作区管理员安装。';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return '将 $names 添加到 GitHub App 的仓库。轻点即可打开 GitHub。';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App 还看不到 $names。请联系工作区管理员将它们添加到 App 的仓库。';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App 安装已被暂停。在账号所有者于 GitHub 上恢复安装之前，$names 的自动化已暂停。';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return '此工作区自动化的负责人已无法看到 $names，因此不会再代表其在那里运行任何内容。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return '此工作区自动化的负责人尚未登录代码托管平台，因此 $names 的自动化会等待其登录。';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return '无法检查对 $names 的访问权限，正在重试。';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '登录 $forge 即可查看另外 $count 个仓库的 pull request',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 个仓库已隐藏，因为你的 $forge 账号看不到它们',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 个仓库已隐藏，因为你在此工作区中没有访问权限',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '正在检查你对另外 $count 个仓库的访问权限…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Atlassian 账号邮箱';
+
+  @override
+  String get credentialsAtlassianEmailInvalid => '请输入你的 Atlassian 账号邮箱地址。';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API 令牌';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return '没有任何自动化令牌可以读取 $names，因此那里的后台工作已暂停。管理员可以在“设置 → 仓库”中添加一个。';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser => '请在浏览器中确认，然后输入其显示的代码。';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      '此账户已连接到此服务器上的另一位用户。请使用其他账户登录。';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '无法连接 $provider 来检查此令牌。请稍后再试。';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider 不接受此令牌。请检查是否完整复制，以及它是否未被撤销。';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return '这不是个人令牌。请粘贴你自己 $provider 账户中的个人访问令牌，而不是项目、群组、工作区或机器人令牌。';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return '此令牌缺少 $scope 权限范围，而评审和评论需要该权限。请创建包含该权限的令牌。';
+  }
+
+  @override
+  String get credentialsTokenExpired => '此令牌已过期。请创建新令牌并粘贴到此处。';
+
+  @override
+  String get credentialsSignInRateLimited => '当前请求过多。请稍等片刻后重试。';
+
+  @override
+  String get credentialsSignInCancelled => '登录已取消或被拒绝。准备好后请重新开始。';
+
+  @override
+  String get credentialsSignInNoLongerOpen => '此次登录已不再有效：它已被取消、使用或替换。请重新开始。';
+
+  @override
+  String get noWorkspacesYetHint => '需要工作区管理员邀请你，或服务器所有者为你创建工作区。';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos 现在指向 $forge 上的另一个仓库。如需继续使用，请在桌面端或 Web 应用中重新关联。';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos 现在指向 $forge 上的另一个仓库。工作区管理员需要先重新关联，才能再次使用。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => '智能体需要此服务器上的沙箱';
+
+  @override
+  String get runSandboxUnavailable =>
+      '此服务器没有沙箱，因此只有其所有者可以在此运行智能体。所有者可以安装沙箱，或为所有人关闭沙箱。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -2558,7 +2675,16 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get systemSender => '系統';
 
   @override
-  String get credentialsConnectCodePrompt => '輸入瀏覽器中顯示的代碼';
+  String get permissionPrPublish => '更新或合併 pull request';
+
+  @override
+  String get permissionRemembered => '持續核准';
+
+  @override
+  String get permissionNotInEffect => '此操作設為拒絕時不生效';
+
+  @override
+  String get credentialsConnectCodePrompt => '確認代碼';
 
   @override
   String get credentialsConnectCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
@@ -2589,6 +2715,188 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get permissionHostExecution => '在主機上執行指令';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return '你的 $provider 登入已失效。請重新登入。';
+  }
+
+  @override
+  String get credentialsSignInPaused => '已暫停：此工作區的登入服務已變更。服務恢復後即可再次使用。';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '暫時無法連接 $provider，正在重試。';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => '僅限此工作區';
+
+  @override
+  String get credentialsScopeAllWorkspaces => '所有工作區';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      '要從此工作區移除你儲存的憑證嗎？其他工作區會保留各自的憑證。';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces => '要從共用它的所有工作區移除你儲存的憑證嗎？';
+
+  @override
+  String get credentialsSignInServerRestarted => '伺服器已重新啟動。請重新開始登入。';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return '在 $owner 上安裝 GitHub App，讓自動化可以存取 $names。輕觸即可開啟 GitHub。';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return '$owner 上未安裝 GitHub App，因此自動化無法存取 $names。請聯絡工作區管理員安裝。';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return '將 $names 新增至 GitHub App 的存放庫。輕觸即可開啟 GitHub。';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App 還看不到 $names。請聯絡工作區管理員將它們新增至 App 的存放庫。';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App 安裝已暫停。在帳戶擁有者於 GitHub 上恢復安裝之前，$names 的自動化已暫停。';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return '此工作區自動化的負責人已無法看到 $names，因此不會再代表其在那裡執行任何內容。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return '此工作區自動化的負責人尚未登入程式碼代管平台，因此 $names 的自動化會等待其登入。';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return '無法檢查對 $names 的存取權限，正在重試。';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '登入 $forge 即可查看另外 $count 個存放庫的 pull request',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你的 $forge 帳戶看不到它們',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你在此工作區中沒有存取權限',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '正在檢查你對另外 $count 個存放庫的存取權限…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Atlassian 帳戶電子郵件';
+
+  @override
+  String get credentialsAtlassianEmailInvalid => '請輸入你的 Atlassian 帳戶電子郵件地址。';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API 權杖';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return '沒有任何自動化權杖可以讀取 $names，因此那裡的背景工作已暫停。管理員可以在「設定 → 儲存庫」中加入一個。';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser => '請在瀏覽器中確認，然後輸入它顯示的代碼。';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      '此帳戶已連接到此伺服器上的另一位用戶。請使用其他帳戶登入。';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '無法連接至 $provider 以檢查此權杖。請稍後再試。';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider 不接受此權杖。請確認你已完整複製，且它未被撤銷。';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return '這不是個人權杖。請貼上你自己 $provider 帳戶的個人存取權杖，而非專案、群組、工作區或機器人的權杖。';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return '此權杖缺少 $scope 範圍，而審查與留言需要它。請建立包含該範圍的權杖。';
+  }
+
+  @override
+  String get credentialsTokenExpired => '此權杖已過期。請建立新的權杖並貼到這裡。';
+
+  @override
+  String get credentialsSignInRateLimited => '目前請求過多。請稍候一下，然後再試一次。';
+
+  @override
+  String get credentialsSignInCancelled => '登入已取消或遭拒絕。準備好時請再重新開始。';
+
+  @override
+  String get credentialsSignInNoLongerOpen => '此登入已不再開啟：它已被取消、使用或取代。請重新開始。';
+
+  @override
+  String get noWorkspacesYetHint => '工作區管理員必須邀請你，或伺服器擁有者可以為你建立工作區。';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos 現在在 $forge 上指向另一個存放庫。請在桌面版或網頁版中重新連接，以繼續使用。';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos 現在在 $forge 上指向另一個存放庫。工作區管理員必須重新連接後，才能再次使用。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => '代理需要此伺服器上的沙箱';
+
+  @override
+  String get runSandboxUnavailable =>
+      '此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。擁有者可以安裝沙箱，或為所有人關閉沙箱功能。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -2827,9 +3135,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get allCaughtUp => '你已全部讀完';
 
   @override
-  String get inboxNoForgeAccount => '伺服器尚未連線 forge 帳戶，因此目前無法將拉取請求歸屬於你。';
-
-  @override
   String get inboxNothingWaiting => '沒有任何事項被阻擋，也沒有拉取請求在等你處理。';
 
   @override
@@ -3029,31 +3334,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names 過大，無法從這裡透過中繼傳送。',
-      one: '$names 過大，無法從這裡透過中繼傳送。',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed => '無法上傳附件。請再試一次。';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '有 $count 個附件無法上傳，已略過。',
-      one: '有 1 個附件無法上傳，已略過。',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => '隊友';
 
   @override
@@ -3185,35 +3465,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get noForgeConnected => '伺服器尚未連線任何 forge，因此無法擷取提取要求。請從桌面應用程式連線。';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '無法讀取 $count 個儲存庫。',
-      one: '無法讀取 1 個儲存庫。',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return '無法讀取：$names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'GitHub App 安裝已暫停';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return '正在顯示 $names 的上次已知資料。請在 GitHub 上恢復安裝。';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'GitHub App 安裝已暫停。正在顯示 $names 的上次已知資料。請在 GitHub 上恢復安裝。';
-  }
 
   @override
   String get draft => '草稿';
@@ -3842,7 +4093,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get permissionPrCreate => '建立 pull request';
 
   @override
-  String get permissionPrPublish => '發佈 pull request';
+  String get permissionPrPublish => '更新或合併 pull request';
 
   @override
   String get permissionVendorSyncWrite => '寫入供應商同步資料';
@@ -3885,7 +4136,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get permissionBuiltInDefault => '內建預設';
 
   @override
-  String get permissionRemembered => '已記住的核准';
+  String get permissionRemembered => '持續核准';
 
   @override
   String get permissionSource => '原始碼';
@@ -3907,9 +4158,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get permissionSetHere => '在此設定規則';
-
-  @override
-  String get permissionRevokeBeforeEdit => '請先撤銷此範圍內的規則或已記住的規則，再為此操作設定通用規則。';
 
   @override
   String get permissionConfirmRevoke => '確認撤銷';
@@ -3959,6 +4207,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String permissionCommands(String commands) {
     return '命令：$commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return '工具：$tools';
+  }
+
+  @override
+  String get permissionNotInEffect => '此動作設為拒絕時不生效';
 
   @override
   String permissionMaxCount(String count) {
@@ -4390,15 +4646,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get activityPullRequest => 'Pull request 更新';
-
-  @override
-  String get activityTicket => '工單更新';
-
-  @override
-  String get activityMeeting => '會議更新';
-
-  @override
-  String get activityCalendar => '行事曆連線';
 
   @override
   String get activityRig => '設備艙更新';
@@ -5051,7 +5298,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get credentialsWaitingForLogin => '正在等待瀏覽器授權…';
 
   @override
-  String get credentialsConnectCodePrompt => '輸入瀏覽器中顯示的代碼';
+  String get credentialsConnectCodePrompt => '確認代碼';
 
   @override
   String get credentialsConnectCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
@@ -5111,10 +5358,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get credentialsPersonalTokenHint => '貼上個人存取權杖';
 
   @override
-  String get credentialsHostManaged =>
-      '此連線來自伺服器應用程式或環境。只有伺服器擁有者能在該處變更；你仍可新增自己的權杖。';
-
-  @override
   String get credentialsStopWatching => '停止監看';
 
   @override
@@ -5133,4 +5376,186 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get permissionHostExecution => '在主機上執行指令';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return '你的 $provider 登入已失效。請重新登入。';
+  }
+
+  @override
+  String get credentialsSignInPaused => '已暫停：此工作區的登入服務已變更。服務恢復後即可再次使用。';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '暫時無法連線至 $provider，正在重試。';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => '僅限此工作區';
+
+  @override
+  String get credentialsScopeAllWorkspaces => '所有工作區';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      '要從此工作區移除你儲存的憑證嗎？其他工作區會保留各自的憑證。';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces => '要從共用它的所有工作區移除你儲存的憑證嗎？';
+
+  @override
+  String get credentialsSignInServerRestarted => '伺服器已重新啟動。請重新開始登入。';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return '在 $owner 上安裝 GitHub App，讓自動化可以存取 $names。輕觸即可開啟 GitHub。';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return '$owner 上未安裝 GitHub App，因此自動化無法存取 $names。請聯絡工作區管理員安裝。';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return '將 $names 新增至 GitHub App 的存放庫。輕觸即可開啟 GitHub。';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App 還看不到 $names。請聯絡工作區管理員將它們新增至 App 的存放庫。';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App 安裝已暫停。在帳號擁有者於 GitHub 上恢復安裝之前，$names 的自動化已暫停。';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return '此工作區自動化的負責人已無法看到 $names，因此不會再代表其在那裡執行任何內容。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return '此工作區自動化的負責人尚未登入程式碼代管平台，因此 $names 的自動化會等待其登入。';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return '無法檢查對 $names 的存取權限，正在重試。';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '登入 $forge 即可查看另外 $count 個存放庫的 pull request',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你的 $forge 帳號看不到它們',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你在此工作區中沒有存取權限',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '正在檢查你對另外 $count 個存放庫的存取權限…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Atlassian 帳號電子郵件';
+
+  @override
+  String get credentialsAtlassianEmailInvalid => '請輸入你的 Atlassian 帳號電子郵件地址。';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API 權杖';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return '沒有任何自動化權杖可以讀取 $names，因此那裡的背景工作已暫停。管理員可以在「設定 → 儲存庫」中新增一個。';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser => '請在瀏覽器中確認，然後輸入它顯示的代碼。';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      '此帳戶已連結到此伺服器上的另一位使用者。請使用其他帳戶登入。';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '無法連線至 $provider 以檢查此權杖。請稍後再試。';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider 不接受此權杖。請確認你已完整複製，且它未被撤銷。';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return '這不是個人權杖。請貼上你自己 $provider 帳戶的個人存取權杖，而非專案、群組、工作區或機器人的權杖。';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return '此權杖缺少 $scope 範圍，而審查與留言需要它。請建立包含該範圍的權杖。';
+  }
+
+  @override
+  String get credentialsTokenExpired => '此權杖已過期。請建立新的權杖並貼到這裡。';
+
+  @override
+  String get credentialsSignInRateLimited => '目前請求過多。請稍候一下，然後再試一次。';
+
+  @override
+  String get credentialsSignInCancelled => '登入已取消或遭拒絕。準備好時請再重新開始。';
+
+  @override
+  String get credentialsSignInNoLongerOpen => '此登入已不再開啟：它已被取消、使用或取代。請重新開始。';
+
+  @override
+  String get noWorkspacesYetHint => '工作區管理員必須邀請你，或伺服器擁有者可以為你建立工作區。';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos 現在在 $forge 上指向另一個存放庫。請在桌面版或網頁版中重新連結，以繼續使用。';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos 現在在 $forge 上指向另一個存放庫。工作區管理員必須重新連結後，才能再次使用。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => '代理需要此伺服器上的沙箱';
+
+  @override
+  String get runSandboxUnavailable =>
+      '此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。擁有者可以安裝沙箱，或為所有人關閉沙箱功能。';
 }

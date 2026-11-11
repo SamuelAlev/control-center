@@ -1,41 +1,46 @@
-/// Shared key in the user-preferences and workspace-settings stores.
+/// Shared key of the commit attribution setting in the user-preferences and
+/// workspace-settings stores.
 const String agentCommitAttributionSettingKey = 'agent_commit_attribution';
 
 /// Commit policy shared by every adapter. Keep this shell-preflight safe.
 const String agentCommitAttributionInstruction =
-    'Use the supplied requesting user Git identity as both author and committer '
-    'for every commit; do not override it with an agent identity. '
-    'If CC_GIT_COAUTHOR_TRAILER is nonempty, append its exact value to the '
-    'commit message. Otherwise do not add agent or AI co-author trailers. '
+    'Use the supplied Git author and committer identities for every commit; '
+    'do not override them. '
+    'Leave commit signing exactly as it is configured: never turn it on, off '
+    'or around, never sign tags, and never add Signed-off-by. '
+    'If CC_GIT_COAUTHOR_TRAILER is nonempty, end every commit message with '
+    'its exact lines as the only co-author trailer lines. Add no other '
+    'Co-authored-by line, agent, AI or human: a push carrying one is refused. '
     'Do not add generated-by footers to commits or pull requests. '
     'Pass this attribution policy to every delegated agent.';
 
-/// A workspace may override every member or defer to each member's preference.
+/// A workspace may decide commit attribution for every member or leave it to
+/// each member's own preference.
 enum AgentAttributionOverride {
-  /// Leave the decision to each member; an unset user preference defaults on.
+  /// Each member decides; an unset preference is on.
   inherit,
 
-  /// Credit Control Center as co-author regardless of the member's preference.
+  /// Co-author credit is on for everyone.
   enabled,
 
-  /// Use only the requesting member's Git identity.
+  /// Co-author credit is off for everyone.
   disabled;
 
-  /// Missing or unrecognized stored values inherit the user preference.
+  /// Missing or unrecognized stored values inherit the member's preference.
   static AgentAttributionOverride fromStored(String? value) => switch (value) {
     'true' => AgentAttributionOverride.enabled,
     'false' => AgentAttributionOverride.disabled,
     _ => AgentAttributionOverride.inherit,
   };
 
-  /// The wire value, or null to remove the workspace override.
+  /// The stored value, or null to remove the workspace override.
   String? get storedValue => switch (this) {
     AgentAttributionOverride.inherit => null,
     AgentAttributionOverride.enabled => 'true',
     AgentAttributionOverride.disabled => 'false',
   };
 
-  /// The forced choice, or null when members can choose for themselves.
+  /// The forced choice, or null when members choose for themselves.
   bool? get value => switch (this) {
     AgentAttributionOverride.inherit => null,
     AgentAttributionOverride.enabled => true,
@@ -43,7 +48,12 @@ enum AgentAttributionOverride {
   };
 }
 
-/// Resolves agent attribution; workspace override → user preference → on.
+/// Whether commits that involve a member carry co-author credit: the
+/// workspace override when there is one, else the member's preference, else
+/// on.
+///
+/// On a person's commits the credit names Control Center; on an automation's
+/// commits it names the people accountable for it.
 bool resolveAgentCommitAttribution({
   required String? userPreference,
   required String? workspaceOverride,

@@ -4,6 +4,7 @@ import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
@@ -309,7 +310,13 @@ class _FakeUserRepository implements UserRepository {
   Future<User?> getByHandle(String handle) async => byHandle[handle];
 
   @override
-  Future<User?> getByEmail(String email) async => byEmail[email];
+  Future<User?> getByVerifiedEmail(String email) async => byId.values
+      .where((u) => u.email == email && u.emailVerified)
+      .firstOrNull;
+
+  @override
+  Future<List<User>> getAllByEmail(String email) async =>
+      byId.values.where((u) => u.email == email).toList();
 
   @override
   Future<User?> getBySsoSubject(String issuer, String subject) async {
@@ -329,6 +336,16 @@ class _FakeUserRepository implements UserRepository {
       byEmail[user.email!] = user;
     }
   }
+  @override
+  Future<User> insertWithFreeHandle(User user) async {
+    final free = Username.candidates(
+      Username.parse(user.handle),
+    ).firstWhere((c) => byHandle[c.value] == null);
+    final stored = user.copyWith(handle: free.value);
+    await upsert(stored);
+    return stored;
+  }
+
 
   @override
   Future<List<User>> getAll() async => byId.values.toList()

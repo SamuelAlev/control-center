@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
 import 'package:cc_harness/tools.dart';
@@ -73,10 +74,13 @@ void main() {
       );
       expect(prompt.command, script);
       expect(prompt.actionClasses, contains('gitPush'));
-      // The request named no refs, so there is no branch to remember, and a
-      // standing approval of this exact script would never match again.
-      expect(prompt.rememberChoice, isNull);
-      expect(prompt.constraintJson, isNull);
+      // The request named no refs, so the push is remembered by this exact
+      // script; the push gateway still asks about the real branch.
+      expect(prompt.rememberChoice, isNotNull);
+      expect(
+        ActionConstraint.decode(prompt.constraintJson),
+        const ActionConstraint(commands: [script]),
+      );
     },
   );
 

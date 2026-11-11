@@ -2,7 +2,7 @@
 title: Een pipeline-sjabloon maken
 description: Stel in de pipeline-editor een DAG-werkstroomsjabloon samen — voeg nodes toe, verbind ze, declareer invoer en maak het uitvoerbaar.
 slug: nl-NL/handleiding/gidsen/pipeline-maken
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Pipeline-sjablonen stel je samen in de werkruimte-instellingen. Het item
@@ -40,7 +40,7 @@ komt te staan waar je hem loslaat, zonder inkomende verbinding.
 | **Bash script**                | listen    | Voert een shellscript uit met `{{state}}`-substitutie; er wordt geen agent gedispatcht    |
 | **Open conversation**          | listen    | Opent de enige zichtbare ruimte van de run en de checkout ervan; agent-nodes voegen zich bij deze ruimte |
 | **Clone PR branch**            | listen    | Vindt de head-branch van de PR via `gh pr view` en kloont die naar de map van de run      |
-| **Post PR comment**            | listen    | Plaatst de gebundelde bevindingen als GitHub-reviewcommentaar op de PR                    |
+| **Post PR comment**            | listen    | Plaatst een reviewcommentaar op de PR vanaf de server: de bevindingen, of zijn `message`                    |
 | **Reviewer (prompt)**          | listen    | Dispatcht een gespecialiseerde reviewer-agent; blijft onderbroken tot de agent zijn resultaat indient |
 | **Consolidate (join)**         | join      | Wacht op meerdere stroomopwaartse takken en vraagt daarna een agent hun uitvoer te bundelen |
 | **Custom prompt**              | listen    | Algemene, promptgestuurde node via de body `promptAgent`                                  |
@@ -141,6 +141,7 @@ geen van beide configureerbaar is:
   `GITHUB_TOKEN` een token dat alleen die ene repo kan lezen, dus `gh` en
   `git clone` werken daarop zonder verdere configuratie. Anders is er geen
   GitHub-token.
+- Een script kan niet naar GitHub schrijven: `gh pr comment`, `gh pr merge`, `gh pr create` en `git push` mislukken met dat token. Plaats in plaats daarvan een opmerking met een **Post PR comment**-node (stel `extras.message` in om je eigen tekst te plaatsen, met `{{key}}`-plaatshouders, in plaats van de gebundelde bevindingen). Push en open pull requests vanuit een agentnode: de `git push` loopt via de run-gateway en de PR wordt geopend met de tool `open_pull_request`. Samenvoegen is aan een persoon; geen enkele node voegt samen.
 - Alleen een beheerder van de werkruimte kan een pipeline met een bash-stap
   maken of bewerken.
 - Het script wordt gestart als het letterlijke uitvoerbare bestand `bash`, dus

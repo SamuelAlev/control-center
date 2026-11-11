@@ -9,11 +9,12 @@ mixin _EnsureOps
     required String spaceId,
     String? definitionId,
     Map<String, dynamic> options = const {},
+    bool attended = false,
     required Principal by,
   }) async {
     final space = await _space(workspaceId, spaceId);
     final loaded = await _pick(space, definitionId);
-    return _ensureIn(space, loaded, options, by);
+    return _ensureIn(space, loaded, options, by, attended: attended);
   }
 
   /// The definition to start: the one named, the one already running here, or
@@ -66,6 +67,7 @@ mixin _EnsureOps
     _Loaded loaded,
     Map<String, dynamic> options,
     Principal by, {
+    bool attended = false,
     Map<String, String> extraEnvironment = const {},
   }) {
     if (_isReleasing(space.workspaceId, space.id)) {
@@ -88,7 +90,14 @@ mixin _EnsureOps
     final future =
         _exclusive(
           key,
-          () => _ensureLocked(space, loaded, options, by, extraEnvironment),
+          () => _ensureLocked(
+            space,
+            loaded,
+            options,
+            by,
+            extraEnvironment,
+            attended: attended,
+          ),
         ).whenComplete(() {
           // A block, not an arrow: `remove` returns this very future, and
           // `whenComplete` waits for whatever its callback returns.
@@ -102,8 +111,9 @@ mixin _EnsureOps
     _Loaded loaded,
     Map<String, dynamic> given,
     Principal by,
-    Map<String, String> extraEnvironment,
-  ) async {
+    Map<String, String> extraEnvironment, {
+    required bool attended,
+  }) async {
     final ws = space.workspaceId;
     final existing = await _rowOf(ws, space.id, loaded.id);
     final options = _resolveOptions(
@@ -120,6 +130,7 @@ mixin _EnsureOps
       );
       return touched ?? existing;
     }
+    await _requireHostApproval(loaded);
     final placement = await _admit(space, loaded.definition, by);
     // Read here, not from [space]: that was read before this start was on
     // record, and [whileHeadMoves] holds the head still only from then on.
@@ -138,6 +149,7 @@ mixin _EnsureOps
         mode: existing == null || existing.status == EnvironmentStatus.gone
             ? _StartMode.create
             : _StartMode.resume,
+        attended: attended,
         extraEnvironment: extraEnvironment,
       );
       if (space.isFork && placement == EnvironmentPlacement.host) {
@@ -182,14 +194,17 @@ mixin _EnsureOps
   /// Admission again, for everything that runs code in an environment that
   /// already exists.
   ///
-  /// Only a fork PR on the host needs it: there, code nobody reviewed runs as
-  /// the server's user. The policy may have changed since the start, and an
-  /// approval covers the head it was given for, not whatever was pushed next.
+  /// Its definition must still be one the current server owner approved when
+  /// it runs anything on the host. Beyond that, only a fork PR on the host
+  /// needs it: there, code nobody reviewed runs as the server's user. The
+  /// policy may have changed since the start, and an approval covers the head
+  /// it was given for, not whatever was pushed next.
   Future<void> _readmit(
     SpaceEnvironment env,
     EnvironmentSpaceInfo space,
     Principal by,
   ) async {
+    await _requireHostApprovalOf(env.workspaceId, env.definitionId);
     if (!space.isFork || env.placement != EnvironmentPlacement.host.name) {
       return;
     }

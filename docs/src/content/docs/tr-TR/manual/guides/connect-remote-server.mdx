@@ -2,7 +2,7 @@
 title: Uzak bir sunucuya bağlanma
 description: Masaüstü uygulamasını veya web istemcisini başka bir yerde çalışan bir cc_server’a yönlendirin ve sunucular arasında yeniden başlatmadan geçiş yapın.
 slug: tr-TR/kilavuz/nasil-yapilir/uzak-sunucuya-baglanma
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Her istemci, verilerin sahibi olan bir `cc_server` üzerinde arayüz çizen bir
@@ -88,6 +88,8 @@ kaynağında çalışır; Service Worker'ı istekleri kimliği doğrulanmış ş
 üzerinden `cc_server` üzerindeki code-server arka ucuna taşır. Service Worker'lar
 kullanılabilsin diye web istemcisini HTTPS ya da güvenli loopback üzerinden barındırın.
 Yerel istemciler yetenekle sınırlandırılmış bir loopback cephesi kullanır.
+
+Gömülü code-server düzenleyicisini yalnızca sunucu sahibi açabilir: sunucuda sunucunun kendi kullanıcısı olarak çalışır. Bir oturum, onu açan cihaza ve kişiye aittir. VS Code'un çalışma alanı güveni açık olarak açılır; bu yüzden VS Code bir klasöre güvenmeden önce sorar ve otomatik görevler kapalıdır. Diğer herkes yerleşik tek dosyalı düzenleyiciyi ve dosya görünümlerini kullanmaya devam eder.
 :::
 
 ### Tarayıcının yapmadıkları
@@ -102,9 +104,9 @@ yerel bir pencereye ya da makinenin kendi cihazlarına ihtiyaç duyar:
 
 İki tanesi eksik olmak yerine farklı davranır. Toplantı **kaydı** tarayıcıda
 çalışır; mikrofonunuzu ve ses parçası içeren bir ekran paylaşımını yakalar.
-**Düzenleyicide aç** da çalışır, ancak sunucudan düzenleyiciyi _sunucunun_
-ekranında başlatmasını ister; bu yüzden kurulu düzenleyicisi olmayan headless
-bir ana makinede düğme kendini gizler.
+Düzenleyicinizin adını taşıyan düğme (örneğin **VS Code'da aç**) sunucudan düzenleyiciyi
+_sunucunun_ ekranında başlatmasını ister; bu yüzden yalnızca sunucu sahibine sunulur
+ve kurulu düzenleyicisi olmayan headless bir ana makinede düğme kendini gizler.
 
 ## Sorun giderme
 

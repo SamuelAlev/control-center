@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_mcp/cc_mcp.dart';
@@ -15,8 +14,8 @@ import 'package:test/test.dart';
 
 /// Proof of the single-port MCP topology: the MCP Streamable HTTP transport
 /// (`POST /mcp`, `GET /sse`, OPTIONS preflight) rides the main cc_server
-/// listener when a handler is mounted, 404s when none is and a tokenless
-/// surface never answers off-host clients (fail closed).
+/// listener when a handler is mounted, 404s when none is, and answers no
+/// caller without a credential, loopback included.
 void main() {
   group('MCP mount on the main listener', () {
     late LocalRpcServer server;
@@ -36,7 +35,7 @@ void main() {
       await server.start();
       serverPort = server.boundPort;
       handler = McpRequestHandler(
-        config: const McpConfig(enabled: true),
+        token: 'owner-token',
         dispatcher: McpToolDispatcher(
           registry: McpToolRegistry([_StubTool('alpha')]),
         ),
@@ -47,11 +46,17 @@ void main() {
       await server.stop();
     });
 
-    Future<HttpClientResponse> post(Map<String, dynamic> body) async {
+    Future<HttpClientResponse> post(
+      Map<String, dynamic> body, {
+      String? token = 'owner-token',
+    }) async {
       final client = HttpClient();
       try {
         final request = await client.post('127.0.0.1', serverPort, '/mcp');
         request.headers.contentType = ContentType.json;
+        if (token != null) {
+          request.headers.set('Authorization', 'Bearer $token');
+        }
         request.write(jsonEncode(body));
         return await request.close();
       } finally {
@@ -86,6 +91,7 @@ void main() {
           'OPTIONS',
           Uri.parse('http://127.0.0.1:$serverPort/mcp'),
         );
+        request.headers.set('Origin', 'http://localhost:6274');
         final resp = await request.close();
         expect(resp.statusCode, 204);
         expect(resp.headers.value('access-control-allow-origin'), isNotNull);
@@ -93,6 +99,17 @@ void main() {
       } finally {
         client.close();
       }
+    });
+
+    test('a loopback caller without a credential is refused', () async {
+      server.mcpHandler = handler;
+      final resp = await post({
+        'jsonrpc': '2.0',
+        'method': 'ping',
+        'id': 1,
+      }, token: null);
+      await resp.drain<void>();
+      expect(resp.statusCode, 401);
     });
 
     test('/mcp 404s once the handler is unmounted', () async {
@@ -107,26 +124,6 @@ void main() {
       final resp = await post({'jsonrpc': '2.0', 'method': 'ping', 'id': 1});
       await resp.drain<void>();
       expect(resp.statusCode, 404);
-    });
-  });
-
-  group('mcpRemoteClientAllowed', () {
-    final loopback = InternetAddress.loopbackIPv4;
-    final lan = InternetAddress('192.168.1.20');
-
-    test('loopback is always allowed', () {
-      expect(mcpRemoteClientAllowed(remote: loopback, hasToken: false), isTrue);
-      expect(mcpRemoteClientAllowed(remote: loopback, hasToken: true), isTrue);
-    });
-
-    test('off-host requires a bearer token (fail closed)', () {
-      expect(mcpRemoteClientAllowed(remote: lan, hasToken: false), isFalse);
-      expect(mcpRemoteClientAllowed(remote: lan, hasToken: true), isTrue);
-    });
-
-    test('unknown remote is treated as off-host', () {
-      expect(mcpRemoteClientAllowed(remote: null, hasToken: false), isFalse);
-      expect(mcpRemoteClientAllowed(remote: null, hasToken: true), isTrue);
     });
   });
 }

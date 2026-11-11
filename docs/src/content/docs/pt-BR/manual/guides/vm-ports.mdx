@@ -2,7 +2,7 @@
 title: Encaminhar portas a partir de um terminal
 description: Alcance um servidor de desenvolvimento iniciado em um Terminal (VM) ou em um shell do host — da sua máquina, do Navegador (VM), do Android, na sua rede ou sob um domínio de desenvolvimento com HTTPS.
 slug: pt-BR/manual/guias/portas-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Um servidor que você inicia no terminal de uma conversa é publicado apenas para **aquele espaço**. O painel de portas detecta os processos que este app iniciou lá e que estão escutando, mapeia-os e dá a você um endereço para cada lugar de onde você possa querer alcançá-los. Dois espaços podem ambos escutar na `5173`; seus mapas nunca se misturam.
@@ -11,7 +11,7 @@ Nada aqui abre a máquina: cada caminho é criado pelo servidor, sob demanda, e 
 
 ## Ver o que está escutando
 
-1. Abra o **Terminal (VM)** ou o shell do host da conversa (em um espaço ou na página de uma PR).
+1. No editor da conversa (em um espaço ou na página de uma PR), abra **Terminal** pelo menu `+`: em **Máquinas** para um shell na VM da conversa, ou em **Ferramentas** para um terminal no servidor. Somente o proprietário do servidor pode abrir um shell do host; o terminal de qualquer outra pessoa fica em sandbox.
 2. Inicie seu servidor — `pnpm dev`, `python -m http.server 8000`, qualquer coisa.
 3. Em poucos segundos, o **ícone de plugue** no canto superior direito do terminal
    ganha um ponto. Clique nele.
@@ -122,6 +122,10 @@ está escutando* até ele voltar —, ao passo que os encaminhamentos automátic
 desaparecem quando a porta deles desaparece. Em um shell do host, você também
 pode definir uma porta local diferente.
 
+Alterar encaminhamentos exige uma concessão de escrita em todos os repositórios que o espaço expõe. Com acesso de leitura você ainda vê as portas, e o painel diz "Alterar estas portas exige acesso de escrita a todos os repositórios deste espaço." no lugar de **Adicionar porta**. Veja [Quem pode observar e quem pode controlar](/pt-BR/manual/guias/usar-rigs/#quem-pode-observar-e-quem-pode-controlar).
+
+Um terminal que alguém abriu para si mesmo mantém as suas portas somente para essa pessoa: para qualquer outra, a lista de portas dele e as alterações de portas respondem como se a sessão não existisse, exatamente como a própria sessão. Terminais compartilhados em um espaço seguem a regra do espaço acima.
+
 ## Como ele permanece contido
 
 As portas têm como chave o espaço de trabalho e o espaço. O próprio mapa de
@@ -133,9 +137,9 @@ abertos para o Navegador (VM) e o Android. Um shell do host nunca varre a máqui
 inteira. Nenhum processo de escuta é criado dentro de um convidado sem que o
 servidor o tenha colocado lá, e tudo é desmontado junto com o terminal ou o rig.
 O design é explicado em
-[Rigs e recintos](/pt-BR/manual/conceitos/rigs/#ports-without-holes); as portas
+[Rigs e recintos](/pt-BR/manual/conceitos/rigs/#portas-sem-brechas); as portas
 reservadas exatas e as regras de domínio estão na
-[referência de rigs](/pt-BR/manual/referencia/rigs/#ports-and-dev-domains).
+[referência de rigs](/pt-BR/manual/referencia/rigs/#portas-e-domínios-de-desenvolvimento).
 
 ## Relacionados
 

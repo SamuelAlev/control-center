@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_capabilities.dart';
@@ -14,7 +15,6 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart'
     show RigLaunchException, RigToolException;
-import 'package:cc_infra/src/rigs/rig_browser_defaults.dart';
 import 'package:cc_infra/src/rigs/rig_exec_defaults.dart'
     show kExecRigAptMirrors;
 import 'package:cc_infra/src/rigs/rig_machine.dart';
@@ -1195,7 +1195,7 @@ class SmolvmEnclosureBackend {
       image = defaultImage;
     } else if (!isExec && engine != RigBrowserEngine.chromium) {
       // A workspace's custom BROWSER image is a Chromium-oriented image: the
-      // setting predates engines, and the workload installs/launches Chromium.
+      // setting is not per engine, and the workload installs/launches Chromium.
       // Handing it to Firefox or WebKit would install and launch a different
       // engine than the selected one. The override is skipped rather than
       // half-applied, and said out loud so it does not read as ignored.

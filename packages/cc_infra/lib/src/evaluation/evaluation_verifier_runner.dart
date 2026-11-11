@@ -15,8 +15,8 @@ import 'package:path/path.dart' as p;
 
 /// Runs deterministic acceptance checks. Controlled campaigns accept only
 /// typed oracles: expected values remain in the controller, and submitted code
-/// runs in a separate contained process without a checker mount. The legacy
-/// noncontrolled CLI still supports its explicit local trusted-script checks;
+/// runs in a separate contained process without a checker mount. The
+/// noncontrolled CLI supports its explicit local trusted-script checks;
 /// it is not a security boundary for untrusted skill campaigns.
 class EvaluationVerifierRunner {
   /// Creates an [EvaluationVerifierRunner].

@@ -2,7 +2,7 @@
 title: Rigi i izolacje
 description: Dlaczego agenci dostają jednorazowe maszyny zamiast Twojego komputera — granice izolacji, tory wyświetlania, poświadczenia, porty i cykl życia.
 slug: pl-PL/podrecznik/koncepcje/rigi
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 **Rig** to jednorazowa maszyna, którą agent steruje w czasie rzeczywistym —
@@ -256,7 +256,8 @@ robić coś innego.
 Rig celowo **nie** jest globalnym miejscem docelowym. Podgląd na żywo to karta w
 przestrzeni albo PR, w których dzieje się praca, ograniczona do tej rozmowy —
 więc Twoja karta i wywołania `browser_use` agenta adresują *jedną* maszynę (po
-jednej na silnik, na powierzchni przeglądarki). To, czy rigi mogą się w ogóle
+jednej na silnik, na powierzchni przeglądarki). Rig otwarty w przestrzeni jest maszyną tej przestrzeni, z dostępem do jej worktree, więc podąża za repozytoriami przestrzeni: dostęp do odczytu przestrzeni pozwala go obserwować, a uprawnienie zapisu do tych repozytoriów pozwala nim sterować. Rig, który nie należy do żadnej przestrzeni, nie sięga do żadnego worktree i może z niego korzystać każdy członek obszaru roboczego. [Kto może obserwować, a kto sterować](/pl-PL/podrecznik/poradniki/uzywanie-rigow/#kto-może-obserwować-a-kto-sterować) opisuje, co obejmuje każde z tych uprawnień.
+To, czy rigi mogą się w ogóle
 uruchamiać, jest właściwością hosta, więc możliwości, obrazy, niestandardowe
 obrazy obszaru roboczego i lista działających maszyn znajdują się w
 **Ustawienia → Serwer → Rigi**. Sterowanie izolacją to odrębna [klasa działań

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,9 +42,7 @@ const int kRepoDirectoryPageSize = 500;
 /// Calls the server's `repos.listDirectory` op and decodes one cursor page.
 ///
 /// The single client-side decode site for that op — the Explorer tree is the
-/// only consumer. When the connected server doesn't expose the op (it predates
-/// lazy listings), resolves to an empty terminal page rather than throwing, so
-/// a stale server degrades to an empty tree instead of an error panel.
+/// only consumer.
 Future<({List<RepoDirectoryEntry> entries, bool hasMore})>
 fetchRepoDirectoryListing(
   RemoteRpcClient client, {
@@ -56,29 +53,22 @@ fetchRepoDirectoryListing(
   int limit = kRepoDirectoryPageSize,
   String? spaceId,
 }) async {
-  try {
-    final data = await client.call('repos.listDirectory', {
-      'workspace_id': workspaceId,
-      'repo_id': repoId,
-      'path': path,
-      'cursor': cursor,
-      'limit': limit,
-      'space_id': ?spaceId,
-    });
-    final entries = <RepoDirectoryEntry>[
-      for (final e in ((data['entries'] as List?) ?? const []).whereType<Map>())
-        (
-          relativePath: e['relativePath'] as String? ?? '',
-          isDirectory: e['isDirectory'] as bool? ?? false,
-        ),
-    ];
-    return (entries: entries, hasMore: data['has_more'] as bool? ?? false);
-  } on RemoteRpcException catch (e) {
-    if (e.code == RpcErrorCodes.opUnknown) {
-      return (entries: const <RepoDirectoryEntry>[], hasMore: false);
-    }
-    rethrow;
-  }
+  final data = await client.call('repos.listDirectory', {
+    'workspace_id': workspaceId,
+    'repo_id': repoId,
+    'path': path,
+    'cursor': cursor,
+    'limit': limit,
+    'space_id': ?spaceId,
+  });
+  final entries = <RepoDirectoryEntry>[
+    for (final e in ((data['entries'] as List?) ?? const []).whereType<Map>())
+      (
+        relativePath: e['relativePath'] as String? ?? '',
+        isDirectory: e['isDirectory'] as bool? ?? false,
+      ),
+  ];
+  return (entries: entries, hasMore: data['has_more'] as bool? ?? false);
 }
 
 /// Accumulates one directory's cursor pages into a complete listing.
@@ -102,6 +92,12 @@ class RepoDirectoryListingNotifier
   /// `entries` are re-ordered for display, and `entries.last` there names an
   /// arbitrary file — paging from it would skip most of the directory.
   String _cursor = '';
+
+  /// Why the last later-page fetch failed, while `failed` is set, so the
+  /// tree can word a refusal (a forge sign-in, no read access) instead of a
+  /// generic failure. A failed first page is the provider's own error.
+  Object? get lastFailure => _lastFailure;
+  Object? _lastFailure;
 
   @override
   Future<RepoDirectoryListingState> build() async {
@@ -150,13 +146,15 @@ class RepoDirectoryListingNotifier
       if (page.entries.isNotEmpty) {
         _cursor = page.entries.last.relativePath;
       }
+      _lastFailure = null;
       state = AsyncData((
         entries: _displayOrder([...current.entries, ...page.entries]),
         hasMore: page.hasMore,
         loadingMore: false,
         failed: false,
       ));
-    } on Object {
+    } on Object catch (e) {
+      _lastFailure = e;
       // Keep what we have; `failed` stops the auto-drain from spinning on a
       // persistent error and shows the retry affordance.
       state = AsyncData((

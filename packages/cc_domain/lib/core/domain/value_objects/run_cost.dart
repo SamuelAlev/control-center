@@ -98,11 +98,8 @@ class RunCost {
   /// Cache-hit write tokens (discounted by the model provider).
   final int cachedWriteTokens;
 
-  /// Estimated cost in cents.
-  ///
-  /// The legacy whole-cent projection. Callers that hold an exact figure
-  /// SHOULD also set [costMicros]; this field stays authoritative for
-  /// historical rows that never carried one.
+  /// Estimated cost in whole cents: the rounded display projection of
+  /// [costMicros]. Arithmetic uses [costMicros].
   final int estimatedCostCents;
 
   /// Exact cost in micro-USD (`1e-6` USD), or `0` when no precise figure was
@@ -118,14 +115,8 @@ class RunCost {
   /// How [costMicros] / [estimatedCostCents] was obtained.
   final CostBasis costBasis;
 
-  /// Exact cost in micro-USD: the recorded precise figure when one exists,
-  /// else the legacy cents projection widened (never a division that loses
-  /// data).
-  int get preciseCostMicros =>
-      costMicros != 0 ? costMicros : estimatedCostCents * 10000;
-
-  /// Cost in US dollars, from [preciseCostMicros].
-  double get costUsd => preciseCostMicros / 1000000;
+  /// Cost in US dollars, from [costMicros].
+  double get costUsd => costMicros / 1000000;
 
   /// Total wall-clock duration in milliseconds, if measured.
   final int? durationMs;
@@ -159,7 +150,7 @@ class RunCost {
     if (this == zero) {
       return other;
     }
-    final micros = preciseCostMicros + other.preciseCostMicros;
+    final micros = costMicros + other.costMicros;
     return RunCost(
       inputTokens: inputTokens + other.inputTokens,
       outputTokens: outputTokens + other.outputTokens,
@@ -181,9 +172,7 @@ class RunCost {
   }
 
   bool get _isEmpty =>
-      totalTokens == 0 &&
-      preciseCostMicros == 0 &&
-      costBasis != CostBasis.unknown;
+      totalTokens == 0 && costMicros == 0 && costBasis != CostBasis.unknown;
 
   /// Empty [RunCost] with all values at zero.
   static const zero = RunCost();
@@ -278,15 +267,11 @@ class RunUsage {
   /// Cache-hit write tokens.
   final int cachedWriteTokens;
 
-  /// Estimated cost in cents (legacy whole-cent projection).
+  /// Estimated cost in whole cents: the rounded projection of [costMicros].
   final int estimatedCostCents;
 
   /// Exact cost in micro-USD (`1e-6` USD), or `0` when unpriced.
   final int costMicros;
-
-  /// Exact micro-USD, widening legacy cent-only reports before arithmetic.
-  int get preciseCostMicros =>
-      costMicros != 0 ? costMicros : estimatedCostCents * 10000;
 
   /// How the cost figures were obtained.
   final CostBasis costBasis;
@@ -298,7 +283,7 @@ class RunUsage {
   /// Merges two reports additively (token axes and exact cost), combining the
   /// cost basis the same way [RunCost.operator+] does.
   RunUsage operator +(RunUsage other) {
-    final micros = preciseCostMicros + other.preciseCostMicros;
+    final micros = costMicros + other.costMicros;
     return RunUsage(
       inputTokens: inputTokens + other.inputTokens,
       outputTokens: outputTokens + other.outputTokens,
@@ -316,9 +301,7 @@ class RunUsage {
   }
 
   bool get _isEmpty =>
-      totalTokens == 0 &&
-      preciseCostMicros == 0 &&
-      costBasis != CostBasis.unknown;
+      totalTokens == 0 && costMicros == 0 && costBasis != CostBasis.unknown;
 
   /// Converts to [RunCost] for persistence on [AgentRunLog].
   RunCost toCost({int? durationMs, int? timeToFirstTokenMs}) => RunCost(

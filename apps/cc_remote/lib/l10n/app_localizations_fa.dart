@@ -248,10 +248,6 @@ class AppLocalizationsFa extends AppLocalizations {
   String get allCaughtUp => 'همه را دیده‌اید';
 
   @override
-  String get inboxNoForgeAccount =>
-      'هیچ حساب میزبانی کدی روی سرور وصل نیست، بنابراین هنوز نمی‌توان pull requestها را به شما نسبت داد.';
-
-  @override
   String get inboxNothingWaiting =>
       'چیزی مسدود نیست و هیچ pull requestی منتظر شما نیست.';
 
@@ -458,32 +454,6 @@ class AppLocalizationsFa extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '⁨$names⁩ برای ارسال از اینجا روی رله خیلی بزرگ هستند.',
-      one: '⁨$names⁩ برای ارسال از اینجا روی رله خیلی بزرگ است.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'بارگذاری پیوست ممکن نشد. دوباره تلاش کنید.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count پیوست بارگذاری نشد و کنار گذاشته شد.',
-      one: '1 پیوست بارگذاری نشد و کنار گذاشته شد.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'هم‌تیمی';
 
   @override
@@ -619,35 +589,6 @@ class AppLocalizationsFa extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'هیچ میزبانی کدی روی سرور وصل نیست، بنابراین نمی‌توان pull requestها را گرفت. یکی را از برنامهٔ دسکتاپ وصل کنید.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'خواندن $count مخزن ممکن نشد.',
-      one: 'خواندن 1 مخزن ممکن نشد.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'خوانده نشد: ⁨$names⁩';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'نصب GitHub App معلق شده است';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'آخرین داده‌های شناخته‌شده برای ⁨$names⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'نصب GitHub App معلق شده است. آخرین داده‌های شناخته‌شده برای ⁨$names⁩ نمایش داده می‌شود. نصب را در GitHub از سر بگیرید.';
-  }
 
   @override
   String get draft => 'پیش‌نویس';
@@ -1297,7 +1238,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get permissionPrCreate => 'ایجاد Pull request';
 
   @override
-  String get permissionPrPublish => 'انتشار Pull request';
+  String get permissionPrPublish => 'به‌روزرسانی یا ادغام pull requestها';
 
   @override
   String get permissionVendorSyncWrite => 'نوشتن در همگام‌سازی ارائه‌دهنده';
@@ -1341,7 +1282,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get permissionBuiltInDefault => 'پیش‌فرض داخلی';
 
   @override
-  String get permissionRemembered => 'تأیید ذخیره‌شده';
+  String get permissionRemembered => 'تأیید پابرجا';
 
   @override
   String get permissionSource => 'منبع';
@@ -1363,10 +1304,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'تنظیم قاعده در اینجا';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'پیش از تعیین قاعدهٔ عمومی برای این کنش، قاعدهٔ محدود یا ذخیره‌شده را لغو کنید.';
 
   @override
   String get permissionConfirmRevoke => 'تأیید لغو';
@@ -1418,6 +1355,14 @@ class AppLocalizationsFa extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'فرمان‌ها: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'ابزارها: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect => 'هنگام رد این کنش اعمال نمی‌شود';
 
   @override
   String permissionMaxCount(String count) {
@@ -1872,15 +1817,6 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'به‌روزرسانی Pull request';
-
-  @override
-  String get activityTicket => 'به‌روزرسانی تیکت';
-
-  @override
-  String get activityMeeting => 'به‌روزرسانی جلسه';
-
-  @override
-  String get activityCalendar => 'اتصال تقویم';
 
   @override
   String get activityRig => 'به‌روزرسانی محیط محصور';
@@ -2563,8 +2499,7 @@ class AppLocalizationsFa extends AppLocalizations {
   String get credentialsWaitingForLogin => 'در انتظار مجوزدهی در مرورگر شما…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'کدی را که در مرورگر نمایش داده شده وارد کنید';
+  String get credentialsConnectCodePrompt => 'کد تأیید';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2634,10 +2569,6 @@ class AppLocalizationsFa extends AppLocalizations {
       'توکن دسترسی شخصی را جای‌گذاری کنید';
 
   @override
-  String get credentialsHostManaged =>
-      'این اتصال از برنامه یا محیط سرور می‌آید. فقط مالک سرور می‌تواند آن را در همان‌جا تغییر دهد؛ شما همچنان می‌توانید توکن خودتان را اضافه کنید.';
-
-  @override
   String get credentialsStopWatching => 'توقف انتظار';
 
   @override
@@ -2657,4 +2588,202 @@ class AppLocalizationsFa extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'اجرای فرمان روی میزبان';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'ورود شما به $provider منقضی شده است. دوباره وارد شوید.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'متوقف شده: سرویس ورود این فضای کاری تغییر کرده است. با بازگشت سرویس دوباره کار می‌کند.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'اکنون دسترسی به $provider ممکن نیست. در حال تلاش دوباره.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'فقط این فضای کاری';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'همهٔ فضاهای کاری';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'اعتبارنامهٔ ذخیره‌شده از این فضای کاری حذف شود؟ فضاهای کاری دیگر اعتبارنامهٔ خود را نگه می‌دارند.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'اعتبارنامهٔ ذخیره‌شده از همهٔ فضاهای کاری‌ای که آن را به اشتراک می‌گذارند حذف شود؟';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'سرور دوباره راه‌اندازی شد. ورود را از نو شروع کنید.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'GitHub App را روی $owner نصب کنید تا خودکارسازی به $names برسد. برای باز کردن GitHub ضربه بزنید.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App روی $owner نصب نیست، بنابراین خودکارسازی به $names نمی‌رسد. از یک مدیر فضای کاری بخواهید آن را نصب کند.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return '$names را به مخزن‌های GitHub App اضافه کنید. برای باز کردن GitHub ضربه بزنید.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App هنوز $names را نمی‌بیند. از یک مدیر فضای کاری بخواهید آن‌ها را به مخزن‌هایش اضافه کند.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'نصب GitHub App معلق شده است. خودکارسازی برای $names متوقف است تا یکی از مالکان حساب نصب را در GitHub از سر بگیرد.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'فرد مسئول خودکارسازی این فضای کاری دیگر $names را نمی‌بیند، بنابراین چیزی آنجا به نام او اجرا نمی‌شود.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'فرد مسئول خودکارسازی این فضای کاری وارد سکوی کد نشده است، بنابراین خودکارسازی برای $names منتظر می‌ماند تا وارد شود.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'بررسی دسترسی به $names ممکن نشد. در حال تلاش دوباره.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'برای دیدن pull requestهای $count مخزن دیگر وارد $forge شوید',
+      one: 'برای دیدن pull requestهای ۱ مخزن دیگر وارد $forge شوید',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count مخزن پنهان است چون حساب $forge شما آن‌ها را نمی‌بیند',
+      one: '۱ مخزن پنهان است چون حساب $forge شما آن را نمی‌بیند',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count مخزن پنهان است چون در این فضای کاری به آن‌ها دسترسی ندارید',
+      one: '۱ مخزن پنهان است چون در این فضای کاری به آن دسترسی ندارید',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'در حال بررسی دسترسی شما به $count مخزن دیگر…',
+      one: 'در حال بررسی دسترسی شما به ۱ مخزن دیگر…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'ایمیل حساب Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'نشانی ایمیل حساب Atlassian خود را وارد کنید.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'توکن API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'هیچ توکن خودکارسازی نمی‌تواند $names را بخواند، بنابراین کارهای پس‌زمینه آنجا متوقف شده‌اند. یک مدیر می‌تواند از تنظیمات ← مخزن‌ها یکی اضافه کند.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'در مرورگر خود تأیید کنید، سپس کدی را که نشان می‌دهد وارد کنید.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'این حساب از قبل به شخص دیگری روی این سرور وصل است. با حساب دیگری وارد شوید.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'برای بررسی این توکن، $provider در دسترس نبود. لحظه‌ای دیگر دوباره امتحان کنید.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider این توکن را نمی‌پذیرد. بررسی کنید که همه‌اش را کپی کرده باشید و لغو نشده باشد.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'این توکن شخصی نیست. یک توکن دسترسی شخصی از حساب خودتان در $provider بچسبانید، نه توکن پروژه، گروه، فضای کاری یا ربات.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'این توکن دسترسی «$scope» را ندارد. توکنی بسازید که آن را داشته باشد.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'این توکن منقضی شده است. یک توکن جدید بسازید و اینجا بچسبانید.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'درخواست‌ها در حال حاضر زیادند. کمی صبر کنید و دوباره امتحان کنید.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'ورود لغو یا رد شد. وقتی آماده بودید دوباره شروعش کنید.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'این ورود دیگر باز نیست: لغو، استفاده یا جایگزین شده است. دوباره شروعش کنید.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'یک مدیر فضای کاری باید شما را دعوت کند، یا مالک سرور می‌تواند برای شما فضای کاری بسازد.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos اکنون به مخزن دیگری در $forge اشاره می‌کند. برای ادامهٔ استفاده، از برنامهٔ دسکتاپ یا وب دوباره پیوندش دهید.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos اکنون به مخزن دیگری در $forge اشاره می‌کند. یک مدیر فضای کاری باید دوباره پیوندش دهد تا دوباره قابل استفاده شود.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'عامل‌ها روی این سرور به سندباکس نیاز دارند';
+
+  @override
+  String get runSandboxUnavailable =>
+      'این سرور سندباکس ندارد، پس فقط مالکش می‌تواند اینجا عامل اجرا کند. مالک می‌تواند سندباکس را نصب کند یا ایزوله‌سازی را برای همه خاموش کند.';
 }

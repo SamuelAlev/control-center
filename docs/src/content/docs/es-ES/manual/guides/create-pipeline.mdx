@@ -2,7 +2,7 @@
 title: Crear una plantilla de pipeline
 description: Crea una plantilla de flujo de trabajo DAG en el editor de pipelines — añade nodos, conéctalos, declara entradas y haz que se pueda ejecutar.
 slug: es-ES/manual/guias/crear-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Las plantillas de pipeline se crean en los ajustes del espacio de trabajo. La
@@ -37,25 +37,25 @@ La barra lateral **Biblioteca de nodos** ocupa de forma permanente la izquierda
 del editor. Fíltrala con el cuadro **Buscar nodos** y arrastra una entrada al
 lienzo: el nodo aterriza donde lo sueltes, sin ninguna conexión entrante.
 
-| Nodo de la paleta               | Tipo de paso | Qué hace                                                                             |
-| ------------------------------- | ------------ | ------------------------------------------------------------------------------------ |
-| **Bash script**                 | listen       | Ejecuta un script de shell con sustitución de `{{state}}`; no se despacha ningún agente |
+| Nodo de la paleta               | Tipo de paso | Qué hace                                                                                             |
+| ------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen       | Ejecuta un script de shell con sustitución de `{{state}}`; no se despacha ningún agente              |
 | **Open conversation**           | listen       | Abre el único espacio visible de la ejecución y su checkout; los nodos de agente se unen a esta sala |
-| **Clone PR branch**             | listen       | Descubre la rama head de la PR mediante `gh pr view` y la clona en el directorio de la ejecución |
-| **Post PR comment**             | listen       | Publica los hallazgos consolidados en la PR como comentario de revisión de GitHub    |
-| **Reviewer (prompt)**           | listen       | Despacha un agente revisor especializado; se suspende hasta que el agente envía su resultado |
-| **Consolidate (join)**          | join         | Espera a varias ramas anteriores y luego pide a un agente que consolide sus salidas   |
-| **Custom prompt**               | listen       | Nodo genérico guiado por prompt, enrutado a través del cuerpo `promptAgent`           |
-| **Post to space**               | listen       | Envía un mensaje a un espacio de mensajería                                           |
-| **Condition / switch (router)** | router       | Ramifica el flujo según un valor de estado                                            |
-| **If file exists (router)**     | router       | Enruta `"true"` cuando existe una ruta bajo el clon; si no, `"false"`                 |
-| **Any file exists (OR router)** | router       | Enruta `"true"` cuando existe cualquiera de las rutas indicadas                       |
-| **All conditions (AND router)** | router       | Enruta `"true"` solo cuando existen todas las rutas indicadas                         |
-| **Team dispatch**               | listen       | Despacha un equipo completo y se suspende hasta que termina                           |
-| **Approval gate**               | listen       | Se detiene a la espera de una decisión de aprobación                                  |
-| **For each (map)**              | forEach      | Renderiza un prompt por elemento y luego despacha el agente una vez con esos prompts unidos |
-| **Call sub-pipeline**           | listen       | Ejecuta otra plantilla como paso anidado                                              |
-| **Clean up worktrees**          | listen       | Elimina worktrees aislados obsoletos; determinista, no se despacha ningún agente      |
+| **Clone PR branch**             | listen       | Descubre la rama head de la PR mediante `gh pr view` y la clona en el directorio de la ejecución     |
+| **Post PR comment**             | listen       | Publica un comentario de revisión en la PR desde el servidor: los hallazgos, o su `message`          |
+| **Reviewer (prompt)**           | listen       | Despacha un agente revisor especializado; se suspende hasta que el agente envía su resultado         |
+| **Consolidate (join)**          | join         | Espera a varias ramas anteriores y luego pide a un agente que consolide sus salidas                  |
+| **Custom prompt**               | listen       | Nodo genérico guiado por prompt, enrutado a través del cuerpo `promptAgent`                          |
+| **Post to space**               | listen       | Envía un mensaje a un espacio de mensajería                                                          |
+| **Condition / switch (router)** | router       | Ramifica el flujo según un valor de estado                                                           |
+| **If file exists (router)**     | router       | Enruta `"true"` cuando existe una ruta bajo el clon; si no, `"false"`                                |
+| **Any file exists (OR router)** | router       | Enruta `"true"` cuando existe cualquiera de las rutas indicadas                                      |
+| **All conditions (AND router)** | router       | Enruta `"true"` solo cuando existen todas las rutas indicadas                                        |
+| **Team dispatch**               | listen       | Despacha un equipo completo y se suspende hasta que termina                                          |
+| **Approval gate**               | listen       | Se detiene a la espera de una decisión de aprobación                                                 |
+| **For each (map)**              | forEach      | Renderiza un prompt por elemento y luego despacha el agente una vez con esos prompts unidos          |
+| **Call sub-pipeline**           | listen       | Ejecuta otra plantilla como paso anidado                                                             |
+| **Clean up worktrees**          | listen       | Elimina worktrees aislados obsoletos; determinista, no se despacha ningún agente                     |
 
 La biblioteca los agrupa en **Flujo y lógica**, **Revisión de PR**, **Agentes**,
 **Mensajería** y **Código**. No hay ningún grupo Demo.
@@ -146,6 +146,13 @@ porque ninguno de los dos es configurable:
   `GITHUB_TOKEN` contienen un token que solo puede leer ese repo, así que `gh` y
   `git clone` contra él funcionan sin ninguna configuración. En caso contrario,
   no hay ningún token de GitHub.
+- Un script no puede escribir en GitHub: `gh pr comment`, `gh pr merge`,
+  `gh pr create` y `git push` fallan con ese token. Comenta con un nodo **Post PR
+  comment** en su lugar (define `extras.message` para publicar tu propio
+  texto, con marcadores `{{key}}`, en lugar de los hallazgos consolidados).
+  Envía y abre pull requests desde un nodo de agente: su `git push` pasa por la
+  pasarela de ejecuciones y abre el PR con la herramienta `open_pull_request`.
+  La fusión queda en manos de una persona; ningún nodo fusiona.
 - Solo un administrador del espacio de trabajo puede crear o editar un pipeline
   con un paso bash.
 - El script se lanza como el ejecutable literal `bash`, así que `bash` debe
@@ -237,16 +244,16 @@ editor.
 4. Pulsa **Añadir entrada** por cada campo de formulario que deba recoger una
    ejecución manual:
 
-| Campo                          | Descripción                                                             |
-| ------------------------------ | ----------------------------------------------------------------------- |
-| **Clave**                      | Clave de estado bajo la que se guarda el valor; referénciala como `{{key}}` |
-| **Etiqueta**                   | Etiqueta mostrada (por defecto, la clave)                               |
-| **Tipo**                       | Texto, Texto multilínea, Número, Interruptor, Selección, Repositorio    |
-| **Opciones (separadas por comas)** | Opciones separadas por comas, solo para Selección                   |
-| **Valor predeterminado**       | Valor previamente rellenado                                             |
-| **Marcador de posición**       | Texto de sugerencia dentro del campo vacío                              |
-| **Texto de ayuda**             | Texto de ayuda bajo el campo                                            |
-| **Obligatorio**                | Si el formulario de ejecución se bloquea con un valor vacío             |
+| Campo                              | Descripción                                                                 |
+| ---------------------------------- | --------------------------------------------------------------------------- |
+| **Clave**                          | Clave de estado bajo la que se guarda el valor; referénciala como `{{key}}` |
+| **Etiqueta**                       | Etiqueta mostrada (por defecto, la clave)                                   |
+| **Tipo**                           | Texto, Texto multilínea, Número, Interruptor, Selección, Repositorio        |
+| **Opciones (separadas por comas)** | Opciones separadas por comas, solo para Selección                           |
+| **Valor predeterminado**           | Valor previamente rellenado                                                 |
+| **Marcador de posición**           | Texto de sugerencia dentro del campo vacío                                  |
+| **Texto de ayuda**                 | Texto de ayuda bajo el campo                                                |
+| **Obligatorio**                    | Si el formulario de ejecución se bloquea con un valor vacío                 |
 
 Una entrada de tipo **Repositorio** muestra un selector sobre los repos del
 espacio de trabajo y rellena `repo_id`, `repo_local_path`, `repo_full_name` y

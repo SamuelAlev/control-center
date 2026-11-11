@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/presentation/settings/repos_settings_view.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
@@ -84,6 +85,8 @@ void main() {
             'ws-test',
           ).overrideWith((ref) => const Stream<List<Repo>>.empty()),
           appPreferencesProvider.overrideWithValue(prefs),
+          // Adding browses the server's folders: the owner's right.
+          canUseHostProvider.overrideWithValue(true),
         ],
         child: _wrap(const ReposSettingsView()),
       ),
@@ -619,6 +622,7 @@ void main() {
             'ws-test',
           ).overrideWith((ref) => Stream.value([])),
           appPreferencesProvider.overrideWithValue(prefs),
+          canUseHostProvider.overrideWithValue(true),
         ],
         child: _wrap(const ReposSettingsView()),
       ),
@@ -627,6 +631,43 @@ void main() {
     await tester.pump(const Duration(milliseconds: 200));
 
     expect(find.text('Add repository'), findsAtLeast(1));
+  });
+
+  testWidgets('someone who is not the server owner is offered no add', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(800, 600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          activeWorkspaceIdProvider.overrideWith(
+            () => _TestActiveWorkspaceNotifier('ws-test'),
+          ),
+          reposForWorkspaceProvider(
+            'ws-test',
+          ).overrideWith((ref) => Stream.value([])),
+          appPreferencesProvider.overrideWithValue(prefs),
+          canUseHostProvider.overrideWithValue(false),
+        ],
+        child: _wrap(const ReposSettingsView()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Add repository'), findsNothing);
+    expect(
+      find.text(
+        "The server owner adds repositories from the server's folders.",
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('renders repo with empty branch falls back to path', (

@@ -3,7 +3,7 @@ title: Seni bina
 description: Bagaimana Control Center distrukturkan dengan model pelayan klien nipis, Clean Architecture berteraskan ciri serta port dan penyesuai.
 dateModified: 2026-09-19
 slug: ms-MY/manual-pengguna/konsep/seni-bina
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Gambaran keseluruhan
@@ -60,7 +60,7 @@ Ciri **`guardrails`** meletakkan lapisan domainnya dalam `cc_domain/features/gua
 - Entiti memori: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Objek nilai dikongsi: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Port dikongsi: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Perkhidmatan domain: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Perkhidmatan domain: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + jenis acara (ruang kerja/ejen, PR/semakan, pemesejan, penetikan, pipeline, orkestrasi, memori, kalendar/mesyuarat, identiti dan keahlian, kebolehcerapan)
 
 ## Identiti dan multipemain
@@ -132,7 +132,6 @@ Pelayan memegang kelayakan yang penting: token GitHub dan penetikan untuk pelanc
 
 - Rahsia dalam `flutter_secure_storage` (rantai kunci macOS, pengurus kelayakan Windows, libsecret Linux) — kelayakan peranti klien dan kunci penggandingan jauh, bukan token pembekal
 - `shared_preferences` untuk keutamaan tidak sensitif sahaja (tema, fon, susun atur)
-- Rahsia pembekal yang tertinggal daripada pemasangan lama diserahkan kepada pelayan sekali oleh `features/auth/providers/credential_migration.dart`, kemudian dipadam daripada rantai kunci klien
 
 ## Penguatkuasaan seni bina
 

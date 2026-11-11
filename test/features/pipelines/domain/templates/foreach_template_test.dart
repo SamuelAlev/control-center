@@ -204,6 +204,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String spaceId,
     required String feedback,
+    String? senderUserId,
   }) async {}
   @override
   Future<void> retryAgentTurn({
@@ -211,6 +212,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String spaceId,
     required String failedMessageId,
     String? modelOverride,
+    String? requestedByUserId,
   }) async {}
 
   @override
@@ -238,6 +240,7 @@ class _FakeMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -245,6 +248,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 

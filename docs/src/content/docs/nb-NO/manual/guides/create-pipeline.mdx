@@ -2,7 +2,7 @@
 title: Opprett en pipeline-mal
 description: Skriv en DAG-arbeidsflytmal i pipeline-editoren — legg til noder, koble dem sammen, erklær inndata og gjør den kjørbar.
 slug: nb-NO/handbok/slik-gjor-du/opprett-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Pipeline-maler lages i innstillingene for arbeidsområdet. Oppføringen
@@ -39,7 +39,7 @@ lander der du slipper den, uten innkommende kobling.
 | **Bash script**                | listen   | Kjører et skallskript med `{{state}}`-substitusjon; ingen agent sendes ut             |
 | **Open conversation**          | listen   | Åpner kjøringens ene synlige område og utsjekkingen der; agentnoder blir med i rommet |
 | **Clone PR branch**            | listen   | Finner PR-ens head-gren via `gh pr view` og kloner den til kjøringskatalogen          |
-| **Post PR comment**            | listen   | Publiserer samlede funn til PR-en som en GitHub-gjennomgangskommentar                 |
+| **Post PR comment**            | listen   | Publiserer en gjennomgangskommentar på PR-en fra serveren: funnene, eller `message`-en                 |
 | **Reviewer (prompt)**          | listen   | Sender ut en spesialisert reviewer-agent; settes på pause til agenten leverer         |
 | **Consolidate (join)**         | join     | Venter på flere oppstrømsgrener og ber deretter en agent slå sammen utdataene deres   |
 | **Custom prompt**              | listen   | Generisk promptstyrt node som rutes gjennom kroppen `promptAgent`                     |
@@ -137,6 +137,7 @@ miljøvariabler, fordi ingen av delene kan konfigureres:
   `GH_TOKEN` og `GITHUB_TOKEN` et token som bare kan lese det ene repoet, så `gh`
   og `git clone` mot det fungerer uten oppsett. Ellers finnes det ikke noe
   GitHub-token.
+- Et skript kan ikke skrive til GitHub: `gh pr comment`, `gh pr merge`, `gh pr create` og `git push` feiler med det tokenet. Kommenter med en **Post PR comment**-node i stedet (sett `extras.message` for å legge ut din egen tekst, med `{{key}}`-plassholdere, i stedet for de samlede funnene). Push og åpne pull requests fra en agentnode: `git push` går gjennom kjøringsgatewayen, og den åpner PR-en med verktøyet `open_pull_request`. Sammenslåing overlates til en person; ingen node slår sammen.
 - Bare en administrator i arbeidsområdet kan opprette eller redigere en pipeline
   med et bash-steg.
 - Skriptet startes som den bokstavelige kjørbare filen `bash`, så `bash` må

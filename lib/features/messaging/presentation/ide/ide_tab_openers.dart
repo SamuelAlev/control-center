@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/agent_shell_process.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_tab.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
@@ -39,14 +42,21 @@ class IdeTabOpeners {
   final String? Function() _defaultEditorRepoId;
   final VoidCallback _publishTerminals;
 
+  /// Whether this person may open the code-server editor.
+  bool get _hostEditor => _host.ref.read(canUseHostProvider);
+
   /// Opens (or focuses) the conversation's code-server editor tab on its
   /// isolated worktree — the single place where files are created/saved.
   /// Driven by ⌘T and by double-clicking the tab-strip void. One code-server
   /// per conversation worktree, so a re-open refocuses the running instance
   /// rather than stacking a second tab.
+  ///
+  /// The editor runs on the server host outside any sandbox, so only someone
+  /// with host access ([canUseHostProvider]) gets one; for anyone else this
+  /// opens nothing.
   void openEditor() {
     final spaceId = _host.selectedSpaceId;
-    if (spaceId == null) {
+    if (spaceId == null || !_hostEditor) {
       return;
     }
     final l10n = AppLocalizations.of(_host.context);
@@ -90,6 +100,9 @@ class IdeTabOpeners {
   /// Each distinct file gets its own tab; a file already open in the pane
   /// ([leafId], else the active one) is refocused (dedup by path). [toSide]
   /// instead opens a fresh tab in a new pane split off to the right.
+  ///
+  /// Without host access there is no editor, so the file opens in the
+  /// read-only quick view instead (in a new pane to the side for [toSide]).
   void openWorktreeFile(
     ({String repoId, String path}) target, {
     bool toSide = false,
@@ -97,6 +110,19 @@ class IdeTabOpeners {
   }) {
     final spaceId = _host.selectedSpaceId;
     if (spaceId == null) {
+      return;
+    }
+    if (!_hostEditor) {
+      // Still to the side when asked: the built-in view of the same file.
+      if (toSide) {
+        _host.layout.openInSplit(
+          _host.layout.activeLeafId,
+          MessagingIdeTabs.fileQuickView(target: target, spaceId: spaceId),
+          DropEdge.right,
+        );
+        return;
+      }
+      quickViewFile(target);
       return;
     }
     final l10n = AppLocalizations.of(_host.context);
@@ -237,13 +263,19 @@ class IdeTabOpeners {
     }
     final ref = _host.ref;
     final context = _host.context;
-    final result = await revertWorktreeFiles(
-      ref.read(rpcClientProvider),
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoId: target.repoId,
-      paths: target.paths,
-    );
+    WorktreeRevertResult? result;
+    Object? refusal;
+    try {
+      result = await revertWorktreeFiles(
+        ref.read(rpcClientProvider),
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        repoId: target.repoId,
+        paths: target.paths,
+      );
+    } on RemoteRpcException catch (e) {
+      refusal = e;
+    }
     if (!context.mounted) {
       return;
     }
@@ -260,7 +292,10 @@ class IdeTabOpeners {
       ..invalidate(repoChangesGroupedProvider(args));
     final l10n = AppLocalizations.of(context);
     if (result == null) {
-      _showToast(l10n.ideRevertConfirmTitle, l10n.ideRevertFailed);
+      _showToast(
+        l10n.ideRevertConfirmTitle,
+        repoRefusalOf(l10n, refusal) ?? l10n.ideRevertFailed,
+      );
     } else if (result.skipped.isNotEmpty) {
       _showToast(
         l10n.ideRevertConfirmTitle,

@@ -71,7 +71,10 @@ void main() {
       'credentials.setForgeToken',
       'credentials.clearForgeToken', 'credentials.setTicketingToken',
       'credentials.clearTicketingToken',
+      'credentials.commitSigningKey', 'credentials.createCommitSigningKey',
+      'credentials.deleteCommitSigningKey',
       'identity.me', 'users.updateProfile', 'users.markOnboardingFinished',
+      'users.checkHandle',
       'subscriptions.usage',
       // Browser subscriptions are owned by ctx.userId + ctx.deviceId, never
       // an arbitrary client-supplied device. Workspace grants gate delivery.
@@ -89,21 +92,25 @@ void main() {
       'oauth.connections', 'oauth.disconnect',
       'providers.list', 'providers.listModels',
       'forge.capabilities', 'forge.listConnections',
-      'ticketing.listConnections', 'github.currentUser', 'github.teamProfile',
+      'ticketing.listConnections', 'github.teamProfile',
       'github.userProfile',
       // In-handler gates (owner/admin/membership checks inside the handler,
       // documented at each site).
-      'workspace.upsert', 'workspace.create', 'workspace.delete',
+      'workspace.upsert', 'workspace.delete',
       'workspace.reorder',
-      'confirmation.respond', 'connectivity.setTunnel',
+      'confirmation.respond',
       'pairing.list', 'pairing.rename', 'pairing.revoke',
+      'process.kill',
       // Non-secret, read-only host/service probes and utility reads.
       'adapter.detectAll', 'adapter.detectOne', 'claude.serviceStatus',
       'claude_accounts.list', 'connection.describe', 'connection.ping',
       'connectivity.status', 'github.serviceStatus', 'kimi.serviceStatus',
       'openai.serviceStatus', 'serviceStatus.getAll', 'sandbox.detect',
       'changelog.get',
-      'ide.detectEditors', 'process.detect', 'fonts.list',
+      // Running / port / enabled of the MCP listener; never the token, which
+      // `mcp.token` and `mcp.rotateToken` keep for the server owner.
+      'mcp.status',
+      'fonts.list',
       'demo.repoStars',
       'models.voiceCatalog',
       'models.catalog', 'models.refreshCatalog',
@@ -115,13 +122,16 @@ void main() {
       'orchestration.approvedNeedingMaterialization',
       'orchestration.forPipelineRunAnyWorkspace',
       'users.list', 'credential_gate.resolve',
+      // Agent runs on this host: the caller's workspaces only (all for the
+      // server owner); a stop resolves the pid against a live run first.
+      'process.detect',
       // The worker lane: authenticated by worker credentials at its own
       // chokepoint, not by human workspace roles.
       'fleet.drainWorker', 'fleet.registerWorker', 'fleet.removeWorker',
       'fleet.resumeWorker', 'fleet.revokeWorker', 'fleet.workerComplete',
       'fleet.workerEvents', 'fleet.workerHeartbeat', 'fleet.workerPoll',
       // Local host utilities (fullClient-capability-gated where mutating).
-      'fs.browseDirectory', 'process.kill', 'acp.listModels',
+      'acp.listModels',
       // The install's usage-analytics decision: every client must read it to
       // know whether it may collect. Carries no workspace or user data; the
       // switch itself (`telemetry.setUsageAnalytics`) is serverOwner.
@@ -267,6 +277,9 @@ void main() {
     // the declaration sites.
     const unscopedSelfScoped = <String>{
       'agent_run_log.watchAll',
+      // Each frame reads only the caller's own scopes: the workspaces they
+      // administer, and the server trail when they are the server owner.
+      'audit.watchLog',
       'agent_run_log.watchRecent',
       'agents.watchAll',
       'confirmation.watchPending',

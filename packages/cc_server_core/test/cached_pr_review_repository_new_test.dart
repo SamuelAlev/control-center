@@ -892,7 +892,12 @@ CachedPrReviewRepository _makeRepo({
   // The repository is forge-agnostic now, so the fake HTTP surface is driven
   // through the real GitHub adapter — which means these tests also cover the
   // adapter's mapping rather than bypassing it.
-  forgeClient: GitHubForgePrClient(client: apiClient, owner: 'o', repo: 'r'),
+  forgeClient: GitHubForgePrClient(
+    client: apiClient,
+    owner: 'o',
+    repo: 'r',
+    approvalGuard: (_, _) async {},
+  ),
   owner: 'o',
   repo: 'r',
   apiDiffSource: apiDiffSource ?? FakePrDiffSource(),

@@ -64,27 +64,10 @@ const int kSnapGlyphWidth = 5;
 /// most recent discarded history.
 const int kSnapMaxRetainedSourceChars = 200000;
 
-/// Distinguishes the caption line the snapshot replacement message opens with,
-/// so a text-compaction fallback can recognize a region it must rehydrate
-/// rather than a region of ordinary history.
-const String kSnapcompactCaptionMarker = 'earlier messages are rendered as';
-
-/// Whether [message] is a snapshot replacement (an imaged page).
-///
-/// The identity marker ([HarnessMessage.isSnapshotCarrier], stamped by the loop
-/// from the reported `foldedFromIndex`) is authoritative — it survives image
-/// shedding and a restart. The content test is a fallback for legacy pages
-/// written before the marker existed.
-bool isSnapcompactMessage(HarnessMessage message) {
-  if (message.isSnapshotCarrier) {
-    return true;
-  }
-  if (message.role != HarnessRole.user) {
-    return false;
-  }
-  final hasImage = message.content.any((b) => b is HarnessImageBlock);
-  return hasImage && message.textContent.contains(kSnapcompactCaptionMarker);
-}
+/// Whether [message] is a snapshot replacement (an imaged page): the identity
+/// marker ([HarnessMessage.isSnapshotCarrier], stamped by the loop from the
+/// reported `foldedFromIndex`), which survives image shedding and a restart.
+bool isSnapcompactMessage(HarnessMessage message) => message.isSnapshotCarrier;
 
 /// Rebuilds a snapshot region as TEXT so a text compactor can fold the real
 /// conversation instead of the page caption.

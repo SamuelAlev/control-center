@@ -2,7 +2,7 @@
 title: Inbyggda agentverktyg
 description: Verktygsytan den inbyggda harnessen ger en agent – språkserver, strukturell sökning, felsökare, kernlar och workerstyrning – med varje operation och dess argument.
 slug: sv-SE/handbok/referens/agentverktyg
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 De här är de **serverbundna** verktyg som den inbyggda agentköraren registrerar direkt – språkserver, strukturell sökning, felsökare, kernlar, frågor och workerstyrning – till skillnad från de [MCP-verktyg](/sv-SE/handbok/referens/mcp-verktyg/) den bryggar in och de generiska fil-, sök- och shellverktygen från harnessens körare. De finns inte i MCP-registret: en extern MCP-klient ser dem inte, eftersom var och en är bunden till en levande resurs på serversidan – en språkserverprocess, en felsökningsadapter, en tolk – som hör till en enda körning.
@@ -24,6 +24,8 @@ Varje verktyg deklarerar en nivå, och nivån avgör **vilka ytor som ser det** 
 ## `lsp` — språkserverfrågor
 
 Registreras när körningen har en språkserverövervakare och en arbetskatalog. Huruvida en server faktiskt kan svara upptäcks vid anropstillfället, som en **skärning**: en rotmarkör måste finnas *och* serverns binärfil måste gå att slå upp. Bara en av dem betyder att ingen server startar – det säger `status` – i stället för en tyst gissning.
+
+Servrarna kommer bara från den inbyggda tabellen; en `lsp.json` i arkivet läses inte. I en sandlådad körning får varje körning en egen språkserversession, så servrarna startar på nytt med varje körning. Projektlokala binärfiler (`node_modules/.bin`) används bara när körningen är sandlådad, och projektroten löses aldrig upp utanför körningens arbetskatalog.
 
 Positioner anges med `line` plus en delsträng i `symbol`, aldrig med kolumn. En modell som ombeds ange en kolumn gissar, och en felaktig gissning pekar ut en annan symbol på samma rad – ett svar som ser rätt ut men handlar om något annat. Att utelämna `symbol` i en navigeringsåtgärd är ett fel, inte en gissning på första kolumnen.
 
@@ -117,7 +119,7 @@ Varje fil jämförs mot innehållet som fångades vid mellanlagringen, och **var
 
 Registreras när körningen har en övervakare för felsökningssessioner, en arbetskatalog och ett samtals-id. Huruvida en adapter faktiskt kan starta upptäcks vid anropstillfället, enligt samma skärningsregel som för språkservern (rotmarkör *och* binärfil). Nivån `exec`; inte parallellsäker (en session är tillstånd mellan anrop, så om `continue` kör om `stack` läses en ram som redan har flyttat sig).
 
-En session per samtal, med en hård TTL (30 minuter). En andra `launch` avvisas i stället för att tyst ersätta den första.
+En session per samtal, med en hård TTL (30 minuter). En andra `launch` avvisas i stället för att tyst ersätta den första. I en sandlådad körning behåller sessionen sin sandlåda över turerna tills den tar slut, alltså under högst de 30 minuterna.
 
 | Op            | Argument                      | Anmärkningar                                   |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ En session per samtal, med en hård TTL (30 minuter). En andra `launch` avvisas 
 | `status`      | —                             | Om en session körs, och var den stoppade       |
 | `breakpoints` | `file`, `lines[]`             | Tomma `lines` rensar filen. Kan sättas **före** start |
 | `launch`      | `program`, `args[]`           | Startar programmet stoppat vid dina brytpunkter |
-| `attach`      | `port`                        | Ansluter till ett redan körande felsökningsobjekt |
+| `attach`      | `port`                        | Ansluter till ett redan körande felsökningsobjekt på en av körningens egna vidarebefordrade portar; alla andra portar avvisas innan något startar |
 | `continue`    | `thread_id?`                  | Kör tills nästa stopp                          |
 | `pause`       | `thread_id?`                  | Stoppar det där det är                         |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Flyttar ett steg                    |
@@ -146,7 +148,7 @@ En session per samtal, med en hård TTL (30 minuter). En andra `launch` avvisas 
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` föredrar ett projektlokalt `.venv/bin` eller `venv/bin` framför `$PATH`: en python från `$PATH` är en annan miljö, och att ansluta från fel miljö misslyckas på ett sätt som läses som trasig kod.
+`debugpy` föredrar ett projektlokalt `.venv/bin` eller `venv/bin` framför `$PATH` när körningen är sandlådad: en python från `$PATH` är en annan miljö, och att ansluta från fel miljö misslyckas på ett sätt som läses som trasig kod. Utan sandlåda använder den bara `$PATH`, så ett arkiv kan inte välja vilken tolk som körs på värden.
 
 ---
 
@@ -176,7 +178,7 @@ Bryggan **går in i harnessens verktygsregister igen**, så räcken, godkännand
 Cellens tidsgräns är en *inaktivitets*budget (standard 5 minuter) och den **pausas** medan ett bryggat anrop pågår, så en cell som sprider ut arbetet till subagenter dödas inte mitt i utspridningen.
 
 :::note[Var kerneln körs]
-I samtalets avskilda miljö när det har en, annars på värden. Den startar inte en avskild miljö för att komma dit – samma regel som hindrar en stationsflik från att starta automatiskt.
+I samtalets avskilda miljö när det har en, annars i körningens OS-sandlåda på värden. Med sandlådan avstängd eller otillgänglig körs den obegränsad, och `eval` begär godkännande för körning på värden. Den startar inte en avskild miljö för att komma dit – samma regel som hindrar en stationsflik från att starta automatiskt.
 :::
 
 ---

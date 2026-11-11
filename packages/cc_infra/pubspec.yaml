@@ -20,6 +20,9 @@ dependencies:
   clock: any
   # SHA256 content-addressing for skill bundles + the skills-lock manifest.
   crypto: ^3.0.7
+  # Ed25519 for SSH commit signatures (signing and the push inspection's
+  # verification); pure Dart, already in the workspace lock.
+  cryptography: ^2.9.0
   rhttp: 0.18.0
 
   ffi: ^2.2.0

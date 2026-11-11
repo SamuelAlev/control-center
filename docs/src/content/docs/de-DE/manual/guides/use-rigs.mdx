@@ -2,7 +2,7 @@
 title: Einem Agenten eine Testmaschine geben
 description: Gib einem Agenten einen Wegwerf-Browser, einen Desktop, einen Android-Emulator oder einen iOS-Simulator — live mitverfolgt, und die Steuerung kannst du übernehmen.
 slug: de-DE/handbuch/anleitungen/rigs-nutzen
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Ein **Rig** ist eine Wegwerfmaschine, die ein Agent öffnet, wenn er etwas
@@ -134,6 +134,21 @@ Drücke **Maschine stoppen**, wenn du fertig bist.
 
 Die Steuerung ist absichtlich exklusiv: Tippen zwei in dieselbe Maschine,
 entsteht Eingabe, die keiner von beiden gemeint hat.
+
+### Wer zusehen und wer steuern darf
+
+Eine Maschine, die in einem Space geöffnet ist, folgt den Repositories dieses Spaces, so wie der Space selbst (siehe [Bereiche folgen ihren Repositorys](/de-DE/handbuch/konzepte/autorisierung/#bereiche-folgen-ihren-repositorys)):
+
+- **Zusehen** braucht Lesezugriff auf den Space: einen Lesezugriff auf jedes Repository, das der Space freigibt, und deine eigene Forge-Anmeldung, die jedes davon lesen kann. Zusehen umfasst die Liste der Maschinen, den Bildschirm, den Ton, den Zustand des Browsers, ihre Ports sowie das Lesen ihrer Zwischenablage und Dateien.
+- **Steuern** braucht außerdem einen [Schreibzugriff](/de-DE/handbuch/konzepte/autorisierung/#code-ändern-braucht-den-schreibzugriff) auf diese Repositories. Steuern umfasst das Öffnen einer Maschine im Space, Tippen und Klicken, die Übernahme der Steuerung, Starten, Stoppen und Schließen, das Weiterleiten ihrer Ports, das Schreiben in ihre Zwischenablage, das Ablegen von Dateien darauf und die Nutzung des Mikrofons.
+
+Mit reinem Lesezugriff zeigt die Maschine **Nur ansehen** und „Du kannst diesen Computer ansehen. Ihn steuern, seine Ports weiterleiten, etwas hineinkopieren oder Dateien darauf ablegen erfordert Schreibzugriff auf alle Repositories in diesem Space.“ Unter einem deaktivierten **Maschine starten** sagt der Tab „Einen Computer hier zu starten erfordert Schreibzugriff auf alle Repositories in diesem Space. Ein Workspace-Admin kann ihn freigeben.“ Ohne Lesezugriff wird die Maschine nicht angezeigt, es steht nur da: „Du kannst diesen Computer nicht ansehen. Er gehört zu einem Space, auf den du keinen Lesezugriff hast.“
+
+Eine Maschine, die zu keinem Space gehört, erreicht keinen Worktree, und jedes Mitglied des Arbeitsbereichs kann sie ansehen und steuern.
+
+Eine Maschine, die die eigenen Anmeldungen einer Person trägt, gehört dieser Person zum Steuern: ihre Terminal-Maschine oder jede Maschine, die für sie geöffnet wurde und deren Netzwerkzugang einen Forge erreicht. Nur diese Person und Agentenläufe, die allein für sie handeln, können sie steuern. Workspace-Admins und der Serverinhaber heben das nicht auf. Andere, die der Space zulässt, dürfen ihren Bildschirm, Ton, Zustand und ihre Ports weiterhin ansehen, aber nicht steuern, ihre Ports nicht weiterleiten, nichts hineinkopieren, keine Dateien darauf ablegen, keine Dateien herauskopieren und ihre Zwischenablage nicht lesen. Eine solche Maschine zeigt **Nur ansehen** mit diesem Hinweis: „Du kannst diesen Computer ansehen. Er verwendet die Anmeldungen der Person, für die er geöffnet wurde. Deshalb kann nur sie ihn steuern, seine Ports weiterleiten, etwas hineinkopieren oder Dateien darauf ablegen.“ Eine Aktion, die aus diesem Grund abgelehnt wird, sagt: „Nur die Person, für die dieser Computer geöffnet wurde, kann ihn steuern. Er verwendet deren eigene Anmeldungen.“ Die Terminal-Maschine einer anderen Person erscheint für dich gar nicht, genau wie deren Terminal-Sitzungen.
+
+Jede Maschine zeigt, ob du sie steuern kannst, und das aktualisiert sich von selbst, wenn sich eine Freigabe oder deine Forge-Anmeldung ändert.
 
 ## Dinge hinein- und hinausbewegen
 

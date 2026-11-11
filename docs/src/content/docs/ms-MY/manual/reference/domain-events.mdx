@@ -2,7 +2,7 @@
 title: Acara domain
 description: Katalog lengkap 54 acara domain, muatannya dan pelanggan di pihak pelayan yang menggunakannya.
 slug: ms-MY/manual-pengguna/rujukan/acara-domain
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bas acara
@@ -148,14 +148,13 @@ Beberapa subsistem yang kelihatan dipacu acara dari luar sebenarnya tidak. Ia di
 
 | Subdomain           | Bagaimana keadaan bergerak sebaliknya                                                                    |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memori              | `record_memory_fact` dan rakan-rakannya menulis dan kembali; dapatan semula membaca. Tiada apa-apa menerbitkan tentang sesuatu fakta atau konflik |
+| Memori              | `propose_fact` dan rakan-rakannya menulis dan kembali; dapatan semula membaca. Tiada apa-apa menerbitkan tentang sesuatu fakta atau konflik |
 | Orkestrasi          | Cadangan, kelulusannya dan larian pipeline yang dijana ialah baris dan panggilan RPC                    |
 | Dokumen pelan       | `submit_plan` menulis satu revisi; kelulusan mewujudkan satu orkestrasi. Kedua-duanya tidak diumumkan  |
 | Artifak             | `publish_artifact` / `revise_artifact` menulis revisi secara terus                                     |
 | Kelulusan           | Eskalasi dikendalikan dalam perkhidmatan aliran kerja kelulusan                                         |
 | Penyegerakan tiket  | Penyelaras vendor melanggan acara tiket di atas; webhook masuk digunakan secara terus                   |
 | Penyegaran kalendar | Satu penyegerakan upsert acara dan klien membaca semula; tiada siaran penyegaran                        |
-| Cantuman worktree   | Direkodkan dalam `worktree_merge_log` dan dibaca dari situ                                              |
 
 ## Pelanggan
 
@@ -190,7 +189,7 @@ Setiap pelanggan di bawah dibina dalam `runCcServer` (atau perkhidmatan yang dib
 
 `TicketAssigned` ialah isyarat audit dan pemberitahuan serta pencetus pipeline. Penugasan kepada ejen merekodkan pemilikan dan tidak memulakan sebarang larian — tiada penghantar tiket. Penugasan kepada pasukan (`assignedTeamId` ditetapkan) ialah pengecualiannya: `TeamRoutingService` menghantar ketua pasukan.
 
-`TicketRemoteSyncHandler` diisytiharkan tetapi tidak pernah dibina dalam kod pengeluaran, jadi ia tidak melanggan apa-apa hari ini. `NotificationEventMapper` di pihak klien dibina hanya dalam ujiannya sendiri — ia ialah sisa laluan dalam proses dari sebelum pemisahan klien/pelayan. Toast langsung datang daripada bingkai wayar di bawah.
+Toast langsung datang daripada bingkai wayar di bawah.
 
 ## Pemetaan pemberitahuan
 

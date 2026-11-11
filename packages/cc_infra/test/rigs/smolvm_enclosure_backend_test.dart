@@ -1,18 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart'
+    show
+        RigBrowserHomeTheme,
+        browserRigHomeHtml,
+        kBrowserRigHomePath,
+        kBrowserRigHomeUrl;
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_display.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_infra/src/rigs/qemu_enclosure_backend.dart'
     show RigToolException;
-import 'package:cc_infra/src/rigs/rig_browser_defaults.dart'
-    show
-        RigBrowserHomeTheme,
-        browserRigHomeHtml,
-        kBrowserRigHomePath,
-        kBrowserRigHomeUrl;
 import 'package:cc_infra/src/rigs/rig_ports.dart' show kRigPortMuxGuestPort;
 import 'package:cc_infra/src/rigs/smolvm_enclosure_backend.dart';
 import 'package:path/path.dart' as p;

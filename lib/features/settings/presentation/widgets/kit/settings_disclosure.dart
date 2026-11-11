@@ -162,7 +162,7 @@ class _SettingsDisclosureState extends State<SettingsDisclosure> {
         // to is a bug.
         CcCollapsible(
           expanded: expanded,
-          duration: CcMotion.normal,
+          duration: CcMotion.moderate,
           child: Padding(padding: widget.childPadding, child: widget.child),
         ),
       ],

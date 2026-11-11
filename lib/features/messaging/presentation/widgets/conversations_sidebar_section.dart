@@ -6,6 +6,7 @@ import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/providers/agent_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
@@ -80,9 +81,8 @@ class _ConversationsSidebarSectionState
     final humanIds = {for (final space in humanSpaces) space.id};
     _rows.removeWhere((id, _) => !humanIds.contains(id));
 
-    // A plain column, not a shrink-wrapped non-scrolling ListView: this sits
-    // inside the sidebar's own scrolling list, so a nested viewport bought
-    // nothing but a second layout pass over every row.
+    // A plain column, not a shrink-wrapped ListView: inside the sidebar's own
+    // scrolling list a nested viewport only adds a layout pass over each row.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -313,7 +313,7 @@ class _SectionChevron extends StatelessWidget {
           height: kCcSidebarItemExtent,
           child: Center(
             child: AnimatedRotation(
-              duration: CcMotion.resolveToggle(context, CcMotion.normal),
+              duration: CcMotion.resolveToggle(context, CcMotion.moderate),
               curve: CcMotion.standard,
               turns: expanded ? 0 : -0.25,
               child: Icon(AppIcons.chevronDown, size: 14, color: color),

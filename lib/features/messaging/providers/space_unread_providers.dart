@@ -32,8 +32,8 @@ final spaceUserLastReadAtProvider = StreamProvider.autoDispose
 /// Whether a space has agent messages the user hasn't seen yet (the sidebar's
 /// notification-dot signal). True only when the user has opened the space
 /// before (a non-null read cursor exists) AND a top-level agent message landed
-/// after that cursor. A never-opened space shows no dot, so legacy rows don't
-/// all light up at once. Reads the server-computed activity aggregate — no
+/// after that cursor. A never-opened space shows no dot, so a space the user
+/// never visited does not light up with its whole history. Reads the server-computed activity aggregate — no
 /// per-space message-list subscription.
 ///
 /// When the space lists its conversations, the matching [conversationUnreadProvider]

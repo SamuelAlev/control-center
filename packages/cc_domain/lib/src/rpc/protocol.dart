@@ -68,14 +68,13 @@ abstract final class RpcErrorCodes {
 
 /// The repo-RPC wire-protocol versions this build speaks.
 ///
-/// `initialize` carries the client's `{'protocol': {'min': …, 'max': …}}` and
+/// `initialize` must carry the client's `{'protocol': {'min': …, 'max': …}}`;
 /// the server answers with the highest version both sides support, echoed as
-/// `capabilities.protocol.agreed`. Negotiation used to be advertised and never
-/// read on EITHER side — the range was sent, ignored, and no version was ever
-/// agreed, which is worse than not claiming to negotiate at all.
+/// `capabilities.protocol.agreed`, and refuses an `initialize` without a range
+/// or one that does not intersect its own.
 abstract final class RepoRpcProtocol {
   /// Oldest version this build can speak.
-  static const int min = 1;
+  static const int min = 2;
 
   /// Newest version this build can speak.
   static const int max = 2;

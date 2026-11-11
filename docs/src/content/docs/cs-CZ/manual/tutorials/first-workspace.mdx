@@ -2,7 +2,7 @@
 title: Váš první pracovní prostor
 description: Vytvoř pracovní prostor, zaregistruj do něj repozitář a hranici izolace si ověř sám.
 slug: cs-CZ/prirucka/tutorialy/prvni-pracovni-prostor
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Co postavíš
@@ -11,10 +11,12 @@ Na konci tohohle tutoriálu budeš mít:
 
 - Pracovní prostor pojmenovaný podle tvého projektu
 - Git repozitář zaregistrovaný do něj
-- Pět založených agentů, z nichž jednoho máš nastaveného tak, aby mohl běžet
+- Šest založených agentů, z nichž jednoho máš nastaveného tak, aby mohl běžet
 - Druhý, prázdný pracovní prostor, který dokazuje hranici izolace
 
 Úvodní nastavení ti pracovní prostor už vytvořilo. Tenhle tutoriál schválně zakládá nový, abys viděl každou část postupu.
+
+Vytvoření pracovního prostoru vyžaduje vlastníka serveru, tedy toho, kdo server nastavil. Na ploše, která běží na vlastním serveru, jsi to ty. Na cizím serveru **Přidat pracovní prostor** hlásí „Pracovní prostory může vytvářet jen vlastník serveru. Požádejte ho o vytvoření, nebo požádejte správce pracovního prostoru, aby vás pozval.“ Udělej jedno z toho a zbytek tutoriálu si projdi v tom pracovním prostoru. Registrace repozitáře v kroku 2 vyžaduje správce pracovního prostoru a druhý pracovní prostor v kroku 4 zase vlastníka serveru.
 
 Než začneš, vyber git checkout, který splní všechny tři podmínky. Registrační krok cokoli jiného odmítne:
 
@@ -35,12 +37,12 @@ Control Center se přepne do nového pracovního prostoru a otevře jeho doruče
 Za tím server publikuje událost `WorkspaceCreated` a pracovní prostor založí s tímhle:
 
 - **agentem CEO**, jehož persona je koordinace a delegování
-- čtyřmi specialisty — `qa`, `architect`, `engineer` a `librarian` — každým s vlastními pokyny a skilly
+- pěti specialisty — `qa`, `architect`, `engineer`, `librarian` a `content-synthesizer` — každým s vlastními pokyny a skilly
 - vestavěnými šablonami pipeline a řádky jejich spouštěčů
 
 Tohle dostane každý pracovní prostor, který vytvoříš, nejen ten první.
 
-Ověř to: otevři **Nastavení → Pracovní prostor → Agenti**. V soupisce je pět agentů, každý s dutým stavovým kroužkem.
+Ověř to: otevři **Nastavení → Pracovní prostor → Agenti**. V soupisce je šest agentů, každý s dutým stavovým kroužkem.
 
 ## Krok 2: Zaregistruj repozitář
 
@@ -57,7 +59,7 @@ Ověř to: repozitář se objeví v seznamu se svým `owner/repo` a aktuální v
 
 ## Krok 3: Připrav jednoho agenta ke spuštění
 
-Těch pět agentů, které tenhle pracovní prostor právě založil, nemá adaptér ani model. Odeslání je spustí na **Control Center (built-in)** a když model nastavený není, požádá Anthropic o jeho výchozí. Fungují tedy jen tehdy, když máš připojený účet Anthropic, a i pak na modelu, který sis nevybral. Úvodní nastavení při prvním spuštění svou volbu jednou zapíše každému agentovi v prvním pracovním prostoru. Pracovní prostor, který vytvoříš potom, začíná se všemi pěti nenastavenými. Nastav jednoho teď.
+Těch šest agentů, které tenhle pracovní prostor právě založil, nemá adaptér ani model. Odeslání je spustí na **Control Center (built-in)** a když model nastavený není, požádá Anthropic o jeho výchozí. Fungují tedy jen tehdy, když máš připojený účet Anthropic, a i pak na modelu, který sis nevybral. Úvodní nastavení při prvním spuštění svou volbu jednou zapíše každému agentovi v prvním pracovním prostoru. Pracovní prostor, který vytvoříš potom, začíná se všemi šesti nenastavenými. Nastav jednoho teď.
 
 1. Otevři **Nastavení → Pracovní prostor → Agenti**
 2. V soupisce vyber `engineer`
@@ -73,7 +75,7 @@ Každý agent má vlastní adaptér a model, takže to zopakuj u každého dalš
 Z čipu v titulní liště vytvoř druhý pracovní prostor, přesně jako v kroku 1. Pak se na něj podívej:
 
 - **Nastavení → Pracovní prostor → Repozitáře** je prázdné. Repozitář, který jsi před minutou zaregistroval, tam není.
-- **Nastavení → Pracovní prostor → Agenti** drží pět agentů, ale jsou to jiné řádky. Adaptér nastavený v kroku 3 je pryč.
+- **Nastavení → Pracovní prostor → Agenti** drží šest agentů, ale jsou to jiné řádky. Adaptér nastavený v kroku 3 je pryč.
 - Seznam prostorů, tickety i paměť jsou prázdné.
 
 Nic neuniklo, protože není odkud: řádky každého pracovního prostoru žijí v jeho vlastním databázovém souboru. Čtení napříč pracovními prostory není dotaz, který by se filtroval. Je to dotaz, který nemá kde běžet. Smazání pracovního prostoru je odpojení souboru.
@@ -84,6 +86,6 @@ Celý model popisují [Pracovní prostory a izolace](/cs-CZ/prirucka/koncepty/pr
 
 ## Shrnutí
 
-Vytvořil jsi pracovní prostor, viděl, jak založí CEO a čtyři specialisty, zaregistroval do něj repozitář, dal jednomu agentovi adaptér a model a ověřil, že druhý pracovní prostor z toho nesdílí nic.
+Vytvořil jsi pracovní prostor, viděl, jak založí CEO a pět specialistů, zaregistroval do něj repozitář, dal jednomu agentovi adaptér a model a ověřil, že druhý pracovní prostor z toho nesdílí nic.
 
 **Další:** [Odešlete prvního agenta](/cs-CZ/prirucka/tutorialy/prvni-agent/), ať pracovní prostor začne pracovat.

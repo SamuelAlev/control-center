@@ -17,11 +17,13 @@ class _ScriptedRunner implements AdapterOneShotRunner {
 
   @override
   Future<String?> complete({
+    required String? workspaceId,
+    required String? requestedByUserId,
     required String adapterId,
     String? modelId,
     required String systemPrompt,
     required String prompt,
-    Duration timeout = const Duration(minutes: 2),
+    required Duration timeout,
     int maxTokens = 1024,
   }) async {
     prompts.add(prompt);
@@ -78,7 +80,7 @@ void main() {
       _ScriptedRunner([]),
       synthesizer: ContentSynthesizerResolver(FakeAgentRoster()),
     );
-    final step = await service.step(workspaceId: 'ws', roughObjective: 'fix the tests');
+    final step = await service.step(workspaceId: 'ws', requestedByUserId: 'olga', roughObjective: 'fix the tests');
     expect(step.unavailable, isTrue);
     expect(step.question, isNull);
   });
@@ -88,7 +90,7 @@ void main() {
     await build(
       runner,
       synthesizer: configured(persona: 'Keep questions under ten words.'),
-    ).step(workspaceId: 'ws', roughObjective: 'fix auth');
+    ).step(workspaceId: 'ws', requestedByUserId: 'olga', roughObjective: 'fix auth');
     expect(runner.runners.single, (
       adapterId: 'claude-code',
       modelId: 'claude-sonnet-5',
@@ -102,7 +104,7 @@ void main() {
 
   test('accepts a draft that covers all five requirements', () async {
     final service = build(_ScriptedRunner([_completeObjective]));
-    final step = await service.step(workspaceId: 'ws', roughObjective: 'fix auth');
+    final step = await service.step(workspaceId: 'ws', requestedByUserId: 'olga', roughObjective: 'fix auth');
     expect(step.isReady, isTrue);
     expect(step.objective, contains('## Verification'));
     expect(step.missing, isEmpty);
@@ -118,7 +120,7 @@ Make it work well.
 '''],
       ),
     );
-    final step = await service.step(workspaceId: 'ws', roughObjective: 'fix auth');
+    final step = await service.step(workspaceId: 'ws', requestedByUserId: 'olga', roughObjective: 'fix auth');
     expect(step.isReady, isFalse);
     expect(step.question, isNotNull);
     expect(
@@ -150,7 +152,7 @@ Ask me if stuck.
 '''],
       ),
     );
-    final step = await service.step(workspaceId: 'ws', roughObjective: 'fix auth');
+    final step = await service.step(workspaceId: 'ws', requestedByUserId: 'olga', roughObjective: 'fix auth');
     expect(step.isReady, isFalse);
     expect(step.weaknesses, isNotEmpty);
     expect(step.weaknesses.join(' '), contains('works well'));
@@ -160,6 +162,7 @@ Ask me if stuck.
     final runner = _ScriptedRunner(['What command proves it?']);
     await build(runner).step(
       workspaceId: 'ws',
+      requestedByUserId: 'olga',
       roughObjective: 'fix auth',
       transcript: ['Q: When is it done?', 'A: when the tests pass'],
     );
@@ -171,7 +174,7 @@ Ask me if stuck.
     final runner = _ScriptedRunner([
       'Which command proves the auth tests pass?',
     ]);
-    final step = await build(runner).step(workspaceId: 'ws', roughObjective: 'fix auth');
+    final step = await build(runner).step(workspaceId: 'ws', requestedByUserId: 'olga', roughObjective: 'fix auth');
     expect(step.question, 'Which command proves the auth tests pass?');
   });
 
@@ -185,6 +188,7 @@ Ask me if stuck.
     );
     final step = await service.step(
       workspaceId: 'ws',
+      requestedByUserId: 'olga',
       roughObjective: 'fix auth',
       transcript: ['Q: a', 'A: b'],
     );
@@ -195,6 +199,7 @@ Ask me if stuck.
   test('a failed model call is not an objective', () async {
     final step = await build(_ScriptedRunner([null])).step(
       workspaceId: 'ws',
+      requestedByUserId: 'olga',
       roughObjective: 'fix auth',
     );
     expect(step.isReady, isFalse);

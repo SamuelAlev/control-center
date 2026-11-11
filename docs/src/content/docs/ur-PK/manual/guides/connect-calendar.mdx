@@ -2,7 +2,7 @@
 title: Google Calendar جوڑیں
 description: Google Calendar کو workspace سے جوڑیں، کئی accounts کا انتظام کریں، اور sign-in ختم ہونے پر دوبارہ جوڑیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/کیلنڈر-جوڑیں
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 یہ گائیڈ دکھاتی ہے کہ Google Calendar کو workspace سے کیسے جوڑیں۔ یہ ہر workspace اور ہر رکن کے لیے ہے: یہ اس workspace کے لیے آپ کے events کو Control Center میں sync کرتا ہے، جہاں آپ دعوت ناموں کا جواب دے سکتے ہیں، نئے events بُک، منتقل اور حذف کر سکتے ہیں۔ پوری تصویر کے لیے دیکھیں [کیلنڈر اور شیڈولنگ](/ur-PK/ہدایت-نامہ/تصورات/کیلنڈر/)۔
@@ -15,7 +15,7 @@ sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
 ## ایک account جوڑنا
 
 1. سائیڈ بار میں **کیلنڈر** کھولیں۔
-2. calendar سائیڈ بار میں **کیلنڈر اکاؤنٹ شامل کریں** پر کلک کریں۔ (یہی حصہ **ترتیبات → ورک اسپیس → پروفائل اور شناخت** کے تحت **Google Calendar** میں بھی ہے۔)
+2. calendar سائیڈ بار میں **کیلنڈر اکاؤنٹ شامل کریں** پر کلک کریں۔ (یہی حصہ **ترتیبات → آپ → پروفائل** کے تحت **Google Calendar** میں بھی ہے۔)
 3. **Google Calendar منسلک کریں** پر کلک کریں۔ آپ کا براؤزر Google کا consent page کھولتا ہے۔
 4. account چنیں اور اپنے calendar events اور calendar list تک رسائی کی منظوری دیں۔
 
@@ -39,7 +39,6 @@ connect flow ہر client کے ساتھ `calendar.events` اور `calendar.calend
 
 مہمانوں کو Google کی اپنی ای میل دعوت، اپڈیٹ یا منسوخی ملتی ہے۔ آپ صرف ان calendars پر بُک کر سکتے ہیں جن میں آپ کا account لکھ سکتا ہے، اور صرف اپنے accounts کے ساتھ: کسی دوسرے رکن کا جڑا ہوا calendar کبھی پیش نہیں کیا جاتا۔ recurring event کے ایک occurrence کو منتقل کرنے سے بھی باقی سلسلہ برقرار رہتا ہے۔
 
-
 ## sync کیسے کام کرتا ہے
 
 **سرور** شیڈول کا مالک ہے: وہ ہر workspace کے جڑے ہوئے accounts کو ہر دو منٹ بعد دیکھتا ہے اور events کو workspace کے database میں لکھتا ہے۔ کلائنٹس کبھی Google سے بات نہیں کرتے — وہ وہی پڑھتے ہیں جو سرور نے لکھا ہے۔
@@ -60,11 +59,11 @@ connect flow ہر client کے ساتھ `calendar.events` اور `calendar.calend
 
 ## account کو disconnect کرنا
 
-calendar سائیڈ بار سے (یا **ترتیبات → ورک اسپیس → پروفائل اور شناخت** سے) اس account پر **منقطع کریں** پر کلک کریں۔ اس سے اس کے sync شدہ events حذف ہو جاتے ہیں اور سرور پر اس کا محفوظ credential صاف ہو جاتا ہے۔
+calendar سائیڈ بار سے (یا **ترتیبات → آپ → پروفائل** سے) اس account پر **منقطع کریں** پر کلک کریں۔ اس سے اس کے sync شدہ events حذف ہو جاتے ہیں اور سرور پر اس کا محفوظ credential صاف ہو جاتا ہے۔
 
 ## اپنا Google client لائیں
 
-جب آپ **اپنی ایپس استعمال کریں** چنیں تو اپنا Google client چلائیں۔ سرور کا client صرف تب لاگو ہوتا ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Google سمیت، اور سرور کا client محفوظ رہتا ہے مگر استعمال نہیں ہوتا۔ جب سرور Connect استعمال کر رہا ہو اور consent screen پر آپ کے اپنے پروجیکٹ کا نام ہو، تو workspace کو اپنا client دیں ([یہاں دیکھیں](#ایک-workspace-کو-اپنا-google-client-دیں))؛ یہ ہر mode میں لاگو ہوتا ہے۔
+جب آپ **اپنی ایپس استعمال کریں** چنیں تو اپنا Google client چلائیں۔ سرور کا client صرف تب لاگو ہوتا ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Google سمیت، اور سرور کا client محفوظ رہتا ہے مگر استعمال نہیں ہوتا۔ جب سرور Connect استعمال کر رہا ہو اور consent screen پر آپ کے اپنے پروجیکٹ کا نام ہو، تو workspace کو اپنی ایپس پر رکھیں اور اسے اپنا client دیں ([یہاں دیکھیں](#ایک-workspace-کو-اپنا-google-client-دیں))؛ یہ سرور کے کسی بھی mode میں لاگو ہوتا ہے۔
 
 1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) میں **Google Calendar API** فعال کریں اور **OAuth consent screen** ترتیب دیں، جس میں `calendar.events`، `calendar.calendarlist.readonly`، `openid` اور `email` scopes شامل ہوں۔ جب تک app verify نہ ہو، خود کو **test user** کے طور پر شامل کریں۔ 
 2. **Web application** قسم کا ایک **OAuth client ID** بنائیں۔
@@ -80,14 +79,13 @@ calendar سائیڈ بار سے (یا **ترتیبات → ورک اسپیس →
 ایک workspace سرور کے client کے بجائے اپنے client کے ذریعے Google Calendar جوڑ سکتا ہے۔ یہ صرف workspace admin یا owner ترتیب دے سکتا ہے۔
 
 1. اوپر کے مراحل 1 اور 2 کی طرح **Web application** client بنائیں
-2. **ترتیبات → ورک اسپیس → عام → پرووائیڈر ایپس** پر جائیں اور **Google Calendar** کھولیں
-3. **اس ورک اسپیس کی اپنی ایپ استعمال کریں** چنیں
-4. row کے **Callback URL** کے تحت دکھایا گیا redirect URI client میں ہو بہو شامل کریں
-5. **Client id** اور **Client secret** چسپاں کریں
+2. **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں۔ **Control Center Connect** کارڈ پر **اپنی ایپس استعمال کریں** چنیں اور **لاگو کریں** پر کلک کریں
+3. Calendar کے تحت **Google Calendar ایپ** کارڈ ظاہر ہوتا ہے۔ کارڈ کے **Callback URL** کے تحت دکھایا گیا redirect URI client میں ہو بہو شامل کریں
+4. **Client id** اور **Client secret** چسپاں کریں
 
-اس workspace میں جڑے calendar accounts پھر اس client سے گزرتے ہیں، چاہے سرور لوگوں کو کسی بھی طریقے سے sign in کرائے۔ یہ کبھی سرور کے client یا Connect پر fall back نہیں کرتا: جب تک دونوں فیلڈز مکمل نہ ہوں، اس workspace میں Google Calendar بند رہتا ہے، اور row بتاتی ہے کیا غائب ہے۔ secret کبھی سرور سے باہر نہیں جاتا۔
+اس workspace میں جڑے calendar accounts پھر اس client سے گزرتے ہیں، چاہے سرور لوگوں کو کسی بھی طریقے سے sign in کرائے۔ یہ کبھی سرور کے client یا Connect پر fall back نہیں کرتا: جب تک دونوں فیلڈز مکمل نہ ہوں، اس workspace میں Google Calendar بند رہتا ہے، اور کارڈ بتاتا ہے کیا غائب ہے۔ secret کبھی سرور سے باہر نہیں جاتا۔
 
-سرور کے client اور workspace کے client کے درمیان سوئچ کرنے، یا workspace کے client id کو بدلنے سے، اس workspace کے ہر Google account کو دوبارہ جوڑنے کے لیے نشان زد کیا جاتا ہے۔ **اس سرور کی ایپ استعمال کریں** workspace کے محفوظ شدہ فیلڈز حذف کر دیتا ہے۔ سرور کے دوسرے workspaces متاثر نہیں ہوتے۔
+**اپنی ایپس استعمال کریں** ہر provider پر بیک وقت لاگو ہوتا ہے: GitHub، Linear اور GIF سرچ بھی صرف workspace کی اپنی ایپس پر چلتی ہیں۔ workspace کی sign-in ایپس بدلنے، یا workspace کے client id کو بدلنے سے، اس workspace کے ہر Google account کو دوبارہ جوڑنے کے لیے نشان زد کیا جاتا ہے۔ محفوظ شدہ فیلڈز workspace کے کسی دوسرے انتخاب پر واپس جانے پر برقرار رہتے ہیں، مگر صرف **اپنی ایپس استعمال کریں** کے تحت استعمال ہوتے ہیں۔ سرور کے دوسرے workspaces متاثر نہیں ہوتے۔
 
 ## خرابیوں کا ازالہ
 
@@ -98,8 +96,8 @@ calendar سائیڈ بار سے (یا **ترتیبات → ورک اسپیس →
 | Google سے `invalid_client`                            | id اور secret مختلف clients کے ہیں، یا client حذف ہو گیا                                                                                  |
 | منظوری کامیاب مگر sync خالی                           | آپ کا account consent screen پر **test user** نہیں، یا درخواست کیے گئے کسی scope کو نہیں دیا گیا                                                   |
 | dialog کہتا ہے کوڈ میل نہیں کھاتا                       | 8 حروف بالکل ویسے ٹائپ کریں جیسے براؤزر دکھاتا ہے۔ پانچ غلط کوڈ sign-in ختم کر دیتے ہیں؛ دوبارہ شروع کریں                                  |
-| "Couldn't update your response" یا event بنانے، منتقل کرنے یا حذف کرنے میں ناکامی                 | یہ پرانے read-only scope کے ساتھ جڑے account کی وجہ سے ہے۔ دوبارہ جوڑیں؛ آپ کے ساتھ صرف پڑھنے کے لیے بانٹا گیا calendar بھی لکھنے سے انکار کرتا ہے                                                                         |
-| سب کو دوبارہ جوڑنا پڑتا ہے                             | سرور یا workspace کا Google client بدل گیا، یا سرور کا Connect انتخاب یا key بدل گئی۔ دیکھیں [منقضی account کو دوبارہ جوڑنا](#منقضی-account-کو-دوبارہ-جوڑنا) |
+| "Couldn't update your response" یا event بنانے، منتقل کرنے یا حذف کرنے میں ناکامی                 | اکاؤنٹ کو calendar لکھنے کی اجازت نہیں دی گئی تھی۔ دوبارہ جوڑیں اور مانگے گئے ہر scope کو منظور کریں؛ آپ کے ساتھ صرف پڑھنے کے لیے بانٹا گیا calendar بھی لکھنے سے انکار کرتا ہے                                                                         |
+| سب کو دوبارہ جوڑنا پڑتا ہے                             | سرور یا workspace کا Google client بدل گیا، یا سرور یا workspace کا Connect انتخاب بدل گیا، یا سرور کی key بدل گئی۔ دیکھیں [منقضی account کو دوبارہ جوڑنا](#منقضی-account-کو-دوبارہ-جوڑنا) |
 
 ## متعلقہ گائیڈز
 

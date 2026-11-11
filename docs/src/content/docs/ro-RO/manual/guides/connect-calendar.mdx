@@ -2,7 +2,7 @@
 title: Conectează un Google Calendar
 description: Conectează Google Calendar la un spațiu de lucru, gestionează mai multe conturi și reconectează când expiră o autentificare.
 slug: ro-RO/manual/ghiduri-practice/conecteaza-calendar
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Acest ghid îți arată cum să conectezi Google Calendar la un spațiu de lucru.
@@ -22,7 +22,7 @@ imaginea completă.
 ## Conectează un cont
 
 1. Deschide **Calendar** în bara laterală.
-2. Apasă **Adaugă un cont de calendar** în bara laterală a calendarului. (Aceeași secțiune se află în **Setări → Spațiu de lucru → Profil și identitate**, sub **Google Calendar**.)
+2. Apasă **Adaugă un cont de calendar** în bara laterală a calendarului. (Aceeași secțiune se află în **Setări → Tu → Profil**, sub **Google Calendar**.)
 3. Apasă **Conectează Google Calendar**. Browserul deschide pagina de consimțământ a Google.
 4. Alege contul și aprobă accesul la evenimentele calendarului și la lista de calendare.
 
@@ -66,7 +66,8 @@ plus `openid email`, indiferent de clientul care îl rulează. Un cont conectat
 Participanții primesc invitația, actualizarea sau anularea trimisă de Google.
 Poți programa doar pe calendarele în care contul tău are voie să scrie și doar cu
 conturile tale: calendarul conectat al altui membru nu este oferit niciodată.
- Mutarea unei apariții dintr-un eveniment recurent lasă restul seriei.
+Mutarea unei apariții dintr-un eveniment recurent lasă restul seriei.
+
 ## Cum funcționează sincronizarea
 
 **Serverul** deține programul: parcurge conturile conectate ale fiecărui spațiu de
@@ -110,8 +111,7 @@ de date a fost restaurat pe o altă mașină.
 
 ## Deconectează un cont
 
-Din bara laterală a calendarului (sau **Setări → Spațiu de lucru → Profil și
-identitate**), apasă **Deconectează** pe cont. Aceasta șterge evenimentele
+Din bara laterală a calendarului (sau **Setări → Tu → Profil**), apasă **Deconectează** pe cont. Aceasta șterge evenimentele
 sincronizate și curăță acreditarea stocată pe server.
 
 ## Adu-ți propriul client Google
@@ -121,8 +121,8 @@ Clientul serverului se aplică doar atunci: cu Control Center Connect sau cu un
 Connect propriu, Connect rulează fiecare bandă, inclusiv Google, iar clientul
 serverului rămâne salvat, dar nefolosit. Ca ecranul de consimțământ să numească
 propriul tău proiect cât timp serverul folosește Connect, dă spațiului de lucru
-propriul client ([mai jos](#dă-unui-spațiu-de-lucru-propriul-client-google));
-asta se aplică în orice mod.
+propriul client ([mai jos](#dă-unui-spațiu-de-lucru-propriul-client-google)); asta se
+aplică indiferent de modul serverului.
 
 1. În [Google Cloud Console](https://console.cloud.google.com/apis/credentials), activează **Google Calendar API** și configurează **ecranul de consimțământ OAuth**, adăugând domeniile `calendar.events`, `calendar.calendarlist.readonly`, `openid` și `email`. Cât timp aplicația nu este verificată, adaugă-te ca **utilizator de test**.
 2. Creează un **ID client OAuth** cu tipul de aplicație **Web application**.
@@ -146,22 +146,17 @@ celui al serverului. Doar un administrator sau un proprietar al spațiului de lu
 o poate configura.
 
 1. Creează un client Google de tip **Web application** ca la pașii 1 și 2 de mai sus
-2. Mergi la **Setări → Spațiu de lucru → General → Aplicații ale providerilor** și deschide **Google Calendar**
-3. Alege **Folosește aplicația proprie a acestui spațiu de lucru**
-4. Adaugă clientului URI-ul de redirecționare afișat de rând sub **URL de callback**, întocmai
-5. Lipește **Client id** și **Client secret**
+2. Mergi la **Setări → Spațiu de lucru → Integrări**. Pe cardul **Control Center Connect**, alege **Folosește aplicațiile mele** și apasă **Aplică**
+3. La Calendar apare cardul aplicației **Google Calendar**. Adaugă clientului URI-ul de redirecționare afișat de card sub **URL de callback**, întocmai
+4. Lipește **Client id** și **Client secret**
 
 Conturile de calendar conectate în acest spațiu de lucru trec atunci prin acel
 client, indiferent cum autentifică serverul oamenii. Nu revin niciodată la clientul
 serverului sau la Connect: până când ambele câmpuri sunt completate, Google Calendar
-este oprit în acest spațiu de lucru, iar rândul spune ce lipsește. Secretul nu
+este oprit în acest spațiu de lucru, iar cardul spune ce lipsește. Secretul nu
 parăsește niciodată serverul.
 
-Trecerea între clientul serverului și cel al spațiului de lucru, sau schimbarea
-id-ului clientului spațiului de lucru, marchează fiecare cont Google din acest
-spațiu de lucru pentru reconectare. **Folosește aplicația acestui server** șterge
-câmpurile salvate ale spațiului de lucru. Celelalte spații de lucru de pe server nu
-sunt afectate.
+**Folosește aplicațiile mele** acoperă toți furnizorii deodată: GitHub, Linear și căutarea GIF funcționează și ele doar cu aplicațiile proprii ale spațiului de lucru. Trecerea între aplicațiile de autentificare ale spațiului de lucru, sau schimbarea id-ului clientului spațiului de lucru, marchează fiecare cont Google din acest spațiu de lucru pentru reconectare. Câmpurile salvate rămân când spațiul de lucru trece la altă alegere, dar sunt folosite doar sub **Folosește aplicațiile mele**. Celelalte spații de lucru de pe server nu sunt afectate.
 
 ## Depanare
 
@@ -172,8 +167,8 @@ sunt afectate.
 | `invalid_client` de la Google                       | Id-ul și secretul provin din clienți diferiți sau clientul a fost șters                                                              |
 | Aprobarea reușește, dar sincronizarea este goală    | Contul tău nu este **utilizator de test** pe ecranul de consimțământ sau un domeniu cerut nu a fost acordat                       |
 | Dialogul spune că codul nu se potrivește            | Tastează cele 8 caractere exact cum le afișează browserul. Cinci coduri greșite încheie autentificarea; pornește din nou              |
-| „Nu s-a putut actualiza răspunsul", sau programarea, mutarea ori ștergerea eșuează       | Contul a fost conectat cu vechiul domeniu doar de citire. Reconectează-l; un calendar partajat cu tine doar pentru citire refuză și scrierile                                                   |
-| Toată lumea trebuie să se reconecteze               | Clientul Google al serverului sau al spațiului de lucru s-a schimbat, sau alegerea ori cheia lui Connect de pe server s-a schimbat. Vezi [Reconectează un cont expirat](#reconectează-un-cont-expirat) |
+| „Nu s-a putut actualiza răspunsul", sau programarea, mutarea ori ștergerea eșuează       | Contul nu a acordat accesul de scriere la calendar. Reconectează-l și aprobă fiecare domeniu cerut; un calendar partajat cu tine doar pentru citire refuză și scrierile                                                   |
+| Toată lumea trebuie să se reconecteze               | Clientul Google al serverului sau al spațiului de lucru s-a schimbat, sau alegerea lui Connect de pe server ori din spațiul de lucru, sau cheia serverului, s-a schimbat. Vezi [Reconectează un cont expirat](#reconectează-un-cont-expirat) |
 
 ## Ghiduri conexe
 

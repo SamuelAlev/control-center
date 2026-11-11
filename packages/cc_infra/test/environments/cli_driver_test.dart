@@ -63,6 +63,7 @@ void main() {
     bool withStart = true,
     int readyTimeout = 1,
     Map<String, int> timeouts = const {},
+    List<String> interactive = const [],
   }) => CliEnvironmentComponent(
     id: 'tool',
     label: 'Tool',
@@ -107,6 +108,7 @@ void main() {
     statusMap: map,
     readyTimeoutSeconds: readyTimeout,
     timeouts: timeouts,
+    interactive: interactive,
   );
 
   CliContext context({
@@ -360,6 +362,135 @@ void main() {
       expect(verbCalls(), ['tool env start fix-login']);
     });
 
+    group('a verb that needs a person', () {
+      EnvironmentCommandResult needs(int exitCode) => failed(
+        exitCode,
+        error: EnvironmentError(
+          code: 'needs-you',
+          message: 'Needs an answer',
+          exitCode: exitCode,
+        ),
+      );
+
+      late List<(String, String)> onTerminal;
+
+      Future<void> terminal(String verb, EnvironmentError reason) async =>
+          onTerminal.add((verb, reason.code));
+
+      setUp(() => onTerminal = []);
+
+      test('runs again on a terminal, then waits for ready', () async {
+        statuses = [missing, starting, ready];
+        verbs['create'] = needs(3);
+
+        final report = await driver.up(
+          context(
+            tool: component(map: statusMap, interactive: const ['create']),
+          ),
+          onTerminal: terminal,
+        );
+
+        expect(report.state, EnvironmentReportedState.ready);
+        expect(onTerminal, [('create', 'needs-you')]);
+      });
+
+      test('a stopped one goes there through start', () async {
+        statuses = [stopped, ready];
+        verbs['start'] = needs(3);
+
+        await driver.up(
+          context(
+            tool: component(map: statusMap, interactive: const ['start']),
+          ),
+          onTerminal: terminal,
+        );
+
+        expect(onTerminal, [('start', 'needs-you')]);
+      });
+
+      test('stops the start when the verb is not declared', () async {
+        statuses = [missing, ready];
+        verbs['create'] = needs(3);
+
+        await expectLater(
+          driver.up(
+            context(
+              tool: component(map: statusMap, interactive: const ['start']),
+            ),
+            onTerminal: terminal,
+          ),
+          failsWith('needs-you'),
+        );
+        expect(onTerminal, isEmpty);
+      });
+
+      test('stops the start when there is no terminal', () async {
+        statuses = [missing, ready];
+        verbs['create'] = needs(3);
+
+        await expectLater(
+          driver.up(
+            context(
+              tool: component(map: statusMap, interactive: const ['create']),
+            ),
+          ),
+          failsWith('needs-you'),
+        );
+      });
+
+      for (final (exitCode, what) in const [
+        (4, 'a sign-in'),
+        (5, 'a missing dependency'),
+      ]) {
+        test('$what is nothing a terminal answers', () async {
+          statuses = [missing, ready];
+          verbs['create'] = needs(exitCode);
+
+          await expectLater(
+            driver.up(
+              context(
+                tool: component(map: statusMap, interactive: const ['create']),
+              ),
+              onTerminal: terminal,
+            ),
+            failsWith('needs-you'),
+          );
+          expect(onTerminal, isEmpty);
+        });
+      }
+
+      test('a terminal that fails ends the start', () async {
+        statuses = [missing, ready];
+        verbs['create'] = needs(3);
+
+        await expectLater(
+          driver.up(
+            context(
+              tool: component(map: statusMap, interactive: const ['create']),
+            ),
+            onTerminal: (verb, reason) async =>
+                throw const EnvironmentDriverException(
+                  EnvironmentError(code: 'terminal-failed', message: 'no'),
+                ),
+          ),
+          failsWith('terminal-failed'),
+        );
+      });
+
+      test('reset goes there as well', () async {
+        verbs['reset-db'] = needs(3);
+
+        await driver.reset(
+          context(
+            tool: component(map: statusMap, interactive: const ['reset']),
+          ),
+          onTerminal: terminal,
+        );
+
+        expect(onTerminal, [('reset', 'needs-you')]);
+      });
+    });
+
     test('stopped with no start verb runs create', () async {
       statuses = [stopped, ready];
       await driver.up(
@@ -550,6 +681,36 @@ void main() {
       await expectLater(driver.destroy(context()), failsWith('command-failed'));
     });
 
+    test(
+      'a destroy refused in words is success once status says gone',
+      () async {
+        // The tool names the reason only in prose here, and as a code from
+        // `status`: without asking, the row could never be removed.
+        verbs['destroy'] = failed(
+          1,
+          stderr: 'Environment fix-login does not exist',
+        );
+        statuses = [missing];
+        await driver.destroy(context());
+        expect(runner.calls.map((call) => call.argv[2]), ['destroy', 'status']);
+      },
+    );
+
+    test(
+      'a failed destroy keeps its own error when status is unreadable',
+      () async {
+        verbs['destroy'] = failed(1, stderr: 'busy');
+        statuses = [ok('not json')];
+        await expectLater(
+          driver.destroy(context()),
+          failsWith(
+            'command-failed',
+            isA<EnvironmentError>().having((e) => e.message, 'message', 'busy'),
+          ),
+        );
+      },
+    );
+
     test('list reads names through the map', () async {
       verbs['ls'] = ok(
         jsonEncode([
@@ -568,6 +729,36 @@ void main() {
         ]),
       );
       expect(await driver.list(context(tool: component())), ['a', 'b']);
+    });
+
+    test('list reads natively when the map names no pointer', () async {
+      verbs['ls'] = ok(
+        jsonEncode([
+          {'name': 'a'},
+        ]),
+      );
+      final map = EnvironmentStatusMap.fromJson(const {
+        'state': [
+          {'state': 'ready'},
+        ],
+      });
+      expect(await driver.list(context(tool: component(map: map))), ['a']);
+    });
+
+    test('a list that is not JSON is an error, not an empty list', () async {
+      verbs['ls'] = ok('Checking for updates...');
+      await expectLater(
+        driver.list(context(tool: component())),
+        failsWith('list-unreadable'),
+      );
+    });
+
+    test('a list that is not an array is an error too', () async {
+      verbs['ls'] = ok(jsonEncode({'error': 'not signed in'}));
+      await expectLater(
+        driver.list(context(tool: component())),
+        failsWith('list-unreadable'),
+      );
     });
 
     test('logs fills {tail} and skips what isn\'t set', () async {
@@ -596,6 +787,51 @@ void main() {
       expect(lines, ['hello']);
       await subscription.cancel();
       expect(stream.cancelled, isTrue);
+    });
+
+    test(
+      'followLogs forwards stderr and ends with the verb\'s failure',
+      () async {
+        runner = FakeStreamingRunner();
+        driver = CliDriver(runner: runner);
+        final lines = <String>[];
+        final errors = <Object>[];
+        final done = Completer<void>();
+        driver
+            .followLogs(context(), service: 'app')
+            .listen(lines.add, onError: errors.add, onDone: done.complete);
+        await Future<void>.delayed(Duration.zero);
+        final stream = runner.streams.single;
+        stream.emit('hello');
+        stream.events.add(
+          const EnvironmentCommandOutput('no such env', isStderr: true),
+        );
+        stream.result.complete(failed(1, stderr: 'no such env'));
+        await done.future;
+        expect(lines, ['hello', 'no such env']);
+        expect(
+          errors.single,
+          isA<EnvironmentDriverException>().having(
+            (e) => e.error.code,
+            'code',
+            'command-failed',
+          ),
+        );
+      },
+    );
+
+    test('followLogs ends quietly when the verb exits 0', () async {
+      runner = FakeStreamingRunner();
+      driver = CliDriver(runner: runner);
+      final errors = <Object>[];
+      final done = Completer<void>();
+      driver
+          .followLogs(context())
+          .listen((_) {}, onError: errors.add, onDone: done.complete);
+      await Future<void>.delayed(Duration.zero);
+      runner.streams.single.result.complete(ok());
+      await done.future;
+      expect(errors, isEmpty);
     });
 
     test('exec joins the command into one argument', () async {

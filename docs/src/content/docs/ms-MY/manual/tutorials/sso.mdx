@@ -2,7 +2,7 @@
 title: Daftar masuk pasukan anda dengan SSO
 description: Sambungkan Okta (SAML) ke pelayan Control Center anda dan laksanakan satu log masuk dari hujung ke hujung.
 slug: ms-MY/manual-pengguna/tutorial/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -86,6 +86,16 @@ Dua polisi menentukan apa yang dilakukan oleh log masuk pertama:
   kerja yang eksplisit, iaitu lalai yang lebih selamat.
 - **Peruntukkan pengguna tidak diketahui pada log masuk pertama** — hidup
   secara lalai; matikannya untuk menolak sesiapa yang akaunnya belum wujud.
+
+Jika orang sudah mempunyai akaun pada pelayan ini, sahkan alamat e-mel mereka
+sebelum sesiapa pun log masuk dengan SSO: buka **Tetapan → Pelayan → Orang**
+dan gunakan **Sahkan e-mel** pada setiap baris yang ditandai **E-mel belum
+disahkan**. Log masuk hanya memadankan akaun sedia ada mengikut e-mel apabila
+alamat itu telah disahkan (atau ditetapkan oleh SSO atau SCIM). Alamat yang
+ditaip seseorang dalam profil mereka sendiri atau pada jemputan tidak memadankan
+apa-apa, jadi tanpa langkah ini mereka mendapat akaun kedua, atau ditolak apabila
+peruntukkan pengguna tidak diketahui dimatikan. Lihat
+[Cara log masuk memadankan akaun sedia ada](/ms-MY/manual-pengguna/panduan-cara/sso-oidc/#bagaimana-log-masuk-memadankan-akaun-sedia-ada).
 
 Secara pilihan, petakan atribut yang membawa nama kumpulan (milik Okta
 lazimnya `groups`) dan terjemahkan kumpulan kepada peranan menggunakan peta

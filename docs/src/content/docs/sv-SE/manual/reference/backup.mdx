@@ -2,7 +2,7 @@
 title: Säkerhetskopia, export och import
 description: Ögonblicksbildens struktur, manifestet, varje säkerhetskopieringsåtgärd och överföringsväg, och exakt vilka filer en säkerhetskopia innehåller och inte innehåller.
 slug: sv-SE/handbok/referens/sakerhetskopia
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Allt som Control Center kan kopiera, lämna över eller ta över, och den exakta formen på
@@ -112,6 +112,7 @@ databas, och inget av resten följer med:
 | `models/`                           | Nej                  | Nej                    |
 | `meetings/<meetingId>/`             | Nej                  | Nej                    |
 | `rigs/`                             | Nej                  | Nej                    |
+| `_agent_hooks/`                     | Nej                  | Nej                    |
 
 En del av det är umbärligt – `spaces/` innehåller copy-on-write-worktrees som
 återskapas från repona, `pr_clones/` är en cache, `models/` laddas ner på nytt, `rigs/`
@@ -121,6 +122,10 @@ med, och `secrets.json` innehåller varje parkopplingsnyckel, leverantörsuppgif
 SSO-inställning i installationen. Se
 [Säkerhetskopiera och återställ](/sv-SE/handbok/how-to-guider/sakerhetskopiera-och-aterstall/#kopiera-säkerhetskopior-bort-från-maskinen)
 för att täcka resten.
+:::caution[En arbetsytedatabas innehåller webhook-hemligheter]
+`workspace.db` är hela arbetsytan: konversationer, körloggar, kodindexet, repolänkar, miljödefinitioner och medlemmar. Den innehåller också arbetsytans pipeline-webhook-tokens och webhook-hemligheter för ärendesynk i läsbar form, så behandla en nedladdad export eller säkerhetskopia som en hemlighet. Den innehåller ingen leverantörsinloggning, enhetsnyckel eller användarhemlighet; de finns i `global.db` och `secrets.json`.
+:::
+
 :::note[Chattbottens tokens stannar kvar med avsikt]
 Att `chat_credentials/` ligger bredvid databasen i stället för i den är varför en
 arbetsyta som lämnas till någon annan inte bär några levande bottokens. Se
@@ -144,7 +149,7 @@ säkerhetskopiering är inkopplad, som demoservern.
 | `workspace.listBackups` | read | Arbetsyta | `admin` | inga | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | Arbetsyta | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Arbetsyta  | `admin`               | inga          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Arbetsyta  | `owner`               | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | Arbetsyta  | `owner` och serverägaren | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Installation* | `owner`           | `id`          | registerrad markerad som borttagen |
 
 * `workspace.delete` saknar omfattning eftersom raden den markerar ligger i det globala
@@ -168,8 +173,12 @@ installationens **ägare** (`ServerAuthority.serverOwner`), samma grind som
 att vara admin för en arbetsyta räcker inte för att hantera de andra. Borttagning
 accepterar bara det listade tidsstämpelkatalognamnet, inte en godtycklig sökväg
 på servern, och tar bort hela ögonblicksbilden (även ofullständiga sådana).
-Export/import per arbetsyta ligger kvar hos arbetsytans admin/ägare, inte hos
-installationens ägare.
+Export av arbetsyta och nedladdning av schemalagda säkerhetskopior ligger kvar hos
+arbetsytans admin.
+:::
+
+:::note[Återställning tillhör serverägaren]
+`workspace.import` och `POST /backup/restore` gör att servern tar över en databasfil vars rader den sedan behandlar som sina egna: repolänkar och vem som skapade dem, miljödefinitioner som körs på värden, worktree- och loggsökvägar. Därför kräver båda serverägaren (`ServerAuthority.serverOwner`), som också måste vara arbetsytans ägare. Alla andra, och varje anropare på en värd utan någon registrerad ägare, nekas med `server_owner_required`. Ingen trigger eller vy som filen tar med sig tas över.
 :::
 
 ### Svaret från `server.listBackups`
@@ -243,7 +252,7 @@ signatur över dess målsträng med dess parkopplings-PSK och rollen nedan.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Arbetsytans **admin** |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installationens **ägare** |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Arbetsytans **admin**; installationens **ägare** när arbetsytan har raderats |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Arbetsytans **ägare** |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Installationens **ägare** som också är arbetsytans **ägare** (annars `403` med `server_owner_required`) |
 
 `w` är ett arbetsyte-id, `n` ett namn på en katalog för en ögonblicksbild eller en
 schemalagd säkerhetskopia, `d` det anropande enhets-id:t och `s` signaturen. På

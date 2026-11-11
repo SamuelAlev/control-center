@@ -25,9 +25,6 @@ abstract final class CcMotion {
   /// 160ms — dropdowns, tabs, switch thumb, short panel travel.
   static const Duration moderate = Duration(milliseconds: 160);
 
-  /// Backward-compatible alias of [moderate].
-  static const Duration normal = moderate;
-
   /// 240ms — dialogs, drawers, large chrome.
   static const Duration slow = Duration(milliseconds: 240);
 

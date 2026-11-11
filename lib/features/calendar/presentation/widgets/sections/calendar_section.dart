@@ -10,8 +10,12 @@ import 'package:control_center/shared/widgets/section_card.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Settings → Integrations: connect one or more Google Calendar accounts to the
-/// active workspace, each disconnectable on its own.
+/// Settings → You → Profile, under Connected accounts: connect one or more
+/// Google Calendar accounts, each disconnectable on its own.
+///
+/// The accounts are the person's, but kept per workspace: they sync events
+/// into the workspace settings were opened from and nowhere else, which the
+/// card's line says by name.
 class CalendarSection extends ConsumerWidget {
   /// Creates a [CalendarSection].
   const CalendarSection({super.key});
@@ -22,9 +26,13 @@ class CalendarSection extends ConsumerWidget {
     final accounts =
         ref.watch(googleAccountsProvider).asData?.value ?? const [];
     final workspaceId = ref.watch(activeWorkspaceIdProvider);
+    final workspaceName = ref.watch(activeWorkspaceProvider)?.name;
 
     return SectionCard(
       label: l10n.calendarSettingsTitle,
+      subtitle: workspaceName == null
+          ? null
+          : Text(l10n.accountReachWorkspace(workspaceName)),
       child: Column(
         children: [
           for (final account in accounts)

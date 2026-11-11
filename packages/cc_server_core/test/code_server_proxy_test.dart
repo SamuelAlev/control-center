@@ -30,6 +30,7 @@ void main() {
     late Completer<void> finishStream;
     const knownSid = 'known-capability-token';
     const foreignSid = 'foreign-capability-token';
+    const otherUserSid = 'other-user-capability-token';
 
     setUp(() async {
       tmp = Directory.systemTemp.createTempSync('cc_vscode_proxy_test');
@@ -94,6 +95,21 @@ void main() {
               port: upstream.port,
               folderPath: '/tmp/fake-worktree',
               deviceId: 'device-a',
+              userId: 'user-a',
+              expiresAt: sessionExpiresAt,
+              status: CodeServerStatus.ready,
+            );
+          }
+          if (sid == otherUserSid) {
+            // Opened from device-a by another user before the device was
+            // reassigned to user-a.
+            return CodeServerSession(
+              sessionId: sid,
+              workspaceId: 'wsA',
+              port: upstream.port,
+              folderPath: '/tmp/fake-worktree',
+              deviceId: 'device-a',
+              userId: 'user-owner',
               expiresAt: sessionExpiresAt,
               status: CodeServerStatus.ready,
             );
@@ -117,6 +133,19 @@ void main() {
       final resp = await get('/proxy/vscode/$foreignSid/');
       await resp.body.drain<void>();
       expect(resp.statusCode, 403);
+    });
+
+    test('another user on the same device is answered as unknown', () async {
+      final unknown = await get('/proxy/vscode/$foreignSid/');
+      await unknown.body.drain<void>();
+      final resp = await get('/proxy/vscode/$otherUserSid/');
+      final body = await resp.body
+          .cast<List<int>>()
+          .transform(utf8.decoder)
+          .join();
+      expect(resp.statusCode, unknown.statusCode);
+      expect(resp.statusCode, 403);
+      expect(body, isNot(contains('upstream:')));
     });
 
     test('403 for a missing capability (bare prefix)', () async {
@@ -315,6 +344,7 @@ void main() {
                 port: upstream.port,
                 folderPath: '/tmp/fake-worktree',
                 deviceId: 'device-a',
+                userId: 'user-a',
                 expiresAt: DateTime.now().add(const Duration(hours: 1)),
                 status: CodeServerStatus.ready,
               )
@@ -355,7 +385,7 @@ void main() {
     late Directory tmp;
     late RemoteRpcClient client;
     late String psk;
-    late List<({String sid, String path, int? line, String? window})> reports;
+    late List<({String sid, String path, int? line, String window})> reports;
     late List<({String sid, String path, bool dirty})> dirtyReports;
     late DateTime sessionExpiresAt;
     late StreamController<Map<String, dynamic>> commands;
@@ -402,6 +432,7 @@ void main() {
                 port: upstream.port,
                 folderPath: '/tmp/fake-worktree',
                 deviceId: 'device-a',
+                userId: 'user-a',
                 expiresAt: sessionExpiresAt,
                 status: CodeServerStatus.ready,
               )
@@ -453,7 +484,7 @@ void main() {
       () async {
         final status = await postReport(
           bridgeSid,
-          '{"path":"/tmp/fake-worktree/lib/foo.dart","line":41}',
+          '{"path":"/tmp/fake-worktree/lib/foo.dart","line":41,"window":"w-0"}',
         );
         expect(status, HttpStatus.noContent);
         // The upstream would return 200 and never invoke the report callback.
@@ -461,7 +492,7 @@ void main() {
         expect(reports.single.sid, bridgeSid);
         expect(reports.single.path, '/tmp/fake-worktree/lib/foo.dart');
         expect(reports.single.line, 41);
-        expect(reports.single.window, isNull);
+        expect(reports.single.window, 'w-0');
       },
     );
 
@@ -484,6 +515,14 @@ void main() {
 
     test('a malformed private report is ignored without error', () async {
       expect(await postReport(bridgeSid, 'not-json'), HttpStatus.noContent);
+      expect(reports, isEmpty);
+    });
+
+    test('an open report without a window id is dropped', () async {
+      expect(
+        await postReport(bridgeSid, '{"path":"/tmp/fake-worktree/lib/a.dart"}'),
+        HttpStatus.noContent,
+      );
       expect(reports, isEmpty);
     });
 
@@ -924,6 +963,7 @@ _bootWsProxy(String knownSid) async {
           port: upstream.port,
           folderPath: '/tmp/fake-worktree',
           deviceId: 'device-a',
+          userId: 'user-a',
           expiresAt: DateTime.now().add(const Duration(hours: 1)),
           status: CodeServerStatus.ready,
         );

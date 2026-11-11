@@ -2,7 +2,7 @@
 title: 파이프라인 템플릿 만들기
 description: 파이프라인 편집기에서 DAG 워크플로 템플릿을 작성합니다. 노드를 추가하고 연결하며 입력을 선언해 실행할 수 있게 만듭니다.
 slug: ko-KR/매뉴얼/사용-가이드/파이프라인-만들기
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 파이프라인 템플릿은 워크스페이스 설정에서 작성합니다. 워크스페이스 사이드바의
@@ -39,7 +39,7 @@ ID 대화상자는 없습니다. 편집기는 **새 파이프라인**이라는 �
 | **Bash script**                 | listen    | `{{state}}` 치환과 함께 셸 스크립트를 실행합니다. 에이전트는 디스패치되지 않습니다       |
 | **Open conversation**           | listen    | 실행의 유일한 표시 스페이스와 그 체크아웃을 엽니다. 에이전트 노드가 이 방에 참여합니다   |
 | **Clone PR branch**             | listen    | `gh pr view`로 PR 헤드 브랜치를 찾아 실행 디렉터리로 클론합니다                         |
-| **Post PR comment**             | listen    | 취합한 결과를 GitHub 리뷰 댓글로 PR에 게시합니다                                        |
+| **Post PR comment**             | listen    | 서버에서 PR에 리뷰 댓글을 게시합니다: 취합한 결과 또는 `message`                        |
 | **Reviewer (prompt)**           | listen    | 전문 리뷰어 에이전트를 디스패치하고, 에이전트가 결과를 제출할 때까지 중단합니다          |
 | **Consolidate (join)**          | join      | 여러 업스트림 분기를 기다린 뒤 에이전트에게 그 출력을 취합하도록 요청합니다             |
 | **Custom prompt**               | listen    | `promptAgent` 본문을 거치는 범용 프롬프트 기반 노드                                     |
@@ -131,6 +131,7 @@ ID 대화상자는 없습니다. 편집기는 **새 파이프라인**이라는 �
   페이로드의 `repo_full_name`), `GH_TOKEN`과 `GITHUB_TOKEN`에 그 저장소 하나만
   읽을 수 있는 토큰이 들어가므로, 그 저장소에 대한 `gh`와 `git clone`이 별도
   설정 없이 동작합니다. 그렇지 않으면 GitHub 토큰이 없습니다.
+- 스크립트는 GitHub에 쓸 수 없습니다. 해당 토큰으로는 `gh pr comment`, `gh pr merge`, `gh pr create`, `git push`가 실패합니다. 댓글은 대신 **Post PR comment** 노드로 남기세요(취합된 결과 대신 직접 작성한 텍스트를 게시하려면 `{{key}}` 플레이스홀더가 포함된 `extras.message`를 설정합니다). 푸시와 풀 리퀘스트 열기는 에이전트 노드에서 하세요. 에이전트의 `git push`는 실행 게이트웨이를 거치고, `open_pull_request` 도구로 PR을 엽니다. 병합은 사람이 하며, 어떤 노드도 병합하지 않습니다.
 - bash 단계가 있는 파이프라인은 워크스페이스 관리자만 만들거나 편집할 수 있습니다.
 - 스크립트는 문자 그대로 `bash` 실행 파일로 스폰되므로 서버 호스트의 `PATH`에
   `bash`가 있어야 합니다.

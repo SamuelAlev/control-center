@@ -2,7 +2,7 @@
 title: Eventos de dominio
 description: Catálogo completo de los 54 eventos de dominio, sus cargas útiles y los suscriptores del servidor que los consumen.
 slug: es-ES/manual/referencia/eventos-de-dominio
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bus de eventos
@@ -148,14 +148,13 @@ Varios subsistemas que desde fuera parecen basados en eventos no lo son. Se enum
 
 | Subdominio           | Cómo cambia el estado en su lugar                                                                                 |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memoria              | `record_memory_fact` y sus compañeras escriben y devuelven; la recuperación lee. Nada publica al registrar un hecho o un conflicto |
+| Memoria              | `propose_fact` y sus compañeras escriben y devuelven; la recuperación lee. Nada publica al registrar un hecho o un conflicto |
 | Orquestación       | La propuesta, su aprobación y la ejecución de pipeline generada son filas y llamadas RPC                        |
 | Documentos de plan      | `submit_plan` escribe una revisión; la aprobación materializa una orquestación. Ninguna de las dos se anuncia           |
 | Artefactos           | `publish_artifact` / `revise_artifact` escriben revisiones directamente                                          |
 | Aprobaciones           | La escalada se gestiona dentro del servicio de flujo de aprobación                                              |
 | Sincronización de tickets         | El coordinador de proveedores se suscribe a los eventos de tickets de arriba; los webhooks entrantes se aplican directamente     |
 | Actualización del calendario    | Una sincronización hace upsert de los eventos y el cliente vuelve a leer; no hay ninguna difusión de actualización                            |
-| Fusiones de worktree     | Se registran en `worktree_merge_log` y se leen desde ahí                                                    |
 
 ## Suscriptores
 
@@ -190,7 +189,7 @@ Todos los suscriptores de abajo se construyen dentro de `runCcServer` (o de un s
 
 `TicketAssigned` es una señal de auditoría y de notificación, y un disparador de pipeline. La asignación a un agente registra la titularidad y no inicia ninguna ejecución: no hay ningún despachador de tickets. La asignación a un equipo (`assignedTeamId` definido) es la excepción: `TeamRoutingService` despacha al líder del equipo.
 
-`TicketRemoteSyncHandler` está declarado, pero nunca se construye en el código de producción, así que hoy no se suscribe a nada. El `NotificationEventMapper` del lado del cliente solo se construye en su propio test: es el vestigio de la ruta en proceso anterior a la separación entre cliente y servidor. Los toasts en vivo proceden de las tramas de abajo.
+Los toasts en vivo proceden de las tramas de abajo.
 
 ## Mapeo de notificaciones
 

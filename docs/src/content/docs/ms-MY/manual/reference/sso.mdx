@@ -2,7 +2,7 @@
 title: Rujukan konfigurasi SSO
 description: Setiap tetapan, titik akhir, operasi dan kod ralat daftar masuk tunggal.
 slug: ms-MY/manual-pengguna/rujukan/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Semua yang boleh dikonfigurasikan tentang daftar masuk tunggal, di satu tempat.
@@ -34,6 +34,18 @@ boleh bercanggah dengannya).
 | `groupRoleMap`         | kedua-duanya  | `{}`            | kumpulan → peranan; pemetaan pemilik ditolak semasa menyimpan                                                                                          |
 | `autoMember`           | kedua-duanya  | hidup           | tambah pengguna secara automatik ke setiap ruang kerja pada log masuk pertama                                                                        |
 | `allowJit`             | kedua-duanya  | hidup           | peruntukkan pengguna tidak diketahui semasa log masuk                                                                                                |
+
+## Padanan akaun
+
+`SsoProvisioner` menyelesaikan log masuk mengikut susunan ini dan tidak sekali-kali mengikut nama pengguna:
+
+1. `(users.sso_issuer, users.sso_subject)` sama dengan issuer dan subjek log masuk itu (NameID SAML / `sub` OIDC).
+2. Akaun yang alamatnya sama dengan e-mel log masuk, hanya apabila kedua-dua pihak mengesahkannya: penyedia (OIDC `email_verified: true`; tuntutan yang hilang bukan pengesahan; asersi SAML yang ditandatangani sentiasa pengesahan) dan akaun (`users.email_verified`). Alamat disimpan dipangkas dan huruf kecil, dan dibandingkan dengan cara itu. Alamat yang disahkan hanya sepadan apabila tepat satu akaun memegangnya dalam keadaan disahkan; dua pemegang tidak sepadan dengan apa-apa (dilog tanpa alamat), dan tiada akaun boleh disahkan untuk varian huruf besar/kecil bagi alamat yang dipegang disahkan oleh akaun lain.
+3. Jika tidak, akaun baharu apabila `allowJit` dihidupkan; penolakan apabila ia dimatikan.
+
+`users.email_verified` ditetapkan oleh log masuk SSO atau push SCIM yang membawa alamat itu, atau oleh pemilik pelayan dengan `users.vouchEmail` (**Tetapan → Pelayan → Orang → Sahkan e-mel**, diaudit sebagai `user.email_vouched`). Suntingan profil pemilik sendiri mengesahkan alamat mereka sendiri. Sebarang suntingan profil lain, dan sebarang alamat yang ditaip pada jemputan, kekal tidak disahkan, dan menyunting alamat mengosongkan bendera itu. Log masuk yang disahkan yang mencipta akaun mengambil alamat daripada akaun yang hanya menaipnya (diaudit sebagai `user.email_unvouched_cleared`), tidak sekali-kali daripada akaun yang memegangnya dalam keadaan disahkan; dalam kes itu akaun baharu tidak mendapat alamat.
+
+Akaun yang dipadankan dan sudah dipinkan kepada subjek atau issuer lain menolak log masuk dengan `This account is already linked to a different SSO identity`. Akaun yang dinyahaktifkan menolak dengan `This account has been deactivated`.
 
 ## Konfigurasi proses
 
@@ -134,6 +146,7 @@ Kegagalan `cc_saml_verify_response` membawa kod yang stabil:
   KERJA MENGIKUT REKA BENTUK.
 - `users.sso_subject` + `users.sso_issuer` — sematan subjek penyedia, unik bagi
   setiap `(issuer, subject)` melalui indeks separa.
+- `users.email_verified`: sama ada alamat akaun boleh sepadan dengan log masuk SSO atau push SCIM (lihat [Padanan akaun](#padanan-akaun)).
 - `users.deactivated_at` — cap nyahaktifan SCIM.
 - Token pembawa SCIM dan rahsia klien OIDC disimpan dalam fail rahsia 0600,
   tidak pernah dalam pangkalan data.

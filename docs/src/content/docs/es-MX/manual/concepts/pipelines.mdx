@@ -2,7 +2,7 @@
 title: Pipelines y automatización
 description: Por qué los pipelines separan la programación del trabajo, qué inicia realmente una ejecución y cuáles de las plantillas integradas funcionan de entrada.
 slug: es-MX/manual/conceptos/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Los pipelines son la mitad determinista de Control Center. Un agente decide qué
@@ -37,7 +37,7 @@ reanudar un paso, porque reanudar sería peor que detenerse:
   parcial `orchestration.awaitApproval`. `human.gate` no queda exento.
 - Un paso declarado como `extras: {'idempotent': false}` que estaba en curso
   cuando el servidor se detuvo puede que ya haya aplicado su efecto secundario
-  (una fusión squash, una limpieza de worktree). Volver a ejecutarlo podría
+  (una copia de seguridad del espacio de trabajo, una limpieza de worktree). Volver a ejecutarlo podría
   aplicarlo dos veces, así que el motor lo marca como fallido y te deja a ti el
   reintento.
 
@@ -148,9 +148,27 @@ y eso nunca debió ser una decisión del usuario.
 Otra asimetría que vale la pena conocer: la plantilla integrada `pr_review`
 deliberadamente ya no publica en GitHub. Publicar una revisión es un paso
 aparte que requiere aprobación del usuario, y un pipeline que publicara
-directamente duplicaría la publicación. `cross_review`, `ticket_to_pr` y
-`pr_triage` sí siguen publicando un comentario directamente en GitHub cuando se
-ejecutan.
+directamente duplicaría la publicación. `cross_review`, `ticket_to_pr`,
+`pr_triage`, `pre_merge_gate` y `external_pr_welcome` sí siguen publicando un
+comentario en GitHub cuando se ejecutan.
+
+Lo publican desde el servidor, mediante el paso **Post PR comment**
+(`prReview.comment`), nunca desde un script de shell: los pasos de shell de un
+pipeline y los sandbox de sus agentes tienen un token de GitHub que solo puede
+leer. La misma regla condiciona lo demás:
+
+- `external_pr_welcome` publica su saludo como `message` de ese paso.
+- `ticket_to_pr` hace que el agente programador envíe `agent/<ticket_id>` (a
+  través de la pasarela de ejecuciones) y abra el PR en borrador con
+  `open_pull_request`, con el inicio de sesión en GitHub de la persona que
+  inició la ejecución, o como el bot si nadie la inició. Ambos pasan por las
+  reglas del espacio de trabajo **Enviar a un remoto** y **Abrir una pull
+  request**. En Control Center Connect, una ejecución que nadie pidió, como la
+  que dispara `TicketAssigned`, no puede enviar ni abrir el PR: el bot de la app
+  compartida solo lee y comenta.
+- `pre_merge_gate` nunca fusiona. Aprobar en su puerta publica que el PR está
+  listo para que un mantenedor lo fusione; rechazar publica que se piden
+  cambios. Una persona fusiona desde la página del PR.
 
 ## Lo que el motor sabe
 

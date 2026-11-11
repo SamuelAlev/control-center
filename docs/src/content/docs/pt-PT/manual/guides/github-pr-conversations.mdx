@@ -2,7 +2,7 @@
 title: Falar com o Control Center a partir de uma PR do GitHub
 description: Peça ao Control Center uma revisão ou faça uma pergunta a partir da própria conversa da PR, sem webhook nem URL público.
 slug: pt-PT/manual/guias/conversas-pr-github
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Este guia mostra-lhe como trabalhar com o Control Center sem sair do GitHub:
@@ -32,24 +32,7 @@ exatamente como uma implementação pública.
 
 ## Descobrir o nome do seu bot
 
-Mencione `@usectrl`, a conta GitHub dedicada do Control Center. Este é o acionador predefinido; a faixa do GitHub do seu espaço de trabalho continua a tratar o pedido e a publicar as respostas. Não precisa das credenciais da conta `usectrl`.
-
-O login da própria App, `<appslug>[bot]`, e a forma curta `@appslug` também funcionam. Para consultar esse alias opcional na sua própria app:
-
-1. Vá a **Definições → Servidor → Início de sessão único** e desloque-se até ao
-   cartão **Aplicações do fornecedor**
-2. Abra o bloco **GitHub** e clique em **Testar**
-3. Copie o **Login do bot** quando for preenchido. Se ainda mostrar a dica de
-   campo vazio, o login é sempre `<appslug>[bot]` — escreva-o, ou então a forma
-   curta `@appslug`
-
-O GitHub não apresenta contas de App no preenchimento automático de `@`, pelo que os aliases da App têm de ser escritos ou copiados. O utilizador dedicado `@usectrl` é a forma predefinida de invocação; `@myapp` e `@myapp[bot]` continuam a ser aliases aceites da App.
-
-:::note[Escolha um nome de aplicação distinto]
-A forma curta é comparada como texto. Se um utilizador humano do GitHub partilhar
-o slug da sua aplicação, mencionar esse utilizador pela forma curta também chega
-ao bot. A forma completa `@myapp[bot]` é sempre inequívoca.
-:::
+Mencione `@usectrl`, a conta GitHub dedicada do Control Center. É o único acionador: mencionar o login da própria App não faz nada. A faixa do GitHub do seu espaço de trabalho continua a tratar o pedido e a publicar as respostas. Não precisa das credenciais da conta `usectrl`.
 
 ## Pedir uma revisão a partir do GitHub
 
@@ -121,7 +104,7 @@ O servidor resolve o autor de um comentário, ou quem adicionou a etiqueta
 
 - **A conta do GitHub tem de ter sessão iniciada** neste servidor. A
   correspondência faz-se pelo id numérico da conta no GitHub, nunca pelo login.
-  Inicie sessão em **Definições → Espaço de trabalho → Perfil e identidade →
+  Inicie sessão em **Definições → Você → Perfil →
   Hospedagem de código**
 - **Tem de ser membro com um papel de escrita** (`member`, `admin` ou `owner`) no
   espaço de trabalho que liga o repositório
@@ -146,7 +129,7 @@ silêncio. O mesmo vale para a etiqueta.
 | Aspeto               | Comportamento                                                            |
 | -------------------- | ------------------------------------------------------------------------ |
 | Reconhecimento       | 👀 da sua conta no comentário (ou na PR, no caso da etiqueta), dentro de uma varredura |
-| Respostas            | Publicadas no canal onde a pergunta foi feita, a começar por `**Control Center** (for @your-login):`. Numa app própria, o autor é o bot da app; através do Connect é a sua conta, a atuar através da App partilhada |
+| Respostas            | Publicadas no canal onde a pergunta foi feita, a começar por `**Control Center** (for @your-login):`. Autoria do bot da app. Na app partilhada do Connect, uma resposta dentro de uma conversa de revisão tem como autor a sua própria conta,, a menos que o operador do Connect tenha incluído esta instalação |
 | Atribuição no espaço | A pergunta é sua; o agente corre em seu nome, de acordo com as definições de autonomia do espaço |
 | Revisões             | As constatações ficam no espaço de revisão; publicar no GitHub é manual   |
 
@@ -169,9 +152,6 @@ chega durante uma paragem é apanhado na varredura seguinte.
 - Tem sessão iniciada no GitHub neste servidor, é membro com um papel de
   escrita e pode fazer push para o repositório? O servidor ignora qualquer
   outra pessoa sem responder
-- Na App partilhada do Control Center, a instalação da organização está
-  autorizada para este servidor? Consulte
-  [Autorizar este servidor para uma organização](/pt-PT/manual/guias/github-app/#autorizar-este-servidor-para-uma-organização)
 - Continua sem acontecer nada? O registo do servidor indica a varredura e a PR
   quando algo falha; procure `pr_conversation:` (o componente de sondagem) e
   `github_pr_conversation:` (a ponte)

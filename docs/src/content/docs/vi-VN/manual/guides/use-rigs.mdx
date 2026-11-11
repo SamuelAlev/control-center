@@ -2,7 +2,7 @@
 title: Cho agent một máy để kiểm thử
 description: Cho agent một trình duyệt, desktop, trình giả lập Android hoặc Trình mô phỏng iOS dùng một lần — xem trực tiếp, kèm quyền điều khiển bạn có thể tiếp quản.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Một **rig** là một cỗ máy dùng một lần mà agent mở ra khi cần thực sự thử một
@@ -132,6 +132,39 @@ Nhấn **Dừng máy** khi bạn xong việc.
 
 Quyền điều khiển là độc quyền có chủ đích: hai chủ thể cùng gõ vào một cỗ máy sẽ
 tạo ra thao tác nhập mà cả hai đều không hề muốn.
+
+### Ai có thể xem và ai có thể điều khiển
+
+Một cỗ máy được mở trong một space sẽ theo các kho mã của space đó, giống như
+chính space đó theo các kho mã của nó (xem [Space theo kho mã của chúng](/vi-VN/so-tay/khai-niem/uy-quyen/#space-đi-theo-kho-mã-của-chúng)):
+
+- **Xem nó** cần quyền đọc space: quyền đọc trên mọi kho mã mà space hiển thị,
+  và đăng nhập forge của chính bạn đọc được từng kho đó. Việc xem bao gồm danh sách
+  máy, màn hình, âm thanh, trạng thái của trình duyệt, các cổng của nó, và đọc bảng
+  nhớ tạm và các tệp của nó.
+- **Điều khiển nó** còn cần một [quyền ghi](/vi-VN/so-tay/khai-niem/uy-quyen/#thay-đổi-mã-cần-quyền-ghi)
+  trên những kho mã đó. Điều khiển bao gồm mở một cỗ máy trong space, gõ và nhấp,
+  nắm quyền điều khiển, khởi động, dừng và đóng nó, chuyển tiếp các cổng của nó, ghi
+  vào bảng nhớ tạm, thả tệp lên nó và dùng micro.
+
+Với chỉ quyền đọc, cỗ máy hiển thị **Chỉ xem** và dòng "Bạn có thể xem máy này. Điều khiển máy, chuyển tiếp cổng, dán nội dung vào hoặc thả tệp vào máy cần quyền ghi trên mọi kho lưu trữ trong không gian này." Dưới nút **Khởi động máy** đang bị vô hiệu hóa, tab cho biết "Khởi động máy ở đây cần quyền ghi trên mọi kho lưu trữ trong không gian này. Quản trị viên không gian làm việc có thể cấp quyền." Không có quyền đọc thì máy không được hiển thị, chỉ có "Bạn không thể xem máy này. Máy thuộc một không gian mà bạn không có quyền đọc."
+
+Một cỗ máy không thuộc space nào thì không tiếp cận được worktree nào, và mọi thành
+viên của không gian làm việc đều có thể xem và điều khiển nó.
+
+Một cỗ máy mang đăng nhập forge riêng của một người là của người đó để điều khiển: máy
+terminal của họ, hoặc bất kỳ máy nào được mở cho họ mà quyền truy cập mạng của nó đến
+được một forge. Chỉ người đó, và các lượt chạy agent chỉ hành động vì riêng họ, mới điều
+khiển được nó. Quản trị viên không gian làm việc và chủ sở hữu máy chủ cũng không ghi
+đè điều này. Những người khác mà space cho phép vẫn có thể xem màn hình, âm thanh, trạng
+thái và các cổng của nó, nhưng không thể điều khiển, chuyển tiếp cổng, dán vào, thả tệp
+vào, sao chép tệp ra khỏi hoặc đọc bảng nhớ tạm của nó. Cỗ máy như vậy hiển thị **Chỉ xem**
+với ghi chú này: "Bạn có thể xem máy này. Máy dùng tài khoản đăng nhập của người mà máy được mở cho, nên chỉ người đó mới có thể điều khiển, chuyển tiếp cổng, dán nội dung vào hoặc thả tệp vào máy." Một thao
+tác bị từ chối vì lý do này sẽ báo "Chỉ người mà máy này được mở cho mới có thể điều khiển. Máy dùng tài khoản đăng nhập của chính người đó." Máy terminal của người khác hoàn toàn không hiển thị
+với bạn, giống như các phiên terminal của họ.
+
+Mỗi cỗ máy cho biết bạn có điều khiển được nó hay không, và trạng thái đó tự cập nhật khi
+một grant hoặc đăng nhập forge của bạn thay đổi.
 
 ## Đưa nội dung vào và ra
 

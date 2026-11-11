@@ -2,7 +2,7 @@
 title: Állomások
 description: Minden állomásfelület, háttérrendszer, műveleti ige, életciklus-állapot, port, alapérték és szerződés – a teljes tényszerű katalógus.
 slug: hu-HU/kezikonyv/referencia/allomasok
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Csak tények. A mögöttük lévő modellhez lásd: [Állomások és elszigetelt
@@ -232,8 +232,10 @@ hálózati garanciát.
 
 | Eszköz | Leírás |
 | --- | --- |
-| `rig_list` | Egy munkaterület állomásainak listázása felülettel, állapottal, kijelzővel és vezérlővel |
+| `rig_list` | A futtatás terének állomásainak listázása felülettel, állapottal, kijelzővel és vezérlővel |
 | `rig_close` | Egy állomás megsemmisítése és a lemezének eldobása |
+
+Ezek az eszközök, akárcsak a négy használati eszköz, csak ügynökfuttatásoknak szólnak; minden más hívót elutasítanak. A futtatás csak annak a térnek az állomásait éri el, amelyre a futtatást kiadták: a `space_id` a futtatás jogosultságából származik, sosem a hívásból. Egy másik térhez vagy egyik térhez sem tartozó állomás ugyanúgy válaszol, mint a hiányzó.
 
 ## Életciklus
 
@@ -340,7 +342,7 @@ soha nem munkaterületi beállítás.
   haladnak, mint az állomásképkockák és a megbeszélés hangja.
 - **A hitelesítés** a `rig-files:<workspaceId>/<rigId>` aláírt cél plusz a
   munkaterületi tagság – ez saját cél, így egy gép *megnézésére* kiállított URL
-  nem tud fájlokat is írni bele.
+  nem tud fájlokat is írni bele. Térben megnyitott állomásnál a vágólap vagy egy fájl olvasásához a térhez való olvasási jog is kell, a vágólap írásához és a fájlok ejtéséhez pedig írási jog a tér tárolóira. Olyan állomáson, amely egy személy saját bejelentkezéseit hordozza, mindkét sáv – beleértve az olvasást is – kizárólag annak a személynek a joga. Lásd: [Ki nézheti meg, és ki vezérelheti](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/#ki-nézheti-meg-és-ki-vezérelheti).
 - **Az átvétel érvényesül.** A vágólap írása és a fájlok ejtése módosító
   művelet, ezért elutasításra kerül, amíg más tartja a vezérlést; a vágólap
   olvasása és egy fájl kiolvasása megfigyelés, ezért nem.

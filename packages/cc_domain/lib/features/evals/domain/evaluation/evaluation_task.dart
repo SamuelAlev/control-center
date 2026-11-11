@@ -60,8 +60,8 @@ enum EvaluationTaskKind {
 /// Deterministic checks inspect bytes on disk or independently compare
 /// structured results. Controlled campaigns accept only declarative oracles:
 /// candidate code runs in an enclosure with inputs, while expected values and
-/// assertions remain in the controller. Legacy local CLI command checks are
-/// not an acceptable contained-campaign oracle.
+/// assertions remain in the controller. Local CLI command checks are not an
+/// acceptable contained-campaign oracle.
 enum EvaluationVerifierKind {
   /// Run `command` in the workspace; pass when its exit status is in
   /// `expectExit` (default `[0]`).

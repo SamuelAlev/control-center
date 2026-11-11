@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:ffi';
 
 import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 import 'package:cc_natives/src/native_runtime.dart' show NativeLog;
 import 'package:cc_natives/src/native_unavailable.dart';
 import 'package:cc_natives/src/watch/directory_change_watcher.dart';

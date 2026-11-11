@@ -13,10 +13,14 @@ import 'package:cc_server_core/cc_server_core.dart';
 /// Execution ports are null (ops never built → `opUnknown`); `DemoProfile`
 /// default-denies the rest; a ratchet forces new ops to be classified. Agent
 /// runs use `ScriptedAgentLoop` (no tools, no model). Optional demo env:
-/// `CC_SERVER_DEMO_TTL_MINUTES`, `CC_SERVER_DEMO_MAX_VISITORS`,
-/// `CC_SERVER_DEMO_POOL_SIZE`, `CC_SERVER_DEMO_DISK_BUDGET_MB`,
-/// `CC_SERVER_DEMO_MAX_PER_IP`, `CC_SERVER_DEMO_INVITE_CODE`.
+/// `CC_SERVER_DEMO_TTL_MINUTES`, `CC_SERVER_DEMO_POOL_SIZE`,
+/// `CC_SERVER_DEMO_DISK_BUDGET_MB`, `CC_SERVER_DEMO_MAX_PER_IP`,
+/// `CC_SERVER_DEMO_INVITE_CODE`.
 Future<void> main(List<String> args) async {
+  // A compiled server is its own agent run client, as `cc_server` is.
+  if (args.isNotEmpty && args.first == 'agent-run') {
+    exit(await runAgentRunClient(args.sublist(1)));
+  }
   if (args.isNotEmpty && (args.first == '--version' || args.first == '-v')) {
     stdout.writeln(
       'cc_demo_server ${BuildInfo.buildVersion} (${BuildInfo.buildGitSha})',

@@ -13,6 +13,7 @@ class PermissionSpecialRow extends StatelessWidget {
   const PermissionSpecialRow({
     super.key,
     required this.rule,
+    this.inEffect = true,
     required this.canEdit,
     required this.busy,
     required this.revokeArmed,
@@ -20,6 +21,9 @@ class PermissionSpecialRow extends StatelessWidget {
   });
 
   final ActionPolicyRule rule;
+
+  /// False for a standing approval of an action that is set to deny.
+  final bool inEffect;
   final bool canEdit;
   final bool busy;
   final String? revokeArmed;
@@ -63,12 +67,17 @@ class PermissionSpecialRow extends StatelessWidget {
                 label: expired
                     ? l.permissionExpired
                     : permissionDecisionLabel(l, effective),
-                tone: expired
+                tone: expired || !inEffect
                     ? CcStatusTone.neutral
                     : permissionDecisionTone(effective),
               ),
             ],
           ),
+          if (!expired && !inEffect)
+            Text(
+              l.permissionNotInEffect,
+              style: CcTypography.caption.copyWith(color: t.textSecondary),
+            ),
           Text(
             '${rule.provenance == 'remembered' ? l.permissionRemembered : l.permissionExplicitRule} · $when',
             style: CcTypography.caption.copyWith(color: t.textTertiary),
@@ -118,6 +127,8 @@ class PermissionSpecialRow extends StatelessWidget {
         l.permissionHosts(constraint.hosts!.join(', ')),
       if (constraint.commands != null)
         l.permissionCommands(constraint.commands!.join(', ')),
+      if (constraint.tools != null)
+        l.permissionTools(constraint.tools!.join(', ')),
       if (constraint.maxCount != null)
         l.permissionMaxCount(number.format(constraint.maxCount)),
       if (constraint.maxCents != null)

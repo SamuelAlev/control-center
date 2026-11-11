@@ -4,11 +4,28 @@ import 'dart:io';
 
 import 'package:cc_harness/loop.dart';
 
-/// [AgentLoopHooks] that shells out to user-authored scripts. Each configured
-/// script receives a JSON payload on stdin and runs in [cwd] with a bounded
-/// timeout. The script's stdout/stderr are drained (and discarded): an
-/// undrained pipe fills its OS buffer and blocks a chatty script until the
-/// timeout kills it.
+/// Starts a hook script: [executable] with [args] in [workingDirectory], with
+/// [environment] added to whatever environment the starter gives every
+/// process. The server passes the run's `ToolProcessLauncher.start`, so a hook
+/// is a tool process of the run, sandboxed exactly like the others.
+typedef HookProcessStart =
+    Future<Process> Function(
+      String executable,
+      List<String> args, {
+      required String workingDirectory,
+      Map<String, String>? environment,
+    });
+
+/// [AgentLoopHooks] that runs host-configured scripts. Each configured script
+/// is started as its own executable (no shell, no arguments) through [start],
+/// receives a JSON payload on stdin and runs in [cwd] with a bounded timeout.
+/// The script's stdout/stderr are drained (and discarded): an undrained pipe
+/// fills its OS buffer and blocks a chatty script until the timeout kills it.
+///
+/// A hook gets nothing of the run's own environment: no gateway lease, no
+/// forge or provider credential. It sees only what [start] gives every
+/// process (the server's allowlisted child environment and, sandboxed, the
+/// proxy), plus the event on stdin.
 ///
 /// Failure semantics, deliberately split by what the hook is FOR:
 ///
@@ -16,27 +33,31 @@ import 'package:cc_harness/loop.dart';
 ///   observed exit code of 0 allows the call. A non-zero exit, a timeout, or a
 ///   script that could not be spawned at all all deny — a gate that cannot
 ///   answer is not permission (the same rule the loop applies to a throwing
-///   [AgentLoopHooks.preToolUse]).
+///   [AgentLoopHooks.preToolUse]). [denyTools] is the same rule for a gate
+///   that was declared but refused before the run.
 /// * The **session-start** and **post-tool** scripts only observe, so they are
 ///   best-effort: a missing or failing script never breaks the run.
 class ShellAgentLoopHooks implements AgentLoopHooks {
   /// Creates a [ShellAgentLoopHooks].
   ShellAgentLoopHooks({
     required this.cwd,
-    required this.environment,
+    required this.start,
     this.sessionStartScript,
     this.preToolScript,
     this.postToolScript,
+    this.denyTools = false,
     this.timeout = const Duration(seconds: 30),
   });
 
   /// Working directory the scripts run in.
   final String cwd;
 
-  /// The scripts' complete environment. Nothing from this process's own
-  /// environment is added: the caller builds it (the server passes its
-  /// allowlisted child environment).
-  final Map<String, String> environment;
+  /// Starts each script.
+  final HookProcessStart start;
+
+  /// Whether every tool call is denied: a pre-tool gate was declared but could
+  /// not be honored.
+  final bool denyTools;
 
   /// Script run once at session start (optional).
   final String? sessionStartScript;
@@ -54,7 +75,8 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
   /// config carrying just [sessionStartScript] observes nothing per tool, so
   /// it must not cost the run its read-only tool batching.
   @override
-  bool get interceptsTools => preToolScript != null || postToolScript != null;
+  bool get interceptsTools =>
+      denyTools || preToolScript != null || postToolScript != null;
 
   @override
   Future<void> onSessionStart() async {
@@ -65,6 +87,9 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
 
   @override
   Future<bool> preToolUse(String toolName, Map<String, dynamic> args) async {
+    if (denyTools) {
+      return false;
+    }
     if (preToolScript == null) {
       return true;
     }
@@ -72,9 +97,9 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
       preToolScript!,
       jsonEncode({'event': 'pre_tool', 'tool': toolName, 'args': args}),
     );
-    // Fail closed: only an observed clean exit allows. A spawn failure (null),
-    // a timeout (-1) and any non-zero exit — including 127 from a
-    // command-not-found shell — deny.
+    // Fail closed: only an observed clean exit allows. A spawn failure (null,
+    // which covers a missing or non-executable script), a timeout (-1) and
+    // any non-zero exit deny.
     return code == 0;
   }
 
@@ -103,13 +128,11 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
   Future<int?> _run(String script, String stdinJson) async {
     final Process process;
     try {
-      process = await Process.start(
+      process = await start(
         script,
         const [],
         workingDirectory: cwd,
-        environment: environment,
-        includeParentEnvironment: false,
-        runInShell: true,
+        environment: const {},
       );
     } on Object {
       return null;
@@ -122,9 +145,8 @@ class ShellAgentLoopHooks implements AgentLoopHooks {
       process.stdin.write(stdinJson);
       await process.stdin.close();
     } on Object {
-      // Broken pipe: the script already exited (command-not-found is the
-      // common case). The exit code is still the gate — do not treat this
-      // as a failed launch.
+      // Broken pipe: the script already exited without reading stdin. The
+      // exit code is still the gate — do not treat this as a failed launch.
     }
     try {
       return await process.exitCode.timeout(

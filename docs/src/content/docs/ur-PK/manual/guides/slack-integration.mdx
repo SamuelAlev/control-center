@@ -2,7 +2,7 @@
 title: Slack انضمام سیٹ کریں
 description: Slack کو Control Center workspace سے جوڑیں، یا تو مشترکہ Control Center app کے ذریعے یا اپنی کسی app کے ذریعے، تاکہ اراکین Slack سے ایجنٹس چلا سکیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/slack-انضمام
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 یہ گائیڈ دکھاتی ہے کہ Slack کو Control Center workspace سے کیسے جوڑیں: مشترکہ Control Center app شامل کر کے، یا اپنی ایک app کے ساتھ جو Control Center آپ کے لیے بناتا ہے یا جو آپ خود بناتے ہیں۔
@@ -25,22 +25,22 @@ bridge ساخت کے لحاظ سے provider سے آزاد ہے — ہر provider
 
 | Mode                          | کیا درکار ہے                                                                                                       | آپ کو کیا ملتا ہے                                                                           |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------- |
-| **مشترکہ Control Center ایپ** | سرور Control Center Connect استعمال کرتا ہے (**ترتیبات → سرور → سنگل سائن آن**) اور Connect Slack فراہم کرتا ہے | ایک کلک اور Slack sign-in۔ کوئی app بنانا نہیں، کوئی token چسپاں نہیں، کچھ rotate نہیں کرنا |
+| **مشترکہ Control Center ایپ** | اس workspace کی sign-in ایپس Control Center Connect کے ذریعے چلتی ہیں (سرور کا انتخاب **ترتیبات → سرور → سنگل سائن آن** میں، یا workspace کا اپنا **ترتیبات → ورک اسپیس → انٹیگریشنز** پر) اور Connect Slack فراہم کرتا ہے | ایک کلک اور Slack sign-in۔ کوئی app بنانا نہیں، کوئی token چسپاں نہیں، کچھ rotate نہیں کرنا |
 | **آپ کی اپنی ایپ**              | آپ کے Slack workspace میں ایک Slack app، جو نیچے دیے گئے تین طریقوں میں سے کسی ایک سے بنی ہو                         | آپ کا اپنا bot نام، descriptions اور slash command، جو Control Center سے editable ہیں        |
 
 ### مشترکہ Control Center ایپ شامل کریں
 
-1. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+1. Control Center میں **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
 2. Slack والے بلاک پر **Add Control Center to Slack** قطار تلاش کریں اور **Add to Slack** پر کلک کریں
 3. آپ کا براؤزر Slack کھولتا ہے۔ Slack کے ساتھ sign in کریں، Slack workspace چنیں اور install کی منظوری دیں
 4. جب براؤزر ایک کوڈ دکھائے، تو اسے اس dialog میں درج کریں جو Control Center نے کھلا چھوڑا ہے۔ اگر براؤزر خود آپ کو app میں واپس لے آئے تو کچھ ٹائپ کرنے کی ضرورت نہیں
 5. ایک toast بتاتا ہے کہ app کس Slack workspace میں شامل ہوئی، اور Slack والا بلاک کنکشن کو shared Control Center app پر چلتا دکھاتا ہے
 
-صرف workspace admin app شامل کر سکتا ہے۔ قطار بتاتی ہے کہ جب سرور اپنی apps کے بجائے Connect استعمال کرتا ہو، یا آپ کے Connect میں Slack app نہ ہو، یا اس workspace میں پہلے سے اپنی Slack app جڑی ہو، تو وہ کیوں شروع نہیں ہو سکتی۔
+صرف workspace admin app شامل کر سکتا ہے۔ قطار بتاتی ہے کہ جب اس workspace کی sign-in ایپس اپنی ایپس ہوں، Connect نہیں، یا آپ کے Connect میں Slack app نہ ہو، یا اس workspace میں پہلے سے اپنی Slack app جڑی ہو، تو وہ کیوں شروع نہیں ہو سکتی۔
 
 اپنی app سے فرق:
 
-- Slack shared app کے events کو Connect کو بھیجتا ہے۔ Connect صرف ایک reference رکھتا ہے (team، channel اور message id) اور message text گرا دیتا ہے؛ سرور Connect سے references کے لیے long-poll کرتا ہے اور ہر message خود Slack سے پڑھتا ہے۔ slash command کا text Connect سے گزرتا ہے، اسی لیے [`/cc ticket`](#ticket-drafts-from-slack) صرف ایک draft بناتا ہے
+- Slack shared app کے events کو Connect کو بھیجتا ہے۔ Connect صرف ایک reference رکھتا ہے (team، channel اور message id) اور message text گرا دیتا ہے؛ سرور Connect سے references کے لیے long-poll کرتا ہے اور ہر message خود Slack سے پڑھتا ہے۔ slash command کا text Connect سے گزرتا ہے، اسی لیے [`/cc ticket`](#slack-سے-ticket-drafts) صرف ایک draft بناتا ہے
 - bot token اس سرور کے لیے sealed ہوتا ہے اور Connect کے ذریعے renew ہوتا ہے، اس لیے کوئی token چسپاں یا rotate کرنے کی ضرورت نہیں
 - bot کا نام، descriptions اور slash command shared app کے ہیں۔ Slack قطار بتاتی ہے کہ کنکشن shared app پر چل رہا ہے اور **بوٹ حسبِ ضرورت** نہیں دیتی
 - ایک Slack workspace ایک وقت میں ایک Control Center سرور سے جڑا ہوتا ہے۔ کسی دوسرے سرور سے app شامل کرنے سے وہ وہاں منتقل ہو جاتا ہے اور اس سرور کا کنکشن رک جاتا ہے
@@ -62,7 +62,7 @@ mode بدلنے کے لیے، disconnect کریں اور دوسری سمت سے 
 ## آپشن A: Control Center کو app بنانے دیں
 
 1. [api.slack.com/apps](https://api.slack.com/apps) پر app configuration token کا جوڑا بنائیں اور **refresh** token (`xoxe-…`) کاپی کریں
-2. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+2. Control Center میں **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
 3. Slack والے بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
 4. token چسپاں کریں، app کا نام، bot نام، descriptions اور slash command ایڈجسٹ کریں، پھر **ایپ بنائیں** پر کلک کریں
 5. dialog کے دکھائے ہوئے باقی دو مراحل پورے کریں، ہر ایک Slack کا لنک ہے:
@@ -76,7 +76,7 @@ configuration token ہر استعمال پر rotate ہوتا ہے۔ Control Cent
 
 وہی app، configuration token کے بغیر — Slack آپ کو اپنی create screen دکھاتا ہے جس میں پورا manifest پہلے سے بھرا ہوتا ہے۔
 
-1. Control Center میں **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+1. Control Center میں **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
 2. Slack والے بلاک پر **میرے لیے ایپ بنائیں** پر کلک کریں
 3. app کا نام، bot نام، descriptions اور slash command ایڈجسٹ کریں — یہ link کے ساتھ جاتے ہیں
 4. **Slack میں بنائیں** پر کلک کریں۔ آپ کا براؤزر Slack کا app-creation page کھولتا ہے جس میں configuration پہلے سے بھری ہوتی ہے
@@ -130,7 +130,7 @@ message.im
 
 آپ کی اپنی app کے tokens اسی طرح Control Center تک پہنچتے ہیں۔ shared app کو ان میں سے کسی کی ضرورت نہیں۔
 
-1. **ترتیبات → ورک اسپیس → عام** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
+1. **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں اور **چیٹ برجز** کارڈ تک اسکرول کریں
 2. Slack والے بلاک پر **Connect Slack** پر کلک کریں
 3. فیلڈز بھریں:
 
@@ -189,7 +189,7 @@ reasoning دیوار جیسے متن اور tool output کے طور پر رہت�
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-`|` سے پہلے کا متن عنوان ہے، اور اس کے بعد کا متن تفصیل۔ بوٹ جواب دیتا ہے کہ اس نے ticket کا draft بنا دیا ہے۔ ابھی کچھ نہیں بنایا جاتا اور نہ ہی ticket automation چلتا ہے: draft آپ کے لیے **ترتیبات → ورک اسپیس → پروفائل اور شناخت → چیٹ سے ٹکٹ کے مسودے** میں منتظر رہتا ہے، جہاں آپ عنوان اور تفصیل درست کر سکتے ہیں، پھر **ٹکٹ بنائیں** یا **مسترد کریں** پر کلک کریں۔
+`|` سے پہلے کا متن عنوان ہے، اور اس کے بعد کا متن تفصیل۔ بوٹ جواب دیتا ہے کہ اس نے ticket کا draft بنا دیا ہے۔ ابھی کچھ نہیں بنایا جاتا اور نہ ہی ticket automation چلتا ہے: draft آپ کے لیے **ترتیبات → آپ → پروفائل → چیٹ سے ٹکٹ کے مسودے** میں منتظر رہتا ہے، جہاں آپ عنوان اور تفصیل درست کر سکتے ہیں، پھر **ٹکٹ بنائیں** یا **مسترد کریں** پر کلک کریں۔
 
 - صرف وہ رکن جس نے کمانڈ چلائی، draft دیکھتا ہے
 - جو draft آپ چھوڑ دیں وہ ایک دن بعد ختم ہو جاتا ہے۔ drafts صرف memory میں رہتے ہیں، اس لیے سرور کا restart انہیں بھی ختم کر دیتا ہے

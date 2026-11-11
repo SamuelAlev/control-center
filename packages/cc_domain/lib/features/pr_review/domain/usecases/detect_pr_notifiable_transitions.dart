@@ -28,18 +28,15 @@ class PrNotifiableState {
 
   /// Reads the slice out of one `pullRequestToWire` map.
   ///
-  /// Tolerant of every field being absent: a snapshot written by an older
-  /// server is a legitimate `before`, and the safe reading of a missing field
-  /// is the neutral one (no checks, no decision, uncomputed mergeability), all
-  /// of which suppress rather than invent a transition.
+  /// Tolerant of every field being absent: the safe reading of a missing
+  /// field is the neutral one (no checks, no decision, uncomputed
+  /// mergeability), all of which suppress rather than invent a transition.
   factory PrNotifiableState.fromWire(Map<String, dynamic> wire) {
     final author = wire['author'];
     return PrNotifiableState(
       isDraft: wire['is_draft'] == true,
       state: wire['state'] as String? ?? 'open',
-      authorLogin: author is Map
-          ? (author['login'] as String? ?? '')
-          : '',
+      authorLogin: author is Map ? (author['login'] as String? ?? '') : '',
       checksStatus: _checksFromName(wire['checks_status'] as String?),
       reviewDecision: PrReviewDecision.fromString(
         wire['review_decision'] as String?,

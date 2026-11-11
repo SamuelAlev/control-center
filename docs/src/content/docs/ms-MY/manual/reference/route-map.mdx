@@ -2,7 +2,7 @@
 title: Peta laluan
 description: Setiap laluan yang didaftarkan Control Center, berserta skrin dan parameter pertanyaannya.
 slug: ms-MY/manual-pengguna/rujukan/peta-laluan
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Cangkerang aplikasi
@@ -11,7 +11,7 @@ Cangkerang aplikasi (`ControlCenterLayout`) membalut setiap laluan dalam ruang k
 
 Gerbang itu lengkap apabila sekurang-kurangnya satu hos kod disambungkan **bagi pengguna yang telah daftar masuk** dan sekurang-kurangnya satu ruang kerja wujud.
 
-Kelayakan yang hilang dan persediaan yang hilang dilayan secara berbeza, dan pembezanya ialah `users.onboarding_finished_at` yang dibaca daripada `identity.me` pemanggil itu sendiri — bukan sekali-kali "ruang kerja wujud", yang salah sebaik sahaja seseorang dijemput ke ruang kerja yang tidak pernah diciptanya. Tanpa hos kod disambungkan, akaun yang telah melalui onboarding kekal dalam aplikasi, dan cangkerang ruang kerja memaparkan amaran dengan pautan ke Tetapan → Ruang kerja → Profil & identiti, tempat log masuk berada; yang belum pergi ke `/onboarding`. Selagi bendera itu masih tidak diketahui, pengawal mengekalkan skrin pemula dan bukannya meneka, kerana ia tidak pernah mengubah hala keluar semula daripada onboarding.
+Kelayakan yang hilang dan persediaan yang hilang dilayan secara berbeza, dan pembezanya ialah `users.onboarding_finished_at` yang dibaca daripada `identity.me` pemanggil itu sendiri — bukan sekali-kali "ruang kerja wujud", yang salah sebaik sahaja seseorang dijemput ke ruang kerja yang tidak pernah diciptanya. Tanpa hos kod disambungkan, akaun yang telah melalui onboarding kekal dalam aplikasi, dan cangkerang ruang kerja memaparkan amaran dengan pautan ke Tetapan → Anda → Profil, tempat log masuk berada; yang belum pergi ke `/onboarding`. Selagi bendera itu masih tidak diketahui, pengawal mengekalkan skrin pemula dan bukannya meneka, kerana ia tidak pernah mengubah hala keluar semula daripada onboarding.
 
 ## Laluan tanpa awalan
 
@@ -65,7 +65,7 @@ Tiada **item "Plans" dalam bar sisi**. Plan Studio terbuka sebagai tab editor da
 
 ## Laluan tetapan
 
-`/settings` mengubah hala ke `/settings/you/appearance`. Butang tetapan bar sisi dan `Cmd/Ctrl + ,` kedua-duanya menuju ke `/settings/you/appearance`.
+`/settings` mengubah hala ke `/settings/you/profile`. Butang tetapan bar sisi dan `Cmd/Ctrl + ,` kedua-duanya menuju ke `/settings/you/profile`.
 
 Laluan tetapan menggunakan ruang nama mengikut **skop** — `you/`, `workspace/`, `server/` — kerana segmen itu menyatakan siapa yang dipengaruhi oleh sesuatu perubahan. Dua laluan wujud sebelum ruang nama itu diperkenalkan dan tidak berskop dalam URL: `/settings/memory` dan `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Laluan tetapan menggunakan ruang nama mengikut **skop** — `you/`, `workspace/`
 
 | Laluan                        | Skrin                                                                      |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Tema, bahasa, tipografi, tema editor (halaman pendaratan tetapan)          |
-| `/settings/you/notifications` | Togol bagi setiap acara, waktu senyap                                      |
+| `/settings/you/profile`       | Akaun anda di pelayan ini: nama, nama pengguna, gambar dan log masuk (halaman pendaratan tetapan) |
+| `/settings/you/profile?section=accounts` | Akaun yang disambungkan: log masuk anda sendiri untuk hos kod, tiket, kalendar dan sembang, serta draf tiket daripada sembang |
+| `/settings/you/appearance`    | Tema, bahasa, tipografi, tema editor |
 | `/settings/you/audio`         | Mikrofon, imlak, pengesanan mesyuarat dan output landskap bunyi            |
+| `/settings/you/notifications` | Togol bagi setiap acara, waktu senyap                                      |
+| `/settings/you/commits`       | Siapa yang dikreditkan pada commit daripada kerja yang anda mulakan, dan kunci tandatangan commit anda |
+| `/settings/you/desktop`       | Aplikasi desktop sahaja: ikon dulang, menutup tetingkap dan dibuka semasa log masuk |
 | `/settings/you/devices`       | Telefon berganding dan kawalan jauh                                        |
 | `/settings/you/newsfeed`      | Pengurusan suapan: sumber, muat semula, keadaan bacaan                     |
+| `/settings/you/links`         | Tempat pautan dari luar Control Center dibuka                              |
 
 ### Ruang kerja
 
 | Laluan                              | Skrin                                                                                               |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil dan identiti dalam ruang kerja ini: nama, pengarang git, hos kod, kalendar |
-| `/settings/workspace/general`      | Nama, logo, glob rahsia, konkurensi semakan, penamaan cawangan, kesihatan segerak, jambatan sembang, zon bahaya |
+| `/settings/workspace/profile`      | Profil dan identiti dalam ruang kerja ini: nama, e-mel, pengarang git |
+| `/settings/workspace/general`      | Nama, logo, glob rahsia, konkurensi semakan, penamaan cawangan, zon bahaya |
+| `/settings/workspace/integrations` | Pilihan Connect, app GitHub dan token automasi, vendor dan automasi tiket, kesihatan segerak, apl penyedia milik ruang kerja, jambatan sembang, GIF. Setiap kumpulan penyedia menamakan akaun anda sendiri dan memautkan ke Akaun yang disambungkan |
 | `/settings/workspace/meetings`     | Templat nota mesyuarat dan profil suara tersimpan                                                    |
-| `/settings/workspace/members`      | Senarai ahli, jemputan, jejak audit. Jejak audit dipecahkan kepada halaman dengan `?cursor=` pilihan |
+| `/settings/workspace/members`      | Senarai ahli dan jemputan                                                                            |
 | `/settings/workspace/repositories` | Repositori yang didaftarkan dalam ruang kerja ini                                                    |
 | `/settings/workspace/environments` | Definisi persekitaran: apa yang boleh dimulakan ruang dan tugasan yang dijalankan worktree mereka |
 | `/settings/workspace/agents`       | Identiti ejen yang didaftarkan                                                                       |
@@ -108,6 +114,8 @@ Laluan tetapan menggunakan ruang nama mengikut **skop** — `you/`, `workspace/`
 | `/settings/server/rigs`        | Stesen: apa yang hos ini boleh but, imej asas, imej tersuai, mesin yang sedang berjalan |
 | `/settings/server/sandbox`     | Geran exec kotak pasir: program yang boleh dijalankan ejen daripada salinan kerja mereka bagi repositori anda |
 | `/settings/server/diagnostics` | Diagnostik dan privasi: pengotakpasiran, pembenaman, pengelogan, pelaporan ranap |
+| `/settings/server/people`      | Orang di pelayan ini dan sama ada setiap alamat disahkan (pemilik pelayan sahaja)|
+| `/settings/server/audit`       | Log audit: milik pelayan, dan ruang kerja yang anda urus                         |
 | `/settings/server/backup`      | Sandaran dan pulih: snapshot pemasangan, eksport setiap ruang kerja, import dan padam  |
 | `/settings/server/about`       | Perihal dan kemas kini                                                                |
 

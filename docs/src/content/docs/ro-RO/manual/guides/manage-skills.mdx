@@ -2,7 +2,7 @@
 title: Instalează și gestionează skill-uri
 description: Instalează și actualizează skill-urile unui spațiu de lucru prin poarta de scanare, apoi compară reviziile salvate cu ajutorul evaluărilor de skill-uri cu buget.
 slug: ro-RO/manual/ghiduri-practice/gestioneaza-skill-uri
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Acest ghid îți arată cum să umpli un spațiu de lucru cu skill-uri de pe GitHub:
@@ -98,7 +98,7 @@ fișierul de blocare ca referință de revenire.
    folosește un furnizor configurat și un model capabil de instrumente.
    **Claude Code** folosește contul Claude gestionat implicit și un
    identificator concret de model; autentifică-te mai întâi în **Setări →
-   Adaptori**. Nu împrumută autentificarea personală a operatorului de server.
+   Server → Furnizori de modele → Conturi Claude Code**. Nu împrumută autentificarea personală a operatorului de server.
 3. Alege o **Comparație** din tabelul de mai jos.
 4. Setează **Repetări per sarcină** (1–20) și **Buget (cenți SUA)**. De exemplu,
    `100` înseamnă 1 USD. Selectează **Pornește evaluarea** pentru a autoriza
@@ -188,8 +188,7 @@ niciodată cu comenzile slash încorporate (`/plan`, `/goal`, `/loop`, `/compact
   agentului
 - `/skill:<repo>:<name>` — un skill livrat de un repo cu checkout în acest spațiu
 
-Un nume simplu care nu este încorporat se rezolvă în continuare, pentru mesajele
-scrise înainte să existe spațiul de nume. `/skill:plan` este ceea ce ajunge la un
+`/skill:plan` este ceea ce ajunge la un
 skill numit `plan`; `/plan` este întotdeauna cel încorporat.
 
 ## Skill-uri limitate la repo

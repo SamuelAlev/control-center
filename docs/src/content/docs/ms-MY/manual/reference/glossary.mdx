@@ -2,7 +2,7 @@
 title: Glosari
 description: Takrif istilah penting yang digunakan di seluruh Control Center.
 slug: ms-MY/manual-pengguna/rujukan/glosari
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Manifes kemahiran yang dipasang bagi setiap ruang kerja: bagi setiap satu, repositori sumbernya, laluan dalam repo, commit yang dipinkan padanya dan hash kandungan terkumpul. Pemasangan, kemas kini dan nyahpasang menjaganya terkini; verify_skills menyemaknya terhadap cakera.'],
 ['Gerbang larian ejen', 'Titik akhir loopback pada cc_server yang menerapkan polisi tindakan di dalam kotak pasir ejen. Setiap push GitHub yang dibuat ejen dihalakan ke situ, disemak terhadap peraturan Push ke remote dan dimajukan dengan token tulis yang tidak pernah dipegang ejen; perintah Bash Claude Code disemak melalui hook pada titik akhir yang sama.'],
 ['Modus', 'chat, plan, review, atau orchestrate. Disimpan mengikut ruang, jadi satu ejen boleh berada dalam modus berbeza dalam ruang berbeza; setiap perbualan dalam satu ruang berkongsinya. Mengawal prompt sistem, peraturan tulis kotak pasir dan senarai izin alat MCP.'],
-['SandboxBackend', 'microvm (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), native (Seatbelt natif OS pada macOS, bubblewrap pada Linux dan WSL2) atau none. Diprobe sekali semasa but; native membalut penghantaran ejen apabila tersedia. Windows tiada bahagian belakang natif dan Linux memerlukan bwrap serta socat, jadi larian di sana tidak dibalut; --sandbox off memilih untuk keluar secara sengaja.'],
+['SandboxBackend', 'microvm (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), native (Seatbelt natif OS pada macOS, bubblewrap pada Linux dan WSL2) atau none. Diprobe sekali semasa but; native membalut penghantaran ejen apabila tersedia. Windows tiada bahagian belakang natif dan Linux memerlukan bwrap serta socat; pada hos sebegitu hanya larian pemilik pelayan dimulakan, tanpa balutan, dan larian orang lain ditolak. --sandbox off menjalankan setiap ahli ejen tanpa balutan.'],
 ['Stesen', 'Mesin pakai buang yang dipandu ejen secara masa nyata: penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan alat ejen menuju ke satu mesin yang sama.'],
 ['Persekitaran terasing', 'Sifat pengasingan yang lebih kuat yang tersedia untuk stesen bersandarkan VM: sempadan kernel, cakera tindanan pakai buang, gerbang rangkaian tolak-secara-lalai dan broker kelayakan. Stesen Android dan iOS boleh dibuang tetapi menggunakan rangkaian yang diuruskan hos, jadi ia tidak menuntut sempadan ini. Memandu mana-mana stesen menggunakan kelas guardrail enclosureControl.'],
 ['RunCost', 'Rekod token/kos (token input, token output, anggaran kos dalam sen) bagi satu larian ejen.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Mengorkestra pelaksanaan larian: memulakan larian, menjadualkan langkah, mengekalkan keadaan, mengendalikan router/join/continue-on-fail, menyambung semula larian yang sedang berjalan selepas permulaan semula.'],
 ['PipelineTriggerDispatcher', 'Melanggan acara domain dan memulakan secara automatik larian pipeline yang sepadan bagi pencetus yang didayakan.'],
 ['MemoryAccessPolicy', 'Menyelesaikan dan menguatkuasakan kebenaran memori peranan ejen pada domain.'],
-['HarnessCostCalculator', 'Menghitung penggunaan token harness terbina menjadi RunCost daripada katalog models.dev. Penghantaran mengekalkan rekod itu ke atas log larian.'],
+['HarnessRunAccounting', 'Mengira panggilan model harness terbina sekali sahaja, dinilai daripada katalog models.dev, mengekalkannya pada larian pemilik dan menggabungkan perbelanjaan larian anak ke dalam bajet induknya.'],
 ['BudgetEnforcementService', 'Mengira perbelanjaan bulanan bagi setiap ejen dan sekatan pra-penghantaran (checkInvocationBlock). Sekatan itu hanya dirujuk oleh reconciler pemulihan (OrphanRunReaper, StrandedTicketReconciler), tidak pernah oleh penghantaran biasa.'],
 ['BudgetGovernanceService', 'Menilai perbelanjaan bulanan bagi setiap ejen selepas setiap larian: ambang lembut merekodkan insiden amaran; kehabisan merekodkan insiden keras dan menukar kitaran hayat ejen kepada paused.'],
 ['DomainEventBus', 'Bas terbit/langgan siaran dalam proses untuk komunikasi merentas ciri. Acara adalah bertipe; pelanggan menggunakan strim mengikut jenis.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Klien nipis telefon — PWA web Flutter yang mengawal armada dari jauh melalui geganti berperantara dengan polisi alat tolak-secara-lalai.'],
 ['cc_signaling_server', 'Broker geganti WebSocket tanpa keadaan yang menghoskan bilik bergerbang jemputan. Geganti bodoh: ia hanya memajukan bingkai tersegel hujung-ke-hujung, tidak memegang data apl dan tidak pernah melihat PSK penggandingan.'],
 ['Principal', 'Nilai tersegel yang menyatukan manusia dan ejen sebagai satu abstraksi pelaku. UserPrincipal(userId) atau AgentPrincipal(agentId). Setiap mesej, tiket, semakan, pelan dan log larian diatribusikan melalui Principal.'],
-['Pengguna', 'Identiti manusia, disimpan dalam global.db dan oleh itu global merentas ruang kerja. Principal yang mencipta sesuatu ruang kerja menjadi pemiliknya, distempel pada Workspace.ownerUserId dengan baris keahlian berperanan pemilik; yang lain menyertai melalui jemputan atau SSO.'],
+['Pengguna', 'Identiti manusia, disimpan dalam global.db dan oleh itu global merentas ruang kerja. Hanya pemilik pelayan mencipta ruang kerja dan menjadi pemiliknya, distempel pada Workspace.ownerUserId dengan baris keahlian berperanan pemilik; yang lain menyertai melalui jemputan atau SSO.'],
+['Pemilik pelayan', 'Orang yang menyediakan pelayan itu, direkodkan sekali pada permulaan pertama; tiada apa yang dihantar melalui rangkaian mengubahnya. Admin ruang kerja atau pemilik ruang kerja bukan pemilik pelayan. Tiada apa-apa berjalan pada mesin pelayan sendiri di luar kotak pasir melainkan pemilik pelayan memulakannya atau meluluskan jenis pelaksanaan hos itu: mencipta ruang kerja, shell hos, editor kod terbenam, persekitaran yang berjalan pada hos dan checkout yang dipautkan dari luar storan ruang kerja adalah milik mereka sahaja.'],
 ['WorkspaceMember', 'Baris keahlian yang mengikat seorang Pengguna pada sesuatu Ruang kerja pada sesuatu WorkspaceRole. Keahlian — bukan kunci penggandingan — ialah sempadan akses.'],
 ['WorkspaceRole', 'Peranan keahlian berperingkat: owner, admin, member, viewer, atau guest. Titik sesak op repo memperoleh lantai peranan minimum bagi setiap jenis op.'],
 ['ParticipantPresence', 'Kesedaran fana untuk sesuatu Principal (status, lokus, kursor, menaip, status langsung ejen + kos berjalan). Tidak pernah dikekalkan; berhab pelayan; ditapis geran repo sebelum disebarkan.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Dail autonomi', 'Kawalan bagi setiap ruang dan setiap ejen — propose-only / act-with-approval / act-freely — dilaksanakan sebagai profil bernama di atas stor guardrail tindakan.'],
 ['cc_worker', 'Binari pelaksana armada Dart tulen tanpa kepala. Berganding dengan cc_server, mengisytiharkan keupayaannya, menarik kerja yang dipajak, melaksanakannya dan menstrim acara kembali. Tidak memegang sebarang keadaan berkekalan.'],
 ['JobSpec', 'Spesifikasi bertipe untuk segala yang boleh dilaksanakan (larian ejen, langkah pipeline, indeks kod, render golden, benchmark, kelompok eval): keupayaan diperlukan, keutamaan, bajet, ruang kerja.'],
-['ActionClass', 'Set tertutup 13 kelas kesan (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Setiap alat yang mengubah keadaan mengisytiharkan kelasnya; enjin guardrail menyelesaikan allow / prompt / deny mengikut skop.'],
+['ActionClass', 'Set tertutup 14 kelas kesan (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Setiap alat yang mengubah keadaan mengisytiharkan kelasnya; enjin guardrail menyelesaikan allow / prompt / deny mengikut skop.'],
 ['WriteLedger', 'Ledger idempotensi berskop ruang kerja. Setiap mutasi membawa kunci idempotensi bagi setiap tindakan logik; main balik mengembalikan hasil asal yang identik bait demi bait. Menjadikan sambung semula dan berbilang klien selamat secara binaan.'],
 ['Kunci idempotensi', 'UUIDv7 yang dijana klien, ditempa bagi setiap tindakan logik (bukan setiap percubaan). Menyahduplikasi percubaan semula merentas sambung semula dan klien.'],
 ['Peti masuk "Needs me"', 'Baris gilir merentas tiang dengan peraturan ketat: sesuatu item muncul hanya jika ia menyekat sesuatu (ejen, cantuman, segerak) atau secara eksplisit meminta pengendali.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Keputusan semakan', 'ship, hold atau block. Mana-mana penemuan P0 dengan keyakinan >= 0.7 menyekat; mana-mana P0 lain atau mana-mana P1 menahan; sebaliknya ship. Paksi gagal berpintu memaksa block dan tidak boleh dikalahkan oleh penemuan.'],
 ['SessionRecording', 'Strim acara serta kaset HTTP/LLM dan I/O alat yang ditangkap bagi satu larian, dipasangkan dengan AgentConfigHash.'],
 ['Sesi golden', 'SessionRecording yang telah disahkan dan dipinkan bagi setiap ejen atau playbook.'],
-['Control Center Connect', 'Perkhidmatan pilihan yang menjalankan log masuk pembekal (GitHub, Google, Linear) untuk pelayan tanpa apl sendiri. Dihoskan oleh Control Center, dihoskan sendiri, atau dimatikan. Ia memulangkan pemeteraian kelayakan dan token GitHub satu-repo, dan tidak pernah melihat kandungan repo.'],
+['Control Center Connect', 'Perkhidmatan pilihan yang menjalankan log masuk pembekal (GitHub, Google, Linear) untuk pelayan atau ruang kerja yang memilih perkhidmatan ini dan bukannya apl sendiri. Dihoskan oleh Control Center, dihoskan sendiri, atau dimatikan. Ia memulangkan pemeteraian kelayakan dan token GitHub satu-repo, dan tidak pernah melihat kandungan repo.'],
 ['Pemeteraian kelayakan', 'Kelayakan tersulit yang hanya boleh dibuka oleh Connect yang menciptanya, terikat kepada pembekal, alamat Connect, id pemasangan, ruang kerja, akaun, apl dan generasi secret. Pelayan menyimpan pemeteraian; token akses kekal dalam memori.'],
 ['Id pemasangan', 'Identiti pelayan terhadap satu alamat Connect, diperoleh daripada kunci pemasangannya. Connect membenarkan pelayan mengikut id pemasangan; memutar kunci menukarnya dan mengeluarkan semua orang daripada lorong Connect.'],
-['Ikatan pemasangan', 'Rekod Connect tentang pelayan mana yang boleh menggunakan pemasangan GitHub bagi App kongsi. Pemasangan organisasi memerlukan pentadbir untuk membenarkan setiap pelayan.'],
-['Lorong log masuk', 'Log masuk pelayar bagi satu pembekal: `github`, `google`, `linear`, `linear_app` atau `slack`. Setiap lorong berjalan pada apl pelayan apabila ia lengkap, jika tidak melalui Connect, dan jika tidak, tidak tersedia.'],
+['Ikatan pemasangan', 'Rekod Connect tentang sesebuah pelayan tempat pasukan Slack terikat. Pemasangan GitHub tiada ikatan sedemikian: mana-mana pelayan tempat ahli log masuk boleh menggunakannya.'],
+['Lorong log masuk', 'Log masuk pelayar bagi satu pembekal: `github`, `google`, `linear`, `linear_app` atau `slack`. Di bawah apl sendiri, lorong berjalan pada apl sendiri apabila apl itu dikonfigurasi sepenuhnya, jika tidak ia tidak tersedia; dengan Connect dipilih, Connect menjalankannya. Kedua-duanya tidak jatuh kembali antara satu sama lain.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Modus**: `chat`, `plan`, `review`, atau `orchestrate`. Disimpan **mengikut ruang**, jadi satu ejen boleh berada dalam modus berbeza dalam ruang berbeza; setiap perbualan dalam satu ruang berkongsinya. Mengawal prompt sistem, peraturan tulis kotak pasir dan senarai izin alat MCP. Penggubah hanya menawarkan `chat`, `plan` dan `orchestrate`; `chat` dilabelkan "Ejen".
 
-**SandboxBackend**: `microvm` (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), `native` (Seatbelt pada macOS, bubblewrap pada Linux dan WSL2) atau `none`. Diprobe sekali semasa but; `native` **digunakan pada penghantaran ejen** apabila tersedia, membalut CLI Claude Code dan alat `bash` harness. Windows tiada bahagian belakang natif dan Linux memerlukan `bwrap` serta `socat`, jadi larian di sana tidak dibalut; `--sandbox off` memilih untuk keluar secara sengaja.
+**SandboxBackend**: `microvm` (VM tertutup — satu-satunya bahagian belakang dengan sempadan kernel, digunakan pada terminal interaktif), `native` (Seatbelt pada macOS, bubblewrap pada Linux dan WSL2) atau `none`. Diprobe sekali semasa but; `native` **digunakan pada penghantaran ejen** apabila tersedia, membalut CLI Claude Code dan alat `bash` harness. Windows tiada bahagian belakang natif dan Linux memerlukan `bwrap` serta `socat`; pada hos sebegitu hanya larian pemilik pelayan dimulakan, tanpa balutan, dan larian orang lain ditolak. `--sandbox off` menjalankan setiap ahli ejen tanpa balutan.
 
 **Stesen**: Mesin pakai buang yang dipandu ejen secara masa nyata — penyemak imbas atau desktop Linux tertutup, emulator Android atau Simulator iOS yang diuruskan hos, atau terminal tertutup. Ditonton secara langsung melalui lorong resolusi penuhnya sendiri, dengan pengambilalihan dikuatkuasakan di pihak pelayan. Berskop pada satu perbualan supaya tab manusia dan panggilan `browser_use` / `computer_use` / `mobile_use` / `ios_use` ejen menuju ke satu mesin lalai. Lihat [Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Menyelesaikan dan menguatkuasakan kebenaran memori peranan ejen pada domain.
 
-**HarnessCostCalculator**: Menghitung penggunaan token harness terbina menjadi `RunCost` daripada katalog models.dev. Penghantaran mengekalkan rekod itu ke atas log larian.
+**HarnessRunAccounting**: Mengira panggilan model harness terbina sekali sahaja, dinilai daripada katalog models.dev, mengekalkannya pada larian pemilik dan menggabungkan perbelanjaan larian anak ke dalam bajet induknya.
 
 **BudgetEnforcementService**: Mengira perbelanjaan bulanan bagi setiap ejen dan sekatan pra-penghantaran (`checkInvocationBlock`). Sekatan itu hanya dirujuk oleh reconciler pemulihan (`OrphanRunReaper`, `StrandedTicketReconciler`), tidak pernah oleh penghantaran pengguna atau ejen biasa.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Output berstruktur yang diekstrak oleh pipeline ringkasan dan disimpan sebagai baris berasingan. Item tindakan boleh dipautkan pada tiket.
 
-**CalendarEvent**: Entri Google Calendar yang disegerakkan, berskop pada satu ruang kerja dan akaun bersambung. Berbeza daripada Mesyuarat: acara ialah komitmen berjadual; Mesyuarat ialah sesi yang dirakam. Dipautkan satu-ke-satu melalui `MeetingCalendarLink`.
+**CalendarEvent**: Entri Google Calendar yang disegerakkan, berskop pada satu ruang kerja dan akaun bersambung. Berbeza daripada Mesyuarat: acara ialah komitmen berjadual; Mesyuarat ialah sesi yang dirakam. Dipautkan satu-ke-satu melalui jadual `meeting_calendar_links`.
 
 **CalendarAccount**: Akaun Google yang bersambung, bagi setiap ruang kerja, ahli dan e-mel (`google:<workspaceId>:<userId>:<email>`). Kelayakannya disimpan di sisi pelayan sebagai kunci `google_*` dalam `<dataDir>/secrets.json` dan tidak sekali-kali sampai ke klien; log masuk melalui Connect hanya menyimpan pemeteraian kelayakan. Bendera `authExpiredAt` memacu sepanduk sambung semula.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: Nilai tersegel yang menyatukan manusia dan ejen sebagai satu abstraksi pelaku — `UserPrincipal(userId)` atau `AgentPrincipal(agentId)`. Setiap mesej, tiket, semakan, pelan dan log larian diatribusikan melalui Principal.
 
-**Pengguna**: Identiti manusia, disimpan dalam `global.db` dan oleh itu global merentas ruang kerja. Principal yang mencipta sesuatu ruang kerja menjadi **pemiliknya** — distempel pada `Workspace.ownerUserId` dengan baris keahlian berperanan owner dalam operasi yang sama. Yang lain menyertai melalui jemputan atau SSO.
+**Pemilik pelayan**: Orang yang menyediakan pelayan itu, direkodkan sekali pada permulaan pertama; tiada apa yang dihantar melalui rangkaian mengubahnya. Admin ruang kerja atau pemilik ruang kerja bukan pemilik pelayan. Tiada apa-apa berjalan pada mesin pelayan sendiri di luar kotak pasir melainkan pemilik pelayan memulakannya atau meluluskan jenis pelaksanaan hos itu: mencipta ruang kerja, shell hos, editor kod terbenam, persekitaran yang berjalan pada hos dan checkout yang dipautkan dari luar storan ruang kerja adalah milik mereka sahaja. Lihat [Pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan).
+
+**Pengguna**: Identiti manusia, disimpan dalam `global.db` dan oleh itu global merentas ruang kerja. Hanya pemilik pelayan mencipta ruang kerja, dan menjadi **pemiliknya** — distempel pada `Workspace.ownerUserId` dengan baris keahlian berperanan owner dalam operasi yang sama. Yang lain menyertai melalui jemputan atau SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Baris keahlian yang mengikat seorang Pengguna pada sesuatu Ruang kerja pada sesuatu peranan (`owner` / `admin` / `member` / `viewer` / `guest`). **Keahlian — bukan kunci penggandingan — ialah sempadan akses.** Geran setiap repo menghalang keahlian daripada memberi keistimewaan melebihi forge.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Dail autonomi**: Kawalan bagi setiap ruang dan setiap ejen — `propose-only` / `act-with-approval` / `act-freely` — dilaksanakan sebagai profil bernama di atas stor guardrail tindakan.
 
-**ActionClass**: Set tertutup 13 kelas kesan (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Setiap alat yang mengubah keadaan mengisytiharkan kelasnya; enjin guardrail menyelesaikan `allow` / `prompt` / `deny` mengikut skop (ruang > ejen > ruang kerja > praset modus > lalai terbina).
+**ActionClass**: Set tertutup 14 kelas kesan (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Setiap alat yang mengubah keadaan mengisytiharkan kelasnya; enjin guardrail menyelesaikan `allow` / `prompt` / `deny` mengikut skop (ruang > ejen > ruang kerja > praset modus > lalai terbina).
 
 **WriteLedger** / **kunci idempotensi**: Setiap mutasi membawa kunci idempotensi yang dijana klien (UUIDv7, bagi setiap tindakan logik). Ledger berskop ruang kerja menyahduplikasi sebelum pengendali berjalan; main balik mengembalikan hasil asal yang identik bait demi bait. Menjadikan sambung semula dan berbilang klien selamat secara binaan.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Broker geganti WebSocket tanpa keadaan yang menghoskan bilik bergerbang jemputan — geganti bodoh yang hanya memajukan bingkai tersegel hujung-ke-hujung, tidak memegang data apl dan tidak pernah melihat PSK penggandingan.
 
-**Control Center Connect**: Perkhidmatan pilihan yang menjalankan log masuk pembekal (GitHub, Google Calendar, Linear) untuk pelayan yang belum mendaftarkan apl sendiri: versi yang dihoskan oleh Control Center, versi yang dijalankan oleh sebuah organisasi (`cc-connect`, atau dipasang dalam `cc_server` pada `/connect`), atau tiada. Connect memulangkan pemeteraian kelayakan dan token GitHub satu-repo, dan tidak pernah melihat kandungan repo. Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/).
+**Control Center Connect**: Perkhidmatan pilihan yang menjalankan log masuk pembekal (GitHub, Google Calendar, Linear) untuk pelayan atau ruang kerja yang memilihnya dan bukannya apl sendiri: versi yang dihoskan oleh Control Center, versi yang dijalankan oleh sebuah organisasi (`cc-connect`, atau dipasang dalam `cc_server` pada `/connect`), atau tiada. Connect memulangkan pemeteraian kelayakan dan token GitHub satu-repo, dan tidak pernah melihat kandungan repo. Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/).
 
 **Pemeteraian kelayakan** (`credential_seal`): Kelayakan tersulit yang hanya boleh dibuka oleh Connect yang menciptanya, terikat kepada pembekal, alamat Connect, id pemasangan, ruang kerja, akaun, apl dan generasi secret. Pelayan menyimpan pemeteraian dan id pemasangan ia dibuat untuknya; token akses kekal dalam memori. Pemeteraian yang id pemasangannya tidak lagi sepadan akan dibuang dan pemiliknya log masuk semula.
 
 **Id pemasangan** (`install_id`): Identiti pelayan terhadap satu alamat Connect, diperoleh daripada kunci pemasangan dalam fail rahsianya. Connect membenarkan pelayan mengikut id pemasangan. Memutar kunci menghasilkan id baharu dan mengeluarkan semua orang daripada lorong Connect.
 
-**Ikatan pemasangan** (`install_binding`): Rekod Connect tentang pelayan mana yang boleh menggunakan pemasangan GitHub bagi App kongsi. Memasang melalui sesebuah pelayan akan mengikatnya; **Benarkan pelayan ini** oleh pentadbir organisasi akan mengikat pelayan lain.
+**Ikatan pemasangan** (`install_binding`): Rekod Connect tentang sesebuah pelayan tempat pasukan Slack terikat. Pemasangan GitHub tiada ikatan sedemikian: mana-mana pelayan tempat ahli log masuk boleh menggunakannya.
 
-**Lorong log masuk**: Log masuk pelayar bagi satu pembekal — `github`, `google`, `linear`, `linear_app` atau `slack`. Sesebuah lorong berjalan pada apl pelayan apabila apl itu lengkap, jika tidak melalui Connect, dan jika tidak, tidak tersedia. Apl sendiri yang dikonfigurasikan separa ialah ralat, tidak sekali-kali jatuh kembali kepada Connect.
+**Lorong log masuk**: Log masuk pelayar bagi satu pembekal — `github`, `google`, `linear`, `linear_app` atau `slack`. Di bawah apl sendiri, sesebuah lorong berjalan pada apl sendiri (pelayan atau ruang kerja) apabila apl itu dikonfigurasi sepenuhnya, jika tidak ia tidak tersedia; dengan Connect dipilih, Connect menjalankannya. Kedua-duanya tidak jatuh kembali antara satu sama lain, dan apl sendiri yang dikonfigurasi separa ialah ralat.
 
 ## Lihat juga
 

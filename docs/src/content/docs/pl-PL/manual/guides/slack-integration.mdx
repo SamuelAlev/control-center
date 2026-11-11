@@ -2,7 +2,7 @@
 title: Skonfiguruj integrację Slack
 description: Połącz Slacka z obszarem roboczym Control Center, przez współdzieloną aplikację Control Center albo własną, aby członkowie mogli kierować agentami ze Slacka.
 slug: pl-PL/podrecznik/poradniki/integracja-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Ten poradnik pokazuje, jak połączyć Slacka z obszarem roboczym Control Center: dodając współdzieloną aplikację Control Center albo własną aplikacją, którą Control Center utworzy za Ciebie lub którą zbudujesz samodzielnie.
@@ -27,18 +27,18 @@ Obszar roboczy działa naraz dokładnie na jednej z nich.
 
 | Tryb                          | Wymaga                                                                                                   | Co dostajesz                                                                          |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **Współdzielona aplikacja Control Center** | Serwer używa Control Center Connect (**Ustawienia → Serwer → Logowanie jednokrotne**), a Connect obsługuje Slacka | Jedno kliknięcie i logowanie przez Slacka. Bez aplikacji do tworzenia, tokenu do wklejania i niczego do wymiany |
+| **Współdzielona aplikacja Control Center** | Aplikacje logowania obszaru roboczego działają przez Control Center Connect (wybór serwera w **Ustawienia → Serwer → Logowanie jednokrotne** albo własny wybór obszaru roboczego w **Ustawienia → Obszar roboczy → Integracje**), a Connect obsługuje Slacka | Jedno kliknięcie i logowanie przez Slacka. Bez aplikacji do tworzenia, tokenu do wklejania i niczego do wymiany |
 | **Własna aplikacja**          | Aplikacja Slack w Twoim obszarze roboczym Slack, utworzona jednym z trzech sposobów poniżej             | Własna nazwa bota, opisy i polecenie z ukośnikiem, edytowalne z Control Center       |
 
 ### Dodaj współdzieloną aplikację Control Center
 
-1. W Control Center przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
+1. W Control Center przejdź do **Ustawienia → Obszar roboczy → Integracje** i przewiń do karty **Mostki czatu**
 2. W bloku Slack znajdź wiersz **Dodaj Control Center do Slack** i kliknij **Dodaj do Slack**
 3. Przeglądarka otwiera Slacka. Zaloguj się przez Slacka, wybierz obszar roboczy Slack i zatwierdź instalację
 4. Gdy przeglądarka pokaże kod, wpisz go w oknie dialogowym, które Control Center zostawiło otwarte. Jeśli przeglądarka sama przekaże Cię z powrotem do aplikacji, nie trzeba nic wpisywać
 5. Powiadomienie podaje nazwę obszaru roboczego Slack, do którego dodano aplikację, a blok Slack pokazuje, że połączenie działa na współdzielonej aplikacji Control Center
 
-Tylko administrator obszaru roboczego może dodać aplikację. Wiersz wyjaśnia, dlaczego nie da się zacząć, gdy serwer używa własnych aplikacji zamiast Connect, gdy Twój Connect nie ma aplikacji Slack albo gdy ten obszar roboczy ma już połączoną własną aplikację Slack.
+Tylko administrator obszaru roboczego może dodać aplikację. Wiersz wyjaśnia, dlaczego nie da się zacząć, gdy aplikacje logowania tego obszaru roboczego są własne zamiast Connect, gdy Twój Connect nie ma aplikacji Slack albo gdy ten obszar roboczy ma już połączoną własną aplikację Slack.
 
 Czym różni się od własnej aplikacji:
 
@@ -64,7 +64,7 @@ Zdarzenia Twojej własnej aplikacji nigdy nie przechodzą przez Connect: Socket 
 ## Opcja A: pozwól Control Center utworzyć aplikację
 
 1. Wygeneruj parę tokenów konfiguracji aplikacji na [api.slack.com/apps](https://api.slack.com/apps) i skopiuj token **odświeżania** (`xoxe-…`)
-2. W Control Center przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
+2. W Control Center przejdź do **Ustawienia → Obszar roboczy → Integracje** i przewiń do karty **Mostki czatu**
 3. W bloku Slack kliknij **Utwórz aplikację za mnie**
 4. Wklej token, dostosuj nazwę aplikacji, nazwę bota, opisy i polecenie z ukośnikiem, a następnie kliknij **Utwórz aplikację**
 5. Wykonaj dwa pozostałe kroki pokazane w oknie, każdy jako link do Slacka:
@@ -78,7 +78,7 @@ Token konfiguracji rotuje przy każdym użyciu. Control Center zapisuje zrotowan
 
 Ta sama aplikacja, bez tokenu konfiguracji — Slack otwiera własny ekran tworzenia z całym manifestem już wypełnionym.
 
-1. W Control Center przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
+1. W Control Center przejdź do **Ustawienia → Obszar roboczy → Integracje** i przewiń do karty **Mostki czatu**
 2. W bloku Slack kliknij **Utwórz aplikację za mnie**
 3. Dostosuj nazwę aplikacji, nazwę bota, opisy i polecenie z ukośnikiem — te ustawienia podróżują z linkiem
 4. Kliknij **Utwórz w Slack**. Przeglądarka otworzy stronę tworzenia aplikacji w Slacku z wypełnioną wstępnie konfiguracją
@@ -132,7 +132,7 @@ message.im
 
 Tak tokeny Twojej własnej aplikacji docierają do Control Center. Współdzielona aplikacja niczego z tego nie potrzebuje.
 
-1. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i przewiń do karty **Mostki czatu**
+1. Przejdź do **Ustawienia → Obszar roboczy → Integracje** i przewiń do karty **Mostki czatu**
 2. W bloku Slack kliknij **Połącz Slack**
 3. Wypełnij pola:
 
@@ -204,7 +204,7 @@ Każdy połączony członek z rolą z prawem zapisu może zaproponować zgłosze
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-Tekst przed `|` to tytuł, tekst po nim to opis. Bot odpowiada, że przygotował szkic zgłoszenia. Nic jeszcze nie powstaje i nie uruchamia się żadna automatyzacja zgłoszeń: szkic czeka na Ciebie w **Ustawienia → Obszar roboczy → Profil i tożsamość → Szkice zgłoszeń z czatu**, gdzie możesz poprawić tytuł i opis, a następnie kliknąć **Utwórz zgłoszenie** albo **Odrzuć**.
+Tekst przed `|` to tytuł, tekst po nim to opis. Bot odpowiada, że przygotował szkic zgłoszenia. Nic jeszcze nie powstaje i nie uruchamia się żadna automatyzacja zgłoszeń: szkic czeka na Ciebie w **Ustawienia → Ty → Profil → Szkice zgłoszeń z czatu**, gdzie możesz poprawić tytuł i opis, a następnie kliknąć **Utwórz zgłoszenie** albo **Odrzuć**.
 
 - Szkic widzi tylko członek, który uruchomił polecenie
 - Pozostawiony szkic jest usuwany po dniu. Szkice żyją w pamięci, więc usuwa je też restart serwera

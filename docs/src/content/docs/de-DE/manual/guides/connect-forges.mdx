@@ -2,7 +2,7 @@
 title: Einen Code-Host verbinden
 description: Verbinde GitHub, GitLab oder Bitbucket, damit PR-Oberfläche, Repo-Registrierung und Agentenläufe funktionieren — ein Arbeitsbereich kann alle drei nutzen.
 slug: de-DE/handbuch/anleitungen/code-host-verbinden
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center arbeitet mit drei Code-Hosts — in der App heißen sie genau so: **GitHub**, **GitLab** und **Bitbucket Cloud**. Keiner davon ist die Vorgabe. Verbindest du einen, funktioniert alles; verbindest du mehrere, kann ein einzelner Arbeitsbereich Repos von allen gleichzeitig halten.
@@ -11,22 +11,26 @@ Der Code-Host ist eine Eigenschaft jedes **Repos** und wird beim Registrieren au
 
 ## Einen Code-Host verbinden
 
-1. Öffne **Einstellungen → Arbeitsbereich → Profil und Identität** (`/settings/workspace/profile`).
+1. Öffne **Einstellungen → Du → Profil** (`/settings/you/profile`).
 2. Finde die Karte **Code-Hosting**. Jeder unterstützte Code-Host steht dort, verbunden oder nicht.
 3. Drücke bei **GitHub** auf **Bei GitHub anmelden**. Drücke bei **GitLab** oder **Bitbucket** auf **Token hinzufügen** und füge eines ein.
 
-**Bei GitHub gibt es nur die Anmeldung.** Sie läuft über die eigene GitHub App des Servers oder über Control Center Connect, je nachdem, was der Server-Eigentümer eingerichtet hat (siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/)); ein GitHub-Token zum Einfügen gibt es nicht. GitLab und Bitbucket nehmen weiterhin ein persönliches Token.
+**Bei GitHub gibt es nur die Anmeldung.** Sie läuft über die eigene GitHub App des Servers oder über Control Center Connect, je nachdem, was der Server-Eigentümer eingerichtet hat, oder über die Apps, die ein Administrator des Arbeitsbereichs für diesen Arbeitsbereich in **Einstellungen → Arbeitsbereich → Integrationen** gewählt hat (siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/)); ein GitHub-Token zum Einfügen gibt es nicht. GitLab und Bitbucket nehmen weiterhin ein persönliches Token.
 
 So oder so ist das Zugangsdatum **deins und liegt auf dem Server**, gebunden an deine Benutzer-ID: Auf dem Rechner, auf dem du es eintippst, liegt kein Token, jedes Gerät, von dem du dich anmeldest, nutzt dasselbe, und kein anderes Mitglied kann es lesen. Es gilt ab der **nächsten Anfrage** — neu starten musst du nichts, und trennst du die Verbindung, wird es sofort nicht mehr gesendet.
 
-Jede Zeile sagt, woher ihr Zugangsdatum kommt. Daran scheiden sich „mein Token funktioniert nicht“ und „ein anderes Token antwortet“:
+Die Karte zeigt, wo deine Konten verwendet werden. Ein GitLab- oder Bitbucket-Token gilt für dich in **jedem Arbeitsbereich auf dem Server**, also fügst du es einmal ein. Deine GitHub-Anmeldung gilt ebenfalls, außer ein Arbeitsbereich hat eigene Anmelde-Apps: Dieser Arbeitsbereich behält dann eine eigene GitHub-Anmeldung, und die Karte nennt sie.
 
-| Untertitel                                             | Bedeutung                                                              |
-| ------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `Angemeldet als octocat`                               | Dein eigenes Zugangsdatum wird verwendet                               |
-| `Angemeldet als octocat · aus der Umgebung`            | Nur GitLab oder Bitbucket: Eine Umgebungsvariable des Servers antwortet, nicht dein Token |
-| `Nicht verbunden`                                      | Du hast für diesen Code-Host kein Zugangsdatum                         |
-| `Die Anmeldung bei GitHub ist auf diesem Server noch nicht eingerichtet.` | Der Server hat weder eine eigene GitHub App noch Connect; der Server-Eigentümer richtet eins davon ein |
+Jede Zeile zeigt den Stand **deines** Zugangsdatums. Nur dein eigenes Zugangsdatum antwortet für dich; nichts anderes springt ein:
+
+| Die Zeile sagt                                                | Bedeutung                                                                                            |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `Angemeldet als octocat`                                      | Dein eigenes Zugangsdatum wird verwendet |
+| `Nicht verbunden`                                             | Du hast für diesen Code-Host kein Zugangsdatum                                                       |
+| `Deine Anmeldung bei GitHub als octocat ist abgelaufen. Melde dich erneut an.` | Deine Anmeldung ist abgelaufen oder beim Code-Host widerrufen worden                    |
+| `Pausiert: Der Anmeldedienst dieses Arbeitsbereichs hat sich geändert` | Dieser Arbeitsbereich ist auf einen anderen Anmeldedienst umgestellt. Deine Anmeldung bleibt erhalten und funktioniert wieder, wenn er zurückgestellt wird, deshalb gibt es keinen Anmelde-Button |
+| `GitHub ist gerade nicht erreichbar. Neuer Versuch läuft.` | Vorübergehender Ausfall. Control Center versucht es weiter; du musst nichts tun                     |
+| Ein Satz, der erklärt, warum die Anmeldung nicht verfügbar ist | Zum Beispiel `Die Anmeldung bei GitHub ist für diesen Arbeitsbereich nicht eingerichtet.` oder `Der Anmeldedienst dieses Arbeitsbereichs hat seine Identität geändert. Ein Admin muss das bestätigen.` Administratoren erhalten eine Schaltfläche zu der Einstellung, die es behebt |
 
 ### Welches Token welcher Code-Host braucht
 
@@ -35,17 +39,43 @@ Jede Zeile sagt, woher ihr Zugangsdatum kommt. Daran scheiden sich „mein Token
 | **GitLab**    | Ein persönliches Zugriffstoken mit `api`                                                                           | gitlab.com → User settings → Access tokens             |
 | **Bitbucket** | Ein Atlassian-API-Token plus die E-Mail deines Kontos                                                              | id.atlassian.com → Security → API tokens               |
 
-Bitbucket authentifiziert mit deiner **Konto-E-Mail als Benutzername** und dem Token als Passwort. Setze `BITBUCKET_EMAIL` in der Umgebung des Servers, damit er weiß, welche E-Mail zum Token gehört.
+Bitbucket authentifiziert mit deiner **Konto-E-Mail als Benutzername** und dem API-Token als Passwort, deshalb fragt der Bitbucket-Dialog nach beidem. Ein Bitbucket-**Zugriffstoken** für ein Repository, ein Projekt oder einen Arbeitsbereich gehört keiner Person, deshalb lehnt dieser Dialog es ab: Es ist stattdessen ein [Automatisierungstoken](#ein-automatisierungstoken-hinzufügen). Dasselbe gilt für ein GitLab-**Projekt**- oder **Gruppen-Zugriffstoken**: GitLab fragt vor dem Speichern, wem das Token gehört, und das Token eines Bots wird hier abgelehnt.
+
+Ein Token ist nie an einen Arbeitsbereich gebunden: Du hast eines pro Code-Host, und jeder Arbeitsbereich auf dem Server verwendet es. **Trennen** entfernt es für alle.
 
 ### Hintergrundarbeit
 
 Arbeit ohne Menschen dahinter (Agentenläufe, Pipelines, PR-Polling) braucht ebenfalls ein Zugangsdatum, und jeder Code-Host löst das anders:
 
 - **GitHub** — ein Token für jeweils ein Repository, ausgestellt über die GitHub App des Servers oder über Connect und begrenzt auf das, was ein verantwortliches Mitglied dort tun darf. Es ist nie die vollständig weitergereichte Anmeldung einer Person, und keine Umgebungsvariable und kein eingefügtes Token springt dafür ein. Siehe [GitHub-Integration einrichten](/de-DE/handbuch/anleitungen/github-integration/#für-wen-dein-zugangsdatum-spricht)
-- **GitLab** — das eingefügte Token des Server-Eigentümers, dann `GITLAB_TOKEN`, dann `CI_JOB_TOKEN`
-- **Bitbucket** — das eingefügte Token des Server-Eigentümers, dann `BITBUCKET_API_TOKEN`, dann `BITBUCKET_TOKEN` (mit `BITBUCKET_EMAIL`)
+- **GitLab** und **Bitbucket** — nur das **Automatisierungstoken** des Repos: ein Bot-Zugriffstoken, das ein Administrator des Arbeitsbereichs für dieses Repo oder für jedes Repo dieses Code-Hosts im Arbeitsbereich hinzufügt. Das Token des Repos selbst geht vor dem des Arbeitsbereichs. Abfragen von Pull Requests, KI-Review-Kommentare sowie Pushes und Merge Requests, die niemand angefragt hat, nutzen alle dieses Token, deshalb erscheinen sie auf dem Code-Host als dieser Bot, nie als Mitglied. Kein persönliches Token eines Mitglieds springt ein, und es gibt kein server-weites Token und kein Token aus Umgebungsvariablen. Ohne ein solches Token pausiert die Hintergrundarbeit an dem Repo, und der Hinweis zum Repo-Zugriff sagt das.
 
-Die Umgebungsvariablen für GitLab und Bitbucket sind die Zugangsdaten **des Servers**, nicht deine: Eine Anfrage in deinem Auftrag nutzt dein Token und sonst nichts. Die Umgebung springt also nie still für dich ein.
+Arbeit, die ein Mitglied anfordert (ein Kommentar, ein Review, ein Merge Request eines Agenten, der für es geöffnet wurde), nutzt weiterhin das eigene Token dieses Mitglieds.
+
+## Ein Automatisierungstoken hinzufügen
+
+Nur Administratoren des Arbeitsbereichs sehen Automatisierungstoken oder ändern sie. Jedes wird beim Speichern beim Code-Host geprüft: Ein Token, das als Person handelt, wird abgelehnt (ein persönliches GitLab-Token, ein Atlassian-API-Token oder jedes Bitbucket-Token, das sich als Konto einer Person anmeldet), ebenso eines, das das Repo, für das es gedacht ist, nicht lesen kann.
+
+- **Für ein Repo:** Öffne **Einstellungen → Arbeitsbereich → Repositorys**. Die Karte **Automatisierungstoken** listet jedes GitLab- und Bitbucket-Repo mit dem Bot, der dort handelt, **Nutzt das Token des Workspace** oder **Kein Token. Die Automatisierung ist hier pausiert.** Drücke in der Zeile des Repos auf **Token hinzufügen**.
+- **Für jedes Repo eines Code-Hosts:** Öffne **Einstellungen → Arbeitsbereich → Integrationen**, finde die Karte **Automatisierungstoken** und drücke in der Zeile GitLab oder Bitbucket auf **Token hinzufügen**. Repos, die das Token nicht lesen kann, werden nach dem Speichern genannt und bleiben pausiert.
+
+Ist die Hintergrundarbeit bereits pausiert, erhalten Administratoren **Token hinzufügen** außerdem direkt im Hinweis zum Repo-Zugriff. **Token aktualisieren** ersetzt ein Token; die Papierkorb-Schaltfläche entfernt es, und jedes Repo, das danach ohne Token dasteht, pausiert. Verweigert der Code-Host ein gespeichertes Token später (widerrufen oder abgelaufen), sagt seine Zeile das, und die Repos, die es abgedeckt hat, pausieren, bis du es ersetzt.
+
+| Code-Host     | Automatisierungstoken | Wo du es anlegst |
+| ------------- | --------------------- | ---------------- |
+| **GitLab**    | Ein **Projekt**- oder **Gruppen-Zugriffstoken** mit `read_api` und `read_repository`; füge `api` und `write_repository` für Kommentare, Merge Requests und Pushes hinzu | Das Projekt bzw. die Gruppe → Einstellungen → Access tokens |
+| **Bitbucket** | Ein **Repository**-, **Projekt**- oder **Arbeitsbereichs-Zugriffstoken** mit Lesezugriff auf das Repository, plus Schreibzugriff auf Pull Requests für Kommentare und Pull Requests (Schreibzugriff auf das Repository für Pushes) | Das Repository, Projekt bzw. der Arbeitsbereich → Einstellungen → Access tokens |
+
+GitLab zeigt die Arbeit als Bot-Benutzer des Tokens; Bitbucket zeigt sie unter dem Namen des Zugriffstokens.
+
+### Bitbucket: Zugriffstoken oder API-Token
+
+Bitbucket kennt zwei Arten von Token, und Control Center hält sie auseinander:
+
+- Ein **API-Token** (id.atlassian.com) gehört deinem Atlassian-Konto und wird zusammen mit deiner E-Mail verwendet. Es ist **dein** Zugangsdatum und gehört unter **Code-Hosting** in **Einstellungen → Du → Profil**.
+- Ein **Zugriffstoken** (angelegt in den Einstellungen eines Repositorys, Projekts oder Arbeitsbereichs) gehört diesem Repository, Projekt oder Arbeitsbereich, nicht einer Person. Es ist ein Automatisierungstoken und gehört unter **Automatisierungstoken**.
+
+Jeder Dialog lehnt die andere Art ab und sagt, wohin sie gehört.
 
 ## Auf jedem Code-Host bist du eine andere Person
 
@@ -53,11 +83,26 @@ Derselbe Mensch ist auf GitHub `octocat` und auf GitLab jemand ganz anderes. Con
 
 Ist die Identität eines Code-Hosts noch nicht aufgelöst, tragen seine Repos nichts zum Posteingang bei, statt auf alles zu passen. Der Posteingang sagt das, statt zu behaupten, du seist auf dem neuesten Stand.
 
+## Du siehst nur, was dein eigenes Konto sehen kann
+
+Ein Pull Request aus einem Repo erreicht dich nur, wenn deine Rolle im Arbeitsbereich das Repo erlaubt **und dein eigenes Konto auf diesem Code-Host es lesen kann**. Administratoren des Arbeitsbereichs und der Besitzer folgen derselben Regel. Sind einige Repos ausgeblendet, sagen Posteingang und PR-Warteschlange, wie viele und warum, ohne sie zu nennen:
+
+- **Melde dich bei GitHub an, um Pull Requests aus 3 weiteren Repositorys zu sehen**: Du hast diesen Code-Host hier noch nicht verbunden. Melde dich an, dann erscheinen sie
+- **3 Repositorys sind ausgeblendet, weil dein GitHub-Konto sie nicht sieht**: Frag jemanden mit Zugriff auf dem Code-Host
+- **3 Repositorys sind ausgeblendet, weil du in diesem Arbeitsbereich keinen Zugriff darauf hast**: Frag einen Administrator des Arbeitsbereichs um Zugriff
+- **Dein Zugriff auf 3 weitere Repositorys wird geprüft…**: Wird kurz angezeigt, während Control Center prüft, was dein Konto lesen kann
+
+Code folgt derselben Regel. Um Dateien, Diffs oder die Suche eines Repos zu öffnen oder ein Terminal darauf, brauchst du dessen Freigabe in diesem Arbeitsbereich, und dein eigenes Forge-Konto muss es lesen können; für Administratoren des Arbeitsbereichs gilt das ebenso, nur der Serverinhaber ist ausgenommen. Kann der Forge zur Prüfung nicht erreicht werden, siehst du „Dein Forge-Zugriff konnte nicht bestätigt werden. Versuche es erneut.“ (mit dem Namen des Forges). Siehe [Code folgt dem Forge](/de-DE/handbuch/konzepte/autorisierung/#code-folgt-dem-code-host).
+
+Dasselbe gilt für alles, was aus diesen Pull Requests entsteht. Ein Review-Bereich, seine Nachrichten und seine Agentenläufe verschwinden, solange du den zugehörigen Pull Request nicht sehen kannst, und ein offener Review-Bereich schließt sich, wenn du den Zugriff verlierst. Pipeline-Läufe zu einem ausgeblendeten Pull Request fallen aus deiner Lauf-Liste heraus. Agenten, die für dich arbeiten, können diese Review-Bereiche ebenfalls nicht lesen. Die Repository-Liste des Arbeitsbereichs zeigt jedes Repo, auf das du in diesem Arbeitsbereich Zugriff hast, auch eines, das dein Code-Host-Konto noch nicht erreicht.
+
+Ist der Code-Host gerade am Rate-Limit oder nicht erreichbar, zeigt Control Center noch einige Minuten lang, was es zuletzt bestätigt hat, und blendet diese Pull Requests dann aus, bis es erneut prüfen kann.
+
 ## Ein Posteingang, jeder Code-Host
 
 Posteingang und PR-Warteschlange fragen jeden Code-Host ab, der im Arbeitsbereich vorkommt, und führen die Ergebnisse zu einem Strom zusammen — ein Pull Request von GitHub und einer von Bitbucket stehen nebeneinander, nach Zeit geordnet statt nach Anbieter gruppiert.
 
-Ausfälle bleiben isoliert. Ein Code-Host, der ausfällt, am Rate-Limit hängt oder nicht verbunden ist, trägt nichts bei und lässt die anderen in Ruhe; den ganzen Posteingang leert er dabei nie. Seine eigenen Repos zeigen weiter den letzten bekannten Stand, bis er wieder da ist.
+Ausfälle bleiben isoliert. Ein Code-Host, der ausfällt oder am Rate-Limit hängt, lässt die anderen in Ruhe, und seine Repos behalten den letzten bekannten Stand, bis er wieder läuft; den ganzen Posteingang leert er dabei nie. Ein Repo, das der Server nicht mehr erreichen kann, fällt heraus, statt veraltete Pull Requests zu zeigen, und der **Hinweis zum Repo-Zugriff** nennt es mit der Abhilfe: die GitHub App auf seiner Organisation installieren, das Repo zu den Repositories der App hinzufügen, eine pausierte Installation fortsetzen, das verantwortliche Mitglied sich erneut anmelden lassen oder ein Automatisierungstoken für ein GitLab- oder Bitbucket-Repo hinzufügen. Administratoren erhalten eine Schaltfläche für die Schritte der GitHub App und für das Hinzufügen des Tokens.
 
 ## Was jeder Code-Host kann
 
@@ -93,15 +138,31 @@ GitLab nennt einen Pull Request **Merge Request**. Control Center sagt im eigene
 
 ### Die PR-Liste ist leer und meldet, ein Code-Host sei nicht verbunden
 
-Du hast für diesen Code-Host kein Zugangsdatum. Melde dich unter **Einstellungen → Arbeitsbereich → Profil und Identität → Code-Hosting** bei GitHub an oder füge dort ein Token für GitLab oder Bitbucket ein. Die Repos der anderen Code-Hosts bleiben unberührt.
+Du hast für diesen Code-Host kein Zugangsdatum. Melde dich unter **Einstellungen → Du → Profil → Code-Hosting** bei GitHub an oder füge dort ein Token für GitLab oder Bitbucket ein. Die Repos der anderen Code-Hosts bleiben unberührt.
 
 ### Ich habe einen Code-Host verbunden, seine Repos zeigen aber nichts
 
-Prüfe den Untertitel der Zeile. Steht bei einer GitLab- oder Bitbucket-Zeile „aus der Umgebung“, antwortet ein anderes Zugangsdatum als das, das du erwartest. Für alles, was du anfragst, gewinnt dein eigenes Token. Steht dort also etwas anderes, wurde deins nicht gespeichert. Prüfe bei GitHub, ob die GitHub App auf dem Konto installiert ist, dem die Repos gehören.
+Prüfe den Zustand der Zeile und dann die Hinweise über der PR-Liste. „Melde dich bei … an, um Pull Requests aus … weiteren Repositorys zu sehen“ bedeutet, dass dein eigenes Konto für diese Repos nicht verbunden ist; „… ausgeblendet, weil dein … Konto sie nicht sieht“ bedeutet, dass der Code-Host dir keinen Zugriff gibt. Bei GitHub sagt dir der Hinweis zum Repo-Zugriff, wenn die GitHub App auf der Organisation des Repos nicht installiert ist oder das Repo nicht enthält.
+
+### Hintergrundarbeit an einem GitLab- oder Bitbucket-Repo ist pausiert
+
+Das Repo hat kein Automatisierungstoken, das es lesen kann. Ein Administrator des Arbeitsbereichs fügt eines für das Repo oder für den ganzen Arbeitsbereich hinzu; siehe [Ein Automatisierungstoken hinzufügen](#ein-automatisierungstoken-hinzufügen). Dein eigenes persönliches Token hebt die Pause nicht auf: Hintergrundarbeit nutzt nie das Token eines Mitglieds.
 
 ### Ein Repo lässt sich nicht registrieren
 
-Zur Registrierung müssen alle drei gelten: Der Pfad liegt in einem Git-Arbeitsbaum, er hat ein `origin`-Remote, und dieses Remote zeigt auf github.com, gitlab.com oder bitbucket.org. Siehe [Repos zu einem Arbeitsbereich hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/).
+Zur Registrierung müssen alle drei gelten: Der Pfad liegt in einem Git-Arbeitsbaum, er hat ein `origin`-Remote, und dieses Remote zeigt auf github.com, gitlab.com oder bitbucket.org. Das `origin` muss außerdem das Repository sein, das du verknüpfst, und einen Ordner außerhalb des Speichers des Arbeitsbereichs kann nur der Serverinhaber verknüpfen. Siehe [Repos zu einem Arbeitsbereich hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/).
+
+### Ich habe eine Freigabe, aber das Repository sagt, mein Konto kann es nicht lesen
+
+Dein eigenes Forge-Konto kann dieses Repository nicht lesen, daher bleibt sein Code für dich gesperrt, was der Arbeitsbereich auch freigibt. Melde dich unter **Code-Hosting** oben beim Forge an oder erhalte beim Forge Zugriff auf das Repository.
+
+### „Dein Forge-Zugriff konnte nicht bestätigt werden“
+
+Der Forge war zur Prüfung nicht erreichbar, daher hat Control Center abgelehnt, statt zu raten. Versuche es gleich noch einmal.
+
+### _repo_ zeigt jetzt auf ein anderes Repository
+
+Das Repository hinter diesem Pfad hat sich geändert: Es wurde gelöscht und neu angelegt oder verschoben und ersetzt. Control Center sendet ihm nichts, bis ein Administrator des Arbeitsbereichs im Hinweis oder in der Zeile des Repositorys auf **Neu verknüpfen** klickt. Eine einfache Umbenennung oder Übertragung wird von selbst nachverfolgt und zeigt diesen Hinweis nie.
 
 ### Nach starker Nutzung steht eine Weile alles still
 

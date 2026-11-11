@@ -2,7 +2,7 @@
 title: Eine Pipeline-Vorlage erstellen
 description: Lege im Pipeline-Editor eine DAG-Vorlage an. Füge Knoten hinzu, verbinde sie, deklariere Eingaben und mach sie ausführbar.
 slug: de-DE/handbuch/anleitungen/pipeline-erstellen
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Pipeline-Vorlagen entstehen in den Einstellungen des Arbeitsbereichs. Der Eintrag
@@ -42,20 +42,20 @@ Der Knoten landet dort, wo du ihn loslässt, ohne eingehende Verbindung.
 | **Bash script**                 | listen     | Führt ein Shell-Skript mit Ersetzung von `{{state}}` aus; es wird kein Agent losgeschickt   |
 | **Open conversation**           | listen     | Öffnet den einen sichtbaren Bereich des Laufs und seinen Checkout; Agentenknoten betreten diesen Bereich |
 | **Clone PR branch**             | listen     | Ermittelt den Head-Branch des PR über `gh pr view` und klont ihn ins Laufverzeichnis        |
-| **Post PR comment**             | listen     | Schreibt die zusammengeführten Befunde als GitHub-Review-Kommentar an den PR                |
-| **Reviewer (prompt)**           | listen     | Schickt einen spezialisierten Reviewer-Agenten los; hält an, bis der Agent sein Ergebnis einreicht |
-| **Consolidate (join)**          | join       | Wartet auf mehrere vorgelagerte Zweige und bittet dann einen Agenten, ihre Ausgaben zusammenzuführen |
-| **Custom prompt**               | listen     | Allgemeiner, promptgesteuerter Knoten über den Body `promptAgent`                           |
-| **Post to space**               | listen     | Sendet eine Nachricht an einen Bereich                                                      |
-| **Condition / switch (router)** | router     | Verzweigt den Ablauf nach einem Zustandswert                                                |
-| **If file exists (router)**     | router     | Routet `"true"`, wenn ein Pfad unter dem Klon existiert, sonst `"false"`                    |
-| **Any file exists (OR router)** | router     | Routet `"true"`, wenn irgendein aufgeführter Pfad existiert                                 |
-| **All conditions (AND router)** | router     | Routet `"true"` nur, wenn jeder aufgeführte Pfad existiert                                  |
-| **Team dispatch**               | listen     | Schickt ein ganzes Team los und hält an, bis es fertig ist                                  |
-| **Approval gate**               | listen     | Hält für eine Freigabeentscheidung an                                                       |
-| **For each (map)**              | forEach    | Rendert einen Prompt je Eintrag und schickt den Agenten dann einmal los, mit diesen Prompts aneinandergereiht |
-| **Call sub-pipeline**           | listen     | Führt eine andere Vorlage als verschachtelten Schritt aus                                   |
-| **Clean up worktrees**          | listen     | Entfernt veraltete isolierte Worktrees; deterministisch, es wird kein Agent losgeschickt    |
+| **Post PR comment**             | listen  | Schreibt vom Server aus einen Review-Kommentar an den PR: die Befunde oder seine `message`                    |
+| **Reviewer (prompt)**           | listen  | Schickt einen spezialisierten Reviewer-Agenten los; hält an, bis der Agent sein Ergebnis einreicht            |
+| **Consolidate (join)**          | join    | Wartet auf mehrere vorgelagerte Zweige und bittet dann einen Agenten, ihre Ausgaben zusammenzuführen          |
+| **Custom prompt**               | listen  | Allgemeiner, promptgesteuerter Knoten über den Body `promptAgent`                                             |
+| **Post to space**               | listen  | Sendet eine Nachricht an einen Bereich                                                                        |
+| **Condition / switch (router)** | router  | Verzweigt den Ablauf nach einem Zustandswert                                                                  |
+| **If file exists (router)**     | router  | Routet `"true"`, wenn ein Pfad unter dem Klon existiert, sonst `"false"`                                      |
+| **Any file exists (OR router)** | router  | Routet `"true"`, wenn irgendein aufgeführter Pfad existiert                                                   |
+| **All conditions (AND router)** | router  | Routet `"true"` nur, wenn jeder aufgeführte Pfad existiert                                                    |
+| **Team dispatch**               | listen  | Schickt ein ganzes Team los und hält an, bis es fertig ist                                                    |
+| **Approval gate**               | listen  | Hält für eine Freigabeentscheidung an                                                                         |
+| **For each (map)**              | forEach | Rendert einen Prompt je Eintrag und schickt den Agenten dann einmal los, mit diesen Prompts aneinandergereiht |
+| **Call sub-pipeline**           | listen  | Führt eine andere Vorlage als verschachtelten Schritt aus                                                     |
+| **Clean up worktrees**          | listen  | Entfernt veraltete isolierte Worktrees; deterministisch, es wird kein Agent losgeschickt                      |
 
 Die Bibliothek gruppiert sie unter **Ablauf und Logik**, **PR-Review**,
 **Agenten**, **Nachrichten** und **Code**. Eine Gruppe Demo gibt es nicht.
@@ -146,6 +146,13 @@ gibt es nicht, weil beides fest ist:
   `GH_TOKEN` und `GITHUB_TOKEN` ein Token, das nur dieses eine Repo lesen kann,
   deshalb funktionieren `gh` und `git clone` dagegen ohne weitere Einrichtung.
   Andernfalls gibt es kein GitHub-Token.
+- Ein Skript kann nicht nach GitHub schreiben: `gh pr comment`, `gh pr merge`,
+  `gh pr create` und `git push` scheitern mit diesem Token. Kommentiere stattdessen
+  mit einem Knoten **Post PR comment** (setze `extras.message`, um deinen eigenen
+  Text mit `{{key}}`-Platzhaltern zu posten, statt der zusammengeführten Befunde).
+  Push und Pull Requests kommen aus einem Agentenknoten: Sein `git push` läuft über
+  das Run-Gateway, und den PR öffnet er mit dem Werkzeug `open_pull_request`.
+  Gemergt wird von einer Person; kein Knoten führt einen Merge aus.
 - Nur ein Administrator des Arbeitsbereichs kann eine Pipeline mit einem
   Bash-Schritt anlegen oder bearbeiten.
 - Das Skript wird als das ausführbare Programm `bash` gestartet, deshalb muss `bash` auf

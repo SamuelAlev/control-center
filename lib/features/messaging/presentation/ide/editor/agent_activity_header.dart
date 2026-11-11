@@ -1,6 +1,8 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
+import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart'
+    show ErrorSegment;
 import 'package:cc_domain/features/agents/domain/value_objects/agent_live_state.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/agents/presentation/widgets/agent_status.dart';
@@ -110,6 +112,11 @@ class AgentActivityHeader extends ConsumerWidget {
 
   /// The run's own summary, else the label the tab was opened with.
   String _title(AppLocalizations l10n) {
+    // A run refused for want of a sandbox is worded here, by its code: its
+    // summary is the server's English sentence.
+    if (run?.errorCode == ErrorSegment.sandboxUnavailableCode) {
+      return l10n.runSandboxUnavailableTitle;
+    }
     final summary = run?.summary?.trim();
     if (summary != null && summary.isNotEmpty) {
       return summary;

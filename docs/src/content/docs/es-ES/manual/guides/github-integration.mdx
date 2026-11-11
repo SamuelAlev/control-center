@@ -2,7 +2,7 @@
 title: Configurar la integración con GitHub
 description: Inicia sesión en GitHub para que funcionen la superficie de PR, el registro de repos y las ejecuciones de agentes.
 slug: es-ES/manual/guias/integracion-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Esta guía cubre las partes específicas de GitHub de la puesta en marcha. GitHub
@@ -30,7 +30,7 @@ persona hace por su cuenta.
 
 GitHub solo admite inicio de sesión: no hay ningún token que pegar.
 
-1. Ve a **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de
+1. Ve a **Ajustes → Tú → Perfil → Alojamiento de
    código** (o al primer paso de la puesta en marcha)
 2. En la fila **GitHub**, haz clic en **Iniciar sesión en GitHub**
 3. El navegador abre GitHub. Aprueba la app
@@ -56,30 +56,41 @@ tokens que el servidor emitió en tu nombre.
 
 ## Para quién habla tu credencial
 
-- **Todo lo que haces tú** (abrir la página de la PR, publicar una revisión,
-  aprobar, fusionar) se ejecuta con **tu** inicio de sesión y nada más. Si no
-  has iniciado sesión, la aplicación te lo dice y te pide que la inicies.
-  Ninguna otra credencial te suplanta
-- **El trabajo sin nadie escribiendo** (ejecuciones de agentes, pipelines,
-  sondeo de PR, respuestas del bot, clonados) recibe un token para un solo
-  repositorio, emitido desde la GitHub App del servidor o a través de Connect.
-  Se limita a lo que un miembro responsable puede hacer en él: el miembro que lo
-  pidió o, si no, el propietario del espacio de trabajo. Un miembro que no puede
-  hacer push limita el token a lectura
-- **La automatización nunca aprueba** una pull request. Aprobar es un acto de
-  una persona
+Control Center sigue la distinción de GitHub entre actuar **como persona** y actuar **como la aplicación**:
+
+| Qué ocurre | Se muestra en GitHub como |
+| --- | --- |
+| Todo lo que haces tú mismo: comentar, revisar, aprobar, hacer merge, pedir revisores | **Tú**. GitHub marca un comentario de la conversación como hecho con la aplicación Control Center; una revisión y sus comentarios en línea no llevan esa marca |
+| Revisión con IA, respuestas de agentes y comentarios en conversaciones de PR, etiquetas, trabajo de pipeline y de bots | **El bot de Control Center**. En la app compartida de Connect, una revisión es del bot solo para una instalación que el operador de Connect haya dado de alta; si no, aparece como la persona responsable |
+| Un pull request que abre un agente por ti, sus ediciones del título o la descripción de ese pull request, sus pushes y sus commits | **Tú**. Control Center figura como coautor cuando el crédito de coautoría está activado |
+| Trabajo que nadie pidió (programaciones, webhooks) | **El bot de Control Center**, también como autor de sus commits. En Control Center Connect nunca hace push ni abre un pull request |
+
+- **Todo lo que haces** se ejecuta con **tu** inicio de sesión y nada más. Si no has iniciado sesión, la aplicación te pide que lo hagas. Ninguna otra credencial actúa en tu lugar
+- **El trabajo del bot** recibe un token para un solo repositorio cada vez, limitado a lo que puede hacer allí un miembro responsable: quien lo pidió, o si no, el propietario del espacio de trabajo. Un miembro que no puede hacer push limita el token a lectura. Las respuestas del bot que actúan en nombre de alguien empiezan por **Control Center (para @login)**
+- **Los agentes abren pull requests a través de Control Center**, nunca desde su sandbox, para que el pull request sea tuyo y las reglas propias de GitHub te impidan aprobarlo. Control Center también rechaza una aprobación de la persona que pidió al agente hacerlo, y de la autora del pull request. En una ejecución programada o por webhook, eso cubre a todo administrador que activó su disparador o editó su pipeline mientras estaba activo. Debe revisarlo alguien distinto. Si Control Center no puede confirmar quién abrió el pull request, o qué cuenta de la forja es la tuya, lo rechaza y te pide que lo intentes de nuevo
+- **Los agentes comentan también a través de Control Center.** El token de GitHub que recibe una ejecución de agente solo lee. Cuando un agente comenta en el pull request en el que trabaja, Control Center publica el comentario como el bot, empezando por **Control Center (para @login)** cuando alguien pidió la ejecución. Un agente solo puede comentar en su propio pull request: uno del mismo repositorio, nunca de un fork, cuyo último commit empujó el agente o es el commit actual de la rama de su espacio. Las menciones @ en el comentario de un agente no notifican a nadie. Un agente también puede cambiar el título o la descripción de su propio pull request mientras esté abierto. Esa edición se hace del mismo modo en que se abrió el pull request (en tu nombre, cuando pediste la ejecución), y pide aprobación antes por defecto. La descripción de un pull request conserva sus menciones @, tanto cuando el agente lo abre como cuando la edita, así que las personas a las que nombra sí son notificadas
+- **En Control Center Connect, el bot nunca hace push ni abre un pull request.** Hacer push, crear una rama o abrir un pull request allí necesita a una persona que lo pidió, y se ejecuta con su inicio de sesión. Una ejecución programada o por webhook que intente hacer push se detiene con un mensaje que lo dice. Para que las ejecuciones sin supervisión puedan hacer push, dale al espacio de trabajo su propia GitHub App en **Ajustes**
+- **Lo que puede hacer el bot de Connect.** Con la app compartida de Connect, el bot comenta, etiqueta y reacciona. Publica una revisión (una revisión con IA, comentarios de revisión, solicitudes de revisores) solo cuando el operador de Connect ha dado de alta la instalación de este servidor. Si no, la revisión sale con el inicio de sesión propio de la persona responsable y aparece con su nombre. El bot nunca abre, edita, cierra ni cambia el título de un pull request, descarta una revisión, ni edita o borra un comentario; eso necesita a una persona que lo pidió, con su propio inicio de sesión. Connect no vincula la instalación de tu organización a un único servidor de Control Center: cualquier servidor en el que un miembro con permiso de push a un repositorio haya iniciado sesión mediante Connect puede obtener el token de comentarios del bot para ese repositorio
+- **Un servidor o un espacio de trabajo con su propia GitHub App** mantiene el bot para todo lo anterior, incluidas las revisiones
+- **La automatización nunca aprueba** un pull request. Aprobar es un acto de una persona
+
+Al vincular un repositorio, Control Center comprueba que tu cuenta puede verlo, y avisa si la GitHub App no está instalada en su organización o no incluye el repositorio, con un enlace para solucionarlo. Vincular y desvincular necesita a un administrador del espacio de trabajo, y una copia fuera del almacenamiento del espacio de trabajo solo puede vincularla el propietario del servidor; consulta [Añadir repos a un espacio de trabajo](/es-ES/manual/guias/anadir-repos/).
+
+El vínculo sigue al id permanente del repositorio en GitHub, así que un cambio de nombre o una transferencia no requieren nada de tu parte. Si la ruta nombra después otro repositorio, Control Center deja de enviarle nada y muestra un aviso hasta que un administrador del espacio de trabajo pulse **Volver a vincular**.
+
+Abrir el código de un repositorio (archivos, diffs, búsqueda, un terminal) necesita tanto su concesión en el espacio de trabajo como un inicio de sesión tuyo en GitHub que pueda leerlo. Los administradores del espacio de trabajo siguen la misma regla; solo el propietario del servidor queda exento.
 
 ## Qué te aporta la integración
 
-| Función                     | Cómo                                                                                                            |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Lista y detalle de PR       | La API REST de GitHub, desde el servidor, con tu propio inicio de sesión                                        |
-| Ejecuciones de comprobación | La API Checks de GitHub                                                                                         |
-| Publicación de revisiones   | Un paso que activa el usuario y que publica tu revisión en la PR, en tu nombre                                  |
-| Registro de repos           | Se acepta un checkout si su remoto `origin` apunta a github.com, o a gitlab.com / bitbucket.org                 |
-| Acceso de los agentes a GitHub | Un token para el único repositorio de la ejecución como `GH_TOKEN` / `GITHUB_TOKEN`; los push pasan por Control Center |
-| Avisos de notificación      | Un sondeo en el servidor de tu bandeja de notificaciones de GitHub genera «Mencionado en pull request» y «Revisión solicitada» |
-| Perfiles de usuario         | Tarjetas de perfil al pasar el cursor y filtrado de PR por autor                                                |
+| Función                        | Cómo                                                                                                                                                                                                                |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lista y detalle de PR          | La API REST de GitHub, desde el servidor, con tu propio inicio de sesión                                                                                                                                            |
+| Ejecuciones de comprobación    | La API Checks de GitHub                                                                                                                                                                                             |
+| Publicación de revisiones      | Un paso que activa el usuario y que publica tu revisión en la PR, en tu nombre                                                                                                                                      |
+| Registro de repos              | Se acepta un checkout si su remoto `origin` apunta a github.com, o a gitlab.com / bitbucket.org                                                                                                                     |
+| Acceso a GitHub para agentes | Dentro de una ejecución, `git fetch` pasa por Control Center, que descarga los repositorios con los que trabaja la ejecución con un token de solo lectura que la ejecución nunca tiene. `gh` los lee con un token de solo lectura que Control Center entrega cuando se le pide y revoca al terminar la ejecución. Los pushes, pull requests, sus ediciones y los comentarios pasan por Control Center |
+| Avisos de notificación         | Un sondeo en el servidor de tu bandeja de notificaciones de GitHub genera «Mencionado en pull request» y «Revisión solicitada»                                                                                      |
+| Perfiles de usuario            | Tarjetas de perfil al pasar el cursor y filtrado de PR por autor                                                                                                                                                    |
 
 Algunas rutas usan la API GraphQL en lugar de REST cuando sale más barato: la
 actividad de ramas del selector al componer una PR y el estado de revisión en
@@ -97,34 +108,23 @@ minutos.
 
 ## Cómo actúan los agentes en GitHub
 
-- Un agente que trabaja en un worktree de GitHub recibe un token para ese único
-  repositorio. Puede leer el código y comentar en pull requests cuando el
-  miembro responsable puede hacer push, y solo leer cuando no puede. Un push
-  pasa por Control Center, que pregunta a la regla **Enviar a un remoto** y luego
-  lo reenvía con un token de escritura que el agente nunca tiene. Consulta
+- Un agente que trabaja en un worktree de GitHub recibe un token para ese único repositorio. Solo puede leer el código, las issues y los pull requests; los comentarios pasan por Control Center, como se describe arriba. El push pasa por Control Center, que consulta la regla **Enviar a un remoto** y luego lo reenvía con un token de escritura que el agente nunca tiene. Consulta
   [Configurar políticas del entorno aislado](/es-ES/manual/guias/politicas-de-entorno-aislado/)
-- Los commits del agente siempre usan la identidad de Git de quien los solicita
-  como autor y como committer. Por defecto, el trailer
-  `Co-Authored-By: Control Center <hi@usectrl.dev>` acredita como coautora a la
-  cuenta de GitHub `@usectrl`. En **Ajustes → Tú → Atribución de commits**
-  puedes desactivar esta coautoría sin cambiar tu identidad. La opción del
-  espacio de trabajo en **Ajustes → Espacio de trabajo → General** prevalece y
-  bloquea el interruptor personal. La atribución propia de Claude Code siempre
-  está desactivada. La firma de commits sigue necesitando su propia
-  configuración válida
-- Un terminal que abres en un rig recibe tu propio inicio de sesión, restringido
-  a ese único repositorio, así que los push que hagas ahí son tuyos
-- Cuando no se puede emitir ningún token (ninguna persona responsable ha
-  iniciado sesión, la app no está instalada en el propietario o la instalación
-  está suspendida), la ejecución arranca sin él y sus notas explican por qué. No
-  hay ninguna credencial de respaldo
+- El trabajo que tú inicias se confirma como tú. Cuando pides algo a un agente, o confirmas en el IDE, tú eres el autor y el committer, con una dirección que tu forja ha verificado: tu dirección noreply de GitHub desde tu inicio de sesión en GitHub, o en GitLab y Bitbucket el correo que informa tu inicio de sesión allí. La identidad de Git del espacio de trabajo solo se usa para un commit que haces a mano en un repositorio donde ninguna forja avala una dirección tuya. Si no has iniciado sesión en esa forja, los commits de un agente son del bot en su lugar, y las notas de la ejecución lo dicen
+- El trabajo que nadie pidió se confirma como el bot. Una ejecución programada o por webhook confirma como la GitHub App del espacio de trabajo (`<app>[bot]`, con su dirección noreply de GitHub), o como `Control Center <hi@usectrl.dev>` cuando no hay GitHub App o el repositorio está en GitLab o Bitbucket
+- **Acreditar a Control Center como coautor** (**Ajustes** → **Tú** → **Commits**) añade un trailer `Co-Authored-By:` para la otra parte: Control Center en tus commits, y en los del bot, cada persona que activó el disparador que lanzó la ejecución. Está activado salvo que lo desactives. Un administrador del espacio de trabajo puede decidirlo para todos con **Crédito de coautoría** en **Ajustes** → **Espacio de trabajo** → **General**; tu elección se guarda entonces, pero no se aplica en ese espacio de trabajo. La atribución propia de Claude Code siempre está desactivada
+- Tus commits pueden firmarse. En **Commits verificados** de **Ajustes** → **Tú** → **Commits**, elige **Crear clave de firma** y añade su mitad pública a tu cuenta de GitHub o GitLab como clave de firma; a partir de entonces, los commits de las ejecuciones que pides, y los que haces en el IDE, aparecen como verificados. La mitad privada se queda en tu servidor, así que quien controle ese servidor puede firmar commits como tú mientras la clave esté en tu cuenta, y en GitHub un commit que ya aparece como verificado sigue verificado tras eliminar la clave. Bitbucket no tiene claves solo para firma: no añadas la clave allí, y los commits en Bitbucket no se firman. Los commits del bot nunca se firman
+- Los commits que haces en el panel **Control de código** del IDE omiten los hooks de Git del repositorio, como hace `git commit --no-verify`, y el Git del servidor ignora los asistentes de credenciales, los editores, las herramientas de diff externas y los firmantes que configure el repositorio: ejecuta Git en su propia máquina, en un árbol que un agente o un pull request pueden modificar. Consulta [Confirmar y enviar desde Control de código](/es-ES/manual/guias/revisar-y-fusionar-pr/#hacer-commit-y-push-desde-control-de-código-fuente)
+- Cada commit que empuja un agente se comprueba antes, incluidas las capas que empuja `stack_publish` para un stack. Un push que nombra a otra persona, descarta o toma prestado un crédito, añade una línea de firma, o no está firmado como indican tus ajustes, se rechaza. Los commits que empujas tú mismo desde el IDE son tuyos y no se comprueban así
+- Un terminal que abres en un rig recibe tu propio inicio de sesión, limitado al único repositorio, así que los pushes desde allí son tuyos
+- Cuando no se puede emitir ningún token (nadie responsable ha iniciado sesión, la app no está instalada en el propietario, o la instalación está suspendida), el comando que lo pidió explica por qué. No existe una credencial de respaldo
 
 ## Solución de problemas
 
 ### La lista de PR está vacía y dice que GitHub no está conectado
 
 No has iniciado sesión en GitHub en este servidor. Haz clic en
-**Iniciar sesión en GitHub** en **Alojamiento de código**. Los repos de otros
+**Iniciar sesión en GitHub** en **Ajustes → Tú → Perfil → Alojamiento de código**. Los repos de otros
 hosts de código no se ven afectados.
 
 ### La fila de GitHub dice que el inicio de sesión no está configurado en este servidor
@@ -133,6 +133,8 @@ El servidor no tiene ni su propia GitHub App ni Connect. El propietario del
 servidor elige una opción en **Ajustes → Servidor → Inicio de sesión único**:
 **Crear mi app de GitHub** lleva unos dos minutos. Consulta
 [Crear la GitHub App](/es-ES/manual/guias/github-app/).
+
+En un espacio de trabajo con sus propias apps, la fila lo indica cuando la GitHub App del espacio de trabajo falta o está incompleta. Un administrador del espacio de trabajo la completa en la tarjeta **App de GitHub**, en **Ajustes → Espacio de trabajo → Integraciones**; consulta [Dar a un espacio de trabajo su propia app](/es-ES/manual/guias/github-app/#dar-a-un-espacio-de-trabajo-su-propia-app).
 
 ### El diálogo dice que el código no coincide
 
@@ -143,11 +145,7 @@ Cinco códigos erróneos terminan el inicio de sesión; vuelve a empezar.
 
 La GitHub App no tiene ninguna instalación en la cuenta propietaria del
 repositorio. Un administrador del espacio de trabajo la instala desde
-**Ajustes → Espacio de trabajo → General → Instalaciones de la app de GitHub**.
-En una organización que usa la App compartida de Control Center, puede que un
-administrador de esa organización tenga que hacer clic en
-**Autorizar este servidor**. Consulta
-[Crear la GitHub App](/es-ES/manual/guias/github-app/#autorizar-este-servidor-para-una-organización).
+**Ajustes → Espacio de trabajo → Integraciones → Instalaciones de la app de GitHub**.
 
 ### Todo el mundo tiene que volver a iniciar sesión en GitHub
 
@@ -159,8 +157,20 @@ inicios de sesión a través de Connect están ligados al servidor que los hizo.
 
 El registro necesita las tres cosas: que la ruta esté dentro de un árbol de
 trabajo de git, que tenga un remoto `origin` y que ese remoto apunte a un host de
-código compatible (github.com, gitlab.com o bitbucket.org). Consulta
+código compatible (github.com, gitlab.com o bitbucket.org). El `origin` debe ser el repositorio que vinculas, y una carpeta fuera del almacenamiento del espacio de trabajo solo puede vincularla el propietario del servidor. Consulta
 [Añadir repos a un espacio de trabajo](/es-ES/manual/guias/anadir-repos/).
+
+### Tengo una concesión pero el repositorio dice que mi cuenta no puede leerlo
+
+Tu cuenta de GitHub no puede leer ese repositorio, así que su código sigue cerrado para ti aunque tengas una concesión del espacio de trabajo. Inicia sesión en GitHub en **Alojamiento de código**, o pide acceso al repositorio en GitHub.
+
+### «No se pudo confirmar tu acceso a GitHub»
+
+GitHub no se pudo contactar para comprobar tu acceso, así que Control Center lo rechazó en lugar de suponer. Inténtalo de nuevo en un momento.
+
+### Las revisiones de Connect aparecen con mi nombre, no con el del bot
+
+En la app compartida de Connect, el bot publica revisiones solo para las instalaciones que el operador de Connect ha dado de alta. En los demás casos, la revisión sale con el inicio de sesión propio de la persona responsable. Para que el bot publique revisiones, dale al espacio de trabajo su propia GitHub App.
 
 ### Todo deja de funcionar un rato tras un uso intenso
 

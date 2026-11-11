@@ -2,7 +2,7 @@
 title: 从 GitHub PR 与 Control Center 对话
 description: 直接在 PR 对话中向 Control Center 请求审查或提问，无需 webhook 或公开 URL。
 slug: zh-CN/手册/操作指南/github-pr-对话
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 本指南介绍如何在不离开 GitHub 的情况下使用 Control Center：在 PR 页面上请求一次
@@ -12,28 +12,14 @@ AI 审查，在评论中向机器人提问，并在它的审查线程中把对�
 
 ## 前提条件
 
-- 工作区拥有一条 GitHub 通道：服务器自己的 GitHub App 或 Connect，并且该应用已[安装](/zh-CN/手册/操作指南/github-app/#在你的仓库所在处安装它)在拥有该仓库的账户上。自有应用需要 **Pull requests** 与 **Issues** 的读写权限，而**创建我的 GitHub 应用**已经会授予它们
+- 工作区拥有一条 GitHub 通道：服务器自己的 GitHub App 或 Connect，并且该应用已[安装](/zh-CN/手册/操作指南/github-app/#将它安装到你的仓库所在处)在拥有该仓库的账户上。自有应用需要 **Pull requests** 与 **Issues** 的读写权限，而**创建我的 GitHub 应用**已经会授予它们
 - 仓库已关联到 Control Center 中的一个工作区
 - 你已在本服务器上[登录 GitHub](/zh-CN/手册/操作指南/github-集成/)，并且你对该仓库有推送权限
 - 不需要 webhook URL，不需要隧道，不需要回调——网络侧没有任何要配置的东西
 
 ## 找到机器人的名称
 
-提及 `@usectrl`，这是 Control Center 专用的 GitHub 账号。它是默认触发方式；你的工作区的 GitHub 通道仍会处理请求并发布回复。你不需要 `usectrl` 账号的凭证。
-
-App 自身的登录名 `<appslug>[bot]` 及其短形式 `@appslug` 也能使用。如需查找自有应用的这个可选别名：
-
-1. 前往 **设置 → 服务器 → 单点登录**，向下滚动到 **提供商应用** 卡片
-2. 展开 **GitHub** 区块并点击 **测试**
-3. 填充完成后复制 **机器人登录名**。如果它仍显示空白提示，那么登录名始终是
-   `<appslug>[bot]`——输入它，或者使用短名 `@appslug`
-
-GitHub 的 `@` 自动补全不显示 App 账号，因此 App 别名需要手动输入或复制。专用用户 `@usectrl` 是默认调用方式；`@myapp` 和 `@myapp[bot]` 仍作为 App 别名被接受。
-
-:::note[选择一个有辨识度的应用名称]
-短名是按文本匹配的。如果某个 GitHub 人类用户恰好与你的应用共用同一个 slug，
-那么用短名提及该用户也会触达机器人。完整的 `@myapp[bot]` 形式则始终没有歧义。
-:::
+提及 `@usectrl`，这是 Control Center 专用的 GitHub 账号。它是唯一的触发方式：提及 App 自己的登录名不会有任何效果；你的工作区的 GitHub 通道仍会处理请求并发布回复。你不需要 `usectrl` 账号的凭证。
 
 ## 从 GitHub 请求审查
 
@@ -91,7 +77,7 @@ what would the complexity be with the bounded queue instead?
 
 服务器会先解析一条评论的作者（或添加 `ai-review` 标签的人），然后才会采取任何行动：
 
-- **该 GitHub 账户必须已在本服务器上登录。** 匹配依据是 GitHub 的数字账户 ID，绝不是登录名。请在 **设置 → 工作区 → 个人资料与身份 → 代码托管** 中登录
+- **该 GitHub 账户必须已在本服务器上登录。** 匹配依据是 GitHub 的数字账户 ID，绝不是登录名。请在 **设置 → 你 → 个人资料 → 代码托管** 中登录
 - **他们必须是在关联该仓库的工作区中拥有写入角色的成员**（`member`、`admin` 或
   `owner`）
 - **他们必须在 GitHub 上对该仓库拥有推送权限。** 回复使用的令牌仅限于该人的访问权限，因此只能读取的人不会得到回复
@@ -107,7 +93,7 @@ what would the complexity be with the bounded queue instead?
 | 事项                     | 行为                                                                     |
 | ---------------------- | ------------------------------------------------------------------------ |
 | 确认回应     | 在一轮扫描内，评论上（或对于标签，在 PR 上）出现你账户添加的 👀 |
-| 回答             | 落在此前提问所在的通道中，以 `**Control Center** (for @your-login):` 开头。在自有应用上，作者是该应用的机器人；通过 Connect 时，作者是你的账户，并通过共享 App 行事 |
+| 回答             | 落在此前提问所在的通道中，以 `**Control Center** (for @your-login):` 开头。作者是应用的机器人。在共享的 Connect 应用上，审查线程内的回复由你自己的账户发布，除非 Connect 运营方已将此安装列入名单 |
 | 空间内的归属 | 问题算在你名下；智能体代表你运行，并遵循该空间的自主程度设置 |
 | 审查             | 发现项落在审查空间中；发布到 GitHub 需要手动进行         |
 
@@ -120,7 +106,6 @@ what would the complexity be with the bounded queue instead?
 - 该 App 是否已**安装**在拥有该仓库的账户上，仓库是否已**关联**到某个工作区？
   未关联的仓库会在记录任何内容之前被跳过，所以之后再关联它，内容仍然会送达
 - 你是否已在本服务器上登录 GitHub，是否为拥有写入角色的成员，并且能推送到该仓库？服务器会忽略其他人，且不作回复
-- 如果使用的是 Control Center 的共享 App，该组织的安装是否已为本服务器授权？参见[为组织授权此服务器](/zh-CN/手册/操作指南/github-app/#为组织授权此服务器)
 - 仍然没有任何反应？当出错时，服务器日志会指明是哪一轮扫描和哪个 PR；请查找
   `pr_conversation:`（轮询器）和 `github_pr_conversation:`（桥接器）
 

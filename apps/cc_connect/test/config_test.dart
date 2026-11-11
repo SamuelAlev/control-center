@@ -76,6 +76,41 @@ void main() {
     );
   }
 
+  test('core\'s secret variable list is exactly what the configuration '
+      'reads as a secret', () {
+    final source = File('lib/src/service_config.dart').readAsStringSync();
+    String name(Match m) => m.group(1)!;
+    final dual = RegExp(
+      r"\bdual\(\s*'(CONNECT_[A-Z0-9_]+)'",
+    ).allMatches(source).map(name).toSet();
+    final single = RegExp(
+      r"\bsecret\(\s*'(CONNECT_[A-Z0-9_]+)'",
+    ).allMatches(source).map(name).toSet();
+    expect(dual, isNotEmpty);
+    expect(single, isNotEmpty);
+    // A dual secret also reads its previous generation.
+    final read = {...single, ...dual, for (final n in dual) '${n}_PREVIOUS'};
+    expect(connectSecretEnvKeys, read);
+    // Every other variable named anywhere in the service is not a secret.
+    final named = <String>{
+      for (final file in [
+        ...Directory('lib').listSync(recursive: true),
+        ...Directory('bin').listSync(recursive: true),
+      ].whereType<File>().where((f) => f.path.endsWith('.dart')))
+        ...RegExp(
+          r"'(CONNECT_[A-Z0-9_]+)'",
+        ).allMatches(file.readAsStringSync()).map(name),
+    };
+    final others = named.difference(read);
+    expect(others, contains('CONNECT_GITHUB_CLIENT_ID'));
+    for (final key in others) {
+      expect(isConnectSecretEnvKey(key), isFalse, reason: key);
+    }
+    for (final key in read) {
+      expect(isConnectSecretEnvKey('${key}_FILE'), isFalse, reason: key);
+    }
+  });
+
   group('fromEnvironment refuses', () {
     test('a missing public URL', () {
       refuses({...base()}..remove('CONNECT_PUBLIC_URL'), 'CONNECT_PUBLIC_URL');
@@ -179,6 +214,10 @@ void main() {
         'CONNECT_GITHUB_SECRET_GENERATION': '0',
       }, 'GENERATION');
       refuses({...base(), 'CONNECT_GITHUB_APP_ID': 'abc'}, 'APP_ID');
+      refuses({
+        ...base(),
+        'CONNECT_GITHUB_APP_PRIVATE_KEY': 'not a key',
+      }, 'CONNECT_GITHUB_APP_PRIVATE_KEY');
       refuses({...base(), 'CONNECT_KLIPY_MODE': 'open'}, 'CONNECT_KLIPY_MODE');
     });
 
@@ -321,6 +360,28 @@ void main() {
       expect(config.linear, isNull, reason: 'the signed file decides lanes');
       final denied = await harness.call(b, 'GET', '/v1/config');
       expect(denied.json, {'error': 'install_blocked'});
+      // * under a key the operator supplied, not the hosted root: said at
+      // error level when the service starts.
+      final open = harness.logs
+          .map((l) => jsonDecode(l) as Map<String, Object?>)
+          .where((l) => l['event'] == 'config.open_to_any_install');
+      expect(open.single['level'], 'error');
+    });
+
+    test('a signed config with an allow list says nothing about *', () async {
+      final path = await _writeSigned(scratch, signingSeed);
+      final harness = await Harness.start(
+        allowed: [a],
+        env: {
+          'CONNECT_SIGNED_CONFIG_FILE': path,
+          'CONNECT_CONFIG_PUBLIC_KEYS': publicKey,
+        },
+      );
+      addTearDown(harness.close);
+      expect(
+        harness.logs.where((l) => l.contains('config.open_to_any_install')),
+        isEmpty,
+      );
     });
 
     test('inline, it is served byte for byte and lets * through', () async {
@@ -489,6 +550,38 @@ void main() {
           ),
           throwsA(isA<ConnectConfigException>()),
         );
+      }
+    });
+  });
+
+  group('GitHub App key pasted into an environment variable', () {
+    final canonical = normalizePem(testGitHubAppKey);
+    final oneLineEscaped = testGitHubAppKey.trim().replaceAll('\n', r'\n');
+
+    for (final (name, pasted) in [
+      ('as is', testGitHubAppKey),
+      ('with literal \\n escapes', oneLineEscaped),
+      ('quoted with escapes', '"$oneLineEscaped"'),
+      ('line breaks as spaces', testGitHubAppKey.trim().replaceAll('\n', ' ')),
+      ('CRLF line breaks', testGitHubAppKey.replaceAll('\n', '\r\n')),
+      ('base64 of the PEM', base64.encode(utf8.encode(testGitHubAppKey))),
+    ]) {
+      test('$name reads as the same key', () {
+        expect(normalizePem(pasted), canonical);
+        expect(isReadableGitHubAppKey(pasted), isTrue);
+        expect(
+          () => ConnectServiceConfig.fromEnvironment({
+            ...base(),
+            'CONNECT_GITHUB_APP_PRIVATE_KEY': pasted,
+          }),
+          returnsNormally,
+        );
+      });
+    }
+
+    test('anything that is not a key is still refused', () {
+      for (final junk in ['not a key', 'bm90IGEga2V5', '"-----BEGIN X-----"']) {
+        expect(isReadableGitHubAppKey(junk), isFalse, reason: junk);
       }
     });
   });

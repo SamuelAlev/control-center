@@ -155,6 +155,8 @@ class PullRequest {
     this.baseRef = '',
     this.baseSha = '',
     this.headRef = '',
+    this.baseRepoId = '',
+    this.headRepoId = '',
     this.requestedReviewers = const <PrUser>[],
     this.requestedTeamSlugs = const <String>[],
     this.assignees = const <PrUser>[],
@@ -234,6 +236,22 @@ class PullRequest {
 
   /// Head branch ref name.
   final String headRef;
+
+  /// The forge's durable id of the repository the pull request merges into:
+  /// GitHub's numeric repository id, GitLab's target project id, Bitbucket's
+  /// destination repository uuid. Survives a rename or a transfer, unlike
+  /// [repoFullName]. '' when the payload carried none.
+  final String baseRepoId;
+
+  /// The forge's durable id of the repository the head branch lives in (the
+  /// same kinds of id as [baseRepoId]); differs from it for a pull request
+  /// from a fork. '' when the payload carried none (a deleted fork included).
+  final String headRepoId;
+
+  /// Whether the head branch provably lives in the base repository: both ids
+  /// are known and equal. A fork, or a payload without ids, is not.
+  bool get isFromBaseRepository =>
+      baseRepoId.isNotEmpty && headRepoId == baseRepoId;
 
   /// Users requested to review this PR.
   final List<PrUser> requestedReviewers;
@@ -318,6 +336,8 @@ class PullRequest {
       baseRef: baseRef,
       baseSha: baseSha,
       headRef: headRef,
+      baseRepoId: baseRepoId,
+      headRepoId: headRepoId,
       requestedReviewers: requestedReviewers,
       requestedTeamSlugs: requestedTeamSlugs,
       assignees: assignees,
@@ -407,6 +427,8 @@ class PullRequest {
           baseRef == other.baseRef &&
           baseSha == other.baseSha &&
           headRef == other.headRef &&
+          baseRepoId == other.baseRepoId &&
+          headRepoId == other.headRepoId &&
           _sameUsers(requestedReviewers, other.requestedReviewers) &&
           _listEquals(requestedTeamSlugs, other.requestedTeamSlugs) &&
           _sameUsers(assignees, other.assignees) &&

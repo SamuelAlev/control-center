@@ -2,7 +2,7 @@
 title: AI-gestuurde review gebruiken
 description: Voer de pr_review-pipeline uit op een PR, lees de bevindingen en het oordeel en publiceer de review vervolgens naar GitHub.
 slug: nl-NL/handleiding/gidsen/ai-review
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Deze gids laat zien hoe je reviewer-agenten een pull request laat reviewen en hoe
@@ -121,7 +121,7 @@ Control Center verstuurt **één** GitHub-review. Bevindingen die al zijn opgelo
 of verworpen, worden overgeslagen. De knop neemt elke resterende open bevinding
 mee en dient bij **Ship** `APPROVE` in. (De MCP-tool `publish_review_to_github`
 gebruikt standaard alleen door peers bevestigde bevindingen en keurt nooit goed:
-die publiceert als automatisering, dus `approve_on_ship` heeft daar geen effect.) Bevindingen met een anker naar
+die publiceert als automatisering, dus `approve_on_ship` heeft daar geen effect. Die geautomatiseerde publicatie wordt geplaatst door de bot, behalve op de gedeelde Control Center Connect-app als de Connect-operator deze installatie niet heeft opgenomen: dan gaat ze via de eigen GitHub-aanmelding van de verantwoordelijke persoon, onder hun naam.) Bevindingen met een anker naar
 een bestand en regel worden inline reacties; al het overige komt in de
 samenvattingstekst terecht, elk met een voettekst "— Control Center AI review",
 zodat de bron ondubbelzinnig is. Een **Block**-oordeel wordt ingediend als
@@ -145,7 +145,7 @@ draait.
 
 Andere ingebouwde pipelines posten wél rechtstreeks naar GitHub: `cross_review`,
 `pr_triage`, `ticket_to_pr` en `pre_merge_gate` eindigen elk in een
-commentaarstap. Alleen `pr_review` houdt zijn uitvoer voor jou achter.
+commentaarstap, die de server plaatst. Alleen `pr_review` houdt zijn uitvoer voor jou achter. Geen van hen voegt samen of keurt goed.
 
 ## Zelf reviewers starten
 

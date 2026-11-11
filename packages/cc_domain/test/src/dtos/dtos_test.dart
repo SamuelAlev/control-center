@@ -87,7 +87,7 @@ void main() {
         'secret_exclude_globs': ['a', 'b'],
         'review_concurrency': 4,
         'auto_publish_review': true,
-        'github_auth_mode': 'app',
+        'connect_mode': 'custom',
         'github_app_id': '12345',
         'deleted_at': '2025-01-02T00:00:00',
         'created_at': '2025-01-01T00:00:00',
@@ -101,7 +101,7 @@ void main() {
       expect(dto.secretExcludeGlobs, ['a', 'b']);
       expect(dto.reviewConcurrency, 4);
       expect(dto.autoPublishReview, isTrue);
-      expect(dto.githubAuthMode, 'app');
+      expect(dto.connectMode, 'custom');
       expect(dto.githubAppId, '12345');
       expect(dto.deletedAt, DateTime(2025, 1, 2));
       expect(dto.createdAt, DateTime(2025, 1, 1));
@@ -110,7 +110,9 @@ void main() {
       expect(out['id'], 'w1');
       expect(out['secret_exclude_globs'], ['a', 'b']);
       expect(out['review_concurrency'], 4);
-      expect(out['github_auth_mode'], 'app');
+      expect(out['connect_mode'], 'custom');
+      expect(out.containsKey('connect_url'), isFalse);
+      expect(out.containsKey('github_auth_mode'), isFalse);
       expect(out['github_app_id'], '12345');
       expect(out['deleted_at'], '2025-01-02T00:00:00.000');
     });
@@ -278,8 +280,8 @@ void main() {
         'workspace_id': 'w',
         'mode': 'pair',
         'provisioning_status': 'ready',
+        'kind': 'topic',
         'pipeline_run_id': 'pr',
-        'origin': 'agent',
         'archived_at': '2025-01-03T00:00:00',
         'created_at': '2025-01-01T00:00:00',
         'updated_at': '2025-01-02T00:00:00',
@@ -298,19 +300,19 @@ void main() {
         'id': 'c',
         'name': 'n',
         'workspace_id': 'w',
+        'provisioning_status': 'ready',
+        'kind': 'topic',
       }).toJson();
       expect(out.containsKey('mode'), isFalse);
       expect(out.containsKey('created_at'), isFalse);
       expect(out.containsKey('archived_at'), isFalse);
     });
 
-    test('a missing archived_at reads as not archived (older servers)', () {
-      final dto = SpaceDto.fromJson({
-        'id': 'c',
-        'name': 'n',
-        'workspace_id': 'w',
-      });
-      expect(dto.archivedAt, isNull);
+    test('a missing status or kind is refused', () {
+      expect(
+        () => SpaceDto.fromJson({'id': 'c', 'name': 'n', 'workspace_id': 'w'}),
+        throwsA(isA<TypeError>()),
+      );
     });
 
     test('non-string timestamp -> null', () {
@@ -318,6 +320,8 @@ void main() {
         'id': 'c',
         'name': 'n',
         'workspace_id': 'w',
+        'provisioning_status': 'ready',
+        'kind': 'topic',
         'created_at': 5,
       });
       expect(dto.createdAt, isNull);
@@ -483,33 +487,22 @@ void main() {
   });
 
   group('ArticleDto', () {
-    test('round-trip with summary fallback and publishedAt alt key', () {
+    test('round-trip', () {
       final dto = ArticleDto.fromJson({
         'id': 'a',
         'feed_id': 'f',
         'title': 't',
         'url': 'u',
         'image_url': 'i',
-        'description': 'desc',
+        'summary': 'sum',
         'author': 'au',
-        'publishedAt': '2025-01-01T00:00:00',
+        'published_at': '2025-01-01T00:00:00',
         'is_read': true,
         'is_saved': true,
       });
-      expect(dto.summary, 'desc');
+      expect(dto.summary, 'sum');
       expect(dto.publishedAt, DateTime(2025, 1, 1));
       expect(dto.isRead, isTrue);
-    });
-
-    test('uses published_at when publishedAt absent', () {
-      final dto = ArticleDto.fromJson({
-        'id': 'a',
-        'feed_id': 'f',
-        'title': 't',
-        'published_at': '2025-02-01T00:00:00',
-      });
-      expect(dto.publishedAt, DateTime(2025, 2, 1));
-      expect(dto.summary, isNull);
     });
   });
 
@@ -822,7 +815,6 @@ void main() {
         'cached_read_tokens': 4,
         'cached_write_tokens': 6,
         'estimated_cost_cents': 7,
-        'child_cost_cents': 8,
         'agent_role': 'main',
         'duration_ms': 100,
         'time_to_first_token_ms': 50,
@@ -2002,7 +1994,6 @@ void main() {
         'cached_read_tokens': 40,
         'cached_write_tokens': 50,
         'estimated_cost_cents': 60,
-        'child_cost_cents': 70,
         'agent_role': 'main',
         'duration_ms': 100,
         'time_to_first_token_ms': 5,

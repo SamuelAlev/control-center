@@ -2,7 +2,7 @@
 title: Ferramentas de agente integradas
 description: A superfície de ferramentas que o harness integrado oferece a um agente — servidor de linguagem, busca estrutural, depurador, kernels e controle de workers — com cada operação e seus argumentos.
 slug: pt-BR/manual/referencia/ferramentas-de-agente
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Estas são as ferramentas **vinculadas ao servidor** que o runtime de agente integrado registra diretamente — servidor de linguagem, busca estrutural, depurador, kernels, perguntas e controle de workers —, em oposição às [ferramentas MCP](/pt-BR/manual/referencia/ferramentas-mcp/) que ele conecta por ponte e às ferramentas genéricas de arquivo, busca e shell do runtime do harness. Elas não estão no registro MCP: um cliente MCP externo não as verá, porque cada uma está vinculada a um recurso vivo do lado do servidor — um processo de servidor de linguagem, um adaptador de depuração, um interpretador — que pertence a uma execução.
@@ -24,6 +24,8 @@ Cada ferramenta declara um nível, e o nível decide **quais superfícies a veem
 ## `lsp` — consultas ao servidor de linguagem
 
 Registrada quando a execução tem um supervisor de servidor de linguagem e um diretório de trabalho. Se um servidor consegue de fato responder é detectado no momento da chamada, como uma **interseção**: um marcador de raiz precisa existir *e* o binário do servidor precisa resolver. Qualquer um dos dois sozinho significa que nenhum servidor inicia — o `status` diz isso —, em vez de um chute silencioso.
+
+Os servidores vêm somente da tabela embutida; um `lsp.json` do repositório não é lido. Em uma execução em sandbox, cada execução tem a sua própria sessão de servidor de linguagem, então os servidores iniciam de novo a cada execução. Binários locais do projeto (`node_modules/.bin`) são usados apenas quando a execução está em sandbox, e a raiz do projeto nunca se resolve acima do diretório de trabalho da execução.
 
 As posições são endereçadas por `line` mais uma substring `symbol`, nunca por coluna. Um modelo a quem se pede uma coluna chuta, e um chute errado resolve para outro símbolo na mesma linha — uma resposta que parece certa e trata de outra coisa. Omitir `symbol` em uma ação de navegação é um erro, não um chute para a primeira coluna.
 
@@ -117,7 +119,7 @@ Cada arquivo é comparado com o conteúdo capturado no momento da preparação, 
 
 Registrada quando a execução tem um supervisor de sessão de depuração, um diretório de trabalho e um id de conversa. Se um adaptador consegue de fato iniciar é detectado no momento da chamada, pela mesma regra de interseção do servidor de linguagem (marcador de raiz *e* binário). Nível `exec`; não é segura para paralelismo (uma sessão é estado entre chamadas, então um `continue` que ultrapassasse o `stack` leria um frame que já se moveu).
 
-Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` é recusado em vez de substituir silenciosamente o primeiro.
+Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` é recusado em vez de substituir silenciosamente o primeiro. Em uma execução em sandbox, a sessão mantém o sandbox entre os turnos até terminar, então por no máximo esses 30 minutos.
 
 | Operação      | Argumentos                    | Observações                                    |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` �
 | `status`      | —                             | Se uma sessão está em execução, e onde ela parou |
 | `breakpoints` | `file`, `lines[]`             | `lines` vazio limpa o arquivo. Podem ser definidos **antes** de iniciar |
 | `launch`      | `program`, `args[]`           | Inicia o programa parado nos seus pontos de interrupção |
-| `attach`      | `port`                        | Conecta-se a um processo já em execução         |
+| `attach`      | `port`                        | Conecta-se a um processo já em execução, em uma das portas encaminhadas da própria execução; qualquer outra porta é recusada antes de qualquer coisa iniciar |
 | `continue`    | `thread_id?`                  | Roda até a próxima parada                      |
 | `pause`       | `thread_id?`                  | Para onde ele estiver                          |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Avança um passo                     |
@@ -146,7 +148,7 @@ Uma sessão por conversa, com um TTL rígido (30 minutos). Um segundo `launch` �
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-O `debugpy` prefere um `.venv/bin` ou `venv/bin` local do projeto ao `$PATH`: um python do `$PATH` é outro ambiente, e anexar a partir do errado falha de um jeito que se lê como código quebrado.
+O `debugpy` prefere um `.venv/bin` ou `venv/bin` local do projeto ao `$PATH` quando a execução está em sandbox: um python do `$PATH` é outro ambiente, e anexar a partir do errado falha de um jeito que se lê como código quebrado. Fora do sandbox, ele usa apenas o `$PATH`, então um repositório não consegue escolher o interpretador que roda no host.
 
 ---
 
@@ -176,7 +178,7 @@ A ponte **entra novamente no registro de ferramentas do harness**, então os gua
 O timeout da célula é um orçamento de *inatividade* (padrão de 5 minutos) e fica **suspenso** enquanto há uma chamada via ponte pendente, então uma célula que se distribui para subagentes não é morta no meio da distribuição.
 
 :::note[Onde o kernel roda]
-No recinto da conversa quando ela tem um; caso contrário, no host. Ele não inicializa um recinto para chegar até lá — a mesma regra que impede uma aba de rig de iniciar automaticamente.
+No recinto da conversa quando ela tem um; caso contrário, no sandbox do sistema operacional da execução, no host. Com o sandbox desligado ou indisponível, ele roda sem confinamento e `eval` pede aprovação de execução no host. Ele não inicializa um recinto para chegar até lá — a mesma regra que impede uma aba de rig de iniciar automaticamente.
 :::
 
 ---

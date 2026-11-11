@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
@@ -13,9 +12,11 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:test/test.dart';
 
 import '../helpers/windows_safe_delete.dart';
@@ -97,22 +98,6 @@ String _result({bool isError = false}) => jsonEncode({
   'result': isError ? 'overloaded' : 'ok',
 });
 
-class _NoopBroker implements CredentialBrokerPort {
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async => const ScopedCredentials(handle: 'h', environment: {});
-
-  @override
-  Future<void> revoke(String handle) async {}
-}
-
 class _UnusedAgentRepo implements AgentRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -129,16 +114,18 @@ void main() {
 
   DispatchSession buildSession(_ScriptedClaude sandbox) => DispatchSession(
     deps: SandboxDispatchDeps(
+      hostExecution: const HostExecutionGate(
+        posture: HostExecutionPosture.offByOwner,
+      ),
       sandbox: sandbox,
-      broker: _NoopBroker(),
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
       eventBus: null,
-      resolveCommitIdentity: (_, {workspaceId}) async =>
-          AgentCommitIdentity.owner(
+      resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+          AgentCommitIdentity.person((
             name: 'Test User',
             email: 'test@example.test',
-          ),
+          )),
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
     ),
     onResolveHandle:

@@ -2,7 +2,7 @@
 title: 使用情况分析
 description: 开启使用情况分析后 Control Center 会记录什么、由谁决定，以及哪些内容永远不会发送。
 slug: zh-CN/手册/参考/使用情况分析
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center 可以向一个 [Umami](https://umami.is) 实例发送**假名化的使用事件**。使用情况分析**默认关闭，直到服务器运营者将其开启**。该设置属于服务器，对连接到它的每个客户端都生效：桌面应用、Web 应用、手机以及服务器本身。
@@ -13,7 +13,7 @@ Control Center 可以向一个 [Umami](https://umami.is) 实例发送**假名化
 
 | 开关 | 位置 | 作用 |
 | --- | --- | --- |
-| **分享使用情况分析** | 引导流程（沙箱步骤）和**设置 → 隐私**。只有服务器运营者可以更改；其他成员只能以只读方式看到当前值 | 作用于整个服务器。以 `telemetry.usage_analytics` 存储在服务器设置中。除非设为 `true`，否则保持关闭 |
+| **分享使用情况分析** | 引导流程（沙箱步骤）和**设置 → 服务器 → 诊断与隐私**。只有服务器运营者可以更改；其他成员只能以只读方式看到当前值 | 作用于整个服务器。以 `telemetry.usage_analytics` 存储在服务器设置中。除非设为 `true`，否则保持关闭 |
 | 构建类型 | 自动 | debug 和 profile 构建不会发送，而是把每个事件写入调试日志 |
 | `CC_ANALYTICS_DEBUG=1` | `cc_server` 的环境变量或其 `.env` 文件 | 让服务器及所有连接到它的客户端的 debug 和 profile 构建真正发送数据，用于测试。上面的开关仍须开启 |
 | `DO_NOT_TRACK=1` | `cc_server` 的环境变量 | 无论开关如何，都会停止服务器自身的上报。客户端仍遵循该开关 |

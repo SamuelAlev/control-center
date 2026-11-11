@@ -2,7 +2,7 @@
 title: Bir Google Calendar bağlama
 description: Google Calendar’ı bir çalışma alanına bağlayın, birden çok hesabı yönetin ve bir oturum açmanın süresi dolduğunda yeniden bağlanın.
 slug: tr-TR/kilavuz/nasil-yapilir/takvim-baglama
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Bu kılavuz, Google Calendar’ı bir çalışma alanına nasıl bağlayacağınızı gösterir.
@@ -21,7 +21,7 @@ Control Center’a eşitler; orada davetlere yanıt verebilir, etkinlikleri ayı
 ## Hesap bağlama
 
 1. Kenar çubuğunda **Takvim**’i açın.
-2. Takvim kenar çubuğunda **Takvim hesabı ekle**’ye tıklayın. (Aynı bölüm **Ayarlar → Çalışma alanı → Profil ve kimlik** yolunda, **Google Calendar** altında da yer alır.)
+2. Takvim kenar çubuğunda **Takvim hesabı ekle**’ye tıklayın. (Aynı bölüm **Ayarlar → Siz → Profil** yolunda, **Google Calendar** altında da yer alır.)
 3. **Google Calendar’ı bağla**’ya tıklayın. Tarayıcınız Google’ın onay sayfasını açar.
 4. Hesabı seçin ve takvim etkinliklerinize ve takvim listenize erişimi onaylayın.
 
@@ -50,7 +50,6 @@ Bağlantı akışı, hangi istemci yürütürse yürütsün `calendar.events` ve
 - **Etkinliği silin:** etkinliği açın ve çöp kutusu simgesine tıklayın. Onay, kimlerin etkilendiğini gösterir: düzenlediğiniz bir etkinlik iptal edildiğinde konuklara bildirilir, bir daveti silmek ise onu yalnızca takviminizden kaldırır. Yinelenen bir etkinliğin tek bir örneğini silmek serinin geri kalanını korur
 
 Konuklar Google’ın kendi e-posta davetini, güncellemesini veya iptalini alır. Yalnızca hesabınızın yazabildiği takvimlerde ve yalnızca kendi hesaplarınızla ayırtabilirsiniz: başka bir üyenin bağlı takvimi asla önerilmez. Yinelenen bir etkinliğin tek bir örneğini taşımak da serinin geri kalanını korur.
-
 
 ## Eşitleme nasıl çalışır
 
@@ -93,13 +92,13 @@ bir makineye geri yüklendiyse.
 
 ## Bir hesabın bağlantısını kesme
 
-Takvim kenar çubuğundan (veya **Ayarlar → Çalışma alanı → Profil ve kimlik**
+Takvim kenar çubuğundan (veya **Ayarlar → Siz → Profil**
 yolundan) hesaptaki **Bağlantıyı kes**’e tıklayın. Bu işlem, eşitlenmiş
 etkinliklerini siler ve sunucudaki saklı kimlik bilgisini temizler.
 
 ## Kendi Google istemcinizi getirme
 
-Kendi Google istemcinizi, **Kendi uygulamalarımı kullan** seçeneğini seçtiğinizde çalıştırın. Sunucunun kendi istemcisi yalnızca o durumda geçerlidir: Control Center Connect ya da özel bir Connect ile Connect her hattı çalıştırır, Google dahil; sunucunun istemcisi kayıtlı ama kullanılmadan kalır. Connect kullanılırken onay ekranının kendi projenizin adını taşımasını istiyorsanız çalışma alanına kendi istemcisini verin ([aşağıda](#bir-çalışma-alanına-kendi-google-istemcisini-verme)); bu her modda geçerlidir.
+Kendi Google istemcinizi, **Kendi uygulamalarımı kullan** seçeneğini seçtiğinizde çalıştırın. Sunucunun kendi istemcisi yalnızca o durumda geçerlidir: Control Center Connect ya da özel bir Connect ile Connect her hattı çalıştırır, Google dahil; sunucunun istemcisi kayıtlı ama kullanılmadan kalır. Connect kullanılırken onay ekranının kendi projenizin adını taşımasını istiyorsanız çalışma alanını kendi uygulamalarına alıp ona kendi istemcisini verin ([aşağıda](#bir-çalışma-alanına-kendi-google-istemcisini-verme)); bu sunucunun modu ne olursa olsun geçerlidir.
 
 1. [Google Cloud Console](https://console.cloud.google.com/apis/credentials) üzerinde **Google Calendar API**’yi etkinleştirin ve `calendar.events`, `calendar.calendarlist.readonly`, `openid` ile `email` kapsamlarını ekleyerek **OAuth onay ekranını** yapılandırın. Uygulama doğrulanmamışken kendinizi bir **test kullanıcısı** olarak ekleyin.
 2. Uygulama türü **Web uygulaması** olan bir **OAuth istemci kimliği** oluşturun.
@@ -120,14 +119,13 @@ açma, onu veren istemciye aittir.
 Bir çalışma alanı, Google Calendar’ı sunucunun istemcisi yerine kendi istemcisi üzerinden bağlayabilir. Bunu yalnızca bir çalışma alanı yöneticisi veya sahibi ayarlayabilir.
 
 1. Yukarıdaki 1 ve 2. adımlardaki gibi bir Google **Web uygulaması** istemcisi oluşturun
-2. **Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları** bölümüne gidin ve **Google Calendar**’ı açın
-3. **Bu çalışma alanının kendi uygulamasını kullan**’ı seçin
-4. Satırın **Geri çağırma URL’si** altında gösterdiği yönlendirme URI’sini istemciye birebir ekleyin
-5. **İstemci id** ve **İstemci gizli anahtarı** değerlerini yapıştırın
+2. **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gidin. **Control Center Connect** kartında **Kendi uygulamalarımı kullan** seçeneğini seçin ve **Uygula**’ya tıklayın
+3. Takvim bölümünde **Google Calendar uygulaması** kartı görünür. Kartın **Geri çağırma URL’si** altında gösterdiği yönlendirme URI’sini istemciye birebir ekleyin
+4. **İstemci id** ve **İstemci gizli anahtarı** değerlerini yapıştırın
 
-Bu çalışma alanında bağlanan takvim hesapları, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak bu istemciden geçer. Sunucunun istemcisine ya da Connect’e asla geri dönmez: iki alan da ayarlanana kadar Google Calendar bu çalışma alanında kapalıdır ve satır neyin eksik olduğunu söyler. Gizli anahtar sunucudan asla ayrılmaz.
+Bu çalışma alanında bağlanan takvim hesapları, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak bu istemciden geçer. Sunucunun istemcisine ya da Connect’e asla geri dönmez: iki alan da ayarlanana kadar Google Calendar bu çalışma alanında kapalıdır ve kart neyin eksik olduğunu söyler. Gizli anahtar sunucudan asla ayrılmaz.
 
-Sunucunun istemcisi ile çalışma alanınınki arasında geçiş yapmak ya da çalışma alanının istemci id’sini değiştirmek, bu çalışma alanındaki her Google hesabını yeniden bağlanmak üzere işaretler. **Bu sunucunun uygulamasını kullan** çalışma alanının kayıtlı alanlarını siler. Sunucudaki diğer çalışma alanları etkilenmez.
+**Kendi uygulamalarımı kullan** tüm sağlayıcıları aynı anda kapsar: GitHub, Linear ve GIF araması da yalnızca çalışma alanının kendi uygulamaları üzerinde çalışır. Çalışma alanının oturum açma uygulamalarını değiştirmek ya da çalışma alanının istemci id’sini değiştirmek, bu çalışma alanındaki her Google hesabını yeniden bağlanmak üzere işaretler. Kayıtlı alanlar, çalışma alanı başka bir seçeneğe döndüğünde korunur; ancak yalnızca **Kendi uygulamalarımı kullan** altında kullanılır. Sunucudaki diğer çalışma alanları etkilenmez.
 
 ## Sorun giderme
 
@@ -138,8 +136,8 @@ Sunucunun istemcisi ile çalışma alanınınki arasında geçiş yapmak ya da �
 | Google’dan `invalid_client`                                      | Kimlik ile gizli anahtar farklı istemcilere ait ya da istemci silinmiş                                                                        |
 | Onay başarılı ama eşitleme boş                                   | Hesabınız onay ekranında bir **test kullanıcısı** değil ya da istenen kapsamlardan biri verilmedi                                                   |
 | İletişim kutusu kodun eşleşmediğini söylüyor                     | 8 karakteri tarayıcının gösterdiği gibi birebir yazın. Beş yanlış kod oturum açmayı sonlandırır; yeniden başlayın                            |
-| “Yanıtınız güncellenemedi”, ayırtma, taşıma veya silme başarısız             | Hesap eski salt okunur kapsamla bağlandı. Yeniden bağlayın; size yalnızca okuma olarak paylaşılmış bir takvim yazmayı da reddeder                                                                 |
-| Herkesin yeniden bağlanması gerekiyor                            | Sunucunun veya çalışma alanının Google istemcisi değişti ya da sunucunun Connect seçimi veya anahtarı değişti. Bkz. [Süresi dolmuş bir hesabı yeniden bağlama](#süresi-dolmuş-bir-hesabı-yeniden-bağlama) |
+| “Yanıtınız güncellenemedi”, ayırtma, taşıma veya silme başarısız             | Hesap takvim yazma erişimi vermedi. Yeniden bağlayın ve istenen her kapsamı onaylayın; size yalnızca okuma olarak paylaşılmış bir takvim yazmayı da reddeder                                                                 |
+| Herkesin yeniden bağlanması gerekiyor                            | Sunucunun veya çalışma alanının Google istemcisi değişti ya da sunucunun veya çalışma alanının Connect seçimi, ya da sunucunun anahtarı değişti. Bkz. [Süresi dolmuş bir hesabı yeniden bağlama](#süresi-dolmuş-bir-hesabı-yeniden-bağlama) |
 
 ## İlgili kılavuzlar
 

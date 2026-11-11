@@ -2,7 +2,7 @@
 title: Einen PR prüfen und mergen
 description: Öffne die PR-Arbeitsfläche, lies den Diff, schreibe Inline-Kommentare, schick ein Review ab und merge.
 slug: de-DE/handbuch/anleitungen/pr-pruefen-und-mergen
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Diese Anleitung zeigt, wie du einen Pull Request prüfst und mergst.
@@ -23,9 +23,13 @@ App öffnen sich bei Bedarf. Tabs für die Bereitstellungsvorschau erscheinen
 automatisch, sobald auf dem PR eine Vorschau-URL erkannt wird. Dein Tab-Layout
 wird je PR gemerkt.
 
+Der eingebettete code-server wird nur dem Serverinhaber angeboten, weil er auf dem Server als dessen eigener Benutzer läuft. Eine Sitzung gehört dem Gerät und der Person, die sie geöffnet hat, startet mit eingeschaltetem Arbeitsbereichsvertrauen von VS Code (VS Code fragt, bevor es einem Ordner vertraut) und führt nichts automatisch aus. Alle anderen behalten den Einzeldatei-Editor und die Dateiansichten.
+
 Der Tab **Übersicht** trägt die Metadaten des PR (Autor, Branch, Labels,
 Zugewiesene, Reaktionen, Commits, Check-Status) und die Aktionszeile:
-Aktualisieren, **Review**, **Merge**, in der IDE öffnen und ein Menü ⋯.
+Aktualisieren, **Review**, **Merge**, eine Schaltfläche mit dem Namen deines Editors (etwa **In VS Code öffnen**) und ein Menü ⋯.
+
+Die Editor-Schaltfläche startet einen nativen Editor auf dem **eigenen Bildschirm des Servers**, als der Benutzer des Servers und außerhalb jeder Sandbox; er wird daher nur dem [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber) angeboten. Auf einem Desktop, der seinen eigenen Server hostet, ist das die Person am Schreibtisch. Dasselbe gilt für das Öffnen des Worktrees einer Unterhaltung in einem Editor. Alle anderen nutzen die eingebauten Editoransichten. Auch der Eigentümer kann einen Pull Request nur aus einem Repository öffnen, das mit dem Arbeitsbereich verknüpft ist.
 
 ### Einen PR aus dem Stapel eines Bereichs öffnen
 
@@ -44,7 +48,7 @@ sie ein- oder auszuklappen. Nicht zusammenhängende PRs bleiben getrennt, und
 unvollständige oder mehrdeutige Branch-Verknüpfungen werden nicht als geordneter
 Stapel dargestellt.
 
-In **Versionsverwaltung** öffnet **Gestapelte Pull Requests (N)** eine Auswahl
+In der Kopfzeile des PR öffnet das Stapel-Abzeichen (ein Ebenen-Symbol mit der Anzahl der Pull Requests im Stapel) **Gestapelte Pull Requests**, eine Auswahl
 der veröffentlichten Teile des Stapels, von unten nach oben. Jeder Eintrag zeigt
 die PR-Nummer, die Bezeichnung des Teils und die Position; der ausgecheckte Teil
 ist markiert. Wähle einen Eintrag, um seine PR-Arbeitsfläche zu öffnen. **Stapel
@@ -54,6 +58,21 @@ außerhalb von Control Center erstellt wurden, gelten ebenfalls als
 veröffentlicht. Teilweise veröffentlichte Stapel bieten beide Aktionen an; bei
 Arbeit mit einem einzelnen Branch bleiben die einzelnen Aktionen zum Erstellen
 und Anzeigen eines PR erhalten.
+
+### Aus der Quellcodeverwaltung committen und pushen
+
+Ein Commit, den du im Panel **Quellcodeverwaltung** machst, gehört dir: Du bist sein Autor und Committer, unter der Adresse, die dein Forge für deine Anmeldung bestätigt hat. Hast du unter **Verifizierte Commits** in **Einstellungen → Du → Commits** einen Signierschlüssel erstellt, signiert der Server ihn mit deinem eigenen Signierschlüssel, bevor er gepusht wird. Ein Push trägt deine eigene Anmeldung, eingeschränkt auf dieses eine Repository.
+
+Der Server führt Git auf seiner eigenen Maschine aus, in einem Baum, den ein Agent oder ein Pull Request ändern kann. Daher startet er keines der Programme, die ein Repository auswählen kann:
+
+- Commits überspringen die Git-Hooks des Repositorys, so wie `git commit --no-verify`. Ein Pre-Commit-Hook, ein Commit-msg-Hook oder ein Pre-Push-Hook läuft nicht
+- Credential-Helper, Editoren, externe Diff-Werkzeuge und Signierprogramme, die das Repository konfiguriert, werden ignoriert
+
+Führe deine Prüfungen selbst vor dem Commit aus oder in CI.
+
+Das Ändern des Codes braucht den [Schreibzugriff](/de-DE/handbuch/konzepte/autorisierung/#code-ändern-braucht-den-schreibzugriff) auf dem Repository: das Speichern oder Zurücksetzen von Dateien im Editor, **Neueste PR-Commits abrufen**, Committen und Pushen, das Veröffentlichen eines Branches sowie die Stack-Aktionen, die einen Teil anlegen, auschecken oder veröffentlichen. Mit nur Lese- oder Review-Zugriff siehst du die Dateien und Diffs, und diese Aktionen antworten „Du kannst dieses Repository lesen, aber nicht ändern. Ein Workspace-Admin kann Schreibzugriff freigeben.“
+
+**Neueste PR-Commits abrufen** bringt den Review-Worktree auf die neuesten Commits des Pull Requests. Es holt mit deiner eigenen GitHub-Anmeldung und fragt dich nach einer Anmeldung, wenn du keine hast. Committe oder verwirf zuerst deine Änderungen: Ein Worktree mit nicht committeten Änderungen wird nicht synchronisiert.
 
 ## Den Diff lesen
 
@@ -141,7 +160,7 @@ Mergen ist endgültig: es schiebt Commits zum Code-Host, deshalb gibt es einen
 Bestätigungsschritt statt eines Eintrags im Rückgängig-Stapel. Danach wird der
 Cache des PR ungültig, der Status wechselt auf **Zusammengeführt**, und ein
 Ereignis `PullRequestStatusChanged` wird mit dem Status `merged` ausgelöst.
-Dieses Ereignis gibt den kurzlebigen Worktree von „Im Editor öffnen“ frei und
+Dieses Ereignis gibt den kurzlebigen Worktree frei, den die Editor-Schaltfläche geöffnet hat, und
 startet zwei mitgelieferte Pipelines: **Stale repository cleanup**, die die
 veralteten Worktrees und Unterhaltungsordner des PR entfernt, und **Release
 notes**, die einen Changelog-Eintrag entwirft.
@@ -168,6 +187,12 @@ deterministische Modell aus Kohorten und Achsen.
 
 Control Center importiert auch PRs, die Menschen außerhalb der App geöffnet
 haben. Der Ablauf oben ist derselbe. Externe PRs erkennt der PR-Polling-Dienst.
+
+## Fehlersuche
+
+### Mein Pre-Commit-Hook lief nicht
+
+Commits, die du im Panel **Quellcodeverwaltung** der App machst, überspringen die Git-Hooks des Repositorys, so wie `git commit --no-verify`. Der Server führt Git auf seiner eigenen Maschine aus, in einem Baum, den Agenten und Pull Requests ändern können, daher startet er nie ein Programm, das das Repository auswählt. Führe die Prüfungen des Hooks selbst aus oder verlass dich auf CI.
 
 ## Verwandte Anleitungen
 

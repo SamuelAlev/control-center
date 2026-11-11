@@ -33,8 +33,8 @@ class SpaceParticipantsTable extends Table {
   DateTimeColumn get joinedAt => dateTime().withDefault(currentDateAndTime)();
 
   /// When this participant last read the space (their read cursor). Null
-  /// until the space is first opened under this participant, so legacy rows
-  /// are treated as "nothing unseen yet" rather than "everything unseen".
+  /// until the space is first opened under this participant, which is treated
+  /// as "nothing unseen yet" rather than "everything unseen".
   ///
   /// Drives the sidebar's unread indicator: an agent message newer than this
   /// timestamp (while no run is in flight) surfaces a notification dot.

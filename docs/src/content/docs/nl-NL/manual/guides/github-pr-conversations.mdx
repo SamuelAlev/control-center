@@ -2,7 +2,7 @@
 title: Met Control Center praten vanuit een GitHub-PR
 description: Vraag Control Center om een review of stel een vraag vanuit het PR-gesprek zelf, zonder webhook of openbare URL.
 slug: nl-NL/handleiding/gidsen/github-pr-gesprekken
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Deze gids laat zien hoe je met Control Center werkt zonder GitHub te verlaten:
@@ -30,31 +30,14 @@ laptop achter NAT gedraagt zich precies als een openbare deployment.
 
 ## De naam van je bot vinden
 
-Vermeld `@usectrl`, het eigen GitHub-account van Control Center. Dit is de standaardtrigger; de GitHub-route van je werkruimte verwerkt het verzoek nog steeds en plaatst de antwoorden. Je hebt geen inloggegevens voor het account `usectrl` nodig.
-
-De eigen login van de App, `<appslug>[bot]`, en de korte vorm `@appslug` werken ook. Zo vind je deze optionele alias op je eigen app:
-
-1. Ga naar **Instellingen → Server → Single sign-on** en scroll naar de kaart
-   **Provider-apps**
-2. Open het blok **GitHub** en klik op **Testen**
-3. Kopieer **Bot-login** zodra die verschijnt. Staat er nog de lege hint, dan is
-   de login altijd `<appslug>[bot]` — typ die, of de korte vorm `@appslug`
-
-GitHub toont App-accounts niet in de automatische aanvulling voor `@`, dus App-aliassen moet je typen of kopiëren. De eigen gebruiker `@usectrl` is de standaardaanroep; zowel `@myapp` als `@myapp[bot]` blijven geldige App-aliassen.
-
-:::note[Kies een onderscheidende appnaam]
-De korte vorm wordt op tekst vergeleken. Deelt een menselijke GitHub-gebruiker
-toevallig de slug van je app, dan bereikt een vermelding van die gebruiker in de
-korte vorm ook de bot. De volledige vorm `@myapp[bot]` is altijd eenduidig.
-:::
+Vermeld `@usectrl`, het eigen GitHub-account van Control Center. Het is de enige trigger: de eigen login van de app vermelden doet niets. De GitHub-route van je werkruimte verwerkt het verzoek nog steeds en plaatst de antwoorden. Je hebt geen inloggegevens voor het account `usectrl` nodig.
 
 ## Een review aanvragen vanuit GitHub
 
 Twee manieren, die beide dezelfde meegeleverde `pr_review`-pipeline starten als
 de knop **Ask AI**:
 
-- **Voeg het label `ai-review` toe** aan de PR. Dat komt het dichtst in de buurt
-  van de bot als reviewer toewijzen — appaccounts kunnen de native plek van een
+- **Voeg het label `ai-review` toe** aan de PR. Dichter bij het toewijzen van de bot als reviewer komt GitHub niet — appaccounts kunnen de native plek van een
   aangevraagde reviewer niet bezetten. Je account reageert op de PR met 👀 en de
   review start in Control Center; er wordt geen opmerking geplaatst
 - **Plaats `@usectrl review`** (of alleen `@usectrl`) als opmerking in het
@@ -118,7 +101,7 @@ De server herleidt de auteur van een opmerking, of degene die het label
 
 - **Het GitHub-account moet op deze server zijn aangemeld.** Er wordt gematcht op
   het numerieke account-id van GitHub, nooit op de login. Meld je aan via
-  **Instellingen → Werkruimte → Profiel en identiteit → Codehosting**
+  **Instellingen → Jij → Profiel → Codehosting**
 - **Die persoon moet lid zijn met een schrijfrol** (`member`, `admin` of
   `owner`) in de werkruimte die de repository koppelt
 - **Die persoon moet op GitHub naar de repository kunnen pushen.** Antwoorden
@@ -142,7 +125,7 @@ voor het label.
 | Onderdeel                | Gedrag                                                                   |
 | ------------------------ | ------------------------------------------------------------------------ |
 | Bevestiging              | 👀 vanaf je account op de opmerking (of op de PR, voor het label), binnen één pollronde |
-| Antwoorden               | Geplaatst op de plek waar de vraag is gesteld, beginnend met `**Control Center** (for @your-login):`. Bij een eigen app is de auteur de bot van de app; via Connect is het je eigen account, handelend via de gedeelde App |
+| Antwoorden               | Geplaatst op de plek waar de vraag is gesteld, beginnend met `**Control Center** (for @your-login):`. Geschreven door de bot van de app. Op de gedeelde Connect-app is een antwoord binnen een reviewthread geschreven door je eigen account, tenzij de Connect-beheerder deze installatie heeft opgenomen |
 | Attributie in de ruimte  | De vraag is van jou; de agent draait namens jou, onder de autonomie-instellingen van de ruimte |
 | Reviews                  | Bevindingen belanden in de reviewruimte; publiceren naar GitHub is handmatig |
 
@@ -164,9 +147,6 @@ downtime binnenkomt, wordt bij de volgende pollronde opgepikt.
 - Ben je op deze server aangemeld bij GitHub, ben je lid met een schrijfrol, en
   mag je naar de repo pushen? De server negeert iedereen anders zonder te
   antwoorden
-- Is op de gedeelde App van Control Center de installatie van de organisatie
-  geautoriseerd voor deze server? Zie
-  [Deze server autoriseren voor een organisatie](/nl-NL/handleiding/gidsen/github-app/#deze-server-autoriseren-voor-een-organisatie)
 - Nog steeds niets? Het serverlogboek noemt de pollronde en de PR wanneer er iets
   misgaat; zoek naar `pr_conversation:` (de poller) en
   `github_pr_conversation:` (de brug)

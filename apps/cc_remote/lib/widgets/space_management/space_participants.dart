@@ -1,10 +1,12 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_remote/l10n/app_localizations.dart';
+import 'package:cc_remote/operation_scope.dart';
 import 'package:cc_remote/widgets/space_management/space_controls.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class SpaceParticipants extends StatelessWidget {
+class SpaceParticipants extends ConsumerWidget {
   const SpaceParticipants({
     required this.workspaceId,
     required this.agents,
@@ -38,8 +40,9 @@ class SpaceParticipants extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final users = ref.watch(remoteUsersProvider).value ?? const {};
     final tokens = context.designSystem ?? DesignSystemTokens.light();
     final scopedAgents = agents.where(
       (agent) => agent.workspaceId == workspaceId,
@@ -72,9 +75,11 @@ class SpaceParticipants extends StatelessWidget {
           ),
         for (final member in scopedMembers)
           SpacePick(
-            member.displayName?.isNotEmpty == true
-                ? member.displayName!
-                : member.userId,
+            switch ((member.displayName, users[member.userId]?.handle)) {
+              (final name?, _) when name.isNotEmpty => name,
+              (_, final handle?) when handle.isNotEmpty => '@$handle',
+              _ => l10n.teammate,
+            },
             editing
                 ? _has('user', member.userId)
                 : member.userId == selfId ||
@@ -82,6 +87,13 @@ class SpaceParticipants extends StatelessWidget {
             enabled && member.userId != selfId
                 ? () => onHuman(member.userId)
                 : null,
+            // Named by display name, a person is told apart by username.
+            username: switch (users[member.userId]?.handle) {
+              final handle? when handle.isNotEmpty &&
+                  (member.displayName?.isNotEmpty ?? false) =>
+                handle,
+              _ => null,
+            },
           ),
       ],
     );

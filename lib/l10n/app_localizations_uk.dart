@@ -156,7 +156,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get guardrailClassPrCreate => 'Відкрити pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Опублікувати рецензію або злити';
+  String get guardrailClassPrPublish => 'Оновити або злити pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Запис у зовнішній трекер';
@@ -2574,9 +2574,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get activityToggledMcpServer => 'Перемкнуто MCP-сервер';
 
   @override
-  String get activityUpdatedMcpToken => 'Оновлено MCP-токен';
-
-  @override
   String get activitySavedApiKey => 'Збережено API-ключ';
 
   @override
@@ -3209,9 +3206,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Видалити «$name»?';
   }
-
-  @override
-  String get archiveConversation => 'Архівувати розмову';
 
   @override
   String get deleteFact => 'Видалити факт';
@@ -3907,9 +3901,6 @@ class AppLocalizationsUk extends AppLocalizations {
       'Відповідати оформленню ОС або вибрати фіксований режим.';
 
   @override
-  String get mcpAuthToken => 'Токен автентифікації MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Керування MCP-сервером недоступне на підключеному сервері.';
 
@@ -4127,9 +4118,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Системних шрифтів не виявлено.';
-
-  @override
-  String get noTokenSet => 'Токен не задано — доступ необмежений.';
 
   @override
   String get noWorkingMemory => 'Нотаток у робочій пам’яті ще немає.';
@@ -4621,33 +4609,6 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Облікові дані GitHub сервера не бачать $repos. Якщо репозиторій належить організації, встановіть GitHub App там або підключіть токен із доступом.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Немає доступу до $count репозиторіїв',
-      many: 'Немає доступу до $count репозиторіїв',
-      few: 'Немає доступу до $count репозиторіїв',
-      one: 'Немає доступу до репозиторію',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Встановлення GitHub App призупинено';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Показано останні відомі дані для $repos. Відновіть встановлення на GitHub або підключіть токен із доступом.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Немає доступу';
 
   @override
@@ -4766,9 +4727,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Правило';
-
-  @override
-  String get runCompleted => 'Запуск завершено';
 
   @override
   String get running => 'Виконується';
@@ -4932,9 +4890,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get setLabel => 'Задати';
-
-  @override
-  String get setToken => 'Задати токен';
 
   @override
   String get settingsLabel => 'Налаштування';
@@ -5132,9 +5087,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get skillOriginManual => 'Вручну';
 
   @override
-  String get skillOriginRegistry => 'Реєстр';
-
-  @override
   String get skillOriginRuntimeLocal => 'Локальний runtime';
 
   @override
@@ -5309,10 +5261,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Перемкнути тему';
-
-  @override
-  String get tokenConfigured =>
-      'Налаштовано — клієнти мають надавати цей токен.';
 
   @override
   String get topic => 'Тема';
@@ -8916,7 +8864,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Які дії інструментів виконуються без запиту. Читання завжди дозволене; вищі рівні запитують підтвердження.';
+      'Які дії інструментів самого Control Center, викликані через його кінцеву точку MCP або його агентами, виконуються без запиту. Читання завжди дозволені; вищі рівні запитують. Сервери всередині запуску дотримуються політики дій цього запуску.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Завжди запитувати';
@@ -12457,20 +12405,8 @@ class AppLocalizationsUk extends AppLocalizations {
   String get settingsAbout => 'Про програму';
 
   @override
-  String get settingsScopeBadgeYou => 'ВИ';
-
-  @override
-  String get settingsScopeBadgeDevice => 'ЦЕЙ ПРИСТРІЙ';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'РОБОЧИЙ ПРОСТІР';
-
-  @override
-  String get settingsScopeBadgeServer => 'СЕРВЕР';
-
-  @override
   String get settingsProfileDescription =>
-      'Ваше ім\'я, пошта й git-ідентичність у цьому просторі. Зміна простору змінює цей шар; псевдонім, вхід і пристрої лишаються на обліковому записі.';
+      'Ваше ім\'я, електронна пошта та git-ідентичність у цьому робочому просторі. Перемикання робочого простору змінює цей шар; ваше ім\'я користувача, вхід і пристрої лишаються на вашому обліковому записі в Ви → Профіль.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12485,49 +12421,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Ідентичність, політика та угоди, спільні для всіх у цьому робочому просторі.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Авторство комітів';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Виберіть, чи зазначати Control Center у комітах агента. Адміністратори робочого простору можуть змінити цей вибір для всіх його учасників.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Зазначення агента';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Зазначати Control Center у комітах агента';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Автором і комітером комітів завжди є ви. Якщо ввімкнено, Control Center (@usectrl) додається як співавтор. Якщо вимкнено, коміти не містять згадок про агента.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Налаштування цього робочого простору має перевагу над вашим вибором. Ваші вподобання збережено, але тут вони не діють.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Завантаження налаштувань авторства…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Виберіть, чи зазначати Control Center у комітах агента. Налаштування робочого простору має перевагу над особистими вподобаннями кожного учасника.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Використовувати вподобання кожного учасника';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Завжди зазначати Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Ніколи не зазначати Control Center';
+      'Політики та домовленості, спільні для всіх у цьому робочому просторі.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12896,9 +12790,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Перевірка з’єднання…';
-
-  @override
-  String get fromEnvironment => 'із середовища';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13473,14 +13364,14 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Використовується робочими просторами, що успадковують застосунок GitHub цього встановлення. Робочий простір із власним застосунком налаштовує його в Робочий простір → Загальні.';
+      'Використовується робочими просторами, які слідують застосункам входу цього сервера. Робочий простір із власними застосунками налаштовує свій App у розділі Робочий простір → Інтеграції.';
 
   @override
   String get providerAppsGroupPrConversations => 'Розмови в pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Як розробники говорять із цим сервером на GitHub у просторах, що успадковують. Простір із власним App має бота в Простір → Загальні. Без вебхука й публічної URL — сервер опитує.';
+      'Як розробники можуть спілкуватися з цим сервером на GitHub у робочих просторах, які слідують за ним. Робочий простір із власними застосунками має власного бота в розділі Робочий простір → Інтеграції. Працює без webhook і публічної URL-адреси; сервер сам опитує.';
 
   @override
   String get providerAppBotLogin => 'Логін бота';
@@ -13513,10 +13404,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get portLabel => 'Порт';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Без токена все, що має доступ до цього порту, може викликати кожен інструмент.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Інструменти';
 
   @override
@@ -13543,6 +13430,142 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Очистити все';
+
+  @override
+  String get guardrailFamilyCommands => 'Команди';
+
+  @override
+  String get guardrailStandingApproval => 'Схвалення на час';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Дозволено: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Спочатку запитувати: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Заборонено: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'гілки $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'шляхи $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'хости $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'команди $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'інструменти $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'команди, що починаються з $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'не більше $count одночасно';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'не більше $amount центів';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'кожна дія такого типу';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'від $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'до $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'до відкликання';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Відкликати: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed =>
+      'Не вдалося відкликати. Спробуйте ще раз.';
+
+  @override
+  String get guardrailEntryInactive => 'не діє, поки стоїть «Заборонити»';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Дозволено у $count випадках з наведених нижче',
+      many: 'Дозволено у $count випадках з наведених нижче',
+      few: 'Дозволено у $count випадках з наведених нижче',
+      one: 'Дозволено у $count випадку з наведених нижче',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count схвалень на час, наданих на весь робочий простір, також діють тут.',
+      many:
+          '$count схвалень на час, наданих на весь робочий простір, також діють тут.',
+      few:
+          '$count схвалення на час, надані на весь робочий простір, також діють тут.',
+      one:
+          '$count схвалення на час, надане на весь робочий простір, також діє тут.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count схвалень на час задано для окремих просторів або агентів. Оберіть «Простір» або «Агент» вище, щоб їх побачити.',
+      many:
+          '$count схвалень на час задано для окремих просторів або агентів. Оберіть «Простір» або «Агент» вище, щоб їх побачити.',
+      few:
+          '$count схвалення на час задано для окремих просторів або агентів. Оберіть «Простір» або «Агент» вище, щоб їх побачити.',
+      one:
+          '$count схвалення на час задано для окремого простору або агента. Оберіть «Простір» або «Агент» вище, щоб його побачити.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Пісочниця';
@@ -14371,6 +14394,13 @@ class AppLocalizationsUk extends AppLocalizations {
       'Вас запитають знову, коли агент наступного разу потребуватиме запустити програму з цієї копії.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Пошук шляхів';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Немає дозволів, що відповідають запиту';
+
+  @override
   String get demoBadgeLabel => 'Демо';
 
   @override
@@ -14732,11 +14762,11 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Це з’єднання досягає сервера через ретранслятор, який не передає файли. Підключіться до сервера напряму, щоб завантажити або вивантажити резервну копію.';
+      'Передавання файлів для цього з’єднання ще не налаштовано. Підключіться до сервера знову, щоб завантажити або вивантажити резервну копію.';
 
   @override
   String get backupTransferForbidden =>
-      'Сервер відмовив. Щоб завантажити робочий простір, потрібна роль admin, щоб відновити — owner, а для всього знімка — operator інсталяції.';
+      'Сервер відмовив. Щоб завантажити робочий простір, потрібна роль адміністратора робочого простору. Щоб відновити, потрібен власник сервера, який також має бути власником цього робочого простору. Для повного знімка потрібен власник сервера.';
 
   @override
   String get backupTransferUnsupported =>
@@ -15041,34 +15071,8 @@ class AppLocalizationsUk extends AppLocalizations {
       'Розміщувати вміст буфера обміну з будь-якого середовища на цьому пристрої без запиту.';
 
   @override
-  String get workspaceGitHubIdentity => 'Ідентичність GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Як фонова робота з GitHub у цьому робочому просторі проходить автентифікацію: через застосунок цього встановлення або через власний застосунок робочого простору.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'Використовувати GitHub App цієї інсталяції';
-
-  @override
-  String get workspaceGitHubModeApp => 'Використовувати інший GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Використовує GitHub App у Сервер → Застосунки постачальників.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Ідентичність бота й опитування цього простору. Учасники входять у Ви через цей App.';
-
-  @override
   String get profileOverlayHint =>
       'Ці поля — ви в цьому просторі. Порожні поля успадковують ім\'я й пошту облікового запису. Зміна простору змінює цей шар.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Увійдіть або вставте токен для цього простору.';
 
   @override
   String get stackStartNextPart => 'Почати наступну частину';
@@ -15885,6 +15889,17 @@ class AppLocalizationsUk extends AppLocalizations {
       'Сервер не зміг надати команду входу для цього облікового запису.';
 
   @override
+  String get claudeAccountSignedIn => 'Вхід виконано';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Це вікно закриється автоматично після завершення входу.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Це вікно закриється автоматично після входу в усі облікові записи.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Термін входу в Claude Code минув';
 
@@ -16042,7 +16057,7 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'Це потрібно налаштувати на сервері';
+  String get environmentInputNeeded => 'Це потрібно налаштувати на сервері';
 
   @override
   String get environmentKindApp => 'Застосунок';
@@ -16648,21 +16663,40 @@ class AppLocalizationsUk extends AppLocalizations {
   String get environmentOpenPanel => 'Відкрити середовище';
 
   @override
-  String get environmentNeedsSetup => 'Потрібне налаштування';
+  String get environmentStatusBlocked => 'Потрібна дія';
+
+  @override
+  String get environmentStateInTerminal => 'У терміналі';
+
+  @override
+  String get environmentWaitingInTerminal => 'Очікує на вас у терміналі';
+
+  @override
+  String get environmentOpenTerminal => 'Відкрити термінал';
+
+  @override
+  String get environmentSignInNeeded => 'Потрібно увійти в обліковий запис';
+
+  @override
+  String get environmentDependencyNeeded => 'Потрібний компонент недоступний';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Тут готово. Середовище ще запускається';
 
   @override
   String get environmentContinueInTerminal => 'Продовжити в терміналі';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Інструменту потрібне ваше введення в терміналі: пароль або відповідь. Після цього запуск продовжиться.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Цей термінал відкрито, бо для запуску потрібні ваші дії';
 
   @override
-  String get environmentSetupTab => 'Налаштування середовища';
+  String get environmentStartTerminalTab => 'Налаштування середовища';
 
   @override
   String get environmentsNothingRunning =>
@@ -16965,23 +16999,14 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Схваліть запит на сторінці $provider у браузері. Це вікно саме помітить, коли ви закінчите.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Очікування $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Вхід не завершено';
 
   @override
   String get signInReopenPage => 'Знову відкрити сторінку входу';
 
   @override
-  String get signInCodePrompt => 'Введіть код, показаний у браузері';
+  String get signInCodePrompt =>
+      'Підтвердьте у браузері, потім введіть код, який він покаже.';
 
   @override
   String get signInCodeMalformed =>
@@ -17024,7 +17049,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Цей вхід більше не дійсний. Почніть його заново.';
+      'Цей вхід більше не відкритий: його скасовано, використано або замінено. Почніть знову.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -17032,7 +17057,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Зараз забагато спроб входу. Зачекайте хвилину й спробуйте ще раз.';
+      'Зараз забагато запитів. Зачекайте трохи й спробуйте ще раз.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -17063,10 +17088,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Застосунок $provider не встановлено там, де він потрібен. Установіть його й спробуйте знову.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Це встановлення застосунку GitHub уже авторизовано для іншого сервера Control Center.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -17125,7 +17146,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Де встановлено застосунок GitHub — серед облікових записів, яким належать репозиторії цього робочого простору. Встановлення організації працює лише на серверах, які авторизували її адміністратори.';
+      'Де встановлено застосунок GitHub — серед облікових записів, яким належать репозиторії цього робочого простору.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -17135,21 +17156,7 @@ class AppLocalizationsUk extends AppLocalizations {
   String get githubInstallApp => 'Установити застосунок GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Авторизувати цей сервер';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Тепер цей сервер може використовувати встановлення в $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Призупинено';
-
-  @override
-  String get githubInstallationAuthorized => 'Авторизовано';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Не авторизовано';
 
   @override
   String get linearAutomationTitle => 'Автоматизація Linear';
@@ -17175,7 +17182,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Зареєструйте застосунки GitHub, Google і Linear самостійно в Налаштування → Сервер → Єдиний вхід, а власний застосунок Slack кожного робочого простору підключіть у його налаштуваннях. «Створити мій застосунок GitHub» налаштовує GitHub за один крок.';
+      'Зареєструйте застосунки GitHub, Google і Linear самостійно в Налаштування → Сервер → Єдиний вхід, а власний застосунок Slack кожного робочого простору під\'єднайте в Робочий простір → Інтеграції, де робочий простір також може вибрати власні застосунки або Connect. «Створити мій застосунок GitHub» налаштовує GitHub за один крок.';
 
   @override
   String get connectModeCustom => 'Використовувати власний сервер Connect';
@@ -17310,7 +17317,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Сервер отримає новий ключ і новий ідентифікатор встановлення. Усі входи через Connect перестануть працювати, і всім доведеться ввійти знову. Входів через ваші власні застосунки це не стосується.';
+      'Цей сервер отримає новий ключ і новий ідентифікатор інсталяції, а старий ідентифікатор виводиться з обігу в Connect: входи, зашифровані під ним, і старий ключ там перестають працювати, тож усім, хто входив через Connect, доведеться ввійти знову. Токени, що вже видані, працюють до їх спливу. Входи через ваші власні застосунки не зачіпаються. Якщо Connect недоступний, нічого не змінюється, і ви можете спробувати ще раз.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17444,35 +17451,6 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Застосунки провайдерів';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Які застосунки Google Calendar, Linear і Klipy використовує цей робочий простір. За замовчуванням використовуються застосунки цього сервера або Control Center Connect. Робочий простір із власним застосунком ніколи не переходить на них.';
-
-  @override
-  String get workspaceProviderAppModeInherit =>
-      'Використовувати застосунок сервера';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Входи та запити йдуть через застосунок цього сервера або Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Використовувати власний застосунок робочого простору';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Використовується лише застосунок цього робочого простору. Поки він не налаштований повністю, провайдер тут вимкнено і не переходить на інший застосунок.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Застосунок сервера';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Власний застосунок';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Ще не вистачає: $fields. Доки всі поля не заповнено, провайдер у цьому робочому просторі вимкнено. Він не переходить на застосунок цього сервера.';
   }
@@ -17489,22 +17467,116 @@ class AppLocalizationsUk extends AppLocalizations {
       'Пошук GIF у цьому робочому просторі використовує цей ключ.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Змінити застосунок $provider?';
+  String get settingsWorkspaceIntegrations => 'Інтеграції';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Хостинг коду, завдання, календар, чат і пошук GIF у цьому робочому просторі, а також застосунки, через які вони входять.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Які застосунки цей робочий простір використовує для GitHub, Google Календаря, Linear, Slack і пошуку GIF. Якщо адміністратор не обере інше, він слідує за цим сервером.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Як на цьому сервері';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Цей сервер використовує застосунки Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Цей сервер використовує сервер Connect за адресою $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Усі, хто підключений до $provider у цьому робочому просторі через застосунок сервера, мають увійти знову через застосунок робочого простору.';
+  String get workspaceConnectInheritOwn =>
+      'Цей сервер використовує власні застосунки.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Власник сервера ще не обрав, тож діють власні застосунки сервера.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Використовуються лише застосунки цього робочого простору. Додайте кожен нижче, поруч із його провайдером. Провайдер без застосунку тут вимкнено; натомість не використовуються ні застосунки цього сервера, ні Connect.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Лише HTTPS. Адреси в приватній або локальній мережі відхиляються.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL у середовищі цього сервера визначає, куди надсилаються входи, тож цей робочий простір не може вибрати власний Connect. Він може слідувати за цим сервером або використовувати власні застосунки.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Змінити застосунки для входу цього робочого простору?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Усім у робочому просторі доведеться знову увійти в GitHub, Linear і Google Календар через нові застосунки. Входи, виконані через поточні застосунки, тут перестануть працювати.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Змінити застосунки';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Слідує вибору вище. Провайдер ніколи не переходить на інший застосунок.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Застосунок робочого простору';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Застосунок сервера';
+
+  @override
+  String get workspaceGitHubAppTitle => 'Застосунок GitHub';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Власний застосунок цього робочого простору діє від імені його репозиторіїв і виконує вхід учасників. Він ніколи не переходить на застосунок цього сервера чи на Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Цей робочий простір використовує застосунок GitHub, який надають його застосунки для входу. Встановіть його на облікові записи, яким належать ваші репозиторії.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Діє від імені цього робочого простору';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Бот застосунку коментує, переглядає та опитує pull request-и в репозиторіях цього робочого простору.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Застосунок $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Це видалить облікові дані $provider робочого простору. Усі, хто підключений через застосунок робочого простору, мають увійти знову.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Входи та запити $provider у цьому робочому просторі використовують лише цей застосунок.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Змінити застосунок';
+  String get workspaceGifsTitle => 'GIF-и';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Пошук GIF використовує ключ Klipy цього робочого простору.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Пошук GIF використовує ключ Klipy цього сервера.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Пошук GIF працює через Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Пошук GIF вимкнено в цьому робочому просторі.';
 
   @override
   String openOnForge(String forge) {
@@ -17522,7 +17594,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Підключіть GitHub, GitLab або Bitbucket у Налаштування → Робочий простір → Профіль і ідентичність → Хостинг коду';
+      'Підключіть GitHub, GitLab або Bitbucket у Налаштування → Ви → Профіль';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17539,4 +17611,1145 @@ class AppLocalizationsUk extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Підключіть $forge, щоб відкрити pull request у цьому репозиторії';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Ваш вхід у $provider як $account закінчився. Увійдіть знову.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Призупинено: служба входу цього робочого простору змінилася';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'Зараз не вдається зв’язатися з $provider. Повторюємо спробу.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Ваш вхід збережено, і він знову запрацює, щойно служба повернеться. Адміністратор робочого простору може перевірити налаштування входу в розділі «Інтеграції».';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Сервер перезапустився. Почніть вхід знову.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Вхід через $provider не налаштовано для цього робочого простору.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Вхід через $provider налаштовано неправильно: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Цей робочий простір використовує власні застосунки, але застосунку для $provider не має.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Ця збірка не може перевірити Control Center Connect, тому вхід через $provider вимкнено.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Служба входу цього робочого простору змінила ідентифікацію. Адміністратор має це підтвердити.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Зараз не вдається зв’язатися зі службою входу цього робочого простору.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Адресу служби входу цього робочого простору не вказано або вона недійсна.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Оператор сервера закріпив службу входу, тому вибір цього робочого простору не діє.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Служба входу цього робочого простору не підтримує $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Відкрити інтеграції';
+
+  @override
+  String get signInOpenServerSettings => 'Відкрити налаштування входу';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Це виконується від вашого імені в $provider, а токен не додано. Додайте його й повторіть спробу.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Від’єднати $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Щоб працювати з репозиторіями $provider, його доведеться під’єднати знову.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return '$provider буде від’єднано лише в цьому робочому просторі. Інші робочі простори збережуть своє підключення.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return '$provider буде від’єднано в усіх робочих просторах, що використовують це підключення.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider від’єднано від цього робочого простору';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider від’єднано від усіх робочих просторів';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Установіть GitHub App у $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Автоматизація не матиме доступу до $repos, доки там не встановлено застосунок.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Додайте $repos до репозиторіїв GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Застосунок установлено в цьому обліковому записі, але він ще не бачить цих репозиторіїв.';
+
+  @override
+  String get repoAccessChooseRepos => 'Вибрати репозиторії';
+
+  @override
+  String get repoAccessSuspendedTitle => 'Встановлення GitHub App призупинено';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Автоматизацію для $repos призупинено, доки власник облікового запису не відновить встановлення на GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Автоматизацію призупинено';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Відповідальна за автоматизацію цього робочого простору особа більше не бачить $repos, тож там нічого не виконується від її імені.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Відповідальна за автоматизацію цього робочого простору особа не ввійшла у forge, тож автоматизація для $repos чекає, доки вона ввійде.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Не вдалося перевірити доступ до $repos. Повторюємо спробу.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Попросіть виправити це: $admins.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Попросіть адміністратора робочого простору виправити це.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Увійдіть у $forge, щоб бачити pull requests з інших репозиторіїв: $count',
+      one: 'Увійдіть у $forge, щоб бачити pull requests ще з 1 репозиторію',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Приховано репозиторіїв, яких не бачить ваш обліковий запис $forge: $count',
+      one:
+          '1 репозиторій приховано, бо ваш обліковий запис $forge його не бачить',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Приховано репозиторіїв, до яких у вас немає доступу в цьому робочому просторі: $count',
+      one:
+          '1 репозиторій приховано, бо у вас немає доступу до нього в цьому робочому просторі',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Перевіряємо ваш доступ до інших репозиторіїв: $count…',
+      one: 'Перевіряємо ваш доступ ще до 1 репозиторію…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Пов’язано, але автоматизація поки має доступ не всюди';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Установити в іншій організації';
+
+  @override
+  String get forgeTokenEmailLabel => 'Email облікового запису Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Введіть адресу електронної пошти вашого облікового запису Atlassian.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API-токен';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'API-токени Bitbucket працюють разом з email облікового запису Atlassian, який їх створив.';
+
+  @override
+  String get automationTokensTitle => 'Токени автоматизації';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Фонова робота в GitLab і Bitbucket, як-от оновлення pull request, коментарі ШІ-рев\'ю та merge request, про які ніхто не просив, використовує токен доступу бота, а не людини. Власний токен репозиторію має перевагу над токеном робочого простору.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Використовується для кожного репозиторію GitLab або Bitbucket у цьому робочому просторі без власного токена автоматизації. Фонова робота там показується як бот цього токена.';
+
+  @override
+  String get automationTokenNone =>
+      'Немає токена. Автоматизацію тут призупинено.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Використовує токен робочого простору';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Діє як $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Токен доступу додано';
+
+  @override
+  String get automationTokenRejected =>
+      'Платформа відхилила цей токен. Замініть його.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Токен автоматизації $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Вставте токен доступу проєкту або групи. Потрібні read_api і read_repository; для коментарів, merge request і push додайте api і write_repository. GitLab показує його роботу як бота токена.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Вставте токен доступу репозиторію, проєкту або робочого простору з читанням репозиторію та записом pull request для коментарів і pull request. Ваш власний API-токен додається в «Ви → Профіль», а не тут.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Токен збережено, але він не може читати $repos. Автоматизація там залишається призупиненою.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Видалити токен автоматизації?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Автоматизацію, що залежить від цього токена, буде призупинено, доки не додадуть інший.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Кожен репозиторій $forge без власного токена';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Жоден токен автоматизації не може читати $repos, тому фонову роботу там призупинено.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Коміти з роботи, яку ви починаєте, містять ваше ім\'я. Оберіть, кому ще зараховано авторство, і чи показувати на хостингу коду ваші коміти як перевірені.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Авторство';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Робота, яку ви починаєте';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Ви автор і committer під електронною поштою, яку ваш хостинг коду підтвердив для вашого входу. Сюди входять чати з агентами, конвеєри, які ви запускаєте, і коміти, які ви робите в редакторі.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Автоматичні запуски';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Запуски за розкладом або вебхуком створюють коміти від імені бота і ніколи не підписуються.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Доки ви не ввійдете на хостинг коду в робочому просторі, ваші запуски там створюють коміти від імені бота.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Зазначати Control Center як співавтора';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Ваші коміти вказують Control Center (@usectrl) як співавтора, а автоматичні запуски, які ви ввімкнули, вказують вас. Коли вимкнено, жодного рядка не додається.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Налаштування цього робочого простору має перевагу над вашим вибором. Ваші вподобання збережено, але тут вони не діють.';
+
+  @override
+  String get settingsCoauthorCreditLoading =>
+      'Завантаження налаштувань авторства…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Зазначення співавторів';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Чи містять коміти рядки співавторів: Control Center в комітах учасника, а також учасники, які ввімкнули автоматичний запуск, у його комітах. Вибір тут перевизначає налаштування кожного учасника.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Використовувати вподобання кожного учасника';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Завжди зазначати співавторів';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Ніколи не зазначати співавторів';
+
+  @override
+  String get settingsCommitSigningSection => 'Перевірені коміти';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Підписуються';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Не підписуються';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Цей сервер може підписувати ваші коміти вашим власним ключем, тож GitHub і GitLab показуватимуть їх як перевірені. Нічого не підписується, доки ви не створите ключ.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Створити ключ підпису';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Ключ підпису створено. Додайте його до свого облікового запису на хостингу коду.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Відкритий ключ';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Відкритий ключ скопійовано';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Відбиток';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Створено';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Додайте його до свого облікового запису на хостингу коду';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Коміт показується як перевірений, лише доки ви також увійшли на цей хостинг коду в робочому просторі, тож хостинг підтверджує вашу електронну пошту.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Встановіть Key type у значення Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Встановіть Usage type у значення Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Коміти в Bitbucket не підписуються. Не додавайте цей ключ до свого облікового запису Bitbucket: SSH-ключ там також є входом.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Не підтримується';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Чому ви довіряєте';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Закритий ключ ніколи не покидає цей сервер.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Той, хто керує цим сервером, може підписувати коміти від вашого імені, доки ключ є у вашому обліковому записі на хостингу коду.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'На GitHub коміти, які вже показано як перевірені, лишаються перевіреними після видалення ключа.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Видалити ключ';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Видалити ваш ключ підпису?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Відтепер ваші коміти не підписуються. Ключ лишається у ваших облікових записах на хостингу коду, доки ви не видалите його там.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Ключ підпису видалено';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Не вдалося завантажити ваш ключ підпису: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Профіль';
+
+  @override
+  String get accountProfileDescription =>
+      'Хто ви в кожному робочому просторі та які у вас є власні облікові записи для хостингу коду, тікетингу, календаря й чату.';
+
+  @override
+  String get accountSectionTitle => 'Обліковий запис';
+
+  @override
+  String get accountSectionDescription =>
+      'Ваше ім\'я користувача та ім\'я йдуть за вами в кожен робочий простір. Робочий простір може показувати інше ім\'я чи електронну пошту: задайте це в Робочий простір → Профіль і ідентичність.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Не вдалося завантажити ваш профіль: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Ім\'я, яке люди бачать у ваших повідомленнях і рев\'ю.';
+
+  @override
+  String get accountDisplayNameRequired => 'Введіть відображуване ім\'я.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Це можна змінити, але не можна видалити.';
+
+  @override
+  String get accountAvatarLabel => 'Зображення';
+
+  @override
+  String get accountAvatarHint =>
+      'Посилання на квадратне зображення, що починається з https://.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Використайте посилання, що починається з https://.';
+
+  @override
+  String get usernameLabel => 'Ім\'я користувача';
+
+  @override
+  String get usernameRule =>
+      'Від 2 до 32 символів: малі літери, цифри, крапки, дефіси або підкреслення. Люди згадують вас за ним.';
+
+  @override
+  String get usernameAvailable => 'Вільно.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Вільно. Буде збережено як $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Використайте від 2 до 32 символів: малі літери, цифри, “.”, “_” або “-”, починаючи й закінчуючи літерою чи цифрою.';
+
+  @override
+  String get usernameReserved => 'Це ім\'я користувача зарезервовано.';
+
+  @override
+  String get usernameTaken => 'Це ім\'я користувача вже зайняте.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Зараз не вдалося перевірити це ім\'я. Ви все одно можете зберегти; рішення ухвалює сервер.';
+
+  @override
+  String get linkedAccountsTitle => 'Підключені облікові записи';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Постачальник ідентифікації';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Потрібен вхід';
+
+  @override
+  String get linkedAccountStatusPaused => 'Призупинено';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Недоступний';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Провайдер ідентифікації, через який входить ваш обліковий запис. Керує ним той, хто адмініструє цей сервер.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Облікові записи, які ви підключили для себе. Control Center діє від вашого імені через них, і зміни в них стосуються лише вас.';
+
+  @override
+  String get accountReachServer =>
+      'Використовується в кожному робочому просторі цього сервера.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Використовується лише в $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub використовується лише в $workspace, який має власні застосунки для входу. GitLab і Bitbucket використовуються в кожному робочому просторі цього сервера.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Ваш обліковий запис';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Ваш обліковий запис: $status. Відкриває Ви → Профіль.';
+  }
+
+  @override
+  String get yourForgeAccountNone =>
+      'Обліковий запис хостингу коду не підключено';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Обліковий запис $provider не підключено';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Обліковий запис $provider не прив’язано';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'Ви тимчасовий гість у демо, тож облікового запису для змін немає: ні імені користувача, профілю, ні підключених облікових записів.';
+
+  @override
+  String get onboardingStepYou => 'Ви';
+
+  @override
+  String get onboardingYouTitle => 'Оберіть ім\'я користувача';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Ім\'я користувача — це те, як люди згадують вас і як позначається ваша робота. Ви можете змінити його й відображуване ім\'я пізніше в Налаштування → Ви → Профіль.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Цей обліковий запис $provider уже підключено до іншої людини на цьому сервері. Увійдіть з іншим обліковим записом $provider.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Токен спливає $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Токен сплив $date. Вставте новий, щоб продовжувати роботу.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'Не вдалося звернутися до $forge, щоб перевірити цей токен. Спробуйте за хвилину.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge не приймає цей токен. Перевірте, чи скопійовано його повністю і чи його не відкликано.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Це не особистий токен. Вставте особистий токен доступу зі свого облікового запису $forge, а не токен проєкту, групи, робочого простору чи бота.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'У цього токена немає області $scope, яка потрібна для рецензування та коментарів. Створіть токен, що її містить.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Цей токен сплив. Створіть новий і вставте його сюди.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Агенти, яких ви запускаєте, можуть створювати коміти, підписані від вашого імені, у будь-якому репозиторії, де вони працюють. Видалення ключа тут зупиняє це одразу: запуски, що вже тривають, більше нічого не підписують.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Ключ не замінено, і нічого не змінилося: $error Спробуйте ще раз.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Ви ще не в робочому просторі';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Адміністратор робочого простору має запросити вас, або власник сервера може створити для вас робочий простір. Він відкриється тут, щойно вас додадуть.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Ви ввійшли як $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Перевірити ще раз';
+
+  @override
+  String get noWorkspaceSignOut => 'Вийти';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Створювати робочі простори може лише власник сервера. Попросіть його створити один або попросіть адміністратора робочого простору запросити вас.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo немає в жодному з ваших робочих просторів, а ви не в робочому просторі, до якого його можна додати. Попросіть адміністратора робочого простору запросити вас.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Лише власник сервера може це зробити';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Повний редактор працює на машині самого сервера, тож відкрити його може лише власник сервера. Ви все ще можете відкривати й редагувати файли в Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'У пісочниці';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Працює в пісочниці всередині папок цього робочого простору, тож деякі інструменти та шляхи хоста тут недоступні.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Оболонка хоста працює на сервері без пісочниці, тож відкрити її може лише власник сервера. Звичайний термінал працює в пісочниці.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Термінал можна відкрити лише всередині папок цього робочого простору.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Лише власник сервера може зберегти або схвалити середовище, яке працює на хості сервера. Адміністратор робочого простору може користуватися тим, що працює в rig.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Коміти, які ви робите в редакторі застосунку, не запускають Git-хуки з репозиторію, як git commit --no-verify: сервер запускає Git на власному хості, в дереві, яке можуть змінювати агенти та pull requests.';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP-клієнти надсилають цей токен з кожним запитом як заголовок Authorization: Bearer. Сервер створює його під час першого запуску; його можна замінити, але не видалити.';
+
+  @override
+  String get mcpShowToken => 'Показати токен';
+
+  @override
+  String get mcpHideToken => 'Приховати токен';
+
+  @override
+  String get mcpRotateToken => 'Замінити токен';
+
+  @override
+  String get mcpRotateTokenTitle => 'Замінити токен MCP?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Сервер одразу переходить на новий токен. Кожен MCP-клієнт, що досі використовує поточний, отримає відмову, доки ви не дасте йому новий.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Токен замінено. Передайте новий вашим MCP-клієнтам.';
+
+  @override
+  String get mcpOwnerOnlyTitle =>
+      'Кінцева точка MCP призначена для власника сервера';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Її токен відкриває кожен інструмент на цьому сервері, тож лише власник сервера може його бачити, замінювати або запускати й зупиняти кінцеву точку.';
+
+  @override
+  String get activityRotatedMcpToken => 'Замінено токен MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect не зміг вивести старий ключ з обігу';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Нічого не змінено. Якщо замінити все одно, цей сервер отримає новий ключ, але стара ідентичність у цьому Connect лишиться чинною, доки не спливуть її входи.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Замінити все одно';
+
+  @override
+  String get settingsAuditLog => 'Журнал аудиту';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Хто що змінив, де і чим це закінчилося — на сервері та в кожному робочому просторі, яким ви керуєте. Серверні операції фіксують назви аргументів, а не їхні значення.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Лише для адміністраторів';
+
+  @override
+  String get auditLogNoAccess =>
+      'Журнал аудиту охоплює сервер і робочі простори, якими ви керуєте. Ви не керуєте жодним робочим простором, тож показувати нічого.';
+
+  @override
+  String get auditLogSourceServer => 'Сервер';
+
+  @override
+  String get auditLogSourceWorkspace => 'Робочий простір';
+
+  @override
+  String get auditLogAddFilter => 'Фільтр';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Фільтр…';
+
+  @override
+  String get auditLogFilterActor => 'Користувач';
+
+  @override
+  String get auditLogFilterSource => 'Робочий простір';
+
+  @override
+  String get auditLogFilterOutcome => 'Результат';
+
+  @override
+  String get auditLogFilterTime => 'Час';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Успішно';
+
+  @override
+  String get auditLogOutcomeDenied => 'Відхилено';
+
+  @override
+  String get auditLogOutcomeFailed => 'Помилка';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Не раніше';
+
+  @override
+  String get auditLogTimeAfter => 'Після';
+
+  @override
+  String get auditLogTimeBefore => 'До';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Не пізніше';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Час $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 годину тому';
+
+  @override
+  String get auditLogTimePresetDay => '24 години тому';
+
+  @override
+  String get auditLogTimePresetWeek => '7 днів тому';
+
+  @override
+  String get auditLogTimePresetMonth => '30 днів тому';
+
+  @override
+  String get auditLogTimeExact => 'Точний час';
+
+  @override
+  String get auditLogTimeInvalid => 'Введіть YYYY-MM-DD, за бажанням з HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Додати';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo тепер вказує на інший репозиторій';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Цей шлях тепер вказує на інший репозиторій на $forge. Перепідключіть його, щоб продовжувати користуватися ним.';
+  }
+
+  @override
+  String get repoRelink => 'Перепідключити';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Перепідключено $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Цей шлях тепер вказує на інший репозиторій. Адміністратор робочого простору має перепідключити його, перш ніж ним можна буде користуватися.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Ваш обліковий запис $forge не може читати цей репозиторій.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Не вдалося підтвердити ваш доступ до $forge. Спробуйте ще раз.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Ваш обліковий запис на хостингу коду не може читати цей репозиторій.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Не вдалося підтвердити ваш доступ на хостингу коду. Спробуйте ще раз.';
+
+  @override
+  String get repoPathHostPath =>
+      'Лише власник сервера може прив\'язати папку поза сховищем цього робочого простору.';
+
+  @override
+  String get repoPathMissing => 'На сервері за цим шляхом нічого немає.';
+
+  @override
+  String get repoPathDataDir =>
+      'Репозиторій не може вказувати на папку даних сервера.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Репозиторієм не може бути власна папка робочого простору.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Джерело (origin) цієї папки — інший репозиторій.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Збережено. Їм потрібно ввійти на $forge, перш ніж вони зможуть відкрити цей репозиторій.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Збережено. Їхній обліковий запис $forge поки не може читати цей репозиторій, тож він для них прихований.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Збережено. Зараз не вдалося підтвердити їхній доступ до $forge.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo не прив\'язано в жодному з ваших робочих просторів. Попросіть власника сервера додати його.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Власник сервера додає репозиторії з папок сервера.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Цю адресу ввели лише ви. Вхід через єдиний вхід не зіставить її, доки власник сервера її не підтвердить.';
+
+  @override
+  String get settingsServerPeople => 'Люди';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Усі, хто має обліковий запис на цьому сервері, і чи підтверджено їхню електронну адресу.';
+
+  @override
+  String get serverPeopleLabel => 'Облікові записи';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Лише власник сервера може бачити облікові записи всіх людей і підтверджувати електронні адреси.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed =>
+      'Електронну пошту не підтверджено';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Підтвердити електронну пошту';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Підтвердити, що $email належить $name? Вхід через єдиний вхід зіставлятиме цю адресу з їхнім обліковим записом.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Підтверджено $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Агентам потрібна пісочниця на цьому сервері';
+
+  @override
+  String get runSandboxUnavailable =>
+      'На цьому сервері немає пісочниці, тож тут агенти можуть запускатися лише власником. Власник може встановити пісочницю або вимкнути її для всіх.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Ця папка поза сховищем робочого простору. Підтвердьте, що цей сервер може її використовувати.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Ця папка поза сховищем робочого простору. Підтвердити її може лише власник сервера.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'На сервері за цим шляхом більше нічого немає. Видаліть цей репозиторій і додайте його знову з поточної папки.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Цю папку не можна використати як репозиторій. Видаліть її й додайте репозиторій з іншої папки.';
+
+  @override
+  String get repoPathConfirm => 'Підтвердити';
+
+  @override
+  String get repoPathConfirmAll => 'Підтвердити все';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count папки знаходяться поза сховищем робочого простору',
+      many: '$count папок знаходяться поза сховищем робочого простору',
+      few: '$count папки знаходяться поза сховищем робочого простору',
+      one: '1 папка знаходиться поза сховищем робочого простору',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Підтвердіть, що цей сервер може їх використовувати. Кожен репозиторій перевіряється знову з вашим доступом.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Сервери, знайдені в налаштуваннях інструментів цієї машини, доступні лише в запусках, які ви починаєте або за які відповідаєте. Запуски інших людей їх не бачать, і через кінцеву точку MCP Control Center їх не пропонують.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Увійдіть на $provider, щоб побачити код цього репозиторію.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Увійти';
+
+  @override
+  String get ideContentSearchFailed => 'Не вдалося шукати у файлах';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Цей файл недоступний у цьому worktree.';
+
+  @override
+  String get ideChangesLoadFailed => 'Не вдалося завантажити зміни';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Цей шлях тепер вказує на інший репозиторій на $forge. Адміністратор робочого простору має перепідключити його, перш ніж ним можна буде користуватися.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Відновлювати резервні копії може лише власник сервера. Ви все ще можете їх завантажити.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Лише читання';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Ви можете дивитися цей термінал. Вводити в нього, змінювати його розмір або зупиняти можна лише з доступом на запис до кожного репозиторію в цій розмові.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Ви можете дивитися це середовище. Запуск, зупинка або перезапуск потребують доступу на запис до кожного репозиторію в розмові.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Працює на цьому сервері. Схваліть, щоб дозволити запуск.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Працює на цьому сервері. Власник сервера має схвалити його, перш ніж він зможе запуститися.';
+
+  @override
+  String get environmentHostApprove => 'Схвалити';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Схваліть як адміністратор робочого простору: лише копія адміністратора показує секретні значення, а схвалення зберігає їх назад.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Власник сервера ще не схвалив це середовище, тож воно не може працювати на цьому сервері.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Ви ще не схвалили це середовище. Воно працює на цьому сервері, тож запуститься, щойно ви схвалите його визначення.';
+
+  @override
+  String get environmentHostApprovalReview => 'Переглянути й схвалити';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Увійдіть на $provider, щоб відкрити цей простір.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Ваш обліковий запис $forge не може читати один із репозиторіїв, які використовує цей простір.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Ваш обліковий запис на хостингу коду не може читати один із репозиторіїв, які використовує цей простір.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'У вас немає права читання на один із репозиторіїв, які використовує цей простір. Адміністратор робочого простору може його надати.';
+
+  @override
+  String get spaceAccessFailed => 'Не вдалося відкрити цей простір.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Розбивка контексту недоступна в цій сесії.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Прив\'язаний репозиторій потребує і власника, і назви репозиторію.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'У вас немає доступу на читання до цього репозиторію. Адміністратор робочого простору може його надати.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Ви можете читати цей репозиторій, але не можете його змінювати. Адміністратор робочого простору може надати доступ на запис.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Ви можете читати цей репозиторій, але не можете його рецензувати. Адміністратор робочого простору може надати доступ на рецензування.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Лише перегляд';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Ви можете дивитися на цю машину. Керування нею, пересилання її портів, вставлення в неї та перетягування файлів на неї потребують доступу на запис до всіх репозиторіїв у цьому просторі.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Щоб запустити машину тут, потрібен доступ на запис до всіх репозиторіїв у цьому просторі. Адміністратор робочого простору може його надати.';
+
+  @override
+  String get rigViewRefused =>
+      'Ви не можете переглянути цю машину. Вона належить до простору, на читання якого у вас немає доступу.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Щоб змінювати ці порти, потрібен доступ на запис до всіх репозиторіїв у цьому просторі.';
+
+  @override
+  String get rigHolderOnly =>
+      'Керувати цією машиною може лише той, для кого її відкрили. Вона використовує його власні входи в сервіси.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Ви можете дивитися на цю машину. Вона використовує входи в сервіси того, для кого її відкрили, тож лише він може керувати нею, пересилати її порти, вставляти в неї дані або перетягувати на неї файли.';
 }

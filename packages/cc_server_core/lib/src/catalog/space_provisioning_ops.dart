@@ -17,12 +17,16 @@ typedef SpaceProvisioningAction =
 List<RepoOp> buildSpaceProvisioningOps({
   required SpaceProvisioningAction? retry,
   required SpaceProvisioningAction? cancel,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
 }) {
   RepoOpHandler run(SpaceProvisioningAction action) => (ctx) async {
     final spaceId = ctx.args['space_id'] as String;
-    await assertSpaceOwned(ctx.workspaceId!, spaceId);
+    await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
     await action(workspaceId: ctx.workspaceId!, spaceId: spaceId);
     return {'ok': true};
   };
@@ -55,7 +59,11 @@ WatchQuery buildSpaceProvisioningLogWatchQuery({
   required SpaceProvisioningLogPort log,
   required RepoAccessRepoResolver reposExposedBySpace,
   required RepoReadGrantCheck requireRepoReadGrant,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
 }) => WatchQuery(
   name: 'messaging.watchSpaceProvisioningLog',

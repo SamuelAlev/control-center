@@ -20,6 +20,7 @@ PipelineTriggersTableCompanion triggerToCompanion(PipelineTrigger t) {
     matchJson: Value(jsonEncode(t.match)),
     lastFiredAt: Value(t.lastFiredAt),
     catchUpPolicy: Value(t.catchUpPolicy.name),
+    armedByUserIdsJson: Value(jsonEncode(t.armedByUserIds.toList()..sort())),
     createdAt: Value(t.createdAt),
   );
 }
@@ -40,8 +41,24 @@ PipelineTrigger triggerFromRow(PipelineTriggersTableData row) {
     match: _decodeMap(row.matchJson),
     lastFiredAt: row.lastFiredAt,
     catchUpPolicy: CronCatchUpPolicy.fromName(row.catchUpPolicy),
+    armedByUserIds: _decodeIds(row.armedByUserIdsJson),
     createdAt: row.createdAt,
   );
+}
+
+Set<String> _decodeIds(String raw) {
+  try {
+    final decoded = jsonDecode(raw);
+    if (decoded is List) {
+      return {
+        for (final id in decoded)
+          if (id is String && id.isNotEmpty) id,
+      };
+    }
+  } on FormatException {
+    // Malformed JSON — nobody recorded.
+  }
+  return const {};
 }
 
 Map<String, dynamic> _decodeMap(String raw) {

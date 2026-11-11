@@ -12,18 +12,6 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-// The pure filter predicates moved to the providers layer (so provider code
-// like the inbox pipeline can use them without importing presentation);
-// re-exported here for the many presentation-side importers.
-export 'package:control_center/features/pr_review/providers/pr_filter_providers.dart'
-    show
-        applyFilters,
-        isQuickToReview,
-        prMatchesStatus,
-        prPassesFilters,
-        prRepoNameOf,
-        prRepoOwnerOf;
-
 /// Navigates to the detail view for [prNumber] in [repo].
 ///
 /// The repo is part of the detail URL (PR numbers are per-repo), so it is

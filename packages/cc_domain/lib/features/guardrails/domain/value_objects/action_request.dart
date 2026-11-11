@@ -25,6 +25,7 @@ class ActionRequest {
     this.hosts = const [],
     this.magnitude,
     this.cents,
+    this.tool,
   });
 
   /// An action with no describable arguments (the conservative default).
@@ -53,6 +54,11 @@ class ActionRequest {
   /// A monetary magnitude in cents, for budget ceilings.
   final int? cents;
 
+  /// The tool the agent called (an MCP or harness tool name), when the action
+  /// is a tool call. It lets a standing approval name the one tool a person
+  /// approved rather than every tool with the same effects.
+  final String? tool;
+
   /// Whether this request carries anything a constraint could match.
   bool get isEmpty =>
       command == null &&
@@ -60,7 +66,8 @@ class ActionRequest {
       refs.isEmpty &&
       hosts.isEmpty &&
       magnitude == null &&
-      cents == null;
+      cents == null &&
+      tool == null;
 
   /// A copy with [classes] replaced (chokepoints extract arguments once and
   /// re-tag them per gated tool).
@@ -72,13 +79,32 @@ class ActionRequest {
     hosts: hosts,
     magnitude: magnitude,
     cents: cents,
+    tool: tool,
   );
+
+  /// A copy carrying [command] when this request names none. A chokepoint
+  /// that passes the shell command beside the request means the same call, so
+  /// a rule about commands must see it.
+  ActionRequest withCommand(String? command) =>
+      this.command != null || command == null || command.isEmpty
+      ? this
+      : ActionRequest(
+          classes: classes,
+          command: command,
+          paths: paths,
+          refs: refs,
+          hosts: hosts,
+          magnitude: magnitude,
+          cents: cents,
+          tool: tool,
+        );
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ActionRequest &&
           other.command == command &&
+          other.tool == tool &&
           other.magnitude == magnitude &&
           other.cents == cents &&
           _sameList(other.paths, paths) &&
@@ -102,6 +128,7 @@ class ActionRequest {
   @override
   int get hashCode => Object.hash(
     command,
+    tool,
     magnitude,
     cents,
     Object.hashAll(paths),

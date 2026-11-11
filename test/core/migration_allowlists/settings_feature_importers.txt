@@ -12,5 +12,5 @@
 # presentation/settings_contributions.dart and add it to the composition root.
 #
 # The reverse direction is fine and is NOT checked here: a feature may import
-# settings' card vocabulary (settings_shared.dart, scope_badge.dart,
-# SettingsPage) so a contributed card looks native.
+# settings' card vocabulary (settings_shared.dart, SettingsPage) so a
+# contributed card looks native.

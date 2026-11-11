@@ -2,7 +2,7 @@
 title: Jogosultság — ki mit tehet, és hogyan bizonyíthatja
 description: A Control Center szerepkörei mögötti engedélykatalógus, a manipulálást kimutató auditnapló, amelybe minden jogosultsági döntés bekerül, valamint a telepítésszintű vezérlők, amelyeket az üzemeltető rögzíthet.
 slug: hu-HU/kezikonyv/fogalmak/jogosultsag
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 A Control Center két jogosultsági kérdésre ad választ, és ez a kettő valóban
@@ -62,19 +62,102 @@ régi kliens, amely nem érti ezt az értéket, a vendég szerepre esik vissza,
 ahelyett hogy találgatna.
 
 A szerepek alatt **repónkénti hozzáférések** állnak (`none` / `read` /
-`review` / `write`): a munkaterületi tagság soha nem biztosít csendben nagyobb
+`review` / `write`, lásd: [Kódmódosításhoz írási jog kell](#kódmódosításhoz-írási-jog-kell)): a munkaterületi tagság soha nem biztosít csendben nagyobb
 jogosultságot, mint a kódhoszt. A kódot elérő felületek mindegyike ellenőrzi
 ezeket — azok is, amelyek oldalról érik el a kódot, például egy terminál vagy egy
 tér worktree-jére nyitott szerkesztő-munkamenet.
 
-## Szerverhatáskör
+## A kód a forge-ot követi
 
-Egyes műveletek egyáltalán nem munkaterülethez kötődnek: telepítésszintű
-beállítások, SSO-konfiguráció, szolgáltatói hitelesítő adatok, modellek kezelése,
-a teljes telepítés mentései. Ezek **szerverhatáskört** deklarálnak, és mindenki
-számára elutasításra kerülnek, kivéve a telepítés üzemeltetőjét (a nyilvántartott
-szervertulajdonost). Szándékosan egyetlen üzemeltetői identitás és annak egyetlen
-definíciója létezik.
+A hozzáférés önmagában nem nyit meg egy tároló kódját. Ahhoz, hogy valaki lássa a
+fájljait, diffjeit vagy keresési eredményeit, vagy terminált nyisson rajta, a
+tagnak rendelkeznie kell a Control Center-hozzáféréssel **és** a saját
+forge-bejelentkezésével kell olvashatnia a tárolót. A munkaterület-adminok sem
+mentesülnek; a szerver tulajdonosa igen, mert a munkakönyvtár az ő gépén van. A
+forge-kapcsolat nélküli tárolóhoz csak a hozzáférés kell.
+
+- Ha egy admin olyan személynek ad hozzáférést egy tárolóhoz, akinek a
+  forge-fiókja nem olvashatja, a hozzáférés mentésre kerül, az admin pedig
+  figyelmeztetést lát.
+- Ha a forge nem érhető el az ellenőrzéshez, a válasz nem, nem találgatás: az
+  illető a „Nem sikerült igazolni a(z) GitHub-hozzáférését. Próbálja újra.”
+  üzenetet látja (a forge nevével), és később újra próbálkozik.
+- A pull requestekre és mindarra, ami belőlük készül, ugyanez a szabály vonatkozik.
+
+### Kódmódosításhoz írási jog kell
+
+A repótárolási hozzáférésnek három szintje van, és mindegyik tartalmazza az előzőt:
+
+- **read**: a tároló fájljainak, diffjeinek és keresési eredményeinek megtekintése, feltéve hogy a saját forge-bejelentkezése is olvashatja.
+- **review**: a read, plusz a pull requestjein való jóváhagyás, változtatás kérése és a többi átnézési művelet.
+- **write**: a review, plusz a kód módosítása és a tárolóba író ügynökfuttatások indítása. A kód módosítása lefedi a fájlok szerkesztőben való mentését vagy visszavonását, egy worktree szinkronizálását a pull request fejére, a commitolást és push-olást, egy ág közzétételét, valamint azokat a kötegműveleteket, amelyek egy részt kivágnak, kicsekkolnak vagy közzétesznek.
+
+Minden push, amelyet valaki nevében végeznek – akár ő maga, akár egy általa kért ügynökfuttatás –, a push pillanatában ellenőrzi az ő írási jogát azon a tárolón, a GitHubon, a GitLabon és a Bitbucketen egyaránt. Egy stack közzétételekor a stack minden tárolóját ellenőrzi, mielőtt bármelyiket push-olná.
+
+Hiányzó hozzáférésnél a hibaüzenet megnevezi a hiányzó szintet. Olvasási jog nélkül ez az üzenet fogadja: „Nincs olvasási hozzáférésed ehhez a tárolóhoz. A munkaterület adminisztrátora megadhatja.” Olvasási, de írási jog nélkül pedig ez: „Olvashatod ezt a tárolót, de nem módosíthatod. A munkaterület adminisztrátora írási hozzáférést adhat.”
+
+### A terek a tárolóikat követik
+
+Amit az ügynökök a kódról írtak, az a kódot követi. Egy tér tartalma (üzenetei,
+átiratai és eszközkimenetei, keresési eredményei, futtatási naplói, teendői,
+tevékenysége és értesítései) azon tárolók kódját hordozza, amelyeken dolgozik, ezért
+a teret csak az a tag nyitja meg, aki olvasási hozzáféréssel rendelkezik minden
+használt tárolóra, és akinek a saját forge-bejelentkezése mindegyiket olvashatja.
+Ezek a térhez kijelölt tárolók, vagy ha nincs rögzített kijelölés, a munkaterület
+összes tárolója. A tárolók nélkül létrehozott tér minden tag számára nyitott.
+
+Egy tér, amelyet valaki nem nyithat meg, sehol nem jelenik meg számára, a keresést,
+a futtatási naplókat, a teendőket, a tevékenységet és az értesítéseket is beleértve.
+A munkaterület-adminok minden hozzáférést birtokolnak, de a forge-fél alól nem
+mentesülnek; a szerver tulajdonosa viszont igen.
+
+Ha egy beszélgetést mindenkinek olvasnia kell, a teret tárolók nélkül hozza létre,
+vagy csak olyan tárolókkal, amelyeket mindenki olvashat.
+
+## A szerver tulajdonosa
+
+Aki a szervert beállította, az a szerver **tulajdonosa**. A szerver az első
+indításkor egyszer rögzíti őt, és a hálózaton küldött semmi nem változtatja ezt meg.
+A munkaterület-admin vagy a munkaterület-tulajdonos nem a szerver tulajdonosa:
+bárkinek adható munkaterület, de a szerver gépének egy tulajdonosa van.
+
+**A szerver saját gépén semmi nem fut homokozón kívül, hacsak a szerver tulajdonosa
+nem indította el, vagy nem hagyta jóvá az ilyen típusú hoszt-végrehajtást.**
+Konkrétan csak a szerver tulajdonosa tehet az alábbiakat:
+
+- Munkaterület létrehozása. Mindenki más egy képernyőt lát, amely arra kéri, hogy a
+  tulajdonos hozzon létre egyet, vagy egy munkaterület-admin hívja meg.
+- A hoszt shell megnyitása a szerveren futó terminálban. Mindenki más homokozós
+  terminált kap, az ügynökök korlátaival, a munkaterület saját könyvtáraiban.
+- A beágyazott kódszerkesztő megnyitása. A szerver saját felhasználójaként fut, a
+  termináljával, feladataival és bővítményeivel együtt.
+- Pull request vagy egy beszélgetés worktree-jének megnyitása natív szerkesztőben. A
+  szerkesztő a szerver saját képernyőjén, a szerver felhasználójaként indul.
+- Egy [környezet](/hu-HU/kezikonyv/gyakorlati-utmutatok/kornyezetek/) definíciójának mentése vagy jóváhagyása,
+  amely bármit futtat a hoszton: hoszton való elhelyezés, parancsot futtató ellenőrzés,
+  vagy provisionálási vagy archiválási feladat.
+- Ügynökök futtatása olyan szerveren, amelynek gépén nincs homokozó. Mindenki más
+  futtatásait ott elutasítják, hacsak a tulajdonos nem a `--sandbox off` kapcsolóval
+  indította a szervert, ami minden tag ügynökét korlátozás nélkül futtatja (lásd
+  [Ügynökök homokozó nélküli hoszton](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/#ügynökök-homokozó-nélküli-hoszton)).
+- A munkaterület saját tárhelyén kívül eső tárolómásolat összekapcsolása, a szabály
+  előtt összekapcsolt tároló megerősítése, és a szerver mappáinak böngészése tároló
+  hozzáadásakor (lásd [Tárolók hozzáadása](/hu-HU/kezikonyv/gyakorlati-utmutatok/repok-hozzaadasa/)).
+- A szerveren futó összes ügynökfolyamat megtekintése és leállítása. Mindenki más
+  csak az általa tagként ismert munkaterületekben futó élő ügynökfuttatásokat látja és
+  állítja le.
+- Annak engedélyezése, hogy az ügynökök a szerver felhasználójának saját eszközeiben
+  (Claude, Codex, Cursor és a többi) beállított MCP-szervereket használják. Csak azok a
+  beépített harness-futtatások kapják meg ezeket, amelyekért a tulajdonos felel; lásd
+  [A személyes MCP-szerverek a tulajdonosé maradnak](/hu-HU/kezikonyv/gyakorlati-utmutatok/mcp-szerver/#a-személyes-mcp-szerverek-a-tulajdonosé-maradnak).
+- Egy személy e-mail-címének megerősítése, hogy az egyszeri bejelentkezés
+  párosíthassa (lásd [OpenID Connect-szolgáltató csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/sso-oidc/#hogyan-párosulnak-a-bejelentkezések-a-meglévő-fiókokhoz)).
+- Telepítésszintű beállítások módosítása: SSO, szolgáltatói hitelesítő adatok, az
+  MCP-végpont és annak tokenje, modellkezelés, Connect és a teljes telepítés mentései.
+  Ezek a műveletek **szerverhatáskört** deklarálnak, és mindenki más számára
+  elutasításra kerülnek.
+
+Egyetlen üzemeltetői identitás létezik szándékosan, és annak egyetlen definíciója.
 
 ## Az auditnapló
 

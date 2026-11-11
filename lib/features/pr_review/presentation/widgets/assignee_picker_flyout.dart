@@ -249,7 +249,7 @@ class _AssigneePickerHeaderState extends ConsumerState<AssigneePickerHeader> {
           child: Center(
             child: Text(
               l10n.noMatchingUsers,
-              style: TextStyle(fontSize: 13, color: t.textQuaternary),
+              style: CcTypography.bodySm.copyWith(color: t.textTertiary),
             ),
           ),
         );
@@ -333,30 +333,28 @@ class _AssigneeFlyoutRow extends StatelessWidget {
               return Container(
                 color: hovered ? t.bgPrimaryHover : const Color(0x00000000),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
                 ),
                 child: Row(
                   children: [
                     PickerCheckBox(selected: selected, hovered: hovered),
-                    const SizedBox(width: 10),
+                    AppSpacing.hGapSm,
                     ExcludeSemantics(
                       child: GitHubUserAvatar(
                         login: user.login,
                         avatarUrl: user.avatarUrl,
-                        size: 22,
+                        size: 20,
                         showHoverCard: false,
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    AppSpacing.hGapSm,
                     Expanded(
                       child: Text(
                         user.displayLabel,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w600,
+                        style: CcTypography.bodySm.copyWith(
                           color: t.textPrimary,
                         ),
                       ),

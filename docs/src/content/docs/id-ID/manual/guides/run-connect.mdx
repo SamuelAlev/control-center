@@ -2,7 +2,7 @@
 title: Jalankan server Connect
 description: Jalankan Control Center Connect Anda sendiri dari image Docker cc-connect, atau pasang di dalam cc_server, agar server Anda memasukkan orang melalui app penyedia yang Anda daftarkan.
 slug: id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect menjalankan proses masuk penyedia (GitHub, Google Calendar, Linear, Slack) untuk
@@ -43,7 +43,7 @@ konfigurasi Connect, dan server melihatnya sebagai tidak tersedia. `<base>` di b
 
 | Penyedia       | Daftarkan                                                                                                                                                                                                                                                            | Simpan                                  |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` dengan **Redirect on update** aktif. Biarkan **Request user authorization (OAuth) during installation** nonaktif: jika aktif, GitHub mengabaikan setup URL. Biarkan **Expire user authorization tokens** aktif | App id, slug, client id, client secret |
+| **Aplikasi GitHub** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` dengan **Redirect on update** aktif. Biarkan **Request user authorization (OAuth) during installation** nonaktif: jika aktif, GitHub mengabaikan setup URL. Biarkan **Expire user authorization tokens** aktif | App id, slug, client id, client secret, kunci privat |
 | **Google**     | Klien OAuth bertipe **Web application** dengan redirect URI `<base>/oauth/google/callback`, dan Google Calendar API diaktifkan                                                                                                                                       | Client id, client secret                |
 | **Linear**     | Aplikasi OAuth dengan callback URL `<base>/oauth/linear/callback` dan `<base>/oauth/linear_app/callback`                                                                                                                                                              | Hanya client id                         |
 | **Slack**      | Redirect URL `<base>/oauth/slack_oidc/callback` dan `<base>/oauth/slack/callback`. Event Subscriptions di `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash command di `<base>/v1/hooks/slack/commands`. Aktifkan token rotation | App id, client id, client secret, signing secret |
@@ -52,9 +52,9 @@ Berikan GitHub App izin repositori berikut: **Metadata** baca, **Contents** baca
 baca dan tulis, **Issues** baca dan tulis, **Checks**, **Actions**, dan **Commit statuses** baca. Tambahkan
 izin organisasi **Members** baca untuk permintaan tinjauan tim. Webhook boleh dimatikan: server melakukan polling.
 
-Connect tidak pernah memerlukan kunci privat GitHub App. Sebagai gantinya, ia mencetak token satu-repositori
-dari proses masuk milik seseorang sendiri. Linear juga tidak memerlukan rahasia: Connect mengembalikan kode ke
-server, dan server menyelesaikan pertukarannya sendiri.
+Connect memerlukan kunci privat GitHub App (**Buat kunci privat** di pengaturan App). Ia menandatangani permintaan App yang mencari instalasi yang mencakup sebuah repositori (atau, ketika repositori itu tidak punya, instalasi owner-nya) dan mencetak token instalasi satu-repositori, masing-masing hanya setelah proses masuk milik orang yang meminta membuktikan akses ke repositori tersebut.
+
+Setiap server di Connect Anda berbagi bot App. Bot boleh membaca, berkomentar, memberi label, dan bereaksi sebagai bot untuk server mana pun. Meninjau pull request sebagai bot hanya diizinkan untuk server yang Anda daftarkan di `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (id instalasinya, dipisahkan koma); setiap server lain mempublikasikan tinjauan dengan token peninjau sendiri. Mendorong tidak pernah dilakukan sebagai bot. Untuk mengizinkan server milik Anda sendiri meninjau sebagai bot, tambahkan id instalasinya di sana lalu mulai ulang. Simpan berkas kunci sebagai rahasia, seperti kunci segel. Linear tidak memerlukan rahasia: Connect mengembalikan kode ke server, dan server menyelesaikan pertukarannya sendiri.
 
 ## Langkah 3: Kumpulkan id instalasi
 
@@ -103,12 +103,15 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Arahkan reverse proxy Anda ke port `8790`. Image berjalan sebagai pengguna tanpa hak istimewa, menyimpan
-state di volume `/data`, dan memiliki health check bawaan (`cc-connect --healthcheck`, yang memeriksa `/healthz`).
+Arahkan reverse proxy Anda ke port `8790`, dan atur `CONNECT_TRUST_PROXY` ke jumlah proxy di depan Connect agar batas laju per alamatnya melihat alamat setiap klien. Image berjalan sebagai pengguna tanpa hak istimewa, menyimpan state di volume `/data`, dan memiliki health check bawaan (`cc-connect --healthcheck`, yang memeriksa `/healthz`: prosesnya menjawab). `/readyz` juga memeriksa bahwa penyimpanan state dan binding-nya menjawab serta bahwa Redis, bila dipakai, masih menjalankan `maxmemory-policy noeviction`; arahkan readiness check orkestrator ke sana.
+
+Halaman persetujuan masuk menjawab dengan form post yang hanya diterima Connect dari halamannya sendiri: `Sec-Fetch-Site`, bila dikirim, harus `same-origin`, dan `Origin`, bila dikirim, harus origin dari `CONNECT_PUBLIC_URL`; post tanpa keduanya ditolak. Jadi proxy harus meneruskan kedua header itu tanpa perubahan, dan `CONNECT_PUBLIC_URL` harus berupa alamat yang benar-benar digunakan browser orang. Jika melanjutkan dari halaman itu selalu menampilkan "Tautan ini sudah kedaluwarsa", dan log menampilkan `oauth.done_refused` dengan alasan `origin` atau `no_origin`, salah satu dari dua hal itu tidak benar.
 
 Connect menolak mulai (kode keluar `78`) ketika konfigurasinya terbuka, tidak aman, atau setengah jadi, dan
 mencetak variabel mana yang salah. Daftar izin yang hilang, alamat `http` yang bukan loopback, kunci segel yang
@@ -123,7 +126,8 @@ berjalan** menyebut **Connect** untuk setiap penyedia yang Anda daftarkan. `cc_s
 Sebuah server dapat menjalankan Connect sendiri alih-alih kontainer terpisah. Layanan yang dipasang adalah layanan
 yang sama dengan yang dijalankan image.
 
-1. Letakkan variabel `CONNECT_*` di berkas `.env` server (atau lingkungannya), seperti di Langkah 5
+1. Letakkan variabel `CONNECT_*` di berkas `.env` server, seperti di Langkah 5.
+   Server menolak mulai ketika sebuah rahasia Connect, termasuk `CONNECT_SENTRY_DSN`, diekspor di lingkungannya
 2. Tambahkan `CC_SERVER_CONNECT_HOST=on`
 3. Mulai ulang server. Log-nya mencetak `embedded Connect at <url>`
 
@@ -135,6 +139,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect kemudian dilayani di `<server>/connect`:
@@ -164,9 +169,10 @@ selama rotasi.
 | `CONNECT_PUBLIC_URL`            | wajib     | URL publik kanonis. HTTPS, atau `http` hanya di loopback. Path berarti dipasang. Tanpa query atau fragment                        |
 | `CONNECT_ALLOWED_INSTALLS`      | wajib     | Id instalasi dipisahkan koma. `*` hanya diterima bersama `CONNECT_SIGNED_CONFIG_FILE`                                             |
 | `CONNECT_DENY_INSTALLS`         |           | Id instalasi yang ditolak meski diizinkan                                                                                         |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Id pemilik GitHub numerik. Jika diatur, token repositori hanya dicetak untuk repositori yang mereka miliki                        |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Id pemilik GitHub numerik. Jika diatur, token repositori hanya dicetak untuk repositori yang mereka miliki. Ini tidak membatasi siapa yang dapat masuk: orang yang diizinkan memakai Connect ini tetap menerima token pengguna App miliknya sendiri. Untuk melayani satu organisasi saja, jadikan App privat bagi organisasi itu                        |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Id instalasi yang boleh membuat bot App meninjau pull request. Kosong secara bawaan; `*` ditolak, dan setiap id juga harus diizinkan |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Alamat bind dan port                                                                                                     |
-| `CONNECT_TRUST_PROXY`           | `0`       | Lompatan proxy tepercaya dalam `X-Forwarded-For` (0 sampai 8). Hanya dipakai untuk batas laju per alamat                          |
+| `CONNECT_TRUST_PROXY`           | `0`       | Lompatan proxy tepercaya dalam `X-Forwarded-For` (0 sampai 8). Hanya dipakai untuk batas per alamat, petunjuk jaringan pada halaman masuk, dan alamat yang dicatat. Di belakang proxy, `0` menghitung setiap klien sebagai proxy, dan log menyatakannya sekali                          |
 
 ### Jalur penyedia
 
@@ -174,6 +180,7 @@ selama rotasi.
 | --------------------------------------------------------------------------- | ------ | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |        | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |        | Rahasia, dual                                                               |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY` |        | Rahasia. Kunci privat App (PEM)                                             |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |        | Klien Google. Rahasianya dual                                               |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |        | Aplikasi Linear. Tanpa rahasia                                              |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |        | App Slack                                                                   |
@@ -191,12 +198,12 @@ selama rotasi.
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` atau `gcp-kms`                                                                                     |
 | `CONNECT_SEAL_KEYS`                                       |                            | Rahasia, wajib untuk `local`. Entri `kid:key` dipisahkan koma, yang terbaru di depan; entri lama tetap dapat mendekripsi |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, wajib untuk `gcp-kms`                                   |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` untuk satu instance, `redis` untuk beberapa                                                       |
-| `CONNECT_REDIS_URL`                                       |                            | Rahasia. `redis://` atau `rediss://`                                                                       |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` untuk satu instance, `redis` untuk beberapa. Penyimpanan memori yang penuh menolak proses masuk dan permintaan baru alih-alih melupakan entri yang masih aktif                                                       |
+| `CONNECT_REDIS_URL`                                       |                            | Rahasia. `redis://` atau `rediss://`. Redis 6.2 atau lebih baru dengan `maxmemory-policy noeviction`, keduanya diperiksa saat mulai                                                                       |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | Bundel CA untuk `rediss://`                                                                                |
-| `CONNECT_BINDINGS`                                        | `file`                     | Tempat pengikatan instalasi GitHub disimpan: `file` atau `firestore`                                       |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` di image)  | Menyimpan `bindings.json`                                                                                  |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | database `(default)`      | Untuk `CONNECT_BINDINGS=firestore`                                                                         |
+| `CONNECT_BINDINGS`                                        | `file`                     | Tempat pengikatan tim Slack disimpan: `file` atau `firestore`                                              |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` di image)  | Menyimpan `bindings.json`. Dikunci oleh satu Connect: Connect kedua pada direktori yang sama tidak mau mulai                                                                                  |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | database `(default)`      | Untuk `CONNECT_BINDINGS=firestore`. Connect tidak mau mulai ketika Firestore tidak menjawab                                                                         |
 
 ### Konfigurasi, log, dan batas
 
@@ -206,18 +213,35 @@ selama rotasi.
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Kunci yang harus diverifikasi oleh konfigurasi yang ditandatangani                                  |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoch konfigurasi yang dibuat oleh Connect yang di-self-host                                        |
 | `CONNECT_LOG_HMAC_KEY`                  | acak per proses    | Rahasia. Atur agar tag yang menggantikan id instalasi di log tetap stabil lintas restart dan instance |
+| `CONNECT_SENTRY_DSN`                    |                    | Rahasia. DSN Sentry https tempat baris galat dilaporkan: jenis galat, bingkai stack, rute, dan id permintaan, tidak pernah pesan, body, atau header |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | Lingkungan Sentry                                                                                   |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Dilaporkan oleh `/v1/version`                                                                       |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Permintaan per instalasi                                                                            |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Permintaan per alamat                                                                               |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Permintaan untuk seluruh layanan                                                                    |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Permintaan per alamat (alamat IPv6 dihitung per /64)                                                                               |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Permintaan untuk seluruh instance                                                                    |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`          | Pengiriman event dan perintah Slack per alamat, dihitung terpisah dari permintaan lain |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`      | Pengiriman event dan perintah Slack untuk seluruh instance                          |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Peristiwa Slack per tim                                                                             |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Pencarian GIF per instalasi                                                                         |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | Pencarian GIF per alamat, di seluruh server                                                         |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | Proses masuk yang dimulai per alamat                                                                |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | Token GitHub yang diterbitkan per akun GitHub di satu server (proses masuk, penyegaran, token repositori) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × di atas (`120`) | Sama, per akun GitHub di seluruh server                                     |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | Token GitHub yang diterbitkan per alamat                                                            |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | Proses masuk GitHub baru untuk seluruh app                                                          |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | Token bot per server                                                                                |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | Token bot per akun GitHub yang meminta, di seluruh server                                           |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | Token bot untuk seluruh app                                                                         |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | Penyegaran dan token repositori untuk seluruh app. Proses masuk baru memiliki batasnya sendiri di atas |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | Token repositori aktif yang boleh dimiliki satu akun GitHub sebelum Connect mencatat peringatan     |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | Id instalasi yang dipensiunkan per alamat (per /48 untuk IPv6)                                      |
+
+Panggilan yang melewati batas dijawab `rate_limited`. Server mencoba lagi nanti dan tidak pernah mengeluarkan siapa pun karenanya.
 
 ## Jalankan lebih dari satu instance
 
 Satu instance dengan `CONNECT_STATE=memory` sudah cukup untuk sebagian besar organisasi. Beberapa instance di
-belakang satu alamat memerlukan `CONNECT_STATE=redis`, dan salah satu dari `CONNECT_DATA_DIR` bersama atau
-`CONNECT_BINDINGS=firestore`, sehingga proses masuk yang dimulai di satu instance dapat diselesaikan di instance lain.
+belakang satu alamat memerlukan `CONNECT_STATE=redis` dan `CONNECT_BINDINGS=firestore`, sehingga proses masuk yang dimulai di satu instance dapat diselesaikan di instance lain dan setiap instance melihat binding Slack dan id instalasi yang dipensiunkan yang sama. `CONNECT_DATA_DIR` bersama tidak berfungsi: Connect pertama mengunci direktori itu. Batas permintaan per instalasi, per alamat, dan per instance bersifat per instance; batas proses masuk, token GitHub, token bot, pencarian GIF per alamat, pensiun, dan tim Slack dibagikan melalui penyimpanan state.
 
 ## Rotasi rahasia penyedia
 
@@ -241,19 +265,21 @@ agar mereka tahu bahwa perintah itu berasal dari Anda.
 ## Blokir sebuah server
 
 Tambahkan id instalasinya ke `CONNECT_DENY_INSTALLS` lalu mulai ulang. Pemiliknya akan melihat
-"Connect telah memblokir id instalasi server ini" dan setiap proses masuk melalui Connect di sana akan berhenti.
+"Connect memblokir ID pemasangan server ini. Hubungi operator server Connect Anda." dan setiap proses masuk melalui Connect di sana akan berhenti.
+
+Server juga memensiunkan id instalasi lamanya sendiri ketika pemiliknya memutar kunci. Ia membuktikan id itu miliknya dengan satu segel kredensial yang dibuat Connect ini untuknya, sehingga hanya server yang pernah memasukkan seseorang yang dapat memensiunkan id. Connect menyimpan id yang dipensiunkan selamanya, sehingga kunci lama dan setiap segel yang dibuat untuknya berhenti bekerja, dan melepaskan ruang kerja Slack yang terikat pada id lama. Token yang sudah dibagikan kedaluwarsa dengan sendirinya: dalam 8 jam untuk token seseorang, 1 jam untuk token bot. Connect menyimpan paling banyak 100.000 id yang dipensiunkan; melewati itu, rotasi ditolak dan log menyatakannya pada tingkat error.
 
 ## Pemecahan masalah
 
 ### Sebuah server menyatakan Connect telah memblokirnya
 
-Id instalasinya tidak ada di `CONNECT_ALLOWED_INSTALLS`, atau ada di `CONNECT_DENY_INSTALLS`. Id berubah ketika
+Id instalasinya tidak ada di `CONNECT_ALLOWED_INSTALLS`, ada di `CONNECT_DENY_INSTALLS`, atau telah dipensiunkan oleh rotasi kunci. Id berubah ketika
 pemilik server memutar kunci; minta id yang baru.
 
-### Sebuah penyedia tampak tidak tersedia
+### Setiap proses masuk ke satu penyedia gagal
 
-Salah satu variabelnya hilang, sehingga Connect mengeluarkan jalur tersebut. Periksa log startup dan tabel di atas.
-GitHub memerlukan keempat hal: app id, slug, client id, dan client secret; Google memerlukan client id dan client secret.
+Salah satu variabelnya mungkin hilang, sehingga Connect mengeluarkan jalur tersebut. Periksa log startup dan tabel di atas.
+GitHub memerlukan kelimanya: app id, slug, client id, client secret, dan kunci privat; Google memerlukan client id dan client secret.
 
 ### Proses masuk gagal dengan ketidakcocokan redirect
 

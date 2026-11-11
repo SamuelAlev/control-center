@@ -51,6 +51,7 @@ void main() {
           sourcePath: '/src/shop',
         ),
       ],
+      defaultRole: 'app',
       ports: const {'web': 42000},
       compose: const {'COMPOSE_PROJECT_NAME': 'cc-env-1'},
     ),
@@ -167,17 +168,21 @@ exit 2
   });
 
   test('the tail is throttled and bounded', () async {
+    // Bursts with a pause after each, so the count below is about the
+    // throttle and not about how fast this machine prints.
     final outcome = await run(
       task(
         ShellEnvironmentCommand(
-          r'for i in $(seq 1 200); do echo "line-$i"; sleep 0.001; done',
+          r'for burst in 1 2 3; do '
+          r'for i in $(seq 1 200); do echo "line-$burst-$i"; done; '
+          r'sleep 0.1; done',
         ),
       ),
     );
     expect(outcome.run.output, startsWith('[…output truncated…]'));
-    expect(outcome.run.output, endsWith('line-200'));
-    expect(runs.outputWrites.length, lessThan(100));
+    expect(outcome.run.output, endsWith('line-3-200'));
     expect(runs.outputWrites, isNotEmpty);
+    expect(runs.outputWrites.length, lessThan(30));
   });
 
   test('progress lands in the tail', () async {

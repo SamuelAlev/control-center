@@ -2,7 +2,7 @@
 title: 流水线与自动化
 description: 流水线为何把调度与工作分开、究竟什么会启动一次运行，以及哪些内置模板开箱即用。
 slug: zh-CN/手册/概念/流水线
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 流水线是 Control Center 中确定性的那一半。智能体决定说什么；流水线决定接下来
@@ -29,7 +29,7 @@ sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
   `extras['awaitApproval'] == true`——也就是 `orchestration.awaitApproval`
   部分批准门控。`human.gate` 不在豁免之列。
 - 一个声明了 `extras: {'idempotent': false}` 的步骤，如果在服务器停止时正处于
-  执行途中，可能已经施加了它的副作用（一次压缩合并、一次工作树清理）。重新运行
+  执行途中，可能已经施加了它的副作用（一次工作区备份、一次工作树清理）。重新运行
   它可能会重复施加，因此引擎会将其判为失败，把重试留给你来决定。
 
 ## 种类负责调度，主体负责执行
@@ -109,7 +109,13 @@ webhook token 同时充当 HMAC 密钥：会用 `HMAC-SHA256(body, token)` 校�
 
 还有一处值得了解的不对称：`pr_review` 内置模板有意不再向 GitHub 发布内容。发布审查
 是一个独立的、需要用户把关的步骤，如果流水线直接发布就会重复发布。`cross_review`、
-`ticket_to_pr` 和 `pr_triage` 在运行时仍然会直接向 GitHub 发布评论。
+`ticket_to_pr`、`pr_triage`、`pre_merge_gate` 和 `external_pr_welcome` 在运行时仍会向 GitHub 发布一条评论。
+
+它们由服务器发布，通过 **Post PR comment** 步骤（`prReview.comment`），绝不从 shell 脚本发布：流水线的 shell 步骤和其智能体的沙箱所持有的 GitHub 令牌只能读取。同样的规则也决定了其余部分：
+
+- `external_pr_welcome` 以该步骤的 `message` 发布其问候语。
+- `ticket_to_pr` 让 coder 智能体（经由运行网关）推送 `agent/<ticket_id>`，并使用 `open_pull_request` 工具打开草稿 PR，使用发起该次运行之人的 GitHub 登录；若无人发起，则以机器人身份执行。两者都符合工作区的 **推送到远程仓库** 与 **打开 pull request** 规则。在 Control Center Connect 上，由 `TicketAssigned` 触发等无人发起的运行无法推送或打开 PR：共享 App 的机器人只能读取与评论。
+- `pre_merge_gate` 从不合并。在其门控处批准时会发布该 PR 已准备好供维护者合并；拒绝时则发布需要修改。合并由人在 PR 页面上完成。
 
 ## 引擎知道什么
 

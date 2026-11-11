@@ -1,8 +1,8 @@
 ---
 title: Reference Control Center Connect
-description: Co Connect vidí a co nikdy, tři režimy, identita instalace, zapečetěná pověření, důvěra v konfiguraci a každé nastavení, operace a stavový kód.
+description: Co Connect vidí a co nikdy, tři režimy, vlastní volba pracovního prostoru, identita instalace, zapečetěná pověření, důvěra v konfiguraci a každé nastavení, operace a stavový kód.
 slug: cs-CZ/prirucka/referencni-prirucka/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect provádí přihlášení k poskytovatelům pro servery, které
@@ -10,11 +10,12 @@ si nezaregistrovaly vlastní aplikace. Server používá buď hostovaný Connect
 Control Center, Connect, který provozuje jeho organizace
 ([Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)),
 nebo žádný. Volba leží v **Nastavení → Server → Jednotné přihlášení → Control
-Center Connect**, v `cc_server connect` nebo v `CC_CONNECT_URL`.
+Center Connect**, v `cc_server connect` nebo v `CC_CONNECT_URL`. Pracovní prostor ji následuje, pokud admin pro něj nezvolí jinou v **Nastavení → Pracovní prostor → Integrace** ([Volba pro každý pracovní prostor](#volba-pro-každý-pracovní-prostor)).
+
 
 ## Dráhy
 
-Každý poskytovatel je dráha. Při **Použít vlastní aplikace** (nebo dřív, než si někdo vybere) dráha běží na vlastní aplikaci serveru, když je úplně nastavená, jinak není dostupná. S Control Center nebo vlastním Connect obsluhuje Connect každou dráhu, kterou nabízí: vlastní aplikace serveru zůstávají uložené, ale nepoužijí se ani pro přihlášení, ani pro automatizaci serveru, ani pro stav, který server hlásí. Vlastní aplikace pracovního prostoru platí v každém režimu.
+Každý poskytovatel je dráha. Při **Použít vlastní aplikace** (nebo dřív, než si někdo vybere) dráha běží na vlastní aplikaci serveru, když je úplně nastavená, jinak není dostupná. S Control Center nebo vlastním Connect obsluhuje Connect každou dráhu, kterou nabízí: vlastní aplikace serveru zůstávají uložené, ale nepoužijí se ani pro přihlášení, ani pro automatizaci serveru, ani pro stav, který server hlásí. Pracovní prostor, který zvolil vlastní volbu, běží na každé dráze podle té volby.
 
 | Dráha        | Vlastní aplikace potřebuje                      | Přes Connect                                                  |
 | ------------ | ----------------------------------------------- | ------------------------------------------------------------- |
@@ -26,9 +27,7 @@ Každý poskytovatel je dráha. Při **Použít vlastní aplikace** (nebo dřív
 | `klipy`      | `KLIPY_APP_KEY`                                 | Hledání GIF přes proxy Connect                                |
 
 Vlastní aplikace, která je nastavená jen částečně, z dráhy udělá chybu, nikdy
-tichý přechod na Connect. Pracovní prostor, který používá vlastní GitHub App
-(**Nastavení → Pracovní prostor → Obecné → Identita GitHub**), u GitHubu přes
-Connect nikdy nejde, a pracovní prostor, který používá vlastní aplikaci Google, Linear nebo Klipy (**Nastavení → Pracovní prostor → Obecné → Aplikace poskytovatelů**), nikdy u tohoto poskytovatele nejde přes aplikaci serveru ani přes Connect. Změna volby Connect nikoho neodhlásí z vlastní aplikace pracovního prostoru.
+tichý přechod na Connect. Pracovní prostor na **Použít vlastní aplikace** nikdy nejde přes aplikace serveru ani přes jakýkoli Connect, u žádného poskytovatele. Změna volby Connect na serveru nikoho neodhlásí z pracovního prostoru, který zvolil vlastní volbu.
 
 ## Co Connect vidí a co nikdy
 
@@ -36,17 +35,21 @@ Connect nikdy nejde, a pracovní prostor, který používá vlastní aplikaci Go
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | ID instalace serveru a podpisy požadavků                                                      | Zdrojový kód, obsah repozitářů, diffy ani text pull requestů          |
 | Účet u poskytovatele, který se přihlásil, během přihlášení                                    | Tickety, přepisy ani nic v databázi pracovního prostoru               |
-| Ke kterému pracovnímu prostoru pověření patří, jako neprůhledné id uvnitř pečetě              | Soukromý klíč GitHub App: tokeny repozitářů pocházejí z přihlášení člověka |
+| Ke kterému pracovnímu prostoru pověření patří, jako neprůhledné id uvnitř pečetě              | Tajemství vlastních aplikací serveru: nikdy neopouštějí server               |
 | Repozitář, pro který se vydává token GitHubu pro jediný repozitář                             | Obnovovací tokeny v klidu: existují jen uvnitř pečetí, které drží server |
-| Id instalací GitHubu vázaná na server                                                         | Tajemství Linear: kód od Linear vyměňuje server sám                  |
+| Tým Slacku vázaný na server                                                                    | Tajemství Linear: kód od Linear vyměňuje server sám                  |
 | Hledané výrazy GIF, když dělá proxy pro Klipy                                                 | Hesla, párovací klíče ani klíče poskytovatelů modelů                  |
 | Odkazy na události Slacku (tým, kanál, id zprávy) a text slash příkazů                        | Text zpráv Slacku: Connect ho při příchodu zahodí a server si zprávu přečte ze Slacku sám |
 
-Krátkodobý stav (rozpracovaná přihlášení, nonce, mezipaměti) drží Connect
-nejvýš 15 minut. Jediné trvalé záznamy jsou vazby instalací: které servery
-smějí používat kterou instalaci GitHubu a ke kterému serveru je vázaný každý
-tým Slacku. Chyby nesou kód, nikdy odpověď poskytovatele, a logy zapisují ID
-instalací jen jako klíčované hashe.
+Rozpracovaná přihlášení, nonce a mezipaměti drží Connect nejvýš 10 minut a
+hodinová počítadla použití nejvýš dvě hodiny. Token GitHubu pro jediný repozitář
+vydaný jako člověk zůstává zaznamenaný, zapečetěný k přihlášení, které o něj
+požádalo, dokud nevyprší (nejvýš 8 hodin), takže ho Connect může znovu vydat
+a odvolat při odpojení. Jediné trvalé záznamy jsou vazby Slacku (ke kterému
+serveru je vázaný každý tým Slacku) a vyřazená ID instalací. Chyby nesou kód,
+nikdy odpověď poskytovatele. Logy zapisují ID instalací jen jako klíčované hashe
+a token GitHubu jen jako `hashed_token`, který pro něj ukazuje auditní log
+organizace na GitHubu, takže vlastník organizace může obě položky spárovat.
 
 ## Režimy
 
@@ -64,11 +67,31 @@ Tohle sestavení nemá zakompilovaný žádný klíč hostované konfigurace, ta
 hostovaný režim hlásí `hosted_unprovisioned` a neobsluhuje žádnou dráhu.
 Vlastní aplikace a vlastní Connect fungují.
 
+Hostovaný Connect běží v jediném kontejneru. Jeho klíč pro pečetě a soukromý klíč sdílené GitHub App jsou tam proměnné prostředí, ne klíče v trezoru, který jen podepisuje nebo dešifruje, jak GitHub doporučuje pro soukromý klíč App. To je známá mezera současného nastavení.
+
 Server čte konfiguraci Connect nejvýš každých 10 minut a na každé volání čeká
 nejvýš 5 sekund. Když je Connect nedostupný, zůstává v platnosti poslední dobrá
 konfigurace a Nastavení ji označí jako zastaralou.
 
+## Volba pro každý pracovní prostor
+
+**Nastavení → Pracovní prostor → Integrace → Control Center Connect** přepíše volbu serveru pro jeden pracovní prostor. Každý člen vidí volbu a to, kde běží každé přihlášení; měnit ji smí jen admin pracovního prostoru.
+
+| Volba | Chování |
+| --- | --- |
+| **Stejné jako tento server** | Výchozí. Pracovní prostor běží na tom, co zvolil vlastník serveru; volba to pojmenuje |
+| **Použít aplikace Control Center** | Hostovaný Connect od Control Center, ať server používá cokoli |
+| **Použít vlastní aplikace** | Jen vlastní aplikace pracovního prostoru: jeho GitHub App, klient Google, aplikace Linear, klíč Klipy a aplikace Slack. Poskytovatel bez ní tu není dostupný; částečně vyplněná je chyba nastavení |
+| **Použít vlastní server Connect** | Connect na adrese HTTPS, kterou pracovní prostor zadá. Adresy v privátní nebo lokální síti jsou odmítnuty |
+
+- Každá volba jiná než **Stejné jako tento server** drží přihlášení ke GitHubu a Linear každého člověka v pozici patřící pracovnímu prostoru, takže se nemíchají s těmi na úrovni serveru
+- Přepnutí se nejdřív zeptá: všichni v pracovním prostoru se znovu přihlásí ke GitHubu, Linear a Google Calendar přes nové aplikace
+- Vlastní připojení aplikace Slack pracovního prostoru funguje při každé volbě; **Přidat Control Center do Slacku** volbu následuje
+- `CC_CONNECT_URL` také zamkne pracovní prostory, aby neměly vlastní Connect: mohou následovat server nebo použít vlastní aplikace
+- Vlastní Connect pracovního prostoru se důvěřuje při prvním použití jen pro ten pracovní prostor: **Důvěřovat novým aplikacím** tam nikdy nemění, čemu důvěřuje server nebo jiný pracovní prostor
+
 ## Identita instalace
+
 
 | Položka        | Co to je                                                                                                         |
 | -------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -97,16 +120,37 @@ a generaci tajemství.
 
 ## Instalace GitHubu
 
-Instalaci sdílené GitHub App může server použít, jen když ji Connect navázal na
-ID instalace toho serveru.
+Instalaci sdílené GitHub App může použít každý server. Connect nevede záznam o
+tom, který server ji smí používat.
 
-- **Nainstalovat aplikaci GitHub** v **Nastavení → Pracovní prostor → Obecné**
-  otevře GitHub s 15minutovým lístkem. Connect novou instalaci naváže, když
-  instalující vlastní osobní účet nebo spravuje organizaci
-- **Autorizovat tento server** naváže instalaci, která už existuje. Udělat to
-  může jen admin organizace
-- Instalace v organizaci může být navázaná na několik serverů; každý potřebuje
-  autorizaci od admina
+- **Nainstalovat aplikaci GitHub** v **Nastavení → Pracovní prostor → Integrace**
+  otevře stránku instalace aplikace na GitHubu. Server sestaví odkaz z názvu
+  aplikace v konfiguraci Connect
+- Token pro jediný repozitář potřebuje aplikaci nainstalovanou u vlastníka
+  repozitáře a přístup přihlášené osoby k tomu repozitáři. Je to vlastní token
+  té osoby, omezený na její roli, nikdy víc
+- Organizace omezuje Control Center na GitHubu: odebráním instalace, zúžením jejích
+  repozitářů nebo odebráním osoby
+- Pro volání, která může udělat jen člověk, například výpis jeho instalací, Connect serveru předá uživatelský token App toho člověka, ne token pro jeden repozitář. Přihlášení na serveru znamená, že tomuto serveru ten token svěřuješ
+- Organizace, která vynucuje seznam povolených IP adres GitHubu, nemůže použít hostovaný Connect, jehož adresy nejsou pevné. Místo něj zaregistruje vlastní GitHub App, na svých serverech nebo na Connectu, který provozuje
+- **Odpojit** odvolá jen toto přihlášení: Connect spotřebuje obnovovací token jednou a smaže to, co tím dostane, smaže svůj uživatelský token a tokeny pro jeden repozitář, které pro něj vydal. Kopie jeho pečeti kdekoli uložená přestane fungovat. Přihlášení téhož člověka na jiných serverech a v jiných pracovních prostorech dál funguje. Chcete-li Control Center z účtu na GitHubu odebrat úplně, odvolejte ho na GitHubu v **Nastavení → Aplikace → Autorizované aplikace GitHub → Odvolat**
+
+### Sdílený bot
+
+Tokeny vydané jako bot App (`as: app`) ukazují na GitHubu stejného bota pro každý server, který používá stejný Connect: GitHub ty servery nerozliší.
+
+- Každý server smí botovi číst a komentovat: `read`, `review` a `comment` (komentáře, štítky, přiřazené osoby a reakce u issues a pull requestů)
+- Revidovat pull request jako bot (`bot`, který zapisuje do pull requestů) smí jen servery, které provozovatel Connectu uvede v `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Každý jiný server dostane odpověď `needs_requester` a revizi zveřejní přes token odpovědné osoby, který GitHub omezí na tuhle osobu: revize se zobrazí pod jejím jménem. Týká se to zveřejňování AI review, komentářů k revizi a žádostí o revizi
+- Push, vytvoření větve a otevření pull requestu (`write`) se nikdy nevydávají jako sdílený bot. Vždy používají vlastní přihlášení žadatele
+- Schválení pull requestu se neautomatizuje nikdy, na žádném tokenu
+- Server nebo pracovní prostor s vlastní GitHub App si bota pro všechno z toho ponechá, včetně revizí
+
+### Co by měli vlastníci a členové organizace vědět
+
+- Server, na kterém se někdo přihlásil, drží jeho uživatelský token App: až 8 hodin na token, obnovovaný, dokud se člověk neodpojí. Může jednat jeho jménem v každém repozitáři, na který je sdílená App nainstalovaná a který dosáhne. Connect může server odříznout nadobro (vyřazená nebo zamítnutá instalace), ale token, který už byl vydán, platí až do vypršení
+- Instalace sdílené GitHub App v organizaci dává souhlas pro každý server Control Center, na který se kterýkoli člen přihlásí, ne pro jeden server
+- Bot je sdílený, jak je popsáno výše: organizace na GitHubu nepozná, který server jednal jako bot
+- Organizace, která chce vlastní hranici, zaregistruje vlastní GitHub App a provozuje vlastní Connect ([Spusťte server Connect](/cs-CZ/prirucka/navody/spusteni-serveru-connect/)), nebo nakonfiguruje App na vlastních serverech
 
 ## Důvěra v konfiguraci
 
@@ -117,7 +161,7 @@ ID instalace toho serveru.
 
 ## Operace
 
-Všechna nastavení Connect smí měnit jen vlastník serveru.
+Nastavení Connect na serveru smí měnit jen vlastník serveru.
 
 | Operace               | Co dělá                                                                                |
 | --------------------- | -------------------------------------------------------------------------------------- |
@@ -125,7 +169,17 @@ Všechna nastavení Connect smí měnit jen vlastník serveru.
 | `connect.configure`   | Nastaví `hosted`, `custom` (s `url`) nebo `off`                                        |
 | `connect.test`        | Znovu stáhne konfiguraci a ohlásí stav                                                 |
 | `connect.confirmPins` | Přijme změněné identifikátory vlastního Connect                                        |
-| `connect.rotateKey`   | Vystaví nový instalační klíč. Každé přihlášení přes Connect na tomto serveru přestane fungovat |
+| `connect.rotateKey`   | Vystaví nový instalační klíč a nové ID instalace (`force` ho nahradí, i když Connect nemohl starý vyřadit); viz [Vyměňte instalační klíč](#výměna-instalačního-klíče) |
+
+Vlastní volba pracovního prostoru má vlastní operace, každá pojmenovává pracovní prostor:
+
+| Operace | Kdo | Co dělá |
+| --- | --- | --- |
+| `workspaceConnect.status` | Kterýkoli člen | Volba, na co se přeloží, stav a zdroj každého poskytovatele. ID instalace a čekající připnutí jen pro adminy |
+| `workspaceConnect.set` | Admin pracovního prostoru | Nastaví `inherit`, `hosted`, `custom` (s `url`) nebo `own` |
+| `workspaceConnect.test` | Admin pracovního prostoru | Znovu stáhne konfiguraci Connect pracovního prostoru a ohlásí stav |
+| `workspaceConnect.confirmPins` | Admin pracovního prostoru | Přijme změněné identifikátory vlastního Connect pracovního prostoru |
+
 
 Samotná přihlášení používají `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` a `oauth.disconnect`. Člověkem je vždy
@@ -134,22 +188,42 @@ přihlášený volající.
 ## Přihlášení přes Connect
 
 1. Server požádá Connect o spuštění dráhy a dostane autorizační URL
-   poskytovatele, kterou si ověří, než ji ukáže
+   poskytovatele, kterou si ověří, než ji ukáže. GitHub vždy ukáže výběr účtu
 2. Člověk to schválí v prohlížeči. Poskytovatel se vrátí na Connect
-3. Connect ukáže 8místný kód a odkaz `control-center://oauth-done`
-4. Člověk kód opíše do aplikace, nebo otevře odkaz. Server si přihlášení
+3. Connect ukáže, co bude moci server, který přihlášení spustil, dělat jako
+   člověk, a jak dlouho. Connect nepozná, kdo ten server provozuje, takže
+   stránka žádá člověka, aby pokračoval, jen když přihlášení spustil sám,
+   a aby ji zavřel, když mu odkaz poslal někdo jiný. Když je prohlížeč na jiné
+   síti, než ze které přihlášení začalo, stránka to řekne: u hostovaného serveru
+   nebo jiného zařízení je to normální, ale přesně tak vypadá phishing.
+   **Zrušit** přihlášení ukončí: kód poskytovatele se nikdy nepoužije. Každá
+   stránka odpoví jednou; odpověď, která nepřišla ze stránky, kterou Connect
+   právě ukázal, se odmítne
+4. Po **Pokračovat** ukáže Connect 8místný kód a odkaz `control-center://oauth-done`.
+   Kdo kód dostane, dostane přístup, který se právě schválil, takže ho posílejte
+   jen tam, kde přihlášení začalo
+5. Člověk kód opíše do aplikace, nebo otevře odkaz. Server si přihlášení
    vyzvedne s tím kódem a s vlastním důkazem požadavku
 
 Přihlášení vyprší po 10 minutách. Pět chybných kódů ho ukončí. Odkaz, který
 tahle aplikace nezahájila, se odmítne hláškou **Přihlášení nebylo zahájeno
-zde**.
+zde**. Connect omezuje, kolik přihlášení může jedna síťová adresa zahájit,
+a jak často se tokeny GitHubu vydávají pro každého člověka a server, pro člověka
+napříč servery, pro adresu a pro celou aplikaci. Nová přihlášení mají vlastní
+rozpočet, takže nikdy nezdrží obnovy, které potřebují jiní lidé. Za limitem se
+volání odmítne s `rate_limited` a server to zkusí později, aniž by kohokoli
+odhlásil. Přihlášení nad limit člověka se na GitHubu vrátí zpět a odmítne se.
 
 ## Výměna instalačního klíče
 
-**Vyměnit klíč** na kartě Connect, nebo `cc_server connect rotate-key --yes`:
+Výměnu klíče smí provést jen vlastník serveru, tlačítkem **Vyměnit klíč** na kartě
+**Control Center Connect** v **Nastavení → Server → Jednotné přihlášení**. Příkaz
+pro to není. Výměna:
 
-- Dá serveru nový instalační klíč a nové ID instalace
-- Odhlásí všechny ze všech drah, které běží přes Connect
+- Odhlásí všechny ze všech drah, které běží přes Connect. U každého serveru Connect, se kterým se starý klíč používal, server z něj odvolá přihlášení ke GitHubu a Slacku, která tam drží (přihlášení přes Google nemá co odvolat a vyprší)
+- Vyřadí staré ID instalace u každého z těchto serverů Connect, podepsané starým klíčem a doložené jednou pečetí, kterou server od toho Connectu drží. Od té chvíle Connect odmítne každý požadavek se starým klíčem, takže pečeť nebo kopie starého klíče odsud je k ničemu, a týmy Slacku vázané na staré ID se uvolní, aby se mohly znovu připojit. Tokeny, které už byly vydány, platí až do vypršení (hodinu u bot tokenu, osm hodin u tokenu člověka). Server, který od Connectu nemá žádnou pečeť, nemá co vyřazovat a přeskočí ho
+- Pak dá serveru nový instalační klíč a nové ID instalace
+- Pokud Connect nejde dosáhnout, nebo odmítne staré ID vyřadit, výměnu zastaví před přepnutím klíčů a ukáže **Connect nemohl vyřadit starý klíč**. **Otočit i tak** přepne klíče bez ohledu na to; staré ID instalace pak u daného Connectu zůstane použitelné, dokud nevyprší jeho tokeny, u GitHubu nejvýš 8 hodin
 - Přihlášení přes vlastní aplikace serveru nechá být
 - Vyžaduje přidání nového ID instalace na seznam povolených u vlastního Connect
 
@@ -161,7 +235,7 @@ zde**.
 | `signature`            | Hostovaná konfigurace neprošla kontrolou podpisu                     |
 | `rollback`             | Connect obsloužil starší konfiguraci, než jakou server už viděl      |
 | `unreachable`          | Server na Connect nedosáhne                                          |
-| `install_blocked`      | Connect toto ID instalace nepovoluje                                 |
+| `install_blocked`      | Connect toto ID instalace nepovoluje, nebo bylo vyřazeno             |
 | `pins_changed`         | Vlastní Connect ohlásil jiné identifikátory aplikací                 |
 | `protocol`             | Connect odpověděl ve tvaru, kterému tento server nerozumí            |
 

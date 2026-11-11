@@ -2,7 +2,7 @@
 title: Statistiques d’utilisation
 description: Ce que Control Center enregistre quand les statistiques d’utilisation sont activées, qui en décide et ce qui n’est jamais envoyé.
 slug: fr-FR/manuel/reference/statistiques-utilisation
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center peut envoyer des **événements d’utilisation pseudonymes** à une instance [Umami](https://umami.is). Les statistiques d’utilisation sont **désactivées tant que l’opérateur du serveur ne les active pas**. Le réglage appartient au serveur et s’applique à tous les clients qui y sont connectés : l’application de bureau, l’application web, le téléphone et le serveur lui-même.
@@ -13,7 +13,7 @@ Les statistiques d’utilisation sont distinctes de **Partager les rapports de p
 
 | Interrupteur | Où | Effet |
 | --- | --- | --- |
-| **Partager les statistiques d'utilisation** | Intégration (étape du bac à sable) et **Réglages → Confidentialité**. Seul l’opérateur du serveur peut le modifier ; les autres membres voient la valeur actuelle en lecture seule | Pour tout le serveur. Stocké sous `telemetry.usage_analytics` dans les réglages du serveur. Désactivé sauf s’il vaut `true` |
+| **Partager les statistiques d'utilisation** | Intégration (étape du bac à sable) et **Réglages → Serveur → Diagnostics et confidentialité**. Seul l’opérateur du serveur peut le modifier ; les autres membres voient la valeur actuelle en lecture seule | Pour tout le serveur. Stocké sous `telemetry.usage_analytics` dans les réglages du serveur. Désactivé sauf s’il vaut `true` |
 | Type de build | Automatique | Les builds debug et profile n’envoient rien. Ils écrivent chaque événement dans le journal de débogage à la place |
 | `CC_ANALYTICS_DEBUG=1` | Environnement de `cc_server` ou son `.env` | Permet aux builds debug et profile du serveur, et de tous les clients qui y sont connectés, d’envoyer réellement, pour les tests. L’interrupteur ci-dessus doit tout de même être activé |
 | `DO_NOT_TRACK=1` | Environnement de `cc_server` | Arrête les remontées propres au serveur, quelle que soit la position de l’interrupteur. Les clients continuent de suivre l’interrupteur |

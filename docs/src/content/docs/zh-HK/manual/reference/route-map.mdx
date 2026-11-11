@@ -2,7 +2,7 @@
 title: 路由圖
 description: Control Center 註冊的每條路由，連同其畫面與查詢參數。
 slug: zh-HK/手冊/參考/路由圖
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## 應用程式外殼
@@ -11,7 +11,7 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 當**已登入使用者**至少連接了一個程式碼託管平台，且至少存在一個工作區時，這道關卡才會通過。
 
-缺少憑證與缺少設定是分開處理的，而區分它們的依據是 `users.onboarding_finished_at`，它讀自呼叫者自己的 `identity.me` —— 絕不是「工作區存在」，因為一旦有人被邀請進入一個並非由自己建立的工作區，後者馬上就不成立。在未連接任何程式碼託管平台時，已完成入門的帳戶會留在應用程式內：工作區外殼會顯示一則警告，並附上前往 **設定 → 工作區 → 個人資料與身分** 的連結，登入即位於該處。尚未完成的則前往 `/onboarding`。當該旗標仍然未知時，守衛會停留在啟動畫面，而不是憑猜測行事，因為它絕不會把人從入門流程重新導向出去。
+缺少憑證與缺少設定是分開處理的，而區分它們的依據是 `users.onboarding_finished_at`，它讀自呼叫者自己的 `identity.me` —— 絕不是「工作區存在」，因為一旦有人被邀請進入一個並非由自己建立的工作區，後者馬上就不成立。在未連接任何程式碼託管平台時，已完成入門的帳戶會留在應用程式內：工作區外殼會顯示一則警告，並附上前往 **設定 → 你 → 個人資料** 的連結，登入即位於該處。尚未完成的則前往 `/onboarding`。當該旗標仍然未知時，守衛會停留在啟動畫面，而不是憑猜測行事，因為它絕不會把人從入門流程重新導向出去。
 
 ## 無前綴路由
 
@@ -65,7 +65,7 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 ## 設定路由
 
-`/settings` 會重新導向至 `/settings/you/appearance`。側邊欄的設定按鈕與 `Cmd/Ctrl + ,` 都會前往 `/settings/you/appearance`。
+`/settings` 會重新導向至 `/settings/you/profile`。側邊欄的設定按鈕與 `Cmd/Ctrl + ,` 都會前往 `/settings/you/profile`。
 
 設定路徑按**範圍**劃分命名空間 —— `you/`、`workspace/`、`server/` —— 因為該分段說明了變更會影響誰。有兩條路徑早於這套命名空間劃分，在 URL 中不帶範圍：`/settings/memory` 與 `/settings/pipelines`。
 
@@ -73,20 +73,26 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 
 | 路徑                          | 畫面                                                                       |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | 主題、語言、字體、編輯器主題（設定的落地頁）                               |
-| `/settings/you/notifications` | 逐事件開關、勿擾時段                                                       |
+| `/settings/you/profile`       | 你在此伺服器上的帳戶：名稱、用戶名稱、圖片與登入（設定的落地頁） |
+| `/settings/you/profile?section=accounts` | 已連接的帳戶：你自己的程式碼託管、工單、日曆與聊天登入，以及來自聊天的工單草稿 |
+| `/settings/you/appearance`    | 主題、語言、字體、編輯器主題 |
 | `/settings/you/audio`         | 麥克風、聽寫、會議偵測與聲景輸出                                           |
+| `/settings/you/notifications` | 逐事件開關、勿擾時段                                                       |
+| `/settings/you/commits`       | 誰會在你啟動的工作所產生的提交中獲得署名，以及你的提交簽署金鑰             |
+| `/settings/you/desktop`       | 僅限桌面應用程式：系統匣圖示、關閉視窗與登入時開啟                         |
 | `/settings/you/devices`       | 已配對的手機與遙控                                                         |
 | `/settings/you/newsfeed`      | 資訊源管理：訂閱源、重新整理、已讀狀態                                     |
+| `/settings/you/links`         | 外部連結在何處開啟                                                         |
 
 ### 工作區
 
 | 路徑                               | 畫面                                                                                                |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | 此工作區的個人資料與身分：名稱、git 作者、程式碼託管、日曆 |
-| `/settings/workspace/general`      | 名稱、標誌、密鑰 glob、審查並行數、分支命名、同步健康狀況、聊天橋接、危險區域 |
+| `/settings/workspace/profile`      | 此工作區的個人資料與身分：名稱、電郵、git 作者 |
+| `/settings/workspace/general`      | 名稱、標誌、密鑰 glob、審查並行數、分支命名、危險區域 |
+| `/settings/workspace/integrations` | Connect 選擇、GitHub 應用程式與自動化權杖、工單供應商與自動化、同步健康狀態、工作區自己的供應商應用程式、聊天橋接、GIF。每個供應商群組都會指明你自己的帳戶，並連結到已連接的帳戶 |
 | `/settings/workspace/meetings`     | 會議筆記範本與已儲存的聲紋檔案                                                                      |
-| `/settings/workspace/members`      | 名冊、邀請、稽核軌跡。稽核軌跡以可選的 `?cursor=` 分頁                                               |
+| `/settings/workspace/members`      | 名冊與邀請                                               |
 | `/settings/workspace/repositories` | 在此工作區註冊的程式庫                                                                              |
 | `/settings/workspace/environments` | 環境定義：空間可以啟動什麼，以及工作樹執行哪些工作 |
 | `/settings/workspace/agents`       | 已註冊的代理身分                                                                                    |
@@ -108,6 +114,8 @@ sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
 | `/settings/server/rigs`        | 測試機：這部主機可啟動的內容、基礎映像、自訂映像、執行中的機器                         |
 | `/settings/server/sandbox`     | 沙箱執行授權：代理可從其在你程式庫中的工作副本執行的程式 |
 | `/settings/server/diagnostics` | 診斷與私隱：沙箱、嵌入、日誌記錄、當機報告 |
+| `/settings/server/people`      | 本伺服器上的人員，以及每個地址是否已確認（僅限伺服器擁有者）       |
+| `/settings/server/audit`       | 稽核軌跡：伺服器的，以及你管理的工作區的                            |
 | `/settings/server/backup`      | 備份與還原：安裝快照、按工作區匯出、匯入與刪除                                        |
 | `/settings/server/about`       | 關於與更新                                                                            |
 

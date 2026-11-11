@@ -718,8 +718,8 @@ class TranscriptToolList extends StatelessWidget {
 ///
 /// Resolution goes through the child run's recorded `spawnToolCallId`, so a
 /// parent that fired several `task` calls in one turn still links each cell to
-/// the right child. A transcript recorded before spawn correlation existed (or
-/// whose child row has since been pruned) resolves to null and stays inert.
+/// the right child. A call no child run records (or whose child row has since
+/// been pruned) resolves to null and stays inert.
 class _SubagentChip extends ConsumerWidget {
   const _SubagentChip({required this.segment, required this.label});
 

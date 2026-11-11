@@ -2,7 +2,7 @@
 title: Kebenaran — siapa boleh buat apa, dan bagaimana anda membuktikannya
 description: Katalog keizinan di sebalik peranan Control Center, jejak audit yang mengesan pengusikan bagi setiap keputusan kebenaran, dan kawalan seluruh pemasangan yang boleh dipasak oleh operator.
 slug: ms-MY/manual-pengguna/konsep/kebenaran
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center menjawab dua soalan kebenaran, dan kedua-duanya memang
@@ -62,19 +62,102 @@ sebagai `custom:<id>`, dan klien yang versinya terlalu lama untuk memahami
 nilai itu kembali kepada Tetamu dan tidak meneka.
 
 Di bawah peranan terletak **pemberian setiap repositori** (`none` / `read` /
-`review` / `write`): keahlian ruang kerja tidak pernah secara senyap memberi
+`review` / `write`, lihat [Mengubah kod memerlukan geran tulis](#mengubah-kod-memerlukan-geran-tulis)):
+keahlian ruang kerja tidak pernah secara senyap memberi
 keistimewaan melebihi hos kod. Setiap permukaan yang mendedahkan kod
 menyemaknya — termasuk yang mencapai kod secara menyamping, seperti terminal
 atau sesi editor yang dibuka pada worktree sesuatu ruang.
 
-## Autoriti pelayan
+## Kod mengikut forge
 
-Sesetengah operasi langsung bukan tentang ruang kerja: tetapan seluruh
-pemasangan, konfigurasi SSO, kelayakan penyedia, pengurusan model, sandaran
-seluruh pemasangan. Operasi itu mengisytiharkan **autoriti pelayan** dan
-ditolak untuk semua orang kecuali operator pemasangan tersebut (pemilik
-pelayan yang direkodkan). Sengaja hanya wujud satu identiti operator dan satu
-takrifan bagi identiti itu.
+Geran sahaja tidak membuka kod sesebuah repositori. Untuk melihat failnya, diff atau hasil
+carian, atau untuk membuka terminal ke atasnya, ahli memerlukan geran Control Center **dan**
+log masuk forge mereka sendiri mesti boleh membaca repositori itu. Admin ruang kerja tidak
+dikecualikan; pemilik pelayan dikecualikan, kerana checkout itu berada pada mesin mereka.
+Repositori tanpa remote forge hanya memerlukan geran.
+
+- Apabila admin memberikan repositori kepada seseorang yang akaun forgenya tidak boleh
+  membacanya, geran itu disimpan dan admin melihat amaran.
+- Apabila forge tidak dapat dihubungi untuk menyemak, jawapannya ialah tidak, bukan tekaan:
+  orang itu melihat "Tidak dapat mengesahkan akses GitHub anda. Cuba lagi." (dengan nama forge
+  mereka) dan mencuba semula kemudian.
+- Permintaan tarik dan segala yang dibuat daripadanya mengikut peraturan yang sama.
+
+### Mengubah kod memerlukan geran tulis
+
+Geran repositori mempunyai tiga tahap, dan setiap satu merangkumi tahap sebelumnya:
+
+- **read**: lihat fail, diff dan hasil carian repositori, dengan syarat log masuk forge anda
+  sendiri juga boleh membacanya.
+- **review**: baca, serta meluluskan, meminta perubahan dan tindakan semakan lain pada PR-nya.
+- **write**: semakan, serta mengubah kod dan memacu larian ejen yang menulis kepada repositori.
+  Mengubah kod meliputi menyimpan atau membatalkan fail dalam editor, menyegerakkan worktree
+  ke kepala PR, commit dan push, menerbitkan cawangan, serta tindakan timbunan yang memotong,
+  menyemak atau menerbitkan sebahagian.
+
+Setiap push yang dibuat untuk seseorang, sama ada oleh mereka sendiri atau oleh larian ejen yang mereka minta, menyemak geran tulis mereka pada repositori itu pada masa push dibuat, di GitHub, GitLab dan Bitbucket sama sahaja. Menerbitkan timbunan menyemak setiap repositori dalam timbunan itu sebelum ia men-push mana-mana daripadanya.
+
+Penolakan menamakan geran yang tiada. Tanpa akses baca, apl berkata "Anda tidak mempunyai akses
+baca untuk repositori ini. Admin ruang kerja boleh memberikannya." Dengan baca tetapi bukan tulis,
+ia berkata "Anda boleh membaca repositori ini tetapi tidak boleh mengubahnya. Admin ruang kerja boleh memberikan akses tulis."
+
+### Ruang mengikut repositorinya
+
+Apa yang ejen tulis tentang kod turut mengikut kod. Kandungan sesuatu ruang (mesej, transkrip
+dan output alatnya, hasil carian, log larian, todo, aktiviti dan pemberitahuan) membawa kod
+repositori yang diusahakannya, jadi ruang hanya dibuka untuk ahli yang memegang geran baca ke
+atas setiap repositori yang digunakan ruang itu, dan yang log masuk forge sendirinya boleh
+membacanya. Itu ialah repositori yang dipilih untuknya, atau semua repositori ruang kerja apabila
+tiada pilihan direkodkan untuk ruang itu. Ruang yang dicipta tanpa repositori terbuka kepada
+setiap ahli.
+
+Ruang yang seseorang tidak boleh buka tidak disenaraikan untuk mereka di mana-mana, termasuk
+carian, log larian, todo, aktiviti dan pemberitahuan. Admin ruang kerja memegang setiap geran
+tetapi tidak dikecualikan daripada separuh forge; pemilik pelayan dikecualikan.
+
+Untuk perbualan yang semua orang patut boleh baca, cipta ruang tanpa repositori, atau hanya
+dengan repositori yang semua orang boleh baca.
+
+## Pemilik pelayan
+
+Orang yang menyediakan pelayan ialah **pemiliknya**. Pelayan merekodkan mereka sekali, pada
+permulaan pertama, dan tiada apa yang dihantar melalui rangkaian mengubahnya. Admin ruang kerja,
+atau pemilik ruang kerja, bukan pemilik pelayan: sesiapa boleh diberi ruang kerja, tetapi mesin
+pelayan hanya mempunyai satu pemilik.
+
+**Tiada apa-apa berjalan pada mesin pelayan sendiri di luar sandbox melainkan pemilik pelayan
+memulakannya atau meluluskan jenis pelaksanaan hos itu.** Secara konkrit, hanya pemilik pelayan
+boleh:
+
+- Mencipta ruang kerja. Orang lain melihat skrin yang meminta mereka supaya pemilik mencipta
+  satu atau admin ruang kerja menjemput mereka.
+- Membuka shell hos dalam terminal yang dihoskan pada pelayan. Orang lain mendapat terminal
+  yang dikotak pasir, dengan had ejen, dalam direktori ruang kerja itu sendiri.
+- Membuka editor kod terbenam. Ia berjalan sebagai pengguna pelayan itu sendiri, dengan terminal,
+  tugas dan sambungannya.
+- Membuka PR atau worktree perbualan dalam editor natif. Editor itu dimulakan pada skrin pelayan
+  sendiri, sebagai pengguna pelayan.
+- Menyimpan atau meluluskan definisi [persekitaran](/ms-MY/manual-pengguna/panduan-cara/persekitaran/) yang menjalankan
+  apa-apa pada hos: penempatan hos, semakan yang menjalankan arahan, atau tugas peruntukan atau
+  arkib.
+- Menjalankan ejen pada pelayan yang mesinnya tiada sandbox. Larian orang lain ditolak di sana,
+  melainkan pemilik memulakan pelayan dengan `--sandbox off`, yang menjalankan ejen setiap ahli
+  tanpa sekatan (lihat [Ejen pada hos tanpa sandbox](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/#ejen-pada-hos-tanpa-kotak-pasir)).
+- Memautkan checkout repositori yang berada di luar storan ruang kerja itu sendiri, mengesahkan
+  satu yang dipautkan sebelum peraturan itu, dan melayari folder pelayan apabila menambah
+  repositori (lihat [Tambah repositori](/ms-MY/manual-pengguna/panduan-cara/tambah-repositori/)).
+- Melihat dan menghentikan setiap proses ejen yang berjalan pada pelayan. Orang lain hanya melihat
+  dan menghentikan larian ejen langsung dalam ruang kerja yang mereka ahli.
+- Membenarkan ejen menggunakan pelayan MCP yang dikonfigurasi dalam alat pengguna pelayan itu
+  sendiri (Claude, Codex, Cursor dan selebihnya). Hanya larian harness terbina yang pemilik
+  bertanggungjawab ke atasnya mendapatnya; lihat [Pelayan MCP peribadi kekal milik pemilik](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/#pelayan-mcp-peribadi-kekal-milik-pemilik).
+- Mengesahkan alamat e-mel seseorang, supaya log masuk tunggal boleh memadankannya (lihat
+  [Sambung penyedia OpenID Connect](/ms-MY/manual-pengguna/panduan-cara/sso-oidc/#bagaimana-log-masuk-memadankan-akaun-sedia-ada)).
+- Menukar tetapan seluruh pemasangan: SSO, kelayakan penyedia, endpoint MCP dan tokennya,
+  pengurusan model, Connect, dan sandaran seluruh pemasangan. Operasi ini mengisytiharkan
+  **autoriti pelayan** dan ditolak untuk semua orang lain.
+
+Sengaja hanya wujud satu identiti operator dan satu takrifan bagi identiti itu.
 
 ## Jejak audit
 

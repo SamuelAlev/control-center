@@ -148,11 +148,8 @@ class _ConditionConfigEditorState extends State<ConditionConfigEditor> {
       _defaultCtrl.text = (extras['default'] as String?) ?? '';
       return;
     }
-    // Legacy top-level comparison (left/op/right).
+    // No condition yet: start on an empty comparison.
     _mode = _ConditionMode.comparison;
-    _leftCtrl.text = (extras['left'] as String?) ?? '';
-    _op = (extras['op'] as String?) ?? 'exists';
-    _rightCtrl.text = _stringify(extras['right']);
   }
 
   List<String> _pathList(Object? paths, Object? singlePath) => [
@@ -198,10 +195,7 @@ class _ConditionConfigEditorState extends State<ConditionConfigEditor> {
       ..remove('predicate')
       ..remove('switchKey')
       ..remove('cases')
-      ..remove('default')
-      ..remove('left')
-      ..remove('op')
-      ..remove('right');
+      ..remove('default');
     final baseKey = _baseKeyCtrl.text.trim().isEmpty
         ? 'repo_local_path'
         : _baseKeyCtrl.text.trim();
@@ -365,7 +359,10 @@ class _ConditionConfigEditorState extends State<ConditionConfigEditor> {
           const SizedBox(height: 12),
           _Labeled(
             label: l10n.conditionSwitchKey,
-            child: CcTextField(controller: _switchKeyCtrl, hintText: 'pr_class'),
+            child: CcTextField(
+              controller: _switchKeyCtrl,
+              hintText: 'pr_class',
+            ),
           ),
           const SizedBox(height: 12),
           _Labeled(

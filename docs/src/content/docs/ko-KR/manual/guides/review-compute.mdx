@@ -2,7 +2,7 @@
 title: 리뷰 컴퓨트(코호트, 축, 결정적 diff)
 description: 리뷰 컴퓨트 패스가 서버 측에서 만들어 내는 것 — 코호트, API 계약 및 시각적 diff, 축별 게이트 — 과 그것이 리뷰 탭에 어떻게 합쳐지는지 설명합니다.
 slug: ko-KR/매뉴얼/사용-가이드/리뷰-컴퓨트
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 PR의 **리뷰** 탭은 리뷰 파이프라인이 작동하는 동안에는 실시간 진행 상황이고,
@@ -14,8 +14,7 @@ PR의 **리뷰** 탭은 리뷰 파이프라인이 작동하는 동안에는 실�
 그 탭 뒤에서 `cc_server`는 파일 코호트를 만들고 결정적 축을 실행하며, 이를
 `review_studio.*` RPC 작업(`cohorts`, `blastRadius`, `cohortImpact`,
 `ciSignals`, `dependencyDiffs`, `setContractDecision`, `approveVisual`,
-`compute` 및 그에 대응하는 `watch*` 쌍)으로 제공합니다. 여전히
-`pr.reviewStudio`를 이름에 둔 영속 레이아웃도 이 같은 리뷰 탭을 엽니다.
+`compute` 및 그에 대응하는 `watch*` 쌍)으로 제공합니다.
 
 리뷰 탭에서:
 
@@ -76,6 +75,8 @@ PR이 Widgetbook 앱이 있는 Flutter 저장소의 UI 컴포넌트를 변경하
 PR의 base와 head 워크트리에서 헤드리스 `flutter test` 골든 패스로 변경된
 컴포넌트를 이전과 이후 상태로 렌더링한 다음 픽셀을 diff합니다.
 
+이 테스트들은 풀 리퀘스트 자체의 코드이므로 에이전트의 도구 프로세스처럼 실행됩니다. 서버가 에이전트를 샌드박스에 넣는 경우에는 샌드박스 안에서, 서버 소유자가 샌드박스를 끈 경우에는 샌드박스 없이, 샌드박스가 없는 경우에는 서버 소유자가 책임지는 요청에 한해서만 실행됩니다. 그 밖의 사용자에게 이 축은 "서버에 샌드박스가 없고, PR의 테스트를 샌드박스 없이 실행할 수 있는 것은 서버 소유자뿐입니다"라는 이유와 함께 **unavailable**로 보고됩니다.
+
 :::note[서버 호스트에 Flutter SDK가 필요합니다]
 순수 Dart 서버는 Flutter 위젯을 프로세스 내에서 렌더링할 수 없으므로
 `flutter test`를 외부 프로세스로 실행합니다. SDK는 `cc_server`를 실행하는
@@ -86,9 +87,9 @@ PR의 base와 head 워크트리에서 헤드리스 `flutter test` 골든 패스�
 
 **changed** 또는 **removed**로 표시된 스냅숏은 승인될 때까지 시각적 게이트를
 붙잡아 둡니다. **unchanged**, **added**, **approved** 스냅숏은 게이트를
-통과시킵니다. 실행 불가는 다음 네 가지 이유 중 하나입니다. 호스트에 Flutter
-SDK 없음, 저장소에 Widgetbook 앱 없음, 골든 테스트 가능한 사용 사례 없음, 또는
-골든 하네스 오류.
+통과시킵니다. 실행 불가는 다음 다섯 가지 이유 중 하나입니다. 호스트에 Flutter
+SDK 없음, 저장소에 Widgetbook 앱 없음, 골든 테스트 가능한 사용 사례 없음, 골든
+하네스 오류, 또는 서버 소유자가 책임지지 않는 요청에 대한 샌드박스 없음.
 
 의도한 변경을 승인하는 것은 `review_studio.approveVisual`입니다.
 

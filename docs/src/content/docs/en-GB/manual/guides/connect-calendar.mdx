@@ -2,7 +2,7 @@
 title: Connect a Google Calendar
 description: Connect Google Calendar to a workspace, manage multiple accounts and reconnect when a sign-in expires.
 slug: en-GB/manual/guides/connect-calendar
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 This guide shows you how to connect Google Calendar to a workspace. It's
@@ -21,7 +21,7 @@ for the full picture.
 ## Connect an account
 
 1. Open **Calendar** in the sidebar.
-2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → Workspace → Profile & identity**, under **Google Calendar**.)
+2. Click **Add calendar account** in the calendar sidebar. (The same section lives at **Settings → You → Profile**, under **Google Calendar**.)
 3. Click **Connect Google Calendar**. Your browser opens Google's consent page.
 4. Choose the account and approve access to your calendar events and calendar list.
 
@@ -90,13 +90,13 @@ another machine.
 
 ## Disconnect an account
 
-From the calendar sidebar (or **Settings → Workspace → Profile & identity**), click
+From the calendar sidebar (or **Settings → You → Profile**), click
 **Disconnect** on the account. This deletes its synced events and clears its
 stored credential on the server.
 
 ## Bring your own Google client
 
-Run your own Google client when you chose **Use my own apps**. The server's own client applies only then: with Control Center's or a custom Connect, Connect runs every lane, Google included, and the server's client stays saved but unused. To have the consent screen name your own project while the server uses Connect, give the workspace its own client ([below](#give-one-workspace-its-own-google-client)); that applies in every mode.
+Run your own Google client when you chose **Use my own apps**. The server's own client applies only then: with Control Center's or a custom Connect, Connect runs every lane, Google included, and the server's client stays saved but unused. To have the consent screen name your own project while the server uses Connect, put the workspace on its own apps and give it its own client ([below](#give-one-workspace-its-own-google-client)); that applies whatever the server's mode.
 
 1. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the **Google Calendar API** and configure the **OAuth consent screen**, adding the `calendar.events`, `calendar.calendarlist.readonly`, `openid` and `email` scopes. While the app is unverified, add yourself as a **test user**.
 2. Create an **OAuth client ID** of application type **Web application**.
@@ -117,14 +117,13 @@ belongs to the client that issued it.
 A workspace can connect Google Calendar through a client of its own instead of the server's. Only a workspace admin or owner can set it up.
 
 1. Create a Google **Web application** client as in steps 1 and 2 above
-2. Go to **Settings → Workspace → General → Provider apps** and open **Google Calendar**
-3. Choose **Use this workspace's own app**
-4. Add the redirect URI the row shows under **Callback URL** to the client, verbatim
-5. Paste the **Client id** and **Client secret**
+2. Go to **Settings → Workspace → Integrations**. On the **Control Center Connect** card, choose **Use my own apps** and click **Apply**
+3. Under Calendar, the **Google Calendar app** card appears. Add the redirect URI it shows under **Callback URL** to the client, verbatim
+4. Paste the **Client id** and **Client secret**
 
-Calendar accounts connected in this workspace then go through that client, whichever way the server signs people in. It never falls back to the server's client or to Connect: until both fields are set, Google Calendar is off in this workspace and the row says what is missing. The secret never leaves the server.
+Calendar accounts connected in this workspace then go through that client, whichever way the server signs people in. It never falls back to the server's client or to Connect: until both fields are set, Google Calendar is off in this workspace and the card says what is missing. The secret never leaves the server.
 
-Switching between the server's client and the workspace's, or changing the workspace's client id, marks every Google account in this workspace for reconnection. **Use this server's app** deletes the workspace's saved fields. Other workspaces on the server are not affected.
+**Use my own apps** covers every provider at once: GitHub, Linear and GIF search also run only on the workspace's own apps. Switching the workspace's sign-in apps, or changing the workspace's client id, marks every Google account in this workspace for reconnection. The saved fields stay when the workspace switches back to another choice, but are used only under **Use my own apps**. Other workspaces on the server are not affected.
 
 ## Troubleshooting
 
@@ -135,8 +134,8 @@ Switching between the server's client and the workspace's, or changing the works
 | `invalid_client` from Google                        | The id and secret are from different clients, or the client was deleted                                                            |
 | Approval succeeds but sync is empty                 | Your account is not a **test user** on the consent screen, or a requested scope was not granted                                    |
 | The dialog says the code does not match             | Type the 8 characters exactly as the browser shows them. Five wrong codes end the sign-in; start again                               |
-| "Couldn't update your response", or booking, moving or deleting fails          | The account was connected with the old read-only scope. Reconnect it; a calendar shared with you read-only also refuses writes                                                                          |
-| Everybody has to reconnect                          | The server's or the workspace's Google client changed, or the server's Connect choice or key changed. See [Reconnect an expired account](#reconnect-an-expired-account) |
+| "Couldn't update your response", or booking, moving or deleting fails          | The account did not grant calendar write access. Reconnect it and approve every requested scope; a calendar shared with you read-only also refuses writes                                               |
+| Everybody has to reconnect                          | The server's or the workspace's Google client changed, or the server's or the workspace's Connect choice, or the server's key, changed. See [Reconnect an expired account](#reconnect-an-expired-account) |
 
 ## Related guides
 

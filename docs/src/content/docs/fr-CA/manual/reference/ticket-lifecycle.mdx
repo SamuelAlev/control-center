@@ -2,7 +2,7 @@
 title: Cycle de vie des tickets
 description: Champs, statuts, transitions et relations des tickets, ainsi que le point de passage des mutations.
 slug: fr-CA/manuel/reference/cycle-de-vie-des-tickets
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Statuts des tickets
@@ -117,7 +117,7 @@ L’agrégat couvre deux préoccupations sur une seule ligne. Le **miroir** (fou
 | `projectId`              | `String?`                  | Projet propriétaire ; jamais transmis à un système distant                                  |
 | `assignedAgentId`        | `String?`                  | Identifiant du principal attribué (métadonnées seulement — attribuer ne lance rien)        |
 | `assigneeType`           | `PrincipalType`            | Type de principal que désigne `assignedAgentId` — `user` ou `agent` (par défaut `agent`)   |
-| `createdByType`          | `PrincipalType?`           | Type de principal ayant créé le ticket (`user` ou `agent`) ; nul pour les lignes héritées ou système |
+| `createdByType`          | `PrincipalType?`           | Type de principal ayant créé le ticket (`user` ou `agent`) ; nul pour les lignes créées par le système |
 | `createdById`            | `String?`                  | Identifiant du principal créateur                                                          |
 | `assignedTeamId`         | `String?`                  | Équipe attribuée (métadonnées seulement)                                                   |
 | `delegatedByAgentId`     | `String?`                  | Agent qui a délégué ce ticket                                                              |

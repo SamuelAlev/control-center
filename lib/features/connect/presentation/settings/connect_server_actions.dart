@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:cc_data/cc_data.dart' show ConnectModeSetting, ConnectStatus;
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/connect/providers/connect_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
@@ -11,11 +13,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The command-line equivalent of this card, for a headless server.
 const String kConnectCliHint =
-    'cc_server connect status | enable [--url] | disable | rotate-key';
+    'cc_server connect status | enable [--url] | disable';
 
 /// This server's identity on Connect and the operations on it: the install
 /// id to hand to an allowlist or an org owner, a configuration test, a key
-/// rotation, and the CLI that does the same from a terminal.
+/// rotation (here only), and the CLI for the rest from a terminal.
 class ConnectServerActions extends ConsumerStatefulWidget {
   /// Creates the actions.
   const ConnectServerActions({super.key, required this.status});
@@ -81,24 +83,82 @@ class _ConnectServerActionsState extends ConsumerState<ConnectServerActions> {
     if (confirmed != true || !mounted) {
       return;
     }
+    await _rotateKey(force: false);
+  }
+
+  /// A Connect could not retire the old key, so nothing changed. Shows the
+  /// server's account of which Connect failed and how, and offers to rotate
+  /// anyway, saying what that leaves behind.
+  Future<void> _offerForce(String reason) async {
+    final l10n = AppLocalizations.of(context);
+    final force = await showCcDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CcDialog(
+        title: l10n.connectRotateKeyRetireFailedTitle,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(reason),
+            const SizedBox(height: AppSpacing.md),
+            Text(l10n.connectRotateKeyForceBody),
+          ],
+        ),
+        actions: [
+          CcButton(
+            variant: CcButtonVariant.secondary,
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
+          ),
+          CcButton(
+            variant: CcButtonVariant.destructive,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.connectRotateKeyAnyway),
+          ),
+        ],
+      ),
+    );
+    if (force == true && mounted) {
+      await _rotateKey(force: true);
+    }
+  }
+
+  Future<void> _rotateKey({required bool force}) async {
+    final l10n = AppLocalizations.of(context);
     setState(() => _rotating = true);
+    String? retireFailure;
     try {
-      await ConnectSettingsActions(ref).rotateKey();
+      await ConnectSettingsActions(ref).rotateKey(force: force);
       if (mounted) {
         CcToastScope.maybeOf(
           context,
         )?.show(l10n.connectRotateKeyDone, variant: CcToastVariant.success);
       }
     } on Object catch (e) {
-      if (mounted) {
-        CcToastScope.maybeOf(
-          context,
-        )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      // A Connect that could not retire the old key answers `validation`,
+      // naming each Connect and its error code: offer to rotate anyway.
+      if (!force && e is RemoteRpcException) {
+        if (e.code == RpcErrorCodes.validation) {
+          retireFailure = e.message;
+        }
+      }
+      if (retireFailure == null && mounted) {
+        // Nothing changed: the rotation was refused whole. The button stays
+        // for another try.
+        CcToastScope.maybeOf(context)?.show(
+          l10n.connectRotateKeyFailed(
+            e is RemoteRpcException ? e.message : '$e',
+          ),
+          variant: CcToastVariant.danger,
+        );
       }
     } finally {
       if (mounted) {
         setState(() => _rotating = false);
       }
+    }
+    if (retireFailure case final reason? when mounted) {
+      await _offerForce(reason);
     }
   }
 

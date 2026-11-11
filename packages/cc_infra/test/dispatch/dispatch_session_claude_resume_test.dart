@@ -4,7 +4,6 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/task_lifecycle_events.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/llm_call_purpose.dart';
@@ -20,9 +19,11 @@ import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_infra/src/dispatch/backends/cli_backends.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:test/test.dart';
@@ -143,24 +144,6 @@ String _result({
       },
 });
 
-class _NoopBroker implements CredentialBrokerPort {
-  final revoked = <String>[];
-
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async => const ScopedCredentials(handle: 'h', environment: {});
-
-  @override
-  Future<void> revoke(String handle) async => revoked.add(handle);
-}
-
 class _UnusedAgentRepo implements AgentRepository {
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -242,11 +225,9 @@ void main() {
     String? claudeConfigDir,
     String agentDirHostPath = '/work/tree',
     DateTime? runStartedAt,
-    bool creditAgent = true,
+    String requesterName = 'Requesting User',
     bool hasGitIdentity = true,
-    Object? attributionFailure,
     Object? identityFailure,
-    _NoopBroker? broker,
     DomainEventBus? eventBus,
     Map<String, String> adapterEnv = const {},
     Map<String, String> callerEnv = const {},
@@ -254,29 +235,25 @@ void main() {
         ClaudeMcpDiscoveryCachePolicy.disabled,
   }) => DispatchSession(
     deps: SandboxDispatchDeps(
+      hostExecution: const HostExecutionGate(
+        posture: HostExecutionPosture.offByOwner,
+      ),
       sandbox: sandbox,
-      broker: broker ?? _NoopBroker(),
       agentRepo: _UnusedAgentRepo(),
       runLogRepo: null,
       eventBus: eventBus,
       backendRegistry: BackendRegistry({'claude': const ClaudeCliBackend()}),
       claudeSessionStore: store,
       claudeMcpDiscoveryCache: discoveryCache,
-      resolveAgentAttribution: (_, {workspaceId}) async {
-        if (attributionFailure != null) {
-          throw attributionFailure;
-        }
-        return creditAgent;
-      },
-      resolveCommitIdentity: (_, {workspaceId}) async {
+      resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async {
         if (identityFailure != null) {
           throw identityFailure;
         }
         return hasGitIdentity
-            ? AgentCommitIdentity.owner(
-                name: 'Requesting User',
+            ? AgentCommitIdentity.person((
+                name: requesterName,
                 email: 'requester@example.test',
-              )
+              ), creditAgent: true)
             : null;
       },
     ),
@@ -352,126 +329,110 @@ void main() {
     });
   });
 
-  for (final creditAgent in [true, false]) {
-    test(
-      'commits belong to the requester with agent credit $creditAgent',
-      () async {
-        final sandbox = _ScriptedClaude();
-        await runAnswering(
-          sandbox,
-          buildSession(
-            sandbox,
-            store: InMemoryClaudeNativeSessionStore(),
-            creditAgent: creditAgent,
-            callerEnv: const {
-              'GIT_AUTHOR_NAME': 'Old Agent',
-              'GIT_AUTHOR_EMAIL': 'old@example.test',
-              'GIT_COMMITTER_NAME': 'Old Agent',
-              'GIT_COMMITTER_EMAIL': 'old@example.test',
-              'CC_GIT_COAUTHOR_TRAILER':
-                  'Co-Authored-By: Old Agent <old@example.test>',
-            },
-            adapterEnv: const {
-              'GIT_AUTHOR_NAME': 'Claude',
-              'GIT_COMMITTER_EMAIL': 'claude@example.test',
-            },
-          ),
-        );
-        Future<String> git(List<String> args) async {
-          final result = await Process.run(
-            'git',
-            args,
-            workingDirectory: temp.path,
-            environment: sandbox.env,
-          );
-          expect(result.exitCode, 0, reason: '${result.stderr}');
-          return '${result.stdout}'.trim();
-        }
-
-        await git(['init', '--quiet']);
-        final trailer = sandbox.env![DispatchSession.coAuthorTrailerEnvKey]!;
-        await git([
-          '-c',
-          'commit.gpgsign=false',
-          '-c',
-          'core.hooksPath=${temp.path}/no-hooks',
-          'commit',
-          '--allow-empty',
-          '--quiet',
-          '-m',
-          'Requester change',
-          if (trailer.isNotEmpty) ...['-m', trailer],
-        ]);
-        expect(
-          await git(['log', '-1', '--format=%an <%ae>%n%cn <%ce>%n%B']),
-          'Requesting User <requester@example.test>\n'
-          'Requesting User <requester@example.test>\n'
-          'Requester change'
-          '${creditAgent ? '\n\nCo-Authored-By: Control Center <hi@usectrl.dev>' : ''}',
-        );
-      },
+  test('commits are authored and committed by the requester and credit '
+      'Control Center', () async {
+    final sandbox = _ScriptedClaude();
+    await runAnswering(
+      sandbox,
+      buildSession(
+        sandbox,
+        store: InMemoryClaudeNativeSessionStore(),
+        callerEnv: const {
+          'GIT_AUTHOR_NAME': 'Old Agent',
+          'GIT_AUTHOR_EMAIL': 'old@example.test',
+          'GIT_COMMITTER_NAME': 'Old Agent',
+          'GIT_COMMITTER_EMAIL': 'old@example.test',
+          'CC_GIT_COAUTHOR_TRAILER':
+              'Co-Authored-By: Old Agent <old@example.test>',
+        },
+        adapterEnv: const {
+          'GIT_AUTHOR_NAME': 'Claude',
+          'GIT_COMMITTER_EMAIL': 'claude@example.test',
+        },
+      ),
     );
-  }
-
-  test(
-    'changing attribution forks a native session and removes old credit',
-    () async {
-      final store = InMemoryClaudeNativeSessionStore();
-      final enabled = _ScriptedClaude();
-      await runAnswering(
-        enabled,
-        buildSession(enabled, store: store, promptParts: partsOf('first')),
+    Future<String> git(List<String> args) async {
+      final result = await Process.run(
+        'git',
+        args,
+        workingDirectory: temp.path,
+        environment: sandbox.env,
       );
-      final disabled = _ScriptedClaude();
-      await runAnswering(
-        disabled,
-        buildSession(
-          disabled,
-          store: store,
-          promptParts: partsOf('second'),
-          creditAgent: false,
-        ),
-        sessionId: 'sess-B',
-      );
-      expect(disabled.argv, isNot(contains('--resume')));
-    },
-  );
-
-  for (final creditAgent in [true, false]) {
-    for (final failure in ['settings', 'missing identity', 'identity lookup']) {
-      test('$failure failure releases credentials and fails the task '
-          '(agent credit: $creditAgent)', () async {
-        final sandbox = _ScriptedClaude();
-        final broker = _NoopBroker();
-        final bus = DomainEventBus();
-        final lifecycle = <TaskLifecycleEvent>[];
-        final subscription = bus.on<TaskLifecycleEvent>().listen(lifecycle.add);
-        addTearDown(subscription.cancel);
-        addTearDown(bus.dispose);
-        final session = buildSession(
-          sandbox,
-          store: InMemoryClaudeNativeSessionStore(),
-          creditAgent: creditAgent,
-          hasGitIdentity: failure != 'missing identity',
-          attributionFailure: failure == 'settings'
-              ? StateError('Settings unavailable')
-              : null,
-          identityFailure: failure == 'identity lookup'
-              ? StateError('Identity unavailable')
-              : null,
-          broker: broker,
-          eventBus: bus,
-        );
-        final events = session.controller.stream.toList();
-        await session.run();
-        await events;
-        await settle();
-        expect(sandbox.argv, isEmpty);
-        expect(broker.revoked, ['h']);
-        expect(lifecycle.whereType<TaskFailed>(), hasLength(1));
-        expect(lifecycle.whereType<TaskCompleted>(), isEmpty);
-      });
+      expect(result.exitCode, 0, reason: '${result.stderr}');
+      return '${result.stdout}'.trim();
     }
+
+    await git(['init', '--quiet']);
+    final trailer = sandbox.env![DispatchSession.coAuthorTrailerEnvKey]!;
+    expect(trailer, 'Co-Authored-By: Control Center <hi@usectrl.dev>');
+    await git([
+      '-c',
+      'commit.gpgsign=false',
+      '-c',
+      'core.hooksPath=${temp.path}/no-hooks',
+      'commit',
+      '--allow-empty',
+      '--quiet',
+      '-m',
+      'Requester change',
+      '-m',
+      trailer,
+    ]);
+    expect(
+      await git(['log', '-1', '--format=%an <%ae>%n%cn <%ce>%n%B']),
+      'Requesting User <requester@example.test>\n'
+      'Requesting User <requester@example.test>\n'
+      'Requester change\n\n'
+      'Co-Authored-By: Control Center <hi@usectrl.dev>',
+    );
+  });
+
+  test('a different requester forks the native session', () async {
+    final store = InMemoryClaudeNativeSessionStore();
+    final first = _ScriptedClaude();
+    await runAnswering(
+      first,
+      buildSession(first, store: store, promptParts: partsOf('first')),
+    );
+    final second = _ScriptedClaude();
+    await runAnswering(
+      second,
+      buildSession(
+        second,
+        store: store,
+        promptParts: partsOf('second'),
+        requesterName: 'Someone Else',
+      ),
+      sessionId: 'sess-B',
+    );
+    expect(second.argv, isNot(contains('--resume')));
+  });
+
+  for (final failure in ['missing identity', 'identity lookup']) {
+    test('$failure failure fails the task before anything runs', () async {
+      final sandbox = _ScriptedClaude();
+      final bus = DomainEventBus();
+      final lifecycle = <TaskLifecycleEvent>[];
+      final subscription = bus.on<TaskLifecycleEvent>().listen(lifecycle.add);
+      addTearDown(subscription.cancel);
+      addTearDown(bus.dispose);
+      final session = buildSession(
+        sandbox,
+        store: InMemoryClaudeNativeSessionStore(),
+        hasGitIdentity: failure != 'missing identity',
+        identityFailure: failure == 'identity lookup'
+            ? StateError('Identity unavailable')
+            : null,
+        eventBus: bus,
+      );
+      final events = session.controller.stream.toList();
+      await session.run();
+      await events;
+      await settle();
+      expect(sandbox.argv, isEmpty);
+      expect(lifecycle.whereType<TaskFailed>(), hasLength(1));
+      expect(lifecycle.whereType<TaskCompleted>(), isEmpty);
+    });
   }
 
   group('native session lineage', () {

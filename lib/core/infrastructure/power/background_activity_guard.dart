@@ -55,10 +55,10 @@ class MacosBackgroundActivityGuard implements BackgroundActivityGuard {
       await _channel.invokeMethod<void>(method, args);
       AppLog.i('BackgroundActivity', '$method ok');
     } on MissingPluginException {
-      // An older native build without the handler — degrade gracefully; the
-      // worst case is the pre-fix throttling behaviour. If you see this during a
-      // recording, the macOS app was NOT rebuilt after the App Nap fix landed
-      // (a hot restart does not recompile Swift) — do a full rebuild.
+      // A native build without the handler — degrade gracefully; the worst
+      // case is App Nap throttling. If you see this during a recording, the
+      // macOS app was not rebuilt (a hot restart does not recompile Swift) —
+      // do a full rebuild.
       AppLog.w(
         'BackgroundActivity',
         'native handler missing for $method — rebuild the macOS app '

@@ -45,6 +45,7 @@ void main() {
     exitPollInterval: const Duration(milliseconds: 1),
     reapGrace: const Duration(milliseconds: 1),
     logRingBytes: 4096,
+    groupPollInterval: const Duration(milliseconds: 1),
   );
 
   setUp(() {
@@ -266,6 +267,44 @@ void main() {
       await supervisor.waitReady('env-2', 'web');
       expect(state('web', 'env-1'), 'starting');
       expect(state('web', 'env-2'), 'ready');
+    });
+
+    group('a logMatch watch', () {
+      const probe = EnvironmentReadyProbe(logMatch: r'listening on \d+');
+
+      test('ends on the match', () async {
+        await supervisor.start(spec(ready: probe));
+        expect(supervisor.followsLogOf('env-1', 'web'), isTrue);
+        terminals.last.print('listening on 42000\r\n');
+        await supervisor.waitReady('env-1', 'web');
+        expect(supervisor.followsLogOf('env-1', 'web'), isFalse);
+      });
+
+      test('ends with its run, not one per respawn', () async {
+        await supervisor.start(spec(ready: probe));
+        for (final count in [2, 3, 4]) {
+          terminals.last.exit.complete(1);
+          await until(() => terminals.sessions.length == count);
+        }
+        // Only the current run's watch is left.
+        expect(supervisor.followsLogOf('env-1', 'web'), isTrue);
+        groups.onSignal = (group, signal) {
+          if (!terminals.last.exit.isCompleted) {
+            terminals.last.exit.complete(0);
+          }
+        };
+        await supervisor.stop('env-1', 'web');
+        expect(supervisor.followsLogOf('env-1', 'web'), isFalse);
+      });
+
+      test('ends when the process exits for good', () async {
+        await supervisor.start(
+          spec(ready: probe, restart: EnvironmentRestartPolicy.never),
+        );
+        terminals.last.exit.complete(1);
+        await until(() => state() == 'failed');
+        expect(supervisor.followsLogOf('env-1', 'web'), isFalse);
+      });
     });
 
     test('states say which environment they are about', () async {
@@ -667,9 +706,13 @@ void main() {
       isolateHome: isolateHome,
     );
 
+    /// Past the launch grace, so an exit is a person closing it.
+    void later() => now = now.add(const Duration(seconds: 6));
+
     test('runs, and exit 0 is closed', () async {
       await supervisor.start(app());
       expect(state('desktop'), 'running');
+      later();
       terminals.last.exit.complete(0);
       await until(() => state('desktop') == 'closed');
       await Future<void>.delayed(const Duration(milliseconds: 10));
@@ -679,6 +722,7 @@ void main() {
 
     test('a crash shows its last lines and does not restart', () async {
       await supervisor.start(app());
+      later();
       terminals.last.print('segfault at 0x0\r\n');
       terminals.last.exit.complete(-11);
       await until(() => state('desktop') == 'crashed');
@@ -699,11 +743,121 @@ void main() {
 
     test('Launch after closing works', () async {
       await supervisor.start(app());
+      later();
       terminals.last.exit.complete(0);
       await until(() => state('desktop') == 'closed');
       await supervisor.start(app());
       expect(terminals.sessions, hasLength(2));
       expect(state('desktop'), 'running');
+    });
+
+    group('a launcher that exits', () {
+      String pidFile() => '$stateDir/pids/desktop';
+
+      /// Starts the app, then ends its first process with [code] while
+      /// [rest] of its group runs on.
+      Future<int> handOff({List<int> rest = const [9001], int code = 0}) async {
+        await supervisor.start(app());
+        final pid = terminals.last.pid;
+        groups.groups[pid] = rest;
+        terminals.last.exit.complete(code);
+        await until(
+          () => supervisor.stateOf('env-1', 'desktop')!.sessionId == null,
+        );
+        return pid;
+      }
+
+      test('leaves the app running while its group has members', () async {
+        final exits = <EnvironmentProcessExit>[];
+        supervisor.exits.listen(exits.add);
+        final pid = await handOff();
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+        expect(state('desktop'), 'running');
+        expect(File(pidFile()).existsSync(), isTrue);
+        expect(supervisor.processOf('env-1', 'desktop')?.processGroup, pid);
+        expect(await supervisor.processTreeOf('env-1', 'desktop'), [9001]);
+        expect(groups.signals, isEmpty);
+        expect(exits, isEmpty);
+
+        later();
+        groups.groups.remove(pid);
+        await until(() => state('desktop') == 'closed');
+        expect(File(pidFile()).existsSync(), isFalse);
+        expect(supervisor.processOf('env-1', 'desktop'), isNull);
+        await until(() => exits.isNotEmpty);
+        expect(exits.single.state, 'closed');
+      });
+
+      test('a second Launch while the group runs does nothing', () async {
+        await handOff();
+        await supervisor.start(app());
+        expect(terminals.sessions, hasLength(1));
+        expect(state('desktop'), 'running');
+      });
+
+      test('stop signals the group the launcher left', () async {
+        final pid = await handOff();
+        groups.onSignal = (group, signal) => groups.groups.remove(group);
+        await supervisor.stop('env-1', 'desktop');
+        expect(groups.signals, [(pid, ProcessSignal.sigint)]);
+        expect(state('desktop'), 'closed');
+        expect(File(pidFile()).existsSync(), isFalse);
+      });
+
+      test('stop escalates when the group ignores SIGINT', () async {
+        final pid = await handOff();
+        groups.onSignal = (group, signal) {
+          if (signal == ProcessSignal.sigterm) {
+            groups.groups.remove(group);
+          }
+        };
+        await supervisor.stop('env-1', 'desktop');
+        expect(groups.signals, [
+          (pid, ProcessSignal.sigint),
+          (pid, ProcessSignal.sigterm),
+        ]);
+      });
+
+      test('the next boot reaps what it left', () async {
+        final pid = await handOff();
+        final next = build();
+        addTearDown(next.dispose);
+        final reaped = await next.reapSurvivors(stateDir);
+        expect(reaped, ['desktop']);
+        expect(groups.signals.first, (pid, ProcessSignal.sigterm));
+      });
+
+      test('a group gone within the launch grace failed', () async {
+        final pid = await handOff();
+        terminals.last.print('cannot open display\r\n');
+        groups.groups.remove(pid);
+        await until(() => state('desktop') == 'failed');
+        expect(
+          supervisor.stateOf('env-1', 'desktop')!.detail,
+          contains('Exited right after launch'),
+        );
+      });
+    });
+
+    test('gone right after launch is failed, not closed', () async {
+      await supervisor.start(app());
+      terminals.last.print('handing off to the running instance\r\n');
+      terminals.last.exit.complete(0);
+      await until(() => state('desktop') == 'failed');
+      final detail = supervisor.stateOf('env-1', 'desktop')!.detail!;
+      expect(detail, contains('Exited right after launch'));
+      expect(detail, contains('handing off to the running instance'));
+      expect(File('$stateDir/pids/desktop').existsSync(), isFalse);
+    });
+
+    test('a crash right after launch is failed with its code', () async {
+      await supervisor.start(app());
+      terminals.last.exit.complete(127);
+      await until(() => state('desktop') == 'failed');
+      expect(
+        supervisor.stateOf('env-1', 'desktop')!.detail,
+        contains('Exited right after launch with code 127'),
+      );
     });
 
     test('refused on a headless server', () async {
@@ -881,6 +1035,7 @@ void main() {
             sourcePath: '/src/shop',
           ),
         ],
+        defaultRole: 'app',
         ports: const {'web': 42000},
       ),
     );

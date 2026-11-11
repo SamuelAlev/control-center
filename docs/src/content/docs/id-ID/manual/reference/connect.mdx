@@ -1,15 +1,16 @@
 ---
 title: Referensi Control Center Connect
-description: Apa yang dilihat dan tidak pernah dilihat Connect, tiga mode, identitas instalasi, segel kredensial, kepercayaan konfigurasi, dan setiap pengaturan, operasi, serta kode status.
+description: Apa yang dilihat dan tidak pernah dilihat Connect, tiga mode, pilihan milik ruang kerja, identitas instalasi, segel kredensial, kepercayaan konfigurasi, dan setiap pengaturan, operasi, serta kode status.
 slug: id-ID/panduan-pengguna/referensi/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect menjalankan proses masuk penyedia untuk server yang belum mendaftarkan app
 mereka sendiri. Sebuah server memakai Connect yang dihosting Control Center, atau Connect yang dijalankan
 sebuah organisasi ([Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/)),
 atau tidak keduanya. Pilihannya ada di **Pengaturan → Server → Single sign-on → Control Center Connect**,
-perintah `cc_server connect`, atau `CC_CONNECT_URL`.
+perintah `cc_server connect`, atau `CC_CONNECT_URL`. Ruang kerja mengikutinya kecuali admin memilih hal lain
+untuk ruang kerja itu di **Pengaturan → Ruang kerja → Integrasi** ([Pilihan per ruang kerja](#pilihan-per-ruang-kerja)).
 
 ## Jalur
 
@@ -17,7 +18,7 @@ Setiap penyedia adalah satu jalur. Di bawah **Gunakan aplikasi saya sendiri** (a
 berjalan di app server sendiri ketika app itu sudah dikonfigurasi lengkap, jika tidak jalur itu tidak tersedia.
 Dengan Connect milik Control Center atau Connect kustom, Connect menjalankan setiap jalur yang dilayaninya: app
 server tetap tersimpan tetapi tidak dipakai untuk login, otomatisasi server, atau status yang dilaporkan server.
-App ruang kerja selalu didahulukan di semua mode.
+Ruang kerja yang memilih pilihannya sendiri menjalankan setiap jalur sesuai pilihan itu sebagai gantinya.
 
 | Jalur       | App milik sendiri memerlukan                    | Melalui Connect                                           |
 | ----------- | ----------------------------------------------- | --------------------------------------------------------- |
@@ -29,10 +30,9 @@ App ruang kerja selalu didahulukan di semua mode.
 | `klipy`     | `KLIPY_APP_KEY`                                 | Pencarian GIF, diproksikan oleh Connect                   |
 
 App milik sendiri yang hanya dikonfigurasi sebagian menjadikan jalurnya galat, tidak pernah diam-diam
-jatuh kembali ke Connect. Ruang kerja yang memakai GitHub App sendiri (**Pengaturan → Ruang kerja → Umum →
-Identitas GitHub**) tidak pernah melalui Connect untuk GitHub. Ruang kerja yang memakai Google, Linear, atau Klipy
-miliknya sendiri (**Pengaturan → Ruang kerja → Umum → Aplikasi penyedia**) tidak pernah melalui app server atau
-Connect untuk penyedia itu. Mengubah pilihan Connect tidak mengeluarkan siapa pun dari app milik ruang kerja.
+jatuh kembali ke Connect. Ruang kerja yang memakai **Gunakan aplikasi saya sendiri** tidak pernah melalui app
+server maupun Connect mana pun, untuk penyedia mana pun. Mengubah pilihan Connect server tidak mengeluarkan siapa
+pun dari ruang kerja yang membuat pilihannya sendiri.
 
 ## Apa yang dilihat Connect dan apa yang tidak pernah dilihatnya
 
@@ -40,16 +40,13 @@ Connect untuk penyedia itu. Mengubah pilihan Connect tidak mengeluarkan siapa pu
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Id instalasi server dan tanda tangan permintaan                                               | Kode sumber, isi repositori, diff, atau teks pull request             |
 | Akun penyedia yang masuk, selama proses masuk                                                 | Tiket, transkrip, atau apa pun di basis data ruang kerja              |
-| Ruang kerja mana yang dimiliki sebuah kredensial, sebagai id buram di dalam segel             | Kunci privat GitHub App: token repositori berasal dari proses masuk seseorang |
+| Ruang kerja mana yang dimiliki sebuah kredensial, sebagai id buram di dalam segel             | Rahasia app server sendiri: rahasia itu tidak pernah meninggalkan server |
 | Repositori yang diberi token GitHub satu-repositori                                           | Refresh token dalam keadaan tersimpan: hanya ada di dalam segel yang disimpan server |
-| Instalasi GitHub yang terikat ke server                                                       | Rahasia Linear: server menukar kode Linear sendiri                    |
+| Tim Slack yang terikat ke server                                                              | Rahasia Linear: server menukar kode Linear sendiri                    |
 | Istilah pencarian GIF, saat Connect memproksikan Klipy                                        | Kata sandi, kunci pairing, atau kunci penyedia model                  |
 | Referensi peristiwa Slack (team, kanal, id pesan) dan teks perintah slash                     | Teks pesan Slack: Connect membuangnya saat diterima, dan server membaca pesan dari Slack sendiri |
 
-Connect menyimpan state berumur pendek (proses masuk yang tertunda, nonce, cache) paling lama 15 menit.
-Satu-satunya catatan jangka panjangnya adalah pengikatan instalasi: server mana yang boleh memakai
-instalasi GitHub mana, dan setiap tim Slack terikat ke server mana. Galat membawa kode, tidak pernah
-respons penyedia, dan log hanya mencatat id instalasi sebagai hash berkunci.
+Connect menyimpan proses masuk yang tertunda, nonce, dan cache paling lama 10 menit, dan penghitung pemakaian per jam paling lama dua jam. Token GitHub satu-repositori yang dicetak sebagai seseorang tetap tercatat, tersegel untuk proses masuk yang memintanya, sampai kedaluwarsa (paling lama 8 jam), sehingga Connect dapat mengeluarkannya lagi dan mencabutnya saat diputuskan. Satu-satunya catatan jangka panjangnya adalah pengikatan Slack (server mana yang terikat ke setiap tim Slack) dan id instalasi yang sudah dipensiunkan. Galat membawa kode, tidak pernah respons penyedia. Log hanya mencatat id instalasi sebagai hash berkunci, dan token GitHub hanya sebagai `hashed_token` yang ditampilkan log audit organisasi GitHub untuknya, sehingga pemilik organisasi dapat mencocokkan keduanya.
 
 ## Mode
 
@@ -66,9 +63,35 @@ Pengaturan kemudian menampilkan kuncinya dan tidak dapat mengubahnya.
 Build ini tidak menyertakan kunci konfigurasi hosted, sehingga mode hosted melaporkan `hosted_unprovisioned`
 dan tidak melayani jalur apa pun. App milik sendiri dan Connect kustom tetap berfungsi.
 
+Connect yang dihosting berjalan dalam satu kontainer. Kunci segel dan kunci privat GitHub App bersama berupa variabel lingkungan di sana, bukan kunci di vault yang hanya menandatangani atau mendekripsi, seperti yang direkomendasikan GitHub untuk kunci privat App. Itu adalah celah yang diketahui pada penyiapan saat ini.
+
 Sebuah server membaca konfigurasi Connect paling sering setiap 10 menit dan menunggu paling lama 5 detik
 untuk setiap panggilan. Saat Connect tidak terjangkau, konfigurasi baik terakhir tetap dipakai dan Pengaturan
 menandainya sebagai usang.
+
+## Pilihan per ruang kerja
+
+**Pengaturan → Ruang kerja → Integrasi → Control Center Connect** menggantikan pilihan server untuk satu ruang
+kerja. Setiap anggota melihatnya dan melihat tempat setiap proses masuk berjalan; hanya admin ruang kerja yang
+dapat mengubahnya.
+
+| Pilihan                             | Perilaku                                                                                                                                                                                                    |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sama seperti server ini**         | Bawaan. Ruang kerja berjalan di apa pun yang dipilih pemilik server; opsi itu menyebutkannya                                                                                                                 |
+| **Gunakan aplikasi Control Center** | Connect hosted milik Control Center, apa pun yang digunakan server                                                                                                                                           |
+| **Gunakan aplikasi saya sendiri**   | Hanya app milik ruang kerja: GitHub App-nya, klien Google, aplikasi Linear, kunci Klipy, dan app Slack. Penyedia tanpa app di sini nonaktif; app yang hanya sebagian dikonfigurasi adalah galat penyiapan |
+| **Gunakan server Connect kustom**   | Connect di alamat HTTPS yang diberikan ruang kerja. Alamat di jaringan privat atau lokal ditolak                                                                                                            |
+
+- Pilihan apa pun selain **Sama seperti server ini** menyimpan proses masuk GitHub dan Linear setiap anggota di
+  slot milik ruang kerja, sehingga tidak pernah bercampur dengan slot milik server
+- Beralih meminta konfirmasi dulu: setiap orang di ruang kerja harus masuk lagi ke GitHub, Linear, dan Google
+  Calendar lewat aplikasi baru
+- Koneksi app Slack milik ruang kerja berfungsi di setiap pilihan; **Tambahkan Control Center ke Slack** mengikuti
+  pilihan
+- `CC_CONNECT_URL` juga mengunci ruang kerja agar tidak memiliki Connect sendiri: mereka hanya bisa mengikuti server
+  atau memakai app mereka sendiri
+- Connect kustom sebuah ruang kerja dipercaya saat pertama kali digunakan untuk ruang kerja itu saja: **Percayai
+  aplikasi baru** di sana tidak pernah mengubah apa yang dipercaya server atau ruang kerja lain
 
 ## Identitas instalasi
 
@@ -96,13 +119,31 @@ akun penyedia, app, dan generasi secret.
 
 ## Instalasi GitHub
 
-Sebuah instalasi GitHub App bersama hanya dapat digunakan oleh server ketika Connect telah mengikatnya ke id
-instalasi server tersebut.
+Instalasi GitHub App bersama dapat digunakan dari setiap server. Connect tidak menyimpan catatan tentang server mana yang boleh menggunakannya.
 
-- **Pasang GitHub App** di **Pengaturan → Ruang kerja → Umum** membuka GitHub dengan tiket 15 menit. Connect
-  mengikat instalasi baru ketika pemasangnya memiliki akun pribadi atau mengelola organisasi
-- **Otorisasi server ini** mengikat instalasi yang sudah ada. Hanya admin organisasi yang dapat melakukannya
-- Instalasi organisasi dapat diikat ke beberapa server; setiap server memerlukan otorisasi admin
+- **Pasang aplikasi GitHub** di **Pengaturan → Ruang kerja → Integrasi** membuka halaman pemasangan aplikasi di GitHub. Server membangun tautan dari nama aplikasi dalam konfigurasi Connect
+- Token satu-repositori memerlukan app terpasang pada pemilik repositori dan akses orang yang masuk ke repositori tersebut. Itu adalah token pribadi orang tersebut, dibatasi sesuai perannya, tidak pernah lebih
+- Sebuah organisasi membatasi Control Center di GitHub: dengan menghapus instalasi, mempersempit repositorinya, atau mengeluarkan orangnya
+- Untuk panggilan yang hanya dapat dilakukan orang itu sendiri, seperti mendaftar instalasi mereka, Connect memberikan kepada server token pengguna App milik orang tersebut, bukan token satu-repositori. Masuk di sebuah server berarti mempercayai server itu dengan token tersebut
+- Organisasi yang menerapkan daftar izin IP GitHub tidak dapat memakai Connect yang dihosting, yang alamatnya tidak tetap. Organisasi itu mendaftarkan GitHub App sendiri, di servernya sendiri atau di Connect yang dijalankannya
+- **Putuskan** hanya mencabut proses masuk itu: Connect menggunakan refresh token-nya sekali dan menghapus apa yang dikembalikannya, menghapus token pengguna serta token satu-repositori yang dicetak Connect untuknya. Salinan segelnya yang disimpan di mana pun berhenti berfungsi. Proses masuk orang tersebut di server dan ruang kerja lain tetap berfungsi. Untuk menghapus Control Center dari akun GitHub sepenuhnya, cabut di GitHub pada **Pengaturan → Aplikasi → Aplikasi GitHub yang diotorisasi → Cabut**
+
+### Bot bersama
+
+Token yang dicetak sebagai bot App (`as: app`) menampilkan bot yang sama di GitHub untuk setiap server yang memakai Connect yang sama: GitHub tidak dapat membedakan server-server itu.
+
+- Setiap server boleh membuat bot membaca dan berkomentar: `read`, `review`, dan `comment` (komentar, label, penerima tugas, dan reaksi pada issue dan pull request)
+- Meninjau pull request sebagai bot (`bot`, yang menulis pull request) hanya diizinkan untuk server yang dicantumkan operator Connect di `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Setiap server lain dijawab `needs_requester` dan memublikasikan tinjauan melalui token pribadi orang yang bertanggung jawab, yang dibatasi GitHub hanya untuk orang itu: tinjauan tampil di bawah nama mereka. Ini mencakup penerbitan tinjauan AI, komentar tinjauan, dan permintaan peninjau
+- Push, membuat cabang, dan membuka pull request (`write`) tidak pernah dicetak sebagai bot bersama. Selalu memakai proses masuk pemintanya sendiri
+- Menyetujui pull request tidak pernah otomatis, dengan token apa pun
+- Server atau ruang kerja dengan GitHub App sendiri tetap memakai bot untuk semua ini, termasuk tinjauan
+
+### Yang perlu diketahui pemilik dan anggota organisasi
+
+- Server tempat seseorang masuk menyimpan token pengguna App mereka: hingga 8 jam per token, diperbarui sampai mereka memutuskan. Token itu dapat bertindak atas nama mereka di setiap repositori tempat App bersama terpasang yang dapat mereka jangkau. Connect dapat memutus server dari akses untuk selamanya (instalasi yang dipensiunkan atau ditolak), tetapi token yang sudah diberikan tetap berlaku sampai kedaluwarsa
+- Memasang GitHub App bersama di sebuah organisasi memberi persetujuan untuk setiap server Control Center tempat anggota mana pun masuk, bukan untuk satu server
+- Bot bersama, seperti di atas: organisasi tidak dapat mengetahui di GitHub server mana yang bertindak sebagai bot
+- Organisasi yang ingin memiliki batasnya sendiri mendaftarkan GitHub App sendiri dan menjalankan Connect sendiri ([Jalankan server Connect](/id-ID/panduan-pengguna/panduan-praktis/jalankan-server-connect/)), atau mengonfigurasi App di servernya sendiri
 
 ## Kepercayaan konfigurasi
 
@@ -113,7 +154,7 @@ instalasi server tersebut.
 
 ## Operasi
 
-Semua pengaturan Connect hanya untuk pemilik server.
+Pengaturan Connect milik server hanya untuk pemilik server.
 
 | Operasi               | Fungsi                                                                                        |
 | --------------------- | --------------------------------------------------------------------------------------------- |
@@ -121,29 +162,41 @@ Semua pengaturan Connect hanya untuk pemilik server.
 | `connect.configure`   | Menetapkan `hosted`, `custom` (dengan `url`), atau `off`                                      |
 | `connect.test`        | Mengambil ulang konfigurasi dan melaporkan kesehatan                                          |
 | `connect.confirmPins` | Menerima id yang berubah dari Connect kustom                                                  |
-| `connect.rotateKey`   | Membuat kunci instalasi baru. Setiap proses masuk melalui Connect di server ini berhenti bekerja |
+| `connect.rotateKey`   | Membuat kunci instalasi dan id instalasi baru (`force` menggantinya meskipun Connect tidak dapat mempensiunkan yang lama); lihat [Rotasi kunci instalasi](#rotasi-kunci-instalasi) |
+
+Pilihan milik ruang kerja memiliki operasinya sendiri, masing-masing menyebut ruang kerjanya:
+
+| Operasi                        | Siapa              | Fungsi                                                                              |
+| ------------------------------ | ------------------ | ----------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Anggota mana pun   | Pilihan, hasilnya, kesehatan, dan sumber setiap penyedia. Id instalasi dan pin tertunda hanya untuk admin |
+| `workspaceConnect.set`         | Admin ruang kerja  | Menetapkan `inherit`, `hosted`, `custom` (dengan `url`), atau `own`                 |
+| `workspaceConnect.test`        | Admin ruang kerja  | Mengambil ulang konfigurasi Connect ruang kerja dan melaporkan kesehatan             |
+| `workspaceConnect.confirmPins` | Admin ruang kerja  | Menerima id yang berubah dari Connect kustom ruang kerja                             |
+
 
 Proses masuk sendiri memakai `oauth.lanes`, `oauth.begin`, `oauth.status`, `oauth.complete`,
 `oauth.connections`, dan `oauth.disconnect`. Orang tersebut selalu adalah pemanggil yang sudah masuk.
 
 ## Proses masuk melalui Connect
 
-1. Server meminta Connect memulai jalur dan menerima URL otorisasi penyedia, yang diperiksanya sebelum ditampilkan
+1. Server meminta Connect memulai jalur dan menerima URL otorisasi penyedia, yang diperiksanya sebelum ditampilkan. GitHub selalu menampilkan pemilih akunnya
 2. Orang tersebut menyetujui di peramban. Penyedia mengembalikan peramban ke Connect
-3. Connect menampilkan kode 8 karakter dan tautan `control-center://oauth-done`
-4. Orang tersebut mengetik kode ke aplikasi, atau mengikuti tautan. Server mengklaim proses masuk dengan kode
-   itu beserta bukti miliknya sendiri atas permintaan tersebut
+3. Connect menampilkan apa yang dapat dilakukan server yang memulai proses masuk sebagai orang tersebut, dan untuk berapa lama. Connect tidak dapat mengetahui siapa yang menjalankan server itu, sehingga halaman meminta orang tersebut melanjutkan hanya bila mereka sendiri yang memulai proses masuk, dan menutupnya bila seseorang mengirimkan tautan itu kepada mereka. Bila peramban berada di jaringan lain dibandingkan jaringan tempat proses masuk dimulai, halaman mengatakannya: itu wajar untuk server yang dihosting atau perangkat lain, dan itu juga yang terlihat seperti phishing. **Batal** mengakhiri proses masuk: kode penyedia tidak pernah dipakai. Setiap halaman menjawab sekali: jawaban yang tidak berasal dari halaman yang baru ditampilkan Connect ditolak
+4. Setelah **Lanjutkan**, Connect menampilkan kode 8 karakter dan tautan `control-center://oauth-done`. Siapa pun yang mendapatkan kode itu mendapatkan akses yang baru disetujui, sehingga kode hanya boleh dikirim ke tempat proses masuk dimulai
+5. Orang tersebut mengetik kode ke aplikasi, atau mengikuti tautan. Server mengklaim proses masuk dengan kode itu beserta bukti miliknya sendiri atas permintaan tersebut
 
 Proses masuk kedaluwarsa setelah 10 menit. Lima kode salah akan mengakhirinya. Tautan yang tidak dimulai oleh
-aplikasi ini akan ditolak dengan **Proses masuk tidak dimulai di sini**.
+aplikasi ini akan ditolak dengan **Proses masuk tidak dimulai di sini**. Connect membatasi berapa banyak proses masuk yang dapat dimulai dari satu alamat jaringan, dan seberapa sering token GitHub diterbitkan per orang dan server, per orang lintas server, per alamat, dan untuk seluruh app. Proses masuk baru memiliki anggarannya sendiri, sehingga tidak pernah menahan pembaruan yang dibutuhkan orang lain. Melewati batas, sebuah panggilan ditolak dengan `rate_limited`, dan server mencoba lagi nanti tanpa mengeluarkan siapa pun. Proses masuk yang melewati batas orang tersebut dibatalkan di GitHub dan ditolak.
 
 ## Rotasi kunci instalasi
 
-**Rotasi kunci** pada kartu Connect, atau `cc_server connect rotate-key --yes`:
+Hanya pemilik server yang dapat memutar kunci, dengan **Rotasi kunci** pada kartu **Control Center Connect** di **Pengaturan → Server → Single sign-on**. Tidak ada perintah untuk itu. Rotasi:
 
-- Memberi server kunci instalasi baru dan id instalasi baru
-- Mengeluarkan semua orang dari setiap jalur yang berjalan melalui Connect
-- Tidak mengubah proses masuk melalui app milik server sendiri
+- Mengeluarkan semua orang dari setiap jalur yang berjalan melalui Connect. Untuk setiap server Connect tempat kunci lama dipakai, server mencabut proses masuk GitHub dan Slack yang dipegangnya dari sana (proses masuk Google tidak memiliki apa pun untuk dicabut dan berakhir sendiri)
+- Mempensiunkan id instalasi lama di setiap server Connect tersebut, ditandatangani dengan kunci lama dan dibuktikan dengan satu segel kredensial yang dipegang server dari Connect itu. Sejak saat itu Connect menolak setiap permintaan yang dibuat dengan kunci lama, sehingga segel atau salinan kunci lama yang diambil dari server ini tidak berguna, dan tim Slack yang terikat ke id lama dilepaskan agar dapat terhubung lagi. Token yang sudah diberikan tetap berlaku sampai kedaluwarsa (satu jam untuk token bot, delapan jam untuk token seseorang). Server Connect yang tidak memiliki segel dari server ini tidak memiliki apa pun untuk dipensiunkan dan dilewati
+- Kemudian memberi server kunci instalasi baru dan id instalasi baru
+- Jika sebuah server Connect tidak dapat dijangkau, atau menolak mempensiunkan id lama, berhenti sebelum mengganti kunci dan menampilkan **Connect tidak dapat menonaktifkan kunci lama**. **Tetap ganti** mengganti kunci apa pun yang terjadi; id instalasi lama kemudian tetap dapat dipakai di Connect itu sampai tokennya kedaluwarsa, paling lama 8 jam untuk GitHub
+- Membiarkan proses masuk melalui app milik server sendiri tidak berubah
 - Memerlukan id instalasi baru ditambahkan ke daftar izin Connect kustom
 
 ## Kode status
@@ -154,7 +207,7 @@ aplikasi ini akan ditolak dengan **Proses masuk tidak dimulai di sini**.
 | `signature`            | Konfigurasi hosted gagal dalam pemeriksaan tanda tangannya           |
 | `rollback`             | Connect menyajikan konfigurasi yang lebih lama daripada yang sudah dilihat server |
 | `unreachable`          | Server tidak dapat menjangkau Connect                                |
-| `install_blocked`      | Connect tidak mengizinkan id instalasi ini                           |
+| `install_blocked`      | Connect tidak mengizinkan id instalasi ini, atau id tersebut sudah dipensiunkan |
 | `pins_changed`         | Connect kustom mengumumkan id app yang berbeda                       |
 | `protocol`             | Connect menjawab dalam bentuk yang tidak dipahami server ini         |
 

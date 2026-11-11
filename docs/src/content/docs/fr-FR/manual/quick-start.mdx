@@ -2,7 +2,7 @@
 title: Démarrage rapide
 description: Installez Control Center, configurez un agent et regardez-le travailler sur votre dépôt.
 slug: fr-FR/manuel/demarrage-rapide
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Voici le chemin complet le plus court pour passer de rien à un agent qui travaille sur votre propre code. Suivez-le dans l'ordre ; chaque étape dépend de la précédente.
@@ -16,7 +16,7 @@ Installez Control Center comme décrit dans [Installer](/fr-FR/manuel/installer/
 Au premier lancement, l'application de bureau affiche **Bienvenue dans Control Center**. Choisissez **Exécuter dans cette application**. Control Center lance un `cc_server` sans interface sur cette machine, qui détient vos données et fait tout le travail. Vous ne le voyez jamais ; l'écran de configuration initiale s'ouvre à la place.
 
 :::note[Vous préférez ne rien installer ?]
-La même application s'exécute dans le navigateur sur [app.usectrl.dev](https://app.usectrl.dev) avec les mêmes fonctionnalités. Un onglet de navigateur ne peut toutefois pas héberger le serveur : c'est donc à vous d'en fournir un — exécutez `cc_server` en local et connectez-vous à `ws://localhost:9030`, ou pointez-le vers un serveur sur une autre machine. Ce démarrage rapide emprunte la voie de l'application de bureau, car elle ne demande aucune configuration de serveur ; voir [Installer](/fr-FR/manuel/installer/#use-it-in-your-browser) pour la voie du navigateur.
+La même application s'exécute dans le navigateur sur [app.usectrl.dev](https://app.usectrl.dev) avec les mêmes fonctionnalités. Un onglet de navigateur ne peut toutefois pas héberger le serveur : c'est donc à vous d'en fournir un — exécutez `cc_server` en local et connectez-vous à `ws://localhost:9030`, ou pointez-le vers un serveur sur une autre machine. Ce démarrage rapide emprunte la voie de l'application de bureau, car elle ne demande aucune configuration de serveur ; voir [Installer](/fr-FR/manuel/installer/#lutiliser-dans-votre-navigateur) pour la voie du navigateur.
 :::
 
 ## Étape 2 : Parcourir la configuration initiale
@@ -25,7 +25,7 @@ Les étapes de la configuration initiale s'enchaînent dans l'ordre — impossib
 
 1. **Connexion** (propriétaire du serveur uniquement) : choisissez comment ce serveur connecte les personnes à GitHub, Google Calendar et Linear — **Utiliser les applications de Control Center**, **Utiliser mes propres applications** ou **Utiliser un serveur Connect personnalisé**. Avec vos propres applications, **Créer mon application GitHub** configure GitHub en une seule étape. Vous pourrez modifier ce choix plus tard dans **Paramètres → Serveur → Authentification unique**.
 2. **Connexion** : connectez-vous à GitHub, ou collez un jeton GitLab ou Bitbucket. L'identifiant est stocké sur le serveur et rattaché à votre compte.
-3. **Espace de travail** : nommez votre premier espace de travail et choisissez éventuellement un logo. Sa création amorce cinq agents — un CEO, plus `qa`, `architect`, `engineer` et `librarian` — ainsi que les modèles de pipeline intégrés.
+3. **Espace de travail** (propriétaire du serveur uniquement) : nommez votre premier espace de travail et choisissez éventuellement un logo. Les autres personnes attendent sur **Vous ne faites pas encore partie d’un espace de travail** jusqu’à ce que le propriétaire en crée un pour elles ou qu’un administrateur d’espace de travail les invite. Sa création amorce six agents — un CEO, plus `qa`, `architect`, `engineer`, `librarian` et `content-synthesizer` — ainsi que les modèles de pipeline intégrés.
 4. **Bac à sable** : enregistre une préférence en matière de bac à sable. Quel que soit votre choix, vous pouvez continuer.
 5. **Adaptateur** : choisissez l'adaptateur et le modèle par défaut des agents. Sélectionnez **Control Center (built-in)**, puis utilisez le sélecteur de fournisseur qui apparaît pour vous connecter à un fournisseur de modèles — la liste des modèles reste vide tant qu'aucun n'est connecté. Terminer cette étape applique aussi l'adaptateur et le modèle à l'agent CEO de l'espace de travail.
 6. **Voix (facultatif)** : installez un modèle vocal sur l'appareil pour la dictée, ou passez cette étape.
@@ -33,7 +33,7 @@ Les étapes de la configuration initiale s'enchaînent dans l'ordre — impossib
 Control Center ouvre ensuite la boîte de réception de votre espace de travail.
 
 :::note[Ce qui borne une exécution d'agent]
-Les commandes d'un agent sont encapsulées dans le bac à sable natif du système d'exploitation de l'hôte lorsqu'il en existe un — Seatbelt sous macOS, bubblewrap sous Linux. Windows n'offre aucun backend, si bien que les exécutions y sont bornées par les seules autres couches : l'arbre de travail propre à la conversation (`git worktree` sous Windows ; copie sur écriture là où `rift` est livré), les identifiants intermédiés à chaque lancement et révoqués au démontage, et les garde-fous d'action. Voir [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/).
+Les commandes d'un agent sont encapsulées dans le bac à sable natif du système d'exploitation de l'hôte lorsqu'il en existe un — Seatbelt sous macOS, bubblewrap sous Linux. Windows n'offre aucun backend. Sur un hôte qui n'en a pas, seules les exécutions de l'agent du propriétaire du serveur démarrent, et elles ne sont bornées que par les autres couches : l'arbre de travail propre à la conversation (`git worktree` sous Windows ; copie sur écriture là où `rift` est livré), les identifiants intermédiés à chaque lancement et révoqués au démontage, et les garde-fous d'action. Voir [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/).
 :::
 
 ## Étape 3 : Ajouter un dépôt
@@ -57,7 +57,7 @@ Dans l'onglet **Paramètres**, définissez :
 
 Appuyez sur **Enregistrer les modifications**.
 
-Cette étape n'est pas facultative en pratique. Seul l'agent CEO hérite de l'adaptateur choisi pendant la configuration initiale ; les quatre spécialistes sont créés sans adaptateur. Ils se rabattent sur **Control Center (built-in)** avec le modèle par défaut d'Anthropic : ils ne s'exécutent donc que si vous avez connecté un compte Anthropic — et sur un modèle que vous n'avez pas choisi si c'est le cas.
+Cette étape n'est pas facultative en pratique. L'étape d'adaptateur de la configuration initiale définit son adaptateur et son modèle sur chaque agent existant à ce moment-là ; un espace de travail créé plus tard amorce les six sans l'un ni l'autre. Un agent qui n'en a pas se rabat sur **Control Center (built-in)** avec le modèle par défaut d'Anthropic : ils ne s'exécutent donc que si vous avez connecté un compte Anthropic — et sur un modèle que vous n'avez pas choisi si c'est le cas.
 
 ## Étape 5 : Envoyer une tâche à l'agent
 

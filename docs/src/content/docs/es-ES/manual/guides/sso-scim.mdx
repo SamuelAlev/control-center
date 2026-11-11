@@ -2,7 +2,7 @@
 title: Aprovisionar usuarios con SCIM
 description: Deja que tu IdP cree, actualice y desaprovisione cuentas de Control Center automáticamente.
 slug: es-ES/manual/guias/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Usa esta guía cuando quieras control del ciclo de vida: cuando alguien
@@ -35,8 +35,9 @@ los IdP (Okta, Entra ID y otros) precisamente para eso.
    - **Autenticación**: `Authorization: Bearer <token>`
    - **ID de usuario**: `userName` (correo) o `externalId` — ambos coinciden
 4. Haz una prueba con un usuario: envíalo desde el IdP y confirma que
-   aparece (la creación vía SCIM fija el `externalId` del proveedor en la
-   cuenta, la misma fijación que establece el primer inicio de sesión SSO).
+   aparece (la creación vía SCIM registra el `externalId` del proveedor en la
+   cuenta, que es como las llamadas SCIM posteriores la encuentran), y después
+   haz que esa persona inicie sesión mediante SSO antes de desplegarlo para todos.
 
 ## Qué hace el desaprovisionamiento
 
@@ -57,6 +58,7 @@ invitación nueva o la política de miembro automático al iniciar sesión.
 
 ## Solución de problemas
 
+- **A una persona aprovisionada se le rechaza con «Esta cuenta ya está vinculada a una identidad SSO distinta»** — limitación conocida: una cuenta que SCIM creó con un `externalId` queda asociada a ese id, y el primer inicio de sesión SSO en ella se rechaza. Hasta que se corrija, aprovisiona sin `externalId`, o deja que el aprovisionamiento JIT cree la cuenta en el primer inicio de sesión y usa SCIM solo para la desactivación.
 - **401 en todas las llamadas** — el token ha cambiado; regenéralo y
   actualiza el IdP.
 - **No se llega al endpoint** — el túnel está caído, o el servidor solo

@@ -215,17 +215,20 @@ void _emitLog(bool isError, String line, [Object? error]) {
   final stamp =
       '${two(now.hour)}:${two(now.minute)}:${two(now.second)}'
       '.${now.millisecond.toString().padLeft(3, '0')}';
-  line = '$stamp $line';
+  // Every line is redacted, whoever wrote it: a token interpolated into a
+  // message or carried by an exception's text never reaches stdio or disk.
+  line = '$stamp ${redactSecrets(line)}';
+  final detail = error == null ? null : redactSecrets('$error');
   // Persist to the rotating file first — synchronous + flushed — so a line
   // (including a crash record) survives even if the process dies immediately
   // after. Bounded on disk by the sink's size cap + retention (FINDINGS §132).
-  _fileSink?.write(error != null ? '$line\n  $error' : line);
+  _fileSink?.write(detail != null ? '$line\n  $detail' : line);
   _logTail = _logTail.then((_) async {
     try {
       if (isError) {
         stderr.writeln(line);
-        if (error != null) {
-          stderr.writeln('  $error');
+        if (detail != null) {
+          stderr.writeln('  $detail');
         }
         await stderr.flush();
       } else {

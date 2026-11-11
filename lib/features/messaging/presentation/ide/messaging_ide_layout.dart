@@ -285,10 +285,15 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
         _open.openFromScope(
           MessagingIdeTabs.environmentTerminal(sessionId, label),
         ),
-    openSetup: ({required spaceId, required sessionId, required label}) =>
-        _open.openFromScope(
-          MessagingIdeTabs.environmentTerminal(sessionId, label, setup: true),
-        ),
+    openStartTerminal:
+        ({required spaceId, required sessionId, required label}) =>
+            _open.openFromScope(
+              MessagingIdeTabs.environmentTerminal(
+                sessionId,
+                label,
+                startTerminal: true,
+              ),
+            ),
     openViewer: ({required spaceId, required componentId, required label}) =>
         _rigs.focusOrOpen(
           AppLocalizations.of(context),
@@ -1260,6 +1265,10 @@ class _MessagingIdeLayoutState extends ConsumerState<MessagingIdeLayout>
 
   @override
   void keepShell(EditorTab tab) => _terminals.keepShell(tab);
+
+  @override
+  void archiveClosedConversation(EditorTab tab, {bool agentsStopped = false}) =>
+      _tabActions.archiveOnClose(tab, agentsStopped: agentsStopped);
 
   @override
   String terminalLabel(EditorTab tab, AppLocalizations l10n) =>

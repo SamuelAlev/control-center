@@ -2,7 +2,7 @@
 title: Rigs
 description: Todas as superfícies de rig, backends, verbos de ação, estados do ciclo de vida, portas, predefinições e contratos — o catálogo factual completo.
 slug: pt-PT/manual/referencia/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Apenas factos. Para o modelo por trás deles, leia [Rigs e
@@ -226,8 +226,10 @@ rede em recinto.
 
 | Ferramenta | Descrição |
 | --- | --- |
-| `rig_list` | Lista os rigs de um espaço de trabalho com superfície, estado, ecrã e controlador |
+| `rig_list` | Lista os rigs do espaço da execução com superfície, estado, ecrã e controlador |
 | `rig_close` | Destrói um rig e descarta o respetivo disco |
+
+Estas ferramentas, como as quatro ferramentas use, são só para execuções de agentes; qualquer outro chamador é recusado. Uma execução chega apenas aos rigs do espaço para o qual foi autorizada: `space_id` vem da concessão da execução, nunca da chamada. Um rig de outro espaço, ou de nenhum espaço, responde exatamente como um rig inexistente.
 
 ## Ciclo de vida
 
@@ -332,7 +334,7 @@ escolhas são independentes e nunca são uma definição do espaço de trabalho.
   os fotogramas dos rigs e o áudio das reuniões já usam.
 - **A autenticação** é o alvo assinado `rig-files:<workspaceId>/<rigId>` mais a
   adesão ao espaço de trabalho — um alvo próprio, para que um URL emitido para
-  *observar* uma máquina não possa também escrever ficheiros nela.
+  *observar* uma máquina não possa também escrever ficheiros nela. Para um rig aberto num espaço, ler a área de transferência ou um ficheiro exige também acesso de leitura a esse espaço, e escrever na área de transferência ou largar ficheiros exige uma autorização de escrita nos seus repositórios. Num rig que transporta os inícios de sessão próprios de uma pessoa, as duas vias, incluindo a leitura, pertencem apenas a essa pessoa. Veja [Quem pode observar e quem pode operar](/pt-PT/manual/guias/usar-rigs/#quem-pode-observar-e-quem-pode-operar).
 - **A assunção do controlo aplica-se.** Escrever na área de transferência e
   largar ficheiros alteram estado e são recusados enquanto outra pessoa detém o
   controlo; ler a área de transferência e extrair um ficheiro são observação e

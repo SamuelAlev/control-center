@@ -29,6 +29,7 @@ void main() {
     Map<String, String> definitionEnv = const {},
     EnvironmentContractPr? pr,
     Map<String, String> compose = const {},
+    List<EnvironmentContractRepo> repos = const [app, e2e],
   }) => EnvironmentContract(
     EnvironmentContractInput(
       name: 'fix-login',
@@ -39,7 +40,8 @@ void main() {
       spaceId: 'space-1',
       spaceName: 'Fix login',
       spaceKind: pr == null ? 'space' : 'pr',
-      repos: const [app, e2e],
+      repos: repos,
+      defaultRole: 'app',
       ports: const {'web': 42000, 'postgres.5432': 42001},
       urls: const {'web': 'http://web--fix-login--shop.localhost:7355'},
       primaryUrl: 'http://web--fix-login--shop.localhost:7355',
@@ -109,8 +111,6 @@ void main() {
       expect(env, containsPair('CC_SPACE_KIND', 'space'));
       expect(env, containsPair('CC_WORKSPACE_PATH', app.path));
       expect(env, containsPair('CC_ROOT_PATH', app.sourcePath));
-      expect(env, containsPair('CC_REPO_PATH_APP', app.path));
-      expect(env, containsPair('CC_REPO_PATH_E2E_SUITE', e2e.path));
       expect(env, containsPair('NO_COLOR', '1'));
     });
 
@@ -118,6 +118,7 @@ void main() {
       expect(env, containsPair('CC_ENV_BRANCH', 'fix/login'));
       expect(env, containsPair('CC_ENV_HOME', '/home/acme'));
       expect(env, containsPair('CC_ENV_REPO_APP', app.path));
+      expect(env, containsPair('CC_ENV_REPO_E2E_SUITE', e2e.path));
       expect(env, containsPair('CC_ENV_SOURCE_E2E_SUITE', e2e.sourcePath));
     });
 
@@ -233,8 +234,23 @@ void main() {
   });
 
   group('workingDirectory', () {
-    test('defaults to the first role present', () {
+    test('defaults to the first declared role', () {
       expect(contract().workingDirectory(null), app.path);
+    });
+
+    test('never falls back to another role the space has', () {
+      final withoutApp = contract(repos: const [e2e]);
+      expect(
+        () => withoutApp.workingDirectory(null),
+        throwsA(
+          isA<EnvironmentTemplateException>().having(
+            (e) => e.message,
+            'message',
+            'This space has no repo for the role app',
+          ),
+        ),
+      );
+      expect(withoutApp.environment(), isNot(contains('CC_WORKSPACE_PATH')));
     });
 
     test('takes a role and a path', () {

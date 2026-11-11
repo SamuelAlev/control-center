@@ -154,6 +154,19 @@ void main() {
     expect(result.exitCode, isNot(environmentTimeoutExitCode));
   });
 
+  test('the exit is the last thing a command says', () async {
+    final events = <EnvironmentCommandEvent>[];
+    await runner.run(
+      ShellEnvironmentCommand('echo out; echo err >&2; exit 4'),
+      onEvent: events.add,
+    );
+    expect(events.whereType<EnvironmentCommandExit>(), hasLength(1));
+    final exit = events.last;
+    expect(exit, isA<EnvironmentCommandExit>());
+    expect((exit as EnvironmentCommandExit).exitCode, 4);
+    expect(exit.succeeded, isFalse);
+  });
+
   test('a daemon holding stdout open does not fail the command', () async {
     final watch = Stopwatch()..start();
     final result = await runner.run(
@@ -205,8 +218,79 @@ exit 7
           hint: 'Fix it',
           command: 'tool repair',
           exitCode: 7,
+          output: 'noise',
         ),
       );
+    });
+
+    test(
+      'the error keeps the end of the output beside the tool\'s words',
+      () async {
+        final long = 'x' * 400;
+        final result = await runner.run(
+          ShellEnvironmentCommand('''
+for i in \$(seq 1 30); do echo "pull \$i" >&2; done
+echo "$long" >&2
+echo '{"type":"log","stream":"stderr","line":"denied: the token has expired"}' >&2
+echo '{"type":"error","code":"compose.up","message":"The stack did not start"}' >&2
+exit 1
+'''),
+        );
+        final output = result.error!.output!.split('\n');
+        expect(result.error?.message, 'The stack did not start');
+        expect(output, hasLength(EnvironmentCommandRunner.errorOutputLines));
+        expect(output.first, 'pull 21');
+        expect(output[output.length - 2], '${'x' * 300}…');
+        expect(output.last, 'denied: the token has expired');
+      },
+    );
+
+    test('a line the tool wrapped in JSON is still a line', () async {
+      final events = <EnvironmentCommandEvent>[];
+      final result = await runner.run(
+        ShellEnvironmentCommand(r'''
+echo '{"type":"log","stream":"stdout","line":"Container db  Started"}' >&2
+echo '{"type":"log","stream":"stderr"}' >&2
+'''),
+        onEvent: events.add,
+      );
+      expect(events.whereType<EnvironmentCommandProgress>(), isEmpty);
+      expect(events.whereType<EnvironmentCommandOutput>().map((e) => e.line), [
+        'Container db  Started',
+        '{"type":"log","stream":"stderr"}',
+      ]);
+      expect(result.stderr, startsWith('Container db  Started'));
+    });
+
+    test('the tool\'s verdict reads as a line of the log', () async {
+      final events = <EnvironmentCommandEvent>[];
+      await runner.run(
+        ShellEnvironmentCommand(r'''
+echo '{"type":"error","code":"env.broken","message":"It broke","hint":"Fix it"}' >&2
+exit 7
+'''),
+        onEvent: events.add,
+      );
+      expect(events.whereType<EnvironmentCommandOutput>().map((e) => e.line), [
+        '[error] It broke',
+      ]);
+    });
+
+    test('a step keeps the id its tool gave it, number or word', () async {
+      final events = <EnvironmentCommandEvent>[];
+      await runner.run(
+        ShellEnvironmentCommand(r'''
+echo '{"type":"step","id":1,"label":"Pulling images","state":"running"}' >&2
+echo '{"type":"step","id":"db","label":"Database","state":"succeeded"}' >&2
+'''),
+        onEvent: events.add,
+      );
+      final steps = events.whereType<EnvironmentCommandProgress>().toList();
+      expect(steps.map((e) => e.progress.id), ['1', 'db']);
+      expect(steps.map((e) => e.progress.stepState), [
+        EnvironmentStepState.running,
+        EnvironmentStepState.done,
+      ]);
     });
 
     test('an error line that is not last is plain output', () async {
@@ -243,7 +327,7 @@ exit 1
     });
 
     for (final (code, name) in const [
-      (3, 'host-setup-required'),
+      (3, 'input-required'),
       (4, 'auth-required'),
       (5, 'dependency-unavailable'),
     ]) {
@@ -263,7 +347,7 @@ exit 3
 '''),
       );
       expect(result.error?.command, 'sudo tool hosts');
-      expect(result.error?.needsHostSetup, isTrue);
+      expect(result.error?.blocker, EnvironmentBlocker.input);
     });
   });
 

@@ -1,5 +1,6 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -67,18 +68,18 @@ void main() {
     test('parses a full payload', () {
       final r = ReliabilityView.fromWire({
         'score': 0.92,
-        'recommended': 'act_with_approval',
+        'recommended': 'actWithApproval',
         'rationale': ['passed 10/10', 'no regressions'],
       });
       expect(r.score, 0.92);
-      expect(r.recommended, 'act_with_approval');
+      expect(r.recommended, AutonomyLevel.actWithApproval);
       expect(r.rationale, ['passed 10/10', 'no regressions']);
     });
 
     test('tolerates missing fields', () {
       final r = ReliabilityView.fromWire({});
       expect(r.score, 0);
-      expect(r.recommended, 'observe_only');
+      expect(r.recommended, AutonomyLevel.proposeOnly);
       expect(r.rationale, isEmpty);
     });
   });
@@ -186,12 +187,12 @@ void main() {
 
     test('reliability forwards agent_id and maps the result', () async {
       host.callResults['evals.reliability'] = {
-        'reliability': {'score': 0.5, 'recommended': 'act_with_approval'},
+        'reliability': {'score': 0.5, 'recommended': 'actWithApproval'},
       };
       final c = RpcEvalsClient(client);
       final r = await c.reliability('a-1');
       expect(r.score, 0.5);
-      expect(r.recommended, 'act_with_approval');
+      expect(r.recommended, AutonomyLevel.actWithApproval);
       expect(host.lastCall('evals.reliability')!.args['agent_id'], 'a-1');
     });
 

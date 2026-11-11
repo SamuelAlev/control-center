@@ -3,12 +3,13 @@ import 'package:cc_domain/core/domain/entities/ide_editor.dart';
 import 'package:control_center/core/constants/app_constants.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Materializes a PR's branch into a worktree on the connected `cc_server` and
-/// opens it in an editor on the host (`ide.ensureWorktree` /
-/// `ide.openPrInEditor` / `ide.detectEditors`). The server owns the checkout
+/// opens it in an editor on the host (`ide.openPrInEditor` /
+/// `ide.detectEditors`, both the server owner's). The server owns the checkout
 /// and the process launch; the thin client only names the editor.
 final prWorktreeRpcProvider = Provider<RemoteIdeRepository>((ref) {
   return RemoteIdeRepository(ref.watch(rpcClientProvider));
@@ -16,7 +17,14 @@ final prWorktreeRpcProvider = Provider<RemoteIdeRepository>((ref) {
 
 /// The full editor catalog for the current platform, each flagged
 /// [IdeEditor.installed]. Detection runs once and is cached by Riverpod.
+///
+/// Empty, without asking, for anyone who may not use the server host: an
+/// editor opens on the SERVER's display, which is host execution, so every
+/// "open in editor" affordance reads this list and hides with it.
 final installedEditorsProvider = FutureProvider<List<IdeEditor>>((ref) async {
+  if (!ref.watch(canUseHostProvider)) {
+    return const [];
+  }
   return ref.watch(prWorktreeRpcProvider).detectEditors();
 });
 

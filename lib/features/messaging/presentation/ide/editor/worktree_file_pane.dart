@@ -1,5 +1,8 @@
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_code_failure_view.dart';
 import 'package:control_center/features/messaging/providers/worktree_file_ops_provider.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -47,7 +50,11 @@ class _WorktreeFilePaneState extends ConsumerState<WorktreeFilePane> {
   bool _binary = false;
   bool _dirty = false;
   bool _saving = false;
-  String? _error;
+
+  /// Whether the last read failed, and why when the server refused it
+  /// (null: the worktree has no such file).
+  bool _failed = false;
+  Object? _failure;
   String _loaded = '';
 
   @override
@@ -75,22 +82,30 @@ class _WorktreeFilePaneState extends ConsumerState<WorktreeFilePane> {
   Future<void> _load() async {
     setState(() {
       _loading = true;
-      _error = null;
+      _failed = false;
+      _failure = null;
     });
-    final res = await readWorktreeFile(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repoId,
-      path: widget.path,
-    );
+    WorktreeReadResult? res;
+    Object? failure;
+    try {
+      res = await readWorktreeFile(
+        ref.read(rpcClientProvider),
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+        repoId: widget.repoId,
+        path: widget.path,
+      );
+    } on Object catch (e) {
+      failure = e;
+    }
     if (!mounted) {
       return;
     }
     setState(() {
       _loading = false;
       if (res == null) {
-        _error = 'File is not available in this worktree.';
+        _failed = true;
+        _failure = failure;
         return;
       }
       _binary = res.binary;
@@ -105,14 +120,20 @@ class _WorktreeFilePaneState extends ConsumerState<WorktreeFilePane> {
       return;
     }
     setState(() => _saving = true);
-    final res = await writeWorktreeFile(
-      ref.read(rpcClientProvider),
-      workspaceId: widget.workspaceId,
-      spaceId: widget.spaceId,
-      repoId: widget.repoId,
-      path: widget.path,
-      content: _controller.text,
-    );
+    WorktreeWriteResult? res;
+    Object? refusal;
+    try {
+      res = await writeWorktreeFile(
+        ref.read(rpcClientProvider),
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+        repoId: widget.repoId,
+        path: widget.path,
+        content: _controller.text,
+      );
+    } on RemoteRpcException catch (e) {
+      refusal = e;
+    }
     if (!mounted) {
       return;
     }
@@ -125,7 +146,9 @@ class _WorktreeFilePaneState extends ConsumerState<WorktreeFilePane> {
     });
     final l10n = AppLocalizations.of(context);
     CcToastScope.maybeOf(context)?.show(
-      res != null ? l10n.saved : l10n.saveFailed,
+      res != null
+          ? l10n.saved
+          : repoRefusalOf(l10n, refusal) ?? l10n.saveFailed,
       variant: res != null ? CcToastVariant.success : CcToastVariant.danger,
     );
   }
@@ -173,9 +196,12 @@ class _WorktreeFilePaneState extends ConsumerState<WorktreeFilePane> {
         Expanded(
           child: _loading
               ? const Center(child: CcSpinner())
-              : _error != null
-              ? Center(
-                  child: Text(_error!, style: TextStyle(color: t.textTertiary)),
+              : _failed
+              ? RepoCodeFailureView(
+                  error: _failure,
+                  fallback: l10n.ideWorktreeFileUnavailable,
+                  workspaceId: widget.workspaceId,
+                  onRetry: _load,
                 )
               : _binary
               ? Center(
@@ -220,6 +246,9 @@ class _Editor extends StatelessWidget {
         controller: controller,
         focusNode: focusNode,
         maxLines: null,
+        // An expanding field takes no line bounds; CcTextField's default
+        // minLines (1) would trip EditableText's assert.
+        minLines: null,
         expands: true,
         keyboardType: TextInputType.multiline,
         textStyle: TextStyle(

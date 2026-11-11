@@ -2,7 +2,7 @@
 title: Ciclo de vida de tickets
 description: Campos, estados, transiciones y relaciones de los tickets, y el punto de paso de las mutaciones.
 slug: es-ES/manual/referencia/ciclo-de-vida-de-tickets
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Estados de los tickets
@@ -118,7 +118,7 @@ El agregado abarca dos aspectos en una sola fila. El **espejo** (proveedor, clav
 | `projectId`              | `String?`                  | Proyecto propietario; nunca se envía a un remoto                                           |
 | `assignedAgentId`        | `String?`                  | Id del principal asignado (solo metadatos: asignar no despacha nada)                       |
 | `assigneeType`           | `PrincipalType`            | Qué tipo de principal nombra `assignedAgentId`: `user` o `agent` (`agent` de forma predeterminada) |
-| `createdByType`          | `PrincipalType?`           | Tipo de principal que creó el ticket (`user` o `agent`); nulo en las filas heredadas o del sistema |
+| `createdByType`          | `PrincipalType?`           | Tipo de principal que creó el ticket (`user` o `agent`); nulo en las filas creadas por el sistema |
 | `createdById`            | `String?`                  | Id del principal que lo creó                                                               |
 | `assignedTeamId`         | `String?`                  | Equipo asignado (solo metadatos)                                                           |
 | `delegatedByAgentId`     | `String?`                  | Agente que delegó este ticket                                                              |

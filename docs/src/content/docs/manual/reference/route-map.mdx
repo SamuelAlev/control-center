@@ -9,7 +9,7 @@ The app shell (`ControlCenterLayout`) wraps every in-workspace route via a `Shel
 
 The gate is complete when at least one forge is connected **for the signed-in user** and at least one workspace exists.
 
-A missing credential and a missing setup are treated differently, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded stays in the app: the workspace shell shows a warning with a link to Settings → Workspace → Profile & identity, where the sign-in lives. One that has not onboarded goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
+A missing credential and a missing setup are treated differently, and the discriminator is `users.onboarding_finished_at` read off the caller's own `identity.me` — never "workspaces exist", which is wrong the moment someone is invited into a workspace they never created. With no forge connected, an account that has onboarded stays in the app: the workspace shell shows a warning with a link to Settings → You → Profile, where the sign-in lives. One that has not onboarded goes to `/onboarding`. While the flag is still unknown the guard holds the splash rather than guessing, because it never redirects back out of onboarding.
 
 ## Unprefixed routes
 
@@ -63,7 +63,7 @@ There is **no "Plans" sidebar item**. Plan Studio opens as an editor tab from th
 
 ## Settings routes
 
-`/settings` redirects to `/settings/you/appearance`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/appearance`.
+`/settings` redirects to `/settings/you/profile`. The sidebar's settings button and `Cmd/Ctrl + ,` both go to `/settings/you/profile`.
 
 Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` — because the segment states who a change affects. Two paths predate the namespacing and are not scoped in the URL: `/settings/memory` and `/settings/pipelines`.
 
@@ -71,20 +71,26 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 
 | Path                          | Screen                                                                     |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Theme, language, typography, editor theme (the settings landing)          |
-| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
+| `/settings/you/profile`       | Your account on this server: name, username, picture and sign-in (the settings landing) |
+| `/settings/you/profile?section=accounts` | Connected accounts: your own code hosting, ticketing, calendar and chat sign-ins, and ticket drafts from chat |
+| `/settings/you/appearance`    | Theme, language, typography, editor theme |
 | `/settings/you/audio`         | Microphone, dictation, meeting detection and soundscape output             |
+| `/settings/you/notifications` | Per-event toggles, quiet hours                                             |
+| `/settings/you/commits`       | Who is credited on commits from work you start, and your commit signing key |
+| `/settings/you/desktop`       | Desktop app only: the tray icon, closing the window and opening at login   |
 | `/settings/you/devices`       | Paired phones and remote control                                           |
 | `/settings/you/newsfeed`      | Feed management: sources, refresh, read state                              |
+| `/settings/you/links`         | Where links from outside Control Center open                               |
 
 ### Workspace
 
 | Path                               | Screen                                                                                              |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profile and identity in this workspace: name, git author, code hosting, calendar |
-| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, sync health, chat bridges, danger zone |
+| `/settings/workspace/profile`      | Profile and identity in this workspace: name, email, git author |
+| `/settings/workspace/general`      | Name, logo, secret globs, review concurrency, branch naming, danger zone |
+| `/settings/workspace/integrations` | Connect choice, the GitHub App and automation tokens, ticketing vendor and automation, sync health, the workspace's own provider apps, chat bridges, GIFs. Each provider group names your own account and links to Connected accounts |
 | `/settings/workspace/meetings`     | Meeting note templates and saved voice profiles                                                     |
-| `/settings/workspace/members`      | Roster, invites, audit trail. The audit trail paginates with optional `?cursor=`                    |
+| `/settings/workspace/members`      | Roster and invites                                                                                  |
 | `/settings/workspace/repositories` | Repositories registered in this workspace                                                           |
 | `/settings/workspace/environments` | Environment definitions: what spaces can start and the tasks their worktrees run |
 | `/settings/workspace/agents`       | Registered agent identities                                                                         |
@@ -106,6 +112,8 @@ Settings paths are namespaced by **scope** — `you/`, `workspace/`, `server/` �
 | `/settings/server/rigs`        | Rigs: what this host can boot, base images, custom images, running machines           |
 | `/settings/server/sandbox`     | Sandbox exec grants: programs agents may run from their working copy of your repositories |
 | `/settings/server/diagnostics` | Diagnostics and privacy: sandboxing, embedding, logging, crash reporting |
+| `/settings/server/people`      | People on this server and whether each address is confirmed (server owner only)       |
+| `/settings/server/audit`       | Audit log: the server's, and the workspaces you administer                            |
 | `/settings/server/backup`      | Backup and restore: install snapshots, per-workspace export, import and delete        |
 | `/settings/server/about`       | About and updates                                                                     |
 

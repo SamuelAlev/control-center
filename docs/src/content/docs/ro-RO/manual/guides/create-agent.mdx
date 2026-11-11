@@ -2,12 +2,12 @@
 title: Creează și configurează un agent
 description: Adaugă un agent într-un spațiu de lucru, dă-i un adaptor, un model, abilități și permisiuni și confirmă că rulează.
 slug: ro-RO/manual/ghiduri-practice/creeaza-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Acest ghid arată cum să adaugi un agent într-un spațiu de lucru și să îl configurezi până când poate rula cu adevărat.
 
-Fiecare spațiu de lucru este populat cu cinci agenți — un CEO plus `qa`, `architect`, `engineer` și `librarian` — așa că de obicei ai agenți înainte să fi configurat vreunul. Pașii de mai jos se aplică în egală măsură unui agent populat și unuia nou.
+Fiecare spațiu de lucru este populat cu șase agenți — un CEO plus `qa`, `architect`, `engineer`, `librarian` și `content-synthesizer` — așa că de obicei ai agenți înainte să fi configurat vreunul. Pașii de mai jos se aplică în egală măsură unui agent populat și unuia nou.
 
 ## Înainte de a începe
 
@@ -53,7 +53,7 @@ Lista derulantă **Model** este determinată de adaptorul pe care l-ai ales. Pen
 
 **Abilități** este un selector cu cipuri pentru pachetele de abilități instalate în acest spațiu de lucru. Atinge un cip pentru a-l comuta; simbolul de bifă le marchează pe cele selectate. Dacă spațiul de lucru nu are abilități, câmpul afișează „No skills available. Create skills in Settings → Skills first."
 
-Aici nu alegi abilitățile proprii ale unui repo. Un repo care le livrează (în `.agents/skills/`, `.claude/skills/` sau `.opencode/skills/`) le contribuie automat agentului care lucrează în acel repo, iar ele se schimbă când acesta se mută în altul — vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#repo-scoped-skills).
+Aici nu alegi abilitățile proprii ale unui repo. Un repo care le livrează (în `.agents/skills/`, `.claude/skills/` sau `.opencode/skills/`) le contribuie automat agentului care lucrează în acel repo, iar ele se schimbă când acesta se mută în altul — vezi [Skill-uri limitate la repo](/ro-RO/manual/concepte/modelul-agentilor/#skill-uri-limitate-la-repo).
 
 ## Setează linia de raportare și personajul
 
@@ -73,7 +73,7 @@ Un agent nu are comutatoare de permisiuni proprii. Ce poate trimite, deschide, f
 Tokenul GitHub al agentului este întotdeauna doar pentru citire. Un push trece prin Control Center, care întreabă regula **Push către un remote** înainte de a-l transmite. Vezi [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/) pentru cum ajunge fiecare regulă la o rulare.
 
 :::note[Regulile și sandbox-ul sistemului de operare sunt straturi separate]
-Regulile decid ce poate face un agent; sandbox-ul sistemului de operare limitează unde pot citi, scrie și se pot conecta procesele lui. `cc_server` învelește rulările agenților în sandbox-ul gazdei acolo unde există unul — Windows nu are niciun backend nativ, iar Linux și WSL2 au nevoie de `bwrap` și `socat`. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru setul complet de granițe.
+Regulile decid ce poate face un agent; sandbox-ul sistemului de operare limitează unde pot citi, scrie și se pot conecta procesele lui. `cc_server` învelește rulările agenților în sandbox-ul gazdei acolo unde există unul — Windows nu are niciun backend nativ, iar Linux și WSL2 au nevoie de `bwrap` și `socat`. Acolo unde nu există niciunul, pornesc doar rulările proprietarului serverului, dacă proprietarul nu a dezactivat sandbox-ul pentru toată lumea. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru setul complet de granițe.
 :::
 
 ## Verifică dacă rulează

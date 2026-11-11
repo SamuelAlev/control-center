@@ -2,7 +2,7 @@
 title: Analitik penggunaan
 description: Perkara yang direkodkan oleh Control Center apabila analitik penggunaan dihidupkan, siapa yang membuat keputusan, dan perkara yang tidak pernah dihantar.
 slug: ms-MY/manual-pengguna/rujukan/analitik-penggunaan
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center boleh menghantar **peristiwa penggunaan berpseudonim** ke tika [Umami](https://umami.is). Analitik penggunaan **dimatikan sehingga pengendali pelayan menghidupkannya**. Tetapan ini milik pelayan dan terpakai kepada setiap klien yang bersambung dengannya: apl desktop, apl web, telefon dan pelayan itu sendiri.
@@ -13,7 +13,7 @@ Analitik penggunaan berasingan daripada **Kongsi laporan ranap**, iaitu tetapan 
 
 | Suis | Lokasi | Kesan |
 | --- | --- | --- |
-| **Kongsi analitik penggunaan** | Onboarding (langkah kotak pasir) dan **Tetapan → Privasi**. Hanya pengendali pelayan yang boleh mengubahnya; ahli lain melihat nilai semasa dalam mod baca sahaja | Untuk seluruh pelayan. Disimpan sebagai `telemetry.usage_analytics` dalam tetapan pelayan. Dimatikan melainkan ditetapkan kepada `true` |
+| **Kongsi analitik penggunaan** | Onboarding (langkah kotak pasir) dan **Tetapan → Pelayan → Diagnostik dan privasi**. Hanya pengendali pelayan yang boleh mengubahnya; ahli lain melihat nilai semasa dalam mod baca sahaja | Untuk seluruh pelayan. Disimpan sebagai `telemetry.usage_analytics` dalam tetapan pelayan. Dimatikan melainkan ditetapkan kepada `true` |
 | Jenis binaan | Automatik | Binaan debug dan profile tidak menghantar apa-apa. Sebaliknya, setiap peristiwa ditulis ke log debug |
 | `CC_ANALYTICS_DEBUG=1` | Persekitaran `cc_server` atau fail `.env`nya | Membenarkan binaan debug dan profile pelayan, serta setiap klien yang bersambung dengannya, menghantar peristiwa secara sebenar untuk tujuan ujian. Suis di atas masih perlu dihidupkan |
 | `DO_NOT_TRACK=1` | Persekitaran `cc_server` | Menghentikan pelaporan pelayan itu sendiri, tidak kira kedudukan suis. Klien masih mengikut suis |

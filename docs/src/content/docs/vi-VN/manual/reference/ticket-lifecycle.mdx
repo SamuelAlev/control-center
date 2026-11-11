@@ -2,7 +2,7 @@
 title: Vòng đời phiếu
 description: Các trường, trạng thái, chuyển trạng thái, quan hệ của phiếu và điểm nghẽn thay đổi.
 slug: vi-VN/so-tay/tham-chieu/vong-doi-phieu
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Trạng thái phiếu
@@ -117,7 +117,7 @@ Thực thể tổng hợp trải hai mối quan tâm trên cùng một hàng. **
 | `projectId`              | `String?`                  | Dự án sở hữu; không bao giờ được đẩy lên hệ thống từ xa                                    |
 | `assignedAgentId`        | `String?`                  | Id của chủ thể được gán (chỉ là siêu dữ liệu — gán không điều phối gì cả)                  |
 | `assigneeType`           | `PrincipalType`            | Loại chủ thể mà `assignedAgentId` chỉ tới — `user` hoặc `agent` (mặc định `agent`)         |
-| `createdByType`          | `PrincipalType?`           | Loại chủ thể đã tạo phiếu (`user` hoặc `agent`); null với các hàng cũ/hệ thống             |
+| `createdByType`          | `PrincipalType?`           | Loại chủ thể đã tạo phiếu (`user` hoặc `agent`); null với các hàng do hệ thống tạo             |
 | `createdById`            | `String?`                  | Id của chủ thể đã tạo                                                                      |
 | `assignedTeamId`         | `String?`                  | Đội được gán (chỉ là siêu dữ liệu)                                                         |
 | `delegatedByAgentId`     | `String?`                  | Agent đã ủy thác phiếu này                                                                 |

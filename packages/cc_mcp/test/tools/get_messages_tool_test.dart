@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
@@ -14,10 +15,8 @@ import 'package:cc_mcp/src/tools/get_messages_tool.dart';
 import 'package:test/test.dart';
 
 class _FakeMessagingRepository implements MessagingRepository {
-
   @override
-  dynamic noSuchMethod(Invocation invocation) =>
-      super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
   @override
   Future<void> archiveSpace(String workspaceId, String spaceId) async {}
 
@@ -281,10 +280,21 @@ void main() {
   group('GetMessagesTool', () {
     late _FakeMessagingRepository repository;
     late GetSpaceMessagesTool tool;
+    late Set<String> hidden;
+    late List<String?> askedFor;
 
     setUp(() {
       repository = _FakeMessagingRepository();
-      tool = GetSpaceMessagesTool(repository: repository);
+      hidden = {};
+      askedFor = [];
+      tool = GetSpaceMessagesTool(
+        repository: repository,
+        hiddenSpaces:
+            ({required workspaceId, required callerConversationId}) async {
+              askedFor.add(callerConversationId);
+              return hidden;
+            },
+      );
       // ch-1 belongs to workspace ws-1 (the caller's workspace).
       repository.setSpaces('ws-1', [repository._space('ch-1', 'ws-1')]);
     });
@@ -371,6 +381,54 @@ void main() {
             as Map<String, dynamic>)['sender_id'],
         'agent-1',
       );
+    });
+
+    test('refuses a review space the run requester cannot see', () async {
+      repository.setMessages('ch-1', [
+        Message(
+          id: 'm-1',
+          spaceId: 'ch-1',
+          conversationId: 'ch-1',
+          senderId: 'agent-1',
+          senderType: SenderType.agent,
+          content: 'Rotate prod DB creds',
+          messageType: MessageType.text,
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      ]);
+      hidden = {'ch-1'};
+      final result = await tool.call({
+        'workspace_id': 'ws-1',
+        'space_id': 'ch-1',
+        McpCallScope.callerConversationKey: 'conv-run',
+      });
+      expect(result.isError, isTrue);
+      expect(result.content.first.text, isNot(contains('Rotate')));
+      expect(askedFor, ['conv-run']);
+    });
+
+    test('an unattested caller is asked about as no run', () async {
+      // A header-only scope removes the key; the tool then asks with null.
+      final scoped = const McpCallScope(
+        workspaceId: 'ws-1',
+        conversationId: 'conv-spoofed',
+      ).apply({'space_id': 'ch-1'}, tool.inputSchema);
+      expect(scoped.containsKey(McpCallScope.callerConversationKey), isFalse);
+      await tool.call(scoped);
+      expect(askedFor, [null]);
+    });
+
+    test('an attested run names itself, whatever the model wrote', () {
+      final scoped =
+          const McpCallScope(
+            workspaceId: 'ws-1',
+            conversationId: 'conv-run',
+            attested: true,
+          ).apply({
+            'space_id': 'ch-1',
+            McpCallScope.callerConversationKey: 'conv-other',
+          }, tool.inputSchema);
+      expect(scoped[McpCallScope.callerConversationKey], 'conv-run');
     });
 
     test('respects limit', () async {

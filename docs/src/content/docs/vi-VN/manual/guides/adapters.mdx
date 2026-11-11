@@ -2,7 +2,7 @@
 title: Quản lý adapter và mô hình
 description: Kết nối nhà cung cấp mô hình, chọn mô hình mà agent chạy trên đó và kiểm tra máy chủ có những CLI runner agent nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/adapter
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Hướng dẫn này chỉ cách kết nối nhà cung cấp mô hình và chọn thứ mà agent chạy
@@ -118,6 +118,8 @@ một cuộc trò chuyện: tiêu đề, câu trả lời `/btw`, tài liệu `/
 phỏng vấn mục tiêu `/goal`. Mỗi lần nó chạy một lượt hoàn thành không dùng công cụ,
 trên adapter và mô hình riêng của nó, vì vậy hãy cấp cho nó một mô hình nhỏ và nhanh.
 
+Khi adapter đó là một CLI ACP, lượt hoàn thành là một tiến trình trên máy của máy chủ và tuân theo [quy tắc sandbox](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/#agent-trên-máy-chủ-không-có-sandbox): nằm trong sandbox khi máy chủ có sandbox cho agent, và khi không có sandbox thì chỉ với các yêu cầu mà chủ sở hữu máy chủ chịu trách nhiệm. Với bất kỳ ai khác, các tính năng này bị bỏ qua: không có tiêu đề nào được tạo, và `/btw` trả lời "Không có tác tử Content synthesizer hoặc nó không có trình chạy hoạt động".
+
 Chỉnh sửa **persona** của nó trong **Cài đặt → Không gian làm việc → Agent** để đổi
 cách văn bản này được viết: độ dài tiêu đề, ngôn ngữ, giọng điệu, các ví dụ nó làm
 theo. Định dạng phản hồi mà mỗi tính năng phân tích (tiêu đề một dòng, các mục của
@@ -137,8 +139,7 @@ Sau đó nhấn **Làm mới** ở đầu trang. Mỗi hàng được phát hi�
 và đường dẫn đã phân giải, cùng các chip cho biết nó có hỗ trợ chế độ JSON và
 chọn mô hình hay không.
 
-CLI bên ngoài giữ thông tin xác thực riêng, trong cấu hình riêng của nó, trên
-máy chủ. Control Center không quản lý chúng.
+Các đăng nhập Claude Code được liệt kê dưới **Tài khoản Claude Code** trên bộ điều hợp Claude Code. Control Center tạo thư mục cấu hình của mỗi tài khoản trên máy chủ và đưa cho bạn lệnh `claude auth login` để chạy ở đó; nó không bao giờ tự đăng nhập thay bạn.
 
 :::caution[Tham số thêm và Biến môi trường của adapter chỉ nằm trên thiết bị này]
 Mỗi hàng adapter có trường **Tham số thêm** và hộp thoại **Biến môi trường**.

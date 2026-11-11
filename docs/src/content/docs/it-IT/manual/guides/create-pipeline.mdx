@@ -2,7 +2,7 @@
 title: Crea un modello di pipeline
 description: Crea un modello di workflow DAG nell'editor delle pipeline — aggiungi nodi, collegali, dichiara gli input e rendilo eseguibile.
 slug: it-IT/manuale/guide/crea-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 I modelli di pipeline si creano nelle impostazioni dello spazio di lavoro. La
@@ -41,7 +41,7 @@ atterra dove lo lasci, senza alcuna connessione in entrata.
 | **Bash script**                 | listen            | Esegue uno script shell con sostituzione di `{{state}}`; nessun agente inviato                   |
 | **Open conversation**           | listen            | Apre l'unico spazio visibile dell'esecuzione e il suo checkout; i nodi agente si uniscono a questa stanza |
 | **Clone PR branch**             | listen            | Individua il branch head della PR tramite `gh pr view` e lo clona nella directory dell'esecuzione |
-| **Post PR comment**             | listen            | Pubblica i rilievi consolidati sulla PR come commento di revisione GitHub                        |
+| **Post PR comment**             | listen            | Pubblica dal server un commento di revisione sulla PR: i rilievi, oppure il suo `message`        |
 | **Reviewer (prompt)**           | listen            | Invia un agente revisore specializzato; sospende finché l'agente non invia il suo risultato      |
 | **Consolidate (join)**          | join              | Attende più rami a monte, poi chiede a un agente di consolidarne gli output                      |
 | **Custom prompt**               | listen            | Nodo generico guidato da prompt, instradato attraverso il corpo `promptAgent`                    |
@@ -144,6 +144,7 @@ l'ambiente, perché nessuno dei due è configurabile:
   `GITHUB_TOKEN` contengono un token che può solo leggere quell'unico
   repository, quindi `gh` e `git clone` su di esso funzionano senza
   configurazione. Altrimenti non c'è alcun token GitHub.
+- Uno script non può scrivere su GitHub: `gh pr comment`, `gh pr merge`, `gh pr create` e `git push` falliscono con quel token. Per commentare usa invece un nodo **Post PR comment** (imposta `extras.message` per pubblicare un testo tuo, con segnaposto `{{key}}`, anziché i rilievi consolidati). Esegui il push e apri le pull request da un nodo agente: il suo `git push` passa dal gateway dell'esecuzione e apre la PR con lo strumento `open_pull_request`. Il merge spetta a una persona; nessun nodo esegue il merge.
 - Solo un amministratore dello spazio di lavoro può creare o modificare una
   pipeline con un passaggio bash.
 - Lo script viene avviato come eseguibile letterale `bash`, quindi `bash` deve

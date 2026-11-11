@@ -34,8 +34,8 @@ class Conversation {
   /// aliasing to the space id.
   final String id;
 
-  /// Owning workspace (isolation scope). Nullable to mirror the space — some
-  /// system/legacy spaces carry a null workspace.
+  /// Owning workspace (isolation scope). Nullable to mirror the space's
+  /// `workspaceId`.
   final String? workspaceId;
 
   /// The space this conversation lives inside.

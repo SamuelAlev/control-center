@@ -2,7 +2,7 @@
 title: Connecter un fournisseur OpenID Connect
 description: Reliez n’importe quel émetteur OIDC — Pocket ID, Keycloak, Auth0, Zitadel — à la connexion à Control Center.
 slug: fr-CA/manuel/guides/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -92,6 +92,32 @@ publique — voir [provisionner des utilisateurs avec
 SCIM](/fr-CA/manuel/guides/sso-scim).
 :::
 
+## Comment les connexions retrouvent les comptes existants
+
+Une connexion par le fournisseur d’identité retrouve son compte dans cet ordre :
+
+1. **L’identité épinglée.** La première connexion SSO épingle le sujet du fournisseur (émetteur plus `sub`) au compte. Chaque connexion ultérieure avec ce sujet correspond à ce compte.
+2. **Un courriel vérifié, des deux côtés.** Sinon, la connexion ne retrouve un compte par courriel que si le fournisseur envoie `email_verified: true` et que l’adresse du compte est aussi vérifiée. Une adresse est vérifiée lorsque l’authentification unique ou SCIM l’a définie, ou lorsque le propriétaire du serveur l’a confirmée. L’adresse du propriétaire compte aussi.
+
+Les adresses courriel sont enregistrées et affichées en minuscules, et la correspondance ignore la casse. Une adresse vérifiée n’identifie un compte que si exactement un compte la détient ; si deux comptes détiennent la même adresse vérifiée, elle ne correspond à aucun des deux.
+
+Une adresse saisie par une personne dans son propre profil, ou saisie sur une invitation, n’est pas vérifiée et ne correspond à rien. Modifier une adresse retire son état vérifié jusqu’à ce que quelqu’un la confirme à nouveau. Une connexion ne correspond jamais par nom d’utilisateur.
+
+Si rien ne correspond, la connexion crée un nouveau compte lorsque **Provisionner les utilisateurs inconnus à la première connexion** est activé, et est refusée lorsqu’il est désactivé.
+
+### Avant d’activer l’authentification unique pour des personnes qui ont déjà un compte
+
+Confirmez d’abord leurs adresses. Ouvrez **Paramètres → Serveur → Personnes**, où chaque compte affiche **Courriel non confirmé** tant que quelqu’un ne l’a pas attesté, et utilisez **Confirmer le courriel** sur la ligne de chaque personne. Seul le propriétaire du serveur voit cette liste. Sans cette étape, chacune de ces personnes obtient soit un second compte à sa première connexion SSO, soit un refus lorsque le provisionnement des utilisateurs inconnus est désactivé.
+
+Une personne voit « Vous seul avez saisi cette adresse. La connexion unique ne la reconnaîtra pas tant que le propriétaire du serveur ne l’aura pas confirmée. » sous le champ courriel de son propre profil tant que son adresse n’est pas confirmée.
+
+### Fournisseurs qui n’envoient pas `email_verified`
+
+Certains fournisseurs omettent cette déclaration. Microsoft Entra ID le fait par défaut. Une déclaration absente n’est pas un oui : avec un tel fournisseur, une connexion ne correspond que par l’identité épinglée, et la première connexion d’une personne ne peut jamais retrouver son compte existant par courriel. Provisionner le compte avec SCIM n’aide pas à cette première connexion OIDC. Les solutions pratiques sont :
+
+- laisser **Provisionner les utilisateurs inconnus à la première connexion** activé et laisser la première connexion créer le compte, ou
+- configurer le fournisseur pour qu’il émette `email_verified`, puis confirmer les adresses correspondantes comme ci-dessus.
+
 ## Vérifier votre configuration à partir de cette page
 
 Le vérificateur ci-dessous s’exécute dans votre navigateur. Il récupère
@@ -104,3 +130,15 @@ connexion d’essai qui montre si le client et son URI de redirection sont
 enregistrés. Il ne demande jamais le secret client.
 
 <SsoCheck kind="oidc" />
+
+## Dépannage
+
+### Une personne a obtenu un second compte après l’activation de l’authentification unique
+
+Le courriel de son compte existant n’était pas vérifié lors de sa première connexion SSO ; la connexion ne l’a donc pas retrouvé et a créé un nouveau compte. Cela arrive lorsque l’adresse a été saisie dans son profil ou sur une invitation sans que le propriétaire du serveur l’ait confirmée, ou lorsque le fournisseur n’a pas envoyé `email_verified: true`. Un nouveau compte dont le fournisseur atteste l’adresse prend cette adresse, et l’ancien compte, qui ne l’avait que saisie, la perd.
+
+Pour l’éviter pour la personne suivante, confirmez les adresses dans **Paramètres → Serveur → Personnes** avant leur première connexion. Pour une personne qui a déjà deux comptes, le nouveau est épinglé à son identité SSO : c’est donc celui que ses connexions utiliseront désormais.
+
+### « Ce compte est déjà lié à une autre identité SSO »
+
+La connexion a retrouvé un compte par son courriel vérifié, mais ce compte est déjà épinglé à un autre sujet ou à un autre émetteur : un autre utilisateur chez le fournisseur, la même personne sous un nouveau fournisseur, ou un compte créé par SCIM sous son propre identifiant. Le compte épinglé refuse toute autre identité, de sorte qu’une adresse recyclée chez le fournisseur ne peut pas s’en emparer. Connectez-vous avec l’identité à laquelle le compte a été lié en premier.

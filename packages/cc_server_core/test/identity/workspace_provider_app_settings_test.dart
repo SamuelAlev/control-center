@@ -15,7 +15,7 @@ import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart';
 import 'package:test/test.dart';
 
-/// A workspace's own Google, Linear and Klipy apps: inherit by default,
+/// A workspace's own Google, Linear and Klipy apps: nothing by default,
 /// fail-closed when half-configured, write-only secrets, a change that
 /// announces a different app, and nothing that crosses to another workspace.
 void main() {
@@ -31,26 +31,21 @@ void main() {
 
   tearDown(() => dir.deleteSync(recursive: true));
 
-  test('a workspace inherits every provider by default', () async {
+  test('a workspace stores no app by default', () async {
     for (final provider in WorkspaceAppProvider.values) {
       final status = await apps.status('ws-a', provider);
-      expect(status.mode, WorkspaceAppMode.inherit, reason: provider.wire);
       expect(status.state, OwnAppState.none, reason: provider.wire);
+      expect(status.toJson().containsKey('mode'), isFalse);
     }
     expect(
       await apps.oauthCredentials('ws-a', WorkspaceAppProvider.google),
       isNull,
     );
-    expect(await apps.linearApiKey('ws-a'), isNull);
+    expect(await apps.linearApiKey('ws-a'), isEmpty);
     expect(await apps.klipyAppKey('ws-a'), isNull);
   });
 
-  test('own mode with a missing field fails closed', () async {
-    await apps.setMode(
-      'ws-a',
-      WorkspaceAppProvider.google,
-      WorkspaceAppMode.own,
-    );
+  test('a missing field fails closed', () async {
     await apps.save('ws-a', WorkspaceAppProvider.google, {'client_id': 'id'});
     final status = await apps.status('ws-a', WorkspaceAppProvider.google);
     expect(status.state, OwnAppState.partial);
@@ -59,14 +54,11 @@ void main() {
       () => apps.oauthCredentials('ws-a', WorkspaceAppProvider.google),
       throwsA(isA<WorkspaceAppIncomplete>()),
     );
-    await apps.setMode(
-      'ws-a',
-      WorkspaceAppProvider.klipy,
-      WorkspaceAppMode.own,
-    );
+    // A Linear API key alone is a half-set-up Linear app too.
+    await apps.save('ws-a', WorkspaceAppProvider.linear, {'api_key': 'k'});
     expect(
-      () => apps.klipyAppKey('ws-a'),
-      throwsA(isA<WorkspaceAppIncomplete>()),
+      (await apps.status('ws-a', WorkspaceAppProvider.linear)).state,
+      OwnAppState.partial,
     );
   });
 
@@ -98,16 +90,15 @@ void main() {
     );
   });
 
-  test('back to the server lane deletes the fields', () async {
+  test('empty strings clear the fields', () async {
     await apps.save('ws-a', WorkspaceAppProvider.linear, {
       'client_id': 'lin',
       'api_key': 'lin_api',
     });
-    await apps.setMode(
-      'ws-a',
-      WorkspaceAppProvider.linear,
-      WorkspaceAppMode.inherit,
-    );
+    await apps.save('ws-a', WorkspaceAppProvider.linear, {
+      'client_id': '',
+      'api_key': '',
+    });
     expect(
       await secrets.keysMatching(
         (k) => k.startsWith('workspace_provider_app_'),
@@ -127,11 +118,10 @@ void main() {
       'client_secret': 's2',
     });
     await apps.save('ws-a', WorkspaceAppProvider.google, {'client_id': 'two'});
-    await apps.setMode(
-      'ws-a',
-      WorkspaceAppProvider.google,
-      WorkspaceAppMode.inherit,
-    );
+    await apps.save('ws-a', WorkspaceAppProvider.google, {
+      'client_id': '',
+      'client_secret': '',
+    });
     expect(heard, [
       ('ws-a', WorkspaceAppProvider.google),
       ('ws-a', WorkspaceAppProvider.google),
@@ -155,7 +145,7 @@ void main() {
         isNull,
       );
       expect(await apps.klipyAppKey('ws-b'), isNull);
-      expect(await apps.linearApiKey('ws-b'), isNull);
+      expect(await apps.linearApiKey('ws-b'), isEmpty);
       expect(
         (await apps.status('ws-b', WorkspaceAppProvider.google)).clientId,
         isEmpty,
@@ -208,8 +198,8 @@ void main() {
 
       final left = await secrets.keysMatching((_) => true);
       expect(left.where((k) => k.contains('ws-a')), isEmpty);
-      // Klipy key + mode marker, the Linear slot grant, the calendar credential.
-      expect(left.where((k) => k.contains('ws-b')), hasLength(4));
+      // The Klipy key, the Linear slot grant, the calendar credential.
+      expect(left.where((k) => k.contains('ws-b')), hasLength(3));
       expect(left, contains('user_ticket_linear_alice'));
     });
   });
@@ -266,7 +256,8 @@ void main() {
             (((list['result'] as Map)['data'] as Map)['apps'] as List)
                 .cast<Map<String, Object?>>()
                 .firstWhere((a) => a['provider'] == 'linear');
-        expect(linear['mode'], 'own');
+        expect(linear.containsKey('mode'), isFalse);
+        expect(linear['state'], 'complete');
         expect(linear['has_api_key'], isTrue);
         expect(linear.toString(), isNot(contains('lin_api_a')));
         expect(linear['redirect_uris'], [
@@ -280,17 +271,15 @@ void main() {
       for (final op in [
         'workspaceProviderApps.list',
         'workspaceProviderApps.save',
-        'workspaceProviderApps.setMode',
       ]) {
         final res = await call(op, 'mia', {
           'workspace_id': 'ws-a',
           'provider': 'klipy',
-          'mode': 'own',
           'app_key': 'x',
         });
         expect(code(res), RpcErrorCodes.unauthorized, reason: op);
       }
-      expect(await apps.ownsApp('ws-a', WorkspaceAppProvider.klipy), isFalse);
+      expect(await apps.klipyAppKey('ws-a'), isNull);
     });
 
     test("an owner of B reaches none of A's config", () async {
@@ -298,12 +287,10 @@ void main() {
       for (final op in [
         'workspaceProviderApps.list',
         'workspaceProviderApps.save',
-        'workspaceProviderApps.setMode',
       ]) {
         final res = await call(op, 'bea', {
           'workspace_id': 'ws-a',
           'provider': 'klipy',
-          'mode': 'inherit',
           'app_key': 'B',
         });
         expect(code(res), RpcErrorCodes.unauthorized, reason: op);

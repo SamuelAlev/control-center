@@ -2,7 +2,7 @@
 title: Usar espaços
 description: Crie espaços, defina o modo deles, gerencie participantes e autonomia e abra conversas e tópicos.
 slug: pt-BR/manual/guias/espacos
-sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
+sourceHash: c588f695c796a2ddce571d4870ef5c7d3594fe07
 ---
 
 Este guia mostra como usar espaços. Um **espaço** é a superfície de mensagens do
@@ -27,6 +27,8 @@ agentes](#espaços-entre-agentes) abaixo.
    repos cria um espaço sem nada em checkout
 6. Confirme
 
+Os repositórios que você escolhe também definem quem pode abrir o espaço. Somente os integrantes que têm concessão de leitura em todos eles, e cuja própria conta de login na forja pode ler todos eles, veem o espaço e tudo o que há nele: mensagens, resultados de busca, logs de execução, tarefas, atividade e notificações. Um espaço sem repositórios fica aberto a todos os integrantes. Para uma conversa que todo o espaço de trabalho deve poder ler, desmarque todos os repos ou mantenha apenas repos que todos podem ler. Veja [Espaços seguem os seus repositórios](/pt-BR/manual/conceitos/autorizacao/#espaços-seguem-seus-repositórios).
+
 Só um agente responde a uma mensagem, então um espaço sem agente não inicia nada: o compositor avisa isso e mantém a sua mensagem até você mencionar um agente com @, o que o adiciona ao espaço e envia a mensagem. Não há executor padrão por trás de um espaço vazio.
 
 Os espaços têm escopo de espaço de trabalho: você só vê agentes do espaço de
@@ -36,7 +38,7 @@ Cada repo é baixado em `repos/<name>/` dentro do espaço. Um repo que traz suas
 próprias skills de agente as contribui para o agente que estiver trabalhando nele
 — um conjunto de cada repo por vez, trocando conforme o agente se move. No
 composer, você pode alcançar qualquer uma delas com `/skill:<repo>:<name>`. Veja
-[Skills com escopo de repositório](/pt-BR/manual/conceitos/modelo-de-agentes/#repo-scoped-skills).
+[Skills com escopo de repositório](/pt-BR/manual/conceitos/modelo-de-agentes/#skills-com-escopo-de-repositório).
 
 A superfície fica em `/workspaces/<id>/spaces`, e um único espaço em
 `/workspaces/<id>/spaces/<spaceId>`.

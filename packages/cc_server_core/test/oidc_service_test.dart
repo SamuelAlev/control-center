@@ -9,6 +9,7 @@ import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_server_core/src/identity/oidc_service.dart';
 import 'package:cc_server_core/src/identity/sso_provisioner.dart';
@@ -201,7 +202,13 @@ class _FakeUserRepository implements UserRepository {
   Future<User?> getByHandle(String handle) async => byHandle[handle];
 
   @override
-  Future<User?> getByEmail(String email) async => byEmail[email];
+  Future<User?> getByVerifiedEmail(String email) async => byId.values
+      .where((u) => u.email == email && u.emailVerified)
+      .firstOrNull;
+
+  @override
+  Future<List<User>> getAllByEmail(String email) async =>
+      byId.values.where((u) => u.email == email).toList();
 
   @override
   Future<User?> getBySsoSubject(String issuer, String subject) async {
@@ -221,6 +228,16 @@ class _FakeUserRepository implements UserRepository {
       byEmail[user.email!] = user;
     }
   }
+  @override
+  Future<User> insertWithFreeHandle(User user) async {
+    final free = Username.candidates(
+      Username.parse(user.handle),
+    ).firstWhere((c) => byHandle[c.value] == null);
+    final stored = user.copyWith(handle: free.value);
+    await upsert(stored);
+    return stored;
+  }
+
 
   @override
   dynamic noSuchMethod(Invocation invocation) =>
@@ -668,6 +685,7 @@ void main() {
           handle: 'ada',
           displayName: 'Ada',
           email: 'ada@example.com',
+          emailVerified: true,
           createdAt: DateTime.utc(2025, 1, 1),
         );
         users.byId[existing.id] = existing;
@@ -1057,8 +1075,7 @@ void main() {
         // Regression: the handle-match used to run for ANY email-less login,
         // so a co-resident IdP user asserting a colleague's
         // preferred_username matched, got pinned and took the account over.
-        // Matching by self-asserted username now requires a vouched claim
-        // set (SAML's signed assertions; never an unverified OIDC one).
+        // No login matches by username any more (next test).
         final users = _FakeUserRepository();
         final existing = User(
           id: 'u-2',
@@ -1098,6 +1115,48 @@ void main() {
       },
     );
 
+    test('a vouched email-less login never matches by username either', () async {
+      // People choose their usernames, so one an IdP asserts names nobody:
+      // a member who picked "bob" must not receive the IdP's bob, and the
+      // IdP's bob must not land in that member's account.
+      final users = _FakeUserRepository();
+      final existing = User(
+        id: 'u-2',
+        handle: 'bob',
+        displayName: 'Bob',
+        createdAt: DateTime.utc(2025, 1, 1),
+      );
+      users.byId[existing.id] = existing;
+      users.byHandle[existing.handle] = existing;
+      var beginUrl = Uri.parse('https://app/cb');
+      final service = _buildService(
+        http: _FakeHttpClient({
+          (u) => u.path.contains('.well-known'): _discoveryOk,
+          (u) => u.path.contains('token'): (_) => _tokenWithClaims(
+            _claimsFor(beginUrl, {
+              'preferred_username': 'bob',
+              'email_verified': true,
+            }),
+          ),
+        }),
+        users: users,
+        workspaces: _FakeWorkspaceRepository(),
+        members: _FakeMembershipRepository(),
+      );
+      beginUrl = await service.beginLogin(
+        redirectUri: Uri.parse('https://app/cb'),
+      );
+      final result = await service.handleCallback(
+        requestUri: beginUrl.replace(
+          queryParameters: {...beginUrl.queryParameters, 'code': 'c'},
+        ),
+        redirectUri: Uri.parse('https://app/cb'),
+      );
+      expect(result.user.id, isNot('u-2'));
+      expect(result.user.handle, 'bob2');
+      expect(users.byId['u-2']!.ssoSubject, isNull);
+    });
+
     test(
       'an unverified email seeds a new account WITHOUT shadowing the owner',
       () async {
@@ -1111,6 +1170,7 @@ void main() {
           handle: 'victim',
           displayName: 'Victim',
           email: 'victim@example.com',
+          emailVerified: true,
           createdAt: DateTime.utc(2025, 1, 1),
         );
         users.byId[victim.id] = victim;
@@ -1193,7 +1253,7 @@ void main() {
       expect(result.user.displayName, 'Bob The Builder');
     });
 
-    test('falls back to sso-user when the handle sanitizes to empty', () async {
+    test('falls back to member when the handle normalises to nothing', () async {
       var beginUrl = Uri.parse('https://app/cb');
       final service = _buildService(
         http: _FakeHttpClient({
@@ -1215,7 +1275,7 @@ void main() {
         ),
         redirectUri: Uri.parse('https://app/cb'),
       );
-      expect(result.user.handle, 'sso-user');
+      expect(result.user.handle, 'member');
     });
 
     test('uses the configured default role when no group maps', () async {
@@ -1339,6 +1399,7 @@ void main() {
           handle: 'ada',
           displayName: 'Ada',
           email: 'ada@example.com',
+          emailVerified: true,
           ssoSubject: 'real-subject',
           ssoIssuer: 'https://idp.test',
           createdAt: DateTime.utc(2025, 1, 1),
@@ -1386,6 +1447,7 @@ void main() {
           handle: 'victim',
           displayName: 'Victim',
           email: 'victim@example.com',
+          emailVerified: true,
           createdAt: DateTime.utc(2025, 1, 1),
         );
         users.byId[invited.id] = invited;
@@ -1434,6 +1496,7 @@ void main() {
           handle: 'victim',
           displayName: 'Victim',
           email: 'victim@example.com',
+          emailVerified: true,
           createdAt: DateTime.utc(2025, 1, 1),
         );
         users.byId[invited.id] = invited;
@@ -1781,6 +1844,7 @@ void main() {
           handle: 'ada',
           displayName: 'Ada',
           email: 'ada@example.com',
+          emailVerified: true,
           ssoSubject: 'subject-1',
           ssoIssuer: 'https://idp.test',
           createdAt: DateTime.utc(2025, 1, 1),
@@ -1827,6 +1891,7 @@ void main() {
           handle: 'ada',
           displayName: 'Ada',
           email: 'ada@example.com',
+          emailVerified: true,
           ssoSubject: 'subject-1',
           ssoIssuer: 'scim', // pinned by SCIM, not by this OIDC issuer.
           createdAt: DateTime.utc(2025, 1, 1),

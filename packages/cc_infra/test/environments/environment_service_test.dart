@@ -153,7 +153,7 @@ void main() {
       await h.ensure();
       expect(h.commands, [
         'tool first',
-        'compose up -d db site',
+        'compose up -d --remove-orphans db site',
         'tool second',
       ]);
     });
@@ -244,7 +244,7 @@ void main() {
       expect(second.id, first.id);
       expect(second.ports, first.ports);
       expect(second.status, EnvironmentStatus.ready);
-      expect(h.commands, ['compose up -d db site']);
+      expect(h.commands, ['compose up -d --remove-orphans db site']);
       expect(h.routing.routes[first.id], isNotEmpty);
     });
 
@@ -262,6 +262,35 @@ void main() {
       h.runner.calls.clear();
       await h.service.reset('ws-a', 'space-1', by: principal);
       expect(h.commands, ['tool migrate', 'tool warm']);
+    });
+
+    test('a task a start has nothing for is idle, not a step of it', () async {
+      h.store(
+        definitionJson([
+          taskJson('migrate', ['create']),
+          taskJson('warm', ['start']),
+          taskJson('deps', ['change']),
+          taskJson('e2e', ['manual']),
+        ]),
+      );
+      final first = await h.ensure();
+      expect(
+        {for (final item in first.components) item.id: item.state},
+        {
+          'migrate': 'completed',
+          'warm': 'completed',
+          'deps': 'idle',
+          'e2e': 'idle',
+        },
+      );
+      expect(first.startComponents.map((item) => item.id), ['migrate', 'warm']);
+
+      await h.service.stop('ws-a', 'space-1', by: principal);
+      final second = await h.ensure();
+      // Its work is done for as long as the environment lives.
+      expect(component('migrate').state, 'idle');
+      expect(second.startComponents.map((item) => item.id), ['warm']);
+      expect(second.status, EnvironmentStatus.ready);
     });
 
     test(
@@ -299,7 +328,8 @@ void main() {
         ),
       );
       final env = await h.ensure();
-      expect(env.status, EnvironmentStatus.failed);
+      // Exit 3 means the same from a task as from a tool: it waits on someone.
+      expect(env.status, EnvironmentStatus.blocked);
       expect(env.lastError?.code, 'host');
       expect(env.lastError?.command, 'sudo tool hosts');
       expect(h.commands, ['tool migrate']);
@@ -442,7 +472,7 @@ void main() {
         await h.ensure();
         expect(h.directory.added, ['repo-e2e']);
         final call = h.runner.calls.firstWhere((c) => c.argv.first == 'tool');
-        expect(call.environment['CC_REPO_PATH_E2E'], '/tmp');
+        expect(call.environment['CC_ENV_REPO_E2E'], '/tmp');
       });
 
       test('useSource passes the registered checkout', () async {
@@ -459,7 +489,7 @@ void main() {
         );
         await h.ensure();
         final call = h.runner.calls.firstWhere((c) => c.argv.first == 'tool');
-        expect(call.environment['CC_REPO_PATH_E2E'], '$root/source-e2e');
+        expect(call.environment['CC_ENV_REPO_E2E'], '$root/source-e2e');
         expect(h.directory.added, isEmpty);
       });
 
@@ -477,7 +507,7 @@ void main() {
         );
         await h.ensure();
         final call = h.runner.calls.firstWhere((c) => c.argv.first == 'tool');
-        expect(call.environment.keys, isNot(contains('CC_REPO_PATH_E2E')));
+        expect(call.environment.keys, isNot(contains('CC_ENV_REPO_E2E')));
       });
 
       test('a required role that can\'t be had stops it', () async {
@@ -626,7 +656,7 @@ void main() {
       h.store(definitionJson([composeJson()]));
       final results = await Future.wait([h.ensure(), h.ensure(), h.ensure()]);
       expect(results.map((env) => env.id).toSet(), hasLength(1));
-      expect(h.commands, ['compose up -d db site']);
+      expect(h.commands, ['compose up -d --remove-orphans db site']);
     });
 
     test('a stop waits for the start in flight', () async {
@@ -641,7 +671,7 @@ void main() {
       await h.until(() => h.commands.isNotEmpty);
       final stopping = h.service.stop('ws-a', 'space-1', by: principal);
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(h.commands, ['compose up -d db site']);
+      expect(h.commands, ['compose up -d --remove-orphans db site']);
       held.complete();
       await starting;
       await stopping;
@@ -1216,6 +1246,7 @@ void main() {
           taskJson('deps', ['provision']),
         ]),
         by: principal,
+        byServerOwner: true,
       );
       await expectLater(
         h.service.saveDefinition(
@@ -1224,6 +1255,7 @@ void main() {
             taskJson('more', ['archive']),
           ]),
           by: principal,
+          byServerOwner: true,
         ),
         invalid(contains('repo-app')),
       );
@@ -1236,6 +1268,7 @@ void main() {
           taskJson('deps', ['provision']),
         ]),
         by: principal,
+        byServerOwner: true,
       );
       await h.service.saveDefinition(
         workspaceId: 'ws-a',
@@ -1244,6 +1277,7 @@ void main() {
           taskJson('deps2', ['provision']),
         ]),
         by: principal,
+        byServerOwner: true,
       );
     });
 
@@ -1676,7 +1710,11 @@ void main() {
         await h.until(() => h.terminals.sessions.length > before);
         expect(h.commands, contains('tool migrate'));
         expect(h.commands, isNot(contains('tool other')));
-        expect(h.commands.first, startsWith('compose up -d --build'));
+        // Re-planned: the new service is there. The fixture does not build.
+        expect(
+          h.commands.first,
+          'compose up -d --remove-orphans db site extra',
+        );
         await h.until(() => row('pr').ports.containsKey('extra.9000'));
       });
 
@@ -2143,25 +2181,55 @@ void main() {
       expect(h.commands, contains('tool destroy shop'));
     });
 
-    test('a tool that no longer lists it means gone', () async {
-      h.tool['ls'] = ok(jsonEncode(['other']));
-      h.store(
-        definitionJson([
-          {
-            'kind': 'cli',
-            'id': 'tool',
-            'verbs': {
-              'create': ['tool', 'create'],
-              'status': ['tool', 'status'],
-              'destroy': ['tool', 'destroy'],
-              'list': ['tool', 'ls'],
+    group('a tool that no longer lists it', () {
+      setUp(() {
+        h.store(
+          definitionJson([
+            {
+              'kind': 'cli',
+              'id': 'tool',
+              'verbs': {
+                'create': ['tool', 'create'],
+                'status': ['tool', 'status'],
+                'destroy': ['tool', 'destroy'],
+                'list': ['tool', 'ls'],
+              },
             },
-          },
-        ]),
-      );
-      stored(EnvironmentStatus.stopped);
-      await h.service.recover();
-      expect(h.environments.rows['env-1']!.status, EnvironmentStatus.gone);
+          ]),
+        );
+        stored(EnvironmentStatus.stopped);
+      });
+
+      EnvironmentStatus status() => h.environments.rows['env-1']!.status;
+
+      test('and says it is missing means gone', () async {
+        h.tool['ls'] = ok(jsonEncode(['other']));
+        h.tool['status'] = ok(jsonEncode({'state': 'missing'}));
+
+        await h.service.recover();
+
+        expect(status(), EnvironmentStatus.gone);
+      });
+
+      test('but still answers for it keeps it', () async {
+        // A list that spells names its own way must not lose environments.
+        h.tool['ls'] = ok(jsonEncode(['acme-other']));
+        h.tool['status'] = ok(jsonEncode({'state': 'stopped'}));
+
+        await h.service.recover();
+
+        expect(status(), EnvironmentStatus.stopped);
+      });
+
+      test('in a list nobody could read keeps it', () async {
+        h.tool['ls'] = ok('Checking for updates...');
+        h.tool['status'] = ok(jsonEncode({'state': 'missing'}));
+
+        await h.service.recover();
+
+        expect(status(), EnvironmentStatus.stopped);
+        expect(h.runner.callsWith('status'), isEmpty);
+      });
     });
 
     group('orphans', () {
@@ -2392,13 +2460,13 @@ void main() {
 
       test('keeps the row and the reason through a poll', () async {
         await h.ensure();
-        expect(row().status, EnvironmentStatus.failed);
+        expect(row().status, EnvironmentStatus.blocked);
 
         h.now = h.now.add(const Duration(minutes: 6));
         await h.service.runMaintenance();
 
-        expect(row().status, EnvironmentStatus.failed);
-        expect(row().lastError?.needsHostSetup, isTrue);
+        expect(row().status, EnvironmentStatus.blocked);
+        expect(row().lastError?.blocker, EnvironmentBlocker.input);
         expect(row().components.single.state, 'failed');
       });
 
@@ -2408,7 +2476,7 @@ void main() {
 
         await h.service.recover();
 
-        expect(row().status, EnvironmentStatus.failed);
+        expect(row().status, EnvironmentStatus.blocked);
       });
 
       test('leaves the attempt in the space\'s runs', () async {
@@ -2416,7 +2484,7 @@ void main() {
 
         final run = (await h.runs.forSpace('ws-a', 'space-a')).single;
         expect(run.kind, EnvironmentRunKind.start);
-        expect(run.status, EnvironmentRunStatus.failed);
+        expect(run.status, EnvironmentRunStatus.blocked);
         expect(run.exitCode, 3);
         expect(run.error, 'Adding the hostnames needs sudo');
       });
@@ -2457,156 +2525,6 @@ void main() {
         final held = await h.service.definitionEnvironments('ws-a', 'def-1');
 
         expect(held.single.spaceName, isNull);
-      });
-    });
-
-    group('finishing a start on a terminal', () {
-      void definition({bool setup = true}) => h.store(
-        definitionJson([
-          {
-            'kind': 'cli',
-            'id': 'tool',
-            'verbs': {
-              'create': ['tool', 'create', '--json'],
-              'status': ['tool', 'status'],
-              'destroy': ['tool', 'destroy'],
-              if (setup) 'setup': ['tool', 'create', '{name}'],
-            },
-            'statusMap': {
-              'state': [
-                {
-                  'when': {'path': '/up', 'equals': true},
-                  'state': 'ready',
-                },
-                {'state': 'starting'},
-              ],
-              'missingErrorCodes': ['env.not-found'],
-            },
-          },
-        ]),
-      );
-
-      Future<void> stoppedForSetup() async {
-        h.tool['status'] = failed(
-          1,
-          error: const EnvironmentError(
-            code: 'env.not-found',
-            message: 'No such environment',
-          ),
-        );
-        h.tool['create'] = failed(
-          3,
-          error: const EnvironmentError(
-            code: 'hosts',
-            message: 'Adding the hostnames needs sudo',
-            command: 'printed by the tool --do-not-run-me',
-            exitCode: 3,
-          ),
-        );
-        await h.ensure();
-      }
-
-      Future<String> start() =>
-          h.service.startSetup('ws-a', 'space-1', by: principal);
-
-      test('runs the definition\'s verb, not what the tool printed', () async {
-        definition();
-        await stoppedForSetup();
-
-        await start();
-
-        expect(h.terminals.last.executable, '/usr/bin/tool');
-        expect(h.terminals.last.arguments, ['create', row().name]);
-        expect(h.terminals.last.environment['TERM'], 'xterm-256color');
-      });
-
-      test('a second press opens the same terminal', () async {
-        definition();
-        await stoppedForSetup();
-
-        final first = await start();
-
-        expect(await start(), first);
-        expect(h.terminals.sessions, hasLength(1));
-      });
-
-      test('the start carries on when it succeeds', () async {
-        definition();
-        await stoppedForSetup();
-        await start();
-        h.tool['status'] = ok(jsonEncode({'up': true}));
-
-        h.terminals.last.exit.complete(0);
-        for (var i = 0; i < 200 && !row().status.isRunning; i++) {
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-        }
-
-        expect(row().status, EnvironmentStatus.ready);
-        expect(row().lastError, isNull);
-      });
-
-      test('a failure stays where it was, and leaves a run', () async {
-        definition();
-        await stoppedForSetup();
-        await start();
-
-        h.terminals.last.print('sudo: 3 incorrect password attempts\n');
-        h.terminals.last.exit.complete(1);
-        await pumpEventQueue();
-
-        expect(row().status, EnvironmentStatus.failed);
-        expect(row().lastError?.needsHostSetup, isTrue);
-        final run = (await h.runs.forSpace(
-          'ws-a',
-          'space-1',
-        )).firstWhere((item) => item.label == 'setup');
-        expect(run.status, EnvironmentRunStatus.failed);
-        expect(run.output, contains('incorrect password attempts'));
-      });
-
-      test('refuses when nothing is waiting on a person', () async {
-        definition();
-        h.tool['status'] = ok(jsonEncode({'up': true}));
-        await h.ensure();
-
-        await expectLater(start(), throwsA(isA<Exception>()));
-        expect(h.terminals.sessions, isEmpty);
-      });
-
-      test('refuses a definition without the verb', () async {
-        definition(setup: false);
-        await stoppedForSetup();
-
-        await expectLater(start(), throwsA(isA<Exception>()));
-        expect(h.terminals.sessions, isEmpty);
-      });
-
-      test('a fork never gets a password prompt on this machine', () async {
-        definition();
-        await stoppedForSetup();
-        final space = h.directory.spaces['space-1']!;
-        h.directory.spaces['space-1'] = EnvironmentSpaceInfo(
-          id: space.id,
-          workspaceId: space.workspaceId,
-          name: space.name,
-          branch: space.branch,
-          repos: space.repos,
-          isFork: true,
-        );
-
-        await expectLater(start(), throwsA(isA<Exception>()));
-        expect(h.terminals.sessions, isEmpty);
-      });
-
-      test('destroying it ends a terminal nobody will answer', () async {
-        definition();
-        await stoppedForSetup();
-        await start();
-        h.tool['destroy'] = ok();
-
-        await h.service.destroy('ws-a', 'space-1', by: principal);
-
-        expect(h.terminals.last.killed, isTrue);
       });
     });
 
@@ -2670,6 +2588,7 @@ void main() {
         workspaceId: 'ws-a',
         definition: definitionJson([composeJson()]),
         by: principal,
+        byServerOwner: true,
       );
       expect(record.name, 'Shop');
       expect(record.createdBy, 'user:member');
@@ -2691,6 +2610,7 @@ void main() {
             'contract': 2,
           },
           by: principal,
+          byServerOwner: true,
         ),
         invalid(allOf(contains('contract: '), contains('env'), contains('\n'))),
       );
@@ -2708,6 +2628,7 @@ void main() {
             },
           ),
           by: principal,
+          byServerOwner: true,
         ),
         invalid(contains('repos.app: ')),
       );
@@ -2719,8 +2640,15 @@ void main() {
           workspaceId: 'ws-a',
           definition: {'name': 'x'},
           by: principal,
+          byServerOwner: true,
         ),
-        invalid(startsWith('definition: ')),
+        invalid(
+          allOf(
+            contains('contract: Required'),
+            contains('repos: Required'),
+            contains('components: Required'),
+          ),
+        ),
       );
     });
 
@@ -2751,6 +2679,7 @@ void main() {
           repoId: 'repo-app',
           path: '.cc/environment.json',
           by: principal,
+          byServerOwner: true,
         );
         expect(record.approvedBlobHash, 'blob1');
         expect(record.sourcePath, '.cc/environment.json');
@@ -2772,6 +2701,7 @@ void main() {
             'policy': {'maxRunning': 1},
           },
           by: principal,
+          byServerOwner: true,
         );
         final definition = await h.service.definitionFor('ws-a', 'space-1');
         expect(definition?.policy.maxRunning, 1);
@@ -2787,6 +2717,7 @@ void main() {
             path: 'env.json',
             expectedBlobHash: 'blob1',
             by: principal,
+            byServerOwner: true,
           ),
           throwsA(isA<ValidationException>()),
         );
@@ -2799,6 +2730,7 @@ void main() {
           repoId: 'repo-app',
           path: 'env.json',
           by: principal,
+          byServerOwner: true,
         );
         onBranch(
           fileAt(
@@ -2818,6 +2750,7 @@ void main() {
             'policy': {'maxRunning': 1},
           },
           by: principal,
+          byServerOwner: true,
         );
         expect(again.approvedBlobHash, 'blob1');
         expect(again.definitionJson, first.definitionJson);
@@ -2830,6 +2763,7 @@ void main() {
           repoId: 'repo-app',
           path: 'env.json',
           by: principal,
+          byServerOwner: true,
         );
         onBranch(
           fileAt(
@@ -2855,6 +2789,7 @@ void main() {
           repoId: 'repo-app',
           path: 'env.json',
           by: principal,
+          byServerOwner: true,
         );
         await h.ensure();
         expect(h.commands, contains('tool evil'));
@@ -2867,6 +2802,7 @@ void main() {
           repoId: 'repo-app',
           path: 'env.json',
           by: principal,
+          byServerOwner: true,
         );
         final update = await h.service.sourceUpdate('ws-a', record.id);
         expect(update?['update_available'], isFalse);
@@ -2885,6 +2821,7 @@ void main() {
             repoId: 'repo-app',
             path: 'env.json',
             by: principal,
+            byServerOwner: true,
           ),
           throwsA(isA<ValidationException>()),
         );
@@ -2898,6 +2835,7 @@ void main() {
             repoId: 'repo-app',
             path: 'env.json',
             by: principal,
+            byServerOwner: true,
           ),
           invalid(contains('does not exist on main')),
         );
@@ -2910,6 +2848,7 @@ void main() {
             repoId: 'repo-app',
             path: '../secret',
             by: principal,
+            byServerOwner: true,
           ),
           invalid(contains('source.path')),
         );
@@ -2923,6 +2862,7 @@ void main() {
             repoId: 'repo-b',
             path: 'env.json',
             by: principal,
+            byServerOwner: true,
           ),
           invalid(contains('not linked')),
         );
@@ -2936,6 +2876,7 @@ void main() {
             'source': {'repoId': 'repo-app', 'path': 'env.json'},
           },
           by: principal,
+          byServerOwner: true,
         );
         expect(record.approvedBlobHash, 'blob1');
       });
@@ -3183,7 +3124,7 @@ void main() {
       h.store({'name': 'x'}, id: 'junk');
       await expectLater(
         h.ensure(definitionId: 'junk'),
-        invalid(startsWith('definition: ')),
+        invalid(contains('repos: Required')),
       );
     });
 
@@ -4052,6 +3993,7 @@ void main() {
           definition: Map<String, dynamic>.from(redacted['definition'] as Map)
             ..['env'] = {'DATABASE_URL': kEnvironmentRedactedValue},
           by: principal,
+          byServerOwner: true,
         ),
         invalid(contains('hidden values')),
       );
@@ -4068,6 +4010,7 @@ void main() {
             'env': {'SECRET_ID': kEnvironmentRedactedValue},
           },
           by: principal,
+          byServerOwner: true,
         ),
         invalid(contains('hidden values')),
       );
@@ -4086,6 +4029,7 @@ void main() {
             extra: {'placement': 'rig'},
           ),
           by: principal,
+          byServerOwner: true,
         ),
         invalid(contains('repos.e2e')),
       );
@@ -4487,6 +4431,8 @@ void main() {
       'agentShimTools': (h) => h.service.agentShimTools('ws-a', 'space-b'),
       'sandboxHosts': (h) => h.service.sandboxHosts('ws-a', 'space-b'),
       'definitionFor': (h) => h.service.definitionFor('ws-a', 'space-b'),
+      'hostComposeProject': (h) =>
+          h.service.hostComposeProject('ws-a', 'space-b'),
       'nameFor': (h) => h.service.nameFor('ws-a', 'space-b'),
       'worktreeRoots': (h) => h.service.worktreeRoots('ws-a', 'space-b'),
       'workingDirectory': (h) => h.service.workingDirectory('ws-a', 'space-b'),
@@ -4526,7 +4472,7 @@ void main() {
     test('the list above covers the whole port', () {
       // Methods that take a space. Anything added to EnvironmentPort or
       // AgentEnvironmentContext with a spaceId belongs in `calls`.
-      expect(calls, hasLength(26));
+      expect(calls, hasLength(27));
     });
 
     test('definitions are scoped too', () async {

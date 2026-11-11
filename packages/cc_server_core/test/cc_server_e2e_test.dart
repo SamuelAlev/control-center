@@ -52,10 +52,12 @@ void main() {
 
       // --- Seed the server's DB + secrets exactly as a paired device would exist.
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.workspaceRegistryDao.upsertWorkspace(
-        const WorkspacesTableCompanion(
-          id: Value(workspaceId),
-          name: Value('Alpha'),
+        WorkspacesTableCompanion(
+          id: const Value(workspaceId),
+          name: const Value('Alpha'),
+          ownerUserId: Value(seededOwnerId),
         ),
       );
       await DaoTicketRepository(
@@ -72,12 +74,14 @@ void main() {
         ),
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(workspaceId),
-          label: Value('e2e'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          workspaceId: const Value(workspaceId),
+          label: const Value('e2e'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -109,7 +113,8 @@ void main() {
     },
   );
 
-  test('GET /healthz returns liveness JSON without auth', () async {
+  test('GET /healthz returns liveness JSON without auth, and shutdown '
+      'releases the forge clients', () async {
     final tmp = Directory.systemTemp.createTempSync('cc_server_health');
     // The boot preflight refuses to start without the native libraries;
     // stage whatever this machine has into the data dir (see the helper).
@@ -119,7 +124,12 @@ void main() {
     final server = await runCcServer(
       args: ['--data-dir', tmp.path, '--port', '0'],
     );
-    addTearDown(server.shutdown);
+    var stopped = false;
+    addTearDown(() async {
+      if (!stopped) {
+        await server.shutdown();
+      }
+    });
 
     final http = HttpClient();
     addTearDown(() => http.close(force: true));
@@ -140,6 +150,41 @@ void main() {
     expect(json['gitSha'], BuildInfo.buildGitSha);
     expect(json['schemaVersion'], isA<int>());
     expect(json['catalogVersion'], isA<int>());
+
+    expect(server.forgeClientsClosed, isFalse);
+    stopped = true;
+    await server.shutdown();
+    expect(server.forgeClientsClosed, isTrue);
+  });
+
+  test('a server stopped right after it boots logs no error', () async {
+    final tmp = Directory.systemTemp.createTempSync('cc_server_quick_stop');
+    await stageServerNatives(tmp.path);
+    addTearDown(() => deleteDirBestEffort(tmp));
+
+    final server = await runCcServer(
+      args: ['--data-dir', tmp.path, '--port', '0'],
+    );
+    // Boot's unawaited database work (the newsfeed sweep, workspace seeding,
+    // the template reconcile) is still running: the databases must not close
+    // under an open transaction of it.
+    await server.shutdown();
+
+    final logs = Directory('${tmp.path}/logs');
+    final lines = [
+      if (logs.existsSync())
+        for (final file in logs.listSync().whereType<File>())
+          ...file.readAsLinesSync(),
+    ];
+    expect(lines, isNotEmpty, reason: 'the boot writes its log');
+    expect([
+      for (final line in lines)
+        if (line.contains('[error]') ||
+            line.contains('reconcile failed') ||
+            line.contains('newsfeed refresh failed') ||
+            line.contains('newsfeed seed/refresh failed'))
+          line,
+    ], isEmpty);
   });
 
   test('conversation revert/unrevert (undo/redo) round-trips over RPC', () async {
@@ -155,10 +200,12 @@ void main() {
 
     // Seed a workspace + a space with three messages.
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Alpha'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Alpha'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     final messaging = DaoMessagingRepository(seed.workspaces);
@@ -174,12 +221,14 @@ void main() {
       );
     }
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -247,21 +296,25 @@ void main() {
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Alpha'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Alpha'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     final messaging = DaoMessagingRepository(seed.workspaces);
     final space = await messaging.createSpace(workspaceId, 'Build', const []);
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -288,7 +341,7 @@ void main() {
       );
     }
 
-    // Active spaces carry no archive key at all (older servers read the same).
+    // Active spaces carry no archive key at all.
     expect((await spaceWire()).containsKey('archived_at'), isFalse);
 
     await client.call('messaging.archiveSpace', {'space_id': space.id});
@@ -311,10 +364,12 @@ void main() {
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Alpha'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Alpha'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     final wsDb = seed.workspaces.of(workspaceId);
@@ -328,12 +383,14 @@ void main() {
     final messaging = DaoMessagingRepository(seed.workspaces);
     final space = await messaging.createSpace(workspaceId, 'Build', const []);
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -406,19 +463,23 @@ void main() {
       // "row=active, psk=missing" state (a device that was registered but never
       // had a pairing key minted/stored for it).
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.workspaceRegistryDao.upsertWorkspace(
-        const WorkspacesTableCompanion(
-          id: Value(workspaceId),
-          name: Value('Alpha'),
+        WorkspacesTableCompanion(
+          id: const Value(workspaceId),
+          name: const Value('Alpha'),
+          ownerUserId: Value(seededOwnerId),
         ),
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(workspaceId),
-          label: Value('unpaired'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          workspaceId: const Value(workspaceId),
+          label: const Value('unpaired'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -463,32 +524,38 @@ void main() {
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Alpha'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Alpha'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     // A first-party web client (platform 'web' → fullClient) ...
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(adminId),
-        workspaceId: Value(workspaceId),
-        label: Value('admin'),
-        platform: Value('web'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(adminId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('admin'),
+        platform: const Value('web'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     // ... and a phone (platform 'ios' → restricted).
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(phoneId),
-        workspaceId: Value(workspaceId),
-        label: Value('phone'),
-        platform: Value('ios'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(phoneId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('phone'),
+        platform: const Value('ios'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -576,28 +643,34 @@ void main() {
       const workspaceId = 'ws-alpha';
 
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.workspaceRegistryDao.upsertWorkspace(
-        const WorkspacesTableCompanion(
-          id: Value(workspaceId),
-          name: Value('Alpha'),
+        WorkspacesTableCompanion(
+          id: const Value(workspaceId),
+          name: const Value('Alpha'),
+          ownerUserId: Value(seededOwnerId),
         ),
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(workspaceId),
-          label: Value('proxy'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          workspaceId: const Value(workspaceId),
+          label: const Value('proxy'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(secondDeviceId),
-          workspaceId: Value(workspaceId),
-          label: Value('second proxy device'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(secondDeviceId),
+          workspaceId: const Value(workspaceId),
+          label: const Value('second proxy device'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -712,9 +785,14 @@ void main() {
       const otherWorkspace = 'ws-other';
 
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       for (final ws in [ownWorkspace, otherWorkspace]) {
         await seed.global.workspaceRegistryDao.upsertWorkspace(
-          WorkspacesTableCompanion(id: Value(ws), name: Value(ws)),
+          WorkspacesTableCompanion(
+            id: Value(ws),
+            name: Value(ws),
+            ownerUserId: Value(seededOwnerId),
+          ),
         );
       }
       // Dated relative to now, NOT to a fixed calendar date. Booting the
@@ -787,12 +865,14 @@ void main() {
         );
       }
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(ownWorkspace),
-          label: Value('e2e'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          workspaceId: const Value(ownWorkspace),
+          label: const Value('e2e'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -878,7 +958,6 @@ void main() {
               }))['log']
               as Map;
       expect(finalRun['child_cost_micros'], 11000);
-      expect(finalRun['child_cost_cents'], 1);
       expect(finalRun['input_tokens'], 8);
       expect(finalRun['summary'], 'done');
 
@@ -961,12 +1040,13 @@ void main() {
         ),
       );
       await guestSeed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(guestDeviceId),
-          userId: Value('tx-unmembered-user'),
-          label: Value('Unmembered device'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(guestDeviceId),
+          userId: const Value('tx-unmembered-user'),
+          label: const Value('Unmembered device'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await guestSeed.close();
@@ -1031,9 +1111,14 @@ void main() {
       const otherWorkspace = 'ws-other';
 
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       for (final ws in [ownWorkspace, otherWorkspace]) {
         await seed.global.workspaceRegistryDao.upsertWorkspace(
-          WorkspacesTableCompanion(id: Value(ws), name: Value(ws)),
+          WorkspacesTableCompanion(
+            id: Value(ws),
+            name: Value(ws),
+            ownerUserId: Value(seededOwnerId),
+          ),
         );
       }
       // The rows below belong to the session's own workspace; the other one
@@ -1123,12 +1208,14 @@ void main() {
             );
       }
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(ownWorkspace),
-          label: Value('e2e'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          workspaceId: const Value(ownWorkspace),
+          label: const Value('e2e'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -1182,19 +1269,23 @@ void main() {
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Alpha'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Alpha'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -1235,17 +1326,12 @@ void main() {
     );
   });
 
-  // Reviewers file their findings into their OWN per-reviewer conversation
-  // streams, not the space's standing conversation. Gathering from one
-  // conversation therefore matched none of the selected ids and reported
-  // "posted 0, skipped 0, failed 0" — a silent no-op that reads as a
-  // successful post of nothing.
-  //
-  // The probe uses an UNANCHORED finding on purpose: it is counted as
-  // `skipped` without any call to the forge, so "the server found the
-  // message" is provable without a network round-trip. A regression makes
-  // every counter zero.
-  test('pr_review.commentFindings gathers findings space-wide', () async {
+  // Posting findings writes to the PR as the caller, so the op first proves
+  // the caller's own forge sign-in can read the repo. This server has no
+  // GitHub sign-in for the caller: the op must refuse with the typed
+  // `needs_sign_in` error (the client opens sign-in from it) before it
+  // touches a single finding, rather than reporting "posted 0".
+  test('pr_review.commentFindings needs a forge sign-in', () async {
     final tmp = Directory.systemTemp.createTempSync('cc_server_comment_e2e');
     await stageServerNatives(tmp.path);
     addTearDown(() => deleteDirBestEffort(tmp));
@@ -1255,10 +1341,12 @@ void main() {
     const workspaceId = 'ws-alpha';
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Alpha'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Alpha'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     // The op resolves (and workspace-checks) the repo before reading any
@@ -1310,12 +1398,14 @@ void main() {
       },
     );
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -1335,26 +1425,23 @@ void main() {
     await client.initialize();
     client.activeWorkspaceId = workspaceId;
 
-    final result = await client.call('pr_review.commentFindings', {
-      'workspace_id': workspaceId,
-      'space_id': space.id,
-      'owner': 'acme',
-      'repo': 'app',
-      'pr_number': 1,
-      'commit_sha': 'deadbeef',
-      'message_ids': ['finding-1'],
-    });
-
-    // Found and reported. Before the fix every counter was 0 because the
-    // finding was never seen at all.
-    expect(result['skipped'], 1);
-    expect(result['posted'], 0);
-    expect(result['failed'], 0);
-    // The out-of-diff bucket is always present, so the toast can read it
-    // without treating "no such key" as "none" — it is the counter that tells
-    // a reviewer their finding is about code this PR does not touch, which
-    // GitHub answers with a 422 rather than a comment.
-    expect(result['outOfDiff'], 0);
+    await expectLater(
+      client.call('pr_review.commentFindings', {
+        'workspace_id': workspaceId,
+        'space_id': space.id,
+        'owner': 'acme',
+        'repo': 'app',
+        'pr_number': 1,
+        'commit_sha': 'deadbeef',
+        'message_ids': ['finding-1'],
+      }),
+      throwsA(
+        isA<RemoteRpcException>().having((e) => e.data, 'data', {
+          'kind': 'needs_sign_in',
+          'lane': 'github',
+        }),
+      ),
+    );
   });
 
   // Nothing could mark a finding RESOLVED before this op existed. The enum
@@ -1373,10 +1460,12 @@ void main() {
       const workspaceId = 'ws-alpha';
 
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.workspaceRegistryDao.upsertWorkspace(
-        const WorkspacesTableCompanion(
-          id: Value(workspaceId),
-          name: Value('Alpha'),
+        WorkspacesTableCompanion(
+          id: const Value(workspaceId),
+          name: const Value('Alpha'),
+          ownerUserId: Value(seededOwnerId),
         ),
       );
       final messaging = DaoMessagingRepository(seed.workspaces);
@@ -1418,12 +1507,14 @@ void main() {
         },
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(workspaceId),
-          label: Value('e2e'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          workspaceId: const Value(workspaceId),
+          label: const Value('e2e'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -1519,31 +1610,25 @@ void main() {
     const workspaceId = 'ws-artifact';
 
     // Seed identity + membership up front: the subscription gate refuses a
-    // caller whose membership does not resolve, and boot adopts the earliest
-    // existing user as the owner the orphan device binds to.
+    // caller whose membership does not resolve.
     final seed = openSeedDatabases(tmp.path);
-    await seed.global.userDao.upsert(
-      const UsersTableCompanion(
-        id: Value('user-owner'),
-        handle: Value('owner'),
-        displayName: Value('Owner'),
-      ),
-    );
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.workspaceRegistryDao.upsertWorkspace(
-      const WorkspacesTableCompanion(
-        id: Value(workspaceId),
-        name: Value('Artifact'),
+      WorkspacesTableCompanion(
+        id: const Value(workspaceId),
+        name: const Value('Artifact'),
+        ownerUserId: Value(seededOwnerId),
       ),
     );
     await seed.workspaces
         .of(workspaceId)
         .workspaceMemberDao
         .upsert(
-          const WorkspaceMembersTableCompanion(
-            id: Value('m-owner'),
-            workspaceId: Value(workspaceId),
-            userId: Value('user-owner'),
-            role: Value('owner'),
+          WorkspaceMembersTableCompanion(
+            id: const Value('m-owner'),
+            workspaceId: const Value(workspaceId),
+            userId: Value(seededOwnerId),
+            role: const Value('owner'),
           ),
         );
     // The artifact row itself: readable by the watch's projection, with no
@@ -1559,12 +1644,14 @@ void main() {
           ),
         );
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        workspaceId: Value(workspaceId),
-        label: Value('e2e'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        workspaceId: const Value(workspaceId),
+        label: const Value('e2e'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();

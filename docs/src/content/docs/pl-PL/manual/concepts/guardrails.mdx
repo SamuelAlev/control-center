@@ -2,7 +2,7 @@
 title: Guardraile — jedna polityka dla każdej mutującej akcji
 description: Dlaczego Control Center prowadzi każdy efekt uboczny agenta przez jeden silnik allow/prompt/deny, dlaczego taksonomia ActionClass celowo pozostaje mała i co tak naprawdę zmienia suwak autonomii.
 slug: pl-PL/podrecznik/koncepcje/guardraile
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agenty w Control Center mogą usuwać pliki, wypychać gałęzie, publikować pull
@@ -20,9 +20,8 @@ którym akcja może opuścić system: w rejestrze narzędzi wbudowanego harnessu
 w bramie dyspozytora MCP po stronie serwera i przy mutacjach operacji na
 repozytoriach. Reguła zapisana raz obowiązuje więc zarówno wbudowany runtime,
 jak i zewnętrzne CLI agentów — nie ma drugiej, cichszej ścieżki wokół niej.
-Starsza polityka poleceń tylko dla basha nadal działa: reguła może dopasować
-prefiks polecenia zamiast klasy akcji, a obie postacie współistnieją w tym
-samym magazynie.
+Reguła może też dopasować prefiks polecenia zamiast klasy akcji; obie postacie
+znajdują się w tym samym magazynie.
 
 Silnik nie zastępuje jednak sandboxa systemu operacyjnego i sandbox nie
 zastępuje jego. Odpowiadają na różne pytania: guardraile decydują, czy
@@ -30,14 +29,12 @@ wywołanie, które Control Center widzi, może w ogóle się wydarzyć, a sandbo
 ogranicza, gdzie może dotrzeć powstały proces. `cc_server` stosuje sandbox
 tam, gdzie host oferuje backend — ale [Windows nie oferuje żadnego, a Linux
 wymaga `bwrap` i `socat`](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/). Na takich hostach
-guardraile są najzewnętrzniejszą warstwą egzekwowania, a nie polityką
-posadowioną na podłodze — warto o tym wiedzieć, decydując, jak liberalne ma
-być ustawienie.
+startują tylko uruchomienia właściciela serwera, chyba że właściciel wyłączył sandbox dla wszystkich opcją `--sandbox off`. Dla każdego uruchomienia, które startuje bez sandboxa, guardraile są najzewnętrzniejszą warstwą egzekwowania, a nie polityką posadowioną na podłodze — warto o tym wiedzieć, decydując, jak liberalne ma być ustawienie.
 
 ## ActionClass: celowo zamknięta taksonomia
 
 Każde mutujące narzędzie deklaruje, do których **ActionClasses** należy, ze
-zamkniętego zestawu trzynastu klas efektów. Pięć z nich domyślnie daje
+zamkniętego zestawu czternastu klas efektów. Sześć z nich domyślnie daje
 **prompt**; pozostałe dają allow, a zmienia to dopiero reguła.
 
 | Klasa                      | Wbudowana wartość domyślna | Co obejmuje                                                       |
@@ -55,17 +52,15 @@ zamkniętego zestawu trzynastu klas efektów. Pięć z nich domyślnie daje
 | `processSpawn`             | allow                      | Uruchamianie procesu (powłoka i wszystko, co ją wywołuje)         |
 | `workspaceMutation`        | allow                      | Zmiana struktury obszaru roboczego (repozytoria, przestrzenie, agenty) |
 | `enclosureControl`         | allow                      | Sterowanie rigiem: uruchamianie VM, przesyłanie do niego danych wejściowych |
+| `hostExecution`            | **prompt**                 | Uruchamianie polecenia na hoście serwera poza jakąkolwiek piaskownicą na żądanie agenta: zadania środowiska, procesy, stosy compose oraz `eval`, gdy jego jądro działa bez ograniczeń |
 
 Osiem klas z domyślnym allow wybrano przy założeniu, że pod nimi działa
-podłoga sandboxa. Działa tam, gdzie host oferuje backend, a nie działa na
-Windowsie ani na Linuksie bez `bwrap` i `socat` — jeśli więc chcesz mieć tam
-kontrolowane `fileWriteOutsideWorktree` albo `packageInstall`, tę regułę
-musisz napisać sam.
+podłoga sandboxa. Działa tam, gdzie host oferuje backend, a nie działa przy `--sandbox off` ani dla uruchomień właściciela na Windowsie czy na Linuksie bez `bwrap` i `socat`. Jeśli więc chcesz tam kontrolować `fileWriteOutsideWorktree` albo `packageInstall`, tę regułę musisz napisać sam.
 
 Zestaw jest zamknięty celowo. Nowe mutujące narzędzie, które nie deklaruje
 żadnej klasy, nie przechodzi testu zapadki, więc taksonomia może rosnąć tylko
 na podstawie wyraźnej, uzasadnionej decyzji — „rozrost taksonomii to śmierć
-tej funkcji”. Trzynaście klas wystarcza, by wyrazić polityki, które ludzie
+tej funkcji”. Czternaście klas wystarcza, by wyrazić polityki, które ludzie
 naprawdę piszą (nigdy nie wypychaj bez pytania, nigdy nie usuwaj poza
 worktree, odczyty zawsze dozwolone), a jest ich dość mało, by interfejs
 ustawień pozostał zrozumiały.
@@ -94,7 +89,7 @@ Dwie decyzje niosą twarde gwarancje:
 
 Celowo nie ma tu zapadki na jedną turę. Każde wywołanie narzędzia rozstrzyga
 politykę od zera, więc powtarzanie pytania o tę samą akcję ogranicza wyłącznie
-własna decyzja operatora „zapamiętaj ten wybór”, a nie cokolwiek związanego z
+własne zatwierdzenie czasowe operatora, a nie cokolwiek związanego z
 turą.
 
 ## Reguły na poziomie argumentów
@@ -112,6 +107,7 @@ Ograniczenie może wskazywać:
 - **hosty** — cele sieciowe, z symbolami wieloznacznymi subdomen
   (`*.internal`)
 - **polecenia** — prefiksy poleceń, dopasowywane na granicy słowa
+- **narzędzia** — dokładne narzędzie, które nazywa wywołanie, dzięki czemu zatwierdzenie może objąć jedno narzędzie zamiast wszystkich narzędzi o tym samym skutku
 - **pułapy** — `maxCount` / `maxCents`, dzięki czemu „usuń maksymalnie 50
   plików” da się wyrazić
 
@@ -154,15 +150,19 @@ trybu pod magazynem polityki oraz sandbox systemu operacyjnego pod obiema.
 Reguła polecenia rozstrzygająca się jako `allow` nigdy nie poluzowuje żadnej
 z nich — siatka trybu działa później, a jej `deny` jest ostateczne.
 
-## Trwałe zatwierdzenia
+## Zatwierdzenia czasowe
 
-Odpowiedź na zapytanie przez „zapamiętaj to” zapisuje prawdziwą regułę
-polityki: z zakresem (przestrzeń / agent / obszar roboczy), **ograniczoną do
-argumentów** (zatwierdzenie wypchnięcia do `feature/login` przyznaje
-`feature/**`, a nie `main`) i **samoodwołującą się** po upływie wyraźnego TTL.
-Zgoda na najbliższe kilka godzin to nie to samo, co ciche przepisanie trwałej
-polityki; zapisane reguły trafiają do tego samego magazynu z pochodzeniem
-`remembered` i terminem wygaśnięcia, więc można je odwołać wcześniej.
+Każda karta zatwierdzenia, którą wywołuje akcja agenta, oferuje **Zatwierdź na 8 godzin**, gdy akcja ma coś węższego niż swoja klasa do wskazania. Wybranie tego zapisuje prawdziwą regułę polityki, czyli zatwierdzenie czasowe, w tym samym magazynie co reguły, które ustawiasz, z pochodzeniem `remembered` i terminem wygaśnięcia:
+
+- **Ograniczone zakresem.** Zapis dotyczy przestrzeni, z której wzięło się pytanie. Tylko odpowiedź administratora może zostać zapisana dla całego obszaru roboczego.
+- **Wąskie.** Nazywa rodzinę gałęzi (zatwierdzenie wypchnięcia do `feature/login` obejmuje `feature/**`, a nie `main`), folder, host, dokładne polecenie albo narzędzie. Commit to jedyna akcja zatwierdzana jako klasa, dla tej przestrzeni: nie ma nic węższego do nazwania.
+- **Samoodwołujące się.** Kończy się po ośmiu godzinach, a można je odwołać wcześniej na stronie uprawnień agentów.
+
+Zatwierdzenie czasowe tylko oszczędza pytanie. Odpowiada na pytanie „zapytaj najpierw” ustawione w jego własnym zakresie lub szerszym, nigdy na odmowę, niezależnie od tego, z którego zakresu pochodzi odmowa. Jest przechowywane obok reguły ustawionej dla akcji, więc zmiana tej reguły zostawia zatwierdzenie w mocy, a odwołanie zatwierdzenia zostawia regułę.
+
+Niektóre bramki pytają samodzielnie, po tym jak polityka zezwoliła na wywołanie: własne zadeklarowane zatwierdzenie narzędzia albo siatka poleceń trybu. Pomijają swoje pytanie tylko w przypadku zatwierdzenia czasowego, które nazywa dokładnie to narzędzie lub polecenie. Ustawienie akcji na Zezwól ich nie wycisza.
+
+Trzy karty zostawiają dwa przyciski, bo nie ma czego przenosić dalej: zezwolenie sandboksowi na uruchamianie programów z folderu (zatwierdzenie to już zapisany przydział, który można cofnąć), operacja destrukcyjna, którą potwierdzasz raz, oraz instalacja skilla (zmieniony skill ma pytać ponownie).
 
 ## Poziomy egzekwowania
 

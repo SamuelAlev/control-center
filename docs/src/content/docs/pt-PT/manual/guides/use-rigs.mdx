@@ -2,7 +2,7 @@
 title: Dar a um agente uma máquina para testar
 description: Dê a um agente um navegador, um ambiente de trabalho, um emulador Android ou um Simulador de iOS descartáveis — observado em direto, com controlos que pode assumir.
 slug: pt-PT/manual/guias/usar-rigs
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Um **rig** é uma máquina descartável que um agente abre quando precisa mesmo de
@@ -137,6 +137,21 @@ Carregue em **Parar a máquina** quando terminar.
 
 O controlo é exclusivo de propósito: dois intervenientes a escrever na mesma
 máquina produzem entrada que nenhum deles pretendia.
+
+### Quem pode observar e quem pode operar
+
+Uma máquina aberta num espaço segue os repositórios desse espaço, da mesma forma que o próprio espaço (ver [Os espaços seguem os seus repositórios](/pt-PT/manual/conceitos/autorizacao/#os-espaços-seguem-os-seus-repositórios)):
+
+- **Observá-la** exige acesso de leitura ao espaço: uma concessão de leitura sobre cada repositório que o espaço expõe, e o seu próprio início de sessão na forja capaz de ler cada um deles. Observar abrange a lista de máquinas, o ecrã, o som, o estado do navegador, as suas portas, e a leitura da sua área de transferência e dos seus ficheiros.
+- **Operá-la** exige também uma [autorização de escrita](/pt-PT/manual/conceitos/autorizacao/#alterar-código-exige-a-concessão-de-escrita) sobre esses repositórios. Operar abrange abrir uma máquina no espaço, escrever e clicar, assumir o controlo, iniciar, parar e fechar, encaminhar as suas portas, escrever na sua área de transferência, largar ficheiros nela e usar o microfone.
+
+Com acesso só de leitura, a máquina mostra **Apenas visualização** e a mensagem "Pode ver esta máquina. Controlá-la, encaminhar as portas dela, colar nela ou largar ficheiros nela exige acesso de escrita a todos os repositórios deste espaço." Com o botão **Iniciar a máquina** desativado, o separador diz "Iniciar uma máquina aqui exige acesso de escrita a todos os repositórios deste espaço. Um admin do espaço de trabalho pode concedê-lo." Sem acesso de leitura, a máquina não é mostrada, apenas "Não pode ver esta máquina. Pertence a um espaço ao qual não tem acesso de leitura."
+
+Uma máquina que não pertence a nenhum espaço não alcança nenhuma worktree, e todos os membros do espaço de trabalho podem observá-la e operá-la.
+
+Uma máquina que transporta os inícios de sessão próprios de uma pessoa é dela para a operar: a sua máquina-terminal, ou qualquer máquina aberta para ela cuja rede alcance uma forja. Só essa pessoa, e as execuções de agentes que atuam apenas por ela, a podem operar. Os administradores do espaço de trabalho e o proprietário do servidor não se sobrepõem a isto. Os outros que o espaço admite ainda podem observar o seu ecrã, som, estado e portas, mas não a podem operar, encaminhar as suas portas, colar nela, largar ficheiros nela, copiar ficheiros para fora dela ou ler a sua área de transferência. Essa máquina mostra **Apenas visualização** com esta nota: "Pode ver esta máquina. Usa os inícios de sessão da pessoa para quem foi aberta, por isso só essa pessoa a pode controlar, encaminhar as portas, colar nela ou largar ficheiros nela." Uma ação recusada por este motivo diz "Só a pessoa para quem esta máquina foi aberta a pode controlar. Usa os inícios de sessão próprios dessa pessoa." A máquina-terminal de outra pessoa não aparece para si, tal como as suas sessões de terminal.
+
+Cada máquina mostra se pode operá-la, e isso atualiza-se sozinho quando uma concessão ou o seu início de sessão na forja muda.
 
 ## Mover coisas para dentro e para fora
 

@@ -1,8 +1,8 @@
 ---
 title: Skapa GitHub-appen
-description: Ge din server en egen GitHub-app med ett klick, installera den där dina repos finns och auktorisera servern för en organisations installation.
+description: Ge din server en egen GitHub-app med ett klick och installera den där dina repos finns, så att alla i organisationen kan använda den från vilken server som helst.
 slug: sv-SE/handbok/how-to-guider/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Den här guiden visar hur du ger din server en egen GitHub-app. Det tar ungefär
@@ -34,7 +34,7 @@ ansvarig medlem kan göra där. Att läsa ett länkat repo kräver bara appen; a
 som skriver kräver en medlem som kan pusha. Automatisering godkänner aldrig en
 pull request.
 
-Serverns egen app gäller bara under **Använd mina egna appar**. Med Control Center Connect eller en egen Connect sköter Connect alla spår, GitHub inräknat; serverns app förblir sparad men oanvänd tills du byter tillbaka. En arbetsytas egna app ([Ge en arbetsyta en annan app](#ge-en-arbetsyta-en-annan-app)) gäller fortfarande i alla lägen. En app där några av fälten saknas är ett fel, inte en reservväg: GitHub-inloggningar avvisas tills varje fält är ifyllt.
+Serverns egen app gäller bara under **Använd mina egna appar**. Med Control Center Connect eller en egen Connect sköter Connect alla spår, GitHub inräknat; serverns app förblir sparad men oanvänd tills du byter tillbaka. En arbetsyta med egna appar ([Ge en arbetsyta en egen app](#ge-en-arbetsyta-en-egen-app)) använder i stället sin egen app, oavsett serverns läge. En app där några av fälten saknas är ett fel, inte en reservväg: GitHub-inloggningar avvisas tills varje fält är ifyllt.
 
 ## Förutsättningar
 
@@ -91,26 +91,25 @@ ingenting.
 2. Välj **All repositories**, eller välj de repos som den här servern ska se
 
 För att installera den på ett annat konto senare går en administratör i
-arbetsytan till **Inställningar → Arbetsyta → Allmänt**, letar upp
-**Installationer av GitHub-appen** på kortet för GitHub-identitet och klickar på
+arbetsytan till **Inställningar → Arbetsyta → Integrationer**, letar upp
+**Installationer av GitHub-appen** på kortet **GitHub-app** under Kodvärd och klickar på
 **Installera GitHub-appen**. Listan visar varje konto som appen är installerad på
 och markerar en avstängd installation.
 
-## Auktorisera den här servern för en organisation
+## Dela en organisations installation
 
-På Control Centers delade app betjänar en organisations installation bara de
-servrar som dess administratörer har auktoriserat. En installation via
-**Installera GitHub-appen** auktoriserar servern som startade den. För en
-installation som redan finns:
+En organisation installerar GitHub-appen en gång. Därefter kan alla i den som
+loggar in på GitHub på en Control Center-server använda installationen, oavsett
+vilken server det är: din, en kollegas eller deras egen. Det finns inget att
+auktorisera per server.
 
-1. En administratör i organisationen loggar in på GitHub på den här servern
-2. Administratören öppnar **Inställningar → Arbetsyta → Allmänt → Installationer
-   av GitHub-appen**
-3. Organisationens rad visar **Inte auktoriserad**. Administratören klickar på
-   **Auktorisera den här servern**
+Varje token en server får är den inloggade personens egen, begränsad till ett
+repo och till personens roll där, så den når aldrig längre än personen kan på
+GitHub. GitHubs granskningslogg visar den personen, som agerar via appen.
 
-Raden visar sedan **Auktoriserad**. Din egen app behöver inget av detta: varje
-installation av den tillhör din server.
+För att stoppa Control Center från att nå en organisation tar en ägare av
+organisationen bort installationen eller begränsar dess repos på GitHub. Att ta
+bort en person från organisationen stoppar också deras åtkomst.
 
 ## Registrera den för hand i stället
 
@@ -149,17 +148,15 @@ processmiljö, där varje underprocess skulle kunna läsa den; förvara dem i
 gång per fält**, så ändringar i Inställningar skrivs inte över vid nästa
 omstart.
 
-## Ge en arbetsyta en annan app
+## Ge en arbetsyta en egen app
 
-En arbetsyta kan använda en egen app i stället för serverns. En administratör i
-arbetsytan går till **Inställningar → Arbetsyta → Allmänt**, väljer **Använd en
-annan GitHub App** på kortet **GitHub-identitet** och anger den appens ID, privata
-nyckel, klient-ID och klienthemlighet. Medlemmarna loggar sedan in på den appen
-för den här arbetsytan. En arbetsyta med egen app faller aldrig tillbaka på
-serverns app eller på Connect: tills fälten är kompletta avvisas dess
-GitHub-arbete. Det gäller oavsett hur servern loggar in personer, även via Connect.
+En arbetsyta kan köra på en egen app i stället för serverns:
 
-Kortet **Leverantörsappar** på samma sida gör detsamma för Google Calendar, Linear och GIF-sökning. Se [Ge en arbetsyta en egen Linear-applikation](/sv-SE/handbok/how-to-guider/linear-integration/#ge-en-arbetsyta-en-egen-linear-applikation) och [Ge en arbetsyta en egen Google-klient](/sv-SE/handbok/how-to-guider/anslut-kalender/#ge-en-arbetsyta-en-egen-google-klient).
+1. En administratör i arbetsytan går till **Inställningar → Arbetsyta → Integrationer**
+2. På kortet **Control Center Connect** väljer de **Använd mina egna appar** och klickar på **Tillämpa**. Alla i arbetsytan loggar in igen via arbetsytans appar
+3. Kortet **GitHub-app** under Kodvärd innehåller nu appens fält: **App-ID** och **Privat nyckel** under **Agerar för den här arbetsytan**, **Klient-ID** och **Klienthemlighet** under **Logga in personer**. Klicka på **Test** när de är ifyllda
+
+Medlemmarna loggar sedan in på den appen för den här arbetsytan. En arbetsyta med egna appar faller aldrig tillbaka på serverns app eller på Connect: tills fälten är kompletta avvisas dess GitHub-arbete. Samma val gäller Google Calendar, Linear och GIF-sökning, var och en med sina egna fält bredvid sin leverantör på samma sida. Se [Ge en arbetsyta en egen Linear-applikation](/sv-SE/handbok/how-to-guider/linear-integration/#ge-en-arbetsyta-en-egen-linear-applikation) och [Ge en arbetsyta en egen Google-klient](/sv-SE/handbok/how-to-guider/anslut-kalender/#ge-en-arbetsyta-en-egen-google-klient). De övriga valen på kortet, och vad vart och ett gör, finns i [Arbetsytans eget val](/sv-SE/handbok/referens/connect/#arbetsytans-eget-val).
 
 ## Felsökning
 
@@ -177,7 +174,7 @@ Inställningar.
 
 Registrering och installation är två separata steg. Öppna appens
 installationssida, eller använd **Installera GitHub-appen** under Arbetsyta →
-Allmänt.
+Integrationer.
 
 ### Test säger att den privata nyckeln inte kunde läsas
 

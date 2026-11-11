@@ -53,6 +53,7 @@ class SandboxSpec {
     this.protectedPaths = const [],
     this.runnerStateDirs = const [],
     this.execGrantRoots = const [],
+    this.toolDirs = const [],
     this.loopbackPorts = const [],
     this.environmentScope,
     this.superviseProcessGroup = false,
@@ -127,6 +128,16 @@ class SandboxSpec {
   /// Linux ignores this: bwrap has no `$HOME` exec block to re-open.
   final List<String> execGrantRoots;
 
+  /// Directories of tools the server writes for the run (its git signer, its
+  /// environment command shims): readable and executable inside the sandbox,
+  /// never writable.
+  ///
+  /// They are on the run's `PATH` and git runs its signer from here, so a run
+  /// that could replace one would change what its own later commands, and git,
+  /// execute. Both materializers emit the write deny after every write
+  /// allowance.
+  final List<String> toolDirs;
+
   /// Host loopback ports the sandboxed process must reach whatever the
   /// network posture — the server's own agent endpoint (MCP and the agent run
   /// gateway). macOS shares the host loopback; a Linux sandbox has its own
@@ -173,6 +184,7 @@ class SandboxSpec {
             execGrantRoots,
             other.execGrantRoots,
           ) &&
+          const ListEquality<String>().equals(toolDirs, other.toolDirs) &&
           const ListEquality<int>().equals(
             loopbackPorts,
             other.loopbackPorts,
@@ -193,6 +205,7 @@ class SandboxSpec {
     Object.hashAll(protectedPaths),
     Object.hashAll(runnerStateDirs),
     Object.hashAll(execGrantRoots),
+    Object.hashAll(toolDirs),
     Object.hashAll(loopbackPorts),
     environmentScope,
     superviseProcessGroup,

@@ -211,16 +211,25 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
   /// Consumes a pending comment permalink: resolve the comment to its thread,
   /// open that thread's file and scroll the thread into view.
   ///
-  /// Retries across frames like [_maybeJumpToPendingFile], because two things
-  /// arrive asynchronously and neither is guaranteed on the frame the URL is
-  /// applied: the comment list (an RPC stream) and the mounted diff state.
+  /// Retries across frames like [_maybeJumpToPendingFile], because three
+  /// things arrive asynchronously and none is guaranteed on the frame the URL
+  /// is applied: the comment list and the diff's patches (RPC streams, waited
+  /// for up to [_revealLoadTimeout]) and the mounted diff state.
   void _maybeRevealPendingComment() {
     final commentId = widget.pendingCommentAnchor?.value;
     if (commentId == null || !mounted) {
       return;
     }
-    _scheduleReveal(commentId, attempts: 30);
+    _scheduleReveal(
+      commentId,
+      attempts: 30,
+      loadDeadline: DateTime.now().add(_revealLoadTimeout),
+    );
   }
+
+  /// How long a comment reveal waits for the comments and the patches before
+  /// it gives up and sends the reader to the timeline.
+  static const Duration _revealLoadTimeout = Duration(seconds: 20);
 
   @override
   Widget build(BuildContext context) {
@@ -499,8 +508,7 @@ class _PrDiffTabState extends ConsumerState<PrDiffTab> {
                     searchFocusToken: _searchFocusToken,
                     onOpenSearch: _requestSidebarSearch,
                     onShowFileTree: _showFileTree,
-                    onOpenFileInEditor:
-                        widget.onOpenFileInEditor ?? (_, {int? line}) {},
+                    onOpenFileInEditor: widget.onOpenFileInEditor,
                   ),
                 ),
               ),

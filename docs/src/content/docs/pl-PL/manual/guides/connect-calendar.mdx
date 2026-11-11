@@ -2,7 +2,7 @@
 title: Połącz Google Calendar
 description: Połącz Kalendarz Google z obszarem roboczym, zarządzaj wieloma kontami i połącz ponownie, gdy logowanie wygaśnie.
 slug: pl-PL/podrecznik/poradniki/podlaczanie-kalendarza
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Ten poradnik pokazuje, jak połączyć Kalendarz Google z obszarem roboczym. Połączenie
@@ -22,7 +22,7 @@ znajdziesz w sekcji [Kalendarz i planowanie](/pl-PL/podrecznik/koncepcje/kalenda
 ## Połącz konto
 
 1. Otwórz **Kalendarz** na pasku bocznym.
-2. Kliknij **Dodaj konto kalendarza** na pasku bocznym kalendarza. (Ta sama sekcja znajduje się w **Ustawienia → Obszar roboczy → Profil i tożsamość**, pod **Kalendarz Google**.)
+2. Kliknij **Dodaj konto kalendarza** na pasku bocznym kalendarza. (Ta sama sekcja znajduje się w **Ustawienia → Ty → Profil**, pod **Kalendarz Google**.)
 3. Kliknij **Połącz Kalendarz Google**. Przeglądarka otwiera stronę zgody Google.
 4. Wybierz konto i zatwierdź dostęp do wydarzeń w kalendarzu oraz do listy kalendarzy.
 
@@ -109,8 +109,7 @@ klient Google serwera albo katalog danych przywrócono na innej maszynie.
 
 ## Rozłącz konto
 
-Na pasku bocznym kalendarza (albo w **Ustawienia → Obszar roboczy → Profil i
-tożsamość**) kliknij **Rozłącz** przy koncie. Spowoduje to usunięcie
+Na pasku bocznym kalendarza (albo w **Ustawienia → Ty → Profil**) kliknij **Rozłącz** przy koncie. Spowoduje to usunięcie
 zsynchronizowanych wydarzeń i wyczyszczenie zapisanego poświadczenia tego konta
 na serwerze.
 
@@ -120,9 +119,8 @@ Uruchom własnego klienta Google, gdy wybrano **Użyj własnych aplikacji**. Kli
 serwera obowiązuje tylko wtedy: przy aplikacjach Control Center albo własnym serwerze
 Connect Connect obsługuje każdą ścieżkę, także Google, a klient serwera pozostaje
 zapisany, ale nieużywany. Aby na ekranie zgody widniała nazwa Twojego projektu, gdy serwer korzysta
-z Connect, nadaj obszarowi roboczemu własnego klienta
-([poniżej](#daj-jednemu-obszarowi-roboczemu-własnego-klienta-google)); działa to we
-wszystkich trybach.
+z Connect, przełącz obszar roboczy na własne aplikacje i nadaj mu własnego klienta
+([poniżej](#daj-jednemu-obszarowi-roboczemu-własnego-klienta-google)); działa to niezależnie od trybu serwera.
 
 1. W [konsoli Google Cloud](https://console.cloud.google.com/apis/credentials) włącz **Google Calendar API** i skonfiguruj **ekran zgody OAuth**, dodając zakresy `calendar.events`, `calendar.calendarlist.readonly`, `openid` i `email`. Dopóki aplikacja nie jest zweryfikowana, dodaj siebie jako **użytkownika testowego**.
 2. Utwórz **identyfikator klienta OAuth** o typie aplikacji **Web application**.
@@ -145,20 +143,16 @@ Obszar roboczy może połączyć Kalendarz Google przez własnego klienta zamias
 serwera. Ustawić go może tylko administrator lub właściciel obszaru roboczego.
 
 1. Utwórz klienta Google typu **Web application** tak jak w krokach 1 i 2 powyżej
-2. Przejdź do **Ustawienia → Obszar roboczy → Ogólne → Aplikacje dostawców** i otwórz **Kalendarz Google**
-3. Wybierz **Użyj własnej aplikacji tego obszaru roboczego**
-4. Dodaj do klienta URI przekierowania, który wiersz pokazuje pod **Adres URL wywołania zwrotnego**, dosłownie
-5. Wklej **Identyfikator klienta** i **Sekret klienta**
+2. Przejdź do **Ustawienia → Obszar roboczy → Integracje**. Na karcie **Control Center Connect** wybierz **Użyj własnych aplikacji** i kliknij **Zastosuj**
+3. W sekcji Kalendarz pojawi się karta **Aplikacja Kalendarz Google**. Dodaj do klienta URI przekierowania, który karta pokazuje pod **Adres URL wywołania zwrotnego**, dosłownie
+4. Wklej **Identyfikator klienta** i **Sekret klienta**
 
 Konta kalendarza połączone w tym obszarze roboczym przechodzą wtedy przez tego klienta,
 niezależnie od tego, jak serwer loguje ludzi. Nigdy nie przechodzą na klienta serwera ani
 na Connect: dopóki oba pola nie są wypełnione, Kalendarz Google jest w tym obszarze
-roboczym wyłączony, a wiersz mówi, czego brakuje. Sekret nigdy nie opuszcza serwera.
+roboczym wyłączony, a karta mówi, czego brakuje. Sekret nigdy nie opuszcza serwera.
 
-Przełączenie między klientem serwera a klientem obszaru roboczego albo zmiana identyfikatora
-klienta obszaru roboczego oznacza do ponownego połączenia wszystkie konta Google w tym
-obszarze roboczym. **Użyj aplikacji tego serwera** usuwa zapisane pola obszaru roboczego.
-Inne obszary robocze na serwerze nie są zmieniane.
+**Użyj własnych aplikacji** obejmuje od razu wszystkich dostawców: GitHub, Linear i wyszukiwanie GIF działają także wyłącznie na aplikacjach obszaru roboczego. Przełączenie aplikacji logowania obszaru roboczego albo zmiana identyfikatora klienta obszaru roboczego oznacza do ponownego połączenia wszystkie konta Google w tym obszarze roboczym. Zapisane pola pozostają, gdy obszar roboczy wraca do innego wyboru, ale są używane tylko przy **Użyj własnych aplikacji**. Inne obszary robocze na serwerze nie są zmieniane.
 
 ## Rozwiązywanie problemów
 
@@ -169,8 +163,8 @@ Inne obszary robocze na serwerze nie są zmieniane.
 | `invalid_client` od Google                                    | Identyfikator i sekret pochodzą z różnych klientów albo klient został usunięty                                                                |
 | Zatwierdzenie się udaje, ale synchronizacja jest pusta        | Twoje konto nie jest **użytkownikiem testowym** na ekranie zgody albo nie przyznano jednego z żądanych zakresów                                |
 | Okno dialogowe informuje, że kod się nie zgadza              | Wpisz 8 znaków dokładnie tak, jak pokazuje je przeglądarka. Pięć błędnych kodów kończy logowanie; zacznij od nowa                              |
-| „Nie udało się zaktualizować odpowiedzi” albo dodawanie, przesuwanie lub usuwanie wydarzenia się nie udaje | Konto połączono ze starym zakresem tylko do odczytu. Połącz je ponownie; kalendarz udostępniony Ci tylko do odczytu też odrzuca zmiany |
-| Wszyscy muszą połączyć się ponownie                          | Zmienił się klient Google serwera lub obszaru roboczego albo wybór Connect na serwerze bądź jego klucz. Zobacz [Połącz ponownie wygasłe konto](#połącz-ponownie-wygasłe-konto)   |
+| „Nie udało się zaktualizować odpowiedzi” albo dodawanie, przesuwanie lub usuwanie wydarzenia się nie udaje | Konto nie przyznało dostępu do zapisu w kalendarzu. Połącz je ponownie i zatwierdź wszystkie żądane zakresy; kalendarz udostępniony Ci tylko do odczytu też odrzuca zmiany |
+| Wszyscy muszą połączyć się ponownie                          | Zmienił się klient Google serwera lub obszaru roboczego albo wybór Connect serwera lub obszaru roboczego, albo klucz serwera. Zobacz [Połącz ponownie wygasłe konto](#połącz-ponownie-wygasłe-konto)   |
 
 ## Powiązane poradniki
 

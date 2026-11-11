@@ -2,7 +2,7 @@
 title: Ports von einem Terminal weiterleiten
 description: Erreiche einen Dev-Server, der in einem Terminal (VM) oder einer Host-Shell gestartet wurde — von deinem Rechner, aus dem Browser (VM), von Android, in deinem Netzwerk oder unter einer Dev-Domain mit HTTPS.
 slug: de-DE/handbuch/anleitungen/vm-ports
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Ein Server, den du im Terminal einer Unterhaltung startest, wird nur für
@@ -16,7 +16,7 @@ und er endet mit dem Terminal oder dem Rig.
 
 ## Nachsehen, was lauscht
 
-1. Öffne das **Terminal (VM)** oder die Host-Shell der Unterhaltung (in einem Bereich oder auf einer PR-Seite).
+1. Öffne im Editor der Unterhaltung (in einem Bereich oder auf einer PR-Seite) über das Menü `+` das **Terminal**: unter **Computer** für eine Shell in der VM der Unterhaltung oder unter **Werkzeuge** für ein Terminal auf dem Server. Nur der Serverinhaber kann eine Host-Shell öffnen; das Terminal aller anderen läuft in einer Sandbox.
 2. Starte deinen Server — `pnpm dev`, `python -m http.server 8000`, irgendetwas.
 3. Nach wenigen Sekunden bekommt das **Steckersymbol** oben rechts im Terminal
    einen Punkt. Klicke darauf.
@@ -131,6 +131,10 @@ Weiterleitung behält ihre Adresse, während dein Server neu startet — die Zei
 zeigt *lauscht nicht*, bis er zurück ist —, wohingegen automatische
 Weiterleitungen verschwinden, sobald ihr Port verschwindet. Auf einer
 Host-Shell kannst du außerdem einen anderen lokalen Port setzen.
+
+Weiterleitungen zu ändern braucht Schreibzugriff auf jedes Repository, das der Bereich freigibt. Mit reinem Lesezugriff siehst du die Ports weiterhin, und das Panel zeigt statt **Port hinzufügen** den Text „Das Ändern dieser Ports erfordert Schreibzugriff auf alle Repositories in diesem Space.“ Siehe [Wer zusehen und wer steuern darf](/de-DE/handbuch/anleitungen/rigs-nutzen/#wer-zusehen-und-wer-steuern-darf).
+
+Ein Terminal, das jemand für sich selbst geöffnet hat, gehört in Bezug auf seine Ports nur dieser Person: Für alle anderen antworten die Portliste und die Portänderungen so, als gäbe es die Sitzung nicht, genau wie die Sitzung selbst. In einem Space geteilte Terminals folgen der Space-Regel oben.
 
 ## Wie es eingegrenzt bleibt
 

@@ -249,10 +249,6 @@ class AppLocalizationsEl extends AppLocalizations {
   String get allCaughtUp => 'Είστε ενήμεροι';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Δεν είναι συνδεδεμένος λογαριασμός forge στον διακομιστή, επομένως τα pull requests δεν μπορούν ακόμη να αποδοθούν σε εσάς.';
-
-  @override
   String get inboxNothingWaiting =>
       'Τίποτα δεν είναι αποκλεισμένο και κανένα pull request δεν σας περιμένει.';
 
@@ -461,32 +457,6 @@ class AppLocalizationsEl extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names είναι πολύ μεγάλα για αποστολή μέσω του relay από εδώ.',
-      one: '$names είναι πολύ μεγάλο για αποστολή μέσω του relay από εδώ.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Δεν ήταν δυνατή η μεταφόρτωση του συνημμένου. Δοκιμάστε ξανά.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count συνημμένα δεν μεταφορτώθηκαν και παραλείφθηκαν.',
-      one: '1 συνημμένο δεν μεταφορτώθηκε και παραλείφθηκε.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Συνάδελφος';
 
   @override
@@ -624,36 +594,6 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Δεν είναι συνδεδεμένο forge στον διακομιστή, επομένως δεν μπορούν να ανακτηθούν pull requests. Συνδέστε ένα από την εφαρμογή υπολογιστή.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repo δεν ήταν αναγνώσιμα.',
-      one: '1 repo δεν ήταν αναγνώσιμο.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Μη αναγνώσιμα: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle =>
-      'Η εγκατάσταση του GitHub App έχει ανασταλεί';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$names⁩. Συνεχίστε την εγκατάσταση στο GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Η εγκατάσταση του GitHub App έχει ανασταλεί. Εμφανίζονται τα τελευταία γνωστά δεδομένα για τα ⁨$names⁩. Συνεχίστε την εγκατάσταση στο GitHub.';
-  }
 
   @override
   String get draft => 'Πρόχειρο';
@@ -1317,7 +1257,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get permissionPrCreate => 'Δημιουργία pull request';
 
   @override
-  String get permissionPrPublish => 'Δημοσίευση pull request';
+  String get permissionPrPublish => 'Ενημέρωση ή συγχώνευση pull requests';
 
   @override
   String get permissionVendorSyncWrite => 'Εγγραφή συγχρονισμού παρόχου';
@@ -1361,7 +1301,7 @@ class AppLocalizationsEl extends AppLocalizations {
   String get permissionBuiltInDefault => 'Ενσωματωμένη προεπιλογή';
 
   @override
-  String get permissionRemembered => 'Αποθηκευμένη έγκριση';
+  String get permissionRemembered => 'Προσωρινή έγκριση';
 
   @override
   String get permissionSource => 'Πηγή';
@@ -1383,10 +1323,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Ορισμός κανόνα εδώ';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Απαιτείται ανάκληση του κανόνα με συγκεκριμένο πεδίο εφαρμογής ή του αποθηκευμένου κανόνα πριν οριστεί γενικός κανόνας για αυτή την ενέργεια.';
 
   @override
   String get permissionConfirmRevoke => 'Επιβεβαίωση ανάκλησης';
@@ -1439,6 +1375,15 @@ class AppLocalizationsEl extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Εντολές: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Εργαλεία: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Χωρίς ισχύ όσο αυτή η ενέργεια είναι σε Απόρριψη';
 
   @override
   String permissionMaxCount(String count) {
@@ -1901,15 +1846,6 @@ class AppLocalizationsEl extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Ενημέρωση pull request';
-
-  @override
-  String get activityTicket => 'Ενημέρωση εισιτηρίου';
-
-  @override
-  String get activityMeeting => 'Ενημέρωση σύσκεψης';
-
-  @override
-  String get activityCalendar => 'Σύνδεση ημερολογίου';
 
   @override
   String get activityRig => 'Ενημέρωση περιβλήματος';
@@ -2608,8 +2544,7 @@ class AppLocalizationsEl extends AppLocalizations {
       'Αναμονή έγκρισης στο πρόγραμμα περιήγησης…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Εισαγάγετε τον κωδικό που εμφανίζεται στο πρόγραμμα περιήγησης';
+  String get credentialsConnectCodePrompt => 'Κωδικός επιβεβαίωσης';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2680,10 +2615,6 @@ class AppLocalizationsEl extends AppLocalizations {
       'Επικολλήστε ένα προσωπικό token πρόσβασης';
 
   @override
-  String get credentialsHostManaged =>
-      'Αυτή η σύνδεση προέρχεται από την εφαρμογή ή το περιβάλλον του διακομιστή. Μόνο ο ιδιοκτήτης του διακομιστή μπορεί να την αλλάξει εκεί. Μπορείτε πάντως να προσθέσετε το δικό σας token.';
-
-  @override
   String get credentialsStopWatching => 'Διακοπή παρακολούθησης';
 
   @override
@@ -2704,4 +2635,207 @@ class AppLocalizationsEl extends AppLocalizations {
   @override
   String get permissionHostExecution =>
       'Εκτέλεση εντολών στον κεντρικό υπολογιστή';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Η σύνδεσή σας στο $provider έληξε. Συνδεθείτε ξανά.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Σε παύση: η υπηρεσία σύνδεσης αυτού του χώρου εργασίας άλλαξε. Θα λειτουργήσει ξανά μόλις επιστρέψει η υπηρεσία.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'Δεν είναι δυνατή η επικοινωνία με το $provider αυτή τη στιγμή. Γίνεται νέα προσπάθεια.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Μόνο αυτός ο χώρος εργασίας';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Όλοι οι χώροι εργασίας';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Αφαίρεση των αποθηκευμένων διαπιστευτηρίων σας από αυτόν τον χώρο εργασίας; Οι άλλοι κρατούν τα δικά τους.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Αφαίρεση των αποθηκευμένων διαπιστευτηρίων σας από κάθε χώρο εργασίας που τα μοιράζεται;';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Ο διακομιστής επανεκκινήθηκε. Ξεκινήστε ξανά τη σύνδεση.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Εγκαταστήστε το GitHub App στο $owner ώστε ο αυτοματισμός να φτάνει στα $names. Πατήστε για άνοιγμα του GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'Το GitHub App δεν είναι εγκατεστημένο στο $owner, οπότε ο αυτοματισμός δεν φτάνει στα $names. Ζητήστε από έναν διαχειριστή του χώρου εργασίας να το εγκαταστήσει.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Προσθέστε τα $names στα αποθετήρια του GitHub App. Πατήστε για άνοιγμα του GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'Το GitHub App δεν βλέπει ακόμη τα $names. Ζητήστε από έναν διαχειριστή του χώρου εργασίας να τα προσθέσει στα αποθετήριά του.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Η εγκατάσταση του GitHub App έχει ανασταλεί. Ο αυτοματισμός για τα $names είναι σε παύση μέχρι ένας κάτοχος του λογαριασμού να συνεχίσει την εγκατάσταση στο GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Το άτομο που είναι υπεύθυνο για τον αυτοματισμό αυτού του χώρου εργασίας δεν βλέπει πια τα $names, οπότε τίποτα δεν εκτελείται εκεί για λογαριασμό του.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Το άτομο που είναι υπεύθυνο για τον αυτοματισμό αυτού του χώρου εργασίας δεν έχει συνδεθεί στο forge, οπότε ο αυτοματισμός για τα $names περιμένει μέχρι να συνδεθεί.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Δεν ήταν δυνατός ο έλεγχος πρόσβασης στα $names. Γίνεται νέα προσπάθεια.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Συνδεθείτε στο $forge για να δείτε pull requests από $count ακόμη αποθετήρια',
+      one:
+          'Συνδεθείτε στο $forge για να δείτε pull requests από 1 ακόμη αποθετήριο',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count αποθετήρια είναι κρυφά επειδή ο λογαριασμός σας στο $forge δεν τα βλέπει',
+      one:
+          '1 αποθετήριο είναι κρυφό επειδή ο λογαριασμός σας στο $forge δεν το βλέπει',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count αποθετήρια είναι κρυφά επειδή δεν έχετε πρόσβαση σε αυτά σε αυτόν τον χώρο εργασίας',
+      one:
+          '1 αποθετήριο είναι κρυφό επειδή δεν έχετε πρόσβαση σε αυτό σε αυτόν τον χώρο εργασίας',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ελέγχεται η πρόσβασή σας σε $count ακόμη αποθετήρια…',
+      one: 'Ελέγχεται η πρόσβασή σας σε 1 ακόμη αποθετήριο…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Email λογαριασμού Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Εισαγάγετε τη διεύθυνση email του λογαριασμού σας Atlassian.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Κανένα διακριτικό αυτοματοποίησης δεν μπορεί να διαβάσει τα $names, οπότε η εργασία στο παρασκήνιο εκεί είναι σε παύση. Ένας διαχειριστής μπορεί να προσθέσει ένα στις Ρυθμίσεις → Αποθετήρια.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Επιβεβαιώστε στο πρόγραμμα περιήγησης, και μετά εισαγάγετε τον κωδικό που εμφανίζει στο πεδίο παρακάτω.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Αυτός ο λογαριασμός είναι ήδη συνδεδεμένος με άλλο άτομο σε αυτόν τον διακομιστή. Συνδεθείτε με διαφορετικό λογαριασμό.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'Δεν ήταν δυνατή η επικοινωνία με το $provider για τον έλεγχο αυτού του token. Δοκιμάστε ξανά σε λίγο.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return 'Το $provider δεν αποδέχεται αυτό το token. Ελέγξτε ότι το αντιγράψατε ολόκληρο και ότι δεν έχει ανακληθεί.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Αυτό δεν είναι προσωπικό token. Επικολλήστε ένα προσωπικό access token από τον δικό σας λογαριασμό στο $provider, όχι token έργου, ομάδας, χώρου εργασίας ή bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Στο token λείπει το δικαίωμα $scope, που χρειάζονται η αναθεώρηση και τα σχόλια. Δημιουργήστε ένα που το περιλαμβάνει.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Αυτό το token έχει λήξει. Δημιουργήστε ένα νέο και επικολλήστε το εδώ.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Πάρα πολλά αιτήματα αυτή τη στιγμή. Περιμένετε λίγο και δοκιμάστε ξανά.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Η σύνδεση ακυρώθηκε ή απορρίφθηκε. Ξεκινήστε την ξανά όταν είστε έτοιμοι.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Αυτή η σύνδεση δεν είναι πλέον ανοιχτή: ακυρώθηκε, χρησιμοποιήθηκε ή αντικαταστάθηκε. Ξεκινήστε την ξανά.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Ένας διαχειριστής χώρου εργασίας πρέπει να σας προσκαλέσει, ή ο κάτοχος του διακομιστή μπορεί να δημιουργήσει χώρο εργασίας για εσάς.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return 'Το $repos δείχνει πλέον σε διαφορετικό αποθετήριο στο $forge. Επανασυνδέστε το από την επιφάνεια εργασίας ή την εφαρμογή ιστού για να συνεχίσετε να το χρησιμοποιείτε.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return 'Το $repos δείχνει πλέον σε διαφορετικό αποθετήριο στο $forge. Ένας διαχειριστής χώρου εργασίας πρέπει να το επανασυνδέσει πριν μπορέσει να χρησιμοποιηθεί ξανά.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Οι πράκτορες χρειάζονται sandbox σε αυτόν τον διακομιστή';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Αυτός ο διακομιστής δεν έχει sandbox, γι\' αυτό μόνο ο κάτοχός του μπορεί να εκτελεί εδώ πράκτορες. Ο κάτοχος μπορεί να εγκαταστήσει το sandbox ή να απενεργοποιήσει την απομόνωση για όλους.';
 }

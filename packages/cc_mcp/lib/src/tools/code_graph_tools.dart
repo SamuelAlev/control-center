@@ -2,8 +2,8 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
-import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_symbol.dart';
+import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
@@ -11,26 +11,39 @@ import 'package:cc_mcp/src/log/cc_mcp_log.dart';
 
 /// Workspace-isolation guard for the repo-scoped code-graph tools. A repo may
 /// be linked to several workspaces, so every tool requires the caller's
-/// `workspace_id` and we reject access unless [repoId] is actually linked to
-/// it. The underlying repository is itself workspace-partitioned (every query
-/// is scoped by `workspaceId`); this check turns a cross-workspace lookup into
-/// an explicit denial rather than silently empty results. Returns an error
-/// [CallResult] to short-circuit `run`, or `null` when access is allowed.
+/// `workspace_id` and we reject access unless [gate] admits [repoId] there:
+/// linked to it, with a checkout the server still serves. The underlying
+/// repository is itself workspace-partitioned (every query is scoped by
+/// `workspaceId`); this check turns a cross-workspace lookup, or one of a
+/// repository whose path is refused, into an explicit denial rather than
+/// results. Returns an error [CallResult] to short-circuit `run`, or `null`
+/// when access is allowed.
 Future<CallResult?> _denyUnlessRepoInWorkspace(
-  WorkspaceRepository workspaceRepository,
+  CodeGraphRepoGate gate,
   String workspaceId,
   String repoId,
 ) async {
-  final linked = await workspaceRepository.isRepoLinkedToWorkspace(
-    workspaceId,
-    repoId,
-  );
-  if (!linked) {
+  if (!await gate(workspaceId, repoId)) {
     return CallResult.error(
-      'Repository $repoId is not part of workspace $workspaceId.',
+      'Repository $repoId is not part of workspace $workspaceId, or its '
+      'checkout is not served.',
     );
   }
   return null;
+}
+
+/// [symbols] without those of a repository [gate] does not admit in
+/// [workspaceId], so a traversal never lists a refused repository's symbols.
+Future<List<CodeSymbol>> _admitted(
+  List<CodeSymbol> symbols,
+  CodeGraphRepoGate gate,
+  String workspaceId,
+) async {
+  final admitted = <String, bool>{};
+  return [
+    for (final s in symbols)
+      if (admitted[s.repoId] ??= await gate(workspaceId, s.repoId)) s,
+  ];
 }
 
 /// Graph partition for a call: space worktree when [spaceId] owns one for
@@ -172,13 +185,13 @@ class SearchCodeTool extends McpTool {
   /// Creates a [SearchCodeTool].
   SearchCodeTool({
     required this._repository,
-    required this._workspaceRepository,
+    required this._repoGate,
     this._embeddingService,
     this._tree,
   });
 
   final CodeGraphRepository _repository;
-  final WorkspaceRepository _workspaceRepository;
+  final CodeGraphRepoGate _repoGate;
   final EmbeddingPort? _embeddingService;
   final CodeGraphTreePort? _tree;
 
@@ -237,7 +250,7 @@ class SearchCodeTool extends McpTool {
       return CallResult.error('Missing query');
     }
     final denied = await _denyUnlessRepoInWorkspace(
-      _workspaceRepository,
+      _repoGate,
       workspaceId,
       repoId,
     );
@@ -291,12 +304,12 @@ class CodeSymbolTool extends McpTool {
   /// Creates a [CodeSymbolTool].
   CodeSymbolTool({
     required this._repository,
-    required this._workspaceRepository,
+    required this._repoGate,
     this._tree,
   });
 
   final CodeGraphRepository _repository;
-  final WorkspaceRepository _workspaceRepository;
+  final CodeGraphRepoGate _repoGate;
   final CodeGraphTreePort? _tree;
 
   @override
@@ -342,7 +355,7 @@ class CodeSymbolTool extends McpTool {
       return CallResult.error('Missing name');
     }
     final denied = await _denyUnlessRepoInWorkspace(
-      _workspaceRepository,
+      _repoGate,
       workspaceId,
       repoId,
     );
@@ -385,10 +398,12 @@ class CodeCallersTool extends McpTool {
   /// Creates a [CodeCallersTool].
   CodeCallersTool({
     required this._repository,
+    required this._repoGate,
     this._tree,
   });
 
   final CodeGraphRepository _repository;
+  final CodeGraphRepoGate _repoGate;
   final CodeGraphTreePort? _tree;
 
   @override
@@ -437,6 +452,7 @@ class CodeCallersTool extends McpTool {
     }
     final denied = await _denyUnlessSymbolInWorkspace(
       _repository,
+      _repoGate,
       workspaceId,
       symbolId,
     );
@@ -462,7 +478,7 @@ class CodeCallersTool extends McpTool {
       checkoutId: checkoutId,
     );
     final verified = await _liveSymbols(
-      symbols,
+      await _admitted(symbols, _repoGate, workspaceId),
       tree: _tree,
       repository: _repository,
       workspaceId: workspaceId,
@@ -483,10 +499,12 @@ class CodeCalleesTool extends McpTool {
   /// Creates a [CodeCalleesTool].
   CodeCalleesTool({
     required this._repository,
+    required this._repoGate,
     this._tree,
   });
 
   final CodeGraphRepository _repository;
+  final CodeGraphRepoGate _repoGate;
   final CodeGraphTreePort? _tree;
 
   @override
@@ -535,6 +553,7 @@ class CodeCalleesTool extends McpTool {
     }
     final denied = await _denyUnlessSymbolInWorkspace(
       _repository,
+      _repoGate,
       workspaceId,
       symbolId,
     );
@@ -560,7 +579,7 @@ class CodeCalleesTool extends McpTool {
       checkoutId: checkoutId,
     );
     final verified = await _liveSymbols(
-      symbols,
+      await _admitted(symbols, _repoGate, workspaceId),
       tree: _tree,
       repository: _repository,
       workspaceId: workspaceId,
@@ -581,10 +600,12 @@ class CodeImpactTool extends McpTool {
   /// Creates a [CodeImpactTool].
   CodeImpactTool({
     required this._repository,
+    required this._repoGate,
     this._tree,
   });
 
   final CodeGraphRepository _repository;
+  final CodeGraphRepoGate _repoGate;
   final CodeGraphTreePort? _tree;
 
   @override
@@ -631,6 +652,7 @@ class CodeImpactTool extends McpTool {
     }
     final denied = await _denyUnlessSymbolInWorkspace(
       _repository,
+      _repoGate,
       workspaceId,
       symbolId,
     );
@@ -658,7 +680,7 @@ class CodeImpactTool extends McpTool {
     // above resolved it); only the impact set is verified, since that is what
     // the agent goes on to open.
     final verified = await _liveSymbols(
-      subgraph.nodes,
+      await _admitted(subgraph.nodes, _repoGate, workspaceId),
       tree: _tree,
       repository: _repository,
       workspaceId: workspaceId,
@@ -682,15 +704,17 @@ class CodeImpactTool extends McpTool {
 /// impact), which take a `symbol_id` rather than a `repo_id`. The repository's
 /// `getById` is itself workspace-partitioned, so a symbol from another
 /// workspace resolves to `null` — surfaced here as an explicit denial rather
-/// than empty graph results. Returns an error [CallResult] to short-circuit
-/// `run`, or `null` when the symbol exists in [workspaceId].
+/// than empty graph results, as is a symbol of a repository [gate] does not
+/// admit. Returns an error [CallResult] to short-circuit `run`, or `null` when
+/// the symbol exists in [workspaceId] and may be read.
 Future<CallResult?> _denyUnlessSymbolInWorkspace(
   CodeGraphRepository repository,
+  CodeGraphRepoGate gate,
   String workspaceId,
   String symbolId,
 ) async {
   final symbol = await repository.getById(workspaceId, symbolId);
-  if (symbol == null) {
+  if (symbol == null || !await gate(workspaceId, symbol.repoId)) {
     return CallResult.error(
       'Symbol $symbolId not found in workspace $workspaceId.',
     );

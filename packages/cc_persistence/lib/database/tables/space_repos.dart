@@ -6,9 +6,8 @@ import 'package:drift/drift.dart';
 ///
 /// A row `(workspaceId, spaceId, repoId)` declares that the space's
 /// conversation workspace should check out that repo. When a space has NO
-/// rows, the provisioner falls back to every repo linked to the workspace
-/// (back-compat with spaces created before per-space selection existed);
-/// PR-workbench spaces ignore this table entirely and always provision
+/// rows, the provisioner checks out every repo linked to the workspace (the
+/// default selection); PR-workbench spaces ignore this table entirely and always provision
 /// exactly the PR's repo.
 ///
 /// `workspaceId` is carried (not just derivable via the space) so reads scope

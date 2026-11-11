@@ -30,17 +30,6 @@ abstract final class PrTabKinds {
   /// on every PR teaches the reader to ignore it. "Ask AI" opens it.
   static const String reviewArtifact = 'pr.reviewArtifact';
 
-  /// Legacy review kinds — a standing dashboard tab (`pr.review`), and before
-  /// it a split Findings / Studio pair. All fold into [reviewArtifact] so a
-  /// persisted layout naming one still opens something.
-  static const String review = 'pr.review';
-
-  /// See [review].
-  static const String aiReview = 'pr.aiReview';
-
-  /// See [review].
-  static const String reviewStudio = 'pr.reviewStudio';
-
   /// A PR-scoped chat conversation (a real space, provisioned at the PR head).
   static const String chat = 'pr.chat';
 
@@ -111,11 +100,7 @@ abstract final class PrTabKinds {
       case actions:
         return AppIcons.zap;
       case reviewArtifact:
-      case review:
-      case aiReview:
         return AppIcons.sparkles;
-      case reviewStudio:
-        return AppIcons.boxes;
       case chat:
         return AppIcons.messageSquareText;
       case terminal:

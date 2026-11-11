@@ -2,10 +2,10 @@
 title: Strumenti MCP
 description: Catalogo completo degli strumenti MCP che cc_server registra, per famiglia.
 slug: it-IT/manuale/riferimento/strumenti-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` ospita un unico registro di strumenti MCP (JSON-RPC 2.0), servito sulla porta principale del server (predefinita `9030`) su `POST /mcp` e `GET /sse`, versione del protocollo `2024-11-05`. Ogni client raggiunge lo stesso registro: il desktop, la build web, i client MCP esterni e il runtime integrato degli agenti. I server MCP esterni possono essere collegati allo stesso registro come livello dinamico.
+`cc_server` ospita un unico registro di strumenti MCP (JSON-RPC 2.0), servito sulla porta principale del server (predefinita `9030`) su `POST /mcp` e `GET /sse`, versione del protocollo `2024-11-05`. Ogni client raggiunge lo stesso registro: il desktop, la build web, i client MCP esterni e il runtime integrato degli agenti. I server MCP esterni possono essere collegati allo stesso registro come livello dinamico. I server rilevati nella configurazione degli strumenti personale dell'utente del server sono l'eccezione: questo endpoint non li elenca, non li chiama e non li cerca mai, e solo le esecuzioni dell'harness integrato, di cui il proprietario del server è responsabile, li ottengono (vedi [I server MCP personali restano del proprietario](/it-IT/manuale/guide/server-mcp/#i-server-mcp-personali-restano-del-proprietario)).
 
 ## Dimensione del registro
 
@@ -23,7 +23,7 @@ I cinque strumenti del grafo del codice vengono registrati solo quando l'host pa
 Il registro completo è annunciato in `tools/list` senza filtri di scoperta. Le modifiche ai ticket sono strumenti tipizzati.
 
 :::note[I client esterni vedono sempre l'intero catalogo]
-`tools/list` non viene mai ridotto. I client MCP convalidano i nomi degli strumenti rispetto alla propria copia in cache di quell'elenco e rifiutano qualsiasi cosa non sia in elenco senza chiedere al server, quindi uno strumento nascosto lì è irraggiungibile, non semplicemente silenzioso.
+`tools/list` non viene mai ridotto, a parte i server MCP personali del proprietario del server, che non vi compaiono mai. I client MCP convalidano i nomi degli strumenti rispetto alla propria copia in cache di quell'elenco e rifiutano qualsiasi cosa non sia in elenco senza chiedere al server, quindi uno strumento nascosto lì è irraggiungibile, non semplicemente silenzioso.
 
 L'**harness integrato** è diverso: carica solo un sottoinsieme residente di definizioni per richiesta e richiama il resto al primo uso; è un comportamento lato harness e non cambia questo registro. Vedi [Contesto degli strumenti e cache dei prompt](/it-IT/manuale/concetti/contesto-strumenti).
 :::
@@ -249,7 +249,7 @@ dati non attendibili. I quattro strumenti d'uso più `rig_close` dichiarano la
 `mobile_use` e `ios_use` dichiarano anche `packageInstall`), quindi le modalità
 di sola lettura li negano. `rig_list` non ne dichiara nessuna — legge solo lo
 stato dello spazio di lavoro. Il vocabolario completo dei verbi per superficie è
-nel [riferimento sui rig](/it-IT/manuale/riferimento/rig/#action-verbs).
+nel [riferimento sui rig](/it-IT/manuale/riferimento/rig/#verbi-di-azione).
 
 | Strumento | Descrizione |
 | --- | --- |
@@ -257,8 +257,10 @@ nel [riferimento sui rig](/it-IT/manuale/riferimento/rig/#action-verbs).
 | `browser_use` | Pilota un Chromium, Firefox o WebKit headless (`engine`): naviga, fai clic, compila, estrai (a11y/DOM/console), appunti, screenshot |
 | `mobile_use` | Pilota Android su ADB: ispeziona/invia input, screenshot, installa/avvia/ferma/ripristina/disinstalla app, deep link e comandi del dispositivo in forma argv |
 | `ios_use` | Pilota il simulatore iOS tramite WebDriverAgent/CoreSimulator: ispeziona/invia input, screenshot, installa/avvia/ferma/disinstalla app, deep link e processi del simulatore in forma argv |
-| `rig_list` | Elenca i rig di uno spazio di lavoro con superficie, stato, dimensione del display e controller |
+| `rig_list` | Elenca i rig dello spazio dell'esecuzione con superficie, stato, dimensione del display e controller |
 | `rig_close` | Distruggi un rig e scarta lo stato della macchina che possiede |
+
+Solo le esecuzioni di agenti possono chiamare questi strumenti; qualsiasi altro chiamante viene rifiutato. Un'esecuzione raggiunge solo i rig dello spazio per cui le è stato concesso l'accesso: `space_id` proviene dalla concessione dell'esecuzione, mai dalla chiamata, e un rig di un altro spazio, o di nessuno spazio, risponde esattamente come un rig inesistente.
 
 `app_use` è un quinto strumento use: guida le finestre di un'app desktop avviata in uno spazio, direttamente sull'host e non in una VM, e dichiara anche `fileWriteOutsideWorktree` e `fileDelete`. Questo strumento e gli strumenti `environment_*` sono descritti in [Configurare gli ambienti](/it-IT/manuale/guide/ambienti/).
 
@@ -304,7 +306,7 @@ alcuno strumento, quindi un nome che potresti aver visto citato altrove restitui
 | Capacità | Dove risiede invece |
 | --- | --- |
 | Assumere, licenziare o modificare un agente | L'interfaccia degli agenti. Non esiste alcuno strumento `hire_agent` / `fire_agent` / `update_agent` |
-| Creare uno spazio di lavoro | `workspace.upsert` via RPC, che inizializza e appone la proprietà |
+| Creare uno spazio di lavoro | `workspace.create` via RPC, solo per il proprietario del server, che inizializza e appone la proprietà |
 | Progetti (crea / elenca / aggiorna / classifica) | L'interfaccia dei ticket. I progetti sono una superficie per l'operatore — vedi [Progetti](/it-IT/manuale/guide/progetti/) |
 | Porre all'operatore una domanda bloccante | Lo strumento `ask_user` dell'**harness**, non MCP. Renderizza un modulo nella conversazione e si blocca in attesa della risposta |
 | Diagnostica per agente | Nulla. Non esiste un `doctor` — vedi [Diagnostica un agente](/it-IT/manuale/guide/diagnostica-agente/) |

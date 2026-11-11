@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_infra/src/network/forge_git_auth.dart';
 import 'package:cc_infra/src/util/command_redaction.dart';
 import 'package:cc_natives/cc_natives.dart';
 import 'package:path/path.dart' as p;
@@ -93,24 +94,21 @@ class PrCloneManager {
   /// Public HTTPS URL — stored as the remote after cloning (no token).
   String get _cleanUrl => 'https://github.com/$_owner/$_repo.git';
 
-  /// Auth env: the GitHub PAT rides in `GIT_CONFIG_PARAMETERS` as an
-  /// `http.<url>.extraHeader` Authorization header — in the process
-  /// ENVIRONMENT, never the remote URL. The URL stays clean (no token for git
-  /// to echo on stderr) and the token is invisible to `ps` (env, not argv)
-  /// (VULN-010).
-  Map<String, String> get _authEnv {
-    if (_githubToken.isEmpty) {
-      return _baseEnv;
-    }
-    final b64 = base64Encode(utf8.encode('x-access-token:$_githubToken'));
-    final param =
-        "'http.https://github.com/.extraHeader=Authorization: Basic $b64'";
-    final existing = Platform.environment['GIT_CONFIG_PARAMETERS'] ?? '';
-    return {
-      ..._baseEnv,
-      'GIT_CONFIG_PARAMETERS': existing.isEmpty ? param : '$existing $param',
-    };
-  }
+  /// Auth env: the GitHub token rides in `GIT_CONFIG_PARAMETERS` as an
+  /// `http.<url>.extraHeader` Authorization header
+  /// ([forgeGitAuthConfigParameter]) — in the process ENVIRONMENT, never the
+  /// remote URL. The URL stays clean (no token for git to echo on stderr)
+  /// and the token is invisible to `ps` (env, not argv) (VULN-010). Nothing
+  /// of this process's own `GIT_CONFIG_PARAMETERS` is carried over.
+  Map<String, String> get _authEnv => _githubToken.isEmpty
+      ? _baseEnv
+      : {
+          ..._baseEnv,
+          'GIT_CONFIG_PARAMETERS': forgeGitAuthConfigParameter(
+            ForgeHost.github,
+            _githubToken,
+          ),
+        };
 
   /// Minimal env overrides.
   ///

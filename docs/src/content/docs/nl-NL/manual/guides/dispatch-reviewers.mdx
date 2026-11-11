@@ -2,7 +2,7 @@
 title: Reviewer-agenten starten
 description: Stuur specialistische reviewer-agenten op een PR af vanuit de PR-weergave, een MCP-tool of een pipeline-stap.
 slug: nl-NL/handleiding/gidsen/reviewers-starten
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Deze gids laat zien hoe je reviewer-agenten start om pull requests te reviewen.
@@ -88,7 +88,7 @@ Twee gebeurtenissen doen hier ter zake, en ze zijn niet uitwisselbaar:
 | Gebeurtenis            | Gaat af wanneer                                                                                                    | Payload-sleutels                                                   |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | Een PR wordt **via Control Center** geopend — op het opstelscherm, of door een agent die `pr_lifecycle.publish` aanroept | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | De PR-pollingdienst vindt een PR die rechtstreeks op GitHub is geopend                                           | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | De PR-pollingdienst vindt een PR die rechtstreeks op GitHub is geopend                                           | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 Bij een PR die op github.com wordt geopend, treedt `PullRequestPublished` nooit
 op, dus een sjabloon dat alleen aan die gebeurtenis is gekoppeld, ziet hem niet.

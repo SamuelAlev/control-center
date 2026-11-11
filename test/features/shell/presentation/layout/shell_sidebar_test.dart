@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/shell/presentation/widgets/title_bar_workspace_chip.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -93,6 +94,52 @@ void main() {
 
       expect(find.text('My Project'), findsOneWidget);
     });
+
+    for (final canCreate in const [true, false]) {
+      testWidgets('the switcher offers "Add workspace…" only to someone who '
+          'may create (may: $canCreate)', (tester) async {
+        tester.view.physicalSize = const Size(800, 600);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() {
+          tester.view.resetPhysicalSize();
+          tester.view.resetDevicePixelRatio();
+        });
+
+        final workspace = Workspace(
+          id: 'ws-1',
+          name: 'My Project',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appPreferencesProvider.overrideWithValue(prefs),
+              canCreateWorkspacesProvider.overrideWithValue(canCreate),
+              workspacesProvider.overrideWith(
+                (ref) => Stream.value([workspace]),
+              ),
+              activeWorkspaceProvider.overrideWith((ref) => workspace),
+              reposForWorkspaceProvider.overrideWith(
+                (ref, id) => const Stream<List<Repo>>.empty(),
+              ),
+            ],
+            child: _wrap(const TitleBarWorkspaceChip()),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('My Project'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byKey(const ValueKey('ws-1')), findsOneWidget);
+        expect(
+          find.text('Add workspace…'),
+          canCreate ? findsOneWidget : findsNothing,
+        );
+      });
+    }
 
     testWidgets('active tile is a neutral wash and rows sit flush', (
       tester,

@@ -2,7 +2,7 @@
 title: Pipeline-stegtyper
 description: Referanse for typer av pipeline-steg, kroppsnøkler for steg, konfigurasjonen deres og stegresultater.
 slug: nb-NO/handbok/referanse/pipeline-steg
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Et pipeline-steg har to uavhengige akser:
@@ -61,7 +61,7 @@ Generisk node for prompt og utsending: renderer prompten, sender agenten ut i en
 
 ### `pipeline.condition`
 
-Ruterkropp — leser `config.extras`, evaluerer en betingelse og returnerer `StepResult.route(key)`. Betingelser er **ikke** JavaScript-uttrykk; tre former for utforming støttes, i prioritert rekkefølge:
+Ruterkropp — leser `config.extras`, evaluerer en betingelse og returnerer `StepResult.route(key)`. Betingelser er **ikke** JavaScript-uttrykk; to former for utforming støttes, i prioritert rekkefølge:
 
 - **Predikattre** (`extras.predicate`) — et boolsk tre som ruter `"true"` / `"false"`. Hver node er et map med en `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — sann når en av de oppførte stiene finnes på disken; `negate` snur den; `recursive` søker også i underkataloger (og hopper over `.git`, `node_modules`, `build`, `.dart_tool`). Relative stier løses mot `state[baseKey]` (standard `repo_local_path`), ellers mot arbeidsområdekatalogen for kjøringen.
@@ -69,19 +69,28 @@ Ruterkropp — leser `config.extras`, evaluerer en betingelse og returnerer `Ste
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolske grupper.
   - `{"type": "not", "of": <predicate>}` — negasjon.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; ruter til det første tilfellet tilstandsverdien inneholder uten hensyn til store og små bokstaver, ellers `default`.
-- **Sammenligning** (eldre toppnivå `extras.left` / `extras.op` / `extras.right`) — tilsvarer et `comparison`-predikat, beholdt for maler som ble laget før treet.
 
 Kanter ut av noden har en `routeKey` som må samsvare med nøkkelen som returneres.
 
 ### `prReview.comment`
 
-Legger ut de samlede funnene som en PR-gjennomgangskommentar via GitHub-PR-klienten.
+Legger ut de samlede funnene, eller stegets egen `extras.message`, som en PR-gjennomgangskommentar via GitHub-PR-klienten.
 
-| Tilstandsnøkkel          | Beskrivelse                                  |
-| ------------------------ | -------------------------------------------- |
-| `repo_full_name`         | `owner/repo` (obligatorisk)                  |
-| `pr_number`              | PR-nummer — int eller numerisk streng (obligatorisk) |
-| `consolidated_findings`  | Kommentartekst (obligatorisk)                |
+| Nøkkel                  | Leses fra      | Beskrivelse                                                         |
+| ----------------------- | -------------- | ------------------------------------------------------------------- |
+| `repo_full_name`        | Triggerpayload | `owner/repo` (obligatorisk)                                         |
+| `pr_number`             | Triggerpayload | PR-nummer, et positivt heltall eller numerisk streng (obligatorisk) |
+| `consolidated_findings` | Tilstand       | Kommentartekst når steget ikke har en `message`                     |
+
+Pull requesten hentes bare fra kjøringens triggerpayload, aldri fra tilstand som et steg kan skrive om midt i kjøringen. @-nevnelser i den publiserte teksten gjøres virkningsløse, så kommentaren varsler ingen.
+
+En `message` gjengir sine `{{key}}`-plassholdere slik:
+
+- `repo_full_name`, `repo_owner`, `repo_name` og `pr_number` gjengir pull requesten steget legger ut på.
+- `author` gjengis fra triggerpayloaden, uendret, bare når det er et gyldig brukernavn på forgen; alt annet får steget til å feile.
+- `consolidated_findings` gjengis som rå markdown, med sine @-nevnelser gjort virkningsløse.
+- Alle andre verdier gjengis som ren tekst: på én linje, med markdown-tegn escapet og @-nevnelser gjort virkningsløse.
+- En plassholder som ikke løses til noe, får steget til å feile.
 
 Returnerer `StepResult.terminal` med `comment_review_id` og `commented_at` i tilstanden.
 

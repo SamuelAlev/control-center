@@ -2,7 +2,7 @@
 title: Send ut din første agent
 description: Opprett en agent, gi den et område og en oppgave, og se kjøringen strømme tilbake.
 slug: nb-NO/handbok/veiledninger/forste-agent
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Det du skal bygge
@@ -76,7 +76,7 @@ Det som begrenser kjøringen: dens eget copy-on-write-worktree, legitimasjonen s
 
 **Sjekkpunkt.** Én kjøringsrad som viser status, varighet, start- og sluttidspunkt og adapteren den kjørte på.
 
-Agentens endringer er committet på samtalens gren, i worktreet dens. Du er alltid forfatter og committer med Git-identiteten din i arbeidsområdet. Som standard krediterer `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` som medforfatter. Du kan slå av denne medforfatterkrediteringen under **Innstillinger → Deg → Kreditering av commits**, med mindre en administrator har overstyrt valget under **Innstillinger → Arbeidsområde → Generelt**.
+Agentens endringer er committet på samtalens gren, i worktreet dens. Fordi du ba om kjøringen, er commitene dine: du er forfatter og committer, under adressen forgen din har bekreftet (GitHub-noreply-adressen din fra GitHub-påloggingen), og en `Co-Authored-By:`-trailer krediterer Control Center med mindre du har slått det av. Hvis du ikke er logget inn på forgen, er commitene i stedet botens til Control Center, og kjøringens notater sier det.
 
 ## Å få en pull request
 

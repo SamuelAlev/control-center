@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_commit.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_domain/features/pr_review/domain/services/diff_parser.dart';
 import 'package:cc_domain/features/pr_review/domain/sources/pr_diff_source.dart';
 import 'package:cc_infra/src/git/git_diff_z_parser.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/pr_review/pr_clone_manager.dart';
 import 'package:cc_natives/cc_natives.dart';
 

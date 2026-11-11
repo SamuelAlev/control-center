@@ -1,10 +1,11 @@
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 
-/// Read-only view of every tool definition the registry knows. The BM25
+/// Read-only view of the tool definitions any caller may see. The BM25
 /// tool-discovery search tool indexes this to help agents find the right tool
 /// in a large catalogue.
 abstract interface class ToolCatalog {
-  /// Every tool definition (native + bridged + extras).
+  /// Every shared tool definition (native + extras). Personal tools (see
+  /// [McpToolRegistry]) are left out: a catalogue tool serves every run.
   List<ToolDef> allToolDefinitions();
 }
 
@@ -12,7 +13,15 @@ abstract interface class ToolCatalog {
 ///
 /// Layers: **base** (native, fixed at construction), **dynamic** (external MCP
 /// via [setDynamicTools]), **extra** (host singletons via [register]).
-/// Every registered tool is in `tools/list` — ungated. Gating was unenforceable:
+///
+/// The dynamic layer is **personal**: it holds the MCP servers discovered in
+/// the server OS user's own tool configs, which act with that user's
+/// identity and credentials. Only a run the server owner is accountable for
+/// may be handed them, so every run-facing read takes `includePersonal`, and
+/// without it a personal tool is absent: not listed, not callable, and never
+/// standing in for a shared tool of the same name.
+///
+/// Every shared tool is in `tools/list` — ungated. Gating was unenforceable:
 /// Claude Code validates names against its cached list client-side and refuses
 /// unlisted tools, so gated writes were unreachable. Harness deferral belongs
 /// in the harness layer. [onToolsChanged] drives `tools/list_changed`;
@@ -46,8 +55,10 @@ class McpToolRegistry implements ToolCatalog {
     onToolsChanged?.call();
   }
 
-  /// Looks up a tool by name across all three layers.
-  McpTool? lookup(String name) => _extra[name] ?? _dynamic[name] ?? _base[name];
+  /// Looks up a tool by name: the shared layers, and the personal one only
+  /// with [includePersonal].
+  McpTool? lookup(String name, {required bool includePersonal}) =>
+      _extra[name] ?? (includePersonal ? _dynamic[name] : null) ?? _base[name];
 
   /// Resolves an incoming tool name tolerantly.
   ///
@@ -59,13 +70,13 @@ class McpToolRegistry implements ToolCatalog {
   /// `control_center_<tool>`) and an agent that types the prefixed name it was
   /// shown should not get "unknown tool" from the server. Returns null when no
   /// candidate resolves.
-  McpTool? resolve(String name) {
-    final exact = lookup(name);
+  McpTool? resolve(String name, {required bool includePersonal}) {
+    final exact = lookup(name, includePersonal: includePersonal);
     if (exact != null) {
       return exact;
     }
     for (final candidate in _dePrefixedCandidates(name)) {
-      final tool = lookup(candidate);
+      final tool = lookup(candidate, includePersonal: includePersonal);
       if (tool != null) {
         return tool;
       }
@@ -94,22 +105,24 @@ class McpToolRegistry implements ToolCatalog {
   /// The total number of known tools.
   int get totalToolCount => _allTools().length;
 
-  /// The tool definitions advertised in `tools/list` — the full catalogue.
-  List<ToolDef> listDefinitions() =>
-      _allTools().values.map((t) => t.definition).toList();
+  /// The tool definitions advertised in `tools/list`, with the personal layer
+  /// only when [includePersonal].
+  List<ToolDef> listDefinitions({required bool includePersonal}) =>
+      _visible(includePersonal).values.map((t) => t.definition).toList();
 
   @override
-  List<ToolDef> allToolDefinitions() => listDefinitions();
+  List<ToolDef> allToolDefinitions() => listDefinitions(includePersonal: false);
 
-  /// All tool names.
-  Iterable<String> get toolNames => _allTools().keys;
+  /// Tool names, with the personal layer only when [includePersonal].
+  Iterable<String> toolNames({required bool includePersonal}) =>
+      _visible(includePersonal).keys;
 
-  /// Stable fingerprint of the current catalogue (names + schema keys),
+  /// Stable fingerprint of the shared catalogue (names + schema keys),
   /// as a hex string. Changes exactly when the advertised toolset changes, so
   /// embedding it in a client config invalidates config-hash-keyed tool-list
   /// caches on server upgrades.
   String get toolsetRevision {
-    final entries = _allTools().values.map((t) {
+    final entries = _visible(false).values.map((t) {
       final props = t.inputSchema['properties'];
       final keys = props is Map
           ? (props.keys.map((k) => '$k').toList()..sort())
@@ -130,4 +143,7 @@ class McpToolRegistry implements ToolCatalog {
 
   /// base ∪ dynamic ∪ extra, with extras/dynamic taking precedence on a clash.
   Map<String, McpTool> _allTools() => {..._base, ..._dynamic, ..._extra};
+
+  Map<String, McpTool> _visible(bool includePersonal) =>
+      includePersonal ? _allTools() : {..._base, ..._extra};
 }

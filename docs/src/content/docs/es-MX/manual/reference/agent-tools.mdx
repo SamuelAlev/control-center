@@ -2,7 +2,7 @@
 title: Herramientas de agente integradas
 description: La superficie de herramientas que el arnés integrado le da a un agente —servidor de lenguaje, búsqueda estructural, depurador, kernels y control de workers— con cada operación y sus argumentos.
 slug: es-MX/manual/referencia/herramientas-de-agente
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Estas son las herramientas **vinculadas al servidor** que el runtime del agente integrado registra directamente —servidor de lenguaje, búsqueda estructural, depurador, kernels, preguntas y control de workers—, a diferencia de las [herramientas MCP](/es-MX/manual/referencia/herramientas-mcp/) que puentea y de las herramientas genéricas de archivo, búsqueda y shell del runtime del arnés. No están en el registro MCP: un cliente MCP externo no las verá, porque cada una está vinculada a un recurso vivo del lado del servidor —un proceso de servidor de lenguaje, un adaptador de depuración, un intérprete— que pertenece a una sola ejecución.
@@ -24,6 +24,8 @@ Cada herramienta declara un nivel, y el nivel decide **qué superficies la ven**
 ## `lsp` — consultas al servidor de lenguaje
 
 Se registra cuando la ejecución tiene un supervisor de servidor de lenguaje y un directorio de trabajo. Que un servidor pueda responder de verdad se detecta en el momento de la llamada, como una **intersección**: debe existir un marcador de raíz *y* el binario del servidor debe poder resolverse. Cualquiera de los dos por sí solo significa que no arranca ningún servidor —`status` lo dice—, en lugar de una suposición silenciosa.
+
+Los servidores provienen solo de la tabla integrada; no se lee ningún `lsp.json` del repositorio. En una ejecución con sandbox, cada ejecución tiene su propia sesión de servidor de lenguaje, así que los servidores vuelven a arrancar con cada ejecución. Los binarios locales del proyecto (`node_modules/.bin`) solo se usan cuando la ejecución está en un sandbox, y la raíz del proyecto nunca se resuelve por encima del directorio de trabajo de la ejecución.
 
 Las posiciones se direccionan con `line` más una subcadena `symbol`, nunca por columna. Un modelo al que se le pide una columna adivina, y una suposición equivocada se resuelve en otro símbolo de la misma línea: una respuesta que parece correcta y que trata de otra cosa. Omitir `symbol` en una acción de navegación es un error, no una suposición de la primera columna.
 
@@ -117,7 +119,7 @@ Cada archivo se compara con el contenido capturado en el momento de la preparaci
 
 Se registra cuando la ejecución tiene un supervisor de sesión de depuración, un directorio de trabajo y un id de conversación. Que un adaptador pueda arrancar de verdad se detecta en el momento de la llamada, con la misma regla de intersección que el servidor de lenguaje (marcador de raíz *y* binario). Nivel `exec`; no es seguro en paralelo (una sesión es estado entre llamadas, así que un `continue` que adelantara a `stack` leería un frame que ya se ha movido).
 
-Una sesión por conversación, con un TTL estricto (30 minutos). Un segundo `launch` se rechaza en lugar de reemplazar en silencio al primero.
+Una sesión por conversación, con un TTL estricto (30 minutos). Un segundo `launch` se rechaza en lugar de reemplazar en silencio al primero. En una ejecución con sandbox, la sesión conserva su sandbox entre turnos hasta que termina, así que solo durante esos 30 minutos como máximo.
 
 | Op            | Argumentos                    | Notas                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Una sesión por conversación, con un TTL estricto (30 minutos). Un segundo `lau
 | `status`      | —                             | Si hay una sesión en ejecución y dónde se detuvo |
 | `breakpoints` | `file`, `lines[]`             | Un `lines` vacío limpia el archivo. Se pueden establecer **antes** de lanzar |
 | `launch`      | `program`, `args[]`           | Inicia el programa detenido en tus puntos de interrupción |
-| `attach`      | `port`                        | Se conecta a un proceso ya en ejecución bajo depuración |
+| `attach`      | `port`                        | Se conecta a un proceso ya en ejecución bajo depuración, en uno de los puertos reenviados de la propia ejecución; cualquier otro puerto se rechaza antes de que arranque nada |
 | `continue`    | `thread_id?`                  | Se ejecuta hasta la siguiente parada            |
 | `pause`       | `thread_id?`                  | Lo detiene donde está                          |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Avanza un paso                        |
@@ -146,7 +148,7 @@ Una sesión por conversación, con un TTL estricto (30 minutos). Un segundo `lau
 | `lldb`    | `lldb-dap`                    | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                     | `go.mod`                                        |
 
-`debugpy` prefiere un `.venv/bin` o un `venv/bin` locales del proyecto antes que `$PATH`: un python de `$PATH` es un entorno distinto, y conectarse desde el equivocado falla de una forma que parece código roto.
+`debugpy` prefiere un `.venv/bin` o un `venv/bin` locales del proyecto antes que `$PATH` cuando la ejecución está en un sandbox: un python de `$PATH` es un entorno distinto, y conectarse desde el equivocado falla de una forma que parece código roto. Sin sandbox usa solo `$PATH`, así que un repositorio no puede elegir el intérprete que se ejecuta en el host.
 
 ---
 
@@ -176,7 +178,7 @@ El puente **vuelve a entrar en el registro de herramientas del arnés**, así qu
 El tiempo de espera de la celda es un presupuesto de *inactividad* (5 minutos de forma predeterminada) y se **suspende** mientras hay una llamada puenteada pendiente, así que una celda que se reparte entre subagentes no se mata a mitad del reparto.
 
 :::note[Dónde se ejecuta el kernel]
-En el recinto de la conversación cuando lo tiene, y en el host en caso contrario. No arranca un recinto para llegar hasta allí —la misma regla que impide que una pestaña de rig se inicie automáticamente.
+En el recinto de la conversación cuando lo tiene; en otro caso, en el sandbox del sistema operativo de la ejecución, en el host. Sin sandbox, o con el sandbox no disponible, se ejecuta sin confinar y `eval` pide aprobación para ejecutar en el host. No arranca un recinto para llegar hasta allí —la misma regla que impide que una pestaña de rig se inicie automáticamente.
 :::
 
 ---

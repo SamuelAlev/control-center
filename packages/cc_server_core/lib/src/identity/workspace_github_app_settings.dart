@@ -4,6 +4,9 @@ import 'package:cc_infra/cc_infra.dart' show GitHubAppClient;
 import 'package:cc_server_core/src/connect/linear_sign_in_lane.dart'
     show LinearAppGrants;
 import 'package:cc_server_core/src/file_secrets_store.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
+import 'package:cc_server_core/src/forge/forge_automation_tokens.dart'
+    show ForgeAutomationTokens;
 import 'package:cc_server_core/src/google_calendar_server.dart'
     show FileGoogleCredentialsStore;
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
@@ -16,9 +19,11 @@ import 'package:cc_server_core/src/identity/workspace_provider_app_settings.dart
 /// workspace must not leak a private key. `workspaces.github_app_id` on the
 /// registry row is the non-secret id; the PEM and OAuth secret stay here.
 ///
-/// [GithubAuthMode.inherit] workspaces share the server's GitHub lane (its own
-/// App, else Connect). A missing workspace key in [GithubAuthMode.app] does
-/// **not** fall through to the server's lane.
+/// The workspace's App applies only while its Connect choice is
+/// [WorkspaceConnectMode.own]; a missing key then does **not** fall through
+/// to the server's lane. [WorkspaceConnectMode.inherit] workspaces share the
+/// server's GitHub lane (its own App, else its Connect); a workspace on a
+/// Connect of its own has no App here at all.
 class WorkspaceGitHubAppSettings {
   /// Creates a [WorkspaceGitHubAppSettings].
   WorkspaceGitHubAppSettings({
@@ -40,6 +45,7 @@ class WorkspaceGitHubAppSettings {
   final Map<String, String> _clientKeyOf = {};
 
   final List<void Function(String workspaceId)> _listeners = [];
+  final List<Future<void> Function(String workspaceId)> _deletionListeners = [];
 
   /// Calls [listener] after a workspace's App credentials are saved or
   /// deleted: whatever was minted under the previous identity must not be
@@ -47,8 +53,20 @@ class WorkspaceGitHubAppSettings {
   void addListener(void Function(String workspaceId) listener) =>
       _listeners.add(listener);
 
+  /// Runs first when a workspace is deleted, while its secrets (and its own
+  /// Connect's trust) are still there: its members' grants are revoked
+  /// upstream (`CredentialOffboarding.workspaceDeleted`).
+  Future<void> Function(String workspaceId)? offboardWorkspace;
+
+  /// Calls [listener] once a workspace is deleted, after its secrets went:
+  /// state kept elsewhere for it (its own Connect's trust store) goes too.
+  void addDeletionListener(
+    Future<void> Function(String workspaceId) listener,
+  ) => _deletionListeners.add(listener);
+
   /// Reports that [workspaceId]'s GitHub identity changed outside this
-  /// class (its mode or App id was edited on the workspace row).
+  /// class (its App id was edited on the workspace row, or its Connect
+  /// choice changed).
   void identityChanged(String workspaceId) => _changed(workspaceId);
 
   void _changed(String workspaceId) {
@@ -72,49 +90,49 @@ class WorkspaceGitHubAppSettings {
       'workspace_provider_app_github_${workspaceId}_client_id';
 
   /// True when [key] belongs to [workspaceId]: its GitHub identity, its
-  /// Google, Linear and Klipy apps, its members' GitHub overlays, Linear
-  /// grants and calendar credentials, and its Linear app-actor grant.
-  static bool isWorkspaceSecret(String key, String workspaceId) {
-    if (key == privateKeySecret(workspaceId) ||
-        key == clientSecretSecret(workspaceId) ||
-        key == clientIdSecret(workspaceId) ||
-        key == LinearAppGrants.keyFor(workspaceId) ||
-        WorkspaceProviderAppSettings.isWorkspaceSecret(key, workspaceId) ||
-        UserCredentialsStore.isWorkspaceTicketKey(key, workspaceId) ||
-        FileGoogleCredentialsStore.isWorkspaceSecret(key, workspaceId)) {
-      return true;
-    }
-    // Per-(user, workspace) GitHub overlay: `user_forge_github_<userId>_<ws>`.
-    const prefix = 'user_forge_github_';
-    return key.startsWith(prefix) && key.endsWith('_$workspaceId');
-  }
-
-  /// Deletes the per-workspace GitHub personal access tokens earlier
-  /// versions stored (`workspace_forge_github_<ws>`). GitHub is sign-in only;
-  /// nothing reads them, so they must not linger in the secrets file.
-  Future<int> purgeLegacyTokens() => _secrets.deleteMatching(
-    (key) => key.startsWith('workspace_forge_github_'),
-  );
+  /// Google, Linear and Klipy apps, its members' forge sign-ins and lapse
+  /// markers (every forge), Linear grants and calendar credentials, its
+  /// Linear app-actor grant, and its GitLab/Bitbucket automation tokens.
+  /// Every match is exact or a full prefix ending in a delimiter workspace
+  /// ids cannot contain, so one workspace never reaches another's keys or a
+  /// person's global ones.
+  static bool isWorkspaceSecret(String key, String workspaceId) =>
+      key == privateKeySecret(workspaceId) ||
+      key == clientSecretSecret(workspaceId) ||
+      key == clientIdSecret(workspaceId) ||
+      key == LinearAppGrants.keyFor(workspaceId) ||
+      WorkspaceProviderAppSettings.isWorkspaceSecret(key, workspaceId) ||
+      UserCredentialsStore.isWorkspaceTicketKey(key, workspaceId) ||
+      UserCredentialsStore.isWorkspaceForgeKey(key, workspaceId) ||
+      ForgeAutomationTokens.isWorkspaceSecret(key, workspaceId) ||
+      FileGoogleCredentialsStore.isWorkspaceSecret(key, workspaceId);
 
   /// Deletes every secret belonging to [workspaceId].
   Future<int> deleteForWorkspace(String workspaceId) async {
+    await offboardWorkspace?.call(workspaceId);
     final deleted = await _secrets.deleteMatching(
       (key) => isWorkspaceSecret(key, workspaceId),
     );
     _changed(workspaceId);
+    for (final listener in List.of(_deletionListeners)) {
+      await listener(workspaceId);
+    }
     return deleted;
   }
 
   /// The GitHub App this workspace uses to act as the server, or null.
   ///
-  /// Inherit: the server's own App, when fully configured. App mode: this
-  /// workspace's App, or null when the key is missing (fail-closed).
+  /// Inherit: the server's own App, when fully configured and in force. Own
+  /// apps: this workspace's App, or null when the key is missing
+  /// (fail-closed). A Connect of its own: none.
   Future<GitHubAppClient?> githubApp(Workspace workspace) async {
-    switch (workspace.githubAuthMode) {
-      case GithubAuthMode.inherit:
+    switch (workspace.connectMode) {
+      case WorkspaceConnectMode.inherit:
         return _install.githubApp();
-      case GithubAuthMode.app:
+      case WorkspaceConnectMode.own:
         return _workspaceClient(workspace);
+      case WorkspaceConnectMode.hosted || WorkspaceConnectMode.custom:
+        return null;
     }
   }
 
@@ -125,13 +143,13 @@ class WorkspaceGitHubAppSettings {
   /// OAuth client credentials for Sign in with GitHub in [workspace].
   ///
   /// Inherit uses the server's own App (null when the server rides
-  /// Connect). App mode uses the workspace App's client id and secret; the
-  /// web flow needs both.
+  /// Connect). Own apps use the workspace App's client id and secret; the
+  /// web flow needs both. A Connect of its own: none.
   Future<OAuthAppCredentials?> oauthCredentials(Workspace workspace) async {
-    switch (workspace.githubAuthMode) {
-      case GithubAuthMode.inherit:
+    switch (workspace.connectMode) {
+      case WorkspaceConnectMode.inherit:
         return _install.oauthCredentials(ProviderApp.github);
-      case GithubAuthMode.app:
+      case WorkspaceConnectMode.own:
         final clientId =
             (await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '').trim();
         final clientSecret =
@@ -141,7 +159,26 @@ class WorkspaceGitHubAppSettings {
           return null;
         }
         return (clientId: clientId, clientSecret: clientSecret);
+      case WorkspaceConnectMode.hosted || WorkspaceConnectMode.custom:
+        return null;
     }
+  }
+
+  /// The OAuth client stored for [workspaceId]'s own App, whatever its
+  /// Connect choice now, or null when either half is missing. For revoking
+  /// grants that App issued after the workspace moved off it; sign-in uses
+  /// [oauthCredentials].
+  Future<OAuthAppCredentials?> storedOAuthCredentials(
+    String workspaceId,
+  ) async {
+    final clientId = (await _secrets.readPsk(clientIdSecret(workspaceId)) ?? '')
+        .trim();
+    final clientSecret =
+        (await _secrets.readPsk(clientSecretSecret(workspaceId)) ?? '').trim();
+    if (clientId.isEmpty || clientSecret.isEmpty) {
+      return null;
+    }
+    return (clientId: clientId, clientSecret: clientSecret);
   }
 
   /// Saves this workspace's GitHub App credentials.
@@ -166,26 +203,44 @@ class WorkspaceGitHubAppSettings {
     await _applySecret(clientIdSecret(workspace.id), clientId);
     await _applySecret(clientSecretSecret(workspace.id), clientSecret);
     _changed(workspace.id);
+    forgeAudit(ForgeAuditEvent.providerAppSaved, {
+      'provider': 'github',
+      'scope': 'workspace',
+      'workspace_id': workspace.id,
+      // Names only: which fields this save set or cleared.
+      'fields': [
+        if (clientId != null) 'client_id',
+        if (clientSecret != null) 'client_secret',
+        if (privateKeyPem != null) 'private_key',
+      ].join(','),
+    });
     return status(workspace);
   }
 
-  /// Configuration as reported to clients (presence flags, never secrets).
+  /// The workspace's own App as reported to clients (presence flags, never
+  /// secrets), whatever its Connect choice: it applies only on its own apps,
+  /// where a partial App is the setup error [ProviderAppStatus.error] names.
   Future<ProviderAppStatus> status(
     Workspace workspace, {
     bool probe = false,
   }) async {
-    final appId = workspace.githubAuthMode == GithubAuthMode.app
-        ? workspace.githubAppId
-        : '';
+    final appId = workspace.githubAppId.trim();
     final pem = await _secrets.readPsk(privateKeySecret(workspace.id)) ?? '';
     final clientId = await _secrets.readPsk(clientIdSecret(workspace.id)) ?? '';
+    final hasClientSecret =
+        (await _secrets.readPsk(clientSecretSecret(workspace.id)) ?? '')
+            .isNotEmpty;
     var installations = const <Map<String, Object?>>[];
     var error = '';
     var botLogin = '';
-    if (probe &&
-        workspace.githubAuthMode == GithubAuthMode.app &&
-        appId.isNotEmpty &&
-        pem.isNotEmpty) {
+    final own = workspace.connectMode == WorkspaceConnectMode.own;
+    final fields = [
+      appId.isNotEmpty,
+      pem.isNotEmpty,
+      clientId.isNotEmpty,
+      hasClientSecret,
+    ];
+    if (probe && appId.isNotEmpty && pem.isNotEmpty) {
       final app = await _workspaceClient(workspace);
       if (app == null) {
         error =
@@ -201,12 +256,11 @@ class WorkspaceGitHubAppSettings {
               'account yet — install it from its GitHub App page.';
         }
       }
-    } else if (workspace.githubAuthMode == GithubAuthMode.app &&
-        (appId.isEmpty || pem.isEmpty)) {
+    } else if (own && fields.any((f) => f) && !fields.every((f) => f)) {
       error =
-          'This workspace is set to use its own GitHub App, but the app id '
-          'or private key is missing. Background GitHub work will not fall '
-          'back to this install\'s App.';
+          'This workspace uses its own apps, but its GitHub App is only partly '
+          'set up. Add the app id, private key, client id and client secret. '
+          'GitHub in this workspace will not fall back to this server\'s App.';
     }
     return ProviderAppStatus(
       provider: ProviderApp.github,
@@ -214,9 +268,7 @@ class WorkspaceGitHubAppSettings {
       clientId: clientId,
       botLogin: botLogin,
       hasPrivateKey: pem.isNotEmpty,
-      hasClientSecret:
-          (await _secrets.readPsk(clientSecretSecret(workspace.id)) ?? '')
-              .isNotEmpty,
+      hasClientSecret: hasClientSecret,
       installations: installations,
       error: error,
     );

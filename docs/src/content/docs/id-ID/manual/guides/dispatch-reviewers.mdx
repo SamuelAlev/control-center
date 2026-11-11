@@ -2,7 +2,7 @@
 title: Kirim agen peninjau
 description: Kirim agen peninjau spesialis ke sebuah PR dari tampilan PR, alat MCP, atau langkah pipeline.
 slug: id-ID/panduan-pengguna/panduan-praktis/kirim-agen-peninjau
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Panduan ini menunjukkan cara mengirim agen peninjau untuk meninjau pull
@@ -85,7 +85,7 @@ Ada dua peristiwa penting di sini dan keduanya tidak dapat dipertukarkan:
 | Peristiwa              | Dipicu saat                                                                                                     | Kunci payload                                                      |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | Sebuah PR dibuka **melalui Control Center** — permukaan penyusunan PR, atau agen yang memanggil `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | Layanan polling PR menemukan PR yang dibuka langsung di GitHub                                                  | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | Layanan polling PR menemukan PR yang dibuka langsung di GitHub                                                  | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 PR yang dibuka di github.com tidak pernah memicu `PullRequestPublished`, jadi
 templat yang hanya terhubung ke peristiwa itu tidak akan melihatnya. Perhatikan

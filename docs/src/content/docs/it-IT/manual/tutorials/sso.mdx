@@ -2,7 +2,7 @@
 title: Accedi con il team tramite SSO
 description: Collega Okta (SAML) al tuo server Control Center ed esegui un accesso dall'inizio alla fine.
 slug: it-IT/manuale/tutorial/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -91,6 +91,16 @@ Due policy decidono cosa fa un primo accesso:
 - **Esegui il provisioning degli utenti sconosciuti al primo accesso** —
   attiva per impostazione predefinita; disattivala per rifiutare chiunque il
   cui account non esista già.
+
+Se nel server ci sono già degli account, conferma i loro indirizzi e-mail prima
+che qualcuno acceda con SSO: apri **Impostazioni → Server → Persone** e usa
+**Conferma e-mail** su ogni riga contrassegnata **E-mail non confermata**. Un
+accesso associa un account esistente tramite e-mail solo quando quell'indirizzo
+è confermato (oppure è stato impostato da SSO o SCIM). Un indirizzo inserito
+dalla persona nel proprio profilo o in un invito non corrisponde a nulla, quindi
+senza questo passaggio si ottiene un secondo account, oppure l'accesso viene
+rifiutato quando il provisioning degli utenti sconosciuti è disattivato. Vedi
+[Come gli accessi associano gli account esistenti](/it-IT/manuale/guide/sso-oidc/#come-gli-accessi-associano-gli-account-esistenti).
 
 Se vuoi, mappa un attributo che contiene i nomi dei gruppi (in Okta è
 comunemente `groups`) e traduci i gruppi in ruoli con la mappa — per esempio

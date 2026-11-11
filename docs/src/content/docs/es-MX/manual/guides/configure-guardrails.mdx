@@ -2,13 +2,13 @@
 title: Configurar barandillas
 description: Define reglas de permitir, preguntar primero y denegar para las acciones de los agentes, pruébalas con la sonda «¿Qué pasaría si?» y ajusta la autonomía de cada espacio.
 slug: es-MX/manual/guias/configurar-barandillas
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Esta guía te muestra cómo configurar barandillas: las reglas que deciden si la
 acción de un agente se ejecuta, si pide aprobación primero o si se deniega.
 
-Las barandillas cubren las trece clases de efecto que declara toda herramienta
+Las barandillas cubren las catorce clases de efecto que declara toda herramienta
 que modifica el estado. Se aplican del lado del servidor, en el punto en que se
 llama a la herramienta, nunca mediante una instrucción en un prompt.
 
@@ -23,7 +23,7 @@ llama a la herramienta, nunca mediante una instrucción en un prompt.
    aparece al final de esa fila (**Restablecer al valor heredado**); la decisión
    vuelve al ámbito más amplio
 
-Cada fila muestra la decisión efectiva como una etiqueta de estado y una
+Cada fila muestra la configuración de la acción como una etiqueta de estado y una
 insignia que indica de dónde proviene: **Este ámbito**, **Heredado** o **Valor
 predeterminado**. La matriz se resuelve en el modo Agente (`chat`), así que
 **Preajuste del modo** nunca aparece aquí; usa la sonda «¿Qué pasaría si?» con
@@ -36,6 +36,18 @@ del espacio de trabajo y luego ejecuta la sonda «¿Qué pasaría si?» de abajo
 sobre `git push origin main`. El resultado indica `deny` con el origen
 `workspace`.
 
+## Revisa y revoca aprobaciones temporales
+
+Responder a una tarjeta de aprobación con **Aprobar durante 8 horas** escribe una aprobación temporal: una regla que deja pasar el mismo tipo de acción sin preguntar hasta que expire. Cada una aparece en esta página, bajo la acción a la que pertenece.
+
+1. Ve a **Ajustes → Espacio de trabajo → Permisos de agentes** y elige el ámbito. Una aprobación se escribe para el espacio del que viene la pregunta, así que elige **Espacio** y luego ese espacio
+2. Debajo de la fila de la acción, lee la entrada: qué permite (por ejemplo, push a ramas que coinciden con `feature/**`), las palabras **Aprobación temporal**, quién la concedió cuando fue otra persona, y cuándo expira
+3. Para terminarla ahora, ubícate sobre la entrada y presiona **Revocar**. Los agentes vuelven a preguntar desde su siguiente acción
+
+La fila sigue mostrando la configuración propia de la acción, y una línea debajo cuenta los casos que se listan más abajo y que, aun así, se permiten. Las reglas condicionales que escribe una plantilla aparecen en la misma lista, y las reglas de comando en un grupo **Comandos** después de la última acción. En el ámbito del espacio de trabajo, una nota bajo el resumen cuenta las aprobaciones temporales definidas para espacios o agentes concretos. En un espacio o un agente, cuenta las del espacio de trabajo, que también se aplican ahí.
+
+Una aprobación temporal solo evita una pregunta. Nunca anula **Denegar**: si pones una acción en **Denegar** mientras hay una en curso, su entrada dice **sin efecto mientras esté en Denegar** hasta que expire o la revoques. Cambiar la configuración de una acción deja sus aprobaciones temporales en su lugar, y revocar una deja la configuración.
+
 ## Entiende cómo se resuelve una decisión
 
 La resolución es **primero la especificidad, luego la restrictividad**:
@@ -44,7 +56,7 @@ La resolución es **primero la especificidad, luego la restrictividad**:
    **espacio de trabajo**. El primer ámbito con una regla coincidente decide y
    la resolución se detiene
 2. Si ninguna regla coincide, se aplica el **preajuste del modo**: un modo de
-   solo lectura (Plan, Revisión, Orquestación) deniega once de las trece clases
+   solo lectura (Plan, Revisión, Orquestación) deniega doce de las catorce clases
 3. Si el modo no tiene nada que decir, se aplica el **valor predeterminado
    integrado**
 
@@ -75,7 +87,7 @@ es peor que una rechazada.
 | Crear un commit                          | Permitir                       |
 | Enviar a un remoto                       | Preguntar primero              |
 | Abrir una pull request                   | Preguntar primero              |
-| Publicar una revisión o fusionar         | Preguntar primero              |
+| Actualizar o fusionar una pull request   | Preguntar primero              |
 | Escribir en un rastreador externo        | Preguntar primero              |
 | Acceder a la red                         | Permitir                       |
 | Leer un secreto                          | Permitir                       |
@@ -83,6 +95,7 @@ es peor que una rechazada.
 | Ejecutar un proceso                      | Permitir                       |
 | Cambiar la estructura del espacio de trabajo | Permitir                   |
 | Controlar un recinto (rig)               | Permitir                       |
+| Ejecutar comandos en el host             | Preguntar primero              |
 
 La taxonomía es cerrada. Una herramienta nueva que se publique sin declarar sus
 clases falla una prueba de trinquete en CI, así que nada llega con un conjunto
@@ -93,14 +106,13 @@ de efectos vacío en silencio.
 Antes de cambiar una regla, verifica cómo la resuelve ya la política actual.
 
 1. En la misma página, desplázate hasta **¿Qué pasaría si?**
-2. Elige una **Acción** (una de las trece clases)
+2. Elige una **Acción** (una de las catorce clases)
 3. De manera opcional, completa **Comando** (por ejemplo
    `git push origin main`), **Agente**, **Espacio** y **Modo**
 4. Lee el resultado: la decisión, el motivo y **Origen:**
 
 La sonda ejecuta, sobre tus reglas activas, el mismo resolutor que usa la ruta
-que aplica las reglas, así que la respuesta es exacta. Si te sorprende, cambia
-una regla en la matriz de arriba y vuelve a sondear.
+que aplica las reglas, así que la respuesta es exacta. Cuando decide una aprobación temporal, el origen muestra **Aprobación temporal** seguida de su ámbito. Si la respuesta te sorprende, cambia una regla en la matriz de arriba y vuelve a sondear.
 
 ## Ajusta el control de autonomía de un espacio
 

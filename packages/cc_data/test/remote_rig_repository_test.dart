@@ -54,6 +54,23 @@ void main() {
     expect(RigView.fromWire({'surface': 'computer'}).egressEnforced, isTrue);
   });
 
+  test('reads the caller\'s drive right and the holder rule off the row', () {
+    final holder = RigView.fromWire({
+      'surface': 'computer',
+      'can_drive': false,
+      'holder_only': true,
+    });
+    expect(holder.canDrive, isFalse);
+    expect(holder.holderOnly, isTrue);
+    final own = RigView.fromWire({'surface': 'browser', 'can_drive': true});
+    expect(own.canDrive, isTrue);
+    expect(own.holderOnly, isFalse);
+    // A row that does not say leaves the decision to the client's own state.
+    final silent = RigView.fromWire({'surface': 'browser'});
+    expect(silent.canDrive, isNull);
+    expect(silent.holderOnly, isFalse);
+  });
+
   test('install setup calls the global op with only the stable action', () async {
     final repository = RemoteRigRepository(client);
     await repository.installBackendSetup(

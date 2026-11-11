@@ -2,12 +2,12 @@
 title: Cipta dan konfigurasikan ejen
 description: Tambah ejen ke ruang kerja, berikan penyesuai, model, kemahiran dan kebenaran, kemudian sahkan ia berjalan.
 slug: ms-MY/manual-pengguna/panduan-cara/cipta-ejen
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Panduan ini menunjukkan cara menambah ejen ke ruang kerja dan mengkonfigurasikannya sehingga ia benar-benar boleh berjalan.
 
-Setiap ruang kerja disemai dengan lima ejen — seorang CEO serta `qa`, `architect`, `engineer` dan `librarian` — jadi anda biasanya sudah mempunyai ejen sebelum mengkonfigurasikan mana-mana satu. Langkah di bawah terpakai sama rata kepada ejen yang disemai dan ejen baharu.
+Setiap ruang kerja disemai dengan enam ejen — seorang CEO serta `qa`, `architect`, `engineer`, `librarian` dan `content-synthesizer` — jadi anda biasanya sudah mempunyai ejen sebelum mengkonfigurasikan mana-mana satu. Langkah di bawah terpakai sama rata kepada ejen yang disemai dan ejen baharu.
 
 ## Sebelum anda mula
 
@@ -53,7 +53,7 @@ Menu lungsur **Model** dipacu oleh penyesuai yang anda pilih. Bagi penyesuai ter
 
 **Kemahiran** ialah pemilih cip bagi himpunan kemahiran yang dipasang dalam ruang kerja ini. Ketik satu cip untuk menogolnya; glif tanda semak menandakan cip yang dipilih. Jika ruang kerja tiada kemahiran, medan itu berbunyi "No skills available. Create skills in Settings → Skills first."
 
-Anda tidak memilih kemahiran milik repositori di sini. Repositori yang menyertakannya (dalam `.agents/skills/`, `.claude/skills/` atau `.opencode/skills/`) menyumbangnya secara automatik kepada mana-mana ejen yang bekerja dalam repositori itu, dan ia bertukar ganti apabila ejen berpindah ke repositori lain — lihat [Kemahiran berskop repositori](/ms-MY/manual-pengguna/konsep/model-ejen/#repo-scoped-skills).
+Anda tidak memilih kemahiran milik repositori di sini. Repositori yang menyertakannya (dalam `.agents/skills/`, `.claude/skills/` atau `.opencode/skills/`) menyumbangnya secara automatik kepada mana-mana ejen yang bekerja dalam repositori itu, dan ia bertukar ganti apabila ejen berpindah ke repositori lain — lihat [Kemahiran berskop repositori](/ms-MY/manual-pengguna/konsep/model-ejen/#kemahiran-berskop-repositori).
 
 ## Tetapkan garis pelaporan dan persona
 
@@ -73,7 +73,7 @@ Ejen tidak mempunyai togol kebenaran sendiri. Apa yang boleh di-push, dibuka, di
 Token GitHub ejen sentiasa baca sahaja. Push melalui Control Center, yang bertanya kepada peraturan **Push ke remote** sebelum memajukannya. Lihat [Konfigurasikan polisi kotak pasir](/ms-MY/manual-pengguna/panduan-cara/polisi-kotak-pasir/) untuk cara setiap peraturan sampai kepada sesuatu larian.
 
 :::note[Peraturan dan kotak pasir OS ialah lapisan yang berasingan]
-Peraturan menentukan apa yang boleh dilakukan ejen; kotak pasir OS membatasi di mana prosesnya boleh membaca, menulis dan menyambung. `cc_server` membalut larian ejen dalam kotak pasir hos jika ia wujud — Windows tiada bahagian belakang natif, dan Linux serta WSL2 memerlukan `bwrap` dan `socat`. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk set sempadan yang lengkap.
+Peraturan menentukan apa yang boleh dilakukan ejen; kotak pasir OS membatasi di mana prosesnya boleh membaca, menulis dan menyambung. `cc_server` membalut larian ejen dalam kotak pasir hos jika ia wujud — Windows tiada bahagian belakang natif, dan Linux serta WSL2 memerlukan `bwrap` dan `socat`. Jika tiada langsung, hanya larian pemilik pelayan dimulakan melainkan pemilik mematikan kotak pasir untuk semua orang. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk set sempadan yang lengkap.
 :::
 
 ## Sahkan ia berjalan

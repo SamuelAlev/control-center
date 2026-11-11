@@ -2,7 +2,7 @@
 title: Faça login da sua equipe com SSO
 description: Conecte o Okta (SAML) ao seu servidor do Control Center e faça um login de ponta a ponta.
 slug: pt-BR/manual/tutoriais/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -89,6 +89,8 @@ Duas políticas determinam o que o primeiro login faz:
   explícito para um espaço de trabalho, que é o padrão mais seguro.
 - **Provisionar utilizadores desconhecidos na primeira sessão** — ativado
   por padrão; desative para recusar quem não tem uma conta existente.
+
+Se as pessoas já têm contas neste servidor, confirme os endereços de e-mail delas antes que alguém entre com SSO: abra **Configurações → Servidor → Pessoas** e use **Confirmar e-mail** em cada linha marcada como **E-mail não confirmado**. Um login corresponde a uma conta existente pelo e-mail somente quando esse endereço está confirmado (ou foi definido pelo SSO ou pelo SCIM). Um endereço que alguém digitou no próprio perfil ou em um convite não corresponde a nada; assim, sem esta etapa, a pessoa recebe uma segunda conta ou é recusada quando o provisionamento de utilizadores desconhecidos está desativado. Consulte [Como os logins correspondem a contas existentes](/pt-BR/manual/guias/sso-oidc/#como-os-logins-correspondem-a-contas-existentes).
 
 Opcionalmente, mapeie um atributo que carrega nomes de grupos (no Okta,
 costuma ser `groups`) e traduza grupos em papéis com o mapeamento — por

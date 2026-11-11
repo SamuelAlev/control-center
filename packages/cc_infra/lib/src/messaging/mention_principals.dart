@@ -13,9 +13,11 @@ List<Principal> decodeMentionPrincipals(Map<String, dynamic>? metadata) {
   }
   final principals = <Principal>[];
   for (final m in raw) {
-    if (m is Map<String, dynamic>) {
-      final mention = MessageMention.fromJson(m);
-      principals.add(Principal.of(mention.principalType, mention.agentId));
+    final mention = m is Map<String, dynamic>
+        ? MessageMention.tryFromJson(m)
+        : null;
+    if (mention != null) {
+      principals.add(Principal.of(mention.principalType, mention.principalId));
     }
   }
   return principals;

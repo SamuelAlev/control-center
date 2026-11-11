@@ -2,7 +2,7 @@
 title: Chattbrygga
 description: Leverantörer, kommandon, inloggningsuppgifter, förmågor, RPC-operationer och lagring för chattbryggan.
 slug: sv-SE/handbok/referens/chattbrygga
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Leverantörer
@@ -150,7 +150,7 @@ Kortet öppnas när en nämning accepteras, före kloningen och före den först
 | Nämning accepterad | `Working on it…` |
 | Steget `repo` | `Cloning <repo>…` |
 | Steget `prCheckout` | `Checking out the pull request in <repo>…` |
-| Steget `script` | `Running the setup script for <repo>…` |
+| Steget `provisionTasks` | `Running worktree tasks for <repo>…` |
 | Steget `agent` | `Setting up <agent>…` |
 | `provisioning`, inget steg än | `Preparing the workspace…` |
 | `ready` | `Starting the agent…` |
@@ -254,7 +254,6 @@ Den finns för att länkningen sker på _andra_ sidan: en medlem skriver in eng�
 | --- | --- |
 | Anslutningens inloggningsuppgifter | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json` |
 | Halvfärdig guidad konfiguration | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json` |
-| Äldre Slack-filer | `<dataDir>/<workspaceId>/slack_credentials.json` och `slack_app_setup.json`, läses en gång och migreras på plats |
 
 Inloggningsuppgifterna ligger bredvid arbetsytans databas, inte inuti den: att radera en arbetsyta tar med sig dess chattokens, och `workspace.export` eller en säkerhetskopia kopierar `workspace.db` — så en arbetsyta som lämnas till någon annan bär inga levande bottokens. Skrivningarna är atomiska (tempfil plus namnbyte) och stramas åt till endast ägaren.
 

@@ -2,6 +2,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/artifacts/presentation/widgets/artifact_detail_view.dart';
 import 'package:control_center/features/environments/presentation/environment_logs_pane.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_activity_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/agent_shell_output_pane.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/browser_pane.dart';
@@ -23,6 +24,7 @@ import 'package:control_center/shared/editor/editor_tab.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/attachments/attachment_preview_pane.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The content of one messaging IDE tab, by [EditorTab.kind].
 ///
@@ -98,12 +100,34 @@ class MessagingIdeTabBody extends StatelessWidget {
           isVisible: isVisible,
         );
       case MessagingTabKinds.codeServer:
-        return CodeServerPane(
-          spaceId: tab.args['spaceId'] as String,
-          repoId: tab.args['repoId'] as String?,
-          path: tab.args['path'] as String?,
-          tab: tab,
-          pool: windowPool,
+        final repoId = tab.args['repoId'] as String?;
+        final path = tab.args['path'] as String?;
+        return Consumer(
+          builder: (context, ref, editor) {
+            // The editor is the server owner's. A restored file tab of it
+            // opens the file in the built-in view for anyone else; a bare
+            // editor tab keeps the pane's own refusal, which points there.
+            final workspace = workspaceId;
+            if (!ref.watch(canUseHostProvider) &&
+                workspace != null &&
+                repoId != null &&
+                path != null) {
+              return FileViewerPane(
+                workspaceId: workspace,
+                repoId: repoId,
+                path: path,
+                spaceId: tab.args['spaceId'] as String?,
+              );
+            }
+            return editor!;
+          },
+          child: CodeServerPane(
+            spaceId: tab.args['spaceId'] as String,
+            repoId: repoId,
+            path: path,
+            tab: tab,
+            pool: windowPool,
+          ),
         );
       case MessagingTabKinds.attachment:
         return AttachmentPreviewPane(

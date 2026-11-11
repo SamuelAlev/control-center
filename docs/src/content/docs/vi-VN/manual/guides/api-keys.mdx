@@ -2,7 +2,7 @@
 title: Quản lý khóa API
 description: Mỗi thông tin xác thực nằm ở đâu — tài khoản người dùng của bạn trên máy chủ, chính máy chủ, hay một CLI bên ngoài — và cách đặt, xoay vòng và gỡ bỏ nó.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/khoa-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Hướng dẫn này cho bạn biết mỗi thông tin xác thực mà Control Center dùng được
@@ -32,8 +32,7 @@ con người đứng sau yêu cầu đó hay không.
   trách nhiệm được làm ở đó. Đó không bao giờ là đăng nhập của bạn được chuyển
   nguyên vẹn
 
-Của bạn được đặt trong thẻ **Lưu trữ mã** tại **Cài đặt → Không gian làm việc → Hồ sơ
-& danh tính**; còn ứng dụng của máy chủ nằm trong **Ứng dụng nhà cung cấp** tại
+Của bạn được đặt trong thẻ **Lưu trữ mã** tại **Cài đặt → Bạn → Hồ sơ**; còn ứng dụng của máy chủ nằm trong **Ứng dụng nhà cung cấp** tại
 **Cài đặt → Máy chủ → Đăng nhập một lần**. Xem
 [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
 và [Tạo GitHub App](/vi-VN/so-tay/huong-dan-thuc-hanh/github-app/).
@@ -42,10 +41,9 @@ GitLab và Bitbucket vẫn nhận một token cá nhân được dán vào, đư
 tự. Xem [Kết nối máy chủ mã](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma/).
 
 :::note[Còn có một màn hình chỉ truy cập được bằng URL]
-`/workspaces/<workspaceId>/api-keys` hiển thị cùng hai thẻ như bước đầu tiên của
+`/workspaces/<workspaceId>/api-keys` hiển thị cùng các thẻ như bước đầu tiên của
 quá trình thiết lập ban đầu. Nó **không có mục điều hướng nào ở bất kỳ đâu
-trong giao diện**; chỉ có thể truy cập bằng cách gõ URL. Thay vào đó, hãy dùng
-Cài đặt → Không gian làm việc → Hồ sơ & danh tính.
+trong giao diện**; chỉ có thể truy cập bằng cách gõ URL. Thay vào đó, hãy dùng Cài đặt → Bạn → Hồ sơ cho đăng nhập riêng của bạn, và Cài đặt → Không gian làm việc → Tích hợp cho nhà cung cấp phiếu.
 :::
 
 ## Đặt khóa nhà cung cấp mô hình
@@ -64,10 +62,7 @@ có danh sách đầy đủ và cách thêm một endpoint tùy chỉnh.
 Những thông tin xác thực này là **toàn cục theo máy chủ**: một khóa phục vụ mọi
 không gian làm việc trên bản cài đặt. Token OAuth được làm mới trước khi hết hạn.
 
-Các CLI adapter bên ngoài giữ thông tin xác thực riêng, trong cấu hình riêng của
-chúng, trên máy chạy máy chủ — Control Center không quản lý chúng. Hãy xác thực
-Claude Code theo cách tài liệu của chính nó hướng dẫn, trên máy mà `cc_server`
-chạy.
+Claude Code đăng nhập qua **Tài khoản Claude Code** trong **Cài đặt → Máy chủ → Nhà cung cấp mô hình**: mỗi tài khoản có một thư mục cấu hình riêng trên máy chủ, và bạn chạy lệnh `claude auth login` mà ứng dụng hiển thị cho bạn ở đó.
 
 Hộp thoại **Biến môi trường** của từng adapter trông như một chỗ để đặt khóa cho
 một trong số chúng, nhưng không phải vậy: nó ghi vào thiết bị của bạn, trong khi
@@ -76,14 +71,13 @@ máy chủ đọc bản sao của riêng nó và không có gì nối hai bên l
 
 ## Kết nối một nhà cung cấp phiếu
 
-Thẻ **Phiếu** tại **Cài đặt → Không gian làm việc → Chung** chứa cả hai nửa của
-một quyết định: phiếu của bạn nằm ở nhà cung cấp nào, và máy chủ là ai khi nói
-chuyện với nhà cung cấp đó. Chọn **Cục bộ** sẽ ẩn các dòng Linear — phiếu cục bộ
+Thẻ **Phiếu** tại **Cài đặt → Không gian làm việc → Tích hợp** chứa phần của không gian làm việc:
+phiếu của bạn nằm ở nhà cung cấp nào, và Control Center là ai khi nó tự làm việc ở đó. Chọn **Cục bộ** sẽ ẩn các dòng Linear — phiếu cục bộ
 nằm trong cơ sở dữ liệu riêng của máy chủ này và không có gì để xác thực.
 
 Linear có hai đăng nhập và không có khóa dán vào: **Linear** là của bạn, cho những
-việc bạn làm, còn **Tự động hóa Linear** là ứng dụng Control Center của không gian
-làm việc, do một quản trị viên kết nối, dành cho đồng bộ phiếu, pipeline và agent.
+việc bạn làm, và nằm trong **Cài đặt → Bạn → Hồ sơ**; còn **Tự động hóa Linear** là ứng dụng Control Center của không gian
+làm việc, do một quản trị viên kết nối trên thẻ **Phiếu**, dành cho đồng bộ phiếu, pipeline và agent.
 Máy chủ cũng có thể giữ một **Khóa API dịch vụ** (**Ứng dụng nhà cung cấp**) cho các
 không gian làm việc chưa kết nối tự động hóa. Không có thông tin xác thực phiếu nào
 được chèn vào sandbox của agent; agent ghi phiếu qua các công cụ của Control Center,
@@ -98,9 +92,10 @@ vốn hỏi quy tắc **Ghi vào tracker bên ngoài**. Xem
   hồi token cũ trên forge
 - **Ứng dụng của máy chủ**: tạo một khóa riêng tư hoặc client secret mới trên trang
   nhà cung cấp của ứng dụng, dán vào **Ứng dụng nhà cung cấp** và nhấn **Kiểm thử**
-- **Khóa cài đặt Connect**: **Xoay vòng khóa** trên thẻ **Control Center Connect**,
-  hoặc `cc_server connect rotate-key --yes`. Mọi người đã đăng nhập qua Connect sẽ
-  phải đăng nhập lại. Xem [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/)
+- **Khóa cài đặt Connect**: chủ máy chủ nhấn **Xoay vòng khóa** trên thẻ **Control
+  Center Connect**. Mọi người đã đăng nhập qua Connect sẽ phải đăng nhập lại. Nếu
+  không thể kết nối tới máy chủ Connect, không có gì thay đổi và bạn sẽ được đề nghị
+  **Vẫn đổi**. Xem [Xoay vòng khóa cài đặt](/vi-VN/so-tay/tham-chieu/connect/#xoay-khóa-cài-đặt)
 - **Một nhà cung cấp mô hình**: trên dòng của nó, đăng xuất (OAuth) hoặc gỡ khóa,
   rồi kết nối lại
 - **Slack**: với app riêng của bạn, dán lại các token trong hộp thoại kết nối. App
@@ -112,8 +107,7 @@ vốn hỏi quy tắc **Ghi vào tracker bên ngoài**. Xem
 
 ### Token GitLab hoặc Bitbucket chạy được trong `curl` nhưng không chạy ở đây
 
-Kiểm tra phụ đề của dòng **Lưu trữ mã**. Nếu nó ghi "từ môi trường", thì thông tin
-xác thực đang đáp ứng là của máy chủ, không phải của bạn — của bạn đã không được lưu.
+Kiểm tra hàng **Lưu trữ mã**. Nếu nó hiển thị "Chưa kết nối" hoặc yêu cầu bạn kết nối lại, nghĩa là token của bạn chưa được lưu hoặc đã bị từ chối. Với Bitbucket, hãy nhập email tài khoản Atlassian cùng với API token.
 
 ### Token GitLab hoặc Bitbucket được chấp nhận nhưng các yêu cầu sau đó thất bại
 

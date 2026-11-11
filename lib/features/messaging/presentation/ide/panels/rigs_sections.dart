@@ -4,6 +4,7 @@ import 'package:cc_data/cc_data.dart' show RigView;
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/messaging/providers/space_browser_tabs_provider.dart';
 import 'package:control_center/features/rigs/presentation/browser_engine_logo.dart';
 import 'package:control_center/features/rigs/presentation/rig_labels.dart';
@@ -486,9 +487,10 @@ class _RigStopButton extends ConsumerWidget {
       await ref.read(rigRepositoryProvider).destroy(workspaceId, rig.id);
     } on Object catch (e) {
       if (toastContext.mounted) {
-        CcToastScope.maybeOf(
-          toastContext,
-        )?.show('$e', variant: CcToastVariant.danger);
+        CcToastScope.maybeOf(toastContext)?.show(
+          repoRefusalOf(AppLocalizations.of(toastContext), e) ?? '$e',
+          variant: CcToastVariant.danger,
+        );
       }
     }
   }

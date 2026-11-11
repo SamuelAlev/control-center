@@ -2,7 +2,7 @@
 title: Install and manage skills
 description: Install and update workspace skills through the scan gate, then compare saved revisions with budgeted skill evaluations.
 slug: en-GB/manual/guides/manage-skills
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 This guide shows you how to fill a workspace with skills from GitHub: add a
@@ -91,7 +91,7 @@ rollback reference in the lock.
    purpose and an **Adapter**. The built-in harness uses a configured provider
    and tool-capable model. **Claude Code** uses the default managed Claude
    account and a concrete model identifier; sign in under **Settings →
-   Adapters** first. It does not borrow the server operator's personal login.
+   Server → Model providers → Claude Code accounts** first. It does not borrow the server operator's personal login.
 3. Choose a **Comparison** from the table below.
 4. Set **Repeats per task** (1–20) and **Budget (US cents)**. For example,
    `100` means US$1. Select **Start evaluation** to authorise paid provider
@@ -177,8 +177,7 @@ built-in slash commands (`/plan`, `/goal`, `/loop`, `/compact`):
   agent
 - `/skill:<repo>:<name>` — a skill shipped by a repo checked out in this space
 
-A bare non-builtin name still resolves, for messages written before the
-namespace existed. `/skill:plan` is what reaches a skill named `plan`; `/plan`
+`/skill:plan` is what reaches a skill named `plan`; `/plan`
 is always the builtin.
 
 ## Repo-scoped skills

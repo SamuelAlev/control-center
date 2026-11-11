@@ -11,7 +11,7 @@ import 'package:cc_infra/cc_infra.dart'
         MeetingRecordingService,
         loadMeetingAudioClip;
 
-import 'package:cc_server_core/src/catalog/catalog_wire.dart';
+import 'package:cc_server_core/src/catalog/meeting_wire.dart';
 import 'package:cc_server_core/src/demo/demo_meeting_service.dart';
 
 /// Builds the `meeting.*` + `dictation.*` repo-ops that the catalog spreads.

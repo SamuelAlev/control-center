@@ -81,17 +81,11 @@ class AgentRunLogsTable extends Table {
   IntColumn get costMicros => integer().withDefault(const Constant(0))();
 
   /// How the cost was obtained: `estimated` | `providerReported` |
-  /// `subscription` | `mixed`. Nullable; null on legacy rows (read as
-  /// estimated).
+  /// `subscription` | `mixed`. Nullable; null reads as estimated.
   TextColumn get costBasis => text().nullable()();
 
-  /// Cost in US cents rolled up from this run's subagent (child) runs, summed
-  /// as each child completes. `estimatedCostCents + childCostCents` is the
-  /// run's total spend including everything it delegated. Zero for leaf runs.
-  IntColumn get childCostCents => integer().withDefault(const Constant(0))();
-
-  /// Exact child rollup in micro-USD — the precise companion to
-  /// [childCostCents], which rounds sub-cent children to zero.
+  /// Cost in micro-USD rolled up from this run's subagent (child) runs, summed
+  /// as each child completes. Zero for leaf runs.
   IntColumn get childCostMicros => integer().withDefault(const Constant(0))();
 
   /// Reasoning-effort level the run actually executed at, when recorded. Null
@@ -118,7 +112,7 @@ class AgentRunLogsTable extends Table {
   TextColumn get latencyJson => text().nullable()();
 
   /// Independent verification verdict: `passed` | `failed` | `unverified`.
-  /// Nullable; null on legacy rows (read as unverified). Distinct from
+  /// Nullable; null reads as unverified. Distinct from
   /// [status]: a run can complete and fail verification.
   TextColumn get verificationStatus => text().nullable()();
 
@@ -127,7 +121,7 @@ class AgentRunLogsTable extends Table {
   TextColumn get verificationJson => text().nullable()();
 
   /// The role this run played in the agent tree for per-role cost attribution:
-  /// `main` | `sub` | `advisor`. Nullable; null/legacy rows attribute to main.
+  /// `main` | `sub` | `advisor`. Nullable; null attributes to main.
   TextColumn get agentRole => text().nullable()();
 
   /// Total wall-clock duration of the run in milliseconds, when measured.

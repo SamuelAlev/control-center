@@ -2,7 +2,7 @@
 title: Sandboxbeleid configureren
 description: Wat een agentrun begrenst, hoe je ziet of de OS-sandbox hem omhult en hoe de actieregels bepalen wat een agent mag pushen of bereiken.
 slug: nl-NL/handleiding/gidsen/sandboxbeleid
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Of een agentrun in een sandbox draait, wordt op de server beslist, bij het
@@ -23,7 +23,7 @@ voorwaardelijke — de andere vijf gelden op elke host.
 
 | Grens                    | Wat het doet                                                                                                                                                                                                                                                                             |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| De OS-sandbox            | Seatbelt op macOS, bubblewrap op Linux en WSL2. Omhult de Claude Code CLI, ACP-adapters en de `bash`-tool van de harness. **Ontbreekt op Windows en op Linux zonder `bwrap` en `socat`**                                                                                                  |
+| De OS-sandbox            | Seatbelt op macOS, bubblewrap op Linux en WSL2. Omhult de Claude Code CLI, ACP-adapters en de `bash`-tool van de harness. **Ontbreekt op Windows en op Linux zonder `bwrap` en `socat`, waar alleen de runs van de servereigenaar starten**                                                                                                  |
 | Zijn eigen worktree      | Elk gesprek krijgt een copy-on-write-checkout. De oorspronkelijke checkout wordt als deny-write-pad in de run opgenomen, en de sandbox is wat dat afdwingt                                                                                                                                  |
 | Inloggegevens via de broker | De inloggegevensbroker maakt per run een omgeving aan en trekt die weer in bij het afbreken. Het GitHub-token daarin kan lezen maar niet pushen: een push loopt via Control Center, dat eerst de pushregel raadpleegt |
 | Actiebeveiligingen       | Elke muterende tool verklaart zijn effectklassen en de beveiliging herleidt ze voordat de aanroep draait. Een `prompt` zonder verbonden goedkeurder wordt geweigerd                                                                                                                        |
@@ -42,10 +42,7 @@ Drie dingen blijven zwakker dan ze lijken:
   sandboxprofiel beperkt ze. Alleen de `bash`-tool gaat door de gesandboxte
   opdrachtuitvoerder. Die tools worden begrensd door hun eigen padbeperking plus
   de actiebeveiligingen.
-- Op een host zonder backend geldt de eerste rij helemaal niet. ACP en de
-  `bash`-tool van de harness vallen terug op sanering van de omgeving plus het
-  opdrachtbeleid; Claude Code erft via `NoSandboxAdapter` de omgeving van de
-  host. De server zegt dat in zijn opstartlog. Controleer het jouwe hieronder.
+- Op een host zonder backend starten alleen runs waarvoor de servereigenaar verantwoordelijk is, en voor die runs geldt de eerste rij helemaal niet. Runs van alle anderen worden geweigerd. Onder `--sandbox off` starten de runs van elk lid zonder de eerste rij. In beide gevallen vallen ACP en de `bash`-tool van de harness terug op sanering van de omgeving plus het opdrachtbeleid, en erft Claude Code via `NoSandboxAdapter` de omgeving van de host. De server zegt in zijn opstartlog in welk geval je zit. Controleer het jouwe hieronder.
 
 ## Bepalen wat een agent mag pushen
 
@@ -55,8 +52,8 @@ Elk daarvan is een actieregel:
 | Regel                                 | Standaardwaarde | Wat die dekt                                                                  |
 | ------------------------------------- | --------------- | ----------------------------------------------------------------------------- |
 | **Naar een remote pushen**            | Eerst vragen    | Elke `git push` naar GitHub, welke adapter ook                                |
-| **Een pull request openen**           | Eerst vragen    | `gh pr create` en de pull-requesttools                                        |
-| **Een review publiceren of mergen**   | Eerst vragen    | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                 |
+| **Een pull request openen**           | Eerst vragen    | De pull-requesttools van Control Center. `gh pr create` werkt niet in een run                                        |
+| **Een pull request bijwerken of samenvoegen** | Eerst vragen    | Reacties van een agent op zijn pull request, wijzigingen aan de titel of beschrijving ervan en gepubliceerde reviews, via de tools van Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` en `gh pr close` werken niet in een run                 |
 | **Naar een externe tracker schrijven** | Eerst vragen   | Ticketschrijfacties via de tools van Control Center en `gh issue`             |
 | **Toegang tot het netwerk**           | Toestaan        | Of de sandbox überhaupt een netwerk heeft, en de webtools van de harness      |
 
@@ -117,43 +114,40 @@ of `--sandbox` aan staat. Controleer ze in die volgorde.
 3. Lees het opstartlog van de server. Het print precies één van drie regels:
    - `agent sandbox ON` plus de backendmelding — runs worden omhuld
    - `no OS-native agent sandbox on this host` plus een installatietip waar die
-     er is — runs worden niet omhuld
-   - `agent sandbox DISABLED by --sandbox off` — een bewuste uitschakeling
+     er is: alleen runs waarvoor de servereigenaar verantwoordelijk is starten, ongehuld, en die van alle anderen worden geweigerd
+   - `agent sandbox DISABLED by --sandbox off`: de runs van elk lid starten, ongehuld
+4. De blootstellingsregel die bij het opstarten wordt afgedrukt, zegt hetzelfde in één woord: `sandbox=native`, `sandbox=off` of `sandbox=unavailable`.
 
 `GET /healthz` rapporteert de sandboxstatus niet, dus het opstartlog is de
 controle.
 
-Om de sandbox bewust uit te zetten — een host waar het profiel zich misdraagt is
-juist de reden dat die bestaat — start je de server met `--sandbox off`, of zet
-je `CC_SERVER_SANDBOX=off`. De standaardwaarde is `on`, en `on` betekent "gebruik
-een backend als de host er een heeft", nooit "eis er een".
+Alleen de servereigenaar beslist om zonder sandbox te draaien. Om dat voor iedereen te doen, start je de server met `--sandbox off`, of zet je `CC_SERVER_SANDBOX=off`. De agents van elk lid draaien dan ongehuld op die machine, dus dit is een beslissing over iedereen die de server gebruikt, eenmaal genomen bij het opstarten. De standaardwaarde is `on`: die omhult elke run wanneer de host een backend heeft en, wanneer dat niet zo is, start hij alleen de runs van de eigenaar.
 
 Twee situaties krijgen nooit een native sandboxomhulling. Op **Windows** meldt de
-native probe altijd dat die niet beschikbaar is en valt er niets te installeren —
-agent-dispatch gebruikt `none`. De backend `microvm` staat apart (interactieve
+native probe altijd dat die niet beschikbaar is en valt er niets te installeren, dus starten alleen de runs van de servereigenaar, tenzij de eigenaar `--sandbox off` meegeeft. De backend `microvm` staat apart (interactieve
 terminals en rigs) en hangt via de probe af van zijn eigen runtime. Op **Linux en
 WSL2** moeten zowel `bwrap` als `socat` op het `PATH` staan; zonder die
-rapporteert de probe niet beschikbaar en noemt hij de ontbrekende pakketten.
+rapporteert de probe niet beschikbaar en noemt hij de ontbrekende pakketten, en starten alleen de runs van de eigenaar.
 
 Op Linux/WSL2 met bubblewrap geïnstalleerd kunnen de globs voor geheime bestanden
 uit het standaardbeleid niet worden afgedwongen voor bestanden die een agent
-later aanmaakt. Zo'n native run mislukt nu in plaats van de regels stil te
-negeren. Een positieve probe bij het opstarten garandeert dus niet dat een
-Linux-dispatch kan starten. `--sandbox off` is een bewuste, onbegrensde
+later aanmaakt, dus elke native run mislukt in plaats van de regels stil te
+negeren, ook die van de eigenaar. Een positieve probe bij het opstarten betekent dus niet dat een
+Linux-dispatch kan starten: vandaag draait een Linux-server agents met `--sandbox off`, of zonder bubblewrap alleen voor de eigenaar. `--sandbox off` is een bewuste, onbegrensde
 uitschakeling, geen vervangende beveiligingsgrens.
 
 ## Weten wat een modus al verbiedt
 
 De modus wordt per ruimte opgeslagen en voedt de beveiligingsengine als de laag
 **modusvoorinstelling**. Drie van de vier modi zijn alleen-lezen, en een
-alleen-lezen modus weigert elf effectklassen zonder meer:
+alleen-lezen modus weigert twaalf effectklassen zonder meer:
 
 | Modus              | Worktree     | Geweigerd door de voorinstelling                                                                                                                                                                                                                                                                                        |
 | ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Agent** (`chat`) | Beschrijfbaar | Niets — de ingebouwde standaardwaarden gelden                                                                                                                                                                                                                                                                            |
-| **Plan**           | Alleen-lezen | Een bestand verwijderen, buiten de worktree schrijven, een commit maken, pushen, een pull request openen, publiceren of mergen, naar een externe tracker schrijven, een pakket installeren, een proces uitvoeren, de werkruimtestructuur wijzigen, een omhulling starten of aansturen |
-| **Review**         | Alleen-lezen | Dezelfde elf. Niet door de gebruiker te selecteren — de composer biedt alleen Agent, Plan en Orkestratie                                                                                                                                                                                                                 |
-| **Orkestratie**    | Alleen-lezen | Dezelfde elf                                                                                                                                                                                                                                                                                                             |
+| **Plan**           | Alleen-lezen | Een bestand verwijderen, buiten de worktree schrijven, een commit maken, pushen, een pull request openen, publiceren of mergen, naar een externe tracker schrijven, een pakket installeren, een proces uitvoeren, de werkruimtestructuur wijzigen, een omhulling starten of aansturen, opdrachten op de host uitvoeren |
+| **Review**         | Alleen-lezen | Dezelfde twaalf. Niet door de gebruiker te selecteren — de composer biedt alleen Agent, Plan en Orkestratie                                                                                                                                                                                                                 |
+| **Orkestratie**    | Alleen-lezen | Dezelfde twaalf                                                                                                                                                                                                                                                                                                             |
 
 Netwerktoegang en toegang tot secrets worden door een alleen-lezen modus bewust
 _niet_ geweigerd: onderzoek is juist het hele doel ervan.
@@ -178,18 +172,22 @@ Lees wat git heeft getoond. `Control Center policy: …` betekent dat een regel 
 push heeft geweigerd of dat een **Eerst vragen** onbeantwoord bleef.
 `… is not linked to this workspace` betekent dat de push gericht is op een repo
 die niet die van de worktree is en ook niet aan de werkruimte is gekoppeld.
-`Control Center has no GitHub credential that can push …` betekent dat de
-GitHub App niet op die repo is geïnstalleerd en dat geen terugvalgegeven kon
-pushen: installeer de App op die repo of koppel GitHub.
+`Control Center has no GitHub credential that can push …` betekent dat er geen push-token kon worden aangemaakt:
+installeer de GitHub App op die repo of log in bij GitHub.
+
+### Mijn agentrun is geweigerd met "Deze server heeft geen sandbox"
+
+De run toont **Agents hebben een sandbox nodig op deze server** met "Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren. De beheerder kan de sandbox installeren of sandboxing voor iedereen uitzetten." De machine van de server heeft geen OS-sandbox, en de verantwoordelijke persoon voor de run is niet de servereigenaar, dus er is niets gestart. Bij een schema, webhook of andere automatisering is de verantwoordelijke persoon degene aan wie de automatisering is gebonden, niet wie er toevallig naar kijkt.
+
+Alleen de servereigenaar kan dit veranderen. Op Linux en WSL2 installeert hij `bubblewrap` en `socat` en herstart de server (lees eerst de Linux-opmerking hierboven). Op Windows is er geen backend om te installeren. De andere keuze is de server herstarten met `--sandbox off`, wat de agents van elk lid op die machine zonder inperking laat draaien.
 
 ### De kaart Sandboxing meldt geen native sandbox
 
-Dan worden agentruns op die host niet door Seatbelt of bubblewrap omhuld en heb
-je het met de overige grenzen te doen. Installeer op Linux en WSL2 beide
+Dan worden agentruns op die host niet door Seatbelt of bubblewrap omhuld: alleen de runs van de servereigenaar starten, en de overige grenzen zijn wat zij hebben. Installeer op Linux en WSL2 beide
 ontbrekende tools — `sudo apt-get install bubblewrap socat` — en herstart de
 server; het opstartlog zou dan moeten zeggen dat de sandbox aan staat. Op Windows
 valt er geen native backend te installeren, dus scherp je in plaats daarvan de
-beveiligingen aan: zie
+beveiligingen aan voor de eigen runs van de eigenaar: zie
 [Beveiligingen configureren](/nl-NL/handleiding/gidsen/beveiligingen-configureren/).
 
 ### Een agent heeft een bestand buiten zijn worktree bereikt
@@ -203,7 +201,7 @@ beveiligingen. Een `bash`-opdracht of de Claude Code CLI _wordt_ wel omhuld waar
 een backend bestaat, en je geregistreerde checkouts staan binnen die omhulling in
 elke modus op deny-write, inclusief hun via symlinks herleide spellingen (op
 macOS herleidt een pad dat via `/tmp` of `/var/folders` loopt naar `/private`, en
-beide spellingen worden nu geweigerd). Op een host zonder backend geldt niets
+beide spellingen worden geweigerd). Onder `--sandbox off`, of voor de eigen runs van de eigenaar op een host zonder backend, geldt niets
 daarvan. Hoe dan ook kunnen de beveiligingen **Buiten de worktree schrijven**
 zonder meer weigeren.
 

@@ -2,7 +2,7 @@
 title: Rigs và môi trường cách ly
 description: Vì sao agent nhận được máy dùng một lần thay vì máy tính của bạn — các ranh giới cô lập, làn hiển thị, thông tin xác thực, cổng và vòng đời.
 slug: vi-VN/so-tay/khai-niem/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Một **rig** là một cỗ máy dùng một lần mà agent điều khiển trong thời gian thực
@@ -250,6 +250,7 @@ Một rig cố ý **không** phải một điểm đến toàn cục. Chế đ�
 tab trong space hoặc PR nơi công việc đang diễn ra, được giới hạn theo cuộc hội
 thoại đó — nên tab của bạn và các lời gọi `browser_use` của agent cùng trỏ tới
 *một* cỗ máy (một máy cho mỗi engine, trên bề mặt trình duyệt).
+Một rig được mở trong một space là cỗ máy của space đó, với các worktree của space trong tầm với, nên nó theo các kho mã của space: quyền đọc space cho phép bạn xem nó, còn quyền ghi trên các kho mã đó cho phép bạn điều khiển nó. Một rig không thuộc space nào thì không tiếp cận được worktree nào, và mọi thành viên của không gian làm việc đều có thể dùng nó. [Ai có thể xem và ai có thể điều khiển](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/#ai-có-thể-xem-và-ai-có-thể-điều-khiển) liệt kê những gì mỗi quyền bao gồm.
 Việc rig có thể khởi động được hay không là thuộc tính của máy chủ, nên năng lực,
 image, image tùy chỉnh theo không gian làm việc và danh sách máy đang chạy nằm
 trong **Cài đặt → Máy chủ → Rigs**. Điều khiển một môi trường cách ly là một

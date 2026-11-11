@@ -31,8 +31,9 @@ protocol IdPs (Okta, Entra ID and others) use for exactly that.
    - **Authentication**: `Authorization: Bearer <token>`
    - **User id**: `userName` (email) or `externalId` — both match
 4. Test with one user: push them from the IdP, confirm they appear (SCIM
-   create pins the provider's `externalId` onto the account, the same pin a
-   first SSO login sets).
+   create records the provider's `externalId` on the account, which is how
+   later SCIM calls find it), then have that person sign in through SSO
+   before you roll it out to everyone.
 
 ## What deprovisioning does
 
@@ -52,6 +53,12 @@ policy.
 
 ## Troubleshooting
 
+- **A provisioned person is refused with "This account is already linked
+  to a different SSO identity"** — known limitation: an account SCIM created
+  with an `externalId` stays tied to that id, and the first SSO sign-in to it
+  is refused. Until this is fixed, provision without `externalId`, or let
+  just-in-time provisioning create the account at first sign-in and use SCIM
+  for deprovisioning.
 - **401 on every call** — the token changed; regenerate and update the IdP.
 - **The endpoint is not reachable** — the tunnel is down, or the server is
   relay-only. SCIM needs direct HTTPS; JIT keeps working regardless.

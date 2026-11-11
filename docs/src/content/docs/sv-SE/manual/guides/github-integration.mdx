@@ -2,7 +2,7 @@
 title: Konfigurera GitHub-integration
 description: Logga in på GitHub så att PR-ytan, reporegistreringen och agentkörningarna fungerar.
 slug: sv-SE/handbok/how-to-guider/github-integration
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Den här guiden handlar om de GitHub-specifika delarna av uppsättningen. GitHub är
@@ -28,7 +28,7 @@ inte använda den, och att logga in dem är något de gör själva.
 
 GitHub har bara inloggning: det finns ingen token att klistra in.
 
-1. Gå till **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** (eller första
+1. Gå till **Inställningar → Du → Profil → Kodvärd** (eller första
    steget i introduktionen)
 2. På raden **GitHub**, klicka på **Logga in på GitHub**
 3. Din webbläsare öppnar GitHub. Godkänn appen
@@ -54,17 +54,69 @@ servern har utfärdat för din räkning.
 
 ## Vem din inloggningsuppgift talar för
 
-- **Allt du gör** (öppnar PR-sidan, publicerar en granskning, godkänner, slår
-  ihop) körs på **din** inloggning och inget annat. Om du inte är inloggad säger
-  appen det och ber dig logga in. Ingen annan inloggningsuppgift kliver in i ditt
-  ställe
-- **Arbete där ingen skriver** (agentkörningar, pipelines, PR-pollning, botsvar,
-  kloner) får en token för ett repo, utfärdad från serverns GitHub-app eller via
-  Connect. Den är begränsad till vad en ansvarig medlem kan göra där: medlemmen
-  som frågade, annars arbetsytans ägare. En medlem som inte kan pusha begränsar
-  token till läsning
+Control Center följer GitHubs egen uppdelning mellan att agera **som en person**
+och att agera **som appen**:
+
+| Vad som händer                                                                     | Visas på GitHub som                                                     |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Allt du gör själv: kommentera, granska, godkänna, slå ihop, begära granskare      | **Du**. GitHub märker en kommentar i samtalet som gjord med Control Center-appen; en granskning och dess inline-kommentarer saknar sådan märkning |
+| AI-granskning, agentsvar och agentkommentarer i PR-konversationer, etiketter, pipeline- och botarbete | **Control Center-boten**. På den delade Connect-appen är en granskning bara botens för en installation som Connect-operatören har listat; annars visas den som den ansvariga personen                                                |
+| En pull request som en agent öppnar åt dig, dess ändringar av den pull requestens titel eller beskrivning, dess pushar och dess commits | **Du**. Control Center krediteras som medförfattare när medförfattarkredit är på |
+| Arbete ingen bett om (scheman, webhooks)                                           | **Control Center-boten**, som författare av dess commits också. På Control Center Connect pushar eller öppnar den aldrig en pull request |
+
+- **Allt du gör** körs på **din** inloggning och inget annat. Om du inte är inloggad
+  ber appen dig logga in. Ingen annan inloggningsuppgift kliver in i ditt ställe
+- **Botarbete** får en token för ett repo i taget, begränsad till vad en ansvarig
+  medlem kan göra där: medlemmen som bad om det, annars arbetsytans ägare. En
+  medlem som inte kan pusha begränsar den till läsning. Botsvar som agerar för
+  någon börjar med **Control Center (for @login)**
+- **Agenter öppnar pull requests genom Control Center**, aldrig från sin sandlåda,
+  så pull requesten är din och GitHubs egna regler hindrar dig från att godkänna
+  den. Control Center vägrar också ett godkännande från personen som bad agenten
+  om det, och från pull requestens författare. För en schemalagd eller webhook-körning
+  omfattar det varje administratör som aktiverade dess trigger eller redigerade dess
+  pipeline medan den var aktiv. Någon annan måste granska. Om Control Center inte kan
+  bekräfta vem som öppnade pull requesten, eller vilket konto på kodvärden som är ditt,
+  vägrar den och ber dig försöka igen
+- **Agenter kommenterar genom Control Center också.** GitHub-tokenen som en agentkörning får kan bara läsa. När en agent kommenterar på pull requesten den arbetar med postar
+  Control Center kommentaren som boten, med början **Control Center (for @login)**
+  när någon bett om körningen. En agent kan bara kommentera på sin egen pull request:
+  en i samma repo, aldrig en fork, vars senaste commit agenten pushat eller som är
+  ytans grens aktuella commit. @-omnämnanden i en agents kommentar meddelar ingen. En agent kan också ändra titeln eller beskrivningen på sin egen pull request medan den är öppen. Ändringen görs på samma sätt som pull requesten öppnades (i ditt namn, när du bad om körningen) och kräver godkännande först som standard. En pull requests beskrivning behåller sina @-omnämnanden, både när agenten öppnar den och när den redigerar den, så att de personer den nämner meddelas
+- **På Control Center Connect pushar eller öppnar boten aldrig en pull request.** Att pusha, skapa
+  en gren eller öppna en pull request där kräver en person som bett om det, och
+  körs på den personens inloggning. En schemalagd eller webhook-körning som försöker
+  pusha stoppas med ett meddelande om det. För att låta obevakade körningar pusha,
+  ge arbetsytan en egen GitHub-app under **Inställningar**
+- **Vad Connect-boten kan göra.** Med den delade Connect-appen kommenterar, etiketterar
+  och reagerar boten. Den publicerar en granskning (en AI-granskning, granskningskommentarer,
+  granskarbegäranden) bara när Connect-operatören har listat den här serverns installation.
+  Annars går granskningen ut på den ansvariga personens egen inloggning och visas under
+  hens namn. Boten öppnar, redigerar, stänger eller byter titel på en
+  pull request aldrig, avvisar aldrig en granskning och redigerar eller tar aldrig bort en
+  kommentar; det kräver en person som bett om det, på sin egen inloggning. Connect binder
+  inte din organisations installation till en enda Control Center-server: vilken server som
+  helst där en medlem som kan pusha till ett repo och som loggat in via Connect kan få botens
+  kommenterings-token för repot
+- **En server eller arbetsyta med en egen GitHub-app** behåller boten för allt ovan,
+  granskningar inräknade
 - **Automatisering godkänner aldrig** en pull request. Att godkänna är en persons
   handling
+
+När du kopplar ett repo kontrollerar Control Center att ditt konto kan se det, och
+varnar när GitHub-appen inte är installerad på dess organisation eller inte
+omfattar repot, med en länk för att åtgärda det. Att koppla och koppla från kräver
+en arbetsytadministratör, och en kopia utanför arbetsytans egen lagring kan bara
+kopplas av serverägaren; se [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
+
+Kopplingen följer repots permanenta GitHub-id, så ett namnbyte eller en överföring
+kräver inget av dig. Om sökvägen senare pekar på ett annat repo slutar Control Center
+skicka något dit och visar en avisering tills en arbetsytadministratör klickar på
+**Koppla om**.
+
+Att öppna ett repos kod (filer, diffar, sökning, en terminal) kräver både dess bidrag
+i arbetsytan och en GitHub-inloggning av dig som kan läsa det. Arbetsytans
+administratörer följer samma regel; bara serverägaren är undantagen.
 
 ## Vad integrationen ger dig
 
@@ -74,7 +126,7 @@ servern har utfärdat för din räkning.
 | Kontrollkörningar     | GitHub Checks API                                                                                              |
 | Publicera granskning  | Ett steg som en användare måste godkänna och som publicerar din granskning på PR:en, som du                    |
 | Reporegistrering      | En utcheckning godtas om dess `origin`-remote pekar på github.com — eller på gitlab.com / bitbucket.org        |
-| Agenters GitHub-åtkomst | En token för körningens enda repo som `GH_TOKEN` / `GITHUB_TOKEN`; pushar går genom Control Center          |
+| Agenters GitHub-åtkomst | Inne i en körning hämtar `git fetch` repona som körningen arbetar med via Control Center, med en skrivskyddad token som körningen aldrig själv innehar. `gh` läser dem med en skrivskyddad token som Control Center ger ut när den begärs och återkallar när körningen avslutas. Pushar, pull requests, ändringar av dem och kommentarer går genom Control Center |
 | Aviseringsping        | En pollning på serversidan av din GitHub-aviseringsinkorg väcker ”Omnämnd i pull request” och ”Granskning begärd” |
 | Användarprofiler      | Profilkort vid hovring och filtrering av PR:er per författare                                                  |
 
@@ -95,17 +147,49 @@ och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
 ## Så agerar agenter på GitHub
 
 - En agent som arbetar i en GitHub-worktree får en token för just det repot. Den
-  kan läsa koden och kommentera på pull requests när den ansvariga medlemmen kan
-  pusha, och bara läsa när medlemmen inte kan. En push går genom Control Center,
+  kan bara läsa kod, ärenden och pull requests; kommentarer går genom Control Center,
+  enligt ovan. En push går genom Control Center,
   som frågar regeln **Pusha till en remote** och sedan skickar den vidare med en
   skrivtoken som agenten aldrig har. Se
   [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/)
-- Agentens commits använder alltid den begärande personens Git-identitet som både författare och committer. Som standard krediterar raden `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` som medförfattare. Under **Inställningar → Du → Tillskrivning av commits** kan du stänga av den medförfattarkrediteringen utan att ändra din identitet. En inställning för arbetsytan under **Inställningar → Arbetsyta → Allmänt** har företräde och låser det personliga reglaget. Claude Codes egen tillskrivning är alltid avstängd. Commitsignering kräver fortfarande en egen giltig konfiguration
+- Arbete du startar committas som du. När du ber en agent om något, eller committar i
+  IDE:t, är du författare och committer, under en adress som din kodvärd har verifierat:
+  din GitHub-noreply-adress från din GitHub-inloggning, eller på GitLab och Bitbucket den
+  e-post din inloggning där rapporterar. Din Git-identitet för arbetsytan används bara för
+  en commit du gör för hand i ett repo där ingen kodvärd bekräftar en adress som är din.
+  Om du inte är inloggad på kodvärden är en agents commits i stället botens, och
+  körningens anteckningar säger det
+- Arbete ingen bett om committas som boten. En schemalagd eller webhook-körning committar
+  som arbetsytans GitHub-app (`<app>[bot]`, med dess GitHub-noreply-adress), eller som
+  `Control Center <hi@usectrl.dev>` när det inte finns någon GitHub-app eller repot ligger
+  på GitLab eller Bitbucket
+- **Ange Control Center som medförfattare** (**Inställningar** → **Du** → **Commits**) lägger
+  till en `Co-Authored-By:`-rad för den andra parten: Control Center på dina commits, och på
+  botens commits varje person som aktiverade triggern bakom körningen. Den är på om du inte
+  stänger av den. En arbetsytadministratör kan bestämma det för alla med **Medförfattarkredit**
+  under **Inställningar** → **Arbetsyta** → **Allmänt**; ditt eget val sparas då men gäller
+  inte i den arbetsytan. Claude Codes egen tillskrivning är alltid avstängd
+- Dina commits kan signeras. Under **Verifierade commits** i **Inställningar** → **Du** →
+  **Commits** väljer du **Skapa signeringsnyckel** och lägger till dess publika del på ditt
+  GitHub- eller GitLab-konto som signeringsnyckel; därefter visas commits från körningar du bett om, och commits du gör i
+  IDE:t, som verifierade. Den privata delen stannar på din server, så den som kontrollerar
+  servern kan signera commits som dig så länge nyckeln finns på ditt konto, och på GitHub
+  förblir en commit som redan visas som verifierad verifierad efter att du tagit bort
+  nyckeln. Bitbucket har ingen nyckel som bara är till för signering: lägg inte till
+  nyckeln där, och commits på Bitbucket signeras inte. Botens commits signeras aldrig
+- Commits du gör i IDE:ts panel **Källkontroll** hoppar över repots Git-hooks, precis som
+  `git commit --no-verify` gör, och serverns Git ignorerar credential helpers, editorer,
+  externa diffverktyg och signerare som repot konfigurerar: den kör Git på sin egen
+  maskin, i ett träd som en agent eller en pull request kan ändra. Se
+  [Committa och pusha från Källkontroll](/sv-SE/handbok/how-to-guider/granska-och-sla-ihop-pr/#commit-och-push-från-källkontroll)
+- Varje commit en agent pushar kontrolleras först, även lagren `stack_publish` pushar för
+  en stack. En push som anger någon annan, tar bort eller lånar en kredit, lägger till en
+  signed-off-rad, eller inte är signerad på det sätt dina inställningar anger, avvisas. Commits du pushar själv från IDE:t är dina och
+  kontrolleras inte på det sättet
 - En terminal som du öppnar på en rigg får din egen inloggning, begränsad till
   just det repot, så pushar därifrån är dina
 - När ingen token kan utfärdas (ingen ansvarig är inloggad, appen är inte
-  installerad hos ägaren, eller installationen är avstängd) startar körningen
-  utan, och dess anteckningar förklarar varför. Det finns ingen
+  installerad hos ägaren, eller installationen är avstängd) förklarar kommandot som begärde den varför. Det finns ingen
   reservinloggningsuppgift
 
 ## Felsökning
@@ -113,7 +197,7 @@ och en uppdateringsknapp. Statusarna uppdateras av sig själva varannan minut.
 ### PR-listan är tom och säger att GitHub inte är anslutet
 
 Du är inte inloggad på GitHub på den här servern. Klicka på **Logga in på
-GitHub** under **Kodvärd**. Repos på andra kodvärdar påverkas inte.
+GitHub** under **Inställningar → Du → Profil → Kodvärd**. Repos på andra kodvärdar påverkas inte.
 
 ### Raden GitHub säger att inloggningen inte är konfigurerad på den här servern
 
@@ -121,6 +205,11 @@ Servern har varken en egen GitHub-app eller Connect. Serverägaren väljer en av
 dem under **Inställningar → Server → Enkel inloggning**: **Skapa min GitHub-app**
 tar ungefär två minuter. Se
 [Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/).
+
+I en arbetsyta med egna appar säger raden det när arbetsytans GitHub-app saknas
+eller är ofullständig. En administratör för arbetsytan fyller i den på kortet
+**GitHub-app** under **Inställningar → Arbetsyta → Integrationer**; se
+[Ge en arbetsyta en egen app](/sv-SE/handbok/how-to-guider/github-app/#ge-en-arbetsyta-en-egen-app).
 
 ### Dialogen säger att koden inte stämmer
 
@@ -130,11 +219,8 @@ felaktiga koder avslutar inloggningen; starta den igen.
 ### Inloggningen säger att appen inte är installerad
 
 GitHub-appen har ingen installation på kontot som äger repot. En administratör i
-arbetsytan installerar den från **Inställningar → Arbetsyta → Allmänt →
-Installationer av GitHub-appen**. För en organisation på Control Centers delade
-app kan en administratör i organisationen behöva klicka på **Auktorisera den här
-servern**. Se
-[Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/#auktorisera-den-här-servern-för-en-organisation).
+arbetsytan installerar den från **Inställningar → Arbetsyta → Integrationer →
+Installationer av GitHub-appen**.
 
 ### Alla måste logga in på GitHub igen
 
@@ -146,8 +232,26 @@ bundna till servern som skapade dem.
 
 Registreringen kräver alla tre: sökvägen ligger i ett git-arbetsträd, den har en
 `origin`-remote och den remoten pekar på en kodvärd som stöds (github.com,
-gitlab.com eller bitbucket.org). Se
+gitlab.com eller bitbucket.org). `origin` måste vara det repo du kopplar, och en mapp
+utanför arbetsytans egen lagring kan bara kopplas av serverägaren. Se
 [Lägg till repos i en arbetsyta](/sv-SE/handbok/how-to-guider/lagg-till-repos/).
+
+### Jag har ett bidrag men repot säger att mitt konto inte kan läsa det
+
+Ditt GitHub-konto kan inte läsa det repot, så dess kod är stängd för dig även med ett
+arbetsytebidrag. Logga in på GitHub under **Kodvärd**, eller be om åtkomst till repot på GitHub.
+
+### "Kunde inte bekräfta din åtkomst till GitHub"
+
+GitHub gick inte att nå för att kontrollera din åtkomst, så Control Center vägrade i
+stället för att gissa. Försök igen om en stund.
+
+### Granskningar på Connect visas under mitt namn, inte botens
+
+På den delade Connect-appen publicerar boten bara granskningar för installationer som
+Connect-operatören har listat. Överallt annars går granskningen ut på den ansvariga
+personens egen inloggning. För att låta boten publicera granskningar,
+ge arbetsytan en egen GitHub-app.
 
 ### Allt slutar fungera en stund efter hård användning
 

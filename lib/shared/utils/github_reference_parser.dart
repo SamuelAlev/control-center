@@ -194,14 +194,5 @@ GitHubReference? parseGitHubAppScheme(String url) {
 }
 
 /// Tries both [parseGitHubUrl] and [parseGitHubAppScheme] in sequence.
-///
-/// [currentOwner] and [currentRepo] are retained for source compatibility
-/// with call sites that haven't been updated; they're no longer used now
-/// that the app scheme always carries owner/repo explicitly.
-GitHubReference? parseAnyGitHubReference(
-  String url, {
-  required String currentOwner,
-  required String currentRepo,
-}) {
-  return parseGitHubUrl(url) ?? parseGitHubAppScheme(url);
-}
+GitHubReference? parseAnyGitHubReference(String url) =>
+    parseGitHubUrl(url) ?? parseGitHubAppScheme(url);

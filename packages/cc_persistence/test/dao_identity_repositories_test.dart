@@ -1,10 +1,13 @@
 import 'package:cc_domain/cc_domain.dart' show ValidationException;
+import 'package:cc_domain/core/domain/entities/server_audit_entry.dart';
 import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/entities/user_activity_entry.dart';
 import 'package:cc_domain/core/domain/entities/workspace_invite.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
+import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
+import 'package:cc_domain/core/domain/value_objects/audit_log_filter.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:test/test.dart';
@@ -73,9 +76,60 @@ void main() {
       expect(await userRepo.getByHandle('missing'), isNull);
     });
 
-    test('getByEmail resolves a user', () async {
-      expect((await userRepo.getByEmail('u-1@example.com'))?.id, 'u-1');
-      expect(await userRepo.getByEmail('missing@x.com'), isNull);
+    test('only a vouched address identifies a user by email', () async {
+      // u-1's address is self-set: it is held, but identifies nobody.
+      expect(await userRepo.getByVerifiedEmail('u-1@example.com'), isNull);
+      expect(
+        (await userRepo.getAllByEmail('u-1@example.com')).map((u) => u.id),
+        ['u-1'],
+      );
+      final u1 = (await userRepo.getById('u-1'))!;
+      await userRepo.upsert(u1.copyWith(emailVerified: true));
+      expect((await userRepo.getByVerifiedEmail('u-1@example.com'))?.id, 'u-1');
+      expect(await userRepo.getByVerifiedEmail('missing@x.com'), isNull);
+    });
+
+    test('an address is matched in any case, and stored normalized', () async {
+      final u1 = (await userRepo.getById('u-1'))!;
+      await userRepo.upsert(
+        u1.copyWith(email: '  U-1@Example.COM ', emailVerified: true),
+      );
+      expect((await userRepo.getById('u-1'))!.email, 'u-1@example.com');
+      expect((await userRepo.getByVerifiedEmail('u-1@EXAMPLE.com'))?.id, 'u-1');
+      expect(
+        (await userRepo.getAllByEmail(' U-1@example.com')).map((u) => u.id),
+        ['u-1'],
+      );
+    });
+
+    test('a stored address that is not normalized matches nothing', () async {
+      // Written past the entity, which always stores the normalized form.
+      await global.customStatement(
+        'UPDATE users SET email = ?, email_verified = 1 WHERE id = ?',
+        ['Shared@Example.com', 'u-1'],
+      );
+      expect(await userRepo.getByVerifiedEmail('shared@example.com'), isNull);
+      expect(await userRepo.getAllByEmail('SHARED@example.com'), isEmpty);
+    });
+
+    test('a different address is not vouched; the same one stays', () async {
+      final u1 = (await userRepo.getById('u-1'))!;
+      await userRepo.upsert(u1.copyWith(emailVerified: true));
+      final vouched = (await userRepo.getById('u-1'))!;
+      await userRepo.upsert(vouched.copyWith(displayName: 'Renamed'));
+      expect((await userRepo.getById('u-1'))!.emailVerified, isTrue);
+      await userRepo.upsert(vouched.copyWith(email: 'elsewhere@example.com'));
+      expect((await userRepo.getById('u-1'))!.emailVerified, isFalse);
+      expect(
+        () => User(
+          id: 'u-x',
+          handle: 'ux',
+          displayName: 'X',
+          emailVerified: true,
+          createdAt: DateTime.utc(2026),
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('upsert replaces on the same id', () async {
@@ -99,6 +153,81 @@ void main() {
         'u-1',
         'u-2',
       });
+    });
+
+    User user(String id, String handle) => User(
+      id: id,
+      handle: handle,
+      displayName: 'User $id',
+      createdAt: DateTime.utc(2026, 1, 2),
+    );
+
+    test('upsert refuses a username another user holds', () async {
+      await expectLater(
+        userRepo.upsert(user('u-1', 'u-2')),
+        throwsA(
+          isA<UsernameRefusedException>().having(
+            (e) => e.reason,
+            'reason',
+            UsernameRefusal.taken,
+          ),
+        ),
+      );
+      expect((await userRepo.getById('u-1'))?.handle, 'u-1');
+    });
+
+    test("upsert keeps a user's own username", () async {
+      await userRepo.upsert(user('u-1', 'u-1'));
+      expect((await userRepo.getById('u-1'))?.displayName, 'User u-1');
+    });
+
+    test('a freed username can be taken', () async {
+      await userRepo.upsert(user('u-2', 'renamed'));
+      await userRepo.upsert(user('u-1', 'u-2'));
+      expect((await userRepo.getById('u-1'))?.handle, 'u-2');
+    });
+
+    test('two concurrent writers of one username: exactly one wins', () async {
+      final results = await Future.wait([
+        for (final id in ['u-1', 'u-2'])
+          userRepo
+              .upsert(user(id, 'contested'))
+              .then((_) => 'ok')
+              .catchError(
+                (Object e) => (e as UsernameRefusedException).reason.wire,
+              ),
+      ]);
+      expect(results..sort(), ['ok', 'taken']);
+      final holders = (await userRepo.getAll()).where(
+        (u) => u.handle == 'contested',
+      );
+      expect(holders, hasLength(1));
+    });
+
+    test('insertWithFreeHandle takes the next free name', () async {
+      final first = await userRepo.insertWithFreeHandle(user('u-3', 'u-1'));
+      final second = await userRepo.insertWithFreeHandle(user('u-4', 'u-1'));
+      expect(first.handle, 'u-12');
+      expect(second.handle, 'u-13');
+      expect((await userRepo.getById('u-4'))?.handle, 'u-13');
+    });
+
+    test('concurrent allocations never share a name', () async {
+      final users = await Future.wait([
+        for (var i = 0; i < 6; i++)
+          userRepo.insertWithFreeHandle(user('n-$i', 'sam')),
+      ]);
+      expect(users.map((u) => u.handle).toSet(), hasLength(6));
+      expect(users.map((u) => u.handle), contains('sam'));
+    });
+
+    test('the unique index refuses a duplicate written around the DAO', () async {
+      await expectLater(
+        global.customStatement(
+          "INSERT INTO users (id, handle, display_name) VALUES ('x', 'u-1', 'X')",
+        ),
+        throwsA(anything),
+      );
     });
   });
 
@@ -163,27 +292,29 @@ void main() {
       );
     });
 
-    test('profile overlay is workspace-scoped and survives a role upsert',
-        () async {
-      await memberRepo.upsert(member('m-1', 'w-1', 'u-1'));
-      await memberRepo.upsert(member('m-2', 'w-2', 'u-1'));
-      await memberRepo.updateProfileOverlay(
-        'w-1',
-        'u-1',
-        displayName: 'Sam Here',
-        gitAuthorEmail: 'sam@w1.example',
-      );
-      await memberRepo.upsert(
-        member('m-1', 'w-1', 'u-1', role: WorkspaceRole.admin),
-      );
-      final inW1 = await memberRepo.getMember('w-1', 'u-1');
-      final inW2 = await memberRepo.getMember('w-2', 'u-1');
-      expect(inW1?.displayName, 'Sam Here');
-      expect(inW1?.gitAuthorEmail, 'sam@w1.example');
-      expect(inW1?.role, WorkspaceRole.admin);
-      expect(inW2?.displayName, isNull);
-      expect(inW2?.gitAuthorEmail, isNull);
-    });
+    test(
+      'profile overlay is workspace-scoped and survives a role upsert',
+      () async {
+        await memberRepo.upsert(member('m-1', 'w-1', 'u-1'));
+        await memberRepo.upsert(member('m-2', 'w-2', 'u-1'));
+        await memberRepo.updateProfileOverlay(
+          'w-1',
+          'u-1',
+          displayName: 'Sam Here',
+          gitAuthorEmail: 'sam@w1.example',
+        );
+        await memberRepo.upsert(
+          member('m-1', 'w-1', 'u-1', role: WorkspaceRole.admin),
+        );
+        final inW1 = await memberRepo.getMember('w-1', 'u-1');
+        final inW2 = await memberRepo.getMember('w-2', 'u-1');
+        expect(inW1?.displayName, 'Sam Here');
+        expect(inW1?.gitAuthorEmail, 'sam@w1.example');
+        expect(inW1?.role, WorkspaceRole.admin);
+        expect(inW2?.displayName, isNull);
+        expect(inW2?.gitAuthorEmail, isNull);
+      },
+    );
 
     test('remove deletes a membership', () async {
       await memberRepo.upsert(member('m-1', 'w-1', 'u-1'));
@@ -379,7 +510,7 @@ void main() {
       );
     });
 
-    test('getPage paginates with a real total and cursors', () async {
+    test('pages walk the trail by keyset with real counts', () async {
       for (var i = 0; i < 12; i++) {
         await activityRepo.append(
           UserActivityEntry(
@@ -392,30 +523,28 @@ void main() {
           ),
         );
       }
-      final page1 = await activityRepo.getPage('w-1', limit: 10);
-      expect(page1.total, 12);
-      expect(page1.start, 1);
-      expect(page1.entries.length, 10);
-      expect(page1.entries.first.id, 'p-11');
-      expect(page1.nextCursor, isNotNull);
-      expect(page1.prevCursor, isNull);
+      final page1 = await activityRepo.pageRows('w-1', limit: 10);
+      expect(page1.length, 10);
+      expect(page1.first.id, 'p-11');
+      expect(await activityRepo.count('w-1'), 12);
 
-      final page2 = await activityRepo.getPage(
+      final cursor = ActivityCursor.fromEntry(page1.last);
+      final page2 = await activityRepo.pageRows(
         'w-1',
+        olderThan: cursor,
         limit: 10,
-        cursor: page1.nextCursor,
       );
-      expect(page2.total, 12);
-      expect(page2.start, 11);
-      expect(page2.entries.map((e) => e.id), ['p-1', 'p-0']);
-      expect(page2.nextCursor, isNull);
-      expect(page2.prevCursor, isNull);
-
-      final back = await activityRepo.getPage('w-1', limit: 10);
-      expect(back.entries.first.id, page1.entries.first.id);
+      expect(page2.map((e) => e.id), ['p-1', 'p-0']);
+      expect(await activityRepo.count('w-1', newerThan: cursor), 9);
+      final newer = await activityRepo.newerRows(
+        'w-1',
+        newerThan: cursor,
+        limit: 2,
+      );
+      expect(newer.map((e) => e.id), ['p-3', 'p-4']);
     });
 
-    test('getPage applies ip and query filters to the total', () async {
+    test('filters narrow rows, counts and the actor facet', () async {
       await activityRepo.append(
         UserActivityEntry(
           id: 'f-1',
@@ -435,23 +564,54 @@ void main() {
           userId: 'u-2',
           action: 'tickets.create',
           targetId: 'T-9',
-          ip: '198.51.100.9',
+          ip: '192.168.1.4',
           createdAt: DateTime.utc(2026, 1, 4, 2),
         ),
       );
-      final byIp = await activityRepo.getPage(
-        'w-1',
-        filter: const UserActivityFilter(ip: '203.0.113.7'),
-      );
-      expect(byIp.total, 1);
-      expect(byIp.entries.single.id, 'f-1');
+      Future<List<String>> where(AuditLogFilter f) async => [
+        for (final e in await activityRepo.pageRows(
+          'w-1',
+          limit: 10,
+          filter: f,
+        ))
+          e.id,
+      ];
 
-      final byQuery = await activityRepo.getPage(
-        'w-1',
-        filter: const UserActivityFilter(query: 'ceo'),
+      expect(await where(const AuditLogFilter(ip: '203.0.113.7')), ['f-1']);
+      expect(await where(const AuditLogFilter(query: 'ceo')), ['f-1']);
+      expect(await where(const AuditLogFilter(countryCode: 'FR')), ['f-1']);
+      expect(await where(const AuditLogFilter(localNetwork: true)), ['f-2']);
+      expect(await where(const AuditLogFilter(actorIds: {'u-2'})), ['f-2']);
+      expect(
+        await where(
+          AuditLogFilter(
+            time: [
+              AuditTimeCondition(
+                op: AuditTimeOperator.after,
+                at: DateTime.utc(2026, 1, 4, 1),
+              ),
+            ],
+          ),
+        ),
+        ['f-2'],
       );
-      expect(byQuery.total, 1);
-      expect(byQuery.entries.single.targetId, 'ceo');
+      // Workspace records all returned: only an `ok` outcome matches them.
+      expect(
+        await where(const AuditLogFilter(outcomes: {AuditOutcome.denied})),
+        isEmpty,
+      );
+      expect(await where(const AuditLogFilter(outcomes: {AuditOutcome.ok})), [
+        'f-2',
+        'f-1',
+      ]);
+      expect(
+        await activityRepo.count(
+          'w-1',
+          filter: const AuditLogFilter(query: 'ceo'),
+        ),
+        1,
+      );
+      expect(await activityRepo.countByActor('w-1'), {'u-1': 1, 'u-2': 1});
     });
   });
 

@@ -3,9 +3,13 @@ part of 'code_server_service.dart';
 // Workbench settings belong to the editor session service but do not involve
 // process lifecycle or device-bound authorization.
 extension _CodeServerWorkbenchSettings on CodeServerService {
-  /// Seeds code-server User `settings.json`: trusted + editor-only chrome.
+  /// Seeds code-server User `settings.json`: workspace trust on + editor-only
+  /// chrome.
   ///
-  /// Trust avoids language-server/tasks/debug prompts the embed cannot answer.
+  /// code-server runs as the server's OS user, so VS Code's own workspace
+  /// trust stays on: the server owner answers its prompt per folder, and folder
+  /// tasks never start automatically even in a trusted folder.
+  ///
   /// Hides activity/status/tab/menu/chat chrome (app shell owns those); bridge
   /// closes side bars/panel on activation and editor focus. `showTabs: none` so
   /// navigation replaces the single editor (no competing VS Code tabs).
@@ -28,11 +32,14 @@ extension _CodeServerWorkbenchSettings on CodeServerService {
         // Corrupt / hand-edited — overwrite rather than fail the open.
       }
     }
-    // Trust: open the worktree without Restricted Mode.
-    settings['security.workspace.trust.enabled'] = false;
-    settings['security.workspace.trust.startupPrompt'] = 'never';
-    settings['security.workspace.trust.banner'] = 'never';
-    settings['security.workspace.trust.emptyWindow'] = false;
+    // Trust: VS Code's defaults decide, so clear any override an earlier seed
+    // wrote into this merged file, and never run a folder's tasks on open.
+    settings['security.workspace.trust.enabled'] = true;
+    settings
+      ..remove('security.workspace.trust.startupPrompt')
+      ..remove('security.workspace.trust.banner')
+      ..remove('security.workspace.trust.emptyWindow');
+    settings['task.allowAutomaticTasks'] = 'off';
     // Editor-only chrome: hide code-server's own shell parts that duplicate the
     // app's (tabs / activity / status / terminal-panel toggle / menus).
     settings['workbench.activityBar.location'] = 'hidden';

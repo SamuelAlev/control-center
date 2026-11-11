@@ -97,7 +97,6 @@
 
   "inboxLoadFailed": "آپ کا ان باکس لوڈ نہیں ہو سکا",
   "allCaughtUp": "سب دیکھ لیا",
-  "inboxNoForgeAccount": "سرور پر کوئی forge اکاؤنٹ منسلک نہیں، اس لیے ابھی pull requests آپ سے منسوب نہیں کیے جا سکتے۔",
   "inboxNothingWaiting": "کچھ بلاک نہیں اور کوئی pull request آپ کے انتظار میں نہیں۔",
   "blocked": "بلاک",
   "sectionNeedsYourReview": "آپ کے ریویو کی ضرورت",
@@ -186,22 +185,6 @@
       "names": { "type": "String" }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, one{\u2068{names}\u2069 یہاں سے ریلے پر بھیجنے کے لیے بہت بڑی ہے۔} other{\u2068{names}\u2069 یہاں سے ریلے پر بھیجنے کے لیے بہت بڑی ہیں۔}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": { "type": "int" },
-      "names": { "type": "String" }
-    }
-  },
-  "attachmentUploadFailed": "منسلکہ اپ لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
-  "attachmentsLeftOut": "{count, plural, one{1 منسلکہ اپ لوڈ نہیں ہو سکا اور چھوڑ دیا گیا۔} other{{count} منسلکے اپ لوڈ نہیں ہو سکے اور چھوڑ دیے گئے۔}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "teammate": "ساتھی",
   "systemSender": "سسٹم",
   "agent": "ایجنٹ",
@@ -260,24 +243,6 @@
   "prsEmptyDescription": "اس ورک اسپیس کے ریپوز کے pull requests یہاں نظر آتے ہیں۔",
   "refreshPullRequests": "pull requests تازہ کریں",
   "noForgeConnected": "سرور پر کوئی forge منسلک نہیں، اس لیے pull requests حاصل نہیں کیے جا سکتے۔ ڈیسک ٹاپ ایپ سے ایک منسلک کریں۔",
-  "reposUnreadable": "{count, plural, one{1 ریپو پڑھا نہیں جا سکا۔} other{{count} ریپوز پڑھے نہیں جا سکے۔}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "reposNotReadable": "پڑھے نہیں جا سکے: \u2068{names}\u2069",
-  "installationSuspendedTitle": "GitHub App انسٹالیشن معطل ہے",
-  "installationSuspendedBody": "⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔",
-  "installationSuspendedNotice": "GitHub App انسٹالیشن معطل ہے. ⁨{names}⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-
   "draft": "ڈرافٹ",
   "merged": "مرج شدہ",
   "closed": "بند",
@@ -676,7 +641,7 @@
   "permissionGitCommit": "تبدیلیاں کمٹ کریں",
   "permissionGitPush": "کمٹس پش کریں",
   "permissionPrCreate": "Pull requests بنائیں",
-  "permissionPrPublish": "Pull requests شائع کریں",
+  "permissionPrPublish": "Pull requests کو اپ ڈیٹ یا merge کریں",
   "permissionVendorSyncWrite": "وینڈر سنک میں لکھیں",
   "permissionNetworkEgress": "نیٹ ورک تک رسائی",
   "permissionSecretAccess": "رازوں تک رسائی",
@@ -688,12 +653,11 @@
   "permissionEffectiveDescription": "بغیر عمل کی تفصیلات کے اس دائرے میں نافذ۔ نیچے دی گئی مشروط اجازتیں صرف مماثل درخواستوں پر لاگو ہوتی ہیں؛ حتمی فیصلہ سرور کرتا ہے۔",
   "permissionSpaceAgentNote": "کوئی ایجنٹ منتخب نہیں۔ اوپر ایجنٹ منتخب کرنے تک ایجنٹ کے مخصوص قواعد نہیں دکھائے جائیں گے۔",
   "permissionScopedGrants": "اس دائرے کے قواعد",
-  "permissionRemembered": "یاد رکھی گئی منظوری",
+  "permissionRemembered": "جاری منظوری",
   "permissionSetAtThisScope": "{source} · یہاں مقرر کیا گیا",
   "permissionInheritedFrom": "{source} · وراثت میں ملا",
   "permissionExpiresAt": "{date} کو ختم ہوگا",
   "permissionSetHere": "یہاں قاعدہ مقرر کریں",
-  "permissionRevokeBeforeEdit": "اس عمل کے لیے عمومی قاعدہ مقرر کرنے سے پہلے دائرے کا یا یاد رکھا گیا قاعدہ منسوخ کریں۔",
   "permissionConfirmRevoke": "منسوخی کی تصدیق کریں",
   "permissionRevokeRule": "قاعدہ منسوخ کریں",
   "permissionCommandPrefix": "کمانڈ کا سابقہ: {prefix}",
@@ -807,9 +771,6 @@
   "activityAgentBlocked": "ایجنٹ کی کارروائی مسدود ہے",
   "activityMessage": "نیا پیغام",
   "activityPullRequest": "Pull request کی تازہ کاری",
-  "activityTicket": "ٹکٹ کی تازہ کاری",
-  "activityMeeting": "میٹنگ کی تازہ کاری",
-  "activityCalendar": "کیلنڈر کنکشن",
   "activityRig": "انکلوژر کی تازہ کاری",
   "activityPrReady": "Pull request مرج کے لیے تیار ہے",
   "activityPrBlocked": "Pull request کا مرج رکا ہوا ہے",
@@ -961,7 +922,7 @@
   "credentialsApiKeyHint": "فراہم کنندہ کی API کلید پیسٹ کریں",
   "credentialsBrowserLogin": "براؤزر سے سائن اِن کریں",
   "credentialsWaitingForLogin": "آپ کے براؤزر میں اجازت کا انتظار ہے…",
-  "credentialsConnectCodePrompt": "براؤزر میں دکھایا گیا کوڈ درج کریں",
+  "credentialsConnectCodePrompt": "تصدیقی کوڈ",
   "credentialsConnectCodeMalformed": "یہ سائن اِن کوڈ نہیں لگتا۔ کوڈز میں 8 حروف اور ہندسے ہوتے ہیں۔",
   "credentialsSignInInvalidCode": "یہ کوڈ اس سائن اِن سے میل نہیں کھاتا۔ اسے جانچیں اور دوبارہ کوشش کریں۔",
   "credentialsSignInTooManyCodes": "بہت زیادہ غلط کوڈ۔ سائن اِن دوبارہ شروع کریں۔",
@@ -978,11 +939,51 @@
   "credentialsCompleteLogin": "سائن اِن مکمل کریں",
   "credentialsPersonalToken": "ذاتی رسائی کا ٹوکن",
   "credentialsPersonalTokenHint": "ذاتی رسائی کا ٹوکن پیسٹ کریں",
-  "credentialsHostManaged": "یہ کنکشن سرور ایپ یا ماحول سے آتا ہے۔ اسے وہاں صرف سرور کا مالک بدل سکتا ہے؛ آپ اپنا ٹوکن پھر بھی شامل کر سکتے ہیں۔",
   "credentialsStopWatching": "نگرانی بند کریں",
   "transcriptClaudeSignInExpiredTitle": "Claude Code سائن ان کی میعاد ختم ہو گئی",
   "transcriptClaudeSignInExpiredBody": "رن رک گیا کیونکہ اس کا اکاؤنٹ اب تصدیق نہیں ہوتا۔ دوبارہ سائن ان کریں، پھر یہ باری دوبارہ آزمائیں۔",
   "transcriptSignInExpiredTitle": "فراہم کنندہ سائن ان کی میعاد ختم ہو گئی",
   "transcriptSignInExpiredBody": "رن رک گیا کیونکہ فراہم کنندہ کی اسناد اب کام نہیں کرتیں۔ اسے ترتیبات ← فراہم کنندگان میں دوبارہ جوڑیں، پھر یہ باری دوبارہ آزمائیں۔",
-  "permissionHostExecution": "میزبان پر کمانڈز چلائیں"
+  "permissionHostExecution": "میزبان پر کمانڈز چلائیں",
+  "credentialsSignInLapsed": "آپ کا {provider} سائن اِن ختم ہو گیا ہے۔ دوبارہ سائن اِن کریں۔",
+  "credentialsSignInPaused": "موقوف: اس ورک اسپیس کی سائن اِن سروس بدل گئی ہے۔ سروس واپس آتے ہی یہ دوبارہ کام کرے گا۔",
+  "credentialsProviderUnreachable": "ابھی {provider} تک رسائی نہیں ہو پا رہی۔ دوبارہ کوشش کی جا رہی ہے۔",
+  "credentialsScopeWorkspace": "صرف یہ ورک اسپیس",
+  "credentialsScopeAllWorkspaces": "تمام ورک اسپیسز",
+  "credentialsRemoveConfirmWorkspace": "اپنی محفوظ کردہ اسناد اس ورک اسپیس سے ہٹائیں؟ دوسری ورک اسپیسز اپنی اسناد رکھتی ہیں۔",
+  "credentialsRemoveConfirmAllWorkspaces": "اپنی محفوظ کردہ اسناد ان تمام ورک اسپیسز سے ہٹائیں جو انہیں شیئر کرتی ہیں؟",
+  "credentialsSignInServerRestarted": "سرور دوبارہ شروع ہو گیا۔ سائن اِن دوبارہ شروع کریں۔",
+  "repoAccessInstallApp": "{owner} پر GitHub App انسٹال کریں تاکہ آٹومیشن {names} تک پہنچ سکے۔ GitHub کھولنے کے لیے تھپتھپائیں۔",
+  "repoAccessAskAdminInstall": "{owner} پر GitHub App انسٹال نہیں ہے، اس لیے آٹومیشن {names} تک نہیں پہنچ سکتی۔ ورک اسپیس کے کسی ایڈمن سے اسے انسٹال کرنے کو کہیں۔",
+  "repoAccessAddToApp": "{names} کو GitHub App کی ریپوزٹریز میں شامل کریں۔ GitHub کھولنے کے لیے تھپتھپائیں۔",
+  "repoAccessAskAdminAdd": "GitHub App ابھی {names} نہیں دیکھ سکتی۔ ورک اسپیس کے کسی ایڈمن سے انہیں اس کی ریپوزٹریز میں شامل کرنے کو کہیں۔",
+  "repoAccessSuspended": "GitHub App انسٹالیشن معطل ہے۔ {names} کے لیے آٹومیشن اس وقت تک موقوف ہے جب تک اکاؤنٹ کا کوئی مالک GitHub پر انسٹالیشن دوبارہ شروع نہ کرے۔",
+  "repoAccessOwnerCannotSee": "اس ورک اسپیس کی آٹومیشن کا ذمہ دار شخص اب {names} نہیں دیکھ سکتا، اس لیے وہاں ان کی طرف سے کچھ نہیں چلتا۔",
+  "repoAccessOwnerNotSignedIn": "اس ورک اسپیس کی آٹومیشن کا ذمہ دار شخص فورج میں سائن اِن نہیں ہے، اس لیے {names} کی آٹومیشن ان کے سائن اِن کرنے تک انتظار کرتی ہے۔",
+  "repoAccessRetrying": "{names} تک رسائی کی جانچ نہیں ہو سکی۔ دوبارہ کوشش کی جا رہی ہے۔",
+  "hiddenReposSignIn": "{count, plural, =1{مزید 1 ریپوزٹری کی pull requests دیکھنے کے لیے {forge} میں سائن اِن کریں} other{مزید {count} ریپوزٹریز کی pull requests دیکھنے کے لیے {forge} میں سائن اِن کریں}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 ریپوزٹری چھپی ہوئی ہے کیونکہ آپ کا {forge} اکاؤنٹ اسے نہیں دیکھ سکتا} other{{count} ریپوزٹریز چھپی ہوئی ہیں کیونکہ آپ کا {forge} اکاؤنٹ انہیں نہیں دیکھ سکتا}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 ریپوزٹری چھپی ہوئی ہے کیونکہ اس ورک اسپیس میں آپ کو اس تک رسائی نہیں} other{{count} ریپوزٹریز چھپی ہوئی ہیں کیونکہ اس ورک اسپیس میں آپ کو ان تک رسائی نہیں}}",
+  "hiddenReposChecking": "{count, plural, =1{مزید 1 ریپوزٹری تک آپ کی رسائی جانچی جا رہی ہے…} other{مزید {count} ریپوزٹریز تک آپ کی رسائی جانچی جا رہی ہے…}}",
+  "credentialsAtlassianEmail": "Atlassian اکاؤنٹ کی ای میل",
+  "credentialsAtlassianEmailInvalid": "اپنے Atlassian اکاؤنٹ کا ای میل پتہ درج کریں۔",
+  "credentialsBitbucketApiToken": "API ٹوکن",
+  "repoAccessAutomationTokenMissing": "کوئی آٹومیشن ٹوکن {names} نہیں پڑھ سکتا، اس لیے وہاں پس منظر کا کام موقوف ہے۔ ایڈمن ترتیبات ← ریپوزٹریز میں ایک شامل کر سکتا ہے۔",
+  "credentialsSignInConfirmInBrowser": "اپنے براؤزر میں تصدیق کریں، پھر جو کوڈ دکھائے وہ درج کریں۔",
+  "credentialsSignInAccountAlreadyBound": "یہ اکاؤنٹ اس سرور پر پہلے ہی کسی اور شخص سے جڑا ہوا ہے۔ کسی مختلف اکاؤنٹ سے سائن ان کریں۔",
+  "credentialsTokenUnreachable": "اس ٹوکن کی جانچ کے لیے {provider} تک رسائی نہیں ہو سکی۔ کچھ دیر بعد دوبارہ کوشش کریں۔",
+  "credentialsTokenRejected": "{provider} یہ ٹوکن قبول نہیں کرتا۔ دیکھیں کہ آپ نے پورا ٹوکن کاپی کیا ہے اور وہ منسوخ نہیں ہوا۔",
+  "credentialsTokenWrongKind": "یہ ذاتی ٹوکن نہیں ہے۔ اپنے {provider} اکاؤنٹ کا ذاتی ایکسیس ٹوکن چسپاں کریں، پروجیکٹ، گروپ، ورک اسپیس یا بوٹ کا ٹوکن نہیں۔",
+  "credentialsTokenNarrowScope": "اس ٹوکن میں {scope} اسکوپ نہیں ہے۔ ایسا ٹوکن بنائیں جس میں وہ ہو۔",
+  "credentialsTokenExpired": "یہ ٹوکن ختم ہو چکا ہے۔ نیا بنائیں اور یہاں چسپاں کریں۔",
+  "credentialsSignInRateLimited": "ابھی درخواستیں بہت زیادہ ہیں۔ کچھ دیر انتظار کریں، پھر دوبارہ کوشش کریں۔",
+  "credentialsSignInCancelled": "سائن ان منسوخ یا مسترد کیا گیا۔ تیار ہوں تو اسے دوبارہ شروع کریں۔",
+  "credentialsSignInNoLongerOpen": "یہ سائن ان اب کھلا نہیں ہے: یہ منسوخ، استعمال، یا تبدیل ہو چکا ہے۔ اسے دوبارہ شروع کریں۔",
+  "noWorkspacesYetHint": "ایک ورک اسپیس ایڈمن کو آپ کو دعوت دینی ہوگی، یا سرور کا مالک آپ کے لیے ورک اسپیس بنا سکتا ہے۔",
+  "repoAccessReplaced": "{repos} اب {forge} پر ایک مختلف ریپوزٹری کی طرف اشارہ کرتی ہے۔ استعمال جاری رکھنے کے لیے ڈیسک ٹاپ یا ویب ایپ سے اسے دوبارہ لنک کریں۔",
+  "repoAccessAskAdminRelink": "{repos} اب {forge} پر ایک مختلف ریپوزٹری کی طرف اشارہ کرتی ہے۔ دوبارہ استعمال سے پہلے ایک ورک اسپیس ایڈمن کو اسے دوبارہ لنک کرنا ہوگا۔",
+  "runSandboxUnavailableTitle": "ایجنٹس کو اس سرور پر سینڈ باکس چاہیے",
+  "runSandboxUnavailable": "اس سرور پر سینڈ باکس نہیں ہے، اس لیے یہاں صرف اس کا مالک ایجنٹس چلا سکتا ہے۔ مالک سینڈ باکس انسٹال کر سکتا ہے یا سب کے لیے سینڈ باکسنگ بند کر سکتا ہے۔",
+  "permissionTools": "ٹولز: {tools}",
+  "permissionNotInEffect": "اس ایکشن کے منع ہونے کے دوران نافذ نہیں"
 }

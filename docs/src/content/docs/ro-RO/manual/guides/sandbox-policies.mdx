@@ -2,7 +2,7 @@
 title: Configurează politicile de sandbox
 description: Ce constrânge o rulare de agent, cum îți dai seama dacă sandbox-ul sistemului de operare o învelește și cum decid regulile de acțiune ce poate trimite sau accesa un agent.
 slug: ro-RO/manual/ghiduri-practice/politici-sandbox
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Dacă o rulare de agent este sandboxată se decide pe server, la pornire
@@ -23,7 +23,7 @@ operare și este singurul condiționat — celelalte cinci rezistă pe orice gaz
 
 | Graniță                     | Ce face                                                                                                                                                                                            |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sandbox-ul sistemului de operare | Seatbelt pe macOS, bubblewrap pe Linux și WSL2. Învelește CLI-ul Claude Code, adaptoarele ACP și instrumentul `bash` al harness-ului. **Absent pe Windows și pe Linux fără `bwrap` și `socat`** |
+| Sandbox-ul sistemului de operare | Seatbelt pe macOS, bubblewrap pe Linux și WSL2. Învelește CLI-ul Claude Code, adaptoarele ACP și instrumentul `bash` al harness-ului. **Absent pe Windows și pe Linux fără `bwrap` și `socat`, unde pornesc doar rulările proprietarului serverului** |
 | Propriul worktree           | Fiecare conversație primește un checkout copy-on-write. Checkout-ul original este inclus în rulare ca o cale cu scrierea interzisă, iar sandbox-ul este cel care impune asta                            |
 | Acreditări emise de broker  | Brokerul de acreditări emite un mediu per rulare și îl revocă la desființare. Tokenul GitHub din el poate citi, dar nu poate face push: un push trece prin Control Center, care întreabă mai întâi regula de push |
 | Guardrail-uri de acțiuni    | Fiecare instrument care modifică starea își declară clasele de efect, iar garda le rezolvă înainte ca apelul să ruleze. Un `prompt` fără niciun aprobator conectat este refuzat                      |
@@ -44,10 +44,13 @@ Trei lucruri rămân mai slabe decât par:
   instrumentul `bash` trece prin executorul de comenzi sandboxat. Acele
   instrumente sunt limitate de propria confinare a căilor plus guardrail-urile
   de acțiuni.
-- Pe o gazdă fără backend, primul rând nu se aplică deloc. ACP și instrumentul
-  `bash` al harness-ului se întorc la sanitizarea mediului plus politica de
-  comenzi; Claude Code moștenește mediul gazdei prin `NoSandboxAdapter`.
-  Serverul spune asta în jurnalul său de pornire. Verifică-l pe al tău mai jos.
+- Pe o gazdă fără backend, pornesc doar rulările de care răspunde proprietarul
+  serverului, iar pentru acestea primul rând nu se aplică deloc. Rulările tuturor
+  celorlalți sunt refuzate. Sub `--sandbox off` toate rulările membrilor pornesc
+  fără primul rând. Oricum, ACP și instrumentul `bash` al harness-ului se întorc
+  la sanitizarea mediului plus politica de comenzi, iar Claude Code moștenește
+  mediul gazdei prin `NoSandboxAdapter`. Serverul spune ce caz este în jurnalul
+  său de pornire. Verifică-l pe al tău mai jos.
 
 ## Decide ce poate trimite un agent
 
@@ -57,8 +60,8 @@ Fiecare este o regulă de acțiune:
 | Regulă                                   | Implicit încorporat | Ce acoperă                                                                   |
 | ---------------------------------------- | ------------------- | ---------------------------------------------------------------------------- |
 | **Push către un remote**                 | Întreabă întâi      | Fiecare `git push` către GitHub, indiferent de adaptor                       |
-| **Deschide un pull request**             | Întreabă întâi      | `gh pr create` și instrumentele de pull request                              |
-| **Publică o revizuire sau o fuziune**    | Întreabă întâi      | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                |
+| **Deschide un pull request**             | Întreabă întâi      | Instrumentele de pull request ale Control Center. `gh pr create` nu funcționează într-o rulare                              |
+| **Actualizează sau unește un pull request** | Întreabă întâi      | Comentariile unui agent la pull request-ul său, modificările aduse titlului sau descrierii acestuia și revizuirile publicate, prin instrumentele Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` și `gh pr close` nu funcționează într-o rulare                |
 | **Scrie într-un tracker extern**         | Întreabă întâi      | Scrieri de tichete prin instrumentele Control Center și `gh issue`           |
 | **Accesează rețeaua**                    | Permite             | Dacă sandbox-ul are rețea, și instrumentele web ale harness-ului             |
 
@@ -118,48 +121,57 @@ Două lucruri decid asta, ambele pe server: dacă gazda oferă un backend și da
    învelișul pe care îl folosește de fapt serverul.
 3. Citește jurnalul de pornire al serverului. Afișează exact una dintre trei
    linii:
-   - `agent sandbox ON` plus nota despre backend — rulările sunt învelite
+   - `agent sandbox ON` plus nota despre backend: rulările sunt învelite
    - `no OS-native agent sandbox on this host` plus un indiciu de instalare
-     acolo unde există — rulările nu sunt învelite
-   - `agent sandbox DISABLED by --sandbox off` — o renunțare deliberată
+     acolo unde există: pornesc doar rulările de care răspunde proprietarul
+     serverului, neînvelite, iar ale celorlalți sunt refuzate
+   - `agent sandbox DISABLED by --sandbox off`: pornesc toate rulările membrilor,
+     neînvelite
+4. Linia de expunere afișată la pornire spune același lucru într-un cuvânt:
+   `sandbox=native`, `sandbox=off` sau `sandbox=unavailable`.
 
 `GET /healthz` nu raportează starea sandbox-ului, așa că jurnalul de pornire
 este verificarea.
 
-Ca să oprești sandbox-ul în mod deliberat — o gazdă pe care profilul se
-comportă prost este motivul pentru care această opțiune există — pornește
-serverul cu `--sandbox off` sau setează `CC_SERVER_SANDBOX=off`. Implicitul este
-`on`, iar `on` înseamnă „folosește un backend dacă gazda are unul”, niciodată
-„cere unul”.
+Doar proprietarul serverului decide să ruleze fără sandbox. Ca să o faci pentru
+toată lumea, pornește serverul cu `--sandbox off` sau setează
+`CC_SERVER_SANDBOX=off`. Atunci rulările tuturor agenților membrilor rulează
+neizolat pe mașina aceea, deci este o decizie despre toți cei care folosesc
+serverul, luată o singură dată la pornire. Implicitul este `on`: învelește
+fiecare rulare când gazda are un backend și, când nu are, pornesc doar rulările
+proprietarului.
 
 Două situații nu primesc niciodată un înveliș de sandbox nativ. Pe **Windows**
 sonda nativă raportează întotdeauna indisponibil și nu există nimic de
-instalat — trimiterea agenților folosește `none`. Backendul `microvm` este
-separat (terminale interactive și stații) și este condiționat de sondă pe
-propriul său runtime. Pe **Linux și WSL2**, atât `bwrap`, cât și `socat`
-trebuie să fie în `PATH`; fără ele, sonda raportează indisponibil și numește
-pachetele lipsă.
+instalat, deci pornesc doar rulările proprietarului serverului, decât dacă
+proprietarul pornește cu `--sandbox off`. Backendul `microvm` este separat
+(terminale interactive și stații) și este condiționat de sondă pe propriul său
+runtime. Pe **Linux și WSL2**, atât `bwrap`, cât și `socat` trebuie să fie în
+`PATH`; fără ele, sonda raportează indisponibil și numește pachetele lipsă, iar
+pornesc doar rulările proprietarului.
 
 Pe Linux/WSL2 cu bubblewrap instalat, globurile de fișiere secrete ale politicii
 standard nu pot fi aplicate pentru fișierele pe care un agent le creează
-ulterior. O astfel de rulare nativă eșuează acum, în loc să ignore în silențiu
-regulile. O sondă de pornire pozitivă nu garantează așadar că o trimitere pe
-Linux poate porni. `--sandbox off` este o renunțare deliberată la confinare, nu
-o graniță de securitate substitutivă.
+ulterior, așa că fiecare rulare nativă eșuează în loc să ignore în silențiu
+regulile, a proprietarului inclusiv. O sondă de pornire pozitivă nu înseamnă
+așadar că o trimitere pe Linux poate porni: astăzi un server Linux rulează
+agenții cu `--sandbox off`, sau fără bubblewrap doar pentru proprietar.
+`--sandbox off` este o renunțare deliberată la confinare, nu o graniță de
+securitate substitutivă.
 
 ## Află ce interzice deja un mod
 
 Modul este stocat per spațiu și alimentează rezolvitorul de guardrail-uri ca
 strat de **presetare de mod**. Trei dintre cele patru moduri sunt doar pentru
-citire, iar un mod doar pentru citire refuză categoric unsprezece clase de
+citire, iar un mod doar pentru citire refuză categoric doisprezece clase de
 efect:
 
 | Mod                 | Worktree       | Refuzate de presetare                                                                                                                                                            |
 | ------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`)  | Inscriptibil   | Nimic — se aplică impliciturile încorporate                                                                                                                                      |
-| **Plan**            | Doar pentru citire | Șterge un fișier, scrie în afara worktree-ului, creează un commit, push către un remote, deschide un pull request, publică o revizuire sau o fuziune, scrie într-un tracker extern, instalează un pachet, rulează un proces, modifică structura spațiului de lucru, conduce un mediu izolat (stație) |
-| **Revizuire**       | Doar pentru citire | Aceleași unsprezece. Nu poate fi selectat de utilizator — zona de compunere oferă doar Agent, Plan și Orchestrează                                                               |
-| **Orchestrează**    | Doar pentru citire | Aceleași unsprezece                                                                                                                                                              |
+| **Plan**            | Doar pentru citire | Șterge un fișier, scrie în afara worktree-ului, creează un commit, push către un remote, deschide un pull request, publică o revizuire sau o fuziune, scrie într-un tracker extern, instalează un pachet, rulează un proces, modifică structura spațiului de lucru, conduce un mediu izolat (stație), rulează comenzi pe gazdă |
+| **Revizuire**       | Doar pentru citire | Aceleași doisprezece. Nu poate fi selectat de utilizator — zona de compunere oferă doar Agent, Plan și Orchestrează                                                               |
+| **Orchestrează**    | Doar pentru citire | Aceleași doisprezece                                                                                                                                                              |
 
 Accesul la rețea și accesul la secrete nu sunt refuzate în mod deliberat de un
 mod doar pentru citire: cercetarea este tocmai rostul unui astfel de mod.
@@ -185,18 +197,33 @@ Citește ce a afișat git. `Control Center policy: …` înseamnă că o regulă
 refuzat push-ul sau că un **Întreabă întâi** a rămas fără răspuns.
 `… is not linked to this workspace` înseamnă că push-ul țintește un depozit care
 nu este nici cel al worktree-ului, nici legat de spațiul de lucru.
-`Control Center has no GitHub credential that can push …` înseamnă că GitHub
-App nu este instalat pe acel depozit și nicio acreditare de rezervă nu a putut
-face push: instalează aplicația pe depozit sau conectează GitHub.
+`Control Center has no GitHub credential that can push …` înseamnă că nu a putut fi generat niciun token de push: instalează aplicația GitHub pe acel
+depozit sau autentifică-te în GitHub.
+
+### Rularea agentului a fost refuzată cu „Acest server nu are sandbox”
+
+Rularea afișează **Agenții au nevoie de un sandbox pe acest server** cu „Acest
+server nu are sandbox, deci doar proprietarul lui poate rula aici agenți. Proprietarul poate instala sandbox-ul sau poate dezactiva sandboxing-ul pentru toată lumea.”
+Mașina serverului nu are sandbox de sistem de operare, iar persoana responsabilă
+pentru rulare nu este proprietarul serverului, deci nimic nu a pornit. Pentru un
+program, un webhook sau altă automatizare, persoana responsabilă este cea de care
+este legată automatizarea, nu cine se uită la ea.
+
+Doar proprietarul serverului poate schimba asta. Pe Linux și WSL2 instalează
+`bubblewrap` și `socat` și repornește serverul (dar citește mai întâi nota despre
+Linux de mai sus). Pe Windows nu există niciun backend de instalat. Cealaltă
+alegere este să repornești serverul cu `--sandbox off`, care rulează agenții
+fiecărui membru neizolat pe mașina aceea.
 
 ### Cardul Sandboxing nu raportează niciun sandbox nativ
 
 Atunci rulările de agent de pe acea gazdă nu sunt învelite de Seatbelt sau
-bubblewrap, iar granițele rămase sunt tot ce ai. Pe Linux și WSL2, instalează
-ambele instrumente lipsă — `sudo apt-get install bubblewrap socat` — și
-repornește serverul; jurnalul de pornire ar trebui să spună atunci că
-sandbox-ul este pornit. Pe Windows nu există niciun backend nativ de instalat,
-așa că strânge în schimb guardrail-urile: vezi
+bubblewrap: pornesc doar rulările proprietarului serverului, iar granițele rămase
+sunt tot ce au acestea. Pe Linux și WSL2, instalează ambele instrumente lipsă —
+`sudo apt-get install bubblewrap socat` — și repornește serverul; jurnalul de
+pornire ar trebui să spună atunci că sandbox-ul este pornit. Pe Windows nu există
+niciun backend nativ de instalat, așa că strânge în schimb guardrail-urile
+pentru rulările proprietarului: vezi
 [Configurează guardrail-urile](/ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri/).
 
 ### Un agent a ajuns la un fișier din afara worktree-ului său
@@ -210,8 +237,9 @@ plus guardrail-urile. O comandă `bash` sau CLI-ul Claude Code _este_ învelit
 acolo unde există un backend, iar checkout-urile tale înregistrate au scrierea
 interzisă în interiorul acelui înveliș în orice mod, inclusiv grafia lor
 rezolvată prin symlink (pe macOS, o cale accesată prin `/tmp` sau `/var/folders`
-se rezolvă sub `/private`, iar acum ambele grafii sunt interzise). Pe o gazdă
-fără backend, nimic din toate acestea nu se aplică. În orice caz,
+se rezolvă sub `/private`, iar ambele grafii sunt interzise). Sub
+`--sandbox off`, sau pentru rulările proprietarului pe o gazdă fără backend,
+nimic din toate acestea nu se aplică. În orice caz,
 guardrail-urile pot refuza categoric **Scrie în afara worktree-ului**.
 
 ## Ghiduri conexe

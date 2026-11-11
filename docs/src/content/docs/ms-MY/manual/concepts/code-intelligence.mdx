@@ -2,7 +2,7 @@
 title: Kepintaran kod
 description: Mengapa ejen memerlukan pengkompil, pemadan struktur dan nyahpepijat — dan apa yang setiap satu jawab yang tidak dapat dijawab oleh yang lain.
 slug: ms-MY/manual-pengguna/konsep/kepintaran-kod
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center memberikan ejen empat cara untuk memahami kod selain membacanya. Setiap satu menjawab soalan yang benar-benar berbeza, dan sebabnya ada empat dan bukan satu ialah tiada satu mekanisme pun yang menjawab kesemuanya.
@@ -31,6 +31,8 @@ Mengulang apa yang telah diberitahu kepada ejen lebih buruk daripada berdiam dir
 Tiada pelayan dimulakan semasa but. Satu pelayan dimulakan pada permintaan pertama yang memerlukannya, yang hampir selalu merupakan suntingan pertama pada fail yang dituntutnya, dan pelayan yang menganggur akan disapu keluar. Hos yang tidak pernah menyentuh Dart tidak pernah memulakan penganalisis.
 
 Pengesanan ialah satu **persilangan**: penanda akar mesti wujud dalam checkout *dan* binari mesti dapat diselesaikan. Penanda sahaja berkata "projek ini ialah Python" dan tidak berkata apa-apa tentang sama ada pelayan dipasang; binari yang dapat diselesaikan sahaja berkata hos ini mempunyai rantaian alat dan tidak berkata apa-apa tentang checkout ini. Hanya kedua-duanya bersama-sama bermakna satu pertanyaan boleh berjaya, dan alat yang ditawarkan tetapi selalu gagal lebih buruk daripada alat yang tidak hadir.
+
+Apa yang boleh dipengaruhi oleh repositori dikekalkan kecil dengan sengaja. Pelayan diambil daripada jadual terbina dalam, tidak sekali-kali daripada fail dalam checkout, dan binari di dalam projek (`node_modules/.bin`) hanya digunakan apabila larian itu berada dalam kotak pasir. Pelayan bahasa ialah program yang berjalan pada mesin pelayan, jadi repositori tidak berhak menamakannya.
 
 ## Mengapa carian struktur, sedangkan grep wujud
 

@@ -2,7 +2,7 @@
 title: Use AI-powered review
 description: Run the pr_review pipeline on a PR, read the findings and verdict, then publish the review to GitHub.
 slug: en-GB/manual/guides/ai-review
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 This guide shows you how to have reviewer agents review a pull request and how to
@@ -112,7 +112,10 @@ Control Center sends **one** GitHub review. Findings already resolved or dismiss
 are skipped. The button includes every remaining open finding and, on **Ship**,
 submits `APPROVE`. (The MCP tool `publish_review_to_github` defaults to
 peer-confirmed findings only and never approves: it publishes as automation,
-so `approve_on_ship` has no effect there.) Those that carry a file and line anchor become inline
+so `approve_on_ship` has no effect there. That automated publish is posted by
+the bot, except on the shared Control Center Connect app when the Connect
+operator has not listed this installation: then it goes out on the accountable
+person's own GitHub sign-in, under their name.) Those that carry a file and line anchor become inline
 comments; everything else folds into the summary body, each with a
 "— Control Center AI review" footer so the source is unambiguous. A **Block**
 verdict is submitted as `REQUEST_CHANGES`; **Hold** as `COMMENT`; **Ship** as
@@ -132,8 +135,9 @@ Settings → Workspace → Agent permissions if you want it to run unattended.
 :::
 
 Other built-in pipelines do post to GitHub directly: `cross_review`, `pr_triage`,
-`ticket_to_pr` and `pre_merge_gate` each end in a comment step. Only `pr_review`
-holds its output back for you.
+`ticket_to_pr` and `pre_merge_gate` each end in a comment step, which the server
+posts. Only `pr_review` holds its output back for you. None of them merges or
+approves.
 
 ## Dispatch reviewers yourself
 

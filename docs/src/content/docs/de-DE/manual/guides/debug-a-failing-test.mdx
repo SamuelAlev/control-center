@@ -2,7 +2,7 @@
 title: Einen fehlgeschlagenen Test mit einem Agenten debuggen
 description: Lass einen Agenten einen Haltepunkt setzen, unter dem Debugger starten und einen echten Stack-Frame lesen, statt Print-Anweisungen einzufügen.
 slug: de-DE/handbuch/anleitungen/fehlgeschlagenen-test-debuggen
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Diese Anleitung zeigt, wie du einen Agenten dazu bringst, einen Debugger zu benutzen, wenn Print-Anweisungen einen Fehler nicht erklären.
@@ -31,8 +31,8 @@ Er antwortet mit dem, was er gefunden hat, oder erklärt, dass ein Adapter beide
 | Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Kommt mit LLVM                     |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python nimmt den Interpreter des Projekts]
-`debugpy` wird in `.venv/bin` oder `venv/bin` gesucht, bevor `$PATH` drankommt. Ein Python aus `$PATH` ist eine andere Umgebung, und ein Attach aus der falschen scheitert so, dass es wie kaputter Code wirkt und nicht wie der falsche Interpreter.
+:::note[Python nimmt den Interpreter des Projekts, wenn der Lauf in der Sandbox ist]
+Bei einem Lauf in der Sandbox wird `debugpy` in `.venv/bin` oder `venv/bin` gesucht, bevor `$PATH` drankommt. Ein Python aus `$PATH` ist eine andere Umgebung, und ein Attach aus der falschen scheitert so, dass es wie kaputter Code wirkt und nicht wie der falsche Interpreter. Ohne Sandbox nutzt es nur `$PATH`, sodass ein Repository nicht festlegen kann, welcher Interpreter auf der Maschine des Servers läuft.
 :::
 
 ## Erst den Haltepunkt setzen, dann starten
@@ -106,6 +106,8 @@ Für einen festgefahrenen Prozess, nicht für einen, den du selbst startest:
 debug(op: "attach", port: 5858)
 ```
 
+Der Port muss einer der eigenen weitergeleiteten Ports des Laufs sein. Jeder andere Port wird abgelehnt, bevor etwas startet, sodass ein Agent sich nicht an einen Prozess anhängen kann, der jemand anderem auf der Maschine des Servers gehört.
+
 ## Beenden
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Beende die Sitzung immer. Ein Debug-Adapter besitzt einen **angehaltenen Prozess**, der festhält, was dieser Prozess festhält — einen Port, eine Sperre, eine Datenbankverbindung.
 
 :::note[Es kann dir nicht davonlaufen]
-Jede Sitzung hat eine harte TTL, die sie nicht verlängern kann, es gibt genau eine pro Unterhaltung, und alles wird abgebaut, wenn der Server stoppt. Ein zweites `launch` wird abgelehnt, statt das erste zu ersetzen: Ein Agent, der eines startet, ohne das andere zu beenden, hat das erste mit ziemlicher Sicherheit aus den Augen verloren.
+Jede Sitzung hat eine harte TTL von 30 Minuten, die sie nicht verlängern kann, es gibt genau eine pro Unterhaltung, und alles wird abgebaut, wenn der Server stoppt. Bei einem Lauf in der Sandbox behält die Sitzung ihre Sandbox über mehrere Antworten hinweg höchstens so lange. Ein zweites `launch` wird abgelehnt, statt das erste zu ersetzen: Ein Agent, der eines startet, ohne das andere zu beenden, hat das erste mit ziemlicher Sicherheit aus den Augen verloren.
 :::
 
 ## Begrenzte Ausgabe

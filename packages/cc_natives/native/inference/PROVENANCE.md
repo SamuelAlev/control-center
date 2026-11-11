@@ -29,7 +29,7 @@ Bumping the version means updating, together:
 
 1. `SHERPA_ONNX_VERSION` + every `SHERPA_ONNX_LIB_SHA256_*` in `native_pins.env`
    (checksums differ per platform; get them with
-   `shasum -a 256 <archive>` for each of macOS arm64/x64, Linux x64/arm64, Windows x64);
+   `shasum -a 256 <archive>` for each of macOS arm64/x64, Linux x64/arm64, Windows x64/arm64);
 2. `sherpa-onnx-sys` in `Cargo.toml` (pinned `=` and `Cargo.lock` regenerated);
 3. `src/ort_sys.rs`, **if** the bundled ONNX Runtime version moved — see below.
 

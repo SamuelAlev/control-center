@@ -184,6 +184,7 @@ class CodeServerService implements CodeServerPort {
     required String spaceId,
     required String repoId,
     required String deviceId,
+    required String userId,
     String? path,
     String autoSave = 'afterDelay',
   }) async {
@@ -192,6 +193,9 @@ class CodeServerService implements CodeServerPort {
     }
     if (deviceId.isEmpty) {
       throw ArgumentError.value(deviceId, 'deviceId', 'must not be empty');
+    }
+    if (userId.isEmpty) {
+      throw ArgumentError.value(userId, 'userId', 'must not be empty');
     }
     // Resolve the conversation's isolated CoW worktree. Foreign ids / a repo
     // not yet provisioned for this conversation → no worktree → no session.
@@ -240,6 +244,7 @@ class CodeServerService implements CodeServerPort {
         spaceId: spaceId,
         repoId: repoId,
         deviceId: deviceId,
+        userId: userId,
         path: path,
         autoSave: autoSave,
       );
@@ -253,6 +258,7 @@ class CodeServerService implements CodeServerPort {
         workspaceId: workspaceId,
         spaceId: spaceId,
         deviceId: deviceId,
+        userId: userId,
         path: path,
         autoSave: autoSave,
       );
@@ -268,6 +274,7 @@ class CodeServerService implements CodeServerPort {
     required String workspaceId,
     required String spaceId,
     required String deviceId,
+    required String userId,
     required String? path,
     required String autoSave,
   }) async {
@@ -276,9 +283,8 @@ class CodeServerService implements CodeServerPort {
     // already-running instance: VS Code hot-reloads User `settings.json`. Cheap,
     // idempotent write of a small file; requires the user-data dir to exist.
     await Directory(_userDataDir(workspaceId)).create(recursive: true);
-    // Open the worktree TRUSTED (no VS Code "Restricted Mode"), else the
-    // language server + tasks are gated behind a trust prompt the embedded
-    // editor can't sensibly answer.
+    // Workspace trust stays on: the server owner answers VS Code's own trust
+    // prompt per folder, and folder tasks never start automatically.
     await _ensureWorkbenchSettings(workspaceId, autoSave);
 
     // Reuse the process across devices, never its client capability.
@@ -286,7 +292,7 @@ class CodeServerService implements CodeServerPort {
     if (existingId != null) {
       final instance = _instances[existingId];
       if (instance != null && !instance.exited) {
-        return _bind(instance, deviceId);
+        return _bind(instance, deviceId, userId);
       }
       _killAndRemove(existingId);
     }
@@ -301,6 +307,7 @@ class CodeServerService implements CodeServerPort {
         port: 0,
         folderPath: worktree.path,
         deviceId: deviceId,
+        userId: userId,
         expiresAt: _now().add(_sessionTtl),
         status: CodeServerStatus.unavailable,
       );
@@ -342,10 +349,8 @@ class CodeServerService implements CodeServerPort {
       '--auth', 'none',
       '--disable-telemetry',
       '--disable-update-check',
-      // Open the worktree TRUSTED (no Restricted Mode). Belt-and-suspenders with
-      // the settings.json seed above: the flag is per-session, the setting is
-      // global — neither a version quirk nor a stale setting re-gates the LSP.
-      '--disable-workspace-trust',
+      // Never `--disable-workspace-trust`: the editor runs as the server's OS
+      // user, so the owner answers VS Code's trust prompt per folder.
       '--bind-addr', '127.0.0.1:0',
       '--user-data-dir', _userDataDir(workspaceId),
       '--extensions-dir', _extensionsDir,
@@ -410,12 +415,17 @@ class CodeServerService implements CodeServerPort {
       }),
     );
 
-    return _bind(instance, deviceId);
+    return _bind(instance, deviceId, userId);
   }
 
-  /// Shares one client capability across tabs from the same device, keeping a
-  /// separate ref for each open. An expired binding is replaced, not revived.
-  CodeServerSession _bind(_CodeServerInstance instance, String deviceId) {
+  /// Shares one client capability across tabs from the same device and user,
+  /// keeping a separate ref for each open. An expired binding, or one minted for
+  /// a different user of a reassigned device, is replaced, not revived.
+  CodeServerSession _bind(
+    _CodeServerInstance instance,
+    String deviceId,
+    String userId,
+  ) {
     if (deviceId.isEmpty) {
       throw ArgumentError.value(deviceId, 'deviceId', 'must not be empty');
     }
@@ -423,7 +433,7 @@ class CodeServerService implements CodeServerPort {
     final oldId = instance.byDevice[deviceId];
     if (oldId != null) {
       final old = _bindings[oldId];
-      if (old != null && old.expiresAt.isAfter(now)) {
+      if (old != null && old.userId == userId && old.expiresAt.isAfter(now)) {
         old.refCount++;
         instance.refCount++;
         return _sessionFor(old);
@@ -433,6 +443,7 @@ class CodeServerService implements CodeServerPort {
     final binding = _CodeServerBinding(
       capability: _mintCapability(),
       deviceId: deviceId,
+      userId: userId,
       instance: instance,
       expiresAt: now.add(_sessionTtl),
     );
@@ -559,6 +570,7 @@ class CodeServerService implements CodeServerPort {
       port: instance.port,
       folderPath: instance.folderPath,
       deviceId: binding.deviceId,
+      userId: binding.userId,
       expiresAt: binding.expiresAt,
       status: CodeServerStatus.ready,
     );
@@ -1436,12 +1448,14 @@ class _CodeServerBinding {
   _CodeServerBinding({
     required this.capability,
     required this.deviceId,
+    required this.userId,
     required this.instance,
     required this.expiresAt,
   });
 
   final String capability;
   final String deviceId;
+  final String userId;
   final _CodeServerInstance instance;
   final DateTime expiresAt;
   int refCount = 1;

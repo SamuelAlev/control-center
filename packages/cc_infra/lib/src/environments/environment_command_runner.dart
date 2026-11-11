@@ -73,6 +73,19 @@ class EnvironmentCommandProgress extends EnvironmentCommandEvent {
   final EnvironmentProgress progress;
 }
 
+/// The command is over: nothing follows this. Steps it left under way went
+/// the way it did.
+class EnvironmentCommandExit extends EnvironmentCommandEvent {
+  /// Creates an [EnvironmentCommandExit].
+  const EnvironmentCommandExit(this.exitCode);
+
+  /// How it exited.
+  final int exitCode;
+
+  /// Whether it exited 0.
+  bool get succeeded => exitCode == 0;
+}
+
 /// How a command ended. Output is redacted and bounded to its tail.
 class EnvironmentCommandResult {
   /// Creates an [EnvironmentCommandResult].
@@ -168,6 +181,11 @@ class EnvironmentCommandRunner {
 
   /// Lines of stderr quoted when a tool gives no structured error.
   static const int errorTailLines = 20;
+
+  /// Lines of stderr kept beside a tool's own structured error, and how long
+  /// one of them may be.
+  static const int errorOutputLines = 12;
+  static const int _errorOutputLineChars = 300;
 
   final EnvironmentProcessStarter _starter;
   final EnvironmentBinaryResolver _binaryResolver;
@@ -347,12 +365,26 @@ class EnvironmentCommandRunner {
         lastStderrLine = line;
       }
       final progress = EnvironmentProgress.tryParseLine(line);
-      if (progress != null) {
+      if (progress != null && !progress.isLog) {
         events.add(EnvironmentCommandProgress(progress));
         return;
       }
-      stderr.addLine(line);
-      events.add(EnvironmentCommandOutput(line, isStderr: true));
+      // The tool's own verdict is read from its last line once it has
+      // exited. Here it is one more line of a log, not JSON to wade through.
+      final verdict = _parseErrorLine(line);
+      if (verdict != null) {
+        events.add(
+          EnvironmentCommandOutput(
+            '[error] ${verdict.message}',
+            isStderr: true,
+          ),
+        );
+        return;
+      }
+      // A line the tool wrapped in JSON is still a line of output.
+      final text = progress?.label ?? line;
+      stderr.addLine(text);
+      events.add(EnvironmentCommandOutput(text, isStderr: true));
     });
     final outDone = outSubscription.asFuture<void>();
     final errDone = errSubscription.asFuture<void>();
@@ -421,6 +453,7 @@ class EnvironmentCommandRunner {
     if (timedOut) {
       exitCode = environmentTimeoutExitCode;
     }
+    events.add(EnvironmentCommandExit(exitCode));
     return EnvironmentCommandResult(
       exitCode: exitCode,
       display: display,
@@ -458,9 +491,10 @@ class EnvironmentCommandRunner {
         exitCode: exitCode,
       );
     }
-    // Only exits 3, 4 and 5 ask a person to act, so only they fall back to the
+    // Only a blocker asks a person to act, so only it falls back to the
     // command itself: it is what to run again after fixing the host.
-    final actionable = exitCode >= 3 && exitCode <= 5;
+    final blocker = EnvironmentBlocker.ofExitCode(exitCode);
+    final actionable = blocker != null;
     final structured = _parseErrorLine(lastStderrLine);
     if (structured != null) {
       return EnvironmentError(
@@ -469,20 +503,34 @@ class EnvironmentCommandRunner {
         hint: structured.hint,
         command: structured.command ?? (actionable ? display : null),
         exitCode: exitCode,
+        output: _excerpt(stderr),
       );
     }
     final tail = stderr.lastLines(errorTailLines);
     return EnvironmentError(
-      code: switch (exitCode) {
-        3 => 'host-setup-required',
-        4 => 'auth-required',
-        5 => 'dependency-unavailable',
-        _ => 'command-failed',
+      code: switch (blocker) {
+        EnvironmentBlocker.input => 'input-required',
+        EnvironmentBlocker.authentication => 'auth-required',
+        EnvironmentBlocker.dependency => 'dependency-unavailable',
+        null => 'command-failed',
       },
       message: tail.isEmpty ? '`$display` exited $exitCode' : tail,
       command: actionable ? display : null,
       exitCode: exitCode,
     );
+  }
+
+  /// The end of [stderr], for an error to carry beside the tool's own words:
+  /// enough to see why, and short enough to store and show.
+  static String? _excerpt(EnvironmentOutputTail stderr) {
+    final lines = [
+      for (final line in stderr.lastLines(errorOutputLines).split('\n'))
+        if (line.trim().isNotEmpty)
+          line.trimRight().length > _errorOutputLineChars
+              ? '${line.trimRight().substring(0, _errorOutputLineChars)}…'
+              : line.trimRight(),
+    ];
+    return lines.isEmpty ? null : lines.join('\n');
   }
 
   static EnvironmentError? _parseErrorLine(String? line) {

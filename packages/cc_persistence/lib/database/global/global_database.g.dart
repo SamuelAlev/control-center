@@ -88,17 +88,29 @@ class $WorkspacesTableTable extends WorkspacesTable
     ),
     defaultValue: const Constant(false),
   );
-  static const VerificationMeta _githubAuthModeMeta = const VerificationMeta(
-    'githubAuthMode',
+  static const VerificationMeta _connectModeMeta = const VerificationMeta(
+    'connectMode',
   );
   @override
-  late final GeneratedColumn<String> githubAuthMode = GeneratedColumn<String>(
-    'github_auth_mode',
+  late final GeneratedColumn<String> connectMode = GeneratedColumn<String>(
+    'connect_mode',
     aliasedName,
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
     defaultValue: const Constant('inherit'),
+  );
+  static const VerificationMeta _connectUrlMeta = const VerificationMeta(
+    'connectUrl',
+  );
+  @override
+  late final GeneratedColumn<String> connectUrl = GeneratedColumn<String>(
+    'connect_url',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
   );
   static const VerificationMeta _githubAppIdMeta = const VerificationMeta(
     'githubAppId',
@@ -168,7 +180,8 @@ class $WorkspacesTableTable extends WorkspacesTable
     secretExcludeGlobs,
     reviewConcurrency,
     autoPublishReview,
-    githubAuthMode,
+    connectMode,
+    connectUrl,
     githubAppId,
     position,
     createdAt,
@@ -242,13 +255,19 @@ class $WorkspacesTableTable extends WorkspacesTable
         ),
       );
     }
-    if (data.containsKey('github_auth_mode')) {
+    if (data.containsKey('connect_mode')) {
       context.handle(
-        _githubAuthModeMeta,
-        githubAuthMode.isAcceptableOrUnknown(
-          data['github_auth_mode']!,
-          _githubAuthModeMeta,
+        _connectModeMeta,
+        connectMode.isAcceptableOrUnknown(
+          data['connect_mode']!,
+          _connectModeMeta,
         ),
+      );
+    }
+    if (data.containsKey('connect_url')) {
+      context.handle(
+        _connectUrlMeta,
+        connectUrl.isAcceptableOrUnknown(data['connect_url']!, _connectUrlMeta),
       );
     }
     if (data.containsKey('github_app_id')) {
@@ -321,9 +340,13 @@ class $WorkspacesTableTable extends WorkspacesTable
         DriftSqlType.bool,
         data['${effectivePrefix}auto_publish_review'],
       )!,
-      githubAuthMode: attachedDatabase.typeMapping.read(
+      connectMode: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
-        data['${effectivePrefix}github_auth_mode'],
+        data['${effectivePrefix}connect_mode'],
+      )!,
+      connectUrl: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}connect_url'],
       )!,
       githubAppId: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -384,13 +407,19 @@ class WorkspacesTableData extends DataClass
   /// "Publish to GitHub" action, which itself stays ActionClass-guarded).
   final bool autoPublishReview;
 
-  /// How this workspace authenticates to GitHub for background work
-  /// (`inherit` / `app`). Typed because the server reads it on the
-  /// credential path — not an opaque `workspace_settings` string.
-  final String githubAuthMode;
+  /// Whose provider apps this workspace uses (`inherit` / `hosted` /
+  /// `custom` / `own`): the server's choice, a Connect of its own, or its own
+  /// apps. Typed because the server reads it on every credential path — not
+  /// an opaque `workspace_settings` string.
+  final String connectMode;
 
-  /// Numeric GitHub App id when [githubAuthMode] is `app`. Empty otherwise.
-  /// The private key is never a column; it lives in `secrets.json`.
+  /// The canonical Connect base URL when [connectMode] is `custom`. Empty
+  /// otherwise.
+  final String connectUrl;
+
+  /// Numeric id of this workspace's own GitHub App, used while [connectMode]
+  /// is `own`. Empty when none is saved. The private key is never a column;
+  /// it lives in `secrets.json`.
   final String githubAppId;
 
   /// The operator's manual order for the workspace switcher / manager
@@ -416,7 +445,8 @@ class WorkspacesTableData extends DataClass
     required this.secretExcludeGlobs,
     required this.reviewConcurrency,
     required this.autoPublishReview,
-    required this.githubAuthMode,
+    required this.connectMode,
+    required this.connectUrl,
     required this.githubAppId,
     required this.position,
     required this.createdAt,
@@ -437,7 +467,8 @@ class WorkspacesTableData extends DataClass
     map['secret_exclude_globs'] = Variable<String>(secretExcludeGlobs);
     map['review_concurrency'] = Variable<int>(reviewConcurrency);
     map['auto_publish_review'] = Variable<bool>(autoPublishReview);
-    map['github_auth_mode'] = Variable<String>(githubAuthMode);
+    map['connect_mode'] = Variable<String>(connectMode);
+    map['connect_url'] = Variable<String>(connectUrl);
     map['github_app_id'] = Variable<String>(githubAppId);
     map['position'] = Variable<int>(position);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -461,7 +492,8 @@ class WorkspacesTableData extends DataClass
       secretExcludeGlobs: Value(secretExcludeGlobs),
       reviewConcurrency: Value(reviewConcurrency),
       autoPublishReview: Value(autoPublishReview),
-      githubAuthMode: Value(githubAuthMode),
+      connectMode: Value(connectMode),
+      connectUrl: Value(connectUrl),
       githubAppId: Value(githubAppId),
       position: Value(position),
       createdAt: Value(createdAt),
@@ -487,7 +519,8 @@ class WorkspacesTableData extends DataClass
       ),
       reviewConcurrency: serializer.fromJson<int>(json['reviewConcurrency']),
       autoPublishReview: serializer.fromJson<bool>(json['autoPublishReview']),
-      githubAuthMode: serializer.fromJson<String>(json['githubAuthMode']),
+      connectMode: serializer.fromJson<String>(json['connectMode']),
+      connectUrl: serializer.fromJson<String>(json['connectUrl']),
       githubAppId: serializer.fromJson<String>(json['githubAppId']),
       position: serializer.fromJson<int>(json['position']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -506,7 +539,8 @@ class WorkspacesTableData extends DataClass
       'secretExcludeGlobs': serializer.toJson<String>(secretExcludeGlobs),
       'reviewConcurrency': serializer.toJson<int>(reviewConcurrency),
       'autoPublishReview': serializer.toJson<bool>(autoPublishReview),
-      'githubAuthMode': serializer.toJson<String>(githubAuthMode),
+      'connectMode': serializer.toJson<String>(connectMode),
+      'connectUrl': serializer.toJson<String>(connectUrl),
       'githubAppId': serializer.toJson<String>(githubAppId),
       'position': serializer.toJson<int>(position),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -523,7 +557,8 @@ class WorkspacesTableData extends DataClass
     String? secretExcludeGlobs,
     int? reviewConcurrency,
     bool? autoPublishReview,
-    String? githubAuthMode,
+    String? connectMode,
+    String? connectUrl,
     String? githubAppId,
     int? position,
     DateTime? createdAt,
@@ -537,7 +572,8 @@ class WorkspacesTableData extends DataClass
     secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
     reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
     autoPublishReview: autoPublishReview ?? this.autoPublishReview,
-    githubAuthMode: githubAuthMode ?? this.githubAuthMode,
+    connectMode: connectMode ?? this.connectMode,
+    connectUrl: connectUrl ?? this.connectUrl,
     githubAppId: githubAppId ?? this.githubAppId,
     position: position ?? this.position,
     createdAt: createdAt ?? this.createdAt,
@@ -561,9 +597,12 @@ class WorkspacesTableData extends DataClass
       autoPublishReview: data.autoPublishReview.present
           ? data.autoPublishReview.value
           : this.autoPublishReview,
-      githubAuthMode: data.githubAuthMode.present
-          ? data.githubAuthMode.value
-          : this.githubAuthMode,
+      connectMode: data.connectMode.present
+          ? data.connectMode.value
+          : this.connectMode,
+      connectUrl: data.connectUrl.present
+          ? data.connectUrl.value
+          : this.connectUrl,
       githubAppId: data.githubAppId.present
           ? data.githubAppId.value
           : this.githubAppId,
@@ -584,7 +623,8 @@ class WorkspacesTableData extends DataClass
           ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
           ..write('reviewConcurrency: $reviewConcurrency, ')
           ..write('autoPublishReview: $autoPublishReview, ')
-          ..write('githubAuthMode: $githubAuthMode, ')
+          ..write('connectMode: $connectMode, ')
+          ..write('connectUrl: $connectUrl, ')
           ..write('githubAppId: $githubAppId, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
@@ -603,7 +643,8 @@ class WorkspacesTableData extends DataClass
     secretExcludeGlobs,
     reviewConcurrency,
     autoPublishReview,
-    githubAuthMode,
+    connectMode,
+    connectUrl,
     githubAppId,
     position,
     createdAt,
@@ -621,7 +662,8 @@ class WorkspacesTableData extends DataClass
           other.secretExcludeGlobs == this.secretExcludeGlobs &&
           other.reviewConcurrency == this.reviewConcurrency &&
           other.autoPublishReview == this.autoPublishReview &&
-          other.githubAuthMode == this.githubAuthMode &&
+          other.connectMode == this.connectMode &&
+          other.connectUrl == this.connectUrl &&
           other.githubAppId == this.githubAppId &&
           other.position == this.position &&
           other.createdAt == this.createdAt &&
@@ -637,7 +679,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
   final Value<String> secretExcludeGlobs;
   final Value<int> reviewConcurrency;
   final Value<bool> autoPublishReview;
-  final Value<String> githubAuthMode;
+  final Value<String> connectMode;
+  final Value<String> connectUrl;
   final Value<String> githubAppId;
   final Value<int> position;
   final Value<DateTime> createdAt;
@@ -652,7 +695,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     this.secretExcludeGlobs = const Value.absent(),
     this.reviewConcurrency = const Value.absent(),
     this.autoPublishReview = const Value.absent(),
-    this.githubAuthMode = const Value.absent(),
+    this.connectMode = const Value.absent(),
+    this.connectUrl = const Value.absent(),
     this.githubAppId = const Value.absent(),
     this.position = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -668,7 +712,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     this.secretExcludeGlobs = const Value.absent(),
     this.reviewConcurrency = const Value.absent(),
     this.autoPublishReview = const Value.absent(),
-    this.githubAuthMode = const Value.absent(),
+    this.connectMode = const Value.absent(),
+    this.connectUrl = const Value.absent(),
     this.githubAppId = const Value.absent(),
     this.position = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -685,7 +730,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     Expression<String>? secretExcludeGlobs,
     Expression<int>? reviewConcurrency,
     Expression<bool>? autoPublishReview,
-    Expression<String>? githubAuthMode,
+    Expression<String>? connectMode,
+    Expression<String>? connectUrl,
     Expression<String>? githubAppId,
     Expression<int>? position,
     Expression<DateTime>? createdAt,
@@ -702,7 +748,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
         'secret_exclude_globs': secretExcludeGlobs,
       if (reviewConcurrency != null) 'review_concurrency': reviewConcurrency,
       if (autoPublishReview != null) 'auto_publish_review': autoPublishReview,
-      if (githubAuthMode != null) 'github_auth_mode': githubAuthMode,
+      if (connectMode != null) 'connect_mode': connectMode,
+      if (connectUrl != null) 'connect_url': connectUrl,
       if (githubAppId != null) 'github_app_id': githubAppId,
       if (position != null) 'position': position,
       if (createdAt != null) 'created_at': createdAt,
@@ -720,7 +767,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     Value<String>? secretExcludeGlobs,
     Value<int>? reviewConcurrency,
     Value<bool>? autoPublishReview,
-    Value<String>? githubAuthMode,
+    Value<String>? connectMode,
+    Value<String>? connectUrl,
     Value<String>? githubAppId,
     Value<int>? position,
     Value<DateTime>? createdAt,
@@ -736,7 +784,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
       secretExcludeGlobs: secretExcludeGlobs ?? this.secretExcludeGlobs,
       reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
       autoPublishReview: autoPublishReview ?? this.autoPublishReview,
-      githubAuthMode: githubAuthMode ?? this.githubAuthMode,
+      connectMode: connectMode ?? this.connectMode,
+      connectUrl: connectUrl ?? this.connectUrl,
       githubAppId: githubAppId ?? this.githubAppId,
       position: position ?? this.position,
       createdAt: createdAt ?? this.createdAt,
@@ -770,8 +819,11 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
     if (autoPublishReview.present) {
       map['auto_publish_review'] = Variable<bool>(autoPublishReview.value);
     }
-    if (githubAuthMode.present) {
-      map['github_auth_mode'] = Variable<String>(githubAuthMode.value);
+    if (connectMode.present) {
+      map['connect_mode'] = Variable<String>(connectMode.value);
+    }
+    if (connectUrl.present) {
+      map['connect_url'] = Variable<String>(connectUrl.value);
     }
     if (githubAppId.present) {
       map['github_app_id'] = Variable<String>(githubAppId.value);
@@ -804,7 +856,8 @@ class WorkspacesTableCompanion extends UpdateCompanion<WorkspacesTableData> {
           ..write('secretExcludeGlobs: $secretExcludeGlobs, ')
           ..write('reviewConcurrency: $reviewConcurrency, ')
           ..write('autoPublishReview: $autoPublishReview, ')
-          ..write('githubAuthMode: $githubAuthMode, ')
+          ..write('connectMode: $connectMode, ')
+          ..write('connectUrl: $connectUrl, ')
           ..write('githubAppId: $githubAppId, ')
           ..write('position: $position, ')
           ..write('createdAt: $createdAt, ')
@@ -859,6 +912,21 @@ class $UsersTableTable extends UsersTable
     true,
     type: DriftSqlType.string,
     requiredDuringInsert: false,
+  );
+  static const VerificationMeta _emailVerifiedMeta = const VerificationMeta(
+    'emailVerified',
+  );
+  @override
+  late final GeneratedColumn<bool> emailVerified = GeneratedColumn<bool>(
+    'email_verified',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("email_verified" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
   );
   static const VerificationMeta _avatarRefMeta = const VerificationMeta(
     'avatarRef',
@@ -956,6 +1024,7 @@ class $UsersTableTable extends UsersTable
     handle,
     displayName,
     email,
+    emailVerified,
     avatarRef,
     gitAuthorName,
     gitAuthorEmail,
@@ -1005,6 +1074,15 @@ class $UsersTableTable extends UsersTable
       context.handle(
         _emailMeta,
         email.isAcceptableOrUnknown(data['email']!, _emailMeta),
+      );
+    }
+    if (data.containsKey('email_verified')) {
+      context.handle(
+        _emailVerifiedMeta,
+        emailVerified.isAcceptableOrUnknown(
+          data['email_verified']!,
+          _emailVerifiedMeta,
+        ),
       );
     }
     if (data.containsKey('avatar_ref')) {
@@ -1092,6 +1170,10 @@ class $UsersTableTable extends UsersTable
         DriftSqlType.string,
         data['${effectivePrefix}email'],
       ),
+      emailVerified: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}email_verified'],
+      )!,
       avatarRef: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}avatar_ref'],
@@ -1146,6 +1228,11 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
   /// Optional email address (invites work without one).
   final String? email;
 
+  /// Whether [email] was vouched for by the identity provider (SSO, SCIM) or
+  /// the server owner. Only a vouched address matches an SSO login or a SCIM
+  /// push; one a person typed about themselves never does.
+  final bool emailVerified;
+
   /// Optional avatar reference (server media ref or remote URL).
   final String? avatarRef;
 
@@ -1187,6 +1274,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
     required this.handle,
     required this.displayName,
     this.email,
+    required this.emailVerified,
     this.avatarRef,
     this.gitAuthorName,
     this.gitAuthorEmail,
@@ -1205,6 +1293,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
     if (!nullToAbsent || email != null) {
       map['email'] = Variable<String>(email);
     }
+    map['email_verified'] = Variable<bool>(emailVerified);
     if (!nullToAbsent || avatarRef != null) {
       map['avatar_ref'] = Variable<String>(avatarRef);
     }
@@ -1238,6 +1327,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
       email: email == null && nullToAbsent
           ? const Value.absent()
           : Value(email),
+      emailVerified: Value(emailVerified),
       avatarRef: avatarRef == null && nullToAbsent
           ? const Value.absent()
           : Value(avatarRef),
@@ -1273,6 +1363,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
       handle: serializer.fromJson<String>(json['handle']),
       displayName: serializer.fromJson<String>(json['displayName']),
       email: serializer.fromJson<String?>(json['email']),
+      emailVerified: serializer.fromJson<bool>(json['emailVerified']),
       avatarRef: serializer.fromJson<String?>(json['avatarRef']),
       gitAuthorName: serializer.fromJson<String?>(json['gitAuthorName']),
       gitAuthorEmail: serializer.fromJson<String?>(json['gitAuthorEmail']),
@@ -1293,6 +1384,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
       'handle': serializer.toJson<String>(handle),
       'displayName': serializer.toJson<String>(displayName),
       'email': serializer.toJson<String?>(email),
+      'emailVerified': serializer.toJson<bool>(emailVerified),
       'avatarRef': serializer.toJson<String?>(avatarRef),
       'gitAuthorName': serializer.toJson<String?>(gitAuthorName),
       'gitAuthorEmail': serializer.toJson<String?>(gitAuthorEmail),
@@ -1311,6 +1403,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
     String? handle,
     String? displayName,
     Value<String?> email = const Value.absent(),
+    bool? emailVerified,
     Value<String?> avatarRef = const Value.absent(),
     Value<String?> gitAuthorName = const Value.absent(),
     Value<String?> gitAuthorEmail = const Value.absent(),
@@ -1324,6 +1417,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
     handle: handle ?? this.handle,
     displayName: displayName ?? this.displayName,
     email: email.present ? email.value : this.email,
+    emailVerified: emailVerified ?? this.emailVerified,
     avatarRef: avatarRef.present ? avatarRef.value : this.avatarRef,
     gitAuthorName: gitAuthorName.present
         ? gitAuthorName.value
@@ -1349,6 +1443,9 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
           ? data.displayName.value
           : this.displayName,
       email: data.email.present ? data.email.value : this.email,
+      emailVerified: data.emailVerified.present
+          ? data.emailVerified.value
+          : this.emailVerified,
       avatarRef: data.avatarRef.present ? data.avatarRef.value : this.avatarRef,
       gitAuthorName: data.gitAuthorName.present
           ? data.gitAuthorName.value
@@ -1377,6 +1474,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
           ..write('handle: $handle, ')
           ..write('displayName: $displayName, ')
           ..write('email: $email, ')
+          ..write('emailVerified: $emailVerified, ')
           ..write('avatarRef: $avatarRef, ')
           ..write('gitAuthorName: $gitAuthorName, ')
           ..write('gitAuthorEmail: $gitAuthorEmail, ')
@@ -1395,6 +1493,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
     handle,
     displayName,
     email,
+    emailVerified,
     avatarRef,
     gitAuthorName,
     gitAuthorEmail,
@@ -1412,6 +1511,7 @@ class UsersTableData extends DataClass implements Insertable<UsersTableData> {
           other.handle == this.handle &&
           other.displayName == this.displayName &&
           other.email == this.email &&
+          other.emailVerified == this.emailVerified &&
           other.avatarRef == this.avatarRef &&
           other.gitAuthorName == this.gitAuthorName &&
           other.gitAuthorEmail == this.gitAuthorEmail &&
@@ -1427,6 +1527,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
   final Value<String> handle;
   final Value<String> displayName;
   final Value<String?> email;
+  final Value<bool> emailVerified;
   final Value<String?> avatarRef;
   final Value<String?> gitAuthorName;
   final Value<String?> gitAuthorEmail;
@@ -1441,6 +1542,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
     this.handle = const Value.absent(),
     this.displayName = const Value.absent(),
     this.email = const Value.absent(),
+    this.emailVerified = const Value.absent(),
     this.avatarRef = const Value.absent(),
     this.gitAuthorName = const Value.absent(),
     this.gitAuthorEmail = const Value.absent(),
@@ -1456,6 +1558,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
     required String handle,
     required String displayName,
     this.email = const Value.absent(),
+    this.emailVerified = const Value.absent(),
     this.avatarRef = const Value.absent(),
     this.gitAuthorName = const Value.absent(),
     this.gitAuthorEmail = const Value.absent(),
@@ -1473,6 +1576,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
     Expression<String>? handle,
     Expression<String>? displayName,
     Expression<String>? email,
+    Expression<bool>? emailVerified,
     Expression<String>? avatarRef,
     Expression<String>? gitAuthorName,
     Expression<String>? gitAuthorEmail,
@@ -1488,6 +1592,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
       if (handle != null) 'handle': handle,
       if (displayName != null) 'display_name': displayName,
       if (email != null) 'email': email,
+      if (emailVerified != null) 'email_verified': emailVerified,
       if (avatarRef != null) 'avatar_ref': avatarRef,
       if (gitAuthorName != null) 'git_author_name': gitAuthorName,
       if (gitAuthorEmail != null) 'git_author_email': gitAuthorEmail,
@@ -1506,6 +1611,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
     Value<String>? handle,
     Value<String>? displayName,
     Value<String?>? email,
+    Value<bool>? emailVerified,
     Value<String?>? avatarRef,
     Value<String?>? gitAuthorName,
     Value<String?>? gitAuthorEmail,
@@ -1521,6 +1627,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
       handle: handle ?? this.handle,
       displayName: displayName ?? this.displayName,
       email: email ?? this.email,
+      emailVerified: emailVerified ?? this.emailVerified,
       avatarRef: avatarRef ?? this.avatarRef,
       gitAuthorName: gitAuthorName ?? this.gitAuthorName,
       gitAuthorEmail: gitAuthorEmail ?? this.gitAuthorEmail,
@@ -1547,6 +1654,9 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
     }
     if (email.present) {
       map['email'] = Variable<String>(email.value);
+    }
+    if (emailVerified.present) {
+      map['email_verified'] = Variable<bool>(emailVerified.value);
     }
     if (avatarRef.present) {
       map['avatar_ref'] = Variable<String>(avatarRef.value);
@@ -1587,6 +1697,7 @@ class UsersTableCompanion extends UpdateCompanion<UsersTableData> {
           ..write('handle: $handle, ')
           ..write('displayName: $displayName, ')
           ..write('email: $email, ')
+          ..write('emailVerified: $emailVerified, ')
           ..write('avatarRef: $avatarRef, ')
           ..write('gitAuthorName: $gitAuthorName, ')
           ..write('gitAuthorEmail: $gitAuthorEmail, ')
@@ -2217,8 +2328,8 @@ class PairedDevicesTableData extends DataClass
   /// Unique device id (generated at pairing).
   final String id;
 
-  /// The user this device authenticates as. Nullable in SQL only until the
-  /// identity bootstrap backfills legacy rows to the owner; required in code.
+  /// The user this device authenticates as. Every writer sets it; a row
+  /// without one is refused at authentication.
   final String? userId;
 
   /// Workspace active at pairing time (seed for the session binding).
@@ -9873,6 +9984,514 @@ class EnvironmentSlotLeasesTableCompanion
   }
 }
 
+class $ServerAuditTableTable extends ServerAuditTable
+    with TableInfo<$ServerAuditTableTable, ServerAuditTableData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ServerAuditTableTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userIdMeta = const VerificationMeta('userId');
+  @override
+  late final GeneratedColumn<String> userId = GeneratedColumn<String>(
+    'user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _deviceIdMeta = const VerificationMeta(
+    'deviceId',
+  );
+  @override
+  late final GeneratedColumn<String> deviceId = GeneratedColumn<String>(
+    'device_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _ipMeta = const VerificationMeta('ip');
+  @override
+  late final GeneratedColumn<String> ip = GeneratedColumn<String>(
+    'ip',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _opMeta = const VerificationMeta('op');
+  @override
+  late final GeneratedColumn<String> op = GeneratedColumn<String>(
+    'op',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _argNamesMeta = const VerificationMeta(
+    'argNames',
+  );
+  @override
+  late final GeneratedColumn<String> argNames = GeneratedColumn<String>(
+    'arg_names',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _outcomeMeta = const VerificationMeta(
+    'outcome',
+  );
+  @override
+  late final GeneratedColumn<String> outcome = GeneratedColumn<String>(
+    'outcome',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    userId,
+    deviceId,
+    ip,
+    op,
+    argNames,
+    outcome,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'server_audit';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<ServerAuditTableData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('user_id')) {
+      context.handle(
+        _userIdMeta,
+        userId.isAcceptableOrUnknown(data['user_id']!, _userIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userIdMeta);
+    }
+    if (data.containsKey('device_id')) {
+      context.handle(
+        _deviceIdMeta,
+        deviceId.isAcceptableOrUnknown(data['device_id']!, _deviceIdMeta),
+      );
+    }
+    if (data.containsKey('ip')) {
+      context.handle(_ipMeta, ip.isAcceptableOrUnknown(data['ip']!, _ipMeta));
+    }
+    if (data.containsKey('op')) {
+      context.handle(_opMeta, op.isAcceptableOrUnknown(data['op']!, _opMeta));
+    } else if (isInserting) {
+      context.missing(_opMeta);
+    }
+    if (data.containsKey('arg_names')) {
+      context.handle(
+        _argNamesMeta,
+        argNames.isAcceptableOrUnknown(data['arg_names']!, _argNamesMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_argNamesMeta);
+    }
+    if (data.containsKey('outcome')) {
+      context.handle(
+        _outcomeMeta,
+        outcome.isAcceptableOrUnknown(data['outcome']!, _outcomeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_outcomeMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ServerAuditTableData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ServerAuditTableData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      userId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_id'],
+      )!,
+      deviceId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}device_id'],
+      ),
+      ip: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}ip'],
+      ),
+      op: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}op'],
+      )!,
+      argNames: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}arg_names'],
+      )!,
+      outcome: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}outcome'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $ServerAuditTableTable createAlias(String alias) {
+    return $ServerAuditTableTable(attachedDatabase, alias);
+  }
+}
+
+class ServerAuditTableData extends DataClass
+    implements Insertable<ServerAuditTableData> {
+  /// Unique entry identifier.
+  final String id;
+
+  /// The person who made the call.
+  final String userId;
+
+  /// The device the call came from, when known.
+  final String? deviceId;
+
+  /// The client address the session observed, when known.
+  final String? ip;
+
+  /// The op name.
+  final String op;
+
+  /// JSON array of the argument names, sorted.
+  final String argNames;
+
+  /// `ok`, `denied` or `failed`.
+  final String outcome;
+
+  /// When the call ended.
+  final DateTime createdAt;
+  const ServerAuditTableData({
+    required this.id,
+    required this.userId,
+    this.deviceId,
+    this.ip,
+    required this.op,
+    required this.argNames,
+    required this.outcome,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['user_id'] = Variable<String>(userId);
+    if (!nullToAbsent || deviceId != null) {
+      map['device_id'] = Variable<String>(deviceId);
+    }
+    if (!nullToAbsent || ip != null) {
+      map['ip'] = Variable<String>(ip);
+    }
+    map['op'] = Variable<String>(op);
+    map['arg_names'] = Variable<String>(argNames);
+    map['outcome'] = Variable<String>(outcome);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  ServerAuditTableCompanion toCompanion(bool nullToAbsent) {
+    return ServerAuditTableCompanion(
+      id: Value(id),
+      userId: Value(userId),
+      deviceId: deviceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(deviceId),
+      ip: ip == null && nullToAbsent ? const Value.absent() : Value(ip),
+      op: Value(op),
+      argNames: Value(argNames),
+      outcome: Value(outcome),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory ServerAuditTableData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ServerAuditTableData(
+      id: serializer.fromJson<String>(json['id']),
+      userId: serializer.fromJson<String>(json['userId']),
+      deviceId: serializer.fromJson<String?>(json['deviceId']),
+      ip: serializer.fromJson<String?>(json['ip']),
+      op: serializer.fromJson<String>(json['op']),
+      argNames: serializer.fromJson<String>(json['argNames']),
+      outcome: serializer.fromJson<String>(json['outcome']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'userId': serializer.toJson<String>(userId),
+      'deviceId': serializer.toJson<String?>(deviceId),
+      'ip': serializer.toJson<String?>(ip),
+      'op': serializer.toJson<String>(op),
+      'argNames': serializer.toJson<String>(argNames),
+      'outcome': serializer.toJson<String>(outcome),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  ServerAuditTableData copyWith({
+    String? id,
+    String? userId,
+    Value<String?> deviceId = const Value.absent(),
+    Value<String?> ip = const Value.absent(),
+    String? op,
+    String? argNames,
+    String? outcome,
+    DateTime? createdAt,
+  }) => ServerAuditTableData(
+    id: id ?? this.id,
+    userId: userId ?? this.userId,
+    deviceId: deviceId.present ? deviceId.value : this.deviceId,
+    ip: ip.present ? ip.value : this.ip,
+    op: op ?? this.op,
+    argNames: argNames ?? this.argNames,
+    outcome: outcome ?? this.outcome,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  ServerAuditTableData copyWithCompanion(ServerAuditTableCompanion data) {
+    return ServerAuditTableData(
+      id: data.id.present ? data.id.value : this.id,
+      userId: data.userId.present ? data.userId.value : this.userId,
+      deviceId: data.deviceId.present ? data.deviceId.value : this.deviceId,
+      ip: data.ip.present ? data.ip.value : this.ip,
+      op: data.op.present ? data.op.value : this.op,
+      argNames: data.argNames.present ? data.argNames.value : this.argNames,
+      outcome: data.outcome.present ? data.outcome.value : this.outcome,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServerAuditTableData(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('ip: $ip, ')
+          ..write('op: $op, ')
+          ..write('argNames: $argNames, ')
+          ..write('outcome: $outcome, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(id, userId, deviceId, ip, op, argNames, outcome, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ServerAuditTableData &&
+          other.id == this.id &&
+          other.userId == this.userId &&
+          other.deviceId == this.deviceId &&
+          other.ip == this.ip &&
+          other.op == this.op &&
+          other.argNames == this.argNames &&
+          other.outcome == this.outcome &&
+          other.createdAt == this.createdAt);
+}
+
+class ServerAuditTableCompanion extends UpdateCompanion<ServerAuditTableData> {
+  final Value<String> id;
+  final Value<String> userId;
+  final Value<String?> deviceId;
+  final Value<String?> ip;
+  final Value<String> op;
+  final Value<String> argNames;
+  final Value<String> outcome;
+  final Value<DateTime> createdAt;
+  final Value<int> rowid;
+  const ServerAuditTableCompanion({
+    this.id = const Value.absent(),
+    this.userId = const Value.absent(),
+    this.deviceId = const Value.absent(),
+    this.ip = const Value.absent(),
+    this.op = const Value.absent(),
+    this.argNames = const Value.absent(),
+    this.outcome = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  ServerAuditTableCompanion.insert({
+    required String id,
+    required String userId,
+    this.deviceId = const Value.absent(),
+    this.ip = const Value.absent(),
+    required String op,
+    required String argNames,
+    required String outcome,
+    required DateTime createdAt,
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       userId = Value(userId),
+       op = Value(op),
+       argNames = Value(argNames),
+       outcome = Value(outcome),
+       createdAt = Value(createdAt);
+  static Insertable<ServerAuditTableData> custom({
+    Expression<String>? id,
+    Expression<String>? userId,
+    Expression<String>? deviceId,
+    Expression<String>? ip,
+    Expression<String>? op,
+    Expression<String>? argNames,
+    Expression<String>? outcome,
+    Expression<DateTime>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (userId != null) 'user_id': userId,
+      if (deviceId != null) 'device_id': deviceId,
+      if (ip != null) 'ip': ip,
+      if (op != null) 'op': op,
+      if (argNames != null) 'arg_names': argNames,
+      if (outcome != null) 'outcome': outcome,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  ServerAuditTableCompanion copyWith({
+    Value<String>? id,
+    Value<String>? userId,
+    Value<String?>? deviceId,
+    Value<String?>? ip,
+    Value<String>? op,
+    Value<String>? argNames,
+    Value<String>? outcome,
+    Value<DateTime>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return ServerAuditTableCompanion(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      deviceId: deviceId ?? this.deviceId,
+      ip: ip ?? this.ip,
+      op: op ?? this.op,
+      argNames: argNames ?? this.argNames,
+      outcome: outcome ?? this.outcome,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (userId.present) {
+      map['user_id'] = Variable<String>(userId.value);
+    }
+    if (deviceId.present) {
+      map['device_id'] = Variable<String>(deviceId.value);
+    }
+    if (ip.present) {
+      map['ip'] = Variable<String>(ip.value);
+    }
+    if (op.present) {
+      map['op'] = Variable<String>(op.value);
+    }
+    if (argNames.present) {
+      map['arg_names'] = Variable<String>(argNames.value);
+    }
+    if (outcome.present) {
+      map['outcome'] = Variable<String>(outcome.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ServerAuditTableCompanion(')
+          ..write('id: $id, ')
+          ..write('userId: $userId, ')
+          ..write('deviceId: $deviceId, ')
+          ..write('ip: $ip, ')
+          ..write('op: $op, ')
+          ..write('argNames: $argNames, ')
+          ..write('outcome: $outcome, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$GlobalDatabase extends GeneratedDatabase {
   _$GlobalDatabase(QueryExecutor e) : super(e);
   $GlobalDatabaseManager get managers => $GlobalDatabaseManager(this);
@@ -9905,6 +10524,9 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
       $ManagedActionPoliciesTableTable(this);
   late final $EnvironmentSlotLeasesTableTable environmentSlotLeasesTable =
       $EnvironmentSlotLeasesTableTable(this);
+  late final $ServerAuditTableTable serverAuditTable = $ServerAuditTableTable(
+    this,
+  );
   late final Index idxUsersHandle = Index(
     'idx_users_handle',
     'CREATE UNIQUE INDEX idx_users_handle ON users (handle)',
@@ -9937,6 +10559,10 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     'idx_placement_log_workspace',
     'CREATE INDEX idx_placement_log_workspace ON placement_log (workspace_id)',
   );
+  late final Index idxServerAuditCreated = Index(
+    'idx_server_audit_created',
+    'CREATE INDEX idx_server_audit_created ON server_audit (created_at)',
+  );
   late final WorkspaceRegistryDao workspaceRegistryDao = WorkspaceRegistryDao(
     this as GlobalDatabase,
   );
@@ -9963,6 +10589,9 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
   late final EnvironmentLeaseDao environmentLeaseDao = EnvironmentLeaseDao(
     this as GlobalDatabase,
   );
+  late final ServerAuditDao serverAuditDao = ServerAuditDao(
+    this as GlobalDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -9983,6 +10612,7 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     ssoConnectionsTable,
     managedActionPoliciesTable,
     environmentSlotLeasesTable,
+    serverAuditTable,
     idxUsersHandle,
     idxRssArticlesFeedIdGuid,
     idxWorkersStatus,
@@ -9991,6 +10621,7 @@ abstract class _$GlobalDatabase extends GeneratedDatabase {
     idxJobsLeaseExpiry,
     idxPlacementLogJob,
     idxPlacementLogWorkspace,
+    idxServerAuditCreated,
   ];
   @override
   StreamQueryUpdateRules get streamUpdateRules => const StreamQueryUpdateRules([
@@ -10027,7 +10658,8 @@ typedef $$WorkspacesTableTableCreateCompanionBuilder =
       Value<String> secretExcludeGlobs,
       Value<int> reviewConcurrency,
       Value<bool> autoPublishReview,
-      Value<String> githubAuthMode,
+      Value<String> connectMode,
+      Value<String> connectUrl,
       Value<String> githubAppId,
       Value<int> position,
       Value<DateTime> createdAt,
@@ -10044,7 +10676,8 @@ typedef $$WorkspacesTableTableUpdateCompanionBuilder =
       Value<String> secretExcludeGlobs,
       Value<int> reviewConcurrency,
       Value<bool> autoPublishReview,
-      Value<String> githubAuthMode,
+      Value<String> connectMode,
+      Value<String> connectUrl,
       Value<String> githubAppId,
       Value<int> position,
       Value<DateTime> createdAt,
@@ -10097,8 +10730,13 @@ class $$WorkspacesTableTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get githubAuthMode => $composableBuilder(
-    column: $table.githubAuthMode,
+  ColumnFilters<String> get connectMode => $composableBuilder(
+    column: $table.connectMode,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get connectUrl => $composableBuilder(
+    column: $table.connectUrl,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10172,8 +10810,13 @@ class $$WorkspacesTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get githubAuthMode => $composableBuilder(
-    column: $table.githubAuthMode,
+  ColumnOrderings<String> get connectMode => $composableBuilder(
+    column: $table.connectMode,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get connectUrl => $composableBuilder(
+    column: $table.connectUrl,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -10241,8 +10884,13 @@ class $$WorkspacesTableTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get githubAuthMode => $composableBuilder(
-    column: $table.githubAuthMode,
+  GeneratedColumn<String> get connectMode => $composableBuilder(
+    column: $table.connectMode,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get connectUrl => $composableBuilder(
+    column: $table.connectUrl,
     builder: (column) => column,
   );
 
@@ -10308,7 +10956,8 @@ class $$WorkspacesTableTableTableManager
                 Value<String> secretExcludeGlobs = const Value.absent(),
                 Value<int> reviewConcurrency = const Value.absent(),
                 Value<bool> autoPublishReview = const Value.absent(),
-                Value<String> githubAuthMode = const Value.absent(),
+                Value<String> connectMode = const Value.absent(),
+                Value<String> connectUrl = const Value.absent(),
                 Value<String> githubAppId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -10323,7 +10972,8 @@ class $$WorkspacesTableTableTableManager
                 secretExcludeGlobs: secretExcludeGlobs,
                 reviewConcurrency: reviewConcurrency,
                 autoPublishReview: autoPublishReview,
-                githubAuthMode: githubAuthMode,
+                connectMode: connectMode,
+                connectUrl: connectUrl,
                 githubAppId: githubAppId,
                 position: position,
                 createdAt: createdAt,
@@ -10340,7 +10990,8 @@ class $$WorkspacesTableTableTableManager
                 Value<String> secretExcludeGlobs = const Value.absent(),
                 Value<int> reviewConcurrency = const Value.absent(),
                 Value<bool> autoPublishReview = const Value.absent(),
-                Value<String> githubAuthMode = const Value.absent(),
+                Value<String> connectMode = const Value.absent(),
+                Value<String> connectUrl = const Value.absent(),
                 Value<String> githubAppId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -10355,7 +11006,8 @@ class $$WorkspacesTableTableTableManager
                 secretExcludeGlobs: secretExcludeGlobs,
                 reviewConcurrency: reviewConcurrency,
                 autoPublishReview: autoPublishReview,
-                githubAuthMode: githubAuthMode,
+                connectMode: connectMode,
+                connectUrl: connectUrl,
                 githubAppId: githubAppId,
                 position: position,
                 createdAt: createdAt,
@@ -10409,6 +11061,7 @@ typedef $$UsersTableTableCreateCompanionBuilder =
       required String handle,
       required String displayName,
       Value<String?> email,
+      Value<bool> emailVerified,
       Value<String?> avatarRef,
       Value<String?> gitAuthorName,
       Value<String?> gitAuthorEmail,
@@ -10425,6 +11078,7 @@ typedef $$UsersTableTableUpdateCompanionBuilder =
       Value<String> handle,
       Value<String> displayName,
       Value<String?> email,
+      Value<bool> emailVerified,
       Value<String?> avatarRef,
       Value<String?> gitAuthorName,
       Value<String?> gitAuthorEmail,
@@ -10510,6 +11164,11 @@ class $$UsersTableTableFilterComposer
 
   ColumnFilters<String> get email => $composableBuilder(
     column: $table.email,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get emailVerified => $composableBuilder(
+    column: $table.emailVerified,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -10633,6 +11292,11 @@ class $$UsersTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get emailVerified => $composableBuilder(
+    column: $table.emailVerified,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get avatarRef => $composableBuilder(
     column: $table.avatarRef,
     builder: (column) => ColumnOrderings(column),
@@ -10696,6 +11360,11 @@ class $$UsersTableTableAnnotationComposer
 
   GeneratedColumn<String> get email =>
       $composableBuilder(column: $table.email, builder: (column) => column);
+
+  GeneratedColumn<bool> get emailVerified => $composableBuilder(
+    column: $table.emailVerified,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get avatarRef =>
       $composableBuilder(column: $table.avatarRef, builder: (column) => column);
@@ -10818,6 +11487,7 @@ class $$UsersTableTableTableManager
                 Value<String> handle = const Value.absent(),
                 Value<String> displayName = const Value.absent(),
                 Value<String?> email = const Value.absent(),
+                Value<bool> emailVerified = const Value.absent(),
                 Value<String?> avatarRef = const Value.absent(),
                 Value<String?> gitAuthorName = const Value.absent(),
                 Value<String?> gitAuthorEmail = const Value.absent(),
@@ -10832,6 +11502,7 @@ class $$UsersTableTableTableManager
                 handle: handle,
                 displayName: displayName,
                 email: email,
+                emailVerified: emailVerified,
                 avatarRef: avatarRef,
                 gitAuthorName: gitAuthorName,
                 gitAuthorEmail: gitAuthorEmail,
@@ -10848,6 +11519,7 @@ class $$UsersTableTableTableManager
                 required String handle,
                 required String displayName,
                 Value<String?> email = const Value.absent(),
+                Value<bool> emailVerified = const Value.absent(),
                 Value<String?> avatarRef = const Value.absent(),
                 Value<String?> gitAuthorName = const Value.absent(),
                 Value<String?> gitAuthorEmail = const Value.absent(),
@@ -10862,6 +11534,7 @@ class $$UsersTableTableTableManager
                 handle: handle,
                 displayName: displayName,
                 email: email,
+                emailVerified: emailVerified,
                 avatarRef: avatarRef,
                 gitAuthorName: gitAuthorName,
                 gitAuthorEmail: gitAuthorEmail,
@@ -15586,6 +16259,284 @@ typedef $$EnvironmentSlotLeasesTableTableProcessedTableManager =
       EnvironmentSlotLeasesTableData,
       PrefetchHooks Function()
     >;
+typedef $$ServerAuditTableTableCreateCompanionBuilder =
+    ServerAuditTableCompanion Function({
+      required String id,
+      required String userId,
+      Value<String?> deviceId,
+      Value<String?> ip,
+      required String op,
+      required String argNames,
+      required String outcome,
+      required DateTime createdAt,
+      Value<int> rowid,
+    });
+typedef $$ServerAuditTableTableUpdateCompanionBuilder =
+    ServerAuditTableCompanion Function({
+      Value<String> id,
+      Value<String> userId,
+      Value<String?> deviceId,
+      Value<String?> ip,
+      Value<String> op,
+      Value<String> argNames,
+      Value<String> outcome,
+      Value<DateTime> createdAt,
+      Value<int> rowid,
+    });
+
+class $$ServerAuditTableTableFilterComposer
+    extends Composer<_$GlobalDatabase, $ServerAuditTableTable> {
+  $$ServerAuditTableTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ip => $composableBuilder(
+    column: $table.ip,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get argNames => $composableBuilder(
+    column: $table.argNames,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$ServerAuditTableTableOrderingComposer
+    extends Composer<_$GlobalDatabase, $ServerAuditTableTable> {
+  $$ServerAuditTableTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userId => $composableBuilder(
+    column: $table.userId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get deviceId => $composableBuilder(
+    column: $table.deviceId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ip => $composableBuilder(
+    column: $table.ip,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get op => $composableBuilder(
+    column: $table.op,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get argNames => $composableBuilder(
+    column: $table.argNames,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get outcome => $composableBuilder(
+    column: $table.outcome,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$ServerAuditTableTableAnnotationComposer
+    extends Composer<_$GlobalDatabase, $ServerAuditTableTable> {
+  $$ServerAuditTableTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get userId =>
+      $composableBuilder(column: $table.userId, builder: (column) => column);
+
+  GeneratedColumn<String> get deviceId =>
+      $composableBuilder(column: $table.deviceId, builder: (column) => column);
+
+  GeneratedColumn<String> get ip =>
+      $composableBuilder(column: $table.ip, builder: (column) => column);
+
+  GeneratedColumn<String> get op =>
+      $composableBuilder(column: $table.op, builder: (column) => column);
+
+  GeneratedColumn<String> get argNames =>
+      $composableBuilder(column: $table.argNames, builder: (column) => column);
+
+  GeneratedColumn<String> get outcome =>
+      $composableBuilder(column: $table.outcome, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$ServerAuditTableTableTableManager
+    extends
+        RootTableManager<
+          _$GlobalDatabase,
+          $ServerAuditTableTable,
+          ServerAuditTableData,
+          $$ServerAuditTableTableFilterComposer,
+          $$ServerAuditTableTableOrderingComposer,
+          $$ServerAuditTableTableAnnotationComposer,
+          $$ServerAuditTableTableCreateCompanionBuilder,
+          $$ServerAuditTableTableUpdateCompanionBuilder,
+          (
+            ServerAuditTableData,
+            BaseReferences<
+              _$GlobalDatabase,
+              $ServerAuditTableTable,
+              ServerAuditTableData
+            >,
+          ),
+          ServerAuditTableData,
+          PrefetchHooks Function()
+        > {
+  $$ServerAuditTableTableTableManager(
+    _$GlobalDatabase db,
+    $ServerAuditTableTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ServerAuditTableTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ServerAuditTableTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ServerAuditTableTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> userId = const Value.absent(),
+                Value<String?> deviceId = const Value.absent(),
+                Value<String?> ip = const Value.absent(),
+                Value<String> op = const Value.absent(),
+                Value<String> argNames = const Value.absent(),
+                Value<String> outcome = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => ServerAuditTableCompanion(
+                id: id,
+                userId: userId,
+                deviceId: deviceId,
+                ip: ip,
+                op: op,
+                argNames: argNames,
+                outcome: outcome,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String userId,
+                Value<String?> deviceId = const Value.absent(),
+                Value<String?> ip = const Value.absent(),
+                required String op,
+                required String argNames,
+                required String outcome,
+                required DateTime createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => ServerAuditTableCompanion.insert(
+                id: id,
+                userId: userId,
+                deviceId: deviceId,
+                ip: ip,
+                op: op,
+                argNames: argNames,
+                outcome: outcome,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$ServerAuditTableTable, ServerAuditTableData>(
+                    table,
+                  ),
+                  BaseReferences<
+                    _$GlobalDatabase,
+                    $ServerAuditTableTable,
+                    ServerAuditTableData
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$ServerAuditTableTableProcessedTableManager =
+    ProcessedTableManager<
+      _$GlobalDatabase,
+      $ServerAuditTableTable,
+      ServerAuditTableData,
+      $$ServerAuditTableTableFilterComposer,
+      $$ServerAuditTableTableOrderingComposer,
+      $$ServerAuditTableTableAnnotationComposer,
+      $$ServerAuditTableTableCreateCompanionBuilder,
+      $$ServerAuditTableTableUpdateCompanionBuilder,
+      (
+        ServerAuditTableData,
+        BaseReferences<
+          _$GlobalDatabase,
+          $ServerAuditTableTable,
+          ServerAuditTableData
+        >,
+      ),
+      ServerAuditTableData,
+      PrefetchHooks Function()
+    >;
 
 class $GlobalDatabaseManager {
   final _$GlobalDatabase _db;
@@ -15628,4 +16579,6 @@ class $GlobalDatabaseManager {
         _db,
         _db.environmentSlotLeasesTable,
       );
+  $$ServerAuditTableTableTableManager get serverAuditTable =>
+      $$ServerAuditTableTableTableManager(_db, _db.serverAuditTable);
 }

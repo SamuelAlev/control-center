@@ -2,7 +2,7 @@
 title: Stationer
 description: Varje stationsyta, backend, åtgärdsverb, livscykeltillstånd, port, standardvärde och kontrakt – den fullständiga faktakatalogen.
 slug: sv-SE/handbok/referens/stationer
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Bara fakta. För modellen bakom dem, läs [Stationer och avskilda
@@ -216,8 +216,10 @@ nätverk.
 
 | Verktyg | Beskrivning |
 | --- | --- |
-| `rig_list` | Listar en arbetsytas stationer med yta, status, skärm och kontrollinnehavare |
+| `rig_list` | Listar stationerna i körningens yta med yta, status, skärm och kontrollinnehavare |
 | `rig_close` | Förstör en station och kastar dess disk |
+
+Dessa verktyg, precis som de fyra användningsverktygen, är bara för agentkörningar; alla andra anropare nekas. En körning når bara stationerna i den yta den leasades för: `space_id` kommer från körningens behörighet, aldrig från anropet. En station i en annan yta, eller i ingen yta, svarar exakt som en saknad.
 
 ## Livscykel
 
@@ -320,7 +322,10 @@ arbetsyteinställning.
   bildrutor och mötesljud redan gör.
 - **Autentisering** är det signerade målet `rig-files:<workspaceId>/<rigId>`
   plus arbetsytemedlemskap – ett eget mål, så en URL som skapats för att *titta*
-  på en maskin kan inte samtidigt skriva filer till den.
+  på en maskin kan inte samtidigt skriva filer till den. För en rigg som öppnats i
+  en yta krävs för att läsa urklipp eller en fil också läsbehörighet till ytan, och
+  för att skriva urklipp eller släppa filer en skrivbehörighet på dess repon. På en rigg som bär en persons egna inloggningar är båda spåren, även läsningen, bara den personens; se
+  [Vem kan titta och vem kan styra](/sv-SE/handbok/how-to-guider/anvand-stationer/#vem-kan-titta-och-vem-kan-styra).
 - **Övertagande gäller.** Att skriva urklippet och släppa filer är muterande och
   nekas medan någon annan håller kontrollen; att läsa urklippet och läsa ut en
   fil är observation och nekas inte.

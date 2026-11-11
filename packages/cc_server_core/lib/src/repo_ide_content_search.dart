@@ -3,6 +3,50 @@ part of 'repo_ide_data_service.dart';
 // Pure helpers behind `repos.searchContent`: pathspecs, `git grep` argv,
 // option parsing and match windows.
 
+/// Options for [RepoIdeDataService.searchContent], mirroring VS Code's search
+/// controls. Defaults (`caseSensitive: false`, `regex: false`, `wholeWord:
+/// false`, empty globs) are a case-insensitive literal search, which is what a
+/// caller that omits the option map gets.
+class SearchContentOptions {
+  /// Creates [SearchContentOptions]. All flags default to a case-insensitive,
+  /// literal, unglobbed search.
+  const SearchContentOptions({
+    this.caseSensitive = false,
+    this.regex = false,
+    this.wholeWord = false,
+    this.include = const [],
+    this.exclude = const [],
+    this.paths = const [],
+  });
+
+  /// Case-sensitive matching. When false (default) `git grep` runs with `-i`.
+  final bool caseSensitive;
+
+  /// Treat `query` as a regex. When false (default) `git grep` runs with `-F`
+  /// (fixed-string); when true the `-F` is dropped.
+  final bool regex;
+
+  /// Whole-word matching. Adds `git grep`'s `-w`.
+  final bool wholeWord;
+
+  /// Comma/space-separated include pathspecs (matched as path globs after
+  /// `git grep`'s `--`). Empty (default) → no include filter.
+  final List<String> include;
+
+  /// Comma/space-separated exclude pathspecs (each forwarded as `:!glob`).
+  /// Empty (default) → no exclude filter.
+  final List<String> exclude;
+
+  /// Exact repo-relative files to grep (a JSON list, never a split string).
+  ///
+  /// When non-empty these replace [include] as the include pathspecs, so a
+  /// PR-scoped search cannot leak into the rest of the tree. [include] then
+  /// filters this list (git-style globs) rather than OR-ing onto the whole
+  /// tree. Empty (default) → whole-tree grep, optionally narrowed by
+  /// [include].
+  final List<String> paths;
+}
+
 /// Include pathspecs for a grep: exact [SearchContentOptions.paths]
 /// (optionally filtered by [SearchContentOptions.include] globs) or, when
 /// paths is empty, the include globs themselves.
@@ -140,7 +184,7 @@ RegExpMatch? _firstContentMatch(
 
 /// Builds the `git grep` argv for [query] under [options].
 ///
-/// Legacy defaults (`caseSensitive: false`, `regex: false`) emit
+/// The defaults (`caseSensitive: false`, `regex: false`) emit
 /// `-i -F`. Whole-word adds `-w`; regex replaces `-F` with `-E` (extended
 /// regex — git grep's default BRE doesn't recognise `\d` etc.). Include/
 /// exclude globs become pathspecs after `--`: a default pathspec already

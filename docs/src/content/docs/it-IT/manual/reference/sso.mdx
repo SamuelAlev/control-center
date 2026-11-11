@@ -2,7 +2,7 @@
 title: Riferimento della configurazione SSO
 description: Ogni parametro, endpoint, operazione e codice di errore dell'accesso singolo.
 slug: it-IT/manuale/riferimento/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Tutto ciò che è configurabile dell'accesso singolo, in un unico posto. I
@@ -35,6 +35,18 @@ in disaccordo).
 | `groupRoleMap`         | entrambi     | `{}`            | gruppo → ruolo; le mappature verso il proprietario vengono rifiutate al salvataggio                                                                  |
 | `autoMember`           | entrambi     | attivato        | aggiunge automaticamente gli utenti a ogni spazio di lavoro al primo accesso                                                                         |
 | `allowJit`             | entrambi     | attivato        | esegue il provisioning degli utenti sconosciuti all'accesso                                                                                          |
+
+## Corrispondenza degli account
+
+`SsoProvisioner` risolve un accesso in quest'ordine e mai per nome utente:
+
+1. `(users.sso_issuer, users.sso_subject)` uguali all'issuer e al subject dell'accesso (NameID di SAML / `sub` di OIDC).
+2. Un account il cui indirizzo è uguale all'e-mail dell'accesso, solo quando entrambe le parti lo garantiscono: il provider (`email_verified: true` in OIDC; un claim mancante non è una garanzia; un'asserzione SAML firmata lo è sempre) e l'account (`users.email_verified`). Gli indirizzi sono salvati senza spazi e in minuscolo e vengono confrontati così; un indirizzo verificato corrisponde solo quando esattamente un account lo detiene come verificato, mentre due titolari non corrispondono a nessuno (registrato senza l'indirizzo), e nessun account può essere verificato per una variante con maiuscole o minuscole diverse di un indirizzo che un altro account detiene come verificato.
+3. Altrimenti un nuovo account quando `allowJit` è attivo; un rifiuto quando è disattivo.
+
+`users.email_verified` viene impostato da un accesso SSO o da un push SCIM che porta l'indirizzo, oppure dal proprietario del server con `users.vouchEmail` (**Impostazioni → Server → Persone → Conferma e-mail**, con audit `user.email_vouched`). La modifica del profilo del proprietario garantisce il suo stesso indirizzo. Ogni altra modifica del profilo, e ogni indirizzo digitato in un invito, lascia il campo non verificato, e modificare un indirizzo cancella il contrassegno. Un accesso garantito che crea un account prende l'indirizzo dagli account che lo hanno solo digitato (con audit `user.email_unvouched_cleared`), mai da uno che lo detiene come verificato; in quel caso il nuovo account non riceve alcun indirizzo.
+
+Un account già associato a un subject o a un issuer diverso rifiuta l'accesso con `This account is already linked to a different SSO identity`. Un account disattivato rifiuta con `This account has been deactivated`.
 
 ## Configurazione del processo
 
@@ -136,6 +148,7 @@ I fallimenti di `cc_saml_verify_response` portano un codice stabile:
   SCELTA PROGETTUALE.
 - `users.sso_subject` + `users.sso_issuer` — il pinning del subject del
   provider, univoco per `(issuer, subject)` tramite un indice parziale.
+- `users.email_verified`: se l'indirizzo dell'account può corrispondere a un accesso SSO o a un push SCIM (vedi [Corrispondenza degli account](#corrispondenza-degli-account)).
 - `users.deactivated_at` — la marcatura di disattivazione SCIM.
 - Il token bearer SCIM e il segreto client OIDC vivono nel file dei segreti
   con permessi 0600, mai nel database.

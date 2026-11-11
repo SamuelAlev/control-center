@@ -3,8 +3,8 @@ import 'dart:collection';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/domain_matcher.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 
 /// Minimal SOCKS5 proxy used alongside the HTTP proxy for tools that don't
 /// honour `HTTP_PROXY` and dial raw TCP.

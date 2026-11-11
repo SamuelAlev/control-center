@@ -3,6 +3,8 @@
 // inline — a provider dropdown that opens the login dialog, after which the
 // model dropdown populates. These tests pin that contract end to end.
 
+import 'dart:typed_data';
+
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
@@ -22,6 +24,7 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/auth/presentation/screens/onboarding_screen.dart';
+import 'package:control_center/features/auth/providers/onboarding_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/sandboxing/providers/sandboxing_providers.dart';
@@ -82,6 +85,9 @@ void main() {
           appPreferencesProvider.overrideWithValue(prefs),
           rpcClientProvider.overrideWithValue(rpc),
           isServerOwnerProvider.overrideWithValue(false),
+          canCreateWorkspacesProvider.overrideWithValue(true),
+          // Already onboarded, so the walk starts at the forge step.
+          onboardingFinishedProvider.overrideWithValue(true),
           voiceModelCatalogProvider.overrideWith((ref) async => null),
           // The onboarding gate is "at least one forge connected"; overriding
           // the connections keeps the real derivation under test.
@@ -89,7 +95,7 @@ void main() {
             (ref) async => const [
               ForgeConnection(
                 forge: ForgeHost.github,
-                authenticated: true,
+                status: ForgeConnectionStatus.connected,
                 username: 'testuser',
                 source: ForgeCredentialSource.oauth,
               ),
@@ -417,7 +423,11 @@ class _FakeAgentRepository implements AgentRepository {
 
 class _FakeCreateWorkspaceNotifier extends CreateWorkspaceNotifier {
   @override
-  Future<String?> create({required String name, String? logoPath}) async {
+  Future<String?> create({
+    required String name,
+    Uint8List? logoBytes,
+    String logoExtension = '',
+  }) async {
     state = const AsyncData<String?>('ws-new');
     return 'ws-new';
   }

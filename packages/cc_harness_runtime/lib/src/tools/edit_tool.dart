@@ -102,6 +102,10 @@ class EditTool extends HarnessTool {
           ),
         );
       }
+      final refused = readOnlyRefusal(resolved, context.readOnlyRoots);
+      if (refused != null) {
+        return refused;
+      }
       if (!buffers.containsKey(resolved)) {
         final file = File(resolved);
         if (!file.existsSync()) {

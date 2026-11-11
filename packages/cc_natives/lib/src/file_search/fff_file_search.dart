@@ -5,6 +5,7 @@ import 'dart:isolate';
 import 'package:cc_natives/src/file_search/dart_file_search.dart';
 import 'package:cc_natives/src/file_search/file_search.dart';
 import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 import 'package:cc_natives/src/native_runtime.dart';
 import 'package:cc_natives/src/native_unavailable.dart';
 import 'package:ffi/ffi.dart';

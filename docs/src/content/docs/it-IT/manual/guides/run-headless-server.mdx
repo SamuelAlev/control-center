@@ -3,7 +3,7 @@ title: Esegui un server headless
 description: Esegui il binario headless cc_server o la sua immagine Docker, associa un client e configuralo con l'intera superficie di flag CLI e variabili d'ambiente.
 dateModified: 2026-11-08
 slug: it-IT/manuale/guide/esegui-server-headless
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Esegui `cc_server` su una macchina sempre accesa, poi connettiti dal desktop, da
@@ -171,8 +171,9 @@ web), `--label` (predefinito al nome della piattaforma più l'hostname di questa
 macchina), `--host` (l'host da stampare nell'URL, dato che il loopback non è
 raggiungibile da un'altra macchina) e `--client-url`. Rieseguire `pair` ruota la
 chiave di quel dispositivo e chiude le sue sessioni attive. L'abbinamento non
-crea mai uno spazio di lavoro: l'onboarding del client che si connette nomina e
-crea il primo.
+crea mai uno spazio di lavoro. Solo il proprietario del server può crearne: sul client del
+proprietario, l'onboarding nomina e crea il primo, mentre chiunque altro attende che il
+proprietario ne crei uno per lui o che un amministratore dello spazio di lavoro lo inviti.
 
 Con `--client-url` stampa anche un codice QR scansionabile dal terminale che apre
 il client web già compilato:
@@ -191,8 +192,7 @@ in esecuzione. I due non sono intercambiabili. Vedi
 [Associa un dispositivo](/it-IT/manuale/guide/associa-dispositivo/).
 :::
 
-Una credenziale generata da `cc_server pair` non ha **alcuna scadenza**; una
-generata nell'app scade sempre dopo 30 giorni. Revoca un dispositivo creato dalla
+Una credenziale generata da `cc_server pair` scade dopo 30 giorni, come quella generata nell'app; esegui di nuovo `pair` per lo stesso dispositivo per emetterne una nuova. Revoca un dispositivo creato dalla
 CLI da **Impostazioni → Tu → I tuoi dispositivi** quando hai finito di usarlo.
 
 La chiave di abbinamento autentica l'handshake Noise obbligatorio; ogni sessione
@@ -243,6 +243,26 @@ HTTP `426`, anche dal loopback; i client associati usano invece il tunnel cifrat
 Il server resta in esecuzione fino a `SIGINT`/`SIGTERM`, poi si arresta in modo
 pulito.
 
+### Leggi le righe di avvio
+
+Due righe indicano come è impostato questo server. La riga di esposizione, stampata accanto al
+banner di pronto, inizia con `cc_server exposure:` ed elenca quanto il server è raggiungibile
+(`bind`, `tls`, `relay`, `tunnel`), se è registrato un proprietario del server (`owner`) e come
+girano gli agenti su questa macchina (`sandbox`):
+
+- `sandbox=native`: ogni esecuzione di un agente è avvolta nella sandbox del sistema operativo.
+- `sandbox=off`: hai avviato il server con `--sandbox off`, quindi gli agenti di ogni membro
+  girano senza confinamento su questa macchina.
+- `sandbox=unavailable`: l'host non ha un backend di sandbox (Windows, o Linux senza `bwrap` e
+  `socat`), quindi partono solo le esecuzioni di agenti di cui risponde il proprietario del server.
+  Le esecuzioni di tutti gli altri vengono rifiutate con il messaggio "Questo server non ha una
+  sandbox, quindi solo il suo proprietario può eseguire agenti qui."
+
+Una riga sulla sandbox più in alto nel log dice lo stesso a parole e, quando manca un backend,
+indica cosa installare. Far girare gli agenti altrui senza sandbox è una scelta che il proprietario
+del server fa una sola volta, per tutti, con `--sandbox off`. Vedi
+[Configura le policy della sandbox](/it-IT/manuale/guide/policy-sandbox/#verifica-se-le-esecuzioni-dei-tuoi-agenti-sono-isolate-nel-sandbox).
+
 ## Passaggio 5: connetti un client
 
 Punta un client all'URL del server e alla chiave di abbinamento del passaggio 3:
@@ -252,8 +272,8 @@ Punta un client all'URL del server e alla chiave di abbinamento del passaggio 3:
 - **Telefono**: associa l'app **Remote** da un client in esecuzione — vedi [Associa un dispositivo](/it-IT/manuale/guide/associa-dispositivo/).
 
 :::note[cc_server non serve alcun bundle web]
-Un `cc_server` autonomo non monta mai una web root, quindi `GET /` restituisce
-404. Il client web è ospitato separatamente: usa `app.usectrl.dev`, oppure ospita
+Un `cc_server` autonomo non monta mai una web root, quindi `GET /` restituisce 404.
+Il client web è ospitato separatamente: usa `app.usectrl.dev`, oppure ospita
 tu stesso la build web su qualsiasi host statico HTTPS (l'immagine `cc-webapp`
 qui sopra è esattamente questo). Un'origine del browser diversa dal loopback deve
 trovarsi in `--allowed-origins`, altrimenti l'upgrade WebSocket verso `/rpc` viene
@@ -268,6 +288,14 @@ propria dell'app web. Il suo service worker instrada il traffico HTTP e WebSocke
 attraverso la stessa sessione cifrata autenticata del resto del client.
 `cc_server` decifra ogni richiesta, la inoltra al suo backend code-server locale
 e cifra la risposta di ritorno al client. I file restano di proprietà del server.
+
+L'editor gira sul server come utente del server stesso, con il suo terminale, le sue attività ed
+estensioni, quindi solo il [proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server)
+può aprirlo. Una sessione appartiene al dispositivo e alla persona che l'hanno aperta. Si apre con
+l'attendibilità dell'area di lavoro di VS Code attiva, quindi VS Code chiede conferma prima di
+considerare attendibile una cartella, e con le attività automatiche disattivate, così le attività di
+un repository non partono all'apertura. Tutti gli altri mantengono l'editor integrato dell'app e le
+viste dei file; l'editor completo non è offerto a loro.
 
 Ospita il client web su HTTPS o su un'origine loopback sicura così che i service
 worker possano girare. La build web normale e gli script di release includono le
@@ -314,6 +342,11 @@ quindi per essi al server non serve alcun indirizzo pubblico. Gli accessi
 tramite le app del server riportano il browser all'URL pubblico del server,
 quindi imposta `--public-url` su un indirizzo che i browser delle persone
 possano raggiungere.
+
+Questa è l'impostazione predefinita del server. Un amministratore dello spazio di lavoro può dare a uno spazio di
+lavoro una scelta diversa in **Impostazioni → Spazio di lavoro → Integrazioni**. Con `CC_CONNECT_URL` impostato,
+uno spazio di lavoro può comunque passare alle proprie app ma non a un Connect proprio; vedi
+[Scelta per spazio di lavoro](/it-IT/manuale/riferimento/connect/#scelta-per-spazio-di-lavoro).
 
 Per ospitare Connect per altri server da questo, imposta
 `CC_SERVER_CONNECT_HOST=on`; vedi
@@ -367,7 +400,7 @@ nello spazio di lavoro, non dal possesso di una chiave di abbinamento.
 Due cose da sapere prima di esporre la porta oltre il loopback (il solo TLS non
 fornisce la crittografia end-to-end del client associato né autorizza le risorse):
 
-- **L'MCP adotta un comportamento restrittivo fuori dall'host.** Una superficie MCP senza token risponde solo al loopback. Il bind `any` non la amplia: una richiesta esterna all'host viene rifiutata con "MCP requires a bearer token to answer non-loopback clients" finché non ne configuri uno (`mcp.setToken`, oppure **Impostazioni → Server → Server MCP**).
+- **L'MCP richiede sempre il suo token.** Il server crea il token MCP al primo avvio e ogni richiesta, anche quella dal loopback, deve inviarlo come `Authorization: Bearer <token>`. Non può essere disattivato; il proprietario del server lo legge e lo rigenera in **Impostazioni → Server → Server MCP**. Le richieste da una pagina web, verso un `Host` sconosciuto, o un `POST` che non è JSON vengono rifiutate prima che il token venga verificato. Vedi [Usa il server MCP](/it-IT/manuale/guide/server-mcp/).
 - **`GET /healthz` non è autenticato per scelta**, ha CORS con wildcard e pubblica l'id, il nome, l'impronta dell'identità e la versione di build del server. I client hanno bisogno dell'impronta per fare il pin del server, quindi è deliberato — ma significa che qualsiasi `cc_server` raggiungibile divulga tutte queste informazioni a chiunque le chieda.
 
 ## Guide correlate

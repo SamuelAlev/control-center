@@ -2,7 +2,7 @@
 title: Schutzregeln — eine Richtlinie für jede verändernde Aktion
 description: Warum Control Center jede Nebenwirkung eines Agenten durch eine einzige Policy-Engine für allow, prompt und deny führt, warum die ActionClass-Taxonomie absichtlich klein bleibt und was der Autonomieregler wirklich ändert.
 slug: de-DE/handbuch/konzepte/schutzregeln
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agenten in Control Center können Dateien löschen, Branches pushen, Pull
@@ -20,9 +20,7 @@ eine Aktion das System verlassen kann: die Werkzeugregistrierung des
 eingebauten Harness, das serverseitige Tor des MCP-Dispatchers und Mutationen
 der Repo-Operationen. Eine einmal geschriebene Regel gilt deshalb für die
 eingebaute Laufzeit und für externe Agenten-CLIs gleichermaßen — es gibt
-keinen zweiten, stilleren Weg daran vorbei. Die ältere, nur für Bash geltende
-Befehlsrichtlinie funktioniert weiter: Eine Regel kann einen Befehlspräfix
-treffen statt einer Aktionsklasse, und beide Formen liegen im selben Speicher.
+keinen zweiten, stilleren Weg daran vorbei. Eine Regel kann auch einen Befehlspräfix statt einer Aktionsklasse treffen; beide Formen liegen im selben Speicher.
 
 Die Engine ersetzt die Betriebssystem-Sandbox nicht, und die Sandbox ersetzt
 sie nicht. Sie beantworten verschiedene Fragen. Die Schutzregeln entscheiden,
@@ -31,14 +29,16 @@ Sandbox begrenzt, wohin der entstehende Prozess gelangen darf. `cc_server`
 legt die Sandbox an, wo der Host ein Backend anbietet — [Windows bietet
 keines, und Linux braucht `bwrap` und
 `socat`](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/). Auf diesen Hosts
-sind die Schutzregeln die äußerste Durchsetzungsschicht, nicht eine
+starten nur die Läufe des Serverinhabers, außer der Inhaber hat die Sandbox
+mit `--sandbox off` für alle ausgeschaltet. Für jeden Lauf, der ohne Sandbox
+startet, sind die Schutzregeln die äußerste Durchsetzungsschicht, nicht eine
 Richtlinie, die auf einer Untergrenze liegt. Das solltest du wissen, wenn du
 entscheidest, wie großzügig du sein willst.
 
 ## ActionClass: eine bewusst geschlossene Taxonomie
 
 Jedes verändernde Werkzeug deklariert, zu welchen **ActionClasses** es gehört,
-aus einer geschlossenen Menge von dreizehn Effektklassen. Fünf davon fragen
+aus einer geschlossenen Menge von vierzehn Effektklassen. Sechs davon fragen
 von Haus aus nach. Der Rest lässt zu, und eine Regel ändert das.
 
 | Klasse                     | Eingebauter Standard | Was sie abdeckt                                              |
@@ -56,18 +56,20 @@ von Haus aus nach. Der Rest lässt zu, und eine Regel ändert das.
 | `processSpawn`             | allow                | Einen Prozess starten (Shell und alles, was eine Shell aufruft) |
 | `workspaceMutation`        | allow                | Die Struktur des Arbeitsbereichs ändern (Repos, Bereiche, Agenten) |
 | `enclosureControl`         | allow                | Eine Kapsel (Rig) steuern: eine VM starten, ihr Eingaben schicken |
+| `hostExecution`            | **prompt**           | Einen Befehl auf dem Server-Host außerhalb jeder Sandbox ausführen, auf Anfrage eines Agenten: Umgebungsaufgaben, Prozesse, Compose-Stacks und `eval`, wenn dessen Kernel unbegrenzt läuft |
 
 Die acht Klassen mit Standard allow wurden unter der Annahme gewählt, dass
 die Sandbox-Untergrenze unter ihnen greift. Das tut sie, wo der Host ein
-Backend anbietet, und das tut sie nicht unter Windows oder auf einem
-Linux-Rechner ohne `bwrap` und `socat`. Wenn du `fileWriteOutsideWorktree`
+Backend anbietet, und das tut sie nicht unter `--sandbox off`, nicht für die
+eigenen Läufe des Inhabers unter Windows oder auf einem Linux-Rechner ohne
+`bwrap` und `socat`. Wenn du `fileWriteOutsideWorktree`
 oder `packageInstall` dort unter eine Regel stellen willst, musst du sie
 selbst schreiben.
 
 Die Menge ist absichtlich geschlossen. Ein neues veränderndes Werkzeug, das
 keine Klasse deklariert, fällt durch den Ratchet-Test. Die Taxonomie wächst
 deshalb nur durch eine ausdrückliche, begründete Entscheidung — „Wildwuchs in
-der Taxonomie ist der Tod dieses Features.“ Dreizehn Klassen reichen für die
+der Taxonomie ist der Tod dieses Features.“ Vierzehn Klassen reichen für die
 Richtlinien, die Leute tatsächlich schreiben (nie ohne Nachfrage pushen, nie
 außerhalb eines Worktrees löschen, Lesen immer zulassen), und sie sind wenige
 genug, dass die Einstellungsoberfläche verständlich bleibt.
@@ -96,7 +98,7 @@ Zwei Entscheidungen tragen harte Garantien:
 
 Es gibt absichtlich keinen Merker pro Turn. Jeder Werkzeugaufruf löst die
 Richtlinie neu auf. Wiederholtes Nachfragen für dieselbe Aktion begrenzt nur
-das eigene „Für 8 Stunden freigeben“ der betreibenden Person, nichts, das an
+die eigene Dauerfreigabe der betreibenden Person, nichts, das an
 den Turn gebunden ist.
 
 ## Regeln auf Argumentebene
@@ -113,6 +115,7 @@ Eine Einschränkung kann benennen:
   „jeder Branch außer main“)
 - **Hosts** — Netzziele, mit Platzhaltern für Subdomains (`*.internal`)
 - **Befehle** — Befehlspräfixe, an einer Wortgrenze
+- **Werkzeuge** — der genaue Werkzeugname, den ein Aufruf nennt, damit eine Freigabe ein einzelnes Werkzeug abdecken kann statt jedes Werkzeugs mit derselben Wirkung
 - **Obergrenzen** — `maxCount` / `maxCents`, damit „bis zu 50 Dateien löschen“
   ausdrückbar ist
 
@@ -157,16 +160,19 @@ und darunter die Betriebssystem-Sandbox. Eine Befehlsregel, die auf `allow`
 auflöst, lockert keine von beiden — das Netz des Modus läuft danach, und sein
 `deny` ist endgültig.
 
-## Gespeicherte Freigaben
+## Dauerfreigaben
 
-Eine Nachfrage mit „Für 8 Stunden freigeben“ zu beantworten schreibt eine
-echte Richtlinienregel: im Geltungsbereich (Bereich / Agent / Arbeitsbereich),
-**an die Argumente gebunden** (die Freigabe eines Pushs nach `feature/login`
-gewährt `feature/**`, nicht `main`) und **selbst aufhebend** nach einer
-ausdrücklichen TTL. Für die nächsten Stunden ja zu sagen ist nicht dasselbe,
-wie still deine dauerhafte Richtlinie umzuschreiben. Die Regeln landen im
-selben Speicher mit der Herkunft `remembered` und einem Ablauf, sodass du sie
-früher widerrufen kannst.
+Jede Freigabekarte, die die Aktion eines Agenten auslöst, bietet **Für 8 Stunden freigeben** an, wenn die Aktion etwas Engeres als ihre Klasse zu benennen hat. Wählst du sie, schreibt das eine echte Richtlinienregel, eine Dauerfreigabe, in denselben Speicher wie die Regeln, die du setzt, mit der Herkunft `remembered` und einem Ablauf:
+
+- **Bereichsbezogen.** Sie wird für den Bereich geschrieben, aus dem die Frage kam. Nur die Antwort eines Admins kann für den ganzen Arbeitsbereich geschrieben werden.
+- **Eng gefasst.** Sie bindet sich an eine Branch-Familie (eine Freigabe für einen Push nach `feature/login` deckt `feature/**` ab, nicht `main`), an einen Ordner, einen Host, den genauen Befehl oder das genaue Werkzeug. Ein Commit ist die einzige Aktion, die als Klasse für diesen Bereich freigegeben wird: Für sie gibt es nichts Engeres zu benennen.
+- **Läuft von selbst ab.** Sie endet nach acht Stunden und lässt sich auf der Seite Agent-Berechtigungen früher widerrufen.
+
+Eine Dauerfreigabe erspart nur eine Nachfrage. Sie beantwortet eine Aktion, die auf „Zuerst fragen“ steht, im eigenen oder einem weiteren Geltungsbereich, und nie eine Verweigerung, gleich aus welchem Geltungsbereich die Verweigerung stammt. Sie wird neben der Regel gespeichert, die du für die Aktion gesetzt hast, sodass das Ändern dieser Regel die Dauerfreigabe unberührt lässt und das Widerrufen der Dauerfreigabe die Regel unberührt lässt.
+
+Manche Kontrollpunkte fragen von sich aus nach, nachdem die Richtlinie einen Aufruf erlaubt hat: die vom Werkzeug selbst deklarierte Freigabe oder das Befehlsnetz eines Modus. Sie verzichten auf ihre Nachfrage nur bei einer Dauerfreigabe, die genau dieses Werkzeug oder diesen Befehl benennt. Die Aktion auf „Zulassen“ zu setzen, bringt sie nicht zum Schweigen.
+
+Drei Karten behalten zwei Schaltflächen, weil es nichts gibt, das sich weitertragen ließe: das Erlauben, dass die Sandbox Programme aus einem Ordner ausführt (die Freigabe ist ohnehin eine gespeicherte Erlaubnis, die du widerrufen kannst), ein zerstörender Vorgang, den du einmal bestätigst, und eine Skill-Installation (ein geänderter Skill soll erneut fragen).
 
 ## Durchsetzungsstufen
 

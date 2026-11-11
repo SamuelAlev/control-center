@@ -314,16 +314,8 @@ class _FakeRunLogRepository implements AgentRunLogRepository {
     if (current == null || current.workspaceId != workspaceId) {
       return;
     }
-    final micros =
-        (current.childCostMicros != 0
-            ? current.childCostMicros
-            : current.childCostCents * 10000) +
-        amountMicros;
     await upsert(
-      current.copyWith(
-        childCostMicros: micros,
-        childCostCents: (micros / 10000).round(),
-      ),
+      current.copyWith(childCostMicros: current.childCostMicros + amountMicros),
     );
   }
 
@@ -1673,7 +1665,7 @@ void main() {
         await service.completeRun(
           childLog,
           null,
-          cost: const RunCost(estimatedCostCents: 42),
+          cost: const RunCost(estimatedCostCents: 42, costMicros: 420000),
         );
 
         // The parent's run row gained the child cost.

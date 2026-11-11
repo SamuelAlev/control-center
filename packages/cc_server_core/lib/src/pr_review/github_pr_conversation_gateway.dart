@@ -24,7 +24,7 @@ final class GitHubConversationIdentity {
     required this.lane,
   });
 
-  /// The App's bot account (`<slug>[bot]`): loop guard and mention alias.
+  /// The App's bot account (`<slug>[bot]`): the loop guard.
   final String botLogin;
 
   /// The App's public slug.
@@ -56,26 +56,27 @@ enum GitHubReactionClaim {
   /// This server left the reaction (HTTP 201): the work is ours.
   claimed,
 
-  /// The person had already left it (HTTP 200): another server of theirs,
-  /// or an earlier attempt, owns the work.
+  /// The bot had already left it (HTTP 200): another server on the same
+  /// App, or an earlier attempt, owns the work.
   alreadyClaimed,
 }
 
 /// The GitHub operations the PR-conversation surface needs, as one seam so the
 /// bridge and poller run their whole behaviour against an in-memory fake.
 ///
-/// One gateway serves exactly one workspace: reads ride that workspace's
-/// one-repository tokens bounded by its accountable human, replies are
-/// bounded by the member who asked, and claims are that member's own
-/// reaction. There is no server-wide identity to fall back to.
+/// One gateway serves exactly one workspace and speaks as its App's bot on
+/// every lane: reads ride that workspace's one-repository tokens bounded by
+/// its accountable human, while replies and claims are bounded by the member
+/// who asked. There is no server-wide identity to fall back to, and no
+/// person's own token is ever used.
 abstract interface class GitHubPrConversationGateway {
   /// The bot and lane the workspace converses as, or null when it has no
   /// GitHub lane (the conversation surface idles).
   Future<GitHubConversationIdentity?> identity();
 
-  /// Open PRs addressed via @usectrl or the App bot's compatible mentions,
-  /// and PRs carrying the configured review label. [since] bounds only
-  /// mention lanes; the label lane's membership is itself trigger state.
+  /// Open PRs addressed via @usectrl, and PRs carrying the configured review
+  /// label. [since] bounds only the mention lane; the label lane's
+  /// membership is itself trigger state.
   Future<BotConversationCandidates> searchCandidates({DateTime? since});
 
   /// Conversation-timeline comments on one PR.
@@ -101,17 +102,22 @@ abstract interface class GitHubPrConversationGateway {
     String label,
   });
 
-  /// Whether this server can mint a `bot` token for [owner]/[repo] bounded
-  /// by [actingUserId]: the App is installed there and that member can push.
-  /// A token clamped below `bot` (no push) is a refusal.
+  /// Whether this server can mint, for [owner]/[repo] bounded by
+  /// [actingUserId], the scope its claim and reply there need: `bot` inside
+  /// an inline review thread ([inReviewThread]: the review-comment reaction
+  /// and the thread reply), else `comment` (an issue-comment or pull request
+  /// reaction and a timeline comment). The App is installed there and that
+  /// member can push; a token clamped below that scope is a refusal.
   Future<bool> canPostAs(
     String owner,
     String repo, {
     required String actingUserId,
+    required bool inReviewThread,
   });
 
-  /// Claims an inbound conversation comment with [asUserId]'s own 👀.
-  /// Throws when the reaction could not be left.
+  /// Claims an inbound conversation comment with the bot's 👀, on a `bot`
+  /// token bounded by [asUserId]. Throws when the reaction could not be
+  /// left.
   Future<GitHubReactionClaim> claimIssueComment(
     String owner,
     String repo,
@@ -119,7 +125,8 @@ abstract interface class GitHubPrConversationGateway {
     required String asUserId,
   });
 
-  /// Claims an inbound inline review comment with [asUserId]'s own 👀.
+  /// Claims an inbound inline review comment with the bot's 👀, bounded by
+  /// [asUserId].
   Future<GitHubReactionClaim> claimReviewComment(
     String owner,
     String repo,
@@ -127,7 +134,8 @@ abstract interface class GitHubPrConversationGateway {
     required String asUserId,
   });
 
-  /// Claims a labelled PR with [asUserId]'s own 👀 on the PR itself.
+  /// Claims a labelled PR with the bot's 👀 on the PR itself, bounded by
+  /// [asUserId].
   Future<GitHubReactionClaim> claimPullRequest(
     String owner,
     String repo,
@@ -180,25 +188,26 @@ typedef GitHubScopedMint =
     });
 
 /// Production gateway for one workspace, over its bot presence and its
-/// per-owner GitHub clients.
+/// one-repository automation clients.
 ///
-/// The candidate search is GraphQL, which rides the workspace's accountable
-/// human's own token whichever owner's client sends it (`GitHubClients`
-/// mints one-repository tokens only for `/repos/{owner}/{repo}` REST). One
-/// search therefore covers every installation that person can see; its hits
-/// are narrowed to the accounts the App is installed on.
+/// The candidate search is GraphQL on each linked repository's own
+/// one-repository token (`GitHubClients.forRepo`), never a person's sign-in:
+/// one search per linked repository under an owner the App is installed on
+/// and not suspended there.
 class WorkspaceGitHubPrConversationGateway
     implements GitHubPrConversationGateway {
   /// Creates a [WorkspaceGitHubPrConversationGateway].
   ///
   /// `clientForOwner` is the workspace's automation client for an owner,
-  /// bounded by `actingUserId` when given; `personClient` is a member's own
-  /// sign-in; `mint` is the workspace's scoped-token broker.
+  /// bounded by `actingUserId` when given; `clientForRepo` its client for one
+  /// repository; `linkedRepos` the workspace's linked GitHub repositories;
+  /// `mint` is the workspace's scoped-token broker.
   WorkspaceGitHubPrConversationGateway({
     required this._presence,
     required this._lane,
     required this._clientForOwner,
-    required this._personClient,
+    required this._clientForRepo,
+    required this._linkedRepos,
     required this._mint,
     this._reviewLabel = kGithubPrReviewLabel,
     this._onWarning,
@@ -208,7 +217,8 @@ class WorkspaceGitHubPrConversationGateway
   final Future<GitHubLane> Function() _lane;
   final GitHubApiClient Function(String owner, {String? actingUserId})
   _clientForOwner;
-  final GitHubApiClient Function(String userId) _personClient;
+  final GitHubApiClient Function(String owner, String repo) _clientForRepo;
+  final Future<List<({String owner, String repo})>> Function() _linkedRepos;
   final GitHubScopedMint _mint;
   final String _reviewLabel;
   final void Function(String message)? _onWarning;
@@ -250,21 +260,38 @@ class WorkspaceGitHubPrConversationGateway
     if (live.isEmpty) {
       return BotConversationCandidates.empty;
     }
-    final BotConversationCandidates found;
+    var found = BotConversationCandidates.empty;
+    final List<({String owner, String repo})> linked;
     try {
-      // GraphQL is not about one repository, so every owner's automation
-      // client sends it with the same accountable human's token: one search
-      // sees exactly what N per-owner searches would. Hits are then kept
-      // only under accounts the App is installed on and not suspended.
-      found = await _clientForOwner(live.values.first).graphql
-          .searchBotConversationCandidates(
+      linked = await _linkedRepos();
+    } on Object catch (e) {
+      _onWarning?.call('github_pr_conversation: listing repos failed: $e');
+      return BotConversationCandidates.empty;
+    }
+    for (final link in linked) {
+      if (!live.containsKey(link.owner.toLowerCase())) {
+        continue;
+      }
+      try {
+        // Each repository's own token: the bot sees what it was installed
+        // on, and a repository it cannot reach fails alone.
+        found = found.followedBy(
+          await _clientForRepo(
+            link.owner,
+            link.repo,
+          ).graphql.searchBotConversationCandidates(
             botLogin: botLogin,
             label: _reviewLabel,
             since: since,
-          );
-    } on Object catch (e) {
-      _onWarning?.call('github_pr_conversation: search failed: $e');
-      return BotConversationCandidates.empty;
+            repoFullName: '${link.owner}/${link.repo}',
+          ),
+        );
+      } on Object catch (e) {
+        _onWarning?.call(
+          'github_pr_conversation: search in ${link.owner}/${link.repo} '
+          'failed: $e',
+        );
+      }
     }
     return found.where((pr) => live.containsKey(pr.owner.toLowerCase()));
   }
@@ -313,19 +340,23 @@ class WorkspaceGitHubPrConversationGateway
     String owner,
     String repo, {
     required String actingUserId,
+    required bool inReviewThread,
   }) async {
+    final scope = inReviewThread
+        ? GitHubTokenScope.bot
+        : GitHubTokenScope.comment;
     try {
       final grant = await _mint(
         owner,
         repo,
-        scope: GitHubTokenScope.bot,
+        scope: scope,
         actingUserId: actingUserId,
       );
-      return grant.scope == GitHubTokenScope.bot;
+      return grant.scope == scope;
     } on Object catch (e) {
       _onWarning?.call(
-        'github_pr_conversation: no bot token for $owner/$repo bounded by '
-        '$actingUserId: $e',
+        'github_pr_conversation: no ${scope.wire} token for $owner/$repo '
+        'bounded by $actingUserId: $e',
       );
       return false;
     }
@@ -338,7 +369,10 @@ class WorkspaceGitHubPrConversationGateway
     int commentId, {
     required String asUserId,
   }) async => _claim(
-    await _personClient(asUserId).pr.createIssueCommentReaction(
+    await _clientForOwner(
+      owner,
+      actingUserId: asUserId,
+    ).pr.createIssueCommentReaction(
       owner,
       repo,
       commentId: commentId,
@@ -353,7 +387,10 @@ class WorkspaceGitHubPrConversationGateway
     int commentId, {
     required String asUserId,
   }) async => _claim(
-    await _personClient(asUserId).pr.createReviewCommentReaction(
+    await _clientForOwner(
+      owner,
+      actingUserId: asUserId,
+    ).pr.createReviewCommentReaction(
       owner,
       repo,
       commentId: commentId,
@@ -368,7 +405,7 @@ class WorkspaceGitHubPrConversationGateway
     int prNumber, {
     required String asUserId,
   }) async => _claim(
-    await _personClient(asUserId).pr.createIssueReaction(
+    await _clientForOwner(owner, actingUserId: asUserId).pr.createIssueReaction(
       owner,
       repo,
       issueNumber: prNumber,

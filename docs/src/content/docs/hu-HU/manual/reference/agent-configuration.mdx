@@ -2,7 +2,7 @@
 title: Ügynökkonfiguráció
 description: Az ügynökentitás összes mezője és a hozzá tartozó enumok.
 slug: hu-HU/kezikonyv/referencia/ugynokkonfiguracio
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Ez a referencia felsorolja az ügynökentitás összes mezőjét, valamint a használt enumokat és jelzőket. Az ügynök alkalmazásbeli létrehozásának vagy szerkesztésének lépésről lépésre haladó bemutatását lásd: [Ügynök létrehozása és konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa/).
@@ -79,6 +79,35 @@ Készségazonosítók megváltoztathatatlan, kis-nagybetűt nem megkülönbözte
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Shell-hookok
+
+A shell-hookok lehetővé teszik, hogy a szerver tulajdonosa saját szkripteket futtasson egy beépített harness-futás körül: a munkamenet indulásakor, minden eszközhívás előtt és minden eszközhívás után. A hook tetszőleges kód, ezért a hookok a gazdagép konfigurációjának részei. Csak a szerver tulajdonosa állítja be, kézzel, a szerver gépén. Az alkalmazásban nincs ilyen beállítás, és nincs olyan művelet, amely írná őket.
+
+Egy ügynök hookjai a szerver adatkönyvtárának saját mappájában élnek:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+Az `<agent slug>` az ügynök mappájának neve a munkaterületen (`agents/<slug>/`). Ez a mappa minden munkaterület tárhelyén kívül esik, és minden homokozó elrejti az adatkönyvtárat, így egyetlen tag, futtatás vagy terminál sem tudja írni.
+
+A `hooks.json` három kulcs valamelyikéhez rendel szkriptet, a hook-mappához viszonyított útvonal alapján:
+
+| Kulcs          | Mikor fut                 | Mit jelent a kilépési kódja                                    |
+| -------------- | ------------------------- | -------------------------------------------------------------- |
+| `sessionStart` | Egyszer, a futás indulásakor | Semmit; a hook csak megfigyel                               |
+| `preTool`      | Minden eszközhívás előtt  | `0` engedélyezi a hívást; bármi más megtagadja                 |
+| `postTool`     | Minden eszközhívás után   | Semmit; a hook csak megfigyel                                  |
+
+- Minden szkript önálló futtatható programként indul, shell és argumentumok nélkül, ezért futtathatónak kell lennie, és shebang sorral kell kezdődnie. Az eseményt JSON-ként kapja a stdin-en: az esemény nevét, az eszközhookok esetén pedig az eszköz nevét az argumentumaival (`preTool`), illetve az eredményével (`postTool`).
+- A hook a futás eszközfolyamatai egyikeként fut, a futás ügynökmappájában. Ha a szerver homokozóban futtatja az ügynököket, a hook a futás homokozóján belül fut. Minimális környezetet kap, és a futás hitelesítő adatai közül egyiket sem: se forge- vagy szolgáltatói tokent, se átjáró-hozzáférést.
+- Minden hook 30 másodpercet kap. A kimenetét beolvassák és eldobják.
+- A `preTool` hibánál zárt: a nem nulla kilépési kód, az időtúllépés vagy az, ha a szkript nem indítható el, megtagadja az eszközhívást.
+- Az olyan útvonal, amely abszolút, hiányzik, vagy kilép a hook-mappából (a linkek feloldása után), visszautasításra kerül, a futás naplója pedig megmondja, melyik hook és miért. Egy visszautasított vagy olvashatatlan `preTool` hook minden eszközhívást megtagad, amíg ki nem javítják.
+- A `.agents/harness.json` fájlban lévő `hooks` blokkot – akár egy repóban, akár az ügynök saját mappájában – a rendszer figyelmen kívül hagyja. Egy repó gyakran más valakinek a kódja, az ügynök mappáját pedig tagok és futtatások is írhatják. A futás naplója rögzíti, hogy a blokkot figyelmen kívül hagyták, és megmondja, honnan olvassák helyette a hookokat.
+
+A shell-hookok csak a beépített harness-re vonatkoznak. Ha `preTool` vagy `postTool` hook van beállítva, a futás az eszközeit egyesével hívja.
 
 ## AgentLiveState (származtatott)
 

@@ -2,7 +2,7 @@
 title: Sediakan integrasi Slack
 description: Sambungkan Slack ke ruang kerja Control Center, melalui apl kongsi Control Center atau salah satu apl anda sendiri, supaya ahli boleh menggerakkan ejen dari Slack.
 slug: ms-MY/manual-pengguna/panduan-cara/integrasi-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Panduan ini menunjukkan cara menyambungkan Slack ke ruang kerja Control Center: dengan menambah apl kongsi Control Center, atau dengan apl anda sendiri yang Control Center cipta untuk anda atau yang anda bina sendiri.
@@ -27,18 +27,18 @@ Satu ruang kerja hanya berjalan pada salah satu mod ini pada satu masa.
 
 | Mod                           | Memerlukan                                                                                               | Yang anda dapat                                                                       |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **Apl kongsi Control Center** | Pelayan menggunakan Control Center Connect (**Tetapan → Pelayan → Daftar masuk tunggal**) dan Connect melayani Slack | Satu klik dan satu log masuk Slack. Tiada apl untuk dicipta, tiada token untuk ditampal, tiada apa untuk diputar |
+| **Apl kongsi Control Center** | Apl log masuk ruang kerja berjalan melalui Control Center Connect (pilihan pelayan dalam **Tetapan → Pelayan → Daftar masuk tunggal**, atau pilihan ruang kerja itu sendiri dalam **Tetapan → Ruang kerja → Integrasi**) dan Connect melayani Slack | Satu klik dan satu log masuk Slack. Tiada apl untuk dicipta, tiada token untuk ditampal, tiada apa untuk diputar |
 | **Apl anda sendiri**          | Apl Slack dalam ruang kerja Slack anda, dicipta dengan salah satu daripada tiga cara di bawah            | Nama bot, perihalan dan perintah slash anda sendiri, boleh disunting dari Control Center |
 
 ### Tambah apl kongsi Control Center
 
-1. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+1. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Integrasi** dan tatal ke kad **Jambatan sembang**
 2. Pada blok Slack, cari baris **Tambah Control Center ke Slack** dan klik **Tambah ke Slack**
 3. Pelayar anda membuka Slack. Log masuk dengan Slack, pilih ruang kerja Slack dan luluskan pemasangan
 4. Apabila pelayar memaparkan kod, masukkannya ke dalam dialog yang Control Center biarkan terbuka. Jika pelayar membawa anda kembali ke apl dengan sendirinya, tiada apa yang perlu ditaip
 5. Notifikasi menamakan ruang kerja Slack tempat apl itu ditambah, dan blok Slack memaparkan sambungan sebagai berjalan pada apl kongsi Control Center
 
-Hanya pentadbir ruang kerja boleh menambah apl. Baris itu menyatakan sebabnya apabila ia tidak dapat dimulakan: apabila pelayan menggunakan apl sendiri dan bukannya Connect, apabila Connect anda tiada apl Slack, atau apabila ruang kerja ini sudah mempunyai apl Slack sendiri yang bersambung.
+Hanya pentadbir ruang kerja boleh menambah apl. Baris itu menyatakan sebabnya apabila ia tidak dapat dimulakan: apabila apl log masuk ruang kerja ini ialah apl sendiri dan bukannya Connect, apabila Connect anda tiada apl Slack, atau apabila ruang kerja ini sudah mempunyai apl Slack sendiri yang bersambung.
 
 Berbeza daripada apl anda sendiri:
 
@@ -64,7 +64,7 @@ Peristiwa apl Slack anda tidak pernah melalui Connect: Socket Mode menghantarnya
 ## Pilihan A: biarkan Control Center mencipta apl
 
 1. Jana pasangan token konfigurasi apl di [api.slack.com/apps](https://api.slack.com/apps) dan salin token **muat semula** (`xoxe-…`)
-2. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+2. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Integrasi** dan tatal ke kad **Jambatan sembang**
 3. Pada blok Slack, klik **Cipta apl untuk saya**
 4. Tampal token itu, laraskan nama apl, nama bot, perihalan dan perintah slash, kemudian klik **Cipta apl**
 5. Ikut dua langkah yang tinggal yang ditunjukkan oleh dialog, setiap satu sebagai pautan ke Slack:
@@ -78,7 +78,7 @@ Token konfigurasi diputarkan pada setiap penggunaan. Control Center menyimpan ni
 
 Apl yang sama, tanpa token konfigurasi — Slack menyerahkan skrin ciptaannya sendiri dengan keseluruhan manifes sudah diisi.
 
-1. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+1. Dalam Control Center, pergi ke **Tetapan → Ruang kerja → Integrasi** dan tatal ke kad **Jambatan sembang**
 2. Pada blok Slack, klik **Cipta apl untuk saya**
 3. Laraskan nama apl, nama bot, perihalan dan perintah slash — semuanya ikut bersama pautan itu
 4. Klik **Cipta dalam Slack**. Penyemak imbas anda membuka halaman penciptaan apl Slack dengan konfigurasi telah diisi
@@ -132,7 +132,7 @@ message.im
 
 Inilah cara token apl anda sendiri sampai ke Control Center. Apl kongsi tidak memerlukan apa-apa daripada ini.
 
-1. Pergi ke **Tetapan → Ruang kerja → Umum** dan tatal ke kad **Jambatan sembang**
+1. Pergi ke **Tetapan → Ruang kerja → Integrasi** dan tatal ke kad **Jambatan sembang**
 2. Pada blok Slack, klik **Sambung Slack**
 3. Isikan medan-medan berikut:
 
@@ -155,6 +155,9 @@ Tanpa token konfigurasi apl yang pilihan, sambungan itu berfungsi dengan baik �
 ## Apa yang berlaku apabila menyambung
 
 - Menyimpan kelayakan dalam direktori ruang kerja itu sendiri, di sebelah pangkalan datanya, boleh dibaca oleh pemilik sahaja. Ia tidak pernah kembali kepada klien. Bagi apl kongsi, itu ialah geran bermeterai; token bot jangka pendek yang diperbaharui daripadanya kekal dalam memori
+- Mula menerima sebutan, balasan benang Slack, DM dan arahan slash: melalui satu sambungan Socket Mode untuk apl sendiri anda, atau melalui tinjauan panjang Connect tunggal pelayan untuk apl kongsi
+- Memasang semula setiap benang Slack yang pernah dijambatkan, supaya sambung semula meneruskan perbualan sedia ada dan tidak membiarkannya tergantung
+- Tidak menelan kos untuk ruang kerja yang tiada apl sembang: tiada soket, tiada pemasa, tiada trafik
 
 :::note[Di mana token berada dan mengapa bukan dalam rantai kunci]
 Kelayakan bot ialah satu fail JSON biasa bagi setiap penyedia di
@@ -202,7 +205,7 @@ Mana-mana ahli yang dipautkan dengan peranan menulis boleh mencadangkan tiket da
 
 Teks sebelum `|` ialah tajuk, teks selepasnya ialah perihalan. Bot membalas bahawa ia telah menghasilkan
 draf. Tiada tiket dicipta lagi dan tiada automasi tiket dicetuskan: draf menunggu anda dalam
-**Tetapan → Ruang kerja → Profil & identiti → Draf tiket daripada sembang**, tempat anda boleh membetulkan
+**Tetapan → Anda → Profil → Draf tiket daripada sembang**, tempat anda boleh membetulkan
 tajuk dan perihalan, kemudian klik **Cipta tiket** atau **Buang**.
 
 - Hanya ahli yang menjalankan perintah itu melihat draf

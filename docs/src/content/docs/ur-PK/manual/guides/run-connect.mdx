@@ -2,7 +2,7 @@
 title: Connect سرور چلائیں
 description: cc-connect Docker image سے اپنا Control Center Connect چلائیں، یا اسے cc_server کے اندر mount کریں، تاکہ آپ کے سرورز لوگوں کو ان provider apps کے ذریعے sign in کرائیں جو آپ نے رجسٹر کی ہیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/connect-سرور-چلائیں
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect ان سرورز کے لیے provider sign-ins (GitHub، Google Calendar، Linear اور Slack) چلاتا ہے جنہوں نے اپنی apps رجسٹر نہیں کیں۔ یہ گائیڈ دکھاتی ہے کہ اپنا Connect کیسے چلائیں، تاکہ provider apps، ان کے secrets، اور ان سرورز کی فہرست جنہیں ان کے استعمال کی اجازت ہے، سب آپ کے پاس رہیں۔
@@ -30,14 +30,16 @@ Connect کیا دیکھ سکتا ہے اور کیا نہیں، یہ [Connect ref
 
 | Provider       | رجسٹریشن                                                                                                                                                                                                                                                              | محفوظ رکھیں                                  |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
-| **GitHub App** | Callback URL ‏`<base>/oauth/github/callback`۔ Setup URL ‏`<base>/oauth/github/setup` کے ساتھ **Redirect on update** فعال۔ **Request user authorization (OAuth) during installation** غیر فعال رکھیں: فعال ہونے پر GitHub setup URL کو نظرانداز کرتا ہے۔ **Expire user authorization tokens** فعال رکھیں | App id، slug، client id، client secret         |
+| **GitHub App** | Callback URL ‏`<base>/oauth/github/callback`۔ Setup URL ‏`<base>/oauth/github/setup` کے ساتھ **Redirect on update** فعال۔ **Request user authorization (OAuth) during installation** غیر فعال رکھیں: فعال ہونے پر GitHub setup URL کو نظرانداز کرتا ہے۔ **Expire user authorization tokens** فعال رکھیں | App id، slug، client id، client secret، private key |
 | **Google**     | redirect URI ‏`<base>/oauth/google/callback` کے ساتھ **Web application** قسم کا OAuth client، اور Google Calendar API فعال                                                                                                                                              | Client id، client secret                     |
 | **Linear**     | callback URLs ‏`<base>/oauth/linear/callback` اور `<base>/oauth/linear_app/callback` کے ساتھ OAuth application                                                                                                                                                       | صرف Client id                                |
 | **Slack**      | Redirect URLs ‏`<base>/oauth/slack_oidc/callback` اور `<base>/oauth/slack/callback`۔ Event Subscriptions ‏`<base>/v1/hooks/slack/events` پر (`app_mention`، `message.*`، `assistant_thread_*`، `app_uninstalled`، `tokens_revoked`)۔ Slash commands ‏`<base>/v1/hooks/slack/commands` پر۔ Token rotation فعال | App id، client id، client secret، signing secret |
 
 GitHub App کو یہ repository permissions دیں: **Metadata** read، **Contents** read اور write، **Pull requests** read اور write، **Issues** read اور write، اور **Checks**، **Actions** اور **Commit statuses** read۔ team review requests کے لیے organization **Members** read شامل کریں۔ Webhooks بند رہ سکتے ہیں: سرورز polling کرتے ہیں۔
 
-Connect کو کبھی GitHub App کی private key کی ضرورت نہیں ہوتی۔ اس کے بجائے وہ شخص کے اپنے sign-in سے ایک repository تک محدود tokens جاری کرتا ہے۔ Linear کو بھی کسی secret کی ضرورت نہیں: Connect code سرور کو واپس دیتا ہے، اور سرور خود exchange مکمل کرتا ہے۔
+Connect کو GitHub App کی private key کی ضرورت ہے (App کی settings میں **Generate a private key**)۔ یہ App کی درخواستوں پر دستخط کرتا ہے جو اُس انسٹالیشن کو تلاش کرتی ہیں جو کسی repository کو کور کرتی ہے (یا، جب repository کی کوئی انسٹالیشن نہ ہو، تو owner کی انسٹالیشن)، اور ایک repository تک محدود installation token جاری کرتا ہے، ہر بار تبھی جب مانگنے والے شخص کے اپنے sign-in نے اس repository تک رسائی ثابت کی ہو۔
+
+ہر وہ سرور جو آپ کے Connect پر ہے App کا bot شیئر کرتا ہے۔ وہ ان میں سے کسی کے لیے بھی bot کے طور پر پڑھ، تبصرہ، لیبل اور ری ایکشن کر سکتا ہے۔ bot کے طور پر pull requests کا ریویو صرف اُن سرورز کے لیے اجازت ہے جنہیں آپ `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` میں درج کریں (ان کے install ids، کاما سے جدا)؛ باقی ہر سرور ریویو اپنے ہی ریویور کے ٹوکن سے شائع کرتا ہے۔ پش کبھی bot کے طور پر نہیں کیا جاتا۔ اپنے کسی سرور کو bot کے طور پر ریویو کرنے دینے کے لیے اس کا install id وہاں شامل کریں اور دوبارہ شروع کریں۔ key فائل کو seal key کی طرح secret رکھیں۔ Linear کو کوئی secret نہیں چاہیے: Connect code سرور کو واپس دیتا ہے، اور سرور خود exchange مکمل کرتا ہے۔
 
 ## مرحلہ 3: install ids جمع کریں
 
@@ -84,11 +86,15 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-اپنا reverse proxy port `8790` کی طرف اشارہ کریں۔ image ایک غیر مراعات یافتہ user کے طور پر چلتی ہے، اپنی state `/data` volume میں رکھتی ہے، اور اس میں built-in health check ہے (`cc-connect --healthcheck`، جو `/healthz` کو probe کرتا ہے)۔
+اپنا reverse proxy port `8790` کی طرف اشارہ کریں، اور `CONNECT_TRUST_PROXY` کو اُن proxies کی تعداد پر سیٹ کریں جو Connect کے سامنے ہیں، تاکہ اس کی فی پتہ حد ہر کلائنٹ کا پتہ دیکھے۔ image ایک غیر مراعات یافتہ user کے طور پر چلتی ہے، اپنی state `/data` volume میں رکھتی ہے، اور اس میں built-in health check ہے (`cc-connect --healthcheck`، جو `/healthz` کو probe کرتا ہے: process جواب دیتا ہے)۔ `/readyz` یہ بھی جانچتا ہے کہ اس کے state اور binding stores جواب دیتے ہیں، اور یہ کہ Redis، جب استعمال ہو، اب بھی `maxmemory-policy noeviction` پر چل رہا ہے؛ کسی orchestrator کی readiness جانچ وہیں کریں۔
+
+sign-in consent page ایک form post کے ساتھ جواب دیتا ہے جسے Connect صرف اپنے ہی page سے قبول کرتا ہے: `Sec-Fetch-Site`، جب بھیجا جائے، تو `same-origin` ہونا چاہیے، اور `Origin`، جب بھیجا جائے، تو `CONNECT_PUBLIC_URL` کا origin ہونا چاہیے؛ جو post دونوں میں سے کسی کے بغیر ہو وہ مسترد ہوتی ہے۔ اس لیے proxy کو دونوں headers بغیر تبدیلی کے گزارنے ہوں گے، اور `CONNECT_PUBLIC_URL` وہ پتہ ہونا چاہیے جو لوگوں کے براؤزر واقعی استعمال کرتے ہیں۔ اگر اس page پر جاری رکھنے سے ہمیشہ "یہ لنک ختم ہو چکا ہے" دکھے، اور log میں `oauth.done_refused` کے ساتھ reason `origin` یا `no_origin` ہو، تو ان دونوں میں سے ایک غلط ہے۔
 
 Connect شروع ہونے سے انکار کرتا ہے (exit code `78`) جب اس کی configuration کھلی، غیر محفوظ یا نامکمل ہو، اور بتاتا ہے کہ کون سا variable غلط ہے۔ allowlist کا نہ ہونا، loopback کے علاوہ `http` پتہ، غلط seal key، یا `NAME` اور `NAME_FILE` دونوں کا مقرر ہونا، یہ سب اسے روک دیتے ہیں۔
 
@@ -98,7 +104,7 @@ Checkpoint: ہر سرور پر Connect کارڈ **کام کر رہا ہے** پڑ
 
 سرور الگ container کے بجائے خود Connect میزبانی کر سکتا ہے۔ mount کی گئی سروس وہی ہے جو image چلاتی ہے۔
 
-1. `CONNECT_*` variables سرور کی `.env` فائل (یا environment) میں رکھیں، جیسا کہ مرحلہ 5 میں ہے
+1. `CONNECT_*` variables سرور کی `.env` فائل میں رکھیں، جیسا کہ مرحلہ 5 میں ہے۔ جب کوئی Connect secret، بشمول `CONNECT_SENTRY_DSN`، سرور کے environment میں export ہو تو سرور شروع ہونے سے انکار کرتا ہے
 2. `CC_SERVER_CONNECT_HOST=on` شامل کریں
 3. سرور دوبارہ شروع کریں۔ اس کا log `embedded Connect at <url>` پرنٹ کرتا ہے
 
@@ -110,6 +116,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect پھر `<server>/connect` پر دستیاب ہوتا ہے:
@@ -133,9 +140,10 @@ provider redirects کو `https://<server>/connect` کے خلاف رجسٹر کر
 | `CONNECT_PUBLIC_URL`            | لازمی     | معیاری عوامی URL۔ HTTPS، یا loopback پر `http`۔ راستہ mount کی نشاندہی کرتا ہے۔ کوئی query یا fragment نہیں                       |
 | `CONNECT_ALLOWED_INSTALLS`      | لازمی     | کاما سے جدا install ids۔ `*` صرف `CONNECT_SIGNED_CONFIG_FILE` کے ساتھ قبول ہے                                                    |
 | `CONNECT_DENY_INSTALLS`         |           | وہ install ids جو اجازت ہونے کے باوجود مسترد ہوں                                                                                 |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | عددی GitHub owner ids۔ مقرر ہونے پر repository tokens صرف انہی owners کی repositories کے لیے جاری ہوتے ہیں                         |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | عددی GitHub owner ids۔ مقرر ہونے پر repository tokens صرف انہی owners کی repositories کے لیے جاری ہوتے ہیں۔ یہ کسی کے sign in کو محدود نہیں کرتا: اس Connect کے استعمال کی اجازت والا شخص پھر بھی اپنا App user token وصول کرتا ہے۔ صرف ایک organization کی خدمت کے لیے، App کو اسی تک نجی رکھیں |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | وہ install ids جو App کے bot سے pull requests کا ریویو کر سکتے ہیں۔ ڈیفالٹ میں خالی؛ `*` مسترد ہے، اور ہر id کو اجازت یافتہ بھی ہونا چاہیے |
 | `CONNECT_HOST`، `CONNECT_PORT`  | `0.0.0.0`، `8790` | bind پتہ اور port                                                                                                                 |
-| `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` میں قابلِ اعتماد proxy hops (0 تا 8)۔ صرف فی پتہ rate limit کے لیے استعمال ہوتا ہے                              |
+| `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` میں قابلِ اعتماد proxy hops (0 تا 8)۔ صرف فی پتہ حدوں، sign-in page کے نیٹ ورک اشارے اور لاگ شدہ پتے کے لیے استعمال ہوتا ہے۔ proxy کے پیچھے `0` ہر کلائنٹ کو proxy شمار کرتا ہے، اور log ایک بار یہ بتاتا ہے |
 
 ### فراہم کنندہ کی لینیں
 
@@ -143,6 +151,7 @@ provider redirects کو `https://<server>/connect` کے خلاف رجسٹر کر
 | --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`، `CONNECT_GITHUB_APP_SLUG`، `CONNECT_GITHUB_CLIENT_ID` |         | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | secret، dual                                                                |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |         | Secret۔ App کی private key (PEM)                                            |
 | `CONNECT_GOOGLE_CLIENT_ID`، `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Google client۔ secret dual ہے                                               |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Linear application۔ کوئی secret نہیں                                        |
 | `CONNECT_SLACK_APP_ID`، `CONNECT_SLACK_CLIENT_ID`                           |         | Slack app                                                                   |
@@ -160,12 +169,12 @@ provider redirects کو `https://<server>/connect` کے خلاف رجسٹر کر
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` یا `gcp-kms`                                                                                       |
 | `CONNECT_SEAL_KEYS`                                       |                            | secret، `local` کے لیے لازمی۔ کاما سے جدا `kid:key` entries، نئی سب سے پہلے؛ پرانی entries اب بھی decrypt ہوتی ہیں |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`، `gcp-kms` کے لیے لازمی                                    |
-| `CONNECT_STATE`                                           | `memory`                   | ایک instance کے لیے `memory`، کئی کے لیے `redis`                                                           |
-| `CONNECT_REDIS_URL`                                       |                            | secret۔ `redis://` یا `rediss://`                                                                          |
+| `CONNECT_STATE`                                           | `memory`                   | ایک instance کے لیے `memory`، کئی کے لیے `redis`۔ ایک پُر memory store نئے sign-ins اور درخواستوں کو مسترد کرتا ہے، بجائے اس کے کہ کوئی زندہ entry بھول جائے |
+| `CONNECT_REDIS_URL`                                       |                            | secret۔ `redis://` یا `rediss://`۔ Redis 6.2 یا بعد کا، `maxmemory-policy noeviction` کے ساتھ، دونوں startup پر جانچے جاتے ہیں |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | `rediss://` کے لیے CA bundle                                                                               |
-| `CONNECT_BINDINGS`                                        | `file`                     | GitHub installation bindings کہاں رہتے ہیں: `file` یا `firestore`                                          |
-| `CONNECT_DATA_DIR`                                        | `data` (image میں `/data`) | `bindings.json` رکھتا ہے                                                                                   |
-| `CONNECT_FIRESTORE_PROJECT`، `CONNECT_FIRESTORE_DATABASE` | `(default)` database       | `CONNECT_BINDINGS=firestore` کے لیے                                                                        |
+| `CONNECT_BINDINGS`                                        | `file`                     | Slack team bindings کہاں رہتے ہیں: `file` یا `firestore`                                          |
+| `CONNECT_DATA_DIR`                                        | `data` (image میں `/data`) | `bindings.json` رکھتا ہے۔ ایک Connect اسے لاک کرتا ہے: اسی directory پر دوسرا Connect شروع نہیں ہوتا |
+| `CONNECT_FIRESTORE_PROJECT`، `CONNECT_FIRESTORE_DATABASE` | `(default)` database       | `CONNECT_BINDINGS=firestore` کے لیے۔ جب Firestore جواب نہ دے تو Connect شروع نہیں ہوتا |
 
 ### configuration، logs اور حدیں
 
@@ -175,16 +184,34 @@ provider redirects کو `https://<server>/connect` کے خلاف رجسٹر کر
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | وہ keys جن کے خلاف signed configuration verify ہو                                                    |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | وہ epoch جو ایک self-hosted Connect کی configuration تیار کرتا ہے                                    |
 | `CONNECT_LOG_HMAC_KEY`                  | ہر process کے لیے random | secret۔ اسے سیٹ کریں تاکہ install ids کی جگہ استعمال ہونے والے tags restarts اور instances کے درمیان مستحکم رہیں |
+| `CONNECT_SENTRY_DSN`                    |                    | secret۔ ایک https Sentry DSN جس پر error lines رپورٹ ہوتی ہیں: error type، stack frames، route اور request id، کبھی message، body یا header نہیں |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | Sentry environment |
 | `CONNECT_VERSION`، `CONNECT_IMAGE_DIGEST` |                  | `/v1/version` کے ذریعے رپورٹ ہوتے ہیں                                                                |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | فی install درخواستیں                                                                                 |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | فی پتہ درخواستیں                                                                                     |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | پوری سروس کے لیے درخواستیں                                                                           |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | فی پتہ درخواستیں (IPv6 پتہ فی /64 شمار ہوتا ہے)                                                      |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | پورے instance کے لیے درخواستیں                                                                      |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`              | فی پتہ Slack event اور command deliveries، باقی درخواستوں سے الگ شمار ہوتی ہیں |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`          | پورے instance کے لیے Slack event اور command deliveries |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | فی team Slack events                                                                                 |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | فی install GIF searches                                                                              |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | فی پتہ GIF searches، تمام servers میں |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | فی پتہ شروع کیے گئے sign-ins |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | فی GitHub account، ایک server پر، جاری کیے گئے GitHub tokens (sign-ins، refreshes، repository tokens) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × اوپر کی قدر (`120`) | وہی، ہر GitHub account کے لیے تمام servers پر |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | فی پتہ جاری کیے گئے GitHub tokens |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | پوری ایپ کے لیے نئے GitHub sign-ins |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | فی server bot tokens |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | فی مانگنے والا GitHub account، تمام servers پر bot tokens |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | پوری ایپ کے لیے bot tokens |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | پوری ایپ کے لیے refreshes اور repository tokens۔ نئے sign-ins کی اپنی حد اوپر ہے |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | live repository tokens جو ایک GitHub account رکھ سکتا ہے، اس سے پہلے کہ Connect warning لاگ کرے |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | فی پتہ retire کیے گئے install ids (IPv6 کے لیے فی /48) |
+
+حد سے آگے کی کال `rate_limited` کا جواب پاتی ہے۔ سرورز بعد میں دوبارہ کوشش کرتے ہیں اور اس کی وجہ سے کسی کو کبھی sign out نہیں کرتے۔
 
 ## ایک سے زیادہ instances چلانا
 
-زیادہ تر تنظیموں کے لیے `CONNECT_STATE=memory` کے ساتھ ایک instance کافی ہے۔ ایک پتے کے پیچھے کئی instances کو `CONNECT_STATE=redis` چاہیے، اور ساتھ میں ایک مشترکہ `CONNECT_DATA_DIR` یا `CONNECT_BINDINGS=firestore`، تاکہ ایک instance پر شروع ہونے والا sign-in دوسری پر مکمل ہو سکے۔
+زیادہ تر تنظیموں کے لیے `CONNECT_STATE=memory` کے ساتھ ایک instance کافی ہے۔ ایک پتے کے پیچھے کئی instances کو `CONNECT_STATE=redis` اور `CONNECT_BINDINGS=firestore` چاہیے، تاکہ ایک instance پر شروع ہونے والا sign-in دوسری پر مکمل ہو سکے اور ہر instance ایک ہی Slack bindings اور retire شدہ install ids دیکھے۔ مشترکہ `CONNECT_DATA_DIR` کام نہیں کرتا: پہلا Connect اسے لاک کر دیتا ہے۔ فی install، فی پتہ اور پورے instance کی درخواست کی حدیں ہر instance کے لیے الگ ہیں؛ sign-ins، GitHub tokens، bot tokens، فی پتہ GIF searches، retirements اور Slack teams کی حدیں state store کے ذریعے مشترک ہیں۔
 
 ## provider secret rotate کرنا
 
@@ -202,17 +229,19 @@ seal key rotate کرنے کے لیے، پہلے `CONNECT_SEAL_KEYS` کے آغا�
 
 ## سرور کو block کرنا
 
-اس کا install id `CONNECT_DENY_INSTALLS` میں شامل کریں اور restart کریں۔ اس کا owner دیکھتا ہے "Connect has blocked this server's install id" اور اس پر ہر Connect sign-in رک جاتا ہے۔
+اس کا install id `CONNECT_DENY_INSTALLS` میں شامل کریں اور restart کریں۔ اس کا owner دیکھتا ہے "Connect نے اس سرور کی انسٹال آئی ڈی بلاک کر دی ہے۔ اپنے Connect سرور کے آپریٹر سے رابطہ کریں۔" اور اس پر ہر Connect sign-in رک جاتا ہے۔
+
+سرور اپنا پرانا install id بھی خود retire کرتا ہے جب اس کا owner key rotate کرے۔ وہ ثابت کرتا ہے کہ id اس کا اپنا ہے، اُس ایک credential seal کے ذریعے جو اِس Connect نے اس کے لیے بنایا تھا، اس لیے صرف وہ سرور id retire کر سکتا ہے جس نے کسی کو sign in کرایا ہو۔ Connect retired ids کو ہمیشہ کے لیے رکھتا ہے، اس لیے پرانی key اور اس کے لیے بنائی گئی ہر seal کام کرنا بند کر دیتی ہے، اور پرانے id سے بندھی Slack workspaces آزاد ہو جاتی ہیں۔ جو tokens پہلے ہی جاری ہو چکے ہیں وہ خود بخود ختم ہو جاتے ہیں: کسی شخص کے tokens 8 گھنٹے کے اندر، bot کے tokens 1 گھنٹے کے اندر۔ Connect زیادہ سے زیادہ 100,000 retired ids رکھتا ہے؛ اس سے آگے rotation مسترد ہوتی ہے اور log error کی سطح پر یہ بتاتا ہے۔
 
 ## خرابیوں کا ازالہ
 
 ### ایک سرور کہتا ہے Connect نے اسے block کیا ہے
 
-اس کا install id `CONNECT_ALLOWED_INSTALLS` میں نہیں ہے، یا `CONNECT_DENY_INSTALLS` میں ہے۔ id اس وقت بدلتا ہے جب اس کا owner key rotate کرے؛ نیا id مانگیں۔
+اس کا install id `CONNECT_ALLOWED_INSTALLS` میں نہیں ہے، `CONNECT_DENY_INSTALLS` میں ہے، یا key rotation سے retire ہو چکا ہے۔ id اس وقت بدلتا ہے جب اس کا owner key rotate کرے؛ نیا id مانگیں۔
 
-### ایک provider unavailable دکھاتا ہے
+### کسی ایک provider پر ہر sign-in ناکام ہوتا ہے
 
-اس کا ایک variable غائب ہے، اس لیے Connect نے وہ lane نکال دی۔ startup log اور اوپر کی tables دیکھیں۔ GitHub کو چاروں درکار ہیں: app id، slug، client id اور client secret؛ Google کو client id اور secret دونوں چاہئیں۔
+اس کا ایک variable غائب ہو سکتا ہے، اس لیے Connect نے وہ lane نکال دی۔ startup log اور اوپر کی tables دیکھیں۔ GitHub کو پانچوں درکار ہیں: app id، slug، client id، client secret اور private key؛ Google کو client id اور secret دونوں چاہئیں۔
 
 ### sign-ins redirect mismatch سے ناکام ہوتے ہیں
 

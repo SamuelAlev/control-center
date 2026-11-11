@@ -26,7 +26,7 @@ void main() {
     graph = _FakeGraph();
     tree = _FakeTree();
     op = buildCodeGraphOps(
-      workspaceRepository: workspaces,
+      repoGate: workspaces.isRepoLinkedToWorkspace,
       codeGraph: graph,
       tree: tree,
     ).singleWhere((o) => o.name == 'codeGraph.symbolLookup');

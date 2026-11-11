@@ -2,7 +2,7 @@
 title: Υπολογισμός ελέγχου (κοόρτες, άξονες και ντετερμινιστικά diffs)
 description: Τι παράγει στην πλευρά του διακομιστή το πέρασμα υπολογισμού ελέγχου — κοόρτες, diffs συμβολαίου API και οπτικά diffs, πύλες ανά άξονα — και πώς αυτά ενσωματώνονται στην καρτέλα Ανασκόπηση.
 slug: el-GR/εγχειρίδιο/οδηγοί-πρακτικής/υπολογισμός-ελέγχου
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Η καρτέλα **Ανασκόπηση** ενός PR είναι η ζωντανή πρόοδος του pipeline ελέγχου
@@ -15,8 +15,7 @@ sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
 ντετερμινιστικούς άξονες και τους σερβίρει μέσω των λειτουργιών RPC
 `review_studio.*` (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`,
 `dependencyDiffs`, `setContractDecision`, `approveVisual`, `compute` και τα δίδυμα
-`watch*` τους). Μια αποθηκευμένη διάταξη που εξακολουθεί να ονομάζει
-`pr.reviewStudio` ανοίγει αυτή την ίδια καρτέλα **Ανασκόπηση**.
+`watch*` τους).
 
 Στην καρτέλα **Ανασκόπηση**:
 
@@ -86,6 +85,8 @@ MATLAB, Ada). Ένα αποθετήριο σε οποιαδήποτε άλλη �
 περάσματος golden με `flutter test` στα worktree base και head του PR και μετά
 συγκρίνει τα pixel.
 
+Αυτές οι δοκιμές είναι ο δικός του κώδικας του PR, οπότε εκτελούνται όπως η διεργασία ενός εργαλείου πράκτορα: μέσα στο sandbox όταν ο διακομιστής απομονώνει τους πράκτορες, χωρίς περιορισμούς όταν ο κάτοχος του διακομιστή έχει απενεργοποιήσει το sandbox, και χωρίς sandbox μόνο για αίτημα για το οποίο ευθύνεται ο κάτοχος του διακομιστή. Για όλους τους άλλους ο άξονας αναφέρει **unavailable** με την αιτία «no sandbox on this server, and only its owner may run a PR's tests unsandboxed».
+
 :::note[Αυτό απαιτεί Flutter SDK στον κεντρικό υπολογιστή του διακομιστή]
 Ο διακομιστής σε καθαρό Dart δεν μπορεί να αποδώσει widget Flutter εντός της
 διεργασίας, οπότε καλεί το `flutter test` ως εξωτερική διεργασία. Το SDK πρέπει να
@@ -96,8 +97,8 @@ MATLAB, Ada). Ένα αποθετήριο σε οποιαδήποτε άλλη �
 
 Τα στιγμιότυπα με σήμανση **changed** ή **removed** κρατούν την οπτική πύλη μέχρι
 να εγκριθούν· τα στιγμιότυπα **unchanged**, **added** και **approved** την αίρουν.
-Η μη διαθεσιμότητα έχει μία από τέσσερις αιτίες: «no Flutter SDK on host», «no
-Widgetbook app in repo», «no golden-testable use-cases» ή «golden harness error».
+Η μη διαθεσιμότητα έχει μία από πέντε αιτίες: «no Flutter SDK on host», «no
+Widgetbook app in repo», «no golden-testable use-cases», «golden harness error» ή χωρίς sandbox για αίτημα για το οποίο δεν ευθύνεται ο κάτοχος του διακομιστή.
 
 Η έγκριση μιας σκόπιμης αλλαγής γίνεται με το `review_studio.approveVisual`.
 

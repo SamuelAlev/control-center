@@ -2,7 +2,7 @@
 title: Kirim agen pertama Anda
 description: Buat agen, beri ia space dan tugas, lalu saksikan run-nya mengalir kembali.
 slug: id-ID/panduan-pengguna/tutorial/agen-pertama
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Apa yang akan Anda bangun
@@ -76,7 +76,7 @@ Yang membatasi run: worktree copy-on-write miliknya sendiri, kredensial yang dij
 
 **Titik pemeriksaan.** Satu baris run, yang menampilkan status, durasi, waktu mulai dan selesai, serta adapter yang dipakainya.
 
-Perubahan agen di-commit pada cabang percakapan itu, di dalam worktree-nya. Anda selalu menjadi penulis dan committer, memakai identitas Git Anda di ruang kerja. Secara default, trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` mencantumkan akun GitHub `@usectrl` sebagai penulis bersama. Anda dapat mematikan kredit penulis bersama ini di **Pengaturan → Anda → Atribusi commit**, kecuali jika admin ruang kerja telah mengganti pilihan itu di **Pengaturan → Ruang kerja → Umum**.
+Perubahan agen di-commit pada cabang percakapan itu, di dalam worktree-nya. Karena Anda yang meminta run ini, commit tersebut milik Anda: Anda adalah penulis dan committer, dengan alamat yang diverifikasi forge Anda (alamat noreply GitHub Anda dari proses masuk ke GitHub), dan trailer `Co-Authored-By:` mengkredit Control Center kecuali Anda mematikannya. Jika Anda belum masuk ke forge, commit tersebut justru milik bot Control Center dan catatan run menjelaskannya.
 
 ## Mendapatkan pull request
 

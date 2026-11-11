@@ -1,10 +1,16 @@
+import 'dart:ui' show PlatformDispatcher;
+
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/pr_review_repository.dart';
 import 'package:cc_markdown/cc_markdown.dart';
+import 'package:control_center/core/providers/locale_provider.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart'
-    show needsSignInLane;
+    show LaneSignInNeed, SignInNeed, needsSignIn;
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/pr_review/providers/pr_review_providers.dart';
+import 'package:control_center/l10n/app_locales.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// In-flight edit state for a single PR's title/body/assignees/reviewers/labels.
@@ -26,7 +32,7 @@ class PrEditState {
     this.hiddenIssueCommentIds = const {},
     this.hiddenReviewCommentIds = const {},
     this.signInRefusals = 0,
-    this.refusedLane,
+    this.refusedNeed,
   });
 
   /// Whether a title save is in flight.
@@ -68,8 +74,8 @@ class PrEditState {
   /// even two in a row.
   final int signInRefusals;
 
-  /// The sign-in the latest such refusal asked for.
-  final ConnectOAuthLane? refusedLane;
+  /// The sign-in (or token) the latest such refusal asked for.
+  final SignInNeed? refusedNeed;
 
   /// Returns a copy with the given fields replaced.
   PrEditState copyWith({
@@ -85,7 +91,7 @@ class PrEditState {
     Set<int>? hiddenIssueCommentIds,
     Set<int>? hiddenReviewCommentIds,
     int? signInRefusals,
-    ConnectOAuthLane? refusedLane,
+    SignInNeed? refusedNeed,
   }) {
     return PrEditState(
       savingTitle: savingTitle ?? this.savingTitle,
@@ -103,7 +109,7 @@ class PrEditState {
       hiddenReviewCommentIds:
           hiddenReviewCommentIds ?? this.hiddenReviewCommentIds,
       signInRefusals: signInRefusals ?? this.signInRefusals,
-      refusedLane: refusedLane ?? this.refusedLane,
+      refusedNeed: refusedNeed ?? this.refusedNeed,
     );
   }
 }
@@ -165,14 +171,27 @@ class PrEditNotifier extends Notifier<PrEditState> {
   /// The error message for a failed edit. A refusal for want of the
   /// reader's own sign-in is also recorded, so the screen can offer one.
   String _fail(Object e) {
-    final lane = needsSignInLane(e, fallback: ConnectOAuthLane.github);
-    if (lane != null) {
+    final forge = ref.read(prRepoRowProvider(pr))?.forge;
+    final need = needsSignIn(
+      e,
+      fallback: forge == null
+          ? const LaneSignInNeed(ConnectOAuthLane.github)
+          : SignInNeed.forForge(forge),
+    );
+    if (need != null) {
       state = state.copyWith(
         signInRefusals: state.signInRefusals + 1,
-        refusedLane: lane,
+        refusedNeed: need,
       );
     }
-    return _msg(e);
+    // A repository replaced on its forge, or one the person's own forge
+    // account cannot read, is worded by its kind, not the server's English.
+    final l10n = lookupAppLocalizations(
+      remapTranslationLocale(
+        ref.read(localeProvider) ?? PlatformDispatcher.instance.locale,
+      ),
+    );
+    return repoCodeRefusalMessage(l10n, e) ?? _msg(e);
   }
 
   /// Saves the PR [title]. Returns null on success, else an error message.

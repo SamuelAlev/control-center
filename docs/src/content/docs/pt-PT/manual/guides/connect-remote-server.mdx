@@ -2,7 +2,7 @@
 title: Ligar a um servidor remoto
 description: Aponte a aplicação de ambiente de trabalho ou o cliente web a um cc_server a correr noutro sítio e alterne entre servidores sem reiniciar.
 slug: pt-PT/manual/guias/ligar-servidor-remoto
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Todos os clientes são um renderizador sobre um `cc_server` que detém os dados. A
@@ -90,6 +90,8 @@ conduz os pedidos pela sessão cifrada autenticada até ao backend code-server n
 `cc_server`. Aloje o cliente web por HTTPS ou em loopback seguro para que os
 service workers estejam disponíveis.
 Os clientes nativos usam uma fachada de loopback com âmbito de capacidade.
+
+Só o proprietário do servidor pode abrir o editor incorporado code-server: ele corre no servidor como o próprio utilizador do servidor. Uma sessão pertence ao dispositivo e à pessoa que a abriu. Abre com a confiança de espaço de trabalho do VS Code ativada, por isso o VS Code pergunta antes de confiar numa pasta, e com as tarefas automáticas desativadas. Os restantes utilizadores mantêm o editor integrado de ficheiro único e as vistas de ficheiros.
 :::
 
 ### O que o navegador não faz
@@ -105,9 +107,7 @@ dispositivos da máquina:
 
 Dois comportam-se de forma diferente em vez de faltarem. A **gravação** de
 reuniões funciona no navegador, capturando o seu microfone mais uma partilha de
-ecrã que inclui uma faixa de áudio. **Abrir no IDE** também funciona, mas pede ao
-servidor que inicie o editor no ecrã _do servidor_, pelo que o botão se esconde
-perante um anfitrião headless sem editores instalados.
+ecrã que inclui uma faixa de áudio. O botão com o nome do seu editor (como **Abrir no VS Code**) pede ao servidor que inicie o editor no ecrã _do servidor_, por isso só é oferecido ao proprietário do servidor, e o botão esconde-se perante um anfitrião headless sem editores instalados.
 
 ## Resolução de problemas
 

@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_workspace_provisioner_port.dart';
 import 'package:cc_domain/core/domain/ports/space_provisioning_log_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/services/slugify.dart';
@@ -16,7 +17,6 @@ import 'package:cc_domain/features/settings/domain/services/branch_template_reso
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/repos/space_provisioning_log.dart';
 import 'package:cc_infra/src/repos/worktree_release.dart';
 import 'package:path/path.dart' as p;
@@ -472,9 +472,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     final existing = await _registry.forUnitRepo(workspaceId, spaceId, repo.id);
     if (existing != null) {
       // Reusable only when the worktree is still there AND still under THIS
-      // space's `repos/`. The second half is what heals a row written before
-      // worktrees moved from `conversations/<id>/` to `spaces/<id>/`: the
-      // directory it names exists, so a plain existence check would report
+      // space's `repos/`: a row naming a directory anywhere else would report
       // "reuse" forever while the agent's overlay symlinks into an empty
       // `spaces/<id>/repos`.
       final stillHere = Directory(existing.path).existsSync();
@@ -506,7 +504,7 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
     final name = slugify(repoName).isEmpty ? repo.id : slugify(repoName);
 
     final fetchUrl = repo.hasForgeRemote && repo.forge == ForgeHost.github
-        ? 'https://github.com/${repo.remoteOwner}/${repo.remoteName}.git'
+        ? 'https://${repo.forge.gitHost}/${repo.remoteOwner}/${repo.remoteName}.git'
         : null;
 
     // Past the reuse check, so ANY directory sitting at the destination is an
@@ -741,11 +739,6 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
       return 0;
     }
     final rows = await _registry.watchForWorkspace(workspaceId).first;
-    // Reap the pre-rename `conversations/` tree first, THROUGH the ordinary
-    // teardown so its uncommitted work is rescued rather than deleted from
-    // under an operator. Rows destroyed here are gone from `rows` below by the
-    // time the staleness loop reads them (it re-checks the directory).
-    await _reapLegacyConversationsDir(workspaceId, rows);
     var reaped = 0;
     // Spaces whose worktrees we tore down here — their space dir (the
     // per-agent overlays and their token-bearing `.mcp.json`) goes with them.
@@ -793,50 +786,6 @@ class RepoWorkspaceProvisioner implements RepoWorkspaceProvisionerPort {
 
   /// Idle time after which a sweep deletes a worktree's warm review index.
   static const _captureIndexMaxAge = Duration(days: 7);
-
-  /// Deletes the workspace's obsolete `conversations/` tree.
-  ///
-  /// Worktrees are keyed by SPACE and now live under `spaces/<spaceId>/`. The
-  /// old tree is not a second copy anyone reads: nothing resolves paths into it
-  /// any more, so left alone it is a directory of full repo checkouts that
-  /// nothing will ever reclaim — while the registry rows pointing into it would
-  /// keep reporting "reuse" and hand agents a repos/ symlink into an empty
-  /// directory. Removing it makes those rows self-heal through the ordinary
-  /// vanished-directory path.
-  Future<void> _reapLegacyConversationsDir(
-    String workspaceId,
-    List<IsolatedRepo> rows,
-  ) async {
-    try {
-      final ws = await _filesystem.workspaceDir(workspaceId);
-      final legacy = Directory(p.join(ws, 'conversations'));
-      if (!legacy.existsSync()) {
-        return;
-      }
-      // Through the releaser, never a bare recursive delete: those worktrees
-      // are real checkouts an agent may have left uncommitted work in, and
-      // the isolation destroy is what saves it as a patch outside the repo
-      // first.
-      final displaced = rows
-          .where((r) => p.isWithin(legacy.path, r.path))
-          .toList();
-      if (displaced.isNotEmpty) {
-        await _releaser.release(
-          displaced,
-          mode: WorktreeReleaseMode.releaseRowsOnly,
-        );
-      }
-      if (legacy.existsSync()) {
-        await legacy.delete(recursive: true);
-      }
-      CcInfraLog.info(
-        'sweepStale: removed the obsolete conversations/ tree in $workspaceId '
-        '(${displaced.length} worktree(s) released; they live under spaces/ now)',
-      );
-    } on Object catch (e) {
-      CcInfraLog.warning('sweepStale: legacy conversations cleanup failed: $e');
-    }
-  }
 
   /// Whether [row]'s space is gone. Unknown (no predicate wired, or the
   /// lookup threw) counts as PRESENT: a sweep must never destroy a live

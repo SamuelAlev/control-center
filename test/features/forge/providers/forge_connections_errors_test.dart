@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
@@ -35,18 +36,12 @@ void main() {
             'connections': [
               {
                 'forge': 'github',
-                'authenticated': true,
+                'status': lapsed ? 'needs_sign_in' : 'connected',
+                'scope': 'global',
                 'username': 'Alice',
                 'source': 'oauth',
               },
-              {'forge': 'gitlab', 'authenticated': false},
-            ],
-          };
-        }
-        if (op == 'oauth.connections') {
-          return {
-            'connections': [
-              {'lane': 'github', 'connected': true, 'needs_sign_in': lapsed},
+              {'forge': 'gitlab', 'status': 'not_connected'},
             ],
           };
         }
@@ -102,21 +97,21 @@ void main() {
     expect(container.read(viewerLoginsProvider), {ForgeHost.github: 'alice'});
   });
 
-  test(
-    'a lapsed person grant is visible while the server reads connected',
-    () async {
-      lapsed = true;
-      final connections = await container.read(forgeConnectionsProvider.future);
-      final github = connections.firstWhere((c) => c.forge == ForgeHost.github);
-      expect(github.authenticated, isTrue);
-      expect(github.needsSignIn, isTrue);
-      expect(needsForgeSignIn(connections), isTrue);
-    },
-  );
+  test('a lapsed person grant reads as needs_sign_in from the server', () async {
+    lapsed = true;
+    final connections = await container.read(forgeConnectionsProvider.future);
+    final github = connections.firstWhere((c) => c.forge == ForgeHost.github);
+    expect(github.status, ForgeConnectionStatus.needsSignIn);
+    expect(github.isUsable, isFalse);
+    expect(needsForgeSignIn(connections), isTrue);
+  });
 
   test('a working grant does not ask for a sign-in', () async {
     final connections = await container.read(forgeConnectionsProvider.future);
-    expect(connections.any((c) => c.needsSignIn), isFalse);
+    expect(
+      connections.any((c) => c.status == ForgeConnectionStatus.needsSignIn),
+      isFalse,
+    );
     expect(needsForgeSignIn(connections), isFalse);
   });
 }

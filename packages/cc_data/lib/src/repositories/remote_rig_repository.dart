@@ -37,15 +37,17 @@ class RigView {
     this.memoryMb = 0,
     this.currentUrl,
     this.browserEngine,
+    this.canDrive,
+    this.holderOnly = false,
   });
 
   /// Builds a view from the `rig.*` wire map.
   ///
-  /// Absent fields come back ABSENT — `phase` no longer defaults to
-  /// `provisioning` and `accelerated` no longer defaults to true. A truncated
-  /// or older payload reading as a known state is worse than reading as
-  /// unknown: the first shows a spinner for a machine nobody is booting, and
-  /// the second hid the "Emulated" warning on exactly the hosts that need it.
+  /// Absent fields come back ABSENT — `phase` does not default to
+  /// `provisioning` and `accelerated` does not default to true. A truncated
+  /// payload reading as a known state is worse than reading as unknown: the
+  /// first shows a spinner for a machine nobody is booting, and the second
+  /// hides the "Emulated" warning on exactly the hosts that need it.
   factory RigView.fromWire(Map<String, dynamic> wire) => RigView(
     id: wire['id'] as String? ?? '',
     surface: wire['surface'] as String? ?? '',
@@ -73,11 +75,12 @@ class RigView {
     expiresAt: DateTime.tryParse(wire['expires_at'] as String? ?? ''),
     memoryMb: wire['memory_mb'] as int? ?? 0,
     currentUrl: wire['current_url'] as String?,
-    // Absent on a server that predates browser engines, where every browser
-    // rig was Chromium. Left NULL rather than defaulted, so the UI can show
-    // no badge at all instead of asserting a browser this client never
-    // heard the server name.
+    // Null off the browser surface, or for an engine this build does not
+    // read: the UI then shows no badge rather than asserting a browser the
+    // server never named.
     browserEngine: RigBrowserEngine.fromWire(wire['browser_engine'] as String?),
+    canDrive: wire['can_drive'] as bool?,
+    holderOnly: wire['holder_only'] as bool? ?? false,
   );
 
   /// Session id.
@@ -106,7 +109,7 @@ class RigView {
   final String phase;
 
   /// [phase] parsed, or null when the server named one this client does not
-  /// know (an older or newer server, a truncated payload).
+  /// know (a truncated payload, a value this build does not read).
   ///
   /// Null is a REAL state the UI has to render honestly. It used to be
   /// impossible — an absent phase defaulted to `provisioning` — so an unknown
@@ -158,9 +161,8 @@ class RigView {
   /// WHICH machine of this surface + engine within the conversation.
   ///
   /// Null is the conversation's DEFAULT machine — the one an agent drives, the
-  /// one a tab that names no slot addresses, and what every rig on a server
-  /// that predates slots reports. A non-null slot is a second machine a person
-  /// opened deliberately.
+  /// one a tab that names no slot addresses. A non-null slot is a second
+  /// machine a person opened deliberately.
   final String? slotId;
 
   /// The agent driving it.
@@ -186,6 +188,15 @@ class RigView {
   /// say. Drives the tab's badge and keeps one tab per engine addressing its
   /// own machine.
   final RigBrowserEngine? browserEngine;
+
+  /// Whether the CALLER may drive this rig (input, control, ports, paste,
+  /// file drop, destroy), as the server answered for them: the holder rule
+  /// and the space's write rule together. Null when the row did not say.
+  final bool? canDrive;
+
+  /// Whether this rig carries somebody else's own credentials, so only the
+  /// person it was opened for may drive it ([canDrive] is then false).
+  final bool holderOnly;
 
   /// Whether it can still be driven.
   bool get isLive => phaseKind?.isLive ?? false;
@@ -235,15 +246,10 @@ class RigBackendView {
       for (final s in (wire['surfaces'] as List? ?? const []))
         if (s is String) s,
     ],
-    // Absent on a server that predates engines, which had exactly one
-    // browser: reading that as "no browsers" would grey out a tab the
-    // server boots perfectly well. An empty LIST is taken at its word.
-    browserEngines: wire.containsKey('browserEngines')
-        ? [
-            for (final e in (wire['browserEngines'] as List? ?? const []))
-              ?RigBrowserEngine.fromWire(e as String?),
-          ]
-        : const [RigBrowserEngine.chromium],
+    browserEngines: [
+      for (final e in (wire['browserEngines'] as List? ?? const []))
+        ?RigBrowserEngine.fromWire(e as String?),
+    ],
     terminals: wire['terminals'] as bool? ?? false,
     enforcedEgress: wire['enforcedEgress'] as bool? ?? true,
     requiresInstall: wire['requiresInstall'] as bool? ?? false,
@@ -446,9 +452,7 @@ class RemoteRigRepository {
   /// Opens a rig.
   ///
   /// [engine] names which browser a browser rig should run and is ignored on the other
-  /// surfaces.
-  /// Omitted rather than defaulted here so an older server — which has no `engine` argument
-  /// and only ever ran Chromium — keeps working unchanged.
+  /// surfaces; omitted, the server opens its default engine.
   /// [homeTheme] (`'light'`/`'dark'`) is the calling app's brightness: a browser rig's home
   /// page is written into the guest at boot, so the scheme must travel with the open.
   Future<RigView> open({

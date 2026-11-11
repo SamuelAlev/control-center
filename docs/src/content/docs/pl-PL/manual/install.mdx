@@ -2,7 +2,7 @@
 title: Instalacja
 description: Korzystaj z Control Center w przeglądarce albo zainstaluj aplikację desktopową, skonfiguruj backend agenta i wybierz, gdzie działa jego serwer.
 slug: pl-PL/podrecznik/instalacja
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center działa na dwa sposoby: jako **aplikacja webowa** pod adresem
@@ -183,11 +183,10 @@ identyfikatora użytkownika — a nie w pęku kluczy systemu klienta. Każde urz
 z którego się logujesz, korzysta z tego samego, a żaden inny członek nie może go
 odczytać.
 
-GitHub obsługuje tylko logowanie: **Ustawienia → Obszar roboczy → Profil
-i tożsamość → Hosting kodu** oferuje **Zaloguj się do GitHub** i nie ma tokenu
+GitHub obsługuje tylko logowanie: **Ustawienia → Ty → Profil → Hosting kodu** oferuje **Zaloguj się do GitHub** i nie ma tokenu
 do wklejania. Logowanie przebiega przez własną GitHub App serwera
 ([Utwórz GitHub App](/pl-PL/podrecznik/poradniki/github-app/)) albo przez
-Control Center Connect, zależnie od wyboru właściciela serwera. Z własną
+Control Center Connect, zależnie od wyboru właściciela serwera, chyba że administrator obszaru roboczego wybrał dla tego obszaru roboczego inne aplikacje logowania w **Ustawienia → Obszar roboczy → Integracje**. Z własną
 aplikacją serwera przeglądarka sama wraca na serwer; przez Connect wpisujesz
 8-znakowy kod, który pokazuje przeglądarka, albo pozwalasz jej otworzyć
 Control Center. Zobacz [Skonfiguruj integrację GitHub](/pl-PL/podrecznik/poradniki/integracja-github/).
@@ -240,7 +239,7 @@ oraz flagi `--data-dir` / `--port` / `--bind`.
    **Odśwież**.
 2. **Ustawienia → Obszar roboczy → Repozytoria** wylicza repozytoria tego obszaru
    roboczego, a **Dodaj repozytorium** przegląda foldery hosta serwera.
-3. **Ustawienia → Obszar roboczy → Agenci** wylicza pięciu agentów, których utworzył
+3. **Ustawienia → Obszar roboczy → Agenci** wylicza sześciu agentów, których utworzył
    Twój pierwszy obszar roboczy. Dla każdego trzeba ustawić **Adapter** i **Model**,
    zanim będzie mógł zadziałać.
 4. **Ustawienia → Serwer → Diagnostyka i prywatność** raportuje backendy sandboxa

@@ -41,15 +41,11 @@ enum SandboxBackend {
   /// the host's own processes.
   bool get isEnclosed => this == SandboxBackend.microvm;
 
-  /// Parses [value] back into a backend. Legacy `"docker"` values rewrite to
-  /// [native] so existing users keep their "sandboxed" intent; unknown
-  /// values fall through to [none].
+  /// Parses [value] back into a backend; unknown values fall through to
+  /// [none].
   static SandboxBackend fromName(String? value) {
     if (value == null) {
       return SandboxBackend.none;
-    }
-    if (value == 'docker') {
-      return SandboxBackend.native;
     }
     for (final b in SandboxBackend.values) {
       if (b.name == value) {

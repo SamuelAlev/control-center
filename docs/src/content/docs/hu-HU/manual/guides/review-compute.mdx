@@ -2,7 +2,7 @@
 title: Átnézési számítás (kohorszok, tengelyek és determinisztikus diffek)
 description: Mit állít elő az átnézési számítási kör a szerveroldalon – kohorszokat, API-szerződés- és vizuális diffeket, tengelyenkénti kapukat –, és hogyan épül ez be az Átnézés fülbe.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 A PR **Átnézés** füle az átnézési pipeline élő előrehaladása, amíg az dolgozik,
@@ -15,8 +15,6 @@ A fül mögött a `cc_server` fájlkohorszokat épít, lefuttatja a determiniszt
 tengelyeket, és kiszolgálja őket a `review_studio.*` RPC-műveleteken keresztül
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` és a `watch*` ikertestvéreik).
-Egy perzisztált elrendezés, amely még mindig a `pr.reviewStudio` nevet viseli,
-ugyanezt az Átnézés fület nyitja meg.
 
 Az Átnézés fülön:
 
@@ -88,6 +86,8 @@ rendelkező Flutter-repóban, a számítási kör a PR base és head worktree-j�
 headless `flutter test` golden-futtatással rendereli a megváltozott
 komponenseket előtte és utána, majd diffeli a képpontokat.
 
+Ezek a tesztek a pull request saját kódjai, ezért ügynök eszközfolyamatához hasonlóan futnak: homokozóban, ha a szerver homokozóban futtatja az ügynököket; homokozó kikapcsolása esetén korlátozás nélkül, ha a szerver tulajdonosa kikapcsolta a homokozót; és homokozó nélkül csak olyan kérésre, amelyért a szerver tulajdonosa felel. Másoknak a tengely **unavailable** állapotot jelent, „nincs homokozó ezen a szerveren, a PR tesztjeit homokozó nélkül csak a tulajdonosa futtathatja” indokkal.
+
 :::note[Ehhez Flutter SDK szükséges a szerver hosztján]
 A tisztán Dart szerver nem tud Flutter-widgeteket folyamaton belül renderelni,
 ezért külső folyamatként meghívja a `flutter test` parancsot. Az SDK-t a
@@ -98,9 +98,10 @@ jelent olyan sikert, amelyet nem érdemelt ki.
 
 A **changed** vagy **removed** jelöléssel ellátott pillanatképek jóváhagyásig
 visszatartják a vizuális kaput; az **unchanged**, **added** és **approved**
-pillanatképek kinyitják azt. Az elérhetetlenségnek négy oka lehet: nincs
+pillanatképek kinyitják azt. Az elérhetetlenségnek öt oka lehet: nincs
 Flutter SDK a hoszton, nincs Widgetbook alkalmazás a repóban, nincsenek
-golden-tesztelhető használati esetek, vagy hiba történt a golden-harnessben.
+golden-tesztelhető használati esetek, hiba történt a golden-harnessben, vagy
+nincs homokozó olyan kéréshez, amelyért a szerver tulajdonosa nem felel.
 
 Egy szándékolt változás jóváhagyása a `review_studio.approveVisual`.
 

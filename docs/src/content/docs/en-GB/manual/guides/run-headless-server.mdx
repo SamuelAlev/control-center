@@ -3,7 +3,7 @@ title: Run a headless server
 description: Run the cc_server headless binary or its Docker image, pair a client to it and configure it with the full CLI flag and environment surface.
 dateModified: 2026-11-08
 slug: en-GB/manual/guides/run-headless-server
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Run `cc_server` on a machine that stays on, then connect to it from your desktop,
@@ -161,8 +161,10 @@ tier — `desktop`, `ios`, `android`, anything else is a web client), `--label`
 (defaults to the platform name plus this machine's hostname), `--host` (the host
 to print in the URL, since loopback is not reachable from another machine) and
 `--client-url`. Re-running `pair` rotates that device's key and drops its live
-sessions. Pairing never creates a workspace: the connecting client's onboarding
-names and creates the first one.
+sessions. Pairing never creates a workspace. Only the server owner creates
+workspaces: on the owner's client, onboarding names and creates the first one,
+and anyone else waits until the owner creates one for them or a workspace admin
+invites them.
 
 With `--client-url` it also prints a terminal-scannable QR that opens the web
 client already filled in:
@@ -180,9 +182,10 @@ key in the URL fragment. The **Remote** phone app expects a different payload
 interchangeable. See [Pair a device](/en-GB/manual/guides/pair-a-device/).
 :::
 
-A credential minted by `cc_server pair` carries **no expiry**; one minted in the
-app always expires after 30 days. Revoke a CLI-minted device from
-**Settings → You → Your devices** when you are done with it.
+A credential minted by `cc_server pair` expires after 30 days, like one minted
+in the app; run `pair` again for the same device to issue a fresh one. Revoke a
+CLI-minted device from **Settings → You → Your devices** when you are done with
+it.
 
 The pairing key authenticates the mandatory Noise handshake; each session derives
 fresh traffic keys and checks the server's signed identity. Protect the pairing
@@ -229,6 +232,26 @@ use the encrypted tunnel instead.
 
 The server runs until `SIGINT`/`SIGTERM`, then shuts down cleanly.
 
+### Read the startup lines
+
+Two lines tell you how this server is set up. The exposure line, printed next
+to the ready banner, starts with `cc_server exposure:` and lists how far it can be reached (`bind`, `tls`,
+`relay`, `tunnel`), whether a server owner is recorded (`owner`), and how
+agents run on this machine (`sandbox`):
+
+- `sandbox=native`: every agent run is wrapped in the OS sandbox.
+- `sandbox=off`: you started the server with `--sandbox off`, so every
+  member's agents run unconfined on this machine.
+- `sandbox=unavailable`: the host has no sandbox backend (Windows, or Linux
+  without `bwrap` and `socat`), so only agent runs the server owner is
+  accountable for start. Everyone else's runs are refused with "This server
+  has no sandbox, so only its owner can run agents here."
+
+A sandbox line earlier in the log says the same in words and, when a backend is
+missing, names what to install. Running other people's agents without a
+sandbox is a choice the server owner makes once, for everyone, with
+`--sandbox off`. See [Configure sandbox policies](/en-GB/manual/guides/sandbox-policies/#check-whether-your-agent-runs-are-sandboxed).
+
 ## Step 5: Connect a client
 
 Point a client at the server URL and pairing key from step 3:
@@ -255,6 +278,14 @@ authenticated encrypted session as the rest of the client. `cc_server`
 decrypts each request, forwards it to its local code-server backend, and
 encrypts the response back to the client. The files remain server-owned.
 
+The editor runs on the server as the server's own user, with its terminal,
+tasks and extensions, so only the [server owner](/en-GB/manual/concepts/authorisation/#the-server-owner)
+can open it. A session belongs to the device and person that opened it. It opens
+with VS Code's workspace trust on, so VS Code asks before trusting a folder, and
+with automatic tasks off, so a repository's tasks never start on open. Everyone
+else keeps the app's built-in editor and file views; the full editor is not
+offered to them.
+
 Host the web client over HTTPS or a secure loopback origin so Service Workers
 can run. The normal web build and release scripts include the shared resource
 assets. If you build a bundle manually, stage those assets afterwards from the
@@ -272,7 +303,6 @@ Native editor traffic uses a capability-scoped loopback facade instead.
 Do not expose the server-launched editor extension's private loopback
 report/command gateway through a public proxy. Sensitive public HTTP requests
 are rejected; resources require an authenticated encrypted session.
-
 
 ## Step 6: Choose how people sign in
 
@@ -298,6 +328,12 @@ Sign-ins through Connect finish with a code the browser shows, so the server
 needs no public address for them. Sign-ins through the server's own apps return
 the browser to the server's public URL, so set `--public-url` to an address
 people's browsers can reach.
+
+This is the server's default. A workspace admin can give one workspace a
+different choice under **Settings → Workspace → Integrations**. With
+`CC_CONNECT_URL` set, a workspace can still switch to its own apps but not to
+a Connect of its own; see
+[Per-workspace choice](/en-GB/manual/reference/connect/#per-workspace-choice).
 
 To host Connect for other servers from this one, set `CC_SERVER_CONNECT_HOST=on`;
 see [Run a Connect server](/en-GB/manual/guides/run-connect/#mount-connect-inside-cc_server).
@@ -345,7 +381,7 @@ by the caller's workspace membership and role — not by holding a pairing key.
 Two things to know before you expose the port beyond loopback (TLS alone does
 not provide the paired client's end-to-end encryption or authorise resources):
 
-- **MCP fails closed off-host.** A tokenless MCP surface answers loopback only. Binding `any` does not widen it — an off-host request is refused with "MCP requires a bearer token to answer non-loopback clients" until you configure one (`mcp.setToken`, or **Settings → Server → MCP servers**).
+- **MCP always needs its token.** The server creates the MCP token at first start and every request, loopback included, must send it as `Authorization: Bearer <token>`. It cannot be turned off; the server owner reads and rotates it in **Settings → Server → MCP servers**. Requests from a web page, to an unknown `Host`, or a `POST` that is not JSON are refused before the token is checked. See [Use the MCP server](/en-GB/manual/guides/mcp-server/).
 - **`GET /healthz` is unauthenticated by design**, with wildcard CORS and publishes the server's id, name, identity fingerprint and build version. Clients need the fingerprint to pin the server, so this is deliberate — but it does mean any reachable `cc_server` discloses that much to anyone who asks.
 
 ## Related guides

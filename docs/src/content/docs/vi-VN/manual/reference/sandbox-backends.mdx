@@ -2,15 +2,23 @@
 title: Backend sandbox
 description: Các backend sandbox, nơi chúng được áp dụng và mọi value object mà runtime sandbox sử dụng.
 slug: vi-VN/so-tay/tham-chieu/backend-sandbox
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Việc một lượt chạy có được sandbox hay không phụ thuộc vào máy chủ]
-`cc_server` dò máy chủ một lần lúc khởi động và bọc việc điều phối agent trong backend gốc khi bước dò báo có một backend khả dụng và `--sandbox` không phải `off`. Cả hai đường nối điều phối đều được bọc: CLI Claude Code qua cổng sandbox, và ACP cùng công cụ `bash` của harness tích hợp qua trình quản lý sandbox.
+`cc_server` quyết định một lần lúc khởi động cách các agent chạy trên máy chủ này, và quyết định đó giữ nguyên cho đến khi nó khởi động lại:
 
-Nơi bước dò báo không có backend — **Windows thì luôn vậy** và Linux hay WSL2 thiếu `bwrap` và `socat` — các lượt chạy agent **không** được sandbox. ACP và công cụ `bash` của harness vẫn được spawn với môi trường đã làm sạch; Claude Code đi qua `NoSandboxAdapter` và kế thừa môi trường của máy chủ. Những ranh giới còn lại là cây làm việc riêng của lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), một token forge chỉ đọc, do broker cấp theo từng lần khởi chạy và thu hồi khi kết thúc, các lần push phải vượt qua quy tắc push tại cổng lượt chạy agent, chính sách lệnh theo từng chế độ, [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) hợp nhất (đóng-khi-lỗi), việc làm sạch môi trường trên các đường ACP và `bash` của harness, và bề mặt công cụ mà chế độ của nó cho phép.
+- **Có sandbox** (`native`): bước dò tìm thấy một backend và `--sandbox` không phải `off`. Cả hai đường nối điều phối đều được bọc: CLI Claude Code qua cổng sandbox, và ACP cùng công cụ `bash` của harness tích hợp qua trình quản lý sandbox.
+- **Tắt** (`off`): chủ sở hữu máy chủ đã khởi động nó với `--sandbox off`. Mọi agent của thành viên chạy không bị giới hạn trên máy này, bất kể ai đã khởi động lượt chạy đó.
+- **Không khả dụng** (`unavailable`): sandbox được bật nhưng bước dò không tìm thấy backend (**Windows thì luôn vậy**, và Linux hay WSL2 thiếu `bwrap` và `socat`). Một lượt chạy chỉ bắt đầu khi người chịu trách nhiệm cho nó là [chủ sở hữu](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) của máy chủ: người đã yêu cầu nó, hoặc với tự động hóa là người mà nó được gắn vào. Lượt chạy của bất kỳ ai khác bị từ chối trước khi thông tin xác thực được tạo, một lease được lấy hoặc một tiến trình được khởi động. Khi không có chủ sở hữu nào được ghi nhận, không lượt chạy nào bắt đầu.
+
+Một lượt chạy bị từ chối sẽ thất bại với mã `sandbox_unavailable`. Ứng dụng hiển thị nó là **Agent cần sandbox trên máy chủ này**: "Máy chủ này không có sandbox, nên chỉ chủ sở hữu của nó mới có thể chạy agent ở đây. Chủ sở hữu có thể cài đặt sandbox hoặc tắt sandboxing cho tất cả mọi người."
+
+Một lượt chạy khởi động mà không có sandbox (dưới `off`, hoặc lượt chạy của chính chủ sở hữu dưới `unavailable`) chạy trực tiếp trên máy chủ. ACP và công cụ `bash` của harness vẫn được spawn với môi trường đã làm sạch; Claude Code đi qua `NoSandboxAdapter` và kế thừa môi trường của máy chủ. Những ranh giới còn lại là cây làm việc riêng của lượt chạy (copy-on-write ở nơi `rift` được phát hành; `git worktree` trên Windows), một token forge chỉ đọc, do broker cấp theo từng lần khởi chạy và thu hồi khi kết thúc, các lần push phải vượt qua quy tắc push tại cổng lượt chạy agent, chính sách lệnh theo từng chế độ, [rào chắn hành động](/vi-VN/so-tay/khai-niem/rao-chan/) hợp nhất (đóng-khi-lỗi), việc làm sạch môi trường trên các đường ACP và `bash` của harness, và bề mặt công cụ mà chế độ của nó cho phép.
 
 Các công cụ tệp in-process của harness (read, write, edit, apply patch, search, find, search_files) nằm ngoài sandbox trên mọi máy chủ: chúng chạy trong tiến trình máy chủ, nên chỉ `bash` được bọc.
+
+Máy host không bao giờ là phương án dự phòng cho một máy chủ có sandbox. Nếu máy chủ có sandbox cho agent nhưng không có sandbox nào để giao cho một lượt chạy, các tiến trình công cụ và lệnh `bash` của nó bị từ chối, chứ không được khởi động trên máy host. Cùng tư thế đó quyết định các tiến trình nhỏ quanh một lượt chạy: các trợ thủ ACP một lần (tiêu đề cuộc hội thoại, `/btw`, `/handoff`, `/goal`) và các bài kiểm thử golden của một pull request trong Review Studio chạy trong sandbox khi máy chủ có sandbox cho agent, không bị giới hạn dưới `off`, và dưới `unavailable` chỉ cho một yêu cầu mà chủ sở hữu máy chủ chịu trách nhiệm; nếu không, chúng bị bỏ qua.
 :::
 
 ## Tổng quan backend
@@ -19,9 +27,9 @@ Các công cụ tệp in-process của harness (read, write, edit, apply patch, 
 | ------------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | VM khép kín   | `microvm` | macOS, Linux, Windows (hypervisor microVM)    | Được đặt cổng theo bước dò trên runtime microVM; áp dụng cho terminal tương tác — shell chạy bên trong một [rig](/vi-VN/so-tay/khai-niem/rigs/), không phải trên máy chủ |
 | Gốc           | `native`  | macOS (Seatbelt), Linux và WSL2 (bubblewrap)  | Được dò lúc khởi động; Linux từ chối một lượt chạy cần các lệnh từ chối ghi theo mẫu tên tệp mà bubblewrap không thể thực thi |
-| Không cô lập  | `none`    | Tất cả                                        | Giá trị mặc định khi phân tích, mặc định của terminal và phương án dự phòng khi không có backend nào khả dụng hoặc `--sandbox off` được đặt |
+| Không cô lập  | `none`    | Tất cả                                        | Giá trị mặc định khi phân tích và mặc định của terminal; việc điều phối agent dùng nó dưới `--sandbox off`, và với các lượt chạy của chính chủ sở hữu khi không có backend nào khả dụng |
 
-`SandboxBackend.fromName` trả về `none` khi giá trị được lưu là null hoặc không nhận ra. Giá trị `"docker"` được lưu sẽ ánh xạ thành `native`.
+`SandboxBackend.fromName` trả về `none` khi giá trị được lưu là null hoặc không nhận ra.
 
 **`microvm` là backend duy nhất có ranh giới kernel** — khối lượng công việc
 thực sự không chạy trên máy chủ. Nó không bao giờ là phương án dự phòng âm thầm
@@ -34,7 +42,7 @@ terminal không bao giờ có thể tự nhận là khép kín trong khi đang c
 chủ. Vòng đời, image và egress cho chính VM được trình bày trong [tham chiếu
 rigs](/vi-VN/so-tay/tham-chieu/rigs/).
 
-**Windows không có sandbox gốc.** `NativeSandboxAdapter.probe` trả về `available: false` trên mọi máy chủ không phải macOS hay Linux/WSL2. Do đó việc điều phối agent trên Windows dùng `none`. Backend `microvm` là riêng biệt: nó được đặt cổng theo bước dò trên runtime microVM và áp dụng cho terminal tương tác cùng rig, không áp dụng cho việc bọc `bash` trên máy chủ.
+**Windows không có sandbox gốc.** `NativeSandboxAdapter.probe` trả về `available: false` trên mọi máy chủ không phải macOS hay Linux/WSL2, nên một máy chủ Windows ở trạng thái `unavailable`: chỉ các lượt chạy agent của chủ sở hữu máy chủ mới bắt đầu, không bị giới hạn, còn của những người khác bị từ chối. Để cho mọi thành viên chạy agent ở đó, chủ sở hữu khởi động máy chủ với `--sandbox off`, khi đó mọi lượt chạy đều không bị giới hạn. Backend `microvm` là riêng biệt: nó được đặt cổng theo bước dò trên runtime microVM và áp dụng cho terminal tương tác cùng rig, không áp dụng cho việc bọc `bash` trên máy chủ.
 
 ## Kết quả dò
 
@@ -47,9 +55,9 @@ Bước dò chính là thứ đặt cổng cho việc thực thi. Nó chạy m�
 | Linux hoặc WSL2 thiếu một trong hai công cụ | `false` | `requiresInstall: true`, kèm một gợi ý cài đặt nêu tên các gói còn thiếu   |
 | Mọi nền tảng khác                      | `false`     | Sandbox gốc không được cung cấp trên nền tảng này                          |
 
-Máy chủ ghi kết quả vào một dòng khởi động duy nhất: `agent sandbox ON` kèm ghi chú, `no OS-native agent sandbox on this host` kèm gợi ý, hoặc `agent sandbox DISABLED by --sandbox off`. `GET /healthz` không mang trường sandbox nào.
+Máy chủ ghi kết quả vào một dòng khởi động duy nhất: `agent sandbox ON` kèm ghi chú; `no OS-native agent sandbox on this host` kèm gợi ý, trong đó nói thêm rằng chỉ các lượt chạy mà chủ sở hữu máy chủ chịu trách nhiệm mới sẽ bắt đầu; hoặc `agent sandbox DISABLED by --sandbox off`. Dòng exposure in lúc khởi động mang cùng quyết định dưới dạng `sandbox=native`, `sandbox=off` hoặc `sandbox=unavailable`. `GET /healthz` không mang trường sandbox nào.
 
-`--sandbox` / `CC_SERVER_SANDBOX` chấp nhận `on` (mặc định) hoặc `off`. Đây là cơ chế chủ động tắt, không phải bật: `on` nghĩa là "bọc khi máy chủ cung cấp một backend", không bao giờ là "bắt buộc phải có một backend".
+`--sandbox` / `CC_SERVER_SANDBOX` chấp nhận `on` (mặc định) hoặc `off`. `on` bọc mọi lượt chạy khi máy chủ cung cấp một backend, và chỉ cho phép các lượt chạy của chủ sở hữu khi không có. `off` chạy mọi agent của thành viên không bị giới hạn trên máy này; đó là lựa chọn của chủ sở hữu cho tất cả mọi người, không phải cài đặt theo từng lượt chạy.
 
 ## Backend gốc
 
@@ -64,6 +72,8 @@ Profile được sinh ra **mặc định là dễ dãi** (`(allow default)`) và
 - **Tiến trình**: `process-exec` từ chối các tệp nhị phân luôn nguy hiểm, cộng thêm việc chặn thực thi bất cứ thứ gì từ một thư mục có thể ghi. Các cây cài đặt công cụ đã biết trong thư mục home của bạn (cache của corepack, npx và `pnpm dlx`, trình quản lý phiên bản node, trình duyệt Playwright, rustup và cargo, Go, fvm và pub cache, pyenv, uv và pipx, rbenv, sdkman, mise, asdf và `~/.local/bin`) được mở lại bên dưới khối chặn đó. Các thư mục tạm dùng chung cũng bị chặn. Thay vào đó, mỗi phiên được cấp một `TMPDIR` riêng dưới `/private/tmp`, nơi các chương trình nó build (một tệp nhị phân `go test`, một bản build cargo) có thể chạy. Quy tắc từ chối cho các tệp nhị phân luôn nguy hiểm được áp dụng sau các quy tắc cho phép này
 - **Mạng**: bị giới hạn ở các cổng proxy in-process cùng DNS — loopback không được cho phép toàn bộ và không cho phép lắng nghe TCP. Socket Unix chỉ được phép bên trong `TMPDIR` riêng của phiên, bao gồm các công cụ như tsx và Chrome giữ socket IPC ở đó; SSH agent và các socket khác vẫn không thể truy cập. Các proxy thực thi danh sách cho phép theo tên miền của từng phiên (xem [Egress mạng](#egress-mạng))
 - **Cấu hình**: profile được sinh theo từng lần khởi chạy từ `SandboxSpec`
+- **Lệnh của chính máy chủ**: không một thư mục con trực tiếp nào của thư mục mà máy chủ chạy chương trình từ đó (mọi mục `PATH` và các thư mục công cụ riêng của người dùng thường gặp như `~/.local/bin`, với các liên kết của trình quản lý phiên bản như `~/fvm/default` được phân giải) có thể bị tạo, thay thế, xóa hoặc đổi tên, cũng không phải gói đã cài mà một lệnh được liên kết trỏ tới. Xem [Thư mục lệnh của máy chủ](#thư-mục-lệnh-của-máy-chủ)
+- **Tệp khởi động**: mọi đường dẫn home mà profile từ chối đọc cũng bị từ chối ghi, và các tệp khởi động của shell và phiên của người dùng máy chủ (`.zshenv`, `.zlogin`, `.bash_login`, cấu hình fish, unit systemd của người dùng, mục tự khởi động và các thứ tương tự) bị từ chối ghi ở mọi chế độ
 
 Yêu cầu:
 
@@ -76,6 +86,7 @@ Dùng bubblewrap (`bwrap`) để tạo các namespace mount và PID.
 - **Hệ thống tệp**: tạo một namespace mount chỉ nhìn thấy những đường dẫn đã được gắn
 - **Mạng**: chạy trong một namespace mạng không chia sẻ; lưu lượng tới được các proxy của máy chủ qua những cầu socket Unix bằng `socat`
 - **Tiến trình**: cô lập namespace PID
+- **Lệnh của chính máy chủ và tệp khởi động**: các bảo vệ giống như trên macOS, được biểu diễn dưới dạng bind của bubblewrap. Chúng chưa được kiểm chứng trên Linux, và một thư mục lệnh bị thiếu ở đó vẫn có thể được tạo
 
 Yêu cầu:
 
@@ -91,19 +102,51 @@ một backend có quy tắc tên tệp tại thời điểm tạo để khôi ph
 trên Linux. Tắt sandboxing là một lựa chọn chủ động từ bỏ mọi ràng buộc, không
 phải một cách lách tương đương.
 
+Trên thực tế, một máy chủ Linux hoặc WSL2 hiện chạy agent theo một trong hai cách. Khởi động với `--sandbox off`, nó chạy mọi agent của thành viên không bị giới hạn. Khi chưa cài bubblewrap hoặc `socat`, nó ở trạng thái `unavailable` và chỉ chạy các agent của chủ sở hữu máy chủ, không bị giới hạn. Khi cả hai công cụ đã được cài và sandbox được bật, mọi lượt chạy đều đóng-khi-lỗi, kể cả của chủ sở hữu.
+
+## Thư mục lệnh của máy chủ
+
+Máy chủ tìm, một lần khi khởi động, mọi thư mục mà nó chạy chương trình từ đó: mỗi mục trong `PATH` của nó, các thư mục công cụ riêng của người dùng mà nó dò (như `~/.local/bin`, `~/.bun/bin` và các thư mục global của npm, yarn và pnpm), và thư mục thật đằng sau mọi liên kết trên đường đi (liên kết của trình quản lý phiên bản như `~/fvm/default` hoặc mặc định của fnm). Bên trong sandbox, một agent không thể thêm, thay thế, xóa hay đổi tên một lệnh trong các thư mục đó, liên kết dẫn tới một lệnh, hoặc gói đã cài mà một lệnh được liên kết trỏ tới, và không đổi tên được các thư mục nằm phía trên chúng. Nếu không, một lượt chạy trong sandbox có thể cài sẵn một chương trình mà máy chủ, hoặc người dùng, sau này khởi động bên ngoài sandbox.
+
+Điều này thay đổi gì với một lượt chạy:
+
+- Cài đặt global từ bên trong một lượt chạy trong sandbox thất bại với "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, và `cargo install`, `go install` hoặc `dart pub global activate` khi thư mục bin của chúng nằm trên `PATH` của máy chủ.
+- Đổi phiên bản mặc định thất bại tương tự (`fnm default`, `nvm alias default`, `fvm global`), cũng như việc một công cụ tự cập nhật tại chỗ.
+- Cài đặt cục bộ của dự án (`node_modules/.bin`), `npx`, `pnpm dlx`, các trình quản lý gói do corepack quản lý, cache SDK và các bản build thông thường vẫn hoạt động.
+
+Để một công cụ global có sẵn cho agent, hãy cài nó trên chính máy chủ, với tư cách người dùng của máy chủ, rồi khởi động lại máy chủ để lệnh mới cũng được bảo vệ. Hoặc cài nó trong dự án. Một lệnh được cài sau khi máy chủ đã khởi động chỉ được bảo vệ đầy đủ từ lần khởi động kế tiếp.
+
+Được thực thi và kiểm thử trên macOS. Trên Linux, các quy tắc tương tự là các bind của bubblewrap chưa được kiểm chứng. Windows không có sandbox.
+
 ## Backend không cô lập
 
-Không có sandbox. Tiến trình chạy trực tiếp trên máy chủ với quyền truy cập hệ thống tệp, mạng và tiến trình của máy chủ. ACP và công cụ `bash` của harness vẫn được làm sạch môi trường và áp chính sách lệnh; Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ. Đây là thứ việc điều phối agent quay về trên một máy chủ không có backend khả dụng hoặc có `--sandbox off`, và cũng là mặc định của terminal khi máy khách không nêu backend nào.
+Không có sandbox. Tiến trình chạy trực tiếp trên máy chủ với quyền truy cập hệ thống tệp, mạng và tiến trình của máy chủ. ACP và công cụ `bash` của harness vẫn được làm sạch môi trường và áp chính sách lệnh; Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ. Việc điều phối agent dùng nó cho mọi lượt chạy dưới `--sandbox off`, và trên một máy chủ không có backend khả dụng chỉ cho các lượt chạy của chính chủ sở hữu; lượt chạy của bất kỳ ai khác bị từ chối ở đó. Với một terminal, đó là shell của máy chủ, thứ mà chỉ chủ sở hữu máy chủ mới được mở.
 
 ## Terminal do máy chủ cung cấp
 
-Terminal được sandbox theo những quy tắc riêng của nó, không theo bước dò của đường điều phối. `defaultBackend` của `TerminalSessionService` là `none` và `cc_server` không ghi đè nó, nên một phiên terminal chạy shell của máy chủ trừ khi máy khách yêu cầu `native` một cách tường minh — còn bảng terminal của ứng dụng desktop thì không.
+Terminal do máy chủ lưu trữ chỉ mở shell của máy chủ cho [chủ sở hữu](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) của máy chủ. Mọi người khác nhận một terminal được sandbox, với giới hạn của agent, trong các thư mục riêng của không gian làm việc.
 
-Khi `native` được yêu cầu, shell được bọc qua `SandboxManager` dưới một profile terminal cố định: `$HOME` và thư mục làm việc của phiên có thể ghi, mạng mở và `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` cùng `~/Library/Keychains` bị từ chối đọc. Token forge chỉ đọc và cổng push không áp dụng ở đây — đó là chuyện của đường điều phối. Nếu việc bọc không được hỗ trợ, phiên sẽ thất bại thay vì hiển thị một nhãn native trên một PTY là shell của máy chủ.
+Backend được chọn cho một phiên như sau:
+
+| Được yêu cầu | Chủ sở hữu máy chủ | Những người khác |
+| --- | --- | --- |
+| Không gì | Backend mặc định của máy chủ | Mặc định, với `none` được thay bằng `native` |
+| `none` (shell của máy chủ) | Shell của máy chủ | Bị từ chối: shell của máy chủ chạy trên máy chủ không có sandbox |
+| `native` | Sandbox gốc, profile của chủ sở hữu | Sandbox gốc, profile của agent |
+| `microvm` | VM khép kín | VM khép kín |
+| Một tên không nhận ra | Bị từ chối | Bị từ chối |
+
+- **Profile của chủ sở hữu.** `$HOME` và thư mục làm việc của phiên có thể ghi, mạng mở, và `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` và `~/Library/Keychains` bị từ chối đọc.
+- **Profile của agent** (`memberTerminalSandboxConfig`). Cùng chính sách mà một agent trong không gian làm việc đó chạy theo: ghi chỉ ở thư mục làm việc, một thư mục chạy riêng, `/tmp` và các phần của `$HOME` mà agent được phép ghi; bí mật bị từ chối đọc; mạng là danh sách cho phép egress của agent; chương trình chỉ chạy từ thư mục làm việc và các toolchain đã cài.
+- Một terminal chỉ mở bên trong các thư mục riêng của không gian làm việc. Thư mục làm việc nằm ngoài chúng bị từ chối, không bao giờ bị thay bằng thư mục khác.
+- Chỉ người đã mở một terminal mới đọc, gõ vào, đổi kích thước hoặc đóng nó được. Với bất kỳ ai khác, id của nó trông như không tồn tại.
+- `microvm` được yêu cầu tường minh trên một máy chủ không có dịch vụ rig sẽ thất bại thay vì lùi về. Mặc định `microvm` trên một máy chủ như vậy hạ xuống `native` và ghi điều đó vào log.
+
+Token forge chỉ đọc và cổng push không áp dụng cho terminal: đó là chuyện của đường điều phối. Nếu việc bọc không được hỗ trợ, phiên sẽ thất bại thay vì hiển thị nhãn sandbox trên một phiên là shell của máy chủ.
 
 ## Egress mạng
 
-Khi một sandbox được khởi chạy, quyền truy cập mạng ra ngoài được thực thi bởi các proxy in-process, không phải bởi các quy tắc tường lửa của kernel. Trên một máy chủ không có backend khả dụng, không điều nào ở đây áp dụng và một tiến trình được spawn tiếp cận mạng đúng như người dùng máy chủ sẽ làm.
+Khi một sandbox được khởi chạy, quyền truy cập mạng ra ngoài được thực thi bởi các proxy in-process, không phải bởi các quy tắc tường lửa của kernel. Một lượt chạy không được sandbox (mọi lượt chạy dưới `--sandbox off`, hoặc lượt chạy của chủ sở hữu trên một máy chủ không có backend) không nhận được điều nào trong số này: một tiến trình nó spawn tiếp cận mạng đúng như người dùng máy chủ sẽ làm.
 
 - Runtime sandbox chạy một proxy HTTP/HTTPS và một proxy SOCKS5 trên `127.0.0.1` bên trong tiến trình `cc_server`, **một cặp cho mỗi phiên bị giới hạn** (`http_proxy.dart`, `socks_proxy.dart`). Các lượt chạy đồng thời không dùng chung một cặp.
 - Các tiến trình được sandbox nhận các biến môi trường proxy (`HTTP_PROXY`/`HTTPS_PROXY` → proxy HTTP, `ALL_PROXY` → proxy SOCKS; `GIT_SSH_COMMAND` định tuyến git-qua-SSH qua proxy SOCKS). Trên Linux, namespace mạng không được chia sẻ, nên các proxy là lối ra duy nhất; trên macOS, sandbox dùng chung loopback của máy chủ và nói chuyện trực tiếp với chúng.

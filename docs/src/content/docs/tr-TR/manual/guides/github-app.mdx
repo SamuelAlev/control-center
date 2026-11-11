@@ -1,8 +1,8 @@
 ---
 title: GitHub App oluşturma
-description: Sunucunuza tek tıklamayla kendi GitHub App’ini verin, onu depolarınızın bulunduğu yere kurun ve sunucuyu bir kuruluşun kurulumu için yetkilendirin.
+description: Sunucunuza tek tıklamayla kendi GitHub App’ini verin ve onu depolarınızın bulunduğu yere kurun; böylece kuruluştaki herkes her sunucudan kullanabilsin.
 slug: tr-TR/kilavuz/nasil-yapilir/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Bu kılavuz, sunucunuza kendi GitHub App’ini nasıl vereceğinizi gösterir. Yaklaşık
@@ -34,7 +34,7 @@ yapabilecekleriyle sınırlıdır. Bağlı bir depoyu okumak için yalnızca uyg
 yeterlidir; yazan her şey push edebilen bir üye gerektirir. Otomasyon bir pull
 request’i asla onaylamaz.
 
-Sunucunun kendi uygulaması yalnızca **Kendi uygulamalarımı kullan** seçeneğinde kullanılır. Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, GitHub dahil; sunucunun uygulaması kayıtlı kalır ama seçimi geri alana kadar kullanılmaz. Çalışma alanının kendi uygulaması ([Bir çalışma alanına farklı bir uygulama verme](#bir-çalışma-alanına-farklı-bir-uygulama-verme)) her modda geçerlidir. Bazı alanları eksik bir uygulama bir hatadır, geri dönüş değildir: her alan ayarlanana kadar GitHub oturum açmaları reddedilir.
+Sunucunun kendi uygulaması yalnızca **Kendi uygulamalarımı kullan** seçeneğinde kullanılır. Control Center Connect ya da özel bir Connect ile Connect tüm hatları çalıştırır, GitHub dahil; sunucunun uygulaması kayıtlı kalır ama seçimi geri alana kadar kullanılmaz. Kendi uygulamalarını kullanan bir çalışma alanı ([Bir çalışma alanına kendi uygulamasını verme](#bir-çalışma-alanına-kendi-uygulamasını-verme)) sunucunun modu ne olursa olsun kendi uygulamasını kullanır. Bazı alanları eksik bir uygulama bir hatadır, geri dönüş değildir: her alan ayarlanana kadar GitHub oturum açmaları reddedilir.
 
 ## Önkoşullar
 
@@ -92,24 +92,27 @@ Kayıtlı ama kurulu olmayan bir uygulama kişileri oturum açtırabilir ama hi�
 2. **All repositories**’i seçin ya da bu sunucunun görmesi gerekenleri işaretleyin
 
 Daha sonra başka bir hesaba kurmak için bir çalışma alanı yöneticisi **Ayarlar →
-Çalışma alanı → Genel** bölümüne gider, GitHub kimliği kartında **GitHub
-uygulaması kurulumları**’nı bulur ve **GitHub uygulamasını yükle**’ye tıklar. Liste,
+Çalışma alanı → Entegrasyonlar** bölümüne gider, Kod barındırma altındaki **GitHub
+Uygulaması** kartında **GitHub uygulaması kurulumları**’nı bulur ve **GitHub
+uygulamasını yükle**’ye tıklar. Liste,
 uygulamanın kurulu olduğu her hesabı gösterir ve askıya alınmış bir kurulumu
 işaretler.
 
-## Bu sunucuyu bir kuruluş için yetkilendirme
+## Bir kuruluşun kurulumunu paylaşma
 
-Control Center’ın paylaşılan App’inde bir kuruluşun kurulumu yalnızca
-yöneticilerinin yetkilendirdiği sunuculara hizmet eder. **GitHub uygulamasını
-yükle** üzerinden kurmak, kurulumu başlatan sunucuyu yetkilendirir. Zaten var olan
-bir kurulum için:
+Bir kuruluş GitHub App’i bir kez kurar. Bundan sonra kuruluştaki, Control Center
+sunucusunda GitHub’a oturum açan herkes, sunucunun kim olduğuna bakılmaksızın
+(sizin, bir iş arkadaşınızın ya da kendi sunucusu) kurulumu kullanabilir. Sunucu
+başına yetkilendirme gerekmez.
 
-1. O kuruluşun bir yöneticisi bu sunucuda GitHub’a oturum açar
-2. **Ayarlar → Çalışma alanı → Genel → GitHub uygulaması kurulumları**’nı açar
-3. Kuruluşun satırında **Yetkisiz** yazar. **Bu sunucuyu yetkilendir**’e tıklar
+Bir sunucunun aldığı her belirteç, oturum açan kişiye aittir; bir depoyla ve o
+kişinin o depodaki rolüyle sınırlıdır. Bu yüzden GitHub’da yapabileceğinden daha
+fazlasına erişemez. GitHub denetim günlüğü, uygulama üzerinden hareket eden bu
+kişiyi gösterir.
 
-Satır bundan sonra **Yetkili** yazar. Kendi uygulamanızın bunların hiçbirine
-ihtiyacı yoktur: onun her kurulumu sunucunuza aittir.
+Control Center’ın bir kuruluşa erişmesini durdurmak için kuruluşun bir sahibi
+GitHub’da kurulumu kaldırır ya da depolarını daraltır. Bir kişiyi kuruluştan
+çıkarmak da o kişinin erişimini durdurur.
 
 ## Bunun yerine elle kaydetme
 
@@ -148,17 +151,22 @@ tutun (Docker’da dosyayı `/app/bin/.env` yoluna bağlayın). Tohumlama **alan
 bir kez** yapılır; böylece Ayarlar’da yapılan bir düzenleme bir sonraki yeniden
 başlatmada geri alınmaz.
 
-## Bir çalışma alanına farklı bir uygulama verme
+## Bir çalışma alanına kendi uygulamasını verme
 
-Bir çalışma alanı, sunucununki yerine kendi uygulamasını kullanabilir. Bir
-çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Genel** bölümüne gider,
-**GitHub kimliği** kartında **Farklı bir GitHub App kullan**’ı seçer ve o
-uygulamanın id’sini, özel anahtarını, istemci id’sini ve istemci gizli anahtarını
-girer. Üyeler bundan sonra bu çalışma alanı için o uygulamaya oturum açar. Kendi
-uygulamasını kullanan bir çalışma alanı asla sunucunun uygulamasına ya da
-Connect’e geri dönmez: alanları tamamlanana kadar GitHub işleri reddedilir. Bu, sunucunun insanları nasıl oturum açtırdığından bağımsız olarak, Connect dahil geçerlidir.
+Bir çalışma alanı, sunucununki yerine kendi uygulamasını kullanabilir:
 
-Aynı sayfadaki **Sağlayıcı uygulamaları** kartı Google Calendar, Linear ve GIF araması için aynısını yapar. Bkz. [Bir çalışma alanına kendi Linear uygulamasını verme](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/#bir-çalışma-alanına-kendi-linear-uygulamasını-verme) ve [Bir çalışma alanına kendi Google istemcisini verme](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/#bir-çalışma-alanına-kendi-google-istemcisini-verme).
+1. Bir çalışma alanı yöneticisi **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümüne gider
+2. **Control Center Connect** kartında **Kendi uygulamalarımı kullan** seçeneğini seçer ve **Uygula**’ya tıklar. Çalışma alanındaki herkes bundan sonra çalışma alanının uygulamaları üzerinden yeniden oturum açar
+3. Kod barındırma altındaki **GitHub Uygulaması** kartı artık uygulamanın alanlarını taşır: **Bu çalışma alanı adına işlem yapma** altında **Uygulama id** ve **Özel anahtar**, **Kişileri oturum açtırma** altında **İstemci id** ve **İstemci gizli anahtarı**. Hepsi ayarlandıktan sonra **Test**’e tıklayın
+
+Üyeler bundan sonra bu çalışma alanı için o uygulamaya oturum açar. Kendi
+uygulamalarını kullanan bir çalışma alanı asla sunucunun uygulamasına ya da
+Connect’e geri dönmez: alanları tamamlanana kadar GitHub işleri reddedilir. Aynı
+seçim Google Calendar, Linear ve GIF araması için de geçerlidir; her biri kendi
+alanlarıyla, aynı sayfada sağlayıcısının yanında yer alır. Bkz.
+[Bir çalışma alanına kendi Linear uygulamasını verme](/tr-TR/kilavuz/nasil-yapilir/linear-entegrasyonu/#bir-çalışma-alanına-kendi-linear-uygulamasını-verme) ve [Bir çalışma alanına kendi Google istemcisini verme](/tr-TR/kilavuz/nasil-yapilir/takvim-baglama/#bir-çalışma-alanına-kendi-google-istemcisini-verme).
+Bu kartta bulunan diğer seçenekler ve her birinin yaptığı şey için bkz.
+[Çalışma alanı başına seçim](/tr-TR/kilavuz/referans/connect/#çalışma-alanı-başına-seçim).
 
 ## Sorun giderme
 
@@ -175,7 +183,7 @@ yeniden başlayın.
 ### Test, kimlik bilgilerinin çalıştığını ama uygulamanın hiçbir yere kurulmadığını söylüyor
 
 Kayıt ve kurulum ayrı adımlardır. Uygulamanın kurulum sayfasını açın ya da
-Çalışma alanı → Genel’deki **GitHub uygulamasını yükle**’yi kullanın.
+Çalışma alanı → Entegrasyonlar’daki **GitHub uygulamasını yükle**’yi kullanın.
 
 ### Test, özel anahtarın okunamadığını söylüyor
 

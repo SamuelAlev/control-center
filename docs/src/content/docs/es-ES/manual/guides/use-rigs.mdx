@@ -2,7 +2,7 @@
 title: Dar a un agente una máquina para probar
 description: Da a un agente un navegador, un escritorio, un emulador de Android o un simulador de iOS desechables — vistos en directo, con controles que puedes asumir.
 slug: es-ES/manual/guias/usar-rigs
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Un **rig** es una máquina desechable que un agente abre cuando necesita probar
@@ -138,6 +138,21 @@ Pulsa **Detener la máquina** cuando termines.
 
 El control es exclusivo a propósito: dos actores escribiendo en una misma
 máquina producen entrada que ninguno de los dos pretendía.
+
+### Quién puede observar y quién puede controlar
+
+Una máquina abierta en un espacio sigue a los repositorios de ese espacio, igual que el propio espacio (véase [Los espacios siguen a sus repositorios](/es-ES/manual/conceptos/autorizacion/#los-espacios-siguen-a-sus-repositorios)):
+
+- **Observarla** necesita acceso de lectura al espacio: una concesión de lectura sobre cada repositorio que expone el espacio, y que tu propio inicio de sesión en la forja pueda leer cada uno de ellos. Observar abarca la lista de máquinas, la pantalla, el sonido, el estado del navegador, sus puertos, y leer su portapapeles y sus archivos.
+- **Controlarla** necesita además una [concesión de escritura](/es-ES/manual/conceptos/autorizacion/#cambiar-código-necesita-la-concesión-de-escritura) sobre esos repositorios. Controlar abarca abrir una máquina en el espacio, escribir y hacer clic, tomar el control, iniciar, detener y cerrar, reenviar sus puertos, escribir en su portapapeles, soltar archivos sobre ella y usar el micrófono.
+
+Con acceso de solo lectura la máquina muestra **Solo visualización** y «Puedes ver esta máquina. Controlarla, reenviar sus puertos, pegar en ella o soltar archivos en ella requiere acceso de escritura a todos los repositorios de este espacio.» Con el botón **Iniciar la máquina** desactivado, la pestaña dice «Iniciar una máquina aquí requiere acceso de escritura a todos los repositorios de este espacio. Un administrador del espacio de trabajo puede concederlo.» Sin acceso de lectura la máquina no se muestra, solo aparece «No puedes ver esta máquina. Pertenece a un espacio al que no tienes acceso de lectura.»
+
+Una máquina que no pertenece a ningún espacio no alcanza ningún worktree, y todos los miembros del espacio de trabajo pueden observarla y controlarla.
+
+Una máquina que lleva los inicios de sesión propios de una persona es suya para controlarla: su máquina-terminal, o cualquier máquina abierta para ella cuyo acceso de red llegue a una forja. Solo esa persona, y las ejecuciones de agentes que actúan únicamente por ella, pueden controlarla. Los administradores del espacio de trabajo y el propietario del servidor no lo anulan. Los demás que admite el espacio pueden seguir observando su pantalla, sonido, estado y puertos, pero no pueden controlarla, reenviar sus puertos, pegar en ella, soltar archivos en ella, copiar archivos de ella ni leer su portapapeles. Una máquina así muestra **Solo visualización** con esta nota: «Puedes ver esta máquina. Usa los inicios de sesión de la persona para la que se abrió, así que solo ella puede controlarla, reenviar sus puertos, pegar contenido en ella o soltar archivos en ella.» Una acción rechazada por este motivo dice «Solo la persona para la que se abrió esta máquina puede controlarla. Usa sus propios inicios de sesión.» Una máquina-terminal de otra persona no aparece para ti en absoluto, igual que sus sesiones de terminal.
+
+Cada máquina muestra si puedes controlarla, y se actualiza sola cuando cambia una concesión o tu inicio de sesión en la forja.
 
 ## Mover cosas hacia dentro y hacia fuera
 

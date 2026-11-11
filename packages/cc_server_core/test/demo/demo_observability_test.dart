@@ -90,7 +90,7 @@ void main() {
     expect(evals.expand((e) => e.runs).map((r) => r.passRate), contains(1));
     expect(
       evals.expand((e) => e.runs).map((r) => r.status),
-      containsAll(['completed', 'failed']),
+      containsAll(['done', 'failed']),
     );
     for (final seed in evals) {
       expect(seed.suite.workspaceId, workspaceId);

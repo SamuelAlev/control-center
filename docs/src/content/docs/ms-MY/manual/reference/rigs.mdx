@@ -2,7 +2,7 @@
 title: Stesen
 description: Setiap permukaan stesen, bahagian belakang, kata kerja tindakan, keadaan kitaran hayat, port, lalai dan kontrak — katalog fakta yang lengkap.
 slug: ms-MY/manual-pengguna/rujukan/stesen
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Fakta sahaja. Untuk model di sebaliknya, baca [Stesen dan persekitaran
@@ -223,8 +223,10 @@ jaminan rangkaian terkurung.
 
 | Alat | Penerangan |
 | --- | --- |
-| `rig_list` | Senaraikan stesen sesebuah ruang kerja dengan permukaan, status, paparan dan pengawal |
+| `rig_list` | Senaraikan stesen bagi ruang larian dengan permukaan, status, paparan dan pengawal |
 | `rig_close` | Musnahkan stesen dan buang cakeranya |
+
+Alat ini, seperti empat alat use, hanya untuk larian ejen; mana-mana pemanggil lain ditolak. Sesuatu larian hanya mencapai stesen bagi ruang yang diberikan kepadanya: `space_id` datang daripada geran larian, bukan daripada panggilan. Stesen bagi ruang lain, atau tiada ruang, dijawab sama seperti stesen yang tiada.
 
 ## Kitaran hayat
 
@@ -326,7 +328,7 @@ tidak pernah menjadi tetapan ruang kerja.
   bingkai stesen dan audio mesyuarat.
 - **Pengesahan** ialah sasaran yang ditandatangani `rig-files:<workspaceId>/<rigId>`
   serta keahlian ruang kerja — sasaran tersendiri, jadi URL yang dicipta untuk
-  *menonton* mesin tidak boleh juga menulis fail ke dalamnya.
+  *menonton* mesin tidak boleh juga menulis fail ke dalamnya. Bagi stesen yang dibuka dalam ruang, membaca papan klip atau fail juga memerlukan akses baca ke ruang itu, dan menulis papan klip atau melepaskan fail memerlukan geran tulis ke atas repositorinya. Pada stesen yang membawa log masuk milik seseorang, kedua-dua lorong, termasuk bacaan, adalah milik orang itu sahaja. Lihat [Siapa boleh menonton dan siapa boleh memandu](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/#siapa-boleh-menonton-dan-siapa-boleh-memandu).
 - **Pengambilalihan terpakai.** Menulis papan klip dan melepaskan fail adalah
   mengubah keadaan dan ditolak semasa orang lain memegang kawalan; membaca papan
   klip dan membaca fail keluar ialah pemerhatian dan bukan.

@@ -273,8 +273,7 @@ class ToolGateDecision {
   /// Whether the call may proceed.
   final bool allowed;
 
-  /// Why the call was denied. Empty renders the legacy `Denied by user.`
-  /// message, which keeps recorded sessions byte-compatible.
+  /// Why the call was denied. Empty renders `Denied by user.`.
   final String reason;
 
   /// What the agent should do instead, when there is a sanctioned alternative.

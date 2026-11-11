@@ -8,6 +8,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_infra/src/environments/cli_driver.dart';
 import 'package:cc_infra/src/environments/compose_driver.dart';
 import 'package:cc_infra/src/environments/environment_command_runner.dart';
+import 'package:cc_infra/src/environments/environment_host_approval.dart';
 import 'package:cc_infra/src/environments/environment_lease_allocator.dart';
 import 'package:cc_infra/src/environments/environment_process_supervisor.dart';
 import 'package:cc_infra/src/environments/environment_task_runner.dart';
@@ -304,6 +305,7 @@ class EnvironmentServiceDependencies {
     required this.runner,
     required this.stateDirFor,
     required this.isAdmin,
+    required this.serverOwner,
     required this.home,
     this.seeds = const WorktreeSeedFiles(),
     this.windows,
@@ -315,6 +317,7 @@ class EnvironmentServiceDependencies {
     this.maintenanceInterval = const Duration(seconds: 10),
     this.watchedPollInterval = const Duration(seconds: 10),
     this.idlePollInterval = const Duration(minutes: 5),
+    this.terminalTimeout = const Duration(minutes: 20),
   });
 
   /// Stored definitions.
@@ -362,6 +365,10 @@ class EnvironmentServiceDependencies {
   /// Decides `approval` fork starts.
   final EnvironmentAdminCheck isAdmin;
 
+  /// The current server owner: a definition that runs on the host runs only
+  /// while this is who approved it, and saving one records this owner.
+  final EnvironmentServerOwner serverOwner;
+
   /// The server user's home.
   final String home;
 
@@ -394,4 +401,8 @@ class EnvironmentServiceDependencies {
 
   /// Status polling otherwise.
   final Duration idlePollInterval;
+
+  /// How long a start waits for a person to finish a verb on a terminal. The
+  /// environment's lock is held for all of it, so it is not forever.
+  final Duration terminalTimeout;
 }

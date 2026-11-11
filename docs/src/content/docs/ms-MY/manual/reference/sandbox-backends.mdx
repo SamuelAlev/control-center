@@ -2,15 +2,23 @@
 title: Bahagian belakang kotak pasir
 description: Bahagian belakang kotak pasir, tempat ia digunakan dan setiap objek nilai yang digunakan oleh masa jalan kotak pasir.
 slug: ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Sama ada sesuatu larian dikotak pasirkan bergantung pada hos]
-`cc_server` menyiasat hos sekali semasa permulaan dan membalut penghantaran ejen dalam bahagian belakang natif apabila siasatan melaporkan satu tersedia dan `--sandbox` bukan `off`. Kedua-dua sambungan penghantaran dibalut: CLI Claude Code melalui port kotak pasir, dan ACP serta alat `bash` harness terbina melalui pengurus kotak pasir.
+`cc_server` membuat keputusan sekali semasa permulaan tentang cara ejen berjalan pada hos ini, dan keputusan itu kekal sehingga ia dimulakan semula:
 
-Di mana siasatan melaporkan tiada bahagian belakang — **Windows sentiasa** dan Linux atau WSL2 tanpa `bwrap` dan `socat` — larian ejen **tidak** dikotak pasirkan. ACP dan alat `bash` harness masih dilancarkan dengan sanitasi persekitaran; Claude Code melalui `NoSandboxAdapter` dan mewarisi persekitaran hos. Sempadan yang tinggal ialah worktree larian itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows), token hos kod baca sahaja yang diuruskan melalui broker setiap pelancaran dan ditarik balik semasa pembongkaran, push yang mesti melepasi peraturan push di gerbang larian ejen, polisi perintah mengikut modus, [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) bersatu (gagal-tertutup), sanitasi persekitaran pada laluan ACP dan `bash` harness, serta permukaan alat yang dibenarkan oleh modusnya.
+- **Dalam kotak pasir** (`native`): siasatan menemui bahagian belakang dan `--sandbox` bukan `off`. Kedua-dua sambungan penghantaran dibalut: CLI Claude Code melalui port kotak pasir, dan ACP serta alat `bash` harness terbina melalui pengurus kotak pasir.
+- **Mati** (`off`): pemilik pelayan memulakannya dengan `--sandbox off`. Setiap larian ejen ahli berjalan tanpa sekatan pada mesin ini, tidak kira siapa yang memulakannya.
+- **Tidak tersedia** (`unavailable`): kotak pasir dihidupkan tetapi siasatan tidak menemui bahagian belakang (**Windows sentiasa**, dan Linux atau WSL2 tanpa `bwrap` dan `socat`). Larian hanya bermula apabila orang yang bertanggungjawab ke atasnya ialah [pemilik](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) pelayan: orang yang memintanya, atau bagi automasi, orang yang ia terikat kepadanya. Larian orang lain ditolak sebelum kelayakan dicetak, lease diambil atau proses dimulakan. Tanpa pemilik direkodkan, tiada larian sesiapa pun bermula.
+
+Larian yang ditolak gagal dengan kod `sandbox_unavailable`. Apl memaparkannya sebagai **Ejen memerlukan kotak pasir pada pelayan ini**: "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini. Pemilik boleh memasang kotak pasir atau mematikan kotak pasir untuk semua orang."
+
+Larian yang memang bermula tanpa kotak pasir (di bawah `off`, atau larian pemilik sendiri di bawah `unavailable`) berjalan terus pada hos. ACP dan alat `bash` harness masih dilancarkan dengan sanitasi persekitaran; Claude Code melalui `NoSandboxAdapter` mewarisi persekitaran hos. Sempadan yang tinggal ialah worktree larian itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows), token hos kod baca sahaja yang diuruskan melalui broker setiap pelancaran dan ditarik balik semasa pembongkaran, push yang mesti melepasi peraturan push di gerbang larian ejen, polisi perintah mengikut modus, [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) bersatu (gagal-tertutup), sanitasi persekitaran pada laluan ACP dan `bash` harness, serta permukaan alat yang dibenarkan oleh modusnya.
 
 Alat fail dalam proses harness (read, write, edit, apply patch, search, find, search_files) berada di luar kotak pasir pada setiap hos: ia berjalan dalam proses pelayan, jadi hanya `bash` dibalut.
+
+Hos tidak pernah menjadi patah balik bagi pelayan yang dikotak pasirkan. Jika pelayan mengotak pasirkan ejen tetapi tiada kotak pasir untuk diberikan kepada larian, proses alatnya dan perintah `bash` ditolak, bukan dimulakan pada hos. Postur yang sama menentukan proses kecil di sekeliling larian: pembantu ACP sekali guna (tajuk perbualan, `/btw`, `/handoff`, `/goal`) dan ujian golden sesuatu pull request dalam Review Studio berjalan dalam kotak pasir apabila pelayan mengotak pasirkan ejen, tanpa sekatan di bawah `off`, dan di bawah `unavailable` hanya untuk permintaan yang pemilik pelayan bertanggungjawab ke atasnya; jika tidak, ia dilangkau.
 :::
 
 ## Gambaran keseluruhan bahagian belakang
@@ -19,13 +27,13 @@ Alat fail dalam proses harness (read, write, edit, apply patch, search, find, se
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | VM terasing | `microvm` | macOS, Linux, Windows (microVM hypervisor)    | Bersyarat siasatan pada masa jalan microVM; terpakai pada terminal interaktif — shell berjalan di dalam [stesen](/ms-MY/manual-pengguna/konsep/stesen/), bukan pada hos |
 | Natif      | `native`  | macOS (Seatbelt), Linux dan WSL2 (bubblewrap) | Disiasat semasa permulaan; Linux menolak larian yang memerlukan penolakan tulis glob nama fail, yang tidak dapat dikuatkuasakan bubblewrap |
-| Tiada      | `none`    | Semua                                           | Lalai penghuraian, lalai terminal dan patah balik apabila tiada bahagian belakang tersedia atau `--sandbox off` ditetapkan |
+| Tiada      | `none`    | Semua                                           | Lalai penghuraian dan lalai terminal; penghantaran ejen menggunakannya di bawah `--sandbox off`, dan untuk larian pemilik sendiri apabila tiada bahagian belakang tersedia |
 
-`SandboxBackend.fromName` mengembalikan `none` untuk nilai tersimpan yang nol atau tidak dikenali. `"docker"` yang tersimpan dipetakan kepada `native`.
+`SandboxBackend.fromName` mengembalikan `none` untuk nilai tersimpan yang nol atau tidak dikenali.
 
 **`microvm` ialah satu-satunya bahagian belakang dengan sempadan kernel** — beban kerja itu benar-benar tidak berjalan pada hos. Ia tidak pernah menjadi patah balik senyap dalam mana-mana arah: memintanya secara eksplisit pada hos yang tidak boleh but VM gagal dengan lantang ("saya minta VM tetapi dapat komputer riba saya" ialah satu-satunya kemerosotan yang tidak mampu ditanggung oleh persekitaran terasing), dan hanya *lalai yang tidak dinyatakan* yang turun ke `native`, dengan baris log yang menyatakannya. Bahagian belakang sebenar sesi itu dilaporkan kembali kepada klien dan diberikan lencana, jadi sesuatu terminal tidak boleh sekali-kali mendakwa ia terasing sedangkan ia berjalan pada hos. Kitaran hayat, imej dan keluar bagi VM itu sendiri diliputi oleh [rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/).
 
-**Windows tiada kotak pasir natif.** `NativeSandboxAdapter.probe` mengembalikan `available: false` pada setiap hos yang bukan macOS atau Linux/WSL2. Oleh itu penghantaran ejen pada Windows menggunakan `none`. Bahagian belakang `microvm` adalah berasingan: ia bersyarat siasatan pada masa jalan microVM dan terpakai pada terminal interaktif serta stesen, bukan untuk membalut `bash` pada hos.
+**Windows tiada kotak pasir natif.** `NativeSandboxAdapter.probe` mengembalikan `available: false` pada setiap hos yang bukan macOS atau Linux/WSL2. Oleh itu pelayan Windows ialah `unavailable`: hanya larian ejen pemilik pelayan yang bermula, tanpa sekatan, dan larian orang lain ditolak. Untuk membenarkan setiap ahli menjalankan ejen di sana, pemilik memulakan pelayan dengan `--sandbox off`, yang menjalankan kesemuanya tanpa sekatan. Bahagian belakang `microvm` adalah berasingan: ia bersyarat siasatan pada masa jalan microVM dan terpakai pada terminal interaktif serta stesen, bukan untuk membalut `bash` pada hos.
 
 ## Keputusan siasatan
 
@@ -38,9 +46,9 @@ Siasatan itulah yang menentukan penguatkuasaan. Ia berjalan sekali, semasa permu
 | Linux atau WSL2 yang kekurangan salah satu alat      | `false`     | `requiresInstall: true`, dengan petunjuk pemasangan yang menamakan pakej yang hilang |
 | Mana-mana platform lain                 | `false`     | Kotak pasir natif tidak ditawarkan pada platform ini                            |
 
-Pelayan mencatat hasilnya pada satu baris permulaan: `agent sandbox ON` beserta nota, `no OS-native agent sandbox on this host` beserta petunjuk, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tidak membawa medan kotak pasir.
+Pelayan mencatat hasilnya pada satu baris permulaan: `agent sandbox ON` beserta nota; `no OS-native agent sandbox on this host` beserta petunjuk, yang menambah bahawa hanya larian yang pemilik pelayan bertanggungjawab ke atasnya akan bermula; atau `agent sandbox DISABLED by --sandbox off`. Baris pendedahan yang dicetak semasa permulaan membawa keputusan yang sama sebagai `sandbox=native`, `sandbox=off` atau `sandbox=unavailable`. `GET /healthz` tidak membawa medan kotak pasir.
 
-`--sandbox` / `CC_SERVER_SANDBOX` menerima `on` (lalai) atau `off`. Ia penarikan diri, bukan pengaktifan: `on` bermaksud "balut apabila hos menawarkan bahagian belakang", bukan sekali-kali "wajibkan satu".
+`--sandbox` / `CC_SERVER_SANDBOX` menerima `on` (lalai) atau `off`. `on` membalut setiap larian apabila hos menawarkan bahagian belakang dan hanya membenarkan larian pemilik apabila ia tidak menawarkannya. `off` menjalankan setiap ejen ahli tanpa sekatan pada hos ini; ia pilihan pemilik untuk semua orang, bukan tetapan bagi setiap larian.
 
 ## Bahagian belakang natif
 
@@ -53,8 +61,10 @@ Profil yang dijana **permisif secara lalai** (`(allow default)`) dan mengukir pe
 - **Bacaan sistem fail**: ditolak untuk laluan rahsia (`~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, `~/Library/Keychains` dan seluruh set tolak-baca yang lain)
 - **Tulisan sistem fail**: ditetapkan semula kepada tolak, kemudian benarkan sub-laluan yang eksplisit, dengan laluan wajib-tolak (fail rc shell, `.git/hooks`, konfigurasi Claude, checkout yang dilindungi) disekat walaupun di dalam akar yang boleh ditulis. `file-write-unlink` ditolak pada setiap laluan yang ditolak dan nenek moyangnya, jadi penamaan semula tidak dapat memintas penolakan tulis
 - **Proses**: penolakan `process-exec` untuk binari yang sentiasa berbahaya, serta sekatan ke atas pelaksanaan apa-apa daripada direktori yang boleh ditulis. Direktori pemasangan toolchain yang diketahui di bawah home anda (corepack, cache `npx` dan `pnpm dlx`, pengurus versi node, pelayar Playwright, rustup dan cargo, Go, fvm dan pub cache, pyenv, uv dan pipx, rbenv, sdkman, mise, asdf dan `~/.local/bin`) dibuka semula di bawah sekatan tersebut. Direktori temp kongsi turut disekat. Sebaliknya, setiap sesi diberi `TMPDIR` persendirian di bawah `/private/tmp`, tempat program yang dibinanya (binari `go test`, binaan cargo) boleh dijalankan. Penolakan yang sentiasa berbahaya dikenakan selepas kebenaran ini
-- **Rangkaian**: terhad kepada port proksi dalam proses serta DNS — loopback tidak dibenarkan secara menyeluruh dan pendengaran TCP ditolak. Soket Unix dibenarkan hanya di dalam `TMPDIR` persendirian sesi, yang meliputi alat seperti tsx dan Chrome yang menyimpan soket IPC di situ; ejen SSH anda dan soket lain kekal tidak boleh dicapai. Proksi menguatkuasakan senarai benarkan domain bagi setiap sesi (lihat [Keluar rangkaian](#keluar-rangkaian)) menguatkuasakan senarai benarkan domain bagi setiap sesi (lihat [Keluar rangkaian](#keluar-rangkaian))
+- **Rangkaian**: terhad kepada port proksi dalam proses serta DNS — loopback tidak dibenarkan secara menyeluruh dan pendengaran TCP ditolak. Soket Unix dibenarkan hanya di dalam `TMPDIR` persendirian sesi, yang meliputi alat seperti tsx dan Chrome yang menyimpan soket IPC di situ; ejen SSH anda dan soket lain kekal tidak boleh dicapai. Proksi menguatkuasakan senarai benarkan domain bagi setiap sesi (lihat [Keluar rangkaian](#keluar-rangkaian))
 - **Konfigurasi**: profil dijana bagi setiap pelancaran daripada `SandboxSpec`
+- **Arahan pelayan sendiri**: tiada anak langsung bagi folder yang pelayan jalankan program daripadanya (setiap entri `PATH` dan folder alat per-pengguna yang biasa seperti `~/.local/bin`, dengan pautan pengurus versi seperti `~/fvm/default` diselesaikan) boleh dicipta, diganti, dipadam atau dinamakan semula, begitu juga pakej terpasang yang ditunjuk oleh arahan terpaut. Lihat [Folder arahan pelayan](#folder-arahan-pelayan)
+- **Fail permulaan**: setiap laluan rumah yang profil tolak-bacanya juga ditolak tulisnya, dan fail permulaan shell serta sesi pengguna pelayan (`.zshenv`, `.zlogin`, `.bash_login`, konfigurasi fish, unit pengguna systemd, entri autostart dan sewaktu dengannya) ditolak tulisnya dalam setiap modus
 
 Keperluan:
 
@@ -67,6 +77,7 @@ Menggunakan bubblewrap (`bwrap`) untuk mencipta namespace mount dan PID.
 - **Sistem fail**: mencipta namespace mount dengan hanya laluan yang diikat kelihatan
 - **Rangkaian**: berjalan dalam namespace rangkaian yang tidak dikongsi; trafik sampai ke proksi hos melalui jambatan soket Unix `socat`
 - **Proses**: pengasingan namespace PID
+- **Arahan pelayan sendiri dan fail permulaan**: perlindungan yang sama seperti pada macOS, dinyatakan sebagai bind bubblewrap. Ia belum disahkan pada Linux, dan folder arahan yang hilang di sana masih boleh dicipta
 
 Keperluan:
 
@@ -75,19 +86,51 @@ Keperluan:
 
 Bubblewrap boleh menaungi laluan sedia ada tetapi tidak boleh melarang fail `.env`, `*.key` atau `*.pem` yang *baharu* di dalam bind yang boleh ditulis. Polisi penghantaran standard memerlukan penolakan glob nama fail ini, jadi penghantaran ejen natif kini **gagal tertutup pada Linux/WSL2 walaupun siasatan menemui bubblewrap**. Ia tidak berjalan dengan polisi yang lebih lemah secara senyap. Bahagian belakang dengan peraturan nama fail pada masa penciptaan diperlukan untuk memulihkan penghantaran natif Linux. Mematikan kotak pasir ialah penarikan diri tanpa kekangan yang eksplisit, bukan jalan pintas yang setara.
 
+Dalam amalan, pelayan Linux atau WSL2 menjalankan ejen hari ini dalam salah satu daripada dua cara. Dimulakan dengan `--sandbox off`, ia menjalankan setiap ejen ahli tanpa sekatan. Tanpa bubblewrap atau `socat` dipasang, ia ialah `unavailable` dan hanya menjalankan ejen pemilik pelayan, tanpa sekatan. Dengan kedua-dua alat dipasang dan kotak pasir dihidupkan, setiap larian gagal tertutup, termasuk milik pemilik.
+
+## Folder arahan pelayan
+
+Pelayan mencari, sekali semasa permulaan, setiap folder yang ia jalankan program daripadanya: setiap entri `PATH`-nya, folder alat per-pengguna yang ia periksa (seperti `~/.local/bin`, `~/.bun/bin` dan folder global npm, yarn dan pnpm), dan folder sebenar di sebalik setiap pautan di sepanjang laluan (pautan pengurus versi seperti `~/fvm/default` atau lalai fnm). Di dalam kotak pasir, ejen tidak boleh menambah, menggantikan, memadam atau menamakan semula arahan dalam folder tersebut, pautan yang menuju ke sana, atau pakej terpasang yang ditunjuk oleh arahan terpaut, dan tidak boleh menamakan semula folder di atasnya. Jika tidak, larian yang dikotak pasirkan boleh menanam program yang kemudiannya dimulakan oleh pelayan, atau oleh orang itu, di luar kotak pasir.
+
+Perubahan ini memberi kesan kepada larian:
+
+- Pemasangan global dari dalam larian yang dikotak pasirkan gagal dengan "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, dan `cargo install`, `go install` atau `dart pub global activate` apabila folder binnya berada pada `PATH` pelayan.
+- Menukar versi lalai gagal dengan cara yang sama (`fnm default`, `nvm alias default`, `fvm global`), begitu juga alat yang mengemas kini dirinya di tempat.
+- Pemasangan setempat projek (`node_modules/.bin`), `npx`, `pnpm dlx`, pengurus pakej yang diuruskan oleh corepack, cache SDK dan binaan biasa terus berfungsi.
+
+Untuk menjadikan alat global tersedia kepada ejen, pasangkannya pada pelayan itu sendiri, sebagai pengguna pelayan, dan mulakan semula pelayan supaya arahan baharu itu turut dilindungi. Atau pasangkannya dalam projek. Arahan yang dipasang selepas pelayan dimulakan hanya dilindungi sepenuhnya dari permulaan seterusnya.
+
+Dikuatkuasakan dan diuji pada macOS. Pada Linux peraturan yang sama ialah bind bubblewrap yang belum disahkan. Windows tiada kotak pasir.
+
 ## Bahagian belakang none
 
-Tiada kotak pasir. Proses berjalan terus pada hos dengan akses sistem fail, rangkaian dan proses hos. ACP dan alat `bash` harness masih mendapat sanitasi persekitaran dan polisi perintah; Claude Code melalui `NoSandboxAdapter` mewarisi persekitaran hos. Inilah yang menjadi patah balik penghantaran ejen pada hos tanpa bahagian belakang tersedia atau dengan `--sandbox off`, dan ia ialah lalai terminal apabila klien tidak menamakan mana-mana satu.
+Tiada kotak pasir. Proses berjalan terus pada hos dengan akses sistem fail, rangkaian dan proses hos. ACP dan alat `bash` harness masih mendapat sanitasi persekitaran dan polisi perintah; Claude Code melalui `NoSandboxAdapter` mewarisi persekitaran hos. Penghantaran ejen menggunakannya bagi setiap larian di bawah `--sandbox off`, dan pada hos tanpa bahagian belakang tersedia bagi larian pemilik pelayan sahaja; larian orang lain ditolak di sana. Bagi terminal, ia ialah shell hos, yang hanya pemilik pelayan boleh buka.
 
 ## Terminal yang dihoskan pelayan
 
-Terminal dikotak pasirkan mengikut syaratnya sendiri, bukan oleh siasatan penghantaran. `defaultBackend` `TerminalSessionService` ialah `none` dan `cc_server` tidak mengatasinya, jadi sesi terminal menjalankan shell hos melainkan klien meminta `native` secara eksplisit — panel terminal desktop tidak berbuat demikian.
+Terminal yang dihoskan pelayan membuka shell hos hanya untuk [pemilik](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) pelayan. Orang lain mendapat terminal yang dikotak pasirkan, dengan had ejen, dalam direktori ruang kerja itu sendiri.
 
-Apabila `native` diminta, shell dibalut melalui `SandboxManager` di bawah profil terminal tetap: `$HOME` dan direktori kerja sesi boleh ditulis, rangkaian terbuka dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` serta `~/Library/Keychains` ditolak bacaannya. Token hos kod baca sahaja dan gerbang push tidak terpakai — itu urusan penghantaran. Jika balutan tidak disokong, sesi itu gagal dan bukannya memaparkan lencana natif pada PTY shell hos.
+Cara bahagian belakang dipilih bagi sesi:
+
+| Diminta | Pemilik pelayan | Orang lain |
+| --- | --- | --- |
+| Tidak dinyatakan | Bahagian belakang lalai pelayan | Lalai, dengan `none` digantikan dengan `native` |
+| `none` (shell hos) | Shell hos | Ditolak: shell hos berjalan pada pelayan tanpa kotak pasir |
+| `native` | Kotak pasir natif, profil pemilik | Kotak pasir natif, profil ejen |
+| `microvm` | VM terasing | VM terasing |
+| Nama yang tidak dikenali | Ditolak | Ditolak |
+
+- **Profil pemilik.** `$HOME` dan direktori kerja sesi boleh ditulis, rangkaian terbuka, dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` serta `~/Library/Keychains` ditolak bacaannya.
+- **Profil ejen** (`memberTerminalSandboxConfig`). Dasar yang sama yang dijalankan oleh ejen dalam ruang kerja itu: tulisan kekal dalam direktori kerja, direktori larian persendirian, `/tmp` dan bahagian `$HOME` yang boleh ditulis oleh ejen; rahsia ditolak bacaannya; rangkaian ialah senarai benarkan keluar ejen; program dijalankan hanya dari direktori kerja dan toolchain yang dipasang.
+- Terminal dibuka hanya di dalam direktori ruang kerja itu sendiri. Direktori kerja di luarnya ditolak, tidak sekali-kali ditukar kepada yang lain.
+- Hanya orang yang membuka terminal boleh membaca, menaip ke dalam, menukar saiz atau menutupnya. Kepada orang lain, idnya kelihatan tidak diketahui.
+- `microvm` yang diminta secara eksplisit pada hos tanpa perkhidmatan rig gagal dan bukannya berpatah balik. Lalai `microvm` pada hos sebegitu turun kepada `native` dan menyatakannya dalam log.
+
+Token hos kod baca sahaja dan gerbang push tidak terpakai untuk terminal: ia urusan penghantaran. Jika balutan tidak disokong, sesi itu gagal dan bukannya memaparkan lencana kotak pasir pada sesi shell hos.
 
 ## Keluar rangkaian
 
-Apabila kotak pasir dilancarkan, akses rangkaian keluar dikuatkuasakan oleh proksi dalam proses, bukan oleh peraturan firewall kernel. Pada hos tanpa bahagian belakang tersedia, tiada satu pun daripada ini terpakai dan proses yang dilancarkan mencapai rangkaian tepat seperti yang akan dilakukan oleh pengguna pelayan.
+Apabila kotak pasir dilancarkan, akses rangkaian keluar dikuatkuasakan oleh proksi dalam proses, bukan oleh peraturan firewall kernel. Larian yang tidak dikotak pasirkan (setiap larian di bawah `--sandbox off`, atau larian pemilik pada hos tanpa bahagian belakang) tidak mendapat apa-apa daripada ini: proses yang dilancarkannya mencapai rangkaian tepat seperti yang akan dilakukan oleh pengguna pelayan.
 
 - Masa jalan kotak pasir menjalankan proksi HTTP/HTTPS dan proksi SOCKS5 pada `127.0.0.1` di dalam proses `cc_server`, **satu pasangan bagi setiap sesi terhad** (`http_proxy.dart`, `socks_proxy.dart`). Larian serentak tidak berkongsi pasangan.
 - Proses berkotak pasir menerima pemboleh ubah persekitaran proksi (`HTTP_PROXY`/`HTTPS_PROXY` → proksi HTTP, `ALL_PROXY` → proksi SOCKS; `GIT_SSH_COMMAND` menghalakan git-melalui-SSH melalui proksi SOCKS). Pada Linux namespace rangkaian tidak dikongsi, jadi proksi ialah satu-satunya jalan keluar; pada macOS kotak pasir berkongsi loopback hos dan bercakap terus dengannya.

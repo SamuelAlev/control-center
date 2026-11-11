@@ -2,7 +2,7 @@
 title: Gjennomgangsberegning (kohorter, akser og deterministiske differ)
 description: Hva gjennomgangsberegningen produserer på serversiden — kohorter, API-kontrakt- og visuelle differ, porter per akse — og hvordan det inngår i Gjennomgang-fanen.
 slug: nb-NO/handbok/slik-gjor-du/gjennomgangsberegning
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 **Gjennomgang**-fanen på en PR er den levende fremdriften til
@@ -15,8 +15,6 @@ Bak den fanen bygger `cc_server` filkohorter, kjører de deterministiske aksene 
 eksponerer dem gjennom RPC-operasjonene `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` og deres `watch*`-tvillinger).
-En lagret layout som fortsatt nevner `pr.reviewStudio`, åpner denne samme
-Gjennomgang-fanen.
 
 I Gjennomgang-fanen:
 
@@ -86,6 +84,8 @@ beregningskjøringen de endrede komponentene før og etter gjennom en headless
 golden-kjøring med `flutter test` i PR-ens base- og head-worktrees, og differ
 deretter pikslene.
 
+Disse testene er PR-ens egen kode, så de kjører som et agentverktøys prosess: inne i sandkassen når serveren sandkasser agenter, uten begrensning når serverens eier slo av sandkassen, og uten sandkasse bare for en forespørsel serverens eier står ansvarlig for. For alle andre melder aksen **unavailable** med årsaken «no sandbox on this server, and only its owner may run a PR's tests unsandboxed».
+
 :::note[Dette krever et Flutter SDK på serververten]
 Den rene Dart-serveren kan ikke rendre Flutter-widgeter i sin egen prosess, så
 den starter `flutter test` som en egen prosess. SDK-et må være installert på
@@ -96,9 +96,10 @@ løp den ikke har gjort seg fortjent til.
 
 Øyeblikksbilder merket **changed** eller **removed** holder den visuelle porten
 til de er godkjent; øyeblikksbilder merket **unchanged**, **added** og
-**approved** åpner den. Utilgjengelighet har én av fire årsaker: ingen Flutter
+**approved** åpner den. Utilgjengelighet har én av fem årsaker: ingen Flutter
 SDK på verten, ingen Widgetbook-app i repoet, ingen golden-testbare
-brukstilfeller eller en feil i golden-harnesset.
+brukstilfeller, en feil i golden-harnesset eller ingen sandkasse for en
+forespørsel serverens eier ikke står ansvarlig for.
 
 Å godkjenne en tilsiktet endring gjøres med `review_studio.approveVisual`.
 

@@ -11,7 +11,6 @@ const String themeModeKey = 'theme_mode';
 /// 'onFocusChange'); seeded into code-server's `files.autoSave` on every open.
 const String editorAutoSaveKey = 'editor_auto_save';
 
-
 /// Storage key for the app font family.
 const String appFontFamilyKey = 'app_font_family';
 
@@ -45,21 +44,10 @@ const String audioInputDeviceIdKey = 'audio_input_device_id';
 /// machine's hardware.
 const String audioOutputDeviceKey = 'audio_output_device';
 
-/// The key [audioOutputDeviceKey] replaced, back when the output choice only
-/// routed the soundscape. Read once and migrated forward so an existing
-/// selection survives the widening; never written.
-const String legacySoundscapeOutputDeviceKey = 'soundscape_output_device';
-
 /// SharedPreferences key for the composer dictation push-to-talk mode. `true`
 /// = hold-to-talk (dictate while held, stop on release); `false`/absent =
 /// toggle (press once to start, again to stop).
 const String dictationHoldToTalkKey = 'dictation_hold_to_talk';
-
-/// SharedPreferences key for the JSON list of custom meeting-note templates.
-const String meetingTemplatesKey = 'meeting_templates';
-
-/// SharedPreferences key for the selected meeting-note template id.
-const String selectedMeetingTemplateKey = 'selected_meeting_template';
 
 /// SharedPreferences key for whether automatic meeting detection is enabled.
 const String meetingAutoDetectKey = 'meeting_auto_detect';

@@ -15,7 +15,7 @@ import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
-    show kPipelineRequestedByKey;
+    show kPipelineArmedByKey, kPipelineRequestedByKey, pipelineArmedByOf;
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_run_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
@@ -66,6 +66,7 @@ class _FakeRunRepo implements PipelineRunRepository {
       totalCostCents: existing.totalCostCents,
       totalTokens: existing.totalTokens,
       dryRun: existing.dryRun,
+      templateSnapshot: existing.templateSnapshot,
     );
   }
 
@@ -266,6 +267,7 @@ Future<PipelineRun> _seedWaitingParent(
   String id = 'parent-run',
   String workspaceId = 'ws',
   String? requester,
+  List<String>? armedBy,
   String bodyKey = BuiltInBodyKeys.callFlow,
   PipelineStepStatus stepStatus = PipelineStepStatus.running,
   PipelineRunStatus status = PipelineRunStatus.running,
@@ -275,7 +277,10 @@ Future<PipelineRun> _seedWaitingParent(
     templateId: 'parent-tpl',
     workspaceId: workspaceId,
     status: status,
-    triggerPayload: {kPipelineRequestedByKey: ?requester},
+    triggerPayload: {
+      kPipelineRequestedByKey: ?requester,
+      kPipelineArmedByKey: ?armedBy,
+    },
     startedAt: DateTime(2026),
     templateSnapshot: PipelineDefinition(
       templateId: 'parent-tpl',
@@ -631,6 +636,35 @@ void main() {
       expect(overridden![kPipelineRequestedByKey], 'bob');
     });
 
+    test('the arming admins are recorded from the argument, never the '
+        'payload', () async {
+      final payload = await payloadOf(
+        () => engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          triggerPayload: {
+            kPipelineArmedByKey: ['mallory'],
+            'repo': 'x',
+          },
+          armedByUserIds: {'admin', 'other-admin'},
+        ),
+      );
+      expect(payload![kPipelineArmedByKey], ['admin', 'other-admin']);
+      expect(pipelineArmedByOf(payload), {'admin', 'other-admin'});
+      expect(payload.containsKey(kPipelineRequestedByKey), isFalse);
+
+      final forged = await payloadOf(
+        () => engine.start(
+          'tpl',
+          workspaceId: 'ws',
+          triggerPayload: {
+            kPipelineArmedByKey: ['mallory'],
+          },
+        ),
+      );
+      expect(forged!.containsKey(kPipelineArmedByKey), isFalse);
+    });
+
     test("a sub-pipeline inherits its parent's requester", () async {
       final parent = await _seedWaitingParent(runRepo, requester: 'alice');
       final payload = await payloadOf(
@@ -643,6 +677,26 @@ void main() {
       );
       expect(payload![kPipelineRequestedByKey], 'alice');
     });
+
+    test(
+      "an unrequested sub-pipeline inherits its parent's arming admin",
+      () async {
+        final parent = await _seedWaitingParent(
+          runRepo,
+          armedBy: ['admin', 'other-admin'],
+        );
+        final payload = await payloadOf(
+          () => engine.start(
+            'tpl',
+            workspaceId: 'ws',
+            parentPipelineRunId: parent.id,
+            parentStepId: 'call',
+          ),
+        );
+        expect(payload![kPipelineArmedByKey], ['admin', 'other-admin']);
+        expect(payload.containsKey(kPipelineRequestedByKey), isFalse);
+      },
+    );
   });
 
   // ── 2. Parallel step execution ───────────────────────────────────────
@@ -2385,6 +2439,7 @@ void main() {
           workspaceId: 'ws',
           status: PipelineRunStatus.running,
           startedAt: DateTime(2026),
+          templateSnapshot: def,
         );
         for (final stepId in ['trigger', 'stepA', 'stepB']) {
           runRepo.steps['stranded-$stepId'] = PipelineStepRun(
@@ -2431,6 +2486,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
+        templateSnapshot: def,
       );
       runRepo.steps['stuck-trigger'] = PipelineStepRun(
         id: 'stuck-trigger',
@@ -2491,6 +2547,7 @@ void main() {
           workspaceId: 'ws',
           status: PipelineRunStatus.running,
           startedAt: DateTime(2026),
+          templateSnapshot: def,
         );
         runRepo.steps['c-trigger'] = PipelineStepRun(
           id: 'c-trigger',
@@ -2593,6 +2650,7 @@ void main() {
           status: PipelineRunStatus.running,
           state: {'existing': 'kept'},
           startedAt: DateTime(2026),
+          templateSnapshot: def,
         );
         runRepo.steps['trig'] = PipelineStepRun(
           id: 'trig',
@@ -2647,6 +2705,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2020),
+        templateSnapshot: def,
       );
       runRepo.steps['trig2'] = PipelineStepRun(
         id: 'trig2',
@@ -2756,6 +2815,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
+        templateSnapshot: def,
       );
       runRepo.steps['trig3'] = PipelineStepRun(
         id: 'trig3',
@@ -2825,6 +2885,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
+        templateSnapshot: def,
       );
       runRepo.steps['sr-empty'] = PipelineStepRun(
         id: 'sr-empty',
@@ -2897,6 +2958,7 @@ void main() {
           workspaceId: 'ws',
           status: PipelineRunStatus.running,
           startedAt: DateTime(2026),
+          templateSnapshot: def,
         );
         runRepo.steps['sr-failed'] = PipelineStepRun(
           id: 'sr-failed',
@@ -2985,6 +3047,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
+        templateSnapshot: def,
       );
       runRepo.steps['trig-race'] = PipelineStepRun(
         id: 'trig-race',
@@ -3121,6 +3184,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
+        templateSnapshot: def,
       );
       runRepo.steps['trig-fail'] = PipelineStepRun(
         id: 'trig-fail',
@@ -3202,6 +3266,7 @@ void main() {
         workspaceId: 'ws',
         status: PipelineRunStatus.running,
         startedAt: DateTime(2026),
+        templateSnapshot: def,
       );
       runRepo.steps['trig-ok'] = PipelineStepRun(
         id: 'trig-ok',
@@ -3299,6 +3364,7 @@ void main() {
         status: PipelineRunStatus.failed,
         startedAt: DateTime(2026),
         errorMessage: 'everything failed',
+        templateSnapshot: def,
       );
 
       await engine.retry('ws', 'r2');
@@ -3351,6 +3417,7 @@ void main() {
         startedAt: DateTime(2026),
         finishedAt: DateTime(2026, 1, 1, 0, 5),
         errorMessage: 'Run cancelled',
+        templateSnapshot: def,
       );
 
       await engine.retry('ws', 'r-cancelled');
@@ -3874,7 +3941,8 @@ void main() {
       // comes it must pick up where it stopped — firing the entry step would
       // redo every step the first attempt had already completed, in rooms those
       // steps already worked in.
-      templateRepo.seed(gatedDefinition(maxParallelRuns: 1));
+      final def = gatedDefinition(maxParallelRuns: 1);
+      templateRepo.seed(def);
       registerGatedBodies();
 
       // One run in flight, holding the only slot.
@@ -3891,6 +3959,7 @@ void main() {
         startedAt: DateTime(2025),
         finishedAt: DateTime(2025, 1, 1, 0, 5),
         errorMessage: 'boom',
+        templateSnapshot: def,
       );
       runRepo.steps['sr-trigger'] = PipelineStepRun(
         id: 'sr-trigger',

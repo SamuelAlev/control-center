@@ -2,7 +2,7 @@
 title: Quy trình và tự động hóa
 description: Vì sao quy trình tách lập lịch khỏi công việc, điều gì thực sự khởi chạy một lần chạy và những mẫu tích hợp sẵn nào chạy được ngay khi cài xong.
 slug: vi-VN/so-tay/khai-niem/quy-trinh
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Quy trình là nửa tất định của Control Center. Agent quyết định nói gì; quy
@@ -35,7 +35,7 @@ bước, bởi chạy tiếp sẽ còn tệ hơn là dừng lại:
   true` — đó là cổng phê duyệt một phần `orchestration.awaitApproval`.
   `human.gate` không được miễn.
 - Một bước khai báo `extras: {'idempotent': false}` đang chạy dở khi máy chủ
-  dừng có thể đã áp dụng hiệu ứng phụ của nó rồi (một squash merge, một lần
+  dừng có thể đã áp dụng hiệu ứng phụ của nó rồi (một lần sao lưu không gian làm việc, một lần
   dọn dẹp worktree). Chạy lại có thể áp dụng hai lần, nên engine đánh dấu
   bước đó thất bại và để bạn tự thử lại.
 
@@ -138,8 +138,13 @@ bao giờ được xem là lựa chọn của người dùng.
 Một điểm bất đối xứng nữa đáng biết: mẫu tích hợp sẵn `pr_review` cố ý không
 còn đăng lên GitHub. Xuất bản một đánh giá là một bước riêng, có cổng cho
 người dùng duyệt, và một quy trình đăng trực tiếp sẽ xuất bản hai lần.
-`cross_review`, `ticket_to_pr` và `pr_triage` thì vẫn đăng thẳng một bình luận
-lên GitHub khi chúng chạy.
+`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` và `external_pr_welcome` vẫn đăng một bình luận lên GitHub khi chạy.
+
+Chúng đăng từ máy chủ, qua bước **Post PR comment** (`prReview.comment`), không bao giờ từ script shell: các bước shell của pipeline và sandbox của các agent chỉ giữ một token GitHub chỉ có quyền đọc. Cùng quy tắc đó định hình phần còn lại:
+
+- `external_pr_welcome` đăng lời chào qua trường `message` của bước đó.
+- `ticket_to_pr` để agent coder đẩy `agent/<ticket_id>` (qua cổng chạy) và mở PR nháp bằng công cụ `open_pull_request`, dưới danh tính đăng nhập GitHub của người đã khởi chạy lượt chạy, hoặc bằng bot nếu không ai khởi chạy. Cả hai đều phải đáp ứng quy tắc **Push lên remote** và **Mở pull request** của không gian làm việc. Trên Control Center Connect, một lượt chạy không do ai yêu cầu, chẳng hạn lượt được kích hoạt bởi `TicketAssigned`, không thể đẩy hay mở PR: bot của App dùng chung chỉ đọc và bình luận.
+- `pre_merge_gate` không bao giờ merge. Khi phê duyệt tại cổng của nó, nó đăng rằng PR đã sẵn sàng để maintainer merge; khi từ chối, nó đăng rằng cần thay đổi. Người merge thực hiện từ trang PR.
 
 ## Engine biết những gì
 

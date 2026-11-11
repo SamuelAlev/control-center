@@ -31,7 +31,7 @@ The demo's `kDemoViewerLogin` presents Maya Okonkwo for PR/inbox display, not au
 
 ## Landing capture checklist
 
-The media briefs are `docs/src/data/landing-en.ts` and the slots are in `docs/src/components/landing/`. The six hero stops are **Agents**, **Inbox**, **Code review**, **Tickets**, **Meetings** and **Pipelines**. The feature grid reuses five of these; the connected workflow reuses tickets, agents and review. There are three additional shots: the action approval, desktop/web paired with a phone, and the expanded hero preview (the currently selected stop).
+The media briefs are `docs/src/data/landing-en.ts` and the slots are in `docs/src/components/landing/`. The six hero stops are **Agents**, **Inbox**, **Code review**, **Tickets**, **Meetings** and **Pipelines**. The feature grid draws on `featureCaptures` in `docs/src/data/captures.ts`; the connected workflow reuses tickets, agents and review. There are three additional shots: the action approval, desktop/web paired with a phone, and the expanded hero preview (the currently selected stop).
 
 | Shot | Public demo data and safe interaction | Use a real server instead for |
 | --- | --- | --- |
@@ -44,9 +44,9 @@ The media briefs are `docs/src/data/landing-en.ts` and the slots are in `docs/sr
 | Subscription pill | Fictional Claude Code, Codex, Cursor, z.ai and Kimi quota windows with rolling reset times; `subscriptions.usage` is the sole admitted subscription read. | Actual account/plan usage. |
 | Desktop + phone | The web demo shows the workspace and approval on desktop or a narrow browser viewport. | A genuine paired phone companion: pairing is deliberately unavailable on the public host. |
 
-The public demo's approval, tool output, quotas, meeting transcript and worktree-looking file snapshot are **fictional**. Never record these as proof that a push, shell command, clone, audio capture, provider quota fetch or external publication actually happened. Do not enable execution to improve a marketing shot; capture real execution against an operator-controlled `cc_server` instead. The landing inbox tour uses the silent capture in `docs/public/media/`. Other `ProductMedia.astro` slots stay placeholders until verified captures are supplied and integrated.
+The public demo's approval, tool output, quotas, meeting transcript and worktree-looking file snapshot are **fictional**. Never record these as proof that a push, shell command, clone, audio capture, provider quota fetch or external publication actually happened. Do not enable execution to improve a marketing shot; capture real execution against an operator-controlled `cc_server` instead. Captures live in `docs/public/media/` and are listed in `docs/src/data/captures.ts`; a slot without one renders its diagram.
 
-Record desktop at the slot's 1440 × 900 source size and the phone composition at 390 × 844. Capture the action, not just the final state; the landing media implementation still needs accessible controls, captions/transcript for video and a paused/reduced-motion path as described in `docs/README.md`. Seeded approval is registered on visitor claim so it survives an unclaimed pool carried through a server restart.
+Record desktop at the capture size in `docs/README.md` (2880 × 1864) and the phone composition at 390 × 844. Capture the action, not just the final state. Seeded approval is registered on visitor claim so it survives an unclaimed pool carried through a server restart.
 
 ### Capture sequence
 

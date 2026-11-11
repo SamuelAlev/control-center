@@ -2,7 +2,7 @@
 title: Kết nối nhà cung cấp OpenID Connect
 description: Kết nối bất kỳ issuer OIDC nào — Pocket ID, Keycloak, Auth0, Zitadel — với đăng nhập của Control Center.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -82,6 +82,53 @@ lệ**: IdP gọi trực tiếp máy chủ của bạn, việc này cần một 
 công khai — xem [cấp phát người dùng bằng SCIM](/vi-VN/so-tay/huong-dan-thuc-hanh/sso-scim).
 :::
 
+## Cách các lần đăng nhập khớp với tài khoản đã có
+
+Một lần đăng nhập qua nhà cung cấp danh tính sẽ tìm tài khoản của nó theo thứ tự sau:
+
+1. **Danh tính được ghim.** Lần đăng nhập SSO đầu tiên ghim subject của nhà cung cấp
+   (issuer cộng `sub`) vào tài khoản. Mọi lần đăng nhập sau đó với subject ấy đều là
+   tài khoản đó.
+2. **Email đã xác minh ở cả hai phía.** Nếu không, lần đăng nhập chỉ khớp với một tài
+   khoản theo email khi nhà cung cấp gửi `email_verified: true` và địa chỉ của tài khoản
+   cũng đã được xác minh. Một địa chỉ được xem là đã xác minh khi SSO hoặc SCIM đặt nó,
+   hoặc khi chủ sở hữu máy chủ đã xác nhận nó. Địa chỉ của chính chủ sở hữu cũng được tính.
+
+Email được lưu và hiển thị bằng chữ thường, và việc khớp không phân biệt chữ hoa chữ
+thường. Một địa chỉ đã xác minh chỉ định danh một tài khoản khi đúng một tài khoản giữ
+nó; nếu hai tài khoản cùng giữ một địa chỉ đã xác minh, nó không khớp với tài khoản nào.
+
+Một địa chỉ mà ai đó tự nhập trong hồ sơ của họ, hoặc nhập trên một lời mời, là chưa
+xác minh và không khớp với gì. Việc sửa một địa chỉ sẽ xóa trạng thái đã xác minh của
+nó cho đến khi ai đó xác nhận lại. Đăng nhập không bao giờ khớp theo tên người dùng.
+
+Khi không có gì khớp, lần đăng nhập sẽ tạo một tài khoản mới nếu **Cấp phát người dùng
+chưa có khi đăng nhập lần đầu** được bật, và bị từ chối nếu tắt.
+
+### Trước khi bật SSO cho những người đã có tài khoản
+
+Hãy xác nhận địa chỉ của họ trước. Mở **Cài đặt → Máy chủ → Mọi người**, nơi mỗi tài
+khoản hiển thị **Email chưa được xác nhận** cho đến khi ai đó xác nhận nó, rồi dùng
+**Xác nhận email** trên hàng của từng người. Chỉ chủ sở hữu máy chủ mới thấy danh sách
+này. Nếu bỏ qua bước này, mỗi người trong số đó sẽ hoặc có thêm một tài khoản thứ hai
+ở lần đăng nhập SSO đầu tiên, hoặc bị từ chối khi tắt cấp phát người dùng chưa có.
+
+Khi địa chỉ của họ còn chưa được xác nhận, người dùng sẽ thấy "Chỉ có bạn nhập địa chỉ
+này. Đăng nhập một lần (SSO) sẽ không khớp với nó cho đến khi chủ sở hữu máy chủ xác nhận."
+dưới ô email trong hồ sơ của chính họ.
+
+### Nhà cung cấp không gửi `email_verified`
+
+Một số nhà cung cấp bỏ sót claim này. Microsoft Entra ID làm vậy theo mặc định. Một
+claim bị thiếu không phải là "có", nên với nhà cung cấp như vậy, một lần đăng nhập chỉ
+khớp theo danh tính được ghim, và lần đăng nhập đầu tiên của một người không bao giờ
+tìm được tài khoản đã có của họ theo email. Cấp phát tài khoản bằng SCIM cũng không
+giúp được lần đăng nhập OIDC đầu tiên đó. Các cách thực tế là:
+
+- để **Cấp phát người dùng chưa có khi đăng nhập lần đầu** bật và cho lần đăng nhập đầu
+  tiên tạo tài khoản, hoặc
+- cấu hình nhà cung cấp để phát `email_verified`, rồi xác nhận các địa chỉ khớp như trên.
+
 ## Kiểm tra cấu hình của bạn ngay trên trang này
 
 Công cụ kiểm tra bên dưới chạy trong trình duyệt của bạn. Nó tải trực tiếp tài
@@ -93,3 +140,26 @@ client của bạn cần. Với một client ID và địa chỉ máy chủ, nó
 chưa. Nó không bao giờ hỏi client secret.
 
 <SsoCheck kind="oidc" />
+
+## Xử lý sự cố
+
+### Ai đó có tài khoản thứ hai sau khi bật SSO
+
+Tài khoản hiện có của họ không có địa chỉ đã xác minh vào lần đầu họ đăng nhập bằng SSO,
+nên lần đăng nhập không khớp với nó và tạo một tài khoản mới. Điều đó xảy ra khi địa chỉ
+được nhập trong hồ sơ hoặc trên một lời mời và chủ sở hữu máy chủ chưa xác nhận, hoặc khi
+nhà cung cấp không gửi `email_verified: true`. Một tài khoản mới mà nhà cung cấp đã bảo
+đảm cho địa chỉ đó sẽ nhận địa chỉ ấy, còn tài khoản cũ chỉ có địa chỉ được nhập thì mất nó.
+
+Để tránh điều này với người tiếp theo, hãy xác nhận địa chỉ trong **Cài đặt → Máy chủ →
+Mọi người** trước khi họ đăng nhập. Với người đã có hai tài khoản, tài khoản mới được ghim
+vào danh tính SSO của họ, nên đó là tài khoản mà các lần đăng nhập của họ sẽ dùng từ nay trở đi.
+
+### "Tài khoản này đã được liên kết với một danh tính SSO khác"
+
+Lần đăng nhập đã khớp một tài khoản theo email đã xác minh của nó, nhưng tài khoản đó đã
+được ghim vào một subject hoặc issuer khác: một người dùng khác tại nhà cung cấp, cùng một
+người dưới một nhà cung cấp mới, hoặc một tài khoản do SCIM tạo dưới mã định danh riêng
+của nó. Tài khoản đã ghim từ chối mọi danh tính khác, nên một địa chỉ được tái sử dụng tại
+nhà cung cấp không thể chiếm lấy nó. Hãy đăng nhập bằng danh tính mà tài khoản được liên
+kết lúc đầu.

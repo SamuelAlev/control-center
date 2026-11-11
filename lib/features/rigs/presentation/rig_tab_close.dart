@@ -8,7 +8,9 @@
 library;
 
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
+import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/editor/editor_live_close.dart';
@@ -44,6 +46,11 @@ Future<bool> confirmCloseLiveRigTab({
       ref.read(conversationRigProvider(key)) ??
       ref.read(conversationPendingRigProvider(key));
   if (rig == null) {
+    return true;
+  }
+  // Shutting a machine down is driving it: someone who may only watch it
+  // closes their view and leaves the machine to the people who may.
+  if (readRigAccessFor(ref, workspaceId, rig).access != RigAccess.drive) {
     return true;
   }
   if (rig.isFailed) {
@@ -83,7 +90,10 @@ Future<void> _destroyRig(
     await ref.read(rigRepositoryProvider).destroy(workspaceId, rigId);
   } on Object catch (e) {
     if (context != null && context.mounted) {
-      CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
+      CcToastScope.of(context).show(
+        repoRefusalOf(AppLocalizations.of(context), e) ?? '$e',
+        variant: CcToastVariant.danger,
+      );
     }
   }
 }

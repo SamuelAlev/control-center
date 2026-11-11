@@ -2,7 +2,7 @@
 title: "Rigs y recintos"
 description: "Por qué los agentes reciben máquinas desechables en lugar de tu computadora: las fronteras de aislamiento, los canales de visualización, las credenciales, los puertos y el ciclo de vida."
 slug: es-MX/manual/conceptos/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Un **rig** es una máquina desechable que un agente dirige en tiempo real: un
@@ -265,7 +265,8 @@ lugar de hacer otra cosa en silencio.
 Un rig deliberadamente **no** es un destino global. La vista en vivo es una
 pestaña en el espacio o la PR donde ocurre el trabajo, acotada a esa
 conversación, así que tu pestaña y las llamadas `browser_use` del agente se
-dirigen a *una* máquina (una por motor, en la superficie de navegador). Que los
+dirigen a *una* máquina (una por motor, en la superficie de navegador).
+Un rig abierto en un espacio es la máquina del espacio, con sus worktrees del espacio al alcance, así que sigue a los repositorios del espacio: el acceso de lectura al espacio te permite verlo, y una concesión de escritura sobre esos repositorios te permite dirigirlo. Un rig que no pertenece a ningún espacio no alcanza ningún worktree, y todo miembro del espacio de trabajo puede usarlo. [Quién puede observar y quién puede dirigir](/es-MX/manual/guias/usar-rigs/#quién-puede-observar-y-quién-puede-dirigir) enumera lo que cubre cada uno. Que los
 rigs puedan arrancar o no es una propiedad del host, así que las capacidades,
 las imágenes, las imágenes personalizadas por espacio de trabajo y la lista de
 máquinas en ejecución están en **Ajustes → Servidor → Rigs**. Dirigir un recinto

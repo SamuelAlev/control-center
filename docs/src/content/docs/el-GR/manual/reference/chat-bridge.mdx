@@ -2,7 +2,7 @@
 title: Γέφυρα συνομιλίας
 description: Πάροχοι, εντολές, διαπιστευτήρια, δυνατότητες, λειτουργίες RPC και αποθήκευση για τη γέφυρα συνομιλίας.
 slug: el-GR/εγχειρίδιο/αναφορά/γέφυρα-συνομιλίας
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Πάροχοι
@@ -150,7 +150,7 @@ message.im
 | Η αναφορά έγινε δεκτή        | `Working on it…`                                               |
 | Βήμα `repo`                  | `Cloning <repo>…`                                              |
 | Βήμα `prCheckout`            | `Checking out the pull request in <repo>…`                     |
-| Βήμα `script`                | `Running the setup script for <repo>…`                         |
+| Βήμα `provisionTasks`                | `Running worktree tasks for <repo>…`                         |
 | Βήμα `agent`                 | `Setting up <agent>…`                                          |
 | `provisioning`, κανένα βήμα ακόμη | `Preparing the workspace…`                                |
 | `ready`                      | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ message.im
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Διαπιστευτήρια σύνδεσης    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Ημιτελής καθοδηγούμενη ρύθμιση | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                          |
-| Παλιά αρχεία Slack         | `<dataDir>/<workspaceId>/slack_credentials.json` και `slack_app_setup.json`, διαβάζονται μία φορά και μεταναστεύουν επί τόπου |
 
 Τα διαπιστευτήρια ζουν δίπλα στη βάση δεδομένων του χώρου εργασίας, όχι μέσα της: η διαγραφή ενός χώρου εργασίας παίρνει μαζί της τα token συνομιλίας του και το `workspace.export` ή ένα αντίγραφο ασφαλείας αντιγράφει το `workspace.db` — οπότε ένας χώρος εργασίας που παραδίδεται σε κάποιον άλλο δεν κουβαλά ζωντανά token bot. Οι εγγραφές είναι ατομικές (προσωρινό αρχείο συν μετονομασία) και περιορίζονται σε δικαιώματα μόνο του ιδιοκτήτη.
 

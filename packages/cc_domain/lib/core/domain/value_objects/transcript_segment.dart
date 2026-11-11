@@ -257,7 +257,8 @@ class ToolSegment extends TranscriptSegment {
   /// Name of the tool (e.g. `Read`, `Edit`, `mcp__cc__create_ticket`).
   final String toolName;
 
-  /// Id pairing the call with its result. May be `''` for legacy events.
+  /// Id pairing the call with its result. May be `''` when the producer
+  /// supplied none.
   final String toolCallId;
 
   /// Parsed JSON tool arguments (e.g. `{file_path, old_string, new_string}`).
@@ -467,6 +468,14 @@ class ErrorSegment extends TranscriptSegment {
 
   /// Whether the run failed because its credential stopped authenticating.
   bool get isAuthentication => code == authenticationErrorCode;
+
+  /// [code] for a run the server refused before it started: the server has no
+  /// sandbox, and only work its owner is accountable for may run unsandboxed
+  /// (`HostSandboxUnavailableException`). Also the run log's `errorCode`.
+  static const sandboxUnavailableCode = 'sandbox_unavailable';
+
+  /// Whether the run was refused because the server has no sandbox.
+  bool get isSandboxUnavailable => code == sandboxUnavailableCode;
 
   @override
   Map<String, dynamic> toJson() => {

@@ -2,7 +2,7 @@
 title: "Slash-parancsok"
 description: "Minden parancs, amelyet beírhat az üzenetszerkesztőbe: mit tesz, és hol fut."
 slug: hu-HU/kezikonyv/referencia/slash-parancsok
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 A tér üzenetszerkesztőjébe beírt parancsok. Aszerint, hogy hol fejtik ki hatásukat, három csoportba esnek, és a különbség számít: egy **helyi** parancs soha nem utazik üzenetként, így sem az átiratban nem jelenik meg, sem ügynökhöz nem jut el.
@@ -140,7 +140,7 @@ Mindkettő ugyanaz az alakzat — veszi a beszélgetést úgy, ahogy van, tesz f
 
 Sablonozás: `$1`, `$@`, `$@[start:length]` és `$ARGUMENTS`. A frontmatter beállíthatja a `description`-t (üzenetszerkesztői automatikus kiegészítés). Az `allowed-tools` és a `model` beolvasódik a fájlból, de egy felhasználói parancs meghívása jelenleg csak az argumentumokat helyettesíti be a törzsbe — nem változtatják meg a futtatás modelljét vagy eszközfelületét.
 
-A felhasználó által írt parancs nyer az azonos nevű készséggel szemben — ez egy gyorsparancs, amelyet egy ember szándékosan hívott meg, argumentumokkal.
+A készségek csak `/skill:<name>` alakban érhetők el, így a felhasználó által írt parancs soha nem ütközik velük.
 
 ---
 

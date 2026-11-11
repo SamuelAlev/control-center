@@ -1,8 +1,9 @@
 import 'dart:async';
+import 'package:cc_domain/core/domain/entities/git_repo_info.dart'
+    show ForgeRemote;
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/git_repo_inspector_port.dart';
 import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/process_control_port.dart';
@@ -11,6 +12,7 @@ import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/llm_call_record_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_handle.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
@@ -40,6 +42,8 @@ import 'package:cc_infra/src/dispatch/agent_run_gateway.dart';
 import 'package:cc_infra/src/dispatch/backend_registry.dart';
 import 'package:cc_infra/src/dispatch/claude_idle_compactor.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
+import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/dispatch/steering_session_view.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/harness/ast_parser_provider.dart';
@@ -50,6 +54,7 @@ import 'package:cc_infra/src/messaging/run_transcript_recorder.dart';
 import 'package:cc_infra/src/sandboxing/claude_mcp_discovery_cache.dart';
 import 'package:cc_infra/src/sandboxing/claude_native_session.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
@@ -63,7 +68,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
   /// Creates a [SandboxedAgentDispatchAdapter].
   SandboxedAgentDispatchAdapter({
     required SandboxPort sandbox,
-    required CredentialBrokerPort credentialBroker,
+    required HostExecutionGate hostExecution,
     required AgentRepository agentRepository,
     AgentRunLogRepository? runLogRepository,
     LlmCallRecordRepository? llmCallRecordRepository,
@@ -88,6 +93,14 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     })?
     mcpServersResolver,
     Future<List<String>> Function(String workspaceId)? protectedPathsResolver,
+    Future<List<String>> Function(
+      String workspaceId,
+      String spaceId,
+      String? actingUserId,
+    )?
+    writableWorktrees,
+    Future<List<ForgeRemote>> Function(String workspaceId, String spaceId)?
+    spaceRepos,
     BackendRegistry? backendRegistry,
     this.sandboxManager,
     this.confirmationPort,
@@ -96,6 +109,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     BlobStore? blobStore,
     MediaRenderPort? mediaRenderer,
     LspSupervisor? lspSupervisor,
+    String? agentHooksRoot,
     AstParserProvider? astParsers,
     HarnessTranscriptStore? transcriptStore,
     ToolOutputStore? toolOutputStore,
@@ -110,6 +124,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     DebugSessionSupervisor? debugSupervisor,
     Future<KernelLauncher> Function({
       required String workingDirectory,
+      required ToolProcessLauncher hostProcesses,
       String? workspaceId,
       String? conversationId,
     })?
@@ -131,10 +146,10 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
     Future<AgentCommitIdentity?> Function(
       String? userId, {
       String? workspaceId,
+      String? runLogId,
+      ForgeHost? forge,
     })?
     resolveCommitIdentity,
-    Future<bool> Function(String? userId, {String? workspaceId})?
-    resolveAgentAttribution,
     GitRepoInspectorPort? repoInspector,
     ProcessControlPort? processControl,
     FileSearchPort? fileSearch,
@@ -142,7 +157,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
   }) : _sandbox = sandbox,
        _deps = SandboxDispatchDeps(
          sandbox: sandbox,
-         broker: credentialBroker,
+         hostExecution: hostExecution,
          agentRepo: agentRepository,
          runLogRepo: runLogRepository,
          llmCallRecordRepo: llmCallRecordRepository,
@@ -152,6 +167,8 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          mcpConfigPathResolver: mcpConfigPathResolver,
          mcpServersResolver: mcpServersResolver,
          protectedPathsResolver: protectedPathsResolver,
+         writableWorktrees: writableWorktrees,
+         spaceRepos: spaceRepos,
          backendRegistry: backendRegistry ?? buildBackendRegistry(),
          sandboxManager: sandboxManager,
          confirmationPort: confirmationPort,
@@ -160,6 +177,7 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          blobStore: blobStore,
          mediaRenderer: mediaRenderer,
          lspSupervisor: lspSupervisor,
+         agentHooksRoot: agentHooksRoot,
          astParsers: astParsers,
          transcriptStore: transcriptStore,
          toolOutputStore: toolOutputStore,
@@ -185,7 +203,6 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
          harnessProviderFactory: harnessProviderFactory,
          agentLoop: agentLoop,
          resolveCommitIdentity: resolveCommitIdentity,
-         resolveAgentAttribution: resolveAgentAttribution,
          repoInspector: repoInspector,
          processControl: processControl,
          fileSearch: fileSearch,
@@ -194,6 +211,9 @@ class SandboxedAgentDispatchAdapter implements AgentDispatchPort {
 
   final SandboxPort _sandbox;
   final SandboxDispatchDeps _deps;
+
+  /// Where an ACP one-shot may run: the confinement this adapter's runs get.
+  OneShotConfinement get oneShotConfinement => OneShotConfinement.of(_deps);
 
   /// The process-wide OS sandbox manager, or null when unavailable.
   final SandboxManager? sandboxManager;

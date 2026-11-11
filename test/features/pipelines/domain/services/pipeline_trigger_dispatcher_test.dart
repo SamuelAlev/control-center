@@ -28,6 +28,7 @@ class _StartCall {
     this.dedupKey,
     this.parentPipelineRunId,
     this.parentStepId,
+    this.armedByUserIds = const {},
     this.dryRun = false,
   });
   final String templateId;
@@ -37,6 +38,7 @@ class _StartCall {
   final String? dedupKey;
   final String? parentPipelineRunId;
   final String? parentStepId;
+  final Set<String> armedByUserIds;
   final bool dryRun;
 }
 
@@ -73,6 +75,7 @@ class _FakePipelineEngine implements PipelineEngine {
     String? parentPipelineRunId,
     String? parentStepId,
     String? requestedByUserId,
+    Set<String> armedByUserIds = const {},
     bool dryRun = false,
   }) async {
     calls.add(
@@ -84,6 +87,7 @@ class _FakePipelineEngine implements PipelineEngine {
         dedupKey: dedupKey,
         parentPipelineRunId: parentPipelineRunId,
         parentStepId: parentStepId,
+        armedByUserIds: armedByUserIds,
         dryRun: dryRun,
       ),
     );
@@ -161,6 +165,7 @@ PipelineTrigger _trigger({
   bool enabled = true,
   String eventType = 'TicketAssigned',
   Map<String, dynamic>? match,
+  Set<String> armedByUserIds = const {},
 }) {
   return PipelineTrigger(
     id: id,
@@ -169,6 +174,7 @@ PipelineTrigger _trigger({
     enabled: enabled,
     eventType: eventType,
     match: match ?? const {},
+    armedByUserIds: armedByUserIds,
   );
 }
 
@@ -230,6 +236,31 @@ void main() {
         expect(engine.calls, isEmpty);
       },
     );
+
+    test('a fire carries every admin who armed the trigger', () async {
+      triggerRepo = FakePipelineTriggerRepository(
+        onEnabledForEvent: (_) => [
+          _trigger(
+            eventType: 'TicketCreated',
+            armedByUserIds: {'admin-1', 'admin-2'},
+          ),
+        ],
+      );
+      engine = _FakePipelineEngine(returnRun: _run('r-armed'));
+      dispatcher = PipelineTriggerDispatcher(
+        eventBus: eventBus,
+        engine: engine,
+        triggerRepository: triggerRepo,
+      );
+      dispatcher.start();
+
+      eventBus.publish(
+        TicketCreated(ticketId: 't-1', workspaceId: 'ws-1', occurredAt: now),
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(engine.calls.single.armedByUserIds, {'admin-1', 'admin-2'});
+    });
 
     test(
       'dispatches TicketCreated to enabled triggers',

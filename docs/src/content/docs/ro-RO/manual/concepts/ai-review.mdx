@@ -2,7 +2,7 @@
 title: Revizuire IA
 description: Cum devine un pull request unul revizuit — spații de revizuire, noduri de revizuire și consensul între colegi, cohorte și axe, verdictul Ship/Hold/Block și de ce publicarea rămâne un pas pe care îl faci tu.
 slug: ro-RO/manual/concepte/revizuire-ia
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Forma unei revizuiri
@@ -215,9 +215,15 @@ ori. Când apeși **Publică pe GitHub**:
 - Butonul **Publică pe GitHub** postează revizuirea ca persoana care l-a apăsat,
   pe propria ei autentificare GitHub: poarta de lansare este a ei, deci și
   revizuirea. O publicare fără o persoană în spate este automatizare, iar
-  automatizarea nu aprobă niciodată: Ship pleacă atunci ca `COMMENT`, iar prin
-  Control Center Connect postarea este atribuită cu prefixul
-  `**Control Center** (for @login):`.
+  automatizarea nu aprobă niciodată: Ship pleacă atunci ca `COMMENT`, iar
+  @-mențiunile din constatări sunt neutralizate, astfel încât postarea să nu
+  notifice pe nimeni. Postarea o face botul, cu excepția aplicației partajate
+  Control Center Connect când operatorul Connect nu a trecut această instalare
+  pe listă: atunci pleacă pe propria autentificare GitHub a persoanei
+  responsabile, sub numele ei, și este atribuită cu
+  prefixul `**Control Center** (for @login):`. Un server sau un spațiu de lucru
+  cu propria aplicație GitHub postează întotdeauna ca bot. Un agent care apelează
+  unealta MCP poate publica doar revizuirea din propriul spațiu.
 
 Publicarea declară clasa de acțiune `prPublish`, astfel încât punctul de control
 al guardrail-urilor o condiționează ca orice acțiune care mută date — solicită

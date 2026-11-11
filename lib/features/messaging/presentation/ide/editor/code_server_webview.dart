@@ -84,9 +84,9 @@ class CodeServerWebView extends StatefulWidget {
 }
 
 class _CodeServerWebViewState extends State<CodeServerWebView> {
-  /// Uncovers anyway when the marker never arrives (a server running an older
-  /// bridge, a failed bridge install), so a missing signal costs a brief chrome
-  /// flash rather than a stuck spinner. A warm boot logs it in ~5s.
+  /// Uncovers anyway when the marker never arrives (a failed bridge install),
+  /// so a missing signal costs a brief chrome flash rather than a stuck
+  /// spinner. A warm boot logs it in ~5s.
   static const Duration _coverTimeout = Duration(seconds: 10);
 
   bool _covered = true;

@@ -5,10 +5,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart';
 
 /// Builds the global, owner-only pinned backend setup operation.
-RepoOp buildRigInstallBackendSetupOp({
-  required RigPort rigs,
-  required void Function(RepoOpContext context) requireServerAdmin,
-}) => RepoOp(
+RepoOp buildRigInstallBackendSetupOp({required RigPort rigs}) => RepoOp(
   name: 'rig.installBackendSetup',
   serverAuthority: ServerAuthority.serverOwner,
   kind: RepoOpKind.mutate,
@@ -19,7 +16,6 @@ RepoOp buildRigInstallBackendSetupOp({
     ActionClass.packageInstall,
   },
   handler: (context) async {
-    requireServerAdmin(context);
     final raw = context.args['action'];
     final action = raw is String ? RigBackendSetupAction.fromWire(raw) : null;
     if (action == null) {

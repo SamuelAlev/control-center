@@ -2,7 +2,7 @@
 title: Outils d’agent intégrés
 description: La surface d’outils que le harnais intégré offre à un agent — serveur de langage, recherche structurelle, débogueur, noyaux et contrôle des workers — avec chaque opération et ses arguments.
 slug: fr-FR/manuel/reference/outils-agent
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Voici les outils **liés au serveur** que le moteur d’exécution d’agent intégré enregistre directement — serveur de langage, recherche structurelle, débogueur, noyaux, questions et contrôle des workers — par opposition aux [outils MCP](/fr-FR/manuel/reference/outils-mcp/) qu’il intègre par passerelle et aux outils génériques de fichiers, de recherche et de shell du moteur d’exécution du harnais. Ils ne figurent pas dans le registre MCP : un client MCP externe ne les verra pas, car chacun est lié à une ressource côté serveur vivante — un processus de serveur de langage, un adaptateur de débogage, un interpréteur — qui appartient à une seule exécution.
@@ -24,6 +24,8 @@ Chaque outil déclare un palier, et le palier décide **quelles surfaces le voie
 ## `lsp` — requêtes de serveur de langage
 
 Enregistré lorsque l’exécution dispose d’un superviseur de serveur de langage et d’un répertoire de travail. Savoir si un serveur peut réellement répondre est détecté au moment de l’appel, sous forme d’**intersection** : un marqueur racine doit exister *et* le binaire du serveur doit être résolvable. L’un ou l’autre seul signifie qu’aucun serveur ne démarre — `status` le dit — plutôt qu’une supposition silencieuse.
+
+Les serveurs proviennent uniquement de la table intégrée ; un fichier `lsp.json` du dépôt n’est pas lu. Dans une exécution sous bac à sable, chaque exécution dispose de sa propre session de serveur de langage, si bien que les serveurs redémarrent à chaque exécution. Les binaires propres au projet (`node_modules/.bin`) ne sont utilisés que lorsque l’exécution est sous bac à sable, et la racine du projet ne remonte jamais au-dessus du répertoire de travail de l’exécution.
 
 Les positions sont désignées par `line` plus une sous-chaîne `symbol`, jamais par colonne. Un modèle à qui l’on demande une colonne devine, et une mauvaise supposition se résout sur un autre symbole de la même ligne — une réponse qui a l’air juste et qui porte sur autre chose. Omettre `symbol` sur une action de navigation est une erreur, pas une supposition de première colonne.
 
@@ -117,7 +119,7 @@ Chaque fichier est comparé au contenu capturé au moment de la préparation, et
 
 Enregistré lorsque l’exécution dispose d’un superviseur de session de débogage, d’un répertoire de travail et d’un identifiant de conversation. Savoir si un adaptateur peut réellement démarrer est détecté au moment de l’appel, selon la même règle d’intersection que le serveur de langage (marqueur racine *et* binaire). Palier `exec` ; non sûr en parallèle (une session est un état qui traverse les appels, donc un `continue` qui dépasse `stack` lirait un cadre qui a déjà bougé).
 
-Une seule session par conversation, avec une durée de vie stricte (30 minutes). Un second `launch` est refusé plutôt que de remplacer silencieusement le premier.
+Une seule session par conversation, avec une durée de vie stricte (30 minutes). Un second `launch` est refusé plutôt que de remplacer silencieusement le premier. Dans une exécution sous bac à sable, la session conserve son bac à sable d’un tour à l’autre jusqu’à sa fin, donc pendant au plus ces 30 minutes.
 
 | Op            | Arguments                     | Notes                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Une seule session par conversation, avec une durée de vie stricte (30 minutes).
 | `status`      | —                             | Si une session est en cours, et où elle s’est arrêtée |
 | `breakpoints` | `file`, `lines[]`             | Un `lines` vide efface le fichier. Peut être défini **avant** le lancement |
 | `launch`      | `program`, `args[]`           | Démarre le programme arrêté sur vos points d’arrêt |
-| `attach`      | `port`                        | Se connecte à un programme débogué déjà en cours d’exécution |
+| `attach`      | `port`                        | Se connecte à un programme débogué déjà en cours d’exécution sur l’un des ports transférés propres à l’exécution ; tout autre port est refusé avant tout démarrage |
 | `continue`    | `thread_id?`                  | Exécute jusqu’au prochain arrêt                |
 | `pause`       | `thread_id?`                  | L’arrête là où il en est                       |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Avance d’un pas                          |
@@ -146,7 +148,7 @@ Une seule session par conversation, avec une durée de vie stricte (30 minutes).
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` préfère un `.venv/bin` ou `venv/bin` local au projet à `$PATH` : un python de `$PATH` est un environnement différent, et s’y attacher depuis le mauvais échoue d’une manière qui se lit comme du code cassé.
+`debugpy` préfère un `.venv/bin` ou `venv/bin` local au projet à `$PATH` lorsque l’exécution est sous bac à sable : un python de `$PATH` est un environnement différent, et s’y attacher depuis le mauvais échoue d’une manière qui se lit comme du code cassé. Hors bac à sable, il n’utilise que `$PATH`, si bien qu’un dépôt ne peut pas choisir l’interpréteur qui tourne sur l’hôte.
 
 ---
 
@@ -176,7 +178,7 @@ La passerelle **re-entre dans le registre d’outils du harnais**, si bien que l
 Le délai d’expiration de la cellule est un budget d’*inactivité* (5 minutes par défaut) et il est **suspendu** tant qu’un appel via la passerelle est en cours, de sorte qu’une cellule qui se ramifie vers des sous-agents n’est pas tuée en pleine ramification.
 
 :::note[Où s’exécute le noyau]
-Dans l’enceinte de la conversation quand elle en a une, sur l’hôte sinon. Il ne démarre pas d’enceinte pour y parvenir — la même règle qui empêche un onglet rig de démarrer tout seul.
+Dans l’enceinte de la conversation quand elle en a une, sinon dans le bac à sable de l’OS de l’exécution, sur l’hôte. Avec le bac à sable désactivé ou indisponible, il tourne sans confinement et `eval` demande une approbation d’exécution sur l’hôte. Il ne démarre pas d’enceinte pour y parvenir — la même règle qui empêche un onglet rig de démarrer tout seul.
 :::
 
 ---

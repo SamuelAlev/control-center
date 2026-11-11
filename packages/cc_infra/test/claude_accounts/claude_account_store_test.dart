@@ -903,6 +903,166 @@ void main() {
         },
       );
     });
+
+    group('sign-in states', () {
+      // What a surface waiting on `claude auth login` asks every couple of
+      // seconds, so it must cost no CLI start and must agree with dispatch.
+      File credential(String accountId) =>
+          File(p.join(store.configDirFor(accountId), '.credentials.json'));
+
+      test('reads every registered account without probing the CLI', () async {
+        await seed(['Work', 'Personal']);
+
+        final states = await build().signInStates();
+
+        expect(
+          [for (final s in states) (s.accountId, s.signedIn)],
+          [('work', true), ('personal', true)],
+        );
+        expect(
+          states.first.credentialExpiresAt,
+          DateTime.fromMillisecondsSinceEpoch(999),
+        );
+        expect(
+          proc.calls.where((c) => c.exe != 'security'),
+          isEmpty,
+          reason: 'a keychain read per account, and nothing else',
+        );
+      });
+
+      test('an account nobody signed in reads signed out', () async {
+        await store.create(label: 'Work');
+
+        final state = (await build().signInStates()).single;
+
+        expect(state.signedIn, isFalse);
+        expect(state.credentialExpiresAt, isNull);
+      });
+
+      test(
+        'a login that lands in the keychain is a finished sign-in',
+        () async {
+          final a = await store.create(label: 'Work');
+          final before = (await build().signInStates()).single;
+          expect(before.signedIn, isFalse);
+
+          // `claude auth login` wrote the account's own keychain item.
+          final expiresAt = clock.add(const Duration(hours: 8));
+          final service = ClaudeAccountStore.keychainServiceFor(
+            store.configDirFor(a.id),
+          );
+          proc.results['find-generic-password -s $service'] = ProcessResult(
+            0,
+            0,
+            _credentials(expiresAt: expiresAt.millisecondsSinceEpoch),
+            '',
+          );
+          final after = (await build().signInStates()).single;
+
+          expect(after.signedIn, isTrue);
+          expect(
+            after.credentialExpiresAt!.isAtSameMomentAs(expiresAt),
+            isTrue,
+          );
+          expect(after.signedInSince(before), isTrue);
+          // Mirrored on the way, so the next roster read and the next run both
+          // find the new login.
+          expect(credential(a.id).existsSync(), isTrue);
+        },
+        skip: !Platform.isMacOS ? 'macOS keychain only' : null,
+      );
+
+      test(
+        'signing a working account in again is a finished sign-in',
+        () async {
+          await seed(['Work']);
+          final before = (await build().signInStates()).single;
+          expect(before.signedIn, isTrue);
+          expect(
+            (await build().signInStates()).single.signedInSince(before),
+            isFalse,
+          );
+
+          credential('work').writeAsStringSync(
+            _credentials(
+              expiresAt: clock
+                  .add(const Duration(hours: 8))
+                  .millisecondsSinceEpoch,
+            ),
+          );
+
+          expect(
+            (await build().signInStates()).single.signedInSince(before),
+            isTrue,
+          );
+        },
+      );
+
+      test(
+        'a lapsed sign-in that renews itself still reads signed in',
+        () async {
+          // Dispatch keeps such an account, so the watch must not call the same
+          // credential a new sign-in just because it lapsed.
+          await seed(['Work']);
+          credential('work').writeAsStringSync(
+            _credentials(
+              expiresAt: clock
+                  .subtract(const Duration(hours: 6))
+                  .millisecondsSinceEpoch,
+            ),
+          );
+
+          final before = (await build().signInStates()).single;
+          final later = (await build().signInStates()).single;
+
+          expect(before.signedIn, isTrue);
+          expect(later.signedInSince(before), isFalse);
+        },
+      );
+
+      test('agrees with dispatch about a credential a run saw fail', () async {
+        await seed(['Work']);
+        credential(
+          'work',
+        ).setLastModifiedSync(clock.subtract(const Duration(hours: 1)));
+        await build().markAuthFailed('work');
+        final before = (await build().signInStates()).single;
+        expect(before.signedIn, isFalse);
+        expect(
+          before.signedIn,
+          (await build().availability())['work']!.signedIn,
+        );
+
+        // The login rewrites the credential, which is what clears the failure.
+        credential('work')
+          ..writeAsStringSync(
+            _credentials(
+              expiresAt: clock
+                  .add(const Duration(hours: 8))
+                  .millisecondsSinceEpoch,
+            ),
+          )
+          ..setLastModifiedSync(clock.add(const Duration(minutes: 1)));
+        final after = (await build().signInStates()).single;
+
+        expect(after.signedInSince(before), isTrue);
+        expect(
+          after.signedIn,
+          (await build().availability())['work']!.signedIn,
+        );
+      });
+
+      test('names no account the registry does not hold', () async {
+        await seed(['Work']);
+        // A credential directory beside the registered ones is not an account.
+        Directory(store.configDirFor('stray')).createSync(recursive: true);
+        credential('stray').writeAsStringSync(_credentials(expiresAt: 999));
+
+        final states = await build().signInStates();
+
+        expect([for (final s in states) s.accountId], ['work']);
+      });
+    });
   });
 
   group('labels', () {
@@ -957,36 +1117,6 @@ void main() {
       skip: !Platform.isMacOS ? 'macOS keychain only' : null,
     );
 
-    test('retires an account an older build seeded from it', () async {
-      final seeded = await store.create(label: 'Keychain account');
-      final own = await store.create(label: 'Work');
-      // The registry as an older build wrote it: the seeded row carries the
-      // marker, and its directory holds a copy of the operator's credential.
-      final registry = File(p.join(store.root, 'accounts.json'));
-      final rows = (jsonDecode(registry.readAsStringSync()) as List)
-          .cast<Map<String, dynamic>>();
-      rows.first['tracks_default_login'] = true;
-      registry.writeAsStringSync(jsonEncode(rows));
-      final copy = File(
-        p.join(store.configDirFor(seeded.id), '.credentials.json'),
-      )..writeAsStringSync(_credentials(expiresAt: 900));
-      final ownCreds = File(
-        p.join(store.configDirFor(own.id), '.credentials.json'),
-      )..writeAsStringSync(_credentials(expiresAt: 900));
-
-      expect(await store.retireDefaultLoginCopies(), [seeded.id]);
-      expect(copy.existsSync(), isFalse, reason: 'the copy is what raced');
-      expect(ownCreds.existsSync(), isTrue, reason: 'its own login stays');
-      expect(
-        registry.readAsStringSync(),
-        isNot(contains('tracks_default_login')),
-      );
-      expect((await store.list()).map((a) => a.id), [
-        seeded.id,
-        own.id,
-      ], reason: 'the account itself stays, signed out');
-      expect(await store.retireDefaultLoginCopies(), isEmpty);
-    });
   });
 
   test('obsolete token files do not hide an expired login', () async {

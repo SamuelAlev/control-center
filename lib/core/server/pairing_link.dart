@@ -14,26 +14,17 @@ Map<String, dynamic>? decodePairingJson(String fragment) {
   }
 }
 
-/// Decodes a pairing fragment into its string fields: base64url JSON, or a
-/// `key=value&…` query string. Null when it is neither.
+/// Decodes a base64url-JSON pairing fragment into its string fields. Null
+/// when it is not one.
 ///
 /// Nested values such as an invite's `d` descriptor stringify; nothing here
 /// reads them.
 Map<String, String>? decodePairingFragment(String fragment) {
-  final text = fragment.trim();
-  if (text.isEmpty) {
+  final json = decodePairingJson(fragment);
+  if (json == null) {
     return null;
   }
-  final json = decodePairingJson(text);
-  if (json != null) {
-    return {for (final e in json.entries) e.key: '${e.value}'};
-  }
-  try {
-    final fields = Uri.splitQueryString(text);
-    return fields.isEmpty ? null : fields;
-  } on Object {
-    return null;
-  }
+  return {for (final e in json.entries) e.key: '${e.value}'};
 }
 
 /// Builds the link a first-party client accepts: [origin] plus the credential
@@ -90,11 +81,11 @@ class PairingLink {
     if (fields == null) {
       return null;
     }
-    final server = (fields['server'] ?? fields['s'] ?? '').trim();
+    final server = (fields['s'] ?? '').trim();
     final displayServer = normalizeServerUrl(server);
-    final deviceId = (fields['device'] ?? fields['i'] ?? '').trim();
-    final psk = (fields['psk'] ?? fields['k'] ?? '').trim();
-    final inviteCode = (fields['invite'] ?? fields['inv'] ?? '').trim();
+    final deviceId = (fields['i'] ?? '').trim();
+    final psk = (fields['k'] ?? '').trim();
+    final inviteCode = (fields['inv'] ?? '').trim();
     final hasCredential = deviceId.isNotEmpty && psk.isNotEmpty;
     if (displayServer == null || (inviteCode.isEmpty && !hasCredential)) {
       return null;

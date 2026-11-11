@@ -2,7 +2,7 @@
 title: Il modello degli agenti
 description: Che cos'è davvero un agente in Control Center, quali dei suoi campi ne cambiano il comportamento e come l'adattatore su cui viene eseguito decide che cosa si può imporre.
 slug: it-IT/manuale/concetti/modello-agenti
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Che cos'è un agente?
@@ -54,7 +54,7 @@ Le skill di repository vengono caricate per **ogni** adattatore, non solo per l'
 
 Un agente non porta flag di permesso propri. Se può creare un commit, eseguire un push, aprire una pull request, scrivere su un tracker o raggiungere la rete lo decidono i [guardrail delle azioni](/it-IT/manuale/concetti/guardrail/) — consenti, chiedi prima o nega, nell'ambito dello spazio di lavoro, dell'agente o dello spazio — e le stesse regole valgono qualunque sia l'adapter che lo esegue.
 
-Ciò che viene _fornito_ a un'esecuzione non cambia con queste regole. Un'esecuzione in un worktree GitHub riceve sempre un token GitHub di sola lettura, e per un push la domanda arriva nel momento in cui avviene: la configurazione git dell'agente fa passare ogni push verso GitHub da Control Center, che applica la regola **Eseguire il push a un remoto** prima di inoltrarlo.
+Ciò che viene _fornito_ a un'esecuzione non cambia con queste regole. Un'esecuzione può sempre leggere i repository GitHub su cui lavora, con un token di sola lettura, e per un push la domanda arriva nel momento in cui avviene: la configurazione git dell'agente fa passare ogni push verso GitHub da Control Center, che applica la regola **Eseguire il push a un remoto** prima di inoltrarlo.
 
 Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/) per come funziona, compreso ciò che viene e ciò che non viene imposto a livello di filesystem.
 
@@ -70,16 +70,16 @@ Il campo più determinante di un agente è il suo adattatore, perché il traspor
 In concreto, **solo l'harness integrato supporta i sottoagenti, la guida durante l'esecuzione, la pausa e la ripresa (e quindi la possibilità di prendere il controllo) e l'applicazione strutturale della modalità.** Claude Code non ha nulla di tutto questo.
 
 :::caution[Il sandbox del sistema operativo è un limite minimo, non impone la modalità e non tutti gli host ne hanno uno]
-La matrice qui sopra riguarda ciò che Control Center riesce a _vedere e a controllare_. Sotto di essa, `cc_server` avvolge la CLI di Claude Code nel sandbox del sistema operativo dell'host dove ne esiste uno — Seatbelt su macOS, bubblewrap su Linux e WSL2 — così un `rm` non visto o una scrittura non vista restano comunque limitati dal sistema operativo. Su **Windows non esiste alcun backend** e su Linux o WSL2 senza `bwrap` e `socat` la sonda non ne segnala nessuno, quindi lì quelle esecuzioni ricadono sulla sanificazione dell'ambiente, sulle credenziali fornite tramite broker, sui guardrail delle chiamate che Control Center riesce a vedere e sul worktree della conversazione stessa (copy-on-write dove `rift` è disponibile; `git worktree` su Windows).
+La matrice qui sopra riguarda ciò che Control Center riesce a _vedere e a controllare_. Sotto di essa, `cc_server` avvolge la CLI di Claude Code nel sandbox del sistema operativo dell'host dove ne esiste uno — Seatbelt su macOS, bubblewrap su Linux e WSL2 — così un `rm` non visto o una scrittura non vista restano comunque limitati dal sistema operativo. Su **Windows non esiste alcun backend** e su Linux o WSL2 senza `bwrap` e `socat` la sonda non ne segnala nessuno. Lì partono solo le esecuzioni del proprietario del server, e quelle di tutti gli altri vengono rifiutate, a meno che il proprietario non abbia avviato il server con `--sandbox off`. Un'esecuzione che parte senza sandbox ricade sulla sanificazione dell'ambiente, sulle credenziali fornite tramite broker, sui guardrail delle chiamate che Control Center riesce a vedere e sul worktree della conversazione stessa (copy-on-write dove `rift` è disponibile; `git worktree` su Windows).
 
 Ciò che il sandbox non è, è un _punto di controllo_. Delimita dove un processo può leggere, scrivere e connettersi — una modalità di sola lettura lo raggiunge davvero, sotto forma di bind mount in sola lettura — ma non può intercettare una chiamata, richiedere un'approvazione o dirti in seguito che cosa ha tentato la CLI. Questo, più le quattro capacità appena nominate, è ancora ciò che l'harness integrato ha e gli altri no. Vedi [Sandbox e sicurezza](/it-IT/manuale/concetti/sandbox-e-sicurezza/).
 :::
 
-Un agente **senza** adattatore ricade su **Control Center (built-in)** — il loop dentro il server, quindi non c'è nessuna CLI da installare — e il suo log di esecuzione registra `cc-harness`. Ogni agente creato dal popolamento iniziale nasce senza adattatore né modello, quindi i cinque agenti di uno spazio di lavoro nuovo vengono eseguiti tutti lì, sul modello predefinito di Anthropic, finché non imposti un adattatore e un modello per agente. La scelta «adattatore predefinito» dell'onboarding è una preferenza lato client che il server non legge mai e che non viene applicata retroattivamente agli agenti già creati.
+Un agente **senza** adattatore ricade su **Control Center (built-in)** — il loop dentro il server, quindi non c'è nessuna CLI da installare — e il suo log di esecuzione registra `cc-harness`. Ogni agente creato dal popolamento iniziale nasce senza adattatore né modello, quindi i sei agenti di uno spazio di lavoro nuovo vengono eseguiti tutti lì, sul modello predefinito di Anthropic, finché non imposti un adattatore e un modello per agente. Completare il passaggio dell'adattatore nell'onboarding imposta la sua coppia adattatore e modello su ogni agente a cui ne manca ancora una negli spazi di lavoro esistenti in quel momento; non esiste un esecutore predefinito per lo spazio di lavoro.
 
 ## Da dove vengono gli agenti
 
-- **Creati insieme allo spazio di lavoro.** Ogni spazio di lavoro — non solo il primo — riceve un CEO più quattro specialisti (`qa`, `architect`, `engineer`, `librarian`) che rispondono a lui, creati in modo idempotente in background quando lo spazio di lavoro viene creato. Vedi [Spazi di lavoro e isolamento](/it-IT/manuale/concetti/spazi-di-lavoro/).
+- **Creati insieme allo spazio di lavoro.** Ogni spazio di lavoro — non solo il primo — riceve un CEO più cinque specialisti (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) che rispondono a lui, creati in modo idempotente in background quando lo spazio di lavoro viene creato. Vedi [Spazi di lavoro e isolamento](/it-IT/manuale/concetti/spazi-di-lavoro/).
 - **Aggiunti a mano** in Impostazioni → Spazio di lavoro → Agenti. Chiedere a un agente di assumere un collega non crea una riga; usa quella schermata.
 
 ## Stato in tempo reale

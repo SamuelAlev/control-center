@@ -332,7 +332,6 @@ class ReviseArtifactTool extends McpTool {
       );
     }
 
-
     return CallResult.success(
       jsonEncode({
         'work_product_id': productId,
@@ -591,14 +590,15 @@ Future<ArtifactRunContext> resolveArtifactRunContext({
           'needs one to be published into.',
     );
   }
-  return ArtifactRunContext(
-    // The dispatch path writes `AgentRunLog.spaceId`, so this resolves to the
-    // real space. The fallback is for older run rows written before it did —
-    // it is wrong for a thread (a conversation id names no space) and exists
-    // only so a legacy run degrades instead of throwing.
-    spaceId: run.spaceId ?? conversationId,
-    conversationId: conversationId,
-  );
+  final spaceId = run.spaceId;
+  if (spaceId == null || spaceId.isEmpty) {
+    return const ArtifactRunContext(
+      error:
+          'Your active run is not tied to a space — an artifact needs one to '
+          'be published into.',
+    );
+  }
+  return ArtifactRunContext(spaceId: spaceId, conversationId: conversationId);
 }
 
 Map<String, dynamic> _productJson(WorkProduct w) => {

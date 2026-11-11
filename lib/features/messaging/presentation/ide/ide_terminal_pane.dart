@@ -48,10 +48,11 @@ class IdeTerminalPane extends StatelessWidget {
       // A shell older than the space's environment lacks its variables.
       return Column(
         children: [
-          if (tab.args[kEnvironmentSetupTabArg] == true)
-            EnvironmentSetupBanner(
+          if (tab.args[kEnvironmentStartTerminalTabArg] == true)
+            EnvironmentStartTerminalBanner(
               workspaceId: claimed.session.workspaceId,
               spaceId: claimed.session.spaceId,
+              sessionId: claimed.session.attachSessionId,
             ),
           EnvironmentTerminalBanner(
             workspaceId: claimed.session.workspaceId,

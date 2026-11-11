@@ -2,7 +2,7 @@
 title: Thiết lập tích hợp Linear
 description: Đăng nhập vào Linear, kết nối tự động hóa Linear của không gian làm việc, và chọn Linear làm nhà cung cấp phiếu cho các phiếu mới.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear có hai danh tính trong Control Center, và cả hai đều là đăng nhập qua trình duyệt:
@@ -22,7 +22,7 @@ bên ngoài nào — xem [Tạo và quản lý phiếu](/vi-VN/so-tay/huong-dan-
 
 ## Chọn Linear cho không gian làm việc
 
-1. Vào **Cài đặt → Không gian làm việc → Chung** và tìm thẻ **Phiếu**
+1. Vào **Cài đặt → Không gian làm việc → Tích hợp** và tìm thẻ **Phiếu**
 2. Đặt **Nhà cung cấp phiếu** thành **Linear**
 
 Các phiếu bạn tạo từ đó về sau sẽ được gắn `provider: linear`. **Cục bộ** giữ phiếu trong
@@ -30,7 +30,7 @@ cơ sở dữ liệu của máy chủ này và ẩn các hàng Linear: không c�
 
 ## Đăng nhập vào Linear
 
-Trên cùng thẻ, hàng **Linear** là của bạn:
+Đăng nhập Linear riêng của bạn nằm trong **Cài đặt → Bạn → Hồ sơ**, ở thẻ **Phiếu**:
 
 1. Nhấp **Đăng nhập vào Linear**
 2. Phê duyệt trong trình duyệt của bạn
@@ -41,9 +41,11 @@ Trên cùng thẻ, hàng **Linear** là của bạn:
 Mọi việc bạn làm trong Linear từ Control Center đều chạy dưới đăng nhập này và không gì
 khác. Nếu bạn chưa đăng nhập, ứng dụng yêu cầu bạn đăng nhập thay vì hành động thay người khác.
 
+Đăng nhập này hoạt động trong mọi không gian làm việc trên máy chủ, trừ khi một không gian làm việc có ứng dụng đăng nhập riêng: không gian làm việc đó giữ một đăng nhập Linear riêng. Thẻ cho biết điều nào áp dụng.
+
 ## Kết nối tự động hóa Linear
 
-Hàng **Tự động hóa Linear** là ứng dụng Control Center của không gian làm việc trong Linear.
+Hàng **Tự động hóa Linear** trên thẻ **Phiếu** trong **Cài đặt → Không gian làm việc → Tích hợp** là ứng dụng Control Center của không gian làm việc trong Linear.
 Đồng bộ phiếu, pipeline và agent ghi bằng ứng dụng này, nên các issue và bình luận tự động
 xuất hiện dưới tên Control Center thay vì tên một người.
 
@@ -58,7 +60,7 @@ các công cụ của chính Control Center, vốn hỏi quy tắc **Ghi vào tr
 
 ## Đăng ký ứng dụng Linear riêng của bạn
 
-Dùng ứng dụng riêng khi bạn đã chọn **Dùng ứng dụng của riêng tôi**. Ứng dụng của máy chủ chỉ được dùng khi đó: với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả Linear, còn ứng dụng riêng và khóa API dịch vụ của máy chủ vẫn được lưu nhưng không dùng. Ứng dụng riêng của một không gian làm việc ([bên dưới](#cấp-cho-một-không-gian-làm-việc-ứng-dụng-linear-riêng)) vẫn áp dụng ở mọi chế độ.
+Dùng ứng dụng riêng khi bạn đã chọn **Dùng ứng dụng của riêng tôi**. Ứng dụng của máy chủ chỉ được dùng khi đó: với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả Linear, còn ứng dụng riêng và khóa API dịch vụ của máy chủ vẫn được lưu nhưng không dùng. Một không gian làm việc dùng ứng dụng riêng ([bên dưới](#cấp-cho-một-không-gian-làm-việc-ứng-dụng-linear-riêng)) dùng ứng dụng riêng của nó, bất kể chế độ của máy chủ.
 
 1. Tạo một ứng dụng OAuth tại
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -81,21 +83,20 @@ trường tiến trình của nó.
 Một không gian làm việc có thể đăng nhập Linear qua một ứng dụng riêng thay vì ứng dụng của máy chủ. Chỉ quản trị viên hoặc chủ sở hữu không gian làm việc mới có thể thiết lập.
 
 1. Tạo một ứng dụng OAuth Linear như các bước ở trên
-2. Vào **Cài đặt → Không gian làm việc → Chung → Ứng dụng nhà cung cấp** và mở **Linear**
-3. Chọn **Dùng ứng dụng riêng của không gian làm việc này**
-4. Thêm cả hai callback URL mà hàng hiển thị dưới **URL gọi lại** vào ứng dụng Linear, nguyên văn
-5. Dán **Id client** của nó và, tùy chọn, một **Khóa API dịch vụ** cho tự động hóa của không gian làm việc này
+2. Vào **Cài đặt → Không gian làm việc → Tích hợp**. Trên thẻ **Control Center Connect**, chọn **Dùng ứng dụng của riêng tôi** và nhấn **Áp dụng**
+3. Dưới **Phiếu**, thẻ **Ứng dụng Linear** xuất hiện. Thêm cả hai callback URL mà thẻ hiển thị dưới **URL gọi lại** vào ứng dụng Linear, nguyên văn
+4. Dán **Id client** của nó và, tùy chọn, một **Khóa API dịch vụ** cho tự động hóa của không gian làm việc này
 
-Ứng dụng của không gian làm việc khi đó trả lời mọi đăng nhập Linear và yêu cầu tự động hóa trong không gian làm việc này, bất kể máy chủ đăng nhập người dùng bằng cách nào. Nó không bao giờ rơi về ứng dụng của máy chủ hay Connect: cho đến khi có id client, Linear tắt trong không gian làm việc này và hàng sẽ cho biết còn thiếu gì. Khóa API dịch vụ chỉ dùng ở đây; không có nó, đồng bộ cần **Kết nối Linear để tự động hóa**.
+Ứng dụng của không gian làm việc khi đó trả lời mọi đăng nhập Linear và yêu cầu tự động hóa trong không gian làm việc này, bất kể máy chủ đăng nhập người dùng bằng cách nào. Nó không bao giờ rơi về ứng dụng của máy chủ hay Connect: cho đến khi có id client, Linear tắt trong không gian làm việc này và thẻ sẽ cho biết còn thiếu gì. Khóa API dịch vụ chỉ dùng ở đây; không có nó, đồng bộ cần **Kết nối Linear để tự động hóa**.
 
-Chuyển đổi giữa ứng dụng của máy chủ và ứng dụng của không gian làm việc, hoặc đổi id client của không gian làm việc, sẽ đăng xuất mọi người trong không gian làm việc này khỏi Linear và ngắt tự động hóa của họ. Họ đăng nhập lại qua ứng dụng mới. **Dùng ứng dụng của máy chủ này** sẽ xóa các trường đã lưu của không gian làm việc. Bí mật chỉ ghi: hàng chỉ cho biết có đã lưu một bí mật hay không. Các không gian làm việc khác trên máy chủ không bị ảnh hưởng.
+**Dùng ứng dụng của riêng tôi** áp dụng cho mọi nhà cung cấp cùng lúc: GitHub, Google Calendar và tìm GIF cũng chỉ chạy trên ứng dụng riêng của không gian làm việc, mỗi cái được thiết lập bên cạnh nhà cung cấp của nó trên cùng trang. Đổi ứng dụng đăng nhập của không gian làm việc, hoặc đổi id client của không gian làm việc, sẽ đăng xuất mọi người trong không gian làm việc này khỏi Linear và ngắt tự động hóa của họ. Họ đăng nhập lại qua ứng dụng mới. Các trường đã lưu được giữ lại khi không gian làm việc chuyển sang lựa chọn khác, nhưng chỉ được dùng dưới **Dùng ứng dụng của riêng tôi**. Bí mật chỉ ghi: thẻ chỉ cho biết có đã lưu một bí mật hay không. Các không gian làm việc khác trên máy chủ không bị ảnh hưởng.
 
 ## Xử lý sự cố
 
 ### Hàng Linear báo đăng nhập chưa được thiết lập
 
 Máy chủ không có ứng dụng Linear riêng cũng không có Connect. Chủ máy chủ chọn một trong hai
-trong **Cài đặt → Máy chủ → Đăng nhập một lần**. Khi không gian làm việc dùng ứng dụng riêng, hàng thay vào đó cho biết thiết lập chưa xong: quản trị viên không gian làm việc thêm id client trong **Cài đặt → Không gian làm việc → Chung → Ứng dụng nhà cung cấp**.
+trong **Cài đặt → Máy chủ → Đăng nhập một lần**. Khi không gian làm việc dùng ứng dụng riêng, hàng thay vào đó cho biết thiết lập chưa xong: quản trị viên không gian làm việc thêm id client trên thẻ **Ứng dụng Linear** trong **Cài đặt → Không gian làm việc → Tích hợp**.
 
 ### Đồng bộ phiếu thất bại với lỗi xác thực
 

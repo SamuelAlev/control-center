@@ -30,7 +30,11 @@ const Permission kStopRunPermission = Permission(
 List<RepoOp> buildSteeringForceOps({
   required SteeringQueueService? steeringQueue,
   required MessagingPort? dispatch,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
   required Future<RoleDefinition?> Function(String workspaceId, String userId)?
   resolveRoleDefinition,
@@ -64,7 +68,7 @@ List<RepoOp> buildSteeringForceOps({
         final spaceId = ctx.args['space_id'] as String;
         final conversationId = ctx.args['conversation_id'] as String;
         final messageId = ctx.args['message_id'] as String;
-        await assertSpaceOwned(workspaceId, spaceId);
+        await assertSpaceOwned(workspaceId, spaceId, ctx.userId);
         final outcome = await steeringQueue.forceSend(
           workspaceId: workspaceId,
           spaceId: spaceId,

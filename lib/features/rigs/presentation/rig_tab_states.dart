@@ -27,6 +27,7 @@ class RigStart extends ConsumerWidget {
     required this.starting,
     required this.error,
     required this.onStart,
+    this.refusal,
     this.engine,
   });
 
@@ -42,8 +43,12 @@ class RigStart extends ConsumerWidget {
   /// The last failure, when there was one.
   final String? error;
 
-  /// Opens the machine.
-  final VoidCallback onStart;
+  /// Opens the machine; null when the person may not.
+  final VoidCallback? onStart;
+
+  /// Why the person may not start one here, in words, in place of a boot
+  /// failure.
+  final String? refusal;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -119,7 +124,16 @@ class RigStart extends ConsumerWidget {
                     icon: AppIcons.play,
                     child: Text(l10n.rigStartMachine),
                   ),
-                  if (error != null) ...[
+                  if (refusal case final refusal?) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      refusal,
+                      textAlign: TextAlign.center,
+                      style: CcTypography.caption.copyWith(
+                        color: t.textTertiary,
+                      ),
+                    ),
+                  ] else if (error != null) ...[
                     const SizedBox(height: AppSpacing.md),
                     RigBootFailure(error: error!),
                   ],

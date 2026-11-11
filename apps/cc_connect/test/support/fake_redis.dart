@@ -27,6 +27,9 @@ final class FakeRedis {
   /// Answer GETDEL with "unknown command" (Redis before 6.2).
   bool oldServer = false;
 
+  /// What `INFO memory` reports as `maxmemory_policy`.
+  String evictionPolicy = 'noeviction';
+
   int get port => _server.port;
 
   Future<void> close() async {
@@ -160,6 +163,11 @@ final class FakeRedis {
     switch (name) {
       case 'SELECT':
         return _simple('OK');
+      case 'INFO':
+        return _bulk(
+          '# Memory\r\nused_memory:1024\r\n'
+          'maxmemory_policy:$evictionPolicy\r\n',
+        );
       case 'GET':
         final value = _live(c[1]);
         return _bulk(value is String ? value : null);

@@ -2,7 +2,7 @@
 title: Einen Google Calendar verbinden
 description: Verbinde Google Calendar mit einem Arbeitsbereich, verwalte mehrere Konten und verbinde ein Konto erneut, wenn eine Anmeldung abläuft.
 slug: de-DE/handbuch/anleitungen/kalender-verbinden
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Diese Anleitung zeigt, wie du Google Calendar mit einem Arbeitsbereich
@@ -24,7 +24,7 @@ zusammenhängt, steht unter
 ## Ein Konto verbinden
 
 1. Öffne **Kalender** in der Seitenleiste.
-2. Klicke in der Kalender-Seitenleiste auf **Kalenderkonto hinzufügen**. (Dieselbe Stelle liegt unter **Einstellungen → Arbeitsbereich → Profil und Identität**, bei **Google Calendar**.)
+2. Klicke in der Kalender-Seitenleiste auf **Kalenderkonto hinzufügen**. (Dieselbe Stelle liegt unter **Einstellungen → Du → Profil**, bei **Google Calendar**.)
 3. Klicke auf **Google Calendar verbinden**. Dein Browser öffnet die Zustimmungsseite von Google.
 4. Wähle das Konto und genehmige den Zugriff auf deine Termine und die Kalenderliste.
 
@@ -45,8 +45,7 @@ Konten. Wechselst du den Arbeitsbereich, siehst du die Kalender dieses
 Arbeitsbereichs.
 
 Der Verbindungsablauf fordert `calendar.events` und `calendar.calendarlist.readonly`
-plus `openid email` an, gleich welcher Client ihn ausführt. Ein Konto, das vor
-Schreibzugriff verbunden wurde, hat nur den schreibgeschützten Scope: Es fordert
+plus `openid email` an, gleich welcher Client ihn ausführt. Ein Konto, das verbunden wurde, bevor Control Center in Google schreiben konnte, hat nur den schreibgeschützten Scope: Es fordert
 dich auf, es erneut zu verbinden, und die neue Anmeldung gewährt den Rest.
 
 ## Termine buchen, verschieben, beantworten und löschen
@@ -117,8 +116,7 @@ wiederhergestellt.
 
 ## Ein Konto trennen
 
-Klicke in der Kalender-Seitenleiste (oder unter **Einstellungen →
-Arbeitsbereich → Profil und Identität**) beim Konto auf **Trennen**. Das
+Klicke in der Kalender-Seitenleiste (oder unter **Einstellungen → Du → Profil**) beim Konto auf **Trennen**. Das
 löscht die synchronisierten Termine und entfernt das gespeicherte Zugangsdatum
 auf dem Server.
 
@@ -129,7 +127,7 @@ hast. Der Client des Servers gilt nur dann: Mit der App von Control Center oder
 einem eigenen Connect läuft jede Spur über Connect, Google eingeschlossen, und
 der Client des Servers bleibt gespeichert, aber ungenutzt. Damit der
 Zustimmungsbildschirm dein eigenes Projekt nennt, während der Server Connect
-verwendet, gib dem Arbeitsbereich einen eigenen Client
+verwendet, setze den Arbeitsbereich auf eigene Apps und gib ihm einen eigenen Client
 ([unten](#einem-arbeitsbereich-einen-eigenen-google-client-geben)). Das gilt in
 jedem Modus.
 
@@ -155,24 +153,17 @@ kann das einrichten.
 
 1. Lege einen Google-Client vom Typ **Webanwendung** an, wie in den Schritten 1
    und 2 oben
-2. Geh zu **Einstellungen → Arbeitsbereich → Allgemein → Anbieter-Apps** und öffne
-   **Google Calendar**
-3. Wähle **Eigene App dieses Workspace verwenden**
-4. Trag den Redirect-URI, den die Zeile unter **Callback-URL** zeigt, wörtlich im
-   Client ein
-5. Füge **Client id** und **Client-Secret** ein
+2. Geh zu **Einstellungen → Arbeitsbereich → Integrationen**. Wähle auf der Karte **Control Center Connect** die Option **Eigene Apps verwenden** und klicke auf **Anwenden**
+3. Unter Kalender erscheint die Karte **Google-Calendar-App**. Trag den Redirect-URI, den die Karte unter **Callback-URL** zeigt, wörtlich im Client ein
+4. Füge **Client-ID** und **Client-Secret** ein
 
 Die Kalenderkonten, die in diesem Arbeitsbereich verbunden werden, laufen dann
 über diesen Client, egal auf welchem Weg der Server Personen anmeldet. Er fällt
 nie auf den Client des Servers oder auf Connect zurück: Solange beide Felder
 nicht gesetzt sind, ist Google Calendar in diesem Arbeitsbereich aus, und die
-Zeile sagt, was fehlt. Das Secret verlässt den Server nie.
+Karte sagt, was fehlt. Das Secret verlässt den Server nie.
 
-Der Wechsel zwischen dem Client des Servers und dem des Arbeitsbereichs oder eine
-geänderte Client-ID des Arbeitsbereichs markiert jedes Google-Konto in diesem
-Arbeitsbereich zur erneuten Verbindung. **App dieses Servers verwenden** löscht
-die gespeicherten Felder des Arbeitsbereichs. Andere Arbeitsbereiche auf dem
-Server sind nicht betroffen.
+**Eigene Apps verwenden** gilt für alle Anbieter zugleich: GitHub, Linear und die GIF-Suche laufen dann ebenfalls nur über die Apps des Arbeitsbereichs. Der Wechsel der Anmeldeanwendungen des Arbeitsbereichs oder eine geänderte Client-ID des Arbeitsbereichs markiert jedes Google-Konto in diesem Arbeitsbereich zur erneuten Verbindung. Die gespeicherten Felder bleiben erhalten, wenn der Arbeitsbereich zu einer anderen Wahl wechselt, werden aber nur unter **Eigene Apps verwenden** genutzt. Andere Arbeitsbereiche auf dem Server sind nicht betroffen.
 
 ## Fehlerbehebung
 
@@ -183,8 +174,8 @@ Server sind nicht betroffen.
 | `invalid_client` von Google                         | ID und Secret stammen von verschiedenen Clients, oder der Client wurde gelöscht                                                      |
 | Die Bestätigung gelingt, die Synchronisierung bleibt leer | Dein Konto ist auf dem Zustimmungsbildschirm kein **Testnutzer**, oder einer der angeforderten Scopes wurde nicht gewährt                  |
 | Der Dialog meldet, dass der Code nicht passt        | Tippe die 8 Zeichen genau so ein, wie der Browser sie zeigt. Fünf falsche Codes beenden die Anmeldung; fang neu an                   |
-| „Antwort konnte nicht aktualisiert werden“, oder Buchen, Verschieben oder Löschen schlägt fehl | Das Konto wurde mit dem alten schreibgeschützten Scope verbunden. Verbinde es erneut; ein Kalender, der dir nur schreibgeschützt geteilt wurde, lehnt Schreibzugriffe ebenfalls ab |
-| Alle müssen sich erneut verbinden                   | Der Google-Client des Servers oder des Arbeitsbereichs hat sich geändert, oder die Connect-Wahl oder der Schlüssel des Servers. Siehe [Ein abgelaufenes Konto erneut verbinden](#ein-abgelaufenes-konto-erneut-verbinden) |
+| „Antwort konnte nicht aktualisiert werden“, oder Buchen, Verschieben oder Löschen schlägt fehl | Das Konto hat keinen Schreibzugriff auf den Kalender erhalten. Verbinde es erneut und bestätige jeden angefragten Scope; ein Kalender, der dir nur schreibgeschützt geteilt wurde, lehnt Schreibzugriffe ebenfalls ab |
+| Alle müssen sich erneut verbinden                   | Der Google-Client des Servers oder des Arbeitsbereichs hat sich geändert, oder die Connect-Wahl des Servers oder des Arbeitsbereichs, oder der Schlüssel des Servers. Siehe [Ein abgelaufenes Konto erneut verbinden](#ein-abgelaufenes-konto-erneut-verbinden) |
 
 ## Verwandte Anleitungen
 

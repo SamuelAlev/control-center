@@ -2,7 +2,7 @@
 title: Instal dan kelola skill
 description: Pasang dan perbarui skill ruang kerja melalui gerbang pemindaian, lalu bandingkan revisi tersimpan dengan evaluasi skill yang beranggaran.
 slug: id-ID/panduan-pengguna/panduan-praktis/kelola-skill
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Panduan ini menunjukkan cara mengisi ruang kerja dengan skill dari GitHub:
@@ -99,7 +99,7 @@ kunci.
    skill dan sebuah **Adapter**. Harness bawaan memakai penyedia yang telah
    dikonfigurasi dan model yang mendukung alat. **Claude Code** memakai akun
    Claude terkelola bawaan dan pengenal model yang konkret; masuk dulu di
-   **Pengaturan → Adapter**. Ini tidak meminjam login pribadi operator server.
+   **Pengaturan → Server → Penyedia model → Akun Claude Code**. Ini tidak meminjam login pribadi operator server.
 3. Pilih **Perbandingan** dari tabel di bawah.
 4. Atur **Pengulangan per tugas** (1–20) dan **Anggaran (sen AS)**. Misalnya,
    `100` berarti US$1. Pilih **Mulai evaluasi** untuk mengotorisasi pekerjaan
@@ -195,8 +195,7 @@ dengan perintah slash bawaan (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — skill yang disertakan repo yang di-checkout di space
   ini
 
-Nama telanjang yang bukan bawaan tetap dapat dikenali, untuk pesan yang ditulis
-sebelum namespace itu ada. `/skill:plan` adalah yang menjangkau skill bernama
+`/skill:plan` adalah yang menjangkau skill bernama
 `plan`; `/plan` selalu merupakan bawaan.
 
 ## Skill bercakupan repo

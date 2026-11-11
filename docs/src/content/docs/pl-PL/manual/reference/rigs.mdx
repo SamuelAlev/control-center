@@ -2,7 +2,7 @@
 title: Rigi
 description: Każda powierzchnia, backend, czasownik działania, stan cyklu życia, port, wartość domyślna i kontrakt rigu — kompletny katalog faktów.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/rigi
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Tylko fakty. Model, który za nimi stoi, opisuje [Rigi i
@@ -224,8 +224,10 @@ hosta ani gwarancji izolacji sieci.
 
 | Narzędzie | Opis |
 | --- | --- |
-| `rig_list` | Wyświetla listę rigów obszaru roboczego z powierzchnią, stanem, wyświetlaczem i kontrolerem |
+| `rig_list` | Wyświetla listę rigów przestrzeni uruchomienia z powierzchnią, stanem, wyświetlaczem i kontrolerem |
 | `rig_close` | Niszczy rig i odrzuca jego dysk |
+
+Te narzędzia, podobnie jak cztery narzędzia użycia, są przeznaczone wyłącznie dla uruchomień agentów; każdy inny wywołujący zostaje odrzucony. Uruchomienie sięga tylko do rigów przestrzeni, dla której zostało wydzierżawione: `space_id` pochodzi z uprawnienia uruchomienia, nigdy z wywołania. Rig innej przestrzeni albo rig bez przestrzeni odpowiada dokładnie tak samo jak brakujący.
 
 ## Cykl życia
 
@@ -330,7 +332,7 @@ są ustawieniem obszaru roboczego.
 - **Uwierzytelnianie** opiera się na podpisanym celu
   `rig-files:<workspaceId>/<rigId>` oraz członkostwie w obszarze roboczym — to
   osobny cel, więc URL wystawiony do *podglądu* maszyny nie może jednocześnie
-  zapisywać w niej plików.
+  zapisywać w niej plików. Dla riga otwartego w przestrzeni odczyt schowka lub pliku wymaga też dostępu do odczytu tej przestrzeni, a zapis do schowka i upuszczanie plików wymagają uprawnienia zapisu do jej repozytoriów. Na rigu, który niesie własne logowania jednej osoby, oba kanały, także odczyt, należą wyłącznie do tej osoby; zob. [Kto może obserwować, a kto sterować](/pl-PL/podrecznik/poradniki/uzywanie-rigow/#kto-może-obserwować-a-kto-sterować).
 - **Przejęcie kontroli obowiązuje.** Zapis do schowka i upuszczanie plików są
   modyfikujące i są odrzucane, gdy kontrolę trzyma ktoś inny; odczyt schowka
   i odczyt pliku na zewnątrz to obserwacja, więc nie są.

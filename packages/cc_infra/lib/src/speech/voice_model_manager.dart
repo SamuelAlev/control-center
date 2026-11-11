@@ -10,12 +10,6 @@ import 'package:cc_infra/src/util/http_file_download.dart';
 import 'package:path/path.dart' as p;
 import 'package:rhttp/rhttp.dart';
 
-// Re-export the relocated value types so existing consumers that import this
-// manager keep naming `VoiceModelPaths` / `VoiceModelType` without a churned
-// import. The canonical definitions now live in cc_domain.
-export 'package:cc_domain/features/meetings/domain/value_objects/voice_model_paths.dart'
-    show VoiceModelPaths, VoiceModelType;
-
 /// Configuration for an installable ASR model: where to download it, how it
 /// unpacks and how the recognizer should load it.
 ///

@@ -2,7 +2,7 @@
 title: Anslut en Google Calendar
 description: Anslut Google Calendar till en arbetsyta, hantera flera konton och återanslut när en inloggning har gått ut.
 slug: sv-SE/handbok/how-to-guider/anslut-kalender
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Den här guiden visar hur du ansluter Google Calendar till en arbetsyta.
@@ -21,7 +21,7 @@ den arbetsytan till Control Center, där du också kan svara på inbjudningar, b
 ## Anslut ett konto
 
 1. Öppna **Kalender** i sidofältet.
-2. Klicka på **Lägg till kalenderkonto** i kalenderns sidofält. (Samma avsnitt finns i **Inställningar → Arbetsyta → Profil och identitet**, under **Google Calendar**.)
+2. Klicka på **Lägg till kalenderkonto** i kalenderns sidofält. (Samma avsnitt finns i **Inställningar → Du → Profil**, under **Google Calendar**.)
 3. Klicka på **Anslut Google Calendar**. Din webbläsare öppnar Googles samtyckessida.
 4. Välj kontot och godkänn åtkomst till händelserna i din kalender och till kalenderlistan.
 
@@ -53,8 +53,6 @@ igen, och den nya inloggningen ger resten.
 - **Ta bort en händelse:** öppna den och klicka på papperskorgen. Bekräftelsen visar vem som berörs: deltagare får veta att en händelse du arrangerar är inställd, medan borttagning av en inbjudan bara tar bort den från din kalender. Om du tar bort en förekomst i en återkommande händelse finns resten av serien kvar
 
 Deltagarna får Googles egna e-postinbjudan, uppdatering eller avbokning. Du kan bara boka i kalendrar som ditt konto får skriva till, och bara med dina egna konton: en annan medlems anslutna kalender erbjuds aldrig. Att flytta en förekomst i en återkommande händelse lämnar resten av serien orörd.
-
-
 
 ## Så fungerar synkningen
 
@@ -94,13 +92,13 @@ Google-klient har ändrats, eller datakatalogen återställdes på en annan mask
 
 ## Koppla från ett konto
 
-I kalenderns sidofält (eller **Inställningar → Arbetsyta → Profil och
-identitet**) klickar du på **Koppla från** för kontot. Detta tar bort kontots
+I kalenderns sidofält (eller **Inställningar → Du → Profil**)
+klickar du på **Koppla från** för kontot. Detta tar bort kontots
 synkade händelser och rensar dess lagrade autentiseringsuppgift på servern.
 
 ## Ta med din egen Google-klient
 
-Kör din egen Google-klient när du har valt **Använd mina egna appar**. Serverns egen klient gäller bara då: med Control Center Connect eller en egen Connect kör Connect alla spår, Google inräknat, och serverns klient förblir sparad men oanvänd. För att samtycksskärmen ska visa ditt eget projekt medan servern använder Connect ger du arbetsytan en egen klient ([nedan](#ge-en-arbetsyta-en-egen-google-klient)); det gäller i alla lägen.
+Kör din egen Google-klient när du har valt **Använd mina egna appar**. Serverns egen klient gäller bara då: med Control Center Connect eller en egen Connect kör Connect alla spår, Google inräknat, och serverns klient förblir sparad men oanvänd. För att samtycksskärmen ska visa ditt eget projekt medan servern använder Connect sätter du arbetsytan på egna appar och ger den en egen klient ([nedan](#ge-en-arbetsyta-en-egen-google-klient)); det gäller oavsett serverns läge.
 
 1. I [Google Cloud Console](https://console.cloud.google.com/apis/credentials) aktiverar du **Google Calendar API** och konfigurerar **OAuth consent screen** och lägger till behörighetsomfången `calendar.events`, `calendar.calendarlist.readonly`, `openid` och `email`. Medan appen är overifierad lägger du till dig själv som **test user**.
 2. Skapa ett **OAuth client ID** av programtypen **Web application**.
@@ -121,14 +119,13 @@ tillhör klienten som utfärdade den.
 En arbetsyta kan ansluta Google Calendar via en egen klient i stället för serverns. Bara en administratör eller ägare för arbetsytan kan konfigurera det.
 
 1. Skapa en Google-klient av typen **Web application** enligt steg 1 och 2 ovan
-2. Gå till **Inställningar → Arbetsyta → Allmänt → Leverantörsappar** och öppna **Google Calendar**
-3. Välj **Använd arbetsytans egna app**
-4. Lägg till omdirigerings-URI:n som raden visar under **Callback-URL** i klienten, ordagrant
-5. Klistra in **Klient-ID** och **Klienthemlighet**
+2. Gå till **Inställningar → Arbetsyta → Integrationer**. På kortet **Control Center Connect** väljer du **Använd mina egna appar** och klickar på **Tillämpa**
+3. Under Kalender visas kortet **Google Calendar-app**. Lägg till omdirigerings-URI:n som kortet visar under **Callback-URL** i klienten, ordagrant
+4. Klistra in **Klient-ID** och **Klienthemlighet**
 
-Kalenderkonton som ansluts i den här arbetsytan går sedan via den klienten, oavsett hur servern loggar in personer. Det faller aldrig tillbaka på serverns klient eller på Connect: tills båda fälten är ifyllda är Google Calendar av i den här arbetsytan, och raden säger vad som saknas. Hemligheten lämnar aldrig servern.
+Kalenderkonton som ansluts i den här arbetsytan går sedan via den klienten, oavsett hur servern loggar in personer. Det faller aldrig tillbaka på serverns klient eller på Connect: tills båda fälten är ifyllda är Google Calendar av i den här arbetsytan, och kortet säger vad som saknas. Hemligheten lämnar aldrig servern.
 
-Byte mellan serverns klient och arbetsytans, eller byte av arbetsytans klient-ID, markerar varje Google-konto i den här arbetsytan för återanslutning. **Använd serverns app** tar bort arbetsytans sparade fält. Andra arbetsytor på servern påverkas inte.
+**Använd mina egna appar** omfattar alla leverantörer på en gång: GitHub, Linear och GIF-sökning kör också bara på arbetsytans egna appar. Byte av arbetsytans inloggningsappar, eller byte av arbetsytans klient-ID, markerar varje Google-konto i den här arbetsytan för återanslutning. De sparade fälten finns kvar när arbetsytan byter tillbaka till ett annat val, men används bara under **Använd mina egna appar**. Andra arbetsytor på servern påverkas inte.
 
 ## Felsökning
 
@@ -139,8 +136,8 @@ Byte mellan serverns klient och arbetsytans, eller byte av arbetsytans klient-ID
 | `invalid_client` från Google                        | Klient-ID:t och hemligheten kommer från olika klienter, eller så har klienten tagits bort                                                              |
 | Godkännandet lyckas men synken är tom               | Ditt konto är inte en **test user** på samtycksskärmen, eller så beviljades inte något av de begärda omfången                                                   |
 | Dialogen säger att koden inte stämmer               | Skriv de 8 tecknen exakt som webbläsaren visar dem. Fem felaktiga koder avslutar inloggningen; börja om                                                |
-| "Kunde inte uppdatera ditt svar", eller bokning, flyttning eller borttagning misslyckas         | Kontot anslöts med det gamla skrivskyddade omfånget. Anslut det igen; en kalender som delats med dig skrivskyddat avvisar också skrivningar                                                                                               |
-| Alla måste återansluta                              | Serverns eller arbetsytans Google-klient har ändrats, eller serverns Connect-val eller nyckel har ändrats. Se [Återanslut ett konto som har gått ut](#återanslut-ett-konto-som-har-gått-ut) |
+| "Kunde inte uppdatera ditt svar", eller bokning, flyttning eller borttagning misslyckas         | Kontot beviljade inte skrivåtkomst till kalendern. Anslut det igen och godkänn alla begärda omfång; en kalender som delats med dig skrivskyddat avvisar också skrivningar                                                                                               |
+| Alla måste återansluta                              | Serverns eller arbetsytans Google-klient har ändrats, eller serverns eller arbetsytans Connect-val, eller serverns nyckel, har ändrats. Se [Återanslut ett konto som har gått ut](#återanslut-ett-konto-som-har-gått-ut) |
 
 ## Relaterade guider
 

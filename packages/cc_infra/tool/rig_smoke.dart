@@ -19,6 +19,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/repositories/rig_repository.dart';
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/ios_action.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_action_result.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
@@ -215,7 +216,7 @@ Future<void> _smokeEnvironmentHost(String dataDir, String worktree) async {
     spaceWorktrees: (_, _) async => [worktree, private.path],
   );
   final definition = EnvironmentDefinition.fromJson(const {
-    'id': 'smoke',
+    'contract': 1,
     'name': 'Acme',
     'repos': {
       'app': {'repoId': 'repo-1', 'anchor': true},

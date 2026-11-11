@@ -2,7 +2,7 @@
 title: Ärendelivscykel
 description: Ärendefält, statusar, övergångar, relationer och flaskhalsen för mutationer.
 slug: sv-SE/handbok/referens/arendelivscykel
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Ärendestatusar
@@ -118,7 +118,7 @@ Aggregatet spänner över två angelägenheter på en och samma rad. **Speglinge
 | `projectId`              | `String?`                  | Ägande projekt; skickas aldrig till en fjärr                                               |
 | `assignedAgentId`        | `String?`                  | Den tilldelade principalens id (endast metadata – en tilldelning skickar inte ut något)    |
 | `assigneeType`           | `PrincipalType`            | Vilken sorts principal `assignedAgentId` pekar ut – `user` eller `agent` (standard `agent`) |
-| `createdByType`          | `PrincipalType?`           | Sorten av principal som skapade ärendet (`user` eller `agent`); null för äldre rader och systemrader |
+| `createdByType`          | `PrincipalType?`           | Sorten av principal som skapade ärendet (`user` eller `agent`); null för systemskapade rader |
 | `createdById`            | `String?`                  | Den skapande principalens id                                                               |
 | `assignedTeamId`         | `String?`                  | Tilldelat team (endast metadata)                                                           |
 | `delegatedByAgentId`     | `String?`                  | Agenten som delegerade det här ärendet                                                     |

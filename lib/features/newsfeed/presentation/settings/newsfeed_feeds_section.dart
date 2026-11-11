@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/newsfeed/presentation/widgets/feed_favicon.dart';
 import 'package:control_center/features/newsfeed/providers/newsfeed_providers.dart';
+import 'package:control_center/features/settings/presentation/widgets/kit/settings_hover_reveal.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/section_card.dart';
@@ -10,7 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// Settings → You → Newsfeed: the signed-in user's feed registry — enable,
-/// refresh, remove and add feeds. The list is per-user; another user's feeds
+/// remove and add feeds, and refresh them all. The list is per-user; another user's feeds
 /// are never visible here.
 class NewsfeedFeedsSection extends ConsumerWidget {
   /// Creates a [NewsfeedFeedsSection].
@@ -87,10 +88,22 @@ class _FeedsCard extends ConsumerWidget {
   }
 }
 
-class _FeedRow extends ConsumerWidget {
+/// One feed. Its enable switch and delete stay hidden until the row is
+/// hovered or focused ([SettingsHoverReveal]); the status dot on the favicon
+/// and the dimmed row carry the enabled state at rest.
+class _FeedRow extends ConsumerStatefulWidget {
   const _FeedRow({required this.feed});
 
   final RssFeed feed;
+
+  @override
+  ConsumerState<_FeedRow> createState() => _FeedRowState();
+}
+
+class _FeedRowState extends ConsumerState<_FeedRow> {
+  bool _hovered = false;
+
+  RssFeed get feed => widget.feed;
 
   String _subtitle(AppLocalizations l10n) {
     if (feed.hasError) {
@@ -106,14 +119,17 @@ class _FeedRow extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final tokens = context.designSystem;
     final l10n = AppLocalizations.of(context);
     final isDemo = ref.watch(isDemoServerProvider);
     final dimmed = !feed.enabled && !feed.hasError;
-    return Opacity(
+    // Demo rows are a fixture: their disabled controls stay in view to carry
+    // the reason in a tooltip.
+    final active = isDemo || _hovered;
+    final row = Opacity(
       opacity: dimmed ? 0.6 : 1,
       child: Padding(
         padding: const EdgeInsetsDirectional.fromSTEB(16, 10, 8, 10),
@@ -148,47 +164,47 @@ class _FeedRow extends ConsumerWidget {
                 ],
               ),
             ),
-            CcSwitch(
-              value: feed.enabled,
-              // demo: the subscription list is fixed. Every one of these is a
-              // `newsfeed.*` management op the demo server does not expose, so
-              // an enabled control could only ever raise a toast.
-              onChanged: isDemo
-                  ? null
-                  : (v) => ref
-                        .read(newsfeedRepositoryProvider)
-                        .setFeedEnabled(feed.id, enabled: v),
-            ),
-            const SizedBox(width: 8),
-            CcTooltip(
-              message: isDemo ? l10n.demoUnavailableFeeds : l10n.refresh,
-              child: CcIconButton(
-                icon: AppIcons.refreshCw,
-                semanticLabel: l10n.refresh,
-                onPressed: isDemo
-                    ? null
-                    : () => ref
-                          .read(newsfeedRefreshControllerProvider.notifier)
-                          .refreshFeed(feed.id),
-              ),
-            ),
-            const SizedBox(width: 4),
-            CcTooltip(
-              message: isDemo ? l10n.demoUnavailableFeeds : l10n.delete,
-              child: CcIconButton(
-                variant: CcButtonVariant.destructive,
-                icon: AppIcons.trash2,
-                semanticLabel: l10n.delete,
-                onPressed: isDemo ? null : () => _confirmDelete(context, ref),
+            SettingsHoverReveal(
+              active: active,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                spacing: AppSpacing.sm,
+                children: [
+                  CcSwitch(
+                    value: feed.enabled,
+                    // demo: the subscription list is fixed. Every one of these
+                    // is a `newsfeed.*` management op the demo server does not
+                    // expose, so an enabled control could only ever raise a
+                    // toast.
+                    onChanged: isDemo
+                        ? null
+                        : (v) => ref
+                              .read(newsfeedRepositoryProvider)
+                              .setFeedEnabled(feed.id, enabled: v),
+                  ),
+                  CcIconButton(
+                    variant: CcButtonVariant.ghostDestructive,
+                    icon: AppIcons.trash2,
+                    size: CcButtonSize.sm,
+                    tooltip: isDemo ? l10n.demoUnavailableFeeds : l10n.delete,
+                    semanticLabel: l10n.delete,
+                    onPressed: isDemo ? null : () => _confirmDelete(context),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: row,
+    );
   }
 
-  Future<void> _confirmDelete(BuildContext context, WidgetRef ref) async {
+  Future<void> _confirmDelete(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final confirmed = await showCcDialog<bool>(
       context: context,

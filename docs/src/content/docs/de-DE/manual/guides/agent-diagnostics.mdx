@@ -2,7 +2,7 @@
 title: Einen Agenten diagnostizieren
 description: Geh Laufprotokoll, Adapter-Prüfung, Serverstatus und Host-Diagnose durch, wenn ein Agent keine Läufe mehr erzeugt.
 slug: de-DE/handbuch/anleitungen/agent-diagnostizieren
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Diese Anleitung zeigt, wie du herausfindest, warum ein Agent keine Läufe erzeugt.
@@ -13,13 +13,13 @@ Arbeite von oben nach unten: zuerst die eigenen Läufe des Agenten, dann sein Ba
 
 **Einstellungen → Arbeitsbereich → Agenten** → den Agenten auswählen → **Protokolle**.
 
-Jeder Lauf zeigt ein Status-Badge, eine Dauer („Running…“, solange er läuft), Start- und Endzeit, die PID und den verwendeten Adapter. **Ansicht** öffnet den rohen Ereignisstrom dieses Laufs. **Stoppen** beendet einen laufenden Prozess und markiert den Lauf mit „Killed by user“; **Laufenden beenden** in der Kopfzeile tut dasselbe für jeden laufenden Lauf dieses Agenten.
+Jeder Lauf zeigt ein Status-Badge, eine Dauer („Running…“, solange er läuft), Start- und Endzeit, die PID und den verwendeten Adapter. **Ansicht** öffnet den rohen Ereignisstrom dieses Laufs. **Stoppen** beendet einen laufenden Prozess und markiert den Lauf mit „Killed by user“; **Laufenden beenden** in der Kopfzeile tut dasselbe für jeden laufenden Lauf dieses Agenten in diesem Arbeitsbereich. Du kannst nur laufende Agentenläufe in Arbeitsbereichen sehen und stoppen, denen du angehörst; der Serverinhaber sieht und stoppt alle.
 
 Lies es so:
 
 - **Gar keine Läufe** — die Ausführung ist nie angestoßen worden. Erwähnungen im Composer sind `@` plus Wortzeichen (Buchstaben, Ziffern, Unterstrich). Die Auflösung ist eine exakte oder Präfix-Übereinstimmung mit dem Agentennamen, deshalb wird `@code-reviewer` als `code` gelesen und kann trotzdem einen Agenten namens `code-reviewer` wecken. Ein Name mit Leerzeichen lässt sich nicht als ein Token erwähnen. Danach zu Schritt 2.
-- **Ein Lauf, der sofort mit einem Fehler endete** — öffne **Ansicht**. Ein Fehlstart des Backends erscheint hier als Prozessfehler.
-- **Ein Lauf, der bei „Running…“ hängen bleibt** — stoppe ihn und prüfe dann das **Stille-Timeout (Minuten)** des Agenten im Tab Einstellungen. Ohne gesetzten Wert gilt der Standard des jeweiligen Modus.
+- **Ein Lauf, der sofort mit einem Fehler endete** — öffne **Ansicht**. Ein Fehlstart des Backends erscheint hier als Prozessfehler. „Dieser Server hat keine Sandbox, daher kann hier nur der Serverinhaber Agenten ausführen.“ heißt, dass der Rechner des Servers keine Betriebssystem-Sandbox hat und du nicht der Serverinhaber bist; siehe [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/#mein-agentenlauf-wurde-mit-dieser-server-hat-keine-sandbox-abgelehnt).
+- **Ein Lauf, der bei „Running…“ hängen bleibt** — stoppe ihn und prüfe dann das **Stille-Timeout (Minuten)** des Agenten im Tab **Einstellungen** des Agenten. Ohne gesetzten Wert gilt der Standard des jeweiligen Modus.
 - **Ein abgeschlossener Lauf ohne brauchbare Ausgabe** — der Status im Laufprotokoll bleibt `completed`, auch wenn der Lauf ohne das angekündigte Lieferergebnis endete. Das ehrliche Signal steckt im Zusammenfassungstext.
 
 Der Tab Protokolle zeigt keine Kosten. Die Ausgaben stehen in der Tabelle je Agent unter **Observability → Übersicht**.
@@ -67,11 +67,11 @@ Zwei Dinge, die zählen, wenn eine Änderung „in den Tests klappt, in der App 
 - **Datenschutz** — ob roher Diff-Inhalt an das Modell des Agenten gehen darf und ob Absturzberichte gesendet werden.
 
 :::caution[Dieser Abschnitt meldet den Host, und seine Schalter liegen auf dem Client]
-Erkennung und Durchsetzung stimmen inzwischen überein: Meldet der Detektor ein natives Backend, sind Agentenläufe auf diesem Host wirklich darin eingeschlossen. Lebendig ist in diesem Abschnitt nur der Detektor. Hauptschalter und Backend-Auswahl sind Einstellungen auf deinem Gerät, und der Server liest keine davon. Der eigene Schalter des Servers ist `--sandbox` (Standard `on`, `off` zum Abwählen).
+Erkennung und Durchsetzung stimmen überein: Meldet der Detektor ein natives Backend, sind Agentenläufe auf diesem Host wirklich darin eingeschlossen. Lebendig ist in diesem Abschnitt nur der Detektor. Hauptschalter und Backend-Auswahl sind Einstellungen auf deinem Gerät, und der Server liest keine davon. Der eigene Schalter des Servers ist `--sandbox` (Standard `on`, `off` zum Abwählen).
 
-Eine Warnung hier lohnt das Handeln. Warum ein Agent scheitert, steht meist woanders. Welchen Zustand der Server hat, steht im Startlog: `agent sandbox ON` mit der Backend-Notiz, `no OS-native agent sandbox on this host` mit einem Installationshinweis, oder `agent sandbox DISABLED by --sandbox off`. `GET /healthz` hat kein Sandbox-Feld.
+Eine Warnung hier lohnt das Handeln. Auf einem Host ohne Backend ist sie der Grund, warum jemand außer dem Serverinhaber keine Agenten ausführen kann. Welchen Zustand der Server hat, steht im Startlog: `agent sandbox ON` mit der Backend-Notiz, `no OS-native agent sandbox on this host` mit einem Installationshinweis, oder `agent sandbox DISABLED by --sandbox off`, und seine Expositionszeile trägt `sandbox=native`, `sandbox=unavailable` oder `sandbox=off`. `GET /healthz` hat kein Sandbox-Feld.
 
-Wo kein Backend da ist — unter Windows immer, unter Linux oder WSL2 ohne `bwrap` und `socat` — laufen die Läufe **ohne** Sandbox. Was sie begrenzt, ist der eigene Checkout der Unterhaltung, das Forge-Token des Laufs, das nur lesen darf, und das Push-Gateway, die Schutzregeln für Aktionen, die Bereinigung der Umgebung und die Werkzeugfläche, die der Modus zulässt.
+Wo kein Backend da ist — unter Windows immer, unter Linux oder WSL2 ohne `bwrap` und `socat` — starten nur Läufe, für die der Serverinhaber verantwortlich ist; alle anderen werden abgelehnt. Die Läufe, die dort starten, und jeder Lauf unter `--sandbox off` laufen **ohne** Sandbox. Was sie begrenzt, ist der eigene Checkout der Unterhaltung, das Forge-Token des Laufs, das nur lesen darf, und das Push-Gateway, die Schutzregeln für Aktionen, die Bereinigung der Umgebung und die Werkzeugfläche, die der Modus zulässt.
 :::
 
 ## Häufige Fehler

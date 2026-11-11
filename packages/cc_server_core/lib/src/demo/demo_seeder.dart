@@ -898,6 +898,7 @@ class DemoSeeder {
           cachedWriteTokens: 480,
           thoughtTokens: 90,
           estimatedCostCents: 14,
+          costMicros: 140000,
         ),
       ),
     );

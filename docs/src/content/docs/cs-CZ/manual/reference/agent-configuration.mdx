@@ -2,7 +2,7 @@
 title: Konfigurace agentů
 description: Každé pole entity agenta a enumy, které používá.
 slug: cs-CZ/prirucka/referencni-prirucka/konfigurace-agentu
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Tahle stránka vypisuje všechna pole entity agenta a enumy a příznaky, se kterými pracuje. Jak agenta v aplikaci krok za krokem založit nebo upravit, popisuje [Vytvořte a nakonfigurujte agenta](/cs-CZ/prirucka/navody/vytvoreni-agenta/).
@@ -78,6 +78,35 @@ Neměnná množina identifikátorů skillů bez rozlišení velikosti písmen. P
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Shell hooky
+
+Shell hooky umožňují vlastníkovi serveru spouštět vlastní skripty kolem běhu vestavěného harnessu: jednou při startu relace, před každým voláním nástroje a po každém volání nástroje. Hook je libovolný kód, takže jsou součástí konfigurace hostitele. Nastavuje je jen vlastník serveru ručně, na stroji serveru. V aplikaci pro ně není žádné nastavení a žádná operace je nezapisuje.
+
+Hooky agenta leží v jeho vlastní složce v datovém adresáři serveru:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` je název složky agenta v pracovním prostoru (`agents/<slug>/`). Tato složka leží mimo úložiště každého pracovního prostoru a každý sandbox skrývá datový adresář, takže ji nemůže zapsat žádný člen, běh ani terminál.
+
+`hooks.json` mapuje kterýkoli ze tří klíčů na skript podle cesty relativní vůči složce hooků:
+
+| Klíč           | Kdy běží                       | Co znamená její návratový kód                                  |
+| -------------- | ------------------------------ | -------------------------------------------------------------- |
+| `sessionStart` | Jednou, na začátku běhu        | Nic; hook jen pozoruje                                         |
+| `preTool`      | Před každým voláním nástroje   | `0` volání povolí; cokoli jiného ho zamítne                    |
+| `postTool`     | Po každém volání nástroje      | Nic; hook jen pozoruje                                         |
+
+- Každý skript se spouští jako samostatný spustitelný soubor, bez shellu a bez argumentů, takže musí být spustitelný a začínat řádkem shebang. Událost dostane jako JSON na stdin: název události a u hooků nástrojů název nástroje s jeho argumenty (`preTool`), nebo jeho výsledek (`postTool`).
+- Hook běží jako jeden z procesů nástrojů běhu, v adresáři agenta pro daný běh. Když server spouští agenty v sandboxu, běží uvnitř sandboxu běhu. Dostane minimální prostředí a žádné přihlašovací údaje běhu: žádný token hostingu kódu ani poskytovatele a žádný přístup k bráně.
+- Každý hook má 30 sekund. Jeho výstup se přečte a zahodí.
+- `preTool` selhává zavřeně. Nenulový návratový kód, vypršení času nebo skript, který nejde spustit, volání nástroje zamítne.
+- Cesta, která je absolutní, chybí, nebo vede ven ze složky hooků (odkazy se rozbalí), se odmítne a log běhu napíše, který hook byl odmítnut a proč. Odmítnutý nebo nečitelný hook `preTool` zamítá každé volání nástroje, dokud se neopraví.
+- Blok `hooks` v `.agents/harness.json` se ignoruje, ať je v repozitáři, nebo ve vlastní složce agenta. Repozitář bývá často cizí kód a do složky agenta můžou zapisovat členové i běhy. Log běhu napíše, že blok byl ignorován, a kde se hooky místo toho čtou.
+
+Shell hooky platí jen pro vestavěný harness. Nastavený hook `preTool` nebo `postTool` způsobí, že běh volá své nástroje jeden po druhém.
 
 ## AgentLiveState (odvozený)
 

@@ -2,7 +2,7 @@
 title: Vidarebefordra portar från en terminal
 description: Nå en dev-server som startats i en Terminal (VM) eller ett värdskal – från din maskin, från Webbläsare (VM), från Android, i ditt nätverk eller under en dev-domän med HTTPS.
 slug: sv-SE/handbok/how-to-guider/vm-portar
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 En server som du startar i ett samtals terminal publiceras bara för **den
@@ -15,7 +15,7 @@ och dör med terminalen eller stationen.
 
 ## Se vad som lyssnar
 
-1. Öppna samtalets **Terminal (VM)** eller värdskal (i en yta eller på en PR-sida).
+1. Öppna **Terminal** från `+`-menyn i samtalets redigerare (i en yta eller på en PR-sida): under **Datorer** för ett skal i samtalets VM, eller under **Verktyg** för en terminal på servern. Bara serverägaren kan öppna ett värdskal; alla andras terminal körs i en sandlåda.
 2. Starta din server – `pnpm dev`, `python -m http.server 8000`, vad som helst.
 3. Inom några sekunder får **kontaktikonen** i terminalens övre högra hörn
    en prick. Klicka på den.
@@ -124,6 +124,10 @@ om) något lyssnar på den. En manuell vidarebefordran behåller sin adress
 medan din server startar om – raden visar *lyssnar inte* tills den är tillbaka
 – medan automatiska vidarebefordringar försvinner när deras port gör det. I
 ett värdskal kan du också ange en annan lokal port.
+
+Att ändra vidarebefordringar kräver en skrivbehörighet på varje repo som ytan exponerar. Med läsbehörighet ser du fortfarande portarna, och panelen säger "Att ändra dessa portar kräver skrivåtkomst till alla arkiv i den här ytan." i stället för **Lägg till port**. Se [Vem kan titta och vem kan styra](/sv-SE/handbok/how-to-guider/anvand-stationer/#vem-kan-titta-och-vem-kan-styra).
+
+En terminal som någon öppnat för sig själv behåller sina portar för sig: för alla andra svarar dess portlista och portändringar som om sessionen inte fanns, precis som sessionen själv. Terminaler som delas i en yta följer ytregeln ovan.
 
 ## Hur det hålls avgränsat
 

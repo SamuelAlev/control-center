@@ -25,7 +25,6 @@ void main() {
     sessions = IdeTerminalSessions(
       registry: () => container.read(terminalRegistryProvider.notifier),
       registryState: registry,
-      mintSessionId: () => 'minted',
     );
     notifications = 0;
     sessions.addListener(() => notifications++);
@@ -76,10 +75,10 @@ void main() {
     expect(notifications, 1);
   });
 
-  test('a legacy tab without a session id gets a fresh one', () {
-    const legacy = EditorTab(kind: 'terminal', label: 'Terminal');
-    claim(legacy);
-    expect(sessions.controllerFor(legacy)!.session.sessionId, 'minted');
+  test('a tab without a session id claims nothing', () {
+    const unnamed = EditorTab(kind: 'terminal', label: 'Terminal');
+    expect(sessions.beginClaim(unnamed), isFalse);
+    expect(registry().controllers, isEmpty);
   });
 
   test('a tab closed before its claim landed kills the session', () {

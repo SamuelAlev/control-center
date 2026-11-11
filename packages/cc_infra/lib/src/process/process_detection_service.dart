@@ -1,15 +1,19 @@
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/active_process_info.dart';
-import 'package:cc_domain/core/domain/ports/process_detection_port.dart';
+import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 
 import 'package:cc_infra/src/process/child_process.dart';
 
-/// Detects running agent processes by querying the agent run log database.
-class ProcessDetectionService implements ProcessDetectionPort {
+/// Lists and stops the agent runs alive on this host, from the agent run log.
+///
+/// Server-only. Every answer is filtered by the caller's workspaces, and a stop
+/// resolves the pid against a live running run first: a pid that is not one,
+/// or whose workspace the caller may not stop, is never signalled.
+class ProcessDetectionService {
   /// Creates a [ProcessDetectionService] backed by the given repositories.
   ProcessDetectionService({
     required this._runLogRepo,
@@ -21,60 +25,70 @@ class ProcessDetectionService implements ProcessDetectionPort {
   final AgentRepository _agentRepo;
   final WorkspaceRepository _workspaceRepo;
 
-  @override
-  Future<List<ActiveProcessInfo>> detect() async {
+  /// The agent runs alive on this host in a workspace [visible] admits.
+  Future<List<ActiveProcessInfo>> detect({
+    required Future<bool> Function(String workspaceId) visible,
+  }) async {
     try {
-      final allLogs = await _runLogRepo.watchAll().first;
-      final runningLogs = allLogs
-          .where((l) => l.isRunning && l.pid != null)
-          .toList();
-
-      if (runningLogs.isEmpty) {
+      final runs = <AgentRunLog>[
+        for (final log in await _liveRuns())
+          if (await visible(log.workspaceId!)) log,
+      ];
+      if (runs.isEmpty) {
         return [];
       }
-
       final agents = await _agentRepo.watchAll().first;
       final workspaces = await _workspaceRepo.watchAll().first;
-
       final agentMap = {for (final a in agents) a.id: a};
       final workspaceMap = {for (final w in workspaces) w.id: w};
-
-      final processes = <ActiveProcessInfo>[];
-      for (final log in runningLogs) {
-        if (!await _isPidAlive(log.pid!)) {
-          continue;
-        }
-
-        final agent = agentMap[log.agentId];
-        final agentName = agent?.name ?? 'Unknown';
-
-        String workspaceName = '';
-        if (log.workspaceId != null) {
-          workspaceName = workspaceMap[log.workspaceId]?.name ?? '';
-        }
-
-        processes.add(
+      return [
+        for (final log in runs)
           ActiveProcessInfo(
-            agentName: agentName,
-            workspaceName: workspaceName,
+            agentName: agentMap[log.agentId]?.name ?? 'Unknown',
+            workspaceName: workspaceMap[log.workspaceId]?.name ?? '',
             pid: log.pid!,
-            command: agentName,
+            command: agentMap[log.agentId]?.name ?? 'Unknown',
             startTime: log.startedAt,
           ),
-        );
-      }
-
-      return processes;
+      ];
     } catch (_) {
       return [];
     }
   }
 
-  @override
-  Future<void> killProcess(int pid) async {
-    try {
-      Process.killPid(pid);
-    } catch (_) {}
+  /// Signals the live agent run whose process is [pid] when [mayStop] admits
+  /// its workspace. False, with nothing signalled, when [pid] is no live
+  /// running agent run or its workspace is not admitted.
+  Future<bool> stopRun(
+    int pid, {
+    required Future<bool> Function(String workspaceId) mayStop,
+  }) async {
+    for (final log in await _liveRuns()) {
+      if (log.pid == pid) {
+        if (!await mayStop(log.workspaceId!)) {
+          return false;
+        }
+        try {
+          return Process.killPid(pid);
+        } catch (_) {
+          return false;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// Running runs with a recorded pid and workspace whose process is alive.
+  Future<List<AgentRunLog>> _liveRuns() async {
+    final all = await _runLogRepo.watchAll().first;
+    return [
+      for (final log in all)
+        if (log.isRunning &&
+            log.pid != null &&
+            log.workspaceId != null &&
+            await _isPidAlive(log.pid!))
+          log,
+    ];
   }
 
   Future<bool> _isPidAlive(int pid) async {

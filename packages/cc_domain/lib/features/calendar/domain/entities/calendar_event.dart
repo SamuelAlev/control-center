@@ -289,8 +289,7 @@ class CalendarAccount {
   /// Owning workspace.
   final String workspaceId;
 
-  /// The member who connected this account. Empty on legacy workspace-pool
-  /// rows predating per-user calendar ownership.
+  /// The member who connected this account. Empty when no owner is recorded.
   final String userId;
 
   /// Provider id (`google`).

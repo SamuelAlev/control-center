@@ -2,7 +2,7 @@
 title: Ekibinizi SSO ile oturum açtırın
 description: Okta'yı (SAML) Control Center sunucunuza bağlayın ve baştan sona bir oturum açma gerçekleştirin.
 slug: tr-TR/kilavuz/ogreticiler/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -86,6 +86,16 @@ tutulacak iki şey:
   çalışma alanı daveti gerektirir ve bu daha güvenli varsayılandır.
 - **Bilinmeyen kullanıcıları ilk girişte sağla** — varsayılan olarak açıktır;
   hesabı zaten var olmayan herkesi reddetmek için kapatın.
+
+Sunucuda zaten hesabı olan kişiler varsa, herkes SSO ile oturum açmadan önce
+e-posta adreslerini onaylayın: **Ayarlar → Sunucu → Kişiler** bölümünü açın ve
+**E-posta onaylanmadı** işaretli her satırda **E-postayı onayla** düğmesini
+kullanın. Bir oturum açma, mevcut bir hesapla ancak bu adres onaylanmışsa (ya da
+SSO veya SCIM tarafından ayarlanmışsa) e-posta üzerinden eşleşir. Birinin kendi
+profilinde ya da bir davette girdiği adres hiçbir şeyle eşleşmez; bu adım olmazsa
+ya ikinci bir hesap oluşur ya da bilinmeyen kullanıcıları sağlama kapalıysa
+reddedilirler. Ayrıntılar için bkz.
+[Oturum açmaların mevcut hesaplarla nasıl eşleştiği](/tr-TR/kilavuz/nasil-yapilir/sso-oidc/#oturum-açmaların-mevcut-hesaplarla-nasıl-eşleştiği).
 
 İsteğe bağlı olarak grup adlarını taşıyan bir özniteliği eşleyin (Okta'da bu
 genellikle `groups` olur) ve grupları bu eşlemeyle rollere dönüştürün — örneğin

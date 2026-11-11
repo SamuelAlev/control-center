@@ -2,7 +2,7 @@
 title: Configurar a integração com o Linear
 description: Inicie sessão no Linear, ligue a automação do Linear de um espaço de trabalho e escolha o Linear como fornecedor de tickets para os novos tickets.
 slug: pt-PT/manual/guias/integracao-linear
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 O Linear tem duas identidades no Control Center, e ambas são inícios de sessão
@@ -24,7 +24,7 @@ consulte [Criar e gerir tickets](/pt-PT/manual/guias/gerir-tickets/).
 
 ## Escolher o Linear para o espaço de trabalho
 
-1. Vá a **Definições → Espaço de trabalho → Geral** e encontre o cartão
+1. Vá a **Definições → Espaço de trabalho → Integrações** e encontre o cartão
    **Tickets**
 2. Defina o **Fornecedor de tickets** como **Linear**
 
@@ -34,7 +34,7 @@ linhas do Linear: não há nada em que autenticar.
 
 ## Iniciar sessão no Linear
 
-No mesmo cartão, a linha **Linear** é a sua:
+O seu próprio início de sessão no Linear está em **Definições → Você → Perfil**, no cartão **Tickets**:
 
 1. Clique em **Entrar no Linear**
 2. Aprove no navegador
@@ -46,9 +46,12 @@ Tudo o que fizer no Linear a partir do Control Center é executado com este
 início de sessão e mais nada. Se não tiver sessão iniciada, a aplicação pede-lhe
 que inicie sessão em vez de atuar como outra pessoa.
 
+O início de sessão funciona em todos os espaços de trabalho do servidor, a menos que um espaço de trabalho tenha as suas próprias apps de início de sessão: esse espaço de trabalho mantém um início de sessão próprio no Linear. O cartão indica qual dos casos se aplica.
+
 ## Ligar a automação do Linear
 
-A linha **Automação do Linear** é a aplicação do Control Center do espaço de
+A linha **Automação do Linear**, no cartão **Tickets** em **Definições →
+Espaço de trabalho → Integrações**, é a aplicação do Control Center do espaço de
 trabalho no Linear. A sincronização de tickets, os pipelines e os agentes
 escrevem com ela, pelo que as issues e os comentários automáticos aparecem como
 Control Center e não como uma pessoa.
@@ -71,9 +74,9 @@ Use a sua própria aplicação quando tiver escolhido **Usar as minhas próprias
 apps**. A aplicação do próprio servidor só se aplica nesse caso: com as apps do
 Control Center ou um Connect próprio, o Connect executa todas as faixas, incluindo a do
 Linear, e a aplicação do servidor e a chave de API de serviço continuam guardadas, mas
-sem uso. A aplicação de um espaço de trabalho
-([abaixo](#dê-ao-espaço-de-trabalho-a-sua-própria-aplicação-do-linear)) continua a valer
-em todos os modos.
+sem uso. Um espaço de trabalho com as próprias apps
+([abaixo](#dê-ao-espaço-de-trabalho-a-sua-própria-aplicação-do-linear)) usa a aplicação
+própria dele no lugar, qualquer que seja o modo do servidor.
 
 1. Crie uma aplicação OAuth em
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -100,24 +103,18 @@ vez da aplicação do servidor. Só um administrador ou proprietário do espaço
 pode configurar isto.
 
 1. Crie uma aplicação OAuth do Linear como nos passos acima
-2. Vá a **Definições → Espaço de trabalho → Geral** e abra **Aplicativos de provedores**, depois **Linear**
-3. Escolha **Usar o aplicativo próprio deste espaço de trabalho**
-4. Adicione à aplicação do Linear os dois URLs de callback que a linha mostra em **URLs de callback**, tal como aparecem
-5. Cole o **Id de cliente** e, opcionalmente, uma **Chave de API de serviço** para a automação deste espaço de trabalho
+2. Vá a **Definições → Espaço de trabalho → Integrações**. No cartão **Control Center Connect**, escolha **Usar as minhas próprias apps** e clique em **Aplicar**
+3. Em Tickets, aparece o cartão da app **Linear**. Adicione à aplicação do Linear os dois URLs de callback que ele mostra em **URLs de callback**, tal como aparecem
+4. Cole o **Id de cliente** e, opcionalmente, uma **Chave de API de serviço** para a automação deste espaço de trabalho
 
 A aplicação do espaço de trabalho passa então a responder a todo o início de sessão no
 Linear e a todo o pedido de automação neste espaço de trabalho, seja qual for a forma
 como o servidor inicia a sessão das pessoas. Nunca recorre à aplicação do servidor nem ao
 Connect: enquanto não estiver definido um id de cliente, o Linear fica desativado neste
-espaço de trabalho, e a linha indica o que falta. A chave de API de serviço dela é usada
+espaço de trabalho, e o cartão indica o que falta. A chave de API de serviço dela é usada
 apenas aqui; sem ela, a sincronização exige **Ligar o Linear para automação**.
 
-Trocar entre a aplicação do servidor e a do espaço de trabalho, ou alterar o id de cliente
-do espaço de trabalho, termina a sessão de todos os membros deste espaço de trabalho no
-Linear e desliga a automação deles. Voltam a iniciar sessão pela nova aplicação. **Usar o
-aplicativo deste servidor** apaga os campos guardados do espaço de trabalho. Os segredos
-são apenas de escrita: a linha mostra apenas se algum está guardado. Os outros espaços de
-trabalho do servidor não são afetados.
+**Usar as minhas próprias apps** vale para todos os provedores ao mesmo tempo: GitHub, Google Calendar e a pesquisa de GIFs também funcionam apenas com as apps próprias do espaço de trabalho, cada uma configurada ao lado do respetivo provedor, na mesma página. Trocar os apps de início de sessão do espaço de trabalho, ou alterar o id de cliente do espaço de trabalho, termina a sessão de todos os membros deste espaço de trabalho no Linear e desliga a automação deles. Voltam a iniciar sessão pela nova aplicação. Os campos guardados permanecem quando o espaço de trabalho volta a outra escolha, mas só são usados em **Usar as minhas próprias apps**. Os segredos são apenas de escrita: o cartão mostra apenas se algum está guardado. Os outros espaços de trabalho do servidor não são afetados.
 
 ## Resolução de problemas
 
@@ -125,10 +122,10 @@ trabalho do servidor não são afetados.
 
 O servidor não tem nem uma aplicação do Linear própria nem o Connect. O
 proprietário do servidor escolhe uma das opções em **Definições → Servidor →
-Início de sessão único**. Quando o espaço de trabalho usa a própria aplicação, a linha
+Início de sessão único**. Quando o espaço de trabalho usa as próprias apps, a linha
 indica em vez disso que a configuração não está concluída: um administrador do espaço de
-trabalho adiciona o id de cliente em **Definições → Espaço de trabalho → Geral →
-Aplicativos de provedores**.
+trabalho adiciona o id de cliente no cartão da app **Linear**, em **Definições →
+Espaço de trabalho → Integrações**.
 
 ### A sincronização de tickets falha com um erro de autenticação
 

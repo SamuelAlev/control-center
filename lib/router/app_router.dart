@@ -25,13 +25,15 @@ import 'package:control_center/features/pr_review/presentation/screens/compose_p
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail_screen.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_list_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/about_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/account_profile_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/adapters_settings_screen.dart';
-import 'package:control_center/features/settings/presentation/screens/agent_attribution_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/agent_permissions_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/agents_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/appearance_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/audio_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/audit_log_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/backup_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/commits_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/desktop_app_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/diagnostics_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/environments_settings_screen.dart';
@@ -47,10 +49,12 @@ import 'package:control_center/features/settings/presentation/screens/repos_sett
 import 'package:control_center/features/settings/presentation/screens/rigs_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/sandbox_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/server_connection_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/server_people_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/skills_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/sso_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/voice_meetings_settings_screen.dart';
 import 'package:control_center/features/settings/presentation/screens/workspace_general_settings_screen.dart';
+import 'package:control_center/features/settings/presentation/screens/workspace_integrations_settings_screen.dart';
 import 'package:control_center/features/shell/presentation/layout/control_center_layout.dart';
 import 'package:control_center/features/ticketing/presentation/screens/project_overview_screen.dart';
 import 'package:control_center/features/ticketing/presentation/screens/tickets_screen.dart';
@@ -505,9 +509,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: settingsRoute(workspaceIdParam),
             redirect: (_, state) =>
-                settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+                settingsLandingRoute(state.pathParameters['workspaceId']!),
           ),
           // You — follows the signed-in user across devices.
+          GoRoute(
+            path: settingsAccountProfileRoute(workspaceIdParam),
+            pageBuilder: (context, state) => buildPage(
+              state,
+              _absorb(
+                AccountProfileSettingsScreen(
+                  openAtAccounts: opensAtConnectedAccounts(state.uri),
+                ),
+              ),
+            ),
+          ),
           GoRoute(
             path: settingsAppearanceRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
@@ -519,11 +534,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 buildPage(state, _absorb(const NotificationsSettingsScreen())),
           ),
           GoRoute(
-            path: settingsAgentAttributionRoute(workspaceIdParam),
-            pageBuilder: (context, state) => buildPage(
-              state,
-              _absorb(const AgentAttributionSettingsScreen()),
-            ),
+            path: settingsCommitsRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const CommitsSettingsScreen())),
           ),
           GoRoute(
             path: settingsAudioRoute(workspaceIdParam),
@@ -561,6 +574,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => buildPage(
               state,
               _absorb(const WorkspaceGeneralSettingsScreen()),
+            ),
+          ),
+          GoRoute(
+            path: settingsWorkspaceIntegrationsRoute(workspaceIdParam),
+            pageBuilder: (context, state) => buildPage(
+              state,
+              _absorb(const WorkspaceIntegrationsSettingsScreen()),
             ),
           ),
           GoRoute(
@@ -638,6 +658,16 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: settingsDiagnosticsRoute(workspaceIdParam),
             pageBuilder: (context, state) =>
                 buildPage(state, _absorb(const DiagnosticsSettingsScreen())),
+          ),
+          GoRoute(
+            path: settingsServerPeopleRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const ServerPeopleSettingsScreen())),
+          ),
+          GoRoute(
+            path: settingsServerAuditRoute(workspaceIdParam),
+            pageBuilder: (context, state) =>
+                buildPage(state, _absorb(const AuditLogSettingsScreen())),
           ),
           GoRoute(
             path: settingsBackupRoute(workspaceIdParam),

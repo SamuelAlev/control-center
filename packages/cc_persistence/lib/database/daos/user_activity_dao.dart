@@ -1,5 +1,6 @@
 import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
+import 'package:cc_domain/core/domain/value_objects/audit_log_filter.dart';
+import 'package:cc_persistence/database/daos/audit_filter_sql.dart';
 import 'package:cc_persistence/database/tables/user_activity_table.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:drift/drift.dart';
@@ -42,164 +43,106 @@ class UserActivityDao extends DatabaseAccessor<WorkspaceDatabase>
             ..limit(limit))
           .watch();
 
-  /// Newest-first keyset page. Pass [limit] + 1 so the caller can see whether
-  /// an older page remains. [cursor] is an exclusive older-than bound.
-  Future<List<UserActivityTableData>> getPageRows(
+  /// Matching rows strictly older than [olderThan] (from the newest when
+  /// null), newest first, at most [limit].
+  Future<List<UserActivityTableData>> pageRows(
     String workspaceId, {
+    ActivityCursor? olderThan,
     required int limit,
-    ActivityCursor? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) => _pageQuery(
-    workspaceId,
-    limit: limit,
-    cursor: cursor,
-    filter: filter,
-  ).get();
+    AuditLogFilter filter = const AuditLogFilter(),
+  }) =>
+      (select(userActivityTable)
+            ..where(
+              (t) =>
+                  _predicate(t, workspaceId, filter) &
+                  (olderThan == null
+                      ? const Constant(true)
+                      : auditOlderThan(t.createdAt, t.id, olderThan)),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.createdAt),
+              (t) => OrderingTerm.desc(t.id),
+            ])
+            ..limit(limit))
+          .get();
 
-  /// Live counterpart of [getPageRows].
-  Stream<List<UserActivityTableData>> watchPageRows(
+  /// Matching rows strictly newer than [newerThan], oldest first (the
+  /// reverse of the page order), at most [limit].
+  Future<List<UserActivityTableData>> newerRows(
     String workspaceId, {
+    required ActivityCursor newerThan,
     required int limit,
-    ActivityCursor? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) => _pageQuery(
-    workspaceId,
-    limit: limit,
-    cursor: cursor,
-    filter: filter,
-  ).watch();
+    AuditLogFilter filter = const AuditLogFilter(),
+  }) =>
+      (select(userActivityTable)
+            ..where(
+              (t) =>
+                  _predicate(t, workspaceId, filter) &
+                  auditNewerThan(t.createdAt, t.id, newerThan),
+            )
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.createdAt),
+              (t) => OrderingTerm.asc(t.id),
+            ])
+            ..limit(limit))
+          .get();
 
-  /// Rows strictly newer than [cursor], oldest-of-those first (the reverse
-  /// of the page order). Used to compute `prev_cursor` and the 1-based start.
-  Future<List<UserActivityTableData>> getNewerRows(
+  /// How many rows match, or only those strictly newer than [newerThan].
+  Future<int> count(
     String workspaceId, {
-    required ActivityCursor cursor,
-    required int limit,
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) {
+    AuditLogFilter filter = const AuditLogFilter(),
+    ActivityCursor? newerThan,
+  }) async {
     final t = userActivityTable;
-    return (select(t)
-          ..where(
-            (row) =>
-                _predicate(row, workspaceId, filter) & _newerThan(row, cursor),
-          )
-          ..orderBy([
-            (row) => OrderingTerm.asc(row.createdAt),
-            (row) => OrderingTerm.asc(row.id),
-          ])
-          ..limit(limit))
-        .get();
-  }
-
-  /// How many rows match [filter] in [workspaceId].
-  Future<int> countForWorkspace(
-    String workspaceId, {
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) async {
-    final count = userActivityTable.id.count();
+    final count = t.id.count();
     final row =
-        await (selectOnly(userActivityTable)
-              ..addColumns([count])
-              ..where(_predicate(userActivityTable, workspaceId, filter)))
-            .getSingle();
-    return row.read(count) ?? 0;
-  }
-
-  /// How many matching rows sort strictly newer than [cursor].
-  Future<int> countNewerThan(
-    String workspaceId,
-    ActivityCursor cursor, {
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) async {
-    final count = userActivityTable.id.count();
-    final row =
-        await (selectOnly(userActivityTable)
+        await (selectOnly(t)
               ..addColumns([count])
               ..where(
-                _predicate(userActivityTable, workspaceId, filter) &
-                    _newerThan(userActivityTable, cursor),
+                _predicate(t, workspaceId, filter) &
+                    (newerThan == null
+                        ? const Constant(true)
+                        : auditNewerThan(t.createdAt, t.id, newerThan)),
               ))
             .getSingle();
     return row.read(count) ?? 0;
   }
 
-  SimpleSelectStatement<$UserActivityTableTable, UserActivityTableData>
-  _pageQuery(
+  /// Matching rows per actor id.
+  Future<Map<String, int>> countByActor(
     String workspaceId, {
-    required int limit,
-    ActivityCursor? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
-  }) {
-    final query = select(userActivityTable)
-      ..where(
-        (t) =>
-            _predicate(t, workspaceId, filter) &
-            (cursor == null ? const Constant(true) : _olderThan(t, cursor)),
-      )
-      ..orderBy([
-        (t) => OrderingTerm.desc(t.createdAt),
-        (t) => OrderingTerm.desc(t.id),
-      ])
-      ..limit(limit);
-    return query;
+    AuditLogFilter filter = const AuditLogFilter(),
+  }) async {
+    final t = userActivityTable;
+    final count = t.id.count();
+    final rows =
+        await (selectOnly(t)
+              ..addColumns([t.userId, count])
+              ..where(_predicate(t, workspaceId, filter))
+              ..groupBy([t.userId]))
+            .get();
+    return {for (final r in rows) r.read(t.userId)!: r.read(count) ?? 0};
   }
+
+  /// Emits whenever a row is appended or pruned.
+  Stream<void> watchChanges() => attachedDatabase.tableUpdates(
+    TableUpdateQuery.onTable(userActivityTable),
+  );
 
   Expression<bool> _predicate(
     $UserActivityTableTable t,
     String workspaceId,
-    UserActivityFilter filter,
-  ) {
-    var expr = t.workspaceId.equals(workspaceId);
-    final ip = filter.ip;
-    if (ip != null && ip.isNotEmpty) {
-      expr = expr & t.ip.equals(ip);
-    }
-    final country = filter.countryCode;
-    if (country != null && country.isNotEmpty) {
-      expr = expr & t.countryCode.equals(country);
-    }
-    if (filter.localNetwork) {
-      expr = expr & t.ip.isNotNull() & t.countryCode.isNull();
-    }
-    final needle = _searchNeedle(filter.query);
-    final userIds = filter.userIds.where((id) => id.isNotEmpty).toList();
-    if (needle != null || userIds.isNotEmpty) {
-      Expression<bool>? text;
-      if (needle != null) {
-        final pattern = '%$needle%';
-        text =
-            t.action.lower().like(pattern) |
-            t.targetId.lower().like(pattern) |
-            t.targetType.lower().like(pattern) |
-            t.ip.lower().like(pattern) |
-            t.details.lower().like(pattern);
-      }
-      if (userIds.isNotEmpty) {
-        final users = t.userId.isIn(userIds);
-        text = text == null ? users : text | users;
-      }
-      expr = expr & text!;
-    }
-    return expr;
-  }
-
-  Expression<bool> _olderThan(
-    $UserActivityTableTable t,
-    ActivityCursor cursor,
-  ) {
-    final at = cursor.createdAt;
-    return t.createdAt.isSmallerThanValue(at) |
-        (t.createdAt.equals(at) & t.id.isSmallerThanValue(cursor.id));
-  }
-
-  Expression<bool> _newerThan(
-    $UserActivityTableTable t,
-    ActivityCursor cursor,
-  ) {
-    final at = cursor.createdAt;
-    return t.createdAt.isBiggerThanValue(at) |
-        (t.createdAt.equals(at) & t.id.isBiggerThanValue(cursor.id));
-  }
+    AuditLogFilter filter,
+  ) =>
+      t.workspaceId.equals(workspaceId) &
+      auditFilterPredicate(
+        filter,
+        userId: t.userId,
+        ip: t.ip,
+        createdAt: t.createdAt,
+        countryCode: t.countryCode,
+        searchColumns: [t.action, t.targetType, t.targetId, t.ip, t.details],
+      );
 
   /// Deletes entries older than [cutoff]; returns the number removed.
   ///
@@ -208,18 +151,4 @@ class UserActivityDao extends DatabaseAccessor<WorkspaceDatabase>
   Future<int> deleteOlderThan(DateTime cutoff) => (delete(
     userActivityTable,
   )..where((t) => t.createdAt.isSmallerThanValue(cutoff))).go();
-}
-
-/// Lowercased LIKE needle with SQL wildcards stripped so a typed `%` cannot
-/// widen the scan.
-String? _searchNeedle(String? query) {
-  if (query == null) {
-    return null;
-  }
-  final needle = query
-      .toLowerCase()
-      .replaceAll('%', '')
-      .replaceAll('_', '')
-      .trim();
-  return needle.isEmpty ? null : needle;
 }

@@ -5,6 +5,25 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_run.dart';
 /// write.
 const String kPipelineRequestedByKey = 'requested_by_user_id';
 
+/// The trigger-payload key a run started by an armed trigger records,
+/// as a list of user ids, everyone who armed it (or edited it, or its
+/// pipeline, while armed) under. Like [kPipelineRequestedByKey], written only
+/// by the engine (from the trigger, never a payload) and inherited by
+/// sub-pipelines. They are not requesters: the run still acts as the
+/// workspace's accountable human. They name who may not approve a pull
+/// request the run's agents open.
+const String kPipelineArmedByKey = 'armed_by_user_ids';
+
+/// The user ids a run's [payload] records under [kPipelineArmedByKey].
+Set<String> pipelineArmedByOf(Map<String, dynamic>? payload) {
+  final raw = payload?[kPipelineArmedByKey];
+  return {
+    if (raw is List)
+      for (final id in raw)
+        if (id is String && id.isNotEmpty) id,
+  };
+}
+
 /// Port that decouples `SubPipelineLauncher` from the concrete `PipelineEngine`
 /// implementation, breaking the circular dependency between the engine and the
 /// body registry.

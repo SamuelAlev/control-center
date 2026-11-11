@@ -2,7 +2,7 @@
 title: Rigs
 description: Jede Rig-Oberfläche, jedes Backend, jedes Aktionsverb, jeder Lebenszyklus-Zustand, jeder Port, jeder Standard und jeder Vertrag — der vollständige Faktenkatalog.
 slug: de-DE/handbuch/referenz/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Nur Fakten. Das Modell dahinter steht unter [Rigs und
@@ -230,8 +230,10 @@ eines gekapselten Netzes.
 
 | Werkzeug | Beschreibung |
 | --- | --- |
-| `rig_list` | Listet die Rigs eines Arbeitsbereichs mit Oberfläche, Status, Anzeige und Steuerndem |
+| `rig_list` | Listet die Rigs des Space des Laufs mit Oberfläche, Status, Anzeige und Steuerndem |
 | `rig_close` | Zerstört ein Rig und verwirft seine Platte |
+
+Diese Werkzeuge sind wie die vier Use-Werkzeuge nur für Agentenläufe gedacht; jeder andere Aufrufer wird abgewiesen. Ein Lauf erreicht nur die Rigs des Space, für den er vergeben wurde: `space_id` stammt aus der Freigabe des Laufs, nie aus dem Aufruf. Ein Rig eines anderen Space oder ohne Space antwortet genau wie ein fehlendes.
 
 ## Lebenszyklus
 
@@ -338,7 +340,14 @@ Entscheidungen sind unabhängig und nie eine Einstellung des Arbeitsbereichs.
 - **Authentifizierung** ist das signierte Ziel
   `rig-files:<workspaceId>/<rigId>` plus die Mitgliedschaft im
   Arbeitsbereich — ein eigenes Ziel, sodass eine URL, die geprägt wurde, um
-  eine Maschine zu *beobachten*, nicht auch Dateien hineinschreiben kann.
+  eine Maschine zu *beobachten*, nicht auch Dateien hineinschreiben kann. Bei
+  einem Rig, das in einem Space geöffnet ist, braucht das Lesen der
+  Zwischenablage oder einer Datei zusätzlich Lesezugriff auf diesen Space, und
+  das Schreiben der Zwischenablage oder das Ablegen von Dateien einen
+  Schreibzugriff auf dessen Repositories. Bei einem Rig, das die eigenen
+  Anmeldungen einer Person trägt, gehören beide Bahnen, das Lesen eingeschlossen,
+  nur dieser Person. Siehe [Wer zusehen und wer steuern
+  darf](/de-DE/handbuch/anleitungen/rigs-nutzen/#wer-zusehen-und-wer-steuern-darf).
 - **Die Übernahme gilt.** Die Zwischenablage zu schreiben und Dateien
   abzulegen ist verändernd und wird abgelehnt, solange jemand anderes die
   Steuerung hält; die Zwischenablage zu lesen und eine Datei herauszulesen

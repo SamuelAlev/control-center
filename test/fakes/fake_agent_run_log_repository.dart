@@ -181,16 +181,8 @@ class FakeAgentRunLogRepository implements AgentRunLogRepository {
     if (current == null || current.workspaceId != workspaceId) {
       return;
     }
-    final micros =
-        (current.childCostMicros != 0
-            ? current.childCostMicros
-            : current.childCostCents * 10000) +
-        amountMicros;
     await upsert(
-      current.copyWith(
-        childCostMicros: micros,
-        childCostCents: (micros / 10000).round(),
-      ),
+      current.copyWith(childCostMicros: current.childCostMicros + amountMicros),
     );
   }
 

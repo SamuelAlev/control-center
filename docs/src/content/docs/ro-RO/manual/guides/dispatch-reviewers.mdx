@@ -2,7 +2,7 @@
 title: Trimite agenți revizori
 description: Trimite agenți revizori specializați pe un PR din vederea PR-ului, dintr-un instrument MCP sau dintr-un pas de pipeline.
 slug: ro-RO/manual/ghiduri-practice/trimite-agenti-revizori
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Acest ghid îți arată cum să trimiți agenți revizori care să revizuiască pull request-uri.
@@ -85,10 +85,10 @@ Pentru ca un pipeline de revizuire să pornească singur:
 
 Două evenimente contează aici și nu sunt interschimbabile:
 
-| Eveniment              | Se declanșează când                                                                                             | Chei de payload                                                    |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | Un PR este deschis **prin Control Center** — suprafața de compunere sau un agent care apelează `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | Serviciul de interogare a PR-urilor găsește un PR deschis direct pe GitHub                                      | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Eveniment              | Se declanșează când                                                                                                   | Chei de payload                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PullRequestPublished` | Un PR este deschis **prin Control Center** — suprafața de compunere sau un agent care apelează `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                             |
+| `ExternalPrDetected`   | Serviciul de interogare a PR-urilor găsește un PR deschis direct pe GitHub                                            | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 Un PR deschis pe github.com nu declanșează niciodată `PullRequestPublished`, așa
 că un șablon conectat doar la acel eveniment nu îl va vedea. Reține de asemenea

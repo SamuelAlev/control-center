@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/agents/agent_discovery_service.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Minimal fake of the filesystem port: only the two methods discovery uses

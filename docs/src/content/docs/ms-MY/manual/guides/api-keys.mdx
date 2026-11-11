@@ -2,7 +2,7 @@
 title: Urus kunci API
 description: Di mana setiap kelayakan berada — akaun pengguna anda pada pelayan, pelayan itu sendiri, atau CLI luaran — dan cara menetapkannya, memutarnya serta membuangnya.
 slug: ms-MY/manual-pengguna/panduan-cara/kunci-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Panduan ini menunjukkan kepada anda di mana setiap kelayakan yang digunakan oleh
@@ -31,8 +31,8 @@ pada sama ada ada manusia di belakangnya.
   Connect, dan dihadkan kepada apa yang boleh dilakukan oleh ahli yang bertanggungjawab di sana. Ia tidak
   pernah log masuk anda yang diserahkan sepenuhnya
 
-Milik anda ditetapkan dalam kad **Hos kod** di **Tetapan → Ruang kerja → Profil &
-identiti**; apl pelayan dalam **Apl penyedia** di **Tetapan → Pelayan → Daftar
+Milik anda ditetapkan dalam kad **Hos kod** di **Tetapan → Anda →
+Profil**; apl pelayan dalam **Apl penyedia** di **Tetapan → Pelayan → Daftar
 masuk tunggal**. Lihat [Sediakan integrasi GitHub](/ms-MY/manual-pengguna/panduan-cara/integrasi-github/)
 dan [Cipta GitHub App](/ms-MY/manual-pengguna/panduan-cara/github-app/).
 
@@ -40,10 +40,9 @@ GitLab dan Bitbucket masih menerima token peribadi yang ditampal, disimpan denga
 Lihat [Sambungkan hos kod](/ms-MY/manual-pengguna/panduan-cara/sambungkan-hos-kod/).
 
 :::note[Ada juga skrin URL sahaja]
-`/workspaces/<workspaceId>/api-keys` memaparkan dua kad yang sama seperti langkah
+`/workspaces/<workspaceId>/api-keys` memaparkan kad yang sama seperti langkah
 pertama onboarding. Ia **tiada entri navigasi di mana-mana dalam UI**; ia hanya
-boleh dicapai dengan menaip URL itu. Gunakan Tetapan → Ruang kerja → Profil &
-identiti sebaliknya.
+boleh dicapai dengan menaip URL itu. Gunakan Tetapan → Anda → Profil untuk log masuk anda sendiri, dan Tetapan → Ruang kerja → Integrasi untuk vendor tiket.
 :::
 
 ## Tetapkan kunci penyedia model
@@ -62,9 +61,9 @@ dan untuk menambah titik akhir tersuai.
 Kelayakan ini **global hos**: satu kunci melayani setiap ruang kerja pada
 pemasangan ini. Token OAuth disegarkan sebelum ia tamat tempoh.
 
-CLI penyesuai luaran menyimpan kelayakannya sendiri, dalam konfigurasinya sendiri,
-pada hos pelayan — Control Center tidak menguruskannya. Sahkan Claude Code seperti
-yang dinyatakan dalam dokumentasinya sendiri, pada mesin yang menjalankan `cc_server`.
+Claude Code log masuk melalui **Akaun Claude Code** di bawah **Tetapan → Pelayan → Penyedia model**:
+setiap akaun mendapat direktori konfigurasinya sendiri pada pelayan, dan anda menjalankan arahan
+`claude auth login` yang dipaparkan oleh apl di sana.
 
 Dialog **Pemboleh ubah persekitaran** bagi setiap penyesuai kelihatan seperti
 tempat untuk meletakkan kunci bagi salah satu daripadanya, tetapi bukan: ia
@@ -74,13 +73,11 @@ apa yang menghubungkan keduanya. Lihat
 
 ## Sambungkan vendor penetikan
 
-Kad **Tiket** pada **Tetapan → Ruang kerja → Umum** memegang kedua-dua belah satu
-keputusan: di mana tiket anda berada, dan siapa Control Center apabila bercakap
-dengannya. Memilih **Setempat** menyembunyikan baris Linear — tiket setempat berada dalam pangkalan
+Kad **Tiket** pada **Tetapan → Ruang kerja → Integrasi** memegang bahagian ruang kerja: di mana tiket anda berada, dan siapa Control Center apabila ia berfungsi di sana sendiri. Memilih **Setempat** menyembunyikan baris Linear — tiket setempat berada dalam pangkalan
 data pelayan ini sendiri dan tiada apa-apa untuk disahkan.
 
 Linear mempunyai dua log masuk dan tiada kunci yang ditampal: **Linear** ialah milik anda, untuk perkara
-yang anda lakukan, dan **Automasi Linear** ialah apl Control Center ruang kerja, disambungkan oleh pentadbir,
+yang anda lakukan, dan terletak di **Tetapan → Anda → Profil**; **Automasi Linear** ialah apl Control Center ruang kerja, disambungkan oleh pentadbir pada kad **Tiket**,
 untuk penyegerakan tiket, pipeline dan ejen. Pelayan juga boleh menyimpan **Kunci API perkhidmatan**
 (**Apl penyedia**) bagi ruang kerja yang belum menyambungkan automasi. Tiada kelayakan penetikan disuntik
 ke dalam kotak pasir ejen; ejen menulis tiket melalui alat Control Center, yang bertanya kepada peraturan
@@ -94,9 +91,10 @@ ke dalam kotak pasir ejen; ejen menulis tiket melalui alat Control Center, yang 
   yang lama pada hos kod
 - **Apl pelayan**: jana kunci persendirian atau rahsia klien baharu pada halaman pembekal apl itu,
   tampalkannya dalam **Apl penyedia** dan tekan **Uji**
-- **Kunci pemasangan Connect**: **Putar kunci** pada kad **Control Center Connect**, atau
-  `cc_server connect rotate-key --yes`. Semua orang yang log masuk melalui Connect perlu log masuk semula.
-  Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/)
+- **Kunci pemasangan Connect**: pemilik pelayan menekan **Putar kunci** pada kad **Control Center Connect**.
+  Semua orang yang log masuk melalui Connect perlu log masuk semula. Jika pelayan Connect tidak dapat
+  dihubungi, tiada apa yang berubah dan anda ditawarkan **Jana semula juga**. Lihat
+  [Putar kunci pemasangan](/ms-MY/manual-pengguna/rujukan/connect/#putar-kunci-pemasangan)
 - **Penyedia model**: pada barisnya, daftar keluar (OAuth) atau buang kunci itu,
   kemudian sambung semula
 - **Slack**: bagi apl anda sendiri, tampal semula token dalam dialog sambungan. Apl Slack kongsi Control
@@ -108,8 +106,7 @@ ke dalam kotak pasir ejen; ejen menulis tiket melalui alat Control Center, yang 
 
 ### Token GitLab atau Bitbucket berfungsi dalam `curl` tetapi tidak di sini
 
-Semak subtajuk baris **Hos kod**. Jika ia berbunyi "daripada persekitaran", kelayakan yang menjawab ialah
-milik pelayan, bukan milik anda — milik anda tidak disimpan.
+Semak baris **Hos kod**. Jika ia berbunyi "Tidak disambungkan" atau meminta anda menyambung semula, token anda tidak disimpan atau telah ditolak. Untuk Bitbucket, masukkan e-mel akaun Atlassian anda bersama token API.
 
 ### Token GitLab atau Bitbucket diterima tetapi permintaan kemudiannya gagal
 

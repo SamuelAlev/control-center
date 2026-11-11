@@ -48,7 +48,6 @@ class _UnusedBroker implements CredentialBrokerPort {
 /// No OS sandbox: validation and dry run answer before one is needed.
 final _sandbox = BashScriptSandbox(
   wrap: null,
-  deniedPaths: const [],
   broker: _UnusedBroker(),
   linkedRepo: (_, _) async => null,
 );

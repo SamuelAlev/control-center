@@ -1,8 +1,8 @@
 ---
 title: Utwórz GitHub App
-description: Daj swojemu serwerowi własną GitHub App jednym kliknięciem, zainstaluj ją tam, gdzie są Twoje repozytoria, i autoryzuj serwer dla instalacji organizacji.
+description: Daj swojemu serwerowi własną GitHub App jednym kliknięciem, zainstaluj ją tam, gdzie są Twoje repozytoria, tak aby wszyscy w organizacji mogli z niej korzystać z dowolnego serwera.
 slug: pl-PL/podrecznik/poradniki/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Ten poradnik pokazuje, jak dać serwerowi własną GitHub App. Zajmuje to około
@@ -37,8 +37,7 @@ Automatyzacja nigdy nie zatwierdza pull requesta.
 Aplikacja serwera obowiązuje tylko przy **Użyj własnych aplikacji**. Przy aplikacjach
 Control Center albo własnym Connect to Connect obsługuje każdą ścieżkę, także GitHub;
 aplikacja serwera pozostaje zapisana, ale nieużywana, aż przełączysz z powrotem.
-Aplikacja obszaru roboczego ([Daj jednemu obszarowi roboczemu inną aplikację](#daj-jednemu-obszarowi-roboczemu-inną-aplikację))
-nadal obowiązuje we wszystkich trybach. Aplikacja, której brakuje części pól, to błąd,
+Obszar roboczy na własnych aplikacjach ([Daj jednemu obszarowi roboczemu własną aplikację](#daj-jednemu-obszarowi-roboczemu-własną-aplikację)) używa zamiast tego własnej aplikacji, niezależnie od trybu serwera. Aplikacja, której brakuje części pól, to błąd,
 a nie przejście na rozwiązanie zapasowe: logowania do GitHuba są odrzucane, dopóki nie
 ustawi się wszystkich pól.
 
@@ -99,24 +98,16 @@ odczyta niczego.
 2. Wybierz **All repositories** albo zaznacz te, które ten serwer ma widzieć
 
 Aby później zainstalować ją na innym koncie, administrator obszaru roboczego
-przechodzi do **Ustawienia → Obszar roboczy → Ogólne**, znajduje **Instalacje
-aplikacji GitHub** na karcie tożsamości GitHub i klika **Zainstaluj aplikację
-GitHub**. Lista pokazuje każde konto, na którym aplikacja jest zainstalowana,
+przechodzi do **Ustawienia → Obszar roboczy → Integracje**, znajduje **Instalacje aplikacji GitHub** na karcie **Aplikacja GitHub** w sekcji Hosting kodu i klika **Zainstaluj aplikację GitHub**. Lista pokazuje każde konto, na którym aplikacja jest zainstalowana,
 i oznacza zawieszoną instalację.
 
-## Autoryzuj ten serwer dla organizacji
+## Udostępnij instalację organizacji
 
-Przy współdzielonej App od Control Center instalacja organizacji obsługuje tylko
-serwery, które autoryzowali jej administratorzy. Instalacja przez **Zainstaluj
-aplikację GitHub** autoryzuje serwer, który ją rozpoczął. Dla instalacji, która
-już istnieje:
+Organizacja instaluje GitHub App jeden raz. Potem każdy w organizacji, kto loguje się do GitHuba na serwerze Control Center, może korzystać z tej instalacji, niezależnie od tego, czy serwer jest jego, kolegi, czy jego własny. Nie ma nic do autoryzowania dla poszczególnych serwerów.
 
-1. Administrator tej organizacji loguje się do GitHuba na tym serwerze
-2. Otwiera **Ustawienia → Obszar roboczy → Ogólne → Instalacje aplikacji GitHub**
-3. Wiersz organizacji pokazuje **Nieautoryzowana**. Klika **Autoryzuj ten serwer**
+Każdy token, jaki dostaje serwer, należy do zalogowanej osoby i jest ograniczony do jednego repozytorium oraz do jej roli w nim, więc nigdy nie sięga dalej, niż mogłaby na GitHubie. Dziennik audytu GitHuba pokazuje tę osobę, działającą przez aplikację.
 
-Wiersz pokazuje wtedy **Autoryzowana**. Własna aplikacja nie potrzebuje niczego
-z tego: każda jej instalacja należy do Twojego serwera.
+Aby Control Center nie mógł sięgać do organizacji, właściciel organizacji usuwa instalację albo zawęża jej repozytoria na GitHubie. Usunięcie osoby z organizacji też kończy jej dostęp.
 
 ## Albo zarejestruj ją ręcznie
 
@@ -155,20 +146,15 @@ potomny; trzymaj je w pliku `.env` (w Dockerze zamontuj go pod `/app/bin/.env`).
 Wypełnianie następuje **raz na pole**, więc edycji w Ustawieniach nie cofnie
 następny restart.
 
-## Daj jednemu obszarowi roboczemu inną aplikację
+## Daj jednemu obszarowi roboczemu własną aplikację
 
-Obszar roboczy może zamiast aplikacji serwera używać własnej. Administrator
-obszaru roboczego przechodzi do **Ustawienia → Obszar roboczy → Ogólne**, na
-karcie **Tożsamość GitHub** wybiera **Użyj innej GitHub App** i wpisuje
-identyfikator, klucz prywatny, identyfikator klienta i sekret klienta tej
-aplikacji. Członkowie logują się wtedy do tej aplikacji dla tego obszaru
-roboczego. Obszar roboczy na własnej aplikacji nigdy nie przechodzi na aplikację
-serwera ani na Connect: dopóki jego pola nie są kompletne, jego praca z GitHubem
-jest odrzucana. Działa to niezależnie od tego, jak serwer loguje ludzi, także przy Connect.
+Obszar roboczy może działać na własnej aplikacji zamiast aplikacji serwera:
 
-Karta **Aplikacje dostawców** na tej samej stronie robi to samo dla Kalendarza Google,
-Linear i wyszukiwania GIF. Zobacz [Daj jednemu obszarowi roboczemu własną aplikację Linear](/pl-PL/podrecznik/poradniki/integracja-linear/#daj-jednemu-obszarowi-roboczemu-własną-aplikację-linear)
-oraz [Daj jednemu obszarowi roboczemu własnego klienta Google](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/#daj-jednemu-obszarowi-roboczemu-własnego-klienta-google).
+1. Administrator obszaru roboczego przechodzi do **Ustawienia → Obszar roboczy → Integracje**
+2. Na karcie **Control Center Connect** wybiera **Użyj własnych aplikacji** i klika **Zastosuj**. Wszyscy w obszarze roboczym logują się ponownie przez aplikacje obszaru roboczego
+3. Karta **Aplikacja GitHub** w sekcji Hosting kodu zawiera teraz pola aplikacji: **Identyfikator aplikacji** i **Klucz prywatny** w sekcji **Działa w imieniu tego obszaru roboczego**, **Identyfikator klienta** i **Sekret klienta** w sekcji **Logowanie ludzi**. Po wypełnieniu kliknij **Test**
+
+Członkowie logują się wtedy do tej aplikacji dla tego obszaru roboczego. Obszar roboczy na własnych aplikacjach nigdy nie przechodzi na aplikację serwera ani na Connect: dopóki jego pola nie są kompletne, jego praca z GitHubem jest odrzucana. Ten sam wybór obejmuje Kalendarz Google, Linear i wyszukiwanie GIF, każdy z własnymi polami obok dostawcy na tej samej stronie. Zobacz [Daj jednemu obszarowi roboczemu własną aplikację Linear](/pl-PL/podrecznik/poradniki/integracja-linear/#daj-jednemu-obszarowi-roboczemu-własną-aplikację-linear) oraz [Daj jednemu obszarowi roboczemu własnego klienta Google](/pl-PL/podrecznik/poradniki/podlaczanie-kalendarza/#daj-jednemu-obszarowi-roboczemu-własnego-klienta-google). Pozostałe wybory na tej karcie i to, co każdy z nich robi, opisuje [Wybór dla każdego obszaru roboczego](/pl-PL/podrecznik/dokumentacja-referencyjna/connect/#wybór-dla-każdego-obszaru-roboczego).
 
 ## Rozwiązywanie problemów
 
@@ -185,7 +171,7 @@ nowa w Ustawieniach.
 ### Test mówi, że poświadczenia działają, ale aplikacja nie jest nigdzie zainstalowana
 
 Rejestracja i instalacja to osobne kroki. Otwórz stronę instalacji aplikacji
-albo użyj **Zainstaluj aplikację GitHub** w Obszar roboczy → Ogólne.
+albo użyj **Zainstaluj aplikację GitHub** w Obszar roboczy → Integracje.
 
 ### Test mówi, że nie udało się odczytać klucza prywatnego
 

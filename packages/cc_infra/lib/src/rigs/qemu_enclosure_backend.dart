@@ -325,8 +325,7 @@ class RigRuntimeOwner {
 
   /// Reads the marker in [directory], or null when there is none.
   ///
-  /// An absent or unparseable marker reads as unowned — the same state every
-  /// directory written before this file existed is in.
+  /// An absent or unparseable marker reads as unowned.
   static RigRuntimeOwner? readSync(String directory) {
     final file = File(p.join(directory, fileName));
     if (!file.existsSync()) {
@@ -1488,8 +1487,8 @@ class QemuEnclosureBackend {
       return false;
     }
 
-    // An unmarked directory predates the marker (or its writer died before the
-    // first flush): there is no pid to verify, so there is nothing to kill and
+    // An unmarked directory (its writer died before the first flush, or it
+    // was never a rig's): there is no pid to verify, so there is nothing to kill and
     // removing it is all that is available. A LIVE rig can no longer land
     // here — `launch` refuses to boot without its marker, precisely so that
     // "unmarked" means "not ours and not anybody's".

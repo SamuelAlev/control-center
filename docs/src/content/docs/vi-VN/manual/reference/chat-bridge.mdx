@@ -2,7 +2,7 @@
 title: Cầu chat
 description: Nhà cung cấp, lệnh, thông tin xác thực, năng lực, thao tác RPC và lưu trữ của cầu nối chat.
 slug: vi-VN/so-tay/tham-chieu/cau-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Nhà cung cấp
@@ -150,7 +150,7 @@ Thẻ mở ra khi một lượt nhắc được chấp nhận, trước khi clon
 | Đã chấp nhận lượt nhắc      | `Working on it…`                                               |
 | Bước `repo`                 | `Cloning <repo>…`                                              |
 | Bước `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Bước `script`               | `Running the setup script for <repo>…`                         |
+| Bước `provisionTasks`       | `Running worktree tasks for <repo>…`                           |
 | Bước `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, chưa có bước nào | `Preparing the workspace…`                                |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Nó tồn tại vì việc liên kết diễn ra ở phía _bên kia_: thành vi
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Thông tin xác thực kết nối    | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                    |
 | Thiết lập có hướng dẫn còn dang dở | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                         |
-| Các tệp Slack cũ              | `<dataDir>/<workspaceId>/slack_credentials.json` và `slack_app_setup.json`, được đọc một lần và migration tại chỗ |
 
 Thông tin xác thực nằm bên cạnh cơ sở dữ liệu của không gian làm việc chứ không nằm trong đó: xóa một không gian làm việc là mang theo cả token chat của nó, còn `workspace.export` hay một bản sao lưu chỉ sao chép `workspace.db` — nên một không gian làm việc được chuyển cho người khác không mang theo token bot còn sống. Việc ghi là nguyên tử (tệp tạm cộng đổi tên) và được siết lại chỉ cho chủ sở hữu.
 

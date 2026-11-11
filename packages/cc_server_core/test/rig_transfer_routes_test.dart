@@ -15,6 +15,7 @@ import 'package:cc_persistence/cc_persistence.dart' show PairedDevicesTableData;
 import 'package:cc_persistence/database/daos/paired_device_dao.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
+import 'package:cc_server_core/src/catalog/rig_access.dart' show RigLaneAccess;
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
 import 'package:test/test.dart';
 
@@ -30,6 +31,7 @@ void main() {
 
     late LocalRpcServer server;
     late _RecordingRigPort rigs;
+    late _LaneAccess lanes;
     late RemoteRpcClient remote;
     late HttpClient publicClient;
     late Directory dataDir;
@@ -82,6 +84,7 @@ void main() {
       dataDir = await Directory.systemTemp.createTemp('rig-transfer-routes-');
       addTearDown(() => dataDir.delete(recursive: true));
       rigs = _RecordingRigPort();
+      lanes = _LaneAccess();
       publicClient = HttpClient();
       addTearDown(() => publicClient.close(force: true));
       microphoneBytes = Uint8List(0);
@@ -98,6 +101,7 @@ void main() {
         workspaceResolver: (_) async => const [],
         workspaceExists: (id) async => id == workspaceId,
         rigTransfer: rigs,
+        rigAccess: lanes,
         rigStream:
             ({
               required String workspaceId,
@@ -534,6 +538,92 @@ void main() {
       expect(microphoneSession, isEmpty);
     });
 
+    test('a viewer who may not drive sees the rig but sends it '
+        'nothing', () async {
+      lanes.drivers.clear();
+
+      final clipboard = await get(url('/rig/clipboard/$rigId'));
+      await clipboard.body.drain<void>();
+      final audio = await get(audioUrl());
+      await audio.body.drain<void>();
+      expect(clipboard.statusCode, HttpStatus.ok);
+      expect(audio.statusCode, HttpStatus.ok);
+
+      final write = await post(url('/rig/clipboard/$rigId'), {'text': 'hi'});
+      await write.body.drain<void>();
+      final drop = await post(url('/rig/files/$rigId'), {'files': []});
+      await drop.body.drain<void>();
+      final microphone = await postBytes(microphoneUrl(), Uint8List(0));
+      await microphone.body.drain<void>();
+      expect(write.statusCode, HttpStatus.forbidden);
+      expect(drop.statusCode, HttpStatus.forbidden);
+      expect(microphone.statusCode, HttpStatus.forbidden);
+      expect(rigs.written, isNull);
+      expect(rigs.dropped, isNull);
+      expect(microphoneSession, isEmpty);
+      expect(lanes.asked, contains((rigId, 'user-a', 'drive')));
+    });
+
+    test('on a rig carrying somebody else\'s credentials the guest\'s '
+        'clipboard and files are the holder\'s alone; sound stays with '
+        'every viewer', () async {
+      lanes
+        ..readers.clear()
+        ..drivers.clear();
+
+      for (final uri in [
+        url('/rig/clipboard/$rigId'),
+        url('/rig/files/$rigId', extra: {'p': 'L2V0Yy9ob3N0cw'}),
+      ]) {
+        final response = await get(uri);
+        await response.body.drain<void>();
+        expect(response.statusCode, HttpStatus.forbidden, reason: '$uri');
+      }
+      final audio = await get(audioUrl());
+      await audio.body.drain<void>();
+      expect(audio.statusCode, HttpStatus.ok);
+      expect(rigs.reads, 0);
+      expect(rigs.lastPath, isNull);
+      expect(lanes.asked, contains((rigId, 'user-a', 'read')));
+
+      // The holder reads both.
+      lanes.readers.add('user-a');
+      rigs.file = RigFileBytes(
+        name: 'hosts',
+        bytes: Uint8List.fromList([1]),
+        mediaType: 'text/plain',
+      );
+      final clipboard = await get(url('/rig/clipboard/$rigId'));
+      await clipboard.body.drain<void>();
+      final file = await get(
+        url('/rig/files/$rigId', extra: {'p': 'L2V0Yy9ob3N0cw'}),
+      );
+      await file.body.drain<void>();
+      expect(clipboard.statusCode, HttpStatus.ok);
+      expect(file.statusCode, HttpStatus.ok);
+      expect(rigs.lastPath, '/etc/hosts');
+    });
+
+    test('a member who may not see the rig opens none of its lanes', () async {
+      lanes
+        ..viewers.clear()
+        ..drivers.clear();
+
+      for (final uri in [
+        url('/rig/clipboard/$rigId'),
+        url('/rig/files/$rigId', extra: {'p': 'L2V0Yy9ob3N0cw'}),
+        audioUrl(),
+      ]) {
+        final response = await get(uri);
+        await response.body.drain<void>();
+        expect(response.statusCode, HttpStatus.forbidden, reason: '$uri');
+      }
+      expect(rigs.reads, 0);
+      expect(rigs.lastPath, isNull);
+      expect(lanes.asked, contains((rigId, 'user-a', 'read')));
+      expect(lanes.asked, contains((rigId, 'user-a', 'view')));
+    });
+
     test('a host with no enclosure support 404s through Noise', () async {
       final bare = LocalRpcServer(
         dispatcher: _StubDispatcher(),
@@ -641,6 +731,39 @@ class _RecordingRigPort implements RigPort {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
+/// Who may see, read and drive the rig: `user-a` all three, until a test
+/// says otherwise. Records each question as `(rigId, userId, right)`.
+class _LaneAccess implements RigLaneAccess {
+  final viewers = {'user-a'};
+  final readers = {'user-a'};
+  final drivers = {'user-a'};
+  final asked = <(String, String, String)>[];
+
+  @override
+  Future<bool> mayView(String workspaceId, String userId, String rigId) async {
+    asked.add((rigId, userId, 'view'));
+    return workspaceId == 'wsA' && viewers.contains(userId);
+  }
+
+  @override
+  Future<bool> mayReadContents(
+    String workspaceId,
+    String userId,
+    String rigId,
+  ) async {
+    asked.add((rigId, userId, 'read'));
+    return workspaceId == 'wsA' &&
+        viewers.contains(userId) &&
+        readers.contains(userId);
+  }
+
+  @override
+  Future<bool> mayDrive(String workspaceId, String userId, String rigId) async {
+    asked.add((rigId, userId, 'drive'));
+    return workspaceId == 'wsA' && drivers.contains(userId);
+  }
+}
+
 class _StubDispatcher implements RpcDispatcher {
   @override
   Future<Map<String, dynamic>> handleRequest(JsonRpcRequest request) async =>
@@ -667,6 +790,7 @@ class _StubDevicesDao implements PairedDeviceDao {
           status: 'active',
           pairedAt: DateTime.now(),
           lastSeenAt: DateTime.now(),
+          expiresAt: DateTime.now().add(const Duration(hours: 1)),
         )
       : null;
 

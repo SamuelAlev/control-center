@@ -2,14 +2,14 @@
 title: Konfigurasi pagar pengaman
 description: Tetapkan aturan izinkan, tanyakan dulu, dan tolak untuk tindakan agen, uji aturannya dengan “Bagaimana jika?”, dan sesuaikan otonomi per space.
 slug: id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Panduan ini menunjukkan cara mengonfigurasi pagar pengaman: aturan yang
 menentukan apakah tindakan agen dijalankan, meminta persetujuan lebih dulu,
 atau ditolak.
 
-Pagar pengaman mencakup tiga belas kelas efek yang dideklarasikan setiap alat
+Pagar pengaman mencakup empat belas kelas efek yang dideklarasikan setiap alat
 yang mengubah keadaan. Semuanya ditegakkan di sisi server pada titik alat itu
 dipanggil, tidak pernah lewat instruksi di dalam prompt.
 
@@ -23,7 +23,7 @@ dipanggil, tidak pernah lewat instruksi di dalam prompt.
    ujung baris itu (**Kembalikan ke diwariskan**) — keputusannya kembali ke
    cakupan yang lebih luas
 
-Setiap baris menampilkan keputusan efektif sebagai tag status dan badge yang
+Setiap baris menampilkan pengaturan aksi sebagai tag status dan badge yang
 menunjukkan asalnya: **Cakupan ini**, **Diwariskan**, atau **Default bawaan**.
 Matriks ini diselesaikan pada mode Agen (`chat`), sehingga **Preset mode** tidak
 pernah muncul di sini — gunakan “Bagaimana jika?” dengan mode hanya-baca yang
@@ -35,6 +35,18 @@ Titik pemeriksaan: tetapkan **Push ke remote** ke **Tolak** pada cakupan ruang
 kerja, lalu jalankan “Bagaimana jika?” di bawah untuk `git push origin main`.
 Hasilnya terbaca `deny` dengan sumber `workspace`.
 
+## Tinjau dan cabut persetujuan sementara
+
+Menjawab kartu persetujuan dengan **Setujui selama 8 jam** menulis persetujuan sementara: aturan yang membiarkan jenis aksi yang sama lolos tanpa bertanya sampai berakhir. Setiap persetujuan tercantum di halaman ini, di bawah aksi yang menjadi miliknya.
+
+1. Buka **Pengaturan → Ruang kerja → Izin agen** dan pilih cakupannya. Persetujuan ditulis untuk space tempat pertanyaan itu berasal, jadi pilih **Space** lalu space tersebut
+2. Di bawah baris aksi, baca entrinya: apa yang diizinkannya (misalnya push ke branch yang cocok dengan `feature/**`), kata **Persetujuan sementara**, siapa yang memberinya jika itu orang lain, dan kapan berakhir
+3. Untuk mengakhirinya sekarang, arahkan kursor ke entri dan tekan **Cabut**. Agen akan bertanya lagi mulai dari aksi berikutnya
+
+Baris tetap menampilkan pengaturan aksi itu sendiri, dan sebuah baris di bawahnya menghitung kasus yang tercantum di bawah ini yang tetap diizinkan. Aturan bersyarat yang ditulis oleh sebuah templat muncul dalam daftar yang sama, dan aturan perintah muncul di grup **Perintah** setelah aksi terakhir. Di cakupan ruang kerja, catatan di bawah ringkasan menghitung persetujuan sementara yang ditetapkan untuk space atau agen tunggal. Di space atau agen, catatan itu menghitung persetujuan ruang kerja, yang juga berlaku di sana.
+
+Persetujuan sementara hanya menghemat satu pertanyaan. Ia tidak pernah menimpa **Tolak**: jika Anda menetapkan aksi ke **Tolak** selagi persetujuan sementara untuk aksi itu masih berlaku, entri persetujuan itu menampilkan **tidak berlaku saat ditolak** sampai persetujuan itu berakhir atau Anda mencabutnya. Mengubah pengaturan aksi membiarkan persetujuan sementaranya tetap ada, dan mencabut salah satunya membiarkan pengaturan tetap ada.
+
 ## Memahami cara keputusan diselesaikan
 
 Penyelesaiannya adalah **spesifisitas lebih dulu, lalu keketatan**:
@@ -42,7 +54,7 @@ Penyelesaiannya adalah **spesifisitas lebih dulu, lalu keketatan**:
 1. Aturan **Space**, lalu **Agen**, lalu **Ruang kerja**. Cakupan pertama yang
    memiliki aturan yang cocoklah yang memutuskan dan penyelesaian berhenti
 2. Jika tidak ada aturan yang cocok, **preset mode** berlaku — mode hanya-baca
-   (rencana, tinjauan, orkestrasi) menolak sebelas dari tiga belas kelas
+   (rencana, tinjauan, orkestrasi) menolak dua belas dari empat belas kelas
 3. Jika mode tidak menentukan apa pun, **default bawaan** yang berlaku
 
 Dalam satu cakupan, aturan perintah diselesaikan berdasarkan prefiks yang cocok
@@ -72,7 +84,7 @@ daripada eksekusi yang ditolak.
 | Buat commit                  | Izinkan        |
 | Push ke remote               | Tanyakan dulu  |
 | Buka pull request            | Tanyakan dulu  |
-| Publikasikan review atau merge | Tanyakan dulu |
+| Perbarui atau gabungkan pull request | Tanyakan dulu |
 | Tulis ke pelacak eksternal   | Tanyakan dulu  |
 | Akses jaringan               | Izinkan        |
 | Baca secret                  | Izinkan        |
@@ -80,6 +92,7 @@ daripada eksekusi yang ditolak.
 | Jalankan proses              | Izinkan        |
 | Ubah struktur ruang kerja    | Izinkan        |
 | Kendalikan enclosure (rig)   | Izinkan        |
+| Jalankan perintah di host    | Tanyakan dulu  |
 
 Taksonomi ini tertutup. Alat baru yang dirilis tanpa mendeklarasikan kelasnya
 akan gagal dalam uji ratchet di CI, sehingga tidak ada yang hadir dengan
@@ -91,15 +104,13 @@ Sebelum mengubah aturan, periksa bagaimana kebijakan saat ini sudah
 menyelesaikannya.
 
 1. Di halaman yang sama, gulir ke **Bagaimana jika?**
-2. Pilih **Aksi** (salah satu dari tiga belas kelas)
+2. Pilih **Aksi** (salah satu dari empat belas kelas)
 3. Secara opsional isi **Perintah** (misalnya `git push origin main`),
    **Agen**, **Ruang**, dan **Mode**
 4. Baca hasilnya: keputusan, alasannya, dan **Sumber:**
 
 “Bagaimana jika?” menjalankan resolver yang sama dengan yang dipakai jalur
-penegakan, terhadap aturan aktif Anda, sehingga jawabannya persis. Jika hasilnya
-mengejutkan Anda, ubah aturan di matriks di atas lalu jalankan “Bagaimana
-jika?” lagi.
+penegakan, terhadap aturan aktif Anda, sehingga jawabannya persis. Jika persetujuan sementara yang memutuskan, sumbernya berbunyi **Persetujuan sementara** diikuti cakupannya. Jika jawabannya mengejutkan Anda, ubah aturan di matriks di atas lalu jalankan “Bagaimana jika?” lagi.
 
 ## Tetapkan dial otonomi sebuah space
 

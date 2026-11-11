@@ -3,7 +3,7 @@ title: Arhitectură
 description: Cum este structurat Control Center cu un model de server pentru client subțire, Clean Architecture orientată pe funcționalități și modelul porturi și adaptoare.
 dateModified: 2026-09-19
 slug: ro-RO/manual/concepte/arhitectura
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Prezentare generală
@@ -60,7 +60,7 @@ Funcționalitatea **`guardrails`** își pune stratul de domeniu în `cc_domain/
 - Entități de memorie: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Obiecte-valoare partajate: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Porturi partajate: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Servicii de domeniu: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Servicii de domeniu: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + tipuri de evenimente (spațiu de lucru/agent, PR/revizuire, mesagerie, tichete, pipeline, orchestrare, memorie, calendar/întâlniri, identitate și apartenență, observabilitate)
 
 ## Identitate și multiplayer
@@ -132,7 +132,6 @@ Serverul deține acreditările care contează: tokenurile GitHub și de ticketin
 
 - Secrete în `flutter_secure_storage` (keychain macOS, credential manager Windows, libsecret Linux) — acreditarea de dispozitiv a clientului și cheile de asociere remote, nu tokenurile furnizorilor
 - `shared_preferences` doar pentru preferințe nesensibile (temă, font, aspect)
-- Secretele rămase de la furnizori din instalări mai vechi sunt predate serverului o singură dată de `features/auth/providers/credential_migration.dart`, apoi sunt șterse din keychainul clientului
 
 ## Aplicarea arhitecturii
 

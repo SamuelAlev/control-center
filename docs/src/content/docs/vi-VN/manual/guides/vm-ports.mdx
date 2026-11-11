@@ -2,7 +2,7 @@
 title: Chuyển tiếp cổng từ terminal
 description: Truy cập một máy chủ phát triển khởi chạy trong Terminal (VM) hoặc shell host — từ máy của bạn, từ Browser (VM), từ Android, trên mạng của bạn, hoặc dưới một tên miền dev với HTTPS.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/cong-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Một máy chủ bạn khởi chạy trong terminal của một cuộc hội thoại chỉ được công bố cho **space đó**. Bảng cổng nhận ra những cổng đang lắng nghe mà ứng dụng này đã khởi chạy ở đó, ánh xạ chúng, và cho bạn một địa chỉ cho mọi nơi bạn có thể muốn truy cập tới. Hai space có thể cùng lắng nghe trên `5173`; các ánh xạ của chúng không bao giờ trộn lẫn.
@@ -11,7 +11,7 @@ Không có gì ở đây mở toang cỗ máy: mọi đường đi đều do má
 
 ## Xem những gì đang lắng nghe
 
-1. Mở **Terminal (VM)** hoặc shell host của cuộc hội thoại (trong một space hoặc trên trang PR).
+1. Trong trình soạn thảo của cuộc hội thoại (trong một space hoặc trên trang PR), mở **Terminal** từ menu `+`: dưới **Máy** để mở shell trong VM của cuộc hội thoại, hoặc dưới **Công cụ** để mở terminal trên máy chủ. Chỉ chủ sở hữu máy chủ mới có thể mở shell host; terminal của những người khác đều chạy trong sandbox.
 2. Khởi chạy máy chủ của bạn — `pnpm dev`, `python -m http.server 8000`, bất cứ thứ gì.
 3. Trong vài giây, **biểu tượng phích cắm** ở góc trên bên phải của terminal
    sẽ có thêm một chấm. Hãy nhấp vào đó.
@@ -116,6 +116,10 @@ trong khi máy chủ của bạn khởi động lại — dòng đó hiển th�
 tới khi nó trở lại — còn các bản chuyển tiếp tự động biến mất khi cổng của chúng
 biến mất. Trên một shell host, bạn cũng có thể đặt một cổng cục bộ khác.
 
+Thay đổi các chuyển tiếp cần quyền ghi trên mọi kho lưu trữ mà space này công bố. Với quyền đọc, bạn vẫn thấy các cổng, và bảng hiển thị "Thay đổi các cổng này cần quyền ghi trên mọi kho lưu trữ trong không gian này." thay cho **Thêm cổng**. Xem [Ai có thể xem và ai có thể điều khiển](/vi-VN/so-tay/huong-dan-thuc-hanh/su-dung-rigs/#ai-có-thể-xem-và-ai-có-thể-điều-khiển).
+
+Một terminal mà ai đó mở cho riêng họ chỉ giữ các cổng của nó đối với họ: với bất kỳ ai khác, danh sách cổng và các thay đổi cổng của nó trả lời như thể phiên đó không tồn tại, giống hệt chính phiên đó. Terminal được chia sẻ trong một space tuân theo quy tắc space ở trên.
+
 ## Cách nó vẫn được giới hạn
 
 Các cổng được lập chỉ mục theo không gian làm việc và space. Bản đồ cổng của chính
@@ -126,9 +130,9 @@ nghe, và những tunnel ngược mà máy chủ giữ mở cho Browser (VM) và
 shell host không bao giờ quét toàn bộ cỗ máy. Không cổng lắng nghe nào từng được
 tạo bên trong một hệ thống khách mà máy chủ không đặt ở đó, và mọi thứ đều bị tháo
 dỡ cùng terminal hoặc rig. Thiết kế được giải thích trong
-[Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/#ports-without-holes);
+[Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/#cổng-mà-không-khoét-lỗ-hổng);
 còn các cổng dành riêng chính xác và quy tắc tên miền nằm trong
-[tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/#ports-and-dev-domains).
+[tham chiếu rigs](/vi-VN/so-tay/tham-chieu/rigs/#cổng-và-tên-miền-dev).
 
 ## Liên quan
 

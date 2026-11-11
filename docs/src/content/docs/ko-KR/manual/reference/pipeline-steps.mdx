@@ -2,7 +2,7 @@
 title: 파이프라인 단계
 description: 파이프라인 단계 종류, 단계 본문 키, 그 구성과 단계 결과를 다루는 레퍼런스입니다.
 slug: ko-KR/매뉴얼/레퍼런스/파이프라인-단계
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 파이프라인 단계에는 서로 독립적인 두 축이 있습니다:
@@ -61,7 +61,7 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 
 ### `pipeline.condition`
 
-라우터 본문으로, `config.extras`를 읽고 조건을 평가한 뒤 `StepResult.route(key)`를 반환합니다. 조건은 JavaScript 표현식이 **아닙니다**. 우선순위 순으로 세 가지 작성 형태를 지원합니다:
+라우터 본문으로, `config.extras`를 읽고 조건을 평가한 뒤 `StepResult.route(key)`를 반환합니다. 조건은 JavaScript 표현식이 **아닙니다**. 우선순위 순으로 두 가지 작성 형태를 지원합니다:
 
 - **프레디킷 트리**(`extras.predicate`) — `"true"` / `"false"`로 라우팅하는 불리언 트리입니다. 각 노드는 `type`이 있는 맵입니다:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — 나열된 경로 중 하나라도 디스크에 존재하면 true입니다. `negate`는 이를 뒤집고, `recursive`는 하위 디렉터리도 검색합니다(`.git`, `node_modules`, `build`, `.dart_tool`은 건너뜀). 상대 경로는 `state[baseKey]`(기본값 `repo_local_path`)를 기준으로 해석하며, 그렇지 않으면 실행별 워크스페이스 디렉터리를 기준으로 합니다.
@@ -69,19 +69,28 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — 불리언 그룹입니다.
   - `{"type": "not", "of": <predicate>}` — 부정입니다.
 - **스위치**(`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; 상태 값이 대소문자를 구분하지 않고 처음으로 포함하는 케이스로 라우팅하고, 없으면 `default`로 갑니다.
-- **비교**(레거시 최상위 `extras.left` / `extras.op` / `extras.right`) — `comparison` 프레디킷과 동등하며, 트리 이전에 작성된 템플릿을 위해 유지됩니다.
 
 노드에서 나가는 엣지는 반환된 키와 일치해야 하는 `routeKey`를 가집니다.
 
 ### `prReview.comment`
 
-GitHub PR 클라이언트를 통해 통합된 발견 사항을 PR 리뷰 댓글로 게시합니다.
+GitHub PR 클라이언트를 통해 통합된 발견 사항 또는 해당 단계 자체의 `extras.message`를 PR 리뷰 댓글로 게시합니다.
 
-| 상태 키                 | 설명                                        |
-| ----------------------- | ------------------------------------------- |
-| `repo_full_name`        | `owner/repo`(필수)                          |
-| `pr_number`             | PR 번호 — int 또는 숫자 문자열(필수)        |
-| `consolidated_findings` | 댓글 본문(필수)                             |
+| 키                      | 가져오는 곳     | 설명                                                  |
+| ----------------------- | --------------- | ----------------------------------------------------- |
+| `repo_full_name`        | 트리거 페이로드 | `owner/repo`(필수)                                    |
+| `pr_number`             | 트리거 페이로드 | PR 번호 — 양의 int 또는 숫자 문자열(필수)             |
+| `consolidated_findings` | 상태            | 단계에 `message`가 없을 때의 댓글 본문                 |
+
+풀 리퀘스트는 실행의 트리거 페이로드에서만 가져오며, 단계가 실행 중에 다시 쓸 수 있는 상태에서는 가져오지 않습니다. 게시되는 텍스트의 @멘션은 무력화되므로 댓글은 아무에게도 알리지 않습니다.
+
+`message`는 `{{key}}` 플레이스홀더를 다음과 같이 렌더링합니다:
+
+- `repo_full_name`, `repo_owner`, `repo_name`, `pr_number`는 해당 단계가 게시하는 풀 리퀘스트를 렌더링합니다.
+- `author`는 포지에서 유효한 사용자 이름인 경우에만 트리거 페이로드에서 그대로 렌더링됩니다. 그 밖의 경우 단계가 실패합니다.
+- `consolidated_findings`는 원시 마크다운으로 렌더링되며, 그 안의 @멘션은 무력화됩니다.
+- 그 밖의 모든 값은 리터럴 텍스트로 렌더링됩니다. 한 줄로 만들어지고, 마크다운 기호는 이스케이프되며, @멘션은 무력화됩니다.
+- 아무것도 해석되지 않는 플레이스홀더가 있으면 단계가 실패합니다.
 
 상태에 `comment_review_id`와 `commented_at`을 담아 `StepResult.terminal`을 반환합니다.
 

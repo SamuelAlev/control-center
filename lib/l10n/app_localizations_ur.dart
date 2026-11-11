@@ -152,7 +152,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get guardrailClassPrCreate => 'pull request کھولیں';
 
   @override
-  String get guardrailClassPrPublish => 'ریویو شائع کریں یا مرج کریں';
+  String get guardrailClassPrPublish =>
+      'ایک pull request کو اپ ڈیٹ یا merge کریں';
 
   @override
   String get guardrailClassVendorSyncWrite => 'بیرونی ٹریکر پر لکھیں';
@@ -2540,9 +2541,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get activityToggledMcpServer => 'MCP سرور ٹوگل کیا';
 
   @override
-  String get activityUpdatedMcpToken => 'MCP ٹوکن اپ ڈیٹ کیا';
-
-  @override
   String get activitySavedApiKey => 'API کلید محفوظ کی';
 
   @override
@@ -3165,9 +3163,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String deleteConfirmName(String name) {
     return '\"⁨$name⁩\" حذف کریں؟';
   }
-
-  @override
-  String get archiveConversation => 'گفتگو آرکائیو کریں';
 
   @override
   String get deleteFact => 'فیکٹ حذف کریں';
@@ -3854,9 +3849,6 @@ class AppLocalizationsUr extends AppLocalizations {
       'اپنے OS کی ظاہری شکل سے میل کھائیں یا مقرر موڈ منتخب کریں۔';
 
   @override
-  String get mcpAuthToken => 'MCP تصدیقی ٹوکن';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'منسلک سرور پر MCP سرور کنٹرول دستیاب نہیں۔';
 
@@ -4069,9 +4061,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'کوئی سسٹم فونٹ نہیں ملا۔';
-
-  @override
-  String get noTokenSet => 'کوئی ٹوکن سیٹ نہیں — رسائی غیر محدود ہے۔';
 
   @override
   String get noWorkingMemory => 'ابھی کوئی ورکنگ میموری نوٹس نہیں۔';
@@ -4556,30 +4545,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'سرور کا GitHub کریڈینشل ⁨$repos⁩ نہیں دیکھ سکتا۔ اگر ریپوزٹری کسی آرگنائزیشن کی ہے تو وہاں GitHub App انسٹال کریں یا رسائی والا ٹوکن منسلک کریں۔';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ریپوزٹریز تک رسائی نہیں',
-      one: 'ایک ریپوزٹری تک رسائی نہیں',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle => 'GitHub App انسٹالیشن معطل ہے';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return '⁨$repos⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں، یا رسائی والا ٹوکن منسلک کریں۔';
-  }
-
-  @override
   String get repoNoAccessBadge => 'رسائی نہیں';
 
   @override
@@ -4693,9 +4658,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get ruleLabel => 'قاعدہ';
-
-  @override
-  String get runCompleted => 'رن مکمل';
 
   @override
   String get running => 'چل رہا ہے';
@@ -4857,9 +4819,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get setLabel => 'سیٹ کریں';
-
-  @override
-  String get setToken => 'ٹوکن سیٹ کریں';
 
   @override
   String get settingsLabel => 'ترتیبات';
@@ -5056,9 +5015,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get skillOriginManual => 'دستی';
 
   @override
-  String get skillOriginRegistry => 'رجسٹری';
-
-  @override
   String get skillOriginRuntimeLocal => 'رن ٹائم مقامی';
 
   @override
@@ -5233,10 +5189,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get toggleTheme => 'تھیم ٹوگل کریں';
-
-  @override
-  String get tokenConfigured =>
-      'کنفیگر شدہ — کلائنٹس کو یہ ٹوکن پیش کرنا ہوگا۔';
 
   @override
   String get topic => 'موضوع';
@@ -8780,7 +8732,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'کون سے ٹول ایکشنز بغیر پوچھے چلیں۔ پڑھنا ہمیشہ اجازت یافتہ ہے؛ اعلیٰ ٹائرز پوچھتے ہیں۔';
+      'Control Center کے اپنے ٹولز کے کون سے اعمال، جو اس کے MCP اینڈ پوائنٹ کے ذریعے یا اس کے ایجنٹس کے ذریعے بلائے جاتے ہیں، بغیر پوچھے چلیں۔ پڑھنا ہمیشہ اجازت یافتہ ہے؛ اعلیٰ درجے پوچھتے ہیں۔ کسی رن کے اندر کے سرورز اس رن کی ایکشن پالیسی پر چلتے ہیں۔';
 
   @override
   String get mcpApprovalAlwaysAsk => 'ہمیشہ پوچھیں';
@@ -12255,20 +12207,8 @@ class AppLocalizationsUr extends AppLocalizations {
   String get settingsAbout => 'کے بارے میں';
 
   @override
-  String get settingsScopeBadgeYou => 'آپ';
-
-  @override
-  String get settingsScopeBadgeDevice => 'یہ ڈیوائس';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'ورک اسپیس';
-
-  @override
-  String get settingsScopeBadgeServer => 'سرور';
-
-  @override
   String get settingsProfileDescription =>
-      'اس ورک اسپیس میں آپ کا نام، ای میل اور git شناخت۔ ورک اسپیس بدلنا یہ تہہ بدلتا ہے؛ ہینڈل، سائن ان اور آلات اکاؤنٹ پر رہتے ہیں۔';
+      'اس ورک اسپیس میں آپ کا نام، ای میل اور git شناخت۔ ورک اسپیس بدلنے سے یہ پرت بدلتی ہے؛ آپ کا یوزر نیم، سائن ان اور ڈیوائسز آپ کے آپ ← پروفائل والے اکاؤنٹ پر رہتے ہیں۔';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12283,49 +12223,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'شناخت، پالیسی اور روایات جو اس ورک اسپیس کے سب شیئر کرتے ہیں۔';
-
-  @override
-  String get settingsAgentAttributionTitle => 'کمیٹ کی نسبت';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'منتخب کریں کہ ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیا جائے یا نہیں۔ ورک اسپیس ایڈمن اس انتخاب کو ورک اسپیس کے سبھی ارکان کے لیے بدل سکتے ہیں۔';
-
-  @override
-  String get settingsAgentCoauthorSection => 'ایجنٹ کو کریڈٹ';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیں';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'کمیٹس کے مصنف اور انہیں ثبت کرنے والے ہمیشہ آپ ہیں۔ فعال ہونے پر Control Center (@usectrl) کو شریک مصنف کے طور پر شامل کیا جاتا ہے۔ غیر فعال ہونے پر کمیٹس میں ایجنٹ کا کوئی کریڈٹ نہیں ہوتا۔';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'اس ورک اسپیس کی ترتیب آپ کے ذاتی انتخاب پر فوقیت رکھتی ہے۔ آپ کی ترجیح محفوظ ہے مگر یہاں لاگو نہیں ہوتی۔';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'نسبت کی ترتیبات لوڈ ہو رہی ہیں…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'منتخب کریں کہ ایجنٹ کمیٹس میں Control Center کو کریڈٹ دیا جائے یا نہیں۔ ورک اسپیس کا انتخاب ہر رکن کی ذاتی ترجیح پر فوقیت رکھتا ہے۔';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'ہر رکن کی ترجیح استعمال کریں';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Control Center کو ہمیشہ کریڈٹ دیں';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Control Center کو کبھی کریڈٹ نہ دیں';
+      'پالیسیاں اور روایات جو اس ورک اسپیس میں سب کے درمیان مشترک ہیں۔';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12690,9 +12588,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get checkingConnection => 'کنکشن چیک ہو رہا ہے…';
-
-  @override
-  String get fromEnvironment => 'ماحول سے';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13257,14 +13152,14 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'ان ورک اسپیسز کے ذریعے استعمال ہوتی ہے جو اس انسٹال کی GitHub ایپ وراثت میں لیتی ہیں۔ اپنی ایپ والی ورک اسپیس اسے ورک اسپیس ← عام میں ترتیب دیتی ہے۔';
+      'یہ ان ورک اسپیسز کے لیے ہے جو اس سرور کی سائن ان ایپس کی پیروی کرتے ہیں۔ اپنی ایپس والا ورک اسپیس اپنی App کو ورک اسپیس ← انٹیگریشنز میں ترتیب دیتا ہے۔';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request گفتگوئیں';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'وراثت والی ورک اسپیسز میں ڈویلپرز GitHub پر اس سرور سے کیسے بات کرتے ہیں۔ اپنے App والی ورک اسپیس کا بوٹ ورک اسپیس → عمومی میں ہے۔ ویب ہک یا عوامی URL کے بغیر — سرور پول کرتا ہے۔';
+      'ان ورک اسپیسز میں جو اس سرور کی پیروی کرتے ہیں، ڈیولپرز GitHub پر اس سرور سے کیسے بات کر سکتے ہیں۔ اپنی ایپس والے ورک اسپیس کا اپنا بوٹ ورک اسپیس ← انٹیگریشنز میں ہوتا ہے۔ کسی webhook یا عوامی URL کے بغیر کام کرتا ہے؛ سرور خود پولنگ کرتا ہے۔';
 
   @override
   String get providerAppBotLogin => 'بوٹ لاگ اِن';
@@ -13297,10 +13192,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get portLabel => 'پورٹ';
 
   @override
-  String get mcpNoTokenWarning =>
-      'ٹوکن کے بغیر جو اس پورٹ تک پہنچے وہ ہر ٹول کال کر سکتا ہے۔';
-
-  @override
   String get mcpBridgedToolsLabel => 'ٹولز';
 
   @override
@@ -13327,6 +13218,130 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'سب صاف کریں';
+
+  @override
+  String get guardrailFamilyCommands => 'کمانڈز';
+
+  @override
+  String get guardrailStandingApproval => 'جاری منظوری';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'اجازت دیں: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'پہلے پوچھیں: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'منع کریں: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'برانچز $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'راستے $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'ہوسٹس $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'کمانڈز $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'ٹولز $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'وہ کمانڈز جو $prefix سے شروع ہوں';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'ایک وقت میں زیادہ سے زیادہ $count';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'زیادہ سے زیادہ $amount سینٹ';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'اس قسم کا ہر ایکشن';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return '$name کی طرف سے';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return '$time پر ختم ہوگا';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'منسوخ ہونے تک';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'منسوخ کریں: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'منسوخ نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get guardrailEntryInactive => 'منع ہونے کے دوران نافذ نہیں';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'نیچے درج $count صورتوں میں اجازت ہے',
+      one: 'نیچے درج 1 صورت میں اجازت ہے',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'پوری ورک اسپیس کے لیے $count جاری منظوریاں یہاں بھی لاگو ہوتی ہیں۔',
+      one: 'پوری ورک اسپیس کے لیے 1 جاری منظوری یہاں بھی لاگو ہوتی ہے۔',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count جاری منظوریاں الگ الگ اسپیسز یا ایجنٹس کے لیے سیٹ ہیں۔ انہیں دیکھنے کے لیے اوپر اسپیس یا ایجنٹ منتخب کریں۔',
+      one:
+          'ایک جاری منظوری ایک ہی اسپیس یا ایجنٹ کے لیے سیٹ ہے۔ اسے دیکھنے کے لیے اوپر اسپیس یا ایجنٹ منتخب کریں۔',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'سینڈ باکسنگ';
@@ -14137,6 +14152,12 @@ class AppLocalizationsUr extends AppLocalizations {
       'اگلی بار ایجنٹ اس کاپی سے پروگرام چلانا چاہے تو دوبارہ پوچھا جائے گا۔';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'راستے تلاش کریں';
+
+  @override
+  String get sandboxExecGrantsNoMatch => 'آپ کی تلاش سے کوئی گرانٹ مماثل نہیں';
+
+  @override
   String get demoBadgeLabel => 'ڈیمو';
 
   @override
@@ -14492,11 +14513,11 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'یہ کنکشن ریلے سے سرور تک پہنچتا ہے، جو فائل ٹرانسفر نہیں لے جاتا۔ بیک اپ ڈاؤن لوڈ یا اپ لوڈ کے لیے سرور سے براہِ راست منسلک ہوں۔';
+      'اس کنکشن کے لیے فائل ٹرانسفر ابھی ترتیب نہیں دی گئی۔ بیک اپ ڈاؤن لوڈ یا اپ لوڈ کرنے کے لیے سرور سے دوبارہ منسلک ہوں۔';
 
   @override
   String get backupTransferForbidden =>
-      'سرور نے انکار کیا۔ ورک اسپیس ڈاؤن لوڈ کے لیے ایڈمن کردار، بحالی کے لیے مالک، اور پورے اسنیپ شاٹ کے لیے انسٹال کا آپریٹر چاہیے۔';
+      'سرور نے انکار کیا۔ ورک اسپیس ڈاؤن لوڈ کرنے کے لیے ایڈمن کردار درکار ہے۔ اسے بحال کرنے کے لیے سرور کا مالک درکار ہے، جو اس ورک اسپیس کا مالک بھی ہو۔ پورے اسنیپ شاٹ کے لیے سرور کا مالک درکار ہے۔';
 
   @override
   String get backupTransferUnsupported => 'اس سرور پر بیک اپ سطح نہیں۔';
@@ -14801,34 +14822,8 @@ class AppLocalizationsUr extends AppLocalizations {
       'کسی بھی ماحول سے کلپ بورڈ کا مواد پوچھے بغیر اس آلے پر رکھیں۔';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub شناخت';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'اس ورک اسپیس میں پس منظر کا GitHub کام کیسے تصدیق کرتا ہے: اس انسٹال کی ایپ سے، یا ورک اسپیس کی اپنی ایپ سے۔';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'اس تنصیب کا GitHub App استعمال کریں';
-
-  @override
-  String get workspaceGitHubModeApp => 'کوئی اور GitHub App استعمال کریں';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'سرور → فراہم کنندہ ایپس کا GitHub App استعمال کرتا ہے۔';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'اس ورک اسپیس کی بوٹ اور پولنگ شناخت۔ اراکین آپ میں اس App کے ذریعے سائن ان کرتے ہیں۔';
-
-  @override
   String get profileOverlayHint =>
       'یہ فیلڈز اس ورک اسپیس میں آپ ہیں۔ خالی فیلڈز اکاؤنٹ کا نام اور ای میل وراثت میں لیتی ہیں۔ ورک اسپیس بدلنا یہ تہہ بدلتا ہے۔';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'اس ورک اسپیس کے لیے سائن ان کریں یا ٹوکن چسپاں کریں۔';
 
   @override
   String get stackStartNextPart => 'اگلا حصہ شروع کریں';
@@ -15634,6 +15629,17 @@ class AppLocalizationsUr extends AppLocalizations {
       'سرور اس اکاؤنٹ کے لیے لاگ ان کمانڈ فراہم نہیں کر سکا۔';
 
   @override
+  String get claudeAccountSignedIn => 'سائن اِن ہو گیا';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'سائن اِن مکمل ہوتے ہی یہ ڈائیلاگ خودبخود بند ہو جائے گا۔';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'تمام اکاؤنٹس میں سائن اِن مکمل ہوتے ہی یہ ڈائیلاگ خودبخود بند ہو جائے گا۔';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Claude Code سائن ان کی میعاد ختم ہو گئی';
 
@@ -15787,7 +15793,7 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'اسے سرور پر سیٹ اپ کرنا ہوگا';
+  String get environmentInputNeeded => 'اسے سرور پر سیٹ اپ کرنا ہوگا';
 
   @override
   String get environmentKindApp => 'ایپ';
@@ -16386,21 +16392,40 @@ class AppLocalizationsUr extends AppLocalizations {
   String get environmentOpenPanel => 'ماحول کھولیں';
 
   @override
-  String get environmentNeedsSetup => 'سیٹ اپ درکار ہے';
+  String get environmentStatusBlocked => 'کارروائی درکار ہے';
+
+  @override
+  String get environmentStateInTerminal => 'ٹرمینل میں';
+
+  @override
+  String get environmentWaitingInTerminal => 'ٹرمینل میں آپ کا منتظر';
+
+  @override
+  String get environmentOpenTerminal => 'ٹرمینل کھولیں';
+
+  @override
+  String get environmentSignInNeeded => 'آپ کو سائن ان کرنا ہوگا';
+
+  @override
+  String get environmentDependencyNeeded => 'اس کی ایک ضروری چیز دستیاب نہیں';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'یہاں مکمل ہو گیا۔ ماحول اب بھی شروع ہو رہا ہے';
 
   @override
   String get environmentContinueInTerminal => 'ٹرمینل میں جاری رکھیں';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'ٹول کو پاس ورڈ یا سوال کے لیے ٹرمینل میں آپ کی ضرورت ہے۔ مکمل ہونے پر آغاز جاری رہے گا۔';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'یہ ٹرمینل اس لیے کھلا کیونکہ آغاز کو آپ کی ضرورت ہے';
 
   @override
-  String get environmentSetupTab => 'ماحول کا سیٹ اپ';
+  String get environmentStartTerminalTab => 'ماحول کا سیٹ اپ';
 
   @override
   String get environmentsNothingRunning => 'اس تعریف سے کچھ نہیں چل رہا۔';
@@ -16691,23 +16716,14 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'براؤزر میں $provider کے صفحے پر درخواست منظور کریں۔ یہ ونڈو خود پہچان لے گی کہ آپ فارغ ہو گئے۔';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return '$provider کا انتظار…';
-  }
-
-  @override
   String get signInFailedTitle => 'سائن اِن مکمل نہیں ہوا';
 
   @override
   String get signInReopenPage => 'سائن اِن صفحہ دوبارہ کھولیں';
 
   @override
-  String get signInCodePrompt => 'براؤزر میں دکھایا گیا کوڈ درج کریں';
+  String get signInCodePrompt =>
+      'اپنے براؤزر میں تصدیق کریں، پھر جو کوڈ دکھائے وہ درج کریں۔';
 
   @override
   String get signInCodeMalformed =>
@@ -16751,7 +16767,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'یہ سائن اِن اب درست نہیں رہا۔ اسے دوبارہ شروع کریں۔';
+      'یہ سائن ان اب کھلا نہیں ہے: یہ منسوخ، استعمال، یا تبدیل ہو چکا ہے۔ اسے دوبارہ شروع کریں۔';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16759,7 +16775,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'ابھی سائن اِن کی بہت زیادہ کوششیں ہو رہی ہیں۔ ایک منٹ انتظار کریں، پھر دوبارہ کوشش کریں۔';
+      'ابھی درخواستیں بہت زیادہ ہیں۔ کچھ دیر انتظار کریں، پھر دوبارہ کوشش کریں۔';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16790,10 +16806,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return '$provider ایپ وہاں انسٹال نہیں جہاں اس کی ضرورت ہے۔ اسے انسٹال کریں اور دوبارہ کوشش کریں۔';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'GitHub ایپ کی یہ انسٹالیشن پہلے ہی کسی اور Control Center سرور کے لیے مجاز ہے۔';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16852,7 +16864,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'GitHub ایپ کہاں انسٹال ہے، ان اکاؤنٹس میں سے جن سے اس ورک اسپیس کے ریپوزٹری تعلق رکھتے ہیں۔ کسی تنظیم کی انسٹالیشن صرف ان سرورز پر کام کرتی ہے جنہیں اس کے ایڈمنز مجاز کریں۔';
+      'GitHub ایپ کہاں انسٹال ہے، ان اکاؤنٹس میں سے جن سے اس ورک اسپیس کے ریپوزٹری تعلق رکھتے ہیں۔';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16862,21 +16874,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get githubInstallApp => 'GitHub ایپ انسٹال کریں';
 
   @override
-  String get githubAuthorizeServer => 'اس سرور کو مجاز کریں';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'یہ سرور اب $account پر موجود انسٹالیشن استعمال کر سکتا ہے۔';
-  }
-
-  @override
   String get githubInstallationSuspended => 'معطل';
-
-  @override
-  String get githubInstallationAuthorized => 'مجاز';
-
-  @override
-  String get githubInstallationNotAuthorized => 'غیر مجاز';
 
   @override
   String get linearAutomationTitle => 'Linear آٹومیشن';
@@ -16902,7 +16900,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'GitHub، Google اور Linear ایپس خود ترتیبات ← سرور ← سنگل سائن آن میں رجسٹر کریں، اور ہر ورک اسپیس کی اپنی Slack ایپ اس کی ترتیبات میں جوڑیں۔ \"میری GitHub ایپ بنائیں\" ایک قدم میں GitHub ترتیب دیتا ہے۔';
+      'GitHub، Google اور Linear ایپس خود ترتیبات ← سرور ← سنگل سائن آن میں رجسٹر کریں، اور ہر ورک اسپیس کی اپنی Slack ایپ ورک اسپیس ← انٹیگریشنز میں جوڑیں، جہاں ورک اسپیس اپنی ایپس یا Connect بھی منتخب کر سکتا ہے۔ «میری GitHub ایپ بنائیں» GitHub کو ایک مرحلے میں ترتیب دیتا ہے۔';
 
   @override
   String get connectModeCustom => 'اپنا Connect سرور استعمال کریں';
@@ -17037,7 +17035,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'اس سرور کو نئی کلید اور نئی انسٹال آئی ڈی ملتی ہے۔ Connect کے ذریعے کیے گئے تمام سائن اِن کام کرنا بند کر دیتے ہیں، اور سب کو دوبارہ سائن اِن کرنا ہوگا۔ آپ کی اپنی ایپس کے ذریعے سائن اِن متاثر نہیں ہوتے۔';
+      'اس سرور کو نئی کلید اور نئی انسٹال آئی ڈی ملتی ہے، اور پرانی آئی ڈی Connect پر ریٹائر ہو جاتی ہے: اس کے تحت جاری سائن ان، اور پرانی کلید وہاں کام کرنا بند کر دیتی ہے، اس لیے Connect کے ذریعے سائن ان کرنے والے سب کو دوبارہ سائن ان کرنا ہوگا۔ جو ٹوکن پہلے جاری ہو چکے ہیں وہ ختم ہونے تک چلتے رہیں گے۔ آپ کی اپنی ایپس کے ذریعے سائن ان متاثر نہیں ہوتے۔ اگر Connect تک رسائی نہ ہو تو کچھ نہیں بدلتا اور آپ دوبارہ کوشش کر سکتے ہیں۔';
 
   @override
   String get connectRotateKeyDone =>
@@ -17171,34 +17169,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'پرووائیڈر ایپس';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'یہ ورک اسپیس Google Calendar، Linear اور Klipy کی کون سی ایپس استعمال کرتا ہے۔ ڈیفالٹ طور پر یہ اس سرور کی ایپس یا Control Center Connect استعمال کرتا ہے۔ اپنی ایپ والا ورک اسپیس کبھی ان پر واپس نہیں جاتا۔';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'اس سرور کی ایپ استعمال کریں';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'سائن ان اور درخواستیں اس سرور کی ایپ، یا Control Center Connect، سے جاتی ہیں۔';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'اس ورک اسپیس کی اپنی ایپ استعمال کریں';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'صرف اس ورک اسپیس کی ایپ استعمال ہوتی ہے۔ جب تک یہ مکمل نہ ہو، یہ پرووائیڈر یہاں بند رہتا ہے اور کسی اور ایپ پر واپس نہیں جاتا۔';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'سرور کی ایپ';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'اپنی ایپ';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'ابھی باقی ہے: $fields۔ جب تک تمام فیلڈز مکمل نہ ہوں، یہ پرووائیڈر اس ورک اسپیس میں بند رہتا ہے۔ یہ اس سرور کی ایپ پر واپس نہیں جاتا۔';
   }
@@ -17215,22 +17185,113 @@ class AppLocalizationsUr extends AppLocalizations {
       'اس ورک اسپیس میں GIF سرچ اسی کلید سے ہوتی ہے۔';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return '$provider ایپ تبدیل کریں؟';
+  String get settingsWorkspaceIntegrations => 'انٹیگریشنز';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'اس ورک اسپیس میں کوڈ ہوسٹنگ، ٹکٹس، کیلنڈر، چیٹ اور GIF سرچ، اور وہ کن ایپس کے ذریعے سائن ان کرتے ہیں۔';
+
+  @override
+  String get workspaceConnectDescription =>
+      'یہ ورک اسپیس GitHub، Google Calendar، Linear، Slack اور GIF سرچ کے لیے کون سی ایپس استعمال کرتا ہے۔ جب تک کوئی ایڈمن کچھ اور منتخب نہ کرے، یہ اس سرور کی پیروی کرتا ہے۔';
+
+  @override
+  String get workspaceConnectModeInherit => 'اس سرور جیسا';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'یہ سرور Control Center کی ایپس استعمال کرتا ہے۔';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'یہ سرور $url پر موجود Connect سرور استعمال کرتا ہے۔';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'اس ورک اسپیس میں جو بھی اس سرور کی ایپ کے ذریعے $provider سے جڑا ہے، اسے ورک اسپیس کی ایپ کے ساتھ دوبارہ سائن ان کرنا ہوگا۔';
+  String get workspaceConnectInheritOwn => 'یہ سرور اپنی ایپس استعمال کرتا ہے۔';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'سرور کے مالک نے ابھی انتخاب نہیں کیا، اس لیے سرور کی اپنی ایپس لاگو ہوتی ہیں۔';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'صرف اس ورک اسپیس کی ایپس استعمال ہوتی ہیں۔ ہر ایک کو نیچے اس کے فراہم کنندہ کے ساتھ شامل کریں۔ جس فراہم کنندہ کی ایپ نہ ہو وہ یہاں بند ہے؛ اس سرور کی ایپس یا Connect اس کی جگہ استعمال نہیں ہوتے۔';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'صرف HTTPS۔ نجی یا مقامی نیٹ ورک کے پتے مسترد کیے جاتے ہیں۔';
+
+  @override
+  String get workspaceConnectLocked =>
+      'اس سرور کے ماحول میں CC_CONNECT_URL طے کرتا ہے کہ سائن ان کہاں جائیں گے، اس لیے یہ ورک اسپیس اپنا Connect منتخب نہیں کر سکتا۔ یہ اس سرور کی پیروی کر سکتا ہے یا اپنی ایپس استعمال کر سکتا ہے۔';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'اس ورک اسپیس کی سائن ان ایپس تبدیل کریں؟';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'ورک اسپیس میں سب کو نئی ایپس کے ذریعے GitHub، Linear اور Google Calendar میں دوبارہ سائن ان کرنا ہوگا۔ موجودہ ایپس کے ذریعے کیے گئے سائن ان یہاں کام کرنا بند کر دیں گے۔';
+
+  @override
+  String get workspaceConnectSwitchAction => 'ایپس تبدیل کریں';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'اوپر والے انتخاب کی پیروی کرتا ہے۔ کوئی فراہم کنندہ کبھی کسی دوسری ایپ پر واپس نہیں جاتا۔';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'ورک اسپیس کی ایپ';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'سرور کی ایپ';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub ایپ';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'اس ورک اسپیس کی اپنی App اس کے ریپوزٹریز کی طرف سے کام کرتی ہے اور ممبران کو سائن ان کرواتی ہے۔ یہ کبھی اس سرور کی App یا Connect پر واپس نہیں جاتی۔';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'یہ ورک اسپیس اس GitHub App کو استعمال کرتا ہے جو اس کی سائن ان ایپس فراہم کرتی ہیں۔ اسے ان اکاؤنٹس پر انسٹال کریں جن کے آپ کے ریپوزٹریز ہیں۔';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'اس ورک اسپیس کی طرف سے کام کرنا';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'App کا بوٹ اس ورک اسپیس کے ریپوزٹریز میں pull requests پر تبصرے کرتا، ان کا جائزہ لیتا اور ان کے لیے پولنگ کرتا ہے۔';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider ایپ';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'اس سے ورک اسپیس کی $provider اسناد حذف ہو جائیں گی۔ ورک اسپیس کی ایپ سے جڑے ہر فرد کو دوبارہ سائن ان کرنا ہوگا۔';
+  String workspaceOwnAppDescription(String provider) {
+    return 'اس ورک اسپیس میں $provider کے سائن ان اور درخواستیں صرف اسی ایپ کو استعمال کرتے ہیں۔';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'ایپ تبدیل کریں';
+  String get workspaceGifsTitle => 'GIFs';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'GIF سرچ اس ورک اسپیس کی Klipy کلید استعمال کرتی ہے۔';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'GIF سرچ اس سرور کی Klipy کلید استعمال کرتی ہے۔';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF سرچ Control Center Connect کے ذریعے چلتی ہے۔';
+
+  @override
+  String get workspaceGifsSourceOff => 'اس ورک اسپیس میں GIF سرچ بند ہے۔';
 
   @override
   String openOnForge(String forge) {
@@ -17248,7 +17309,7 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'ترتیبات ← ورک اسپیس ← پروفائل اور شناخت ← کوڈ ہوسٹنگ میں GitHub، GitLab یا Bitbucket منسلک کریں';
+      'ترتیبات ← آپ ← پروفائل میں GitHub، GitLab یا Bitbucket منسلک کریں';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17265,4 +17326,1140 @@ class AppLocalizationsUr extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'اس ریپوزٹری میں پل ریکویسٹ کھولنے کے لیے $forge منسلک کریں';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return '$account کے طور پر آپ کا $provider سائن اِن ختم ہو گیا ہے۔ دوبارہ سائن اِن کریں۔';
+  }
+
+  @override
+  String get connectionPaused =>
+      'موقوف: اس ورک اسپیس کی سائن اِن سروس بدل گئی ہے';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'ابھی $provider تک رسائی نہیں ہو پا رہی۔ دوبارہ کوشش کی جا رہی ہے۔';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'آپ کا سائن اِن محفوظ ہے اور سروس واپس آتے ہی دوبارہ کام کرے گا۔ ورک اسپیس کا کوئی ایڈمن انٹیگریشنز میں سائن اِن سیٹ اپ دیکھ سکتا ہے۔';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'سرور دوبارہ شروع ہو گیا۔ سائن اِن دوبارہ شروع کریں۔';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'اس ورک اسپیس کے لیے $provider سائن اِن سیٹ اپ نہیں ہے۔';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider سائن اِن غلط سیٹ اپ ہے: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'یہ ورک اسپیس اپنی ایپس استعمال کرتی ہے لیکن اس کے پاس $provider ایپ نہیں ہے۔';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'یہ بِلڈ Control Center Connect کی تصدیق نہیں کر سکتی، اس لیے $provider سائن اِن بند ہے۔';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'اس ورک اسپیس کی سائن اِن سروس نے اپنی شناخت بدل لی ہے۔ کسی ایڈمن کو اس کی تصدیق کرنی ہوگی۔';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'ابھی اس ورک اسپیس کی سائن اِن سروس تک رسائی نہیں ہو پا رہی۔';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'اس ورک اسپیس کی سائن اِن سروس کا پتہ موجود نہیں یا غلط ہے۔';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'سرور کے آپریٹر نے سائن اِن سروس مقرر کر دی ہے، اس لیے اس ورک اسپیس کا اپنا انتخاب لاگو نہیں ہوتا۔';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'اس ورک اسپیس کی سائن اِن سروس $provider فراہم نہیں کرتی۔';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'انٹیگریشنز کھولیں';
+
+  @override
+  String get signInOpenServerSettings => 'سائن اِن کی ترتیبات کھولیں';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'یہ $provider پر آپ کے نام سے چلتا ہے، اور آپ نے ٹوکن شامل نہیں کیا۔ ایک ٹوکن شامل کریں، پھر دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '$provider منقطع کریں؟';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return '$provider کی ریپوزٹریز پر کام کرنے کے لیے آپ کو اسے دوبارہ جوڑنا ہوگا۔';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'یہ $provider کو صرف اس ورک اسپیس میں منقطع کرتا ہے۔ دوسری ورک اسپیسز اپنا کنکشن رکھتی ہیں۔';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'یہ $provider کو ہر اس ورک اسپیس میں منقطع کرتا ہے جو یہ کنکشن شیئر کرتی ہے۔';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider اس ورک اسپیس سے منقطع ہو گیا';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider تمام ورک اسپیسز سے منقطع ہو گیا';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return '$owner پر GitHub App انسٹال کریں';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'جب تک وہاں ایپ انسٹال نہ ہو، آٹومیشن $repos تک نہیں پہنچ سکتی۔';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return '$repos کو GitHub App کی ریپوزٹریز میں شامل کریں';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'ایپ اس اکاؤنٹ پر انسٹال ہے لیکن ابھی یہ ریپوزٹریز نہیں دیکھ سکتی۔';
+
+  @override
+  String get repoAccessChooseRepos => 'ریپوزٹریز منتخب کریں';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App انسٹالیشن معطل ہے';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return '$repos کے لیے آٹومیشن اس وقت تک موقوف ہے جب تک اکاؤنٹ کا کوئی مالک GitHub پر انسٹالیشن دوبارہ شروع نہ کرے۔';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'آٹومیشن موقوف ہے';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'اس ورک اسپیس کی آٹومیشن کا ذمہ دار شخص اب $repos نہیں دیکھ سکتا، اس لیے وہاں ان کی طرف سے کچھ نہیں چلتا۔';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'اس ورک اسپیس کی آٹومیشن کا ذمہ دار شخص فورج میں سائن اِن نہیں ہے، اس لیے $repos کی آٹومیشن ان کے سائن اِن کرنے تک انتظار کرتی ہے۔';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return '$repos تک رسائی کی جانچ نہیں ہو سکی۔ دوبارہ کوشش کی جا رہی ہے۔';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'اسے ٹھیک کرنے کے لیے $admins سے کہیں۔';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'اسے ٹھیک کرنے کے لیے ورک اسپیس کے کسی ایڈمن سے کہیں۔';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'مزید $count ریپوزٹریز کی pull requests دیکھنے کے لیے $forge میں سائن اِن کریں',
+      one:
+          'مزید 1 ریپوزٹری کی pull requests دیکھنے کے لیے $forge میں سائن اِن کریں',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ریپوزٹریز چھپی ہوئی ہیں کیونکہ آپ کا $forge اکاؤنٹ انہیں نہیں دیکھ سکتا',
+      one:
+          '1 ریپوزٹری چھپی ہوئی ہے کیونکہ آپ کا $forge اکاؤنٹ اسے نہیں دیکھ سکتا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ریپوزٹریز چھپی ہوئی ہیں کیونکہ اس ورک اسپیس میں آپ کو ان تک رسائی نہیں',
+      one:
+          '1 ریپوزٹری چھپی ہوئی ہے کیونکہ اس ورک اسپیس میں آپ کو اس تک رسائی نہیں',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مزید $count ریپوزٹریز تک آپ کی رسائی جانچی جا رہی ہے…',
+      one: 'مزید 1 ریپوزٹری تک آپ کی رسائی جانچی جا رہی ہے…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'لنک ہو گیا، لیکن آٹومیشن ابھی ہر جگہ نہیں پہنچ سکتی';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'کسی اور تنظیم پر انسٹال کریں';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian اکاؤنٹ کی ای میل';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'اپنے Atlassian اکاؤنٹ کا ای میل پتہ درج کریں۔';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API ٹوکن';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket کے API ٹوکن انہیں بنانے والے Atlassian اکاؤنٹ کی ای میل کے ساتھ کام کرتے ہیں۔';
+
+  @override
+  String get automationTokensTitle => 'آٹومیشن ٹوکنز';
+
+  @override
+  String get automationTokensRepoHint =>
+      'GitLab اور Bitbucket پر پس منظر کا کام، جیسے پل ریکویسٹ کی اپ ڈیٹس، AI ریویو کے تبصرے اور ایسی مرج ریکویسٹس جو کسی نے نہیں مانگیں، ایک بوٹ کا رسائی ٹوکن استعمال کرتا ہے، کبھی کسی شخص کا نہیں۔ ریپوزٹری کا اپنا ٹوکن ورک اسپیس کے ٹوکن پر فوقیت رکھتا ہے۔';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'اس ورک اسپیس کی ہر اس GitLab یا Bitbucket ریپوزٹری کے لیے استعمال ہوتا ہے جس کا اپنا آٹومیشن ٹوکن نہیں۔ وہاں پس منظر کا کام اس ٹوکن کے بوٹ کے طور پر دکھایا جاتا ہے۔';
+
+  @override
+  String get automationTokenNone => 'کوئی ٹوکن نہیں۔ یہاں آٹومیشن موقوف ہے۔';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'ورک اسپیس کا ٹوکن استعمال کرتا ہے';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '$name کے طور پر کام کرتا ہے';
+  }
+
+  @override
+  String get automationTokenStored => 'رسائی ٹوکن شامل کر دیا گیا';
+
+  @override
+  String get automationTokenRejected =>
+      'پلیٹ فارم نے یہ ٹوکن مسترد کر دیا۔ اسے بدلیں۔';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge آٹومیشن ٹوکن';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'پروجیکٹ یا گروپ رسائی ٹوکن پیسٹ کریں۔ اسے read_api اور read_repository درکار ہیں؛ تبصروں، مرج ریکویسٹس اور پُش کے لیے api اور write_repository شامل کریں۔ GitLab اس کا کام ٹوکن کے بوٹ کے طور پر دکھاتا ہے۔';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'ریپوزٹری، پروجیکٹ یا ورک اسپیس کا رسائی ٹوکن پیسٹ کریں جس میں ریپوزٹری پڑھنے کی اجازت ہو، اور تبصروں اور پل ریکویسٹس کے لیے پل ریکویسٹ لکھنے کی اجازت بھی۔ آپ کا اپنا API ٹوکن یہاں نہیں بلکہ ترتیبات ← آپ ← پروفائل میں جاتا ہے۔';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'ٹوکن محفوظ ہو گیا، لیکن یہ $repos نہیں پڑھ سکتا۔ وہاں آٹومیشن موقوف رہے گی۔';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'آٹومیشن ٹوکن ہٹائیں؟';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'اس ٹوکن پر منحصر آٹومیشن اس وقت تک موقوف رہے گی جب تک کوئی دوسرا ٹوکن شامل نہ کیا جائے۔';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'اپنے ٹوکن کے بغیر ہر $forge ریپوزٹری';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'کوئی آٹومیشن ٹوکن $repos نہیں پڑھ سکتا، اس لیے وہاں پس منظر کا کام موقوف ہے۔';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'آپ کے شروع کردہ کام کی کمیٹس میں آپ کا نام ہوتا ہے۔ منتخب کریں کہ اور کن کو کریڈٹ ملے، اور فورجز آپ کی کمیٹس کو تصدیق شدہ دکھائیں یا نہیں۔';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'مصنفیت';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'آپ کا شروع کردہ کام';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'آپ مصنف اور کمیٹر ہیں، اس ای میل کے تحت جو آپ کے سائن ان کے لیے آپ کے فورج نے تصدیق کی ہو۔ اس میں ایجنٹس کے ساتھ چیٹس، آپ کی شروع کردہ پائپ لائنز، اور ایڈیٹر میں آپ کی کی گئی کمیٹس شامل ہیں۔';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'خودکار رنز';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'شیڈول یا webhook سے شروع ہونے والے رنز بوٹ کے طور پر کمیٹ ہوتے ہیں، اور کبھی سائن نہیں ہوتے۔';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'جب تک آپ کسی ورک اسپیس میں کسی فورج پر سائن ان نہیں کرتے، وہاں آپ کے رنز بوٹ کے طور پر کمیٹ ہوں گے۔';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Control Center کو شریک مصنف کے طور پر کریڈٹ دیں';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'آپ کی کمیٹس Control Center (@usectrl) کو شریک مصنف کے طور پر ظاہر کرتی ہیں، اور جن خودکار رنز کو آپ نے فعال کیا ہو وہ آپ کا نام ظاہر کرتے ہیں۔ بند ہونے پر دونوں میں سے کوئی سطر شامل نہیں ہوتی۔';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'اس ورک اسپیس کی ترتیب آپ کے ذاتی انتخاب پر فوقیت رکھتی ہے۔ آپ کی ترجیح محفوظ ہے مگر یہاں لاگو نہیں ہوتی۔';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'نسبت کی ترتیبات لوڈ ہو رہی ہیں…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'شریک مصنف کا کریڈٹ';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'کمیٹس میں شریک مصنف کی سطریں ہوں گی یا نہیں: ممبر کی اپنی کمیٹس پر Control Center، اور وہ ممبرز جنہوں نے اپنی کمیٹس پر خودکار رن فعال کیا ہو۔ یہاں کا انتخاب ہر ممبر کی اپنی ترجیح پر غالب آتا ہے۔';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'ہر رکن کی ترجیح استعمال کریں';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'ہمیشہ شریک مصنف کا کریڈٹ شامل کریں';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'کبھی شریک مصنف کا کریڈٹ شامل نہ کریں';
+
+  @override
+  String get settingsCommitSigningSection => 'تصدیق شدہ کمیٹس';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'سائننگ';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'سائن نہیں ہو رہا';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'یہ سرور آپ کی کمیٹس کو آپ کی اپنی کلید سے سائن کر سکتا ہے، تاکہ GitHub اور GitLab انہیں تصدیق شدہ دکھائیں۔ جب تک آپ کلید نہ بنائیں، کچھ بھی سائن نہیں ہوتا۔';
+
+  @override
+  String get settingsCommitSigningCreate => 'سائننگ کلید بنائیں';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'سائننگ کلید بن گئی۔ اسے اپنے فورج اکاؤنٹ میں شامل کریں۔';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'پبلک کلید';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'پبلک کلید کاپی ہو گئی';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'فنگر پرنٹ';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'بنائی گئی';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'اسے اپنے فورج اکاؤنٹ میں شامل کریں';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'کوئی کمیٹ اس وقت تک تصدیق شدہ دکھائی نہیں دیتی جب تک آپ ورک اسپیس میں اسی فورج پر بھی سائن ان نہ ہوں، تاکہ فورج آپ کی ای میل کی تصدیق کرے۔';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key۔ Key type کو Signing Key پر سیٹ کریں۔';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys۔ Usage type کو Signing پر سیٹ کریں۔';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Bitbucket پر کمیٹس سائن نہیں ہوتیں۔ یہ کلید اپنے Bitbucket اکاؤنٹ میں شامل نہ کریں: وہاں SSH کلید لاگ اِن کا کام بھی دیتی ہے۔';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'سپورٹ نہیں ہے';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'آپ کس پر اعتماد کر رہے ہیں';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'نجی کلید کبھی اس سرور سے باہر نہیں جاتی۔';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'جو بھی اس سرور کو کنٹرول کرتا ہے، جب تک کلید آپ کے فورج اکاؤنٹ پر ہے، وہ آپ کے نام سے کمیٹس سائن کر سکتا ہے۔';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'GitHub پر، جو کمیٹس پہلے سے تصدیق شدہ دکھائی جا چکی ہیں، کلید ہٹانے کے بعد بھی تصدیق شدہ رہتی ہیں۔';
+
+  @override
+  String get settingsCommitSigningDelete => 'کلید حذف کریں';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'اپنی سائننگ کلید حذف کریں؟';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'اب سے آپ کی کمیٹس سائن نہیں ہوں گی۔ کلید آپ کے فورج اکاؤنٹس پر اس وقت تک رہے گی جب تک آپ وہاں سے اسے ہٹا نہ دیں۔';
+
+  @override
+  String get settingsCommitSigningDeleted => 'سائننگ کلید حذف ہو گئی';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'آپ کی سائننگ کلید لوڈ نہیں ہو سکی: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'پروفائل';
+
+  @override
+  String get accountProfileDescription =>
+      'ہر ورک اسپیس میں آپ کون ہیں، اور آپ کے اپنے کوڈ ہوسٹنگ، ٹکٹنگ، کیلنڈر اور چیٹ اکاؤنٹس۔';
+
+  @override
+  String get accountSectionTitle => 'اکاؤنٹ';
+
+  @override
+  String get accountSectionDescription =>
+      'آپ کا یوزر نیم اور نام ہر ورک اسپیس میں آپ کے ساتھ جاتا ہے۔ کوئی ورک اسپیس مختلف نام یا ای میل دکھا سکتی ہے: اسے ورک اسپیس ← پروفائل اور شناخت میں سیٹ کریں۔';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'آپ کا پروفائل لوڈ نہیں ہو سکا: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'وہ نام جو لوگ آپ کے پیغامات اور ریویوز پر دیکھتے ہیں۔';
+
+  @override
+  String get accountDisplayNameRequired => 'ڈسپلے نام درج کریں۔';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'اسے تبدیل کیا جا سکتا ہے، مگر ہٹایا نہیں جا سکتا۔';
+
+  @override
+  String get accountAvatarLabel => 'تصویر';
+
+  @override
+  String get accountAvatarHint =>
+      'ایک مربع تصویر کا لنک، جو https:// سے شروع ہو۔';
+
+  @override
+  String get accountAvatarInvalid =>
+      'ایسا لنک استعمال کریں جو https:// سے شروع ہو۔';
+
+  @override
+  String get usernameLabel => 'یوزر نیم';
+
+  @override
+  String get usernameRule =>
+      '2 سے 32 چھوٹے انگریزی حروف، ہندسے، نقطے، ڈیش یا انڈرسکور۔ لوگ اسی سے آپ کا ذکر کرتے ہیں۔';
+
+  @override
+  String get usernameAvailable => 'دستیاب ہے۔';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'دستیاب ہے۔ اسے $username کے طور پر محفوظ کیا جائے گا۔';
+  }
+
+  @override
+  String get usernameInvalid =>
+      '2 سے 32 چھوٹے انگریزی حروف، ہندسے، “.”، “_” یا “-” استعمال کریں، اور نام کا آغاز اور اختتام حرف یا ہندسے سے ہو۔';
+
+  @override
+  String get usernameReserved => 'یہ یوزر نیم محفوظ ہے۔';
+
+  @override
+  String get usernameTaken => 'یہ یوزر نیم پہلے سے لیا جا چکا ہے۔';
+
+  @override
+  String get usernameCheckFailed =>
+      'یہ نام ابھی چیک نہیں ہو سکا۔ آپ پھر بھی محفوظ کر سکتے ہیں؛ فیصلہ سرور کرے گا۔';
+
+  @override
+  String get linkedAccountsTitle => 'جڑے ہوئے اکاؤنٹس';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'شناخت فراہم کنندہ';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'سائن ان درکار ہے';
+
+  @override
+  String get linkedAccountStatusPaused => 'موقوف';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'رسائی سے باہر';
+
+  @override
+  String get ssoIdentityDescription =>
+      'وہ شناخت فراہم کنندہ جس کے ذریعے آپ کا اکاؤنٹ سائن اِن ہوتا ہے۔ اس سرور کو چلانے والا اسے منظم کرتا ہے۔';
+
+  @override
+  String get settingsAccountsDescription =>
+      'وہ اکاؤنٹس جو آپ اپنے لیے جوڑتے ہیں۔ Control Center ان کے ذریعے آپ کی طرف سے کام کرتا ہے، اور ان میں تبدیلی صرف آپ پر اثر ڈالتی ہے۔';
+
+  @override
+  String get accountReachServer =>
+      'اس سرور کی ہر ورک اسپیس میں استعمال ہوتا ہے۔';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'صرف $workspace میں استعمال ہوتا ہے۔';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub صرف $workspace میں استعمال ہوتا ہے، جس کی اپنی سائن اِن ایپس ہیں۔ GitLab اور Bitbucket اس سرور کی ہر ورک اسپیس میں استعمال ہوتے ہیں۔';
+  }
+
+  @override
+  String get yourAccountLabel => 'آپ کا اکاؤنٹ';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'آپ کا اکاؤنٹ: $status۔ آپ ← پروفائل کھولتا ہے۔';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'کوئی کوڈ ہوسٹنگ اکاؤنٹ منسلک نہیں';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return '$provider کا کوئی اکاؤنٹ منسلک نہیں';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'کوئی $provider اکاؤنٹ لنک نہیں';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'آپ ڈیمو میں عارضی مہمان ہیں، اس لیے تبدیل کرنے کے لیے کوئی اکاؤنٹ نہیں ہے: نہ یوزر نیم، نہ پروفائل، نہ جڑے ہوئے اکاؤنٹس۔';
+
+  @override
+  String get onboardingStepYou => 'آپ';
+
+  @override
+  String get onboardingYouTitle => 'اپنا یوزر نیم منتخب کریں';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'آپ کا یوزر نیم وہ ہے جس سے لوگ آپ کا ذکر کرتے ہیں اور آپ کے کام پر لیبل لگتا ہے۔ آپ اسے اور اپنا ڈسپلے نام بعد میں ترتیبات ← آپ ← پروفائل میں بدل سکتے ہیں۔';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'یہ $provider اکاؤنٹ اس سرور پر پہلے ہی کسی اور شخص سے جڑا ہوا ہے۔ کسی مختلف $provider اکاؤنٹ سے سائن ان کریں۔';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'ٹوکن $date کو ختم ہو جائے گا';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'ٹوکن $date کو ختم ہو گیا۔ کام جاری رکھنے کے لیے نیا ٹوکن چسپاں کریں۔';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'اس ٹوکن کی جانچ کے لیے $forge تک رسائی نہیں ہو سکی۔ کچھ دیر بعد دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge یہ ٹوکن قبول نہیں کرتا۔ دیکھیں کہ آپ نے پورا ٹوکن کاپی کیا ہے اور وہ منسوخ نہیں ہوا۔';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'یہ ذاتی ٹوکن نہیں ہے۔ اپنے $forge اکاؤنٹ کا ذاتی ایکسیس ٹوکن چسپاں کریں، پروجیکٹ، گروپ، ورک اسپیس یا بوٹ کا ٹوکن نہیں۔';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'اس ٹوکن میں $scope اسکوپ نہیں ہے، جو ریویو اور تبصروں کے لیے درکار ہے۔ ایسا ٹوکن بنائیں جس میں وہ ہو۔';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'یہ ٹوکن ختم ہو چکا ہے۔ نیا بنائیں اور یہاں چسپاں کریں۔';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'آپ کے شروع کردہ ایجنٹس ان ریپوزٹریز میں جہاں وہ کام کرتے ہیں، آپ کے نام سے سائن شدہ کمیٹس بنا سکتے ہیں۔ یہاں کلید حذف کرنے سے یہ فوراً رک جاتا ہے: جو رنز پہلے سے جاری ہیں وہ اس کے بعد کچھ بھی سائن نہیں کریں گے۔';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'کلید تبدیل نہیں ہوئی اور کچھ نہیں بدلا: $error دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'آپ ابھی کسی ورک اسپیس میں نہیں ہیں';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'ایک ورک اسپیس ایڈمن کو آپ کو دعوت دینی ہوگی، یا سرور کا مالک آپ کے لیے ورک اسپیس بنا سکتا ہے۔ آپ کے شامل ہوتے ہی یہ یہاں کھل جائے گا۔';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return '$name کے طور پر سائن ان';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'دوبارہ جانچیں';
+
+  @override
+  String get noWorkspaceSignOut => 'سائن آؤٹ';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'صرف سرور کا مالک ورک اسپیس بنا سکتا ہے۔ ان سے ایک بنانے کو کہیں، یا کسی ورک اسپیس ایڈمن سے آپ کو دعوت دینے کو کہیں۔';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo آپ کے کسی ورک اسپیس میں نہیں ہے، اور آپ ایسے ورک اسپیس میں نہیں ہیں جس میں اسے شامل کیا جا سکے۔ کسی ورک اسپیس ایڈمن سے آپ کو دعوت دینے کو کہیں۔';
+  }
+
+  @override
+  String get serverOwnerOnly => 'یہ صرف سرور کا مالک کر سکتا ہے';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'مکمل ایڈیٹر سرور کی اپنی مشین پر چلتا ہے، اس لیے اسے صرف سرور کا مالک کھول سکتا ہے۔ آپ پھر بھی ایکسپلورر سے فائلیں کھول اور ترمیم کر سکتے ہیں۔';
+
+  @override
+  String get terminalSandboxedBadge => 'سینڈ باکس شدہ';
+
+  @override
+  String get terminalSandboxedHint =>
+      'یہ اس ورک اسپیس کے فولڈرز کے اندر سینڈ باکس میں چلتا ہے، اس لیے یہاں کچھ ہوسٹ ٹولز اور پاتھس دستیاب نہیں ہیں۔';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'ہوسٹ شیل سرور پر بغیر سینڈ باکس کے چلتا ہے، اس لیے اسے صرف سرور کا مالک کھول سکتا ہے۔ عام ٹرمینل سینڈ باکس میں چلتا ہے۔';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'ٹرمینل صرف اس ورک اسپیس کے اپنے فولڈرز کے اندر کھل سکتا ہے۔';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'صرف سرور کا مالک ایسا انوائرنمنٹ محفوظ یا منظور کر سکتا ہے جو سرور ہوسٹ پر چلتا ہے۔ ورک اسپیس ایڈمن وہ انوائرنمنٹ استعمال کر سکتا ہے جو Rig میں چلتا ہو۔';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'ایپ کے اپنے ایڈیٹر میں کی گئی کمیٹس ریپوزٹری سے کوئی Git hooks نہیں چلاتیں، جیسے git commit --no-verify کے ساتھ ہوتا ہے: سرور Git اپنے ہوسٹ پر چلاتا ہے، ایسے درخت میں جسے ایجنٹس اور پل ریکوئسٹس بدل سکتے ہیں۔';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP کلائنٹس ہر درخواست کے ساتھ یہ ٹوکن Authorization: Bearer ہیڈر میں بھیجتے ہیں۔ سرور اسے پہلی بار شروع ہونے پر بناتا ہے؛ آپ اسے بدل سکتے ہیں مگر ہٹا نہیں سکتے۔';
+
+  @override
+  String get mcpShowToken => 'ٹوکن دکھائیں';
+
+  @override
+  String get mcpHideToken => 'ٹوکن چھپائیں';
+
+  @override
+  String get mcpRotateToken => 'ٹوکن بدلیں';
+
+  @override
+  String get mcpRotateTokenTitle => 'MCP ٹوکن بدلیں؟';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'سرور فوراً نیا ٹوکن استعمال کرنے لگے گا۔ موجودہ ٹوکن استعمال کرنے والا ہر MCP کلائنٹ اس وقت تک رد ہوگا جب تک آپ اسے نیا ٹوکن نہ دیں۔';
+
+  @override
+  String get mcpTokenRotated =>
+      'ٹوکن بدل دیا گیا۔ اپنے MCP کلائنٹس کو نیا ٹوکن دیں۔';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP اینڈ پوائنٹ صرف سرور کے مالک کے لیے ہے';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'اس کا ٹوکن اس سرور کے ہر ٹول کو کھولتا ہے، اس لیے اسے صرف سرور کا مالک دیکھ، بدل، یا اینڈ پوائنٹ شروع اور بند کر سکتا ہے۔';
+
+  @override
+  String get activityRotatedMcpToken => 'MCP ٹوکن بدلا گیا';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect پرانی کلید ختم نہیں کر سکا';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'کچھ نہیں بدلا۔ اگر آپ پھر بھی بدلیں تو اس سرور کو نئی کلید مل جائے گی، لیکن پرانی شناخت اس Connect پر اس وقت تک قابلِ استعمال رہے گی جب تک اس کے سائن ان ختم نہ ہوں۔';
+
+  @override
+  String get connectRotateKeyAnyway => 'پھر بھی بدلیں';
+
+  @override
+  String get settingsAuditLog => 'آڈٹ لاگ';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'سرور اور آپ کے منظم کردہ ہر ورک اسپیس میں کس نے کیا تبدیل کیا، کہاں، اور نتیجہ کیا رہا۔ سرور کے آپریشنز صرف آرگیومنٹ کے نام ریکارڈ کرتے ہیں، ان کی قدریں نہیں۔';
+
+  @override
+  String get auditLogNoAccessTitle => 'صرف ایڈمنز';
+
+  @override
+  String get auditLogNoAccess =>
+      'آڈٹ لاگ سرور اور ان ورک اسپیسز کا احاطہ کرتا ہے جنہیں آپ منظم کرتے ہیں۔ آپ کوئی ورک اسپیس منظم نہیں کرتے، اس لیے دکھانے کے لیے کچھ نہیں ہے۔';
+
+  @override
+  String get auditLogSourceServer => 'سرور';
+
+  @override
+  String get auditLogSourceWorkspace => 'ورک اسپیس';
+
+  @override
+  String get auditLogAddFilter => 'فلٹر';
+
+  @override
+  String get auditLogFilterOptionsHint => 'فلٹر…';
+
+  @override
+  String get auditLogFilterActor => 'کرنے والا';
+
+  @override
+  String get auditLogFilterSource => 'ورک اسپیس';
+
+  @override
+  String get auditLogFilterOutcome => 'نتیجہ';
+
+  @override
+  String get auditLogFilterTime => 'وقت';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'کامیاب';
+
+  @override
+  String get auditLogOutcomeDenied => 'مسترد';
+
+  @override
+  String get auditLogOutcomeFailed => 'ناکام';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'یا اس کے بعد';
+
+  @override
+  String get auditLogTimeAfter => 'کے بعد';
+
+  @override
+  String get auditLogTimeBefore => 'سے پہلے';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'یا اس سے پہلے';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'وقت $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 گھنٹہ پہلے';
+
+  @override
+  String get auditLogTimePresetDay => '24 گھنٹے پہلے';
+
+  @override
+  String get auditLogTimePresetWeek => '7 دن پہلے';
+
+  @override
+  String get auditLogTimePresetMonth => '30 دن پہلے';
+
+  @override
+  String get auditLogTimeExact => 'درست وقت';
+
+  @override
+  String get auditLogTimeInvalid =>
+      'YYYY-MM-DD استعمال کریں، اختیاری طور پر HH:MM کے ساتھ';
+
+  @override
+  String get auditLogTimeAdd => 'شامل کریں';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo اب ایک مختلف ریپوزٹری کی طرف اشارہ کرتی ہے';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'یہ پاتھ اب $forge پر ایک مختلف ریپوزٹری کی طرف اشارہ کرتا ہے۔ استعمال جاری رکھنے کے لیے اسے دوبارہ لنک کریں۔';
+  }
+
+  @override
+  String get repoRelink => 'دوبارہ لنک کریں';
+
+  @override
+  String repoRelinked(String repo) {
+    return '$repo دوبارہ لنک ہو گیا۔';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'یہ پاتھ اب ایک مختلف ریپوزٹری کی طرف اشارہ کرتا ہے۔ استعمال سے پہلے ایک ورک اسپیس ایڈمن کو اسے دوبارہ لنک کرنا ہوگا۔';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'آپ کا $forge اکاؤنٹ اس ریپوزٹری کو نہیں پڑھ سکتا۔';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'آپ کی $forge تک رسائی کی تصدیق نہیں ہو سکی۔ دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'آپ کا فورج اکاؤنٹ اس ریپوزٹری کو نہیں پڑھ سکتا۔';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'آپ کی فورج تک رسائی کی تصدیق نہیں ہو سکی۔ دوبارہ کوشش کریں۔';
+
+  @override
+  String get repoPathHostPath =>
+      'صرف سرور کا مالک اس ورک اسپیس کے اسٹوریج سے باہر کا فولڈر لنک کر سکتا ہے۔';
+
+  @override
+  String get repoPathMissing => 'سرور پر اس پاتھ پر کچھ موجود نہیں ہے۔';
+
+  @override
+  String get repoPathDataDir =>
+      'ریپوزٹری سرور کے ڈیٹا فولڈر کے اندر کی طرف اشارہ نہیں کر سکتی۔';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'ریپوزٹری خود ورک اسپیس کا فولڈر نہیں ہو سکتی۔';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'اس فولڈر کا اوریجن ایک مختلف ریپوزٹری ہے۔';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'محفوظ ہو گیا۔ اس ریپوزٹری کو کھولنے سے پہلے انہیں $forge پر سائن ان کرنا ہوگا۔';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'محفوظ ہو گیا۔ ان کا $forge اکاؤنٹ ابھی اس ریپوزٹری کو نہیں پڑھ سکتا، اس لیے یہ ان سے چھپی رہے گی۔';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'محفوظ ہو گیا۔ ابھی ان کی $forge تک رسائی کی تصدیق نہیں ہو سکی۔';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo آپ کے کسی ورک اسپیس میں لنک نہیں ہے۔ سرور کے مالک سے اسے شامل کرنے کو کہیں۔';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'سرور کا مالک سرور کے فولڈرز سے ریپوزٹریز شامل کرتا ہے۔';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'یہ پتہ صرف آپ نے درج کیا ہے۔ جب تک سرور کا مالک اس کی تصدیق نہ کرے، سنگل سائن آن اس سے میچ نہیں کرے گا۔';
+
+  @override
+  String get settingsServerPeople => 'لوگ';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'اس سرور پر اکاؤنٹ رکھنے والے تمام لوگ، اور یہ کہ ان کی ای میل کی تصدیق ہوئی ہے یا نہیں۔';
+
+  @override
+  String get serverPeopleLabel => 'اکاؤنٹس';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'صرف سرور کا مالک سب کے اکاؤنٹس دیکھ سکتا ہے اور ای میل پتے کی تصدیق کر سکتا ہے۔';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'ای میل کی تصدیق نہیں ہوئی';
+
+  @override
+  String get serverPeopleConfirmEmail => 'ای میل کی تصدیق کریں';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'کیا تصدیق کریں کہ $email $name کا ہے؟ سنگل سائن آن اس پتے کو ان کے اکاؤنٹ سے میچ کرے گا۔';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '$email کی تصدیق ہو گئی۔';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'ایجنٹس کو اس سرور پر سینڈ باکس چاہیے';
+
+  @override
+  String get runSandboxUnavailable =>
+      'اس سرور پر سینڈ باکس نہیں ہے، اس لیے یہاں صرف اس کا مالک ایجنٹس چلا سکتا ہے۔ مالک سینڈ باکس انسٹال کر سکتا ہے یا سب کے لیے سینڈ باکسنگ بند کر سکتا ہے۔';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'یہ فولڈر ورک اسپیس کے اسٹوریج سے باہر ہے۔ تصدیق کریں کہ یہ سرور اسے استعمال کر سکتا ہے۔';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'یہ فولڈر ورک اسپیس کے اسٹوریج سے باہر ہے۔ صرف سرور کا مالک اس کی تصدیق کر سکتا ہے۔';
+
+  @override
+  String get repoPathIssueMissing =>
+      'سرور پر اس پاتھ پر اب کچھ موجود نہیں ہے۔ اس ریپوزٹری کو ہٹائیں اور اس کے موجودہ فولڈر سے دوبارہ شامل کریں۔';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'یہ فولڈر ریپوزٹری کے طور پر استعمال نہیں ہو سکتا۔ اسے ہٹائیں اور ریپوزٹری کو کسی دوسرے فولڈر سے شامل کریں۔';
+
+  @override
+  String get repoPathConfirm => 'تصدیق کریں';
+
+  @override
+  String get repoPathConfirmAll => 'سب کی تصدیق کریں';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count فولڈرز ورک اسپیس کے اسٹوریج سے باہر ہیں',
+      one: '1 فولڈر ورک اسپیس کے اسٹوریج سے باہر ہے',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'تصدیق کریں کہ یہ سرور انہیں استعمال کر سکتا ہے۔ ہر ریپوزٹری آپ کی رسائی کے ساتھ دوبارہ جانچی جائے گی۔';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'اس مشین کی اپنی ٹول ترتیبات میں ملنے والے سرورز صرف ان رنز میں دستیاب ہیں جو آپ شروع کریں یا جن کے آپ ذمہ دار ہوں۔ دوسروں کے رنز انہیں کبھی نہیں دیکھتے، اور انہیں Control Center کے MCP اینڈ پوائنٹ کے ذریعے پیش نہیں کیا جاتا۔';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'اس ریپوزٹری کا کوڈ دیکھنے کے لیے $provider پر سائن ان کریں۔';
+  }
+
+  @override
+  String get repoCodeSignIn => 'سائن ان';
+
+  @override
+  String get ideContentSearchFailed => 'فائلوں میں تلاش نہیں ہو سکی';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'یہ فائل اس ورک ٹری میں دستیاب نہیں ہے۔';
+
+  @override
+  String get ideChangesLoadFailed => 'تبدیلیاں لوڈ نہیں ہو سکیں';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'یہ پاتھ اب $forge پر ایک مختلف ریپوزٹری کی طرف اشارہ کرتا ہے۔ استعمال سے پہلے ایک ورک اسپیس ایڈمن کو اسے دوبارہ لنک کرنا ہوگا۔';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'صرف سرور کا مالک بیک اپ بحال کر سکتا ہے۔ آپ پھر بھی انہیں ڈاؤن لوڈ کر سکتے ہیں۔';
+
+  @override
+  String get terminalReadOnlyBadge => 'صرف پڑھنے کے لیے';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'آپ اس ٹرمینل کو دیکھ سکتے ہیں۔ اس میں ٹائپ کرنے، اس کا سائز بدلنے یا اسے روکنے کے لیے اس گفتگو کی ہر ریپوزٹری پر رائٹ ایکسیس درکار ہے۔';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'آپ اس انوائرنمنٹ کو دیکھ سکتے ہیں۔ اسے شروع، روکنے یا دوبارہ شروع کرنے کے لیے اس گفتگو کی ہر ریپوزٹری پر رائٹ ایکسیس درکار ہے۔';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'یہ سرور پر چلتا ہے۔ شروع ہونے کے لیے اسے منظور کریں۔';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'یہ سرور پر چلتا ہے۔ شروع ہونے سے پہلے سرور کے مالک کو اسے منظور کرنا ہوگا۔';
+
+  @override
+  String get environmentHostApprove => 'منظور کریں';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'اسے ورک اسپیس ایڈمن کے طور پر منظور کریں: صرف ایڈمن کی کاپی میں خفیہ قدریں نظر آتی ہیں، اور منظوری انہیں واپس محفوظ کرتی ہے۔';
+
+  @override
+  String get environmentHostUnapproved =>
+      'سرور کے مالک نے ابھی تک یہ انوائرنمنٹ منظور نہیں کیا، اس لیے یہ اس سرور پر نہیں چل سکتا۔';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'آپ نے ابھی تک یہ انوائرنمنٹ منظور نہیں کیا۔ یہ اس سرور پر چلتا ہے، اس لیے آپ کے اس کی تعریف منظور کرنے کے بعد یہ شروع ہوگا۔';
+
+  @override
+  String get environmentHostApprovalReview => 'جائزہ لیں اور منظور کریں';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'یہ اسپیس کھولنے کے لیے $provider پر سائن ان کریں۔';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'آپ کا $forge اکاؤنٹ اس اسپیس کی استعمال ہونے والی ایک ریپوزٹری کو نہیں پڑھ سکتا۔';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'آپ کا فورج اکاؤنٹ اس اسپیس کی استعمال ہونے والی ایک ریپوزٹری کو نہیں پڑھ سکتا۔';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'آپ کو اس اسپیس کی استعمال ہونے والی ایک ریپوزٹری کی ریڈ ایکسیس حاصل نہیں ہے۔ ایک ورک اسپیس ایڈمن یہ دے سکتا ہے۔';
+
+  @override
+  String get spaceAccessFailed => 'یہ اسپیس نہیں کھل سکی۔';
+
+  @override
+  String get contextExplorerRefused =>
+      'اس سیشن میں کانٹیکسٹ کی تفصیل دستیاب نہیں ہے۔';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'لنک شدہ ریپوزٹری کو مالک اور ریپوزٹری کا نام دونوں درکار ہیں۔';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'آپ کو اس ریپوزٹری تک پڑھنے کی رسائی حاصل نہیں۔ ورک اسپیس کا ایڈمن اسے دے سکتا ہے۔';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'آپ اس ریپوزٹری کو پڑھ سکتے ہیں مگر اسے تبدیل نہیں کر سکتے۔ ورک اسپیس کا ایڈمن لکھنے کی رسائی دے سکتا ہے۔';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'آپ اس ریپوزٹری کو پڑھ سکتے ہیں مگر اس کا جائزہ نہیں لے سکتے۔ ورک اسپیس کا ایڈمن جائزے کی رسائی دے سکتا ہے۔';
+
+  @override
+  String get rigWatchOnlyBadge => 'صرف دیکھنے کے لیے';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'آپ اس مشین کو دیکھ سکتے ہیں۔ اسے چلانے، اس کے پورٹس فارورڈ کرنے، اس میں پیسٹ کرنے یا اس پر فائلیں ڈالنے کے لیے اس اسپیس کی ہر ریپوزٹری تک لکھنے کی رسائی درکار ہے۔';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'یہاں ایک مشین شروع کرنے کے لیے اس اسپیس کی ہر ریپوزٹری تک لکھنے کی رسائی درکار ہے۔ ورک اسپیس کا ایڈمن اسے دے سکتا ہے۔';
+
+  @override
+  String get rigViewRefused =>
+      'آپ یہ مشین نہیں دیکھ سکتے۔ یہ ایک ایسی اسپیس سے تعلق رکھتی ہے جس تک آپ کی پڑھنے کی رسائی نہیں۔';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'ان پورٹس کو تبدیل کرنے کے لیے اس اسپیس کی ہر ریپوزٹری تک لکھنے کی رسائی درکار ہے۔';
+
+  @override
+  String get rigHolderOnly =>
+      'صرف وہ شخص جس کے لیے یہ مشین کھولی گئی تھی اسے چلا سکتا ہے۔ یہ ان کے اپنے سائن ان استعمال کرتی ہے۔';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'آپ اس مشین کو دیکھ سکتے ہیں۔ یہ اس شخص کے سائن ان استعمال کرتی ہے جس کے لیے یہ کھولی گئی تھی، اس لیے صرف وہی اسے چلا سکتا ہے، اس کے پورٹس فارورڈ کر سکتا ہے، اس میں پیسٹ کر سکتا ہے یا اس پر فائلیں ڈال سکتا ہے۔';
 }

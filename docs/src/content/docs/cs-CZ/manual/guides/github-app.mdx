@@ -1,8 +1,8 @@
 ---
 title: Vytvořte GitHub App
-description: Dej svému serveru vlastní GitHub App jedním kliknutím, nainstaluj ji tam, kde máš repozitáře, a autorizuj server pro instalaci v organizaci.
+description: Dej svému serveru vlastní GitHub App jedním kliknutím a nainstaluj ji tam, kde máš repozitáře, aby ji mohl každý v organizaci používat z libovolného serveru.
 slug: cs-CZ/prirucka/navody/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Tenhle návod ukáže, jak serveru dát vlastní GitHub App. Zabere to asi dvě
@@ -31,7 +31,7 @@ vydá, pokrývá jeden repozitář a je omezený na to, co tam smí odpovědný 
 Ke čtení propojeného repozitáře stačí aplikace; cokoli, co zapisuje, potřebuje
 člena, který smí pushovat. Automatizace pull request nikdy neschválí.
 
-Aplikace serveru platí jen při **Použít vlastní aplikace**. S Control Center nebo vlastním Connect běží přes Connect každá dráha včetně GitHubu; aplikace serveru zůstává uložená, ale nepoužitá, dokud se nevrátíš zpět. Vlastní App pracovního prostoru ([Dej pracovnímu prostoru jinou App](#dej-pracovnímu-prostoru-jinou-app)) platí dál v každém režimu. Aplikace, které
+Aplikace serveru platí jen při **Použít vlastní aplikace**. S Control Center nebo vlastním Connect běží přes Connect každá dráha včetně GitHubu; aplikace serveru zůstává uložená, ale nepoužitá, dokud se nevrátíš zpět. Pracovní prostor na vlastních aplikacích používá místo toho svou App ([Dej pracovnímu prostoru vlastní aplikaci](#dej-pracovnímu-prostoru-vlastní-aplikaci)), ať je režim serveru jakýkoli. Aplikace, které
 chybí některá pole, je chyba, ne přechod na náhradu: přihlášení ke GitHubu se
 odmítají, dokud nejsou nastavená všechna pole.
 
@@ -89,24 +89,24 @@ a nepřečte nic.
 2. Zvol **All repositories**, nebo vyber ty, které má tenhle server vidět
 
 Na další účet ji později nainstaluje admin pracovního prostoru: v **Nastavení →
-Pracovní prostor → Obecné** najde na kartě identity GitHubu **Instalace
+Pracovní prostor → Integrace** najde na kartě **GitHub App** v části Hostování kódu **Instalace
 aplikace GitHub** a klikne na **Nainstalovat aplikaci GitHub**. Seznam ukazuje
 každý účet, na kterém je aplikace nainstalovaná, a označí pozastavenou
 instalaci.
 
-## Autorizuj tento server pro organizaci
+## Sdílej instalaci organizace
 
-U sdílené App od Control Center obsluhuje instalace organizace jen servery,
-které její admini autorizovali. Instalace přes **Nainstalovat aplikaci GitHub**
-autorizuje server, který ji spustil. U instalace, která už existuje:
+Organizace nainstaluje GitHub App jednou. Poté může kdokoli v ní, kdo se ke
+GitHubu přihlásí na serveru Control Center, instalaci použít, ať je to jakýkoli
+server: tvůj, kolegův nebo vlastní. Pro každý server není co autorizovat.
 
-1. Admin té organizace se na tomto serveru přihlásí ke GitHubu
-2. Otevře **Nastavení → Pracovní prostor → Obecné → Instalace aplikace GitHub**
-3. Řádek organizace hlásí **Neautorizováno**. Klikne na **Autorizovat tento
-   server**
+Každý token, který server dostane, patří přihlášené osobě, je omezený na jeden
+repozitář a na její roli v něm, takže nikdy nedosáhne dál, než by mohla na
+GitHubu. Auditní log GitHubu ukazuje tuto osobu, jak jedná přes aplikaci.
 
-Řádek pak hlásí **Autorizováno**. Vlastní aplikace nic z toho nepotřebuje:
-každá její instalace patří tvému serveru.
+Aby Control Center ztratil přístup k organizaci, vlastník organizace instalaci na
+GitHubu odebere nebo zúží její repozitáře. Odebráním člověka z organizace mu přístup
+také zanikne.
 
 ## Zaregistruj ji raději ručně
 
@@ -143,17 +143,16 @@ jeho procesu, kde by je přečetl každý podřízený proces; drž je v souboru
 `.env` (v Dockeru ho připoj na `/app/bin/.env`). Naplnění proběhne **pro každé
 pole jednou**, takže úpravu v Nastavení další restart nevrátí.
 
-## Dej jednomu pracovnímu prostoru jinou aplikaci
+## Dej pracovnímu prostoru vlastní aplikaci
 
-Pracovní prostor může místo aplikace serveru používat vlastní. Admin
-pracovního prostoru jde do **Nastavení → Pracovní prostor → Obecné**, na kartě
-**Identita GitHub** zvolí **Použít jinou GitHub App** a zadá id, soukromý klíč,
-client id a client secret té aplikace. Členové se pak pro tenhle pracovní
-prostor přihlašují k té aplikaci. Pracovní prostor na vlastní aplikaci nikdy
-nepřejde na aplikaci serveru ani na Connect: dokud nejsou jeho pole úplná, jeho
-práce s GitHubem se odmítá.
+Pracovní prostor může běžet na vlastní aplikaci místo aplikace serveru:
 
-Karta **Aplikace poskytovatelů** na stejné stránce dělá totéž pro Google Calendar, Linear a hledání GIF. Viz [Dej pracovnímu prostoru vlastní aplikaci Linear](/cs-CZ/prirucka/navody/integrace-linear/#dej-pracovnímu-prostoru-vlastní-aplikaci-linear) a [Dej pracovnímu prostoru vlastního klienta Google](/cs-CZ/prirucka/navody/pripojeni-kalendare/#dej-pracovnímu-prostoru-vlastního-klienta-google).
+1. Admin pracovního prostoru otevře **Nastavení → Pracovní prostor → Integrace**
+2. Na kartě **Control Center Connect** zvolí **Použít vlastní aplikace** a klikne na **Použít**. Všichni v pracovním prostoru se přihlásí znovu přes aplikace pracovního prostoru
+3. Karta **GitHub App** pod Hostováním kódu teď obsahuje pole aplikace: **ID aplikace** a **Soukromý klíč** pod **Jedná za tento pracovní prostor**, **Client id** a **Client secret** pod **Přihlašování lidí**. Jakmile jsou vyplněná, klikni na **Test**
+
+Členové se pak pro tenhle pracovní prostor přihlašují k té aplikaci. Pracovní prostor na vlastních aplikacích nikdy nepřejde na aplikaci serveru ani na Connect: dokud nejsou jeho pole úplná, jeho práce s GitHubem se odmítá. Stejná volba pokrývá Google Calendar, Linear a hledání GIF, každé s vlastními poli vedle svého poskytovatele na téže stránce. Viz [Dej pracovnímu prostoru vlastní aplikaci Linear](/cs-CZ/prirucka/navody/integrace-linear/#dej-pracovnímu-prostoru-vlastní-aplikaci-linear) a [Dej pracovnímu prostoru vlastního klienta Google](/cs-CZ/prirucka/navody/pripojeni-kalendare/#dej-pracovnímu-prostoru-vlastního-klienta-google).
+Ostatní volby na té kartě a to, co dělá každá z nich, jsou v [Volba pro každý pracovní prostor](/cs-CZ/prirucka/referencni-prirucka/connect/#volba-pro-každý-pracovní-prostor).
 
 ## Řešení problémů
 
@@ -170,7 +169,7 @@ z Nastavení.
 ### Test hlásí, že údaje fungují, ale aplikace není nikde nainstalovaná
 
 Registrace a instalace jsou dva kroky. Otevři stránku instalace aplikace, nebo
-použij **Nainstalovat aplikaci GitHub** v Pracovní prostor → Obecné.
+použij **Nainstalovat aplikaci GitHub** v Pracovní prostor → Integrace.
 
 ### Test hlásí, že soukromý klíč nešel přečíst
 

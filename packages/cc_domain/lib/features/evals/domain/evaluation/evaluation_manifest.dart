@@ -161,7 +161,8 @@ class EvaluationManifest {
   /// Harness build identity (package version or a pinned rev).
   final String harnessVersion;
 
-  /// Exact package identity and fixed ambient inventory. Null for legacy runs.
+  /// Exact package identity and fixed ambient inventory. Null when the run
+  /// recorded none.
   final String? skillKey;
   final String? skillHash;
   final String? baselineSkillHash;

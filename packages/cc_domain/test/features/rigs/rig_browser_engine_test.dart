@@ -44,14 +44,12 @@ void main() {
       expect(restored, spec);
     });
 
-    test('a row written before engines existed reads as Chromium', () {
-      // Every browser rig that predates this enum ran Chromium, and reading
-      // those back as "unknown" would strand them.
+    test('an engine this build does not read lands on the fallback', () {
       final json = RigSpec(
         surface: RigSurface.browser,
         conversationId: 'c1',
-      ).toJson()..remove('browserEngine');
-      expect(RigSpec.fromJson(json).browserEngine, RigBrowserEngine.chromium);
+      ).toJson()..['browserEngine'] = 'safari';
+      expect(RigSpec.fromJson(json).browserEngine, RigBrowserEngine.fallback);
     });
 
     test('two engines are two different specs', () {
@@ -100,17 +98,14 @@ void main() {
   });
 
   group('RigBackendCapabilities', () {
-    test('an older server that names no engines still offers Chromium', () {
-      // Such a server hosts the browser surface perfectly well; reading its
-      // silence as "no browsers" would grey out a tab that works.
+    test('a payload that names no engines offers none', () {
       final capabilities = RigBackendCapabilities.fromJson({
         'backend': EnclosureBackend.smolvm.wire,
         'available': true,
         'surfaces': [RigSurface.browser.wire],
       });
-      expect(capabilities.browserEngines, {RigBrowserEngine.chromium});
-      expect(capabilities.supportsEngine(RigBrowserEngine.chromium), isTrue);
-      expect(capabilities.supportsEngine(RigBrowserEngine.firefox), isFalse);
+      expect(capabilities.browserEngines, isEmpty);
+      expect(capabilities.supportsEngine(RigBrowserEngine.chromium), isFalse);
     });
 
     test('an empty engine list is taken at its word', () {

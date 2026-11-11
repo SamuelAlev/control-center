@@ -164,7 +164,7 @@ class _MemberRow extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          MemberAvatar(name: name, user: user, workspaceId: workspaceId),
+          MemberAvatar(name: name, user: user),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

@@ -1,6 +1,6 @@
 ---
 title: Use the MCP server
-description: Point an external MCP client at Control Center's tool server, set a bearer token and know what the surface exposes.
+description: Point an external MCP client at Control Center's tool server, send its bearer token and know what the surface exposes.
 ---
 
 This guide shows you how to connect an external MCP client — Claude Code, an
@@ -27,25 +27,40 @@ So a default local install is at `http://127.0.0.1:9030/mcp`.
 2. Read the **MCP server** card — it shows running or stopped and the port it is
    listening on
 
-The surface is on by default on a fresh install, so a loopback client works with
-no settings trip. **Start on app launch** controls whether it comes back after a
+The surface is on by default on a fresh install. Only the server owner sees the
+card's token, and only they can start or stop the endpoint. **Start on app launch** controls whether it comes back after a
 restart; **Start** / **Stop** are session controls that do not change that
 preference.
 
 The server binds loopback by default, so the endpoint is only reachable from the
 machine `cc_server` runs on unless you started it with `--bind any`.
 
+## Get the token
+
+Every request needs the server's MCP token, from any machine, loopback
+included. The server creates it the first time it starts. There is no way to
+turn it off and no way to clear it.
+
+1. On **Settings → Server → MCP servers**, find the **Authentication token** row
+2. Press **Show token** and copy it
+3. To replace it, press **Rotate token**. The server switches to the new token
+   at once, and every client still using the old one is refused until you give
+   it the new one
+
 ## Connect a client
 
-Point your client at the Streamable HTTP endpoint. The exact configuration shape
-is your client's business; the URL is the same either way.
+Point your client at the Streamable HTTP endpoint and send the token as
+`Authorization: Bearer <token>` on every request, `GET /sse` included. There is
+no other way to send it: a token in the URL is not accepted. The exact
+configuration shape is your client's business.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -67,22 +82,20 @@ also discovered from the project and registered twice.
 Checkpoint: ask the client to list its tools. You should see `mcp__*` entries
 covering tickets, spaces, memory, code graph and review.
 
-## Serve MCP beyond the host
+## What the endpoint refuses
 
-1. On **Settings → Server → MCP servers**, on the **Authentication token** row,
-   press **Set** and paste a token
-2. Send it as `Authorization: Bearer <token>` on every `POST /mcp` request
+The token opens every tool on the server, so the endpoint also refuses anything
+a web page could have sent, before it looks at the token:
 
-A tokenless surface refuses any non-loopback caller with 403. That is fail-closed
-by design: the token is what makes off-host service possible at all.
+| Request                                                                 | Answer |
+| ----------------------------------------------------------------------- | ------ |
+| An `Origin` header that is not a page on this machine (`http://localhost`, `http://127.0.0.1` or `http://[::1]`, any port) | `403`, "Cross-origin requests are not accepted" |
+| A `Host` header that is neither this listener's loopback address and port nor the server's public host name | `403`, "Unknown host" |
+| A `POST` whose body is not `application/json`                           | `415`  |
+| No token, or a wrong one                                                | `401`  |
 
-Token changes apply to the live surface immediately — no restart.
-
-:::note[`GET /sse` takes the token in the query string]
-The notification stream is token-checked like every other route, but a browser
-`EventSource` cannot send an `Authorization` header — so `/sse` accepts the token
-as `?token=<token>` as well. Without one it answers 401.
-:::
+To serve MCP beyond the host, start the server with `--bind any` and send the
+token from the other machine, addressing the server by its public host name.
 
 ## Scope every call to a workspace
 
@@ -120,6 +133,31 @@ The full catalogue is advertised in `tools/list` with no discovery gating — an
 external MCP client refuses to call a tool that is not in its cached list, so
 hiding tools breaks them rather than tidying them.
 
+## Personal MCP servers stay the owner's
+
+This guide is about Control Center's own endpoint. The other direction, MCP
+servers that Control Center hands to the agents it runs, is listed under
+**Settings → Server → MCP servers → External MCP servers**. Servers configured
+on the server's machine for Claude, Codex, Cursor, Gemini, VS Code, Windsurf,
+OpenCode or in a `.mcp.json` are found there automatically.
+
+Those discovered servers come from the server user's own tool configuration
+and act with that user's identity and credentials, so they belong to the
+server owner:
+
+- They are available only inside built-in harness runs the server owner
+  starts or is accountable for, including automation in a workspace the owner
+  is accountable for.
+- A member's run, automation bound to a member, and every run on a server with
+  no recorded owner get none of them. There the tools are not listed, cannot
+  be called and do not show up in tool search.
+- This endpoint never lists, calls or searches them, for anyone, the owner's
+  token included, and it does not pass on their resources or prompts. So an
+  agent CLI that reaches Control Center over MCP, such as Claude Code, does not
+  get them through Control Center either; it uses its own configuration.
+
+MCP servers configured for the workspace are not affected by any of this.
+
 ## Troubleshooting
 
 ### The client sees no tools
@@ -128,9 +166,21 @@ hiding tools breaks them rather than tidying them.
 - Check the port matches your `cc_server` port
 - On Claude Code, check you passed `--mcp-config` and `--strict-mcp-config`
 
-### 403 from a machine that is not the server
+### 401 Unauthorized
 
-No bearer token is configured. Set one and send it.
+The request carried no token, or an old one. Copy the current token from the
+**Authentication token** row and send it as `Authorization: Bearer <token>`. A
+token in the URL is ignored.
+
+### 403 from a client that worked before
+
+The request carried an `Origin` from a web page, or a `Host` the server does not
+answer to. Call the endpoint from a client rather than a browser page, by the
+server's loopback address or its public host name.
+
+### 415 Unsupported Media Type
+
+Send `POST /mcp` bodies as `application/json`.
 
 ### A tool call fails with "Missing or invalid argument: workspace_id"
 

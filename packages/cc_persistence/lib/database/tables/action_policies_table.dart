@@ -5,8 +5,9 @@ import 'package:drift/drift.dart';
 /// A rule maps `(scope, ActionClass | commandPrefix) → allow | prompt | deny`
 /// at workspace / space / agent scope. Resolution (in domain) is
 /// `space > agent > workspace > mode preset > built-in default`; within a
-/// scope, longest-prefix then most-restrictive. Workspace-scoped; the unique
-/// key guarantees at most one rule per `(scope, actionClass, commandPrefix)`.
+/// scope, longest-prefix then most-restrictive. Workspace-scoped. SQLite never
+/// applies the unique key (one of actionClass/commandPrefix is always NULL);
+/// `DaoActionPolicyRepository.upsertRule` enforces rule identity instead.
 @TableIndex(name: 'idx_action_policies_workspace', columns: {#workspaceId})
 @TableIndex(
   name: 'idx_action_policies_scope',

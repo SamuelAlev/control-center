@@ -2,7 +2,7 @@
 title: Gestisci adattatori e modelli
 description: Collega i fornitori di modelli, scegli il modello su cui viene eseguito un agente e verifica quali CLI dei runner degli agenti sono presenti sull'host del server.
 slug: it-IT/manuale/guide/adapter
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Questa guida mostra come collegare i fornitori di modelli e scegliere su cosa
@@ -124,6 +124,13 @@ attorno a una conversazione: il titolo, le risposte di `/btw`, i documenti di
 completamento senza strumenti, con il proprio adattatore e modello, quindi
 assegnagli un modello piccolo e veloce.
 
+Quando quell'adattatore è una CLI ACP, il completamento è un processo sulla
+macchina del server e segue la [regola della sandbox](/it-IT/manuale/concetti/sandbox-e-sicurezza/#agenti-su-un-host-senza-sandbox):
+dentro la sandbox quando il server isola gli agenti, e senza sandbox solo per
+le richieste di cui risponde il proprietario del server. Per chiunque altro
+queste funzioni vengono saltate: non viene generato alcun titolo, e `/btw`
+risponde "L'agente Content synthesizer manca o non ha un runner funzionante".
+
 Modifica la sua **persona** in **Impostazioni → Spazio di lavoro → Agenti** per
 cambiare il modo in cui si legge quel testo: lunghezza dei titoli, lingua, tono,
 gli esempi che segue. Il formato della risposta che ogni funzione analizza (un
@@ -145,8 +152,7 @@ Poi premi **Aggiorna** in cima alla pagina. Ogni riga rilevata mostra la version
 risolta e il percorso, più i chip che indicano se supporta la modalità JSON e la
 selezione del modello.
 
-Una CLI esterna conserva le proprie credenziali, nella propria configurazione,
-sull'host del server. Control Center non le gestisce.
+Gli accessi a Claude Code sono elencati in **Account Claude Code** nell'adattatore Claude Code. Control Center crea la cartella di configurazione di ogni account sul server e ti fornisce il comando `claude auth login` da eseguire lì; non accede mai al posto tuo.
 
 :::caution[Gli argomenti aggiuntivi e le variabili d'ambiente dell'adattatore restano su questo dispositivo]
 Ogni riga dell'adattatore offre un campo **Argomenti aggiuntivi** e una finestra

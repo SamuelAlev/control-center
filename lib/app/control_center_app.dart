@@ -19,6 +19,7 @@ import 'package:control_center/features/shell/presentation/widgets/title_bar_wor
 import 'package:control_center/features/shell/providers/command_palette_providers.dart';
 import 'package:control_center/features/shell/providers/shell_route_providers.dart';
 import 'package:control_center/features/telemetry/providers/analytics_session_provider.dart';
+import 'package:control_center/features/workspaces/presentation/widgets/workspace_media_proxy_scope.dart';
 import 'package:control_center/features/workspaces/providers/rpc_client_workspace_sync_provider.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_url_sync_provider.dart';
@@ -171,48 +172,50 @@ class ControlCenterApp extends ConsumerWidget {
               // (MaterialApp.builder wraps the router), so it shadows the
               // framework's own undo/redo mapping — see text_undo_shortcuts.dart
               // for why it reports the key handled over real fields.
-              RouteTitle(
-                child: CcTheme(
-                  data: isDark
-                      ? CcThemeData.dark(fontFamily: appFontFamily)
-                      : CcThemeData.light(fontFamily: appFontFamily),
-                  // Third-party widgets on the deprecated framework Material
-                  // library resolve their own Theme/MaterialLocalizations here.
-                  child: LegacyMaterialBridge(
-                    child: Stack(
-                      children: [
-                        Overlay(
-                          initialEntries: [
-                            OverlayEntry(
-                              builder: (context) => CcToastScope(
-                                child: child ?? const SizedBox.shrink(),
+              WorkspaceMediaProxyScope(
+                child: RouteTitle(
+                  child: CcTheme(
+                    data: isDark
+                        ? CcThemeData.dark(fontFamily: appFontFamily)
+                        : CcThemeData.light(fontFamily: appFontFamily),
+                    // Third-party widgets on the deprecated framework Material
+                    // library resolve their own Theme/MaterialLocalizations here.
+                    child: LegacyMaterialBridge(
+                      child: Stack(
+                        children: [
+                          Overlay(
+                            initialEntries: [
+                              OverlayEntry(
+                                builder: (context) => CcToastScope(
+                                  child: child ?? const SizedBox.shrink(),
+                                ),
                               ),
-                            ),
-                            OverlayEntry(
-                              builder: (context) =>
-                                  const _AppServerActivityOverlay(),
-                            ),
-                            // The app-drawn window controls (desktop windows whose
-                            // native ones went with the hidden title bar), above
-                            // every route and dialog like a real caption. Only the
-                            // buttons hit-test; nothing renders on the web.
-                            OverlayEntry(
-                              builder: (context) => const Align(
-                                alignment: AlignmentDirectional.topEnd,
-                                child: WindowCaptionButtons(),
+                              OverlayEntry(
+                                builder: (context) =>
+                                    const _AppServerActivityOverlay(),
                               ),
-                            ),
-                          ],
-                        ),
-                        // App-wide shutdown overlay (above every route + toasts),
-                        // driven by server-fed progress during a local-server quit.
-                        const Positioned.fill(child: ServerShutdownOverlay()),
-                        // Takes over once the connection drops (shutdown or
-                        // not): retry now or leave for the sign-in screen.
-                        const Positioned.fill(
-                          child: ServerDisconnectedOverlay(),
-                        ),
-                      ],
+                              // The app-drawn window controls (desktop windows whose
+                              // native ones went with the hidden title bar), above
+                              // every route and dialog like a real caption. Only the
+                              // buttons hit-test; nothing renders on the web.
+                              OverlayEntry(
+                                builder: (context) => const Align(
+                                  alignment: AlignmentDirectional.topEnd,
+                                  child: WindowCaptionButtons(),
+                                ),
+                              ),
+                            ],
+                          ),
+                          // App-wide shutdown overlay (above every route + toasts),
+                          // driven by server-fed progress during a local-server quit.
+                          const Positioned.fill(child: ServerShutdownOverlay()),
+                          // Takes over once the connection drops (shutdown or
+                          // not): retry now or leave for the sign-in screen.
+                          const Positioned.fill(
+                            child: ServerDisconnectedOverlay(),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

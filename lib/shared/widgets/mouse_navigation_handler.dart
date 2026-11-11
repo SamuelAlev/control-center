@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;

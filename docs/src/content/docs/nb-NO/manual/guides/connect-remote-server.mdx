@@ -2,7 +2,7 @@
 title: Koble til en ekstern server
 description: Pek skrivebordsappen eller nettklienten mot en cc_server som kjører et annet sted, og bytt mellom servere uten å starte på nytt.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-ekstern-server
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Hver klient er en gjengiver over en `cc_server` som eier dataene. Skrivebordet
@@ -86,6 +86,12 @@ forespørsler gjennom den autentiserte krypterte økten til
 code-server-backenden på `cc_server`. Vert nettklienten over HTTPS eller sikker
 loopback, slik at Service Workere er tilgjengelige. Native klienter bruker en
 kapabilitetsavgrenset loopback-fasade.
+
+Bare serverens eier kan åpne den innebygde code-server-editoren: den kjører på
+serveren som serverens egen bruker. En økt tilhører enheten og personen som
+åpnet den. Den åpnes med VS Codes arbeidsområdetillit på, så VS Code spør før
+den stoler på en mappe, og med automatiske oppgaver av. Alle andre beholder den
+innebygde enkeltfilseditoren og filvisningene.
 :::
 
 ### Det nettleseren ikke gjør
@@ -100,9 +106,9 @@ flater trenger et native vindu eller maskinens egne enheter:
 
 To ting oppfører seg annerledes i stedet for å mangle. **Opptak** av møter
 fungerer i nettleseren; det fanger mikrofonen din pluss en skjermdeling som
-inkluderer et lydspor. **Åpne i IDE** fungerer også, men ber serveren starte
-editoren på _serverens_ skjerm, så knappen skjuler seg mot en headless vert uten
-installerte editorer.
+inkluderer et lydspor. Knappen oppkalt etter editoren din (for eksempel **Open in VS Code**) ber
+serveren starte editoren på _serverens_ skjerm, så den tilbys bare til serverens eier, og knappen skjuler seg mot en
+headless vert uten installerte editorer.
 
 ## Feilsøking
 

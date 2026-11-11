@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_checks_panel.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_definition_delete.dart';
@@ -12,6 +13,7 @@ import 'package:control_center/features/environments/presentation/settings/envir
 import 'package:control_center/features/environments/presentation/settings/environment_source_panel.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_test_panel.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_controls.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_host_approval.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
@@ -125,7 +127,12 @@ class _EnvironmentDefinitionEditorState
     ];
     final tab = _tab.clamp(0, tabs.length - 1);
     final name = form.text(const ['name']);
-    final issues = _IssueSummary(form: form, notes: seed.notes);
+    final issues = _IssueSummary(
+      form: form,
+      notes: seed.notes,
+      ownerOnly: state.ownerOnly,
+      record: watchStoredEnvironmentRecord(ref, record),
+    );
     return PageWrapper(
       title: name.isEmpty ? l10n.environmentsTitle : name,
       subtitle: isAdmin ? null : l10n.environmentsAdminOnly,
@@ -220,10 +227,21 @@ class _EnvironmentDefinitionEditorState
 
 /// Problems no field can show, and what a repo scan noted.
 class _IssueSummary extends StatelessWidget {
-  const _IssueSummary({required this.form, required this.notes});
+  const _IssueSummary({
+    required this.form,
+    required this.notes,
+    required this.ownerOnly,
+    required this.record,
+  });
 
   final EnvironmentForm form;
   final List<String> notes;
+
+  /// The stored definition, for its host approval; null for a new one.
+  final EnvironmentDefinitionRecord? record;
+
+  /// The save was refused: only the server owner places things on the host.
+  final bool ownerOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -234,10 +252,23 @@ class _IssueSummary extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (record case final record?)
+            EnvironmentHostApprovalNotice(
+              record: record,
+              padding: const EdgeInsetsDirectional.only(bottom: AppSpacing.md),
+            ),
           for (final note in notes)
             Padding(
               padding: const EdgeInsets.only(bottom: AppSpacing.sm),
               child: CcAlert(title: note),
+            ),
+          if (ownerOnly)
+            Padding(
+              padding: const EdgeInsets.only(bottom: AppSpacing.md),
+              child: CcAlert(
+                variant: CcAlertVariant.danger,
+                title: l10n.environmentHostOwnerOnly,
+              ),
             ),
           if (issues.isNotEmpty)
             Padding(

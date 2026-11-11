@@ -65,13 +65,16 @@ class SandboxConfig {
   /// mandatory-deny and move-blocking emission.
   final SandboxPolicySpec? policy;
 
-  /// A copy with [filesystem] replaced.
-  SandboxConfig copyWith({FilesystemConfig? filesystem}) => SandboxConfig(
+  /// A copy with the given fields replaced.
+  SandboxConfig copyWith({
+    FilesystemConfig? filesystem,
+    List<String>? allowedExecutables,
+  }) => SandboxConfig(
     sessionId: sessionId,
     network: network,
     filesystem: filesystem ?? this.filesystem,
     denyExecutables: denyExecutables,
-    allowedExecutables: allowedExecutables,
+    allowedExecutables: allowedExecutables ?? this.allowedExecutables,
     allowedExecRoots: allowedExecRoots,
     toolchainExecRoots: toolchainExecRoots,
     allowAllUnixSockets: allowAllUnixSockets,
@@ -125,12 +128,16 @@ class FilesystemConfig {
     this.allowRead = const [],
     this.allowWrite = const [],
     this.denyWrite = const [],
+    this.hiddenRoots = const [],
+    this.hostExecutables = HostExecutableDirs.none,
   });
 
   /// Paths denied for read access.
   final List<String> denyRead;
 
-  /// Paths explicitly allowed for read access.
+  /// Paths explicitly allowed for read access. On Linux, where a sandbox
+  /// sees only what is bound into it, each is bound read-only so it exists
+  /// there; it is never made writable by being listed here.
   final List<String> allowRead;
 
   /// Paths explicitly allowed for write access.
@@ -138,4 +145,72 @@ class FilesystemConfig {
 
   /// Paths denied for write access.
   final List<String> denyWrite;
+
+  /// Server-private trees (the server's data directory, its `.env`) that are
+  /// neither readable nor writable, except for the paths inside them this
+  /// config grants by name: its [allowRead] and [allowWrite] entries and the
+  /// policy's read-only mounts, run dir, runner state dirs and tool dirs.
+  ///
+  /// The sandbox manager adds these to every config it wraps, so no launcher
+  /// can leave them out.
+  final List<String> hiddenRoots;
+
+  /// Where the host resolves the executables it runs outside any sandbox.
+  /// Nothing in them may change from inside one; the sandbox manager adds
+  /// them to every config it wraps, like [hiddenRoots].
+  final HostExecutableDirs hostExecutables;
+
+  /// A copy with the given fields replaced.
+  FilesystemConfig copyWith({
+    List<String>? allowRead,
+    List<String>? hiddenRoots,
+    HostExecutableDirs? hostExecutables,
+  }) => FilesystemConfig(
+    denyRead: denyRead,
+    allowRead: allowRead ?? this.allowRead,
+    allowWrite: allowWrite,
+    denyWrite: denyWrite,
+    hiddenRoots: hiddenRoots ?? this.hiddenRoots,
+    hostExecutables: hostExecutables ?? this.hostExecutables,
+  );
+}
+
+/// The directories the host resolves executables from, and the paths that
+/// decide what runs from them, as found once at server start.
+///
+/// The host runs bare names (`claude`, `node`, `git`, `docker`, a hook's
+/// `#!/usr/bin/env node`) outside every sandbox, through its `PATH` and the
+/// install prefixes it probes. When one of those lies under a tree a sandbox
+/// may write (`$HOME`, `/tmp`), a sandboxed run could put a program there that
+/// the host later runs as the server user. Every sandbox profile therefore
+/// keeps [dirs]' direct children, [links] and [installRoots] unchangeable and
+/// the directories above them unrenameable, while leaving the trees below the
+/// direct children writable (an SDK's `bin/cache`, a node version's
+/// `lib/node_modules`).
+final class HostExecutableDirs {
+  /// Creates a [HostExecutableDirs].
+  const HostExecutableDirs({
+    this.dirs = const [],
+    this.links = const [],
+    this.installRoots = const [],
+  });
+
+  /// Nothing to protect.
+  static const HostExecutableDirs none = HostExecutableDirs();
+
+  /// The directories, each in every spelling: as written and after each
+  /// symlink on the way (`~/fvm/default/bin`, `~/fvm/versions/<v>/bin`).
+  final List<String> dirs;
+
+  /// The symlinks on the way to a directory or to a direct child's target
+  /// (`~/fvm/default`). Replacing one would point the host somewhere else.
+  final List<String> links;
+
+  /// The trees a symlinked direct child resolves into, protected whole: the
+  /// package an npm global's link names (`lib/node_modules/<pkg>`), the
+  /// version directory a native installer's link names.
+  final List<String> installRoots;
+
+  /// Whether there is nothing to protect.
+  bool get isEmpty => dirs.isEmpty && links.isEmpty && installRoots.isEmpty;
 }

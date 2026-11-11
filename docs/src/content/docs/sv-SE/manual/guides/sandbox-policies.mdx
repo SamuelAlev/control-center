@@ -2,7 +2,7 @@
 title: Konfigurera sandlådepolicyer
 description: Vad som begränsar en agentkörning, hur du avgör om OS-sandlådan lindar in den och hur åtgärdsreglerna avgör vad en agent får pusha eller nå.
 slug: sv-SE/handbok/how-to-guider/sandladepolicyer
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Om en agentkörning är sandlådad avgörs på servern, vid start
@@ -22,7 +22,7 @@ En agentkörning hålls tillbaka av sex saker. Den första är OS-sandlådan och
 
 | Gräns                     | Vad den gör                                                                                                                                                                                                                                        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| OS-sandlådan              | Seatbelt på macOS, bubblewrap på Linux och WSL2. Lindar in Claude Code-CLI:n, ACP-adaptrar och harnessens `bash`-verktyg. **Saknas på Windows och på Linux utan `bwrap` och `socat`** |
+| OS-sandlådan              | Seatbelt på macOS, bubblewrap på Linux och WSL2. Lindar in Claude Code-CLI:n, ACP-adaptrar och harnessens `bash`-verktyg. **Saknas på Windows och på Linux utan `bwrap` och `socat`, där bara serverägarens körningar startar** |
 | Sin egen worktree         | Varje samtal får en copy-on-write-utcheckning. Den ursprungliga utcheckningen viks in i körningen som en skrivnekad sökväg och det är sandlådan som verkställer det                                                                                  |
 | Mäklade inloggningsuppgifter | Mäklaren för inloggningsuppgifter präglar en miljö per körning och återkallar den vid nedrivning. Dess GitHub-token kan läsa men inte pusha: en push går genom Control Center, som först frågar pushregeln |
 | Åtgärdsräcken             | Varje muterande verktyg deklarerar sina effektklasser och grinden löser dem innan anropet körs. En `prompt` utan ansluten godkännare nekas                                                                                                           |
@@ -41,10 +41,13 @@ Tre saker är svagare än de ser ut:
   begränsar dem. Bara verktyget `bash` går genom den sandlådade
   kommandoköraren. De verktygen begränsas av sin egen sökvägsbegränsning plus
   åtgärdsräckena.
-- På en värd utan backend gäller den första raden inte alls. ACP och harnessens
-  `bash`-verktyg faller tillbaka på miljösanering plus kommandopolicyn; Claude
-  Code ärver värdmiljön via `NoSandboxAdapter`. Servern säger det i sin
-  startlogg. Kontrollera din nedan.
+- På en värd utan backend startar bara körningar som serverägaren är ansvarig för,
+  och för dem gäller den första raden inte. Andras körningar nekas. Under
+  `--sandbox off` startar varje medlems körningar utan den första raden. Oavsett
+  vilket fall det är faller ACP och harnessens `bash`-verktyg tillbaka på
+  miljösanering plus kommandopolicyn, och Claude Code ärver värdmiljön via
+  `NoSandboxAdapter`. Servern säger vilket fall du är i i sin startlogg.
+  Kontrollera din nedan.
 
 ## Avgör vad en agent får pusha
 
@@ -54,8 +57,8 @@ Var och en är en åtgärdsregel:
 | Regel                                            | Inbyggd standard | Vad den täcker                                                              |
 | ------------------------------------------------ | ---------------- | --------------------------------------------------------------------------- |
 | **Pusha till en remote**                         | Fråga först      | Varje `git push` till GitHub, oavsett adapter                               |
-| **Öppna en pull request**                        | Fråga först      | `gh pr create` och verktygen för pull requests                              |
-| **Publicera en granskning eller sammanslagning** | Fråga först      | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`               |
+| **Öppna en pull request**                        | Fråga först      | Control Centers verktyg för pull requests. `gh pr create` fungerar inte i en körning                              |
+| **Uppdatera eller slå ihop en pull request**     | Fråga först      | Agentens kommentarer på sin pull request, ändringar av dess titel eller beskrivning och publicerade granskningar, genom Control Centers verktyg. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` och `gh pr close` fungerar inte i en körning               |
 | **Skriv till ett externt ärendesystem**          | Fråga först      | Ärendeskrivningar via Control Centers verktyg och `gh issue`                |
 | **Använd nätverket**                             | Tillåt           | Om sandlådan har något nätverk alls, och harnessens webbverktyg             |
 
@@ -113,30 +116,37 @@ Två saker avgör det, båda på servern: om värden erbjuder en backend och om
    **Ingen isolering**. Uppgiften **I kraft** är den här enhetens inställning,
    inte den inlindning som servern faktiskt använder.
 3. Läs serverns startlogg. Den skriver ut exakt en av tre rader:
-   - `agent sandbox ON` plus backend-anteckningen – körningarna lindas in
+   - `agent sandbox ON` plus backend-anteckningen: körningarna lindas in
    - `no OS-native agent sandbox on this host` plus en installationshänvisning
-     där en sådan finns – körningarna lindas inte in
-   - `agent sandbox DISABLED by --sandbox off` – ett medvetet val att stänga av
+     där en sådan finns: bara körningar som serverägaren är ansvarig för startar,
+     utan inlindning, och andras nekas
+   - `agent sandbox DISABLED by --sandbox off`: varje medlems körningar startar,
+     utan inlindning
+4. Exponeringsraden som skrivs ut vid start säger samma sak med ett ord:
+   `sandbox=native`, `sandbox=off` eller `sandbox=unavailable`.
 
 `GET /healthz` rapporterar inte sandlådans tillstånd, så startloggen är
 kontrollen.
 
-För att stänga av sandlådan medvetet – en värd där profilen beter sig illa är
-anledningen till att den finns – startar du servern med `--sandbox off`, eller
-sätter `CC_SERVER_SANDBOX=off`. Standardvärdet är `on` och `on` betyder "använd
-en backend om värden har en", aldrig "kräv en".
+Bara serverägaren kan besluta att köra utan sandlåda. För att göra det för alla
+startar du servern med `--sandbox off`, eller sätter `CC_SERVER_SANDBOX=off`.
+Varje medlems agenter körs då obegränsade på den maskinen, så det här är ett beslut
+för alla som använder servern, fattat en gång vid start. Standardvärdet är `on`: det
+lindar in varje körning när värden har en backend, och när den inte har det startar
+det bara ägarens körningar.
 
 Två situationer får aldrig en inbyggd sandlådeinlindning. På **Windows**
 rapporterar den inbyggda sonden alltid otillgänglig och det finns inget att
-installera – agentdispatch använder `none`. Backenden `microvm` är separat
+installera, så bara serverägarens körningar startar om inte ägaren kör med `--sandbox off`. Backenden `microvm` är separat
 (interaktiva terminaler och stationer) och sonderas på sin egen runtime. På
 **Linux och WSL2** måste både `bwrap` och `socat` finnas i `PATH`; utan dem
-rapporterar sonden otillgänglig och namnger de saknade paketen.
+rapporterar sonden otillgänglig och namnger de saknade paketen, och bara ägarens körningar startar.
 
 På Linux/WSL2 med bubblewrap installerat kan standardpolicyns globmönster för
-hemliga filer inte verkställas för filer som en agent skapar senare. En sådan
-inbyggd körning misslyckas nu i stället för att tyst ignorera reglerna. En
-positiv startsond garanterar därför inte att en Linux-dispatch kan starta.
+hemliga filer inte verkställas för filer som en agent skapar senare, så varje inbyggd
+körning misslyckas i stället för att tyst ignorera reglerna, även ägarens. En positiv
+startsond garanterar därför inte att en Linux-dispatch kan starta: idag kör en
+Linux-server agenter med `--sandbox off`, eller utan bubblewrap för ägaren ensam.
 `--sandbox off` är ett medvetet oinskränkt val att stänga av, inte en ersättande
 säkerhetsgräns.
 
@@ -144,14 +154,14 @@ säkerhetsgräns.
 
 Läget lagras per yta och matar räckesupplösaren som lagret
 **lägesförinställning**. Tre av de fyra lägena är skrivskyddade och ett
-skrivskyddat läge nekar elva effektklasser direkt:
+skrivskyddat läge nekar tolv effektklasser direkt:
 
 | Läge               | Worktree   | Nekas av förinställningen                                                                                                                                                        |
 | ------------------ | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`) | Skrivbar   | Inget – de inbyggda standarderna gäller                                                                                                                                          |
-| **Plan**           | Skrivskyddat | Ta bort en fil, skriva utanför worktreen, skapa en commit, pusha, öppna en PR, publicera eller slå ihop, skriva till ett externt ärendesystem, installera ett paket, köra en process, ändra arbetsytans struktur, starta eller driva en avskild miljö |
-| **Granskning**     | Skrivskyddat | Samma elva. Inte valbart av användaren – composern erbjuder bara Agent, Plan och Orkestrera                                                                                     |
-| **Orkestrera**     | Skrivskyddat | Samma elva                                                                                                                                                                       |
+| **Plan**           | Skrivskyddat | Ta bort en fil, skriva utanför worktreen, skapa en commit, pusha, öppna en PR, publicera eller slå ihop, skriva till ett externt ärendesystem, installera ett paket, köra en process, ändra arbetsytans struktur, starta eller driva en avskild miljö, köra kommandon på värden |
+| **Granskning**     | Skrivskyddat | Samma tolv. Inte valbart av användaren – composern erbjuder bara Agent, Plan och Orkestrera                                                                                     |
+| **Orkestrera**     | Skrivskyddat | Samma tolv                                                                                                                                                                       |
 
 Nätverksåtkomst och hemlighetsåtkomst nekas medvetet _inte_ av ett skrivskyddat
 läge: forskning är själva poängen med ett sådant.
@@ -177,16 +187,29 @@ pushen eller att ett **Fråga först** blev obesvarat.
 `… is not linked to this workspace` betyder att pushen riktas mot ett repo som
 varken är worktreens eget eller länkat till arbetsytan.
 `Control Center has no GitHub credential that can push …` betyder att
-GitHub-appen inte är installerad på det repot och att ingen fallback-uppgift
-kunde pusha: installera appen på repot eller anslut GitHub.
+ingen push-token kunde skapas: installera GitHub-appen på repot eller logga in på GitHub.
+
+### Min agentkörning nekades med ”Den här servern har ingen sandlåda”
+
+Körningen visar **Agenter behöver en sandlåda på den här servern** med ”Den här servern
+har ingen sandlåda, så bara dess ägare kan köra agenter här. Ägaren kan installera
+sandlådan eller stänga av sandlådan för alla.” Serverns värd har ingen OS-sandlåda,
+och körningens ansvariga person är inte serverägaren, så ingenting startades. För ett
+schema, en webhook eller annan automation är den ansvariga personen den som
+automationen är bunden till, inte den som tittar på den.
+
+Bara serverägaren kan ändra detta. På Linux och WSL2 installerar de `bubblewrap` och
+`socat` och startar om servern (men läs först Linux-noten ovan). På Windows finns ingen
+backend att installera. Det andra valet är att starta om servern med `--sandbox off`,
+som kör varje medlems agenter obegränsade på den maskinen.
 
 ### Kortet Sandlåda rapporterar ingen inbyggd sandlåda
 
-Då lindas inte agentkörningarna på den värden in av Seatbelt eller bubblewrap
-och de återstående gränserna är vad du har. På Linux och WSL2 installerar du
-båda de saknade verktygen – `sudo apt-get install bubblewrap socat` – och
+Då lindas inte agentkörningarna på den värden in av Seatbelt eller bubblewrap: bara
+serverägarens körningar startar, och de återstående gränserna är vad de har. På Linux
+och WSL2 installerar du båda de saknade verktygen – `sudo apt-get install bubblewrap socat` – och
 startar om servern; startloggen bör då säga att sandlådan är på. På Windows
-finns ingen inbyggd backend att installera, så skärp räckena i stället: se
+finns ingen inbyggd backend att installera, så skärp räckena för ägarens egna körningar i stället: se
 [Konfigurera räcken](/sv-SE/handbok/how-to-guider/konfigurera-racken/).
 
 ### En agent nådde en fil utanför sin worktree
@@ -200,7 +223,7 @@ dem – deras gräns är deras egen sökvägsbegränsning plus räckena. Ett
 dina registrerade utcheckningar är skrivnekade inuti den inlindningen i varje
 läge, inklusive deras symlänksupplösta stavningar (på macOS löses en sökväg som
 nås via `/tmp` eller `/var/folders` upp under `/private` och båda stavningarna
-nekas nu). På en värd utan backend gäller inget av det. Hur som helst kan
+nekas). Under `--sandbox off`, eller för ägarens egna körningar på en värd utan backend, gäller inget av det. Hur som helst kan
 räckena neka **Skriv utanför worktree** direkt.
 
 ## Relaterade guider

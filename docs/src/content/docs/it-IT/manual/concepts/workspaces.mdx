@@ -2,7 +2,7 @@
 title: Spazi di lavoro e isolamento
 description: Perché uno spazio di lavoro è un confine di tenant rigido, come la separazione dei database rende strutturale quel confine e cosa lo attraversa deliberatamente.
 slug: it-IT/manuale/concetti/spazi-di-lavoro
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Che cos'è uno spazio di lavoro?
@@ -79,9 +79,11 @@ Un file di spazio di lavoro contiene solo un `workspace_meta` a riga singola per
 
 ## Creare uno spazio di lavoro
 
+Solo il [proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server) può creare uno spazio di lavoro; il server ne genera l'id. Né un amministratore né il proprietario di uno spazio di lavoro può crearne un altro. Chi non fa ancora parte di alcuno spazio di lavoro vede **Non fai ancora parte di uno spazio di lavoro**, che gli chiede di far creare uno spazio di lavoro dal proprietario del server o di farsi invitare da un amministratore; il modulo **Aggiungi spazio di lavoro** dice lo stesso a chiunque altro.
+
 Creare uno spazio di lavoro fa più che inserire una riga nel registro. In un'unica operazione il server contrassegna l'utente che lo crea come `ownerUserId`, registra l'appartenenza con ruolo di proprietario di quell'utente e pubblica un evento di dominio `WorkspaceCreated`. I listener su quell'evento poi inizializzano, in modo idempotente e in background:
 
-- un **agente CEO** più quattro specialisti — `qa`, `architect`, `engineer`, `librarian` — con gli specialisti che riportano al CEO;
+- un **agente CEO** più cinque specialisti — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — con gli specialisti che riportano al CEO;
 - i **modelli di pipeline integrati** e i relativi trigger (i trigger a evento e manuali sono abilitati di serie; quelli pianificati sono opt-in, tranne la pulizia GC giornaliera dei worktree);
 - le **suite di eval iniziali**.
 
@@ -90,7 +92,7 @@ Questo accade per _ogni_ spazio di lavoro, non solo per il primo. Gli agenti ini
 La scrittura dell'appartenenza del proprietario conta più di quanto sembri: senza di essa lo spazio di lavoro appena creato non avrebbe membri e ogni chiamata con ambito di spazio di lavoro che il creatore fa subito dopo verrebbe negata.
 
 :::note[Gli agenti non possono creare uno spazio di lavoro]
-Non esiste alcuno strumento MCP `create_workspace`. Gli esseri umani creano uno spazio di lavoro tramite `workspace.create` (punto di controllo del solo nome) o `workspace.upsert` (record completo, usato anche per gli aggiornamenti). Entrambi contrassegnano l'utente che lo crea come `owner` e pubblicano `WorkspaceCreated`.
+Non esiste alcuno strumento MCP `create_workspace`. Il proprietario del server crea uno spazio di lavoro tramite `workspace.create`, che lo registra come suo `owner` e pubblica `WorkspaceCreated`. `workspace.upsert` aggiorna solo uno spazio di lavoro già esistente: non ne crea mai uno e non cambia mai il proprietario di uno spazio di lavoro, cosa che fa solo **Trasferisci la proprietà**.
 :::
 
 ## Eliminazione, esportazione, importazione
@@ -120,7 +122,7 @@ da un'istantanea dell'installazione equivale a puntare `workspace.import` sul
 installazione resta una ricopiatura della directory dell'istantanea a server
 fermo.
 
-Ciò che nessuna di esse trasporta è il resto della directory dello spazio di lavoro. Uno spazio di lavoro accumula più di un database — immagini incollate, file di skill e di agenti, credenziali di chat, worktree — ed esportazione e importazione spostano il **file**, quindi tutto ciò che gli sta accanto resta dov'è. Per le credenziali è deliberato e per i worktree è sacrificabile; per il resto è un limite da conoscere anziché una funzionalità. Il [riferimento sul backup](/it-IT/manuale/riferimento/backup/#what-a-backup-does-not-contain) contiene la tabella completa.
+Ciò che nessuna di esse trasporta è il resto della directory dello spazio di lavoro. Uno spazio di lavoro accumula più di un database — immagini incollate, file di skill e di agenti, credenziali di chat, worktree — ed esportazione e importazione spostano il **file**, quindi tutto ciò che gli sta accanto resta dov'è. Per le credenziali è deliberato e per i worktree è sacrificabile; per il resto è un limite da conoscere anziché una funzionalità. Il [riferimento sul backup](/it-IT/manuale/riferimento/backup/#cosa-non-contiene-un-backup) contiene la tabella completa.
 
 ## Spostare un backup tra il server e il tuo dispositivo
 

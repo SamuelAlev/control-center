@@ -39,8 +39,8 @@ class UserActivityTable extends Table {
   TextColumn get countryCode => text().nullable()();
 
   /// Sanitized JSON object of the mutation's arguments (and a few
-  /// contextual result fields). Null on rows recorded before this column
-  /// existed, or when nothing useful survived redaction.
+  /// contextual result fields). Null when nothing useful survived
+  /// redaction.
   TextColumn get details => text().nullable()();
 
   /// When the action happened.

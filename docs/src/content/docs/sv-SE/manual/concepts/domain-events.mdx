@@ -2,7 +2,7 @@
 title: Domänhändelser
 description: Varför funktioner kommunicerar via en händelsebuss i samma process i stället för att importera varandra, vad bussen är – och inte är – källa till sanning för, och vilka händelser som faktiskt kan driva automatisering.
 slug: sv-SE/handbok/koncept/domanhandelser
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Vad en domänhändelse är
@@ -37,9 +37,7 @@ pull requests, ärenden eller möten. Observability aggregerar körningsutfall u
 att nå in i dispatch.
 
 Kostnaden är den vanliga: en publicist kan inte avgöra om någon lyssnar, och en
-lyssnare som aldrig konstrueras är tyst och overksam. `TicketRemoteSyncHandler`
-är det stående exemplet: den är deklarerad, täcks av tester och kopplas aldrig
-in i produktion.
+lyssnare som aldrig konstrueras är tyst och overksam.
 
 ## Vad bussen inte är
 

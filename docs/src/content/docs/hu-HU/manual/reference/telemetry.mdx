@@ -2,7 +2,7 @@
 title: Használati statisztikák
 description: Mit rögzít a Control Center, amikor a használati statisztikák be vannak kapcsolva, ki dönt róluk, és mi nem kerül soha elküldésre.
 slug: hu-HU/kezikonyv/referencia/hasznalati-statisztikak
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 A Control Center **álnevesített használati eseményeket** küldhet egy [Umami](https://umami.is)-példánynak. A használati statisztikák **ki vannak kapcsolva, amíg a szerver üzemeltetője be nem kapcsolja őket**. A beállítás a szerverhez tartozik, és minden hozzá csatlakozó kliensre vonatkozik: az asztali alkalmazásra, a webalkalmazásra, a telefonra és magára a szerverre is.
@@ -13,7 +13,7 @@ A használati statisztikák függetlenek az **Összeomlásjelentések megosztás
 
 | Kapcsoló | Hol | Hatás |
 | --- | --- | --- |
-| **Használati statisztikák megosztása** | A bevezetés (a homokozó lépése) és a **Beállítások → Adatvédelem**. Csak a szerver üzemeltetője módosíthatja; a többi tag csak olvasásra látja az aktuális értéket | Az egész szerverre érvényes. A szerverbeállításokban `telemetry.usage_analytics` néven tárolódik. Ki van kapcsolva, hacsak nincs `true` értékre állítva |
+| **Használati statisztikák megosztása** | A bevezetés (a homokozó lépése) és a **Beállítások → Szerver → Diagnosztika és adatvédelem**. Csak a szerver üzemeltetője módosíthatja; a többi tag csak olvasásra látja az aktuális értéket | Az egész szerverre érvényes. A szerverbeállításokban `telemetry.usage_analytics` néven tárolódik. Ki van kapcsolva, hacsak nincs `true` értékre állítva |
 | Build típusa | Automatikus | A debug és profile buildek nem küldenek adatot. Ehelyett minden eseményt a hibakeresési naplóba írnak |
 | `CC_ANALYTICS_DEBUG=1` | A `cc_server` környezete vagy annak `.env` fájlja | Tesztelési célból lehetővé teszi, hogy a szerver és minden hozzá csatlakozó kliens debug és profile buildjei ténylegesen küldjenek adatot. A fenti kapcsolónak ekkor is bekapcsolva kell lennie |
 | `DO_NOT_TRACK=1` | A `cc_server` környezete | Leállítja a szerver saját adatküldését, bármit mutat is a kapcsoló. A kliensek továbbra is a kapcsolót követik |

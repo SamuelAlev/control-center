@@ -2,7 +2,7 @@
 title: Hurtigstart
 description: Installer Control Center, konfigurer én agent og se den jobbe mot repoet ditt.
 slug: nb-NO/handbok/hurtigstart
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Dette er den korteste komplette veien fra ingenting til en agent som kjører mot din egen kode. Følg den i rekkefølge; hvert steg bygger på det forrige.
@@ -29,7 +29,7 @@ Onboarding kjører stegene sine i rekkefølge – du kan ikke hoppe over noe. De
 
 1. **Pålogging** (bare servereier): velg hvordan denne serveren logger inn folk på GitHub, Google Calendar og Linear – **Bruk appene til Control Center**, **Bruk mine egne apper** eller **Bruk en egen Connect-server**. Med egne apper setter **Opprett min GitHub-app** opp GitHub i ett steg. Du kan endre dette senere under **Innstillinger → Server → Enkel pålogging**.
 2. **Koble til**: logg inn på GitHub, eller lim inn et GitLab- eller Bitbucket-token. Påloggingsinformasjonen lagres på serveren, knyttet til kontoen din.
-3. **Arbeidsområde**: gi det første arbeidsområdet ditt et navn og velg eventuelt en logo. Når du oppretter det, seedes fem agenter – en CEO pluss `qa`, `architect`, `engineer` og `librarian` – sammen med de innebygde pipeline-malene.
+3. **Arbeidsområde** (bare servereier): gi det første arbeidsområdet ditt et navn og velg eventuelt en logo. Andre venter på **Du er ikke i et arbeidsområde ennå** til eieren oppretter ett for dem, eller en administrator for arbeidsområdet inviterer dem. Når du oppretter det, seedes seks agenter – en CEO pluss `qa`, `architect`, `engineer`, `librarian` og `content-synthesizer` – sammen med de innebygde pipeline-malene.
 4. **Sandkasse**: registrerer et sandkassevalg. Uansett hva du velger, kan du fortsette.
 5. **Adapter**: velg hvilken adapter og modell agentene skal bruke som standard. Velg **Control Center (built-in)**, og bruk deretter leverandørvelgeren som dukker opp, til å logge inn hos en modellleverandør – modellisten forblir tom til en leverandør er koblet til. Når du fullfører dette steget, festes også adapteren og modellen til arbeidsområdets CEO-agent.
 6. **Stemme (valgfritt)**: installer en talemodell på enheten for diktering, eller hopp over det.
@@ -37,7 +37,7 @@ Onboarding kjører stegene sine i rekkefølge – du kan ikke hoppe over noe. De
 Deretter åpner Control Center innboksen for arbeidsområdet.
 
 :::note[Hva som avgrenser en agentkjøring]
-Agentkommandoer pakkes inn i vertens OS-egne sandkasse når en slik finnes – Seatbelt på macOS, bubblewrap på Linux. Windows har ingen backend, så kjøringer der avgrenses bare av de andre lagene: samtalens eget worktre (`git worktree` på Windows; copy-on-write der `rift` er tilgjengelig), påloggingsinformasjon som formidles per kjøring og trekkes tilbake ved nedriving, og tillatelsesreglene for handlinger. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
+Agentkommandoer pakkes inn i vertens OS-egne sandkasse når en slik finnes – Seatbelt på macOS, bubblewrap på Linux. Windows har ingen backend. På en vert uten en slik starter bare servereierens agentkjøringer, og de avgrenses bare av de andre lagene: samtalens eget worktre (`git worktree` på Windows; copy-on-write der `rift` er tilgjengelig), påloggingsinformasjon som formidles per kjøring og trekkes tilbake ved nedriving, og tillatelsesreglene for handlinger. Alle andres kjøringer avvises til eieren installerer sandkassen eller slår av sandkassing for alle. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
 :::
 
 ## Steg 3: Legg til en repo
@@ -61,7 +61,7 @@ På fanen **Innstillinger** angir du:
 
 Trykk **Lagre endringer**.
 
-Dette steget er i praksis ikke valgfritt. Bare CEO-agenten arver adapteren du valgte under onboarding; de fire spesialistene opprettes uten noen. De faller tilbake til **Control Center (built-in)** med Anthropics standardmodell, og kjører derfor bare hvis du har koblet til en Anthropic-konto – og på en modell du ikke har valgt, hvis du har det.
+Dette steget er i praksis ikke valgfritt. Adaptertrinnet i onboardingen setter adapteren og modellen på hver agent som fantes på det tidspunktet; et arbeidsområde som opprettes senere, seedes med alle seks usatt. En agent uten adapter faller tilbake til **Control Center (built-in)** med Anthropics standardmodell, og kjører derfor bare hvis du har koblet til en Anthropic-konto – og på en modell du ikke har valgt, hvis du har det.
 
 ## Steg 5: Send en oppgave til agenten
 

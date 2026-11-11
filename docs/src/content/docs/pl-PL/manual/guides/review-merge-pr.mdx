@@ -2,7 +2,7 @@
 title: Zrecenzuj i scal PR
 description: Otwórz warsztat PR, przeczytaj diff, zostaw komentarze w linii, wyślij recenzję i scal ją.
 slug: pl-PL/podrecznik/poradniki/recenzja-i-scalanie-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Ten poradnik pokazuje, jak zrecenzować i scalić pull request.
@@ -23,9 +23,13 @@ jednego pliku, osadzony code-server i przeglądarka w aplikacji otwierają się 
 zostanie wykryty adres URL podglądu. Układ kart jest zapamiętywany dla każdego
 PR-a.
 
+Osadzony code-server dostaje tylko właściciel serwera, ponieważ działa na serwerze jako jego własny użytkownik. Sesja należy do urządzenia i osoby, która ją otworzyła, startuje z włączonym zaufaniem obszaru roboczego VS Code (VS Code pyta przed zaufaniem folderu) i nie uruchamia żadnego zadania automatycznie. Wszyscy inni zachowują edytor pojedynczego pliku i widoki plików.
+
 Karta Przegląd niesie metadane PR-a (autor, gałąź, etykiety, przypisane osoby,
 reakcje, commity, stan kontroli) oraz wiersz akcji: odśwież, **Recenzja**,
-**Scal**, otwórz w IDE i menu przepełnienia ⋯.
+**Scal**, przycisk nazwany od twojego edytora (na przykład **Otwórz w VS Code**) i menu przepełnienia ⋯.
+
+Ten przycisk edytora uruchamia natywny edytor na **własnym ekranie serwera**, jako użytkownik serwera i poza jakąkolwiek piaskownicą, dlatego jest oferowany wyłącznie [właścicielowi serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera). Na komputerze stacjonarnym, który sam hostuje serwer, jest to osoba przy biurku. Tak samo jest z otwieraniem worktree rozmowy w edytorze. Wszyscy inni korzystają z wbudowanych widoków edytora. Nawet właściciel może otworzyć PR tylko z repozytorium połączonego z obszarem roboczym.
 
 ### Otwórz PR ze stosu przestrzeni
 
@@ -42,14 +46,28 @@ Space, aby go zwinąć lub rozwinąć. Niepowiązane PR-y pozostają osobno, a
 niekompletne lub niejednoznaczne powiązania gałęzi nie są prezentowane jako
 uporządkowany stos.
 
-W **Kontroli wersji** opcja **Stos pull requestów (N)** otwiera selektor
-opublikowanych części stosu, zaczynając od dolnej. Każdy wpis pokazuje numer
+W nagłówku PR-a odznaka stosu (ikona warstw z liczbą pull requestów w stosie) otwiera **Stos pull requestów**, selektor opublikowanych części stosu, zaczynając od dolnej. Każdy wpis pokazuje numer
 PR-a, etykietę części i pozycję; wyewidencjonowana część jest oznaczona. Wybierz
 wpis, aby otworzyć jego warsztat PR. **Opublikuj stos** pojawia się tylko wtedy,
 gdy wykrywanie PR-ów się zakończyło i co najmniej jedna część nie ma PR-a.
 Dotyczy to także menu gałęzi. PR-y utworzone poza Control Center również liczą
 się jako opublikowane. Częściowo opublikowane stosy oferują obie akcje; praca na
 pojedynczej gałęzi zachowuje pojedyncze akcje tworzenia i wyświetlania PR-a.
+
+### Commit i push z panelu Kontrola źródła
+
+Commit, który wykonasz w panelu Kontrola źródła, jest Twój: to Ty jesteś jego autorem i committerem, pod adresem, który Twój hosting kodu zweryfikował dla Twojego logowania. Gdy utworzysz klucz podpisywania w sekcji **Zweryfikowane commity** w **Ustawienia → Ty → Commity**, serwer podpisuje go Twoim własnym kluczem podpisującym, zanim zostanie wypchnięty. Push niesie Twoje własne logowanie, zawężone do tego jednego repozytorium.
+
+Serwer uruchamia Git na własnej maszynie, w drzewie, które agent lub pull request może zmienić, więc nie uruchamia żadnego programu, który repozytorium może wybrać:
+
+- Commity pomijają haki Git repozytorium, tak jak robi to `git commit --no-verify`. Hak pre-commit, hak commit-msg ani hak pre-push nie zostaje uruchomiony
+- Pomocniki poświadczeń, edytory, zewnętrzne narzędzia diff i programy podpisujące, które konfiguruje repozytorium, są ignorowane
+
+Uruchom swoje sprawdzenia samodzielnie przed commitem albo w CI.
+
+Zmiana kodu wymaga [uprawnienia zapisu](/pl-PL/podrecznik/koncepcje/autoryzacja/#zmiana-kodu-wymaga-uprawnienia-zapisu) do repozytorium: zapisywania lub cofania plików w edytorze, **Pobierz najnowsze commity z PR**, commitowania i wypychania, publikowania gałęzi oraz działań na stosie, które wydzielają, wyewidencjonowują lub publikują część. Z samym dostępem do odczytu lub recenzji widzisz pliki i różnice, a te działania odpowiadają: „Możesz czytać to repozytorium, ale nie możesz go zmieniać. Administrator obszaru roboczego może przyznać dostęp do zapisu.”
+
+**Pobierz najnowsze commity z PR** synchronizuje worktree recenzji z najnowszymi commitami pull requesta. Pobiera, używając Twojego własnego logowania do GitHuba, i prosi o zalogowanie, gdy go nie masz. Najpierw zrób commit albo odrzuć swoje zmiany: worktree z niezacommitowanymi zmianami nie jest synchronizowane.
 
 ## Przeczytaj diff
 
@@ -134,8 +152,8 @@ egzekwuje ochrona gałęzi po stronie forge.
 Scalanie jest nieodwracalne: wypycha commity na forge, więc zamiast wpisu cofania
 dostaje krok potwierdzenia. Następnie pamięć podręczna PR-a jest unieważniana,
 jego status zmienia się na **Scalono**, a zdarzenie `PullRequestStatusChanged`
-zostaje wywołane ze statusem `merged`. To zdarzenie zwalnia efemeryczny worktree
-„otwórz w edytorze” i uruchamia dwa wbudowane potoki: **Stale repository
+zostaje wywołane ze statusem `merged`. To zdarzenie zwalnia efemeryczny worktree,
+który otworzył przycisk edytora, i uruchamia dwa wbudowane potoki: **Stale repository
 cleanup**, który usuwa nieaktualne worktree i foldery rozmów PR-a, oraz **Release
 notes**, który tworzy projekt wpisu w changelogu.
 
@@ -162,6 +180,12 @@ modelu kohort i osi.
 Control Center importuje także PR-y otwarte przez ludzi poza aplikacją. Powyższy
 przebieg recenzji jest identyczny. Zewnętrzne PR-y są wykrywane przez usługę
 odpytywania PR-ów.
+
+## Rozwiązywanie problemów
+
+### Mój hak pre-commit się nie uruchomił
+
+Commity wykonane w panelu Kontrola źródła pomijają haki Git repozytorium, tak jak `git commit --no-verify`. Serwer uruchamia Git na własnej maszynie, w drzewie, które mogą zmieniać agenty i pull requesty, więc nigdy nie uruchamia programu wybranego przez repozytorium. Uruchom sprawdzenia haka samodzielnie albo polegaj na CI.
 
 ## Powiązane poradniki
 

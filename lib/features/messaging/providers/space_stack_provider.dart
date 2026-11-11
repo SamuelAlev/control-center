@@ -63,8 +63,14 @@ class SpaceStackLayer {
   final int? prNumber;
 }
 
-/// Outcome of a stack mutation.
-typedef StackCallResult = ({bool ok, bool dirty, String? error});
+/// Outcome of a stack mutation. `failure` is what the call threw, so a
+/// refusal (no write grant, the forge refusing) can be worded by its kind.
+typedef StackCallResult = ({
+  bool ok,
+  bool dirty,
+  String? error,
+  Object? failure,
+});
 
 /// The layers recorded for a space. Empty until the first cut, and empty
 /// when the call fails, so a sidebar that cannot reach the server stays quiet.
@@ -104,6 +110,7 @@ StackCallResult _stackResult(Map<String, dynamic> data) => (
   ok: data['ok'] == true,
   dirty: data['dirty'] == true,
   error: data['error'] as String?,
+  failure: null,
 );
 
 /// Checks [branch] out inside the space. Does not open a review room.
@@ -123,7 +130,7 @@ Future<StackCallResult> checkoutStackLayer(
     });
     return _stackResult(data);
   } on Object catch (e) {
-    return (ok: false, dirty: false, error: '$e');
+    return (ok: false, dirty: false, error: '$e', failure: e);
   }
 }
 
@@ -144,7 +151,7 @@ Future<StackCallResult> cutStackLayer(
     });
     return _stackResult(data);
   } on Object catch (e) {
-    return (ok: false, dirty: false, error: '$e');
+    return (ok: false, dirty: false, error: '$e', failure: e);
   }
 }
 
@@ -167,6 +174,6 @@ Future<StackCallResult> publishStack(
     });
     return _stackResult(data);
   } on Object catch (e) {
-    return (ok: false, dirty: false, error: '$e');
+    return (ok: false, dirty: false, error: '$e', failure: e);
   }
 }

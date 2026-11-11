@@ -2,7 +2,7 @@
 title: Anslut till en fjärrserver
 description: Rikta skrivbordsappen eller webbklienten mot en cc_server som körs någon annanstans och byt mellan servrar utan att starta om.
 slug: sv-SE/handbok/how-to-guider/anslut-fjarrserver
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Varje klient är en renderare över en `cc_server` som äger datan. Skrivbordsappen
@@ -85,6 +85,12 @@ krypterade sessionen till code-server-backenden på `cc_server`. Hosta
 webbklienten över HTTPS eller säker loopback så att Service Workers finns
 tillgängliga. Inbyggda klienter använder en kapabilitetsavgränsad
 loopback-fasad.
+
+Bara serverägaren kan öppna den inbäddade code-server-redigeraren: den körs på
+servern som serverns egen användare. En session tillhör enheten och personen som
+öppnade den. Den öppnas med VS Codes arbetsytetillit påslagen, så VS Code frågar
+innan den litar på en mapp, och med automatiska uppgifter avstängda. Alla andra
+behåller den inbyggda enfilsredigeraren och filvyerna.
 :::
 
 ### Vad webbläsaren inte gör
@@ -99,9 +105,9 @@ behöver ett inbyggt fönster eller maskinens egna enheter:
 
 Två av dem beter sig annorlunda i stället för att saknas. Mötes-**inspelning**
 fungerar i webbläsaren och fångar din mikrofon plus en skärmdelning som innehåller
-ett ljudspår. **Öppna i IDE** fungerar också, men ber servern starta redigeraren på
-_serverns_ skärm, så knappen döljer sig mot en headless-värd utan installerade
-redigerare.
+ett ljudspår. Knappen med namnet på din redigerare (till exempel **Öppna i VS Code**) ber
+servern starta redigeraren på _serverns_ skärm, så knappen erbjuds bara serverägaren, och den döljer sig mot en headless-värd utan
+installerade redigerare.
 
 ## Felsökning
 

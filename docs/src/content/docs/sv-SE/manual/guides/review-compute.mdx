@@ -2,7 +2,7 @@
 title: Granskningsberäkning (kohorter, axlar och deterministiska diffar)
 description: Vad granskningsberäkningens körning producerar på serversidan – kohorter, API-kontrakts- och visuella diffar, grindar per axel – och hur det vävs in i fliken Granskning.
 slug: sv-SE/handbok/how-to-guider/granskningsberakning
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Fliken **Granskning** på en PR visar granskningspipelinen i realtid medan den
@@ -15,8 +15,6 @@ Bakom den fliken bygger `cc_server` filkohorter, kör de deterministiska axlarna
 och exponerar dem via RPC-operationerna `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` och deras `watch*`-tvillingar).
-En sparad layout som fortfarande heter `pr.reviewStudio` öppnar samma flik
-Granskning.
 
 På fliken Granskning:
 
@@ -83,6 +81,8 @@ beräkningskörningen de ändrade komponenterna före och efter via en headless
 golden-körning med `flutter test` i PR:ens base- och head-worktrees, och diffar
 sedan pixlarna.
 
+Eftersom testerna är PR:ens egen kod körs de som en agents verktygsprocess: inuti sandlådan när servern sandlådar agenter, osandlådat när serverägaren har stängt av sandlådan, och utan sandlåda bara för en begäran som serverägaren svarar för. För alla andra rapporterar axeln **unavailable** med orsaken ”ingen sandlåda på den här servern, och bara dess ägare får köra en PR:s tester osandlådat”.
+
 :::note[Det här kräver ett Flutter SDK på servervärten]
 Den rena Dart-servern kan inte rendera Flutter-widgetar i processen, så den
 startar `flutter test` som en separat process. SDK:t måste vara installerat på
@@ -93,9 +93,10 @@ godkänt resultat som den inte har gjort sig förtjänat.
 
 Ögonblicksbilder märkta **changed** eller **removed** håller kvar den visuella
 grinden tills de godkänns; ögonblicksbilder märkta **unchanged**, **added** och
-**approved** öppnar den. Otillgänglighet har en av fyra orsaker: ingen Flutter
+**approved** öppnar den. Otillgänglighet har en av fem orsaker: ingen Flutter
 SDK på värden, ingen Widgetbook-app i repot, inga golden-testbara
-användningsfall eller ett fel i golden-harnesset.
+användningsfall, ett fel i golden-harnesset eller ingen sandlåda för en begäran
+som serverägaren inte svarar för.
 
 Att godkänna en avsedd ändring är `review_studio.approveVisual`.
 

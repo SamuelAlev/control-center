@@ -117,8 +117,8 @@ class ExitPlanModeTool extends McpTool {
 
     // Approved → consume the gate: flip the SPACE out of plan mode so the mode
     // guard now permits execution tools. Mode is one column on the space row
-    // (every conversation in the space shares it), so this cannot be applied
-    // with a conversation id — which is what it used to be handed.
+    // (every conversation in the space shares it), so it is applied with the
+    // run's space id, never a conversation id.
     if (latest != null && latest.status == ApprovalStatus.approved) {
       final spaceId = run.spaceId;
       if (spaceId == null || spaceId.isEmpty) {

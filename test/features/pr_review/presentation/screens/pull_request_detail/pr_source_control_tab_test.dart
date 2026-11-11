@@ -108,12 +108,10 @@ Widget _testWorkbench(Widget child, _CommitHost host) => ProviderScope(
       (ref, args) async => (
         staged: [_staged],
         unstaged: <PrFile>[],
-        hasUpstream: false,
+        hasUpstream: true,
         ahead: 0,
         behind: 0,
         aheadOfBase: 0,
-        aheadOfBaseKnown: false,
-        statusKnown: false,
       ),
     ),
   ],

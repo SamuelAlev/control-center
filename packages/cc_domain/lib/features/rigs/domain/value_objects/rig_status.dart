@@ -65,8 +65,8 @@ enum RigCloseReason {
   /// that could extend its own life indefinitely is not ephemeral.
   ttlExpired,
 
-  /// The space that owned it went away. The wire name predates rigs being
-  /// keyed by space; the rig's owner id is the space's id.
+  /// The space that owned it went away (the rig's owner id is the space's
+  /// id).
   conversationEnded,
 
   /// The workspace was deleted, or the viewer lost membership of it.

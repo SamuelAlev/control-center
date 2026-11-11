@@ -2,7 +2,7 @@
 title: Чат-мост
 description: Провайдеры, команды, учётные данные, возможности, операции RPC и хранилище чат-моста.
 slug: ru-RU/руководство/справка/чат-мост
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Провайдеры
@@ -210,7 +210,7 @@ message.im
 | Упоминание принято         | `Working on it…`                                               |
 | Шаг `repo`                 | `Cloning <repo>…`                                              |
 | Шаг `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Шаг `script`               | `Running the setup script for <repo>…`                         |
+| Шаг `provisionTasks`       | `Running worktree tasks for <repo>…`                           |
 | Шаг `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, шага пока нет | `Preparing the workspace…`                                  |
 | `ready`                    | `Starting the agent…`                                          |
@@ -340,7 +340,6 @@ Slack, а они самые жёсткие среди смоделированн
 | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Учётные данные соединения   | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Незавершённая пошаговая настройка | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                       |
-| Устаревшие файлы Slack      | `<dataDir>/<workspaceId>/slack_credentials.json` и `slack_app_setup.json`, читаются один раз и переносятся на месте |
 
 Учётные данные лежат рядом с базой данных рабочего пространства, а не внутри
 неё: удаление рабочего пространства уносит с собой его токены чата, а

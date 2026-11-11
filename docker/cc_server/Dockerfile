@@ -137,7 +137,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 
 # Entry shim, because a PaaS does not let you choose your port.
 #
-# Railway / Render / Fly / Cloud Run all INJECT `PORT` and route to it; this
+# Render / Fly / Cloud Run all INJECT `PORT` and route to it; this
 # server reads `CC_SERVER_PORT`. The shim maps one to the other (a `--port`
 # flag beats the env var in CcServerConfig.resolve, so passing it is
 # unambiguous) and derives `CC_SERVER_PUBLIC_URL` from the platform's own
@@ -161,7 +161,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 #
 # Demo deployments additionally set, all optional (defaults in parentheses):
 #   CC_SERVER_DEMO_TTL_MINUTES    (45)    workspace lifetime per visitor
-#   CC_SERVER_DEMO_MAX_VISITORS   (60)    live visitors before redemption 503s
 #   CC_SERVER_DEMO_POOL_SIZE      (4)     workspaces seeded and kept warm
 #   CC_SERVER_DEMO_DISK_BUDGET_MB (8192)  data-directory ceiling
 #   CC_SERVER_DEMO_MAX_PER_IP     (3)     concurrent sessions from one address
@@ -180,8 +179,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 # a tmpfs /data makes a container restart the cleanest reaper there is.
 CMD ["/bin/sh", "-c", "\
 if [ -n \"$PORT\" ]; then set -- --port \"$PORT\"; fi; \
-if [ -z \"$CC_SERVER_PUBLIC_URL\" ] && [ -n \"$RAILWAY_PUBLIC_DOMAIN\" ]; then \
-  export CC_SERVER_PUBLIC_URL=\"wss://$RAILWAY_PUBLIC_DOMAIN/rpc\"; fi; \
 if [ -z \"$CC_SERVER_PUBLIC_URL\" ] && [ -n \"$RENDER_EXTERNAL_HOSTNAME\" ]; then \
   export CC_SERVER_PUBLIC_URL=\"wss://$RENDER_EXTERNAL_HOSTNAME/rpc\"; fi; \
 if [ -z \"$CC_SERVER_PUBLIC_URL\" ] && [ -n \"$FLY_APP_NAME\" ]; then \

@@ -2,7 +2,7 @@
 title: Exécuter des agents en parallèle
 description: Lancez plusieurs agents à la fois sans que leur travail entre en collision.
 slug: fr-FR/manuel/guides/agents-en-parallele
-sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
+sourceHash: a14be769d17ca7bcc63fc1c9c22645a1127209a5
 ---
 
 Ce guide vous montre comment exécuter plusieurs agents en même temps sans qu’ils s’écrasent mutuellement.
@@ -48,7 +48,7 @@ Assigner un ticket à un agent enregistre la propriété. Il n’existe aucun r�
 
 ## Surveiller leur exécution
 
-**Observabilité → En direct** (pied de la barre latérale → Observabilité, puis l’onglet En direct) affiche l’effectif d’agents de cet espace de travail, rafraîchi chaque seconde : le statut (en cours / inactif / en veille / interrompu), ce que fait chacun, les jetons et le coût de sa dernière exécution, ainsi qu’une commande d’arrêt pour un processus en cours. Sélectionner une ligne ancre un volet de transcription en direct.
+**Observabilité → En direct** (pied de la barre latérale → Observabilité, puis l’onglet En direct) affiche l’effectif d’agents de cet espace de travail, rafraîchi chaque seconde : le statut (en cours / inactif / en veille / interrompu), ce que fait chacun, les jetons et le coût de sa dernière exécution, ainsi qu’une commande d’arrêt pour un processus en cours. La commande d’arrêt n’arrête que les exécutions d’agents en direct des espaces de travail auxquels vous appartenez ; le propriétaire du serveur peut arrêter n’importe lequel. Sélectionner une ligne ancre un volet de transcription en direct.
 
 **Paramètres → Espace de travail → Agents** affiche le même effectif avec un vocabulaire de statut différent, axé sur ce qui demande attention et dérivé de l’historique d’exécution de chaque agent — en cours, bloqué, échoué, inactif, jamais exécuté — trié de sorte que tout ce qui demande attention remonte en tête. L’onglet **Journaux** de chaque agent contient son propre historique d’exécution.
 

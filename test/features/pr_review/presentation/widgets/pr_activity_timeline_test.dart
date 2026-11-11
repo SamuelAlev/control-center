@@ -131,6 +131,13 @@ Widget _wrap(
             deletions: 0,
             patch: '',
           ),
+          PrFile(
+            filename: 'lib/done.dart',
+            status: PrFileStatus.modified,
+            additions: 1,
+            deletions: 0,
+            patch: '',
+          ),
         ]),
       ),
       codeFontFamilyProvider.overrideWithValue('Fira Code'),
@@ -310,7 +317,7 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
         final controller = ScrollController();
         addTearDown(controller.dispose);
-        final diffJumps = <int>[];
+        final diffReveals = <int>[];
         await tester.pumpWidget(
           _wrap(
             CustomScrollView(
@@ -320,7 +327,7 @@ void main() {
                 PrActivityTimeline(
                   pr: _pr(),
                   prRef: _prRef,
-                  onOpenFileInDiff: diffJumps.add,
+                  onOpenCommentInDiff: diffReveals.add,
                 ),
               ],
             ),
@@ -400,15 +407,14 @@ void main() {
         // The review that only REPLIED gets its own reference card, showing
         // what was said and pointing back at the conversation it answers.
         expect(find.text('In reply to lib/b.dart'), findsOneWidget);
-        // The jump to the diff moved onto the conversation's file header, and
-        // resolves the commented file's tree-order index (lib/b.dart is second
-        // after lib/a.dart).
+        // The jump to the diff sits on the conversation's file header and
+        // reveals the conversation itself, by its root comment.
         final jump = find.byIcon(AppIcons.arrowRight);
         // Live file + the resolved conversation that still has a line.
         expect(jump, findsNWidgets(2));
         await tester.ensureVisible(jump.first);
         await tester.tap(jump.first);
-        expect(diffJumps, [1]);
+        expect(diffReveals, [100]);
         // Bot comment: badge + stripped display login + markdown body.
         expect(find.text('bot'), findsOneWidget);
         expect(find.text('sonarqubecloud'), findsOneWidget);
@@ -434,6 +440,64 @@ void main() {
 
         await tester.pumpWidget(Container());
         await tester.pump(const Duration(milliseconds: 100));
+      },
+    );
+
+    testWidgets(
+      'a conversation whose file left the diff reads as outdated, with no '
+      'jump to the diff',
+      (tester) async {
+        tester.view.physicalSize = const Size(800, 4000);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        final reveals = <int>[];
+        await tester.pumpWidget(
+          _wrap(
+            CustomScrollView(
+              scrollCacheExtent: const ScrollCacheExtent.pixels(8000),
+              slivers: [
+                PrActivityTimeline(
+                  pr: _pr(),
+                  prRef: _prRef,
+                  onOpenCommentInDiff: reveals.add,
+                ),
+              ],
+            ),
+            // The forge still reports line 52, but the change was reverted:
+            // lib/reverted.dart is not among the changed files any more.
+            comments: [
+              PrCodeReviewComment(
+                id: 200,
+                body: 'still in the diff',
+                user: const PrUser(login: 'krishna', avatarUrl: ''),
+                path: 'lib/b.dart',
+                position: 1,
+                line: 1,
+                createdAt: _t0.add(const Duration(hours: 4)),
+                reviewId: 1,
+              ),
+              PrCodeReviewComment(
+                id: 201,
+                body: 'about code that was reverted',
+                user: const PrUser(login: 'krishna', avatarUrl: ''),
+                path: 'lib/reverted.dart',
+                position: 52,
+                line: 52,
+                createdAt: _t0.add(const Duration(hours: 4)),
+                reviewId: 1,
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle(const Duration(seconds: 5));
+
+        expect(find.text('lib/reverted.dart'), findsOneWidget);
+        expect(find.text('Outdated'), findsOneWidget);
+        final jump = find.byIcon(AppIcons.arrowRight);
+        expect(jump, findsOneWidget);
+        await tester.tap(jump);
+        expect(reveals, [200]);
       },
     );
 

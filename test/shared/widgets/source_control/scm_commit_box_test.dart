@@ -183,12 +183,7 @@ void main() {
 
   group('scmCanOpenPullRequest', () {
     bool open({
-      bool statusKnown = true,
-      bool hasUpstream = true,
-      int ahead = 0,
       int aheadOfBase = 0,
-      bool aheadOfBaseKnown = true,
-      String branch = 'space/abc',
       int dirtyFiles = 0,
       bool hasExistingPr = false,
     }) {
@@ -196,12 +191,7 @@ void main() {
         hasForgeRemote: true,
         hasExistingPr: hasExistingPr,
         dirtyFiles: dirtyFiles,
-        statusKnown: statusKnown,
-        hasUpstream: hasUpstream,
-        ahead: ahead,
         aheadOfBase: aheadOfBase,
-        aheadOfBaseKnown: aheadOfBaseKnown,
-        branch: branch,
       );
     }
 
@@ -213,15 +203,8 @@ void main() {
       expect(open(), isFalse);
     });
 
-    test(
-      'an older server still offers a PR for a published feature branch',
-      () {
-        expect(open(aheadOfBaseKnown: false), isTrue);
-      },
-    );
-
-    test('publishing main does not offer a pull request of main', () {
-      expect(open(aheadOfBaseKnown: false, branch: 'main'), isFalse);
+    test('a dirty working tree can open a PR', () {
+      expect(open(dirtyFiles: 1), isTrue);
     });
   });
 }

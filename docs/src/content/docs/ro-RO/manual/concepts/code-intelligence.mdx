@@ -2,7 +2,7 @@
 title: Intelligence pentru cod
 description: De ce are nevoie un agent de compilator, de un potrivitor structural și de un depanator — și la ce răspunde fiecare dintre ele, la ce celelalte nu pot răspunde.
 slug: ro-RO/manual/concepte/intelligence-pentru-cod
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center îi dă unui agent patru moduri de a înțelege codul dincolo de simpla citire a lui. Ele răspund la întrebări cu adevărat diferite, iar motivul pentru care sunt patru, nu unul, este că niciun mecanism unic nu răspunde la toate.
@@ -31,6 +31,8 @@ A repeta ce i s-a spus deja agentului este mai rău decât să nu spui nimic: um
 Niciun server nu pornește la boot. Unul pornește la prima cerere care are nevoie de el, care este aproape întotdeauna prima editare a unui fișier pe care îl revendică, iar cele inactive sunt curățate. O gazdă care nu atinge niciodată Dart nu pornește niciodată un analizor.
 
 Detecția este o **intersecție**: un marker de rădăcină trebuie să existe în copia locală *și* binarul trebuie să se rezolve. Un marker singur spune „acest proiect este Python” și nimic despre dacă serverul este instalat; un binar care se rezolvă singur spune că gazda are un lanț de instrumente și nimic despre această copie locală. Numai ambele împreună înseamnă că o interogare poate reuși, iar un instrument care este oferit și eșuează mereu este mai rău decât unul care lipsește.
+
+Ceea ce poate influența un depozit este păstrat mic, intenționat. Serverele vin dintr-un tabel integrat, niciodată dintr-un fișier din copia locală, iar un binar din proiect (`node_modules/.bin`) este folosit doar când rularea este în sandbox. Un server de limbaj este un program care rulează pe mașina serverului, așa că un depozit nu are voie să numească unul.
 
 ## De ce căutare structurală, când există grep
 

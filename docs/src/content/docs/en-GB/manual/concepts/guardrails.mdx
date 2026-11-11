@@ -2,7 +2,7 @@
 title: Guardrails — one policy for every mutating action
 description: Why Control Center routes every agent side effect through a single allow/prompt/deny engine, how the ActionClass taxonomy stays small on purpose and what the autonomy dial really changes.
 slug: en-GB/manual/concepts/guardrails
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Agents in Control Center can delete files, push branches, publish pull
@@ -18,9 +18,8 @@ There is exactly one policy engine. It is consulted at every point where an
 action can leave the system: the built-in harness's tool registry, the
 server-side MCP dispatcher gate and repo-op mutations. A rule written once
 therefore applies to the built-in runtime and to external agent CLIs alike —
-there is no second, quieter path around it. The older bash-only command policy
-still works: a rule can match a command prefix instead of an action class and
-the two forms coexist in the same store.
+there is no second, quieter path around it. A rule can also match a command
+prefix instead of an action class; both forms live in the same store.
 
 The engine is not, however, a substitute for the OS sandbox and the sandbox is
 not a substitute for it. They answer different questions: the guardrails decide
@@ -28,13 +27,15 @@ whether a call Control Center can see is allowed to happen at all, while the
 sandbox bounds where the resulting process may reach. `cc_server` applies the
 sandbox where the host offers a backend — but [Windows offers none and Linux
 needs `bwrap` and `socat`](/en-GB/manual/concepts/sandbox-security/). On those hosts
-the guardrails are the outermost enforcement layer rather than a policy sitting
+only the server owner's runs start, unless the owner turned the sandbox off for
+everyone with `--sandbox off`. For any run that starts without a sandbox, the
+guardrails are the outermost enforcement layer rather than a policy sitting
 on top of a floor, which is worth knowing when you decide how permissive to be.
 
 ## ActionClass: a deliberately closed taxonomy
 
 Every mutating tool declares which **ActionClasses** it belongs to, from a
-closed set of thirteen effect classes. Five of them prompt out of the box; the
+closed set of fourteen effect classes. Six of them prompt out of the box; the
 rest allow and a rule is what changes that.
 
 | Class                      | Built-in default | What it covers                                                   |
@@ -52,16 +53,18 @@ rest allow and a rule is what changes that.
 | `processSpawn`             | allow            | Spawning a process (shell and anything shelling out)             |
 | `workspaceMutation`        | allow            | Mutating workspace structure (repos, spaces, agents)             |
 | `enclosureControl`         | allow            | Driving an enclosure (rig): booting a VM, sending it input       |
+| `hostExecution`            | **prompt**       | Running a command on the server host outside any sandbox at an agent's request: environment tasks, processes, compose stacks, and `eval` when its kernel runs unconfined |
 
 The eight allow-by-default classes were chosen on the assumption that the
 sandbox floor applies beneath them. It does where the host offers a backend,
-and it does not on Windows or on a Linux box missing `bwrap` and `socat` — so
-if you want `fileWriteOutsideWorktree` or `packageInstall` gated there, that is
-a rule you have to write.
+and it does not under `--sandbox off`, nor for the owner's own runs on Windows
+or on a Linux box missing `bwrap` and `socat`. If you want
+`fileWriteOutsideWorktree` or `packageInstall` gated there, that is a rule you
+have to write.
 
 The set is closed on purpose. A new mutating tool that declares no class fails
 the ratchet test, so the taxonomy can only grow by an explicit, argued
-decision — "taxonomy sprawl is the death of this feature." Thirteen classes is
+decision — "taxonomy sprawl is the death of this feature." Fourteen classes is
 enough to express the policies people actually write (never push without
 asking, never delete outside a worktree, always allow reads) and few enough
 that the settings UI stays comprehensible.
@@ -89,7 +92,7 @@ Two decisions carry hard guarantees:
 
 There is deliberately no per-turn latch. Every tool call re-resolves the policy
 from scratch, so repeated prompting for the same action is bounded by the
-operator's own "remember this decision" rather than by anything turn-scoped.
+operator's own standing approval rather than by anything turn-scoped.
 
 ## Argument-level rules
 
@@ -105,6 +108,8 @@ A constraint may name:
   branch except main")
 - **hosts** — network destinations, with subdomain wildcards (`*.internal`)
 - **commands** — command prefixes, matched on a word boundary
+- **tools** — the exact tool a call names, so an approval can cover one tool
+  rather than every tool with the same effect
 - **ceilings** — `maxCount` / `maxCents`, so "delete up to 50 files" is
   expressible
 
@@ -147,12 +152,34 @@ policy store, and the OS sandbox beneath both. A command rule that resolves to
 
 ## Standing approvals
 
-Answering a prompt with "remember this" writes a real policy rule: scoped
-(space / agent / workspace), **argument-constrained** (approving a push to
-`feature/login` grants `feature/**`, not `main`) and **self-revoking** on an
-explicit TTL. Saying yes for the next few hours is not the same as quietly
-rewriting your permanent policy, and the rules it writes land in the same
-store with provenance `remembered` and an expiry, so they can be revoked early.
+Every approval card an agent's action raises offers **Approve for 8 hours**
+when the action has something narrower than its class to name. Choosing it
+writes a real policy rule, a standing approval, into the same store as the
+rules you set, with provenance `remembered` and an expiry:
+
+- **Scoped.** It is written for the space the question came from. Only an
+  admin's answer can be written for the whole workspace.
+- **Narrow.** It names a branch family (approving a push to `feature/login`
+  covers `feature/**`, not `main`), a folder, a host, the exact command or the
+  tool. A commit is the one action approved as a class, for that space: it has
+  nothing narrower to name.
+- **Self-revoking.** It ends after eight hours, and it can be revoked sooner
+  on the agent permissions page.
+
+A standing approval only spares a question. It answers an ask set at its own
+scope or a wider one and never a deny, whichever scope the deny comes from. It
+is stored beside the rule you set for the action, so changing that rule leaves
+the approval in place and revoking the approval leaves the rule.
+
+Some gates ask on their own after the policy has allowed a call: a tool's own
+declared approval, or a mode's command net. They skip their question only for
+a standing approval that names that exact tool or command. Setting the action
+to allow does not silence them.
+
+Three cards keep two buttons, because there is nothing to carry forward:
+letting the sandbox run programs from a folder (approving it is already a
+stored grant you can revoke), a destructive operation you confirm once, and a
+skill install (a changed skill should ask again).
 
 ## Enforcement levels
 

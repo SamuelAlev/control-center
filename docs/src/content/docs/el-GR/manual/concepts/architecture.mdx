@@ -3,7 +3,7 @@ title: Αρχιτεκτονική
 description: Πώς είναι δομημένο το Control Center, με μοντέλο λεπτού πελάτη πάνω από διακομιστή, Καθαρή Αρχιτεκτονική με προτεραιότητα στα χαρακτηριστικά και θύρες και προσαρμογείς.
 dateModified: 2026-09-19
 slug: el-GR/εγχειρίδιο/έννοιες/αρχιτεκτονική
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Επισκόπηση
@@ -60,7 +60,7 @@ feature_name/
 - Οντότητες μνήμης: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Κοινά αντικείμενα τιμής: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Κοινές θύρες: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Υπηρεσίες τομέα: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Υπηρεσίες τομέα: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + τύποι συμβάντων (χώρου εργασίας/πράκτορα, PR/κριτικής, μηνυμάτων, εισιτηρίων, pipeline, ενορχήστρωσης, μνήμης, ημερολογίου/συσκέψεων, ταυτότητας και ιδιότητας μέλους, παρατηρησιμότητας)
 
 ## Ταυτότητα και συνεργασία
@@ -132,7 +132,6 @@ feature_name/
 
 - Μυστικά στο `flutter_secure_storage` (keychain του macOS, credential manager των Windows, libsecret του Linux) — το διαπιστευτήριο συσκευής του πελάτη και τα κλειδιά απομακρυσμένης σύζευξης, όχι τα token των παρόχων
 - `shared_preferences` μόνο για μη ευαίσθητες προτιμήσεις (θέμα, γραμματοσειρά, διάταξη)
-- Τα υπολείμματα μυστικών παρόχων από παλαιότερες εγκαταστάσεις παραδίδονται μία φορά στον διακομιστή από το `features/auth/providers/credential_migration.dart` και έπειτα διαγράφονται από το keychain του πελάτη
 
 ## Επιβολή της αρχιτεκτονικής
 

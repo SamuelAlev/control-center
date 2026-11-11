@@ -2,7 +2,7 @@
 title: Hubungkan ke server jarak jauh
 description: Arahkan aplikasi desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antar server tanpa memulai ulang.
 slug: id-ID/panduan-pengguna/panduan-praktis/hubungkan-server-jarak-jauh
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Setiap klien adalah perender di atas `cc_server` yang memiliki data. Aplikasi
@@ -89,6 +89,8 @@ itu sendiri; Service Worker-nya membawa permintaan melalui sesi terenkripsi yang
 terautentikasi ke backend code-server pada `cc_server`. Hosting klien web melalui
 HTTPS atau loopback aman agar Service Worker tersedia. Klien native memakai fasad
 loopback yang dibatasi kapabilitas.
+
+Hanya pemilik server yang dapat membuka editor code-server tertanam: editor itu berjalan di server sebagai pengguna server itu sendiri. Sesi menjadi milik perangkat dan orang yang membukanya. Editor dibuka dengan trust workspace VS Code aktif, sehingga VS Code meminta konfirmasi sebelum mempercayai sebuah folder, dan dengan tugas otomatis dimatikan. Orang lain tetap memakai editor berkas tunggal bawaan dan tampilan berkas.
 :::
 
 ### Yang tidak dilakukan peramban
@@ -103,9 +105,7 @@ permukaan memerlukan jendela native atau perangkat milik mesin itu sendiri:
 
 Dua hal berperilaku berbeda alih-alih tidak ada. **Perekaman** rapat berfungsi di
 peramban, menangkap mikrofon Anda plus berbagi layar yang menyertakan trek audio.
-**Buka di IDE** juga berfungsi, tetapi meminta server meluncurkan editor di layar
-_server_, jadi tombolnya menyembunyikan diri sendiri terhadap host headless tanpa
-editor terpasang.
+Tombol yang dinamai sesuai editor Anda (misalnya **Open in VS Code**) meminta server meluncurkan editor di layar _server_, sehingga hanya pemilik server yang ditawari tombol itu, dan tombol tersebut menyembunyikan diri sendiri terhadap host headless tanpa editor terpasang.
 
 ## Pemecahan masalah
 

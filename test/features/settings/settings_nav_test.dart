@@ -1,4 +1,5 @@
 import 'package:control_center/features/settings/settings_nav.dart';
+import 'package:control_center/router/routes.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Pins the settings information architecture against drift.
@@ -45,13 +46,13 @@ void main() {
     ]);
   });
 
-  test('profile & identity lives under Workspace, not You', () {
+  test('the account profile is the first personal page; the workspace '
+      'overlay leads the workspace group', () {
+    final you = kSettingsNav.firstWhere((g) => g.scope == SettingScope.user);
+    expect(you.items.first.id, 'you.profile');
     expect(
-      kSettingsNav
-          .firstWhere((g) => g.scope == SettingScope.user)
-          .items
-          .map((e) => e.id),
-      isNot(contains('you.profile')),
+      you.items.first.route(workspaceId),
+      '/workspaces/ws-1/settings/you/profile',
     );
     expect(
       kSettingsNav
@@ -60,6 +61,44 @@ void main() {
           .first
           .id,
       'workspace.profile',
+    );
+  });
+
+  test('settings opens on the first page of the sidebar', () {
+    final first = kAvailableSettingsNavItems.first;
+    expect(settingsLandingRoute(workspaceId), first.route(workspaceId));
+    // Everyone has a profile, on every client.
+    expect(first.ownerOnly, isFalse);
+    expect(first.desktopOnly, isFalse);
+  });
+
+  test('connected accounts are part of the profile, not a page of their '
+      'own', () {
+    expect(kSettingsNavItems.map((e) => e.id), isNot(contains('you.accounts')));
+    final profile = kSettingsNavItems.firstWhere((e) => e.id == 'you.profile');
+    expect(
+      Uri.parse(settingsAccountsRoute(workspaceId)).path,
+      profile.route(workspaceId),
+    );
+  });
+
+  test('commits is a personal page', () {
+    final commits = kSettingsNav
+        .firstWhere((g) => g.scope == SettingScope.user)
+        .items
+        .firstWhere((e) => e.id == 'you.commits');
+    expect(commits.route(workspaceId), '/workspaces/ws-1/settings/you/commits');
+  });
+
+  test('integrations sits right after workspace general', () {
+    final ids = kSettingsNav
+        .firstWhere((g) => g.scope == SettingScope.workspace)
+        .items
+        .map((e) => e.id)
+        .toList();
+    expect(
+      ids.indexOf('workspace.integrations'),
+      ids.indexOf('workspace.general') + 1,
     );
   });
 

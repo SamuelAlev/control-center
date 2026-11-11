@@ -69,6 +69,27 @@ void main() {
     );
   });
 
+  testWidgets('a run refused for want of a sandbox is guidance by its code', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host([
+        ErrorSegment(
+          message: 'server sentence',
+          code: ErrorSegment.sandboxUnavailableCode,
+          startedAt: DateTime.utc(2026),
+        ),
+      ]),
+    );
+    await tester.pump();
+
+    final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+    expect(find.byType(CcAlert), findsOneWidget);
+    expect(find.text(l10n.runSandboxUnavailableTitle), findsOneWidget);
+    expect(find.text(l10n.runSandboxUnavailable), findsOneWidget);
+    expect(find.text('server sentence'), findsNothing);
+  });
+
   testWidgets('Control Center rows show readable labels, raw IDs in details', (
     tester,
   ) async {

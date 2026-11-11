@@ -2,10 +2,10 @@
 title: Herramientas MCP
 description: Catálogo completo de las herramientas MCP que registra cc_server, por familia.
 slug: es-MX/manual/referencia/herramientas-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` aloja un único registro de herramientas MCP (JSON-RPC 2.0), servido en el puerto principal del servidor (`9030` de forma predeterminada) en `POST /mcp` y `GET /sse`, con la versión de protocolo `2024-11-05`. Todos los clientes llegan al mismo registro: el escritorio, la versión web, los clientes MCP externos y el entorno de ejecución de agentes integrado. Los servidores MCP externos se pueden puentear hacia el mismo registro como una capa dinámica.
+`cc_server` aloja un único registro de herramientas MCP (JSON-RPC 2.0), servido en el puerto principal del servidor (`9030` de forma predeterminada) en `POST /mcp` y `GET /sse`, con la versión de protocolo `2024-11-05`. Todos los clientes llegan al mismo registro: el escritorio, la versión web, los clientes MCP externos y el entorno de ejecución de agentes integrado. Los servidores MCP externos se pueden puentear hacia el mismo registro como una capa dinámica. Los servidores descubiertos en la configuración de herramientas del usuario del servidor son la excepción: este endpoint nunca los lista, llama ni busca, y solo las ejecuciones del arnés integrado, de las que responde el propietario del servidor, los obtienen (consulta [Los servidores MCP personales siguen siendo del propietario](/es-MX/manual/guias/servidor-mcp/#los-servidores-mcp-personales-siguen-siendo-del-propietario)).
 
 ## Tamaño del registro
 
@@ -23,7 +23,7 @@ Las cinco herramientas del grafo de código solo se registran cuando el host pas
 El registro completo se anuncia en `tools/list` sin ninguna compuerta de descubrimiento. Las ediciones de tickets son herramientas con tipo.
 
 :::note[Los clientes externos siempre ven el catálogo completo]
-`tools/list` nunca se recorta. Los clientes MCP validan los nombres de las herramientas contra su propia copia en caché de esa lista y rechazan todo lo que no figure en ella sin llegar a preguntar al servidor, así que una herramienta oculta ahí es inalcanzable en lugar de solo estar callada.
+`tools/list` nunca se recorta, salvo por los servidores MCP personales del propietario del servidor, que nunca incluye. Los clientes MCP validan los nombres de las herramientas contra su propia copia en caché de esa lista y rechazan todo lo que no figure en ella sin llegar a preguntar al servidor, así que una herramienta oculta ahí es inalcanzable en lugar de solo estar callada.
 
 El **arnés integrado** es distinto: carga solo un subconjunto residente de definiciones por solicitud y trae el resto la primera vez que se usa, lo cual es un comportamiento del lado del arnés y no cambia este registro. Consulta [Contexto de herramientas y caché de prompts](/es-MX/manual/conceptos/contexto-de-herramientas).
 :::
@@ -248,7 +248,7 @@ delimita como datos que no son de confianza. Las cuatro herramientas de uso más
 (las herramientas de uso también declaran `networkEgress` y `processSpawn`; `mobile_use` e
 `ios_use` también declaran `packageInstall`), así que los modos de solo lectura las deniegan. `rig_list`
 no declara ninguna: solo lee el estado del espacio de trabajo. El vocabulario completo de verbos por superficie está en la
-[referencia de rigs](/es-MX/manual/referencia/rigs/#action-verbs).
+[referencia de rigs](/es-MX/manual/referencia/rigs/#verbos-de-acción).
 
 | Herramienta    | Descripción                                                                                     |
 | -------------- | ------------------------------------------------------------------------------------------------ |
@@ -256,8 +256,10 @@ no declara ninguna: solo lee el estado del espacio de trabajo. El vocabulario co
 | `browser_use`  | Controla un Chromium, Firefox o WebKit sin interfaz (`engine`): navegar, hacer clic, rellenar, extraer (a11y/DOM/console), portapapeles, captura de pantalla |
 | `mobile_use`   | Controla Android por ADB: inspección/entrada, capturas de pantalla, instalar/iniciar/detener/restablecer/desinstalar apps, enlaces profundos y comandos de dispositivo con forma de argv |
 | `ios_use`      | Controla el simulador de iOS mediante WebDriverAgent/CoreSimulator: inspección/entrada, capturas de pantalla, instalar/iniciar/detener/desinstalar apps, enlaces profundos y procesos del simulador con forma de argv |
-| `rig_list`     | Enumera los rigs de un espacio de trabajo con su superficie, estado, tamaño de pantalla y controlador |
+| `rig_list`     | Enumera los rigs del espacio de la ejecución con su superficie, estado, tamaño de pantalla y controlador |
 | `rig_close`    | Destruye un rig y descarta el estado de máquina que posee                                        |
+
+Solo las ejecuciones de agentes pueden llamar a estas herramientas; cualquier otro llamador es rechazado. Una ejecución solo alcanza los rigs del espacio para el que se le arrendó: `space_id` viene de la concesión de la ejecución, nunca de la llamada, y un rig de otro espacio, o de ningún espacio, responde igual que uno inexistente.
 
 `app_use` es una quinta herramienta use: maneja las ventanas de una aplicación de escritorio lanzada en un espacio, directamente en el host y no en una VM, y además declara `fileWriteOutsideWorktree` y `fileDelete`. Tanto ella como las herramientas `environment_*` se describen en [Configurar entornos](/es-MX/manual/guias/entornos/).
 
@@ -302,7 +304,7 @@ ninguna herramienta, así que un nombre que hayas visto referenciado en otro lug
 | Capacidad                              | Dónde vive en su lugar                                                                       |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Contratar, despedir o editar un agente  | La interfaz de agentes. No existe ninguna herramienta `hire_agent` / `fire_agent` / `update_agent` |
-| Crear un espacio de trabajo             | `workspace.upsert` por RPC, que siembra y estampa la propiedad                               |
+| Crear un espacio de trabajo             | `workspace.create` por RPC, solo para el propietario del servidor, que siembra y estampa la propiedad |
 | Proyectos (crear / listar / actualizar / archivar) | La interfaz de tickets. Los proyectos son una superficie del operador; consulta [Proyectos](/es-MX/manual/guias/proyectos/) |
 | Hacer al operador una pregunta bloqueante | La herramienta `ask_user` del **arnés**, no de MCP. Muestra un formulario en la conversación y se bloquea hasta recibir la respuesta |
 | Diagnóstico por agente                  | Nada. No existe ningún `doctor`; consulta [Diagnosticar un agente](/es-MX/manual/guias/diagnosticar-agente/) |

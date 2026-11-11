@@ -2,7 +2,7 @@
 title: Ponte di chat
 description: Provider, comandi, credenziali, capacità, operazioni RPC e archiviazione del ponte di chat.
 slug: it-IT/manuale/riferimento/ponte-di-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Provider
@@ -150,7 +150,7 @@ La scheda si apre quando una menzione viene accettata, prima del clone e prima d
 | Menzione accettata               | `Working on it…`                                               |
 | Passaggio `repo`                 | `Cloning <repo>…`                                              |
 | Passaggio `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Passaggio `script`               | `Running the setup script for <repo>…`                         |
+| Passaggio `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | Passaggio `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, nessun passaggio ancora | `Preparing the workspace…`                              |
 | `ready`                          | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Esiste perché il collegamento avviene dall'_altra_ parte: un membro digita il c
 | --------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Credenziali di connessione  | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                    |
 | Preparazione guidata incompleta | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                          |
-| File Slack legacy           | `<dataDir>/<workspaceId>/slack_credentials.json` e `slack_app_setup.json`, letti una volta e migrati sul posto |
 
 Le credenziali vivono accanto al database dello spazio di lavoro, non al suo interno: eliminare uno spazio di lavoro porta con sé i suoi token di chat e `workspace.export` o un backup copia `workspace.db` — quindi uno spazio di lavoro ceduto a qualcun altro non porta con sé token di bot attivi. Le scritture sono atomiche (file temporaneo più rename) e ristrette al solo proprietario.
 

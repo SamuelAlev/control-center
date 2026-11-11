@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cc_harness/tools.dart';
+import 'package:cc_harness_runtime/src/tools/workspace_paths.dart';
 
 /// Commits or discards a staged change as its own tool (visible approval +
 /// transcript line). Refuses the whole change if any file drifted since staging
@@ -95,6 +96,16 @@ class ResolveTool extends HarnessTool {
         'discard that change. The staged edit has been dropped — re-run the '
         'tool against the current files.',
       );
+    }
+
+    for (final file in staged.files) {
+      final refused = file.isNoop
+          ? null
+          : readOnlyRefusal(file.path, context.readOnlyRoots);
+      if (refused != null) {
+        store.discard(id);
+        return refused;
+      }
     }
 
     // Validated as a set, so the write is a set too.

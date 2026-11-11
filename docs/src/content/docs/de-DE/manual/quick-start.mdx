@@ -2,7 +2,7 @@
 title: Schnellstart
 description: Installiere Control Center, richte einen Agenten ein und sieh zu, wie er an deinem Repo arbeitet.
 slug: de-DE/handbuch/schnellstart
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Das ist der kürzeste vollständige Weg von null bis zu einem Agenten, der an deinem eigenen Code arbeitet. Geh ihn der Reihe nach; jeder Schritt hängt vom vorherigen ab.
@@ -30,7 +30,7 @@ Das Onboarding geht seine Schritte der Reihe nach durch — vorausspringen geht 
 
 1. **Anmeldung** (nur Server-Eigentümer): Wähle, wie dieser Server Personen bei GitHub, Google Calendar und Linear anmeldet — **Apps von Control Center verwenden**, **Eigene Apps verwenden** oder **Eigenen Connect-Server verwenden**. Mit eigenen Apps richtet **Meine GitHub-App erstellen** GitHub in einem Schritt ein. Ändern kannst du das später unter **Einstellungen → Server → Single sign-on**.
 2. **Verbinden**: Melde dich bei GitHub an oder füge ein Token für GitLab oder Bitbucket ein. Die Zugangsdaten liegen auf dem Server und sind an dein Konto gebunden.
-3. **Workspace**: Benenne deinen ersten Arbeitsbereich und wähle optional ein Logo. Beim Anlegen entstehen fünf Agenten — ein CEO plus `qa`, `architect`, `engineer` und `librarian` — und die mitgelieferten Pipeline-Vorlagen.
+3. **Workspace** (nur Server-Eigentümer): Benenne deinen ersten Arbeitsbereich und wähle optional ein Logo. Alle anderen warten auf **Du bist noch in keinem Workspace**, bis der Server-Eigentümer einen für sie anlegt oder ein Admin sie einlädt. Beim Anlegen entstehen sechs Agenten — ein CEO plus `qa`, `architect`, `engineer`, `librarian` und `content-synthesizer` — und die mitgelieferten Pipeline-Vorlagen.
 4. **Sandbox**: hält eine Sandbox-Präferenz fest. Beide Entscheidungen lassen dich weitergehen.
 5. **Adapter**: Wähle den Adapter und das Modell, das Agenten standardmäßig nutzen sollen. Wähle **Control Center (built-in)** und melde dich dann in der Anbieterauswahl, die erscheint, bei einem Modellanbieter an — die Modellliste bleibt leer, bis einer verbunden ist. Mit dem Abschluss dieses Schritts werden Adapter und Modell auch auf den CEO-Agenten des Arbeitsbereichs geschrieben.
 6. **Stimme (optional)**: Installiere ein Sprachmodell auf dem Gerät fürs Diktat, oder überspringe den Schritt.
@@ -38,7 +38,7 @@ Das Onboarding geht seine Schritte der Reihe nach durch — vorausspringen geht 
 Control Center öffnet danach den Posteingang deines Arbeitsbereichs.
 
 :::note[Was einen Agentenlauf begrenzt]
-Agentenbefehle werden mit der nativen Sandbox des Host-Betriebssystems umhüllt, sobald eine vorhanden ist — Seatbelt unter macOS, bubblewrap unter Linux. Windows hat kein Backend, dort begrenzen die Läufe also nur die anderen Schichten: der eigene Worktree der Unterhaltung (`git worktree` unter Windows; Copy-on-Write, wo `rift` mitgeliefert wird), Zugangsdaten, die bei jedem Start vermittelt und beim Aufräumen widerrufen werden, und die Aktions-Schutzregeln. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
+Agentenbefehle werden mit der nativen Sandbox des Host-Betriebssystems umhüllt, sobald eine vorhanden ist — Seatbelt unter macOS, bubblewrap unter Linux. Windows hat kein Backend. Auf einem Host ohne Backend starten nur die Läufe des Server-Eigentümers, und sie werden nur durch die anderen Schichten begrenzt: der eigene Worktree der Unterhaltung (`git worktree` unter Windows; Copy-on-Write, wo `rift` mitgeliefert wird), Zugangsdaten, die bei jedem Start vermittelt und beim Aufräumen widerrufen werden, und die Aktions-Schutzregeln. Alle anderen Läufe werden abgelehnt, bis der Server-Eigentümer die Sandbox installiert oder das Sandboxing für alle ausgeschaltet hat. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
 :::
 
 ## Schritt 3: Ein Repository hinzufügen
@@ -62,7 +62,7 @@ Auf dem Tab **Einstellungen** setzt du:
 
 Klicke auf **Änderungen speichern**.
 
-Dieser Schritt ist in der Praxis nicht optional. Nur der CEO-Agent übernimmt den Adapter aus dem Onboarding; die vier Spezialisten werden ohne einen angelegt. Sie fallen auf **Control Center (built-in)** mit dem Standardmodell von Anthropic zurück, laufen also nur, wenn du ein Anthropic-Konto verbunden hast — und dann auf einem Modell, das du nicht gewählt hast, falls du eins verbunden hast.
+Dieser Schritt ist in der Praxis nicht optional. Der Adapter-Schritt im Onboarding setzt Adapter und Modell auf jedem Agenten, der zu diesem Zeitpunkt schon existierte; ein später angelegter Arbeitsbereich entsteht mit allen sechs ungesetzt. Ein Agent ohne Adapter fällt auf **Control Center (built-in)** mit dem Standardmodell von Anthropic zurück, laufen also nur, wenn du ein Anthropic-Konto verbunden hast — und dann auf einem Modell, das du nicht gewählt hast, falls du eins verbunden hast.
 
 ## Schritt 5: Dem Agenten eine Aufgabe schicken
 

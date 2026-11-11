@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Headless sunucunun her bayrağı, ortam değişkeni, alt komutu ve veri dizini yolu.
 slug: tr-TR/kilavuz/referans/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Her süreç bayrağı bir CLI bayrağı ya da bir ortam değişkeni alır; önce bayrak,
@@ -48,7 +48,7 @@ başlangıç günlük satırlarını denetleyin.
 
 | Bayrak                   | Ortam                           | Varsayılan                            | Anlam                                                                                                                                 |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Bir arka uç mevcut olduğunda ajan çalıştırmalarının ana makinenin işletim sistemi sandbox'ına sarılıp sarılmayacağı. Bir etkinleştirme değil, vazgeçme anahtarıdır — aşağıya bakın |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on`, ajan çalıştırmalarını ana makinenin işletim sistemi sandbox'ına sarar; sandbox'ı olmayan bir ana makinede yalnızca sunucu sahibinin çalıştırmalarını başlatır. `off`, her üyenin ajanlarını bu ana makinede sınırlandırılmadan çalıştırır. Aşağıya bakın |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Arka planda kod grafiği dizinlemesi için sahadaki kapatma anahtarı. `off` yeniden derleme olmadan temiz başlatır                        |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Hazır bildiriminden sonra ilk dizin taramasının bekletileceği saniye (0–300 aralığına sınırlanır)                                     |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Harness çalıştırmalarının küçük bir yerleşik araç kümesi ile bir ad dizini gönderip kalanları ilk kullanımda yükleyip yüklemediği. Aşağıya bakın |
@@ -85,24 +85,35 @@ okuyabileceği bir yerdeyken, sunucu **başlamayı reddeder** (çıkış kodu `7
 sonra yapılan bir düzenleme yeniden başlatmayla geri alınmaz. Boş bir değer ayarlı
 değil gibi okunur.
 
-GitLab ve Bitbucket arka plan işleri ayrıca `GITLAB_TOKEN` / `CI_JOB_TOKEN` ve
-`BITBUCKET_EMAIL` ile birlikte `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN`
-değişkenlerini okur. GitHub için ortam kimlik bilgisi yoktur.
+Hiçbir forge kimlik bilgisi ortamdan gelmez: GitHub, GitLab ve Bitbucket hepsi bir
+üyenin kendi oturumu ya da token’ı üzerinden, ya da bununla sınırlı, depo başına GitHub
+App token’ları üzerinden çalışır.
 
 ### `--sandbox`
 
 Sunucu, başlangıçta ana makineyi bir kez yoklar ve bir arka uç mevcutsa ajan
 komut yürütmesini işletim sisteminin yerel sandbox'ına sarar: macOS'ta
-`sandbox-exec` (Seatbelt), Linux ve WSL2'de `bwrap` ile `socat`. Hiçbirinin
-bulunmadığı yerlerde — Windows ya da bu araçlardan yoksun bir Linux ana
-makinesi — çalıştırmalar ortam arındırmasına, komut politikasına ve eylem
-korumalarına geri düşer ve başlangıç günlüğü hangi durumun geçerli olduğunu
-söyler.
+`sandbox-exec` (Seatbelt), Linux ve WSL2'de `bwrap` ile `socat`. Karar bir kez
+verilir ve sunucu yeniden başlatılana kadar geçerli kalır. Başlangıç maruziyet
+satırında gösterilen üç sonuç vardır:
 
-`--sandbox off`, yoklayıcının göremediği durum için sahadaki kapatma
-anahtarıdır: sandbox profilinin kendisinin kötü davrandığı bir ana makine.
-Yeniden derleme gerektirmez ve sunucu, süreç yaşadığı sürece bir uyarı günlükler;
-böylece bu durum asla sessiz kalmaz.
+| `sandbox=`    | Ne zaman                                | Kimin ajan çalıştırmaları başlar                                                 |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Bir arka uç mevcutsa ve `--sandbox` `on` ise | Herkesinki, sarılmış                                                        |
+| `off`         | `--sandbox off`                         | Herkesinki, bu ana makinede sınırlandırılmadan                                   |
+| `unavailable` | `--sandbox on` ve arka uç yoksa (Windows ya da `bwrap` ve `socat` olmayan Linux) | Yalnızca çalıştırmadan sorumlu kişinin sunucu sahibi olduğu çalıştırmalar, sınırlandırılmadan. Diğerleri "Bu sunucuda sandbox yok, bu yüzden burada ajanları yalnızca sahibi çalıştırabilir." ile reddedilir. |
+
+Otomasyon için sorumlu kişi, otomasyonun bağlı olduğu kişidir. Kayıtlı bir sunucu
+sahibi yoksa `unavailable` bir ana makinede hiçbir çalıştırma başlamaz. `bubblewrap`
+kurulu Linux ve WSL2'de yerel gönderim şu anda her çalıştırmayı güvenli biçimde
+reddeder; bkz. [Sandbox arka uçları](/tr-TR/kilavuz/referans/sandbox-arka-uclari/#linux-bubblewrap).
+
+`--sandbox off`, sunucuyu kullanan herkes için sunucu sahibinin tercihidir: her
+üyenin ajanlarını bu makinede sınırlandırılmadan çalıştırır. Sandbox profilinin
+kendisinin kötü davrandığı bir ana makinede ya da üyelerin arka ucu olmayan bir
+ana makinede ajan çalıştırabilmesi için kullanın. Yeniden derleme gerektirmez ve
+sunucu, süreç yaşadığı sürece bir uyarı günlükler; böylece bu durum asla sessiz
+kalmaz.
 
 ### `--tool-deferral`
 
@@ -182,7 +193,6 @@ değişikliği 10 dakika içinde ya da yeniden başlatıldığında alır.
 | `cc_server connect enable`             | Control Center’ın barındırdığı Connect’i kullanır                                                                |
 | `cc_server connect enable --url <url>` | O URL’deki özel bir Connect’i kullanır (HTTPS ya da loopback üzerinde `http`)                                    |
 | `cc_server connect disable`            | Connect kullanımını durdurur. Kişileri yalnızca sunucunun kendi uygulamaları oturum açtırır                     |
-| `cc_server connect rotate-key --yes`   | Yeni bir kurulum anahtarı ve kurulum kimliği üretir. Connect üzerinden oturum açan herkes yeniden oturum açar. `--yes` olmadan yalnızca uyarır ve `2` ile çıkar |
 
 Komut verilmezse varsayılan `status` olur. Her komut `--data-dir` kabul eder.
 `CC_CONNECT_URL`, bunların sakladığı her şeyi geçersiz kılar. Bilinmeyen bir komut

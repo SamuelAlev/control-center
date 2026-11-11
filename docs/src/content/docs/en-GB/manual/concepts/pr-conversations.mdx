@@ -2,13 +2,13 @@
 title: PR conversations
 description: How a GitHub PR comment becomes an agent turn with no webhook, what authorises the author, and who each side of the conversation is attributed to.
 slug: en-GB/manual/concepts/pr-conversations
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 A pull request is already where the conversation about code happens. PR
 conversations make it a surface on a Control Center workspace, the same way a
 [chat bridge](/en-GB/manual/concepts/chat-bridges/) makes Slack one: @mention
-`@usectrl` (or the workspace's GitHub App bot) on a PR, reply inside its review
+`@usectrl` on a PR, reply inside its review
 threads, or add the `ai-review` label, and the work happens in the PR's review
 space — under the same attribution and guardrails as anything typed in the app.
 A comment and a label are gated the same way: on the member who wrote or added
@@ -24,7 +24,7 @@ side is attributed to**.
 GitHub's only push channel for an app is a webhook, and a webhook needs an
 inbound URL — the one thing this surface deliberately never requires. So
 discovery is a sweep: one aliased search per app installation asks GitHub for
-PRs that mention the bot (or its short slug) and for open PRs that carry the
+PRs that mention `@usectrl` and for open PRs that carry the
 review label, PRs that already have a review space get their comment threads
 read, and everything is diffed by comment id against what was seen last sweep.
 An own app sweeps every minute over at most 25 PRs. Through Connect the calls
@@ -66,8 +66,8 @@ Three checks, in order, and failing any of them is silent — nothing is posted:
 - **A signed-in member.** The account must belong to a member of _this_
   workspace who signed in to GitHub on this server
 - **A write role.** `viewer` and `guest` cannot start work
-- **Push access.** Replies use a `bot` token limited to that member's access to
-  the repository. If the server cannot mint one, it does not proceed
+- **Push access.** Replies use a token for that one repository, limited to that
+  member's access to it. If the server cannot mint one, it does not proceed
 
 Every check runs before any acknowledgement, so a stranger gets no reaction
 and no reply. A comment is never attributed to somebody who did not send it,
@@ -88,15 +88,17 @@ Each side of the conversation carries a different identity, and the difference
 is the feature:
 
 - **On GitHub, the reply is automation on your behalf.** Every reply rides a
-  `bot` token for that one repository, limited to the asking member's access.
-  On an own app the author is the app's `[bot]` account. Through Connect a
-  token for the shared App is a user token, so the reply is authored by the
-  asking member's account, acting through the App. Either way every reply
-  starts with `**Control Center** (for @login):`, which says who asked and
-  doubles as the loop guard.
+  token for that one repository, limited to the asking member's access, and is
+  authored by the app's `[bot]` account. One exception: on the shared Control
+  Center Connect app the bot posts in review threads only when the Connect
+  operator has listed the installation, so otherwise a reply inside a review
+  thread is authored by the asking member's own account.
+  Either way every reply starts with `**Control Center** (for @login):`, which
+  says who asked and doubles as the loop guard. @-mentions in the agent's words are made inert,
+  so a reply never notifies a user or team.
 - **In the space, the question is yours.** The message is attributed to the
   member the author resolved to, and the agent run executes on their behalf:
-  commits co-author them, and the space's autonomy dial and action guardrails
+  its commits are theirs, and the space's autonomy dial and action guardrails
   apply exactly as they do to a message typed in the app. Forge writes from
   the run use one-repository tokens bounded by that member, never their sign-in
   handed over whole.
@@ -104,22 +106,18 @@ is the feature:
 Publishing review findings back to GitHub remains a person's decision, made in
 Control Center. A mention can _start_ a review; only a human publishes one.
 
-## The loop guard, and the short name
+## The loop guard
 
 Everything authored by a bot account is dropped before any gate runs — ours
 specifically, and every `[bot]` suffix, so another app's review bot cannot
 wake ours either — and so is every comment that starts with the
-`**Control Center** (for @` prefix, since a reply through Connect is authored by
-a person's account. Without this the answers would arrive as new comments and
+`**Control Center** (for @` prefix, since a review-thread reply through Connect
+can be authored by a person's account. Without this the answers would arrive as new comments and
 re-trigger the bridge forever.
 
-The `[bot]` suffix is also why the short form exists. GitHub fixes an app
-account's login at `<slug>[bot]`, offers no autocomplete for it, and never
-resolves `@slug` to the app — so accepting the bare slug is _our_ matcher's
-decision, and discovering it needs a raw comment-**text** search lane rather
-than GitHub's mention index. The cost is stated rather than smoothed: a human
-user who shares the app's slug addresses the bot with every short-form
-mention of themselves. Distinctive app names make the collision hypothetical.
+Only `@usectrl` starts work. The App's own login (`<slug>[bot]`) and its bare
+slug address nothing: GitHub offers no autocomplete for an app account, and a
+bare slug can belong to a human user.
 
 ## What is deliberately not offered
 

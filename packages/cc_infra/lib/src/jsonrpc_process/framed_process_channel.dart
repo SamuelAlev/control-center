@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 
 /// `Content-Length`-framed JSON messages over a child process's stdio.
 ///
@@ -50,22 +50,21 @@ class FramedProcessChannel {
     unawaited(_process.stdin.done.then<void>((_) {}, onError: (Object _) {}));
   }
 
-  /// Spawns [command] and returns a channel speaking to it.
+  /// Spawns [command] through [launcher] and returns a channel speaking to
+  /// it.
   static Future<FramedProcessChannel> start({
+    required ToolProcessLauncher launcher,
     required String command,
     required List<String> args,
     required String workingDirectory,
     Map<String, String>? environment,
     String? name,
   }) async {
-    final process = await ChildProcess.start(
+    final process = await launcher.start(
       command,
       args,
       workingDirectory: workingDirectory,
       environment: environment,
-      // The toolchain allowlist, so a server that needs PATH or a language
-      // SDK finds it.
-      toolchain: true,
     );
     return FramedProcessChannel._(process, name ?? command);
   }

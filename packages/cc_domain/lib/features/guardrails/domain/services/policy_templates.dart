@@ -93,8 +93,11 @@ class PolicyTemplates {
         ),
       ],
       PolicyTemplate.balanced => [
-        rule(ActionClass.gitPush, ActionDecision.deny,
-            constraint: protectedRefs),
+        rule(
+          ActionClass.gitPush,
+          ActionDecision.deny,
+          constraint: protectedRefs,
+        ),
         rule(ActionClass.fileDelete, ActionDecision.prompt),
         rule(ActionClass.secretAccess, ActionDecision.prompt),
         rule(ActionClass.packageInstall, ActionDecision.prompt),
@@ -105,8 +108,11 @@ class PolicyTemplates {
         // Even here the trunk stays protected: "permissive" is about not
         // interrupting day-to-day work, not about letting an agent rewrite
         // the default branch unattended.
-        rule(ActionClass.gitPush, ActionDecision.deny,
-            constraint: protectedRefs),
+        rule(
+          ActionClass.gitPush,
+          ActionDecision.deny,
+          constraint: protectedRefs,
+        ),
         rule(ActionClass.gitPush, ActionDecision.allow),
         rule(ActionClass.prCreate, ActionDecision.allow),
         rule(ActionClass.vendorSyncWrite, ActionDecision.allow),
@@ -121,17 +127,22 @@ class PolicyTemplates {
   /// Ids, workspace and timestamps are deliberately omitted: an export is a
   /// POSTURE, not a set of rows, so importing it into another workspace mints
   /// fresh rules rather than colliding on ids.
+  ///
+  /// Rules that end (an "Approve for 8 hours" answer, any rule with an
+  /// expiry) are left out: the export drops expiry and provenance, so
+  /// importing one would make a time-boxed approval permanent policy.
   List<Map<String, Object?>> export(List<ActionPolicyRule> rules) => [
     for (final r in rules)
-      {
-        'scope_type': r.scopeType.wire,
-        if (r.scopeId.isNotEmpty) 'scope_id': r.scopeId,
-        if (r.actionClass != null) 'action_class': r.actionClass!.wire,
-        if (r.commandPrefix != null) 'command_prefix': r.commandPrefix,
-        'decision': r.decision.wire,
-        'enforcement': r.enforcement.wire,
-        if (r.constraint != null) 'constraint': r.constraint!.toJson(),
-      },
+      if (r.provenance == 'user' && r.expiresAt == null)
+        {
+          'scope_type': r.scopeType.wire,
+          if (r.scopeId.isNotEmpty) 'scope_id': r.scopeId,
+          if (r.actionClass != null) 'action_class': r.actionClass!.wire,
+          if (r.commandPrefix != null) 'command_prefix': r.commandPrefix,
+          'decision': r.decision.wire,
+          'enforcement': r.enforcement.wire,
+          if (r.constraint != null) 'constraint': r.constraint!.toJson(),
+        },
   ];
 
   /// Parses exported JSON back into rules for [workspaceId].

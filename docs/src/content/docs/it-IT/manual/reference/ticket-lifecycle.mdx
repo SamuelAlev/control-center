@@ -2,7 +2,7 @@
 title: Ciclo di vita dei ticket
 description: Campi, stati, transizioni e relazioni dei ticket e il punto di controllo delle mutazioni.
 slug: it-IT/manuale/riferimento/ciclo-di-vita-ticket
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Stati dei ticket
@@ -117,7 +117,7 @@ L'aggregato copre due aspetti su un'unica riga. Il **mirror** (provider, chiavi,
 | `projectId`              | `String?`                  | Progetto proprietario; non viene mai inviato a un remoto                                   |
 | `assignedAgentId`        | `String?`                  | Id del principale assegnato (solo metadati — l'assegnazione non manda nulla in esecuzione) |
 | `assigneeType`           | `PrincipalType`            | Che tipo di principale indica `assignedAgentId` — `user` o `agent` (predefinito `agent`)   |
-| `createdByType`          | `PrincipalType?`           | Tipo di principale che ha creato il ticket (`user` o `agent`); null per le righe legacy/di sistema |
+| `createdByType`          | `PrincipalType?`           | Tipo di principale che ha creato il ticket (`user` o `agent`); null per le righe create dal sistema |
 | `createdById`            | `String?`                  | Id del principale che l'ha creato                                                          |
 | `assignedTeamId`         | `String?`                  | Team assegnato (solo metadati)                                                             |
 | `delegatedByAgentId`     | `String?`                  | Agente che ha delegato questo ticket                                                       |

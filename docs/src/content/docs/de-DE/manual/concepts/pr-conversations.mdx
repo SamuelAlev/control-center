@@ -2,15 +2,14 @@
 title: PR-Unterhaltungen
 description: Wie aus einem GitHub-PR-Kommentar ohne Webhook ein Agentenzug wird, was den Autor autorisiert und wem jede Seite der Unterhaltung zugeschrieben wird.
 slug: de-DE/handbuch/konzepte/pr-unterhaltungen
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Ein Pull Request ist schon der Ort, an dem das Gespräch über Code stattfindet.
 PR-Unterhaltungen machen ihn zu einer Oberfläche auf einem Arbeitsbereich von
 Control Center, so wie eine
 [Chat-Brücke](/de-DE/handbuch/konzepte/chat-bruecken/) Slack zu einer macht:
-`@usectrl` (oder den Bot der GitHub App des Arbeitsbereichs) auf einem PR mit @
-erwähnen, in seinen Review-Threads antworten oder das Label `ai-review` setzen,
+`@usectrl` auf einem PR erwähnen, in seinen Review-Threads antworten oder das Label `ai-review` setzen,
 und die Arbeit läuft im Review-Bereich des PR — unter derselben Zuschreibung
 und denselben Schutzregeln wie alles, was in der App getippt wird. Kommentar
 und Label werden gleich geprüft: anhand des Mitglieds, das ihn geschrieben
@@ -28,8 +27,7 @@ wird**.
 Der einzige Push-Kanal, den GitHub einer App bietet, ist ein Webhook, und ein
 Webhook braucht eine eingehende URL — genau das, was diese Oberfläche bewusst
 nie verlangt. Die Erkennung ist deshalb ein Durchlauf: Eine Suche mit Alias je
-App-Installation fragt GitHub nach Pull Requests, die den Bot erwähnen (oder
-seinen kurzen Slug), und nach offenen Pull Requests mit dem Review-Label. Pull
+App-Installation fragt GitHub nach Pull Requests, die `@usectrl` erwähnen, und nach offenen Pull Requests mit dem Review-Label. Pull
 Requests, die schon einen Review-Bereich haben, werden auf ihre
 Kommentar-Threads gelesen, und alles wird anhand der Kommentar-ID gegen den
 letzten Durchlauf abgeglichen. Eine eigene App läuft jede Minute über höchstens
@@ -78,8 +76,7 @@ still — es wird nichts gepostet:
   Arbeitsbereichs gehören, das sich auf diesem Server bei GitHub angemeldet hat
 - **Eine Rolle mit Schreibrecht.** `viewer` und `guest` können keine Arbeit
   starten
-- **Push-Zugriff.** Antworten nutzen ein `bot`-Token, das auf den Zugriff dieses
-  Mitglieds auf das Repository begrenzt ist. Kann der Server keines ausstellen,
+- **Push-Zugriff.** Antworten nutzen ein Token für genau dieses eine Repository, begrenzt auf den Zugriff dieses Mitglieds darauf. Kann der Server keines ausstellen,
   geht es nicht weiter
 
 Jede Prüfung läuft vor jeder Bestätigung, eine fremde Person bekommt also
@@ -103,16 +100,17 @@ Jede Seite der Unterhaltung trägt eine andere Identität, und der Unterschied
 ist die Funktion:
 
 - **Auf GitHub ist die Antwort Automatisierung in deinem Namen.** Jede Antwort
-  läuft über ein `bot`-Token für dieses eine Repository, begrenzt auf den
-  Zugriff des fragenden Mitglieds. Bei einer eigenen App ist der Autor das
-  Konto `[bot]` der App. Über Connect ist ein Token für die gemeinsame App ein
-  Benutzertoken, die Antwort stammt also vom Konto des fragenden Mitglieds, das
-  über die App handelt. In beiden Fällen beginnt jede Antwort mit
+  läuft über ein Token für dieses eine Repository, begrenzt auf den Zugriff des
+  fragenden Mitglieds, und stammt vom Konto `[bot]` der App. Eine Ausnahme gibt
+  es: Auf der gemeinsamen Control Center Connect-App postet der Bot in
+  Review-Threads nur, wenn der Connect-Betreiber die Installation aufgeführt hat.
+  Sonst stammt eine Antwort in einem Review-Thread vom eigenen Konto des fragenden
+  Mitglieds. In beiden Fällen beginnt jede Antwort mit
   `**Control Center** (for @login):`. Das sagt, wer gefragt hat, und dient
-  zugleich als Schleifensperre.
+  zugleich als Schleifensperre. @-Erwähnungen in den Worten des Agenten werden entschärft, sodass eine Antwort nie einen Nutzer oder ein Team benachrichtigt.
 - **Im Bereich gehört die Frage dir.** Die Nachricht wird dem Mitglied
   zugeschrieben, zu dem der Autor aufgelöst wurde, und der Agentenlauf läuft in
-  dessen Namen: Commits nennen es als Co-Autor, und der Autonomieregler des
+  dessen Namen: seine Commits gehören dem Mitglied, und der Autonomieregler des
   Bereichs sowie die Schutzregeln für Aktionen gelten genauso wie bei einer
   Nachricht, die in der App getippt wurde. Schreibvorgänge an die Forge aus dem
   Lauf nutzen Tokens für ein einzelnes Repository, begrenzt durch dieses
@@ -122,23 +120,16 @@ Review-Befunde auf GitHub zu veröffentlichen bleibt die Entscheidung einer
 Person, getroffen in Control Center. Eine Erwähnung kann ein Review _starten_;
 veröffentlicht wird es nur von einem Menschen.
 
-## Die Schleifensperre und der Kurzname
+## Die Schleifensperre
 
 Alles, was ein Bot-Konto verfasst, wird verworfen, bevor irgendein Tor läuft —
 unseres ausdrücklich, und jedes Suffix `[bot]`, damit auch der Review-Bot
 einer anderen App unseren nicht weckt —, und ebenso jeder Kommentar, der mit dem
-Präfix `**Control Center** (for @` beginnt, denn eine Antwort über Connect
-stammt vom Konto einer Person. Ohne das kämen die Antworten als neue Kommentare
+Präfix `**Control Center** (for @` beginnt, denn eine Antwort in einem Review-Thread über Connect
+kann vom Konto einer Person stammen. Ohne das kämen die Antworten als neue Kommentare
 an und lösten die Brücke endlos erneut aus.
 
-Das Suffix `[bot]` ist auch der Grund für die Kurzform. GitHub legt den Login
-eines App-Kontos auf `<slug>[bot]` fest, bietet dafür keine Autovervollständigung
-und löst `@slug` nie zur App auf — den bloßen Slug anzunehmen ist also die
-Entscheidung _unseres_ Abgleichs, und ihn zu entdecken braucht eine rohe
-Suchspur über den Kommentar-**Text**, nicht den Erwähnungsindex von GitHub. Der
-Preis wird genannt, nicht geglättet: Ein Mensch, der denselben Slug trägt wie
-die App, spricht den Bot mit jeder Erwähnung seiner selbst in der Kurzform an.
-Unverwechselbare App-Namen machen die Kollision hypothetisch.
+Nur `@usectrl` startet Arbeit. Der eigene Login der App (`<slug>[bot]`) und ihr bloßer Slug adressieren nichts: GitHub bietet für ein App-Konto keine Autovervollständigung, und ein bloßer Slug kann zu einem menschlichen Benutzer gehören.
 
 ## Was bewusst nicht angeboten wird
 

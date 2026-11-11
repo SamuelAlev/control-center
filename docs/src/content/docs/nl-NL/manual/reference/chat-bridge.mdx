@@ -2,7 +2,7 @@
 title: Chatbrug
 description: Providers, commando's, inloggegevens, capaciteiten, RPC-operaties en opslag voor de chatbrug.
 slug: nl-NL/handleiding/referentie/chatbrug
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Providers
@@ -150,7 +150,7 @@ De kaart opent wanneer een vermelding wordt geaccepteerd, vóór het klonen en v
 | Vermelding geaccepteerd      | `Working on it…`                                               |
 | Stap `repo`                  | `Cloning <repo>…`                                              |
 | Stap `prCheckout`            | `Checking out the pull request in <repo>…`                     |
-| Stap `script`                | `Running the setup script for <repo>…`                         |
+| Stap `provisionTasks`                | `Running worktree tasks for <repo>…`                         |
 | Stap `agent`                 | `Setting up <agent>…`                                          |
 | `provisioning`, nog geen stap | `Preparing the workspace…`                                    |
 | `ready`                      | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Hij bestaat omdat het koppelen aan de _andere_ kant gebeurt: een lid typt de cod
 | --------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Inloggegevens van verbindingen          | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Halfvoltooide begeleide installatie     | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Oude Slack-bestanden                    | `<dataDir>/<workspaceId>/slack_credentials.json` en `slack_app_setup.json`, één keer gelezen en ter plaatse gemigreerd |
 
 Inloggegevens staan naast de database van de werkruimte, niet erin: het verwijderen van een werkruimte neemt de chattokens mee, en `workspace.export` of een back-up kopieert `workspace.db` — dus een werkruimte die je aan iemand anders geeft, bevat geen levende bottokens. Er wordt atomair weggeschreven (tijdelijk bestand plus rename) en de rechten gaan naar alleen de eigenaar.
 

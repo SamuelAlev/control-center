@@ -17,7 +17,7 @@ An unlinked member who mentions the bot gets a reply in that Slack thread explai
 
 Linking takes both sides: sending a code from Slack proves the Slack account, and confirming it in Control Center proves that account is yours.
 
-1. Go to **Settings → Workspace → Profile & identity** and scroll to the **Linked chat
+1. Go to **Settings → You → Profile** and find the **Linked chat
    accounts** card
 2. On the Slack block, click **Link my Slack account**. The dialog shows a one-time code, for example:
 
@@ -30,7 +30,7 @@ K7M2QP
 5. If it is your account, click **Confirm**. The link is made, the dialog says so and the bot confirms in the same direct message
 6. If it is not yours, click **Decline**. Nothing is linked and the code stops working; click **Get a new code** to try again
 
-Closing the dialog does not lose a claim. A code that arrives later waits on the **Link my Slack account** row of your profile page, with the same **Confirm** and **Decline**.
+Closing the dialog does not lose a claim. A code that arrives later waits on the **Link my Slack account** row of that card, with the same **Confirm** and **Decline**.
 
 Why the confirmation step: a code read over your shoulder and sent from somebody else's Slack account would otherwise make that account act as you. Only you can confirm, and only the exact profile that sent the code.
 
@@ -49,18 +49,20 @@ A code that is unknown, expired, declined or minted for a different workspace fa
 
 If your Slack profile carries a confirmed email that matches the verified email of a Control Center user who is **already a member of this workspace**, the bridge links you the first time you talk to it. No code needed.
 
+The Control Center side counts as verified when single sign-on or SCIM set the address, or the server owner confirmed it in **Settings → Server → People**. An address you typed in your own profile is not verified, so it links nothing until the owner confirms it; use the code flow meanwhile.
+
 Both halves matter: the email match proves identity, but only membership grants access, so a stranger whose email happens to exist on the server links to nothing. The roster shows how each link was made ("matched by email" or "linked with a code").
 
 Automatic linking needs the `users:read.email` scope. Without it, Slack will not disclose the address and the code flow is the only path.
 
 ## See who is linked
 
-The roster is workspace administration, so it lives on the other half of the
-surface: **Settings → Workspace → General → Chat bridges → Linked accounts**. It
+The roster is workspace administration, so it lives in the admin card:
+**Settings → Workspace → Integrations → Chat bridges → Linked accounts**. It
 lists every linked member in the workspace, with the Slack account each maps to
 and how the link was made.
 
-Your own state is on your profile page: the **Link my Slack account** row reads
+Your own state is on **Settings → You → Profile**: the **Link my Slack account** row reads
 "Linked to _your-slack-id_" once you are linked and tells you to link when you
 are not.
 

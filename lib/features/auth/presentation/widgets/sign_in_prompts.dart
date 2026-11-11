@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
     show ConnectOAuthLane, SignInLaneMode;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart';
 import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/providers/oauth_providers.dart';
+import 'package:control_center/features/forge/presentation/widgets/forge_token_dialog.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -43,39 +46,48 @@ Future<void> showSignInPhishingWarning(BuildContext context) =>
 /// action with `needs_sign_in`, and says whether it did — the caller reports
 /// every other failure its own way.
 ///
-/// [lane] is the provider the action was about, used when the refusal does
-/// not name one. [workspaceId] is the scope the sign-in should run in.
+/// [fallback] is what the action was about, used when the refusal names no
+/// lane. [workspaceId] is the active workspace the sign-in starts from. A
+/// token-only forge (GitLab, Bitbucket) opens its token dialog instead of a
+/// browser sign-in.
 bool offerSignInForRefusal(
   BuildContext context,
   Object error, {
-  required ConnectOAuthLane lane,
+  required SignInNeed fallback,
   String? workspaceId,
 }) {
-  final needed = needsSignInLane(error, fallback: lane);
+  final needed = needsSignIn(error, fallback: fallback);
   if (needed == null || !context.mounted) {
     return false;
   }
   unawaited(
-    showSignInRequiredDialog(context, lane: needed, workspaceId: workspaceId),
+    showSignInRequiredDialog(context, need: needed, workspaceId: workspaceId),
   );
   return true;
 }
 
-/// Explains that an action needs the reader's own [lane] account and offers
-/// to sign in.
+/// Explains that an action needs the reader's own account and offers to
+/// sign in ([LaneSignInNeed]) or to add a token ([TokenSignInNeed]).
 Future<void> showSignInRequiredDialog(
   BuildContext context, {
-  required ConnectOAuthLane lane,
+  required SignInNeed need,
   String? workspaceId,
 }) async {
+  final provider = switch (need) {
+    LaneSignInNeed(:final lane) => signInProviderName(lane),
+    TokenSignInNeed(:final forge) => forge.displayName,
+  };
   final start = await showCcDialog<bool>(
     context: context,
     builder: (dialogContext) {
       final l10n = AppLocalizations.of(dialogContext);
-      final provider = signInProviderName(lane);
       return CcDialog(
         title: l10n.signInRequiredTitle(provider),
-        content: Text(l10n.signInRequiredBody(provider)),
+        content: Text(
+          need is TokenSignInNeed
+              ? l10n.forgeTokenRequiredBody(provider)
+              : l10n.signInRequiredBody(provider),
+        ),
         actions: [
           CcButton(
             variant: CcButtonVariant.secondary,
@@ -84,18 +96,27 @@ Future<void> showSignInRequiredDialog(
           ),
           CcButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: Text(signInActionLabel(l10n, lane)),
+            child: Text(switch (need) {
+              LaneSignInNeed(:final lane) => signInActionLabel(l10n, lane),
+              TokenSignInNeed() => l10n.addToken,
+            }),
           ),
         ],
       );
     },
   );
-  if (start == true && context.mounted) {
-    await showProviderSignInDialog(
-      context,
-      lane: lane,
-      workspaceId: workspaceId,
-    );
+  if (start != true || !context.mounted) {
+    return;
+  }
+  switch (need) {
+    case LaneSignInNeed(:final lane):
+      await showProviderSignInDialog(
+        context,
+        lane: lane,
+        workspaceId: workspaceId,
+      );
+    case TokenSignInNeed(:final forge):
+      await showForgeTokenDialog(context, forge: forge);
   }
 }
 
@@ -118,7 +139,7 @@ class SignInRequiredBanner extends ConsumerWidget {
   /// The provider the surface acts on.
   final ConnectOAuthLane lane;
 
-  /// The sign-in scope (null = server-wide).
+  /// The active workspace (null only before any workspace exists).
   final String? workspaceId;
 
   /// Space below the notice when it shows, so a hidden notice leaves none.
@@ -129,33 +150,50 @@ class SignInRequiredBanner extends ConsumerWidget {
     final info = ref.watch(oauthLanesProvider(workspaceId)).value?[lane];
     final connections = ref.watch(oauthConnectionsProvider(workspaceId));
     final connection = connections.value?[lane];
+    final status = connection?.status ?? ForgeConnectionStatus.notConnected;
     if (info == null ||
         info.mode == SignInLaneMode.unavailable ||
         !connections.hasValue ||
-        (connection != null &&
-            connection.connected &&
-            !connection.needsSignIn)) {
+        status == ForgeConnectionStatus.connected ||
+        // Retrying on its own: nothing for the reader to do.
+        status == ForgeConnectionStatus.unreachable) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
+    final provider = signInProviderName(lane);
+    // A paused grant comes back with the workspace's sign-in service; a
+    // fresh sign-in would replace it, so the notice explains and offers
+    // nothing to click.
+    final paused = status == ForgeConnectionStatus.paused;
     final alert = CcAlert(
-      title: connection?.needsSignIn ?? false
-          ? l10n.signInErrorNeedsSignIn(signInProviderName(lane))
-          : l10n.signInRequiredBanner(signInProviderName(lane)),
-      icon: AppIcons.keyRound,
-      variant: CcAlertVariant.warning,
-      trailing: CcButton(
-        size: CcButtonSize.sm,
-        variant: CcButtonVariant.secondary,
-        onPressed: () => unawaited(
-          showProviderSignInDialog(
-            context,
-            lane: lane,
-            workspaceId: workspaceId,
-          ),
-        ),
-        child: Text(signInActionLabel(l10n, lane)),
-      ),
+      title:
+          unusableConnectionLine(
+            l10n,
+            status,
+            provider,
+            account: connection?.account ?? '',
+          ) ??
+          l10n.signInRequiredBanner(provider),
+      icon: paused ? AppIcons.pause : AppIcons.keyRound,
+      variant: paused ? CcAlertVariant.info : CcAlertVariant.warning,
+      trailing: paused
+          ? null
+          : CcButton(
+              size: CcButtonSize.sm,
+              variant: CcButtonVariant.secondary,
+              onPressed: () => unawaited(
+                showProviderSignInDialog(
+                  context,
+                  lane: lane,
+                  workspaceId: workspaceId,
+                ),
+              ),
+              child: Text(
+                status == ForgeConnectionStatus.needsSignIn
+                    ? l10n.signInAgain
+                    : signInActionLabel(l10n, lane),
+              ),
+            ),
     );
     return bottomGap == 0
         ? alert

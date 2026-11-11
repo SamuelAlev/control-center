@@ -130,8 +130,8 @@ void main() {
   // is the worst possible combination on exactly the ops that need it most
   // (install-wide settings, sandbox posture, the argv agents launch with).
   //
-  // Such an op must carry an explicit in-handler guard instead; see
-  // `requireServerAdmin`.
+  // Such an op declares `serverAuthority: ServerAuthority.serverOwner`
+  // instead, which the dispatcher enforces for scoped and unscoped ops alike.
   test('no RepoOp declares both workspaceScoped: false and minRole', () {
     // Comments are stripped first: the prose explaining this very rule names
     // `workspaceScoped: false` and a comment sitting between two ops would
@@ -169,7 +169,7 @@ void main() {
       reason:
           'These ops declare a minRole the dispatcher never evaluates, because '
           'the role gate only runs for workspace-scoped ops. Remove the '
-          'minRole and add an explicit in-handler check (requireServerAdmin), '
+          'minRole and declare serverAuthority: ServerAuthority.serverOwner, '
           'or make the op workspace-scoped:\n'
           '${offenders.map((o) => "  $o").join("\n")}',
     );

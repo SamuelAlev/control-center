@@ -43,6 +43,13 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
 
   Future<void> _flushChain = Future<void>.value();
 
+  /// Keys a [readFresh] re-read did not find in the file stamped
+  /// [_missStamp]. Asked again, they are answered from here (one `stat`, no
+  /// re-read) until the file changes or this process writes: a key another
+  /// process adds changes the file's length, so the stamp sees it.
+  final Set<String> _misses = {};
+  (int, int)? _missStamp;
+
   Future<Map<String, String>> _load() async {
     final cached = _cache;
     if (cached != null && _stamp() == _cacheStamp) {
@@ -155,7 +162,6 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     // place: there is no instant at which the new VAPID key or any device PSK
     // sits in a file with a wider mode, and no chmod runs after the fact.
     await writePrivateFile(_file.path, utf8.encode(jsonEncode(merged)));
-    _deleteLegacyTemporary();
     _cache = merged;
     // Re-stamp against what we just wrote; `_readFromDisk` above stamped the
     // PRE-write file, which would make our own flush look like a foreign write.
@@ -167,20 +173,6 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
         _pending.remove(key);
       }
     });
-  }
-
-  /// Removes the fixed-name `<file>.tmp` that flushes used before they staged
-  /// through [writePrivateFile]. A crash mid-flush could leave it holding a
-  /// full copy of the secrets; nothing reads it any more.
-  void _deleteLegacyTemporary() {
-    try {
-      final legacy = File('${_file.path}.tmp');
-      if (legacy.existsSync()) {
-        legacy.deleteSync();
-      }
-    } on Object {
-      // Best-effort: the live file is already written.
-    }
   }
 
   /// Reads the PSK for [deviceId], seeing a device paired by another process.
@@ -204,15 +196,27 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
     if (cached.containsKey(key)) {
       return cached[key];
     }
+    if (_misses.contains(key) && _stamp() == _missStamp) {
+      return null;
+    }
     // Anything this process wrote but has not flushed yet still wins.
     final fresh = _applyPending(await _readFromDisk());
-    return (_cache = fresh)[key];
+    _cache = fresh;
+    if (_missStamp != _cacheStamp) {
+      _misses.clear();
+      _missStamp = _cacheStamp;
+    }
+    if (!fresh.containsKey(key)) {
+      _misses.add(key);
+    }
+    return fresh[key];
   }
 
   @override
   Future<bool> writePsk(String deviceId, String psk) async {
     (await _load())[deviceId] = psk;
     _pending[deviceId] = psk;
+    _misses.clear();
     await _flush();
     return true;
   }
@@ -221,6 +225,7 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
   Future<void> deletePsk(String deviceId) async {
     (await _load()).remove(deviceId);
     _pending[deviceId] = null;
+    _misses.clear();
     await _flush();
   }
 
@@ -249,6 +254,7 @@ class FileSecretsStore implements PairedDeviceSecretsPort {
       map.remove(key);
       _pending[key] = null;
     }
+    _misses.clear();
     await _flush();
     return keys.length;
   }

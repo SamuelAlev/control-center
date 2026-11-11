@@ -199,8 +199,8 @@ class ArtifactSeries {
 /// behaviour and selection model for free.
 ///
 /// Persisted inside a `WorkProductRevision.content` JSON envelope (see
-/// `ArtifactDocument`), which is why the codecs here are defensive: a revision
-/// written by an older build must still decode.
+/// `ArtifactDocument`), which is why the codecs here are defensive: a stored
+/// revision must still decode.
 sealed class ArtifactBlock {
   /// Creates an [ArtifactBlock].
   const ArtifactBlock({this.id});

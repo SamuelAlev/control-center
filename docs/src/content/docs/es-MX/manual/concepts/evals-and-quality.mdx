@@ -2,7 +2,7 @@
 title: Evaluaciones y calidad
 description: Suites de evaluación y campañas de skills fijadas a revisiones, y cómo interpretar su evidencia.
 slug: es-MX/manual/conceptos/evaluaciones-y-calidad
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observabilidad → Calidad** contiene tanto suites de evaluación de una sola
@@ -23,7 +23,7 @@ Cinco suites iniciales se siembran cuando se crea un espacio de trabajo. Cubren
 propuestas de orquestación, una revisión que encuentra un error sembrado, que el
 modo plan se mantenga en solo lectura, que el modo plan produzca un plan y el
 ciclo completo de un ticket. El sembrado escucha `WorkspaceCreated`
-(`workspace.upsert` o `workspace.create`), omite un nombre que ya existe y no
+(publicado por `workspace.create`), omite un nombre que ya existe y no
 rellena retroactivamente los espacios de trabajo más antiguos.
 
 ### Dónde aparecen

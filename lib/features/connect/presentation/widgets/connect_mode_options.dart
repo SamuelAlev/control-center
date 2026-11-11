@@ -31,6 +31,19 @@ bool isLoopbackConnectUrl(String url) {
   }
 }
 
+/// Whether [url] is an absolute HTTPS URL with a host and nothing a Connect
+/// base URL cannot carry: the shape a WORKSPACE's custom Connect must have.
+/// Plain HTTP to loopback is a server owner's privilege, never a workspace's.
+bool isHttpsConnectUrl(String url) {
+  final uri = Uri.tryParse(url.trim());
+  return uri != null &&
+      uri.scheme == 'https' &&
+      uri.host.isNotEmpty &&
+      uri.userInfo.isEmpty &&
+      !uri.hasQuery &&
+      !uri.hasFragment;
+}
+
 /// The three ways a server can sign people in to providers, as radio rows:
 /// Control Center's apps (hosted Connect), the operator's own apps (Connect
 /// off), or a Connect server at an HTTPS URL.
@@ -71,87 +84,167 @@ class ConnectModeOptions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _Option(
+    return ConnectChoiceList<ConnectModeSetting>(
+      selected: selected,
+      onSelected: onSelected,
+      urlChoice: ConnectModeSetting.custom,
+      urlController: urlController,
+      urlError: urlError,
+      urlHelper: (url) =>
+          isLoopbackConnectUrl(url) ? l10n.connectCustomUrlLoopbackHint : null,
+      onUrlSubmitted: onUrlSubmitted,
+      choices: [
+        ConnectChoice(
           value: ConnectModeSetting.hosted,
-          selected: selected,
-          enabled: enabled,
           title: l10n.connectModeHosted,
           hint: l10n.connectModeHostedDisclosure,
-          onSelected: onSelected,
-        ),
-        _Option(
-          value: ConnectModeSetting.off,
-          selected: selected,
           enabled: enabled,
+        ),
+        ConnectChoice(
+          value: ConnectModeSetting.off,
           title: l10n.connectModeOwn,
           hint: l10n.connectModeOwnHint,
-          onSelected: onSelected,
-        ),
-        _Option(
-          value: ConnectModeSetting.custom,
-          selected: selected,
           enabled: enabled,
+        ),
+        ConnectChoice(
+          value: ConnectModeSetting.custom,
           title: l10n.connectModeCustom,
           hint: l10n.connectModeCustomHint,
-          onSelected: onSelected,
+          enabled: enabled,
         ),
-        if (selected == ConnectModeSetting.custom)
-          Padding(
-            padding: const EdgeInsetsDirectional.only(
-              start: 28,
-              top: AppSpacing.xs,
-              bottom: AppSpacing.sm,
-            ),
-            // RTL carve-out: a URL reads left to right in every locale.
-            child: Directionality(
-              textDirection: TextDirection.ltr,
-              child: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: urlController,
-                builder: (context, value, _) => CcTextField(
-                  controller: urlController,
-                  enabled: enabled,
-                  label: l10n.connectCustomUrlLabel,
-                  hintText: 'https://connect.example.com',
-                  keyboardType: TextInputType.url,
-                  errorText: urlError,
-                  helperText: isLoopbackConnectUrl(value.text)
-                      ? l10n.connectCustomUrlLoopbackHint
-                      : null,
-                  onSubmitted: onUrlSubmitted,
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
 }
 
-class _Option extends StatelessWidget {
-  const _Option({
+/// One radio row of a [ConnectChoiceList].
+@immutable
+class ConnectChoice<T> {
+  /// Creates a choice.
+  const ConnectChoice({
     required this.value,
-    required this.selected,
-    required this.enabled,
     required this.title,
     required this.hint,
+    this.enabled = true,
+  });
+
+  /// What picking it selects.
+  final T value;
+
+  /// The row's title.
+  final String title;
+
+  /// What it means, under the title.
+  final String hint;
+
+  /// False greys the row out and ignores taps.
+  final bool enabled;
+}
+
+/// Radio rows for "whose apps sign people in", with the Connect URL field
+/// under [urlChoice] while it is selected.
+///
+/// The server's card ([ConnectModeOptions]) and a workspace's card share it,
+/// so the two choices look and read the same.
+class ConnectChoiceList<T> extends StatelessWidget {
+  /// Creates the list.
+  const ConnectChoiceList({
+    super.key,
+    required this.choices,
+    required this.selected,
+    required this.onSelected,
+    required this.urlChoice,
+    required this.urlController,
+    this.urlError,
+    this.urlHelper,
+    this.onUrlSubmitted,
+  });
+
+  /// The rows, in display order.
+  final List<ConnectChoice<T>> choices;
+
+  /// The chosen value, or null for none.
+  final T? selected;
+
+  /// Picks a value.
+  final ValueChanged<T> onSelected;
+
+  /// The value that needs a Connect URL.
+  final T urlChoice;
+
+  /// The custom Connect URL being typed.
+  final TextEditingController urlController;
+
+  /// Why the typed URL is not acceptable, if it is not.
+  final String? urlError;
+
+  /// Helper text for what is typed, or null for none.
+  final String? Function(String url)? urlHelper;
+
+  /// Called when the URL field is submitted.
+  final ValueChanged<String>? onUrlSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final urlEnabled = choices.any((c) => c.value == urlChoice && c.enabled);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final choice in choices) ...[
+          _Option<T>(
+            choice: choice,
+            selected: selected,
+            onSelected: onSelected,
+          ),
+          if (choice.value == urlChoice && selected == urlChoice)
+            Padding(
+              padding: const EdgeInsetsDirectional.only(
+                start: 28,
+                top: AppSpacing.xs,
+                bottom: AppSpacing.sm,
+              ),
+              // RTL carve-out: a URL reads left to right in every locale.
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: urlController,
+                  builder: (context, value, _) => CcTextField(
+                    controller: urlController,
+                    enabled: urlEnabled,
+                    label: l10n.connectCustomUrlLabel,
+                    hintText: 'https://connect.example.com',
+                    keyboardType: TextInputType.url,
+                    errorText: urlError,
+                    helperText: urlHelper?.call(value.text),
+                    onSubmitted: onUrlSubmitted,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ],
+    );
+  }
+}
+
+class _Option<T> extends StatelessWidget {
+  const _Option({
+    required this.choice,
+    required this.selected,
     required this.onSelected,
   });
 
-  final ConnectModeSetting value;
-  final ConnectModeSetting? selected;
-  final bool enabled;
-  final String title;
-  final String hint;
-  final ValueChanged<ConnectModeSetting> onSelected;
+  final ConnectChoice<T> choice;
+  final T? selected;
+  final ValueChanged<T> onSelected;
 
   @override
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final select = enabled ? () => onSelected(value) : null;
+    final enabled = choice.enabled;
+    final select = enabled ? () => onSelected(choice.value) : null;
     return MergeSemantics(
       child: GestureDetector(
         // The whole row is the target, not just the dot.
@@ -162,11 +255,11 @@ class _Option extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CcRadio<ConnectModeSetting>(
-                value: value,
+              CcRadio<T>(
+                value: choice.value,
                 groupValue: selected,
                 onChanged: enabled ? onSelected : null,
-                semanticLabel: title,
+                semanticLabel: choice.title,
               ),
               const SizedBox(width: AppSpacing.sm + 2),
               Expanded(
@@ -174,7 +267,7 @@ class _Option extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      choice.title,
                       style: CcTypography.bodySm.copyWith(
                         fontWeight: FontWeight.w600,
                         color: enabled ? t.textPrimary : t.textTertiary,
@@ -182,7 +275,7 @@ class _Option extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.xxs),
                     Text(
-                      hint,
+                      choice.hint,
                       style: CcTypography.caption.copyWith(
                         height: 1.45,
                         color: t.textSecondary,

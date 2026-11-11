@@ -26,8 +26,7 @@ class SpaceActivity {
   final DateTime? lastAgentMessageAt;
 
   /// When the newest agent message landed in each conversation. Empty when
-  /// the space has no agent messages, or when an older server omitted the
-  /// breakdown. The sidebar uses this to put the unread dot on the
+  /// the space has no agent messages. The sidebar uses this to put the unread dot on the
   /// conversation that actually has unseen work, not on every child and not
   /// only on the parent space.
   final Map<String, DateTime> lastAgentMessageAtByConversation;

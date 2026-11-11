@@ -41,6 +41,18 @@ class SandboxExecGrantView {
   final DateTime createdAt;
 }
 
+/// One page of `sandbox.listExecGrants`.
+class SandboxExecGrantViewPage {
+  /// Creates a [SandboxExecGrantViewPage].
+  const SandboxExecGrantViewPage({required this.grants, required this.total});
+
+  /// The rows on this page, newest first.
+  final List<SandboxExecGrantView> grants;
+
+  /// How many grants match the query across every page.
+  final int total;
+}
+
 /// Reads and revokes sandbox exec grants over RPC.
 ///
 /// There is deliberately no `grant` call: a decision is only ever created by
@@ -53,23 +65,37 @@ class RemoteSandboxExecGrantRepository {
 
   final RemoteRpcClient _client;
 
-  /// Every recorded decision in [workspaceId].
+  /// One page of decisions in [workspaceId] whose path contains [query],
+  /// newest first: [limit] rows from [offset], plus how many match in total.
   ///
-  /// A server predating this feature answers `opUnknown`, which reads as "no
-  /// decisions" rather than an error, so the page renders its empty state
+  /// A server without the op (a demo) answers `opUnknown`, which reads as
+  /// "no decisions" rather than an error, so the page renders its empty state
   /// instead of a red banner.
-  Future<List<SandboxExecGrantView>> list(String workspaceId) async {
+  Future<SandboxExecGrantViewPage> list(
+    String workspaceId, {
+    String query = '',
+    int offset = 0,
+    int limit = 25,
+  }) async {
     try {
       final data = await _client.call('sandbox.listExecGrants', {
         'workspace_id': workspaceId,
+        if (query.trim().isNotEmpty) 'query': query.trim(),
+        'offset': offset,
+        'limit': limit,
       });
-      return [
+      final grants = [
         for (final g in (data['grants'] as List? ?? const []))
-          if (g is Map) SandboxExecGrantView.fromWire(g.cast<String, dynamic>()),
+          if (g is Map)
+            SandboxExecGrantView.fromWire(g.cast<String, dynamic>()),
       ];
+      return SandboxExecGrantViewPage(
+        grants: grants,
+        total: (data['total'] as num).toInt(),
+      );
     } on RemoteRpcException catch (e) {
       if (e.code == RpcErrorCodes.opUnknown) {
-        return const [];
+        return const SandboxExecGrantViewPage(grants: [], total: 0);
       }
       rethrow;
     }

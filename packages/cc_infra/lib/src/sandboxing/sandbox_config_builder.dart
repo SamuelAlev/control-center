@@ -87,6 +87,7 @@ class SandboxConfigBuilder {
         readOnlyMounts: _withResolvedPaths(spec.readOnlyMounts),
         runnerStateDirs: _withResolvedPaths(spec.runnerStateDirs),
         execGrantRoots: _withResolvedPaths(spec.execGrantRoots),
+        toolDirs: _withResolvedPaths(spec.toolDirs),
       ),
     );
   }
@@ -451,8 +452,9 @@ class SandboxConfigBuilder {
   /// shell dotfiles, editor configs, `.git/hooks`, `.claude/commands`, etc.
   /// Returns absolute paths to shadow with deny-write rules.
   ///
-  /// Skips `node_modules` and `.git` internals (except hooks/config) for
-  /// performance. Items directly in the root are included.
+  /// Skips `node_modules` and the rest of `.git` (beyond
+  /// [SandboxPolicyResolver.dangerousGitPaths]) for performance. Items
+  /// directly in the root are included.
   List<String> _scanDangerousPaths(SandboxPolicySpec spec) {
     final results = <String>{};
     final dangerousNames = {
@@ -461,7 +463,6 @@ class SandboxConfigBuilder {
     };
     final dangerousDirNames = SandboxPolicyResolver.dangerousDirectories
         .toSet();
-    final gitPaths = SandboxPolicyResolver.dangerousGitPaths.toSet();
 
     for (final root in spec.allowWrite) {
       if (root.isEmpty) {
@@ -473,16 +474,11 @@ class SandboxConfigBuilder {
         0,
         dangerousNames,
         dangerousDirNames,
-        gitPaths,
         results,
       );
       // Direct git internals under the root.
-      for (final g in SandboxPolicyResolver.dangerousGitPaths) {
-        final p = '$root/$g';
-        if (FileSystemEntity.typeSync(p, followLinks: false) !=
-            FileSystemEntityType.notFound) {
-          results.add(p);
-        }
+      if (FileSystemEntity.isDirectorySync(p.join(root, '.git'))) {
+        results.addAll(_gitInternals(p.join(root, '.git')));
       }
       for (final f in SandboxPolicyResolver.dangerousExtraFiles) {
         final p = '$root/$f';
@@ -497,13 +493,24 @@ class SandboxConfigBuilder {
 
   static const int _dangerousScanDepth = 3;
 
+  /// [SandboxPolicyResolver.dangerousGitPaths] under the `.git` directory
+  /// [gitDir], whether or not they exist yet: creating `commondir` is as
+  /// dangerous as editing `config`. (Linux can only shadow paths that exist,
+  /// and skips the rest.)
+  ///
+  /// p.join, not '$path/leaf': the deny rules are host paths and a literal
+  /// '/' join produced mixed separators on Windows.
+  static Iterable<String> _gitInternals(String gitDir) => [
+    for (final g in SandboxPolicyResolver.dangerousGitPaths)
+      p.joinAll([gitDir, ...g.split('/').skip(1)]),
+  ];
+
   void _scanDir(
     Directory dir,
     String root,
     int depth,
     Set<String> dangerousNames,
     Set<String> dangerousDirNames,
-    Set<String> gitPaths,
     Set<String> results,
   ) {
     if (depth > _dangerousScanDepth) {
@@ -516,7 +523,10 @@ class SandboxConfigBuilder {
       return;
     }
     for (final entry in entries) {
-      final name = entry.uri.pathSegments.last;
+      // The basename, not `uri.pathSegments.last`: a directory's URI ends in
+      // `/`, so that was empty for every directory and no nested `.git`,
+      // `.vscode` or `node_modules` was ever recognised.
+      final name = p.basename(entry.path);
 
       if (dangerousNames.contains(name)) {
         results.add(entry.path);
@@ -528,19 +538,10 @@ class SandboxConfigBuilder {
           results.add(entry.path);
           continue;
         }
-        // Peek inside .git for hooks/config (without counting against
-        // depth or descending into the full git internals).
+        // The git internals (without counting against depth or descending
+        // into the rest of `.git`).
         if (name == '.git') {
-          for (final g in gitPaths) {
-            // p.join, not '$path/leaf': the deny rules are host paths and a
-            // literal '/' join produced mixed separators on Windows (which
-            // then never matched the caller's own p.join-built expectations).
-            final candidate = p.join(entry.path, g.split('/').last);
-            if (FileSystemEntity.typeSync(candidate, followLinks: false) !=
-                FileSystemEntityType.notFound) {
-              results.add(candidate);
-            }
-          }
+          results.addAll(_gitInternals(entry.path));
           continue;
         }
         // Skip performance-heavy subtrees.
@@ -554,7 +555,6 @@ class SandboxConfigBuilder {
             depth + 1,
             dangerousNames,
             dangerousDirNames,
-            gitPaths,
             results,
           );
         }

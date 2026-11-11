@@ -96,7 +96,7 @@ class InboxSectionCard extends ConsumerWidget {
         SliverToBoxAdapter(
           child: CcCollapsible(
             expanded: expanded,
-            duration: CcMotion.normal,
+            duration: CcMotion.moderate,
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: tokens.panel,

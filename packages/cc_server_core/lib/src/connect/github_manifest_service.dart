@@ -8,6 +8,7 @@ import 'package:cc_domain/cc_domain.dart'
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart'
     show gitHubRestApiVersion;
 import 'package:cc_server_core/src/connect/bounded_body.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 
 /// One "Create my GitHub App" attempt.
@@ -115,10 +116,11 @@ class GitHubManifestService {
 
   /// Whether the created app holds a permission the manifest did not ask
   /// for, or a higher level of one: those are not what this server posted.
-  /// An app holding less is accepted (it just does less).
+  /// An app holding less is accepted (it just does less); an answer that
+  /// does not say what it holds is refused.
   static bool _exceedsRequested(Object? granted) {
     if (granted is! Map) {
-      return false;
+      return true;
     }
     for (final MapEntry(:key, :value) in granted.entries) {
       final asked = permissions[key];
@@ -254,14 +256,16 @@ class GitHubManifestService {
     }
     final expected = match?.browserKey;
     if (match == null || expected == null) {
-      throw const AuthException(
+      throw _refused(
+        'expired',
         'This GitHub App link expired. Start again from Settings.',
       );
     }
     if (browserKey == null || !constantTimeEquals(browserKey, expected)) {
       // Single use either way: a state carried to another browser is spent.
       _byTicket.remove(match.ticket);
-      throw const AuthException(
+      throw _refused(
+        'other_browser',
         'Finish creating the app in the browser that started it. Start '
         'again from Settings.',
       );
@@ -269,7 +273,10 @@ class GitHubManifestService {
     // Single use, whatever happens next.
     _byTicket.remove(match.ticket);
     if (!RegExp(r'^[A-Za-z0-9_-]{1,100}$').hasMatch(code)) {
-      throw const AuthException('GitHub did not send a usable code.');
+      throw _refused(
+        'bad_code',
+        'GitHub did not send a usable code.',
+      );
     }
     final request = await _http.postUrl(
       _api.replace(path: '/app-manifests/$code/conversions'),
@@ -288,16 +295,28 @@ class GitHubManifestService {
         timeout: _timeout,
       );
       if (response.statusCode != 201) {
-        throw const AuthException('GitHub did not create the app.');
+        throw _refused(
+          'not_created',
+          'GitHub did not create the app.',
+        );
       }
       json = jsonDecode(body);
     } on HttpException {
-      throw const AuthException('GitHub sent an unexpected answer.');
+      throw _refused(
+        'unexpected_answer',
+        'GitHub sent an unexpected answer.',
+      );
     } on FormatException {
-      throw const AuthException('GitHub sent an unexpected answer.');
+      throw _refused(
+        'unexpected_answer',
+        'GitHub sent an unexpected answer.',
+      );
     }
     if (json is! Map) {
-      throw const AuthException('GitHub sent an unexpected answer.');
+      throw _refused(
+        'unexpected_answer',
+        'GitHub sent an unexpected answer.',
+      );
     }
     final id = json['id'];
     final slug = json['slug'];
@@ -313,13 +332,17 @@ class GitHubManifestService {
         clientSecret is! String ||
         pem is! String ||
         owner is! Map) {
-      throw const AuthException('GitHub sent an incomplete app.');
+      throw _refused(
+        'incomplete_app',
+        'GitHub sent an incomplete app.',
+      );
     }
     // The exact name this attempt's manifest posted: the nonce is in no
     // other attempt's manifest and is spent with this one.
     if (name != _appName(match.nonce) ||
         _exceedsRequested(json['permissions'])) {
-      throw const AuthException(
+      throw _refused(
+        'not_this_manifest',
         'That app was not created from this server. Start again.',
       );
     }
@@ -332,10 +355,16 @@ class GitHubManifestService {
               ownerLogin is! String ||
               ownerLogin.toLowerCase() != match.organization.toLowerCase()
         : ownerType != 'User' || (ownerId != null && owner['id'] != ownerId)) {
-      throw const AuthException(
+      throw _refused(
+        'wrong_owner',
         'GitHub created the app under a different account than requested.',
       );
     }
+    forgeAudit(ForgeAuditEvent.githubAppManifestCreated, {
+      'app_id': id,
+      'owner': ownerLogin is String ? ownerLogin : '',
+      'owner_type': ownerType is String ? ownerType : '',
+    });
     await apps.save(
       ProviderApp.github,
       appId: '$id',
@@ -347,5 +376,10 @@ class GitHubManifestService {
       slug: slug,
       installUrl: Uri.https('github.com', '/apps/$slug/installations/new'),
     );
+  }
+
+  static AuthException _refused(String reason, String message) {
+    forgeAudit(ForgeAuditEvent.githubAppManifestRefused, {'reason': reason});
+    return AuthException(message);
   }
 }

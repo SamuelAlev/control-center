@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Every flag, environment variable, subcommand and data-directory path of the headless server.
 slug: en-GB/manual/reference/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Every process flag takes a CLI flag or an environment variable; the flag wins,
@@ -47,7 +47,7 @@ default. Check the startup log lines when a flag seems to have no effect.
 
 | Flag                     | Env                             | Default                               | Meaning                                                                                                                     |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Whether agent runs are wrapped in the host's OS-native sandbox when one is available. An opt-out, not an enable — see below |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` wraps agent runs in the host's OS-native sandbox, and on a host without one starts only the server owner's runs. `off` runs every member's agents unconfined on this host. See below |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Field kill switch for background code-graph indexing. `off` boots clean without a rebuild                                   |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Seconds to hold the first index sweep after the ready banner (clamped 0–300)                                                |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Whether harness runs send a small resident tool set plus a name index, loading the rest on first use. See below              |
@@ -82,21 +82,33 @@ where every child process could read it. Seeding from `.env` happens once per
 field, so a later edit in Settings is not undone by a restart. An empty value
 reads as unset.
 
-GitLab and Bitbucket background work also reads `GITLAB_TOKEN` / `CI_JOB_TOKEN`
-and `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` with `BITBUCKET_EMAIL`. GitHub has
-no environment credential.
+No forge credential comes from the environment: GitHub, GitLab and Bitbucket
+all act on a member's own sign-in or token, or on one-repository GitHub App
+tokens bounded by one.
 
 ### `--sandbox`
 
 The server probes the host once at boot and wraps agent command execution in the
 OS-native sandbox when a backend is available: `sandbox-exec` (Seatbelt) on macOS,
-`bwrap` plus `socat` on Linux and WSL2. Where none is — Windows, or a Linux host missing
-those tools — runs fall back to environment sanitisation, the command policy and the
-action guardrails and the startup log says which state applies.
+`bwrap` plus `socat` on Linux and WSL2. The decision is made once and holds until the
+server restarts. There are three outcomes, each shown on the startup exposure line:
 
-`--sandbox off` is the field kill switch for the case the probe cannot see: a host where
-the sandbox profile itself misbehaves. It does not need a rebuild and the server logs a
-warning for the life of the process so the state is never silent.
+| `sandbox=`    | When                                    | Whose agent runs start                                                           |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | A backend is available and `--sandbox` is `on` | Everyone's, wrapped                                                        |
+| `off`         | `--sandbox off`                         | Everyone's, unconfined on this host                                              |
+| `unavailable` | `--sandbox on` and no backend (Windows, or Linux without `bwrap` and `socat`) | Only runs the server owner is accountable for, unconfined. Others are refused with "This server has no sandbox, so only its owner can run agents here." |
+
+For automation the accountable person is the one the automation is bound to. With no
+server owner recorded, no run starts on an `unavailable` host. On Linux and WSL2 with
+bubblewrap installed, native dispatch currently fails closed for every run; see
+[Sandbox backends](/en-GB/manual/reference/sandbox-backends/#linux-bubblewrap).
+
+`--sandbox off` is the server owner's choice for everyone who uses the server: it runs
+every member's agents unconfined on this machine. Use it on a host where the sandbox
+profile itself misbehaves, or to let members run agents on a host with no backend. It
+does not need a rebuild, and the server logs a warning for the life of the process so
+the state is never silent.
 
 ### `--tool-deferral`
 
@@ -170,7 +182,6 @@ picks up a change within 10 minutes or on restart.
 | `cc_server connect enable`      | Uses Control Center's hosted Connect                                                                             |
 | `cc_server connect enable --url <url>` | Uses a custom Connect at that URL (HTTPS, or `http` on loopback)                                          |
 | `cc_server connect disable`     | Stops using Connect. Only the server's own apps sign people in                                                   |
-| `cc_server connect rotate-key --yes` | Mints a new install key and install id. Everybody who signed in through Connect signs in again. Without `--yes` it only warns and exits `2` |
 
 `status` with no command is the default. Each command accepts `--data-dir`.
 `CC_CONNECT_URL` overrides whatever these store. An unknown command exits `64`.

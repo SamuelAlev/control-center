@@ -60,6 +60,7 @@ EnvironmentComponentState _state(
   String id,
   String kind,
   String state, {
+  String? label,
   int restarts = 0,
   List<Map<String, dynamic>> services = const [],
   String? sessionId,
@@ -69,6 +70,7 @@ EnvironmentComponentState _state(
   id: id,
   kind: kind,
   state: state,
+  label: label,
   restarts: restarts,
   services: services,
   sessionId: sessionId,
@@ -141,6 +143,58 @@ void main() {
       await tester.tap(_action('Open'));
       await tester.pumpAndSettle();
       expect(host.opened, ['process:tty1']);
+    });
+
+    testWidgets('without the operate right the controls are disabled, '
+        'with the reason', (tester) async {
+      final repository = FakeEnvironmentRepository(
+        environments: [
+          environment(
+            components: [
+              _state('web', 'process', 'running', sessionId: 'tty1'),
+            ],
+          ),
+        ],
+      )..canOperate = false;
+      await _pump(tester, repository);
+
+      expect(
+        find.textContaining('You can watch this environment.'),
+        findsOneWidget,
+      );
+      expect(tester.widget<CcIconButton>(_action('Restart')).onPressed, isNull);
+      expect(
+        tester
+            .widget<CcButton>(find.widgetWithText(CcButton, 'Stop'))
+            .onPressed,
+        isNull,
+      );
+      // Watching stays open: the process's own terminal opens read-only.
+      expect(tester.widget<CcIconButton>(_action('Open')).onPressed, isNotNull);
+    });
+
+    testWidgets('with the operate right there is no reason line', (
+      tester,
+    ) async {
+      final repository = FakeEnvironmentRepository(
+        environments: [
+          environment(
+            components: [
+              _state('web', 'process', 'running', sessionId: 'tty1'),
+            ],
+          ),
+        ],
+      );
+      await _pump(tester, repository);
+
+      expect(
+        find.textContaining('You can watch this environment.'),
+        findsNothing,
+      );
+      expect(
+        tester.widget<CcIconButton>(_action('Restart')).onPressed,
+        isNotNull,
+      );
     });
 
     testWidgets('a manual task shows its last result and runs on request', (
@@ -677,15 +731,151 @@ void main() {
     );
   });
 
-  test('steps prefer the tool\'s own lines over the components', () {
-    final starting = environment(
+  group('the steps of a start', () {
+    const pulled = EnvironmentProgress(
+      type: 'step',
+      id: '1',
+      label: 'Pulled 4 images',
+      state: 'done',
+    );
+    const containers = EnvironmentProgress(
+      type: 'step',
+      id: '2',
+      label: 'Starting the containers',
+      state: 'running',
+    );
+
+    SpaceEnvironment starting() => environment(
       status: EnvironmentStatus.starting,
-      components: [_state('web', 'process', 'starting')],
+      components: [
+        _state(
+          'tool',
+          'cli',
+          'starting',
+          label: 'Stack',
+        ).copyWith(steps: const [pulled, containers]),
+        _state('web', 'process', 'waiting').copyWith(detail: 'Port 4100'),
+        _state('migrate', 'task', 'pending'),
+        // What this start never runs is not a step of it.
+        _state('e2e', 'task', 'idle'),
+        _state('desktop', 'app', 'closed'),
+      ],
     );
-    expect(environmentSteps(starting, const []).single.label, 'web');
-    expect(
-      environmentSteps(starting, const []).single.state,
-      EnvironmentStepState.running,
+
+    test('one row for each part the start goes through', () {
+      expect(environmentSteps(starting()), [
+        (
+          label: 'Stack',
+          state: EnvironmentStepState.running,
+          detail: 'Starting the containers',
+        ),
+        (
+          label: 'web',
+          state: EnvironmentStepState.running,
+          detail: 'Port 4100',
+        ),
+        (label: 'migrate', state: EnvironmentStepState.pending, detail: null),
+      ]);
+    });
+
+    test('a tool\'s steps never add rows, whatever it reports', () {
+      SpaceEnvironment after(List<EnvironmentProgress> steps) => environment(
+        status: EnvironmentStatus.starting,
+        components: [_state('tool', 'cli', 'starting').copyWith(steps: steps)],
+      );
+      expect(environmentSteps(after(const [])), [
+        (label: 'tool', state: EnvironmentStepState.running, detail: null),
+      ]);
+      expect(environmentSteps(after(const [pulled])).single.detail, isNull);
+      expect(
+        environmentSteps(after(const [pulled, containers])).single.detail,
+        'Starting the containers',
+      );
+    });
+
+    test('a part that is done says nothing more', () {
+      final ready = environment(
+        components: [
+          _state(
+            'tool',
+            'cli',
+            'ready',
+          ).copyWith(detail: 'post-start: succeeded', steps: const [pulled]),
+        ],
+      );
+      expect(environmentSteps(ready), [
+        (label: 'tool', state: EnvironmentStepState.done, detail: null),
+      ]);
+    });
+
+    testWidgets('the step under way sits beneath its part', (tester) async {
+      await tester.pumpWidget(
+        testWrap(EnvironmentStepList(environment: starting())),
+      );
+      await tester.pump();
+
+      expect(find.text('Stack'), findsOneWidget);
+      expect(find.text('Starting the containers'), findsOneWidget);
+      expect(find.text('Pulled 4 images'), findsNothing);
+      expect(find.text('migrate'), findsOneWidget);
+      expect(find.text('e2e'), findsNothing);
+      expect(find.text('desktop'), findsNothing);
+      expect(find.byType(CcSpinner), findsNWidgets(2));
+      expect(
+        tester.getTopLeft(find.text('Starting the containers')).dy,
+        greaterThan(tester.getTopLeft(find.text('Stack')).dy),
+      );
+    });
+
+    testWidgets('the same under RTL', (tester) async {
+      await tester.pumpWidget(
+        testWrap(
+          EnvironmentStepList(environment: starting()),
+          textDirection: TextDirection.rtl,
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      // The detail lines up with its part's name, on the reading side.
+      expect(
+        tester.getTopRight(find.text('Starting the containers')).dx,
+        tester.getTopRight(find.text('Stack')).dx,
+      );
+    });
+  });
+
+  testWidgets('a failure shows what the tool printed last, to read and copy', (
+    tester,
+  ) async {
+    await _pump(
+      tester,
+      FakeEnvironmentRepository(
+        environments: [
+          environment(
+            status: EnvironmentStatus.failed,
+            lastError: EnvironmentError(
+              code: 'compose.up',
+              message: 'The stack did not start',
+              exitCode: 1,
+              output: [
+                for (var i = 1; i <= 8; i++) 'pull $i',
+                'denied: the token has expired',
+              ].join('\n'),
+            ),
+            components: [_state('tool', 'cli', 'failed')],
+          ),
+        ],
+      ),
     );
+
+    expect(find.text('The stack did not start'), findsOneWidget);
+    final box = find.textContaining('denied: the token has expired');
+    expect(box, findsOneWidget);
+    // The end of it: the reason is in the last lines.
+    final shown = tester.widget<Text>(box).data!.split('\n');
+    expect(shown, hasLength(6));
+    expect(shown.first, 'pull 4');
+    expect(Directionality.of(tester.element(box)), TextDirection.ltr);
   });
 }

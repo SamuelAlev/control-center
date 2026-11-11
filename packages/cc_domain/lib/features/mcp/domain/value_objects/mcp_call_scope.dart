@@ -117,6 +117,17 @@ class McpCallScope {
     fillIfEmpty('agent_id', agentId);
     fillIfEmpty('conversation_id', conversationId);
     fillIfEmpty('space_id', spaceId);
+    // The calling run's own conversation, for a tool that bounds what it
+    // reads by whom the run acts for. Only an attested scope names it:
+    // header-only values are whatever the caller chose to write.
+    if (props.containsKey(callerConversationKey)) {
+      final caller = conversationId;
+      if (attested && caller != null && caller.isNotEmpty) {
+        scoped[callerConversationKey] = caller;
+      } else {
+        scoped.remove(callerConversationKey);
+      }
+    }
     // Delegation identities name the CALLER on every tool that declares them,
     // never a model-chosen value: they drive sender attribution, the per-pair
     // rate limit, the cycle chain and the autonomy/budget lookups. With no
@@ -135,6 +146,12 @@ class McpCallScope {
     }
     return scoped;
   }
+
+  /// The argument that always names the calling run's conversation: FORCED
+  /// to [conversationId] by [apply] when the scope is [attested], removed
+  /// otherwise. Unlike `conversation_id` (a target most tools let the model
+  /// choose), the model can never set it.
+  static const String callerConversationKey = 'caller_conversation_id';
 
   /// Arguments that always name the calling agent and are therefore FORCED to
   /// [agentId] by [apply], whatever the tool's `forcedScopeKeys` say.

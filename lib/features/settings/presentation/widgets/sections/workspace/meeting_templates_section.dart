@@ -1,11 +1,8 @@
 import 'package:cc_domain/features/meetings/domain/entities/meeting_template.dart';
 import 'package:cc_ui/cc_ui.dart';
-import 'package:control_center/core/constants/app_constants.dart';
-import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/meetings/providers/meeting_template_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/general/settings_shared.dart';
-import 'package:control_center/features/settings/providers/workspace_settings_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -32,9 +29,6 @@ class MeetingTemplatesSection extends ConsumerStatefulWidget {
 
 class _MeetingTemplatesSectionState
     extends ConsumerState<MeetingTemplatesSection> {
-  /// Session guard for the one-time legacy migration (see [_seedLegacy]).
-  static bool _legacySeedDone = false;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -46,16 +40,6 @@ class _MeetingTemplatesSectionState
     final isAdmin =
         workspaceId != null &&
         (ref.watch(myWorkspaceRoleProvider(workspaceId))?.isAdmin ?? false);
-
-    // The one-time migration only runs once the workspace settings have
-    // actually loaded — "key absent" is indistinguishable from "not yet read".
-    if (!_legacySeedDone) {
-      final settings = ref.watch(workspaceSettingsProvider).asData?.value;
-      if (settings != null) {
-        _legacySeedDone = true;
-        _seedLegacy(settings);
-      }
-    }
 
     return SectionCard(
       label: l10n.meetingTemplates,
@@ -166,57 +150,6 @@ class _MeetingTemplatesSectionState
             .select(result.id);
       }
     });
-  }
-
-  /// One-time migration from the old device-local store: when the workspace
-  /// owns no templates yet and this client still carries custom ones in its
-  /// legacy preferences, carry them up and clear the legacy keys — so the
-  /// migration happens exactly once, in the first workspace opened, and never
-  /// re-runs for another workspace or after a restart.
-  Future<void> _seedLegacy(Map<String, String> settings) async {
-    if (settings.containsKey(meetingTemplatesSettingKey) ||
-        settings.containsKey(activeMeetingTemplateSettingKey)) {
-      return;
-    }
-    final prefs = ref.read(appPreferencesProvider);
-    final legacyCustom = MeetingTemplate.decodeCustom(
-      prefs.getString(meetingTemplatesKey),
-    );
-    final legacySelected = prefs.getString(selectedMeetingTemplateKey);
-    final carrySelection =
-        legacySelected != null && legacySelected != MeetingTemplate.defaultId;
-    if (legacyCustom.isEmpty && !carrySelection) {
-      return;
-    }
-
-    final workspaceId = ref.read(activeWorkspaceIdProvider);
-    if (workspaceId == null) {
-      return;
-    }
-    final repo = ref.read(workspaceSettingsRepositoryProvider);
-    try {
-      if (legacyCustom.isNotEmpty) {
-        await repo.set(
-          workspaceId,
-          meetingTemplatesSettingKey,
-          MeetingTemplate.encodeCustom(legacyCustom),
-        );
-      }
-      if (carrySelection) {
-        await repo.set(
-          workspaceId,
-          activeMeetingTemplateSettingKey,
-          legacySelected,
-        );
-      }
-      // The legacy keys are unread from here on; removing them makes the
-      // migration idempotent across workspaces and sessions.
-      await prefs.remove(meetingTemplatesKey);
-      await prefs.remove(selectedMeetingTemplateKey);
-    } on Object catch (_) {
-      // A failed RPC leaves the legacy keys in place, so the next session
-      // retries. The in-memory guard keeps this session quiet.
-    }
   }
 }
 

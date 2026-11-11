@@ -44,6 +44,7 @@ class RemoteRelayHost {
     this.watchQueries,
     this.workspaceExists,
     this.resolveRole,
+    this.canViewNotification,
     this.toolIsMutating,
     this.attachResources,
     RemoteRateLimiterPool? rateLimiters,
@@ -102,6 +103,11 @@ class RemoteRelayHost {
   /// (workspace-targeted events are dropped for non-members). Null (bare test
   /// hosts) skips the gates; production wiring always supplies it.
   final WorkspaceRoleResolver? resolveRole;
+
+  /// Per-frame visibility for the event forwarder: a workspace notification
+  /// about a repository, space or pull request the session user may not see
+  /// is dropped (the durable feed's rule). Null skips it (bare test hosts).
+  final NotificationViewCheck? canViewNotification;
 
   /// Classifies a registered tool before a relayed session applies its role
   /// gate. An unknown tool returns null and is refused before dispatch.
@@ -431,6 +437,7 @@ class RemoteRelayHost {
           ? null
           : (workspaceId) async =>
                 await roleResolver(workspaceId, userId) != null,
+      canView: canViewNotification,
     );
     pending.session = _LiveSession(
       transport: auth.channel,

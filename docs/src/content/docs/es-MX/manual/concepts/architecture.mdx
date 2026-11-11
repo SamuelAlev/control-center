@@ -3,7 +3,7 @@ title: Arquitectura
 description: Cómo está estructurado Control Center con un modelo de servidor y cliente ligero, Clean Architecture centrada en funcionalidades y puertos y adaptadores.
 dateModified: 2026-09-19
 slug: es-MX/manual/conceptos/arquitectura
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Resumen
@@ -140,7 +140,7 @@ binario de servidor sin Flutter importen las mismas definiciones:
 - Puertos compartidos: `SandboxPort`, `CredentialBrokerPort`,
   `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
 - Servicios de dominio: `MemoryAccessPolicy`, `ActivityLogger`,
-  `MentionResolver`, `RunLivenessClassifier`
+  `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + tipos de evento (espacio de trabajo/agente, PR/revisión,
   mensajería, tickets, pipeline, orquestación, memoria, calendario/reuniones,
   identidad y membresía, observabilidad)
@@ -297,10 +297,6 @@ dispositivo y la clave de emparejamiento de un servidor remoto.
   cliente y las claves de emparejamiento remoto, no los tokens de proveedores
 - `shared_preferences` solo para preferencias no sensibles (tema, tipografía,
   diseño)
-- Los secretos de proveedores sobrantes de instalaciones anteriores se entregan
-  al servidor una sola vez mediante
-  `features/auth/providers/credential_migration.dart` y luego se eliminan del
-  llavero del cliente
 
 ## Cumplimiento de la arquitectura
 

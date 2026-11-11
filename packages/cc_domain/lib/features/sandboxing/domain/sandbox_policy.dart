@@ -26,6 +26,7 @@ class SandboxPolicySpec {
     this.runDir,
     this.runnerStateDirs = const [],
     this.execGrantRoots = const [],
+    this.toolDirs = const [],
     this.loopbackPorts = const [],
     this.environmentScope,
   });
@@ -87,6 +88,11 @@ class SandboxPolicySpec {
   /// ignores them: bwrap has no `$HOME` exec block to re-open.
   final List<String> execGrantRoots;
 
+  /// See [SandboxSpec.toolDirs]. macOS denies writes to them after every
+  /// write allowance and allows exec beneath them; Linux re-binds them
+  /// read-only after every writable bind.
+  final List<String> toolDirs;
+
   /// See [SandboxSpec.loopbackPorts].
   final List<int> loopbackPorts;
 
@@ -106,6 +112,7 @@ class SandboxPolicySpec {
     List<String>? readOnlyMounts,
     List<String>? runnerStateDirs,
     List<String>? execGrantRoots,
+    List<String>? toolDirs,
   }) => SandboxPolicySpec(
     sessionId: sessionId,
     denyRead: denyRead ?? this.denyRead,
@@ -120,6 +127,7 @@ class SandboxPolicySpec {
     runDir: runDir,
     runnerStateDirs: runnerStateDirs ?? this.runnerStateDirs,
     execGrantRoots: execGrantRoots ?? this.execGrantRoots,
+    toolDirs: toolDirs ?? this.toolDirs,
     loopbackPorts: loopbackPorts,
     environmentScope: environmentScope,
   );
@@ -151,8 +159,9 @@ class SandboxPolicyResolver {
 
   // ---- Filesystem: secrets deny-read ----
 
-  /// Relative paths under `$HOME` denied for read. Expanded by the resolver
-  /// with the supplied `homeDir`.
+  /// Relative paths under `$HOME` denied for read, and for write as well: a
+  /// sandbox that cannot read `~/.gnupg` must not be able to replace its
+  /// config either. Expanded by the resolver with the supplied `homeDir`.
   static const List<String> secretsDenyReadRels = [
     '.ssh',
     '.aws',
@@ -193,8 +202,25 @@ class SandboxPolicyResolver {
     '.claude/agents',
   ];
 
-  /// Always-blocked git internals under each writable root.
-  static const List<String> dangerousGitPaths = ['.git/hooks', '.git/config'];
+  /// Always-blocked git internals under each writable root: everything that
+  /// decides which config, hooks, attributes or objects git reads there. Git
+  /// the server runs in a worktree an agent can write must never be steered
+  /// into running a program: `config` and `config.worktree` define filters,
+  /// diff and merge drivers and remote commands; `commondir` points git at
+  /// another directory's config and hooks; `info/` holds attributes (which
+  /// name those drivers) and grafts; `objects/info/` holds alternates, which
+  /// redirect object reads to another repository. (`objects/info/` is also
+  /// where `git gc` keeps its commit-graph, which a sandboxed run therefore
+  /// cannot write.) Runs never use linked worktrees where a sandbox exists,
+  /// so `.git` is always a directory here.
+  static const List<String> dangerousGitPaths = [
+    '.git/hooks',
+    '.git/config',
+    '.git/config.worktree',
+    '.git/commondir',
+    '.git/info',
+    '.git/objects/info',
+  ];
 
   /// Additional single files to block inside writable roots (npm auth).
   static const List<String> dangerousExtraFiles = ['.npmrc'];
@@ -229,14 +255,49 @@ class SandboxPolicyResolver {
     '.claude/hooks',
   ];
 
-  /// Home RC dotfiles denied for write.
+  /// Start-up files the server user's own shells, sessions and tools run or
+  /// source, denied for write. Each one is code that runs outside the sandbox
+  /// the next time that user logs in, opens a shell or starts a session.
   static const List<String> homeRcDenyRels = [
+    // sh, bash.
+    '.profile',
     '.bashrc',
     '.bash_profile',
-    '.zshrc',
+    '.bash_login',
+    '.bash_logout',
+    '.inputrc',
+    // zsh (`.zshenv` runs for every zsh, scripts included).
+    '.zshenv',
     '.zprofile',
-    '.profile',
+    '.zshrc',
+    '.zlogin',
+    '.zlogout',
+    '.config/zsh',
+    // fish, nushell, other shells.
+    '.config/fish',
+    '.config/nushell',
+    '.kshrc',
+    '.mkshrc',
+    '.cshrc',
+    '.tcshrc',
+    '.login',
+    '.logout',
+    // Git's global config.
     '.gitconfig',
+    // Linux sessions: user units, autostart entries, session environment.
+    '.config/systemd/user',
+    '.config/autostart',
+    '.config/environment.d',
+    '.pam_environment',
+    '.xprofile',
+    '.xinitrc',
+    '.xsession',
+    '.xsessionrc',
+    // Interpreters that run a user start-up file on every launch.
+    '.pythonrc',
+    '.pythonstartup',
+    '.irbrc',
+    '.pryrc',
   ];
 
   // ---- Exec allow: toolchain installs under $HOME ----
@@ -349,7 +410,8 @@ class SandboxPolicyResolver {
       allowed.addAll(spec.egressAllowlist);
     }
 
-    // --- Secrets deny-read (expanded with home). ---
+    // --- Secrets deny-read (expanded with home), also denied for write
+    // below: one list, so a secret can never be hidden but replaceable. ---
     final denyRead = <String>[];
     if (homeDir != null && homeDir.isNotEmpty) {
       for (final rel in secretsDenyReadRels) {
@@ -401,7 +463,7 @@ class SandboxPolicyResolver {
       // (last-match-wins, so the deny prevails); on Linux they are masked with
       // a /dev/null bind. Every mode — chat included — keeps originals
       // untouchable; agents only ever write in their CoW worktrees.
-      denyWrite: [...secretsDenyWrite, ...spec.protectedPaths],
+      denyWrite: [...secretsDenyWrite, ...denyRead, ...spec.protectedPaths],
       denyExecutables: alwaysDangerousExecutables,
       allowedDomains: allowed.toSet().toList(),
       deniedDomains: denied,
@@ -420,6 +482,10 @@ class SandboxPolicyResolver {
       execGrantRoots: [
         for (final root in spec.execGrantRoots)
           if (root.isNotEmpty) root,
+      ],
+      toolDirs: [
+        for (final dir in spec.toolDirs)
+          if (dir.isNotEmpty) dir,
       ],
       loopbackPorts: spec.loopbackPorts,
       environmentScope: spec.environmentScope,

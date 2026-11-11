@@ -24,7 +24,7 @@ enum EditorAutoSaveMode {
   final String wireValue;
 
   /// Parses a persisted / wire value back to a mode, defaulting to [afterDelay]
-  /// for anything unrecognised (including the legacy null).
+  /// for anything unrecognised or absent.
   static EditorAutoSaveMode fromWire(String? value) {
     for (final mode in EditorAutoSaveMode.values) {
       if (mode.wireValue == value) {

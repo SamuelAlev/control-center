@@ -2,13 +2,13 @@
 title: Configurer les garde-fous
 description: Définissez des règles d’autorisation, de demande et de refus pour les actions des agents, testez-les avec la sonde « Et si ? » et ajustez l’autonomie par espace.
 slug: fr-CA/manuel/guides/configurer-garde-fous
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Ce guide montre comment configurer les garde-fous : les règles qui déterminent
 si l’action d’un agent s’exécute, demande d’abord une approbation ou est refusée.
 
-Les garde-fous couvrent les treize classes d’effet que déclare chaque outil
+Les garde-fous couvrent les quatorze classes d’effet que déclare chaque outil
 modificateur. Ils sont appliqués côté serveur, au moment où l’outil est appelé,
 jamais par une instruction dans un prompt.
 
@@ -23,7 +23,7 @@ jamais par une instruction dans un prompt.
    réinitialisation qui apparaît à la fin de cette ligne (**Revenir à la valeur
    héritée**) — la décision revient à la portée plus large
 
-Chaque ligne affiche la décision effective sous forme d’étiquette d’état, ainsi
+Chaque ligne affiche le réglage de l’action sous forme d’étiquette d’état, ainsi
 qu’un badge indiquant sa provenance : **Cette portée**, **Hérité** ou **Valeur
 par défaut**. La matrice est résolue au mode Agent (`chat`), donc **Préréglage du
 mode** n’apparaît jamais ici — utilisez la sonde « Et si ? » avec un mode en
@@ -35,6 +35,18 @@ Point de contrôle : réglez **Pousser vers un dépôt distant** sur **Refuser**
 portée de l’espace de travail, puis lancez la sonde « Et si ? » ci-dessous sur
 `git push origin main`. Le résultat indique `deny` avec la source `workspace`.
 
+## Examiner et révoquer les approbations temporaires
+
+Répondre à une carte d’approbation avec **Approuver pour 8 heures** écrit une approbation temporaire : une règle qui laisse passer le même type d’action sans demander jusqu’à sa fin. Chacune figure sur cette page, sous l’action à laquelle elle appartient.
+
+1. Allez dans **Paramètres → Espace de travail → Autorisations des agents** et choisissez la portée. Une approbation est écrite pour l’espace d’où vient la question : choisissez donc **Espace**, puis cet espace
+2. Sous la ligne de l’action, lisez l’entrée : ce qu’elle autorise (par exemple, les push vers des branches correspondant à `feature/**`), les mots **Approbation temporaire**, qui l’a accordée lorsqu’il s’agissait d’une autre personne, et la date de fin
+3. Pour la terminer maintenant, pointez l’entrée et appuyez sur **Révoquer**. Les agents redemandent dès leur action suivante
+
+La ligne affiche toujours le réglage propre à l’action, et une ligne dessous compte les cas listés plus bas qui sont tout de même autorisés. Les règles conditionnelles écrites par un modèle de politique apparaissent dans la même liste, et les règles de commande dans un groupe **Commandes** après la dernière action. À la portée de l’espace de travail, une note sous le résumé compte les approbations temporaires fixées pour un seul espace ou un seul agent. À la portée d’un espace ou d’un agent, elle compte celles de l’espace de travail, qui s’y appliquent aussi.
+
+Une approbation temporaire ne fait que dispenser d’une question. Elle ne remplace jamais **Refuser** : si vous réglez une action sur **Refuser** pendant qu’une approbation est en cours, son entrée affiche **sans effet si l'action est sur Refuser** jusqu’à sa fin ou jusqu’à sa révocation. Modifier le réglage d’une action laisse ses approbations temporaires en place, et révoquer l’une d’elles laisse le réglage en place.
+
 ## Comprendre comment une décision est résolue
 
 La résolution suit l’ordre **spécificité d’abord, puis restrictivité** :
@@ -42,7 +54,7 @@ La résolution suit l’ordre **spécificité d’abord, puis restrictivité** :
 1. Les règles d’**espace**, puis d’**agent**, puis d’**espace de travail**. La
    première portée dont une règle correspond tranche, et la résolution s’arrête
 2. Si aucune règle ne correspond, le **préréglage du mode** s’applique — un mode
-   en lecture seule (plan, revue, orchestration) refuse onze des treize classes
+   en lecture seule (plan, revue, orchestration) refuse douze des quatorze classes
 3. Si le mode ne se prononce pas, la **valeur par défaut intégrée** s’applique
 
 Au sein d’une même portée, une règle de commande est résolue par le préfixe
@@ -73,7 +85,7 @@ exécution refusée.
 | Créer un commit                     | Autoriser                  |
 | Pousser vers un dépôt distant       | Demander d’abord           |
 | Ouvrir une pull request             | Demander d’abord           |
-| Publier une revue ou fusionner      | Demander d’abord           |
+| Mettre à jour ou fusionner une pull request | Demander d’abord           |
 | Écrire dans un outil de suivi externe | Demander d’abord         |
 | Accéder au réseau                   | Autoriser                  |
 | Lire un secret                      | Autoriser                  |
@@ -81,6 +93,7 @@ exécution refusée.
 | Exécuter un processus               | Autoriser                  |
 | Modifier la structure de l’espace de travail | Autoriser         |
 | Piloter une enceinte (rig)          | Autoriser                  |
+| Exécuter des commandes sur l'hôte   | Demander d’abord           |
 
 La taxonomie est fermée. Un nouvel outil livré sans déclarer ses classes échoue
 à un test de cliquet en CI, de sorte que rien n’arrive avec un ensemble d’effets
@@ -92,14 +105,13 @@ Avant de modifier une règle, vérifiez comment la politique actuelle la résout
 déjà.
 
 1. Sur la même page, faites défiler jusqu’à **Et si ?**
-2. Choisissez une **Action** (l’une des treize classes)
+2. Choisissez une **Action** (l’une des quatorze classes)
 3. Remplissez au besoin **Commande** (par exemple `git push origin main`),
    **Agent**, **Espace** et **Mode**
 4. Lisez le résultat : la décision, la raison et la **Source :**
 
 La sonde exécute le même résolveur que celui qu’emprunte le chemin d’application,
-contre vos règles actives, de sorte que la réponse est exacte. Si elle vous
-surprend, modifiez une règle dans la matrice ci-dessus et relancez la sonde.
+contre vos règles actives, de sorte que la réponse est exacte. Lorsqu’une approbation temporaire décide, la source affiche **Approbation temporaire** suivie de sa portée. Si la réponse vous surprend, modifiez une règle dans la matrice ci-dessus et relancez la sonde.
 
 ## Régler l’autonomie d’un espace
 

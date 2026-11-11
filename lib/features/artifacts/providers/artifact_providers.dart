@@ -46,8 +46,7 @@ final artifactRevisionsProvider = FutureProvider.autoDispose
 /// Decodes a revision's stored envelope into a renderable document.
 ///
 /// Loose on purpose: content that was accepted and persisted must always come
-/// back out, even if it was written by an older build or hand-edited. One
-/// malformed block is dropped; it never blanks the card.
+/// back out. One malformed block is dropped; it never blanks the card.
 ArtifactDocument decodeArtifactRevision(WorkProductRevision revision) {
   final raw = revision.content.trim();
   if (raw.isEmpty) {
@@ -61,7 +60,7 @@ ArtifactDocument decodeArtifactRevision(WorkProductRevision revision) {
   } on FormatException {
     // Not JSON at all.
   }
-  // A legacy or hand-written revision holding plain markdown still renders —
-  // the column predates the block schema and its doc comment said "markdown".
+  // A revision holding plain markdown (the governance revision tool and the
+  // demo seeder write raw text, not an envelope) renders as one block.
   return ArtifactDocument(blocks: [ArtifactMarkdownBlock(text: raw)]);
 }

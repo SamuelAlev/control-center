@@ -2,7 +2,7 @@
 title: Autentifică echipa cu SSO
 description: Conectează Okta (SAML) la serverul tău Control Center și parcurge o autentificare de la un capăt la altul.
 slug: ro-RO/manual/tutoriale/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -87,6 +87,16 @@ Două politici decid ce face o primă autentificare:
   varianta implicită mai sigură.
 - **Provisionare utilizatori necunoscuți la prima autentificare** — activat
   implicit; dezactivează-l ca să respingi pe oricine nu are deja un cont.
+
+Dacă oamenii au deja conturi pe acest server, confirmă adresele lor de e-mail
+înainte ca cineva să se autentifice prin SSO: deschide **Setări → Server →
+Persoane** și apasă **Confirmă e-mailul** pe fiecare rând marcat **E-mail
+neconfirmat**. O autentificare se potrivește cu un cont existent după e-mail
+doar când adresa aceea este confirmată (sau a fost setată prin SSO sau SCIM).
+O adresă pe care cineva a scris-o în propriul profil sau la o invitație nu se
+potrivește cu nimic, deci fără acest pas primesc un al doilea cont sau sunt
+refuzați când provisionarea utilizatorilor necunoscuți este dezactivată. Vezi
+[Cum se potrivesc autentificările cu conturile existente](/ro-RO/manual/ghiduri-practice/sso-oidc/#cum-se-potrivesc-autentificările-cu-conturile-existente).
 
 Opțional, mapează un atribut care poartă numele grupurilor (la Okta este de
 obicei `groups`) și traduce grupurile în roluri cu ajutorul mapării — de

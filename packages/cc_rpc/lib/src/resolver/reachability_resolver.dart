@@ -328,8 +328,7 @@ class ServerIdentityProbe {
   /// Whether the server runs with the `--insecure` escape hatch.
   final bool insecure;
 
-  /// The server's build version, or null when it did not report one (a
-  /// server older than the /healthz build-identity fields).
+  /// The server's build version, or null when it did not report one.
   final String? version;
 
   /// The server's build git sha, or null when absent.

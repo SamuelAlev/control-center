@@ -1,12 +1,13 @@
-/// A device-bound capability for a server-hosted code-server process opening
-/// one conversation's isolated copy-on-write worktree.
+/// A device- and user-bound capability for a server-hosted code-server process
+/// opening one conversation's isolated copy-on-write worktree.
 ///
-/// The process is loopback-only and can be shared by authorized devices, but
-/// each device has its own [sessionId]. Clients access it only through the
-/// authenticated encrypted resource tunnel at `/proxy/vscode/<sessionId>/`.
-/// The server's extension bridge has a separate, private process id. Each
-/// resource request must compare [deviceId] with the authenticated device and
-/// reject unknown, expired, closed, or foreign bindings.
+/// The process is loopback-only and runs as the server's OS user, so only the
+/// server owner may open one. Each opener has its own [sessionId]. Clients
+/// access it only through the authenticated encrypted resource tunnel at
+/// `/proxy/vscode/<sessionId>/`. The server's extension bridge has a separate,
+/// private process id. Each resource request must compare [deviceId] and
+/// [userId] with the authenticated principal and answer a foreign binding
+/// exactly like an unknown, expired or closed one.
 class CodeServerSession {
   /// Creates a [CodeServerSession].
   const CodeServerSession({
@@ -15,6 +16,7 @@ class CodeServerSession {
     required this.port,
     required this.folderPath,
     required this.deviceId,
+    required this.userId,
     required this.expiresAt,
     required this.status,
   });
@@ -38,6 +40,10 @@ class CodeServerSession {
   /// The paired-device id that owns this capability. Another device cannot use
   /// it even if the capability string leaks.
   final String deviceId;
+
+  /// The user who opened this capability. A paired device can be reassigned to
+  /// another user, so the proxy also refuses any principal whose user differs.
+  final String userId;
 
   /// Expiry of this device's binding. An expired capability is revoked without
   /// tearing down another device's still-live reference to the shared process.
@@ -90,7 +96,7 @@ class CodeServerOpenRequest {
   final int? line;
 
   /// The reporting editor window's bridge id (see
-  /// [codeServerBridgeWindowMarker]), or null from an older bridge. The client
+  /// [codeServerBridgeWindowMarker]), or null when the report carries none. The client
   /// uses it to open the file in the pane that holds that window.
   final String? windowId;
 }

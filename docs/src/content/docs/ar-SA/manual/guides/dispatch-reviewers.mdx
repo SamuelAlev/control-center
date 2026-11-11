@@ -2,7 +2,7 @@
 title: إرسال وكلاء مراجعة
 description: أرسل وكلاء مراجعة متخصصين لمراجعة طلب سحب، من صفحته أو من أداة MCP أو من خطوة في خط الأنابيب.
 slug: ar-SA/دليل-المستخدم/أدلة-إرشادية/إرسال-وكلاء-مراجعة
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 يشرح هذا الدليل كيف تُرسل وكلاء مراجعة لمراجعة طلبات السحب.
@@ -57,10 +57,10 @@ dispatch_reviewers(
 
 حدثان يهمان هنا، ولا يحل أحدهما محل الآخر:
 
-| الحدث | ينطلق عندما | مفاتيح الحمولة |
-| --- | --- | --- |
-| `PullRequestPublished` | يُفتح طلب سحب **عبر Control Center** — سطح إنشاء طلب السحب، أو وكيل يستدعي `pr_lifecycle.publish` | `pr_id`، `workspace_id`، `repo_owner`، `repo_name` |
-| `ExternalPrDetected` | تجد خدمة استطلاع طلبات السحب طلب سحب فُتح مباشرة على GitHub | `repo_owner`، `repo_name`، `pr_number`، `pr_title`، `author` |
+| الحدث                  | ينطلق عندما                                                                                       | مفاتيح الحمولة                                                                 |
+| ---------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PullRequestPublished` | يُفتح طلب سحب **عبر Control Center** — سطح إنشاء طلب السحب، أو وكيل يستدعي `pr_lifecycle.publish` | `pr_id`، `workspace_id`، `repo_owner`، `repo_name`                             |
+| `ExternalPrDetected`   | تجد خدمة استطلاع طلبات السحب طلب سحب فُتح مباشرة على GitHub                                       | `repo_owner`، `repo_name`، `repo_full_name`، `pr_number`، `pr_title`، `author` |
 
 طلب سحب يُفتح على github.com لا يرفع `PullRequestPublished` أبدًا، فالقالب الموصول بذلك الحدث وحده لن يراه. ولاحظ أيضًا أن `PullRequestPublished` لا يحمل `pr_number` — فالخطوة التي يشير سكربتها أو مطالبتها إلى `{{pr_number}}` لا بد أن تغذّيها `ExternalPrDetected`، أو تشغيل يدوي يوفّر القيمة.
 

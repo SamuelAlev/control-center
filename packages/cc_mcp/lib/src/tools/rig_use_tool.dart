@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_action.dart';
@@ -17,6 +18,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/window_action.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_mcp/src/log/cc_mcp_log.dart';
+import 'package:cc_mcp/src/tools/hidden_spaces_for_caller.dart';
 
 /// Shared behaviour for the enclosure and host-device tools.
 ///
@@ -34,10 +36,12 @@ const String kUnattributedRigAgentId = 'unattributed';
 /// `mobile_use`, `ios_use` and `app_use`: one resolution path and one effect
 /// contract.
 abstract class RigUseTool extends McpTool {
-  /// Creates a [RigUseTool] over [_rigs].
-  RigUseTool({required this._rigs});
+  /// Creates a [RigUseTool] over [_rigs]; [_runPeople] says whom the
+  /// calling run acts for ([runPersonOf]).
+  RigUseTool({required this._rigs, this._runPeople});
 
   final RigPort _rigs;
+  final RunPeopleForCaller? _runPeople;
 
   /// The surface this tool drives.
   RigSurface get surface;
@@ -77,6 +81,19 @@ abstract class RigUseTool extends McpTool {
     ActionClass.processSpawn,
   };
 
+  /// The run's own space and agent, never the model's: a run reaches only
+  /// the rigs of the space its lease names ([rigOfRunSpace]).
+  @override
+  Set<String> get forcedScopeKeys => kRigRunScopeKeys;
+
+  /// Forcing a value is no use if none was supplied: the model's would stand.
+  @override
+  Set<String> get requiredScopeKeys => const {'space_id'};
+
+  /// Headers can name any space; only a run's own secret names its own.
+  @override
+  bool get requiresRunGrant => true;
+
   @override
   Map<String, dynamic> get inputSchema => {
     'type': 'object',
@@ -96,12 +113,8 @@ abstract class RigUseTool extends McpTool {
       // id. Declaring the conversation here would have the transport inject
       // the run's conversation uuid instead — a different key, so the agent
       // and the person watching would drive two different machines.
-      'space_id': {
-        'type': 'string',
-        'description':
-            'Space the rig belongs to, so repeated calls reuse one machine '
-            'instead of booting a new one each time. Filled in automatically.',
-      },
+      'space_id': kRigRunSpaceProperty,
+      McpCallScope.callerConversationKey: callerConversationProperty,
       // Declared so `McpToolBridge` injects the running agent's id — it only
       // fills fields the schema names. Without it every action in the audit
       // log was attributed to the literal principal `agent:agent`, which is
@@ -159,17 +172,31 @@ abstract class RigUseTool extends McpTool {
       return CallResult.error(options.error!);
     }
 
+    final spaceId = _optString(arguments['space_id']);
+    if (spaceId == null) {
+      return CallResult.error('$name requires a session space_id.');
+    }
+    final person = await runPersonOf(
+      _runPeople,
+      arguments,
+      workspaceId: workspaceId,
+    );
     final Rig rig;
     try {
       rig = await _resolveRig(
         workspaceId: workspaceId,
         rigId: _optString(arguments['rig_id']),
-        conversationId: _optString(arguments['space_id']),
+        conversationId: spaceId,
+        person: person,
         agentId: suppliedAgentId,
         engine: options.engine,
       );
     } on _RigResolutionFailure catch (e) {
       return CallResult.error(e.message);
+    }
+    // Also after an open: reuse can hand back a machine somebody opened.
+    if (!rig.spec.drivableBy(person)) {
+      return CallResult.error(rigHolderOnlyRefusal);
     }
 
     if (!rig.status.isLive) {
@@ -208,16 +235,21 @@ abstract class RigUseTool extends McpTool {
   Future<Rig> _resolveRig({
     required String workspaceId,
     required RigBrowserEngine engine,
+    required String conversationId,
+    required String? person,
     String? rigId,
-    String? conversationId,
     String? agentId,
   }) async {
     if (rigId != null && rigId.isNotEmpty) {
-      final existing = await _rigs.get(workspaceId, rigId);
+      final existing = await rigOfRunSpace(
+        _rigs,
+        workspaceId: workspaceId,
+        spaceId: conversationId,
+        rigId: rigId,
+        person: person,
+      );
       if (existing == null) {
-        // A rig in another workspace must read as absent, not as forbidden:
-        // the difference is enough to confirm the id exists somewhere.
-        throw _RigResolutionFailure('No rig "$rigId" in this workspace.');
+        throw _RigResolutionFailure(unknownRigRefusal(rigId));
       }
       if (existing.surface != surface) {
         throw _RigResolutionFailure(
@@ -225,21 +257,16 @@ abstract class RigUseTool extends McpTool {
           '${surface.wire} rigs. Open a ${surface.wire} rig instead.',
         );
       }
-      // A window rig reaches a real app on the host, so it belongs to the
-      // space whose environment launched it and nobody else.
-      if (surface == RigSurface.window &&
-          existing.conversationId != conversationId) {
-        throw _RigResolutionFailure('No rig "$rigId" in this space.');
-      }
       return existing;
     }
 
-    if (conversationId != null && conversationId.isNotEmpty) {
+    {
       final open = await _rigs.list(workspaceId);
       for (final candidate in open) {
         if (candidate.conversationId == conversationId &&
             candidate.surface == surface &&
             !candidate.spec.isExec &&
+            candidate.spec.drivableBy(person) &&
             // The conversation's DEFAULT machine only. A person can open a
             // second machine of the same surface and engine to compare two
             // things side by side; latching onto one of those would have the
@@ -293,6 +320,81 @@ abstract class RigUseTool extends McpTool {
 String? _optString(Object? value) =>
     value is String && value.isNotEmpty ? value : null;
 
+/// The scope keys every rig tool forces from the run's attested grant.
+const Set<String> kRigRunScopeKeys = {'space_id', 'agent_id'};
+
+/// The `space_id` property of a rig tool: the run's own space, never a
+/// target the model picks.
+const Map<String, dynamic> kRigRunSpaceProperty = {
+  'type': 'string',
+  'description':
+      'The space this run works in, so repeated calls reuse one machine. '
+      'Filled in automatically; any value you pass is replaced.',
+};
+
+/// What a rig id the run may not reach answers: the same words as a rig
+/// that does not exist, so the difference confirms nothing.
+String unknownRigRefusal(String rigId) => 'No rig "$rigId" in this workspace.';
+
+/// Rig [rigId] of [workspaceId] when it belongs to [spaceId], the space the
+/// calling run's lease names, and [person] (whom the run acts for,
+/// [runPersonOf]) may know it ([RigSpec.visibleTo]); null for a missing rig,
+/// a rig of another space, a rig bound to no space and somebody else's
+/// terminal machine alike.
+///
+/// A run opens rigs only in its own space (`space_id` is forced from its
+/// grant), so a rig bound to no space was opened by a person, never by this
+/// run, and is out of its reach.
+Future<Rig?> rigOfRunSpace(
+  RigPort rigs, {
+  required String workspaceId,
+  required String spaceId,
+  required String rigId,
+  required String? person,
+}) async {
+  final rig = await rigs.get(workspaceId, rigId);
+  return rig != null &&
+          rig.conversationId == spaceId &&
+          rig.spec.visibleTo(person)
+      ? rig
+      : null;
+}
+
+/// The people the run calling from `callerConversationId` acts for: one
+/// entry per run open in that conversation, null for a run nobody is
+/// accountable for. Empty when the caller is not a known run.
+typedef RunPeopleForCaller =
+    Future<Set<String?>> Function({
+      required String workspaceId,
+      required String? callerConversationId,
+    });
+
+/// The one person the run calling with [arguments] acts for, as the rig
+/// rules see it, or null: when nobody is accountable, when the caller is no
+/// known run, and when runs acting for different people share its
+/// conversation (a machine carrying one person's credentials takes no input
+/// that might be another's).
+Future<String?> runPersonOf(
+  RunPeopleForCaller? runPeople,
+  Map<String, dynamic> arguments, {
+  required String workspaceId,
+}) async {
+  if (runPeople == null) {
+    return null;
+  }
+  final people = await runPeople(
+    workspaceId: workspaceId,
+    callerConversationId: callerConversationOf(arguments),
+  );
+  return people.length == 1 ? people.single : null;
+}
+
+/// What a run gets for driving a machine that carries the credentials of
+/// someone it does not act for ([RigSpec.drivableBy]).
+const String rigHolderOnlyRefusal =
+    'This machine carries the credentials of a person this run does not act '
+    'for; only that person and their own runs can drive it.';
+
 class _RigResolutionFailure implements Exception {
   const _RigResolutionFailure(this.message);
   final String message;
@@ -301,7 +403,7 @@ class _RigResolutionFailure implements Exception {
 /// `computer_use` — drive a Linux desktop inside an enclosed VM.
 class ComputerUseTool extends RigUseTool {
   /// Creates a [ComputerUseTool].
-  ComputerUseTool({required super.rigs});
+  ComputerUseTool({required super.rigs, super.runPeople});
 
   @override
   String get name => 'computer_use';
@@ -398,20 +500,7 @@ class ComputerUseTool extends RigUseTool {
 /// policy entry, and it runs server-side so a sandbox never needs a GUI.
 class AppUseTool extends RigUseTool {
   /// Creates an [AppUseTool].
-  AppUseTool({required super.rigs});
-
-  /// The run's own space and agent, never the model's: an app window is on
-  /// the host, and only the space that launched it may drive it.
-  @override
-  Set<String> get forcedScopeKeys => const {'space_id', 'agent_id'};
-
-  /// Forcing a value is no use if none was supplied: the model's would stand.
-  @override
-  Set<String> get requiredScopeKeys => const {'space_id'};
-
-  /// Headers can name any space; only a run's own secret names its own.
-  @override
-  bool get requiresRunGrant => true;
+  AppUseTool({required super.rigs, super.runPeople});
 
   @override
   String get name => 'app_use';
@@ -523,7 +612,7 @@ class AppUseTool extends RigUseTool {
 /// `browser_use` — drive a headless browser inside an enclosed VM.
 class BrowserUseTool extends RigUseTool {
   /// Creates a [BrowserUseTool].
-  BrowserUseTool({required super.rigs});
+  BrowserUseTool({required super.rigs, super.runPeople});
 
   @override
   String get name => 'browser_use';
@@ -700,7 +789,7 @@ class BrowserUseTool extends RigUseTool {
 /// `mobile_use` — drive an Android device over ADB.
 class MobileUseTool extends RigUseTool {
   /// Creates a [MobileUseTool].
-  MobileUseTool({required super.rigs});
+  MobileUseTool({required super.rigs, super.runPeople});
 
   @override
   String get name => 'mobile_use';
@@ -821,7 +910,7 @@ class MobileUseTool extends RigUseTool {
 /// `ios_use` — drive an ephemeral iOS Simulator through WebDriverAgent.
 class IosUseTool extends RigUseTool {
   /// Creates an [IosUseTool].
-  IosUseTool({required super.rigs});
+  IosUseTool({required super.rigs, super.runPeople});
 
   @override
   String get name => 'ios_use';
@@ -951,12 +1040,23 @@ class IosUseTool extends RigUseTool {
 /// `rig_list` — what enclosures are open in this workspace.
 class RigListTool extends McpTool {
   /// Creates a [RigListTool].
-  RigListTool({required this._rigs});
+  RigListTool({required this._rigs, this._runPeople});
 
   final RigPort _rigs;
+  final RunPeopleForCaller? _runPeople;
 
   @override
   String get name => 'rig_list';
+
+  /// The run's own space, never the model's ([rigOfRunSpace]).
+  @override
+  Set<String> get forcedScopeKeys => kRigRunScopeKeys;
+
+  @override
+  Set<String> get requiredScopeKeys => const {'space_id'};
+
+  @override
+  bool get requiresRunGrant => true;
 
   @override
   String get description =>
@@ -971,6 +1071,8 @@ class RigListTool extends McpTool {
         'type': 'string',
         'description': 'Workspace to list rigs for.',
       },
+      'space_id': kRigRunSpaceProperty,
+      McpCallScope.callerConversationKey: callerConversationProperty,
       'include_closed': {
         'type': 'boolean',
         'description': 'Include recently closed rigs. Defaults to false.',
@@ -988,8 +1090,21 @@ class RigListTool extends McpTool {
     // Through `rigOptBool`, like every other boolean on this surface: a model
     // that sends the STRING "true" (several do, and the schema's `boolean`
     // does not stop them) silently got `false` from a bare `== true`.
+    final spaceId = _optString(arguments['space_id']);
+    if (spaceId == null) {
+      return CallResult.error('$name requires a session space_id.');
+    }
     final includeClosed = rigOptBool(arguments, 'include_closed') ?? false;
-    final rigs = await _rigs.list(workspaceId);
+    final person = await runPersonOf(
+      _runPeople,
+      arguments,
+      workspaceId: workspaceId,
+    );
+    // Only the run's own space: what it can reach is what it sees.
+    final rigs = [
+      for (final r in await _rigs.list(workspaceId))
+        if (r.conversationId == spaceId && r.spec.visibleTo(person)) r,
+    ];
     final visible = includeClosed
         ? rigs
         : rigs.where((r) => r.status.isLive).toList();
@@ -1017,12 +1132,23 @@ class RigListTool extends McpTool {
 /// `rig_close` — destroy an enclosure.
 class RigCloseTool extends McpTool {
   /// Creates a [RigCloseTool].
-  RigCloseTool({required this._rigs});
+  RigCloseTool({required this._rigs, this._runPeople});
 
   final RigPort _rigs;
+  final RunPeopleForCaller? _runPeople;
 
   @override
   String get name => 'rig_close';
+
+  /// The run's own space, never the model's ([rigOfRunSpace]).
+  @override
+  Set<String> get forcedScopeKeys => kRigRunScopeKeys;
+
+  @override
+  Set<String> get requiredScopeKeys => const {'space_id'};
+
+  @override
+  bool get requiresRunGrant => true;
 
   @override
   String get description =>
@@ -1042,6 +1168,8 @@ class RigCloseTool extends McpTool {
         'description': 'Workspace the rig belongs to.',
       },
       'rig_id': {'type': 'string', 'description': 'The rig to destroy.'},
+      'space_id': kRigRunSpaceProperty,
+      McpCallScope.callerConversationKey: callerConversationProperty,
     },
     'required': ['workspace_id', 'rig_id'],
   };
@@ -1058,9 +1186,27 @@ class RigCloseTool extends McpTool {
         'Missing or invalid argument: rig_id (expected string)',
       );
     }
-    final rig = await _rigs.get(workspaceId, rigId);
+    final spaceId = _optString(arguments['space_id']);
+    if (spaceId == null) {
+      return CallResult.error('$name requires a session space_id.');
+    }
+    final person = await runPersonOf(
+      _runPeople,
+      arguments,
+      workspaceId: workspaceId,
+    );
+    final rig = await rigOfRunSpace(
+      _rigs,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+      rigId: rigId,
+      person: person,
+    );
     if (rig == null) {
-      return CallResult.error('No rig "$rigId" in this workspace.');
+      return CallResult.error(unknownRigRefusal(rigId));
+    }
+    if (!rig.spec.drivableBy(person)) {
+      return CallResult.error(rigHolderOnlyRefusal);
     }
     await _rigs.close(workspaceId: workspaceId, rigId: rigId);
     return CallResult.success(

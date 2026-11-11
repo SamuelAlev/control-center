@@ -2,7 +2,7 @@
 title: Slack-integráció beállítása
 description: Csatlakoztassa a Slacket egy Control Center-munkaterülethez a megosztott Control Center-alkalmazással vagy egy saját alkalmazással, hogy a tagok a Slackből vezérelhessék az ügynököket.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/slack-integracio
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Ez az útmutató bemutatja, hogyan kapcsolhatja össze a Slacket egy Control Center-munkaterülettel: a megosztott Control Center-alkalmazás hozzáadásával, vagy egy saját alkalmazással, amelyet a Control Center hoz létre Önnek, vagy Ön épít fel saját maga.
@@ -27,18 +27,18 @@ Egy munkaterület egyszerre pontosan az egyiken fut.
 
 | Mód                           | Amire szükség van                                                                                        | Amit kap                                                                              |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| **Megosztott Control Center-alkalmazás** | A szerver a Control Center Connectet használja (**Beállítások → Szerver → Egyszeri bejelentkezés**), és a Connect kiszolgálja a Slacket | Egy kattintás és egy Slack-bejelentkezés. Nincs létrehozandó alkalmazás, beillesztendő token vagy cserélendő elem |
+| **Megosztott Control Center-alkalmazás** | A bejelentkezési alkalmazások a munkaterületen a Control Center Connecten futnak (a szerver választása a **Beállítások → Szerver → Egyszeri bejelentkezés** alatt, a munkaterületé a **Beállítások → Munkaterület → Integrációk** alatt), és a Connect kiszolgálja a Slacket | Egy kattintás és egy Slack-bejelentkezés. Nincs létrehozandó alkalmazás, beillesztendő token vagy cserélendő elem |
 | **Saját alkalmazás**          | Egy Slack-alkalmazás a Slack-munkaterületén, az alábbi három mód egyikével létrehozva                    | Saját botnév, leírások és slash-parancs, a Control Centerből szerkeszthetően         |
 
 ### A megosztott Control Center-alkalmazás hozzáadása
 
-1. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+1. A Control Centerben lépjen a **Beállítások → Munkaterület → Integrációk** oldalra, és görgessen a **Csevegőhidak** kártyához
 2. A Slack blokkon keresse meg **A Control Center hozzáadása ide: Slack** sort, és kattintson a **Hozzáadás ide: Slack** elemre
 3. A böngészője megnyitja a Slacket. Jelentkezzen be a Slackkel, válassza ki a Slack-munkaterületet, és hagyja jóvá a telepítést
 4. Amikor a böngésző egy kódot mutat, írja be abba a párbeszédablakba, amelyet a Control Center nyitva hagyott. Ha a böngésző magától visszaadja Önt az alkalmazásnak, nincs mit beírni
 5. Egy értesítés megnevezi a Slack-munkaterületet, amelyhez az alkalmazást hozzáadták, a Slack blokk pedig azt mutatja, hogy a kapcsolat a megosztott Control Center-alkalmazáson fut
 
-Az alkalmazást csak munkaterület-adminisztrátor adhatja hozzá. A sor megmondja, miért nem indítható el, ha a szerver a Connect helyett saját alkalmazásokat használ, ha az Ön Connectjének nincs Slack-alkalmazása, vagy ha ehhez a munkaterülethez már saját Slack-alkalmazás van csatlakoztatva.
+Az alkalmazást csak munkaterület-adminisztrátor adhatja hozzá. A sor megmondja, miért nem indítható el, ha a munkaterület bejelentkezési alkalmazásai a Connect helyett saját alkalmazások, ha az Ön Connectjének nincs Slack-alkalmazása, vagy ha ehhez a munkaterülethez már saját Slack-alkalmazás van csatlakoztatva.
 
 Miben különbözik a saját alkalmazástól:
 
@@ -64,7 +64,7 @@ A saját alkalmazás eseményei soha nem haladnak át a Connecten: a Socket Mode
 ## A. lehetőség: hagyja, hogy a Control Center hozza létre az alkalmazást
 
 1. Hozzon létre egy alkalmazáskonfigurációs tokenpárt az [api.slack.com/apps](https://api.slack.com/apps) oldalon, és másolja ki a **refresh** tokent (`xoxe-…`)
-2. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+2. A Control Centerben lépjen a **Beállítások → Munkaterület → Integrációk** oldalra, és görgessen a **Csevegőhidak** kártyához
 3. A Slack blokkon kattintson az **Alkalmazás létrehozása helyettem** elemre
 4. Illessze be a tokent, módosítsa az alkalmazás nevét, a bot nevét, a leírásokat és a slash-parancsot, majd kattintson az **Alkalmazás létrehozása** elemre
 5. Kövesse a párbeszédablakban látható két hátralévő lépést, amelyek mindegyike a Slackbe mutató hivatkozás:
@@ -78,7 +78,7 @@ A konfigurációs token minden használatkor rotálódik. A Control Center menet
 
 Ugyanaz az alkalmazás, konfigurációs token nélkül — a Slack a saját létrehozási képernyőjét adja Önnek, amelyen a teljes manifest már ki van töltve.
 
-1. A Control Centerben lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+1. A Control Centerben lépjen a **Beállítások → Munkaterület → Integrációk** oldalra, és görgessen a **Csevegőhidak** kártyához
 2. A Slack blokkon kattintson az **Alkalmazás létrehozása helyettem** elemre
 3. Módosítsa az alkalmazás nevét, a bot nevét, a leírásokat és a slash-parancsot — ezek a hivatkozással együtt utaznak
 4. Kattintson a **Létrehozás a(z) Slack felületen** elemre. A böngészője megnyitja a Slack alkalmazáslétrehozó oldalát az előre kitöltött konfigurációval
@@ -132,7 +132,7 @@ A `message.channels` és a `message.groups` teszi lehetővé, hogy egy _válasz_
 
 Így jutnak el a saját alkalmazás tokenjei a Control Centerhez. A megosztott alkalmazásnak ezek közül semmire nincs szüksége.
 
-1. Lépjen a **Beállítások → Munkaterület → Általános** oldalra, és görgessen a **Csevegőhidak** kártyához
+1. Lépjen a **Beállítások → Munkaterület → Integrációk** oldalra, és görgessen a **Csevegőhidak** kártyához
 2. A Slack blokkon kattintson a **Slack csatlakoztatása** elemre
 3. Töltse ki a mezőket:
 
@@ -205,7 +205,7 @@ Bármely összekapcsolt, írási jogosultságú szerepkörrel rendelkező tag ja
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-A `|` előtti szöveg a cím, az utána következő a leírás. A bot azt válaszolja, hogy elkészítette a jegy vázlatát. Még semmi nem jön létre, és semmilyen jegyautomatizálás nem indul el: a vázlat a **Beállítások → Munkaterület → Profil és identitás → Csevegésből készült jegyvázlatok** helyen várja Önt, ahol javíthatja a címet és a leírást, majd a **Jegy létrehozása** vagy az **Elvetés** elemre kattinthat.
+A `|` előtti szöveg a cím, az utána következő a leírás. A bot azt válaszolja, hogy elkészítette a jegy vázlatát. Még semmi nem jön létre, és semmilyen jegyautomatizálás nem indul el: a vázlat a **Beállítások → Ön → Profil → Csevegésből készült jegyvázlatok** helyen várja Önt, ahol javíthatja a címet és a leírást, majd a **Jegy létrehozása** vagy az **Elvetés** elemre kattinthat.
 
 - A vázlatot csak az a tag látja, aki a parancsot futtatta
 - A magára hagyott vázlat egy nap után törlődik. A vázlatok a memóriában élnek, így a szerver újraindítása is törli őket

@@ -2,7 +2,7 @@
 title: Nyahpepijat ujian yang gagal dengan ejen
 description: Minta ejen menetapkan titik henti, melancarkan di bawah penyahpepijat dan membaca bingkai tindanan sebenar dan bukannya menambah pernyataan cetak.
 slug: ms-MY/manual-pengguna/panduan-cara/nyahpepijat-ujian-gagal
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Panduan ini menunjukkan cara membuat ejen menggunakan penyahpepijat pada
@@ -39,11 +39,11 @@ memerlukan kedua-dua bahagian itu.
 | Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Disertakan dengan LLVM             |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python memilih jurubahasa projek]
-`debugpy` dicari dalam `.venv/bin` atau `venv/bin` sebelum `$PATH`. Python `$PATH`
+:::note[Python memilih jurubahasa projek apabila larian berada dalam kotak pasir]
+Dalam larian berkotak pasir, `debugpy` dicari dalam `.venv/bin` atau `venv/bin` sebelum `$PATH`. Python `$PATH`
 ialah persekitaran yang berbeza, dan melampirkan daripada yang salah akan gagal
 dengan cara yang kelihatan seperti kod rosak dan bukan seperti jurubahasa yang
-salah.
+salah. Dalam larian tanpa kotak pasir ia hanya menggunakan `$PATH`, jadi sesuatu repositori tidak boleh memilih jurubahasa yang berjalan pada mesin pelayan.
 :::
 
 ## Tetapkan titik henti dahulu, kemudian lancarkan
@@ -125,6 +125,8 @@ Untuk proses yang tersekat dan bukan proses yang anda mulakan:
 debug(op: "attach", port: 5858)
 ```
 
+Port itu mesti salah satu port yang diteruskan bagi larian itu. Mana-mana port lain ditolak sebelum apa-apa bermula, supaya ejen tidak boleh melampirkan diri pada proses yang dimiliki orang lain pada mesin pelayan.
+
 ## Tamatkan
 
 ```
@@ -136,8 +138,8 @@ dihentikan** yang memegang apa sahaja yang dipegang oleh proses itu — satu por
 satu kunci, satu sambungan pangkalan data.
 
 :::note[Ia tidak boleh lari daripada anda]
-Setiap sesi mempunyai TTL keras yang tidak boleh dipanjangkannya, terdapat tepat
-satu sesi bagi setiap perbualan, dan semuanya dibongkar apabila pelayan berhenti.
+Setiap sesi mempunyai TTL keras (30 minit) yang tidak boleh dipanjangkannya, terdapat tepat
+satu sesi bagi setiap perbualan, dan semuanya dibongkar apabila pelayan berhenti. Dalam larian berkotak pasir, sesi itu mengekalkan kotak pasirnya merentas giliran selama tempoh itu sahaja.
 `launch` kedua ditolak dan tidak menggantikan yang pertama: ejen yang memulakan
 satu tanpa menamatkan yang lain hampir pasti telah hilang jejak yang pertama.
 :::

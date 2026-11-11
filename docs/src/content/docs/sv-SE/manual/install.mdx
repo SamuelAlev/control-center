@@ -2,7 +2,7 @@
 title: Installera
 description: Använd Control Center i webbläsaren eller installera skrivbordsappen, ställ in en agentbackend och välj var servern körs.
 slug: sv-SE/handbok/installera
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center kan köras på två sätt: som en **webbapp** på
@@ -121,7 +121,7 @@ Modellistor serveras live av varje ansluten leverantör; [models.dev](https://mo
 
 En GitHub-inloggningsuppgift är **din och ligger på servern**, knuten till ditt användar-id — inte i klientens operativsystems nyckelring. Varje enhet du loggar in från använder samma, och ingen annan medlem kan läsa den.
 
-GitHub har bara inloggning: **Inställningar → Arbetsyta → Profil och identitet → Kodvärd** erbjuder **Logga in på GitHub**, och det finns ingen token att klistra in. Inloggningen går via serverns egen GitHub-app ([Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) eller via Control Center Connect, beroende på vad serverägaren valde. Med serverns egen app kommer webbläsaren tillbaka till servern av sig själv; via Connect skriver du in koden på 8 tecken som webbläsaren visar, eller låter den öppna Control Center. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/).
+GitHub har bara inloggning: **Inställningar → Du → Profil → Kodvärd** erbjuder **Logga in på GitHub**, och det finns ingen token att klistra in. Inloggningen går via serverns egen GitHub-app ([Skapa GitHub-appen](/sv-SE/handbok/how-to-guider/github-app/)) eller via Control Center Connect, beroende på vad serverägaren valde, om inte en administratör för arbetsytan valt andra inloggningsappar för just den arbetsytan i **Inställningar → Arbetsyta → Integrationer**. Med serverns egen app kommer webbläsaren tillbaka till servern av sig själv; via Connect skriver du in koden på 8 tecken som webbläsaren visar, eller låter den öppna Control Center. Se [Konfigurera GitHub-integration](/sv-SE/handbok/how-to-guider/github-integration/).
 
 Onboardingen ber om den här anslutningen. Därefter är samma kort platsen där du loggar in igen eller kopplar från. GitLab och Bitbucket använder samma kort med en inklistrad personlig token; se [Anslut en kodvärd](/sv-SE/handbok/how-to-guider/anslut-kodvard/).
 
@@ -143,7 +143,7 @@ För att hosta en server själv följer du [Kör en headless-server](/sv-SE/hand
 
 1. **Inställningar → Server → Modellleverantörer** listar båda adaptrarna. "Control Center (built-in)" visas som hittad med versionen `built-in`; Claude Code visas som hittad om dess CLI finns i `PATH` på servervärden. Tryck på **Uppdatera** om den saknas.
 2. **Inställningar → Arbetsyta → Arkiv** listar den här arbetsytans repos, och **Lägg till arkiv** bläddrar i servervärdens mappar.
-3. **Inställningar → Arbetsyta → Agenter** listar de fem agenter som din första arbetsyta seedade. Var och en behöver en **Adapter** och en **Modell** angivna innan den kan köra.
+3. **Inställningar → Arbetsyta → Agenter** listar de sex agenter som din första arbetsyta seedade. Var och en behöver en **Adapter** och en **Modell** angivna innan den kan köra.
 4. **Inställningar → Server → Diagnostik och integritet** rapporterar vilka sandlådebackends den här värden erbjuder, inbäddningsmodellens status och loggning.
 
 ## Bygg från källkod

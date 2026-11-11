@@ -4,11 +4,8 @@
 ///
 /// This is THE autonomy vocabulary — the per-(space, agent) dial stored in
 /// `space_autonomy.autonomy_level`, the value `autonomy.setForSpace`
-/// validates, and the ceiling the delegation guards enforce. It used to exist
-/// twice with two different wire vocabularies (`observe_only` in the
-/// delegation guards, `proposeOnly` in the client provider and the database),
-/// which meant a ceiling read from the dial could never equal a ceiling the
-/// guards parsed. One enum, one wire form, one legacy alias table.
+/// validates, the ceiling the delegation guards enforce and the one a
+/// reliability score recommends. One enum, one wire form.
 enum AutonomyLevel {
   /// Gated tools are denied; the agent can only propose actions.
   proposeOnly('proposeOnly'),
@@ -24,17 +21,8 @@ enum AutonomyLevel {
   /// The stable wire/storage name (the `space_autonomy` column value).
   final String wire;
 
-  /// Legacy snake-case wire forms the delegation guards used to write.
-  static const Map<String, AutonomyLevel> _legacy = {
-    'observe_only': AutonomyLevel.proposeOnly,
-    'propose_only': AutonomyLevel.proposeOnly,
-    'act_with_approval': AutonomyLevel.actWithApproval,
-    'act_free': AutonomyLevel.actFreely,
-    'act_freely': AutonomyLevel.actFreely,
-  };
-
-  /// Parses a wire name (current or legacy); null for `null`/unknown — the
-  /// client's "no explicit level, use the server default".
+  /// Parses a wire name; null for `null`/unknown — the client's "no explicit
+  /// level, use the server default".
   static AutonomyLevel? tryFromWire(String? value) {
     if (value == null) {
       return null;
@@ -44,7 +32,7 @@ enum AutonomyLevel {
         return level;
       }
     }
-    return _legacy[value];
+    return null;
   }
 
   /// Parses a wire name, defaulting to the SAFEST level on `null`/unknown —

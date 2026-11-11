@@ -2,7 +2,7 @@
 title: Vestavěné nástroje agentů
 description: Plocha nástrojů, kterou vestavěný harness dává agentovi — jazykový server, strukturální hledání, debugger, kernely a řízení workerů — s každou operací a jejími argumenty.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-agentu
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Tohle jsou nástroje **vázané na server**, které vestavěný runtime agenta registruje přímo — jazykový server, strukturální hledání, debugger, kernely, otázky a řízení workerů — na rozdíl od [nástrojů MCP](/cs-CZ/prirucka/referencni-prirucka/nastroje-mcp/), které si přemosťuje, a od obecných nástrojů na soubory, hledání a shell z runtime harnessu. Na registru MCP nejsou: externí klient MCP je neuvidí, protože každý je vázaný na živý prostředek na straně serveru — proces jazykového serveru, ladicí adaptér, interpret — a ten patří jednomu běhu.
@@ -24,6 +24,8 @@ Každý nástroj deklaruje úroveň a ta rozhoduje, **které plochy ho vidí** �
 ## `lsp` — dotazy na jazykový server
 
 Registruje se, když má běh dohled jazykového serveru a pracovní adresář. Jestli server opravdu umí odpovědět, se zjistí až při volání, jako **průnik**: musí existovat kořenová značka *a zároveň* se musí najít binárka serveru. Jedno z toho samo znamená, že se server nespustí — řekne to `status` — místo tichého odhadu.
+
+Servery se berou jen z vestavěné tabulky; `lsp.json` z repozitáře se nečte. V běhu v sandboxu dostane každý běh vlastní relaci jazykového serveru, takže servery se při každém běhu startují znovu. Lokální binárky projektu (`node_modules/.bin`) se používají jen v běhu v sandboxu a kořen projektu se nikdy nerozpozná výš než pracovní adresář běhu.
 
 Pozice se adresují řádkem `line` a podřetězcem `symbol`, nikdy sloupcem. Model, který má uvést sloupec, hádá, a špatný odhad trefí jiný symbol na stejném řádku — odpověď, která vypadá správně a je o něčem jiném. Vynechat `symbol` u navigační akce je chyba, ne odhad prvního sloupce.
 
@@ -117,7 +119,7 @@ Každý soubor se porovná s obsahem zachyceným při přípravě a **jakýkoli*
 
 Registruje se, když má běh dohled ladicí relace, pracovní adresář a identifikátor konverzace. Jestli adaptér opravdu umí nastartovat, se zjistí až při volání, stejným pravidlem průniku jako u jazykového serveru (kořenová značka *a zároveň* binárka). Úroveň `exec`; není bezpečný pro paralelní volání (relace je stav napříč voláními, takže `continue`, které předběhne `stack`, by četlo rámec, který se už posunul).
 
-Jedna relace na konverzaci, s tvrdou TTL (30 minut). Druhý `launch` se odmítne, místo aby první tiše nahradil.
+Jedna relace na konverzaci, s tvrdou TTL (30 minut). Druhý `launch` se odmítne, místo aby první tiše nahradil. V běhu v sandboxu si relace ponechá sandbox přes všechny tahy až do konce, tedy nejdéle na těch 30 minut.
 
 | Operace       | Argumenty                     | Poznámky                                       |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Jedna relace na konverzaci, s tvrdou TTL (30 minut). Druhý `launch` se odmítne
 | `status`      | —                             | Jestli relace běží a kde se zastavila          |
 | `breakpoints` | `file`, `lines[]`             | Prázdné `lines` soubor vyčistí. Lze nastavit **před** spuštěním |
 | `launch`      | `program`, `args[]`           | Spustí program zastavený na tvých zarážkách    |
-| `attach`      | `port`                        | Připojí se k už běžícímu laděnému procesu      |
+| `attach`      | `port`                        | Připojí se k už běžícímu laděnému procesu na jednom z vlastních přesměrovaných portů běhu; jiný port se odmítne dřív, než se cokoli spustí |
 | `continue`    | `thread_id?`                  | Běží do dalšího zastavení                      |
 | `pause`       | `thread_id?`                  | Zastaví ho tam, kde právě je                   |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Posune o jeden krok                     |
@@ -146,7 +148,7 @@ Jedna relace na konverzaci, s tvrdou TTL (30 minut). Druhý `launch` se odmítne
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` dává přednost projektovému `.venv/bin` nebo `venv/bin` před `$PATH`: python z `$PATH` je jiné prostředí a připojení ze špatného selže tak, že to vypadá jako rozbitý kód.
+`debugpy` dává přednost projektovému `.venv/bin` nebo `venv/bin` před `$PATH`, ale jen v běhu v sandboxu: python z `$PATH` je jiné prostředí a připojení ze špatného selže tak, že to vypadá jako rozbitý kód. Mimo sandbox používá jen `$PATH`, takže repozitář nemůže vybrat interpret, který běží na hostiteli.
 
 ---
 
@@ -176,7 +178,7 @@ Most **znovu vstoupí do registru nástrojů harnessu**, takže guardraily, schv
 Časový limit buňky je rozpočet *nečinnosti* (výchozí 5 minut) a po dobu nevyřízeného volání přes most je **pozastavený**, takže buňka, která se rozvětví na podagenty, se uprostřed rozvětvení nezabije.
 
 :::note[Kde kernel běží]
-V izolovaném prostředí konverzace, pokud nějaké má, jinak na hostiteli. Izolované prostředí kvůli tomu nenabootuje — stejné pravidlo, které brání kartě stanice naběhnout sama.
+V izolovaném prostředí konverzace, pokud nějaké má, jinak v sandboxu operačního systému pro běh na hostiteli. Bez sandboxu nebo když není k dispozici, běží bez omezení a `eval` žádá o schválení spuštění na hostiteli. Izolované prostředí kvůli tomu nenabootuje — stejné pravidlo, které brání kartě stanice naběhnout sama.
 :::
 
 ---

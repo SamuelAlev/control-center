@@ -30,17 +30,25 @@ class GuardVerdict {
     this.reason,
     this.source,
     this.prompted = false,
+    this.resolution,
   });
 
   /// An allow verdict. [prompted] is true when the operator was just asked to
   /// confirm (so a downstream gate can skip a redundant second confirmation).
-  const GuardVerdict.allow({this.source = 'default', this.prompted = false})
-    : allowed = true,
-      reason = null;
+  const GuardVerdict.allow({
+    this.source = 'default',
+    this.prompted = false,
+    this.resolution,
+  }) : allowed = true,
+       reason = null;
 
   /// A deny verdict carrying the agent-facing [reason].
-  const GuardVerdict.deny(this.reason, {this.source, this.prompted = false})
-    : allowed = false;
+  const GuardVerdict.deny(
+    this.reason, {
+    this.source,
+    this.prompted = false,
+    this.resolution,
+  }) : allowed = false;
 
   /// Whether the action may proceed.
   final bool allowed;
@@ -55,6 +63,17 @@ class GuardVerdict {
   /// a downstream capability-tier gate avoid a DOUBLE confirmation for the same
   /// tool call (PRD 24 — the guard owns the declared classes and already asked).
   final bool prompted;
+
+  /// The policy's answer this verdict was decided from, or null when the call
+  /// had no effects to resolve. A gate that asks on its own hands it to
+  /// [ActionGuardService.approvalRequest].
+  final ActionResolution? resolution;
+
+  /// See [ActionResolution.standingApprovalCovers]; false for a denied call.
+  bool standingApprovalCovers({String? tool, String? command}) =>
+      allowed &&
+      (resolution?.standingApprovalCovers(tool: tool, command: command) ??
+          false);
 }
 
 /// A record of a guard decision for the audit trail (PRD 24 §5).
@@ -330,6 +349,7 @@ class ActionGuardService {
       return GuardVerdict.deny(
         kProposeOnlyReason,
         source: res.driving.source,
+        resolution: res,
       );
     }
 
@@ -338,14 +358,14 @@ class ActionGuardService {
         // Allows are recorded too: "which human authorized this agent action"
         // is unanswerable from a deny-only trail.
         audit(ActionDecision.allow);
-        return GuardVerdict.allow(source: res.driving.source);
+        return GuardVerdict.allow(source: res.driving.source, resolution: res);
       case ActionDecision.prompt
           when res.driving.rule?.enforcement == EnforcementLevel.advisory:
         // ADVISORY: allow, but record that the rule matched. This is how a
         // strict rule gets adopted — roll it out advisory, read the audit
         // trail to see what it WOULD have blocked, then promote it.
         audit(ActionDecision.allow);
-        return GuardVerdict.allow(source: res.driving.source);
+        return GuardVerdict.allow(source: res.driving.source, resolution: res);
       case ActionDecision.deny:
         // Soft-mandatory: a deny a holder of the override permission may
         // proceed through, WITH a recorded justification. This is the escape
@@ -358,7 +378,10 @@ class ActionGuardService {
             overrideReason.trim().isNotEmpty &&
             canOverride) {
           audit(ActionDecision.allow);
-          return GuardVerdict.allow(source: res.driving.source);
+          return GuardVerdict.allow(
+            source: res.driving.source,
+            resolution: res,
+          );
         }
         audit(ActionDecision.deny);
         return GuardVerdict.deny(
@@ -368,6 +391,7 @@ class ActionGuardService {
                     'permission.'
               : res.driving.reason,
           source: res.driving.source,
+          resolution: res,
         );
       case ActionDecision.prompt:
         if (operatorInitiated) {
@@ -375,7 +399,10 @@ class ActionGuardService {
           // the approval. Audited as an allow so the trail still shows which
           // rule was in play and who satisfied it.
           audit(ActionDecision.allow);
-          return GuardVerdict.allow(source: res.driving.source);
+          return GuardVerdict.allow(
+            source: res.driving.source,
+            resolution: res,
+          );
         }
         final port = _confirm;
         if (port == null) {
@@ -384,11 +411,12 @@ class ActionGuardService {
           return GuardVerdict.deny(
             '${res.driving.reason} No approver is connected (fail-closed).',
             source: res.driving.source,
+            resolution: res,
           );
         }
         final approved = await port.requestApproval(
-          _buildRequest(
-            res,
+          approvalRequest(
+            resolution: res,
             spaceId: spaceId,
             conversationId: conversationId,
             actionSummary: actionSummary,
@@ -406,18 +434,122 @@ class ActionGuardService {
           prompted: true,
         );
         return approved
-            ? GuardVerdict.allow(source: res.driving.source, prompted: true)
+            ? GuardVerdict.allow(
+                source: res.driving.source,
+                prompted: true,
+                resolution: res,
+              )
             : GuardVerdict.deny(
                 'Denied at confirmation: ${res.driving.reason}',
                 source: res.driving.source,
                 prompted: true,
+                resolution: res,
               );
     }
   }
 
-  ConfirmationRequest _buildRequest(
-    ActionResolution res, {
+  /// Asks [port] about [command], which a gate wants approved on its own (a
+  /// mode's command net, an ACP agent's own permission request), unless a
+  /// person's live standing approval covers exactly this command.
+  ///
+  /// Policy is read only for that approval: what the gate decided stands, so
+  /// a policy deny does not refuse here and a plain allow does not spare the
+  /// ask. Without [guard] or [workspaceId] nothing is consulted and the card
+  /// offers no standing approval. A spared ask is audited as an allow.
+  static Future<bool> confirmCommand({
+    required ActionGuardService? guard,
+    required ConfirmationPort port,
+    required String? workspaceId,
     required Set<ActionClass> classes,
+    required String command,
+    String? spaceId,
+    String? conversationId,
+    String? agentId,
+    Mode mode = Mode.chat,
+    String actionSummary = '',
+    String? onBehalfOfUserId,
+    String? runId,
+    String? detail,
+    ConfirmationSeverity? severity,
+    ConfirmationKind? kind,
+    Future<void>? withdrawn,
+  }) async {
+    final request = ActionRequest(classes: classes, command: command);
+    final ws = workspaceId;
+    final resolution = guard == null || ws == null || ws.isEmpty
+        ? null
+        : await guard.resolve(
+            workspaceId: ws,
+            classes: classes,
+            command: command,
+            spaceId: spaceId,
+            agentId: agentId,
+            mode: mode,
+            request: request,
+          );
+    if (resolution != null &&
+        resolution.standingApprovalCovers(command: command)) {
+      guard!.recordOutcome(
+        workspaceId: ws!,
+        resolution: resolution,
+        applied: ActionDecision.allow,
+        classes: classes,
+        agentId: agentId,
+        spaceId: spaceId,
+        actionSummary: actionSummary,
+        onBehalfOfUserId: onBehalfOfUserId,
+        runId: runId,
+        command: command,
+      );
+      return true;
+    }
+    return port.requestApproval(
+      approvalRequest(
+        resolution: resolution,
+        classes: classes,
+        askedByPolicy: false,
+        request: request,
+        spaceId: spaceId,
+        conversationId: conversationId,
+        workspaceId: workspaceId,
+        agentId: agentId,
+        actionSummary: actionSummary,
+        detail: detail,
+        severity: severity,
+        kind: kind,
+        withdrawn: withdrawn,
+      ),
+    );
+  }
+
+  /// Builds the confirmation a person is shown about an agent's action.
+  ///
+  /// Every gate that asks about something an agent is doing builds its
+  /// request here, so every card offers "Approve for 8 hours" on the same
+  /// terms and the answer writes a standing approval the same gate consults
+  /// next time.
+  ///
+  /// [resolution] is the policy's answer for this call, resolved with the
+  /// clock. Null means the gate could not consult policy, and nothing is
+  /// offered. [askedByPolicy] is false for a gate that asks on its own after
+  /// policy let the call through (an MCP tool's declared approval, a mode's
+  /// command net, an ACP agent's own request): the approval then covers every
+  /// declared class, since the person approved them together, and the gate
+  /// skips its ask while [GuardVerdict.standingApprovalCovers] holds.
+  ///
+  /// A standing approval is never wider than what was approved: the classes
+  /// that asked, narrowed by [_rememberConstraintFor]. A call with nothing to
+  /// narrow it by offers none, except a commit ([standsWithoutConstraint]).
+  /// A push alone is remembered by its branch, or by its exact command when
+  /// it names no branch: the shell hook sees the command but not the host and
+  /// the push gateway the refs but not the command, so a branch must match at
+  /// both, and the gateway still asks about the real branch of a push
+  /// approved by command.
+  static ConfirmationRequest approvalRequest({
+    required ActionResolution? resolution,
+    required Set<ActionClass> classes,
+    bool askedByPolicy = true,
+    ActionRequest request = ActionRequest.empty,
     String? command,
     String? rationale,
     String? spaceId,
@@ -425,75 +557,117 @@ class ActionGuardService {
     String actionSummary = '',
     String? workspaceId,
     String? agentId,
-    ActionRequest request = ActionRequest.empty,
+    String? title,
+    String? detail,
+    ConfirmationSeverity? severity,
+    ConfirmationKind? kind,
     Future<void>? withdrawn,
   }) {
-    final prompting = res.prompting
-        .map((r) => r.actionClass?.wire)
-        .whereType<String>()
-        .toList();
     final script = command ?? request.command;
-    final rememberedRequest = ActionRequest(
-      classes: request.classes,
-      command: script,
-      paths: request.paths,
-      refs: request.refs,
-      hosts: request.hosts,
-      magnitude: request.magnitude,
-      cents: request.cents,
-    );
     final copy = ActionApprovalCopy.describe(
       classes: classes,
       request: request,
       command: script,
       rationale: rationale,
     );
-    final drivingClass = res.driving.actionClass;
-    // A push is described by the branch it lands on. The shell hook sees the
-    // command but not the host, the push gateway the host but not the
-    // command, so a standing approval that also pinned either would match at
-    // only one of them and the next push to the same branch would ask again.
-    // A push whose branch is unknown has nothing narrow to remember: an
-    // unconstrained space-scoped allow would outrank a workspace rule
-    // protecting `main`, so it is not offered.
-    final pushOnly =
-        prompting.length == 1 && prompting.single == ActionClass.gitPush.wire;
-    final remembered = pushOnly
-        ? (request.refs.isEmpty ? null : ActionRequest(refs: request.refs))
-        : rememberedRequest;
+    final asked = switch (resolution) {
+      null => const <ActionClass>[],
+      ActionResolution(decision: ActionDecision.deny) => const <ActionClass>[],
+      final ActionResolution res when askedByPolicy =>
+        res.decision == ActionDecision.prompt
+            ? [for (final r in res.prompting) ?r.actionClass]
+            : const <ActionClass>[],
+      _ => [
+        for (final c in ActionClass.values)
+          if (classes.contains(c)) c,
+      ],
+    };
+    final mayRemember =
+        asked.isNotEmpty &&
+        (resolution!.rememberable ||
+            (!askedByPolicy && resolution.decision == ActionDecision.allow));
+    final wires = [for (final c in asked) c.wire];
+    // A gate that asks on its own skips its ask only for an approval naming
+    // its exact tool or command, so only the policy's own ask is remembered
+    // for the class alone. And only when the call itself is a commit (its
+    // request declares the class), not something that merely needs the
+    // capability, like a skill install.
+    final unconstrained =
+        mayRemember &&
+        askedByPolicy &&
+        standsWithoutConstraint(wires) &&
+        request.classes.contains(ActionClass.gitCommit);
+    ActionConstraint? constraint;
+    if (mayRemember && !unconstrained) {
+      final trimmed = script?.trim();
+      final pushOnly = asked.length == 1 && asked.single == ActionClass.gitPush;
+      constraint = !pushOnly
+          ? _rememberConstraintFor(request.withCommand(trimmed))
+          : request.refs.isNotEmpty
+          ? _rememberConstraintFor(ActionRequest(refs: request.refs))
+          : trimmed != null && trimmed.isNotEmpty
+          ? ActionConstraint(commands: [trimmed])
+          : null;
+      // Never "push anywhere": a push approval names a branch or a command.
+      if (constraint != null &&
+          asked.contains(ActionClass.gitPush) &&
+          constraint.refs == null &&
+          constraint.commands == null) {
+        constraint = null;
+      }
+    }
+    final drivingClass = askedByPolicy
+        ? resolution?.driving.actionClass
+        : asked.firstOrNull;
     return ConfirmationRequest(
       spaceId: spaceId ?? '',
       conversationId: conversationId,
       workspaceId: workspaceId,
-      title: copy.title,
-      detail: copy.detail,
+      title: title ?? copy.title,
+      detail: detail ?? copy.detail,
       command: script,
-      severity: _severityFor(drivingClass),
-      kind: _kindFor(drivingClass),
-      rememberChoice: pushOnly && remembered == null
-          ? null
-          : RememberScope.workspace,
+      severity: severity ?? _severityFor(drivingClass),
+      kind: kind ?? _kindFor(drivingClass),
+      rememberChoice: constraint != null || unconstrained
+          ? RememberScope.workspace
+          : null,
       // Identity stays tied to the attempted action, not to display wording.
       // Distinct scripts or targets cannot share a remembered answer.
       fingerprint: jsonEncode([
         'action',
-        prompting,
+        wires,
         actionSummary,
         script,
         request.refs,
         request.paths,
         request.hosts,
+        request.tool,
         request.magnitude,
         request.cents,
       ]),
-      actionClasses: prompting,
+      actionClasses: wires,
       agentId: agentId,
-      constraintJson: remembered == null
-          ? null
-          : _rememberConstraintFor(remembered)?.encode(),
+      constraintJson: constraint?.encode(),
       withdrawn: withdrawn,
     );
   }
+
+  /// The class a standing approval is filed under when the action declares
+  /// no effect class: an external MCP server's tool, a request the classifier
+  /// names nothing for. Policy for it is read only to find that approval; the
+  /// gate that asks decides everything else.
+  static const Set<ActionClass> undeclaredEffect = {ActionClass.processSpawn};
+
+  /// Whether a standing approval of exactly these classes (wire names) may
+  /// carry no constraint.
+  ///
+  /// Only a commit: it stays in the run's own worktree and has no branch,
+  /// folder or host to narrow it by, and its command differs every time, so
+  /// the approval covers commits at the scope it is written for. Every other
+  /// approval names something narrower than its class. The card builder and
+  /// `confirmation.respond` both ask here, so neither can widen the other.
+  static bool standsWithoutConstraint(List<String> classWires) =>
+      classWires.length == 1 && classWires.single == ActionClass.gitCommit.wire;
 
   /// Generalizes the approved call's arguments into the constraint a
   /// remembered rule should carry.
@@ -502,13 +676,10 @@ class ActionGuardService {
   /// than "yes to this exact call" — approving one push to `feature/login`
   /// should not re-prompt on `feature/logout`, and must NOT cover `main`. So
   /// a ref is generalized to its first segment (`feature/**`), a path to its
-  /// directory, and a host is kept exactly. An empty request generalizes to
-  /// null: the rule then covers the class outright, which is what the operator
-  /// answered when there was nothing narrower to say.
-  ActionConstraint? _rememberConstraintFor(ActionRequest request) {
-    if (request.isEmpty) {
-      return null;
-    }
+  /// directory, and a host, a command and a tool are kept exactly. A request
+  /// with none of them generalizes to null, and nothing is remembered: a rule
+  /// with no constraint would cover the whole class.
+  static ActionConstraint? _rememberConstraintFor(ActionRequest request) {
     List<String>? generalizedRefs;
     if (request.refs.isNotEmpty) {
       generalizedRefs = {
@@ -526,18 +697,21 @@ class ActionGuardService {
             path,
       }.toList()..sort();
     }
+    final command = request.command?.trim();
+    final tool = request.tool;
     final constraint = ActionConstraint(
       refs: generalizedRefs,
       paths: generalizedPaths,
       hosts: request.hosts.isEmpty
           ? null
           : (request.hosts.toSet().toList()..sort()),
-      commands: request.command == null ? null : [request.command!],
+      commands: command == null || command.isEmpty ? null : [command],
+      tools: tool == null || tool.isEmpty ? null : [tool],
     );
     return constraint.isUnconstrained ? null : constraint;
   }
 
-  ConfirmationSeverity _severityFor(ActionClass? cls) {
+  static ConfirmationSeverity _severityFor(ActionClass? cls) {
     switch (cls) {
       case ActionClass.fileDelete:
       case ActionClass.gitPush:
@@ -548,7 +722,7 @@ class ActionGuardService {
     }
   }
 
-  ConfirmationKind _kindFor(ActionClass? cls) {
+  static ConfirmationKind _kindFor(ActionClass? cls) {
     switch (cls) {
       case ActionClass.fileDelete:
       case ActionClass.fileWriteOutsideWorktree:

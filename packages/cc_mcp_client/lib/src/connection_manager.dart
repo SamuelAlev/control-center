@@ -426,37 +426,6 @@ class ConnectionManager {
     return conn.reconnectHistory.length > reconnectBurstLimit;
   }
 
-  /// Reads a resource [uri] from [serverName]. Returns the raw
-  /// `resources/read` result. Throws if the server is unknown/disconnected.
-  Future<Map<String, dynamic>> readResource(String serverName, String uri) {
-    final client = _connections[serverName]?.client;
-    if (client == null) {
-      throw McpTransportException('server "$serverName" is not connected');
-    }
-    return client.readResource(
-      uri,
-      timeout: _connections[serverName]!.config.timeout,
-    );
-  }
-
-  /// Gets a prompt [name] from [serverName] with [arguments]. Returns the raw
-  /// `prompts/get` result. Throws if the server is unknown/disconnected.
-  Future<Map<String, dynamic>> getPrompt(
-    String serverName,
-    String name, {
-    Map<String, String> arguments = const {},
-  }) {
-    final client = _connections[serverName]?.client;
-    if (client == null) {
-      throw McpTransportException('server "$serverName" is not connected');
-    }
-    return client.getPrompt(
-      name,
-      arguments: arguments,
-      timeout: _connections[serverName]!.config.timeout,
-    );
-  }
-
   Future<Map<String, dynamic>> _invoke(
     String serverName,
     String toolName,

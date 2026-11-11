@@ -2,7 +2,7 @@
 title: Ponte de chat
 description: Provedores, comandos, credenciais, capacidades, operações RPC e armazenamento da ponte de chat.
 slug: pt-BR/manual/referencia/ponte-de-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Provedores
@@ -150,7 +150,7 @@ O cartão abre quando uma menção é aceita, antes do clone e antes do primeiro
 | Menção aceita | `Working on it…` |
 | Etapa `repo` | `Cloning <repo>…` |
 | Etapa `prCheckout` | `Checking out the pull request in <repo>…` |
-| Etapa `script` | `Running the setup script for <repo>…` |
+| Etapa `provisionTasks` | `Running worktree tasks for <repo>…` |
 | Etapa `agent` | `Setting up <agent>…` |
 | `provisioning`, ainda sem etapa | `Preparing the workspace…` |
 | `ready` | `Starting the agent…` |
@@ -254,7 +254,6 @@ Ela existe porque a vinculação acontece no _outro_ lado: um membro digita o c�
 | --- | --- |
 | Credenciais de conexão | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json` |
 | Configuração guiada pela metade | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json` |
-| Arquivos legados do Slack | `<dataDir>/<workspaceId>/slack_credentials.json` e `slack_app_setup.json`, lidos uma vez e migrados no lugar |
 
 As credenciais ficam ao lado do banco de dados do espaço de trabalho, não dentro dele: excluir um espaço de trabalho leva junto seus tokens de chat, e `workspace.export` ou um backup copia `workspace.db` — então um espaço de trabalho entregue a outra pessoa não carrega tokens de bot ativos. As gravações são atômicas (arquivo temporário mais renomeação) e restritas ao proprietário.
 

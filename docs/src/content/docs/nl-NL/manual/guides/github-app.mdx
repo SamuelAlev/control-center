@@ -1,8 +1,8 @@
 ---
 title: De GitHub App maken
-description: Geef je server met één klik een eigen GitHub App, installeer hem waar je repository's staan en autoriseer de server voor de installatie van een organisatie.
+description: Geef je server met één klik een eigen GitHub App, installeer hem waar je repository's staan zodat iedereen in de organisatie hem vanaf elke server kan gebruiken.
 slug: nl-NL/handleiding/gidsen/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Deze gids laat zien hoe je je server een eigen GitHub App geeft. Het kost
@@ -35,7 +35,7 @@ verantwoordelijk lid daar mag doen. Een gekoppelde repository lezen vraagt allee
 de app; alles wat schrijft, vraagt een lid dat mag pushen. Automatisering keurt
 nooit een pull request goed.
 
-De app van de server geldt alleen onder **Mijn eigen apps gebruiken**. Met de Connect van Control Center of een eigen Connect verzorgt Connect GitHub, en de app van de server blijft opgeslagen maar ongebruikt tot je terugschakelt. De app van de werkruimte ([Eén werkruimte een andere app geven](#eén-werkruimte-een-andere-app-geven)) geldt in alle modi. Een app waarvan
+De app van de server geldt alleen onder **Mijn eigen apps gebruiken**. Met de Connect van Control Center of een eigen Connect verzorgt Connect GitHub, en de app van de server blijft opgeslagen maar ongebruikt tot je terugschakelt. Een werkruimte op eigen apps ([Eén werkruimte een eigen app geven](#eén-werkruimte-een-eigen-app-geven)) gebruikt in plaats daarvan de eigen app, ongeacht de modus van de server. Een app waarvan
 velden ontbreken, is een fout en geen terugval: GitHub-aanmeldingen worden
 geweigerd tot elk veld is ingesteld.
 
@@ -96,26 +96,18 @@ niets lezen.
 2. Kies **All repositories**, of selecteer de repo's die deze server mag zien
 
 Om hem later op een ander account te installeren, gaat een beheerder van de
-werkruimte naar **Instellingen → Werkruimte → Algemeen**, zoekt **Installaties
-van de GitHub-app** op de kaart GitHub-identiteit en klikt op **GitHub-app
+werkruimte naar **Instellingen → Werkruimte → Integraties**, zoekt **Installaties
+van de GitHub-app** op de kaart **GitHub-app** onder Codehosting en klikt op **GitHub-app
 installeren**. De lijst toont elk account waarop de app is geïnstalleerd en
 markeert een opgeschorte installatie.
 
-## Deze server autoriseren voor een organisatie
+## De installatie van een organisatie delen
 
-Op de gedeelde App van Control Center bedient de installatie van een organisatie
-alleen de servers die haar beheerders hebben geautoriseerd. Installeren via
-**GitHub-app installeren** autoriseert de server die het startte. Voor een
-installatie die al bestaat:
+Een organisatie installeert de GitHub App één keer. Daarna kan iedereen in de organisatie die op een Control Center-server bij GitHub aanmeldt, de installatie gebruiken, welke server dat ook is: die van jou, die van een collega of een eigen server. Er hoeft per server niets geautoriseerd te worden.
 
-1. Een beheerder van die organisatie meldt zich op deze server aan bij GitHub
-2. Die opent **Instellingen → Werkruimte → Algemeen → Installaties van de
-   GitHub-app**
-3. De rij van de organisatie zegt **Niet geautoriseerd**. Die klikt op **Deze
-   server autoriseren**
+Elk token dat een server krijgt, is van de ingelogde persoon zelf, beperkt tot één repository en tot de rol van die persoon daarin, dus het reikt nooit verder dan wat die persoon op GitHub zelf zou kunnen. Het auditlogboek van GitHub toont die persoon, die via de app handelt.
 
-De rij toont daarna **Geautoriseerd**. Je eigen app heeft dit allemaal niet
-nodig: elke installatie ervan hoort bij jouw server.
+Om te voorkomen dat Control Center een organisatie bereikt, verwijdert een eigenaar van de organisatie de installatie of beperkt de repositories op GitHub. Iemand uit de organisatie verwijderen stopt ook zijn of haar toegang.
 
 ## In plaats daarvan met de hand registreren
 
@@ -154,17 +146,15 @@ kindproces het kan lezen; bewaar ze in het `.env`-bestand (koppel het in Docker
 aan `/app/bin/.env`). Het vullen gebeurt **één keer per veld**, dus een
 bewerking in Instellingen wordt niet ongedaan gemaakt door de volgende herstart.
 
-## Eén werkruimte een andere app geven
+## Eén werkruimte een eigen app geven
 
-Een werkruimte kan een eigen app gebruiken in plaats van die van de server. Een
-beheerder van de werkruimte gaat naar **Instellingen → Werkruimte → Algemeen**,
-kiest **Een andere GitHub App gebruiken** op de kaart **GitHub-identiteit** en
-voert het id, de privésleutel, de client-id en het client-secret van die app in.
-Leden melden zich dan voor deze werkruimte bij die app aan. Een werkruimte met een
-eigen app valt nooit terug op de app van de server of op Connect: zolang de velden
-niet compleet zijn, wordt het GitHub-werk ervan geweigerd. Dit geldt ongeacht hoe de server mensen aanmeldt, ook via Connect.
+Een werkruimte kan op een eigen app draaien in plaats van die van de server:
 
-Het kaartje **Provider-apps** op dezelfde pagina doet hetzelfde voor Google Agenda, Linear en GIF-zoeken. Zie [Geef één werkruimte een eigen Linear-app](/nl-NL/handleiding/gidsen/linear-integratie/#geef-één-werkruimte-een-eigen-linear-app) en [Geef één werkruimte een eigen Google-client](/nl-NL/handleiding/gidsen/agenda-verbinden/#geef-één-werkruimte-een-eigen-google-client).
+1. Een beheerder van de werkruimte gaat naar **Instellingen → Werkruimte → Integraties**
+2. Op de kaart **Control Center Connect** kiest die **Mijn eigen apps gebruiken** en klikt op **Toepassen**. Iedereen in de werkruimte meldt zich opnieuw aan via de apps van de werkruimte
+3. De kaart **GitHub-app** onder Codehosting bevat nu de velden van de app: **App-id** en **Privésleutel** onder **Handelt namens deze werkruimte**, **Client-id** en **Client-secret** onder **Mensen aanmelden**. Klik op **Testen** zodra ze zijn ingevuld
+
+Leden melden zich dan voor deze werkruimte bij die app aan. Een werkruimte met eigen apps valt nooit terug op de app van de server of op Connect: zolang de velden niet compleet zijn, wordt het GitHub-werk ervan geweigerd. Dezelfde keuze geldt voor Google Agenda, Linear en GIF-zoeken, elk met de eigen velden naast de provider op dezelfde pagina. Zie [Geef één werkruimte een eigen Linear-app](/nl-NL/handleiding/gidsen/linear-integratie/#geef-één-werkruimte-een-eigen-linear-app) en [Geef één werkruimte een eigen Google-client](/nl-NL/handleiding/gidsen/agenda-verbinden/#geef-één-werkruimte-een-eigen-google-client). De andere keuzes op die kaart, en wat elk ervan doet, staan in [Keuze per werkruimte](/nl-NL/handleiding/referentie/connect/#keuze-per-werkruimte).
 
 ## Probleemoplossing
 
@@ -181,7 +171,7 @@ opnieuw vanuit Instellingen.
 ### Testen zegt dat de inloggegevens werken, maar de app is nergens geïnstalleerd
 
 Registratie en installatie zijn aparte stappen. Open de installatiepagina van de
-app, of gebruik **GitHub-app installeren** in Werkruimte → Algemeen.
+app, of gebruik **GitHub-app installeren** in Werkruimte → Integraties.
 
 ### Testen zegt dat de privésleutel niet kon worden gelezen
 

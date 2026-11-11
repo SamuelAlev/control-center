@@ -9,6 +9,7 @@ import 'package:control_center/features/environments/presentation/settings/envir
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_labels.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/app_timestamp.dart';
@@ -34,6 +35,8 @@ class _EnvironmentTestPanelState extends ConsumerState<EnvironmentTestPanel> {
 
   Future<void> _run(String definitionId) async {
     final toasts = CcToastScope.maybeOf(context);
+    final l10n = AppLocalizations.of(context);
+    final owner = ref.read(canUseHostProvider);
     setState(() => _starting = true);
     try {
       final runId = await ref
@@ -44,7 +47,7 @@ class _EnvironmentTestPanelState extends ConsumerState<EnvironmentTestPanel> {
       }
     } on Object catch (error) {
       toasts?.show(
-        environmentFailureMessage(error),
+        environmentRefusalMessage(l10n, error, owner: owner),
         variant: CcToastVariant.danger,
       );
     } finally {

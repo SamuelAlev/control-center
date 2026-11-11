@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:control_center/features/messaging/presentation/utils/conversation_display_name.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';

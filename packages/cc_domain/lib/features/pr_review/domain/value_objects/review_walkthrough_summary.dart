@@ -4,9 +4,9 @@
 // The narrative is authored by the finalizing agent from deterministic inputs
 // (cohorts, findings, axis results); this VO is the typed envelope so the
 // Review Hub and the GitHub publisher render the same structure. Parsing is
-// null-on-malformed (same discipline as [ReviewNodePayload]): a legacy
-// summary without these keys parses to null and callers fall back to the
-// message's markdown body.
+// null-on-malformed (same discipline as [ReviewNodePayload]): a summary
+// without these keys parses to null and callers fall back to the message's
+// markdown body.
 //
 // ignore_for_file: sort_constructors_first
 
@@ -34,8 +34,8 @@ class ReviewWalkthroughArea {
   final List<String> bullets;
 
   /// The changed files this area covers, so the walkthrough can be read as a
-  /// table of concerns rather than a flat file list. Empty on summaries
-  /// written before the table existed.
+  /// table of concerns rather than a flat file list. Empty when the summary
+  /// names none.
   final List<String> files;
 
   /// Builds from JSON.
@@ -145,8 +145,8 @@ class ReviewWalkthroughSummary {
   };
 
   /// Parses from a `review_summary`-style metadata map. Returns null when the
-  /// structured keys are absent (legacy summaries) or every field is
-  /// malformed — callers then fall back to the markdown body.
+  /// structured keys are absent or every field is malformed — callers then
+  /// fall back to the markdown body.
   static ReviewWalkthroughSummary? fromMetadata(Map<String, dynamic>? meta) {
     if (meta == null) {
       return null;

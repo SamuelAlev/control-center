@@ -1,48 +1,48 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_server_core/src/forge/forge_probe.dart';
+
+/// Who a forge says the bearer of a token is: `login`, the handle PR authors
+/// are matched by, and `id`, the account's durable id.
+typedef ForgeViewer = ({String login, String id});
 
 /// Asks [forge] who the bearer of [token] is. Null when the token is refused
 /// or the forge is unreachable.
-Future<String?> probeForgeViewer(ForgeHost forge, String token) async {
-  final (url, header, field) = switch (forge) {
-    ForgeHost.github => (
-      'https://api.github.com/user',
-      'Bearer $token',
-      'login',
-    ),
-    ForgeHost.gitlab => (
-      'https://gitlab.com/api/v4/user',
-      'Bearer $token',
-      'username',
-    ),
-    ForgeHost.bitbucket || ForgeHost.local => ('', '', ''),
+///
+/// Bitbucket's `/2.0/user` is authenticated the way every Bitbucket call is
+/// ([forgeGet]: an `email:token` API token as basic auth, an
+/// access token as bearer). An access token has no person behind it and is
+/// refused there, so it never reads as anyone's sign-in. The login is the
+/// account's `nickname` (falling back to its `account_id`), the same handle
+/// Bitbucket PR authors carry; the `account_id` is the durable id.
+Future<ForgeViewer?> probeForgeViewer(ForgeHost forge, String token) async {
+  if (forge == ForgeHost.local) {
+    return null;
+  }
+  final answer = await forgeGet(forge, token, '/user');
+  final json = answer.json;
+  return answer.status == 200 && json is Map
+      ? forgeViewerFromJson(forge, json)
+      : null;
+}
+
+/// Reads the viewer out of [forge]'s `/user` answer; null when it names no
+/// one.
+ForgeViewer? forgeViewerFromJson(ForgeHost forge, Map<dynamic, dynamic> json) {
+  String text(Object? value) => switch (value) {
+    final String s => s,
+    final num n => n.toString(),
+    _ => '',
   };
-  if (url.isEmpty) {
-    return null;
-  }
-  final client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
-  try {
-    final request = await client.getUrl(Uri.parse(url));
-    request.followRedirects = false;
-    request.headers
-      ..set(HttpHeaders.authorizationHeader, header)
-      ..set(HttpHeaders.userAgentHeader, 'control-center')
-      ..set(HttpHeaders.acceptHeader, 'application/json');
-    final response = await request.close().timeout(const Duration(seconds: 8));
-    final body = await utf8.decodeStream(
-      response.timeout(const Duration(seconds: 8)),
-    );
-    if (response.statusCode != 200) {
-      return null;
-    }
-    final json = jsonDecode(body);
-    final value = json is Map ? json[field] : null;
-    return value is String && value.isNotEmpty ? value : null;
-  } on Object {
-    return null;
-  } finally {
-    client.close(force: true);
-  }
+  final ForgeViewer viewer = switch (forge) {
+    ForgeHost.github => (login: text(json['login']), id: text(json['id'])),
+    ForgeHost.gitlab => (login: text(json['username']), id: text(json['id'])),
+    ForgeHost.bitbucket => (
+      login: text(json['nickname']).isNotEmpty
+          ? text(json['nickname'])
+          : text(json['account_id']),
+      id: text(json['account_id']),
+    ),
+    ForgeHost.local => (login: '', id: ''),
+  };
+  return viewer.login.isEmpty ? null : viewer;
 }

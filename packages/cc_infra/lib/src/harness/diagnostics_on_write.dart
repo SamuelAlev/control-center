@@ -5,6 +5,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
 /// Argument keys the built-in write tools use for their target path.
@@ -15,6 +16,11 @@ const List<String> _pathKeys = ['path', 'file_path', 'filename', 'file'];
 /// Closes the feedback loop at write time (agents rarely call `lsp` later).
 /// Reports only NEW diagnostics via [DiagnosticsLedger]. Wait is budgeted —
 /// a slow language server must not fail a successful edit.
+///
+/// Starts a language server only through a confined [ToolProcessLauncher]:
+/// with an unconfined one it reads the servers already running (started by
+/// an `lsp` call, which declares host execution), so a write never starts an
+/// unconfined process by itself.
 class DiagnosticsOnWriteTool extends HarnessTool {
   /// Wraps [_inner], reporting diagnostics for whatever file it wrote.
   DiagnosticsOnWriteTool({
@@ -22,6 +28,7 @@ class DiagnosticsOnWriteTool extends HarnessTool {
     required this._supervisor,
     required this._ledger,
     required this._workingDirectory,
+    required this._launcher,
     this.budget = const Duration(seconds: 5),
   });
 
@@ -29,6 +36,7 @@ class DiagnosticsOnWriteTool extends HarnessTool {
   final LspSupervisor _supervisor;
   final DiagnosticsLedger _ledger;
   final String _workingDirectory;
+  final ToolProcessLauncher _launcher;
 
   /// How long to wait for the server to publish after the write.
   final Duration budget;
@@ -100,13 +108,18 @@ class DiagnosticsOnWriteTool extends HarnessTool {
     if (!file.existsSync()) {
       return '';
     }
-    final root = findProjectRoot(p.dirname(path));
+    final root = findProjectRoot(
+      p.dirname(path),
+      ceiling: _workingDirectory,
+    );
     // No server for this language is the common case (markdown, JSON, YAML)
     // and must cost nothing — notably NOT a server start.
-    if (_supervisor.serversForFile(root, path).isEmpty) {
+    if (_supervisor.serversForFile(root, path, _launcher).isEmpty) {
       return '';
     }
-    final clients = await _supervisor.clientsForFile(root, path);
+    final clients = _launcher.confined
+        ? await _supervisor.clientsForFile(root, path, _launcher)
+        : _supervisor.runningClientsForFile(root, path, _launcher);
     if (clients.isEmpty) {
       return '';
     }

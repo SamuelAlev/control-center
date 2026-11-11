@@ -57,7 +57,7 @@ void main() {
           _FakeTool('hire_agent', ToolApprovalTier.exec),
         ]);
         final names = registry
-            .toolsFor(const ToolSurfaceSpec.readOnlyLegacy())
+            .toolsFor(const ToolSurfaceSpec.readOnly())
             .map((t) => t.name)
             .toSet();
         expect(names, {'read', 'create_ticket'});
@@ -116,7 +116,7 @@ void main() {
         _FakeTool('bash', ToolApprovalTier.exec),
       ]);
       final report = registry.describeFor(
-        const ToolSurfaceSpec.readOnlyLegacy(),
+        const ToolSurfaceSpec.readOnly(),
       );
       expect(report.included, ['read']);
       expect(report.excluded['write'], 'denied by name');

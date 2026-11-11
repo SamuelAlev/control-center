@@ -2,7 +2,7 @@
 title: Thuật ngữ
 description: Định nghĩa các thuật ngữ then chốt được dùng xuyên suốt Control Center.
 slug: vi-VN/so-tay/tham-chieu/thuat-ngu
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Manifest theo từng không gian làm việc về các kỹ năng đã cài: với mỗi kỹ năng là kho mã nguồn, đường dẫn trong kho, commit được ghim và một hash nội dung tổng hợp. Các thao tác cài, cập nhật và gỡ cài đặt giữ nó luôn mới; verify_skills đối chiếu nó với đĩa.'],
 ['Cổng lượt chạy agent', 'Một endpoint loopback trên cc_server áp dụng chính sách hành động bên trong sandbox của agent. Mọi lần push lên GitHub mà agent thực hiện đều được định tuyến tới đó, được kiểm tra theo quy tắc Push lên remote và được chuyển tiếp bằng một token ghi mà agent không bao giờ nắm giữ; các lệnh Bash của Claude Code được kiểm tra qua một hook trên cùng endpoint đó.'],
 ['Chế độ', 'chat, plan, review hoặc orchestrate. Được lưu theo từng space, nên một agent có thể ở các chế độ khác nhau trong các space khác nhau; mọi cuộc hội thoại trong một space đều dùng chung chế độ đó. Chi phối prompt hệ thống, các quy tắc ghi của sandbox và danh sách công cụ MCP được phép.'],
-['SandboxBackend', 'microvm (một VM khép kín — backend duy nhất có ranh giới kernel, được áp dụng cho terminal tương tác), native (Seatbelt gốc của hệ điều hành trên macOS, bubblewrap trên Linux và WSL2) hoặc none. Được dò một lần lúc khởi động; native bọc lấy việc điều phối agent khi có sẵn. Windows không có backend native và Linux cần bwrap cùng socat, nên các lượt chạy ở đó không được bọc; --sandbox off là cách chủ động từ chối.'],
+['SandboxBackend', 'microvm (một VM khép kín — backend duy nhất có ranh giới kernel, được áp dụng cho terminal tương tác), native (Seatbelt gốc của hệ điều hành trên macOS, bubblewrap trên Linux và WSL2) hoặc none. Được dò một lần lúc khởi động; native bọc lấy việc điều phối agent khi có sẵn. Windows không có backend native và Linux cần bwrap cùng socat; trên một máy như vậy chỉ các lượt chạy của chủ sở hữu máy chủ mới bắt đầu, không được bọc, còn của những người khác bị từ chối. --sandbox off chạy mọi agent của thành viên không được bọc.'],
 ['Rig', 'Một cỗ máy dùng một lần do agent điều khiển trong thời gian thực: một trình duyệt hoặc desktop Linux khép kín, một trình giả lập Android hoặc Simulator iOS do máy chủ quản lý, hoặc một terminal khép kín. Được xem trực tiếp qua làn riêng ở độ phân giải đầy đủ, với việc giành quyền điều khiển được thực thi phía máy chủ. Có phạm vi theo một cuộc hội thoại để tab của người và công cụ của agent cùng nhắm tới một cỗ máy.'],
 ['Môi trường cách ly', 'Thuộc tính cô lập mạnh hơn dành cho các rig chạy trên VM: một ranh giới kernel, đĩa overlay dùng một lần, cổng mạng từ chối theo mặc định và bộ môi giới thông tin xác thực. Rig Android và iOS là dùng một lần nhưng dùng mạng do máy chủ quản lý, nên chúng không tuyên bố ranh giới này. Việc điều khiển bất kỳ rig nào đều dùng lớp rào chắn enclosureControl.'],
 ['RunCost', 'Bản tổng hợp token/chi phí (token đầu vào, token đầu ra, chi phí ước tính theo cent) cho một lượt chạy agent.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Điều phối việc thực thi lượt chạy: khởi động lượt chạy, lên lịch các bước, lưu bền trạng thái, xử lý router/join/continue-on-fail, tiếp tục các lượt chạy đang dang dở sau khi khởi động lại.'],
 ['PipelineTriggerDispatcher', 'Đăng ký các sự kiện miền và tự động khởi động những lượt chạy quy trình khớp với các trình kích hoạt đang bật.'],
 ['MemoryAccessPolicy', 'Phân giải và thực thi quyền truy cập bộ nhớ theo vai trò agent trên các miền.'],
-['HarnessCostCalculator', 'Quy đổi mức dùng token của harness tích hợp thành một RunCost theo danh mục models.dev. Việc điều phối lưu bản tổng hợp đó vào nhật ký chạy.'],
+['HarnessRunAccounting', 'Ghi nhận các lệnh gọi mô hình của harness tích hợp đúng một lần, định giá theo danh mục models.dev, lưu chúng trên lượt chạy sở hữu và cộng dồn chi tiêu của một lượt chạy con vào ngân sách của lượt chạy cha.'],
 ['BudgetEnforcementService', 'Tính chi tiêu hàng tháng theo từng agent và một chốt chặn trước khi điều phối (checkInvocationBlock). Chốt chặn đó chỉ được các bộ hòa giải phục hồi (OrphanRunReaper, StrandedTicketReconciler) tham chiếu, không bao giờ bởi việc điều phối thông thường.'],
 ['BudgetGovernanceService', 'Đánh giá chi tiêu hàng tháng theo từng agent sau mỗi lượt chạy: một ngưỡng mềm ghi lại sự cố cảnh báo; việc cạn ngân sách ghi lại sự cố cứng và đảo vòng đời của agent sang paused.'],
 ['DomainEventBus', 'Bus publish/subscribe quảng bá trong cùng tiến trình cho giao tiếp giữa các tính năng. Sự kiện có kiểu; bên đăng ký tiêu thụ các luồng theo kiểu.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Máy khách mỏng trên điện thoại — một PWA web Flutter điều khiển từ xa toàn đội máy qua relay được môi giới, với chính sách công cụ từ chối theo mặc định.'],
 ['cc_signaling_server', 'Một broker relay WebSocket không trạng thái, chứa các phòng có cổng mời. Một relay ngốc nghếch: nó chỉ chuyển tiếp các khung được niêm phong đầu-cuối, không giữ dữ liệu ứng dụng nào và không bao giờ thấy PSK ghép nối.'],
 ['Principal', 'Một giá trị niêm phong hợp nhất con người và agent thành một trừu tượng tác nhân duy nhất. UserPrincipal(userId) hoặc AgentPrincipal(agentId). Mọi tin nhắn, phiếu, đánh giá, kế hoạch và nhật ký chạy đều quy về một Principal.'],
-['Người dùng', 'Một danh tính con người, được lưu trong global.db và do đó mang tính toàn cục xuyên các không gian làm việc. Tác nhân tạo ra một không gian làm việc trở thành chủ sở hữu của nó, được ghi vào Workspace.ownerUserId cùng một hàng tư cách thành viên vai trò chủ sở hữu; những người khác tham gia qua lời mời hoặc SSO.'],
+['Người dùng', 'Một danh tính con người, được lưu trong global.db và do đó mang tính toàn cục xuyên các không gian làm việc. Chỉ chủ sở hữu máy chủ mới tạo được một không gian làm việc, và người đó trở thành chủ sở hữu của nó, được ghi vào Workspace.ownerUserId cùng một hàng tư cách thành viên vai trò chủ sở hữu; những người khác tham gia qua lời mời hoặc SSO.'],
+['Chủ sở hữu máy chủ', 'Người đã thiết lập máy chủ, được ghi lại một lần khi khởi động lần đầu; không có gì gửi qua mạng làm thay đổi điều đó. Quản trị viên không gian làm việc hay chủ không gian làm việc đều không phải là chủ sở hữu máy chủ. Không có gì chạy trên chính máy của máy chủ ngoài sandbox trừ khi chủ sở hữu máy chủ đã khởi động nó hoặc phê duyệt loại thực thi trên host đó: việc tạo không gian làm việc, shell của host, trình soạn thảo mã nhúng, các môi trường chạy trên host và các bản checkout được liên kết từ bên ngoài bộ nhớ của một không gian làm việc đều chỉ thuộc về họ.'],
 ['WorkspaceMember', 'Một hàng tư cách thành viên gắn một Người dùng với một Không gian làm việc ở một WorkspaceRole. Tư cách thành viên — không phải khóa ghép nối — chính là ranh giới truy cập.'],
 ['WorkspaceRole', 'Vai trò thành viên phân bậc: owner, admin, member, viewer hoặc guest. Điểm chốt thao tác kho mã suy ra mức vai trò tối thiểu cho từng loại thao tác.'],
 ['ParticipantPresence', 'Thông tin hiện diện tạm thời cho một Principal (trạng thái, vị trí, con trỏ, đang gõ, trạng thái trực tiếp của agent và chi phí đang chạy). Không bao giờ được lưu bền; tập trung ở hub phía máy chủ; được lọc theo cấp quyền kho mã trước khi phân phát.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Nút tự chủ', 'Một điều khiển theo từng space, theo từng agent — propose-only / act-with-approval / act-freely — được hiện thực như một hồ sơ có tên trên kho rào chắn hành động.'],
 ['cc_worker', 'Một tệp nhị phân thực thi đội máy không giao diện, thuần Dart. Ghép nối với một cc_server, khai báo các năng lực của nó, kéo các công việc đã thuê, thực thi chúng và truyền sự kiện ngược về. Không giữ trạng thái bền vững nào.'],
 ['JobSpec', 'Đặc tả có kiểu cho mọi thứ có thể thực thi (lượt chạy agent, bước quy trình, chỉ mục mã, golden-render, benchmark, lô đánh giá): năng lực cần thiết, độ ưu tiên, ngân sách, không gian làm việc.'],
-['ActionClass', 'Một tập đóng gồm 13 lớp hiệu ứng (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Mọi công cụ gây thay đổi đều khai báo các lớp của mình; engine rào chắn phân giải allow / prompt / deny theo từng phạm vi.'],
+['ActionClass', 'Một tập đóng gồm 14 lớp hiệu ứng (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Mọi công cụ gây thay đổi đều khai báo các lớp của mình; engine rào chắn phân giải allow / prompt / deny theo từng phạm vi.'],
 ['WriteLedger', 'Sổ cái idempotency có phạm vi theo không gian làm việc. Mọi thay đổi đều mang một khóa idempotency theo từng hành động logic; một lần phát lại trả về kết quả gốc giống hệt từng byte. Nhờ cấu trúc, việc kết nối lại và nhiều máy khách trở nên an toàn.'],
 ['Khóa idempotency', 'Một UUIDv7 do máy khách tạo, được tạo mới cho mỗi hành động logic (không phải mỗi lần thử). Loại bỏ trùng lặp các lần thử lại xuyên các lần kết nối lại và các máy khách.'],
 ['Hộp thư Cần tôi', 'Một hàng đợi xuyên các trụ cột với quy tắc nghiêm ngặt: một mục chỉ xuất hiện nếu nó chặn một việc gì đó (một agent, một lần merge, một lần đồng bộ) hoặc yêu cầu người vận hành một cách minh thị.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Kết luận đánh giá', 'ship, hold hoặc block. Bất kỳ phát hiện P0 nào có độ tin cậy >= 0.7 đều block; bất kỳ P0 khác hoặc bất kỳ P1 nào thì hold; còn lại là ship. Một trục có cổng bị lỗi buộc phải block và không thể bị các phát hiện ghi đè.'],
 ['SessionRecording', 'Một luồng sự kiện cùng các cassette HTTP/LLM và I/O công cụ được ghi lại cho một lượt chạy, đi kèm một AgentConfigHash.'],
 ['Phiên golden', 'Một SessionRecording đã được phê duyệt, được ghim theo từng agent hoặc playbook.'],
-['Control Center Connect', 'Một dịch vụ tùy chọn chạy đăng nhập nhà cung cấp (GitHub, Google, Linear) cho các máy chủ chưa có ứng dụng riêng. Do Control Center lưu trữ, tự lưu trữ, hoặc tắt. Dịch vụ trả về niêm phong thông tin xác thực và token GitHub cho một kho mã, và không bao giờ thấy nội dung kho mã.'],
+['Control Center Connect', 'Một dịch vụ tùy chọn chạy đăng nhập nhà cung cấp (GitHub, Google, Linear) cho các máy chủ hoặc không gian làm việc đã chọn nó thay vì ứng dụng riêng của họ. Do Control Center lưu trữ, tự lưu trữ, hoặc tắt. Dịch vụ trả về niêm phong thông tin xác thực và token GitHub cho một kho mã, và không bao giờ thấy nội dung kho mã.'],
 ['Niêm phong thông tin xác thực', 'Một thông tin xác thực đã mã hóa mà chỉ Connect đã tạo ra nó mới mở được, ràng buộc với nhà cung cấp, địa chỉ Connect, id cài đặt, không gian làm việc, tài khoản, ứng dụng và thế hệ secret. Máy chủ lưu niêm phong; access token chỉ nằm trong bộ nhớ.'],
 ['Id cài đặt', 'Danh tính của một máy chủ đối với một địa chỉ Connect, được suy ra từ khóa cài đặt của nó. Connect cho phép máy chủ theo id cài đặt; xoay khóa sẽ đổi id và đăng xuất mọi người khỏi các làn Connect.'],
-['Ràng buộc cài đặt', 'Bản ghi của Connect về những máy chủ nào được dùng một cài đặt GitHub của App dùng chung. Một cài đặt của tổ chức cần quản trị viên cấp quyền cho từng máy chủ.'],
-['Làn đăng nhập', 'Đăng nhập trình duyệt của một nhà cung cấp: `github`, `google`, `linear`, `linear_app` hoặc `slack`. Mỗi làn chạy trên ứng dụng riêng của máy chủ khi ứng dụng đó đầy đủ, nếu không thì qua Connect, và nếu không nữa thì không khả dụng.'],
+['Ràng buộc cài đặt', 'Bản ghi của Connect về máy chủ duy nhất mà một đội Slack được gắn với. Cài đặt GitHub không có bản ghi này: mọi máy chủ mà một thành viên đăng nhập đều có thể dùng chúng.'],
+['Làn đăng nhập', 'Đăng nhập trình duyệt của một nhà cung cấp: `github`, `google`, `linear`, `linear_app` hoặc `slack`. Theo ứng dụng riêng, một làn chạy trên ứng dụng riêng khi ứng dụng đó được cấu hình đầy đủ, nếu không thì không khả dụng; khi đã chọn Connect thì Connect chạy nó. Không bên nào rơi về bên kia.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Chế độ**: `chat`, `plan`, `review` hoặc `orchestrate`. Được lưu **theo từng space**, nên một agent có thể ở các chế độ khác nhau trong các space khác nhau; mọi cuộc hội thoại trong một space đều dùng chung chế độ đó. Chi phối prompt hệ thống, các quy tắc ghi của sandbox và danh sách công cụ MCP được phép. Khung soạn tin chỉ đưa ra `chat`, `plan` và `orchestrate`; `chat` được gắn nhãn “Agent”.
 
-**SandboxBackend**: `microvm` (một VM khép kín — backend duy nhất có ranh giới kernel, được áp dụng cho terminal tương tác), `native` (Seatbelt trên macOS, bubblewrap trên Linux và WSL2) hoặc `none`. Được dò một lần lúc khởi động; `native` được **áp dụng cho việc điều phối agent** khi có sẵn, bọc lấy CLI Claude Code và công cụ `bash` của harness. Windows không có backend native và Linux cần `bwrap` cùng `socat`, nên các lượt chạy ở đó không được bọc; `--sandbox off` là cách chủ động từ chối.
+**SandboxBackend**: `microvm` (một VM khép kín — backend duy nhất có ranh giới kernel, được áp dụng cho terminal tương tác), `native` (Seatbelt trên macOS, bubblewrap trên Linux và WSL2) hoặc `none`. Được dò một lần lúc khởi động; `native` được **áp dụng cho việc điều phối agent** khi có sẵn, bọc lấy CLI Claude Code và công cụ `bash` của harness. Windows không có backend native và Linux cần `bwrap` cùng `socat`; trên một máy như vậy chỉ các lượt chạy của chủ sở hữu máy chủ mới bắt đầu, không được bọc, còn của những người khác bị từ chối. `--sandbox off` chạy mọi agent của thành viên không được bọc.
 
 **Rig**: Một cỗ máy dùng một lần do agent điều khiển trong thời gian thực — một trình duyệt hoặc desktop Linux khép kín, một trình giả lập Android hoặc Simulator iOS do máy chủ quản lý, hoặc một terminal khép kín. Được xem trực tiếp qua làn riêng ở độ phân giải đầy đủ, với việc giành quyền điều khiển được thực thi phía máy chủ. Có phạm vi theo một cuộc hội thoại để tab của người và các lệnh gọi `browser_use` / `computer_use` / `mobile_use` / `ios_use` của agent cùng nhắm tới một cỗ máy mặc định. Xem [Rigs và môi trường cách ly](/vi-VN/so-tay/khai-niem/rigs/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Phân giải và thực thi quyền truy cập bộ nhớ theo vai trò agent trên các miền.
 
-**HarnessCostCalculator**: Quy đổi mức dùng token của harness tích hợp thành một `RunCost` theo danh mục models.dev. Việc điều phối lưu bản tổng hợp đó vào nhật ký chạy.
+**HarnessRunAccounting**: Ghi nhận các lệnh gọi mô hình của harness tích hợp đúng một lần, định giá theo danh mục models.dev, lưu chúng trên lượt chạy sở hữu và cộng dồn chi tiêu của một lượt chạy con vào ngân sách của lượt chạy cha.
 
 **BudgetEnforcementService**: Tính chi tiêu hàng tháng theo từng agent và một chốt chặn trước khi điều phối (`checkInvocationBlock`). Chốt chặn đó chỉ được các bộ hòa giải phục hồi (`OrphanRunReaper`, `StrandedTicketReconciler`) tham chiếu, không bao giờ bởi một lần điều phối thông thường của người dùng hay agent.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Các đầu ra có cấu trúc được quy trình tóm tắt trích xuất và lưu thành những hàng riêng. Việc cần làm có thể liên kết tới một phiếu.
 
-**CalendarEvent**: Một mục Google Calendar đã đồng bộ, có phạm vi theo một không gian làm việc và tài khoản đã kết nối. Khác với Cuộc họp: một sự kiện là cam kết đã lên lịch; một Cuộc họp là phiên được ghi. Được liên kết một-một qua một `MeetingCalendarLink`.
+**CalendarEvent**: Một mục Google Calendar đã đồng bộ, có phạm vi theo một không gian làm việc và tài khoản đã kết nối. Khác với Cuộc họp: một sự kiện là cam kết đã lên lịch; một Cuộc họp là phiên được ghi. Được liên kết một-một qua bảng `meeting_calendar_links`.
 
 **CalendarAccount**: Một tài khoản Google đã kết nối, theo không gian làm việc, thành viên và email (`google:<workspaceId>:<userId>:<email>`). Thông tin xác thực của nó được lưu phía máy chủ dưới một khóa `google_*` trong `<dataDir>/secrets.json` và không bao giờ tới máy khách; đăng nhập trình duyệt hoàn tất trên máy chủ. Đăng nhập qua Connect chỉ lưu một niêm phong thông tin xác thực. Cờ `authExpiredAt` điều khiển biểu ngữ kết nối lại.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: Một giá trị niêm phong hợp nhất con người và agent thành một trừu tượng tác nhân duy nhất — `UserPrincipal(userId)` hoặc `AgentPrincipal(agentId)`. Mọi tin nhắn, phiếu, đánh giá, kế hoạch và nhật ký chạy đều quy về một Principal.
 
-**Người dùng**: Một danh tính con người, được lưu trong `global.db` và do đó mang tính toàn cục xuyên các không gian làm việc. Tác nhân tạo ra một không gian làm việc trở thành **chủ sở hữu** của nó — được ghi vào `Workspace.ownerUserId` cùng một hàng tư cách thành viên vai trò chủ sở hữu trong cùng thao tác. Những người khác tham gia qua lời mời hoặc SSO.
+**Chủ sở hữu máy chủ**: Người đã thiết lập máy chủ, được ghi lại một lần khi khởi động lần đầu; không có gì gửi qua mạng làm thay đổi điều đó. Quản trị viên không gian làm việc hay chủ không gian làm việc đều không phải là chủ sở hữu máy chủ. Không có gì chạy trên chính máy của máy chủ ngoài sandbox trừ khi chủ sở hữu máy chủ đã khởi động nó hoặc phê duyệt loại thực thi trên host đó: việc tạo không gian làm việc, shell của host, trình soạn thảo mã nhúng, các môi trường chạy trên host và các bản checkout được liên kết từ bên ngoài bộ nhớ của một không gian làm việc đều chỉ thuộc về họ. Xem [Chủ sở hữu máy chủ](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ).
+
+**Người dùng**: Một danh tính con người, được lưu trong `global.db` và do đó mang tính toàn cục xuyên các không gian làm việc. Chỉ chủ sở hữu máy chủ mới tạo được một không gian làm việc, và người đó trở thành **chủ sở hữu** của nó — được ghi vào `Workspace.ownerUserId` cùng một hàng tư cách thành viên vai trò chủ sở hữu trong cùng thao tác. Những người khác tham gia qua lời mời hoặc SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Một hàng tư cách thành viên gắn một User với một Workspace ở một vai trò (`owner` / `admin` / `member` / `viewer` / `guest`). **Tư cách thành viên — không phải khóa ghép nối — chính là ranh giới truy cập.** Các cấp quyền theo từng kho mã giữ cho tư cách thành viên không tạo ra đặc quyền cao hơn máy chủ mã.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Nút tự chủ**: Một điều khiển theo từng space, theo từng agent — `propose-only` / `act-with-approval` / `act-freely` — được hiện thực như một hồ sơ có tên trên kho rào chắn hành động.
 
-**ActionClass**: Một tập đóng gồm 13 lớp hiệu ứng (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Mọi công cụ gây thay đổi đều khai báo các lớp của mình; engine rào chắn phân giải `allow` / `prompt` / `deny` theo từng phạm vi (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: Một tập đóng gồm 14 lớp hiệu ứng (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Mọi công cụ gây thay đổi đều khai báo các lớp của mình; engine rào chắn phân giải `allow` / `prompt` / `deny` theo từng phạm vi (space > agent > workspace > mode preset > built-in default).
 
 **WriteLedger** / **khóa idempotency**: Mọi thay đổi đều mang một khóa idempotency do máy khách tạo (UUIDv7, theo từng hành động logic). Sổ cái có phạm vi theo không gian làm việc loại bỏ trùng lặp trước khi trình xử lý chạy; một lần phát lại trả về kết quả gốc giống hệt từng byte. Nhờ cấu trúc, việc kết nối lại và nhiều máy khách trở nên an toàn.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Một broker relay WebSocket không trạng thái, chứa các phòng có cổng mời — một relay ngốc nghếch chỉ chuyển tiếp các khung được niêm phong đầu-cuối, không giữ dữ liệu ứng dụng nào và không bao giờ thấy PSK ghép nối.
 
-**Control Center Connect**: Một dịch vụ tùy chọn chạy đăng nhập nhà cung cấp (GitHub, Google Calendar, Linear) cho các máy chủ chưa đăng ký ứng dụng riêng: bản do Control Center lưu trữ, bản do một tổ chức tự vận hành (`cc-connect`, hoặc được gắn trong `cc_server` tại `/connect`), hoặc không có. Dịch vụ trả về niêm phong thông tin xác thực và token GitHub cho một kho mã, và không bao giờ thấy nội dung kho mã. Xem [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/).
+**Control Center Connect**: Một dịch vụ tùy chọn chạy đăng nhập nhà cung cấp (GitHub, Google Calendar, Linear) cho các máy chủ hoặc không gian làm việc đã chọn nó thay vì ứng dụng riêng của họ: bản do Control Center lưu trữ, bản do một tổ chức tự vận hành (`cc-connect`, hoặc được gắn trong `cc_server` tại `/connect`), hoặc không có. Dịch vụ trả về niêm phong thông tin xác thực và token GitHub cho một kho mã, và không bao giờ thấy nội dung kho mã. Xem [Control Center Connect](/vi-VN/so-tay/tham-chieu/connect/).
 
 **Niêm phong thông tin xác thực** (`credential_seal`): Một thông tin xác thực đã mã hóa mà chỉ Connect đã tạo ra nó mới mở được, ràng buộc với nhà cung cấp, địa chỉ Connect, id cài đặt, không gian làm việc, tài khoản, ứng dụng và thế hệ secret. Máy chủ lưu niêm phong và id cài đặt mà nó được tạo cho; access token nằm trong bộ nhớ. Một niêm phong có id cài đặt không còn khớp sẽ bị loại bỏ và chủ của nó đăng nhập lại.
 
 **Id cài đặt** (`install_id`): Danh tính của một máy chủ đối với một địa chỉ Connect, được suy ra từ khóa cài đặt trong tệp secret của nó. Connect cho phép máy chủ theo id cài đặt. Xoay khóa sẽ tạo ra id mới và đăng xuất mọi người khỏi các làn Connect.
 
-**Ràng buộc cài đặt** (`install_binding`): Bản ghi của Connect về những máy chủ nào được dùng một cài đặt GitHub của App dùng chung. Cài đặt qua một máy chủ sẽ ràng buộc nó; **Ủy quyền máy chủ này** của quản trị viên tổ chức sẽ ràng buộc một máy chủ khác.
+**Ràng buộc cài đặt** (`install_binding`): Bản ghi của Connect về máy chủ duy nhất mà một đội Slack được gắn với. Cài đặt GitHub không có bản ghi này: mọi máy chủ mà một thành viên đăng nhập đều có thể dùng chúng.
 
-**Làn đăng nhập**: Đăng nhập trình duyệt của một nhà cung cấp — `github`, `google`, `linear`, `linear_app` hoặc `slack`. Một làn chạy trên ứng dụng riêng của máy chủ khi ứng dụng đó đã đầy đủ, nếu không thì qua Connect, và nếu không nữa thì không khả dụng. Một ứng dụng riêng cấu hình dở dang là một lỗi, không bao giờ rơi về Connect.
+**Làn đăng nhập**: Đăng nhập trình duyệt của một nhà cung cấp — `github`, `google`, `linear`, `linear_app` hoặc `slack`. Theo ứng dụng riêng, một làn chạy trên ứng dụng riêng (của máy chủ hoặc không gian làm việc) khi ứng dụng đó đã được cấu hình đầy đủ, nếu không thì không khả dụng; khi đã chọn Connect thì Connect chạy nó. Không bên nào rơi về bên kia, và một ứng dụng riêng cấu hình dở dang là một lỗi.
 
 ## Xem thêm
 

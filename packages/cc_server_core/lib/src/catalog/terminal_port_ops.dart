@@ -1,5 +1,6 @@
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_ports_port.dart';
+import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart';
 
@@ -12,14 +13,26 @@ import 'package:cc_host/cc_host.dart';
 /// (demo omits them). Mutations stay `networkEgress`.
 ///
 /// Spread from `buildRemoteRpcCatalog` so the catalog freeze does not grow.
-List<RepoOp> buildTerminalPortOps({required RigPortsPort rigPorts}) => [
+/// Each op first passes [requireSpace] for its `space_id` (the catalog's
+/// space gate): a space's terminal is the space's machine. A session
+/// somebody else opened answers `{ok: false}`, exactly as a missing one
+/// ([isOthersTerminal]).
+List<RepoOp> buildTerminalPortOps({
+  required RigPortsPort rigPorts,
+  required TerminalSessionPort? terminals,
+  required Future<void> Function(RepoOpContext ctx) requireSpace,
+}) => [
   RepoOp(
     name: 'terminal.setPortsAutoForward',
     kind: RepoOpKind.mutate,
     requiredArgs: const ['session_id', 'space_id', 'enabled'],
     actionClasses: const {ActionClass.networkEgress},
     handler: (ctx) async {
+      await requireSpace(ctx);
       final ids = _sessionSpace(ctx);
+      if (isOthersTerminal(terminals, ids.sessionId, ctx.userId)) {
+        return const {'ok': false};
+      }
       final ok = await rigPorts.setTerminalPortsAutoForward(
         ctx.workspaceId!,
         ids.sessionId,
@@ -35,7 +48,11 @@ List<RepoOp> buildTerminalPortOps({required RigPortsPort rigPorts}) => [
     requiredArgs: const ['session_id', 'space_id', 'guest_port'],
     actionClasses: const {ActionClass.networkEgress},
     handler: (ctx) async {
+      await requireSpace(ctx);
       final ids = _sessionSpace(ctx);
+      if (isOthersTerminal(terminals, ids.sessionId, ctx.userId)) {
+        return const {'ok': false};
+      }
       final port = _guestPort(ctx.args['guest_port']);
       if (port == null) {
         throw const ValidationException(
@@ -66,7 +83,11 @@ List<RepoOp> buildTerminalPortOps({required RigPortsPort rigPorts}) => [
     requiredArgs: const ['session_id', 'space_id', 'guest_port'],
     actionClasses: const {ActionClass.networkEgress},
     handler: (ctx) async {
+      await requireSpace(ctx);
       final ids = _sessionSpace(ctx);
+      if (isOthersTerminal(terminals, ids.sessionId, ctx.userId)) {
+        return const {'ok': false};
+      }
       final port = _guestPort(ctx.args['guest_port']);
       if (port == null) {
         throw const ValidationException(
@@ -88,7 +109,11 @@ List<RepoOp> buildTerminalPortOps({required RigPortsPort rigPorts}) => [
     requiredArgs: const ['session_id', 'space_id', 'guest_port', 'exposed'],
     actionClasses: const {ActionClass.networkEgress},
     handler: (ctx) async {
+      await requireSpace(ctx);
       final ids = _sessionSpace(ctx);
+      if (isOthersTerminal(terminals, ids.sessionId, ctx.userId)) {
+        return const {'ok': false};
+      }
       final port = _guestPort(ctx.args['guest_port']);
       if (port == null) {
         throw const ValidationException(
@@ -111,7 +136,11 @@ List<RepoOp> buildTerminalPortOps({required RigPortsPort rigPorts}) => [
     requiredArgs: const ['session_id', 'space_id', 'guest_port'],
     actionClasses: const {ActionClass.networkEgress},
     handler: (ctx) async {
+      await requireSpace(ctx);
       final ids = _sessionSpace(ctx);
+      if (isOthersTerminal(terminals, ids.sessionId, ctx.userId)) {
+        return const {'ok': false};
+      }
       final port = _guestPort(ctx.args['guest_port']);
       if (port == null) {
         throw const ValidationException(
@@ -133,6 +162,17 @@ List<RepoOp> buildTerminalPortOps({required RigPortsPort rigPorts}) => [
     },
   ),
 ];
+
+/// Whether terminal [sessionId] was opened by somebody other than [userId]:
+/// its ports then answer as if it did not exist, as the session does.
+bool isOthersTerminal(
+  TerminalSessionPort? terminals,
+  String sessionId,
+  String userId,
+) {
+  final opener = terminals?.openerOf(sessionId);
+  return opener != null && opener != userId;
+}
 
 ({String sessionId, String spaceId}) _sessionSpace(RepoOpContext ctx) {
   final sessionId = ctx.args['session_id'];

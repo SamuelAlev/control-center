@@ -169,7 +169,7 @@ abstract final class AgentProcessEventCodec {
         'kind': 'done',
         'ts': ts,
         // Optional terminal-outcome override (e.g. 'max_turns') — absent on
-        // a plain completion, so older readers see the shape they know.
+        // a plain completion.
         if (outcome != null) 'outcome': turnOutcomeToString(outcome),
       },
     };

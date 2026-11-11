@@ -13,11 +13,26 @@ import 'package:cc_harness/tools.dart';
 /// This is the user-gated publish step `finalize_review` defers. By default it
 /// publishes only consensus-confirmed findings (the precision-first wedge):
 /// a finding is posted only after a second agent confirmed it.
+///
+/// Only an agent run can call it, and only for its own space: the review it
+/// publishes posts as the Control Center bot, so the model must not be able
+/// to name another review space in the workspace.
 class PublishReviewToGithubTool extends McpTool {
   /// Creates a [PublishReviewToGithubTool].
   PublishReviewToGithubTool({required this._service});
 
   final ReviewPublisherPort _service;
+
+  /// The run's own space, whatever the model sent.
+  @override
+  Set<String> get forcedScopeKeys => const {'space_id'};
+
+  @override
+  Set<String> get requiredScopeKeys => const {'workspace_id', 'space_id'};
+
+  /// The space is read from the calling run; headers can name any.
+  @override
+  bool get requiresRunGrant => true;
 
   @override
   String get name => 'publish_review_to_github';
@@ -43,7 +58,9 @@ class PublishReviewToGithubTool extends McpTool {
       },
       'space_id': {
         'type': 'string',
-        'description': 'The review space ID to publish.',
+        'description':
+            'The review space to publish: this run\'s own (filled in '
+            'automatically).',
       },
       'selection': {
         'type': 'string',

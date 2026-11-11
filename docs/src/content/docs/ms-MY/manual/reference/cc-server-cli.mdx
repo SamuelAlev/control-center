@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Setiap flag, pemboleh ubah persekitaran, subperintah dan laluan direktori data bagi pelayan tanpa kepala.
 slug: ms-MY/manual-pengguna/rujukan/cli-cc-server
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Setiap flag proses menerima flag CLI atau pemboleh ubah persekitaran; flag diutamakan,
@@ -47,7 +47,7 @@ lalai. Periksa baris log permulaan apabila sesuatu flag kelihatan tidak berkesan
 
 | Flag                     | Persekitaran                    | Lalai                                 | Maksud                                                                                                                      |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Sama ada larian ejen dibalut dalam kotak pasir natif OS hos apabila tersedia. Pilihan keluar, bukan pilihan masuk — lihat di bawah |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` membalut larian ejen dalam kotak pasir natif OS hos, dan pada hos tanpa satu hanya memulakan larian pemilik pelayan. `off` menjalankan ejen setiap ahli tanpa kurungan pada hos ini. Lihat di bawah |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Suis mati lapangan untuk pengindeksan graf kod latar belakang. `off` but dengan bersih tanpa bina semula                    |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Saat untuk menahan sapuan indeks pertama selepas sepanduk sedia (dihadkan 0–300)                                            |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Sama ada larian harness menghantar set alat residen yang kecil serta indeks nama, lalu memuatkan selebihnya pada penggunaan pertama. Lihat di bawah |
@@ -79,21 +79,26 @@ Docker, lekapkan pada `/app/bin/.env`. Pelayan **enggan bermula** (kod keluar `7
 persekitaran prosesnya, tempat setiap proses anak boleh membacanya. Penyemaian daripada `.env` berlaku sekali bagi setiap
 medan, jadi suntingan kemudian dalam Tetapan tidak dibatalkan oleh mula semula. Nilai kosong dibaca sebagai tidak ditetapkan.
 
-Kerja latar belakang GitLab dan Bitbucket juga membaca `GITLAB_TOKEN` / `CI_JOB_TOKEN` dan `BITBUCKET_API_TOKEN` /
-`BITBUCKET_TOKEN` dengan `BITBUCKET_EMAIL`. GitHub tidak mempunyai kelayakan persekitaran.
+Tiada kelayakan forge datang daripada persekitaran: GitHub, GitLab dan Bitbucket semuanya bertindak
+melalui log masuk atau token milik ahli sendiri, atau melalui token GitHub App untuk satu repositori
+yang terikat kepada ahli bertanggungjawab.
 
 ### `--sandbox`
 
 Pelayan menyiasat hos sekali semasa but dan membalut pelaksanaan perintah ejen dalam
 kotak pasir natif OS apabila bahagian belakang tersedia: `sandbox-exec` (Seatbelt) pada macOS,
-`bwrap` serta `socat` pada Linux dan WSL2. Di tempat tiada — Windows, atau hos Linux
-yang kekurangan alat tersebut — larian jatuh kembali kepada sanitasi persekitaran, polisi
-perintah dan guardrail tindakan, dan log permulaan menyatakan keadaan yang berkuat kuasa.
+`bwrap` serta `socat` pada Linux dan WSL2.
+Keputusan dibuat sekali dan kekal sehingga pelayan dimulakan semula. Terdapat tiga hasil, setiap satu dipaparkan pada baris pendedahan permulaan:
 
-`--sandbox off` ialah suis mati lapangan bagi kes yang tidak dapat dilihat oleh
-siasatan: hos tempat profil kotak pasir itu sendiri berkelakuan salah. Ia tidak
-memerlukan bina semula dan pelayan merekodkan amaran sepanjang hayat proses supaya
-keadaan itu tidak pernah senyap.
+| `sandbox=`    | Bila                                    | Larian ejen siapa yang dimulakan                                                 |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Bahagian belakang tersedia dan `--sandbox` ialah `on` | Semua orang, dibalut                                                       |
+| `off`         | `--sandbox off`                         | Semua orang, tanpa kurungan pada hos ini                                         |
+| `unavailable` | `--sandbox on` dan tiada bahagian belakang (Windows, atau Linux tanpa `bwrap` dan `socat`) | Hanya larian yang pemilik pelayan bertanggungjawab ke atasnya, tanpa kurungan. Yang lain ditolak dengan "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini." |
+
+Bagi automasi, orang yang bertanggungjawab ialah orang yang automasi itu terikat kepadanya. Tanpa pemilik pelayan yang direkodkan, tiada larian dimulakan pada hos `unavailable`. Pada Linux dan WSL2 dengan bubblewrap dipasang, penghantaran natif kini gagal tertutup untuk setiap larian; lihat [Bahagian belakang kotak pasir](/ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir/#linux-bubblewrap).
+
+`--sandbox off` ialah pilihan pemilik pelayan untuk semua orang yang menggunakan pelayan: ia menjalankan ejen setiap ahli tanpa kurungan pada mesin ini. Gunakannya pada hos tempat profil kotak pasir itu sendiri berkelakuan salah, atau untuk membenarkan ahli menjalankan ejen pada hos tanpa bahagian belakang. Ia tidak memerlukan bina semula, dan pelayan merekodkan amaran sepanjang hayat proses supaya keadaan itu tidak pernah senyap.
 
 ### `--tool-deferral`
 
@@ -171,7 +176,6 @@ daripada direktori data. Pelayan yang sedang berjalan mengambil perubahan dalam 
 | `cc_server connect enable`              | Menggunakan Control Center Connect yang dihoskan oleh Control Center                                                                     |
 | `cc_server connect enable --url <url>`  | Menggunakan Connect tersuai di URL itu (HTTPS, atau `http` pada loopback)                                                                |
 | `cc_server connect disable`             | Berhenti menggunakan Connect. Hanya apl pelayan sendiri yang mendaftar masuk orang                                                      |
-| `cc_server connect rotate-key --yes`    | Mencipta kunci pemasangan dan id pemasangan baharu. Semua orang yang log masuk melalui Connect perlu log masuk semula. Tanpa `--yes` ia hanya memberi amaran dan keluar dengan kod `2` |
 
 `status` tanpa arahan ialah lalai. Setiap arahan menerima `--data-dir`. `CC_CONNECT_URL` mengatasi apa sahaja yang disimpan
 oleh arahan-arahan ini. Arahan yang tidak dikenali keluar dengan kod `64`. Lihat [Control Center Connect](/ms-MY/manual-pengguna/rujukan/connect/)

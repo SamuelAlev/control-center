@@ -2,7 +2,7 @@
 title: Code-Intelligenz
 description: Warum ein Agent den Compiler, einen strukturellen Matcher und einen Debugger braucht – und welche Frage jeder beantwortet, die die anderen nicht beantworten.
 slug: de-DE/handbuch/konzepte/code-intelligenz
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center gibt einem Agenten vier Wege, Code zu verstehen, die über das Lesen hinausgehen. Diese Wege beantworten jeweils andere Fragen, und es sind vier statt einer, weil kein einzelner Mechanismus alle beantwortet.
@@ -31,6 +31,8 @@ Zu wiederholen, was der Agent schon erfahren hat, ist schlimmer, als nichts zu s
 Beim Start läuft kein Server. Einer startet bei der ersten Anfrage, die ihn braucht, fast immer die erste Bearbeitung einer Datei, für die er zuständig ist, und untätige werden weggeräumt. Ein Host, der Dart nie anfasst, startet nie einen Analyzer.
 
 Die Erkennung ist eine **Schnittmenge**: Im Checkout muss ein Wurzelmarker liegen, *und* die Binärdatei muss sich auflösen lassen. Ein Marker allein sagt „dieses Projekt ist Python“ und nichts darüber, ob der Server installiert ist. Eine auflösbare Binärdatei allein sagt, dass der Host eine Toolchain hat, und nichts über diesen Checkout. Nur beides zusammen heißt, dass eine Abfrage gelingen kann, und ein Tool, das angeboten wird und immer fehlschlägt, ist schlimmer als eines, das fehlt.
+
+Was ein Repository beeinflussen kann, ist bewusst klein gehalten. Die Server kommen aus einer eingebauten Tabelle, nie aus einer Datei im Checkout, und eine Binärdatei im Projekt (`node_modules/.bin`) wird nur benutzt, wenn der Lauf in einer Sandbox läuft. Ein Sprachserver ist ein Programm, das auf dem Rechner des Servers läuft, daher kann ein Repository nicht bestimmen, welcher es ist.
 
 ## Warum strukturelle Suche, wenn es grep gibt
 

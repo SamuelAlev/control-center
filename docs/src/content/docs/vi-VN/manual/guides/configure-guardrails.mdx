@@ -2,13 +2,13 @@
 title: Cấu hình rào chắn
 description: Đặt quy tắc cho phép, hỏi trước và từ chối cho hành động của agent, kiểm thử chúng bằng công cụ thăm dò Nếu như và tinh chỉnh mức tự chủ theo từng space.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/cau-hinh-rao-chan
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Hướng dẫn này chỉ cho bạn cách cấu hình rào chắn: những quy tắc quyết định một
 hành động của agent được chạy, hỏi phê duyệt trước, hay bị từ chối.
 
-Rào chắn bao phủ mười ba lớp hiệu ứng mà mọi công cụ có thể thay đổi trạng thái
+Rào chắn bao phủ mười bốn lớp hiệu ứng mà mọi công cụ có thể thay đổi trạng thái
 đều khai báo. Chúng được thực thi phía máy chủ ngay tại thời điểm công cụ được
 gọi, chứ không bao giờ bằng một chỉ dẫn trong prompt.
 
@@ -21,7 +21,7 @@ gọi, chứ không bao giờ bằng một chỉ dẫn trong prompt.
 4. Để bỏ một quy tắc bạn đã đặt, nhấn nút đặt lại xuất hiện ở cuối hàng đó
    (**Xóa về kế thừa**) — quyết định sẽ quay về phạm vi rộng hơn
 
-Mỗi hàng hiển thị quyết định hiệu lực dưới dạng thẻ trạng thái và một huy hiệu cho
+Mỗi hàng hiển thị thiết lập của hành động dưới dạng thẻ trạng thái và một huy hiệu cho
 biết nó đến từ đâu: **Phạm vi này**, **Kế thừa** hoặc **Mặc định tích hợp**. Ma
 trận này được giải quyết ở chế độ Agent (`chat`), nên **Preset chế độ** không bao
 giờ xuất hiện ở đây — hãy dùng công cụ thăm dò Nếu như với một chế độ chỉ đọc được
@@ -33,6 +33,18 @@ Việc viết một quy tắc cần vai trò `admin`. Việc đọc ma trận th
 việc, rồi chạy công cụ thăm dò Nếu như bên dưới trên `git push origin main`. Kết
 quả đọc là `deny` với nguồn `workspace`.
 
+## Xem lại và thu hồi phê duyệt có thời hạn
+
+Trả lời thẻ phê duyệt bằng **Phê duyệt trong 8 giờ** sẽ ghi một phê duyệt có thời hạn: một quy tắc cho phép cùng loại hành động đi qua mà không hỏi cho đến khi nó kết thúc. Mỗi phê duyệt được liệt kê bên dưới hành động mà nó thuộc về.
+
+1. Vào **Cài đặt → Không gian làm việc → Quyền của agent** và chọn phạm vi. Phê duyệt được ghi cho space mà câu hỏi xuất phát từ đó, nên chọn **Space** rồi chọn space đó
+2. Đọc mục hiển thị bên dưới hàng của hành động: nó cho phép gì (ví dụ, push tới các nhánh khớp `feature/**`), cụm từ **Phê duyệt có thời hạn**, ai đã cấp nếu là người khác, và khi nào nó kết thúc
+3. Để kết thúc ngay, trỏ tới mục đó và nhấn **Thu hồi**. Agent sẽ hỏi lại từ hành động tiếp theo của nó
+
+Hàng vẫn hiển thị thiết lập riêng của hành động, và một dòng bên dưới đếm các trường hợp được liệt kê bên dưới mà vẫn được cho phép. Các quy tắc có điều kiện do một mẫu viết ra xuất hiện trong cùng danh sách, và các quy tắc lệnh nằm trong nhóm **Lệnh** sau hành động cuối cùng. Ở phạm vi không gian làm việc, một ghi chú dưới phần tóm tắt đếm các phê duyệt có thời hạn được đặt cho từng space hoặc agent riêng lẻ. Ở một space hoặc agent, nó đếm các phê duyệt của không gian làm việc, vốn cũng áp dụng ở đó.
+
+Phê duyệt có thời hạn chỉ miễn một câu hỏi. Nó không bao giờ ghi đè **Từ chối**: nếu bạn đặt một hành động thành **Từ chối** khi một phê duyệt có thời hạn cho hành động đó vẫn còn hiệu lực, mục của phê duyệt đó hiển thị **không có hiệu lực khi bị từ chối** cho đến khi nó kết thúc hoặc bạn thu hồi phê duyệt. Đổi thiết lập của một hành động sẽ giữ nguyên các phê duyệt có thời hạn của nó, và thu hồi một phê duyệt sẽ giữ nguyên thiết lập.
+
 ## Hiểu cách một quyết định được giải quyết
 
 Việc giải quyết tuân theo **mức cụ thể trước, rồi đến mức hạn chế**:
@@ -40,7 +52,7 @@ Việc giải quyết tuân theo **mức cụ thể trước, rồi đến mức
 1. Quy tắc **Space**, rồi **agent**, rồi **không gian làm việc**. Phạm vi đầu tiên
    có quy tắc khớp sẽ quyết định và việc giải quyết dừng lại
 2. Nếu không quy tắc nào khớp, **preset chế độ** được áp dụng — một chế độ chỉ đọc
-   (plan, review, orchestrate) từ chối mười một trong mười ba lớp
+   (plan, review, orchestrate) từ chối mười hai trong mười bốn lớp
 3. Nếu chế độ không có gì để nói, **mặc định tích hợp** được áp dụng
 
 Trong cùng một phạm vi, một quy tắc lệnh được giải quyết theo tiền tố khớp dài
@@ -67,7 +79,7 @@ này là có chủ đích: một lượt chạy không qua cổng còn tệ hơn
 | Tạo một commit               | Cho phép         |
 | Push lên remote              | Hỏi trước        |
 | Mở một pull request          | Hỏi trước        |
-| Xuất bản review hoặc merge   | Hỏi trước        |
+| Cập nhật hoặc hợp nhất một pull request | Hỏi trước        |
 | Ghi vào tracker bên ngoài    | Hỏi trước        |
 | Truy cập mạng                | Cho phép         |
 | Đọc một secret               | Cho phép         |
@@ -75,6 +87,7 @@ này là có chủ đích: một lượt chạy không qua cổng còn tệ hơn
 | Chạy một tiến trình          | Cho phép         |
 | Thay đổi cấu trúc không gian làm việc | Cho phép |
 | Điều khiển một enclosure (rig) | Cho phép       |
+| Chạy lệnh trên máy chủ         | Hỏi trước      |
 
 Danh mục này là đóng. Một công cụ mới được phát hành mà không khai báo các lớp
 của nó sẽ trượt một bài kiểm thử ratchet trong CI, nên không thứ gì xuất hiện với
@@ -86,14 +99,13 @@ Trước khi thay đổi một quy tắc, hãy kiểm tra xem chính sách hiệ
 nó thế nào.
 
 1. Trên cùng trang đó, cuộn tới **Nếu như?**
-2. Chọn một **Hành động** (một trong mười ba lớp)
+2. Chọn một **Hành động** (một trong mười bốn lớp)
 3. Tùy chọn điền **Lệnh** (ví dụ `git push origin main`), **Agent**,
    **Space** và **Chế độ**
 4. Đọc kết quả: quyết định, lý do và **Nguồn:**
 
 Công cụ thăm dò chạy đúng bộ giải quyết mà đường thực thi dùng, dựa trên các quy
-tắc đang hoạt động của bạn, nên câu trả lời là chính xác. Nếu nó khiến bạn bất
-ngờ, hãy sửa một quy tắc trong ma trận bên trên rồi thăm dò lại.
+tắc đang hoạt động của bạn, nên câu trả lời là chính xác. Khi một phê duyệt có thời hạn quyết định, nguồn sẽ hiển thị **Phê duyệt có thời hạn** kèm phạm vi của nó. Nếu câu trả lời khiến bạn bất ngờ, hãy sửa một quy tắc trong ma trận bên trên rồi thăm dò lại.
 
 ## Đặt nút tự chủ của một space
 

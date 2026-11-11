@@ -2,7 +2,7 @@
 title: Révision par IA
 description: Comment une demande de tirage en vient à être révisée — espaces de révision, nœuds de révision et consensus des pairs, cohortes et axes, le verdict Ship/Hold/Block, et pourquoi la publication reste une étape que vous franchissez vous-même.
 slug: fr-CA/manuel/concepts/revision-par-ia
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## La forme d'une révision
@@ -224,8 +224,15 @@ Quand vous appuyez sur **Publier sur GitHub** :
   a appuyé dessus, avec sa propre connexion GitHub : le verrou de mise en
   production lui appartient, la révision aussi. Une publication sans personne
   derrière relève de l'automatisation, qui n'approuve jamais : Ship part alors en
-  `COMMENT` et, sur Control Center Connect, la publication est attribuée avec le
-  préfixe `**Control Center** (for @login):`.
+  `COMMENT`, et les @-mentions des constats sont rendues inertes, de sorte que la
+  publication n'avertit personne. Elle est publiée par le bot, sauf sur
+  l'application partagée Control Center Connect lorsque l'opérateur de Connect n'a
+  pas inscrit cette installation : elle part alors avec la connexion GitHub de la
+  personne responsable, sous son nom, attribuée
+  avec le préfixe `**Control Center** (for @login):`. Un serveur ou un espace de
+  travail disposant de sa propre application GitHub publie toujours en tant que
+  bot. Un agent qui appelle l'outil MCP ne peut publier que la révision de son
+  propre espace.
 
 La publication déclare la classe d'action `prPublish`, de sorte que le point de
 contrôle des garde-fous la soumet à un verrou comme toute action mutante — elle

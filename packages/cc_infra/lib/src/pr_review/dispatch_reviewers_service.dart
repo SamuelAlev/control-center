@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/review_space_association.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/review_space_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
@@ -11,7 +12,6 @@ import 'package:cc_domain/features/pipelines/domain/ports/dispatch_reviewers_por
 import 'package:cc_domain/features/pr_review/domain/services/review_guidelines.dart';
 import 'package:cc_domain/features/pr_review/domain/services/reviewer_matching_service.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:path/path.dart' as p;
 import 'package:pool/pool.dart';
 
@@ -82,7 +82,7 @@ class DispatchReviewersService implements DispatchReviewersPort {
   /// [cohortBrief] is the deterministic review-area map (markdown) computed
   /// from the code graph before the fan-out: reviewers walk areas in impact
   /// order and stamp each finding with its `cohort_key` so the Review Hub
-  /// routes findings into areas. Null keeps the legacy brief.
+  /// routes findings into areas. Null sends the brief without an area map.
   @override
   Future<Map<String, dynamic>> dispatch({
     required String spaceId,

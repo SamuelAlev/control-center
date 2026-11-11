@@ -2,7 +2,7 @@
 title: レビュアーエージェントをディスパッチ
 description: PR ビュー、MCP ツール、またはパイプラインステップから、専門のレビュアーエージェントを PR に送り込みます。
 slug: ja-JP/マニュアル/ハウツーガイド/レビュアーのディスパッチ
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 このガイドでは、プルリクエストをレビューするためにレビュアーエージェントを
@@ -88,7 +88,7 @@ Step の後に追加したノードも実行されます。同じ上流ステッ
 | イベント               | 発火するタイミング                                                                                                        | ペイロードのキー                                              |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `PullRequestPublished` | PR が **Control Center 経由で**オープンされた — コンポーズ画面、またはエージェントが `pr_lifecycle.publish` を呼び出した場合 | `pr_id`、`workspace_id`、`repo_owner`、`repo_name`            |
-| `ExternalPrDetected`   | PR ポーリングサービスが、GitHub 上で直接オープンされた PR を検出した                                                       | `repo_owner`、`repo_name`、`pr_number`、`pr_title`、`author`  |
+| `ExternalPrDetected`   | PR ポーリングサービスが、GitHub 上で直接オープンされた PR を検出した                                                       | `repo_owner`、`repo_name`、`repo_full_name`、`pr_number`、`pr_title`、`author`  |
 
 github.com でオープンされた PR は `PullRequestPublished` を発生させないため、その
 イベントだけに接続されたテンプレートはそれを認識しません。また、

@@ -2,7 +2,7 @@
 title: 聊天橋接
 description: 聊天橋接的供應商、指令、憑證、能力、RPC 操作與儲存方式。
 slug: zh-TW/手冊/參考/聊天橋接
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## 供應商
@@ -150,7 +150,7 @@ Control Center 在建立或編輯應用程式時所強制指定的結構性設�
 | 提及已被接受                | `Working on it…`                                               |
 | 步驟 `repo`                 | `Cloning <repo>…`                                              |
 | 步驟 `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| 步驟 `script`               | `Running the setup script for <repo>…`                         |
+| 步驟 `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | 步驟 `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`，尚無步驟    | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Control Center 在建立或編輯應用程式時所強制指定的結構性設�
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 連線憑證                   | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | 未完成的引導式設定         | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| 舊版 Slack 檔案            | `<dataDir>/<workspaceId>/slack_credentials.json` 和 `slack_app_setup.json`，讀取一次並原地遷移               |
 
 憑證存放在工作區資料庫的旁邊，而不是裡面：刪除工作區會連帶移除它的聊天權杖，而 `workspace.export` 或備份只會複製 `workspace.db`——因此一個交給別人的工作區不會夾帶仍然有效的機器人權杖。寫入是原子性的（暫存檔加上重新命名），並收緊為僅限擁有者。
 

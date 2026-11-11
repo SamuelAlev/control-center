@@ -2,7 +2,7 @@
 title: پائپ لائن قدم
 description: پائپ لائن قدم کی اقسام، قدم باڈی کلیدیں، اُن کی کنفیگریشن اور قدم کے نتائج کا حوالہ۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/پائپ-لائن-قدم
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 ایک پائپ لائن قدم کے دو آزاد محور ہوتے ہیں:
@@ -61,7 +61,7 @@ Control Center کے OS sandbox کے اندر، `<cc_root>/pipelines/<pipelineRun
 
 ### `pipeline.condition`
 
-روٹر باڈی — `config.extras` پڑھتی ہے، ایک شرط کا جائزہ لیتی ہے اور `StepResult.route(key)` واپس کرتی ہے۔ شرطیں JavaScript اظہار **نہیں** ہیں؛ ترجیحی ترتیب کے ساتھ تین تحریری شکلیں معاون ہیں:
+روٹر باڈی — `config.extras` پڑھتی ہے، ایک شرط کا جائزہ لیتی ہے اور `StepResult.route(key)` واپس کرتی ہے۔ شرطیں JavaScript اظہار **نہیں** ہیں؛ ترجیحی ترتیب کے ساتھ دو تحریری شکلیں معاون ہیں:
 
 - **پریڈیکیٹ ٹری** (`extras.predicate`) — ایک بولین ٹری جو `"true"` / `"false"` روٹ کرتا ہے۔ ہر نوڈ ایک میپ ہے جس میں ایک `type` ہوتا ہے:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — جب فہرست میں شامل کوئی بھی پاتھ ڈسک پر موجود ہو تو true؛ `negate` اسے پلٹ دیتا ہے؛ `recursive` ذیلی ڈائریکٹریز میں بھی تلاش کرتا ہے (`.git`، `node_modules`، `build`، `.dart_tool` چھوڑ کر)۔ نسبتی پاتھ `state[baseKey]` (ڈیفالٹ `repo_local_path`) کے مقابلے میں حل ہوتے ہیں، ورنہ فی رن ورک اسپیس ڈائریکٹری کے۔
@@ -69,19 +69,28 @@ Control Center کے OS sandbox کے اندر، `<cc_root>/pipelines/<pipelineRun
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — بولین گروپس۔
   - `{"type": "not", "of": <predicate>}` — نفی۔
 - **سوئچ** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`؛ پہلے ایسے کیس پر روٹ کرتا ہے جسے اسٹیٹ ویلیو بڑے/چھوٹے حروف کے فرق کے بغیر شامل ہو، ورنہ `default` پر۔
-- **موازنہ** (پرانی اعلیٰ سطحی `extras.left` / `extras.op` / `extras.right`) — ایک `comparison` پریڈیکیٹ کے برابر، اُن ٹیمپلیٹس کے لیے رکھا گیا جو ٹری سے پہلے لکھے گئے تھے۔
 
 نوڈ سے نکلنے والے کناروں کے ساتھ ایک `routeKey` ہوتی ہے جو واپس کی گئی کلید سے مماثل ہونی چاہیے۔
 
 ### `prReview.comment`
 
-یکجا شدہ نتائج کو GitHub PR کلائنٹ کے ذریعے PR ریویو تبصرے کے طور پر پوسٹ کرتا ہے۔
+یکجا شدہ نتائج، یا step کا اپنا `extras.message`، کو GitHub PR کلائنٹ کے ذریعے PR ریویو تبصرے کے طور پر پوسٹ کرتا ہے۔
 
-| اسٹیٹ کلید               | تفصیل                                        |
-| ------------------------ | -------------------------------------------- |
-| `repo_full_name`         | `owner/repo` (لازمی)                         |
-| `pr_number`              | PR نمبر — int یا عددی سٹرنگ (لازمی)          |
-| `consolidated_findings`  | تبصرے کی باڈی (لازمی)                        |
+| کلید                    | کہاں سے پڑھا جاتا ہے | تفصیل                                                                   |
+| ----------------------- | --------------------- | ----------------------------------------------------------------------- |
+| `repo_full_name`        | trigger payload       | `owner/repo` (لازمی)                                                    |
+| `pr_number`             | trigger payload       | PR نمبر، ایک مثبت int یا عددی سٹرنگ (لازمی)                              |
+| `consolidated_findings` | state                 | تبصرے کی باڈی جب step میں `message` نہ ہو                                 |
+
+Pull request صرف رن کے trigger payload سے آتا ہے، کبھی اس state سے نہیں جسے کوئی step رن کے دوران بدل سکے۔ پوسٹ کیے گئے متن میں @-mentions غیر مؤثر کر دیے جاتے ہیں، تاکہ تبصرہ کسی کو مطلع نہ کرے۔
+
+`message` اپنے `{{key}}` placeholders کو یوں رینڈر کرتا ہے:
+
+- `repo_full_name`، `repo_owner`، `repo_name` اور `pr_number` اُس pull request کو رینڈر کرتے ہیں جس پر step پوسٹ کرتا ہے۔
+- `author` trigger payload سے جوں کا توں رینڈر ہوتا ہے، صرف تب جب وہ forge پر ایک درست username ہو؛ ورنہ step ناکام ہو جاتا ہے۔
+- `consolidated_findings` خام markdown کے طور پر رینڈر ہوتا ہے، جس کے @-mentions غیر مؤثر کیے جاتے ہیں۔
+- باقی ہر value لفظی متن کے طور پر رینڈر ہوتی ہے: ایک سطر میں، markdown کے رموز escape کیے ہوئے اور @-mentions غیر مؤثر کیے ہوئے۔
+- جو placeholder کسی بھی value تک حل نہ ہو، وہ step کو ناکام کر دیتا ہے۔
 
 `StepResult.terminal` واپس کرتا ہے، اور اسٹیٹ میں `comment_review_id` اور `commented_at` ہوتے ہیں۔
 

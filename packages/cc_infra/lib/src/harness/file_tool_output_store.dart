@@ -408,9 +408,9 @@ class FileToolOutputStore implements ToolOutputStore {
       );
     }
 
-    // No usable index (written by an older build, a tampered length, or a
-    // corrupt index): decode the whole original. Slower, but exact — and a
-    // bounded ceiling keeps a tampered file from exhausting memory.
+    // No usable index (missing, a tampered length, or a corrupt index):
+    // decode the whole original. Slower, but exact — and a bounded ceiling
+    // keeps a tampered file from exhausting memory.
     if (actualBytes > maxBytes) {
       throw const FormatException('stored output exceeds the read ceiling');
     }

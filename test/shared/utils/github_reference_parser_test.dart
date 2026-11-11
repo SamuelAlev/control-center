@@ -317,18 +317,12 @@ void main() {
     test('parses GitHub web URL (first path via parseGitHubUrl)', () {
       final ref = parseAnyGitHubReference(
         'https://github.com/flutter/flutter/pull/42',
-        currentOwner: 'unused',
-        currentRepo: 'unused',
       );
       expect(ref, isA<GitHubPrReference>());
     });
 
     test('parses app scheme URL (fallback to parseGitHubAppScheme)', () {
-      final ref = parseAnyGitHubReference(
-        'control-center://pr/owner/repo/99',
-        currentOwner: 'unused',
-        currentRepo: 'unused',
-      );
+      final ref = parseAnyGitHubReference('control-center://pr/owner/repo/99');
       expect(ref, isA<GitHubPrReference>());
       final pr = ref as GitHubPrReference;
       expect(pr.owner, 'owner');
@@ -337,14 +331,7 @@ void main() {
     });
 
     test('returns null when neither parser matches', () {
-      expect(
-        parseAnyGitHubReference(
-          'https://example.com/not/github',
-          currentOwner: 'ignored',
-          currentRepo: 'ignored',
-        ),
-        isNull,
-      );
+      expect(parseAnyGitHubReference('https://example.com/not/github'), isNull);
     });
 
     test('prefers parseGitHubUrl result over parseGitHubAppScheme', () {
@@ -352,8 +339,6 @@ void main() {
       // the web URL path should take priority.
       final ref = parseAnyGitHubReference(
         'https://github.com/flutter/flutter/pull/10',
-        currentOwner: 'ignored',
-        currentRepo: 'ignored',
       );
       expect(ref, isA<GitHubPrReference>());
       final pr = ref as GitHubPrReference;

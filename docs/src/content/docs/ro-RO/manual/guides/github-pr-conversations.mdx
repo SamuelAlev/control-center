@@ -2,7 +2,7 @@
 title: Vorbește cu Control Center dintr-un PR GitHub
 description: Cere-i lui Control Center o revizuire sau pune o întrebare chiar din conversația PR-ului, fără webhook și fără URL public.
 slug: ro-RO/manual/ghiduri-practice/conversatii-pr-github
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Acest ghid îți arată cum să lucrezi cu Control Center fără să părăsești GitHub:
@@ -32,25 +32,7 @@ publică.
 
 ## Găsește numele botului tău
 
-Menționează `@usectrl`, contul GitHub dedicat al Control Center. Acesta este declanșatorul implicit; banda GitHub a spațiului tău de lucru gestionează în continuare solicitarea și publică răspunsurile. Nu ai nevoie de acreditările contului `usectrl`.
-
-Loginul propriu al aplicației, `<appslug>[bot]`, și forma scurtă `@appslug` funcționează și ele. Ca să găsești acest alias opțional pe propria ta aplicație:
-
-1. Mergi la **Setări → Server → Autentificare unică** și derulează până la
-   cardul **Aplicații provider**
-2. Deschide secțiunea **GitHub** și apasă **Test**
-3. Copiază **Login bot** când se completează. Dacă încă afișează indicația de
-   câmp gol, loginul este întotdeauna `<appslug>[bot]` — tastează asta, sau
-   forma scurtă `@appslug`
-
-GitHub nu afișează conturile App în autocompletarea pentru `@`, așa că aliasurile aplicației trebuie tastate sau copiate. Utilizatorul dedicat `@usectrl` este invocarea implicită; atât `@myapp`, cât și `@myapp[bot]` rămân aliasuri acceptate ale aplicației.
-
-:::note[Alege un nume de aplicație distinct]
-Forma scurtă este potrivită ca text. Dacă un utilizator GitHub obișnuit are din
-întâmplare același slug ca aplicația ta, menționarea acelui utilizator prin forma
-scurtă ajunge tot la bot. Forma completă `@myapp[bot]` este întotdeauna lipsită
-de ambiguitate.
-:::
+Menționează `@usectrl`, contul GitHub dedicat al Control Center. Este singurul declanșator: menționarea contului propriu al aplicației nu face nimic; banda GitHub a spațiului tău de lucru gestionează în continuare solicitarea și publică răspunsurile. Nu ai nevoie de acreditările contului `usectrl`.
 
 ## Cere o revizuire din GitHub
 
@@ -122,8 +104,8 @@ Serverul rezolvă autorul unui comentariu, sau pe cel care a adăugat eticheta
 
 - **Contul GitHub trebuie să fie autentificat** pe acest server. Potrivirea se
   face după id-ul numeric al contului GitHub, niciodată după login.
-  Autentifică-te din **Setări → Spațiu de lucru → Profil și identitate →
-  Găzduire de cod**
+  Autentifică-te din **Setări →
+  Tu → Profil → Găzduire de cod**
 - **Persoana trebuie să fie membru cu un rol de scriere** (`member`, `admin`
   sau `owner`) în spațiul de lucru care leagă repozitoriul
 - **Persoana trebuie să poată face push** în repozitoriu pe GitHub. Răspunsurile
@@ -147,7 +129,7 @@ Același lucru e valabil pentru etichetă.
 | Lucru                | Comportament                                                             |
 | -------------------- | ------------------------------------------------------------------------ |
 | Confirmare           | 👀 de pe contul tău pe comentariu (sau pe PR, pentru etichetă), în decurs de o scanare |
-| Răspunsuri           | Postate în firul în care a fost pusă întrebarea, începând cu `**Control Center** (for @your-login):`. Pe o aplicație proprie, autorul este botul aplicației; prin Connect este contul tău, acționând prin aplicația partajată |
+| Răspunsuri           | Postate în firul în care a fost pusă întrebarea, începând cu `**Control Center** (for @your-login):`. Autorul este botul aplicației. Pe aplicația partajată Connect, un răspuns dintr-un fir de revizuire este scris de contul tău, dacă operatorul Connect nu a trecut această instalare pe listă |
 | Atribuirea în spațiu | Întrebarea este a ta; agentul rulează în numele tău, sub setările de autonomie ale spațiului |
 | Revizuiri            | Constatările ajung în spațiul de revizuire; publicarea pe GitHub este manuală |
 
@@ -168,9 +150,6 @@ perioade de nefuncționare este prins la scanarea următoare.
   înregistra ceva, așa că legarea lui mai târziu livrează totuși
 - Ești autentificat în GitHub pe acest server, membru cu un rol de scriere și
   poți face push în repo? Serverul îi ignoră pe toți ceilalți fără să răspundă
-- Pe aplicația partajată a Control Center, instalarea organizației este
-  autorizată pentru acest server? Vezi
-  [Autorizează acest server pentru o organizație](/ro-RO/manual/ghiduri-practice/github-app/#autorizează-acest-server-pentru-o-organizație)
 - Tot nimic? Jurnalul serverului numește scanarea și PR-ul când ceva eșuează;
   caută `pr_conversation:` (interogatorul) și `github_pr_conversation:` (puntea)
 

@@ -1,6 +1,8 @@
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show ServerOwnerRequiredException;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -48,6 +50,9 @@ class AddWorkspaceForm extends ConsumerStatefulWidget {
 class _AddWorkspaceFormState extends ConsumerState<AddWorkspaceForm> {
   late final _nameController = TextEditingController(text: widget.initialName);
   String? _logoPath;
+
+  /// The picked image's extension with its dot (`.png`), from its name.
+  String _logoExtension = '';
   String? _error;
   Uint8List? _logoBytes;
   bool _saving = false;
@@ -70,9 +75,9 @@ class _AddWorkspaceFormState extends ConsumerState<AddWorkspaceForm> {
     }
 
     // Read the bytes rather than keeping only a path: `File(path)` is a
-    // `dart:io` call this widget also runs on web, where it throws. The path
-    // still travels to the host (it names the file server-side); the preview
-    // renders from memory.
+    // `dart:io` call this widget also runs on web, where it throws, and a
+    // path names a file on this machine, not the server. The bytes travel
+    // to the server (`fs.persistLogoBytes`); the preview renders from memory.
     final bytes = await file.readAsBytes();
     if (!mounted) {
       return;
@@ -80,6 +85,7 @@ class _AddWorkspaceFormState extends ConsumerState<AddWorkspaceForm> {
     setState(() {
       _logoPath = file.path;
       _logoBytes = bytes;
+      _logoExtension = _extensionOf(file.name);
     });
   }
 
@@ -96,19 +102,31 @@ class _AddWorkspaceFormState extends ConsumerState<AddWorkspaceForm> {
     });
     final id = await ref
         .read(createWorkspaceProvider.notifier)
-        .create(name: name, logoPath: _logoPath);
+        .create(
+          name: name,
+          logoBytes: _logoBytes,
+          logoExtension: _logoExtension,
+        );
     if (!mounted) {
       return;
     }
     if (id != null) {
       widget.onCreated(id);
     } else {
-      final asyncVal = ref.read(createWorkspaceProvider);
+      final error = ref.read(createWorkspaceProvider).error;
+      if (error is ServerOwnerRequiredException) {
+        // Re-read the right, so every create affordance follows the server.
+        ref.invalidate(currentIdentityProvider);
+      }
       setState(() {
         _saving = false;
-        _error = l10n.failedToCreateWorkspace(
-          '${asyncVal.error ?? l10n.somethingWentWrong}',
-        );
+        // Refused because only the server owner may create (the create right
+        // was withdrawn after this form opened): say so, not the raw error.
+        _error = error is ServerOwnerRequiredException
+            ? l10n.workspaceCreateOwnerOnly
+            : l10n.failedToCreateWorkspace(
+                '${error ?? l10n.somethingWentWrong}',
+              );
       });
     }
   }
@@ -269,4 +287,11 @@ class _LogoPicker extends StatelessWidget {
       ),
     );
   }
+}
+
+/// [name]'s extension with its dot, lower-cased (`Logo.PNG` → `.png`); empty
+/// when it has none.
+String _extensionOf(String name) {
+  final dot = name.lastIndexOf('.');
+  return dot <= 0 ? '' : name.substring(dot).toLowerCase();
 }

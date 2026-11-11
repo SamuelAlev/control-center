@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_persistence/database/workspace/workspace_database.dart';
 import 'package:cc_persistence/mappers/repo_mapper.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +18,8 @@ void main() {
           path: '/path/to/repo',
           remoteOwner: 'acme',
           remoteName: 'project',
+          linkedByUserId: 'u-ada',
+          forgeRepoId: '42',
           position: 0,
           linkedAt: DateTime(2026),
           createdAt: DateTime(2026, 1, 15),
@@ -32,6 +35,9 @@ void main() {
         expect(domain.remoteName, 'project');
         expect(domain.createdAt, DateTime(2026, 1, 15));
         expect(domain.updatedAt, DateTime(2026, 3, 20));
+        expect(domain.forge, ForgeHost.github);
+        expect(domain.linkedBy, 'u-ada');
+        expect(domain.forgeRepoId, '42');
       },
     );
 
@@ -46,6 +52,8 @@ void main() {
           path: '/local/repo',
           remoteOwner: '',
           remoteName: '',
+          linkedByUserId: '',
+          forgeRepoId: '',
           position: 0,
           linkedAt: DateTime(2026),
           createdAt: DateTime(2025, 6, 1),
@@ -81,6 +89,8 @@ void main() {
             path: '/a',
             remoteOwner: 'a',
             remoteName: 'b',
+            linkedByUserId: '',
+            forgeRepoId: '',
             position: 0,
             linkedAt: DateTime(2026),
             createdAt: DateTime(2026, 1, 1),
@@ -93,6 +103,8 @@ void main() {
             path: '/c',
             remoteOwner: 'c',
             remoteName: 'd',
+            linkedByUserId: '',
+            forgeRepoId: '',
             position: 0,
             linkedAt: DateTime(2026),
             createdAt: DateTime(2026, 2, 1),
@@ -120,6 +132,8 @@ void main() {
             path: '/a',
             remoteOwner: 'a',
             remoteName: 'b',
+            linkedByUserId: '',
+            forgeRepoId: '',
             position: 0,
             linkedAt: DateTime(2026),
             createdAt: DateTime(2026, 1, 1),

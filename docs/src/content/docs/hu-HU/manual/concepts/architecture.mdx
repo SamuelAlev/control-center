@@ -3,7 +3,7 @@ title: "Architektúra"
 description: "Hogyan épül fel a Control Center: vékonykliens-szervermodell, funkcióközpontú Clean Architecture, valamint portok és adapterek."
 dateModified: 2026-09-19
 slug: hu-HU/kezikonyv/fogalmak/architektura
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Áttekintés
@@ -60,7 +60,7 @@ A `packages/cc_domain/lib/core/domain/` azokat az entitásokat és tárolókat t
 - Memóriaentitások: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Megosztott értékobjektumok: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Megosztott portok: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domain-szolgáltatások: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Domain-szolgáltatások: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + eseménytípusok (munkaterület/ügynök, PR/átnézés, üzenetküldés, jegykezelés, pipeline, orchestráció, memória, naptár/megbeszélések, identitás és tagság, megfigyelhetőség)
 
 ## Identitás és többszereplős mód
@@ -132,7 +132,6 @@ A szerver birtokolja az igazán fontos hitelesítő adatokat: az ügynökindít�
 
 - Titkok a `flutter_secure_storage`-ban (macOS kulcstároló, Windows hitelesítőadat-kezelő, Linux libsecret) — a kliens eszközhitelesítő adata és a távoli párosítási kulcsok, nem a szolgáltatói tokenek
 - `shared_preferences` csak nem érzékeny beállításokhoz (téma, betűtípus, elrendezés)
-- A régebbi telepítésekből visszamaradt szolgáltatói titkokat a `features/auth/providers/credential_migration.dart` egyszer átadja a szervernek, majd törli a kliens kulcstárolójából
 
 ## Az architektúra kikényszerítése
 

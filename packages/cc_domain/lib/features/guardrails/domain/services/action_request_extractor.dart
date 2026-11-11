@@ -67,10 +67,11 @@ class ActionRequestExtractor {
   /// Argument keys carrying a countable magnitude.
   static const countKeys = <String>{'count', 'limit', 'max_files'};
 
-  /// Extracts what policy can constrain from [args].
+  /// Extracts what policy can constrain from [args], a call of [tool].
   ActionRequest extract(
     Map<String, dynamic> args, {
     Set<ActionClass> classes = const {},
+    String? tool,
   }) {
     final paths = <String>[];
     final refs = <String>[];
@@ -101,6 +102,7 @@ class ActionRequestExtractor {
       refs: refs,
       hosts: hosts,
       magnitude: magnitude,
+      tool: tool,
     );
   }
 

@@ -2,7 +2,7 @@
 title: Análises de uso
 description: O que o Control Center registra quando as análises de uso estão ativadas, quem decide e o que nunca é enviado.
 slug: pt-BR/manual/referencia/analises-de-uso
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 O Control Center pode enviar **eventos de uso pseudônimos** para uma instância do [Umami](https://umami.is). As análises de uso ficam **desativadas até que o operador do servidor as ative**. A configuração pertence ao servidor e vale para todos os clientes conectados a ele: o aplicativo de desktop, o aplicativo web, o celular e o próprio servidor.
@@ -13,7 +13,7 @@ As análises de uso são separadas de **Compartilhar relatórios de falhas**, um
 
 | Opção | Onde | Efeito |
 | --- | --- | --- |
-| **Compartilhar análises de uso** | Onboarding (etapa do sandbox) e **Configurações → Privacidade**. Só o operador do servidor pode alterá-la; os demais membros veem o valor atual somente para leitura | Para todo o servidor. Armazenada como `telemetry.usage_analytics` nas configurações do servidor. Desativada a menos que seja definida como `true` |
+| **Compartilhar análises de uso** | Onboarding (etapa do sandbox) e **Configurações → Servidor → Diagnóstico e privacidade**. Só o operador do servidor pode alterá-la; os demais membros veem o valor atual somente para leitura | Para todo o servidor. Armazenada como `telemetry.usage_analytics` nas configurações do servidor. Desativada a menos que seja definida como `true` |
 | Tipo de build | Automático | Builds de debug e de profile não enviam nada. Em vez disso, gravam cada evento no log de debug |
 | `CC_ANALYTICS_DEBUG=1` | Ambiente do `cc_server` ou o `.env` dele | Permite que builds de debug e de profile do servidor, e de todos os clientes conectados a ele, enviem eventos de verdade, para testes. A opção acima ainda precisa estar ativada |
 | `DO_NOT_TRACK=1` | Ambiente do `cc_server` | Interrompe os envios do próprio servidor, seja qual for o valor da opção. Os clientes continuam seguindo a opção |

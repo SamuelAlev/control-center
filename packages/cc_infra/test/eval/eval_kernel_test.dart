@@ -3,6 +3,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_infra/src/eval/eval_kernel.dart';
 import 'package:cc_infra/src/eval/magics_transform.dart';
 import 'package:cc_infra/src/harness/eval_tool.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:test/test.dart';
 
 import '../helpers/windows_safe_delete.dart';
@@ -91,6 +92,7 @@ void main() {
             language: KernelLanguage.python,
             launcher: HostKernelLauncher(
               workingDirectory: root.path,
+              processes: const HostToolProcessLauncher(),
               pythonExecutable: python,
             ),
             bridge: bridge,
@@ -145,6 +147,7 @@ void main() {
             language: KernelLanguage.python,
             launcher: HostKernelLauncher(
               workingDirectory: root.path,
+              processes: const HostToolProcessLauncher(),
               pythonExecutable: python,
             ),
             maxOutputChars: 200,
@@ -213,7 +216,10 @@ void main() {
       });
 
       test('reset drops the state', () async {
-        final tool = EvalTool(kernelFor: (_) => kernel);
+        final tool = EvalTool(
+          kernelFor: (_) => kernel,
+          hostConfined: true,
+        );
         build();
         await kernel.run('marker = 1');
         final after = await tool.execute({
@@ -225,7 +231,10 @@ void main() {
       });
 
       test('the tool surfaces an empty cell honestly', () async {
-        final tool = EvalTool(kernelFor: (_) => build());
+        final tool = EvalTool(
+          kernelFor: (_) => build(),
+          hostConfined: true,
+        );
         final result = await tool.execute({
           'code': 'x = 1',
           'description': 'Assign a variable',
@@ -235,7 +244,10 @@ void main() {
       });
 
       test('is exec tier and not parallel-safe', () {
-        final tool = EvalTool(kernelFor: (_) => build());
+        final tool = EvalTool(
+          kernelFor: (_) => build(),
+          hostConfined: true,
+        );
         expect(tool.approvalTier, ToolApprovalTier.exec);
         expect(tool.actionClasses, contains(ActionClass.processSpawn));
         expect(
@@ -257,6 +269,7 @@ void main() {
     test('requires a per-call description in the schema', () {
       final tool = EvalTool(
         kernelFor: (_) => fail('the kernel must not be resolved'),
+        hostConfined: true,
       );
       final schema = tool.inputSchema;
       expect(schema['required'], contains('description'));
@@ -266,6 +279,7 @@ void main() {
     test('rejects a call without a description before touching a kernel', () async {
       final tool = EvalTool(
         kernelFor: (_) => fail('the kernel must not be resolved'),
+        hostConfined: true,
       );
       final result = await tool.execute({
         'code': 'x = 1',

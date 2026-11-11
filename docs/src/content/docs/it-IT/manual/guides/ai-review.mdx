@@ -2,7 +2,7 @@
 title: Usa la revisione basata sull'IA
 description: Esegui la pipeline pr_review su una PR, leggi i rilievi e il verdetto, poi pubblica la revisione su GitHub.
 slug: it-IT/manuale/guide/revisione-ia
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Questa guida mostra come far revisionare una pull request agli agenti revisori e
@@ -121,9 +121,11 @@ Control Center invia **una sola** revisione GitHub. I rilievi già risolti o
 scartati vengono saltati. Il pulsante include ogni rilievo ancora aperto e, con
 **Ship**, invia `APPROVE`. (Lo strumento MCP `publish_review_to_github` usa
 come impostazione predefinita solo i rilievi confermati dai pari e non approva
-mai: pubblica come automazione, quindi lì `approve_on_ship` non ha effetto.) I
-rilievi ancorati a un file e a una
-riga diventano commenti inline; tutto il resto si ripiega nel corpo del
+mai: pubblica come automazione, quindi lì `approve_on_ship` non ha effetto. Questa
+pubblicazione automatica è inviata dal bot, tranne che sull'app condivisa Control
+Center Connect quando l'operatore di Connect non ha elencato questa installazione:
+allora parte con l'accesso GitHub personale della persona responsabile, a suo nome.) I rilievi ancorati a un file e a una riga diventano
+commenti inline; tutto il resto si ripiega nel corpo del
 riepilogo, ciascuno con un piè di pagina “— Control Center AI review” perché la
 fonte sia inequivocabile. Un verdetto **Block** viene inviato come
 `REQUEST_CHANGES`; **Hold** come `COMMENT`; **Ship** come `APPROVE` da questo
@@ -144,9 +146,7 @@ Impostazioni → Spazio di lavoro → Autorizzazioni degli agenti se vuoi che ve
 eseguita senza supervisione.
 :::
 
-Altre pipeline integrate pubblicano invece direttamente su GitHub: `cross_review`,
-`pr_triage`, `ticket_to_pr` e `pre_merge_gate` terminano ciascuna con un passaggio
-di commento. Solo `pr_review` trattiene il proprio output per te.
+Altre pipeline integrate pubblicano invece direttamente su GitHub: `cross_review`, `pr_triage`, `ticket_to_pr` e `pre_merge_gate` terminano ciascuna con un passaggio di commento, che viene pubblicato dal server. Solo `pr_review` trattiene il proprio output per te. Nessuna di esse esegue il merge né approva.
 
 ## Invia tu stesso i revisori
 

@@ -2,7 +2,7 @@
 title: Cadangkan dan pulihkan
 description: Ambil snapshot instalasi, pindahkan ruang kerja antar mesin, pulihkan satu ruang kerja atau semuanya, dan simpan salinannya di tempat lain.
 slug: id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Panduan ini membahas lima hal yang sebenarnya dilakukan orang dengan cadangan: membuatnya,
@@ -16,7 +16,8 @@ Semua yang ada di sini berada di **Pengaturan → Server → Cadangan & pemuliha
 
 - **Klien penuh** — aplikasi desktop atau web. Ponsel yang dipasangkan tidak bisa memicu satu pun dari tindakan ini, memang begitu desainnya.
 - Untuk membuat, menampilkan daftar, mengunduh, atau menghapus **snapshot instalasi**: **pemilik** instalasi.
-- Untuk tindakan per ruang kerja: **admin** ruang kerja itu untuk mengekspornya atau untuk menampilkan daftar dan mengunduh cadangan terjadwalnya, **pemilik** untuk mengimpor atau menghapusnya atau untuk menghapus salah satu cadangannya.
+- Untuk tindakan per ruang kerja: **admin** ruang kerja itu untuk mengekspornya atau untuk menampilkan daftar dan mengunduh cadangan terjadwalnya, **pemilik** untuk menghapusnya atau untuk menghapus salah satu cadangannya.
+- Untuk **memulihkan** ruang kerja, dari berkas yang diunggah, cadangan terjadwal, atau snapshot: [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server), yang juga harus menjadi pemilik ruang kerja tersebut. Pemulihan membuat server mengadopsi berkas basis data sebagai miliknya sendiri, jadi itu keputusan pemilik server. Semua orang lain melihat "Hanya pemilik server yang dapat memulihkan cadangan. Anda tetap bisa mengunduhnya." sebagai pengganti tindakan pemulihan.
 - Untuk pengunduhan dan pengunggahan: klien penuh yang dipasangkan, baik pada koneksi langsung maupun melalui relay dengan perantara. Kedua jalur membawa byte file melalui terowongan sumber daya terautentikasi dan terenkripsi ujung ke ujung yang sama; relay tidak dapat membacanya.
 
 ::::caution[Snapshot instalasi bersifat manual]
@@ -40,11 +41,13 @@ Kedua artefak itu **hanya basis data**:
 - **Snapshot instalasi** adalah direktori bertanda waktu: `manifest.json`, `global.db`, dan satu `<workspaceId>/workspace.db` per ruang kerja.
 - **Ekspor ruang kerja** adalah satu file `workspace.db` itu.
 
+Basis data ruang kerja adalah seluruh ruang kerja: percakapannya, log run, indeks kode, tautan repositori, definisi lingkungan, dan anggotanya. Ia juga menyimpan token webhook pipeline dan rahasia webhook sinkronisasi tiket ruang kerja, dalam bentuk yang dapat dibaca. Simpan cadangan atau ekspor ruang kerja yang diunduh seperti Anda menyimpan rahasia. Ia tidak memuat proses masuk penyedia, kunci perangkat, atau rahasia pengguna; semua itu berada di basis data global dan penyimpanan rahasia server.
+
 Keduanya tidak membawa sisa direktori data: `secrets.json` (kunci pemasangan, kredensial
 penyedia, SSO), `blobs/` milik ruang kerja (gambar yang ditempelkan ke pesan), `skills/`,
 `agents/`, `chat_credentials/`, audio rapat yang direkam, atau gambar rig. Sebagiannya bisa
 dibuang dan sebagiannya tidak — 
-[tabel lengkapnya ada di referensi](/id-ID/panduan-pengguna/referensi/cadangan/#what-a-backup-does-not-contain),
+[tabel lengkapnya ada di referensi](/id-ID/panduan-pengguna/referensi/cadangan/#apa-yang-tidak-dimuat-cadangan),
 dan menutupinya adalah tujuan [bagian di luar mesin](#menyalin-cadangan-ke-luar-mesin).
 
 ## Membuat snapshot seluruh instalasi
@@ -71,7 +74,7 @@ penyalinannya gagal — periksa log server.
 
 ## Menjadwalkan cadangan ruang kerja dan retensinya
 
-Buka **Pengaturan → Pipeline → Template pipeline** untuk ruang kerja tersebut dan cari
+Buka **Pengaturan → Ruang kerja → Template pipeline** untuk ruang kerja tersebut dan cari
 **Workspace backup**. Jadwalnya yang aktif berjalan setiap Minggu pukul 03:00 UTC:
 **Back up workspace**, diikuti **Delete backups older than** (bawaan 30 hari). Node
 kedua berjalan hanya setelah cadangan berhasil. Anda bisa mengubah jumlah hari retensi
@@ -95,7 +98,7 @@ menyatakan hal itu alih-alih menampilkan daftar cadangannya.
 
 Bentangkan sebuah baris untuk melihat setiap cadangan, dari yang terbaru:
 
-- **Pulihkan** mengganti basis data ruang kerja saat ini dengan cadangan ini. Ekspor ruang kerja dulu jika Anda mungkin perlu membatalkannya. Memerlukan **pemilik**.
+- **Pulihkan** mengganti basis data ruang kerja saat ini dengan cadangan ini. Ekspor ruang kerja dulu jika Anda mungkin perlu membatalkannya. Memerlukan pemilik server, yang juga harus menjadi pemilik ruang kerja.
 - **Unduh** menyimpan file di mesin yang sedang Anda gunakan. Cadangan tetap ada di server.
 - **Salin jalur** menyalin lokasinya di server.
 - **Hapus** menghapus cadangan ini secara permanen, setelah Anda mengetik nama ruang kerja. Memerlukan **pemilik**.
@@ -109,7 +112,7 @@ menghapusnya. **Pemilik** instalasi melihatnya di daftar yang sama, ditandai
 yang melihat baris tersebut.
 
 Cadangan itu tidak memiliki **Pulihkan**, karena tidak ada ruang kerja untuk tujuan
-pemulihan. Untuk mengembalikannya, unduh cadangan itu, buat ruang kerja, lalu unggah
+pemulihan. Untuk mengembalikannya, unduh cadangan itu, buat ruang kerja (hanya pemilik server yang dapat), lalu unggah
 filenya seperti dijelaskan di
 [Memindahkan ruang kerja ke instalasi lain](#memindahkan-ruang-kerja-ke-instalasi-lain).
 
@@ -150,9 +153,9 @@ Satu ruang kerja adalah satu file basis data, jadi menyerahkannya adalah operasi
 2. Di server **tujuan**, buat (atau pilih) ruang kerja yang akan menerimanya.
 3. Bentangkan ruang kerja itu, dan di bawah **Pulihkan dari perangkat ini** tekan **Pilih file lalu unggah**. Pilih `.db` yang Anda unduh.
 
-Jika kedua server adalah mesin yang sama tempat Anda bekerja, **Simpan di server** plus
-**Impor** → **Pilih file** melakukan hal yang sama tanpa perjalanan bolak-balik; path
-di dialog impor diselesaikan di host server.
+Langkah 3 adalah pemulihan, sehingga memerlukan pemilik server tujuan, yang juga harus memiliki ruang kerja itu.
+
+Jika kedua server adalah mesin yang sama tempat Anda bekerja, **Simpan di server** di sumber, lalu path file di **File basis data ruang kerja** dan **Impor** di tujuan, melakukan hal yang sama tanpa perjalanan bolak-balik; path itu diselesaikan di host server.
 
 :::caution[Impor menggantikan semuanya]
 Mengimpor menimpa semua yang saat ini dimiliki ruang kerja tujuan, dan tindakan ini tidak
@@ -167,11 +170,11 @@ kedua, perangkat yang dipasangkan dan id pengguna milik file itu berasal dari in
 asalnya dan tidak akan dikenali di instalasi ini — data ruang kerja itu sendiri tetap
 utuh, tetapi periksa ulang keanggotaannya setelah mengadopsinya.
 
-Token bot chat berada di samping basis data, bukan di dalamnya, jadi ruang kerja yang Anda
-serahkan kepada orang lain tidak membawa kredensial aktif. Instalasi penerima
-menghubungkan kembali tokennya sendiri.
+Token bot chat dan proses masuk penyedia berada di luar basis data, sehingga instalasi penerima menghubungkan kembali miliknya sendiri. Berkas itu tetap memuat token webhook pipeline dan rahasia webhook sinkronisasi tiket milik ruang kerja, sehingga ruang kerja yang Anda serahkan kepada orang lain ikut menyerahkan token dan rahasia tersebut. Lakukan rotasi setelahnya jika penerima tidak seharusnya memilikinya.
 
 ## Memulihkan satu ruang kerja dari snapshot
+
+Anda harus menjadi pemilik server dan pemilik ruang kerja tersebut.
 
 1. Di bawah **Snapshot instalasi**, bentangkan snapshot yang Anda inginkan.
 2. Temukan baris ruang kerja itu dan tekan **Pulihkan**.
@@ -183,8 +186,8 @@ yang sama secara berbeda.
 
 Sebuah baris bisa menyatakan **Sudah tidak ada di server ini**, dengan tombol **Pulihkan**
 nonaktif: snapshot memuat ruang kerja yang sudah tidak dimiliki instalasi ini. Pulihkan
-secara manual — buat ruang kerja, lalu di bawah **Data ruang kerja** impor ke dalamnya dari
-`<snapshot path>/<old workspace id>/workspace.db`. Snapshot yang dibentangkan menampilkan
+secara manual — buat ruang kerja (hanya pemilik server), lalu di bawah **Data ruang kerja** masukkan
+`<snapshot path>/<old workspace id>/workspace.db` di kolom **File basis data ruang kerja**-nya dan tekan **Impor**. Snapshot yang dibentangkan menampilkan
 **Path di server**-nya sendiri di kolom salin, dan judul barisnya adalah id ruang kerja
 lama, jadi kedua bagian path itu ada di depan Anda.
 
@@ -354,9 +357,11 @@ penyimpanannya.
 | Gejala                                                                  | Penyebab dan perbaikan                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Unduhan atau unggahan gagal setelah koneksi berubah                   | Coba lagi pada koneksi terpasang yang aktif. Jalur langsung dan relay sama-sama mendukung transfer file terenkripsi; keduanya tidak membuka fallback HTTP teks polos                          |
-| "Server menolak"                                                     | Peran. Membuat atau menampilkan daftar snapshot instalasi memerlukan operator instalasi. Mengunduh ruang kerja memerlukan admin, memulihkannya memerlukan pemilik, zip seluruh snapshot memerlukan operator instalasi |
-| "Server ini tidak punya permukaan cadangan"                                      | Host tidak memiliki port cadangan yang terpasang — server demo. Operasinya tidak ada alih-alih ditolak                          |
-| "File lebih besar dari yang diterima server"                             | Unggahan dibatasi 8 GiB. Letakkan file di host server dan gunakan **Impor** → **Pilih file** sebagai gantinya                 |
+| "Server menolak. Mengunduh ruang kerja memerlukan peran admin ruang kerja. Memulihkan satu ruang kerja memerlukan pemilik server, yang juga harus memiliki ruang kerja tersebut. Snapshot utuh memerlukan pemilik server."                                                     | Peran. Membuat, menampilkan daftar, atau mengunduh snapshot instalasi memerlukan pemilik server. Mengunduh ruang kerja memerlukan admin; memulihkannya memerlukan pemilik server, yang juga harus memiliki ruang kerja itu |
+| "Transfer file belum disiapkan untuk koneksi ini. Hubungkan ulang ke server untuk mengunduh atau mengunggah cadangan." | Koneksi ini ke server tidak memiliki jalur transfer file, sehingga **Unduh** dan unggah dimatikan. Hubungkan ulang ke server, lalu coba lagi |
+| "Hanya pemilik server yang dapat memulihkan cadangan. Anda tetap bisa mengunduhnya." | Pemulihan mengganti basis data ruang kerja di host server, sehingga hanya pemilik server yang memulihkan. Unduh cadangannya dan minta mereka |
+| "Server ini tidak punya permukaan cadangan."                                      | Host tidak memiliki port cadangan yang terpasang — server demo. Operasinya tidak ada alih-alih ditolak                          |
+| "File lebih besar dari yang diterima server."                             | Unggahan dibatasi 8 GiB. Letakkan file di host server dan masukkan path-nya di **File basis data ruang kerja** sebagai gantinya                 |
 | Impor ditolak: bukan basis data ruang kerja Control Center                  | File tidak memiliki baris `workspace_meta` — itu bukan ekspor ruang kerja, atau terpotong. Tidak ada yang digantikan             |
 | Snapshot terdaftar sebagai **Tidak lengkap**                                      | Manifest-nya hilang atau menyebut file yang tidak ada. Buat snapshot baru; sementara itu adopsi file ruang kerja satu per satu darinya |
 | Snapshot menyatakan ada ruang kerja yang tidak terekam                             | Ruang kerja itu belum pernah ditulisi, atau penyalinannya gagal. Periksa log server                                  |

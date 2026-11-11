@@ -2,7 +2,7 @@
 title: Guardrail — una sola policy per ogni azione che modifica lo stato
 description: Perché Control Center instrada ogni effetto collaterale di un agente attraverso un unico motore allow/prompt/deny, perché la tassonomia ActionClass resta piccola di proposito e cosa cambia davvero il selettore dell'autonomia.
 slug: it-IT/manuale/concetti/guardrail
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Gli agenti in Control Center possono eliminare file, fare push di branch,
@@ -20,10 +20,9 @@ un'azione può uscire dal sistema: il registro degli strumenti dell'harness
 integrato, il cancello del dispatcher MCP lato server e le mutazioni delle
 operazioni sui repo. Una regola scritta una volta vale quindi sia per il
 runtime integrato sia per le CLI degli agenti esterni — non esiste un secondo
-percorso, più silenzioso, che la aggiri. La vecchia policy dei comandi, valida
-solo per bash, funziona ancora: una regola può corrispondere a un prefisso di
-comando invece che a una classe di azione, e le due forme convivono nello
-stesso archivio.
+percorso, più silenzioso, che la aggiri. Una regola può anche corrispondere a un prefisso di
+comando invece che a una classe di azione; entrambe le forme convivono
+nello stesso archivio.
 
 Il motore, però, non sostituisce la sandbox del sistema operativo, e la sandbox
 non sostituisce il motore. Rispondono a domande diverse: i guardrail decidono
@@ -31,15 +30,18 @@ se una chiamata che Control Center riesce a vedere può avvenire o meno, mentre
 la sandbox delimita fin dove può arrivare il processo che ne deriva.
 `cc_server` applica la sandbox dove l'host offre un backend — ma [su Windows
 non ne esiste alcuno e Linux richiede `bwrap` e
-`socat`](/it-IT/manuale/concetti/sandbox-e-sicurezza/). Su quegli host i
-guardrail sono lo strato di applicazione più esterno, non una policy che poggia
-su una base: cosa utile da sapere quando decidi quanto essere permissivo.
+`socat`](/it-IT/manuale/concetti/sandbox-e-sicurezza/). Su quegli host partono
+solo le esecuzioni del proprietario del server, a meno che il proprietario non
+abbia disattivato il sandbox per tutti con `--sandbox off`. Per ogni esecuzione
+che parte senza sandbox, i guardrail sono lo strato di applicazione più esterno,
+non una policy che poggia su una base: cosa utile da sapere quando decidi quanto
+essere permissivo.
 
 ## ActionClass: una tassonomia chiusa di proposito
 
 Ogni strumento che modifica lo stato dichiara a quali **ActionClasses**
-appartiene, all'interno di un insieme chiuso di tredici classi di effetto.
-Cinque richiedono conferma fin da subito; le altre consentono, e solo una
+appartiene, all'interno di un insieme chiuso di quattordici classi di effetto.
+Sei richiedono conferma fin da subito; le altre consentono, e solo una
 regola cambia le cose.
 
 | Classe                     | Predefinito integrato | Cosa copre                                                       |
@@ -57,17 +59,19 @@ regola cambia le cose.
 | `processSpawn`             | allow                 | Avviare un processo (shell e tutto ciò che invoca una shell)     |
 | `workspaceMutation`        | allow                 | Modificare la struttura dello spazio di lavoro (repo, spazi, agenti) |
 | `enclosureControl`         | allow                 | Pilotare un recinto (rig): avviare una VM, inviarle input        |
+| `hostExecution`            | **prompt**            | Eseguire un comando sull'host del server fuori da ogni sandbox su richiesta di un agente: attività di ambiente, processi, stack compose, e `eval` quando il suo kernel gira senza confinamento |
 
 Le otto classi consentite per impostazione predefinita sono state scelte
 presupponendo che sotto di esse valga la base della sandbox. Vale dove l'host
-offre un backend, e non vale su Windows né su una macchina Linux priva di
-`bwrap` e `socat` — quindi se lì vuoi mettere `fileWriteOutsideWorktree` o
+offre un backend, e non vale con `--sandbox off`, né per le esecuzioni del
+proprietario su Windows o su una macchina Linux priva di `bwrap` e `socat` —
+quindi se lì vuoi mettere `fileWriteOutsideWorktree` o
 `packageInstall` sotto una regola, quella regola devi scriverla.
 
 L'insieme è chiuso di proposito. Un nuovo strumento che modifica lo stato e non
 dichiara alcuna classe non supera il test a cricchetto, quindi la tassonomia
 può crescere solo con una decisione esplicita e argomentata — «la
-proliferazione della tassonomia è la morte di questa funzione». Tredici classi
+proliferazione della tassonomia è la morte di questa funzione». Quattordici classi
 bastano per esprimere le policy che la gente scrive davvero (non fare mai push
 senza chiedere, non eliminare mai fuori da un worktree, consentire sempre le
 letture) e sono abbastanza poche da mantenere comprensibile l'interfaccia delle
@@ -98,8 +102,7 @@ Due decisioni portano garanzie ferree:
 
 Non esiste di proposito alcun blocco valido per un solo turno. Ogni chiamata a
 uno strumento risolve di nuovo la policy da zero, quindi le richieste ripetute
-per la stessa azione sono limitate dal «ricorda questa decisione» dell'operatore,
-non da qualcosa legato al turno.
+per la stessa azione sono limitate dall'approvazione temporanea propria dell'operatore, non da qualcosa legato al turno.
 
 ## Regole a livello di argomenti
 
@@ -116,6 +119,7 @@ Un vincolo può indicare:
   «qualsiasi branch tranne main»)
 - **host** — destinazioni di rete, con wildcard sui sottodomini (`*.internal`)
 - **comandi** — prefissi di comando, confrontati su un confine di parola
+- **strumenti** — lo strumento esatto che una chiamata nomina, così un'approvazione può coprire un solo strumento anziché tutti quelli con lo stesso effetto
 - **tetti** — `maxCount` / `maxCents`, così «elimina fino a 50 file» è
   esprimibile
 
@@ -159,15 +163,19 @@ del sistema operativo sotto entrambi. Una regola sui comandi che si risolve in
 `allow` non allenta nessuno dei due — la rete della modalità viene eseguita
 dopo e il suo `deny` è definitivo.
 
-## Approvazioni permanenti
+## Approvazioni temporanee
 
-Rispondere a un prompt con «ricorda questa decisione» scrive una vera regola di
-policy: con ambito (spazio / agente / spazio di lavoro), **vincolata agli
-argomenti** (approvare un push verso `feature/login` concede `feature/**`, non
-`main`) e **auto-revocante** dopo un TTL esplicito. Dire sì per le prossime ore
-non è la stessa cosa che riscrivere in silenzio la tua policy permanente, e le
-regole così scritte finiscono nello stesso archivio con provenienza
-`remembered` e una scadenza, quindi possono essere revocate in anticipo.
+Ogni scheda di approvazione generata dall'azione di un agente offre **Approva per 8 ore** quando l'azione ha qualcosa di più stretto della sua classe da indicare. Sceglierla scrive una vera regola di policy, un'approvazione temporanea, nello stesso archivio delle regole che imposti, con provenienza `remembered` e una scadenza:
+
+- **Con ambito.** Viene scritta per lo spazio da cui proviene la domanda. Solo la risposta di un amministratore può essere scritta per l'intero spazio di lavoro.
+- **Ristretta.** Indica una famiglia di branch (approvare un push verso `feature/login` concede `feature/**`, non `main`), una cartella, un host, il comando esatto o lo strumento. Un commit è l'unica azione approvata come classe, per quello spazio: non ha nulla di più ristretto da indicare.
+- **Auto-revocante.** Termina dopo otto ore e può essere revocata prima nella pagina delle autorizzazioni degli agenti.
+
+Un'approvazione temporanea risparmia soltanto una domanda. Risponde a una decisione Chiedi prima fissata al proprio ambito o a uno più ampio, e mai a un Nega, da qualunque ambito provenga. È memorizzata accanto alla regola che hai impostato per l'azione: cambiare quella regola lascia l'approvazione al suo posto, e revocare l'approvazione lascia la regola.
+
+Alcuni controlli chiedono da soli dopo che la policy ha consentito una chiamata: l'approvazione dichiarata dallo strumento stesso, oppure la rete di comandi di una modalità. Saltano la loro domanda solo per un'approvazione temporanea che indica esattamente quello strumento o quel comando. Impostare l'azione su Consenti non li zittisce.
+
+Tre tipi di scheda mantengono due pulsanti (nega e approva), perché non c'è nulla da portare avanti: far eseguire al sandbox programmi da una cartella (approvarla è già una concessione salvata che puoi revocare), un'operazione distruttiva che confermi una sola volta, e l'installazione di una skill (una skill modificata deve chiedere di nuovo).
 
 ## Livelli di applicazione
 

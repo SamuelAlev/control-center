@@ -7,10 +7,10 @@ import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart'
     show ValidationException, WorkspaceMismatchException;
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/sandboxing/domain/terminal_session_port.dart';
 import 'package:cc_infra/src/environments/environment_process_supervisor.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/terminal_session_service.dart';
 import 'package:cc_natives/cc_natives.dart';
@@ -78,7 +78,11 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 300));
 
       final first = await terminals
-          .output(workspaceId: 'ws-1', sessionId: session.sessionId)
+          .output(
+            workspaceId: 'ws-1',
+            userId: 'ada',
+            sessionId: session.sessionId,
+          )
           .first;
 
       expect(String.fromCharCodes(first), contains('Password:'));
@@ -89,11 +93,13 @@ void main() {
 
       await terminals.write(
         workspaceId: 'ws-1',
+        userId: 'ada',
         sessionId: session.sessionId,
         data: 'hunter2'.codeUnits,
       );
       final sent = await terminals.write(
         workspaceId: 'ws-1',
+        userId: 'ada',
         sessionId: session.sessionId,
         data: '\r'.codeUnits,
       );
@@ -118,7 +124,11 @@ void main() {
 
     test('closing the tab leaves it running', () async {
       final session = await spawn('sleep 30');
-      await terminals.kill(workspaceId: 'ws-1', sessionId: session.sessionId);
+      await terminals.kill(
+        workspaceId: 'ws-1',
+        userId: 'ada',
+        sessionId: session.sessionId,
+      );
       expect(terminals.ownerOf(session.sessionId), 'environment:env-1/web');
       expect(Process.killPid(session.pid, ProcessSignal.sigcont), isTrue);
       await terminals.killOwned(
@@ -133,11 +143,16 @@ void main() {
       final session = await spawn(r'read line; echo "got $line"; sleep 5');
       final bytes = <int>[];
       final subscription = terminals
-          .output(workspaceId: 'ws-1', sessionId: session.sessionId)
+          .output(
+            workspaceId: 'ws-1',
+            userId: 'ada',
+            sessionId: session.sessionId,
+          )
           .listen(bytes.addAll);
       addTearDown(subscription.cancel);
       await terminals.write(
         workspaceId: 'ws-1',
+        userId: 'ada',
         sessionId: session.sessionId,
         data: 'hello\n'.codeUnits,
       );
@@ -172,7 +187,11 @@ void main() {
         throwsA(isA<WorkspaceMismatchException>()),
       );
       await expectLater(
-        terminals.kill(workspaceId: 'ws-2', sessionId: session.sessionId),
+        terminals.kill(
+          workspaceId: 'ws-2',
+          userId: 'ada',
+          sessionId: session.sessionId,
+        ),
         throwsA(isA<WorkspaceMismatchException>()),
       );
     }, skip: skip);
@@ -316,6 +335,107 @@ void main() {
       addTearDown(other.dispose);
       expect(await other.reapSurvivors('${dir.path}/state'), ['web']);
       expect(await const HostProcessGroups().members(group), isEmpty);
+    }, skip: skip);
+  });
+
+  group('a verb that asks on a real terminal', () {
+    const owner = 'environment:env-1/terminal';
+
+    EnvironmentProcessSupervisor supervisor() {
+      final subject = EnvironmentProcessSupervisor(terminals: terminals);
+      addTearDown(subject.dispose);
+      return subject;
+    }
+
+    Future<OwnedTerminalSession> ask(
+      EnvironmentProcessSupervisor subject,
+      String script, {
+      void Function(List<int>)? onOutput,
+    }) => subject.startInteractive(
+      workspaceId: 'ws-1',
+      spaceId: 'space-1',
+      owner: owner,
+      argv: ['/bin/sh', '-c', script],
+      environment: const {'CC_ENV_INTERACTIVE': '1'},
+      workingDirectory: dir.path,
+      onOutput: onOutput,
+    );
+
+    Future<void> shows(List<int> bytes, String text) async {
+      final deadline = DateTime.now().add(const Duration(seconds: 5));
+      while (!String.fromCharCodes(bytes).contains(text) &&
+          DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      expect(String.fromCharCodes(bytes), contains(text));
+    }
+
+    test(
+      'the answer typed there reaches it, and its exit comes back',
+      () async {
+        final seen = <int>[];
+        // A tool asking the way sudo does: at its terminal, not on a pipe.
+        final session = await ask(
+          supervisor(),
+          r'test -t 0 || exit 9; test "$CC_ENV_INTERACTIVE" = 1 || exit 8; '
+          r'printf "Password: "; read answer; test "$answer" = sesame',
+          onOutput: seen.addAll,
+        );
+        await shows(seen, 'Password: ');
+
+        await terminals.write(
+          workspaceId: 'ws-1',
+          userId: 'ada',
+          sessionId: session.sessionId,
+          data: 'sesame\n'.codeUnits,
+        );
+
+        expect(await session.exitCode, 0);
+        expect(terminals.ownerOf(session.sessionId), isNull);
+      },
+      skip: skip,
+    );
+
+    test('a wrong answer is its own exit code', () async {
+      final seen = <int>[];
+      final session = await ask(
+        supervisor(),
+        r'printf "Password: "; read answer; test "$answer" = sesame || exit 7',
+        onOutput: seen.addAll,
+      );
+      await shows(seen, 'Password: ');
+
+      await terminals.write(
+        workspaceId: 'ws-1',
+        userId: 'ada',
+        sessionId: session.sessionId,
+        data: 'guess\n'.codeUnits,
+      );
+
+      expect(await session.exitCode, 7);
+    }, skip: skip);
+
+    test('ending it stops a tool still waiting for an answer', () async {
+      final seen = <int>[];
+      final subject = supervisor();
+      final session = await ask(
+        subject,
+        'printf "Password: "; read answer',
+        onOutput: seen.addAll,
+      );
+      await shows(seen, 'Password: ');
+
+      await subject.stopInteractive(
+        workspaceId: 'ws-1',
+        sessionId: session.sessionId,
+        owner: owner,
+      );
+
+      expect(
+        await session.exitCode.timeout(const Duration(seconds: 5)),
+        isNot(0),
+      );
+      expect(terminals.ownerOf(session.sessionId), isNull);
     }, skip: skip);
   });
 }

@@ -234,9 +234,10 @@ class _PendingReply {
 /// Order, per comment: loop guard (bots and our own attributed replies) →
 /// author resolved by numeric GitHub id to a writing member, else ignored
 /// silently (nothing is posted) → the server confirms it can mint a `bot`
-/// token bounded by that member → the claim: the member's own 👀 reaction,
-/// where 201 means this server owns the work and 200 means another server of
-/// theirs already does → work. A label runs the same gate on the labeller.
+/// token bounded by that member → the claim: the App bot's 👀 reaction on a
+/// `bot` token bounded by that member, where 201 means this server owns the
+/// work and 200 means another server on the same App already does → work. A
+/// label runs the same gate on the labeller.
 ///
 /// Every reply rides the workspace's gateway with a `bot` token bounded by
 /// the asking member and starts with [attributed]'s prefix. Outbound: the
@@ -284,15 +285,12 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
 
   CacheDao _cache(String workspaceId) => _workspaceDbs.of(workspaceId).cacheDao;
 
-  /// The dedicated account is the default PR-conversation mention. The
-  /// installed App's full bot login and bare slug remain compatible aliases;
-  /// neither changes the identity used to post replies or guard bot loops.
+  /// The dedicated account is the PR-conversation mention. It never changes
+  /// the identity used to post replies or guard bot loops; an empty
+  /// [botLogin] (no installed App) accepts no mention at all.
   static List<String> acceptedMentionLogins(String botLogin) => botLogin.isEmpty
       ? const []
-      : [
-          mention.githubPrConversationMentionLogin,
-          ...mention.acceptedMentionLogins(botLogin),
-        ];
+      : const [mention.githubPrConversationMentionLogin];
 
   /// Whether [body] addresses the PR conversation bridge.
   static bool mentionsBot(String body, String botLogin) =>
@@ -311,9 +309,11 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     return body.trim();
   }
 
-  /// [body] as an automated reply on behalf of [login].
+  /// [body] as an automated reply on behalf of [login], its mentions made
+  /// inert ([mention.neutralizeMentions]): the bot's words never page anyone.
+  /// The prefix names [login] as who it acted for.
   static String attributed(String login, String body) =>
-      '$attributionLead$login): $body';
+      '$attributionLead$login): ${mention.neutralizeMentions(body)}';
 
   /// Whether [body] is one of our automated replies.
   static bool isAutomatedReply(String body) =>
@@ -399,6 +399,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       repo: repo,
       userId: member.userId,
       what: 'comment ${comment.id} on $owner/$repo#$prNumber',
+      inReviewThread: comment.isReviewComment,
       react: () => comment.isReviewComment
           ? gateway.claimReviewComment(
               owner,
@@ -470,8 +471,9 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
   ///
   /// The label is gated exactly like a mention: the labeller (latest
   /// `labeled` event, by numeric id) must be a writing member who can push
-  /// to the repository, and claims the PR with their own 👀. The review runs
-  /// with the labeller as its accountable human. Nothing is posted.
+  /// to the repository, and the bot claims the PR with 👀 for them. The
+  /// review runs with the labeller as its accountable human. Nothing is
+  /// posted.
   @override
   Future<GitHubInboundOutcome> handleLabeledPullRequest({
     required String workspaceId,
@@ -509,6 +511,7 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
       repo: repo,
       userId: member.userId,
       what: 'label on $owner/$repo#$prNumber',
+      inReviewThread: false,
       react: () => gateway.claimPullRequest(
         owner,
         repo,
@@ -557,9 +560,15 @@ class GitHubPrConversationBridge implements GitHubPrConversationSink {
     required String repo,
     required String userId,
     required String what,
+    required bool inReviewThread,
     required Future<GitHubReactionClaim> Function() react,
   }) async {
-    if (!await gateway.canPostAs(owner, repo, actingUserId: userId)) {
+    if (!await gateway.canPostAs(
+      owner,
+      repo,
+      actingUserId: userId,
+      inReviewThread: inReviewThread,
+    )) {
       return false;
     }
     try {

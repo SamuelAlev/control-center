@@ -1,8 +1,10 @@
 part of '../cc_server_runtime.dart';
 
-/// The Google, Linear and Klipy lanes, each resolved per workspace: the
-/// workspace's own app ([WorkspaceProviderAppSettings]) when it has one and
-/// nothing else, else this server's own app, else Control Center Connect.
+/// The Google, Linear and Klipy lanes, each resolved per workspace through
+/// its Connect route ([ConnectClient.routeFor]): the workspace's own apps
+/// ([WorkspaceProviderAppSettings]) and nothing else when it chose them, the
+/// server's own apps when it inherits a server on its own apps, else the
+/// Control Center Connect it uses.
 ///
 /// Google Calendar: the server owns the connection; a member's account per
 /// workspace connects through the browser sign-in (`google` lane) and the
@@ -13,9 +15,9 @@ part of '../cc_server_runtime.dart';
 /// composer's GIF search (the thin client holds no key; with nothing
 /// configured the `gif.*` ops return empty).
 ///
-/// A workspace that changes or leaves its own app loses every grant the old
-/// one issued there: they answer "sign in again" rather than keep working
-/// under another client.
+/// A workspace that changes its own app, or its Connect choice, loses every
+/// grant the old one issued there: they answer "sign in again" rather than
+/// keep working under another client.
 ({
   ServerCalendar serverCalendar,
   LinearClients linearClients,
@@ -50,6 +52,7 @@ _wireProviderAppLanes({
       apps: providerApps,
       workspaceApps: workspaceApps,
       accounts: serverCalendar.accounts,
+      route: connectClient.routeFor,
     ),
   );
   final linearAppGrants = LinearAppGrants(secrets);
@@ -61,6 +64,7 @@ _wireProviderAppLanes({
         workspaceApps: workspaceApps,
         people: userCredentials,
         workspaces: linearAppGrants,
+        route: connectClient.routeFor,
       ),
   ];
   linearLanes.forEach(providerSignIn.register);
@@ -69,6 +73,7 @@ _wireProviderAppLanes({
     workspaces: linearAppGrants,
     apps: providerApps,
     workspaceApps: workspaceApps,
+    route: connectClient.routeFor,
     refresh: (lane, token, {slot}) =>
         providerSignIn.refresh(lane, token, slot: slot, workspaceId: slot),
     revoke: linearLanes.first.revoke,
@@ -76,13 +81,48 @@ _wireProviderAppLanes({
   workspaceApps.addListener((workspaceId, provider) {
     switch (provider) {
       case WorkspaceAppProvider.google:
-        unawaited(serverCalendar.tokens.revalidateWorkspace(workspaceId));
+        _runSlotReset(
+          'google',
+          workspaceId,
+          () => serverCalendar.tokens.revalidateWorkspace(workspaceId),
+        );
       case WorkspaceAppProvider.linear:
-        unawaited(linearClients.resetWorkspace(workspaceId));
+        _runSlotReset(
+          'linear',
+          workspaceId,
+          () => linearClients.resetWorkspace(workspaceId),
+        );
       case WorkspaceAppProvider.klipy:
         // A key, not a grant: the next search reads the new one.
         break;
     }
+  });
+  // Another Connect choice in one workspace: its Google and Linear grants
+  // are checked against (or dropped for) the apps it uses now.
+  connectClient.settings.addWorkspaceListener((workspaceId) {
+    _runSlotReset(
+      'google',
+      workspaceId,
+      () => serverCalendar.tokens.revalidateWorkspace(workspaceId),
+    );
+    _runSlotReset(
+      'linear',
+      workspaceId,
+      () => linearClients.resetWorkspace(workspaceId),
+    );
+  });
+  // Another server choice: a workspace that no longer owns a person slot
+  // (its target is the server's now) reads its members' global Linear
+  // grants, so the slot's grants go.
+  connectClient.settings.addListener(() {
+    _runSlotReset('linear', null, () async {
+      for (final workspace in await workspaceRepository.getAll()) {
+        if (!workspace.isDeleted &&
+            !(await connectClient.routeFor(workspace.id)).workspaceSlot) {
+          await linearClients.resetPersonSlot(workspace.id);
+        }
+      }
+    });
   });
   final klipyGifs = KlipyGifs(
     connect: connectClient,
@@ -94,4 +134,54 @@ _wireProviderAppLanes({
     linearClients: linearClients,
     klipyGifs: klipyGifs,
   );
+}
+
+/// Runs a slot reset a settings change set off, without awaiting it; a
+/// failure is logged (`grant.reset_failed`) instead of vanishing: the grants
+/// it meant to drop are still stored.
+void _runSlotReset(
+  String lane,
+  String? workspaceId,
+  Future<void> Function() reset,
+) {
+  unawaited(
+    reset().catchError((Object e) {
+      forgeAudit(ForgeAuditEvent.grantResetFailed, {
+        'lane': lane,
+        'workspace_id': workspaceId,
+        'reason': errorKindOf(e),
+      });
+    }),
+  );
+}
+
+/// Ends a leaving person's provider credentials through the one
+/// [CredentialOffboarding] path: on member removal (an admin, SCIM
+/// deactivation, leaving), on workspace deletion (before its secrets go),
+/// and once at boot for anything a crash or an earlier build left behind.
+void _wireCredentialOffboarding({
+  required ProviderSignInService providerSignIn,
+  required UserCredentialsStore userCredentials,
+  required WorkspaceMembershipRepository membershipRepository,
+  required DaoWorkspaceRepository workspaceRepository,
+  required WorkspaceGitHubAppSettings workspaceGitHub,
+  required CalendarAccountService calendarAccounts,
+  required DomainEventBus eventBus,
+}) {
+  final offboarding = CredentialOffboarding(
+    signIn: providerSignIn,
+    users: userCredentials,
+    members: membershipRepository,
+    workspaces: workspaceRepository,
+    calendar: calendarAccounts,
+  );
+  eventBus.on<WorkspaceMemberRemoved>().listen(
+    (e) => _runSlotReset(
+      'offboarding',
+      e.workspaceId,
+      () => offboarding.memberLeft(e.userId, e.workspaceId),
+    ),
+  );
+  workspaceGitHub.offboardWorkspace = offboarding.workspaceDeleted;
+  _runSlotReset('offboarding', null, offboarding.reconcile);
 }

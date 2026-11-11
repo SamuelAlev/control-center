@@ -18,10 +18,7 @@ ReasoningEffort? _raiseEffort(
 }
 
 extension _DispatchSessionHarness on DispatchSession {
-  Future<void> _runHarness({
-    required ScopedCredentials scoped,
-    required String wsId,
-  }) async {
+  Future<void> _runHarness({required String wsId}) async {
     _harness.begin();
     // The moment a harness loop becomes drainable: the steering queue service
     // wires this session's drain notifications and flushes any
@@ -29,10 +26,6 @@ extension _DispatchSessionHarness on DispatchSession {
     // written while the session was between transports, or before this
     // dispatch existed, has no other delivery path).
     onHarnessStarted?.call();
-    for (final note in scoped.notes) {
-      addEvent(DebugEvent(content: '[harness] $note'));
-    }
-
     // 1. Resolve provider + model + credential. A modelId may carry a fallback
     //    chain: `primary/model|fallback/model|…`.
     final factory = deps.harnessProviderFactory;
@@ -185,6 +178,7 @@ extension _DispatchSessionHarness on DispatchSession {
         final actionRequest = const ActionRequestExtractor().extract(
           args,
           classes: tool.actionClasses,
+          tool: tool.name,
         );
         final resolution = await guard.resolve(
           workspaceId: wsId,
@@ -247,18 +241,19 @@ extension _DispatchSessionHarness on DispatchSession {
             reason: 'approval is required but no approver is connected',
           );
         }
-        final copy = ActionApprovalCopy.describe(
-          classes: tool.actionClasses,
-          request: actionRequest,
-        );
+        // Policy asks here (the dial never asks on its own once policy
+        // allows), and the resolution above already let a live standing
+        // approval answer it.
         final approved = await port.requestApproval(
-          ConfirmationRequest(
-            spaceId: spaceId ?? '',
+          ActionGuardService.approvalRequest(
+            resolution: resolution,
+            classes: tool.actionClasses,
+            request: actionRequest,
+            spaceId: spaceId,
             conversationId: conversationId,
             workspaceId: workspaceId,
-            title: copy.title,
-            detail: copy.detail,
-            command: actionRequest.command,
+            agentId: agentId,
+            actionSummary: tool.name,
             kind: tool.approvalTier == ToolApprovalTier.exec
                 ? ConfirmationKind.command
                 : ConfirmationKind.fileWrite,
@@ -294,22 +289,22 @@ extension _DispatchSessionHarness on DispatchSession {
           reason: 'approval is required but no approver is connected',
         );
       }
-      final actionRequest = const ActionRequestExtractor().extract(
-        args,
-        classes: tool.actionClasses,
-      );
-      final copy = ActionApprovalCopy.describe(
-        classes: tool.actionClasses,
-        request: actionRequest,
-      );
+      // No policy was consulted (no guard, or a tool with no effect
+      // classes), so there is nothing a standing approval could rest on.
       final approved = await port.requestApproval(
-        ConfirmationRequest(
-          spaceId: spaceId ?? '',
+        ActionGuardService.approvalRequest(
+          resolution: null,
+          classes: tool.actionClasses,
+          request: const ActionRequestExtractor().extract(
+            args,
+            classes: tool.actionClasses,
+            tool: tool.name,
+          ),
+          spaceId: spaceId,
           conversationId: conversationId,
           workspaceId: workspaceId,
-          title: copy.title,
-          detail: copy.detail,
-          command: actionRequest.command,
+          agentId: agentId,
+          actionSummary: tool.name,
           kind: tool.approvalTier == ToolApprovalTier.exec
               ? ConfirmationKind.command
               : ConfirmationKind.fileWrite,
@@ -322,20 +317,18 @@ extension _DispatchSessionHarness on DispatchSession {
             );
     }
 
-    final harnessToolEnv = <String, String>{
-      ...scoped.environment,
-      ..._run.identity.gitEnv,
-    };
+    final harnessToolEnv = <String, String>{..._run.identity.gitEnv};
     // `bash` pushes through the gateway exactly like a CLI adapter's shell.
     final lease = _gatewayLease;
     if (lease != null) {
       harnessToolEnv.addAll(_leaseEnvironment(lease, harnessToolEnv));
     }
 
-    final runConfig = await HarnessRunConfig.load(
-      [agentDirHostPath, agentConfigDir],
-      hookTrustedBases: [agentConfigDir],
-    );
+    final hookFolder = _hookFolder;
+    final runConfig = await HarnessRunConfig.load([
+      agentDirHostPath,
+      agentConfigDir,
+    ], hookBase: hookFolder);
     final sessionCostCapMicros =
         (costCapCents ?? defaultRunCostCapCents) * 10000;
     final bool Function()? budgetExceeded = switch (parsedCommand.command) {
@@ -353,6 +346,7 @@ extension _DispatchSessionHarness on DispatchSession {
     final registry = _buildHarnessRegistry(
       mode: effectiveMode,
       env: harnessToolEnv,
+      personalMcp: await _personalMcpAllowed(),
     );
 
     final subagentCatalog = await _subagentCatalog();
@@ -465,17 +459,7 @@ extension _DispatchSessionHarness on DispatchSession {
       effort: effectiveEffort?.name,
     );
 
-    if (runConfig.droppedHookBase != null) {
-      addEvent(
-        DebugEvent(
-          content:
-              '[harness] ignoring shell hooks declared by '
-              '${runConfig.droppedHookBase}/.agents/harness.json — hooks are '
-              'only honored from your own agent config dir, never from a '
-              "repository's working tree.",
-        ),
-      );
-    }
+    _reportHookConfig(runConfig, hookFolder);
     if (runConfig.advisorEnabled) {
       final watchdogContext = await loadWatchdogContext(
         agentDirHostPath,
@@ -547,13 +531,14 @@ extension _DispatchSessionHarness on DispatchSession {
         );
       }
     }
-    hooks = runConfig.hasHooks
+    hooks = runConfig.hasHooks && hookFolder != null
         ? ShellAgentLoopHooks(
             cwd: agentDirHostPath,
-            environment: ChildProcess.environmentFor(toolchain: true),
+            start: _hookProcesses(effectiveMode, hookFolder).start,
             sessionStartScript: runConfig.hookSessionStart,
             preToolScript: runConfig.hookPreTool,
             postToolScript: runConfig.hookPostTool,
+            denyTools: runConfig.preToolRefused,
           )
         : null;
 
@@ -641,6 +626,7 @@ extension _DispatchSessionHarness on DispatchSession {
     final context = HarnessToolContext(
       workingDirectory: agentDirHostPath,
       sharedRoots: _workspaceSharedRoots(),
+      readOnlyRoots: _readOnlyRoots,
       agentId: agentId,
       workspaceId: workspaceId,
       conversationId: conversationId,
@@ -843,6 +829,9 @@ extension _DispatchSessionHarness on DispatchSession {
         }
       }
       await accounting.flush();
+      // Also after a stop already finished the run: a tool call still
+      // unwinding then may have opened a session again.
+      await _bestEffort('tool sandbox release', _releaseToolProcesses);
       _finish(exitCode: exitCode, error: runFailure);
       await _finishing;
     }

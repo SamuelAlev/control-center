@@ -37,7 +37,7 @@ extension _SpaceMessageFeed on _SpaceScreenState {
                                 message: message,
                                 workspaceId: widget.workspaceId,
                                 myUserId: _myUserId,
-                                userNames: _userNames,
+                                users: _users,
                                 turns: turns,
                               ),
                               CcButton(

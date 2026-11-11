@@ -2,7 +2,7 @@
 title: Munkaterületek és elszigetelés
 description: Miért jelent a munkaterület szigorú bérlői határt, hogyan teszi ezt a határt strukturálissá az adatbázisok szétválasztása, és mi az, ami szándékosan átlépi.
 slug: hu-HU/kezikonyv/fogalmak/munkateruletek
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Mi a munkaterület?
@@ -79,9 +79,11 @@ Egy munkaterületfájl csak egy egysoros `workspace_meta` táblát hordoz az ön
 
 ## Munkaterület létrehozása
 
+Munkaterületet csak a [szerver tulajdonosa](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) hozhat létre; az azonosítót a szerver adja. Munkaterület-adminisztrátor vagy tulajdonos nem hozhat létre másikat. Aki még nincs munkaterületen, a **Még nincs munkaterületen** üzenetet látja, amely arra kéri, hogy a szerver tulajdonosa hozzon létre egyet, vagy egy munkaterület-adminisztrátor hívja meg. A **Munkaterület hozzáadása** űrlap mindenki másnak ugyanezt mondja.
+
 Egy munkaterület létrehozása többet tesz, mint egy nyilvántartási sor beszúrása. Egyetlen műveletben a szerver a létrehozó felhasználót `ownerUserId` értékkel jelöli meg, rögzíti e felhasználó tulajdonosi szerepű tagságát, és közzétesz egy `WorkspaceCreated` domaineseményt. Az eseményre figyelő hallgatók ezután idempotensen, a háttérben feltöltik:
 
-- egy **CEO-ügynököt**, valamint négy specialistát — `qa`, `architect`, `engineer`, `librarian` —, akik a CEO-nak jelentenek;
+- egy **CEO-ügynököt**, valamint öt specialistát — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` —, akik a CEO-nak jelentenek;
 - a **beépített pipeline-sablonokat** és azok eseményindítóit (az esemény- és kézi indítók bekapcsolva érkeznek; az ütemezettek külön engedélyezést igényelnek, kivéve a napi worktree-GC seprést);
 - a **kezdő kiértékelési csomagokat**.
 
@@ -90,7 +92,7 @@ Ez _minden_ munkaterületnél megtörténik, nem csak az elsőnél. A feltöltö
 A tulajdonosi tagság írása jelentősebb, mint amilyennek látszik: nélküle a frissen létrehozott munkaterületnek nem lennének tagjai, és minden munkaterület-hatókörű hívást elutasítanának, amelyet a létrehozó ezután tesz.
 
 :::note[Az ügynökök nem hozhatnak létre munkaterületet]
-Nincs `create_workspace` MCP-eszköz. Az emberek a `workspace.create` (csak névre szóló szűk keresztmetszet) vagy a `workspace.upsert` (teljes rekord, frissítésekhez is) hívással hoznak létre munkaterületet. Mindkettő a létrehozó felhasználót `owner` értékkel jelöli meg, és közzéteszi a `WorkspaceCreated` eseményt.
+Nincs `create_workspace` MCP-eszköz. A munkaterületet a szerver tulajdonosa hozza létre a `workspace.create` hívással, amely `owner`-ként jelöli meg, és közzéteszi a `WorkspaceCreated` eseményt. A `workspace.upsert` csak a már létező munkaterületet frissíti; nem hoz létre újat, és soha nem változtatja meg a munkaterület tulajdonosát, ezt csak a **Tulajdonjog átadása** teszi meg.
 :::
 
 ## Törlés, exportálás, importálás
@@ -106,7 +108,7 @@ Mivel egy munkaterület egyetlen fájl, a munkaterület továbbadása fájlműve
 
 A biztonsági mentési műveletek a **Beállítások → Szerver → Biztonsági mentés és visszaállítás** alatt találhatók: a **Biztonsági mentés most** pillanatképet készít a telepítésről, a lista megmutatja, mely pillanatképek teljesek, és a telepítés tulajdonosának megerősítés után lehetővé teszi azok törlését, valamint minden munkaterület felajánlja az exportálást és az importálást. A beépített **Workspace backup** pipeline heti ütemezéssel csak az adott munkaterület adatbázisát menti, és törli a beállított megőrzési korosztálynál régebbi saját mentéseit. Ezek a mentések ugyanezen az oldalon, munkaterületenként szerepelnek, ahol mindegyik visszaállítható, letölthető vagy törölhető. Egy munkaterület törlése után a mentései megmaradnak, hogy a telepítés tulajdonosa begyűjtse vagy eltávolítsa őket, mivel az ütemezése és a megőrzése vele együtt leáll. Egy munkaterület visszaállítása telepítési pillanatképből a `workspace.import`, a pillanatkép `<workspaceId>/workspace.db` fájljára irányítva; egy teljes telepítés visszaállítása továbbra is a pillanatképkönyvtár visszamásolása leállított szerver mellett.
 
-Egyik sem viszi magával a munkaterület-könyvtár többi részét. Egy munkaterület többet halmoz fel egy adatbázisnál — beillesztett képek, készség- és ügynökfájlok, csevegőhitelesítő adatok, worktree-k —, az exportálás és az importálás pedig a **fájlt** mozgatja, így minden, ami mellette van, a helyén marad. Ez a hitelesítő adatoknál szándékos, a worktree-knél eldobható; a többinél inkább tudnivaló korlát, mint szolgáltatás. A teljes táblázat a [mentési referenciában](/hu-HU/kezikonyv/referencia/mentes/#what-a-backup-does-not-contain) található.
+Egyik sem viszi magával a munkaterület-könyvtár többi részét. Egy munkaterület többet halmoz fel egy adatbázisnál — beillesztett képek, készség- és ügynökfájlok, csevegőhitelesítő adatok, worktree-k —, az exportálás és az importálás pedig a **fájlt** mozgatja, így minden, ami mellette van, a helyén marad. Ez a hitelesítő adatoknál szándékos, a worktree-knél eldobható; a többinél inkább tudnivaló korlát, mint szolgáltatás. A teljes táblázat a [mentési referenciában](/hu-HU/kezikonyv/referencia/mentes/#mit-nem-tartalmaz-egy-biztonsági-mentés) található.
 
 ## Biztonsági mentés mozgatása a szerver és az eszköz között
 

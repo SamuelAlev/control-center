@@ -64,7 +64,7 @@ bool _sameMessages(List<Message> a, List<Message> b) {
 /// The paged history loader stops on this same predicate, so the tail and a
 /// full scan build the same window.
 bool messageCountsTowardContextBudget(Message message) {
-  if (message.isContextSummary) {
+  if (message.isCompaction) {
     return false;
   }
   if (message.isSystem || message.isTicket || message.isReviewNode) {

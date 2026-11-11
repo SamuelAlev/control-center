@@ -2,13 +2,13 @@
 title: Configurează guardrail-urile
 description: Setează reguli de tip permite, întreabă întâi și refuză pentru acțiunile agenților, testează-le cu sonda „ce-ar fi dacă” și reglează autonomia fiecărui spațiu.
 slug: ro-RO/manual/ghiduri-practice/configureaza-guardrail-uri
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Acest ghid arată cum să configurezi guardrail-urile: regulile care decid dacă
 acțiunea unui agent rulează, cere mai întâi o aprobare sau este refuzată.
 
-Guardrail-urile acoperă cele treisprezece clase de efect pe care le declară
+Guardrail-urile acoperă cele paisprezece clase de efect pe care le declară
 fiecare instrument care modifică starea. Ele se aplică pe server, în momentul în
 care instrumentul este apelat, niciodată printr-o instrucțiune dintr-un prompt.
 
@@ -23,7 +23,7 @@ care instrumentul este apelat, niciodată printr-o instrucțiune dintr-un prompt
    apare la sfârșitul acelui rând (**Revino la moștenit**) — decizia revine la
    domeniul mai larg
 
-Fiecare rând arată decizia efectivă ca etichetă de stare și un badge pentru de
+Fiecare rând arată setarea acțiunii ca etichetă de stare și un badge pentru de
 unde provine: **Acest domeniu**, **Moștenit** sau **Implicit încorporat**.
 Matricea se rezolvă în modul Agent (`chat`), așa că **Presetare de mod** nu
 apare niciodată aici — folosește sonda „ce-ar fi dacă” cu un mod doar pentru
@@ -35,6 +35,18 @@ Punct de control: setează **Push către un remote** pe **Refuză** la domeniul
 spațiului de lucru, apoi rulează sonda „ce-ar fi dacă” de mai jos pe
 `git push origin main`. Rezultatul arată `deny` cu sursa `workspace`.
 
+## Revizuiește și revocă aprobările temporare
+
+Răspunzând unui card de aprobare cu **Aprobă pentru 8 ore** se scrie o aprobare temporară: o regulă care lasă să treacă același tip de acțiune fără să mai întrebe până la sfârșitul ei. Fiecare este listată pe această pagină, sub acțiunea căreia îi aparține.
+
+1. Mergi la **Setări → Spațiu de lucru → Permisiuni agent** și alege domeniul. O aprobare se scrie pentru spațiul din care vine întrebarea, deci alege **Spațiu** și apoi acel spațiu
+2. Sub rândul acțiunii, citește intrarea: ce permite (de exemplu, push-uri către ramuri care corespund lui `feature/**`), cuvintele **Aprobare temporară**, cine a acordat-o atunci când a fost altcineva, și când se termină
+3. Ca să o închei acum, indică intrarea și apasă **Revocă**. Agenții întreabă din nou începând cu următoarea lor acțiune
+
+Rândul arată în continuare setarea proprie a acțiunii, iar o linie sub el numără cazurile listate mai jos care sunt permise oricum. Regulile condiționale scrise de un șablon de politică apar în aceeași listă, iar regulile de comandă într-un grup **Comenzi** după ultima acțiune. La domeniul spațiului de lucru, o notă sub rezumat numără aprobările temporare setate pentru spații sau agenți individuali. Într-un spațiu sau la un agent, ea numără pe cele ale spațiului de lucru, care se aplică și acolo.
+
+O aprobare temporară scutește doar o întrebare. Nu anulează niciodată **Refuză**: dacă setezi o acțiune pe **Refuză** cât timp una este în curs, intrarea ei afișează **fără efect cât acțiunea este setată pe Refuză** până la sfârșitul ei sau până o revoci. Modificarea setării unei acțiuni lasă aprobările ei temporare la locul lor, iar revocarea uneia lasă setarea.
+
 ## Înțelege cum se rezolvă o decizie
 
 Rezolvarea este **întâi după specificitate, apoi după restrictivitate**:
@@ -43,8 +55,8 @@ Rezolvarea este **întâi după specificitate, apoi după restrictivitate**:
    lucru**. Primul domeniu cu o regulă potrivită decide, iar rezolvarea se
    oprește
 2. Dacă nicio regulă nu se potrivește, se aplică **presetarea de mod** — un mod
-   doar pentru citire (Plan, Revizuire, Orchestrează) refuză unsprezece dintre
-   cele treisprezece clase
+   doar pentru citire (Plan, Revizuire, Orchestrează) refuză doisprezece dintre
+   cele paisprezece clase
 3. Dacă modul nu are nimic de spus, se aplică **implicitul încorporat**
 
 În interiorul unui singur domeniu, o regulă de comandă se rezolvă după cel mai
@@ -74,7 +86,7 @@ decât una refuzată.
 | Creează un commit                   | Permite             |
 | Push către un remote                | Întreabă întâi      |
 | Deschide un pull request            | Întreabă întâi      |
-| Publică o revizuire sau o fuziune   | Întreabă întâi      |
+| Actualizează sau unește un pull request | Întreabă întâi      |
 | Scrie într-un tracker extern        | Întreabă întâi      |
 | Accesează rețeaua                   | Permite             |
 | Citește un secret                   | Permite             |
@@ -82,6 +94,7 @@ decât una refuzată.
 | Rulează un proces                   | Permite             |
 | Modifică structura spațiului de lucru | Permite           |
 | Conduce un mediu izolat (stație)    | Permite             |
+| Rulează comenzi pe gazdă            | Întreabă întâi      |
 
 Taxonomia este închisă. Un instrument nou care ajunge în producție fără să-și
 declare clasele pică un test cu clichet în CI, așa că nimic nu sosește cu un set
@@ -93,14 +106,13 @@ de efecte gol în silențiu.
 rezolvă deja.
 
 1. Pe aceeași pagină, derulează până la **Ce-ar fi dacă?**
-2. Alege o **Acțiune** (una dintre cele treisprezece clase)
+2. Alege o **Acțiune** (una dintre cele paisprezece clase)
 3. Completează opțional **Comandă** (de exemplu `git push origin main`),
    **Agent**, **Spațiu** și **Mod**
 4. Citește rezultatul: decizia, motivul și **Sursă:**
 
 Sonda rulează același rezolvitor pe care îl folosește calea de aplicare,
-împotriva regulilor tale active, așa că răspunsul este exact. Dacă te
-surprinde, schimbă o regulă în matricea de mai sus și sondează din nou.
+împotriva regulilor tale active, așa că răspunsul este exact. Când decide o aprobare temporară, sursa afișează **Aprobare temporară** urmată de domeniul ei. Dacă răspunsul te surprinde, schimbă o regulă în matricea de mai sus și sondează din nou.
 
 ## Setează cadranul de autonomie al unui spațiu
 

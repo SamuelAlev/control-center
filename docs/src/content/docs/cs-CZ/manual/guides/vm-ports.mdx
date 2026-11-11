@@ -2,7 +2,7 @@
 title: Přesměrujte porty z terminálu
 description: Jak se dostat k vývojovému serveru spuštěnému v Terminal (VM) nebo v shellu hostitele — ze svého stroje, z Browser (VM), z Androidu, ze sítě, nebo na vývojové doméně s HTTPS.
 slug: cs-CZ/prirucka/navody/porty-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Server, který spustíš v terminálu konverzace, se vystaví jen pro **tenhle prostor**. Panel **Předané porty** si všimne posluchačů, které tam tahle aplikace spustila, namapuje je a dá ti adresu pro každé místo, odkud se k nim chceš dostat. Dva prostory můžou oba naslouchat na `5173`; jejich mapy se nikdy nesmíchají.
@@ -11,7 +11,7 @@ Nic z tohohle stroj neotevírá: každou cestu vytvoří server, na požádání
 
 ## Podívej se, co naslouchá
 
-1. Otevři **Terminal (VM)** konverzace nebo shell hostitele (v prostoru, nebo na stránce PR).
+1. V editoru konverzace (v prostoru, nebo na stránce PR) otevři **Terminál** z menu `+`: pod **Počítače** shell ve VM konverzace, nebo pod **Nástroje** terminál na serveru. Shell hostitele může otevřít jen vlastník serveru; terminál kohokoli jiného běží v sandboxu.
 2. Spusť server — `pnpm dev`, `python -m http.server 8000`, cokoli.
 3. Během pár sekund dostane **ikona zástrčky** v pravém horním rohu terminálu
    tečku. Klikni na ni.
@@ -115,6 +115,10 @@ něco naslouchá, nebo ne. Ruční předání si adresu podrží, i když
 server restartuješ — řádek ukazuje *nenaslouchá*, dokud se nevrátí —
 kdežto automatická předání zmizí spolu se svým portem. U shellu hostitele můžeš
 taky nastavit jiný místní port.
+
+Změna předání vyžaduje zápisové oprávnění ke každému repozitáři, který prostor vystavuje. I s čtecím přístupem porty vidíš a panel místo **Přidat port** říká „Změna těchto portů vyžaduje přístup pro zápis ke všem repozitářům v tomto prostoru.“. Viz [Kdo může sledovat a kdo ovládat](/cs-CZ/prirucka/navody/pouziti-stanic/#kdo-může-sledovat-a-kdo-ovládat).
+
+Terminál, který si někdo otevřel pro sebe, zůstane svými porty jen pro něj: pro každého jiného jeho seznam portů i změny portů odpovídají, jako by relace neexistovala, stejně jako sama relace. Terminály sdílené v prostoru se řídí pravidlem prostoru výše.
 
 ## Jak to zůstane uzavřené
 

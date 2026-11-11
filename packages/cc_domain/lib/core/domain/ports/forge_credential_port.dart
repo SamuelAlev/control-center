@@ -5,12 +5,12 @@ import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 ///
 /// Keyed by forge (one workspace may hold several). With a `userId` → that
 /// person's own credential (sign-in or pasted token), nobody else's. Without
-/// one, GitHub answers nothing: automation reaches GitHub only through a
+/// one, every forge answers nothing: automation reaches GitHub only through a
 /// one-repository App token bounded by an accountable human
-/// (`GitHubClients.mintScoped`/`forOwner`), never a person's, the server
-/// owner's or the environment's. A token-only forge (GitLab, Bitbucket) answers
-/// the server owner's pasted token, then the environment, for work no person is
-/// doing.
+/// (`GitHubClients.mintScoped`/`forOwner`), and GitLab or Bitbucket only
+/// through the repository's or workspace's automation token (a project/group
+/// or repository/workspace access token an admin stored), never a person's,
+/// the server owner's or the environment's.
 ///
 /// Server-internal: implementations and callers never let a token cross the
 /// RPC boundary or reach a log. What clients see is [ForgeConnectionView].
@@ -24,22 +24,24 @@ abstract interface class ForgeTokenStore {
     String? workspaceId,
   });
 
-  /// Stores [token] as [userId]'s credential for [forge] and answers the
-  /// connection as the forge now sees it, probed with the new token so a
-  /// rejected paste reads as unauthenticated with a reason.
+  /// Stores [token] as [userId]'s one credential for [forge] on this server,
+  /// used in every workspace, and answers the connection as the forge now
+  /// sees it, probed with the new token so a rejected paste reads as needing
+  /// a new one.
   ///
-  /// Takes effect immediately: the token is read per request, so a user who
-  /// pastes one does not restart the server to use it. GitHub is sign-in only
-  /// and refuses a pasted token.
+  /// Takes effect immediately: the token is read per request. GitHub is
+  /// sign-in only and refuses a pasted token.
   Future<ForgeConnection> setToken(
     ForgeHost forge,
     String token, {
     String? userId,
-    String? workspaceId,
   });
 
-  /// Clears [userId]'s stored credential for [forge].
-  Future<void> clearToken(
+  /// Clears [userId]'s credential in effect for [forge] in [workspaceId]
+  /// (a GitHub sign-in kept for that workspace when one is in effect there,
+  /// else the person's server-wide credential) and answers the scope it
+  /// cleared, or null when nothing was stored.
+  Future<ForgeCredentialScope?> clearToken(
     ForgeHost forge, {
     String? userId,
     String? workspaceId,
@@ -53,6 +55,13 @@ abstract interface class ForgeConnectionView {
   /// The current connection state of every supported forge, in
   /// [ForgeHost.supported] order.
   Future<List<ForgeConnection>> connections({
+    String? userId,
+    String? workspaceId,
+  });
+
+  /// The connection state of one [forge].
+  Future<ForgeConnection> connection(
+    ForgeHost forge, {
     String? userId,
     String? workspaceId,
   });

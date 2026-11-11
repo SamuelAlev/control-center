@@ -13,10 +13,15 @@ class EvalTool extends HarnessTool {
   /// Creates an [EvalTool].
   EvalTool({
     required this._kernelFor,
+    required this.hostConfined,
     this.maxImages = 4,
   });
 
   final EvalKernel Function(KernelLanguage language) _kernelFor;
+
+  /// Whether a kernel that runs on the server host (the conversation has no
+  /// enclosure) runs inside the run's sandbox.
+  final bool hostConfined;
 
   /// How many images one cell may return.
   ///
@@ -39,8 +44,13 @@ class EvalTool extends HarnessTool {
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.exec;
 
+  /// A process spawn, and host execution when the kernel may run unconfined
+  /// on the server host.
   @override
-  Set<ActionClass> get actionClasses => const {ActionClass.processSpawn};
+  Set<ActionClass> get actionClasses => {
+    ActionClass.processSpawn,
+    if (!hostConfined) ActionClass.hostExecution,
+  };
 
   /// One kernel, one cell at a time: two cells racing in one interpreter is
   /// two halves of two programs interleaved in one namespace.

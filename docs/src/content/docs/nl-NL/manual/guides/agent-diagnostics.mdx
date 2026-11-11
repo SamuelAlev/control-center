@@ -2,7 +2,7 @@
 title: Een agent diagnosticeren
 description: Loop het runlog, de adapterdetectie, de serverstatus en de hostdiagnose door wanneer een agent geen runs meer produceert.
 slug: nl-NL/handleiding/gidsen/agent-diagnosticeren
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Deze gids laat zien hoe je erachter komt waarom een agent geen runs produceert.
@@ -18,7 +18,7 @@ Elke run toont een statusbadge, een duur ("Running…" zolang hij loopt), de beg
 en eindtijd, de PID en de adapter die is gebruikt. **Bekijken** opent de ruwe
 gebeurtenissenstroom van die run. **Stoppen** beëindigt een lopend proces en zet
 de run op "Killed by user"; **Actieve stoppen** in de kop doet hetzelfde voor
-elke lopende run van die agent.
+elke lopende run van die agent in deze werkruimte. Je kunt alleen actieve agentruns in werkruimtes waar je lid van bent zien en stoppen; de servereigenaar ziet en stopt ze allemaal.
 
 Lees het zo:
 
@@ -29,9 +29,9 @@ Lees het zo:
   `code-reviewer` wekken. Een naam met een spatie kan niet als één token worden
   vermeld. Ga dan naar stap 2.
 - **Een run die meteen met een fout eindigde** — open **Bekijken**. Een fout bij
-  het starten van de backend verschijnt hier als een procesfout.
+  het starten van de backend verschijnt hier als een procesfout. Bij de melding "Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren." betekent dat de machine van de server geen OS-sandbox heeft en dat jij niet de eigenaar bent; zie [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/#mijn-agentrun-is-geweigerd-met-deze-server-heeft-geen-sandbox).
 - **Een run die blijft hangen op "Running…"** — stop hem en controleer daarna de
-  **Stilte-time-out** van de agent op het tabblad **Instellingen**. Zonder
+  **Stilte-time-out (minuten)** van de agent op het tabblad **Instellingen**. Zonder
   ingestelde time-out geldt de standaardwaarde per modus.
 - **Een voltooide run zonder bruikbare uitvoer** — de status in het runlog blijft
   `completed` voor een run die eindigde zonder het resultaat dat zijn modus
@@ -118,19 +118,18 @@ is de pagina op hostniveau. Die bevat:
   doorgestuurd en of crashrapporten worden verzonden.
 
 :::caution[Deze sectie rapporteert de host; de bedieningselementen zijn client-side]
-Detectie en handhaving komen nu overeen: waar de detector een native backend
+Detectie en handhaving komen overeen: waar de detector een native backend
 rapporteert, zijn agentruns op die host er echt in omhuld. Maar de detector is het
 enige live onderdeel in deze sectie. De hoofdschakelaar en de backendkiezer zijn voorkeuren die op jouw apparaat zijn opgeslagen, en de server leest ze geen van beide — de eigen schakelaar van de server is `--sandbox` (`on` standaard, `off` om af te zien van sandboxing).
 
-Een waarschuwing hier is dus het waard om er iets mee te doen, maar het is
-meestal niet de reden waarom een agent faalt. Lees het opstartlog om te
+Een waarschuwing hier is dus het waard om er iets mee te doen. Op een host zonder backend is dat precies waarom iemand anders dan de servereigenaar helemaal geen agents kan draaien. Lees het opstartlog om te
 bevestigen in welke toestand de server verkeert: het print `agent sandbox ON` met
 de backendnotitie, `no OS-native agent sandbox on this host` met een
-installatiehint, of `agent sandbox DISABLED by --sandbox off`. `GET /healthz`
+installatiehint, of `agent sandbox DISABLED by --sandbox off`, en de blootstellingsregel bevat `sandbox=native`, `sandbox=unavailable` of `sandbox=off`. `GET /healthz`
 bevat geen sandboxveld.
 
-Waar geen backend is — altijd Windows, Linux of WSL2 zonder `bwrap` en `socat` —
-worden runs **niet** gesandboxed, en wat ze begrenst is de eigen checkout van het
+Waar geen backend is (altijd Windows, Linux of WSL2 zonder `bwrap` en `socat`),
+starten alleen runs waarvoor de servereigenaar verantwoordelijk is, en worden die van alle anderen geweigerd. De runs die daar starten, en elke run onder `--sandbox off`, worden **niet** gesandboxed, en wat ze begrenst is de eigen checkout van het
 gesprek, het forge-token met alleen leesrechten en de push-gateway, de
 actiebeveiligingen, het saneren van de omgeving en het tooloppervlak dat de modus
 van het gesprek toestaat.

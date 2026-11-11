@@ -2,7 +2,7 @@
 title: Bir OpenID Connect sağlayıcısı bağlama
 description: Herhangi bir OIDC issuer’ını — Pocket ID, Keycloak, Auth0, Zitadel — Control Center oturum açmasına bağlayın.
 slug: tr-TR/kilavuz/nasil-yapilir/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -92,6 +92,55 @@ gerektirir — bkz.
 [SCIM ile kullanıcı sağlama](/tr-TR/kilavuz/nasil-yapilir/sso-scim).
 :::
 
+## Oturum açmaların mevcut hesaplarla nasıl eşleştiği
+
+Bir kimlik sağlayıcısı üzerinden yapılan oturum açma, hesabını şu sırayla bulur:
+
+1. **Sabitlenmiş kimlik.** İlk SSO girişi, sağlayıcının subject'ini (issuer ve
+   `sub`) hesaba sabitler. Bu subject ile yapılan sonraki her giriş o hesaptır.
+2. **Her iki tarafta doğrulanmış e-posta.** Aksi halde oturum açma, bir hesapla
+   e-posta üzerinden yalnızca sağlayıcı `email_verified: true` gönderdiğinde ve
+   hesabın adresi de doğrulanmışsa eşleşir. Bir adres, SSO ya da SCIM ayarladığında
+   veya sunucu sahibi onayladığında doğrulanmış sayılır. Sunucu sahibinin kendi
+   adresi de sayılır.
+
+E-posta adresleri küçük harfle saklanır ve gösterilir; eşleştirme büyük/küçük harfi
+yok sayar. Doğrulanmış bir adres yalnızca tam olarak bir hesap tarafından tutuluyorsa
+bir hesabı tanımlar; aynı doğrulanmış adresi iki hesap tutuyorsa hiçbiriyle eşleşmez.
+
+Birinin kendi profilinde ya da bir davette girdiği adres doğrulanmış değildir ve
+hiçbir şeyle eşleşmez. Bir adresi düzenlemek, biri onu yeniden onaylayana kadar
+doğrulanmış durumunu temizler. Bir oturum açma hiçbir zaman kullanıcı adıyla
+eşleşmez.
+
+Hiçbir şey eşleşmezse, **Bilinmeyen kullanıcıları ilk girişte sağla** açıksa oturum
+açma yeni bir hesap oluşturur, kapalıysa reddedilir.
+
+### Hesabı olan kişiler için SSO'yu açmadan önce
+
+Önce adreslerini onaylayın. **Ayarlar → Sunucu → Kişiler** bölümünü açın; burada her
+hesap, biri onu onaylayana kadar **E-posta onaylanmadı** olarak görünür ve her
+kişinin satırında **E-postayı onayla** düğmesini kullanın. Bu listeyi yalnızca
+sunucu sahibi görür. Bu adım olmadan bu kişilerin her biri ilk SSO girişinde ikinci
+bir hesap alır ya da bilinmeyen kullanıcıları sağlama kapalıysa reddedilir.
+
+Adresleri onaylanmamış olduğu sürece, kişi kendi profilindeki e-posta alanının
+altında "Bu adresi yalnızca siz girdiniz. Tek oturum açma (SSO), sunucu sahibi onaylayana kadar
+bununla eşleşmez." mesajını görür.
+
+### `email_verified` göndermeyen sağlayıcılar
+
+Bazı sağlayıcılar bu talebi hiç göndermez. Microsoft Entra ID varsayılan olarak
+göndermez. Eksik bir talep bir evet anlamına gelmez; bu nedenle böyle bir sağlayıcıyla
+oturum açma yalnızca sabitlenmiş kimlikle eşleşir ve bir kişinin ilk girişi mevcut
+hesabını e-postayla hiçbir zaman bulamaz. Hesabı SCIM ile sağlamak bu ilk OIDC
+girişine yardımcı olmaz. Pratik yollar şunlardır:
+
+- **Bilinmeyen kullanıcıları ilk girişte sağla** seçeneğini açık bırakın ve hesabı
+  ilk girişin oluşturmasına izin verin, ya da
+- sağlayıcıyı `email_verified` gönderecek şekilde yapılandırın, ardından eşleşen
+  adresleri yukarıdaki gibi onaylayın.
+
 ## Yapılandırmanızı bu sayfadan denetleyin
 
 Aşağıdaki denetleyici tarayıcınızda çalışır. Issuer’ınızın discovery
@@ -104,3 +153,26 @@ gösteren bir test oturum açması açabilir. Hiçbir zaman client secret
 istemez.
 
 <SsoCheck kind="oidc" />
+
+## Sorun giderme
+
+### SSO açıldıktan sonra biri ikinci bir hesap aldı
+
+Mevcut hesabının adresi, ilk SSO girişinde doğrulanmamıştı; bu yüzden oturum açma
+onunla eşleşmedi ve yeni bir hesap oluşturdu. Bu, adres profilde ya da bir davette
+yazıldığında ve sunucu sahibi onaylamadığında ya da sağlayıcı `email_verified: true`
+göndermediğinde olur. Sağlayıcının adresi onayladığı yeni bir hesap o adresi alır;
+yalnızca yazılmış adresi olan eski hesap onu kaybeder.
+
+Bir sonraki kişi için bundan kaçınmak üzere, oturum açmadan önce adresleri
+**Ayarlar → Sunucu → Kişiler** bölümünde onaylayın. İki hesabı zaten olan biri için
+yeni hesap SSO kimliğine sabitlenir; bu nedenle bundan sonra girişleri onu kullanır.
+
+### "Bu hesap zaten farklı bir SSO kimliğine bağlı"
+
+Oturum açma, bir hesabı doğrulanmış e-postasıyla eşleştirdi; ancak o hesap zaten başka
+bir subject'e ya da başka bir issuer'a sabitlenmiş: sağlayıcıdaki farklı bir kullanıcı,
+yeni bir sağlayıcıdaki aynı kişi ya da SCIM'in kendi tanımlayıcısıyla oluşturduğu bir
+hesap. Sabitlenmiş hesap diğer tüm kimlikleri reddeder; böylece sağlayıcıdaki
+yeniden kullanılmış bir adres onu ele geçiremez. Hesabın ilk bağlandığı kimlikle
+oturum açın.

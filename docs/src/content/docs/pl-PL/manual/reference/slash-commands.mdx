@@ -2,7 +2,7 @@
 title: Polecenia slash
 description: Wszystkie polecenia, które możesz wpisać w kompozytorze — co robią i gdzie działają.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/polecenia-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Polecenia wpisywane w kompozytorze przestrzeni. Dzielą się na trzy grupy według tego, gdzie działają, a ta różnica ma znaczenie: polecenie **lokalne** nigdy nie wędruje jako wiadomość, więc nie pojawia się w transkrypcie ani nie dociera do agenta.
@@ -139,7 +139,7 @@ Oba mają ten sam kształt — biorą rozmowę taką, jaka jest, zadają jedno p
 
 Szablony: `$1`, `$@`, `$@[start:length]` i `$ARGUMENTS`. Frontmatter może ustawić `description` (autouzupełnianie w kompozytorze). `allowed-tools` i `model` są odczytywane z pliku, ale wywołanie polecenia użytkownika na razie tylko podstawia argumenty do treści — nie zmieniają modelu ani powierzchni narzędzi uruchomienia.
 
-Polecenie napisane przez użytkownika wygrywa ze skillem o tej samej nazwie — to skrót, który człowiek wywołał świadomie, z argumentami.
+Do skilli dociera się tylko jako `/skill:<name>`, więc polecenie napisane przez użytkownika nigdy z żadnym nie koliduje.
 
 ---
 

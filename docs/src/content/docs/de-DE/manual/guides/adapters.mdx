@@ -2,7 +2,7 @@
 title: Adapter und Modelle verwalten
 description: Verbinde Modellanbieter, wähle das Modell, auf dem ein Agent läuft, und prüfe, welche Runner-CLIs der Server-Host hat.
 slug: de-DE/handbuch/anleitungen/adapter
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Diese Anleitung zeigt dir, wie du Modellanbieter verbindest und festlegst, worauf
@@ -118,6 +118,8 @@ jedem Agenten, den du nutzen willst.
 
 Der Agent **Content synthesizer** schreibt den Text, den Control Center rund um eine Unterhaltung erzeugt: ihren Titel, Antworten auf `/btw`, `/handoff`-Dokumente und das Zielinterview von `/goal`. Er führt jedes Mal eine Vervollständigung ohne Werkzeuge aus, auf seinem eigenen Adapter und Modell, also gib ihm ein kleines, schnelles Modell.
 
+Ist dieser Adapter eine ACP-CLI, läuft die Vervollständigung als Prozess auf dem Rechner des Servers und folgt der [Sandbox-Regel](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/#agenten-auf-einem-host-ohne-sandbox): innerhalb der Sandbox, wenn der Server Agenten in einer Sandbox ausführt, und ohne Sandbox nur für Anfragen, für die der Serverinhaber einsteht. Für alle anderen werden diese Funktionen übersprungen: Es wird kein Titel erzeugt, und `/btw` antwortet „Der Agent „Content synthesizer“ fehlt oder hat keinen funktionierenden Runner“.
+
 Bearbeite seine **Persona** unter **Einstellungen → Arbeitsbereich → Agenten**, um zu ändern, wie dieser Text klingt: Titellänge, Sprache, Tonfall und die Beispiele, denen er folgt. Das Antwortformat, das jede Funktion auswertet (ein einzeiliger Titel, die Abschnitte des Ziels), ist fest und wird nach deiner Persona angewendet. Lösche den Agenten, um diese Funktionen abzuschalten; er wird nicht wieder angelegt.
 
 ## Eine Runner-CLI installieren
@@ -134,8 +136,7 @@ Drücke danach oben auf der Seite **Aktualisieren**. Jede erkannte Zeile zeigt
 die aufgelöste Version und den Pfad, dazu Chips dafür, ob **JSON-Modus** und
 **Modellauswahl** unterstützt werden.
 
-Eine externe CLI behält ihre eigenen Zugangsdaten in ihrer eigenen
-Konfiguration auf dem Server-Host. Control Center verwaltet sie nicht.
+Claude-Code-Anmeldungen stehen unter **Claude-Code-Konten** auf dem Claude-Code-Runner. Control Center legt das Konfigurationsverzeichnis jedes Kontos auf dem Server an und gibt dir den Befehl `claude auth login`, den du dort ausführst; es meldet dich nie selbst an.
 
 :::caution[Zusätzliche Argumente und Umgebungsvariablen bleiben auf diesem Gerät]
 Jede Adapter-Zeile bietet ein Feld **Zusätzliche Argumente** und einen Dialog

@@ -2,7 +2,7 @@
 title: Routkarta
 description: Varje rutt som Control Center registrerar, med sin skärm och sina query-parametrar.
 slug: sv-SE/handbok/referens/routkarta
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Appskalet
@@ -11,7 +11,7 @@ Appskalet (`ControlCenterLayout`) omsluter varje rutt i arbetsytan via en `Shell
 
 Grinden är uppfylld när minst en kodvärd är ansluten **för den inloggade användaren** och minst en arbetsyta finns.
 
-En saknad inloggningsuppgift och en saknad konfiguration hanteras olika, och det som skiljer dem är `users.onboarding_finished_at`, hämtat från anroparens egen `identity.me` — aldrig ”det finns arbetsytor”, vilket är fel i samma stund någon bjuds in till en arbetsyta de aldrig själva skapade. Om ingen kodvärd är ansluten stannar ett konto som har slutfört introduktionen kvar i appen: arbetsytans skal visar en varning med en länk till **Inställningar → Arbetsyta → Profil och identitet**, där inloggningen finns. Ett konto som inte har slutfört introduktionen går till `/onboarding`. Så länge flaggan är okänd håller vakten kvar startskärmen i stället för att gissa, eftersom den aldrig omdirigerar tillbaka ut ur introduktionen.
+En saknad inloggningsuppgift och en saknad konfiguration hanteras olika, och det som skiljer dem är `users.onboarding_finished_at`, hämtat från anroparens egen `identity.me` — aldrig ”det finns arbetsytor”, vilket är fel i samma stund någon bjuds in till en arbetsyta de aldrig själva skapade. Om ingen kodvärd är ansluten stannar ett konto som har slutfört introduktionen kvar i appen: arbetsytans skal visar en varning med en länk till **Inställningar → Du → Profil**, där inloggningen finns. Ett konto som inte har slutfört introduktionen går till `/onboarding`. Så länge flaggan är okänd håller vakten kvar startskärmen i stället för att gissa, eftersom den aldrig omdirigerar tillbaka ut ur introduktionen.
 
 ## Rutter utan prefix
 
@@ -65,7 +65,7 @@ Det finns **ingen sidofältspost med namnet ”Planer”**. Plan Studio öppnas 
 
 ## Inställningsrutter
 
-`/settings` omdirigerar till `/settings/you/appearance`. Sidofältets inställningsknapp och `Cmd/Ctrl + ,` går båda till `/settings/you/appearance`.
+`/settings` omdirigerar till `/settings/you/profile`. Sidofältets inställningsknapp och `Cmd/Ctrl + ,` går båda till `/settings/you/profile`.
 
 Inställningssökvägarna är namnrymdsindelade efter **omfång** — `you/`, `workspace/`, `server/` — eftersom segmentet talar om vem en ändring gäller. Två sökvägar är äldre än namnrymderna och saknar omfång i URL:en: `/settings/memory` och `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Inställningssökvägarna är namnrymdsindelade efter **omfång** — `you/`, `w
 
 | Sökväg                        | Skärm                                                              |
 | ----------------------------- | ------------------------------------------------------------------ |
-| `/settings/you/appearance`    | Tema, språk, typografi, redigerartema (inställningarnas landningssida) |
-| `/settings/you/notifications` | Reglage per händelse, tysta timmar                                 |
+| `/settings/you/profile`       | Ditt konto på den här servern: namn, användarnamn, bild och inloggning (inställningarnas landningssida) |
+| `/settings/you/profile?section=accounts` | Anslutna konton: dina egna inloggningar för kodvärd, ärenden, kalender och chatt, samt ärendeutkast från chatten |
+| `/settings/you/appearance`    | Tema, språk, typografi, redigerartema |
 | `/settings/you/audio`         | Mikrofon, diktering, mötesupptäckt och ljudlandskapsutgång         |
+| `/settings/you/notifications` | Reglage per händelse, tysta timmar                                 |
+| `/settings/you/commits`       | Vem som krediteras på commits från arbete du startar, och din commit-signeringsnyckel |
+| `/settings/you/desktop`       | Endast skrivbordsappen: aktivitetsfältsikonen, stängning av fönstret och öppning vid inloggning |
 | `/settings/you/devices`       | Parkopplade telefoner och fjärrstyrning                            |
 | `/settings/you/newsfeed`      | Flödeshantering: källor, uppdatering, lässtatus                    |
+| `/settings/you/links`         | Var länkar utanför Control Center öppnas                           |
 
 ### Arbetsyta
 
 | Sökväg                             | Skärm                                                                                               |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil och identitet i den här arbetsytan: namn, git-författare, kodvärd, kalender                    |
-| `/settings/workspace/general`      | Namn, logotyp, globmönster för hemligheter, granskningsutspridning, grennamngivning, synkhälsa, chattbryggor, farozon |
+| `/settings/workspace/profile`      | Profil och identitet i den här arbetsytan: namn, e-post, git-författare                               |
+| `/settings/workspace/general`      | Namn, logotyp, globmönster för hemligheter, granskningsutspridning, grennamngivning, farozon         |
+| `/settings/workspace/integrations` | Val för Connect, GitHub-appen och automatiseringstokens, ärendeleverantör och -automatisering, synkhälsa, arbetsytans egna leverantörsappar, chattbryggor, GIF:ar. Varje leverantörsgrupp anger ditt eget konto och länkar till Anslutna konton |
 | `/settings/workspace/meetings`     | Mallar för mötesanteckningar och sparade röstprofiler                                                |
-| `/settings/workspace/members`      | Medlemslista, inbjudningar, granskningskedja. Granskningskedjan pagineras med valfri `?cursor=`        |
+| `/settings/workspace/members`      | Medlemslista och inbjudningar        |
 | `/settings/workspace/repositories` | Arkiv registrerade i den här arbetsytan                                                             |
 | `/settings/workspace/environments` | Miljödefinitioner: vad ytor kan starta och vilka uppgifter deras worktrees kör |
 | `/settings/workspace/agents`       | Registrerade agentidentiteter                                                                       |
@@ -108,6 +114,8 @@ Inställningssökvägarna är namnrymdsindelade efter **omfång** — `you/`, `w
 | `/settings/server/rigs`        | Stationer: vad den här värden kan starta, basavbildningar, egna avbildningar, maskiner som körs |
 | `/settings/server/sandbox`     | Exekveringsbeviljanden i sandlådan: program agenter får köra från sin arbetskopia av dina arkiv |
 | `/settings/server/diagnostics` | Diagnostik och integritet: sandlådeisolering, inbäddning, loggning, kraschrapportering |
+| `/settings/server/people`      | Personer på den här servern och om varje adress är bekräftad (endast serverägaren)       |
+| `/settings/server/audit`       | Granskningslogg: serverns och de arbetsytor du administrerar                            |
 | `/settings/server/backup`      | Säkerhetskopiering och återställning: installationsögonblicksbilder, export per arbetsyta, import och borttagning |
 | `/settings/server/about`       | Om och uppdateringar                                                                          |
 

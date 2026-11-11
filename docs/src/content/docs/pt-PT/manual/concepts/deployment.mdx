@@ -2,7 +2,7 @@
 title: Implementação e clientes
 description: Como a arquitetura de cliente leve do Control Center separa um servidor headless dos seus clientes de computador, web e telemóvel.
 slug: pt-PT/manual/conceitos/implementacao
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 O Control Center não é um único programa. É uma **arquitetura de cliente leve**:
@@ -131,6 +131,8 @@ code-server. O navegador precisa de HTTPS ou de um contexto de loopback seguro
 para os service workers. Os clientes nativos usam uma fachada de loopback com
 âmbito de capacidade.
 
+Só o [proprietário do servidor](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor) pode abrir o editor code-server incorporado: ele corre no servidor como o próprio utilizador do servidor. Uma sessão pertence ao dispositivo e à pessoa que a abriu. Abre com a confiança do espaço de trabalho do VS Code ativada, por isso o VS Code pergunta antes de confiar numa pasta, e com as tarefas automáticas desligadas. Os restantes mantêm o editor de ficheiro único e as vistas de ficheiros incorporadas.
+
 ### Companheiro para telemóvel (cc_remote)
 
 A aplicação **Remote** é um cliente separado e mais leve — uma PWA Flutter para web em
@@ -199,8 +201,7 @@ um `cc_worker` real executa trabalhos em lease.
 
 Os dois níveis não aplicam a mesma sandbox. O `cc_server` envolve as execuções que ele
 próprio realiza na sandbox do sistema operativo do anfitrião, onde existe um backend —
-Seatbelt no macOS, bubblewrap no Linux e no WSL2 — e recorre às outras fronteiras no
-Windows ou sem `bwrap` e `socat`. **O `cc_worker` não aplica sandbox nenhuma.**
+Seatbelt no macOS, bubblewrap no Linux e no WSL2. No Windows, ou sem `bwrap` e `socat`, arranca apenas as execuções pelas quais o proprietário do servidor é responsável e recusa as dos restantes, a menos que o proprietário o tenha iniciado com `--sandbox off`, o que executa os agentes de todos os membros sem confinamento. **O `cc_worker` não aplica sandbox nenhuma.**
 Anuncia uma capacidade `sandbox` para que o servidor possa colocar trabalhos por
 plataforma, mas nada no worker aplica uma: um trabalho em lease é lançado diretamente,
 limitado pelo ambiente do lease e pela worktree que lhe foi atribuída. Entregar
@@ -250,7 +251,7 @@ digital guardada. Na primeira ligação, verifique essa impressão digital atrav
 QR fidedigno ou de outro canal fidedigno: um primeiro contacto assinado, por si só,
 não consegue autenticar quem forneceu a chave. Se a identidade mudar, o cliente falha
 de forma fechada; volte a emparelhar através de um canal fidedigno em vez de ignorar a
-divergência. Os clientes mais antigos e o RPC em texto simples não conseguem ligar-se.
+divergência. O RPC em texto simples não é aceite.
 O TLS continua a ser necessário para as origens de navegador, o arranque e os
 metadados públicos; `--insecure` afeta o listener externo do servidor, e não a sessão
 cifrada obrigatória.

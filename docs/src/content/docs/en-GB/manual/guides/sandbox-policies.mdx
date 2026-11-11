@@ -2,7 +2,7 @@
 title: Configure sandbox policies
 description: What constrains an agent run, how to tell whether the OS sandbox is wrapping it and how the action rules decide what an agent may push or reach.
 slug: en-GB/manual/guides/sandbox-policies
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Whether an agent run is sandboxed is decided on the server, at boot
@@ -22,7 +22,7 @@ that is conditional — the other five hold on every host.
 
 | Boundary                 | What it does                                                                                                                                                                                      |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`** |
+| The OS sandbox           | Seatbelt on macOS, bubblewrap on Linux and WSL2. Wraps the Claude Code CLI, ACP adapters and the harness `bash` tool. **Absent on Windows and on Linux without `bwrap` and `socat`, where only the server owner's runs start** |
 | Its own worktree         | Each conversation gets a copy-on-write checkout. The original checkout is folded into the run as a deny-write path and the sandbox is what enforces it                                            |
 | Brokered credentials     | The credential broker mints a per-run environment and revokes it at teardown. Its GitHub token can read but not push: a push goes through Control Center, which asks the push rule first        |
 | Action guardrails        | Every mutating tool declares its effect classes and the guard resolves them before the call runs. A `prompt` with no approver connected is denied                                                 |
@@ -42,10 +42,13 @@ Three things stay weaker than they look:
   find, search_files) run inside the server process, so no sandbox profile constrains them.
   Only the `bash` tool goes through the sandboxed command runner. Those tools are
   bounded by their own path confinement plus the action guardrails.
-- On a host with no backend the first row does not apply at all. ACP and the
-  harness `bash` tool fall back to environment sanitisation plus the command
-  policy; Claude Code inherits the host environment through `NoSandboxAdapter`.
-  The server says so in its startup log. Check yours below.
+- On a host with no backend, only runs the server owner is accountable for
+  start, and for those the first row does not apply. Everyone else's runs are
+  refused. Under `--sandbox off` every member's runs start without the first
+  row. Either way ACP and the harness `bash` tool fall back to environment
+  sanitisation plus the command policy, and Claude Code inherits the host
+  environment through `NoSandboxAdapter`. The server says which case you are
+  in on its startup log. Check yours below.
 
 ## Decide what an agent may push
 
@@ -55,8 +58,8 @@ Each is an action rule:
 | Rule                             | Built-in default | What it covers                                                         |
 | -------------------------------- | ---------------- | ---------------------------------------------------------------------- |
 | **Push to a remote**             | Ask first        | Every `git push` to GitHub, whatever the adapter                       |
-| **Open a pull request**          | Ask first        | `gh pr create` and the pull-request tools                              |
-| **Publish a review or merge**    | Ask first        | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`          |
+| **Open a pull request**          | Ask first        | Control Center's pull-request tools. `gh pr create` does not work in a run                              |
+| **Update or merge a pull request** | Ask first      | An agent's comments on its pull request, edits to its title or description and published reviews, through Control Center's tools. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` and `gh pr close` do not work in a run          |
 | **Write to an external tracker** | Ask first        | Ticket writes through Control Center's tools and `gh issue` writes     |
 | **Access the network**           | Allow            | Whether the sandbox has a network at all, and the harness's web tools  |
 
@@ -113,43 +116,52 @@ whether `--sandbox` is on. Check them in that order.
    **No isolation**. The **In force** fact is this device's preference, not the
    wrap the server actually uses.
 3. Read the server's startup log. It prints exactly one of three lines:
-   - `agent sandbox ON` plus the backend note — runs are wrapped
+   - `agent sandbox ON` plus the backend note: runs are wrapped
    - `no OS-native agent sandbox on this host` plus an install hint where there
-     is one — runs are not wrapped
-   - `agent sandbox DISABLED by --sandbox off` — a deliberate opt-out
+     is one: only runs the server owner is accountable for start, unwrapped,
+     and everyone else's are refused
+   - `agent sandbox DISABLED by --sandbox off`: every member's runs start,
+     unwrapped
+4. The exposure line printed at startup says the same thing in one word:
+   `sandbox=native`, `sandbox=off` or `sandbox=unavailable`.
 
 `GET /healthz` does not report sandbox state, so the startup log is the check.
 
-To turn the sandbox off deliberately — a host where the profile misbehaves is
-the reason it exists — start the server with `--sandbox off`, or set
-`CC_SERVER_SANDBOX=off`. The default is `on` and `on` means "use a backend if
-the host has one", never "require one".
+Only the server owner decides to run without a sandbox. To do it for everyone,
+start the server with `--sandbox off`, or set `CC_SERVER_SANDBOX=off`. Every
+member's agents then run unconfined on that machine, so this is a decision
+about everyone who uses the server, made once at boot. The default is `on`: it
+wraps every run when the host has a backend and, when it does not, starts only
+the owner's runs.
 
 Two situations never get a native sandbox wrap. On **Windows** the native probe
-always reports unavailable and there is nothing to install — agent dispatch
-uses `none`. The `microvm` backend is separate (interactive terminals and rigs)
-and is probe-gated on its own runtime. On **Linux and WSL2** both `bwrap` and
-`socat` must be on the `PATH`; without them the probe reports unavailable and
-names the missing packages.
+always reports unavailable and there is nothing to install, so only the server
+owner's runs start unless the owner passes `--sandbox off`. The `microvm`
+backend is separate (interactive terminals and rigs) and is probe-gated on its
+own runtime. On **Linux and WSL2** both `bwrap` and `socat` must be on the
+`PATH`; without them the probe reports unavailable and names the missing
+packages, and only the owner's runs start.
 
 On Linux/WSL2 with bubblewrap installed, the standard policy's secret-file
-globs cannot be enforced for files an agent creates later. Such a native run
-now fails instead of silently ignoring the rules. A positive boot probe
-therefore does not guarantee that a Linux dispatch can start. `--sandbox off`
-is a deliberate unconfined opt-out, not a substitute security boundary.
+globs cannot be enforced for files an agent creates later, so every native run
+fails instead of silently ignoring the rules, the owner's included. A positive
+boot probe therefore does not mean a Linux dispatch can start: today a Linux
+server runs agents with `--sandbox off`, or without bubblewrap for the owner
+alone. `--sandbox off` is a deliberate unconfined opt-out, not a substitute
+security boundary.
 
 ## Know what a mode already forbids
 
 Mode is stored per space and feeds the guardrail resolver as the **mode
 preset** layer. Three of the four modes are read-only and a read-only mode
-refuses eleven effect classes outright:
+refuses twelve effect classes outright:
 
 | Mode               | Worktree  | Refused by the preset                                                                                                                                                            |
 | ------------------ | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`) | Writable  | Nothing — the built-in defaults apply                                                                                                                                            |
-| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure |
-| **Review**         | Read-only | The same eleven. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
-| **Orchestrate**    | Read-only | The same eleven                                                                                                                                                                     |
+| **Plan**           | Read-only | Delete a file, write outside the worktree, commit, push, open a PR, publish or merge, write to an external tracker, install a package, run a process, change workspace structure, boot or drive an enclosure, run commands on the host |
+| **Review**         | Read-only | The same twelve. Not user-selectable — the composer offers only Agent, Plan and Orchestrate                                                                                         |
+| **Orchestrate**    | Read-only | The same twelve                                                                                                                                                                     |
 
 Network access and secret access are deliberately _not_ refused by a read-only
 mode: research is the point of one.
@@ -173,17 +185,30 @@ resolution order.
 Read what git printed. `Control Center policy: …` means a rule denied the push
 or an **Ask first** went unanswered. `… is not linked to this workspace` means
 the push targets a repo that is neither the worktree's own nor linked to the
-workspace. `Control Center has no GitHub credential that can push …` means the
-GitHub App is not installed on that repo and no fallback credential could push:
-install the App on it or connect GitHub.
+workspace. `Control Center has no GitHub credential that can push …` means no push
+token could be minted: install the GitHub App on that repo, or sign in to GitHub.
+
+### My agent run was refused with "This server has no sandbox"
+
+The run shows **Agents need a sandbox on this server** with "This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone." The server's host has no OS sandbox, and the run's accountable
+person is not the server owner, so nothing was started. For a schedule,
+webhook or other automation, the accountable person is the one the automation
+is bound to, not whoever is looking at it.
+
+Only the server owner can change this. On Linux and WSL2 they install
+`bubblewrap` and `socat` and restart the server (but read the Linux note above
+first). On Windows there is no backend to install. The other choice is to
+restart the server with `--sandbox off`, which runs every member's agents
+unconfined on that machine.
 
 ### The Sandboxing card reports no native sandbox
 
-Then agent runs on that host are not wrapped by Seatbelt or bubblewrap and the
-remaining boundaries are what you have. On Linux and WSL2, install both missing
-tools — `sudo apt-get install bubblewrap socat` — and restart the server; the
-startup log should then say the sandbox is on. On Windows there is no native
-backend to install, so tighten the guardrails instead: see
+Then agent runs on that host are not wrapped by Seatbelt or bubblewrap: only
+the server owner's runs start, and the remaining boundaries are what they
+have. On Linux and WSL2, install both missing tools
+(`sudo apt-get install bubblewrap socat`) and restart the server; the startup
+log should then say the sandbox is on. On Windows there is no native backend
+to install, so tighten the guardrails for the owner's own runs instead: see
 [Configure guardrails](/en-GB/manual/guides/configure-guardrails/).
 
 ### An agent reached a file outside its worktree
@@ -196,8 +221,9 @@ them — their bound is their own path confinement plus the guardrails. A `bash`
 CLI _is_ wrapped where a backend exists and your registered
 checkouts are deny-write inside that wrap in every mode, including their
 symlink-resolved spellings (on macOS a path reached through `/tmp` or
-`/var/folders` resolves under `/private` and both spellings are now denied). On
-a host with no backend none of that applies. Either way, guardrails can refuse
+`/var/folders` resolves under `/private` and both spellings are denied).
+Under `--sandbox off`, or for the owner's own runs on a host with no backend, none
+of that applies. Either way, guardrails can refuse
 **Write outside the worktree** outright.
 
 ## Related guides

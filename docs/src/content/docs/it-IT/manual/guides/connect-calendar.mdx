@@ -2,7 +2,7 @@
 title: Collega un Google Calendar
 description: Collega Google Calendar a uno spazio di lavoro, gestisci più account e riconnetti un account quando un accesso scade.
 slug: it-IT/manuale/guide/collega-calendario
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Questa guida mostra come collegare Google Calendar a uno spazio di lavoro. Il
@@ -21,7 +21,7 @@ tuoi eventi di quello spazio in Control Center, dove puoi anche rispondere agli 
 ## Collega un account
 
 1. Apri **Calendario** nella barra laterale.
-2. Fai clic su **Aggiungi account calendario** nella barra laterale del calendario. (La stessa sezione si trova in **Impostazioni → Spazio di lavoro → Profilo e identità**, sotto **Google Calendar**.)
+2. Fai clic su **Aggiungi account calendario** nella barra laterale del calendario. (La stessa sezione si trova in **Impostazioni → Tu → Profilo**, sotto **Google Calendar**.)
 3. Fai clic su **Collega Google Calendar**. Il browser apre la pagina di consenso di Google.
 4. Scegli l'account e approva l'accesso agli eventi e all'elenco dei tuoi calendari.
 
@@ -62,8 +62,6 @@ il nuovo accesso concede il resto.
 Gli ospiti ricevono l'invito, l'aggiornamento o l'annullamento via email da Google. Spostare un'occorrenza di un evento ricorrente lascia intatto il resto della serie. Puoi prenotare solo
 su calendari su cui il tuo account può scrivere, e solo con i tuoi account: il calendario collegato di
 un altro membro non viene mai proposto.
-
-## Come funziona la sincronizzazione
 
 ## Come funziona la sincronizzazione
 
@@ -109,8 +107,7 @@ stata ripristinata su un'altra macchina.
 
 ## Disconnetti un account
 
-Dalla barra laterale del calendario (o da **Impostazioni → Spazio di lavoro →
-Profilo e identità**), fai clic su **Disconnetti** sull'account. Questo elimina i
+Dalla barra laterale del calendario (o da **Impostazioni → Tu → Profilo**), fai clic su **Disconnetti** sull'account. Questo elimina i
 suoi eventi sincronizzati e cancella la credenziale memorizzata sul server.
 
 ## Porta il tuo client Google
@@ -118,10 +115,11 @@ suoi eventi sincronizzati e cancella la credenziale memorizzata sul server.
 Usa un tuo client Google solo quando hai scelto **Usa le mie app**. Il client del server vale solo in
 quel caso: con Connect di Control Center o un Connect personalizzato, Connect gestisce ogni canale, Google
 compreso, e il client del server resta salvato ma inutilizzato. Per far sì che la schermata di consenso
-rechi il nome del tuo progetto mentre il server usa Connect, assegna allo spazio di lavoro un client proprio
-([sotto](#assegna-allo-spazio-di-lavoro-un-client-google-proprio)); vale in ogni modalità.
+rechi il nome del tuo progetto mentre il server usa Connect, assegna allo spazio di lavoro le proprie app e un client proprio
+([sotto](#assegna-allo-spazio-di-lavoro-un-client-google-proprio)); vale qualunque sia la modalità del server.
 
 1. Nella [Google Cloud Console](https://console.cloud.google.com/apis/credentials), abilita la **Google Calendar API** e configura la **schermata di consenso OAuth**, aggiungendo gli scope `calendar.events`, `calendar.calendarlist.readonly`, `openid` ed `email`. Finché l'app non è verificata, aggiungi te stesso come **utente di test**.2. Crea un **ID client OAuth** di tipo applicazione **Web application**.
+2. Crea un **OAuth client ID** con tipo di applicazione **Web application**.
 3. Aggiungi l'URI di reindirizzamento autorizzato `<server origin>/oauth/google/callback`. **Impostazioni → Server → Accesso single sign-on → App del fornitore → Google** mostra l'URL esatto sotto **URL di callback**; copialo alla lettera.
 4. Incolla **Id client** e **Segreto client** in quello stesso blocco Google, oppure inseriscili nel file `.env` del server come `GOOGLE_OAUTH_CLIENT_ID` e `GOOGLE_OAUTH_CLIENT_SECRET`.
 
@@ -140,19 +138,20 @@ Uno spazio di lavoro può collegare Google Calendar tramite un client suo, invec
 Solo un amministratore o un proprietario dello spazio di lavoro può configurarlo.
 
 1. Crea un client Google di tipo **Web application** come ai passi 1 e 2 sopra
-2. Vai su **Impostazioni → Spazio di lavoro → Generale → App dei provider** e apri **Google Calendar**
-3. Scegli **Usa l'app propria di questo workspace**
-4. Aggiungi al client l'URI di reindirizzamento mostrato dalla riga sotto **URL di callback**, così com'è
-5. Incolla **Id client** e **Segreto client**
+2. Vai in **Impostazioni → Spazio di lavoro → Integrazioni**. Nella scheda **Control Center Connect** scegli **Usa le mie app** e fai clic su **Applica**
+3. Sotto Calendario compare la scheda **app Google Calendar**. Aggiungi al client l'URI di reindirizzamento mostrato dalla scheda sotto **URL di callback**, così com'è
+4. Incolla **Id client** e **Segreto client**
 
 Gli account di calendario collegati in questo spazio di lavoro passano da quel client, qualunque sia il modo
 in cui il server fa accedere le persone. Non ricadono mai sul client del server o su Connect: finché entrambi
-i campi non sono impostati, Google Calendar è disattivato in questo spazio di lavoro e la riga indica cosa
+i campi non sono impostati, Google Calendar è disattivato in questo spazio di lavoro e la scheda indica cosa
 manca. Il secret non lascia mai il server.
 
-Passare tra il client del server e quello dello spazio di lavoro, o cambiare l'ID client dello spazio di
-lavoro, segna ogni account Google di questo spazio di lavoro per la riconnessione. **Usa l'app di questo
-server** elimina i campi salvati dello spazio di lavoro. Gli altri spazi di lavoro del server non ne sono toccati.
+**Usa le mie app** vale per tutti i provider insieme: anche GitHub, Linear e la ricerca GIF funzionano solo con
+le app dello spazio di lavoro, ciascuna impostata accanto al proprio provider nella stessa pagina. Passare alle
+app di accesso dello spazio di lavoro, o cambiare l'ID client dello spazio di lavoro, segna ogni account Google di
+questo spazio di lavoro per la riconnessione. I campi salvati restano quando lo spazio di lavoro torna a un'altra
+scelta, ma vengono usati solo con **Usa le mie app**. Gli altri spazi di lavoro del server non ne sono toccati.
 
 ## Risoluzione dei problemi
 
@@ -163,8 +162,8 @@ server** elimina i campi salvati dello spazio di lavoro. Gli altri spazi di lavo
 | `invalid_client` da Google                          | L'ID e il secret provengono da client diversi, oppure il client è stato eliminato                                                                       |
 | L'approvazione riesce ma la sincronizzazione è vuota | Il tuo account non è un **utente di test** nella schermata di consenso, oppure uno degli scope richiesti non è stato concesso                                   |
 | La finestra di dialogo dice che il codice non corrisponde | Digita gli 8 caratteri esattamente come li mostra il browser. Cinque codici errati interrompono l'accesso; ricomincia                              |
-| «Impossibile aggiornare la tua risposta», o prenotazione, spostamento ed eliminazione non riusciti | L'account è collegato con il vecchio scope di sola lettura. Ricollegalo; anche un calendario condiviso in sola lettura rifiuta le scritture                                                                |
-| Tutti devono riconnettersi                          | Il client Google del server o dello spazio di lavoro è cambiato, oppure è cambiata la scelta o la chiave Connect del server. Vedi [Riconnetti un account scaduto](#riconnetti-un-account-scaduto) |
+| «Impossibile aggiornare la tua risposta», o prenotazione, spostamento ed eliminazione non riusciti | L'account non ha concesso l'accesso in scrittura al calendario. Ricollegalo e approva ogni scope richiesto; anche un calendario condiviso in sola lettura rifiuta le scritture                                                                |
+| Tutti devono riconnettersi                          | Il client Google del server o dello spazio di lavoro è cambiato, oppure sono cambiate la scelta di Connect del server o dello spazio di lavoro, o la chiave del server. Vedi [Riconnetti un account scaduto](#riconnetti-un-account-scaduto) |
 
 ## Guide correlate
 

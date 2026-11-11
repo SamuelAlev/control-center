@@ -2,7 +2,7 @@
 title: Mapa tras
 description: Každá trasa, kterou Control Center registruje, s její obrazovkou a parametry dotazu.
 slug: cs-CZ/prirucka/referencni-prirucka/mapa-tras
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Shell aplikace
@@ -11,7 +11,7 @@ Shell aplikace (`ControlCenterLayout`) obaluje každou trasu uvnitř pracovního
 
 Brána je hotová, když je připojená aspoň jedna forge **pro přihlášeného uživatele** a existuje aspoň jeden pracovní prostor.
 
-Chybějící přihlašovací údaj a chybějící nastavení se řeší jinak a rozlišuje je `users.onboarding_finished_at` přečtené z vlastního `identity.me` volajícího — nikdy „pracovní prostory existují“, což je špatně v okamžiku, kdy tě někdo pozve do pracovního prostoru, který jsi nezaložil. Bez připojené forge zůstává účet, který úvodní nastavení dokončil, v aplikaci: shell pracovního prostoru ukáže varování s odkazem na Nastavení → Pracovní prostor → Profil a identita, kde je přihlášení; účet, který ho nedokončil, jde na `/onboarding`. Dokud je příznak pořád neznámý, stráž podrží startovací obrazovku a nehádá, protože z úvodního nastavení se ven nikdy nepřesměrovává.
+Chybějící přihlašovací údaj a chybějící nastavení se řeší jinak a rozlišuje je `users.onboarding_finished_at` přečtené z vlastního `identity.me` volajícího — nikdy „pracovní prostory existují“, což je špatně v okamžiku, kdy tě někdo pozve do pracovního prostoru, který jsi nezaložil. Bez připojené forge zůstává účet, který úvodní nastavení dokončil, v aplikaci: shell pracovního prostoru ukáže varování s odkazem na Nastavení → Vy → Profil, kde je přihlášení; účet, který ho nedokončil, jde na `/onboarding`. Dokud je příznak pořád neznámý, stráž podrží startovací obrazovku a nehádá, protože z úvodního nastavení se ven nikdy nepřesměrovává.
 
 ## Trasy bez prefixu
 
@@ -65,7 +65,7 @@ Konverzace a vlákna **nemají vlastní trasu** — vlákno je konverzace uvnit�
 
 ## Trasy nastavení
 
-`/settings` přesměruje na `/settings/you/appearance`. Tlačítko nastavení v postranním panelu i `Cmd/Ctrl + ,` vedou na `/settings/you/appearance`.
+`/settings` přesměruje na `/settings/you/profile`. Tlačítko nastavení v postranním panelu i `Cmd/Ctrl + ,` vedou na `/settings/you/profile`.
 
 Cesty nastavení jsou členěné podle **rozsahu** — `you/`, `workspace/`, `server/` — protože segment říká, koho změna zasáhne. Dvě cesty jsou starší než tohle členění a v URL rozsah nemají: `/settings/memory` a `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Cesty nastavení jsou členěné podle **rozsahu** — `you/`, `workspace/`, `se
 
 | Cesta                         | Obrazovka                                                              |
 | ----------------------------- | ---------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Motiv, jazyk, typografie, motiv editoru (výchozí obrazovka nastavení) |
-| `/settings/you/notifications` | Přepínače podle události, tiché hodiny                                |
+| `/settings/you/profile`       | Váš účet na tomto serveru: jméno, uživatelské jméno, obrázek a přihlášení (výchozí obrazovka nastavení) |
+| `/settings/you/profile?section=accounts` | Připojené účty: vaše vlastní přihlášení k hostování kódu, ticketingu, kalendáři a chatu a návrhy ticketů z chatu |
+| `/settings/you/appearance`    | Motiv, jazyk, typografie, motiv editoru |
 | `/settings/you/audio`         | Mikrofon, diktování, zjišťování schůzek a výstup soundscape           |
+| `/settings/you/notifications` | Přepínače podle události, tiché hodiny                                |
+| `/settings/you/commits`       | Kdo je uveden jako autor commitů z práce, kterou spustíte, a váš klíč pro podepisování commitů |
+| `/settings/you/desktop`       | Jen desktopová aplikace: ikona v liště, zavření okna a otevření při přihlášení |
 | `/settings/you/devices`       | Spárované telefony a vzdálené ovládání                                |
 | `/settings/you/newsfeed`      | Správa kanálu novinek: zdroje, obnovení, stav přečtení                |
+| `/settings/you/links`         | Kam se otevírají odkazy zvenku Control Center                         |
 
 ### Pracovní prostor
 
 | Cesta                              | Obrazovka                                                                                                |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil a identita v tomto pracovním prostoru: jméno, autor Git, hostování kódu, kalendář                |
-| `/settings/workspace/general`      | Název, logo, vyloučení cest k tajemstvím, souběh kontrol, pojmenování větví, zdraví synchronizace, mosty chatu, nebezpečná zóna |
+| `/settings/workspace/profile`      | Profil a identita v tomto pracovním prostoru: jméno, e-mail, autor Git |
+| `/settings/workspace/general`      | Název, logo, vyloučení cest k tajemstvím, souběh kontrol, pojmenování větví, nebezpečná zóna |
+| `/settings/workspace/integrations` | Volba Connect, aplikace GitHub a automatizační tokeny, dodavatel ticketů a automatizace, zdraví synchronizace, vlastní aplikace poskytovatelů pracovního prostoru, mosty chatu, GIFy. Každá skupina poskytovatele uvádí váš vlastní účet a odkazuje na Připojené účty |
 | `/settings/workspace/meetings`     | Šablony poznámek ze schůzek a uložené hlasové profily                                                    |
-| `/settings/workspace/members`      | Seznam členů, pozvánky, auditní stopa. Auditní stopa se stránkuje volitelným `?cursor=`                  |
+| `/settings/workspace/members`      | Seznam členů a pozvánky                                                                                  |
 | `/settings/workspace/repositories` | Repozitáře zaregistrované v tomto pracovním prostoru                                                     |
 | `/settings/workspace/environments` | Definice prostředí: co mohou prostory spouštět a jaké úlohy spouštějí jejich worktree |
 | `/settings/workspace/agents`       | Zaregistrované identity agentů                                                                           |
@@ -108,6 +114,8 @@ Cesty nastavení jsou členěné podle **rozsahu** — `you/`, `workspace/`, `se
 | `/settings/server/rigs`        | Stanice: co na tomhle hostiteli může naběhnout, základní obrazy, vlastní obrazy, běžící stroje   |
 | `/settings/server/sandbox`     | Povolení spustitelných souborů v sandboxu: programy, které agenti smí spouštět ze své pracovní kopie tvých repozitářů |
 | `/settings/server/diagnostics` | Diagnostika a soukromí: sandboxování, embeddingy, protokolování, hlášení pádů |
+| `/settings/server/people`      | Lidé na tomto serveru a to, zda je každá adresa potvrzená (jen vlastník serveru)      |
+| `/settings/server/audit`       | Auditní log: serveru a pracovních prostorů, které spravuješ                           |
 | `/settings/server/backup`      | Záloha a obnovení: snímky instalace, export po pracovních prostorech, import a smazání            |
 | `/settings/server/about`       | O aplikaci a aktualizace                                                                           |
 

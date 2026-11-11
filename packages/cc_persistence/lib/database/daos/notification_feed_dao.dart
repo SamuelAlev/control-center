@@ -195,9 +195,8 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
   /// from [conversationId] in [spaceId] recorded at or before [readAt] — the
   /// bell catching up with a conversation the user just read.
   ///
-  /// An item whose frame carries no `conversation_id` predates the
-  /// space/conversation split and is matched on [spaceId] alone. Items the
-  /// read watermark already covers are skipped, and an existing per-item row
+  /// An item whose frame carries no `conversation_id` is not matched. Items
+  /// the read watermark already covers are skipped, and an existing per-item row
   /// is never touched: it is either read already, dismissed, or an explicit
   /// "mark as unread" that reading the conversation must not overrule.
   Future<void> markConversationMessagesRead(
@@ -323,8 +322,7 @@ class NotificationFeedDao extends DatabaseAccessor<WorkspaceDatabase>
     if (params is! Map || params['space_id'] != spaceId) {
       return false;
     }
-    final itemConversation = params['conversation_id'];
-    return itemConversation == null || itemConversation == conversationId;
+    return params['conversation_id'] == conversationId;
   }
 
   /// Hides a single feed item for a user, stamping it read at the same time —

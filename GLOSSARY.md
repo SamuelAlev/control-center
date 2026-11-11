@@ -13,11 +13,11 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Messaging Bounded Context
 
-- **Space:** workspace-scoped participant container. A DM and a room differ only by participant count; some legacy/system spaces have no workspace id. A space has a mode and provisioning state.
+- **Space:** workspace-scoped participant container. A DM and a room differ only by participant count. A space has a mode and provisioning state.
 - **Conversation:** a peer message stream within a space; none is the primary stream. A **thread** is a conversation anchored to one message in a sibling conversation of the same space. Threads do not nest. **ThreadSummary** is a derived reply/participant rollup for its anchor, not independent state.
-- **Message:** one conversation entry, typed for rendering by **MessageType** (`text`, `agentTurn`, `reviewNode`, `plan`, etc.); `agentTurn` contains a completed turn's segments. **SenderType** distinguishes human `user` from `agent`.
+- **Message:** one conversation entry, typed for rendering by **MessageType** (`text`, `agentTurn`, `reviewNode`, `plan`, etc.); `agentTurn` contains a completed turn's segments. **SenderType** is a human `user`, an `agent`, or `system` for what the server itself posts (sender id `system`).
 - **SpaceParticipant:** an agent or human principal in a space, with a role and individual read cursor. **MessageMention** is a resolved @mention referencing either principal type.
-- **SpaceRepo:** the space's explicitly selected repos for worktree provisioning. With no rows, older spaces use all workspace repos; PR spaces use their PR repo.
+- **Space repo selection:** the repos chosen for a space's worktrees; with none selected, every linked workspace repo; PR spaces use their PR repo.
 - **MessageReaction:** a principal's emoji reaction on a space message, unique per message/principal/emoji. Do not confuse it with GitHub PR **ReactionGroup**.
 - **ThinkingEvent:** reasoning subtype of the live **AgentProcessEvent** stream, grouped with tool calls/results for display.
 
@@ -31,7 +31,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 ## PR Review Bounded Context
 
 - **PullRequest:** GitHub PR with identity, branches, review/check state and diff metadata. **EnrichedPullRequest** pairs one with a registered Repo and assigns priority/staleness category; **RepoPullRequests** groups them by repo.
-- **PrFile / FileChange / PrCommit / CheckRun:** respectively a changed file with patch/viewed state, a patch-free file summary, a PR commit, and a CI check on the PR head. **IssueComment** is top-level; **PrCodeReviewComment** is an inline GitHub comment with diff/thread anchoring.
+- **PrFile / PrCommit / CheckRun:** respectively a changed file with patch/viewed state, a PR commit, and a CI check on the PR head. **IssueComment** is top-level; **PrCodeReviewComment** is an inline GitHub comment with diff/thread anchoring.
 - **PrInlineThread / PrInlineEntry:** locally authored inline review or suggested-edit thread and its entries, including resolved/GitHub-sync status. **PrReviewSubmission** is a submitted verdict; **PrUser** is a small GitHub user reference.
 - **ReactionGroup:** grouped GitHub PR reactions. **GifResult** is a GIF search result; neither is a space-message reaction.
 - **PrGeneration:** workspace-scoped generated PR draft not yet published to GitHub.
@@ -77,7 +77,7 @@ Names and distinctions used across the domain. This is not a field inventory; en
 ## Calendar Bounded Context
 
 - **CalendarAccount:** connected Google account per member per workspace/email (`google:<workspaceId>:<userId>:<email>`); reauthorization is indicated by expired auth state. Tokens are not fields on this entity. **CalendarEvent:** synced scheduled event, distinct from a recorded **Meeting**. **CalendarAttendee:** RSVP participant; the app only writes the signed-in user's attendance response, never creates/edits/deletes events.
-- **MeetingCalendarLink:** optional unique link from a recorded meeting to its source calendar event. **CalendarEventStatus** is the provider event lifecycle; **CalendarViewMode** is a UI preference, not an event state.
+- **Meeting–calendar link:** optional unique link (`meeting_calendar_links`) from a recorded meeting to its source calendar event. **CalendarEventStatus** is the provider event lifecycle; **CalendarViewMode** is a UI preference, not an event state.
 - **Google sign-in lane / FileGoogleCredentialsStore / ServerGoogleTokenManager:** the `google` browser sign-in (own Web client or Connect), the per-account server-side credential store (`google_<accountId>` in `secrets.json`) and the in-memory, single-flight token refresher. See [SECURITY.md](SECURITY.md) for credential ownership.
 
 ## Meetings Bounded Context
@@ -104,11 +104,11 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Agents Bounded Context (Doctor & Live State)
 
-- **DiagnosticResult / DoctorReport:** one environment check and its aggregate report. **AgentLiveState:** `running`, `blocked`, `failed`, `idle`, `neverRun`, derived from recent runs rather than independently persisted.
+- **AgentLiveState:** `running`, `blocked`, `failed`, `queued`, `succeeded`, `idle`, `neverRun`, derived from recent runs rather than independently persisted.
 
 ## Dashboard Bounded Context
 
-- **DashboardStatus:** summary of workspace counts. **ActiveProcessInfo:** matched live agent OS process and workspace.
+- **ActiveProcessInfo:** matched live agent OS process and workspace.
 
 ## GitHub Status Bounded Context
 
@@ -124,15 +124,17 @@ Names and distinctions used across the domain. This is not a field inventory; en
 - **Sign-in lane:** one provider's browser sign-in: `github`, `google`, `linear`, `linear_app` (workspace app actor) or `slack`. Runs on the server's own app when complete, else Connect, else unavailable; a partial own app is an error, never a fall back. Not a model-provider OAuth (harness credentials).
 - **Install id (`install_id`):** a server's identity towards one Connect origin: 26 Crockford base32 characters of SHA-256 over the SPKI of an Ed25519 key HKDF-derived from the server's `connect_install_key` seed. Distinct from device pairing identity; rotating the seed changes it and invalidates every seal.
 - **Credential seal (`credential_seal`):** AEAD blob only the issuing Connect can open, bound to provider, Connect origin, install id, workspace, account, app and secret generation. The server stores the seal with `seal_install_id` and `connect_origin`; access tokens stay in memory. A mismatched seal is cleared on read.
-- **Install binding (`install_binding`):** Connect's record of which install ids may use a GitHub installation of the shared App (an organization needs an admin to authorize each server), or which single install a Slack team is bound to.
+- **Install binding (`install_binding`):** Connect's record of which single install a Slack team is bound to. GitHub has none: Connect checks each request against the acting person's own sealed sign-in instead.
+- **Connected accounts:** a person's own sign-ins (GitHub, GitLab, Bitbucket, Linear, Google Calendar, Slack account link), managed on Settings → You → Profile, under the heading of that name. Each belongs to the person, never to a workspace: a pasted GitLab or Bitbucket token is one per person and used in every workspace; a GitHub or Linear sign-in is too, unless a workspace runs its own app or its own Connect and so needs a sign-in of its own. Workspace → Integrations keeps only what an admin decides for the workspace.
 - **Own app:** a provider app the server (or a workspace, for GitHub) registered itself; always takes precedence over Connect. **Create my GitHub App** registers one through GitHub's manifest flow.
 
 ## Identity & Access Bounded Context
 
 - **User:** human identity spanning workspaces. **Principal:** tagged union `UserPrincipal` or `AgentPrincipal`, used for attribution and ownership; never use a sentinel user id for an agent.
+- **Username:** the name a person chooses for themselves, stored and sent as `User.handle` (no second identifier). One rule, `Username` in `cc_domain`: lowercase, 2 to 32 characters of `a-z0-9._-` starting and ending with a letter or digit, never `system`, `agent`, `everyone`, `here`, `channel`, `usectrl` or `me`, unique across the server. Mentions resolve against it. Names the server derives (OS account, invite hint, IdP claim, email) are only suggestions that go through the same rule and take the next free name; the person confirms or changes theirs in onboarding and under You → Profile. Never matched against an IdP's username, and never a forge login: a connected account (a forge, Linear, Google or Slack account under You → Profile) keeps its own login for that provider's data.
 - **WorkspaceMember:** user-to-workspace role assignment. Membership is the access boundary; a paired device alone is not membership. **WorkspaceRole:** `owner`, `admin`, `member`, `viewer`, `guest`.
-- **WorkspaceInvite:** expiring one-use, hash-stored invite for a role. **UserDevice:** user's paired-client credential; revocation closes active sessions. **UserActivityEntry:** append-only attribution/audit record.
-- **WorkspaceMemberRepoGrant:** per-workspace/user/repo `none`, `read`, `review`, `write` grant. Owners/admins have implicit write; other members default to none, preventing workspace membership from over-granting forge access.
+- **WorkspaceInvite:** expiring one-use, hash-stored invite for a role. **PairedDevice:** user's paired-client credential; revocation closes active sessions. **UserActivityEntry:** append-only attribution/audit record.
+- **Repo grant (`RepoGrantLevel`):** per-workspace/user/repo `none`, `read`, `review`, `write` grant. Owners/admins have implicit write; other members default to none, preventing workspace membership from over-granting forge access.
 
 ## Governance Bounded Context
 
@@ -142,11 +144,11 @@ Names and distinctions used across the domain. This is not a field inventory; en
 ## Harness Bounded Context (built-in agent runtime)
 
 - **Harness:** in-process agent loop calling model providers and tools directly, not an external CLI subprocess. `cc_harness` is the portable kernel, `cc_harness_runtime` hosts VM-only providers/tools; server adapters live in `cc_infra`. A model *provider* (including Cursor) is not an adapter process.
-- **AgentLoop / AgentLoopRunner:** event-sourced turn interface and implementation, emitting text/reasoning/tool/turn events. **LlmProviderPort / HarnessProviders:** provider contract and credential resolution. **Tool / ToolRegistry:** in-process tools available to the loop; external MCP tools are bridged in. **ReasoningEffort:** provider-mapped reasoning setting.
+- **AgentLoop / AgentLoopRunner:** event-sourced turn interface and implementation, emitting text/reasoning/tool/turn events. **LlmProviderPort / HarnessProviderFactory:** provider contract and credential resolution. **Tool / ToolRegistry:** in-process tools available to the loop; external MCP tools are bridged in. **ReasoningEffort:** provider-mapped reasoning setting.
 
 ## Model Routing Bounded Context
 
-- **ModelCatalog:** provider/model metadata including context limits, reasoning support and prices. **ProviderPolicyEngine / ProviderPolicy:** per-provider availability and context-promotion policy. **SmallModelRouter:** routes eligible subtasks to cheaper/faster models within quality constraints.
+- **ModelCatalog:** provider/model metadata including context limits, reasoning support and prices. **ProviderPolicyEngine:** per-provider availability and context-promotion policy. **SmallModelRouter:** routes eligible subtasks to cheaper/faster models within quality constraints.
 
 ## Skills Bounded Context
 
@@ -197,13 +199,13 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 - **ParticipantPresence:** ephemeral, never-persisted human/agent awareness; repo-grant filtered before fan-out. **PresenceLocus:** tagged position in a space, file, PR, ticket or plan node.
 - **Follow / steer / take-over / hand-back:** follow another human user's viewport until navigating away (never an agent); redirect a running agent via conversation; pause at a turn boundary to edit its worktree; send the change summary before resuming. Paused state survives restart.
-- **Autonomy dial:** per-space/agent `propose-only`, `act-with-approval` or `act-freely` profile over action guardrails; risky actions still require the policy gate.
+- **Autonomy dial:** per-space/agent `proposeOnly`, `actWithApproval` or `actFreely` profile (`AutonomyLevel`) over action guardrails; risky actions still require the policy gate.
 
 ## Plan Studio Bounded Context
 
 - **PlanGraph:** shared typed DAG shape for a single-agent **PlanDocument** (conversation-scoped) and an **OrchestrationProposal** (orchestration-scoped). Both can be edited before approval; only approved revisions execute.
 - **OrchestrationRevision:** append-only authored proposal snapshot for diff and rewind. **Playbook:** versioned typed-parameter template over a stored proposal or pipeline; substitution is not an expression language.
-- **PlanEstimator / ProposalDiff:** evidence-based cost/time/risk estimates with uncertainty and structural changes between revisions, respectively.
+- **PlanEstimator / ProposalDiffService:** evidence-based cost/time/risk estimates with uncertainty and structural changes between revisions, respectively.
 
 ## Review Studio Bounded Context
 
@@ -225,10 +227,14 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 - **ActionClass:** closed taxonomy of effects (file mutation, git/PR mutation, network, secret access, package/process/workspace/enclosure actions). Tools declare effect classes; unknown classes do not gain implicit permission.
 - **ActionPolicyRule:** scoped `allow`, `prompt` or `deny`; resolution order is space > agent > workspace > mode preset > built-in default, then longest command prefix and most restrictive rule. **ActionDecision / PolicyResolver:** stable within a turn; an unanswerable prompt is denied and multi-class actions take the most restrictive decision.
+- **Standing approval:** the expiring allow an "Approve for 8 hours" answer writes (`provenance` `remembered`), naming something narrower than its class: a branch family, a folder, a host, the exact command or the exact tool; a commit is the one approved as a class. It sits outside rule precedence, answers an ask at its own scope or a broader one and never a deny, and is listed and revoked on the agent permissions page.
 - **Adapter honesty matrix:** records what each runtime can actually enforce at MCP, native CLI and sandbox layers; CC cannot intercept every external CLI action.
-- **Agent run gateway:** loopback `/agent/` endpoint through which the action policy reaches code inside an agent's sandbox. Hard half: every GitHub push is rewritten to it, checked against `gitPush` (refs included) and forwarded on a server-held write token. Soft half: `ShellActionClassifier` maps shell command lines (harness `bash`, Claude Code's PreToolUse hook) to action classes; a hidden command evades it, a push cannot.
-- **ForgeTokenScope:** `read` (one repository: contents read plus pull requests when the accountable human can push, what an agent's environment holds) or `write` (push; held only by the gateway or a human-opened terminal rig). There is no "none": permission is the policy's call, not token withholding. On GitHub it maps to a **GitHubTokenScope** (`read`, `review`, `bot`, `write`), clamped to the accountable human's repository role.
+- **Agent run gateway:** loopback `/agent/` endpoint through which the action policy reaches code inside an agent's sandbox. Hard half: every GitHub push is rewritten to it, checked against `gitPush` (refs included) and forwarded on a server-held write token; a run's fetches of its own repositories on GitHub, GitLab and Bitbucket go through it too, on a credential the run never holds. Soft half: `ShellActionClassifier` maps shell command lines (harness `bash`, Claude Code's PreToolUse hook) to action classes; a hidden command evades it, a push cannot.
+- **ForgeTokenScope:** for one repository: `read` (contents, pull requests and CI; pipeline shell steps, clones and enclosures), `review` (what an agent run reads with, minted by the gateway) or `write` (push; held only by the gateway or a human-opened terminal rig). There is no "none": permission is the policy's call, not token withholding. On GitHub it maps to a **GitHubTokenScope** (`read`, `review`, `comment`, `bot`, `write`), clamped to the accountable human's repository role.
 - **Accountable human:** the member whose GitHub access bounds automation in a workspace: the acting user (requester, labeller, mention author, pipeline `requested_by_user_id`) while still a member, else the workspace owner. Never an unrelated server owner.
+- **Commit identity:** who the commits made through Control Center name (`AgentCommitIdentity`), decided by who started the work. A person's work (a run they asked for, a commit they make in the IDE) is committed as that person, author and committer, under an address their forge verified. Work nobody asked for (a schedule, a webhook) is committed as the agent: the GitHub App's bot on GitHub, else `Control Center <hi@usectrl.dev>`. Not the **accountable human** (who bounds a token) and not the forge identity a push or pull request shows (whose token it rode).
+- **Commit attribution:** the setting (`agent_commit_attribution`: workspace override, else the person's preference, else on) that adds a `Co-Authored-By:` line for the other party: Control Center on a person's commits, and on the agent's commits the people who armed the trigger behind the run.
+- **Commit signing key:** a person's own Ed25519 SSH signing key, created on request and kept by the server (`CommitSigningKeys`); the person adds its public half to their forge account as a signing key. It signs that person's commits only, never the agent's, never a tag, and nothing on Bitbucket.
 
 ## Agent Peer Messaging & Delegation
 
@@ -240,14 +246,14 @@ Names and distinctions used across the domain. This is not a field inventory; en
 
 ## Deterministic UX Bounded Context
 
-- **WriteLedger / idempotency key:** one client UUIDv7 per logical mutation, reused on retries; server deduplicates before handling and returns the original result. **ActionJournal / universal undo:** reversible, compensable and irreversible action classes; irreversible side effects use preview/confirmation instead of an undo promise.
+- **Write ledger (`TicketWriteLedger`, `DaoWriteLedger`) / idempotency key:** one client UUIDv7 per logical mutation, reused on retries; server deduplicates before handling and returns the original result. **ActionJournal / universal undo:** reversible, compensable and irreversible action classes; irreversible side effects use preview/confirmation instead of an undo promise.
 - **Unified inbox:** items that block work or explicitly need an operator, rather than all activity. **Banner rail:** at most two time-critical actionable items, displayed one at a time.
 
 ## Value Objects (Shared Kernel)
 
 - **IdeEditor:** installed/local-editor catalog entry, not a code-server session. **AgentSkills / AgentRole:** case-insensitive skill identifiers and role used in prompts/governance/memory. Agents carry no permission flags; what they may do is action policy.
 - **Mode:** `chat`, `review`, `plan`, `orchestrate`; constrains prompt, writes and tool access per conversation. Plan/review are read-only; orchestrate may propose work but execution waits for approval. **SandboxBackend / SandboxSpec / SandboxBindMount / SandboxHandle / SandboxState / SandboxEvent / SandboxViolation:** host isolation selection, launch contract, mounted path, running handle/lifecycle and event/denial record.
-- **RunCost / RetryMeta / WakeReason / WakeContext:** token/cost aggregate, attempt lineage and reason/context for dispatch. **RepoIsolationBackend:** `rift` or Windows `gitWorktree` (also possible on legacy persisted rows). **MemoryPermission:** `none`, `read`, `write`. **AppLocale:** locale/display metadata.
+- **RunCost / RetryMeta / WakeReason / WakeContext:** token/cost aggregate, attempt lineage and reason/context for dispatch. **RepoIsolationBackend:** `rift` or Windows `gitWorktree`. **MemoryPermission:** `none`, `read`, `write`. **AppLocale:** locale/display metadata.
 
 ## Ports (Abstractions)
 
@@ -256,13 +262,13 @@ Ports are domain contracts implemented by infrastructure; `packages/cc_domain/li
 - **SandboxPort / CredentialBrokerPort / ConfirmationPort / AgentQuestionPort:** sandbox lifecycle, per-launch `ForgeTokenScope`d credentials with revocation, privileged-action approval and inline agent questions.
 - **GitRepoInspectorPort / GitCommandPort / RepoIsolationPort / RepoWorkspaceProvisionerPort / WorkspaceFilesystemPort:** checkout inspection, Git execution, isolated worktree creation and per-space filesystem management. Provision failure must not mutate the source checkout.
 - **RunLogStorePort / EmbeddingPort / NotificationPort / NotificationPreferencesPort / ProcessControlPort / ModeResolver:** run storage, optional vectorization, desktop notifications/preferences, process control and mode lookup.
-- **AgentBackend / AgentDispatchPort / MessagingPort / TicketProviderPort / PipelineEnginePort / DispatchReviewersPort / SchemaValidatorPort / SandboxDetectorPort / DoctorPort / GitHubCliPort / ProcessDetectionPort / McpServerPort / McpTool / TicketWorkflowPort:** feature-specific seams, named by the feature that consumes them; inspect the corresponding `domain/ports/` for signatures.
+- **AgentBackend / AgentDispatchPort / MessagingPort / TicketProviderPort / PipelineEnginePort / DispatchReviewersPort / SchemaValidatorPort / SandboxDetectorPort / ProcessDetectionPort / McpTool:** feature-specific seams, named by the feature that consumes them; inspect the corresponding `domain/ports/` for signatures.
 
 ## Domain Events
 
 - **DomainEventBus:** in-process typed publish/subscribe for cross-feature reactions; each event carries `occurredAt`. Events notify after state transitions; they are not commands or a persisted queue.
 - Representative triggers: `WorkspaceCreated` seeds defaults; `RepoAdded` indexes code; `AgentRunCompleted` unblocks pipeline/goal/cost consumers; `SpaceCreated` provisions worktrees; `SpaceDeleted` triggers GC; `MeetingRecordingStopped` starts summarization; `CalendarAuthExpired` prompts reconnection; `TicketAssigned` routes team work.
-- Distinct PR signals matter: `PullRequestStatusChanged` is a general transition, `PrMerged` is merge-specific, `PrHeadChanged` invalidates stale review and `ExternalPrDetected` concerns non-agent PRs. Pipeline lifecycle events are terminal (`PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`). Device revocation is observed directly from its table, not a `UserDeviceRevoked` event.
+- Distinct PR signals matter: `PullRequestStatusChanged` is a general transition, `PrMerged` is merge-specific, `PrHeadChanged` invalidates stale review and `ExternalPrDetected` concerns non-agent PRs. Pipeline lifecycle events are terminal (`PipelineRunCompleted`, `PipelineRunFailed`, `PipelineRunCancelled`).
 
 ## Domain Services
 
@@ -272,12 +278,12 @@ Ports are domain contracts implemented by infrastructure; `packages/cc_domain/li
 
 ## Cross-Cutting
 
-- **AppNotification / NotificationCategory / NotificationSound:** payload, per-category settings and bundled sound. Live notifications come from `notifications/*` RPC frames via `mapNotificationFrame`; legacy `NotificationEventMapper` is test-only, not a live server-event subscriber.
+- **AppNotification / NotificationCategory / NotificationSound:** payload, per-category settings and bundled sound. Live notifications come from `notifications/*` RPC frames via `mapNotificationFrame`.
 
 ## MCP Bounded Context
 
 - **McpTool:** schema, handler and approval metadata for one tool. **McpToolRegistry / McpToolDispatcher:** lookup/listing and mode/confirmation-gated call routing. **JsonRpcRequest / JsonRpcResponse / JsonRpcError / JsonRpcNotification:** wire message shapes.
-- `cc_server` assembles a common registry in `cc_server_core`; desktop/web/external clients and the built-in harness reach it over server RPC/MCP. Registry entries are advertised through `tools/list`, not hidden behind discovery; additional external servers are bridged by `cc_mcp_client`. `cc_mcp` owns server tools; the client `mcp` feature is settings/status UI. Tool families include messaging, tickets, review, memory, code, agents, workspace, pipelines and governance. `submit_plan` produces a typed plan document; artifact tools publish versioned typed blocks, not HTML. Avoid fixed tool-count inventories.
+- `cc_server` assembles a common registry in `cc_server_core`; desktop/web/external clients and the built-in harness reach it over server RPC/MCP. Registry entries are advertised through `tools/list`, not hidden behind discovery; additional external servers are bridged by `cc_mcp_client`. `cc_mcp` owns server tools; the client `mcp` feature is providers only, and its UI lives under settings. Tool families include messaging, tickets, review, memory, code, agents, workspace, pipelines and governance. `submit_plan` produces a typed plan document; artifact tools publish versioned typed blocks, not HTML. Avoid fixed tool-count inventories.
 
 ## Remote Control Bounded Context
 
@@ -287,7 +293,7 @@ Ports are domain contracts implemented by infrastructure; `packages/cc_domain/li
 
 ## Client/Server Architecture Bounded Context
 
-- **cc_server:** headless pure-Dart owner of persistence, background jobs, MCP and RPC. **ServerConnectionMode:** desktop `local` (supervised child) or `remote`; browser always remote. **ServerConnectionConfig / ServerConnectionStore:** non-secret server choice and separate secure pairing credential.
+- **cc_server:** headless pure-Dart owner of persistence, background jobs, MCP and RPC. **ServerConnectionMode:** desktop `local` (supervised child) or `remote`; browser always remote. **ServerEntry / ServerConnectionStore:** non-secret server choice and separate secure pairing credential.
 - **CcServerProcess / CcServerEndpoint:** supervised local child and its loopback RPC address, with parent-death shutdown. **ServerBackend / ThinClientBackend:** boot-time resolved server client and local-child handle. **RemoteRpcClient / LocalRpcServer / InProcessRpcChannel:** client RPC contract, authenticated server endpoint and in-memory local/test transport.
 - **RPC workspace binding:** one workspace is bound to each session; clients cannot supply another workspace id to gain access. **MediaProxyConfig:** client media fetches through the paired server, not directly from upstream hosts. No client opens a database. For server/client package layout and storage, see [ARCH.md](ARCH.md).
 

@@ -2,7 +2,7 @@
 title: Crear una plantilla de pipeline
 description: Crea una plantilla de flujo de trabajo DAG en el editor de pipelines — agrega nodos, conéctalos, declara entradas y haz que se pueda ejecutar.
 slug: es-MX/manual/guias/crear-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Las plantillas de pipeline se crean en los ajustes del espacio de trabajo. La
@@ -42,7 +42,7 @@ lienzo: el nodo aterriza donde lo sueltes, sin ninguna conexión entrante.
 | **Bash script**                 | listen       | Ejecuta un script de shell con sustitución de `{{state}}`; no se despacha ningún agente |
 | **Open conversation**           | listen       | Abre el único espacio visible de la ejecución y su checkout; los nodos de agente se unen a esta sala |
 | **Clone PR branch**             | listen       | Descubre la rama head de la PR con `gh pr view` y la clona en el directorio de la ejecución |
-| **Post PR comment**             | listen       | Publica los hallazgos consolidados en la PR como comentario de revisión de GitHub    |
+| **Post PR comment**             | listen       | Publica un comentario de revisión en la PR desde el servidor: los hallazgos, o su `message`    |
 | **Reviewer (prompt)**           | listen       | Despacha un agente revisor especializado; se suspende hasta que el agente envía su resultado |
 | **Consolidate (join)**          | join         | Espera a varias ramas anteriores y luego pide a un agente que consolide sus salidas   |
 | **Custom prompt**               | listen       | Nodo genérico guiado por prompt, enrutado a través del cuerpo `promptAgent`           |
@@ -147,6 +147,13 @@ porque ninguno de los dos es configurable:
   `GITHUB_TOKEN` contienen un token que solo puede leer ese repo, así que `gh` y
   `git clone` contra él funcionan sin ninguna configuración. De lo contrario,
   no hay ningún token de GitHub.
+- Un script no puede escribir en GitHub: `gh pr comment`, `gh pr merge`,
+  `gh pr create` y `git push` fallan con ese token. Comenta con un nodo **Post PR
+  comment** en su lugar (define `extras.message` para publicar tu propio texto,
+  con marcadores `{{key}}`, en lugar de los hallazgos consolidados). Envía y abre
+  pull requests desde un nodo de agente: su `git push` pasa por la pasarela de
+  ejecuciones y abre el PR con la herramienta `open_pull_request`. La fusión queda
+  en manos de una persona; ningún nodo fusiona.
 - Solo un administrador del espacio de trabajo puede crear o editar un pipeline
   con un paso bash.
 - El script se lanza como el ejecutable literal `bash`, así que `bash` debe

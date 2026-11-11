@@ -1,4 +1,5 @@
 import 'package:cc_persistence/cc_persistence.dart';
+import 'package:cc_server_core/src/identity/identity_bootstrap.dart';
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 
 /// Opens the REAL on-disk databases under [dataDir] — `global.db` plus each
@@ -33,12 +34,28 @@ class SeedDatabases {
 
   /// Registers [workspaceId] in the registry and materialises its database, so a
   /// booting server finds both the row and the file.
-  Future<void> seedWorkspace(String workspaceId, {required String name}) async {
+  ///
+  /// [ownerUserId] records the workspace's owner; the booting server gives that
+  /// user an owner membership.
+  Future<void> seedWorkspace(
+    String workspaceId, {
+    required String name,
+    String? ownerUserId,
+  }) async {
     await global.workspaceRegistryDao.upsertWorkspace(
-      WorkspacesTableCompanion(id: Value(workspaceId), name: Value(name)),
+      WorkspacesTableCompanion(
+        id: Value(workspaceId),
+        name: Value(name),
+        ownerUserId: Value(ownerUserId),
+      ),
     );
     await workspaces.create(workspaceId);
   }
+
+  /// The server owner, minted and recorded the way first boot does it.
+  /// Idempotent: the booting server reuses the record.
+  Future<String> serverOwner() =>
+      IdentityBootstrap(global: global, workspaces: workspaces).run();
 
   /// Closes both halves.
   Future<void> close() async {

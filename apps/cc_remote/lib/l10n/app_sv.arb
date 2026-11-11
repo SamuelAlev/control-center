@@ -94,7 +94,6 @@
   },
   "inboxLoadFailed": "Kunde inte läsa in inkorgen",
   "allCaughtUp": "Du är ikapp",
-  "inboxNoForgeAccount": "Inget forge-konto är anslutet på servern, så pull requests kan inte tillskrivas dig ännu.",
   "inboxNothingWaiting": "Inget är blockerat och ingen pull request väntar på dig.",
   "blocked": "Blockerad",
   "sectionNeedsYourReview": "Behöver din granskning",
@@ -201,28 +200,6 @@
       }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, =1{{names} är för stor för att skickas över relän härifrån.} other{{names} är för stora för att skickas över relän härifrån.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      },
-      "names": {
-        "type": "String"
-      }
-    }
-  },
-  "attachmentUploadFailed": "Kunde inte ladda upp bilagan. Försök igen.",
-  "attachmentsLeftOut": "{count, plural, =1{1 bilaga kunde inte laddas upp och utelämnades.} other{{count} bilagor kunde inte laddas upp och utelämnades.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "teammate": "Kollega",
   "systemSender": "System",
   "agent": "Agent",
@@ -282,27 +259,6 @@
   "prsEmptyDescription": "Pull requests från den här arbetsytans repon visas här.",
   "refreshPullRequests": "Uppdatera pull requests",
   "noForgeConnected": "Ingen forge är ansluten på servern, så inga pull requests kan hämtas. Anslut en från desktopappen.",
-  "reposUnreadable": "{count, plural, =1{1 repo kunde inte läsas.} other{{count} repon kunde inte läsas.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reposNotReadable": "Går inte att läsa: {names}",
-  "installationSuspendedTitle": "GitHub App-installationen är avstängd",
-  "installationSuspendedBody": "Visar senast kända data för {names}. Återuppta installationen på GitHub.",
-  "installationSuspendedNotice": "GitHub App-installationen är avstängd. Visar senast kända data för {names}. Återuppta installationen på GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": {
-        "type": "String"
-      }
-    }
-  },
   "draft": "Utkast",
   "merged": "Sammanslagen",
   "closed": "Stängd",
@@ -740,7 +696,7 @@
   "permissionGitCommit": "Skapa commits",
   "permissionGitPush": "Pusha commits",
   "permissionPrCreate": "Skapa pull requests",
-  "permissionPrPublish": "Publicera pull requests",
+  "permissionPrPublish": "Uppdatera eller slå ihop pull requests",
   "permissionVendorSyncWrite": "Skriv till ett externt ärendesystem",
   "permissionNetworkEgress": "Använd nätverket",
   "permissionSecretAccess": "Läs hemligheter",
@@ -752,12 +708,11 @@
   "permissionEffectiveDescription": "Gäller på den här nivån utan åtgärdsargument. Villkorade behörigheter nedan gäller bara matchande förfrågningar. Servern fattar det slutliga beslutet.",
   "permissionSpaceAgentNote": "Ingen agent vald. Agentspecifika regler visas först när du väljer en agent ovan.",
   "permissionScopedGrants": "Regler på den här nivån",
-  "permissionRemembered": "Sparat godkännande",
+  "permissionRemembered": "Stående godkännande",
   "permissionSetAtThisScope": "{source} · angiven här",
   "permissionInheritedFrom": "{source} · ärvd",
   "permissionExpiresAt": "Går ut {date}",
   "permissionSetHere": "Ange en regel här",
-  "permissionRevokeBeforeEdit": "Återkalla den nivåspecifika eller sparade regeln innan du anger en allmän regel för åtgärden.",
   "permissionConfirmRevoke": "Bekräfta återkallande",
   "permissionRevokeRule": "Återkalla regel",
   "permissionCommandPrefix": "Kommandoprefix: {prefix}",
@@ -871,9 +826,6 @@
   "activityAgentBlocked": "Agentens åtgärd blockerad",
   "activityMessage": "Nytt meddelande",
   "activityPullRequest": "Uppdatering av pull request",
-  "activityTicket": "Ärendeuppdatering",
-  "activityMeeting": "Mötesuppdatering",
-  "activityCalendar": "Kalenderanslutning",
   "activityRig": "Stationsuppdatering",
   "activityPrReady": "Pull request redo att slås samman",
   "activityPrBlocked": "Sammanslagning av pull request blockerad",
@@ -1025,7 +977,7 @@
   "credentialsApiKeyHint": "Klistra in en API-nyckel från leverantören",
   "credentialsBrowserLogin": "Logga in via webbläsaren",
   "credentialsWaitingForLogin": "Väntar på godkännande i din webbläsare…",
-  "credentialsConnectCodePrompt": "Ange koden som visas i webbläsaren",
+  "credentialsConnectCodePrompt": "Bekräftelsekod",
   "credentialsConnectCodeMalformed": "Det ser inte ut som en inloggningskod. Koder har 8 bokstäver och siffror.",
   "credentialsSignInInvalidCode": "Koden hör inte till den här inloggningen. Kontrollera den och försök igen.",
   "credentialsSignInTooManyCodes": "För många felaktiga koder. Starta inloggningen igen.",
@@ -1042,11 +994,51 @@
   "credentialsCompleteLogin": "Slutför inloggningen",
   "credentialsPersonalToken": "Personlig åtkomsttoken",
   "credentialsPersonalTokenHint": "Klistra in en personlig åtkomsttoken",
-  "credentialsHostManaged": "Anslutningen kommer från serverappen eller serverns miljö. Bara serverägaren kan ändra den där, men du kan lägga till en egen token.",
   "credentialsStopWatching": "Sluta bevaka",
   "transcriptClaudeSignInExpiredTitle": "Inloggningen till Claude Code har gått ut",
   "transcriptClaudeSignInExpiredBody": "Körningen stoppades eftersom kontot inte längre autentiseras. Logga in igen och försök sedan med turen igen.",
   "transcriptSignInExpiredTitle": "Inloggningen till leverantören har gått ut",
   "transcriptSignInExpiredBody": "Körningen stoppades eftersom leverantörens inloggningsuppgifter inte längre fungerar. Anslut den igen under Inställningar → Leverantörer och försök sedan med turen igen.",
-  "permissionHostExecution": "Kör kommandon på värden"
+  "permissionHostExecution": "Kör kommandon på värden",
+  "credentialsSignInLapsed": "Din inloggning på {provider} har gått ut. Logga in igen.",
+  "credentialsSignInPaused": "Pausad: arbetsytans inloggningstjänst har ändrats. Den fungerar igen när tjänsten är tillbaka.",
+  "credentialsProviderUnreachable": "Det går inte att nå {provider} just nu. Försöker igen.",
+  "credentialsScopeWorkspace": "Bara den här arbetsytan",
+  "credentialsScopeAllWorkspaces": "Alla arbetsytor",
+  "credentialsRemoveConfirmWorkspace": "Ta bort dina sparade inloggningsuppgifter från den här arbetsytan? Andra arbetsytor behåller sina.",
+  "credentialsRemoveConfirmAllWorkspaces": "Ta bort dina sparade inloggningsuppgifter från alla arbetsytor som delar dem?",
+  "credentialsSignInServerRestarted": "Servern startades om. Börja inloggningen igen.",
+  "repoAccessInstallApp": "Installera GitHub App på {owner} så att automatiseringen når {names}. Tryck för att öppna GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App är inte installerad på {owner}, så automatiseringen når inte {names}. Be en administratör för arbetsytan att installera den.",
+  "repoAccessAddToApp": "Lägg till {names} bland GitHub Appens arkiv. Tryck för att öppna GitHub.",
+  "repoAccessAskAdminAdd": "GitHub App ser inte {names} ännu. Be en administratör för arbetsytan att lägga till dem bland dess arkiv.",
+  "repoAccessSuspended": "GitHub App-installationen är avstängd. Automatiseringen för {names} är pausad tills en ägare av kontot återupptar installationen på GitHub.",
+  "repoAccessOwnerCannotSee": "Personen som ansvarar för arbetsytans automatisering kan inte längre se {names}, så inget körs där för deras räkning.",
+  "repoAccessOwnerNotSignedIn": "Personen som ansvarar för arbetsytans automatisering är inte inloggad på forgen, så automatiseringen för {names} väntar tills de loggar in.",
+  "repoAccessRetrying": "Kunde inte kontrollera åtkomsten till {names}. Försöker igen.",
+  "hiddenReposSignIn": "{count, plural, =1{Logga in på {forge} för att se pull requests från 1 arkiv till} other{Logga in på {forge} för att se pull requests från {count} arkiv till}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{1 arkiv är dolt eftersom ditt {forge}-konto inte kan se det} other{{count} arkiv är dolda eftersom ditt {forge}-konto inte kan se dem}}",
+  "hiddenReposNoGrant": "{count, plural, =1{1 arkiv är dolt eftersom du saknar åtkomst till det i den här arbetsytan} other{{count} arkiv är dolda eftersom du saknar åtkomst till dem i den här arbetsytan}}",
+  "hiddenReposChecking": "{count, plural, =1{Kontrollerar din åtkomst till 1 arkiv till…} other{Kontrollerar din åtkomst till {count} arkiv till…}}",
+  "credentialsAtlassianEmail": "E-post för Atlassian-kontot",
+  "credentialsAtlassianEmailInvalid": "Ange e-postadressen för ditt Atlassian-konto.",
+  "credentialsBitbucketApiToken": "API-token",
+  "repoAccessAutomationTokenMissing": "Ingen automatiseringstoken kan läsa {names}, så bakgrundsarbetet där är pausat. En administratör kan lägga till en under Inställningar → Repositoryn.",
+  "credentialsSignInConfirmInBrowser": "Bekräfta i webbläsaren och ange sedan koden den visar i fältet nedan.",
+  "credentialsSignInAccountAlreadyBound": "Det här kontot är redan anslutet till en annan person på den här servern. Logga in med ett annat konto.",
+  "credentialsTokenUnreachable": "{provider} kunde inte nås för att kontrollera token. Försök igen om en stund.",
+  "credentialsTokenRejected": "{provider} godkänner inte token. Kontrollera att du kopierat hela den och att den inte har återkallats.",
+  "credentialsTokenWrongKind": "Det här är ingen personlig token. Klistra in en personlig åtkomsttoken från ditt eget {provider}-konto, inte en token för ett projekt, en grupp, en arbetsyta eller en bot.",
+  "credentialsTokenNarrowScope": "Token saknar behörigheten {scope}, som granskning och kommentarer kräver. Skapa en som har den.",
+  "credentialsTokenExpired": "Token har gått ut. Skapa en ny och klistra in den här.",
+  "credentialsSignInRateLimited": "För många förfrågningar just nu. Vänta en stund och försök igen.",
+  "credentialsSignInCancelled": "Inloggningen avbröts eller nekades. Starta den igen när du är redo.",
+  "credentialsSignInNoLongerOpen": "Den här inloggningen är inte längre öppen: den avbröts, användes eller ersattes. Starta den igen.",
+  "noWorkspacesYetHint": "En arbetsytadministratör måste bjuda in dig, eller så kan serverägaren skapa en arbetsyta åt dig.",
+  "repoAccessReplaced": "{repos} pekar nu på ett annat arkiv på {forge}. Koppla om det från skrivbordsappen eller webbappen för att fortsätta använda det.",
+  "repoAccessAskAdminRelink": "{repos} pekar nu på ett annat arkiv på {forge}. En arbetsytadministratör måste koppla om det innan det kan användas igen.",
+  "runSandboxUnavailableTitle": "Agenter behöver en sandlåda på den här servern",
+  "runSandboxUnavailable": "Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här. Ägaren kan installera sandlådan eller stänga av sandlådan för alla.",
+  "permissionTools": "Verktyg: {tools}",
+  "permissionNotInEffect": "Inte i kraft medan den här åtgärden är nekad"
 }

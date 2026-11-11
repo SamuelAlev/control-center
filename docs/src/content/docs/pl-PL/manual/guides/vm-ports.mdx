@@ -2,7 +2,7 @@
 title: Przekieruj porty z terminala
 description: Osiągnij serwer deweloperski uruchomiony w Terminalu (VM) lub w powłoce hosta — ze swojej maszyny, z Przeglądarki (VM), z Androida, w swojej sieci albo pod domeną deweloperską z HTTPS.
 slug: pl-PL/podrecznik/poradniki/porty-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Serwer uruchomiony w terminalu rozmowy jest publikowany tylko dla **tej
@@ -16,8 +16,7 @@ stronie serwera i ginie razem z terminalem albo rigiem.
 
 ## Zobacz, co nasłuchuje
 
-1. Otwórz **Terminal (VM)** rozmowy albo powłokę hosta (w przestrzeni lub na
-   stronie PR-a).
+1. W edytorze rozmowy (w przestrzeni lub na stronie PR-a) otwórz **Terminal** z menu `+`: w sekcji **Maszyny** powłokę w VM rozmowy, a w sekcji **Narzędzia** terminal na serwerze. Powłokę hosta może otworzyć tylko właściciel serwera; czyjś inny terminal działa w piaskownicy.
 2. Uruchom swój serwer — `pnpm dev`, `python -m http.server 8000`, cokolwiek.
 3. W ciągu kilku sekund **ikona wtyczki** w prawym górnym rogu terminala
    dostanie kropkę. Kliknij ją.
@@ -131,6 +130,10 @@ gdy serwer się restartuje — wiersz pokazuje *nie nasłuchuje*, dopóki nie wr
 podczas gdy automatyczne przekierowania znikają razem ze swoim portem. W powłoce
 hosta możesz też ustawić inny port lokalny.
 
+Zmiana przekierowań portów wymaga uprawnienia zapisu do każdego repozytorium, które udostępnia przestrzeń. Z samym dostępem do odczytu nadal widzisz porty, a zamiast **Dodaj port** panel pokazuje: „Zmiana tych portów wymaga dostępu do zapisu do wszystkich repozytoriów w tej przestrzeni.” Zob. [Kto może obserwować, a kto sterować](/pl-PL/podrecznik/poradniki/uzywanie-rigow/#kto-może-obserwować-a-kto-sterować).
+
+Terminal, który ktoś otworzył dla siebie, zachowuje swoje porty tylko dla niego: dla każdego innego jego lista portów i zmiany portów odpowiadają tak, jakby sesja nie istniała, dokładnie jak sama sesja. Terminale udostępnione w przestrzeni podlegają regule przestrzeni opisanej wyżej.
+
 ## Jak zachowuje izolację
 
 Porty są kluczowane po obszarze roboczym i przestrzeni. Własna mapa portów
@@ -142,9 +145,9 @@ odwrotnymi, które serwer trzyma otwarte dla Przeglądarki (VM) i Androida.
 Powłoka hosta nigdy nie skanuje całej maszyny. Żaden nasłuch nie powstaje w
 systemie gościa bez udziału serwera, a wszystko jest demontowane razem z
 terminalem albo rigiem. Projekt opisano w
-[Rigach i izolacjach](/pl-PL/podrecznik/koncepcje/rigi/#ports-without-holes);
+[Rigach i izolacjach](/pl-PL/podrecznik/koncepcje/rigi/#porty-bez-dziur);
 dokładne zarezerwowane porty i zasady domen znajdziesz w
-[dokumentacji referencyjnej rigów](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/#ports-and-dev-domains).
+[dokumentacji referencyjnej rigów](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/#porty-i-domeny-deweloperskie).
 
 ## Powiązane
 

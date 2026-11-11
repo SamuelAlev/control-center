@@ -29,8 +29,8 @@ It answers with what it found, or explains that an adapter needs both halves.
 | Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Ships with LLVM                    |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python picks the project's interpreter]
-`debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter.
+:::note[Python picks the project's interpreter when the run is sandboxed]
+In a sandboxed run, `debugpy` is looked up in `.venv/bin` or `venv/bin` before `$PATH`. A `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code rather than as the wrong interpreter. In a run without a sandbox it uses `$PATH` only, so a repository cannot choose the interpreter that runs on the server's machine.
 :::
 
 ## Set the breakpoint first, then launch
@@ -104,6 +104,8 @@ For a wedged process rather than one you are starting:
 debug(op: "attach", port: 5858)
 ```
 
+The port has to be one of the run's own forwarded ports. Any other port is refused before anything starts, so an agent cannot attach to a process that belongs to someone else on the server's machine.
+
 ## Finish
 
 ```
@@ -113,7 +115,7 @@ debug(op: "terminate")
 Always end the session. A debug adapter owns a **stopped process** holding whatever that process holds — a port, a lock, a database connection.
 
 :::note[It cannot run away from you]
-Every session has a hard TTL it cannot extend, there is exactly one per conversation, and everything is torn down when the server stops. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
+Every session has a hard TTL it cannot extend (30 minutes), there is exactly one per conversation, and everything is torn down when the server stops. In a sandboxed run the session keeps its sandbox across turns for that long at most. A second `launch` is refused rather than replacing the first: an agent that starts one without ending the other has almost certainly lost track of the first.
 :::
 
 ## Bounded output

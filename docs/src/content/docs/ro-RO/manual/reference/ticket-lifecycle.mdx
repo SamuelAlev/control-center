@@ -2,7 +2,7 @@
 title: Ciclul de viață al tichetelor
 description: Câmpurile, stările, tranzițiile și relațiile tichetelor, plus punctul de trecere al mutațiilor.
 slug: ro-RO/manual/referinta/ciclul-de-viata-al-tichetelor
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Stările tichetelor
@@ -117,7 +117,7 @@ Agregatul acoperă două preocupări pe un singur rând. **Oglinda** (furnizor, 
 | `projectId`              | `String?`                  | Proiectul proprietar; nu este trimis niciodată către un sistem de la distanță             |
 | `assignedAgentId`        | `String?`                  | Id-ul principalului atribuit (doar metadate — atribuirea nu trimite nimic)                 |
 | `assigneeType`           | `PrincipalType`            | Ce fel de principal numește `assignedAgentId` — `user` sau `agent` (implicit `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Felul principalului care a creat tichetul (`user` sau `agent`); null pentru rândurile vechi/de sistem |
+| `createdByType`          | `PrincipalType?`           | Felul principalului care a creat tichetul (`user` sau `agent`); null pentru rândurile create de sistem |
 | `createdById`            | `String?`                  | Id-ul principalului care a creat tichetul                                                 |
 | `assignedTeamId`         | `String?`                  | Echipa atribuită (doar metadate)                                                          |
 | `delegatedByAgentId`     | `String?`                  | Agentul care a delegat acest tichet                                                       |

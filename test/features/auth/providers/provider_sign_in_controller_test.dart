@@ -1,8 +1,12 @@
 import 'dart:async';
 
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInAttemptStatus, SignInUnavailableReason;
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
+import 'package:control_center/features/auth/presentation/widgets/provider_sign_in_dialog.dart'
+    show signInUnavailableMessage;
 import 'package:control_center/features/auth/presentation/widgets/sign_in_copy.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -22,11 +26,12 @@ SignInAttempt _attempt(
   SignInFailure? codeError,
   String account = '',
   Duration expiresIn = const Duration(minutes: 10),
+  String url = _url,
 }) => SignInAttempt(
   loginId: loginId,
   lane: lane,
   mode: mode,
-  url: _url,
+  url: url,
   expiresAt: DateTime.now().toUtc().add(expiresIn),
   status: status,
   account: account,
@@ -55,8 +60,15 @@ class _FakeSignIn implements RemoteProviderSignIn {
   }
 
   @override
-  Future<SignInAttempt> status(String loginId, {String? workspaceId}) async {
-    calls.add(('status', {'login_id': loginId, 'workspace_id': workspaceId}));
+  Future<SignInAttempt> status(
+    String loginId, {
+    String? workspaceId,
+    ConnectOAuthLane? lane,
+  }) async {
+    calls.add((
+      'status',
+      {'login_id': loginId, 'workspace_id': workspaceId, 'lane': lane},
+    ));
     return onStatus!(loginId);
   }
 
@@ -230,6 +242,41 @@ void main() {
           isFalse,
         );
       });
+    });
+  });
+
+  group('the browser address', () {
+    test('only HTTPS, or HTTP to this machine, is ever opened', () async {
+      for (final bad in [
+        'http://provider.example/authorize',
+        'javascript:alert(1)',
+        'file:///etc/hosts',
+        'control-center://oauth-done?login_id=x&code=y',
+        '/relative/path',
+        '',
+      ]) {
+        repo.onBegin = (lane) => _attempt('bad', url: bad);
+        final controller = container().read(
+          providerSignInControllerProvider.notifier,
+        );
+        await expectLater(
+          controller.begin(ConnectOAuthLane.github),
+          throwsA(isA<FormatException>()),
+          reason: bad,
+        );
+        expect(controller.startedHere('bad'), isFalse, reason: bad);
+      }
+      expect(opened, isEmpty);
+
+      const loopback = 'http://127.0.0.1:9030/oauth/authorize';
+      repo
+        ..onBegin = ((lane) => _attempt('local', url: loopback))
+        ..onStatus = _attempt;
+      final c = container();
+      await c
+          .read(providerSignInControllerProvider.notifier)
+          .begin(ConnectOAuthLane.github);
+      expect(opened, [loopback]);
     });
   });
 
@@ -423,6 +470,48 @@ void main() {
       expect(await controller.completeFromDeepLink('dl-2', 'K7Q29WXM'), isTrue);
       expect(repo.argsOf('complete'), hasLength(1));
     });
+
+    test('every poll names the lane the attempt belongs to', () {
+      fakeAsync((async) {
+        repo.onBegin = (lane) => _attempt('own-lane', lane: lane);
+        repo.onStatus = (id) => _attempt(id, lane: ConnectOAuthLane.linear);
+        final c = container();
+        unawaited(
+          c
+              .read(providerSignInControllerProvider.notifier)
+              .begin(ConnectOAuthLane.linear, workspaceId: 'ws-1'),
+        );
+        async.elapse(const Duration(seconds: 2));
+        expect(repo.argsOf('status').single['lane'], ConnectOAuthLane.linear);
+        expect(repo.argsOf('status').single['workspace_id'], 'ws-1');
+      });
+    });
+
+    test('a retry stops polling the attempt it replaces', () {
+      fakeAsync((async) {
+        var begins = 0;
+        repo.onBegin = (lane) => _attempt('own-${++begins}');
+        repo.onStatus = _attempt;
+        final c = container();
+        final controller = c.read(providerSignInControllerProvider.notifier);
+        unawaited(
+          controller.begin(ConnectOAuthLane.github, workspaceId: 'ws-1'),
+        );
+        async.flushMicrotasks();
+        SignInAttempt? superseded;
+        unawaited(controller.result('own-1')!.then((a) => superseded = a));
+
+        unawaited(
+          controller.begin(ConnectOAuthLane.github, workspaceId: 'ws-1'),
+        );
+        async.flushMicrotasks();
+        expect(superseded?.loginId, 'own-1', reason: 'its waiter is released');
+
+        async.elapse(const Duration(seconds: 6));
+        final polled = repo.argsOf('status').map((a) => a['login_id']).toSet();
+        expect(polled, {'own-2'}, reason: 'the old attempt is not polled');
+      });
+    });
   });
 
   group('failure copy', () {
@@ -462,6 +551,90 @@ void main() {
           ConnectOAuthLane.google,
         ),
         l10n.signInErrorAccessDenied('Google Calendar'),
+      );
+    });
+    test('a server restart asks for a fresh sign-in', () {
+      expect(
+        signInFailureMessage(
+          l10n,
+          SignInFailure.attemptUnknown,
+          ConnectOAuthLane.github,
+        ),
+        l10n.signInErrorAttemptUnknown,
+      );
+    });
+
+    test("the server's explanation follows the failure sentence", () {
+      final base = signInFailureMessage(
+        l10n,
+        SignInFailure.exchangeFailed,
+        ConnectOAuthLane.github,
+      );
+      expect(
+        signInFailureDetail(
+          l10n,
+          SignInFailure.exchangeFailed,
+          ConnectOAuthLane.github,
+          serverMessage: 'The client secret was rejected.',
+        ),
+        '$base\nThe client secret was rejected.',
+      );
+      expect(
+        signInFailureDetail(
+          l10n,
+          SignInFailure.exchangeFailed,
+          ConnectOAuthLane.github,
+        ),
+        base,
+      );
+    });
+
+    test('every unusable status reads differently', () {
+      expect(
+        unusableConnectionLine(
+          l10n,
+          ForgeConnectionStatus.needsSignIn,
+          'GitHub',
+          account: 'octocat',
+        ),
+        l10n.connectionNeedsSignInAs('GitHub', 'octocat'),
+      );
+      expect(
+        unusableConnectionLine(l10n, ForgeConnectionStatus.paused, 'GitHub'),
+        l10n.connectionPaused,
+      );
+      expect(
+        unusableConnectionLine(
+          l10n,
+          ForgeConnectionStatus.unreachable,
+          'GitHub',
+        ),
+        l10n.connectionUnreachable('GitHub'),
+      );
+      expect(
+        unusableConnectionLine(l10n, ForgeConnectionStatus.connected, 'GitHub'),
+        isNull,
+      );
+    });
+
+    test('every unavailable reason has its own sentence', () {
+      final messages = {
+        for (final reason in SignInUnavailableReason.values)
+          signInUnavailableMessage(
+            l10n,
+            ConnectOAuthLane.github,
+            SignInLaneInfo(
+              lane: ConnectOAuthLane.github,
+              mode: SignInLaneMode.unavailable,
+              unavailableReason: reason,
+              error: 'bad secret',
+            ),
+          ),
+      };
+      expect(messages, hasLength(SignInUnavailableReason.values.length));
+      expect(
+        messages,
+        contains(l10n.signInUnavailableMisconfigured('GitHub', 'bad secret')),
       );
     });
   });

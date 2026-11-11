@@ -2,7 +2,7 @@
 title: Asociază un dispozitiv
 description: Asociază-ți telefonul (sau un al doilea browser ori desktop) cu serverul tău Control Center ca să poți urmări flota de la distanță.
 slug: ro-RO/manual/ghiduri-practice/asociaza-dispozitiv
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Acest ghid îți arată cum să asociezi un telefon cu Control Center, ca să poți citi
@@ -61,8 +61,7 @@ Nu există un pas de tip în așteptare-apoi-aprobare: un dispozitiv emis este a
 din momentul creării, iar poarta de conectare verifică doar că credențialul este
 activ și neexpirat. Tratează codul QR și cheia de asociere ca pe o parolă și
 revocă tot ce nu ai vrut să oferi. Atât sesiunile de client directe, cât și cele
-prin releu necesită criptare cap la cap; clienții mai vechi nu pot reveni la RPC
-în clar.
+prin releu necesită criptare cap la cap; nu există RPC în clar.
 :::
 
 ## Gestionează dispozitivele asociate
@@ -77,7 +76,7 @@ imediată și ireversibilă din perspectiva dispozitivului.
 
 Credențialele emise din acest panou sunt limitate în timp: expiră 30 de zile după
 emitere, iar după aceea poarta de conectare le respinge închis. Un credențial emis
-cu `cc_server pair` în linia de comandă **nu expiră deloc** — revocă-l manual când
+cu `cc_server pair` în linia de comandă expiră în același fel; rulează din nou `pair` ca să emiți unul nou și revocă-l manual când
 mașina pentru care a fost emis este scoasă din uz.
 
 ## Schimbă spațiile de lucru de pe telefon

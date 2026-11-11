@@ -2,7 +2,7 @@
 title: Sambung ke pelayan jauh
 description: Halakan apl desktop atau klien web ke cc_server yang berjalan di tempat lain dan beralih antara pelayan tanpa memulakan semula.
 slug: ms-MY/manual-pengguna/panduan-cara/sambung-ke-pelayan-jauh
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Setiap klien ialah pemapar kepada `cc_server` yang memiliki data. Desktop boleh
@@ -88,6 +88,8 @@ itu sendiri; Service Worker-nya membawa permintaan melalui sesi tersulit yang di
 ke backend code-server pada `cc_server`. Hoskan klien web melalui HTTPS atau loopback
 selamat supaya Service Worker tersedia. Klien natif menggunakan fasad loopback yang
 dihadkan oleh keupayaan.
+
+Hanya pemilik pelayan boleh membuka editor code-server terbenam: ia berjalan pada pelayan sebagai pengguna pelayan itu sendiri. Sesi itu dimiliki oleh peranti dan orang yang membukanya. Ia dibuka dengan kepercayaan ruang kerja VS Code dihidupkan, jadi VS Code bertanya sebelum mempercayai folder, dan dengan tugas automatik dimatikan. Orang lain mengekalkan editor fail tunggal terbina dalam dan paparan fail.
 :::
 
 ### Apa yang tidak dilakukan oleh penyemak imbas
@@ -102,9 +104,8 @@ permukaan memerlukan tetingkap natif atau peranti mesin itu sendiri:
 
 Dua ciri berkelakuan berbeza dan bukannya tidak ada. **Rakaman** mesyuarat
 berfungsi dalam penyemak imbas, menangkap mikrofon anda serta kongsi skrin yang
-merangkumi trek audio. **Buka dalam IDE** juga berfungsi, tetapi meminta pelayan
-melancarkan editor pada paparan _pelayan_, jadi butang itu menyembunyikan dirinya
-terhadap hos tanpa kepala yang tiada editor dipasang.
+merangkumi trek audio. Butang yang dinamakan sempena editor anda (seperti **Buka dalam VS Code**) meminta
+pelayan melancarkan editor pada paparan _pelayan_, jadi ia hanya ditawarkan kepada pemilik pelayan, dan butang itu menyembunyikan dirinya terhadap hos tanpa kepala yang tiada editor dipasang.
 
 ## Penyelesaian masalah
 

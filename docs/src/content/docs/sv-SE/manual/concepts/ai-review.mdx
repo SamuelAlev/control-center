@@ -2,7 +2,7 @@
 title: AI-granskning
 description: Hur en pull request blir granskad – granskningsytor, granskningsnoder och kollegakonsensus, kohorter och axlar, utfallet Ship/Hold/Block, och varför publiceringen är ett steg du själv tar.
 slug: sv-SE/handbok/koncept/ai-granskning
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Hur en granskning ser ut
@@ -203,8 +203,12 @@ användaren så att en granskning aldrig kan publiceras dubbelt. När du trycker
   tryckte på den, med personens egen GitHub-inloggning: releasegrinden är
   personens, och då är granskningen det också. En publicering utan en person
   bakom sig är automatisering, och automatisering godkänner aldrig: Ship skickas
-  då som `COMMENT`, och på Control Center Connect krediteras inlägget med
-  prefixet `**Control Center** (for @login):`.
+  då som `COMMENT`, och @-omnämnanden i fynden görs verkningslösa så att inlägget
+  inte meddelar någon. Den publiceras av boten, utom på den delade Control Center
+  Connect-appen när Connect-operatören inte har listat den här installationen: då
+  skickas den med den ansvariga personens egen inloggning, under hens namn, och krediteras med prefixet `**Control Center** (for @login):`.
+  En server eller arbetsyta med en egen GitHub-app publicerar alltid som boten.
+  En agent som anropar MCP-verktyget kan bara publicera ytans egen granskning.
 
 Publicering deklarerar åtgärdsklassen `prPublish`, så räckesflaskhalsen grindar
 den precis som vilken muterande åtgärd som helst – den frågar som standard och

@@ -2,7 +2,7 @@
 title: Installeren
 description: Gebruik Control Center in de browser of installeer de desktopapp, stel een agentbackend in en kies waar zijn server draait.
 slug: nl-NL/handleiding/installeren
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center werkt op twee manieren: als **webapp** op
@@ -136,7 +136,7 @@ Modellenlijsten worden live geleverd door elke verbonden provider; [models.dev](
 
 Een GitHub-inloggegeven is **van jou en staat op de server**, gekoppeld aan je gebruikers-id — niet in de sleutelhanger van het besturingssysteem van de client. Elk apparaat waarmee je inlogt gebruikt hetzelfde gegeven, en geen ander lid kan het lezen.
 
-GitHub kent alleen aanmelden: **Instellingen → Werkruimte → Profiel en identiteit → Codehosting** biedt **Inloggen bij GitHub**, en er is geen token om te plakken. De aanmelding loopt via de eigen GitHub App van de server ([De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)) of via Control Center Connect, afhankelijk van wat de servereigenaar heeft gekozen. Met de eigen app van de server keert de browser vanzelf terug naar de server; via Connect typ je de code van 8 tekens die de browser toont, of laat je de browser Control Center openen. Zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/).
+GitHub kent alleen aanmelden: **Instellingen → Jij → Profiel → Codehosting** biedt **Inloggen bij GitHub**, en er is geen token om te plakken. De aanmelding loopt via de eigen GitHub App van de server ([De GitHub App maken](/nl-NL/handleiding/gidsen/github-app/)) of via Control Center Connect, afhankelijk van wat de servereigenaar heeft gekozen, tenzij een werkruimtebeheerder voor die werkruimte andere aanmeldapps heeft gekozen in **Instellingen → Werkruimte → Integraties**. Met de eigen app van de server keert de browser vanzelf terug naar de server; via Connect typ je de code van 8 tekens die de browser toont, of laat je de browser Control Center openen. Zie [GitHub-integratie instellen](/nl-NL/handleiding/gidsen/github-integratie/).
 
 De onboarding vraagt om deze verbinding. Daarna meld je je op dezelfde kaart opnieuw aan of verbreek je de verbinding. GitLab en Bitbucket gebruiken dezelfde kaart met een geplakt persoonlijk token; zie [Een codehost verbinden](/nl-NL/handleiding/gidsen/codehost-verbinden/).
 
@@ -158,7 +158,7 @@ Volg [Een headless server draaien](/nl-NL/handleiding/gidsen/headless-server-dra
 
 1. **Instellingen → Server → Modelaanbieders** toont beide adapters. ‘Control Center (built-in)’ verschijnt als gevonden met versie `built-in`; Claude Code verschijnt als gevonden als zijn CLI in de `PATH` van de serverhost staat. Druk op **Vernieuwen** als hij ontbreekt.
 2. **Instellingen → Werkruimte → Repository's** toont de repo's van deze werkruimte, en **Repository toevoegen** bladert door de mappen van de serverhost.
-3. **Instellingen → Werkruimte → Agenten** toont de vijf agenten die je eerste werkruimte heeft geseed. Elke agent heeft een ingestelde **Adapter** en een ingesteld **Model** nodig voordat hij kan draaien.
+3. **Instellingen → Werkruimte → Agenten** toont de zes agenten die je eerste werkruimte heeft geseed. Elke agent heeft een ingestelde **Adapter** en een ingesteld **Model** nodig voordat hij kan draaien.
 4. **Instellingen → Server → Diagnose en privacy** rapporteert de sandboxbackends die deze host biedt, de status van het embeddingmodel en de logging.
 
 ## Bouwen vanaf de broncode

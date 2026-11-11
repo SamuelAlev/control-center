@@ -16,6 +16,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -23,9 +24,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The installed editors the server host reports (empty against a headless
 /// server). Cached by Riverpod for the session.
+///
+/// Empty, without asking, for anyone who may not use the server host: the
+/// editor opens on the server's display, which is host execution.
 final _serverEditorsProvider = FutureProvider.autoDispose<List<IdeEditor>>((
   ref,
 ) async {
+  if (!ref.watch(canUseHostProvider)) {
+    return const [];
+  }
   final editors = await RemoteIdeRepository(
     ref.watch(rpcClientProvider),
   ).detectEditors();

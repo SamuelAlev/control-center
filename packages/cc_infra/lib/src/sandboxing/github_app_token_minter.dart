@@ -6,9 +6,8 @@ import 'package:rhttp/rhttp.dart';
 /// repo-scoped access tokens.
 ///
 /// [installationId] is resolved per call by `GitHubAppClient` from the repo's
-/// owner — it is NOT configuration. A server-wide installation id used to be an
-/// environment variable, which cannot be right: an app is installed per
-/// account, and which account matters is only known once a repo is picked.
+/// owner: an app is installed per account, and which account matters is only
+/// known once a repo is picked.
 class GitHubAppConfig {
   /// Creates a [GitHubAppConfig].
   const GitHubAppConfig({
@@ -26,80 +25,119 @@ class GitHubAppConfig {
   /// The installation the token is minted for, resolved from the repo's owner
   /// by the caller.
   final String installationId;
-
-  /// Whether every field needed to mint is present.
-  bool get isComplete =>
-      appId.isNotEmpty && privateKeyPem.isNotEmpty && installationId.isNotEmpty;
 }
 
-/// A minted installation token and its (server-reported) expiry.
+/// The App JWT GitHub's App endpoints authenticate with: RS256, `iss` the
+/// App id, issued a minute in the past (GitHub's advice against clock skew)
+/// and expiring nine minutes after [now], under GitHub's ten-minute ceiling.
+String buildGitHubAppJwt({
+  required String appId,
+  required String privateKeyPem,
+  required DateTime now,
+}) {
+  int seconds(DateTime t) => t.millisecondsSinceEpoch ~/ 1000;
+  return JWT({
+    'iss': appId,
+    'iat': seconds(now.subtract(const Duration(seconds: 60))),
+    'exp': seconds(now.add(const Duration(minutes: 9))),
+  }).sign(
+    RSAPrivateKey(privateKeyPem),
+    algorithm: JWTAlgorithm.RS256,
+    noIssueAt: true,
+  );
+}
+
+/// A minted installation token, its (server-reported) expiry, and what GitHub
+/// said it covers.
 class MintedToken {
   /// Creates a [MintedToken].
-  const MintedToken({required this.token, this.expiresAt});
+  const MintedToken({
+    required this.token,
+    this.expiresAt,
+    this.coverage = const {},
+    this.requestId = '',
+  });
 
   /// The installation access token (`ghs_…`).
   final String token;
 
   /// When GitHub says the token expires (≈1h), or null if unparsed.
   final DateTime? expiresAt;
+
+  /// GitHub's `permissions`, `repository_selection` and `repositories`, as
+  /// answered, so a caller that knows the repository's id can prove the
+  /// coverage again by id.
+  final Map<String, Object?> coverage;
+
+  /// GitHub's `x-github-request-id` for the mint, or ''.
+  final String requestId;
 }
 
-/// Mints (and revokes) **GitHub App installation access tokens** — short-lived,
-/// repo-scoped, permission-restricted credentials — so a sandboxed agent run
-/// never sees the user's broad PAT (FINDINGS §1.1/1.2).
+/// Mints (and revokes) **GitHub App installation access tokens**: short-lived,
+/// repo-scoped, permission-restricted credentials.
 ///
-/// Flow: build a ≤10-minute RS256-signed App JWT (`iss` = app id), present it
-/// as `Bearer` to `POST /app/installations/{id}/access_tokens` with the
-/// requested `repositories` + `permissions` and return the scoped token.
-/// Revocation is `DELETE /installation/token` authed with the token itself.
+/// Flow: build an App JWT ([buildGitHubAppJwt]), present it as `Bearer` to
+/// `POST /app/installations/{id}/access_tokens` with the requested
+/// `repositories` + `permissions`, and return the scoped token only when
+/// GitHub's answer covers exactly those repositories with exactly those
+/// permissions. Revocation is `DELETE /installation/token` authed with the
+/// token itself.
 class GitHubAppTokenMinter {
   /// Creates a minter over an [_httpClient] based at `https://api.github.com`.
-  GitHubAppTokenMinter({required this._httpClient, required this._config});
+  GitHubAppTokenMinter({
+    required this._httpClient,
+    required this._config,
+    DateTime Function()? now,
+  }) : _now = now ?? (() => DateTime.now().toUtc());
 
   final RhttpClient _httpClient;
   final GitHubAppConfig _config;
+  final DateTime Function() _now;
 
-  /// The App JWT the minter presents to GitHub. Public for testability — a test
-  /// can verify the RS256 signature + claims without a live GitHub.
-  ///
-  /// `dart_jsonwebtoken` stamps `iat = now` and (via `expiresIn`) `exp = now +
-  /// 9 min`, comfortably under GitHub's 10-minute ceiling; `iss` is the app id.
-  String buildAppJwt() {
-    return JWT({'iss': _config.appId}).sign(
-      RSAPrivateKey(_config.privateKeyPem),
-      algorithm: JWTAlgorithm.RS256,
-      expiresIn: const Duration(minutes: 9),
-    );
-  }
+  /// The App JWT the minter presents to GitHub.
+  String buildAppJwt() => buildGitHubAppJwt(
+    appId: _config.appId,
+    privateKeyPem: _config.privateKeyPem,
+    now: _now(),
+  );
 
   /// Exchanges a fresh App JWT for an installation token scoped to
-  /// [repositories] (bare repo names) with [permissions]. Throws on failure.
+  /// [repositories] (bare repo names) with [permissions].
+  ///
+  /// Throws [ArgumentError] for an empty [repositories] or [permissions]
+  /// (GitHub reads either absent as "everything the installation has"),
+  /// [FormatException] for an answer that is not a token, and [StateError]
+  /// for a token wider than asked (revoked first).
   Future<MintedToken> mint({
     required List<String> repositories,
-    Map<String, String> permissions = const {},
+    required Map<String, String> permissions,
   }) async {
     if (repositories.isEmpty) {
-      // GitHub reads an absent list as every repository of the installation.
       throw ArgumentError.value(repositories, 'repositories', 'is empty');
+    }
+    if (permissions.isEmpty) {
+      throw ArgumentError.value(permissions, 'permissions', 'is empty');
     }
     final jwt = buildAppJwt();
     final res = await _httpClient.post(
       '/app/installations/${_config.installationId}/access_tokens',
       body: HttpBody.json({
         'repositories': repositories,
-        if (permissions.isNotEmpty) 'permissions': permissions,
+        'permissions': permissions,
       }),
       headers: HttpHeaders.rawMap({
         'Authorization': 'Bearer $jwt',
         'Accept': 'application/vnd.github+json',
       }),
     );
-    final data = (httpJsonBody(res) as Map<String, dynamic>?) ?? const {};
-    final token = data['token'] as String?;
-    if (token == null || token.isEmpty) {
-      throw StateError('GitHub App installation-token mint returned no token.');
+    final data = httpJsonBody(res);
+    final token = data is Map ? data['token'] : null;
+    if (data is! Map || token is! String || token.isEmpty) {
+      throw const FormatException(
+        'GitHub App installation-token mint returned no token.',
+      );
     }
-    if (!_coversExactly(data, repositories)) {
+    if (!_coversExactly(data, repositories, permissions)) {
       try {
         await revoke(token);
       } on Object {
@@ -107,33 +145,49 @@ class GitHubAppTokenMinter {
       }
       throw StateError(
         'GitHub App installation-token mint was not limited to the '
-        'requested repositories.',
+        'requested repositories and permissions.',
       );
     }
-    final expStr = data['expires_at'] as String?;
+    final expires = data['expires_at'];
     return MintedToken(
       token: token,
-      expiresAt: expStr != null ? DateTime.tryParse(expStr) : null,
+      expiresAt: expires is String ? DateTime.tryParse(expires) : null,
+      coverage: {
+        'permissions': data['permissions'],
+        'repository_selection': data['repository_selection'],
+        'repositories': data['repositories'],
+      },
+      requestId: _header(res.headers, 'x-github-request-id'),
     );
   }
 
+  /// Whether the answer proves it covers exactly [repositories] with exactly
+  /// [permissions]: a `selected` selection, a repository list naming them
+  /// and nothing else, and a permission map equal to the one asked for.
+  /// GitHub always lists both for an installation token, so an answer
+  /// without them proves nothing and is refused.
   static bool _coversExactly(
-    Map<String, dynamic> data,
+    Map<dynamic, dynamic> data,
     List<String> repositories,
+    Map<String, String> permissions,
   ) {
     if (data['repository_selection'] != 'selected') {
       return false;
     }
-    final listed = data['repositories'];
-    if (listed == null) {
-      return true;
+    final granted = data['permissions'];
+    if (granted is! Map ||
+        granted.length != permissions.length ||
+        permissions.entries.any((e) => granted[e.key] != e.value)) {
+      return false;
     }
+    final listed = data['repositories'];
     if (listed is! List) {
       return false;
     }
     final names = {
       for (final r in listed)
-        if (r is Map && r['name'] is String) (r['name'] as String).toLowerCase(),
+        if (r is Map && r['name'] is String)
+          (r['name'] as String).toLowerCase(),
     };
     return names.length == listed.length &&
         names.length == repositories.length &&
@@ -151,4 +205,14 @@ class GitHubAppTokenMinter {
       }),
     );
   }
+}
+
+/// [name]'s value in [headers], compared case-insensitively, or ''.
+String _header(List<(String, String)> headers, String name) {
+  for (final (key, value) in headers) {
+    if (key.toLowerCase() == name) {
+      return value;
+    }
+  }
+  return '';
 }

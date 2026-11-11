@@ -1,4 +1,8 @@
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_rpc/cc_rpc.dart';
+import 'package:control_center/features/auth/providers/oauth_providers.dart'
+    show SignInNeed, needsSignIn;
 
 /// Result of writing a draft into a conversation's worktree.
 typedef WorktreeWriteResult = ({String repoId, String path});
@@ -24,6 +28,10 @@ typedef WorktreeCommitResult = ({
 /// Reads a file from the conversation's isolated worktree (the PR-head tree)
 /// via the SERVER-side `worktree.readFile` op. Returns null when the op is
 /// unavailable / the space owns no worktree for the repo.
+///
+/// A refusal (`unauthorized`: not signed in to the forge, the person's own
+/// forge account cannot read the repository, the repository replaced) is
+/// rethrown typed, so the pane words it rather than reading as missing.
 Future<WorktreeReadResult?> readWorktreeFile(
   RemoteRpcClient rpcClient, {
   required String workspaceId,
@@ -45,6 +53,11 @@ Future<WorktreeReadResult?> readWorktreeFile(
       content: data['content'] as String? ?? '',
       binary: data['binary'] as bool? ?? false,
     );
+  } on RemoteRpcException catch (e) {
+    if (e.code == RpcErrorCodes.unauthorized) {
+      rethrow;
+    }
+    return null;
   } on Exception {
     return null;
   }
@@ -94,7 +107,8 @@ Future<WorktreeCommitResult?> commitAndPushWorktree(
       headSha: data['headSha'] as String?,
       error: data['error'] as String?,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    _rethrowRefusal(e, st);
     return null;
   }
 }
@@ -138,7 +152,8 @@ Future<WorktreePublishResult?> publishWorktreeBranch(
       uncommitted: (data['uncommitted'] as num?)?.toInt() ?? 0,
       error: data['error'] as String?,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    _rethrowRefusal(e, st);
     return null;
   }
 }
@@ -182,11 +197,11 @@ Future<WorktreeBranchSyncResult?> syncWorktreeBranch(
       pushed: data['pushed'] as bool? ?? false,
       dirty: data['dirty'] as bool? ?? false,
       conflict: data['conflict'] as bool? ?? false,
-      // Absent on a server that predates push-refusal reporting.
       pushRefused: data['pushRefused'] == true,
       error: data['error'] as String?,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    _rethrowRefusal(e, st);
     return null;
   }
 }
@@ -305,7 +320,8 @@ Future<WorktreeCheckoutResult?> checkoutWorktreeBranch(
       dirty: data['dirty'] == true,
       error: data['error'] as String?,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    _rethrowRefusal(e, st);
     return null;
   }
 }
@@ -323,6 +339,9 @@ typedef PrWorktreeSyncOutcome = ({bool synced, bool dirty, String? error});
 /// `worktree.syncToPrHead` op. Returns `synced` when the tree advanced,
 /// `dirty` when it was skipped because of uncommitted edits, or null when the
 /// op is unavailable / the space owns no worktree.
+///
+/// The fetch runs on the caller's own GitHub sign-in, so a `needs_sign_in`
+/// refusal is rethrown for the caller to offer that sign-in.
 Future<PrWorktreeSyncOutcome?> syncWorktreeToPrHead(
   RemoteRpcClient rpcClient, {
   required String workspaceId,
@@ -343,7 +362,12 @@ Future<PrWorktreeSyncOutcome?> syncWorktreeToPrHead(
       dirty: data['dirty'] == true,
       error: null,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    if (needsSignIn(e, fallback: SignInNeed.forForge(ForgeHost.github)) !=
+        null) {
+      rethrow;
+    }
+    _rethrowRefusal(e, st);
     return null;
   }
 }
@@ -449,7 +473,8 @@ Future<WorktreeWriteResult?> writeWorktreeFile(
       repoId: data['repoId'] as String? ?? repoId,
       path: data['path'] as String? ?? path,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    _rethrowRefusal(e, st);
     // The op is absent on hosts that own no worktrees, or the call failed —
     // surface as "not saved" rather than throwing to the caller.
     return null;
@@ -489,7 +514,17 @@ Future<WorktreeRevertResult?> revertWorktreeFiles(
       reverted: (data['reverted'] as num?)?.toInt() ?? 0,
       skipped: skipped,
     );
-  } on Exception {
+  } on Exception catch (e, st) {
+    _rethrowRefusal(e, st);
     return null;
+  }
+}
+
+/// Lets a refusal reach the caller (`unauthorized`: no write grant on the
+/// repository, the forge refusing, the space unreadable), which words it by
+/// kind; anything else stays "the op is unavailable" (null).
+void _rethrowRefusal(Exception error, StackTrace stackTrace) {
+  if (error is RemoteRpcException && error.code == RpcErrorCodes.unauthorized) {
+    Error.throwWithStackTrace(error, stackTrace);
   }
 }

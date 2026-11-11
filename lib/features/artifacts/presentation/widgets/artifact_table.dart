@@ -1,7 +1,7 @@
 import 'package:cc_domain/features/governance/domain/value_objects/artifact_block.dart';
 import 'package:cc_markdown/cc_markdown.dart';
 import 'package:control_center/core/theme/app_text_styles.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:control_center/core/theme/resolve_design_tokens.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_registries.dart';
 import 'package:control_center/shared/widgets/markdown/markdown_style.dart';
 import 'package:flutter/foundation.dart';

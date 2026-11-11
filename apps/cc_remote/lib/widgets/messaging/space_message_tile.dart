@@ -30,7 +30,7 @@ class SpaceMessageTile extends StatefulWidget {
     required this.message,
     required this.workspaceId,
     required this.myUserId,
-    required this.userNames,
+    required this.users,
     this.turns,
   });
 
@@ -44,7 +44,7 @@ class SpaceMessageTile extends StatefulWidget {
   final String? myUserId;
 
   /// Display names of co-members keyed by user id.
-  final Map<String, String> userNames;
+  final Map<String, UserDto> users;
 
   /// Live and finished transcripts for this space. Null in tests that render
   /// a row which still has its segments inline.
@@ -198,10 +198,11 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
     final l10n = AppLocalizations.of(context);
     final agentName = spaceMessageSenderLabel(
       m,
-      userNames: widget.userNames,
+      users: widget.users,
       agentName: meta?['agentName'] as String?,
       l10n: l10n,
     );
+    final handle = spaceMessageSenderHandle(m, users: widget.users);
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -231,10 +232,29 @@ class _SpaceMessageTileState extends State<SpaceMessageTile> {
                           color: t.fgTertiary,
                         ),
                         const SizedBox(width: 4),
-                        Text(
-                          agentName.isEmpty ? l10n.agent : agentName,
-                          style: TextStyle(fontSize: 11, color: t.fgTertiary),
+                        Flexible(
+                          child: Text(
+                            agentName.isEmpty ? l10n.agent : agentName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: t.fgTertiary,
+                            ),
+                          ),
                         ),
+                        if (handle != null) ...[
+                          const SizedBox(width: 4),
+                          Text(
+                            '@$handle',
+                            // RTL carve-out: a username reads left to right.
+                            textDirection: TextDirection.ltr,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: t.textQuaternary,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),

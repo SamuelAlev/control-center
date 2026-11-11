@@ -2,7 +2,7 @@
 title: Espaces de travail et isolation
 description: Pourquoi un espace de travail est une frontière de locataire étanche, comment la séparation des bases de données rend cette frontière structurelle et ce qui la franchit délibérément.
 slug: fr-CA/manuel/concepts/espaces-de-travail
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Qu’est-ce qu’un espace de travail ?
@@ -79,9 +79,11 @@ Un fichier d’espace de travail ne porte qu’une `workspace_meta` à ligne uni
 
 ## Créer un espace de travail
 
+Seul le [propriétaire du serveur](/fr-CA/manuel/concepts/autorisation/#le-propriétaire-du-serveur) peut créer un espace de travail; c’est le serveur qui en génère l’identifiant. Un administrateur ou un propriétaire d’espace de travail ne peut pas en créer un autre. Une personne qui ne fait partie d’aucun espace de travail voit **Vous ne faites pas encore partie d’un espace de travail**, qui lui demande de faire créer un espace par le propriétaire du serveur ou de se faire inviter par un administrateur d’espace de travail, et le formulaire **Ajouter un espace de travail** affiche le même message à toute autre personne.
+
 Créer un espace de travail fait plus qu’insérer une ligne dans le registre. En une seule opération, le serveur inscrit l’utilisateur créateur comme `ownerUserId`, enregistre l’appartenance de cet utilisateur avec le rôle de propriétaire et publie un événement de domaine `WorkspaceCreated`. Les écouteurs de cet événement amorcent ensuite, de façon idempotente et en arrière-plan :
 
-- un **agent CEO** et quatre spécialistes — `qa`, `architect`, `engineer`, `librarian` —, les spécialistes relevant du CEO ;
+- un **agent CEO** et cinq spécialistes — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` —, les spécialistes relevant du CEO ;
 - les **modèles de pipeline intégrés** et leurs déclencheurs (les déclencheurs par événement et manuels sont livrés activés ; ceux planifiés sont facultatifs, sauf le balayage quotidien de GC des arbres de travail) ;
 - les **suites d’évaluation de départ**.
 
@@ -90,7 +92,7 @@ Cela se produit pour _chaque_ espace de travail, pas seulement le premier. Les a
 L’écriture de l’appartenance du propriétaire importe plus qu’il n’y paraît : sans elle, l’espace de travail fraîchement créé n’aurait aucun membre et chaque appel propre à un espace de travail que le créateur fait ensuite serait refusé.
 
 :::note[Les agents ne peuvent pas créer un espace de travail]
-Il n’existe aucun outil MCP `create_workspace`. Les humains créent un espace de travail par `workspace.create` (point de passage qui n’accepte que le nom) ou `workspace.upsert` (enregistrement complet, également utilisé pour les mises à jour). Les deux inscrivent l’utilisateur créateur comme `owner` et publient `WorkspaceCreated`.
+Il n’existe aucun outil MCP `create_workspace`. Le propriétaire du serveur crée un espace de travail par `workspace.create`, qui l’inscrit comme `owner` et publie `WorkspaceCreated`. `workspace.upsert` ne met à jour qu’un espace de travail existant; il n’en crée jamais, et il ne modifie jamais le propriétaire d’un espace de travail, ce que seul **Transférer la propriété** fait.
 :::
 
 ## Supprimer, exporter, importer
@@ -117,7 +119,7 @@ instantané de l’installation consiste à pointer `workspace.import` vers le
 `<workspaceId>/workspace.db` de l’instantané ; restaurer une installation complète demeure une
 recopie du répertoire d’instantané avec le serveur arrêté.
 
-Ce qu’aucune de ces opérations ne transporte, c’est le reste du répertoire de l’espace de travail. Un espace de travail accumule plus qu’une base de données — images collées, fichiers de skills et d’agents, identifiants de clavardage, arbres de travail — et l’export et l’import déplacent le **fichier**, donc tout ce qui l’accompagne reste où il est. C’est délibéré pour les identifiants et jetable pour les arbres de travail ; pour le reste, c’est une limite à connaître plutôt qu’une fonctionnalité. La [référence sur la sauvegarde](/fr-CA/manuel/reference/sauvegarde/#what-a-backup-does-not-contain) contient le tableau complet.
+Ce qu’aucune de ces opérations ne transporte, c’est le reste du répertoire de l’espace de travail. Un espace de travail accumule plus qu’une base de données — images collées, fichiers de skills et d’agents, identifiants de clavardage, arbres de travail — et l’export et l’import déplacent le **fichier**, donc tout ce qui l’accompagne reste où il est. C’est délibéré pour les identifiants et jetable pour les arbres de travail ; pour le reste, c’est une limite à connaître plutôt qu’une fonctionnalité. La [référence sur la sauvegarde](/fr-CA/manuel/reference/sauvegarde/#ce-quune-sauvegarde-ne-contient-pas) contient le tableau complet.
 
 ## Déplacer une sauvegarde entre le serveur et votre appareil
 

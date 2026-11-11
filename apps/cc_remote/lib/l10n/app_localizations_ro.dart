@@ -248,10 +248,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get allCaughtUp => 'Ești la zi';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Niciun cont forge nu este conectat pe server, deci pull request-urile nu îți pot fi atribuite încă.';
-
-  @override
   String get inboxNothingWaiting =>
       'Nimic nu este blocat și niciun pull request nu te așteaptă.';
 
@@ -461,34 +457,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names sunt prea mari pentru a fi trimise prin relay de aici.',
-      few: '$names sunt prea mari pentru a fi trimise prin relay de aici.',
-      one: '$names este prea mare pentru a fi trimis prin relay de aici.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Nu s-a putut încărca atașamentul. Încearcă din nou.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de atașamente nu au putut fi încărcate și au fost omise.',
-      few: '$count atașamente nu au putut fi încărcate și au fost omise.',
-      one: '1 atașament nu a putut fi încărcat și a fost omis.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Coleg';
 
   @override
@@ -625,37 +593,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Niciun forge nu este conectat pe server, deci nu se pot prelua pull request-uri. Conectează unul din aplicația desktop.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de repo-uri nu au putut fi citite.',
-      few: '$count repo-uri nu au putut fi citite.',
-      one: '1 repo nu a putut fi citit.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Ilizibile: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle =>
-      'Instalarea GitHub App este suspendată';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Se afișează ultimele date cunoscute pentru $names. Reia instalarea pe GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Instalarea GitHub App este suspendată. Se afișează ultimele date cunoscute pentru $names. Reia instalarea pe GitHub.';
-  }
 
   @override
   String get draft => 'Ciornă';
@@ -1325,7 +1262,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get permissionPrCreate => 'Creează pull request-uri';
 
   @override
-  String get permissionPrPublish => 'Publică pull request-uri';
+  String get permissionPrPublish => 'Actualizează sau unește pull request-uri';
 
   @override
   String get permissionVendorSyncWrite => 'Scrie sincronizări cu furnizorii';
@@ -1369,7 +1306,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get permissionBuiltInDefault => 'Implicit încorporat';
 
   @override
-  String get permissionRemembered => 'Aprobare reținută';
+  String get permissionRemembered => 'Aprobare temporară';
 
   @override
   String get permissionSource => 'Sursă';
@@ -1391,10 +1328,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Stabilește o regulă aici';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Revocă regula specifică sau reținută înainte de a stabili o regulă generală pentru această acțiune.';
 
   @override
   String get permissionConfirmRevoke => 'Confirmă revocarea';
@@ -1447,6 +1380,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Comenzi: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Instrumente: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Fără efect cât această acțiune este setată pe Refuză';
 
   @override
   String permissionMaxCount(String count) {
@@ -1908,15 +1850,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Actualizare pull request';
-
-  @override
-  String get activityTicket => 'Actualizare tichet';
-
-  @override
-  String get activityMeeting => 'Actualizare întâlnire';
-
-  @override
-  String get activityCalendar => 'Conexiune la calendar';
 
   @override
   String get activityRig => 'Actualizare mediu izolat';
@@ -2606,7 +2539,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Se așteaptă autorizarea în browser…';
 
   @override
-  String get credentialsConnectCodePrompt => 'Introdu codul afișat în browser';
+  String get credentialsConnectCodePrompt => 'Cod de confirmare';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2677,10 +2610,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Lipește un token de acces personal';
 
   @override
-  String get credentialsHostManaged =>
-      'Această conexiune provine din aplicația sau mediul serverului. Doar proprietarul serverului o poate modifica acolo; poți totuși să adaugi propriul token.';
-
-  @override
   String get credentialsStopWatching => 'Oprește monitorizarea';
 
   @override
@@ -2701,4 +2630,205 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Rulează comenzi pe gazdă';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Autentificarea ta în $provider a expirat. Autentifică-te din nou.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'În pauză: serviciul de autentificare al acestui spațiu de lucru s-a schimbat. Funcționează din nou când serviciul revine.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return '$provider nu poate fi contactat acum. Se reîncearcă.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Doar acest spațiu de lucru';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Toate spațiile de lucru';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Elimini datele de autentificare salvate din acest spațiu de lucru? Celelalte și le păstrează pe ale lor.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Elimini datele de autentificare salvate din toate spațiile de lucru care le folosesc?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Serverul a repornit. Începe din nou autentificarea.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Instalează GitHub App pe $owner ca automatizarea să ajungă la $names. Atinge pentru a deschide GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App nu este instalată pe $owner, așa că automatizarea nu ajunge la $names. Cere unui administrator al spațiului de lucru să o instaleze.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Adaugă $names la depozitele GitHub App. Atinge pentru a deschide GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App încă nu vede $names. Cere unui administrator al spațiului de lucru să le adauge la depozitele ei.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Instalarea GitHub App este suspendată. Automatizarea pentru $names este în pauză până când un proprietar al contului reia instalarea pe GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Persoana responsabilă de automatizarea acestui spațiu de lucru nu mai vede $names, așa că acolo nu rulează nimic în numele ei.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Persoana responsabilă de automatizarea acestui spațiu de lucru nu este autentificată în forge, așa că automatizarea pentru $names așteaptă până se autentifică.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Accesul la $names nu a putut fi verificat. Se reîncearcă.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Autentifică-te în $forge ca să vezi pull request-urile din alte depozite: $count',
+      one:
+          'Autentifică-te în $forge ca să vezi pull request-urile din încă 1 depozit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Depozite ascunse pentru că contul tău $forge nu le vede: $count',
+      one: '1 depozit este ascuns pentru că contul tău $forge nu îl vede',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Depozite ascunse la care nu ai acces în acest spațiu de lucru: $count',
+      one:
+          '1 depozit este ascuns pentru că nu ai acces la el în acest spațiu de lucru',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se verifică accesul tău la alte depozite: $count…',
+      one: 'Se verifică accesul tău la încă 1 depozit…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'E-mailul contului Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Introdu adresa de e-mail a contului tău Atlassian.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Niciun token de automatizare nu poate citi $names, așa că munca din fundal de acolo este în pauză. Un admin poate adăuga unul în Setări → Depozite.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Confirmă în browser, apoi introdu codul afișat.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Acest cont este deja conectat la altă persoană de pe acest server. Autentifică-te cu alt cont.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider nu a putut fi contactat pentru a verifica acest token. Încearcă din nou peste puțin.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider nu acceptă acest token. Verifică dacă l-ai copiat complet și dacă nu a fost revocat.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Acesta nu este un token personal. Lipește un token de acces personal din contul tău $provider, nu un token de proiect, grup, spațiu de lucru sau bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Acestui token îi lipsește scope-ul $scope, necesar pentru revizuire și comentarii. Creează unul care îl are.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Acest token a expirat. Creează unul nou și lipește-l aici.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Prea multe cereri acum. Așteaptă puțin, apoi încearcă din nou.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Autentificarea a fost anulată sau refuzată. Pornește-o din nou când ești gata.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Această autentificare nu mai este deschisă: a fost anulată, folosită sau înlocuită. Pornește-o din nou.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Un administrator al spațiului de lucru trebuie să te invite, sau proprietarul serverului poate crea un spațiu de lucru pentru tine.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos indică acum către un alt depozit de pe $forge. Reconectează-l din aplicația desktop sau web ca să-l poți folosi în continuare.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos indică acum către un alt depozit de pe $forge. Un administrator al spațiului de lucru trebuie să îl reconecteze înainte de a putea fi folosit din nou.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenții au nevoie de un sandbox pe acest server';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți. Proprietarul poate instala sandbox-ul sau poate dezactiva sandboxing-ul pentru toată lumea.';
 }

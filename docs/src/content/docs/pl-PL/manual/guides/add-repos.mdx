@@ -2,11 +2,11 @@
 title: Dodaj repozytoria do obszaru roboczego
 description: Zarejestruj kopie robocze Git w obszarze roboczym, aby agenci mogli na nich pracować.
 slug: pl-PL/podrecznik/poradniki/dodawanie-repozytoriow
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
 Ten poradnik pokazuje, jak zarejestrować kopię roboczą Git w obszarze roboczym,
-zindeksować ją ponownie i usunąć.
+zindeksować ją ponownie i usunąć. Dodanie repozytorium z folderów serwera wymaga właściciela serwera, a jego usunięcie — administratora obszaru roboczego.
 
 Repozytoria należą **do obszaru roboczego**. Nie ma globalnego rejestru ani
 osobnego kroku łączenia: dodanie repozytorium i umieszczenie go w obszarze
@@ -38,9 +38,29 @@ więc `gitlab.com/group/subgroup/project` rejestruje się jako właściciel
 
 Folder musi też znajdować się na maszynie hostującej `cc_server`, w jednym
 z katalogów `--repo-roots` tego serwera. Ta lista dozwolonych domyślnie wskazuje
-katalog domowy użytkownika serwera, a nawigowanie powyżej korzenia jest odrzucane.
+katalog domowy użytkownika serwera, a nawigowanie powyżej korzenia jest odrzucane. Przeglądanie folderów serwera jest oferowane wyłącznie [właścicielowi serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera), bo pokazuje pliki samej maszyny. Każdy inny widzi w miejscu przycisku **Dodaj repozytorium** komunikat „Właściciel serwera dodaje repozytoria z folderów serwera.”, a odnośnik do repozytorium, którego żaden z jego obszarów roboczych nie ma, mówi, że nie jest ono połączone z żadnym z jego obszarów roboczych i że trzeba poprosić właściciela serwera o jego dodanie.
+
+Miejsce, w którym może leżeć kopia robocza, zależy od tego, kto ją łączy:
+
+- **W pamięci obszaru roboczego** na serwerze: każdy administrator obszaru roboczego.
+- **Gdziekolwiek indziej na dysku serwera**: tylko [właściciel serwera](/pl-PL/podrecznik/koncepcje/autoryzacja/#właściciel-serwera), bo tylko on może wskazać serwerowi pliki samej maszyny. Każdy inny widzi „Tylko właściciel serwera może połączyć folder spoza pamięci tego obszaru roboczego.”
+- **Folder danych serwera** albo cokolwiek w nim: nigdy.
+
+`origin` kopii roboczej musi być repozytorium, które łączysz. Folder, którego `origin` wskazuje inne repozytorium, jest odrzucany z komunikatem „Origin tego folderu to inne repozytorium.”
+
+### Foldery, których serwer jeszcze nie używa
+
+Repozytorium, którego folder leży poza pamięcią obszaru roboczego i którego nie połączył właściciel serwera, na przykład w zaimportowanym obszarze roboczym, pokazuje pod swoim wierszem komunikat „Ten folder znajduje się poza pamięcią obszaru roboczego. Potwierdź, że ten serwer może z niego korzystać.”, dopóki właściciel serwera go nie potwierdzi. Każdy inny widzi zamiast tego „Ten folder znajduje się poza pamięcią obszaru roboczego. Tylko właściciel serwera może to potwierdzić.”
+
+Właściciel potwierdza to raz: **Potwierdź** w wierszu albo **Potwierdź wszystkie** w powiadomieniu nad listą, gdy czeka kilka repozytoriów. Każde jest sprawdzane ponownie jako właściciel, tymi samymi kontrolami co przy łączeniu. Do tego czasu repozytorium zostaje na liście, ale nie jest otwierane, przygotowywane ani indeksowane: żaden edytor, terminal, środowisko ani kopia przestrzeni go nie używa, a graf kodu go pomija. Ponowne dodanie tego samego folderu przez właściciela serwera działa jak potwierdzenie i zachowuje identyfikator repozytorium.
+
+Kopia robocza, którą dowiązanie symboliczne przeniosło gdzie indziej, jest traktowana tak samo: zostaje na liście i jest nieużywana, dopóki nie zostanie ponownie połączona przez osobę, która może łączyć folder, na który teraz wskazuje.
+
+Musisz też być zalogowany do forge repozytorium, a Twoje własne konto musi widzieć to repozytorium.
 
 ## Zarejestruj kopię roboczą
+
+Do tych kroków potrzebujesz właściciela serwera.
 
 1. Otwórz **Ustawienia → Obszar roboczy → Repozytoria**
    (`/workspaces/<id>/settings/workspace/repositories`).
@@ -98,8 +118,23 @@ odczytywana jest każda lista repozytoriów w aplikacji.
 ## Popraw link do GitHub
 
 Ikona linku w wierszu otwiera edytor właściciela i nazwy repozytorium na
-GitHubie — przydatne, gdy zdalne repozytorium zmieniło nazwę lub zostało
-przeniesione.
+GitHubie.
+
+Rzadko będziesz tego potrzebować. Link jest powiązany ze stałym identyfikatorem repozytorium na forge, więc zmiana nazwy lub przeniesienie są śledzone automatycznie.
+
+- Zmiana nazwy repozytorium w Control Center zmienia tylko jego nazwę wyświetlaną.
+- Zmiana repozytorium forge, do którego wskazuje link, wymaga administratora obszaru roboczego i jest sprawdzana na forge przy jego własnym logowaniu, tak samo jak przy łączeniu.
+- Połączonego repozytorium nie da się zamienić na lokalne.
+
+Jeśli ścieżka później wskazuje **inne** repozytorium (oryginał został usunięty i utworzony na nowo albo przeniesiony i zastąpiony innym), Control Center przestaje wysyłać do niego cokolwiek: żadnych tokenów, pushów, komentarzy ani żądań. Dotyczy to także własnych działań osoby: recenzja, scalenie lub komentarz wykonany przez Ciebie w takim repozytorium jest odrzucany, na GitHubie, GitLabie i Bitbucket. Wiersz i pull requesty repozytorium pokazują „_repo_ wskazuje teraz na inne repozytorium”, dopóki administrator obszaru roboczego nie kliknie **Połącz ponownie**.
+
+## Kto może otworzyć kod
+
+Samo uprawnienie do repozytorium nie otwiera jego plików. Aby otworzyć pliki, diffy, wyszukiwanie albo terminal, członek potrzebuje uprawnienia Control Center, a jego własne logowanie do forge musi móc czytać repozytorium. Administratorzy obszaru roboczego nie są zwolnieni; właściciel serwera jest. Zobacz [Kod podąża za forge](/pl-PL/podrecznik/koncepcje/autoryzacja/#kod-podąża-za-hostingiem-kodu).
+
+Gdy przyznajesz repozytorium komuś, czyje konto na forge nie może go czytać, uprawnienie zostaje zapisane, a Ty widzisz ostrzeżenie, na przykład „Zapisano. Ich konto GitHub nie może jeszcze odczytać tego repozytorium, więc pozostaje ono dla nich ukryte.”
+
+Ta sama zasada decyduje, kto może otworzyć przestrzeń. Przestrzeń otwiera się tylko dla członków, którzy mogą otworzyć kod każdego repozytorium, którego używa, i jest ukryta przed wszystkimi innymi, wraz z wynikami wyszukiwania, dziennikami uruchomień, zadaniami, aktywnością i powiadomieniami. Przestrzeń bez repozytoriów jest otwarta dla każdego członka. Zobacz [Przestrzenie podążają za swoimi repozytoriami](/pl-PL/podrecznik/koncepcje/autoryzacja/#przestrzenie-podążają-za-swoimi-repozytoriami).
 
 ## Usuń repozytorium
 
@@ -110,6 +145,8 @@ przeniesione.
 Okno dialogowe mówi, co robi: „_name_ zostanie usunięty z tego obszaru
 roboczego. Lokalne pliki na dysku nie zostaną dotknięte.”
 
+Usunięcie repozytorium wymaga administratora obszaru roboczego. Usuwa też zapisane poświadczenia forge dla tego repozytorium, na przykład token automatyzacji GitLab albo Bitbucket.
+
 Usunięcie kasuje wiersz repozytorium z tego obszaru roboczego i kaskadowo usuwa
 jego wiersze w grafie kodu — symbole, krawędzie, pliki i punkty kontrolne indeksu
 — a także wszystkie uprawnienia do tego repozytorium dla poszczególnych członków,
@@ -117,6 +154,28 @@ jego powiązania przestrzeni z repozytorium oraz zapisy jego izolowanych kopii
 roboczych. Ta sama kopia robocza zarejestrowana w innym obszarze roboczym to
 niezależny wiersz i pozostaje nienaruszona. Worktree na dysku, na które
 wskazywały te zapisy, nie są usuwane przez tę operację.
+
+## Rozwiązywanie problemów
+
+### Mam uprawnienie, ale repozytorium mówi, że moje konto nie może go odczytać
+
+Twoje własne konto na forge nie może odczytać repozytorium, więc Control Center ukrywa przed Tobą jego kod, mimo że obszar roboczy je przyznał. Zaloguj się do forge w **Ustawienia → Ty → Profil → Hosting kodu**, jeśli jeszcze tego nie zrobiłeś, albo poproś właściciela repozytorium na forge o dostęp. Repozytorium otwiera się, gdy tylko Twoje konto na forge może je czytać.
+
+### „Ten folder znajduje się poza pamięcią obszaru roboczego”
+
+Folder repozytorium leży poza pamięcią obszaru roboczego, a właściciel serwera go nie połączył, albo dowiązanie symboliczne wskazuje teraz gdzie indziej. Zostaje na liście i jest nieużywane, dopóki właściciel serwera go nie potwierdzi albo nie doda folderu ponownie. Jeśli nie jesteś właścicielem, poproś go. Jeśli jesteś, naciśnij **Potwierdź** w wierszu albo **Potwierdź wszystkie** nad listą; zobacz [Foldery, których serwer jeszcze nie używa](#foldery-których-serwer-jeszcze-nie-używa).
+
+### „Na serwerze nie ma już niczego pod tą ścieżką”
+
+Folder został przeniesiony albo usunięty na maszynie serwera. Przywróć go albo poproś administratora obszaru roboczego, aby usunął repozytorium przyciskiem **Usuń** w powiadomieniu i dodał je ponownie z jego obecnego folderu.
+
+### „Ten folder nie może być używany jako repozytorium”
+
+Zapisany folder to folder danych serwera, coś w nim, albo sam folder pamięci obszaru roboczego. Żaden z nich nie może być repozytorium. Administrator obszaru roboczego usuwa je przyciskiem **Usuń** w powiadomieniu, a potem dodaje repozytorium ponownie z rzeczywistego folderu kopii roboczej.
+
+### „Nie udało się potwierdzić twojego dostępu w hostingu kodu”
+
+Control Center nie mógł połączyć się z forge, by sprawdzić, czy Twoje konto może czytać repozytorium, więc odmówił zamiast zgadywać. Spróbuj ponownie za chwilę.
 
 ## Powiązane poradniki
 

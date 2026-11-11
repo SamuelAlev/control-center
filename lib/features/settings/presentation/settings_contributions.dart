@@ -1,7 +1,9 @@
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:control_center/features/settings/presentation/widgets/agent_account_pools_tab.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_apps_section.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/workspace_provider_apps_card.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/sync_health_card.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/workspace_gifs_card.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/integrations/workspace_own_app_card.dart';
 import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
@@ -9,27 +11,67 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// What `settings` itself puts on Server → Single sign-on: this server's own
 /// provider apps, below the Connect card that decides whether they are needed.
-/// On Workspace → General, after the GitHub identity: the workspace's own
-/// Google Calendar, Linear and Klipy apps.
+///
+/// On Workspace → Integrations, each in its provider's band: the workspace's
+/// own Linear and Google Calendar apps (only while it uses its own apps),
+/// ticket sync health beside the ticketing card it reports on, and where GIF
+/// search runs (with the workspace's Klipy key in its own-apps mode).
 const List<SettingsSectionContribution> settingsSettingsSections = [
   SettingsSectionContribution(
     id: 'settings.provider-apps',
     slot: SettingsSlot.serverSignIn,
     order: 20,
     builder: _buildProviderApps,
+    visible: watchProviderAppsApplies,
   ),
   SettingsSectionContribution(
-    id: 'settings.workspace-provider-apps',
-    slot: SettingsSlot.workspaceGeneral,
-    order: 6,
-    builder: _buildWorkspaceProviderApps,
+    id: 'settings.workspace-app.linear',
+    slot: SettingsSlot.workspaceIntegrations,
+    order: 32,
+    builder: _buildWorkspaceLinearApp,
+    visible: _workspaceLinearAppApplies,
+  ),
+  SettingsSectionContribution(
+    id: 'settings.sync-health',
+    slot: SettingsSlot.workspaceIntegrations,
+    order: 33,
+    builder: _buildSyncHealth,
+    visible: watchSyncHealthApplies,
+  ),
+  SettingsSectionContribution(
+    id: 'settings.workspace-app.google',
+    slot: SettingsSlot.workspaceIntegrations,
+    order: 41,
+    builder: _buildWorkspaceGoogleApp,
+    visible: _workspaceGoogleAppApplies,
+  ),
+  SettingsSectionContribution(
+    id: 'settings.gifs',
+    slot: SettingsSlot.workspaceIntegrations,
+    order: 60,
+    builder: _buildGifs,
+    visible: watchWorkspaceGifsApplies,
   ),
 ];
 
 Widget _buildProviderApps(BuildContext context) => const ProviderAppsSection();
 
-Widget _buildWorkspaceProviderApps(BuildContext context) =>
-    const WorkspaceProviderAppsCard();
+Widget _buildWorkspaceLinearApp(BuildContext context) =>
+    const WorkspaceOwnAppCard(provider: 'linear');
+
+Widget _buildSyncHealth(BuildContext context) => const SyncHealthCard();
+
+Widget _buildWorkspaceGoogleApp(BuildContext context) =>
+    const WorkspaceOwnAppCard(provider: 'google');
+
+Widget _buildGifs(BuildContext context) => const WorkspaceGifsCard();
+
+// Tear-offs, so the contribution list stays `const`.
+bool _workspaceLinearAppApplies(WidgetRef ref) =>
+    watchWorkspaceOwnAppApplies(ref, 'linear');
+
+bool _workspaceGoogleAppApplies(WidgetRef ref) =>
+    watchWorkspaceOwnAppApplies(ref, 'google');
 
 /// What `settings` itself contributes to the agent registry's detail pane.
 ///

@@ -2,7 +2,7 @@
 title: Implementación y clientes
 description: Cómo la arquitectura de cliente ligero de Control Center separa un servidor headless de sus clientes de escritorio, web y celular.
 slug: es-MX/manual/conceptos/implementacion
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center no es un único programa. Es una **arquitectura de cliente
@@ -141,6 +141,8 @@ y del backend de code-server. El navegador necesita HTTPS o un contexto de
 loopback seguro para los service workers. Los clientes nativos usan una fachada
 de loopback con alcance de capacidades.
 
+Solo el [propietario del servidor](/es-MX/manual/conceptos/autorizacion/#el-propietario-del-servidor) puede abrir el editor integrado code-server: se ejecuta en el servidor como el propio usuario del servidor. Una sesión pertenece al dispositivo y a la persona que la abrió. Se abre con la confianza del espacio de trabajo de VS Code activada, así que VS Code pregunta antes de confiar en una carpeta, y con las tareas automáticas desactivadas. Los demás conservan el editor de un solo archivo y las vistas de archivos integradas.
+
 ### Compañero para celular (cc_remote)
 
 La aplicación **Remote** es un cliente aparte y más ligero: una PWA web de
@@ -215,9 +217,11 @@ trabajos en arrendamiento.
 
 Las dos capas no aplican el mismo aislamiento. `cc_server` envuelve las
 ejecuciones que realiza él mismo en el sandbox del sistema operativo del host
-cuando existe un backend — Seatbelt en macOS, bubblewrap en Linux y WSL2 — y
-recurre a las demás fronteras en Windows o cuando no hay `bwrap` y `socat`.
-**`cc_worker` no aplica ningún sandbox.** Anuncia una capacidad `sandbox` para
+cuando existe un backend — Seatbelt en macOS, bubblewrap en Linux y WSL2. En
+Windows, o cuando no hay `bwrap` y `socat`, solo inicia las ejecuciones de las
+que responde el propietario del servidor y rechaza las de los demás, a menos que
+el propietario lo haya iniciado con `--sandbox off`, lo que ejecuta sin confinar
+los agentes de todos los miembros. **`cc_worker` no aplica ningún sandbox.** Anuncia una capacidad `sandbox` para
 que el servidor pueda colocar trabajos por plataforma, pero nada en el worker
 aplica ninguna: un trabajo en arrendamiento se lanza directamente, acotado por el
 entorno del arrendamiento y el worktree que se le dio. Ceder trabajo en
@@ -266,8 +270,7 @@ guardado. En la primera conexión, verifica esa huella mediante un QR de
 confianza u otro canal confiable: un primer contacto firmado por sí solo no
 puede autenticar quién proporcionó la clave. Si la identidad cambia, el cliente
 falla en cerrado; vuelve a emparejarte por un canal confiable en lugar de
-ignorar la discrepancia. Los clientes antiguos y el RPC en texto plano no pueden
-conectarse. TLS sigue siendo necesario para los orígenes del navegador, el
+ignorar la discrepancia. El RPC en texto plano no se acepta. TLS sigue siendo necesario para los orígenes del navegador, el
 arranque y los metadatos públicos; `--insecure` afecta al listener externo del
 servidor, no a la sesión cifrada obligatoria.
 

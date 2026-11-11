@@ -75,10 +75,10 @@ class _PrScreenState extends ConsumerState<PrScreen> {
           _toolbar(t),
           if (snapshot.value?.authenticated == false)
             const NoForgeNotice()
-          else
-            InaccessibleReposNotice(
-              repos: snapshot.value?.inaccessibleRepos ?? const [],
-            ),
+          else ...[
+            HiddenReposNotice(hidden: snapshot.value?.hiddenRepos ?? const []),
+            RepoAccessNotice(issues: snapshot.value?.repoAccess ?? const []),
+          ],
           Expanded(
             child: items.when(
               loading: () => const Center(child: CcSpinner(size: 24)),

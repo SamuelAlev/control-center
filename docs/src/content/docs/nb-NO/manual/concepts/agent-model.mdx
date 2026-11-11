@@ -2,7 +2,7 @@
 title: Agentmodellen
 description: Hva en agent faktisk er i Control Center, hvilke av feltene dens som endrer atferd, og hvordan adapteren den kjører på avgjør hva som kan håndheves.
 slug: nb-NO/handbok/konsepter/agentmodell
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Hva er en agent?
@@ -54,7 +54,7 @@ Repo-skills lastes for **hver** adapter, ikke bare det innebygde harnesset. Skil
 
 En agent har ingen egne tillatelsesflagg. Om den får opprette en commit, pushe, åpne en pull request, skrive til et oppfølgingssystem eller nå nettverket, avgjøres av [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/) — tillat, spør først eller nekt, i omfanget arbeidsområde, agent eller område — og de samme reglene gjelder uansett hvilken adapter som kjører den.
 
-Hva en kjøring blir _tildelt_, endres ikke av disse reglene. En kjøring i en GitHub-worktree får alltid et GitHub-token som bare kan lese, og en push blir spurt om i det øyeblikket den skjer: agentens git-konfigurasjon sender hver GitHub-push gjennom Control Center, som bruker regelen **Push til en remote** før den sendes videre.
+Hva en kjøring blir _tildelt_, endres ikke av disse reglene. En kjøring kan alltid lese GitHub-repoene den jobber med, med et GitHub-token som bare kan lese, og en push blir spurt om i det øyeblikket den skjer: agentens git-konfigurasjon sender hver GitHub-push gjennom Control Center, som bruker regelen **Push til en remote** før den sendes videre.
 
 Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hvordan det virker, inkludert hva som håndheves og ikke håndheves på filsystemnivå.
 
@@ -70,16 +70,16 @@ Det desidert mest avgjørende feltet på en agent er adapteren, fordi adapterens
 Konkret: **bare det innebygde harnesset støtter underagenter, styring midt i en kjøring, pause og gjenopptaking (og dermed overtaking) og strukturell modushåndhevelse.** Claude Code får ingen av disse.
 
 :::caution[OS-sandkassen er et gulv, ikke en håndhever av modus, og ikke alle verter har én]
-Matrisen over handler om hva Control Center kan _se og styre_. Under den pakker `cc_server` inn Claude Code-CLI-en i vertens OS-sandkasse der en finnes — Seatbelt på macOS, bubblewrap på Linux og WSL2 — så en usett `rm` eller en usett skriving er fortsatt avgrenset av OS-et. På **Windows finnes det ingen backend i det hele tatt**, og på Linux eller WSL2 uten `bwrap` og `socat` rapporterer sonden ingen, så der faller slike kjøringer tilbake til sanering av miljøet, brokerlevert påloggingsinformasjon, tillatelsesreglene for kallene Control Center kan se, og samtalens egen worktree (copy-on-write der `rift` følger med; `git worktree` på Windows).
+Matrisen over handler om hva Control Center kan _se og styre_. Under den pakker `cc_server` inn Claude Code-CLI-en i vertens OS-sandkasse der en finnes — Seatbelt på macOS, bubblewrap på Linux og WSL2 — så en usett `rm` eller en usett skriving er fortsatt avgrenset av OS-et. På **Windows finnes det ingen backend i det hele tatt**, og på Linux eller WSL2 uten `bwrap` og `socat` rapporterer sonden ingen. Der starter bare serverens eiers kjøringer, og alles andre avvises med mindre eieren startet serveren med `--sandbox off`. En kjøring som starter uten sandkasse, faller tilbake til sanering av miljøet, brokerlevert påloggingsinformasjon, tillatelsesreglene for kallene Control Center kan se, og samtalens egen worktree (copy-on-write der `rift` følger med; `git worktree` på Windows).
 
 Det sandkassen ikke er, er en _port_. Den avgrenser hvor en prosess kan lese, skrive og koble til — en skrivebeskyttet modus kommer faktisk fram til den, i form av skrivebeskyttede bind-monteringer — men den kan ikke avskjære et kall, reise en godkjenning eller fortelle deg etterpå hva CLI-en forsøkte. Det, pluss de fire kapasitetene nevnt rett over, er fortsatt det det innebygde harnesset har og de andre ikke har. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/).
 :::
 
-En agent **uten** adapter faller tilbake til **Control Center (built-in)** — løkken inne i serveren, så det finnes ingen CLI å installere — og kjøringsloggen dens registrerer `cc-harness`. Hver standardopprettet agent opprettes uten adapter eller modell, så de fem agentene i et nytt arbeidsområde kjører alle der, på Anthropics standardmodell, til du setter en adapter og modell per agent. Onboarding-valget av standardadapter er en klientinnstilling serveren aldri leser, og den anvendes ikke i ettertid på agenter som allerede er opprettet.
+En agent **uten** adapter faller tilbake til **Control Center (built-in)** — løkken inne i serveren, så det finnes ingen CLI å installere — og kjøringsloggen dens registrerer `cc-harness`. Hver standardopprettet agent opprettes uten adapter eller modell, så de seks agentene i et nytt arbeidsområde kjører alle der, på Anthropics standardmodell, til du setter en adapter og modell per agent. Når du fullfører adaptertrinnet i onboardingen, settes adapteren og modellen på hver agent som fortsatt mangler én, i arbeidsområdene som finnes på det tidspunktet; det finnes ingen standardkjører per arbeidsområde.
 
 ## Hvor agentene kommer fra
 
-- **Opprettes sammen med arbeidsområdet.** Hvert arbeidsområde — ikke bare det første — får en CEO pluss fire spesialister (`qa`, `architect`, `engineer`, `librarian`) som rapporterer til den, opprettet idempotent i bakgrunnen når arbeidsområdet opprettes. Se [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/).
+- **Opprettes sammen med arbeidsområdet.** Hvert arbeidsområde — ikke bare det første — får en CEO pluss fem spesialister (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) som rapporterer til den, opprettet idempotent i bakgrunnen når arbeidsområdet opprettes. Se [Arbeidsområder og isolasjon](/nb-NO/handbok/konsepter/arbeidsomrader/).
 - **Legges til manuelt** under Innstillinger → Arbeidsområde → Agenter. Å be en agent ansette en kollega oppretter ikke en rad; bruk det skjermbildet.
 
 ## Sanntidstilstand

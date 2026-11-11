@@ -2,7 +2,7 @@
 title: Kjør en Connect-server
 description: Kjør din egen Control Center Connect fra Docker-imaget cc-connect, eller monter den i cc_server, slik at serverne dine logger inn folk via leverandørapper du registrerer.
 slug: nb-NO/handbok/slik-gjor-du/kjor-connect-server
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect kjører leverandørpålogginger (GitHub, Google Calendar,
@@ -46,7 +46,7 @@ utilgjengelig. `<base>` nedenfor er din `CONNECT_PUBLIC_URL`.
 
 | Leverandør     | Registrer                                                                                                                                                                                                                                                            | Behold                                  |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` med **Redirect on update** slått på. La **Request user authorization (OAuth) during installation** være av: når den er på, ignorerer GitHub setup-URL-en. La **Expire user authorization tokens** stå på | App-id, slug, client id, client secret |
+| **GitHub App** | Callback-URL `<base>/oauth/github/callback`. Setup-URL `<base>/oauth/github/setup` med **Redirect on update** slått på. La **Request user authorization (OAuth) during installation** være av: når den er på, ignorerer GitHub setup-URL-en. La **Expire user authorization tokens** stå på | App-id, slug, client id, client secret, en privat nøkkel |
 | **Google**     | En OAuth-klient av typen **Nettapplikasjon** med omdirigerings-URI `<base>/oauth/google/callback`, og Google Calendar API aktivert                                                                                                                                  | Client id, client secret                |
 | **Linear**     | En OAuth-applikasjon med callback-URL-ene `<base>/oauth/linear/callback` og `<base>/oauth/linear_app/callback`                                                                                                                                                    | Bare client id                          |
 | **Slack**      | Omdirigerings-URL-er `<base>/oauth/slack_oidc/callback` og `<base>/oauth/slack/callback`. Event Subscriptions på `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash-kommandoer på `<base>/v1/hooks/slack/commands`. Tokenrotasjon på | App-id, client id, client secret, signing secret |
@@ -57,10 +57,9 @@ skriv, **Pull requests** les og skriv, **Issues** les og skriv, **Checks**,
 med lesetilgang for forespørsler om gjennomgang fra team. Webhooks kan være av:
 serverne poller.
 
-Connect trenger aldri den private nøkkelen til GitHub App-en. Den utsteder i
-stedet tokener for ett repo fra en persons egen pålogging. Linear trenger heller
-ingen hemmelighet: Connect gir koden tilbake til serveren, som fullfører
-utvekslingen selv.
+Connect trenger den private nøkkelen til GitHub-appen (**Generate a private key** i appens innstillinger). Den signerer appens forespørsler som finner installasjonen som dekker et repo (eller, når repoet ikke har en, eierens installasjon) og utsteder et installasjonstoken for ett repo, hver bare etter at personen som spør, har bevist tilgang til repoet med sin egen pålogging.
+
+Hver server på Connect-en din deler appens bot. Den kan lese, kommentere, sette etiketter og reagere som boten for alle dem. Å gjennomgå pull requests som boten er bare tillatt for serverne du lister i `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (installasjons-ID-ene deres, kommaseparert); alle andre servere publiserer gjennomganger med reviewerens egen token. Å pushe gjøres aldri som boten. For å la en server du eier, gjennomgå som boten, legg til installasjons-ID-en der og start på nytt. Behandle nøkkelfilen som en hemmelighet, som forseglingsnøkkelen. Linear trenger heller ingen hemmelighet: Connect gir koden tilbake til serveren, som fullfører utvekslingen selv.
 
 ## Trinn 3: Samle inn installasjons-ID-ene
 
@@ -113,13 +112,15 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Pek reverse proxyen din mot port `8790`. Imaget kjører som en bruker uten
-privilegier, lagrer tilstanden sin i volumet `/data` og har en innebygd
-helsesjekk (`cc-connect --healthcheck`, som sjekker `/healthz`).
+Pek reverse proxyen din mot port `8790`, og sett `CONNECT_TRUST_PROXY` til antall proxyer foran Connect, slik at grensen per adresse ser hver klients adresse. Imaget kjører som en bruker uten privilegier, lagrer tilstanden sin i volumet `/data` og har en innebygd helsesjekk (`cc-connect --healthcheck`, som sjekker `/healthz`: prosessen svarer). `/readyz` sjekker også at tilstands- og bindingslagrene svarer, og at Redis, når den brukes, fortsatt kjører `maxmemory-policy noeviction`; pek en orkestrators klarhetssjekk dit.
+
+Samtykkesiden for pålogging svarer med et skjema-post som Connect bare godtar fra sin egen side: `Sec-Fetch-Site`, når den sendes, må være `same-origin`, og `Origin`, når den sendes, må være opprinnelsen til `CONNECT_PUBLIC_URL`; en post med ingen av dem avvises. Proxyen må derfor sende begge headerne uendret videre, og `CONNECT_PUBLIC_URL` må være adressen folks nettlesere faktisk bruker. Hvis det å fortsette på den siden alltid viser «Denne lenken har utløpt», og loggen viser `oauth.done_refused` med årsak `origin` eller `no_origin`, er én av disse to feil.
 
 Connect nekter å starte (avslutningskode `78`) når konfigurasjonen er åpen,
 utrygg eller halvferdig, og skriver ut hvilken variabel som er feil. En manglende
@@ -135,8 +136,7 @@ pålogging kjøres** nevner **Connect** for hver leverandør du har registrert.
 En server kan selv være vert for Connect i stedet for en separat container. Den
 monterte tjenesten er den samme som imaget kjører.
 
-1. Legg `CONNECT_*`-variablene i serverens `.env`-fil (eller i miljøet), som i
-   trinn 5
+1. Legg `CONNECT_*`-variablene i serverens `.env`-fil, som i trinn 5. Serveren nekter å starte når en Connect-hemmelighet, inkludert `CONNECT_SENTRY_DSN`, er eksportert i miljøet
 2. Legg til `CC_SERVER_CONNECT_HOST=on`
 3. Start serveren på nytt. Loggen skriver ut `embedded Connect at <url>`
 
@@ -148,6 +148,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect serveres da på `<server>/connect`:
@@ -180,9 +181,10 @@ rotasjon.
 | `CONNECT_PUBLIC_URL`            | påkrevd   | Den kanoniske offentlige URL-en. HTTPS, eller `http` bare på loopback. En sti betyr en montering. Ingen spørring eller fragment   |
 | `CONNECT_ALLOWED_INSTALLS`      | påkrevd   | Kommaseparerte installasjons-ID-er. `*` godtas bare sammen med `CONNECT_SIGNED_CONFIG_FILE`                                       |
 | `CONNECT_DENY_INSTALLS`         |           | Installasjons-ID-er som avvises selv når de er tillatt                                                                           |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeriske GitHub-eier-ID-er. Når den er satt, utstedes repotokener bare for repoer de eier                                        |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeriske GitHub-eier-ID-er. Når den er satt, utstedes repotokener bare for repoer de eier. Den begrenser ikke hvem som logger inn: en person som har lov til å bruke denne Connect, får fortsatt sitt eget brukertoken for appen. For å betjene bare én organisasjon, hold appen privat for den                                        |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Installasjons-ID-er som kan la appens bot gjennomgå pull requests. Tom som standard; `*` avvises, og hver ID må også være tillatt |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Bindingsadresse og port                                                                                                  |
-| `CONNECT_TRUST_PROXY`           | `0`       | Klarerte proxyhopp i `X-Forwarded-For` (0 til 8). Brukes bare for hastighetsgrensen per adresse                                  |
+| `CONNECT_TRUST_PROXY`           | `0`       | Klarerte proxyhopp i `X-Forwarded-For` (0 til 8). Brukes til grensene per adresse, nettverkshintet på påloggingssiden og den loggførte adressen. Bak en proxy teller `0` hver klient som proxyen, og loggen sier det én gang                                  |
 
 ### Leverandørspor
 
@@ -190,6 +192,7 @@ rotasjon.
 | --------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |          | GitHub App-en                                                              |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |          | Hemmelighet, dual                                                          |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |          | Hemmelighet. Appens private nøkkel (PEM)                                   |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |          | Google-klienten. Hemmeligheten er dual                                     |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |          | Linear-applikasjonen. Ingen hemmelighet                                    |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |          | Slack-appen                                                                |
@@ -207,12 +210,12 @@ rotasjon.
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` eller `gcp-kms`                                                                                    |
 | `CONNECT_SEAL_KEYS`                                       |                            | Hemmelighet, påkrevd for `local`. Kommaseparerte `kid:key`-oppføringer, nyeste først; eldre oppføringer dekrypterer fortsatt |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, påkrevd for `gcp-kms`                                    |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` for én instans, `redis` for flere                                                                 |
-| `CONNECT_REDIS_URL`                                       |                            | Hemmelighet. `redis://` eller `rediss://`                                                                  |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` for én instans, `redis` for flere. En full minnelagring avviser nye pålogginger og forespørsler i stedet for å glemme en levende oppføring                                                                 |
+| `CONNECT_REDIS_URL`                                       |                            | Hemmelighet. `redis://` eller `rediss://`. Redis 6.2 eller nyere med `maxmemory-policy noeviction`, begge sjekkes ved oppstart                                                                  |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | CA-pakke for `rediss://`                                                                                   |
-| `CONNECT_BINDINGS`                                        | `file`                     | Hvor bindinger til GitHub-installasjoner ligger: `file` eller `firestore`                                  |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` i imaget)  | Inneholder `bindings.json`                                                                                 |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databasen `(default)`      | For `CONNECT_BINDINGS=firestore`                                                                           |
+| `CONNECT_BINDINGS`                                        | `file`                     | Hvor bindinger til Slack-team ligger: `file` eller `firestore`                                             |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` i imaget)  | Inneholder `bindings.json`. Låst av én Connect: en andre Connect på samme katalog starter ikke                                                                                 |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | databasen `(default)`      | For `CONNECT_BINDINGS=firestore`. Connect starter ikke når Firestore ikke svarer                                                                           |
 
 ### Konfigurasjon, logger og grenser
 
@@ -222,19 +225,35 @@ rotasjon.
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Nøkler den signerte konfigurasjonen må verifiseres mot                                              |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoken til konfigurasjonen en selvhostet Connect genererer                                          |
 | `CONNECT_LOG_HMAC_KEY`                  | tilfeldig per prosess | Hemmelighet. Sett den for å holde merkene som står for installasjons-ID-er, stabile på tvers av omstarter og instanser |
+| `CONNECT_SENTRY_DSN`                    |                    | Hemmelighet. En https-Sentry-DSN som feillinjer rapporteres til: feiltypen, stakkrammer, rute og forespørsels-id, aldri en melding, kropp eller header |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | Sentry-miljøet                                                                                      |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Rapporteres av `/v1/version`                                                                        |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Forespørsler per installasjon                                                                       |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Forespørsler per adresse                                                                            |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Forespørsler for hele tjenesten                                                                     |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Forespørsler per adresse (en IPv6-adresse teller per /64)                                                                            |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Forespørsler for hele instansen                                                                     |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600` | Slack-hendelser og -kommandoleveringer per adresse, talt separat fra andre forespørsler |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100` | Slack-hendelser og -kommandoleveringer for hele instansen |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Slack-hendelser per team                                                                            |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | GIF-søk per installasjon                                                                            |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE` | `240` | GIF-søk per adresse, på tvers av servere |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60` | Pålogginger startet per adresse |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30` | GitHub-tokener utstedt per GitHub-konto på én server (pålogginger, fornyelser, repotokener) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × over (`120`) | Det samme per GitHub-konto på tvers av alle servere |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600` | GitHub-tokener utstedt per adresse |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500` | Nye GitHub-pålogginger for hele appen |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120` | Bot-tokener per server |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240` | Bot-tokener per spørrende GitHub-konto, på tvers av servere |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000` | Bot-tokener for hele appen |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500` | Fornyelser og repotokener for hele appen. Nye pålogginger har sin egen grense over |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN` | `10` | Levende repotokener én GitHub-konto kan ha før Connect logger en advarsel |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR` | `10` | Installasjons-ID-er pensjonert per adresse (per /48 for IPv6) |
+
+Et kall som går over en grense, får svaret `rate_limited`. Servere prøver igjen senere og logger aldri noen ut på grunn av det.
 
 ## Kjør mer enn én instans
 
 Én instans med `CONNECT_STATE=memory` er nok for de fleste organisasjoner. Flere
-instanser bak én adresse trenger `CONNECT_STATE=redis`, og enten en delt
-`CONNECT_DATA_DIR` eller `CONNECT_BINDINGS=firestore`, slik at en pålogging som
-startet på én instans, kan fullføres på en annen.
+instanser bak én adresse trenger `CONNECT_STATE=redis` og `CONNECT_BINDINGS=firestore`, slik at en pålogging som startet på én instans, kan fullføres på en annen, og alle instanser ser de samme Slack-bindingene og pensjonerte installasjons-ID-ene. En delt `CONNECT_DATA_DIR` fungerer ikke: den første Connect låser den. Forespørselsgrensene per installasjon, per adresse og per instans er per instans; grensene for pålogginger, GitHub-tokener, bot-tokener, GIF-søk per adresse, pensjoneringer og Slack-team deles gjennom tilstandslageret.
 
 ## Roter en leverandørhemmelighet
 
@@ -262,21 +281,22 @@ slik at de vet at meldingen kommer fra deg.
 ## Blokker en server
 
 Legg installasjons-ID-en til i `CONNECT_DENY_INSTALLS` og start på nytt. Eieren
-ser «Connect har blokkert installasjons-ID-en til denne serveren», og hver
+ser «Connect har blokkert installasjons-ID-en til denne serveren. Kontakt den som driver Connect-serveren din.», og hver
 Connect-pålogging på den stopper.
+
+En server pensjonerer også sin egen gamle installasjons-ID når eieren bytter nøkkel. Den beviser at ID-en er dens egen med ett seglet legitimasjon som denne Connect laget for den, så bare en server som har logget noen inn, kan pensjonere en ID. Connect beholder pensjonerte ID-er for godt, så den gamle nøkkelen og hvert segl laget for den slutter å virke, og Slack-arbeidsområdene bundet til den gamle ID-en frigjøres. Tokener som allerede er utstedt, utløper av seg selv: innen 8 timer for en persons, og 1 time for en bots. Connect holder høyst 100 000 pensjonerte ID-er; over det avvises en bytte av nøkkel, og loggen sier det på feilnivå.
 
 ## Feilsøking
 
 ### En server sier at Connect har blokkert den
 
-Installasjons-ID-en står ikke i `CONNECT_ALLOWED_INSTALLS`, eller den står i
-`CONNECT_DENY_INSTALLS`. ID-en endres når eieren bytter nøkkelen; be om den nye.
+Installasjons-ID-en står ikke i `CONNECT_ALLOWED_INSTALLS`, den står i `CONNECT_DENY_INSTALLS`, eller den ble pensjonert av en nøkkelbytte. ID-en endres når eieren bytter nøkkelen; be om den nye.
 
-### En leverandør vises som utilgjengelig
+### Alle pålogginger til én leverandør feiler
 
-En av variablene mangler, så Connect utelot sporet. Sjekk oppstartsloggen og
-tabellene over. GitHub trenger alle fire: app-id, slug, client id og client
-secret; Google trenger både client id og hemmelighet.
+En av variablene kan mangle, så Connect utelot sporet. Sjekk oppstartsloggen og
+tabellene over. GitHub trenger alle fem: app-id, slug, client id, client
+secret og privat nøkkel; Google trenger både client id og hemmelighet.
 
 ### Pålogginger feiler med en omdirigeringsfeil
 

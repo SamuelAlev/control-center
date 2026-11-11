@@ -2,7 +2,7 @@
 title: Invia il tuo primo agente
 description: Crea un agente, dagli uno spazio e un compito e osserva l'esecuzione tornare in streaming.
 slug: it-IT/manuale/tutorial/primo-agente
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Cosa costruirai
@@ -76,7 +76,7 @@ Che cosa delimita l'esecuzione: il suo worktree copy-on-write, le credenziali me
 
 **Checkpoint.** Una riga di esecuzione, che mostra stato, durata, ora di avvio e di completamento e l'adattatore su cui è stata eseguita.
 
-Le modifiche dell'agente sono committate sul branch della conversazione, nel suo worktree. Sei sempre sia l'autore sia il committer, con la tua identità Git dello spazio di lavoro. Per impostazione predefinita, il trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` accredita l'account GitHub `@usectrl` come coautore. Puoi disattivare questo credito in **Impostazioni → Tu → Attribuzione dei commit**, a meno che un amministratore non abbia imposto una scelta diversa in **Impostazioni → Spazio di lavoro → Generale**.
+Le modifiche dell'agente sono committate sul branch della conversazione, nel suo worktree. Poiché sei stato tu a chiedere l'esecuzione, i commit sono tuoi: sei l'autore e il committer, con l'indirizzo verificato dal tuo forge (il tuo indirizzo noreply di GitHub dal tuo accesso a GitHub), e un trailer `Co-Authored-By:` accredita Control Center, a meno che tu non l'abbia disattivato. Se non hai effettuato l'accesso al forge, i commit sono invece quelli del bot di Control Center e le note dell'esecuzione lo dicono.
 
 ## Ottenere una pull request
 

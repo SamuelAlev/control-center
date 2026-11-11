@@ -237,21 +237,6 @@ class NewsfeedRefreshController extends Notifier<bool> {
       state = false;
     }
   }
-
-  /// Refetches a single feed by [feedId].
-  Future<void> refreshFeed(String feedId) async {
-    if (state) {
-      return;
-    }
-    state = true;
-    try {
-      await ref.read(newsfeedRepositoryProvider).refreshFeed(feedId);
-    } on UnsupportedError {
-      // See [refreshAll]: host-side only over the thin client.
-    } finally {
-      state = false;
-    }
-  }
 }
 
 /// Provider that controls newsfeed refresh state.

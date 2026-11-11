@@ -7,6 +7,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart'
     show AccountPoolOrder;
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
@@ -28,7 +29,6 @@ import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dar
 import 'package:cc_domain/features/observability/domain/run_stage.dart';
 import 'package:cc_domain/features/observability/domain/run_verification.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -331,7 +331,11 @@ class _FakeAgentDispatchService implements AgentDispatchService {
   }
 
   @override
-  Future<void> failRun(AgentRunLog runLog, String error) async {
+  Future<void> failRun(
+    AgentRunLog runLog,
+    String error, {
+    String? errorCode,
+  }) async {
     failRunCalled = true;
     lastFailError = error;
   }
@@ -719,6 +723,7 @@ void main() {
             inputTokens: 1000,
             outputTokens: 500,
             estimatedCostCents: 12,
+            costMicros: 120000,
           ),
           timestamp: _t(2),
         ),

@@ -1,7 +1,9 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_gate.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_import_source_field.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -16,6 +18,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// All three are server-side by construction — the databases live with
 /// `cc_server` and never leave it — so this row asks and reports, and every
 /// path it shows is a path on the server's filesystem, not on this device.
+/// Adopting a file (a restore) is the server owner's ([canRestoreBackups]);
+/// anyone else exports, downloads and deletes.
 class WorkspaceDataRow extends ConsumerStatefulWidget {
   /// Creates a [WorkspaceDataRow].
   const WorkspaceDataRow({
@@ -39,21 +43,13 @@ class WorkspaceDataRow extends ConsumerStatefulWidget {
 }
 
 class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
-  final TextEditingController _source = TextEditingController();
   bool _exporting = false;
   bool _downloading = false;
-  bool _importing = false;
   bool _uploading = false;
   bool _deleting = false;
   String? _lastExportPath;
   ({int transferred, int? total})? _downloadProgress;
   ({int transferred, int? total})? _uploadProgress;
-
-  @override
-  void dispose() {
-    _source.dispose();
-    super.dispose();
-  }
 
   void _toast(String message, {required bool ok}) {
     if (!mounted) {
@@ -194,37 +190,6 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
     );
   }
 
-  Future<void> _import() async {
-    final l10n = AppLocalizations.of(context);
-    final name = widget.workspace.name;
-    final source = _source.text.trim();
-    if (source.isEmpty) {
-      return;
-    }
-    final confirmed = await showCcConfirmDialog(
-      context: context,
-      title: l10n.backupImportTitle(name),
-      message: l10n.backupImportBody(name),
-      confirmLabel: l10n.backupImportAction,
-      cancelLabel: l10n.cancel,
-      danger: true,
-      typeToConfirm: name,
-      typeToConfirmLabels: appTypeToConfirmLabels(context),
-    );
-    if (!confirmed || !mounted) {
-      return;
-    }
-    await _run(() async {
-      await ref
-          .read(backupActionsProvider)
-          .importWorkspace(
-            workspaceId: widget.workspace.id,
-            sourcePath: source,
-          );
-      _toast(l10n.backupImportDone(name), ok: true);
-    }, ({required busy}) => setState(() => _importing = busy));
-  }
-
   Future<void> _delete() async {
     final l10n = AppLocalizations.of(context);
     final name = widget.workspace.name;
@@ -252,8 +217,8 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final tokens = context.designSystem ?? DesignSystemTokens.light();
-    // Files move over the server's HTTP lane, which a relayed connection does
-    // not have. Disabled with a reason beats a button that cannot work.
+    // Files move over the session's file lane (direct or relayed); without one
+    // the controls are disabled with a reason, not a button that cannot work.
     final canTransfer = ref.watch(backupTransferAvailableProvider);
 
     return SettingsEntityRow(
@@ -314,32 +279,7 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
             const SizedBox(height: AppSpacing.xs),
             SettingsCopyField(value: _lastExportPath),
           ],
-          const SizedBox(height: AppSpacing.lg),
-          SettingsField(
-            label: l10n.backupRestoreFromDeviceLabel,
-            description: l10n.backupRestoreFromDeviceDescription,
-            centerControl: true,
-            child: Align(
-              alignment: AlignmentDirectional.centerEnd,
-              child: CcButton(
-                size: CcButtonSize.sm,
-                variant: CcButtonVariant.secondary,
-                icon: AppIcons.upload,
-                loading: _uploading,
-                onPressed: !canTransfer || _uploading
-                    ? null
-                    : _uploadAndRestore,
-                child: Text(l10n.backupUploadAction),
-              ),
-            ),
-          ),
-          if (_uploadProgress != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            BackupTransferProgressBar(
-              transferred: _uploadProgress!.transferred,
-              total: _uploadProgress!.total,
-            ),
-          ],
+          // Files move over the HTTP lane: download above, upload below.
           if (!canTransfer) ...[
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -348,36 +288,38 @@ class _WorkspaceDataRowState extends ConsumerState<WorkspaceDataRow> {
             ),
           ],
           const SizedBox(height: AppSpacing.lg),
-          // The other direction, for a file that is ALREADY on the server —
-          // one an operator dropped in over ssh, or a per-workspace file inside
-          // a snapshot directory. Uploading a file the server already holds
-          // would be a round trip for nothing.
-          SettingsField(
-            label: l10n.backupImportSourceLabel,
-            description: l10n.backupImportSourceDescription,
-            layout: SettingsFieldLayout.stacked,
-            child: Row(
-              children: [
-                Expanded(
-                  child: CcTextField(
-                    controller: _source,
-                    hintText: '/path/to/workspace.db',
-                    onChanged: (_) => setState(() {}),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                CcButton(
-                  size: CcButtonSize.md,
+          // Restoring is the server owner's; anyone else is told so, once.
+          if (!canRestoreBackups(ref))
+            const BackupRestoreOwnerOnlyNote()
+          else ...[
+            SettingsField(
+              label: l10n.backupRestoreFromDeviceLabel,
+              description: l10n.backupRestoreFromDeviceDescription,
+              centerControl: true,
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: CcButton(
+                  size: CcButtonSize.sm,
                   variant: CcButtonVariant.secondary,
-                  loading: _importing,
-                  onPressed: _source.text.trim().isEmpty || _importing
+                  icon: AppIcons.upload,
+                  loading: _uploading,
+                  onPressed: !canTransfer || _uploading
                       ? null
-                      : _import,
-                  child: Text(l10n.backupImportAction),
+                      : _uploadAndRestore,
+                  child: Text(l10n.backupUploadAction),
                 ),
-              ],
+              ),
             ),
-          ),
+            if (_uploadProgress != null) ...[
+              const SizedBox(height: AppSpacing.sm),
+              BackupTransferProgressBar(
+                transferred: _uploadProgress!.transferred,
+                total: _uploadProgress!.total,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.lg),
+            WorkspaceImportSourceField(workspace: widget.workspace),
+          ],
           const SizedBox(height: AppSpacing.lg),
           Text(
             l10n.backupDeleteBody(widget.workspace.name),

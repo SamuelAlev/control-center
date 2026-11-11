@@ -78,9 +78,9 @@ export interface LocaleNegotiation {
 }
 
 /**
- * A permanent redirect for a localized manual URL that is not canonical: the
- * prefixed English path every locale used before its slugs were translated,
- * or another locale's slug under this prefix.
+ * A permanent redirect for a localized manual URL that is not canonical:
+ * Starlight's prefixed English path (still built as a fallback route) or
+ * another locale's slug under this prefix.
  */
 export function redirectManual(request: Request, routes: ManualRoutes): Response | null {
   if (request.method !== 'GET' && request.method !== 'HEAD') return null;

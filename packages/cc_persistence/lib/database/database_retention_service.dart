@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cc_domain/core/domain/value_objects/agent_pull_request_cache_kinds.dart';
 import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_persistence/database/cross_workspace_queries.dart';
@@ -149,10 +150,15 @@ class DatabaseRetentionService {
     total += await _prune(
       'caches',
       // An editor layout is only rewritten when it changes, so a layout the
-      // person opens daily but never rearranges would otherwise age out.
+      // person opens daily but never rearranges would otherwise age out. Who
+      // asked an agent for a pull request bounds its approval for as long as
+      // it is open.
       () => db.cacheDao.deleteOlderThan(
         now.subtract(cacheRetention),
-        exceptKinds: EditorLayoutCacheKinds.all,
+        exceptKinds: {
+          ...EditorLayoutCacheKinds.all,
+          ...AgentPullRequestCacheKinds.all,
+        },
       ),
     );
     total += await _prune(

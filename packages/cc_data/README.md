@@ -10,10 +10,9 @@ over `cc_rpc` instead of touching a database directly. Web-safe pure Dart.
   `WorkspaceRepository`, `WorkspaceFilesystemPort`, …) as RPC-backed adapters
   (e.g. `RpcWorkspaceFilesystemPort`). Reads map to `repo/call` + `sub/*`
   watch queries; writes map to the corresponding server ops.
-- Let a thin client (web and increasingly the desktop) consume server-owned
-  state through the _same_ domain interfaces the server implements against its
-  DB — so presentation code never knows whether data came from a local DB or a
-  remote server.
+- Let every client (desktop, web, phone) consume server-owned state through
+  the _same_ domain interfaces the server implements against its database; no
+  client holds a database of its own.
 
 ## Invariants
 

@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: 無介面伺服器的每一個旗標、環境變數、子指令與資料目錄路徑。
 slug: zh-HK/手冊/參考/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 每一個行程旗標都可以用 CLI 旗標或環境變數提供；旗標勝過環境變數，再勝過預設值。供應商憑證是例外——見[供應商應用程式與 Connect](#供應商應用程式與-connect)。
@@ -43,7 +43,7 @@ sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 
 | 旗標                 | 環境變數                        | 預設值   | 含義                                                                                                                              |
 | -------------------- | ------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`          | `CC_SERVER_SANDBOX`             | `on`     | 當主機提供作業系統原生沙箱時，代理執行是否會被包裹其中。這是退出機制，而不是啟用機制——見下文                                       |
+| `--sandbox`          | `CC_SERVER_SANDBOX`             | `on`     | `on` 會把代理執行包裹在主機的作業系統原生沙箱中，而在沒有沙箱的主機上只會啟動伺服器擁有者的執行。`off` 會在此主機上讓每位成員的代理無約束地執行。見下文                                     |
 | `--code-index`       | `CC_SERVER_CODE_INDEX`          | `on`     | 背景程式碼圖索引的現場終止開關。`off` 會在不重建的情況下乾淨啟動                                                                   |
 | `--code-index-defer` | `CC_SERVER_CODE_INDEX_DEFER`    | `15`     | 就緒橫幅之後，延後第一次索引掃描的秒數（限制於 0–300）                                                                             |
 | `--tool-deferral`    | `CC_SERVER_TOOL_DEFERRAL`       | `on`     | 執行框架的執行是否只送出一個小的常駐工具集加一個名稱索引，其餘在首次使用時載入。見下文                                             |
@@ -69,13 +69,21 @@ sourceHash: 4653187d295065918324777d9aa872b4896dce2e
 
 `.env` 檔案會從伺服器的工作目錄、可執行檔旁邊，或其上層的原始碼檢出中讀取；在 Docker 中，請把它掛載到 `/app/bin/.env`。若 `GITHUB_APP_PRIVATE_KEY`、`GITHUB_CLIENT_SECRET`、`GOOGLE_OAUTH_CLIENT_SECRET`、`LINEAR_API_KEY` 或任何 `SLACK_*SECRET*` 被匯出到伺服器的行程環境中（每個子行程都讀得到），伺服器會**拒絕啟動**（結束代碼 `78`）。從 `.env` 提供初始值每個欄位只發生一次，因此之後在設定中所作的編輯不會因重新啟動而被還原。空值會視同未設定。
 
-GitLab 與 Bitbucket 的背景工作亦會讀取 `GITLAB_TOKEN` / `CI_JOB_TOKEN`，以及 `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` 連同 `BITBUCKET_EMAIL`。GitHub 沒有環境變數憑證。
+沒有任何託管平台憑證來自環境變數：GitHub、GitLab 與 Bitbucket 都只會以某位成員自己的登入或權杖行事，或是以受該成員約束的單一程式庫 GitHub App 權杖行事。
 
 ### `--sandbox`
 
-伺服器會在啟動時探測主機一次，並在後端可用時，把代理的指令執行包裹在作業系統原生沙箱中：macOS 上是 `sandbox-exec`（Seatbelt），Linux 與 WSL2 上是 `bwrap` 加 `socat`。在沒有後端的地方——Windows，或缺少這些工具的 Linux 主機——執行會回退到環境清理、指令政策與操作護欄，而啟動記錄會說明當時適用哪一種狀態。
+伺服器會在啟動時探測主機一次，並在後端可用時，把代理的指令執行包裹在作業系統原生沙箱中：macOS 上是 `sandbox-exec`（Seatbelt），Linux 與 WSL2 上是 `bwrap` 加 `socat`。決定只做一次，並一直有效直到伺服器重新啟動。共有三種結果，各自顯示在啟動時的暴露行上：
 
-`--sandbox off` 是針對探測看不見的情況所用的現場終止開關：主機上的沙箱設定檔本身行為失當。它不需要重建，而伺服器會在整個行程存續期間記錄一則警告，因此這個狀態永遠不會是無聲的。
+| `sandbox=` | 何時 | 誰的代理執行會啟動 |
+| --- | --- | --- |
+| `native` | 後端可用且 `--sandbox` 為 `on` | 所有人的執行，皆被包裹 |
+| `off` | `--sandbox off` | 所有人的執行，在此主機上無約束 |
+| `unavailable` | `--sandbox on` 且沒有後端（Windows，或缺少 `bwrap` 與 `socat` 的 Linux） | 只有由伺服器擁有者負責的執行，無約束。其他人的執行會被拒絕，並顯示「此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。」 |
+
+對於自動化而言，負責的人是該自動化所綁定的人。若未記錄伺服器擁有者，則在 `unavailable` 主機上不會啟動任何執行。在已安裝 bubblewrap 的 Linux 與 WSL2 上，原生派發目前會對每次執行都封閉式失敗；見[沙箱後端](/zh-HK/手冊/參考/沙箱後端/#linuxbubblewrap)。
+
+`--sandbox off` 是伺服器擁有者為所有使用該伺服器的人所作的選擇：它會讓每位成員的代理在這部機器上無約束地執行。在沙箱設定檔本身行為失當的主機上使用它，或讓成員能在沒有後端的主機上執行代理。它不需要重建，而伺服器會在整個行程存續期間記錄一則警告，因此這個狀態永遠不會是無聲的。
 
 ### `--tool-deferral`
 
@@ -128,7 +136,6 @@ GitLab 與 Bitbucket 的背景工作亦會讀取 `GITLAB_TOKEN` / `CI_JOB_TOKEN`
 | `cc_server connect enable`      | 使用 Control Center 代管的 Connect                                                                               |
 | `cc_server connect enable --url <url>` | 使用位於該 URL 的自訂 Connect（HTTPS，或回送地址上的 `http`）                                             |
 | `cc_server connect disable`     | 停止使用 Connect。只有伺服器自己的應用程式能讓人們登入                                                           |
-| `cc_server connect rotate-key --yes` | 產生新的安裝金鑰和安裝 id。所有經由 Connect 登入的人都要重新登入。沒有 `--yes` 時只會發出警告並以 `2` 結束 |
 
 不帶指令時預設為 `status`。每個指令都接受 `--data-dir`。`CC_CONNECT_URL` 會凌駕這些指令所儲存的內容。未知的指令會以 `64` 結束。模式、安裝身分與狀態代碼請參見 [Control Center Connect](/zh-HK/手冊/參考/connect/)。
 

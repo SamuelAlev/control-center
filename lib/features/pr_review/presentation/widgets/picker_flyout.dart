@@ -127,35 +127,33 @@ class _PickerFlyoutPanelState extends State<PickerFlyoutPanel> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+                      padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
                       child: Semantics(
                         header: true,
                         child: Text(
                           title,
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                          style: CcTypography.bodySm.copyWith(
+                            fontWeight: CcTypography.semiboldWeight,
                             color: t.textPrimary,
                           ),
                         ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
                       child: Row(
                         children: [
                           Icon(
                             AppIcons.search,
-                            size: 15,
+                            size: 14,
                             color: t.fgQuaternary,
                           ),
-                          const SizedBox(width: 8),
+                          AppSpacing.hGapSm,
                           Expanded(
                             child: CcTextField(
                               controller: searchController,
                               focusNode: searchFocus,
-                              textStyle: TextStyle(
-                                fontSize: 13.5,
+                              textStyle: CcTypography.bodySm.copyWith(
                                 color: t.textPrimary,
                               ),
                               onChanged: onQueryChanged,
@@ -197,11 +195,11 @@ class PickerCheck extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return SizedBox(
-      width: 18,
+      width: 16,
       child: selected
           ? Icon(
               AppIcons.check,
-              size: 16,
+              size: 14,
               color: dimmed ? t.fgQuaternary : t.fgBrandPrimary,
             )
           : null,
@@ -233,7 +231,7 @@ class PickerCheckBox extends StatelessWidget {
   /// Whether the row is locked (required code-owner) — shows a dimmed check.
   final bool locked;
 
-  static const double _size = 18;
+  static const double _size = 16;
 
   @override
   Widget build(BuildContext context) {
@@ -262,7 +260,7 @@ class PickerCheckBox extends StatelessWidget {
       child: checked
           ? Icon(
               AppIcons.check,
-              size: 13,
+              size: 12,
               color: locked ? t.fgQuaternary : t.fgWhite,
             )
           : null,
@@ -271,7 +269,7 @@ class PickerCheckBox extends StatelessWidget {
 }
 
 /// A muted section label used to group picker rows (e.g. "Teams",
-/// "Suggested reviewers").
+/// "Suggested reviewers"), styled like a [CcMenu] section header.
 class PickerGroupHeader extends StatelessWidget {
   /// Creates a [PickerGroupHeader].
   const PickerGroupHeader({super.key, required this.label});
@@ -283,15 +281,15 @@ class PickerGroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.designSystem ?? DesignSystemTokens.light();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 2),
       child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.3,
-          color: t.textTertiary,
-        ),
+        label.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: CcFonts.code(
+          textStyle: CcTypography.label,
+          family: context.ccTheme?.monoFontFamily,
+        ).copyWith(color: t.textTertiary),
       ),
     );
   }

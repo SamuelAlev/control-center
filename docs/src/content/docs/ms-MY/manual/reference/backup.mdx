@@ -2,7 +2,7 @@
 title: Sandaran, eksport dan import
 description: Susun atur snapshot, manifes, setiap operasi sandaran dan laluan pemindahan, serta dengan tepat fail yang terkandung dan tidak terkandung dalam sandaran.
 slug: ms-MY/manual-pengguna/rujukan/sandaran
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Semua yang boleh disalin, diserahkan atau diterima pakai oleh Control Center, dan bentuk
@@ -113,6 +113,7 @@ lebih daripada pangkalan datanya, dan tiada satu pun daripada selebihnya berpind
 | `models/`                           | Tidak           | Tidak                      |
 | `meetings/<meetingId>/`             | Tidak           | Tidak                      |
 | `rigs/`                             | Tidak           | Tidak                      |
+| `_agent_hooks/`                     | Tidak           | Tidak                      |
 
 Sebahagian daripadanya boleh dibuang — `spaces/` memegang worktree salin-semasa-tulis yang
 disediakan semula daripada repo, `pr_clones/` ialah cache, `models/` dimuat turun semula,
@@ -120,8 +121,17 @@ disediakan semula daripada repo, `pr_clones/` ialah cache, `models/` dimuat turu
 yang ditunjuk oleh baris dalam pangkalan data, `skills/` dan `agents/` memegang fail yang
 digunakan oleh ejen untuk berjalan, dan `secrets.json` memegang setiap kunci penggandingan,
 kelayakan pembekal dan tetapan SSO pada pemasangan itu. Lihat
-[Sandarkan dan pulihkan](/ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan/#copy-backups-off-the-machine)
+[Sandarkan dan pulihkan](/ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan/#salin-sandaran-keluar-daripada-mesin)
 untuk merangkumi selebihnya.
+:::caution[Pangkalan data ruang kerja memegang rahsia webhook]
+`workspace.db` ialah keseluruhan ruang kerja: perbualan, log larian, indeks kod,
+pautan repositori, definisi persekitaran dan ahli. Ia juga memegang token webhook
+saluran paip dan rahsia webhook penyegerakan tiket dalam bentuk boleh dibaca, jadi
+anggap eksport atau sandaran yang dimuat turun sebagai rahsia. Ia tidak memegang log
+masuk pembekal, kunci peranti atau rahsia pengguna; semuanya berada dalam `global.db`
+dan `secrets.json`.
+:::
+
 :::note[Token sembang sengaja ditinggalkan]
 `chat_credentials/` yang berada di sebelah pangkalan data dan bukannya di dalamnya ialah
 sebab ruang kerja yang diserahkan kepada orang lain tidak membawa token bot yang aktif.
@@ -145,7 +155,7 @@ seperti pelayan demo.
 | `workspace.listBackups` | baca | Ruang kerja | `admin` | tiada | `{backups: [...]}` |
 | `workspace.deleteBackup` | ubah | Ruang kerja | `owner` | `name` | `{ok}` |
 | `workspace.export`    | baca   | Ruang kerja  | `admin`               | tiada         | `{ok, path}`                   |
-| `workspace.import`    | ubah   | Ruang kerja  | `owner`               | `source_path` | `{ok, workspace_id}`           |
+| `workspace.import`    | ubah   | Ruang kerja  | `owner`, dan pemilik pelayan | `source_path` | `{ok, workspace_id}`           |
 | `workspace.delete`    | ubah   | Pemasangan*  | `owner`               | `id`          | baris pendaftaran ditandakan dipadam |
 
 * `workspace.delete` tidak berskop kerana baris yang ditandakannya berada dalam daftar
@@ -169,8 +179,18 @@ masa yang tersenarai, bukan laluan.
 menjadi pentadbir bagi satu ruang kerja tidak cukup untuk menguruskan yang lain. Pemadaman
 hanya menerima nama direktori cap masa yang tersenarai, bukan laluan pelayan sewenang-wenangnya,
 dan membuang keseluruhan snapshot (termasuk snapshot yang tidak lengkap).
-Eksport/import setiap ruang kerja kekal pada pentadbir/pemilik ruang kerja, bukan pemilik
-pemasangan.
+Muat turun eksport dan muat turun sandaran berjadual bagi setiap ruang kerja kekal pada
+pentadbir ruang kerja.
+:::
+
+:::note[Pemulihan ialah milik pemilik pelayan]
+`workspace.import` dan `POST /backup/restore` menjadikan pelayan menerima satu fail
+pangkalan data yang barisnya kemudian dianggapnya sebagai miliknya sendiri: pautan
+repositori dan siapa yang membuatnya, definisi persekitaran yang berjalan pada hos, serta
+laluan worktree dan log. Oleh itu kedua-duanya memerlukan pemilik pelayan
+(`ServerAuthority.serverOwner`), yang juga mesti menjadi pemilik ruang kerja itu. Orang
+lain, dan setiap pemanggil pada hos yang tiada pemilik direkodkan, ditolak dengan
+`server_owner_required`. Tiada pencetus atau paparan yang dibawa oleh fail itu diterima pakai.
 :::
 
 ### Respons `server.listBackups`
@@ -246,7 +266,7 @@ penggandingan dan peranan di bawah.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **Pentadbir** ruang kerja |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **Pemilik** pemasangan    |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **Pentadbir** ruang kerja; **pemilik** pemasangan setelah ruang kerja dipadam |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **Pemilik** ruang kerja   |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Pemasangan **pemilik** yang juga **pemilik** ruang kerja (`403` dengan `server_owner_required` jika tidak) |
 
 `w` ialah id ruang kerja, `n` nama direktori snapshot atau sandaran berjadual, `d` id
 peranti pemanggil, `s` tandatangannya. Pada `/backup/snapshot`, `n` diselesaikan terhadap

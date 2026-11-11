@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cc_infra/src/network/github/github_app_client.dart';
@@ -90,14 +91,22 @@ void main() {
     ],
     '/app/installations/42/access_tokens': {
       'token': token,
+      'permissions': {'contents': 'read'},
       'repository_selection': 'selected',
+      'repositories': [
+        {'id': 1, 'name': 'widget'},
+      ],
       'expires_at': (now ?? DateTime.now().toUtc())
           .add(expiresIn)
           .toIso8601String(),
     },
     '/app/installations/43/access_tokens': {
       'token': '$token-other',
+      'permissions': {'contents': 'read'},
       'repository_selection': 'selected',
+      'repositories': [
+        {'id': 2, 'name': 'widget'},
+      ],
       'expires_at': (now ?? DateTime.now().toUtc())
           .add(expiresIn)
           .toIso8601String(),
@@ -140,8 +149,10 @@ void main() {
       expect(decode(parts[1])['iss'], '12345');
     });
 
-    test('expires inside GitHub\'s ten-minute ceiling', () {
-      final jwt = build().client.buildAppJwt();
+    test('is issued a minute in the past and expires nine minutes ahead, '
+        "inside GitHub's ten-minute ceiling", () {
+      final now = DateTime.utc(2026, 11, 10, 12);
+      final jwt = build(now: () => now).client.buildAppJwt();
       final claims =
           jsonDecode(
                 utf8.decode(
@@ -149,9 +160,9 @@ void main() {
                 ),
               )
               as Map<String, dynamic>;
-      final iat = claims['iat'] as int;
-      final exp = claims['exp'] as int;
-      expect(exp - iat, lessThanOrEqualTo(600));
+      final seconds = now.millisecondsSinceEpoch ~/ 1000;
+      expect(claims['iat'], seconds - 60);
+      expect(claims['exp'], seconds + 9 * 60);
     });
 
     test('is presented as the bearer on app requests', () async {
@@ -191,6 +202,90 @@ void main() {
       );
     });
 
+    test(
+      'every page is read: an owner past the tenth is still found',
+      () async {
+        final pages = <String>[];
+        final client = GitHubAppClient(
+          appId: '12345',
+          privateKeyPem: _testKeyPem,
+          httpClient: TestHttpClient(
+            handler: (request) {
+              final uri = httpRequestUri(request);
+              final page = int.parse(uri.queryParameters['page'] ?? '1');
+              pages.add('$page');
+              // Twelve full pages, then one short one naming `late-org`.
+              return httpTextResponse(request, [
+                if (page <= 12)
+                  for (var i = 0; i < 100; i++)
+                    {
+                      'id': page * 1000 + i,
+                      'account': {'login': 'org-$page-$i'},
+                    }
+                else
+                  {
+                    'id': 99,
+                    'account': {'login': 'late-org'},
+                  },
+              ]);
+            },
+          ),
+        );
+        final listed = await client.installations();
+        expect(listed.map((i) => i.account), contains('late-org'));
+        expect(pages, hasLength(13));
+      },
+    );
+
+    test('a listing in the air when the credentials change is not '
+        'adopted', () async {
+      final gate = Completer<void>();
+      var listings = 0;
+      late GitHubAppClient client;
+      client = GitHubAppClient(
+        appId: '12345',
+        privateKeyPem: _testKeyPem,
+        httpClient: TestHttpClient(
+          handler: (request) async {
+            listings++;
+            if (listings == 1) {
+              await gate.future;
+            }
+            return httpTextResponse(request, [
+              {
+                'id': listings,
+                'account': {'login': 'acme'},
+              },
+            ]);
+          },
+        ),
+      );
+      final stale = client.installations();
+      await Future<void>.delayed(Duration.zero);
+      client.invalidate();
+      gate.complete();
+      expect((await stale).single.id, 1);
+      expect((await client.installations()).single.id, 2);
+    });
+
+    test('a refused App JWT is its own failure, not an outage', () async {
+      final built = build(
+        responses: const {'/app/installations': {'message': 'Bad creds'}},
+        statusByPath: const {'/app/installations': 401},
+      );
+      Object? failure;
+      try {
+        await built.client.mintScopedForOwner(
+          'acme',
+          repositories: const ['widget'],
+          permissions: const {'contents': 'read'},
+        );
+      } on GitHubAppMintRefused catch (e) {
+        failure = e.failure;
+      }
+      expect(failure, GitHubAppMintFailure.jwtRejected);
+    });
+
     test('a failure is not cached', () async {
       // A network blip must not leave the app permanently "installed
       // nowhere" until the next restart.
@@ -205,12 +300,18 @@ void main() {
   });
 
   group('scoped installation tokens', () {
-    Future<String?> mint(GitHubAppClient client, String owner) async =>
-        (await client.mintScopedForOwner(
+    /// The token, or why GitHub refused it.
+    Future<Object> mint(GitHubAppClient client, String owner) async {
+      try {
+        return (await client.mintScopedForOwner(
           owner,
           repositories: const ['widget'],
           permissions: const {'contents': 'read'},
-        ))?.token;
+        )).token;
+      } on GitHubAppMintRefused catch (e) {
+        return e.failure;
+      }
+    }
 
     test('resolve the installation by owner', () async {
       final built = build();
@@ -222,11 +323,15 @@ void main() {
       expect(await mint(build().client, 'ACME'), 'ghs_token');
     });
 
-    test('an owner with no installation has no token', () async {
-      expect(await mint(build().client, 'stranger'), isNull);
+    test('an owner with no installation is not installed', () async {
+      expect(
+        await mint(build().client, 'stranger'),
+        GitHubAppMintFailure.notInstalled,
+      );
     });
 
-    test('a mint failure resolves to null rather than throwing', () async {
+    test('a mint 404 (uninstalled since the listing) is not installed and '
+        'drops the listing', () async {
       final built = build(
         responses: {
           '/app/installations': [
@@ -237,7 +342,63 @@ void main() {
           ],
         },
       );
-      expect(await mint(built.client, 'acme'), isNull);
+      expect(
+        await mint(built.client, 'acme'),
+        GitHubAppMintFailure.notInstalled,
+      );
+      await mint(built.client, 'acme');
+      expect(
+        built.transport.paths.where((p) => p == '/app/installations'),
+        hasLength(2),
+      );
+    });
+
+    test(
+      'a repository left out of the installation is repo_not_selected',
+      () async {
+        final built = build(
+          responses: {
+            ...responsesWith(),
+            '/app/installations/42/access_tokens': {
+              'message':
+                  'There is at least one repository that does not exist or is '
+                  'not accessible to the parent installation.',
+            },
+          },
+          statusByPath: const {'/app/installations/42/access_tokens': 422},
+        );
+        expect(
+          await mint(built.client, 'acme'),
+          GitHubAppMintFailure.repoNotSelected,
+        );
+      },
+    );
+
+    test('a 5xx is unavailable, not a refusal', () async {
+      final built = build(
+        responses: {
+          ...responsesWith(),
+          '/app/installations/42/access_tokens': {'message': 'boom'},
+        },
+        statusByPath: const {'/app/installations/42/access_tokens': 502},
+      );
+      expect(
+        await mint(built.client, 'acme'),
+        GitHubAppMintFailure.unavailable,
+      );
+    });
+
+    test('the installation settings page is where repositories are chosen', () {
+      expect(
+        gitHubInstallationSettingsUrl(
+          const GitHubInstallation(
+            id: 42,
+            account: 'acme',
+            targetType: 'Organization',
+          ),
+        ).toString(),
+        'https://github.com/organizations/acme/settings/installations/42',
+      );
     });
 
     test('a suspended installation is not minted', () async {
@@ -253,9 +414,7 @@ void main() {
           '/app/installations/42/access_tokens': {'token': 'ghs_token'},
         },
       );
-      expect(await mint(built.client, 'acme'), isNull);
-      expect(await built.client.isOwnerSuspended('acme'), isTrue);
-      expect(await built.client.allInstallationsSuspended(), isTrue);
+      expect(await mint(built.client, 'acme'), GitHubAppMintFailure.suspended);
       expect(
         built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
@@ -281,15 +440,14 @@ void main() {
         },
         statusByPath: const {'/app/installations/42/access_tokens': 403},
       );
-      expect(await mint(built.client, 'acme'), isNull);
-      expect(await mint(built.client, 'acme'), isNull);
+      expect(await mint(built.client, 'acme'), GitHubAppMintFailure.suspended);
+      expect(await mint(built.client, 'acme'), GitHubAppMintFailure.suspended);
       expect(
         built.transport.paths.where(
           (p) => p == '/app/installations/42/access_tokens',
         ),
         hasLength(1),
       );
-      expect(await built.client.isOwnerSuspended('acme'), isTrue);
     });
 
     test('a resumed installation is minted after the recheck window', () async {
@@ -304,12 +462,16 @@ void main() {
         ],
         '/app/installations/42/access_tokens': {
           'token': 'ghs_resumed',
+          'permissions': {'contents': 'read'},
           'repository_selection': 'selected',
+          'repositories': [
+            {'id': 1, 'name': 'widget'},
+          ],
           'expires_at': now.add(const Duration(hours: 1)).toIso8601String(),
         },
       };
       final built = build(responses: responses, now: () => now);
-      expect(await mint(built.client, 'acme'), isNull);
+      expect(await mint(built.client, 'acme'), GitHubAppMintFailure.suspended);
 
       responses['/app/installations'] = [
         {

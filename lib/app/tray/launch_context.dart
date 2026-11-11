@@ -36,6 +36,6 @@ Future<void> resolveLaunchContext(List<String> arguments) async {
   } on PlatformException catch (e) {
     AppLog.w('tray', 'launch context unavailable: ${e.message}');
   } on MissingPluginException {
-    // An older runner without the method: an ordinary launch.
+    // A runner without the method: an ordinary launch.
   }
 }

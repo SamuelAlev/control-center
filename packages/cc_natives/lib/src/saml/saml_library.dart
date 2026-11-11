@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:ffi';
 
 import 'package:cc_natives/src/native_library.dart';
+import 'package:cc_natives/src/native_library_paths.dart';
 import 'package:cc_natives/src/native_unavailable.dart';
 import 'package:cc_natives/src/saml/saml_ffi_bindings.dart';
 import 'package:ffi/ffi.dart';

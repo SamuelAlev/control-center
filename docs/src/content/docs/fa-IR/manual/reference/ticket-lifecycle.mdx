@@ -2,7 +2,7 @@
 title: چرخهٔ عمر تیکت
 description: فیلدها، وضعیت‌ها، گذارها، رابطه‌ها و گلوگاه جهش تیکت.
 slug: fa-IR/راهنمای-کاربر/مرجع/چرخه-عمر-تیکت
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## وضعیت‌های تیکت
@@ -118,7 +118,7 @@ Any non-terminal status ──→ cancelled; inReview ──→ failed
 | `projectId`              | `String?`                  | پروژهٔ مالک؛ هرگز به راه دور فرستاده نمی‌شود                                                |
 | `assignedAgentId`        | `String?`                  | شناسهٔ principal تخصیص‌یافته (فقط فراداده — تخصیص دادن چیزی را اعزام نمی‌کند)               |
 | `assigneeType`           | `PrincipalType`            | اینکه `assignedAgentId` نام کدام نوع principal را می‌برد — `user` یا `agent` (پیش‌فرض `agent`) |
-| `createdByType`          | `PrincipalType?`           | نوع principalی که تیکت را ساخت (`user` یا `agent`)؛ برای ردیف‌های قدیمی/سیستمی null است      |
+| `createdByType`          | `PrincipalType?`           | نوع principalی که تیکت را ساخت (`user` یا `agent`)؛ برای ردیف‌های ساخته‌شدهٔ سیستم null است      |
 | `createdById`            | `String?`                  | شناسهٔ principal سازنده                                                                     |
 | `assignedTeamId`         | `String?`                  | تیم تخصیص‌یافته (فقط فراداده)                                                               |
 | `delegatedByAgentId`     | `String?`                  | عاملی که این تیکت را واگذار کرد                                                              |

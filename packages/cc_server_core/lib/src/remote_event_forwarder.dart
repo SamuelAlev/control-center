@@ -23,6 +23,18 @@ typedef TicketWorkspaceResolver = Future<String?> Function(String ticketId);
 /// (single-user), where forwarding stays unconditional.
 typedef WorkspaceMembershipChecker = Future<bool> Function(String workspaceId);
 
+/// Whether [userId] may see a workspace notification frame ([method],
+/// [params]) right now: the same repository, space and PR visibility checks
+/// the durable feed and Web Push apply. Never cached: grants, roles and forge
+/// reach move.
+typedef NotificationViewCheck =
+    Future<bool> Function(
+      String workspaceId,
+      String userId,
+      String method,
+      Map<String, dynamic> params,
+    );
+
 /// Pushes live workspace-scoped updates to every connected client as JSON-RPC
 /// notifications (id-less frames) — the single source the client-side
 /// `RpcNotificationMapper` renders as OS notifications, on every transport
@@ -41,6 +53,7 @@ class RemoteEventForwarder {
     required this.deviceId,
     required this.userId,
     this.isMember,
+    this.canView,
     this.resolveTicketWorkspace,
   });
 
@@ -58,6 +71,10 @@ class RemoteEventForwarder {
   /// per workspace and invalidated by this user's WorkspaceMemberAdded/Removed
   /// events, so revocation stops the flow within one event round-trip.
   final WorkspaceMembershipChecker? isMember;
+
+  /// Per-frame visibility of a workspace notification (repo grants, space
+  /// access, PR visibility). Null on hosts without identity wiring.
+  final NotificationViewCheck? canView;
 
   /// Optional resolver for events without a workspace id ([TicketReassigned]).
   final TicketWorkspaceResolver? resolveTicketWorkspace;
@@ -269,9 +286,16 @@ class RemoteEventForwarder {
       final cached = _membershipCache[workspaceId];
       final allowed = cached ?? await checker(workspaceId);
       _membershipCache[workspaceId] = allowed;
-      if (allowed) {
-        _notify(method, params);
+      if (!allowed) {
+        return;
       }
+      // Membership is not code access: a frame about a repository, space or
+      // pull request the user may not see is dropped like the feed drops it.
+      final view = canView;
+      if (view != null && !await view(workspaceId, userId, method, params)) {
+        return;
+      }
+      _notify(method, params);
     }());
   }
 

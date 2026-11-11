@@ -2,7 +2,7 @@
 title: Een agent een testmachine geven
 description: Geef een agent een wegwerp-browser, -desktop, -Android-emulator of -iOS-simulator — live te volgen, met bediening die je kunt overnemen.
 slug: nl-NL/handleiding/gidsen/rigs-gebruiken
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Een **rig** is een wegwerpmachine die een agent opent wanneer hij iets echt
@@ -134,6 +134,21 @@ Druk op **Machine stoppen** als je klaar bent.
 
 De besturing is bewust exclusief: twee actoren die in één machine typen,
 produceren invoer die geen van beiden bedoelde.
+
+### Wie kan kijken en wie kan aansturen
+
+Een machine die in een ruimte is geopend, volgt de repositories van die ruimte, net zoals de ruimte zelf dat doet (zie [Ruimtes volgen hun repositories](/nl-NL/handleiding/concepten/autorisatie/#ruimtes-volgen-hun-repositories)):
+
+- **Kijken** vereist leestoegang tot de ruimte: een leesgrant op elke repository die de ruimte beschikbaar stelt, en je eigen forge-aanmelding moet elk ervan kunnen lezen. Kijken omvat de lijst met machines, het scherm, het geluid, de staat van de browser, de poorten, en het lezen van het klembord en de bestanden.
+- **Aansturen** vereist daarnaast een [schrijfgrant](/nl-NL/handleiding/concepten/autorisatie/#code-wijzigen-vereist-de-schrijfgrant) op die repositories. Aansturen omvat een machine in de ruimte openen, typen en klikken, de besturing overnemen, de machine starten, stoppen en sluiten, zijn poorten doorsturen, naar het klembord schrijven, bestanden erop neerzetten en de microfoon gebruiken.
+
+Met alleen leestoegang toont de machine **Alleen kijken** en "Je kunt deze machine bekijken. Hem bedienen, zijn poorten doorsturen, erin plakken of er bestanden op neerzetten vereist schrijftoegang tot elke repository in deze space." Onder een uitgeschakelde **Machine starten** zegt het tabblad "Hier een machine starten vereist schrijftoegang tot elke repository in deze space. Een werkruimtebeheerder kan die toekennen." Zonder leestoegang wordt de machine niet getoond, alleen "Je kunt deze machine niet bekijken. Hij hoort bij een space waarvoor je geen leestoegang hebt."
+
+Een machine die bij geen enkele ruimte hoort, bereikt geen worktree, en elk lid van de werkruimte kan hem bekijken en aansturen.
+
+Een machine met de eigen inloggegevens van één persoon is van die persoon om aan te sturen: hun terminalmachine, of elke machine die voor hen is geopend en waarvan de netwerktoegang een forge bereikt. Alleen die persoon, en agentruns die alleen voor hem handelen, kunnen hem aansturen. Werkruimtebeheerders en de serverbeheerder heffen dit niet op. Overige personen die de space toegang geeft, kunnen het scherm, het geluid, de staat en de poorten van de machine nog steeds bekijken, maar kunnen hem niet aansturen, geen poorten doorsturen, er niet in plakken, er geen bestanden op neerzetten, er geen bestanden uit kopiëren en het klembord niet lezen. Zo'n machine toont **Alleen kijken** met deze notitie: "Je kunt deze machine bekijken. Hij gebruikt de inloggegevens van de persoon voor wie hij is geopend, dus alleen die persoon kan hem bedienen, zijn poorten doorsturen, erin plakken of er bestanden op neerzetten." Een actie die om deze reden is geweigerd, zegt "Alleen de persoon voor wie deze machine is geopend, kan hem bedienen. Hij gebruikt diens eigen inloggegevens." De terminal van iemand anders verschijnt voor jou helemaal niet, net zoals hun terminalsessies.
+
+Elke machine toont of jij hem kunt aansturen, en dat wordt vanzelf bijgewerkt wanneer een grant of je forge-aanmelding verandert.
 
 ## Spullen erin en eruit halen
 

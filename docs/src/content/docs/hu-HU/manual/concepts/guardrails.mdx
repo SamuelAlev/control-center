@@ -2,7 +2,7 @@
 title: Korlátok – egy szabályzat minden állapotmódosító művelethez
 description: Miért vezeti át a Control Center minden ügynökmellékhatást egyetlen engedélyezés–kérdezés–tiltás motoron, miért marad szándékosan kicsi az ActionClass-taxonómia, és mit változtat meg valójában az autonómiatárcsa.
 slug: hu-HU/kezikonyv/fogalmak/korlatok
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 A Control Center ügynökei fájlokat törölhetnek, ágakat küldhetnek fel, pull
@@ -19,10 +19,7 @@ Pontosan egy szabályzatmotor van. Minden olyan ponton megkérdezik, ahol egy
 művelet elhagyhatja a rendszert: a beépített harness eszközregiszterénél, a
 szerveroldali MCP-diszpécser kapujánál és a repóműveletek módosításainál. Az
 egyszer megírt szabály így ugyanúgy érvényes a beépített futtatókörnyezetre és
-a külső ügynök-CLI-kre – nincs mögötte egy második, halkabb útvonal. A régebbi,
-csak bashre vonatkozó parancsszabályzat továbbra is működik: egy szabály
-illeszkedhet parancs-előtagra műveletosztály helyett, és a két forma
-ugyanabban a tárban él egymás mellett.
+a külső ügynök-CLI-kre – nincs mögötte egy második, halkabb útvonal. Egy szabály műveletosztály helyett parancs-előtagra is illeszkedhet; a két forma ugyanabban a tárban él egymás mellett.
 
 A motor azonban nem helyettesíti az operációs rendszer homokozóját, és a
 homokozó sem helyettesíti a motort. Különböző kérdésekre válaszolnak: a
@@ -31,14 +28,12 @@ megtörténhet-e, a homokozó pedig azt szabja meg, hová érhet el a létrejöv
 folyamat. A `cc_server` ott alkalmazza a homokozót, ahol a gazdagép kínál
 háttérrendszert – de [a Windows nem kínál ilyet, a Linuxon pedig `bwrap` és
 `socat` kell hozzá](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/). Az ilyen
-gazdagépeken a korlátok a legkülső érvényesítési réteg, nem pedig egy padló
-tetején ülő szabályzat, amit érdemes tudni, amikor eldönti, mennyire legyen
-megengedő.
+gazdagépeken csak a szerver tulajdonosának futtatásai indulnak el, hacsak a tulajdonos a `--sandbox off` kapcsolóval mindenki számára ki nem kapcsolta a homokozót. Minden homokozó nélkül induló futtatásnál a korlátok a legkülső érvényesítési réteg, nem pedig egy padló tetején ülő szabályzat, amit érdemes tudni, amikor eldönti, mennyire legyen megengedő.
 
 ## ActionClass: szándékosan zárt taxonómia
 
 Minden állapotmódosító eszköz megadja, hogy mely **ActionClass**-okba tartozik,
-egy tizenhárom hatásosztályból álló zárt halmazból. Öt közülük alapértelmezés
+egy tizennégy hatásosztályból álló zárt halmazból. Hat közülük alapértelmezés
 szerint kérdez; a többi engedélyez, és ezen csak egy szabály változtat.
 
 | Osztály                    | Beépített alapértelmezett | Mit fed le                                                       |
@@ -56,17 +51,18 @@ szerint kérdez; a többi engedélyez, és ezen csak egy szabály változtat.
 | `processSpawn`             | Engedélyezés     | Folyamat indítása (shell, és minden, ami shellt hív)             |
 | `workspaceMutation`        | Engedélyezés     | A munkaterület szerkezetének módosítása (repók, terek, ügynökök) |
 | `enclosureControl`         | Engedélyezés     | Elszigetelt környezet (állomás) irányítása: VM indítása, bemenet küldése neki |
+| `hostExecution`            | **Előbb kérdezzen** | Parancs futtatása a szerver gazdagépén, bármilyen homokozón kívül, ügynök kérésére: környezeti feladatok, folyamatok, compose-veremek, valamint az `eval`, ha a kernelje homokozón kívül fut |
 
 A nyolc alapból engedélyező osztályt abból a feltevésből választották, hogy
 alattuk érvényesül a homokozó padlója. Ez ott igaz, ahol a gazdagép kínál
-háttérrendszert, Windows alatt viszont nem, és olyan Linux-gépen sem, amelyről
-hiányzik a `bwrap` és a `socat` – így ha ott a `fileWriteOutsideWorktree` vagy
+háttérrendszert, viszont nem a `--sandbox off` mellett, és nem a tulajdonos saját futtatásaira Windows alatt, sem olyan Linux-gépen, amelyről
+hiányzik a `bwrap` és a `socat`. Ha ott a `fileWriteOutsideWorktree` vagy
 a `packageInstall` kapuzását szeretné, azt Önnek kell szabályként megírnia.
 
 A halmaz szándékosan zárt. Egy új, osztályt nem megadó állapotmódosító eszköz
 megbukik a ratchet-teszten, így a taxonómia csak kifejezett, megindokolt
 döntéssel bővülhet – „a taxonómiák burjánzása megöli ezt a funkciót”.
-Tizenhárom osztály elég ahhoz, hogy kifejezze azokat a szabályzatokat,
+Tizennégy osztály elég ahhoz, hogy kifejezze azokat a szabályzatokat,
 amelyeket az emberek ténylegesen megírnak (soha ne küldj fel kérdezés nélkül,
 soha ne törölj a worktree-n kívül, mindig engedélyezd az olvasást), és elég
 kevés ahhoz, hogy a beállítások felülete érthető maradjon.
@@ -97,8 +93,7 @@ Két döntés kemény garanciát hordoz:
 
 Szándékosan nincs körönkénti rögzítés. Minden eszközhívás elölről oldja fel a
 szabályzatot, így ugyanannak a műveletnek az ismételt megkérdezése nem
-körhöz kötött, hanem az üzemeltető saját „jegyezd meg ezt a döntést”
-választása korlátozza.
+körhöz kötött, hanem az üzemeltető saját időkorlátos jóváhagyása korlátozza.
 
 ## Argumentumszintű szabályok
 
@@ -115,6 +110,7 @@ Egy megkötés a következőket nevezheti meg:
   ág a main kivételével”)
 - **gazdagépek** — hálózati célpontok, aldomen-helyettesítő karakterekkel (`*.internal`)
 - **parancsok** — parancs-előtagok, szóhatáron illesztve
+- **eszközök** — az a pontos eszköz, amelyet a hívás megnevez, így egy jóváhagyás egyetlen eszközre vonatkozhat, nem az ugyanolyan hatású összes eszközre
 - **plafonok** — `maxCount` / `maxCents`, így a „legfeljebb 50 fájl törlése” is
   kifejezhető
 
@@ -158,16 +154,19 @@ szabályzattár alatti módparancsháló, és mindkettő alatt az operációs re
 homokozója. Egy `allow`-ra feloldódó parancsszabály soha nem lazítja meg
 egyiket sem – a módháló utána fut, és a `deny`-ja végleges.
 
-## Állandó jóváhagyások
+## Időkorlátos jóváhagyások
 
-Ha egy kérésre „jegyezd meg ezt” válasszal felel, az valódi szabályzati
-szabályt ír: hatókörrel ellátottat (tér / ügynök / munkaterület),
-**argumentumokkal megkötöttet** (a `feature/login` ágra való küldés
-jóváhagyása a `feature/**`-ot engedélyezi, nem a `main`-t), és egy megadott
-TTL-lel **önmagát visszavonót**. Nem ugyanaz néhány órára igent mondani, mint
-csendben átírni az állandó szabályzatát, és a beírt szabályok ugyanabba a tárba
-kerülnek `remembered` eredetmegjelöléssel és lejárati idővel, így korábban is
-visszavonhatók.
+Minden jóváhagyási kártya, amelyet egy ügynök művelete kivált, felajánlja a **Jóváhagyás 8 órára** gombot, ha a műveletnek van az osztályánál szűkebb, megnevezhető része. Ennek választása valódi szabályzati szabályt ír, egy időkorlátos jóváhagyást, ugyanabba a tárba, ahová az Ön beállított szabályai kerülnek, `remembered` eredetmegjelöléssel és lejárati idővel:
+
+- **Hatókörhöz kötött.** A kérdés forrásául szolgáló térre íródik. Az egész munkaterületre csak adminisztrátori válasz írható.
+- **Szűk.** Ágcsaládot nevez meg (a `feature/login` ágra irányuló push jóváhagyása a `feature/**`-ot fedi le, a `main`-t nem), egy mappát, egy gazdagépet, a pontos parancsot vagy az eszközt. A commit az egyetlen művelet, amelyet osztályként, az adott térre hagynak jóvá: nincs nála szűkebb, megnevezhető dolog.
+- **Magától visszavonódó.** Nyolc óra után lejár, és az ügynökjogosultságok oldalon hamarabb is visszavonható.
+
+Egy időkorlátos jóváhagyás csak a kérdést spórolja meg. Az „előbb kérdezzen” döntésre válaszol, amely a saját hatókörében vagy egy szélesebben áll, és sosem írja felül a Tiltást, bármelyik hatókörből származik is az. A műveletre beállított szabály mellett tárolódik, így a szabály módosítása a jóváhagyást érintetlenül hagyja, a jóváhagyás visszavonása pedig a szabályt.
+
+Néhány kapu a szabályzat után is kérdez magától, miután a szabály már engedélyezte a hívást: egy eszköz saját deklarált jóváhagyása vagy egy módparancsháló. Ezt a kérdést csak az az időkorlátos jóváhagyás hagyja el, amely pontosan azt az eszközt vagy parancsot nevezi meg. Az, hogy a műveletet Engedélyezésre állítja, nem némítja el őket.
+
+Három kártya két gombot tart meg, mert nincs mit továbbvinni: a homokozó programfuttatása egy mappából (ennek jóváhagyása már tárolt jog, amelyet visszavonhat), egy egyszer megerősített romboló művelet, és egy készségtelepítés (a megváltozott készségnek újra kérdeznie kell).
 
 ## Érvényesítési szintek
 

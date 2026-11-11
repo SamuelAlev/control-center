@@ -112,12 +112,6 @@ class PlanDocumentApprovalService {
       // only be retried as-is. Reset to `proposed` and drop the template and
       // run so both are regenerated; the hires, team and project are kept.
       await _orchestrations.update(_resetForRerun(existing, spaceId));
-    } else if (existing != null && existing.spaceId != spaceId) {
-      // Written before the space was resolved (it held the conversation id):
-      // repoint it so a resumed approval materializes into the real room.
-      await _orchestrations.update(
-        existing.copyWith(spaceId: spaceId, updatedAt: DateTime.now()),
-      );
     }
     if (existing == null) {
       final now = DateTime.now();
@@ -126,9 +120,7 @@ class PlanDocumentApprovalService {
           id: orchestrationId,
           workspaceId: workspaceId,
           proposal: proposal,
-          // The ROOM the plan was authored in. Storing the conversation id
-          // here matched no space, so every generated step failed the instant
-          // the run started with "no conversation to work in".
+          // The ROOM the plan was authored in, never its conversation.
           spaceId: spaceId,
           orchestratorAgentId: doc.agentId,
           estimatedCostCents: proposal.budget.estimatedCostCents,

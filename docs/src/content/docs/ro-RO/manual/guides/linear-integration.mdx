@@ -2,7 +2,7 @@
 title: Configurează integrarea Linear
 description: Autentifică-te în Linear, conectează automatizarea Linear a unui spațiu de lucru și alege Linear ca provider de ticketing pentru tichetele noi.
 slug: ro-RO/manual/ghiduri-practice/integrare-linear
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear are două identități în Control Center și ambele sunt autentificări în
@@ -24,7 +24,7 @@ extern — vezi
 
 ## Alege Linear pentru spațiul de lucru
 
-1. Mergi la **Setări → Spațiu de lucru → General** și găsește cardul **Ticketing**
+1. Mergi la **Setări → Spațiu de lucru → Integrări** și găsește cardul **Ticketing**
 2. Setează **Provider de ticketing** la **Linear**
 
 Tichetele pe care le creezi de acum înainte sunt marcate cu `provider: linear`.
@@ -33,7 +33,7 @@ rândurile Linear: nu există nimic la care să te autentifici.
 
 ## Autentifică-te în Linear
 
-Pe același card, rândul **Linear** este al tău:
+Autentificarea ta proprie în Linear se află în **Setări → Tu → Profil**, în cardul **Ticketing**:
 
 1. Apasă **Autentifică-te în Linear**
 2. Aprobă în browser
@@ -45,9 +45,11 @@ Tot ce faci în Linear din Control Center rulează pe această autentificare și
 nimic altceva. Dacă nu ești autentificat, aplicația îți cere să te autentifici în
 loc să acționeze ca altcineva.
 
+Autentificarea funcționează în fiecare spațiu de lucru de pe server, cu excepția cazului în care un spațiu de lucru are propriile aplicații de autentificare: acel spațiu de lucru păstrează o autentificare Linear proprie. Cardul spune care se aplică.
+
 ## Conectează automatizarea Linear
 
-Rândul **Automatizare Linear** este aplicația Control Center a spațiului de lucru
+Rândul **Automatizare Linear**, de pe cardul **Ticketing** din **Setări → Spațiu de lucru → Integrări**, este aplicația Control Center a spațiului de lucru
 în Linear. Sincronizarea tichetelor, pipeline-urile și agenții scriu cu ea, așa
 că issue-urile și comentariile automate apar ca venind de la Control Center, nu
 de la o persoană.
@@ -68,9 +70,9 @@ regula **Scrie într-un tracker extern**.
 Folosește propria aplicație când ai ales **Folosește aplicațiile mele**. Aplicația
 serverului se aplică doar atunci: cu Control Center Connect sau cu un Connect propriu,
 Connect gestionează fiecare bandă, inclusiv Linear, iar aplicația serverului și cheia
-API de serviciu rămân salvate, dar nefolosite. O aplicație a spațiului de lucru
-([mai jos](#dă-unui-spațiu-de-lucru-propria-aplicație-linear)) se aplică în continuare
-în orice mod.
+API de serviciu rămân salvate, dar nefolosite. Un spațiu de lucru pe propriile
+aplicații ([mai jos](#dă-unui-spațiu-de-lucru-propria-aplicație-linear)) folosește
+aplicația proprie în locul celei a serverului, indiferent de modul serverului.
 
 1. Creează o aplicație OAuth la
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -97,10 +99,9 @@ celei a serverului. Doar un administrator sau un proprietar al spațiului de luc
 poate configura.
 
 1. Creează o aplicație OAuth Linear ca în pașii de mai sus
-2. Mergi la **Setări → Spațiu de lucru → General → Aplicații ale providerilor** și deschide **Linear**
-3. Alege **Folosește aplicația proprie a acestui spațiu de lucru**
-4. Adaugă în aplicația Linear ambele URL-uri de callback pe care rândul le afișează sub **URL-uri de callback**, întocmai
-5. Lipește **Client id** și, opțional, o **Cheie API de serviciu** pentru automatizarea acestui spațiu de lucru
+2. Mergi la **Setări → Spațiu de lucru → Integrări**. Pe cardul **Control Center Connect**, alege **Folosește aplicațiile mele** și apasă **Aplică**
+3. La Ticketing apare cardul aplicației **Linear**. Adaugă în aplicația Linear ambele URL-uri de callback pe care cardul le afișează sub **URL-uri de callback**, întocmai
+4. Lipește **Client id** și, opțional, o **Cheie API de serviciu** pentru automatizarea acestui spațiu de lucru
 
 Aplicația spațiului de lucru răspunde apoi la fiecare autentificare și cerere de
 automatizare Linear din acest spațiu de lucru, indiferent cum autentifică serverul
@@ -109,12 +110,7 @@ este setat un client id, Linear este oprit în acest spațiu de lucru, iar rând
 ce lipsește. Cheia API de serviciu este folosită doar aici; fără ea, sincronizarea
 are nevoie de **Conectează Linear pentru automatizare**.
 
-Trecerea între aplicația serverului și cea a spațiului de lucru, sau schimbarea
-client id-ului spațiului de lucru, deconectează din Linear pe toți cei din acest
-spațiu de lucru și le oprește automatizarea. Se autentifică din nou prin noua
-aplicație. **Folosește aplicația acestui server** șterge câmpurile salvate ale
-spațiului de lucru. Secretele sunt doar pentru scriere: rândul arată doar dacă unul
-este salvat. Celelalte spații de lucru de pe server nu sunt afectate.
+**Folosește aplicațiile mele** acoperă toți furnizorii deodată: GitHub, Google Calendar și căutarea GIF funcționează și ele doar cu aplicațiile proprii ale spațiului de lucru, fiecare configurat lângă furnizorul său, pe aceeași pagină. Trecerea între aplicațiile de autentificare ale spațiului de lucru, sau schimbarea client id-ului spațiului de lucru, deconectează din Linear pe toți cei din acest spațiu de lucru și le oprește automatizarea. Se autentifică din nou prin noua aplicație. Câmpurile salvate rămân când spațiul de lucru trece la altă alegere, dar sunt folosite doar sub **Folosește aplicațiile mele**. Secretele sunt doar pentru scriere: cardul arată doar dacă unul este salvat. Celelalte spații de lucru de pe server nu sunt afectate.
 
 ## Depanare
 
@@ -122,9 +118,9 @@ este salvat. Celelalte spații de lucru de pe server nu sunt afectate.
 
 Serverul nu are nici aplicație Linear proprie, nici Connect. Proprietarul
 serverului alege una dintre ele în **Setări → Server → Autentificare unică**. Când spațiul de lucru folosește
-propria aplicație, rândul spune în schimb că configurarea lui nu este terminată: un
-administrator al spațiului de lucru adaugă client id-ul în **Setări → Spațiu de lucru
-→ General → Aplicații ale providerilor**.
+aplicațiile proprii, rândul spune în schimb că configurarea lui nu este terminată: un
+administrator al spațiului de lucru adaugă client id-ul pe cardul **Linear**, din
+**Setări → Spațiu de lucru → Integrări**.
 
 ### Sincronizarea tichetelor eșuează cu o eroare de autentificare
 

@@ -17,7 +17,7 @@ import 'package:control_center/features/messaging/presentation/widgets/manage_sp
 import 'package:control_center/features/messaging/presentation/widgets/message_feed.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_header.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_input_bar.dart';
-import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_item.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_route_selection.dart';
 import 'package:control_center/features/messaging/presentation/widgets/steering_queue_list.dart';
 import 'package:control_center/features/messaging/presentation/widgets/takeover_banner.dart';
 import 'package:control_center/features/messaging/presentation/widgets/visible_conversation_registrar.dart';

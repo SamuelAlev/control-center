@@ -11,8 +11,9 @@ class ScopedCredentials {
   /// Opaque token used to [CredentialBrokerPort.revoke] this grant later.
   final String handle;
 
-  /// Env vars to inject into the sandbox guest process (`GH_TOKEN`,
-  /// `GITHUB_TOKEN`).
+  /// The credential as env vars (`GH_TOKEN`, `GITHUB_TOKEN`): what a pipeline
+  /// shell step or a rig is launched with. The agent run gateway reads the
+  /// token out of it and never puts it in an agent's environment.
   final Map<String, String> environment;
 
   /// Wall-clock time after which the credentials should be considered dead.
@@ -35,10 +36,14 @@ enum ForgeTokenScope {
   /// Pipeline shell steps, clones and enclosures.
   read,
 
-  /// [read] plus pull request comments and reviews, when the accountable
-  /// human can push — what lands in an agent's own environment. It cannot
-  /// push: pushes go through the agent run gateway, which consults the push
-  /// rule before using a [write] token.
+  /// What an agent run reads with: [read] plus reading issues, and nothing
+  /// that writes. The agent run gateway mints it when the run's git or `gh`
+  /// asks, only for a repository the run works on, and revokes it when the
+  /// run ends; a run starts with no forge token at all. Pushes go through the
+  /// gateway too (which consults the push rule before using a [write]
+  /// token); agents open a pull request through the server's
+  /// `open_pull_request` tool (on the requesting person's own token) and
+  /// comment on their own one through `comment_on_pull_request` (as the bot).
   review,
 
   /// Write the repository contents. Held server-side by whatever applies the

@@ -482,9 +482,12 @@ void main() {
   // ⌘P end to end: the sink opens the picker over the selected space, Enter
   // opens the pick as a focused code-server tab, the file lands in the recent
   // list, and the row's split action opens it again in a pane to the side.
-  testWidgets('quick open opens a file as a tab, then to the side', (
-    tester,
-  ) async {
+  // The embedded editor is the server owner's: anyone else gets the same
+  // file, to the side, in the built-in view.
+  Future<void> quickOpenToTheSide(
+    WidgetTester tester, {
+    required bool owner,
+  }) async {
     tester.view.physicalSize = const Size(1400, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -539,6 +542,7 @@ void main() {
       ProviderScope(
         overrides: [
           appPreferencesProvider.overrideWithValue(prefs),
+          canUseHostProvider.overrideWithValue(owner),
           activeWorkspaceIdProvider.overrideWith(
             () => _TestActiveWorkspaceNotifier(_kWorkspaceId),
           ),
@@ -643,12 +647,25 @@ void main() {
     expect(split.axis, Axis.horizontal);
     expect(split.children, hasLength(2));
     final side = (split.children[1] as EditorLeafNode).controller;
-    expect(side.tabs.single.kind, MessagingTabKinds.codeServer);
+    expect(
+      side.tabs.single.kind,
+      owner ? MessagingTabKinds.codeServer : MessagingTabKinds.file,
+    );
     expect(side.tabs.single.args['path'], 'lib/menu.dart');
 
     await tester.pumpWidget(Container());
     await tester.pumpAndSettle();
-  });
+  }
+
+  testWidgets(
+    'quick open opens a file as a tab, then to the side',
+    (tester) => quickOpenToTheSide(tester, owner: true),
+  );
+
+  testWidgets(
+    'without the host editor, quick open still opens to the side',
+    (tester) => quickOpenToTheSide(tester, owner: false),
+  );
 
   // A press must reach the editor on the next frame: nothing holds the swap
   // back behind an animation or a timer.

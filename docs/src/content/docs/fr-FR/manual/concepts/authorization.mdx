@@ -2,7 +2,7 @@
 title: Autorisation — qui peut faire quoi, et comment vous le prouvez
 description: Le catalogue de permissions qui sous-tend les rôles de Control Center, le journal d’audit à l’épreuve des altérations où aboutit chaque décision d’autorisation, et les contrôles à l’échelle de l’installation qu’un opérateur peut imposer.
 slug: fr-FR/manuel/concepts/autorisation
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center répond à deux questions d’autorisation, et elles sont réellement
@@ -65,20 +65,58 @@ détiennent sous la forme `custom:<id>`, et un client trop ancien pour comprendr
 cette valeur retombe sur invité plutôt que de deviner.
 
 Sous les rôles se trouvent les **attributions par dépôt** (`none` / `read` /
-`review` / `write`) : l’appartenance à un espace de travail ne confère jamais
+`review` / `write`, voir [Changer du code exige l’autorisation d’écriture](#changer-du-code-exige-lautorisation-décriture)) : l’appartenance à un espace de travail ne confère jamais
 silencieusement plus de droits que la forge. Toutes les surfaces qui exposent du
 code les vérifient — y compris celles qui atteignent le code par la bande, comme
 un terminal ou une session d’éditeur ouverte sur l’arbre de travail d’un espace.
 
-## Autorité du serveur
+## Le code suit la forge
 
-Certaines opérations ne concernent pas du tout un espace de travail : les
-réglages à l’échelle de l’installation, la configuration SSO, les identifiants
-des fournisseurs, la gestion des modèles, les sauvegardes complètes de
-l’installation. Celles-là déclarent une **autorité serveur** et sont refusées à
-tout le monde sauf à l’opérateur de l’installation (le propriétaire de serveur
-enregistré). Il existe délibérément une seule identité d’opérateur, et une seule
-définition de celle-ci.
+Une autorisation ne suffit pas à ouvrir le code d’un dépôt. Pour voir ses fichiers, ses diff ou ses résultats de recherche, ou pour ouvrir un terminal dessus, un membre a besoin de l’autorisation Control Center **et** sa propre connexion à la forge doit pouvoir lire le dépôt. Les administrateurs d’espace de travail ne sont pas exemptés. Le propriétaire du serveur l’est, puisque la copie de travail se trouve sur sa machine. Un dépôt sans distant de forge n’exige que l’autorisation.
+
+- Lorsqu’un administrateur accorde un dépôt à une personne dont le compte de forge ne peut pas le lire, l’autorisation est enregistrée et l’administrateur voit un avertissement.
+- Lorsque la forge est injoignable pour la vérification, la réponse est non, jamais une supposition. La personne voit « Impossible de confirmer votre accès à GitHub. Réessayez. » (avec le nom de sa forge) et réessaie plus tard.
+- Les demandes de tirage et tout ce qui en découle suivent la même règle.
+
+### Changer du code exige l’autorisation d’écriture
+
+Une attribution de dépôt a trois niveaux, et chacun inclut le précédent :
+
+- **read** : voir les fichiers, les diff et les résultats de recherche du dépôt, à condition que votre propre connexion à la forge puisse aussi le lire.
+- **review** : read, plus l’approbation, la demande de modifications et les autres actions de revue sur ses demandes de tirage.
+- **write** : review, plus modifier le code et lancer les exécutions d’agents qui écrivent dans le dépôt. Modifier le code couvre l’enregistrement ou l’annulation de fichiers dans l’éditeur, la synchronisation d’un worktree sur la tête de la demande de tirage, la validation et le push, la publication d’une branche, et les actions sur les piles qui créent, extraient ou publient une partie.
+
+Chaque push effectué pour une personne, par elle-même ou par une exécution d’agent qu’elle a demandée, vérifie son autorisation d’écriture sur ce dépôt au moment du push, sur GitHub, GitLab et Bitbucket sans distinction. La publication d’une pile vérifie chaque dépôt de la pile avant de pousser l’un d’eux.
+
+Un refus nomme l’autorisation manquante. Sans accès en lecture, l’application affiche « Vous n'avez pas accès en lecture à ce dépôt. Un administrateur de l'espace de travail peut vous l'accorder. » Avec la lecture mais sans l’écriture, elle affiche « Vous pouvez lire ce dépôt, mais pas le modifier. Un administrateur de l'espace de travail peut accorder l'accès en écriture. »
+
+### Les espaces suivent leurs dépôts
+
+Ce que les agents ont écrit sur le code suit le code. Le contenu d’un espace (ses messages, ses transcriptions et sorties d’outils, ses résultats de recherche, ses journaux d’exécution, ses tâches, son activité et ses notifications) porte le code des dépôts sur lesquels il travaille. Un espace ne s’ouvre donc que pour un membre qui détient une autorisation de lecture sur chaque dépôt que l’espace utilise, et dont la propre connexion à la forge peut lire chacun de ces dépôts. Ce sont les dépôts sélectionnés pour lui, ou tous les dépôts de l’espace de travail lorsqu’aucune sélection n’est enregistrée. Un espace créé sans dépôt est ouvert à tous les membres.
+
+Un espace qu’une personne ne peut pas ouvrir n’est listé pour elle nulle part, y compris dans la recherche, les journaux d’exécution, les tâches, l’activité et les notifications. Les administrateurs d’espace de travail détiennent toutes les autorisations mais ne sont pas exemptés de la moitié forge. Le propriétaire du serveur, lui, l’est.
+
+Pour une conversation que tout le monde doit pouvoir lire, créez l’espace sans dépôt, ou seulement avec des dépôts que tout le monde peut lire.
+
+## Le propriétaire du serveur
+
+La personne qui a installé le serveur en est le **propriétaire**. Le serveur l’enregistre une seule fois, au premier démarrage, et rien de ce qui arrive par le réseau ne modifie cela. Un administrateur d’espace de travail ou un propriétaire d’espace de travail n’est pas le propriétaire du serveur. Chacun peut recevoir un espace de travail, mais la machine du serveur n’a qu’un seul propriétaire.
+
+**Rien ne s’exécute sur la machine du serveur hors d’un bac à sable, sauf si le propriétaire du serveur l’a lancé ou a approuvé ce type d’exécution sur l’hôte.** Concrètement, seul le propriétaire du serveur peut effectuer les actions suivantes.
+
+- Créer un espace de travail. Les autres voient un écran leur demandant de faire créer un espace par le propriétaire ou de se faire inviter par un administrateur d’espace de travail.
+- Ouvrir le shell de l’hôte dans le terminal hébergé sur le serveur. Les autres obtiennent un terminal en bac à sable, avec les limites d’un agent, dans les dossiers propres à l’espace de travail.
+- Ouvrir l’éditeur de code intégré. Il s’exécute sous l’utilisateur propre au serveur, avec son terminal, ses tâches et ses extensions.
+- Ouvrir une demande de tirage ou l’arbre de travail d’une conversation dans un éditeur natif. L’éditeur démarre sur l’écran du serveur, sous l’utilisateur du serveur.
+- Enregistrer ou approuver une définition d’[environnement](/fr-FR/manuel/guides/environnements/) qui exécute quoi que ce soit sur l’hôte (placement sur l’hôte, vérification qui lance une commande, ou tâche de provisionnement ou d’archivage).
+- Exécuter des agents sur un serveur dont la machine n’a pas de bac à sable. Les exécutions des autres y sont refusées, sauf si le propriétaire a lancé le serveur avec `--sandbox off`, ce qui exécute les agents de chaque membre sans confinement (voir [Agents sur un hôte sans bac à sable](/fr-FR/manuel/concepts/bac-a-sable-et-securite/#agents-sur-un-hôte-sans-bac-à-sable)).
+- Relier une copie de dépôt située hors du stockage propre à l’espace de travail, confirmer une copie reliée avant cette règle, et parcourir les dossiers du serveur lors de l’ajout d’un dépôt (voir [Ajouter des dépôts](/fr-FR/manuel/guides/ajouter-des-depots/)).
+- Voir et arrêter chaque processus d’agent en cours sur le serveur. Les autres voient et arrêtent seulement les exécutions d’agents en direct dans les espaces de travail auxquels ils appartiennent.
+- Faire utiliser aux agents les serveurs MCP configurés dans les outils propres à l’utilisateur du serveur (Claude, Codex, Cursor et les autres). Seules les exécutions du harnais intégré dont le propriétaire est responsable les obtiennent (voir [Les serveurs MCP personnels restent ceux du propriétaire](/fr-FR/manuel/guides/serveur-mcp/#les-serveurs-mcp-personnels-restent-ceux-du-propriétaire)).
+- Confirmer l’adresse e-mail d’une personne, pour que l’authentification unique puisse la reconnaître (voir [Connecter un fournisseur OpenID Connect](/fr-FR/manuel/guides/sso-oidc/#comment-les-connexions-correspondent-aux-comptes-existants)).
+- Modifier les réglages à l’échelle de l’installation, comme SSO, les identifiants des fournisseurs, le point de terminaison MCP et son jeton, la gestion des modèles, Connect et les sauvegardes complètes de l’installation. Ces opérations déclarent une **autorité serveur** et sont refusées à tous les autres.
+
+Il existe délibérément une seule identité d’opérateur, et une seule définition de celle-ci. 
 
 ## Le journal d’audit
 

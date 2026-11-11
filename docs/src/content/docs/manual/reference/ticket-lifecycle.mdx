@@ -115,7 +115,7 @@ The aggregate spans two concerns on one row. The **mirror** (provider, keys, tit
 | `projectId`              | `String?`                  | Owning project; never pushed to a remote                                                   |
 | `assignedAgentId`        | `String?`                  | Assigned principal's id (metadata only — assigning dispatches nothing)                     |
 | `assigneeType`           | `PrincipalType`            | Which kind of principal `assignedAgentId` names — `user` or `agent` (default `agent`)      |
-| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for legacy/system rows |
+| `createdByType`          | `PrincipalType?`           | Kind of principal that created the ticket (`user` or `agent`); null for system-created rows |
 | `createdById`            | `String?`                  | Creating principal's id                                                                    |
 | `assignedTeamId`         | `String?`                  | Assigned team (metadata only)                                                              |
 | `delegatedByAgentId`     | `String?`                  | Agent that delegated this ticket                                                           |

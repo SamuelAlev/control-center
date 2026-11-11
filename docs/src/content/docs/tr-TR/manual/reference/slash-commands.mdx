@@ -2,7 +2,7 @@
 title: Slash komutları
 description: Yazı alanına yazabileceğiniz her komut; ne yaptığı ve nerede çalıştığı.
 slug: tr-TR/kilavuz/referans/slash-komutlari
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Bir alanın yazı alanına yazılan komutlar. Etki ettikleri yere göre üç gruba ayrılırlar ve bu fark önemlidir: **yerel** bir komut hiçbir zaman mesaj olarak iletilmez; bu yüzden ne transkriptte görünür ne de bir ajana ulaşır.
@@ -140,7 +140,7 @@ Bunlar bir model çağrısı harcar ve **konuşmayı asla değiştirmez**. Ajan�
 
 Şablonlama: `$1`, `$@`, `$@[start:length]` ve `$ARGUMENTS`. Frontmatter `description` ayarlayabilir (yazı alanı otomatik tamamlaması). `allowed-tools` ve `model` dosyadan ayrıştırılır, ancak bir kullanıcı komutu çağrısı şu anda yalnızca argümanları gövdeye yerleştirir — çalıştırmanın modelini veya araç yüzeyini değiştirmezler.
 
-Kullanıcının kendi yazdığı bir komut, aynı adı taşıyan bir beceriyi yener — bu, bir insanın bilerek argümanlarla çağırdığı bir kısayoldur.
+Becerilere yalnızca `/skill:<name>` olarak ulaşılır; bu yüzden kullanıcının yazdığı bir komut hiçbiriyle çakışmaz.
 
 ---
 

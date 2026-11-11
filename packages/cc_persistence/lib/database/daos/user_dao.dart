@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/entities/user.dart' show normalizeEmail;
 import 'package:cc_persistence/database/global/global_database.dart';
 import 'package:cc_persistence/database/tables/users_table.dart';
 import 'package:drift/drift.dart';
@@ -39,10 +40,27 @@ class UserDao extends DatabaseAccessor<GlobalDatabase> with _$UserDaoMixin {
     usersTable,
   )..where((t) => t.handle.equals(handle))).getSingleOrNull();
 
-  /// Returns a user by [email], or null. Used for OIDC JIT matching.
-  Future<UsersTableData?> getByEmail(String email) => (select(
-    usersTable,
-  )..where((t) => t.email.equals(email))).getSingleOrNull();
+  /// Every user whose VOUCHED address is [email] in any case, oldest first.
+  /// One account, or none, is the answer an identity lookup may act on.
+  Future<List<UsersTableData>> getAllByVerifiedEmail(String email) =>
+      (select(usersTable)
+            ..where(
+              (t) => _sameAddress(t, email) & t.emailVerified.equals(true),
+            )
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+          .get();
+
+  /// Every user holding [email] in any case, vouched or not, oldest first.
+  Future<List<UsersTableData>> getAllByEmail(String email) =>
+      (select(usersTable)
+            ..where((t) => _sameAddress(t, email))
+            ..orderBy([(t) => OrderingTerm.asc(t.createdAt)]))
+          .get();
+
+  // The stored side is normalized on write (`User`), so only the query side
+  // needs it.
+  Expression<bool> _sameAddress($UsersTableTable t, String email) =>
+      t.email.equals(normalizeEmail(email));
 
   /// Returns the user whose SSO subject is ([issuer], [subject]), or null.
   ///
@@ -51,16 +69,41 @@ class UserDao extends DatabaseAccessor<GlobalDatabase> with _$UserDaoMixin {
   /// account to the provider's immutable id, so a reused or changed email
   /// cannot take it over.
   Future<UsersTableData?> getBySsoSubject(String issuer, String subject) =>
-      (select(
-        usersTable,
-      )..where(
-          (t) => t.ssoIssuer.equals(issuer) & t.ssoSubject.equals(subject),
-        ))
+      (select(usersTable)..where(
+            (t) => t.ssoIssuer.equals(issuer) & t.ssoSubject.equals(subject),
+          ))
           .getSingleOrNull();
 
-  /// Inserts or updates a user row.
-  Future<void> upsert(UsersTableCompanion entry) =>
-      into(usersTable).insertOnConflictUpdate(entry);
+  /// Inserts or updates a user row unless another row holds its handle.
+  ///
+  /// The check and the write are one transaction on this connection, so two
+  /// writers cannot both pass the check; the unique index on `handle` is the
+  /// backstop (a write that slips past it fails loudly). Returns false when
+  /// the handle is taken, with nothing written.
+  Future<bool> upsert(UsersTableCompanion entry) => transaction(() async {
+    final holder = await getByHandle(entry.handle.value);
+    if (holder != null && holder.id != entry.id.value) {
+      return false;
+    }
+    await into(usersTable).insertOnConflictUpdate(entry);
+    return true;
+  });
+
+  /// Inserts a NEW user row under the first free handle of [candidates], in
+  /// one transaction, and returns the handle used. [entry]'s own handle is
+  /// ignored; [candidates] must be endless or end with a free name.
+  Future<String> insertWithFreeHandle(
+    UsersTableCompanion entry,
+    Iterable<String> candidates,
+  ) => transaction(() async {
+    for (final candidate in candidates) {
+      if (await getByHandle(candidate) == null) {
+        await into(usersTable).insert(entry.copyWith(handle: Value(candidate)));
+        return candidate;
+      }
+    }
+    throw StateError('no free handle among the candidates');
+  });
 
   /// Number of users on this server (0 → the owner bootstrap must run).
   Future<int> count() async {

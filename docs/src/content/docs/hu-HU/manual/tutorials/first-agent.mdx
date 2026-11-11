@@ -2,7 +2,7 @@
 title: Az első ügynök elindítása
 description: Hozzon létre egy ügynököt, adjon neki egy teret és egy feladatot, és kövesse élőben, ahogy a futás visszaérkezik.
 slug: hu-HU/kezikonyv/oktatoanyagok/elso-ugynok
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Mit fog felépíteni
@@ -76,7 +76,7 @@ Mi korlátozza a futást: a saját copy-on-write worktree-je, az indításkor a 
 
 **Ellenőrzési pont.** Egy futássor, amely az állapotát, időtartamát, kezdési és befejezési idejét, valamint az általa használt adaptert mutatja.
 
-Az ügynök módosításai a beszélgetés ágán, annak worktree-jében kerülnek commitba. Ön mindig szerző és commitoló is, a munkaterületen megadott Git-identitásával. Alapértelmezés szerint a `Co-Authored-By: Control Center <hi@usectrl.dev>` trailer a GitHub `@usectrl` fiókját társszerzőként tünteti fel. Ezt a társszerzői elismerést a **Beállítások → Ön → Commit-hozzárendelés** oldalon kapcsolhatja ki, ha a munkaterület adminisztrátora nem írta felül ezt a **Beállítások → Munkaterület → Általános** oldalon.
+Az ügynök módosításai a beszélgetés ágán, annak worktree-jében kerülnek commitba. Mivel Ön kérte a futtatást, a commitok az Önéi: Ön a szerző és a committer, a forge által ellenőrzött címmel (a GitHubba való bejelentkezése GitHub noreply-címével), a `Co-Authored-By:` trailer pedig a Control Centert tünteti fel, hacsak ezt ki nem kapcsolta. Ha nincs bejelentkezve a forge-ra, a commitokat a Control Center botja készíti, és a futtatás jegyzetei ezt elmondják.
 
 ## Pull request beszerzése
 

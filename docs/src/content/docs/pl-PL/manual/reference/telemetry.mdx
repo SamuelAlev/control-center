@@ -2,7 +2,7 @@
 title: Analityka użycia
 description: Co Control Center rejestruje, gdy analityka użycia jest włączona, kto o tym decyduje i co nigdy nie jest wysyłane.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/analityka-uzycia
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center może wysyłać **pseudonimowe zdarzenia użycia** do instancji [Umami](https://umami.is). Analityka użycia jest **wyłączona, dopóki operator serwera jej nie włączy**. Ustawienie należy do serwera i dotyczy każdego połączonego z nim klienta: aplikacji desktopowej, aplikacji webowej, telefonu i samego serwera.
@@ -13,7 +13,7 @@ Analityka użycia jest niezależna od ustawienia **Udostępnianie raportów awar
 
 | Przełącznik | Gdzie | Skutek |
 | --- | --- | --- |
-| **Udostępnianie analityki użycia** | Onboarding (krok sandboxa) oraz **Ustawienia → Prywatność**. Zmienić go może tylko operator serwera; pozostali członkowie widzą bieżącą wartość tylko do odczytu | Dla całego serwera. Zapisywany jako `telemetry.usage_analytics` w ustawieniach serwera. Wyłączony, chyba że ustawiono go na `true` |
+| **Udostępnianie analityki użycia** | Onboarding (krok sandboxa) oraz **Ustawienia → Serwer → Diagnostyka i prywatność**. Zmienić go może tylko operator serwera; pozostali członkowie widzą bieżącą wartość tylko do odczytu | Dla całego serwera. Zapisywany jako `telemetry.usage_analytics` w ustawieniach serwera. Wyłączony, chyba że ustawiono go na `true` |
 | Typ kompilacji | Automatycznie | Kompilacje debug i profile niczego nie wysyłają. Zamiast tego zapisują każde zdarzenie w dzienniku debugowania |
 | `CC_ANALYTICS_DEBUG=1` | Środowisko `cc_server` lub jego plik `.env` | Pozwala kompilacjom debug i profile serwera oraz każdego połączonego z nim klienta naprawdę wysyłać zdarzenia na potrzeby testów. Powyższy przełącznik nadal musi być włączony |
 | `DO_NOT_TRACK=1` | Środowisko `cc_server` | Zatrzymuje raportowanie przez sam serwer, niezależnie od stanu przełącznika. Klienci nadal stosują się do przełącznika |

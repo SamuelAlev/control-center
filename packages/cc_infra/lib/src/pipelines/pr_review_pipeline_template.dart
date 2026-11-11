@@ -1,11 +1,15 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
 import 'package:cc_domain/features/pipelines/domain/ports/pipeline_engine_port.dart'
     show kPipelineRequestedByKey;
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_body_registry.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_context.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
+import 'package:cc_domain/features/pr_review/domain/services/mention_matcher.dart'
+    show neutralizeMentions;
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart';
 import 'package:cc_infra/cc_infra.dart';
+import 'package:cc_infra/src/pipelines/pr_comment_message.dart';
 
 /// Registers the PR-review-specific step bodies.
 ///
@@ -69,26 +73,53 @@ void registerPrReviewBodies(
   });
 
   registry.registerBody(BuiltInBodyKeys.prReviewComment, (ctx) async {
-    final repoFullName = ctx.requireString('repo_full_name');
-    // Accept an int (from a trigger payload) or a numeric string (e.g. a PR
-    // number produced by an upstream bash step's stdout).
-    final rawPrNumber =
-        ctx.state['pr_number'] ?? ctx.triggerPayload?['pr_number'];
-    final prNumber = rawPrNumber is int
-        ? rawPrNumber
-        : int.tryParse('$rawPrNumber'.trim());
-    if (prNumber == null) {
+    // Which pull request: the run's own, from its trigger payload (the
+    // event, the webhook or the person who started it), never from state a
+    // step can rewrite mid-run.
+    final target = _verifiedTarget(ctx.triggerPayload);
+    if (target == null) {
       return StepResult.failed(
-        'prReviewComment: pr_number missing or not numeric',
+        'prReviewComment: the run names no pull request (repo_full_name as '
+        'owner/name and a positive pr_number in its trigger)',
       );
     }
-    final findings = _prose(ctx, 'consolidated_findings');
+    final (:owner, :name, :number) = target;
+    // A step that sets a `message` posts that text (its `{{key}}`
+    // placeholders rendered against the run, values escaped); otherwise it
+    // posts the consolidated findings. This is how a built-in greets a
+    // contributor or reports a gate decision without a shell step: the
+    // sandbox and pipeline shell tokens only read. Mentions the bot's text
+    // carries are inert either way.
+    final message = ctx.step?.config.extras[kPrCommentMessageKey];
+    final String? findings;
+    if (message is String && message.trim().isNotEmpty) {
+      final rendered = renderPrCommentMessage(
+        message,
+        state: ctx.renderState,
+        trigger: ctx.triggerPayload,
+        forge: ForgeHost.github,
+        owner: owner,
+        name: name,
+        number: number,
+      );
+      final error = rendered.error;
+      if (error != null) {
+        return StepResult.failed(
+          'prReviewComment: step "${ctx.stepId}" message: $error',
+        );
+      }
+      final text = rendered.text ?? '';
+      findings = text.isEmpty ? null : text;
+    } else {
+      final prose = _prose(ctx, 'consolidated_findings');
+      findings = prose == null ? null : neutralizeMentions(prose);
+    }
     if (findings == null) {
       return StepResult.failed('No consolidated findings to post.');
     }
-    final parts = repoFullName.split('/');
-    if (parts.length != 2) {
-      return StepResult.failed('Invalid repo_full_name: $repoFullName');
+    // Dry run: name what would be posted and touch nothing on the forge.
+    if (ctx.dryRun) {
+      return StepResult.terminal(mutatedState: {'comment_dry_run': findings});
     }
 
     // Only the engine writes the requester; a payload cannot name one.
@@ -98,18 +129,18 @@ void registerPrReviewBodies(
     };
     final attribute = await automatedAttribution?.call(
       workspaceId: ctx.workspaceId,
-      owner: parts[0],
+      owner: owner,
       actingUserId: requester,
     );
     final review =
         await githubPrClientFor(
           ctx.workspaceId,
-          parts[0],
+          owner,
           actingUserId: requester,
         ).submitReview(
-          parts[0],
-          parts[1],
-          prNumber: prNumber,
+          owner,
+          name,
+          prNumber: number,
           event: 'COMMENT',
           body: attribute == null ? findings : attribute(findings),
         );
@@ -121,6 +152,31 @@ void registerPrReviewBodies(
       },
     );
   });
+}
+
+/// The pull request a run's [trigger] payload names: `repo_full_name` as a
+/// plain GitHub `owner/name` and a positive `pr_number` (an int, or its
+/// digits), or null when it names none.
+({String owner, String name, int number})? _verifiedTarget(
+  Map<String, dynamic>? trigger,
+) {
+  final fullName = trigger?['repo_full_name'];
+  final rawNumber = trigger?['pr_number'];
+  final number = rawNumber is int
+      ? rawNumber
+      : int.tryParse('${rawNumber ?? ''}'.trim());
+  if (fullName is! String || number == null || number <= 0) {
+    return null;
+  }
+  // A GitHub owner is letters, digits and `-`; a name adds `_` and `.` but is
+  // never `.` or `..` (which would walk the API path).
+  final match = RegExp(
+    r'^([A-Za-z0-9-]+)/([A-Za-z0-9_.-]+)$',
+  ).firstMatch(fullName.trim());
+  if (match == null || match[2] == '.' || match[2] == '..') {
+    return null;
+  }
+  return (owner: match[1]!, name: match[2]!, number: number);
 }
 
 /// The review level this run is executing at.

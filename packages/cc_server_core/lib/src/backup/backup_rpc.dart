@@ -166,11 +166,14 @@ List<RepoOp> buildBackupOps({required DatabaseBackupPort? databaseBackup}) {
     // Adopts a previously exported file as this workspace's database, REPLACING
     // whatever is there. Destructive and irreversible for the target workspace,
     // so it is owner-only on top of fullClient. The file is validated as a
-    // workspace database before anything is replaced.
+    // workspace database before anything is replaced. `source_path` is any
+    // file on the server's disk (another workspace's backup included), so the
+    // caller must be the server owner as well as this workspace's owner.
     RepoOp(
       name: 'workspace.import',
       kind: RepoOpKind.mutate,
       minRole: WorkspaceRole.owner,
+      serverAuthority: ServerAuthority.serverOwner,
       requiredCapability: SessionCapability.fullClient,
       requiredArgs: ['source_path'],
       handler: (ctx) async {

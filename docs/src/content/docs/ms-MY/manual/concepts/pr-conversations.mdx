@@ -2,13 +2,13 @@
 title: Perbualan PR
 description: Bagaimana komen PR GitHub menjadi giliran ejen tanpa webhook, apa yang memberi kebenaran kepada penulisnya, dan kepada siapa setiap pihak dalam perbualan itu diatribusikan.
 slug: ms-MY/manual-pengguna/konsep/perbualan-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Pull request sudah pun menjadi tempat perbualan tentang kod berlaku. Perbualan
 PR menjadikannya satu permukaan pada ruang kerja Control Center, sama seperti
 [jambatan sembang](/ms-MY/manual-pengguna/konsep/jambatan-sembang/) menjadikan Slack satu: @sebut
-`@usectrl` (atau bot GitHub App ruang kerja) pada sesuatu PR, balas di dalam benang semakannya, atau
+`@usectrl` pada sesuatu PR, balas di dalam benang semakannya, atau
 tambah label `ai-review`, dan kerja itu berlaku dalam ruang semakan PR — di bawah
 atribusi dan guardrail yang sama seperti apa-apa yang ditaip dalam aplikasi.
 Sesuatu komen dan label dikawal dengan cara yang sama: berdasarkan ahli yang menulis atau menambahnya.
@@ -24,7 +24,7 @@ yang tiba dari luar** dan **kepada siapa setiap pihak diatribusikan**.
 Satu-satunya saluran tolak GitHub untuk sesuatu aplikasi ialah webhook, dan
 webhook memerlukan URL masuk — satu-satunya perkara yang sengaja tidak pernah
 diperlukan oleh permukaan ini. Jadi penemuan ialah sapuan: satu carian beralias bagi setiap
-pemasangan aplikasi meminta GitHub untuk PR yang menyebut bot itu (atau slug pendeknya) dan untuk PR
+pemasangan aplikasi meminta GitHub untuk PR yang menyebut `@usectrl` dan untuk PR
 terbuka yang membawa label semakan; PR yang sudah mempunyai ruang semakan akan dibaca benang
 komennya, dan semuanya dibezakan mengikut id komen terhadap apa yang dilihat pada sapuan lepas. Aplikasi
 milik sendiri menyapu setiap minit ke atas paling banyak 25 PR. Melalui Connect, panggilan menggunakan
@@ -70,7 +70,7 @@ Tiga semakan, mengikut urutan, dan kegagalan mana-mana satunya senyap — tiada 
 - **Ahli yang telah mendaftar masuk.** Akaun mesti tergolong dalam ahli _ruang kerja ini_ yang
   mendaftar masuk ke GitHub pada pelayan ini
 - **Peranan tulis.** `viewer` dan `guest` tidak boleh memulakan kerja
-- **Akses tolak.** Balasan menggunakan token `bot` yang dihadkan kepada akses ahli itu ke repositori.
+- **Akses tolak.** Balasan menggunakan token untuk repositori itu sahaja, dihadkan kepada akses ahli itu ke atasnya.
   Jika pelayan tidak dapat mencetak token, ia tidak meneruskan
 
 Setiap semakan berjalan sebelum sebarang pengakuan, jadi orang luar tidak mendapat reaksi atau balasan.
@@ -90,15 +90,16 @@ pelayan ditawarkan kepada setiap satunya, dan tuntutan yang sama itulah yang mem
 Setiap pihak dalam perbualan membawa identiti yang berbeza, dan perbezaan itulah
 cirinya:
 
-- **Di GitHub, balasan ialah automasi bagi pihak anda.** Setiap balasan menggunakan token `bot` untuk
-  repositori itu sahaja, dihadkan kepada akses ahli yang bertanya. Pada aplikasi sendiri, pengarangnya ialah
-  akaun `[bot]` aplikasi itu. Melalui Connect, token untuk App kongsi ialah token pengguna, jadi balasan
-  dikarang oleh akaun ahli yang bertanya, bertindak melalui App. Bagaimanapun caranya, setiap balasan bermula
+- **Di GitHub, balasan ialah automasi bagi pihak anda.** Setiap balasan menggunakan token untuk
+  repositori itu sahaja, dihadkan kepada akses ahli yang bertanya, dan dikarang oleh akaun `[bot]` aplikasi itu.
+  Satu pengecualian: pada aplikasi Control Center Connect yang dikongsi, bot hanya menyiarkan dalam benang semakan
+  apabila operator Connect telah menyenaraikan pemasangan itu; jika tidak, balasan dalam benang semakan dikarang
+  oleh akaun ahli yang bertanya sendiri. Bagaimanapun caranya, setiap balasan bermula
   dengan `**Control Center** (for @login):`, yang menyatakan siapa yang bertanya dan sekali gus berfungsi sebagai
-  pengawal gelung.
+  pengawal gelung. @-sebutan dalam kata-kata ejen dinyahaktifkan, jadi balasan tidak memberitahu mana-mana pengguna atau pasukan.
 - **Dalam ruang, soalan itu milik anda.** Mesej itu diatribusikan kepada ahli
   yang diselesaikan oleh penulis, dan larian ejen dilaksanakan bagi pihak
-  mereka: komit menyenaraikan mereka sebagai pengarang bersama, dan dail
+  mereka: komitnya milik mereka, dan dail
   autonomi serta guardrail tindakan ruang itu terpakai tepat seperti pada mesej
   yang ditaip dalam aplikasi. Penulisan hos kod daripada larian menggunakan token satu-repo
   yang dihadkan oleh ahli itu, bukan log masuk mereka yang diserahkan sepenuhnya.
@@ -107,22 +108,17 @@ Menerbitkan penemuan semakan kembali ke GitHub kekal sebagai keputusan
 seseorang, dibuat dalam Control Center. Sebutan boleh _memulakan_ semakan; hanya
 manusia yang menerbitkannya.
 
-## Pengawal gelung, dan nama pendek
+## Pengawal gelung
 
 Semua yang dikarang oleh akaun bot digugurkan sebelum sebarang get dijalankan —
 bot kita khususnya, dan setiap akhiran `[bot]`, supaya bot semakan aplikasi lain
 juga tidak boleh membangunkan bot kita — dan begitu juga setiap komen yang bermula dengan
-awalan `**Control Center** (for @`, kerana balasan melalui Connect dikarang oleh akaun seseorang.
+awalan `**Control Center** (for @`, kerana balasan benang semakan melalui Connect boleh dikarang oleh akaun seseorang.
 Tanpa ini, jawapan bot sendiri akan tiba sebagai komen baharu dan mencetusnya semula selama-lamanya.
 
-Akhiran `[bot]` juga sebab bentuk pendek itu wujud. GitHub menetapkan log masuk
-akaun aplikasi pada `<slug>[bot]`, tidak menawarkan autolengkap untuknya, dan
-tidak pernah menyelesaikan `@slug` kepada aplikasi itu — jadi menerima slug
-kosong ialah keputusan pemadan _kami_, dan menemukannya memerlukan lorong
-carian **teks** komen mentah dan bukan indeks sebutan GitHub. Kosnya dinyatakan
-dan bukan diperhalusi: pengguna manusia yang berkongsi slug aplikasi itu akan
-menyebut bot dengan setiap sebutan bentuk pendek terhadap diri mereka sendiri.
-Nama aplikasi yang tersendiri menjadikan pertembungan itu hipotetikal.
+Hanya `@usectrl` memulakan kerja. Log masuk aplikasi itu sendiri (`<slug>[bot]`) dan slug
+kosongnya tidak menyeru apa-apa: GitHub tidak menawarkan autolengkap untuk akaun aplikasi,
+dan slug kosong boleh tergolong kepada pengguna manusia.
 
 ## Apa yang sengaja tidak ditawarkan
 

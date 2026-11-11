@@ -2,7 +2,7 @@
 title: Cipta templat pipeline
 description: Karang templat aliran kerja DAG dalam editor pipeline — tambah nod, sambungkannya, isytiharkan input dan jadikannya boleh dijalankan.
 slug: ms-MY/manual-pengguna/panduan-cara/cipta-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Templat pipeline dikarang dalam tetapan ruang kerja. Entri **Pipeline** dalam
@@ -41,7 +41,7 @@ melepaskannya, tanpa sambungan masuk.
 | **Bash script**                 | listen        | Menjalankan skrip shell dengan penggantian `{{state}}`; tiada ejen dihantar             |
 | **Open conversation**           | listen        | Membuka satu-satunya ruang yang kelihatan bagi larian itu dan checkout-nya; nod ejen menyertai bilik ini |
 | **Clone PR branch**             | listen        | Menemui cawangan head PR melalui `gh pr view` dan mengklonnya ke direktori larian       |
-| **Post PR comment**             | listen        | Menyiarkan dapatan yang digabungkan ke PR sebagai komen semakan GitHub                  |
+| **Post PR comment**             | listen        | Menyiarkan komen semakan pada PR daripada pelayan: dapatan, atau `message`-nya                  |
 | **Reviewer (prompt)**           | listen        | Menghantar ejen penyemak pakar; menangguhkan sehingga ejen menyerahkan hasilnya         |
 | **Consolidate (join)**          | join          | Menunggu beberapa cabang huluan, kemudian meminta ejen menggabungkan output mereka      |
 | **Custom prompt**               | listen        | Nod dipacu prompt generik yang dialirkan melalui badan `promptAgent`                    |
@@ -131,6 +131,7 @@ kedua-duanya tidak boleh dikonfigurasi:
 - Skrip berjalan di dalam sandbox OS hos, seperti arahan ejen. Hos tanpa sandbox (Windows, atau Linux tanpa `bwrap`) menggagalkan langkah itu dan bukannya menjalankannya tanpa kekangan. Direktori data dan fail `.env` pelayan tidak boleh dibaca dari dalam.
 - Git dan `gh` tidak melihat sebarang konfigurasi hos: tiada log masuk tersimpan, credential helper, atau hook global.
 - Apabila pipeline menamakan repo GitHub yang dipautkan kepada ruang kerja (`repo_full_name` dalam keadaan atau payload pencetus), `GH_TOKEN` dan `GITHUB_TOKEN` memegang token yang hanya boleh membaca repo itu, jadi `gh` dan `git clone` terhadapnya berfungsi tanpa penyediaan. Jika tidak, tiada token GitHub langsung.
+- Skrip tidak boleh menulis ke GitHub: `gh pr comment`, `gh pr merge`, `gh pr create` dan `git push` gagal pada token itu. Komen dengan nod **Post PR comment** sebaliknya (tetapkan `extras.message` untuk menghantar teks anda sendiri, dengan placeholder `{{key}}`, dan bukannya dapatan yang digabungkan). Push dan buka pull request daripada nod ejen: `git push`-nya melalui gerbang larian dan ia membuka PR dengan alat `open_pull_request`. Mencantum diserahkan kepada seseorang; tiada nod mencantum.
 - Hanya pentadbir ruang kerja boleh mencipta atau menyunting pipeline dengan langkah bash.
 - Skrip itu dilancarkan sebagai boleh laksana literal `bash`, jadi `bash` mesti ada pada `PATH` hos pelayan.
 

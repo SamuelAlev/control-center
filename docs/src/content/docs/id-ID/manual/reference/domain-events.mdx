@@ -2,7 +2,7 @@
 title: Peristiwa domain
 description: Katalog lengkap dari 54 peristiwa domain, payload-nya, dan pelanggan sisi server yang mengonsumsinya.
 slug: id-ID/panduan-pengguna/referensi/peristiwa-domain
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bus peristiwa
@@ -148,14 +148,13 @@ Beberapa subsistem yang dari luar tampak digerakkan oleh peristiwa ternyata buka
 
 | Subdomain           | Bagaimana status berpindah sebagai gantinya                                                             |
 | ------------------- | --------------------------------------------------------------------------------------------------------- |
-| Memori              | `record_memory_fact` dan kawan-kawan menulis lalu kembali; recall membaca. Tidak ada yang menerbitkan apa pun saat ada fakta atau konflik |
+| Memori              | `propose_fact` dan kawan-kawan menulis lalu kembali; recall membaca. Tidak ada yang menerbitkan apa pun saat ada fakta atau konflik |
 | Orkestrasi          | Proposal, persetujuannya, dan run pipeline yang dihasilkan adalah baris dan panggilan RPC               |
 | Dokumen rencana     | `submit_plan` menulis revisi; persetujuan mewujudkan sebuah orkestrasi. Keduanya tidak diumumkan        |
 | Artefak             | `publish_artifact` / `revise_artifact` menulis revisi secara langsung                                    |
 | Persetujuan         | Eskalasi ditangani di dalam layanan alur kerja persetujuan                                              |
 | Sinkronisasi tiket  | Koordinator vendor berlangganan peristiwa tiket di atas; webhook masuk diterapkan secara langsung       |
 | Penyegaran kalender | Sinkronisasi melakukan upsert peristiwa dan klien membacanya ulang; tidak ada siaran penyegaran         |
-| Penggabungan worktree | Dicatat di `worktree_merge_log` dan dibaca dari sana                                                  |
 
 ## Pelanggan
 
@@ -190,7 +189,7 @@ Setiap pelanggan di bawah ini dikonstruksi di dalam `runCcServer` (atau layanan 
 
 `TicketAssigned` adalah sinyal audit dan notifikasi sekaligus pemicu pipeline. Penugasan kepada agen mencatat kepemilikan dan tidak memulai run apa pun — tidak ada dispatcher tiket. Penugasan kepada tim (`assignedTeamId` diisi) adalah pengecualiannya: `TeamRoutingService` mengirim pemimpin tim.
 
-`TicketRemoteSyncHandler` dideklarasikan tetapi tidak pernah dikonstruksi di kode produksi, jadi saat ini ia tidak berlangganan apa pun. `NotificationEventMapper` di sisi klien hanya dikonstruksi di pengujiannya sendiri — ia adalah sisa dari jalur dalam proses sebelum pemisahan klien/server. Toast langsung berasal dari frame yang dijelaskan di bawah ini.
+Toast langsung berasal dari frame yang dijelaskan di bawah ini.
 
 ## Pemetaan notifikasi
 

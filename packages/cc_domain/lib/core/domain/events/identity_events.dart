@@ -66,3 +66,43 @@ class WorkspaceMemberRoleChanged implements DomainEvent {
   @override
   final DateTime occurredAt;
 }
+
+/// A user's username, display name or avatar changed.
+///
+/// The one path a rename takes to every server-side cache of who someone is
+/// (presence roster names today): writers publish it after the row is
+/// stored, caches listen, nobody calls a cache directly. Clients learn of it
+/// through `users.watchAll`, which re-emits on the write itself.
+class UserProfileChanged implements DomainEvent {
+  /// Creates a [UserProfileChanged] event.
+  const UserProfileChanged({
+    required this.userId,
+    required this.previousHandle,
+    required this.handle,
+    required this.displayName,
+    required this.avatarRef,
+    required this.occurredAt,
+  });
+
+  /// The user.
+  final String userId;
+
+  /// The username before the change (equal to [handle] when it did not
+  /// change).
+  final String previousHandle;
+
+  /// The username now.
+  final String handle;
+
+  /// The display name now.
+  final String displayName;
+
+  /// The avatar reference now (null: none).
+  final String? avatarRef;
+
+  /// Whether the username itself changed.
+  bool get renamed => previousHandle != handle;
+
+  @override
+  final DateTime occurredAt;
+}

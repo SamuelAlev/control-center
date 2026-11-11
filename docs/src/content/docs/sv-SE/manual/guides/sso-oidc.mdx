@@ -2,7 +2,7 @@
 title: Anslut en OpenID Connect-leverantör
 description: Koppla valfri OIDC-utfärdare – Pocket ID, Keycloak, Auth0, Zitadel – till inloggningen i Control Center.
 slug: sv-SE/handbok/how-to-guider/sso-oidc
-sourceHash: 94a7ff04ac7548494dcb639fa23f8791ea4fcef4
+sourceHash: 7136bc6a64e5a53d8e542a25bdef7e90ec0ced00
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -87,6 +87,32 @@ vilket kräver en tunnel eller en publik URL – se
 [provisionera användare med SCIM](/sv-SE/handbok/how-to-guider/sso-scim).
 :::
 
+## Hur inloggningar matchar befintliga konton
+
+En inloggning via identitetsleverantören hittar sitt konto i den här ordningen:
+
+1. **Den fästa identiteten.** Den första SSO-inloggningen fäster leverantörens subjekt (utfärdare plus `sub`) till kontot. Varje senare inloggning med det subjektet är det kontot.
+2. **En verifierad e-post, på båda sidor.** Annars matchar inloggningen ett konto via e-post bara när leverantören skickar `email_verified: true` och kontots adress också är verifierad. En adress är verifierad när SSO eller SCIM har satt den, eller när serverägaren har bekräftat den. Serverägarens egen adress räknas.
+
+E-postadresser lagras och visas med gemener, och matchningen ignorerar versaler. En verifierad adress identifierar bara ett konto när exakt ett konto har den; om två konton har samma verifierade adress matchar den inget av dem.
+
+En adress som någon skrivit in i sin egen profil, eller en som skrivits in på en inbjudan, är inte verifierad och matchar ingenting. Att ändra en adress rensar dess verifierade status tills någon går i god för den igen. En inloggning matchar aldrig via användarnamn.
+
+När ingenting matchar skapar inloggningen ett nytt konto om **Provisionera okända användare vid första inloggningen** är på, och nekas om den är av.
+
+### Innan du slår på SSO för personer som redan har konton
+
+Bekräfta deras adresser först. Öppna **Inställningar → Server → Personer**, där varje konto visar **E-post ej bekräftad** tills någon har gått i god för det, och använd **Bekräfta e-post** på varje persons rad. Bara serverägaren ser den här listan. Utan det får var och en av dem antingen ett andra konto vid sin första SSO-inloggning, eller nekas när provisionering av okända användare är avslagen.
+
+Medan deras adress är obekräftad ser en person texten "Bara du har angett den här adressen. Enkel inloggning matchar den inte förrän serverägaren bekräftar den." under e-postfältet i sin egen profil.
+
+### Leverantörer som inte skickar `email_verified`
+
+Vissa leverantörer utelämnar påståendet. Microsoft Entra ID gör det som standard. Ett saknat påstående är inte ett ja, så med en sådan leverantör matchar en inloggning bara via den fästa identiteten, och en persons första inloggning kan aldrig hitta deras befintliga konto via e-post. Provisionering av kontot med SCIM hjälper inte den första OIDC-inloggningen. De praktiska vägarna är:
+
+- låt **Provisionera okända användare vid första inloggningen** vara på och låt den första inloggningen skapa kontot, eller
+- konfigurera leverantören att skicka `email_verified`, och bekräfta sedan de matchande adresserna enligt ovan.
+
 ## Kontrollera din konfiguration från den här sidan
 
 Kontrollverktyget nedan körs i din webbläsare. Det hämtar utfärdarens
@@ -98,3 +124,15 @@ testinloggning som visar om klienten och dess redirect-URI är registrerade.
 Det frågar aldrig efter klienthemligheten.
 
 <SsoCheck kind="oidc" />
+
+## Felsökning
+
+### Någon fick ett andra konto efter att SSO slogs på
+
+Deras befintliga kontos adress var inte verifierad när de först loggade in med SSO, så inloggningen matchade den inte och skapade ett nytt konto. Det händer när adressen skrevs in i profilen eller på en inbjudan och serverägaren inte hade bekräftat den, eller när leverantören inte skickade `email_verified: true`. Ett nytt konto vars leverantör går i god för adressen tar över den adressen, och det äldre konto som bara hade den inskriven förlorar den.
+
+För att undvika det för nästa person: bekräfta adresser i **Inställningar → Server → Personer** innan de loggar in. För någon som redan har två konton är det nya kontot fäst vid deras SSO-identitet, så det är det som deras inloggningar använder framöver.
+
+### "Kontot är redan kopplat till en annan SSO-identitet"
+
+Inloggningen matchade ett konto via dess verifierade e-post, men det kontot är redan fäst vid ett annat subjekt eller en annan utfärdare: en annan användare hos leverantören, samma person under en ny leverantör, eller ett konto som SCIM skapade under sin egen identifierare. Det fästa kontot nekar alla andra identiteter, så en återanvänd adress hos leverantören kan inte ta över det. Logga in med den identitet som kontot först kopplades till.

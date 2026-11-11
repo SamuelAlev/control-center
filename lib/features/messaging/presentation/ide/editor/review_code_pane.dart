@@ -1,6 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_code_failure_view.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
 import 'package:control_center/features/messaging/providers/repo_file_content_provider.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
@@ -96,7 +97,16 @@ class _ReviewCodePaneState extends ConsumerState<ReviewCodePane> {
     final files = async.value;
     if (files == null) {
       if (async.hasError) {
-        return _empty(t);
+        // A failed diff is not an empty one: say why, or that it failed.
+        return ColoredBox(
+          color: t.bgPrimary,
+          child: RepoCodeFailureView(
+            error: async.error,
+            fallback: AppLocalizations.of(context).ideChangesLoadFailed,
+            workspaceId: widget.workspaceId,
+            onRetry: () => ref.invalidate(repoChangesProvider(_args)),
+          ),
+        );
       }
       return const Center(child: CcSpinner(size: 18, strokeWidth: 2));
     }

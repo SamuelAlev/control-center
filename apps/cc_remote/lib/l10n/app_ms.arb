@@ -98,7 +98,6 @@
 
   "inboxLoadFailed": "Tidak dapat memuatkan peti masuk anda",
   "allCaughtUp": "Anda sudah mengejar semuanya",
-  "inboxNoForgeAccount": "Tiada akaun forge disambungkan pada pelayan, jadi pull request belum dapat dikaitkan kepada anda.",
   "inboxNothingWaiting": "Tiada yang disekat dan tiada pull request menunggu anda.",
   "blocked": "Disekat",
   "sectionNeedsYourReview": "Memerlukan semakan anda",
@@ -187,22 +186,6 @@
       "names": { "type": "String" }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, =1{{names} terlalu besar untuk dihantar melalui relay dari sini.} other{{names} terlalu besar untuk dihantar melalui relay dari sini.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": { "type": "int" },
-      "names": { "type": "String" }
-    }
-  },
-  "attachmentUploadFailed": "Tidak dapat memuat naik lampiran. Cuba lagi.",
-  "attachmentsLeftOut": "{count, plural, =1{1 lampiran tidak dapat dimuat naik dan dikecualikan.} other{{count} lampiran tidak dapat dimuat naik dan dikecualikan.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "teammate": "Rakan sepasukan",
   "systemSender": "Sistem",
   "agent": "Ejen",
@@ -261,24 +244,6 @@
   "prsEmptyDescription": "Pull request merentasi repo ruang kerja ini muncul di sini.",
   "refreshPullRequests": "Muat semula pull request",
   "noForgeConnected": "Tiada forge disambungkan pada pelayan, jadi pull request tidak dapat diambil. Sambungkan satu dari apl desktop.",
-  "reposUnreadable": "{count, plural, =1{1 repo tidak dapat dibaca.} other{{count} repo tidak dapat dibaca.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "reposNotReadable": "Tidak dapat dibaca: {names}",
-  "installationSuspendedTitle": "Pemasangan GitHub App digantung",
-  "installationSuspendedBody": "Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub.",
-  "installationSuspendedNotice": "Pemasangan GitHub App digantung. Memaparkan data terakhir diketahui untuk {names}. Sambung semula pemasangan di GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-
   "draft": "Draf",
   "merged": "Dicantum",
   "closed": "Ditutup",
@@ -677,7 +642,7 @@
   "permissionGitCommit": "Komit perubahan",
   "permissionGitPush": "Tolak komit",
   "permissionPrCreate": "Cipta pull request",
-  "permissionPrPublish": "Terbitkan pull request",
+  "permissionPrPublish": "Kemas kini atau gabungkan pull request",
   "permissionVendorSyncWrite": "Tulis penyegerakan penyedia",
   "permissionNetworkEgress": "Akses rangkaian",
   "permissionSecretAccess": "Akses rahsia",
@@ -689,12 +654,11 @@
   "permissionEffectiveDescription": "Berkuat kuasa pada skop ini tanpa argumen tindakan. Keizinan bersyarat di bawah hanya terpakai pada permintaan yang sepadan; pelayan membuat keputusan akhir.",
   "permissionSpaceAgentNote": "Tiada ejen dipilih. Peraturan khusus ejen tidak dipaparkan sehingga anda memilih satu di atas.",
   "permissionScopedGrants": "Peraturan pada skop ini",
-  "permissionRemembered": "Kelulusan yang diingati",
+  "permissionRemembered": "Kelulusan sementara",
   "permissionSetAtThisScope": "{source} · ditetapkan di sini",
   "permissionInheritedFrom": "{source} · diwarisi",
   "permissionExpiresAt": "Luput pada {date}",
   "permissionSetHere": "Tetapkan peraturan di sini",
-  "permissionRevokeBeforeEdit": "Tarik balik peraturan berskop atau yang diingati sebelum menetapkan peraturan umum untuk tindakan ini.",
   "permissionConfirmRevoke": "Sahkan penarikan balik",
   "permissionRevokeRule": "Tarik balik peraturan",
   "permissionCommandPrefix": "Awalan arahan: {prefix}",
@@ -808,9 +772,6 @@
   "activityAgentBlocked": "Tindakan ejen disekat",
   "activityMessage": "Mesej baharu",
   "activityPullRequest": "Kemas kini pull request",
-  "activityTicket": "Kemas kini tiket",
-  "activityMeeting": "Kemas kini mesyuarat",
-  "activityCalendar": "Sambungan kalendar",
   "activityRig": "Kemas kini kepungan",
   "activityPrReady": "Pull request sedia untuk dicantum",
   "activityPrBlocked": "Cantuman pull request disekat",
@@ -962,7 +923,7 @@
   "credentialsApiKeyHint": "Tampal kunci API penyedia",
   "credentialsBrowserLogin": "Log masuk melalui pelayar",
   "credentialsWaitingForLogin": "Menunggu kebenaran dalam pelayar anda…",
-  "credentialsConnectCodePrompt": "Masukkan kod yang dipaparkan dalam pelayar",
+  "credentialsConnectCodePrompt": "Kod pengesahan",
   "credentialsConnectCodeMalformed": "Itu tidak kelihatan seperti kod log masuk. Kod terdiri daripada 8 huruf dan digit.",
   "credentialsSignInInvalidCode": "Kod itu tidak sepadan dengan log masuk ini. Semak dan cuba lagi.",
   "credentialsSignInTooManyCodes": "Terlalu banyak kod yang salah. Mulakan semula log masuk.",
@@ -979,11 +940,51 @@
   "credentialsCompleteLogin": "Lengkapkan log masuk",
   "credentialsPersonalToken": "Token akses peribadi",
   "credentialsPersonalTokenHint": "Tampal token akses peribadi",
-  "credentialsHostManaged": "Sambungan ini datang daripada aplikasi atau persekitaran pelayan. Hanya pemilik pelayan boleh mengubahnya di sana; anda masih boleh menambah token sendiri.",
   "credentialsStopWatching": "Berhenti memantau",
   "transcriptClaudeSignInExpiredTitle": "Log masuk Claude Code telah tamat tempoh",
   "transcriptClaudeSignInExpiredBody": "Larian berhenti kerana akaunnya tidak lagi disahkan. Log masuk semula, kemudian cuba semula giliran ini.",
   "transcriptSignInExpiredTitle": "Log masuk penyedia telah tamat tempoh",
   "transcriptSignInExpiredBody": "Larian berhenti kerana kelayakan penyedianya tidak lagi berfungsi. Sambung semula dalam Tetapan → Penyedia, kemudian cuba semula giliran ini.",
-  "permissionHostExecution": "Jalankan arahan pada hos"
+  "permissionHostExecution": "Jalankan arahan pada hos",
+  "credentialsSignInLapsed": "Log masuk {provider} anda telah tamat. Log masuk semula.",
+  "credentialsSignInPaused": "Dijeda: perkhidmatan log masuk ruang kerja ini telah berubah. Ia berfungsi semula apabila perkhidmatan kembali.",
+  "credentialsProviderUnreachable": "{provider} tidak dapat dihubungi sekarang. Mencuba semula.",
+  "credentialsScopeWorkspace": "Ruang kerja ini sahaja",
+  "credentialsScopeAllWorkspaces": "Semua ruang kerja",
+  "credentialsRemoveConfirmWorkspace": "Alih keluar kelayakan tersimpan anda daripada ruang kerja ini? Ruang kerja lain mengekalkan milik mereka.",
+  "credentialsRemoveConfirmAllWorkspaces": "Alih keluar kelayakan tersimpan anda daripada setiap ruang kerja yang berkongsinya?",
+  "credentialsSignInServerRestarted": "Pelayan telah dimulakan semula. Mulakan log masuk sekali lagi.",
+  "repoAccessInstallApp": "Pasang GitHub App pada {owner} supaya automasi dapat mencapai {names}. Ketik untuk membuka GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App belum dipasang pada {owner}, jadi automasi tidak dapat mencapai {names}. Minta pentadbir ruang kerja memasangnya.",
+  "repoAccessAddToApp": "Tambah {names} pada repositori GitHub App. Ketik untuk membuka GitHub.",
+  "repoAccessAskAdminAdd": "GitHub App belum dapat melihat {names}. Minta pentadbir ruang kerja menambahnya pada repositorinya.",
+  "repoAccessSuspended": "Pemasangan GitHub App digantung. Automasi untuk {names} dijeda sehingga pemilik akaun menyambung semula pemasangan di GitHub.",
+  "repoAccessOwnerCannotSee": "Orang yang bertanggungjawab atas automasi ruang kerja ini tidak lagi dapat melihat {names}, jadi tiada apa-apa berjalan di sana bagi pihaknya.",
+  "repoAccessOwnerNotSignedIn": "Orang yang bertanggungjawab atas automasi ruang kerja ini belum log masuk ke forge, jadi automasi untuk {names} menunggu sehingga mereka log masuk.",
+  "repoAccessRetrying": "Tidak dapat menyemak akses ke {names}. Mencuba semula.",
+  "hiddenReposSignIn": "{count, plural, other{Log masuk ke {forge} untuk melihat pull request daripada {count} lagi repositori}}",
+  "hiddenReposNoForgeAccess": "{count, plural, other{{count} repositori disembunyikan kerana akaun {forge} anda tidak dapat melihatnya}}",
+  "hiddenReposNoGrant": "{count, plural, other{{count} repositori disembunyikan kerana anda tiada akses dalam ruang kerja ini}}",
+  "hiddenReposChecking": "{count, plural, other{Menyemak akses anda ke {count} lagi repositori…}}",
+  "credentialsAtlassianEmail": "E-mel akaun Atlassian",
+  "credentialsAtlassianEmailInvalid": "Masukkan alamat e-mel akaun Atlassian anda.",
+  "credentialsBitbucketApiToken": "Token API",
+  "repoAccessAutomationTokenMissing": "Tiada token automasi yang dapat membaca {names}, jadi kerja latar belakang di sana dijeda. Pentadbir boleh menambahnya di Tetapan → Repositori.",
+  "credentialsSignInConfirmInBrowser": "Sahkan dalam pelayar anda, kemudian masukkan kod yang dipaparkannya.",
+  "credentialsSignInAccountAlreadyBound": "Akaun ini sudah disambungkan kepada orang lain pada pelayan ini. Log masuk dengan akaun yang berbeza.",
+  "credentialsTokenUnreachable": "{provider} tidak dapat dihubungi untuk menyemak token ini. Cuba sebentar lagi.",
+  "credentialsTokenRejected": "{provider} tidak menerima token ini. Semak sama ada anda menyalin semuanya dan ia belum dibatalkan.",
+  "credentialsTokenWrongKind": "Ini bukan token peribadi. Tampal token akses peribadi daripada akaun {provider} anda sendiri, bukan token projek, kumpulan, ruang kerja atau bot.",
+  "credentialsTokenNarrowScope": "Token ini tidak mempunyai skop {scope}, yang diperlukan untuk semakan dan ulasan. Cipta satu yang mempunyainya.",
+  "credentialsTokenExpired": "Token ini telah tamat tempoh. Cipta yang baharu dan tampalkannya di sini.",
+  "credentialsSignInRateLimited": "Terlalu banyak permintaan sekarang. Tunggu sebentar, kemudian cuba lagi.",
+  "credentialsSignInCancelled": "Log masuk dibatalkan atau ditolak. Mulakannya semula apabila anda sudah bersedia.",
+  "credentialsSignInNoLongerOpen": "Log masuk ini tidak lagi dibuka: ia telah dibatalkan, digunakan atau digantikan. Mulakannya semula.",
+  "noWorkspacesYetHint": "Admin ruang kerja perlu menjemput anda, atau pemilik pelayan boleh mencipta ruang kerja untuk anda.",
+  "repoAccessReplaced": "{repos} kini menunjuk kepada repositori yang berbeza pada {forge}. Pautkannya semula dari apl desktop atau web untuk terus menggunakannya.",
+  "repoAccessAskAdminRelink": "{repos} kini menunjuk kepada repositori yang berbeza pada {forge}. Admin ruang kerja perlu memautkannya semula sebelum ia boleh digunakan semula.",
+  "runSandboxUnavailableTitle": "Ejen memerlukan kotak pasir pada pelayan ini",
+  "runSandboxUnavailable": "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini. Pemilik boleh memasang kotak pasir atau mematikan kotak pasir untuk semua orang.",
+  "permissionTools": "Alat: {tools}",
+  "permissionNotInEffect": "Tidak berkuat kuasa semasa tindakan ini ditolak"
 }

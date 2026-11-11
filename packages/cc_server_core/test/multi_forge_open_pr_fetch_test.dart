@@ -65,6 +65,7 @@ class _FakePort implements OpenPrFetchPort {
           repo: repo,
           prs: [for (final n in numbers) _pr(n, repo.fullName)],
           hasMore: false,
+          totalCount: null,
         ));
       }
     }

@@ -2,7 +2,7 @@
 title: Videresend porter fra en terminal
 description: Nå en utviklerserver som er startet i en Terminal (VM) eller et verts-shell — fra maskinen din, fra Nettleseren (VM), fra Android, på nettverket ditt, eller under et utviklingsdomene med HTTPS.
 slug: nb-NO/handbok/slik-gjor-du/vm-porter
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 En server du starter i terminalen til en samtale, publiseres bare for **det området**. Portpanelet oppdager lyttere denne appen startet der, kartlegger dem og gir deg en adresse for hvert sted du måtte ønske å nå dem fra. To områder kan begge lytte på `5173`; kartene deres blandes aldri.
@@ -11,7 +11,7 @@ Ingenting her åpner maskinen opp: hver bane opprettes av serveren, på forespø
 
 ## Se hva som lytter
 
-1. Åpne samtalens **Terminal (VM)** eller verts-shellet (i et område eller på en PR-side).
+1. I samtalens editor (i et område eller på en PR-side), åpne **Terminal** fra `+`-menyen: under **Maskiner** for et shell i samtalens VM, eller under **Verktøy** for en terminal på serveren. Bare serverens eier kan åpne et verts-shell; andres terminal kjører i en sandkasse.
 2. Start serveren din — `pnpm dev`, `python -m http.server 8000`, hva som helst.
 3. I løpet av noen sekunder får **pluggikonet** i terminalens øvre høyre hjørne
    en prikk. Klikk på det.
@@ -117,6 +117,10 @@ noe lytter på den. En manuell videresending beholder adressen mens
 serveren din starter på nytt — raden viser *lytter ikke* til den kommer
 tilbake — mens automatiske videresendinger forsvinner når porten deres gjør det.
 På et verts-shell kan du også angi en annen lokal port.
+
+Å endre videresendinger krever skrivetilgang til hvert repository området viser. Med lesetilgang ser du fortsatt portene, og panelet sier "Å endre disse portene krever skrivetilgang til alle arkiver i dette området." i stedet for **Legg til port**. Se [Hvem kan se på maskinen, og hvem kan styre den](/nb-NO/handbok/slik-gjor-du/bruk-stasjoner/#hvem-kan-se-på-maskinen-og-hvem-kan-styre-den).
+
+En terminal noen åpnet for seg selv, beholder sine porter for dem: for alle andre svarer portlisten og endringene av den som om økten ikke fantes, akkurat som selve økten. Terminaler delt i et område følger områdereglen over.
 
 ## Hvordan den holdes innesluttet
 

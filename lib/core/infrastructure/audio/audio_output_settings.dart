@@ -33,18 +33,12 @@ class AudioOutputDeviceNotifier extends Notifier<String?> {
   @override
   String? build() {
     _prefs = ref.watch(appPreferencesProvider);
-    final saved =
-        _prefs.getString(audioOutputDeviceKey) ??
-        // Widening the setting must not silently reset it: an install that
-        // chose a device back when it only routed the soundscape keeps that
-        // choice, now applied to everything.
-        _prefs.getString(legacySoundscapeOutputDeviceKey);
+    final saved = _prefs.getString(audioOutputDeviceKey);
     return (saved == null || saved.isEmpty) ? null : saved;
   }
 
   /// Pass `null` to fall back to the system default output.
   Future<void> setDeviceName(String? name) async {
-    await _prefs.remove(legacySoundscapeOutputDeviceKey);
     if (name == null || name.isEmpty || name == _kAutoDeviceName) {
       await _prefs.remove(audioOutputDeviceKey);
       state = null;

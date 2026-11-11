@@ -14,7 +14,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Per-vendor sync health (§188): last-sync time, consecutive-failure streak,
 /// and the latest attempt's outcome — so a failing connection is visible
 /// without log spelunking. Read-only; reflects the server's append-only sync
-/// log streamed over RPC. Renders nothing until a workspace is active.
+/// log streamed over RPC. Shown while a workspace is active
+/// ([watchSyncHealthApplies]).
 class SyncHealthCard extends ConsumerWidget {
   /// Creates a [SyncHealthCard].
   const SyncHealthCard({super.key});
@@ -228,3 +229,7 @@ class _SyncNowButtonState extends ConsumerState<_SyncNowButton> {
     );
   }
 }
+
+/// Whether [SyncHealthCard] has a workspace to report on.
+bool watchSyncHealthApplies(WidgetRef ref) =>
+    ref.watch(activeWorkspaceIdProvider) != null;

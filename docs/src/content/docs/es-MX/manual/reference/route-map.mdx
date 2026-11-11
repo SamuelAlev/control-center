@@ -2,7 +2,7 @@
 title: Mapa de rutas
 description: Todas las rutas que registra Control Center, con su pantalla y sus parámetros de consulta.
 slug: es-MX/manual/referencia/mapa-de-rutas
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Shell de la aplicación
@@ -11,7 +11,7 @@ El shell de la aplicación (`ControlCenterLayout`) envuelve cada ruta dentro del
 
 La puerta está completa cuando hay al menos un host de código conectado **para el usuario que inició sesión** y existe al menos un espacio de trabajo.
 
-Una credencial ausente y una configuración ausente se tratan de forma distinta, y el discriminante es `users.onboarding_finished_at`, leído del propio `identity.me` de quien llama — nunca «existen espacios de trabajo», que es falso en cuanto invitan a alguien a un espacio de trabajo que nunca creó. Sin ningún host de código conectado, una cuenta que ya pasó por el onboarding se queda en la aplicación: el shell del espacio de trabajo muestra una advertencia con un enlace a Ajustes → Espacio de trabajo → Perfil e identidad, donde está el inicio de sesión; una que no, va a `/onboarding`. Mientras el indicador siga siendo desconocido, la guardia retiene la pantalla de inicio en lugar de suponer, porque nunca redirige de vuelta fuera del onboarding.
+Una credencial ausente y una configuración ausente se tratan de forma distinta, y el discriminante es `users.onboarding_finished_at`, leído del propio `identity.me` de quien llama — nunca «existen espacios de trabajo», que es falso en cuanto invitan a alguien a un espacio de trabajo que nunca creó. Sin ningún host de código conectado, una cuenta que ya pasó por el onboarding se queda en la aplicación: el shell del espacio de trabajo muestra una advertencia con un enlace a Ajustes → Tú → Perfil, donde está el inicio de sesión; una que no, va a `/onboarding`. Mientras el indicador siga siendo desconocido, la guardia retiene la pantalla de inicio en lugar de suponer, porque nunca redirige de vuelta fuera del onboarding.
 
 ## Rutas sin prefijo
 
@@ -65,7 +65,7 @@ Las conversaciones y los hilos **no tienen ruta propia** — un hilo es una conv
 
 ## Rutas de ajustes
 
-`/settings` redirige a `/settings/you/appearance`. Tanto el botón de ajustes de la barra lateral como `Cmd/Ctrl + ,` llevan a `/settings/you/appearance`.
+`/settings` redirige a `/settings/you/profile`. Tanto el botón de ajustes de la barra lateral como `Cmd/Ctrl + ,` llevan a `/settings/you/profile`.
 
 Las rutas de ajustes se dividen por **ámbito** — `you/`, `workspace/`, `server/` — porque el segmento indica a quién afecta un cambio. Dos rutas son anteriores a esa división y no llevan ámbito en la URL: `/settings/memory` y `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Las rutas de ajustes se dividen por **ámbito** — `you/`, `workspace/`, `serve
 
 | Ruta                          | Pantalla                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Tema, idioma, tipografía, tema del editor (la pantalla de inicio de los ajustes) |
-| `/settings/you/notifications` | Interruptores por evento, horas de silencio                                |
+| `/settings/you/profile`       | Tu cuenta en este servidor: nombre, nombre de usuario, foto e inicio de sesión (la pantalla de inicio de los ajustes) |
+| `/settings/you/profile?section=accounts` | Cuentas conectadas: tus propios inicios de sesión de alojamiento de código, tickets, calendario y chat, y borradores de tickets del chat |
+| `/settings/you/appearance`    | Tema, idioma, tipografía, tema del editor |
 | `/settings/you/audio`         | Micrófono, dictado, detección de reuniones y salida de paisajes sonoros    |
+| `/settings/you/notifications` | Interruptores por evento, horas de silencio                                |
+| `/settings/you/commits`       | Quién aparece como autor en los commits del trabajo que inicias, y tu clave de firma de commits |
+| `/settings/you/desktop`       | Solo la app de escritorio: el icono de la bandeja, cerrar la ventana y abrir al iniciar sesión |
 | `/settings/you/devices`       | Teléfonos emparejados y control remoto                                     |
 | `/settings/you/newsfeed`      | Administración del feed: fuentes, actualización, estado de lectura         |
+| `/settings/you/links`         | Dónde se abren los enlaces desde fuera de Control Center                   |
 
 ### Espacio de trabajo
 
 | Ruta                               | Pantalla                                                                                            |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Perfil e identidad en este espacio de trabajo: nombre, autor de git, host de código, calendario |
-| `/settings/workspace/general`      | Nombre, logotipo, globs de rutas secretas, revisores en paralelo, nomenclatura de ramas, estado de sincronización, puentes de chat, zona de peligro |
+| `/settings/workspace/profile`      | Perfil e identidad en este espacio de trabajo: nombre, correo electrónico, autor de git |
+| `/settings/workspace/general`      | Nombre, logotipo, globs de rutas secretas, revisores en paralelo, nomenclatura de ramas, zona de peligro |
+| `/settings/workspace/integrations` | Elección de Connect, la app de GitHub y los tokens de automatización, el proveedor de tickets y su automatización, estado de sincronización, las apps de proveedor propias del espacio de trabajo, puentes de chat, GIF. Cada grupo de proveedores indica tu propia cuenta y enlaza a Cuentas conectadas |
 | `/settings/workspace/meetings`     | Plantillas de notas de reunión y perfiles de voz guardados                                          |
-| `/settings/workspace/members`      | Lista de miembros, invitaciones, registro de auditoría. El registro de auditoría pagina con el `?cursor=` opcional |
+| `/settings/workspace/members`      | Lista de miembros e invitaciones |
 | `/settings/workspace/repositories` | Repositorios registrados en este espacio de trabajo                                                 |
 | `/settings/workspace/environments` | Definiciones de entorno: qué pueden iniciar los espacios y qué tareas ejecutan sus worktrees |
 | `/settings/workspace/agents`       | Identidades de agente registradas                                                                   |
@@ -108,6 +114,8 @@ Las rutas de ajustes se dividen por **ámbito** — `you/`, `workspace/`, `serve
 | `/settings/server/rigs`        | Rigs: qué puede arrancar este host, imágenes base, imágenes personalizadas, máquinas en ejecución |
 | `/settings/server/sandbox`     | Permisos de ejecución en el sandbox: programas que los agentes pueden ejecutar desde su copia de trabajo de tus repositorios |
 | `/settings/server/diagnostics` | Diagnóstico y privacidad: sandbox, indexación, registro, informes de fallas |
+| `/settings/server/people`      | Personas en este servidor y si cada dirección está confirmada (solo el propietario del servidor)       |
+| `/settings/server/audit`       | Registro de auditoría: el del servidor y el de los espacios de trabajo que administras                            |
 | `/settings/server/backup`      | Copia de seguridad y restauración: instantáneas de la instalación, exportación por espacio de trabajo, importación y eliminación |
 | `/settings/server/about`       | Acerca de y actualizaciones                                                           |
 

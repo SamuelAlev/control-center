@@ -2,7 +2,7 @@
 title: Dein erster Arbeitsbereich
 description: Lege einen Arbeitsbereich an, registriere ein Repo darin und sieh dir die Isolationsgrenze selbst an.
 slug: de-DE/handbuch/tutorials/erster-arbeitsbereich
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Was du baust
@@ -11,10 +11,12 @@ Am Ende dieses Tutorials hast du:
 
 - einen Arbeitsbereich, der nach deinem Projekt benannt ist
 - ein darin registriertes Git-Repository
-- fünf angelegte Agenten, von denen du einen so weit eingerichtet hast, dass er laufen kann
+- sechs angelegte Agenten, von denen du einen so weit eingerichtet hast, dass er laufen kann
 - einen zweiten, leeren Arbeitsbereich, der die Isolationsgrenze belegt
 
 Das Onboarding hat dir bereits einen Arbeitsbereich angelegt. Dieses Tutorial legt absichtlich einen neuen an, damit du jeden Teil des Vorgangs siehst.
+
+Einen Arbeitsbereich anzulegen braucht den Serverinhaber, also die Person, die den Server eingerichtet hat. Auf einem Desktop, der seinen eigenen Server betreibt, bist das du. Auf dem Server einer anderen Person zeigt **Arbeitsbereich hinzufügen** die Meldung „Nur der Serverinhaber kann Workspaces erstellen. Bitte ihn, einen zu erstellen, oder bitte einen Workspace-Admin, dich einzuladen.“ Tu eines davon und folge dem restlichen Tutorial in diesem Arbeitsbereich. Das Registrieren eines Repositorys in Schritt 2 braucht einen Admin des Arbeitsbereichs, und der zweite Arbeitsbereich in Schritt 4 braucht wieder den Serverinhaber.
 
 Bevor du anfängst, wähle einen Git-Checkout, der alle drei Punkte erfüllt — der Registrierungsschritt lehnt alles andere ab:
 
@@ -35,12 +37,12 @@ Control Center wechselt in den neuen Arbeitsbereich und landet in seinem Postein
 Dahinter veröffentlicht der Server ein Ereignis `WorkspaceCreated` und legt im Arbeitsbereich an:
 
 - einen **CEO-Agenten**, dessen Persona Koordination und Delegation ist
-- vier Spezialisten — `qa`, `architect`, `engineer` und `librarian` —, jeweils mit eigenen Anweisungen und Skills
+- fünf Spezialisten — `qa`, `architect`, `engineer`, `librarian` und `content-synthesizer` —, jeweils mit eigenen Anweisungen und Skills
 - die eingebauten Pipeline-Vorlagen und ihre Trigger-Zeilen
 
 Jeder Arbeitsbereich, den du anlegst, bekommt all das, nicht nur der erste.
 
-Prüfe es: Öffne **Einstellungen → Arbeitsbereich → Agenten**. In der Liste stehen fünf Agenten, jeder mit einem hohlen Statusring.
+Prüfe es: Öffne **Einstellungen → Arbeitsbereich → Agenten**. In der Liste stehen sechs Agenten, jeder mit einem hohlen Statusring.
 
 ## Schritt 2: Ein Repository registrieren
 
@@ -57,7 +59,7 @@ Prüfe es: Das Repo erscheint in der Liste mit seinem `owner/repo` und dem aktue
 
 ## Schritt 3: Einen Agenten lauffähig machen
 
-Die fünf Agenten, die dieser Arbeitsbereich gerade angelegt hat, haben weder Adapter noch Modell. Der Dispatch lässt sie auf **Control Center (built-in)** laufen und fragt, solange kein Modell gesetzt ist, bei Anthropic dessen Standardmodell an — sie laufen also nur, wenn du ein Anthropic-Konto verbunden hast, und dann auf einem Modell, das du nicht gewählt hast, falls du eines verbunden hast. Das Onboarding beim ersten Start schreibt seine Wahl einmal auf jeden Agenten des ersten Arbeitsbereichs; ein Arbeitsbereich, den du danach anlegst, startet mit allen fünf ungesetzt. Setze jetzt einen.
+Die sechs Agenten, die dieser Arbeitsbereich gerade angelegt hat, haben weder Adapter noch Modell. Der Dispatch lässt sie auf **Control Center (built-in)** laufen und fragt, solange kein Modell gesetzt ist, bei Anthropic dessen Standardmodell an — sie laufen also nur, wenn du ein Anthropic-Konto verbunden hast, und dann auf einem Modell, das du nicht gewählt hast, falls du eines verbunden hast. Das Onboarding beim ersten Start schreibt seine Wahl einmal auf jeden Agenten des ersten Arbeitsbereichs; ein Arbeitsbereich, den du danach anlegst, startet mit allen sechs ungesetzt. Setze jetzt einen.
 
 1. Öffne **Einstellungen → Arbeitsbereich → Agenten**
 2. Wähle `engineer` in der Liste
@@ -73,7 +75,7 @@ Jeder Agent trägt seinen eigenen Adapter und sein eigenes Modell. Wiederhole da
 Lege über den Chip in der Titelleiste einen zweiten Arbeitsbereich an, genau wie in Schritt 1. Schau ihn dir dann an:
 
 - **Einstellungen → Arbeitsbereich → Repositorys** ist leer. Das Repo, das du vor einer Minute registriert hast, ist nicht da.
-- **Einstellungen → Arbeitsbereich → Agenten** enthält fünf Agenten, aber andere Zeilen — der Adapter aus Schritt 3 ist weg.
+- **Einstellungen → Arbeitsbereich → Agenten** enthält sechs Agenten, aber andere Zeilen — der Adapter aus Schritt 3 ist weg.
 - Die Liste der Bereiche, die Tickets und das Gedächtnis sind leer.
 
 Es ist nichts durchgesickert, denn es gibt nichts, woraus etwas sickern könnte: Die Zeilen jedes Arbeitsbereichs liegen in der eigenen Datenbankdatei dieses Arbeitsbereichs. Ein arbeitsbereichsübergreifendes Lesen ist keine Abfrage, die gefiltert wird, sondern eine Abfrage, die nirgends laufen kann. Einen Arbeitsbereich zu löschen heißt, die Verknüpfung einer Datei aufzuheben.
@@ -84,6 +86,6 @@ Das vollständige Modell steht in [Arbeitsbereiche und Isolation](/de-DE/handbuc
 
 ## Rückblick
 
-Du hast einen Arbeitsbereich angelegt, zugesehen, wie er einen CEO und vier Spezialisten anlegt, ein Repo darin registriert, einem Agenten einen Adapter und ein Modell gegeben und bestätigt, dass ein zweiter Arbeitsbereich nichts davon teilt.
+Du hast einen Arbeitsbereich angelegt, zugesehen, wie er einen CEO und fünf Spezialisten anlegt, ein Repo darin registriert, einem Agenten einen Adapter und ein Modell gegeben und bestätigt, dass ein zweiter Arbeitsbereich nichts davon teilt.
 
 **Weiter:** [Deinen ersten Agenten starten](/de-DE/handbuch/tutorials/erster-agent/), um den Arbeitsbereich an die Arbeit zu setzen.

@@ -2,7 +2,7 @@
 title: Chat bridges
 description: Why the Slack integration dials out instead of listening, what actually authorises a message that arrives from chat and how one bridge serves any chat product.
 slug: en-GB/manual/concepts/chat-bridges
-sourceHash: 4e552783e2a90409067a456e859b20ebb195a79a
+sourceHash: ee6f53efdb43f53c70c6e267108813985fb39a91
 ---
 
 A chat bridge makes an external chat product — Slack today — a first-class way
@@ -18,10 +18,10 @@ provider-blind on purpose — adding a second product is one enum value, one
 adapter and one plugin — but today "chat" means Slack.
 
 Two surfaces cover it and they belong to different people. Connecting a
-workspace to Slack and customising the bot are **admin** actions under
-Settings → Workspace → General. Linking your own chat account to your Control
-Center identity is a **member** action under Settings → Workspace → Profile &
-identity.
+workspace to Slack and customising the bot are **admin** actions on the **Chat
+bridges** card in Settings → Workspace → Integrations. Linking your own chat
+account to your Control Center identity is a **member** action on the **Linked
+chat accounts** card in Settings → You → Profile.
 
 Three decisions shape the whole feature: **which direction the connection
 runs**, **what authorises a message that arrives from outside** and **where

@@ -2,10 +2,10 @@
 title: Legg til repoer i et arbeidsområde
 description: Registrer Git-utsjekkinger i et arbeidsområde slik at agenter kan jobbe med dem.
 slug: nb-NO/handbok/slik-gjor-du/legg-til-repoer
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Denne veiledningen viser hvordan du registrerer en Git-utsjekking i et arbeidsområde, indekserer den på nytt og fjerner den igjen.
+Denne veiledningen viser hvordan du registrerer en Git-utsjekking i et arbeidsområde, indekserer den på nytt og fjerner den igjen. Å legge til et arkiv fra serverens mapper krever serverens eier; å fjerne et krever en administrator for arbeidsområdet.
 
 Repoer er **knyttet til arbeidsområdet**. Det finnes ikke noe globalt register og ikke noe eget koblingstrinn: å legge til en repo og å plassere den i et arbeidsområde er samme handling. Den samme utsjekkingen registrert i to arbeidsområder blir to uavhengige rader med to forskjellige id-er — på tvers av arbeidsområder er identiteten til en repo filsystembanen, aldri id-en.
 
@@ -21,9 +21,29 @@ Alt annet avvises ved registrering med en eksplisitt melding: "Folder is not ins
 
 Forgen leses fra remoten og lagres på repoen — du velger den aldri selv. Et arbeidsområde kan inneholde repoer fra alle tre samtidig, og hver av dem kontaktes gjennom sitt eget API med sin egen legitimasjon. GitLabs nestede navnerom bevares, så `gitlab.com/group/subgroup/project` registreres med eier `group/subgroup` og navn `project`.
 
-Mappen må også ligge på maskinen som kjører `cc_server`, inne i en av den serverens `--repo-roots`-kataloger. Denne tillatelseslisten er som standard hjemmekatalogen til serverbrukeren, og det avvises å bla over en rot.
+Mappen må også ligge på maskinen som kjører `cc_server`, inne i en av den serverens `--repo-roots`-kataloger. Denne tillatelseslisten er som standard hjemmekatalogen til serverbrukeren, og det avvises å bla over en rot. Å bla i serverens mapper tilbys bare [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier), fordi den lister opp maskinens egne filer. Alle andre ser «Serverens eier legger til arkiver fra serverens mapper.» der **Legg til arkiv**-knappen ellers ville vært, og en lenke til et repo ingen av arbeidsområdene deres har, sier at det ikke er koblet til i noen av arbeidsområdene deres, og at de bør be serverens eier om å legge det til.
+
+Hvor utsjekkingen kan ligge, avhenger av hvem som kobler den til:
+
+- **Inne i arbeidsområdets egen lagring** på serveren: enhver administrator for arbeidsområdet.
+- **Et hvilket som helst annet sted på serverens disk**: bare [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier), fordi bare de kan peke serveren mot maskinens egne filer. Alle andre ser «Bare serverens eier kan koble til en mappe utenfor dette arbeidsområdets lagring.»
+- **Serverens datamappe**, eller noe inni den: aldri.
+
+Utsjekkingens `origin` må være repoet du kobler til. En mappe der `origin` peker på et annet repo, avvises med «Mappens origin er et annet arkiv.»
+
+### Mapper serveren ikke bruker ennå
+
+Et repo der mappen ligger utenfor arbeidsområdets lagring, og som ikke ble koblet av serverens eier, for eksempel et i et importert arbeidsområde, viser «Denne mappen ligger utenfor arbeidsområdets lagring. Bekreft at denne serveren får bruke den.» under raden sin, til serverens eier bekrefter det. Alle andre ser «Denne mappen ligger utenfor arbeidsområdets lagring. Bare serverens eier kan bekrefte den.» i stedet.
+
+Eieren bekrefter det én gang: **Bekreft** på raden, eller **Bekreft alle** i varselet over listen når flere repoer venter. Hvert av dem sjekkes på nytt som eieren, med de samme kontrollene som ved kobling. Inntil da står det i listen, men det åpnes, provisjoneres eller indekseres ikke: ingen editor, terminal, miljø eller områdeutsjekking bruker det, og kodegrafen hopper over det. Å legge til samme mappe igjen som serverens eier gjør det samme som å bekrefte, og beholder repoets id.
+
+En utsjekking som en symbolsk lenke har flyttet et annet sted, behandles på samme måte: den står fortsatt i listen og brukes ikke før den kobles til igjen av noen som har lov til å koble til mappen den nå peker på.
+
+Du må også være logget inn hos repoets kodevert, og din egen konto må kunne se repoet.
 
 ## Registrer en utsjekking
+
+Du må være serverens eier for disse trinnene.
 
 1. Åpne **Innstillinger → Arbeidsområde → Arkiv** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Klikk **Legg til arkiv**.
@@ -56,7 +76,23 @@ Dra i håndtaket på en rad. Rekkefølgen du angir, er rekkefølgen alle repolis
 
 ## Rett opp GitHub-lenken
 
-Lenkeikonet på en rad åpner et redigeringsfelt for GitHub-eieren og arkivnavnet til repoen — nyttig når remoten har fått nytt navn eller er overført.
+Lenkeikonet på en rad åpner et redigeringsfelt for GitHub-eieren og arkivnavnet til repoen.
+
+Du trenger det sjelden. En lenke er knyttet til repoets permanente id hos kodeverten, så et navneskifte eller en overføring følges automatisk.
+
+- Å gi nytt navn til et repo i Control Center endrer bare visningsnavnet.
+- Å endre hvilket kodevertrepo en lenke peker på, krever en administrator for arbeidsområdet, og kontrolleres mot kodeverten med administratorens egen innlogging, på samme måte som ved kobling.
+- Et koblet repo kan ikke gjøres om til et bare-lokalt repo.
+
+Hvis banen senere nevner et **annet** repo (originalen ble slettet og opprettet på nytt, eller flyttet og erstattet av et annet), slutter Control Center å sende det noe: ingen tokener, pusher, kommentarer eller forespørsler. Det gjelder også dine egne handlinger: en gjennomgang, sammenslåing eller kommentar du lager på et slikt repo, avvises, på GitHub, GitLab og Bitbucket likt. Raden og repoets pull requests viser «_repo_ peker nå på et annet arkiv» til en administrator for arbeidsområdet klikker **Koble til på nytt**.
+
+## Hvem kan åpne koden
+
+En arkivtilgang alene åpner ikke et repos filer. For å åpne filer, differ, søk eller en terminal for det, trenger et medlem tilgangen i Control Center, og deres egen innlogging hos kodeverten må kunne lese repoet. Administratorer for arbeidsområdet er ikke unntatt; serverens eier er det. Se [Kode følger kodeverten](/nb-NO/handbok/konsepter/autorisasjon/#kode-følger-plattformen).
+
+Når du gir noen tilgang til et repo som kontoen deres hos kodeverten ikke kan lese, lagres tilgangen, og du ser en advarsel, for eksempel «Lagret. Deres GitHub-konto kan ikke lese dette arkivet ennå, så det er skjult for dem.»
+
+Samme regel avgjør hvem som kan åpne et område. Et område åpnes bare for medlemmer som kan åpne koden til hvert repo det bruker, og er skjult for alle andre, sammen med søkeresultatene, kjøringslogger, gjøremål, aktivitet og varsler. Et område uten repoer er åpent for alle medlemmer. Se [Områder følger repoene sine](/nb-NO/handbok/konsepter/autorisasjon/#områder-følger-repoene-sine).
 
 ## Fjern en repo
 
@@ -66,7 +102,31 @@ Lenkeikonet på en rad åpner et redigeringsfelt for GitHub-eieren og arkivnavne
 
 Dialogen sier hva den gjør: «_name_ fjernes fra dette arbeidsområdet. De lokale filene på disk røres ikke.»
 
+Fjerning krever en administrator for arbeidsområdet. Den glemmer også kodevertslegitimasjonen som er lagret for repoet, for eksempel et GitLab- eller Bitbucket-automasjonstoken.
+
 Fjerningen sletter reporaden fra dette arbeidsområdet og kaskaderer bort kodegrafrommene — symboler, kanter, filer og indekssjekkpunkter — i tillegg til alle repo-tilganger per medlem, område-repo-koblingene dens og postene om isolerte utsjekkinger. Den samme utsjekkingen som er registrert i et annet arbeidsområde, er en uavhengig rad og påvirkes ikke. Worktreer på disk som disse postene pekte på, rives ikke ned av slettingen.
+
+## Feilsøking
+
+### Jeg har en tilgang, men arkivet sier at kontoen min ikke kan lese det
+
+Din egen kodevertskonto kan ikke lese repoet, så Control Center holder koden skjult for deg selv om arbeidsområdet har gitt tilgang. Logg inn hos kodeverten i **Innstillinger → Deg → Profil → Kodehosting** hvis du ikke har gjort det, eller be repoets eier på kodeverten om tilgang. Repoet åpnes så snart kontoen din kan lese det hos kodeverten.
+
+### «Denne mappen ligger utenfor arbeidsområdets lagring»
+
+Repoets mappe ligger utenfor arbeidsområdets lagring, og serverens eier koblet den ikke til, eller en symbolsk lenke peker det et annet sted nå. Det står fortsatt i listen, men brukes ikke før serverens eier bekrefter det eller legger til mappen igjen. Hvis du ikke er eieren, be dem om det. Hvis du er det, trykk **Bekreft** på raden eller **Bekreft alle** over listen; se [Mapper serveren ikke bruker ennå](#mapper-serveren-ikke-bruker-ennå).
+
+### «Det finnes ikke lenger noe på denne banen på serveren»
+
+Mappen ble flyttet eller slettet på serverens maskin. Legg den tilbake, eller få en administrator for arbeidsområdet til å fjerne repoet med **Fjern** i varselet og legge det til igjen fra den nåværende mappen.
+
+### «Denne mappen kan ikke brukes som arkiv»
+
+Den lagrede mappen er serverens egen datamappe, noe inni den, eller selve arbeidsområdets lagringsmappe. Ingen av dem kan være et repo. En administrator for arbeidsområdet fjerner det med **Fjern** i varselet, og legger deretter til repoet igjen fra utsjekkingens faktiske mappe.
+
+### «Kunne ikke bekrefte tilgangen din til kodehosteren»
+
+Control Center kunne ikke nå kodeverten for å sjekke at kontoen din kan lese repoet, så den avviste i stedet for å gjette. Prøv igjen om en liten stund.
 
 ## Relaterte veiledninger
 

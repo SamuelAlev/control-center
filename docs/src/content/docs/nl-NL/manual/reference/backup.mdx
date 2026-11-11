@@ -2,7 +2,7 @@
 title: Backup, export en import
 description: De indeling van de momentopname, het manifest, elke back-upbewerking en overdrachtsroute, en precies welke bestanden een back-up wel en niet bevat.
 slug: nl-NL/handleiding/referentie/backup
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Alles wat Control Center kan kopiëren, overdragen of overnemen, en de exacte vorm van elk
@@ -110,6 +110,7 @@ database, en niets daarvan reist mee:
 | `models/`                           | Nee                  | Nee                       |
 | `meetings/<meetingId>/`             | Nee                  | Nee                       |
 | `rigs/`                             | Nee                  | Nee                       |
+| `_agent_hooks/`                     | Nee                  | Nee                       |
 
 Sommige daarvan is wegwerpbaar — `spaces/` bevat copy-on-write-worktrees die opnieuw worden
 geprovisioneerd vanuit de repo's, `pr_clones/` is een cache, `models/` wordt opnieuw gedownload,
@@ -118,6 +119,15 @@ database naar verwijzen, `skills/` en `agents/` bevatten de bestanden waarmee ee
 `secrets.json` bevat elke koppelingssleutel, providerreferentie en SSO-instelling van de
 installatie. Zie [Back-uppen en herstellen](/nl-NL/handleiding/gidsen/back-uppen-en-herstellen/#back-ups-buiten-de-machine-kopiëren)
 voor het dekken van de rest.
+:::caution[Een werkruimtedatabase bevat webhookgeheimen]
+`workspace.db` is de hele werkruimte: gesprekken, runlogs, de codeindex,
+repokoppelingen, omgevingsdefinities en leden. Hij bevat ook de
+pipeline-webhooktokens en de ticketsync-webhookgeheimen van de werkruimte in
+leesbare vorm, dus behandel een gedownloade export of back-up als geheim. Hij
+bevat geen providerinlogs, apparaatsleutel of gebruikersgeheim; die staan in
+`global.db` en `secrets.json`.
+:::
+
 :::note[Chattokens blijven bewust achter]
 Dat `chat_credentials/` naast de database staat in plaats van erin, is de reden dat een werkruimte
 die aan iemand anders wordt gegeven geen live bottokens meedraagt. Zie de
@@ -141,7 +151,7 @@ aangesloten, zoals de demoserver.
 | `workspace.listBackups` | read | Werkruimte | `admin` | geen | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | Werkruimte | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Werkruimte | `admin`      | geen          | `{ok, path}`                  |
-| `workspace.import`   | mutate | Werkruimte | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | Werkruimte | `owner`, en de serverbeheerder | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Installatie* | `owner`    | `id`          | registerrij gemarkeerd als verwijderd |
 
 * `workspace.delete` heeft geen bereik omdat de rij die hij markeert in het globale
@@ -165,8 +175,18 @@ verwijderoperaties accepteren alleen een vermelde mapnaam met tijdstempel, geen 
 beheerder zijn van één werkruimte is niet genoeg om de andere te beheren. Bij het verwijderen
 wordt alleen de naam van de getoonde tijdstempelmap geaccepteerd, geen willekeurig
 serverpad, en wordt de hele momentopname verwijderd (ook onvolledige momentopnamen).
-Export en import per werkruimte blijven bij de werkruimtebeheerder/-eigenaar, niet bij de
-eigenaar van de installatie.
+Export per werkruimte en downloads van geplande back-ups blijven bij de werkruimtebeheerder.
+:::
+
+:::note[Herstellen is alleen voor de serverbeheerder]
+`workspace.import` en `POST /backup/restore` laten de server een databasebestand
+overnemen waarvan de rijen hij daarna als eigen behandelt: repokoppelingen en wie
+die heeft gemaakt, omgevingsdefinities die op de host draaien, en worktree- en
+logpaden. Daarom zijn beide de serverbeheerder voorbehouden
+(`ServerAuthority.serverOwner`), die ook de eigenaar van de werkruimte moet zijn.
+Iedereen anders, en elke aanroeper op een host zonder vastgelegde eigenaar, wordt
+geweigerd met `server_owner_required`. Triggers en views die het bestand meebrengt,
+worden niet overgenomen.
 :::
 
 ### Antwoord van `server.listBackups`
@@ -240,7 +260,7 @@ doeltekenreeks met zijn koppelings-PSK en de rol hieronder.
 | `/backup/workspace`     | GET     | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | Werkruimte-**beheerder** |
 | `/backup/snapshot`      | GET     | `n`, `d`, `s`   | `backup-snapshot:<name>`         | Installatie-**eigenaar** |
 | `/backup/stored`        | GET     | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | Werkruimte-**beheerder**; installatie-**eigenaar** zodra de werkruimte is verwijderd |
-| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Werkruimte-**eigenaar**  |
+| `/backup/restore`       | POST    | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | Installatie-**eigenaar** die ook werkruimte-**eigenaar** is (anders `403` met `server_owner_required`) |
 
 `w` is een werkruimte-id, `n` de mapnaam van een momentopname of geplande back-up, `d` het id
 van het aanroepende apparaat, `s` de handtekening. Bij `/backup/snapshot` wordt `n` herleid

@@ -1,6 +1,6 @@
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_connect_mode.dart';
 
-export 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
+export 'package:cc_domain/core/domain/value_objects/workspace_connect_mode.dart';
 
 /// A workspace is a user-named container with an optional logo.
 ///
@@ -19,7 +19,8 @@ class Workspace {
     required this.updatedAt,
     this.reviewConcurrency = 3,
     this.autoPublishReview = false,
-    this.githubAuthMode = GithubAuthMode.inherit,
+    this.connectMode = WorkspaceConnectMode.inherit,
+    this.connectUrl = '',
     this.githubAppId = '',
     this.deletedAt,
   }) {
@@ -63,11 +64,17 @@ class Workspace {
   /// Opt-in (off by default); publishing is otherwise user-gated.
   final bool autoPublishReview;
 
-  /// How this workspace authenticates to GitHub for background work.
-  final GithubAuthMode githubAuthMode;
+  /// Whose provider apps this workspace uses: the server's choice, a Connect
+  /// of its own, or its own apps.
+  final WorkspaceConnectMode connectMode;
 
-  /// Numeric GitHub App id when [githubAuthMode] is [GithubAuthMode.app].
-  /// Empty otherwise. The private key lives in the secrets file, never here.
+  /// The canonical Connect base URL when [connectMode] is
+  /// [WorkspaceConnectMode.custom]. Empty otherwise.
+  final String connectUrl;
+
+  /// Numeric id of this workspace's own GitHub App, used while [connectMode]
+  /// is [WorkspaceConnectMode.own]. Empty when none is saved. The private key
+  /// lives in the secrets file, never here.
   final String githubAppId;
 
   /// Soft-delete timestamp. Non-null when workspace has been deleted.
@@ -93,7 +100,8 @@ class Workspace {
           updatedAt == other.updatedAt &&
           reviewConcurrency == other.reviewConcurrency &&
           autoPublishReview == other.autoPublishReview &&
-          githubAuthMode == other.githubAuthMode &&
+          connectMode == other.connectMode &&
+          connectUrl == other.connectUrl &&
           githubAppId == other.githubAppId &&
           deletedAt == other.deletedAt;
 
@@ -108,7 +116,8 @@ class Workspace {
     updatedAt,
     reviewConcurrency,
     autoPublishReview,
-    githubAuthMode,
+    connectMode,
+    connectUrl,
     githubAppId,
     deletedAt,
   );
@@ -125,7 +134,8 @@ class Workspace {
     DateTime? updatedAt,
     int? reviewConcurrency,
     bool? autoPublishReview,
-    GithubAuthMode? githubAuthMode,
+    WorkspaceConnectMode? connectMode,
+    String? connectUrl,
     String? githubAppId,
     DateTime? deletedAt,
   }) {
@@ -139,7 +149,8 @@ class Workspace {
       updatedAt: updatedAt ?? this.updatedAt,
       reviewConcurrency: reviewConcurrency ?? this.reviewConcurrency,
       autoPublishReview: autoPublishReview ?? this.autoPublishReview,
-      githubAuthMode: githubAuthMode ?? this.githubAuthMode,
+      connectMode: connectMode ?? this.connectMode,
+      connectUrl: connectUrl ?? this.connectUrl,
       githubAppId: githubAppId ?? this.githubAppId,
       deletedAt: deletedAt ?? this.deletedAt,
     );

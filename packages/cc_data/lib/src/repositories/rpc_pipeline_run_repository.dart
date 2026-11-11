@@ -59,9 +59,8 @@ class RpcPipelineRunRepository implements PipelineRunReader {
     dryRun: d.dryRun,
   );
 
-  /// The pinned graph, or null when the host sent none (list views, legacy
-  /// runs) or sent one this client cannot read — the run detail then falls
-  /// back to the live template rather than failing to open.
+  /// The pinned graph, or null when the host sent none (list views) or sent
+  /// one this client cannot read.
   static PipelineDefinition? _snapshotFromWire(Map<String, dynamic>? json) {
     if (json == null) {
       return null;

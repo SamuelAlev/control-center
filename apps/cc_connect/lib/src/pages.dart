@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:crypto/crypto.dart' as crypto;
 
 /// The one stylesheet every browser page uses, inline and pinned by hash in
@@ -16,10 +17,17 @@ const String _style =
     'a.button{display:inline-block;margin:1rem 0;padding:.7rem 1.4rem;'
     'border-radius:.5rem;background:#1f1d1a;color:#f6f4ef;text-decoration:none;'
     'font-weight:600}'
+    'form{display:flex;gap:.75rem;justify-content:center;margin:1.5rem 0 0}'
+    'button{font:inherit;font-weight:600;padding:.7rem 1.4rem;'
+    'border-radius:.5rem;border:1px solid #1f1d1a;cursor:pointer;'
+    'background:transparent;color:#1f1d1a}'
+    'button.primary{background:#1f1d1a;color:#f6f4ef}'
+    '.warn{font-weight:600;color:#1f1d1a}'
     '.fine{font-size:.85rem;color:#6b665e}'
     '@media (prefers-color-scheme:dark){body{background:#1a1916;color:#efece6}'
-    'p{color:#c9c4ba}.code{color:#efece6}a.button{background:#efece6;'
-    'color:#1a1916}.fine{color:#9c968b}}';
+    'p{color:#c9c4ba}.code,.warn{color:#efece6}a.button{background:#efece6;'
+    'color:#1a1916}button{border-color:#efece6;color:#efece6}'
+    'button.primary{background:#efece6;color:#1a1916}.fine{color:#9c968b}}';
 
 /// The CSP `style-src` source for [_style].
 final String pageStyleHash =
@@ -29,6 +37,12 @@ final String pageStyleHash =
 final String pageContentSecurityPolicy =
     "default-src 'none'; style-src $pageStyleHash; frame-ancestors 'none'; "
     "base-uri 'none'; form-action 'none'";
+
+/// The policy of the one page with a form (the consent page): the same, but
+/// the form may post to Connect itself.
+final String formPageContentSecurityPolicy =
+    "default-src 'none'; style-src $pageStyleHash; frame-ancestors 'none'; "
+    "base-uri 'none'; form-action 'self'";
 
 /// A fixed message page. No query, provider or user string is ever
 /// interpolated into one.
@@ -58,12 +72,13 @@ enum StaticPage {
         'from the workspace.',
   ),
 
-  /// Another sign-in is connecting the same Slack workspace right now.
-  slackInProgress(
-    409,
-    'This Slack workspace is already being connected',
-    'Someone started connecting it a moment ago. Wait a few minutes, then try '
-        'again from Control Center.',
+  /// The person cancelled at the consent page.
+  cancelled(
+    200,
+    'Sign-in cancelled',
+    'Connect threw this sign-in away. The provider\'s one-time code will never '
+        'be exchanged, so the server that started it receives no token. You '
+        'can close this tab.',
   ),
 
   /// The flow failed on Connect's side or the provider's.
@@ -74,48 +89,24 @@ enum StaticPage {
         'in a moment.',
   ),
 
-  /// The GitHub App was installed and this server authorized.
+  /// The GitHub App was installed.
   githubInstalled(
     200,
     'GitHub App installed',
-    'This Control Center server can now use the installation. You can close '
-        'this tab.',
+    'Installing it consents for every Control Center server a member of this '
+        'account signs in on: each such server can act as that member on the '
+        'repositories the app is installed on. You can close this tab.',
   ),
 
   /// An organization install is waiting for an owner's approval.
   githubRequested(
     200,
     'Installation requested',
-    'An organization owner has to approve the installation on GitHub. Run '
-        '"Authorize this server" in Control Center once it is approved.',
+    'An organization owner has to approve the installation on GitHub. Once '
+        'they do, members can use it from Control Center.',
   ),
 
-  /// The installer may not authorize this server on the installation.
-  githubNotAdmin(
-    403,
-    'You cannot authorize this server here',
-    'Only an organization admin can authorize a Control Center server on an '
-        "organization's installation. Ask an admin to run \"Authorize this "
-        'server" in Control Center.',
-  ),
-
-  /// The installation was not found for this app.
-  githubNotInstalled(
-    404,
-    'Installation not found',
-    'GitHub did not report this installation for the Control Center app. You '
-        'can close this tab and try again from Control Center.',
-  ),
-
-  /// The server the link was made for is not allowed on this Connect.
-  installBlocked(
-    403,
-    'This server cannot use Control Center Connect',
-    'The operator of this Connect has blocked the Control Center server that '
-        'made this link. Nothing was installed for it.',
-  ),
-
-  /// Nothing to do (an installation was updated without a ticket).
+  /// An existing installation's settings changed.
   githubUpdated(200, 'Installation updated', 'You can close this tab.');
 
   const StaticPage(this.status, this.title, this.body);
@@ -146,23 +137,84 @@ String renderStaticPage(StaticPage page) => _document(
   '<h1>${_escape(page.title)}</h1><p>${_escape(page.body)}</p>',
 );
 
-/// The `/done` page: the confirm code and the local deep link. [code] is an
-/// 8-character Crockford code and [deepLink] is built by Connect from its own
-/// login id, so neither is a reflected string.
+/// What the server that started a sign-in on [lane] can do with it, in
+/// plain words, for the consent page.
+String consentScopeFor(ConnectOAuthLane lane) => switch (lane) {
+  ConnectOAuthLane.github =>
+    'The server that started this sign-in will be able to act as you on '
+        'GitHub: on every repository the Control Center app is installed on '
+        'that you can reach, in every organization, until you disconnect.',
+  ConnectOAuthLane.slack =>
+    'The server that started this sign-in will install the Control Center '
+        'bot in your Slack workspace and hold its token. The bot reads '
+        'messages in the channels it is added to and in its direct messages, '
+        'reads the member list with email addresses, and posts messages, '
+        'until the app is uninstalled from the workspace.',
+  ConnectOAuthLane.google =>
+    'The server that started this sign-in will be able to see your list of '
+        'Google calendars and read and change their events, until you '
+        'disconnect.',
+  ConnectOAuthLane.linear =>
+    'The server that started this sign-in will be able to act as you in '
+        'Linear: read and change everything you can see there and create '
+        'issues, until you disconnect.',
+  ConnectOAuthLane.linearApp =>
+    'The server that started this sign-in will be able to act as the Control '
+        'Center app in your Linear workspace: read and change everything the '
+        'app can see there and create issues, until the app is removed.',
+};
+
+/// The `GET /done` consent page: what the server will be able to do, the
+/// warning, and continue/cancel posting back to [action] with the page's
+/// form [token] (base64url, generated by Connect). It shows no code and no
+/// deep link. [otherNetwork] adds the proximity hint.
+String renderConsentPage({
+  required ConnectOAuthLane lane,
+  required bool otherNetwork,
+  required Uri action,
+  required String token,
+}) {
+  const hint =
+      '<p class="warn">This sign-in was started from another network than '
+      'this browser\'s. That is normal for a hosted server or another device, '
+      'and it is also what phishing looks like.</p>';
+  const attribute = HtmlEscape(HtmlEscapeMode.attribute);
+  final target = attribute.convert(action.toString());
+  return _document(
+    'Allow this server?',
+    '<h1>Allow this server?</h1>'
+        '<p>${_escape(consentScopeFor(lane))}</p>'
+        '<p class="warn">Connect cannot tell who runs that server. Continue '
+        'only if you started this sign-in yourself, in your own Control Center '
+        'app or on a server you trust. If someone sent you this link, close '
+        'this page.</p>'
+        '${otherNetwork ? hint : ''}'
+        '<form method="post" action="$target">'
+        '<input type="hidden" name="token" '
+        'value="${attribute.convert(token)}">'
+        '<button type="submit" name="action" value="cancel">Cancel</button>'
+        '<button class="primary" type="submit" name="action" '
+        'value="continue">Continue</button></form>',
+  );
+}
+
+/// The `POST /done` page after continue: the confirm code and the local deep
+/// link. [code] is an 8-character Crockford code and [deepLink] is built by
+/// Connect from its own login id, so neither is a reflected string.
 String renderDonePage({required String code, required Uri deepLink}) {
   final shown = code.length == 8
       ? '${code.substring(0, 4)}-${code.substring(4)}'
       : code;
   return _document(
-    'Finish signing in',
-    '<h1>Finish signing in</h1>'
-        '<p>Open Control Center on this device, or type this code where '
-        'Control Center asks for it.</p>'
+    'Your sign-in code',
+    '<h1>Your sign-in code</h1>'
         '<span class="code">${_escape(shown)}</span>'
+        '<p class="warn">Type it only where you started this sign-in. Anyone '
+        'who gets it gets the access you just approved. Nobody will ever ask '
+        'you for it.</p>'
         '<a class="button" href="${_escape(deepLink.toString())}">'
         'Open Control Center</a>'
-        '<p class="fine">Only enter this code in a Control Center you started '
-        'this sign-in from. Nobody from Control Center will ever ask you for '
-        'it.</p>',
+        '<p class="fine">The button opens Control Center on this device, if '
+        'you started the sign-in here.</p>',
   );
 }

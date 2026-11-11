@@ -1,10 +1,8 @@
 import 'dart:io';
 
 import 'package:cc_rpc/cc_rpc.dart';
-import 'package:control_center/core/providers/storage_providers.dart';
 import 'package:control_center/core/storage/app_support_path_provider.dart';
 import 'package:control_center/core/storage/client_snapshot_store.dart';
-import 'package:control_center/core/storage/legacy_snapshot_cleanup.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -126,17 +124,4 @@ void main() {
       });
     },
   );
-  test('obsolete workspace-only calendar keys are removed exactly', () async {
-    final preferences = AppPreferences.inMemory({
-      'calendar_events_snapshot__ws-1': '{"private":true}',
-      'calendar_events_snapshot__ws-2': '{"private":true}',
-      'calendar_events_snapshot_other': 'keep',
-      'theme_mode': 'dark',
-    });
-    await removeLegacyCalendarSnapshots(preferences);
-    expect(preferences.getString('calendar_events_snapshot__ws-1'), isNull);
-    expect(preferences.getString('calendar_events_snapshot__ws-2'), isNull);
-    expect(preferences.getString('calendar_events_snapshot_other'), 'keep');
-    expect(preferences.getString('theme_mode'), 'dark');
-  });
 }

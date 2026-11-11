@@ -56,11 +56,54 @@ void main() {
       );
     });
 
+    test("an embedded Connect's secrets are refused, its identifiers, "
+        'flags and file paths are not', () {
+      for (final key in [
+        'CONNECT_GITHUB_APP_PRIVATE_KEY',
+        'CONNECT_GITHUB_CLIENT_SECRET',
+        'CONNECT_GITHUB_CLIENT_SECRET_PREVIOUS',
+        'CONNECT_GOOGLE_CLIENT_SECRET',
+        'CONNECT_SLACK_CLIENT_SECRET',
+        'CONNECT_SLACK_SIGNING_SECRET',
+        'CONNECT_KLIPY_APP_KEY',
+        'CONNECT_SEAL_KEYS',
+        'CONNECT_LOG_HMAC_KEY',
+        'CONNECT_REDIS_URL',
+        // A DSN carries Sentry's ingest key.
+        'CONNECT_SENTRY_DSN',
+        'connect_sentry_dsn',
+        // The five secrets Connect reads a previous generation of.
+        'CONNECT_GOOGLE_CLIENT_SECRET_PREVIOUS',
+        'CONNECT_SLACK_CLIENT_SECRET_PREVIOUS',
+        'CONNECT_SLACK_SIGNING_SECRET_PREVIOUS',
+        'CONNECT_KLIPY_APP_KEY_PREVIOUS',
+      ]) {
+        expect(isRefusedProcessSecret(key), isTrue, reason: key);
+      }
+      for (final key in [
+        'CONNECT_GITHUB_APP_ID',
+        'CONNECT_GITHUB_CLIENT_ID',
+        'CONNECT_GITHUB_SECRET_GENERATION',
+        'CONNECT_SEAL_KEYS_FILE',
+        'CONNECT_GITHUB_CLIENT_SECRET_FILE',
+        'CONNECT_PUBLIC_URL',
+        'CONNECT_ALLOWED_INSTALLS',
+        'CONNECT_KMS_KEY',
+        // Connect reads no previous generation of these, so the name is
+        // nothing it would ever take a secret from.
+        'CONNECT_GITHUB_APP_PRIVATE_KEY_PREVIOUS',
+        'CONNECT_SEAL_KEYS_PREVIOUS',
+        'CONNECT_REDIS_URL_PREVIOUS',
+        'CONNECT_SENTRY_DSN_FILE',
+      ]) {
+        expect(isRefusedProcessSecret(key), isFalse, reason: key);
+      }
+    });
+
     test('isRefusedProcessSecret matches Slack secrets by shape', () {
       expect(isRefusedProcessSecret('SLACK_APP_SECRET_TOKEN'), isTrue);
       expect(isRefusedProcessSecret('slack_signing_secret'), isTrue);
       expect(isRefusedProcessSecret('SLACK_BOT_TOKEN'), isFalse);
-      expect(isRefusedProcessSecret('CONNECT_SLACK_CLIENT_SECRET'), isFalse);
     });
   });
 }

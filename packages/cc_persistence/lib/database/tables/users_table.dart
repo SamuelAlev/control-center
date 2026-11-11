@@ -20,6 +20,12 @@ class UsersTable extends Table {
   /// Optional email address (invites work without one).
   TextColumn get email => text().nullable()();
 
+  /// Whether [email] was vouched for by the identity provider (SSO, SCIM) or
+  /// the server owner. Only a vouched address matches an SSO login or a SCIM
+  /// push; one a person typed about themselves never does.
+  BoolColumn get emailVerified =>
+      boolean().withDefault(const Constant(false))();
+
   /// Optional avatar reference (server media ref or remote URL).
   TextColumn get avatarRef => text().nullable()();
 

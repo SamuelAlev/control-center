@@ -1,21 +1,26 @@
+import 'dart:async';
+
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/services/policy_resolver.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/guardrail_class_row.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/guardrail_rule_kinds.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/guardrail_standing_list.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/guardrail_vocabulary.dart';
 import 'package:control_center/features/settings/providers/guardrail_policy_providers.dart';
-import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// The thirteen action classes at one scope: a tally, then four families of
-/// rows, each with its effective decision, where that decision came from, and
-/// an inline picker that upserts a rule at the scope being edited.
-class GuardrailMatrix extends ConsumerWidget {
+/// The action classes at one scope: a tally, then four families of rows, each
+/// with its effective decision, where that decision came from, an inline
+/// picker for the plain rule at the scope being edited, and the standing
+/// approvals set there. Command rules at this scope follow in their own group.
+class GuardrailMatrix extends ConsumerStatefulWidget {
   /// Creates a [GuardrailMatrix].
   const GuardrailMatrix({
     super.key,
@@ -34,18 +39,53 @@ class GuardrailMatrix extends ConsumerWidget {
   /// The scope kind the picker is on, used only for the empty-state copy.
   final ActionScopeType scopeKind;
 
+  @override
+  ConsumerState<GuardrailMatrix> createState() => _GuardrailMatrixState();
+}
+
+class _GuardrailMatrixState extends ConsumerState<GuardrailMatrix> {
   static const PolicyResolver _resolver = PolicyResolver();
 
+  /// Rebuilds when the next approval runs out, so an ended approval leaves
+  /// the list and its row falls back without waiting for another change.
+  Timer? _expiryTick;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _expiryTick?.cancel();
+    super.dispose();
+  }
+
+  void _scheduleExpiryTick(DateTime now) {
+    _expiryTick?.cancel();
+    DateTime? next;
+    for (final r in widget.rules) {
+      final at = r.expiresAt;
+      if (at != null &&
+          at.isAfter(now) &&
+          (next == null || at.isBefore(next))) {
+        next = at;
+      }
+    }
+    if (next != null) {
+      _expiryTick = Timer(next.difference(now), () {
+        if (mounted) {
+          setState(() {});
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final scope = currentScope;
+    final scope = widget.currentScope;
     if (scope == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Text(
-          scopeKind == ActionScopeType.agent
+          widget.scopeKind == ActionScopeType.agent
               ? l10n.guardrailNoAgents
               : l10n.guardrailNoSpaces,
           style: CcTypography.bodySm.copyWith(color: t.textTertiary),
@@ -53,25 +93,41 @@ class GuardrailMatrix extends ConsumerWidget {
       );
     }
     final (scopeType, scopeId) = scope;
-    final spaceId = scopeType == ActionScopeType.space ? scopeId : null;
-    final agentId = scopeType == ActionScopeType.agent ? scopeId : null;
+    // An approval given "for 8 hours" stops applying when it expires, and the
+    // matrix shows what an action would meet now, as enforcement does.
+    final now = DateTime.now();
+    _scheduleExpiryTick(now);
+    final rules = [
+      for (final r in widget.rules)
+        if (!r.isExpiredAt(now)) r,
+    ];
 
     // The tally, computed over the same resolution the rows below render, so
     // the summary can never disagree with the matrix it summarizes.
     final counts = <ActionDecision, int>{
       for (final d in ActionDecision.values) d: 0,
     };
-    final localRules = <ActionPolicyRule>[];
     for (final cls in ActionClass.values) {
       final decision = _resolver
-          .resolveClass(cls, rules: rules, spaceId: spaceId, agentId: agentId)
+          .resolveClassSetting(
+            cls,
+            rules: rules,
+            spaceId: scopeType == ActionScopeType.space ? scopeId : null,
+            agentId: scopeType == ActionScopeType.agent ? scopeId : null,
+          )
           .decision;
       counts[decision] = counts[decision]! + 1;
-      final local = _localRuleFor(rules, scopeType, scopeId, cls);
-      if (local != null) {
-        localRules.add(local);
-      }
     }
+    // "Set here" and "Clear all" are about the picker's plain rules only;
+    // standing approvals keep their own revoke actions.
+    final plainHere = [
+      for (final r in rules)
+        if (r.isAt(scopeType, scopeId) && r.isPlainClassRule) r,
+    ];
+    final commandsHere = [
+      for (final r in rules)
+        if (r.isAt(scopeType, scopeId) && r.commandPrefix != null) r,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,18 +151,19 @@ class GuardrailMatrix extends ConsumerWidget {
             ),
             SettingsFact(
               label: l10n.guardrailSetHere,
-              value: '${localRules.length}',
-              tone: localRules.isEmpty ? null : CcStatusTone.info,
+              value: '${plainHere.length}',
+              tone: plainHere.isEmpty ? null : CcStatusTone.info,
             ),
           ],
-          trailing: localRules.isEmpty
+          note: _otherScopesNote(l10n, rules, scopeType),
+          trailing: plainHere.isEmpty
               ? null
               : CcButton(
                   variant: CcButtonVariant.ghost,
                   size: CcButtonSize.sm,
                   icon: AppIcons.rotateCcw,
                   onPressed: () {
-                    for (final rule in localRules) {
+                    for (final rule in plainHere) {
                       deleteActionPolicyRule(ref, rule.id);
                     }
                   },
@@ -122,151 +179,47 @@ class GuardrailMatrix extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: AppSpacing.lg),
             children: [
               for (final cls in family.classes)
-                _row(
-                  ref,
-                  l10n,
-                  t,
-                  rules,
-                  cls,
-                  scopeType,
-                  scopeId,
-                  spaceId,
-                  agentId,
+                GuardrailClassRow(
+                  actionClass: cls,
+                  rules: rules,
+                  scopeType: scopeType,
+                  scopeId: scopeId,
                 ),
             ],
+          ),
+        if (commandsHere.isNotEmpty)
+          SettingsGroup(
+            title: l10n.guardrailFamilyCommands,
+            showRule: true,
+            separator: SettingsGroupSeparator.none,
+            padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+            children: [GuardrailStandingList(rules: commandsHere)],
           ),
       ],
     );
   }
 
-  Widget _row(
-    WidgetRef ref,
+  /// Standing approvals that are not listed here but matter here: the whole
+  /// workspace's ones when a space or agent is being edited (they apply to it
+  /// too), or single spaces' and agents' ones when the workspace is.
+  String? _otherScopesNote(
     AppLocalizations l10n,
-    DesignSystemTokens t,
-    List<ActionPolicyRule> rules,
-    ActionClass cls,
-    ActionScopeType scopeType,
-    String scopeId,
-    String? spaceId,
-    String? agentId,
-  ) {
-    final resolution = _resolver.resolveClass(
-      cls,
-      rules: rules,
-      spaceId: spaceId,
-      agentId: agentId,
-    );
-    final localRule = _localRuleFor(rules, scopeType, scopeId, cls);
-    final isLocal = localRule != null;
-
-    return CcConfigRow(
-      title: Text(guardrailClassLabel(l10n, cls)),
-      source: _sourceFor(resolution.source, isLocal),
-      sourceLabel: _sourceLabel(l10n, resolution.source, isLocal),
-      status: CcStatusTag(
-        label: guardrailDecisionLabel(l10n, resolution.decision),
-        tone: guardrailDecisionTone(resolution.decision),
-      ),
-      actions: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 132,
-            child: CcSelect<ActionDecision>(
-              options: guardrailDecisionOptions(l10n),
-              value: resolution.decision,
-              semanticLabel: guardrailClassLabel(l10n, cls),
-              onChanged: (d) =>
-                  _setDecision(ref, cls, scopeType, scopeId, localRule, d),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xs),
-          Opacity(
-            opacity: isLocal ? 1 : 0,
-            child: CcIconButton(
-              icon: AppIcons.rotateCcw,
-              size: CcButtonSize.sm,
-              onPressed: isLocal
-                  ? () => deleteActionPolicyRule(ref, localRule.id)
-                  : null,
-              tooltip: l10n.guardrailClearToInherited,
-              semanticLabel: l10n.guardrailClearToInherited,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _setDecision(
-    WidgetRef ref,
-    ActionClass cls,
-    ActionScopeType scopeType,
-    String scopeId,
-    ActionPolicyRule? existing,
-    ActionDecision decision,
-  ) {
-    final workspaceId = ref.read(activeWorkspaceIdProvider);
-    if (workspaceId == null) {
-      return;
-    }
-    final now = DateTime.now();
-    final rule = ActionPolicyRule(
-      id:
-          existing?.id ??
-          stableActionPolicyRuleId(
-            workspaceId: workspaceId,
-            scopeType: scopeType,
-            scopeId: scopeId,
-            actionClass: cls,
-          ),
-      workspaceId: workspaceId,
-      scopeType: scopeType,
-      scopeId: scopeId,
-      actionClass: cls,
-      decision: decision,
-      createdAt: existing?.createdAt ?? now,
-      updatedAt: now,
-    );
-    upsertActionPolicyRule(ref, rule);
-  }
-
-  ActionPolicyRule? _localRuleFor(
     List<ActionPolicyRule> rules,
     ActionScopeType scopeType,
-    String scopeId,
-    ActionClass cls,
   ) {
-    for (final r in rules) {
-      if (r.scopeType == scopeType &&
-          r.scopeId == scopeId &&
-          r.actionClass == cls &&
-          r.commandPrefix == null) {
-        return r;
-      }
+    final editingWorkspace = scopeType == ActionScopeType.workspace;
+    final count = rules
+        .where(
+          (r) =>
+              r.isStandingApproval &&
+              (r.scopeType == ActionScopeType.workspace) != editingWorkspace,
+        )
+        .length;
+    if (count == 0) {
+      return null;
     }
-    return null;
-  }
-
-  CcConfigSource _sourceFor(String source, bool isLocal) {
-    if (isLocal) {
-      return CcConfigSource.localOverride;
-    }
-    return switch (source) {
-      'default' => CcConfigSource.defaultValue,
-      'preset' => CcConfigSource.system,
-      _ => CcConfigSource.inherited,
-    };
-  }
-
-  String _sourceLabel(AppLocalizations l10n, String source, bool isLocal) {
-    if (isLocal) {
-      return l10n.guardrailSourceThisScope;
-    }
-    return switch (source) {
-      'default' => l10n.guardrailSourceDefault,
-      'preset' => l10n.guardrailSourcePreset,
-      _ => l10n.guardrailSourceInherited,
-    };
+    return editingWorkspace
+        ? l10n.guardrailStandingInNarrowerScopes(count)
+        : l10n.guardrailStandingFromWorkspace(count);
   }
 }

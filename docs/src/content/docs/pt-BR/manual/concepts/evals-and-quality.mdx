@@ -2,7 +2,7 @@
 title: Avaliações e qualidade
 description: Suítes de avaliação e campanhas de skills fixadas a revisões, e como interpretar suas evidências.
 slug: pt-BR/manual/conceitos/avaliacoes-e-qualidade
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observabilidade → Qualidade** contém tanto suítes de avaliação de tarefa única
@@ -23,7 +23,7 @@ Cinco suítes iniciais são semeadas quando um espaço de trabalho é criado. El
 cobrem propostas de orquestração, uma revisão que encontra um bug semeado, o
 modo plano permanecendo somente leitura, o modo plano produzindo um plano e um
 ciclo completo de ticket. A semeadura escuta `WorkspaceCreated`
-(`workspace.upsert` ou `workspace.create`), ignora um nome que já existe e não
+(publicado por `workspace.create`), ignora um nome que já existe e não
 preenche retroativamente espaços de trabalho mais antigos.
 
 ### Onde elas aparecem

@@ -2,7 +2,7 @@
 title: Installation
 description: Nutze Control Center im Browser oder installiere die Desktop-App, richte ein Agenten-Backend ein und wähle, wo der Server läuft.
 slug: de-DE/handbuch/installation
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center läuft auf zwei Wegen: als **Web-App** unter
@@ -184,11 +184,10 @@ Ein GitHub-Zugangsdatum gehört **dir und liegt auf dem Server**, gebunden an de
 Benutzer-ID — nicht im Schlüsselbund des Client-Betriebssystems. Jedes Gerät, von
 dem du dich anmeldest, nutzt dasselbe, und kein anderes Mitglied kann es lesen.
 
-Bei GitHub gibt es nur die Anmeldung: **Einstellungen → Arbeitsbereich → Profil
-und Identität → Code-Hosting** bietet **Bei GitHub anmelden**, und ein Token zum
+Bei GitHub gibt es nur die Anmeldung: **Einstellungen → Du → Profil → Code-Hosting** bietet **Bei GitHub anmelden**, und ein Token zum
 Einfügen gibt es nicht. Die Anmeldung läuft über die eigene GitHub App des Servers
 ([Die GitHub App erstellen](/de-DE/handbuch/anleitungen/github-app/)) oder über
-Control Center Connect, je nachdem, was der Server-Eigentümer gewählt hat. Mit der
+Control Center Connect, je nachdem, was der Server-Eigentümer gewählt hat, außer ein Administrator des Arbeitsbereichs hat in **Einstellungen → Arbeitsbereich → Integrationen** andere Anmelde-Apps für diesen Arbeitsbereich gewählt. Mit der
 eigenen App des Servers kehrt der Browser von selbst zum Server zurück; über
 Connect tippst du den 8-stelligen Code ein, den der Browser zeigt, oder lässt ihn
 Control Center öffnen. Siehe
@@ -241,7 +240,7 @@ Kopplungsschlüssel ausstellst und die Flags `--data-dir` / `--port` / `--bind` 
 2. **Einstellungen → Arbeitsbereich → Repositorys** listet die Repos dieses
    Arbeitsbereichs, und **Repository hinzufügen** durchsucht die Ordner des
    Server-Hosts.
-3. **Einstellungen → Arbeitsbereich → Agenten** listet die fünf Agenten, die dein
+3. **Einstellungen → Arbeitsbereich → Agenten** listet die sechs Agenten, die dein
    erster Arbeitsbereich angelegt hat. Jeder braucht einen gesetzten **Adapter** und
    ein **Modell**, bevor er laufen kann.
 4. **Einstellungen → Server → Diagnose und Datenschutz** meldet die

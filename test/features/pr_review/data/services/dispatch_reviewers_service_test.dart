@@ -391,6 +391,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String spaceId,
     required String failedMessageId,
     String? modelOverride,
+    String? requestedByUserId,
   }) async {}
 
   final List<_DispatchRecord> dispatches = [];
@@ -451,6 +452,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String spaceId,
     required String feedback,
+    String? senderUserId,
   }) => throw UnimplementedError();
 
   // Unused-by-this-test surface (sendUserMessage/addAgentToSpace/steerRun/…)
@@ -1997,6 +1999,7 @@ class _ThrowingMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -2004,6 +2007,7 @@ class _ThrowingMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 

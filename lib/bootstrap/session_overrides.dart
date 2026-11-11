@@ -1,6 +1,7 @@
 import 'package:cc_data/cc_data.dart' show RemoteIdentityRepository;
 import 'package:cc_rpc/cc_rpc.dart'
     show RemoteRpcClient, ServerConnectionSupervisor;
+import 'package:control_center/core/offline/offline_queue_provider.dart';
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/providers/server_connection_status_provider.dart';
@@ -36,8 +37,24 @@ List<Override> sessionOverrides({
   // MediaProxyScope alone is not enough.
   mediaProxyConfigProvider.overrideWithValue(mediaProxy),
   serverConnectionSupervisorProvider.overrideWithValue(supervisor),
-  serverSwitchHandlerProvider.overrideWithValue(switchServer),
-  returnToServerSignInProvider.overrideWithValue(returnToSignIn),
+  // Leaving this session (another server, or back to sign-in) drops the
+  // offline queue first: nothing queued here may replay as the next one.
+  serverSwitchHandlerProvider.overrideWith(
+    (ref) => (serverId) async {
+      await ref
+          .read(offlineQueueControllerProvider.notifier)
+          .discardForSessionEnd();
+      await switchServer(serverId);
+    },
+  ),
+  returnToServerSignInProvider.overrideWith(
+    (ref) => () async {
+      await ref
+          .read(offlineQueueControllerProvider.notifier)
+          .discardForSessionEnd();
+      await returnToSignIn();
+    },
+  ),
   // One store per process, shared with the pre-app surfaces: a server choice
   // or appearance change made there is what the connected app reads.
   appPreferencesProvider.overrideWithValue(AppPreferences(prefsBackend)),

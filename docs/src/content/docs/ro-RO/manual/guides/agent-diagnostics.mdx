@@ -2,7 +2,7 @@
 title: Diagnostichează un agent
 description: Parcurge jurnalul de rulare, verificarea adaptorului, starea serverului și diagnosticările gazdei atunci când un agent nu mai produce rulări.
 slug: ro-RO/manual/ghiduri-practice/diagnosticare-agent
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Acest ghid îți arată cum să afli de ce un agent nu produce rulări.
@@ -13,13 +13,13 @@ Lucrează de sus în jos: mai întâi rulările agentului însuși, apoi backend
 
 **Setări → Spațiu de lucru → Agenți** → selectează agentul → **Jurnale**.
 
-Fiecare rulare afișează o insignă de stare, o durată („Running…” cât timp este în curs), orele de început și de final, PID-ul și adaptorul folosit. **Vizualizează** deschide fluxul brut de evenimente al acelei rulări. **Oprește** ucide un proces aflat în rulare și marchează rularea ca „Killed by user”; **Oprește forțat ce rulează** din antet face același lucru pentru fiecare rulare în curs a acelui agent.
+Fiecare rulare afișează o insignă de stare, o durată („Running…” cât timp este în curs), orele de început și de final, PID-ul și adaptorul folosit. **Vizualizează** deschide fluxul brut de evenimente al acelei rulări. **Oprește** ucide un proces aflat în rulare și marchează rularea ca „Killed by user”; **Oprește forțat ce rulează** din antet face același lucru pentru fiecare rulare în curs a acelui agent din acest spațiu de lucru. Poți vedea și opri doar rulările de agent active din spațiile de lucru din care faci parte; proprietarul serverului le vede și le oprește pe toate.
 
 Citește-le astfel:
 
 - **Nicio rulare** — trimiterea nu a avut loc niciodată. Mențiunile din compozitor sunt `@` plus caractere de cuvânt (litere, cifre, liniuță de subliniere). Rezolvarea este o potrivire exactă sau de prefix pe numele agentului, așa că `@code-reviewer` este interpretat ca `code` și poate totuși trezi un agent numit `code-reviewer`. Un nume care conține un spațiu nu poate fi menționat ca un singur token. Apoi treci la pasul 2.
-- **O rulare care s-a încheiat imediat cu eroare** — deschide **Vizualizează**. O eroare de lansare a backendului apare aici ca eroare de proces.
-- **O rulare blocată pe „Running…”** — oprește-o, apoi verifică **Timeout de tăcere** al agentului în tab-ul Setări. Un timeout nesetat folosește implicitul modului.
+- **O rulare care s-a încheiat imediat cu eroare** — deschide **Vizualizează**. O eroare de lansare a backendului apare aici ca eroare de proces. „Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți.” înseamnă că mașina serverului nu are sandbox de sistem de operare și tu nu ești proprietarul lui; vezi [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/#rularea-agentului-a-fost-refuzată-cu-acest-server-nu-are-sandbox).
+- **O rulare blocată pe „Running…”** — oprește-o, apoi verifică **Timeout de tăcere (minute)** al agentului în tab-ul **Setări** al acestuia. Un timeout nesetat folosește implicitul modului.
 - **O rulare încheiată fără rezultat util** — starea din jurnalul de rulare rămâne `completed` pentru o rulare care s-a încheiat fără livrabilul declarat; semnalul onest este textul rezumatului, nu insigna.
 
 Tab-ul Jurnale nu arată niciun cost. Pentru cheltuieli, folosește tabelul pe agent din **Observabilitate → Insights**.
@@ -67,11 +67,11 @@ Două lucruri care merită știute când o modificare „merge în teste, dar nu
 - **Confidențialitate** — dacă conținutul brut al diff-urilor poate fi transmis modelului agentului și dacă se trimit rapoarte de eroare.
 
 :::caution[Această secțiune raportează gazda, iar controalele ei sunt pe client]
-Detectarea și aplicarea sunt acum în acord: acolo unde detectorul raportează un backend nativ, rulările agenților de pe acea gazdă sunt într-adevăr înfășurate în el. Dar detectorul este singurul lucru activ din această secțiune. Comutatorul principal și selectorul de backend sunt preferințe stocate pe dispozitivul tău, iar serverul nu citește niciuna dintre ele — comutatorul propriu al serverului este `--sandbox` (`on` implicit, `off` pentru a renunța).
+Detectarea și aplicarea sunt în acord: acolo unde detectorul raportează un backend nativ, rulările agenților de pe acea gazdă sunt într-adevăr înfășurate în el. Dar detectorul este singurul lucru activ din această secțiune. Comutatorul principal și selectorul de backend sunt preferințe stocate pe dispozitivul tău, iar serverul nu citește niciuna dintre ele — comutatorul propriu al serverului este `--sandbox` (`on` implicit, `off` pentru a renunța).
 
-Deci un avertisment de aici merită tratat, dar de obicei nu este motivul pentru care eșuează un agent. Ca să confirmi în ce stare este serverul, citește jurnalul lui de pornire: afișează `agent sandbox ON` cu nota despre backend, `no OS-native agent sandbox on this host` cu un indiciu de instalare sau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` nu conține niciun câmp de sandbox.
+Deci un avertisment de aici merită tratat. Pe o gazdă fără backend, acesta este motivul pentru care altcineva decât proprietarul serverului nu poate rula deloc agenți. Ca să confirmi în ce stare este serverul, citește jurnalul lui de pornire: afișează `agent sandbox ON` cu nota despre backend, `no OS-native agent sandbox on this host` cu un indiciu de instalare sau `agent sandbox DISABLED by --sandbox off`, iar linia lui de expunere conține `sandbox=native`, `sandbox=unavailable` sau `sandbox=off`. `GET /healthz` nu conține niciun câmp de sandbox.
 
-Acolo unde nu există backend — pe Windows întotdeauna, pe Linux sau WSL2 fără `bwrap` și `socat` — rulările **nu** sunt izolate, iar ce le limitează este checkout-ul propriu al conversației, tokenul de forge doar pentru citire și gateway-ul de push, guardrail-urile de acțiune, sanitizarea mediului și suprafața de instrumente pe care o permite modul său.
+Acolo unde nu există backend (pe Windows întotdeauna, pe Linux sau WSL2 fără `bwrap` și `socat`), pornesc doar rulările pentru care proprietarul serverului răspunde, iar ale tuturor celorlalți sunt refuzate. Rulările care pornesc acolo, precum și fiecare rulare sub `--sandbox off`, **nu** sunt izolate, iar ce le limitează este checkout-ul propriu al conversației, tokenul de forge doar pentru citire și gateway-ul de push, guardrail-urile de acțiune, sanitizarea mediului și suprafața de instrumente pe care o permite modul său.
 :::
 
 ## Eșecuri frecvente

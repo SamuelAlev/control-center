@@ -2,7 +2,7 @@
 title: Le modèle d’agent
 description: Ce qu’est réellement un agent dans Control Center, quels champs modifient son comportement et comment l’adaptateur sur lequel il s’exécute détermine ce qui peut être appliqué.
 slug: fr-FR/manuel/concepts/modele-agent
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Qu’est-ce qu’un agent ?
@@ -54,7 +54,7 @@ Les skills de dépôt sont chargés pour **tous** les adaptateurs, pas seulement
 
 Un agent ne porte aucun indicateur d’autorisation qui lui soit propre. Le droit de créer un commit, de pousser, d’ouvrir une pull request, d’écrire dans un outil de suivi ou d’atteindre le réseau relève des [garde-fous d’action](/fr-FR/manuel/concepts/garde-fous/) — autoriser, demander d’abord ou refuser, à la portée de l’espace de travail, de l’agent ou de l’espace — et les mêmes règles s’appliquent quel que soit l’adaptateur qui l’exécute.
 
-Ce qui est _remis_ à une exécution ne change pas avec ces règles. Une exécution dans un arbre de travail GitHub reçoit toujours un jeton GitHub en lecture seule, et un push fait l’objet d’une question au moment où il a lieu : la configuration git de l’agent fait passer chaque push GitHub par Control Center, qui applique la règle **Pousser vers un dépôt distant** avant de le transmettre.
+Ce qui est _remis_ à une exécution ne change pas avec ces règles. Une exécution peut toujours lire les dépôts GitHub sur lesquels elle travaille, sur un jeton en lecture seule, et un push fait l’objet d’une question au moment où il a lieu : la configuration git de l’agent fait passer chaque push GitHub par Control Center, qui applique la règle **Pousser vers un dépôt distant** avant de le transmettre.
 
 Voir [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/) pour le fonctionnement de ce mécanisme, y compris ce qui est ou n’est pas appliqué au niveau du système de fichiers.
 
@@ -70,16 +70,16 @@ Le champ le plus déterminant d’un agent est son adaptateur, car le transport 
 Concrètement, **seul le harnais intégré prend en charge les sous-agents, le pilotage en cours d’exécution, la pause et la reprise (et donc la prise en main) et l’application structurelle du mode.** Claude Code n’en bénéficie d’aucun.
 
 :::caution[Le bac à sable de l’OS est un socle, pas un mécanisme d’application du mode, et tous les hôtes n’en ont pas]
-Le tableau ci-dessus porte sur ce que Control Center peut _voir et contrôler_. En dessous, `cc_server` enveloppe la CLI Claude Code dans le bac à sable de l’OS de l’hôte lorsqu’il en existe un — Seatbelt sur macOS, bubblewrap sous Linux et WSL2 — si bien qu’un `rm` invisible ou une écriture invisible reste borné par l’OS. Sous **Windows, il n’existe aucun backend** et sous Linux ou WSL2 sans `bwrap` ni `socat`, la sonde n’en signale aucun ; là, ces exécutions retombent sur l’assainissement de l’environnement, les identifiants intermédiés, les garde-fous sur les appels que Control Center peut voir et l’arbre de travail propre à la conversation (copie sur écriture là où `rift` est livré ; `git worktree` sous Windows).
+Le tableau ci-dessus porte sur ce que Control Center peut _voir et contrôler_. En dessous, `cc_server` enveloppe la CLI Claude Code dans le bac à sable de l’OS de l’hôte lorsqu’il en existe un — Seatbelt sur macOS, bubblewrap sous Linux et WSL2 — si bien qu’un `rm` invisible ou une écriture invisible reste borné par l’OS. Sous **Windows, il n’existe aucun backend** et sous Linux ou WSL2 sans `bwrap` ni `socat`, la sonde n’en signale aucun ; là, seules les exécutions du propriétaire du serveur démarrent, et celles des autres sont refusées, sauf si le propriétaire a démarré le serveur avec `--sandbox off`. Une exécution qui démarre sans bac à sable retombe sur l’assainissement de l’environnement, les identifiants intermédiés, les garde-fous sur les appels que Control Center peut voir et l’arbre de travail propre à la conversation (copie sur écriture là où `rift` est livré ; `git worktree` sous Windows).
 
 Ce que le bac à sable n’est pas, c’est une _porte_. Il borne les lieux où un processus peut lire, écrire et se connecter — un mode en lecture seule l’atteint bel et bien, sous forme de montages liés en lecture seule — mais il ne peut pas intercepter un appel, déclencher une approbation ni vous dire après coup ce que la CLI a tenté. Cela, plus les quatre capacités citées juste au-dessus, reste ce que le harnais intégré possède et que les autres n’ont pas. Voir [Bac à sable et sécurité](/fr-FR/manuel/concepts/bac-a-sable-et-securite/).
 :::
 
-Un agent **sans** adaptateur retombe sur **Control Center (built-in)** — la boucle à l’intérieur du serveur, donc aucune CLI à installer — et son journal d’exécution consigne `cc-harness`. Chaque agent amorcé est créé sans adaptateur ni modèle, si bien que les cinq agents d’un espace de travail neuf s’exécutent tous là, sur le modèle par défaut d’Anthropic, tant que vous n’avez pas défini un adaptateur et un modèle par agent. Le choix « adaptateur par défaut » de la configuration initiale est une préférence côté client que le serveur ne lit jamais, et il ne s’applique pas rétroactivement aux agents déjà créés.
+Un agent **sans** adaptateur retombe sur **Control Center (built-in)** — la boucle à l’intérieur du serveur, donc aucune CLI à installer — et son journal d’exécution consigne `cc-harness`. Chaque agent amorcé est créé sans adaptateur ni modèle, si bien que les six agents d’un espace de travail neuf s’exécutent tous là, sur le modèle par défaut d’Anthropic, tant que vous n’avez pas défini un adaptateur et un modèle par agent. Terminer l’étape d’adaptateur de la configuration initiale définit son couple sur chaque agent qui n’en a pas encore dans les espaces de travail existant à ce moment-là ; il n’existe aucun exécuteur par défaut d’espace de travail.
 
 ## D’où viennent les agents
 
-- **Amorcés avec l’espace de travail.** Chaque espace de travail — pas seulement le premier — reçoit un CEO plus quatre spécialistes (`qa`, `architect`, `engineer`, `librarian`) qui lui rendent compte, créés de manière idempotente en arrière-plan à la création de l’espace de travail. Voir [Espaces de travail et isolation](/fr-FR/manuel/concepts/espaces-de-travail/).
+- **Amorcés avec l’espace de travail.** Chaque espace de travail — pas seulement le premier — reçoit un CEO plus cinq spécialistes (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) qui lui rendent compte, créés de manière idempotente en arrière-plan à la création de l’espace de travail. Voir [Espaces de travail et isolation](/fr-FR/manuel/concepts/espaces-de-travail/).
 - **Ajoutés à la main** dans Paramètres → Espace de travail → Agents. Demander à un agent d’embaucher un collègue ne crée pas de ligne ; passez par cet écran.
 
 ## État en direct

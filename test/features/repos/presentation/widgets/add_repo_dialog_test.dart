@@ -1,3 +1,5 @@
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:control_center/features/repos/presentation/widgets/add_repo_dialog.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -8,7 +10,7 @@ void main() {
       final outcome = await registerReposFromPaths(
         (workspaceId, path) async {
           calls.add('$workspaceId:$path');
-          return 'id-$path';
+          return (repoId: 'id-$path', issues: const <RepoAccessIssue>[]);
         },
         'ws-1',
         ['/a', '/b', '/c'],
@@ -25,7 +27,7 @@ void main() {
           if (path == '/not-a-repo') {
             throw Exception('not a git checkout');
           }
-          return 'id-$path';
+          return (repoId: 'id-$path', issues: const <RepoAccessIssue>[]);
         },
         'ws-1',
         ['/ok-1', '/not-a-repo', '/ok-2'],
@@ -44,7 +46,7 @@ void main() {
       final outcome = await registerReposFromPaths(
         (workspaceId, path) async {
           called = true;
-          return 'id';
+          return (repoId: 'id', issues: const <RepoAccessIssue>[]);
         },
         'ws-1',
         const [],
@@ -53,6 +55,29 @@ void main() {
       expect(called, isFalse);
       expect(outcome.added, isEmpty);
       expect(outcome.failed, isEmpty);
+    });
+
+    test('collects what automation cannot reach in the added repos', () async {
+      final outcome = await registerReposFromPaths(
+        (workspaceId, path) async => (
+          repoId: 'id-$path',
+          issues: [
+            RepoAccessIssue(
+              forge: ForgeHost.github,
+              owner: 'acme',
+              name: path.substring(1),
+              state: RepoAccessState.appNotInstalled,
+            ),
+          ],
+        ),
+        'ws-1',
+        ['/api', '/web'],
+      );
+
+      expect(outcome.issues.map((i) => i.repoFullName), [
+        'acme/api',
+        'acme/web',
+      ]);
     });
   });
 }

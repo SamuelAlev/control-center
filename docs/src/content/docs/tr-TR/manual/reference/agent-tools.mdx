@@ -2,7 +2,7 @@
 title: Yerleşik ajan araçları
 description: Yerleşik harness’ın bir ajana sunduğu araç yüzeyi — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler ve worker kontrolü — her işlem ve argümanıyla birlikte.
 slug: tr-TR/kilavuz/referans/ajan-araclari
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Bunlar, yerleşik ajan çalışma zamanının doğrudan kaydettiği **sunucuya bağlı** araçlardır — dil sunucusu, yapısal arama, hata ayıklayıcı, kernel’ler, sorular ve worker kontrolü — içeri köprülediği [MCP araçlarının](/tr-TR/kilavuz/referans/mcp-araclari/) ve harness çalışma zamanının genel dosya, arama ve shell araçlarının aksine. MCP kayıt defterinde yer almazlar: harici bir MCP istemcisi onları görmez, çünkü her biri tek bir çalıştırmaya ait canlı bir sunucu tarafı kaynağa bağlıdır — bir dil sunucusu süreci, bir hata ayıklama adaptörü, bir yorumlayıcı.
@@ -24,6 +24,8 @@ Her araç bir kademe bildirir ve kademe, **hangi yüzeylerin onu gördüğüne**
 ## `lsp` — dil sunucusu sorguları
 
 Bir çalıştırmada bir dil sunucusu gözetmeni ve bir çalışma dizini olduğunda kaydedilir. Bir sunucunun gerçekten yanıt verip veremeyeceği, çağrı anında bir **kesişim** olarak algılanır: bir kök belirtecin bulunması *ve* sunucu ikili dosyasının çözümlenmesi gerekir. Tek başına ikisinden biri, sunucunun başlamaması anlamına gelir — `status` bunu söyler — sessiz bir tahmin yerine.
+
+Sunucular yalnızca yerleşik tablodan gelir; depo `lsp.json` dosyası okunmaz. Sandbox’lı bir çalıştırmada her çalıştırma kendi dil sunucusu oturumunu alır, bu yüzden sunucular her çalıştırmayla yeniden başlar. Projeye özgü ikililer (`node_modules/.bin`) yalnızca çalıştırma sandbox içindeyse kullanılır ve proje kökü çalıştırmanın çalışma dizininin üstüne asla çözümlenmez.
 
 Konumlar `line` ile ve bir `symbol` alt dizesiyle adreslenir, hiçbir zaman sütunla değil. Bir sütun istenen model tahmin yürütür ve yanlış bir tahmin, aynı satırdaki farklı bir sembole çözümlenir — doğru görünen ama başka bir şeyle ilgili bir yanıt. Bir gezinme eyleminde `symbol` alanını atlamak bir hatadır, ilk sütun tahmini değil.
 
@@ -117,7 +119,7 @@ Her dosya, sahneleme anında yakalanan içerikle karşılaştırılır ve **herh
 
 Bir çalıştırmada bir hata ayıklama oturumu gözetmeni, bir çalışma dizini ve bir konuşma kimliği olduğunda kaydedilir. Bir adaptörün gerçekten başlatılıp başlatılamayacağı, dil sunucusundakiyle aynı kesişim kuralıyla, çağrı anında algılanır (kök belirteci *ve* ikili dosya). `exec` kademesi; paralel çalışmaya uygun değil (bir oturum, çağrılar boyunca durumdur; dolayısıyla `stack` çağrısını geçen bir `continue`, çoktan yer değiştirmiş bir çerçeveyi okur).
 
-Konuşma başına bir oturum ve katı bir TTL (30 dakika). İkinci bir `launch`, ilkini sessizce değiştirmek yerine reddedilir.
+Konuşma başına bir oturum ve katı bir TTL (30 dakika). İkinci bir `launch`, ilkini sessizce değiştirmek yerine reddedilir. Sandbox’lı bir çalıştırmada oturum, sona erene kadar dönüşler boyunca sandbox’ını korur; yani en fazla bu 30 dakika boyunca.
 
 | İşlem         | Argümanlar                    | Notlar                                                                 |
 | ------------- | ----------------------------- | ---------------------------------------------------------------------- |
@@ -125,7 +127,7 @@ Konuşma başına bir oturum ve katı bir TTL (30 dakika). İkinci bir `launch`,
 | `status`      | —                             | Bir oturumun çalışıp çalışmadığı ve nerede durduğu                     |
 | `breakpoints` | `file`, `lines[]`             | Boş `lines`, dosyayı temizler. Başlatmadan **önce** ayarlanabilir      |
 | `launch`      | `program`, `args[]`           | Programı, kesme noktalarınızda durmuş halde başlatır                   |
-| `attach`      | `port`                        | Zaten çalışan bir hata ayıklama hedefine bağlanır                      |
+| `attach`      | `port`                        | Zaten çalışan bir hata ayıklama hedefine, çalıştırmanın kendi yönlendirilmiş portlarından birinde bağlanır; diğer her port, hiçbir şey başlamadan reddedilir |
 | `continue`    | `thread_id?`                  | Bir sonraki durma noktasına kadar çalıştırır                           |
 | `pause`       | `thread_id?`                  | Olduğu yerde durdurur                                                  |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Bir adım ilerletir                                          |
@@ -146,7 +148,7 @@ Konuşma başına bir oturum ve katı bir TTL (30 dakika). İkinci bir `launch`,
 | `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   |
 | `delve`   | `dlv dap`                    | `go.mod`                                         |
 
-`debugpy`, `$PATH` yerine proje içindeki `.venv/bin` ya da `venv/bin` yolunu tercih eder: `$PATH`’teki bir python farklı bir ortamdır ve yanlış olandan bağlanmak, bozuk kod olarak okunan bir hatayla başarısız olur.
+`debugpy`, sandbox’lı bir çalıştırmada `$PATH` yerine proje içindeki `.venv/bin` ya da `venv/bin` yolunu tercih eder: `$PATH`’teki bir python farklı bir ortamdır ve yanlış olandan bağlanmak, bozuk kod olarak okunan bir hatayla başarısız olur. Sandbox dışında yalnızca `$PATH` kullanır; bu yüzden bir depo ana makinede çalışacak yorumlayıcıyı seçemez.
 
 ---
 
@@ -176,7 +178,7 @@ Köprü, **harness araç kayıt defterine yeniden girer**; böylece korumalar, o
 Hücrenin zaman aşımı bir *hareketsizlik* bütçesidir (varsayılan 5 dakika) ve köprü üzerinden gelen bir çağrı sonuçlanana kadar **askıya alınır**; böylece alt ajanlara dağılan bir hücre, dağıtımın ortasında öldürülmez.
 
 :::note[Kernel nerede çalışır]
-Konuşmanın bir enclosure’ı varsa orada, yoksa ana makinede. Bunun için bir enclosure **başlatmaz** — bir rig sekmesinin kendiliğinden başlamasını engelleyen kuralın aynısı.
+Konuşmanın bir enclosure’ı varsa orada, yoksa çalıştırmanın ana makinedeki işletim sistemi sandbox’ında. Sandbox kapalıysa ya da yoksa sınırlandırılmadan çalışır ve `eval` ana makine yürütme onayı ister. Oraya ulaşmak için bir enclosure **başlatmaz** — bir rig sekmesinin kendiliğinden başlamasını engelleyen kuralın aynısı.
 :::
 
 ---

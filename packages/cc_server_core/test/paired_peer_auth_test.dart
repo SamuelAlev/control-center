@@ -79,6 +79,7 @@ void main() {
         status: const Value(PairedDeviceStatus.active),
         pairedAt: Value(pairedAt),
         lastSeenAt: Value(lastSeenAt),
+        expiresAt: Value(DateTime.now().add(const Duration(hours: 1))),
       ),
     );
   }

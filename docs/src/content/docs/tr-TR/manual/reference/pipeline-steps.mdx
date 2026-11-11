@@ -2,7 +2,7 @@
 title: Pipeline adımları
 description: Pipeline adım türleri, adım gövdesi anahtarları, bunların yapılandırması ve adım sonuçları için referans.
 slug: tr-TR/kilavuz/referans/pipeline-adimlari
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Bir pipeline adımının birbirinden bağımsız iki ekseni vardır:
@@ -61,7 +61,7 @@ Genel istem ve gönderim düğümü: istemi işler, ajanı bir konuşmaya gönde
 
 ### `pipeline.condition`
 
-Router gövdesi — `config.extras` okur, bir koşulu değerlendirir ve `StepResult.route(key)` döndürür. Koşullar JavaScript ifadeleri **değildir**; öncelik sırasına göre üç yazım biçimi desteklenir:
+Router gövdesi — `config.extras` okur, bir koşulu değerlendirir ve `StepResult.route(key)` döndürür. Koşullar JavaScript ifadeleri **değildir**; öncelik sırasına göre iki yazım biçimi desteklenir:
 
 - **Koşul ağacı** (`extras.predicate`) — `"true"` / `"false"` olarak yönlendiren mantıksal bir ağaç. Her düğüm, bir `type` içeren bir haritadır:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — listelenen yollardan herhangi biri diskte varsa true; `negate` bunu tersine çevirir; `recursive` alt dizinlerde de arar (`.git`, `node_modules`, `build`, `.dart_tool` atlanarak). Göreli yollar `state[baseKey]` (varsayılan `repo_local_path`) değerine göre çözümlenir; yoksa çalıştırma başına çalışma alanı dizinine göre.
@@ -69,21 +69,30 @@ Router gövdesi — `config.extras` okur, bir koşulu değerlendirir ve `StepRes
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — mantıksal gruplar.
   - `{"type": "not", "of": <predicate>}` — değilleme.
 - **Seçim** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; durum değerinin büyük/küçük harf ayrımı gözetmeksizin içerdiği ilk seçeneğe, aksi halde `default`’a yönlendirir.
-- **Karşılaştırma** (eski tarz üst düzey `extras.left` / `extras.op` / `extras.right`) — bir `comparison` koşuluna eşdeğerdir; ağaçtan önce yazılmış şablonlar için korunmuştur.
 
 Düğümden çıkan kenarlar, döndürülen anahtarla eşleşmesi gereken bir `routeKey` taşır.
 
 ### `prReview.comment`
 
-Birleştirilmiş bulguları GitHub PR istemcisi üzerinden bir PR inceleme yorumu olarak yayımlar.
+Birleştirilmiş bulguları ya da adımın kendi `extras.message`’ını GitHub PR istemcisi üzerinden bir PR inceleme yorumu olarak yayımlar.
 
-| Durum anahtarı           | Açıklama                                     |
-| ------------------------ | -------------------------------------------- |
-| `repo_full_name`         | `owner/repo` (zorunlu)                       |
-| `pr_number`              | PR numarası — int veya sayısal dize (zorunlu) |
-| `consolidated_findings`  | Yorum gövdesi (zorunlu)                      |
+| Anahtar                 | Okunduğu yer        | Açıklama                                                              |
+| ----------------------- | ------------------- | --------------------------------------------------------------------- |
+| `repo_full_name`        | tetikleyici yükü    | `owner/repo` (zorunlu)                                                |
+| `pr_number`             | tetikleyici yükü    | PR numarası, pozitif bir tam sayı ya da sayısal dize (zorunlu)        |
+| `consolidated_findings` | durum               | Adımın `message`’ı yoksa yorum gövdesi                                |
 
-Durumda `comment_review_id` ve `commented_at` ile `StepResult.terminal` döndürür.
+Pull request yalnızca çalıştırmanın tetikleyici yükünden gelir; bir adımın çalışma sırasında yeniden yazabildiği durumdan asla gelmez. Yayımlanan metindeki @ anmaları etkisiz kılınır, böylece yorum kimseye bildirim göndermez.
+
+Bir `message`, `{{key}}` yer tutucularını şöyle işler:
+
+- `repo_full_name`, `repo_owner`, `repo_name` ve `pr_number`, adımın yayımladığı pull request’i işler.
+- `author`, yalnızca forge’da geçerli bir kullanıcı adıysa tetikleyici yükünden olduğu gibi işlenir; diğer her durumda adım başarısız olur.
+- `consolidated_findings`, @ anmaları etkisiz kılınmış ham markdown olarak işlenir.
+- Diğer tüm değerler düz metin olarak işlenir: tek satırda, markdown noktalama işaretleri kaçışlanmış ve @ anmaları etkisiz kılınmış.
+- Hiçbir değere çözülmeyen bir yer tutucu adımı başarısız kılar.
+
+`StepResult.terminal` döndürür; durumda `comment_review_id` ve `commented_at` yer alır.
 
 ### `messaging.postSpace`
 

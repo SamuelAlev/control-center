@@ -2,7 +2,7 @@
 title: Comandos slash
 description: Todo comando que você pode digitar no composer, o que ele faz e onde é executado.
 slug: pt-BR/manual/referencia/comandos-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Comandos digitados no composer de um espaço. Eles se dividem em três grupos conforme onde produzem efeito, e a diferença importa: um comando **local** nunca trafega como mensagem, então nem aparece na transcrição nem chega a um agente.
@@ -139,7 +139,7 @@ Os dois têm o mesmo formato — pegar a conversa como ela está, fazer uma úni
 
 Templates: `$1`, `$@`, `$@[start:length]` e `$ARGUMENTS`. O frontmatter pode definir `description` (autocomplete do composer). `allowed-tools` e `model` são lidos do arquivo, mas hoje a invocação de um comando de usuário apenas substitui os argumentos no corpo — eles não mudam o modelo nem a superfície de ferramentas da execução.
 
-Um comando escrito pelo usuário tem precedência sobre uma skill de mesmo nome — é um atalho que uma pessoa invocou de propósito, com argumentos.
+As skills são acessadas somente como `/skill:<name>`, então um comando escrito pelo usuário nunca colide com uma delas.
 
 ---
 

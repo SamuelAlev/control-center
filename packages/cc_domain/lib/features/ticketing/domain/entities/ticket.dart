@@ -112,7 +112,7 @@ class Ticket {
   final PrincipalType assigneeType;
 
   /// The kind of principal that created the ticket (`agent` / `user`), or
-  /// null when unknown (legacy/system rows).
+  /// null when unknown (system rows).
   final PrincipalType? createdByType;
 
   /// Id of the creating principal, when known.

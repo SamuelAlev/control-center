@@ -1,10 +1,8 @@
-import 'package:cc_domain/core/domain/entities/github_user.dart';
 import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/entities/workspace_member.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
-import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_server_core/src/identity/workspace_profile.dart';
 import 'package:test/test.dart';
 
@@ -107,73 +105,6 @@ void main() {
         workspaceId: 'ws-a',
       );
       expect(a, isNull);
-    });
-  });
-
-  group('resolveAgentCommitIdentity', () {
-    final other = User(
-      id: 'u-2',
-      handle: 'bo',
-      displayName: 'Bo',
-      email: 'bo@example.com',
-      gitAuthorName: 'Bo Git',
-      gitAuthorEmail: 'bo@git.example',
-      createdAt: created,
-    );
-    final users = _Users({user.id: user, other.id: other});
-    final members = _Members({});
-
-    Future<AgentCommitIdentity?> resolve(
-      String? userId, {
-      GitHubUser? account,
-    }) => resolveAgentCommitIdentity(
-      users: users,
-      members: members,
-      ownerUserId: user.id,
-      githubAccount: (_, _) async => account,
-      userId: userId,
-      workspaceId: 'ws-a',
-    );
-
-    test('the owner commits as themselves and may sign', () async {
-      expect(
-        await resolve(user.id),
-        AgentCommitIdentity.owner(name: 'Sam Git', email: 'sam@git.example'),
-      );
-    });
-
-    test('another member is author via their GitHub noreply; Control Center '
-        'commits, unsigned', () async {
-      final id = await resolve(
-        other.id,
-        account: const GitHubUser(login: 'bo', avatarUrl: '', id: 7),
-      );
-      expect(
-        id,
-        AgentCommitIdentity.member(
-          name: 'Bo Git',
-          email: '7+bo@users.noreply.github.com',
-        ),
-      );
-      expect(id!.mayHostSign, isFalse);
-    });
-
-    test(
-      'a member without GitHub authors with their workspace git email',
-      () async {
-        expect(
-          await resolve(other.id),
-          AgentCommitIdentity.member(name: 'Bo Git', email: 'bo@git.example'),
-        );
-      },
-    );
-
-    test('a run nobody requested is Control Center throughout', () async {
-      expect(await resolve(null), AgentCommitIdentity.unrequested());
-    });
-
-    test('an unknown requester has no identity', () async {
-      expect(await resolve('u-unknown'), isNull);
     });
   });
 }

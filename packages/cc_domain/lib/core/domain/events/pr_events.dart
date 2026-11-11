@@ -377,8 +377,7 @@ class PrCommentMentioned implements DomainEvent {
   /// Line the comment is anchored to, for a review comment.
   final int? line;
 
-  /// The Control Center user this concerns. Null on an older server; the
-  /// client then falls back to notifying rather than silently dropping.
+  /// The Control Center user this concerns.
   final String? forUserId;
 
   @override

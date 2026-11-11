@@ -2,7 +2,7 @@
 title: Configurer l’intégration Slack
 description: Connectez Slack à un espace de travail Control Center, au moyen de l’application Control Center partagée ou d’une application à vous, pour que les membres puissent piloter des agents depuis Slack.
 slug: fr-FR/manuel/guides/integration-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Ce guide vous montre comment connecter Slack à un espace de travail Control Center : en ajoutant l’application Control Center partagée, ou avec une application à vous, que Control Center crée pour vous ou que vous construisez vous-même.
@@ -28,18 +28,18 @@ Un espace de travail fonctionne avec exactement l’une des deux à la fois.
 
 | Mode | Il faut | Vous obtenez |
 | --- | --- | --- |
-| **Application Control Center partagée** | Que le serveur utilise Control Center Connect (**Paramètres → Serveur → Authentification unique**) et que Connect serve Slack | Un clic et une connexion à Slack. Aucune application à créer, aucun jeton à coller, rien à renouveler |
+| **Application Control Center partagée** | Que les applications de connexion de l’espace de travail passent par Control Center Connect (le choix du serveur dans **Paramètres → Serveur → Authentification unique**, ou celui de l’espace de travail dans **Paramètres → Espace de travail → Intégrations**) et que Connect serve Slack | Un clic et une connexion à Slack. Aucune application à créer, aucun jeton à coller, rien à renouveler |
 | **Votre propre application** | Une application Slack dans votre espace de travail Slack, obtenue de l’une des trois façons ci-dessous | Votre propre nom de bot, vos descriptions et votre commande slash, modifiables depuis Control Center |
 
 ### Ajouter l’application Control Center partagée
 
-1. Dans Control Center, allez dans **Paramètres → Espace de travail → Général** et faites défiler jusqu’à la carte **Ponts de messagerie**
+1. Dans Control Center, allez dans **Paramètres → Espace de travail → Intégrations** et faites défiler jusqu’à la carte **Ponts de messagerie**
 2. Dans le bloc Slack, repérez la ligne **Ajouter Control Center à Slack** et cliquez sur **Ajouter à Slack**
 3. Votre navigateur ouvre Slack. Connectez-vous avec Slack, choisissez l’espace de travail Slack et approuvez l’installation
 4. Lorsque le navigateur affiche un code, saisissez-le dans la boîte de dialogue que Control Center a laissée ouverte. Si le navigateur vous renvoie de lui-même vers l’application, il n’y a rien à saisir
 5. Un toast indique l’espace de travail Slack auquel l’application a été ajoutée, et le bloc Slack montre que la connexion fonctionne avec l’application Control Center partagée
 
-Seul un administrateur de l’espace de travail peut ajouter l’application. La ligne explique pourquoi l’installation ne peut pas démarrer lorsque le serveur utilise ses propres applications plutôt que Connect, lorsque votre Connect n’a pas d’application Slack, ou lorsque cet espace de travail a déjà connecté sa propre application Slack.
+Seul un administrateur de l’espace de travail peut ajouter l’application. La ligne explique pourquoi l’installation ne peut pas démarrer lorsque les applications de connexion de cet espace de travail sont ses propres applications plutôt que Connect, lorsque votre Connect n’a pas d’application Slack, ou lorsque cet espace de travail a déjà connecté sa propre application Slack.
 
 Ce qui la distingue de votre propre application :
 
@@ -65,7 +65,7 @@ Les événements de votre propre application ne passent jamais par Connect : le
 ## Option A : laisser Control Center créer l’application
 
 1. Générez une paire de jetons de configuration d’application sur [api.slack.com/apps](https://api.slack.com/apps) et copiez le jeton d’**actualisation** (`xoxe-…`)
-2. Dans Control Center, allez dans **Paramètres → Espace de travail → Général** et faites défiler jusqu’à la carte **Ponts de messagerie**
+2. Dans Control Center, allez dans **Paramètres → Espace de travail → Intégrations** et faites défiler jusqu’à la carte **Ponts de messagerie**
 3. Dans le bloc Slack, cliquez sur **Créer l’app pour moi**
 4. Collez le jeton, ajustez le nom de l’application, le nom du bot, les descriptions et la commande slash, puis cliquez sur **Créer l’app**
 5. Suivez les deux étapes restantes que montre la boîte de dialogue, chacune sous forme de lien vers Slack :
@@ -79,7 +79,7 @@ Le jeton de configuration est renouvelé à chaque utilisation. Control Center e
 
 La même application, sans jeton de configuration — Slack vous ouvre son propre écran de création avec tout le manifeste déjà rempli.
 
-1. Dans Control Center, allez dans **Paramètres → Espace de travail → Général** et faites défiler jusqu’à la carte **Ponts de messagerie**
+1. Dans Control Center, allez dans **Paramètres → Espace de travail → Intégrations** et faites défiler jusqu’à la carte **Ponts de messagerie**
 2. Dans le bloc Slack, cliquez sur **Créer l’app pour moi**
 3. Ajustez le nom de l’application, le nom du bot, les descriptions et la commande slash — ils voyagent avec le lien
 4. Cliquez sur **Créer dans Slack**. Votre navigateur ouvre la page de création d’application de Slack avec la configuration pré-remplie
@@ -133,7 +133,7 @@ message.im
 
 C’est ainsi que les jetons de votre propre application parviennent à Control Center. L’application partagée n’a besoin de rien de tout cela.
 
-1. Allez dans **Paramètres → Espace de travail → Général** et faites défiler jusqu’à la carte **Ponts de messagerie**
+1. Allez dans **Paramètres → Espace de travail → Intégrations** et faites défiler jusqu’à la carte **Ponts de messagerie**
 2. Dans le bloc Slack, cliquez sur **Connecter Slack**
 3. Renseignez les champs :
 
@@ -207,7 +207,7 @@ Tout membre lié disposant d’un rôle en écriture peut proposer un ticket dep
 /cc ticket Corriger le test de connexion instable | Il échoue sur la CI environ une fois par jour.
 ```
 
-Le texte avant le `|` est le titre, le texte après est la description. Le bot répond qu’il a rédigé un brouillon du ticket. Rien n’est encore créé et aucune automatisation de ticket ne se déclenche : le brouillon vous attend dans **Paramètres → Espace de travail → Profil et identité → Brouillons de tickets depuis le chat**, où vous pouvez corriger le titre et la description, puis cliquer sur **Créer le ticket** ou **Abandonner**.
+Le texte avant le `|` est le titre, le texte après est la description. Le bot répond qu’il a rédigé un brouillon du ticket. Rien n’est encore créé et aucune automatisation de ticket ne se déclenche : le brouillon vous attend dans **Paramètres → Vous → Profil → Brouillons de tickets depuis le chat**, où vous pouvez corriger le titre et la description, puis cliquer sur **Créer le ticket** ou **Abandonner**.
 
 - Seul le membre qui a lancé la commande voit le brouillon
 - Un brouillon que vous laissez de côté est supprimé au bout d’un jour. Les brouillons vivent en mémoire : un redémarrage du serveur les supprime donc aussi

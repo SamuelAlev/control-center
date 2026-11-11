@@ -2,7 +2,7 @@
 title: Votre premier espace de travail
 description: Créez un espace de travail, enregistrez-y un dépôt et constatez par vous-même la frontière d’isolation.
 slug: fr-FR/manuel/tutoriels/premier-espace-de-travail
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Ce que vous allez construire
@@ -11,10 +11,12 @@ sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
 
 - Un espace de travail nommé d’après votre projet
 - Un dépôt Git enregistré dedans
-- Cinq agents amorcés, dont l’un que vous aurez configuré assez bien pour qu’il s’exécute
+- Six agents amorcés, dont l’un que vous aurez configuré assez bien pour qu’il s’exécute
 - Un second espace de travail, vide, qui démontre la frontière d’isolation
 
 La configuration initiale vous a déjà créé un espace de travail. Ce tutoriel en crée un nouveau délibérément, pour que vous voyiez chaque étape du processus.
+
+Créer un espace de travail demande le propriétaire du serveur, la personne qui a installé le serveur. Sur un ordinateur qui exécute son propre serveur, c’est vous. Sur le serveur de quelqu’un d’autre, **Ajouter un espace de travail** affiche « Seul le propriétaire du serveur peut créer des espaces de travail. Demandez-lui d’en créer un, ou demandez à un administrateur d’espace de travail de vous inviter. » Faites l’une de ces deux choses, puis suivez le reste du tutoriel dans cet espace de travail. Enregistrer un dépôt à l’étape 2 demande un administrateur d’espace de travail, et le second espace de travail de l’étape 4 demande de nouveau le propriétaire du serveur.
 
 Avant de commencer, choisissez une copie de travail Git qui satisfait ces trois conditions — l’étape d’enregistrement refuse tout le reste :
 
@@ -35,12 +37,12 @@ Control Center bascule vers le nouvel espace de travail et aboutit sur sa boîte
 En coulisses, le serveur publie un événement `WorkspaceCreated` et amorce l’espace de travail avec :
 
 - un **agent CEO**, dont la persona est la coordination et la délégation
-- quatre spécialistes — `qa`, `architect`, `engineer` et `librarian` — chacun avec ses propres instructions et skills
+- cinq spécialistes — `qa`, `architect`, `engineer`, `librarian` et `content-synthesizer` — chacun avec ses propres instructions et skills
 - les modèles de pipeline intégrés et leurs lignes de déclencheur
 
 Chaque espace de travail que vous créez reçoit tout cela, pas seulement le premier.
 
-Vérifiez-le : ouvrez **Paramètres → Espace de travail → Agents**. Cinq agents figurent dans l’effectif, chacun avec un anneau d’état vide.
+Vérifiez-le : ouvrez **Paramètres → Espace de travail → Agents**. Six agents figurent dans l’effectif, chacun avec un anneau d’état vide.
 
 ## Étape 2 : Enregistrer un dépôt
 
@@ -57,7 +59,7 @@ Vérifiez-le : le dépôt apparaît dans la liste avec son `owner/repo` et sa b
 
 ## Étape 3 : Rendre un agent exécutable
 
-Les cinq agents que cet espace de travail vient d’amorcer n’ont ni adaptateur ni modèle. Le lancement les exécute sur **Control Center (built-in)** et, sans modèle défini, demande à Anthropic son modèle par défaut — ils ne fonctionnent donc que si vous avez connecté un compte Anthropic, et sur un modèle que vous n’avez pas choisi si c’est le cas. La configuration initiale au premier lancement inscrit son choix sur chaque agent du premier espace de travail, une seule fois ; un espace de travail que vous créez ensuite démarre avec les cinq non définis. Définissez-en un maintenant.
+Les six agents que cet espace de travail vient d’amorcer n’ont ni adaptateur ni modèle. Le lancement les exécute sur **Control Center (built-in)** et, sans modèle défini, demande à Anthropic son modèle par défaut — ils ne fonctionnent donc que si vous avez connecté un compte Anthropic, et sur un modèle que vous n’avez pas choisi si c’est le cas. La configuration initiale au premier lancement inscrit son choix sur chaque agent du premier espace de travail, une seule fois ; un espace de travail que vous créez ensuite démarre avec les six non définis. Définissez-en un maintenant.
 
 1. Ouvrez **Paramètres → Espace de travail → Agents**
 2. Sélectionnez `engineer` dans l’effectif
@@ -73,7 +75,7 @@ Chaque agent porte son propre adaptateur et son propre modèle, répétez donc l
 Créez un second espace de travail depuis la puce de la barre de titre, exactement comme à l’étape 1. Puis observez-le :
 
 - **Paramètres → Espace de travail → Dépôts** est vide. Le dépôt que vous avez enregistré il y a une minute n’y est pas.
-- **Paramètres → Espace de travail → Agents** contient cinq agents, mais ce sont des lignes différentes — l’adaptateur que vous avez défini à l’étape 3 a disparu.
+- **Paramètres → Espace de travail → Agents** contient six agents, mais ce sont des lignes différentes — l’adaptateur que vous avez défini à l’étape 3 a disparu.
 - La liste des espaces, les tickets et la mémoire sont tous vides.
 
 Rien n’a fuité, car il n’y a rien d’où fuiter : les lignes de chaque espace de travail vivent dans le fichier de base de données propre à cet espace de travail. Une lecture entre espaces de travail n’est pas une requête qui se fait filtrer, c’est une requête qui n’a nulle part où s’exécuter. Supprimer un espace de travail, c’est dissocier un fichier.
@@ -84,6 +86,6 @@ Pour le modèle complet, lisez [Espaces de travail et isolation](/fr-FR/manuel/c
 
 ## Récapitulatif
 
-Vous avez créé un espace de travail, l’avez vu amorcer un CEO et quatre spécialistes, y avez enregistré un dépôt, avez donné à un agent un adaptateur et un modèle, et avez confirmé qu’un second espace de travail n’en partage rien.
+Vous avez créé un espace de travail, l’avez vu amorcer un CEO et cinq spécialistes, y avez enregistré un dépôt, avez donné à un agent un adaptateur et un modèle, et avez confirmé qu’un second espace de travail n’en partage rien.
 
 **Suivant :** [Lancer votre premier agent](/fr-FR/manuel/tutoriels/premier-agent/) pour mettre l’espace de travail au travail.

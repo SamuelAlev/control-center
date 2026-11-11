@@ -2,7 +2,7 @@
 title: Hantar ejen penyemak
 description: Hantar ejen penyemak pakar ke sesuatu PR dari paparan PR, alat MCP atau langkah pipeline.
 slug: ms-MY/manual-pengguna/panduan-cara/hantar-ejen-penyemak
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Panduan ini menunjukkan cara menghantar ejen penyemak untuk menyemak pull
@@ -87,7 +87,7 @@ Dua peristiwa penting di sini dan kedua-duanya tidak boleh saling menggantikan:
 | Peristiwa              | Tercetus apabila                                                                                             | Kunci muatan                                                       |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
 | `PullRequestPublished` | Satu PR dibuka **melalui Control Center** — permukaan gubahan, atau ejen yang memanggil `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | Perkhidmatan pengundian PR menemui PR yang dibuka terus pada GitHub                                          | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | Perkhidmatan pengundian PR menemui PR yang dibuka terus pada GitHub                                          | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 PR yang dibuka pada github.com tidak pernah membangkitkan `PullRequestPublished`,
 jadi templat yang disambungkan hanya kepada peristiwa itu tidak akan

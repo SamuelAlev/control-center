@@ -14,6 +14,7 @@ import 'package:cc_infra/src/network/models/github_commit_status.dart';
 import 'package:cc_infra/src/network/models/github_issue_comment.dart';
 import 'package:cc_infra/src/network/models/github_job_run.dart';
 import 'package:cc_infra/src/network/models/github_label.dart';
+import 'package:cc_infra/src/network/models/github_pr_client_results.dart';
 import 'package:cc_infra/src/network/models/github_pr_stack.dart';
 import 'package:cc_infra/src/network/models/github_pull_request.dart';
 import 'package:cc_infra/src/network/models/github_pull_request_file.dart';
@@ -24,76 +25,6 @@ import 'package:cc_infra/src/network/models/github_team.dart';
 import 'package:cc_infra/src/network/models/github_timeline_event.dart';
 import 'package:cc_infra/src/network/models/github_workflow_run.dart';
 import 'package:rhttp/rhttp.dart';
-
-/// A page of pull request results with a flag indicating whether more pages
-/// are available.
-class PaginatedPullRequests {
-  /// Creates a [PaginatedPullRequests].
-  const PaginatedPullRequests({required this.items, required this.hasMore});
-
-  /// The pull requests in this page.
-  final List<GitHubPullRequest> items;
-
-  /// Whether there are more pages available.
-  final bool hasMore;
-}
-
-/// A page of pull request stacks with a flag indicating whether more pages
-/// are available.
-class PaginatedPrStacks {
-  /// Creates a [PaginatedPrStacks].
-  const PaginatedPrStacks({required this.items, required this.hasMore});
-
-  /// The stacks in this page.
-  final List<GitHubPrStack> items;
-
-  /// Whether there are more pages available.
-  final bool hasMore;
-}
-
-/// The result of comparing two branches (`base...head`): the changed files
-/// (same shape as the PR-files endpoint, so the diff viewer can render them
-/// directly) plus the commit count. Additions/deletions are summed from the
-/// files since the compare endpoint carries no top-level totals.
-class GitHubBranchComparison {
-  /// Creates a [GitHubBranchComparison].
-  const GitHubBranchComparison({
-    required this.files,
-    required this.totalCommits,
-    this.commits = const [],
-  });
-
-  /// The files changed between base and head.
-  final List<GitHubPullRequestFile> files;
-
-  /// Number of commits head is ahead of base.
-  final int totalCommits;
-
-  /// The commits between base and head (same shape as the PR-commits endpoint).
-  final List<GitHubCommit> commits;
-
-  /// Total lines added across all files.
-  int get additions => files.fold(0, (sum, f) => sum + f.additions);
-
-  /// Total lines deleted across all files.
-  int get deletions => files.fold(0, (sum, f) => sum + f.deletions);
-}
-
-/// The outcome of a conditional (ETag) open-PR list probe: whether GitHub
-/// reported a change since the caller's last ETag and the ETag to present on
-/// the next probe. A 304 response does not count against the REST rate limit,
-/// which is what makes a short polling cadence affordable.
-class ConditionalPrListProbe {
-  /// Creates a [ConditionalPrListProbe].
-  const ConditionalPrListProbe({required this.changed, this.etag});
-
-  /// True when the list changed (HTTP 200); false on 304 Not Modified.
-  final bool changed;
-
-  /// The response's ETag (present on 200; null on 304, where the caller keeps
-  /// its previous one).
-  final String? etag;
-}
 
 /// Client for GitHub PR-related REST API endpoints.
 class GitHubPrClient {
@@ -408,6 +339,72 @@ class GitHubPrClient {
         items: _decodeList(items, GitHubPullRequest.fromJson),
         hasMore: _hasNextPage(response),
       );
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
+  }
+
+  /// The pull requests [author] got merged since [mergedSince] across
+  /// [repoFullNames] (`owner/name`), in ONE search
+  /// (`is:pr is:merged author:<login> merged:>=<date> repo:a repo:b …`),
+  /// most recently updated first, at most [limit] of them. Each comes back
+  /// with the repository it belongs to, read off the issue-shaped result's
+  /// `repository_url`; a result outside [repoFullNames] is dropped. Callers
+  /// keep [repoFullNames] short (GitHub caps a query's length and its
+  /// boolean operators), chunking larger sets.
+  Future<List<({String repoFullName, GitHubPullRequest pr})>>
+  searchMergedPullRequestsByAuthor({
+    required String author,
+    required List<String> repoFullNames,
+    required DateTime mergedSince,
+    int limit = 50,
+    CancelToken? cancelToken,
+  }) async {
+    if (author.isEmpty || repoFullNames.isEmpty) {
+      return const [];
+    }
+    final wanted = {for (final r in repoFullNames) r.toLowerCase()};
+    final since = mergedSince.toUtc().toIso8601String().substring(0, 10);
+    final q = [
+      'is:pr',
+      'is:merged',
+      'author:$author',
+      'merged:>=$since',
+      for (final r in repoFullNames) 'repo:$r',
+    ].join(' ');
+    try {
+      final response = await _httpClient.get(
+        '/search/issues',
+        query: {
+          'q': q,
+          'per_page': '${limit.clamp(1, 100)}',
+          'sort': 'updated',
+          'order': 'desc',
+        },
+        cancelToken: cancelToken,
+      );
+      final map = httpJsonBody(response) as Map<String, dynamic>?;
+      final items = map?['items'] as List? ?? const [];
+      final out = <({String repoFullName, GitHubPullRequest pr})>[];
+      for (final item in items) {
+        if (item is! Map<String, dynamic>) {
+          continue;
+        }
+        final url = item['repository_url'] as String? ?? '';
+        final marker = url.indexOf('/repos/');
+        final fullName = marker < 0 ? '' : url.substring(marker + 7);
+        if (!wanted.contains(fullName.toLowerCase())) {
+          continue;
+        }
+        out.add((
+          repoFullName: fullName,
+          pr: GitHubPullRequest.fromJson(item),
+        ));
+      }
+      return out;
     } on RhttpException catch (e) {
       if (e is RhttpCancelException) {
         rethrow;

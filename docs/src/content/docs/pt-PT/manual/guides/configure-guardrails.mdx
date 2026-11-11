@@ -2,13 +2,13 @@
 title: Configurar guardrails
 description: Defina regras de permitir, perguntar primeiro e negar para as ações dos agentes, teste-as com a sonda «E se?» e ajuste a autonomia por espaço.
 slug: pt-PT/manual/guias/configurar-guardrails
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Este guia mostra-lhe como configurar as guardrails: as regras que decidem se a
 ação de um agente é executada, se pede aprovação primeiro ou se é recusada.
 
-As guardrails abrangem as treze classes de efeitos que cada ferramenta mutável
+As guardrails abrangem as catorze classes de efeitos que cada ferramenta mutável
 declara. São aplicadas do lado do servidor, no momento em que a ferramenta é
 chamada, nunca por uma instrução num prompt.
 
@@ -24,7 +24,7 @@ chamada, nunca por uma instrução num prompt.
    aparece no fim dessa linha (**Repor para o valor herdado**) — a decisão recai
    sobre o âmbito mais amplo
 
-Cada linha mostra a decisão efetiva como uma etiqueta de estado e um distintivo
+Cada linha mostra a configuração da ação como uma etiqueta de estado e um distintivo
 com a sua origem: **Este âmbito**, **Herdado** ou **Predefinição**. A matriz
 resolve-se no modo Agente (`chat`), pelo que **Predefinição do modo** nunca
 aparece aqui — use a sonda «E se?» com um modo só de leitura selecionado para
@@ -36,6 +36,18 @@ Ponto de verificação: defina **Fazer push para um remoto** como **Negar** no
 âmbito do espaço de trabalho e, em seguida, execute a sonda «E se?» abaixo com
 `git push origin main`. O resultado indica `deny` com origem `workspace`.
 
+## Rever e revogar aprovações temporárias
+
+Responder a um cartão de aprovação com **Aprovar durante 8 horas** escreve uma aprovação temporária: uma regra que deixa passar o mesmo tipo de ação sem perguntar até terminar. Cada uma aparece nesta página, debaixo da ação a que pertence.
+
+1. Aceda a **Definições → Espaço de trabalho → Permissões dos agentes** e escolha o âmbito. Uma aprovação é escrita para o espaço de onde veio a pergunta, por isso escolha **Espaço** e depois esse espaço
+2. Por baixo da linha da ação, leia a entrada: o que permite (por exemplo, pushes para branches que correspondem a `feature/**`), as palavras **Aprovação temporária**, quem a deu quando foi outra pessoa, e quando termina
+3. Para a terminar já, aponte para a entrada e carregue em **Revogar**. Os agentes voltam a perguntar a partir da sua ação seguinte
+
+A linha continua a mostrar a configuração da própria ação, e uma linha por baixo dela conta os casos listados abaixo que são permitidos mesmo assim. As regras condicionais que um modelo de política escreveu aparecem na mesma lista, e as regras de comando num grupo **Comandos** depois da última ação. No âmbito do espaço de trabalho, uma nota sob o resumo conta as aprovações temporárias definidas para espaços isolados ou agentes. Num espaço ou agente, conta as do espaço de trabalho, que também se aplicam aí.
+
+Uma aprovação temporária só dispensa uma pergunta. Nunca anula **Negar**: se puser uma ação em **Negar** enquanto houver uma em curso, a entrada dela mostra **sem efeito enquanto estiver em Negar** até terminar ou a revogar. Alterar a configuração de uma ação deixa as suas aprovações temporárias no lugar, e revogar uma deixa a configuração.
+
 ## Compreender como uma decisão é resolvida
 
 A resolução dá **primeiro prioridade à especificidade e depois à
@@ -45,7 +57,7 @@ restritividade**:
    O primeiro âmbito com uma regra correspondente decide e a resolução termina
    aí
 2. Se nenhuma regra corresponder, aplica-se a **predefinição do modo** — um modo
-   só de leitura (plan, review, orchestrate) recusa onze das treze classes
+   só de leitura (plan, review, orchestrate) recusa doze das catorze classes
 3. Se o modo não tiver nada a dizer, aplica-se a **predefinição**
 
 Dentro de um mesmo âmbito, uma regra de comando resolve-se pelo prefixo
@@ -75,7 +87,7 @@ recusada.
 | Criar um commit                   | Permitir         |
 | Fazer push para um remoto         | Perguntar primeiro |
 | Abrir um pull request             | Perguntar primeiro |
-| Publicar uma revisão ou fazer merge | Perguntar primeiro |
+| Atualizar ou fazer merge de um pull request | Perguntar primeiro |
 | Escrever num rastreador externo   | Perguntar primeiro |
 | Aceder à rede                     | Permitir         |
 | Ler um segredo                    | Permitir         |
@@ -83,6 +95,7 @@ recusada.
 | Executar um processo              | Permitir         |
 | Alterar a estrutura do espaço de trabalho | Permitir  |
 | Controlar um recinto (rig)        | Permitir         |
+| Executar comandos no host         | Perguntar primeiro |
 
 A taxonomia é fechada. Uma nova ferramenta lançada sem declarar as suas classes
 falha um teste de trinquete em CI, pelo que nada chega com um conjunto de efeitos
@@ -93,14 +106,13 @@ silenciosamente vazio.
 Antes de alterar uma regra, verifique como a política atual já a resolve.
 
 1. Na mesma página, desça até **E se?**
-2. Escolha uma **Ação** (uma das treze classes)
+2. Escolha uma **Ação** (uma das catorze classes)
 3. Opcionalmente, preencha **Comando** (por exemplo `git push origin main`),
    **Agente**, **Espaço** e **Modo**
 4. Leia o resultado: a decisão, o motivo e **Origem:**
 
 A sonda executa o mesmo resolvedor que o percurso de aplicação usa, sobre as suas
-regras em vigor, pelo que a resposta é exata. Se o resultado o surpreender,
-altere uma regra na matriz acima e volte a sondar.
+regras em vigor, pelo que a resposta é exata. Quando uma aprovação temporária decide, a origem mostra **Aprovação temporária** seguida do seu âmbito. Se a resposta o surpreender, altere uma regra na matriz acima e volte a sondar.
 
 ## Definir o dial de autonomia de um espaço
 

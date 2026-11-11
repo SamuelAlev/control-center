@@ -100,8 +100,13 @@ class ResolvedDapAdapter {
 /// host has a Go toolchain and says nothing about this checkout. Only both
 /// together mean a debug session can actually start, and offering a `debug`
 /// tool that always fails is worse than not offering it.
+///
+/// A spec's project-local bin dirs are searched only with [projectLocalBins]
+/// (the adapter runs in the run's sandbox): a binary the repository put there
+/// is the repository's program, and it never runs unconfined.
 List<ResolvedDapAdapter> detectDapAdapters(
   String root, {
+  required bool projectLocalBins,
   List<DapAdapterSpec> specs = kDapAdapters,
   String? Function(String command, List<String> localBinDirs, String root)?
   resolveBinary,
@@ -114,7 +119,11 @@ List<ResolvedDapAdapter> detectDapAdapters(
     )) {
       continue;
     }
-    final executable = resolve(spec.command, spec.localBinDirs, root);
+    final executable = resolve(
+      spec.command,
+      projectLocalBins ? spec.localBinDirs : const [],
+      root,
+    );
     if (executable == null) {
       continue;
     }

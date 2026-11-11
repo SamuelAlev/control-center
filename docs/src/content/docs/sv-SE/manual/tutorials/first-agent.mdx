@@ -2,7 +2,7 @@
 title: Starta din första agent
 description: Skapa en agent, ge den en yta och en uppgift och se körningen strömma tillbaka.
 slug: sv-SE/handbok/guider/forsta-agent
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Det här bygger du
@@ -76,7 +76,7 @@ Vad som begränsar körningen: dess egen copy-on-write-worktree, de inloggningsu
 
 **Kontrollpunkt.** En körningsrad som visar dess status, varaktighet, start- och sluttider och adaptern den kördes på.
 
-Agentens ändringar checkas in på samtalets gren, i dess worktree. Du står alltid som författare och committer med din Git-identitet från arbetsytan. Som standard krediterar `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` som medförfattare. Du kan stänga av den medförfattarkrediteringen under **Inställningar → Du → Tillskrivning av commits**, om inte en administratör har åsidosatt valet under **Inställningar → Arbetsyta → Allmänt**.
+Agentens ändringar checkas in på samtalets gren, i dess worktree. Eftersom du bad om körningen tillhör commitsen dig: du är författare och committer, under den adress din kodvärd har verifierat (din GitHub-noreply-adress från din GitHub-inloggning), och en `Co-Authored-By:`-rad krediterar Control Center om du inte har stängt av det. Om du inte är inloggad på kodvärden är commitsen i stället Control Center-bottens, och körningens anteckningar säger det.
 
 ## Skaffa en pull request
 

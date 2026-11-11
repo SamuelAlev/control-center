@@ -2,7 +2,7 @@
 title: Ruang kerja dan isolasi
 description: Mengapa ruang kerja merupakan batas penyewa yang keras, bagaimana pemisahan basis data membuat batas itu bersifat struktural, dan apa yang sengaja melintasinya.
 slug: id-ID/panduan-pengguna/konsep/ruang-kerja
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Apa itu ruang kerja?
@@ -79,9 +79,11 @@ Berkas ruang kerja hanya memuat `workspace_meta` satu baris untuk identifikasi d
 
 ## Membuat ruang kerja
 
+Hanya [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server) yang dapat membuat ruang kerja; server yang menerbitkan id-nya. Admin atau owner ruang kerja tidak dapat membuat ruang kerja lain. Seseorang yang belum berada di ruang kerja mana pun melihat **Anda belum berada di ruang kerja**, yang meminta mereka agar pemilik server membuatnya atau admin ruang kerja mengundang mereka, dan form **Tambah ruang kerja** menyampaikan hal yang sama kepada siapa pun selain mereka.
+
 Membuat ruang kerja melakukan lebih dari sekadar menyisipkan baris registri. Dalam satu operasi, server menstempel pengguna pembuat sebagai `ownerUserId`, mencatat keanggotaan peran owner pengguna itu, dan menerbitkan peristiwa domain `WorkspaceCreated`. Pendengar peristiwa itu kemudian menanam, secara idempoten dan di latar belakang:
 
-- seorang **agen CEO** plus empat spesialis — `qa`, `architect`, `engineer`, `librarian` — dengan para spesialis melapor kepada CEO;
+- seorang **agen CEO** plus lima spesialis — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — dengan para spesialis melapor kepada CEO;
 - **templat pipeline bawaan** beserta pemicunya (pemicu peristiwa dan manual langsung aktif sejak awal; yang terjadwal bersifat opt-in kecuali sapuan GC worktree harian);
 - **suite eval pemula**.
 
@@ -90,7 +92,7 @@ Ini terjadi pada _setiap_ ruang kerja, bukan hanya yang pertama. Agen hasil seed
 Penulisan keanggotaan owner lebih penting daripada kelihatannya: tanpanya, ruang kerja yang baru dibuat tidak akan punya anggota dan setiap panggilan bercakupan ruang kerja yang dilakukan pembuatnya berikutnya akan ditolak.
 
 :::note[Agen tidak dapat membuat ruang kerja]
-Tidak ada alat MCP `create_workspace`. Manusia membuat ruang kerja melalui `workspace.create` (titik pengunci hanya nama) atau `workspace.upsert` (rekaman penuh, juga dipakai untuk pembaruan). Keduanya menstempel pengguna pembuat sebagai `owner` dan menerbitkan `WorkspaceCreated`.
+Tidak ada alat MCP `create_workspace`. Pemilik server membuat ruang kerja melalui `workspace.create`, yang menstempelnya sebagai `owner` dan menerbitkan `WorkspaceCreated`. `workspace.upsert` hanya memperbarui ruang kerja yang sudah ada; ia tidak pernah membuat satu pun, dan tidak pernah mengubah owner ruang kerja, yang hanya dapat dilakukan oleh **Alihkan kepemilikan**.
 :::
 
 ## Menghapus, mengekspor, mengimpor
@@ -106,7 +108,7 @@ Karena satu ruang kerja adalah satu berkas, memindahkan ruang kerja adalah opera
 
 Operasi pencadangan berada di bawah **Pengaturan → Server → Cadangan & pemulihan**: **Cadangkan sekarang** mengambil snapshot pemasangan, daftarnya menunjukkan snapshot mana yang lengkap dan memungkinkan pemilik pemasangan menghapusnya setelah konfirmasi, dan setiap ruang kerja menawarkan ekspor dan impor. Pipeline bawaan **Workspace backup** hanya mengambil basis data ruang kerja itu dengan jadwal mingguan dan menghapus cadangannya sendiri yang lebih tua dari usia retensi yang dikonfigurasi. Cadangan itu ditampilkan per ruang kerja di halaman yang sama, tempat masing-masing dapat dipulihkan, diunduh, atau dihapus. Menghapus ruang kerja meninggalkan cadangannya agar pemilik pemasangan dapat mengambil atau menghapusnya, karena jadwal dan retensinya ikut berhenti bersamanya. Memulihkan sebuah ruang kerja dari snapshot pemasangan berarti `workspace.import` yang diarahkan ke `<workspaceId>/workspace.db` milik snapshot; memulihkan seluruh pemasangan tetap berupa penyalinan kembali direktori snapshot dengan server dihentikan.
 
-Yang tidak dibawa oleh satu pun dari operasi itu adalah sisa direktori ruang kerja. Ruang kerja mengakumulasi lebih dari sekadar basis data — gambar yang ditempel, berkas skill dan agen, kredensial chat, worktree — dan ekspor serta impor memindahkan **berkas** itu, sehingga semua yang ada di sampingnya tetap di tempatnya. Itu memang disengaja untuk kredensial dan dapat dibuang untuk worktree; untuk sisanya, ini adalah batasan yang perlu diketahui, bukan sebuah fitur. [Referensi cadangan](/id-ID/panduan-pengguna/referensi/cadangan/#what-a-backup-does-not-contain) memuat tabel lengkapnya.
+Yang tidak dibawa oleh satu pun dari operasi itu adalah sisa direktori ruang kerja. Ruang kerja mengakumulasi lebih dari sekadar basis data — gambar yang ditempel, berkas skill dan agen, kredensial chat, worktree — dan ekspor serta impor memindahkan **berkas** itu, sehingga semua yang ada di sampingnya tetap di tempatnya. Itu memang disengaja untuk kredensial dan dapat dibuang untuk worktree; untuk sisanya, ini adalah batasan yang perlu diketahui, bukan sebuah fitur. [Referensi cadangan](/id-ID/panduan-pengguna/referensi/cadangan/#apa-yang-tidak-dimuat-cadangan) memuat tabel lengkapnya.
 
 ## Memindahkan cadangan antara server dan perangkat Anda
 

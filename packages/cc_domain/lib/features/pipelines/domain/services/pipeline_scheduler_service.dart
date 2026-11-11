@@ -118,6 +118,7 @@ class PipelineSchedulerService {
             'planned_at': plannedAt.toIso8601String(),
           },
           dedupKey: '${trigger.id}:${plannedAt.toIso8601String()}',
+          armedByUserIds: trigger.armedByUserIds,
         );
       } on PipelineTemplateNotFoundError {
         // Retrying can't help: template deletion leaves its triggers behind.

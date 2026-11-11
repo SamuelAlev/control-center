@@ -2,14 +2,13 @@
 title: PR konuşmaları
 description: Bir GitHub PR yorumunun webhook olmadan nasıl bir ajan turuna dönüştüğü, yazarı neyin yetkilendirdiği ve konuşmanın her iki tarafının kime atfedildiği.
 slug: tr-TR/kilavuz/kavramlar/pr-konusmalari
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Kod hakkındaki konuşma zaten bir pull request'te gerçekleşir. PR konuşmaları
 onu bir Control Center çalışma alanında bir yüzey haline getirir; tıpkı bir
 [sohbet köprüsünün](/tr-TR/kilavuz/kavramlar/sohbet-kopruleri/) Slack'i böyle
-bir yüzey haline getirmesi gibi: bir PR'da `@usectrl`'ü (ya da çalışma alanının
-GitHub App botunu) @ ile anın, inceleme konularının içinde yanıtlayın veya
+bir yüzey haline getirmesi gibi: bir PR'da `@usectrl`'ü @ ile anın, inceleme konularının içinde yanıtlayın veya
 `ai-review` etiketini ekleyin ve iş, PR'ın inceleme alanında gerçekleşir —
 uygulamada yazılan her şeyle aynı atıf ve korumalar altında. Bir yorum ve bir
 etiket aynı şekilde denetlenir: onu yazan ya da ekleyen üyeye göre. Yanıtlar,
@@ -25,7 +24,7 @@ hangi yönde çalıştığı**, **dışarıdan gelen bir yorumu neyin yetkilendi
 GitHub'ın bir uygulama için sunduğu tek push kanalı bir webhook'tur ve bir
 webhook gelen bir URL gerektirir — bu yüzeyin bilinçli olarak asla talep
 etmediği tek şey. Dolayısıyla keşif bir taramadır: her uygulama kurulumu için
-takma adlı tek bir arama GitHub'dan botu (veya kısa slug'ını) anan PR'ları ve
+takma adlı tek bir arama GitHub'dan `@usectrl`'ı anan PR'ları ve
 inceleme etiketini taşıyan açık PR'ları ister, hâlihazırda bir inceleme alanı
 olan PR'ların yorum konuları okunur ve her şeyin farkı, yorum kimliği üzerinden
 son taramada görülenlere göre alınır. Kendi uygulama her dakika en fazla 25 PR
@@ -73,8 +72,8 @@ hiçbir şey gönderilmez:
 - **Oturum açmış bir üye.** Hesap, bu sunucuda GitHub'a oturum açmış _bu_
   çalışma alanının bir üyesine ait olmalıdır
 - **Yazma rolü.** `viewer` ve `guest` iş başlatamaz
-- **Push erişimi.** Yanıtlar, o üyenin depoya erişimiyle sınırlı bir `bot`
-  token'ı kullanır. Sunucu bunu üretemezse devam etmez
+- **Push erişimi.** Yanıtlar, yalnızca o tek depo için ve o üyenin depoya
+  erişimiyle sınırlı bir token kullanır. Sunucu bunu üretemezse devam etmez
 
 Her denetim herhangi bir onaydan önce çalışır; böylece bir yabancı ne bir tepki
 ne de bir yanıt alır. Bir yorum asla onu göndermeyen birine atfedilmez ve bir
@@ -94,15 +93,18 @@ her birine sunulur ve aynı sahiplenme karar verir.
 Konuşmanın her tarafı farklı bir kimlik taşır ve fark da özelliğin kendisidir:
 
 - **GitHub'da yanıt, sizin adınıza yapılan bir otomasyondur.** Her yanıt, o tek
-  depo için soran üyenin erişimiyle sınırlı bir `bot` token'ı kullanır. Kendi
-  uygulamada yazar, uygulamanın `[bot]` hesabıdır. Connect üzerinden paylaşılan
-  App için bir token bir kullanıcı token'ıdır; dolayısıyla yanıtın yazarı, App
-  aracılığıyla hareket eden soran üyenin hesabıdır. Her iki durumda da her yanıt
-  `**Control Center** (for @login):` ile başlar; bu, kimin sorduğunu söyler ve
-  aynı zamanda döngü koruması işlevi görür.
+  depo için soran üyenin erişimiyle sınırlı bir token ile gider ve uygulamanın
+  `[bot]` hesabı tarafından yazılır. Bir istisna var: paylaşılan Control Center
+  Connect uygulamasında bot, yalnızca Connect operatörü kurulumu listelediğinde
+  inceleme konularında yorum yazar; aksi hâlde bir inceleme konusunun içindeki
+  yanıt, soran üyenin kendi hesabıyla yazılır. Her iki
+  durumda da her yanıt `**Control Center** (for @login):` ile başlar; bu, kimin
+  sorduğunu söyler ve aynı zamanda döngü koruması işlevi görür. Bir ajanın
+  sözlerindeki @ anmaları etkisiz kılınır, böylece bir yanıt hiçbir kullanıcıyı
+  veya ekibi bilgilendirmez.
 - **Alanın içinde soru size aittir.** İleti, yazarın çözümlendiği üyeye
-  atfedilir ve ajan çalıştırması onun adına yürütülür: commit'ler onları ortak
-  yazar olarak gösterir ve alanın özerklik kadranı ile eylem korumaları, tıpkı
+  atfedilir ve ajan çalıştırması onun adına yürütülür: commit'ler onlarındır ve
+  alanın özerklik kadranı ile eylem korumaları, tıpkı
   uygulamada yazılan bir iletiye uygulandığı gibi uygulanır. Çalıştırmadan gelen
   forge yazmaları o üyeyle sınırlanmış tek depoluk token'lar kullanır, asla
   onun bütünüyle devredilmiş oturum açmasını değil.
@@ -111,23 +113,16 @@ Konuşmanın her tarafı farklı bir kimlik taşır ve fark da özelliğin kendi
 kararı olarak kalır. Bir anma bir incelemeyi _başlatabilir_; onu yalnızca bir
 insan yayımlar.
 
-## Döngü koruması ve kısa ad
+## Döngü koruması
 
 Bir bot hesabı tarafından yazılan her şey, herhangi bir denetim çalışmadan önce
 düşürülür — özellikle bizimki ve her `[bot]` son eki; böylece başka bir
 uygulamanın inceleme botu da bizimkini uyandıramaz — ve
 `**Control Center** (for @` önekiyle başlayan her yorum da düşürülür, çünkü
-Connect üzerinden yapılan bir yanıtı bir kişinin hesabı yazar. Bu olmasaydı
+Connect üzerinden bir inceleme konusu yanıtı bir kişinin hesabı tarafından yazılabilir. Bu olmasaydı
 yanıtlar yeni yorumlar olarak gelir ve köprüyü sonsuza dek yeniden tetiklerdi.
 
-`[bot]` son eki, kısa biçimin var olmasının nedenidir. GitHub bir uygulama
-hesabının giriş adını `<slug>[bot]` olarak sabitler, onun için otomatik
-tamamlama sunmaz ve `@slug`ı asla uygulamaya çözmez — dolayısıyla çıplak slug'ı
-kabul etmek _bizim_ eşleştiricimizin kararıdır ve bunun keşfi, GitHub'ın anma
-dizini yerine ham bir yorum **metni** arama kanalı gerektirir. Maliyet
-yumuşatılmadan belirtilir: uygulamanın slug'ını paylaşan bir insan kullanıcı,
-kendisinden yapılan her kısa biçimli anmayla bota seslenir. Kendine özgü
-uygulama adları bu çakışmayı varsayımsal kılar.
+Yalnızca `@usectrl` iş başlatır. Uygulamanın kendi girişi (`<slug>[bot]`) ve çıplak slug'ı hiçbir şeye hitap etmez: GitHub bir uygulama hesabı için otomatik tamamlama sunmaz ve çıplak bir slug bir insan kullanıcıya ait olabilir.
 
 ## Bilinçli olarak sunulmayanlar
 

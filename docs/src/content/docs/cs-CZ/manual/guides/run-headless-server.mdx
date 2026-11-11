@@ -3,7 +3,7 @@ title: Spusťte headless server
 description: Spusť headless binárku cc_server nebo její obraz pro Docker, spáruj s ní klienta a nastav ji přes celou plochu příznaků CLI a proměnných prostředí.
 dateModified: 2026-11-08
 slug: cs-CZ/prirucka/navody/spusteni-headless-serveru
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Spusť `cc_server` na stroji, který zůstane zapnutý, a připoj se k němu z počítače,
@@ -163,8 +163,10 @@ zařízení, tedy `desktop`, `ios`, `android`, a cokoli jiného je webový klien
 `--label` (výchozí je název platformy plus hostname tohohle stroje), `--host`
 (hostitel, který se vypíše do URL, protože loopback z jiného stroje není
 dosažitelný) a `--client-url`. Opakované `pair` tomu zařízení otočí klíč a
-shodí jeho živé relace. Párování pracovní prostor nikdy nezaloží: onboarding
-připojujícího se klienta ten první pojmenuje a vytvoří.
+shodí jeho živé relace. Párování pracovní prostor nikdy nezakládá. Pracovní prostory může vytvářet
+jen vlastník serveru: v klientovi vlastníka onboarding ten první pojmenuje a
+vytvoří, a ostatní čekají, dokud jim ho vlastník nevytvoří, nebo je nepozve
+admin pracovního prostoru.
 
 S `--client-url` navíc vypíše QR, které se dá naskenovat z terminálu a otevře
 webového klienta už vyplněného:
@@ -182,8 +184,7 @@ a klíč ve fragmentu URL. Telefonní aplikace **Remote** čeká jiný payload
 [Spárujte zařízení](/cs-CZ/prirucka/navody/parovani-zarizeni/).
 :::
 
-Pověření vystavené přes `cc_server pair` **neexpiruje**. Pověření vystavené
-v aplikaci vyprší vždy po 30 dnech. Zařízení vystavené z CLI odvolej v
+Pověření vystavené přes `cc_server pair` vyprší po 30 dnech, stejně jako to vystavené v aplikaci. Pro totéž zařízení spusť `pair` znovu, když chceš nové. Zařízení vystavené z CLI odvolej v
 **Nastavení → Vy → Vaše zařízení**, až ho nebudeš potřebovat.
 
 Párovací klíč ověřuje povinný handshake Noise; každá relace odvozuje čerstvé
@@ -232,6 +233,16 @@ klienti místo toho používají šifrovaný tunel.
 
 Server běží do `SIGINT`/`SIGTERM` a pak se čistě vypne.
 
+### Přečti řádky při startu
+
+Dva řádky ti řeknou, jak je tenhle server nastavený. Řádek o vystavení, vypsaný vedle úvodního banneru, začíná `cc_server exposure:` a uvádí, jak daleko jde server dosáhnout (`bind`, `tls`, `relay`, `tunnel`), zda je zaznamenaný vlastník serveru (`owner`) a jak na tomto stroji běží agenti (`sandbox`):
+
+- `sandbox=native`: každý běh agenta je obalen sandboxem operačního systému.
+- `sandbox=off`: server jsi spustil s `--sandbox off`, takže agenti všech členů běží na tomto stroji bez omezení.
+- `sandbox=unavailable`: hostitel nemá backend sandboxu (Windows, nebo Linux bez `bwrap` a `socat`), takže startují jen běhy agentů, za které odpovídá vlastník serveru. Běhy všech ostatních jsou odmítnuty hláškou „Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník.“
+
+Řádek sandboxu dřív v logu říká totéž slovy a, když chybí backend, uvádí, co nainstalovat. Spouštět cizí agenty bez sandboxu je volba, kterou vlastník serveru udělá jednou pro všechny pomocí `--sandbox off`. Viz [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/#zkontroluj-jestli-jsou-běhy-agenta-v-sandboxu).
+
 ## Krok 5: Připoj klienta
 
 Namiř klienta na URL serveru a párovací klíč z kroku 3:
@@ -257,6 +268,14 @@ aplikace. Jeho service worker vede HTTP i WebSocket provoz touž ověřenou
 šifrovanou relací jako zbytek klienta. `cc_server` každý požadavek dešifruje,
 předá ho svému lokálnímu backendu code-server a odpověď zašifruje zpět
 klientovi. Soubory zůstávají v držení serveru.
+
+Editor běží na serveru jako vlastní uživatel serveru, se svým terminálem, úlohami
+a rozšířeními, takže ho může otevřít jen [vlastník serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru).
+Relace patří zařízení a osobě, která ji otevřela. Otevírá se se zapnutou důvěrou
+pracovního prostoru ve VS Code, takže se VS Code před důvěrou ve složku zeptá,
+a s vypnutými automatickými úlohami, takže úlohy repozitáře se při otevření
+nespustí. Všichni ostatní zůstávají u vestavěného editoru aplikace a zobrazení
+souborů; plný editor jim nabízen není.
 
 Webového klienta hostuj přes HTTPS nebo zabezpečený origin loopbacku, aby
 service workery mohly běžet. Sdílené prostředky jsou součástí běžného sestavení
@@ -302,6 +321,8 @@ Přihlášení přes Connect končí kódem, který ukáže prohlížeč, takže
 ně nepotřebuje veřejnou adresu. Přihlášení přes vlastní aplikace serveru vrací
 prohlížeč na veřejnou URL serveru, takže nastav `--public-url` na adresu,
 na kterou prohlížeče lidí dosáhnou.
+
+Tohle je výchozí nastavení serveru. Admin pracovního prostoru může jednomu pracovnímu prostoru dát jinou volbu v **Nastavení → Pracovní prostor → Integrace**. S nastaveným `CC_CONNECT_URL` může pracovní prostor přejít na vlastní aplikace, ale ne na vlastní Connect; viz [Volba pro každý pracovní prostor](/cs-CZ/prirucka/referencni-prirucka/connect/#volba-pro-každý-pracovní-prostor).
 
 Chceš-li z tohoto serveru hostovat Connect pro jiné servery, nastav
 `CC_SERVER_CONNECT_HOST=on`; viz
@@ -351,7 +372,7 @@ párovacího klíče.
 Než port vystavíš mimo loopback, platí dvě věci (TLS samo o sobě nedodává
 spárovanému klientovi šifrování od konce ke konci ani neautorizuje prostředky):
 
-- **MCP mimo hostitele selhává do zamítnutí.** Plocha MCP bez tokenu odpovídá jen na loopback. Vazba `any` ji nerozšíří. Požadavek mimo hostitele se odmítne hláškou „MCP requires a bearer token to answer non-loopback clients“, dokud token nenastavíš (`mcp.setToken`, nebo **Nastavení → Server → Servery MCP**).
+- **MCP vždy potřebuje svůj token.** Server vytvoří token MCP při prvním startu a každý požadavek, včetně loopbacku, ho musí poslat jako `Authorization: Bearer <token>`. Nedá se vypnout; vlastník serveru ho čte a otáčí v **Nastavení → Server → Servery MCP**. Požadavky z webové stránky, na neznámý `Host`, nebo `POST`, který není JSON, se odmítnou dřív, než se token zkontroluje. Viz [Používejte MCP server](/cs-CZ/prirucka/navody/mcp-server/).
 - **`GET /healthz` je schválně bez ověření**, s CORS na všechny originy, a publikuje id serveru, název, otisk identity a verzi sestavení. Klienti otisk potřebují, aby si server připnuli, takže je to záměr. Znamená to ale, že každý dosažitelný `cc_server` tolik prozradí komukoli, kdo se zeptá.
 
 ## Související návody

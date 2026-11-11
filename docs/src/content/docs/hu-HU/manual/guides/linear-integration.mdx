@@ -2,7 +2,7 @@
 title: Linear-integráció beállítása
 description: Jelentkezzen be a Linearbe, csatlakoztassa a munkaterület Linear-automatizálását, és válassza a Lineart az új jegyek jegykezelő szolgáltatójának.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/linear-integracio
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 A Linearnek két identitása van a Control Centerben, és mindkettő böngészős
@@ -24,7 +24,7 @@ Control Center saját adatbázisán működik, külső szolgáltatás nélkül �
 
 ## A Linear kiválasztása a munkaterülethez
 
-1. Lépjen a **Beállítások → Munkaterület → Általános** helyre, és keresse meg a
+1. Lépjen a **Beállítások → Munkaterület → Integrációk** helyre, és keresse meg a
    **Jegykezelés** kártyát
 2. Állítsa a **Jegykezelő szolgáltató** értékét **Linear**-re
 
@@ -34,7 +34,7 @@ elrejti a Linear-sorokat: nincs mihez hitelesíteni.
 
 ## Bejelentkezés a Linearbe
 
-Ugyanazon a kártyán a **Linear** sor az Öné:
+Az Ön saját Linear-bejelentkezése a **Beállítások → Ön → Profil** oldalon, a **Jegykezelés** kártyán található:
 
 1. Kattintson a **Bejelentkezés: Linear** elemre
 2. Hagyja jóvá a böngészőben
@@ -47,9 +47,11 @@ Minden, amit a Control Centerből a Linearben tesz, ezen a bejelentkezésen fut,
 semmi máson. Ha nincs bejelentkezve, az alkalmazás bejelentkezést kér, ahelyett
 hogy valaki más nevében járna el.
 
+A bejelentkezés a szerveren minden munkaterületen működik, kivéve ha egy munkaterületnek saját bejelentkezési alkalmazásai vannak: az a munkaterület saját Linear-bejelentkezést tart fenn. A kártya megmutatja, melyik érvényes.
+
 ## A Linear-automatizálás csatlakoztatása
 
-A **Linear-automatizálás** sor a munkaterület Control Center-alkalmazása a
+A **Linear-automatizálás** sor, a **Jegykezelés** kártyán a **Beállítások → Munkaterület → Integrációk** oldalon, a munkaterület Control Center-alkalmazása a
 Linearben. A jegyszinkronizálás, a pipeline-ok és az ügynökök ezen keresztül
 írnak, így az automatikus issue-k és hozzászólások Control Centerként jelennek
 meg, nem egy személyként.
@@ -72,8 +74,8 @@ Saját alkalmazást akkor használjon, ha a **Saját alkalmazások használata**
 lehetőséget választották. A szerver saját alkalmazása csak ebben az esetben érvényes:
 Control Center vagy egyéni Connect esetén a Connect kezeli a Linearot is, a szerver
 alkalmazása és szolgáltatói API-kulcsa pedig mentve marad, de nincs használatban. A
-munkaterület saját alkalmazása ([lent](#egy-munkaterület-saját-linear-alkalmazásának-beállítása))
-minden módban érvényes.
+saját alkalmazásokkal rendelkező munkaterület ([lent](#egy-munkaterület-saját-linear-alkalmazásának-beállítása))
+a saját alkalmazását használja, a szerver módjától függetlenül.
 
 1. Hozzon létre egy OAuth-alkalmazást a
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -102,21 +104,17 @@ A munkaterület a szerver alkalmazása helyett saját alkalmazáson keresztül i
 Linearba. Ezt csak munkaterületi adminisztrátor vagy tulajdonos állíthatja be.
 
 1. Hozzon létre egy Linear OAuth-alkalmazást a fenti lépések szerint
-2. Nyissa meg a **Beállítások → Munkaterület → Általános → Szolgáltatói alkalmazások** menüpontot, és nyissa meg a **Linear** elemet
-3. Válassza a **A munkaterület saját alkalmazásának használata** lehetőséget
-4. Adja hozzá a Linear-alkalmazáshoz mindkét visszahívási URL-t, amely a sor **Callback URL** alatt jelenik meg, szó szerint
-5. Illessze be a **Kliens-ID**-t, és opcionálisan a **Szolgáltatási API-kulcsot** ehhez a munkaterület-automatizáláshoz
+2. Nyissa meg a **Beállítások → Munkaterület → Integrációk** oldalt. A **Control Center Connect** kártyán válassza a **Saját alkalmazások használata** lehetőséget, majd kattintson az **Alkalmazás** gombra
+3. A Jegykezelés alatt megjelenik a **Linear-alkalmazás** kártya. Adja hozzá a Linear-alkalmazáshoz mindkét visszahívási URL-t, amely a kártya **Callback URL** alatt jelenik meg, szó szerint
+4. Illessze be a **Kliens-ID**-t, és opcionálisan a **Szolgáltatási API-kulcsot** ehhez a munkaterület-automatizáláshoz
 
 A munkaterület alkalmazása ezen a munkaterületen minden Linear-bejelentkezést és automatizálási kérést kiszolgál, bárhogyan
 jelentkezteti be a szerver az embereket. Soha nem esik vissza a szerver alkalmazására vagy a Connectre: amíg nincs
-kliensazonosító megadva, a Linear ki van kapcsolva ebben a munkaterületen, és a sor megmondja, mi hiányzik. A
+kliensazonosító megadva, a Linear ki van kapcsolva ebben a munkaterületen, és a kártya mondja meg, mi hiányzik. A
 szolgáltatási API-kulcsa csak itt használatos; kulcs nélkül a szinkronizáláshoz a **Linear csatlakoztatása automatizáláshoz**
 szükséges.
 
-A szerver alkalmazása és a munkaterület alkalmazása közötti váltás, illetve a munkaterület kliensazonosítójának módosítása
-kijelentkezteti ebben a munkaterületen mindenkit a Linearból, és leválasztja az automatizálását. Az új alkalmazáson
-keresztül jelentkeznek be újra. A **szerver alkalmazásának használata** lehetőség törli a munkaterület mentett mezőit. A titkok
-csak írhatók: a sor csak azt mutatja, van-e mentett titok. A szerver többi munkaterülete nem érintett.
+**Saját alkalmazások használata** mindent lefed egyszerre: a GitHub, a Google Calendar és a GIF-keresés is csak a munkaterület saját alkalmazásain fut, mindegyik a szolgáltatója mellett, ugyanazon az oldalon beállítva. A munkaterület alkalmazásai közötti váltás, illetve a munkaterület kliensazonosítójának módosítása kijelentkezteti ebben a munkaterületen mindenkit a Linearból, és leválasztja az automatizálását. Az új alkalmazáson keresztül jelentkeznek be újra. A mentett mezők megmaradnak, ha a munkaterület más választásra vált, de csak a **Saját alkalmazások használata** alatt használják őket. A titkok csak írhatók: a kártya csak azt mutatja, van-e mentett titok. A szerver többi munkaterülete nem érintett.
 
 ## Hibaelhárítás
 
@@ -124,9 +122,8 @@ csak írhatók: a sor csak azt mutatja, van-e mentett titok. A szerver többi mu
 
 A szervernek nincs sem saját Linear-alkalmazása, sem Connectje. A szerver
 tulajdonosa a **Beállítások → Szerver → Egyszeri bejelentkezés** helyen
-választja ki az egyiket. Ha a munkaterület saját alkalmazást használ, a sor ehelyett azt
-mutatja, hogy a beállítása nincs befejezve: a munkaterület adminisztrátora a
-**Beállítások → Munkaterület → Általános → Szolgáltatói alkalmazások** helyen adja meg a kliensazonosítót.
+választja ki az egyiket. Ha a munkaterület saját alkalmazást használ, a kártya ehelyett azt
+mutatja, hogy a beállítása nincs befejezve: a munkaterület adminisztrátora a **Linear-alkalmazás** kártyán, a **Beállítások → Munkaterület → Integrációk** helyen adja meg a kliensazonosítót.
 
 ### A jegyszinkronizálás hitelesítési hibával meghiúsul
 

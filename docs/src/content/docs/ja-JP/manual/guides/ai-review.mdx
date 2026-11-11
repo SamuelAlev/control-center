@@ -2,7 +2,7 @@
 title: AI レビューを使う
 description: PR で pr_review パイプラインを実行し、指摘と判定を読み、そのレビューを GitHub に公開します。
 slug: ja-JP/マニュアル/ハウツーガイド/ai-レビュー
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 このガイドでは、レビュアーエージェントにプルリクエストをレビューさせ、その結果を
@@ -116,7 +116,7 @@ Control Center は **1 つ**の GitHub レビューを送信します。すで�
 却下済みの指摘はスキップされます。このボタンは残っているすべてのオープンな指摘を
 含み、**Ship** の場合は `APPROVE` を送信します。（MCP ツール
 `publish_review_to_github` はピアが確認した指摘のみをデフォルトとし、決して
-承認しません。自動化として公開するため、そこでは `approve_on_ship` は効果がありません。）ファイルと行のアンカーを持つ指摘は
+承認しません。その自動公開はボットが投稿します。ただし、Connect 運営者がこのインストールを登録していない共有の Control Center Connect アプリの場合は、責任を負う人自身の GitHub サインインで、その人の名前で送信されます。そこでは `approve_on_ship` は効果がありません。）ファイルと行のアンカーを持つ指摘は
 インラインコメントになり、それ以外はすべてサマリー本文にまとめられ、それぞれに
 「— Control Center AI review」というフッターが付くため、出所が曖昧になりません。
 **Block** の判定は `REQUEST_CHANGES` として、**Hold** は `COMMENT` として、
@@ -135,9 +135,7 @@ Control Center は **1 つ**の GitHub レビューを送信します。すで�
 してください。
 :::
 
-他の組み込みパイプラインは GitHub に直接投稿します：`cross_review`、`pr_triage`、
-`ticket_to_pr`、`pre_merge_gate` はいずれもコメントステップで終わります。
-`pr_review` だけが、その出力をあなたのために保留します。
+他の組み込みパイプラインは GitHub に直接投稿します：`cross_review`、`pr_triage`、`ticket_to_pr`、`pre_merge_gate` はいずれも、サーバーが投稿するコメントステップで終わります。`pr_review` だけが、その出力をあなたのために保留します。いずれもマージも承認もしません。
 
 ## レビュアーを自分でディスパッチする
 

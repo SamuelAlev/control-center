@@ -2,7 +2,7 @@
 title: Provisionar usuários com SCIM
 description: Deixe seu IdP criar, atualizar e desprovisionar contas do Control Center automaticamente.
 slug: pt-BR/manual/guias/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Use este guia quando você quiser controle de ciclo de vida — o desligamento de
@@ -34,8 +34,9 @@ outros) usam exatamente para isso.
    - **Autenticação**: `Authorization: Bearer <token>`
    - **ID do usuário**: `userName` (e-mail) ou `externalId` — ambos funcionam
 4. Teste com um usuário: envie-o a partir do IdP e confirme que ele aparece (a
-   criação via SCIM fixa o `externalId` do provedor na conta, a mesma fixação que um
-   primeiro login por SSO define).
+   criação via SCIM registra o `externalId` do provedor na conta, que é como as
+   chamadas SCIM posteriores a encontram), depois peça a essa pessoa que entre por
+   SSO antes de implantar para todos.
 
 ## O que o desprovisionamento faz
 
@@ -56,6 +57,7 @@ inclusão automática no momento do login.
 
 ## Solução de problemas
 
+- **Uma pessoa provisionada é recusada com "Esta conta já está vinculada a uma identidade SSO diferente"** — limitação conhecida: uma conta criada pelo SCIM com um `externalId` continua vinculada a esse id, e o primeiro login por SSO nela é recusado. Enquanto isso não for corrigido, provisione sem `externalId`, ou deixe o JIT criar a conta no primeiro login e use o SCIM apenas para desprovisionar.
 - **401 em todas as chamadas** — o token mudou; regenere-o e atualize o IdP.
 - **O endpoint não está acessível** — o túnel está fora do ar ou o servidor
   funciona apenas via relay. O SCIM precisa de HTTPS direto; o JIT continua

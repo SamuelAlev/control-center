@@ -2,7 +2,7 @@
 title: Peruntukkan pengguna dengan SCIM
 description: Biarkan IdP anda mencipta, mengemas kini dan menyahperuntukkan akaun Control Center secara automatik.
 slug: ms-MY/manual-pengguna/panduan-cara/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Gunakan panduan ini apabila anda mahukan kawalan kitaran hayat — pengeluaran
@@ -35,8 +35,9 @@ log masuk pada masa hadapan. SCIM ialah protokol tolak yang digunakan oleh IdP
    - **Authentication**: `Authorization: Bearer <token>`
    - **User id**: `userName` (e-mel) atau `externalId` — kedua-duanya sepadan
 4. Uji dengan seorang pengguna: tolak mereka dari IdP, sahkan mereka muncul
-   (penciptaan SCIM menyematkan `externalId` penyedia pada akaun itu, penyematan
-   yang sama seperti yang ditetapkan oleh log masuk SSO pertama).
+   (penciptaan SCIM merekodkan `externalId` penyedia pada akaun itu, dan
+   begitulah panggilan SCIM kemudian mencarinya), kemudian minta orang itu log
+   masuk melalui SSO sebelum anda melancarkannya kepada semua orang.
 
 ## Apa yang berlaku semasa nyahperuntukan
 
@@ -57,6 +58,7 @@ ahli automatik semasa log masuk.
 
 ## Penyelesaian masalah
 
+- **Seorang yang diperuntukkan ditolak dengan mesej "Akaun ini sudah dipautkan kepada identiti SSO yang berbeza"** — had yang diketahui: akaun yang dicipta SCIM dengan `externalId` kekal terikat kepada id itu, dan log masuk SSO pertama kepadanya ditolak. Sehingga ini dibetulkan, peruntukkan tanpa `externalId`, atau biarkan peruntukan just-in-time mencipta akaun pada log masuk pertama dan gunakan SCIM untuk penyahperuntukan sahaja.
 - **401 pada setiap panggilan** — token telah berubah; jana semula dan kemas
   kini IdP.
 - **Titik akhir tidak dapat dicapai** — terowong terputus, atau pelayan itu

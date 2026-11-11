@@ -2,7 +2,7 @@
 title: 创建流水线模板
 description: 在流水线编辑器中编写 DAG 工作流模板——添加节点、连接它们、声明输入，并让它可运行。
 slug: zh-CN/手册/操作指南/创建流水线
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 流水线模板在工作区设置中编写。工作区侧边栏中的 **流水线** 入口是_运行队列_，
@@ -35,7 +35,7 @@ sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 | **Bash script**                 | listen   | 运行带 `{{state}}` 替换的 shell 脚本；不派发智能体                                      |
 | **Open conversation**           | listen   | 打开这次运行唯一可见的空间及其检出；智能体节点会加入这个房间                            |
 | **Clone PR branch**             | listen   | 通过 `gh pr view` 找出 PR 的 head 分支，并将其克隆到运行目录                             |
-| **Post PR comment**             | listen   | 把汇总后的发现项作为一条 GitHub 审查评论发布到该 PR                                     |
+| **Post PR comment**             | listen   | 由服务器在该 PR 上发布一条审查评论：汇总后的发现项，或其 `message`                                     |
 | **Reviewer (prompt)**           | listen   | 派发专门的审查智能体；挂起直到该智能体提交结果                                          |
 | **Consolidate (join)**          | join     | 等待多个上游分支，然后让一个智能体汇总它们的输出                                        |
 | **Custom prompt**               | listen   | 经由 `promptAgent` 主体路由的通用提示词驱动节点                                         |
@@ -116,6 +116,7 @@ sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 - 当流水线指明了与工作区关联的 GitHub 仓库（状态或触发载荷中的 `repo_full_name`）时，
   `GH_TOKEN` 与 `GITHUB_TOKEN` 会持有一个只能读取该仓库的令牌，因此针对它的 `gh` 和
   `git clone` 无需配置即可使用。否则不存在 GitHub 令牌。
+- 脚本无法写入 GitHub：在该令牌上，`gh pr comment`、`gh pr merge`、`gh pr create` 与 `git push` 都会失败。请改用 **Post PR comment** 节点发表评论（将 `extras.message` 设为你自己的文本，可使用 `{{key}}` 占位符，而非汇总后的发现项）。推送并打开 pull request 请在智能体节点中进行：其 `git push` 经由运行网关，并且它使用 `open_pull_request` 工具打开 PR。合并交由人处理；没有任何节点会合并。
 - 只有工作区管理员才能创建或编辑包含 bash 步骤的流水线。
 - 脚本以字面可执行文件 `bash` 启动，因此服务器主机的 `PATH` 中必须有 `bash`。
   这是 Windows 上的一个考虑事项。

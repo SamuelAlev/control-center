@@ -2,13 +2,16 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/settings/settings_nav.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
+import 'package:control_center/router/routes.dart';
+import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:control_center/shared/widgets/command_palette.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// Settings destinations in the same order and with the same visibility as the
-/// settings sidebar.
+/// settings sidebar, plus the one part of a page people look for by its own
+/// name: the connected accounts on the profile.
 class _SettingsCommandSource implements CommandSource {
   @override
   String get id => 'settings';
@@ -27,12 +30,17 @@ class _SettingsCommandSource implements CommandSource {
     }
 
     final isServerOwner = ref.watch(isServerOwnerProvider);
+    final isWorkspaceAdmin = ref.watch(isWorkspaceAdminAnywhereProvider);
     final router = GoRouter.of(context);
     final l10n = AppLocalizations.of(context);
     return [
       for (final group in kSettingsNav)
         for (final item in group.items)
-          if ((!item.ownerOnly || isServerOwner) && item.availableHere)
+          if (item.shownTo(
+                isServerOwner: isServerOwner,
+                isWorkspaceAdmin: isWorkspaceAdmin,
+              ) &&
+              item.availableHere) ...[
             CommandItem(
               id: 'settings:${item.id}',
               label: item.label(l10n),
@@ -41,6 +49,16 @@ class _SettingsCommandSource implements CommandSource {
               icon: item.icon,
               onExecute: () => router.go(item.route(workspaceId)),
             ),
+            if (item.id == 'you.profile')
+              CommandItem(
+                id: 'settings:you.profile.accounts',
+                label: l10n.linkedAccountsTitle,
+                description: group.label(l10n),
+                category: l10n.settingsLabel,
+                icon: AppIcons.keyRound,
+                onExecute: () => router.go(settingsAccountsRoute(workspaceId)),
+              ),
+          ],
     ];
   }
 }

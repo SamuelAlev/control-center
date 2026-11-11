@@ -56,8 +56,7 @@ There is no pending-then-approve step: a minted device is active from the
 moment it is created and the connect gate checks only that the credential is
 active and unexpired. Treat the QR and the pairing key like a password and
 revoke anything you did not mean to hand out. Both direct and relayed client
-sessions require end-to-end encryption; older clients cannot fall back to
-plaintext RPC.
+sessions require end-to-end encryption; there is no plaintext RPC.
 :::
 
 ## Manage paired devices
@@ -71,9 +70,10 @@ Revoking is the right move for a lost or replaced phone. It is immediate and
 irreversible from the device's perspective.
 
 Credentials minted from this panel are time-boxed: they expire 30 days after they
-are issued and the connect gate fails them closed after that. A credential
-minted with `cc_server pair` on the command line carries **no expiry at all** —
-revoke it by hand when the machine it was for is retired.
+are issued and the connect gate fails them closed after that. A credential minted
+with `cc_server pair` on the command line expires the same way; run `pair` again
+to issue a fresh one, and revoke it by hand when the machine it was for is
+retired.
 
 ## Switch workspaces from the phone
 

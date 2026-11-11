@@ -2,7 +2,7 @@
 title: Připojte se ke vzdálenému serveru
 description: Namiř aplikaci pro počítač nebo webového klienta na cc_server, který běží jinde, a přepínej mezi servery bez restartu.
 slug: cs-CZ/prirucka/navody/pripojeni-ke-vzdalenemu-serveru
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Každý klient jen vykresluje `cc_server`, který vlastní data. Desktop si umí
@@ -84,6 +84,8 @@ vede požadavky stávající ověřenou šifrovanou relací k backendu code-serv
 `cc_server`. Webového klienta hostuj přes HTTPS nebo zabezpečený loopback, aby
 byly service workery dostupné. Nativní klienti používají fasádu loopback
 s rozsahem podle schopnosti.
+
+Editor code-server na serveru smí otevřít jen vlastník serveru: běží na serveru pod jeho vlastním uživatelem. Relace patří zařízení a člověku, který ji otevřel. Otevírá se se zapnutou důvěrou pracovního prostoru VS Code, takže se VS Code před důvěrou složce zeptá, a s vypnutými automatickými úlohami. Ostatní zůstávají u vestavěného editoru jednoho souboru a zobrazení souborů.
 :::
 
 ### Co prohlížeč nedělá
@@ -97,9 +99,9 @@ potřebuje nativní okno nebo zařízení samotného stroje:
 - souhrn schůzky znovu nespustíš a ten, který se zpracovává, nezrušíš
 
 Dvě věci fungují, jen jinak. **Nahrávání** schůzky v prohlížeči funguje: bere
-mikrofon a sdílení obrazovky se zvukovou stopou. **Otevřít v IDE** funguje
-taky, ale požádá server, aby editor spustil na displeji _serveru_. Tlačítko se
-proto schová, když je hostitel bez rozhraní a nemá nainstalovaný žádný editor.
+mikrofon a sdílení obrazovky se zvukovou stopou. Tlačítko pojmenované podle tvého editoru (například **Otevřít v VS Code**) požádá
+server, aby editor spustil na displeji _serveru_, takže ho nabízí jen vlastník serveru, a tlačítko se
+schová, když je hostitel bez rozhraní a nemá nainstalovaný žádný editor.
 
 ## Řešení problémů
 

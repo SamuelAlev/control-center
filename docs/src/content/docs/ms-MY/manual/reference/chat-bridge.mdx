@@ -2,7 +2,7 @@
 title: Jambatan sembang
 description: Penyedia, perintah, kelayakan, keupayaan, operasi RPC dan storan untuk jambatan sembang.
 slug: ms-MY/manual-pengguna/rujukan/jambatan-sembang
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Penyedia
@@ -150,7 +150,7 @@ Kad itu terbuka apabila sebutan diterima, sebelum klon dan sebelum token pertama
 | Sebutan diterima            | `Working on it…`                                               |
 | Langkah `repo`              | `Cloning <repo>…`                                              |
 | Langkah `prCheckout`        | `Checking out the pull request in <repo>…`                     |
-| Langkah `script`            | `Running the setup script for <repo>…`                         |
+| Langkah `provisionTasks`    | `Running worktree tasks for <repo>…`                           |
 | Langkah `agent`             | `Setting up <agent>…`                                          |
 | `provisioning`, belum ada langkah | `Preparing the workspace…`                               |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Ia wujud kerana pemautan berlaku di _sisi lain_: ahli menaip kod sekali guna itu
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Kelayakan sambungan        | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Persediaan berpandu yang separuh siap | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                   |
-| Fail Slack legasi          | `<dataDir>/<workspaceId>/slack_credentials.json` dan `slack_app_setup.json`, dibaca sekali dan dihijrahkan di tempatnya |
 
 Kelayakan berada di sisi pangkalan data ruang kerja, bukan di dalamnya: memadam ruang kerja akan membawa token sembangnya bersama dan `workspace.export` atau sandaran menyalin `workspace.db` — jadi ruang kerja yang diserahkan kepada orang lain tidak membawa token bot yang masih aktif. Penulisan bersifat atomik (fail sementara serta penamaan semula) dan diketatkan kepada pemilik sahaja.
 

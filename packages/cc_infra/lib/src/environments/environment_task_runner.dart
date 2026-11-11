@@ -165,6 +165,8 @@ class EnvironmentTaskRunner {
           tail.addLine(isStderr ? '[stderr] $line' : line);
         case EnvironmentCommandProgress(:final progress):
           tail.addLine('[${progress.type}] ${progress.label ?? ''}');
+        case EnvironmentCommandExit():
+          break;
       }
       scheduleFlush();
       onEvent?.call(event);

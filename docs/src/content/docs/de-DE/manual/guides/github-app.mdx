@@ -1,8 +1,8 @@
 ---
 title: Die GitHub App erstellen
-description: Gib deinem Server mit einem Klick eine eigene GitHub App, installiere sie dort, wo deine Repositories liegen, und autorisiere den Server für die Installation einer Organisation.
+description: Gib deinem Server mit einem Klick eine eigene GitHub App und installiere sie dort, wo deine Repositories liegen, damit alle in der Organisation sie von jedem Server aus nutzen können.
 slug: de-DE/handbuch/anleitungen/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Diese Anleitung zeigt, wie du deinem Server eine eigene GitHub App gibst. Sie
@@ -38,9 +38,9 @@ Mitglied, das pushen darf. Automatisierung genehmigt nie einen Pull Request.
 Die App des Servers gilt nur unter **Eigene Apps verwenden**. Mit Apps von
 Control Center oder einem eigenen Connect-Server läuft Connect jede Spur, GitHub
 eingeschlossen; die App des Servers bleibt gespeichert, aber ungenutzt, bis du
-zurückwechselst. Eine App des Arbeitsbereichs
-([Einem Arbeitsbereich eine andere App geben](#einem-arbeitsbereich-eine-andere-app-geben))
-gilt weiterhin in jedem Modus. Eine App, der einige
+zurückwechselst. Ein Arbeitsbereich mit eigenen Apps
+([Einem Arbeitsbereich eine eigene App geben](#einem-arbeitsbereich-eine-eigene-app-geben))
+nutzt stattdessen seine eigene App, unabhängig vom Modus des Servers. Eine App, der einige
 Felder fehlen, ist ein Fehler und kein Rückfall: GitHub-Anmeldungen werden
 abgelehnt, bis jedes Feld gesetzt ist.
 
@@ -101,27 +101,27 @@ und sonst nichts lesen.
 2. Wähle **All repositories**, oder die Repositories, die dieser Server sehen soll
 
 Um sie später auf einem anderen Konto zu installieren, geht ein Administrator
-des Arbeitsbereichs zu **Einstellungen → Arbeitsbereich → Allgemein**, sucht auf
-der Karte GitHub-Identität den Eintrag **GitHub-App-Installationen** und klickt
+des Arbeitsbereichs zu **Einstellungen → Arbeitsbereich → Integrationen**, sucht auf
+der Karte **GitHub-App** unter Code-Hosting den Eintrag **GitHub-App-Installationen** und klickt
 auf **GitHub-App installieren**. Die Liste zeigt jedes Konto, auf dem die App
 installiert ist, und markiert eine gesperrte Installation.
 
-## Diesen Server für eine Organisation autorisieren
+## Die Installation einer Organisation teilen
 
-Bei der gemeinsamen App von Control Center bedient die Installation einer
-Organisation nur die Server, die ihre Administratoren autorisiert haben. Eine
-Installation über **GitHub-App installieren** autorisiert den Server, der sie
-gestartet hat. Für eine Installation, die schon existiert:
+Eine Organisation installiert die GitHub App einmal. Danach kann jede Person
+darin, die sich auf einem Control-Center-Server bei GitHub anmeldet, die
+Installation nutzen, auf welchem Server auch immer: auf deinem, dem einer
+Kollegin oder auf einem eigenen. Pro Server muss nichts freigegeben werden.
 
-1. Ein Administrator dieser Organisation meldet sich auf diesem Server bei
-   GitHub an
-2. Er öffnet **Einstellungen → Arbeitsbereich → Allgemein →
-   GitHub-App-Installationen**
-3. Die Zeile der Organisation zeigt **Nicht autorisiert**. Er klickt auf
-   **Diesen Server autorisieren**
+Jedes Token, das ein Server bekommt, gehört der angemeldeten Person selbst, ist
+auf ein Repository und auf ihre Rolle darin begrenzt und reicht daher nie weiter,
+als sie es auf GitHub könnte. Das Audit-Log von GitHub zeigt diese Person, die
+über die App handelt.
 
-Danach zeigt die Zeile **Autorisiert**. Deine eigene App braucht nichts davon:
-Jede ihrer Installationen gehört zu deinem Server.
+Um Control Center den Zugriff auf eine Organisation zu entziehen, entfernt ein
+Owner der Organisation die Installation oder verengt ihre Repositories auf
+GitHub. Wird eine Person aus der Organisation entfernt, verliert sie ebenfalls
+den Zugriff.
 
 ## Stattdessen von Hand registrieren
 
@@ -161,22 +161,20 @@ bewahre sie in der `.env`-Datei auf (in Docker eingehängt unter
 `/app/bin/.env`). Das Belegen passiert **einmal je Feld**, eine Änderung unter
 Einstellungen macht der nächste Neustart also nicht rückgängig.
 
-## Einem Arbeitsbereich eine andere App geben
+## Einem Arbeitsbereich eine eigene App geben
 
-Ein Arbeitsbereich kann statt der App des Servers eine eigene nutzen. Ein
-Administrator des Arbeitsbereichs geht zu **Einstellungen → Arbeitsbereich →
-Allgemein**, wählt auf der Karte **GitHub-Identität** die Option **Eine andere
-GitHub-App verwenden** und trägt ID, privaten Schlüssel, Client-ID und
-Client-Secret dieser App ein. Mitglieder melden sich dann für diesen
-Arbeitsbereich bei dieser App an. Ein Arbeitsbereich mit eigener App fällt nie
-auf die App des Servers oder auf Connect zurück: Solange ihre Felder nicht
-vollständig sind, wird seine GitHub-Arbeit abgelehnt. Sie gilt unabhängig davon,
-wie der Server Personen anmeldet, auch über Connect.
+Ein Arbeitsbereich kann statt der App des Servers eine eigene nutzen:
 
-Die Karte **Anbieter-Apps** auf derselben Seite macht dasselbe für Google
-Calendar, Linear und die GIF-Suche. Siehe
+1. Ein Administrator des Arbeitsbereichs geht zu **Einstellungen → Arbeitsbereich → Integrationen**
+2. Auf der Karte **Control Center Connect** wählt er **Eigene Apps verwenden** und klickt auf **Anwenden**. Alle im Arbeitsbereich melden sich danach erneut über die Apps des Arbeitsbereichs an
+3. Die Karte **GitHub App** unter Code-Hosting enthält jetzt die Felder der App: **App-ID** und **Privater Schlüssel** unter **Handelt für diesen Arbeitsbereich**, **Client-ID** und **Client-Secret** unter **Personen anmelden**. Klicke auf **Testen**, sobald sie gesetzt sind
+
+Mitglieder melden sich dann für diesen Arbeitsbereich bei dieser App an. Ein Arbeitsbereich mit eigenen Apps fällt nie auf die App des Servers oder auf Connect zurück: Solange ihre Felder nicht vollständig sind, wird seine GitHub-Arbeit abgelehnt.
+Dasselbe gilt für Google
+Calendar, Linear und die GIF-Suche, jeweils mit eigenen Feldern neben ihrem Anbieter auf derselben Seite. Siehe
 [Einem Arbeitsbereich eine eigene Linear-Anwendung geben](/de-DE/handbuch/anleitungen/linear-integration/#einem-arbeitsbereich-eine-eigene-linear-anwendung-geben)
 und [Einem Arbeitsbereich einen eigenen Google-Client geben](/de-DE/handbuch/anleitungen/kalender-verbinden/#einem-arbeitsbereich-einen-eigenen-google-client-geben).
+Die anderen Optionen auf dieser Karte und was jede davon bewirkt, stehen unter [Die Wahl je Arbeitsbereich](/de-DE/handbuch/referenz/connect/#die-wahl-je-arbeitsbereich).
 
 ## Fehlersuche
 
@@ -194,7 +192,7 @@ Fang in den Einstellungen neu an.
 
 Registrierung und Installation sind getrennte Schritte. Öffne die
 Installationsseite der App oder nutze **GitHub-App installieren** unter
-Arbeitsbereich → Allgemein.
+Arbeitsbereich → Integrationen.
 
 ### Testen sagt, der private Schlüssel ließ sich nicht lesen
 

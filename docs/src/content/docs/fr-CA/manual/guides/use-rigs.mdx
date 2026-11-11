@@ -2,7 +2,7 @@
 title: Donner une machine de test à un agent
 description: Donnez à un agent un navigateur, un bureau, un émulateur Android ou un simulateur iOS jetable — observé en direct, avec des commandes que vous pouvez prendre en main.
 slug: fr-CA/manuel/guides/utiliser-rigs
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Un **rig** est une machine jetable qu'un agent ouvre quand il doit vraiment
@@ -137,6 +137,36 @@ Cliquez sur **Arrêter la machine** quand vous avez terminé.
 
 Le contrôle est exclusif à dessein : deux acteurs qui tapent dans une même
 machine produisent des entrées qu'aucun des deux ne voulait.
+
+### Qui peut regarder et qui peut piloter
+
+Une machine ouverte dans un espace suit les dépôts de cet espace, de la même façon
+que l'espace lui-même (voir [Les espaces suivent leurs dépôts](/fr-CA/manuel/concepts/autorisation/#les-espaces-suivent-leurs-dépôts)) :
+
+- **La regarder** exige un droit de lecture sur l'espace : une autorisation de
+  lecture sur chaque dépôt que l'espace expose, et votre propre connexion à la
+  forge capable de lire chacun d'eux. Regarder couvre la liste des machines,
+  l'écran, le son, l'état du navigateur, ses ports, ainsi que la lecture de son
+  presse-papiers et de ses fichiers.
+- **La piloter** exige en plus une [autorisation d'écriture](/fr-CA/manuel/concepts/autorisation/#modifier-du-code-exige-lautorisation-décriture)
+  sur ces dépôts. Piloter couvre l'ouverture d'une machine dans l'espace, la saisie
+  et les clics, la prise de contrôle, le démarrage, l'arrêt et la fermeture, le
+  transfert de ses ports, l'écriture dans son presse-papiers, le dépôt de fichiers
+  sur elle et l'utilisation du microphone.
+
+Avec un droit de lecture seul, la machine affiche **Consultation uniquement** et
+« Vous pouvez observer cette machine. La piloter, rediriger ses ports, y coller du contenu ou y déposer des fichiers nécessite un accès en écriture à tous les dépôts de cet espace. » Sous le bouton **Démarrer la machine** désactivé, l'onglet
+indique « Démarrer une machine ici nécessite un accès en écriture à tous les dépôts de cet espace. Un administrateur de l'espace de travail peut l'accorder. » Sans
+droit de lecture, la machine n'est pas affichée, seulement « Vous ne pouvez pas
+afficher cette machine. Elle appartient à un espace auquel vous n'avez pas accès en
+lecture. »
+
+Une machine qui n'appartient à aucun espace n'atteint aucun arbre de travail, et
+chaque membre de l'espace de travail peut la regarder et la piloter.
+
+Une machine qui porte les connexions d'une seule personne lui appartient pour la piloter : son terminal machine, ou toute machine ouverte pour elle dont l'accès réseau atteint une forge. Seule cette personne, et les exécutions d'agent qui n'agissent que pour elle, peuvent la piloter. Les administrateurs d'espace de travail et le propriétaire du serveur ne font pas exception. Les autres que l'espace admet peuvent encore observer son écran, son son, son état et ses ports, mais ne peuvent pas la piloter, transférer ses ports, y coller du contenu, y déposer des fichiers, en copier ni lire son presse-papiers. Une telle machine affiche **Consultation uniquement** avec cette note : « Vous pouvez observer cette machine. Elle utilise les connexions de la personne pour qui elle a été ouverte : seule cette personne peut la piloter, rediriger ses ports, y coller du contenu ou y déposer des fichiers. » Une action refusée pour cette raison répond : « Seule la personne pour qui cette machine a été ouverte peut la piloter. Elle utilise ses propres connexions. » Le terminal machine d'une autre personne n'apparaît pas du tout pour vous, pas plus que ses sessions de terminal.
+
+Chaque machine indique si vous pouvez la piloter, et cela se met à jour seul lorsqu'un droit ou votre connexion à la forge change.
 
 ## Faire entrer et sortir des éléments
 

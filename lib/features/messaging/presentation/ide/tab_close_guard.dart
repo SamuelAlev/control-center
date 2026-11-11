@@ -41,6 +41,11 @@ abstract interface class TabCloseHost {
   /// Keeps [tab]'s shell running after the tab closes.
   void keepShell(EditorTab tab);
 
+  /// Archives the conversation a chat [tab] shows, which is closing.
+  /// [agentsStopped] says its agents were just stopped from the close prompt,
+  /// so a busy mark that has not caught up yet does not keep it.
+  void archiveClosedConversation(EditorTab tab, {bool agentsStopped = false});
+
   /// The label a terminal [tab] shows.
   String terminalLabel(EditorTab tab, AppLocalizations l10n);
 
@@ -49,7 +54,10 @@ abstract interface class TabCloseHost {
 }
 
 /// The messaging IDE's tab-close confirmations: unsaved files, a booted rig,
-/// a shell running a command and a conversation with agents at work.
+/// a shell running a command and a conversation with agents at work. A user
+/// close of a chat tab also archives its conversation; tabs leaving the tree
+/// any other way (a drag, a space switch, an archive elsewhere) never pass
+/// through here.
 class TabCloseGuard {
   /// Creates the guard for the tabs of the IDE behind a [TabCloseHost].
   TabCloseGuard(this._host);
@@ -174,6 +182,10 @@ class TabCloseGuard {
   /// running" is the status quo — what is new is being told, and being offered
   /// the stop that was otherwise only reachable from the composer of a tab you
   /// were about to close.
+  ///
+  /// Closing a chat tab archives its conversation, except when the user keeps
+  /// an agent running in it: the prompt promises that conversation stays in
+  /// the sidebar to come back to.
   Future<bool> _confirmCloseConversation(
     EditorTab tab,
     AppLocalizations l10n,
@@ -197,6 +209,7 @@ class TabCloseGuard {
             ?.value ??
         const [];
     if (runs.isEmpty) {
+      _host.archiveClosedConversation(tab);
       return true;
     }
     final choice = await confirmCloseLiveTab(
@@ -216,6 +229,9 @@ class TabCloseGuard {
         final messaging = _host.ref.read(messagingServiceProvider);
         for (final run in runs) {
           await messaging.stopRun(workspaceId, run.id);
+        }
+        if (_host.mounted) {
+          _host.archiveClosedConversation(tab, agentsStopped: true);
         }
         return true;
     }

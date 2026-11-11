@@ -2,7 +2,7 @@
 title: Linear انضمام سیٹ کریں
 description: Linear میں sign in کریں، workspace کا Linear automation جوڑیں، اور نئے tickets کے لیے Linear کو ticketing provider منتخب کریں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/linear-انضمام
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Control Center میں Linear کی دو شناختیں ہیں، اور دونوں browser sign-ins ہیں: آپ کی اپنی، جو آپ کے کاموں کے لیے ہے، اور workspace کی Control Center app، جو ایجنٹس اور pipelines کے کاموں کے لیے ہے۔ tickets، projects، links، collaborators، delegation اور assignment سب Control Center کے اپنے database کے خلاف کام کرتے ہیں اور کسی بیرونی سروس کی ضرورت نہیں — دیکھیں [tickets بنائیں اور منظم کریں](/ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ٹکٹس-منظم-کریں/)۔
@@ -14,14 +14,14 @@ Control Center میں Linear کی دو شناختیں ہیں، اور دونوں
 
 ## workspace کے لیے Linear چنیں
 
-1. **ترتیبات → ورک اسپیس → عام** پر جائیں اور **ٹکٹنگ** کارڈ تلاش کریں
+1. **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں اور **ٹکٹنگ** کارڈ تلاش کریں
 2. **ٹکٹنگ فراہم کنندہ** کو **Linear** پر سیٹ کریں
 
 اس کے بعد آپ کے بنائے tickets `provider: linear` کے نشان کے ساتھ آتے ہیں۔ **مقامی** tickets کو اسی سرور کے اپنے database میں رکھتا ہے اور Linear کی قطاریں چھپا دیتا ہے: تصدیق کے لیے کچھ نہیں ہوتا۔
 
 ## Linear میں sign in
 
-اسی کارڈ پر، **Linear** قطار آپ کی ہے:
+آپ کا اپنا Linear sign-in **ترتیبات → آپ → پروفائل** پر، **ٹکٹنگ** کارڈ میں ہے:
 
 1. **Sign in to Linear** پر کلک کریں
 2. براؤزر میں منظوری دیں
@@ -29,9 +29,11 @@ Control Center میں Linear کی دو شناختیں ہیں، اور دونوں
 
 Control Center سے Linear میں آپ جو بھی کرتے ہیں وہ اسی sign-in پر چلتا ہے اور کسی اور پر نہیں۔ اگر آپ sign in نہیں ہیں تو ایپ آپ سے sign in کرنے کو کہتی ہے، نہ کہ کسی اور کے طور پر کام کرنے لگتی ہے۔
 
+یہ sign-in **سرور کی ہر ورک اسپیس** میں کام کرتا ہے، جب تک کسی ورک اسپیس کی اپنی sign-in ایپس نہ ہوں: وہ ورک اسپیس اپنا Linear sign-in رکھتی ہے۔ کارڈ بتاتا ہے کہ کون سا لاگو ہے۔
+
 ## Linear automation جوڑیں
 
-**Linear آٹومیشن** قطار workspace کی Control Center app ہے جو Linear میں ہے۔ ticket sync، pipelines اور agents اسی سے لکھتے ہیں، اس لیے خودکار issues اور تبصرے کسی فرد کے بجائے Control Center کے نام سے ظاہر ہوتے ہیں۔
+**Linear آٹومیشن** قطار، **ترتیبات → ورک اسپیس → انٹیگریشنز** میں **ٹکٹنگ** کارڈ پر، workspace کی Control Center app ہے جو Linear میں ہے۔ ticket sync، pipelines اور agents اسی سے لکھتے ہیں، اس لیے خودکار issues اور تبصرے کسی فرد کے بجائے Control Center کے نام سے ظاہر ہوتے ہیں۔
 
 1. ایک workspace admin **آٹومیشن کے لیے Linear منسلک کریں** پر کلک کرتا ہے
 2. وہ براؤزر میں app کو Linear workspace کے لیے منظور کرتا ہے، جیسا اوپر ہے
@@ -42,7 +44,7 @@ Control Center سے Linear میں آپ جو بھی کرتے ہیں وہ اسی s
 
 ## اپنی Linear application رجسٹر کریں
 
-اپنی application صرف اس وقت استعمال کریں جب آپ نے **اپنی ایپس استعمال کریں** چنا ہو۔ سرور کی application صرف تب لاگو ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Linear سمیت، اور سرور کی application اور service API key محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں۔ workspace کی اپنی application ([نیچے](#ایک-workspace-کو-اپنی-linear-application-دیں)) ہر mode میں لاگو رہتی ہے۔
+اپنی application صرف اس وقت استعمال کریں جب آپ نے **اپنی ایپس استعمال کریں** چنا ہو۔ سرور کی application صرف تب لاگو ہوتی ہے: Control Center Connect یا custom Connect کے ساتھ، Connect ہر lane چلاتا ہے، Linear سمیت، اور سرور کی application اور service API key محفوظ رہتی ہیں مگر استعمال نہیں ہوتیں۔ جو workspace اپنی ایپس پر ہو ([نیچے](#ایک-workspace-کو-اپنی-linear-application-دیں)) اپنی application استعمال کرتا ہے، سرور کے mode سے قطع نظر۔
 
 1. [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new) پر ایک OAuth application بنائیں
 2. دونوں callback URLs شامل کریں جو **ترتیبات → سرور → سنگل سائن آن → فراہم کنندہ ایپس → Linear** کے تحت **کال بیک URLs** میں دکھائے گئے ہیں، ہو بہو:
@@ -58,20 +60,19 @@ Control Center سے Linear میں آپ جو بھی کرتے ہیں وہ اسی s
 workspace سرور کی application کے بجائے اپنی application کے ذریعے Linear میں sign in کر سکتا ہے۔ یہ صرف workspace admin یا owner ترتیب دے سکتا ہے۔
 
 1. اوپر کے مراحل کی طرح ایک Linear OAuth application بنائیں
-2. **ترتیبات → ورک اسپیس → عام → پرووائیڈر ایپس** پر جائیں اور **Linear** کھولیں
-3. **اس ورک اسپیس کی اپنی ایپ استعمال کریں** چنیں
-4. row کے **کال بیک URLs** کے تحت دکھائے گئے دونوں callback URLs کو Linear application میں ہو بہو شامل کریں
-5. اس کا **Client id** چسپاں کریں، اور اختیاری طور پر اس workspace کے automation کے لیے **سروس API کلید** شامل کریں
+2. **ترتیبات → ورک اسپیس → انٹیگریشنز** پر جائیں۔ **Control Center Connect** کارڈ پر **اپنی ایپس استعمال کریں** چنیں اور **لاگو کریں** پر کلک کریں
+3. **ٹکٹس** کے تحت **Linear ایپ** کارڈ ظاہر ہوتا ہے۔ کارڈ کے **کال بیک URLs** کے تحت دکھائے گئے دونوں callback URLs کو Linear application میں ہو بہو شامل کریں
+4. اس کا **Client id** چسپاں کریں، اور اختیاری طور پر اس workspace کے automation کے لیے **سروس API کلید** شامل کریں
 
-workspace کی application پھر اس workspace میں ہر Linear sign-in اور automation درخواست کا جواب دیتی ہے، چاہے سرور لوگوں کو کسی بھی طریقے سے sign in کرائے۔ یہ کبھی سرور کی application یا Connect پر fall back نہیں کرتی: جب تک client id سیٹ نہ ہو، اس workspace میں Linear بند رہتا ہے، اور row بتاتی ہے کیا غائب ہے۔ اس کی service API key صرف یہیں استعمال ہوتی ہے؛ اس کے بغیر sync کو **آٹومیشن کے لیے Linear منسلک کریں** درکار ہے۔
+workspace کی application پھر اس workspace میں ہر Linear sign-in اور automation درخواست کا جواب دیتی ہے، چاہے سرور لوگوں کو کسی بھی طریقے سے sign in کرائے۔ یہ کبھی سرور کی application یا Connect پر fall back نہیں کرتی: جب تک client id سیٹ نہ ہو، اس workspace میں Linear بند رہتا ہے، اور کارڈ بتاتا ہے کیا غائب ہے۔ اس کی service API key صرف یہیں استعمال ہوتی ہے؛ اس کے بغیر sync کو **آٹومیشن کے لیے Linear منسلک کریں** درکار ہے۔
 
-سرور کی application اور workspace کی application کے درمیان سوئچ کرنے، یا workspace کے client id کو بدلنے سے، اس workspace کے ہر فرد کو Linear سے sign out کیا جاتا ہے اور ان کا automation disconnect ہو جاتا ہے۔ وہ نئی application سے دوبارہ sign in کرتے ہیں۔ **اس سرور کی ایپ استعمال کریں** workspace کے محفوظ شدہ فیلڈز حذف کر دیتا ہے۔ secrets صرف لکھنے کے لیے ہیں: row بس دکھاتی ہے کہ ایک محفوظ ہے یا نہیں۔ سرور کے دوسرے workspaces متاثر نہیں ہوتے۔
+**اپنی ایپس استعمال کریں** ہر provider پر بیک وقت لاگو ہوتا ہے: GitHub، Google Calendar اور GIF سرچ بھی صرف workspace کی اپنی ایپس پر چلتی ہیں، ہر ایک اپنے provider کے ساتھ اسی صفحے پر سیٹ ہوتی ہے۔ workspace کی sign-in ایپس بدلنے، یا workspace کے client id کو بدلنے سے، اس workspace کے ہر فرد کو Linear سے sign out کیا جاتا ہے اور ان کا automation disconnect ہو جاتا ہے۔ وہ نئی application سے دوبارہ sign in کرتے ہیں۔ محفوظ شدہ فیلڈز workspace کے کسی دوسرے انتخاب پر واپس جانے پر برقرار رہتے ہیں، مگر صرف **اپنی ایپس استعمال کریں** کے تحت استعمال ہوتے ہیں۔ secrets صرف لکھنے کے لیے ہیں: کارڈ بس دکھاتا ہے کہ ایک محفوظ ہے یا نہیں۔ سرور کے دوسرے workspaces متاثر نہیں ہوتے۔
 
 ## خرابیوں کا ازالہ
 
 ### Linear قطار کہتی ہے sign-in سیٹ نہیں ہے
 
-سرور کے پاس نہ اپنی Linear application ہے نہ Connect۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں ان میں سے ایک چنتا ہے۔ جب workspace اپنی application استعمال کرتا ہے تو row کے بجائے بتاتی ہے کہ اس کا سیٹ اپ مکمل نہیں: workspace admin **ترتیبات → ورک اسپیس → عام → پرووائیڈر ایپس** میں client id شامل کرتا ہے۔
+سرور کے پاس نہ اپنی Linear application ہے نہ Connect۔ سرور کا مالک **ترتیبات → سرور → سنگل سائن آن** میں ان میں سے ایک چنتا ہے۔ جب workspace اپنی ایپس استعمال کرتا ہو تو row اس کے بجائے بتاتی ہے کہ سیٹ اپ مکمل نہیں: workspace admin **ترتیبات → ورک اسپیس → انٹیگریشنز** پر **Linear ایپ** کارڈ میں client id شامل کرتا ہے۔
 
 ### ticket sync authentication error کے ساتھ ناکام ہوتا ہے
 

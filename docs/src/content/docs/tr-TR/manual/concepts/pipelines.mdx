@@ -2,7 +2,7 @@
 title: Pipeline’lar ve otomasyon
 description: Pipeline’ların zamanlamayı işten neden ayırdığı, bir çalıştırmayı gerçekte neyin başlattığı ve yerleşik şablonlardan hangilerinin kutudan çıktığı gibi çalışır durumda olduğu.
 slug: tr-TR/kilavuz/kavramlar/pipelinelar
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipeline’lar Control Center’ın deterministik yarısıdır. Neyin söyleneceğine bir
@@ -36,7 +36,7 @@ motor, uçuştaki çalıştırmaları yeniden yükler ve kaldıkları yerden dev
   true`’dur — bu, `orchestration.awaitApproval` kısmi onay kapısıdır.
   `human.gate` muaf değildir.
 - `extras: {'idempotent': false}` olarak bildirilmiş ve sunucu durduğunda
-  uçuşta olan bir adım, yan etkisini (bir squash merge, bir çalışma ağacı
+  uçuşta olan bir adım, yan etkisini (bir çalışma alanı yedeği, bir çalışma ağacı
   temizliği) çoktan uygulamış olabilir. Yeniden çalıştırmak iki kez uygulamaya yol
   açabilir; bu yüzden motor onu başarısız kılar ve yeniden denemeyi size bırakır.
 
@@ -140,8 +140,24 @@ birikir ve bu hiçbir zaman kullanıcı tercihi olarak düşünülmemişti.
 Bilmeye değer bir asimetri daha: `pr_review` yerleşiği artık bilinçli olarak
 GitHub’a gönderi yapmaz. Bir incelemeyi yayımlamak ayrı ve kullanıcı onayına
 bağlı bir adımdır; doğrudan gönderi yapan bir pipeline iki kez yayımlardı.
-`cross_review`, `ticket_to_pr` ve `pr_triage` ise çalıştıklarında hâlâ doğrudan
-GitHub’a yorum gönderir.
+`cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` ve `external_pr_welcome`
+ise çalıştıklarında hâlâ GitHub’a yorum gönderir.
+
+Bu yorumu sunucu gönderir; **PR yorumu gönder** adımı (`prReview.comment`) üzerinden,
+asla bir kabuk betiğinden: bir pipeline’ın kabuk adımları ve ajanların sandbox’ları
+yalnızca okuyabilen bir GitHub token’ı taşır. Aynı kural geri kalanı da biçimlendirir:
+
+- `external_pr_welcome` karşılamasını bu adımın `message` alanı olarak gönderir.
+- `ticket_to_pr`, kodlayıcı ajanın `agent/<ticket_id>` dalını (çalıştırma geçidi üzerinden)
+  göndermesini ve taslak PR’ı `open_pull_request` ile açmasını sağlar; bunu çalıştırmayı
+  başlatan kişinin GitHub oturumuyla, kimse başlatmadıysa bot olarak yapar. İkisi de
+  çalışma alanının **Uzak depoya push et** ve **Pull request aç** kurallarına tabidir.
+  Control Center Connect üzerinde, `TicketAssigned` ile tetiklenen gibi kimsenin
+  istemediği bir çalıştırma push edemez ya da PR açamaz: paylaşılan uygulamanın botu
+  yalnızca okur ve yorum yapar.
+- `pre_merge_gate` asla birleştirmez. Kapısında onaylamak, PR’ın bir bakımcının
+  birleştirmeye hazır olduğunu; reddetmek ise değişiklik istendiğini yayımlar.
+  Birleştirmeyi bir kişi PR sayfasından yapar.
 
 ## Motorun bildikleri
 

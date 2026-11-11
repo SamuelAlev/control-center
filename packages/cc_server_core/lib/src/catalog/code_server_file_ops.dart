@@ -5,6 +5,8 @@ import 'package:cc_host/cc_host.dart';
 /// Embedded editor navigation and session release. File operations address a
 /// running code-server and return `{sent: bool}`, false when none runs for the
 /// worktree. `codeServer.close` releases one device-bound open reference.
+/// Like `codeServer.open`, every op is server-owner only: the editor runs as
+/// the server's OS user.
 ///
 /// Spread from `buildRemoteRpcCatalog` (under its `fullClientOnly` gate) so
 /// the catalog freeze does not grow.
@@ -12,6 +14,7 @@ List<RepoOp> buildCodeServerFileOps({required CodeServerPort codeServer}) => [
   RepoOp(
     name: 'codeServer.close',
     kind: RepoOpKind.mutate,
+    serverAuthority: ServerAuthority.serverOwner,
     requiredArgs: const ['workspace_id', 'session_id'],
     handler: (ctx) async {
       await codeServer.closeSession(
@@ -29,6 +32,7 @@ List<RepoOp> buildCodeServerFileOps({required CodeServerPort codeServer}) => [
   RepoOp(
     name: 'codeServer.openFile',
     kind: RepoOpKind.mutate,
+    serverAuthority: ServerAuthority.serverOwner,
     requiredArgs: const ['space_id', 'window_id', 'path'],
     handler: (ctx) async {
       final line = ctx.args['line'];
@@ -49,6 +53,7 @@ List<RepoOp> buildCodeServerFileOps({required CodeServerPort codeServer}) => [
   RepoOp(
     name: 'codeServer.closeFile',
     kind: RepoOpKind.mutate,
+    serverAuthority: ServerAuthority.serverOwner,
     requiredArgs: const ['space_id', 'path'],
     handler: (ctx) async {
       final sent = await codeServer.closeFile(

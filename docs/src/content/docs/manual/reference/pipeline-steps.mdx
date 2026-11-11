@@ -59,7 +59,7 @@ Generic prompt-and-dispatch node: renders the prompt, dispatches the agent into 
 
 ### `pipeline.condition`
 
-Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; three authoring shapes are supported, in priority order:
+Router body — reads `config.extras`, evaluates a condition and returns `StepResult.route(key)`. Conditions are **not** JavaScript expressions; two authoring shapes are supported, in priority order:
 
 - **Predicate tree** (`extras.predicate`) — a boolean tree that routes `"true"` / `"false"`. Each node is a map with a `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — true when any listed path exists on disk; `negate` flips it; `recursive` also searches sub-directories (skipping `.git`, `node_modules`, `build`, `.dart_tool`). Relative paths resolve against `state[baseKey]` (default `repo_local_path`), else the per-run workspace directory.
@@ -67,19 +67,28 @@ Router body — reads `config.extras`, evaluates a condition and returns `StepRe
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — boolean groups.
   - `{"type": "not", "of": <predicate>}` — negation.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routes to the first case the state value case-insensitively contains, else `default`.
-- **Comparison** (legacy top-level `extras.left` / `extras.op` / `extras.right`) — equivalent to a `comparison` predicate, kept for templates authored before the tree.
 
 Edges out of the node carry a `routeKey` that must match the returned key.
 
 ### `prReview.comment`
 
-Posts the consolidated findings as a PR review comment via the GitHub PR client.
+Posts the consolidated findings, or the step's own `extras.message`, as a PR review comment via the GitHub PR client.
 
-| State key                 | Description                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (required)                      |
-| `pr_number`               | PR number — int or numeric string (required) |
-| `consolidated_findings`   | Comment body (required)                      |
+| Key                       | Read from       | Description                                         |
+| ------------------------- | --------------- | --------------------------------------------------- |
+| `repo_full_name`          | trigger payload | `owner/repo` (required)                             |
+| `pr_number`               | trigger payload | PR number, a positive int or numeric string (required) |
+| `consolidated_findings`   | state           | Comment body when the step has no `message`         |
+
+The pull request comes from the run's trigger payload only, never from state a step can rewrite mid-run. @-mentions in the posted text are made inert, so the comment notifies no one.
+
+A `message` renders its `{{key}}` placeholders as follows:
+
+- `repo_full_name`, `repo_owner`, `repo_name` and `pr_number` render the pull request the step posts on.
+- `author` renders from the trigger payload, as is, only when it is a valid username on the forge; anything else fails the step.
+- `consolidated_findings` renders as raw markdown, with its @-mentions made inert.
+- Every other value renders as literal text: on one line, with markdown punctuation escaped and @-mentions made inert.
+- A placeholder that resolves to nothing fails the step.
 
 Returns `StepResult.terminal` with `comment_review_id` and `commented_at` in state.
 

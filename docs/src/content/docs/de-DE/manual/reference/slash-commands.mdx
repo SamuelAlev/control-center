@@ -2,7 +2,7 @@
 title: Slash-Befehle
 description: Alle Befehle, die du im Composer tippen kannst, was sie bewirken und wo sie laufen.
 slug: de-DE/handbuch/referenz/slash-befehle
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Befehle, die du im Composer eines Bereichs tippst. Sie fallen in drei Gruppen, je nachdem, wo sie wirken, und der Unterschied zählt: Ein **lokaler** Befehl reist nie als Nachricht, erscheint also weder im Transkript noch erreicht er einen Agenten.
@@ -127,7 +127,7 @@ Beide haben dieselbe Form: die Unterhaltung nehmen, wie sie steht, eine Frage da
 
 Platzhalter: `$1`, `$@`, `$@[start:length]` und `$ARGUMENTS`. Das Frontmatter darf `description` setzen (Autovervollständigung im Composer). `allowed-tools` und `model` werden aus der Datei gelesen, ein Aufruf eines Benutzerbefehls setzt derzeit aber nur Argumente in den Text ein und ändert weder das Modell noch die Werkzeugfläche des Laufs.
 
-Ein selbst geschriebener Befehl gewinnt gegen einen Skill desselben Namens: eine Abkürzung, die ein Mensch absichtlich aufgerufen hat, mit Argumenten.
+Skills werden nur als `/skill:<name>` erreicht, sodass ein selbst geschriebener Befehl nie mit einem kollidiert.
 
 ---
 

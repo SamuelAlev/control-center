@@ -2,10 +2,10 @@
 title: Adicionar repos a um espaço de trabalho
 description: Registe checkouts Git num espaço de trabalho para que os agentes possam trabalhar neles.
 slug: pt-PT/manual/guias/adicionar-repos
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Este guia mostra-lhe como registar um checkout Git num espaço de trabalho, voltar a indexá-lo e removê-lo.
+Este guia mostra-lhe como registar um checkout Git num espaço de trabalho, voltar a indexá-lo e removê-lo. Adicionar um repositório a partir das pastas do servidor exige o proprietário do servidor; remover um exige um administrador do espaço de trabalho.
 
 Os repos têm **âmbito de espaço de trabalho**. Não existe um registo global nem um passo de ligação: adicionar um repo e colocá-lo num espaço de trabalho são o mesmo ato. O mesmo checkout registado em dois espaços de trabalho torna-se duas linhas independentes, com dois ids diferentes — entre espaços de trabalho, a identidade de um repo é o seu caminho no sistema de ficheiros, nunca o seu id.
 
@@ -21,9 +21,29 @@ Qualquer outra situação é recusada no momento do registo com uma mensagem exp
 
 A forge é lida a partir do remoto e guardada no repo — nunca a escolhe. Um espaço de trabalho pode conter repos das três ao mesmo tempo, e comunica-se com cada uma através da sua própria API, com a sua própria credencial. Os namespaces aninhados do GitLab são preservados, pelo que `gitlab.com/group/subgroup/project` é registado com o proprietário `group/subgroup` e o nome `project`.
 
-A pasta também tem de residir na máquina que aloja o `cc_server`, dentro de um dos diretórios `--repo-roots` desse servidor. Essa lista de autorizações tem como predefinição o diretório pessoal do utilizador do servidor, e é recusada a navegação acima de uma raiz.
+A pasta também tem de residir na máquina que aloja o `cc_server`, dentro de um dos diretórios `--repo-roots` desse servidor. Essa lista de autorizações tem como predefinição o diretório pessoal do utilizador do servidor, e é recusada a navegação acima de uma raiz. A navegação pelas pastas do servidor é oferecida apenas ao [proprietário do servidor](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor), porque lista os ficheiros próprios da máquina. Qualquer outra pessoa vê "O proprietário do servidor adiciona repositórios a partir das pastas do servidor." no lugar em que estaria o botão **Adicionar repositório**, e uma ligação a um repositório que nenhum dos seus espaços de trabalho tem indica que o repositório não está associado a nenhum dos seus espaços de trabalho, e que deve pedir ao proprietário do servidor que o adicione.
+
+Onde o checkout pode estar depende de quem o associa:
+
+- **Dentro do armazenamento do próprio espaço de trabalho** no servidor: qualquer administrador do espaço de trabalho.
+- **Em qualquer outro ponto do disco do servidor**: apenas o [proprietário do servidor](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor), porque só ele pode apontar o servidor para os ficheiros próprios da máquina. Qualquer outra pessoa vê "Apenas o proprietário do servidor pode associar uma pasta fora do armazenamento deste espaço de trabalho."
+- **A pasta de dados do servidor**, ou qualquer coisa dentro dela: nunca.
+
+O `origin` do checkout tem de ser o repositório que está a associar. Uma pasta cujo `origin` nomeia outro repositório é recusada com "A origem dessa pasta é outro repositório."
+
+### Pastas que o servidor ainda não usa
+
+Um repositório cuja pasta está fora do armazenamento do espaço de trabalho e que o proprietário do servidor não associou, como um num espaço de trabalho importado, mostra "Esta pasta está fora do armazenamento do espaço de trabalho. Confirme que este servidor pode utilizá-la." sob a sua linha, até o proprietário do servidor o confirmar. Qualquer outra pessoa vê, em vez disso, "Esta pasta está fora do armazenamento do espaço de trabalho. Apenas o proprietário do servidor pode confirmá-la."
+
+O proprietário confirma-o uma vez: **Confirmar** na linha, ou **Confirmar todos** no aviso acima da lista quando vários repositórios estão à espera. Cada um é verificado de novo como proprietário, com as mesmas verificações da associação. Até lá, continua na lista mas não é aberto, aprovisionado nem indexado: nenhum editor, terminal, ambiente ou checkout de espaço o usa, e o grafo de código ignora-o. Adicionar de novo a mesma pasta como proprietário do servidor faz o mesmo que confirmá-la, e mantém o id do repositório.
+
+Um checkout que um link simbólico tenha movido para outro lado é tratado da mesma forma: continua listado e sem uso até ser associado de novo por alguém autorizado a associar a pasta para onde aponta agora.
+
+Também precisa de ter sessão iniciada na forja do repositório, e a sua própria conta tem de conseguir ver o repositório.
 
 ## Registar um checkout
+
+Precisa de ser o proprietário do servidor para estes passos.
 
 1. Abra **Definições → Espaço de trabalho → Repositórios** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Clique em **Adicionar repositório**.
@@ -56,7 +76,23 @@ Arraste a pega de uma linha. A ordem que definir é a ordem com que todas as lis
 
 ## Corrigir a ligação ao GitHub
 
-O ícone de ligação numa linha abre um editor para o proprietário e o nome do repositório GitHub do repo — útil quando o remoto foi renomeado ou transferido.
+O ícone de ligação numa linha abre um editor para o proprietário e o nome do repositório GitHub do repo.
+
+Raramente precisa dele. Uma ligação fica associada ao id permanente do repositório na forja, por isso uma renomeação ou transferência é seguida automaticamente.
+
+- Renomear um repositório no Control Center altera apenas o seu nome de apresentação.
+- Mudar o repositório da forja a que uma ligação aponta requer um administrador do espaço de trabalho, e é verificado na forja com o início de sessão do próprio administrador, da mesma forma que a associação.
+- Um repositório associado não pode ser transformado num repositório apenas local.
+
+Se o caminho depois nomear um repositório **diferente** (o original foi eliminado e criado de novo, ou movido e substituído por outro), o Control Center deixa de lhe enviar seja o que for: nenhum token, push, comentário ou pedido. Isto abrange também as ações da própria pessoa: uma revisão, um merge ou um comentário que faça num desses repositórios é recusado, no GitHub, no GitLab e no Bitbucket. A linha e as pull requests do repositório mostram "_repo_ agora aponta para outro repositório" até um administrador do espaço de trabalho carregar em **Associar novamente**.
+
+## Quem pode abrir o código
+
+Uma concessão sobre um repositório não abre sozinha os ficheiros de um repositório. Para abrir ficheiros, diffs, pesquisa ou um terminal dele, um membro precisa da concessão do Control Center, e o seu próprio início de sessão na forja tem de conseguir ler o repositório. Os administradores do espaço de trabalho não são isentos; o proprietário do servidor é. Veja [O código segue a forja](/pt-PT/manual/conceitos/autorizacao/#código-segue-a-forja).
+
+Ao conceder um repositório a alguém cuja conta na forja não o consegue ler, a concessão fica guardada e vê um aviso, como "Guardado. A conta deles em GitHub ainda não consegue ler este repositório, então ele continua oculto para eles."
+
+A mesma regra decide quem pode abrir um espaço. Um espaço só abre para os membros que conseguem abrir o código de todos os repositórios que usa, e fica oculto a todos os outros, juntamente com os seus resultados de pesquisa, registos de execuções, tarefas, atividade e notificações. Um espaço sem repositórios fica aberto a todos os membros. Veja [Os espaços seguem os seus repositórios](/pt-PT/manual/conceitos/autorizacao/#os-espaços-seguem-os-seus-repositórios).
 
 ## Remover um repo
 
@@ -66,7 +102,31 @@ O ícone de ligação numa linha abre um editor para o proprietário e o nome do
 
 A caixa de diálogo explica o que faz: “_name_ será removido deste espaço de trabalho. Os ficheiros locais no disco não são afetados.”
 
+Remover um repositório exige um administrador do espaço de trabalho. Também esquece as credenciais da forja guardadas para esse repositório, como um token de automação do GitLab ou do Bitbucket.
+
 A remoção elimina a linha do repo deste espaço de trabalho e propaga a eliminação às suas linhas do grafo de código — símbolos, arestas, ficheiros e pontos de verificação de indexação —, além de todas as concessões de repo por membro sobre ele, das suas ligações espaço-repo e dos seus registos de checkouts isolados. O mesmo checkout registado noutro espaço de trabalho é uma linha independente e não é afetado. As árvores de trabalho em disco para as quais esses registos apontavam não são destruídas pela eliminação.
+
+## Resolução de problemas
+
+### Tenho uma concessão mas o repositório diz que a minha conta não o consegue ler
+
+A sua própria conta na forja não consegue ler o repositório, por isso o Control Center mantém o seu código fora do seu alcance, mesmo que o espaço de trabalho lho tenha concedido. Inicie sessão na forja em **Definições → Você → Perfil → Hospedagem de código**, se ainda não o fez, ou peça ao dono do repositório na forja que lhe dê acesso. O repositório abre assim que a sua conta na forja o conseguir ler.
+
+### "Esta pasta está fora do armazenamento do espaço de trabalho"
+
+A pasta do repositório está fora do armazenamento do espaço de trabalho e o proprietário do servidor não a associou, ou um link simbólico passou a apontar para outro sítio. Continua listado mas sem uso até o proprietário do servidor o confirmar ou adicionar a pasta de novo. Se não for o proprietário, peça-lhe. Se for, carregue em **Confirmar** na linha ou em **Confirmar todos** acima da lista; veja [Pastas que o servidor ainda não usa](#pastas-que-o-servidor-ainda-não-usa).
+
+### "Já não existe nada neste caminho do servidor"
+
+A pasta foi movida ou eliminada na máquina do servidor. Reponha-a, ou peça a um administrador do espaço de trabalho que remova o repositório com **Remover** no aviso e o adicione de novo a partir da pasta atual.
+
+### "Esta pasta não pode ser utilizada como repositório"
+
+A pasta guardada é a pasta de dados do próprio servidor, algo que esteja dentro dela, ou a própria pasta de armazenamento do espaço de trabalho. Nenhuma destas pode ser um repositório. Um administrador do espaço de trabalho remove-o com **Remover** no aviso, e depois adiciona o repositório de novo a partir da pasta real do checkout.
+
+### "Não foi possível confirmar o seu acesso na forja"
+
+O Control Center não conseguiu contactar a forja para verificar que a sua conta consegue ler o repositório, por isso recusou em vez de adivinhar. Tente novamente daqui a pouco.
 
 ## Guias relacionados
 

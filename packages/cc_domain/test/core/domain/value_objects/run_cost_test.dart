@@ -126,6 +126,7 @@ void main() {
         cachedReadTokens: 3,
         cachedWriteTokens: 1,
         estimatedCostCents: 7,
+        costMicros: 70000,
       );
       const b = RunCost(
         inputTokens: 1,
@@ -134,6 +135,7 @@ void main() {
         cachedReadTokens: 4,
         cachedWriteTokens: 5,
         estimatedCostCents: 6,
+        costMicros: 60000,
       );
       final sum = a + b;
       expect(sum.inputTokens, 11);
@@ -142,6 +144,7 @@ void main() {
       expect(sum.cachedReadTokens, 7);
       expect(sum.cachedWriteTokens, 6);
       expect(sum.estimatedCostCents, 13);
+      expect(sum.costMicros, 130000);
     });
 
     test('adds durations when both sides have one', () {

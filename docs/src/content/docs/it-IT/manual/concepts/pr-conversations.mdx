@@ -2,14 +2,14 @@
 title: Conversazioni sulle PR
 description: Come un commento a una PR GitHub diventa il turno di un agente senza webhook, cosa autorizza l'autore e a chi viene attribuito ciascun lato della conversazione.
 slug: it-IT/manuale/concetti/conversazioni-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Una pull request è già il luogo in cui avviene la conversazione sul codice. Le
 conversazioni sulle PR la rendono una superficie su uno spazio di lavoro di
 Control Center, allo stesso modo in cui un
 [ponte di chat](/it-IT/manuale/concetti/ponti-di-chat/) rende tale Slack:
-@menziona `@usectrl` (o il bot della GitHub App dello spazio di lavoro) su una
+@menziona `@usectrl` su una
 PR, rispondi all'interno dei suoi thread di revisione oppure aggiungi
 l'etichetta `ai-review`, e il lavoro avviene nello spazio di revisione della
 PR — con la stessa attribuzione e gli stessi guardrail di qualsiasi cosa
@@ -27,8 +27,7 @@ arriva dall'esterno** e **a chi è attribuito ciascun lato**.
 L'unico canale push di GitHub per un'app è un webhook, e un webhook richiede un
 URL in ingresso — l'unica cosa che questa superficie non richiede mai, di
 proposito. La scoperta è quindi una scansione: una ricerca con alias per ogni
-installazione dell'app chiede a GitHub le PR che menzionano il bot (o il suo
-slug breve) e le PR aperte che portano l'etichetta di revisione, le PR che hanno
+installazione dell'app chiede a GitHub le PR che menzionano `@usectrl` e le PR aperte che portano l'etichetta di revisione, le PR che hanno
 già uno spazio di revisione vedono leggere i propri thread di commenti, e tutto
 viene confrontato per id del commento con quanto visto alla scansione
 precedente. Un'app propria esegue la scansione ogni minuto su al massimo 25 PR.
@@ -78,8 +77,8 @@ viene pubblicato nulla:
   membro di _questo_ spazio di lavoro che ha effettuato l'accesso a GitHub su
   questo server
 - **Un ruolo di scrittura.** `viewer` e `guest` non possono avviare lavoro
-- **Accesso in push.** Le risposte usano un token `bot` limitato all'accesso di
-  quel membro al repository. Se il server non riesce a emetterne uno, non
+- **Accesso in push.** Le risposte usano un token per quel solo repository, limitato all'accesso di
+  quel membro a esso. Se il server non riesce a emetterne uno, non
   procede
 
 Ogni controllo viene eseguito prima di qualsiasi conferma, quindi un estraneo
@@ -103,16 +102,17 @@ Ciascun lato della conversazione porta un'identità diversa, e la differenza è
 la funzionalità:
 
 - **Su GitHub, la risposta è automazione per tuo conto.** Ogni risposta viaggia
-  su un token `bot` per quell'unico repository, limitato all'accesso del membro
-  che ha chiesto. Con un'app propria l'autore è l'account `[bot]` dell'app.
-  Tramite Connect un token per l'App condivisa è un token utente, quindi la
-  risposta è firmata dall'account del membro che ha chiesto, che agisce tramite
-  l'App. In entrambi i casi ogni risposta inizia con
+  per quel solo repository, limitato all'accesso del membro che ha chiesto, e viene
+  firmata dall'account `[bot]` dell'app. Un'eccezione: sull'app condivisa Control
+  Center Connect il bot pubblica nei thread di revisione solo quando l'operatore di
+  Connect ha elencato l'installazione, quindi altrimenti una risposta dentro un
+  thread di revisione è firmata dall'account del membro che ha chiesto. In ogni caso ogni risposta inizia con
   `**Control Center** (for @login):`, che dice chi ha chiesto e funge anche da
-  protezione anti-loop.
+  protezione anti-loop. Le @-menzioni nelle parole dell'agente vengono rese inerti,
+  così una risposta non notifica mai un utente o un team.
 - **Nello spazio, la domanda è tua.** Il messaggio è attribuito al membro in cui
   l'autore si è risolto, e l'esecuzione dell'agente avviene per suo conto: i
-  commit lo vedono come coautore, e il selettore dell'autonomia e i guardrail
+  commit sono suoi, e il selettore dell'autonomia e i guardrail
   delle azioni dello spazio si applicano esattamente come a un messaggio
   digitato nell'app. Le scritture sulla forge provenienti dall'esecuzione usano
   token limitati a un repository e circoscritti da quel membro, mai il suo
@@ -122,24 +122,17 @@ Pubblicare i risultati della revisione di nuovo su GitHub resta una decisione
 di una persona, presa in Control Center. Una menzione può _avviare_ una
 revisione; solo un essere umano la pubblica.
 
-## La protezione anti-loop e il nome breve
+## La protezione anti-loop
 
 Tutto ciò che è stato creato da un account bot viene scartato prima che venga
 eseguito qualsiasi controllo — il nostro in particolare, e ogni suffisso
 `[bot]`, così nemmeno il bot di revisione di un'altra app può svegliare il
 nostro — e lo stesso vale per ogni commento che inizia con il prefisso
-`**Control Center** (for @`, poiché una risposta tramite Connect è firmata
-dall'account di una persona. Senza questo, le risposte arriverebbero come nuovi
+`**Control Center** (for @`, poiché una risposta in un thread di revisione tramite
+Connect può essere firmata dall'account di una persona. Senza questo, le risposte arriverebbero come nuovi
 commenti e riattiverebbero il ponte all'infinito.
 
-Il suffisso `[bot]` è anche il motivo per cui esiste la forma breve. GitHub
-fissa il login di un account app a `<slug>[bot]`, non offre alcun completamento
-automatico per esso e non risolve mai `@slug` nell'app — quindi accettare lo
-slug nudo è una decisione del _nostro_ matcher, e scoprirlo richiede una corsia
-di ricerca sul commento in **testo** grezzo anziché l'indice delle menzioni di
-GitHub. Il costo viene dichiarato invece che nascosto: un utente umano che
-condivide lo slug dell'app si rivolge al bot con ogni menzione in forma breve
-di se stesso. Nomi di app distintivi rendono la collisione ipotetica.
+Solo `@usectrl` avvia il lavoro. Il login proprio dell'app (`<slug>[bot]`) e il suo slug nudo non indirizzano nulla: GitHub non offre alcun completamento automatico per un account app, e uno slug nudo può appartenere a un utente umano.
 
 ## Cosa non viene offerto di proposito
 

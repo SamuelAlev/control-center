@@ -2,7 +2,7 @@
 title: Configurer les politiques de bac à sable
 description: Ce qui limite l’exécution d’un agent, comment savoir si le bac à sable du système d’exploitation l’enveloppe et comment les règles d’action décident de ce qu’un agent peut pousser ou atteindre.
 slug: fr-CA/manuel/guides/politiques-de-bac-a-sable
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Le fait qu’une exécution d’agent soit isolée dans un bac à sable se décide sur le
@@ -25,7 +25,7 @@ sur tous les hôtes.
 
 | Frontière                                        | Ce qu’elle fait                                                                                                                                                                        |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Le bac à sable du système d’exploitation         | Seatbelt sous macOS, bubblewrap sous Linux et WSL2. Enveloppe l’interface de ligne de commande Claude Code, les adaptateurs ACP et l’outil `bash` du harnais. **Absent sous Windows et sous Linux sans `bwrap` ni `socat`** |
+| Le bac à sable du système d’exploitation         | Seatbelt sous macOS, bubblewrap sous Linux et WSL2. Enveloppe l’interface de ligne de commande Claude Code, les adaptateurs ACP et l’outil `bash` du harnais. **Absent sous Windows et sous Linux sans `bwrap` ni `socat`, où seules les exécutions du propriétaire du serveur démarrent** |
 | Son propre arbre de travail                      | Chaque conversation obtient une copie de travail en copie sur écriture. La copie de travail d’origine est intégrée à l’exécution comme chemin en refus d’écriture, et c’est le bac à sable qui l’impose |
 | Identifiants délivrés par courtage               | Le courtier d’identifiants forge un environnement propre à chaque exécution et le révoque au démontage. Son jeton GitHub peut lire, mais pas pousser : une poussée passe par Control Center, qui consulte d’abord la règle de poussée |
 | Garde-fous d’actions                             | Chaque outil modificateur déclare ses classes d’effet, et le garde-fou les résout avant l’exécution de l’appel. Un `prompt` sans approbateur connecté est refusé                        |
@@ -45,11 +45,15 @@ Trois choses restent plus faibles qu’elles n’en ont l’air :
   sorte qu’aucun profil de bac à sable ne les contraint. Seul l’outil `bash`
   passe par le lanceur de commandes isolé. Ces outils sont bornés par leur propre
   confinement des chemins, plus les garde-fous d’actions.
-- Sur un hôte dépourvu de backend, la première ligne ne s’applique pas du tout.
-  ACP et l’outil `bash` du harnais se rabattent sur l’assainissement de
-  l’environnement et la politique de commandes ; Claude Code hérite de
+- Sur un hôte dépourvu de backend, seules les exécutions dont le propriétaire du
+  serveur est responsable démarrent, et pour celles-ci la première ligne ne
+  s’applique pas. Les exécutions des autres sont refusées. Sous `--sandbox off`,
+  chaque exécution de chaque membre démarre sans la première ligne. Dans les deux
+  cas, ACP et l’outil `bash` du harnais se rabattent sur l’assainissement de
+  l’environnement et la politique de commandes, et Claude Code hérite de
   l’environnement de l’hôte par l’intermédiaire de `NoSandboxAdapter`. Le serveur
-  le signale dans son journal de démarrage. Vérifiez le vôtre ci-dessous.
+  indique dans quel cas vous vous trouvez dans son journal de démarrage. Vérifiez
+  le vôtre ci-dessous.
 
 ## Décider de ce qu’un agent peut pousser
 
@@ -59,8 +63,8 @@ le réseau. Chacun est une règle d’action :
 | Règle                                     | Valeur par défaut | Ce qu’elle couvre                                                                   |
 | ----------------------------------------- | ----------------- | ----------------------------------------------------------------------------------- |
 | **Pousser vers un dépôt distant**         | Demander d’abord  | Chaque `git push` vers GitHub, quel que soit l’adaptateur                           |
-| **Ouvrir une pull request**               | Demander d’abord  | `gh pr create` et les outils de pull request                                        |
-| **Publier une revue ou fusionner**        | Demander d’abord  | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                       |
+| **Ouvrir une pull request**               | Demander d’abord  | Les outils de pull request de Control Center. `gh pr create` ne fonctionne pas dans une exécution                                        |
+| **Mettre à jour ou fusionner une pull request** | Demander d’abord  | Les commentaires d’un agent sur sa pull request, les modifications de son titre ou de sa description et les revues publiées, via les outils de Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge` et `gh pr close` ne fonctionnent pas dans une exécution                       |
 | **Écrire dans un outil de suivi externe** | Demander d’abord  | Les écritures de tickets via les outils de Control Center et `gh issue`             |
 | **Accéder au réseau**                     | Autoriser         | Si le bac à sable dispose d’un réseau, et les outils web du harnais                 |
 
@@ -127,49 +131,57 @@ et si `--sandbox` est activé. Vérifiez-les dans cet ordre.
    réellement.
 3. Lisez le journal de démarrage du serveur. Il affiche exactement l’une des
    trois lignes suivantes :
-   - `agent sandbox ON` suivi de la note sur le backend — les exécutions sont
+   - `agent sandbox ON` suivi de la note sur le backend : les exécutions sont
      enveloppées
    - `no OS-native agent sandbox on this host` suivi, s’il y en a un, d’un indice
-     d’installation — les exécutions ne sont pas enveloppées
-   - `agent sandbox DISABLED by --sandbox off` — une désactivation délibérée
+     d’installation : seules les exécutions dont le propriétaire du serveur est
+     responsable démarrent, sans enveloppe, et celles des autres sont refusées
+   - `agent sandbox DISABLED by --sandbox off` : les exécutions de chaque membre
+     démarrent, sans enveloppe
+4. La ligne d’exposition affichée au démarrage dit la même chose en un mot :
+   `sandbox=native`, `sandbox=off` ou `sandbox=unavailable`.
 
 `GET /healthz` ne signale pas l’état du bac à sable ; c’est donc le journal de
 démarrage qui fait foi.
 
-Pour désactiver délibérément le bac à sable — un hôte où le profil se comporte
-mal est précisément la raison d’être de cette option — démarrez le serveur avec
-`--sandbox off`, ou définissez `CC_SERVER_SANDBOX=off`. La valeur par défaut est
-`on`, et `on` signifie « utiliser un backend si l’hôte en a un », jamais « en
-exiger un ».
+Seul le propriétaire du serveur décide de fonctionner sans bac à sable. Pour le
+faire pour tout le monde, démarrez le serveur avec `--sandbox off`, ou définissez
+`CC_SERVER_SANDBOX=off`. Chaque exécution de chaque membre tourne alors sans
+confinement sur cette machine ; il s’agit donc d’une décision qui concerne tous
+ceux qui utilisent le serveur, prise une fois au démarrage. La valeur par défaut
+est `on` : elle enveloppe chaque exécution lorsque l’hôte dispose d’un backend et,
+sinon, ne démarre que les exécutions du propriétaire.
 
 Deux situations n’obtiennent jamais d’enveloppe de bac à sable native. Sous
 **Windows**, la sonde native signale toujours que le bac à sable est
-indisponible et il n’y a rien à installer — le lancement d’agents utilise `none`.
+indisponible et il n’y a rien à installer, si bien que seules les exécutions du propriétaire du serveur démarrent, à moins que celui-ci ne passe `--sandbox off`.
 Le backend `microvm` est distinct (terminaux interactifs et rigs) et son
 activation dépend de la sonde sur son propre moteur d’exécution. Sous **Linux et
 WSL2**, `bwrap` et `socat` doivent tous deux se trouver dans le `PATH` ; sans
 eux, la sonde signale que le bac à sable est indisponible et nomme les paquets
-manquants.
+manquants, et seules les exécutions du propriétaire démarrent.
 
 Sous Linux/WSL2 avec bubblewrap installé, les globs de fichiers secrets de la
 politique standard ne peuvent pas être appliqués aux fichiers qu’un agent crée
-par la suite. Une telle exécution native échoue désormais au lieu d’ignorer les
-règles en silence. Une sonde de démarrage positive ne garantit donc pas qu’un
-lancement sous Linux pourra démarrer. `--sandbox off` est une désactivation
+par la suite ; de ce fait, chaque exécution native échoue au lieu d’ignorer les
+règles en silence, y compris celles du propriétaire. Une sonde de démarrage
+positive ne signifie donc pas qu’un lancement sous Linux pourra démarrer :
+aujourd’hui, un serveur Linux fait tourner les agents avec `--sandbox off`, ou
+sans bubblewrap pour le seul propriétaire. `--sandbox off` est une désactivation
 délibérée sans confinement, et non une frontière de sécurité de remplacement.
 
 ## Savoir ce qu’un mode interdit déjà
 
 Le mode est stocké par espace et alimente le résolveur de garde-fous comme
 couche **Préréglage du mode**. Trois des quatre modes sont en lecture seule, et
-un mode en lecture seule refuse d’emblée onze classes d’effet :
+un mode en lecture seule refuse d’emblée douze classes d’effet :
 
 | Mode               | Arbre de travail | Refusé par le préréglage                                                                                                                                                         |
 | ------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agent** (`chat`) | Inscriptible     | Rien — les valeurs par défaut intégrées s’appliquent                                                                                                                             |
-| **Plan**           | Lecture seule    | Supprimer un fichier, écrire hors de l’arbre de travail, créer un commit, pousser, ouvrir une PR, publier ou fusionner, écrire dans un outil de suivi externe, installer un paquet, exécuter un processus, modifier la structure de l’espace de travail, démarrer ou piloter une enceinte |
-| **Review**         | Lecture seule    | Les mêmes onze. Non sélectionnable par l’utilisateur — le composeur n’offre que Agent, Plan et Orchestrate                                                                        |
-| **Orchestrate**    | Lecture seule    | Les mêmes onze                                                                                                                                                                   |
+| **Plan**           | Lecture seule    | Supprimer un fichier, écrire hors de l’arbre de travail, créer un commit, pousser, ouvrir une PR, publier ou fusionner, écrire dans un outil de suivi externe, installer un paquet, exécuter un processus, modifier la structure de l’espace de travail, démarrer ou piloter une enceinte, exécuter des commandes sur l'hôte |
+| **Review**         | Lecture seule    | Les mêmes douze. Non sélectionnable par l’utilisateur — le composeur n’offre que Agent, Plan et Orchestrate                                                                        |
+| **Orchestrate**    | Lecture seule    | Les mêmes douze                                                                                                                                                                   |
 
 L’accès réseau et l’accès aux secrets ne sont délibérément _pas_ refusés par un
 mode en lecture seule : la recherche est la raison d’être d’un tel mode.
@@ -195,19 +207,35 @@ Lisez ce que git a affiché. `Control Center policy: …` signifie qu’une règ
 refusé le push ou qu’un **Demander d’abord** est resté sans réponse.
 `… is not linked to this workspace` signifie que le push vise un dépôt qui
 n’est ni celui de l’arbre de travail ni lié à l’espace de travail.
-`Control Center has no GitHub credential that can push …` signifie que la
-GitHub App n’est pas installée sur ce dépôt et qu’aucun identifiant de repli
-n’a pu pousser : installez l’App sur ce dépôt ou connectez GitHub.
+`Control Center has no GitHub credential that can push …` signifie qu’aucun jeton de push n’a pu être généré : installez l’App sur ce dépôt, ou connectez-vous à GitHub.
+
+### Mon exécution d’agent a été refusée avec « Ce serveur n’a pas de bac à sable »
+
+L’exécution affiche **Les agents ont besoin d’un bac à sable sur ce serveur** avec
+« Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents.
+Le propriétaire peut installer le bac à sable ou le désactiver pour tout le monde. »
+L’hôte du serveur n’a aucun bac à sable du système d’exploitation, et la personne
+responsable de l’exécution n’est pas le propriétaire du serveur ; rien n’a donc
+démarré. Pour une planification, un webhook ou une autre automatisation, la personne
+responsable est celle à laquelle l’automatisation est liée, et non celle qui consulte
+l’exécution.
+
+Seul le propriétaire du serveur peut changer cela. Sous Linux et WSL2, il installe
+`bubblewrap` et `socat` puis redémarre le serveur (mais lisez d’abord la note sur
+Linux ci-dessus). Sous Windows, il n’y a aucun backend à installer. L’autre choix
+consiste à redémarrer le serveur avec `--sandbox off`, ce qui fait tourner les agents
+de chaque membre sans confinement sur cette machine.
 
 ### La carte Bac à sable ne signale aucun bac à sable natif
 
 Alors les exécutions d’agent sur cet hôte ne sont pas enveloppées par Seatbelt ou
-bubblewrap, et les frontières restantes sont tout ce qui vous protège. Sous Linux
-et WSL2, installez les deux outils manquants,
-`sudo apt-get install bubblewrap socat`, puis redémarrez le serveur ; le journal
-de démarrage devrait alors indiquer que le bac à sable est actif. Sous Windows,
-il n’y a aucun backend natif à installer ; resserrez plutôt les garde-fous :
-voir [Configurer les garde-fous](/fr-CA/manuel/guides/configurer-garde-fous/).
+bubblewrap : seules les exécutions du propriétaire du serveur démarrent, et les
+frontières restantes sont ce dont elles disposent. Sous Linux et WSL2, installez
+les deux outils manquants, `sudo apt-get install bubblewrap socat`, puis
+redémarrez le serveur ; le journal de démarrage devrait alors indiquer que le bac
+à sable est actif. Sous Windows, il n’y a aucun backend natif à installer ;
+resserrez plutôt les garde-fous pour les exécutions du propriétaire : voir
+[Configurer les garde-fous](/fr-CA/manuel/guides/configurer-garde-fous/).
 
 ### Un agent a atteint un fichier hors de son arbre de travail
 
@@ -221,8 +249,9 @@ de ligne de commande Claude Code _est_ enveloppée là où un backend existe, et
 copies de travail enregistrées sont en refus d’écriture à l’intérieur de cette
 enveloppe dans tous les modes, y compris sous leur forme résolue par lien
 symbolique (sous macOS, un chemin atteint par `/tmp` ou `/var/folders` se résout
-sous `/private`, et les deux graphies sont désormais refusées). Sur un hôte sans
-backend, rien de tout cela ne s’applique. Dans un cas comme dans l’autre, les
+sous `/private`, et les deux graphies sont refusées). Sous `--sandbox off`, ou
+pour les exécutions du propriétaire sur un hôte sans backend, rien de tout cela ne
+s’applique. Dans un cas comme dans l’autre, les
 garde-fous peuvent refuser catégoriquement **Écrire hors de l’arbre de travail**.
 
 ## Guides connexes

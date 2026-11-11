@@ -856,7 +856,7 @@ class AgentDispatchService {
     await _propagateCostToParent(
       workspaceId,
       runLog.agentId,
-      cost?.preciseCostMicros ?? 0,
+      cost?.costMicros ?? 0,
     );
   }
 
@@ -957,9 +957,14 @@ class AgentDispatchService {
   }
 
   /// Marks [runLog] failed (idempotent) and forgets its dispatch mapping.
+  /// [errorCode] is the failure's machine-readable code, when it has one.
   ///
   /// Workspace-sourced from [AgentRunLog.workspaceId], like [completeRun].
-  Future<void> failRun(AgentRunLog runLog, String error) async {
+  Future<void> failRun(
+    AgentRunLog runLog,
+    String error, {
+    String? errorCode,
+  }) async {
     _runToDispatch.remove(runLog.id);
     // The run ended (in error): the agent goes idle but stays registered so it
     // can be re-dispatched. A hard kill maps to `aborted`, not here.
@@ -970,13 +975,14 @@ class AgentDispatchService {
     }
     final existing = await _runLogRepo?.getById(workspaceId, runLog.id);
     if (existing != null && existing.completedAt == null) {
-      // Fail from the freshly-read row (preserves any propagated childCostCents
+      // Fail from the freshly-read row (preserves any propagated childCostMicros
       // and other server-side fields), not the stale dispatch-time object.
       final completedAt = DateTime.now();
       final failed = existing.copyWith(
         completedAt: completedAt,
         status: RunStatus.error,
         summary: error,
+        errorCode: errorCode,
         // A run that died after 20 minutes is a different diagnosis from one
         // that died on the first turn, so a failure gets timed too.
         cost: _timed(existing.cost, existing.startedAt, completedAt),

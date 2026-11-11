@@ -90,7 +90,7 @@ class FileChatConnectionStore {
       return null;
     }
     try {
-      // A file that predates a rename, or was hand-edited, must not out-vote the
+      // A file that was moved or hand-edited must not out-vote the
       // directory it lives in or the file name it was read from.
       map['workspaceId'] = workspaceId;
       map['provider'] = provider.wire;

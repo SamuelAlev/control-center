@@ -5,8 +5,7 @@ import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_client.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/lsp/lsp_symbol_position.dart';
-
-import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
 /// Gives the agent LSP diagnostics, navigation, symbol search, and code actions.
@@ -20,11 +19,15 @@ class LspTool extends HarnessTool {
     required this._supervisor,
     required this._ledger,
     required this._workingDirectory,
+    required this._launcher,
   });
 
   final LspSupervisor _supervisor;
   final DiagnosticsLedger _ledger;
   final String _workingDirectory;
+
+  /// Starts the language servers and the project checker.
+  final ToolProcessLauncher _launcher;
 
   @override
   String get name => 'lsp';
@@ -47,6 +50,14 @@ class LspTool extends HarnessTool {
   /// mechanism.
   @override
   ToolApprovalTier get approvalTier => ToolApprovalTier.read;
+
+  /// Nothing when its processes run in the run's sandbox. Unconfined, a
+  /// language server and the project checker (`cargo check`, `go build`, …)
+  /// run the repository's build scripts on the host, which is host execution.
+  @override
+  Set<ActionClass> get actionClasses => {
+    if (!_launcher.confined) ActionClass.hostExecution,
+  };
 
   @override
   Map<String, dynamic> get inputSchema => {
@@ -108,7 +119,10 @@ class LspTool extends HarnessTool {
     if (action == null || action.isEmpty) {
       return HarnessToolResult.error('lsp requires an action.');
     }
-    final root = findProjectRoot(_workingDirectory);
+    final root = findProjectRoot(
+      _workingDirectory,
+      ceiling: _workingDirectory,
+    );
 
     if (action == 'status') {
       return HarnessToolResult.success(_renderStatus(root));
@@ -149,6 +163,7 @@ class LspTool extends HarnessTool {
     final client = await _supervisor.clientForFile(
       root,
       path,
+      _launcher,
       typeIntelligenceOnly: true,
     );
     if (client == null) {
@@ -191,7 +206,7 @@ class LspTool extends HarnessTool {
   }
 
   String _renderStatus(String root) {
-    final servers = _supervisor.statusFor(root);
+    final servers = _supervisor.statusFor(root, _launcher);
     if (servers.isEmpty) {
       return 'No language servers detected for $root (no matching project '
           'markers, or the binaries are not installed).';
@@ -202,7 +217,7 @@ class LspTool extends HarnessTool {
   }
 
   Future<HarnessToolResult> _fileDiagnostics(String root, String path) async {
-    final clients = await _supervisor.clientsForFile(root, path);
+    final clients = await _supervisor.clientsForFile(root, path, _launcher);
     if (clients.isEmpty) {
       return HarnessToolResult.error(
         'No language server available for ${p.basename(path)}.',
@@ -244,13 +259,12 @@ class LspTool extends HarnessTool {
         continue;
       }
       try {
-        final result = await ChildProcess.run(
+        final result = await runToolProcess(
+          _launcher,
           check.argv.first,
           check.argv.sublist(1),
           workingDirectory: root,
-          toolchain: true,
-          runInShell: true,
-        ).timeout(const Duration(minutes: 3));
+        );
         final output = '${result.stdout}\n${result.stderr}'.trim();
         if (output.isEmpty) {
           return HarnessToolResult.success('No project diagnostics.');
@@ -268,8 +282,8 @@ class LspTool extends HarnessTool {
     }
     // No project checker: fall back to whatever the running servers know.
     final all = <LspDiagnostic>[];
-    for (final config in _supervisor.serversFor(root)) {
-      final client = await _supervisor.clientFor(config, root);
+    for (final config in _supervisor.serversFor(root, _launcher)) {
+      final client = await _supervisor.clientFor(config, root, _launcher);
       if (client != null) {
         all.addAll(client.allDiagnostics());
       }
@@ -411,11 +425,11 @@ class LspTool extends HarnessTool {
       );
     }
     final out = <String>[];
-    for (final config in _supervisor.serversFor(root)) {
+    for (final config in _supervisor.serversFor(root, _launcher)) {
       if (config.isLinter) {
         continue;
       }
-      final client = await _supervisor.clientFor(config, root);
+      final client = await _supervisor.clientFor(config, root, _launcher);
       if (client == null) {
         continue;
       }

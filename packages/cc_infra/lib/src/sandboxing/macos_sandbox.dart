@@ -4,8 +4,10 @@
 
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/process/child_process.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
+import 'package:cc_infra/src/sandboxing/hidden_roots.dart';
+import 'package:cc_infra/src/sandboxing/host_executables.dart';
 
 /// macOS `sandbox-exec` with a generated Seatbelt profile.
 ///
@@ -48,14 +50,28 @@ abstract final class MacosSandbox {
     lines.add('(allow default)');
     lines.add('');
 
+    final hidden = HiddenRoots.of(config);
     for (final path in config.filesystem.denyRead) {
       lines.add('(deny file-read* ${_seatbeltPath(path)})');
+    }
+    // Server-private trees: closed whole, their path components stat-able (so
+    // `getcwd` and `realpath` work inside a re-opened worktree), and re-opened
+    // for exactly what the config names inside them.
+    for (final root in hidden.roots) {
+      lines.add('(deny file-read* ${_seatbeltPath(root)})');
+    }
+    for (final dir in hidden.traversal) {
+      lines.add('(allow file-read-metadata (literal "${_escape(dir)}"))');
     }
     for (final path in config.filesystem.allowRead) {
       lines.add('(allow file-read* ${_seatbeltPath(path)})');
     }
+    for (final path in hidden.readable) {
+      lines.add('(allow file-read* ${_seatbeltPath(path)})');
+    }
     if (config.filesystem.denyRead.isNotEmpty ||
-        config.filesystem.allowRead.isNotEmpty) {
+        config.filesystem.allowRead.isNotEmpty ||
+        hidden.roots.isNotEmpty) {
       lines.add('');
     }
 
@@ -67,7 +83,8 @@ abstract final class MacosSandbox {
     final readOnlyMounts = policy?.readOnlyMounts ?? const <String>[];
     if (config.filesystem.allowWrite.isNotEmpty ||
         config.filesystem.denyWrite.isNotEmpty ||
-        readOnlyMounts.isNotEmpty) {
+        readOnlyMounts.isNotEmpty ||
+        hidden.roots.isNotEmpty) {
       lines.add('(deny file-write*)');
       for (final path in config.filesystem.allowWrite) {
         lines.add('(allow file-write* ${_seatbeltPath(path)})');
@@ -84,6 +101,14 @@ abstract final class MacosSandbox {
         '/dev/stderr',
       ]) {
         lines.add('(allow file-write* (literal "$literal"))');
+      }
+      // The hidden trees are closed after `$HOME`, which may contain them, and
+      // re-opened for the worktrees and dirs the config may write inside them.
+      for (final root in hidden.roots) {
+        lines.add('(deny file-write* ${_seatbeltPath(root)})');
+      }
+      for (final path in hidden.writable) {
+        lines.add('(allow file-write* ${_seatbeltPath(path)})');
       }
       // Secrets + mandatory-deny writes.
       for (final path in config.filesystem.denyWrite) {
@@ -113,19 +138,12 @@ abstract final class MacosSandbox {
       }
       lines.add('');
     }
-    // The sandbox's own tools live under `/private/var/folders`, which every
-    // session may write. Every later session runs them, so a session that could
-    // rewrite one would plant code in all the others. Denied after every write
-    // allowance, and whether or not the config declares any.
-    for (final dir in readOnlyToolDirs) {
-      lines.add('(deny file-write* (subpath "${_escape(dir)}"))');
-    }
 
     // For every denied path, deny file-write-unlink on the path AND its
     // ancestor directories. This prevents `mv payload ~/.bashrc` from
     // bypassing a write-deny via rename (rename(2) triggers
     // file-write-unlink on the destination).
-    final moveBlocked = <String>{...readOnlyToolDirs};
+    final moveBlocked = <String>{};
     for (final path in config.filesystem.denyWrite) {
       if (!path.contains('*')) {
         moveBlocked.add(path);
@@ -148,6 +166,81 @@ abstract final class MacosSandbox {
           runDir.isNotEmpty &&
           moveBlocked.any((p) => runDir == p || runDir.startsWith('$p/'))) {
         lines.add('(allow file-write-unlink (subpath "${_escape(runDir)}"))');
+      }
+      lines.add('');
+    }
+
+    // A hidden root is already closed to writes, unlinks included. Renaming
+    // a directory above it would move it to a path no rule names, so those
+    // are refused too. Only literals: the worktrees inside stay renameable.
+    final hiddenAncestors = <String>{
+      for (final root in hidden.roots) ...HiddenRoots.ancestorsOf(root),
+    };
+    for (final dir in hiddenAncestors) {
+      lines.add('(deny file-write-unlink (literal "${_escape(dir)}"))');
+    }
+    if (hiddenAncestors.isNotEmpty) {
+      lines.add('');
+    }
+
+    // Tools other code runs: the sandbox's own (under `/private/var/folders`,
+    // which every session may write, and which every later session runs) and
+    // the run's tool dirs (on its `PATH`; git runs its signer from one).
+    // Denied after every write and unlink allowance above, with the
+    // directories above them unrenameable, so nothing in the sandbox can
+    // change what they hold.
+    final toolDirs = <String>{
+      ...readOnlyToolDirs,
+      ...?policy?.toolDirs.where((d) => d.isNotEmpty),
+    };
+    for (final dir in toolDirs) {
+      lines.add('(deny file-write* (subpath "${_escape(dir)}"))');
+      for (final ancestor in _ancestorDirectories(dir)) {
+        lines.add('(deny file-write-unlink (literal "${_escape(ancestor)}"))');
+      }
+    }
+    if (toolDirs.isNotEmpty) {
+      lines.add('');
+    }
+
+    // Where the host finds the programs it runs unconfined. Their direct
+    // children cannot be created, replaced, deleted or renamed, nor the
+    // directories, the links on the way or the trees a linked child resolves
+    // into; the directories above them cannot be renamed. Below the direct
+    // children everything stays writable (an SDK's `bin/cache`). Emitted
+    // after every write and unlink allowance, so nothing re-opens them.
+    final hostExecutables =
+        hostExecutablesUnder(config.filesystem.hostExecutables, [
+          ...config.filesystem.allowWrite,
+          ..._tempRoots,
+          ...hidden.writable,
+          ?policy?.runDir,
+          ...?policy?.runnerStateDirs,
+        ]);
+    if (!hostExecutables.isEmpty) {
+      final unrenameable = <String>{};
+      for (final dir in hostExecutables.dirs) {
+        final escaped = _escape(dir);
+        lines.add('(deny file-write* (literal "$escaped"))');
+        // A `"` cannot be written inside a `#"…"` regex; such a directory
+        // keeps the literal deny only.
+        if (!dir.contains('"')) {
+          lines.add(
+            '(deny file-write* (regex #"^${_regexEscape(dir)}/[^/]+\$"))',
+          );
+        }
+        unrenameable.addAll(_ancestorDirectories(dir));
+      }
+      for (final link in hostExecutables.links) {
+        lines.add('(deny file-write* (literal "${_escape(link)}"))');
+        unrenameable.addAll(_ancestorDirectories(link));
+      }
+      for (final root in hostExecutables.installRoots) {
+        lines.add('(deny file-write* ${_seatbeltPath(root)})');
+        unrenameable.addAll(_ancestorDirectories(root));
+      }
+      for (final dir in unrenameable) {
+        lines.add('(deny file-write-unlink (literal "${_escape(dir)}"))');
       }
       lines.add('');
     }
@@ -224,6 +317,12 @@ abstract final class MacosSandbox {
       for (final root in config.allowedExecRoots) {
         if (root.isNotEmpty) {
           lines.add('(allow process-exec (subpath "${_escape(root)}"))');
+        }
+      }
+      // The run's tool dirs: executable, and (above) never writable.
+      for (final dir in policy?.toolDirs ?? const <String>[]) {
+        if (dir.isNotEmpty) {
+          lines.add('(allow process-exec (subpath "${_escape(dir)}"))');
         }
       }
       lines.add('');
@@ -304,55 +403,10 @@ esac
 exec /usr/bin/security "$@"
 ''';
 
-  /// File name of [sshSignShim] in the tool dir.
-  static const String sshSignShimName = 'cc-ssh-sign';
-
-  /// Env var carrying the user's own `gpg.ssh.program` to [sshSignShim].
-  static const String userSshProgramEnvKey = 'CC_GIT_SSH_PROGRAM';
-
-  /// The `gpg.ssh.program` of a sandboxed git, when the user signs with SSH.
-  ///
-  /// The profile denies unix sockets, so the user's SSH agent (1Password's
-  /// `op-ssh-sign` included) is out of reach and a signed commit fails with
-  /// "failed to write commit object". Only the `-Y sign` call is rerouted: it
-  /// goes to the agent run gateway (`AgentRunGateway`), which signs on the
-  /// host; the env names, header and path below are the gateway's
-  /// (`AgentRunLease`). Every other call (`-Y verify`, `find-principals`) runs
-  /// the user's own program, exactly as git would have.
-  static const String sshSignShim = r'''#!/bin/sh
-# Control Center macOS sandbox: the SSH agent is unreachable in here. Git's
-# signing calls go to the agent gateway, which signs on the host; everything
-# else runs the user's own gpg.ssh.program.
-if [ "$1" != "-Y" ] || [ "$2" != "sign" ]; then
-  exec "${CC_GIT_SSH_PROGRAM:-ssh-keygen}" "$@"
-fi
-for buffer; do :; done
-if [ -z "$CC_AGENT_GATEWAY" ] || [ -z "$CC_AGENT_RUN_TOKEN" ]; then
-  echo "Control Center: this session cannot sign commits (no agent run)." >&2
-  exit 1
-fi
-if curl --disable --silent --show-error --fail-with-body --noproxy '*' \
-  --connect-timeout 5 --max-time 360 \
-  --header "X-CC-Agent-Run: $CC_AGENT_RUN_TOKEN" \
-  --header 'Content-Type: application/octet-stream' \
-  --data-binary "@$buffer" --output "$buffer.sig" \
-  "$CC_AGENT_GATEWAY/agent/git-sign"; then
-  exit 0
-fi
-cat "$buffer.sig" >&2 2>/dev/null
-rm -f "$buffer.sig"
-exit 1
-''';
-
   /// Installs [keychainStandIn] as `<profilesDir>/bin/security` and returns
   /// that directory, resolved (Seatbelt matches real paths; `/var` is a link).
   static String installKeychainStandIn(Directory profilesDir) =>
       _installTool(profilesDir, 'security', keychainStandIn);
-
-  /// Installs [sshSignShim] as `<profilesDir>/bin/[sshSignShimName]` and
-  /// returns that directory, resolved.
-  static String installSshSignShim(Directory profilesDir) =>
-      _installTool(profilesDir, sshSignShimName, sshSignShim);
 
   /// Rewritten whenever its content differs, through a rename so a concurrent
   /// spawn never runs a half-written script.
@@ -385,23 +439,18 @@ exit 1
     int? httpProxyPort,
     int? socksProxyPort,
     String binShell = '/bin/bash',
-    String? sshSigningProgram,
     String? sessionTmpDir,
   }) {
     if (!profilesDir.existsSync()) {
       profilesDir.createSync(recursive: true);
     }
     final toolDir = installKeychainStandIn(profilesDir);
-    final signer = sshSigningProgram == null
-        ? null
-        : '${installSshSignShim(profilesDir)}/$sshSignShimName';
     // The legitimate CLI binary gets an explicit exec allow so the
     // writable-dir exec block doesn't block it.
     final allowedExecutables = <String>[
       if (argv.isNotEmpty) argv.first,
       binShell,
       '$toolDir/security',
-      ?signer,
     ];
     final profile = generateSeatbeltProfile(
       config,
@@ -431,34 +480,13 @@ exit 1
       profileFile.path,
       binShell,
       '-c',
-      '$path$tmp${_gitSignerConfig(signer, sshSigningProgram)}$cd$inner',
+      '$path$tmp$cd$inner',
     ];
     return MacosWrapResult(
       executable: '/usr/bin/sandbox-exec',
       argv: wrapped,
       profilePath: profileFile.path,
     );
-  }
-
-  /// Shell that points git's SSH signer at [signer] for this process tree,
-  /// handing the user's own [program] to it for everything but signing.
-  ///
-  /// Nothing is written to any git config file: it is one more `GIT_CONFIG_*`
-  /// entry after those the environment already carries (the gateway's push
-  /// routing), which git applies at command scope. Without SSH signing
-  /// ([signer] null) git's signing config is left exactly as the user has it.
-  /// A non-numeric count is reset rather than evaluated: bash arithmetic on
-  /// an inherited string would run any command substitution inside it.
-  static String _gitSignerConfig(String? signer, String? program) {
-    if (signer == null || program == null) {
-      return '';
-    }
-    return 'export $userSshProgramEnvKey=${_quoteOne(program)}; '
-        r'cc_n=${GIT_CONFIG_COUNT:-0}; '
-        r"case $cc_n in ''|*[!0-9]*) cc_n=0 ;; esac; "
-        r'export GIT_CONFIG_KEY_$cc_n=gpg.ssh.program '
-        'GIT_CONFIG_VALUE_\$cc_n=${_quoteOne(signer)} '
-        r'GIT_CONFIG_COUNT=$((cc_n + 1)); unset cc_n; ';
   }
 
   /// Returns a seatbelt deny rule for a write-denied path. Glob patterns
@@ -500,6 +528,10 @@ exit 1
     }
     return '^${buf.toString()}\$';
   }
+
+  /// [path] as a literal inside a Seatbelt regex.
+  static String _regexEscape(String path) =>
+      path.replaceAllMapped(RegExp(r'[.+?*^${}()|[\]\\]'), (m) => '\\${m[0]}');
 
   /// Returns all ancestor directories of [path] (not including `/` or `.`).
   /// E.g. `/Users/foo/.bashrc` → `['/Users/foo', '/Users']`.

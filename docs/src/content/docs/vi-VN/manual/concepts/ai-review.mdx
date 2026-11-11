@@ -2,7 +2,7 @@
 title: Đánh giá bằng AI
 description: Cách một pull request trở thành một bản đã được đánh giá — space đánh giá, node đánh giá và đồng thuận ngang hàng, cohort và trục, kết luận Ship/Hold/Block, và vì sao xuất bản vẫn là bước do bạn thực hiện.
 slug: vi-VN/so-tay/khai-niem/danh-gia-ai
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Hình dạng của một lượt đánh giá
@@ -208,9 +208,14 @@ GitHub**:
 - Nút **Xuất bản lên GitHub** đăng lượt đánh giá dưới danh nghĩa người đã nhấn
   nút, bằng đăng nhập GitHub của chính họ: cổng phát hành thuộc về họ, nên lượt
   đánh giá cũng vậy. Một lần xuất bản không có người đứng sau là tự động hóa, và
-  tự động hóa không bao giờ phê duyệt: Ship khi đó được gửi là `COMMENT`, và trên
-  Control Center Connect bài đăng được ghi nhận bằng tiền tố
-  `**Control Center** (for @login):`.
+  tự động hóa không bao giờ phê duyệt: Ship khi đó được gửi là `COMMENT`, và các
+  lượt nhắc @ trong phát hiện được vô hiệu hóa để bài đăng không thông báo cho ai.
+  Bài đăng do bot đăng, trừ khi là trên ứng dụng Control Center Connect dùng chung
+  mà nhà vận hành Connect chưa liệt kê cài đặt này: khi đó nó được gửi bằng đăng
+  nhập riêng của người chịu trách nhiệm, dưới tên họ, và được
+  ghi nhận bằng tiền tố `**Control Center** (for @login):`. Máy chủ hoặc không gian
+  làm việc có ứng dụng GitHub riêng luôn đăng bài dưới dạng bot. Một agent gọi công
+  cụ MCP chỉ có thể đăng đánh giá của không gian của chính nó.
 
 Xuất bản khai báo lớp hành động `prPublish`, nên điểm chặn của rào chắn kiểm
 soát nó như mọi hành động thay đổi dữ liệu — nó hỏi trước theo mặc định và từ

@@ -2,12 +2,12 @@
 title: Ajan oluşturma ve yapılandırma
 description: Bir çalışma alanına ajan ekleyin, ona bir adaptör, model, beceri ve izin verin ve çalıştığını doğrulayın.
 slug: tr-TR/kilavuz/nasil-yapilir/ajan-olusturma
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Bu kılavuz, bir çalışma alanına nasıl ajan ekleyeceğinizi ve onu gerçekten çalışana kadar nasıl yapılandıracağınızı gösterir.
 
-Her çalışma alanı beş ajanla birlikte gelir — bir CEO ile `qa`, `architect`, `engineer` ve `librarian` —, bu yüzden genellikle daha hiçbirini yapılandırmadan ajanlarınız olur. Aşağıdaki adımlar hazır gelen bir ajan için de yeni bir ajan için de aynı şekilde geçerlidir.
+Her çalışma alanı altı ajanla birlikte gelir — bir CEO ile `qa`, `architect`, `engineer`, `librarian` ve `content-synthesizer` —, bu yüzden genellikle daha hiçbirini yapılandırmadan ajanlarınız olur. Aşağıdaki adımlar hazır gelen bir ajan için de yeni bir ajan için de aynı şekilde geçerlidir.
 
 ## Başlamadan önce
 
@@ -53,7 +53,7 @@ Adaptörü ayarlanmamış bir ajan **Control Center (built-in)** adaptörüne, y
 
 **Beceriler**, bu çalışma alanında kurulu beceri paketleri üzerinde bir çip seçicidir. Bir çipi açıp kapatmak için ona dokunun; onay işareti simgesi seçili olanları belirtir. Çalışma alanında hiç beceri yoksa alan "No skills available. Create skills in Settings → Skills first." şeklinde görünür.
 
-Bir deponun kendi becerilerini burada seçmezsiniz. Bunları içeren bir depo (`.agents/skills/`, `.claude/skills/` veya `.opencode/skills/` içinde), o depoda çalışan ajana bunları otomatik olarak kazandırır ve ajan başka bir depoya geçtiğinde de bunlar değişir — bkz. [Depo kapsamlı beceriler](/tr-TR/kilavuz/kavramlar/ajan-modeli/#repo-scoped-skills).
+Bir deponun kendi becerilerini burada seçmezsiniz. Bunları içeren bir depo (`.agents/skills/`, `.claude/skills/` veya `.opencode/skills/` içinde), o depoda çalışan ajana bunları otomatik olarak kazandırır ve ajan başka bir depoya geçtiğinde de bunlar değişir — bkz. [Depo kapsamlı beceriler](/tr-TR/kilavuz/kavramlar/ajan-modeli/#depoya-özel-beceriler).
 
 ## Raporlama zincirini ve personayı ayarlayın
 
@@ -73,7 +73,7 @@ Bir ajanın kendine ait izin anahtarları yoktur. Neyi push edebileceğini, aça
 Ajanın GitHub belirteci her zaman salt okunurdur. Bir push, iletmeden önce **Uzak depoya push et** kuralına soran Control Center'dan geçer. Her kuralın bir çalıştırmaya nasıl ulaştığı için bkz. [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/).
 
 :::note[Kurallar ve işletim sistemi sandbox'ı ayrı katmanlardır]
-Kurallar bir ajanın ne yapabileceğine karar verir; işletim sistemi sandbox'ı ise süreçlerinin nerede okuyup yazabileceğini ve nereye bağlanabileceğini sınırlar. `cc_server`, bulunduğu yerde ajan çalıştırmalarını ana makinenin sandbox'ına sarar — Windows'ta yerel bir arka uç yoktur; Linux ve WSL2 ise `bwrap` ve `socat` gerektirir. Sınırların tamamı için bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
+Kurallar bir ajanın ne yapabileceğine karar verir; işletim sistemi sandbox'ı ise süreçlerinin nerede okuyup yazabileceğini ve nereye bağlanabileceğini sınırlar. `cc_server`, bulunduğu yerde ajan çalıştırmalarını ana makinenin sandbox'ına sarar — Windows'ta yerel bir arka uç yoktur; Linux ve WSL2 ise `bwrap` ve `socat` gerektirir. Hiçbirinin olmadığı yerde, sahip sandbox'ı herkes için kapatmadıysa yalnızca sunucu sahibinin çalıştırmaları başlar. Sınırların tamamı için bkz. [Sandbox ve güvenlik](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/).
 :::
 
 ## Çalıştığını doğrulayın

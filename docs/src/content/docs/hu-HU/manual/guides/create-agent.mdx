@@ -2,12 +2,12 @@
 title: Ügynök létrehozása és konfigurálása
 description: Adjon hozzá egy ügynököt egy munkaterülethez, lássa el adapterrel, modellel, készségekkel és jogosultságokkal, és győződjön meg róla, hogy fut.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/ugynok-letrehozasa
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Ez az útmutató bemutatja, hogyan adhat hozzá egy ügynököt egy munkaterülethez, és hogyan konfigurálhatja addig, amíg az ténylegesen futni tud.
 
-Minden munkaterület öt ügynököt kap alapból — egy CEO-t, valamint a `qa`, `architect`, `engineer` és `librarian` ügynököt —, így általában már vannak ügynökei, mielőtt bármelyiket beállítaná. Az alábbi lépések ugyanúgy érvényesek egy alapból létrehozott ügynökre, mint egy újra.
+Minden munkaterület hat ügynököt kap alapból — egy CEO-t, valamint a `qa`, `architect`, `engineer`, `librarian` és `content-synthesizer` ügynököt —, így általában már vannak ügynökei, mielőtt bármelyiket beállítaná. Az alábbi lépések ugyanúgy érvényesek egy alapból létrehozott ügynökre, mint egy újra.
 
 ## Mielőtt elkezdi
 
@@ -53,7 +53,7 @@ A **Modell** legördülő listát az Ön által választott adapter vezérli. A 
 
 A **Készségek** egy chipválasztó az ebben a munkaterületben telepített készségcsomagok fölött. Koppintson egy chipre a be- vagy kikapcsolásához; a pipa jelöli a kiválasztottakat. Ha a munkaterületen nincs készség, a mező ezt írja: „No skills available. Create skills in Settings → Skills first.”
 
-A repók saját készségeit itt nem választja ki. Az a repó, amely ilyeneket szállít (a `.agents/skills/`, `.claude/skills/` vagy `.opencode/skills/` könyvtárban), automatikusan hozzáadja azokat ahhoz az ügynökhöz, amelyik éppen abban a repóban dolgozik, és lecserélődnek, amikor átvált egy másikba — lásd: [Repóhoz kötött készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repo-scoped-skills).
+A repók saját készségeit itt nem választja ki. Az a repó, amely ilyeneket szállít (a `.agents/skills/`, `.claude/skills/` vagy `.opencode/skills/` könyvtárban), automatikusan hozzáadja azokat ahhoz az ügynökhöz, amelyik éppen abban a repóban dolgozik, és lecserélődnek, amikor átvált egy másikba — lásd: [Repóhoz kötött készségek](/hu-HU/kezikonyv/fogalmak/ugynokmodell/#repóhoz-kötött-készségek).
 
 ## A beszámolási vonal és a persona beállítása
 
@@ -73,7 +73,7 @@ Az ügynöknek nincsenek saját jogosultságkapcsolói. Hogy mit pusholhat, nyit
 Az ügynök GitHub-tokenje mindig csak olvasásra jogosult. A push a Control Centeren megy át, amely a továbbítás előtt megkérdezi a **Küldés távoli tárolóra** szabályt. Hogy az egyes szabályok hogyan érik el a futást, lásd a [Homokozószabályzatok konfigurálása](/hu-HU/kezikonyv/gyakorlati-utmutatok/homokozoszabalyzatok/) oldalon.
 
 :::note[A szabályok és az operációs rendszer homokozója külön rétegek]
-A szabályok azt döntik el, mit tehet egy ügynök; az operációs rendszer homokozója azt korlátozza, hol olvashatnak, írhatnak és kapcsolódhatnak a folyamatai. A `cc_server` a gazdagép homokozójába csomagolja az ügynökfuttatásokat, ahol van ilyen — a Windowson nincs natív háttérrendszer, a Linuxnak és a WSL2-nek pedig `bwrap` és `socat` kell. A határok teljes körét lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
+A szabályok azt döntik el, mit tehet egy ügynök; az operációs rendszer homokozója azt korlátozza, hol olvashatnak, írhatnak és kapcsolódhatnak a folyamatai. A `cc_server` a gazdagép homokozójába csomagolja az ügynökfuttatásokat, ahol van ilyen — a Windowson nincs natív háttérrendszer, a Linuxnak és a WSL2-nek pedig `bwrap` és `socat` kell. Ahol nincs ilyen, csak a szerver tulajdonosának futtatásai indulnak el, hacsak a tulajdonos mindenki számára ki nem kapcsolta a homokozót. A határok teljes körét lásd a [Homokozó és biztonság](/hu-HU/kezikonyv/fogalmak/homokozo-es-biztonsag/) oldalon.
 :::
 
 ## Ellenőrizze, hogy fut

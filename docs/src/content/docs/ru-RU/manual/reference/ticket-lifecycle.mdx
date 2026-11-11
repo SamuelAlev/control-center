@@ -2,7 +2,7 @@
 title: Жизненный цикл тикета
 description: Поля тикетов, статусы, переходы, связи и узловая точка мутаций.
 slug: ru-RU/руководство/справка/жизненный-цикл-тикета
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Статусы тикета
@@ -117,7 +117,7 @@ GitHub Issues, Jira Cloud и ClickUp. GitHub Issues — только вендо�
 | `projectId`              | `String?`                  | Проект-владелец; никогда не отправляется в удалённую систему                               |
 | `assignedAgentId`        | `String?`                  | Идентификатор назначенного субъекта (только метаданные — назначение ничего не запускает)   |
 | `assigneeType`           | `PrincipalType`            | Какого рода субъект называет `assignedAgentId` — `user` или `agent` (по умолчанию `agent`) |
-| `createdByType`          | `PrincipalType?`           | Род субъекта, создавшего тикет (`user` или `agent`); null для устаревших и системных строк |
+| `createdByType`          | `PrincipalType?`           | Род субъекта, создавшего тикет (`user` или `agent`); null для строк, созданных системой |
 | `createdById`            | `String?`                  | Идентификатор создавшего субъекта                                                          |
 | `assignedTeamId`         | `String?`                  | Назначенная команда (только метаданные)                                                    |
 | `delegatedByAgentId`     | `String?`                  | Агент, делегировавший этот тикет                                                           |

@@ -2,10 +2,10 @@
 title: Aggiungi repo a uno spazio di lavoro
 description: Registra i checkout Git in uno spazio di lavoro così che gli agenti possano lavorarci.
 slug: it-IT/manuale/guide/aggiungi-repo
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Questa guida mostra come registrare un checkout Git in uno spazio di lavoro, reindicizzarlo e rimuoverlo di nuovo.
+Questa guida mostra come registrare un checkout Git in uno spazio di lavoro, reindicizzarlo e rimuoverlo di nuovo. Aggiungere un repository dalle cartelle del server richiede il proprietario del server; rimuoverne uno richiede un amministratore dello spazio di lavoro.
 
 I repo hanno **ambito di spazio di lavoro**. Non esiste un registro globale né un passaggio di collegamento: aggiungere un repo e inserirlo in uno spazio di lavoro sono lo stesso atto. Lo stesso checkout registrato in due spazi di lavoro diventa due righe indipendenti con due id diversi — tra spazi di lavoro, l'identità di un repo è il suo percorso nel file system, mai il suo id.
 
@@ -21,9 +21,29 @@ Qualunque altra cosa viene rifiutata al momento della registrazione con un messa
 
 L'host di codice viene letto dal remote e memorizzato sul repo — non lo scegli mai. Uno spazio di lavoro può contenere repo di tutti e tre contemporaneamente, e con ciascuno si comunica tramite la propria API con la propria credenziale. I namespace annidati di GitLab vengono preservati, quindi `gitlab.com/group/subgroup/project` viene registrato con proprietario `group/subgroup` e nome `project`.
 
-La cartella deve inoltre trovarsi sulla macchina che ospita `cc_server`, dentro una delle directory `--repo-roots` di quel server. Questa lista di autorizzazione per impostazione predefinita è la home directory dell'utente del server, e la navigazione al di sopra di una root viene rifiutata.
+La cartella deve inoltre trovarsi sulla macchina che ospita `cc_server`, dentro una delle directory `--repo-roots` di quel server. Questa lista di autorizzazione per impostazione predefinita è la home directory dell'utente del server, e la navigazione al di sopra di una root viene rifiutata. La navigazione tra le cartelle del server è offerta solo al [proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server), perché elenca i file della macchina stessa. Chiunque altro vede «Il proprietario del server aggiunge i repository dalle cartelle del server.» al posto del pulsante **Aggiungi repository**, e un link a un repository che nessuno dei suoi spazi di lavoro ha dice che non è collegato in nessuno dei suoi spazi di lavoro, e di chiedere al proprietario del server di aggiungerlo.
+
+Dove può trovarsi il checkout dipende da chi lo collega:
+
+- **Dentro lo spazio di archiviazione dello spazio di lavoro** sul server: qualsiasi amministratore dello spazio di lavoro.
+- **In qualunque altro punto del disco del server**: solo il [proprietario del server](/it-IT/manuale/concetti/autorizzazione/#il-proprietario-del-server), perché solo lui può indirizzare il server verso i file della macchina. Chiunque altro vede «Solo il proprietario del server può collegare una cartella esterna allo spazio di archiviazione di questo spazio di lavoro.»
+- **La cartella dati del server**, o qualsiasi cosa al suo interno: mai.
+
+L'`origin` del checkout deve essere il repository che stai collegando. Una cartella il cui `origin` indica un altro repository viene rifiutata con «L’origine di quella cartella è un altro repository.»
+
+### Cartelle che il server non userà ancora
+
+Un repository la cui cartella si trova fuori dallo spazio di archiviazione dello spazio di lavoro e che non è stato collegato dal proprietario del server, ad esempio uno in uno spazio di lavoro importato, mostra «Questa cartella è fuori dallo spazio di archiviazione dello spazio di lavoro. Conferma che questo server può usarla.» sotto la sua riga, finché il proprietario del server non lo conferma. Chiunque altro vede invece «Questa cartella è fuori dallo spazio di archiviazione dello spazio di lavoro. Solo il proprietario del server può confermarla.»
+
+Il proprietario lo conferma una volta: **Conferma** sulla riga, oppure **Conferma tutti** nell'avviso sopra l'elenco quando più repository sono in attesa. Ciascuno viene ricontrollato come proprietario, con gli stessi controlli del collegamento. Fino ad allora resta nell'elenco ma non viene aperto, predisposto né indicizzato: nessun editor, terminale, ambiente o checkout di uno spazio lo usa, e il grafo del codice lo salta. Aggiungere di nuovo la stessa cartella come proprietario del server ha lo stesso effetto della conferma e conserva l'id del repository.
+
+Un checkout che un link simbolico ha spostato altrove viene trattato allo stesso modo: resta elencato e inutilizzato finché qualcuno autorizzato a collegare la cartella verso cui ora punta non lo collega di nuovo.
+
+Ti serve anche l'accesso al forge del repository, e il tuo account deve poter vedere il repository.
 
 ## Registra un checkout
+
+Per questi passaggi devi essere il proprietario del server.
 
 1. Apri **Impostazioni → Spazio di lavoro → Repository** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Fai clic su **Aggiungi repository**.
@@ -56,7 +76,23 @@ Trascina la maniglia su una riga. L'ordine che imposti è quello con cui vengono
 
 ## Correggi il link GitHub
 
-L'icona del link su una riga apre un editor per il proprietario GitHub e il nome della repository di quel repo — utile quando il remote è stato rinominato o trasferito.
+L'icona del link su una riga apre un editor per il proprietario GitHub e il nome della repository di quel repo.
+
+Ne hai raramente bisogno. Un link è legato all'id permanente del repository sul forge, quindi una rinomina o un trasferimento viene seguita automaticamente.
+
+- Rinominare un repository in Control Center cambia solo il suo nome visualizzato.
+- Cambiare il repository del forge verso cui punta un link richiede un amministratore dello spazio di lavoro, e viene verificato sul forge con l'accesso dell'amministratore, come per il collegamento.
+- Un repository collegato non può diventare un repository solo locale.
+
+Se il percorso in seguito indica un repository **diverso** (l'originale è stato eliminato e creato di nuovo, oppure spostato e sostituito da un altro), Control Center smette di inviargli qualunque cosa: nessun token, push, commento o richiesta. Questo vale anche per le azioni delle persone: una revisione, un merge o un commento che fai su quel repository viene rifiutato, su GitHub, GitLab e Bitbucket allo stesso modo. La riga e le pull request del repository mostrano «_repo_ ora punta a un altro repository» finché un amministratore dello spazio di lavoro non clicca **Ricollega**.
+
+## Chi può aprire il codice
+
+Il solo accesso concesso a un repository non apre i file del repository. Per aprire file, differenze, ricerca o un terminale su di esso, un membro ha bisogno dell'accesso in Control Center e il suo account sul forge deve poter leggere il repository. Gli amministratori dello spazio di lavoro non sono esentati; il proprietario del server sì. Vedi [Il codice segue la forge](/it-IT/manuale/concetti/autorizzazione/#il-codice-segue-la-forge).
+
+Quando concedi un repository a qualcuno il cui account sul forge non può leggerlo, l'accesso viene salvato e vedi un avviso, come «Salvato. Il loro account GitHub non può ancora leggere questo repository, quindi per loro resta nascosto.»
+
+La stessa regola decide chi può aprire uno spazio. Uno spazio si apre solo per i membri che possono aprire il codice di ogni repository che usa, ed è nascosto a tutti gli altri, insieme ai suoi risultati di ricerca, log delle esecuzioni, to-do, attività e notifiche. Uno spazio senza repository è aperto a ogni membro. Vedi [Gli spazi seguono i loro repository](/it-IT/manuale/concetti/autorizzazione/#gli-spazi-seguono-i-loro-repository).
 
 ## Rimuovi un repo
 
@@ -66,7 +102,31 @@ L'icona del link su una riga apre un editor per il proprietario GitHub e il nome
 
 La finestra di dialogo dice cosa fa: «_name_ sarà rimosso da questo spazio di lavoro. I file locali su disco non saranno modificati.»
 
+Rimuovere un repository richiede un amministratore dello spazio di lavoro. Cancella anche le credenziali del forge memorizzate per quel repository, come un token di automazione GitLab o Bitbucket.
+
 La rimozione elimina la riga del repo da questo spazio di lavoro e cancella a cascata le sue righe del grafo del codice — simboli, archi, file e checkpoint di indicizzazione — oltre a ogni autorizzazione per membro su quel repo, ai suoi collegamenti spazio-repo e ai suoi record di checkout isolati. Lo stesso checkout registrato in un altro spazio di lavoro è una riga indipendente e non viene toccato. I worktree su disco a cui quei record puntavano non vengono smontati dall'eliminazione.
+
+## Risoluzione dei problemi
+
+### Ho l'accesso ma il repository dice che il mio account non può leggerlo
+
+Il tuo account sul forge non può leggere il repository, quindi Control Center ne tiene il codice lontano da te anche se lo spazio di lavoro te lo ha concesso. Accedi al forge in **Impostazioni → Tu → Profilo → Hosting del codice** se non l'hai ancora fatto, oppure chiedi al proprietario del repository sul forge l'accesso. Il repository si apre non appena il tuo account sul forge può leggerlo.
+
+### «Questa cartella è fuori dallo spazio di archiviazione dello spazio di lavoro»
+
+La cartella del repository si trova fuori dallo spazio di archiviazione dello spazio di lavoro e il proprietario del server non l'ha collegata, oppure un link simbolico ora lo punta altrove. Resta elencato ma inutilizzato finché il proprietario del server non lo conferma o non aggiunge di nuovo la cartella. Se non sei il proprietario, chiediglielo. Se lo sei, premi **Conferma** sulla riga o **Conferma tutti** sopra l'elenco; vedi [Cartelle che il server non userà ancora](#cartelle-che-il-server-non-userà-ancora).
+
+### «Su questo percorso del server non esiste più nulla»
+
+La cartella è stata spostata o eliminata sul computer del server. Rimettila al suo posto, oppure fai in modo che un amministratore dello spazio di lavoro rimuova il repository con **Rimuovi** nell'avviso e lo aggiunga di nuovo dalla cartella attuale.
+
+### «Questa cartella non può essere usata come repository»
+
+La cartella memorizzata è la cartella dati del server, qualcosa al suo interno, o la cartella di archiviazione dello spazio di lavoro stessa. Nessuna di queste può essere un repository. Un amministratore dello spazio di lavoro la rimuove con **Rimuovi** nell'avviso, poi aggiunge di nuovo il repository dalla vera cartella del checkout.
+
+### «Impossibile confermare il tuo accesso alla forge»
+
+Control Center non è riuscito a raggiungere il forge per verificare che il tuo account possa leggere il repository, quindi ha rifiutato invece di tirare a indovinare. Riprova tra poco.
 
 ## Guide correlate
 

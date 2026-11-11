@@ -1,4 +1,5 @@
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -10,7 +11,7 @@ import 'helpers/test_database.dart';
 
 /// Covers [DaoActionPolicyRepository] and [ActionPolicyMapper] end-to-end.
 /// Exercises the full rule ↔ row round trip, scope filtering and the
-/// "at most one rule per (scope, actionClass|commandPrefix)" dedup chokepoint.
+/// rule-identity dedup chokepoint.
 void main() {
   late GlobalDatabase global;
   late WorkspaceDatabaseManager dbs;
@@ -38,6 +39,8 @@ void main() {
     String? commandPrefix,
     ActionDecision decision = ActionDecision.prompt,
     String provenance = 'user',
+    ActionConstraint? constraint,
+    DateTime? expiresAt,
   }) => ActionPolicyRule(
     id: id,
     workspaceId: ws,
@@ -47,6 +50,8 @@ void main() {
     commandPrefix: commandPrefix,
     decision: decision,
     provenance: provenance,
+    constraint: constraint,
+    expiresAt: expiresAt,
     createdAt: DateTime.utc(2025, 1, 1),
     updatedAt: DateTime.utc(2025, 1, 1),
   );
@@ -146,5 +151,132 @@ void main() {
         expect(rows.first.id, 'ap-2');
       },
     );
+  });
+
+  group('upsertRule replaces only a rule with the same identity', () {
+    final until = DateTime.utc(2025, 1, 1, 8);
+    const feature = ActionConstraint(refs: ['feature/**']);
+
+    ActionPolicyRule plain(String id, ActionDecision decision) => rule(
+      id: id,
+      scopeType: ActionScopeType.space,
+      scopeId: 'c-1',
+      actionClass: ActionClass.gitPush,
+      decision: decision,
+    );
+
+    ActionPolicyRule standing(
+      String id, {
+      ActionConstraint constraint = feature,
+      DateTime? expiresAt,
+    }) => rule(
+      id: id,
+      scopeType: ActionScopeType.space,
+      scopeId: 'c-1',
+      actionClass: ActionClass.gitPush,
+      decision: ActionDecision.allow,
+      provenance: 'remembered',
+      constraint: constraint,
+      expiresAt: expiresAt ?? until,
+    );
+
+    Future<Set<String>> ids() async => {
+      for (final r in await repo.rulesForScope(
+        'w-1',
+        ActionScopeType.space,
+        'c-1',
+      ))
+        r.id,
+    };
+
+    test('a standing approval leaves the plain rule of its class', () async {
+      await repo.upsertRule(plain('plain', ActionDecision.prompt));
+      await repo.upsertRule(standing('standing'));
+      expect(await ids(), {'plain', 'standing'});
+    });
+
+    test('a plain rule leaves the standing approvals of its class', () async {
+      await repo.upsertRule(standing('standing'));
+      await repo.upsertRule(plain('plain-1', ActionDecision.prompt));
+      await repo.upsertRule(plain('plain-2', ActionDecision.deny));
+      expect(await ids(), {'standing', 'plain-2'});
+    });
+
+    test('approving the same thing again refreshes it, no copy', () async {
+      await repo.upsertRule(standing('first'));
+      final later = until.add(const Duration(hours: 3));
+      await repo.upsertRule(standing('second', expiresAt: later));
+      expect(await ids(), {'second'});
+      expect((await repo.ruleById('w-1', 'second'))?.expiresAt?.toUtc(), later);
+    });
+
+    test('approvals of different things coexist', () async {
+      await repo.upsertRule(standing('feature'));
+      await repo.upsertRule(
+        standing(
+          'command',
+          constraint: const ActionConstraint(commands: ['git push']),
+        ),
+      );
+      expect(await ids(), {'feature', 'command'});
+    });
+
+    test('a standing approval leaves a person\'s rule with the same '
+        'condition', () async {
+      await repo.upsertRule(
+        rule(
+          id: 'deny-feature',
+          scopeType: ActionScopeType.space,
+          scopeId: 'c-1',
+          actionClass: ActionClass.gitPush,
+          decision: ActionDecision.deny,
+          constraint: feature,
+        ),
+      );
+      await repo.upsertRule(standing('standing'));
+      expect(await ids(), {'deny-feature', 'standing'});
+    });
+
+    test('a protected-branch deny survives a plain allow, and saving it '
+        'again replaces it', () async {
+      const trunk = ActionConstraint(refs: ['main']);
+      ActionPolicyRule deny(String id) => rule(
+        id: id,
+        actionClass: ActionClass.gitPush,
+        decision: ActionDecision.deny,
+        constraint: trunk,
+      );
+      await repo.upsertRule(deny('deny-1'));
+      await repo.upsertRule(
+        rule(
+          id: 'allow',
+          actionClass: ActionClass.gitPush,
+          decision: ActionDecision.allow,
+        ),
+      );
+      await repo.upsertRule(deny('deny-2'));
+      final rows = await repo.rulesForScope(
+        'w-1',
+        ActionScopeType.workspace,
+        '',
+      );
+      expect({for (final r in rows) r.id}, {'allow', 'deny-2'});
+    });
+
+    test('identity stays within its scope', () async {
+      await repo.upsertRule(standing('space'));
+      await repo.upsertRule(
+        rule(
+          id: 'workspace',
+          actionClass: ActionClass.gitPush,
+          decision: ActionDecision.allow,
+          provenance: 'remembered',
+          constraint: feature,
+          expiresAt: until,
+        ),
+      );
+      expect(await ids(), {'space'});
+      expect(await repo.rules('w-1'), hasLength(2));
+    });
   });
 }

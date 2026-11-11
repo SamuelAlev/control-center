@@ -2,7 +2,7 @@
 title: Felsök en agent
 description: Arbeta dig igenom körningsloggen, adapterproben, serverns status och värddiagnostiken när en agent slutar producera körningar.
 slug: sv-SE/handbok/how-to-guider/felsok-agent
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Den här guiden visar hur du tar reda på varför en agent inte producerar några körningar.
@@ -13,13 +13,13 @@ Arbeta uppifrån och ned: agentens egna körningar först, sedan dess backend, s
 
 **Inställningar → Arbetsyta → Agenter** → välj agenten → **Loggar**.
 
-Varje körning visar ett statusmärke, en varaktighet ("Running…" medan den pågår), dess start- och sluttider, dess PID och adaptern den använde. **Visa** öppnar körningens råa händelseström. **Stoppa** dödar en körande process och markerar körningen "Killed by user"; **Avsluta körning** i sidhuvudet gör samma sak för varje pågående körning av den agenten.
+Varje körning visar ett statusmärke, en varaktighet ("Running…" medan den pågår), dess start- och sluttider, dess PID och adaptern den använde. **Visa** öppnar körningens råa händelseström. **Stoppa** dödar en körande process och markerar körningen "Killed by user"; **Avsluta körning** i sidhuvudet gör samma sak för varje pågående körning av den agenten i den här arbetsytan. Du kan se och stoppa bara pågående agentkörningar i arbetsytor du är medlem i; serverägaren ser och stoppar alla.
 
 Läs den så här:
 
 - **Inga körningar alls** — dispatchningen skedde aldrig. Omnämnanden i skrivfältet är `@` plus ordtecken (bokstäver, siffror, understreck). Uppslagningen är en exakt eller prefixmatchning mot agentnamnet, så `@code-reviewer` tolkas som `code` och kan ändå väcka en agent med namnet `code-reviewer`. Ett namn med ett mellanslag kan inte nämnas som en enda token. Gå sedan vidare till steg 2.
-- **En körning som slutade omedelbart med fel** — öppna **Visa**. Ett misslyckande med att starta backenden visas här som ett processfel.
-- **En körning som fastnat på "Running…"** — stoppa den och kontrollera sedan agentens **Tystnadstimeout** på fliken Inställningar. En timeout som inte är angiven använder standardvärdet per läge.
+- **En körning som slutade omedelbart med fel** — öppna **Visa**. Ett misslyckande med att starta backenden visas här som ett processfel. ”Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här.” betyder att serverns maskin saknar en OS-sandlåda och att du inte är dess ägare; se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/#min-agentkörning-nekades-med-den-här-servern-har-ingen-sandlåda).
+- **En körning som fastnat på "Running…"** — stoppa den och kontrollera sedan agentens **Tystnadstimeout (minuter)** på fliken **Inställningar**. En timeout som inte är angiven använder standardvärdet per läge.
 - **En slutförd körning utan användbara utdata** — körningsloggens status står kvar som `completed` för en körning som avslutades utan sin deklarerade leverans; den ärliga signalen är sammanfattningstexten, inte märket.
 
 Fliken Loggar visar ingen kostnad. För utgifter, använd tabellen per agent i **Observability → Insikter**.
@@ -67,11 +67,11 @@ Två saker värda att känna till när en ändring "fungerar i tester men inte i
 - **Integritet** — huruvida rå diff-innehåll får vidarebefordras till agentens modell och huruvida kraschrapporter skickas.
 
 :::caution[Det här avsnittet rapporterar värden, men reglagen finns på klientsidan]
-Detektion och verkställighet stämmer nu överens: där detektorn rapporterar en nativ backend är agentkörningar på den värden verkligen inpackade i den. Men detektorn är det enda levande i det här avsnittet. Huvudväxeln och backendväljaren är inställningar som lagras på din enhet, och servern läser ingen av dem — serverns egen växel är `--sandbox` (`on` som standard, `off` för att avstå).
+Detektion och verkställighet stämmer överens: där detektorn rapporterar en nativ backend är agentkörningar på den värden verkligen inpackade i den. Men detektorn är det enda levande i det här avsnittet. Huvudväxeln och backendväljaren är inställningar som lagras på din enhet, och servern läser ingen av dem — serverns egen växel är `--sandbox` (`on` som standard, `off` för att avstå).
 
-Så en varning här är värd att agera på, men den är oftast inte orsaken till att en agent misslyckas. För att bekräfta vilket läge servern är i, läs dess startlogg: den skriver ut `agent sandbox ON` med backendanteckningen, `no OS-native agent sandbox on this host` med ett installationstips eller `agent sandbox DISABLED by --sandbox off`. `GET /healthz` innehåller inget sandlådefält.
+Så en varning här är värd att agera på. På en värd utan backend är det varför någon annan än serverägaren inte alls kan köra agenter. För att bekräfta vilket läge servern är i, läs dess startlogg: den skriver ut `agent sandbox ON` med backendanteckningen, `no OS-native agent sandbox on this host` med ett installationstips eller `agent sandbox DISABLED by --sandbox off`, och dess exponeringsrad innehåller `sandbox=native`, `sandbox=unavailable` eller `sandbox=off`. `GET /healthz` innehåller inget sandlådefält.
 
-Där det inte finns någon backend — Windows alltid, Linux eller WSL2 utan `bwrap` och `socat` — är körningar **inte** sandlådade, och det som begränsar dem är samtalets egen checkout, dess kodvärdstoken som bara kan läsa och pushgatewayen, räckena för åtgärder, miljösaneringen och den verktygsyta som dess läge tillåter.
+Där det inte finns någon backend (Windows alltid, Linux eller WSL2 utan `bwrap` och `socat`) startar bara körningar som serverägaren är ansvarig för, och alla andras nekas. De körningar som startar där, och varje körning under `--sandbox off`, är **inte** sandlådade, och det som begränsar dem är samtalets egen checkout, dess kodvärdstoken som bara kan läsa och pushgatewayen, räckena för åtgärder, miljösaneringen och den verktygsyta som dess läge tillåter.
 :::
 
 ## Vanliga fel

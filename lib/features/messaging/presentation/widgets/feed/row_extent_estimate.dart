@@ -10,12 +10,6 @@ const double kSeparatorRowExtent = 38;
 /// item list, the load-more spinner).
 const double kUnknownRowExtent = 96;
 
-/// Segments assumed for a lite list row that carries a transcript the wire
-/// elided and whose `segment_count` the server did not stamp (a row written
-/// before that field existed). Deliberately modest: over-estimating the
-/// scrollback pushes the load-more threshold out of reach.
-const int kElidedSegmentGuess = 6;
-
 /// Rendered line height of bubble body text (14px × `bodyLineHeight` 1.5).
 const double _lineHeight = 21;
 
@@ -126,9 +120,5 @@ int _segmentCount(Message message) {
   if (segments is List) {
     return segments.length;
   }
-  final stamped = (metadata['segment_count'] as num?)?.toInt();
-  if (stamped != null) {
-    return stamped;
-  }
-  return metadata['segments_elided'] == true ? kElidedSegmentGuess : 0;
+  return (metadata['segment_count'] as num?)?.toInt() ?? 0;
 }

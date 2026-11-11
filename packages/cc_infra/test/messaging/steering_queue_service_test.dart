@@ -184,6 +184,7 @@ void main() {
   List<String> dispatched = [];
   List<MessageAttachment> dispatchedAttachments = [];
   List<String> dispatchedImages = [];
+  List<String?> dispatchedFor = [];
   late SteeringQueueService service;
 
   setUp(() {
@@ -193,6 +194,7 @@ void main() {
     dispatched = [];
     dispatchedAttachments = [];
     dispatchedImages = [];
+    dispatchedFor = [];
     service = SteeringQueueService(
       messagingRepository: messaging,
       runLogRepository: runLogs,
@@ -209,6 +211,7 @@ void main() {
             dispatched.add(content);
             dispatchedAttachments.addAll(attachments);
             dispatchedImages.addAll(promptImageRefs);
+            dispatchedFor.add(senderUserId);
           },
       sessionsForConversation: (conversationId) => [
         for (final s in sessions)
@@ -565,6 +568,23 @@ void main() {
         everyElement(isTrue),
       );
       expect(dispatched, ['one\n\ntwo']);
+    });
+
+    test('the turn a card becomes acts for the card\'s author', () async {
+      sessions.add(_FakeSession()..harnessActive = false);
+      await service.enqueue(
+        workspaceId: 'ws',
+        spaceId: 'space',
+        conversationId: 'conv',
+        content: 'push it',
+        senderUserId: 'member-7',
+      );
+
+      runLogs.active = [];
+      await service.handleRunEnded('ws', 'conv', 'space');
+
+      expect(messaging.messages.single.senderId, 'member-7');
+      expect(dispatchedFor, ['member-7']);
     });
 
     test('keeps rows queued while another run is still active', () async {

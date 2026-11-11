@@ -46,7 +46,7 @@ class RemoteTerminalRepository {
   /// The distinction matters for the badge: an unspecified default can step
   /// down when a host has no rig service, and a terminal labelled "enclosed
   /// VM" while running on the host would be the worst possible lie to tell.
-  /// `backend` is null against a server that predates this field.
+  /// `backend` is null when the server does not report one.
   Future<({String sessionId, String? backend})> spawnSession({
     required int rows,
     required int cols,
@@ -75,20 +75,31 @@ class RemoteTerminalRepository {
     );
   }
 
-  /// Live PTY bytes (`{chunk: <base64>}`), never replaceable snapshots.
-  /// Each listener starts live; replaying a previous chunk corrupts the screen.
-  Stream<List<int>> output(String sessionId) => _client
+  /// The session's output: first whether this person may drive it
+  /// ([TerminalDriveRight], from the subscription's opening `{can_drive}`
+  /// frame), then live PTY bytes ([TerminalBytes], from `{chunk: <base64>}`
+  /// frames), never replaceable snapshots. Each listener starts live;
+  /// replaying a previous chunk corrupts the screen. A frame carrying
+  /// neither is dropped, never turned into an empty chunk.
+  Stream<TerminalOutputFrame> output(String sessionId) => _client
       .subscribeEvents('terminal.output', {'session_id': sessionId})
-      .map((data) {
-        final chunk = data['chunk'] as String?;
-        return chunk == null ? const <int>[] : base64Decode(chunk);
+      .expand<TerminalOutputFrame>((data) {
+        final chunk = data['chunk'];
+        if (chunk is String) {
+          return [TerminalBytes(base64Decode(chunk))];
+        }
+        final canDrive = data['can_drive'];
+        if (canDrive is bool) {
+          return [TerminalDriveRight(canDrive: canDrive)];
+        }
+        return const [];
       });
 
   /// The session's foreground-process title stream (`{title: <string>}`
   /// pushes; `''` when the shell sits at its prompt). The server polls the
   /// PTY's foreground process group, so the tab can title itself after a
-  /// long-running command even when the shell never emits OSC 0/2. Servers
-  /// that predate the op error the stream with `RpcErrorCodes.opUnknown` —
+  /// long-running command even when the shell never emits OSC 0/2. A server
+  /// without the op errors the stream with `RpcErrorCodes.opUnknown` —
   /// callers should tolerate that and simply keep the OSC-only behaviour.
   Stream<String> titles(String sessionId) => _client
       .subscribe('terminal.titles', {'session_id': sessionId})
@@ -109,4 +120,29 @@ class RemoteTerminalRepository {
   /// Kills the session's shell and releases its sandbox resources.
   Future<void> kill(String sessionId) =>
       _client.call('terminal.kill', {'session_id': sessionId});
+}
+
+/// One frame of a terminal's `terminal.output` subscription.
+sealed class TerminalOutputFrame {
+  const TerminalOutputFrame();
+}
+
+/// Whether this person may drive the terminal: type into it, resize it and
+/// close or stop it. False is a read-only view of someone else's terminal; a
+/// person's own terminal is always true. Sent once, before any bytes.
+final class TerminalDriveRight extends TerminalOutputFrame {
+  /// Creates the right.
+  const TerminalDriveRight({required this.canDrive});
+
+  /// Whether this person may drive the terminal.
+  final bool canDrive;
+}
+
+/// Live bytes the PTY wrote.
+final class TerminalBytes extends TerminalOutputFrame {
+  /// Wraps [bytes].
+  const TerminalBytes(this.bytes);
+
+  /// The raw bytes, possibly splitting a UTF-8 sequence.
+  final List<int> bytes;
 }

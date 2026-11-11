@@ -2,7 +2,7 @@
 title: پل گفتگو
 description: ارائه‌دهندگان، دستورات، اعتبارنامه‌ها، قابلیت‌ها، عملیات RPC و ذخیره‌سازی پل گفتگو.
 slug: fa-IR/راهنمای-کاربر/مرجع/پل-گفتگو
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## ارائه‌دهندگان
@@ -150,7 +150,7 @@ message.im
 | منشن پذیرفته شد             | `Working on it…`                                               |
 | گام `repo`                  | `Cloning <repo>…`                                              |
 | گام `prCheckout`            | `Checking out the pull request in <repo>…`                     |
-| گام `script`                | `Running the setup script for <repo>…`                         |
+| گام `provisionTasks`                | `Running worktree tasks for <repo>…`                         |
 | گام `agent`                 | `Setting up <agent>…`                                          |
 | `provisioning`، بدون گام تا این لحظه | `Preparing the workspace…`                             |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ message.im
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | اعتبارنامه‌های اتصال         | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | راه‌اندازی هدایت‌شدهٔ نیمه‌تمام | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| فایل‌های قدیمی Slack         | `<dataDir>/<workspaceId>/slack_credentials.json` و `slack_app_setup.json`، که یک‌بار خوانده و در جای خود مهاجرت داده می‌شوند |
 
 اعتبارنامه‌ها کنار پایگاه دادهٔ فضای کاری زندگی می‌کنند، نه درون آن: حذف یک فضای کاری توکن‌های گفتگویش را با خود می‌برد و `workspace.export` یا یک پشتیبان، `workspace.db` را کپی می‌کند — پس فضای کاری‌ای که به کس دیگری سپرده می‌شود هیچ توکن ربات زنده‌ای با خود نمی‌برد. نوشتن‌ها اتمی‌اند (فایل موقت به‌علاوهٔ تغییر نام) و به فقط-مالک محدود می‌شوند.
 

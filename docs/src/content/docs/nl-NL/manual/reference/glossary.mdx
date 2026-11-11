@@ -2,7 +2,7 @@
 title: Verklarende woordenlijst
 description: Definities van de kernbegrippen die in Control Center worden gebruikt.
 slug: nl-NL/handleiding/referentie/woordenlijst
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Het manifest per werkruimte van geïnstalleerde skills: voor elk ervan de bronrepository, het pad in de repo, de commit waaraan het is vastgezet en een samengevatte contenthash. Installaties, updates en de-installaties houden het actueel; verify_skills controleert het tegen de schijf.'],
 ['Agentrun-gateway', 'Een loopback-eindpunt op cc_server dat het actiebeleid binnen de sandbox van een agent toepast. Elke GitHub-push van een agent wordt erheen geleid, getoetst aan de regel Naar een remote pushen en doorgestuurd met een schrijftoken dat de agent nooit in handen heeft; de Bash-opdrachten van Claude Code worden via een hook op hetzelfde eindpunt gecontroleerd.'],
 ['Modus', 'chat, plan, review of orchestrate. Per ruimte opgeslagen, dus één agent kan in verschillende ruimtes in verschillende modi staan; elk gesprek in een ruimte deelt de modus. Bepaalt de systeemprompt, de schrijfregels van de sandbox en de allowlist met MCP-tools.'],
-['SandboxBackend', 'microvm (een afgesloten VM — de enige backend met een kernelgrens, toegepast op interactieve terminals), native (OS-eigen Seatbelt op macOS, bubblewrap op Linux en WSL2) of none. Wordt één keer bij het opstarten geprobeerd; native omhult agentdispatch wanneer die beschikbaar is. Windows heeft geen native backend en Linux vereist bwrap plus socat, dus runs daar worden niet omhuld; --sandbox off kiest daar bewust voor om het uit te zetten.'],
+['SandboxBackend', 'microvm (een afgesloten VM — de enige backend met een kernelgrens, toegepast op interactieve terminals), native (OS-eigen Seatbelt op macOS, bubblewrap op Linux en WSL2) of none. Wordt één keer bij het opstarten geprobeerd; native omhult agentdispatch wanneer die beschikbaar is. Windows heeft geen native backend en Linux vereist bwrap plus socat; op een host zonder backend starten alleen de runs van de servereigenaar, zonder omhulling, en worden die van anderen geweigerd. --sandbox off laat de agents van elk lid zonder omhulling draaien.'],
 ['Rig', 'Een wegwerpmachine die een agent in realtime aanstuurt: een afgesloten browser of Linux-desktop, een door de host beheerde Android-emulator of iOS Simulator, of een afgesloten terminal. Live bekeken via zijn eigen baan op volledige resolutie, met overname die server-side wordt afgedwongen. Gebonden aan een gesprek, zodat het menselijke tabblad en de agenttool één machine aanspreken.'],
 ['Omhulling', 'De sterkere isolatie-eigenschap die beschikbaar is voor VM-ondersteunde rigs: een kernelgrens, een wegwerp-overlayschijf, een netwerkpoort die standaard weigert en een credential broker. Android- en iOS-rigs zijn wegwerpbaar maar gebruiken door de host beheerde netwerken, dus claimen deze grens niet. Elke rig aansturen gebruikt de beveiligingsklasse enclosureControl.'],
 ['RunCost', 'Token- en kostenoverzicht (invoertokens, uitvoertokens, geschatte kosten in centen) voor één agentrun.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Orkestreert de uitvoering van runs: start runs, plant stappen, slaat de toestand op, behandelt routers/joins/continue-on-fail en hervat lopende runs na een herstart.'],
 ['PipelineTriggerDispatcher', 'Abonneert zich op domeingebeurtenissen en start automatisch passende pipelineruns voor ingeschakelde triggers.'],
 ['MemoryAccessPolicy', 'Bepaalt en handhaaft de geheugenrechten van agentrollen op domeinen.'],
-['HarnessCostCalculator', 'Waardeert het tokenverbruik van de ingebouwde harness tot een RunCost op basis van de catalogus models.dev. Dispatch schrijft dat overzicht naar de runlog.'],
+['HarnessRunAccounting', 'Verwerkt de modelaanroepen van de ingebouwde harness één keer, geprijsd op basis van de catalogus models.dev, slaat ze op bij de eigenaarrun en telt de uitgaven van een kindrun op bij het budget van de bovenliggende run.'],
 ['BudgetEnforcementService', 'Berekent de maandelijkse uitgaven per agent en een blokkade vóór dispatch (checkInvocationBlock). Die blokkade wordt alleen geraadpleegd door de herstel-reconcilers (OrphanRunReaper, StrandedTicketReconciler), nooit door gewone dispatch.'],
 ['BudgetGovernanceService', 'Evalueert de maandelijkse uitgaven per agent na elke run: een zachte drempel legt een waarschuwingsincident vast; uitputting legt een hard incident vast en zet de levenscyclus van de agent op paused.'],
 ['DomainEventBus', 'In-process broadcast- publish/subscribe-bus voor communicatie tussen features. Gebeurtenissen zijn getypeerd; abonnees lezen streams op type.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'De thin client voor de telefoon — een Flutter-web-PWA die de fleet op afstand bestuurt via de bemiddelde relay, met een toolbeleid dat standaard weigert.'],
 ['cc_signaling_server', 'Een staatloze WebSocket-relaybroker die uitnodigingsgebonden ruimtes host. Een domme relay: hij stuurt alleen end-to-end verzegelde frames door, houdt geen appgegevens vast en ziet de koppelings-PSK nooit.'],
 ['Principal', 'Een verzegelde waarde die mensen en agenten verenigt als de ene actorabstractie. UserPrincipal(userId) of AgentPrincipal(agentId). Elk bericht, ticket, elke review, elk plan en elke runlog wordt via een principal toegeschreven.'],
-['Gebruiker', 'Een menselijke identiteit, opgeslagen in global.db en dus globaal over werkruimtes heen. De principal die een werkruimte aanmaakt, wordt de eigenaar, vastgelegd op Workspace.ownerUserId met een lidmaatschapsrij met de rol owner; anderen sluiten aan via een uitnodiging of SSO.'],
+['Gebruiker', 'Een menselijke identiteit, opgeslagen in global.db en dus globaal over werkruimtes heen. Alleen de servereigenaar maakt een werkruimte aan en wordt de eigenaar ervan, vastgelegd op Workspace.ownerUserId met een lidmaatschapsrij met de rol owner; anderen sluiten aan via een uitnodiging of SSO.'],
+['Servereigenaar', 'De persoon die de server heeft ingesteld, één keer vastgelegd bij de eerste start; niets dat over het netwerk wordt verstuurd, wijzigt dat. Een werkruimte-admin of werkruimte-eigenaar is niet de servereigenaar. Niets draait op de eigen machine van de server buiten een sandbox, tenzij de servereigenaar het heeft gestart of die soort hostuitvoering heeft goedgekeurd: werkruimtes aanmaken, de host-shell, de ingebedde codeeditor, omgevingen die op de host draaien en checkouts die van buiten de opslag van een werkruimte zijn gekoppeld, zijn uitsluitend van hen.'],
 ['WorkspaceMember', 'Een lidmaatschapsrij die een gebruiker aan een werkruimte bindt met een WorkspaceRole. Lidmaatschap — niet een koppelingssleutel — is de toegangsgrens.'],
 ['WorkspaceRole', 'Gefaseerde lidmaatschapsrol: owner, admin, member, viewer of guest. Het knelpunt voor repo-operaties leidt per soort operatie een minimumrol af.'],
 ['ParticipantPresence', 'Tijdelijke aanwezigheid voor een principal (status, verblijfplaats, cursor, typen, de live status en lopende kosten van een agent). Wordt nooit opgeslagen; draait via de server; vóór het uitwaaieren gefilterd op repotoegang.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Autonomieknop', 'Een bediening per ruimte per agent — propose-only / act-with-approval / act-freely — geïmplementeerd als een benoemd profiel boven de opslag met actiebeveiligingen.'],
 ['cc_worker', 'Een headless uitvoerderbinary in puur Dart voor de fleet. Koppelt zich aan een cc_server, meldt zijn mogelijkheden, haalt geleasde jobs op, voert ze uit en streamt gebeurtenissen terug. Houdt geen duurzame toestand vast.'],
 ['JobSpec', 'De getypeerde spec voor alles wat uitvoerbaar is (agentrun, pipelinestap, code-index, golden-render, benchmark, evalbatch): vereiste mogelijkheden, prioriteit, budget, werkruimte.'],
-['ActionClass', 'Een gesloten set van 13 effectklassen (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Elke muteerbare tool verklaart zijn klassen; de beveiligingsengine bepaalt per bereik allow / prompt / deny.'],
+['ActionClass', 'Een gesloten set van 14 effectklassen (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Elke muteerbare tool verklaart zijn klassen; de beveiligingsengine bepaalt per bereik allow / prompt / deny.'],
 ['WriteLedger', 'Een werkruimtegebonden idempotentieledger. Elke mutatie draagt een idempotentiesleutel per logische actie; een herhaling levert het byte-identieke oorspronkelijke resultaat op. Maakt opnieuw verbinden en meerdere clients veilig van opzet.'],
 ['Idempotentiesleutel', 'Een door de client gegenereerde UUIDv7 die per logische actie wordt aangemaakt (niet per poging). Ontdubbelt nieuwe pogingen over herverbindingen en clients heen.'],
 ['Postvak', 'Een wachtrij over alle pijlers met een strikte regel: een item verschijnt alleen als het iets blokkeert (een agent, een merge, een sync) of de operator expliciet vraagt.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Review-oordeel', 'ship, hold of block. Elke P0-bevinding met een betrouwbaarheid >= 0,7 blokkeert; elk ander P0 of elk P1 houdt tegen; anders ship. Een as met een poort die faalt, dwingt block af en kan niet door bevindingen worden overstemd.'],
 ['SessionRecording', 'Een gebeurtenisstroom plus HTTP/LLM-cassettes en tool-I/O die voor één run zijn vastgelegd, gekoppeld aan een AgentConfigHash.'],
 ['Golden session', 'Een goedgekeurde SessionRecording die per agent of playbook is vastgezet.'],
-['Control Center Connect', 'Een optionele dienst die provider-aanmeldingen (GitHub, Google, Linear) uitvoert voor servers zonder eigen apps. Gehost door Control Center, zelf gehost, of uit. Hij geeft inloggegevenszegels en GitHub-tokens voor één repository terug en ziet nooit de inhoud van repository\'s.'],
+['Control Center Connect', 'Een optionele dienst die provider-aanmeldingen (GitHub, Google, Linear) uitvoert voor servers of werkruimtes die er voor kiezen in plaats van hun eigen apps. Gehost door Control Center, zelf gehost, of uit. Hij geeft inloggegevenszegels en GitHub-tokens voor één repository terug en ziet nooit de inhoud van repository\'s.'],
 ['Inloggegevenszegel', 'Versleutelde inloggegevens die alleen de Connect die ze maakte kan openen, gebonden aan de provider, het Connect-adres, het installatie-ID, de werkruimte, het account, de app en de secretgeneratie. De server bewaart het zegel; accesstokens blijven in het geheugen.'],
 ['Installatie-ID', 'De identiteit van een server tegenover één Connect-adres, afgeleid van zijn installatiesleutel. Connect laat servers toe op installatie-ID; het vervangen van de sleutel wijzigt het en meldt iedereen af bij de Connect-routes.'],
-['Installatiebinding', 'Het register van Connect van welke servers een GitHub-installatie van de gedeelde App mogen gebruiken. De installatie van een organisatie vraagt een beheerder om elke server te autoriseren.'],
-['Aanmeldroute', 'De browseraanmelding van één provider: github, google, linear, linear_app of slack. Elke route draait op de eigen app van de server als die compleet is, anders via Connect, en anders is hij niet beschikbaar.'],
+['Installatiebinding', 'Het register van Connect van de ene server waaraan een Slack-team is gebonden. GitHub-installaties hebben geen binding: elke server waarop een lid aanmeldt, kan ze gebruiken.'],
+['Aanmeldroute', 'De browseraanmelding van één provider: github, google, linear, linear_app of slack. Onder eigen apps draait een route op de eigen app als die volledig is geconfigureerd, anders is hij niet beschikbaar; met een gekozen Connect draait Connect hem. Geen van beide valt terug op de ander.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Modus**: `chat`, `plan`, `review` of `orchestrate`. **Per ruimte** opgeslagen, dus één agent kan in verschillende ruimtes in verschillende modi staan; elk gesprek in een ruimte deelt de modus. Bepaalt de systeemprompt, de schrijfregels van de sandbox en de allowlist met MCP-tools. De composer biedt alleen `chat`, `plan` en `orchestrate`; `chat` heeft het label “Agent”.
 
-**SandboxBackend**: `microvm` (een afgesloten VM — de enige backend met een kernelgrens, toegepast op interactieve terminals), `native` (Seatbelt op macOS, bubblewrap op Linux en WSL2) of `none`. Wordt één keer bij het opstarten geprobeerd; `native` wordt **toegepast op agentdispatch** wanneer die beschikbaar is, en omhult de Claude Code CLI en de `bash`-tool van de harness. Windows heeft geen native backend en Linux vereist `bwrap` plus `socat`, dus runs daar worden niet omhuld; `--sandbox off` kiest daar bewust voor om het uit te zetten.
+**SandboxBackend**: `microvm` (een afgesloten VM — de enige backend met een kernelgrens, toegepast op interactieve terminals), `native` (Seatbelt op macOS, bubblewrap op Linux en WSL2) of `none`. Wordt één keer bij het opstarten geprobeerd; `native` wordt **toegepast op agentdispatch** wanneer die beschikbaar is, en omhult de Claude Code CLI en de `bash`-tool van de harness. Windows heeft geen native backend en Linux vereist `bwrap` plus `socat`; op een host zonder backend starten alleen de runs van de servereigenaar, zonder omhulling, en worden die van alle anderen geweigerd. `--sandbox off` draait de agents van elk lid zonder omhulling.
 
 **Rig**: Een wegwerpmachine die een agent in realtime aanstuurt — een afgesloten browser of Linux-desktop, een door de host beheerde Android-emulator of iOS Simulator, of een afgesloten terminal. Live bekeken via een eigen baan op volledige resolutie, met overname die server-side wordt afgedwongen. Gebonden aan een gesprek, zodat het menselijke tabblad en de aanroepen `browser_use` / `computer_use` / `mobile_use` / `ios_use` van de agent één standaardmachine aanspreken. Zie [Rigs en omhullingen](/nl-NL/handleiding/concepten/rigs/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Bepaalt en handhaaft de geheugenrechten van agentrollen op domeinen.
 
-**HarnessCostCalculator**: Waardeert het tokenverbruik van de ingebouwde harness tot een `RunCost` op basis van de catalogus models.dev. Dispatch schrijft dat overzicht naar de runlog.
+**HarnessRunAccounting**: Verwerkt de modelaanroepen van de ingebouwde harness één keer, geprijsd op basis van de catalogus models.dev, slaat ze op bij de eigenaarrun en telt de uitgaven van een kindrun op bij het budget van de bovenliggende run.
 
 **BudgetEnforcementService**: Berekent de maandelijkse uitgaven per agent en een blokkade vóór dispatch (`checkInvocationBlock`). Die blokkade wordt alleen geraadpleegd door de herstel-reconcilers (`OrphanRunReaper`, `StrandedTicketReconciler`), nooit door een gewone dispatch door een gebruiker of agent.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Gestructureerde uitvoer die de samenvattingspipeline extraheert en als losse rijen opslaat. Actiepunten kunnen naar een ticket verwijzen.
 
-**CalendarEvent**: Een gesynchroniseerde vermelding uit Google Calendar, gebonden aan een werkruimte en een verbonden account. Verschilt van een vergadering: een item is een geplande verplichting; een vergadering is een opgenomen sessie. Een-op-een gekoppeld via een `MeetingCalendarLink`.
+**CalendarEvent**: Een gesynchroniseerde vermelding uit Google Calendar, gebonden aan een werkruimte en een verbonden account. Verschilt van een vergadering: een item is een geplande verplichting; een vergadering is een opgenomen sessie. Een-op-een gekoppeld via de tabel `meeting_calendar_links`.
 
 **CalendarAccount**: Een verbonden Google-account, per werkruimte, lid en e-mailadres (`google:<workspaceId>:<userId>:<email>`). De inloggegevens ervan worden server-side opgeslagen als een `google_*`-sleutel in `<dataDir>/secrets.json` en bereiken nooit een client; de aanmelding in de browser rondt af op de server. Een aanmelding via Connect bewaart alleen een inloggegevenszegel. Een `authExpiredAt`-markering stuurt de banner om opnieuw te verbinden.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: Een verzegelde waarde die mensen en agenten verenigt als de ene actorabstractie — `UserPrincipal(userId)` of `AgentPrincipal(agentId)`. Elk bericht, ticket, elke review, elk plan en elke runlog wordt via een principal toegeschreven.
 
-**Gebruiker**: Een menselijke identiteit, opgeslagen in `global.db` en dus globaal over werkruimtes heen. De principal die een werkruimte aanmaakt, wordt de **eigenaar** — vastgelegd op `Workspace.ownerUserId` met in dezelfde handeling een lidmaatschapsrij met de rol owner. Anderen sluiten aan via een uitnodiging of SSO.
+**Servereigenaar**: De persoon die de server heeft ingesteld, één keer vastgelegd bij de eerste start; niets dat over het netwerk wordt verstuurd, wijzigt dat. Een werkruimte-admin of werkruimte-eigenaar is niet de servereigenaar. Niets draait op de eigen machine van de server buiten een sandbox, tenzij de servereigenaar het heeft gestart of die soort hostuitvoering heeft goedgekeurd: werkruimtes aanmaken, de host-shell, de ingebedde codeeditor, omgevingen die op de host draaien en checkouts die van buiten de opslag van een werkruimte zijn gekoppeld, zijn uitsluitend van hen. Zie [De servereigenaar](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder).
+
+**Gebruiker**: Een menselijke identiteit, opgeslagen in `global.db` en dus globaal over werkruimtes heen. Alleen de servereigenaar maakt een werkruimte aan en wordt de **eigenaar** ervan — vastgelegd op `Workspace.ownerUserId` met in dezelfde handeling een lidmaatschapsrij met de rol owner. Anderen sluiten aan via een uitnodiging of SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Een lidmaatschapsrij die een gebruiker aan een werkruimte bindt met een rol (`owner` / `admin` / `member` / `viewer` / `guest`). **Lidmaatschap — niet een koppelingssleutel — is de toegangsgrens.** Toegiften per repo zorgen dat lidmaatschap niet boven de forge uitstijgt.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Autonomieknop**: Een bediening per ruimte per agent — `propose-only` / `act-with-approval` / `act-freely` — geïmplementeerd als een benoemd profiel boven de opslag met actiebeveiligingen.
 
-**ActionClass**: Een gesloten set van 13 effectklassen (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Elke muteerbare tool verklaart zijn klassen; de beveiligingsengine bepaalt per bereik `allow` / `prompt` / `deny` (ruimte > agent > werkruimte > modus-preset > ingebouwde standaard).
+**ActionClass**: Een gesloten set van 14 effectklassen (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Elke muteerbare tool verklaart zijn klassen; de beveiligingsengine bepaalt per bereik `allow` / `prompt` / `deny` (ruimte > agent > werkruimte > modus-preset > ingebouwde standaard).
 
 **WriteLedger** / **Idempotentiesleutel**: Elke mutatie draagt een door de client gegenereerde idempotentiesleutel (UUIDv7, per logische actie). Het werkruimtegebonden ledger ontdubbelt voordat de handler draait; een herhaling levert het byte-identieke oorspronkelijke resultaat op. Maakt opnieuw verbinden en meerdere clients veilig van opzet.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Een staatloze WebSocket-relaybroker die uitnodigingsgebonden ruimtes host — een domme relay die alleen end-to-end verzegelde frames doorstuurt, geen appgegevens vasthoudt en de koppelings-PSK nooit ziet.
 
-**Control Center Connect**: Een optionele dienst die provider-aanmeldingen (GitHub, Google Calendar, Linear) uitvoert voor servers die geen eigen apps hebben geregistreerd: de gehoste van Control Center, een die een organisatie draait (`cc-connect`, of ingebouwd in `cc_server` op `/connect`), of geen. Hij geeft inloggegevenszegels en GitHub-tokens voor één repository terug en ziet nooit de inhoud van repository's. Zie [Control Center Connect](/nl-NL/handleiding/referentie/connect/).
+**Control Center Connect**: Een optionele dienst die provider-aanmeldingen (GitHub, Google Calendar, Linear) uitvoert voor servers of werkruimtes die er voor kiezen in plaats van hun eigen apps: de gehoste van Control Center, een die een organisatie draait (`cc-connect`, of ingebouwd in `cc_server` op `/connect`), of geen. Hij geeft inloggegevenszegels en GitHub-tokens voor één repository terug en ziet nooit de inhoud van repository's. Zie [Control Center Connect](/nl-NL/handleiding/referentie/connect/).
 
 **Inloggegevenszegel**: Versleutelde inloggegevens (`credential_seal`) die alleen de Connect die ze maakte kan openen, gebonden aan de provider, het Connect-adres, het installatie-ID, de werkruimte, het account, de app en de secretgeneratie. De server bewaart het zegel en het installatie-ID waarvoor het is gemaakt; accesstokens blijven in het geheugen. Een zegel waarvan het installatie-ID niet meer klopt, wordt verwijderd en de eigenaar meldt zich opnieuw aan.
 
 **Installatie-ID**: De identiteit van een server tegenover één Connect-adres (`install_id`), afgeleid van de installatiesleutel in zijn geheimenbestand. Connect laat servers toe op installatie-ID. Het vervangen van de sleutel geeft een nieuw ID en meldt iedereen af bij de Connect-routes.
 
-**Installatiebinding**: Het register van Connect (`install_binding`) van welke servers een GitHub-installatie van de gedeelde App mogen gebruiken. Installeren via een server bindt die server; **Deze server autoriseren** door een beheerder van de organisatie bindt een andere.
+**Installatiebinding**: Het register van Connect (`install_binding`) van de ene server waaraan een Slack-team is gebonden. GitHub-installaties hebben geen binding: elke server waarop een lid aanmeldt, kan ze gebruiken.
 
-**Aanmeldroute**: De browseraanmelding van één provider — `github`, `google`, `linear`, `linear_app` of `slack`. Een route draait op de eigen app van de server als die app compleet is, anders via Connect, en anders is hij niet beschikbaar; een gedeeltelijk geconfigureerde eigen app is een fout, nooit een terugval.
+**Aanmeldroute**: De browseraanmelding van één provider — `github`, `google`, `linear`, `linear_app` of `slack`. Onder eigen apps draait een route op de eigen app (van de server of de werkruimte) als die app volledig is geconfigureerd, anders is hij niet beschikbaar; met een gekozen Connect draait Connect hem. Geen van beide valt terug op de ander, en een gedeeltelijk geconfigureerde eigen app is een fout.
 
 ## Zie ook
 

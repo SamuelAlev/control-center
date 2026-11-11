@@ -16,6 +16,7 @@ import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/widgets/conversations_sidebar_section.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_folders_list.dart';
+import 'package:control_center/features/messaging/presentation/widgets/space_row.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_adornments.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_row_layout.dart';
 import 'package:control_center/features/messaging/presentation/widgets/space_sidebar_group.dart';
@@ -1548,8 +1549,6 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final l10n = await AppLocalizations.delegate.load(const Locale('en'));
-        expect(find.text(l10n.archiveConversation), findsNothing);
         expect(
           conversations.statusCalls,
           isEmpty,
@@ -2534,6 +2533,7 @@ class _FakeMessagingPort implements MessagingPort {
     String? conversationId,
     required String kind,
     String input = '',
+    String? requestedByUserId,
   }) async => const ConversationSideChannelResult();
 
   @override
@@ -2541,6 +2541,7 @@ class _FakeMessagingPort implements MessagingPort {
     required String workspaceId,
     required String rough,
     List<String> transcript = const [],
+    String? requestedByUserId,
   }) async => const GuidedGoalStepResult();
 }
 

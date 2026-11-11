@@ -154,12 +154,6 @@ void main() {
       expect((await db.pairedDeviceDao.getById('d-1'))?.lastSeenAt, now);
     });
 
-    test('setUserId binds a device to its owner', () async {
-      await insertDevice('d-1');
-      await db.pairedDeviceDao.setUserId('d-1', 'u-1');
-      expect((await db.pairedDeviceDao.getById('d-1'))?.userId, 'u-1');
-    });
-
     test('remove deletes the device', () async {
       await insertDevice('d-1');
       await db.pairedDeviceDao.remove('d-1');

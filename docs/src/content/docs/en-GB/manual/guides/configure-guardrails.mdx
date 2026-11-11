@@ -2,13 +2,13 @@
 title: Configure guardrails
 description: Set allow, ask-first and deny rules for agent actions, test them with the what-if probe and tune per-space autonomy.
 slug: en-GB/manual/guides/configure-guardrails
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 This guide shows you how to configure guardrails: the rules that decide whether
 an agent's action runs, asks for approval first, or is refused.
 
-Guardrails cover the thirteen effect classes every mutating tool declares. They are
+Guardrails cover the fourteen effect classes every mutating tool declares. They are
 enforced server-side at the point the tool is called, never by an instruction in
 a prompt.
 
@@ -21,7 +21,7 @@ a prompt.
 4. To drop a rule you set, press the reset button that appears at the end of that
    row (**Clear to inherited**) — the decision falls back to the wider scope
 
-Each row shows the effective decision as a status tag and a badge for where it
+Each row shows the action's setting as a status tag and a badge for where it
 came from: **This scope**, **Inherited** or **Built-in default**. The matrix
 resolves at Agent (`chat`) mode, so **Mode preset** never appears here — use the
 what-if probe with a read-only mode selected to see that layer.
@@ -32,6 +32,33 @@ Checkpoint: set **Push to a remote** to **Deny** at the workspace scope, then ru
 the what-if probe below on `git push origin main`. The result reads `deny` with
 source `workspace`.
 
+## Review and revoke standing approvals
+
+Answering an approval card with **Approve for 8 hours** writes a standing
+approval: a rule that lets the same kind of action through without asking until
+it ends. Each one is listed on this page, under the action it belongs to.
+
+1. Go to **Settings → Workspace → Agent permissions** and pick the scope. An
+   approval is written for the space the question came from, so pick **Space**
+   and then that space
+2. Under the action's row, read the entry: what it allows (for example, pushes
+   to branches matching `feature/**`), the words **Standing approval**, who gave
+   it when that was someone else, and when it ends
+3. To end it now, point at the entry and press **Revoke**. Agents ask again from
+   their next action on
+
+The row keeps showing the action's own setting, and a line under it counts the
+cases listed below that are allowed anyway. Conditional rules that a template
+wrote appear in the same list, and command rules in a **Commands** group after
+the last action. At the workspace scope, a note under the summary counts the
+standing approvals set for single spaces or agents. At a space or agent, it
+counts the workspace's, which apply there too.
+
+A standing approval only spares a question. It never overrides **Deny**: if you
+set an action to **Deny** while one is running, its entry reads **not in effect
+while denied** until it ends or you revoke it. Changing an action's setting
+leaves its standing approvals in place, and revoking one leaves the setting.
+
 ## Understand how a decision is resolved
 
 Resolution is **specificity first, then restrictiveness**:
@@ -39,7 +66,7 @@ Resolution is **specificity first, then restrictiveness**:
 1. **Space** rules, then **agent**, then **workspace**. The first scope with a
    matching rule decides and resolution stops
 2. If no rule matches, the **mode preset** applies — a read-only mode (plan,
-   review, orchestrate) refuses eleven of the thirteen classes
+   review, orchestrate) refuses twelve of the fourteen classes
 3. If the mode has nothing to say, the **built-in default** applies
 
 Within a single scope, a command rule resolves by longest matching prefix and an
@@ -66,7 +93,7 @@ a refused one.
 | Create a commit              | Allow            |
 | Push to a remote             | Ask first        |
 | Open a pull request          | Ask first        |
-| Publish a review or merge    | Ask first        |
+| Update or merge a pull request | Ask first      |
 | Write to an external tracker | Ask first        |
 | Access the network           | Allow            |
 | Read a secret                | Allow            |
@@ -74,6 +101,7 @@ a refused one.
 | Run a process                | Allow            |
 | Change workspace structure   | Allow            |
 | Drive an enclosure (rig)     | Allow            |
+| Run commands on the host     | Ask first        |
 
 The taxonomy is closed. A new tool that ships without declaring its classes fails
 a ratchet test in CI, so nothing arrives with a silently empty effect set.
@@ -83,14 +111,15 @@ a ratchet test in CI, so nothing arrives with a silently empty effect set.
 Before changing a rule, check how the current policy already resolves it.
 
 1. On the same page, scroll to **What if?**
-2. Pick an **Action** (one of the thirteen classes)
+2. Pick an **Action** (one of the fourteen classes)
 3. Optionally fill in **Command** (for example `git push origin main`), **Agent**,
    **Space** and **Mode**
 4. Read the result: the decision, the reason and **Source:**
 
 The probe runs the same resolver the enforcement path uses, against your live
-rules, so the answer is exact. If it surprises you, change a rule in the matrix
-above and probe again.
+rules, so the answer is exact. When a standing approval decides, the source
+reads **Standing approval** followed by its scope. If the answer surprises you,
+change a rule in the matrix above and probe again.
 
 ## Set a space's autonomy dial
 

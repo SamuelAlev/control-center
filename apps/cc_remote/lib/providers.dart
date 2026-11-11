@@ -121,18 +121,17 @@ final workspaceLogoProvider = FutureProvider.family<Uint8List?, String>((
   if (client == null) {
     return null;
   }
+  final data = await client.call('workspace.logo', {
+    'workspace_id': workspaceId,
+  });
+  final encoded = data['bytes'];
+  if (encoded is! String || encoded.isEmpty) {
+    return null;
+  }
   try {
-    final data = await client.call('workspace.logo', {
-      'workspace_id': workspaceId,
-    });
-    final encoded = data['bytes'];
-    if (encoded is! String || encoded.isEmpty) {
-      return null;
-    }
     return base64Decode(encoded);
-  } on Object {
-    // A server too old to declare the op answers `opUnknown`; a decode failure
-    // means the file is not an image. Both mean "no mark to draw".
+  } on FormatException {
+    // Not an image: no mark to draw.
     return null;
   }
 });

@@ -1,5 +1,4 @@
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/media/disk_cached_network_image.dart';
 import 'package:control_center/di/providers.dart';
@@ -10,43 +9,36 @@ import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A workspace member's avatar: the best available image for [user], falling back to
+/// A person's avatar: the image their profile names, falling back to
 /// initials derived from [name].
-/// Resolution order — first hit wins and every layer is verified identity (a login is never
-/// guessed from the handle, which could belong to a stranger on GitHub):
-/// An explicit `avatarRef` http(s) URL set on the profile.
-/// For the CURRENT user when they hold the workspace's owner role: the
-/// The server holds one gh token — the host owner's — and the owner-role backfill ties it
-/// to that user, so the avatar only lands on their row.
+///
+/// Only the profile decides the picture. A forge login or a commit email is
+/// never mined for one: a noreply address names a GitHub account, not a
+/// person here, and a guessed login can belong to a stranger. The single
+/// explicit fallback is the viewer's OWN GitHub sign-in, for their own row
+/// while their profile has no picture.
 class MemberAvatar extends ConsumerWidget {
   /// Creates a [MemberAvatar].
   const MemberAvatar({
     super.key,
     required this.name,
-    required this.workspaceId,
     this.user,
+    this.imageUrl,
     this.size = 28,
   });
 
   /// The resolved display name (initials fallback).
   final String name;
 
-  /// The member's user record, when known.
+  /// The person's user record, when known.
   final UserDto? user;
 
-  /// The workspace whose roster/activity is rendered — scopes the owner-role
-  /// check behind the host-GitHub-avatar layer.
-  final String workspaceId;
+  /// An image to show instead of the profile's, such as one being typed
+  /// into the profile form.
+  final String? imageUrl;
 
   /// Diameter in logical pixels.
   final double size;
-
-  /// GitHub noreply addresses: `login@users.noreply.github.com` and the
-  /// numeric-id form `12345+login@users.noreply.github.com`.
-  static final _noreplyGitHubEmail = RegExp(
-    r'^(?:\d+\+)?([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)'
-    r'@users\.noreply\.github\.com$',
-  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,23 +61,14 @@ class MemberAvatar extends ConsumerWidget {
 
   String? _resolveImageUrl(WidgetRef ref) {
     final user = this.user;
-    final avatarRef = user?.avatarRef;
-    if (avatarRef != null && avatarRef.startsWith('http')) {
-      return avatarRef;
-    }
-    final noreply = _noreplyGitHubEmail.firstMatch(user?.gitAuthorEmail ?? '');
-    if (noreply != null) {
-      return 'https://github.com/${noreply.group(1)}.png';
+    final explicit = imageUrl ?? user?.avatarRef;
+    if (explicit != null && explicit.startsWith('http')) {
+      return explicit;
     }
     if (user != null && user.id == ref.watch(currentUserIdProvider)) {
-      final isOwner =
-          ref.watch(myWorkspaceRoleProvider(workspaceId)) ==
-          WorkspaceRole.owner;
-      if (isOwner) {
-        final gh = ref.watch(githubUserProvider).value;
-        if (gh != null && gh.avatarUrl.isNotEmpty) {
-          return gh.avatarUrl;
-        }
+      final gh = ref.watch(githubUserProvider).value;
+      if (gh != null && gh.avatarUrl.isNotEmpty) {
+        return gh.avatarUrl;
       }
     }
     return null;

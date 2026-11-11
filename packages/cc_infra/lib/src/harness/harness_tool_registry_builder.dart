@@ -1,8 +1,10 @@
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_harness/context.dart' show ToolOutputStore;
 import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
@@ -22,6 +24,7 @@ import 'package:cc_infra/src/harness/tools/apply_patch_tool.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:cc_natives/cc_natives.dart';
 
 /// Builds the harness tool registry for one run: built-in tools first (so they
@@ -33,6 +36,11 @@ import 'package:cc_natives/cc_natives.dart';
 /// advertise. There must be one builder only: a second, inspection-specific
 /// assembly would drift from the surface a run actually gets.
 ///
+/// [includePersonalMcp] hands the run the MCP servers discovered in the server
+/// OS user's own tool configs (the registry's personal layer). Only a run the
+/// server owner is accountable for may have them; absent, the run gets none of
+/// them, not even their names.
+///
 /// The caller adds the `task` tool afterwards when the run may spawn
 /// subagents — nesting depth is a per-run property, so it is deliberately not
 /// baked in here.
@@ -40,6 +48,13 @@ import 'package:cc_natives/cc_natives.dart';
 /// [networkEnabled] is the run's network posture, resolved from the "network
 /// egress" policy rule when the run starts: a deny takes the network away from
 /// the sandbox and the web tools alike.
+///
+/// [toolProcesses] is the `eval` kernel's launcher, [debugProcesses] the debug
+/// adapter's and [lspProcesses] starts language servers and the project
+/// checker. Without one, the tools that need it are not registered: they never
+/// start a process any other way. [harnessSandboxSessionId] is the sandbox
+/// session `bash` runs in, the one [toolProcesses] uses; with no
+/// [sandboxManager], `bash` starts through [toolProcesses] or not at all.
 HarnessToolRegistry buildHarnessToolRegistry({
   required Mode mode,
   required bool networkEnabled,
@@ -52,9 +67,11 @@ HarnessToolRegistry buildHarnessToolRegistry({
   SandboxManager? sandboxManager,
   ConfirmationPort? confirmationPort,
   Future<List<String>> Function()? execGrantRootsResolver,
+  Future<SandboxSpec> Function(String sessionId)? sandboxSpec,
   ActionGuardService? actionGuard,
   required FileSearchPort fileSearch,
   McpToolRegistry? mcpRegistry,
+  bool includePersonalMcp = false,
   Future<List<String>> Function()? protectedPaths,
   AgentQuestionPort? agentQuestionPort,
   String? spaceId,
@@ -67,16 +84,23 @@ HarnessToolRegistry buildHarnessToolRegistry({
   StagedEditStore? stagedEditStore,
   DebugSessionSupervisor? debugSupervisor,
   EvalKernel Function(KernelLanguage language)? evalKernelFor,
+  ToolProcessLauncher? toolProcesses,
+  ToolProcessLauncher? debugProcesses,
+  ToolProcessLauncher? lspProcesses,
+  String? harnessSandboxSessionId,
   ToolOutputStore? toolOutputStore,
 }) {
   final commandRunner = SandboxedHarnessCommandRunner(
+    sandboxSessionId: harnessSandboxSessionId,
     mode: mode,
     networkEnabled: networkEnabled,
     loopbackPorts: loopbackPorts,
     environmentScope: environmentScope,
     sandboxManager: sandboxManager,
+    hostProcesses: toolProcesses,
     confirmationPort: confirmationPort,
     execGrantRootsResolver: execGrantRootsResolver,
+    sandboxSpec: sandboxSpec,
     actionGuard: actionGuard,
     workspaceId: workspaceId,
     agentId: agentId,
@@ -170,14 +194,17 @@ HarnessToolRegistry buildHarnessToolRegistry({
   // factory, which is where the decision of WHERE a kernel runs lives (the
   // conversation's enclosure when it has one, the host otherwise).
   final kernelFor = evalKernelFor;
-  if (kernelFor != null) {
-    registry.register(EvalTool(kernelFor: kernelFor));
+  if (kernelFor != null && toolProcesses != null) {
+    registry.register(
+      EvalTool(kernelFor: kernelFor, hostConfined: toolProcesses.confined),
+    );
   }
   // Debugger. Registered only with a supervisor AND a working directory: a
   // debug adapter is chosen by what the checkout contains, so there is nothing
   // to detect without a project root. Exec tier, so read-only surfaces (plan
   // mode, an explore subagent) never see it.
   if (debugSupervisor != null &&
+      debugProcesses != null &&
       lspWorkingDirectory != null &&
       lspWorkingDirectory.isNotEmpty &&
       conversationId != null &&
@@ -190,6 +217,9 @@ HarnessToolRegistry buildHarnessToolRegistry({
         // without terminating the first has almost certainly lost track of
         // the first, and two stopped debuggees is two held ports.
         sessionKey: conversationId,
+        launcher: debugProcesses,
+        // `attach` reaches only what the run's sandbox may reach.
+        attachablePorts: loopbackPorts,
         environment: env,
       ),
     );
@@ -198,7 +228,10 @@ HarnessToolRegistry buildHarnessToolRegistry({
   // the run has a working directory to resolve a project root from — without
   // both there is nothing to ask and no project to ask about.
   final lspRoot = lspWorkingDirectory;
-  if (lspSupervisor != null && lspRoot != null && lspRoot.isNotEmpty) {
+  if (lspSupervisor != null &&
+      lspProcesses != null &&
+      lspRoot != null &&
+      lspRoot.isNotEmpty) {
     final ledger = diagnosticsLedger ?? DiagnosticsLedger();
     registry
       ..register(
@@ -206,6 +239,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
           supervisor: lspSupervisor,
           ledger: ledger,
           workingDirectory: lspRoot,
+          launcher: lspProcesses,
         ),
       )
       // Rename is a separate, WRITE-tier tool: the tier decides which
@@ -216,6 +250,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
           supervisor: lspSupervisor,
           ledger: ledger,
           workingDirectory: lspRoot,
+          launcher: lspProcesses,
         ),
       );
     // The real payoff is not the tool — it is that an edit answers with the
@@ -237,6 +272,7 @@ HarnessToolRegistry buildHarnessToolRegistry({
               supervisor: lspSupervisor,
               ledger: ledger,
               workingDirectory: lspRoot,
+              launcher: lspProcesses,
             ),
           );
       }
@@ -249,16 +285,23 @@ HarnessToolRegistry buildHarnessToolRegistry({
     // tools use it as a target the model must remain able to choose.
     final hiddenScopeParams = <String>{
       if (workspaceId != null && workspaceId.isNotEmpty) 'workspace_id',
-      if (conversationId != null && conversationId.isNotEmpty)
+      if (conversationId != null && conversationId.isNotEmpty) ...{
         'conversation_id',
+        McpCallScope.callerConversationKey,
+      },
       if (spaceId != null && spaceId.isNotEmpty) 'space_id',
       if (agentId != null && agentId.isNotEmpty) ...{
         'from_agent_id',
         'delegated_by_agent_id',
       },
     };
-    for (final toolName in mcpRegistry.toolNames) {
-      final mcpTool = mcpRegistry.lookup(toolName);
+    for (final toolName in mcpRegistry.toolNames(
+      includePersonal: includePersonalMcp,
+    )) {
+      final mcpTool = mcpRegistry.lookup(
+        toolName,
+        includePersonal: includePersonalMcp,
+      );
       if (mcpTool != null) {
         registry.register(
           McpToolBridge(

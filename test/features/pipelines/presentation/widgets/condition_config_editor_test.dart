@@ -422,15 +422,6 @@ void main() {
       expect(p.containsKey('right'), isTrue);
     });
 
-    testWidgets('legacy comparison (top-level left/op/right)', (tester) async {
-      await _pumpEditor(
-        tester,
-        extras: {'left': '{{value}}', 'op': 'lt', 'right': '50'},
-      );
-      expect(find.textContaining('Left value'), findsOneWidget);
-      expect(find.textContaining('Right value'), findsOneWidget);
-    });
-
     // ── SwitchOn hydration ────────────────────────────────────────────
 
     testWidgets('switchOn renders switch key, cases, default fields', (
@@ -550,9 +541,6 @@ void main() {
             'paths': ['a.txt'],
           },
           'switchKey': 'oldKey',
-          'left': 'oldLeft',
-          'op': 'oldOp',
-          'right': 'oldRight',
         },
         captured: captured,
       );
@@ -561,9 +549,6 @@ void main() {
 
       final last = captured.last;
       expect(last.containsKey('switchKey'), isFalse);
-      expect(last.containsKey('left'), isFalse);
-      expect(last.containsKey('op'), isFalse);
-      expect(last.containsKey('right'), isFalse);
       expect(last.containsKey('cases'), isFalse);
       expect(last.containsKey('default'), isFalse);
       expect(last['predicate'], isA<Map>());

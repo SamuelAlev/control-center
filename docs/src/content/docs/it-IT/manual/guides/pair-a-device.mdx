@@ -2,7 +2,7 @@
 title: Associa un dispositivo
 description: Associa il telefono (o un secondo browser o desktop) al tuo server Control Center per seguire la flotta da remoto.
 slug: it-IT/manuale/guide/associa-dispositivo
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Questa guida mostra come associare un telefono a Control Center, così puoi
@@ -64,7 +64,7 @@ attivo dal momento in cui viene creato e il gate di connessione verifica solo ch
 la credenziale sia attiva e non scaduta. Tratta il codice QR e la chiave di
 abbinamento come una password e revoca tutto ciò che non intendevi distribuire.
 Sia le sessioni client dirette sia quelle tramite relay richiedono la crittografia
-end-to-end; i client più vecchi non possono ripiegare su RPC in chiaro.
+end-to-end; non esiste alcun RPC in chiaro.
 :::
 
 ## Gestisci i dispositivi associati
@@ -79,9 +79,7 @@ irreversibile dal punto di vista del dispositivo.
 
 Le credenziali create da questo pannello hanno una scadenza: scadono 30 giorni
 dopo il rilascio e, dopo, il gate di connessione le rifiuta in modo restrittivo.
-Una credenziale creata con `cc_server pair` dalla riga di comando **non ha alcuna
-scadenza** — revocala manualmente quando la macchina a cui era destinata viene
-dismessa.
+Una credenziale creata con `cc_server pair` dalla riga di comando scade allo stesso modo; esegui di nuovo `pair` per emetterne una nuova, e revocala manualmente quando la macchina a cui era destinata viene dismessa.
 
 ## Cambia spazio di lavoro dal telefono
 

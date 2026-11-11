@@ -243,4 +243,35 @@ void main() {
       expect(resolved, startsWith('http://127.0.0.1:9030/_cc_resource/test-cap/proxy/media?'));
     });
   });
+  group('MediaProxyConfig.forWorkspace', () {
+    const raw = 'https://raw.githubusercontent.com/o/r/main/a.png';
+
+    test('carries the active workspace as an unsigned ws parameter', () {
+      final base = config();
+      expect(
+        Uri.parse(base.resolve(raw)).queryParameters,
+        isNot(contains('ws')),
+      );
+
+      final scoped = base.forWorkspace('ws-1');
+      final uri = Uri.parse(scoped.resolve(raw));
+      expect(uri.queryParameters['ws'], 'ws-1');
+      // The signature still pins only the upstream URL.
+      expect(
+        uri.queryParameters['s'],
+        Uri.parse(base.resolve(raw)).queryParameters['s'],
+      );
+    });
+
+    test('one instance per workspace, each with its own memo', () {
+      final base = config();
+      expect(base.forWorkspace('ws-1'), same(base.forWorkspace('ws-1')));
+      expect(base.forWorkspace(null), same(base));
+      expect(base.forWorkspace('ws-1'), isNot(base.forWorkspace('ws-2')));
+      expect(
+        Uri.parse(base.forWorkspace('ws-2').resolve(raw)).queryParameters['ws'],
+        'ws-2',
+      );
+    });
+  });
 }

@@ -68,7 +68,8 @@ void main() {
 
   SearchCodeTool searchTool({bool verify = true}) => SearchCodeTool(
     repository: graph,
-    workspaceRepository: _FakeWorkspaceRepo()..linked[workspaceId] = {repoId},
+    repoGate: (_FakeWorkspaceRepo()..linked[workspaceId] = {repoId})
+        .isRepoLinkedToWorkspace,
     tree: verify ? tree : null,
   );
 
@@ -139,8 +140,8 @@ void main() {
       final json = await run(
         SearchCodeTool(
           repository: graph,
-          workspaceRepository: _FakeWorkspaceRepo()
-            ..linked[workspaceId] = {repoId},
+          repoGate: (_FakeWorkspaceRepo()..linked[workspaceId] = {repoId})
+              .isRepoLinkedToWorkspace,
           tree: unlinked,
         ),
       );
@@ -153,8 +154,8 @@ void main() {
     final json = await run(
       SearchCodeTool(
         repository: graph,
-        workspaceRepository: _FakeWorkspaceRepo()
-          ..linked[workspaceId] = {repoId},
+        repoGate: (_FakeWorkspaceRepo()..linked[workspaceId] = {repoId})
+            .isRepoLinkedToWorkspace,
         tree: _ThrowingTree(),
       ),
     );

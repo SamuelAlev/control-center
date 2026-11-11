@@ -58,10 +58,8 @@ void main() {
   BashScriptSandbox sandbox({
     BashScriptSandboxWrap? wrap,
     bool noSandbox = false,
-    List<String> deniedPaths = const ['/srv/cc/data', '/srv/cc/.env'],
   }) => BashScriptSandbox(
     wrap: noSandbox ? null : wrap ?? passThrough,
-    deniedPaths: deniedPaths,
     broker: broker,
     linkedRepo: (workspaceId, repoFullName) async =>
         workspaceId == 'ws-1' && repoFullName == 'acme/linked'
@@ -217,19 +215,16 @@ void main() {
   });
 
   group('registerBashScriptBody — confinement', () {
-    test('runs inside the sandbox with the data dir and .env denied', () async {
+    test('runs inside the sandbox in its own run dir', () async {
       final res = await run(script: 'true');
       expect(res.isFailed, isFalse);
       final config = wrapped.single;
-      expect(config.filesystem.denyRead, contains('/srv/cc/data'));
-      expect(config.filesystem.denyRead, contains('/srv/cc/.env'));
-      // The step's own run dir (inside the data dir) stays usable.
-      expect(config.filesystem.allowRead, contains(runDir.path));
-      // Named by its resolved path, which is what Seatbelt matches.
-      expect(config.policy!.runDir, runDir.resolveSymbolicLinksSync());
-      if (Platform.isMacOS) {
-        expect(config.filesystem.denyWrite, contains('/srv/cc/data'));
-      }
+      // The step's own run dir (inside the data dir, which the sandbox
+      // manager hides) is named, so it stays usable. Named by its resolved
+      // path, which is what Seatbelt matches.
+      final real = runDir.resolveSymbolicLinksSync();
+      expect(config.policy!.runDir, real);
+      expect(config.filesystem.allowWrite, contains(real));
     });
 
     test('git and gh see no host configuration or token', () async {
@@ -287,7 +282,7 @@ void main() {
       stepDir = Directory('${data.path}/pipelines/run-1')
         ..createSync(recursive: true);
       File('${root.path}/.env').writeAsStringSync('GITHUB_CLIENT_SECRET=x');
-      manager = SandboxManager();
+      manager = SandboxManager(hiddenPaths: [data.path, '${root.path}/.env']);
     });
 
     tearDown(() async {
@@ -319,10 +314,7 @@ void main() {
           runRepository: runRepo,
           stepProcessRegistry: stepRegistry,
           runDirPath: (_) async => stepDir.path,
-          sandbox: sandbox(
-            wrap: manager.wrap,
-            deniedPaths: [data.path, '${root.path}/.env'],
-          ),
+          sandbox: sandbox(wrap: manager.wrap),
         );
         final res = await registry.body(BuiltInBodyKeys.bashScript)(
           ctx(stepId: 'bash'),

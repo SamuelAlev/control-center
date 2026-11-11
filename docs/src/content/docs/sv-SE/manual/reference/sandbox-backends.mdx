@@ -2,15 +2,23 @@
 title: Sandlådebackends
 description: Sandlådebackendarna, var de tillämpas och varje värdeobjekt som sandlådans körtid använder.
 slug: sv-SE/handbok/referens/sandladebackends
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Om en körning är sandlådad beror på värden]
-`cc_server` sonderar värden en gång vid start och lindar in agentdispatchen i den inbyggda backenden när sonderingen rapporterar att en sådan finns och `--sandbox` inte är `off`. Båda dispatchskarvarna lindas in: Claude Code-CLI:n via sandlådeporten, och ACP plus den inbyggda harnessens `bash`-verktyg via sandlådehanteraren.
+`cc_server` avgör en gång vid start hur agenter körs på den här värden, och beslutet gäller tills den startas om:
 
-Där sonderingen inte rapporterar någon backend — **alltid Windows** och Linux eller WSL2 utan `bwrap` och `socat` — är agentkörningarna **inte sandlådade**. ACP och harnessens `bash`-verktyg startar fortfarande med sanerad miljö; Claude Code går via `NoSandboxAdapter` och ärver värdmiljön. De återstående gränserna är körningens egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows), en kodvärdstoken som bara kan läsa, förmedlad per start och återkallad vid nedrivning, pushar som måste passera pushregeln i agentkörningsgatewayen, kommandopolicyen per läge, de enhetliga [åtgärdsräckena](/sv-SE/handbok/koncept/racken/) (fail-closed), miljösaneringen på ACP- och harnessens `bash`-vägar, och den verktygsyta som läget tillåter.
+- **Sandlådad** (`native`): sonderingen hittade en backend och `--sandbox` är inte `off`. Båda dispatchskarvarna lindas in: Claude Code-CLI:n via sandlådeporten, och ACP plus den inbyggda harnessens `bash`-verktyg via sandlådehanteraren.
+- **Av** (`off`): serverägaren startade den med `--sandbox off`. Varje medlems agent körs obegränsat på den här maskinen, vem som än startade den.
+- **Otillgänglig** (`unavailable`): sandlådan är på men sonderingen hittade ingen backend (**alltid Windows**, och Linux eller WSL2 utan `bwrap` och `socat`). En körning startar bara när personen som ansvarar för den är serverns [ägare](/sv-SE/handbok/koncept/auktorisering/#serverägaren): personen som bad om den, eller för automatisering personen den är bunden till. Andras körningar nekas innan en autentiseringsuppgift utfärdas, ett lease tas eller en process startar. Utan registrerad ägare startar ingens körning.
+
+En nekad körning misslyckas med koden `sandbox_unavailable`. Appen visar den som **Agenter behöver en sandlåda på den här servern**: "Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här. Ägaren kan installera sandlådan eller stänga av sandlådan för alla."
+
+En körning som startar utan sandlåda (under `off`, eller ägarens egen körning under `unavailable`) körs direkt på värden. ACP och harnessens `bash`-verktyg startar fortfarande med sanerad miljö; Claude Code går via `NoSandboxAdapter` och ärver värdmiljön. De återstående gränserna är körningens egen worktree (copy-on-write där `rift` finns; `git worktree` på Windows), en kodvärdstoken som bara kan läsa, förmedlad per start och återkallad vid nedrivning, pushar som måste passera pushregeln i agentkörningsgatewayen, kommandopolicyen per läge, de enhetliga [åtgärdsräckena](/sv-SE/handbok/koncept/racken/) (fail-closed), miljösaneringen på ACP- och harnessens `bash`-vägar, och den verktygsyta som läget tillåter.
 
 Harnessens filverktyg i processen (read, write, edit, apply patch, search, find, search_files) ligger utanför sandlådan på varje värd: de körs i serverprocessen, så bara `bash` lindas in.
+
+Värden är aldrig en reservväg för en sandlådad server. Om servern sandlådar agenter men inte har någon sandlåda att ge en körning, nekas dess verktygsprocesser och `bash`-kommandon i stället för att startas på värden. Samma hållning avgör de små processerna runt en körning: ACP-engångshjälpare (konversationstitlar, `/btw`, `/handoff`, `/goal`) och en pull requests golden-tester i Review Studio körs i sandlådan när servern sandlådar agenter, obegränsat under `off`, och under `unavailable` bara för en begäran som serverägaren svarar för; annars hoppas de över.
 :::
 
 ## Backendöversikt
@@ -19,9 +27,9 @@ Harnessens filverktyg i processen (read, write, edit, apply patch, search, find,
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | Avskild VM  | `microvm` | macOS, Linux, Windows (microVM-hypervisor)    | Sondstyrd på microVM-körtiden; gäller interaktiva terminaler — skalet körs inuti en [station](/sv-SE/handbok/koncept/stationer/), inte på värden |
 | Inbyggd     | `native`  | macOS (Seatbelt), Linux och WSL2 (bubblewrap) | Sonderas vid start; Linux vägrar en körning som kräver skrivnekanden för filnamnsglober, vilket bubblewrap inte kan framtvinga |
-| Ingen       | `none`    | Alla                                          | Standard för parsern, terminalens standard och reservvägen när ingen backend finns eller `--sandbox off` är satt |
+| Ingen       | `none`    | Alla                                          | Standard för parsern och terminalens standard; agentdispatchen använder den under `--sandbox off`, och för ägarens egna körningar när ingen backend finns |
 
-`SandboxBackend.fromName` returnerar `none` för ett nullvärde eller ett okänt sparat värde. Ett sparat `"docker"` mappas till `native`.
+`SandboxBackend.fromName` returnerar `none` för ett nullvärde eller ett okänt sparat värde.
 
 **`microvm` är den enda backenden med en kärngräns** — arbetslasten körs
 verkligen inte på värden. Den är aldrig en tyst reservväg i någon riktning: att
@@ -33,7 +41,7 @@ tillbaka till klienten och märks upp, så en terminal kan aldrig påstå sig va
 avskild medan den körs på värden. Livscykel, avbilder och utgående trafik för
 själva VM:en täcks av [stationsreferensen](/sv-SE/handbok/referens/stationer/).
 
-**Windows har ingen inbyggd sandlåda.** `NativeSandboxAdapter.probe` returnerar `available: false` på varje värd som inte är macOS eller Linux/WSL2. Agentdispatch på Windows använder därför `none`. Backenden `microvm` är separat: den är sondstyrd på microVM-körtiden och gäller interaktiva terminaler och stationer, inte inlindning av `bash` på värden.
+**Windows har ingen inbyggd sandlåda.** `NativeSandboxAdapter.probe` returnerar `available: false` på varje värd som inte är macOS eller Linux/WSL2. Därmed är en Windows-server `unavailable`: bara serverägarens agentkörningar startar, obegränsat, och alla andras nekas. För att låta varje medlem köra agenter där startar ägaren servern med `--sandbox off`, vilket kör alla obegränsat. Backenden `microvm` är separat: den är sondstyrd på microVM-körtiden och gäller interaktiva terminaler och stationer, inte inlindning av `bash` på värden.
 
 ## Sonderingens resultat
 
@@ -46,9 +54,9 @@ Det är sonderingen som avgör om tvånget tillämpas. Den körs en gång, vid s
 | Linux eller WSL2 som saknar något av verktygen | `false` | `requiresInstall: true`, med en installationsledtråd som namnger de saknade paketen |
 | Annan plattform                          | `false`     | Inbyggd sandlåda erbjuds inte på den här plattformen                       |
 
-Servern loggar resultatet på en enda startrad: `agent sandbox ON` plus noten, `no OS-native agent sandbox on this host` plus ledtråden, eller `agent sandbox DISABLED by --sandbox off`. `GET /healthz` innehåller inget sandlådefält.
+Servern loggar resultatet på en enda startrad: `agent sandbox ON` plus noten; `no OS-native agent sandbox on this host` plus ledtråden, som lägger till att bara körningar som serverägaren svarar för startar; eller `agent sandbox DISABLED by --sandbox off`. Exponeringsraden som skrivs ut vid start bär samma beslut som `sandbox=native`, `sandbox=off` eller `sandbox=unavailable`. `GET /healthz` innehåller inget sandlådefält.
 
-`--sandbox` / `CC_SERVER_SANDBOX` accepterar `on` (standard) eller `off`. Det är en opt-out, inte en aktivering: `on` betyder ”linda in när värden erbjuder en backend”, aldrig ”kräv en”.
+`--sandbox` / `CC_SERVER_SANDBOX` accepterar `on` (standard) eller `off`. `on` lindar in varje körning när värden erbjuder en backend och släpper bara igenom ägarens körningar när den inte gör det. `off` kör varje medlems agenter obegränsat på den här värden; det är ägarens val för alla, inte en inställning per körning.
 
 ## Inbyggd backend
 
@@ -63,6 +71,8 @@ Den genererade profilen är **tillåtande som standard** (`(allow default)`) och
 - **Process**: `process-exec`-nekanden för de alltid farliga binärerna, plus ett block mot att köra något från en skrivbar katalog. Kända verktygsinstallationer under ditt hem (corepack, npx- och `pnpm dlx`-cacher, nodeversionshanterare, Playwright-webbläsare, rustup och cargo, Go, fvm och pub-cachen, pyenv, uv och pipx, rbenv, sdkman, mise, asdf och `~/.local/bin`) öppnas åter under blocket. De delade temporära katalogerna blockeras också. Varje session får i stället en privat `TMPDIR` under `/private/tmp`, där program den bygger (en `go test`-binär, en cargo-byggnad) kan köras. `process-exec`-nekandena för de alltid farliga binärerna tillämpas efter dessa tillåtelser
 - **Nätverk**: begränsat till proxyportarna i processen plus DNS — loopback är inte generellt tillåtet och TCP-lyssning nekas. Unix-socketar tillåts bara inom sessionens privata `TMPDIR`, vilket täcker verktyg som tsx och Chrome som håller en IPC-socket där; din SSH-agent och andra socketar förblir onåbara. Proxyservrarna framtvingar sessionens domän-allowlist (se [Utgående nätverkstrafik](#utgående-nätverkstrafik))
 - **Konfiguration**: profiler genereras per start utifrån `SandboxSpec`
+- **Serverns egna kommandon**: inget direkt underordnat i en mapp som servern kör program från (varje `PATH`-post och de vanliga verktygsmapparna per användare, som `~/.local/bin`, med versionshanterarnas länkar som `~/fvm/default` upplösta) kan skapas, ersättas, tas bort eller döpas om, inte heller det installerade paket som ett länkat kommando pekar in i. Se [Serverns kommandomappar](#serverns-kommandomappar)
+- **Startfiler**: varje hemsökväg som profilen nekar läsning nekas också skrivning, och startfilerna för serveranvändarens skal och sessioner (`.zshenv`, `.zlogin`, `.bash_login`, fish-konfigurationen, systemd-användarenheter, autostartposter och liknande) är skrivnekade i varje läge
 
 Krav:
 
@@ -75,6 +85,7 @@ Använder bubblewrap (`bwrap`) för att skapa monterings- och PID-namnrymder.
 - **Filsystem**: skapar en monteringsnamnrymd där bara de inbundna sökvägarna syns
 - **Nätverk**: körs i en osharead nätverksnamnrymd; trafiken når värdens proxyservrar via `socat`-bryggor över Unix-socketar
 - **Process**: PID-namnrymdsisolering
+- **Serverns egna kommandon och startfiler**: samma skydd som på macOS, uttryckt som bubblewrap-bindningar. De är ännu inte verifierade på Linux, och en saknad kommandomapp där kan fortfarande skapas
 
 Krav:
 
@@ -90,19 +101,51 @@ skapandet krävs för att återställa inbyggd dispatch på Linux. Att stänga a
 sandlådan är en uttrycklig opt-out utan begränsningar, inte en likvärdig
 kringgång.
 
+I praktiken kör en Linux- eller WSL2-server agenter idag på ett av två sätt. Startad med `--sandbox off` kör den varje medlems agenter obegränsat. Utan bubblewrap eller `socat` installerat är den `unavailable` och kör bara serverägarens agenter, obegränsat. Med båda verktygen installerade och sandlådan på, nekas varje körning, även ägarens.
+
+## Serverns kommandomappar
+
+Servern hittar en gång vid start varje mapp den kör program från: varje post i dess `PATH`, de verktygsmappar per användare den söker i (som `~/.local/bin`, `~/.bun/bin` och npm-, yarn- och pnpm-mapparna för globala paket) och den riktiga mappen bakom varje länk på vägen (versionshanterarnas länkar som `~/fvm/default` eller en fnm-standard). I en sandlåda kan en agent inte lägga till, ersätta, ta bort eller döpa om ett kommando i de mapparna, länken som leder till ett, eller det installerade paket som ett länkat kommando pekar in i, och kan inte döpa om mapparna ovanför dem. Annars kunde en sandlådad körning placera ett program som servern, eller personen, senare startar utanför sandlådan.
+
+Det här ändrar för en körning:
+
+- Globala installationer från en sandlådad körning misslyckas med "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, samt `cargo install`, `go install` eller `dart pub global activate` när deras bin-mapp ligger på serverns `PATH`.
+- Byte av standardversion misslyckas på samma sätt (`fnm default`, `nvm alias default`, `fvm global`), liksom ett verktyg som uppdaterar sig självt på plats.
+- Projektlokala installationer (`node_modules/.bin`), `npx`, `pnpm dlx`, pakethanterare som styrs av corepack, SDK-cacher och vanliga byggen fungerar fortfarande.
+
+För att göra ett globalt verktyg tillgängligt för agenter, installera det på servern själv, som serveranvändaren, och starta om servern så att det nya kommandot också skyddas. Eller installera det i projektet. Ett kommando som installeras efter att servern startat är fullt skyddat först från nästa start.
+
+Tillämpas och testat på macOS. På Linux är samma regler bubblewrap-bindningar som ännu inte är verifierade. Windows har ingen sandlåda.
+
 ## Backenden utan isolering
 
-Ingen sandlåda. Processen körs direkt på värden med värdens filsystem, nätverk och processåtkomst. ACP och harnessens `bash`-verktyg får fortfarande sanerad miljö och kommandopolicyen; Claude Code via `NoSandboxAdapter` ärver värdmiljön. Det här är vad agentdispatchen faller tillbaka på när värden saknar tillgänglig backend eller när `--sandbox off` är satt, och det är terminalens standard när en klient inte anger någon.
+Ingen sandlåda. Processen körs direkt på värden med värdens filsystem, nätverk och processåtkomst. ACP och harnessens `bash`-verktyg får fortfarande sanerad miljö och kommandopolicyen; Claude Code via `NoSandboxAdapter` ärver värdmiljön. Agentdispatchen använder den för varje körning under `--sandbox off`, och på en värd utan tillgänglig backend bara för serverägarens egna körningar; andras körningar nekas där. För en terminal är det värdskalet, som bara serverägaren får öppna.
 
 ## Serverdriven terminal
 
-Terminalen sandlådas på sina egna villkor, inte av dispatchsonderingen. `TerminalSessionService`:s `defaultBackend` är `none` och `cc_server` åsidosätter den inte, så en terminalsession kör värdskalet om inte klienten uttryckligen begär `native` — skrivbordets terminalpanel gör det inte.
+Den serverdrivna terminalen öppnar värdskalet bara för serverns [ägare](/sv-SE/handbok/koncept/auktorisering/#serverägaren). Alla andra får en sandlådad terminal, med en agents begränsningar, i arbetsytans egna mappar.
 
-När `native` begärs lindas skalet in via `SandboxManager` under en fast terminalprofil: `$HOME` och sessionens arbetskatalog är skrivbara, nätverket är öppet och `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` och `~/Library/Keychains` är läsnekade. Kodvärdstoken som bara kan läsa och pushgatewayen gäller inte — de hör till dispatch. Om inlindningen inte stöds misslyckas sessionen i stället för att visa en inbyggd märkning på en PTY med värdskalet.
+Så väljs backenden för en session:
+
+| Begärt | Serverägare | Alla andra |
+| ------ | ----------- | ---------- |
+| Inget | Serverns standardbackend | Standarden, med `none` ersatt av `native` |
+| `none` (värdskalet) | Värdskal | Nekas: värdskalet körs på servern utan sandlåda |
+| `native` | Inbyggd sandlåda, ägarprofil | Inbyggd sandlåda, agentprofil |
+| `microvm` | Avskild VM | Avskild VM |
+| Ett okänt namn | Nekas | Nekas |
+
+- **Ägarprofil.** `$HOME` och sessionens arbetskatalog är skrivbara, nätverket är öppet, och `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` och `~/Library/Keychains` är läsnekade.
+- **Agentprofil** (`memberTerminalSandboxConfig`). Samma policy som en agent i den arbetsytan körs under: skrivningar stannar i arbetskatalogen, en privat körkatalog, `/tmp` och de delar av `$HOME` som en agent får skriva i; hemligheter är läsnekade; nätverket är agentens utgående allowlist; program körs bara från arbetskatalogen och installerade verktygskedjor.
+- En terminal öppnas bara inom arbetsytans egna mappar. En arbetskatalog utanför dem nekas, aldrig bytt mot en annan.
+- Bara den som öppnade en terminal kan läsa, skriva till, ändra storlek på eller stänga den. För alla andra ser dess id ut som okänt.
+- `microvm` begärt uttryckligen på en värd utan stationstjänst misslyckas i stället för att falla tillbaka. En `microvm`-standard på en sådan värd trappas ner till `native` och säger det i loggen.
+
+Den skrivskyddade forge-tokenen och pushgatewayen gäller inte terminaler: de hör till dispatch. Om inlindningen inte stöds misslyckas sessionen i stället för att visa en sandlådemärkning på en session med värdskal.
 
 ## Utgående nätverkstrafik
 
-När en sandlåda startas framtvingas utgående nätverksåtkomst av proxyservrar i processen, inte av brandväggsregler i kärnan. På en värd utan tillgänglig backend gäller inget av detta, och en startad process når nätverket precis som serveranvändaren skulle göra.
+När en sandlåda startas framtvingas utgående nätverksåtkomst av proxyservrar i processen, inte av brandväggsregler i kärnan. En körning som inte är sandlådad (varje körning under `--sandbox off`, eller ägarens körning på en värd utan backend) får inget av detta: en process den startar når nätverket precis som serveranvändaren skulle göra.
 
 - Sandlådans körtid kör en HTTP/HTTPS-proxy och en SOCKS5-proxy på `127.0.0.1` inuti `cc_server`-processen, **ett par per begränsad session** (`http_proxy.dart`, `socks_proxy.dart`). Samtidiga körningar delar inte ett par.
 - Sandlådade processer får proxyvariabler i miljön (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP-proxyn, `ALL_PROXY` → SOCKS-proxyn; `GIT_SSH_COMMAND` dirigerar git-over-SSH genom SOCKS-proxyn). På Linux är nätverksnamnrymden osharead, så proxyservrarna är enda vägen ut; på macOS delar sandlådan värdens loopback och talar med dem direkt.

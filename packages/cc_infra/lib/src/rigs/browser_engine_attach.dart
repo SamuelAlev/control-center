@@ -8,12 +8,12 @@
 // exactly when it mattered.
 library;
 
+import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/rigs/bidi_client.dart';
 import 'package:cc_infra/src/rigs/browser_engine_client.dart';
 import 'package:cc_infra/src/rigs/cdp_client.dart';
-import 'package:cc_infra/src/rigs/rig_browser_defaults.dart';
 import 'package:cc_infra/src/rigs/webdriver_client.dart';
 
 /// Attaches to [engine]'s automation endpoint on [host]:[port].

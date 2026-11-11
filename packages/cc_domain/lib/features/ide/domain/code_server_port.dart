@@ -18,8 +18,9 @@ abstract interface class CodeServerPort {
   /// repoId)` — reusing a running instance keyed by the conversation's
   /// worktree, or spawning one bound loopback on an ephemeral port with its
   /// `--folder` set to the worktree path.
-  /// [deviceId] is the paired-device id of the minting client; the returned
-  /// [CodeServerSession.sessionId] is a high-entropy capability bound to it.
+  /// [deviceId] and [userId] identify the minting client and its signed-in
+  /// user; the returned [CodeServerSession.sessionId] is a high-entropy
+  /// capability bound to both. Callers admit only the server owner.
   /// [path], when given, deep-links the file code-server opens first. Returns
   /// the live session (its `status` reports install/readiness). Throws on a
   /// cross-workspace mismatch or when the worktree cannot be resolved (never
@@ -33,6 +34,7 @@ abstract interface class CodeServerPort {
     required String spaceId,
     required String repoId,
     required String deviceId,
+    required String userId,
     String? path,
     String autoSave = 'afterDelay',
   });
@@ -53,8 +55,8 @@ abstract interface class CodeServerPort {
 
   /// Resolves a live public capability to the owning device and shared process.
   /// Unknown, closed and expired bindings return null. The proxy must compare
-  /// [CodeServerSession.deviceId] against its authenticated device on every
-  /// request; neither the process id nor the extension bridge id is a client
+  /// [CodeServerSession.deviceId] and [CodeServerSession.userId] against its
+  /// authenticated principal on every request; neither the process id nor the extension bridge id is a client
   /// proxy capability.
   CodeServerSession? lookup(String sessionId);
 

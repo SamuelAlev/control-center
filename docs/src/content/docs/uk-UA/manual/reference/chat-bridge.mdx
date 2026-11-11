@@ -2,7 +2,7 @@
 title: Чат-міст
 description: Провайдери, команди, облікові дані, можливості, операції RPC і зберігання для чат-моста.
 slug: uk-UA/керівництво/довідка/чат-міст
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Провайдери
@@ -150,7 +150,7 @@ message.im
 | Згадку прийнято              | `Working on it…`                                               |
 | Крок `repo`                  | `Cloning <repo>…`                                              |
 | Крок `prCheckout`            | `Checking out the pull request in <repo>…`                     |
-| Крок `script`                | `Running the setup script for <repo>…`                         |
+| Крок `provisionTasks`                | `Running worktree tasks for <repo>…`                         |
 | Крок `agent`                 | `Setting up <agent>…`                                          |
 | `provisioning`, кроку ще немає | `Preparing the workspace…`                                   |
 | `ready`                      | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ message.im
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Облікові дані з’єднання            | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                    |
 | Незавершене покрокове налаштування | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                              |
-| Застарілі файли Slack              | `<dataDir>/<workspaceId>/slack_credentials.json` і `slack_app_setup.json`, читаються один раз і переносяться на місці |
 
 Облікові дані лежать поруч із базою даних робочого простору, а не всередині неї: видалення робочого простору забирає з собою його токени чату, а `workspace.export` чи резервна копія копіює `workspace.db` — тож робочий простір, переданий комусь іншому, не несе всередині живих токенів бота. Записи атомарні (тимчасовий файл плюс перейменування) і доступні лише власнику.
 

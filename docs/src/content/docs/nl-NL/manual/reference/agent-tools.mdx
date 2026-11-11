@@ -2,7 +2,7 @@
 title: Ingebouwde agenttools
 description: Het tooloppervlak dat de ingebouwde harness een agent geeft — taalserver, structureel zoeken, debugger, kernels en workerbesturing — met elke bewerking en zijn argumenten.
 slug: nl-NL/handleiding/referentie/agenttools
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Dit zijn de **aan de server gebonden** tools die de ingebouwde agentruntime rechtstreeks registreert — taalserver, structureel zoeken, debugger, kernels, vragen en workerbesturing — in tegenstelling tot de [MCP-tools](/nl-NL/handleiding/referentie/mcp-tools/) die hij erin overbrugt en de generieke bestands-, zoek- en shelltools van de harnessruntime. Ze staan niet in het MCP-register: een externe MCP-client ziet ze niet, omdat elke tool gebonden is aan een levende resource aan de serverkant — een taalserverproces, een debugadapter, een interpreter — die bij één run hoort.
@@ -24,6 +24,8 @@ Elke tool verklaart een niveau, en dat niveau bepaalt **welke oppervlakken hem t
 ## `lsp` — query's op de taalserver
 
 Wordt geregistreerd wanneer de run een taalserver-supervisor en een werkmap heeft. Of een server werkelijk kan antwoorden, wordt op het moment van de aanroep bepaald, als een **doorsnede**: er moet een marker in de root staan *en* de binary van de server moet te vinden zijn. Alleen een van beide betekent dat er geen server start — dat meldt `status` — in plaats van een stilzwijgende gok.
+
+Servers komen alleen uit de ingebouwde tabel; een `lsp.json` in de repository wordt niet gelezen. In een gesandboxde run krijgt elke run zijn eigen taalserversessie, dus servers starten bij elke run opnieuw. Projectlokale binaries (`node_modules/.bin`) worden alleen gebruikt wanneer de run gesandboxed is, en de projectroot wordt nooit hoger opgelost dan de werkmap van de run.
 
 Posities worden aangeduid met `line` plus een substring van `symbol`, nooit met een kolom. Een model dat om een kolom wordt gevraagd, gokt, en een verkeerde gok komt uit op een ander symbool op dezelfde regel — een antwoord dat er goed uitziet maar ergens anders over gaat. Het weglaten van `symbol` bij een navigatieactie is een fout, geen gok op de eerste kolom.
 
@@ -117,7 +119,7 @@ Elk bestand wordt vergeleken met de inhoud die op het moment van klaarzetten is 
 
 Wordt geregistreerd wanneer de run een debug-sessiesupervisor, een werkmap en een gespreks-id heeft. Of een adapter werkelijk kan starten, wordt op het moment van de aanroep bepaald, met dezelfde doorsnede-regel als bij de taalserver (marker *en* binary). Niveau `exec`; niet parallelveilig (een sessie is toestand over meerdere aanroepen, dus een `continue` die `stack` inhaalt, zou een frame lezen dat al is opgeschoven).
 
-Eén sessie per gesprek, met een harde TTL (30 minuten). Een tweede `launch` wordt geweigerd in plaats van de eerste stil te vervangen.
+Eén sessie per gesprek, met een harde TTL (30 minuten). Een tweede `launch` wordt geweigerd in plaats van de eerste stil te vervangen. In een gesandboxde run behoudt de sessie zijn sandbox over de beurten heen tot ze eindigt, dus hooguit die 30 minuten.
 
 | Bewerking     | Argumenten                    | Opmerkingen                                    |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Eén sessie per gesprek, met een harde TTL (30 minuten). Een tweede `launch` wor
 | `status`      | —                             | Of er een sessie draait, en waar die is gestopt |
 | `breakpoints` | `file`, `lines[]`             | Een lege `lines` wist het bestand. Mag **vóór** het starten worden ingesteld |
 | `launch`      | `program`, `args[]`           | Start het programma en stopt bij je breakpoints |
-| `attach`      | `port`                        | Verbindt met een proces dat al onder de debugger draait |
+| `attach`      | `port`                        | Verbindt met een al draaiende debuggee op een van de eigen doorgestuurde poorten van de run; elke andere poort wordt geweigerd voordat er iets start |
 | `continue`    | `thread_id?`                  | Draait tot het volgende stopmoment             |
 | `pause`       | `thread_id?`                  | Stopt het waar het is                          |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Gaat één stap verder                 |
@@ -146,7 +148,7 @@ Eén sessie per gesprek, met een harde TTL (30 minuten). Een tweede `launch` wor
 | `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                    | `go.mod`                                        |
 
-`debugpy` verkiest een projectlokale `.venv/bin` of `venv/bin` boven `$PATH`: een python uit `$PATH` is een andere omgeving, en verbinden vanuit de verkeerde mislukt op een manier die leest als kapotte code.
+`debugpy` verkiest in een gesandboxde run een projectlokale `.venv/bin` of `venv/bin` boven `$PATH`: een python uit `$PATH` is een andere omgeving, en verbinden vanuit de verkeerde mislukt op een manier die leest als kapotte code. Zonder sandbox gebruikt het alleen `$PATH`, zodat een repository niet kan kiezen welke interpreter op de host draait.
 
 ---
 
@@ -176,7 +178,7 @@ De brug **gaat weer het toolregister van de harness binnen**, dus beveiligingen,
 De time-out van de cel is een budget voor *inactiviteit* (standaard 5 minuten) en wordt **opgeschort** zolang er een aanroep via de brug openstaat, zodat een cel die uitwaaiert naar subagenten niet midden in die uitwaaiering wordt gedood.
 
 :::note[Waar de kernel draait]
-In de omhulling van het gesprek als die er is, anders op de host. Hij start geen omhulling op om daar te komen — dezelfde regel die voorkomt dat een rigtab automatisch start.
+In de omhulling van het gesprek als die er is, anders in de OS-sandbox van de run op de host. Met de sandbox uit of niet beschikbaar draait hij zonder inperking en vraagt `eval` om goedkeuring voor hostuitvoering. Hij start geen omhulling op om daar te komen, dezelfde regel die voorkomt dat een rigtab automatisch start.
 :::
 
 ---

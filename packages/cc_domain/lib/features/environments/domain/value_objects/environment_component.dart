@@ -1,4 +1,6 @@
+import 'package:cc_domain/features/environments/domain/services/environment_definition_reader.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status_map.dart';
 import 'package:collection/collection.dart';
 
@@ -22,15 +24,10 @@ enum EnvironmentTaskTrigger {
   /// Just before the role's worktree is destroyed.
   archive;
 
-  /// Parses [wire], or null.
-  static EnvironmentTaskTrigger? tryParse(Object? wire) {
-    for (final trigger in values) {
-      if (trigger.name == wire) {
-        return trigger;
-      }
-    }
-    return null;
-  }
+  /// Every trigger by wire name.
+  static Map<String, EnvironmentTaskTrigger> get byWire => {
+    for (final trigger in values) trigger.name: trigger,
+  };
 
   /// Whether this follows the worktree instead of the environment.
   bool get isWorktreeTrigger => this == provision || this == archive;
@@ -52,12 +49,10 @@ enum EnvironmentRestartPolicy {
   /// Stable wire string.
   final String wire;
 
-  /// Parses [wire], defaulting to [onFailure].
-  static EnvironmentRestartPolicy parse(Object? wire) =>
-      EnvironmentRestartPolicy.values.firstWhere(
-        (policy) => policy.wire == wire,
-        orElse: () => onFailure,
-      );
+  /// Every policy by wire name.
+  static Map<String, EnvironmentRestartPolicy> get byWire => {
+    for (final policy in values) policy.wire: policy,
+  };
 }
 
 /// How agent input reaches a desktop window.
@@ -68,9 +63,10 @@ enum EnvironmentAppInputMode {
   /// Activates the window and injects at system level.
   foreground;
 
-  /// Parses [wire], defaulting to [background].
-  static EnvironmentAppInputMode parse(Object? wire) =>
-      wire == 'foreground' ? foreground : background;
+  /// Every mode by wire name.
+  static Map<String, EnvironmentAppInputMode> get byWire => {
+    for (final mode in values) mode.name: mode,
+  };
 }
 
 /// Where a command runs. Both fields are optional.
@@ -78,11 +74,13 @@ class EnvironmentCwd {
   /// Creates an [EnvironmentCwd].
   const EnvironmentCwd({this.role, this.path});
 
-  /// Parses a `cwd` object.
-  factory EnvironmentCwd.fromJson(Map<String, dynamic> json) => EnvironmentCwd(
-    role: json['role'] as String?,
-    path: json['path'] as String?,
-  );
+  /// Reads a `cwd` object.
+  static EnvironmentCwd read(EnvironmentJsonReader reader) {
+    final role = reader.string('role', nonEmpty: true);
+    final path = reader.string('path', nonEmpty: true);
+    reader.finish();
+    return EnvironmentCwd(role: role, path: path);
+  }
 
   /// The role, or null for the first role the space has.
   final String? role;
@@ -116,15 +114,22 @@ class EnvironmentReadyProbe {
     this.timeoutSeconds = 120,
   });
 
-  /// Parses a `ready` object.
-  factory EnvironmentReadyProbe.fromJson(Map<String, dynamic> json) =>
-      EnvironmentReadyProbe(
-        http: json['http'] as String?,
-        tcp: json['tcp'] as String?,
-        logMatch: json['logMatch'] as String?,
-        expectBelow: (json['expectBelow'] as num?)?.toInt() ?? 500,
-        timeoutSeconds: (json['timeout'] as num?)?.toInt() ?? 120,
-      );
+  /// Reads a `ready` object.
+  static EnvironmentReadyProbe read(EnvironmentJsonReader reader) {
+    final http = reader.string('http', nonEmpty: true);
+    final tcp = reader.string('tcp', nonEmpty: true);
+    final logMatch = reader.string('logMatch', nonEmpty: true);
+    final expectBelow = reader.integer('expectBelow', min: 200, max: 600);
+    final timeout = reader.integer('timeout');
+    reader.finish();
+    return EnvironmentReadyProbe(
+      http: http,
+      tcp: tcp,
+      logMatch: logMatch,
+      expectBelow: expectBelow ?? 500,
+      timeoutSeconds: timeout ?? 120,
+    );
+  }
 
   /// URL template to poll.
   final String? http;
@@ -175,20 +180,29 @@ sealed class EnvironmentComponent {
     }
   }
 
-  /// Parses a component by its `kind`.
-  factory EnvironmentComponent.fromJson(
-    Map<String, dynamic> json, {
-    required String path,
-  }) {
-    final kind = json['kind'];
-    return switch (kind) {
-      'compose' => ComposeEnvironmentComponent.fromJson(json),
-      'cli' => CliEnvironmentComponent.fromJson(json, path: path),
-      'process' => ProcessEnvironmentComponent.fromJson(json, path: path),
-      'task' => TaskEnvironmentComponent.fromJson(json, path: path),
-      'app' => AppEnvironmentComponent.fromJson(json, path: path),
-      _ => throw FormatException('$path.kind is not a component kind: $kind'),
+  /// Reads a component by its `kind`, or null when it can't be built.
+  static EnvironmentComponent? read(EnvironmentJsonReader reader) {
+    final kind = reader.choice('kind', const {
+      'compose': 'compose',
+      'cli': 'cli',
+      'process': 'process',
+      'task': 'task',
+      'app': 'app',
+    }, required: true);
+    final base = EnvironmentComponentBase._read(reader, kind: kind);
+    final component = switch (kind) {
+      'compose' => ComposeEnvironmentComponent._read(reader, base),
+      'cli' => CliEnvironmentComponent._read(reader, base),
+      'process' => ProcessEnvironmentComponent._read(reader, base),
+      'task' => TaskEnvironmentComponent._read(reader, base),
+      'app' => AppEnvironmentComponent._read(reader, base),
+      _ => null,
     };
+    // Without a kind there is no telling which fields belong.
+    if (kind != null) {
+      reader.finish();
+    }
+    return base == null ? null : component;
   }
 
   /// Stable id, unique in the definition.
@@ -236,34 +250,119 @@ sealed class EnvironmentComponent {
     if (ports.length > 1) 'ports': ports,
   };
 
-  static List<String> _strings(Object? json) => [
-    for (final item in (json as List?) ?? const []) '$item',
-  ];
-
-  static Map<String, String> _env(Object? json) => {
-    for (final entry in ((json as Map?) ?? const {}).entries)
-      '${entry.key}': '${entry.value}',
-  };
-
-  static List<String> _ports(Map<String, dynamic> json) => [
-    if (json['port'] is String) json['port'] as String,
-    ..._strings(json['ports']),
-  ];
-
-  static EnvironmentCwd? _cwd(Map<String, dynamic> json) => json['cwd'] is Map
-      ? EnvironmentCwd.fromJson(Map<String, dynamic>.from(json['cwd'] as Map))
-      : null;
-
-  static EnvironmentCommand _body(
-    Map<String, dynamic> json, {
-    required String path,
-  }) {
-    final script = json['script'];
-    if (script is List) {
-      return ShellEnvironmentCommand(script.join('\n'));
+  /// The named ports in `port` and `ports`, or null after an issue.
+  static List<String>? _readPorts(EnvironmentJsonReader reader) {
+    final single = reader.raw('port');
+    final ports = <String>[];
+    var ok = true;
+    if (single is String && single.trim().isNotEmpty) {
+      ports.add(single);
+    } else if (single is List) {
+      reader.report('port', 'Holds one port name. Use ports for a list');
+      ok = false;
+    } else if (single != null) {
+      reader.report(
+        'port',
+        'Must be a port name, such as "web". Control Center picks the number',
+      );
+      ok = false;
     }
-    return EnvironmentCommand.fromJson(json['command'], path: '$path.command');
+    final many = reader.strings('ports', nonEmpty: true);
+    if (reader.has('ports') && many == null) {
+      ok = false;
+    }
+    return ok ? [...ports, ...?many] : null;
   }
+
+  /// What `command` or `script` runs, or null after an issue.
+  static EnvironmentCommand? _readBody(EnvironmentJsonReader reader) {
+    final hasScript = reader.has('script');
+    final hasCommand = reader.has('command');
+    if (hasScript && hasCommand) {
+      reader.report('script', 'Use command or script, not both');
+      return null;
+    }
+    if (hasScript) {
+      return EnvironmentCommand.scriptLines(reader, 'script');
+    }
+    if (!hasCommand) {
+      reader.report('command', 'Required');
+      return null;
+    }
+    return EnvironmentCommand.read(
+      reader.raw('command'),
+      reader.pathOf('command'),
+      reader.issues,
+    );
+  }
+}
+
+/// The fields every component kind shares, as read.
+class EnvironmentComponentBase {
+  const EnvironmentComponentBase._({
+    required this.id,
+    this.label,
+    this.enabledWhen,
+    this.after = const [],
+    this.cwd,
+    this.env = const {},
+  });
+
+  /// The shared fields, or null after an issue in one of them.
+  static EnvironmentComponentBase? _read(
+    EnvironmentJsonReader reader, {
+    required String? kind,
+  }) {
+    final id = reader.string('id', required: true, nonEmpty: true);
+    final label = reader.string('label');
+    final enabledWhen = reader.string('enabledWhen', nonEmpty: true);
+    List<String>? after = const [];
+    if (kind == 'app') {
+      reader.refuse(
+        'after',
+        'An app opens on Launch, once the stack is up, so after has no effect',
+      );
+    } else {
+      after = reader.strings('after');
+      if (reader.has('after') && after == null) {
+        return null;
+      }
+    }
+    final cwdReader = reader.object('cwd');
+    final cwd = cwdReader == null ? null : EnvironmentCwd.read(cwdReader);
+    final env = reader.stringMap('env');
+    if (id == null ||
+        (reader.has('cwd') && cwd == null) ||
+        (reader.has('env') && env == null)) {
+      return null;
+    }
+    return EnvironmentComponentBase._(
+      id: id,
+      label: label,
+      enabledWhen: enabledWhen,
+      after: after ?? const [],
+      cwd: cwd,
+      env: env ?? const {},
+    );
+  }
+
+  /// See [EnvironmentComponent.id].
+  final String id;
+
+  /// See [EnvironmentComponent.label].
+  final String? label;
+
+  /// See [EnvironmentComponent.enabledWhen].
+  final String? enabledWhen;
+
+  /// See [EnvironmentComponent.after].
+  final List<String> after;
+
+  /// See [EnvironmentComponent.cwd].
+  final EnvironmentCwd? cwd;
+
+  /// See [EnvironmentComponent.env].
+  final Map<String, String> env;
 }
 
 /// A compose stack driven natively.
@@ -284,28 +383,54 @@ class ComposeEnvironmentComponent extends EnvironmentComponent {
     this.timeoutSeconds = 300,
   });
 
-  /// Parses a compose component.
-  factory ComposeEnvironmentComponent.fromJson(Map<String, dynamic> json) =>
-      ComposeEnvironmentComponent(
-        id: json['id'] as String,
-        label: json['label'] as String?,
-        enabledWhen: json['enabledWhen'] as String?,
-        after: EnvironmentComponent._strings(json['after']),
-        cwd: EnvironmentComponent._cwd(json),
-        env: EnvironmentComponent._env(json['env']),
-        file: json['file'] as String?,
-        services: EnvironmentComponent._strings(json['services']),
-        build: json['build'] as bool? ?? true,
-        healthchecks: {
-          for (final entry
-              in ((json['healthchecks'] as Map?) ?? const {}).entries)
-            '${entry.key}': EnvironmentComponent._strings(entry.value),
-        },
-        http: json['http'] == null
-            ? null
-            : EnvironmentComponent._strings(json['http']),
-        timeoutSeconds: (json['timeout'] as num?)?.toInt() ?? 300,
+  static ComposeEnvironmentComponent? _read(
+    EnvironmentJsonReader reader,
+    EnvironmentComponentBase? base,
+  ) {
+    for (final key in const ['port', 'ports']) {
+      reader.refuse(
+        key,
+        'Compose ports come from the compose file. Read them as '
+        '{port.<service>.<port>}',
       );
+    }
+    final file = reader.string('file', nonEmpty: true);
+    final services = reader.strings('services');
+    final build = reader.boolean('build');
+    final checks = reader.object('healthchecks');
+    final healthchecks = <String, List<String>>{};
+    var ok = true;
+    if (checks != null) {
+      for (final service in checks.keys.toList()) {
+        final argv = checks.strings(service, nonEmpty: true);
+        if (argv == null) {
+          ok = false;
+        } else {
+          healthchecks[service] = argv;
+        }
+      }
+      checks.finish();
+    }
+    final http = reader.strings('http');
+    final timeout = reader.integer('timeout');
+    if (base == null || !ok) {
+      return null;
+    }
+    return ComposeEnvironmentComponent(
+      id: base.id,
+      label: base.label,
+      enabledWhen: base.enabledWhen,
+      after: base.after,
+      cwd: base.cwd,
+      env: base.env,
+      file: file,
+      services: services ?? const [],
+      build: build ?? true,
+      healthchecks: healthchecks,
+      http: http,
+      timeoutSeconds: timeout ?? 300,
+    );
+  }
 
   /// The compose file, or null to discover it.
   final String? file;
@@ -366,54 +491,124 @@ class CliEnvironmentComponent extends EnvironmentComponent {
     this.keepsDataOnStop = true,
     this.readyTimeoutSeconds = 600,
     this.timeouts = const {},
+    this.interactive = const [],
     this.agentPassthrough,
   }) {
-    for (final verb in const ['create', 'status', 'destroy']) {
+    for (final verb in requiredVerbs) {
       if (!verbs.containsKey(verb)) {
         throw ArgumentError('A cli component needs the $verb verb');
       }
     }
   }
 
-  /// Parses a cli component.
-  factory CliEnvironmentComponent.fromJson(
-    Map<String, dynamic> json, {
-    required String path,
-  }) {
-    final verbs = json['verbs'];
-    if (verbs is! Map) {
-      throw FormatException('$path.verbs is required');
+  /// Every verb a tool can map.
+  static const Set<String> knownVerbs = {
+    'create',
+    'start',
+    'stop',
+    'destroy',
+    'reset',
+    'status',
+    'list',
+    'logs',
+    'exec',
+  };
+
+  /// The verbs no tool can do without.
+  static const Set<String> requiredVerbs = {'create', 'status', 'destroy'};
+
+  /// The verbs that bring an environment up, and so the only ones that may
+  /// be [interactive]: a person is there when one of them runs.
+  static const Set<String> bringUpVerbs = {'create', 'start', 'reset'};
+
+  /// The condition value set while a verb runs on a terminal, for arguments
+  /// that only suit one side: `{"if": "!interactive", "args": ["--json"]}`.
+  static const String interactiveValue = 'interactive';
+
+  static CliEnvironmentComponent? _read(
+    EnvironmentJsonReader reader,
+    EnvironmentComponentBase? base,
+  ) {
+    for (final key in const ['port', 'ports']) {
+      reader.refuse(
+        key,
+        'A tool picks its own ports and reports them in its status',
+      );
     }
-    final passthrough = json['agentPassthrough'];
-    final map = json['statusMap'];
+    var ok = true;
+    final verbs = <String, EnvironmentCommand>{};
+    final verbReader = reader.object('verbs', required: true);
+    if (verbReader == null) {
+      ok = false;
+    } else {
+      for (final verb in verbReader.keys.toList()) {
+        final command = EnvironmentCommand.read(
+          verbReader.raw(verb),
+          verbReader.pathOf(verb),
+          reader.issues,
+        );
+        if (command == null) {
+          ok = false;
+        } else {
+          verbs[verb] = command;
+        }
+      }
+      for (final verb in requiredVerbs) {
+        if (!verbReader.has(verb)) {
+          verbReader.report(
+            verb,
+            'Required: every tool maps ${requiredVerbs.join(', ')}',
+          );
+          ok = false;
+        }
+      }
+      verbReader.finish();
+    }
+    final mapReader = reader.object('statusMap');
+    final statusMap = mapReader == null
+        ? null
+        : EnvironmentStatusMap.read(mapReader);
+    final keepsDataOnStop = reader.boolean('keepsDataOnStop');
+    final readyTimeout = reader.integer('readyTimeout');
+    final timeoutReader = reader.object('timeouts');
+    final timeouts = <String, int>{};
+    if (timeoutReader != null) {
+      for (final verb in timeoutReader.keys.toList()) {
+        final seconds = timeoutReader.integer(verb);
+        if (seconds == null) {
+          ok = false;
+        } else {
+          timeouts[verb] = seconds;
+        }
+      }
+      timeoutReader.finish();
+    }
+    final interactive = reader.strings('interactive');
+    final passthroughReader = reader.object('agentPassthrough');
+    final passthrough = passthroughReader == null
+        ? null
+        : EnvironmentAgentPassthrough._read(passthroughReader);
+    if (base == null ||
+        !ok ||
+        (reader.has('statusMap') && statusMap == null) ||
+        (reader.has('agentPassthrough') && passthrough == null) ||
+        (reader.has('interactive') && interactive == null)) {
+      return null;
+    }
     return CliEnvironmentComponent(
-      id: json['id'] as String,
-      label: json['label'] as String?,
-      enabledWhen: json['enabledWhen'] as String?,
-      after: EnvironmentComponent._strings(json['after']),
-      cwd: EnvironmentComponent._cwd(json),
-      env: EnvironmentComponent._env(json['env']),
-      verbs: {
-        for (final entry in verbs.entries)
-          '${entry.key}': EnvironmentCommand.fromJson(
-            entry.value,
-            path: '$path.verbs.${entry.key}',
-          ),
-      },
-      statusMap: map is Map
-          ? EnvironmentStatusMap.fromJson(Map<String, dynamic>.from(map))
-          : null,
-      keepsDataOnStop: json['keepsDataOnStop'] as bool? ?? true,
-      readyTimeoutSeconds: (json['readyTimeout'] as num?)?.toInt() ?? 600,
-      timeouts: {
-        for (final entry in ((json['timeouts'] as Map?) ?? const {}).entries)
-          '${entry.key}': (entry.value as num).toInt(),
-      },
-      agentPassthrough: passthrough is Map
-          ? EnvironmentAgentPassthrough.fromJson(
-              Map<String, dynamic>.from(passthrough),
-            )
-          : null,
+      id: base.id,
+      label: base.label,
+      enabledWhen: base.enabledWhen,
+      after: base.after,
+      cwd: base.cwd,
+      env: base.env,
+      verbs: verbs,
+      statusMap: statusMap,
+      keepsDataOnStop: keepsDataOnStop ?? true,
+      readyTimeoutSeconds: readyTimeout ?? 600,
+      timeouts: timeouts,
+      interactive: interactive ?? const [],
+      agentPassthrough: passthrough,
     );
   }
 
@@ -433,6 +628,13 @@ class CliEnvironmentComponent extends EnvironmentComponent {
   /// Per-verb timeouts in seconds.
   final Map<String, int> timeouts;
 
+  /// Verbs the tool can finish on a terminal when it needs a person.
+  ///
+  /// Such a verb that exits 3 or 4 through a pipe runs again on a terminal
+  /// tab, same argv with [interactiveValue] set, where the tool asks for
+  /// itself: a `sudo` password, a sign-in. Only for a start a person made.
+  final List<String> interactive;
+
   /// Commands agents may run directly.
   final EnvironmentAgentPassthrough? agentPassthrough;
 
@@ -448,6 +650,7 @@ class CliEnvironmentComponent extends EnvironmentComponent {
     'keepsDataOnStop': keepsDataOnStop,
     'readyTimeout': readyTimeoutSeconds,
     if (timeouts.isNotEmpty) 'timeouts': timeouts,
+    if (interactive.isNotEmpty) 'interactive': interactive,
     'verbs': {
       for (final entry in verbs.entries) entry.key: entry.value.toJson(),
     },
@@ -477,16 +680,30 @@ class EnvironmentPassthroughRule {
     this.denyFlags = const [],
   });
 
-  /// Parses a rule.
-  factory EnvironmentPassthroughRule.fromJson(Map<String, dynamic> json) =>
-      EnvironmentPassthroughRule(
-        argv: EnvironmentComponent._strings(json['argv']),
-        maps: json['maps'] as String,
-        positionalName: (json['positionalName'] as num?)?.toInt(),
-        nameFilter: json['nameFilter'] == true,
-        pathFlags: EnvironmentComponent._strings(json['pathFlags']),
-        denyFlags: EnvironmentComponent._strings(json['denyFlags']),
-      );
+  static EnvironmentPassthroughRule? _read(EnvironmentJsonReader reader) {
+    final argv = reader.strings('argv', required: true, nonEmpty: true);
+    final maps = reader.string('maps', required: true, nonEmpty: true);
+    final positionalName = reader.integer('positionalName', min: 0);
+    final nameFilter = reader.boolean('nameFilter');
+    final pathFlags = reader.strings('pathFlags');
+    final denyFlags = reader.strings('denyFlags');
+    reader.finish();
+    if (argv == null ||
+        maps == null ||
+        (reader.has('positionalName') && positionalName == null) ||
+        (reader.has('pathFlags') && pathFlags == null) ||
+        (reader.has('denyFlags') && denyFlags == null)) {
+      return null;
+    }
+    return EnvironmentPassthroughRule(
+      argv: argv,
+      maps: maps,
+      positionalName: positionalName,
+      nameFilter: nameFilter ?? false,
+      pathFlags: pathFlags ?? const [],
+      denyFlags: denyFlags ?? const [],
+    );
+  }
 
   /// Leading arguments. `a|b` matches either.
   final List<String> argv;
@@ -546,17 +763,22 @@ class EnvironmentAgentPassthrough {
     required this.allow,
   });
 
-  /// Parses a passthrough block.
-  factory EnvironmentAgentPassthrough.fromJson(Map<String, dynamic> json) =>
-      EnvironmentAgentPassthrough(
-        binary: json['binary'] as String,
-        allow: [
-          for (final rule in (json['allow'] as List?) ?? const [])
-            EnvironmentPassthroughRule.fromJson(
-              Map<String, dynamic>.from(rule as Map),
-            ),
-        ],
-      );
+  static EnvironmentAgentPassthrough? _read(EnvironmentJsonReader reader) {
+    final binary = reader.string('binary', required: true, nonEmpty: true);
+    final rules = reader.objects('allow', required: true);
+    final allow = [
+      for (final rule in rules ?? const <EnvironmentJsonReader>[])
+        EnvironmentPassthroughRule._read(rule),
+    ];
+    reader.finish();
+    if (binary == null || rules == null || allow.contains(null)) {
+      return null;
+    }
+    return EnvironmentAgentPassthrough(
+      binary: binary,
+      allow: allow.cast<EnvironmentPassthroughRule>(),
+    );
+  }
 
   /// The executable name.
   final String binary;
@@ -607,32 +829,43 @@ class ProcessEnvironmentComponent extends EnvironmentComponent {
     this.restartOn = const [],
   });
 
-  /// Parses a process component.
-  factory ProcessEnvironmentComponent.fromJson(
-    Map<String, dynamic> json, {
-    required String path,
-  }) => ProcessEnvironmentComponent(
-    id: json['id'] as String,
-    label: json['label'] as String?,
-    enabledWhen: json['enabledWhen'] as String?,
-    after: EnvironmentComponent._strings(json['after']),
-    cwd: EnvironmentComponent._cwd(json),
-    env: EnvironmentComponent._env(json['env']),
-    ports: EnvironmentComponent._ports(json),
-    command: EnvironmentComponent._body(json, path: path),
-    endpoint: json['endpoint'] is Map
-        ? EnvironmentProcessEndpoint.fromJson(
-            Map<String, dynamic>.from(json['endpoint'] as Map),
-          )
-        : null,
-    ready: json['ready'] is Map
-        ? EnvironmentReadyProbe.fromJson(
-            Map<String, dynamic>.from(json['ready'] as Map),
-          )
-        : null,
-    restart: EnvironmentRestartPolicy.parse(json['restart']),
-    restartOn: EnvironmentComponent._strings(json['restartOn']),
-  );
+  static ProcessEnvironmentComponent? _read(
+    EnvironmentJsonReader reader,
+    EnvironmentComponentBase? base,
+  ) {
+    final ports = EnvironmentComponent._readPorts(reader);
+    final command = EnvironmentComponent._readBody(reader);
+    final endpointReader = reader.object('endpoint');
+    final endpoint = endpointReader == null
+        ? null
+        : EnvironmentProcessEndpoint._read(endpointReader);
+    final readyReader = reader.object('ready');
+    final ready = readyReader == null
+        ? null
+        : EnvironmentReadyProbe.read(readyReader);
+    final restart = reader.choice('restart', EnvironmentRestartPolicy.byWire);
+    final restartOn = reader.strings('restartOn');
+    if (base == null ||
+        ports == null ||
+        command == null ||
+        (reader.has('endpoint') && endpoint == null)) {
+      return null;
+    }
+    return ProcessEnvironmentComponent(
+      id: base.id,
+      label: base.label,
+      enabledWhen: base.enabledWhen,
+      after: base.after,
+      cwd: base.cwd,
+      env: base.env,
+      ports: ports,
+      command: command,
+      endpoint: endpoint,
+      ready: ready,
+      restart: restart ?? EnvironmentRestartPolicy.onFailure,
+      restartOn: restartOn ?? const [],
+    );
+  }
 
   /// What to run.
   final EnvironmentCommand command;
@@ -683,13 +916,20 @@ class EnvironmentProcessEndpoint {
     this.primary = false,
   });
 
-  /// Parses an endpoint.
-  factory EnvironmentProcessEndpoint.fromJson(Map<String, dynamic> json) =>
-      EnvironmentProcessEndpoint(
-        role: json['role'] as String,
-        label: json['label'] as String?,
-        primary: json['primary'] == true,
-      );
+  static EnvironmentProcessEndpoint? _read(EnvironmentJsonReader reader) {
+    final role = reader.string('role', required: true, nonEmpty: true);
+    final label = reader.string('label');
+    final primary = reader.boolean('primary');
+    reader.finish();
+    if (role == null) {
+      return null;
+    }
+    return EnvironmentProcessEndpoint(
+      role: role,
+      label: label,
+      primary: primary ?? false,
+    );
+  }
 
   /// Stable role; `{url.<role>}` resolves to it.
   final String role;
@@ -737,31 +977,48 @@ class TaskEnvironmentComponent extends EnvironmentComponent {
     }
   }
 
-  /// Parses a task component.
-  factory TaskEnvironmentComponent.fromJson(
-    Map<String, dynamic> json, {
-    required String path,
-  }) {
+  static TaskEnvironmentComponent? _read(
+    EnvironmentJsonReader reader,
+    EnvironmentComponentBase? base,
+  ) {
+    final ports = EnvironmentComponent._readPorts(reader);
+    final command = EnvironmentComponent._readBody(reader);
+    final wires = reader.list('when', required: true, nonEmpty: true);
     final when = <EnvironmentTaskTrigger>{};
-    for (final wire in (json['when'] as List?) ?? const []) {
-      final trigger = EnvironmentTaskTrigger.tryParse(wire);
+    var ok = wires != null;
+    for (final (index, wire) in (wires ?? const []).indexed) {
+      final trigger = wire is String
+          ? EnvironmentTaskTrigger.byWire[wire]
+          : null;
       if (trigger == null) {
-        throw FormatException('$path.when has an unknown trigger: $wire');
+        reader.issues.add(
+          EnvironmentDefinitionIssue(
+            '${reader.pathOf('when')}[$index]',
+            choiceIssue(wire, EnvironmentTaskTrigger.byWire.keys),
+          ),
+        );
+        ok = false;
+      } else {
+        when.add(trigger);
       }
-      when.add(trigger);
+    }
+    final onChange = reader.strings('onChange');
+    final timeout = reader.integer('timeout');
+    if (base == null || ports == null || command == null || !ok) {
+      return null;
     }
     return TaskEnvironmentComponent(
-      id: json['id'] as String,
-      label: json['label'] as String?,
-      enabledWhen: json['enabledWhen'] as String?,
-      after: EnvironmentComponent._strings(json['after']),
-      cwd: EnvironmentComponent._cwd(json),
-      env: EnvironmentComponent._env(json['env']),
-      ports: EnvironmentComponent._ports(json),
-      command: EnvironmentComponent._body(json, path: path),
+      id: base.id,
+      label: base.label,
+      enabledWhen: base.enabledWhen,
+      after: base.after,
+      cwd: base.cwd,
+      env: base.env,
+      ports: ports,
+      command: command,
       when: when,
-      onChange: EnvironmentComponent._strings(json['onChange']),
-      timeoutSeconds: (json['timeout'] as num?)?.toInt(),
+      onChange: onChange ?? const [],
+      timeoutSeconds: timeout,
     );
   }
 
@@ -818,37 +1075,38 @@ class AppEnvironmentComponent extends EnvironmentComponent {
     required super.id,
     super.label,
     super.enabledWhen,
-    super.after,
     super.cwd,
     super.env,
     super.ports,
     required this.command,
     this.prepare,
     this.isolateHome = false,
-    this.windowBundleId,
     this.inputMode = EnvironmentAppInputMode.background,
   });
 
-  /// Parses an app component.
-  factory AppEnvironmentComponent.fromJson(
-    Map<String, dynamic> json, {
-    required String path,
-  }) {
-    final window = json['window'];
-    final match = window is Map ? window['match'] : null;
+  static AppEnvironmentComponent? _read(
+    EnvironmentJsonReader reader,
+    EnvironmentComponentBase? base,
+  ) {
+    final ports = EnvironmentComponent._readPorts(reader);
+    final command = EnvironmentComponent._readBody(reader);
+    final prepare = reader.string('prepare', nonEmpty: true);
+    final isolateHome = reader.choice('isolate', const {'home': true});
+    final input = reader.choice('input', EnvironmentAppInputMode.byWire);
+    if (base == null || ports == null || command == null) {
+      return null;
+    }
     return AppEnvironmentComponent(
-      id: json['id'] as String,
-      label: json['label'] as String?,
-      enabledWhen: json['enabledWhen'] as String?,
-      after: EnvironmentComponent._strings(json['after']),
-      cwd: EnvironmentComponent._cwd(json),
-      env: EnvironmentComponent._env(json['env']),
-      ports: EnvironmentComponent._ports(json),
-      command: EnvironmentComponent._body(json, path: path),
-      prepare: json['prepare'] as String?,
-      isolateHome: json['isolate'] == 'home',
-      windowBundleId: match is Map ? match['bundleId'] as String? : null,
-      inputMode: EnvironmentAppInputMode.parse(json['input']),
+      id: base.id,
+      label: base.label,
+      enabledWhen: base.enabledWhen,
+      cwd: base.cwd,
+      env: base.env,
+      ports: ports,
+      command: command,
+      prepare: prepare,
+      isolateHome: isolateHome ?? false,
+      inputMode: input ?? EnvironmentAppInputMode.background,
     );
   }
 
@@ -860,9 +1118,6 @@ class AppEnvironmentComponent extends EnvironmentComponent {
 
   /// Give the process a private home.
   final bool isolateHome;
-
-  /// Match windows by bundle id when the app leaves the process tree.
-  final String? windowBundleId;
 
   /// How agent input is delivered.
   final EnvironmentAppInputMode inputMode;
@@ -879,10 +1134,6 @@ class AppEnvironmentComponent extends EnvironmentComponent {
     'command': command.toJson(),
     if (prepare != null) 'prepare': prepare,
     if (isolateHome) 'isolate': 'home',
-    if (windowBundleId != null)
-      'window': {
-        'match': {'bundleId': windowBundleId},
-      },
     'input': inputMode.name,
   };
 

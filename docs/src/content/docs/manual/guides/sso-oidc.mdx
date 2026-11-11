@@ -81,6 +81,56 @@ exception**: the IdP calls your server directly, which requires a tunnel or
 a public URL — see [provision users with SCIM](/manual/guides/sso-scim).
 :::
 
+## How sign-ins match existing accounts
+
+A sign-in through the identity provider finds its account in this order:
+
+1. **The pinned identity.** The first SSO login pins the provider's subject
+   (issuer plus `sub`) to the account. Every later login with that subject
+   is that account.
+2. **A verified email, on both sides.** Otherwise the sign-in matches an
+   account by email only when the provider sends `email_verified: true` and
+   the account's address is verified too. An address is verified when SSO or
+   SCIM set it, or when the server owner confirmed it. The owner's own
+   address counts.
+
+Email addresses are stored and shown in lower case, and matching ignores case.
+A verified address identifies an account only when exactly one account holds
+it; if two accounts hold the same verified address, it matches neither.
+
+An address someone typed in their own profile, or one typed on an invite, is
+not verified and matches nothing. Editing an address clears its verified
+state until someone vouches for it again. A sign-in never matches by
+username.
+
+When nothing matches, the sign-in creates a new account if **Provision
+unknown users on first login** is on, and is refused if it is off.
+
+### Before you turn SSO on for people who already have accounts
+
+Confirm their addresses first. Open **Settings → Server → People**, where
+each account shows **Email not confirmed** until someone has vouched for it,
+and use **Confirm email** on each person's row. Only the server owner sees
+this list. Without it, each of those people either gets a second
+account on their first SSO login, or is refused when provisioning unknown
+users is off.
+
+A person sees "Only you have entered this address. Single sign-on won't match it until the server's owner confirms it." under the email field of their own
+profile while their address is unconfirmed.
+
+### Providers that do not send `email_verified`
+
+Some providers leave the claim out. Microsoft Entra ID does by default. A
+missing claim is not a yes, so with such a provider a sign-in matches only by
+the pinned identity, and a person's first login can never find their
+existing account by email. Provisioning the account with SCIM does not help
+that first OIDC login. The practical routes are:
+
+- leave **Provision unknown users on first login** on and let the first login
+  create the account, or
+- configure the provider to emit `email_verified`, then confirm the matching
+  addresses as above.
+
 ## Check your configuration from this page
 
 The checker below runs in your browser. It fetches your issuer's discovery
@@ -92,3 +142,28 @@ whether the client and its redirect URI are registered. It never asks for
 the client secret.
 
 <SsoCheck kind="oidc" />
+
+## Troubleshooting
+
+### Someone got a second account after SSO was turned on
+
+Their existing account's address was not verified when they first signed in
+with SSO, so the sign-in did not match it and created a new account. That
+happens when the address was typed in their profile or on an invite and the
+server owner had not confirmed it, or when the provider did not send
+`email_verified: true`. A new account whose provider vouched for the address
+takes that address, and the older account that only had it typed loses it.
+
+To avoid it for the next person, confirm addresses in **Settings → Server →
+People** before they sign in. For someone who already has two accounts, the
+new one is pinned to their SSO identity, so it is the one their logins will
+use from now on.
+
+### "This account is already linked to a different SSO identity"
+
+The sign-in matched an account by its verified email, but that account is
+already pinned to another subject or another issuer: a different user at the
+provider, the same person under a new provider, or an account SCIM created
+under its own identifier. The pinned account refuses every other identity, so
+a recycled address at the provider cannot take it over. Sign in with the
+identity the account was first linked to.

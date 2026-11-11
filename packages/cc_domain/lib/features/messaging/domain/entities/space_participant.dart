@@ -41,8 +41,8 @@ class SpaceParticipant {
   final DateTime joinedAt;
 
   /// When this participant last read the space (their read cursor). Null
-  /// until the space is first opened — legacy/never-opened rows are treated
-  /// as "nothing unseen yet". Drives the sidebar unread indicator: an agent
+  /// until the space is first opened — never-opened rows are treated as
+  /// "nothing unseen yet". Drives the sidebar unread indicator: an agent
   /// message newer than this (while no run is in flight) surfaces a dot.
   final DateTime? lastReadAt;
 

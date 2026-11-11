@@ -2,7 +2,7 @@
 title: Zdarzenia domenowe
 description: Dlaczego funkcje komunikują się przez wewnątrzprocesową szynę zdarzeń, zamiast importować się nawzajem, czym szyna jest i nie jest źródłem prawdy oraz które zdarzenia faktycznie mogą sterować automatyzacją.
 slug: pl-PL/podrecznik/koncepcje/zdarzenia-domenowe
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Czym jest zdarzenie domenowe
@@ -38,8 +38,6 @@ wyniki uruchomień, nie sięgając do modułu wysyłania.
 
 Koszt jest ten zwykły: wydawca nie może stwierdzić, czy ktokolwiek słucha,
 a słuchacz, który nigdy nie zostaje utworzony, pozostaje po cichu nieaktywny.
-`TicketRemoteSyncHandler` to stały przykład: jest zadeklarowany, objęty testami
-i nigdy nie zostaje podłączony na produkcji.
 
 ## Czym szyna nie jest
 

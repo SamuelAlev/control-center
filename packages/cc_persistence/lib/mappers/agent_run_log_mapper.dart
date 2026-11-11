@@ -39,14 +39,13 @@ class AgentRunLogMapper {
         cachedWriteTokens: row.cachedWriteTokens,
         estimatedCostCents: row.estimatedCostCents,
         costMicros: row.costMicros,
-        // A legacy row (null basis) reads as `estimated`, which is what a
-        // locally-priced figure is — never as a reported or billed one.
+        // A null basis reads as `estimated`, which is what a locally-priced
+        // figure is — never as a reported or billed one.
         costBasis: CostBasis.fromWire(row.costBasis),
         durationMs: row.durationMs,
         timeToFirstTokenMs: row.timeToFirstTokenMs,
       ),
       role: AgentRunRole.tryParse(row.agentRole),
-      childCostCents: row.childCostCents,
       childCostMicros: row.childCostMicros,
       effort: row.effort,
       taskFamily: row.taskFamily,

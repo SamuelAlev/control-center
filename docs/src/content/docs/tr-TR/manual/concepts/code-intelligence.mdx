@@ -2,7 +2,7 @@
 title: Kod zekâsı
 description: Bir ajanın neden derleyiciye, yapısal bir eşleştiriciye ve bir hata ayıklayıcıya ihtiyaç duyduğu — ve her birinin diğerlerinin veremeyeceği hangi yanıtları verdiği.
 slug: tr-TR/kilavuz/kavramlar/kod-zekasi
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center, bir ajana kodu okumanın ötesinde anlaması için dört yol sunar. Bu yollar gerçekten farklı soruları yanıtlar ve bir tane değil de dört tane olmasının nedeni, tek bir mekanizmanın hepsini yanıtlayamamasıdır.
@@ -31,6 +31,8 @@ Ajanın kendisine zaten söylenenleri tekrarlamak, hiçbir şey söylememekten k
 Açılışta hiçbir sunucu başlamaz. Bir sunucu, ona ihtiyaç duyan ilk istekle başlar — bu neredeyse her zaman, sahiplendiği bir dosyaya yapılan ilk düzenlemedir — ve boşta kalanlar temizlenir. Dart'a hiç dokunmayan bir ana makine hiçbir çözümleyici başlatmaz.
 
 Algılama bir **kesişimdir**: hem checkout'ta bir kök belirtecinin bulunması *hem de* ikili dosyanın çözümlenebilmesi gerekir. Tek başına bir belirteç "bu proje Python" der ve sunucunun kurulu olup olmadığı hakkında hiçbir şey söylemez; tek başına çözümlenebilen bir ikili dosya, ana makinede bir araç zinciri olduğunu söyler ve bu checkout hakkında hiçbir şey söylemez. Ancak ikisi birlikte olduğunda bir sorgu başarılı olabilir; sunulan ve her zaman başarısız olan bir araç ise hiç bulunmayan bir araçtan daha kötüdür.
+
+Bir deponun neyi etkileyebileceği bilinçli olarak küçük tutulur. Sunucular yerleşik bir tablodan gelir, asla checkout'taki bir dosyadan değil; ve projenin içindeki bir ikili dosya (`node_modules/.bin`) yalnızca çalıştırma sandbox içindeyse kullanılır. Bir dil sunucusu sunucunun makinesinde çalışan bir programdır; bu yüzden bir depo birini adlandırma hakkına sahip değildir.
 
 ## grep varken neden yapısal arama
 

@@ -55,10 +55,6 @@ void main() {
       expect(SandboxBackend.fromName(null), SandboxBackend.none);
     });
 
-    test('fromName("docker") returns native (legacy migration)', () {
-      expect(SandboxBackend.fromName('docker'), SandboxBackend.native);
-    });
-
     test('fromName("microvm") returns microvm', () {
       expect(SandboxBackend.fromName('microvm'), SandboxBackend.microvm);
     });

@@ -23,6 +23,53 @@ class SandboxExecGrantDao extends DatabaseAccessor<WorkspaceDatabase>
             ..orderBy([(t) => OrderingTerm.desc(t.createdAt)]))
           .get();
 
+  /// [limit] grants in [workspaceId] from [offset] whose path contains
+  /// [query], newest first. `id` breaks `createdAt` ties so pages never
+  /// overlap or skip a row.
+  Future<List<SandboxExecGrantsTableData>> searchGrants(
+    String workspaceId, {
+    String? query,
+    required int limit,
+    required int offset,
+  }) =>
+      (select(sandboxExecGrantsTable)
+            ..where((_) => _matching(workspaceId, query))
+            ..orderBy([
+              (t) => OrderingTerm.desc(t.createdAt),
+              (t) => OrderingTerm.desc(t.id),
+            ])
+            ..limit(limit, offset: offset))
+          .get();
+
+  /// How many grants in [workspaceId] match [query] (see [searchGrants]).
+  Future<int> countGrants(String workspaceId, {String? query}) async {
+    final count = sandboxExecGrantsTable.id.count();
+    final row =
+        await (selectOnly(sandboxExecGrantsTable)
+              ..addColumns([count])
+              ..where(_matching(workspaceId, query)))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Workspace filter plus a literal, case-insensitive substring match on the
+  /// path. `%` and `_` are escaped rather than stripped: paths routinely carry
+  /// underscores (`cc_server`), and stripping them would make the typed text
+  /// stop matching.
+  Expression<bool> _matching(String workspaceId, String? query) {
+    final t = sandboxExecGrantsTable;
+    final needle = query?.trim() ?? '';
+    final inWorkspace = t.workspaceId.equals(workspaceId);
+    if (needle.isEmpty) {
+      return inWorkspace;
+    }
+    final escaped = needle
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
+    return inWorkspace & t.path.like('%$escaped%', escapeChar: r'\');
+  }
+
   /// Live grants in [workspaceId] (the Settings surface).
   Stream<List<SandboxExecGrantsTableData>> watchGrants(String workspaceId) =>
       (select(sandboxExecGrantsTable)

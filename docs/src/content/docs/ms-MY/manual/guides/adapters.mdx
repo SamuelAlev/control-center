@@ -2,7 +2,7 @@
 title: Urus penyesuai dan model
 description: Sambungkan penyedia model, pilih model yang dijalankan oleh ejen dan semak CLI pelari ejen yang ada pada hos pelayan.
 slug: ms-MY/manual-pengguna/panduan-cara/penyesuai
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Panduan ini menunjukkan cara menyambungkan penyedia model dan memilih apa yang
@@ -116,6 +116,8 @@ penyesuai dan model secara eksplisit pada setiap ejen yang anda ingin gunakan.
 
 Ejen **Content synthesizer** menulis teks yang dijana oleh Control Center di sekeliling sesuatu perbualan: tajuknya, jawapan `/btw`, dokumen `/handoff` dan temu bual objektif `/goal`. Ia menjalankan satu penyiapan tanpa alat setiap kali, pada penyesuai dan modelnya sendiri, jadi berikan model yang kecil dan pantas.
 
+Apabila penyesuai itu ialah CLI ACP, penyiapan itu ialah satu proses pada mesin pelayan dan mengikut [peraturan sandbox](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/#ejen-pada-hos-tanpa-kotak-pasir): di dalam sandbox apabila pelayan mensandbox ejen, dan tanpa sandbox hanya untuk permintaan yang pemilik pelayan bertanggungjawab ke atasnya. Untuk orang lain, ciri-ciri ini dilangkau: tiada tajuk dijana, dan `/btw` menjawab "Ejen Content synthesizer tiada atau tiada runner yang berfungsi".
+
 Sunting **persona** ejen ini dalam **Tetapan → Ruang kerja → Ejen** untuk menukar cara teks itu dibaca — panjang tajuk, bahasa, nada, contoh yang diikutinya. Format balasan yang dihuraikan oleh setiap ciri (tajuk satu baris, bahagian objektif) adalah tetap dan digunakan selepas persona anda. Padamkan ejen untuk mematikan ciri-ciri ini; ia tidak akan disemai semula.
 
 ## Pasang CLI pelari
@@ -131,8 +133,9 @@ Kemudian tekan **Muat semula** di bahagian atas halaman. Setiap baris yang
 dikesan menunjukkan versi dan laluan yang diselesaikan, serta cip sama ada ia
 menyokong modus JSON dan pemilihan model.
 
-CLI luaran menyimpan kelayakannya sendiri, dalam konfigurasinya sendiri, pada hos
-pelayan. Control Center tidak mengurusnya.
+Log masuk Claude Code disenaraikan di bawah **Akaun Claude Code** pada pelari Claude Code.
+Control Center mencipta direktori konfigurasi bagi setiap akaun pada pelayan dan memberi anda arahan
+`claude auth login` untuk dijalankan di sana; ia tidak pernah log masuk untuk anda.
 
 :::caution[Argumen dan pemboleh ubah persekitaran penyesuai kekal pada peranti ini]
 Setiap baris penyesuai menawarkan medan **Argumen tambahan** dan dialog

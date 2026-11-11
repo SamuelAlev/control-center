@@ -181,7 +181,9 @@ abstract interface class DemoWiring {
 
   /// Maya's merged-PR history, answered from the seeded cache rather than
   /// GitHub. Same signature as production `MultiForgeMergedHistory.mergedByViewer`.
-  Future<List<({Repo repo, List<PullRequest> prs, bool hasMore})>>
+  Future<
+    List<({Repo repo, List<PullRequest> prs, bool hasMore, int? totalCount})>
+  >
   mergedByViewer(List<Repo> repos, {String? userId, String? workspaceId});
 
   /// The project's own GitHub stars, fetched and cached server-side. Backs

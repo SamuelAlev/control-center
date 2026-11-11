@@ -2,7 +2,7 @@
 title: Készségek telepítése és kezelése
 description: Telepítsen és frissítsen munkaterületi készségeket a vizsgálati kapun keresztül, majd hasonlítson össze mentett verziókat költségkerethez kötött készségértékelésekkel.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/keszsegek-kezelese
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Ez az útmutató bemutatja, hogyan töltsön fel egy munkaterületet GitHubról
@@ -99,8 +99,8 @@ visszaállítási hivatkozásként megőrzik a lockban.
    illő **Feladatkészletet** és egy **Adaptert**. A beépített harness egy
    beállított szolgáltatót és egy eszközhasználatra képes modellt használ. A
    **Claude Code** az alapértelmezett felügyelt Claude-fiókot és egy konkrét
-   modellazonosítót használ; először jelentkezzen be a **Beállítások →
-   Adapterek** alatt. Nem kölcsönzi a szerverüzemeltető személyes
+   modellazonosítót használ; először jelentkezzen be a **Beállítások → Szerver → Modellszolgáltatók →
+   Claude Code-fiókok** alatt. Nem kölcsönzi a szerverüzemeltető személyes
    bejelentkezését.
 3. Válasszon **Összehasonlítást** az alábbi táblázatból.
 4. Állítsa be az **Ismétlések feladatonként** (1–20) és a
@@ -197,8 +197,7 @@ beépített slash-parancsokkal (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — egy a térben checkoutolt repó által szállított
   készség
 
-A csupasz, nem beépített név továbbra is feloldódik, a névtér megjelenése előtt
-írt üzenetek esetében. A `plan` nevű készséget a `/skill:plan` éri el; a `/plan`
+A `plan` nevű készséget a `/skill:plan` éri el; a `/plan`
 mindig a beépített.
 
 ## Repóhoz kötött készségek

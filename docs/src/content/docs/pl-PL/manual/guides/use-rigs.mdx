@@ -2,7 +2,7 @@
 title: Daj agentowi maszynę do testów
 description: Daj agentowi jednorazową przeglądarkę, pulpit, emulator Androida albo Symulator iOS — z podglądem na żywo i kontrolą, którą możesz przejąć.
 slug: pl-PL/podrecznik/poradniki/uzywanie-rigow
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 **Rig** to jednorazowa maszyna, którą agent otwiera, gdy naprawdę musi czegoś
@@ -130,6 +130,21 @@ Naciśnij **Zatrzymaj maszynę**, gdy skończysz.
 
 Kontrola jest wyłączna celowo: dwie osoby piszące na jednej maszynie tworzą dane
 wejściowe, których żadna z nich nie zamierzała.
+
+### Kto może obserwować, a kto sterować
+
+Maszyna otwarta w przestrzeni podąża za repozytoriami tej przestrzeni, tak samo jak sama przestrzeń (zob. [Przestrzenie podążają za swoimi repozytoriami](/pl-PL/podrecznik/koncepcje/autoryzacja/#przestrzenie-podążają-za-swoimi-repozytoriami)):
+
+- **Obserwowanie** wymaga dostępu do odczytu przestrzeni: uprawnienia odczytu do każdego repozytorium, które udostępnia przestrzeń, oraz twojego własnego logowania w hostingu kodu, które może je odczytać. Obserwowanie obejmuje listę maszyn, ekran, dźwięk, stan przeglądarki, jej porty oraz odczyt schowka i plików.
+- **Sterowanie** wymaga też [uprawnienia zapisu](/pl-PL/podrecznik/koncepcje/autoryzacja/#zmiana-kodu-wymaga-uprawnienia-zapisu) do tych repozytoriów. Sterowanie obejmuje otwieranie maszyny w przestrzeni, pisanie i klikanie, przejmowanie kontroli, uruchamianie, zatrzymywanie i zamykanie maszyny, przekierowywanie jej portów, zapis do jej schowka, upuszczanie na nią plików i używanie mikrofonu.
+
+Z samym dostępem do odczytu maszyna ma znacznik **Tylko podgląd** i komunikat: „Możesz obserwować tę maszynę. Sterowanie nią, przekierowywanie jej portów, wklejanie do niej i upuszczanie na nią plików wymaga dostępu do zapisu do wszystkich repozytoriów w tej przestrzeni.” Przy wyłączonym przycisku **Uruchom maszynę** karta mówi: „Uruchomienie maszyny tutaj wymaga dostępu do zapisu do wszystkich repozytoriów w tej przestrzeni. Administrator obszaru roboczego może go przyznać.” Bez dostępu do odczytu maszyna się nie pokazuje, jest tylko: „Nie możesz wyświetlić tej maszyny. Należy ona do przestrzeni, do której nie masz dostępu do odczytu.”
+
+Maszyna, która nie należy do żadnej przestrzeni, nie sięga do żadnego worktree, więc każdy członek obszaru roboczego może ją obserwować i nią sterować.
+
+Maszyna, która niesie własne logowania jednej osoby, należy do niej: jej maszyna terminala albo dowolna maszyna otwarta dla niej, której dostęp do sieci sięga hostingu kodu. Sterować nią może tylko ta osoba oraz uruchomienia agentów działające wyłącznie w jej imieniu. Administratorzy obszaru roboczego ani właściciel serwera tego nie nadpisują. Inni, których przestrzeń dopuszcza, mogą nadal obserwować jej ekran, dźwięk, stan i porty, ale nie mogą nią sterować, przekierowywać jej portów, wklejać do niej, upuszczać na nią plików, kopiować z niej plików ani czytać jej schowka. Taka maszyna pokazuje **Tylko podgląd** z notą: „Możesz obserwować tę maszynę. Korzysta ona z logowań osoby, dla której została otwarta, więc tylko ona może sterować nią, przekierowywać jej porty, wklejać do niej treści i upuszczać na nią pliki.” Działanie odrzucone z tego powodu odpowiada: „Tylko osoba, dla której otwarto tę maszynę, może nią sterować. Maszyna korzysta z jej własnych logowań.” Maszyna terminala kogoś innego w ogóle się nie pojawia, podobnie jak jego sesje terminala.
+
+Każda maszyna pokazuje, czy możesz nią sterować, i aktualizuje się sama, gdy zmienia się uprawnienie albo twoje logowanie w hostingu kodu.
 
 ## Przenoś rzeczy do środka i na zewnątrz
 

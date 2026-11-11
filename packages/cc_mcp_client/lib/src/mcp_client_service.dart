@@ -1,6 +1,4 @@
-import 'package:cc_domain/features/mcp/domain/ports/mcp_resource_prompt_ports.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
-import 'package:cc_mcp_client/src/bridged_resource_prompt.dart';
 import 'package:cc_mcp_client/src/config/mcp_client_models.dart';
 import 'package:cc_mcp_client/src/config/mcp_server_config.dart';
 import 'package:cc_mcp_client/src/connection_manager.dart';
@@ -14,9 +12,8 @@ import 'package:cc_mcp_client/src/transport_factory.dart';
 ///
 /// Wires the [ConnectionManager] to a [McpToolRegistry] (bridged tools are
 /// pushed into the registry's dynamic layer whenever servers connect or
-/// hot-reload), drives multi-format config discovery, owns OAuth authorization,
-/// and exposes the external servers' resources/prompts as CC MCP providers.
-/// One service instance per workspace — every config it is handed is already
+/// hot-reload), drives multi-format config discovery and owns OAuth
+/// authorization. One service instance per workspace — every config it is handed is already
 /// workspace-scoped by the caller.
 class McpClientService {
   /// Creates an [McpClientService].
@@ -45,22 +42,12 @@ class McpClientService {
           ? null
           : FileMcpToolListCache(toolCachePath),
     );
-    _resourceProvider = BridgedResourceProvider(_manager);
-    _promptProvider = BridgedPromptProvider(_manager);
   }
 
   final McpToolRegistry _registry;
   final McpOAuthTokenStore _tokenStore;
   final BrowserLauncher? _launchBrowser;
   late final ConnectionManager _manager;
-  late final BridgedResourceProvider _resourceProvider;
-  late final BridgedPromptProvider _promptProvider;
-
-  /// Bridges external servers' resources into CC's MCP server.
-  McpResourceProvider get resourceProvider => _resourceProvider;
-
-  /// Bridges external servers' prompts into CC's MCP server.
-  McpPromptProvider get promptProvider => _promptProvider;
 
   /// A status snapshot per known server.
   List<McpServerStatusSnapshot> get serverStatuses => _manager.statuses;

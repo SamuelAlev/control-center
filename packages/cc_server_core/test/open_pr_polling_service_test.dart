@@ -13,6 +13,7 @@ import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/src/forge/github_rate_budget.dart';
+import 'package:cc_server_core/src/forge/repo_access_registry.dart';
 import 'package:cc_server_core/src/pr_review/open_pr_polling_service.dart';
 import 'package:test/test.dart';
 
@@ -318,6 +319,7 @@ void main() {
   late PrChangeSignals signals;
   late DomainEventBus bus;
   late OpenPrPollingService poller;
+  late RepoAccessRegistry access;
   late DateTime now;
 
   final repo1 = _repo('r1');
@@ -337,10 +339,16 @@ void main() {
     signals = PrChangeSignals();
     bus = DomainEventBus();
     now = DateTime(2026, 1, 1, 12);
+    access = RepoAccessRegistry(
+      cacheFor: (workspaceId) => dbs.of(workspaceId).cacheDao,
+      now: () => now,
+    );
     poller = OpenPrPollingService(
       fetchPort: port,
       workspaceRepository: workspaces,
       workspaceDbs: dbs,
+      repoAccess: access,
+      forcedRefreshMinGap: Duration.zero,
       changeSignals: signals,
       prToWire: _prToWire,
       eventBus: bus,
@@ -364,7 +372,7 @@ void main() {
     final events = <ExternalPrDetected>[];
     final sub = bus.on<ExternalPrDetected>().listen(events.add);
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
 
     await poller.refreshNow('ws1');
@@ -388,7 +396,7 @@ void main() {
     'a new PR after baseline publishes ExternalPrDetected + a signal',
     () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
 
@@ -401,7 +409,7 @@ void main() {
 
       now = now.add(const Duration(minutes: 5));
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
       await pump();
@@ -418,7 +426,7 @@ void main() {
 
   test('a vanished PR publishes PullRequestStatusChanged (merged)', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+      (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
 
@@ -428,7 +436,7 @@ void main() {
     now = now.add(const Duration(minutes: 5));
     port.mergedNumbers.add(2);
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
     await pump();
@@ -456,6 +464,7 @@ void main() {
           repo: repo1,
           prs: [_pr(1, title: title, headSha: firstSha)],
           hasMore: false,
+          totalCount: null,
         ),
       ];
       await poller.refreshNow('ws1');
@@ -469,6 +478,7 @@ void main() {
           repo: repo1,
           prs: [_pr(1, title: title, headSha: secondSha)],
           hasMore: false,
+          totalCount: null,
         ),
       ];
       await poller.refreshNow('ws1');
@@ -504,7 +514,12 @@ void main() {
       final events = <PrHeadChanged>[];
       final sub = bus.on<PrHeadChanged>().listen(events.add);
       port.groups = [
-        (repo: repo1, prs: [_pr(1, headSha: 'aaa1111')], hasMore: false),
+        (
+          repo: repo1,
+          prs: [_pr(1, headSha: 'aaa1111')],
+          hasMore: false,
+          totalCount: null,
+        ),
       ];
       await poller.refreshNow('ws1');
       await pump();
@@ -516,7 +531,12 @@ void main() {
       // It is announced as ExternalPrDetected. Claiming its head "changed"
       // would be true of every PR the moment it is first seen.
       port.groups = [
-        (repo: repo1, prs: [_pr(1, headSha: 'aaa1111')], hasMore: false),
+        (
+          repo: repo1,
+          prs: [_pr(1, headSha: 'aaa1111')],
+          hasMore: false,
+          totalCount: null,
+        ),
       ];
       await poller.refreshNow('ws1');
 
@@ -531,6 +551,7 @@ void main() {
             _pr(2, headSha: 'ccc3333'),
           ],
           hasMore: false,
+          totalCount: null,
         ),
       ];
       await poller.refreshNow('ws1');
@@ -543,7 +564,7 @@ void main() {
 
   test('an unchanged probe skips the full fetch', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
     expect(port.fetchGroupsCalls, 1);
@@ -563,6 +584,8 @@ void main() {
         fetchPort: port,
         workspaceRepository: workspaces,
         workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
@@ -570,10 +593,11 @@ void main() {
         now: () => now,
       );
       addTearDown(budgeted.dispose);
+      // 10% left: under the loop's 15% watermark, above the 5% floor.
       budget.record(
         'ws1',
         resource: 'core',
-        remaining: 100,
+        remaining: 500,
         limit: 5000,
         resetAt: now.toUtc().add(const Duration(minutes: 30)),
       );
@@ -601,6 +625,8 @@ void main() {
       fetchPort: port,
       workspaceRepository: workspaces,
       workspaceDbs: dbs,
+      repoAccess: access,
+      forcedRefreshMinGap: Duration.zero,
       changeSignals: signals,
       prToWire: _prToWire,
       eventBus: bus,
@@ -623,7 +649,7 @@ void main() {
 
   test('a changed PR emits a targeted (non-checks) signal', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
 
@@ -634,7 +660,12 @@ void main() {
 
     now = now.add(const Duration(minutes: 5));
     port.groups = [
-      (repo: repo1, prs: [_pr(1, title: 'Renamed')], hasMore: false),
+      (
+        repo: repo1,
+        prs: [_pr(1, title: 'Renamed')],
+        hasMore: false,
+        totalCount: null,
+      ),
     ];
     await poller.refreshNow('ws1');
     await pump();
@@ -650,7 +681,7 @@ void main() {
     'the checks pass updates the snapshot and emits checks-only signals',
     () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
 
@@ -694,7 +725,7 @@ void main() {
     'the checks pass carries review-decision moves as full signals',
     () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
 
@@ -737,7 +768,7 @@ void main() {
 
   test('watchOpenForWorkspace pushes every persisted snapshot', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
 
@@ -753,7 +784,7 @@ void main() {
 
     now = now.add(const Duration(minutes: 5));
     port.groups = [
-      (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+      (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
     await pump();
@@ -776,7 +807,7 @@ void main() {
 
   test('watch frames carry the live sweep-in-flight flag', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     await poller.refreshNow('ws1');
 
@@ -813,7 +844,7 @@ void main() {
   test('refreshNow during an in-flight sweep queues a full forced sweep '
       'and resolves only once it lands', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     final gate = Completer<void>();
     port.fetchGroupsGate = gate;
@@ -847,7 +878,7 @@ void main() {
 
   test('concurrent forced refreshes share one queued sweep', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     final gate = Completer<void>();
     port.fetchGroupsGate = gate;
@@ -867,9 +898,84 @@ void main() {
     );
   });
 
+  test(
+    'forced refreshes are throttled per workspace and join the last one',
+    () async {
+      final throttled = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: workspaces,
+        workspaceDbs: dbs,
+        repoAccess: access,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        now: () => now,
+      );
+      addTearDown(throttled.dispose);
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+      ];
+      final first = throttled.refreshNow('ws1');
+      final second = throttled.refreshNow('ws1');
+      expect(identical(first, second), isTrue);
+      await first;
+      final callsAfterFirst = port.fetchGroupsCalls;
+
+      now = now.add(const Duration(seconds: 10));
+      await throttled.refreshNow('ws1');
+      expect(
+        port.fetchGroupsCalls,
+        callsAfterFirst,
+        reason: 'inside 20 s a refresh answers with the last forced sweep',
+      );
+
+      final probesBefore = port.probeCalls;
+      now = now.add(const Duration(seconds: 11));
+      await throttled.refreshNow('ws1');
+      expect(
+        port.probeCalls,
+        greaterThan(probesBefore),
+        reason: 'past the gap a refresh sweeps again',
+      );
+    },
+  );
+
+  test(
+    'a forced refresh under the 5% floor does not spend GitHub quota',
+    () async {
+      final budget = GitHubRateBudget(now: () => now.toUtc());
+      final floored = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: workspaces,
+        workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        now: () => now,
+        rateBudget: budget,
+      );
+      addTearDown(floored.dispose);
+      budget.record(
+        'ws1',
+        resource: 'core',
+        remaining: 100,
+        limit: 5000,
+        resetAt: now.toUtc().add(const Duration(minutes: 30)),
+      );
+      await floored.refreshNow('ws1');
+      expect(
+        port.probeCalls + port.fetchGroupsCalls,
+        0,
+        reason: '2% left: even an explicit refresh leaves GitHub alone',
+      );
+    },
+  );
+
   test('a non-forced pass coalesces into the sweep in flight', () async {
     port.groups = [
-      (repo: repo1, prs: [_pr(1)], hasMore: false),
+      (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
     ];
     final gate = Completer<void>();
     port.fetchGroupsGate = gate;
@@ -893,7 +999,12 @@ void main() {
       'keeps the previous snapshot instead of persisting an empty one',
       () async {
         port.groups = [
-          (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+          (
+            repo: repo1,
+            prs: [_pr(1), _pr(2)],
+            hasMore: false,
+            totalCount: null,
+          ),
         ];
         await poller.refreshNow('ws1');
 
@@ -938,6 +1049,8 @@ void main() {
         fetchPort: port,
         workspaceRepository: twoRepos,
         workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
@@ -946,8 +1059,8 @@ void main() {
       addTearDown(partialPoller.dispose);
 
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
-        (repo: repo2, prs: [_pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (repo: repo2, prs: [_pr(2)], hasMore: false, totalCount: null),
       ];
       await partialPoller.refreshNow('ws1');
 
@@ -958,7 +1071,7 @@ void main() {
       now = now.add(const Duration(minutes: 5));
       port.unresolvedRepoIds = {repo2.id};
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(3)], hasMore: false),
+        (repo: repo1, prs: [_pr(1), _pr(3)], hasMore: false, totalCount: null),
       ];
       await partialPoller.refreshNow('ws1');
       await pump();
@@ -1008,6 +1121,8 @@ void main() {
         fetchPort: port,
         workspaceRepository: twoRepos,
         workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
@@ -1020,8 +1135,8 @@ void main() {
     /// Baseline both repos, then let r1's probes start failing with [error].
     Future<void> baselineThenFail(Object error) async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
-        (repo: repo2, prs: [_pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (repo: repo2, prs: [_pr(2)], hasMore: false, totalCount: null),
       ];
       await accessPoller.refreshNow('ws1');
       port.probeErrors[repo1.id] = error;
@@ -1035,37 +1150,89 @@ void main() {
       }
     }
 
-    test('parks after the threshold and lands in the snapshot', () async {
-      await baselineThenFail(notFound);
+    Future<RepoAccessIssue?> issueOf(Repo repo, {RepoAccessRegistry? via}) =>
+        (via ?? access).issueFor(
+          'ws1',
+          forge: repo.forge,
+          owner: repo.remoteOwner,
+          name: repo.remoteName,
+        );
 
-      final events = <PullRequestStatusChanged>[];
-      final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+    test(
+      'parks after the threshold in the registry and drops its PRs',
+      () async {
+        await baselineThenFail(notFound);
 
-      await sweeps(2);
-      var snapshot = await _readSnapshot(db);
-      expect(
-        (snapshot['inaccessible_repos'] as List?) ?? const [],
-        isEmpty,
-        reason: 'below the threshold nothing is parked yet',
+        final events = <PullRequestStatusChanged>[];
+        final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+
+        await sweeps(2);
+        expect(
+          await issueOf(repo1),
+          isNull,
+          reason: 'below the threshold nothing is parked yet',
+        );
+        expect(_numbersOf(await _readSnapshot(db), 'o/r1'), [1]);
+
+        await sweeps(1);
+        final issue = await issueOf(repo1);
+        expect(issue, isNotNull);
+        expect(issue!.state, RepoAccessState.ownerCannotSee);
+        expect(issue.repoId, repo1.id);
+        final snapshot = await _readSnapshot(db);
+        expect(
+          snapshot.containsKey('inaccessible_repos'),
+          isFalse,
+          reason: 'the registry is the one record; the snapshot carries none',
+        );
+        expect(
+          _numbersOf(snapshot, 'o/r1'),
+          isEmpty,
+          reason: 'a parked repo shows no PRs nobody can confirm',
+        );
+        expect(_numbersOf(snapshot, 'o/r2'), [2]);
+        expect(
+          events,
+          isEmpty,
+          reason: 'an unreachable repo must never read as merged/closed',
+        );
+
+        await sub.cancel();
+      },
+    );
+
+    test('the lane classifies the denial it parks', () async {
+      final classified = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: twoRepos,
+        workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        now: () => now,
+        classifyAccess: (workspaceId, repo, error) async => (
+          state: RepoAccessState.repoNotSelected,
+          message: '${repo.fullName} is not selected',
+          installUrl: 'https://github.com/settings/installations/1',
+        ),
       );
+      addTearDown(classified.dispose);
+      port.groups = [
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (repo: repo2, prs: [_pr(2)], hasMore: false, totalCount: null),
+      ];
+      await classified.refreshNow('ws1');
+      port.probeErrors[repo1.id] = notFound;
+      for (var i = 0; i < 3; i++) {
+        now = now.add(const Duration(minutes: 1));
+        await classified.pollSoon('ws1');
+      }
 
-      await sweeps(1);
-      snapshot = await _readSnapshot(db);
-      final parked = (snapshot['inaccessible_repos'] as List).cast<Map>();
-      expect(parked, hasLength(1));
-      expect(parked.single['repo_id'], repo1.id);
-      expect(parked.single['reason'], 'not_found');
-      expect(parked.single['since'], isNotNull);
-      expect(_numbersOf(snapshot, 'o/r1'), [
-        1,
-      ], reason: 'the parked repo keeps its previous entries');
-      expect(
-        events,
-        isEmpty,
-        reason: 'an unreachable repo must never read as merged/closed',
-      );
-
-      await sub.cancel();
+      final issue = await issueOf(repo1);
+      expect(issue!.state, RepoAccessState.repoNotSelected);
+      expect(issue.installUrl, 'https://github.com/settings/installations/1');
     });
 
     test('a parked repo is probed on the slow cadence only', () async {
@@ -1092,18 +1259,33 @@ void main() {
     test('a forced refresh re-probes and a success unparks', () async {
       await baselineThenFail(notFound);
       await sweeps(3);
+      expect(await issueOf(repo1), isNotNull);
 
       port.probeErrors.remove(repo1.id);
       now = now.add(const Duration(minutes: 1));
       await accessPoller.refreshNow('ws1');
 
-      final snapshot = await _readSnapshot(db);
       expect(
-        (snapshot['inaccessible_repos'] as List?) ?? const [],
-        isEmpty,
+        await issueOf(repo1),
+        isNull,
         reason: 'a successful probe unparks immediately',
       );
-      expect(_numbersOf(snapshot, 'o/r1'), [1]);
+      expect(_numbersOf(await _readSnapshot(db), 'o/r1'), [1]);
+    });
+
+    test('a repo that comes back is a new baseline, not a burst', () async {
+      await baselineThenFail(notFound);
+      await sweeps(3);
+
+      final events = <PullRequestStatusChanged>[];
+      final sub = bus.on<PullRequestStatusChanged>().listen(events.add);
+      port.probeErrors.remove(repo1.id);
+      now = now.add(const Duration(minutes: 1));
+      await accessPoller.refreshNow('ws1');
+      await pump();
+
+      expect(events, isEmpty);
+      await sub.cancel();
     });
 
     test('transient failures never park', () async {
@@ -1112,12 +1294,14 @@ void main() {
       );
       await sweeps(5);
 
-      final snapshot = await _readSnapshot(db);
+      final issue = await issueOf(repo1);
       expect(
-        (snapshot['inaccessible_repos'] as List?) ?? const [],
-        isEmpty,
-        reason: 'a timeout is GitHub being slow, not an access verdict',
+        issue?.state,
+        RepoAccessState.transient,
+        reason: 'a timeout is the forge being slow, not an access verdict',
       );
+      expect(issue!.state.blocksAutomation, isFalse);
+      expect(_numbersOf(await _readSnapshot(db), 'o/r1'), [1]);
       port.probedRepoIds.clear();
       await sweeps(1);
       expect(
@@ -1136,57 +1320,75 @@ void main() {
       );
       await sweeps(1);
 
-      final snapshot = await _readSnapshot(db);
-      final parked = (snapshot['inaccessible_repos'] as List).cast<Map>();
-      expect(parked, hasLength(1));
-      expect(parked.single['repo_id'], repo1.id);
-      expect(parked.single['reason'], 'installation_suspended');
+      expect(
+        (await issueOf(repo1))?.state,
+        RepoAccessState.installationSuspended,
+      );
     });
 
-    test(
-      'a restart keeps the repo parked (seeded from the snapshot)',
-      () async {
-        await baselineThenFail(notFound);
-        await sweeps(3);
-        accessPoller.dispose();
+    test('a missing automation token parks on the first refusal', () async {
+      await baselineThenFail(
+        const NetworkException(
+          'No automation token can read o/r1.',
+          code: 'automation_token_missing',
+          statusCode: 401,
+        ),
+      );
+      await sweeps(1);
 
-        // A fresh service over the same database: in-memory counters are gone,
-        // but the persisted snapshot re-arms the parked state.
-        final restarted = OpenPrPollingService(
-          fetchPort: port,
-          workspaceRepository: twoRepos,
-          workspaceDbs: dbs,
-          changeSignals: signals,
-          prToWire: _prToWire,
-          eventBus: bus,
-          now: () => now,
-        );
-        addTearDown(restarted.dispose);
+      final issue = await issueOf(repo1);
+      expect(issue?.state, RepoAccessState.automationTokenMissing);
+      expect(issue!.state.blocksAutomation, isTrue);
+    });
 
-        now = now.add(const Duration(minutes: 1));
-        await restarted.pollSoon('ws1');
-        final snapshot = await _readSnapshot(db);
-        final parked = (snapshot['inaccessible_repos'] as List).cast<Map>();
-        expect(parked.map((e) => e['repo_id']), [
-          repo1.id,
-        ], reason: 'the parked state survives the restart');
-      },
-    );
+    test('a restart keeps the repo parked (persisted registry)', () async {
+      await baselineThenFail(notFound);
+      await sweeps(3);
+      accessPoller.dispose();
 
-    test('watchRepoAccessForWorkspace streams the parked list', () async {
+      // A fresh service AND registry over the same databases: in-memory
+      // counters are gone, but the workspace's registry row is not.
+      final reloaded = RepoAccessRegistry(
+        cacheFor: (workspaceId) => dbs.of(workspaceId).cacheDao,
+        now: () => now,
+      );
+      final restarted = OpenPrPollingService(
+        fetchPort: port,
+        workspaceRepository: twoRepos,
+        workspaceDbs: dbs,
+        repoAccess: reloaded,
+        forcedRefreshMinGap: Duration.zero,
+        changeSignals: signals,
+        prToWire: _prToWire,
+        eventBus: bus,
+        now: () => now,
+      );
+      addTearDown(restarted.dispose);
+
+      now = now.add(const Duration(minutes: 1));
+      await restarted.pollSoon('ws1');
+      expect(
+        (await issueOf(repo1, via: reloaded))?.state.blocksAutomation,
+        isTrue,
+        reason: 'the parked state survives the restart',
+      );
+      expect(_numbersOf(await _readSnapshot(db), 'o/r1'), isEmpty);
+    });
+
+    test('watchRepoAccessForWorkspace streams the registry', () async {
       await baselineThenFail(notFound);
       await sweeps(3);
 
-      final frames = <List<Map<String, dynamic>>>[];
+      final frames = <List<RepoAccessIssue>>[];
       final sub = accessPoller
           .watchRepoAccessForWorkspace('ws1')
           .listen(frames.add);
       await pump();
       expect(frames, isNotEmpty);
-      expect(frames.last.map((e) => e['repo_id']), [repo1.id]);
+      expect(frames.last.map((e) => e.repoId), [repo1.id]);
 
       // Must complete promptly — a watch that only tears down on the next
-      // snapshot write would leak the drift subscription per subscriber.
+      // write would leak a subscription per subscriber.
       await sub.cancel().timeout(const Duration(seconds: 5));
     });
   });
@@ -1207,7 +1409,7 @@ void main() {
 
     Future<void> sweepTwoPrs() async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
       await pump();
@@ -1264,7 +1466,12 @@ void main() {
 
       now = now.add(const Duration(minutes: 5));
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(2), _pr(3)], hasMore: false),
+        (
+          repo: repo1,
+          prs: [_pr(1), _pr(2), _pr(3)],
+          hasMore: false,
+          totalCount: null,
+        ),
       ];
       await poller.refreshNow('ws1');
       await pump();
@@ -1311,6 +1518,8 @@ void main() {
           fetchPort: port,
           workspaceRepository: workspaces,
           workspaceDbs: dbs,
+          repoAccess: access,
+          forcedRefreshMinGap: Duration.zero,
           changeSignals: signals,
           prToWire: _prToWire,
           now: () => now,
@@ -1330,11 +1539,11 @@ void main() {
     test('failed history discovery never claims completeness', () async {
       port.unavailableHistoryBranches.add('f1');
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
       port.mergedNumbers.add(1);
-      port.groups = [(repo: repo1, prs: [], hasMore: false)];
+      port.groups = [(repo: repo1, prs: [], hasMore: false, totalCount: null)];
       await poller.refreshNow('ws1');
       final result = await poller.prsForHeadBranch(
         workspaceId: 'ws1',
@@ -1412,7 +1621,9 @@ void main() {
     test(
       'finds a PR opened and merged between unchanged open-list probes',
       () async {
-        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        port.groups = [
+          (repo: repo1, prs: [], hasMore: false, totalCount: null),
+        ];
         await poller.refreshNow('ws1');
         final initial = await poller.prsForHeadBranch(
           workspaceId: 'ws1',
@@ -1458,12 +1669,19 @@ void main() {
       'merged and closed PRs survive a restart, even on a reused branch',
       () async {
         port.groups = [
-          (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+          (
+            repo: repo1,
+            prs: [_pr(1), _pr(2)],
+            hasMore: false,
+            totalCount: null,
+          ),
         ];
         await poller.refreshNow('ws1');
         now = now.add(const Duration(minutes: 5));
         port.mergedNumbers.add(1);
-        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        port.groups = [
+          (repo: repo1, prs: [], hasMore: false, totalCount: null),
+        ];
         await poller.refreshNow('ws1');
 
         expect((await lookup('f1')).single['state'], 'merged');
@@ -1479,7 +1697,12 @@ void main() {
         );
 
         port.groups = [
-          (repo: repo1, prs: [_pr(3, headRef: 'f1')], hasMore: false),
+          (
+            repo: repo1,
+            prs: [_pr(3, headRef: 'f1')],
+            hasMore: false,
+            totalCount: null,
+          ),
         ];
         await poller.refreshNow('ws1');
         expect((await lookup('f1')).map((pr) => pr['state']), [
@@ -1487,7 +1710,9 @@ void main() {
           'open',
         ]);
         now = now.add(const Duration(minutes: 5));
-        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        port.groups = [
+          (repo: repo1, prs: [], hasMore: false, totalCount: null),
+        ];
         await poller.refreshNow('ws1');
         expect((await lookup('f1')).map((pr) => pr['state']), [
           'merged',
@@ -1499,6 +1724,8 @@ void main() {
           fetchPort: port,
           workspaceRepository: workspaces,
           workspaceDbs: dbs,
+          repoAccess: access,
+          forcedRefreshMinGap: Duration.zero,
           changeSignals: signals,
           prToWire: _prToWire,
           now: () => now,
@@ -1520,11 +1747,13 @@ void main() {
       'uncertain status cannot become merged, retries when forge recovers',
       () async {
         port.groups = [
-          (repo: repo1, prs: [_pr(1)], hasMore: false),
+          (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
         ];
         await poller.refreshNow('ws1');
         now = now.add(const Duration(minutes: 5));
-        port.groups = [(repo: repo1, prs: [], hasMore: false)];
+        port.groups = [
+          (repo: repo1, prs: [], hasMore: false, totalCount: null),
+        ];
         // A null verdict is different from a confirmed closed PR.
         port.unknownNumbers.add(1);
         await poller.refreshNow('ws1');
@@ -1563,12 +1792,12 @@ void main() {
 
     test('repo id and workspace isolate terminal history', () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await poller.refreshNow('ws1');
       now = now.add(const Duration(minutes: 5));
       port.mergedNumbers.add(1);
-      port.groups = [(repo: repo1, prs: [], hasMore: false)];
+      port.groups = [(repo: repo1, prs: [], hasMore: false, totalCount: null)];
       await poller.refreshNow('ws1');
       await seedTestWorkspace(global, dbs, 'ws2');
 
@@ -1592,21 +1821,28 @@ void main() {
           fetchPort: port,
           workspaceRepository: twoRepos,
           workspaceDbs: dbs,
+          repoAccess: access,
+          forcedRefreshMinGap: Duration.zero,
           changeSignals: signals,
           prToWire: _prToWire,
           now: () => now,
         );
         addTearDown(multi.dispose);
         port.groups = [
-          (repo: repo1, prs: [_pr(1)], hasMore: false),
-          (repo: repo2, prs: [_pr(2, headRef: 'f1')], hasMore: false),
+          (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+          (
+            repo: repo2,
+            prs: [_pr(2, headRef: 'f1')],
+            hasMore: false,
+            totalCount: null,
+          ),
         ];
         await multi.refreshNow('ws1');
         now = now.add(const Duration(minutes: 5));
         port.mergedNumbers.add(1);
         port.groups = [
-          (repo: repo1, prs: [], hasMore: false),
-          (repo: repo2, prs: [], hasMore: false),
+          (repo: repo1, prs: [], hasMore: false, totalCount: null),
+          (repo: repo2, prs: [], hasMore: false, totalCount: null),
         ];
         await multi.refreshNow('ws1');
         final first = await multi.prsForHeadBranch(
@@ -1641,6 +1877,8 @@ void main() {
         fetchPort: port,
         workspaceRepository: workspaces,
         workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
@@ -1668,7 +1906,7 @@ void main() {
 
     /// Sweeps [prs], baselining on the first call.
     Future<void> sweep(List<PullRequest> prs) async {
-      port.groups = [(repo: repo1, prs: prs, hasMore: false)];
+      port.groups = [(repo: repo1, prs: prs, hasMore: false, totalCount: null)];
       await authored.refreshNow('ws1');
       await pump();
     }
@@ -2043,6 +2281,8 @@ void main() {
         fetchPort: port,
         workspaceRepository: workspaces,
         workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
@@ -2075,6 +2315,8 @@ void main() {
         fetchPort: port,
         workspaceRepository: workspaces,
         workspaceDbs: dbs,
+        repoAccess: access,
+        forcedRefreshMinGap: Duration.zero,
         changeSignals: signals,
         prToWire: _prToWire,
         eventBus: bus,
@@ -2086,7 +2328,7 @@ void main() {
 
     test('an ETag is stored only once the fetch has read the list', () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       port.probeResults[repo1.id] = (changed: true, etag: 'e1');
       await twoRepoPoller.refreshNow('ws1');
@@ -2112,8 +2354,8 @@ void main() {
 
     test('only the repos whose list moved are fetched', () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
-        (repo: repo2, prs: [_pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (repo: repo2, prs: [_pr(2)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       expect(port.fetchedRepoIds.last, unorderedEquals([repo1.id, repo2.id]));
@@ -2131,13 +2373,18 @@ void main() {
       'unconfirmed terminals are retried even when a repo changed',
       () async {
         port.groups = [
-          (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+          (
+            repo: repo1,
+            prs: [_pr(1), _pr(2)],
+            hasMore: false,
+            totalCount: null,
+          ),
         ];
         await twoRepoPoller.refreshNow('ws1');
         now = now.add(const Duration(minutes: 5));
         port.unknownNumbers.add(2);
         port.groups = [
-          (repo: repo1, prs: [_pr(1)], hasMore: false),
+          (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
         ];
         await twoRepoPoller.refreshNow('ws1');
 
@@ -2157,7 +2404,7 @@ void main() {
 
     test('a PR missing from a partial page is not reported closed', () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: true),
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: true, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       final events = <PullRequestStatusChanged>[];
@@ -2167,7 +2414,7 @@ void main() {
       now = now.add(const Duration(minutes: 5));
       port.unknownNumbers.add(2);
       port.groups = [
-        (repo: repo1, prs: [_pr(3), _pr(1)], hasMore: true),
+        (repo: repo1, prs: [_pr(3), _pr(1)], hasMore: true, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       await pump();
@@ -2181,7 +2428,7 @@ void main() {
     test('a repo linked later is baselined on its own first read', () async {
       workspaces.reposByWs['ws1'] = [repo1];
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
 
@@ -2190,8 +2437,8 @@ void main() {
       workspaces.reposByWs['ws1'] = [repo1, repo2];
       now = now.add(const Duration(minutes: 5));
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
-        (repo: repo2, prs: [_pr(5), _pr(6)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (repo: repo2, prs: [_pr(5), _pr(6)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       await pump();
@@ -2199,8 +2446,13 @@ void main() {
 
       now = now.add(const Duration(minutes: 5));
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
-        (repo: repo2, prs: [_pr(5), _pr(6), _pr(7)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (
+          repo: repo2,
+          prs: [_pr(5), _pr(6), _pr(7)],
+          hasMore: false,
+          totalCount: null,
+        ),
       ];
       await twoRepoPoller.refreshNow('ws1');
       await pump();
@@ -2210,8 +2462,8 @@ void main() {
 
     test('an unlinked repo leaves the snapshot', () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
-        (repo: repo2, prs: [_pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
+        (repo: repo2, prs: [_pr(2)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       workspaces.reposByWs['ws1'] = [repo1];
@@ -2226,13 +2478,13 @@ void main() {
 
     test('merged/closed history ages out', () async {
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false),
+        (repo: repo1, prs: [_pr(1), _pr(2)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       port.mergedNumbers.add(2);
       now = now.add(const Duration(minutes: 5));
       port.groups = [
-        (repo: repo1, prs: [_pr(1)], hasMore: false),
+        (repo: repo1, prs: [_pr(1)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       expect((await _readSnapshot(db))['terminal_prs'] as List, hasLength(1));
@@ -2241,11 +2493,75 @@ void main() {
         OpenPrPollingService.terminalRetention + const Duration(days: 1),
       );
       port.groups = [
-        (repo: repo1, prs: [_pr(1), _pr(3)], hasMore: false),
+        (repo: repo1, prs: [_pr(1), _pr(3)], hasMore: false, totalCount: null),
       ];
       await twoRepoPoller.refreshNow('ws1');
       expect((await _readSnapshot(db))['terminal_prs'] as List, isEmpty);
     });
+  });
+
+  test('every resolved repo reports its open PRs and whether the list was '
+      'complete; an unresolved repo reports nothing', () async {
+    final repo2 = _repo('r2');
+    final repo3 = _repo('r3');
+    final reported = <String, ({List<int> numbers, bool complete})>{};
+    final reporting = OpenPrPollingService(
+      fetchPort: port,
+      workspaceRepository: FakeWorkspaceRepository(
+        workspaces: [_workspace('ws1')],
+        reposByWs: {
+          'ws1': [repo1, repo2, repo3],
+        },
+      ),
+      workspaceDbs: dbs,
+      repoAccess: access,
+      forcedRefreshMinGap: Duration.zero,
+      changeSignals: signals,
+      prToWire: _prToWire,
+      eventBus: bus,
+      now: () => now,
+      onOpenPrsRead: (workspaceId, repo, prs, {required complete}) async {
+        expect(workspaceId, 'ws1');
+        if (repo.id == repo2.id) {
+          throw StateError('a failing follow-up never fails the sweep');
+        }
+        reported[repo.id] = (
+          numbers: [for (final pr in prs) pr.number],
+          complete: complete,
+        );
+      },
+    );
+    addTearDown(reporting.dispose);
+    port
+      ..groups = [
+        (
+          repo: repo1,
+          prs: [
+            _pr(1, headRef: 'agent/a'),
+            _pr(2),
+          ],
+          hasMore: true,
+          totalCount: 120,
+        ),
+      ]
+      ..unresolvedRepoIds = {repo3.id};
+
+    await reporting.refreshNow('ws1');
+
+    expect(reported, hasLength(1));
+    expect(reported[repo1.id]?.numbers, [1, 2]);
+    expect(reported[repo1.id]?.complete, isFalse);
+
+    // A repo that resolved with no group has no open PRs: a complete list.
+    reported.clear();
+    port
+      ..groups = []
+      ..unresolvedRepoIds = {repo2.id, repo3.id};
+    now = now.add(const Duration(minutes: 5));
+    await reporting.refreshNow('ws1');
+    expect(reported, hasLength(1));
+    expect(reported[repo1.id]?.numbers, isEmpty);
+    expect(reported[repo1.id]?.complete, isTrue);
   });
 }
 

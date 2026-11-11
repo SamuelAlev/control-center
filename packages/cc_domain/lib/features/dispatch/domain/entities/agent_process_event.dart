@@ -123,9 +123,6 @@ extension AgentProcessEventTypeExtension on AgentProcessEventType {
 /// Each subtype carries structured fields for its payload. Use `event.type`
 /// for lightweight discrimination or pattern-match on the sealed class for
 /// type-safe field access.
-///
-/// Backwards-compatible: every subtype has a `content` getter that returns the
-/// primary text payload so consumers that only read `.content` keep working.
 sealed class AgentProcessEvent {
   AgentProcessEvent({DateTime? timestamp})
     : timestamp = timestamp ?? DateTime.now();
@@ -133,12 +130,9 @@ sealed class AgentProcessEvent {
   /// Type discriminant for this event.
   AgentProcessEventType get type;
 
-  /// Primary text payload — kept for backwards compatibility with consumers
-  /// that read `.content` on the base type.
-  String get content;
-
-  /// Optional metadata map — kept for backwards compatibility.
-  Map<String, dynamic>? get metadata => null;
+  /// The payload equality compares beside [type]: the text of a text-bearing
+  /// event, a tool call's name, a tool result's output.
+  String get _payload => '';
 
   /// Wall-clock time at which the event was observed by the dispatcher.
   final DateTime timestamp;
@@ -149,10 +143,10 @@ sealed class AgentProcessEvent {
       other is AgentProcessEvent &&
           runtimeType == other.runtimeType &&
           type == other.type &&
-          content == other.content;
+          _payload == other._payload;
 
   @override
-  int get hashCode => Object.hash(type, content);
+  int get hashCode => Object.hash(type, _payload);
 }
 
 /// Agent produced visible text output.
@@ -163,8 +157,11 @@ class TextEvent extends AgentProcessEvent {
   @override
   AgentProcessEventType get type => AgentProcessEventType.text;
 
-  @override
+  /// The visible text.
   final String content;
+
+  @override
+  String get _payload => content;
 }
 
 /// Agent produced thinking / reasoning output.
@@ -175,8 +172,11 @@ class ThinkingEvent extends AgentProcessEvent {
   @override
   AgentProcessEventType get type => AgentProcessEventType.thinking;
 
-  @override
+  /// The reasoning text.
   final String content;
+
+  @override
+  String get _payload => content;
 }
 
 /// Agent invoked a tool.
@@ -187,13 +187,13 @@ class ToolCallEvent extends AgentProcessEvent {
     required this.toolCallId,
     this.inputs,
     super.timestamp,
-  }) : content = toolName;
+  });
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.toolCall;
 
   @override
-  final String content;
+  String get _payload => toolName;
 
   /// Name of the tool being called.
   final String toolName;
@@ -204,8 +204,8 @@ class ToolCallEvent extends AgentProcessEvent {
   /// Structured tool input arguments.
   final Map<String, dynamic>? inputs;
 
-  @override
-  Map<String, dynamic>? get metadata => {
+  /// The call as a metadata map (run logs, transcripts).
+  Map<String, dynamic> get metadata => {
     'toolName': toolName,
     'toolCallId': toolCallId,
     if (inputs != null) 'inputs': inputs,
@@ -224,13 +224,13 @@ class ToolResultEvent extends AgentProcessEvent {
     this.images = const [],
     this.attachments = const [],
     super.timestamp,
-  }) : content = outputs;
+  });
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.toolResult;
 
   @override
-  final String content;
+  String get _payload => outputs;
 
   /// Id of the tool call this result belongs to.
   final String toolCallId;
@@ -255,8 +255,8 @@ class ToolResultEvent extends AgentProcessEvent {
   /// Original read media, externalized before publishing the final result.
   final List<MessageAttachment> attachments;
 
-  @override
-  Map<String, dynamic>? get metadata => {
+  /// The result as a metadata map (run logs, transcripts).
+  Map<String, dynamic> get metadata => {
     'toolCallId': toolCallId,
     'outputs': outputs,
     if (toolName != null) 'toolName': toolName,
@@ -292,13 +292,10 @@ class UsageEvent extends AgentProcessEvent {
     this.nativeSessionId,
     this.resumedNativeSession = false,
     super.timestamp,
-  }) : content = '';
+  });
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.usage;
-
-  @override
-  final String content;
 
   /// Token usage and cost breakdown.
   final RunUsage usage;
@@ -338,8 +335,8 @@ class UsageEvent extends AgentProcessEvent {
   /// starting a fresh one.
   final bool resumedNativeSession;
 
-  @override
-  Map<String, dynamic>? get metadata => {
+  /// The report as a metadata map (run logs, transcripts).
+  Map<String, dynamic> get metadata => {
     'inputTokens': usage.inputTokens,
     'outputTokens': usage.outputTokens,
     if (usage.thoughtTokens > 0) 'thoughtTokens': usage.thoughtTokens,
@@ -381,13 +378,10 @@ class StageTimingEvent extends AgentProcessEvent {
     this.modelId,
     this.requestId,
     super.timestamp,
-  }) : content = '';
+  });
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.stageTiming;
-
-  @override
-  final String content;
 
   /// Which boundary this marks.
   final RunStage stage;
@@ -421,8 +415,8 @@ class StageTimingEvent extends AgentProcessEvent {
     requestId: requestId,
   );
 
-  @override
-  Map<String, dynamic>? get metadata => {
+  /// The timing as a metadata map (run logs, transcripts).
+  Map<String, dynamic> get metadata => {
     'stage': stage.wire,
     'offsetMs': offsetMs,
     'source': source.wire,
@@ -468,9 +462,6 @@ class ContextWindowEvent extends AgentProcessEvent {
   @override
   AgentProcessEventType get type => AgentProcessEventType.contextWindow;
 
-  @override
-  String get content => '';
-
   /// Tokens occupying the window after this call.
   final int contextTokens;
 
@@ -480,8 +471,8 @@ class ContextWindowEvent extends AgentProcessEvent {
   /// Automatic compactions the runner performed so far in this run.
   final int compactions;
 
-  @override
-  Map<String, dynamic>? get metadata => {
+  /// The reading as a metadata map (run logs, transcripts).
+  Map<String, dynamic> get metadata => {
     'contextTokens': contextTokens,
     'windowTokens': ?windowTokens,
     if (compactions > 0) 'compactions': compactions,
@@ -497,8 +488,11 @@ class ErrorEvent extends AgentProcessEvent {
   @override
   AgentProcessEventType get type => AgentProcessEventType.error;
 
-  @override
+  /// The error text.
   final String content;
+
+  @override
+  String get _payload => content;
 
   /// Structured machine-readable error code from the adapter, when reported
   /// (e.g. `rate_limit_error`, `overloaded_error`). Drives deterministic
@@ -523,8 +517,11 @@ class SandboxViolationEvent extends AgentProcessEvent {
   @override
   AgentProcessEventType get type => AgentProcessEventType.sandboxViolation;
 
-  @override
+  /// The violation as the sandbox reported it.
   final String content;
+
+  @override
+  String get _payload => content;
 
   /// Denied action (e.g. "file-read", "network-connect").
   final String? action;
@@ -532,8 +529,8 @@ class SandboxViolationEvent extends AgentProcessEvent {
   /// Target of the denied action.
   final String? target;
 
-  @override
-  Map<String, dynamic>? get metadata => {
+  /// The violation as a metadata map (run logs, transcripts).
+  Map<String, dynamic> get metadata => {
     if (action != null) 'action': action,
     if (target != null) 'target': target,
   };
@@ -548,8 +545,11 @@ class DebugEvent extends AgentProcessEvent {
   @override
   AgentProcessEventType get type => AgentProcessEventType.debug;
 
-  @override
+  /// The diagnostic line.
   final String content;
+
+  @override
+  String get _payload => content;
 }
 
 /// Text and/or thinking the agent ALREADY streamed was withdrawn.
@@ -571,9 +571,6 @@ class TextRetractedEvent extends AgentProcessEvent {
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.textRetracted;
-
-  @override
-  String get content => '';
 }
 
 /// Agent run completed.
@@ -585,13 +582,10 @@ class DoneEvent extends AgentProcessEvent {
   /// NOT as a plain completion (e.g. the loop hit its turn ceiling). Null
   /// means a normal completion; consumers that only care about "the process
   /// finished" can ignore it.
-  DoneEvent({this.outcome, super.timestamp}) : content = '';
+  DoneEvent({this.outcome, super.timestamp});
 
   @override
   AgentProcessEventType get type => AgentProcessEventType.done;
-
-  @override
-  final String content;
 
   /// Terminal outcome override, when the run ended without delivering.
   final TurnOutcome? outcome;

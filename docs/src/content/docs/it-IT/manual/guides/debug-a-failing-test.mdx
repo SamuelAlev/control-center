@@ -2,7 +2,7 @@
 title: Esegui il debug di un test fallito con un agente
 description: Fai impostare a un agente un breakpoint, avvia il programma sotto un debugger e leggi uno stack frame reale invece di aggiungere istruzioni print.
 slug: it-IT/manuale/guide/debug-test-fallito
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Questa guida mostra come far usare a un agente un debugger su un fallimento che le istruzioni print non spiegano.
@@ -31,8 +31,8 @@ Risponde con ciò che ha trovato, oppure spiega che un adattatore ha bisogno di 
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Fornito con LLVM                               |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python sceglie l'interprete del progetto]
-`debugpy` viene cercato in `.venv/bin` o `venv/bin` prima che nel `$PATH`. Un python preso dal `$PATH` è un ambiente diverso, e agganciarsi da quello sbagliato fallisce in un modo che si legge come codice rotto anziché come interprete sbagliato.
+:::note[Python sceglie l'interprete del progetto quando l'esecuzione è in sandbox]
+In un'esecuzione in sandbox, `debugpy` viene cercato in `.venv/bin` o `venv/bin` prima che nel `$PATH`. Un python preso dal `$PATH` è un ambiente diverso, e agganciarsi da quello sbagliato fallisce in un modo che si legge come codice rotto anziché come interprete sbagliato. In un'esecuzione senza sandbox usa solo `$PATH`, quindi un repository non può scegliere l'interprete che gira sulla macchina del server.
 :::
 
 ## Prima imposta il breakpoint, poi avvia
@@ -106,6 +106,8 @@ Per un processo bloccato invece che per uno che stai avviando tu:
 debug(op: "attach", port: 5858)
 ```
 
+La porta deve essere una delle porte inoltrate dalla propria esecuzione. Qualsiasi altra porta viene rifiutata prima che parta qualcosa, così un agente non può agganciarsi a un processo che appartiene a qualcun altro sulla macchina del server.
+
 ## Concludi
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Chiudi sempre la sessione. Un adattatore di debug possiede un **processo in pausa** che trattiene tutto ciò che quel processo trattiene: una porta, un lock, una connessione a un database.
 
 :::note[Non può sfuggirti di mano]
-Ogni sessione ha un TTL massimo che non può prolungare, ce n'è esattamente una per conversazione e tutto viene smontato quando il server si ferma. Un secondo `launch` viene rifiutato invece di sostituire il primo: un agente che ne avvia uno senza chiudere l'altro ha quasi certamente perso di vista il primo.
+Ogni sessione ha un TTL massimo che non può prolungare (30 minuti), ce n'è esattamente una per conversazione e tutto viene smontato quando il server si ferma. In un'esecuzione in sandbox la sessione mantiene la sua sandbox tra i turni per non più di quel tempo. Un secondo `launch` viene rifiutato invece di sostituire il primo: un agente che ne avvia uno senza chiudere l'altro ha quasi certamente perso di vista il primo.
 :::
 
 ## Output limitato

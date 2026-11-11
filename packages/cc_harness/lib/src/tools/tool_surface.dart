@@ -26,13 +26,10 @@ class ToolSurfaceSpec {
   /// Everything: read, write and exec tools all available.
   const ToolSurfaceSpec.unrestricted() : this();
 
-  /// The historical read-only surface, byte-for-byte: exec-tier tools and the
-  /// three built-in worktree mutators are dropped; read tools and write-tier
-  /// bridged tools (memory, messaging, tickets) remain.
-  ///
-  /// Kept as a named factory so the migration off the old binary policy is a
-  /// provable no-op — the same tools come out.
-  const ToolSurfaceSpec.readOnlyLegacy()
+  /// The read-only surface: exec-tier tools and the three built-in worktree
+  /// mutators are dropped; read tools and write-tier bridged tools (memory,
+  /// messaging, tickets) remain.
+  const ToolSurfaceSpec.readOnly()
     : this(maxTier: ToolApprovalTier.write, denyNames: worktreeMutators);
 
   /// Built-in tools that mutate the working tree.

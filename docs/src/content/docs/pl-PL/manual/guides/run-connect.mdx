@@ -2,7 +2,7 @@
 title: Uruchom serwer Connect
 description: Uruchom własny Control Center Connect z obrazu Docker cc-connect albo zamontuj go wewnątrz cc_server, aby Twoje serwery logowały ludzi przez zarejestrowane przez Ciebie aplikacje dostawców.
 slug: pl-PL/podrecznik/poradniki/uruchamianie-serwera-connect
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect obsługuje logowanie do dostawców (GitHub, Google
@@ -53,7 +53,7 @@ niedostępnego. `<base>` poniżej to Twój `CONNECT_PUBLIC_URL`.
 
 | Dostawca       | Zarejestruj                                                                                                                                                                                                                                                          | Zachowaj                                |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` z włączonym **Redirect on update**. Pozostaw wyłączone **Request user authorization (OAuth) during installation**: gdy jest włączone, GitHub ignoruje setup URL. Pozostaw włączone **Expire user authorization tokens** | Identyfikator aplikacji, slug, identyfikator klienta, sekret klienta |
+| **Aplikacja GitHub** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` z włączonym **Redirect on update**. Pozostaw wyłączone **Request user authorization (OAuth) during installation**: gdy jest włączone, GitHub ignoruje setup URL. Pozostaw włączone **Expire user authorization tokens** | Identyfikator aplikacji, slug, identyfikator klienta, sekret klienta, klucz prywatny |
 | **Google**     | Klient OAuth typu **Web application** z URI przekierowania `<base>/oauth/google/callback` i włączonym Google Calendar API                                                                                                                                            | Identyfikator klienta, sekret klienta   |
 | **Linear**     | Aplikacja OAuth z adresami URL wywołania zwrotnego `<base>/oauth/linear/callback` i `<base>/oauth/linear_app/callback`                                                                                                                                              | Tylko identyfikator klienta             |
 | **Slack**      | Redirect URLs `<base>/oauth/slack_oidc/callback` i `<base>/oauth/slack/callback`. Event Subscriptions pod `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash commands pod `<base>/v1/hooks/slack/commands`. Włączona rotacja tokenów | Identyfikator aplikacji, identyfikator klienta, sekret klienta, signing secret |
@@ -64,9 +64,9 @@ i zapis, **Checks**, **Actions** i **Commit statuses** odczyt. Dodaj odczyt
 **Members** organizacji na potrzeby próśb o recenzję zespołu. Webhooki mogą
 pozostać wyłączone: serwery odpytują.
 
-Connect nigdy nie potrzebuje klucza prywatnego GitHub App. Tokeny dla jednego
-repozytorium tworzy zamiast tego z własnego logowania osoby. Linear też nie
-potrzebuje sekretu: Connect oddaje kod serwerowi, który sam kończy wymianę.
+Connect potrzebuje klucza prywatnego GitHub App (**Wygeneruj klucz prywatny** w ustawieniach aplikacji). Podpisuje nim żądania App, które znajdują instalację obejmującą repozytorium (a gdy jej brak, instalację właściciela), i wydają token instalacji dla jednego repozytorium, ale dopiero po tym, jak własne logowanie pytającej osoby dowiodło dostępu do tego repozytorium.
+
+Każdy serwer na Twoim Connect dzieli bota aplikacji. Może on czytać, komentować, etykietować i reagować jako bot w każdym z nich. Recenzowanie pull requestów jako bot jest dozwolone tylko dla serwerów wymienionych w `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (ich identyfikatory instalacji, rozdzielone przecinkami); każdy inny serwer publikuje recenzje tokenem samego recenzenta. Push nigdy nie jest wykonywany jako bot. Aby pozwolić serwerowi, który jest Twój, recenzować jako bot, dodaj jego identyfikator instalacji tam i zrestartuj. Plik klucza trzymaj jako sekret, tak jak klucz pieczęci. Linear nie potrzebuje sekretu: Connect oddaje kod serwerowi, który sam kończy wymianę.
 
 ## Krok 3: Zbierz identyfikatory instalacji
 
@@ -123,13 +123,15 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Skieruj reverse proxy na port `8790`. Obraz działa jako nieuprzywilejowany
-użytkownik, trzyma swój stan w woluminie `/data` i ma wbudowaną kontrolę stanu
-(`cc-connect --healthcheck`, która sonduje `/healthz`).
+Skieruj reverse proxy na port `8790` i ustaw `CONNECT_TRUST_PROXY` na liczbę proxy przed Connect, aby jego limit na adres widział adres każdego klienta. Obraz działa jako nieuprzywilejowany użytkownik, trzyma swój stan w woluminie `/data` i ma wbudowaną kontrolę stanu (`cc-connect --healthcheck`, która sonduje `/healthz`: proces odpowiada). `/readyz` dodatkowo sprawdza, czy jego magazyny stanu i powiązań odpowiadają oraz czy Redis, jeśli jest używany, nadal działa z `maxmemory-policy noeviction`; ten adres wskaż sprawdzeniu gotowości orkiestratora.
+
+Strona zgody logowania odpowiada formularzem POST, który Connect przyjmuje tylko ze swojej własnej strony: `Sec-Fetch-Site`, gdy jest wysłany, musi mieć wartość `same-origin`, a `Origin`, gdy jest wysłany, musi być źródłem `CONNECT_PUBLIC_URL`; POST bez żadnego z nich jest odrzucany. Proxy musi więc przepuszczać oba nagłówki bez zmian, a `CONNECT_PUBLIC_URL` musi być adresem, którego przeglądarki ludzi faktycznie używają. Jeśli kontynuowanie na tej stronie zawsze pokazuje „Ten link wygasł”, a dziennik pokazuje `oauth.done_refused` z przyczyną `origin` lub `no_origin`, jedno z tych dwóch jest wyłączone.
 
 Connect odmawia startu (kod wyjścia `78`), gdy jego konfiguracja jest otwarta,
 niebezpieczna albo niedokończona, i wypisuje, która zmienna jest błędna.
@@ -146,8 +148,7 @@ logowania.
 Serwer może sam hostować Connect zamiast osobnego kontenera. Zamontowana usługa
 jest tą samą, którą uruchamia obraz.
 
-1. Umieść zmienne `CONNECT_*` w pliku `.env` serwera (albo w jego środowisku),
-   jak w kroku 5
+1. Umieść zmienne `CONNECT_*` w pliku `.env` serwera, jak w kroku 5. Serwer odmawia startu, gdy któryś z sekretów Connect, także `CONNECT_SENTRY_DSN`, jest wyeksportowany w jego środowisku
 2. Dodaj `CC_SERVER_CONNECT_HOST=on`
 3. Zrestartuj serwer. Jego dziennik wypisuje `embedded Connect at <url>`
 
@@ -159,6 +160,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect jest wtedy dostępny pod `<server>/connect`:
@@ -192,9 +194,10 @@ wartość. Sekrety oznaczone jako **podwójne** przyjmują w trakcie rotacji tak
 | `CONNECT_PUBLIC_URL`            | wymagane  | Kanoniczny publiczny adres URL. HTTPS albo `http` tylko na loopbacku. Ścieżka oznacza montowanie. Bez zapytania i fragmentu      |
 | `CONNECT_ALLOWED_INSTALLS`      | wymagane  | Identyfikatory instalacji rozdzielone przecinkami. `*` jest akceptowane tylko razem z `CONNECT_SIGNED_CONFIG_FILE`               |
 | `CONNECT_DENY_INSTALLS`         |           | Identyfikatory instalacji odrzucane, nawet gdy są dozwolone                                                                      |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeryczne identyfikatory właścicieli GitHub. Gdy ustawione, tokeny repozytoriów są tworzone tylko dla repozytoriów, które do nich należą |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Numeryczne identyfikatory właścicieli GitHub. Gdy ustawione, tokeny repozytoriów są tworzone tylko dla repozytoriów, które do nich należą. Nie ogranicza to tego, kto się loguje: osoba dopuszczona do korzystania z tego Connect nadal dostaje własny token użytkownika App. Aby obsługiwać tylko jedną organizację, trzymaj App prywatną dla niej |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Identyfikatory instalacji, którym wolno, by bot aplikacji recenzował pull requesty. Domyślnie puste; `*` jest odrzucane, a każdy identyfikator musi być też dozwolony |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Adres i port nasłuchu                                                                                                    |
-| `CONNECT_TRUST_PROXY`           | `0`       | Zaufane przeskoki proxy w `X-Forwarded-For` (od 0 do 8). Używane tylko do limitu żądań na adres                                  |
+| `CONNECT_TRUST_PROXY`           | `0`       | Zaufane przeskoki proxy w `X-Forwarded-For` (od 0 do 8). Używane tylko do limitów na adres, do wskazówki sieciowej strony logowania i do zapisywanego adresu. Za proxy `0` liczy każdego klienta jako proxy, a dziennik mówi o tym raz |
 
 ### Ścieżki logowania dostawców
 
@@ -202,6 +205,7 @@ wartość. Sekrety oznaczone jako **podwójne** przyjmują w trakcie rotacji tak
 | --------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |        | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |           | Sekret, podwójny                                                            |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |           | Sekret. Klucz prywatny App (PEM)                                            |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |           | Klient Google. Sekret jest podwójny                                         |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |           | Aplikacja Linear. Bez sekretu                                               |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |           | Aplikacja Slack                                                             |
@@ -219,12 +223,12 @@ wartość. Sekrety oznaczone jako **podwójne** przyjmują w trakcie rotacji tak
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` albo `gcp-kms`                                                                                     |
 | `CONNECT_SEAL_KEYS`                                       |                            | Sekret, wymagany dla `local`. Wpisy `kid:key` rozdzielone przecinkami, najnowszy pierwszy; starsze wpisy nadal odszyfrowują |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, wymagany dla `gcp-kms`                                   |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` dla jednej instancji, `redis` dla kilku                                                           |
-| `CONNECT_REDIS_URL`                                       |                            | Sekret. `redis://` albo `rediss://`                                                                        |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` dla jednej instancji, `redis` dla kilku. Pełny magazyn w pamięci odrzuca nowe logowania i żądania, zamiast zapomnieć aktywny wpis |
+| `CONNECT_REDIS_URL`                                       |                            | Sekret. `redis://` albo `rediss://`. Redis 6.2 lub nowszy z `maxmemory-policy noeviction`, oba sprawdzane przy starcie |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | Pakiet CA dla `rediss://`                                                                                  |
-| `CONNECT_BINDINGS`                                        | `file`                     | Gdzie przechowywane są powiązania instalacji GitHub: `file` albo `firestore`                               |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` w obrazie) | Zawiera `bindings.json`                                                                                    |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | baza `(default)`           | Dla `CONNECT_BINDINGS=firestore`                                                                           |
+| `CONNECT_BINDINGS`                                        | `file`                     | Gdzie przechowywane są powiązania zespołów Slack: `file` albo `firestore`                                  |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` w obrazie) | Zawiera `bindings.json`. Blokowany przez jeden Connect: drugi na tym samym katalogu nie startuje           |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | baza `(default)`           | Dla `CONNECT_BINDINGS=firestore`. Connect nie startuje, gdy Firestore nie odpowiada                        |
 
 ### Konfiguracja, dzienniki i limity
 
@@ -234,19 +238,36 @@ wartość. Sekrety oznaczone jako **podwójne** przyjmują w trakcie rotacji tak
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Klucze, względem których musi się weryfikować podpisana konfiguracja                                |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoka konfiguracji, którą generuje samodzielnie hostowany Connect                                   |
 | `CONNECT_LOG_HMAC_KEY`                  | losowy na proces   | Sekret. Ustaw go, aby znaczniki zastępujące identyfikatory instalacji były stabilne między restartami i instancjami |
+| `CONNECT_SENTRY_DSN`                    |                    | Sekret. Sentry DSN (HTTPS), do którego zgłaszane są linie błędów: typ błędu, ramki stosu, trasa i identyfikator żądania, nigdy komunikat, treść ani nagłówek |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | Środowisko Sentry                                                                                   |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Zgłaszane przez `/v1/version`                                                                       |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Żądania na instalację                                                                               |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Żądania na adres                                                                                    |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Żądania dla całej usługi                                                                            |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Żądania na adres (adres IPv6 liczony na /64)                                                        |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Żądania dla całej instancji                                                                         |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`              | Dostarczenia zdarzeń i poleceń Slack na adres, liczone osobno od innych żądań                       |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`          | Dostarczenia zdarzeń i poleceń Slack dla całej instancji                                            |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Zdarzenia Slack na zespół                                                                           |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Wyszukiwania GIF-ów na instalację                                                                   |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | Wyszukiwania GIF-ów na adres, na wszystkich serwerach                                               |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | Rozpoczęte logowania na adres                                                                       |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | Tokeny GitHub wydane na konto GitHub na jednym serwerze (logowania, odświeżenia, tokeny repozytoriów) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × wartość powyżej (`120`) | To samo na konto GitHub we wszystkich serwerach                              |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | Tokeny GitHub wydane na adres                                                                       |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | Nowe logowania GitHub dla całej aplikacji                                                           |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | Tokeny bota na serwer                                                                               |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | Tokeny bota na pytające konto GitHub, na wszystkich serwerach                                       |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | Tokeny bota dla całej aplikacji                                                                     |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | Odświeżenia i tokeny repozytoriów dla całej aplikacji. Nowe logowania mają własny limit powyżej     |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | Żywe tokeny repozytoriów, które może mieć jedno konto GitHub, zanim Connect zapisze ostrzeżenie     |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | Wycofane identyfikatory instalacji na adres (na /48 dla IPv6)                                       |
+
+Wywołanie powyżej limitu dostaje odpowiedź `rate_limited`. Serwery ponawiają później i nigdy nie wylogowują z jego powodu nikogo.
 
 ## Uruchom więcej niż jedną instancję
 
 Jedna instancja z `CONNECT_STATE=memory` wystarcza większości organizacji. Kilka
-instancji za jednym adresem wymaga `CONNECT_STATE=redis` oraz albo
-współdzielonego `CONNECT_DATA_DIR`, albo `CONNECT_BINDINGS=firestore`, aby
-logowanie rozpoczęte na jednej instancji mogło zakończyć się na innej.
+instancji za jednym adresem wymaga `CONNECT_STATE=redis` i `CONNECT_BINDINGS=firestore`, aby
+logowanie rozpoczęte na jednej instancji mogło zakończyć się na innej, a wszystkie instancje widziały te same powiązania Slack i wycofane identyfikatory instalacji. Współdzielony `CONNECT_DATA_DIR` nie działa: pierwszy Connect go blokuje. Limity żądań na instalację, na adres i na instancję są liczone osobno dla każdej instancji; limity logowań, tokenów GitHub, tokenów bota, wyszukiwań GIF-ów na adres, wycofań i zespołów Slack są współdzielone przez magazyn stanu.
 
 ## Wymień sekret dostawcy
 
@@ -276,22 +297,22 @@ pochodzi od Ciebie.
 
 Dodaj jego identyfikator instalacji do `CONNECT_DENY_INSTALLS` i zrestartuj.
 Jego właściciel zobaczy „Connect zablokował identyfikator instalacji tego
-serwera”, a każde logowanie przez Connect na nim przestanie działać.
+serwera. Skontaktuj się z operatorem swojego serwera Connect.” i każde logowanie przez Connect na nim przestanie działać.
+
+Serwer sam wycofuje też swój stary identyfikator instalacji, gdy jego właściciel wymienia klucz. Dowodzi, że identyfikator jest jego, jedną pieczęcią poświadczenia, którą ten Connect dla niego utworzył, więc tylko serwer, który zalogował kogoś przez Connect, może wycofać identyfikator. Connect na stałe zachowuje wycofane identyfikatory, więc stary klucz i każda pieczęć z nim utworzona przestają działać, a zespoły Slack powiązane ze starym identyfikatorem są zwalniane. Tokeny już wydane wygasają same: w ciągu 8 godzin tokeny osoby, a 1 godziny tokeny bota. Connect przechowuje co najwyżej 100 000 wycofanych identyfikatorów; po przekroczeniu tej liczby rotacja jest odrzucana, a dziennik mówi o tym na poziomie błędu.
 
 ## Rozwiązywanie problemów
 
 ### Serwer informuje, że Connect go zablokował
 
-Jego identyfikatora instalacji nie ma w `CONNECT_ALLOWED_INSTALLS` albo jest
-w `CONNECT_DENY_INSTALLS`. Identyfikator zmienia się, gdy właściciel wymieni
-klucz; poproś o nowy.
+Jego identyfikatora instalacji nie ma w `CONNECT_ALLOWED_INSTALLS`, jest w `CONNECT_DENY_INSTALLS` albo został wycofany przy wymianie klucza. Identyfikator zmienia się, gdy właściciel wymieni klucz; poproś o nowy.
 
-### Dostawca jest wyświetlany jako niedostępny
+### Każde logowanie do jednego dostawcy się nie udaje
 
-Brakuje jednej z jego zmiennych, więc Connect pominął tę ścieżkę logowania.
+Jednej z jego zmiennych może brakować, więc Connect pominął tę ścieżkę logowania.
 Sprawdź dziennik startowy i tabele powyżej. GitHub potrzebuje wszystkich
-czterech: identyfikatora aplikacji, sluga, identyfikatora klienta i sekretu
-klienta; Google potrzebuje zarówno identyfikatora klienta, jak i sekretu.
+pięciu: identyfikatora aplikacji, sluga, identyfikatora klienta, sekretu
+klienta i klucza prywatnego; Google potrzebuje zarówno identyfikatora klienta, jak i sekretu.
 
 ### Logowania kończą się błędem niezgodności przekierowania
 

@@ -2,7 +2,7 @@
 title: O seu primeiro espaço de trabalho
 description: Crie um espaço de trabalho, registe um repo nele e veja a fronteira de isolamento com os seus próprios olhos.
 slug: pt-PT/manual/tutoriais/primeiro-espaco-de-trabalho
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## O que vai construir
@@ -11,10 +11,12 @@ No final deste tutorial, terá:
 
 - Um espaço de trabalho com o nome do seu projeto
 - Um repositório Git registado nele
-- Cinco agentes semeados, um dos quais configurou o suficiente para ser executado
+- Seis agentes semeados, um dos quais configurou o suficiente para ser executado
 - Um segundo espaço de trabalho, vazio, que comprova a fronteira de isolamento
 
 O onboarding já criou um espaço de trabalho para si. Este tutorial cria deliberadamente um novo de raiz, para que veja todas as partes do processo.
+
+Criar um espaço de trabalho requer o proprietário do servidor, a pessoa que configurou o servidor. Num desktop que executa o seu próprio servidor, essa pessoa é você. Num servidor de outra pessoa, **Adicionar espaço de trabalho** diz "Apenas o proprietário do servidor pode criar espaços de trabalho. Peça-lhe que crie um, ou peça a um administrador do espaço de trabalho que o convide." Faça uma dessas coisas e siga o resto do tutorial nesse espaço de trabalho. O registo de um repositório no passo 2 requer um administrador do espaço de trabalho, e o segundo espaço de trabalho do passo 4 requer novamente o proprietário do servidor.
 
 Antes de começar, escolha um checkout Git que cumpra todas estas três condições — o passo de registo recusa tudo o resto:
 
@@ -35,12 +37,12 @@ O Control Center muda para o novo espaço de trabalho e abre na respetiva caixa 
 Por detrás disso, o servidor publica um evento `WorkspaceCreated` e semeia o espaço de trabalho com:
 
 - um **agente CEO**, cuja persona é a coordenação e a delegação
-- quatro especialistas — `qa`, `architect`, `engineer` e `librarian` — cada um com as suas próprias instruções e skills
+- cinco especialistas — `qa`, `architect`, `engineer`, `librarian` e `content-synthesizer` — cada um com as suas próprias instruções e skills
 - os modelos de pipeline integrados e as respetivas linhas de disparadores
 
 Todos os espaços de trabalho que criar recebem tudo isto, não apenas o primeiro.
 
-Para confirmar: abra **Definições → Espaço de trabalho → Agentes**. Estão cinco agentes na lista, cada um com um anel de estado vazio.
+Para confirmar: abra **Definições → Espaço de trabalho → Agentes**. Estão seis agentes na lista, cada um com um anel de estado vazio.
 
 ## Passo 2: registar um repositório
 
@@ -57,7 +59,7 @@ Para confirmar: o repo aparece na lista com o seu `owner/repo` e o branch atual.
 
 ## Passo 3: tornar um agente executável
 
-Os cinco agentes que este espaço de trabalho acabou de semear não têm adaptador nem modelo. O despacho executa-os em **Control Center (built-in)** e, sem modelo definido, pede à Anthropic o respetivo modelo predefinido — pelo que só funcionam se tiver uma conta Anthropic ligada e, nesse caso, num modelo que não escolheu. O onboarding do primeiro arranque marca a sua escolha em todos os agentes do primeiro espaço de trabalho, uma única vez; um espaço de trabalho criado depois disso começa com os cinco por definir. Defina um agora.
+Os seis agentes que este espaço de trabalho acabou de semear não têm adaptador nem modelo. O despacho executa-os em **Control Center (built-in)** e, sem modelo definido, pede à Anthropic o respetivo modelo predefinido — pelo que só funcionam se tiver uma conta Anthropic ligada e, nesse caso, num modelo que não escolheu. O onboarding do primeiro arranque marca a sua escolha em todos os agentes do primeiro espaço de trabalho, uma única vez; um espaço de trabalho criado depois disso começa com os seis por definir. Defina um agora.
 
 1. Abra **Definições → Espaço de trabalho → Agentes**
 2. Selecione o agente `engineer` na lista
@@ -73,7 +75,7 @@ Cada agente tem o seu próprio adaptador e modelo, pelo que deve repetir isto pa
 Crie um segundo espaço de trabalho a partir do chip da barra de título, exatamente como no passo 1. Depois observe-o:
 
 - **Definições → Espaço de trabalho → Repositórios** está vazio. O repo que registou há um minuto não está lá.
-- **Definições → Espaço de trabalho → Agentes** tem cinco agentes, mas são linhas diferentes — o adaptador que definiu no passo 3 desapareceu.
+- **Definições → Espaço de trabalho → Agentes** tem seis agentes, mas são linhas diferentes — o adaptador que definiu no passo 3 desapareceu.
 - A lista de espaços, os tickets e a memória estão todos vazios.
 
 Não houve fugas, porque não há nada de onde fugir: as linhas de cada espaço de trabalho vivem no ficheiro de base de dados do próprio espaço de trabalho. Uma leitura entre espaços de trabalho não é uma consulta que é filtrada, é uma consulta que não tem onde correr. Eliminar um espaço de trabalho é desvincular um ficheiro.
@@ -84,6 +86,6 @@ Para o modelo completo, leia [Espaços de trabalho e isolamento](/pt-PT/manual/c
 
 ## Resumo
 
-Criou um espaço de trabalho, viu-o semear um CEO e quatro especialistas, registou um repo nele, deu a um agente um adaptador e um modelo e confirmou que um segundo espaço de trabalho não partilha nada disso.
+Criou um espaço de trabalho, viu-o semear um CEO e cinco especialistas, registou um repo nele, deu a um agente um adaptador e um modelo e confirmou que um segundo espaço de trabalho não partilha nada disso.
 
 **A seguir:** [Despache o seu primeiro agente](/pt-PT/manual/tutoriais/primeiro-agente/) para pôr o espaço de trabalho a trabalhar.

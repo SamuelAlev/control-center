@@ -92,15 +92,24 @@ abstract interface class EnvironmentPort {
   );
 
   /// Validates and stores a definition. Throws `ValidationException`.
+  ///
+  /// [byServerOwner] is whether [by] is the server owner, as the server
+  /// knows it. A validated definition that runs anything on the host
+  /// (`EnvironmentDefinition.runsOnHost`) is refused with
+  /// `ServerOwnerRequiredException` for anyone else, before anything is
+  /// written.
   Future<EnvironmentDefinitionRecord> saveDefinition({
     required String workspaceId,
     String? definitionId,
     required Map<String, dynamic> definition,
     required Principal by,
+    required bool byServerOwner,
   });
 
   /// Links a definition to a file on a repo's default branch, approving the
-  /// blob it currently has.
+  /// blob it currently has. [byServerOwner] gates a definition that runs on
+  /// the host exactly as in [saveDefinition], judged on the file with its
+  /// overrides applied.
   Future<EnvironmentDefinitionRecord> approveSource({
     required String workspaceId,
     String? definitionId,
@@ -109,6 +118,7 @@ abstract interface class EnvironmentPort {
     Map<String, dynamic>? overrides,
     String? expectedBlobHash,
     required Principal by,
+    required bool byServerOwner,
   });
 
   /// What a linked definition's file holds now, for the review diff.
@@ -152,23 +162,23 @@ abstract interface class EnvironmentPort {
   Stream<List<SpaceEnvironment>> watch(String workspaceId, String spaceId);
 
   /// Starts, or reuses, the space's environment.
+  ///
+  /// [attended] says a person is waiting at a client that can show them a
+  /// terminal. A tool's verb that then needs an answer (a password, a
+  /// sign-in) and is declared `interactive` runs again on a terminal that
+  /// person can type into, and the same start carries on from its exit: the
+  /// environment reads `creating` or `starting` throughout, its component
+  /// `interactive` with the session to open. Without it, and always for an
+  /// agent, the start stops there and the environment reads `blocked`.
+  ///
+  /// Only an entry point that authenticated a person at their own client may
+  /// pass true: what gets typed into that terminal is a password.
   Future<SpaceEnvironment> ensure({
     required String workspaceId,
     required String spaceId,
     String? definitionId,
     Map<String, dynamic> options = const {},
-    required Principal by,
-  });
-
-  /// Runs the `setup` verb of a start that stopped for a person, on a terminal
-  /// they can answer, and returns its session id. The start carries on by
-  /// itself when the verb succeeds. Calling again while it runs returns the
-  /// same session.
-  ///
-  /// For a person only: this is what a password gets typed into.
-  Future<String> startSetup(
-    String workspaceId,
-    String spaceId, {
+    bool attended = false,
     required Principal by,
   });
 
@@ -179,10 +189,11 @@ abstract interface class EnvironmentPort {
     required Principal by,
   });
 
-  /// Returns data to its baseline.
+  /// Returns data to its baseline. [attended] as in [ensure].
   Future<SpaceEnvironment> reset(
     String workspaceId,
     String spaceId, {
+    bool attended = false,
     required Principal by,
   });
 
@@ -252,6 +263,10 @@ abstract interface class EnvironmentPort {
 
   /// Recent runs of a space.
   Future<List<EnvironmentRun>> runs(String workspaceId, String spaceId);
+
+  /// [runs], again whenever one starts, ends or prints: a run that is going
+  /// carries its output so far.
+  Stream<List<EnvironmentRun>> watchRuns(String workspaceId, String spaceId);
 
   /// Recent runs of a definition.
   Future<List<EnvironmentRun>> definitionRuns(

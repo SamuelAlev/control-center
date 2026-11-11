@@ -10,7 +10,7 @@ import 'package:cc_domain/features/pr_review/domain/services/pr_change_signals.d
 import 'package:cc_infra/src/git/viewer_comment_fetch_port.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
-import 'package:cc_infra/src/network/github_graphql_client.dart';
+import 'package:cc_infra/src/network/models/github_graphql_results.dart';
 import 'package:cc_infra/src/network/models/github_review_comment.dart';
 import 'package:cc_infra/src/network/models/github_viewer_activity.dart';
 import 'package:meta/meta.dart';

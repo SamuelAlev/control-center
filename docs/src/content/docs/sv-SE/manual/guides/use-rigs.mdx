@@ -2,7 +2,7 @@
 title: Ge en agent en maskin att testa på
 description: Ge en agent en tillfällig webbläsare, ett skrivbord, en Android-emulator eller en iOS-simulator – med livevy och kontroller du kan ta över.
 slug: sv-SE/handbok/how-to-guider/anvand-stationer
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 En **station** är en tillfällig maskin som en agent öppnar när den faktiskt
@@ -132,6 +132,21 @@ Tryck på **Stoppa maskinen** när du är klar.
 
 Kontrollen är exklusiv med avsikt: två aktörer som skriver i samma maskin ger
 indata som ingen av dem avsåg.
+
+### Vem kan titta och vem kan styra
+
+En maskin som öppnats i en yta följer ytans repon, på samma sätt som ytan själv gör (se [Ytor följer sina repon](/sv-SE/handbok/koncept/auktorisering/#ytor-följer-sina-repon)):
+
+- **Titta på den** kräver läsåtkomst till ytan: en läsbehörighet på varje repo som ytan exponerar, och din egen forge-inloggning kan läsa vart och ett av dem. Att titta omfattar listan över maskiner, skärmen, ljudet, webbläsarens tillstånd, dess portar samt att läsa dess urklipp och filer.
+- **Styra den** kräver också en [skrivbehörighet](/sv-SE/handbok/koncept/auktorisering/#ändring-av-kod-kräver-skrivbehörighet) på de repon. Att styra omfattar att öppna en maskin i ytan, skriva och klicka, ta kontrollen, starta, stoppa och stänga den, vidarebefordra dess portar, skriva till dess urklipp, släppa filer på den och använda mikrofonen.
+
+Med bara läsåtkomst visar maskinen **Endast visning** och "Du kan titta på den här maskinen. Att styra den, vidarebefordra dess portar, klistra in i den eller släppa filer på den kräver skrivåtkomst till alla arkiv i den här ytan." Under en inaktiverad **Starta maskinen** säger fliken "Att starta en maskin här kräver skrivåtkomst till alla arkiv i den här ytan. En arbetsytadministratör kan ge den." Utan läsåtkomst visas inte maskinen, bara "Du kan inte visa den här maskinen. Den tillhör en yta som du inte har läsåtkomst till."
+
+En maskin som inte tillhör någon yta når inget worktree, och varje medlem i arbetsytan kan titta på den och styra den.
+
+En maskin som bär en persons egna inloggningar är deras att styra: deras terminalmaskin, eller vilken maskin som helst som öppnats för dem och vars nätverksåtkomst når en forge. Bara den personen, och agentkörningar som agerar för dem ensam, kan styra den. Arbetsytans administratörer och serverägaren åsidosätter inte detta. Andra som ytan släpper in kan fortfarande titta på dess skärm, ljud, tillstånd och portar, men kan inte styra den, vidarebefordra dess portar, klistra in i den, släppa filer på den, kopiera filer från den eller läsa dess urklipp. En sådan maskin visar **Endast visning** med den här noteringen: "Du kan titta på den här maskinen. Den använder inloggningarna för personen den öppnades för, så bara den personen kan styra den, vidarebefordra dess portar, klistra in i den eller släppa filer på den." En åtgärd som nekas av det skälet säger "Bara personen som maskinen öppnades för kan styra den. Den använder personens egna inloggningar." Någon annans terminalmaskin visas inte alls för dig, precis som deras terminalsessioner.
+
+Varje maskin visar om du kan styra den, och det uppdateras av sig självt när en behörighet eller din forge-inloggning ändras.
 
 ## Flytta in och ut innehåll
 

@@ -2,7 +2,7 @@
 title: Rigs
 description: Chaque surface, backend, verbe d’action, état de cycle de vie, port, valeur par défaut et contrat d’un rig — le catalogue factuel complet.
 slug: fr-FR/manuel/reference/rigs
-sourceHash: fe62d01ea73890f5662609e42f4e796b195d886c
+sourceHash: cd28747fa0c00558983cb4c8603e6a09a0c2f74a
 ---
 
 Des faits uniquement. Pour le modèle qui les sous-tend, consultez [Rigs et
@@ -233,8 +233,10 @@ fichiers, ni shell de l’hôte, ni garantie de réseau confiné.
 
 | Outil | Description |
 | --- | --- |
-| `rig_list` | Liste les rigs d’un espace de travail avec leur surface, leur état, leur affichage et leur contrôleur |
+| `rig_list` | Liste les rigs de l’espace de l’exécution avec leur surface, leur état, leur affichage et leur contrôleur |
 | `rig_close` | Détruit un rig et abandonne son disque |
+
+Ces outils, comme les quatre outils d’usage, sont réservés aux exécutions d’agents ; tout autre appelant est refusé. Une exécution n’atteint que les rigs de l’espace pour lequel elle a reçu son autorisation : `space_id` vient de l’autorisation de l’exécution, jamais de l’appel. Un rig d’un autre espace, ou d’aucun espace, répond exactement comme un rig absent.
 
 ## Cycle de vie
 
@@ -344,7 +346,11 @@ de travail.
 - **L’authentification** repose sur la cible signée
   `rig-files:<workspaceId>/<rigId>` plus l’appartenance à l’espace de travail —
   une cible à part, afin qu’une URL émise pour *regarder* une machine ne
-  puisse pas aussi y écrire des fichiers.
+  puisse pas aussi y écrire des fichiers. Pour un rig ouvert dans un espace,
+  lire le presse-papiers ou un fichier exige aussi un accès en lecture à cet
+  espace, et écrire dans le presse-papiers ou déposer des fichiers exige une
+  autorisation d’écriture sur ses dépôts. Sur un rig qui porte les connexions propres d’une personne, les deux voies, lecture comprise, lui sont seules réservées. Voir [Qui peut regarder et qui peut
+  piloter](/fr-FR/manuel/guides/utiliser-rigs/#qui-peut-regarder-et-qui-peut-piloter).
 - **La prise de contrôle s’applique.** L’écriture dans le presse-papiers et le
   dépôt de fichiers sont des actions modificatrices et sont refusées tant que
   quelqu’un d’autre détient le contrôle ; la lecture du presse-papiers et

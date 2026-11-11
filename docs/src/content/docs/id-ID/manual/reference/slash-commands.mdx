@@ -2,7 +2,7 @@
 title: Perintah slash
 description: Semua perintah yang dapat Anda ketik di composer, apa fungsinya, dan di mana perintah itu berjalan.
 slug: id-ID/panduan-pengguna/referensi/perintah-slash
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Perintah yang diketik di composer sebuah space. Perintah-perintah ini terbagi menjadi tiga kelompok berdasarkan tempat pengaruhnya, dan perbedaannya penting: perintah **lokal** tidak pernah terkirim sebagai pesan, sehingga ia tidak muncul di transkrip dan tidak menjangkau agen.
@@ -140,7 +140,7 @@ Keduanya berbentuk sama — ambil percakapan apa adanya, ajukan satu pertanyaan 
 
 Templat: `$1`, `$@`, `$@[start:length]`, dan `$ARGUMENTS`. Frontmatter dapat menyetel `description` (pelengkapan otomatis composer). `allowed-tools` dan `model` diuraikan dari file, tetapi pemanggilan perintah pengguna saat ini hanya mengganti argumen ke dalam isi — keduanya tidak mengubah model atau permukaan alat run tersebut.
 
-Perintah buatan pengguna menang atas skill dengan nama yang sama — ini adalah pintasan yang dipanggil manusia dengan sengaja, beserta argumennya.
+Skill hanya dijangkau sebagai `/skill:<name>`, sehingga perintah buatan pengguna tidak pernah bertabrakan dengan skill.
 
 ---
 

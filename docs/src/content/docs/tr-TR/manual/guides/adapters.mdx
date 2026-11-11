@@ -2,7 +2,7 @@
 title: Adaptörleri ve modelleri yönetme
 description: Model sağlayıcılarını bağlayın, bir ajanın üzerinde çalıştığı modeli seçin ve sunucu ana makinesinde hangi ajan runner CLI'lerinin bulunduğunu kontrol edin.
 slug: tr-TR/kilavuz/nasil-yapilir/adaptorler
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Bu kılavuz, model sağlayıcılarını nasıl bağlayacağınızı ve bir ajanın neyin
@@ -122,6 +122,13 @@ metni yazar: başlığını, `/btw` yanıtlarını, `/handoff` belgelerini ve `/
 hedef görüşmesini. Her seferinde araç kullanmayan tek bir tamamlama çalıştırır,
 kendi adaptörü ve modelinde; bu yüzden ona küçük ve hızlı bir model verin.
 
+Bu adaptör bir ACP CLI ise tamamlama, sunucunun makinesinde çalışan bir süreçtir
+ve [sandbox kuralını](/tr-TR/kilavuz/kavramlar/sandbox-ve-guvenlik/#sandbox-olmayan-bir-ana-makinedeki-ajanlar)
+izler: sunucu ajanları sandbox'ta çalıştırıyorsa sandbox içinde, sandbox yoksa
+yalnızca sunucu sahibinin sorumlu olduğu isteklerde çalışır. Başkaları için bu
+özellikler atlanır: başlık üretilmez ve `/btw` yanıtları "Content synthesizer ajanı
+yok ya da çalışan bir çalıştırıcısı yok" mesajını verir.
+
 Bu metnin nasıl okunacağını değiştirmek için **Ayarlar → Çalışma alanı → Ajanlar**
 bölümünde onun **persona**sını düzenleyin: başlık uzunluğu, dil, ton, izlediği
 örnekler. Her özelliğin ayrıştırdığı yanıt biçimi (tek satırlık başlık, hedefin
@@ -141,8 +148,7 @@ Ardından sayfanın üst kısmındaki **Yenile**'ye basın. Algılanan her satı
 çözümlenen sürümü ve yolu, ayrıca JSON modunu ve model seçimini destekleyip
 desteklemediğine dair çipleri gösterir.
 
-Harici bir CLI, kimlik bilgilerini kendi yapılandırmasında, sunucu ana
-makinesinde tutar. Control Center bunları yönetmez.
+Claude Code oturumları, Claude Code çalıştırıcısında **Claude Code hesapları** altında listelenir. Control Center her hesabın yapılandırma dizinini sunucuda oluşturur ve orada çalıştırmanız için `claude auth login` komutunu verir; sizin yerinize asla oturum açmaz.
 
 :::caution[Adaptör argümanları ve ortam değişkenleri bu cihazda kalır]
 Her adaptör satırı bir **Ek argümanlar** alanı ve bir **Ortam değişkenleri**

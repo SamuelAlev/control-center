@@ -2,7 +2,7 @@
 title: Een falende test debuggen met een agent
 description: Laat een agent een breakpoint instellen, onder een debugger starten en een echt stackframe lezen in plaats van printinstructies toe te voegen.
 slug: nl-NL/handleiding/gidsen/falende-test-debuggen
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Deze gids laat zien hoe je een agent een debugger laat gebruiken voor een fout die printinstructies niet verklaren.
@@ -31,8 +31,8 @@ Hij antwoordt met wat hij heeft gevonden, of legt uit dat een adapter beide helf
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Zit bij LLVM                       |
 | Go             | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python kiest de interpreter van het project]
-`debugpy` wordt gezocht in `.venv/bin` of `venv/bin` voordat `$PATH` wordt geraadpleegd. Een python uit `$PATH` is een andere omgeving, en verbinden vanuit de verkeerde omgeving mislukt op een manier die leest als kapotte code in plaats van als de verkeerde interpreter.
+:::note[Python kiest de interpreter van het project wanneer de run in een sandbox draait]
+In een run in een sandbox wordt `debugpy` gezocht in `.venv/bin` of `venv/bin` voordat `$PATH` wordt geraadpleegd. Een python uit `$PATH` is een andere omgeving, en verbinden vanuit de verkeerde omgeving mislukt op een manier die leest als kapotte code in plaats van als de verkeerde interpreter. In een run zonder sandbox gebruikt hij alleen `$PATH`, zodat een repository niet kan kiezen welke interpreter draait op de machine van de server.
 :::
 
 ## Eerst het breakpoint, dan starten
@@ -106,6 +106,8 @@ Voor een vastgelopen proces in plaats van een proces dat je zelf start:
 debug(op: "attach", port: 5858)
 ```
 
+De poort moet een van de eigen doorgestuurde poorten van de run zijn. Elke andere poort wordt geweigerd voordat er iets start, zodat een agent niet kan verbinden met een proces dat van iemand anders is op de machine van de server.
+
 ## Afronden
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Beëindig de sessie altijd. Een debugadapter bezit een **gestopt proces** dat vasthoudt wat dat proces ook vasthoudt — een poort, een lock, een databaseverbinding.
 
 :::note[De sessie kan niet aan je ontsnappen]
-Elke sessie heeft een harde TTL die hij niet kan verlengen, er is er precies één per gesprek, en alles wordt afgebroken wanneer de server stopt. Een tweede `launch` wordt geweigerd in plaats van de eerste te vervangen: een agent die er een start zonder de andere te beëindigen, is de eerste vrijwel zeker kwijtgeraakt.
+Elke sessie heeft een harde TTL die hij niet kan verlengen (30 minuten), er is er precies één per gesprek, en alles wordt afgebroken wanneer de server stopt. In een run in een sandbox behoudt de sessie zijn sandbox over beurten heen hooguit zo lang. Een tweede `launch` wordt geweigerd in plaats van de eerste te vervangen: een agent die er een start zonder de andere te beëindigen, is de eerste vrijwel zeker kwijtgeraakt.
 :::
 
 ## Begrensde uitvoer

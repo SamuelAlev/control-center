@@ -45,46 +45,43 @@ final class GoogleApi {
     'https://oauth2.googleapis.com/revoke',
   );
 
-  Future<GoogleTokens> _token(Map<String, String> fields) => withDualSecret(
-    _creds.clientSecret,
-    (secret, _) async {
-      final response = await sendUpstream(
-        _http,
-        UpstreamRequest.form(_tokenUrl, {
-          'client_id': _creds.clientId,
-          'client_secret': secret,
-          ...fields,
-        }),
-      );
-      final json = response.jsonObject;
-      final error = json?['error'];
-      if (!response.ok || error != null) {
-        switch (error) {
-          case 'invalid_client' || 'unauthorized_client':
-            throw const InvalidClientCredentials();
-          case 'invalid_grant':
+  Future<GoogleTokens> _token(Map<String, String> fields) =>
+      withDualSecret(_creds.clientSecret, (secret, _) async {
+        final response = await sendUpstream(
+          _http,
+          UpstreamRequest.form(_tokenUrl, {
+            'client_id': _creds.clientId,
+            'client_secret': secret,
+            ...fields,
+          }),
+        );
+        final json = response.jsonObject;
+        final error = json?['error'];
+        if (!response.ok || error != null) {
+          if (oauthRefreshRejectedErrors.contains(error)) {
             throw GrantRejected(logSlug([error, json?['error_description']]));
-          default:
-            throw const ConnectException(ConnectErrorCode.providerUnavailable);
+          }
+          if (error == 'invalid_client') {
+            throw const InvalidClientCredentials();
+          }
+          throw const ConnectException(ConnectErrorCode.providerUnavailable);
         }
-      }
-      final access = json?['access_token'];
-      final expiresIn = intField(json?['expires_in']);
-      if (access is! String || access.isEmpty || expiresIn == null) {
-        throw const ConnectException(ConnectErrorCode.providerUnavailable);
-      }
-      final refresh = json?['refresh_token'];
-      final scope = json?['scope'];
-      final idToken = json?['id_token'];
-      return GoogleTokens(
-        access: access,
-        expiresAt: _clock().toUtc().add(Duration(seconds: expiresIn)),
-        refresh: refresh is String ? refresh : '',
-        scopes: splitScopes(scope is String ? scope : null),
-        idClaims: jwtClaims(idToken is String ? idToken : null),
-      );
-    },
-  );
+        final access = json?['access_token'];
+        final expiresIn = intField(json?['expires_in']);
+        if (access is! String || access.isEmpty || expiresIn == null) {
+          throw const ConnectException(ConnectErrorCode.providerUnavailable);
+        }
+        final refresh = json?['refresh_token'];
+        final scope = json?['scope'];
+        final idToken = json?['id_token'];
+        return GoogleTokens(
+          access: access,
+          expiresAt: _clock().toUtc().add(Duration(seconds: expiresIn)),
+          refresh: refresh is String ? refresh : '',
+          scopes: splitScopes(scope is String ? scope : null),
+          idClaims: jwtClaims(idToken is String ? idToken : null),
+        );
+      });
 
   /// Exchanges an authorization code (claim).
   Future<GoogleTokens> exchangeCode({

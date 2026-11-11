@@ -2,15 +2,23 @@
 title: Sandkasse-backender
 description: Sandkasse-backendene, hvor de brukes, og hvert verdiobjekt som sandkassekjøretiden bruker.
 slug: nb-NO/handbok/referanse/sandkasse-backender
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Hvorvidt en kjøring er sandkasseinnpakket, avhenger av verten]
-`cc_server` sonderer verten én gang ved oppstart og pakker agentutsending inn i den native backenden når sonderingen rapporterer at en er tilgjengelig og `--sandbox` ikke er `off`. Begge utsendingssømmene pakkes inn: Claude Code-CLI-en gjennom sandkasseporten, og ACP pluss det innebygde harnessets `bash`-verktøy gjennom sandkassestyringen.
+`cc_server` avgjør én gang ved oppstart hvordan agenter kjører på denne verten, og avgjørelsen holder til serveren starter på nytt:
 
-Der sonderingen ikke rapporterer om noen backend — **alltid på Windows**, og på Linux eller WSL2 uten `bwrap` og `socat` — er agentkjøringer **ikke** sandkasseinnpakket. ACP og harnessets `bash`-verktøy starter fortsatt med sanert miljø; Claude Code går gjennom `NoSandboxAdapter` og arver vertens miljø. De gjenstående grensene er kjøringens egen worktree (copy-on-write der `rift` leveres; `git worktree` på Windows), et kodeverttoken som bare kan lese, meglet ved hver oppstart og tilbakekalt ved nedriving, pusher som må gjennom push-regelen i agentkjøringsgatewayen, kommandopolicyen per modus, de enhetlige [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/) (fail-closed), miljøsanering på ACP- og harness-`bash`-stiene, og verktøyflaten modusen tillater.
+- **Sandkassert** (`native`): sonderingen fant en backend og `--sandbox` er ikke `off`. Begge utsendingssømmene pakkes inn: Claude Code-CLI-en gjennom sandkasseporten, og ACP pluss det innebygde harnessets `bash`-verktøy gjennom sandkassestyringen.
+- **Av** (`off`): serverens eier startet den med `--sandbox off`. Alles agentkjøringer kjører uten begrensninger på denne maskinen, uansett hvem som startet dem.
+- **Utilgjengelig** (`unavailable`): sandkassen er på, men sonderingen fant ingen backend (**alltid på Windows**, og på Linux eller WSL2 uten `bwrap` og `socat`). En kjøring starter bare når personen som står ansvarlig for den, er serverens [eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier): personen som ba om den, eller for automatisering personen den er knyttet til. Andres kjøringer avvises før et legitimasjonstoken utstedes, en lease tas eller en prosess starter. Uten registrert eier starter ingens kjøringer.
+
+En avvist kjøring feiler med koden `sandbox_unavailable`. Appen viser den som **Agenter trenger en sandkasse på denne serveren**: «Denne serveren har ingen sandkasse, så bare eieren kan kjøre agenter her. Eieren kan installere sandkassen eller slå av sandkassing for alle.»
+
+Kjøringer som starter uten sandkasse (under `off`, eller eierens egen kjøring under `unavailable`) kjører direkte på verten. ACP og harnessets `bash`-verktøy starter fortsatt med sanert miljø; Claude Code går gjennom `NoSandboxAdapter` og arver vertens miljø. De gjenstående grensene er kjøringens egen worktree (copy-on-write der `rift` leveres; `git worktree` på Windows), et kodeverttoken som bare kan lese, meglet ved hver oppstart og tilbakekalt ved nedriving, pusher som må gjennom push-regelen i agentkjøringsgatewayen, kommandopolicyen per modus, de enhetlige [tillatelsesreglene for handlinger](/nb-NO/handbok/konsepter/tillatelsesregler/) (fail-closed), miljøsanering på ACP- og harness-`bash`-stiene, og verktøyflaten modusen tillater.
 
 Harnessets prosessinterne filverktøy (read, write, edit, apply patch, search, find, search_files) står utenfor sandkassen på alle verter: de kjører i serverprosessen, så bare `bash` pakkes inn.
+
+Verten er aldri en reserveløsning for en server som sandkasser. Hvis serveren sandkasser agenter men ikke har noen sandkasse å gi en kjøring, avvises verktøyprosessene og `bash`-kommandoene, de startes ikke på verten. Samme holdning avgjør de små prosessene rundt en kjøring: ACP-engangshjelpere (samtaletitler, `/btw`, `/handoff`, `/goal`) og en pull requests golden-tester i Review Studio kjører i sandkassen når serveren sandkasser agenter, uten begrensninger under `off`, og under `unavailable` bare for en forespørsel serverens eier står ansvarlig for; ellers hoppes de over.
 :::
 
 ## Oversikt over backender
@@ -19,9 +27,9 @@ Harnessets prosessinterne filverktøy (read, write, edit, apply patch, search, f
 | ------------- | --------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Innelukket VM | `microvm` | macOS, Linux, Windows (microVM-hypervisor)    | Sonderingstyrt på microVM-kjøretiden; gjelder interaktive terminaler — skallet kjører inne i en [stasjon](/nb-NO/handbok/konsepter/stasjoner/), ikke på verten                     |
 | Native        | `native`  | macOS (Seatbelt), Linux og WSL2 (bubblewrap)  | Sonderes ved oppstart; Linux nekter en kjøring som krever skrivenekter på filnavnmønstre, noe bubblewrap ikke kan håndheve                                                           |
-| Ingen         | `none`    | Alle                                          | Standardverdien ved parsing, terminalens standard og reserveløsningen når ingen backend er tilgjengelig eller `--sandbox off` er satt                                              |
+| Ingen         | `none`    | Alle                                          | Standardverdien ved parsing og terminalens standard; agentutsending bruker den under `--sandbox off`, og for eierens egne kjøringer når ingen backend er tilgjengelig                                              |
 
-`SandboxBackend.fromName` returnerer `none` for en lagret verdi som er null eller ukjent. En lagret `"docker"` tilordnes `native`.
+`SandboxBackend.fromName` returnerer `none` for en lagret verdi som er null eller ukjent.
 
 **`microvm` er den eneste backenden med en kjernegrense** — arbeidslasten
 kjører faktisk ikke på verten. Den er aldri en stille reserveløsning i noen av
@@ -34,7 +42,7 @@ være innelukket mens den kjører på verten. Livssyklus, bilder og utgående
 trafikk for selve VM-en dekkes av
 [stasjonsreferansen](/nb-NO/handbok/referanse/stasjoner/).
 
-**Windows har ingen native sandkasse.** `NativeSandboxAdapter.probe` returnerer `available: false` på alle verter som ikke er macOS eller Linux/WSL2. Agentutsending på Windows bruker derfor `none`. `microvm`-backenden er separat: den er sonderingstyrt på microVM-kjøretiden og gjelder interaktive terminaler og stasjoner, ikke innpakking av `bash` på verten.
+**Windows har ingen native sandkasse.** `NativeSandboxAdapter.probe` returnerer `available: false` på alle verter som ikke er macOS eller Linux/WSL2, så en Windows-server er `unavailable`: bare serverens eiers agentkjøringer starter, uten begrensninger, og alle andres avvises. For å la alle medlemmer kjøre agenter der, starter eieren serveren med `--sandbox off`, som kjører alle uten begrensninger. `microvm`-backenden er separat: den er sonderingstyrt på microVM-kjøretiden og gjelder interaktive terminaler og stasjoner, ikke innpakking av `bash` på verten.
 
 ## Sonderingsresultater
 
@@ -47,9 +55,9 @@ Det er sonderingen som avgjør om håndheving skjer. Den kjøres én gang, ved s
 | Linux eller WSL2 som mangler ett av verktøyene | `false`     | `requiresInstall: true`, med et installasjonstips som navngir de manglende pakkene |
 | Enhver annen plattform                 | `false`     | Native sandkasse tilbys ikke på denne plattformen                         |
 
-Serveren logger resultatet på én oppstartslinje: `agent sandbox ON` pluss merknaden, `no OS-native agent sandbox on this host` pluss hintet, eller `agent sandbox DISABLED by --sandbox off`. `GET /healthz` inneholder ikke noe sandkassefelt.
+Serveren logger resultatet på én oppstartslinje: `agent sandbox ON` pluss merknaden; `no OS-native agent sandbox on this host` pluss hintet, som legger til at bare kjøringer serverens eier står ansvarlig for, starter; eller `agent sandbox DISABLED by --sandbox off`. Eksponeringslinjen som skrives ut ved oppstart, bærer samme avgjørelse som `sandbox=native`, `sandbox=off` eller `sandbox=unavailable`. `GET /healthz` inneholder ikke noe sandkassefelt.
 
-`--sandbox` / `CC_SERVER_SANDBOX` godtar `on` (standard) eller `off`. Det er en opt-out, ikke en aktivering: `on` betyr «pakk inn når verten tilbyr en backend», aldri «krev én».
+`--sandbox` / `CC_SERVER_SANDBOX` godtar `on` (standard) eller `off`. `on` pakker inn hver kjøring når verten tilbyr en backend, og slipper bare eierens kjøringer igjennom når den ikke gjør det. `off` kjører alle medlemmers agenter uten begrensninger på denne verten; det er eierens valg for alle, ikke en innstilling per kjøring.
 
 ## Den native backenden
 
@@ -64,6 +72,8 @@ Den genererte profilen er **tillatende som standard** (`(allow default)`) og skj
 - **Prosess**: `process-exec`-nekter for de alltid-farlige binærene, pluss en blokkering av å kjøre noe fra en skrivbar katalog. Kjente installasjonskataloger for verktøykjeder under hjemmekatalogen (corepack, cacher for `npx` og `pnpm dlx`, versjonsbehandlere for node, Playwright-nettlesere, rustup og cargo, Go, fvm og pub-cachen, pyenv, uv og pipx, rbenv, sdkman, mise, asdf og `~/.local/bin`) åpnes igjen under blokkeringen. Delte midlertidige kataloger blokkeres også. I stedet får hver økt en privat `TMPDIR` under `/private/tmp`, der programmer den bygger (en `go test`-binær, en cargo-bygging) kan kjøres. Alltid-farlige nekter brukes etter disse tillatelsene
 - **Nettverk**: begrenset til proxyportene i samme prosess pluss DNS — loopback er ikke tillatt i sin helhet, og TCP-lytting er nektet. Unix-sokler er tillatt bare innenfor øktens private `TMPDIR`, som dekker verktøy som tsx og Chrome som holder en IPC-socket der; SSH-agenten din og andre sokler forblir utilgjengelige. Proxyene håndhever domenetillatelseslisten per økt (se [Utgående nettverkstrafikk](#utgående-nettverkstrafikk))
 - **Konfigurasjon**: profiler genereres ved hver oppstart fra `SandboxSpec`
+- **Serverens egne kommandoer**: ingen direkte barn av en mappe serveren kjører programmer fra (hver `PATH`-oppføring og de vanlige verktøymappene per bruker, som `~/.local/bin`, med versjonsbehandler-lenker som `~/fvm/default` løst opp) kan opprettes, erstattes, slettes eller gis nytt navn, heller ikke den installerte pakken en lenket kommando peker inn i. Se [Serverens kommandomapper](#serverens-kommandomapper)
+- **Oppstartsfiler**: hver hjemmesti profilen nekter lesing av, nektes også skriving, og oppstartsfilene til serverbrukerens skall og økter (`.zshenv`, `.zlogin`, `.bash_login`, fish-konfigurasjon, systemd-brukerenheter, autostart-oppføringer og lignende) er skrivenektet i alle moduser
 
 Krav:
 
@@ -76,6 +86,7 @@ Bruker bubblewrap (`bwrap`) til å opprette mount- og PID-navnerom.
 - **Filsystem**: oppretter et mount-navnerom der bare de bundne stiene er synlige
 - **Nettverk**: kjører i et ikke-delt nettverksnavnerom; trafikken når vertsproxyene gjennom `socat`-broer over Unix-sokler
 - **Prosess**: PID-navneromsisolasjon
+- **Serverens egne kommandoer og oppstartsfiler**: de samme beskyttelsene som på macOS, uttrykt som bubblewrap-monteringer. De er ikke verifisert på Linux ennå, og en manglende kommandomappe der kan fortsatt opprettes
 
 Krav:
 
@@ -91,19 +102,51 @@ filnavnregler på opprettelsestidspunktet kreves for å gjenopprette native
 utsending på Linux. Å slå av sandkassen er en eksplisitt opt-out uten
 begrensninger, ikke en likeverdig omvei.
 
+I praksis kjører en Linux- eller WSL2-server agenter i dag på en av to måter. Startet med `--sandbox off`, kjører den alles agenter uten begrensninger. Uten bubblewrap eller `socat` installert er den `unavailable` og kjører bare serverens eiers agenter, uten begrensninger. Med begge verktøyene installert og sandkassen på, feiler hver kjøring lukket, eierens også.
+
+## Serverens kommandomapper
+
+Serveren finner, én gang ved start, hver mappe den kjører programmer fra: hver oppføring i `PATH`, de verktøymappene per bruker den prøver (som `~/.local/bin`, `~/.bun/bin` og npm-, yarn- og pnpm-globalmappene), og den virkelige mappen bak hver lenke på veien (versjonsbehandler-lenker som `~/fvm/default` eller en fnm-standard). Inne i en sandkasse kan en agent ikke legge til, erstatte, slette eller gi nytt navn til en kommando i disse mappene, lenken som peker til en, eller den installerte pakken en lenket kommando peker inn i, og kan heller ikke gi nytt navn til mappene over dem. Ellers kunne en sandkassert kjøring plante et program som serveren, eller personen, senere starter utenfor sandkassen.
+
+Hva dette endrer for en kjøring:
+
+- Globale installasjoner fra inne i en sandkassert kjøring feiler med "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, og `cargo install`, `go install` eller `dart pub global activate` når deres bin-mappe er på serverens `PATH`.
+- Å bytte en standardversjon feiler på samme måte (`fnm default`, `nvm alias default`, `fvm global`), det samme gjør et verktøy som oppdaterer seg selv på stedet.
+- Prosjektlokale installasjoner (`node_modules/.bin`), `npx`, `pnpm dlx`, pakkehåndterere som administreres av corepack, SDK-cacher og vanlige bygg fungerer fortsatt.
+
+For å gjøre et globalt verktøy tilgjengelig for agenter, installer det på serveren selv, som serverens bruker, og start serveren på nytt slik at den nye kommandoen også er beskyttet. Eller installer det i prosjektet. En kommando installert etter at serveren startet, er bare fullt beskyttet fra neste start.
+
+Håndhevet og testet på macOS. På Linux er de samme reglene bubblewrap-monteringer som ikke er verifisert ennå. Windows har ingen sandkasse.
+
 ## Backenden `none`
 
-Ingen sandkasse. Prosessen kjører direkte på verten med vertens filsystem-, nettverks- og prosesstilgang. ACP og harnessets `bash`-verktøy får fortsatt miljøsanering og kommandopolicyen; Claude Code gjennom `NoSandboxAdapter` arver vertens miljø. Dette er det agentutsending faller tilbake på når en vert ikke har noen tilgjengelig backend eller når `--sandbox off` er satt, og det er terminalens standard når en klient ikke angir noen.
+Ingen sandkasse. Prosessen kjører direkte på verten med vertens filsystem-, nettverks- og prosesstilgang. ACP og harnessets `bash`-verktøy får fortsatt miljøsanering og kommandopolicyen; Claude Code gjennom `NoSandboxAdapter` arver vertens miljø. Agentutsending bruker den for hver kjøring under `--sandbox off`, og på en vert uten tilgjengelig backend for serverens eiers egne kjøringer bare; andres kjøringer avvises der. For en terminal er det vertsskallet, som bare serverens eier kan åpne.
 
 ## Terminal hostet av serveren
 
-Terminalen sandkasseinnpakkes på egne vilkår, ikke av utsendingssonderingen. `defaultBackend` til `TerminalSessionService` er `none`, og `cc_server` overstyrer den ikke, så en terminaløkt kjører vertens skall med mindre klienten eksplisitt ber om `native` — terminalpanelet i skrivebordsappen gjør ikke det.
+Terminalen åpner vertsskallet bare for serverens [eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier). Alle andre får en sandkassert terminal, med en agents begrensninger, i arbeidsområdets egne kataloger.
 
-Når `native` bes, pakkes skallet inn gjennom `SandboxManager` under en fast terminalprofil: `$HOME` og øktens arbeidskatalog er skrivbare, nettverket er åpent, og lesing av `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` og `~/Library/Keychains` er nektet. Kodeverttokenet som bare kan lese, og push-gatewayen gjelder ikke — de er utsendingssaker. Hvis innpakningen ikke støttes, feiler økten i stedet for å vise et native-merke på en PTY med vertens skall.
+Slik velges backenden for en økt:
+
+| Ber om | Serverens eier | Alle andre |
+| --- | --- | --- |
+| Ingenting | Serverens standardbackend | Standarden, med `none` erstattet av `native` |
+| `none` (vertsskallet) | Vertsskall | Avvist: vertsskallet kjører på serveren uten sandkasse |
+| `native` | Native sandkasse, eierprofil | Native sandkasse, agentprofil |
+| `microvm` | Innelukket VM | Innelukket VM |
+| Et ukjent navn | Avvist | Avvist |
+
+- **Eierprofil.** `$HOME` og øktens arbeidskatalog er skrivbare, nettverket er åpent, og `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` og `~/Library/Keychains` er lesenektet.
+- **Agentprofil** (`memberTerminalSandboxConfig`). Den samme policyen en agent i det arbeidsområdet kjører under: skriving holder seg i arbeidskatalogen, en privat kjørekatalog, `/tmp` og de delene av `$HOME` en agent kan skrive til; hemmeligheter er lesenektet; nettverket er agentens utgående tillatelsesliste; programmer kjører bare fra arbeidskatalogen og installerte verktøykjeder.
+- En terminal åpnes bare innenfor arbeidsområdets egne kataloger. En arbeidskatalog utenfor dem avvises, aldri byttet mot en annen.
+- Bare personen som åpnet en terminal, kan lese fra, skrive til, endre størrelsen på eller lukke den. For alle andre ser id-en ut som ukjent.
+- `microvm` som er bedt om eksplisitt på en vert uten stasjonstjeneste, feiler i stedet for å falle tilbake. En `microvm`-standard på en slik vert går ned til `native` og sier det i loggen.
+
+Kodeverttokenet som bare kan lese, og push-gatewayen gjelder ikke terminaler: de er utsendingssaker. Hvis innpakningen ikke støttes, feiler økten i stedet for å vise et sandkassemerke på en vertsskall-økt.
 
 ## Utgående nettverkstrafikk
 
-Når en sandkasse startes, håndheves utgående nettverkstilgang av proxyer i samme prosess, ikke av brannmurregler i kjernen. På en vert uten tilgjengelig backend gjelder ingenting av dette, og en startet prosess når nettverket nøyaktig slik serverbrukeren ville gjort.
+Når en sandkasse startes, håndheves utgående nettverkstilgang av proxyer i samme prosess, ikke av brannmurregler i kjernen. En kjøring som ikke er sandkassert (hver kjøring under `--sandbox off`, eller eierens kjøring på en vert uten backend), får ingenting av dette: en prosess den starter, når nettverket på samme måte som serverbrukeren ville.
 
 - Sandkassekjøretiden kjører en HTTP/HTTPS-proxy og en SOCKS5-proxy på `127.0.0.1` inne i `cc_server`-prosessen, **ett par per begrenset økt** (`http_proxy.dart`, `socks_proxy.dart`). Samtidige kjøringer deler ikke et par.
 - Sandkasseinnpakkede prosesser får proxy-miljøvariabler (`HTTP_PROXY`/`HTTPS_PROXY` → HTTP-proxyen, `ALL_PROXY` → SOCKS-proxyen; `GIT_SSH_COMMAND` ruter git-over-SSH gjennom SOCKS-proxyen). På Linux er nettverksnavnerommet ikke delt, så proxyene er den eneste veien ut; på macOS deler sandkassen vertens loopback og snakker direkte med dem.

@@ -2,7 +2,7 @@
 title: Rigs et enceintes
 description: Pourquoi les agents obtiennent des machines jetables plutôt que votre ordinateur — les frontières d'isolation, les voies d'affichage, les identifiants, les ports et le cycle de vie.
 slug: fr-CA/manuel/concepts/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Un **rig** est une machine jetable qu'un agent pilote en temps réel — un
@@ -272,6 +272,7 @@ Un rig n'est délibérément **pas** une destination globale. La vue en direct e
 onglet dans l'espace ou la PR où le travail se déroule, délimité à cette
 conversation — ainsi, votre onglet et les appels `browser_use` de l'agent
 s'adressent à *une* seule machine (une par moteur, sur la surface du navigateur).
+Un rig ouvert dans un espace est la machine de cet espace, avec les arbres de travail de l'espace à portée de main ; il suit donc les dépôts de l'espace : le droit de lecture sur l'espace permet de le regarder, et une autorisation d'écriture sur ces dépôts permet de le piloter. Un rig qui n'appartient à aucun espace n'atteint aucun arbre de travail, et chaque membre de l'espace de travail peut l'utiliser. [Qui peut regarder et qui peut piloter](/fr-CA/manuel/guides/utiliser-rigs/#qui-peut-regarder-et-qui-peut-piloter) énumère ce que couvre chacun.
 La capacité de démarrer des rigs est une propriété de l'hôte, de sorte que les
 capacités, les images, les images personnalisées par espace de travail et la liste
 des machines en cours se trouvent sous **Paramètres → Serveur → Rigs**. Piloter une

@@ -2,7 +2,7 @@
 title: Redirecționează porturi dintr-un terminal
 description: Ajunge la un server de dezvoltare pornit într-un Terminal (VM) sau într-un shell gazdă — de pe mașina ta, din Browser (VM), de pe Android, în rețeaua ta sau sub un domeniu de dezvoltare cu HTTPS.
 slug: ro-RO/manual/ghiduri-practice/redirectionare-porturi
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Un server pe care îl pornești în terminalul unei conversații este publicat doar pentru **acel spațiu**. Panoul de porturi detectează procesele care ascultă, pornite de această aplicație acolo, le mapează și îți oferă o adresă pentru fiecare loc de unde ai putea vrea să le accesezi. Două spații pot asculta amândouă pe `5173`; hărțile lor nu se amestecă niciodată.
@@ -11,7 +11,7 @@ Nimic de aici nu deschide mașina: fiecare cale este creată de server, la cerer
 
 ## Vezi ce ascultă
 
-1. Deschide **Terminal (VM)** al conversației sau shell-ul gazdă (într-un spațiu sau pe pagina unui PR).
+1. În editorul conversației (într-un spațiu sau pe pagina unui PR), deschide **Terminal** din meniul `+`: sub **Mașini** pentru un shell în VM-ul conversației sau sub **Instrumente** pentru un terminal de pe server. Doar proprietarul serverului poate deschide un shell gazdă; terminalul oricui altcuiva este în sandbox.
 2. Pornește-ți serverul — `pnpm dev`, `python -m http.server 8000`, orice.
 3. În câteva secunde, **pictograma de priză** din colțul din dreapta sus al terminalului primește un punct. Dă clic pe ea.
 
@@ -68,9 +68,13 @@ iOS Simulator este deja Mac-ul — fără inversare. Un iPhone fizic are totuși
 
 **Adaugă port** din partea de jos a panoului mapează un port înainte ca ceva să asculte pe el (sau indiferent dacă ascultă). O redirecționare manuală își păstrează adresa în timp ce serverul tău repornește — rândul afișează *nu ascultă* până când revine — în timp ce redirecționările automate dispar când dispare portul lor. Pe un shell gazdă poți seta și un port local diferit.
 
+Modificarea redirecționărilor necesită drept de scriere asupra fiecărui depozit pe care îl expune spațiul. Cu drept de citire vezi în continuare porturile, iar panoul spune „Modificarea acestor porturi necesită acces de scriere la toate depozitele din acest spațiu.” în locul butonului **Adaugă port**. Vezi [Cine poate privi și cine poate conduce](/ro-RO/manual/ghiduri-practice/foloseste-statii/#cine-poate-privi-și-cine-poate-conduce).
+
+Un terminal pe care cineva și l-a deschis pentru sine își păstrează porturile doar pentru el: pentru oricine altcineva, lista lui de porturi și modificările de porturi răspund ca și cum sesiunea nu ar exista, exact cum face și sesiunea însăși. Terminalele partajate într-un spațiu urmează regula spațiului de mai sus.
+
 ## Cum rămâne izolat
 
-Porturile sunt indexate după spațiu de lucru și spațiu. Harta de porturi proprie a hipervizorului este fixată la pornirea unei mașini, așa că un Terminal (VM) călătorește pe două canale înguste controlate de server: o cale de intrare precreată către invitat, care refuză să se conecteze la orice port pe care invitatul nu ascultă de fapt, și tuneluri inverse pe care serverul le ține deschise pentru Browser (VM) și Android. Un shell gazdă nu scanează niciodată toată mașina. Nu se creează niciodată un ascultător în interiorul unui invitat pe care serverul nu l-a pus acolo, iar totul este demolat odată cu terminalul sau stația. Designul este explicat în [Stații și medii izolate](/ro-RO/manual/concepte/statii/#ports-without-holes); porturile rezervate exacte și regulile de domenii se află în [referința pentru stații](/ro-RO/manual/referinta/statii/#ports-and-dev-domains).
+Porturile sunt indexate după spațiu de lucru și spațiu. Harta de porturi proprie a hipervizorului este fixată la pornirea unei mașini, așa că un Terminal (VM) călătorește pe două canale înguste controlate de server: o cale de intrare precreată către invitat, care refuză să se conecteze la orice port pe care invitatul nu ascultă de fapt, și tuneluri inverse pe care serverul le ține deschise pentru Browser (VM) și Android. Un shell gazdă nu scanează niciodată toată mașina. Nu se creează niciodată un ascultător în interiorul unui invitat pe care serverul nu l-a pus acolo, iar totul este demolat odată cu terminalul sau stația. Designul este explicat în [Stații și medii izolate](/ro-RO/manual/concepte/statii/#porturi-fără-breșe); porturile rezervate exacte și regulile de domenii se află în [referința pentru stații](/ro-RO/manual/referinta/statii/#porturi-și-domenii-de-dezvoltare).
 
 ## Vezi și
 

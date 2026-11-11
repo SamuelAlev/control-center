@@ -2,7 +2,7 @@
 title: Parla con Control Center da una PR GitHub
 description: Chiedi a Control Center una revisione oppure una domanda direttamente dalla conversazione della PR, senza webhook né URL pubblica.
 slug: it-IT/manuale/guide/conversazioni-pr-github
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Questa guida mostra come lavorare con Control Center senza uscire da GitHub:
@@ -31,25 +31,7 @@ esattamente come un deployment pubblico.
 
 ## Trova il nome del bot
 
-Menziona `@usectrl`, l'account GitHub dedicato a Control Center. È il comando predefinito; il canale GitHub del tuo spazio di lavoro continua a gestire la richiesta e a pubblicare le risposte. Non servono le credenziali dell'account `usectrl`.
-
-Funzionano anche il login dell'app, `<appslug>[bot]`, e la forma breve `@appslug`. Per trovare questo alias facoltativo sulla tua app:
-
-1. Vai su **Impostazioni → Server → Accesso single sign-on** e scorri fino alla
-   scheda **App del fornitore**
-2. Apri il blocco **GitHub** e fai clic su **Test**
-3. Copia **Login del bot** quando viene compilato. Se mostra ancora il
-   suggerimento vuoto, il login è sempre `<appslug>[bot]` — digita quello,
-   oppure la forma breve `@appslug`
-
-GitHub non mostra gli account delle App nel completamento automatico di `@`, quindi gli alias dell'App vanno digitati o copiati. L'utente dedicato `@usectrl` è la modalità predefinita; sia `@myapp` sia `@myapp[bot]` restano alias accettati per l'App.
-
-:::note[Scegli un nome di app distintivo]
-La forma breve viene confrontata come testo. Se un utente GitHub umano ha per
-caso lo stesso slug della tua app, menzionare quell'utente con la forma breve
-raggiunge comunque il bot. La forma completa `@myapp[bot]` è sempre
-inequivocabile.
-:::
+Menziona `@usectrl`, l'account GitHub dedicato a Control Center. È l'unico innesco: menzionare il login dell'app stessa non produce nulla. Il canale GitHub del tuo spazio di lavoro continua a gestire la richiesta e a pubblicare le risposte. Non servono le credenziali dell'account `usectrl`.
 
 ## Richiedi una revisione da GitHub
 
@@ -123,7 +105,7 @@ Il server risolve l'autore di un commento, o chi ha aggiunto l'etichetta
 
 - **L'account GitHub deve aver effettuato l'accesso** su questo server. La
   corrispondenza avviene sull'id numerico dell'account GitHub, mai sul login.
-  Accedi da **Impostazioni → Spazio di lavoro → Profilo e identità → Hosting del
+  Accedi da **Impostazioni → Tu → Profilo → Hosting del
   codice**
 - **Deve essere un membro con un ruolo di scrittura** (`member`, `admin` o
   `owner`) nello spazio di lavoro che collega il repository
@@ -148,7 +130,7 @@ in silenzio. Lo stesso vale per l'etichetta.
 | Elemento              | Comportamento                                                            |
 | --------------------- | ------------------------------------------------------------------------ |
 | Conferma              | 👀 dal tuo account sul commento (o sulla PR, per l'etichetta), entro una scansione |
-| Risposte              | Pubblicate nella corsia in cui è stata posta la domanda, a partire da `**Control Center** (for @your-login):`. Con un'app propria l'autore è il bot dell'app; tramite Connect è il tuo account, che agisce tramite l'App condivisa |
+| Risposte              | Pubblicate nella corsia in cui è stata posta la domanda, a partire da `**Control Center** (for @your-login):`. Il bot dell'app ne è l'autore. Sull'app Connect condivisa, una risposta dentro un thread di revisione è scritta dal tuo account, a meno che l'operatore di Connect non abbia inserito in elenco questa installazione |
 | Attribuzione nello spazio | La domanda è tua; l'agente viene eseguito per tuo conto, secondo le impostazioni di autonomia dello spazio |
 | Revisioni             | I rilievi arrivano nello spazio di revisione; la pubblicazione su GitHub è manuale |
 
@@ -172,9 +154,6 @@ successiva.
 - Hai effettuato l'accesso a GitHub su questo server, sei un membro con un ruolo
   di scrittura e puoi eseguire push sul repo? Il server ignora chiunque altro
   senza rispondere
-- Con l'App condivisa di Control Center, l'installazione dell'organizzazione è
-  autorizzata per questo server? Vedi
-  [Autorizza questo server per un'organizzazione](/it-IT/manuale/guide/github-app/#autorizza-questo-server-per-unorganizzazione)
 - Ancora nulla? Il log del server indica la scansione e la PR quando qualcosa
   fallisce; cerca `pr_conversation:` (il poller) e
   `github_pr_conversation:` (il bridge)

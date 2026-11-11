@@ -2,13 +2,13 @@
 title: Percakapan PR
 description: Bagaimana komentar PR GitHub menjadi giliran agen tanpa webhook, apa yang mengotorisasi penulisnya, dan siapa yang diatribusikan pada tiap sisi percakapan.
 slug: id-ID/panduan-pengguna/konsep/percakapan-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Pull request sudah menjadi tempat percakapan tentang kode berlangsung.
 Percakapan PR menjadikannya permukaan pada ruang kerja Control Center, sama
 seperti [jembatan chat](/id-ID/panduan-pengguna/konsep/jembatan-chat/)
-menjadikan Slack demikian: sebut `@usectrl` (atau bot GitHub App ruang kerja)
+menjadikan Slack demikian: sebut `@usectrl`
 di sebuah PR, balas di dalam utas tinjauannya, atau tambahkan label `ai-review`,
 dan pekerjaannya berlangsung di space tinjauan milik PR — dengan atribusi dan
 pagar pengaman yang sama seperti apa pun yang diketik di aplikasi. Komentar dan
@@ -25,7 +25,7 @@ datang dari luar**, dan **siapa yang diatribusikan pada tiap sisinya**.
 Satu-satunya kanal push GitHub untuk sebuah app adalah webhook, dan webhook
 memerlukan URL masuk — satu hal yang sengaja tidak pernah diwajibkan oleh
 permukaan ini. Jadi penemuannya berupa penyapuan: satu pencarian ber-alias per
-instalasi app meminta GitHub mencari PR yang menyebut bot (atau slug pendeknya)
+instalasi app meminta GitHub mencari PR yang menyebut `@usectrl`
 dan PR terbuka yang membawa label tinjauan; PR yang sudah punya space tinjauan
 akan dibaca utas komentarnya; dan semuanya dibandingkan berdasarkan id komentar
 terhadap apa yang terlihat pada penyapuan sebelumnya. App milik sendiri menyapu
@@ -72,8 +72,7 @@ Tiga pemeriksaan, berurutan, dan kegagalan di salah satunya diam saja — tidak 
 - **Anggota yang sudah masuk.** Akun harus milik anggota _ruang kerja ini_ yang masuk
   ke GitHub di server ini
 - **Peran tulis.** `viewer` dan `guest` tidak dapat memulai pekerjaan
-- **Akses push.** Balasan memakai token `bot` yang dibatasi pada akses anggota itu ke
-  repositori. Jika server tidak dapat mencetak token, ia tidak melanjutkan
+- **Akses push.** Balasan memakai token untuk satu repositori itu saja, dibatasi pada akses anggota tersebut ke repositori itu. Jika server tidak dapat mencetak token, ia tidak melanjutkan
 
 Setiap pemeriksaan berjalan sebelum pengakuan apa pun, sehingga orang asing tidak
 mendapat reaksi maupun balasan. Komentar tidak pernah diatribusikan kepada orang yang
@@ -95,15 +94,18 @@ Tiap sisi percakapan membawa identitas yang berbeda, dan perbedaan itulah
 fiturnya:
 
 - **Di GitHub, balasan adalah otomatisasi atas nama Anda.** Setiap balasan memakai
-  token `bot` untuk repositori tersebut, dibatasi pada akses anggota yang bertanya.
-  Pada app milik sendiri, penulisnya adalah akun `[bot]` app itu. Lewat Connect, token
-  App bersama adalah token pengguna, sehingga balasan ditulis oleh akun anggota yang
-  bertanya, bertindak melalui App. Bagaimanapun caranya, setiap balasan dimulai dengan
+  token untuk repositori tersebut saja, dibatasi pada akses anggota yang bertanya,
+  dan ditulis oleh akun `[bot]` milik app itu. Satu pengecualian: di app bersama
+  Control Center Connect, bot hanya memposting di utas tinjauan ketika operator
+  Connect telah mendaftarkan instalasi tersebut; jika tidak, balasan di dalam utas
+  tinjauan ditulis oleh akun milik anggota yang bertanya.
+  Bagaimanapun caranya, setiap balasan dimulai dengan
   `**Control Center** (for @login):`, yang menyatakan siapa yang bertanya dan sekaligus
-  berfungsi sebagai penjaga loop.
+  berfungsi sebagai penjaga loop. @-mention dalam kata-kata agen dibuat tidak aktif,
+  sehingga balasan tidak pernah memberi notifikasi kepada pengguna atau tim.
 - **Di space, pertanyaannya milik Anda.** Pesan diatribusikan kepada anggota yang
   menjadi hasil penyelesaian penulisnya, dan run agen dieksekusi atas nama mereka:
-  commit mencantumkan mereka sebagai ko-penulis, dan dial otonomi serta pagar pengaman
+  commit-nya milik mereka, dan dial otonomi serta pagar pengaman
   tindakan milik space berlaku persis seperti pada pesan yang diketik di aplikasi.
   Penulisan ke forge dari run memakai token satu-repositori yang dibatasi oleh anggota
   tersebut, bukan proses masuk mereka yang diserahkan utuh.
@@ -112,22 +114,16 @@ Menerbitkan temuan tinjauan kembali ke GitHub tetap merupakan keputusan seseoran
 yang dibuat di Control Center. Sebutan dapat _memulai_ sebuah tinjauan; hanya manusia
 yang menerbitkannya.
 
-## Penjaga loop, dan nama pendeknya
+## Penjaga loop
 
 Semua yang ditulis oleh akun bot dibuang sebelum gerbang mana pun berjalan — milik
 kita secara khusus, dan setiap akhiran `[bot]`, sehingga bot peninjau milik app lain
 juga tidak dapat membangunkan bot kita — dan begitu pula setiap komentar yang diawali
-prefiks `**Control Center** (for @`, karena balasan lewat Connect ditulis oleh akun
+prefiks `**Control Center** (for @`, karena balasan utas tinjauan lewat Connect dapat ditulis oleh akun
 seseorang. Tanpa ini, jawaban bot sendiri akan datang sebagai komentar baru dan
 memicunya berulang tanpa henti.
 
-Akhiran `[bot]` juga alasan bentuk pendek itu ada. GitHub menetapkan login akun app
-pada `<slug>[bot]`, tidak menyediakan autocomplete untuknya, dan tidak pernah
-me-resolve `@slug` ke app — jadi menerima slug telanjang adalah keputusan _pencocok_
-kita, dan menemukannya memerlukan jalur pencarian **teks** komentar mentah alih-alih
-indeks sebutan GitHub. Biayanya dinyatakan alih-alih dihaluskan: pengguna manusia yang
-berbagi slug app akan menyapa bot dengan setiap sebutan bentuk pendek untuk dirinya
-sendiri. Nama app yang khas membuat tabrakan itu hanya hipotetis.
+Hanya `@usectrl` yang memulai pekerjaan. Login milik App sendiri (`<slug>[bot]`) dan slug telanjangnya tidak menyapa apa pun: GitHub tidak menyediakan autocomplete untuk akun app, dan slug telanjang bisa milik pengguna manusia.
 
 ## Apa yang sengaja tidak ditawarkan
 

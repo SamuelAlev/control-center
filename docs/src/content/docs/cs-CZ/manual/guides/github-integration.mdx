@@ -2,7 +2,7 @@
 title: Nastavte integraci GitHub
 description: Přihlas se na GitHub, aby fungovala plocha PR, registrace repozitářů a běhy agentů.
 slug: cs-CZ/prirucka/navody/integrace-github
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Tenhle návod bere ty části nastavení, které patří ke GitHubu. GitHub je jeden
@@ -29,7 +29,7 @@ použít nemůže a přihlásí se sám.
 
 GitHub umí jen přihlášení: žádný token se nevkládá.
 
-1. Jdi do **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**
+1. Jdi do **Nastavení → Vy → Profil → Hostování kódu**
    (nebo na první krok onboardingu)
 2. Na řádku **GitHub** klikni na **Přihlásit se k GitHub**
 3. Prohlížeč otevře GitHub. Schval aplikaci
@@ -54,28 +54,41 @@ tvým jménem.
 
 ## Za koho tvé pověření mluví
 
-- **Všechno, co děláš ty** (otevření stránky PR, odeslání revize, schválení,
-  sloučení), běží na **tvém** přihlášení a na ničem jiném. Když přihlášený
-  nejsi, aplikace to řekne a vyzve tě k přihlášení. Žádné jiné pověření tě
-  nezastoupí
-- **Práce, u které nikdo nepíše** (běhy agentů, pipelines, dotazování na PR,
-  odpovědi bota, klony), dostane token pro jeden repozitář, vydaný z GitHub App
-  serveru nebo přes Connect. Je omezený na to, co tam smí odpovědný člen: člen,
-  který požádal, jinak vlastník pracovního prostoru. Člen, který nesmí
-  pushovat, omezí token na čtení
-- **Automatizace pull request nikdy neschválí.** Schválení je čin člověka
+Control Center rozlišuje, stejně jako GitHub, mezi jednáním **jako osoba** a jednáním **jako aplikace**:
+
+| Co se stane | Na GitHubu se zobrazí jako |
+| --- | --- |
+| Všechno, co děláš sám: komentář, review, schválení, merge, žádost o revizi | **Ty**. GitHub označí komentář v konverzaci jako napsaný aplikací Control Center; revize a komentáře k ní u řádků kódu takové označení nemají |
+| AI review, odpovědi agentů a komentáře v konverzacích PR, štítky, práce pipeline a botů | **Bot Control Center**. Na sdílené aplikaci Connect je revize jen botova, pokud ji provozovatel Connectu uvedl pro instalaci; jinak se zobrazí jako odpovědná osoba |
+| Pull request, který za tebe otevře agent, jeho úpravy názvu nebo popisu tohoto pull requestu, jeho pushe a jeho commity | **Ty**. Control Center se uvede jako spoluautor, když je zapnuté uvedení spolupracovníka |
+| Práce, o kterou nikdo nežádal (plány, webhooky) | **Bot Control Center**, i jako autor svých commitů. Na Control Center Connect nikdy nepushuje ani neotevírá pull request |
+
+- **Všechno, co děláš**, běží na **tvém** přihlášení a na ničem jiném. Pokud přihlášen nejsi, aplikace tě vyzve k přihlášení. Žádné jiné pověření tě nezastoupí
+- **Práce bota** dostane token pro jeden repozitář, omezený na to, co tam smí odpovědný člen: člen, který požádal, jinak vlastník pracovního prostoru. Člen, který nesmí pushovat, omezí token na čtení. Botí odpovědi, které jednají za někoho, začínají **Control Center (for @login)**
+- **Agenti otevírají pull requesty přes Control Center**, nikdy ze svého sandboxu, takže pull request je tvůj a pravidla samotného GitHubu ti brání v jeho schválení. Control Center navíc odmítne schválení od člověka, který agenta požádal, a od autora pull requestu. U plánovaného nebo webhookového běhu to platí pro každého správce, který jeho spouštěč zapnul nebo upravil jeho pipeline, zatímco byl zapnutý. Musí to zkontrolovat někdo jiný. Pokud Control Center nedokáže ověřit, kdo pull request otevřel, nebo který účet na forge je tvůj, odmítne a požádá tě, abys to zkusil znovu
+- **Agenti komentují také přes Control Center.** Token GitHubu, který běh agenta dostane, jen čte. Když agent okomentuje pull request, na kterém pracuje, Control Center komentář odešle jako bot, začínající **Control Center (for @login)**, pokud o běh někdo požádal. Agent smí komentovat jen na svém vlastním pull requestu: v tom samém repozitáři, nikdy ne na forku, jehož poslední commit agent pushnul nebo je aktuálním commitem větve svého prostoru. Zmínky @ v komentáři agenta nikoho neupozorní. Agent může také změnit název nebo popis svého vlastního pull requestu, dokud je otevřený. Tato úprava se provede stejným způsobem, jakým byl pull request otevřen (jako ty, když jsi o běh požádal), a ve výchozím nastavení nejdřív vyžaduje schválení. Popis pull requestu si zachovává své zmínky @, a to jak když ho agent otevře, tak když ho upraví, takže lidé, které uvádí, dostanou upozornění
+- **Na Control Center Connect bot nikdy nepushuje ani neotevírá pull request.** Push, vytvoření větve nebo otevření pull requestu tam vyžaduje člověka, který o to požádal, a běží s jeho přihlášením. Plánovaný běh nebo běh podle webhooku, který se pokusí pushovat, se zastaví s hláškou o tom. Aby mohly běhy bez dozoru pushovat, dej pracovnímu prostoru vlastní GitHub App v **Nastavení**
+- **Co umí bot Connectu.** Se sdílenou aplikací Connect bot komentuje, dává štítky a reaguje. Revizi (AI review, komentáře k revizi, žádosti o revizi) zveřejní jen tehdy, když provozovatel Connectu uvedl instalaci tohoto serveru. Jinak revize odejde přes vlastní přihlášení odpovědné osoby a zobrazí se pod jejím jménem. Bot nikdy neotevírá, neupravuje, nezavírá ani nepřejmenovává pull request, neruší revizi a neupravuje ani nemaže komentář; to vyžaduje člověka, který o to požádal, s jeho vlastním přihlášením. Connect nesváže instalaci tvé organizace s jedním serverem Control Center: kterýkoli server, kde se člen s právem pushovat do repozitáře přihlásil přes Connect, může pro ten repozitář získat komentovací token tohoto bota
+- **Server nebo pracovní prostor s vlastní GitHub App** si bota ponechá pro všechno výše uvedené, včetně revizí
+- **Automatizace nikdy neschvaluje** pull request. Schválení je čin člověka
+
+Když propojíš repozitář, Control Center ověří, že ho tvůj účet vidí, a upozorní tě, pokud GitHub App není nainstalována u jeho organizace nebo repozitář nezahrnuje, s odkazem na opravu. Propojit a odpojit repozitář může admin pracovního prostoru; checkout mimo vlastní úložiště pracovního prostoru může propojit jen vlastník serveru. Viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+
+Propojení se váže na trvalé GitHub id repozitáře, takže přejmenování nebo převod nic nevyžaduje. Když cesta později pojmenuje jiný repozitář, Control Center mu přestane cokoli posílat a zobrazí upozornění, dokud admin pracovního prostoru neklikne na **Znovu propojit**.
+
+Otevření kódu repozitáře (soubory, diffy, hledání, terminál) potřebuje jak jeho přidělení v pracovním prostoru, tak tvé přihlášení ke GitHubu, které ho může číst. Admini pracovního prostoru se řídí stejným pravidlem; výjimku má jen vlastník serveru.
 
 ## Co ti integrace dá
 
-| Funkce                  | Jak                                                                                                      |
-| ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| Seznam a detail PR      | GitHub REST API, ze serveru, na tvém vlastním přihlášení                                                 |
-| Běhy kontrol            | GitHub Checks API                                                                                        |
-| Publikování revize      | Krok vázaný na uživatele, který odešle tvoji revizi do PR, tvým jménem                                   |
-| Registrace repozitáře   | Checkout se přijme, když remote `origin` míří na github.com, nebo na gitlab.com / bitbucket.org          |
-| Přístup agenta ke GitHubu | Token pro jediný repozitář běhu jako `GH_TOKEN` / `GITHUB_TOKEN`; push jde přes Control Center        |
-| Upozornění              | Dotazování na doručenou poštu oznámení GitHubu na serveru vyvolá „Zmíněn v pull requestu“ a „Vyžádána kontrola“ |
-| Profily uživatelů       | Karty profilu při najetí a filtrování PR podle autora                                                    |
+| Funkce                    | Jak                                                                                                                                                                         |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Seznam a detail PR        | GitHub REST API, ze serveru, na tvém vlastním přihlášení                                                                                                                    |
+| Běhy kontrol              | GitHub Checks API                                                                                                                                                           |
+| Publikování revize        | Krok vázaný na uživatele, který odešle tvoji revizi do PR, tvým jménem                                                                                                      |
+| Registrace repozitáře     | Checkout se přijme, když remote `origin` míří na github.com, nebo na gitlab.com / bitbucket.org                                                                             |
+| Přístup agentů ke GitHubu | V běhu jde `git fetch` přes Control Center, který stáhne repozitáře, se kterými běh pracuje, tokenem jen pro čtení, který běh nikdy nedrží. `gh` je čte tokenem jen pro čtení, který Control Center vydá na požádání a odvolá při skončení běhu. Pushe, pull requesty, jejich úpravy a komentáře jdou přes Control Center |
+| Upozornění                | Dotazování na doručenou poštu oznámení GitHubu na serveru vyvolá „Zmíněn v pull requestu“ a „Vyžádána kontrola“                                                             |
+| Profily uživatelů         | Karty profilu při najetí a filtrování PR podle autora                                                                                                                       |
 
 Některé cesty použijí GraphQL API místo REST tam, kde je to levnější: aktivita
 větví pro výběr při sestavování PR a živý stav revize, podle kterého se pozná,
@@ -92,24 +105,23 @@ a tlačítkem **Obnovit**. Stavy se samy obnoví každé dvě minuty.
 
 ## Jak agenti na GitHubu jednají
 
-- Agent, který pracuje ve worktree GitHubu, dostane token pro tento jediný
-  repozitář. Umí číst kód a komentovat pull requesty, když odpovědný člen smí
-  pushovat, a jen číst, když nesmí. Push jde přes Control Center, které se zeptá pravidla **Odeslat na
-  remote** a pak ho předá se zapisovacím tokenem, který agent nikdy nedrží. Viz
+- Agent, který pracuje ve worktree GitHubu, dostane token pro tento jediný repozitář. Smí jen číst kód, issues a pull requesty; komentáře jdou přes Control Center, jak je popsáno výše. Push jde přes Control Center, které se zeptá pravidla **Odeslat na remote** a pak ho předá se zapisovacím tokenem, který agent nikdy nedrží. Viz
   [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/)
-- Commity agenta vždy používají Git identitu žadatele jako autora i committera. Ve výchozím nastavení trailer `Co-Authored-By: Control Center <hi@usectrl.dev>` připisuje spoluautorství účtu GitHub `@usectrl`. V **Nastavení → Vy → Připisování autorství commitů** můžeš toto spoluautorství vypnout, aniž by se změnila tvoje identita. Nastavení pracovního prostoru v **Nastavení → Pracovní prostor → Obecné** má přednost a zamkne osobní přepínač. Vlastní atribuce Claude Code je vždy vypnutá. Podepisování commitů stále vyžaduje vlastní platnou konfiguraci
-- Terminál, který otevřeš na stanici, dostane tvoje vlastní přihlášení zúžené
-  na ten jeden repozitář, takže pushe odtamtud jsou tvoje
-- Když se token vydat nedá (nikdo odpovědný není přihlášený, aplikace není
-  nainstalovaná u vlastníka, nebo je instalace pozastavená), běh nastartuje bez
-  něj a jeho poznámky uvedou proč. Žádné záložní pověření neexistuje
+- Práci, kterou jsi zadal ty, commituje jako ty. Když agenta o něco požádáš, nebo commitneš v IDE, jsi autor i committer pod adresou, kterou ověřila tvoje forge: tvou noreply adresou GitHubu z přihlášení na GitHub, nebo na GitLabu a Bitbucketu e-mailem, který tam hlásí tvoje přihlášení. Identita Gitu tvého pracovního prostoru se použije jen pro commit, který uděláš ručně v repozitáři, kde žádná forge neručí za tvou adresu. Pokud k té forge nejsi přihlášen, commity agenta jsou místo toho botovy a poznámky běhu to uvedou
+- Práci, kterou nikdo nežádal, commituje bot. Plánovaný běh nebo běh podle webhooku commituje jako GitHub App pracovního prostoru (`<app>[bot]`, s jeho noreply adresou), nebo jako `Control Center <hi@usectrl.dev>`, když GitHub App není nebo je repozitář na GitLabu či Bitbucketu
+- **Uvádět Control Center jako spolupracovníka** (**Nastavení** → **Vy** → **Commity**) přidá trailer `Co-Authored-By:` pro druhou stranu: Control Center u tvých commitů a u botových commitů každého člověka, který zapnul spouštěč, za nímž běh stojí. Je zapnuté, dokud ho nevypneš. Admin pracovního prostoru o tom může rozhodnout pro všechny pomocí **Uvedení spolupracovníka** v **Nastavení** → **Pracovní prostor** → **Obecné**; tvoje vlastní volba se pak uloží, ale v tom pracovním prostoru se neuplatní. Vlastní připisování Claude Code je vždy vypnuté
+- Tvé commity můžou být podepsané. V **Nastavení** → **Vy** → **Commity** pod **Ověřené commity** zvol **Vytvořit podpisový klíč** a jeho veřejnou polovinu přidej do svého účtu na GitHubu nebo GitLabu jako podpisový klíč; od té chvíle se commity běhů, které si vyžádáš, a commity, které uděláš v IDE, zobrazí jako ověřené. Soukromá polovina zůstává na tvém serveru, takže kdo tenhle server ovládá, může podepisovat commity jako ty, dokud je klíč na tvém účtu; a na GitHubu zůstává commit, který se už zobrazil jako ověřený, ověřený i po odebrání klíče. Bitbucket nemá klíč jen pro podepisování: klíč tam nepřidávej, commity na Bitbucketu se nepodepisují. Botovy commity se nikdy nepodepisují
+- Commity, které uděláš v panelu **Správa zdrojového kódu** v IDE, přeskočí Git hooky repozitáře, jako to dělá `git commit --no-verify`, a Git na serveru ignoruje pomocníky přihlašovacích údajů, editory, externí nástroje pro diff a podepisovací programy, které repozitář nastaví: Git běží na stroji serveru, ve stromu, který může změnit agent nebo pull request. Viz [Commitněte a pushněte z Správy zdrojového kódu](/cs-CZ/prirucka/navody/kontrola-a-slouceni-pr/#commit-a-push-ze-správy-zdrojového-kódu)
+- Každý commit, který agent pushne, se nejdřív zkontroluje, včetně vrstev, které pro stack posílá `stack_publish`. Push, který uvádí někoho jiného, zahodí nebo si přisvojí zásluhu, přidá podpisový řádek, nebo není podepsaný tak, jak říká tvoje nastavení, je odmítnut. Commity, které pushneš sám z IDE, jsou tvoje a takto se nekontrolují
+- Terminál, který otevřeš na stanici, dostane tvoje vlastní přihlášení zúžené na ten jeden repozitář, takže pushe odtamtud jsou tvoje
+- Když se token vydat nedá (nikdo odpovědný není přihlášený, aplikace není nainstalovaná u vlastníka, nebo je instalace pozastavená), příkaz, který si ho vyžádal, uvede proč. Žádné záložní pověření neexistuje
 
 ## Řešení potíží
 
 ### Seznam PR je prázdný a hlásí, že GitHub není připojený
 
 Na tomhle serveru nejsi přihlášený ke GitHubu. Klikni na **Přihlásit se k
-GitHub** v **Hostování kódu**. Repozitáře na jiných forge to nezasáhne.
+GitHub** v **Nastavení → Vy → Profil → Hostování kódu**. Repozitáře na jiných forge to nezasáhne.
 
 ### Řádek GitHub hlásí, že přihlášení na tomto serveru není nastavené
 
@@ -118,6 +130,8 @@ serveru v **Nastavení → Server → Jednotné přihlášení**: **Vytvořit mo
 aplikaci GitHub** zabere asi dvě minuty. Viz
 [Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/).
 
+V pracovním prostoru na vlastních aplikacích řádek ukáže, když GitHub App pracovního prostoru chybí nebo je neúplná. Admin pracovního prostoru ji doplní na kartě **GitHub App** v **Nastavení → Pracovní prostor → Integrace**; viz [Dej pracovnímu prostoru vlastní aplikaci](/cs-CZ/prirucka/navody/github-app/#dej-pracovnímu-prostoru-vlastní-aplikaci).
+
 ### Dialog hlásí, že kód nesedí
 
 Opiš kód přesně tak, jak ho ukazuje prohlížeč: 8 písmen a číslic. Pět
@@ -125,11 +139,8 @@ chybných kódů přihlášení ukončí; začni znovu.
 
 ### Přihlášení hlásí, že aplikace není nainstalovaná
 
-GitHub App nemá instalaci na účtu, který repozitář vlastní. Admin pracovního
-prostoru ji nainstaluje z **Nastavení → Pracovní prostor → Obecné → Instalace
-aplikace GitHub**. U organizace na sdílené App od Control Center může být
-potřeba, aby admin té organizace klikl na **Autorizovat tento server**. Viz
-[Vytvořte GitHub App](/cs-CZ/prirucka/navody/github-app/#autorizuj-tento-server-pro-organizaci).
+GitHub App nemá instalaci na účtu, který repozitář vlastní. Admin pracovního prostoru ji nainstaluje z **Nastavení → Pracovní prostor → Integrace → Instalace
+aplikace GitHub**.
 
 ### Všichni se musí ke GitHubu přihlásit znovu
 
@@ -141,8 +152,21 @@ vázaná na server, který je vytvořil.
 
 Registrace vyžaduje všechny tři podmínky: cesta leží uvnitř git work tree, má
 remote `origin` a ten remote míří na podporovanou forge (github.com,
-gitlab.com nebo bitbucket.org). Viz
-[Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+gitlab.com nebo bitbucket.org). `origin` musí být repozitář, který propojuješ,
+a složku mimo úložiště pracovního prostoru může propojit jen vlastník serveru.
+Viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+
+### Mám přidělení, ale repozitář říká, že můj účet ho nemůže číst
+
+Tvůj účet na GitHubu nemůže číst ten repozitář, takže jeho kód zůstává pro tebe zavřený i s přidělením v pracovním prostoru. Přihlas se ke GitHubu v **Hostování kódu**, nebo si u GitHubu vyžádej přístup k repozitáři.
+
+### „Váš přístup k GitHub se nepodařilo ověřit“
+
+GitHub nešel dosáhnout kvůli kontrole tvého přístupu, takže Control Center raději odmítl, než aby hádal. Zkus to za chvíli znovu.
+
+### Revize na Connectu se zobrazují pod mým jménem, ne pod botem
+
+Na sdílené aplikaci Connect bot zveřejňuje revize jen pro instalace, které provozovatel Connectu uvedl. Všude jinde revize odejde přes vlastní přihlášení odpovědné osoby. Aby revize zveřejňoval bot, dej pracovnímu prostoru vlastní GitHub App.
 
 ### Po velké zátěži na chvíli přestane fungovat všechno
 

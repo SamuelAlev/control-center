@@ -87,3 +87,15 @@ Widget _authFailure(
     ),
   );
 }
+
+/// A run the server refused before it started because it has no sandbox:
+/// guidance worded by the segment's code, not a red log line.
+Widget _sandboxUnavailable(BuildContext context) {
+  final l10n = AppLocalizations.of(context);
+  return CcAlert(
+    variant: CcAlertVariant.info,
+    icon: CcIcons.lock,
+    title: l10n.runSandboxUnavailableTitle,
+    description: Text(l10n.runSandboxUnavailable),
+  );
+}

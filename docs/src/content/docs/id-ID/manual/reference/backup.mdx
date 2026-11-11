@@ -2,7 +2,7 @@
 title: Cadangan, ekspor, dan impor
 description: Tata letak snapshot, manifest, setiap operasi cadangan dan rute transfer, serta persisnya file yang dimuat dan tidak dimuat oleh cadangan.
 slug: id-ID/panduan-pengguna/referensi/cadangan
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Semua yang bisa disalin, diserahkan, atau diadopsi Control Center, beserta bentuk persis
@@ -111,6 +111,7 @@ basis datanya, dan tidak ada bagian lain yang ikut berpindah:
 | `models/`                           | Tidak            | Tidak                      |
 | `meetings/<meetingId>/`             | Tidak            | Tidak                      |
 | `rigs/`                             | Tidak            | Tidak                      |
+| `_agent_hooks/`                     | Tidak            | Tidak                      |
 
 Sebagian dari itu bisa dibuang — `spaces/` menyimpan worktree copy-on-write yang
 disediakan ulang dari repo, `pr_clones/` adalah cache, `models/` diunduh ulang, `rigs/`
@@ -118,8 +119,12 @@ adalah status mesin. Sebagiannya lagi tidak: `blobs/` menyimpan gambar yang dite
 dan dirujuk baris-baris di basis data, `skills/` dan `agents/` menyimpan file yang dipakai
 agen untuk berjalan, dan `secrets.json` menyimpan setiap kunci pemasangan, kredensial
 penyedia, dan pengaturan SSO di instalasi. Lihat
-[Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/#copy-backups-off-the-machine)
+[Cadangkan dan pulihkan](/id-ID/panduan-pengguna/panduan-praktis/cadangkan-dan-pulihkan/#menyalin-cadangan-ke-luar-mesin)
 untuk menutupi sisanya.
+:::caution[Basis data ruang kerja menyimpan rahasia webhook]
+`workspace.db` adalah seluruh ruang kerja: percakapan, log run, indeks kode, tautan repositori, definisi lingkungan, dan anggotanya. Ia juga menyimpan token webhook pipeline dan rahasia webhook sinkronisasi tiket dalam bentuk yang dapat dibaca, jadi perlakukan ekspor atau cadangan yang diunduh sebagai rahasia. Ia tidak menyimpan proses masuk penyedia, kunci perangkat, atau rahasia pengguna apa pun; semua itu ada di `global.db` dan `secrets.json`.
+:::
+
 :::note[Token chat sengaja ditinggalkan]
 `chat_credentials/` berada di samping basis data alih-alih di dalamnya, itulah sebabnya
 ruang kerja yang diserahkan kepada orang lain tidak membawa token bot yang aktif. Lihat
@@ -143,7 +148,7 @@ seperti server demo.
 | `workspace.listBackups` | baca | Ruang kerja | `admin` | tidak ada | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutasi | Ruang kerja | `owner` | `name` | `{ok}` |
 | `workspace.export`   | baca   | Ruang kerja | `admin`          | tidak ada     | `{ok, path}`                  |
-| `workspace.import`   | mutasi | Ruang kerja | `owner`         | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutasi | Ruang kerja | `owner`, dan pemilik server | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutasi | Instalasi* | `owner`          | `id`          | baris pendaftaran ditandai terhapus |
 
 * `workspace.delete` tidak bercakupan karena baris yang ditandainya berada di pendaftaran
@@ -167,8 +172,11 @@ stempel waktu yang terdaftar, bukan path.
 menjadi admin di satu ruang kerja tidak cukup untuk mengelola ruang kerja lainnya.
 Penghapusan hanya menerima nama direktori stempel waktu yang terdaftar, bukan path
 server sembarang, dan menghapus seluruh snapshot (termasuk snapshot yang tidak
-lengkap). Ekspor/impor per ruang kerja tetap berada di tangan admin/pemilik ruang
-kerja, bukan pemilik instalasi.
+lengkap). Ekspor per ruang kerja dan unduhan cadangan terjadwal tetap berada di tangan admin ruang kerja.
+:::
+
+:::note[Pemulihan adalah milik pemilik server]
+`workspace.import` dan `POST /backup/restore` membuat server mengadopsi berkas basis data yang barisnya kemudian diperlakukannya sebagai miliknya sendiri: tautan repositori dan siapa yang membuatnya, definisi lingkungan yang berjalan di host, serta path worktree dan log. Karena itu keduanya memerlukan pemilik server (`ServerAuthority.serverOwner`), yang juga harus menjadi pemilik ruang kerja tersebut. Pemanggil lain, dan setiap pemanggil di host tanpa pemilik yang tercatat, ditolak dengan `server_owner_required`. Tidak ada pemicu atau tampilan yang dibawa berkas itu yang diadopsi.
 :::
 
 ### Respons `server.listBackups`
@@ -244,7 +252,7 @@ memakai PSK pairing dan peran di bawah ini.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** ruang kerja |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **pemilik** instalasi |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** ruang kerja; **pemilik** instalasi setelah ruang kerja dihapus |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **pemilik** ruang kerja |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **pemilik** instalasi yang juga **pemilik** ruang kerja (`403` dengan `server_owner_required` jika tidak) |
 
 `w` adalah id ruang kerja, `n` nama direktori snapshot atau cadangan terjadwal, `d` id
 perangkat pemanggil, `s` tanda tangannya. Pada `/backup/snapshot`, `n` diselesaikan

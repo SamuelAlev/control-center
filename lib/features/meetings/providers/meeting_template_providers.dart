@@ -9,12 +9,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Workspace-scoped: the templates (and the active one) shape summaries for
 /// meetings that live in the workspace's own database, so every member must see
 /// the same set — they are stored in `workspace_settings` (admin-gated writes,
-/// watched live) rather than in device-local preferences, which is where they
-/// lived before and which silently gave two members different templates.
-///
-/// Provider names and notifier APIs are kept identical to the old prefs-backed
-/// versions so consumers (the record-screen picker, the recorder's `stop()` /
-/// "Re-run summary") are unchanged.
+/// watched live) rather than in device-local preferences, which would give two
+/// members different templates.
 class MeetingTemplatesNotifier extends Notifier<List<MeetingTemplate>> {
   @override
   List<MeetingTemplate> build() {

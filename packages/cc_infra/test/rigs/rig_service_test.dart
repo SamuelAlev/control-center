@@ -2264,7 +2264,7 @@ void main() {
 
     EnvironmentDefinition compose({int ttlHours = 24}) =>
         EnvironmentDefinition.fromJson({
-          'id': 'def-1',
+          'contract': 1,
           'name': 'Acme',
           'repos': {
             'app': {'repoId': 'repo-1', 'anchor': true},
@@ -2423,7 +2423,7 @@ void main() {
         '-f',
         '$kSmolvmEnvironmentWorkdir/compose.yaml',
       ]);
-      expect(up.sublist(6), ['up', '-d', '--build']);
+      expect(up.sublist(6), ['up', '-d', '--remove-orphans', '--build']);
       expect(up.join(' '), isNot(contains('override')));
     });
 

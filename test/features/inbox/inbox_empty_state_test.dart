@@ -1,5 +1,5 @@
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
-import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_domain/features/service_status/domain/entities/github_service_status.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_empty_state.dart';
@@ -35,7 +35,7 @@ Widget _wrap({
   required GitHubStatusIndicator indicator,
   String login = 'samuelalev',
   List<GitHubStatusIncident> incidents = const [],
-  List<InaccessibleRepo> inaccessible = const [],
+  List<RepoAccessIssue> inaccessible = const [],
 }) => ProviderScope(
   overrides: [
     githubStatusProvider.overrideWithValue(
@@ -54,7 +54,7 @@ Widget _wrap({
 class _SeededPrsByRepoNotifier extends PrsByRepoNotifier {
   _SeededPrsByRepoNotifier(this.inaccessible);
 
-  final List<InaccessibleRepo> inaccessible;
+  final List<RepoAccessIssue> inaccessible;
 
   @override
   Future<PrsByRepoState> build() async => PrsByRepoState(
@@ -62,7 +62,7 @@ class _SeededPrsByRepoNotifier extends PrsByRepoNotifier {
     hasMore: const {},
     nextPage: const {},
     loadingMore: const {},
-    inaccessibleRepos: inaccessible,
+    repoAccess: inaccessible,
   );
 }
 
@@ -241,11 +241,13 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           indicator: GitHubStatusIndicator.none,
-          inaccessible: const [
-            InaccessibleRepo(
+          inaccessible: [
+            RepoAccessIssue(
+              forge: ForgeHost.github,
+              owner: 'SuspendedOrg',
+              name: 'suspended-repo',
               repoId: 'r1',
-              repoFullName: 'SuspendedOrg/suspended-repo',
-              reason: InaccessibleRepo.installationSuspended,
+              state: RepoAccessState.installationSuspended,
             ),
           ],
         ),
@@ -256,8 +258,8 @@ void main() {
       expect(find.text('GitHub App installation suspended'), findsOneWidget);
       expect(
         find.text(
-          'Showing last known data for SuspendedOrg/suspended-repo. Resume the '
-          'installation on GitHub, or connect a token that has access.',
+          'Automation for SuspendedOrg/suspended-repo is paused until an '
+          'owner of the account resumes the installation on GitHub.',
         ),
         findsOneWidget,
       );

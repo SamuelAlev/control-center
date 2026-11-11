@@ -4,6 +4,7 @@ import 'package:control_center/features/environments/presentation/settings/envir
 import 'package:control_center/features/environments/presentation/widgets/environment_command_box.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
@@ -55,7 +56,11 @@ class EnvironmentChecksPanel extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (error, _) => CcAlert(
               variant: CcAlertVariant.danger,
-              title: environmentFailureMessage(error),
+              title: environmentRefusalMessage(
+                AppLocalizations.of(context),
+                error,
+                owner: ref.watch(canUseHostProvider),
+              ),
             ),
             data: (results) => results.isEmpty
                 ? Text(

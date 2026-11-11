@@ -1,8 +1,8 @@
 ---
 title: Buat GitHub App
-description: Berikan server Anda GitHub App sendiri hanya dengan satu klik, pasang di tempat repositori Anda berada, dan otorisasi server untuk pemasangan sebuah organisasi.
+description: Berikan server Anda GitHub App sendiri hanya dengan satu klik, pasang di tempat repositori Anda berada, dan pasang di tempat repositori Anda berada, sehingga semua orang dalam organisasi dapat memakainya dari server mana pun.
 slug: id-ID/panduan-pengguna/panduan-praktis/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Panduan ini menunjukkan cara memberi server Anda GitHub App sendiri. Prosesnya sekitar
@@ -33,8 +33,9 @@ menulis memerlukan anggota yang dapat push. Otomatisasi tidak pernah menyetujui 
 
 App server hanya berlaku di bawah **Gunakan aplikasi saya sendiri**. Dengan Connect milik Control Center
 atau Connect kustom, Connect menangani GitHub, dan app server tetap tersimpan tetapi tidak digunakan sampai
-Anda beralih kembali. App ruang kerja ([Berikan satu ruang kerja app yang berbeda](#berikan-satu-ruang-kerja-app-yang-berbeda))
-tetap berlaku di semua mode. App yang sebagian kolomnya hilang
+Anda beralih kembali. Ruang kerja yang berada di aplikasinya sendiri
+([Berikan satu ruang kerja aplikasinya sendiri](#berikan-satu-ruang-kerja-aplikasinya-sendiri))
+justru memakai App miliknya sendiri, apa pun mode server. App yang sebagian kolomnya hilang
 adalah kesalahan, bukan cadangan: proses masuk GitHub ditolak sampai setiap kolom diisi.
 
 ## Prasyarat
@@ -85,22 +86,17 @@ App yang terdaftar tetapi tidak dipasang hanya dapat memasukkan orang dan tidak 
 2. Pilih **All repositories**, atau pilih repositori yang harus dilihat server ini
 
 Untuk memasang di akun lain nanti, seorang admin ruang kerja membuka **Pengaturan → Ruang kerja →
-Umum**, menemukan **Pemasangan aplikasi GitHub** pada kartu identitas GitHub, dan mengklik
-**Pasang aplikasi GitHub**. Daftar tersebut menampilkan setiap akun tempat app dipasang dan menandai
+Integrasi**, menemukan **Pemasangan aplikasi GitHub** pada kartu **Aplikasi GitHub** di bawah
+**Hosting kode**, dan mengklik **Pasang aplikasi GitHub**. Daftar tersebut menampilkan setiap akun tempat app dipasang dan menandai
 pemasangan yang ditangguhkan.
 
-## Otorisasi server ini untuk sebuah organisasi
+## Bagikan instalasi sebuah organisasi
 
-Pada app bersama Control Center, pemasangan sebuah organisasi hanya melayani server yang admin-nya
-telah mengotorisasi. Memasang melalui **Pasang aplikasi GitHub** mengotorisasi server yang
-memulainya. Untuk pemasangan yang sudah ada:
+Sebuah organisasi memasang GitHub App sekali saja. Setelah itu, siapa pun di dalamnya yang masuk ke GitHub di server Control Center dapat memakai instalasi tersebut, di server mana pun itu: milik Anda, milik rekan kerja, atau milik mereka sendiri. Tidak ada yang perlu diotorisasi per server.
 
-1. Seorang admin organisasi tersebut masuk ke GitHub di server ini
-2. Mereka membuka **Pengaturan → Ruang kerja → Umum → Pemasangan aplikasi GitHub**
-3. Baris organisasi tersebut menampilkan **Belum diotorisasi**. Mereka mengklik **Otorisasi server ini**
+Setiap token yang didapat server adalah milik orang yang masuk itu sendiri, dibatasi pada satu repositori dan pada perannya di repositori tersebut, sehingga tidak pernah menjangkau lebih jauh daripada yang dapat mereka lakukan di GitHub. Log audit GitHub menampilkan orang tersebut, yang bertindak melalui app.
 
-Baris itu kemudian menampilkan **Diotorisasi**. App milik sendiri Anda tidak memerlukan ini: setiap
-pemasangannya menjadi milik server Anda.
+Untuk menghentikan Control Center menjangkau sebuah organisasi, pemilik organisasi menghapus instalasi atau mempersempit repositorinya di GitHub. Mengeluarkan seseorang dari organisasi juga menghentikan aksesnya.
 
 ## Daftarkan secara manual sebagai gantinya
 
@@ -135,18 +131,21 @@ ganda didekode menjadi baris baru. Server menolak mulai ketika `GITHUB_APP_PRIVA
 membacanya; simpan di berkas `.env` (di Docker, pasang di `/app/bin/.env`). Penyemaian terjadi
 **sekali per kolom**, sehingga penyuntingan di Pengaturan tidak dibatalkan oleh mulai ulang.
 
-## Berikan satu ruang kerja app yang berbeda
+## Berikan satu ruang kerja aplikasinya sendiri
 
-Sebuah ruang kerja dapat memakai app milik sendiri alih-alih app server. Seorang admin ruang kerja
-membuka **Pengaturan → Ruang kerja → Umum**, memilih **Gunakan GitHub App lain** pada kartu
-**Identitas GitHub**, dan memasukkan id, kunci privat, client id, dan client secret app tersebut.
-Anggota kemudian masuk ke app itu untuk ruang kerja ini. Ruang kerja dengan app sendiri tidak pernah
+Sebuah ruang kerja dapat berjalan di app milik sendiri alih-alih app server:
+
+1. Seorang admin ruang kerja membuka **Pengaturan → Ruang kerja → Integrasi**
+2. Pada kartu **Control Center Connect**, mereka memilih **Gunakan aplikasi saya sendiri** lalu mengklik **Terapkan**. Semua orang di ruang kerja masuk lagi melalui aplikasi ruang kerja
+3. Kartu **Aplikasi GitHub** di bawah Hosting kode kini memuat kolom app: **Id aplikasi** dan **Kunci privat** di bawah **Bertindak untuk ruang kerja ini**, **Id klien** dan **Rahasia klien** di bawah **Masukkan anggota**. Klik **Tes** setelah semuanya terisi
+
+Anggota kemudian masuk ke app itu untuk ruang kerja ini. Ruang kerja dengan aplikasinya sendiri tidak pernah
 kembali ke app server maupun ke Connect: sampai kolomnya lengkap, pekerjaan GitHub-nya ditolak. Ini berlaku
-apa pun cara server menjalankan proses masuk, Connect termasuk.
-
-Kartu **Aplikasi penyedia** di halaman yang sama melakukan hal serupa untuk Google Calendar, Linear, dan
-pencarian GIF. Lihat [Berikan satu ruang kerja aplikasi Linear miliknya](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/#berikan-satu-ruang-kerja-aplikasi-linear-miliknya)
+apa pun cara server menjalankan proses masuk, Connect termasuk. Pilihan yang sama mencakup Google Calendar,
+Linear, dan pencarian GIF, masing-masing dengan kolomnya sendiri di samping penyedianya pada halaman yang sama.
+Lihat [Berikan satu ruang kerja aplikasi Linear miliknya](/id-ID/panduan-pengguna/panduan-praktis/integrasi-linear/#berikan-satu-ruang-kerja-aplikasi-linear-miliknya)
 dan [Berikan satu ruang kerja klien Google miliknya](/id-ID/panduan-pengguna/panduan-praktis/hubungkan-kalender/#berikan-satu-ruang-kerja-klien-google-miliknya).
+Pilihan lain pada kartu itu, dan fungsi masing-masing, ada di [Pilihan per ruang kerja](/id-ID/panduan-pengguna/referensi/connect/#pilihan-per-ruang-kerja).
 
 ## Pemecahan masalah
 
@@ -162,7 +161,7 @@ Halaman sekali pakai sudah digunakan, atau sudah lewat sepuluh menit. Mulai lagi
 ### Tes menyebut kredensial berfungsi tetapi app tidak dipasang di mana pun
 
 Pendaftaran dan pemasangan adalah langkah terpisah. Buka halaman pemasangan app,
-atau gunakan **Pasang aplikasi GitHub** di Ruang kerja → Umum.
+atau gunakan **Pasang aplikasi GitHub** di Ruang kerja → Integrasi.
 
 ### Tes menyebut kunci privat tidak dapat dibaca
 

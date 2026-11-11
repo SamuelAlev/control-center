@@ -3,7 +3,7 @@ title: 架构
 description: Control Center 如何通过瘦客户端服务器模型、以功能为先的整洁架构以及端口与适配器进行组织。
 dateModified: 2026-09-19
 slug: zh-CN/手册/概念/架构
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## 概述
@@ -60,7 +60,7 @@ feature_name/
 - 记忆实体：`MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
 - 共享值对象：`AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
 - 共享端口：`SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
-- 领域服务：`MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
+- 领域服务：`MemoryAccessPolicy`、`ActivityLogger`、`AgentMentionParser`、`UserMentionParser`、`RunLivenessClassifier`
 - `DomainEventBus` + 事件类型（工作区/智能体、PR/审查、消息、工单、流水线、编排、记忆、日历/会议、身份与成员关系、可观测性）
 
 ## 身份与多人协作
@@ -132,7 +132,6 @@ Control Center 是多用户的：人和智能体是由 `Principal` 统一起来�
 
 - 机密存放于 `flutter_secure_storage`（macOS 钥匙串、Windows 凭据管理器、Linux libsecret）——即客户端的设备凭据和远程配对密钥，而不是提供方令牌
 - `shared_preferences` 只用于非敏感偏好设置（主题、字体、布局）
-- 旧安装遗留下来的提供方机密由 `features/auth/providers/credential_migration.dart` 一次性交给服务器，随后从客户端钥匙串中删除
 
 ## 架构约束的强制执行
 

@@ -2,10 +2,10 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan `cc_server`, per keluarga.
 slug: id-ID/panduan-pengguna/referensi/alat-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` menghosting satu registri alat MCP (JSON-RPC 2.0), yang dilayani pada port server utama (bawaan `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien menjangkau registri yang sama: desktop, build web, klien MCP eksternal, dan runtime agen bawaan. Server MCP eksternal dapat dijembatani ke registri yang sama sebagai lapisan dinamis.
+`cc_server` menghosting satu registri alat MCP (JSON-RPC 2.0), yang dilayani pada port server utama (bawaan `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien menjangkau registri yang sama: desktop, build web, klien MCP eksternal, dan runtime agen bawaan. Server MCP eksternal dapat dijembatani ke registri yang sama sebagai lapisan dinamis. Server yang ditemukan dalam konfigurasi alat milik pengguna server adalah pengecualian: endpoint ini tidak pernah mendaftarkan, memanggil, atau mencarinya, dan hanya run harness bawaan yang menjadi tanggung jawab pemilik server yang mendapatkannya (lihat [Server MCP pribadi tetap milik pemilik](/id-ID/panduan-pengguna/panduan-praktis/server-mcp/#server-mcp-pribadi-tetap-milik-pemilik)).
 
 ## Ukuran registri
 
@@ -23,7 +23,7 @@ Kelima alat graf kode itu didaftarkan hanya ketika host meneruskan repo graf kod
 Registri lengkapnya diumumkan di `tools/list` tanpa gerbang penemuan. Penyuntingan tiket adalah alat bertipe.
 
 :::note[Klien eksternal selalu melihat seluruh katalog]
-`tools/list` tidak pernah dipangkas. Klien MCP memvalidasi nama alat terhadap salinan cache-nya sendiri atas daftar itu dan menolak apa pun yang tidak terdaftar tanpa bertanya ke server, sehingga alat yang disembunyikan di sana menjadi tidak terjangkau, bukan sekadar diam.
+`tools/list` tidak pernah dipangkas, kecuali server MCP pribadi milik pemilik server, yang tidak pernah dimuat di dalamnya. Klien MCP memvalidasi nama alat terhadap salinan cache-nya sendiri atas daftar itu dan menolak apa pun yang tidak terdaftar tanpa bertanya ke server, sehingga alat yang disembunyikan di sana menjadi tidak terjangkau, bukan sekadar diam.
 
 **Harness bawaan** berbeda: ia hanya memuat subset definisi residen per permintaan dan menarik sisanya saat pertama kali dipakai, yang merupakan perilaku di sisi harness dan tidak mengubah registri ini. Lihat [Konteks alat dan cache prompt](/id-ID/panduan-pengguna/konsep/konteks-alat).
 :::
@@ -246,7 +246,7 @@ konten halaman/UI yang diekstrak dipagari sebagai data tidak tepercaya. Keempat 
 (keempat alat itu juga mendeklarasikan `networkEgress` dan `processSpawn`; `mobile_use` dan
 `ios_use` juga mendeklarasikan `packageInstall`), sehingga mode hanya-baca menolaknya. `rig_list`
 tidak mendeklarasikan apa pun — ia hanya membaca status ruang kerja. Kosakata verba lengkap per permukaan ada di
-[referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/#action-verbs).
+[referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/#verb-tindakan).
 
 | Alat           | Deskripsi                                                                                        |
 | -------------- | ------------------------------------------------------------------------------------------------ |
@@ -254,8 +254,10 @@ tidak mendeklarasikan apa pun — ia hanya membaca status ruang kerja. Kosakata 
 | `browser_use`  | Kendalikan Chromium, Firefox, atau WebKit headless (`engine`): navigasi, klik, isi, ekstrak (a11y/DOM/konsol), papan klip, tangkapan layar |
 | `mobile_use`   | Kendalikan Android melalui ADB: periksa/masukkan, tangkapan layar, pasang/mulai/hentikan/atur ulang/copot pemasangan aplikasi, deep link, dan perintah perangkat berbentuk argv |
 | `ios_use`      | Kendalikan Simulator iOS melalui WebDriverAgent/CoreSimulator: periksa/masukkan, tangkapan layar, pasang/mulai/hentikan/copot pemasangan aplikasi, deep link, dan proses simulator berbentuk argv |
-| `rig_list`     | Tampilkan daftar rig sebuah ruang kerja beserta permukaan, status, ukuran layar, dan pengendalinya |
+| `rig_list`     | Tampilkan daftar rig dari space run ini beserta permukaan, status, ukuran layar, dan pengendalinya |
 | `rig_close`    | Hancurkan rig dan buang status mesin yang dimilikinya                                            |
+
+Hanya run agen yang dapat memanggil alat-alat ini; pemanggil lain ditolak. Sebuah run hanya menjangkau rig dari space yang diberikan kepadanya: `space_id` berasal dari grant run, tidak pernah dari pemanggilan, dan rig dari space lain, atau dari tanpa space, dijawab sama persis seperti rig yang tidak ada.
 
 `app_use` adalah alat use kelima: alat ini mengendalikan jendela aplikasi desktop yang diluncurkan di space, langsung di host dan bukan di VM, serta juga mendeklarasikan `fileWriteOutsideWorktree` dan `fileDelete`. Alat ini dan alat `environment_*` dijelaskan di [Menyiapkan lingkungan](/id-ID/panduan-pengguna/panduan-praktis/lingkungan/).
 
@@ -300,7 +302,7 @@ sama sekali, sehingga nama yang mungkin pernah Anda lihat dirujuk di tempat lain
 | Kemampuan                                | Di mana ia berada sebagai gantinya                                                                                                     |
 | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | Merekrut, memberhentikan, atau menyunting agen | UI agen. Tidak ada alat `hire_agent` / `fire_agent` / `update_agent`                                                              |
-| Membuat ruang kerja                      | `workspace.upsert` melalui RPC, yang menyemai dan menstempel kepemilikan                                                               |
+| Membuat ruang kerja                      | `workspace.create` melalui RPC, khusus pemilik server, yang menyemai dan menstempel kepemilikan                                                               |
 | Proyek (buat / daftar / perbarui / arsipkan) | UI tiket. Proyek adalah permukaan operator — lihat [Proyek](/id-ID/panduan-pengguna/panduan-praktis/proyek/)                        |
 | Mengajukan pertanyaan yang memblokir ke operator | Alat **harness** `ask_user`, bukan MCP. Alat ini merender formulir di dalam percakapan dan memblokir sampai ada jawaban         |
 | Diagnosis per agen                       | Tidak ada. Tidak ada `doctor` — lihat [Diagnosis agen](/id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen/)                        |

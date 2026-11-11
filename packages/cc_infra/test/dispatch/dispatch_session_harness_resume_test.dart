@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
@@ -14,11 +13,13 @@ import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/prompts/prompt_builder.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_infra/src/dispatch/backends/harness_backend.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:cc_infra/src/harness/file_transcript_store.dart';
 import 'package:test/test.dart';
 
@@ -31,21 +32,6 @@ class _Sandbox implements SandboxPort {
   Stream<SandboxEvent> events(SandboxHandle handle) => const Stream.empty();
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _Broker implements CredentialBrokerPort {
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async => const ScopedCredentials(handle: 'test', environment: {});
-  @override
-  Future<void> revoke(String handle) async {}
 }
 
 class _Agents implements AgentRepository {
@@ -165,16 +151,18 @@ void main() {
     runNumber++;
     final session = DispatchSession(
       deps: SandboxDispatchDeps(
+        hostExecution: const HostExecutionGate(
+          posture: HostExecutionPosture.offByOwner,
+        ),
         sandbox: _Sandbox(),
-        broker: _Broker(),
         agentRepo: _Agents(),
         runLogRepo: null,
         eventBus: null,
-        resolveCommitIdentity: (_, {workspaceId}) async =>
-            AgentCommitIdentity.owner(
+        resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+            AgentCommitIdentity.person((
               name: 'Test User',
               email: 'test@example.test',
-            ),
+            )),
         backendRegistry: BackendRegistry({
           'cc-harness': const HarnessBackend(),
         }),

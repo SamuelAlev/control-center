@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/agent.dart';
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/entities/message.dart';
@@ -8,6 +9,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/run_credential_gate_port.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
@@ -23,9 +25,9 @@ import 'package:cc_domain/features/messaging/domain/repositories/messaging_repos
 import 'package:cc_domain/features/messaging/domain/value_objects/message_page.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_kind.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
 import 'package:cc_infra/src/messaging/messaging_service.dart';
+import 'package:cc_infra/src/messaging/steering_queue_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../../../fakes/fake_agent_repository.dart';
@@ -411,6 +413,8 @@ class _FakeMessagingRepo implements MessagingRepository {
     _messages.putIfAbsent(message.spaceId, () => []).add(message);
   }
 
+  /// The whole conversation as one page: what `retryAgentTurn` judges a
+  /// failed turn against.
   @override
   Future<MessagePage> getMessagePage(
     String workspaceId,
@@ -418,7 +422,14 @@ class _FakeMessagingRepo implements MessagingRepository {
     String conversationId, {
     int limit = defaultMessagePageSize,
     String? cursor,
-  }) async => MessagePage.empty;
+  }) async => MessagePage(
+    messages: [
+      if (_owns(workspaceId, spaceId))
+        for (final m in _messages[spaceId] ?? const <Message>[])
+          if (m.conversationId == conversationId) m,
+    ],
+    hasMore: false,
+  );
 
   @override
   Future<List<String>> revertConversationTo(
@@ -468,6 +479,9 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   /// reference either has a body or does not.
   String? lastPrompt;
   List<String>? lastImagePaths;
+
+  /// Whom each [start] was for, in order (null: nobody asked for the run).
+  final List<String?> requesters = [];
   bool pauseReturn = false;
   bool resumeReturn = false;
 
@@ -540,6 +554,7 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
   }) {
     lastPrompt = prompt;
     lastImagePaths = imagePaths;
+    requesters.add(requestedByUserId);
     return DispatchHandle(dispatchId: 'ds-1', events: _controller.stream);
   }
 
@@ -558,6 +573,27 @@ class _FakeAgentDispatchPort implements AgentDispatchPort {
 
   @override
   Future<void> stop() async => _controller.close();
+}
+
+/// Records who each queued card was stored as written by.
+class _RecordingSteeringQueue implements SteeringQueueService {
+  final List<String> senders = [];
+
+  @override
+  Future<EnqueueSteeringResult?> enqueue({
+    required String workspaceId,
+    required String spaceId,
+    required String conversationId,
+    required String content,
+    required String senderUserId,
+    List<Map<String, dynamic>> attachments = const [],
+  }) async {
+    senders.add(senderUserId);
+    return null;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
 class _FakeRunLogRepo extends FakeAgentRunLogRepository {
@@ -1662,6 +1698,38 @@ void main() {
       );
     });
 
+    test('the feedback is its sender\'s message and the refining run acts '
+        'for them, not for the owner', () async {
+      final svc = makeServiceWithAgentRepo();
+      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+      await repo.sendMessage(
+        workspaceId: _ws,
+        spaceId: space.id,
+        content: 'Original plan',
+        senderId: 'agent-1',
+        senderType: 'agent',
+        messageType: 'plan',
+        id: 'plan-1',
+        metadata: {'planStatus': 'pending'},
+      );
+
+      await svc.refinePlan(
+        workspaceId: _ws,
+        spaceId: space.id,
+        feedback: 'Make it shorter',
+        senderUserId: 'member-7',
+      );
+      // The refining run is started without being awaited.
+      await pumpEventQueue();
+
+      final feedback = (await repo.getMessages(
+        _ws,
+        space.id,
+      )).singleWhere((m) => m.content == 'Make it shorter');
+      expect(feedback.senderId, 'member-7');
+      expect(dispatchPort.requesters, ['member-7']);
+    });
+
     test('falls back to any plan when no pending plan exists', () async {
       final svc = makeServiceWithAgentRepo();
       final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
@@ -1921,22 +1989,26 @@ void main() {
   });
 
   group('retryAgentTurn', () {
-    test(
-      'marks the failed message retried and re-dispatches the agent',
-      () async {
-        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
-        // Seed a failed agent-turn message.
-        final failed = Message(
-          id: 'm-failed',
-          spaceId: space.id,
-          conversationId: space.id,
+    /// A turn of `agent-1` that ended in an error, in [conversationId] (the
+    /// space's own conversation when null).
+    Message failedTurn(String id, String spaceId, {String? conversationId}) =>
+        Message(
+          id: id,
+          spaceId: spaceId,
+          conversationId: conversationId ?? spaceId,
           senderId: 'agent-1',
           senderType: SenderType.agent,
           content: '',
           messageType: MessageType.agentTurn,
+          metadata: const {'error': true},
           createdAt: DateTime(2025),
         );
-        repo.seedMessage(failed);
+
+    test(
+      'marks the failed message retried and re-dispatches the agent',
+      () async {
+        final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+        repo.seedMessage(failedTurn('m-failed', space.id));
 
         dispatchPort.emitEvent(TextEvent(content: 'retry'));
         await service.retryAgentTurn(
@@ -1948,8 +2020,93 @@ void main() {
         // The failed message is marked retried.
         final updated = await repo.getMessageById(_ws, 'm-failed');
         expect(updated?.metadata?['retried'], isTrue);
+        expect(dispatchPort.requesters, hasLength(1));
       },
     );
+
+    test('pressing Retry again and again starts one run', () async {
+      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+      repo.seedMessage(failedTurn('m-failed', space.id));
+
+      // Twice at once (a double press, or two clients), then once more after
+      // the retry exists.
+      await Future.wait([
+        for (var i = 0; i < 2; i++)
+          service.retryAgentTurn(
+            workspaceId: _ws,
+            spaceId: space.id,
+            failedMessageId: 'm-failed',
+          ),
+      ]);
+      await service.retryAgentTurn(
+        workspaceId: _ws,
+        spaceId: space.id,
+        failedMessageId: 'm-failed',
+      );
+
+      expect(dispatchPort.requesters, hasLength(1));
+    });
+
+    test('an older failure cannot be retried behind a newer turn', () async {
+      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+      repo.seedMessage(failedTurn('m-older', space.id));
+      repo.seedMessage(failedTurn('m-newer', space.id));
+
+      await service.retryAgentTurn(
+        workspaceId: _ws,
+        spaceId: space.id,
+        failedMessageId: 'm-older',
+      );
+
+      expect(dispatchPort.requesters, isEmpty);
+      final older = await repo.getMessageById(_ws, 'm-older');
+      expect(older?.metadata?['retried'], isNot(true));
+    });
+
+    test('a failed turn of another space is refused', () async {
+      final mine = await service.createSpace(_ws, 'Mine', ['agent-1']);
+      final theirs = await service.createSpace(_ws, 'Theirs', ['agent-1']);
+      repo.seedMessage(failedTurn('m-theirs', theirs.id));
+
+      // The op clears the caller for the space it names, so the message must
+      // be in that space: naming one's own space reaches no other's turn.
+      await expectLater(
+        service.retryAgentTurn(
+          workspaceId: _ws,
+          spaceId: mine.id,
+          failedMessageId: 'm-theirs',
+        ),
+        throwsA(isA<WorkspaceMismatchException>()),
+      );
+
+      expect(dispatchPort.requesters, isEmpty);
+      final untouched = await repo.getMessageById(_ws, 'm-theirs');
+      expect(untouched?.metadata?['retried'], isNot(true));
+    });
+
+    test('the retry acts for whoever pressed it, and for nobody when no '
+        'person did', () async {
+      final space = await service.createSpace(_ws, 'Chat', ['agent-1']);
+
+      repo.seedMessage(failedTurn('m-1', space.id));
+      await service.retryAgentTurn(
+        workspaceId: _ws,
+        spaceId: space.id,
+        failedMessageId: 'm-1',
+        requestedByUserId: 'member-7',
+      );
+      // The retry failed in turn, and this time nobody is behind the press.
+      repo.seedMessage(failedTurn('m-2', space.id));
+      await service.retryAgentTurn(
+        workspaceId: _ws,
+        spaceId: space.id,
+        failedMessageId: 'm-2',
+      );
+
+      // Never the owner standing in ('user-1' here): a run with no requester
+      // is the bot's, and says so.
+      expect(dispatchPort.requesters, ['member-7', null]);
+    });
 
     test('is a no-op when the failed message does not exist', () async {
       await service.retryAgentTurn(
@@ -1958,6 +2115,7 @@ void main() {
         failedMessageId: 'never-existed',
       );
       // No dispatch, no throw.
+      expect(dispatchPort.requesters, isEmpty);
     });
 
     test('stamps the run log with the workspace and the failed turn\'s '
@@ -1966,16 +2124,7 @@ void main() {
       // The failed turn lived in a parenthesis, not the space's `main`
       // conversation.
       repo.seedMessage(
-        Message(
-          id: 'm-failed',
-          spaceId: space.id,
-          conversationId: 'conv-side',
-          senderId: 'agent-1',
-          senderType: SenderType.agent,
-          content: '',
-          messageType: MessageType.agentTurn,
-          createdAt: DateTime(2025),
-        ),
+        failedTurn('m-failed', space.id, conversationId: 'conv-side'),
       );
 
       dispatchPort.emitEvent(TextEvent(content: 'retry'));
@@ -2035,6 +2184,32 @@ void main() {
       expect(runLog, isNotNull);
       // Should not throw.
       await service.stopRun(_ws, runLog!.id);
+    });
+  });
+
+  group('enqueueSteering', () {
+    test('a queued card is its sender\'s, and the owner\'s only when no '
+        'person sent it', () async {
+      final queue = _RecordingSteeringQueue();
+      service.steeringQueueService = queue;
+
+      await service.enqueueSteering(
+        workspaceId: _ws,
+        spaceId: 'ch-1',
+        conversationId: 'conv-1',
+        content: 'also update the docs',
+        senderUserId: 'member-7',
+      );
+      await service.enqueueSteering(
+        workspaceId: _ws,
+        spaceId: 'ch-1',
+        conversationId: 'conv-1',
+        content: 'from a pipeline',
+      );
+
+      // The card's author is who the turn it becomes acts for. Storing a
+      // member's card as the owner's ('user-1' here) ran it as the owner.
+      expect(queue.senders, ['member-7', 'user-1']);
     });
   });
 }

@@ -1,3 +1,4 @@
+import 'package:cc_domain/features/connect/domain/value_objects/connect_health_error.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// How this server reaches Control Center Connect.
@@ -26,54 +27,6 @@ enum ConnectModeSetting {
 
   /// The wire spelling.
   String get wire => name;
-}
-
-/// Why Connect is not usable right now. [none] when it is fine.
-enum ConnectHealthError {
-  /// Healthy.
-  none(''),
-
-  /// The hosted service has no apps for this build yet.
-  hostedUnprovisioned('hosted_unprovisioned'),
-
-  /// The signed configuration did not verify.
-  signature('signature'),
-
-  /// The configuration is older than one already seen.
-  rollback('rollback'),
-
-  /// Connect did not answer.
-  unreachable('unreachable'),
-
-  /// Connect refuses this server.
-  installBlocked('install_blocked'),
-
-  /// Connect's signing keys changed and wait for the owner's confirmation.
-  pinsChanged('pins_changed'),
-
-  /// Connect speaks a protocol this server does not.
-  protocol('protocol'),
-
-  /// A code this client does not know.
-  unknown('?');
-
-  const ConnectHealthError(this.wire);
-
-  /// The wire spelling.
-  final String wire;
-
-  /// Parses a wire value; [none] for an empty one, [unknown] for others.
-  static ConnectHealthError fromWire(Object? wire) {
-    if (wire is! String || wire.isEmpty) {
-      return none;
-    }
-    for (final error in values) {
-      if (error.wire == wire) {
-        return error;
-      }
-    }
-    return unknown;
-  }
 }
 
 /// Where one provider lane's credentials come from.
@@ -222,6 +175,13 @@ class RemoteConnectSettings {
   );
 
   /// Mints a new install key. Every Connect sign-in must be redone.
-  Future<ConnectStatus> rotateKey() async =>
-      ConnectStatus.fromJson(await _client.call('connect.rotateKey', const {}));
+  ///
+  /// Each Connect retires the old key first; when one cannot, the server
+  /// refuses with a validation error naming each Connect and its error code,
+  /// and nothing changes. [force] replaces the key anyway, leaving the old
+  /// identity usable at that Connect until its sign-ins expire.
+  Future<ConnectStatus> rotateKey({bool force = false}) async =>
+      ConnectStatus.fromJson(
+        await _client.call('connect.rotateKey', {if (force) 'force': true}),
+      );
 }

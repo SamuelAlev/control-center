@@ -1038,59 +1038,6 @@ void main() {
     });
   });
 
-  // ── Legacy top-level comparison ──────────────────────────────────────
-
-  group('legacy comparison mode', () {
-    test('routes to true on equals match via state', () async {
-      final result = await _invoke(
-        state: {'val': 'hello'},
-        config: const PipelineNodeConfig(
-          extras: {'left': '{{val}}', 'op': 'equals', 'right': 'hello'},
-        ),
-      );
-      expect(result.nextRouterKey, 'true');
-    });
-
-    test('routes to false when not equal', () async {
-      final result = await _invoke(
-        state: {'val': 'hello'},
-        config: const PipelineNodeConfig(
-          extras: {'left': '{{val}}', 'op': 'equals', 'right': 'world'},
-        ),
-      );
-      expect(result.nextRouterKey, 'false');
-    });
-
-    test('defaults op to exists when missing', () async {
-      final result = await _invoke(
-        state: {'val': 'something'},
-        config: const PipelineNodeConfig(extras: {'left': '{{val}}'}),
-      );
-      expect(result.nextRouterKey, 'true');
-    });
-
-    test('mutatedState includes route key', () async {
-      final result = await _invoke(
-        state: {'val': 'x'},
-        config: const PipelineNodeConfig(
-          extras: {'left': '{{val}}', 'op': 'equals', 'right': 'x'},
-        ),
-      );
-      expect(result.nextRouterKey, 'true');
-      expect(result.mutatedState, containsPair('step1_route', 'true'));
-    });
-
-    test('uses trigger payload for left resolution', () async {
-      final result = await _invoke(
-        trigger: {'score': '90'},
-        config: const PipelineNodeConfig(
-          extras: {'left': '{{score}}', 'op': 'equals', 'right': '90'},
-        ),
-      );
-      expect(result.nextRouterKey, 'true');
-    });
-  });
-
   // ── Edge cases ───────────────────────────────────────────────────────
 
   group('edge cases', () {
@@ -1112,49 +1059,6 @@ void main() {
       );
       expect(result.isFailed, true);
       expect(result.errorMessage, contains('unknown predicate type'));
-    });
-
-    test('empty extras falls to legacy comparison', () async {
-      final result = await _invoke(
-        config: const PipelineNodeConfig(extras: {}),
-      );
-      expect(result.nextRouterKey, 'false');
-    });
-
-    test('predicate takes priority over legacy when both present', () async {
-      final result = await _invoke(
-        state: {'val': 'a'},
-        config: const PipelineNodeConfig(
-          extras: {
-            'predicate': {
-              'type': 'comparison',
-              'left': '{{val}}',
-              'op': 'equals',
-              'right': 'a',
-            },
-            'left': 'X',
-            'op': 'equals',
-            'right': 'Y',
-          },
-        ),
-      );
-      expect(result.nextRouterKey, 'true');
-    });
-
-    test('switch takes priority over legacy when both present', () async {
-      final result = await _invoke(
-        state: {'pr_class': 'docs-update'},
-        config: const PipelineNodeConfig(
-          extras: {
-            'switchKey': 'pr_class',
-            'cases': ['docs', 'security'],
-            'left': 'X',
-            'op': 'equals',
-            'right': 'Y',
-          },
-        ),
-      );
-      expect(result.nextRouterKey, 'docs');
     });
 
     test('predicate takes priority over switch when both present', () async {

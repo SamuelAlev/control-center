@@ -14,12 +14,12 @@ import 'package:collection/collection.dart';
 /// this extra is how [pipelineStartStep] picks the node a run should enter.
 const String kPipelineStartEventTypeKey = 'eventType';
 
-/// Pitch used when stacking newly created trigger nodes under a legacy
-/// shared entry. Matches the editor's trigger-column pitch (tile + gap).
+/// Pitch used when stacking newly created trigger nodes under a shared
+/// entry. Matches the editor's trigger-column pitch (tile + gap).
 const double kPipelineTriggerStackPitch = 96;
 
-/// Event type stamped on a trigger graph node, or null when the node is a
-/// legacy shared entry (`id: 'trigger'` with no extra).
+/// Event type stamped on a trigger graph node, or null when the node is the
+/// shared entry (`id: 'trigger'` with no extra).
 String? pipelineStepStartEventType(PipelineStepDefinition step) {
   if (step.kind != StepKind.trigger) {
     return null;
@@ -103,8 +103,8 @@ bool pipelineHasSharedTriggerEntry(
 
 /// Makes trigger *rows* and trigger *graph nodes* 1:1.
 ///
-/// Older templates keep one hidden `id: 'trigger'` entry that every
-/// [PipelineTrigger] row painted as a proxy of. Expanding that node into one
+/// A template seeded with one hidden `id: 'trigger'` entry has every
+/// [PipelineTrigger] row painted as a proxy of it. Expanding that node into one
 /// step per row copies each outbound edge onto **every** row (separate
 /// [StepTrigger]s, so they OR) — that is the seeded meaning: any of those
 /// events runs the same graph. After expansion, pulling a new wire from
@@ -119,7 +119,7 @@ PipelineDefinition syncPipelineTriggerSteps({
   final sortedRows = sortPipelineTriggers(rows);
   final rowById = {for (final row in sortedRows) row.id: row};
   final existingTriggerSteps = pipelineTriggerSteps(def);
-  final legacy = [
+  final unmatched = [
     for (final step in existingTriggerSteps)
       if (!rowById.containsKey(step.id)) step,
   ];
@@ -130,7 +130,7 @@ PipelineDefinition syncPipelineTriggerSteps({
   // Only the leftover shared entry is rewritten onto a row. A deleted
   // 1:1 node must drop its outbound wires, not steal them onto another
   // start.
-  final expandingShared = legacy.any((step) => step.id == 'trigger');
+  final expandingShared = unmatched.any((step) => step.id == 'trigger');
   final rewireFrom = expandingShared ? 'trigger' : null;
 
   if (sortedRows.isEmpty) {
@@ -202,12 +202,14 @@ PipelineDefinition syncPipelineTriggerSteps({
     changed = true;
   }
 
-  if (legacy.isNotEmpty) {
-    final legacyIds = {for (final step in legacy) step.id};
+  if (unmatched.isNotEmpty) {
+    final unmatchedIds = {for (final step in unmatched) step.id};
     steps = [
       for (final step in steps)
-        if (!(step.kind == StepKind.trigger && legacyIds.contains(step.id)))
-          step.kind == StepKind.trigger ? step : _stripSources(step, legacyIds),
+        if (!(step.kind == StepKind.trigger && unmatchedIds.contains(step.id)))
+          step.kind == StepKind.trigger
+              ? step
+              : _stripSources(step, unmatchedIds),
     ];
     changed = true;
   }

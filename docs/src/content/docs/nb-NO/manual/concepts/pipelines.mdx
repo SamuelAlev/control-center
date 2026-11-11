@@ -2,7 +2,7 @@
 title: Pipelines og automatisering
 description: Hvorfor pipelines skiller planlegging fra arbeid, hva som faktisk starter en kjøring, og hvilke av de innebygde malene som er aktive rett ut av boksen.
 slug: nb-NO/handbok/konsepter/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipelines er den deterministiske halvdelen av Control Center. En agent bestemmer
@@ -35,7 +35,7 @@ steg, fordi gjenopptaking ville være verre enn å stoppe:
   `orchestration.awaitApproval`. `human.gate` er ikke unntatt.
 - Et steg som er deklarert med `extras: {'idempotent': false}` og var i gang da
   serveren stoppet, kan allerede ha anvendt bivirkningen sin (en
-  squash-sammenslåing, en worktree-opprydding). Å kjøre det på nytt kan anvende
+  sikkerhetskopi av arbeidsområdet, en worktree-opprydding). Å kjøre det på nytt kan anvende
   den to ganger, så motoren markerer det som feilet og overlater nytt forsøk til
   deg.
 
@@ -138,8 +138,14 @@ den, og det var aldri ment å skulle være et valg for brukeren.
 Én asymmetri til er verdt å kjenne til: den innebygde `pr_review` legger med
 vilje ikke lenger ut noe på GitHub. Å publisere en gjennomgang er et eget steg
 som brukeren må godkjenne, og en pipeline som la ut direkte, ville publisert
-dobbelt. `cross_review`, `ticket_to_pr` og `pr_triage` legger derimot fortsatt
-ut en kommentar rett på GitHub når de kjører.
+dobbelt. `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` og `external_pr_welcome` legger derimot fortsatt
+ut en kommentar på GitHub når de kjører.
+
+De legger den ut fra serveren, gjennom trinnet **Post PR comment** (`prReview.comment`), aldri fra et shell-skript: pipelinens shell-steg og agentenes sandkasser holder et GitHub-token som bare kan lese. Den samme regelen former resten:
+
+- `external_pr_welcome` legger ut hilsenen sin som trinnets `message`.
+- `ticket_to_pr` lar kodeagenten pushe `agent/<ticket_id>` (gjennom kjøringsgatewayen) og åpne utkast-PR-en med `open_pull_request`, på GitHub-påloggingen til personen som startet kjøringen, eller som boten når ingen gjorde det. Begge møter arbeidsområdets regler **Push til en remote** og **Åpne en pull request**. På Control Center Connect kan en kjøring ingen ba om, for eksempel en som utløses av `TicketAssigned`, ikke pushe eller åpne PR-en: den delte App-ens bot leser og kommenterer bare.
+- `pre_merge_gate` slår aldri sammen. Å godkjenne ved gaten sin legger ut at PR-en er klar for en vedlikeholder å slå sammen; å avvise legger ut at endringer er bedt om. En person slår sammen fra PR-siden.
 
 ## Hva motoren vet
 

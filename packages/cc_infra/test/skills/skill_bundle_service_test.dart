@@ -157,6 +157,7 @@ SkillBundleService _service(
     required String repo,
     required String path,
     String? ref,
+    String? actingUserId,
   })
   fetch,
   SkillScanPort? scanner,
@@ -167,12 +168,14 @@ SkillBundleService _service(
     required String repo,
     required String path,
     String? branch,
+    String? actingUserId,
   })?
   latestCommit,
   Future<String?> Function({
     required String workspaceId,
     required String owner,
     required String repo,
+    String? actingUserId,
   })?
   defaultBranch,
   DomainEventBus? eventBus,
@@ -217,6 +220,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       expect(await svc.computeSkillHash('ws', 'nope'), isNull);
@@ -239,6 +243,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       // The directory DOES exist here, so we hit the listing path with one file.
@@ -262,6 +267,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       expect(await svc.computeSkillHash('ws', 'empty'), isNull);
@@ -281,6 +287,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final hash = await svc.computeSkillHash('ws', 'sk');
@@ -306,6 +313,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final hash = await svc.computeSkillHash('ws', 'multi');
@@ -326,6 +334,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final lock = await svc.readLock('ws');
@@ -347,6 +356,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final lock = await svc.readLock('ws');
@@ -366,6 +376,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final lock = await svc.readLock('ws');
@@ -382,6 +393,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       const entry = SkillLockEntry(
@@ -412,6 +424,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# fetched skill', ref),
       );
       final entry = await svc.installFromGitHub(
@@ -452,6 +465,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => call++ == 0
               ? const SourceSkillFiles(
                   files: {
@@ -511,6 +525,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# bad', ref),
       );
       await expectLater(
@@ -544,6 +559,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# bad', ref),
       );
       final entry = await svc.installFromGitHub(
@@ -570,6 +586,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# bad', ref),
       );
       await expectLater(
@@ -601,6 +618,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => _files('# plain', ref),
         );
         final entry = await svc.installFromGitHub(
@@ -633,6 +651,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final entry = await svc.pinLocal(workspaceId: 'ws', slug: 'local');
@@ -651,6 +670,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await expectLater(
@@ -671,6 +691,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final result = await svc.verify('ws');
@@ -690,6 +711,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
 
@@ -770,6 +792,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       expect(await svc.checkUpdates('ws'), isEmpty);
@@ -785,6 +808,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
         latestCommit:
             ({
@@ -793,13 +817,14 @@ void main() {
               required repo,
               required path,
               branch,
-            }) async =>
-                'newsha',
+              String? actingUserId,
+            }) async => 'newsha',
         defaultBranch:
             ({
               required workspaceId,
               required owner,
               required repo,
+              String? actingUserId,
             }) async => 'main',
       );
       // Pin a github skill.
@@ -835,6 +860,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
         latestCommit:
             ({
@@ -843,8 +869,8 @@ void main() {
               required repo,
               required path,
               branch,
-            }) async =>
-                'x',
+              String? actingUserId,
+            }) async => 'x',
       );
       await svc.writeLock(
         'ws',
@@ -874,6 +900,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
         latestCommit:
             ({
@@ -882,6 +909,7 @@ void main() {
               required repo,
               required path,
               branch,
+              String? actingUserId,
             }) async {
               calls++;
               return 'new';
@@ -916,6 +944,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
         latestCommit:
             ({
@@ -924,8 +953,8 @@ void main() {
               required repo,
               required path,
               branch,
-            }) async =>
-                'same',
+              String? actingUserId,
+            }) async => 'same',
       );
       await svc.writeLock(
         'ws',
@@ -955,6 +984,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
         latestCommit:
             ({
@@ -963,8 +993,8 @@ void main() {
               required repo,
               required path,
               branch,
-            }) async =>
-                throw StateError('net'),
+              String? actingUserId,
+            }) async => throw StateError('net'),
       );
       await svc.writeLock(
         'ws',
@@ -996,6 +1026,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await expectLater(
@@ -1014,6 +1045,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1046,6 +1078,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1081,6 +1114,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# updated $ref', ref),
       );
       // Install first.
@@ -1119,6 +1153,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await expectLater(
@@ -1139,6 +1174,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final result = await svc.previewFiles(
@@ -1166,6 +1202,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final result = await svc.previewFiles(
@@ -1190,6 +1227,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# bye', ref),
       );
       await svc.installFromGitHub(
@@ -1227,6 +1265,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final removed = await svc.uninstall(workspaceId: 'ws', slug: 'loose');
@@ -1246,6 +1285,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       expect(await svc.reVerify('ws'), isEmpty);
@@ -1268,6 +1308,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       // Pin the REAL on-disk hash: a current-rules entry whose bytes match its
@@ -1308,6 +1349,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1343,6 +1385,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1392,6 +1435,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1442,6 +1486,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => _files('', ref),
         );
         await svc.writeLock(
@@ -1482,6 +1527,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1526,6 +1572,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await expectLater(
@@ -1545,6 +1592,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await expectLater(
@@ -1573,6 +1621,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => _files('', ref),
         );
         // A lock file in the dir must not become part of the scanned bundle.
@@ -1606,6 +1655,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.scanInstalled(workspaceId: 'ws', slug: 'u');
@@ -1627,6 +1677,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1636,7 +1687,7 @@ void main() {
             'v': SkillLockEntry(
               slug: 'v',
               source: 'pub',
-              sourceType: SkillOrigin.registry,
+              sourceType: SkillOrigin.github,
               skillPath: 'skills/v/SKILL.md',
               computedHash: 'irrelevant',
               trustTier: SkillTrustTier.verified,
@@ -1662,6 +1713,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final result = await svc.scanInstalled(workspaceId: 'ws', slug: 'q');
@@ -1689,6 +1741,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.writeLock(
@@ -1698,7 +1751,7 @@ void main() {
             'm': SkillLockEntry(
               slug: 'm',
               source: 'pub',
-              sourceType: SkillOrigin.registry,
+              sourceType: SkillOrigin.github,
               skillPath: 'skills/m/SKILL.md',
               computedHash: 'old-pin',
               scanVerdict: SkillScanVerdict.pass,
@@ -1710,7 +1763,7 @@ void main() {
       await svc.scanInstalled(workspaceId: 'ws', slug: 'm');
       final entry = (await svc.readLock('ws')).skills['m']!;
       expect(entry.scanVerdict, SkillScanVerdict.quarantine);
-      expect(entry.sourceType, SkillOrigin.registry);
+      expect(entry.sourceType, SkillOrigin.github);
       expect(entry.computedHash, 'old-pin');
     });
   });
@@ -1728,6 +1781,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final entry = await svc.saveLocal(
@@ -1763,6 +1817,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => _files('', ref),
         );
         final dir = Directory(p.join(temp.path, 'ws', 'skills', 'edited'));
@@ -1823,6 +1878,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => _files('', ref),
         );
         final dir = Directory(p.join(temp.path, 'ws', 'skills', 'edited'));
@@ -1867,6 +1923,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final dir = Directory(p.join(temp.path, 'ws', 'skills', 'edited'));
@@ -1902,6 +1959,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => SourceSkillFiles(
               files: {'SKILL.md': '# skill', 'scripts/run.sh': 'echo hi'},
               ref: ref ?? 'deadbeef',
@@ -1942,6 +2000,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await expectLater(
@@ -1972,6 +2031,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final entry = await svc.saveLocal(
@@ -1989,7 +2049,7 @@ void main() {
       );
     });
 
-    test('preserves registry provenance and records previousHash', () async {
+    test('preserves github provenance and records previousHash', () async {
       final svc = _service(
         temp,
         scanner: _FakeScanner(),
@@ -2000,9 +2060,10 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
-      // A registry skill is installed first (pinned at some hash).
+      // A GitHub skill is installed first (pinned at some hash).
       await svc.writeLock(
         'ws',
         const SkillLock(
@@ -2010,7 +2071,7 @@ void main() {
             'reg': SkillLockEntry(
               slug: 'reg',
               source: 'pub',
-              sourceType: SkillOrigin.registry,
+              sourceType: SkillOrigin.github,
               skillPath: 'skills/reg/SKILL.md',
               computedHash: 'pin-v1',
               ref: '1.0.0',
@@ -2024,7 +2085,7 @@ void main() {
         slug: 'reg',
         content: '# locally edited',
       );
-      expect(entry.sourceType, SkillOrigin.registry);
+      expect(entry.sourceType, SkillOrigin.github);
       expect(entry.source, 'pub');
       expect(entry.trustTier, SkillTrustTier.verified);
       expect(entry.ref, '1.0.0');
@@ -2046,6 +2107,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       expect(await svc.listInstalledStatus('ws'), isEmpty);
@@ -2064,6 +2126,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.saveLocal(workspaceId: 'ws', slug: 'ok', content: '# ok');
@@ -2108,6 +2171,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => _files('', ref),
         );
         await svc.writeLock(
@@ -2158,6 +2222,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final statuses = await svc.listInstalledStatus('ws');
@@ -2187,6 +2252,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       final entry = await svc.saveLocal(
@@ -2215,6 +2281,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# fetched', ref),
       );
       await svc.installFromGitHub(
@@ -2243,6 +2310,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('# updated', ref),
       );
       await svc.writeLock(
@@ -2287,6 +2355,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => _files('', ref),
       );
       await svc.saveLocal(workspaceId: 'ws', slug: 'quiet', content: '# q');

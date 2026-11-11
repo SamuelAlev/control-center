@@ -2,7 +2,7 @@
 title: Inteligence kódu
 description: Proč agent potřebuje překladač, strukturální porovnávač a debugger a na co každý z nich umí odpovědět, když to ostatní neumí.
 slug: cs-CZ/prirucka/koncepty/inteligence-kodu
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center dává agentovi čtyři způsoby, jak kódu rozumět i jinak než čtením. Každý odpovídá na jinou otázku. Jsou čtyři právě proto, že žádný jeden mechanismus nezodpoví všechny.
@@ -31,6 +31,8 @@ Opakovat, co už agent slyšel, je horší než mlčet. Výsledek se zaplní šu
 Při startu se nespouští žádný server. Spustí se až s prvním požadavkem, který ho potřebuje, skoro vždy při první úpravě souboru, o který se hlásí. Nečinné servery se odklízejí. Hostitel, který se Dartu nikdy nedotkne, nespustí analyzátor.
 
 Detekce je **průnik**: v checkoutu musí ležet kořenová značka *a zároveň* se musí najít binárka. Značka sama říká „tohle je projekt v Pythonu“ a nic o tom, jestli je server nainstalovaný. Binárka, kterou jde najít, sama říká, že hostitel má toolchain, a nic o tomto checkoutu. Teprve obojí dohromady znamená, že dotaz může projít. Nástroj, který se nabízí a pokaždé selže, je horší než ten, který v nabídce není.
+
+Co může repozitář ovlivnit, je záměrně malé. Servery pocházejí z vestavěné tabulky, nikdy ze souboru v checkoutu, a binárka uvnitř projektu (`node_modules/.bin`) se použije jen tehdy, když je běh v sandboxu. Jazykový server je program běžící na stroji serveru, takže repozitář nemůže žádný pojmenovat.
 
 ## Proč strukturální hledání, když už je tu grep
 

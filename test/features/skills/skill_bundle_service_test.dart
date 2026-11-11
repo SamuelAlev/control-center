@@ -157,6 +157,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => SourceSkillFiles(
               files: {'SKILL.md': '# Skill\nFetched from $owner/$repo@$ref'},
               ref: ref ?? 'main',
@@ -257,6 +258,7 @@ void main() {
               required repo,
               required path,
               String? ref,
+              String? actingUserId,
             }) async => SourceSkillFiles(
               files: {
                 'SKILL.md':
@@ -373,6 +375,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => SourceSkillFiles(
                 files: {'SKILL.md': '# Skill @ $ref'},
                 ref: ref ?? 'main',
@@ -384,13 +387,14 @@ void main() {
                 required repo,
                 required path,
                 branch,
-              }) async =>
-                  latestSha,
+                String? actingUserId,
+              }) async => latestSha,
           defaultBranch:
               ({
                 required workspaceId,
                 required owner,
                 required repo,
+                String? actingUserId,
               }) async => 'main',
         );
 
@@ -466,6 +470,7 @@ void main() {
                 required repo,
                 required path,
                 String? ref,
+                String? actingUserId,
               }) async => SourceSkillFiles(
                 files: const {'SKILL.md': '# unused'},
                 ref: ref ?? 'main',

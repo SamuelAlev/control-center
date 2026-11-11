@@ -1120,7 +1120,7 @@ void main() {
       'seq': 1,
       'event': wire,
     });
-    expect(back.event.content, 'hi');
+    expect((back.event as TextEvent).content, 'hi');
     // The serialized frame is JSON-stable.
     expect(
       (jsonDecode(jsonEncode(back.toJson())) as Map<String, dynamic>)['jobId'],

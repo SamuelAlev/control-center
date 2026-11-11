@@ -2,7 +2,7 @@
 title: สะพานแชท
 description: ผู้ให้บริการ คำสั่ง ข้อมูลรับรอง ความสามารถ การดำเนินการ RPC และที่จัดเก็บของสะพานแชท
 slug: th-TH/คู่มือ/อ้างอิง/สะพานแชท
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## ผู้ให้บริการ
@@ -150,7 +150,7 @@ message.im
 | การกล่าวถึงได้รับการยอมรับ            | `Working on it…`                                               |
 | ขั้นตอน `repo`                 | `Cloning <repo>…`                                              |
 | ขั้นตอน `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| ขั้นตอน `script`               | `Running the setup script for <repo>…`                         |
+| ขั้นตอน `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | ขั้นตอน `agent`                | `Setting up <agent>…`                                          |
 | `provisioning` ยังไม่มีขั้นตอน | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ message.im
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | ข้อมูลรับรองการเชื่อมต่อ     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | การตั้งค่าแบบมีคำแนะนำที่ทำค้างไว้ | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| ไฟล์ Slack แบบเก่า         | `<dataDir>/<workspaceId>/slack_credentials.json` และ `slack_app_setup.json`, อ่านครั้งเดียวและโยกย้ายในตำแหน่งเดิม |
 
 ข้อมูลรับรองอยู่ข้างฐานข้อมูลของเวิร์กสเปซ ไม่ได้อยู่ข้างใน: การลบเวิร์กสเปซจะพาโทเค็นแชทของมันไปด้วย และ `workspace.export` หรือการสำรองข้อมูลจะคัดลอก `workspace.db` — เวิร์กสเปซที่ส่งต่อให้คนอื่นจึงไม่มีโทเค็นบอทที่ใช้งานได้ติดไป การเขียนเป็นแบบอะตอมมิก (ไฟล์ชั่วคราวบวกการเปลี่ยนชื่อ) และถูกจำกัดสิทธิ์ให้เฉพาะเจ้าของ
 

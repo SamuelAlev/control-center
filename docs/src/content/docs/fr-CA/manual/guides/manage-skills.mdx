@@ -2,7 +2,7 @@
 title: Installer et gérer des skills
 description: Installez et mettez à jour les skills de l'espace de travail via la barrière de scan, puis comparez des révisions enregistrées à des évaluations de skills budgétées.
 slug: fr-CA/manuel/guides/gerer-skills
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Ce guide vous montre comment remplir un espace de travail de skills venus de
@@ -108,7 +108,7 @@ le fichier de verrouillage.
    utilise un fournisseur configuré et un modèle compatible avec les outils.
    **Claude Code** utilise le compte géré par défaut de Claude et un
    identifiant de modèle concret ; connectez-vous d'abord dans **Paramètres →
-   Adaptateurs**. Il n'emprunte pas la connexion personnelle de l'opérateur du
+   Serveur → Fournisseurs de modèles → Comptes Claude Code**. Il n'emprunte pas la connexion personnelle de l'opérateur du
    serveur.
 3. Choisissez une **Comparaison** dans le tableau ci-dessous.
 4. Réglez **Répétitions par tâche** (1–20) et **Budget (cents US)**. Par
@@ -207,8 +207,7 @@ n'entrent jamais en collision avec les commandes slash intégrées (`/plan`,
   l'agent
 - `/skill:<repo>:<name>` — un skill fourni par un dépôt extrait dans cet espace
 
-Un nom seul non intégré se résout quand même, pour les messages écrits avant
-l'existence de l'espace de noms. `/skill:plan` est ce qui atteint un skill
+`/skill:plan` est ce qui atteint un skill
 nommé `plan` ; `/plan` est toujours la commande intégrée.
 
 ## Skills à portée de dépôt
@@ -224,7 +223,7 @@ Les skills de dépôt passent le même scan à refus par défaut (`pass` / `warn
 `quarantine`) avant que leur frontmatter n'atteigne un prompt. `warn` est
 admis ; `quarantine` est retenu, sans dérogation d'opérateur sur ce chemin.
 
-Voir [Skills à portée de dépôt](/fr-CA/manuel/concepts/modele-agent/#repo-scoped-skills) et
+Voir [Skills à portée de dépôt](/fr-CA/manuel/concepts/modele-agent/#skills-à-portée-de-dépôt) et
 [Commandes slash](/fr-CA/manuel/reference/commandes-slash/).
 
 ## Guides connexes

@@ -1,8 +1,8 @@
 ---
 title: Cipta GitHub App
-description: Berikan pelayan anda GitHub App tersendiri dengan satu klik, pasangkannya di tempat repositori anda berada, dan benarkan pelayan untuk pemasangan organisasi.
+description: Berikan pelayan anda GitHub App tersendiri dengan satu klik, pasangkannya di tempat repositori anda berada, supaya semua orang dalam organisasi boleh menggunakannya dari mana-mana pelayan.
 slug: ms-MY/manual-pengguna/panduan-cara/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Panduan ini menunjukkan cara memberikan pelayan anda GitHub App tersendiri. Ia mengambil masa kira-kira
@@ -32,7 +32,7 @@ hanya meliputi satu repositori dan dihadkan kepada apa yang boleh dilakukan oleh
 Membaca repositori yang dipautkan hanya memerlukan app; apa-apa yang menulis memerlukan ahli yang boleh push.
 Automasi tidak pernah meluluskan pull request.
 
-App pelayan hanya terpakai di bawah **Gunakan aplikasi saya sendiri**. Dengan Connect Control Center atau Connect tersuai, Connect mengendalikan GitHub, dan app pelayan kekal disimpan tetapi tidak digunakan sehingga anda bertukar semula. App ruang kerja ([Berikan satu ruang kerja app yang berbeza](#berikan-satu-ruang-kerja-app-yang-berbeza)) terus terpakai dalam semua mod. Sebuah app yang sebahagian medannya
+App pelayan hanya terpakai di bawah **Gunakan aplikasi saya sendiri**. Dengan Connect Control Center atau Connect tersuai, Connect mengendalikan GitHub, dan app pelayan kekal disimpan tetapi tidak digunakan sehingga anda bertukar semula. Ruang kerja yang menggunakan app sendiri ([Berikan satu ruang kerja app sendiri](#berikan-satu-ruang-kerja-app-sendiri)) menggunakan App sendirinya, tanpa mengira mod pelayan. Sebuah app yang sebahagian medannya
 hilang ialah ralat, bukan sandaran: log masuk GitHub ditolak sehingga setiap medan diisi.
 
 ## Prasyarat
@@ -79,22 +79,17 @@ App yang didaftarkan tetapi tidak dipasang hanya boleh mendaftar masuk orang dan
 1. Pilih akaun atau organisasi yang memiliki repositori anda pada halaman pemasangan yang GitHub buka
 2. Pilih **All repositories**, atau pilih repositori yang perlu dilihat oleh pelayan ini
 
-Untuk memasang pada akaun lain kemudian, pentadbir ruang kerja pergi ke **Tetapan → Ruang kerja → Umum**, mencari
-**Pemasangan aplikasi GitHub** pada kad identiti GitHub dan klik **Pasang aplikasi GitHub**. Senarai itu
+Untuk memasang pada akaun lain kemudian, pentadbir ruang kerja pergi ke **Tetapan → Ruang kerja → Integrasi**, mencari
+**Pemasangan aplikasi GitHub** pada kad **Apl GitHub** di bawah Hos kod dan klik **Pasang aplikasi GitHub**. Senarai itu
 memaparkan setiap akaun tempat app dipasang dan menandakan pemasangan yang digantung.
 
-## Benarkan pelayan ini untuk sebuah organisasi
+## Kongsi pemasangan organisasi
 
-Pada app kongsi Control Center, pemasangan sesebuah organisasi hanya berfungsi untuk pelayan yang pentadbirnya telah
-membenarkan. Memasang melalui **Pasang aplikasi GitHub** membenarkan pelayan yang memulakannya. Untuk pemasangan
-yang sudah wujud:
+Organisasi memasang GitHub App sekali sahaja. Selepas itu, sesiapa dalam organisasi yang log masuk ke GitHub pada mana-mana pelayan Control Center boleh menggunakan pemasangan itu, sama ada pelayan itu milik anda, rakan sekerja, atau mereka sendiri. Tiada apa-apa yang perlu dibenarkan bagi setiap pelayan.
 
-1. Seorang pentadbir organisasi itu log masuk ke GitHub pada pelayan ini
-2. Mereka membuka **Tetapan → Ruang kerja → Umum → Pemasangan aplikasi GitHub**
-3. Baris organisasi itu menunjukkan **Belum diberi kuasa**. Mereka klik **Benarkan pelayan ini**
+Setiap token yang diperoleh pelayan ialah milik orang yang log masuk itu sendiri, terhad kepada satu repositori dan peranannya di situ, supaya ia tidak sampai lebih jauh daripada yang boleh mereka lakukan di GitHub. Log audit GitHub menunjukkan orang itu, yang bertindak melalui app.
 
-Baris itu kemudian menunjukkan **Telah diberi kuasa**. App milik anda sendiri tidak memerlukan ini: setiap
-pemasangannya tergolong dalam pelayan anda.
+Untuk menghalang Control Center mencapai sesebuah organisasi, pemilik organisasi membuang pemasangan atau menyempitkan repositorinya di GitHub. Membuang seseorang daripada organisasi juga menghentikan aksesnya.
 
 ## Daftar secara manual sebagai gantinya
 
@@ -128,15 +123,15 @@ dieksport dalam persekitaran prosesnya, tempat setiap proses anak boleh membacan
 (dalam Docker, lekapkan pada `/app/bin/.env`). Penyemaian berlaku **sekali bagi setiap medan**, jadi suntingan
 dalam Tetapan tidak dibatalkan oleh permulaan semula.
 
-## Berikan satu ruang kerja app yang berbeza
+## Berikan satu ruang kerja app sendiri
 
-Sesebuah ruang kerja boleh menggunakan app milik sendiri dan bukannya app pelayan. Pentadbir ruang kerja pergi ke
-**Tetapan → Ruang kerja → Umum**, memilih **Gunakan GitHub App lain** pada kad **Identiti GitHub** dan memasukkan
-id, kunci peribadi, id klien dan rahsia klien app itu. Ahli kemudian log masuk ke app itu untuk ruang kerja ini.
-Ruang kerja pada app sendiri tidak pernah jatuh kembali kepada app pelayan atau Connect: sehingga medannya lengkap,
-kerja GitHubnya ditolak. Ini terpakai tanpa mengira cara pelayan mendaftar masuk orang, termasuk Connect.
+Sesebuah ruang kerja boleh berjalan pada app milik sendiri dan bukannya app pelayan:
 
-Kad **Apl penyedia** pada halaman yang sama melakukan perkara yang sama untuk Google Calendar, Linear dan carian GIF. Lihat [Berikan satu ruang kerja app Linear sendiri](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/#berikan-satu-ruang-kerja-app-linear-sendiri) dan [Berikan satu ruang kerja klien Google sendiri](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/#berikan-satu-ruang-kerja-klien-google-sendiri).
+1. Pentadbir ruang kerja pergi ke **Tetapan → Ruang kerja → Integrasi**
+2. Pada kad **Control Center Connect**, mereka memilih **Gunakan aplikasi saya sendiri** dan klik **Terapkan**. Setiap orang dalam ruang kerja log masuk semula melalui app ruang kerja
+3. Kad **Apl GitHub** di bawah Hos kod kini memegang medan app itu: **ID apl** dan **Kunci peribadi** di bawah **Bertindak untuk ruang kerja ini**, **ID klien** dan **Rahsia klien** di bawah **Melog masuk orang**. Klik **Uji** apabila medannya telah diisi
+
+Ahli kemudian log masuk ke app itu untuk ruang kerja ini. Ruang kerja pada app sendiri tidak pernah jatuh kembali kepada app pelayan atau Connect: sehingga medannya lengkap, kerja GitHubnya ditolak. Pilihan yang sama meliputi Google Calendar, Linear dan carian GIF, dengan medan masing-masing di sebelah pembekalnya pada halaman yang sama. Lihat [Berikan satu ruang kerja app Linear sendiri](/ms-MY/manual-pengguna/panduan-cara/integrasi-linear/#berikan-satu-ruang-kerja-app-linear-sendiri) dan [Berikan satu ruang kerja klien Google sendiri](/ms-MY/manual-pengguna/panduan-cara/sambungkan-kalendar/#berikan-satu-ruang-kerja-klien-google-sendiri). Pilihan lain pada kad itu, dan apa yang dilakukan setiap satu, terdapat dalam [Pilihan setiap ruang kerja](/ms-MY/manual-pengguna/rujukan/connect/#pilihan-setiap-ruang-kerja).
 
 ## Penyelesaian masalah
 
@@ -152,7 +147,7 @@ Halaman sekali guna telah digunakan, atau sepuluh minit telah berlalu. Mulakan s
 ### Uji memaklumkan kelayakan berfungsi tetapi app tidak dipasang di mana-mana
 
 Pendaftaran dan pemasangan ialah langkah berasingan. Buka halaman pemasangan app, atau gunakan **Pasang aplikasi
-GitHub** dalam Ruang kerja → Umum.
+GitHub** dalam Ruang kerja → Integrasi.
 
 ### Uji memaklumkan kunci peribadi tidak dapat dibaca
 

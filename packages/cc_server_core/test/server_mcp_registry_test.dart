@@ -82,6 +82,8 @@ void main() {
     final registry = buildServerMcpRegistry(
       globalDb: global,
       workspaceDbs: dbs,
+      servedRepos: DaoRepoRepository(dbs),
+      codeGraphRepos: (workspaceId, repoId) async => true,
       newsfeedRepository: DaoNewsfeedRepository(
         global.rssDao,
         RssFetcherService(_NullRhttpClient()),
@@ -89,6 +91,9 @@ void main() {
       newsfeedOwnerUserId: 'owner-user',
       ticketRepository: DaoTicketRepository(dbs, global.workspaceRouteDao),
       messagingRepository: DaoMessagingRepository(dbs),
+      hiddenSpacesForCaller:
+          ({required workspaceId, required callerConversationId}) async =>
+              const <String>{},
       agentQuestions: _SilentQuestions(),
       mediaRenderer: _NoopRenderer(),
       todoRepository: DaoTodoRepository(dbs),
@@ -177,7 +182,7 @@ void main() {
     // listed resolves and the catalogue view matches the list.
     for (final name in names) {
       expect(
-        registry.lookup(name as String),
+        registry.lookup(name as String, includePersonal: false),
         isNotNull,
         reason: '$name listed but not resolvable',
       );

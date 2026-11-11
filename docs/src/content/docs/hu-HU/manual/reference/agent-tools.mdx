@@ -2,7 +2,7 @@
 title: Beépített ügynökeszközök
 description: Az az eszközfelület, amelyet a beépített harness ad egy ügynöknek – nyelvi szerver, strukturális keresés, hibakereső, kernelek és worker-vezérlés –, minden művelettel és annak argumentumaival.
 slug: hu-HU/kezikonyv/referencia/ugynokeszkozok
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Ezek azok a **szerverhez kötött** eszközök, amelyeket a beépített ügynök-futtatókörnyezet közvetlenül regisztrál – nyelvi szerver, strukturális keresés, hibakereső, kernelek, kérdések és worker-vezérlés –, szemben az általa behidalazott [MCP-eszközökkel](/hu-HU/kezikonyv/referencia/mcp-eszkozok/) és a harness futtatókörnyezetéből származó általános fájl-, kereső- és shelleszközökkel. Ezek nincsenek benne az MCP-jegyzékben: egy külső MCP-kliens nem látja őket, mert mindegyik egy élő szerveroldali erőforráshoz van kötve – egy nyelviszerver-folyamathoz, egy hibakereső adapterhez, egy értelmezőhöz –, amely egyetlen futtatáshoz tartozik.
@@ -24,6 +24,8 @@ Minden eszköz deklarál egy szintet, és a szint dönti el, **mely felületek l
 ## `lsp` – nyelviszerver-lekérdezések
 
 Akkor kerül regisztrálásra, ha a futtatásnak van nyelviszerver-felügyelője és munkakönyvtára. Az, hogy egy szerver valóban tud-e válaszolni, híváskor derül ki, **metszetként**: lennie kell gyökérjelölőnek, *és* fel kell oldódnia a szerver binárisának. Bármelyik önmagában azt jelenti, hogy nem indul szerver – a `status` ezt megmondja –, ahelyett hogy csendben találgatna.
+
+A szerverek kizárólag a beépített táblázatból származnak; a repó `lsp.json` fájlját nem olvassuk be. Homokozott futtatásban minden futtatás saját nyelvi szerver-munkamenetet kap, így a szerverek futtatásonként újra elindulnak. A projekt helyi binárisai (`node_modules/.bin`) csak akkor kerülnek felhasználásra, ha a futtatás homokozott, a projektgyökér pedig soha nem nyúlik a futtatás munkakönyvtára fölé.
 
 A pozíciókat `line` és egy `symbol` részstring címzi meg, soha nem oszlop. Egy oszlopra kért modell találgat, és egy rossz találgatás ugyanazon a soron egy másik szimbólumra oldódik fel – egy válasz, amely helyesnek látszik, és valami másról szól. A `symbol` elhagyása egy navigációs műveletnél hiba, nem pedig az első oszlopra vonatkozó tipp.
 
@@ -117,7 +119,7 @@ Minden fájlt az előkészítéskor rögzített tartalomhoz hasonlítanak össze
 
 Akkor kerül regisztrálásra, ha a futtatásnak van hibakeresési munkamenet-felügyelője, munkakönyvtára és beszélgetésazonosítója. Az, hogy egy adapter valóban el tud-e indulni, híváskor derül ki, ugyanazzal a metszetszabállyal, mint a nyelvi szervernél (gyökérjelölő *és* bináris). `exec` szint; párhuzamosan nem biztonságos (a munkamenet hívásokon átívelő állapot, így a `continue`, amely megelőzné a `stack`-et, egy már elmozdult keretet olvasna).
 
-Beszélgetésenként egy munkamenet, kemény TTL-lel (30 perc). Egy második `launch` visszautasításra kerül, ahelyett hogy csendben lecserélné az elsőt.
+Beszélgetésenként egy munkamenet, kemény TTL-lel (30 perc). Egy második `launch` visszautasításra kerül, ahelyett hogy csendben lecserélné az elsőt. Homokozott futtatásban a munkamenet a végéig megtartja a homokozóját a körök között, tehát legfeljebb ezt a 30 percet.
 
 | Művelet       | Argumentumok                  | Megjegyzések                                   |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Beszélgetésenként egy munkamenet, kemény TTL-lel (30 perc). Egy második `la
 | `status`      | —                             | Fut-e munkamenet, és hol állt meg              |
 | `breakpoints` | `file`, `lines[]`             | Az üres `lines` törli a fájlt. **Indítás előtt** is beállítható |
 | `launch`      | `program`, `args[]`           | Elindítja a programot, a töréspontjainál megállva |
-| `attach`      | `port`                        | Csatlakozik egy már futó, hibakeresett folyamathoz |
+| `attach`      | `port`                        | Csatlakozik egy már futó, hibakeresett folyamathoz a futtatás saját, továbbított portjainak egyikén; minden más portot még az indulás előtt visszautasít |
 | `continue`    | `thread_id?`                  | A következő megállásig fut                    |
 | `pause`       | `thread_id?`                  | Megállítja ott, ahol éppen van                 |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Egy lépéssel mozdít                  |
@@ -146,7 +148,7 @@ Beszélgetésenként egy munkamenet, kemény TTL-lel (30 perc). Egy második `la
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-A `debugpy` a projekt helyi `.venv/bin` vagy `venv/bin` könyvtárát előnyben részesíti a `$PATH`-tal szemben: egy `$PATH`-beli python más környezet, és a rosszból való csatlakozás úgy hibázik, mintha a kód lenne hibás.
+A `debugpy` a projekt helyi `.venv/bin` vagy `venv/bin` könyvtárát előnyben részesíti a `$PATH`-tal szemben, ha a futtatás homokozott: egy `$PATH`-beli python más környezet, és a rosszból való csatlakozás úgy hibázik, mintha a kód lenne hibás. Homokozó nélkül csak a `$PATH`-ot használja, így a repó nem választhatja ki a gazdagépen futó értelmezőt.
 
 ---
 
@@ -176,7 +178,7 @@ A híd **visszalép a harness eszközregiszterébe**, így a korlátok, a jóvá
 A cella időtúllépése egy *tétlenségi* keret (alapértelmezés: 5 perc), és **felfüggesztésre kerül**, amíg egy hídon átmenő hívás függőben van, így az a cella, amely alügynökökre ágazik szét, nem kerül leállításra a szétágazás közben.
 
 :::note[Hol fut a kernel]
-A beszélgetés elszigetelt környezetében, ha van neki ilyen, egyébként a gazdagépen. Ehhez nem indít elszigetelt környezetet – ugyanaz a szabály, amely megakadályozza, hogy egy állomásfül automatikusan elinduljon.
+A beszélgetés elszigetelt környezetében, ha van neki ilyen, egyébként a futtatás operációs rendszer szintű homokozójában a gazdagépen. Homokozó kikapcsolása vagy hiánya esetén homokozó nélkül fut, és az `eval` gazdagépi végrehajtási jóváhagyást kér. Ehhez nem indít elszigetelt környezetet – ugyanaz a szabály, amely megakadályozza, hogy egy állomásfül automatikusan elinduljon.
 :::
 
 ---

@@ -2,8 +2,10 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart' show CcToastScope, CcToastVariant;
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/repos/presentation/repo_link_workspace_dialog.dart';
 import 'package:control_center/features/repos/presentation/unlinked_repo_dialog.dart';
+import 'package:control_center/features/repos/presentation/widgets/repo_access_warnings_dialog.dart';
 import 'package:control_center/features/repos/presentation/widgets/show_add_repo_dialog.dart';
 import 'package:control_center/features/repos/providers/repo_link_workspace_choices.dart';
 import 'package:control_center/features/repos/providers/repo_providers.dart';
@@ -131,10 +133,27 @@ Future<String?> _linkUnlinkedRepo(
   if (!context.mounted) {
     return null;
   }
+  final canCreate = container.read(canCreateWorkspacesProvider);
+  if (active == null && !canCreate) {
+    // Nowhere to add it and no right to make a place: say so, offer nothing.
+    CcToastScope.maybeOf(context)?.show(
+      AppLocalizations.of(context).repoLinkNoWorkspaceToAddTo(repoFullName),
+    );
+    return null;
+  }
+  if (!container.read(canUseHostProvider)) {
+    // Adding a checkout means browsing the server's folders, which only its
+    // owner may do: say who can, rather than open a browser that is refused.
+    CcToastScope.maybeOf(
+      context,
+    )?.show(AppLocalizations.of(context).repoLinkAskOwnerToAdd(repoFullName));
+    return null;
+  }
   final action = await showUnlinkedRepoDialog(
     context: context,
     repoFullName: repoFullName,
     currentWorkspace: active,
+    canCreateWorkspace: canCreate,
   );
   if (action == null || !context.mounted) {
     return null;
@@ -172,7 +191,7 @@ Future<String?> _linkUnlinkedRepo(
     toasts?.show(
       l10n.repositoriesAddFailed(
         outcome.failed.length,
-        '${first.key}: ${first.value}',
+        '${first.key}: ${describeRepoLinkError(l10n, first.value)}',
       ),
       variant: CcToastVariant.danger,
     );
@@ -193,6 +212,9 @@ Future<String?> _linkUnlinkedRepo(
           : l10n.repoLinkCheckoutMismatch(repoFullName),
       variant: addedIt ? CcToastVariant.success : CcToastVariant.warning,
     );
+  }
+  if (context.mounted) {
+    await showRepoAccessWarnings(context, outcome.issues);
   }
   return workspaceId;
 }

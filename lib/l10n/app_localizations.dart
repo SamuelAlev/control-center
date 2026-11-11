@@ -411,7 +411,7 @@ abstract class AppLocalizations {
   /// No description provided for @guardrailClassPrPublish.
   ///
   /// In en, this message translates to:
-  /// **'Publish a review or merge'**
+  /// **'Update or merge a pull request'**
   String get guardrailClassPrPublish;
 
   /// No description provided for @guardrailClassVendorSyncWrite.
@@ -4470,12 +4470,6 @@ abstract class AppLocalizations {
   /// **'Toggled the MCP server'**
   String get activityToggledMcpServer;
 
-  /// No description provided for @activityUpdatedMcpToken.
-  ///
-  /// In en, this message translates to:
-  /// **'Updated the MCP token'**
-  String get activityUpdatedMcpToken;
-
   /// No description provided for @activitySavedApiKey.
   ///
   /// In en, this message translates to:
@@ -5555,12 +5549,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete \"{name}\"?'**
   String deleteConfirmName(String name);
-
-  /// No description provided for @archiveConversation.
-  ///
-  /// In en, this message translates to:
-  /// **'Archive conversation'**
-  String get archiveConversation;
 
   /// Delete fact
   ///
@@ -6750,12 +6738,6 @@ abstract class AppLocalizations {
   /// **'Match your OS appearance or pick a fixed mode.'**
   String get matchOsAppearance;
 
-  /// No description provided for @mcpAuthToken.
-  ///
-  /// In en, this message translates to:
-  /// **'MCP authentication token'**
-  String get mcpAuthToken;
-
   /// No description provided for @mcpNotAvailableOnServer.
   ///
   /// In en, this message translates to:
@@ -7121,12 +7103,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No system fonts detected.'**
   String get noSystemFonts;
-
-  /// No token set — access is unrestricted.
-  ///
-  /// In en, this message translates to:
-  /// **'No token set — access is unrestricted.'**
-  String get noTokenSet;
 
   /// Empty state for agent working memory
   ///
@@ -7950,30 +7926,6 @@ abstract class AppLocalizations {
   /// **'{name} will be removed from this workspace. The local files on disk are not touched.'**
   String repoRemovedFromWorkspace(String name);
 
-  /// Body of the notice listing repos the server's forge credential cannot access
-  ///
-  /// In en, this message translates to:
-  /// **'The server\'s GitHub credential can\'t see {repos}. If a repository belongs to an organization, install the GitHub App there or connect a token that has access.'**
-  String repoAccessNoticeBody(String repos);
-
-  /// Title of the notice shown when the server's forge credential cannot access linked repos
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1 {A repository can\'t be accessed} other {{count} repositories can\'t be accessed}}'**
-  String repoAccessNoticeTitle(int count);
-
-  /// Title of the notice when the GitHub App installation covering linked repos is suspended
-  ///
-  /// In en, this message translates to:
-  /// **'GitHub App installation suspended'**
-  String get repoAccessNoticeSuspendedTitle;
-
-  /// Body telling the operator the lists are cached because the GitHub App installation is suspended
-  ///
-  /// In en, this message translates to:
-  /// **'Showing last known data for {repos}. Resume the installation on GitHub, or connect a token that has access.'**
-  String repoAccessNoticeSuspendedBody(String repos);
-
   /// Badge on a repo row the server's forge credential cannot access
   ///
   /// In en, this message translates to:
@@ -8159,12 +8111,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rule'**
   String get ruleLabel;
-
-  /// Run completed
-  ///
-  /// In en, this message translates to:
-  /// **'Run completed'**
-  String get runCompleted;
 
   /// Running
   ///
@@ -8447,12 +8393,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set'**
   String get setLabel;
-
-  /// Button to set an auth token
-  ///
-  /// In en, this message translates to:
-  /// **'Set token'**
-  String get setToken;
 
   /// Settings
   ///
@@ -8783,12 +8723,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manual'**
   String get skillOriginManual;
-
-  /// No description provided for @skillOriginRegistry.
-  ///
-  /// In en, this message translates to:
-  /// **'Registry'**
-  String get skillOriginRegistry;
 
   /// No description provided for @skillOriginRuntimeLocal.
   ///
@@ -9125,12 +9059,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Toggle theme'**
   String get toggleTheme;
-
-  /// Configured — clients must present this token.
-  ///
-  /// In en, this message translates to:
-  /// **'Configured — clients must present this token.'**
-  String get tokenConfigured;
 
   /// Topic
   ///
@@ -15146,10 +15074,10 @@ abstract class AppLocalizations {
   /// **'Tool approval'**
   String get mcpApprovalMode;
 
-  /// No description provided for @mcpApprovalModeDescription.
+  /// Under 'Tool approval' in the External MCP servers section. It governs Control Center's own tools by capability tier (reads, writes, everything), not the personal MCP servers listed in that section, which a run's action policy and confirmations govern
   ///
   /// In en, this message translates to:
-  /// **'Which tool actions run without asking. Reads are always allowed; higher tiers prompt.'**
+  /// **'Which actions of Control Center\'s own tools, called through its MCP endpoint or by its agents, run without asking. Reads are always allowed; higher tiers prompt. Servers inside a run follow that run\'s action policy.'**
   String get mcpApprovalModeDescription;
 
   /// No description provided for @mcpApprovalAlwaysAsk.
@@ -20959,34 +20887,10 @@ abstract class AppLocalizations {
   /// **'About'**
   String get settingsAbout;
 
-  /// Locale string for settingsScopeBadgeYou
-  ///
-  /// In en, this message translates to:
-  /// **'YOU'**
-  String get settingsScopeBadgeYou;
-
-  /// Locale string for settingsScopeBadgeDevice
-  ///
-  /// In en, this message translates to:
-  /// **'THIS DEVICE'**
-  String get settingsScopeBadgeDevice;
-
-  /// Locale string for settingsScopeBadgeWorkspace
-  ///
-  /// In en, this message translates to:
-  /// **'WORKSPACE'**
-  String get settingsScopeBadgeWorkspace;
-
-  /// Locale string for settingsScopeBadgeServer
-  ///
-  /// In en, this message translates to:
-  /// **'SERVER'**
-  String get settingsScopeBadgeServer;
-
   /// Locale string for settingsProfileDescription
   ///
   /// In en, this message translates to:
-  /// **'Your name, email and git identity in this workspace. Switching workspace switches this overlay; handle, sign-in and devices stay on your account.'**
+  /// **'Your name, email and git identity in this workspace. Switching workspace switches this overlay; your username, sign-in and devices stay on your account in You → Profile.'**
   String get settingsProfileDescription;
 
   /// Locale string for settingsServerConnectionDescription
@@ -21010,74 +20914,8 @@ abstract class AppLocalizations {
   /// Locale string for settingsWorkspaceGeneralDescription
   ///
   /// In en, this message translates to:
-  /// **'Identity, policy and conventions shared by everyone in this workspace.'**
+  /// **'Policy and conventions shared by everyone in this workspace.'**
   String get settingsWorkspaceGeneralDescription;
-
-  /// Page and section title for agent commit attribution settings
-  ///
-  /// In en, this message translates to:
-  /// **'Commit attribution'**
-  String get settingsAgentAttributionTitle;
-
-  /// Description of the personal agent commit attribution setting
-  ///
-  /// In en, this message translates to:
-  /// **'Choose whether agent commits credit Control Center. Workspace admins can override this choice for everyone in a workspace.'**
-  String get settingsAgentAttributionDescription;
-
-  /// Section label for Control Center agent attribution
-  ///
-  /// In en, this message translates to:
-  /// **'Agent attribution'**
-  String get settingsAgentCoauthorSection;
-
-  /// User toggle to credit Control Center on agent commits
-  ///
-  /// In en, this message translates to:
-  /// **'Credit Control Center on agent commits'**
-  String get settingsAgentCoauthorTitle;
-
-  /// Explanation of enabled and disabled agent commit attribution
-  ///
-  /// In en, this message translates to:
-  /// **'You are always the author and committer. When enabled, Control Center (@usectrl) is added as a co-author. When disabled, commits contain no agent credit.'**
-  String get settingsAgentCoauthorDescription;
-
-  /// Notice shown when a workspace setting disables the personal co-author toggle
-  ///
-  /// In en, this message translates to:
-  /// **'This workspace overrides your personal choice. Your preference is saved but does not apply here.'**
-  String get settingsAgentCoauthorWorkspaceOverride;
-
-  /// Status shown while personal and workspace attribution settings load
-  ///
-  /// In en, this message translates to:
-  /// **'Loading attribution settings…'**
-  String get settingsAgentAttributionLoading;
-
-  /// Description of the workspace agent attribution override
-  ///
-  /// In en, this message translates to:
-  /// **'Choose whether agent commits credit Control Center. A workspace choice overrides each member\'s personal preference.'**
-  String get settingsWorkspaceAgentCoauthorDescription;
-
-  /// Workspace agent commit attribution option that inherits each user's preference
-  ///
-  /// In en, this message translates to:
-  /// **'Use each member\'s preference'**
-  String get settingsWorkspaceAgentCoauthorInherit;
-
-  /// Workspace option to always credit Control Center
-  ///
-  /// In en, this message translates to:
-  /// **'Always credit Control Center'**
-  String get settingsWorkspaceAgentCoauthorAlways;
-
-  /// Workspace option to never credit Control Center
-  ///
-  /// In en, this message translates to:
-  /// **'Never credit Control Center'**
-  String get settingsWorkspaceAgentCoauthorNever;
 
   /// Locale string for settingsWorkspaceMeetingsDescription
   ///
@@ -21714,12 +21552,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Checking connection…'**
   String get checkingConnection;
-
-  /// Locale string for fromEnvironment
-  ///
-  /// In en, this message translates to:
-  /// **'from the environment'**
-  String get fromEnvironment;
 
   /// Locale string for forgeTokenTitle
   ///
@@ -22654,7 +22486,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAppsGroupServerDescription.
   ///
   /// In en, this message translates to:
-  /// **'Used by workspaces that inherit this install\'s GitHub App. A workspace with its own App configures it under Workspace → General.'**
+  /// **'Used by workspaces that follow this server\'s sign-in apps. A workspace on its own apps sets up its App under Workspace → Integrations.'**
   String get providerAppsGroupServerDescription;
 
   /// Settings group: how developers talk to the server on GitHub PRs
@@ -22666,7 +22498,7 @@ abstract class AppLocalizations {
   /// Settings group description for the PR-conversations group
   ///
   /// In en, this message translates to:
-  /// **'How developers can talk to this server on GitHub in inherit workspaces. A workspace with its own App has its own bot under Workspace → General. Works with no webhook or public URL — the server polls.'**
+  /// **'How developers can talk to this server on GitHub in workspaces that follow this server. A workspace on its own apps has its own bot under Workspace → Integrations. Works with no webhook or public URL — the server polls.'**
   String get providerAppsGroupPrConversationsDescription;
 
   /// The GitHub App bot account login, shown copyable in settings
@@ -22723,12 +22555,6 @@ abstract class AppLocalizations {
   /// **'Port'**
   String get portLabel;
 
-  /// No description provided for @mcpNoTokenWarning.
-  ///
-  /// In en, this message translates to:
-  /// **'Without a token, anything that can reach this port can call every tool.'**
-  String get mcpNoTokenWarning;
-
   /// No description provided for @mcpBridgedToolsLabel.
   ///
   /// In en, this message translates to:
@@ -22782,6 +22608,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear all'**
   String get guardrailClearAllHere;
+
+  /// Agent permissions settings: heading of the group that lists rules written for a shell command prefix (e.g. `git push`) rather than for an action type.
+  ///
+  /// In en, this message translates to:
+  /// **'Commands'**
+  String get guardrailFamilyCommands;
+
+  /// Agent permissions settings: names a rule created when someone answered an agent's approval request with 'Approve for 8 hours'. Shown as the source badge of an action row and inside each listed approval.
+  ///
+  /// In en, this message translates to:
+  /// **'Standing approval'**
+  String get guardrailStandingApproval;
+
+  /// Agent permissions settings: one listed standing approval or conditional rule that allows something. {what} is a phrase such as 'branches feature/**' or 'every action of this kind'.
+  ///
+  /// In en, this message translates to:
+  /// **'Allowed for {what}'**
+  String guardrailEntryAllow(String what);
+
+  /// Agent permissions settings: one listed conditional rule that makes agents ask before acting. {what} is a phrase such as 'paths src/**'.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask first for {what}'**
+  String guardrailEntryPrompt(String what);
+
+  /// Agent permissions settings: one listed conditional rule that blocks something. {what} is a phrase such as 'branches main'.
+  ///
+  /// In en, this message translates to:
+  /// **'Denied for {what}'**
+  String guardrailEntryDeny(String what);
+
+  /// Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of git branch patterns, shown as typed.
+  ///
+  /// In en, this message translates to:
+  /// **'branches {patterns}'**
+  String guardrailCoversBranches(String patterns);
+
+  /// Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of file path patterns.
+  ///
+  /// In en, this message translates to:
+  /// **'paths {patterns}'**
+  String guardrailCoversPaths(String patterns);
+
+  /// Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of network host names.
+  ///
+  /// In en, this message translates to:
+  /// **'hosts {patterns}'**
+  String guardrailCoversHosts(String patterns);
+
+  /// Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {patterns} is a comma-separated list of shell commands.
+  ///
+  /// In en, this message translates to:
+  /// **'commands {patterns}'**
+  String guardrailCoversCommands(String patterns);
+
+  /// Agent permissions settings: what a listed rule covers, inserted into 'Allowed for {what}'. {names} is a comma-separated list of agent tool names, shown as typed.
+  ///
+  /// In en, this message translates to:
+  /// **'tools {names}'**
+  String guardrailCoversTools(String names);
+
+  /// Agent permissions settings: what a command rule covers, inserted into 'Allowed for {what}'. {prefix} is the start of a shell command.
+  ///
+  /// In en, this message translates to:
+  /// **'commands starting with {prefix}'**
+  String guardrailCoversCommandPrefix(String prefix);
+
+  /// Agent permissions settings: a limit on how many items (for example files) one action may touch, inserted into 'Allowed for {what}'. {count} is an already formatted number.
+  ///
+  /// In en, this message translates to:
+  /// **'at most {count} at once'**
+  String guardrailCoversMaxCount(String count);
+
+  /// Agent permissions settings: a spending limit, in cents, for one action, inserted into 'Allowed for {what}'. {amount} is an already formatted number.
+  ///
+  /// In en, this message translates to:
+  /// **'at most {amount} cents'**
+  String guardrailCoversMaxCents(String amount);
+
+  /// Agent permissions settings: inserted into 'Allowed for {what}' when a listed rule has no condition and covers the whole action type.
+  ///
+  /// In en, this message translates to:
+  /// **'every action of this kind'**
+  String get guardrailCoversEverything;
+
+  /// Agent permissions settings: who gave a standing approval, shown after the rule as ' · by Alex'. Only shown when it was someone other than the viewer.
+  ///
+  /// In en, this message translates to:
+  /// **'by {name}'**
+  String guardrailEntryGivenBy(String name);
+
+  /// Agent permissions settings: when a standing approval stops applying, shown after the rule as ' · ends 18:40'. {time} is a formatted time, with the date when it is not today.
+  ///
+  /// In en, this message translates to:
+  /// **'ends {time}'**
+  String guardrailEntryEnds(String time);
+
+  /// Agent permissions settings: shown after a listed rule that has no end time, as ' · until revoked'.
+  ///
+  /// In en, this message translates to:
+  /// **'until revoked'**
+  String get guardrailEntryNoEnd;
+
+  /// Agent permissions settings: screen reader label of the button that deletes one listed standing approval or rule. {entry} is the rule's description, e.g. 'Allowed for branches feature/**'.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke: {entry}'**
+  String guardrailRevokeEntry(String entry);
+
+  /// Agent permissions settings: toast shown when deleting a standing approval or rule failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t revoke it. Try again.'**
+  String get guardrailRevokeFailed;
+
+  /// Agent permissions settings: shown after a listed standing approval, as ' · not in effect while denied', when the action it approves is set to Deny. A standing approval only spares a question; it never overrides a Deny.
+  ///
+  /// In en, this message translates to:
+  /// **'not in effect while denied'**
+  String get guardrailEntryInactive;
+
+  /// Agent permissions settings: second line of an action row whose setting is 'Ask first' or 'Deny' while standing approvals listed under it still let some of these actions through.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Allowed in 1 case listed below} other{Allowed in {count} cases listed below}}'**
+  String guardrailClassPartlyAllowed(int count);
+
+  /// Agent permissions settings: note under the summary when a single space or agent is being edited and standing approvals given for the whole workspace also apply to it.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 standing approval for the whole workspace also applies here.} other{{count} standing approvals for the whole workspace also apply here.}}'**
+  String guardrailStandingFromWorkspace(int count);
+
+  /// Agent permissions settings: note under the summary when the whole workspace is being edited and standing approvals exist that were given for one space or one agent only. 'Space' and 'Agent' are the scope toggle's labels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 standing approval is set for a single space or agent. Pick Space or Agent above to see it.} other{{count} standing approvals are set for single spaces or agents. Pick Space or Agent above to see them.}}'**
+  String guardrailStandingInNarrowerScopes(int count);
 
   /// No description provided for @sandboxingCardLabel.
   ///
@@ -24109,6 +24073,18 @@ abstract class AppLocalizations {
   /// **'You\'ll be asked again the next time an agent needs to run a program from this copy.'**
   String get sandboxExecGrantRevokeConfirmBody;
 
+  /// Placeholder of the search field filtering executable grants by path
+  ///
+  /// In en, this message translates to:
+  /// **'Search paths'**
+  String get sandboxExecGrantsSearchHint;
+
+  /// Shown when no executable grant path matches the search
+  ///
+  /// In en, this message translates to:
+  /// **'No grants match your search'**
+  String get sandboxExecGrantsNoMatch;
+
   /// Persistent badge in the app shell header when connected to a public demo server
   ///
   /// In en, this message translates to:
@@ -24649,16 +24625,16 @@ abstract class AppLocalizations {
   /// **'Choose a file and upload'**
   String get backupUploadAction;
 
-  /// Why download and upload are unavailable on a relayed connection
+  /// Why download and upload are off: the app has no file lane to the server for this session (direct and relayed connections both carry one once connected)
   ///
   /// In en, this message translates to:
-  /// **'This connection reaches the server through a relay, which carries no file transfers. Connect to the server directly to download or upload a backup.'**
+  /// **'File transfers aren\'t set up for this connection yet. Reconnect to the server to download or upload a backup.'**
   String get backupTransferUnavailable;
 
   /// Which role each backup transfer requires, after a refusal
   ///
   /// In en, this message translates to:
-  /// **'The server refused. Downloading a workspace needs the admin role, restoring one needs owner, and a whole snapshot needs the install\'s operator.'**
+  /// **'The server refused. Downloading a workspace needs the workspace admin role. Restoring one needs the server owner, who must also own the workspace. A whole snapshot needs the server owner.'**
   String get backupTransferForbidden;
 
   /// That this server has no backup surface at all
@@ -25153,53 +25129,11 @@ abstract class AppLocalizations {
   /// **'Put clipboard content from any enclosure on this device without asking.'**
   String get rigClipboardAlwaysCopyDescription;
 
-  /// Workspace settings card: how this workspace authenticates to GitHub
-  ///
-  /// In en, this message translates to:
-  /// **'GitHub identity'**
-  String get workspaceGitHubIdentity;
-
-  /// Subtitle of the workspace GitHub identity card
-  ///
-  /// In en, this message translates to:
-  /// **'How background GitHub work in this workspace authenticates: this install\'s App, or a different App of the workspace\'s own.'**
-  String get workspaceGitHubIdentityDescription;
-
-  /// Workspace GitHub auth mode: inherit the server App
-  ///
-  /// In en, this message translates to:
-  /// **'Use this install\'s GitHub App'**
-  String get workspaceGitHubModeInherit;
-
-  /// Workspace GitHub auth mode: a dedicated App
-  ///
-  /// In en, this message translates to:
-  /// **'Use a different GitHub App'**
-  String get workspaceGitHubModeApp;
-
-  /// Hint when the workspace inherits the install GitHub App
-  ///
-  /// In en, this message translates to:
-  /// **'Uses the GitHub App on Server → Provider apps.'**
-  String get workspaceGitHubInheritHint;
-
-  /// Hint when the workspace uses its own GitHub App
-  ///
-  /// In en, this message translates to:
-  /// **'This workspace\'s bot and polling identity. Members sign in on You through this App.'**
-  String get workspaceGitHubAppHint;
-
   /// Profile card subtitle: workspace overlay, not a second account
   ///
   /// In en, this message translates to:
   /// **'These fields are you in this workspace. Empty fields inherit your account name and email. Switching workspace switches this overlay.'**
   String get profileOverlayHint;
-
-  /// Code hosting card subtitle on Workspace → Profile
-  ///
-  /// In en, this message translates to:
-  /// **'Sign in or paste a token for this workspace.'**
-  String get forgeConnectionsThisWorkspace;
 
   /// Menu item that cuts the next branch in this space's stack
   ///
@@ -26429,6 +26363,24 @@ abstract class AppLocalizations {
   /// **'The server could not provide a login command for this account.'**
   String get claudeSignInCommandUnavailable;
 
+  /// Badge on a Claude Code account whose sign-in just finished while the sign-in dialog was open. The opposite of the 'Signed out' badge
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in'**
+  String get claudeAccountSignedIn;
+
+  /// Line under the login command in the Claude Code sign-in dialog, beside a spinner. The dialog watches for the login the user runs in a terminal and closes itself when it finishes
+  ///
+  /// In en, this message translates to:
+  /// **'This closes on its own once the sign-in finishes.'**
+  String get claudeSignInClosesItself;
+
+  /// Same line as claudeSignInClosesItself when the dialog lists several Claude Code accounts, each with its own login command
+  ///
+  /// In en, this message translates to:
+  /// **'This closes on its own once every account is signed in.'**
+  String get claudeSignInClosesItselfAll;
+
   /// Title of the notice in a turn that failed because its Claude Code account stopped authenticating
   ///
   /// In en, this message translates to:
@@ -26681,11 +26633,11 @@ abstract class AppLocalizations {
   /// **'Exit code {code}'**
   String environmentExitCode(int code);
 
-  /// Space environments: environmentHostSetupNeeded
+  /// Heading of a notice on an environment whose start stopped because its tool needs an answer only a person at a terminal on the server can give, for example a sudo password.
   ///
   /// In en, this message translates to:
   /// **'This needs setting up on the server'**
-  String get environmentHostSetupNeeded;
+  String get environmentInputNeeded;
 
   /// Space environments: environmentKindApp
   ///
@@ -27755,11 +27707,47 @@ abstract class AppLocalizations {
   /// **'Open environment'**
   String get environmentOpenPanel;
 
-  /// Status of an environment that stopped because a person has to do something on the host, such as adding hostnames with sudo.
+  /// Status of an environment whose start stopped for something only a person can do: an answer at a terminal such as a sudo password, a sign-in, or a missing dependency. Nothing is broken. Shown in a small status tag, so keep it to two or three words.
   ///
   /// In en, this message translates to:
-  /// **'Needs setup'**
-  String get environmentNeedsSetup;
+  /// **'Action needed'**
+  String get environmentStatusBlocked;
+
+  /// State of one part of an environment while its tool runs on a terminal tab and waits for the person to answer it. Shown next to a status dot, so keep it to two or three words.
+  ///
+  /// In en, this message translates to:
+  /// **'In terminal'**
+  String get environmentStateInTerminal;
+
+  /// Heading of a notice on an environment that is still starting: one step of the start runs on a terminal tab and waits for the person to type a password or answer a prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for you in a terminal'**
+  String get environmentWaitingInTerminal;
+
+  /// Button that opens the terminal tab a start is waiting on.
+  ///
+  /// In en, this message translates to:
+  /// **'Open terminal'**
+  String get environmentOpenTerminal;
+
+  /// Heading of a notice on an environment whose start stopped because the tool behind it needs the person to sign in again, for example an expired cloud session.
+  ///
+  /// In en, this message translates to:
+  /// **'This needs you to sign in'**
+  String get environmentSignInNeeded;
+
+  /// Heading of a notice on an environment whose start stopped because something it depends on is missing or not running, for example Docker. The tool's own explanation follows below it.
+  ///
+  /// In en, this message translates to:
+  /// **'Something this needs is not available'**
+  String get environmentDependencyNeeded;
+
+  /// Heading of a notice on a terminal tab after the tool got the answer it needed there. The terminal has gone quiet, and the rest of the start happens in the background.
+  ///
+  /// In en, this message translates to:
+  /// **'Done here. The environment is still starting'**
+  String get environmentStartTerminalDone;
 
   /// Environment host setup: the terminal tab a stopped start finishes in.
   ///
@@ -27767,23 +27755,23 @@ abstract class AppLocalizations {
   /// **'Continue in terminal'**
   String get environmentContinueInTerminal;
 
-  /// Environment host setup: the terminal tab a stopped start finishes in.
+  /// Body of a notice shown while one step of a start runs on a terminal tab: the tool asks there for a password or an answer, and the start carries on by itself once it has it.
   ///
   /// In en, this message translates to:
   /// **'The tool needs you in a terminal, for a password or a prompt. Starting carries on when it finishes.'**
-  String get environmentSetupHint;
+  String get environmentStartTerminalHint;
 
   /// Heading of the notice on a terminal tab that opened by itself after a Start stopped for a person. Says why the tab appeared.
   ///
   /// In en, this message translates to:
   /// **'This terminal opened because the start needs you'**
-  String get environmentSetupTabReason;
+  String get environmentStartTerminalReason;
 
-  /// Environment host setup: the terminal tab a stopped start finishes in.
+  /// Title of the terminal tab a start runs on when its tool needs the person, for example for a sudo password. A tab title, so keep it to two or three words.
   ///
   /// In en, this message translates to:
   /// **'Environment setup'**
-  String get environmentSetupTab;
+  String get environmentStartTerminalTab;
 
   /// Empty state of the Running tab of an environment definition.
   ///
@@ -28223,18 +28211,6 @@ abstract class AppLocalizations {
   /// **'Opening {provider} in your browser…'**
   String signInOpeningBrowser(String provider);
 
-  /// Sign-in dialog instruction while the server waits for the provider to redirect back
-  ///
-  /// In en, this message translates to:
-  /// **'Approve the request on {provider}\'s page in your browser. This window notices by itself when you\'re done.'**
-  String signInWaitingOwn(String provider);
-
-  /// Sign-in dialog status line while waiting
-  ///
-  /// In en, this message translates to:
-  /// **'Waiting for {provider}…'**
-  String signInWaiting(String provider);
-
   /// Title of the alert shown when a provider sign-in fails
   ///
   /// In en, this message translates to:
@@ -28247,10 +28223,10 @@ abstract class AppLocalizations {
   /// **'Open the sign-in page again'**
   String get signInReopenPage;
 
-  /// Sign-in dialog instruction to type the 8-character confirmation code
+  /// Sign-in dialog instruction, for every sign-in: the browser page (Control Center Connect's or this server's own) first asks to confirm, then shows an 8-character code to type here
   ///
   /// In en, this message translates to:
-  /// **'Enter the code shown in your browser'**
+  /// **'Confirm in your browser, then enter the code it shows.'**
   String get signInCodePrompt;
 
   /// Validation error under the sign-in code field
@@ -28307,10 +28283,10 @@ abstract class AppLocalizations {
   /// **'Too many wrong codes. Start the sign-in again.'**
   String get signInErrorTooManyCodes;
 
-  /// Sign-in failure: the server no longer knows this attempt
+  /// Sign-in failure: the server no longer knows this attempt (cancelled on the browser page, already used, or replaced by a newer one)
   ///
   /// In en, this message translates to:
-  /// **'This sign-in is no longer valid. Start it again.'**
+  /// **'This sign-in is no longer open: it was cancelled, used or replaced. Start it again.'**
   String get signInErrorStaleRequest;
 
   /// Sign-in failure: the server could not read the request
@@ -28319,10 +28295,10 @@ abstract class AppLocalizations {
   /// **'The server couldn\'t read this sign-in request. Start it again.'**
   String get signInErrorInvalidRequest;
 
-  /// Sign-in failure: too many sign-in attempts right now
+  /// Sign-in failure: the sign-in service (Control Center Connect or the provider) is limiting requests. Must not ask the person to sign in again; the dialog offers Try again
   ///
   /// In en, this message translates to:
-  /// **'Too many sign-in attempts right now. Wait a minute, then try again.'**
+  /// **'Too many requests right now. Wait a bit, then try again.'**
   String get signInErrorRateLimited;
 
   /// Sign-in failure: the grant came back but the server could not store it
@@ -28360,12 +28336,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The {provider} app isn\'t installed where this needs it. Install it, then try again.'**
   String signInErrorNotInstalled(String provider);
-
-  /// Sign-in failure: the installation belongs to another server
-  ///
-  /// In en, this message translates to:
-  /// **'This GitHub App installation is already authorized for another Control Center server.'**
-  String get signInErrorInstallationBoundElsewhere;
 
   /// Sign-in failure: the Linear team belongs to another server
   ///
@@ -28448,7 +28418,7 @@ abstract class AppLocalizations {
   /// Settings group description for GitHub App installations
   ///
   /// In en, this message translates to:
-  /// **'Where the GitHub App is installed, among the accounts this workspace\'s repositories belong to. An organization\'s installation works only on servers its admins authorize.'**
+  /// **'Where the GitHub App is installed, among the accounts this workspace\'s repositories belong to.'**
   String get githubInstallationsDescription;
 
   /// Empty state for the GitHub App installations list
@@ -28463,35 +28433,11 @@ abstract class AppLocalizations {
   /// **'Install GitHub App'**
   String get githubInstallApp;
 
-  /// Button: an organization admin authorizes this server to use the installation
-  ///
-  /// In en, this message translates to:
-  /// **'Authorize this server'**
-  String get githubAuthorizeServer;
-
-  /// Toast after authorizing this server for an installation; account is the GitHub organization
-  ///
-  /// In en, this message translates to:
-  /// **'This server can now use the installation on {account}.'**
-  String githubServerAuthorized(String account);
-
   /// Status tag: the GitHub App installation is suspended
   ///
   /// In en, this message translates to:
   /// **'Suspended'**
   String get githubInstallationSuspended;
-
-  /// Status tag: this server may use the installation
-  ///
-  /// In en, this message translates to:
-  /// **'Authorized'**
-  String get githubInstallationAuthorized;
-
-  /// Status tag: this server may not use the installation yet
-  ///
-  /// In en, this message translates to:
-  /// **'Not authorized'**
-  String get githubInstallationNotAuthorized;
 
   /// Row title for the workspace Linear app actor
   ///
@@ -28532,7 +28478,7 @@ abstract class AppLocalizations {
   /// Hint under the own-apps option
   ///
   /// In en, this message translates to:
-  /// **'Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace\'s own Slack app in its settings. Create my GitHub App sets up GitHub in one step.'**
+  /// **'Register GitHub, Google and Linear apps yourself under Settings → Server → Single sign-on, and connect each workspace\'s own Slack app under Workspace → Integrations, where a workspace can also pick its own apps or Connect. Create my GitHub App sets up GitHub in one step.'**
   String get connectModeOwnHint;
 
   /// Connect mode option: a self-run Connect server
@@ -28766,7 +28712,7 @@ abstract class AppLocalizations {
   /// Confirm dialog body for rotating the Connect key
   ///
   /// In en, this message translates to:
-  /// **'This server gets a new key and install id. Every sign-in made through Connect stops working, and everyone has to sign in again. Sign-ins through your own apps aren\'t affected.'**
+  /// **'This server gets a new key and install id, and the old id is retired at Connect: sign-ins sealed under it, and the old key, stop working there, so everyone who signed in through Connect signs in again. Tokens already handed out keep working until they expire. Sign-ins through your own apps aren\'t affected. If Connect can\'t be reached, nothing changes and you can try again.'**
   String get connectRotateKeyBody;
 
   /// Toast after rotating the Connect key
@@ -28973,54 +28919,6 @@ abstract class AppLocalizations {
   /// **'Created {key}'**
   String chatTicketDraftCreated(String key);
 
-  /// Title of the workspace card that sets which Google Calendar, Linear and Klipy apps the workspace uses
-  ///
-  /// In en, this message translates to:
-  /// **'Provider apps'**
-  String get workspaceProviderApps;
-
-  /// Subtitle of the workspace provider apps card
-  ///
-  /// In en, this message translates to:
-  /// **'Which Google Calendar, Linear and Klipy apps this workspace uses. By default it uses this server\'s apps or Control Center Connect. A workspace with its own app never falls back to them.'**
-  String get workspaceProviderAppsDescription;
-
-  /// Radio option: the workspace uses the server's app (or Connect) for this provider
-  ///
-  /// In en, this message translates to:
-  /// **'Use this server\'s app'**
-  String get workspaceProviderAppModeInherit;
-
-  /// Hint under the 'use this server's app' option
-  ///
-  /// In en, this message translates to:
-  /// **'Sign-ins and requests use this server\'s own app, or Control Center Connect.'**
-  String get workspaceProviderAppModeInheritHint;
-
-  /// Radio option: the workspace brings its own app for this provider
-  ///
-  /// In en, this message translates to:
-  /// **'Use this workspace\'s own app'**
-  String get workspaceProviderAppModeOwn;
-
-  /// Hint under the 'use this workspace's own app' option
-  ///
-  /// In en, this message translates to:
-  /// **'Only this workspace\'s app is used. While it is incomplete, this provider is off here instead of falling back.'**
-  String get workspaceProviderAppModeOwnHint;
-
-  /// Status tag: the workspace uses the server's app for this provider
-  ///
-  /// In en, this message translates to:
-  /// **'Server\'s app'**
-  String get workspaceProviderAppStatusInherit;
-
-  /// Status tag: the workspace uses its own complete app for this provider
-  ///
-  /// In en, this message translates to:
-  /// **'Own app'**
-  String get workspaceProviderAppStatusOwn;
-
   /// Lists the fields a workspace's own provider app still needs
   ///
   /// In en, this message translates to:
@@ -29045,29 +28943,179 @@ abstract class AppLocalizations {
   /// **'GIF search in this workspace uses this key.'**
   String get workspaceProviderAppKlipyHint;
 
-  /// Confirm dialog title when switching which app a workspace uses for a provider
+  /// Settings nav item and page title: every provider this workspace uses (code hosting, tickets, calendar, chat, GIFs)
   ///
   /// In en, this message translates to:
-  /// **'Switch the {provider} app?'**
-  String workspaceProviderAppSwitchTitle(String provider);
+  /// **'Integrations'**
+  String get settingsWorkspaceIntegrations;
 
-  /// Confirm dialog body when switching a workspace to its own provider app
+  /// Subtitle of Settings → Workspace → Integrations
   ///
   /// In en, this message translates to:
-  /// **'Everyone connected to {provider} in this workspace through this server\'s app has to sign in again with the workspace\'s app.'**
-  String workspaceProviderAppSwitchToOwnBody(String provider);
+  /// **'Code hosting, tickets, calendar, chat and GIF search in this workspace, and whose apps they sign in through.'**
+  String get settingsWorkspaceIntegrationsDescription;
 
-  /// Confirm dialog body when switching a workspace back to the server's provider app
+  /// Subtitle of the workspace's Control Center Connect card
   ///
   /// In en, this message translates to:
-  /// **'This deletes the workspace\'s {provider} credentials. Everyone connected through the workspace\'s app has to sign in again.'**
-  String workspaceProviderAppSwitchToServerBody(String provider);
+  /// **'Whose apps this workspace uses for GitHub, Google Calendar, Linear, Slack and GIF search. Unless an admin picks something else, it follows this server.'**
+  String get workspaceConnectDescription;
 
-  /// Confirm button that switches which app a workspace uses for a provider
+  /// Workspace Connect choice: follow the server owner's choice of sign-in apps
   ///
   /// In en, this message translates to:
-  /// **'Switch app'**
-  String get workspaceProviderAppSwitchAction;
+  /// **'Same as this server'**
+  String get workspaceConnectModeInherit;
+
+  /// Hint under 'Same as this server' when the server uses Control Center's hosted Connect
+  ///
+  /// In en, this message translates to:
+  /// **'This server uses Control Center\'s apps.'**
+  String get workspaceConnectInheritHosted;
+
+  /// Hint under 'Same as this server' when the server uses a custom Connect server
+  ///
+  /// In en, this message translates to:
+  /// **'This server uses the Connect server at {url}.'**
+  String workspaceConnectInheritCustom(String url);
+
+  /// Hint under 'Same as this server' when the server uses its own provider apps
+  ///
+  /// In en, this message translates to:
+  /// **'This server uses its own apps.'**
+  String get workspaceConnectInheritOwn;
+
+  /// Hint under 'Same as this server' when the server owner has not picked sign-in apps
+  ///
+  /// In en, this message translates to:
+  /// **'This server\'s owner hasn\'t chosen yet, so the server\'s own apps apply.'**
+  String get workspaceConnectInheritUnset;
+
+  /// Hint under 'Use my own apps' on the workspace Connect card
+  ///
+  /// In en, this message translates to:
+  /// **'Only this workspace\'s apps are used. Add each one below, next to its provider. A provider without one is off here; this server\'s apps and Connect are never used instead.'**
+  String get workspaceConnectOwnHint;
+
+  /// Helper under the workspace's custom Connect server URL field
+  ///
+  /// In en, this message translates to:
+  /// **'HTTPS only. Addresses on a private or local network are refused.'**
+  String get workspaceConnectCustomUrlHint;
+
+  /// Notice when the server environment forbids a workspace from choosing a Connect server; CC_CONNECT_URL is an environment variable name, keep it verbatim
+  ///
+  /// In en, this message translates to:
+  /// **'CC_CONNECT_URL in this server\'s environment sets where sign-ins go, so this workspace can\'t pick a Connect of its own. It can follow this server or use its own apps.'**
+  String get workspaceConnectLocked;
+
+  /// Confirm dialog title when an admin changes the workspace's Connect choice
+  ///
+  /// In en, this message translates to:
+  /// **'Switch this workspace\'s sign-in apps?'**
+  String get workspaceConnectSwitchTitle;
+
+  /// Confirm dialog body when an admin changes the workspace's Connect choice
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone in this workspace has to sign in to GitHub, Linear and Google Calendar again through the new apps. Sign-ins made through the current ones stop working here.'**
+  String get workspaceConnectSwitchBody;
+
+  /// Confirm button that changes the workspace's Connect choice
+  ///
+  /// In en, this message translates to:
+  /// **'Switch apps'**
+  String get workspaceConnectSwitchAction;
+
+  /// Description of the per-provider list on the workspace Connect card
+  ///
+  /// In en, this message translates to:
+  /// **'Follows the choice above. A provider never falls back to another app.'**
+  String get workspaceConnectLanesDescription;
+
+  /// Status tag: this provider runs on the workspace's own app
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace\'s app'**
+  String get workspaceConnectLaneWorkspaceOwn;
+
+  /// Status tag: this provider runs on the server's own app
+  ///
+  /// In en, this message translates to:
+  /// **'Server\'s app'**
+  String get workspaceConnectLaneServerOwn;
+
+  /// Title of the workspace card about the GitHub App the workspace runs on
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub App'**
+  String get workspaceGitHubAppTitle;
+
+  /// Subtitle of the GitHub App card while the workspace uses its own apps
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace\'s own App acts for its repositories and signs members in. It never falls back to this server\'s App or to Connect.'**
+  String get workspaceGitHubAppOwnDescription;
+
+  /// Subtitle of the GitHub App card while the workspace uses the server's apps or a Connect
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace uses the GitHub App its sign-in apps provide. Install it on the accounts your repositories belong to.'**
+  String get workspaceGitHubAppSharedDescription;
+
+  /// Group title for the workspace GitHub App's id and private key
+  ///
+  /// In en, this message translates to:
+  /// **'Acting for this workspace'**
+  String get workspaceGitHubAppActingTitle;
+
+  /// Description of the workspace GitHub App's id and private key group
+  ///
+  /// In en, this message translates to:
+  /// **'The App\'s bot comments, reviews and polls pull requests in this workspace\'s repositories.'**
+  String get workspaceGitHubAppActingDescription;
+
+  /// Title of the card holding a workspace's own app for one provider
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} app'**
+  String workspaceOwnAppTitle(String provider);
+
+  /// Subtitle of the card holding a workspace's own app for one provider
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-ins and requests in this workspace use only this app.'**
+  String workspaceOwnAppDescription(String provider);
+
+  /// Title of the workspace card about GIF search
+  ///
+  /// In en, this message translates to:
+  /// **'GIFs'**
+  String get workspaceGifsTitle;
+
+  /// GIF search runs on the workspace's own Klipy key; Klipy is a brand name
+  ///
+  /// In en, this message translates to:
+  /// **'GIF search uses this workspace\'s Klipy key.'**
+  String get workspaceGifsSourceWorkspaceOwn;
+
+  /// GIF search runs on the server's own Klipy key; Klipy is a brand name
+  ///
+  /// In en, this message translates to:
+  /// **'GIF search uses this server\'s Klipy key.'**
+  String get workspaceGifsSourceServerOwn;
+
+  /// GIF search runs through a Control Center Connect server
+  ///
+  /// In en, this message translates to:
+  /// **'GIF search runs through Control Center Connect.'**
+  String get workspaceGifsSourceConnect;
+
+  /// No app or key provides GIF search in this workspace
+  ///
+  /// In en, this message translates to:
+  /// **'GIF search is off in this workspace.'**
+  String get workspaceGifsSourceOff;
 
   /// Menu item that opens the pull request on its code host's website
   ///
@@ -29087,10 +29135,10 @@ abstract class AppLocalizations {
   /// **'Connect a code host to load pull requests'**
   String get connectForgeToLoadPrs;
 
-  /// Hint under the empty state pointing at the code hosting settings
+  /// Hint under the empty pull request and inbox states pointing at where a person connects their own code hosting accounts. 'Settings → You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle
   ///
   /// In en, this message translates to:
-  /// **'Connect GitHub, GitLab or Bitbucket in Settings → Workspace → Profile & identity → Code hosting'**
+  /// **'Connect GitHub, GitLab or Bitbucket in Settings → You → Profile'**
   String get connectForgeHint;
 
   /// Hint when the workspace has no repository on a supported code host
@@ -29116,6 +29164,1698 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connect {forge} to open a pull request in this repository'**
   String composePrForgeNotConnected(String forge);
+
+  /// A forge or provider connection whose grant expired or was revoked, naming the last known account
+  ///
+  /// In en, this message translates to:
+  /// **'Your {provider} sign-in as {account} has lapsed. Sign in again.'**
+  String connectionNeedsSignInAs(String provider, String account);
+
+  /// A connection whose grant is parked because the workspace's sign-in service (Connect or its own apps) changed; not the person's fault
+  ///
+  /// In en, this message translates to:
+  /// **'Paused: this workspace\'s sign-in service changed'**
+  String get connectionPaused;
+
+  /// A connection whose grant could not be renewed because the provider or sign-in service is down; it retries on its own
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach {provider} right now. Retrying.'**
+  String connectionUnreachable(String provider);
+
+  /// Body of the workspace banner when the person's forge sign-in is paused because the workspace's sign-in service changed
+  ///
+  /// In en, this message translates to:
+  /// **'Your sign-in is kept and works again once the service is back. A workspace admin can check the sign-in setup in Integrations.'**
+  String get forgeSignInBannerPausedBody;
+
+  /// Sign-in failure: the server no longer knows the attempt (it restarted)
+  ///
+  /// In en, this message translates to:
+  /// **'The server restarted. Start the sign-in again.'**
+  String get signInErrorAttemptUnknown;
+
+  /// Why a sign-in lane cannot be used: nothing is configured for it
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in isn\'t set up for this workspace.'**
+  String signInUnavailableNotConfigured(String provider);
+
+  /// Why a sign-in lane cannot be used: its own app is set up wrongly; error is the server's explanation
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} sign-in is set up incorrectly: {error}'**
+  String signInUnavailableMisconfigured(String provider, String error);
+
+  /// Why a sign-in lane cannot be used: the workspace uses its own apps and none is set up for this provider
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace uses its own apps but has no {provider} app.'**
+  String signInUnavailableOwnAppMissing(String provider);
+
+  /// Why a sign-in lane cannot be used: this server build cannot verify the hosted Connect service
+  ///
+  /// In en, this message translates to:
+  /// **'This build can\'t verify Control Center Connect, so {provider} sign-in is off.'**
+  String signInUnavailableConnectUnprovisioned(String provider);
+
+  /// Why sign-in cannot be used: the custom Connect service's identifiers changed and await an admin's confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace\'s sign-in service changed its identity. An admin needs to confirm it.'**
+  String get signInUnavailableConnectPinsPending;
+
+  /// Why sign-in cannot be used: the Connect service cannot be reached or trusted
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach this workspace\'s sign-in service right now.'**
+  String get signInUnavailableConnectUnreachable;
+
+  /// Why sign-in cannot be used: the custom Connect URL is missing or unusable
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace\'s sign-in service address is missing or invalid.'**
+  String get signInUnavailableConnectUrlInvalid;
+
+  /// Why sign-in cannot be used: the server operator pinned the Connect service in the environment
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s operator set the sign-in service, so this workspace\'s own choice doesn\'t apply.'**
+  String get signInUnavailableBlockedByEnvironment;
+
+  /// Why a sign-in lane cannot be used: the sign-in service in use does not support this provider
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace\'s sign-in service doesn\'t offer {provider}.'**
+  String signInUnavailableLaneNotOffered(String provider);
+
+  /// Button taking a workspace admin to Workspace > Integrations to fix the sign-in setup
+  ///
+  /// In en, this message translates to:
+  /// **'Open integrations'**
+  String get signInOpenIntegrations;
+
+  /// Button taking the server owner to the server's sign-in settings to fix the sign-in setup
+  ///
+  /// In en, this message translates to:
+  /// **'Open sign-in settings'**
+  String get signInOpenServerSettings;
+
+  /// Dialog body when an action was refused because the person has no token for a token-only forge
+  ///
+  /// In en, this message translates to:
+  /// **'This runs as you on {provider}, and you haven\'t added a token. Add one, then try again.'**
+  String forgeTokenRequiredBody(String provider);
+
+  /// Title of the confirmation before disconnecting a forge
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnect {provider}?'**
+  String disconnectProviderTitle(String provider);
+
+  /// Confirmation body before disconnecting a forge outside any workspace
+  ///
+  /// In en, this message translates to:
+  /// **'You\'ll need to connect {provider} again to work on its repositories.'**
+  String disconnectProviderBody(String provider);
+
+  /// Confirmation body: the credential being removed belongs to this workspace only
+  ///
+  /// In en, this message translates to:
+  /// **'This disconnects {provider} in this workspace only. Other workspaces keep their own connection.'**
+  String disconnectScopeWorkspaceBody(String provider);
+
+  /// Confirmation body: the credential being removed is shared by all workspaces
+  ///
+  /// In en, this message translates to:
+  /// **'This disconnects {provider} in every workspace that shares this connection.'**
+  String disconnectScopeGlobalBody(String provider);
+
+  /// Toast after removing a credential kept for this workspace only
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected {provider} from this workspace'**
+  String disconnectedFromWorkspace(String provider);
+
+  /// Toast after removing a credential shared by all workspaces
+  ///
+  /// In en, this message translates to:
+  /// **'Disconnected {provider} from all workspaces'**
+  String disconnectedFromAllWorkspaces(String provider);
+
+  /// Notice title: the workspace's GitHub App is not installed on the account that owns linked repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Install the GitHub App on {owner}'**
+  String repoAccessInstallTitle(String owner);
+
+  /// Notice body naming the repositories affected by the missing GitHub App installation
+  ///
+  /// In en, this message translates to:
+  /// **'Automation can\'t reach {repos} until the App is installed there.'**
+  String repoAccessInstallBody(String repos);
+
+  /// Notice title: the GitHub App is installed but these repositories are not selected in the installation
+  ///
+  /// In en, this message translates to:
+  /// **'Add {repos} to the GitHub App\'s repositories'**
+  String repoAccessSelectTitle(String repos);
+
+  /// Notice body for repositories not selected in the GitHub App installation
+  ///
+  /// In en, this message translates to:
+  /// **'The App is installed on this account but can\'t see these repositories yet.'**
+  String get repoAccessSelectBody;
+
+  /// Button opening the GitHub App installation's repository selection
+  ///
+  /// In en, this message translates to:
+  /// **'Choose repositories'**
+  String get repoAccessChooseRepos;
+
+  /// Notice title: the GitHub App installation covering linked repositories is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub App installation suspended'**
+  String get repoAccessSuspendedTitle;
+
+  /// Notice body for a suspended GitHub App installation
+  ///
+  /// In en, this message translates to:
+  /// **'Automation for {repos} is paused until an owner of the account resumes the installation on GitHub.'**
+  String repoAccessSuspendedBody(String repos);
+
+  /// Notice title: automation acting for the workspace's accountable person is paused for some repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Automation is paused'**
+  String get repoAccessAutomationPausedTitle;
+
+  /// Notice body: the accountable person lost access to these repositories
+  ///
+  /// In en, this message translates to:
+  /// **'The person accountable for this workspace\'s automation can no longer see {repos}, so nothing runs there on their behalf.'**
+  String repoAccessOwnerCannotSeeBody(String repos);
+
+  /// Notice body: the accountable person is not signed in to the forge
+  ///
+  /// In en, this message translates to:
+  /// **'The person accountable for this workspace\'s automation isn\'t signed in to the forge, so automation for {repos} waits until they sign in.'**
+  String repoAccessOwnerNotSignedInBody(String repos);
+
+  /// Muted line: the forge did not answer an access check; it is retried automatically
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check access to {repos}. Retrying.'**
+  String repoAccessTransient(String repos);
+
+  /// Shown to a non-admin member: who in the workspace can fix the access problem
+  ///
+  /// In en, this message translates to:
+  /// **'Ask {admins} to fix this.'**
+  String repoAccessAskAdmins(String admins);
+
+  /// Shown to a non-admin member when the admins' names are not known
+  ///
+  /// In en, this message translates to:
+  /// **'Ask a workspace admin to fix this.'**
+  String get repoAccessAskAnAdmin;
+
+  /// Notice above a PR list: repositories hidden because the person is not signed in to that forge
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Sign in to {forge} to see pull requests from 1 more repository} other{Sign in to {forge} to see pull requests from {count} more repositories}}'**
+  String hiddenReposSignIn(int count, String forge);
+
+  /// Notice above a PR list: repositories hidden because the person's own forge account cannot read them
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 repository is hidden because your {forge} account can\'t see it} other{{count} repositories are hidden because your {forge} account can\'t see them}}'**
+  String hiddenReposNoForgeAccess(int count, String forge);
+
+  /// Notice above a PR list: repositories hidden because the person holds no grant on them in this workspace
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 repository is hidden because you don\'t have access to it in this workspace} other{{count} repositories are hidden because you don\'t have access to them in this workspace}}'**
+  String hiddenReposNoGrant(int count);
+
+  /// Quiet line above a PR list while the person's access to some repositories is still being checked
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Checking your access to 1 more repository…} other{Checking your access to {count} more repositories…}}'**
+  String hiddenReposChecking(int count);
+
+  /// Title of the dialog listing access problems found while linking repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Linked, but automation can\'t reach everything yet'**
+  String get repoLinkAccessWarningsTitle;
+
+  /// Button installing the workspace's GitHub App on another account or organization
+  ///
+  /// In en, this message translates to:
+  /// **'Install on another organization'**
+  String get githubInstallOnAnotherOrganization;
+
+  /// Label of the email field next to a Bitbucket API token; Bitbucket API tokens authenticate with the Atlassian account's email
+  ///
+  /// In en, this message translates to:
+  /// **'Atlassian account email'**
+  String get forgeTokenEmailLabel;
+
+  /// Inline error when the Atlassian account email for a Bitbucket token is missing or malformed
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email address of your Atlassian account.'**
+  String get forgeTokenEmailInvalid;
+
+  /// Label of the Bitbucket API token field
+  ///
+  /// In en, this message translates to:
+  /// **'API token'**
+  String get forgeTokenApiTokenLabel;
+
+  /// Explains why the Bitbucket token dialog also asks for an email
+  ///
+  /// In en, this message translates to:
+  /// **'Bitbucket API tokens work together with the email of the Atlassian account that created them.'**
+  String get forgeTokenBitbucketHint;
+
+  /// Section title: bot access tokens GitLab/Bitbucket background work uses
+  ///
+  /// In en, this message translates to:
+  /// **'Automation tokens'**
+  String get automationTokensTitle;
+
+  /// Section description in Settings → Repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Background work on GitLab and Bitbucket, such as pull request updates, AI review comments and merge requests nobody asked for, uses a bot access token, never a person\'s. A repository\'s own token wins over the workspace\'s.'**
+  String get automationTokensRepoHint;
+
+  /// Section description in Settings → Workspace → Integrations
+  ///
+  /// In en, this message translates to:
+  /// **'Used for every GitLab or Bitbucket repository in this workspace that has no automation token of its own. Background work there shows as this token\'s bot.'**
+  String get automationTokensWorkspaceHint;
+
+  /// Status: this repository has no automation token
+  ///
+  /// In en, this message translates to:
+  /// **'No token. Automation is paused here.'**
+  String get automationTokenNone;
+
+  /// Status: the repository uses the workspace-wide automation token
+  ///
+  /// In en, this message translates to:
+  /// **'Uses the workspace\'s token'**
+  String get automationTokenFromWorkspace;
+
+  /// Status: automation acts as this bot account
+  ///
+  /// In en, this message translates to:
+  /// **'Acts as {name}'**
+  String automationTokenActsAs(String name);
+
+  /// Status: a token is stored but the forge did not name its bot
+  ///
+  /// In en, this message translates to:
+  /// **'Access token added'**
+  String get automationTokenStored;
+
+  /// Status: the stored automation token was revoked or expired
+  ///
+  /// In en, this message translates to:
+  /// **'The forge refused this token. Replace it.'**
+  String get automationTokenRejected;
+
+  /// Dialog title for adding an automation token
+  ///
+  /// In en, this message translates to:
+  /// **'{forge} automation token'**
+  String automationTokenDialogTitle(String forge);
+
+  /// Dialog hint for a GitLab automation token
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a project or group access token. It needs read_api and read_repository; add api and write_repository for comments, merge requests and pushes. GitLab shows its work as the token\'s bot.'**
+  String get automationTokenGitLabHint;
+
+  /// Dialog hint for a Bitbucket automation token. 'You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a repository, project or workspace access token with repository read, plus pull request write for comments and pull requests. Your own API token belongs under You → Profile, not here.'**
+  String get automationTokenBitbucketHint;
+
+  /// Toast after saving a workspace automation token that cannot read some repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Token saved, but it can\'t read {repos}. Automation there stays paused.'**
+  String automationTokenUnreadable(String repos);
+
+  /// Confirm dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Remove automation token?'**
+  String get automationTokenRemoveTitle;
+
+  /// Confirm dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'Automation that relies on this token pauses until another one is added.'**
+  String get automationTokenRemoveBody;
+
+  /// What a workspace-wide automation token applies to
+  ///
+  /// In en, this message translates to:
+  /// **'Every {forge} repository without its own token'**
+  String automationTokenWorkspaceTarget(String forge);
+
+  /// Notice body: GitLab/Bitbucket repositories without a working automation token
+  ///
+  /// In en, this message translates to:
+  /// **'No automation token can read {repos}, so background work there is paused.'**
+  String repoAccessAutomationTokenMissingBody(String repos);
+
+  /// Subtitle of Settings > You > Commits: authorship, co-author credit and commit signing
+  ///
+  /// In en, this message translates to:
+  /// **'Commits from work you start carry your name. Choose who else is credited, and whether forges show your commits as verified.'**
+  String get settingsCommitsDescription;
+
+  /// Section label on the Commits settings page: whose name commits carry
+  ///
+  /// In en, this message translates to:
+  /// **'Authorship'**
+  String get settingsCommitAuthorshipSection;
+
+  /// Row label: commits from work the person started themselves (chat, pipeline, editor)
+  ///
+  /// In en, this message translates to:
+  /// **'Work you start'**
+  String get settingsCommitAuthorshipYoursLabel;
+
+  /// Explains that the person is author and committer of commits from work they start, under the email their forge verified
+  ///
+  /// In en, this message translates to:
+  /// **'You are the author and committer, under the email your forge verified for your sign-in. This covers chats with agents, pipelines you start and commits you make in the editor.'**
+  String get settingsCommitAuthorshipYoursBody;
+
+  /// Row label: runs nobody started by hand (schedules, webhooks)
+  ///
+  /// In en, this message translates to:
+  /// **'Automated runs'**
+  String get settingsCommitAuthorshipBotLabel;
+
+  /// Explains that runs started by a schedule or webhook commit as the bot account and are never signed
+  ///
+  /// In en, this message translates to:
+  /// **'Runs started by a schedule or a webhook commit as the bot, and are never signed.'**
+  String get settingsCommitAuthorshipBotBody;
+
+  /// Note: without a forge sign-in in a workspace, the person's runs there commit as the bot
+  ///
+  /// In en, this message translates to:
+  /// **'Until you sign in to a forge in a workspace, your runs there commit as the bot.'**
+  String get settingsCommitAuthorshipSignInNote;
+
+  /// Personal toggle: add Control Center as co-author on the person's commits
+  ///
+  /// In en, this message translates to:
+  /// **'Credit Control Center as co-author'**
+  String get settingsCoauthorCreditTitle;
+
+  /// What the co-author toggle does on the person's own commits and on automated runs they armed
+  ///
+  /// In en, this message translates to:
+  /// **'Your commits name Control Center (@usectrl) as co-author, and automated runs you armed name you. When off, neither line is added.'**
+  String get settingsCoauthorCreditDescription;
+
+  /// Notice shown when a workspace setting locks the personal co-author toggle
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace overrides your personal choice. Your preference is saved but does not apply here.'**
+  String get settingsCoauthorCreditWorkspaceOverride;
+
+  /// Status shown while personal and workspace co-author settings load
+  ///
+  /// In en, this message translates to:
+  /// **'Loading attribution settings…'**
+  String get settingsCoauthorCreditLoading;
+
+  /// Section label and select label for the workspace co-author credit policy
+  ///
+  /// In en, this message translates to:
+  /// **'Co-author credit'**
+  String get settingsWorkspaceCoauthorCreditTitle;
+
+  /// Explains the workspace co-author credit policy and that it overrides each member's preference
+  ///
+  /// In en, this message translates to:
+  /// **'Whether commits carry co-author lines: Control Center on a member\'s own commits, and the members who armed an automated run on its commits. A choice here overrides each member\'s own.'**
+  String get settingsWorkspaceCoauthorCreditDescription;
+
+  /// Workspace co-author option: each member's own preference applies
+  ///
+  /// In en, this message translates to:
+  /// **'Use each member\'s preference'**
+  String get settingsWorkspaceCoauthorCreditInherit;
+
+  /// Workspace co-author option: co-author lines are always added
+  ///
+  /// In en, this message translates to:
+  /// **'Always add co-author credit'**
+  String get settingsWorkspaceCoauthorCreditAlways;
+
+  /// Workspace co-author option: co-author lines are never added
+  ///
+  /// In en, this message translates to:
+  /// **'Never add co-author credit'**
+  String get settingsWorkspaceCoauthorCreditNever;
+
+  /// Section label for the person's commit signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Verified commits'**
+  String get settingsCommitSigningSection;
+
+  /// Status tag: the person has a signing key, so their commits are signed
+  ///
+  /// In en, this message translates to:
+  /// **'Signing'**
+  String get settingsCommitSigningStatusOn;
+
+  /// Status tag: the person has no signing key, so their commits are not signed
+  ///
+  /// In en, this message translates to:
+  /// **'Not signing'**
+  String get settingsCommitSigningStatusOff;
+
+  /// Shown when the person has no signing key yet: what creating one does
+  ///
+  /// In en, this message translates to:
+  /// **'This server can sign your commits with a key of your own, so GitHub and GitLab show them as verified. Nothing is signed until you create the key.'**
+  String get settingsCommitSigningIntro;
+
+  /// Button: create the person's commit signing key on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Create signing key'**
+  String get settingsCommitSigningCreate;
+
+  /// Toast after creating a signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Signing key created. Add it to your forge account.'**
+  String get settingsCommitSigningCreated;
+
+  /// Label above the SSH public key to copy
+  ///
+  /// In en, this message translates to:
+  /// **'Public key'**
+  String get settingsCommitSigningPublicKeyLabel;
+
+  /// Toast after copying the public key
+  ///
+  /// In en, this message translates to:
+  /// **'Public key copied'**
+  String get settingsCommitSigningKeyCopied;
+
+  /// Label before the key's SHA256 fingerprint
+  ///
+  /// In en, this message translates to:
+  /// **'Fingerprint'**
+  String get settingsCommitSigningFingerprintLabel;
+
+  /// Label before the date the key was created
+  ///
+  /// In en, this message translates to:
+  /// **'Created'**
+  String get settingsCommitSigningCreatedLabel;
+
+  /// Heading above the per-forge steps for adding the public key as a signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Add it to your forge account'**
+  String get settingsCommitSigningAddTitle;
+
+  /// Explains that a commit is verified only when the person is also signed in to that forge in the workspace
+  ///
+  /// In en, this message translates to:
+  /// **'A commit shows as verified only while you are also signed in to that forge in the workspace, so the forge vouches for your email.'**
+  String get settingsCommitSigningAddDescription;
+
+  /// Steps on GitHub. 'Settings', 'SSH and GPG keys', 'New SSH key', 'Key type' and 'Signing Key' are GitHub's own English UI labels: keep them in English
+  ///
+  /// In en, this message translates to:
+  /// **'Settings → SSH and GPG keys → New SSH key. Set Key type to Signing Key.'**
+  String get settingsCommitSigningGitHubSteps;
+
+  /// Steps on GitLab. 'Preferences', 'SSH Keys', 'Usage type' and 'Signing' are GitLab's UI labels: keep them in English
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences → SSH Keys. Set Usage type to Signing.'**
+  String get settingsCommitSigningGitLabSteps;
+
+  /// Bitbucket does not support signing with this key; warns not to add it there because a Bitbucket SSH key also grants access
+  ///
+  /// In en, this message translates to:
+  /// **'Commits on Bitbucket are not signed. Do not add this key to your Bitbucket account: an SSH key there is also a login.'**
+  String get settingsCommitSigningBitbucketSteps;
+
+  /// Tag beside a forge that does not support this signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Not supported'**
+  String get settingsCommitSigningUnsupported;
+
+  /// Heading above the plain statements of what creating a signing key entrusts to the server
+  ///
+  /// In en, this message translates to:
+  /// **'What you are trusting'**
+  String get settingsCommitSigningTrustTitle;
+
+  /// Trust statement: the private key never leaves the server and signs only the person's commits
+  ///
+  /// In en, this message translates to:
+  /// **'The private key never leaves this server.'**
+  String get settingsCommitSigningTrustPrivate;
+
+  /// Trust statement: the server's operator can sign as the person while the key is on their forge account
+  ///
+  /// In en, this message translates to:
+  /// **'Whoever controls this server can sign commits as you for as long as the key is on your forge account.'**
+  String get settingsCommitSigningTrustControl;
+
+  /// Trust statement: GitHub keeps already verified commits verified after the key is removed
+  ///
+  /// In en, this message translates to:
+  /// **'On GitHub, commits already shown as verified stay verified after you remove the key.'**
+  String get settingsCommitSigningTrustVerified;
+
+  /// Button and confirm label: delete the person's signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Delete key'**
+  String get settingsCommitSigningDelete;
+
+  /// Confirmation dialog title for deleting the signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Delete your signing key?'**
+  String get settingsCommitSigningDeleteTitle;
+
+  /// Confirmation dialog body: consequences of deleting the signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Your commits are unsigned from now on. The key stays on your forge accounts until you remove it there.'**
+  String get settingsCommitSigningDeleteBody;
+
+  /// Toast after deleting the signing key
+  ///
+  /// In en, this message translates to:
+  /// **'Signing key deleted'**
+  String get settingsCommitSigningDeleted;
+
+  /// Error shown when the signing key could not be loaded
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your signing key: {error}'**
+  String settingsCommitSigningLoadFailed(String error);
+
+  /// Settings > You > Profile: nav label and page title for the person's own account (username, name, picture, single sign-on identity) and, under their own heading, the accounts they connect
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get accountProfileTitle;
+
+  /// Subtitle of Settings > You > Profile, the page that holds the person's profile and, under it, their connected accounts
+  ///
+  /// In en, this message translates to:
+  /// **'Who you are in every workspace, and your own code hosting, ticketing, calendar and chat accounts.'**
+  String get accountProfileDescription;
+
+  /// Card label on Settings > You > Profile holding username, display name, email and picture
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountSectionTitle;
+
+  /// Explains account-wide fields vs the per-workspace overlay. 'Workspace → Profile & identity' must match the nav labels settingsScopeWorkspace and settingsProfile
+  ///
+  /// In en, this message translates to:
+  /// **'Your username and name follow you into every workspace. A workspace can show a different name or email: set that in Workspace → Profile & identity.'**
+  String get accountSectionDescription;
+
+  /// Error shown when the person's own account row cannot be read; error is a server message
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load your profile: {error}'**
+  String accountLoadFailed(String error);
+
+  /// Hint under the Display name field (account profile and onboarding 'You' step)
+  ///
+  /// In en, this message translates to:
+  /// **'The name people see on your messages and reviews.'**
+  String get accountDisplayNameHint;
+
+  /// Validation error when the display name field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a display name.'**
+  String get accountDisplayNameRequired;
+
+  /// Validation error when the person empties the email or picture field, which the server cannot clear
+  ///
+  /// In en, this message translates to:
+  /// **'This can be changed but not removed.'**
+  String get accountFieldCannotBeCleared;
+
+  /// Label of the profile picture (avatar image link) field
+  ///
+  /// In en, this message translates to:
+  /// **'Picture'**
+  String get accountAvatarLabel;
+
+  /// Hint under the profile picture field. Keep 'https://' literal
+  ///
+  /// In en, this message translates to:
+  /// **'A link to a square image, starting with https://.'**
+  String get accountAvatarHint;
+
+  /// Validation error for a profile picture link that is not an https URL. Keep 'https://' literal
+  ///
+  /// In en, this message translates to:
+  /// **'Use a link that starts with https://.'**
+  String get accountAvatarInvalid;
+
+  /// Label of the username field (the person's unique @name). Use the same term everywhere for 'username'
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameLabel;
+
+  /// Hint under the username field describing the rule
+  ///
+  /// In en, this message translates to:
+  /// **'2 to 32 lowercase letters, digits, dots, dashes or underscores. People mention you with it.'**
+  String get usernameRule;
+
+  /// Status under the username field: the typed name is free
+  ///
+  /// In en, this message translates to:
+  /// **'Available.'**
+  String get usernameAvailable;
+
+  /// Status under the username field when the typed name is free but is stored normalized (lowercased); username is ASCII
+  ///
+  /// In en, this message translates to:
+  /// **'Available. It will be saved as {username}.'**
+  String usernameAvailableAs(String username);
+
+  /// Error under the username field: the name breaks the rule. Keep the three quoted characters literal
+  ///
+  /// In en, this message translates to:
+  /// **'Use 2 to 32 lowercase letters, digits, “.”, “_” or “-”, starting and ending with a letter or digit.'**
+  String get usernameInvalid;
+
+  /// Error under the username field: nobody may hold this name
+  ///
+  /// In en, this message translates to:
+  /// **'That username is reserved.'**
+  String get usernameReserved;
+
+  /// Error under the username field: someone else has this name
+  ///
+  /// In en, this message translates to:
+  /// **'That username is taken.'**
+  String get usernameTaken;
+
+  /// Status under the username field when the availability check failed
+  ///
+  /// In en, this message translates to:
+  /// **'Could not check this name right now. You can still save; the server decides.'**
+  String get usernameCheckFailed;
+
+  /// Heading on Settings > You > Profile over the accounts a person connects for themself (code hosting, ticketing, calendar, chat). Also the link text on Workspace > Integrations that leads there, and a command palette entry
+  ///
+  /// In en, this message translates to:
+  /// **'Connected accounts'**
+  String get linkedAccountsTitle;
+
+  /// Row title on Settings > You > Profile for the single sign-on (SAML/OIDC) identity the account is pinned to
+  ///
+  /// In en, this message translates to:
+  /// **'Identity provider'**
+  String get linkedAccountsIdentityProvider;
+
+  /// State of one of the reader's own accounts in the summary line on Settings > Workspace > Integrations (the detail of yourAccountEntry): the provider refused the sign-in or it expired
+  ///
+  /// In en, this message translates to:
+  /// **'Needs sign-in'**
+  String get linkedAccountStatusNeedsSignIn;
+
+  /// State of one of the reader's own accounts in the summary line on Settings > Workspace > Integrations (the detail of yourAccountEntry): parked because the workspace's sign-in service changed
+  ///
+  /// In en, this message translates to:
+  /// **'Paused'**
+  String get linkedAccountStatusPaused;
+
+  /// State of one of the reader's own accounts in the summary line on Settings > Workspace > Integrations (the detail of yourAccountEntry): its renewal failed for now
+  ///
+  /// In en, this message translates to:
+  /// **'Unreachable'**
+  String get linkedAccountStatusUnreachable;
+
+  /// Subtitle of the Single sign-on card on Settings > You > Profile, shown only when the account is pinned to an identity provider
+  ///
+  /// In en, this message translates to:
+  /// **'The identity provider your account signs in through. Whoever runs this server manages it.'**
+  String get ssoIdentityDescription;
+
+  /// Text under the Connected accounts heading on Settings > You > Profile. Keep 'Control Center' untranslated
+  ///
+  /// In en, this message translates to:
+  /// **'The accounts you connect for yourself. Control Center acts as you through them, and changing them affects only you.'**
+  String get settingsAccountsDescription;
+
+  /// One line on a connected account's card on Settings > You > Profile: the account applies in every workspace on this server
+  ///
+  /// In en, this message translates to:
+  /// **'Used in every workspace on this server.'**
+  String get accountReachServer;
+
+  /// One line on a connected account's card on Settings > You > Profile: the account applies only in the named workspace (the one settings were opened from)
+  ///
+  /// In en, this message translates to:
+  /// **'Used only in {workspace}.'**
+  String accountReachWorkspace(String workspace);
+
+  /// Code hosting card line on Settings > You > Profile when the current workspace has its own sign-in apps (its own GitHub App or its own Connect; same term as workspaceConnectSwitchTitle), so the GitHub sign-in is kept for that workspace only. Keep GitHub, GitLab and Bitbucket untranslated
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub is used only in {workspace}, which has its own sign-in apps. GitLab and Bitbucket are used in every workspace on this server.'**
+  String forgeReachGitHubOwnApp(String workspace);
+
+  /// Leading label of the one-line summary of the reader's own account at the top of a provider group on Settings > Workspace > Integrations
+  ///
+  /// In en, this message translates to:
+  /// **'Your account'**
+  String get yourAccountLabel;
+
+  /// One account in the summary line on Settings > Workspace > Integrations; provider is a service name (GitHub, Linear, Slack), detail is the account name or its state (for example 'Needs sign-in')
+  ///
+  /// In en, this message translates to:
+  /// **'{provider}: {detail}'**
+  String yourAccountEntry(String provider, String detail);
+
+  /// Screen reader label of the account summary line on Settings > Workspace > Integrations. 'You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Your account: {status}. Opens You → Profile.'**
+  String yourAccountLineSemantics(String status);
+
+  /// Account summary line on Settings > Workspace > Integrations > code hosting when the reader has connected no GitHub, GitLab or Bitbucket account
+  ///
+  /// In en, this message translates to:
+  /// **'No code hosting account connected'**
+  String get yourForgeAccountNone;
+
+  /// Account summary line on Settings > Workspace > Integrations when the reader has not signed in to the provider
+  ///
+  /// In en, this message translates to:
+  /// **'No {provider} account connected'**
+  String yourAccountNotConnected(String provider);
+
+  /// Account summary line on Settings > Workspace > Integrations > chat when the reader has not linked their chat account
+  ///
+  /// In en, this message translates to:
+  /// **'No {provider} account linked'**
+  String yourChatAccountNotLinked(String provider);
+
+  /// Demo notice on Settings > You > Profile
+  ///
+  /// In en, this message translates to:
+  /// **'You are a temporary guest in the demo, so there is no account to change: no username, profile or connected accounts.'**
+  String get demoUnavailableAccount;
+
+  /// Onboarding progress-bar label of the first step, where the person chooses their username and display name
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get onboardingStepYou;
+
+  /// Title of the onboarding 'You' step
+  ///
+  /// In en, this message translates to:
+  /// **'Choose your username'**
+  String get onboardingYouTitle;
+
+  /// Lead of the onboarding 'You' step. 'Settings → You → Profile' must match the nav labels settingsScopeYou and accountProfileTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Your username is how people mention you and how your work is labeled. You can change it and your display name later in Settings → You → Profile.'**
+  String get onboardingYouSubtitle;
+
+  /// Sign-in failure: the provider account the person signed in with is already held by another person on this server; one account acts for one person only
+  ///
+  /// In en, this message translates to:
+  /// **'This {provider} account is already connected to another person on this server. Sign in with a different {provider} account.'**
+  String signInErrorAccountAlreadyBound(String provider);
+
+  /// Settings → Code hosting: under a forge row, when the pasted GitLab/Bitbucket token stops working. Hovering the line shows the exact time
+  ///
+  /// In en, this message translates to:
+  /// **'Token expires {date}'**
+  String forgeTokenExpiresOn(String date);
+
+  /// Settings → Code hosting: warning under a forge row once the pasted token has expired
+  ///
+  /// In en, this message translates to:
+  /// **'Token expired {date}. Paste a new one to keep working.'**
+  String forgeTokenExpiredOn(String date);
+
+  /// Token dialog error: the server could not ask the forge about the pasted token (offline, rate limited)
+  ///
+  /// In en, this message translates to:
+  /// **'{forge} could not be reached to check this token. Try again in a moment.'**
+  String personTokenUnreachable(String forge);
+
+  /// Token dialog error: the forge refused the pasted token (wrong, revoked, or for Bitbucket the wrong email)
+  ///
+  /// In en, this message translates to:
+  /// **'{forge} does not accept this token. Check that you copied all of it and that it has not been revoked.'**
+  String personTokenRejected(String forge);
+
+  /// Token dialog error: the pasted token belongs to a bot, project, group or workspace instead of the person
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a personal token. Paste a personal access token from your own {forge} account, not a project, group, workspace or bot token.'**
+  String personTokenWrongKind(String forge);
+
+  /// Token dialog error: the pasted token lacks a permission. {scope} is the forge's own scope name, e.g. api or write:pullrequest:bitbucket; keep it as is
+  ///
+  /// In en, this message translates to:
+  /// **'This token is missing the {scope} scope, which reviewing and commenting need. Create one that has it.'**
+  String personTokenNarrowScope(String scope);
+
+  /// Token dialog error: the pasted token is already expired
+  ///
+  /// In en, this message translates to:
+  /// **'This token has expired. Create a new one and paste it here.'**
+  String get personTokenExpired;
+
+  /// Settings → You → Commits → Verified commits, "What you are trusting" list. "Deleting the key here" = the Delete key action on this page, not removing it from the forge
+  ///
+  /// In en, this message translates to:
+  /// **'Agents you start can make commits signed as you, in any repository they work in. Deleting the key here stops that at once: runs already under way sign nothing further.'**
+  String get settingsCommitSigningTrustAgents;
+
+  /// Settings → Connect: toast when rotating the server's Connect key failed (for example Connect could not be reached). The old key and id keep working; the Rotate key button stays for another try. {error} is the server's sentence
+  ///
+  /// In en, this message translates to:
+  /// **'The key was not rotated, and nothing changed: {error} Try again.'**
+  String connectRotateKeyFailed(String error);
+
+  /// Workspace picker, shown to a signed-in person who belongs to no workspace and may not create one (only the server owner can). Title of a calm dead end, not an error.
+  ///
+  /// In en, this message translates to:
+  /// **'You are not in a workspace yet'**
+  String get noWorkspaceInviteTitle;
+
+  /// Body under noWorkspaceInviteTitle. 'Invite' = an admin adds them to an existing workspace; 'the server owner' = the person who runs this Control Center server.
+  ///
+  /// In en, this message translates to:
+  /// **'A workspace admin has to invite you, or the server owner can create a workspace for you. It opens here as soon as you are added.'**
+  String get noWorkspaceInviteBody;
+
+  /// Small line under noWorkspaceInviteBody, reassuring the person that their sign-in worked.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in as {name}'**
+  String noWorkspaceSignedInAs(String name);
+
+  /// Button on the no-workspace dead end: re-reads whether they were added to a workspace (or may now create one).
+  ///
+  /// In en, this message translates to:
+  /// **'Check again'**
+  String get noWorkspaceCheckAgain;
+
+  /// Button on the no-workspace dead end: leaves this server for the server sign-in screen, so they can sign in as someone else or pick another server.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out'**
+  String get noWorkspaceSignOut;
+
+  /// Error in the new-workspace form when the server refuses because only its owner may create workspaces (their right was withdrawn after the form opened).
+  ///
+  /// In en, this message translates to:
+  /// **'Only the server owner can create workspaces. Ask them to create one, or ask a workspace admin to invite you.'**
+  String get workspaceCreateOwnerOnly;
+
+  /// Toast when a link names a repository no workspace links, the person is in no workspace, and they may not create one.
+  ///
+  /// In en, this message translates to:
+  /// **'{repo} is not in any of your workspaces, and you are not in a workspace to add it to. Ask a workspace admin to invite you.'**
+  String repoLinkNoWorkspaceToAddTo(String repo);
+
+  /// Shared title when the server refused something only its owner (the person who runs this Control Center server) may do. Used for the embedded editor today.
+  ///
+  /// In en, this message translates to:
+  /// **'Only the server owner can do this'**
+  String get serverOwnerOnly;
+
+  /// Under serverOwnerOnly in an editor tab when opening the embedded VS Code editor was refused. 'Explorer' is the IDE's file tree panel, whose built-in single-file editor everyone can still use
+  ///
+  /// In en, this message translates to:
+  /// **'The full editor runs on the server\'s own machine, so only the server\'s owner can open it. You can still open and edit files from the Explorer.'**
+  String get ideCodeServerOwnerOnlyHint;
+
+  /// Small badge above a terminal that runs inside the sandbox (not directly on the server host)
+  ///
+  /// In en, this message translates to:
+  /// **'Sandboxed'**
+  String get terminalSandboxedBadge;
+
+  /// One line beside terminalSandboxedBadge, for someone who is not the server owner: why some things are missing in their terminal
+  ///
+  /// In en, this message translates to:
+  /// **'Runs in a sandbox inside this workspace\'s folders, so some host tools and paths are not available here.'**
+  String get terminalSandboxedHint;
+
+  /// Terminal panel, when the server refused an unsandboxed host shell to someone who is not its owner
+  ///
+  /// In en, this message translates to:
+  /// **'The host shell runs on the server without a sandbox, so only the server owner can open one. A regular terminal runs in the sandbox.'**
+  String get terminalHostShellOwnerOnly;
+
+  /// Terminal panel, when the server refused a working directory outside the workspace's directories
+  ///
+  /// In en, this message translates to:
+  /// **'A terminal can only open inside this workspace\'s own folders.'**
+  String get terminalOutsideWorkspace;
+
+  /// Settings → Environments, when saving or approving a definition was refused because it places something on the server host. 'Rig' = an isolated machine Control Center boots for the environment (keep the product term)
+  ///
+  /// In en, this message translates to:
+  /// **'Only the server owner can save or approve an environment that runs on the server host. A workspace admin can use one that runs in a rig.'**
+  String get environmentHostOwnerOnly;
+
+  /// You → Commits, in the list of what to know about commits made here. 'git commit --no-verify' is a literal command; keep it verbatim
+  ///
+  /// In en, this message translates to:
+  /// **'Commits you make in the app\'s own editor run no Git hooks from the repository, as with git commit --no-verify: the server runs Git on its own host, in a tree that agents and pull requests can change.'**
+  String get settingsCommitsNoHooks;
+
+  /// Settings → MCP servers, under the Authentication token label, for the server owner. 'Authorization: Bearer' is the literal HTTP header; keep it verbatim
+  ///
+  /// In en, this message translates to:
+  /// **'MCP clients send this token with every request, as an Authorization: Bearer header. The server creates it on first start; you can rotate it but not remove it.'**
+  String get mcpTokenDescription;
+
+  /// Button: reveals the MCP token (as the header line to copy). Server owner only
+  ///
+  /// In en, this message translates to:
+  /// **'Show token'**
+  String get mcpShowToken;
+
+  /// Button: hides the MCP token again
+  ///
+  /// In en, this message translates to:
+  /// **'Hide token'**
+  String get mcpHideToken;
+
+  /// Button, and the confirm button of the rotate dialog: replaces the MCP token with a new random one
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate token'**
+  String get mcpRotateToken;
+
+  /// Title of the confirm dialog before rotating the MCP token
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate the MCP token?'**
+  String get mcpRotateTokenTitle;
+
+  /// Body of the rotate-token confirm dialog: the consequence
+  ///
+  /// In en, this message translates to:
+  /// **'The server switches to a new token right away. Every MCP client still using the current one is refused until you give it the new one.'**
+  String get mcpRotateTokenBody;
+
+  /// Toast after the MCP token was rotated; the new token is shown in the card
+  ///
+  /// In en, this message translates to:
+  /// **'Token rotated. Give your MCP clients the new one.'**
+  String get mcpTokenRotated;
+
+  /// Settings → MCP servers, for someone who is not the server owner. Informational, not an error
+  ///
+  /// In en, this message translates to:
+  /// **'The MCP endpoint is for the server owner'**
+  String get mcpOwnerOnlyTitle;
+
+  /// Under mcpOwnerOnlyTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Its token opens every tool on this server, so only the server owner can see it, rotate it, or start and stop the endpoint.'**
+  String get mcpOwnerOnlyBody;
+
+  /// Activity log entry: someone rotated the server's MCP token (op mcp.rotateToken)
+  ///
+  /// In en, this message translates to:
+  /// **'Rotated the MCP token'**
+  String get activityRotatedMcpToken;
+
+  /// Settings → Connect, dialog title after Rotate key failed because a Connect could not retire the old key. The server's own explanation (which Connect, which error code) is shown under it
+  ///
+  /// In en, this message translates to:
+  /// **'Connect could not retire the old key'**
+  String get connectRotateKeyRetireFailedTitle;
+
+  /// Same dialog, under the server's explanation: what 'Rotate anyway' leaves behind. 'Connect' = Control Center Connect (product name)
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing changed. If you rotate anyway, this server gets its new key, but the old identity stays usable at that Connect until its sign-ins expire.'**
+  String get connectRotateKeyForceBody;
+
+  /// Destructive button in that dialog: rotates the key even though a Connect could not retire the old one
+  ///
+  /// In en, this message translates to:
+  /// **'Rotate anyway'**
+  String get connectRotateKeyAnyway;
+
+  /// Settings → Server navigation entry and page title: one table of who changed what across the server and the workspaces the person administers
+  ///
+  /// In en, this message translates to:
+  /// **'Audit log'**
+  String get settingsAuditLog;
+
+  /// Subtitle of the Audit log page
+  ///
+  /// In en, this message translates to:
+  /// **'Who changed what, where and how it ended, across the server and every workspace you administer. Server operations record argument names, never their values.'**
+  String get settingsAuditLogDescription;
+
+  /// Alert title on the Audit log page for someone who is neither the server owner nor a workspace admin
+  ///
+  /// In en, this message translates to:
+  /// **'Admins only'**
+  String get auditLogNoAccessTitle;
+
+  /// Alert body under auditLogNoAccessTitle
+  ///
+  /// In en, this message translates to:
+  /// **'The audit log covers the server and the workspaces you administer. You don\'t administer any workspace, so there\'s nothing to show.'**
+  String get auditLogNoAccess;
+
+  /// Where an audit record happened: the whole server (install-wide settings), as opposed to a workspace. Shown on rows and as a filter option
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get auditLogSourceServer;
+
+  /// Fallback name for a workspace whose name is unknown, on an audit log row
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get auditLogSourceWorkspace;
+
+  /// Audit log toolbar button that opens the filter menu
+  ///
+  /// In en, this message translates to:
+  /// **'Filter'**
+  String get auditLogAddFilter;
+
+  /// Placeholder of the search field inside a filter flyout (e.g. the list of actors)
+  ///
+  /// In en, this message translates to:
+  /// **'Filter…'**
+  String get auditLogFilterOptionsHint;
+
+  /// Audit log filter category: the person who made the change
+  ///
+  /// In en, this message translates to:
+  /// **'Actor'**
+  String get auditLogFilterActor;
+
+  /// Audit log filter category: which workspace (or the server) the change happened in
+  ///
+  /// In en, this message translates to:
+  /// **'Workspace'**
+  String get auditLogFilterSource;
+
+  /// Audit log filter category: how the operation ended (succeeded, denied, failed)
+  ///
+  /// In en, this message translates to:
+  /// **'Outcome'**
+  String get auditLogFilterOutcome;
+
+  /// Audit log toolbar button that adds a time condition
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get auditLogFilterTime;
+
+  /// Active filter chip, e.g. 'Actor: Ada, Riley'. {category} is a filter category name, {values} the selected values
+  ///
+  /// In en, this message translates to:
+  /// **'{category}: {values}'**
+  String auditLogFilterChip(String category, String values);
+
+  /// Selected values of a filter chip when more than two are selected: the first two, then how many more, e.g. 'Ada, Riley +3'
+  ///
+  /// In en, this message translates to:
+  /// **'{values} +{count}'**
+  String auditLogFilterChipMore(String values, int count);
+
+  /// Audit outcome: the operation ran and returned
+  ///
+  /// In en, this message translates to:
+  /// **'Succeeded'**
+  String get auditLogOutcomeOk;
+
+  /// Audit outcome: a permission check refused the operation before it ran
+  ///
+  /// In en, this message translates to:
+  /// **'Denied'**
+  String get auditLogOutcomeDenied;
+
+  /// Audit outcome: the operation ran and threw an error
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get auditLogOutcomeFailed;
+
+  /// Time filter comparison ≥ in words
+  ///
+  /// In en, this message translates to:
+  /// **'On or after'**
+  String get auditLogTimeAtOrAfter;
+
+  /// Time filter comparison > in words
+  ///
+  /// In en, this message translates to:
+  /// **'After'**
+  String get auditLogTimeAfter;
+
+  /// Time filter comparison < in words
+  ///
+  /// In en, this message translates to:
+  /// **'Before'**
+  String get auditLogTimeBefore;
+
+  /// Time filter comparison ≤ in words
+  ///
+  /// In en, this message translates to:
+  /// **'On or before'**
+  String get auditLogTimeAtOrBefore;
+
+  /// Active time filter chip, e.g. 'Time ≥ Nov 10, 2026 14:30'. {operator} is a comparison symbol (or its words for screen readers), {time} a formatted date and time
+  ///
+  /// In en, this message translates to:
+  /// **'Time {operator} {time}'**
+  String auditLogTimeChip(String operator, String time);
+
+  /// Time filter preset: the instant one hour before now
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour ago'**
+  String get auditLogTimePresetHour;
+
+  /// Time filter preset: the instant 24 hours before now
+  ///
+  /// In en, this message translates to:
+  /// **'24 hours ago'**
+  String get auditLogTimePresetDay;
+
+  /// Time filter preset: the instant 7 days before now
+  ///
+  /// In en, this message translates to:
+  /// **'7 days ago'**
+  String get auditLogTimePresetWeek;
+
+  /// Time filter preset: the instant 30 days before now
+  ///
+  /// In en, this message translates to:
+  /// **'30 days ago'**
+  String get auditLogTimePresetMonth;
+
+  /// Label above the field where a date and time is typed for a time filter
+  ///
+  /// In en, this message translates to:
+  /// **'Exact time'**
+  String get auditLogTimeExact;
+
+  /// Error under the exact-time field when the typed text is not a date. Keep YYYY-MM-DD and HH:MM literally
+  ///
+  /// In en, this message translates to:
+  /// **'Use YYYY-MM-DD, optionally with HH:MM'**
+  String get auditLogTimeInvalid;
+
+  /// Button that adds the typed exact time as a filter condition
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get auditLogTimeAdd;
+
+  /// Repository access notice (pull requests, Settings → Repositories) when the linked owner/name now names a different repository on the forge (deleted and re-created, or moved and replaced). Nothing is sent to it until an admin relinks it
+  ///
+  /// In en, this message translates to:
+  /// **'{repo} now points to a different repository'**
+  String repoAccessReplacedTitle(String repo);
+
+  /// Under repoAccessReplacedTitle. 'Path' = the repository's owner/name on the forge. A member also sees who to ask, appended after it
+  ///
+  /// In en, this message translates to:
+  /// **'This path now points to a different repository on {forge}. Relink it to keep using it.'**
+  String repoAccessReplacedBody(String forge);
+
+  /// Button on that notice, for workspace admins only: links the repository again, so the server checks it with the admin's own forge sign-in and pins the new repository
+  ///
+  /// In en, this message translates to:
+  /// **'Relink'**
+  String get repoRelink;
+
+  /// Toast after Relink succeeded
+  ///
+  /// In en, this message translates to:
+  /// **'Relinked {repo}.'**
+  String repoRelinked(String repo);
+
+  /// Code views (file content, terminal in a space) when the server refused because the repository was replaced on its forge
+  ///
+  /// In en, this message translates to:
+  /// **'This path now points to a different repository. A workspace admin has to relink it before it can be used.'**
+  String get repoCodeRepoReplaced;
+
+  /// Code views (file content, a terminal in a space) when the server refused because the person's own forge account cannot read a repository in the space
+  ///
+  /// In en, this message translates to:
+  /// **'Your {forge} account can\'t read this repository.'**
+  String repoCodeForgeCannotRead(String forge);
+
+  /// Same place, when the forge could not be asked whether the person can read the repository; a retry is offered
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t confirm your {forge} access. Try again.'**
+  String repoCodeForgeUnconfirmed(String forge);
+
+  /// repoCodeForgeCannotRead when the server did not name the forge. 'Forge' = the code host (GitHub, GitLab, Bitbucket)
+  ///
+  /// In en, this message translates to:
+  /// **'Your forge account can\'t read this repository.'**
+  String get repoCodeForgeCannotReadUnnamed;
+
+  /// repoCodeForgeUnconfirmed when the server did not name the forge
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t confirm your forge access. Try again.'**
+  String get repoCodeForgeUnconfirmedUnnamed;
+
+  /// Linking or relinking a repository was refused: its folder lies outside the workspace's storage on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Only the server\'s owner can link a folder outside this workspace\'s storage.'**
+  String get repoPathHostPath;
+
+  /// Linking a repository was refused: no folder at that path on the server
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing exists at that path on the server.'**
+  String get repoPathMissing;
+
+  /// Linking a repository was refused: the folder is inside the server's own data folder
+  ///
+  /// In en, this message translates to:
+  /// **'A repository can\'t point into the server\'s data folder.'**
+  String get repoPathDataDir;
+
+  /// Linking a repository was refused: the folder is the workspace's root folder itself
+  ///
+  /// In en, this message translates to:
+  /// **'A repository can\'t be the workspace\'s own folder.'**
+  String get repoPathWorkspaceRoot;
+
+  /// Linking a repository was refused: the git origin of the folder names another repository than the one being linked
+  ///
+  /// In en, this message translates to:
+  /// **'That folder\'s origin is a different repository.'**
+  String get repoPathOriginMismatch;
+
+  /// Member repository access dialog, under a repository row right after its grant was saved: the member is not signed in to its forge
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. They need to sign in to {forge} before they can open this repository.'**
+  String repoGrantNeedsSignIn(String forge);
+
+  /// Same place: the member's own forge account cannot read the repository
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Their {forge} account can\'t read this repository yet, so it stays hidden from them.'**
+  String repoGrantCannotRead(String forge);
+
+  /// Same place: the forge could not be asked whether the member can read it
+  ///
+  /// In en, this message translates to:
+  /// **'Saved. Couldn\'t confirm their {forge} access right now.'**
+  String repoGrantUnconfirmed(String forge);
+
+  /// Toast when someone who is not the server owner opens a repository link (e.g. from the browser extension) for a repository no workspace of theirs links. Adding one means picking a folder on the server's machine, which only the server owner (the person who runs this Control Center server) may do
+  ///
+  /// In en, this message translates to:
+  /// **'{repo} is not linked in any of your workspaces. Ask the server owner to add it.'**
+  String repoLinkAskOwnerToAdd(String repo);
+
+  /// Settings → Repositories, empty list, for someone who is not the server owner: why there is no Add button. 'Server owner' = the person who runs this Control Center server
+  ///
+  /// In en, this message translates to:
+  /// **'The server owner adds repositories from the server\'s folders.'**
+  String get reposEmptyAskOwner;
+
+  /// Under the email field in the person's own profile settings while their address is unconfirmed (they typed it themselves; neither their identity provider nor the server owner has vouched for it)
+  ///
+  /// In en, this message translates to:
+  /// **'Only you have entered this address. Single sign-on won\'t match it until the server\'s owner confirms it.'**
+  String get accountEmailUnconfirmedHint;
+
+  /// Settings → Server navigation item and page title: every account on this server. Server owner only
+  ///
+  /// In en, this message translates to:
+  /// **'People'**
+  String get settingsServerPeople;
+
+  /// Subtitle of Settings → Server → People
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone with an account on this server, and whether their email address is confirmed.'**
+  String get settingsServerPeopleDescription;
+
+  /// Section label above the list of accounts on Settings → Server → People
+  ///
+  /// In en, this message translates to:
+  /// **'Accounts'**
+  String get serverPeopleLabel;
+
+  /// Settings → Server → People, under serverOwnerOnly, for anyone who is not the server owner; also a toast when the server refused to confirm an address for that reason
+  ///
+  /// In en, this message translates to:
+  /// **'Only the server\'s owner can see everyone\'s account and confirm email addresses.'**
+  String get serverPeopleOwnerOnly;
+
+  /// Status tag on an account row in Settings → Server → People (shown to the server owner only) when the person typed their email address themselves and nobody has vouched for it
+  ///
+  /// In en, this message translates to:
+  /// **'Email not confirmed'**
+  String get serverPeopleEmailNotConfirmed;
+
+  /// Row action (icon button tooltip), confirmation dialog title and its confirm button on Settings → Server → People: the server owner vouches that the address belongs to that person
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm email'**
+  String get serverPeopleConfirmEmail;
+
+  /// Body of the Confirm email dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm that {email} belongs to {name}? Single sign-on will match this address to their account.'**
+  String serverPeopleConfirmEmailBody(String email, String name);
+
+  /// Toast after the server owner confirmed an email address
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed {email}.'**
+  String serverPeopleEmailConfirmed(String email);
+
+  /// Title of the notice in a chat turn (and the run's title in its activity tab) when the server refused to start an agent run because it has no sandbox and the person is not the server owner. Guidance, not an error
+  ///
+  /// In en, this message translates to:
+  /// **'Agents need a sandbox on this server'**
+  String get runSandboxUnavailableTitle;
+
+  /// Body of that notice. 'Owner' = the person who runs this Control Center server; 'sandbox' = the isolation agents run in
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.'**
+  String get runSandboxUnavailable;
+
+  /// Settings → Repositories, under a repository the server lists but does not serve (no IDE, environments, terminals, index) until it is confirmed, shown to the server owner, next to a Confirm button. Every checkout linked from a desktop before this rule shows it once
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is outside the workspace\'s storage. Confirm that this server may use it.'**
+  String get repoPathIssueHostPath;
+
+  /// Same notice for anyone who is not the server owner (no button)
+  ///
+  /// In en, this message translates to:
+  /// **'This folder is outside the workspace\'s storage. Only the server\'s owner can confirm it.'**
+  String get repoPathIssueHostPathAskOwner;
+
+  /// Settings → Repositories, under a repository whose folder no longer exists on the server. Workspace admins see a Remove button beside it; no action re-points an existing repository's folder
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing exists at this path on the server anymore. Remove this repository and add it again from its current folder.'**
+  String get repoPathIssueMissing;
+
+  /// Settings → Repositories, under a repository whose folder is the server's own data folder or the workspace's storage root. Workspace admins see a Remove button beside it
+  ///
+  /// In en, this message translates to:
+  /// **'This folder can\'t be used as a repository. Remove it and add the repository from another folder.'**
+  String get repoPathIssueUnusable;
+
+  /// Button next to repoPathIssueHostPath: the server owner confirms the server may use the folder (the server re-checks the link as them)
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get repoPathConfirm;
+
+  /// Button above the repository list when more than one repository waits for that confirmation; confirms them one after another
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm all'**
+  String get repoPathConfirmAll;
+
+  /// Title of the notice above the repository list that carries Confirm all
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 folder is outside the workspace\'s storage} other{{count} folders are outside the workspace\'s storage}}'**
+  String repoPathConfirmAllTitle(int count);
+
+  /// Body of that notice
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm that this server may use them. Each repository is checked again with your access.'**
+  String get repoPathConfirmAllBody;
+
+  /// Second line under the External MCP servers title in Settings → Server → MCP (seen by the server owner). 'This machine's own tool settings' = the MCP configs of Claude, Cursor, VS Code etc. on the server's own OS account; 'MCP endpoint' = the MCP server Control Center itself exposes
+  ///
+  /// In en, this message translates to:
+  /// **'Servers found in this machine\'s own tool settings are available only in runs you start or are accountable for. Other people\'s runs never see them, and they aren\'t offered through Control Center\'s MCP endpoint.'**
+  String get mcpExternalServersOwnerRunsOnly;
+
+  /// Code views (the Explorer's file tree and searches, a file, a diff) when the server refused because the person has no sign-in of their own for the repository's forge. Shown with a 'Sign in' action
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {provider} to see this repository\'s code.'**
+  String repoCodeNeedsSignIn(String provider);
+
+  /// Action beside repoCodeNeedsSignIn in the Explorer tree row and code panes; opens the sign-in prompt for the person's forge account
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in'**
+  String get repoCodeSignIn;
+
+  /// Explorer, 'search in files' (content search) mode: the search failed for a reason that is not an access refusal. Sibling of ideFileSearchFailed
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t search in files'**
+  String get ideContentSearchFailed;
+
+  /// Quick-fix file editor (conversation IDE, PR workbench) when the file could not be read from the conversation's own copy of the repository. Shown with a 'Retry' action
+  ///
+  /// In en, this message translates to:
+  /// **'This file isn\'t available in this worktree.'**
+  String get ideWorktreeFileUnavailable;
+
+  /// Review tab of the conversation IDE (the branch diff) when the diff could not be loaded for a reason that is not an access refusal. Shown with a 'Retry' action
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the changes'**
+  String get ideChangesLoadFailed;
+
+  /// Code views (Explorer tree and searches, a file, a diff, a terminal in a space) when the server refused because the linked repository's owner/name now names a different repository on the forge. The forge-named sibling of repoCodeRepoReplaced, used when the server names the forge
+  ///
+  /// In en, this message translates to:
+  /// **'This path now points to a different repository on {forge}. A workspace admin has to relink it before it can be used.'**
+  String repoCodeRepoReplacedOn(String forge);
+
+  /// Settings → Server → Backup & restore, in place of the Restore buttons and the restore/import fields, for anyone who is not the server owner. Restoring replaces a workspace's data with a file on the server's own machine, so it is the owner's; downloading stays available
+  ///
+  /// In en, this message translates to:
+  /// **'Only the server owner can restore backups. You can still download them.'**
+  String get backupRestoreServerOwnerOnly;
+
+  /// Small badge above a terminal the person may watch but not type into (an environment's setup or process terminal they lack the right to operate)
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get terminalReadOnlyBadge;
+
+  /// One quiet line beside terminalReadOnlyBadge, above a read-only terminal. 'Conversation' = the space whose environment runs the terminal; 'write access' = the person's write grant on each repository there (admins have it)
+  ///
+  /// In en, this message translates to:
+  /// **'You can watch this terminal. Typing in it, resizing or stopping it needs write access to every repository in this conversation.'**
+  String get terminalReadOnlyHint;
+
+  /// One quiet line in the Environment panel and sidebar section when the person may see the environment but not operate it; its start/stop/restart/launch controls are disabled. 'Write access' = the person's write grant on each repository in the conversation (admins have it)
+  ///
+  /// In en, this message translates to:
+  /// **'You can watch this environment. Starting, stopping or restarting it needs write access to every repository in this conversation.'**
+  String get environmentOperateNeedsWrite;
+
+  /// Settings → Environments, a quiet line under a definition (in the list and at the top of its editor) that runs something on the server's own machine and has no approval from the current server owner. Seen by the server owner, beside an 'Approve' button that saves the definition unchanged
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on this server. Approve it to let it start.'**
+  String get environmentHostApprovalOwner;
+
+  /// Same place as environmentHostApprovalOwner, for anyone who is not the server owner; no action
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on this server. The server owner has to approve it before it can start.'**
+  String get environmentHostApprovalMember;
+
+  /// Button beside environmentHostApprovalOwner; the server owner approves the definition by saving it unchanged
+  ///
+  /// In en, this message translates to:
+  /// **'Approve'**
+  String get environmentHostApprove;
+
+  /// Error under the approval notice when the server owner is not a workspace admin, so the definition they see has its secret values hidden and cannot be saved back unchanged
+  ///
+  /// In en, this message translates to:
+  /// **'Approve it as a workspace admin: only an admin\'s copy shows its secret values, and approving saves them back.'**
+  String get environmentHostApproveNeedsAdmin;
+
+  /// Environment panel in a conversation (and the toast after a refused start, restart, task, exec, check, setup or test) when the environment's definition runs on the server's own machine and the current server owner has not approved it. Seen by anyone but the server owner
+  ///
+  /// In en, this message translates to:
+  /// **'The server owner hasn\'t approved this environment yet, so it can\'t run on this server.'**
+  String get environmentHostUnapproved;
+
+  /// Same situation as environmentHostUnapproved, seen by the server owner; in the panel it sits beside environmentHostApprovalReview
+  ///
+  /// In en, this message translates to:
+  /// **'You haven\'t approved this environment yet. It runs on this server, so it starts once you approve its definition.'**
+  String get environmentHostUnapprovedOwner;
+
+  /// Button beside environmentHostUnapprovedOwner in the Environment panel; opens the environment's definition in Settings, where the owner approves it
+  ///
+  /// In en, this message translates to:
+  /// **'Review and approve'**
+  String get environmentHostApprovalReview;
+
+  /// In place of a whole space (conversation workspace) the person opened from a link, a notification or the last space they had open, when the server refused because they are not signed in to the forge that hosts one of the space's repositories. Followed by a Sign in button
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to {provider} to open this space.'**
+  String spaceAccessNeedsSignIn(String provider);
+
+  /// In place of a whole space when the person's own forge account cannot read one of the repositories the space uses, so the server will not show the space to them
+  ///
+  /// In en, this message translates to:
+  /// **'Your {forge} account can\'t read a repository this space uses.'**
+  String spaceAccessForgeCannotRead(String forge);
+
+  /// Same as spaceAccessForgeCannotRead, when the server's refusal does not name the forge
+  ///
+  /// In en, this message translates to:
+  /// **'Your forge account can\'t read a repository this space uses.'**
+  String get spaceAccessForgeCannotReadUnnamed;
+
+  /// In place of a whole space when the person holds no read grant on one of the repositories the space uses
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have read access to a repository this space uses. A workspace admin can grant it.'**
+  String get spaceAccessNoGrant;
+
+  /// In place of a whole space when opening it failed for a reason other than access, with a Retry button
+  ///
+  /// In en, this message translates to:
+  /// **'This space couldn\'t be opened.'**
+  String get spaceAccessFailed;
+
+  /// Context explorer tab (what an agent holds in its context window), when the server refuses the inspection for this kind of session or person; no retry is offered
+  ///
+  /// In en, this message translates to:
+  /// **'The context breakdown isn\'t available in this session.'**
+  String get contextExplorerRefused;
+
+  /// Toast after saving a repository's forge link (owner/organization and repository name) when the server refused because one of them was cleared
+  ///
+  /// In en, this message translates to:
+  /// **'A linked repository needs both an owner and a repository name.'**
+  String get repoLinkForgeRemoteRequired;
+
+  /// Code views (Explorer, a file, a diff, search) and repository actions when the server refused because the person holds no Control Center read grant on the repository
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have read access to this repository. A workspace admin can grant it.'**
+  String get repoCodeNoReadGrant;
+
+  /// Toast when saving a file, reverting, committing, pushing, publishing, syncing or checking out a branch, or moving a stack part was refused because the person holds only a read grant on the repository
+  ///
+  /// In en, this message translates to:
+  /// **'You can read this repository but not change it. A workspace admin can grant write access.'**
+  String get repoCodeNoWriteGrant;
+
+  /// Toast or notice when approving, requesting changes or another review action was refused because the person holds no Control Center review grant on the repository
+  ///
+  /// In en, this message translates to:
+  /// **'You can read this repository but not review it. A workspace admin can grant review access.'**
+  String get repoCodeNoReviewGrant;
+
+  /// Badge above a rig (Browser, Desktop, Android or iOS machine) the person may watch but not drive, because they hold only a read grant on the space's repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Watch only'**
+  String get rigWatchOnlyBadge;
+
+  /// One quiet line beside the watch-only badge above a rig, saying what is off and why
+  ///
+  /// In en, this message translates to:
+  /// **'You can watch this machine. Driving it, forwarding its ports, pasting into it or dropping files on it needs write access to every repository in this space.'**
+  String get rigWatchOnlyHint;
+
+  /// Under the disabled Start button of a rig tab when the server refused opening a rig because the person holds only a read grant on the space's repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Starting a machine here needs write access to every repository in this space. A workspace admin can grant it.'**
+  String get rigStartNeedsWrite;
+
+  /// In place of a rig when its live view was refused because the person cannot read the rig's space
+  ///
+  /// In en, this message translates to:
+  /// **'You can\'t view this machine. It belongs to a space you don\'t have read access to.'**
+  String get rigViewRefused;
+
+  /// Line in a rig's forwarded-ports popover, in place of the add-a-port field, when the person may watch the rig but not change its ports
+  ///
+  /// In en, this message translates to:
+  /// **'Changing these ports needs write access to every repository in this space.'**
+  String get rigPortsWatchOnly;
+
+  /// Toast after a refused action on a rig (Browser, Desktop, Android or iOS machine, or a Terminal (VM)) that carries another person's own sign-ins, and the line in its forwarded-ports popover in place of the add-a-port field
+  ///
+  /// In en, this message translates to:
+  /// **'Only the person this machine was opened for can drive it. It uses their own sign-ins.'**
+  String get rigHolderOnly;
+
+  /// One quiet line beside the watch-only badge above a rig that carries another person's own sign-ins, saying what is off and why
+  ///
+  /// In en, this message translates to:
+  /// **'You can watch this machine. It uses the sign-ins of the person it was opened for, so only they can drive it, forward its ports, paste into it or drop files on it.'**
+  String get rigHolderOnlyHint;
 }
 
 class _AppLocalizationsDelegate

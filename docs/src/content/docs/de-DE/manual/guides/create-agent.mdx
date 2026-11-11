@@ -2,12 +2,12 @@
 title: Einen Agenten erstellen und konfigurieren
 description: Füge einem Arbeitsbereich einen Agenten hinzu, gib ihm Adapter, Modell, Skills und Berechtigungen und prüfe, dass er läuft.
 slug: de-DE/handbuch/anleitungen/agent-erstellen
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Diese Anleitung zeigt dir, wie du einem Arbeitsbereich einen Agenten hinzufügst und ihn so einrichtest, dass er wirklich läuft.
 
-Jeder Arbeitsbereich startet mit fünf Agenten — einem CEO plus `qa`, `architect`, `engineer` und `librarian` —, du hast also meist schon Agenten, bevor du einen konfiguriert hast. Die Schritte unten gelten für einen mit dem Arbeitsbereich angelegten Agenten genauso wie für einen neuen.
+Jeder Arbeitsbereich startet mit sechs Agenten — einem CEO plus `qa`, `architect`, `engineer`, `librarian` und `content-synthesizer` —, du hast also meist schon Agenten, bevor du einen konfiguriert hast. Die Schritte unten gelten für einen mit dem Arbeitsbereich angelegten Agenten genauso wie für einen neuen.
 
 ## Bevor du anfängst
 
@@ -73,7 +73,7 @@ Ein Agent hat keine eigenen Berechtigungsschalter. Was er pushen, öffnen, merge
 Das GitHub-Token des Agenten darf immer nur lesen. Ein Push läuft durch Control Center, das vor dem Weiterleiten die Regel **Zu einem Remote pushen** fragt. Wie jede Regel einen Lauf erreicht, steht unter [Sandbox-Richtlinien konfigurieren](/de-DE/handbuch/anleitungen/sandbox-richtlinien/).
 
 :::note[Regeln und die OS-Sandbox sind getrennte Schichten]
-Die Regeln entscheiden, was ein Agent tun darf; die OS-Sandbox begrenzt, wo seine Prozesse lesen, schreiben und sich verbinden können. `cc_server` hüllt Agentenläufe in die Sandbox des Hosts, wo es eine gibt — Windows hat kein natives Backend, und Linux und WSL2 brauchen `bwrap` und `socat`. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) für sämtliche Grenzen.
+Die Regeln entscheiden, was ein Agent tun darf; die OS-Sandbox begrenzt, wo seine Prozesse lesen, schreiben und sich verbinden können. `cc_server` hüllt Agentenläufe in die Sandbox des Hosts, wo es eine gibt — Windows hat kein natives Backend, und Linux und WSL2 brauchen `bwrap` und `socat`. Wo es keine gibt, starten nur die Läufe des Serverinhabers, außer der Inhaber hat das Sandboxing für alle ausgeschaltet. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/) für sämtliche Grenzen.
 :::
 
 ## Prüfen, dass er läuft

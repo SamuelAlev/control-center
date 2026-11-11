@@ -8,6 +8,7 @@ import 'package:cc_infra/src/harness/diagnostics_on_write.dart';
 import 'package:cc_infra/src/harness/lsp_tool.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -22,6 +23,9 @@ import 'package:test/test.dart';
 ///
 /// Skipped when the Dart SDK is not on PATH.
 void main() {
+  // Unconfined: this pins the protocol; the sandboxed start is pinned in
+  // `host_process_tools_sandbox_test.dart`.
+  const processes = HostToolProcessLauncher();
   late Directory root;
   late LspSupervisor supervisor;
   late DiagnosticsLedger ledger;
@@ -50,7 +54,7 @@ environment:
   /// Waits for the analyzer to settle on [path] and returns fresh diagnostics.
   Future<List<LspDiagnostic>> analyze(String path, String content) async {
     File(path).writeAsStringSync(content);
-    final clients = await supervisor.clientsForFile(root.path, path);
+    final clients = await supervisor.clientsForFile(root.path, path, processes);
     if (clients.isEmpty) {
       return const [];
     }
@@ -113,7 +117,7 @@ int wrong() {
   test('a clean file reports nothing', () async {
     final path = p.join(root.path, 'lib', 'fine.dart');
     File(path).writeAsStringSync('int fine() => 1;\n');
-    final clients = await supervisor.clientsForFile(root.path, path);
+    final clients = await supervisor.clientsForFile(root.path, path, processes);
     if (clients.isEmpty) {
       return;
     }
@@ -138,6 +142,7 @@ int beta() => alpha();
       supervisor: supervisor,
       ledger: ledger,
       workingDirectory: root.path,
+      launcher: processes,
     );
     const ctx = HarnessToolContext(workingDirectory: '.');
 
@@ -176,6 +181,7 @@ int beta() => alpha();
       supervisor: supervisor,
       ledger: ledger,
       workingDirectory: root.path,
+      launcher: processes,
       budget: const Duration(seconds: 20),
     );
     const ctx = HarnessToolContext(workingDirectory: '.');
@@ -208,6 +214,7 @@ int beta() => alpha();
       supervisor: supervisor,
       ledger: ledger,
       workingDirectory: root.path,
+      launcher: processes,
     );
     final result = await wrapped.execute(
       {'path': p.join(root.path, 'lib', 'x.dart')},

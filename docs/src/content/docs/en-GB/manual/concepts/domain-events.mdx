@@ -2,7 +2,7 @@
 title: Domain events
 description: Why features talk through an in-process event bus instead of importing each other, what the bus is and is not the source of truth for and which events can actually drive automation.
 slug: en-GB/manual/concepts/domain-events
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## What a domain event is
@@ -35,9 +35,7 @@ requests, tickets, or meetings. Observability aggregates run outcomes without
 reaching into dispatch.
 
 The cost is the usual one: a publisher cannot tell whether anyone is listening,
-and a listener that is never constructed is silently inert. `TicketRemoteSyncHandler`
-is the standing example: it is declared, covered by tests, and never wired in
-production.
+and a listener that is never constructed is silently inert.
 
 ## What the bus is not
 

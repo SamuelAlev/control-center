@@ -254,13 +254,20 @@ class ComposePrNotifier extends Notifier<ComposePrState> {
       return null;
     }
     state = state.copyWith(publishing: true, clearError: true);
-    final result = await publishWorktreeBranch(
-      ref.read(rpcClientProvider),
-      workspaceId: workspaceId,
-      spaceId: spaceId,
-      repoId: repo.id,
-      branch: state.head.isEmpty ? null : state.head,
-    );
+    final WorktreePublishResult? result;
+    try {
+      result = await publishWorktreeBranch(
+        ref.read(rpcClientProvider),
+        workspaceId: workspaceId,
+        spaceId: spaceId,
+        repoId: repo.id,
+        branch: state.head.isEmpty ? null : state.head,
+      );
+    } on Object {
+      // A refusal (no write grant, the forge) goes to the caller to word.
+      state = state.copyWith(publishing: false);
+      rethrow;
+    }
     state = state.copyWith(
       publishing: false,
       error: result == null

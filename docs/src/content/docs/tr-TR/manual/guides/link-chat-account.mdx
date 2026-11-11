@@ -2,7 +2,7 @@
 title: Slack hesabınızı bağlama
 description: Bir Slack kimliğinin size ait olduğunu kanıtlayın; böylece ajanlar iletileriniz üzerine iş yapar ve emeğiniz size atfedilir.
 slug: tr-TR/kilavuz/nasil-yapilir/sohbet-hesabini-baglama
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Bu kılavuz, sohbet kimliğinizi Control Center kullanıcınıza nasıl bağlayacağınızı ve bir bağlantıyı nasıl kaldıracağınızı gösterir.
@@ -19,8 +19,8 @@ Bağlantısı olmayan bir üye botu etiketlerse, o Slack dizisinde bağlanmanın
 
 Bağlama iki tarafı da gerektirir: Slack’ten bir kod göndermek Slack hesabını kanıtlar, onu Control Center’da onaylamak ise o hesabın size ait olduğunu kanıtlar.
 
-1. **Ayarlar → Çalışma alanı → Profil ve kimlik** bölümüne gidin ve **Bağlı sohbet
-   hesapları** kartına ilerleyin
+1. **Ayarlar → Siz → Profil** bölümüne gidin ve **Bağlı sohbet
+   hesapları** kartını bulun
 2. Slack bloğunda **Slack hesabımı bağla**'ya tıklayın. İletişim kutusu tek kullanımlık bir kod gösterir, örneğin:
 
 ```text
@@ -32,7 +32,7 @@ K7M2QP
 5. Hesap sizinse **Onayla**'ya tıklayın. Bağlantı kurulur, iletişim kutusu bunu söyler ve bot aynı doğrudan mesajda bunu doğrular
 6. Sizin değilse **Reddet**'e tıklayın. Hiçbir şey bağlanmaz ve kod çalışmayı durdurur; yeniden denemek için **Yeni kod al**'a tıklayın
 
-İletişim kutusunu kapatmak bir talebi kaybettirmez. Daha sonra gelen bir kod, profil sayfanızdaki **Slack hesabımı bağla** satırında aynı **Onayla** ve **Reddet** seçenekleriyle bekler.
+İletişim kutusunu kapatmak bir talebi kaybettirmez. Daha sonra gelen bir kod, **Bağlı sohbet hesapları** kartındaki **Slack hesabımı bağla** satırında aynı **Onayla** ve **Reddet** seçenekleriyle bekler.
 
 Onay adımı neden var: omzunuzun üzerinden okunup başka birinin Slack hesabından gönderilen bir kod, aksi halde o hesabın sizin adınıza hareket etmesini sağlardı. Yalnızca siz onaylayabilirsiniz ve yalnızca kodu gönderen profilin ta kendisini.
 
@@ -51,18 +51,20 @@ Bilinmeyen, süresi dolmuş, reddedilmiş veya farklı bir çalışma alanı iç
 
 Slack profilinizde **bu çalışma alanının zaten üyesi olan** bir Control Center kullanıcısının doğrulanmış e-postasıyla eşleşen onaylanmış bir e-posta varsa, köprü botla ilk konuştuğunuzda sizi bağlar. Kod gerekmez.
 
+Control Center tarafında bir adres, tek oturum açma veya SCIM tarafından ayarlanmışsa ya da sunucu sahibi bunu **Ayarlar → Sunucu → Kişiler** içinde onaylamışsa doğrulanmış sayılır. Kendi profilinize yazdığınız bir adres doğrulanmış değildir; sahip onaylayana kadar hiçbir şeye bağlanmaz, o zamana kadar kod akışını kullanın.
+
 İki yarı da önemlidir: e-posta eşleşmesi kimliği kanıtlar, ama erişimi yalnızca üyelik verir; bu yüzden e-postası tesadüfen sunucuda bulunan bir yabancı hiçbir şeye bağlanmaz. Liste, her bağlantının nasıl kurulduğunu gösterir ("e-postayla eşleşti" veya "kodla bağlandı").
 
 Otomatik bağlama `users:read.email` kapsamını gerektirir. Bu olmadan Slack adresi paylaşmaz ve tek yol kod akışıdır.
 
 ## Kimlerin bağlı olduğunu görme
 
-Liste çalışma alanı yönetimine aittir; bu yüzden yüzeyin diğer yarısında yer
-alır: **Ayarlar → Çalışma alanı → Genel → Sohbet köprüleri → Bağlı hesaplar**. Çalışma
+Liste çalışma alanı yönetimine aittir; bu yüzden yönetici kartında yer
+alır: **Ayarlar → Çalışma alanı → Entegrasyonlar → Sohbet köprüleri → Bağlı hesaplar**. Çalışma
 alanındaki her bağlı üyeyi, her birinin eşlendiği Slack hesabı ve bağlantının nasıl
 kurulduğuyla birlikte listeler.
 
-Kendi durumunuz profil sayfanızdadır: **Slack hesabımı bağla** satırı,
+Kendi durumunuz **Ayarlar → Siz → Profil** bölümündedir: **Slack hesabımı bağla** satırı,
 bağlandığınızda "_your-slack-id_ olarak bağlı" yazar; bağlı değilseniz
 bağlanmanızı söyler.
 

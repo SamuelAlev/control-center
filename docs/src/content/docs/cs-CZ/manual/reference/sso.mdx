@@ -2,7 +2,7 @@
 title: Konfigurace SSO
 description: Každá volba, endpoint, operace a chybový kód jednotného přihlášení.
 slug: cs-CZ/prirucka/referencni-prirucka/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Všechno, co jde u jednotného přihlášení nastavit, na jednom místě. Hodnoty
@@ -33,6 +33,18 @@ dvou míst, je připojení, se kterým se obrazovka nastavení může rozejít).
 | `groupRoleMap`         | obojí     | `{}`            | skupina → role; mapování na vlastníka se při uložení odmítne                                                                                              |
 | `autoMember`           | obojí     | zapnuto         | při prvním přihlášení uživatele automaticky přidat do každého pracovního prostoru                                                                         |
 | `allowJit`             | obojí     | zapnuto         | neznámé uživatele založit při přihlášení                                                                                                                  |
+
+## Přiřazení účtů
+
+`SsoProvisioner` najde účet při přihlášení v tomto pořadí a nikdy podle uživatelského jména:
+
+1. `(users.sso_issuer, users.sso_subject)` shodné s vydavatelem a subjektem přihlášení (SAML NameID / OIDC `sub`).
+2. Účet, jehož adresa se rovná e-mailu přihlášení, a to jen tehdy, když ho potvrzují obě strany: poskytovatel (OIDC `email_verified: true`; chybějící claim se nepočítá jako potvrzení, podepsané SAML tvrzení se počítá vždy) i účet (`users.email_verified`). Adresy se ukládají oříznuté a malými písmeny a porovnávají se tak; ověřená adresa se shodne jen tehdy, když ji má ověřenou přesně jeden účet. Dva držitelé se neshodnou s ničím (zaloguje se bez adresy) a žádný účet nelze ověřit pro variantu adresy lišící se velikostí písmen, kterou jiný účet drží ověřenou.
+3. Jinak nový účet, když je `allowJit` zapnuté; když je vypnuté, přihlášení se odmítne.
+
+`users.email_verified` nastaví přihlášení přes SSO nebo SCIM push, který adresu nese, nebo ho vlastník serveru nastaví přes `users.vouchEmail` (**Nastavení → Server → Lidé → Potvrdit e-mail**, auditováno jako `user.email_vouched`). Vlastní úprava profilu vlastníka potvrzuje jeho vlastní adresu. Každá jiná úprava profilu a každá adresa zadaná u pozvánky ponechá ověření nenastavené a změna adresy příznak zruší. Potvrzené přihlášení, které zakládá účet, vezme adresu z účtů, které ji jen napsaly (auditováno jako `user.email_unvouched_cleared`), nikdy z účtu, který ji drží ověřenou; v tom případě nový účet žádnou adresu nedostane.
+
+Shodný účet, který je už připnutý k jinému subjektu nebo vydavateli, přihlášení odmítne hláškou `This account is already linked to a different SSO identity`. Deaktivovaný účet se odmítne hláškou `This account has been deactivated`.
 
 ## Konfigurace procesu
 
@@ -130,6 +142,7 @@ Selhání `cc_saml_verify_response` nesou stabilní kód:
 - `sso_connections` (global.db) — jeden řádek na druh, CROSS-WORKSPACE BY DESIGN.
 - `users.sso_subject` + `users.sso_issuer` — připnutí subjektu poskytovatele,
   jedinečné pro `(issuer, subject)` přes částečný index.
+- `users.email_verified`: zda adresa účtu smí odpovídat přihlášení přes SSO nebo SCIM push (viz [Přiřazení účtů](#přiřazení-účtů)).
 - `users.deactivated_at` — razítko deaktivace přes SCIM.
 - Bearer token SCIM a client secret OIDC žijí v souboru secrets s oprávněním
   0600, nikdy v databázi.

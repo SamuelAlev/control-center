@@ -2,7 +2,7 @@
 title: Calculul revizuirii (cohorte, axe și diff-uri deterministe)
 description: Ce produce pe server trecerea de calcul a revizuirii — cohorte, diff-uri de contract de API și vizuale, porți pe fiecare axă — și cum se reflectă asta în tab-ul Revizuire.
 slug: ro-RO/manual/ghiduri-practice/calculul-revizuirii
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Tab-ul **Revizuire** al unui PR este progresul în direct al pipeline-ului de
@@ -14,9 +14,7 @@ cineva, așa că **Întreabă AI** este cel care îl deschide.
 În spatele acelui tab, `cc_server` construiește cohorte de fișiere, rulează axele
 deterministe și le servește prin operațiunile RPC `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
-`setContractDecision`, `approveVisual`, `compute` și perechile lor `watch*`). Un
-layout persistat care încă numește `pr.reviewStudio` deschide același tab
-Revizuire.
+`setContractDecision`, `approveVisual`, `compute` și perechile lor `watch*`).
 
 În tab-ul Revizuire:
 
@@ -86,6 +84,8 @@ Widgetbook, trecerea de calcul randează componentele modificate înainte și du
 printr-o trecere golden `flutter test` fără interfață, în worktree-urile de bază
 și de vârf ale PR-ului, apoi face diff pe pixeli.
 
+Aceste teste sunt codul propriu al pull request-ului, așa că rulează ca procesul unei unelte a unui agent: în interiorul sandbox-ului când serverul izolează agenții în sandbox, fără izolare când proprietarul serverului a oprit sandbox-ul și fără sandbox doar pentru o cerere pentru care proprietarul serverului răspunde. Pentru oricine altcineva, axa raportează **unavailable** cu motivul „niciun sandbox pe acest server, iar testele unui PR pot rula fără sandbox doar pentru proprietarul serverului”.
+
 :::note[Pe gazda serverului e nevoie de un SDK Flutter]
 Serverul pur Dart nu poate randa widgeturi Flutter în proces, așa că apelează
 `flutter test`. SDK-ul trebuie instalat pe mașina care rulează `cc_server` — nu pe
@@ -95,9 +95,10 @@ on host”. Nu raportează niciodată o trecere pe care nu a meritat-o.
 
 Snapshot-urile marcate **changed** sau **removed** țin poarta vizuală până la
 aprobare; snapshot-urile **unchanged**, **added** și **approved** o eliberează.
-Indisponibilitatea are unul dintre cele patru motive: „no Flutter SDK on host”,
-„no Widgetbook app in repo”, „no golden-testable use-cases” sau „golden harness
-error”.
+Indisponibilitatea are unul dintre cinci motive: „no Flutter SDK on host”,
+„no Widgetbook app in repo”, „no golden-testable use-cases”, „golden harness
+error” sau „niciun sandbox pentru o cerere pentru care proprietarul serverului nu
+răspunde”.
 
 Aprobarea unei modificări intenționate se face cu `review_studio.approveVisual`.
 

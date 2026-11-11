@@ -3,7 +3,7 @@ title: معماری
 description: ساختار Control Center با مدل سرور و کلاینت نازک، معماری تمیزِ ویژگی‌محور و پورت‌ها و آداپتورها.
 dateModified: 2026-09-19
 slug: fa-IR/راهنمای-کاربر/مفهومها/معماری
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## نگاه کلی
@@ -60,7 +60,7 @@ feature_name/
 - موجودیت‌های حافظه: `MemoryFact`، `MemoryPolicy`، `AgentWorkingMemory`، `MemoryAccessGrant`
 - اشیای ارزشی مشترک: `AgentSkills`، `AgentRole`، `Mode`، `SandboxBackend`، `SandboxSpec`، `RunCost`
 - پورت‌های مشترک: `SandboxPort`، `CredentialBrokerPort`، `WorkspaceFilesystemPort`، `GitRepoInspectorPort`، `EmbeddingPort`
-- سرویس‌های دامنه: `MemoryAccessPolicy`، `ActivityLogger`، `MentionResolver`، `RunLivenessClassifier`
+- سرویس‌های دامنه: `MemoryAccessPolicy`، `ActivityLogger`، `AgentMentionParser`، `UserMentionParser`، `RunLivenessClassifier`
 - `DomainEventBus` به‌علاوهٔ انواع رویداد (فضای کاری/عامل، PR/بازبینی، پیام‌رسانی، تیکتینگ، پایپ‌لاین، ارکستراسیون، حافظه، تقویم/جلسه‌ها، هویت و عضویت، رصدپذیری)
 
 ## هویت و چندنفره
@@ -132,7 +132,6 @@ Control Center چندکاربره است: انسان‌ها و عامل‌ها �
 
 - رازها در `flutter_secure_storage` (کیف‌کلید macOS، مدیر اعتبارنامهٔ Windows، libsecret در Linux) — اعتبارنامهٔ دستگاه کلاینت و کلیدهای جفت‌سازی راه دور، نه توکن‌های ارائه‌دهنده
 - `shared_preferences` فقط برای ترجیحات غیرحساس (پوسته، قلم، چیدمان)
-- رازهای باقی‌ماندهٔ ارائه‌دهنده از نصب‌های قدیمی یک‌بار توسط `features/auth/providers/credential_migration.dart` به سرور سپرده می‌شوند و سپس از کیف‌کلید کلاینت حذف می‌شوند
 
 ## اعمال معماری
 

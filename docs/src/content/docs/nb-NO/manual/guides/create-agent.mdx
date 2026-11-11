@@ -2,12 +2,12 @@
 title: Opprett og konfigurer en agent
 description: Legg til en agent i et arbeidsområde, gi den en adapter, modell, skills og tillatelser, og bekreft at den kjører.
 slug: nb-NO/handbok/slik-gjor-du/opprett-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Denne veiledningen viser hvordan du legger en agent til i et arbeidsområde og konfigurerer den til den faktisk kan kjøre.
 
-Hvert arbeidsområde opprettes med fem agenter — en CEO pluss `qa`, `architect`, `engineer` og `librarian` — så du har som regel agenter før du har konfigurert noen. Trinnene nedenfor gjelder like mye for en agent som følger med arbeidsområdet, som for en ny.
+Hvert arbeidsområde opprettes med seks agenter — en CEO pluss `qa`, `architect`, `engineer`, `librarian` og `content-synthesizer` — så du har som regel agenter før du har konfigurert noen. Trinnene nedenfor gjelder like mye for en agent som følger med arbeidsområdet, som for en ny.
 
 ## Før du begynner
 
@@ -73,7 +73,7 @@ En agent har ingen egne tillatelsesbrytere. Hva den får pushe, åpne, slå samm
 Agentens GitHub-token kan alltid bare lese. En push går gjennom Control Center, som spør regelen **Push til en remote** før den sendes videre. Se [Konfigurer sandkassepolicyer](/nb-NO/handbok/slik-gjor-du/sandkassepolicyer/) for hvordan hver regel når en kjøring.
 
 :::note[Regler og OS-sandkassen er separate lag]
-Reglene avgjør hva en agent får gjøre; OS-sandkassen begrenser hvor prosessene dens kan lese, skrive og koble seg til. `cc_server` pakker agentkjøringer inn i vertens sandkasse der en finnes — Windows har ingen innebygd backend, og Linux og WSL2 trenger `bwrap` og `socat`. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hele settet av grenser.
+Reglene avgjør hva en agent får gjøre; OS-sandkassen begrenser hvor prosessene dens kan lese, skrive og koble seg til. `cc_server` pakker agentkjøringer inn i vertens sandkasse der en finnes — Windows har ingen innebygd backend, og Linux og WSL2 trenger `bwrap` og `socat`. Der ingen finnes, starter bare kjøringene til serverens eier, med mindre eieren har slått av sandkassing for alle. Se [Sandkasse og sikkerhet](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/) for hele settet av grenser.
 :::
 
 ## Kontroller at den kjører

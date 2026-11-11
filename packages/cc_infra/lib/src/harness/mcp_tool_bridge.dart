@@ -104,11 +104,13 @@ class McpToolBridge extends HarnessTool {
     Map<String, dynamic> args,
     HarnessToolContext context,
   ) async {
+    // In-process: the context is the run's own, never caller-written.
     final scope = McpCallScope(
       workspaceId: context.workspaceId,
       agentId: context.agentId,
       conversationId: context.conversationId,
       spaceId: context.spaceId,
+      attested: true,
     );
     final missingScope = scope.firstMissing(mcpTool.requiredScopeKeys);
     if (missingScope != null) {

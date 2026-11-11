@@ -2,7 +2,7 @@
 title: Điều phối agent đầu tiên của bạn
 description: Tạo một agent, giao cho nó một space và một tác vụ rồi xem lượt chạy truyền về.
 slug: vi-VN/so-tay/huong-dan/agent-dau-tien
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Bạn sẽ xây dựng gì
@@ -76,7 +76,7 @@ Những gì giới hạn lượt chạy: worktree copy-on-write riêng của nó
 
 **Điểm kiểm tra.** Một hàng lượt chạy, hiển thị trạng thái, thời lượng, thời điểm bắt đầu và kết thúc cùng bộ điều hợp mà nó đã chạy trên đó.
 
-Các thay đổi của agent được commit trên nhánh của cuộc hội thoại, trong worktree của nó. Bạn luôn là tác giả và người thực hiện commit, dùng danh tính Git của mình trong không gian làm việc. Theo mặc định, `Co-Authored-By: Control Center <hi@usectrl.dev>` ghi nhận GitHub `@usectrl` là đồng tác giả. Bạn có thể tắt việc ghi nhận đồng tác giả này tại **Cài đặt → Bạn → Ghi công trong commit**, trừ khi quản trị viên không gian làm việc đã đặt quy tắc khác tại **Cài đặt → Không gian làm việc → Chung**.
+Các thay đổi của agent được commit trên nhánh của cuộc hội thoại, trong worktree của nó. Vì bạn là người yêu cầu lượt chạy, các commit thuộc về bạn: bạn là tác giả và người thực hiện commit, dưới địa chỉ mà forge đã xác minh (địa chỉ noreply GitHub từ đăng nhập GitHub của bạn), và một trailer `Co-Authored-By:` ghi công Control Center trừ khi bạn đã tắt tùy chọn đó. Nếu bạn chưa đăng nhập vào forge, các commit thay vào đó thuộc về bot của Control Center và ghi chú của lượt chạy sẽ nói như vậy.
 
 ## Nhận một pull request
 

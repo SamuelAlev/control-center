@@ -1,8 +1,8 @@
 ---
 title: De MCP-server gebruiken
-description: Wijs een externe MCP-client naar de toolserver van Control Center, stel een bearer-token in en weet wat het oppervlak aanbiedt.
+description: Wijs een externe MCP-client naar de toolserver van Control Center, stuur het bearer-token mee en weet wat het oppervlak aanbiedt.
 slug: nl-NL/handleiding/gidsen/mcp-server
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Deze gids laat je zien hoe je een externe MCP-client — Claude Code, een editor,
@@ -30,26 +30,41 @@ Een standaard lokale installatie draait dus op `http://127.0.0.1:9030/mcp`.
 2. Lees de kaart **MCP-server** — die toont **Actief** of **Gestopt** en de
    poort waarop hij luistert
 
-Het oppervlak staat standaard aan bij een nieuwe installatie, dus een
-loopback-client werkt zonder uitstapje naar de instellingen. **Starten bij
-app-lancering** bepaalt of het na een herstart terugkomt; **Starten** /
+Het oppervlak staat standaard aan bij een nieuwe installatie. Alleen de
+serverbeheerder ziet het token op de kaart, en alleen hij kan het endpoint
+starten of stoppen. **Starten bij app-lancering** bepaalt of het na een herstart terugkomt; **Starten** /
 **Stoppen** gelden alleen voor de sessie en veranderen die voorkeur niet.
 
 De server bindt standaard aan loopback, dus het endpoint is alleen bereikbaar
 vanaf de machine waarop `cc_server` draait, tenzij je hem met `--bind any` hebt
 gestart.
 
+## Het token ophalen
+
+Elke aanvraag heeft het MCP-token van de server nodig, vanaf welke machine dan ook,
+ook via loopback. De server maakt het aan de eerste keer dat hij start. Er is geen
+manier om het uit te zetten en geen manier om het te wissen.
+
+1. Zoek op **Instellingen → Server → MCP-servers** de rij **Authenticatietoken**
+2. Druk op **Token tonen** en kopieer het
+3. Om het te vervangen, druk je op **Token vernieuwen**. De server schakelt meteen
+   over op het nieuwe token, en elke client die nog het oude gebruikt, wordt
+   geweigerd totdat je hem het nieuwe geeft
+
 ## Een client verbinden
 
-Wijs je client naar het Streamable HTTP-endpoint. De exacte vorm van de
-configuratie is aan je client; de URL is in beide gevallen hetzelfde.
+Wijs je client naar het Streamable HTTP-endpoint en stuur het token mee als
+`Authorization: Bearer <token>` bij elke aanvraag, ook `GET /sse`. Er is geen
+andere manier om het mee te sturen: een token in de URL wordt niet geaccepteerd.
+De exacte vorm van de configuratie is aan je client.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -73,25 +88,21 @@ geregistreerd.
 Controlepunt: vraag de client zijn tools op te sommen. Je zou `mcp__*`-vermeldingen
 moeten zien die tickets, ruimtes, geheugen, codegraph en review dekken.
 
-## MCP buiten de host aanbieden
+## Wat het endpoint weigert
 
-1. Ga op **Instellingen → Server → MCP-servers** naar de rij
-   **Authenticatietoken**, druk op **Instellen** en plak een token
-2. Stuur het als `Authorization: Bearer <token>` mee bij elke `POST /mcp`-aanvraag
+Het token opent elke tool op de server, dus het endpoint weigert ook alles wat een
+webpagina kan hebben gestuurd, voordat het naar het token kijkt:
 
-Een oppervlak zonder token weigert elke aanroeper buiten loopback met 403. Dat
-is bewust fail-closed: het token is juist wat dienstverlening buiten de host
-überhaupt mogelijk maakt.
+| Aanvraag | Antwoord |
+| -------- | -------- |
+| Een `Origin`-header die geen pagina op deze machine is (`http://localhost`, `http://127.0.0.1` of `http://[::1]`, elke poort) | `403`, "Cross-origin-verzoeken worden niet geaccepteerd" |
+| Een `Host`-header die niet het loopbackadres en de poort van deze listener is, en ook niet de openbare hostnaam van de server | `403`, "Onbekende host" |
+| Een `POST` waarvan de body geen `application/json` is | `415` |
+| Geen token, of een verkeerd token | `401` |
 
-Wijzigingen aan het token gelden direct voor het live oppervlak — geen
-herstart nodig.
-
-:::note[`GET /sse` neemt het token in de query-string]
-De notificatiestroom wordt net als elke andere route op het token gecontroleerd,
-maar een `EventSource` in de browser kan geen `Authorization`-header sturen —
-daarom accepteert `/sse` het token ook als `?token=<token>`. Zonder token
-antwoordt de route met 401.
-:::
+Om MCP buiten de host aan te bieden, start je de server met `--bind any` en stuur je
+het token vanaf de andere machine, met de server aangesproken via zijn openbare
+hostnaam.
 
 ## Elke aanroep aan een werkruimte koppelen
 
@@ -133,6 +144,31 @@ ontdekking — een externe MCP-client weigert een tool aan te roepen die niet in
 zijn gecachte lijst staat, dus tools verbergen maakt ze stuk in plaats van dat
 het de lijst opruimt.
 
+## Persoonlijke MCP-servers blijven van de eigenaar
+
+Deze gids gaat over het eigen endpoint van Control Center. De andere richting,
+MCP-servers die Control Center meegeeft aan de agents die het draait, staat onder
+**Instellingen → Server → MCP-servers → Externe MCP-servers**. MCP-servers die op de
+machine van de server zijn ingesteld voor Claude, Codex, Cursor, Gemini, VS Code,
+Windsurf, OpenCode of in een `.mcp.json`, worden daar automatisch gevonden.
+
+Die gevonden servers komen uit de eigen toolconfiguratie van de servergebruiker en
+handelen met de identiteit en inloggegevens van die gebruiker, dus ze horen bij de
+serverbeheerder:
+
+- Ze zijn alleen beschikbaar binnen ingebouwde harness-runs die de serverbeheerder
+  start of waarvoor hij verantwoordelijk is, inclusief automatisering in een
+  werkruimte waarvoor de beheerder verantwoordelijk is.
+- Een run van een lid, automatisering die aan een lid is gebonden, en elke run op een
+  server zonder vastgelegde eigenaar krijgen er geen van. Daar worden de tools niet
+  getoond, kunnen ze niet worden aangeroepen en verschijnen ze niet in de toolzoekopdracht.
+- Dit endpoint toont, roept aan of doorzoekt ze nooit, voor niemand, ook niet met het
+  token van de eigenaar, en het geeft hun resources of prompts niet door. Dus een
+  agent-CLI die via MCP met Control Center verbindt, zoals Claude Code, krijgt ze via
+  Control Center ook niet; die gebruikt zijn eigen configuratie.
+
+MCP-servers die voor de werkruimte zijn ingesteld, worden door dit alles niet geraakt.
+
 ## Problemen oplossen
 
 ### De client ziet geen tools
@@ -142,9 +178,21 @@ het de lijst opruimt.
 - Controleer bij Claude Code of je `--mcp-config` en `--strict-mcp-config` hebt
   meegegeven
 
-### 403 vanaf een machine die niet de server is
+### 401 Unauthorized
 
-Er is geen bearer-token geconfigureerd. Stel er een in en stuur het mee.
+De aanvraag had geen token, of een oud token. Kopieer het huidige token uit de rij
+**Authenticatietoken** en stuur het mee als `Authorization: Bearer <token>`. Een
+token in de URL wordt genegeerd.
+
+### 403 van een client die eerder werkte
+
+De aanvraag had een `Origin` van een webpagina, of een `Host` waarop de server niet
+antwoordt. Roep het endpoint aan vanaf een client in plaats van een browserpagina,
+via het loopbackadres van de server of zijn openbare hostnaam.
+
+### 415 Unsupported Media Type
+
+Stuur `POST /mcp`-bodies als `application/json`.
 
 ### Een toolaanroep mislukt met "Missing or invalid argument: workspace_id"
 

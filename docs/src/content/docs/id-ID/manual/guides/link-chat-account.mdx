@@ -2,7 +2,7 @@
 title: Tautkan akun Slack Anda
 description: Buktikan bahwa identitas Slack adalah milik Anda agar agen menindaklanjuti pesan Anda dan pekerjaan Anda diatribusikan kepada Anda.
 slug: id-ID/panduan-pengguna/panduan-praktis/tautkan-akun-chat
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Panduan ini menunjukkan cara menautkan identitas chat Anda ke pengguna Control Center Anda dan cara membatalkan tautannya.
@@ -19,7 +19,7 @@ Anggota yang belum menautkan akun dan menyebut bot akan menerima balasan di thre
 
 Penautan memerlukan kedua pihak: mengirim kode dari Slack membuktikan akun Slack, dan mengonfirmasinya di Control Center membuktikan bahwa akun itu milik Anda.
 
-1. Buka **Pengaturan → Ruang kerja → Profil & identitas** dan gulir ke kartu **Akun chat tertaut**
+1. Buka **Pengaturan → Anda → Profil** dan temukan kartu **Akun chat tertaut**
 2. Pada blok Slack, klik **Hubungkan akun Slack saya**. Dialog menampilkan kode sekali pakai, misalnya:
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Jika itu akun Anda, klik **Konfirmasi**. Tautan dibuat, dialog menyatakannya, dan bot mengonfirmasi di pesan langsung yang sama
 6. Jika itu bukan akun Anda, klik **Tolak**. Tidak ada yang ditautkan dan kode berhenti berfungsi; klik **Minta kode baru** untuk mencoba lagi
 
-Menutup dialog tidak menghilangkan klaim. Kode yang tiba kemudian akan menunggu di baris **Hubungkan akun Slack saya** pada halaman profil Anda, dengan **Konfirmasi** dan **Tolak** yang sama.
+Menutup dialog tidak menghilangkan klaim. Kode yang tiba kemudian akan menunggu di baris **Hubungkan akun Slack saya** pada kartu itu, dengan **Konfirmasi** dan **Tolak** yang sama.
 
 Alasan ada langkah konfirmasi: kode yang dibaca orang lain lalu dikirim dari akun Slack mereka akan membuat akun itu bertindak sebagai Anda. Hanya Anda yang dapat mengonfirmasi, dan hanya profil persis yang mengirim kode.
 
@@ -50,18 +50,20 @@ Kode yang tidak dikenal, sudah kedaluwarsa, ditolak, atau dibuat untuk ruang ker
 
 Jika profil Slack Anda memuat email yang sudah dikonfirmasi dan cocok dengan email terverifikasi pengguna Control Center yang **sudah menjadi anggota ruang kerja ini**, jembatan akan menautkan Anda saat pertama kali Anda berbicara dengannya. Tidak perlu kode.
 
+Sisi Control Center dihitung terverifikasi saat single sign-on atau SCIM yang menetapkan alamatnya, atau pemilik server mengonfirmasinya di **Pengaturan → Server → Orang**. Alamat yang Anda isi sendiri di profil Anda tidak terverifikasi, sehingga tidak menautkan apa pun sampai pemilik mengonfirmasinya; gunakan alur kode sementara itu.
+
 Kedua syarat itu sama pentingnya: kecocokan email membuktikan identitas, tetapi hanya keanggotaan yang memberi akses, jadi orang asing yang emailnya kebetulan ada di server tidak akan tertaut ke apa pun. Daftar anggota menunjukkan bagaimana setiap tautan dibuat ("dicocokkan lewat email" atau "terhubung dengan kode").
 
 Penautan otomatis memerlukan scope `users:read.email`. Tanpanya, Slack tidak akan mengungkapkan alamat tersebut dan alur kode menjadi satu-satunya jalan.
 
 ## Lihat siapa yang tertaut
 
-Daftar anggota termasuk administrasi ruang kerja, jadi letaknya di separuh lain
-permukaan: **Pengaturan → Ruang kerja → Umum → Jembatan chat → Akun terhubung**.
+Daftar anggota termasuk administrasi ruang kerja, jadi letaknya di kartu admin:
+**Pengaturan → Ruang kerja → Integrasi → Jembatan chat → Akun terhubung**.
 Di sana tercantum setiap anggota ruang kerja yang tertaut, lengkap dengan akun Slack
 yang dipetakan masing-masing dan cara tautan itu dibuat.
 
-Status Anda sendiri ada di halaman profil Anda: baris **Hubungkan akun Slack saya**
+Status Anda sendiri ada di **Pengaturan → Anda → Profil**: baris **Hubungkan akun Slack saya**
 menampilkan "Terhubung ke _your-slack-id_" setelah Anda tertaut, dan meminta Anda
 menautkan akun bila belum.
 

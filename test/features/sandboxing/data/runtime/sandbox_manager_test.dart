@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/sandbox_event.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/http_proxy.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:cc_infra/src/sandboxing/socks_proxy.dart';
 import 'package:cc_infra/src/sandboxing/violation_monitor.dart';
@@ -104,7 +104,7 @@ void main() {
   // =========================================================================
   group('SandboxManager construction', () {
     test('default constructor is cheap (no resources acquired)', () {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       // Egress proxies are PER SESSION now (see the `wrap` group), so an
       // un-wrapped manager owns none at all — not even a process-wide pair.
       expect(mgr.proxiesForSession('anything').http, isNull);
@@ -157,7 +157,7 @@ void main() {
     test(
       'with real manager, init prepares the profiles dir (smoke test)',
       () async {
-        final mgr = SandboxManager();
+        final mgr = SandboxManager(hiddenPaths: const []);
         try {
           await mgr.ensureInitialized();
           expect(mgr.profilesDir, isA<Directory>());
@@ -265,7 +265,7 @@ void main() {
     );
 
     test('two restricted sessions never share a proxy', () async {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       try {
         await mgr.wrap(config: restrictedA, argv: ['true']);
         await mgr.wrap(config: restrictedB, argv: ['true']);
@@ -283,7 +283,7 @@ void main() {
     });
 
     test('an unrestricted spawn cannot relax a restricted session', () async {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       try {
         await mgr.wrap(config: restrictedA, argv: ['true']);
         final before = mgr.proxiesForSession('sess-a').http;
@@ -299,7 +299,7 @@ void main() {
     });
 
     test('disposeSession releases only that session\'s proxies', () async {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       try {
         await mgr.wrap(config: restrictedA, argv: ['true']);
         await mgr.wrap(config: restrictedB, argv: ['true']);
@@ -317,7 +317,7 @@ void main() {
 
   group('wrap', () {
     test('calls ensureInitialized before wrapping', () async {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       try {
         const config = SandboxConfig(
           sessionId: 'wrap_test',
@@ -336,7 +336,7 @@ void main() {
     test(
       'sets proxy environment when network is restricted',
       () async {
-        final mgr = SandboxManager();
+        final mgr = SandboxManager(hiddenPaths: const []);
         try {
           const config = SandboxConfig(
             sessionId: 'wrap_restricted',
@@ -392,7 +392,7 @@ void main() {
     );
 
     test('does NOT set proxy vars when network is fully open', () async {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       try {
         const config = SandboxConfig(
           sessionId: 'wrap_open',
@@ -407,7 +407,7 @@ void main() {
     });
 
     test('wrap result contains executable and argv', () async {
-      final mgr = SandboxManager();
+      final mgr = SandboxManager(hiddenPaths: const []);
       try {
         const config = SandboxConfig(
           sessionId: 'wrap_result',

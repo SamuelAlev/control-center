@@ -2,7 +2,7 @@
 title: Revisione IA
 description: Come una pull request diventa revisionata — spazi di revisione, nodi di revisione e consenso tra pari, coorti e assi, il verdetto Ship/Hold/Block e perché la pubblicazione resta un passaggio che fai tu.
 slug: it-IT/manuale/concetti/revisione-ia
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## La forma di una revisione
@@ -192,8 +192,12 @@ GitHub**:
 - Il pulsante **Pubblica su GitHub** pubblica la revisione a nome della persona che l'ha premuto,
   con il suo accesso GitHub: il gate di rilascio è suo, quindi lo è anche la revisione. Una
   pubblicazione senza una persona dietro è automazione, che non approva mai: Ship viene allora
-  inviato come `COMMENT` e, tramite Control Center Connect, il post viene attribuito con il
-  prefisso `**Control Center** (for @login):`.
+  inviato come `COMMENT`, e le @-menzioni nei risultati vengono rese inerti, così il post non
+  notifica nessuno. Il post è pubblicato dal bot, tranne che sull'app condivisa Control Center
+  Connect quando l'operatore di Connect non ha inserito in elenco questa installazione: in quel
+  caso viene inviato con l'accesso GitHub della persona responsabile, a suo nome, attribuito con il prefisso `**Control Center** (for @login):`. Un server o uno spazio
+  di lavoro con una propria app GitHub pubblica sempre come bot. Un agente che chiama lo strumento
+  MCP può pubblicare solo la revisione del proprio spazio.
 
 La pubblicazione dichiara la classe di azione `prPublish`, quindi il punto di strozzatura dei
 guardrail la sottopone a gate come qualsiasi azione di modifica: richiede conferma per impostazione

@@ -2,7 +2,7 @@
 title: Rigs und Kapseln
 description: Warum Agenten Wegwerfmaschinen statt deines Rechners bekommen — Isolationsgrenzen, Anzeigekanäle, Zugangsdaten, Ports und Lebenszyklus.
 slug: de-DE/handbuch/konzepte/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Ein **Rig** ist eine Wegwerfmaschine, die ein Agent in Echtzeit steuert: ein
@@ -259,7 +259,7 @@ hat), sagt die Antwort das, statt still etwas anderes zu tun.
 Ein Rig ist absichtlich **kein** globales Ziel. Die Live-Ansicht ist ein Tab
 in dem Bereich oder PR, in dem die Arbeit läuft, an dieses Gespräch gebunden.
 Dein Tab und die `browser_use`-Aufrufe des Agenten sprechen also *eine*
-Maschine an (eine je Engine, auf der Browser-Oberfläche). Ob Rigs überhaupt
+Maschine an (eine je Engine, auf der Browser-Oberfläche). Ein in einem Space geöffnetes Rig ist die Maschine dieses Spaces, mit dessen Worktrees es erreichbar ist, daher folgt es den Repositories des Spaces: Lesezugriff auf den Space erlaubt dir, es anzusehen, und ein Schreibzugriff auf dessen Repositories erlaubt dir, es zu steuern. Ein Rig, das zu keinem Space gehört, erreicht keinen Worktree, und jedes Mitglied des Arbeitsbereichs kann es nutzen. [Wer zusehen und wer steuern darf](/de-DE/handbuch/anleitungen/rigs-nutzen/#wer-zusehen-und-wer-steuern-darf) listet auf, was jeweils abgedeckt ist. Ob Rigs überhaupt
 starten können, ist eine Eigenschaft des Hosts. Fähigkeiten, Images, eigene
 Images je Arbeitsbereich und die Liste der laufenden Maschinen liegen deshalb
 unter **Einstellungen → Server → Rigs**. Eine Kapsel zu steuern ist eine

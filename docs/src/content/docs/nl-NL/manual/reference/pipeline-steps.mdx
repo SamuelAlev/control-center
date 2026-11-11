@@ -2,7 +2,7 @@
 title: Pipeline-stapsoorten
 description: Referentie voor de stapsoorten van pipelines, de body-sleutels van stappen, hun configuratie en de stapresultaten.
 slug: nl-NL/handleiding/referentie/pipeline-stappen
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Een pipelinestap heeft twee onafhankelijke assen:
@@ -61,7 +61,7 @@ Algemene prompt-en-dispatch-node: rendert de prompt, dispatcht de agent naar een
 
 ### `pipeline.condition`
 
-Routerbody — leest `config.extras`, evalueert een voorwaarde en geeft `StepResult.route(key)` terug. Voorwaarden zijn **geen** JavaScript-expressies; er worden drie schrijfvormen ondersteund, in volgorde van prioriteit:
+Routerbody — leest `config.extras`, evalueert een voorwaarde en geeft `StepResult.route(key)` terug. Voorwaarden zijn **geen** JavaScript-expressies; er worden twee schrijfvormen ondersteund, in volgorde van prioriteit:
 
 - **Predicaatboom** (`extras.predicate`) — een booleaanse boom die routeert naar `"true"` / `"false"`. Elke node is een map met een `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — waar als een van de opgegeven paden op schijf bestaat; `negate` keert dat om; `recursive` doorzoekt ook submappen (met overslaan van `.git`, `node_modules`, `build`, `.dart_tool`). Relatieve paden worden opgelost tegen `state[baseKey]` (standaard `repo_local_path`), anders tegen de werkmap van de run.
@@ -69,19 +69,28 @@ Routerbody — leest `config.extras`, evalueert een voorwaarde en geeft `StepRes
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — booleaanse groepen.
   - `{"type": "not", "of": <predicate>}` — negatie.
 - **Schakelaar** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; routeert naar het eerste geval dat de statuswaarde zonder onderscheid van hoofdletters en kleine letters bevat, anders naar `default`.
-- **Vergelijking** (verouderde velden op het hoogste niveau `extras.left` / `extras.op` / `extras.right`) — gelijkwaardig aan een `comparison`-predicaat, behouden voor sjablonen die zijn gemaakt vóór de boom.
 
 Randen die uit de node vertrekken, dragen een `routeKey` die moet overeenkomen met de teruggegeven sleutel.
 
 ### `prReview.comment`
 
-Plaatst de gebundelde bevindingen als PR-reviewcommentaar via de GitHub-PR-client.
+Plaatst de gebundelde bevindingen, of de eigen `extras.message` van de stap, als PR-reviewcommentaar via de GitHub-PR-client.
 
-| Statussleutel           | Beschrijving                                 |
-| ----------------------- | -------------------------------------------- |
-| `repo_full_name`        | `owner/repo` (verplicht)                     |
-| `pr_number`             | PR-nummer — int of numerieke tekenreeks (verplicht) |
-| `consolidated_findings` | Commentaartekst (verplicht)                  |
+| Sleutel                 | Gelezen uit    | Beschrijving                                                     |
+| ----------------------- | -------------- | ---------------------------------------------------------------- |
+| `repo_full_name`        | Triggerpayload | `owner/repo` (verplicht)                                         |
+| `pr_number`             | Triggerpayload | PR-nummer, een positieve int of numerieke tekenreeks (verplicht) |
+| `consolidated_findings` | Status         | Commentaartekst wanneer de stap geen `message` heeft             |
+
+De pull request komt alleen uit de triggerpayload van de run, nooit uit status die een stap midden in de run kan herschrijven. @-vermeldingen in de geplaatste tekst worden onschadelijk gemaakt, zodat de opmerking niemand een melding geeft.
+
+Een `message` rendert zijn `{{key}}`-placeholders als volgt:
+
+- `repo_full_name`, `repo_owner`, `repo_name` en `pr_number` renderen de pull request waarop de stap plaatst.
+- `author` wordt ongewijzigd uit de triggerpayload gerenderd, alleen wanneer het een geldige gebruikersnaam op de forge is; al het andere laat de stap mislukken.
+- `consolidated_findings` wordt gerenderd als ruwe markdown, met de @-vermeldingen onschadelijk gemaakt.
+- Elke andere waarde wordt gerenderd als letterlijke tekst: op één regel, met markdown-leestekens ge-escaped en @-vermeldingen onschadelijk gemaakt.
+- Een placeholder die nergens naar oplost, laat de stap mislukken.
 
 Geeft `StepResult.terminal` terug met `comment_review_id` en `commented_at` in de status.
 

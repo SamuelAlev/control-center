@@ -4,20 +4,22 @@ import 'package:cc_data/cc_data.dart' show GitHubInstallationView;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/auth/providers/provider_sign_in_controller.dart';
 import 'package:control_center/features/forge/providers/workspace_github_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Where this workspace's GitHub App is installed, and the two actions that
-/// change it: installing it on another account, and authorizing this server
-/// for an organization installation that is bound elsewhere.
+/// Where this workspace's GitHub App is installed, and installing it on
+/// another account.
 ///
-/// An organization installation of Control Center's shared App only works
-/// for the servers its owners authorized, so an org admin sees "Authorize
-/// this server" on the rows that need it. Nobody else does: the server would
-/// refuse them.
+/// An installation needs nothing more: any server a member of the account
+/// signs in on can use it, with that member's own access. A row is tagged
+/// only when GitHub has suspended it.
+///
+/// The listing is the App's cached one; an admin's Refresh asks GitHub
+/// afresh, for an installation made a moment ago.
 class GitHubInstallationsGroup extends ConsumerStatefulWidget {
   /// Creates a [GitHubInstallationsGroup].
   const GitHubInstallationsGroup({super.key, required this.workspaceId});
@@ -33,7 +35,27 @@ class GitHubInstallationsGroup extends ConsumerStatefulWidget {
 class _GitHubInstallationsGroupState
     extends ConsumerState<GitHubInstallationsGroup> {
   bool _installing = false;
-  String? _authorizing;
+  bool _refreshing = false;
+
+  Future<void> _refresh() async {
+    final l10n = AppLocalizations.of(context);
+    setState(() => _refreshing = true);
+    try {
+      await ref
+          .read(githubInstallationsProvider(widget.workspaceId).notifier)
+          .refresh();
+    } on Object catch (e) {
+      if (mounted) {
+        CcToastScope.maybeOf(
+          context,
+        )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _refreshing = false);
+      }
+    }
+  }
 
   Future<void> _install() async {
     final l10n = AppLocalizations.of(context);
@@ -61,36 +83,6 @@ class _GitHubInstallationsGroupState
     }
   }
 
-  Future<void> _authorize(GitHubInstallationView installation) async {
-    final l10n = AppLocalizations.of(context);
-    setState(() => _authorizing = installation.installationId);
-    try {
-      await ref
-          .read(githubAppSetupProvider)
-          .authorizeServer(
-            workspaceId: widget.workspaceId,
-            installationId: installation.installationId,
-          );
-      ref.invalidate(githubInstallationsProvider(widget.workspaceId));
-      if (mounted) {
-        CcToastScope.maybeOf(context)?.show(
-          l10n.githubServerAuthorized(installation.accountLogin),
-          variant: CcToastVariant.success,
-        );
-      }
-    } on Object catch (e) {
-      if (mounted) {
-        CcToastScope.maybeOf(
-          context,
-        )?.show(l10n.failedWithError('$e'), variant: CcToastVariant.danger);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _authorizing = null);
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -98,6 +90,9 @@ class _GitHubInstallationsGroupState
     final installations =
         ref.watch(githubInstallationsProvider(widget.workspaceId)).value ??
         const <GitHubInstallationView>[];
+    final isAdmin =
+        ref.watch(myWorkspaceRoleProvider(widget.workspaceId))?.isAdmin ??
+        false;
     return SettingsGroup(
       title: l10n.githubInstallations,
       description: l10n.githubInstallationsDescription,
@@ -109,21 +104,36 @@ class _GitHubInstallationsGroupState
             style: CcTypography.caption.copyWith(color: t.textTertiary),
           ),
         for (final installation in installations)
-          _InstallationRow(
-            installation: installation,
-            authorizing: _authorizing == installation.installationId,
-            onAuthorize: () => unawaited(_authorize(installation)),
-          ),
-        Align(
-          alignment: AlignmentDirectional.centerStart,
-          child: CcButton(
-            loading: _installing,
-            onPressed: _installing ? null : () => unawaited(_install()),
-            variant: CcButtonVariant.secondary,
-            size: CcButtonSize.sm,
-            icon: AppIcons.externalLink,
-            child: Text(l10n.githubInstallApp),
-          ),
+          _InstallationRow(installation: installation),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            CcButton(
+              loading: _installing,
+              onPressed: _installing ? null : () => unawaited(_install()),
+              variant: CcButtonVariant.secondary,
+              size: CcButtonSize.sm,
+              icon: AppIcons.externalLink,
+              // Once it is installed somewhere, the same action adds another
+              // account; say so rather than offering to install it again.
+              child: Text(
+                installations.isEmpty
+                    ? l10n.githubInstallApp
+                    : l10n.githubInstallOnAnotherOrganization,
+              ),
+            ),
+            // The server asks GitHub afresh only for an admin.
+            if (isAdmin)
+              CcButton(
+                loading: _refreshing,
+                onPressed: _refreshing ? null : () => unawaited(_refresh()),
+                variant: CcButtonVariant.ghost,
+                size: CcButtonSize.sm,
+                icon: AppIcons.refreshCw,
+                child: Text(l10n.refresh),
+              ),
+          ],
         ),
       ],
     );
@@ -131,25 +141,14 @@ class _GitHubInstallationsGroupState
 }
 
 class _InstallationRow extends StatelessWidget {
-  const _InstallationRow({
-    required this.installation,
-    required this.authorizing,
-    required this.onAuthorize,
-  });
+  const _InstallationRow({required this.installation});
 
   final GitHubInstallationView installation;
-  final bool authorizing;
-  final VoidCallback onAuthorize;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final (label, tone) = installation.suspended
-        ? (l10n.githubInstallationSuspended, CcStatusTone.negative)
-        : installation.boundHere
-        ? (l10n.githubInstallationAuthorized, CcStatusTone.positive)
-        : (l10n.githubInstallationNotAuthorized, CcStatusTone.caution);
     return Row(
       children: [
         Icon(
@@ -165,16 +164,11 @@ class _InstallationRow extends StatelessWidget {
             style: CcTypography.bodySm.copyWith(color: t.textPrimary),
           ),
         ),
-        CcStatusTag(label: label, tone: tone),
-        if (installation.canAuthorizeHere) ...[
-          const SizedBox(width: AppSpacing.md),
-          CcButton(
-            loading: authorizing,
-            onPressed: authorizing ? null : onAuthorize,
-            size: CcButtonSize.sm,
-            child: Text(l10n.githubAuthorizeServer),
+        if (installation.suspended)
+          CcStatusTag(
+            label: l10n.githubInstallationSuspended,
+            tone: CcStatusTone.negative,
           ),
-        ],
       ],
     );
   }

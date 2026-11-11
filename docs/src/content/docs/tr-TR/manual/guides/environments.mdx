@@ -2,7 +2,7 @@
 title: Ortamları kurma
 description: Her alana ve pull request'e compose, özel bir CLI, denetlenen süreçler veya masaüstü uygulamasıyla kendi çalışan yığınını verin.
 slug: tr-TR/kilavuz/nasil-yapilir/ortamlar
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 **Ortam**, bir alanın çalışan yığınıdır: bir dalın ihtiyaç duyduğu servisler, diğer tüm alanlardan yalıtılmış, kenar çubuğunda görünür ve ajanların erişebileceği biçimde. Pull request'ler de bir tane alır, çünkü bir PR'ın zaten kendi alanı vardır.
@@ -11,12 +11,26 @@ Bir çalışma alanı yöneticisi bir kez **tanım** yazar. Üyeler ardından bi
 
 ## Tanım oluşturma
 
-1. **Ayarlar → Çalışma alanı → Ortamlar** yolunu açın. Tanımları yalnızca çalışma alanı yöneticileri değiştirebilir.
+1. **Ayarlar → Çalışma alanı → Ortamlar** yolunu açın. Tanımları yalnızca çalışma alanı yöneticileri değiştirebilir; sunucu ana makinesinde çalışan birini yalnızca sunucu sahibi kaydedebilir (bkz. [Kimin neyi kaydedebileceği](#kimin-neyi-kaydedebileceği)).
 2. **Yeni tanım** düğmesine, ardından **Boş tanım** veya **Depodan taslak oluştur** seçeneğine tıklayın. Taslak, depoda compose dosyaları, bir `Procfile` ve `package.json` betikleri arar; sonucu siz gözden geçirirsiniz.
 3. Formu doldurun veya **JSON** sekmesini kullanın. Bu sayfadaki örnekler o JSON'dur.
 4. **Testi çalıştır** düğmesine tıklayın. Tek kullanımlık bir ortam başlatır, hazır olmasını bekler ve onu yok eder.
 
-Bir tanımı depoda tutmak için **Depo dosyası bağla** seçeneğini kullanın. Control Center dosyayı yalnızca varsayılan daldan okur ve yalnızca bir yöneticinin onayladığı sürümü çalıştırır. Daha yeni bir sürüm **Güncelleme var** gösterir ve onaylanana kadar hiçbir şeyi değiştirmez.
+Kaydetme, bir tanımı sıkı biçimde denetler. Bilinmeyen bir alan, yanlış türde bir değer veya yanlış yazılmış bir seçenek, yolu ve en yakın geçerli adıyla birlikte reddedilir, örneğin `repos.app.requird: Unknown field. Did you mean "required"?`. En üst düzeyde bir `$schema` kabul edilir.
+
+Bir tanımı depoda tutmak için **Depo dosyası bağla** seçeneğini kullanın. Control Center dosyayı yalnızca varsayılan daldan okur ve yalnızca onaylanan sürümü çalıştırır: bir çalışma alanı yöneticisi tarafından ya da tanım ana makinede çalıştığında sunucu sahibi tarafından. Daha yeni bir sürüm **Güncelleme var** gösterir ve onaylanana kadar hiçbir şeyi değiştirmez.
+
+### Kimin neyi kaydedebileceği
+
+Bir ortam tanımı, sunucunun kendi kullanıcısı olarak sunucu ana makinesinde komut çalıştırabilir. Bu, bir çalışma alanı rolünün değil, sunucu sahibinin kararıdır:
+
+- Bir tanım **ana makinede çalışır**; ana makine yerleşimine, bir komut çalıştıran bir denetime ya da bir `provision` veya `archive` görevine sahip olduğunda. Bu görevler, yerleşim ne olursa olsun alanın worktree’sinde ana makinede çalışır.
+- Yalnızca [sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) ana makinede çalışan bir tanımı kaydedebilir ya da onaylayabilir. Bu, bağlı bir depo dosyasının yeni bir sürümünü onaylamayı da kapsar. Bunu deneyen bir çalışma alanı yöneticisi şu mesajı görür: "Sunucu host’unda çalışan bir ortamı yalnızca sunucu sahibi kaydedebilir veya onaylayabilir. Bir çalışma alanı yöneticisi rig’de çalışan bir ortamı kullanabilir."
+- Bir çalışma alanı yöneticisi, tamamen bir rig’de çalışan bir tanımı kaydedebilir ve onaylayabilir: `"placement": "rig"`, komut denetimi yok ve `provision` ya da `archive` görevi yok.
+- Üyeler her iki durumda da ortamları başlatır, durdurur ve kullanır.
+- Ana makinede çalışan bir tanım yalnızca **geçerli** sunucu sahibi onu kaydettikten ya da onayladıktan sonra çalışır. Sunucu bu onayı kendisi kaydeder ve her başlatmadan, denetimden, görevden ve pull request head senkronizasyonundan önce denetler. Geçerli sahibin onaylamadığı bir tanım, örneğin önceki bir sahibin kaydettiği bir tanım, ortam listesinde kendi satırının altında ve düzenleyicide bekler. Sunucu sahibi **Onayla** ile “Bu sunucuda çalışır. Başlayabilmesi için onaylayın.” mesajını görür; bu, tanımı değiştirmeden kaydeder. Diğer herkes “Bu sunucuda çalışır. Başlayabilmesi için sunucu sahibinin onaylaması gerekir.” mesajını görür.
+- Bu onay için bekletilen bir ortam “Sunucu sahibi bu ortamı henüz onaylamadı, bu yüzden bu sunucuda çalışamaz.” der. Sunucu sahibi ise bunun yerine “Bu ortamı henüz onaylamadınız. Bu sunucuda çalışır, bu yüzden tanımını onayladığınızda başlar.” mesajını görür ve **İncele ve onayla** ile tanımı açar.
+- Bir ortamın süreç terminalleri ve bir başlatmanın size ihtiyaç duyduğunda açtığı terminal, sunucu ana makinesinde çalışır. Bu terminallere yazmak, boyutlarını değiştirmek ya da kapatmak için alanın açığa çıkardığı her depoya yazma erişimi gerekir; bu erişim kendi forge oturum açmanızla okunabilir: ortamı başlatmakla aynı. Başkaları bu terminallere hiç erişemez.
 
 ## En küçük tanım
 
@@ -35,7 +49,7 @@ Geri kalan her şeyin varsayılanı vardır: compose dosyası bulunur, tüm serv
 
 ## Bileşen türleri
 
-Ortam, sıralı bir bileşen listesidir. `after` başkalarını belirtmedikçe her biri bir öncekinin hazır olmasını bekler ve durdurma ters sırada gerçekleşir. `enabledWhen` bir bileşeni bir seçeneğe veya role bağlar; örneğin `opt.seed`, `!opt.seed` veya `repo.web`.
+Ortam, sıralı bir bileşen listesidir. `after` başkalarını belirtmedikçe her biri bir öncekinin hazır olmasını bekler ve durdurma ters sırada gerçekleşir. `enabledWhen` bir bileşeni bir seçeneğe veya role bağlar; örneğin `opt.seed`, `!opt.seed` veya `repo.web`. İsteğe bağlı bir rolü olup alanda bulunmayan bileşen de aynı biçimde dışarıda bırakılır, `enabledWhen` gerekmeden: başlamaz ve `{port.*}` ya da `{url.*}` değerlerine sahip olmaz; bu nedenle bunları okuyan başka bir bileşen başlatmada başarısız olur.
 
 | Tür | Kim çalıştırır | Ne için |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Ortam, sıralı bir bileşen listesidir. `after` başkalarını belirtmedikçe h
 | `manual` | İstek üzerine: **Çalıştır**, `cc-env run <id>` veya `environment_run_task` |
 | `archive` | Worktree yok edilmeden hemen önce |
 
-Dizi olarak verilen bir komut argv'dir, bu nedenle seçenek değerleri asla bir kabuktan geçmez. Bir dize veya satır dizisi içeren `script`, `bash -lc` altında çalışır. `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` ve `{url.<role>}` gibi yer tutucular yalnızca argv içinde genişletilir. Kabuk komutları aynı değerleri `$CC_ENV_PORT_WEB` gibi `CC_ENV_*` değişkenlerinden okur.
+Başlatmada yapacak işi olmayan bir görev **Boşta** durumunu gösterir ve ortam başlarken gösterilen adım listesinde yer almaz: `manual` ya da `change` görevi ya da daha önce çalışmış bir `create` görevi.
 
-Her komut ve alan terminali ayrıca `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` ve PR alanlarında `CC_PR_NUMBER` ile `CC_PR_IS_FORK` alır. Bir compose bileşeniyle `COMPOSE_PROJECT_NAME` ve `COMPOSE_FILE` de gelir; böylece bir görevdeki `docker compose exec` doğru projeye ulaşır.
+Dizi olarak verilen bir komut argv'dir, bu nedenle seçenek değerleri asla bir kabuktan geçmez. Bir dize veya satır dizisi içeren `script`, `bash -lc` altında çalışır. `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` ve `{url.<role>}` gibi yer tutucular yalnızca argv içinde genişletilir. Kabuk komutları aynı değerleri `$CC_ENV_PORT_WEB` gibi `CC_ENV_*` değişkenlerinden okur. Katılan bir bileşende bilinmeyen bir yer tutucu, hiçbir şey çalışmadan önce başlatmayı durdurur.
+
+Her komut ve alan terminali ayrıca `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` ve PR alanlarında `CC_PR_NUMBER` ile `CC_PR_IS_FORK` alır. Bir compose bileşeniyle `COMPOSE_PROJECT_NAME` ve `COMPOSE_FILE` de gelir; böylece bir görevdeki `docker compose exec` doğru projeye ulaşır.
 
 ## Roller ve çalışma dizini
 
@@ -77,7 +93,7 @@ Tanım, **rolleri** çalışma alanı depolarına bağlar; böylece bir yığın
 - `whenMissing`: alanda rol eksik olduğunda ne olacağı. `addToSpace` depoyu varsayılan dalında ekler ve `required` rollerin varsayılanıdır. `useSource` kayıtlı kopyanızı aktarır; bunu salt okunur kabul etmelisiniz. `skip` değişkeni boş bırakır ve diğer durumlarda varsayılandır.
 - Başlatmak için alandaki bir çapa deposunda `write` izni ve bağlı diğer tüm depolarda okuma erişimi gerekir.
 
-Bir komut, `repos` içinde alanın sahip olduğu ilk rolde çalışır; bu yüzden tek depolu bir tanım bundan hiç söz etmez. Her bileşen bunu `"cwd": { "role": "e2e", "path": "packages/ui" }` ile değiştirebilir. Her iki alan da isteğe bağlıdır.
+Bir komut, `repos` içinde bildirilen ilk rolde çalışır, alanın tesadüfen sahip olduğu başka bir rolde hiçbir zaman; bu yüzden tek depolu bir tanım bundan hiç söz etmez. Her bileşen bunu `"cwd": { "role": "e2e", "path": "packages/ui" }` ile değiştirebilir. Her iki alan da isteğe bağlıdır. İlk rolün bir alanda bulunmayabileceği durumlarda, çünkü ne `required` ne de tek bağlantı noktasıdır, her bileşen rolünü adıyla belirtmek zorundadır.
 
 ## Bağlantı noktaları ve URL'ler
 
@@ -130,6 +146,8 @@ Tek bir compose dosyasından bir web uygulaması ve Postgres; git tarafından yo
 
 `healthchecks`, kendi sağlık denetimi olmayan bir servisin sonraki bileşeni bekletmesini sağlar. Bu olmadan çalışan bir kapsayıcı hazır sayılır ve geçişler hâlâ başlamakta olan bir veritabanının önüne geçebilir.
 
+Her başlatma ve yenileme, `up` komutunu `--remove-orphans` ile çalıştırır; böylece compose dosyasından kaldırılan bir servis durur ve bağlantı noktasını serbest bırakır. Görüntüler başlatmada ve yenilemede, bileşen `"build": false` ayarlamadığı sürece oluşturulur.
+
 ## Örnek: özel CLI
 
 Kapsayıcılarını, alan adlarını ve TLS'ini kendi yöneten uydurma bir `acme` aracı. Control Center `{name}` değerini sağlar ve geri kalan her şeyi `status` çıktısından öğrenir. Bir aracın ana makine adlarını asla türetmez ve `/etc/hosts` dosyasını asla düzenlemez.
@@ -147,7 +165,8 @@ Kapsayıcılarını, alan adlarını ve TLS'ini kendi yöneten uydurma bir `acme
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Kapsayıcılarını, alan adlarını ve TLS'ini kendi yöneten uydurma bir `acme
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Kapsayıcılarını, alan adlarını ve TLS'ini kendi yöneten uydurma bir `acme
 ```
 
 - `create`, `status` ve `destroy` zorunludur. Control Center, okuduğu duruma göre `create` veya `start` seçer. Her fiil argv yerine `{ "shell": "…" }` olabilir.
+- `interactive`, `create`, `start` ve `reset` içinden, ihtiyaç duyduğu şeyi bir terminalde sorabilen fiilleri adlandırır. **Başlat** düğmesine basan kişi için böyle bir fiil 3 koduyla çıktığında Control Center aynı fiili bir terminal sekmesinde yeniden çalıştırır ve başlatma, fiil 0 koduyla çıktığında devam eder. Orada `interactive` koşulu doğrudur ve `CC_ENV_INTERACTIVE=1` ayarlanır; bu nedenle `{ "if": "!interactive", "args": ["--json"] }` makine çıktısını boru hattı için korur. Bir ajanın ya da otomatik bir başlatmanın hiçbir zaman terminal açmaz: ortam **İşlem gerekli** gösterir ve bekler.
+- `destroy` başarısız olsa da, ardından `status` `missing` bildirirse ortam yine de kaldırılır; böylece araç artık sahip olmadığı bir ortam her zaman kaldırılabilir.
+- `list`, Control Center'ın aracın kaybettiği bir ortamı fark etmesini sağlar. Ortam, adı `list` içinde yoksa ve `status` ardından `missing` diyorsa kayıp olarak işaretlenir. Liste olarak okunamayan çıktı hiçbir şeyi değiştirmez.
+- `logs` ve `exec` içindeki `{service}`, `-` ile başlamayan tek bir kelime olmalı ve araç bir şey bildirdiğinde son bildirdiği servislerden biri olmalıdır.
 - `statusMap`, aracın kendi JSON'unu JSON işaretçileriyle okur; `*` her öğeyle eşleşir. Durum kuralları sıralıdır ve ilk eşleşme kazanır. Bir koşul `equals` ile `path` ya da `where` ile `any` veya `none` şeklindedir.
 - `keepsDataOnStop: false` boşta durdurmayı kapatır ve **Durdur** işlemine veri kaybı uyarısı ekler. Durdurma veri kaybettiriyorsa bunu ayarlayın.
 - `routing.mode: "tool"` aracın ana makine adlarını tarayıcıya (VM) ve ajanlara bağlar. Alan adı `.test`, `.localhost` veya `.internal` ile bitmelidir ve bunun dışında bildirilen bir URL atılır.
@@ -229,8 +253,8 @@ Yalnızca süreçler ve görevler, kapsayıcı yok. Web uygulaması API'yi `{url
 }
 ```
 
-- Her süreç, açıp okuyabileceğiniz ve içine yazabileceğiniz bir terminal sekmesidir. Sekmeyi kapatmak süreci durdurmaz.
-- `ready`, `http`, `tcp` veya `logMatch` alır. `restart`, `on-failure` (varsayılan), `always` veya `never` olur. `restartOn`, değişen bir yol eşleştiğinde süreci yeniden başlatır.
+- Her süreç, açıp okuyabileceğiniz ve içine yazabileceğiniz bir terminal sekmesidir; alanın her deposuna yazma erişiminiz varsa (bkz. [Kimin neyi kaydedebileceği](#kimin-neyi-kaydedebileceği)). Sekmeyi kapatmak süreci durdurmaz.
+- `ready`, `http` (tam bir URL), `tcp` (`host:port`) veya `logMatch` (düzenli ifade) alır. `restart`, `on-failure` (varsayılan), `always` veya `never` olur. `restartOn`, değişen bir yol eşleştiğinde süreci yeniden başlatır.
 - `options`, **Başlat** üzerinde bir forma dönüşür ve `agentDefault` bir ajanın başlattığı çalıştırmalar için geçerlidir.
 
 ## Örnek: masaüstü uygulaması
@@ -251,21 +275,21 @@ Derleme adımı olan bir masaüstü uygulaması. Bir uygulama neyle yapılmış 
 }
 ```
 
-Bir uygulama ortamla birlikte başlamaz. Biri **Aç** düğmesine basar ve önce `prepare` çalışır. **Yeniden derle ve aç** bu ikiliyi yeniden çalıştırır. Temiz bir çıkış kapalı olarak görünür, bir çökme son günlük satırlarını gösterir ve yeniden başlatmaz, sunucunun yeniden başlaması uygulamayı asla tekrar açmaz ve boşta durdurma çalışan bir uygulamaya dokunmaz.
+Bir uygulama ortamla birlikte başlamaz. Biri **Aç** düğmesine basar ve önce `prepare` çalışır. **Yeniden derle ve aç** bu ikiliyi yeniden çalıştırır. `enabledWhen` uygulamaya ve onun `prepare` görevine uygulanır; ikisinden biri kapalıyken **Aç** reddedilir. Uygulama, süreç grubundaki herhangi bir süreç çalıştığı sürece çalışıyor sayılır; bu yüzden uygulamayı başlatıp çıkan bir başlatıcı sorun değildir. **Aç** düğmesine basıldıktan yaklaşık 5 saniye içinde her şey ortadan kalkarsa uygulama son günlük satırlarıyla başarısız görünür. Bundan sonra temiz bir çıkış kapalı olarak, bir çökme ise son günlük satırlarıyla görünür ve hiçbiri uygulamayı yeniden başlatmaz. Sunucunun yeniden başlaması uygulamayı kapatır ve asla yeniden açmaz; boşta durdurma ise çalışan bir uygulamaya dokunmaz.
 
 ### Masaüstü uygulaması izinleri ve sınırları
 
 - macOS'ta Control Center'a Sistem Ayarları'ndan bir kez **Ekran Kaydı** ve **Erişilebilirlik** izni verin. Sunucu ana makinesi bir grafik oturumu gerektirir: başsız bir sunucu uygulama başlatmayı reddeder.
-- İkili dosyayı doğrudan başlatın. `open -a` uygulamayı LaunchServices'e verir ve uygulama Control Center'ın izlediği süreç ağacından çıkar. `"window": { "match": { "bundleId": "…" } }` bu durumu kapsar, ancak yalnızca tek kopya çalışırken güvenlidir.
+- İkili dosyayı doğrudan başlatın. `open -a` uygulamayı LaunchServices'e verir ve uygulama Control Center'ın izlediği süreç ağacından çıkar, bu yüzden uygulama başlatıldıktan hemen sonra başarısız görünür.
 - Pencereler bir ekranda kalır. macOS tüm ekranların dışına park edilmiş bir pencereyi yakalamaz, bu yüzden bir ajanın kullandığı uygulama sunucunun ekranında görünür. Odak gerekmez.
 - `"isolate": "home"`, `HOME`, `XDG_*` ve `CFFIXED_USER_HOME` üzerinden uygulamaya özel bir ana dizin verir; böylece iki alandan kopyalar yan yana çalışabilir. `NSUserDefaults` yalıtılmaz, bu yüzden Cocoa tercihleri ve Flutter'ın `shared_preferences` deposu kopyalar arasında paylaşılır.
 - `isolate` yalnızca başlatılan süreç için geçerlidir. `flutter run` gibi bir araç zinciri başlatıcısı gerçek ana dizine ihtiyaç duyar, bu yüzden `isolate` seçeneğini derlenmiş bir ikili dosyayla kullanın. Uygulamanın `--user-data-dir` gibi kendi ayarı varsa onu tercih edin.
 - Ajanlar pencereyi yalnızca bu ortamın süreç ağacına ulaşabilen `app_use` ile yönetir. Ajan masaüstünü değil, pencereyi görür. Ajan başlatmaları eylem ilkesinden geçer ve varsayılan olarak sorar; bir kişi denetimi elindeyken ajan girdisi durur.
 - `"input": "background"` (varsayılan) olayları sürece gönderir. `"foreground"` pencereyi etkinleştirir ve imleci devralır.
 
-## Worktree görevleri depo betiklerinin yerini alıyor
+## Worktree görevleri
 
-`provision` ve `archive` görevleri, depo başına eski kurulum ve arşiv betiklerinin yerini alır. **Mevcut betikler otomatik olarak taşındı:** betiği olan her deponun artık kendi adını taşıyan, aynı betik metnini içeren `setup` ve `archive` görevlerine sahip bir tanımı var. **Ayarlar → Çalışma alanı → Depolar** bölümünde bir deponun satırındaki simge bunu açar. Geçmiş betik çalıştırmaları salt okunur geçmiş olarak kalır.
+`provision` ve `archive` görevleri, bir deponun kurulumunu ve sökümünü worktree’siyle birlikte çalıştırır. **Ayarlar → Çalışma alanı → Depolar** bölümünde bir deponun satırındaki simge, deponun tanımını açar.
 
 Bu görevler ortamı değil worktree'yi izler, bu yüzden kimsenin **Başlat** düğmesine basmadığı alanlarda da çalışır:
 
@@ -292,7 +316,7 @@ Yığını olmayan bir deponun yalnızca görevlerini içeren bir tanıma ihtiya
 
 - Henüz ortam yoktur, bu yüzden bu görevler `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` veya `enabledWhen` kullanamaz ve tanımın `env` değerini almaz.
 - Bir depo için `provision` ve `archive` görevlerini yalnızca bir tanım içerebilir. Diğerleri onu geri kalan her şey için bağlayabilir.
-- `"when": ["provision", "change"]` bir kilit dosyası değiştiğinde de yeniden kurar; kurulum betikleri bunu hiç yapmıyordu.
+- `"when": ["provision", "change"]` bir kilit dosyası değiştiğinde de yeniden kurar.
 - Bir görev kendi `cwd` rolünün worktree'si için çalışır, bu yüzden çok depolu bir tanım her depoyu ayrı ayrı kurabilir.
 - Test çalıştırması `CC_SCRIPT_TEST=1` ayarlar. Yeniden deneme temiz bir worktree'den başlar, bu yüzden yeniden çalıştırmaya dayanan görevler yazın.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Bir compose bileşeniyle, bir `docker` shim'i `ps`, `logs`, `exec`, `port`, `restart` ve `top` ile `docker compose` kullanımına da izin verir. Fiilden önce bayrak gelemez, `logs` çıktıyı izleyemez ve `exec` yalnızca `-T` alır. Diğer her şey 5 koduyla ve "not available in Control Center agent runs" iletisiyle çıkar.
+Bir compose bileşeniyle, bir `docker` shim'i `ps`, `logs`, `exec`, `port`, `restart` ve `top` ile `docker compose` kullanımına da izin verir, yalnızca bu ortamın kendi compose projesine karşı. Fiilden önce bayrak gelemez ve her fiil kısa bir seçenek listesi alır: `logs` izlenemez, `exec` yalnızca `-T` (ya da `--no-tty`) alır. Compose’u başka bir dosyaya ya da projeye yönlendiren seçenekler (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) nerede görünürse görünsün reddedilir. Diğer her şey 5 koduyla ve "not available in Control Center agent runs" iletisiyle çıkar.
 
-Skill'leri kendi aracını çağıran bir depo bunu sürdürebilir. Bir `cli` bileşenindeki `agentPassthrough` bloğu, ajanların hangi komutları çalıştırabileceğini bildirir:
+Skill'leri kendi aracını çağıran bir depo bunu sürdürebilir. Bir `cli` bileşenindeki `agentPassthrough` bloğu, ajanların hangi komutları çalıştırabileceğini bildirir. Yalnızca onaylanmış tanımın bildirdiği komutlar geçer ve her biri ana makinede çalıştığı için **Ana makinede komut çalıştır** kuralını taşır; bu kural varsayılan olarak önce sorar:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Bir fork PR'ının koduna güvenilmez ve ana makine yerleşiminde sunucunun işl
 | Kod | Anlam |
 | --- | --- |
 | 0 | Tamam |
-| 3 | Ana makine kurulumu gerekli. **Terminalde çalıştır**, komut yazılmış ama çalıştırılmamış bir alan terminali açar, ardından **Yeniden dene** yeniden dener. Control Center asla `sudo` çalıştırmaz |
-| 4 | Kimlik doğrulama gerekli |
-| 5 | Bağımlılık kullanılamıyor |
+| 3 | Bir terminalde yanıt gerekir, örneğin bir `sudo` parolası. `interactive` içinde listelenen bir fiil, **Başlat** düğmesine basan kişi için bir terminal sekmesinde yeniden çalışır. Aksi halde **Terminalde çalıştır**, aracın `command` değeri yazılmış ama çalıştırılmamış bir alan terminali açar, ardından **Yeniden dene** yeniden dener. Control Center asla `sudo` çalıştırmaz ve hiçbir istemi yanıtlamaz |
+| 4 | Oturum açma gerekli. Aracın `command` değeri nasıl yapılacağını söyler |
+| 5 | Bağlı olduğu bir şey kullanılamıyor, örneğin çalışmayan bir kapsayıcı çalışma zamanı |
 | Diğer | Hata |
+
+Kodlar 3, 4 ve 5 hata değildir. Ortam **İşlem gerekli** gösterir ve bekler; bir sonraki başlatma, o başlatmanın durduğu yerden devam eder. Bunlardan biriyle çıkan bir görev de aynı anlama gelir.
 
 İlerleme, satırlarla ayrılmış JSON olarak stderr'e gider:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-`step` satırları canlı bir adım listesi olarak, `note` satırları olduğu gibi gösterilir. `error` türündeki son satır yapılandırılmış bir hataya dönüşür ve `command` kopyalanmak üzere sunulur. Bu yoksa Control Center son 20 stderr satırını gösterir. JSON olmayan her şey düz günlük çıktısıdır.
+Ortam başlarken panel, başlatmanın geçtiği bileşenleri listeler; her birinde bir dönen simge, bir onay ya da bir çarpı bulunur. Bir `step` satırı aracın şu anda ne yaptığını bildirir ve `label` değeri aracın kendi satırının altında gösterilir; adımlar hiçbir zaman yeni satır eklemez. Bir adımın `state` değeri `pending`, `running`, `done` veya `failed` olur; `state` içermeyen bir adım çalışıyor sayılır. Aynı `id` ile (metin ya da sayı; yoksa aynı `label` ile) yeniden bildirim yapan bir adım önceki sözünün yerini alır; bu sayede tek bir dönen simgesi olan bir araç aynı `id`'yi koruyup yalnızca `label`'ı değiştirebilir. Kimlik olmadan adımlar birbirini izler: yeni bir adım, öncekini bitirir. Komut çıktığında hâlâ çalışan bir adım, komutun nasıl bittiyse öyle biter.
+
+`log` satırı, araçın JSON içine sardığı tek bir çıktı satırını taşır ve düz çıktı gibi okunur. `note` satırı çalıştırmanın çıktısına gider, `"level": "warn"` içerenler ise uyarı olarak ortamda da kalır. `error` türündeki son satır yapılandırılmış bir hataya dönüşür ve `command` kopyalanmak üzere sunulur, ayrıca çıktının son 12 satırı `message` değerinin altında gösterilir. Bu yoksa Control Center son 20 stderr satırını gösterir. JSON olmayan her şey düz günlük çıktısıdır.
 
 ## İlgili
 

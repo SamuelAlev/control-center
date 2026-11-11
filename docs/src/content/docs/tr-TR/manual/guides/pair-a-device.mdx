@@ -2,7 +2,7 @@
 title: Bir cihaz eşleştirme
 description: Telefonunuzu (ya da ikinci bir tarayıcıyı veya masaüstünü) Control Center sunucunuzla eşleştirin; böylece filoyu uzaktan izleyebilirsiniz.
 slug: tr-TR/kilavuz/nasil-yapilir/cihaz-eslestirme
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Bu kılavuz, bir telefonu Control Center ile nasıl eşleştireceğinizi gösterir;
@@ -62,7 +62,7 @@ oluşturulduğu andan itibaren etkindir ve bağlantı kapısı yalnızca kimlik
 bilgisinin etkin ve süresi dolmamış olduğunu denetler. QR kodunu ve eşleme
 anahtarını bir parola gibi değerlendirin ve vermek istemediğiniz her şeyi iptal
 edin. Hem doğrudan hem de aktarıcı üzerinden istemci oturumları uçtan uca şifreleme
-gerektirir; eski istemciler düz metin RPC'ye geri düşemez.
+gerektirir; düz metin RPC diye bir şey yoktur.
 :::
 
 ## Eşlenmiş cihazları yönetme
@@ -77,9 +77,7 @@ bakış açısından bu anındadır ve geri alınamaz.
 
 Bu panelden üretilen kimlik bilgileri süreyle sınırlıdır: verildikten 30 gün
 sonra süresi dolar ve bağlantı kapısı bundan sonra onları güvenli biçimde
-reddeder. Komut satırında `cc_server pair` ile üretilen bir kimlik bilgisinin ise
-**hiçbir son kullanma tarihi yoktur** — hedeflendiği makine devre dışı
-bırakıldığında onu elle iptal edin.
+reddeder. Komut satırında `cc_server pair` ile üretilen bir kimlik bilgisi de aynı şekilde sona erer; yeni bir tane almak için `pair` komutunu yeniden çalıştırın ve hedeflendiği makine devre dışı bırakıldığında onu elle iptal edin.
 
 ## Telefondan çalışma alanları arasında geçiş yapma
 

@@ -2,7 +2,7 @@
 title: Rever e fazer merge de uma PR
 description: Abra a bancada de trabalho de uma PR, leia o diff, deixe comentários em linha, submeta uma revisão e faça merge.
 slug: pt-PT/manual/guias/rever-e-fazer-merge-de-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Este guia mostra como rever e fazer merge de uma pull request.
@@ -24,9 +24,14 @@ separadores de pré-visualização de implementação são injetados automaticam
 quando é detetado um URL de pré-visualização na PR. A disposição dos seus
 separadores é memorizada por PR.
 
+O code-server incorporado só é oferecido ao proprietário do servidor, porque corre no servidor como o próprio utilizador do servidor. Uma sessão pertence ao dispositivo e à pessoa que a abriu, abre com a confiança do espaço de trabalho do VS Code ativada (o VS Code pergunta antes de confiar numa pasta) e não executa nenhuma tarefa automaticamente. Todos os outros mantêm o editor de ficheiro único e as vistas de ficheiros.
+
 O separador Visão geral contém os metadados da PR (autor, branch, etiquetas,
 responsáveis, reações, commits, estado das verificações) e a linha de ações:
-atualizar, **Revisão**, **Merge**, abrir no IDE e um menu de overflow ⋯.
+atualizar, **Revisão**, **Merge**, um botão com o nome do seu editor (como
+**Abrir no VS Code**) e um menu de overflow ⋯.
+
+Esse botão do editor abre um editor nativo no **ecrã do próprio servidor**, como o utilizador do servidor e fora de qualquer sandbox, por isso só é oferecido ao [proprietário do servidor](/pt-PT/manual/conceitos/autorizacao/#o-proprietário-do-servidor). Numa aplicação de ambiente de trabalho que aloja o seu próprio servidor, essa pessoa é quem está à frente do ecrã. O mesmo vale para abrir o worktree de uma conversa num editor. Todos os outros usam as vistas de editor incorporadas. Mesmo para o proprietário, uma pull request só se abre a partir de um repositório associado ao espaço de trabalho.
 
 ### Abrir uma PR a partir da pilha de um espaço
 
@@ -44,7 +49,7 @@ pilha e prima Enter ou a barra de espaços para a recolher ou expandir. As PRs
 não relacionadas ficam separadas, e as ligações de branch incompletas ou
 ambíguas não são apresentadas como uma pilha ordenada.
 
-Em **Controlo de código-fonte**, **Pull requests empilhadas (N)** abre um seletor
+No cabeçalho da PR, o emblema da pilha (um ícone de camadas com o número de pull requests da pilha) abre **Pull requests empilhadas**, um seletor
 com as partes publicadas da pilha, de baixo para cima. Cada entrada mostra o
 número da PR, o nome da parte e a posição; a parte em checkout está assinalada.
 Selecione uma entrada para abrir a respetiva bancada de trabalho da PR.
@@ -53,6 +58,21 @@ menos uma parte não tiver PR. Isto também se aplica ao menu do branch. As PRs
 criadas fora do Control Center também contam como publicadas. As pilhas
 parcialmente publicadas oferecem ambas as ações; o trabalho num único branch
 mantém as ações individuais de criar/ver a PR.
+
+### Fazer commit e push a partir do Controlo de origem
+
+Um commit que faz no painel **Controlo de origem** é seu: você é o seu autor e committer, com o endereço que a sua forja verificou para o seu início de sessão. Quando criou uma chave de assinatura em **Commits verificados** em **Definições** → **Você** → **Commits**, o servidor assina-o com a sua própria chave de assinatura antes de ser enviado. Um push leva o seu próprio início de sessão, restringido a esse único repositório.
+
+O servidor executa o Git na sua própria máquina, numa árvore que um agente ou uma pull request podem alterar, por isso não executa nenhum dos programas que um repositório possa escolher:
+
+- Os commits ignoram os hooks Git do repositório, tal como `git commit --no-verify`. Um hook de pre-commit, de commit-msg ou de pre-push não é executado
+- Os helpers de credenciais, editores, ferramentas externas de diff e programas de assinatura que o repositório configura são ignorados
+
+Execute você mesmo as verificações antes de fazer commit, ou no CI.
+
+Alterar o código requer a [concessão de escrita](/pt-PT/manual/conceitos/autorizacao/#alterar-código-exige-a-concessão-de-escrita) no repositório: guardar ou reverter ficheiros no editor, **Obter os commits mais recentes da PR**, fazer commit e push, publicar um branch, e as ações da pilha que criam, fazem checkout ou publicam uma parte. Com apenas acesso de leitura ou revisão vê os ficheiros e os diffs, e estas ações respondem "Pode ler este repositório, mas não alterá-lo. Um admin do espaço de trabalho pode conceder acesso de escrita."
+
+**Obter os commits mais recentes da PR** traz o worktree de revisão até aos commits mais recentes da pull request. Faz fetch com o seu próprio início de sessão no GitHub, e pede-lhe que inicie sessão quando não tem nenhum. Faça commit ou descarte primeiro as suas alterações: um worktree com alterações por fazer commit não é sincronizado.
 
 ## Ler o diff
 
@@ -138,7 +158,7 @@ Fazer merge é irreversível: envia commits para a forge, pelo que tem um passo 
 confirmação em vez de uma entrada de desfazer. Depois disso, a cache da PR é
 invalidada, o seu estado passa a **Mesclado** e é disparado um evento
 `PullRequestStatusChanged` com o estado `merged`. Esse evento liberta o worktree
-efémero «abrir no editor» e inicia dois pipelines predefinidos: **Stale
+efémero aberto pelo botão do editor e inicia dois pipelines predefinidos: **Stale
 repository cleanup**, que remove os worktrees e as pastas de conversa obsoletos
 da PR, e **Release notes**, que redige uma entrada de changelog.
 
@@ -164,6 +184,12 @@ determinístico de coortes e eixos.
 O Control Center também importa PRs abertas por pessoas fora da aplicação. O
 fluxo de revisão acima é idêntico. As PRs externas são detetadas pelo serviço de
 sondagem de PRs.
+
+## Resolução de problemas
+
+### O meu hook de pre-commit não foi executado
+
+Os commits feitos no painel **Controlo de origem** da aplicação ignoram os hooks Git do repositório, tal como `git commit --no-verify`. O servidor executa o Git na sua própria máquina, numa árvore que os agentes e as pull requests podem alterar, por isso nunca executa um programa que o repositório escolhe. Execute você mesmo as verificações do hook, ou confie no CI.
 
 ## Guias relacionados
 

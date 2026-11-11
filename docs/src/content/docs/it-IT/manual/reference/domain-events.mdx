@@ -2,7 +2,7 @@
 title: Eventi di dominio
 description: Catalogo completo dei 54 eventi di dominio, dei loro payload e dei sottoscrittori lato server che li consumano.
 slug: it-IT/manuale/riferimento/eventi-di-dominio
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Bus di eventi
@@ -148,14 +148,13 @@ Diversi sottosistemi che dall'esterno sembrano guidati dagli eventi non lo sono.
 
 | Sottodominio | Come si muove invece lo stato |
 | --- | --- |
-| Memoria | `record_memory_fact` e affini scrivono e restituiscono; il richiamo legge. Nulla pubblica su un fatto o un conflitto |
+| Memoria | `propose_fact` e affini scrivono e restituiscono; il richiamo legge. Nulla pubblica su un fatto o un conflitto |
 | Orchestrazione | La proposta, la sua approvazione e l'esecuzione di pipeline generata sono righe e chiamate RPC |
 | Documenti di piano | `submit_plan` scrive una revisione; l'approvazione materializza un'orchestrazione. Nessuno dei due viene annunciato |
 | Artefatti | `publish_artifact` / `revise_artifact` scrivono direttamente le revisioni |
 | Approvazioni | L'escalation è gestita all'interno del servizio del flusso di approvazione |
 | Sincronizzazione dei ticket | Il coordinatore dei fornitori si sottoscrive agli eventi dei ticket qui sopra; i webhook in entrata vengono applicati direttamente |
 | Aggiornamento del calendario | Una sincronizzazione fa l'upsert degli eventi e il client li rilegge; non c'è alcuna trasmissione dell'aggiornamento |
-| Unioni di worktree | Registrate in `worktree_merge_log` e lette da lì |
 
 ## Sottoscrittori
 
@@ -190,7 +189,7 @@ Ogni sottoscrittore seguente viene costruito all'interno di `runCcServer` (o di 
 
 `TicketAssigned` è un segnale di audit e di notifica e un trigger di pipeline. L'assegnazione a un agente registra la proprietà e non avvia alcuna esecuzione — non esiste alcun dispatcher dei ticket. L'assegnazione a un team (`assignedTeamId` impostato) è l'eccezione: `TeamRoutingService` invia il leader del team.
 
-`TicketRemoteSyncHandler` è dichiarato ma non viene mai costruito nel codice di produzione, quindi oggi non si sottoscrive a nulla. Il `NotificationEventMapper` lato client viene costruito solo nel suo test — è il residuo del percorso in-process precedente alla separazione client/server. I toast dal vivo arrivano dai frame descritti sotto.
+I toast dal vivo arrivano dai frame descritti sotto.
 
 ## Mappatura delle notifiche
 

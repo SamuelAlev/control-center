@@ -2,7 +2,7 @@
 title: Skapa en pipelinemall
 description: Författa en DAG-arbetsflödesmall i pipelineredigeraren — lägg till noder, koppla ihop dem, deklarera indata och gör den körbar.
 slug: sv-SE/handbok/how-to-guider/skapa-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Pipelinemallar skapas i arbetsytans inställningar. Posten **Pipelines** i
@@ -38,7 +38,7 @@ släpper den, utan någon inkommande anslutning.
 | **Bash script**                | listen  | Kör ett shell-skript med `{{state}}`-ersättning; ingen agent skickas ut                        |
 | **Open conversation**          | listen  | Öppnar körningens enda synliga yta och dess utcheckning; agentnoder ansluter till rummet       |
 | **Clone PR branch**            | listen  | Hittar PR:ens head-gren via `gh pr view` och klonar den till körningskatalogen                 |
-| **Post PR comment**            | listen  | Publicerar sammanställda fynd på PR:en som en GitHub-granskningskommentar                      |
+| **Post PR comment**            | listen  | Publicerar en granskningskommentar på PR:en från servern: fynden, eller dess `message`         |
 | **Reviewer (prompt)**          | listen  | Skickar ut en specialiserad granskningsagent; pausar tills agenten lämnar in sitt resultat     |
 | **Consolidate (join)**         | join    | Väntar på flera uppströms grenar och ber sedan en agent sammanställa deras utdata              |
 | **Custom prompt**              | listen  | Generisk promptstyrd nod som dirigeras via bodyn `promptAgent`                                 |
@@ -137,6 +137,13 @@ eftersom inget av dem går att konfigurera:
   `GH_TOKEN` och `GITHUB_TOKEN` en token som bara kan läsa just det repot, så `gh`
   och `git clone` mot det fungerar utan konfiguration. Annars finns ingen
   GitHub-token.
+- Ett skript kan inte skriva till GitHub: `gh pr comment`, `gh pr merge`,
+  `gh pr create` och `git push` misslyckas med den tokenen. Kommentera i stället med
+  en nod **Post PR comment** (sätt `extras.message` för att publicera din egen text,
+  med `{{key}}`-platshållare, i stället för de sammanställda fynden). Pusha och öppna
+  pull requests från en agentnod: dess `git push` går via körgatewayen, och den
+  öppnar PR:en med verktyget `open_pull_request`. Att slå ihop lämnas åt en person;
+  ingen nod slår ihop.
 - Bara en administratör i arbetsytan kan skapa eller redigera en pipeline med ett
   bash-steg.
 - Skriptet startas som den bokstavliga körbara filen `bash`, så `bash` måste

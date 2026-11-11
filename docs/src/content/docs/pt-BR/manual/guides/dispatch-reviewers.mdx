@@ -2,7 +2,7 @@
 title: Despachar agentes revisores
 description: Envie agentes revisores especialistas a uma PR pela tela da PR, por uma ferramenta MCP ou por uma etapa de pipeline.
 slug: pt-BR/manual/guias/despachar-revisores
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Este guia mostra como despachar agentes revisores para revisar pull requests.
@@ -83,10 +83,10 @@ Para que um pipeline de revisão dispare sozinho:
 
 Dois eventos importam aqui, e eles não são intercambiáveis:
 
-| Evento                 | Dispara quando                                                                                                  | Chaves do payload                                                  |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `PullRequestPublished` | Uma PR é aberta **por meio do Control Center** — a superfície de composição, ou um agente chamando `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | O serviço de sondagem de PRs encontra uma PR aberta diretamente no GitHub                                        | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| Evento                 | Dispara quando                                                                                                            | Chaves do payload                                                              |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PullRequestPublished` | Uma PR é aberta **por meio do Control Center** — a superfície de composição, ou um agente chamando `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                             |
+| `ExternalPrDetected`   | O serviço de sondagem de PRs encontra uma PR aberta diretamente no GitHub                                                 | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 Uma PR aberta no github.com nunca dispara `PullRequestPublished`, então um modelo
 conectado apenas a esse evento não a verá. Observe também que

@@ -2,7 +2,7 @@
 title: Eval e qualità
 description: Le eval suite e le campagne delle skill ancorate a una revisione, e come interpretarne le evidenze.
 slug: it-IT/manuale/concetti/eval-e-qualita
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Osservabilità → Qualità** contiene sia le eval suite a singola attività sia le
@@ -22,7 +22,7 @@ Cinque eval suite iniziali vengono create quando si crea uno spazio di lavoro.
 Coprono le proposte di orchestrazione, una revisione che individua un bug
 introdotto appositamente, la modalità piano che resta in sola lettura, la
 modalità piano che produce un piano e il ciclo di andata e ritorno di un ticket.
-L'inizializzazione ascolta `WorkspaceCreated` (`workspace.upsert` o
+L'inizializzazione ascolta `WorkspaceCreated` (pubblicato da
 `workspace.create`), salta un nome già esistente e non popola retroattivamente
 gli spazi di lavoro più vecchi.
 

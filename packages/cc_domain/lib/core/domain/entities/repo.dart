@@ -23,6 +23,8 @@ class Repo {
     required this.createdAt,
     required this.updatedAt,
     this.forge = ForgeHost.github,
+    this.linkedBy = '',
+    this.forgeRepoId = '',
   }) {
     if (name.isEmpty) {
       throw ArgumentError('Repo name must not be empty');
@@ -56,6 +58,21 @@ class Repo {
   /// Repository name parsed from the `origin` remote (the last path segment).
   final String remoteName;
 
+  /// The user who linked [path] into the workspace. Only the server owner
+  /// may link a checkout outside the workspace's own storage, so readers
+  /// check it against the owner. Empty for a row whose linker was never
+  /// recorded: such a path is served only from the workspace's own storage.
+  final String linkedBy;
+
+  /// The forge's durable id for the repository this row was linked as (a
+  /// GitHub repository id, a GitLab project id, a Bitbucket repository
+  /// uuid), read with an authorized token when it was linked, or on the
+  /// first authorized read of a row linked before the id was kept. A
+  /// repository renamed or transferred keeps it; another repository created
+  /// at [remoteOwner]/[remoteName] does not, and receives nothing. Empty
+  /// until it is first read.
+  final String forgeRepoId;
+
   /// Creation timestamp.
   final DateTime createdAt;
 
@@ -79,6 +96,8 @@ class Repo {
     String? remoteName,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? linkedBy,
+    String? forgeRepoId,
   }) {
     return Repo(
       id: id ?? this.id,
@@ -89,6 +108,8 @@ class Repo {
       remoteName: remoteName ?? this.remoteName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      linkedBy: linkedBy ?? this.linkedBy,
+      forgeRepoId: forgeRepoId ?? this.forgeRepoId,
     );
   }
 

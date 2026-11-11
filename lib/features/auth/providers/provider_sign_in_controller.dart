@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, normaliseConfirmCode;
+    show ConnectOAuthLane, SignInAttemptStatus, normaliseConfirmCode;
 import 'package:cc_data/cc_data.dart';
+import 'package:control_center/core/offline/offline_queue_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/shared/utils/open_url.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -114,11 +115,13 @@ class ProviderSignInState {
 /// app actor, Slack) and remembers which ones THIS client started.
 ///
 /// The flow is the server's: `oauth.begin` returns a provider URL, which is
-/// opened in the system browser. In own mode the provider redirects to the
-/// server and this polls `oauth.status`; in Connect mode the browser shows an
-/// eight-character code that comes back either typed by the person or through
-/// the `control-center://oauth-done` deep link, and either way goes to
-/// `oauth.complete`.
+/// opened in the system browser (only an HTTPS one, or HTTP to loopback:
+/// [SignInAttempt.browserUrl]). The provider sends the browser back to the
+/// server (own app) or to Connect, and either page shows an eight-character
+/// code that comes back typed by the person or through the
+/// `control-center://oauth-done` deep link, and either way goes to
+/// `oauth.complete`. Nothing is stored before that; this polls
+/// `oauth.status` meanwhile.
 ///
 /// The remembered login ids are the phishing defence. A deep link carrying a
 /// login id this client never started was minted by somebody else's server,
@@ -160,14 +163,28 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
   /// the browser and returns the login id.
   ///
   /// Throws what `oauth.begin` throws (a misconfigured own app, Connect
-  /// unavailable); nothing is remembered in that case.
+  /// unavailable), or [FormatException] for an address a browser must not
+  /// be sent to; nothing is remembered in either case.
   Future<String> begin(ConnectOAuthLane lane, {String? workspaceId}) async {
+    // A new attempt for the same lane and workspace supersedes any still
+    // pending one: stop polling it, so a retry never leaves the previous
+    // attempt's timers asking the server about an attempt nobody watches.
+    for (final session in [...state.sessions.values]) {
+      if (session.attempt.lane == lane &&
+          session.workspaceId == workspaceId &&
+          !session.isTerminal) {
+        abandon(session.loginId);
+      }
+    }
     final attempt = await _repo.begin(lane, workspaceId: workspaceId);
+    final url = attempt.browserUrl;
+    if (url == null && !attempt.status.isTerminal) {
+      throw const FormatException('The sign-in address is not HTTPS.');
+    }
     _started[attempt.loginId] = workspaceId;
     _results[attempt.loginId] = Completer<SignInAttempt>();
     final opened =
-        attempt.url.isNotEmpty &&
-        ref.read(externalUrlOpenerProvider)(attempt.url);
+        url != null && ref.read(externalUrlOpenerProvider)(url.toString());
     _put(
       SignInSession(
         attempt: attempt,
@@ -183,13 +200,28 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
     return attempt.loginId;
   }
 
+  /// Stops watching [loginId]: its poll and expiry timers are cancelled and
+  /// anyone awaiting [result] gets its last known state. The attempt stays
+  /// known to this client, so its deep link is still recognised (and a
+  /// late success still counts).
+  void abandon(String loginId) {
+    _timers.remove(loginId)?.cancel();
+    _expiries.remove(loginId)?.cancel();
+    final completer = _results[loginId];
+    final session = state.sessions[loginId];
+    if (completer != null && !completer.isCompleted && session != null) {
+      completer.complete(session.attempt);
+    }
+  }
+
   /// Opens [loginId]'s provider page again.
   bool reopen(String loginId) {
     final session = state.sessions[loginId];
-    if (session == null || session.attempt.url.isEmpty) {
+    final url = session?.attempt.browserUrl;
+    if (session == null || url == null) {
       return false;
     }
-    final opened = ref.read(externalUrlOpenerProvider)(session.attempt.url);
+    final opened = ref.read(externalUrlOpenerProvider)(url.toString());
     _put(session.copyWith(browserOpened: opened, codeError: session.codeError));
     return opened;
   }
@@ -281,10 +313,9 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
   void _watch(SignInAttempt attempt) {
     final loginId = attempt.loginId;
     _timers.remove(loginId)?.cancel();
-    // Both modes poll: own mode finishes on the server when the provider
-    // redirects; Connect mode can finish or fail from another client (the
-    // deep link on a second device, five wrong codes) or run out, and the
-    // dialog must show it.
+    // An attempt can finish or fail from another client (the deep link on a
+    // second device, five wrong codes) or run out, and the dialog must show
+    // it.
     _timers[loginId] = Timer.periodic(
       kSignInPollInterval,
       (_) => unawaited(_poll(loginId)),
@@ -306,6 +337,7 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
       final attempt = await _repo.status(
         loginId,
         workspaceId: session.workspaceId,
+        lane: session.attempt.lane,
       );
       final now = state.sessions[loginId];
       if (now == null || now.completing) {
@@ -317,10 +349,16 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
       } else {
         _put(now.copyWith(attempt: attempt, codeError: now.codeError));
       }
-    } on Object {
-      // A dropped poll is not a failed sign-in; the next tick asks again and
-      // the attempt's own expiry ends it if the server never answers.
-      if (DateTime.now().toUtc().isAfter(session.attempt.expiresAt)) {
+    } on Object catch (e) {
+      // A server that no longer knows the attempt (cancelled on Connect's
+      // page, used, replaced) has answered: end it rather than spin. A dropped
+      // poll is not a failed sign-in; the next tick asks again and the
+      // attempt's own expiry ends it if the server never answers.
+      final failure = signInFailureOfRpcError(e);
+      if (failure == SignInFailure.staleRequest ||
+          failure == SignInFailure.attemptUnknown) {
+        _end(loginId, failure);
+      } else if (DateTime.now().toUtc().isAfter(session.attempt.expiresAt)) {
         _expire(loginId);
       }
     } finally {
@@ -328,7 +366,10 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
     }
   }
 
-  void _expire(String loginId) {
+  void _expire(String loginId) => _end(loginId, SignInFailure.expired);
+
+  /// Ends the open attempt [loginId] as failed with [failure].
+  void _end(String loginId, SignInFailure failure) {
     final session = state.sessions[loginId];
     if (session == null || session.isTerminal) {
       return;
@@ -342,7 +383,7 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
         url: a.url,
         expiresAt: a.expiresAt,
         status: SignInAttemptStatus.failed,
-        error: SignInFailure.expired,
+        error: failure,
       ),
     );
   }
@@ -370,6 +411,12 @@ class ProviderSignInController extends Notifier<ProviderSignInState> {
       state = ProviderSignInState(
         sessions: state.sessions,
         successes: {...state.successes, lane: state.successesFor(lane) + 1},
+      );
+      // Changes the server refused for want of this sign-in run now.
+      unawaited(
+        ref
+            .read(offlineQueueControllerProvider.notifier)
+            .resumeAfterSignIn(lane.wire),
       );
     }
     final completer = _results[loginId];

@@ -72,12 +72,15 @@ class EnvironmentComponentForm extends StatelessWidget {
                 mono: true,
               ),
               _gap,
-              EnvironmentLinesField(
-                form: form,
-                path: [...path, 'after'],
-                label: l10n.environmentsAfter,
-              ),
-              _gap,
+              // An app opens on Launch, once the stack is up: it has no order.
+              if (kind != 'app') ...[
+                EnvironmentLinesField(
+                  form: form,
+                  path: [...path, 'after'],
+                  label: l10n.environmentsAfter,
+                ),
+                _gap,
+              ],
               EnvironmentTextField(
                 form: form,
                 path: [...path, 'cwd', 'role'],

@@ -132,9 +132,7 @@ ModelCost skillEvaluationModelCostFromPin(Map<String, dynamic> pin) {
   if (pin['pricingPolicyVersion'] != 3 ||
       (pin['budgetEnforcement'] != 'stop_after_call' &&
           pin['budgetEnforcement'] != 'reserved_call')) {
-    throw StateError(
-      'Evaluation model pin predates explicit budget enforcement',
-    );
+    throw StateError('Evaluation model pin has no explicit budget enforcement');
   }
   return ModelCost(
     input: (pin['inputPrice'] as num).toDouble(),

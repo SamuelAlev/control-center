@@ -93,6 +93,7 @@ class PipelineTriggerDispatcher {
           triggerEventType: typeName,
           triggerPayload: {...payload, 'triggerEventType': typeName},
           dedupKey: dedupKey,
+          armedByUserIds: trigger.armedByUserIds,
         );
         if (run != null) {
           CcDomainLog.info(

@@ -1,8 +1,11 @@
 import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_domain/core/domain/entities/workspace.dart'
+    show WorkspaceConnectMode;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_provider.dart';
+import 'package:cc_server_core/src/connect/connect_settings.dart';
 import 'package:cc_server_core/src/connect/linear_clients.dart';
 import 'package:cc_server_core/src/connect/linear_sign_in_lane.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
@@ -25,9 +28,24 @@ ProviderToken _grant(
   appId: 'lin-client',
 );
 
+/// A secrets file whose writes fail while [failWrites] is set.
+final class _FlakySecrets extends FileSecretsStore {
+  _FlakySecrets({required super.dataDir});
+
+  bool failWrites = false;
+
+  @override
+  Future<bool> writePsk(String deviceId, String psk) {
+    if (failWrites) {
+      throw const FileSystemException('disk full');
+    }
+    return super.writePsk(deviceId, psk);
+  }
+}
+
 void main() {
   late Directory dir;
-  late FileSecretsStore secrets;
+  late _FlakySecrets secrets;
   late UserCredentialsStore people;
   late LinearAppGrants workspaces;
   late ProviderAppSettings apps;
@@ -35,10 +53,13 @@ void main() {
   late List<String> revoked;
   late List<(ConnectOAuthLane, String?)> refreshes;
   late RefreshOutcome Function(ProviderToken token) outcome;
+  // Workspaces whose Connect choice is their own apps; every other one
+  // inherits a server on its own apps.
+  late Set<String> ownWorkspaces;
 
   setUp(() {
     dir = Directory.systemTemp.createTempSync('cc_linear_clients_');
-    secrets = FileSecretsStore(dataDir: dir.path);
+    secrets = _FlakySecrets(dataDir: dir.path);
     people = UserCredentialsStore(secrets);
     workspaces = LinearAppGrants(secrets);
     apps = ProviderAppSettings(secrets: secrets);
@@ -46,6 +67,7 @@ void main() {
     revoked = [];
     refreshes = [];
     outcome = (token) => Refreshed(_grant('lin_fresh'));
+    ownWorkspaces = {};
   });
 
   tearDown(() => dir.deleteSync(recursive: true));
@@ -55,6 +77,18 @@ void main() {
     workspaces: workspaces,
     apps: apps,
     workspaceApps: workspaceApps,
+    route: (workspaceId) async => ownWorkspaces.contains(workspaceId)
+        ? const ConnectRoute(
+            mode: WorkspaceConnectMode.own,
+            target: ConnectTarget.none,
+            serverOwnApps: false,
+            workspaceSlot: true,
+          )
+        : const ConnectRoute(
+            mode: WorkspaceConnectMode.inherit,
+            target: ConnectTarget.none,
+            serverOwnApps: true,
+          ),
     refresh: (lane, token, {slot}) async {
       refreshes.add((lane, slot));
       return outcome(token);
@@ -142,6 +176,29 @@ void main() {
       expect(await workspaces.read('ws-1'), isNotNull);
     });
 
+    test(
+      'the daily sweep leaves a deleted workspace\'s grants to lapse',
+      () async {
+        final old = DateTime.now().toUtc().subtract(const Duration(days: 21));
+        await workspaces.write('ws-gone', _grant('a', issuedAt: old));
+        await workspaces.write('ws-live', _grant('b', issuedAt: old));
+        await people.setTicketToken(
+          'alice',
+          TicketProvider.linear,
+          _grant('c', issuedAt: old),
+          workspaceId: 'ws-gone',
+        );
+
+        expect(
+          await clients().refreshAging(
+            isLiveWorkspace: (id) async => id != 'ws-gone',
+          ),
+          1,
+        );
+        expect(refreshes, [(ConnectOAuthLane.linearApp, 'ws-live')]);
+      },
+    );
+
     test('the daily sweep renews grants older than twenty days only', () async {
       final old = DateTime.now().toUtc().subtract(const Duration(days: 21));
       await workspaces.write('ws-old', _grant('a', issuedAt: old));
@@ -153,12 +210,37 @@ void main() {
       );
       await people.setTicketToken('bob', TicketProvider.linear, _grant('d'));
 
-      expect(await clients().refreshAging(), 2);
+      expect(
+        await clients().refreshAging(isLiveWorkspace: (_) async => true),
+        2,
+      );
       expect(refreshes.toSet(), {
         (ConnectOAuthLane.linearApp, 'ws-old'),
         (ConnectOAuthLane.linear, null),
       });
       expect((await workspaces.read('ws-new'))!.accessToken, 'b');
+    });
+
+    test('a renewed grant the server cannot store is kept and used, never '
+        'renewed again with the rotated-out refresh token', () async {
+      await workspaces.write(
+        'ws-1',
+        _grant(
+          'lin_old',
+          expiresAt: DateTime.now().toUtc().subtract(const Duration(hours: 1)),
+        ),
+      );
+      secrets.failWrites = true;
+      final c = clients();
+      expect(await c.appAuthorization('ws-1'), 'Bearer lin_fresh');
+      expect(await c.appAuthorization('ws-1'), 'Bearer lin_fresh');
+      expect(refreshes, hasLength(1));
+      expect((await workspaces.read('ws-1'))!.accessToken, 'lin_old');
+
+      secrets.failWrites = false;
+      expect(await c.appAuthorization('ws-1'), 'Bearer lin_fresh');
+      expect((await workspaces.read('ws-1'))!.accessToken, 'lin_fresh');
+      expect(refreshes, hasLength(1));
     });
 
     test('concurrent callers share one refresh (Linear rotates refresh '
@@ -181,10 +263,12 @@ void main() {
   });
 
   group('a workspace on its own Linear app', () {
-    Future<void> ownApp(String workspaceId, String clientId) =>
-        workspaceApps.save(workspaceId, WorkspaceAppProvider.linear, {
-          'client_id': clientId,
-        });
+    Future<void> ownApp(String workspaceId, String clientId) async {
+      ownWorkspaces.add(workspaceId);
+      await workspaceApps.save(workspaceId, WorkspaceAppProvider.linear, {
+        'client_id': clientId,
+      });
+    }
 
     test(
       "reads a person's grant from its own slot, never the global one",
@@ -259,7 +343,10 @@ void main() {
         _grant('c', issuedAt: old),
         workspaceId: 'ws-own',
       );
-      expect(await clients().refreshAging(), 1);
+      expect(
+        await clients().refreshAging(isLiveWorkspace: (_) async => true),
+        1,
+      );
       expect(refreshes, [(ConnectOAuthLane.linear, 'ws-own')]);
     });
 

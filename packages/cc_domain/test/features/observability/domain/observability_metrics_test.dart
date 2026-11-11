@@ -28,6 +28,8 @@ AgentRunLog _run({
     cachedReadTokens: cachedReadTokens,
     cachedWriteTokens: cachedWriteTokens,
     estimatedCostCents: estimatedCostCents,
+    // A recorded cost carries its exact micro-USD; cents is its projection.
+    costMicros: estimatedCostCents * 10000,
     durationMs: durationMs,
     timeToFirstTokenMs: timeToFirstTokenMs,
   ),

@@ -2,7 +2,7 @@
 title: Rigs en omhullingen
 description: Waarom agenten wegwerpmachines krijgen in plaats van jouw computer — de isolatiegrenzen, weergavekanalen, inloggegevens, poorten en levenscyclus.
 slug: nl-NL/handleiding/concepten/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Een **rig** is een wegwerpmachine die een agent in realtime aanstuurt — een
@@ -264,7 +264,7 @@ zien), zegt het antwoord dat, in plaats van stilletjes iets anders te doen.
 Een rig is bewust **geen** wereldwijde bestemming. De liveweergave is een tab
 in de ruimte of PR waar het werk gebeurt, beperkt tot dat gesprek — dus jouw
 tab en de `browser_use`-aanroepen van de agent richten zich op *één* machine
-(één per engine, op het browseroppervlak). Of rigs überhaupt kunnen opstarten
+(één per engine, op het browseroppervlak). Een rig die in een ruimte is geopend is de machine van die ruimte, met de worktrees van de ruimte binnen bereik, dus hij volgt de repositories van de ruimte: leestoegang tot de ruimte laat je hem bekijken, en een schrijfrecht op die repositories laat je hem aansturen. Een rig die bij geen enkele ruimte hoort, bereikt geen worktree, en elk lid van de werkruimte kan hem gebruiken. [Wie kan kijken en wie kan aansturen](/nl-NL/handleiding/gidsen/rigs-gebruiken/#wie-kan-kijken-en-wie-kan-aansturen) somt op wat elk van beide omvat. Of rigs überhaupt kunnen opstarten
 is een eigenschap van de host, dus capaciteiten, images, aangepaste images per
 werkruimte en de lijst met draaiende machines staan onder
 **Instellingen → Server → Rigs**. Een omhulling aansturen is een eigen

@@ -21,8 +21,8 @@ import 'package:path/path.dart' as p;
 ///   `notEquals`, `contains`, `exists`, `notExists`, `gt`, `lt`), `and`/`or`/`not`.
 /// - **switch** (`switchKey` + `cases` + `default`): first case the value
 ///   contains (case-insensitive), else `default`.
-/// - **comparison** (legacy top-level `left`/`op`/`right`): same as a
-///   `comparison` predicate.
+///
+/// A config with neither shape fails the step.
 void registerConditionBody(
   PipelineBodyRegistry registry, {
   required PipelineTemplateRepository templateRepository,
@@ -85,22 +85,9 @@ void registerConditionBody(
       );
     }
 
-    final leftRef = extras['left'] as String? ?? '';
-    final left = _resolveLeft(
-      leftRef,
-      _PredicateContext(
-        state: ctx.renderState,
-        trigger: ctx.triggerPayload,
-        pipelineRunId: ctx.pipelineRunId,
-        runDirPath: runDirPath,
-      ),
-      renderer,
+    return StepResult.failed(
+      'condition: step "${ctx.stepId}" has neither a predicate nor a switchKey',
     );
-    final op = extras['op'] as String? ?? 'exists';
-    final right = extras['right'];
-    final matched = _compare(left, op, right);
-    final key = matched ? 'true' : 'false';
-    return StepResult.route(key, mutatedState: {'${ctx.stepId}_route': key});
   });
 }
 

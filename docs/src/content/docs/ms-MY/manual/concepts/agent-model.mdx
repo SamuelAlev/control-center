@@ -2,7 +2,7 @@
 title: Model ejen
 description: Apakah sebenarnya ejen dalam Control Center, medan mana yang mengubah tingkah lakunya dan bagaimana penyesuai yang menjalankannya menentukan apa yang boleh dikuatkuasakan.
 slug: ms-MY/manual-pengguna/konsep/model-ejen
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Apakah itu ejen?
@@ -54,7 +54,7 @@ Kemahiran repositori dimuatkan untuk **setiap** penyesuai, bukan hanya harness t
 
 Ejen tidak membawa bendera kebenaran sendiri. Sama ada ia boleh mencipta commit, push, membuka pull request, menulis ke penjejak atau mencapai rangkaian ditentukan oleh [guardrail tindakan](/ms-MY/manual-pengguna/konsep/guardrail/) — benarkan, tanya dahulu atau tolak, pada skop ruang kerja, ejen atau ruang — dan peraturan yang sama terpakai tanpa mengira penyesuai yang menjalankannya.
 
-Apa yang _diberikan_ kepada sesuatu larian tidak berubah dengan peraturan itu. Larian dalam worktree GitHub sentiasa mendapat token GitHub baca sahaja, dan push ditanya pada saat ia berlaku: konfigurasi git ejen menghantar setiap push GitHub melalui Control Center, yang menggunakan peraturan **Push ke remote** sebelum memajukannya.
+Apa yang _diberikan_ kepada sesuatu larian tidak berubah dengan peraturan itu. Larian sentiasa boleh membaca repositori GitHub yang dikerjakannya, dengan token baca sahaja, dan push ditanya pada saat ia berlaku: konfigurasi git ejen menghantar setiap push GitHub melalui Control Center, yang menggunakan peraturan **Push ke remote** sebelum memajukannya.
 
 Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/) untuk cara ia berfungsi, termasuk apa yang dikuatkuasakan dan tidak dikuatkuasakan pada peringkat sistem fail.
 
@@ -70,16 +70,16 @@ Medan yang paling besar kesannya pada sesuatu ejen ialah penyesuainya, kerana pe
 Secara konkritnya, **hanya harness terbina menyokong subejen, pemanduan pertengahan larian, jeda dan sambung semula (dan oleh itu pengambilalihan) serta penguatkuasaan modus secara struktur.** Claude Code tidak mendapat satu pun daripada itu.
 
 :::caution[Kotak pasir OS ialah lantai, bukan penguatkuasa modus, dan bukan setiap hos mempunyainya]
-Matriks di atas adalah tentang apa yang boleh _dilihat dan dikawal_ oleh Control Center. Di bawahnya, `cc_server` membalut CLI Claude Code dalam kotak pasir OS hos jika ada — Seatbelt pada macOS, bubblewrap pada Linux dan WSL2 — jadi `rm` yang tidak dilihat atau penulisan yang tidak dilihat masih dibatasi oleh OS. Pada **Windows tiada bahagian belakang sama sekali** dan pada Linux atau WSL2 tanpa `bwrap` dan `socat` probe melaporkan tiada, jadi di sana larian tersebut jatuh kembali kepada pensanitasi persekitaran, kelayakan yang diuruskan melalui broker, guardrail pada panggilan yang dapat dilihat oleh Control Center dan worktree perbualan itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows).
+Matriks di atas adalah tentang apa yang boleh _dilihat dan dikawal_ oleh Control Center. Di bawahnya, `cc_server` membalut CLI Claude Code dalam kotak pasir OS hos jika ada — Seatbelt pada macOS, bubblewrap pada Linux dan WSL2 — jadi `rm` yang tidak dilihat atau penulisan yang tidak dilihat masih dibatasi oleh OS. Pada **Windows tiada bahagian belakang sama sekali** dan pada Linux atau WSL2 tanpa `bwrap` dan `socat` probe melaporkan tiada. Di sana hanya larian pemilik pelayan dimulakan, dan larian orang lain ditolak melainkan pemilik memulakan pelayan dengan `--sandbox off`. Larian yang dimulakan tanpa kotak pasir jatuh kembali kepada pensanitasi persekitaran, kelayakan yang diuruskan melalui broker, guardrail pada panggilan yang dapat dilihat oleh Control Center dan worktree perbualan itu sendiri (copy-on-write di mana `rift` disertakan; `git worktree` pada Windows).
 
 Apa yang bukan dimiliki oleh kotak pasir ialah sifat _pintu_. Ia membatasi tempat sesuatu proses boleh membaca, menulis dan menyambung — modus baca sahaja memang sampai kepadanya, sebagai bind mount baca sahaja — tetapi ia tidak boleh memintas panggilan, meminta kelulusan, atau memberitahu anda selepas itu apa yang dicuba oleh CLI. Itu, ditambah dengan empat keupayaan yang disebut di atas, masih menjadi apa yang dimiliki oleh harness terbina dan tidak dimiliki oleh yang lain. Lihat [Kotak pasir dan keselamatan](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/).
 :::
 
-Ejen yang **tiada** penyesuai jatuh kembali kepada **Control Center (built-in)** — gelung di dalam pelayan, jadi tiada CLI untuk dipasang — dan log lariannya merekodkan `cc-harness`. Setiap ejen yang dibenihkan dicipta tanpa penyesuai atau model, jadi lima ejen dalam ruang kerja baharu semuanya berjalan di situ, pada model lalai Anthropic, sehingga anda menetapkan penyesuai dan model bagi setiap ejen. Pilihan "penyesuai lalai" semasa pengenalan ialah keutamaan di pihak klien yang tidak pernah dibaca oleh pelayan dan ia tidak digunakan secara retroaktif kepada ejen yang sudah dicipta.
+Ejen yang **tiada** penyesuai jatuh kembali kepada **Control Center (built-in)** — gelung di dalam pelayan, jadi tiada CLI untuk dipasang — dan log lariannya merekodkan `cc-harness`. Setiap ejen yang dibenihkan dicipta tanpa penyesuai atau model, jadi enam ejen dalam ruang kerja baharu semuanya berjalan di situ, pada model lalai Anthropic, sehingga anda menetapkan penyesuai dan model bagi setiap ejen. Langkah penyesuai dalam pengenalan menetapkan pasangannya pada setiap ejen yang masih tiada satu dalam ruang kerja yang wujud pada masa itu; tiada pelari lalai ruang kerja.
 
 ## Dari mana ejen datang
 
-- **Dibenihkan bersama ruang kerja.** Setiap ruang kerja — bukan hanya yang pertama — mendapat seorang CEO serta empat pakar (`qa`, `architect`, `engineer`, `librarian`) yang melaporkan kepadanya, dicipta secara idempoten di latar belakang apabila ruang kerja itu dicipta. Lihat [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
+- **Dibenihkan bersama ruang kerja.** Setiap ruang kerja — bukan hanya yang pertama — mendapat seorang CEO serta lima pakar (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) yang melaporkan kepadanya, dicipta secara idempoten di latar belakang apabila ruang kerja itu dicipta. Lihat [Ruang kerja dan pengasingan](/ms-MY/manual-pengguna/konsep/ruang-kerja/).
 - **Ditambah secara manual** di Tetapan → Ruang kerja → Ejen. Meminta ejen mengupah rakan sekerja tidak mencipta baris; gunakan skrin itu.
 
 ## Keadaan langsung

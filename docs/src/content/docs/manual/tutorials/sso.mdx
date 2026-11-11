@@ -81,6 +81,15 @@ Two policies decide what a first login does:
 - **Provision unknown users on first login** — on by default; turn it off to
   reject anyone whose account does not already exist.
 
+If people already have accounts on this server, confirm their email
+addresses before anyone signs in with SSO: open **Settings → Server →
+People** and use **Confirm email** on each row marked **Email not
+confirmed**. A login matches an existing account by email only when that
+address is confirmed (or was set by SSO or SCIM). An address someone typed in
+their own profile or on an invite matches nothing, so without this step they
+get a second account, or are refused when provisioning unknown users is off.
+See [How sign-ins match existing accounts](/manual/guides/sso-oidc/#how-sign-ins-match-existing-accounts).
+
 Optionally map an attribute carrying group names (Okta's is commonly
 `groups`) and translate groups to roles with the map — for example
 `{"platform-leads": "admin"}`. SSO can never grant the owner role.

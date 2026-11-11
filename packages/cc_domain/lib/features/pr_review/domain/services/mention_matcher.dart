@@ -6,8 +6,7 @@
 /// question is how "the bot heard you but your notification didn't" happens.
 library;
 
-/// The human GitHub account addressed by default in PR conversations.
-/// The app's own bot login remains a separate, accepted alias.
+/// The human GitHub account addressed in PR conversations.
 const githubPrConversationMentionLogin = 'usectrl';
 
 /// The logins a comment may @mention to address [login].
@@ -116,4 +115,122 @@ Set<int> threadCommentIdsAuthoredBy(
     }
   }
   return matched;
+}
+
+/// What [neutralizeMentions] puts between `@` and a name: a zero-width space,
+/// invisible when rendered, which no forge reads as part of a mention.
+const String mentionBreak = '\u200B';
+
+final RegExp _mentionAt = RegExp(r'(?<![A-Za-z0-9_])@(?=[A-Za-z0-9_{])');
+final RegExp _encodedAt = RegExp(
+  r'&(?:#0*64|#x0*40|commat);',
+  caseSensitive: false,
+);
+final RegExp _fence = RegExp(r'^ {0,3}(`{3,}|~{3,})');
+final RegExp _url = RegExp(r'https?://[^\s<>()\[\]]+', caseSensitive: false);
+
+/// [body] with every @-mention outside code made inert, for text the Control
+/// Center bot posts on a forge: an agent's words (or a pull request's,
+/// steering an agent) must not page a user or a whole team (`@org/team`,
+/// GitLab's `@all`) through the bot's account.
+///
+/// A zero-width space goes after the `@` ([mentionBreak]) so the text still
+/// reads the same. Entity-encoded `@` (`&#64;`, `&#x40;`, `&commat;`) counts
+/// too: forges decode it before they look for mentions. Fenced code blocks and
+/// inline code spans are left as they are (no forge mentions inside code, and
+/// `@Annotation` in a snippet must stay copyable), and so are URLs; an e-mail
+/// address is not a mention. Idempotent.
+String neutralizeMentions(String body) {
+  if (!body.contains('@') && !body.contains('&')) {
+    return body;
+  }
+  final out = StringBuffer();
+  String? openFence;
+  final lines = body.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    final line = lines[i];
+    final fence = _fence.firstMatch(line)?.group(1);
+    if (openFence != null) {
+      out.write(line);
+      if (fence != null &&
+          fence[0] == openFence[0] &&
+          fence.length >= openFence.length &&
+          line.trim() == fence) {
+        openFence = null;
+      }
+    } else if (fence != null) {
+      openFence = fence;
+      out.write(line);
+    } else {
+      out.write(_neutralizeOutsideCodeSpans(line));
+    }
+    if (i < lines.length - 1) {
+      out.write('\n');
+    }
+  }
+  return out.toString();
+}
+
+/// [line] with mentions neutralized everywhere but inside inline code spans
+/// (a run of N backticks up to the next run of exactly N).
+String _neutralizeOutsideCodeSpans(String line) {
+  // A URL keeps its `@` (`https://host/@user`): it links, it does not page.
+  String plain(String text) => text.splitMapJoin(
+    _url,
+    onNonMatch: (t) => t
+        .replaceAll(_encodedAt, '@$mentionBreak')
+        .replaceAll(_mentionAt, '@$mentionBreak'),
+  );
+  final out = StringBuffer();
+  var cursor = 0;
+  var scan = 0;
+  while (scan < line.length) {
+    final open = line.indexOf('`', scan);
+    if (open < 0) {
+      break;
+    }
+    var slashes = 0;
+    while (open - slashes > 0 && line[open - slashes - 1] == r'\') {
+      slashes++;
+    }
+    if (slashes.isOdd) {
+      // `\`` is a literal backtick, not the start of code.
+      scan = open + 1;
+      continue;
+    }
+    var openEnd = open;
+    while (openEnd < line.length && line[openEnd] == '`') {
+      openEnd++;
+    }
+    final run = openEnd - open;
+    var close = -1;
+    var search = openEnd;
+    while (search < line.length) {
+      final next = line.indexOf('`', search);
+      if (next < 0) {
+        break;
+      }
+      var nextEnd = next;
+      while (nextEnd < line.length && line[nextEnd] == '`') {
+        nextEnd++;
+      }
+      if (nextEnd - next == run) {
+        close = nextEnd;
+        break;
+      }
+      search = nextEnd;
+    }
+    if (close < 0) {
+      // An unclosed run is literal text, not code.
+      scan = openEnd;
+      continue;
+    }
+    out
+      ..write(plain(line.substring(cursor, open)))
+      ..write(line.substring(open, close));
+    cursor = close;
+    scan = close;
+  }
+  out.write(plain(line.substring(cursor)));
+  return out.toString();
 }

@@ -2,10 +2,10 @@
 title: Bir çalışma alanına depo ekleme
 description: Ajanların üzerinde çalışabilmesi için Git checkout’larını bir çalışma alanına kaydedin.
 slug: tr-TR/kilavuz/nasil-yapilir/depo-ekleme
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Bu kılavuz, bir Git checkout’unu bir çalışma alanına nasıl kaydedeceğinizi, nasıl yeniden indeksleyeceğinizi ve nasıl kaldıracağınızı gösterir.
+Bu kılavuz, bir Git checkout’unu bir çalışma alanına nasıl kaydedeceğinizi, nasıl yeniden indeksleyeceğinizi ve nasıl kaldıracağınızı gösterir. Sunucunun klasörlerinden bir depo eklemek sunucu sahibi gerektirir; birini kaldırmak ise bir çalışma alanı yöneticisi gerektirir.
 
 Depolar **çalışma alanı kapsamlıdır**. Küresel bir kayıt defteri ve ayrı bir bağlama adımı yoktur: bir depo eklemek ile onu bir çalışma alanına koymak aynı eylemdir. İki çalışma alanına kaydedilen aynı checkout, iki farklı kimliğe sahip iki bağımsız satır haline gelir — çalışma alanları arasında bir deponun kimliği dosya sistemi yoludur, hiçbir zaman kimliği değil.
 
@@ -21,9 +21,29 @@ Bunların dışındaki her şey, kayıt sırasında açık bir mesajla reddedili
 
 Kod barındırıcı uzak depodan okunur ve depoda saklanır — onu asla siz seçmezsiniz. Bir çalışma alanı üçünün de depolarını aynı anda barındırabilir ve her biriyle kendi API’si ve kendi kimlik bilgisi üzerinden konuşulur. GitLab’ın iç içe ad alanları korunur; bu nedenle `gitlab.com/group/subgroup/project`, sahibi `group/subgroup`, adı `project` olacak şekilde kaydedilir.
 
-Klasör ayrıca `cc_server`’ı barındıran makinede, o sunucunun `--repo-roots` dizinlerinden birinin içinde bulunmalıdır. Bu izin listesi varsayılan olarak sunucu kullanıcısının ev dizinidir ve bir kökün üstüne çıkan gezinme reddedilir.
+Klasör ayrıca `cc_server`’ı barındıran makinede, o sunucunun `--repo-roots` dizinlerinden birinin içinde bulunmalıdır. Bu izin listesi varsayılan olarak sunucu kullanıcısının ev dizinidir ve bir kökün üstüne çıkan gezinme reddedilir. Sunucunun klasörlerinde gezinme yalnızca [sunucu sahibine](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi) sunulur, çünkü makinenin kendi dosyalarını listeler. Başkaları, **Depo ekle** düğmesinin olacağı yerde “Depoları sunucu sahibi, sunucunun klasörlerinden ekler.” mesajını görür; hiçbir çalışma alanınızda bulunmayan bir depoya bağlantı ise bu deponun çalışma alanlarınızın hiçbirinde bağlı olmadığını ve sunucu sahibinden eklemesini istemeniz gerektiğini söyler.
+
+Checkout’un nerede yaşayabileceği, onu kimin bağladığına bağlıdır:
+
+- **Sunucudaki çalışma alanının kendi depolama alanının içinde**: herhangi bir çalışma alanı yöneticisi.
+- **Sunucu diskinde başka bir yerde**: yalnızca [sunucu sahibi](/tr-TR/kilavuz/kavramlar/yetkilendirme/#sunucu-sahibi), çünkü sunucuyu makinenin kendi dosyalarına yönlendirebilecek tek kişi odur. Başkaları “Yalnızca sunucu sahibi, bu çalışma alanının depolama alanının dışındaki bir klasörü bağlayabilir.” mesajını görür.
+- **Sunucunun veri klasörü** ya da içindeki herhangi bir şey: hiçbir zaman.
+
+Checkout’un `origin`’i, bağladığınız depo olmalıdır. `origin`’i başka bir depoyu adlandıran bir klasör “Bu klasörün origin’i farklı bir depo.” mesajıyla reddedilir.
+
+### Sunucunun henüz kullanmadığı klasörler
+
+Klasörü çalışma alanının depolama alanının dışında olan ve sunucu sahibinin bağlamadığı bir depo — örneğin içe aktarılmış bir çalışma alanındakiler — sahibi onaylayana kadar satırının altında “Bu klasör çalışma alanının depolama alanının dışında. Bu sunucunun onu kullanmasına izin verdiğinizi onaylayın.” mesajını gösterir. Başkaları bunun yerine “Bu klasör çalışma alanının depolama alanının dışında. Yalnızca sunucu sahibi bunu onaylayabilir.” mesajını görür.
+
+Sahip bunu bir kez onaylar: satırdaki **Onayla** ya da birkaç depo beklediğinde listenin üstündeki bildirimdeki **Tümünü onayla**. Her biri sahip olarak yeniden denetlenir; bağlarken yapılan aynı denetimler. Bu arada depo listede kalır ama açılmaz, sağlanmaz ya da indekslenmez: hiçbir düzenleyici, terminal, ortam ya da alan checkout’u onu kullanmaz ve kod grafiği onu atlar. Aynı klasörü sunucu sahibi olarak yeniden eklemek, onu onaylamakla aynı şeyi yapar ve deponun kimliğini korur.
+
+Bir sembolik bağlantının başka bir yere taşıdığı checkout da aynı şekilde ele alınır: listede ve kullanılmadan kalır; ta ki bağlantının artık işaret ettiği klasörü bağlamaya izni olan biri onu yeniden bağlayana kadar.
+
+Ayrıca depo forge’unda oturum açmış olmanız ve kendi hesabınızın depoyu görebilmesi gerekir.
 
 ## Bir checkout kaydetme
+
+Bu adımlar için sunucu sahibi olmanız gerekir.
 
 1. **Ayarlar → Çalışma alanı → Depolar** sayfasını açın (`/workspaces/<id>/settings/workspace/repositories`).
 2. **Depo ekle**’ye tıklayın.
@@ -56,7 +76,23 @@ Bir satırdaki tutamacı sürükleyin. Belirlediğiniz sıra, uygulamadaki her d
 
 ## GitHub bağlantısını düzeltme
 
-Bir satırdaki bağlantı simgesi, deponun GitHub sahibini ve depo adını düzenlemek için bir düzenleyici açar — uzak depo yeniden adlandırıldığında veya taşındığında kullanışlıdır.
+Bir satırdaki bağlantı simgesi, deponun GitHub sahibini ve depo adını düzenlemek için bir düzenleyici açar.
+
+Buna nadiren ihtiyacınız olur. Bir bağlantı, deponun forge’daki kalıcı kimliğine bağlıdır; bu yüzden yeniden adlandırma ya da devir kendiliğinden izlenir.
+
+- Control Center’da bir depoyu yeniden adlandırmak yalnızca görünen adını değiştirir.
+- Bir bağlantının işaret ettiği forge deposunu değiştirmek bir çalışma alanı yöneticisi gerektirir ve bağlarken olduğu gibi, yöneticinin kendi oturum açmasıyla forge’da denetlenir.
+- Bağlı bir depo yerel-only bir depoya dönüştürülemez.
+
+Yol daha sonra **farklı** bir depoyu adlandırırsa (özgün depo silinip yeniden oluşturulduysa ya da başka biriyle taşınıp değiştirildiyse), Control Center ona hiçbir şey göndermeyi bırakır: token, push, yorum ya da istek yok. Bu, kişinin kendi eylemlerini de kapsar: böyle bir depoda yaptığınız bir inceleme, birleştirme ya da yorum GitHub, GitLab ve Bitbucket’ta reddedilir. Satır ve deponun pull request’leri, bir çalışma alanı yöneticisi **Yeniden bağla**’ya tıklayana kadar “_repo_ artık farklı bir depoyu gösteriyor” yazar.
+
+## Kodu kimin açabileceği
+
+Tek başına depo izni, bir deponun dosyalarını açmaz. Dosyaları, diff’leri, aramayı ya da onun için bir terminali açmak için üyenin Control Center izni olmalı ve kendi forge oturum açmasının depoyu okuyabilmesi gerekir. Çalışma alanı yöneticileri muaf değildir; sunucu sahibi muaftır. Bkz. [Kod forge’u izler](/tr-TR/kilavuz/kavramlar/yetkilendirme/#kod-kod-barındırıcısını-izler).
+
+Bir depo iznini, forge hesabı o depoyu okuyamayan birine verdiğinizde izin kaydedilir ve “Kaydedildi. GitHub hesapları bu depoyu henüz okuyamıyor, bu yüzden depo onlardan gizli kalır.” gibi bir uyarı görürsünüz.
+
+Aynı kural bir alanın açılıp açılamayacağını da belirler. Bir alan yalnızca kullandığı her deponun kodunu açabilen üyeler için açılır ve diğerlerinden, arama sonuçları, çalıştırma günlükleri, yapılacaklar, etkinlik ve bildirimleriyle birlikte gizlenir. Hiç deposu olmayan bir alan her üyeye açıktır. Bkz. [Alanlar depolarını izler](/tr-TR/kilavuz/kavramlar/yetkilendirme/#alanlar-depolarını-izler).
 
 ## Bir depoyu kaldırma
 
@@ -66,7 +102,31 @@ Bir satırdaki bağlantı simgesi, deponun GitHub sahibini ve depo adını düze
 
 İletişim kutusu ne yaptığını söyler: “_ad_ bu çalışma alanından kaldırılacak. Diskteki yerel dosyalara dokunulmaz.”
 
+Bir depoyu kaldırmak bir çalışma alanı yöneticisi gerektirir. Ayrıca o depo için saklanan forge kimlik bilgilerini, örneğin bir GitLab ya da Bitbucket otomasyon token’ını da unutur.
+
 Kaldırma işlemi, depo satırını bu çalışma alanından siler ve ona bağlı kod grafiği satırlarını — semboller, kenarlar, dosyalar ve indeks kontrol noktaları — ayrıca üzerindeki her üye için verilmiş depo izinlerini, alan-depo bağlantılarını ve yalıtılmış checkout kayıtlarını zincirleme olarak temizler. Aynı checkout başka bir çalışma alanına kaydedilmişse bağımsız bir satırdır ve etkilenmez. Bu kayıtların işaret ettiği diskteki çalışma ağaçları silme işlemiyle ortadan kaldırılmaz.
+
+## Sorun giderme
+
+### Bir iznim var ama depo hesabımın okuyamadığını söylüyor
+
+Kendi forge hesabınız depoyu okuyamadığı için Control Center, çalışma alanı ona izin vermiş olsa bile kodunu sizden saklar. Henüz yapmadıysanız **Ayarlar → Siz → Profil → Kod barındırma** altında forge’da oturum açın ya da deponun sahibinden forge’da erişim isteyin. Forge hesabınız depoyu okuyabildiği anda depo açılır.
+
+### “Bu klasör çalışma alanının depolama alanının dışında”
+
+Deponun klasörü çalışma alanının depolama alanının dışında ve sunucu sahibi onu bağlamadı ya da bir sembolik bağlantı şimdi onu başka bir yere yönlendiriyor olabilir. Sunucu sahibi onaylayana ya da klasörü yeniden ekleyene kadar listede kalır ama kullanılmaz. Sahip değilseniz ona sorun. Sahipseniz satırdaki **Onayla**’ya ya da listenin üstündeki **Tümünü onayla**’ya basın; bkz. [Sunucunun henüz kullanmadığı klasörler](#sunucunun-henüz-kullanmadığı-klasörler).
+
+### “Sunucuda bu yolda artık hiçbir şey yok”
+
+Klasör sunucunun makinesinde taşınmış ya da silinmiş. Onu geri koyun ya da bir çalışma alanı yöneticisinin bildirimdeki **Kaldır** ile depoyu kaldırıp geçerli klasöründen yeniden eklemesini isteyin.
+
+### “Bu klasör depo olarak kullanılamaz”
+
+Kayıtlı klasör, sunucunun kendi veri klasörü, içindeki bir şey ya da çalışma alanının depolama klasörünün kendisi. Bunların hiçbiri depo olamaz. Bir çalışma alanı yöneticisi bildirimdeki **Kaldır** ile kaldırır, ardından depoyu checkout’un gerçek klasöründen yeniden ekler.
+
+### “Kod barındırma erişiminiz doğrulanamadı”
+
+Control Center, hesabınızın depoyu okuyabildiğini denetlemek için forge’a ulaşamadı; bu yüzden tahmin yürütmek yerine reddetti. Biraz sonra yeniden deneyin.
 
 ## İlgili kılavuzlar
 

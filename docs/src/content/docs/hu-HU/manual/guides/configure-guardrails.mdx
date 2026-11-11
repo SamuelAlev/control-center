@@ -2,14 +2,14 @@
 title: Korlátok konfigurálása
 description: Állítson be engedélyező, előbb kérdező és tiltó szabályokat az ügynökműveletekhez, tesztelje őket a „mi lenne, ha?” próbával, és hangolja térenként az autonómiát.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/korlatok-konfiguralasa
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Ez az útmutató megmutatja, hogyan konfigurálja a korlátokat: azokat a
 szabályokat, amelyek eldöntik, hogy egy ügynök művelete lefut, előbb
 jóváhagyást kér, vagy elutasításra kerül.
 
-A korlátok mind a tizenhárom hatásosztályt lefedik, amelyet minden
+A korlátok mind a tizennégy hatásosztályt lefedik, amelyet minden
 állapotmódosító eszköz deklarál. Kiszolgálóoldalon, a hívás pillanatában
 érvényesülnek, soha nem egy utasítás révén a promptban.
 
@@ -24,7 +24,7 @@ A korlátok mind a tizenhárom hatásosztályt lefedik, amelyet minden
    visszaállítógombot (**Törlés örököltre**) – a döntés visszaesik a tágabb
    hatókörre
 
-Minden sor a hatályos döntést egy állapotcímkével, származását pedig egy
+Minden sor a művelet beállítását egy állapotcímkével, származását pedig egy
 jelvénnyel mutatja: **Ez a hatókör**, **Örökölt** vagy **Beépített
 alapértelmezett**. A mátrix feloldása ügynök (`chat`) módban történik, ezért a
 **Módkészlet** itt soha nem jelenik meg – használja a „mi lenne, ha?” próbát
@@ -37,6 +37,18 @@ munkaterület hatókörében, majd futtassa az alábbi „mi lenne, ha?” prób
 `git push origin main` parancsra. Az eredmény `deny` lesz, `workspace`
 forrással.
 
+## Időkorlátos jóváhagyások áttekintése és visszavonása
+
+A jóváhagyási kártyára a **Jóváhagyás 8 órára** gombbal válaszolva időkorlátos jóváhagyás íródik: olyan szabály, amely az ugyanolyan fajta műveletet kérdés nélkül engedi át, amíg le nem jár. Mindegyik ezen az oldalon jelenik meg, annak a műveletnek a sora alatt, amelyhez tartozik.
+
+1. Lépjen a **Beállítások → Munkaterület → Ügynökjogosultságok** oldalra, és válasszon hatókört. A jóváhagyás a kérdés forrásául szolgáló térre íródik, ezért válassza a **Tér** lehetőséget, majd a kérdéses teret
+2. A művelet sora alatt olvassa el a bejegyzést: mit engedélyez (például a `feature/**` ágakra irányuló push-okat), az **Időkorlátos jóváhagyás** feliratot, azt, hogy ki adta, ha nem Ön, és hogy mikor jár le
+3. Ha most szeretné megszüntetni, mutasson rá a bejegyzésre, és nyomja meg a **Visszavonás** gombot. Az ügynökök a következő műveletüktől kezdve újra kérdeznek
+
+A sor továbbra is a művelet saját beállítását mutatja, a sor alatt pedig egy megjegyzés azt számolja, hány, lent felsorolt eset engedélyezett így is. A sablon által írt feltételes szabályok ugyanebben a listában jelennek meg, a parancsszabályok pedig egy **Parancsok** csoportban, az utolsó művelet után. A munkaterület hatókörében az összefoglaló alatti megjegyzés azt számolja, hány időkorlátos jóváhagyás van egyes terekre vagy ügynökökre beállítva. Térnél vagy ügynöknél a munkaterületieket számolja, mert azok is érvényesek ott.
+
+Az időkorlátos jóváhagyás csak a kérdést spórolja meg. Sosem írja felül a **Tiltás** beállítást: ha a műveletet **Tiltás** értékre állítja, miközben egy hozzá tartozó időkorlátos jóváhagyás még érvényben van, annak bejegyzése a **nincs hatálya, amíg Tiltás van beállítva** feliratot mutatja, amíg a jóváhagyás le nem jár, vagy amíg vissza nem vonja a jóváhagyást. A művelet beállításának módosítása a jóváhagyásait érintetlenül hagyja, a jóváhagyás visszavonása pedig a beállítást.
+
 ## A döntés feloldásának megértése
 
 A feloldás során **először a specifikusság, aztán a szigorúság** dönt:
@@ -44,8 +56,8 @@ A feloldás során **először a specifikusság, aztán a szigorúság** dönt:
 1. A **tér** szabályai, majd az **ügynöké**, majd a **munkaterületé**. Az első
    hatókör, amelyben van illeszkedő szabály, dönt, és a feloldás ott megáll
 2. Ha egyetlen szabály sem illeszkedik, a **módkészlet** lép életbe – egy csak
-   olvasható mód (plan, review, orchestrate) a tizenhárom osztály közül
-   tizenegyet elutasít
+   olvasható mód (plan, review, orchestrate) a tizennégy osztály közül
+   tizenkettőt elutasít
 3. Ha a módnak nincs mondanivalója, a **beépített alapértelmezett** lép életbe
 
 Egyetlen hatókörön belül egy parancsszabály a leghosszabb illeszkedő előtag
@@ -75,7 +87,7 @@ egy elutasítottnál.
 | Commit létrehozása                         | Engedélyezés              |
 | Küldés távoli tárolóra                     | Előbb kérdezzen           |
 | Pull request megnyitása                    | Előbb kérdezzen           |
-| Átnézés vagy összefésülés közzététele      | Előbb kérdezzen           |
+| Pull request frissítése vagy egyesítése    | Előbb kérdezzen           |
 | Írás külső követőbe                        | Előbb kérdezzen           |
 | Hálózati hozzáférés                        | Engedélyezés              |
 | Titok olvasása                             | Engedélyezés              |
@@ -83,6 +95,7 @@ egy elutasítottnál.
 | Folyamat futtatása                         | Engedélyezés              |
 | Munkaterület szerkezetének módosítása      | Engedélyezés              |
 | Elszigetelt környezet (állomás) irányítása | Engedélyezés              |
+| Parancsok futtatása a gazdagépen           | Előbb kérdezzen           |
 
 A taxonómia zárt. Egy új eszköz, amely osztályainak deklarálása nélkül jelenik
 meg, megbukik egy ratchet-teszten a CI-ben, így semmi sem érkezik csendben üres
@@ -94,14 +107,13 @@ Mielőtt megváltoztatna egy szabályt, nézze meg, hogyan oldja fel azt már mo
 hatályos szabályzat.
 
 1. Ugyanezen az oldalon görgessen a **Mi lenne, ha?** részhez
-2. Válasszon egy **Művelet**et (a tizenhárom osztály egyikét)
+2. Válasszon egy **Művelet**et (a tizennégy osztály egyikét)
 3. Adja meg opcionálisan a **Parancs**ot (például `git push origin main`), az
    **Ügynök**öt, a **Tér**t és a **Mód**ot
 4. Olvassa el az eredményt: a döntést, az indoklást és a **Forrás:** mezőt
 
 A próba ugyanazt a feloldót futtatja, amelyet az érvényesítési útvonal használ,
-a tényleges szabályaival szemben, így a válasz pontos. Ha meglepődik,
-módosítson egy szabályt a fenti mátrixban, és próbálja ki újra.
+a tényleges szabályaival szemben, így a válasz pontos. Ha időkorlátos jóváhagyás dönt, a forrás **Időkorlátos jóváhagyás** lesz, mellette a hatókörével. Ha a válasz meglepi Önt, módosítson egy szabályt a fenti mátrixban, és próbálja ki újra.
 
 ## Egy tér autonómiatárcsájának beállítása
 

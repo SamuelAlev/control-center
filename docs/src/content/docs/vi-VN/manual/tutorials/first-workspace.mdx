@@ -2,7 +2,7 @@
 title: Không gian làm việc đầu tiên của bạn
 description: Tạo một không gian làm việc, đăng ký một kho mã vào đó và tự mình xem ranh giới cô lập.
 slug: vi-VN/so-tay/huong-dan/khong-gian-lam-viec-dau-tien
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Những gì bạn sẽ xây dựng
@@ -11,10 +11,12 @@ Kết thúc bài hướng dẫn này, bạn sẽ có:
 
 - Một không gian làm việc mang tên dự án của bạn
 - Một kho mã Git đã được đăng ký vào đó
-- Năm agent được gieo sẵn, trong đó một agent đã được bạn cấu hình đủ tốt để chạy
+- Sáu agent được gieo sẵn, trong đó một agent đã được bạn cấu hình đủ tốt để chạy
 - Một không gian làm việc thứ hai, trống, chứng minh ranh giới cô lập
 
 Quá trình thiết lập ban đầu đã tạo sẵn một không gian làm việc cho bạn. Bài hướng dẫn này cố ý tạo một không gian làm việc mới, để bạn thấy mọi phần của quy trình.
+
+Việc tạo một không gian làm việc cần chủ sở hữu máy chủ, tức là người đã thiết lập máy chủ. Trên máy tính để bàn đang chạy máy chủ của chính nó thì đó là bạn. Trên máy chủ của người khác, **Thêm không gian làm việc** sẽ hiển thị "Chỉ chủ sở hữu máy chủ mới có thể tạo không gian làm việc. Hãy nhờ họ tạo một cái, hoặc nhờ quản trị viên không gian làm việc mời bạn." Hãy làm một trong hai việc đó và làm theo phần còn lại của bài hướng dẫn trong không gian làm việc đó. Đăng ký kho mã ở bước 2 cần quản trị viên không gian làm việc, và không gian làm việc thứ hai ở bước 4 lại cần chủ sở hữu máy chủ.
 
 Trước khi bắt đầu, hãy chọn một bản checkout Git hội đủ cả ba điều kiện sau — bước đăng ký sẽ từ chối mọi thứ khác:
 
@@ -35,12 +37,12 @@ Control Center chuyển sang không gian làm việc mới và dừng lại ở 
 Đằng sau đó, máy chủ phát một sự kiện `WorkspaceCreated` và gieo sẵn không gian làm việc với:
 
 - một **agent CEO**, với persona là điều phối và ủy thác
-- bốn chuyên gia — `qa`, `architect`, `engineer` và `librarian` — mỗi agent có hướng dẫn và kỹ năng riêng
+- năm chuyên gia — `qa`, `architect`, `engineer`, `librarian` và `content-synthesizer` — mỗi agent có hướng dẫn và kỹ năng riêng
 - các mẫu quy trình tích hợp sẵn và các hàng trình kích hoạt của chúng
 
 Mọi không gian làm việc bạn tạo đều nhận được tất cả những thứ này, không chỉ cái đầu tiên.
 
-Điểm kiểm tra: mở **Cài đặt → Không gian làm việc → Agent**. Năm agent có trong danh sách, mỗi agent mang một vòng trạng thái rỗng.
+Điểm kiểm tra: mở **Cài đặt → Không gian làm việc → Agent**. Sáu agent có trong danh sách, mỗi agent mang một vòng trạng thái rỗng.
 
 ## Bước 2: Đăng ký một kho mã
 
@@ -57,7 +59,7 @@ Control Center đọc remote `origin` của từng bản checkout, phân giải 
 
 ## Bước 3: Làm cho một agent chạy được
 
-Năm agent mà không gian làm việc này vừa gieo sẵn không có adapter và không có mô hình. Bộ điều phối chạy chúng trên **Control Center (built-in)** và, khi chưa đặt mô hình, hỏi Anthropic mô hình mặc định của nó — nên chúng chỉ chạy được nếu bạn đã kết nối một tài khoản Anthropic, và chạy trên một mô hình bạn không chọn nếu bạn đã kết nối. Quá trình thiết lập ban đầu ở lần chạy đầu đóng dấu lựa chọn của nó lên mọi agent trong không gian làm việc đầu tiên, đúng một lần; một không gian làm việc bạn tạo sau đó khởi đầu với cả năm agent đều chưa đặt. Hãy đặt cho một agent ngay bây giờ.
+Sáu agent mà không gian làm việc này vừa gieo sẵn không có adapter và không có mô hình. Bộ điều phối chạy chúng trên **Control Center (built-in)** và, khi chưa đặt mô hình, hỏi Anthropic mô hình mặc định của nó — nên chúng chỉ chạy được nếu bạn đã kết nối một tài khoản Anthropic, và chạy trên một mô hình bạn không chọn nếu bạn đã kết nối. Quá trình thiết lập ban đầu ở lần chạy đầu đóng dấu lựa chọn của nó lên mọi agent trong không gian làm việc đầu tiên, đúng một lần; một không gian làm việc bạn tạo sau đó khởi đầu với cả sáu agent đều chưa đặt. Hãy đặt cho một agent ngay bây giờ.
 
 1. Mở **Cài đặt → Không gian làm việc → Agent**
 2. Chọn `engineer` trong danh sách
@@ -73,7 +75,7 @@ Mỗi agent mang adapter và mô hình riêng, nên hãy lặp lại thao tác n
 Tạo một không gian làm việc thứ hai từ chip trên thanh tiêu đề, đúng như ở bước 1. Rồi hãy nhìn vào nó:
 
 - **Cài đặt → Không gian làm việc → Kho lưu trữ** trống. Kho mã bạn đăng ký một phút trước không có ở đó.
-- **Cài đặt → Không gian làm việc → Agent** có năm agent, nhưng chúng là những hàng khác — bộ điều hợp bạn đặt ở bước 3 không còn.
+- **Cài đặt → Không gian làm việc → Agent** có sáu agent, nhưng chúng là những hàng khác — bộ điều hợp bạn đặt ở bước 3 không còn.
 - Danh sách space, phiếu và bộ nhớ đều trống.
 
 Không có gì rò rỉ, vì không có gì để rò rỉ từ đó: các hàng của mỗi không gian làm việc nằm trong tệp cơ sở dữ liệu riêng của không gian làm việc đó. Một lượt đọc xuyên không gian làm việc không phải là một truy vấn bị lọc, mà là một truy vấn không có nơi nào để chạy. Xóa một không gian làm việc là hủy liên kết một tệp.
@@ -84,6 +86,6 @@ Chuyển lại bằng chip trên thanh tiêu đề, hoặc mở **Quản lý kh�
 
 ## Tóm tắt
 
-Bạn đã tạo một không gian làm việc, xem nó gieo sẵn một CEO và bốn chuyên gia, đăng ký một kho mã vào đó, gán cho một agent adapter và mô hình, và xác nhận rằng không gian làm việc thứ hai không chia sẻ thứ nào trong số đó.
+Bạn đã tạo một không gian làm việc, xem nó gieo sẵn một CEO và năm chuyên gia, đăng ký một kho mã vào đó, gán cho một agent adapter và mô hình, và xác nhận rằng không gian làm việc thứ hai không chia sẻ thứ nào trong số đó.
 
 **Tiếp theo:** [Điều phối agent đầu tiên](/vi-VN/so-tay/huong-dan/agent-dau-tien/) để đưa không gian làm việc vào việc.

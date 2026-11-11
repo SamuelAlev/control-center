@@ -2,7 +2,7 @@
 title: Odešlete review agenty
 description: Odešli specializované review agenty na PR z obrazovky PR, nástrojem MCP nebo krokem pipeline.
 slug: cs-CZ/prirucka/navody/odeslani-review-agentu
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Tenhle návod ukazuje, jak odeslat review agenty na kontrolu pull requestu.
@@ -81,10 +81,10 @@ Aby se pipeline kontroly spouštěla sama:
 
 Rozhodují tu dvě události a nejsou zaměnitelné:
 
-| Událost                | Kdy se spustí                                                                                                          | Klíče payloadu                                               |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| `PullRequestPublished` | PR se otevře **přes Control Center**, na ploše pro sestavení PR, nebo ho otevře agent voláním `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`           |
-| `ExternalPrDetected`   | Služba dotazování PR najde PR otevřený přímo na GitHubu                                                                | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author` |
+| Událost                | Kdy se spustí                                                                                                        | Klíče payloadu                                                                 |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PullRequestPublished` | PR se otevře **přes Control Center**, na ploše pro sestavení PR, nebo ho otevře agent voláním `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                             |
+| `ExternalPrDetected`   | Služba dotazování PR najde PR otevřený přímo na GitHubu                                                              | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 PR otevřený na github.com událost `PullRequestPublished` nikdy nevyvolá, takže
 šablona napojená jen na ni ho neuvidí. `PullRequestPublished` navíc nenese

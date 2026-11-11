@@ -158,7 +158,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get guardrailClassPrCreate => 'Deschide un pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Publică o revizuire sau o fuziune';
+  String get guardrailClassPrPublish =>
+      'Actualizează sau unește un pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Scrie într-un tracker extern';
@@ -2575,9 +2576,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get activityToggledMcpServer => 'A comutat serverul MCP';
 
   @override
-  String get activityUpdatedMcpToken => 'A actualizat tokenul MCP';
-
-  @override
   String get activitySavedApiKey => 'A salvat o cheie API';
 
   @override
@@ -3211,9 +3209,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Ștergi \"$name\"?';
   }
-
-  @override
-  String get archiveConversation => 'Arhivează conversația';
 
   @override
   String get deleteFact => 'Șterge faptul';
@@ -3904,9 +3899,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Potrivește aspectul OS-ului sau alege un mod fix.';
 
   @override
-  String get mcpAuthToken => 'Token de autentificare MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Controlul serverului MCP nu este disponibil pe serverul conectat.';
 
@@ -4127,9 +4119,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Niciun font de sistem detectat.';
-
-  @override
-  String get noTokenSet => 'Niciun token setat — accesul este nerestricționat.';
 
   @override
   String get noWorkingMemory => 'Nicio notă de memorie de lucru încă.';
@@ -4620,32 +4609,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Datele de autentificare GitHub ale serverului nu pot vedea $repos. Dacă un depozit aparține unei organizații, instalează GitHub App acolo sau conectează un token care are acces.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '# de depozite nu pot fi accesate',
-      few: '# depozite nu pot fi accesate',
-      one: 'Un depozit nu poate fi accesat',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Instalarea GitHub App este suspendată';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Se afișează ultimele date cunoscute pentru $repos. Reia instalarea pe GitHub sau conectează un token cu acces.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Fără acces';
 
   @override
@@ -4761,9 +4724,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Regulă';
-
-  @override
-  String get runCompleted => 'Rulare finalizată';
 
   @override
   String get running => 'În rulare';
@@ -4928,9 +4888,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get setLabel => 'Setează';
-
-  @override
-  String get setToken => 'Setează tokenul';
 
   @override
   String get settingsLabel => 'Setări';
@@ -5128,9 +5085,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get skillOriginManual => 'Manual';
 
   @override
-  String get skillOriginRegistry => 'Registry';
-
-  @override
   String get skillOriginRuntimeLocal => 'Runtime local';
 
   @override
@@ -5305,10 +5259,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Comută tema';
-
-  @override
-  String get tokenConfigured =>
-      'Configurat — clienții trebuie să prezinte acest token.';
 
   @override
   String get topic => 'Subiect';
@@ -8906,7 +8856,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Ce acțiuni de instrumente rulează fără să întrebe. Citirile sunt întotdeauna permise; nivelurile superioare cer confirmare.';
+      'Ce acțiuni ale propriilor unelte ale Control Center, apelate prin endpointul său MCP sau de agenții săi, rulează fără întrebare. Citirile sunt mereu permise; nivelurile superioare cer confirmare. Serverele din interiorul unei rulări urmează politica de acțiuni a acelei rulări.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Întreabă întotdeauna';
@@ -12434,20 +12384,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsAbout => 'Despre';
 
   @override
-  String get settingsScopeBadgeYou => 'TU';
-
-  @override
-  String get settingsScopeBadgeDevice => 'ACEST DISPOZITIV';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'SPAȚIU DE LUCRU';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Numele, e-mailul și identitatea git în acest spațiu. Schimbarea spațiului schimbă această suprapunere; identificatorul, autentificarea și dispozitivele rămân pe cont.';
+      'Numele, e-mailul și identitatea ta git în acest spațiu de lucru. Schimbarea spațiului de lucru schimbă această suprapunere; numele de utilizator, autentificarea și dispozitivele rămân în contul tău, la Tu → Profil.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12463,50 +12401,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identitate, politică și convenții partajate de toți din acest spațiu de lucru.';
-
-  @override
-  String get settingsAgentAttributionTitle =>
-      'Atribuirea autorului commiturilor';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Alege dacă Control Center este creditat pentru commiturile agentului. Administratorii spațiului de lucru pot suprascrie această alegere pentru toți membrii.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Creditarea agentului';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Creditează Control Center pentru commiturile agentului';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Tu ești întotdeauna autorul și persoana care înregistrează commiturile. Când opțiunea este activă, Control Center (@usectrl) este adăugat drept coautor. Când este dezactivată, commiturile nu includ nicio creditare a agentului.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Setarea acestui spațiu de lucru îți suprascrie alegerea personală. Preferința ta rămâne salvată, dar nu se aplică aici.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Se încarcă setările de atribuire a autorului…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Alege dacă Control Center este creditat pentru commiturile agentului. Alegerea spațiului de lucru suprascrie preferința personală a fiecărui membru.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Folosește preferința fiecărui membru';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Creditează întotdeauna Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Nu credita niciodată Control Center';
+      'Politici și convenții comune tuturor celor din acest spațiu de lucru.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12878,9 +12773,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Se verifică conexiunea…';
-
-  @override
-  String get fromEnvironment => 'din mediu';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13453,14 +13345,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Folosită de spațiile de lucru care moștenesc aplicația GitHub a acestei instalări. Un spațiu de lucru cu propria aplicație o configurează în Spațiu de lucru → General.';
+      'Folosit de spațiile de lucru care urmează aplicațiile de autentificare ale acestui server. Un spațiu de lucru cu propriile aplicații își configurează App-ul în Spațiu de lucru → Integrări.';
 
   @override
   String get providerAppsGroupPrConversations => 'Conversații de pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cum vorbesc dezvoltatorii cu acest server pe GitHub în spațiile moștenite. Un spațiu cu App propriu își are botul în Spațiu de lucru → General. Funcționează fără webhook sau URL public — serverul interoghează.';
+      'Cum pot dezvoltatorii să comunice cu acest server pe GitHub în spațiile de lucru care urmează acest server. Un spațiu de lucru cu propriile aplicații are un bot propriu în Spațiu de lucru → Integrări. Funcționează fără webhook sau URL public; serverul face polling.';
 
   @override
   String get providerAppBotLogin => 'Login bot';
@@ -13493,10 +13385,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Fără un token, orice poate atinge acest port poate apela fiecare instrument.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Instrumente';
 
   @override
@@ -13523,6 +13411,137 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Golește tot';
+
+  @override
+  String get guardrailFamilyCommands => 'Comenzi';
+
+  @override
+  String get guardrailStandingApproval => 'Aprobare temporară';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Permis: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Întreabă întâi: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Refuzat: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'ramuri $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'căi $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'gazde $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'comenzi $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'instrumente $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'comenzi care încep cu $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'cel mult $count simultan';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'cel mult $amount cenți';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'orice acțiune de acest tip';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'de $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'expiră la $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'până la revocare';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Revocă: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'Nu s-a putut revoca. Încearcă din nou.';
+
+  @override
+  String get guardrailEntryInactive =>
+      'fără efect cât acțiunea este setată pe Refuză';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Permis în $count de cazuri listate mai jos',
+      few: 'Permis în $count cazuri listate mai jos',
+      one: 'Permis în 1 caz listat mai jos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de aprobări temporare pentru tot spațiul de lucru se aplică și aici.',
+      few:
+          '$count aprobări temporare pentru tot spațiul de lucru se aplică și aici.',
+      one:
+          '1 aprobare temporară pentru tot spațiul de lucru se aplică și aici.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de aprobări temporare sunt setate pentru spații sau agenți individuali. Alege Spațiu sau Agent mai sus ca să le vezi.',
+      few:
+          '$count aprobări temporare sunt setate pentru spații sau agenți individuali. Alege Spațiu sau Agent mai sus ca să le vezi.',
+      one:
+          '1 aprobare temporară este setată pentru un singur spațiu sau agent. Alege Spațiu sau Agent mai sus ca să o vezi.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandboxing';
@@ -14346,6 +14365,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vei fi întrebat din nou data viitoare când un agent trebuie să ruleze un program din această copie.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Caută căi';
+
+  @override
+  String get sandboxExecGrantsNoMatch => 'Niciun grant nu corespunde căutării';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14706,11 +14731,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Această conexiune atinge serverul printr-un releu, care nu transportă fișiere. Conectează-te direct la server ca să descarci sau să încarci un backup.';
+      'Transferul de fișiere nu este configurat încă pentru această conexiune. Reconectează-te la server ca să descarci sau să încarci un backup.';
 
   @override
   String get backupTransferForbidden =>
-      'Serverul a refuzat. Descărcarea unui spațiu de lucru necesită rolul de admin, restaurarea unuia necesită proprietar, iar un snapshot întreg necesită operatorul instalării.';
+      'Serverul a refuzat. Descărcarea unui spațiu de lucru necesită rolul de admin al spațiului de lucru. Restaurarea unuia necesită proprietarul serverului, care trebuie să fie și proprietarul acelui spațiu de lucru. Un snapshot întreg necesită proprietarul serverului.';
 
   @override
   String get backupTransferUnsupported =>
@@ -15019,34 +15044,8 @@ class AppLocalizationsRo extends AppLocalizations {
       'Puneți conținutul clipboardului din orice mediu pe acest dispozitiv fără confirmare.';
 
   @override
-  String get workspaceGitHubIdentity => 'Identitate GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Cum se autentifică munca GitHub din fundal în acest spațiu de lucru: cu aplicația acestei instalări sau cu o aplicație proprie a spațiului de lucru.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'Folosește GitHub App-ul acestei instalații';
-
-  @override
-  String get workspaceGitHubModeApp => 'Folosește un alt GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Folosește GitHub App-ul din Server → Aplicații furnizor.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Identitatea de bot și de interogare a acestui spațiu. Membrii se autentifică în Tu prin acest App.';
-
-  @override
   String get profileOverlayHint =>
       'Aceste câmpuri ești tu în acest spațiu. Câmpurile goale moștenesc numele și e-mailul contului. Schimbarea spațiului schimbă această suprapunere.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Autentifică-te sau lipește un token pentru acest spațiu de lucru.';
 
   @override
   String get stackStartNextPart => 'Începe partea următoare';
@@ -15863,6 +15862,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Serverul nu a putut furniza o comandă de autentificare pentru acest cont.';
 
   @override
+  String get claudeAccountSignedIn => 'Autentificat';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Această fereastră se închide automat după finalizarea autentificării.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Această fereastră se închide automat după ce toate conturile sunt autentificate.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Autentificarea Claude Code a expirat';
 
@@ -16019,7 +16029,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
+  String get environmentInputNeeded =>
       'Acest lucru trebuie configurat pe server';
 
   @override
@@ -16623,21 +16633,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get environmentOpenPanel => 'Deschide mediul';
 
   @override
-  String get environmentNeedsSetup => 'Necesită configurare';
+  String get environmentStatusBlocked => 'Necesită acțiune';
+
+  @override
+  String get environmentStateInTerminal => 'În terminal';
+
+  @override
+  String get environmentWaitingInTerminal =>
+      'Așteaptă după tine într-un terminal';
+
+  @override
+  String get environmentOpenTerminal => 'Deschide terminalul';
+
+  @override
+  String get environmentSignInNeeded => 'Trebuie să te autentifici';
+
+  @override
+  String get environmentDependencyNeeded => 'Ceva necesar nu este disponibil';
+
+  @override
+  String get environmentStartTerminalDone => 'Gata aici. Mediul încă pornește';
 
   @override
   String get environmentContinueInTerminal => 'Continuă în terminal';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Instrumentul are nevoie de tine într-un terminal pentru o parolă sau o întrebare. Pornirea continuă după aceea.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Acest terminal s-a deschis deoarece pornirea are nevoie de tine';
 
   @override
-  String get environmentSetupTab => 'Configurare mediu';
+  String get environmentStartTerminalTab => 'Configurare mediu';
 
   @override
   String get environmentsNothingRunning =>
@@ -16935,23 +16964,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Aprobă cererea pe pagina $provider din browser. Fereastra aceasta observă singură când ai terminat.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Se așteaptă $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Autentificarea nu s-a finalizat';
 
   @override
   String get signInReopenPage => 'Redeschide pagina de autentificare';
 
   @override
-  String get signInCodePrompt => 'Introdu codul afișat în browser';
+  String get signInCodePrompt =>
+      'Confirmă în browser, apoi introdu codul afișat.';
 
   @override
   String get signInCodeMalformed =>
@@ -16995,7 +17015,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Această autentificare nu mai este validă. Pornește-o din nou.';
+      'Această autentificare nu mai este deschisă: a fost anulată, folosită sau înlocuită. Pornește-o din nou.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -17003,7 +17023,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Prea multe încercări de autentificare acum. Așteaptă un minut, apoi încearcă din nou.';
+      'Prea multe cereri acum. Așteaptă puțin, apoi încearcă din nou.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -17034,10 +17054,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Aplicația $provider nu este instalată acolo unde e nevoie de ea. Instaleaz-o și încearcă din nou.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Această instalare a aplicației GitHub este deja autorizată pentru alt server Control Center.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -17096,7 +17112,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Unde este instalată aplicația GitHub, printre conturile cărora le aparțin depozitele acestui spațiu de lucru. Instalarea unei organizații funcționează doar pe serverele autorizate de administratorii ei.';
+      'Unde este instalată aplicația GitHub, printre conturile cărora le aparțin depozitele acestui spațiu de lucru.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -17106,21 +17122,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get githubInstallApp => 'Instalează aplicația GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Autorizează acest server';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Acest server poate folosi acum instalarea de pe $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Suspendată';
-
-  @override
-  String get githubInstallationAuthorized => 'Autorizată';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Neautorizată';
 
   @override
   String get linearAutomationTitle => 'Automatizare Linear';
@@ -17146,7 +17148,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Înregistrează singur aplicațiile GitHub, Google și Linear în Setări → Server → Autentificare unică și conectează aplicația Slack proprie a fiecărui spațiu de lucru din setările acestuia. „Creează aplicația mea GitHub” configurează GitHub într-un singur pas.';
+      'Înregistrează singur aplicațiile GitHub, Google și Linear în Setări → Server → Autentificare unică, și conectează aplicația Slack proprie a fiecărui spațiu de lucru în Spațiu de lucru → Integrări, unde un spațiu de lucru poate alege și propriile aplicații sau Connect. „Creează aplicația mea GitHub” configurează GitHub într-un singur pas.';
 
   @override
   String get connectModeCustom => 'Folosește un server Connect propriu';
@@ -17281,7 +17283,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Acest server primește o cheie nouă și un ID de instalare nou. Toate autentificările făcute prin Connect nu mai funcționează și toată lumea trebuie să se autentifice din nou. Autentificările prin propriile aplicații nu sunt afectate.';
+      'Serverul primește o cheie nouă și un ID de instalare nou, iar ID-ul vechi este retras la Connect: autentificările sigilate cu el și vechea cheie nu mai funcționează acolo, deci toți cei care s-au autentificat prin Connect trebuie să se autentifice din nou. Tokenurile deja distribuite funcționează până expiră. Autentificările prin propriile aplicații nu sunt afectate. Dacă Connect nu poate fi contactat, nu se schimbă nimic și poți încerca din nou.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17415,35 +17417,6 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Aplicații ale providerilor';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Ce aplicații Google Calendar, Linear și Klipy folosește acest spațiu de lucru. Implicit folosește aplicațiile acestui server sau Control Center Connect. Un spațiu de lucru cu aplicație proprie nu revine niciodată la ele.';
-
-  @override
-  String get workspaceProviderAppModeInherit =>
-      'Folosește aplicația acestui server';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Autentificările și cererile folosesc aplicația acestui server sau Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Folosește aplicația proprie a acestui spațiu de lucru';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Se folosește doar aplicația acestui spațiu de lucru. Cât timp este incompletă, acest provider este dezactivat aici în loc să revină la altă aplicație.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Aplicația serverului';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Aplicație proprie';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Lipsesc încă: $fields. Până când toate câmpurile sunt completate, acest provider este dezactivat în acest spațiu de lucru. Nu revine la aplicația acestui server.';
   }
@@ -17460,22 +17433,116 @@ class AppLocalizationsRo extends AppLocalizations {
       'Căutarea GIF-urilor din acest spațiu de lucru folosește această cheie.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Schimbi aplicația $provider?';
+  String get settingsWorkspaceIntegrations => 'Integrări';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Găzduirea codului, tichetele, calendarul, chatul și căutarea GIF-urilor în acest spațiu de lucru și aplicațiile prin care se conectează.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Ce aplicații folosește acest spațiu de lucru pentru GitHub, Google Calendar, Linear, Slack și căutarea GIF-urilor. Dacă un administrator nu alege altceva, urmează acest server.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Același ca acest server';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Acest server folosește aplicațiile Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Acest server folosește serverul Connect de la $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Toți cei conectați la $provider în acest spațiu de lucru prin aplicația acestui server trebuie să se autentifice din nou cu aplicația spațiului de lucru.';
+  String get workspaceConnectInheritOwn =>
+      'Acest server folosește propriile aplicații.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Proprietarul serverului nu a ales încă, așa că se aplică aplicațiile proprii ale serverului.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Sunt folosite doar aplicațiile acestui spațiu de lucru. Adaugă fiecare aplicație mai jos, lângă furnizorul ei. Un furnizor fără aplicație este dezactivat aici; aplicațiile acestui server și Connect nu sunt folosite în locul lui.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Doar HTTPS. Adresele din rețele private sau locale sunt refuzate.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL din mediul acestui server stabilește unde merg autentificările, așa că acest spațiu de lucru nu poate alege un Connect propriu. Poate urma acest server sau poate folosi propriile aplicații.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Schimbi aplicațiile de autentificare ale acestui spațiu de lucru?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Toți cei din spațiul de lucru trebuie să se autentifice din nou în GitHub, Linear și Google Calendar prin noile aplicații. Autentificările făcute prin aplicațiile actuale nu mai funcționează aici.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Schimbă aplicațiile';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Urmează alegerea de mai sus. Un furnizor nu revine niciodată la o altă aplicație.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Aplicația spațiului de lucru';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Aplicația serverului';
+
+  @override
+  String get workspaceGitHubAppTitle => 'Aplicația GitHub';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Aplicația proprie a acestui spațiu de lucru acționează pentru depozitele sale și autentifică membrii. Nu revine niciodată la aplicația acestui server sau la Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Acest spațiu de lucru folosește aplicația GitHub pusă la dispoziție de aplicațiile sale de autentificare. Instaleaz-o pe conturile cărora le aparțin depozitele tale.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Acționează pentru acest spațiu de lucru';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Botul aplicației comentează, revizuiește și sondează pull requesturile din depozitele acestui spațiu de lucru.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Aplicația $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Asta șterge datele de autentificare $provider ale spațiului de lucru. Toți cei conectați prin aplicația spațiului de lucru trebuie să se autentifice din nou.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Autentificările și cererile $provider din acest spațiu de lucru folosesc doar această aplicație.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Schimbă aplicația';
+  String get workspaceGifsTitle => 'GIF-uri';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Căutarea GIF-urilor folosește cheia Klipy a acestui spațiu de lucru.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Căutarea GIF-urilor folosește cheia Klipy a acestui server.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Căutarea GIF-urilor rulează prin Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Căutarea GIF-urilor este dezactivată în acest spațiu de lucru.';
 
   @override
   String openOnForge(String forge) {
@@ -17493,7 +17560,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Conectează GitHub, GitLab sau Bitbucket în Setări → Spațiu de lucru → Profil și identitate → Găzduire cod';
+      'Conectează GitHub, GitLab sau Bitbucket în Setări → Tu → Profil';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17510,4 +17577,1142 @@ class AppLocalizationsRo extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Conectează $forge pentru a deschide un pull request în acest depozit';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Autentificarea ta în $provider ca $account a expirat. Autentifică-te din nou.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'În pauză: serviciul de autentificare al acestui spațiu de lucru s-a schimbat';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '$provider nu poate fi contactat acum. Se reîncearcă.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Autentificarea ta este păstrată și funcționează din nou când serviciul revine. Un administrator al spațiului de lucru poate verifica configurarea autentificării în Integrări.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Serverul a repornit. Începe din nou autentificarea.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Autentificarea cu $provider nu este configurată pentru acest spațiu de lucru.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Autentificarea cu $provider este configurată greșit: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Acest spațiu de lucru folosește aplicații proprii, dar nu are o aplicație $provider.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Această versiune nu poate verifica Control Center Connect, așa că autentificarea cu $provider este dezactivată.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Serviciul de autentificare al acestui spațiu de lucru și-a schimbat identitatea. Un administrator trebuie să o confirme.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Serviciul de autentificare al acestui spațiu de lucru nu poate fi contactat acum.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Adresa serviciului de autentificare al acestui spațiu de lucru lipsește sau nu este validă.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Operatorul serverului a fixat serviciul de autentificare, așa că alegerea acestui spațiu de lucru nu se aplică.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Serviciul de autentificare al acestui spațiu de lucru nu oferă $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Deschide integrările';
+
+  @override
+  String get signInOpenServerSettings => 'Deschide setările de autentificare';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Acțiunea rulează în numele tău în $provider și nu ai adăugat un token. Adaugă unul, apoi încearcă din nou.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Deconectezi $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Va trebui să conectezi din nou $provider ca să lucrezi la depozitele lui.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Astfel deconectezi $provider doar în acest spațiu de lucru. Celelalte spații de lucru își păstrează propria conexiune.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Astfel deconectezi $provider în toate spațiile de lucru care folosesc această conexiune.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider a fost deconectat de la acest spațiu de lucru';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider a fost deconectat de la toate spațiile de lucru';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Instalează GitHub App pe $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Automatizarea nu poate ajunge la $repos până când aplicația nu este instalată acolo.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Adaugă $repos la depozitele GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Aplicația este instalată pe acest cont, dar încă nu vede aceste depozite.';
+
+  @override
+  String get repoAccessChooseRepos => 'Alege depozitele';
+
+  @override
+  String get repoAccessSuspendedTitle =>
+      'Instalarea GitHub App este suspendată';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Automatizarea pentru $repos este în pauză până când un proprietar al contului reia instalarea pe GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Automatizarea este în pauză';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Persoana responsabilă de automatizarea acestui spațiu de lucru nu mai vede $repos, așa că acolo nu rulează nimic în numele ei.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Persoana responsabilă de automatizarea acestui spațiu de lucru nu este autentificată în forge, așa că automatizarea pentru $repos așteaptă până se autentifică.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Accesul la $repos nu a putut fi verificat. Se reîncearcă.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Cere rezolvarea de la: $admins.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Cere unui administrator al spațiului de lucru să rezolve asta.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Autentifică-te în $forge ca să vezi pull request-urile din alte depozite: $count',
+      one:
+          'Autentifică-te în $forge ca să vezi pull request-urile din încă 1 depozit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Depozite ascunse pentru că contul tău $forge nu le vede: $count',
+      one: '1 depozit este ascuns pentru că contul tău $forge nu îl vede',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Depozite ascunse la care nu ai acces în acest spațiu de lucru: $count',
+      one:
+          '1 depozit este ascuns pentru că nu ai acces la el în acest spațiu de lucru',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se verifică accesul tău la alte depozite: $count…',
+      one: 'Se verifică accesul tău la încă 1 depozit…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Legat, dar automatizarea nu ajunge încă peste tot';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Instalează în altă organizație';
+
+  @override
+  String get forgeTokenEmailLabel => 'E-mailul contului Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Introdu adresa de e-mail a contului tău Atlassian.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'Token API';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Tokenurile API Bitbucket funcționează împreună cu e-mailul contului Atlassian care le-a creat.';
+
+  @override
+  String get automationTokensTitle => 'Tokenuri de automatizare';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Munca din fundal pe GitLab și Bitbucket, precum actualizările pull request-urilor, comentariile de revizuire AI și merge request-urile pe care nu le-a cerut nimeni, folosește un token de acces al unui bot, niciodată pe al unei persoane. Tokenul propriu al unui depozit are prioritate față de cel al spațiului de lucru.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Folosit pentru fiecare depozit GitLab sau Bitbucket din acest spațiu de lucru care nu are propriul token de automatizare. Munca din fundal de acolo apare ca botul acestui token.';
+
+  @override
+  String get automationTokenNone =>
+      'Niciun token. Automatizarea este în pauză aici.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Folosește tokenul spațiului de lucru';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Acționează ca $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Token de acces adăugat';
+
+  @override
+  String get automationTokenRejected =>
+      'Platforma a refuzat acest token. Înlocuiește-l.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Token de automatizare $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Lipește un token de acces de proiect sau de grup. Are nevoie de read_api și read_repository; adaugă api și write_repository pentru comentarii, merge request-uri și push-uri. GitLab îi afișează munca drept botul tokenului.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Lipește un token de acces de depozit, proiect sau spațiu de lucru cu citire a depozitului, plus scriere pentru pull request-uri pentru comentarii și pull request-uri. Propriul tău token API se pune la Tu → Profil, nu aici.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token salvat, dar nu poate citi $repos. Automatizarea rămâne în pauză acolo.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Elimini tokenul de automatizare?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Automatizarea care depinde de acest token intră în pauză până se adaugă altul.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Fiecare depozit $forge fără token propriu';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Niciun token de automatizare nu poate citi $repos, așa că munca din fundal de acolo este în pauză.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commit-urile din munca pe care o pornești poartă numele tău. Alege cine mai primește creditul și dacă forge-urile arată commit-urile tale ca verificate.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Autorat';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Munca pe care o pornești';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Ești autorul și committer-ul, sub adresa de e-mail verificată de forge pentru autentificarea ta. Aici intră conversațiile cu agenții, pipeline-urile pe care le pornești și commit-urile pe care le faci în editor.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Rulări automate';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Rulările pornite de un program sau de un webhook fac commit ca bot și nu sunt niciodată semnate.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Până te autentifici într-un forge din spațiul de lucru, rulările tale de acolo fac commit ca bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Creditează Control Center ca co-autor';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Commit-urile tale menționează Control Center (@usectrl) ca co-autor, iar rulările automate pe care le-ai activat te menționează pe tine. Când este dezactivat, nu se adaugă niciuna dintre linii.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Setarea acestui spațiu de lucru îți suprascrie alegerea personală. Preferința ta rămâne salvată, dar nu se aplică aici.';
+
+  @override
+  String get settingsCoauthorCreditLoading =>
+      'Se încarcă setările de atribuire a autorului…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Credit de co-autor';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Dacă commit-urile au linii de co-autor: Control Center pentru commit-urile proprii ale unui membru și membrii care au activat o rulare automată pentru commit-urile ei. Alegerea de aici înlocuiește setarea fiecărui membru.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Folosește preferința fiecărui membru';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Adaugă mereu creditul de co-autor';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Nu adăuga niciodată creditul de co-autor';
+
+  @override
+  String get settingsCommitSigningSection => 'Commit-uri verificate';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Semnare';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Fără semnare';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Acest server poate semna commit-urile tale cu o cheie proprie, astfel încât GitHub și GitLab să le arate ca verificate. Nimic nu este semnat până nu creezi cheia.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Creează cheia de semnare';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Cheia de semnare a fost creată. Adaug-o în contul tău de pe forge.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Cheie publică';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Cheie publică copiată';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Amprentă';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Creată';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Adaugă-o în contul tău de pe forge';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Un commit apare ca verificat doar cât timp ești autentificat și în acel forge din spațiul de lucru, astfel încât forge-ul garantează adresa ta de e-mail.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Setează Key type la Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Setează Usage type la Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commit-urile de pe Bitbucket nu sunt semnate. Nu adăuga această cheie în contul tău Bitbucket: o cheie SSH de acolo este și o autentificare.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Neacceptat';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Ce acorzi încredere';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Cheia privată nu părăsește niciodată acest server.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Oricine controlează acest server poate semna commit-uri în numele tău atâta timp cât cheia se află în contul tău de pe forge.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'Pe GitHub, commit-urile deja arătate ca verificate rămân verificate după ce elimini cheia.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Șterge cheia';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Ștergi cheia ta de semnare?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'De acum, commit-urile tale nu mai sunt semnate. Cheia rămâne în conturile tale de pe forge până o elimini și de acolo.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Cheia de semnare a fost ștearsă';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Nu s-a putut încărca cheia ta de semnare: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Cine ești în fiecare spațiu de lucru și ce conturi proprii ai pentru găzduire de cod, ticketing, calendar și chat.';
+
+  @override
+  String get accountSectionTitle => 'Cont';
+
+  @override
+  String get accountSectionDescription =>
+      'Numele de utilizator și numele tău te urmează în fiecare spațiu de lucru. Un spațiu de lucru poate afișa alt nume sau alt e-mail: setează-le în Spațiu de lucru → Profil și identitate.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Nu s-a putut încărca profilul tău: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Numele pe care îl văd oamenii în mesajele și revizuirile tale.';
+
+  @override
+  String get accountDisplayNameRequired => 'Introdu un nume afișat.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Acesta poate fi modificat, dar nu șters.';
+
+  @override
+  String get accountAvatarLabel => 'Poză';
+
+  @override
+  String get accountAvatarHint =>
+      'Un link către o imagine pătrată, care începe cu https://.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Folosește un link care începe cu https://.';
+
+  @override
+  String get usernameLabel => 'Nume de utilizator';
+
+  @override
+  String get usernameRule =>
+      '2 până la 32 de litere mici, cifre, puncte, liniuțe sau underscore-uri. Oamenii te menționează cu el.';
+
+  @override
+  String get usernameAvailable => 'Disponibil.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Disponibil. Va fi salvat ca $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Folosește 2 până la 32 de litere mici, cifre, „.”, „_” sau „-”, începând și terminând cu o literă sau o cifră.';
+
+  @override
+  String get usernameReserved => 'Acest nume de utilizator este rezervat.';
+
+  @override
+  String get usernameTaken => 'Acest nume de utilizator este deja luat.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Nu se poate verifica acest nume acum. Poți salva oricum; decide serverul.';
+
+  @override
+  String get linkedAccountsTitle => 'Conturi conectate';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Furnizor de identitate';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Necesită autentificare';
+
+  @override
+  String get linkedAccountStatusPaused => 'În pauză';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Inaccesibil';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Furnizorul de identitate prin care se autentifică contul tău. Cine administrează serverul îl gestionează.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Conturile pe care le conectezi pentru tine. Control Center acționează în numele tău prin ele, iar modificările le afectează doar pe ale tale.';
+
+  @override
+  String get accountReachServer =>
+      'Folosit în fiecare spațiu de lucru de pe acest server.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Folosit doar în $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub se folosește doar în $workspace, care are propriile aplicații de autentificare. GitLab și Bitbucket se folosesc în fiecare spațiu de lucru de pe acest server.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Contul tău';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Contul tău: $status. Deschide Tu → Profil.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Niciun cont de găzduire de cod conectat';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Niciun cont $provider conectat';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Niciun cont $provider legat';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'În demo ești un oaspete temporar, deci nu există un cont de modificat: nici nume de utilizator, profil sau conturi conectate.';
+
+  @override
+  String get onboardingStepYou => 'Tu';
+
+  @override
+  String get onboardingYouTitle => 'Alege-ți numele de utilizator';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Numele tău de utilizator este cum te menționează oamenii și cum este etichetată munca ta. Îl poți schimba mai târziu, la fel ca numele afișat, în Setări → Tu → Profil.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Acest cont $provider este deja conectat la altă persoană de pe acest server. Autentifică-te cu alt cont $provider.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Tokenul expiră la $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Tokenul a expirat la $date. Lipește unul nou ca să continue să funcționeze.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge nu a putut fi contactat pentru a verifica acest token. Încearcă din nou peste puțin.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge nu acceptă acest token. Verifică dacă l-ai copiat complet și dacă nu a fost revocat.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Acesta nu este un token personal. Lipește un token de acces personal din contul tău $forge, nu un token de proiect, grup, spațiu de lucru sau bot.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Acestui token îi lipsește scope-ul $scope, necesar pentru revizuire și comentarii. Creează unul care îl are.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Acest token a expirat. Creează unul nou și lipește-l aici.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agenții pe care îi pornești pot face commit-uri semnate în numele tău, în orice depozit în care lucrează. Dacă ștergi cheia aici, asta se oprește imediat: rulările deja în curs nu mai semnează nimic.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Cheia nu a fost rotită și nu s-a schimbat nimic: $error Încearcă din nou.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Nu ești încă într-un spațiu de lucru';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Un administrator al spațiului de lucru trebuie să te invite, sau proprietarul serverului poate crea un spațiu de lucru pentru tine. Se deschide aici imediat ce ești adăugat.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Autentificat ca $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Verifică din nou';
+
+  @override
+  String get noWorkspaceSignOut => 'Deconectare';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Doar proprietarul serverului poate crea spații de lucru. Cere-i să creeze unul sau cere unui administrator al spațiului de lucru să te invite.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo nu se află în niciunul dintre spațiile tale de lucru, iar tu nu ești într-un spațiu de lucru în care să-l adaugi. Cere unui administrator al spațiului de lucru să te invite.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Doar proprietarul serverului poate face asta';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Editorul complet rulează pe mașina serverului, așa că doar proprietarul serverului îl poate deschide. Poți totuși să deschizi și să editezi fișiere din Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'În sandbox';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Rulează într-un sandbox, în folderele acestui spațiu de lucru, deci unele instrumente și căi de pe gazdă nu sunt disponibile aici.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Shell-ul gazdei rulează pe server fără sandbox, deci doar proprietarul serverului îl poate deschide. Un terminal obișnuit rulează în sandbox.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Un terminal se poate deschide doar în folderele proprii ale acestui spațiu de lucru.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Doar proprietarul serverului poate salva sau aproba un mediu care rulează pe gazda serverului. Un administrator al spațiului de lucru poate folosi unul care rulează într-o stație.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commit-urile pe care le faci în editorul aplicației nu rulează hook-urile Git din depozit, ca în cazul git commit --no-verify: serverul rulează Git pe propria gazdă, într-un arbore pe care agenții și pull request-urile îl pot modifica.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Clienții MCP trimit acest token cu fiecare cerere, ca header Authorization: Bearer. Serverul îl creează la prima pornire; îl poți roti, dar nu îl poți elimina.';
+
+  @override
+  String get mcpShowToken => 'Afișează tokenul';
+
+  @override
+  String get mcpHideToken => 'Ascunde tokenul';
+
+  @override
+  String get mcpRotateToken => 'Rotește tokenul';
+
+  @override
+  String get mcpRotateTokenTitle => 'Rotești tokenul MCP?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Serverul trece imediat la un token nou. Fiecare client MCP care folosește încă cel curent este refuzat până îi dai cel nou.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Token rotit. Dă clienților tăi MCP pe cel nou.';
+
+  @override
+  String get mcpOwnerOnlyTitle =>
+      'Endpointul MCP este pentru proprietarul serverului';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Tokenul său deschide toate instrumentele de pe acest server, deci doar proprietarul serverului îl poate vedea, roti, porni sau opri endpointul.';
+
+  @override
+  String get activityRotatedMcpToken => 'A rotit tokenul MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect nu a putut retrage cheia veche';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Nu s-a schimbat nimic. Dacă rotești oricum, serverul primește cheia nouă, dar identitatea veche rămâne utilizabilă la acel Connect până expiră autentificările ei.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Rotește oricum';
+
+  @override
+  String get settingsAuditLog => 'Jurnal de audit';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Cine a schimbat ce, unde și cum s-a încheiat, pe server și în fiecare spațiu de lucru pe care îl administrezi. Operațiunile de pe server înregistrează numele argumentelor, niciodată valorile lor.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Doar pentru administratori';
+
+  @override
+  String get auditLogNoAccess =>
+      'Jurnalul de audit acoperă serverul și spațiile de lucru pe care le administrezi. Nu administrezi niciun spațiu de lucru, deci nu există nimic de afișat.';
+
+  @override
+  String get auditLogSourceServer => 'Server';
+
+  @override
+  String get auditLogSourceWorkspace => 'Spațiu de lucru';
+
+  @override
+  String get auditLogAddFilter => 'Filtru';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filtrează…';
+
+  @override
+  String get auditLogFilterActor => 'Utilizator';
+
+  @override
+  String get auditLogFilterSource => 'Spațiu de lucru';
+
+  @override
+  String get auditLogFilterOutcome => 'Rezultat';
+
+  @override
+  String get auditLogFilterTime => 'Timp';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Reușit';
+
+  @override
+  String get auditLogOutcomeDenied => 'Refuzat';
+
+  @override
+  String get auditLogOutcomeFailed => 'Eșuat';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'La sau după';
+
+  @override
+  String get auditLogTimeAfter => 'După';
+
+  @override
+  String get auditLogTimeBefore => 'Înainte de';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'La sau înainte de';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Timp $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => 'Acum 1 oră';
+
+  @override
+  String get auditLogTimePresetDay => 'Acum 24 de ore';
+
+  @override
+  String get auditLogTimePresetWeek => 'Acum 7 zile';
+
+  @override
+  String get auditLogTimePresetMonth => 'Acum 30 de zile';
+
+  @override
+  String get auditLogTimeExact => 'Oră exactă';
+
+  @override
+  String get auditLogTimeInvalid => 'Folosește YYYY-MM-DD, opțional cu HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Adaugă';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo indică acum către un alt depozit';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Această cale indică acum către un alt depozit de pe $forge. Reconectează-l ca să-l poți folosi în continuare.';
+  }
+
+  @override
+  String get repoRelink => 'Reconectează';
+
+  @override
+  String repoRelinked(String repo) {
+    return '$repo a fost reconectat.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Această cale indică acum către un alt depozit. Un administrator al spațiului de lucru trebuie să îl reconecteze înainte de a putea fi folosit.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Contul tău $forge nu poate citi acest depozit.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Nu s-a putut confirma accesul tău la $forge. Încearcă din nou.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Contul tău de pe forge nu poate citi acest depozit.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Nu s-a putut confirma accesul tău la forge. Încearcă din nou.';
+
+  @override
+  String get repoPathHostPath =>
+      'Doar proprietarul serverului poate lega un folder din afara spațiului de stocare al acestui spațiu de lucru.';
+
+  @override
+  String get repoPathMissing => 'Nu există nimic la această cale de pe server.';
+
+  @override
+  String get repoPathDataDir =>
+      'Un depozit nu poate indica spre folderul de date al serverului.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Un depozit nu poate fi chiar folderul spațiului de lucru.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Originea acestui folder indică un alt depozit.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Salvat. Trebuie să se autentifice în $forge înainte să poată deschide acest depozit.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Salvat. Contul lor $forge nu poate citi încă acest depozit, deci rămâne ascuns pentru ei.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Salvat. Nu s-a putut confirma acum accesul lor la $forge.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo nu este legat în niciunul dintre spațiile tale de lucru. Cere proprietarului serverului să îl adauge.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Proprietarul serverului adaugă depozite din folderele serverului.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Doar tu ai introdus această adresă. Single sign-on nu o va potrivi până când proprietarul serverului o confirmă.';
+
+  @override
+  String get settingsServerPeople => 'Persoane';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Toți cei care au cont pe acest server și dacă adresa lor de e-mail este confirmată.';
+
+  @override
+  String get serverPeopleLabel => 'Conturi';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Doar proprietarul serverului poate vedea conturile tuturor și poate confirma adresele de e-mail.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-mail neconfirmat';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Confirmă e-mailul';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Confirmi că $email aparține lui $name? Single sign-on va potrivi această adresă cu contul acestuia.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '$email a fost confirmat.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenții au nevoie de un sandbox pe acest server';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți. Proprietarul poate instala sandbox-ul sau poate dezactiva sandboxing-ul pentru toată lumea.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Acest folder este în afara spațiului de stocare al spațiului de lucru. Confirmă că acest server îl poate folosi.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Acest folder este în afara spațiului de stocare al spațiului de lucru. Doar proprietarul serverului îl poate confirma.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Nu mai există nimic la această cale de pe server. Șterge acest depozit și adaugă-l din nou din folderul său actual.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Acest folder nu poate fi folosit ca depozit. Șterge-l și adaugă depozitul dintr-un alt folder.';
+
+  @override
+  String get repoPathConfirm => 'Confirmă';
+
+  @override
+  String get repoPathConfirmAll => 'Confirmă toate';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count de foldere sunt în afara spațiului de stocare al spațiului de lucru',
+      one: '1 folder este în afara spațiului de stocare al spațiului de lucru',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Confirmă că acest server le poate folosi. Fiecare depozit este verificat din nou cu accesul tău.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Serverele găsite în setările de unelte ale acestei mașini sunt disponibile doar în rulările pe care le pornești sau pentru care răspunzi. Rulările altora nu le văd niciodată și nu sunt oferite prin endpointul MCP al Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Autentifică-te în $provider ca să vezi codul acestui depozit.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Autentificare';
+
+  @override
+  String get ideContentSearchFailed => 'Nu s-a putut căuta în fișiere';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Acest fișier nu este disponibil în acest worktree.';
+
+  @override
+  String get ideChangesLoadFailed => 'Nu s-au putut încărca modificările';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Această cale indică acum către un alt depozit de pe $forge. Un administrator al spațiului de lucru trebuie să îl reconecteze înainte de a putea fi folosit.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Doar proprietarul serverului poate restaura copiile de rezervă. Le poți descărca în continuare.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Doar citire';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Poți urmări acest terminal, dar a scrie în el, a-i schimba dimensiunea sau a-l opri necesită acces de scriere la fiecare depozit din această conversație.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Poți vedea acest mediu, dar a-l porni, opri sau reporni necesită acces de scriere la fiecare depozit din această conversație.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Rulează pe acest server. Aprobă-l ca să poată porni.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Rulează pe acest server. Proprietarul serverului trebuie să îl aprobe înainte să poată porni.';
+
+  @override
+  String get environmentHostApprove => 'Aprobă';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Aprobă-l ca administrator al spațiului de lucru: doar copia unui administrator arată valorile secrete, iar aprobarea le salvează înapoi.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Proprietarul serverului nu a aprobat încă acest mediu, deci nu poate rula pe acest server.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Nu ai aprobat încă acest mediu. Rulează pe acest server, deci pornește după ce aprobi definiția lui.';
+
+  @override
+  String get environmentHostApprovalReview => 'Revizuiește și aprobă';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Autentifică-te în $provider ca să deschizi acest spațiu.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Contul tău $forge nu poate citi un depozit folosit de acest spațiu.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Contul tău de pe forge nu poate citi un depozit folosit de acest spațiu.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Nu ai acces de citire la un depozit folosit de acest spațiu. Un administrator al spațiului de lucru îți poate acorda acces.';
+
+  @override
+  String get spaceAccessFailed => 'Acest spațiu nu a putut fi deschis.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Defalcarea contextului nu este disponibilă în această sesiune.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Un depozit legat are nevoie atât de un proprietar, cât și de un nume de depozit.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Nu ai acces de citire la acest depozit. Un administrator al spațiului de lucru îl poate acorda.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Poți citi acest depozit, dar nu îl poți modifica. Un administrator al spațiului de lucru poate acorda accesul de scriere.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Poți citi acest depozit, dar nu îl poți revizui. Un administrator al spațiului de lucru poate acorda accesul de revizuire.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Doar vizualizare';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Poți urmări această mașină. Controlarea ei, redirecționarea porturilor, lipirea în ea sau plasarea fișierelor pe ea necesită acces de scriere la toate depozitele din acest spațiu.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Pornirea unei mașini aici necesită acces de scriere la toate depozitele din acest spațiu. Un administrator al spațiului de lucru îl poate acorda.';
+
+  @override
+  String get rigViewRefused =>
+      'Nu poți vedea această mașină. Aparține unui spațiu la care nu ai acces de citire.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Modificarea acestor porturi necesită acces de scriere la toate depozitele din acest spațiu.';
+
+  @override
+  String get rigHolderOnly =>
+      'Doar persoana pentru care a fost deschisă această mașină o poate controla. Mașina folosește conectările proprii ale acesteia.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Poți urmări această mașină. Folosește conectările persoanei pentru care a fost deschisă, așa că doar ea poate controla mașina, redirecționa porturile ei, lipi conținut în ea sau plasa fișiere pe ea.';
 }

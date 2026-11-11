@@ -2,7 +2,7 @@
 title: Ordliste
 description: Definisjoner av sentrale begreper som brukes gjennomgående i Control Center.
 slug: nb-NO/handbok/referanse/ordliste
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Manifestet per arbeidsområde over installerte skills: for hver av dem kilderepositoriet, repositoriestien, commiten den er festet til og en samlet innholdshash. Installasjoner, oppdateringer og avinstallasjoner holder det oppdatert; verify_skills sjekker det mot disken.'],
 ['Agentkjøringsgateway', 'Et loopback-endepunkt på cc_server som bruker handlingspolicyen inne i en agents sandkasse. Hver GitHub-push en agent gjør, ledes dit, kontrolleres mot regelen Push til en remote og sendes videre med et skrivetoken agenten aldri har; Claude Codes Bash-kommandoer kontrolleres gjennom en hook på samme endepunkt.'],
 ['Modus', 'chat, plan, review eller orchestrate. Lagret per område, så én agent kan være i forskjellige moduser i forskjellige områder; hver samtale i et område deler den. Styrer systemprompten, sandkassens skriveregler og tillatelseslisten for MCP-verktøy.'],
-['SandboxBackend', 'microvm (en lukket VM — den ene backenden med en kjernegrense, brukt på interaktive terminaler), native (OS-innfødt Seatbelt på macOS, bubblewrap på Linux og WSL2) eller none. Probres én gang ved oppstart; native pakker inn agentutsending når den er tilgjengelig. Windows har ingen native-backend, og Linux trenger bwrap pluss socat, så kjøringer der er uinnpakkede; --sandbox off velger bort med vilje.'],
+['SandboxBackend', 'microvm (en lukket VM — den ene backenden med en kjernegrense, brukt på interaktive terminaler), native (OS-innfødt Seatbelt på macOS, bubblewrap på Linux og WSL2) eller none. Probres én gang ved oppstart; native pakker inn agentutsending når den er tilgjengelig. Windows har ingen native-backend, og Linux trenger bwrap pluss socat; på en slik vert starter bare serverens eiers kjøringer, uinnpakkede, og andre avvises. --sandbox off kjører alle medlemmers agenter uinnpakkede.'],
 ['Stasjon', 'En kastbar maskin en agent styrer i sanntid: en lukket nettleser eller et Linux-skrivebord, en vertsstyrt Android-emulator eller iOS-simulator, eller en lukket terminal. Overvåkes direkte over sin egen bane i full oppløsning, med overtakelse håndhevet på serversiden. Knyttet til en samtale, slik at menneskefanen og agentverktøyet adresserer én maskin.'],
 ['Isolert miljø', 'Den sterkere isolasjonsegenskapen som er tilgjengelig for VM-støttede stasjoner: en kjernegrense, en kastbar overlay-disk, en nettsluse som avviser som standard og en legitimasjonsmegler. Android- og iOS-stasjoner er kastbare, men bruker vertsstyrt nettverk og gjør ikke krav på denne grensen. Å styre en stasjon bruker tillatelsesklassen enclosureControl.'],
 ['RunCost', 'Token- og kostnadsopptelling (inndata-tokener, utdata-tokener, estimert kostnad i cent) for én enkelt agentkjøring.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Orkestrerer kjøring: starter kjøringer, planlegger steg, lagrer tilstand, håndterer rutere/sammenføyninger/fortsett-ved-feil og gjenopptar kjøringer underveis etter omstart.'],
 ['PipelineTriggerDispatcher', 'Abonnerer på domenehendelser og starter automatisk samsvarende pipeline-kjøringer for aktiverte utløsere.'],
 ['MemoryAccessPolicy', 'Løser opp og håndhever minnetillatelser for agentroller på domener.'],
-['HarnessCostCalculator', 'Priser tokenbruken til den innebygde kjernen til en RunCost fra models.dev-katalogen. Utsendingen lagrer opptellingen på kjøringsloggen.'],
+['HarnessRunAccounting', 'Fører regnskap over den innebygde kjernens modellkall én gang, priset fra models.dev-katalogen, lagrer dem på den eide kjøringen og summerer en underkjørings forbruk opp til forelderens budsjett.'],
 ['BudgetEnforcementService', 'Beregner månedsforbruk per agent og en blokkering før utsending (checkInvocationBlock). Denne blokkeringen konsulteres bare av gjenopprettingsavstemmerne (OrphanRunReaper, StrandedTicketReconciler), aldri av vanlig utsending.'],
 ['BudgetGovernanceService', 'Vurderer månedsforbruk per agent etter hver kjøring: en myk terskel registrerer en advarselshendelse; uttømming registrerer en hard hendelse og setter agentens livssyklus til paused.'],
 ['DomainEventBus', 'Prosessintern kringkastingsbuss for publish/subscribe på tvers av funksjoner. Hendelser er typede; abonnenter konsumerer strømmer av typen.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Telefon-tynnklienten — en Flutter-nett-PWA som fjernstyrer flåten over det formidlede reléet med en verktøypolicy som avviser som standard.'],
 ['cc_signaling_server', 'En tilstandsløs WebSocket-relémegler som er vert for invitasjonsgatede rom. Et dumt relé: det videresender bare ende-til-ende-forseglede rammer, har ingen appdata og ser aldri parkoblings-PSK-en.'],
 ['Principal', 'En forseglet verdi som samler mennesker og agenter i én aktørabstraksjon. UserPrincipal(userId) eller AgentPrincipal(agentId). Hver melding, sak, gjennomgang, plan og kjøringslogg tilskrives gjennom en Principal.'],
-['Bruker', 'En menneskelig identitet, lagret i global.db og dermed global på tvers av arbeidsområder. Principalen som oppretter et arbeidsområde, blir eieren av det, stemplet på Workspace.ownerUserId med en medlemsrad for eierrollen; andre blir med via invitasjon eller SSO.'],
+['Bruker', 'En menneskelig identitet, lagret i global.db og dermed global på tvers av arbeidsområder. Bare serverens eier oppretter et arbeidsområde og blir eieren av det, stemplet på Workspace.ownerUserId med en medlemsrad for eierrollen; andre blir med via invitasjon eller SSO.'],
+['Serverens eier', 'Personen som satte opp serveren, registrert én gang ved første oppstart; ingenting som sendes over nettverket endrer det. En administrator for arbeidsområdet eller eier av arbeidsområdet er ikke serverens eier. Ingenting kjører på serverens egen maskin utenfor en sandkasse med mindre serverens eier startet det eller godkjente den typen vertskjøring: å opprette arbeidsområder, vertsskallet, den innebygde kodeditoren, miljøer som kjører på verten og utsjekkinger koblet fra utenfor et arbeidsområdes lagring er bare deres.'],
 ['WorkspaceMember', 'En medlemsrad som binder en Bruker til et Arbeidsområde på en WorkspaceRole. Medlemskap — ikke en parkoblingsnøkkel — er tilgangsgrensen.'],
 ['WorkspaceRole', 'Gradert medlemsrolle: owner, admin, member, viewer eller guest. Repo-operasjonsknutepunktet utleder et gulv for minimumsrolle per operasjonstype.'],
 ['ParticipantPresence', 'Flyktig tilstedeværelse for en Principal (status, posisjon, markør, skriving, agentens levende status + løpende kostnad). Lagres aldri; samles på serveren; filtreres etter repo-tilgang før spredning.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Autonomivriden', 'En kontroll per område og per agent — propose-only / act-with-approval / act-freely — implementert som en navngitt profil over lageret for handlingstillatelsesregler.'],
 ['cc_worker', 'En headless ren-Dart-binær for flåteutførelse. Kobler seg til en cc_server, erklærer evnene sine, henter leide jobber, utfører dem og strømmer hendelser tilbake. Har ingen varig tilstand.'],
 ['JobSpec', 'Den typede spesifikasjonen for alt som kan utføres (agentkjøring, pipeline-steg, kodeindeks, golden-render, benchmark, eval-batch): nødvendige evner, prioritet, budsjett, arbeidsområde.'],
-['ActionClass', 'Et lukket sett med 13 effektklasser (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Hvert muterende verktøy erklærer klassene sine; tillatelsesmotoren løser opp allow / prompt / deny per omfang.'],
+['ActionClass', 'Et lukket sett med 14 effektklasser (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Hvert muterende verktøy erklærer klassene sine; tillatelsesmotoren løser opp allow / prompt / deny per omfang.'],
 ['WriteLedger', 'En arbeidsområdeavgrenset idempotenslogg. Hver mutasjon har en idempotensnøkkel per logisk handling; en gjenavspilling returnerer det bytedentiske opprinnelige resultatet. Gjør gjenoppkobling og flere klienter trygt av konstruksjon.'],
 ['Idempotensnøkkel', 'En klientgenerert UUIDv7 som preges per logisk handling (ikke per forsøk). Fjerner duplikater ved nye forsøk på tvers av gjenoppkoblinger og klienter.'],
 ['«Trenger meg»-innboksen', 'En kø på tvers av søylene med en streng regel: et element vises bare hvis det blokkerer noe (en agent, en sammenslåing, en synkronisering) eller eksplisitt ber operatøren om noe.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Gjennomgangsdommen', 'ship, hold eller block. Ethvert P0-funn med konfidens >= 0.7 blokkerer; ethvert annet P0 eller ethvert P1 holder; ellers ship. En gated akse som feiler, tvinger block og kan ikke overstemmes av funn.'],
 ['SessionRecording', 'En hendelsesstrøm pluss HTTP/LLM-kassetter og verktøy-I/O fanget for én kjøring, paret med en AgentConfigHash.'],
 ['Golden session', 'En velsignet SessionRecording festet per agent eller playbook.'],
-['Control Center Connect', 'En valgfri tjeneste som kjører leverandørpålogginger (GitHub, Google, Linear) for servere uten egne apper. Hostet av Control Center, selvhostet eller av. Den returnerer legitimasjonssegl og GitHub-tokener for ett repo og ser aldri innholdet i repoer.'],
+['Control Center Connect', 'En valgfri tjeneste som kjører leverandørpålogginger (GitHub, Google, Linear) for servere eller arbeidsområder som valgte den i stedet for egne apper. Hostet av Control Center, selvhostet eller av. Den returnerer legitimasjonssegl og GitHub-tokener for ett repo og ser aldri innholdet i repoer.'],
 ['Legitimasjonssegl', 'En kryptert legitimasjon som bare den Connect som laget den, kan åpne, bundet til leverandøren, Connect-adressen, installasjons-ID-en, arbeidsområdet, kontoen, appen og hemmelighetsgenerasjonen. Serveren lagrer seglet; tilgangstokener blir værende i minnet.'],
 ['Installasjons-ID', 'En servers identitet overfor én Connect-adresse, avledet fra installasjonsnøkkelen. Connect tillater servere etter installasjons-ID; å bytte nøkkelen endrer den og logger alle ut av Connect-sporene.'],
-['Installasjonsbinding', 'Connects oversikt over hvilke servere som kan bruke en GitHub-installasjon av den delte appen. En organisasjonsinstallasjon krever at en administrator autoriserer hver server.'],
-['Påloggingsspor', 'Én leverandørs pålogging i nettleseren: github, google, linear, linear_app eller slack. Hvert spor kjører på serverens egen app når den er fullstendig, ellers via Connect, ellers er det utilgjengelig.'],
+['Installasjonsbinding', 'Connects oversikt over den ene serveren et Slack-team er bundet til. GitHub-installasjoner har ingen slik binding: alle servere et medlem logger inn på kan bruke dem.'],
+['Påloggingsspor', 'Én leverandørs pålogging i nettleseren: github, google, linear, linear_app eller slack. Under egne apper kjører et spor på den egne appen (serverens eller arbeidsområdets) når den er fullstendig konfigurert, ellers er det utilgjengelig; med Connect valgt kjører Connect det. Ingen av dem faller tilbake til den andre.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Modus**: `chat`, `plan`, `review` eller `orchestrate`. Lagret **per område**, så én agent kan være i forskjellige moduser i forskjellige områder; hver samtale i et område deler den. Styrer systemprompten, sandkassens skriveregler og tillatelseslisten for MCP-verktøy. Skrivefeltet tilbyr bare `chat`, `plan` og `orchestrate`; `chat` er merket «Agent».
 
-**SandboxBackend**: `microvm` (en lukket VM — den ene backenden med en kjernegrense, brukt på interaktive terminaler), `native` (Seatbelt på macOS, bubblewrap på Linux og WSL2) eller `none`. Probres én gang ved oppstart; `native` **brukes på agentutsending** når den er tilgjengelig, og pakker inn Claude Code-CLI-en og kjerne-`bash`-verktøyet. Windows har ingen native-backend, og Linux trenger `bwrap` pluss `socat`, så kjøringer der er uinnpakkede; `--sandbox off` velger bort med vilje.
+**SandboxBackend**: `microvm` (en lukket VM — den ene backenden med en kjernegrense, brukt på interaktive terminaler), `native` (Seatbelt på macOS, bubblewrap på Linux og WSL2) eller `none`. Probres én gang ved oppstart; `native` **brukes på agentutsending** når den er tilgjengelig, og pakker inn Claude Code-CLI-en og kjerne-`bash`-verktøyet. Windows har ingen native-backend, og Linux trenger `bwrap` pluss `socat`; på en slik vert starter bare serverens eiers kjøringer, uinnpakkede, og alles andres avvises. `--sandbox off` kjører alle medlemmers agenter uinnpakkede.
 
 **Stasjon**: En kastbar maskin en agent styrer i sanntid — en lukket nettleser eller et Linux-skrivebord, en vertsstyrt Android-emulator eller iOS-simulator, eller en lukket terminal. Overvåkes direkte over sin egen bane i full oppløsning, med overtakelse håndhevet på serversiden. Knyttet til en samtale, slik at menneskefanen og agentens `browser_use` / `computer_use` / `mobile_use` / `ios_use`-kall adresserer én standardmaskin. Se [Stasjoner og isolerte miljøer](/nb-NO/handbok/konsepter/stasjoner/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Løser opp og håndhever minnetillatelser for agentroller på domener.
 
-**HarnessCostCalculator**: Priser tokenbruken til den innebygde kjernen til en `RunCost` fra models.dev-katalogen. Utsendingen lagrer opptellingen på kjøringsloggen.
+**HarnessRunAccounting**: Fører regnskap over den innebygde kjernens modellkall én gang, priset fra models.dev-katalogen, lagrer dem på den eide kjøringen og summerer en underkjørings forbruk opp til forelderens budsjett.
 
 **BudgetEnforcementService**: Beregner månedsforbruk per agent og en blokkering før utsending (`checkInvocationBlock`). Denne blokkeringen konsulteres bare av gjenopprettingsavstemmerne (`OrphanRunReaper`, `StrandedTicketReconciler`), aldri av en vanlig bruker- eller agentutsending.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Strukturerte utdata hentet ut av oppsummeringspipelinen og lagret som egne rader. Tiltak kan lenkes til en sak.
 
-**CalendarEvent**: En synkronisert Google Kalender-oppføring knyttet til et arbeidsområde og en tilkoblet konto. Forskjellig fra et Møte: en hendelse er en planlagt forpliktelse; et Møte er en tatt opp økt. Koblet én-til-én via en `MeetingCalendarLink`.
+**CalendarEvent**: En synkronisert Google Kalender-oppføring knyttet til et arbeidsområde og en tilkoblet konto. Forskjellig fra et Møte: en hendelse er en planlagt forpliktelse; et Møte er en tatt opp økt. Koblet én-til-én gjennom tabellen `meeting_calendar_links`.
 
 **CalendarAccount**: En tilkoblet Google-konto, per arbeidsområde, medlem og e-postadresse (`google:<workspaceId>:<userId>:<email>`). Legitimasjonen lagres på serversiden som en `google_*`-nøkkel i `<dataDir>/secrets.json` og når aldri en klient; påloggingen i nettleseren fullføres på serveren. En pålogging via Connect lagrer bare et legitimasjonssegl. Et `authExpiredAt`-flagg driver gjenoppkoblingsbanneret.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: En forseglet verdi som samler mennesker og agenter i én aktørabstraksjon — `UserPrincipal(userId)` eller `AgentPrincipal(agentId)`. Hver melding, sak, gjennomgang, plan og kjøringslogg tilskrives gjennom en Principal.
 
-**Bruker**: En menneskelig identitet, lagret i `global.db` og dermed global på tvers av arbeidsområder. Principalen som oppretter et arbeidsområde, blir **eieren** av det — stemplet på `Workspace.ownerUserId` med en medlemsrad for eierrollen i samme operasjon. Andre blir med via invitasjon eller SSO.
+**Serverens eier**: Personen som satte opp serveren, registrert én gang ved første oppstart; ingenting som sendes over nettverket endrer det. En administrator for arbeidsområdet eller eier av arbeidsområdet er ikke serverens eier. Ingenting kjører på serverens egen maskin utenfor en sandkasse med mindre serverens eier startet det eller godkjente den typen vertskjøring: å opprette arbeidsområder, vertsskallet, den innebygde kodeditoren, miljøer som kjører på verten og utsjekkinger koblet fra utenfor et arbeidsområdes lagring er bare deres. Se [Serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier).
+
+**Bruker**: En menneskelig identitet, lagret i `global.db` og dermed global på tvers av arbeidsområder. Bare serverens eier oppretter et arbeidsområde, og blir **eieren** av det — stemplet på `Workspace.ownerUserId` med en medlemsrad for eierrollen i samme operasjon. Andre blir med via invitasjon eller SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: En medlemsrad som binder en Bruker til et Arbeidsområde på en rolle (`owner` / `admin` / `member` / `viewer` / `guest`). **Medlemskap — ikke en parkoblingsnøkkel — er tilgangsgrensen.** Per-repo-tilganger hindrer medlemskapet i å gi mer privilegier enn kodeverten.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Autonomivriden**: En kontroll per område og per agent — `propose-only` / `act-with-approval` / `act-freely` — implementert som en navngitt profil over lageret for handlingstillatelsesregler.
 
-**ActionClass**: Et lukket sett med 13 effektklasser (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Hvert muterende verktøy erklærer klassene sine; tillatelsesmotoren løser opp `allow` / `prompt` / `deny` per omfang (område > agent > arbeidsområde > modusforvalg > innebygd standard).
+**ActionClass**: Et lukket sett med 14 effektklasser (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Hvert muterende verktøy erklærer klassene sine; tillatelsesmotoren løser opp `allow` / `prompt` / `deny` per omfang (område > agent > arbeidsområde > modusforvalg > innebygd standard).
 
 **WriteLedger** / **idempotensnøkkel**: Hver mutasjon har en klientgenerert idempotensnøkkel (UUIDv7, per logisk handling). Den arbeidsområdeavgrensede loggen fjerner duplikater før behandleren kjører; en gjenavspilling returnerer det bytedentiske opprinnelige resultatet. Gjør gjenoppkobling og flere klienter trygt av konstruksjon.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: En tilstandsløs WebSocket-relémegler som er vert for invitasjonsgatede rom — et dumt relé som bare videresender ende-til-ende-forseglede rammer, ikke har appdata og aldri ser parkoblings-PSK-en.
 
-**Control Center Connect**: En valgfri tjeneste som kjører leverandørpålogginger (GitHub, Google Calendar, Linear) for servere som ikke har registrert egne apper: den hostede tjenesten til Control Center, en som en organisasjon kjører (`cc-connect`, eller montert i `cc_server` på `/connect`), eller ingen. Den returnerer legitimasjonssegl og GitHub-tokener for ett repo og ser aldri innholdet i repoer. Se [Control Center Connect](/nb-NO/handbok/referanse/connect/).
+**Control Center Connect**: En valgfri tjeneste som kjører leverandørpålogginger (GitHub, Google Calendar, Linear) for servere eller arbeidsområder som valgte den i stedet for egne apper: den hostede tjenesten til Control Center, en som en organisasjon kjører (`cc-connect`, eller montert i `cc_server` på `/connect`), eller ingen. Den returnerer legitimasjonssegl og GitHub-tokener for ett repo og ser aldri innholdet i repoer. Se [Control Center Connect](/nb-NO/handbok/referanse/connect/).
 
 **Legitimasjonssegl**: En kryptert legitimasjon (`credential_seal`) som bare den Connect som laget den, kan åpne, bundet til leverandøren, Connect-adressen, installasjons-ID-en, arbeidsområdet, kontoen, appen og hemmelighetsgenerasjonen. Serveren lagrer seglet og installasjons-ID-en det ble laget for; tilgangstokener blir værende i minnet. Et segl der installasjons-ID-en ikke lenger stemmer, forkastes, og eieren logger inn på nytt.
 
 **Installasjons-ID**: En servers identitet overfor én Connect-adresse (`install_id`), avledet fra installasjonsnøkkelen i hemmelighetsfilen. Connect tillater servere etter installasjons-ID. Å bytte nøkkelen gir en ny og logger alle ut av Connect-sporene.
 
-**Installasjonsbinding**: Connects oversikt (`install_binding`) over hvilke servere som kan bruke en GitHub-installasjon av den delte appen. Å installere via en server binder den; en organisasjonsadministrators **Autoriser denne serveren** binder en annen.
+**Installasjonsbinding**: Connects oversikt (`install_binding`) over den ene serveren et Slack-team er bundet til. GitHub-installasjoner har ingen slik binding: alle servere et medlem logger inn på kan bruke dem.
 
-**Påloggingsspor**: Én leverandørs pålogging i nettleseren — `github`, `google`, `linear`, `linear_app` eller `slack`. Et spor kjører på serverens egen app når den appen er fullstendig, ellers via Connect, ellers er det utilgjengelig; en delvis konfigurert egen app er en feil, aldri en reserveløsning.
+**Påloggingsspor**: Én leverandørs pålogging i nettleseren — `github`, `google`, `linear`, `linear_app` eller `slack`. Under egne apper kjører et spor på den egne appen (serverens eller arbeidsområdets) når appen er fullstendig konfigurert, ellers er det utilgjengelig; med Connect valgt kjører Connect det. Ingen av dem faller tilbake til den andre, og en delvis konfigurert egen app er en feil.
 
 ## Se også
 

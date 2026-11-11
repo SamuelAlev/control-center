@@ -14,7 +14,6 @@ void main() {
       expect(progress.toJson(), {
         'filesIndexed': 10,
         'filesToIndex': 20,
-        'totalFiles': 50,
         'symbols': 200,
         'edges': 350,
       });

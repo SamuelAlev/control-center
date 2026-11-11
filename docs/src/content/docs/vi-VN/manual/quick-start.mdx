@@ -2,7 +2,7 @@
 title: Bắt đầu nhanh
 description: Cài đặt Control Center, cấu hình một agent và xem nó làm việc trên kho mã của bạn.
 slug: vi-VN/so-tay/bat-dau-nhanh
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Đây là con đường hoàn chỉnh ngắn nhất từ con số không tới một agent đang chạy trên chính mã của bạn. Hãy làm theo đúng thứ tự; mỗi bước đều phụ thuộc vào bước trước đó.
@@ -20,7 +20,7 @@ Cài đặt Control Center như mô tả trong [Cài đặt](/vi-VN/so-tay/cai-d
 đầy đủ tính năng như vậy. Tuy nhiên, một tab trình duyệt không thể lưu trữ máy chủ, nên bạn phải
 tự cung cấp một cái — chạy `cc_server` cục bộ và kết nối tới `ws://localhost:9030`, hoặc trỏ nó tới một máy chủ trên
 máy khác. Bản bắt đầu nhanh này đi theo con đường desktop vì nó không cần thiết lập máy chủ;
-xem [Cài đặt](/vi-VN/so-tay/cai-dat/#use-it-in-your-browser) để biết cách dùng trên trình duyệt.
+xem [Cài đặt](/vi-VN/so-tay/cai-dat/#dùng-trong-trình-duyệt-của-bạn) để biết cách dùng trên trình duyệt.
 :::
 
 ## Bước 2: Đi qua quá trình thiết lập ban đầu
@@ -29,7 +29,7 @@ Quá trình thiết lập ban đầu có sáu bước và chúng chạy theo th�
 
 1. **Đăng nhập** (chỉ chủ máy chủ): chọn cách máy chủ này đăng nhập người dùng vào GitHub, Google Calendar và Linear — **Dùng ứng dụng của Control Center**, **Dùng ứng dụng của riêng tôi**, hoặc **Dùng máy chủ Connect tùy chỉnh**. Với ứng dụng riêng, **Tạo ứng dụng GitHub của tôi** thiết lập GitHub chỉ trong một bước. Bạn có thể đổi sau này trong **Cài đặt → Máy chủ → Đăng nhập một lần**.
 2. **Kết nối**: đăng nhập vào GitHub, hoặc dán một token GitLab hoặc Bitbucket. Thông tin xác thực được lưu trên máy chủ, gắn với tài khoản của bạn.
-3. **Không gian làm việc**: đặt tên cho không gian làm việc đầu tiên của bạn và tùy chọn chọn một logo. Việc tạo nó sẽ gieo tạo sẵn năm agent — một CEO cùng `qa`, `architect`, `engineer` và `librarian` — cùng các mẫu quy trình tích hợp sẵn.
+3. **Không gian làm việc** (chỉ chủ máy chủ): đặt tên cho không gian làm việc đầu tiên của bạn và tùy chọn chọn một logo. Những người khác chờ ở **Bạn chưa ở trong không gian làm việc nào** cho tới khi chủ máy chủ tạo một không gian làm việc cho họ hoặc quản trị viên không gian làm việc mời họ. Việc tạo nó sẽ gieo tạo sẵn sáu agent — một CEO cùng `qa`, `architect`, `engineer`, `librarian` và `content-synthesizer` — cùng các mẫu quy trình tích hợp sẵn.
 4. **Sandbox**: ghi lại tùy chọn sandbox. Dù chọn cách nào bạn cũng có thể tiếp tục.
 5. **Adapter**: chọn adapter và mô hình mà agent sẽ mặc định dùng. Chọn **Control Center (built-in)**, rồi dùng trình chọn nhà cung cấp hiện ra để đăng nhập vào một nhà cung cấp mô hình — danh sách mô hình vẫn trống cho tới khi có một nhà cung cấp được kết nối. Hoàn tất bước này cũng gán adapter và mô hình cho agent CEO của không gian làm việc.
 6. **Giọng nói (tùy chọn)**: cài một mô hình giọng nói chạy trên thiết bị để đọc chính tả, hoặc bỏ qua bước này.
@@ -37,7 +37,7 @@ Quá trình thiết lập ban đầu có sáu bước và chúng chạy theo th�
 Sau đó Control Center mở hộp thư của không gian làm việc.
 
 :::note[Điều gì giới hạn một lượt chạy agent]
-Các lệnh của agent được bọc trong sandbox gốc của hệ điều hành máy chủ khi có sẵn một cái — Seatbelt trên macOS, bubblewrap trên Linux. Windows không có backend, nên các lượt chạy ở đó chỉ được giới hạn bởi những tầng khác: worktree riêng của cuộc hội thoại (`git worktree` trên Windows; copy-on-write ở mọi nơi `rift` được phát hành), thông tin xác thực do bộ môi giới cấp theo từng lần khởi chạy và bị thu hồi khi kết thúc cùng các rào chắn hành động. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
+Các lệnh của agent được bọc trong sandbox gốc của hệ điều hành máy chủ khi có sẵn một cái — Seatbelt trên macOS, bubblewrap trên Linux. Windows không có backend. Trên một máy chủ không có backend, chỉ các lượt chạy agent của chủ sở hữu máy chủ mới bắt đầu, và chúng chỉ được giới hạn bởi những tầng khác: worktree riêng của cuộc hội thoại (`git worktree` trên Windows; copy-on-write ở mọi nơi `rift` được phát hành), thông tin xác thực do bộ môi giới cấp theo từng lần khởi chạy và bị thu hồi khi kết thúc cùng các rào chắn hành động. Mọi lượt chạy khác bị từ chối cho đến khi chủ sở hữu cài đặt sandbox hoặc tắt sandboxing cho tất cả mọi người. Xem [Sandbox và bảo mật](/vi-VN/so-tay/khai-niem/sandbox-va-bao-mat/).
 :::
 
 ## Bước 3: Thêm một kho mã
@@ -61,7 +61,7 @@ Trên tab **Cài đặt**, đặt:
 
 Nhấn **Lưu thay đổi**.
 
-Trên thực tế, bước này không phải tùy chọn. Chỉ agent CEO kế thừa bộ điều hợp được chọn trong quá trình thiết lập ban đầu; bốn chuyên gia được tạo ra mà không có bộ điều hợp. Chúng quay về **Control Center (built-in)** với mô hình mặc định của Anthropic, nên chúng chỉ chạy nếu bạn đã kết nối một tài khoản Anthropic — và chạy trên một mô hình bạn không chọn nếu bạn đã kết nối.
+Trên thực tế, bước này không phải tùy chọn. Bước adapter của thiết lập ban đầu đặt bộ điều hợp và mô hình của nó cho mọi agent đã tồn tại vào thời điểm đó; một không gian làm việc được tạo sau này gieo sáu agent đều chưa đặt. Agent chưa có cặp này sẽ quay về **Control Center (built-in)** với mô hình mặc định của Anthropic, nên chúng chỉ chạy nếu bạn đã kết nối một tài khoản Anthropic — và chạy trên một mô hình bạn không chọn nếu bạn đã kết nối.
 
 ## Bước 5: Gửi cho agent một tác vụ
 

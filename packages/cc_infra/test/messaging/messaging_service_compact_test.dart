@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/features/dispatch/domain/context/conversation_summarizer.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_participant.dart';
@@ -9,7 +10,6 @@ import 'package:cc_domain/features/messaging/domain/ports/messaging_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
 import 'package:cc_harness/context.dart';
 import 'package:cc_infra/src/dispatch/agent_dispatch_service.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:cc_infra/src/messaging/agent_stream_processor.dart';
 import 'package:cc_infra/src/messaging/conversation_compaction_service.dart';
 import 'package:cc_infra/src/messaging/messaging_service.dart';

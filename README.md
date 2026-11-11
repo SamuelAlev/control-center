@@ -313,7 +313,8 @@ Make yourself at home. Your next developer day can start here, free and open sou
 
 Every build is on [GitHub Releases](https://github.com/SamuelAlev/control-center/releases/latest),
 along with standalone `cc_server` archives for all three platforms. `cc-server`,
-`cc-webapp` and `cc-remote` container images are published to GHCR. The desktop app
+`cc-server-demo`, `cc-webapp`, `cc-remote`, `cc-signaling-server` and `cc-connect`
+container images are published to GHCR. The desktop app
 updates itself.
 
 **Prefer to host it yourself?** A browser tab can't be the server, so the web app always
@@ -334,7 +335,8 @@ Requires the [Flutter](https://docs.flutter.dev/get-started/install) SDK (deskto
 ```bash
 scripts/natives/build_natives.sh   # required — a missing native is a hard boot failure
 fvm flutter pub get
-fvm flutter pub run build_runner build --delete-conflicting-outputs
+fvm dart run patchwork apply   # wires patches/*.patch; after every pub get
+fvm dart run build_runner build --delete-conflicting-outputs
 fvm flutter gen-l10n
 fvm flutter run -d macos   # or windows, linux
 ```

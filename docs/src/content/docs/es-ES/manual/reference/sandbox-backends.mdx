@@ -2,15 +2,23 @@
 title: Backends del entorno aislado
 description: Los backends del entorno aislado, dónde se aplican y todos los objetos de valor que usa el runtime del entorno aislado.
 slug: es-ES/manual/referencia/backends-de-entorno-aislado
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Que una ejecución esté aislada depende del host]
-`cc_server` sondea el host una vez al arrancar y envuelve el despacho de agentes en el backend nativo cuando el sondeo informa de que hay uno disponible y `--sandbox` no es `off`. Ambas costuras del despacho se envuelven: la CLI de Claude Code a través del puerto del entorno aislado, y ACP más la herramienta `bash` del arnés integrado a través del gestor del entorno aislado.
+`cc_server` decide una vez al arrancar cómo se ejecutan los agentes en este host, y la decisión se mantiene hasta que se reinicia:
 
-Donde el sondeo no informa de ningún backend —**Windows siempre**, y Linux o WSL2 sin `bwrap` y `socat`—, las ejecuciones de agentes **no** están aisladas. ACP y la herramienta `bash` del arnés siguen lanzándose con el entorno saneado; Claude Code pasa por `NoSandboxAdapter` y hereda el entorno del host. Las fronteras restantes son el propio worktree de la ejecución (copia en escritura donde se distribuye `rift`; `git worktree` en Windows), un token de forja de solo lectura que se emite en cada lanzamiento y se revoca al desmontar, los push que tienen que pasar la regla de push en la pasarela de ejecuciones de agentes, la política de comandos de cada modo, las [barandillas de acciones](/es-ES/manual/conceptos/barandillas/) unificadas (de fallo cerrado), el entorno saneado en las rutas de ACP y del `bash` del arnés, y la superficie de herramientas que permite su modo.
+- **En sandbox** (`native`): el sondeo encontró un backend y `--sandbox` no es `off`. Ambas costuras del despacho se envuelven: la CLI de Claude Code a través del puerto del entorno aislado, y ACP más la herramienta `bash` del arnés integrado a través del gestor del entorno aislado.
+- **Desactivado** (`off`): el propietario del servidor lo inició con `--sandbox off`. Cada ejecución de agente de cada miembro se ejecuta sin confinar en esta máquina, lo haya iniciado quien lo haya iniciado.
+- **No disponible** (`unavailable`): el entorno aislado está activado, pero el sondeo no encontró ningún backend (**Windows siempre**, y Linux o WSL2 sin `bwrap` y `socat`). Una ejecución solo arranca cuando la persona responsable de ella es el [propietario](/es-ES/manual/conceptos/autorizacion/#el-propietario-del-servidor) del servidor: quien la pidió, o, en el caso de la automatización, la persona a la que está vinculada. Las ejecuciones de los demás se rechazan antes de emitir una credencial, tomar un lease o arrancar un proceso. Si no hay propietario registrado, no arranca ninguna ejecución.
+
+Un despacho rechazado falla con el código `sandbox_unavailable`. La app lo muestra como **Los agentes necesitan un sandbox en este servidor**: «Este servidor no tiene sandbox, así que solo su propietario puede ejecutar agentes aquí. El propietario puede instalar el sandbox o desactivar el sandboxing para todos.»
+
+Una ejecución que arranca sin entorno aislado (con `off`, o la ejecución propia del propietario con `unavailable`) se ejecuta directamente en el host. ACP y la herramienta `bash` del arnés siguen lanzándose con el entorno saneado; Claude Code pasa por `NoSandboxAdapter` y hereda el entorno del host. Las fronteras restantes son el propio worktree de la ejecución (copia en escritura donde se distribuye `rift`; `git worktree` en Windows), un token de forja de solo lectura que se emite en cada lanzamiento y se revoca al desmontar, los push que tienen que pasar la regla de push en la pasarela de ejecuciones de agentes, la política de comandos de cada modo, las [barandillas de acciones](/es-ES/manual/conceptos/barandillas/) unificadas (de fallo cerrado), el entorno saneado en las rutas de ACP y del `bash` del arnés, y la superficie de herramientas que permite su modo.
 
 Las herramientas de archivos en proceso del arnés (read, write, edit, apply patch, search, find, search_files) quedan fuera del entorno aislado en cualquier host: se ejecutan en el proceso del servidor, así que solo se envuelve `bash`.
+
+El host nunca es un recurso de reserva para un servidor con entorno aislado. Si el servidor aísla a los agentes pero no tiene ningún entorno aislado que dar a una ejecución, sus procesos de herramienta y sus comandos `bash` se rechazan, no se arrancan en el host. La misma postura decide los pequeños procesos alrededor de una ejecución: los auxiliares ACP de un solo disparo (títulos de conversación, `/btw`, `/handoff`, `/goal`) y las pruebas golden de una PR en Review Studio se ejecutan en el entorno aislado cuando el servidor aísla a los agentes, sin confinar con `off`, y con `unavailable` solo para una petición de la que responde el propietario del servidor; si no, se omiten.
 :::
 
 ## Resumen de los backends
@@ -19,13 +27,13 @@ Las herramientas de archivos en proceso del arnés (read, write, edit, apply pat
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | VM aislada  | `microvm` | macOS, Linux, Windows (hipervisor de microVM) | Condicionado por el sondeo del runtime de microVM; se aplica a los terminales interactivos: el shell se ejecuta dentro de un [rig](/es-ES/manual/conceptos/rigs/), no en el host |
 | Nativo      | `native`  | macOS (Seatbelt), Linux y WSL2 (bubblewrap)   | Se sondea al arrancar; Linux rechaza una ejecución que exija denegaciones de escritura por glob de nombre de archivo, que bubblewrap no puede aplicar |
-| Sin aislamiento | `none` | Todas                                         | El valor predeterminado al analizar, el predeterminado del terminal y el recurso de reserva cuando no hay ningún backend disponible o se ha establecido `--sandbox off` |
+| Sin aislamiento | `none` | Todas                                         | El valor predeterminado al analizar y el predeterminado del terminal; el despacho de agentes lo usa con `--sandbox off`, y para las ejecuciones propias del propietario cuando no hay ningún backend disponible |
 
-`SandboxBackend.fromName` devuelve `none` cuando el valor almacenado es nulo o no se reconoce. Un `"docker"` almacenado se asigna a `native`.
+`SandboxBackend.fromName` devuelve `none` cuando el valor almacenado es nulo o no se reconoce.
 
 **`microvm` es el único backend con una frontera de kernel**: la carga de trabajo no se ejecuta realmente en el host. Nunca es un recurso de reserva silencioso en ninguna de las dos direcciones: solicitarlo de forma explícita en un host que no puede arrancar una VM falla de forma ruidosa («pedí una VM y obtuve mi portátil» es la única degradación que el recinto no puede permitirse), y solo un *predeterminado sin especificar* baja a `native`, dejando una línea de registro que lo indica. El backend real de la sesión se comunica de vuelta al cliente y se marca con una insignia, así que un terminal nunca puede afirmar que está en un recinto mientras se ejecuta en el host. El ciclo de vida, las imágenes y la salida de red de la propia VM se tratan en la [referencia de rigs](/es-ES/manual/referencia/rigs/).
 
-**Windows no tiene entorno aislado nativo.** `NativeSandboxAdapter.probe` devuelve `available: false` en cualquier host que no sea macOS o Linux/WSL2. Por tanto, el despacho de agentes en Windows usa `none`. El backend `microvm` es aparte: está condicionado por el sondeo del runtime de microVM y se aplica a los terminales interactivos y a los rigs, no a envolver `bash` en el host.
+**Windows no tiene entorno aislado nativo.** `NativeSandboxAdapter.probe` devuelve `available: false` en cualquier host que no sea macOS o Linux/WSL2. Así que un servidor en Windows está `unavailable`: solo arrancan las ejecuciones de agentes del propietario del servidor, sin confinar, y las de los demás se rechazan. Para que todos los miembros puedan ejecutar agentes allí, el propietario inicia el servidor con `--sandbox off`, que los ejecuta a todos sin confinar. El backend `microvm` es aparte: está condicionado por el sondeo del runtime de microVM y se aplica a los terminales interactivos y a los rigs, no a envolver `bash` en el host.
 
 ## Resultados del sondeo
 
@@ -38,9 +46,9 @@ El sondeo es lo que condiciona la aplicación. Se ejecuta una vez, al arrancar e
 | Linux o WSL2 sin alguna de las herramientas | `false` | `requiresInstall: true`, con una indicación de instalación que nombra los paquetes que faltan |
 | Cualquier otra plataforma              | `false`     | El entorno aislado nativo no se ofrece en esta plataforma                 |
 
-El servidor registra el resultado en una sola línea de arranque: `agent sandbox ON` más la nota, `no OS-native agent sandbox on this host` más la indicación, o `agent sandbox DISABLED by --sandbox off`. `GET /healthz` no incluye ningún campo del entorno aislado.
+El servidor registra el resultado en una sola línea de arranque: `agent sandbox ON` más la nota; `no OS-native agent sandbox on this host` más la indicación, que añade que solo arrancarán las ejecuciones de las que responde el propietario del servidor; o `agent sandbox DISABLED by --sandbox off`. La línea de exposición que se imprime al arrancar lleva la misma decisión como `sandbox=native`, `sandbox=off` o `sandbox=unavailable`. `GET /healthz` no incluye ningún campo del entorno aislado.
 
-`--sandbox` / `CC_SERVER_SANDBOX` acepta `on` (predeterminado) u `off`. Es una renuncia, no una activación: `on` significa «envuelve cuando el host ofrezca un backend», nunca «exige uno».
+`--sandbox` / `CC_SERVER_SANDBOX` acepta `on` (predeterminado) u `off`. `on` envuelve cada ejecución cuando el host ofrece un backend, y solo admite las ejecuciones del propietario cuando no lo ofrece. `off` ejecuta las de todos los miembros sin confinar en este host; es una decisión del propietario para todos, no un ajuste por ejecución.
 
 ## Backend nativo
 
@@ -55,6 +63,8 @@ El perfil generado es **permisivo de forma predeterminada** (`(allow default)`) 
 - **Procesos**: denegaciones de `process-exec` para los binarios siempre peligrosos, más un bloqueo a ejecutar cualquier cosa desde un directorio escribible. Los árboles conocidos de instalación de herramientas bajo su directorio personal (caché de corepack, de npx y de `pnpm dlx`, gestores de versiones de Node, navegadores de Playwright, rustup y cargo, Go, fvm y la caché de pub, pyenv, uv y pipx, rbenv, sdkman, mise, asdf y `~/.local/bin`) se vuelven a abrir bajo ese bloqueo. Los directorios temporales compartidos también están bloqueados. Cada sesión recibe en su lugar un `TMPDIR` privado bajo `/private/tmp`, donde pueden ejecutarse los programas que compila (un binario de `go test`, una compilación de cargo). Las denegaciones de binarios siempre peligrosos se aplican después de estas autorizaciones
 - **Red**: restringida a los puertos del proxy en proceso más DNS: loopback no se permite sin más y la escucha TCP está denegada. Los sockets Unix solo se permiten dentro del `TMPDIR` privado de la sesión, lo que cubre herramientas como tsx y Chrome que mantienen ahí un socket IPC; su agente SSH y otros sockets siguen inaccesibles. Los proxies aplican la lista de permitidos de dominios por sesión (consulta [Salida de red](#salida-de-red))
 - **Configuración**: los perfiles se generan en cada lanzamiento a partir del `SandboxSpec`
+- **Comandos del propio servidor**: ningún hijo directo de una carpeta desde la que el servidor ejecuta programas (cada entrada de su `PATH` y las carpetas de herramientas habituales de cada usuario, como `~/.local/bin`, con los enlaces de gestores de versiones como `~/fvm/default` resueltos) puede crearse, reemplazarse, borrarse o renombrarse, ni tampoco el paquete instalado al que apunta un comando enlazado. Consulta [Las carpetas de comandos del servidor](#las-carpetas-de-comandos-del-servidor)
+- **Archivos de arranque**: toda ruta del directorio personal que el perfil deniega leer también se deniega escribir, y los archivos de arranque de los shells y las sesiones del usuario del servidor (`.zshenv`, `.zlogin`, `.bash_login`, la configuración de fish, las unidades de usuario de systemd, las entradas de autoarranque y similares) tienen la escritura denegada en todos los modos
 
 Requisitos:
 
@@ -67,6 +77,7 @@ Usa bubblewrap (`bwrap`) para crear espacios de nombres de montaje y de PID.
 - **Sistema de archivos**: crea un espacio de nombres de montaje en el que solo son visibles las rutas montadas con bind
 - **Red**: se ejecuta en un espacio de nombres de red no compartido; el tráfico llega a los proxies del host a través de puentes de sockets Unix de `socat`
 - **Procesos**: aislamiento del espacio de nombres de PID
+- **Comandos del propio servidor y archivos de arranque**: las mismas protecciones que en macOS, expresadas como montajes bind de bubblewrap. Todavía no están verificadas en Linux, y una carpeta de comandos que falte allí aún puede crearse
 
 Requisitos:
 
@@ -75,19 +86,51 @@ Requisitos:
 
 Bubblewrap puede ocultar una ruta existente, pero no puede prohibir un archivo `.env`, `*.key` o `*.pem` *nuevo* dentro de un bind escribible. La política de despacho estándar exige estas denegaciones por glob de nombre de archivo, así que hoy el despacho nativo de agentes **falla en cerrado en Linux/WSL2 incluso cuando el sondeo encuentra bubblewrap**. No se ejecuta con una política silenciosamente más débil. Para restaurar el despacho nativo en Linux se necesita un backend con reglas de nombre de archivo en el momento de la creación. Desactivar el entorno aislado es una renuncia explícita y sin confinamiento, no un equivalente.
 
+En la práctica, un servidor Linux o WSL2 ejecuta hoy los agentes de una de dos formas. Arrancado con `--sandbox off`, ejecuta los agentes de todos los miembros sin confinar. Sin `bubblewrap` o `socat` instalados, está `unavailable` y ejecuta solo los agentes del propietario del servidor, sin confinar. Con ambas herramientas instaladas y el entorno aislado activado, cada ejecución falla en cerrado, incluidas las del propietario.
+
+## Las carpetas de comandos del servidor
+
+El servidor localiza, una vez al arrancar, cada carpeta desde la que ejecuta programas: cada entrada de su `PATH`, las carpetas de herramientas de cada usuario que sondea (como `~/.local/bin`, `~/.bun/bin` y las carpetas globales de npm, yarn y pnpm), y la carpeta real detrás de cada enlace del camino (enlaces de gestores de versiones como `~/fvm/default` o un valor predeterminado de fnm). Dentro de un entorno aislado, un agente no puede añadir, reemplazar, borrar ni renombrar un comando en esas carpetas, ni el enlace que apunta a una, ni el paquete instalado al que apunta un comando enlazado, y tampoco puede renombrar las carpetas que están por encima. De lo contrario, una ejecución aislada podría plantar un programa que el servidor, o la persona, arrancaría más tarde fuera del entorno aislado.
+
+Lo que cambia para una ejecución:
+
+- Las instalaciones globales desde dentro de una ejecución aislada fallan con "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, y `cargo install`, `go install` o `dart pub global activate` cuando su carpeta bin está en el `PATH` del servidor.
+- Cambiar una versión predeterminada falla de la misma forma (`fnm default`, `nvm alias default`, `fvm global`), igual que una herramienta que se actualiza a sí misma en el sitio.
+- Las instalaciones locales del proyecto (`node_modules/.bin`), `npx`, `pnpm dlx`, los gestores de paquetes gestionados por corepack, las cachés de SDK y las compilaciones normales siguen funcionando.
+
+Para que los agentes tengan disponible una herramienta global, instálala en el propio servidor, como el usuario del servidor, y reinicia el servidor para que el nuevo comando también quede protegido. O instálala en el proyecto. Un comando instalado después de arrancar el servidor queda protegido por completo solo a partir del siguiente arranque.
+
+Aplicado y probado en macOS. En Linux, las mismas reglas son montajes bind de bubblewrap que todavía no están verificados. Windows no tiene entorno aislado.
+
 ## Backend sin aislamiento
 
-Ningún entorno aislado. El proceso se ejecuta directamente en el host, con el acceso al sistema de archivos, a la red y a los procesos que tiene el host. ACP y la herramienta `bash` del arnés siguen recibiendo el entorno saneado y la política de comandos; Claude Code a través de `NoSandboxAdapter` hereda el entorno del host. Es aquello a lo que recurre el despacho de agentes en un host sin ningún backend disponible o con `--sandbox off`, y es el valor predeterminado del terminal cuando un cliente no indica ninguno.
+Ningún entorno aislado. El proceso se ejecuta directamente en el host, con el acceso al sistema de archivos, a la red y a los procesos que tiene el host. ACP y la herramienta `bash` del arnés siguen recibiendo el entorno saneado y la política de comandos; Claude Code a través de `NoSandboxAdapter` hereda el entorno del host. El despacho de agentes lo usa para cada ejecución con `--sandbox off`, y en un host sin ningún backend disponible solo para las ejecuciones propias del propietario del servidor; las de los demás se rechazan allí. En un terminal es el shell del host, que solo el propietario del servidor puede abrir.
 
 ## Terminal alojado en el servidor
 
-El terminal se aísla según sus propias reglas, no por el sondeo del despacho. El `defaultBackend` de `TerminalSessionService` es `none` y `cc_server` no lo sobrescribe, así que una sesión de terminal ejecuta el shell del host salvo que el cliente pida `native` explícitamente: el panel de terminal de la aplicación de escritorio no lo hace.
+El terminal alojado en el servidor abre el shell del host solo para el [propietario](/es-ES/manual/conceptos/autorizacion/#el-propietario-del-servidor) del servidor. Los demás obtienen un terminal en entorno aislado, con los límites de un agente, dentro de los directorios propios del espacio de trabajo.
 
-Cuando se solicita `native`, el shell se envuelve a través de `SandboxManager` bajo un perfil de terminal fijo: `$HOME` y el directorio de trabajo de la sesión son escribibles, la red está abierta y se deniega la lectura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` y `~/Library/Keychains`. El token de forja de solo lectura y la pasarela de push no se aplican: son cosa del despacho. Si el envoltorio no es compatible, la sesión falla en lugar de mostrar una insignia nativa sobre un PTY del shell del host.
+Así se elige el backend de una sesión:
+
+| Solicitado | Propietario del servidor | Cualquier otra persona |
+| --- | --- | --- |
+| Nada | El backend predeterminado del servidor | El predeterminado, con `none` sustituido por `native` |
+| `none` (el shell del host) | Shell del host | Rechazado: el shell del host se ejecuta en el servidor sin entorno aislado |
+| `native` | Entorno aislado nativo, perfil de propietario | Entorno aislado nativo, perfil de agente |
+| `microvm` | VM aislada | VM aislada |
+| Un nombre desconocido | Rechazado | Rechazado |
+
+- **Perfil de propietario.** `$HOME` y el directorio de trabajo de la sesión son escribibles, la red está abierta, y se deniega la lectura de `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh` y `~/Library/Keychains`.
+- **Perfil de agente** (`memberTerminalSandboxConfig`). La misma política con la que se ejecuta un agente en ese espacio de trabajo: las escrituras se quedan en el directorio de trabajo, un directorio de ejecución privado, `/tmp` y las partes de `$HOME` en las que un agente puede escribir; los secretos tienen lectura denegada; la red es la lista de permitidos de salida del agente; los programas se ejecutan solo desde el directorio de trabajo y las cadenas de herramientas instaladas.
+- Un terminal se abre solo dentro de los directorios propios del espacio de trabajo. Un directorio de trabajo fuera de ellos se rechaza, nunca se sustituye por otro.
+- Solo quien abrió un terminal puede leerlo, escribir en él, cambiarle el tamaño o cerrarlo. Para cualquier otra persona, su id parece desconocido.
+- `microvm` pedido de forma explícita en un host sin servicio de rigs falla en lugar de caer a otro backend. Un `microvm` predeterminado en un host así baja a `native` y lo indica en el registro.
+
+El token de forja de solo lectura y la pasarela de push no se aplican a los terminales: son cosa del despacho. Si el envoltorio no es compatible, la sesión falla en lugar de mostrar una insignia de entorno aislado sobre una sesión de shell del host.
 
 ## Salida de red
 
-Cuando se lanza un entorno aislado, el acceso saliente a la red lo aplican proxies en proceso, no reglas de cortafuegos del kernel. En un host sin ningún backend disponible nada de esto se aplica, y un proceso lanzado llega a la red exactamente igual que lo haría el usuario del servidor.
+Cuando se lanza un entorno aislado, el acceso saliente a la red lo aplican proxies en proceso, no reglas de cortafuegos del kernel. Una ejecución que no está aislada (cada ejecución con `--sandbox off`, o la ejecución del propietario en un host sin backend) no tiene nada de esto: un proceso que lanza llega a la red exactamente igual que lo haría el usuario del servidor.
 
 - El runtime del entorno aislado ejecuta un proxy HTTP/HTTPS y un proxy SOCKS5 en `127.0.0.1` dentro del proceso `cc_server`, **un par por sesión restringida** (`http_proxy.dart`, `socks_proxy.dart`). Las ejecuciones simultáneas no comparten un par.
 - Los procesos aislados reciben variables de entorno de proxy (`HTTP_PROXY`/`HTTPS_PROXY` → el proxy HTTP, `ALL_PROXY` → el proxy SOCKS; `GIT_SSH_COMMAND` encamina git por SSH a través del proxy SOCKS). En Linux el espacio de nombres de red no se comparte, así que los proxies son la única salida; en macOS el entorno aislado comparte el loopback del host y habla directamente con ellos.

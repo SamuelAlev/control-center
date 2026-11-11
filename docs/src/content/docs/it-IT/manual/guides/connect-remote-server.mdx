@@ -2,7 +2,7 @@
 title: Connettiti a un server remoto
 description: Punta l'app desktop o il client web su un cc_server in esecuzione altrove e passa da un server all'altro senza riavviare.
 slug: it-IT/manuale/guide/connetti-server-remoto
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Ogni client è un renderer sopra un `cc_server` che possiede i dati. Il desktop può
@@ -88,6 +88,8 @@ attraverso la sessione cifrata autenticata verso il backend code-server su
 `cc_server`. Ospita il client web su HTTPS o su un loopback sicuro così che i
 service worker siano disponibili. I client nativi usano una facade loopback con
 ambito di capacità.
+
+Solo il proprietario del server può aprire l'editor code-server incorporato: gira sul server come utente del server stesso. Una sessione appartiene al dispositivo e alla persona che l'hanno aperta. Si apre con la fiducia dello spazio di lavoro di VS Code attiva, così VS Code chiede prima di considerare attendibile una cartella, e con le attività automatiche disattivate. Tutti gli altri mantengono l'editor integrato a file singolo e le viste dei file.
 :::
 
 ### Cosa non fa il browser
@@ -102,9 +104,9 @@ richiedono una finestra nativa o i dispositivi della macchina stessa:
 
 Due funzioni si comportano diversamente anziché mancare del tutto. La
 **registrazione** delle riunioni funziona nel browser e cattura il microfono più
-una condivisione dello schermo che include una traccia audio. Anche **Apri in
-IDE** funziona, ma chiede al server di avviare l'editor sul display _del server_,
-quindi il pulsante si nasconde su un host headless senza editor installati.
+una condivisione dello schermo che include una traccia audio. Il pulsante con il
+nome del tuo editor (come **Apri in VS Code**) chiede al server di avviare l'editor
+sul display _del server_, quindi è offerto solo al proprietario del server, e il pulsante si nasconde su un host headless senza editor installati.
 
 ## Risoluzione dei problemi
 

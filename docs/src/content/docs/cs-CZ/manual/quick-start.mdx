@@ -2,7 +2,7 @@
 title: Rychlý start
 description: Nainstaluj Control Center, nastav jednoho agenta a sleduj, jak pracuje na tvém repozitáři.
 slug: cs-CZ/prirucka/rychly-start
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Tohle je nejkratší úplná cesta od nuly k agentovi, který pracuje na tvém vlastním kódu. Jdi v tomhle pořadí. Každý krok stojí na tom předchozím.
@@ -30,7 +30,7 @@ Kroky úvodního nastavení jdou po řadě. Dopředu se přeskočit nedá. Prvn�
 
 1. **Přihlášení** (jen vlastník serveru): vyber, jak tento server přihlašuje lidi ke GitHubu, Google Calendar a Linear: **Použít aplikace Control Center**, **Použít vlastní aplikace** nebo **Použít vlastní server Connect**. S vlastními aplikacemi nastaví **Vytvořit moji aplikaci GitHub** GitHub v jednom kroku. Později to změníš v **Nastavení → Server → Jednotné přihlášení**.
 2. **Připojit**: přihlas se ke GitHubu, nebo vlož token GitLabu či Bitbucketu. Pověření se uloží na server a připojí se k tvému účtu.
-3. **Pracovní prostor**: pojmenuj první pracovní prostor a volitelně vyber logo. Jeho vytvoření založí pět agentů, CEO a `qa`, `architect`, `engineer` a `librarian`, a vestavěné šablony pipeline.
+3. **Pracovní prostor** (jen vlastník serveru): pojmenuj první pracovní prostor a volitelně vyber logo. Ostatní čekají na **Zatím nejste v pracovním prostoru**, dokud jim ho vlastník serveru nevytvoří nebo je správce pracovního prostoru nepozve. Jeho vytvoření založí šest agentů, CEO a `qa`, `architect`, `engineer`, `librarian` a `content-synthesizer`, a vestavěné šablony pipeline.
 4. **Sandbox**: zapíše preferenci sandboxu. Pokračovat jde po obou volbách.
 5. **Adaptér**: vyber adaptér a model, které mají mít agenti jako výchozí. Zvol **Control Center (built-in)** a ve výběru poskytovatele, který se objeví, se přihlas k poskytovateli modelů. Seznam modelů zůstane prázdný, dokud jednoho nepřipojíš. Dokončení tohohle kroku zapíše adaptér a model i agentovi CEO v pracovním prostoru.
 6. **Hlas (volitelné)**: nainstaluj řečový model na zařízení pro diktování, nebo krok přeskoč.
@@ -38,7 +38,7 @@ Kroky úvodního nastavení jdou po řadě. Dopředu se přeskočit nedá. Prvn�
 Control Center pak otevře doručenou poštu pracovního prostoru.
 
 :::note[Co omezuje běh agenta]
-Příkazy agenta se obalí nativním sandboxem operačního systému hostitele, když je k dispozici: Seatbelt na macOS, bubblewrap na Linuxu. Windows backend nemá, takže tam běhy drží jen ostatní vrstvy. Vlastní worktree konverzace (`git worktree` na Windows; copy-on-write tam, kde je `rift`), pověření vydaná při spuštění a odebraná při úklidu a guardraily akcí. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+Příkazy agenta se obalí nativním sandboxem operačního systému hostitele, když je k dispozici: Seatbelt na macOS, bubblewrap na Linuxu. Windows backend nemá. Na hostiteli bez něj startují jen běhy vlastníka serveru a drží je jen ostatní vrstvy. Vlastní worktree konverzace (`git worktree` na Windows; copy-on-write tam, kde je `rift`), pověření vydaná při spuštění a odebraná při úklidu a guardraily akcí. Ostatní běhy se odmítnou, dokud vlastník serveru nenainstaluje sandbox nebo sandboxing nevypne pro všechny. Viz [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
 ## Krok 3: Přidej repozitář
@@ -62,7 +62,7 @@ Na kartě **Nastavení** nastav:
 
 Stiskni **Uložit změny**.
 
-V praxi tenhle krok vynechat nejde. Adaptér zvolený při úvodním nastavení zdědí jen agent CEO. Čtyři specialisté vzniknou bez něj. Spadnou zpět na **Control Center (built-in)** s výchozím modelem Anthropic, takže běží jen s připojeným účtem Anthropic, a když ho máš, tak na modelu, který sis nevybral.
+V praxi tenhle krok vynechat nejde. Krok s adaptérem v úvodním nastavení nastaví adaptér a model každému agentovi, který v tu chvíli existuje; pracovní prostor vytvořený později založí všech šest bez nastavení. Agent bez něj spadne zpět na **Control Center (built-in)** s výchozím modelem Anthropic, takže běží jen s připojeným účtem Anthropic, a když ho máš, tak na modelu, který sis nevybral.
 
 ## Krok 5: Pošli agentovi úkol
 

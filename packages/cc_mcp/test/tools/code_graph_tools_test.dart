@@ -357,7 +357,7 @@ void main() {
   group('SearchCodeTool', () {
     SearchCodeTool makeTool() => SearchCodeTool(
       repository: graphRepo,
-      workspaceRepository: wsRepo,
+      repoGate: wsRepo.isRepoLinkedToWorkspace,
       embeddingService: embedding,
     );
 
@@ -508,7 +508,7 @@ void main() {
         final slowEmbedding = _FakeEmbeddingPort(isReady: false);
         final t = SearchCodeTool(
           repository: graphRepo,
-          workspaceRepository: wsRepo,
+          repoGate: wsRepo.isRepoLinkedToWorkspace,
           embeddingService: slowEmbedding,
         );
         graphRepo.addSymbols(_threeSymbols());
@@ -528,7 +528,7 @@ void main() {
         final throwingEmbedding = _ThrowingEmbeddingPort();
         final t = SearchCodeTool(
           repository: graphRepo,
-          workspaceRepository: wsRepo,
+          repoGate: wsRepo.isRepoLinkedToWorkspace,
           embeddingService: throwingEmbedding,
         );
         graphRepo.addSymbols(_threeSymbols());
@@ -548,7 +548,7 @@ void main() {
       test('no embedding service still works', () async {
         final t = SearchCodeTool(
           repository: graphRepo,
-          workspaceRepository: wsRepo,
+          repoGate: wsRepo.isRepoLinkedToWorkspace,
         );
         graphRepo.addSymbols(_threeSymbols());
         graphRepo.setSearchResults({'alpha': 0.9});
@@ -569,7 +569,7 @@ void main() {
 
   group('CodeSymbolTool', () {
     CodeSymbolTool makeTool() =>
-        CodeSymbolTool(repository: graphRepo, workspaceRepository: wsRepo);
+        CodeSymbolTool(repository: graphRepo, repoGate: wsRepo.isRepoLinkedToWorkspace);
 
     test('name, description, schema', () {
       final t = makeTool();
@@ -655,7 +655,7 @@ void main() {
   // -- CodeCallersTool ------------------------------------------------------
 
   group('CodeCallersTool', () {
-    CodeCallersTool makeTool() => CodeCallersTool(repository: graphRepo);
+    CodeCallersTool makeTool() => CodeCallersTool(repository: graphRepo, repoGate: _anyRepo);
 
     test('name, description, schema', () {
       final t = makeTool();
@@ -747,7 +747,7 @@ void main() {
   // -- CodeCalleesTool ------------------------------------------------------
 
   group('CodeCalleesTool', () {
-    CodeCalleesTool makeTool() => CodeCalleesTool(repository: graphRepo);
+    CodeCalleesTool makeTool() => CodeCalleesTool(repository: graphRepo, repoGate: _anyRepo);
 
     test('name, description, schema', () {
       final t = makeTool();
@@ -828,7 +828,7 @@ void main() {
   // -- CodeImpactTool -------------------------------------------------------
 
   group('CodeImpactTool', () {
-    CodeImpactTool makeTool() => CodeImpactTool(repository: graphRepo);
+    CodeImpactTool makeTool() => CodeImpactTool(repository: graphRepo, repoGate: _anyRepo);
 
     test('name, description, schema', () {
       final t = makeTool();
@@ -981,11 +981,11 @@ void main() {
       // `code_impact` / `code_callers` answer from the BASE checkout with
       // nothing anywhere to say so.
       final tools = <McpTool>[
-        SearchCodeTool(repository: graphRepo, workspaceRepository: wsRepo),
-        CodeSymbolTool(repository: graphRepo, workspaceRepository: wsRepo),
-        CodeCallersTool(repository: graphRepo),
-        CodeCalleesTool(repository: graphRepo),
-        CodeImpactTool(repository: graphRepo),
+        SearchCodeTool(repository: graphRepo, repoGate: wsRepo.isRepoLinkedToWorkspace),
+        CodeSymbolTool(repository: graphRepo, repoGate: wsRepo.isRepoLinkedToWorkspace),
+        CodeCallersTool(repository: graphRepo, repoGate: _anyRepo),
+        CodeCalleesTool(repository: graphRepo, repoGate: _anyRepo),
+        CodeImpactTool(repository: graphRepo, repoGate: _anyRepo),
       ];
       for (final tool in tools) {
         final props = tool.inputSchema['properties'] as Map<String, dynamic>;
@@ -1010,7 +1010,7 @@ void main() {
 
       final tool = SearchCodeTool(
         repository: graphRepo,
-        workspaceRepository: wsRepo,
+        repoGate: wsRepo.isRepoLinkedToWorkspace,
       );
       final r = await tool.call({
         'workspace_id': _wsId,
@@ -1023,3 +1023,6 @@ void main() {
     });
   });
 }
+
+/// Admits every repository: these groups test traversal, not the gate.
+Future<bool> _anyRepo(String workspaceId, String repoId) async => true;

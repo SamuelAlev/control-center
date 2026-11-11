@@ -15,13 +15,16 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/infrastructure/audio/audio_input_settings.dart';
 import 'package:control_center/core/infrastructure/audio/audio_output_settings.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/rigs/presentation/mjpeg_view.dart';
+import 'package:control_center/features/rigs/presentation/rig_access_notes.dart';
 import 'package:control_center/features/rigs/presentation/rig_browser_toolbar.dart';
 import 'package:control_center/features/rigs/presentation/rig_device_toolbar.dart';
 import 'package:control_center/features/rigs/presentation/rig_input_surface.dart';
 import 'package:control_center/features/rigs/presentation/rig_microphone_sender.dart';
 import 'package:control_center/features/rigs/presentation/rig_panel_chrome.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_audio_controls.dart';
+import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
@@ -104,6 +107,40 @@ class _RigPanelState extends ConsumerState<RigPanel> {
   bool _microphoneOn = false;
 
   bool _restartingUnrestricted = false;
+
+  /// Lowers this rig's space access on a refusal by kind; a rig bound to no
+  /// space has none to lower.
+  void _noteRefusal(Object error) {
+    if (mounted) {
+      rigAccessNotifierOf(
+        ref,
+        widget.workspaceId,
+        widget.rig.conversationId,
+      )?.noteRefusal(error);
+    }
+  }
+
+  /// Lowers it on a 403 from one of the rig's HTTP lanes. A drive lane's
+  /// 403 on a rig whose row says who may drive it is about this machine
+  /// alone (somebody else's sign-ins, or a frame still on its way), so it
+  /// never lowers the space and the other machines in it.
+  void _noteLaneForbidden({required bool drive}) {
+    if (mounted && !(drive && widget.rig.canDrive != null)) {
+      rigAccessNotifierOf(
+        ref,
+        widget.workspaceId,
+        widget.rig.conversationId,
+      )?.noteLaneForbidden(drive: drive);
+    }
+  }
+
+  /// Whether the person may only watch this machine, read outside a build:
+  /// the guest's display mode is theirs to change only when they may drive
+  /// it, like every other input.
+  bool get _watchOnlyNow =>
+      readRigAccessFor(ref, widget.workspaceId, widget.rig).access !=
+      RigAccess.drive;
+
   @override
   void dispose() {
     _resizeDebounce?.cancel();
@@ -153,7 +190,9 @@ class _RigPanelState extends ConsumerState<RigPanel> {
   /// CSS pixel" is not a thing that exists.
   void _scheduleGuestResize(Size logical, double ratio) {
     final rig = widget.rig;
-    if (rig.surfaceKind?.hasResizableDisplay != true || !rig.isLive) {
+    if (rig.surfaceKind?.hasResizableDisplay != true ||
+        !rig.isLive ||
+        _watchOnlyNow) {
       return;
     }
     final w = logical.width.round().clamp(640, 2560);
@@ -216,14 +255,15 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                 if (scale != 1) 'device_scale_factor': scale,
               },
             )
-            .catchError(
-              (_) => (
+            .catchError((Object e) {
+              _noteRefusal(e);
+              return (
                 text: '',
                 isError: true,
                 imageBase64: null,
                 imageMediaType: null,
-              ),
-            ),
+              );
+            }),
       );
     });
   }
@@ -284,7 +324,10 @@ class _RigPanelState extends ConsumerState<RigPanel> {
           .restartUnrestricted(widget.workspaceId, rig.id);
     } on Object catch (e) {
       if (mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
+        _noteRefusal(e);
+        CcToastScope.of(
+          context,
+        ).show(repoRefusalOf(l10n, e) ?? '$e', variant: CcToastVariant.danger);
       }
     } finally {
       if (mounted) {
@@ -298,6 +341,11 @@ class _RigPanelState extends ConsumerState<RigPanel> {
     final t = context.designSystem ?? DesignSystemTokens.light();
     final l10n = AppLocalizations.of(context);
     final rig = widget.rig;
+    // Input, the microphone, paste and file drop are the person's only when
+    // they may drive this machine: its row says so (the space's write grant,
+    // and whose sign-ins it carries); without one the space's state does.
+    final access = watchRigAccessFor(ref, widget.workspaceId, rig);
+    final watchOnly = access.access != RigAccess.drive;
     final audioTabKey = widget.audioTabKey;
     final tabAudio = audioTabKey == null
         ? null
@@ -312,7 +360,10 @@ class _RigPanelState extends ConsumerState<RigPanel> {
         ? ref.watch(audioInputDeviceProvider)
         : tabAudio.inputDeviceId;
     final audioOn = tabAudio?.outputEnabled ?? _audioOn;
-    final microphoneOn = tabAudio?.microphoneEnabled ?? _microphoneOn;
+    final microphoneOn =
+        !watchOnly && (tabAudio?.microphoneEnabled ?? _microphoneOn);
+    final mayUseMicrophone =
+        !watchOnly && (rig.controller == null || rig.isHumanControlled);
     // No libmpv (a stock Linux desktop): the guest's audio has nothing to play
     // through, so there is no toggle and no player.
     final canPlayAudio = ref.watch(mediaPlaybackAvailableProvider);
@@ -350,6 +401,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (watchOnly) RigWatchOnlyNote(holderOnly: access.holderOnly),
           // The browser surface's chrome is its toolbar alone — the address
           // bar answers "where", its size label "how big", and closing the
           // tab shuts the machine down, so the header row would only repeat
@@ -365,8 +417,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                   : null,
               microphoneOn: microphoneOn,
               onToggleMicrophone:
-                  rig.surfaceKind == RigSurface.computer &&
-                      (rig.controller == null || rig.isHumanControlled)
+                  rig.surfaceKind == RigSurface.computer && mayUseMicrophone
                   ? toggleMicrophone
                   : null,
               onNetworkSecurity: rig.egressEnforced
@@ -386,15 +437,19 @@ class _RigPanelState extends ConsumerState<RigPanel> {
               audioOn: audioOn,
               onToggleAudio: canPlayAudio ? toggleAudio : null,
               microphoneOn: microphoneOn,
-              onToggleMicrophone:
-                  (rig.controller == null || rig.isHumanControlled)
-                  ? toggleMicrophone
-                  : null,
+              onToggleMicrophone: mayUseMicrophone ? toggleMicrophone : null,
+              watchOnly: watchOnly,
+              onRefused: _noteRefusal,
             ),
           if ((rig.surfaceKind == RigSurface.mobile ||
                   rig.surfaceKind == RigSurface.ios) &&
               rig.isLive)
-            RigDeviceToolbar(workspaceId: widget.workspaceId, rig: rig),
+            RigDeviceToolbar(
+              workspaceId: widget.workspaceId,
+              rig: rig,
+              watchOnly: watchOnly,
+              onRefused: _noteRefusal,
+            ),
           if (canPlayAudio && audioOn && rig.isLive)
             RigAudioPlayer(
               url: MediaProxyScope.rigAudioUrlOf(
@@ -428,6 +483,7 @@ class _RigPanelState extends ConsumerState<RigPanel> {
               url: microphoneUrl,
               endUrl: microphoneEndUrl,
               inputDeviceId: inputDeviceId,
+              onForbidden: () => _noteLaneForbidden(drive: true),
               onStopped: () {
                 if (!mounted) {
                   return;
@@ -508,12 +564,19 @@ class _RigPanelState extends ConsumerState<RigPanel> {
                           rig: rig,
                           enabled:
                               rig.isLive &&
+                              !watchOnly &&
                               rig.surfaceKind != RigSurface.mobile &&
                               (rig.controller == null || rig.isHumanControlled),
+                          onRefused: _noteRefusal,
+                          onLaneForbidden: _noteLaneForbidden,
                           // The machine on the active tab owns the keyboard
                           // without needing a click first.
                           active: !widget.paused,
-                          child: MjpegView(url: url, paused: widget.paused),
+                          child: MjpegView(
+                            url: url,
+                            paused: widget.paused,
+                            onForbidden: () => _noteLaneForbidden(drive: false),
+                          ),
                         ),
                       );
                     },

@@ -2,7 +2,7 @@
 title: 审查计算（队列、轴与确定性 diff）
 description: 审查计算这一遍在服务器端产出什么 —— 队列、API 契约与视觉 diff、按轴划分的门禁 —— 以及它如何汇入评审标签页。
 slug: zh-CN/手册/操作指南/审查计算
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 PR 的**评审**标签页展示的是审查流水线运行期间的实时进度，随后是它发布出来的工件，
@@ -12,8 +12,7 @@ PR 的**评审**标签页展示的是审查流水线运行期间的实时进度�
 在这个标签页背后，`cc_server` 构建文件队列、运行确定性轴，并通过 `review_studio.*`
 RPC 操作把它们对外提供（`cohorts`、`blastRadius`、`cohortImpact`、`ciSignals`、
 `dependencyDiffs`、`setContractDecision`、`approveVisual`、`compute`，以及它们各自的
-`watch*` 孪生操作）。一个仍然写着 `pr.reviewStudio` 的持久化布局，打开的也是这个
-评审标签页。
+`watch*` 孪生操作）。
 
 在评审标签页上：
 
@@ -65,6 +64,8 @@ breaking 变更同样如此；breaking 但已批准的会给出警告；没有 b
 该 PR 的 base 与 head 工作树中，通过一次无头的 `flutter test` golden 运行渲染出这些
 改动组件的前后状态，然后对像素做 diff。
 
+这些测试是 PR 自身的代码，因此它们的运行方式与智能体的工具进程相同：服务器对智能体进行沙箱隔离时在沙箱内运行；服务器所有者关闭沙箱时不受限制地运行；没有沙箱时，则只为服务器所有者负责的请求运行。对其他人而言，该轴会报告 **unavailable**，原因是 “no sandbox on this server, and only its owner may run a PR's tests unsandboxed”。
+
 :::note[这需要在服务器主机上安装 Flutter SDK]
 纯 Dart 服务器无法在进程内渲染 Flutter widget，因此它会调用外部命令 `flutter test`。
 SDK 必须安装在运行 `cc_server` 的那台机器上 —— 而不是你的客户端上。没有它，这个轴会
@@ -73,8 +74,8 @@ SDK 必须安装在运行 `cc_server` 的那台机器上 —— 而不是你的�
 :::
 
 标记为 **changed** 或 **removed** 的快照会扣住视觉门禁，直到被批准；**unchanged**、
-**added** 和 **approved** 的快照则会放行。不可用有四种可能原因：主机上没有 Flutter
-SDK、仓库中没有 Widgetbook 应用、没有可用于 golden 测试的用例，或 golden 装置出错。
+**added** 和 **approved** 的快照则会放行。不可用有五种可能原因：主机上没有 Flutter
+SDK、仓库中没有 Widgetbook 应用、没有可用于 golden 测试的用例、golden 装置出错，或者对于服务器所有者不负责的请求没有可用的沙箱。
 
 批准一个有意为之的变更用的是 `review_studio.approveVisual`。
 

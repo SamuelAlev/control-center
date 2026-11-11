@@ -408,7 +408,8 @@ Future<void> Function(String lane) _accountPoolCredentialsSweep({
 /// Auto-discovers MCP servers the user already configured for other tools
 /// (Claude/Codex/Cursor/Gemini/VS Code/Windsurf/OpenCode + standalone
 /// `.mcp.json`) and connects the enabled ones, bridging their tools into the
-/// registry. Run fire-and-forget after boot so a slow/dead server never blocks
+/// registry's personal layer: they act as the server OS user, so only runs the
+/// server owner is accountable for are handed them. Run fire-and-forget after boot so a slow/dead server never blocks
 /// startup; best-effort — a discovery failure is logged, never fatal.
 Future<void> _discoverExternalMcpServers(McpClientService service) async {
   try {
@@ -425,3 +426,44 @@ Future<void> _discoverExternalMcpServers(McpClientService service) async {
     CcHostLog.warning('cc_server: external MCP discovery failed: $e');
   }
 }
+
+/// The credential the media proxy fetches [target] with for [userId] viewing
+/// [workspaceId]: their own GitHub sign-in in effect in that workspace, and
+/// only over https to the GitHub hosts that authenticate (a bearer token sent
+/// to an arbitrary image host, or in the clear, would hand a credential to
+/// whoever hosts or watches the asset).
+/// Null: an anonymous fetch.
+Future<String?> _githubMediaCredential(
+  ForgeCredentials credentials,
+  String userId,
+  Uri target,
+  String workspaceId,
+) async {
+  const authenticatedHosts = {
+    'api.github.com',
+    'raw.githubusercontent.com',
+    'private-user-images.githubusercontent.com',
+  };
+  if (target.scheme != 'https' ||
+      !authenticatedHosts.contains(target.host.toLowerCase())) {
+    return null;
+  }
+  final token = await credentials.tokenFor(
+    ForgeHost.github,
+    userId: userId,
+    workspaceId: workspaceId,
+  );
+  return (token == null || token.isEmpty) ? null : 'Bearer $token';
+}
+
+/// The dispatch adapter's autonomy resolver: the space's autonomy dial for an
+/// agent, read per decision.
+Future<String?> Function(String workspaceId, String spaceId, String agentId)
+_spaceAutonomy(WorkspaceDatabaseManager workspaceDbs) =>
+    (workspaceId, spaceId, agentId) async {
+      final row = await workspaceDbs
+          .of(workspaceId)
+          .spaceExtrasDao
+          .autonomyFor(workspaceId, spaceId, agentId);
+      return row?.autonomyLevel;
+    };

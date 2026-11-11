@@ -2,7 +2,7 @@
 title: Menyiapkan lingkungan
 description: Beri setiap space dan pull request stack berjalannya sendiri, dengan compose, CLI kustom, proses yang diawasi, atau aplikasi desktop.
 slug: id-ID/panduan-pengguna/panduan-praktis/lingkungan
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 **Lingkungan** adalah stack berjalan milik satu space: layanan yang dibutuhkan sebuah branch, terisolasi dari semua space lain, terlihat di bilah sisi, dan dapat dijangkau agen. Pull request juga mendapatkannya, karena PR sudah memiliki space sendiri.
@@ -11,12 +11,26 @@ Admin ruang kerja menulis **definisi** satu kali. Anggota lalu menekan **Mulai**
 
 ## Membuat definisi
 
-1. Buka **Pengaturan → Ruang kerja → Lingkungan**. Hanya admin ruang kerja yang dapat mengubah definisi.
+1. Buka **Pengaturan → Ruang kerja → Lingkungan**. Hanya admin ruang kerja yang dapat mengubah definisi, dan hanya pemilik server yang dapat menyimpan definisi yang berjalan di host server (lihat [Siapa yang dapat menyimpan apa](#siapa-yang-dapat-menyimpan-apa)).
 2. Klik **Definisi baru**, lalu **Definisi kosong** atau **Draf dari repo**. Draf memindai repo untuk file compose, `Procfile`, dan skrip `package.json`, lalu Anda meninjau hasilnya.
 3. Isi formulir, atau gunakan tab **JSON**. Contoh di halaman ini adalah JSON tersebut.
 4. Klik **Jalankan pengujian**. Ini memulai lingkungan sekali pakai, menunggu sampai siap, lalu menghancurkannya.
 
-Untuk menyimpan definisi di repo, gunakan **Tautkan file repo**. Control Center membaca file hanya dari branch default dan hanya menjalankan versi yang disetujui admin. Versi yang lebih baru menampilkan **Pembaruan tersedia** dan tidak mengubah apa pun sampai disetujui.
+Saat menyimpan, definisi diperiksa dengan ketat. Field yang tidak dikenal, nilai dengan tipe yang salah, atau pilihan yang salah eja ditolak, beserta path-nya dan nama valid terdekat, misalnya `repos.app.requird: Unknown field. Did you mean "required"?`. `$schema` di tingkat teratas diizinkan.
+
+Untuk menyimpan definisi di repo, gunakan **Tautkan file repo**. Control Center membaca file hanya dari branch default dan hanya menjalankan versi yang disetujui: oleh admin ruang kerja, atau oleh pemilik server ketika definisi berjalan di host. Versi yang lebih baru menampilkan **Pembaruan tersedia** dan tidak mengubah apa pun sampai disetujui.
+
+### Siapa yang dapat menyimpan apa
+
+Sebuah definisi lingkungan dapat menjalankan perintah di host server sebagai pengguna server itu sendiri. Itu keputusan pemilik server, bukan peran ruang kerja:
+
+- Sebuah definisi **berjalan di host** ketika ia memiliki penempatan host, pemeriksaan yang menjalankan perintah, atau tugas `provision` atau `archive`. Tugas-tugas itu berjalan di worktree space di host, apa pun penempatannya.
+- Hanya [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server) yang dapat menyimpan atau menyetujui definisi yang berjalan di host. Itu termasuk menyetujui versi baru dari file repo yang ditautkan. Admin ruang kerja yang mencobanya melihat "Hanya pemilik server yang dapat menyimpan atau menyetujui lingkungan yang berjalan di host server. Admin ruang kerja dapat menggunakan lingkungan yang berjalan di rig."
+- Admin ruang kerja dapat menyimpan dan menyetujui definisi yang sepenuhnya berjalan di rig: `"placement": "rig"`, tanpa perintah pemeriksaan dan tanpa tugas `provision` atau `archive`.
+- Anggota memulai, menghentikan, dan menggunakan lingkungan dalam kedua kasus.
+- Definisi yang berjalan di host hanya berjalan setelah pemilik server **saat ini** menyimpan atau menyetujuinya. Server mencatat persetujuan itu sendiri dan memeriksanya sebelum setiap mulai, pemeriksaan, tugas, dan sinkronisasi kepala pull request. Definisi yang belum disetujui pemilik saat ini, seperti yang disimpan oleh pemilik sebelumnya, menunggu di bawah barisnya dalam daftar lingkungan dan di editor. Pemilik server melihat "Berjalan di server ini. Setujui agar bisa dimulai." dengan **Setujui**, yang menyimpannya tanpa perubahan; semua orang lain melihat "Berjalan di server ini. Pemilik server harus menyetujuinya sebelum bisa dimulai."
+- Lingkungan yang ditahan untuk persetujuan itu menyatakan "Pemilik server belum menyetujui lingkungan ini, sehingga tidak dapat berjalan di server ini." Pemilik server justru melihat "Anda belum menyetujui lingkungan ini. Lingkungan ini berjalan di server ini, jadi akan dimulai setelah Anda menyetujui definisinya." dengan **Tinjau dan setujui**, yang membuka definisinya.
+- Terminal proses lingkungan, dan terminal yang dibuka saat mulai ketika ia membutuhkan Anda, berjalan di host server. Mengetik di salah satunya, mengubah ukurannya, atau menutupnya memerlukan akses tulis ke setiap repositori yang diekspos space, yang dapat dibaca melalui proses masuk forge Anda sendiri: sama seperti memulai lingkungan. Orang lain tidak dapat menjangkau terminal tersebut sama sekali.
 
 ## Definisi terkecil
 
@@ -35,7 +49,7 @@ Semua hal lain memiliki nilai default: file compose ditemukan, setiap layanan be
 
 ## Jenis komponen
 
-Lingkungan adalah daftar komponen berurutan. Masing-masing menunggu komponen sebelumnya siap, kecuali `after` menyebut yang lain, dan penghentian berjalan terbalik. `enabledWhen` membuat komponen bergantung pada opsi atau peran, misalnya `opt.seed`, `!opt.seed`, atau `repo.web`.
+Lingkungan adalah daftar komponen berurutan. Masing-masing menunggu komponen sebelumnya siap, kecuali `after` menyebut yang lain, dan penghentian berjalan terbalik. `enabledWhen` membuat komponen bergantung pada opsi atau peran, misalnya `opt.seed`, `!opt.seed`, atau `repo.web`. Komponen yang perannya opsional dan tidak ada di space dikecualikan dengan cara yang sama, tanpa perlu `enabledWhen`: komponen itu tidak dimulai dan tidak memiliki `{port.*}` atau `{url.*}`, sehingga komponen lain yang membacanya gagal saat memulai.
 
 | Jenis | Siapa yang menjalankan | Kegunaan |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Komponen `task` menerima daftar `when`:
 | `manual` | Atas permintaan: **Jalankan**, `cc-env run <id>`, atau `environment_run_task` |
 | `archive` | Tepat sebelum worktree dihancurkan |
 
-Perintah yang diberikan sebagai array adalah argv, sehingga nilai opsi tidak pernah melewati shell. String, atau `script` dengan array baris, berjalan di bawah `bash -lc`. Placeholder seperti `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}`, dan `{url.<role>}` hanya diperluas di argv. Perintah shell membaca nilai yang sama sebagai variabel `CC_ENV_*`, misalnya `$CC_ENV_PORT_WEB`.
+Tugas yang tidak punya pekerjaan saat proses mulai menampilkan status **Menganggur** dan tidak masuk daftar langkah yang ditampilkan saat lingkungan dimulai: tugas `manual` atau `change`, atau tugas `create` yang sudah pernah dijalankan.
 
-Setiap perintah dan terminal space juga mendapatkan `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>`, dan, di space PR, `CC_PR_NUMBER` serta `CC_PR_IS_FORK`. Dengan komponen compose, mereka juga mendapatkan `COMPOSE_PROJECT_NAME` dan `COMPOSE_FILE`, sehingga `docker compose exec` dalam tugas mencapai proyek yang benar.
+Perintah yang diberikan sebagai array adalah argv, sehingga nilai opsi tidak pernah melewati shell. String, atau `script` dengan array baris, berjalan di bawah `bash -lc`. Placeholder seperti `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}`, dan `{url.<role>}` hanya diperluas di argv. Perintah shell membaca nilai yang sama sebagai variabel `CC_ENV_*`, misalnya `$CC_ENV_PORT_WEB`. Placeholder yang tidak dikenal di komponen yang ikut serta menghentikan proses mulai sebelum ada yang dijalankan.
+
+Setiap perintah dan terminal space juga mendapatkan `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>`, dan, di space PR, `CC_PR_NUMBER` serta `CC_PR_IS_FORK`. Dengan komponen compose, mereka juga mendapatkan `COMPOSE_PROJECT_NAME` dan `COMPOSE_FILE`, sehingga `docker compose exec` dalam tugas mencapai proyek yang benar.
 
 ## Peran dan direktori kerja
 
@@ -77,7 +93,7 @@ Definisi mengikat **peran** ke repo ruang kerja, sehingga satu stack dapat menca
 - `whenMissing`: yang terjadi saat space tidak memiliki peran tersebut. `addToSpace` menambahkan repo pada branch default-nya dan merupakan default untuk peran `required`. `useSource` meneruskan checkout terdaftar Anda, yang harus diperlakukan hanya baca. `skip` membiarkan variabel tidak disetel dan merupakan default lainnya.
 - Memulai memerlukan izin `write` pada repo jangkar di space dan akses baca ke setiap repo terikat lainnya.
 
-Perintah berjalan di peran pertama dalam `repos` yang dimiliki space, sehingga definisi satu repo tidak pernah menyebutkannya. Komponen apa pun dapat menggantinya dengan `"cwd": { "role": "e2e", "path": "packages/ui" }`. Kedua bidang bersifat opsional.
+Perintah berjalan di peran pertama yang dideklarasikan dalam `repos`, tidak pernah di peran lain yang kebetulan dimiliki space, sehingga definisi satu repo tidak pernah menyebutkannya. Komponen apa pun dapat menggantinya dengan `"cwd": { "role": "e2e", "path": "packages/ui" }`. Kedua bidang bersifat opsional. Ketika peran pertama mungkin tidak ada di sebuah space, karena peran itu bukan `required` dan bukan satu-satunya anchor, setiap komponen harus menyebut perannya.
 
 ## Port dan URL
 
@@ -130,6 +146,8 @@ Aplikasi web dan Postgres dari satu file compose, dengan `.env` yang diabaikan g
 
 `healthchecks` memungkinkan layanan tanpa pemeriksaan kesehatan sendiri menahan komponen berikutnya. Tanpanya, kontainer yang berjalan dianggap siap, dan migrasi bisa mendahului basis data yang masih memulai.
 
+Setiap mulai dan refresh menjalankan `up` dengan `--remove-orphans`, sehingga layanan yang dihapus dari file compose berhenti dan membebaskan port-nya. Image dibangun saat mulai dan saat refresh, kecuali komponen menetapkan `"build": false`.
+
 ## Contoh: CLI kustom
 
 Alat rekaan `acme` yang memiliki kontainer, domain, dan TLS-nya sendiri. Control Center memberikan `{name}` dan mengetahui sisanya dari `status`. Control Center tidak pernah menurunkan nama host alat dan tidak pernah mengedit `/etc/hosts`.
@@ -147,7 +165,8 @@ Alat rekaan `acme` yang memiliki kontainer, domain, dan TLS-nya sendiri. Control
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Alat rekaan `acme` yang memiliki kontainer, domain, dan TLS-nya sendiri. Control
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Alat rekaan `acme` yang memiliki kontainer, domain, dan TLS-nya sendiri. Control
 ```
 
 - `create`, `status`, dan `destroy` wajib ada. Control Center memilih `create` atau `start` dari status yang dibacanya. Kata kerja apa pun boleh berupa `{ "shell": "…" }` alih-alih argv.
+- `interactive` menyebutkan kata kerja, dari `create`, `start`, dan `reset`, yang dapat meminta apa yang dibutuhkan di terminal. Ketika kata kerja seperti itu keluar dengan kode 3 untuk orang yang menekan **Mulai**, Control Center menjalankan ulang kata kerja yang sama di tab terminal, dan proses mulai berlanjut setelah kata kerja itu keluar dengan kode 0. Di sana kondisi `interactive` bernilai benar dan `CC_ENV_INTERACTIVE=1` diatur, sehingga `{ "if": "!interactive", "args": ["--json"] }` mempertahankan output mesin untuk pipe. Mulai oleh agen, atau mulai otomatis, tidak pernah membuka terminal: lingkungan menampilkan **Perlu tindakan** dan menunggu.
+- `destroy` yang gagal tetap menghapus lingkungan jika `status` kemudian melaporkan `missing`, sehingga lingkungan yang sudah tidak dimiliki alat selalu bisa dihapus.
+- `list` memungkinkan Control Center menyadari lingkungan yang telah hilang dari alat. Lingkungan hanya ditandai hilang ketika namanya tidak ada di `list` dan `status` kemudian menyatakan `missing`. Output yang tidak dapat dibaca sebagai daftar tidak mengubah apa pun.
+- `{service}` di `logs` dan `exec` harus berupa satu kata yang tidak diawali `-`, dan salah satu layanan yang dilaporkan alat terakhir kali, jika alat pernah melaporkan layanan.
 - `statusMap` membaca JSON alat dengan penunjuk JSON, dengan `*` cocok dengan setiap item. Aturan status berurutan dan kecocokan pertama menang. Kondisi berupa `path` dengan `equals`, atau `any` maupun `none` dengan `where`.
 - `keepsDataOnStop: false` mematikan penghentian saat diam dan menambahkan peringatan kehilangan data ke **Berhenti**. Setel ini jika penghentian menghilangkan data.
 - `routing.mode: "tool"` menghubungkan nama host alat ke browser (VM) dan agen. Domain harus berakhir dengan `.test`, `.localhost`, atau `.internal`, dan URL yang dilaporkan di luarnya dibuang.
@@ -229,8 +253,8 @@ Hanya proses dan tugas, tanpa kontainer. Aplikasi web menemukan API melalui `{ur
 }
 ```
 
-- Setiap proses adalah tab terminal yang dapat Anda buka, baca, dan ketik. Menutup tab tidak menghentikannya.
-- `ready` menerima `http`, `tcp`, atau `logMatch`. `restart` bernilai `on-failure` (default), `always`, atau `never`. `restartOn` memulai ulang proses saat jalur yang berubah cocok.
+- Setiap proses adalah tab terminal yang dapat Anda buka, baca, dan ketik, jika Anda memiliki akses tulis ke setiap repositori dalam space (lihat [Siapa yang dapat menyimpan apa](#siapa-yang-dapat-menyimpan-apa)). Menutup tab tidak menghentikannya.
+- `ready` menerima `http` (URL lengkap), `tcp` (`host:port`), atau `logMatch` (ekspresi reguler). `restart` bernilai `on-failure` (default), `always`, atau `never`. `restartOn` memulai ulang proses saat jalur yang berubah cocok.
 - `options` menjadi formulir pada **Mulai**, dan `agentDefault` berlaku untuk eksekusi yang dimulai agen.
 
 ## Contoh: aplikasi desktop
@@ -251,21 +275,21 @@ Aplikasi desktop dengan langkah build. Aplikasi bekerja sama saja apa pun teknol
 }
 ```
 
-Aplikasi tidak dimulai bersama lingkungan. Seseorang mengklik **Luncurkan**, dan `prepare` berjalan lebih dulu. **Bangun ulang & luncurkan ulang** menjalankan pasangan itu lagi. Keluar bersih tampil sebagai tertutup, crash menampilkan baris log terakhir tanpa memulai ulang, restart server tidak pernah meluncurkannya kembali, dan penghentian saat diam membiarkan aplikasi yang berjalan.
+Aplikasi tidak dimulai bersama lingkungan. Seseorang mengklik **Luncurkan**, dan `prepare` berjalan lebih dulu. **Bangun ulang & luncurkan ulang** menjalankan pasangan itu lagi. `enabledWhen` berlaku untuk aplikasi dan untuk tugas `prepare`-nya, dan **Luncurkan** ditolak selama salah satunya nonaktif. Aplikasi dianggap berjalan selama ada proses dalam grup prosesnya yang berjalan, jadi peluncur yang memulai aplikasi lalu keluar tidak masalah. Jika semuanya hilang dalam sekitar 5 detik setelah **Luncurkan**, aplikasi tampil gagal dengan baris log terakhirnya. Setelah itu, keluar bersih tampil sebagai tertutup dan crash menampilkan baris log terakhir, dan keduanya tidak memulai ulangnya. Restart server menutup aplikasi dan tidak pernah meluncurkannya kembali, dan penghentian saat diam membiarkan aplikasi yang berjalan.
 
 ### Izin dan batasan aplikasi desktop
 
 - Di macOS, berikan Control Center izin **Perekaman Layar** dan **Aksesibilitas** satu kali di Pengaturan Sistem. Host server memerlukan sesi GUI: server headless menolak meluncurkan aplikasi.
-- Luncurkan biner secara langsung. `open -a` menyerahkan aplikasi ke LaunchServices dan aplikasi keluar dari pohon proses yang dilacak Control Center. `"window": { "match": { "bundleId": "…" } }` menangani kasus itu, tetapi hanya aman dengan satu salinan berjalan.
+- Luncurkan biner secara langsung. `open -a` menyerahkan aplikasi ke LaunchServices dan aplikasi keluar dari pohon proses yang dilacak Control Center, sehingga aplikasi tampil gagal tepat setelah diluncurkan.
 - Jendela tetap berada di layar. macOS tidak menangkap jendela yang diparkir di luar semua layar, sehingga aplikasi yang digunakan agen terlihat di layar server. Fokus tidak diperlukan.
 - `"isolate": "home"` memberi aplikasi direktori home pribadi melalui `HOME`, `XDG_*`, dan `CFFIXED_USER_HOME`, sehingga salinan dari dua space dapat berjalan berdampingan. `NSUserDefaults` tidak terisolasi, sehingga preferensi Cocoa dan `shared_preferences` Flutter tetap dibagi antar salinan.
 - `isolate` hanya berlaku untuk proses yang diluncurkan. Peluncur toolchain seperti `flutter run` membutuhkan home yang sebenarnya, jadi pasangkan `isolate` dengan biner hasil build. Jika aplikasi memiliki pengaturan sendiri, seperti `--user-data-dir`, utamakan itu.
 - Agen mengendalikan jendela dengan `app_use`, yang hanya dapat mencapai pohon proses lingkungan ini. Agen melihat jendela, bukan desktop. Peluncuran oleh agen melewati kebijakan tindakan dan default-nya bertanya, dan input agen berhenti saat seseorang memegang kendali.
 - `"input": "background"` (default) mengirim peristiwa ke proses. `"foreground"` mengaktifkan jendela dan mengambil alih kursor.
 
-## Tugas worktree menggantikan skrip repo
+## Tugas worktree
 
-Tugas `provision` dan `archive` menggantikan skrip penyiapan dan arsip lama per repo. **Skrip yang ada telah dimigrasikan secara otomatis:** setiap repo yang memiliki skrip kini memiliki definisi bernama sama dengan repo, dengan tugas `setup` dan `archive` yang menyimpan teks skrip yang sama. Ikon di baris repo pada **Pengaturan → Ruang kerja → Repositori** membukanya. Eksekusi skrip sebelumnya tetap ada sebagai riwayat hanya baca.
+Tugas `provision` dan `archive` menjalankan penyiapan dan pembongkaran repo bersama worktree-nya. Ikon di baris repo pada **Pengaturan → Ruang kerja → Repositori** membuka definisi repo tersebut.
 
 Tugas ini mengikuti worktree, bukan lingkungan, sehingga berjalan di space tempat tidak ada yang mengklik **Mulai**:
 
@@ -292,7 +316,7 @@ Repo tanpa stack hanya membutuhkan definisi yang berisi tugasnya. Karena tidak a
 
 - Belum ada lingkungan, sehingga tugas ini tidak dapat memakai `{name}`, `{port.*}`, `{url.*}`, `{opt.*}`, atau `enabledWhen`, dan tidak mendapatkan `env` definisi.
 - Hanya satu definisi yang boleh memiliki tugas `provision` dan `archive` untuk sebuah repo. Definisi lain tetap boleh mengikatnya untuk hal lainnya.
-- `"when": ["provision", "change"]` juga memasang ulang saat lockfile berubah, hal yang tidak pernah dilakukan skrip penyiapan.
+- `"when": ["provision", "change"]` juga memasang ulang saat lockfile berubah.
 - Tugas berjalan untuk worktree dari peran `cwd`-nya, sehingga definisi multi-repo dapat menyiapkan setiap repo secara terpisah.
 - Eksekusi uji menyetel `CC_SCRIPT_TEST=1`. Percobaan ulang dimulai dari worktree bersih, jadi tulis tugas yang tahan dijalankan ulang.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Dengan komponen compose, shim `docker` juga mengizinkan `docker compose` dengan `ps`, `logs`, `exec`, `port`, `restart`, dan `top`. Tidak boleh ada flag sebelum kata kerja, `logs` tidak dapat mengikuti output, dan `exec` hanya menerima `-T`. Yang lain keluar dengan kode 5 dan "not available in Control Center agent runs".
+Dengan komponen compose, shim `docker` juga mengizinkan `docker compose` dengan `ps`, `logs`, `exec`, `port`, `restart`, dan `top`, dan hanya terhadap proyek compose milik lingkungan ini. Tidak boleh ada flag sebelum kata kerja, dan setiap kata kerja menerima sejumlah kecil opsi: `logs` tidak dapat mengikuti output, dan `exec` hanya menerima `-T` (atau `--no-tty`). Opsi yang mengarahkan compose ke berkas atau proyek lain (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) ditolak di mana pun muncul. Yang lain keluar dengan kode 5 dan "not available in Control Center agent runs".
 
-Repo yang skill-nya memanggil alatnya sendiri dapat terus melakukannya. Blok `agentPassthrough` pada komponen `cli` mendeklarasikan perintah yang boleh dijalankan agen:
+Repo yang skill-nya memanggil alatnya sendiri dapat terus melakukannya. Blok `agentPassthrough` pada komponen `cli` mendeklarasikan perintah yang boleh dijalankan agen. Hanya perintah yang dideklarasikan oleh definisi yang disetujui yang diteruskan, dan setiap perintah berjalan di host, sehingga berlaku aturan **Jalankan perintah di host**, yang secara bawaan meminta izin terlebih dahulu:
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Kode keluar berlaku untuk setiap kata kerja:
 | Kode | Arti |
 | --- | --- |
 | 0 | OK |
-| 3 | Penyiapan host diperlukan. **Jalankan di terminal** membuka terminal space dengan perintah sudah diketik tetapi belum dijalankan, lalu **Coba lagi** mencoba lagi. Control Center tidak pernah menjalankan `sudo` |
-| 4 | Autentikasi diperlukan |
-| 5 | Dependensi tidak tersedia |
+| 3 | Jawaban diperlukan di terminal, misalnya kata sandi `sudo`. Kata kerja yang tercantum di `interactive` dijalankan ulang di tab terminal untuk orang yang menekan **Mulai**. Jika tidak, **Jalankan di terminal** membuka terminal space dengan `command` alat sudah diketik tetapi belum dijalankan, lalu **Coba lagi** mencoba lagi. Control Center tidak pernah menjalankan `sudo` dan tidak pernah menjawab prompt |
+| 4 | Perlu masuk. `command` alat menjelaskan caranya |
+| 5 | Sesuatu yang bergantung padanya tidak tersedia, misalnya runtime kontainer yang tidak berjalan |
 | Lainnya | Kegagalan |
+
+Kode 3, 4, dan 5 bukan kegagalan. Lingkungan menampilkan **Perlu tindakan** dan menunggu, dan mulai berikutnya melanjutkan dari titik tempat mulai tadi berhenti. Tugas yang keluar dengan salah satu kode tersebut memiliki arti yang sama.
 
 Kemajuan dikirim ke stderr sebagai JSON yang dipisahkan baris:
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-Baris `step` tampil sebagai daftar langkah langsung dan baris `note` ditampilkan apa adanya. Baris terakhir bertipe `error` menjadi galat terstruktur, dengan `command` ditawarkan untuk disalin. Tanpanya, Control Center menampilkan 20 baris stderr terakhir. Apa pun yang bukan JSON adalah output log biasa.
+Saat lingkungan dimulai, panel menampilkan komponen yang dilalui proses mulai, masing-masing dengan spinner, tanda centang, atau tanda silang. Baris `step` menyatakan apa yang sedang dilakukan alat sekarang, dan `label`-nya tampil di bawah baris alat itu sendiri; langkah tidak pernah menambah baris. `state` sebuah langkah adalah `pending`, `running`, `done`, atau `failed`, dan langkah tanpa `state` dianggap sedang berjalan. Langkah yang melaporkan lagi dengan `id` yang sama (berupa string atau angka, atau dengan `label` yang sama jika tanpa id) menggantikan apa yang dikatakannya sebelumnya, sehingga alat dengan satu spinner dapat mempertahankan satu `id` dan mengubah `label`. Tanpa id, langkah berurutan: langkah baru mengakhiri langkah sebelumnya. Saat perintah keluar, langkah yang masih berjalan berakhir sesuai cara perintah itu berakhir.
+
+Baris `log` memuat satu baris keluaran alat yang dibungkus JSON, dan dibaca sebagai keluaran teks biasa. Baris `note` masuk ke output proses, dan yang memiliki `"level": "warn"` juga tetap ada di lingkungan sebagai peringatan. Baris terakhir bertipe `error` menjadi galat terstruktur, dengan `command` ditawarkan untuk disalin, dan 12 baris keluaran terakhir tampil di bawah `message`-nya. Tanpanya, Control Center menampilkan 20 baris stderr terakhir. Apa pun yang bukan JSON adalah output log biasa.
 
 ## Terkait
 

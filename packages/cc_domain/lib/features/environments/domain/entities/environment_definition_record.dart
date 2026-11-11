@@ -48,6 +48,9 @@ class EnvironmentDefinitionRecord {
     this.approvedBlobHash,
     this.overridesJson,
     this.createdBy,
+    this.hostApprovedBy,
+    this.runsOnHost = false,
+    this.hostApproved = false,
     required this.createdAt,
     required this.updatedAt,
   }) {
@@ -91,6 +94,26 @@ class EnvironmentDefinitionRecord {
   /// Who wrote it.
   final String? createdBy;
 
+  /// The user id of the server owner who saved this definition while it ran
+  /// something on the host, or null: it runs nothing there, or no owner
+  /// approved it. Only the server sets it, on save, and nothing it runs on
+  /// the host starts unless this is the current server owner.
+  final String? hostApprovedBy;
+
+  /// Whether it runs anything on the server itself, as the server reported
+  /// it with this record (`runs_on_host`). Derived per answer, never stored.
+  final bool runsOnHost;
+
+  /// Whether the CURRENT server owner approved what it runs on the server
+  /// (`host_approved`), as the server reported it with this record. Derived
+  /// per answer from [hostApprovedBy] and who owns the server now; never
+  /// stored. Meaningful only with [runsOnHost].
+  final bool hostApproved;
+
+  /// Whether it runs on the server but no current owner approved it, so
+  /// nothing it runs there starts until the owner saves it once.
+  bool get awaitsHostApproval => runsOnHost && !hostApproved;
+
   /// When it was created.
   final DateTime createdAt;
 
@@ -100,15 +123,18 @@ class EnvironmentDefinitionRecord {
   /// Whether this tracks a file in a repo.
   bool get hasSource => sourceRepoId != null;
 
-  /// The parsed definition.
+  /// The parsed definition, without overrides.
   ///
-  /// Throws [FormatException] on a malformed row.
+  /// Throws [EnvironmentDefinitionException] listing every issue by path, or
+  /// a plain [FormatException] when the text is not JSON.
   EnvironmentDefinition get definition {
-    final decoded = jsonDecode(definitionJson);
-    if (decoded is! Map) {
-      throw const FormatException('A definition must be a JSON object');
+    final (:definition, :issues) = parseEnvironmentDefinition(
+      jsonDecode(definitionJson),
+    );
+    if (definition == null) {
+      throw EnvironmentDefinitionException(issues);
     }
-    return EnvironmentDefinition.fromJson(Map<String, dynamic>.from(decoded));
+    return definition;
   }
 
   /// Wire form.
@@ -152,6 +178,9 @@ class EnvironmentDefinitionRecord {
       other.sourcePath == sourcePath &&
       other.approvedBlobHash == approvedBlobHash &&
       other.overridesJson == overridesJson &&
+      other.hostApprovedBy == hostApprovedBy &&
+      other.runsOnHost == runsOnHost &&
+      other.hostApproved == hostApproved &&
       other.updatedAt == updatedAt;
 
   @override
@@ -164,6 +193,9 @@ class EnvironmentDefinitionRecord {
     sourcePath,
     approvedBlobHash,
     overridesJson,
+    hostApprovedBy,
+    runsOnHost,
+    hostApproved,
     updatedAt,
   );
 }

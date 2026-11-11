@@ -1,8 +1,10 @@
+import 'package:cc_domain/features/environments/domain/services/environment_definition_reader.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_naming.dart';
-import 'package:cc_domain/features/environments/domain/value_objects/environment_template.dart';
 import 'package:collection/collection.dart';
+
+final _roleKey = RegExp(r'^[a-z][a-z0-9_]*$');
 
 /// What to do when a space lacks a role.
 enum EnvironmentWhenMissing {
@@ -15,15 +17,10 @@ enum EnvironmentWhenMissing {
   /// Leave the variable unset.
   skip;
 
-  /// Parses [wire], or null.
-  static EnvironmentWhenMissing? tryParse(Object? wire) {
-    for (final value in values) {
-      if (value.name == wire) {
-        return value;
-      }
-    }
-    return null;
-  }
+  /// Every value by wire name.
+  static Map<String, EnvironmentWhenMissing> get byWire => {
+    for (final value in values) value.name: value,
+  };
 }
 
 /// One role bound to a workspace repo.
@@ -45,15 +42,34 @@ class EnvironmentRole {
     }
   }
 
-  /// Parses a role.
-  factory EnvironmentRole.fromJson(String key, Map<String, dynamic> json) =>
-      EnvironmentRole(
-        key: key,
-        repoId: (json['repoId'] as String?) ?? '',
-        anchor: json['anchor'] == true,
-        required: json['required'] == true,
-        whenMissing: EnvironmentWhenMissing.tryParse(json['whenMissing']),
-      );
+  /// Reads the role called [key], or null when it can't be built.
+  static EnvironmentRole? _read(String key, EnvironmentJsonReader reader) {
+    // A file meant for linking leaves this out on purpose: repo ids belong
+    // to a workspace.
+    final repoId = reader.raw('repoId');
+    if (repoId == null || (repoId is String && repoId.isEmpty)) {
+      reader.report('repoId', 'Pick a repo');
+    } else if (repoId is! String) {
+      reader.report('repoId', 'Must be a string');
+    }
+    final anchor = reader.boolean('anchor');
+    final required = reader.boolean('required');
+    final whenMissing = reader.choice(
+      'whenMissing',
+      EnvironmentWhenMissing.byWire,
+    );
+    reader.finish();
+    if (repoId is! String || repoId.isEmpty) {
+      return null;
+    }
+    return EnvironmentRole(
+      key: key,
+      repoId: repoId,
+      anchor: anchor ?? false,
+      required: required ?? false,
+      whenMissing: whenMissing,
+    );
+  }
 
   /// Role name.
   final String key;
@@ -98,17 +114,23 @@ class EnvironmentRouting {
     this.caFile,
   });
 
-  /// Parses a `routing` object.
-  factory EnvironmentRouting.fromJson(Map<String, dynamic> json) =>
-      EnvironmentRouting(
-        mode: json['mode'] == 'tool'
-            ? EnvironmentRoutingMode.tool
-            : EnvironmentRoutingMode.router,
-        domain: json['domain'] as String?,
-        upstream: json['upstream'] as String?,
-        tls: json['tls'] == true,
-        caFile: json['caFile'] as String?,
-      );
+  static EnvironmentRouting _read(EnvironmentJsonReader reader) {
+    final mode = reader.choice('mode', {
+      for (final mode in EnvironmentRoutingMode.values) mode.name: mode,
+    });
+    final domain = reader.string('domain', nonEmpty: true);
+    final upstream = reader.string('upstream', nonEmpty: true);
+    final tls = reader.boolean('tls');
+    final caFile = reader.string('caFile', nonEmpty: true);
+    reader.finish();
+    return EnvironmentRouting(
+      mode: mode ?? EnvironmentRoutingMode.router,
+      domain: domain,
+      upstream: upstream,
+      tls: tls ?? false,
+      caFile: caFile,
+    );
+  }
 
   /// Who serves the hostnames.
   final EnvironmentRoutingMode mode;
@@ -168,18 +190,31 @@ class EnvironmentOption {
     }
   }
 
-  /// Parses an option.
-  factory EnvironmentOption.fromJson(Map<String, dynamic> json) =>
-      EnvironmentOption(
-        key: (json['key'] as String?) ?? '',
-        type: (json['type'] as String?) ?? 'string',
-        label: json['label'] as String?,
-        values: [
-          for (final value in (json['values'] as List?) ?? const []) '$value',
-        ],
-        defaultValue: json['default'],
-        agentDefault: json['agentDefault'],
-      );
+  /// The option types.
+  static const Set<String> types = {'bool', 'enum', 'multi', 'string'};
+
+  static EnvironmentOption? _read(EnvironmentJsonReader reader) {
+    final key = reader.string('key', required: true, nonEmpty: true);
+    final type = reader.choice('type', {for (final type in types) type: type});
+    final label = reader.string('label');
+    final values = reader.strings('values');
+    final defaultValue = reader.raw('default');
+    final agentDefault = reader.raw('agentDefault');
+    reader.finish();
+    if (key == null ||
+        (reader.has('type') && type == null) ||
+        (reader.has('values') && values == null)) {
+      return null;
+    }
+    return EnvironmentOption(
+      key: key,
+      type: type ?? 'string',
+      label: label,
+      values: values ?? const [],
+      defaultValue: defaultValue,
+      agentDefault: agentDefault,
+    );
+  }
 
   /// Stable key.
   final String key;
@@ -243,21 +278,40 @@ class EnvironmentCheck {
     }
   }
 
-  /// Parses a check.
-  factory EnvironmentCheck.fromJson(
-    Map<String, dynamic> json, {
-    required String path,
-  }) => EnvironmentCheck(
-    id: json['id'] as String,
-    label: (json['label'] as String?) ?? json['id'] as String,
-    command: json['command'] == null
-        ? null
-        : EnvironmentCommand.fromJson(json['command'], path: '$path.command'),
-    expectOutput: json['expectOutput'] as String?,
-    file: json['file'] as String?,
-    hint: json['hint'] as String?,
-    fix: json['fix'] as String?,
-  );
+  static EnvironmentCheck? _read(EnvironmentJsonReader reader) {
+    final id = reader.string('id', required: true, nonEmpty: true);
+    final label = reader.string('label', nonEmpty: true);
+    final command = reader.has('command')
+        ? EnvironmentCommand.read(
+            reader.raw('command'),
+            reader.pathOf('command'),
+            reader.issues,
+          )
+        : null;
+    final expectOutput = reader.string('expectOutput', nonEmpty: true);
+    final file = reader.string('file', nonEmpty: true);
+    final hint = reader.string('hint');
+    final fix = reader.string('fix');
+    if (reader.has('command') == reader.has('file')) {
+      reader.reportHere('Needs exactly one of command and file');
+    }
+    if (reader.has('expectOutput') && !reader.has('command')) {
+      reader.report('expectOutput', 'Only goes with command');
+    }
+    reader.finish();
+    if (id == null || (command == null) == (file == null)) {
+      return null;
+    }
+    return EnvironmentCheck(
+      id: id,
+      label: label ?? id,
+      command: command,
+      expectOutput: expectOutput,
+      file: file,
+      hint: hint,
+      fix: fix,
+    );
+  }
 
   /// Stable id.
   final String id;
@@ -312,16 +366,27 @@ class EnvironmentPolicy {
     this.rigTtlHours = 24,
   });
 
-  /// Parses a `policy` object.
-  factory EnvironmentPolicy.fromJson(Map<String, dynamic> json) =>
-      EnvironmentPolicy(
-        autoCreate: EnvironmentAutoCreate.parse(json['autoCreate']),
-        followPrHead: json['followPrHead'] as bool? ?? true,
-        idleStopMinutes: (json['idleStopMinutes'] as num?)?.toInt() ?? 240,
-        forkPrs: EnvironmentForkPolicy.tryParse(json['forkPrs']),
-        maxRunning: (json['maxRunning'] as num?)?.toInt() ?? 6,
-        rigTtlHours: (json['rigTtlHours'] as num?)?.toInt() ?? 24,
-      );
+  static EnvironmentPolicy _read(EnvironmentJsonReader reader) {
+    final autoCreate = reader.choice('autoCreate', {
+      for (final value in EnvironmentAutoCreate.values) value.wire: value,
+    });
+    final followPrHead = reader.boolean('followPrHead');
+    final idleStopMinutes = reader.integer('idleStopMinutes');
+    final forkPrs = reader.choice('forkPrs', {
+      for (final value in EnvironmentForkPolicy.values) value.name: value,
+    });
+    final maxRunning = reader.integer('maxRunning');
+    final rigTtlHours = reader.integer('rigTtlHours');
+    reader.finish();
+    return EnvironmentPolicy(
+      autoCreate: autoCreate ?? EnvironmentAutoCreate.off,
+      followPrHead: followPrHead ?? true,
+      idleStopMinutes: idleStopMinutes ?? 240,
+      forkPrs: forkPrs,
+      maxRunning: maxRunning ?? 6,
+      rigTtlHours: rigTtlHours ?? 24,
+    );
+  }
 
   /// When environments start on their own.
   final EnvironmentAutoCreate autoCreate;
@@ -375,10 +440,6 @@ enum EnvironmentAutoCreate {
 
   /// Stable wire string.
   final String wire;
-
-  /// Parses [wire], defaulting to [off].
-  static EnvironmentAutoCreate parse(Object? wire) =>
-      values.firstWhere((value) => value.wire == wire, orElse: () => off);
 }
 
 /// How fork PRs are treated.
@@ -390,17 +451,7 @@ enum EnvironmentForkPolicy {
   approval,
 
   /// Refused.
-  deny;
-
-  /// Parses [wire], or null.
-  static EnvironmentForkPolicy? tryParse(Object? wire) {
-    for (final value in values) {
-      if (value.name == wire) {
-        return value;
-      }
-    }
-    return null;
-  }
+  deny,
 }
 
 /// Where an environment runs.
@@ -409,10 +460,7 @@ enum EnvironmentPlacement {
   host,
 
   /// In a dedicated microVM.
-  rig;
-
-  /// Parses [wire], defaulting to [host].
-  static EnvironmentPlacement parse(Object? wire) => wire == 'rig' ? rig : host;
+  rig,
 }
 
 /// A complete environment definition.
@@ -442,98 +490,103 @@ class EnvironmentDefinition {
 
   /// Parses a definition.
   ///
-  /// Throws [FormatException] on a malformed shape. Semantic rules live in
-  /// [validateEnvironmentDefinition], which must also run at read time.
+  /// Throws [EnvironmentDefinitionException] listing every shape issue. Use
+  /// [parseEnvironmentDefinition] to get them without a throw. Semantic rules
+  /// live in `validateEnvironmentDefinition`, which must also run at read
+  /// time.
   factory EnvironmentDefinition.fromJson(Map<String, dynamic> json) {
-    try {
-      final repos = json['repos'];
-      if (repos is! Map || repos.isEmpty) {
-        throw const FormatException('repos needs at least one role');
-      }
-      // A file meant for linking leaves these out on purpose: repo ids belong
-      // to a workspace. Name them all, so one fix doesn't reveal the next.
-      final unbound = [
-        for (final entry in repos.entries)
-          if (entry.value is Map &&
-              '${(entry.value as Map)['repoId'] ?? ''}'.isEmpty)
-            '${entry.key}',
-      ];
-      if (unbound.isNotEmpty) {
-        throw FormatException('Pick a repo for: ${unbound.join(', ')}');
-      }
-      final components = json['components'];
-      if (components is! List) {
-        throw const FormatException('components is required');
-      }
-      return EnvironmentDefinition(
-        contract: (json['contract'] as num?)?.toInt() ?? 1,
-        name: (json['name'] as String?) ?? '',
-        repos: [
-          for (final entry in repos.entries)
-            EnvironmentRole.fromJson(
-              '${entry.key}',
-              Map<String, dynamic>.from(entry.value as Map),
-            ),
-        ],
-        naming: EnvironmentNaming.fromJson(
-          json['naming'] is Map
-              ? Map<String, dynamic>.from(json['naming'] as Map)
-              : const {},
-        ),
-        routing: json['routing'] is Map
-            ? EnvironmentRouting.fromJson(
-                Map<String, dynamic>.from(json['routing'] as Map),
-              )
-            : const EnvironmentRouting(),
-        seedFiles: [
-          for (final file in (json['seedFiles'] as List?) ?? const []) '$file',
-        ],
-        options: [
-          for (final option in (json['options'] as List?) ?? const [])
-            EnvironmentOption.fromJson(
-              Map<String, dynamic>.from(option as Map),
-            ),
-        ],
-        env: {
-          for (final entry in ((json['env'] as Map?) ?? const {}).entries)
-            '${entry.key}': '${entry.value}',
-        },
-        checks: [
-          for (final (index, check)
-              in ((json['checks'] as List?) ?? const []).indexed)
-            EnvironmentCheck.fromJson(
-              Map<String, dynamic>.from(check as Map),
-              path: 'checks[$index]',
-            ),
-        ],
-        components: [
-          for (final (index, component) in components.indexed)
-            EnvironmentComponent.fromJson(
-              Map<String, dynamic>.from(component as Map),
-              path: 'components[$index]',
-            ),
-        ],
-        placement: EnvironmentPlacement.parse(json['placement']),
-        policy: json['policy'] is Map
-            ? EnvironmentPolicy.fromJson(
-                Map<String, dynamic>.from(json['policy'] as Map),
-              )
-            : const EnvironmentPolicy(),
-      );
-    } on FormatException {
-      rethrow;
-    } on TypeError catch (e) {
-      throw FormatException('Malformed definition: $e');
-    } on ArgumentError catch (e) {
-      throw FormatException('${e.message}');
+    final (:definition, :issues) = parseEnvironmentDefinition(json);
+    if (definition == null) {
+      throw EnvironmentDefinitionException(issues);
     }
+    return definition;
+  }
+
+  static EnvironmentDefinition? _read(EnvironmentJsonReader reader) {
+    // Required, so a definition says which contract it was written for; the
+    // version itself is the validator's to judge.
+    final contract = reader.integer('contract', required: true);
+    final name = reader.string('name', required: true, nonEmpty: true);
+
+    final roleReader = reader.object('repos', required: true);
+    final repos = <EnvironmentRole?>[];
+    if (roleReader != null) {
+      if (roleReader.keys.isEmpty) {
+        reader.report('repos', 'Needs at least one role');
+      }
+      for (final key in roleReader.keys.toList()) {
+        if (!_roleKey.hasMatch(key)) {
+          roleReader.report(
+            key,
+            'Role names use lower-case letters, digits and underscores, '
+            'starting with a letter',
+          );
+        }
+        final role = roleReader.object(key);
+        repos.add(role == null ? null : EnvironmentRole._read(key, role));
+      }
+      roleReader.finish();
+    }
+
+    final namingReader = reader.object('naming');
+    final naming = namingReader == null
+        ? const EnvironmentNaming()
+        : EnvironmentNaming.read(namingReader);
+    final routingReader = reader.object('routing');
+    final routing = routingReader == null
+        ? const EnvironmentRouting()
+        : EnvironmentRouting._read(routingReader);
+    final seedFiles = reader.strings('seedFiles');
+    final options = [
+      for (final option
+          in reader.objects('options') ?? const <EnvironmentJsonReader>[])
+        EnvironmentOption._read(option),
+    ];
+    final env = reader.stringMap('env');
+    final checks = [
+      for (final check
+          in reader.objects('checks') ?? const <EnvironmentJsonReader>[])
+        EnvironmentCheck._read(check),
+    ];
+    final components = [
+      for (final component
+          in reader.objects('components', required: true) ??
+              const <EnvironmentJsonReader>[])
+        EnvironmentComponent.read(component),
+    ];
+    final placement = reader.choice('placement', {
+      for (final value in EnvironmentPlacement.values) value.name: value,
+    });
+    final policyReader = reader.object('policy');
+    final policy = policyReader == null
+        ? const EnvironmentPolicy()
+        : EnvironmentPolicy._read(policyReader);
+    reader.finish(schema: true);
+
+    if (reader.issues.isNotEmpty || name == null || repos.isEmpty) {
+      return null;
+    }
+    return EnvironmentDefinition(
+      contract: contract ?? 1,
+      name: name,
+      repos: repos.cast<EnvironmentRole>(),
+      naming: naming,
+      routing: routing,
+      seedFiles: seedFiles ?? const [],
+      options: options.cast<EnvironmentOption>(),
+      env: env ?? const {},
+      checks: checks.cast<EnvironmentCheck>(),
+      components: components.cast<EnvironmentComponent>(),
+      placement: placement ?? EnvironmentPlacement.host,
+      policy: policy,
+    );
   }
 
   /// Whether a tool here can finish a start on a terminal, for when it needs a
   /// person: a password, or some other question it can't ask through a pipe.
-  bool get hasSetupVerb => components
+  bool get canFinishOnTerminal => components
       .whereType<CliEnvironmentComponent>()
-      .any((component) => component.verbs.containsKey('setup'));
+      .any((component) => component.interactive.isNotEmpty);
 
   /// Contract version.
   final int contract;
@@ -632,6 +685,18 @@ class EnvironmentDefinition {
         component is TaskEnvironmentComponent,
   );
 
+  /// Whether anything here runs on the server host as its OS user, outside a
+  /// rig: host placement, a check that runs a command, or a task that
+  /// follows the worktree (provision and archive run in a space's worktree on
+  /// the host whatever the placement). Only the server owner may save or
+  /// approve such a definition.
+  bool get runsOnHost =>
+      placement == EnvironmentPlacement.host ||
+      checks.any((check) => check.command != null) ||
+      components.whereType<TaskEnvironmentComponent>().any(
+        (task) => task.when.any((trigger) => trigger.isWorktreeTrigger),
+      );
+
   /// The effective fork PR policy.
   EnvironmentForkPolicy get forkPolicy =>
       policy.forkPrs ??
@@ -663,21 +728,15 @@ class EnvironmentDefinition {
     (task) => task.when.contains(trigger),
   );
 
-  /// The role a component runs in, given the [present] roles of a space.
+  /// The role a component runs in, given the [present] roles of a space: the
+  /// one it names, or else the first role declared.
   ///
-  /// The first role in declared order that the space has, unless the component
-  /// names one.
+  /// Never another role the space happens to have, which would run the command
+  /// in the wrong repo. Null when the space lacks that role: the component is
+  /// then not part of that space's environment.
   String? roleFor(EnvironmentComponent component, Set<String> present) {
-    final named = component.cwd?.role;
-    if (named != null) {
-      return named;
-    }
-    for (final role in repos) {
-      if (present.contains(role.key)) {
-        return role.key;
-      }
-    }
-    return null;
+    final role = component.cwd?.role ?? repos.firstOrNull?.key;
+    return present.contains(role) ? role : null;
   }
 
   @override
@@ -701,7 +760,7 @@ class EnvironmentDefinitionIssue {
   final String message;
 
   @override
-  String toString() => '$path: $message';
+  String toString() => path.isEmpty ? message : '$path: $message';
 
   @override
   bool operator ==(Object other) =>
@@ -713,509 +772,40 @@ class EnvironmentDefinitionIssue {
   int get hashCode => Object.hash(path, message);
 }
 
-const _reservedEnvKeys = {'PATH', 'HOME'};
+/// A definition, or part of one, whose shape is wrong: every issue found in
+/// one pass, each at its path.
+class EnvironmentDefinitionException extends FormatException {
+  /// Creates an [EnvironmentDefinitionException].
+  EnvironmentDefinitionException(this.issues) : super(issues.join('\n'));
 
-/// Variables that make a process load or run something its argv never named.
-/// Definitions reach argv, and these would reach past it: the same command,
-/// with other code in it.
-const _loaderEnvKeys = {
-  'BASHOPTS',
-  'BASH_ENV',
-  'CLASSPATH',
-  'DOTNET_STARTUP_HOOKS',
-  'ENV',
-  'GCONV_PATH',
-  'IFS',
-  'JAVA_TOOL_OPTIONS',
-  'JDK_JAVA_OPTIONS',
-  'LUA_INIT',
-  'LUA_PATH',
-  'NODE_OPTIONS',
-  'NODE_PATH',
-  'PERL5DB',
-  'PERL5LIB',
-  'PERL5OPT',
-  'PERLLIB',
-  'PHPRC',
-  'PHP_INI_SCAN_DIR',
-  'PROMPT_COMMAND',
-  'PYTHONHOME',
-  'PYTHONPATH',
-  'PYTHONSTARTUP',
-  'RUBYLIB',
-  'RUBYOPT',
-  'SHELLOPTS',
-  'ZDOTDIR',
-  '_JAVA_OPTIONS',
-};
-const _loaderEnvPrefixes = ['DYLD_', 'GIT_', 'LD_'];
-
-/// Shells whose `-c` takes a script.
-const _shells = {'ash', 'bash', 'dash', 'ksh', 'sh', 'zsh'};
-
-/// Other interpreters, and the flags whose next argument is code.
-const _inlineScriptFlags = {
-  'cmd': {'/c', '/k'},
-  'deno': {'eval'},
-  'node': {'-e', '--eval', '-p', '--print'},
-  'perl': {'-e', '-E'},
-  'php': {'-r'},
-  'powershell': {'-c', '-command'},
-  'pwsh': {'-c', '-command'},
-  'python': {'-c'},
-  'ruby': {'-e'},
-};
-
-/// Heap limits, the one use of `NODE_OPTIONS` that loads nothing.
-final _nodeHeapOptions = RegExp(
-  r'^--max-(old|semi)-space-size=\d+( --max-(old|semi)-space-size=\d+)*$',
-);
-final _envKey = RegExp(r'^[A-Za-z_][A-Za-z0-9_]*$');
-final _optionKey = RegExp(r'^[a-z][a-z0-9_]{0,31}$');
-final _componentId = RegExp(r'^[a-z][a-z0-9_-]{0,47}$');
-const _allowedSuffixes = ['.test', '.localhost', '.internal'];
-
-/// Whether [key] changes how a process loads code. Case is ignored because
-/// Windows ignores it.
-bool _isLoaderEnvKey(String key) {
-  final upper = key.toUpperCase();
-  return _loaderEnvKeys.contains(upper) ||
-      _loaderEnvPrefixes.any(upper.startsWith);
+  /// What is wrong, by path.
+  final List<EnvironmentDefinitionIssue> issues;
 }
 
-/// Whether [key] is `NODE_OPTIONS` set to nothing but heap limits. `--require`
-/// and `--import` are why the variable is otherwise refused.
-bool _isHeapSizing(String key, String value) =>
-    key.toUpperCase() == 'NODE_OPTIONS' && _nodeHeapOptions.hasMatch(value);
-
-/// The inline code in [argv]. For a shell, that is the script of each `-c`: the
-/// first operand after a flag cluster holding `c`, as in `-c`, `-lc` or `-euc`.
-/// Later operands are the script's `$1`, `$2` and so on, and those are safe.
+/// Reads [json] as a definition, strictly: an unknown field, a value of the
+/// wrong type or a misspelt choice is an issue at its path, never a default.
 ///
-/// This looks at every position, not only the first, so `env sh -c` and
-/// `docker compose exec web sh -c` count too.
-Iterable<String> _shellScripts(List<String> argv) sync* {
-  for (final (index, argument) in argv.indexed) {
-    final name = argument
-        .split(RegExp(r'[/\\]'))
-        .last
-        .toLowerCase()
-        .replaceFirst(RegExp(r'\.exe$'), '');
-    // `python3.12` is python.
-    final inline =
-        _inlineScriptFlags[name.replaceFirst(RegExp(r'[\d.]+$'), '')];
-    if (inline != null) {
-      for (var at = index + 1; at + 1 < argv.length; at++) {
-        if (inline.contains(argv[at].toLowerCase())) {
-          yield argv[at + 1];
-          break;
-        }
-      }
-      continue;
-    }
-    if (!_shells.contains(name)) {
-      continue;
-    }
-    var script = false;
-    var next = index + 1;
-    while (next < argv.length) {
-      final flag = argv[next];
-      if (flag == '--') {
-        next++;
-        break;
-      }
-      // A placeholder isn't a flag yet, and an option value can make it one.
-      if (flag.length < 2 ||
-          !(flag.startsWith('-') || flag.startsWith('+')) ||
-          EnvironmentValues.placeholdersIn(flag).isNotEmpty) {
-        break;
-      }
-      final cluster = flag.startsWith('--') ? '' : flag.substring(1);
-      script = script || cluster.contains('c');
-      // `-o pipefail` and `--rcfile <file>` each take the next argument.
-      final takesValue =
-          cluster.contains('o') ||
-          cluster.contains('O') ||
-          const {'--rcfile', '--init-file'}.contains(flag);
-      next += takesValue ? 2 : 1;
-    }
-    if (script && next < argv.length) {
-      yield argv[next];
-    }
-  }
-}
-
-/// Checks the rules that keep a definition safe to run.
-///
-/// Pure, and re-run at read time before anything reaches a process, so a row
-/// written by an older build or edited by hand can't bypass it. [linkedRepoIds]
-/// is the workspace's repos; pass null to skip that check when the caller has
-/// none to hand.
-List<EnvironmentDefinitionIssue> validateEnvironmentDefinition(
-  EnvironmentDefinition definition, {
-  Set<String>? linkedRepoIds,
-}) {
+/// The definition is null unless the issues are empty. These are shape
+/// issues only: `checkEnvironmentDefinition` adds the rules of
+/// `validateEnvironmentDefinition`.
+({EnvironmentDefinition? definition, List<EnvironmentDefinitionIssue> issues})
+parseEnvironmentDefinition(Object? json) {
   final issues = <EnvironmentDefinitionIssue>[];
-  void add(String path, String message) =>
-      issues.add(EnvironmentDefinitionIssue(path, message));
-
-  if (definition.contract != 1) {
-    add('contract', 'Unsupported contract version ${definition.contract}');
-  }
-
-  final roles = {for (final role in definition.repos) role.key};
-  if (roles.length != definition.repos.length) {
-    add('repos', 'Role names must be unique');
-  }
-  for (final role in definition.repos) {
-    if (linkedRepoIds != null && !linkedRepoIds.contains(role.repoId)) {
-      if (role.required) {
-        add('repos.${role.key}', 'The repo is not linked to this workspace');
-      }
-    }
-  }
-  if (definition.hasStack && !definition.repos.any((role) => role.anchor)) {
-    add('repos', 'At least one role must be an anchor');
-  }
-
-  final naming = definition.naming;
-  final project = naming.project;
-  if (project != null && !isValidEnvironmentLabel(project)) {
-    add('naming.project', 'Use lower-case letters, digits and hyphens');
-  }
-  if (naming.maxLength < 1 || naming.maxLength > 63) {
-    add('naming.maxLength', 'Must be between 1 and 63');
-  }
-  final pool = naming.pool;
-  if (pool != null) {
-    if (!pool.names.contains('{n}')) {
-      add('naming.pool.names', 'Must contain {n}');
-    }
-    if (pool.size < 1) {
-      add('naming.pool.size', 'Must be at least 1');
-    }
-  }
-
-  final routing = definition.routing;
-  if (routing.mode == EnvironmentRoutingMode.tool) {
-    final domain = routing.domain;
-    if (domain == null || domain.isEmpty) {
-      add('routing.domain', 'Tool routing needs a domain');
-    } else if (!_allowedSuffixes.any(domain.endsWith)) {
-      add('routing.domain', 'Must end in .test, .localhost or .internal');
-    }
-    if (!_isLoopbackHostPort(routing.upstream)) {
-      add('routing.upstream', 'Must be a loopback host:port');
-    }
-    final caFile = routing.caFile;
-    if (caFile != null && !_isHomeRelative(caFile)) {
-      add('routing.caFile', 'Must sit under the home directory');
-    }
-  }
-
-  for (final (index, file) in definition.seedFiles.indexed) {
-    if (!isSafeRelativePath(file)) {
-      add('seedFiles[$index]', 'Must be a relative path inside the repo');
-    }
-  }
-
-  final optionKeys = <String>{};
-  for (final (index, option) in definition.options.indexed) {
-    if (!_optionKey.hasMatch(option.key)) {
-      add('options[$index].key', 'Must match ${_optionKey.pattern}');
-    }
-    if (!optionKeys.add(option.key)) {
-      add('options[$index].key', 'Duplicate option ${option.key}');
-    }
-    if (!const {'bool', 'enum', 'multi', 'string'}.contains(option.type)) {
-      add('options[$index].type', 'Unknown option type ${option.type}');
-    }
-  }
-
-  void checkEnv(String path, Map<String, String> env) {
-    for (final key in env.keys) {
-      if (!_envKey.hasMatch(key)) {
-        add('$path.$key', 'Not a valid variable name');
-      } else if (_reservedEnvKeys.contains(key) || key.startsWith('CC_')) {
-        add('$path.$key', 'Must not shadow PATH, HOME or CC_*');
-      } else if (_isLoaderEnvKey(key) && !_isHeapSizing(key, env[key]!)) {
-        add('$path.$key', 'Changes what code a process loads');
-      }
-    }
-  }
-
-  checkEnv('env', definition.env);
-
-  final ids = <String>{};
-  final portKeys = <String>{};
-  for (final (index, component) in definition.components.indexed) {
-    final path = 'components[$index]';
-    if (!_componentId.hasMatch(component.id)) {
-      add('$path.id', 'Must match ${_componentId.pattern}');
-    }
-    if (!ids.add(component.id)) {
-      add('$path.id', 'Duplicate component ${component.id}');
-    }
-    for (final port in component.ports) {
-      if (!portKeys.add(port)) {
-        add('$path.port', 'Port $port is declared twice');
-      }
-    }
-    checkEnv('$path.env', component.env);
-    final cwd = component.cwd;
-    if (cwd != null) {
-      final role = cwd.role;
-      if (role != null && !roles.contains(role)) {
-        add('$path.cwd.role', 'Unknown role $role');
-      }
-      final relative = cwd.path;
-      if (relative != null && !isSafeRelativePath(relative)) {
-        add('$path.cwd.path', 'Must stay inside the worktree');
-      }
-    }
-  }
-
-  // Parts of a definition that must resolve to something real.
-  final known = <String>{
-    'name',
-    'id',
-    'branch',
-    'stateDir',
-    'home',
-    for (final role in roles) ...['repo.$role', 'source.$role'],
-    for (final option in optionKeys) 'opt.$option',
-    for (final port in portKeys) 'port.$port',
-    for (final role in definition.processEndpointRoles) 'url.$role',
-  };
-  const verbValues = {'service', 'tail', 'command', 'follow'};
-  final hasCompose = definition.components.any(
-    (component) => component is ComposeEnvironmentComponent,
-  );
-
-  bool isKnown(String key) {
-    if (known.contains(key)) {
-      return true;
-    }
-    // Compose ports and URLs are derived from the resolved compose file, so
-    // they exist only once a plan has run.
-    return hasCompose && RegExp(r'^port\.[A-Za-z0-9_.\-]+\.\d+$').hasMatch(key);
-  }
-
-  void checkTemplate(String path, String template, {bool verb = false}) {
-    for (final key in EnvironmentValues.placeholdersIn(template)) {
-      if (verb && verbValues.contains(key)) {
-        continue;
-      }
-      if (!isKnown(key)) {
-        add(path, 'Unknown placeholder {$key}');
-      }
-    }
-  }
-
-  void checkShell(String path, EnvironmentCommand command) {
-    for (final script in _shellScripts(command.templates.toList())) {
-      if (EnvironmentValues.placeholdersIn(script).isNotEmpty) {
-        add(
-          path,
-          'A placeholder inside inline script text is an injection. Pass it '
-          'as an argument after the script instead',
-        );
-      }
-    }
-  }
-
-  void checkCondition(String path, String condition, {bool verb = false}) {
-    final key = environmentConditionKey(condition);
-    if (verb && verbValues.contains(key)) {
-      return;
-    }
-    if (!known.contains(key)) {
-      add(path, 'Condition reads unknown value $key');
-    }
-  }
-
-  for (final entry in definition.env.entries) {
-    checkTemplate('env.${entry.key}', entry.value);
-  }
-
-  for (final (index, check) in definition.checks.indexed) {
-    final path = 'checks[$index]';
-    final command = check.command;
-    if (command != null) {
-      for (final template in command.templates) {
-        checkTemplate(path, template);
-      }
-      checkShell(path, command);
-    }
-    final file = check.file;
-    if (file != null) {
-      checkTemplate(path, file);
-    }
-  }
-
-  for (final (index, component) in definition.components.indexed) {
-    final path = 'components[$index]';
-    final worktreeTask =
-        component is TaskEnvironmentComponent && component.isWorktreeTask;
-    final enabled = component.enabledWhen;
-    if (enabled != null) {
-      checkCondition('$path.enabledWhen', enabled);
-      if (worktreeTask) {
-        add('$path.enabledWhen', 'Worktree tasks run before options exist');
-      }
-    }
-    // Components start in declared order, so `after` can only wait for one
-    // declared earlier. That also rules out every cycle.
-    final earlier = {
-      for (final other in definition.components.take(index)) other.id: other,
-    };
-    for (final dependency in component.after) {
-      if (dependency == component.id) {
-        add('$path.after', 'A component can not wait for itself');
-      } else if (!ids.contains(dependency)) {
-        add('$path.after', 'Unknown component $dependency');
-      } else if (!earlier.containsKey(dependency)) {
-        add(
-          '$path.after',
-          '$dependency is declared after this component. Move it above, '
-              'because components start in order',
-        );
-      } else if (!_startsWithStack(earlier[dependency]!)) {
-        add(
-          '$path.after',
-          '$dependency never starts with the stack, so there is nothing to '
-              'wait for',
-        );
-      }
-    }
-    for (final entry in component.env.entries) {
-      checkTemplate('$path.env.${entry.key}', entry.value);
-    }
-    final isCli = component is CliEnvironmentComponent;
-    for (final command in component.commands) {
-      for (final template in command.templates) {
-        checkTemplate(path, template, verb: isCli);
-      }
-      checkShell(path, command);
-      for (final condition in command.conditions) {
-        checkCondition(path, condition, verb: isCli);
-      }
-    }
-    if (worktreeTask) {
-      for (final template in [
-        ...component.env.values,
-        for (final command in component.commands) ...command.templates,
-      ]) {
-        for (final key in EnvironmentValues.placeholdersIn(template)) {
-          if (key == 'name' ||
-              key.startsWith('port.') ||
-              key.startsWith('url.') ||
-              key.startsWith('opt.')) {
-            add(path, 'Worktree tasks have no environment value {$key}');
-          }
-        }
-      }
-    }
-    switch (component) {
-      case ProcessEnvironmentComponent(:final endpoint, :final ports):
-        if (endpoint != null && ports.isEmpty) {
-          add('$path.endpoint', 'An endpoint needs a declared port');
-        }
-        final ready = component.ready;
-        for (final template in [?ready?.http, ?ready?.tcp]) {
-          checkTemplate('$path.ready', template);
-        }
-      case AppEnvironmentComponent(:final prepare):
-        if (prepare != null &&
-            definition.component(prepare) is! TaskEnvironmentComponent) {
-          add('$path.prepare', 'Must name a task');
-        }
-      case CliEnvironmentComponent(:final agentPassthrough):
-        if (agentPassthrough != null && agentPassthrough.binary.contains('/')) {
-          add('$path.agentPassthrough.binary', 'Must be a bare command name');
-        }
-      case ComposeEnvironmentComponent(:final file):
-        if (file != null && !isSafeRelativePath(file)) {
-          add('$path.file', 'Must be a relative path inside the repo');
-        }
-      case TaskEnvironmentComponent():
-        break;
-    }
-  }
-
-  final composes = [
-    for (final (index, component) in definition.components.indexed)
-      if (component is ComposeEnvironmentComponent) index,
-  ];
-  for (final index in composes.skip(1)) {
-    add(
-      'components[$index]',
-      'An environment runs one compose component: they would share one '
-          'project. Put these services in the first one\'s file, or list them '
-          'in its services',
+  final reader = EnvironmentJsonReader.of(json, '', issues);
+  if (reader == null) {
+    return (
+      definition: null,
+      issues: const [
+        EnvironmentDefinitionIssue('', 'A definition must be a JSON object'),
+      ],
     );
   }
-
-  if (definition.placement == EnvironmentPlacement.rig &&
-      !definition.isRigEligible) {
-    add('placement', 'Rig placement only runs compose and task components');
+  EnvironmentDefinition? definition;
+  try {
+    definition = EnvironmentDefinition._read(reader);
+  } on ArgumentError catch (e) {
+    // Every constructor rule is checked first; this is the backstop.
+    issues.add(EnvironmentDefinitionIssue('', '${e.message}'));
   }
-  if (definition.policy.forkPrs == EnvironmentForkPolicy.rig &&
-      !definition.isRigEligible) {
-    add('policy.forkPrs', 'This definition can not run in a rig');
-  }
-  if (definition.placement == EnvironmentPlacement.rig ||
-      definition.policy.forkPrs == EnvironmentForkPolicy.rig) {
-    for (final role in definition.repos) {
-      if (role.whenMissing == EnvironmentWhenMissing.useSource) {
-        add(
-          'repos.${role.key}',
-          'A rig never receives the source checkout, so useSource can not '
-              'be used with rig placement',
-        );
-      }
-    }
-  }
-
-  return issues;
-}
-
-/// Whether [component] is started by a stack's Start: apps open afterwards,
-/// and a task that only follows the worktree never runs there.
-bool _startsWithStack(EnvironmentComponent component) => switch (component) {
-  AppEnvironmentComponent() => false,
-  TaskEnvironmentComponent(when: final triggers) => !triggers.every(
-    (trigger) => trigger.isWorktreeTrigger,
-  ),
-  _ => true,
-};
-
-bool _isLoopbackHostPort(String? value) {
-  if (value == null) {
-    return false;
-  }
-  final separator = value.lastIndexOf(':');
-  if (separator <= 0) {
-    return false;
-  }
-  final host = value.substring(0, separator);
-  final port = int.tryParse(value.substring(separator + 1));
-  return (host == '127.0.0.1' || host == 'localhost') &&
-      port != null &&
-      port > 0 &&
-      port < 65536;
-}
-
-bool _isHomeRelative(String value) =>
-    value.startsWith('~/') && !value.split('/').contains('..');
-
-/// Whether [path] is relative and can't climb out of its root.
-bool isSafeRelativePath(String path) {
-  if (path.isEmpty || path.startsWith('/') || path.startsWith('~')) {
-    return false;
-  }
-  if (RegExp(r'^[A-Za-z]:').hasMatch(path) || path.contains(r'\')) {
-    return false;
-  }
-  return !path.split('/').contains('..');
+  return (definition: issues.isEmpty ? definition : null, issues: issues);
 }

@@ -2,7 +2,7 @@
 title: Início rápido
 description: Instale o Control Center, configure um agente e veja-o trabalhar no seu repo.
 slug: pt-BR/manual/inicio-rapido
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Este é o caminho completo mais curto entre o zero e um agente executando no seu
@@ -29,7 +29,7 @@ os mesmos recursos. Uma aba do navegador, porém, não consegue hospedar o servi
 então você precisa fornecer um — execute `cc_server` localmente e conecte-se a
 `ws://localhost:9030`, ou aponte-o para um servidor em outra máquina. Este início
 rápido segue o caminho do desktop porque não exige nenhuma configuração de servidor;
-consulte [Instalar](/pt-BR/manual/instalar/#use-it-in-your-browser) para a rota no
+consulte [Instalar](/pt-BR/manual/instalar/#usar-no-navegador) para a rota no
 navegador.
 :::
 
@@ -41,7 +41,7 @@ próprio servidor, é você.
 
 1. **Login** (só o proprietário do servidor): escolha como este servidor faz o login das pessoas no GitHub, no Google Calendar e no Linear — **Usar os apps do Control Center**, **Usar meus próprios apps** ou **Usar um servidor Connect próprio**. Com os seus próprios apps, **Criar meu app do GitHub** configura o GitHub em um único passo. Você pode mudar isso depois em **Configurações → Servidor → Início de sessão único**.
 2. **Conectar**: entre no GitHub ou cole um token do GitLab ou do Bitbucket. A credencial é armazenada no servidor, vinculada à sua conta.
-3. **Espaço de trabalho**: dê um nome ao seu primeiro espaço de trabalho e, opcionalmente, escolha um logotipo. Criá-lo semeia cinco agentes — um CEO e mais `qa`, `architect`, `engineer` e `librarian` — e os modelos de pipeline integrados.
+3. **Espaço de trabalho** (somente o proprietário do servidor): dê um nome ao seu primeiro espaço de trabalho e, opcionalmente, escolha um logotipo. Os demais aguardam em **Você ainda não está em um espaço de trabalho** até que o proprietário crie um para eles ou um administrador do espaço de trabalho os convide. Criá-lo semeia seis agentes — um CEO e mais `qa`, `architect`, `engineer`, `librarian` e `content-synthesizer` — e os modelos de pipeline integrados.
 4. **Sandbox**: registra uma preferência de sandbox. Qualquer uma das opções permite continuar.
 5. **Adaptador**: escolha o adaptador e o modelo padrão dos agentes. Selecione **Control Center (built-in)** e use o seletor de provedores que aparece para entrar em um provedor de modelos — a lista de modelos fica vazia até que um provedor seja conectado. Concluir esta etapa também grava o adaptador e o modelo no agente CEO do espaço de trabalho.
 6. **Voz (opcional)**: instale um modelo de fala no próprio dispositivo para ditado, ou pule esta etapa.
@@ -51,10 +51,10 @@ Em seguida, o Control Center abre a caixa de entrada do seu espaço de trabalho.
 :::note[O que limita uma execução de agente]
 Os comandos dos agentes são envolvidos no sandbox nativo do sistema operacional do
 host quando ele existe — Seatbelt no macOS, bubblewrap no Linux. O Windows não tem
-backend, então as execuções nele são limitadas apenas pelas outras camadas: o worktree
+backend. Em um host sem nenhum, só começam as execuções de agentes do proprietário do servidor, e elas são limitadas apenas pelas outras camadas: o worktree
 da própria conversa (`git worktree` no Windows; copy-on-write onde o `rift` existe),
 credenciais intermediadas a cada inicialização e revogadas no encerramento, e os
-guardrails de ações. Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/).
+guardrails de ações. As execuções de todos os outros são recusadas até que o proprietário instale o sandbox ou desligue o sandboxing para todos. Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/).
 :::
 
 ## Etapa 3: Adicionar um repositório
@@ -86,11 +86,7 @@ Na aba **Configurações**, defina:
 
 Pressione **Guardar alterações**.
 
-Na prática, esta etapa não é opcional. Somente o agente CEO herda o adaptador escolhido
-durante o onboarding; os quatro especialistas são criados sem adaptador. Eles recorrem
-ao **Control Center (built-in)** com o modelo padrão da Anthropic, então só são
-executados se você tiver conectado uma conta da Anthropic — e, nesse caso, em um modelo
-que você não escolheu.
+Na prática, esta etapa não é opcional. A etapa de adaptador do onboarding define o adaptador e o modelo de todo agente que já existia naquele momento; um espaço de trabalho criado depois semeia os seis sem definição. Os agentes sem um deles recorrem ao **Control Center (built-in)** com o modelo padrão da Anthropic, então só são executados se você tiver conectado uma conta da Anthropic — e, nesse caso, em um modelo que você não escolheu.
 
 ## Etapa 5: Enviar uma tarefa ao agente
 

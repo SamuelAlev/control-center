@@ -1,8 +1,8 @@
 ---
 title: Referentie voor Control Center Connect
-description: Wat Connect wel en nooit ziet, de drie modi, de installatie-identiteit, verzegelde inloggegevens, het vertrouwen in de configuratie en elke instelling, bewerking en statuscode.
+description: Wat Connect wel en nooit ziet, de drie modi, de eigen keuze van een werkruimte, de installatie-identiteit, verzegelde inloggegevens, het vertrouwen in de configuratie en elke instelling, bewerking en statuscode.
 slug: nl-NL/handleiding/referentie/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect voert provider-aanmeldingen uit voor servers die geen
@@ -10,14 +10,14 @@ eigen apps hebben geregistreerd. Een server gebruikt de gehoste Connect van
 Control Center, een Connect die zijn organisatie draait
 ([Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/)),
 of geen. De keuze staat in **Instellingen → Server → Single sign-on → Control
-Center Connect**, in `cc_server connect` of in `CC_CONNECT_URL`.
+Center Connect**, in `cc_server connect` of in `CC_CONNECT_URL`. Een werkruimte volgt die keuze tenzij een beheerder voor de werkruimte onder **Instellingen → Werkruimte → Integraties** iets anders kiest ([Keuze per werkruimte](#keuze-per-werkruimte)).
 
 ## Routes
 
 Elke provider is een route. Onder **Mijn eigen apps gebruiken** (of voordat iemand kiest) draait een route op de eigen app van de server als
 die volledig is geconfigureerd, en anders is hij niet beschikbaar. Met de Connect van Control Center of een eigen
 Connect verzorgt Connect elke route die hij bedient: eigen apps van de server blijven opgeslagen maar worden niet
-gebruikt voor aanmelding, servertaken of de status die de server meldt. De app van de werkruimte wint in elke modus.
+gebruikt voor aanmelding, servertaken of de status die de server meldt. Een werkruimte die zelf een keuze heeft gemaakt, draait elke route daarna volgens die keuze.
 
 | Route        | Eigen app heeft nodig                                | Via Connect                                                         |
 | ------------ | ---------------------------------------------------- | ------------------------------------------------------------------- |
@@ -29,9 +29,7 @@ gebruikt voor aanmelding, servertaken of de status die de server meldt. De app v
 | `klipy`      | `KLIPY_APP_KEY`                                      | GIF-zoeken, via Connect als proxy                                   |
 
 Een eigen app die maar deels is geconfigureerd, maakt van zijn route een fout,
-nooit een stille terugval op Connect. Een werkruimte die haar eigen GitHub App
-gebruikt (**Instellingen → Werkruimte → Algemeen → GitHub-identiteit**), gaat
-voor GitHub nooit via Connect. Een werkruimte die eigen Google-, Linear- of Klipy-apps gebruikt (**Instellingen → Werkruimte → Algemeen → Provider-apps**) gaat voor die provider nooit via de app van de server of via Connect. Een wijziging van de Connect-keuze meldt niemand af van de eigen app van een werkruimte.
+nooit een stille terugval op Connect. Een werkruimte op **Mijn eigen apps gebruiken** gaat nooit via de apps van de server of via enige Connect, voor geen enkele provider. Een wijziging van de Connect-keuze van de server meldt niemand af van een werkruimte die zelf een keuze heeft gemaakt.
 
 ## Wat Connect wel en nooit ziet
 
@@ -39,17 +37,13 @@ voor GitHub nooit via Connect. Een werkruimte die eigen Google-, Linear- of Klip
 | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | Het installatie-ID van de server en de aanvraagsignaturen                                     | Broncode, repositoryinhoud, diffs of tekst van pull requests          |
 | Het provideraccount dat zich aanmeldde, tijdens de aanmelding                                 | Tickets, transcripties of iets anders in een werkruimtedatabase       |
-| Bij welke werkruimte inloggegevens horen, als ondoorzichtig ID binnen het zegel               | De privésleutel van een GitHub App: repositorytokens komen uit de aanmelding van een persoon |
+| Bij welke werkruimte inloggegevens horen, als ondoorzichtig ID binnen het zegel               | De eigen app-geheimen van de server: die verlaten de server nooit |
 | De repository waarvoor een GitHub-token voor één repository wordt uitgegeven                  | Refreshtokens in rust: die bestaan alleen in zegels die de server bewaart |
-| GitHub-installatie-ID's die aan de server zijn gebonden                                       | Linear-secrets: de server wisselt de code van Linear zelf in          |
+| Het Slack-team dat aan de server is gebonden                                                  | Linear-secrets: de server wisselt de code van Linear zelf in          |
 | GIF-zoektermen, wanneer het als proxy voor Klipy dient                                        | Wachtwoorden, koppelsleutels of sleutels van modelproviders           |
 | Verwijzingen naar Slack-gebeurtenissen (team, kanaal, bericht-ID) en de tekst van slash-commando's | De tekst van Slack-berichten: Connect gooit die bij aankomst weg en de server leest het bericht zelf uit Slack |
 
-Connect bewaart kortlevende state (lopende aanmeldingen, nonces, caches)
-hoogstens 15 minuten. De enige blijvende gegevens zijn installatiebindingen:
-welke servers welke GitHub-installatie mogen gebruiken, en aan welke server elk
-Slack-team is gebonden. Fouten bevatten een code, nooit het antwoord van de
-provider, en logs leggen installatie-ID's alleen vast als hashes met een sleutel.
+Connect bewaart lopende aanmeldingen, nonces en caches hoogstens 10 minuten, en uursgewijze gebruikstellers hoogstens twee uur. Een token voor één repository dat als persoon is uitgegeven, blijft vastgelegd, verzegeld aan de aanmelding die erom vroeg, tot het verloopt (hoogstens 8 uur), zodat Connect het opnieuw kan uitgeven en intrekken bij het verbreken van de verbinding. De enige blijvende gegevens zijn Slack-bindingen (aan welke server elk Slack-team is gebonden) en ingetrokken installatie-ID's. Fouten bevatten een code, nooit het antwoord van de provider. Logs leggen installatie-ID's alleen vast als hashes met een sleutel, en een GitHub-token alleen als de `hashed_token` die het auditlog van de GitHub-organisatie ervoor toont, zodat een organisatie-eigenaar de twee kan koppelen.
 
 ## Modi
 
@@ -68,9 +62,28 @@ Deze build bevat geen sleutel voor de gehoste configuratie, dus de gehoste modus
 meldt `hosted_unprovisioned` en bedient geen enkele route. Eigen apps en een
 eigen Connect werken wel.
 
+De gehoste Connect draait in één container. Zijn zegelsleutel en de privésleutel van de gedeelde GitHub App staan daar als omgevingsvariabelen, niet in een kluis die alleen ondertekent of ontsleutelt, zoals GitHub voor de privésleutel van een App aanraadt. Dat is een bekende tekortkoming van de huidige opzet.
+
 Een server leest de configuratie van Connect hoogstens elke 10 minuten en wacht
 hoogstens 5 seconden op elke aanroep. Is Connect onbereikbaar, dan blijft de
 laatste goede configuratie in gebruik en markeert Instellingen die als verouderd.
+
+## Keuze per werkruimte
+
+**Instellingen → Werkruimte → Integraties → Control Center Connect** overschrijft de keuze van de server voor één werkruimte. Elk lid ziet die keuze en waar elke aanmelding draait; alleen een beheerder van de werkruimte wijzigt haar.
+
+| Keuze                           | Gedrag                                                                                                         |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Zoals deze server**           | De standaard. De werkruimte draait op wat de servereigenaar heeft gekozen; de optie noemt die keuze           |
+| **De apps van Control Center gebruiken** | De gehoste Connect van Control Center, ongeacht wat de server gebruikt                                |
+| **Mijn eigen apps gebruiken**   | Alleen de apps van de werkruimte: de GitHub-app, Google-client, Linear-applicatie, Klipy-sleutel en Slack-app. Een provider zonder die app staat hier uit; een gedeeltelijke is een installatiefout |
+| **Een eigen Connect-server gebruiken** | Een Connect op een HTTPS-adres dat de werkruimte opgeeft. Adressen op een privé- of lokaal netwerk worden geweigerd |
+
+- Elke keuze behalve **Zoals deze server** houdt de GitHub- en Linear-aanmeldingen van elke persoon in een plek van de werkruimte zelf, zodat ze nooit gemengd worden met die voor de hele server
+- Wisselen vraagt eerst om bevestiging: iedereen in de werkruimte meldt zich opnieuw aan bij GitHub, Linear en Google Agenda via de nieuwe apps
+- De eigen Slack-appverbinding van de werkruimte werkt onder elke keuze; **Control Center toevoegen aan Slack** volgt de keuze
+- `CC_CONNECT_URL` sluit werkruimten ook uit van een eigen Connect: ze kunnen de server volgen of hun eigen apps gebruiken
+- Een eigen Connect van een werkruimte wordt alleen voor die werkruimte bij het eerste gebruik vertrouwd: **Nieuwe apps vertrouwen** verandert daar nooit wat de server of een andere werkruimte vertrouwt
 
 ## Installatie-identiteit
 
@@ -102,17 +115,31 @@ het provideraccount, de app en de secretgeneratie.
 
 ## GitHub-installaties
 
-Een installatie van de gedeelde GitHub App is alleen bruikbaar voor een server
-als Connect haar aan het installatie-ID van die server heeft gebonden.
+Een installatie van de gedeelde GitHub App is bruikbaar vanaf elke server. Connect houdt niet bij welke server hem mag gebruiken.
 
-- **GitHub-app installeren** in **Instellingen → Werkruimte → Algemeen** opent
-  GitHub met een ticket van 15 minuten. Connect bindt de nieuwe installatie
-  wanneer degene die installeert het persoonlijke account bezit of de organisatie
-  beheert
-- **Deze server autoriseren** bindt een installatie die al bestaat. Alleen een
-  beheerder van de organisatie kan dat doen
-- Een organisatie-installatie kan aan meerdere servers worden gebonden; elke
-  server heeft de autorisatie van een beheerder nodig
+- **GitHub-app installeren** in **Instellingen → Werkruimte → Integraties** opent de installatiepagina van de app op GitHub. De server bouwt de link op uit de appnaam in de configuratie van Connect
+- Een token voor één repository vereist dat de app is geïnstalleerd bij de eigenaar van de repository en dat de ingelogde persoon toegang heeft tot de repository. Het is het eigen token van die persoon, beperkt tot zijn of haar rol, nooit meer
+- Een organisatie beperkt Control Center op GitHub: door de installatie te verwijderen, de repositories te beperken of de persoon te verwijderen
+- Voor aanroepen die alleen de persoon kan doen, zoals het opvragen van zijn installaties, geeft Connect de server het eigen gebruikerstoken van de persoon voor de App, niet een token voor één repository. Aanmelden op een server betekent die server vertrouwen met dat token
+- Een organisatie die een GitHub-IP-toegangslijst afdwingt, kan de gehoste Connect niet gebruiken, omdat zijn adressen niet vastliggen. Ze registreert in plaats daarvan een eigen GitHub App, op haar eigen servers of op een Connect die zij draait
+- **Verbreken** trekt alleen die aanmelding in: Connect besteedt zijn refreshtoken één keer en verwijdert wat dat oplevert, verwijdert zijn gebruikerstoken en de tokens voor één repository die Connect er heeft uitgegeven. Een kopie van zijn zegel die ergens is bewaard, werkt daarna niet meer. De aanmeldingen van de persoon op andere servers en in andere werkruimten blijven werken. Om Control Center helemaal van een GitHub-account te verwijderen, trek je het in bij GitHub onder **Instellingen → Applications → Authorized GitHub Apps → Revoke**
+
+### De gedeelde bot
+
+Tokens die als de bot van de App zijn uitgegeven (`as: app`), tonen op GitHub dezelfde bot voor elke server die dezelfde Connect gebruikt: GitHub kan die servers niet van elkaar onderscheiden.
+
+- Elke server mag de bot laten lezen en reageren: `read`, `review` en `comment` (opmerkingen, labels, toegewezenen en reacties op issues en pull requests)
+- Een pull request als de bot reviewen (`bot`, dat pull requests schrijft) is alleen toegestaan voor servers die de Connect-beheerder noemt in `CONNECT_GITHUB_REVIEW_BOT_INSTALLS`. Elke andere server krijgt `needs_requester` als antwoord en publiceert de review met het eigen token van de verantwoordelijke persoon, dat GitHub tot die persoon beperkt: de review verschijnt onder zijn naam. Dit geldt voor het publiceren van AI-reviews, reviewopmerkingen en reviewerverzoeken
+- Pushen, een branch maken en een pull request openen (`write`) worden nooit als de gedeelde bot uitgegeven. Die gebruiken altijd de eigen aanmelding van de aanvrager
+- Een pull request goedkeuren wordt nooit geautomatiseerd, met welk token ook
+- Een server of werkruimte met een eigen GitHub App houdt de bot voor dit alles, ook de reviews
+
+### Wat organisatie-eigenaren en leden moeten weten
+
+- Een server waarop iemand zich aanmeldt, heeft het gebruikerstoken van de App van die persoon: tot 8 uur per token, vernieuwd tot hij verbreekt. Het kan namens hem handelen op elke repository waar de gedeelde App op is geïnstalleerd en die hij kan bereiken. Connect kan een server voorgoed afsnijden (een ingetrokken of geweigerde installatie), maar een token dat al is uitgegeven, blijft geldig tot het verloopt
+- De gedeelde GitHub App op een organisatie installeren geeft toestemming voor elke Control Center-server waarop een lid zich aanmeldt, niet voor één server
+- De bot is gedeeld, zoals hierboven: een organisatie kan op GitHub niet zien welke server als de bot heeft gehandeld
+- Een organisatie die een eigen grens wil, registreert een eigen GitHub App en draait een eigen Connect ([Een Connect-server draaien](/nl-NL/handleiding/gidsen/connect-server-draaien/)), of configureert de App op haar eigen servers
 
 ## Vertrouwen in de configuratie
 
@@ -123,7 +150,7 @@ als Connect haar aan het installatie-ID van die server heeft gebonden.
 
 ## Bewerkingen
 
-Alle Connect-instellingen zijn alleen voor de servereigenaar.
+De Connect-instellingen van de server zijn alleen voor de servereigenaar.
 
 | Bewerking             | Doet                                                                                         |
 | --------------------- | -------------------------------------------------------------------------------------------- |
@@ -131,7 +158,16 @@ Alle Connect-instellingen zijn alleen voor de servereigenaar.
 | `connect.configure`   | Stelt `hosted`, `custom` (met `url`) of `off` in                                             |
 | `connect.test`        | Haalt de configuratie opnieuw op en meldt de gezondheid                                      |
 | `connect.confirmPins` | Accepteert de gewijzigde identifiers van een eigen Connect                                   |
-| `connect.rotateKey`   | Maakt een nieuwe installatiesleutel. Elke aanmelding via Connect op deze server werkt dan niet meer |
+| `connect.rotateKey`   | Maakt een nieuwe installatiesleutel en een nieuw installatie-ID (`force` vervangt het ook als een Connect de oude niet kon intrekken); zie [De installatiesleutel vervangen](#de-installatiesleutel-vervangen) |
+
+Een eigen keuze van een werkruimte heeft eigen bewerkingen, die elk de werkruimte noemen:
+
+| Bewerking                      | Wie                          | Doet                                                                                                |
+| ------------------------------ | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Elk lid                      | De keuze, waar ze op uitkomt, gezondheid en de bron van elke provider. Installatie-ID en wachtende pins alleen voor beheerders |
+| `workspaceConnect.set`         | Beheerder van de werkruimte  | Stelt `inherit`, `hosted`, `custom` (met `url`) of `own` in                                         |
+| `workspaceConnect.test`        | Beheerder van de werkruimte  | Haalt de Connect-configuratie van de werkruimte opnieuw op en meldt de gezondheid                   |
+| `workspaceConnect.confirmPins` | Beheerder van de werkruimte  | Accepteert de gewijzigde identifiers van de eigen Connect van de werkruimte                         |
 
 De aanmeldingen zelf gebruiken `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` en `oauth.disconnect`. De persoon is altijd
@@ -140,22 +176,25 @@ de aangemelde aanroeper.
 ## Aanmelden via Connect
 
 1. De server vraagt Connect de route te starten en krijgt de autorisatie-URL van
-   de provider terug, die hij controleert voordat hij hem toont
+   de provider terug, die hij controleert voordat hij hem toont. GitHub toont altijd zijn accountkiezer.
 2. De persoon keurt goed in de browser. De provider keert terug naar Connect
-3. Connect toont een code van 8 tekens en een link `control-center://oauth-done`
-4. De persoon typt de code in de app of volgt de link. De server claimt de
+3. Connect toont wat de server die de aanmelding startte als de persoon kan doen, en voor hoelang. Connect kan niet zien wie die server draait, dus de pagina vraagt de persoon alleen door te gaan als hij de aanmelding zelf is begonnen, en haar te sluiten als iemand hem de link heeft gestuurd. Wanneer de browser op een ander netwerk zit dan waar de aanmelding is begonnen, zegt de pagina dat: dat is normaal voor een gehoste server of een ander apparaat, en het is ook hoe phishing eruitziet. **Annuleren** beëindigt de aanmelding: de code van de provider wordt nooit gebruikt. Elke pagina antwoordt één keer; een antwoord dat niet van de pagina kwam die Connect net toonde, wordt geweigerd
+4. Na **Doorgaan** toont Connect een code van 8 tekens en een link `control-center://oauth-done`. Wie de code krijgt, krijgt de zojuist goedgekeurde toegang, dus hij gaat alleen naar de plek waar de aanmelding is begonnen
+5. De persoon typt de code in de app of volgt de link. De server claimt de
    aanmelding met de code en zijn eigen bewijs van het verzoek
 
 Een aanmelding verloopt na 10 minuten. Vijf foute codes beëindigen haar. Een link
 die deze app niet heeft gestart, wordt geweigerd met **Inloggen niet hier
-gestart**.
+gestart**. Connect beperkt hoeveel aanmeldingen één netwerkadres kan starten, en hoe vaak GitHub-tokens worden uitgegeven per persoon en server, per persoon over servers heen, per adres en voor de hele app. Nieuwe aanmeldingen hebben een eigen budget, zodat ze nooit de vernieuwingen van andere mensen ophouden. Na een limiet wordt een aanroep geweigerd met `rate_limited`, en probeert de server het later opnieuw zonder iemand af te melden. Een aanmelding na de limiet van de persoon wordt bij GitHub ongedaan gemaakt en geweigerd.
 
 ## De installatiesleutel vervangen
 
-**Sleutel vervangen** op de Connect-kaart, of `cc_server connect rotate-key --yes`:
+Alleen de servereigenaar kan de sleutel vervangen, met **Sleutel vervangen** op de kaart **Control Center Connect** onder **Instellingen → Server → Single sign-on**. Er is geen commando voor. Vervangen:
 
-- Geeft de server een nieuwe installatiesleutel en een nieuw installatie-ID
-- Meldt iedereen af bij elke route die via Connect loopt
+- Meldt iedereen af bij elke route die via Connect loopt. Voor elke Connect-server waarmee de oude sleutel werd gebruikt, trekt de server de GitHub- en Slack-aanmeldingen in die hij daarvandaan bewaart (een Google-aanmelding heeft niets om in te trekken en vervalt)
+- Trekt het oude installatie-ID in bij elk van die Connect-servers, ondertekend met de oude sleutel en bewezen met één zegel dat de server van die Connect bewaart. Vanaf dan weigert Connect elk verzoek met de oude sleutel, dus een zegel of een kopie van de oude sleutel die van deze server is genomen, is nutteloos, en de Slack-werkruimten die aan het oude ID waren gebonden, worden vrijgegeven zodat ze opnieuw kunnen verbinden. Tokens die al zijn uitgegeven, blijven geldig tot ze verlopen (een uur voor een bot-token, acht uur voor het token van een persoon). Een Connect-server waarvan deze server geen zegel heeft, heeft niets om in te trekken en wordt overgeslagen
+- Geeft daarna de server een nieuwe installatiesleutel en een nieuw installatie-ID
+- Als een Connect-server niet bereikbaar is, of weigert het oude ID in te trekken, stopt de server vóór het wisselen van sleutels en toont hij **Connect kon de oude sleutel niet uitschakelen**. **Toch vernieuwen** wisselt de sleutels hoe dan ook; het oude installatie-ID blijft dan bruikbaar bij die Connect tot zijn tokens verlopen, hoogstens 8 uur voor GitHub
 - Laat aanmeldingen via de eigen apps van de server ongemoeid
 - Vereist dat het nieuwe installatie-ID wordt toegevoegd aan de toegestane lijst
   van een eigen Connect
@@ -168,7 +207,7 @@ gestart**.
 | `signature`            | De gehoste configuratie is niet door de signatuurcontrole gekomen    |
 | `rollback`             | Connect serveerde een oudere configuratie dan de server al had gezien |
 | `unreachable`          | De server kan Connect niet bereiken                                  |
-| `install_blocked`      | Connect staat dit installatie-ID niet toe                            |
+| `install_blocked`      | Connect staat dit installatie-ID niet toe, of het is ingetrokken     |
 | `pins_changed`         | Een eigen Connect kondigde andere app-identifiers aan                |
 | `protocol`             | Connect antwoordde in een vorm die deze server niet begrijpt         |
 

@@ -2,7 +2,7 @@
 title: Installera och hantera skills
 description: Installera och uppdatera arbetsytans skills genom scangrinden och jämför sedan sparade revisioner med budgeterade skillutvärderingar.
 slug: sv-SE/handbok/how-to-guider/hantera-skills
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Den här guiden visar hur du fyller en arbetsyta med skills från GitHub: lägg
@@ -97,7 +97,7 @@ versionens hash behålls som referens för återställning i låset.
    syfte och en **Adapter**. Den inbyggda harnessen använder en konfigurerad
    leverantör och en verktygskompetent modell. **Claude Code** använder det
    förvalda hanterade Claude-kontot och en konkret modellidentifierare; logga in
-   under **Inställningar → Adaptrar** först. Det lånar inte serveroperatörens
+   under **Inställningar → Server → Modellleverantörer → Claude Code-konton** först. Det lånar inte serveroperatörens
    personliga inloggning.
 3. Välj en **Jämförelse** i tabellen nedan.
 4. Ställ in **Upprepningar per uppgift** (1–20) och **Budget (US-cent)**. Till
@@ -190,8 +190,7 @@ slash-kommandon (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — en skill som levereras av ett repo som är utcheckat
   i den här ytan
 
-Ett enskilt namn som inte är inbyggt löses fortfarande upp, för meddelanden som
-skrevs innan namnrymden fanns. `/skill:plan` är det som når en skill som heter
+`/skill:plan` är det som når en skill som heter
 `plan`; `/plan` är alltid det inbyggda.
 
 ## Reposcopade skills

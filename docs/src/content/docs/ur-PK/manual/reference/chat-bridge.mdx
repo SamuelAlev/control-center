@@ -2,7 +2,7 @@
 title: چیٹ برج
 description: چیٹ برج کے لیے فراہم کنندگان، کمانڈز، اسناد، صلاحیتیں، RPC آپریشنز اور اسٹوریج۔
 slug: ur-PK/ہدایت-نامہ/حوالہ/چیٹ-برج
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## فراہم کنندگان
@@ -150,7 +150,7 @@ message.im
 | ذکر قبول                | `Working on it…`                                               |
 | قدم `repo`                 | `Cloning <repo>…`                                              |
 | قدم `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| قدم `script`               | `Running the setup script for <repo>…`                         |
+| قدم `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | قدم `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`، ابھی کوئی قدم نہیں | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ message.im
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | کنکشن کی اسناد     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | ادھورا رہ گیا گائیڈڈ سیٹ اپ | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| پرانی Slack فائلیں         | `<dataDir>/<workspaceId>/slack_credentials.json` اور `slack_app_setup.json`، ایک بار پڑھی جاتی ہیں اور وہیں منتقل کر دی جاتی ہیں |
 
 اسناد ورک اسپیس کے ڈیٹا بیس کے پہلو میں رہتی ہیں، اُس کے اندر نہیں: ورک اسپیس حذف کرنے پر اُس کے چیٹ ٹوکن بھی چلے جاتے ہیں اور `workspace.export` یا بیک اپ `workspace.db` نقل کرتا ہے — اس لیے کسی اور کو دیا گیا ورک اسپیس کوئی زندہ بوٹ ٹوکن ساتھ نہیں لے جاتا۔ لکھائی جوہری ہے (عارضی فائل کے ساتھ نام کی تبدیلی) اور صرف مالک تک محدود ہے۔
 

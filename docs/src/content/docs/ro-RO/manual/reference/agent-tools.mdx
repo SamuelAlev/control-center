@@ -2,7 +2,7 @@
 title: Instrumente agent integrate
 description: Suprafața de instrumente pe care harness-ul integrat o oferă unui agent — server de limbaj, căutare structurală, depanator, kerneluri și controlul workerilor — împreună cu fiecare operație și argumentele ei.
 slug: ro-RO/manual/referinta/instrumente-agent
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Acestea sunt instrumentele **legate de server** pe care runtime-ul de agent integrat le înregistrează direct — server de limbaj, căutare structurală, depanator, kerneluri, întrebări și controlul workerilor — spre deosebire de [instrumentele MCP](/ro-RO/manual/referinta/instrumente-mcp/) pe care le aduce prin punte și de instrumentele generice de fișiere, căutare și shell din runtime-ul harness-ului. Nu se află în registrul MCP: un client MCP extern nu le va vedea, pentru că fiecare este legat de o resursă activă de pe server — un proces de server de limbaj, un adaptor de depanare, un interpretor — care aparține unei singure rulări.
@@ -24,6 +24,8 @@ Fiecare instrument declară un nivel, iar nivelul decide **care suprafețe îl v
 ## `lsp` — interogări către serverul de limbaj
 
 Înregistrat când rularea are un supraveghetor de server de limbaj și un director de lucru. Dacă un server poate răspunde cu adevărat se detectează la momentul apelului, ca o **intersecție**: trebuie să existe un marker de rădăcină *și* binarul serverului trebuie să se rezolve. Oricare dintre ele singur înseamnă că niciun server nu pornește — `status` spune asta — în loc să fie o presupunere tăcută.
+
+Serverele vin doar din tabelul încorporat; un fișier `lsp.json` din depozit nu este citit. Într-o rulare izolată fiecare rulare are propria sesiune de server de limbaj, deci serverele pornesc din nou la fiecare rulare. Binarele locale proiectului (`node_modules/.bin`) sunt folosite doar când rularea este izolată, iar rădăcina proiectului nu se rezolvă niciodată deasupra directorului de lucru al rulării.
 
 Pozițiile sunt adresate prin `line` plus un subșir `symbol`, niciodată prin coloană. Un model căruia i se cere o coloană ghicește, iar o presupunere greșită se rezolvă la un alt simbol de pe aceeași linie — un răspuns care pare corect, dar este despre altceva. Omiterea lui `symbol` la o acțiune de navigare este o eroare, nu o presupunere a primei coloane.
 
@@ -117,7 +119,7 @@ Fiecare fișier este comparat cu conținutul capturat în momentul etapizării, 
 
 Înregistrat când rularea are un supraveghetor de sesiuni de depanare, un director de lucru și un id de conversație. Dacă un adaptor poate porni cu adevărat se detectează la momentul apelului, după aceeași regulă de intersecție ca la serverul de limbaj (marker de rădăcină *și* binar). Nivel `exec`; nu este sigur la rulare în paralel (o sesiune este stare între apeluri, așa că un `continue` care depășește un `stack` ar citi un cadru care s-a mișcat deja).
 
-O singură sesiune per conversație, cu un TTL strict (30 de minute). Un al doilea `launch` este refuzat în loc să îl înlocuiască în tăcere pe primul.
+O singură sesiune per conversație, cu un TTL strict (30 de minute). Un al doilea `launch` este refuzat în loc să îl înlocuiască în tăcere pe primul. Într-o rulare izolată sesiunea își păstrează sandbox-ul între ture până se încheie, deci cel mult acele 30 de minute.
 
 | Op            | Argumente                     | Note                                           |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ O singură sesiune per conversație, cu un TTL strict (30 de minute). Un al doil
 | `status`      | —                             | Dacă rulează o sesiune și unde s-a oprit       |
 | `breakpoints` | `file`, `lines[]`             | `lines` gol șterge fișierul. Pot fi stabilite **înainte** de lansare |
 | `launch`      | `program`, `args[]`           | Pornește programul oprit la punctele tale de întrerupere |
-| `attach`      | `port`                        | Se conectează la un proces depanat care rulează deja |
+| `attach`      | `port`                        | Se conectează la un proces depanat care rulează deja pe unul dintre porturile redirecționate ale rulării; orice alt port este refuzat înainte să pornească ceva |
 | `continue`    | `thread_id?`                  | Rulează până la următoarea oprire               |
 | `pause`       | `thread_id?`                  | Îl oprește acolo unde se află                  |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Avansează cu un pas                    |
@@ -146,7 +148,7 @@ O singură sesiune per conversație, cu un TTL strict (30 de minute). Un al doil
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` preferă un `.venv/bin` sau `venv/bin` local proiectului în locul lui `$PATH`: un python din `$PATH` este un mediu diferit, iar atașarea din cel greșit eșuează într-un mod care se citește ca un cod stricat.
+`debugpy` preferă un `.venv/bin` sau `venv/bin` local proiectului în locul lui `$PATH` când rularea este izolată: un python din `$PATH` este un mediu diferit, iar atașarea din cel greșit eșuează într-un mod care se citește ca un cod stricat. Neizolat folosește doar `$PATH`, deci un depozit nu poate alege interpretorul care rulează pe gazdă.
 
 ---
 
@@ -176,7 +178,7 @@ Puntea **reintră în registrul de instrumente al harness-ului**, așa că guard
 Timeout-ul celulei este un buget de *inactivitate* (implicit 5 minute) și este **suspendat** cât timp un apel prin punte este în curs, așa că o celulă care face fan-out către subagenți nu este omorâtă la mijlocul fan-out-ului.
 
 :::note[Unde rulează kernelul]
-În mediul izolat al conversației când aceasta are unul, altfel pe gazdă. Nu pornește un mediu izolat ca să ajungă acolo — aceeași regulă care împiedică pornirea automată a unui tab de stație.
+În mediul izolat al conversației când aceasta are unul, altfel în sandbox-ul rulării de pe gazdă. Cu sandbox-ul oprit sau indisponibil rulează neizolat, iar `eval` cere aprobarea rulării pe gazdă. Nu pornește un mediu izolat ca să ajungă acolo — aceeași regulă care împiedică pornirea automată a unui tab de stație.
 :::
 
 ---

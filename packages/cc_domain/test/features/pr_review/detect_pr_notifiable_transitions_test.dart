@@ -23,7 +23,9 @@ Map<String, dynamic> wire({
   'checks_status': checks.name,
   'review_decision': decision.name,
   'mergeable_state': mergeable.name,
-  'requested_reviewers': [for (final r in requestedReviewers) {'login': r}],
+  'requested_reviewers': [
+    for (final r in requestedReviewers) {'login': r},
+  ],
   'requested_team_slugs': requestedTeams,
   'head_sha': headSha,
 };
@@ -101,14 +103,17 @@ void main() {
       );
     });
 
-    test('failing to pending is NOT recovery — a re-run starting is not news', () {
-      final result = transitions(
-        wire(checks: PrChecksStatus.failing),
-        wire(checks: PrChecksStatus.pending),
-      );
-      expect(result.whereType<PrChecksRecovered>(), isEmpty);
-      expect(result.whereType<PrChecksFailed>(), isEmpty);
-    });
+    test(
+      'failing to pending is NOT recovery — a re-run starting is not news',
+      () {
+        final result = transitions(
+          wire(checks: PrChecksStatus.failing),
+          wire(checks: PrChecksStatus.pending),
+        );
+        expect(result.whereType<PrChecksRecovered>(), isEmpty);
+        expect(result.whereType<PrChecksFailed>(), isEmpty);
+      },
+    );
   });
 
   group('review decision', () {
@@ -264,7 +269,7 @@ void main() {
     });
   });
 
-  group('fromWire tolerates an older snapshot', () {
+  group('fromWire tolerates a sparse snapshot', () {
     test('a wire map with no fields at all reads as neutral', () {
       final state = PrNotifiableState.fromWire(const {});
       expect(state.checksStatus, PrChecksStatus.none);
@@ -275,8 +280,7 @@ void main() {
       expect(state.isOpen, isTrue);
     });
 
-    test('an upgrade from a snapshot with no decision does not fire', () {
-      // The first pass after an upgrade must not announce every PR.
+    test('a snapshot with no decision does not fire', () {
       final before = wire()..remove('review_decision');
       expect(
         transitions(before, wire(decision: PrReviewDecision.none)),

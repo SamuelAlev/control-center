@@ -2,7 +2,7 @@
 title: Domenehendelser
 description: Hvorfor funksjoner snakker sammen gjennom en prosessintern hendelsesbuss i stedet for å importere hverandre, hva bussen er og ikke er kilden til sannhet for, og hvilke hendelser som faktisk kan drive automatisering.
 slug: nb-NO/handbok/konsepter/domenehendelser
-sourceHash: e1db6715b55cceb2f3831d249cf590d8ef01e5d6
+sourceHash: e165a9dd2800a6e63b6dbf35f04c6097f68bf9ce
 ---
 
 ## Hva en domenehendelse er
@@ -37,9 +37,7 @@ requests, saker eller møter. Observerbarheten aggregerer kjøringsutfall uten �
 strekke seg inn i utsendingen.
 
 Kostnaden er den vanlige: en utgiver kan ikke vite om noen lytter, og en lytter
-som aldri blir konstruert, er taust inaktiv. `TicketRemoteSyncHandler` er det
-faste eksempelet: den er deklarert, dekket av tester og aldri koblet inn i
-produksjon.
+som aldri blir konstruert, er taust inaktiv.
 
 ## Hva bussen ikke er
 

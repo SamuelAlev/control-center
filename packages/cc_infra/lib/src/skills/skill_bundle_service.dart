@@ -22,9 +22,9 @@ import 'package:path/path.dart' as p;
 /// Resolves a GitHub skill to its full, pinned file set: given the repo-relative
 /// path of a skill's `SKILL.md` and a [ref], returns every file of the skill's
 /// directory (path relative to the directory) at a commit SHA. [workspaceId]
-/// selects the credential: the workspace's GitHub identity mode decides which
-/// token may read a private source. Injected so the service is testable
-/// without a live GitHub client.
+/// selects the credential: the workspace's GitHub App reads it, or the
+/// [actingUserId]'s own sign-in when the App cannot and a person asked.
+/// Injected so the service is testable without a live GitHub client.
 typedef GitHubSkillFilesFetcher =
     Future<SourceSkillFiles> Function({
       required String workspaceId,
@@ -32,6 +32,7 @@ typedef GitHubSkillFilesFetcher =
       required String repo,
       required String path,
       String? ref,
+      String? actingUserId,
     });
 
 /// Resolves the latest commit SHA touching a path on a branch (null branch =
@@ -43,6 +44,7 @@ typedef GitHubLatestCommitResolver =
       required String repo,
       required String path,
       String? branch,
+      String? actingUserId,
     });
 
 /// Resolves a repo's default branch. Injected for the update-check.
@@ -51,6 +53,7 @@ typedef GitHubDefaultBranchResolver =
       required String workspaceId,
       required String owner,
       required String repo,
+      String? actingUserId,
     });
 
 /// Content-addresses, pins and installs workspace skill bundles, persisting a
@@ -206,6 +209,7 @@ class SkillBundleService implements SkillBundlePort {
     bool allowQuarantineOverride = false,
     String? spaceId,
     String? agentId,
+    String? actingUserId,
   }) async {
     final resolved = await _fetch(
       workspaceId: workspaceId,
@@ -213,6 +217,7 @@ class SkillBundleService implements SkillBundlePort {
       repo: repo,
       path: path,
       ref: ref,
+      actingUserId: actingUserId,
     );
     final (scanResult, hash) = await _installGatedFiles(
       workspaceId: workspaceId,
@@ -334,7 +339,10 @@ class SkillBundleService implements SkillBundlePort {
   }
 
   @override
-  Future<List<SkillUpdateCandidate>> checkUpdates(String workspaceId) async {
+  Future<List<SkillUpdateCandidate>> checkUpdates(
+    String workspaceId, {
+    String? actingUserId,
+  }) async {
     final resolveLatest = _latestCommit;
     if (resolveLatest == null) {
       return const [];
@@ -354,6 +362,7 @@ class SkillBundleService implements SkillBundlePort {
           workspaceId: workspaceId,
           owner: parts[0],
           repo: parts[1],
+          actingUserId: actingUserId,
         );
         final latest = await resolveLatest(
           workspaceId: workspaceId,
@@ -361,6 +370,7 @@ class SkillBundleService implements SkillBundlePort {
           repo: parts[1],
           path: entry.skillPath,
           branch: branch,
+          actingUserId: actingUserId,
         );
         if (latest == null || latest.isEmpty) {
           continue;
@@ -389,6 +399,7 @@ class SkillBundleService implements SkillBundlePort {
     bool allowQuarantineOverride = false,
     String? spaceId,
     String? agentId,
+    String? actingUserId,
   }) async {
     final lock = await readLock(workspaceId);
     final existing = lock.skills[slug];
@@ -413,6 +424,7 @@ class SkillBundleService implements SkillBundlePort {
       repo: parts[1],
       path: existing.skillPath,
       ref: ref,
+      actingUserId: actingUserId,
     );
     final (scanResult, hash) = await _installGatedFiles(
       workspaceId: workspaceId,
@@ -690,8 +702,7 @@ class SkillBundleService implements SkillBundlePort {
   }
 
   /// Runs the mandatory scan gate over [files] BEFORE any disk write and returns
-  /// the passing/warning result (or null when no scanner is wired — the
-  /// backward-compatible no-op). Fail-closed: a scanner error, or a
+  /// the passing/warning result (or null when no scanner is wired). Fail-closed: a scanner error, or a
   /// `quarantine` verdict without [allowQuarantineOverride], throws a
   /// [SkillScanBlockedException] and aborts the install.
   Future<SkillScanResult?> _runGate({

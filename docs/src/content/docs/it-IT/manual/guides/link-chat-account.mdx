@@ -2,7 +2,7 @@
 title: Collega il tuo account Slack
 description: Dimostra che un'identità Slack è la tua, così gli agenti agiscono sui tuoi messaggi e il tuo lavoro ti viene attribuito.
 slug: it-IT/manuale/guide/collega-account-chat
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Questa guida mostra come collegare la tua identità di chat al tuo utente di Control Center e come scollegarne una.
@@ -19,7 +19,7 @@ Un membro non collegato che menziona il bot riceve una risposta in quel thread d
 
 Il collegamento richiede entrambi i lati: inviare un codice da Slack prova l'account Slack, e confermarlo in Control Center prova che quell'account è tuo.
 
-1. Vai in **Impostazioni → Spazio di lavoro → Profilo e identità** e scorri fino alla scheda **Account di chat
+1. Vai in **Impostazioni → Tu → Profilo** e trova la scheda **Account di chat
    collegati**
 2. Nel blocco di Slack, fai clic su **Collega il mio account Slack**. La finestra mostra un codice monouso, per esempio:
 
@@ -32,7 +32,7 @@ K7M2QP
 5. Se è il tuo account, fai clic su **Conferma**. Il collegamento viene creato, la finestra lo indica e il bot lo conferma nello stesso messaggio diretto
 6. Se non è il tuo, fai clic su **Rifiuta**. Non viene collegato nulla e il codice smette di funzionare; fai clic su **Ottieni un nuovo codice** per riprovare
 
-Chiudere la finestra non fa perdere una rivendicazione. Un codice che arriva più tardi resta in attesa nella riga **Collega il mio account Slack** della tua pagina del profilo, con gli stessi pulsanti **Conferma** e **Rifiuta**.
+Chiudere la finestra non fa perdere una rivendicazione. Un codice che arriva più tardi resta in attesa nella riga **Collega il mio account Slack** della scheda, con gli stessi pulsanti **Conferma** e **Rifiuta**.
 
 Perché il passaggio di conferma: senza di esso, un codice letto da sopra la tua spalla e inviato dall'account Slack di qualcun altro farebbe agire quell'account come te. Solo tu puoi confermare, e solo il profilo esatto che ha inviato il codice.
 
@@ -51,19 +51,19 @@ Un codice sconosciuto, scaduto, rifiutato o generato per un altro spazio di lavo
 
 Se il tuo profilo Slack porta un'e-mail confermata che corrisponde all'e-mail verificata di un utente di Control Center che è **già membro di questo spazio di lavoro**, il ponte ti collega la prima volta che gli parli. Nessun codice necessario.
 
+Il lato di Control Center conta come verificato quando l'indirizzo è stato impostato dall'accesso single sign-on o da SCIM, oppure quando il proprietario del server lo ha confermato in **Impostazioni → Server → Persone**. Un indirizzo che hai digitato nel tuo profilo non è verificato, quindi non collega nulla finché il proprietario non lo conferma; nel frattempo usa il flusso con codice.
+
 Entrambe le metà contano: la corrispondenza dell'e-mail prova l'identità, ma solo l'appartenenza concede l'accesso, quindi un estraneo la cui e-mail esiste per caso sul server non collega nulla. L'elenco mostra come è stato creato ogni collegamento («abbinato via e-mail» o «collegato con un codice»).
 
 Il collegamento automatico richiede lo scope `users:read.email`. Senza di esso, Slack non rivelerà l'indirizzo e il flusso tramite codice è l'unica via.
 
 ## Vedi chi è collegato
 
-L'elenco è amministrazione dello spazio di lavoro, quindi vive sull'altra metà
-della superficie: **Impostazioni → Spazio di lavoro → Generale → Ponti di chat
-→ Account collegati**. Elenca ogni membro collegato dello spazio di lavoro, con
+L'elenco è amministrazione dello spazio di lavoro, quindi vive nella scheda di amministrazione: **Impostazioni → Spazio di lavoro → Integrazioni → Ponti di chat → Account collegati**. Elenca ogni membro collegato dello spazio di lavoro, con
 l'account Slack a cui ciascuno corrisponde e come è stato creato il
 collegamento.
 
-Il tuo stato personale è nella tua pagina del profilo: la riga **Collega il mio
+Il tuo stato personale è in **Impostazioni → Tu → Profilo**: la riga **Collega il mio
 account Slack** dice «Collegato a _your-slack-id_» quando sei collegato e ti
 invita a collegarti quando non lo sei.
 

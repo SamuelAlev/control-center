@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
@@ -14,11 +15,13 @@ import 'package:cc_server_core/src/connect/connect_settings.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/forge/forge_credentials.dart';
 import 'package:cc_server_core/src/forge/github_clients.dart';
+import 'package:cc_server_core/src/forge/repo_access_registry.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 import 'package:cc_server_core/src/identity/user_credentials_store.dart';
 import 'package:cc_server_core/src/identity/workspace_github_app_settings.dart';
 import 'package:test/test.dart';
 
+import '../helpers/test_database.dart';
 import 'github_clients_test.dart' as harness show testPem;
 
 const _ws = 'ws';
@@ -40,6 +43,30 @@ final class _Repos implements RepoRepository {
   @override
   Future<List<Repo>> getAll(String workspaceId) async =>
       workspaceId == _ws ? repos : const [];
+}
+
+/// Connect whose signed config names its GitHub App. Every network call fails
+/// the test: building the install link must not ask Connect for anything.
+final class _ConfiguredConnect extends ConnectClient {
+  _ConfiguredConnect(FileSecretsStore secrets)
+    : super(
+        settings: ConnectSettings(
+          secrets: secrets,
+          environment: const {'CC_CONNECT_URL': 'https://connect.example'},
+        ),
+      );
+
+  @override
+  Future<ConnectConfig?> usableConfig(ConnectTarget target) async =>
+      ConnectConfig(
+        epoch: 1,
+        issuedAt: DateTime.utc(2026, 11, 8),
+        github: const GitHubLaneConfig(
+          appId: 1,
+          clientId: 'Iv1test',
+          appSlug: 'cc-test',
+        ),
+      );
 }
 
 Repo _repo(String owner, {ForgeHost forge = ForgeHost.github}) => Repo(
@@ -100,11 +127,10 @@ void main() {
       updatedAt: DateTime.utc(2026),
       ownerUserId: 'alice',
     );
+    final db = createTestDatabase(workspaceId: _ws);
+    addTearDown(db.close);
     final clients = GitHubClients(
-      credentials: ForgeCredentials(
-        env: (_) => null,
-        users: UserCredentialsStore(secrets),
-      ),
+      credentials: ForgeCredentials(users: UserCredentialsStore(secrets)),
       apps: apps,
       workspaceApps: WorkspaceGitHubAppSettings(
         secrets: secrets,
@@ -114,6 +140,10 @@ void main() {
       members: _Members(),
       connect: ConnectClient(settings: ConnectSettings(secrets: secrets)),
       isLinkedRepo: (_, _, _) async => true,
+      mayReadRepo: (_, _, _, _) async => true,
+      repoAccess: RepoAccessRegistry(cacheFor: (_) => db.cacheDao),
+      confirmRepo: (_, _, _, _, _) async {},
+      confirmPersonRequest: (_, _, _, _, _) async {},
     );
     return buildGitHubAppOps(
       clients: clients,
@@ -147,5 +177,53 @@ void main() {
       await listed(await op([_repo('globex', forge: ForgeHost.gitlab)])),
       isEmpty,
     );
+  });
+
+  test('on Connect, the install link comes from its config alone', () async {
+    final secrets = FileSecretsStore(dataDir: dir.path);
+    final apps = ProviderAppSettings(secrets: secrets);
+    final workspace = Workspace(
+      id: _ws,
+      name: _ws,
+      createdAt: DateTime.utc(2026),
+      updatedAt: DateTime.utc(2026),
+      ownerUserId: 'alice',
+    );
+    final db = createTestDatabase(workspaceId: _ws);
+    addTearDown(db.close);
+    final clients = GitHubClients(
+      credentials: ForgeCredentials(users: UserCredentialsStore(secrets)),
+      apps: apps,
+      workspaceApps: WorkspaceGitHubAppSettings(
+        secrets: secrets,
+        install: apps,
+      ),
+      workspaceLookup: (id) async => id == _ws ? workspace : null,
+      members: _Members(),
+      connect: _ConfiguredConnect(secrets),
+      isLinkedRepo: (_, _, _) async => true,
+      mayReadRepo: (_, _, _, _) async => true,
+      repoAccess: RepoAccessRegistry(cacheFor: (_) => db.cacheDao),
+      confirmRepo: (_, _, _, _, _) async {},
+      confirmPersonRequest: (_, _, _, _, _) async {},
+    );
+    final begin = buildGitHubAppOps(
+      clients: clients,
+      manifest: null,
+      pairingServerUrl: 'https://cc.example.com',
+      repos: _Repos(const []),
+    ).firstWhere((o) => o.name == 'github.install.begin');
+
+    final result = await begin.handler(
+      const RepoOpContext(
+        args: {},
+        workspaceId: _ws,
+        deviceId: 'd',
+        userId: 'alice',
+      ),
+    );
+    // No ticket: an installation needs no per-server binding, so the link
+    // is the App's plain install page.
+    expect(result['url'], 'https://github.com/apps/cc-test/installations/new');
   });
 }

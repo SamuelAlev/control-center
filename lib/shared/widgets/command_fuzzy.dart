@@ -4,18 +4,16 @@
 /// from a warm in-memory index that never awaits a round-trip (the <50ms
 /// acceptance criterion is measured on this).
 ///
-/// The SCORER itself now lives in `package:cc_ui/fuzzy.dart` and is re-exported
-/// here, because the design system's own type-to-filter surfaces (a searchable
-/// `CcMenu`, a `CcFilterMenu` flyout) rank with it too and cc_ui cannot import
-/// the host app. That entrypoint imports nothing, so this library stays
+/// The SCORER itself lives in `package:cc_ui/fuzzy.dart`, because the design
+/// system's own type-to-filter surfaces (a searchable `CcMenu`, a
+/// `CcFilterMenu` flyout) rank with it too and cc_ui cannot import the host
+/// app. That entrypoint imports nothing, so this library stays
 /// Flutter-free. What remains here is [rankCommands] — the omnibox's
 /// recency-aware ordering, which is app policy rather than design-system
 /// vocabulary.
 library;
 
 import 'package:cc_ui/fuzzy.dart';
-
-export 'package:cc_ui/fuzzy.dart' show fuzzyScore;
 
 /// Ranks [candidates] against [query], best first. [textOf] extracts the
 /// searchable text (label + description + category, joined). [recencyOf]

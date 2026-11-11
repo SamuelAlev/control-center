@@ -2,7 +2,7 @@
 title: PR átnézése és összefésülése
 description: Nyissa meg a PR-munkapadot, olvassa el a diffet, hagyjon soron belüli megjegyzéseket, küldjön be átnézést és fésülje össze.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/pr-atnezese-es-osszefesulese
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Ez az útmutató bemutatja, hogyan nézhet át és fésülhet össze egy pull requestet.
@@ -24,10 +24,14 @@ egy alkalmazáson belüli böngésző; a telepítési előnézet fülei automati
 bekerülnek, amikor a PR-en előnézeti URL-t észlelünk. A fülek elrendezését
 PR-enként jegyezzük meg.
 
+A beágyazott code-server csak a szerver tulajdonosának érhető el, mert a szerveren, a szerver saját felhasználójaként fut. A munkamenet ahhoz az eszközhöz és személyhez tartozik, amely megnyitotta, a VS Code workspace trust funkciója bekapcsolva nyílik meg (a VS Code kérdez, mielőtt megbíznék egy mappában), és semmilyen feladatot nem futtat automatikusan. Mindenki más megtartja az egyfájlos szerkesztőt és a fájlnézeteket.
+
 Az Áttekintés fül hordozza a PR metaadatait (szerző, ág, címkék,
 hozzárendeltek, reakciók, commitok, ellenőrzési állapot) és a műveletsort:
-frissítés, **Átnézés**, **Összefésülés**, megnyitás IDE-ben és egy ⋯
+frissítés, **Átnézés**, **Összefésülés**, a szerkesztőjéről elnevezett gomb (például **Megnyitás VS Code-ban**) és egy ⋯
 túlcsordulásmenü.
+
+Ez a szerkesztőgomb egy natív szerkesztőt indít a **szerver** saját képernyőjén, a szerver felhasználójaként és homokozón kívül, ezért csak a [szerver tulajdonosának](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-szerver-tulajdonosa) ajánlja fel. Egy saját szervert futtató asztali gépen ez az asztalnál ülő személy. Ugyanez igaz egy beszélgetés worktree-jének szerkesztőben való megnyitására is. Mindenki más a beépített szerkesztő nézeteit használja. A szerver tulajdonosánál is igaz: PR csak a munkaterülethez kapcsolt repóból nyílik meg.
 
 ### PR megnyitása egy tér vereméből
 
@@ -45,8 +49,7 @@ verem fejlécére, és nyomjon Entert vagy Szóközt az összecsukásához vagy
 kinyitásához. A nem összetartozó PR-ek külön maradnak, a hiányos vagy kétértelmű
 ághivatkozások pedig nem jelennek meg rendezett veremként.
 
-A **Verziókezelés** lapon a **Halmozott pull requestek (N)** megnyitja a verem
-közzétett részeinek választóját, legalulról indulva. Minden bejegyzés a PR
+A PR fejlécében a köteg jelvénye (egy rétegikon a köteg pull requestjeinek számával) megnyitja a **Halmozott pull requestek** választóját, a köteg közzétett részeit, legalulról indulva. Minden bejegyzés a PR
 számát, a rész címkéjét és a pozícióját mutatja; a kijelölt rész meg van jelölve.
 Válasszon ki egy bejegyzést a PR-munkapadja megnyitásához. A **Verem
 közzététele** csak akkor jelenik meg, ha a PR-felderítés befejeződött, és
@@ -54,6 +57,21 @@ legalább egy résznek nincs PR-je. Ugyanez érvényes az ágmenüre is. A Contr
 Centeren kívül létrehozott PR-ek is közzétettnek számítanak. A részben közzétett
 vermek mindkét műveletet felkínálják; az egyágú munka megtartja az egyedi PR
 létrehozása/megtekintése műveleteket.
+
+### Commit és push a Verziókezelés panelről
+
+A **Verziókezelés** panelen készített commit az öné: Ön a szerzője és a véglegesítője, azon a címen, amelyet a forge az Ön bejelentkezéséhez ellenőrzött. Ha a **Beállítások → Ön → Commitok** alatt, az **Ellenőrzött commitok** résznél aláírókulcsot hozott létre, a szerver a push előtt az Ön saját aláíró kulcsával írja alá. A push az Ön saját bejelentkezését hordozza, arra az egy repóra szűkítve.
+
+A szerver a saját gépén futtatja a Gitet, egy olyan fában, amelyet egy ügynök vagy egy PR változtathat, ezért egyetlen programot sem futtat, amelyet egy repó kiválaszthat:
+
+- A commitok kihagyják a repó Git-hookjait, ahogy a `git commit --no-verify` is teszi. Pre-commit, commit-msg vagy pre-push hook nem fut le
+- A repó által beállított hitelesítő-segédprogramokat, szerkesztőket, külső diff-eszközöket és aláírási programokat a rendszer figyelmen kívül hagyja
+
+Futtassa le saját maga az ellenőrzéseket commit előtt, vagy a CI-ben.
+
+A kód megváltoztatásához írási jog kell a tárolón ([írási jog](/hu-HU/kezikonyv/fogalmak/jogosultsag/#kódmódosításhoz-írási-jog-kell)): a fájlok szerkesztőben való mentése vagy visszavonása, a **Legújabb PR-commitok húzása**, a commitolás és push, egy ág közzététele, valamint a kötegműveletek, amelyek egy részt kivágnak, kicsekkolnak vagy közzétesznek. Csak olvasási vagy átnézési joggal a fájlokat és a diffeket látja, ezekre a műveletekre pedig ez a válasz érkezik: „Olvashatod ezt a tárolót, de nem módosíthatod. A munkaterület adminisztrátora írási hozzáférést adhat.”
+
+**Legújabb PR-commitok húzása** hozza a review-worktree-t a pull request legújabb commitjaira. Az Ön saját GitHub-bejelentkezésével tölti le, és ha nincs ilyen, bejelentkezést kér. Commitolja vagy dobja el előbb a változásait: a nem commitolt változásokat tartalmazó worktree nem szinkronizálódik.
 
 ## A diff elolvasása
 
@@ -141,7 +159,7 @@ Az összefésülés visszafordíthatatlan: commitokat tol fel a forge-ra, ezért
 visszavonási bejegyzés helyett megerősítési lépést kap. Utána a PR gyorsítótára
 érvénytelenné válik, az állapota **Összefésülve** értékre vált, és egy
 `PullRequestStatusChanged` esemény indul a `merged` állapottal. Ez az esemény
-elengedi az efemer „szerkesztőben megnyitás” worktree-t, és elindít két alapból
+elengedi a szerkesztőgomb által megnyitott efemer worktree-t, és elindít két alapból
 létrehozott pipeline-t: a **Stale repository cleanup**, amely eltávolítja a PR
 elavult worktree-jeit és beszélgetésmappáit, valamint a **Release notes**,
 amely megírja egy changelog-bejegyzés tervezetét.
@@ -169,6 +187,12 @@ számítás](/hu-HU/kezikonyv/gyakorlati-utmutatok/atnezesi-szamitas/).
 A Control Center azokat a PR-eket is importálja, amelyeket az alkalmazáson
 kívül, emberek nyitottak meg. A fenti átnézési folyamat ugyanaz. A külső PR-eket
 a PR-lekérdező szolgáltatás észleli.
+
+## Hibaelhárítás
+
+### A pre-commit hookom nem futott le
+
+Az alkalmazás **Verziókezelés** paneljén készített commitok kihagyják a repó Git-hookjait, ahogy a `git commit --no-verify` is. A szerver a saját gépén futtatja a Gitet, egy olyan fában, amelyet ügynökök és pull requestek változtathatnak, ezért soha nem futtat olyan programot, amelyet a repó választ ki. Futtassa le a hook ellenőrzéseit saját maga, vagy támaszkodjon a CI-re.
 
 ## Kapcsolódó útmutatók
 

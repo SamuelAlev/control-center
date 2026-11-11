@@ -2,7 +2,7 @@
 title: Připojte hostitele kódu
 description: Připoj GitHub, GitLab nebo Bitbucket, aby fungovala plocha pull requestů, registrace repozitářů a běhy agentů. Jeden pracovní prostor může používat všechny tři.
 slug: cs-CZ/prirucka/navody/pripojeni-hostitele-kodu
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center pracuje se třemi hostiteli kódu. Aplikace jim říká **forge**: **GitHub**, **GitLab** a **Bitbucket Cloud**. Žádný není výchozí. Připoj jednoho a všechno funguje. Připoj jich víc a jeden pracovní prostor může držet repozitáře ze všech najednou.
@@ -11,22 +11,26 @@ Forge je vlastnost každého **repozitáře**. Přečte se z jeho remote `origin
 
 ## Připoj forge
 
-1. Otevři **Nastavení → Pracovní prostor → Profil a identita** (`/settings/workspace/profile`).
+1. Otevři **Nastavení → Vy → Profil** (`/settings/you/profile`).
 2. Najdi kartu **Hostování kódu**. Jsou na ní všechny podporované forge, připojené i nepřipojené.
 3. U **GitHubu** stiskni **Přihlásit se k GitHub**. U **GitLabu** nebo **Bitbucketu** stiskni **Přidat token** a token vlož.
 
-**GitHub umí jen přihlášení.** Přihlášení proběhne přes vlastní GitHub App serveru nebo přes Control Center Connect, podle toho, co nastavil vlastník serveru (viz [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)); token GitHubu se nevkládá. GitLab a Bitbucket pořád berou osobní token.
+**GitHub umí jen přihlášení.** Přihlášení proběhne přes vlastní GitHub App serveru nebo přes Control Center Connect, podle toho, co nastavil vlastník serveru, nebo přes aplikace, které pro tento pracovní prostor v **Nastavení → Pracovní prostor → Integrace** vybral správce pracovního prostoru (viz [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/)); token GitHubu se nevkládá. GitLab a Bitbucket pořád berou osobní token.
 
 V obou případech je přihlašovací údaj **tvůj a žije na serveru**, klíčovaný tvým uživatelským id. Token se neukládá na stroj, na kterém jsi ho zadal, každé zařízení, ze kterého se přihlásíš, používá ten samý a žádný jiný člen ho nepřečte. Začne platit u **dalšího požadavku**. Není co restartovat a odpojení ho přestane posílat hned.
 
-Každý řádek říká, odkud jeho přihlašovací údaj pochází. To je rozdíl mezi „můj token nefunguje“ a „odpovídá jiný token“:
+Karta ukazuje, kde se tvoje účty používají. Token GitLabu nebo Bitbucketu je tvůj **ve všech pracovních prostorech na serveru**, takže ho vložíš jednou. Stejně tak tvoje přihlášení ke GitHubu, pokud pracovní prostor nemá vlastní přihlašovací aplikace: ten pracovní prostor si drží vlastní přihlášení ke GitHubu a karta ho pojmenuje.
 
-| Podtitul | Význam |
+Každý řádek ukazuje stav **tvého** přihlašovacího údaje. Odpovídá jen tvůj vlastní údaj; nic jiného se nevkládá:
+
+| Řádek říká | Význam |
 | --- | --- |
-| `Signed in as octocat` | Používá se tvůj vlastní přihlašovací údaj |
-| `Signed in as octocat · from the environment` | Jen GitLab nebo Bitbucket: odpovídá proměnná prostředí serveru, ne tvůj token |
-| `Not connected` | Pro tuhle forge nemáš přihlašovací údaj |
-| `GitHub sign-in isn't set up on this server yet.` | Server nemá vlastní GitHub App ani Connect; jedno z nich nastaví vlastník serveru |
+| `Přihlášeno jako octocat` | Používá se tvůj vlastní přihlašovací údaj |
+| `Nepřipojeno` | Pro tuhle forge nemáš přihlašovací údaj |
+| `Vaše přihlášení k GitHub jako octocat vypršelo. Přihlaste se znovu.` | Přihlášení vypršelo nebo ho forge zrušila |
+| `Pozastaveno: přihlašovací služba tohoto pracovního prostoru se změnila` | Pracovní prostor přešel na jinou přihlašovací službu. Tvoje přihlášení se zachovává a znovu bude fungovat, až se přepne zpět, proto tu není tlačítko pro přihlášení |
+| `GitHub teď není dostupný. Zkouší se znovu.` | Dočasný výpadek. Control Center to zkouší dál; nemusíš dělat nic |
+| Věta vysvětlující, proč přihlášení není dostupné | Například `Přihlášení přes GitHub není pro tento pracovní prostor nastavené.` nebo `Přihlašovací služba tohoto pracovního prostoru změnila identitu. Správce ji musí potvrdit.` Správci mají tlačítko na nastavení, které to opraví |
 
 ### Jaký token která forge chce
 
@@ -35,17 +39,43 @@ Každý řádek říká, odkud jeho přihlašovací údaj pochází. To je rozd�
 | **GitLab** | Osobní přístupový token s oprávněním `api` | gitlab.com → User settings → Access tokens |
 | **Bitbucket** | API token Atlassianu a e-mail účtu | id.atlassian.com → Security → API tokens |
 
-Bitbucket se ověřuje **e-mailem účtu jako uživatelským jménem** a tokenem jako heslem. Nastav `BITBUCKET_EMAIL` v prostředí serveru, aby věděl, který e-mail k tokenu patří.
+Bitbucket se ověřuje **e-mailem účtu jako uživatelským jménem** a API tokenem jako heslem, takže dialog Bitbucketu chce obojí. Bitbucketový **přístupový token** pro repozitář, projekt nebo pracovní prostor nepatří žádné osobě, proto ho tento dialog odmítne: je to místo toho [automatizační token](#přidej-automatizační-token). Totéž platí pro **projektový** nebo **skupinový přístupový token** GitLabu: GitLab se před uložením zeptá, komu token patří, a token bota se tu odmítne.
+
+Token nepatří jednomu pracovnímu prostoru: máš jeden pro každou forge a každý pracovní prostor na serveru ho používá. **Odpojit** ho odstraní pro všechny.
 
 ### Práce na pozadí
 
 Práce, za kterou nestojí člověk (běhy agentů, pipelines, polling PR), potřebuje přihlašovací údaj taky a každá forge to řeší jinak:
 
 - **GitHub** — token vždy pro jeden repozitář, vydaný z GitHub App serveru nebo přes Connect a omezený na to, co tam smí odpovědný člen. Nikdy to není celé předané přihlášení člověka a žádná proměnná prostředí ani vložený token ho nezastoupí. Viz [Nastavte integraci GitHub](/cs-CZ/prirucka/navody/integrace-github/#za-koho-tvé-pověření-mluví)
-- **GitLab** — vložený token vlastníka serveru, potom `GITLAB_TOKEN`, potom `CI_JOB_TOKEN`
-- **Bitbucket** — vložený token vlastníka serveru, potom `BITBUCKET_API_TOKEN`, potom `BITBUCKET_TOKEN` (s `BITBUCKET_EMAIL`)
+- **GitLab** a **Bitbucket** — jen **automatizační token** repozitáře: bot přístupový token, který pro daný repozitář přidá správce pracovního prostoru, nebo pro všechny repozitáře dané forge v pracovním prostoru. Token repozitáře má přednost před tokenem pracovního prostoru. Dotazování PR, komentáře AI revize a pushe a merge requesty, které nikdo nežádal, všechny používají tento token, takže se na forge ukazují jako ten bot, nikdy jako člen. Osobní token žádného člena se nezastoupí a neexistuje token na úrovni serveru ani z proměnných prostředí. Bez něj práce na pozadí pro repozitář pozastaví a oznámení o přístupu k repozitářům to řekne.
 
-Proměnné prostředí pro GitLab a Bitbucket jsou přihlašovací údaj **serveru**, ne tvůj: požadavek tvým jménem použije tvůj token a nic jiného, takže tě prostředí nikdy potichu nezastoupí.
+Práce, kterou člen požádá (komentář, revize, merge request agenta otevřený pro něj), dál používá vlastní token tohoto člena.
+
+## Přidej automatizační token
+
+Automatizační tokeny vidí a mění jen správci pracovního prostoru. Každý se při uložení ověří u forge: odmítne se token, který jedná jako osoba (osobní token GitLabu, Atlassian API token nebo jakýkoli token Bitbucketu, který se přihlašuje jako účet nějaké osoby), a stejně tak token, který nemůže číst repozitář, pro který je určen.
+
+- **Pro jeden repozitář:** otevři **Nastavení → Pracovní prostor → Repozitáře**. Karta **Automatizační tokeny** vypíše každý repozitář GitLab a Bitbucket s botem, který tam jedná, **Používá token pracovního prostoru**, nebo **Žádný token. Automatizace je zde pozastavena.** Na řádku repozitáře stiskni **Přidat token**.
+- **Pro všechny repozitáře forge:** otevři **Nastavení → Pracovní prostor → Integrace**, najdi kartu **Automatizační tokeny** a na řádku GitLabu nebo Bitbucketu stiskni **Přidat token**. Repozitáře, které token nemůže číst, se po uložení pojmenují a zůstanou pozastavené.
+
+Když je práce na pozadí už pozastavená, dostanou správci **Přidat token** rovnou v oznámení o přístupu k repozitářům. **Aktualizovat token** nahradí token; ikona koše ho odstraní a každý repozitář, který zůstane bez něj, se pozastaví. Pokud forge uložený token později odmítne (odvolaný nebo expirovaný), jeho řádek to řekne a repozitáře, které kryl, zůstanou pozastavené, dokud ho nenahradíš.
+
+| Forge | Automatizační token | Kde ho vytvořit |
+| --- | --- | --- |
+| **GitLab** | **Projektový** nebo **skupinový přístupový token** s `read_api` a `read_repository`; pro komentáře, merge requesty a pushe přidej `api` a `write_repository` | Projekt nebo skupina → Settings → Access tokens |
+| **Bitbucket** | **Přístupový token repozitáře**, **projektu** nebo **pracovního prostoru** s čtením repozitáře a zápisem pull requestů pro komentáře a pull requesty (zápis do repozitáře pro pushe) | Repozitář, projekt nebo pracovní prostor → Settings → Access tokens |
+
+GitLab ukazuje práci jako uživatele bota daného tokenu; Bitbucket ji ukazuje pod jménem přístupového tokenu.
+
+### Bitbucket: přístupový token nebo API token
+
+Bitbucket má dva druhy tokenů a Control Center je drží od sebe:
+
+- **API token** (id.atlassian.com) patří tvému účtu Atlassian a používá se spolu s tvým e-mailem. Je to **tvé** přihlašovací údaje a patří pod **Hostování kódu** v **Nastavení → Vy → Profil**.
+- **Přístupový token** (vytvořený v nastavení repozitáře, projektu nebo pracovního prostoru) patří tomuto repozitáři, projektu nebo pracovnímu prostoru, ne osobě. Je to **automatizační token** a patří pod **Automatizační tokeny**.
+
+Každý dialog odmítne ten druhý a řekne, kam patří.
 
 ## Na každé forge jsi někdo jiný
 
@@ -53,11 +83,26 @@ Stejný člověk je na GitHubu `octocat` a na GitLabu někdo úplně jiný. Cont
 
 Když se identita u forge ještě nerozpoznala, její repozitáře do doručené pošty nepřidají nic, místo aby se shodovaly se vším. Doručená pošta to řekne a netvrdí, že „Máte všechno přečtené“.
 
+## Vidíš jen to, co vidí tvůj vlastní účet
+
+Pull requesty z repozitáře se k tobě dostanou jen tehdy, když tvoje role v pracovním prostoru repozitář povoluje **a tvůj vlastní účet u dané forge ho může číst**. Správci pracovního prostoru a vlastník se řídí stejným pravidlem. Když jsou některé repozitáře skryté, doručená pošta a fronta PR řeknou kolik a proč, aniž by je pojmenovaly:
+
+- **Přihlaste se k GitHub, abyste viděli pull requesty z 3 dalších repozitářů**: tuhle forge jsi tu ještě nepřipojil. Přihlas se a objeví se
+- **3 repozitáře jsou skryté, protože tvůj účet GitHubu je nevidí**: zeptej se někoho s přístupem na dané forge
+- **3 repozitáře jsou skryté, protože na ně v tomto pracovním prostoru nemáš přístup**: požádej správce pracovního prostoru o přístup
+- **Kontroluje se tvůj přístup k 3 dalším repozitářům…**: zobrazí se nakrátko, dokud Control Center ověřuje, co tvůj účet smí číst
+
+Kód se řídí stejným pravidlem. Chceš-li otevřít soubory repozitáře, diffy nebo hledání, případně terminál na něm, potřebuješ jeho grant v tomto pracovním prostoru a tvůj vlastní účet u forge jej musí moci číst; platí to i pro správce pracovního prostoru, vyjma vlastníka serveru, který je vyňat. Když forge nejde dosáhnout, aby to ověřila, uvidíš „Váš přístup k hostování kódu se nepodařilo ověřit. Zkuste to znovu.“ (s názvem forge). Viz [Kód sleduje forge](/cs-CZ/prirucka/koncepty/autorizace/#kód-se-řídí-hostitelem-kódu).
+
+Totéž platí pro všechno, co z těchto pull requestů vzniká. Review prostor, jeho zprávy a běhy agentů zmizí, dokud nevidíš jeho pull request, a otevřený review prostor se zavře, když ztratíš přístup. Běhy pipeline týkající se skrytého pull requestu vypadnou z tvého seznamu běhů. Ani agenti pracující pro tebe nemohou tyto review prostory číst. Seznam repozitářů pracovního prostoru ukazuje každý repozitář, ke kterému v tomto pracovním prostoru máš přístup, i ten, na který účet u forge zatím nedosáhne.
+
+Pokud forge omezuje rychlost nebo je nedostupná, Control Center ještě několik minut zobrazuje to, co naposledy potvrdil, a potom ty pull requesty skryje, dokud nebude moci znovu ověřit.
+
 ## Jedna doručená pošta, všechny forge
 
 Doručená pošta a fronta PR se rozběhnou přes každou forge zastoupenou v pracovním prostoru a výsledky složí do jednoho proudu. Pull request z GitHubu a pull request z Bitbucketu stojí vedle sebe, seřazené časem, ne podle dodavatele.
 
-Selhání jsou oddělená. Forge, která je nedostupná, narazila na limit požadavků, nebo není připojená, nepřispěje ničím a ostatní nechá být. Celou doručenou poštu nikdy nevyprázdní. Její repozitáře dál ukazují poslední známý stav, dokud se nevzpamatuje.
+Selhání jsou oddělená. Forge, která je nedostupná nebo narazila na limit požadavků, nechá ostatní být a její repozitáře si drží poslední známý stav, dokud se nevzpamatuje; celou doručenou poštu nikdy nevyprázdní. Repozitář, který server už nedokáže dosáhnout, vypadne, místo aby ukazoval zastaralé pull requesty, a **oznámení o přístupu k repozitářům** ho pojmenuje i s nápravou: nainstalovat GitHub App na jeho organizaci, přidat repozitář do repozitářů App, obnovit pozastavenou instalaci, nebo nechat odpovědného člena, aby se znovu přihlásil, nebo přidat automatizační token pro repozitář GitLab nebo Bitbucket. Správci mají tlačítko pro kroky u GitHub App a pro přidání tokenu.
 
 ## Co která forge umí
 
@@ -93,15 +138,31 @@ GitLab říká pull requestu **merge request**. Control Center ve vlastním mode
 
 ### Seznam PR je prázdný a hlásí, že forge není připojená
 
-Pro tuhle forge nemáš přihlašovací údaj. Přihlas se ke GitHubu, nebo vlož token GitLabu či Bitbucketu, v **Nastavení → Pracovní prostor → Profil a identita → Hostování kódu**. Repozitáře ostatních forge to nezasáhne.
+Pro tuhle forge nemáš přihlašovací údaj. Přihlas se ke GitHubu, nebo vlož token GitLabu či Bitbucketu, v **Nastavení → Vy → Profil → Hostování kódu**. Repozitáře ostatních forge to nezasáhne.
 
 ### Připojil jsem forge, ale její repozitáře pořád nic neukazují
 
-Podívej se na podtitul řádku. Když u řádku GitLabu nebo Bitbucketu stojí „z prostředí“, odpovídá jiný přihlašovací údaj, než čekáš. Tvůj vlastní token vyhrává u všeho, o co požádáš, takže když řádek říká něco jiného, ten tvůj se neuložil. U GitHubu ověř, že je GitHub App nainstalovaná na účtu, který repozitáře vlastní.
+Podívej se na stav řádku a pak na oznámení nad seznamem PR. „Přihlaste se k … abyste viděli pull requesty z … dalších repozitářů“ znamená, že tvůj vlastní účet pro ty repozitáře připojený není; „… skryté, protože tvůj účet … nevidí“ znamená, že ti forge přístup nedává. U GitHubu ti oznámení o přístupu k repozitářům řekne, když GitHub App není nainstalovaná na organizaci repozitáře nebo ho nezahrnuje.
+
+### Práce na pozadí u repozitáře GitLab nebo Bitbucket je pozastavená
+
+Repozitář nemá automatizační token, který by ho mohl číst. Správce pracovního prostoru přidá jeden pro repozitář nebo pro celý pracovní prostor; viz [Přidej automatizační token](#přidej-automatizační-token). Tvůj vlastní osobní token pozastavení nezruší: práce na pozadí nikdy nepoužívá token člena.
 
 ### Repozitář nejde zaregistrovat
 
-Registrace potřebuje všechny tři věci: cesta leží v git work tree, ten má remote `origin` a ten remote míří na github.com, gitlab.com nebo bitbucket.org. Viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+Registrace potřebuje všechny tři věci: cesta leží v git work tree, ten má remote `origin` a ten remote míří na github.com, gitlab.com nebo bitbucket.org. Remote `origin` musí být také repozitář, který propojuješ, a složku mimo vlastní úložiště pracovního prostoru může propojit jen vlastník serveru. Viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/).
+
+### Mám grant, ale repozitář říká, že můj účet ho nemůže číst
+
+Tvůj vlastní účet u forge tenhle repozitář číst nemůže, takže jeho kód zůstává pro tebe zavřený bez ohledu na to, co pracovní prostor povoluje. Přihlas se k forge v sekci **Hostování kódu** výše, nebo získej přístup k repozitáři na forge.
+
+### „Váš přístup k hostování kódu se nepodařilo ověřit“
+
+Forge nešla dosáhnout, aby ověřila tvůj přístup, takže Control Center raději odmítl, než aby hádal. Zkus to za chvíli znovu.
+
+### Repozitář hlásí, že nyní ukazuje na jiný repozitář
+
+Repozitář za touto cestou se změnil: byl smazán a znovu vytvořen, nebo přesunut a nahrazen. Control Center mu nic neposílá, dokud správce pracovního prostoru neklikne na **Znovu propojit** v oznámení nebo v řádku repozitáře. Pouhé přejmenování nebo převod se sleduje samo a tahle hláška se neukáže.
 
 ### Po velkém zatížení všechno na chvíli přestane fungovat
 

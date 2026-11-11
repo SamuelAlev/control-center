@@ -176,12 +176,6 @@ void main() {
       expect(host.lastCall('fs.ensureAgentDir')!.args['agent_slug'], 'a');
     });
 
-    test('ensureMcpSymlink forwards the slug', () async {
-      final port = RpcWorkspaceFilesystemPort(client);
-      await port.ensureMcpSymlink('ws', 'a');
-      expect(host.lastCall('fs.ensureMcpSymlink')!.args['agent_slug'], 'a');
-    });
-
     test('writeAgentFile forwards slug + content', () async {
       final port = RpcWorkspaceFilesystemPort(client);
       await port.writeAgentFile('ws', 'a', 'body');
@@ -309,7 +303,6 @@ void main() {
       await port.listSkillSlugs(target);
       await port.ensureWorkspaceDirs(target);
       await port.ensureAgentDir(target, 'a');
-      await port.ensureMcpSymlink(target, 'a');
       await port.writeAgentFile(target, 'a', 'body');
       await port.deleteAgentDir(target, 'a');
       await port.syncAgentSkillLinks(target, 'a', const ['lint']);

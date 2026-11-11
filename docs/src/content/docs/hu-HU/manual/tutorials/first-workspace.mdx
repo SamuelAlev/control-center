@@ -2,7 +2,7 @@
 title: Az első munkaterületed
 description: Hozzon létre egy munkaterületet, regisztráljon bele egy repót, és győződjön meg saját szemével az elszigetelési határról.
 slug: hu-HU/kezikonyv/oktatoanyagok/elso-munkaterulet
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Mit fog felépíteni
@@ -11,10 +11,12 @@ Az oktatóanyag végére a következőkkel fog rendelkezni:
 
 - A projektjéről elnevezett munkaterület
 - Egy bele regisztrált Git-repó
-- Öt előre létrehozott ügynök, amelyek közül az egyiket már annyira beállította, hogy futni tud
+- Hat előre létrehozott ügynök, amelyek közül az egyiket már annyira beállította, hogy futni tud
 - Egy második, üres munkaterület, amely igazolja az elszigetelési határt
 
 A bevezető már létrehozott Önnek egy munkaterületet. Ez az oktatóanyag szándékosan egy újat készít, hogy a folyamat minden részét lássa.
+
+Munkaterület létrehozásához a szerver tulajdonosa kell, vagyis az, aki a szervert beállította. Saját szervert futtató asztali gépen ez Ön. Más valaki szerverén a **Munkaterület hozzáadása** gomb ezt írja: „Csak a szerver tulajdonosa hozhat létre munkaterületet. Kérje meg, hogy hozzon létre egyet, vagy kérjen meghívást egy munkaterület-adminisztrátortól.” Tegye meg valamelyiket, és kövesse a további lépéseket abban a munkaterületen. A tároló regisztrálásához a 2. lépésben munkaterület-adminisztrátor kell, a 4. lépés második munkaterületéhez pedig ismét a szerver tulajdonosa.
 
 Mielőtt elkezdi, válasszon egy olyan Git-checkoutot, amely mind a három feltételnek megfelel — a regisztrációs lépés minden mást elutasít:
 
@@ -35,12 +37,12 @@ A Control Center átvált az új munkaterületre, és annak beérkező üzenetei
 A háttérben a szerver közzétesz egy `WorkspaceCreated` eseményt, és feltölti a munkaterületet a következőkkel:
 
 - egy **CEO-ügynök**, amelynek perszónája a koordináció és a delegálás
-- négy szakértő — `qa`, `architect`, `engineer` és `librarian` —, mindegyik a saját utasításaival és készségeivel
+- öt szakértő — `qa`, `architect`, `engineer`, `librarian` és `content-synthesizer` —, mindegyik a saját utasításaival és készségeivel
 - a beépített pipeline-sablonok és azok eseményindító-sorai
 
 Minden létrehozott munkaterület mindezt megkapja, nem csak az első.
 
-Ellenőrizze: nyissa meg a **Beállítások → Munkaterület → Ügynökök** pontot. Öt ügynök szerepel a névsorban, mindegyik mellett egy üreges állapotgyűrű.
+Ellenőrizze: nyissa meg a **Beállítások → Munkaterület → Ügynökök** pontot. Hat ügynök szerepel a névsorban, mindegyik mellett egy üreges állapotgyűrű.
 
 ## 2. lépés: Tároló regisztrálása
 
@@ -57,7 +59,7 @@ Ellenőrizze: a repó megjelenik a listában az `owner/repo` értékkel és az a
 
 ## 3. lépés: Tegyen egy ügynököt futtathatóvá
 
-Az öt ügynök, amelyet ez a munkaterület az imént létrehozott, adapter és modell nélkül jött létre. Az indítás a **Control Center (built-in)** adapteren futtatja őket, és mivel nincs beállított modell, az Anthropic alapértelmezett modelljét kéri — így csak akkor működnek, ha csatlakoztatott egy Anthropic-fiókot, és ha csatlakoztatott, akkor is egy Ön által nem választott modellen. Az első indítási bevezető egyszer rányomja a választását az első munkaterület minden ügynökére; az ezután létrehozott munkaterületen mind az öt ügynök beállítás nélkül indul. Most állítson be egyet.
+A hat ügynök, amelyet ez a munkaterület az imént létrehozott, adapter és modell nélkül jött létre. Az indítás a **Control Center (built-in)** adapteren futtatja őket, és mivel nincs beállított modell, az Anthropic alapértelmezett modelljét kéri — így csak akkor működnek, ha csatlakoztatott egy Anthropic-fiókot, és ha csatlakoztatott, akkor is egy Ön által nem választott modellen. Az első indítási bevezető egyszer rányomja a választását az első munkaterület minden ügynökére; az ezután létrehozott munkaterületen mind a hat ügynök beállítás nélkül indul. Most állítson be egyet.
 
 1. Nyissa meg a **Beállítások → Munkaterület → Ügynökök** pontot
 2. Válassza ki az `engineer` ügynököt a névsorban
@@ -73,7 +75,7 @@ Minden ügynök a saját adapterét és modelljét hordozza, ezért ismételje m
 Hozzon létre egy második munkaterületet a címsáv chipjéről, pontosan az 1. lépés szerint. Aztán vessen rá egy pillantást:
 
 - A **Beállítások → Munkaterület → Tárolók** üres. Az egy perccel ezelőtt regisztrált repó nincs ott.
-- A **Beállítások → Munkaterület → Ügynökök** öt ügynököt tartalmaz, de ezek más sorok — a 3. lépésben beállított adapter eltűnt.
+- A **Beállítások → Munkaterület → Ügynökök** hat ügynököt tartalmaz, de ezek más sorok — a 3. lépésben beállított adapter eltűnt.
 - A terek listája, a jegyek és a memória is üres.
 
 Semmi sem szivárgott ki, mert nincs honnan szivárogni: minden munkaterület sorai az adott munkaterület saját adatbázisfájljában élnek. A munkaterületeken átnyúló olvasás nem egy szűrt lekérdezés, hanem olyan lekérdezés, amelynek nincs hol lefutnia. Egy munkaterület törlése egy fájl leválasztása.
@@ -84,6 +86,6 @@ A teljes modellért olvassa el a [Munkaterületek és elszigetelés](/hu-HU/kezi
 
 ## Összefoglalás
 
-Létrehozott egy munkaterületet, végignézte, ahogy egy CEO-t és négy szakértőt kap, regisztrált bele egy repót, ellátta az egyik ügynököt adapterrel és modellel, és meggyőződött róla, hogy egy második munkaterület mindebből semmit sem oszt meg.
+Létrehozott egy munkaterületet, végignézte, ahogy egy CEO-t és öt szakértőt kap, regisztrált bele egy repót, ellátta az egyik ügynököt adapterrel és modellel, és meggyőződött róla, hogy egy második munkaterület mindebből semmit sem oszt meg.
 
 **Következő:** [Az első ügynök indítása](/hu-HU/kezikonyv/oktatoanyagok/elso-ugynok/), hogy munkára fogja a munkaterületet.

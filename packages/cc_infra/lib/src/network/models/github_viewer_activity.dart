@@ -129,15 +129,12 @@ class GitHubViewerActivity {
 }
 
 /// The PRs a bot-conversation search found, one list per lane: the
-/// dedicated `@usectrl` mention, the App bot's full login, its bare slug
-/// (inside comments), and the review label. A PR hit by several lanes
-/// appears in each.
+/// dedicated `@usectrl` mention and the review label. A PR hit by both
+/// lanes appears in each.
 final class BotConversationCandidates {
   /// Creates the candidates.
   const BotConversationCandidates({
     this.mentioned = const [],
-    this.botMentioned = const [],
-    this.shortMentioned = const [],
     this.labeled = const [],
   });
 
@@ -147,21 +144,20 @@ final class BotConversationCandidates {
   /// PRs mentioning the dedicated account.
   final List<GitHubViewerPr> mentioned;
 
-  /// PRs mentioning the App bot's full login.
-  final List<GitHubViewerPr> botMentioned;
-
-  /// PRs whose comments mention the App's bare slug.
-  final List<GitHubViewerPr> shortMentioned;
-
   /// Open PRs carrying the review label.
   final List<GitHubViewerPr> labeled;
+
+  /// Every lane of [others] appended to this one's, lane by lane.
+  BotConversationCandidates followedBy(BotConversationCandidates others) =>
+      BotConversationCandidates(
+        mentioned: [...mentioned, ...others.mentioned],
+        labeled: [...labeled, ...others.labeled],
+      );
 
   /// Only the PRs [keep] accepts, in every lane.
   BotConversationCandidates where(bool Function(GitHubViewerPr pr) keep) =>
       BotConversationCandidates(
         mentioned: mentioned.where(keep).toList(growable: false),
-        botMentioned: botMentioned.where(keep).toList(growable: false),
-        shortMentioned: shortMentioned.where(keep).toList(growable: false),
         labeled: labeled.where(keep).toList(growable: false),
       );
 }

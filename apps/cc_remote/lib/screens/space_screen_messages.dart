@@ -58,7 +58,7 @@ extension _SpaceMessages on _SpaceScreenState {
         _sameMessage(kept.message, message) &&
         kept.workspaceId == widget.workspaceId &&
         kept.myUserId == _myUserId &&
-        identical(kept.userNames, _userNames) &&
+        identical(kept.users, _users) &&
         identical(kept.turns, turns)) {
       return kept.child;
     }
@@ -66,14 +66,14 @@ extension _SpaceMessages on _SpaceScreenState {
       message: message,
       workspaceId: widget.workspaceId,
       myUserId: _myUserId,
-      userNames: _userNames,
+      users: _users,
       turns: turns,
     );
     _keptTiles[message.id] = _KeptTile(
       message,
       widget.workspaceId,
       _myUserId,
-      _userNames,
+      _users,
       turns,
       tile,
     );
@@ -83,10 +83,10 @@ extension _SpaceMessages on _SpaceScreenState {
   Future<void> _messageActions(MessageDto message) async {
     final l10n = AppLocalizations.of(context);
     final writable = ref.read(workspaceRoleProvider).value?.canWrite == true;
-    final failed =
-        message.metadata is Map &&
-        (message.metadata as Map)['error'] == true &&
-        (message.metadata as Map)['retried'] != true;
+    // Retry is offered where the server would accept it, and nowhere else.
+    final retryable = retryableTurnIds(
+      ref.read(conversationFeedProvider(_scope)).value?.messages ?? const [],
+    ).contains(message.id);
     final action = await showCcDialog<String>(
       context: context,
       builder: (dialog) => CcDialog(
@@ -101,7 +101,7 @@ extension _SpaceMessages on _SpaceScreenState {
                 onPressed: () => Navigator.pop(dialog, 'thread'),
                 child: Text(l10n.mobileOpenThread),
               ),
-            if (writable && failed)
+            if (writable && retryable)
               CcButton(
                 size: CcButtonSize.lg,
                 fullWidth: true,
@@ -171,14 +171,14 @@ class _KeptTile {
     this.message,
     this.workspaceId,
     this.myUserId,
-    this.userNames,
+    this.users,
     this.turns,
     this.child,
   );
   final MessageDto message;
   final String workspaceId;
   final String? myUserId;
-  final Map<String, String> userNames;
+  final Map<String, UserDto> users;
   final PhoneTurnRelay turns;
   final Widget child;
 }

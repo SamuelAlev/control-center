@@ -2,7 +2,7 @@
 title: Snelstart
 description: Installeer Control Center, configureer één agent en zie hem aan je repo werken.
 slug: nl-NL/handleiding/snelstart
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 Dit is het kortste volledige pad van niets naar een agent die op je eigen code werkt. Volg het op volgorde; elke stap bouwt voort op de vorige.
@@ -29,7 +29,7 @@ Het onboarden doorloopt zijn stappen op volgorde — vooruit springen kan niet. 
 
 1. **Inloggen** (alleen servereigenaar): kies hoe deze server mensen aanmeldt bij GitHub, Google Calendar en Linear — **De apps van Control Center gebruiken**, **Mijn eigen apps gebruiken** of **Een eigen Connect-server gebruiken**. Met je eigen apps zet **Mijn GitHub-app maken** GitHub in één stap op. Je kunt dit later wijzigen in **Instellingen → Server → Single sign-on**.
 2. **Verbinden**: meld je aan bij GitHub, of plak een GitLab- of Bitbucket-token. De inloggegevens worden op de server opgeslagen en aan je account gekoppeld.
-3. **Werkruimte**: geef je eerste werkruimte een naam en kies optioneel een logo. Bij het aanmaken worden vijf agenten geseed — een CEO plus `qa`, `architect`, `engineer` en `librarian` — en de ingebouwde pipeline-sjablonen.
+3. **Werkruimte** (alleen servereigenaar): geef je eerste werkruimte een naam en kies optioneel een logo. Iedereen anders wacht op **Je zit nog niet in een werkruimte** totdat de eigenaar er een voor hem aanmaakt of een werkruimte-admin hem uitnodigt. Bij het aanmaken worden zes agenten geseed — een CEO plus `qa`, `architect`, `engineer`, `librarian` en `content-synthesizer` — en de ingebouwde pipeline-sjablonen.
 4. **Sandbox**: legt een sandboxvoorkeur vast. Bij beide keuzes kun je doorgaan.
 5. **Adapter**: kies de adapter en het model die agenten standaard moeten gebruiken. Kies **Control Center (built-in)** en gebruik dan de providerkiezer die verschijnt om je bij een modelprovider aan te melden — de modellenlijst blijft leeg tot er een is verbonden. Met het afronden van deze stap worden de adapter en het model ook op de CEO-agent van de werkruimte vastgelegd.
 6. **Stem (optioneel)**: installeer een spraakmodel op het apparaat voor dicteren, of sla deze stap over.
@@ -37,7 +37,7 @@ Het onboarden doorloopt zijn stappen op volgorde — vooruit springen kan niet. 
 Control Center opent daarna het postvak van je werkruimte.
 
 :::note[Wat een agentrun begrenst]
-Agentopdrachten worden verpakt in de OS-native sandbox van de host wanneer die beschikbaar is — Seatbelt op macOS, bubblewrap op Linux. Windows heeft geen backend, dus worden runs daar alleen door de andere lagen begrensd: de eigen worktree van het gesprek (`git worktree` op Windows; copy-on-write waar `rift` meelevert), inloggegevens die per start worden bemiddeld en bij het opruimen worden ingetrokken, en de actiebeveiligingen. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
+Agentopdrachten worden verpakt in de OS-native sandbox van de host wanneer die beschikbaar is — Seatbelt op macOS, bubblewrap op Linux. Windows heeft geen backend. Op een host zonder een daarvan starten alleen de agentruns van de servereigenaar, en die worden alleen door de andere lagen begrensd: de eigen worktree van het gesprek (`git worktree` op Windows; copy-on-write waar `rift` meelevert), inloggegevens die per start worden bemiddeld en bij het opruimen worden ingetrokken, en de actiebeveiligingen. Runs van alle anderen worden geweigerd totdat de eigenaar de sandbox installeert of sandboxing voor iedereen uitzet. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
 :::
 
 ## Stap 3: Een repository toevoegen
@@ -61,7 +61,7 @@ Op het tabblad **Instellingen** stel je in:
 
 Klik op **Wijzigingen opslaan**.
 
-Deze stap is in de praktijk niet optioneel. Alleen de CEO-agent erft de adapter die je tijdens het onboarden hebt gekozen; de vier specialisten worden zonder adapter aangemaakt. Ze vallen terug op **Control Center (built-in)** met het standaardmodel van Anthropic, dus ze draaien alleen als je een Anthropic-account hebt verbonden — en als je er een hebt verbonden, op een model dat je niet zelf hebt gekozen.
+Deze stap is in de praktijk niet optioneel. De adapterstap van het onboarden zet zijn adapter en model op elke agent die er toen al was; een werkruimte die later wordt aangemaakt, krijgt alle zes zonder instelling geseed. Een agent zonder adapter valt terug op **Control Center (built-in)** met het standaardmodel van Anthropic, dus ze draaien alleen als je een Anthropic-account hebt verbonden — en als je er een hebt verbonden, op een model dat je niet zelf hebt gekozen.
 
 ## Stap 5: De agent een taak sturen
 

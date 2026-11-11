@@ -1,4 +1,5 @@
-import 'package:cc_connect_core/cc_connect_core.dart' show ConnectOAuthLane;
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show ConnectOAuthLane, SignInUnavailableReason;
 import 'package:cc_data/cc_data.dart'
     show ProviderConnection, SignInLaneInfo, SignInLaneMode;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
@@ -101,23 +102,27 @@ void main() {
       expect(action.dx, greaterThan(title.dx));
     });
 
-    testWidgets('the ticketing provider and its sign-in live in ONE card', (
+    testWidgets('with Linear, the person\'s own sign-in is its own card', (
       tester,
     ) async {
+      // The vendor is the workspace's choice; the sign-in is the person's,
+      // the same card You → Profile shows.
       await tester.pumpWidget(wrap(vendor: TicketProvider.linear));
       await tester.pumpAndSettle();
 
-      final card = find.ancestor(
+      expect(find.byType(SectionCard), findsNWidgets(3));
+      final vendorCard = find.ancestor(
         of: find.text('Ticketing provider'),
         matching: find.byType(SectionCard),
       );
       expect(
         find.descendant(
-          of: card,
+          of: vendorCard,
           matching: find.widgetWithText(CcButton, 'Sign in to Linear'),
         ),
-        findsOneWidget,
+        findsNothing,
       );
+      expect(find.widgetWithText(CcButton, 'Sign in to Linear'), findsOneWidget);
     });
 
     testWidgets('local tickets show no credential row', (tester) async {
@@ -154,7 +159,7 @@ void main() {
             ConnectOAuthLane.github: SignInLaneInfo(
               lane: ConnectOAuthLane.github,
               mode: SignInLaneMode.unavailable,
-              error: 'This server has no GitHub App yet.',
+              unavailableReason: SignInUnavailableReason.notConfigured,
             ),
           },
         ),
@@ -162,7 +167,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(button(tester, 'Sign in to GitHub').onPressed, isNull);
-      expect(find.text('This server has no GitHub App yet.'), findsOneWidget);
+      expect(
+        find.text("GitHub sign-in isn't set up for this workspace."),
+        findsOneWidget,
+      );
     });
 
     testWidgets('is disabled while the server has not answered', (
@@ -183,7 +191,7 @@ void main() {
           connections: const [
             ForgeConnection(
               forge: ForgeHost.github,
-              authenticated: true,
+              status: ForgeConnectionStatus.connected,
               username: 'octocat',
               source: ForgeCredentialSource.oauth,
             ),
@@ -197,28 +205,6 @@ void main() {
       expect(find.widgetWithText(CcButton, 'Sign in again'), findsOneWidget);
     });
 
-    testWidgets('says WHICH credential is answering when it is not yours', (
-      tester,
-    ) async {
-      // An operator seeing the wrong account needs to know an environment
-      // variable is what is answering, not their own token.
-      await tester.pumpWidget(
-        wrap(
-          connections: const [
-            ForgeConnection(
-              forge: ForgeHost.gitlab,
-              authenticated: true,
-              username: 'octocat',
-              source: ForgeCredentialSource.environment,
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('from the environment'), findsOneWidget);
-    });
-
     testWidgets('surfaces a rejected credential as its own reason', (
       tester,
     ) async {
@@ -227,7 +213,7 @@ void main() {
           connections: const [
             ForgeConnection(
               forge: ForgeHost.github,
-              authenticated: false,
+              status: ForgeConnectionStatus.notConnected,
               error: 'GitHub rejected the stored credential.',
             ),
           ],

@@ -114,9 +114,7 @@ class PipelineRunRow extends StatelessWidget {
         ? l10n.pipelineRunTriggerManual
         : runTriggerLabel(l10n, run);
     final triggerReason = runTriggerReason(l10n, run);
-    final triggerTooltip = triggerReason == null
-        ? triggerLabel
-        : '$triggerLabel · $triggerReason';
+    final triggerTooltip = [?triggerLabel, ?triggerReason].join(' · ');
 
     return CcTappable(
       onPressed: onOpen,

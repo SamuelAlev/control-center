@@ -43,7 +43,9 @@ class _PersonalSignInForm extends StatelessWidget {
             variant: CcButtonVariant.secondary,
             onPressed: busy ? null : onBegin,
             child: Text(
-              connected ? l.credentialsSignInAgain : l.credentialsBrowserLogin,
+              connected || needsAttention
+                  ? l.credentialsSignInAgain
+                  : l.credentialsBrowserLogin,
             ),
           ),
         if (current == null && ownUnreachable)
@@ -57,33 +59,32 @@ class _PersonalSignInForm extends StatelessWidget {
             style: TextStyle(color: t.textSecondary),
           ),
         if (current != null) ...[
+          // Both modes end on a browser page that shows a confirmation code.
           Text(
-            l.credentialsWaitingForLogin,
+            l.credentialsSignInConfirmInBrowser,
             style: TextStyle(color: t.textSecondary),
           ),
-          if (current.mode == SignInLaneMode.connect) ...[
-            const SizedBox(height: 8),
-            // RTL carve-out: the confirmation code is a Latin token.
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: CcTextField(
-                controller: code,
-                label: l.credentialsConnectCodePrompt,
-                textStyle: TextStyle(
-                  fontSize: 22,
-                  letterSpacing: 3,
-                  color: t.textPrimary,
-                ),
-                onSubmitted: (_) => onConfirmCode(),
+          const SizedBox(height: 8),
+          // RTL carve-out: the confirmation code is a Latin token.
+          Directionality(
+            textDirection: TextDirection.ltr,
+            child: CcTextField(
+              controller: code,
+              label: l.credentialsConnectCodePrompt,
+              textStyle: TextStyle(
+                fontSize: 22,
+                letterSpacing: 3,
+                color: t.textPrimary,
               ),
+              onSubmitted: (_) => onConfirmCode(),
             ),
-            CcButton(
-              size: CcButtonSize.lg,
-              variant: CcButtonVariant.primary,
-              onPressed: busy ? null : onConfirmCode,
-              child: Text(l.confirm),
-            ),
-          ],
+          ),
+          CcButton(
+            size: CcButtonSize.lg,
+            variant: CcButtonVariant.primary,
+            onPressed: busy ? null : onConfirmCode,
+            child: Text(l.confirm),
+          ),
           CcButton(
             size: CcButtonSize.lg,
             variant: CcButtonVariant.secondary,
@@ -111,12 +112,17 @@ class _PersonalTokenForm extends StatelessWidget {
     required this.onEdit,
     required this.onSave,
     required this.onCancel,
+    this.emailController,
   });
 
   final bool connected;
   final bool editing;
   final bool busy;
   final TextEditingController controller;
+
+  /// The Atlassian account email, asked for alongside a Bitbucket API token;
+  /// null for a forge whose token stands alone.
+  final TextEditingController? emailController;
   final VoidCallback onEdit;
   final VoidCallback onSave;
   final VoidCallback onCancel;
@@ -138,10 +144,19 @@ class _PersonalTokenForm extends StatelessWidget {
           ),
         if (editing) ...[
           const SizedBox(height: 8),
+          if (emailController case final email?)
+            CcTextField(
+              controller: email,
+              label: l.credentialsAtlassianEmail,
+              hintText: 'you@example.com',
+              keyboardType: TextInputType.emailAddress,
+            ),
           CcTextField(
             controller: controller,
             obscureText: true,
-            label: l.credentialsPersonalToken,
+            label: emailController == null
+                ? l.credentialsPersonalToken
+                : l.credentialsBitbucketApiToken,
             hintText: l.credentialsPersonalTokenHint,
           ),
           CcButton(

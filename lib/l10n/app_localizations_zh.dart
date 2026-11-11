@@ -146,7 +146,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get guardrailClassPrCreate => '打开 pull request';
 
   @override
-  String get guardrailClassPrPublish => '发布评审或合并';
+  String get guardrailClassPrPublish => '更新或合并 pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => '写入外部跟踪器';
@@ -2467,9 +2467,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get activityToggledMcpServer => '切换了 MCP 服务器';
 
   @override
-  String get activityUpdatedMcpToken => '更新了 MCP 令牌';
-
-  @override
   String get activitySavedApiKey => '保存了 API 密钥';
 
   @override
@@ -3076,9 +3073,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String deleteConfirmName(String name) {
     return '删除“$name”？';
   }
-
-  @override
-  String get archiveConversation => '归档会话';
 
   @override
   String get deleteFact => '删除事实';
@@ -3754,9 +3748,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get matchOsAppearance => '跟随系统外观，或选择固定模式。';
 
   @override
-  String get mcpAuthToken => 'MCP 身份验证令牌';
-
-  @override
   String get mcpNotAvailableOnServer => '所连接的服务器不支持 MCP 服务器控制。';
 
   @override
@@ -3958,9 +3949,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noSystemFonts => '未检测到系统字体。';
-
-  @override
-  String get noTokenSet => '未设置令牌——访问不受限制。';
 
   @override
   String get noWorkingMemory => '暂无工作记忆笔记。';
@@ -4434,30 +4422,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return '服务器的 GitHub 凭据无法访问 $repos。如果仓库属于某个组织，请在该组织安装 GitHub App，或连接具有访问权限的令牌。';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '有 $count 个仓库无法访问',
-      one: '有 1 个仓库无法访问',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle => 'GitHub App 安装已被暂停';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return '正在显示 $repos 的上次已知数据。请在 GitHub 上恢复安装，或连接具有访问权限的令牌。';
-  }
-
-  @override
   String get repoNoAccessBadge => '无访问权限';
 
   @override
@@ -4570,9 +4534,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get ruleLabel => '规则';
-
-  @override
-  String get runCompleted => '运行已完成';
 
   @override
   String get running => '运行中';
@@ -4731,9 +4692,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get setLabel => '设置';
-
-  @override
-  String get setToken => '设置令牌';
 
   @override
   String get settingsLabel => '设置';
@@ -4926,9 +4884,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get skillOriginManual => '手动';
 
   @override
-  String get skillOriginRegistry => '注册中心';
-
-  @override
   String get skillOriginRuntimeLocal => '运行时本地';
 
   @override
@@ -5101,9 +5056,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get toggleTheme => '切换主题';
-
-  @override
-  String get tokenConfigured => '已配置 — 客户端必须出示此令牌。';
 
   @override
   String get topic => '主题';
@@ -8540,7 +8492,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get mcpApprovalMode => '工具批准';
 
   @override
-  String get mcpApprovalModeDescription => '哪些工具操作可无需确认即运行。读取始终允许；更高层级会提示。';
+  String get mcpApprovalModeDescription =>
+      '通过其 MCP 端点调用或由其智能体调用的 Control Center 自有工具中，哪些操作无需询问即可运行。读取始终允许；更高层级会提示。运行中的服务器遵循该运行的操作策略。';
 
   @override
   String get mcpApprovalAlwaysAsk => '始终询问';
@@ -11957,20 +11910,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsAbout => '关于';
 
   @override
-  String get settingsScopeBadgeYou => '你';
-
-  @override
-  String get settingsScopeBadgeDevice => '本设备';
-
-  @override
-  String get settingsScopeBadgeWorkspace => '工作区';
-
-  @override
-  String get settingsScopeBadgeServer => '服务器';
-
-  @override
   String get settingsProfileDescription =>
-      '你在此工作区的姓名、电子邮件和 git 身份。切换工作区会切换此覆盖层；句柄、登录和设备仍在账户上。';
+      '你在此工作区中的姓名、邮箱和 git 身份。切换工作区会切换此覆盖层；你的用户名、登录和设备保留在你的账户中，可在 设置 → 你 → 个人资料 中管理。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -11983,44 +11924,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get settingsDiagnosticsDescription => '此安装的隔离、索引、同步、日志与崩溃报告。';
 
   @override
-  String get settingsWorkspaceGeneralDescription => '此工作区中所有人共享的身份、策略与约定。';
-
-  @override
-  String get settingsAgentAttributionTitle => '提交署名';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      '选择是否在智能体提交中为 Control Center 署名。工作区管理员可以为工作区中的所有人覆盖此选择。';
-
-  @override
-  String get settingsAgentCoauthorSection => '智能体署名';
-
-  @override
-  String get settingsAgentCoauthorTitle => '在智能体提交中为 Control Center 署名';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      '你始终是提交的作者和提交者。开启后，Control Center (@usectrl) 将作为共同作者加入。关闭后，提交不包含任何智能体署名。';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      '此工作区的设置覆盖了你的个人选择。你的偏好会保留，但在此处不生效。';
-
-  @override
-  String get settingsAgentAttributionLoading => '正在加载署名设置…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      '选择是否在智能体提交中为 Control Center 署名。工作区的选择会覆盖每位成员的个人偏好。';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit => '使用每位成员的偏好';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways => '始终为 Control Center 署名';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever => '从不为 Control Center 署名';
+  String get settingsWorkspaceGeneralDescription => '此工作区中所有人共同遵守的政策与约定。';
 
   @override
   String get settingsWorkspaceMeetingsDescription => '此工作区会议的笔记模板与已保存的声音。';
@@ -12358,9 +12262,6 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get checkingConnection => '正在检查连接…';
-
-  @override
-  String get fromEnvironment => '来自环境';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -12884,14 +12785,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '供继承此安装 GitHub 应用的工作区使用。拥有自己应用的工作区在“工作区 → 通用”中配置。';
+      '由遵循此服务器登录应用的工作区使用。使用自有应用的工作区在「工作区 → 集成」中设置其 App。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 对话';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '继承工作区中开发者如何在 GitHub 上与此服务器对话。拥有自己 App 的工作区在工作区 → 常规下有自己的机器人。无需 webhook 或公开 URL——由服务器轮询。';
+      '在遵循此服务器的工作区中，开发者如何通过 GitHub 与此服务器交流。使用自有应用的工作区在「工作区 → 集成」中拥有自己的机器人。无需 Webhook 或公共 URL，由服务器轮询。';
 
   @override
   String get providerAppBotLogin => '机器人登录名';
@@ -12922,9 +12823,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get portLabel => '端口';
 
   @override
-  String get mcpNoTokenWarning => '如果没有 token，任何能访问此端口的东西都可以调用所有工具。';
-
-  @override
   String get mcpBridgedToolsLabel => '工具';
 
   @override
@@ -12951,6 +12849,127 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => '全部清除';
+
+  @override
+  String get guardrailFamilyCommands => '命令';
+
+  @override
+  String get guardrailStandingApproval => '持续批准';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return '允许：$what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return '先询问：$what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return '拒绝：$what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return '分支 $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return '路径 $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return '主机 $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return '命令 $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return '工具 $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return '以 $prefix 开头的命令';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return '同时最多 $count 个';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return '最多 $amount 分';
+  }
+
+  @override
+  String get guardrailCoversEverything => '此类的所有操作';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return '批准人 $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return '截止 $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => '直到吊销';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return '吊销：$entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => '无法吊销，请重试。';
+
+  @override
+  String get guardrailEntryInactive => '拒绝时不生效';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '下方列出的 $count 种情况仍允许执行',
+      one: '下方列出的 1 种情况仍允许执行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '整个工作区的 $count 项持续批准也适用于此处。',
+      one: '整个工作区的 1 项持续批准也适用于此处。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已为单个空间或智能体设置 $count 项持续批准。请在上方选择「空间」或「智能体」查看。',
+      one: '已为单个空间或智能体设置 1 项持续批准。请在上方选择「空间」或「智能体」查看。',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => '沙箱';
@@ -13736,6 +13755,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get sandboxExecGrantRevokeConfirmBody => '下次智能体需要从此副本运行程序时会再次询问你。';
 
   @override
+  String get sandboxExecGrantsSearchHint => '搜索路径';
+
+  @override
+  String get sandboxExecGrantsNoMatch => '没有与搜索匹配的授权';
+
+  @override
   String get demoBadgeLabel => '演示';
 
   @override
@@ -14073,12 +14098,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get backupUploadAction => '选择文件并上传';
 
   @override
-  String get backupTransferUnavailable =>
-      '此连接通过中继到达服务器，而中继不承载文件传输。请直接连接服务器以下载或上传备份。';
+  String get backupTransferUnavailable => '此连接尚未设置文件传输。请重新连接服务器以下载或上传备份。';
 
   @override
   String get backupTransferForbidden =>
-      '服务器拒绝了。下载工作区需要管理员角色，恢复工作区需要所有者，整个快照需要安装运营者。';
+      '服务器拒绝了。下载工作区需要工作区管理员角色。恢复工作区需要服务器所有者，且该人还须是此工作区的所有者。整个服务器快照需要服务器所有者。';
 
   @override
   String get backupTransferUnsupported => '此服务器没有备份接口。';
@@ -14368,30 +14392,8 @@ class AppLocalizationsZh extends AppLocalizations {
   String get rigClipboardAlwaysCopyDescription => '无需询问，将任何环境中的剪贴板内容放到此设备上。';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub 身份';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      '此工作区后台 GitHub 工作的身份验证方式：使用此安装的应用，或使用工作区自己的应用。';
-
-  @override
-  String get workspaceGitHubModeInherit => '使用此安装的 GitHub App';
-
-  @override
-  String get workspaceGitHubModeApp => '使用其他 GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint => '使用服务器 → 提供商应用中的 GitHub App。';
-
-  @override
-  String get workspaceGitHubAppHint => '此工作区的机器人和轮询身份。成员在「你」中通过此 App 登录。';
-
-  @override
   String get profileOverlayHint =>
       '这些字段是你在此工作区的身份。空字段继承账户姓名和电子邮件。切换工作区会切换此覆盖层。';
-
-  @override
-  String get forgeConnectionsThisWorkspace => '登录或粘贴此工作区的令牌。';
 
   @override
   String get stackStartNextPart => '开始下一部分';
@@ -15168,6 +15170,15 @@ class AppLocalizationsZh extends AppLocalizations {
   String get claudeSignInCommandUnavailable => '服务器无法提供此账户的登录命令。';
 
   @override
+  String get claudeAccountSignedIn => '已登录';
+
+  @override
+  String get claudeSignInClosesItself => '登录完成后，此对话框会自动关闭。';
+
+  @override
+  String get claudeSignInClosesItselfAll => '所有账户登录完成后，此对话框会自动关闭。';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登录已过期';
 
   @override
@@ -15314,7 +15325,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => '需要在服务器上设置';
+  String get environmentInputNeeded => '需要在服务器上设置';
 
   @override
   String get environmentKindApp => '应用';
@@ -15885,19 +15896,37 @@ class AppLocalizationsZh extends AppLocalizations {
   String get environmentOpenPanel => '打开环境';
 
   @override
-  String get environmentNeedsSetup => '需要设置';
+  String get environmentStatusBlocked => '需要处理';
+
+  @override
+  String get environmentStateInTerminal => '在终端中';
+
+  @override
+  String get environmentWaitingInTerminal => '正在终端中等待你操作';
+
+  @override
+  String get environmentOpenTerminal => '打开终端';
+
+  @override
+  String get environmentSignInNeeded => '需要你登录';
+
+  @override
+  String get environmentDependencyNeeded => '依赖的组件不可用';
+
+  @override
+  String get environmentStartTerminalDone => '已在此处完成。环境仍在启动中';
 
   @override
   String get environmentContinueInTerminal => '在终端中继续';
 
   @override
-  String get environmentSetupHint => '工具需要你在终端中输入密码或回答提示。完成后启动会继续。';
+  String get environmentStartTerminalHint => '工具需要你在终端中输入密码或回答提示。完成后启动会继续。';
 
   @override
-  String get environmentSetupTabReason => '启动需要你操作，因此打开了此终端';
+  String get environmentStartTerminalReason => '启动需要你操作，因此打开了此终端';
 
   @override
-  String get environmentSetupTab => '环境设置';
+  String get environmentStartTerminalTab => '环境设置';
 
   @override
   String get environmentsNothingRunning => '此定义没有正在运行的内容。';
@@ -16176,23 +16205,13 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return '请在浏览器中的 $provider 页面批准请求。完成后此窗口会自动察觉。';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return '正在等待 $provider…';
-  }
-
-  @override
   String get signInFailedTitle => '登录未完成';
 
   @override
   String get signInReopenPage => '重新打开登录页面';
 
   @override
-  String get signInCodePrompt => '输入浏览器中显示的代码';
+  String get signInCodePrompt => '请在浏览器中确认，然后输入其显示的代码。';
 
   @override
   String get signInCodeMalformed => '这看起来不像登录代码。代码由 8 个字母和数字组成。';
@@ -16231,13 +16250,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get signInErrorTooManyCodes => '错误代码次数过多。请重新开始登录。';
 
   @override
-  String get signInErrorStaleRequest => '此次登录已失效。请重新开始。';
+  String get signInErrorStaleRequest => '此次登录已不再有效：它已被取消、使用或替换。请重新开始。';
 
   @override
   String get signInErrorInvalidRequest => '服务器无法读取此登录请求。请重新开始。';
 
   @override
-  String get signInErrorRateLimited => '当前登录尝试过多。请等待一分钟后重试。';
+  String get signInErrorRateLimited => '当前请求过多。请稍等片刻后重试。';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16268,10 +16287,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return '$provider 应用未安装在需要它的位置。请安装后重试。';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      '此 GitHub 应用安装已授权给另一台 Control Center 服务器。';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16326,8 +16341,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get githubInstallations => 'GitHub 应用安装';
 
   @override
-  String get githubInstallationsDescription =>
-      'GitHub 应用的安装位置，仅限于此工作区仓库所属的账户。组织的安装只在其管理员授权的服务器上有效。';
+  String get githubInstallationsDescription => 'GitHub 应用的安装位置，仅限于此工作区仓库所属的账户。';
 
   @override
   String get githubInstallationsEmpty => 'GitHub 应用未安装在此工作区仓库所属的任何账户上。';
@@ -16336,21 +16350,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get githubInstallApp => '安装 GitHub 应用';
 
   @override
-  String get githubAuthorizeServer => '授权此服务器';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return '此服务器现在可以使用 $account 上的安装。';
-  }
-
-  @override
   String get githubInstallationSuspended => '已暂停';
-
-  @override
-  String get githubInstallationAuthorized => '已授权';
-
-  @override
-  String get githubInstallationNotAuthorized => '未授权';
 
   @override
   String get linearAutomationTitle => 'Linear 自动化';
@@ -16376,7 +16376,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      '在“设置 → 服务器 → 单点登录”中自行注册 GitHub、Google 和 Linear 应用，并在每个工作区的设置中连接它自己的 Slack 应用。“创建我的 GitHub 应用”可一步完成 GitHub 设置。';
+      '在“设置 → 服务器 → 单点登录”中自行注册 GitHub、Google 和 Linear 应用，并在“工作区 → 集成”中连接每个工作区自己的 Slack 应用；工作区也可以选择自有应用或 Connect。“创建我的 GitHub 应用”可一步完成 GitHub 设置。';
 
   @override
   String get connectModeCustom => '使用自定义 Connect 服务器';
@@ -16506,7 +16506,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      '此服务器将获得新的密钥和安装 ID。所有经由 Connect 完成的登录都将失效，所有人都需要重新登录。通过你自己的应用完成的登录不受影响。';
+      '此服务器将获得新密钥和安装 ID，旧 ID 将在 Connect 处停用：用其封存的登录，以及停止在该处工作的旧密钥，因此所有通过 Connect 登录的人都需要重新登录。已发出的令牌在过期前仍可使用。你自己应用的登录不受影响。如果无法连接 Connect，则不会有任何更改，你可以重试。';
 
   @override
   String get connectRotateKeyDone => '密钥已轮换。所有通过 Connect 登录的人都需要重新登录。';
@@ -16638,33 +16638,6 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => '提供商应用';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      '工作区使用的 Google 日历、Linear 和 Klipy 应用。默认使用本服务器的应用或 Control Center Connect。使用自有应用的工作区不会回退到它们。';
-
-  @override
-  String get workspaceProviderAppModeInherit => '使用本服务器的应用';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      '登录和请求会使用本服务器自己的应用，或 Control Center Connect。';
-
-  @override
-  String get workspaceProviderAppModeOwn => '使用此工作区自己的应用';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      '仅使用此工作区的应用。在配置完整之前，此工作区中的该提供商保持关闭，不会回退。';
-
-  @override
-  String get workspaceProviderAppStatusInherit => '服务器应用';
-
-  @override
-  String get workspaceProviderAppStatusOwn => '自有应用';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return '仍缺少：$fields。在所有字段设置完成之前，此工作区中的该提供商保持关闭，不会回退到本服务器的应用。';
   }
@@ -16680,22 +16653,106 @@ class AppLocalizationsZh extends AppLocalizations {
   String get workspaceProviderAppKlipyHint => '此工作区的 GIF 搜索使用此密钥。';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return '切换 $provider 应用？';
+  String get settingsWorkspaceIntegrations => '集成';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      '此工作区中的代码托管、工单、日历、聊天和 GIF 搜索，以及它们通过哪些应用登录。';
+
+  @override
+  String get workspaceConnectDescription =>
+      '此工作区在 GitHub、Google 日历、Linear、Slack 和 GIF 搜索中使用哪些应用。除非管理员另行选择，否则它跟随此服务器。';
+
+  @override
+  String get workspaceConnectModeInherit => '与此服务器相同';
+
+  @override
+  String get workspaceConnectInheritHosted => '此服务器使用 Control Center 的应用。';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return '此服务器使用位于 $url 的 Connect 服务器。';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return '此工作区中通过本服务器应用连接 $provider 的所有人，都需要使用工作区应用重新登录。';
+  String get workspaceConnectInheritOwn => '此服务器使用其自有应用。';
+
+  @override
+  String get workspaceConnectInheritUnset => '服务器所有者尚未选择，因此适用服务器自有应用。';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      '仅使用此工作区的应用。请在下方各提供方旁边分别添加。没有应用的提供方在此处处于关闭状态；不会改用此服务器的应用或 Connect。';
+
+  @override
+  String get workspaceConnectCustomUrlHint => '仅限 HTTPS。拒绝私有或本地网络中的地址。';
+
+  @override
+  String get workspaceConnectLocked =>
+      '此服务器环境中的 CC_CONNECT_URL 决定登录请求的去向，因此此工作区无法选择自己的 Connect。它可以跟随此服务器，或使用自有应用。';
+
+  @override
+  String get workspaceConnectSwitchTitle => '切换此工作区的登录应用？';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      '此工作区的所有人都必须通过新应用重新登录 GitHub、Linear 和 Google 日历。通过当前应用完成的登录将在此处失效。';
+
+  @override
+  String get workspaceConnectSwitchAction => '切换应用';
+
+  @override
+  String get workspaceConnectLanesDescription => '遵循上方的选择。提供方绝不会回退到其他应用。';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => '工作区的应用';
+
+  @override
+  String get workspaceConnectLaneServerOwn => '服务器的应用';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub 应用';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      '此工作区自己的应用代表其仓库行事，并为成员完成登录。它绝不会回退到此服务器的应用或 Connect。';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      '此工作区使用其登录应用提供的 GitHub 应用。请将其安装到您的仓库所属的账户上。';
+
+  @override
+  String get workspaceGitHubAppActingTitle => '代表此工作区行事';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      '应用的机器人会在此工作区仓库的拉取请求中发表评论、进行审查并轮询。';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider 应用';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return '这将删除工作区的 $provider 凭据。通过工作区应用连接的所有人都需要重新登录。';
+  String workspaceOwnAppDescription(String provider) {
+    return '此工作区中的 $provider 登录和请求仅使用此应用。';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => '切换应用';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn => 'GIF 搜索使用此工作区的 Klipy 密钥。';
+
+  @override
+  String get workspaceGifsSourceServerOwn => 'GIF 搜索使用此服务器的 Klipy 密钥。';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF 搜索通过 Control Center Connect 运行。';
+
+  @override
+  String get workspaceGifsSourceOff => '此工作区中已关闭 GIF 搜索。';
 
   @override
   String openOnForge(String forge) {
@@ -16712,7 +16769,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      '在「设置 → 工作区 → 个人资料与身份 → 代码托管」中连接 GitHub、GitLab 或 Bitbucket';
+      '在「设置 → 你 → 个人资料」中连接 GitHub、GitLab 或 Bitbucket';
 
   @override
   String get addForgeRepoPrompt =>
@@ -16729,6 +16786,1063 @@ class AppLocalizationsZh extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return '连接 $forge 以在此仓库中创建拉取请求';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return '你以 $account 身份登录的 $provider 已失效。请重新登录。';
+  }
+
+  @override
+  String get connectionPaused => '已暂停：此工作区的登录服务已更改';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '暂时无法连接 $provider，正在重试。';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      '你的登录会保留，服务恢复后即可再次使用。工作区管理员可以在“集成”中检查登录设置。';
+
+  @override
+  String get signInErrorAttemptUnknown => '服务器已重启。请重新开始登录。';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return '此工作区尚未设置 $provider 登录。';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider 登录设置有误：$error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return '此工作区使用自己的应用，但没有 $provider 应用。';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return '此版本无法验证 Control Center Connect，因此 $provider 登录已关闭。';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending => '此工作区的登录服务更改了身份，需要管理员确认。';
+
+  @override
+  String get signInUnavailableConnectUnreachable => '暂时无法连接此工作区的登录服务。';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid => '此工作区登录服务的地址缺失或无效。';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      '服务器运营者已固定登录服务，因此此工作区自己的选择不生效。';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return '此工作区的登录服务不提供 $provider。';
+  }
+
+  @override
+  String get signInOpenIntegrations => '打开集成';
+
+  @override
+  String get signInOpenServerSettings => '打开登录设置';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return '此操作会以你的身份在 $provider 上运行，但你还没有添加 token。请添加后重试。';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '断开 $provider？';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return '你需要重新连接 $provider 才能处理它的仓库。';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return '这只会在此工作区断开 $provider。其他工作区保留各自的连接。';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return '这会在共享此连接的所有工作区断开 $provider。';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '已从此工作区断开 $provider';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '已从所有工作区断开 $provider';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return '在 $owner 上安装 GitHub App';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return '在该处安装 App 之前，自动化无法访问 $repos。';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return '将 $repos 添加到 GitHub App 的仓库';
+  }
+
+  @override
+  String get repoAccessSelectBody => 'App 已安装在此账号上，但还看不到这些仓库。';
+
+  @override
+  String get repoAccessChooseRepos => '选择仓库';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App 安装已被暂停';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return '在账号所有者于 GitHub 上恢复安装之前，$repos 的自动化已暂停。';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => '自动化已暂停';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return '此工作区自动化的负责人已无法看到 $repos，因此不会再代表其在那里运行任何内容。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return '此工作区自动化的负责人尚未登录代码托管平台，因此 $repos 的自动化会等待其登录。';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return '无法检查对 $repos 的访问权限，正在重试。';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return '请联系 $admins 修复此问题。';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin => '请联系工作区管理员修复此问题。';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '登录 $forge 即可查看另外 $count 个仓库的 pull request',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 个仓库已隐藏，因为你的 $forge 账号看不到它们',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 个仓库已隐藏，因为你在此工作区中没有访问权限',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '正在检查你对另外 $count 个仓库的访问权限…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle => '已关联，但自动化还无法访问所有内容';
+
+  @override
+  String get githubInstallOnAnotherOrganization => '安装到其他组织';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian 账号邮箱';
+
+  @override
+  String get forgeTokenEmailInvalid => '请输入你的 Atlassian 账号邮箱地址。';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API 令牌';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket API token 需要与创建它的 Atlassian 账号邮箱一起使用。';
+
+  @override
+  String get automationTokensTitle => '自动化令牌';
+
+  @override
+  String get automationTokensRepoHint =>
+      'GitLab 和 Bitbucket 上的后台工作（例如拉取请求更新、AI 审查评论以及无人请求的合并请求）使用机器人访问令牌，绝不使用个人的令牌。仓库自己的令牌优先于工作区的令牌。';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      '用于此工作区中所有没有自己自动化令牌的 GitLab 或 Bitbucket 仓库。那里的后台工作会显示为此令牌的机器人。';
+
+  @override
+  String get automationTokenNone => '没有令牌。此处的自动化已暂停。';
+
+  @override
+  String get automationTokenFromWorkspace => '使用工作区的令牌';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '以 $name 身份操作';
+  }
+
+  @override
+  String get automationTokenStored => '已添加访问令牌';
+
+  @override
+  String get automationTokenRejected => '平台拒绝了此令牌。请替换它。';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge 自动化令牌';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      '粘贴项目或群组访问令牌。它需要 read_api 和 read_repository；如需评论、合并请求和推送，请再添加 api 和 write_repository。GitLab 会将其工作显示为该令牌的机器人。';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      '粘贴具有仓库读取权限的仓库、项目或工作区访问令牌，并为评论和拉取请求添加拉取请求写入权限。你自己的 API 令牌应添加在“设置 → 你 → 个人资料”中，而不是这里。';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return '令牌已保存，但无法读取 $repos。那里的自动化仍处于暂停状态。';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => '删除自动化令牌？';
+
+  @override
+  String get automationTokenRemoveBody => '依赖此令牌的自动化将暂停，直到添加另一个令牌。';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return '所有没有自己令牌的 $forge 仓库';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return '没有任何自动化令牌可以读取 $repos，因此那里的后台工作已暂停。';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      '你发起的工作所产生的提交会带上你的名字。选择还要署名的对象，并决定代码托管平台是否将你的提交显示为已验证。';
+
+  @override
+  String get settingsCommitAuthorshipSection => '作者身份';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => '你发起的工作';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      '在你登录时代码托管平台已验证的邮箱下，你是作者和提交者。这包括你与智能体的对话、你发起的流水线，以及你在编辑器中做的提交。';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => '自动运行';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      '由计划任务或 Webhook 发起的运行以机器人身份提交，且从不签名。';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      '在工作区中登录代码托管平台之前，你在该工作区的运行会以机器人身份提交。';
+
+  @override
+  String get settingsCoauthorCreditTitle => '将 Control Center 列为共同作者';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      '你的提交会将 Control Center (@usectrl) 列为共同作者，你设置的自动运行则会列出你。关闭后，两行都不会添加。';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      '此工作区的设置覆盖了你的个人选择。你的偏好会保留，但在此处不生效。';
+
+  @override
+  String get settingsCoauthorCreditLoading => '正在加载署名设置…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => '共同作者署名';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      '提交是否包含共同作者行：成员自己的提交中署名 Control Center，为提交设置了自动运行的成员则在其提交中署名。此处的选择会覆盖每位成员的个人设置。';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit => '使用每位成员的偏好';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways => '始终添加共同作者署名';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever => '从不添加共同作者署名';
+
+  @override
+  String get settingsCommitSigningSection => '已验证的提交';
+
+  @override
+  String get settingsCommitSigningStatusOn => '签名中';
+
+  @override
+  String get settingsCommitSigningStatusOff => '未签名';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      '此服务器可以用你自己的密钥为提交签名，使 GitHub 和 GitLab 将其显示为已验证。在你创建密钥之前，不会签名任何内容。';
+
+  @override
+  String get settingsCommitSigningCreate => '创建签名密钥';
+
+  @override
+  String get settingsCommitSigningCreated => '签名密钥已创建。请将其添加到你的代码托管平台账户。';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => '公钥';
+
+  @override
+  String get settingsCommitSigningKeyCopied => '公钥已复制';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => '指纹';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => '创建时间';
+
+  @override
+  String get settingsCommitSigningAddTitle => '将其添加到你的代码托管平台账户';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      '只有在你于工作区中同时登录该代码托管平台时，提交才会显示为已验证，因此由代码托管平台为你的邮箱背书。';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key。将 Key type 设为 Signing Key。';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys。将 Usage type 设为 Signing。';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Bitbucket 上的提交不会签名。请勿将此密钥添加到你的 Bitbucket 账户：那里的 SSH 密钥同时也是一种登录方式。';
+
+  @override
+  String get settingsCommitSigningUnsupported => '不支持';
+
+  @override
+  String get settingsCommitSigningTrustTitle => '你所信任的内容';
+
+  @override
+  String get settingsCommitSigningTrustPrivate => '私钥永远不会离开此服务器。';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      '只要密钥仍在你的代码托管平台账户中，控制此服务器的人就可以以你的身份为提交签名。';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      '在 GitHub 上，删除密钥后，已显示为已验证的提交仍保持已验证。';
+
+  @override
+  String get settingsCommitSigningDelete => '删除密钥';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => '删除你的签名密钥？';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      '从现在起你的提交将不再签名。在你于代码托管平台账户中将其移除之前，该密钥会一直保留在那里。';
+
+  @override
+  String get settingsCommitSigningDeleted => '签名密钥已删除';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return '无法加载你的签名密钥：$error';
+  }
+
+  @override
+  String get accountProfileTitle => '个人资料';
+
+  @override
+  String get accountProfileDescription =>
+      '你在每个工作区中的身份，以及你自己的代码托管、工单系统、日历和聊天账户。';
+
+  @override
+  String get accountSectionTitle => '账户';
+
+  @override
+  String get accountSectionDescription =>
+      '你的用户名和姓名会在所有工作区中通用。工作区可以显示不同的姓名或邮箱：请在 工作区 → 个人资料与身份 中设置。';
+
+  @override
+  String accountLoadFailed(String error) {
+    return '无法加载你的个人资料：$error';
+  }
+
+  @override
+  String get accountDisplayNameHint => '其他人在你的消息和评审中看到的名称。';
+
+  @override
+  String get accountDisplayNameRequired => '请输入显示名称。';
+
+  @override
+  String get accountFieldCannotBeCleared => '此项可以更改，但不能删除。';
+
+  @override
+  String get accountAvatarLabel => '头像';
+
+  @override
+  String get accountAvatarHint => '指向方形图片的链接，以 https:// 开头。';
+
+  @override
+  String get accountAvatarInvalid => '请使用以 https:// 开头的链接。';
+
+  @override
+  String get usernameLabel => '用户名';
+
+  @override
+  String get usernameRule => '2 到 32 个字符，仅限小写字母、数字、点、短横线或下划线。其他人会用它来提及你。';
+
+  @override
+  String get usernameAvailable => '可用。';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return '可用。将保存为 $username。';
+  }
+
+  @override
+  String get usernameInvalid =>
+      '请使用 2 到 32 个字符，仅限小写字母、数字、“.”、“_”或“-”，并以字母或数字开头和结尾。';
+
+  @override
+  String get usernameReserved => '该用户名已被保留。';
+
+  @override
+  String get usernameTaken => '该用户名已被占用。';
+
+  @override
+  String get usernameCheckFailed => '暂时无法检查此名称。你仍可保存，最终由服务器决定。';
+
+  @override
+  String get linkedAccountsTitle => '已连接的账户';
+
+  @override
+  String get linkedAccountsIdentityProvider => '身份提供方';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => '需要登录';
+
+  @override
+  String get linkedAccountStatusPaused => '已暂停';
+
+  @override
+  String get linkedAccountStatusUnreachable => '无法连接';
+
+  @override
+  String get ssoIdentityDescription => '你的账户用来登录的身份提供方。由管理此服务器的人负责管理。';
+
+  @override
+  String get settingsAccountsDescription =>
+      '你为自己连接的账户。Control Center 通过这些账户以你的身份行事，更改它们只影响你自己。';
+
+  @override
+  String get accountReachServer => '在此服务器上的每个工作区中都可使用。';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return '仅在 $workspace 中使用。';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub 仅在 $workspace 中使用，该工作区有自己的登录应用。GitLab 和 Bitbucket 在此服务器上的每个工作区中都可使用。';
+  }
+
+  @override
+  String get yourAccountLabel => '你的账户';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider：$detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return '你的账户：$status。打开“你 → 个人资料”。';
+  }
+
+  @override
+  String get yourForgeAccountNone => '未连接代码托管账户';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return '未连接 $provider 账户';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return '未关联 $provider 账户';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      '你在演示中是临时访客，因此没有可更改的账户：没有用户名、个人资料或已连接的账户。';
+
+  @override
+  String get onboardingStepYou => '你';
+
+  @override
+  String get onboardingYouTitle => '选择你的用户名';
+
+  @override
+  String get onboardingYouSubtitle =>
+      '用户名是他人提及你的方式，也是你工作的标签。之后你可以在 设置 → 你 → 个人资料 中更改它和你的显示名称。';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return '此 $provider 账户已经连接到此服务器上的另一位用户。请使用其他 $provider 账户登录。';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return '令牌将于 $date 过期';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return '令牌已于 $date 过期。请粘贴新令牌以继续使用。';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '无法连接 $forge 来检查此令牌。请稍后再试。';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge 不接受此令牌。请检查是否完整复制，以及它是否未被撤销。';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return '这不是个人令牌。请粘贴你自己 $forge 账户中的个人访问令牌，而不是项目、群组、工作区或机器人令牌。';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return '此令牌缺少 $scope 权限范围，而评审和评论需要该权限。请创建包含该权限的令牌。';
+  }
+
+  @override
+  String get personTokenExpired => '此令牌已过期。请创建新令牌并粘贴到此处。';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      '你发起的智能体可以在其工作的任何仓库中，以你的身份创建已签名的提交。在此删除密钥会立即生效：已在运行的任务不会再签名任何内容。';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return '密钥未轮换，任何内容均未更改：$error 请重试。';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => '你尚未加入任何工作区';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      '需要工作区管理员邀请你，或者服务器所有者为你创建工作区。你被添加后，它会立即在此处打开。';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return '已登录为 $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => '重新检查';
+
+  @override
+  String get noWorkspaceSignOut => '退出登录';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      '只有服务器所有者才能创建工作区。请服务器所有者创建，或请工作区管理员邀请你。';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo 不在你的任何工作区中，你也不在可以添加它的工作区里。请工作区管理员邀请你。';
+  }
+
+  @override
+  String get serverOwnerOnly => '只有服务器所有者才能执行此操作';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      '完整编辑器在服务器本机上运行，因此只有服务器所有者才能打开。你仍可以从资源管理器中打开和编辑文件。';
+
+  @override
+  String get terminalSandboxedBadge => '沙箱中';
+
+  @override
+  String get terminalSandboxedHint => '在此工作区文件夹内的沙箱中运行，因此此处无法使用某些主机工具和路径。';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      '主机 shell 在服务器上不经沙箱直接运行，因此只有服务器所有者才能打开。普通终端在沙箱中运行。';
+
+  @override
+  String get terminalOutsideWorkspace => '终端只能在此工作区自己的文件夹内打开。';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      '只有服务器所有者才能保存或批准在服务器主机上运行的环境。工作区管理员可以使用在 rig 中运行的环境。';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      '你在应用自带编辑器中所做的提交不会运行仓库中的 Git 钩子，与 git commit --no-verify 相同：服务器在自身主机上运行 Git，所处的工作树可能被智能体和拉取请求修改。';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP 客户端会在每个请求中以 Authorization: Bearer 请求头发送此令牌。服务器在首次启动时创建它；你可以轮换它，但不能删除。';
+
+  @override
+  String get mcpShowToken => '显示令牌';
+
+  @override
+  String get mcpHideToken => '隐藏令牌';
+
+  @override
+  String get mcpRotateToken => '轮换令牌';
+
+  @override
+  String get mcpRotateTokenTitle => '轮换 MCP 令牌？';
+
+  @override
+  String get mcpRotateTokenBody =>
+      '服务器会立即切换到新令牌。所有仍在使用当前令牌的 MCP 客户端都会被拒绝，直到你为其提供新令牌。';
+
+  @override
+  String get mcpTokenRotated => '令牌已轮换。请将新令牌提供给你的 MCP 客户端。';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP 端点仅供服务器所有者使用';
+
+  @override
+  String get mcpOwnerOnlyBody => '其令牌可打开此服务器上的每个工具，因此只有服务器所有者可以查看、轮换或启动和停止该端点。';
+
+  @override
+  String get activityRotatedMcpToken => '轮换了 MCP 令牌';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle => 'Connect 无法停用旧密钥';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      '未做任何更改。如果仍然轮换，此服务器将获得新密钥，但旧身份在该 Connect 上仍可使用，直到其登录过期。';
+
+  @override
+  String get connectRotateKeyAnyway => '仍然轮换';
+
+  @override
+  String get settingsAuditLog => '审计日志';
+
+  @override
+  String get settingsAuditLogDescription =>
+      '记录谁在何时做了什么变更以及结果如何，涵盖服务器和你管理的每个工作区。服务器操作只记录参数名称，不记录参数值。';
+
+  @override
+  String get auditLogNoAccessTitle => '仅限管理员';
+
+  @override
+  String get auditLogNoAccess => '审计日志涵盖服务器和你管理的工作区。你没有管理任何工作区，因此没有可显示的内容。';
+
+  @override
+  String get auditLogSourceServer => '服务器';
+
+  @override
+  String get auditLogSourceWorkspace => '工作区';
+
+  @override
+  String get auditLogAddFilter => '筛选';
+
+  @override
+  String get auditLogFilterOptionsHint => '筛选…';
+
+  @override
+  String get auditLogFilterActor => '操作者';
+
+  @override
+  String get auditLogFilterSource => '工作区';
+
+  @override
+  String get auditLogFilterOutcome => '结果';
+
+  @override
+  String get auditLogFilterTime => '时间';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category：$values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => '成功';
+
+  @override
+  String get auditLogOutcomeDenied => '已拒绝';
+
+  @override
+  String get auditLogOutcomeFailed => '失败';
+
+  @override
+  String get auditLogTimeAtOrAfter => '此时或之后';
+
+  @override
+  String get auditLogTimeAfter => '之后';
+
+  @override
+  String get auditLogTimeBefore => '之前';
+
+  @override
+  String get auditLogTimeAtOrBefore => '此时或之前';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return '时间 $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 小时前';
+
+  @override
+  String get auditLogTimePresetDay => '24 小时前';
+
+  @override
+  String get auditLogTimePresetWeek => '7 天前';
+
+  @override
+  String get auditLogTimePresetMonth => '30 天前';
+
+  @override
+  String get auditLogTimeExact => '具体时间';
+
+  @override
+  String get auditLogTimeInvalid => '请使用 YYYY-MM-DD 格式，可选加上 HH:MM';
+
+  @override
+  String get auditLogTimeAdd => '添加';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo 现在指向另一个仓库';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return '此路径现在指向 $forge 上的另一个仓库。请重新关联以继续使用。';
+  }
+
+  @override
+  String get repoRelink => '重新关联';
+
+  @override
+  String repoRelinked(String repo) {
+    return '已重新关联 $repo。';
+  }
+
+  @override
+  String get repoCodeRepoReplaced => '此路径现在指向另一个仓库。工作区管理员需要先重新关联，才能使用。';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return '你的 $forge 账户无法读取此仓库。';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return '无法确认你的 $forge 访问权限。请重试。';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed => '你的代码托管平台账户无法读取此仓库。';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed => '无法确认你的代码托管平台访问权限。请重试。';
+
+  @override
+  String get repoPathHostPath => '只有服务器所有者才能关联位于此工作区存储之外的文件夹。';
+
+  @override
+  String get repoPathMissing => '服务器上该路径不存在任何内容。';
+
+  @override
+  String get repoPathDataDir => '仓库不能指向服务器的数据文件夹。';
+
+  @override
+  String get repoPathWorkspaceRoot => '仓库不能是工作区本身的文件夹。';
+
+  @override
+  String get repoPathOriginMismatch => '该文件夹的 origin 是另一个仓库。';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return '已保存。对方需要先登录 $forge，才能打开此仓库。';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return '已保存。对方的 $forge 账户目前无法读取此仓库，因此对其保持隐藏。';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return '已保存。暂时无法确认对方的 $forge 访问权限。';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo 未关联到你的任何工作区。请让服务器所有者添加它。';
+  }
+
+  @override
+  String get reposEmptyAskOwner => '服务器所有者从服务器的文件夹中添加仓库。';
+
+  @override
+  String get accountEmailUnconfirmedHint => '只有你输入了此地址。在服务器所有者确认之前，单点登录不会与之匹配。';
+
+  @override
+  String get settingsServerPeople => '用户';
+
+  @override
+  String get settingsServerPeopleDescription => '此服务器上的所有账户，以及其邮箱地址是否已确认。';
+
+  @override
+  String get serverPeopleLabel => '账户';
+
+  @override
+  String get serverPeopleOwnerOnly => '只有服务器所有者可以查看所有人的账户并确认邮箱地址。';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => '邮箱未确认';
+
+  @override
+  String get serverPeopleConfirmEmail => '确认邮箱';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return '确认 $email 属于 $name 吗？单点登录会将此地址与其账户匹配。';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '已确认 $email。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => '智能体需要此服务器上的沙箱';
+
+  @override
+  String get runSandboxUnavailable =>
+      '此服务器没有沙箱，因此只有其所有者可以在此运行智能体。所有者可以安装沙箱，或为所有人关闭沙箱。';
+
+  @override
+  String get repoPathIssueHostPath => '此文件夹位于工作区存储之外。请确认此服务器可以使用它。';
+
+  @override
+  String get repoPathIssueHostPathAskOwner => '此文件夹位于工作区存储之外。只有服务器所有者才能确认。';
+
+  @override
+  String get repoPathIssueMissing => '服务器上该路径已不存在任何内容。请移除此仓库，并从其当前文件夹重新添加。';
+
+  @override
+  String get repoPathIssueUnusable => '此文件夹无法用作仓库。请移除它，并从其他文件夹添加仓库。';
+
+  @override
+  String get repoPathConfirm => '确认';
+
+  @override
+  String get repoPathConfirmAll => '全部确认';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count 个文件夹位于工作区存储之外',
+      one: '1 个文件夹位于工作区存储之外',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody => '请确认此服务器可以使用它们。每个仓库都会以你的访问权限重新检查。';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      '在此机器自身工具设置中找到的服务器，仅可用于你发起或负有责任的运行。其他人的运行不会看到它们，它们也不会通过 Control Center 的 MCP 端点提供。';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return '登录 $provider 以查看此仓库的代码。';
+  }
+
+  @override
+  String get repoCodeSignIn => '登录';
+
+  @override
+  String get ideContentSearchFailed => '无法搜索文件内容';
+
+  @override
+  String get ideWorktreeFileUnavailable => '此文件在此工作树中不可用。';
+
+  @override
+  String get ideChangesLoadFailed => '无法加载更改';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return '此路径现在指向 $forge 上的另一个仓库。工作区管理员需要先重新关联，才能使用。';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly => '只有服务器所有者才能还原备份。你仍可以下载它们。';
+
+  @override
+  String get terminalReadOnlyBadge => '只读';
+
+  @override
+  String get terminalReadOnlyHint =>
+      '你可以查看此终端。在其中输入、调整大小或停止它，需要对此对话中的每个仓库拥有写入权限。';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      '你可以查看此环境。启动、停止或重启它，需要对此对话中的每个仓库拥有写入权限。';
+
+  @override
+  String get environmentHostApprovalOwner => '在此服务器上运行。批准后即可启动。';
+
+  @override
+  String get environmentHostApprovalMember => '在此服务器上运行。服务器所有者须先批准，才能启动。';
+
+  @override
+  String get environmentHostApprove => '批准';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      '请以工作区管理员身份批准：只有管理员的副本会显示其机密值，而批准会将这些值保存回去。';
+
+  @override
+  String get environmentHostUnapproved => '服务器所有者尚未批准此环境，因此它无法在此服务器上运行。';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      '你尚未批准此环境。它在此服务器上运行，因此你批准其定义后才会启动。';
+
+  @override
+  String get environmentHostApprovalReview => '审阅并批准';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return '登录 $provider 以打开此空间。';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return '你的 $forge 账户无法读取此空间使用的某个仓库。';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed => '你的代码托管平台账户无法读取此空间使用的某个仓库。';
+
+  @override
+  String get spaceAccessNoGrant => '你对此空间使用的某个仓库没有读取权限。工作区管理员可以授予。';
+
+  @override
+  String get spaceAccessFailed => '无法打开此空间。';
+
+  @override
+  String get contextExplorerRefused => '此会话无法查看上下文细分。';
+
+  @override
+  String get repoLinkForgeRemoteRequired => '关联的仓库需要同时指定所有者和仓库名称。';
+
+  @override
+  String get repoCodeNoReadGrant => '你没有此仓库的读取权限。工作区管理员可以授予。';
+
+  @override
+  String get repoCodeNoWriteGrant => '你可以读取此仓库，但无法更改。工作区管理员可以授予写入权限。';
+
+  @override
+  String get repoCodeNoReviewGrant => '你可以读取此仓库，但无法审核。工作区管理员可以授予审核权限。';
+
+  @override
+  String get rigWatchOnlyBadge => '仅观看';
+
+  @override
+  String get rigWatchOnlyHint =>
+      '你可以观看此机器。操作机器、转发端口、粘贴内容或向机器拖入文件，需要此空间中所有仓库的写入权限。';
+
+  @override
+  String get rigStartNeedsWrite => '在此启动机器需要此空间中所有仓库的写入权限。工作区管理员可以授予。';
+
+  @override
+  String get rigViewRefused => '你无法查看此机器。它属于你没有读取权限的空间。';
+
+  @override
+  String get rigPortsWatchOnly => '更改这些端口需要此空间中所有仓库的写入权限。';
+
+  @override
+  String get rigHolderOnly => '此机器是为某个人开启的，只有此人才能操作它。机器使用其本人的登录信息。';
+
+  @override
+  String get rigHolderOnlyHint =>
+      '你可以观看此机器。它是为某个人开启的，并使用此人的登录信息，因此只有此人可以操作机器、转发端口、粘贴内容或向机器拖入文件。';
 }
 
 /// The translations for Chinese, as used in Hong Kong (`zh_HK`).
@@ -16873,7 +17987,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get guardrailClassPrCreate => '開啟 pull request';
 
   @override
-  String get guardrailClassPrPublish => '發佈審查或合併';
+  String get guardrailClassPrPublish => '更新或合併 pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => '寫入外部追蹤器';
@@ -19194,9 +20308,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get activityToggledMcpServer => '已切換 MCP 伺服器';
 
   @override
-  String get activityUpdatedMcpToken => '已更新 MCP 權杖';
-
-  @override
   String get activitySavedApiKey => '已儲存 API 金鑰';
 
   @override
@@ -19803,9 +20914,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String deleteConfirmName(String name) {
     return '要刪除「$name」嗎？';
   }
-
-  @override
-  String get archiveConversation => '封存對話';
 
   @override
   String get deleteFact => '刪除事實';
@@ -20481,9 +21589,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get matchOsAppearance => '符合你的作業系統外觀，或選擇固定模式。';
 
   @override
-  String get mcpAuthToken => 'MCP 驗證權杖';
-
-  @override
   String get mcpNotAvailableOnServer => '已連接的伺服器無法使用 MCP 伺服器控制。';
 
   @override
@@ -20685,9 +21790,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get noSystemFonts => '未偵測到系統字型。';
-
-  @override
-  String get noTokenSet => '尚未設定權杖 — 存取不受限制。';
 
   @override
   String get noWorkingMemory => '尚無工作記憶備註。';
@@ -21160,30 +22262,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return '伺服器的 GitHub 憑證無法看到 $repos。若存放庫屬於組織，請在該處安裝 GitHub App，或連接具有存取權限的權杖。';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '無法存取 $count 個存放庫',
-      one: '無法存取存放庫',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle => 'GitHub App 安裝已暫停';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return '正在顯示 $repos 的上次已知資料。請在 GitHub 上恢復安裝，或連接具有存取權限的權杖。';
-  }
-
-  @override
   String get repoNoAccessBadge => '無權限';
 
   @override
@@ -21296,9 +22374,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get ruleLabel => '規則';
-
-  @override
-  String get runCompleted => '執行完成';
 
   @override
   String get running => '執行中';
@@ -21457,9 +22532,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get setLabel => '設定';
-
-  @override
-  String get setToken => '設定權杖';
 
   @override
   String get settingsLabel => '設定';
@@ -21652,9 +22724,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get skillOriginManual => '手動';
 
   @override
-  String get skillOriginRegistry => '登錄';
-
-  @override
   String get skillOriginRuntimeLocal => '執行階段本機';
 
   @override
@@ -21827,9 +22896,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get toggleTheme => '切換主題';
-
-  @override
-  String get tokenConfigured => '已設定—用戶端必須出示此權杖。';
 
   @override
   String get topic => '主題';
@@ -25266,7 +26332,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get mcpApprovalMode => '工具核准';
 
   @override
-  String get mcpApprovalModeDescription => '哪些工具動作不必詢問即可執行。讀取一律允許；較高的層級會出現詢問。';
+  String get mcpApprovalModeDescription =>
+      'Control Center 自身工具中，哪些操作無需詢問即可執行（透過其 MCP 端點呼叫，或由其代理呼叫）。讀取一律允許；較高的層級會出現詢問。執行中的伺服器會遵循該執行的操作政策。';
 
   @override
   String get mcpApprovalAlwaysAsk => '總是詢問';
@@ -28685,20 +29752,8 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsAbout => '關於';
 
   @override
-  String get settingsScopeBadgeYou => '你';
-
-  @override
-  String get settingsScopeBadgeDevice => '此裝置';
-
-  @override
-  String get settingsScopeBadgeWorkspace => '工作區';
-
-  @override
-  String get settingsScopeBadgeServer => '伺服器';
-
-  @override
   String get settingsProfileDescription =>
-      '你在此工作區的名稱、電郵和 git 身分。切換工作區會切換此覆蓋層；帳號代號、登入與裝置仍在帳戶上。';
+      '你在此工作區的名稱、電郵及 git 身分。切換工作區會切換此覆蓋層；用戶名稱、登入及裝置仍保留在你的帳戶上，位於「你 → 個人資料」。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -28711,44 +29766,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get settingsDiagnosticsDescription => '此安裝的隔離、索引、同步、日誌與當機回報。';
 
   @override
-  String get settingsWorkspaceGeneralDescription => '此工作區中所有人共用的身分、政策與慣例。';
-
-  @override
-  String get settingsAgentAttributionTitle => '提交署名';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      '選擇是否在代理提交中為 Control Center 署名。工作區管理員可以替工作區內所有人覆寫此選擇。';
-
-  @override
-  String get settingsAgentCoauthorSection => '代理署名';
-
-  @override
-  String get settingsAgentCoauthorTitle => '在代理提交中為 Control Center 署名';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      '你始終是提交的作者與提交者。開啟後，Control Center (@usectrl) 會列為共同作者。關閉後，提交不包含任何代理署名。';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      '此工作區的設定會覆寫你的個人選擇。你的偏好仍會儲存，但在這裡不生效。';
-
-  @override
-  String get settingsAgentAttributionLoading => '正在載入署名設定…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      '選擇是否在代理提交中為 Control Center 署名。工作區的選擇會覆寫每位成員的個人偏好。';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit => '使用每位成員的偏好';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways => '一律為 Control Center 署名';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever => '絕不為 Control Center 署名';
+  String get settingsWorkspaceGeneralDescription => '此工作區所有人共同遵守的政策與慣例。';
 
   @override
   String get settingsWorkspaceMeetingsDescription => '此工作區會議的筆記範本與已儲存的聲音。';
@@ -29086,9 +30104,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get checkingConnection => '正在檢查連接…';
-
-  @override
-  String get fromEnvironment => '來自環境變數';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -29614,14 +30629,14 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '供繼承此安裝 GitHub 應用程式的工作區使用。擁有自己應用程式的工作區在「工作區 → 一般」中設定。';
+      '供遵循此伺服器登入應用程式的工作區使用。使用自有應用程式的工作區會在「工作區 → 整合」中設定其 App。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 對話';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '繼承工作區中開發者如何在 GitHub 上與此伺服器對話。擁有自己 App 的工作區在工作區 → 一般下有自己的機器人。無需 webhook 或公開 URL——由伺服器輪詢。';
+      '在遵循此伺服器的工作區中，開發者如何透過 GitHub 與此伺服器交流。使用自有應用程式的工作區，會在「工作區 → 整合」中擁有自己的機器人。無需 Webhook 或公開 URL，由伺服器輪詢。';
 
   @override
   String get providerAppBotLogin => '機器人登入名稱';
@@ -29652,9 +30667,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get portLabel => '連接埠';
 
   @override
-  String get mcpNoTokenWarning => '若沒有 token，任何能連到這個連接埠的東西都能呼叫所有工具。';
-
-  @override
   String get mcpBridgedToolsLabel => '工具';
 
   @override
@@ -29681,6 +30693,127 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get guardrailClearAllHere => '全部清除';
+
+  @override
+  String get guardrailFamilyCommands => '命令';
+
+  @override
+  String get guardrailStandingApproval => '持續核准';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return '允許：$what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return '先詢問：$what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return '拒絕：$what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return '分支 $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return '路徑 $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return '主機 $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return '命令 $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return '工具 $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return '以 $prefix 開頭的命令';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return '同時最多 $count 個';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return '最多 $amount 仙';
+  }
+
+  @override
+  String get guardrailCoversEverything => '此類的所有操作';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return '核准者 $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return '截止 $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => '直至撤銷';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return '撤銷：$entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => '無法撤銷，請再試一次。';
+
+  @override
+  String get guardrailEntryInactive => '拒絕時不生效';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '下方列出的 $count 種情況仍允許執行',
+      one: '下方列出的 1 種情況仍允許執行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '整個工作區的 $count 項持續核准也適用於此處。',
+      one: '整個工作區的 1 項持續核准也適用於此處。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已為單一空間或代理設定 $count 項持續核准。請在上方選擇「空間」或「代理」查看。',
+      one: '已為單一空間或代理設定 1 項持續核准。請在上方選擇「空間」或「代理」查看。',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => '沙盒';
@@ -30466,6 +31599,12 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get sandboxExecGrantRevokeConfirmBody => '下次有代理需要從此複本執行程式時，系統會再次詢問你。';
 
   @override
+  String get sandboxExecGrantsSearchHint => '搜尋路徑';
+
+  @override
+  String get sandboxExecGrantsNoMatch => '沒有符合搜尋的授權';
+
+  @override
   String get demoBadgeLabel => '示範';
 
   @override
@@ -30804,12 +31943,11 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get backupUploadAction => '選擇檔案並上傳';
 
   @override
-  String get backupTransferUnavailable =>
-      '此連接是透過中繼連到伺服器，而中繼不承載檔案傳輸。請直接連接到伺服器以下載或上傳備份。';
+  String get backupTransferUnavailable => '此連接尚未設定檔案傳輸。請重新連接到伺服器以下載或上傳備份。';
 
   @override
   String get backupTransferForbidden =>
-      '伺服器拒絕了。下載工作區需要管理員角色，還原工作區需要擁有者，整份快照則需要此安裝的操作員。';
+      '伺服器拒絕了。下載工作區需要工作區管理員角色。還原工作區需要伺服器擁有者，且該人還須是此工作區的擁有者。整份伺服器快照需要伺服器擁有者。';
 
   @override
   String get backupTransferUnsupported => '此伺服器沒有備份介面。';
@@ -31099,29 +32237,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get rigClipboardAlwaysCopyDescription => '不經詢問，將任何環境中的剪貼簿內容放到此裝置上。';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub 身分';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      '此工作區背景 GitHub 工作的驗證方式：使用此安裝的應用程式，或使用工作區自己的應用程式。';
-
-  @override
-  String get workspaceGitHubModeInherit => '使用此安裝的 GitHub App';
-
-  @override
-  String get workspaceGitHubModeApp => '使用其他 GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint => '使用伺服器 → 提供者應用程式中的 GitHub App。';
-
-  @override
-  String get workspaceGitHubAppHint => '此工作區的機器人和輪詢身分。成員在「你」中透過此 App 登入。';
-
-  @override
   String get profileOverlayHint => '這些欄位是你在此工作區的身分。空白欄位繼承帳戶名稱和電郵。切換工作區會切換此覆蓋層。';
-
-  @override
-  String get forgeConnectionsThisWorkspace => '登入或貼上此工作區的權杖。';
 
   @override
   String get stackStartNextPart => '開始下一部分';
@@ -31898,6 +33014,15 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get claudeSignInCommandUnavailable => '伺服器無法提供此帳號的登入指令。';
 
   @override
+  String get claudeAccountSignedIn => '已登入';
+
+  @override
+  String get claudeSignInClosesItself => '登入完成後，此對話框會自動關閉。';
+
+  @override
+  String get claudeSignInClosesItselfAll => '所有帳戶登入完成後，此對話框會自動關閉。';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登入已過期';
 
   @override
@@ -32044,7 +33169,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get environmentHostSetupNeeded => '需要在伺服器上設定';
+  String get environmentInputNeeded => '需要在伺服器上設定';
 
   @override
   String get environmentKindApp => '應用程式';
@@ -32615,19 +33740,37 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get environmentOpenPanel => '開啟環境';
 
   @override
-  String get environmentNeedsSetup => '需要設定';
+  String get environmentStatusBlocked => '需要處理';
+
+  @override
+  String get environmentStateInTerminal => '在終端機中';
+
+  @override
+  String get environmentWaitingInTerminal => '正在終端機中等待你操作';
+
+  @override
+  String get environmentOpenTerminal => '打開終端機';
+
+  @override
+  String get environmentSignInNeeded => '需要你登入';
+
+  @override
+  String get environmentDependencyNeeded => '依賴的組件無法使用';
+
+  @override
+  String get environmentStartTerminalDone => '已在此處完成。環境仍在啟動中';
 
   @override
   String get environmentContinueInTerminal => '在終端機中繼續';
 
   @override
-  String get environmentSetupHint => '工具需要你在終端機中輸入密碼或回答提示。完成後啟動會繼續。';
+  String get environmentStartTerminalHint => '工具需要你在終端機中輸入密碼或回答提示。完成後啟動會繼續。';
 
   @override
-  String get environmentSetupTabReason => '啟動需要你操作，因此開啟了此終端機';
+  String get environmentStartTerminalReason => '啟動需要你操作，因此開啟了此終端機';
 
   @override
-  String get environmentSetupTab => '環境設定';
+  String get environmentStartTerminalTab => '環境設定';
 
   @override
   String get environmentsNothingRunning => '此定義沒有正在執行的內容。';
@@ -32906,23 +34049,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return '請在瀏覽器中的 $provider 頁面核准要求。完成後此視窗會自動察覺。';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return '正在等待 $provider…';
-  }
-
-  @override
   String get signInFailedTitle => '登入未完成';
 
   @override
   String get signInReopenPage => '重新開啟登入頁面';
 
   @override
-  String get signInCodePrompt => '輸入瀏覽器中顯示的代碼';
+  String get signInCodePrompt => '請在瀏覽器中確認，然後輸入它顯示的代碼。';
 
   @override
   String get signInCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
@@ -32961,13 +34094,13 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get signInErrorTooManyCodes => '錯誤代碼次數過多。請重新開始登入。';
 
   @override
-  String get signInErrorStaleRequest => '這次登入已失效。請重新開始。';
+  String get signInErrorStaleRequest => '此登入已不再開啟：它已被取消、使用或取代。請重新開始。';
 
   @override
   String get signInErrorInvalidRequest => '伺服器無法讀取這個登入要求。請重新開始。';
 
   @override
-  String get signInErrorRateLimited => '目前登入嘗試次數過多。請等待一分鐘後再試一次。';
+  String get signInErrorRateLimited => '目前請求過多。請稍候一下，然後再試一次。';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -32998,10 +34131,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String signInErrorNotInstalled(String provider) {
     return '$provider 應用程式未安裝在需要的位置。請安裝後再試一次。';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      '此 GitHub 應用程式安裝已授權給另一台 Control Center 伺服器。';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -33057,7 +34186,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get githubInstallationsDescription =>
-      'GitHub 應用程式的安裝位置，僅限於此工作區存放庫所屬的帳戶。組織的安裝只在其管理員授權的伺服器上有效。';
+      'GitHub 應用程式的安裝位置，僅限於此工作區存放庫所屬的帳戶。';
 
   @override
   String get githubInstallationsEmpty => 'GitHub 應用程式未安裝在此工作區存放庫所屬的任何帳戶上。';
@@ -33066,21 +34195,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get githubInstallApp => '安裝 GitHub 應用程式';
 
   @override
-  String get githubAuthorizeServer => '授權此伺服器';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return '此伺服器現在可以使用 $account 上的安裝。';
-  }
-
-  @override
   String get githubInstallationSuspended => '已停權';
-
-  @override
-  String get githubInstallationAuthorized => '已授權';
-
-  @override
-  String get githubInstallationNotAuthorized => '未授權';
 
   @override
   String get linearAutomationTitle => 'Linear 自動化';
@@ -33106,7 +34221,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get connectModeOwnHint =>
-      '在「設定 → 伺服器 → 單一登入」中自行註冊 GitHub、Google 和 Linear 應用程式，並在每個工作區的設定中連接它自己的 Slack 應用程式。「建立我的 GitHub 應用程式」可一步完成 GitHub 設定。';
+      '在「設定 → 伺服器 → 單一登入」中自行註冊 GitHub、Google 和 Linear 應用程式，並在「工作區 → 整合」中連接每個工作區自己的 Slack 應用程式；工作區也可以選擇自有應用程式或 Connect。「建立我的 GitHub 應用程式」可一鍵完成 GitHub 設定。';
 
   @override
   String get connectModeCustom => '使用自訂 Connect 伺服器';
@@ -33236,7 +34351,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get connectRotateKeyBody =>
-      '此伺服器會取得新的金鑰和安裝 ID。所有經由 Connect 完成的登入都會失效，所有人都必須重新登入。透過你自己的應用程式完成的登入不受影響。';
+      '此伺服器會取得新的金鑰與安裝 ID，而舊的 ID 會在 Connect 上撤銷：以它加密的登入，以及舊金鑰，在那裡都會停止運作，因此所有透過 Connect 登入的人都必須重新登入。已發出的權杖在過期前仍可使用。透過你自己的應用程式進行的登入不受影響。若無法連接到 Connect，則不會有任何更改，你可以再試一次。';
 
   @override
   String get connectRotateKeyDone => '金鑰已輪替。所有透過 Connect 登入的人都必須重新登入。';
@@ -33368,33 +34483,6 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   }
 
   @override
-  String get workspaceProviderApps => '供應商應用程式';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      '工作區使用的 Google Calendar、Linear、Klipy 應用程式。預設使用伺服器的應用程式或 Control Center Connect。設有自家應用程式的工作區不會退回使用這些應用程式。';
-
-  @override
-  String get workspaceProviderAppModeInherit => '使用伺服器的應用程式';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      '登入及請求會使用伺服器本身的應用程式，或 Control Center Connect。';
-
-  @override
-  String get workspaceProviderAppModeOwn => '使用工作區自家的應用程式';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      '只會使用此工作區的應用程式。設定完成前，此供應商在這裡會停用，不會退回使用其他應用程式。';
-
-  @override
-  String get workspaceProviderAppStatusInherit => '伺服器應用程式';
-
-  @override
-  String get workspaceProviderAppStatusOwn => '自家應用程式';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return '仍欠：$fields。所有欄位設定完成前，此工作區的此供應商會停用，不會退回使用伺服器的應用程式。';
   }
@@ -33410,22 +34498,106 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String get workspaceProviderAppKlipyHint => '此工作區的 GIF 搜尋會使用這個金鑰。';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return '切換 $provider 應用程式？';
+  String get settingsWorkspaceIntegrations => '整合';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      '此工作區的程式碼託管、工單、行事曆、聊天與 GIF 搜尋，以及用來登入的應用程式。';
+
+  @override
+  String get workspaceConnectDescription =>
+      '此工作區在 GitHub、Google 日曆、Linear、Slack 與 GIF 搜尋中使用哪些應用程式。除非管理員另行選擇，否則會跟隨此伺服器。';
+
+  @override
+  String get workspaceConnectModeInherit => '與此伺服器相同';
+
+  @override
+  String get workspaceConnectInheritHosted => '此伺服器使用 Control Center 的應用程式。';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return '此伺服器使用位於 $url 的 Connect 伺服器。';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return '此工作區中所有透過伺服器應用程式連接 $provider 的人，都要用工作區的應用程式重新登入。';
+  String get workspaceConnectInheritOwn => '此伺服器使用其自有應用程式。';
+
+  @override
+  String get workspaceConnectInheritUnset => '伺服器擁有者尚未選擇，因此套用伺服器自有的應用程式。';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      '僅使用此工作區的應用程式。請在下方各提供者旁邊分別新增。沒有應用程式的提供者在此處會關閉；不會改用此伺服器的應用程式或 Connect。';
+
+  @override
+  String get workspaceConnectCustomUrlHint => '僅限 HTTPS。拒絕私人或本機網路中的位址。';
+
+  @override
+  String get workspaceConnectLocked =>
+      '此伺服器環境中的 CC_CONNECT_URL 決定登入要前往的位置，因此此工作區無法選擇自己的 Connect。它可以跟隨此伺服器，或使用自有的應用程式。';
+
+  @override
+  String get workspaceConnectSwitchTitle => '切換此工作區的登入應用程式？';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      '此工作區的所有人都必須透過新的應用程式重新登入 GitHub、Linear 與 Google 日曆。使用目前應用程式完成的登入將在此失效。';
+
+  @override
+  String get workspaceConnectSwitchAction => '切換應用程式';
+
+  @override
+  String get workspaceConnectLanesDescription => '遵循上方的選擇。提供者絕不會退回使用其他應用程式。';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => '工作區的應用程式';
+
+  @override
+  String get workspaceConnectLaneServerOwn => '伺服器的應用程式';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub 應用程式';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      '此工作區自有的應用程式會代表其儲存庫運作，並為成員完成登入。它絕不會退回使用此伺服器的應用程式或 Connect。';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      '此工作區使用其登入應用程式所提供的 GitHub 應用程式。請將其安裝到您儲存庫所屬的帳戶上。';
+
+  @override
+  String get workspaceGitHubAppActingTitle => '代表此工作區運作';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      '應用程式的機器人會在此工作區儲存庫的拉取請求中留言、審查並輪詢。';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider 應用程式';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return '這會刪除工作區的 $provider 憑證。所有透過工作區應用程式連接的人都要重新登入。';
+  String workspaceOwnAppDescription(String provider) {
+    return '此工作區中的 $provider 登入與請求僅使用此應用程式。';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => '切換應用程式';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn => 'GIF 搜尋使用此工作區的 Klipy 金鑰。';
+
+  @override
+  String get workspaceGifsSourceServerOwn => 'GIF 搜尋使用此伺服器的 Klipy 金鑰。';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF 搜尋透過 Control Center Connect 執行。';
+
+  @override
+  String get workspaceGifsSourceOff => '此工作區已關閉 GIF 搜尋。';
 
   @override
   String openOnForge(String forge) {
@@ -33442,7 +34614,7 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
 
   @override
   String get connectForgeHint =>
-      '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中連結 GitHub、GitLab 或 Bitbucket';
+      '在「設定 → 你 → 個人資料」中連結 GitHub、GitLab 或 Bitbucket';
 
   @override
   String get addForgeRepoPrompt =>
@@ -33459,6 +34631,1063 @@ class AppLocalizationsZhHk extends AppLocalizationsZh {
   String composePrForgeNotConnected(String forge) {
     return '連結 $forge 以在此儲存庫中建立拉取請求';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return '你以 $account 身分登入的 $provider 已失效。請重新登入。';
+  }
+
+  @override
+  String get connectionPaused => '已暫停：此工作區的登入服務已變更';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '暫時無法連接 $provider，正在重試。';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      '你的登入會保留，服務恢復後即可再次使用。工作區管理員可以在「整合」中檢查登入設定。';
+
+  @override
+  String get signInErrorAttemptUnknown => '伺服器已重新啟動。請重新開始登入。';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return '此工作區尚未設定 $provider 登入。';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider 登入設定有誤：$error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return '此工作區使用自己的應用程式，但沒有 $provider 應用程式。';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return '此版本無法驗證 Control Center Connect，因此 $provider 登入已關閉。';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending => '此工作區的登入服務變更了身分，需要管理員確認。';
+
+  @override
+  String get signInUnavailableConnectUnreachable => '暫時無法連接此工作區的登入服務。';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid => '此工作區登入服務的位址缺少或無效。';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      '伺服器營運者已固定登入服務，因此此工作區自己的選擇不會生效。';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return '此工作區的登入服務不提供 $provider。';
+  }
+
+  @override
+  String get signInOpenIntegrations => '開啟整合';
+
+  @override
+  String get signInOpenServerSettings => '開啟登入設定';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return '此操作會以你的身分在 $provider 上執行，但你還沒有新增 token。請新增後再試一次。';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '要中斷 $provider 嗎？';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return '你需要重新連結 $provider 才能處理它的存放庫。';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return '這只會在此工作區中斷 $provider。其他工作區會保留各自的連接。';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return '這會在共用此連接的所有工作區中斷 $provider。';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '已從此工作區中斷 $provider';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '已從所有工作區中斷 $provider';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return '在 $owner 上安裝 GitHub App';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return '在該處安裝 App 之前，自動化無法存取 $repos。';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return '將 $repos 新增至 GitHub App 的存放庫';
+  }
+
+  @override
+  String get repoAccessSelectBody => 'App 已安裝在此帳戶上，但還看不到這些存放庫。';
+
+  @override
+  String get repoAccessChooseRepos => '選擇存放庫';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App 安裝已暫停';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return '在帳戶擁有者於 GitHub 上恢復安裝之前，$repos 的自動化已暫停。';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => '自動化已暫停';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return '此工作區自動化的負責人已無法看到 $repos，因此不會再代表其在那裡執行任何內容。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return '此工作區自動化的負責人尚未登入程式碼代管平台，因此 $repos 的自動化會等待其登入。';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return '無法檢查對 $repos 的存取權限，正在重試。';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return '請聯絡 $admins 修正此問題。';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin => '請聯絡工作區管理員修正此問題。';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '登入 $forge 即可查看另外 $count 個存放庫的 pull request',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你的 $forge 帳戶看不到它們',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你在此工作區中沒有存取權限',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '正在檢查你對另外 $count 個存放庫的存取權限…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle => '已連結，但自動化還無法存取所有內容';
+
+  @override
+  String get githubInstallOnAnotherOrganization => '安裝至其他組織';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian 帳戶電子郵件';
+
+  @override
+  String get forgeTokenEmailInvalid => '請輸入你的 Atlassian 帳戶電子郵件地址。';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API 權杖';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket API token 需要與建立它的 Atlassian 帳戶電子郵件一起使用。';
+
+  @override
+  String get automationTokensTitle => '自動化權杖';
+
+  @override
+  String get automationTokensRepoHint =>
+      'GitLab 和 Bitbucket 上的背景工作（例如拉取請求更新、AI 審查留言，以及無人要求的合併請求）會使用機械人存取權杖，絕不使用個人的權杖。儲存庫自己的權杖優先於工作區的權杖。';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      '用於此工作區中所有沒有自己自動化權杖的 GitLab 或 Bitbucket 儲存庫。那裡的背景工作會顯示為此權杖的機械人。';
+
+  @override
+  String get automationTokenNone => '沒有權杖。此處的自動化已暫停。';
+
+  @override
+  String get automationTokenFromWorkspace => '使用工作區的權杖';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '以 $name 身分操作';
+  }
+
+  @override
+  String get automationTokenStored => '已加入存取權杖';
+
+  @override
+  String get automationTokenRejected => '平台拒絕了此權杖。請替換它。';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge 自動化權杖';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      '貼上專案或群組存取權杖。它需要 read_api 和 read_repository；如要留言、建立合併請求和推送，請再加上 api 和 write_repository。GitLab 會將其工作顯示為該權杖的機械人。';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      '貼上具有儲存庫讀取權限的儲存庫、專案或工作區存取權杖，並為留言和拉取請求加上拉取請求寫入權限。你自己的 API 權杖應放在「你 → 個人資料」下，而不是這裡。';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return '權杖已儲存，但無法讀取 $repos。那裡的自動化仍會暫停。';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => '要移除自動化權杖嗎？';
+
+  @override
+  String get automationTokenRemoveBody => '依賴此權杖的自動化會暫停，直至加入另一個權杖。';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return '所有沒有自己權杖的 $forge 儲存庫';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return '沒有任何自動化權杖可以讀取 $repos，因此那裡的背景工作已暫停。';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      '你開始的工作所產生的提交會帶有你的名字。請選擇還要標示誰為共同作者，以及程式碼代管平台是否將你的提交顯示為已驗證。';
+
+  @override
+  String get settingsCommitAuthorshipSection => '作者身分';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => '你開始的工作';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      '你是作者與提交者，使用程式碼代管平台為你的登入所驗證的電郵。這包括你與代理的對話、你開始的管線，以及你在編輯器中所做的提交。';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => '自動化執行';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      '由排程或 webhook 開始的執行會以機器人身分提交，且絕不簽署。';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      '在工作區中登入程式碼代管平台之前，你在該處的執行會以機器人身分提交。';
+
+  @override
+  String get settingsCoauthorCreditTitle => '將 Control Center 加入為共同作者';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      '你的提交會標示 Control Center（@usectrl）為共同作者，而你啟動的自動化執行會標示你。關閉時，兩者都不會加入這一行。';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      '此工作區的設定會覆寫你的個人選擇。你的偏好仍會儲存，但在這裡不生效。';
+
+  @override
+  String get settingsCoauthorCreditLoading => '正在載入署名設定…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => '共同作者標示';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      '提交是否帶有共同作者行：成員自己的提交會標示 Control Center，而啟動自動化執行的成員，其提交也會標示他們。此處的選擇會覆寫每位成員自己的設定。';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit => '使用每位成員的偏好';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways => '一律加入共同作者標示';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever => '一律不加入共同作者標示';
+
+  @override
+  String get settingsCommitSigningSection => '已驗證的提交';
+
+  @override
+  String get settingsCommitSigningStatusOn => '簽署中';
+
+  @override
+  String get settingsCommitSigningStatusOff => '未簽署';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      '此伺服器可使用你自己的金鑰為你的提交簽署，讓 GitHub 與 GitLab 將它們顯示為已驗證。在你建立金鑰之前，不會進行任何簽署。';
+
+  @override
+  String get settingsCommitSigningCreate => '建立簽署金鑰';
+
+  @override
+  String get settingsCommitSigningCreated => '已建立簽署金鑰。請將它加入你的程式碼代管平台帳戶。';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => '公開金鑰';
+
+  @override
+  String get settingsCommitSigningKeyCopied => '已複製公開金鑰';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => '指紋';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => '建立時間';
+
+  @override
+  String get settingsCommitSigningAddTitle => '將它加入你的程式碼代管平台帳戶';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      '只有在你同時於工作區中登入該程式碼代管平台時，提交才會顯示為已驗證，因此由程式碼代管平台為你的電郵作保。';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key。將 Key type 設為 Signing Key。';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys。將 Usage type 設為 Signing。';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Bitbucket 上的提交不會簽署。請勿將此金鑰加入你的 Bitbucket 帳戶：Bitbucket 上的 SSH 金鑰同時也是登入憑證。';
+
+  @override
+  String get settingsCommitSigningUnsupported => '不支援';
+
+  @override
+  String get settingsCommitSigningTrustTitle => '你所信任的內容';
+
+  @override
+  String get settingsCommitSigningTrustPrivate => '私密金鑰絕不會離開此伺服器。';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      '只要金鑰仍在你的程式碼代管平台帳戶上，控制此伺服器的人就能以你的身分簽署提交。';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      '在 GitHub 上，已顯示為已驗證的提交，在你移除金鑰後仍會維持已驗證。';
+
+  @override
+  String get settingsCommitSigningDelete => '刪除金鑰';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => '要刪除你的簽署金鑰嗎？';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      '從現在起，你的提交將不會簽署。金鑰會保留在你的程式碼代管平台帳戶上，直到你在那裡將它移除。';
+
+  @override
+  String get settingsCommitSigningDeleted => '已刪除簽署金鑰';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return '無法載入你的簽署金鑰：$error';
+  }
+
+  @override
+  String get accountProfileTitle => '個人資料';
+
+  @override
+  String get accountProfileDescription =>
+      '你在每個工作區中的身分，以及你自己的程式碼託管、工單、行事曆和聊天帳戶。';
+
+  @override
+  String get accountSectionTitle => '帳戶';
+
+  @override
+  String get accountSectionDescription =>
+      '你的用戶名稱與名稱會跟著你進入每個工作區。工作區可以顯示不同的名稱或電郵：請在「工作區 → 個人資料與身分」中設定。';
+
+  @override
+  String accountLoadFailed(String error) {
+    return '無法載入你的個人資料：$error';
+  }
+
+  @override
+  String get accountDisplayNameHint => '其他人在你的訊息與審查中看到的名稱。';
+
+  @override
+  String get accountDisplayNameRequired => '請輸入顯示名稱。';
+
+  @override
+  String get accountFieldCannotBeCleared => '此項目可以更改，但無法移除。';
+
+  @override
+  String get accountAvatarLabel => '圖片';
+
+  @override
+  String get accountAvatarHint => '指向方形圖片的連結，以 https:// 開頭。';
+
+  @override
+  String get accountAvatarInvalid => '請使用以 https:// 開頭的連結。';
+
+  @override
+  String get usernameLabel => '用戶名稱';
+
+  @override
+  String get usernameRule => '2 至 32 個小寫字母、數字、句號、連字號或底線。其他人會用它來提及你。';
+
+  @override
+  String get usernameAvailable => '可以使用。';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return '可以使用。將儲存為 $username。';
+  }
+
+  @override
+  String get usernameInvalid => '請使用 2 至 32 個小寫字母、數字、「.」、「_」或「-」，並以字母或數字開頭及結尾。';
+
+  @override
+  String get usernameReserved => '此用戶名稱已保留。';
+
+  @override
+  String get usernameTaken => '此用戶名稱已被使用。';
+
+  @override
+  String get usernameCheckFailed => '目前無法檢查此名稱。你仍可以儲存，由伺服器決定。';
+
+  @override
+  String get linkedAccountsTitle => '已連接的帳戶';
+
+  @override
+  String get linkedAccountsIdentityProvider => '身分提供者';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => '需要登入';
+
+  @override
+  String get linkedAccountStatusPaused => '已暫停';
+
+  @override
+  String get linkedAccountStatusUnreachable => '無法連接';
+
+  @override
+  String get ssoIdentityDescription => '你的帳戶用來登入的身分提供者。由管理這部伺服器的人負責管理。';
+
+  @override
+  String get settingsAccountsDescription =>
+      '你為自己連接的帳戶。Control Center 會透過這些帳戶以你的身分行事，變更它們只會影響你。';
+
+  @override
+  String get accountReachServer => '用於此伺服器上的每個工作區。';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return '僅用於 $workspace。';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub 僅用於 $workspace，該工作區有自己的登入應用程式。GitLab 和 Bitbucket 則用於此伺服器上的每個工作區。';
+  }
+
+  @override
+  String get yourAccountLabel => '你的帳戶';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider：$detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return '你的帳戶：$status。開啟「你 → 個人資料」。';
+  }
+
+  @override
+  String get yourForgeAccountNone => '未連接程式碼託管帳戶';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return '未連接 $provider 帳戶';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return '未連結 $provider 帳戶';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      '你在示範中是暫時的訪客，因此沒有可更改的帳戶：沒有用戶名稱、個人資料或已連接的帳戶。';
+
+  @override
+  String get onboardingStepYou => '你';
+
+  @override
+  String get onboardingYouTitle => '選擇你的用戶名稱';
+
+  @override
+  String get onboardingYouSubtitle =>
+      '你的用戶名稱是他人提及你的方式，也是標示你工作的方式。之後你可以在「設定 → 你 → 個人資料」中更改它與你的顯示名稱。';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return '此 $provider 帳戶已連接到此伺服器上的另一位使用者。請使用其他 $provider 帳戶登入。';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return '權杖將於 $date 到期';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return '權杖已於 $date 到期。請貼上新的權杖以繼續使用。';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '無法連接至 $forge 以檢查此權杖。請稍後再試。';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge 不接受此權杖。請確認你已完整複製，且它未被撤銷。';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return '這不是個人權杖。請貼上你自己 $forge 帳戶的個人存取權杖，而非專案、群組、工作區或機器人的權杖。';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return '此權杖缺少 $scope 範圍，而審查與留言需要它。請建立包含該範圍的權杖。';
+  }
+
+  @override
+  String get personTokenExpired => '此權杖已過期。請建立新的權杖並貼到這裡。';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      '你啟動的代理，可在它們工作的任何存放庫中，以你的身分建立已簽署的提交。在此刪除金鑰會立即停止此行為：已在進行中的執行將不再簽署任何內容。';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return '金鑰未被輪替，沒有任何更改：$error 請再試一次。';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => '你尚未加入任何工作區';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      '工作區管理員必須邀請你，或伺服器擁有者可以為你建立工作區。你一被加入，它就會在這裡開啟。';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return '已登入為 $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => '重新檢查';
+
+  @override
+  String get noWorkspaceSignOut => '登出';
+
+  @override
+  String get workspaceCreateOwnerOnly => '只有伺服器擁有者可以建立工作區。請他建立一個，或請工作區管理員邀請你。';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo 不在你的任何工作區中，而你也不在可以加入它的工作區中。請工作區管理員邀請你。';
+  }
+
+  @override
+  String get serverOwnerOnly => '只有伺服器擁有者可以執行此操作';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      '完整編輯器執行於伺服器本機，因此只有伺服器擁有者可以開啟它。你仍可從檔案總管開啟與編輯檔案。';
+
+  @override
+  String get terminalSandboxedBadge => '沙箱';
+
+  @override
+  String get terminalSandboxedHint => '在此工作區資料夾內的沙箱中執行，因此某些主機工具與路徑在此無法使用。';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      '主機 shell 會在伺服器上不經沙箱執行，因此只有伺服器擁有者可以開啟。一般終端機會在沙箱中執行。';
+
+  @override
+  String get terminalOutsideWorkspace => '終端機只能在此工作區自己的資料夾內開啟。';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      '只有伺服器擁有者可以儲存或核准在伺服器主機上執行的環境。工作區管理員可以使用在 rig 中執行的環境。';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      '你在應用程式自己的編輯器中所做的提交不會執行存放庫中的 Git 掛勾，就像 git commit --no-verify 一樣：伺服器在它自己的主機上執行 Git，而代理與 pull request 都可以更改該目錄樹。';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP 用戶端會以 Authorization: Bearer 標頭傳送此權杖。伺服器會在首次啟動時建立它；你可以輪替，但無法移除。';
+
+  @override
+  String get mcpShowToken => '顯示權杖';
+
+  @override
+  String get mcpHideToken => '隱藏權杖';
+
+  @override
+  String get mcpRotateToken => '輪替權杖';
+
+  @override
+  String get mcpRotateTokenTitle => '要輪替 MCP 權杖嗎？';
+
+  @override
+  String get mcpRotateTokenBody =>
+      '伺服器會立即切換到新的權杖。在你把新權杖提供給每個仍在使用目前權杖的 MCP 用戶端之前，它們都會被拒絕。';
+
+  @override
+  String get mcpTokenRotated => '權杖已輪替。請把新的權杖提供給你的 MCP 用戶端。';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP 端點僅供伺服器擁有者使用';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      '它的權杖可開啟此伺服器上的每個工具，因此只有伺服器擁有者可以檢視、輪替，或啟動與停止此端點。';
+
+  @override
+  String get activityRotatedMcpToken => '已輪替 MCP 權杖';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle => 'Connect 無法撤銷舊金鑰';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      '沒有任何更改。若你仍要輪替，此伺服器會取得新的金鑰，但舊的身分在該 Connect 上會持續有效，直到其登入過期為止。';
+
+  @override
+  String get connectRotateKeyAnyway => '仍要輪替';
+
+  @override
+  String get settingsAuditLog => '審計記錄';
+
+  @override
+  String get settingsAuditLogDescription =>
+      '記錄誰在何時更改了什麼以及結果如何，涵蓋伺服器和你管理的每個工作區。伺服器操作只記錄參數名稱，不記錄參數值。';
+
+  @override
+  String get auditLogNoAccessTitle => '僅限管理員';
+
+  @override
+  String get auditLogNoAccess => '審計記錄涵蓋伺服器和你管理的工作區。你目前沒有管理任何工作區，因此沒有可顯示的內容。';
+
+  @override
+  String get auditLogSourceServer => '伺服器';
+
+  @override
+  String get auditLogSourceWorkspace => '工作區';
+
+  @override
+  String get auditLogAddFilter => '篩選';
+
+  @override
+  String get auditLogFilterOptionsHint => '篩選…';
+
+  @override
+  String get auditLogFilterActor => '操作者';
+
+  @override
+  String get auditLogFilterSource => '工作區';
+
+  @override
+  String get auditLogFilterOutcome => '結果';
+
+  @override
+  String get auditLogFilterTime => '時間';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category：$values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => '成功';
+
+  @override
+  String get auditLogOutcomeDenied => '已拒絕';
+
+  @override
+  String get auditLogOutcomeFailed => '失敗';
+
+  @override
+  String get auditLogTimeAtOrAfter => '此時或之後';
+
+  @override
+  String get auditLogTimeAfter => '之後';
+
+  @override
+  String get auditLogTimeBefore => '之前';
+
+  @override
+  String get auditLogTimeAtOrBefore => '此時或之前';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return '時間 $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 小時前';
+
+  @override
+  String get auditLogTimePresetDay => '24 小時前';
+
+  @override
+  String get auditLogTimePresetWeek => '7 天前';
+
+  @override
+  String get auditLogTimePresetMonth => '30 天前';
+
+  @override
+  String get auditLogTimeExact => '指定時間';
+
+  @override
+  String get auditLogTimeInvalid => '請使用 YYYY-MM-DD 格式，可選擇加上 HH:MM';
+
+  @override
+  String get auditLogTimeAdd => '新增';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo 現在指向另一個存放庫';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return '此路徑現在在 $forge 上指向另一個存放庫。請重新連接以繼續使用它。';
+  }
+
+  @override
+  String get repoRelink => '重新連接';
+
+  @override
+  String repoRelinked(String repo) {
+    return '已重新連接 $repo。';
+  }
+
+  @override
+  String get repoCodeRepoReplaced => '此路徑現在指向另一個存放庫。工作區管理員必須重新連接它，才能使用。';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return '你的 $forge 帳戶無法讀取此存放庫。';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return '無法確認你的 $forge 存取權限。請再試一次。';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed => '你的程式碼代管平台帳戶無法讀取此存放庫。';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed => '無法確認你的程式碼代管平台存取權限。請再試一次。';
+
+  @override
+  String get repoPathHostPath => '只有伺服器擁有者可以連接位於此工作區儲存空間之外的資料夾。';
+
+  @override
+  String get repoPathMissing => '伺服器上該路徑不存在任何東西。';
+
+  @override
+  String get repoPathDataDir => '存放庫不能指向伺服器的資料資料夾。';
+
+  @override
+  String get repoPathWorkspaceRoot => '存放庫不能是工作區本身的資料夾。';
+
+  @override
+  String get repoPathOriginMismatch => '該資料夾的 origin 指向另一個存放庫。';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return '已儲存。對方需要先登入 $forge，才能開啟此存放庫。';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return '已儲存。對方的 $forge 帳戶目前仍無法讀取此存放庫，因此對他們保持隱藏。';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return '已儲存。目前無法確認對方的 $forge 存取權限。';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo 未連接到你的任何工作區。請詢問伺服器擁有者將它加入。';
+  }
+
+  @override
+  String get reposEmptyAskOwner => '伺服器擁有者會從伺服器的資料夾中新增存放庫。';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      '只有你自己輸入了這個地址。在伺服器擁有者確認之前，單一登入不會與它比對。';
+
+  @override
+  String get settingsServerPeople => '使用者';
+
+  @override
+  String get settingsServerPeopleDescription => '在此伺服器上擁有帳戶的每個人，以及其電郵地址是否已確認。';
+
+  @override
+  String get serverPeopleLabel => '帳戶';
+
+  @override
+  String get serverPeopleOwnerOnly => '只有伺服器擁有者可以檢視所有人的帳戶並確認電郵地址。';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => '電郵未確認';
+
+  @override
+  String get serverPeopleConfirmEmail => '確認電郵';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return '確認 $email 屬於 $name 嗎？單一登入會將此地址與其帳戶比對。';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '已確認 $email。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => '代理需要此伺服器上的沙箱';
+
+  @override
+  String get runSandboxUnavailable =>
+      '此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。擁有者可以安裝沙箱，或為所有人關閉沙箱功能。';
+
+  @override
+  String get repoPathIssueHostPath => '此資料夾位於工作區儲存空間之外。請確認此伺服器可以使用它。';
+
+  @override
+  String get repoPathIssueHostPathAskOwner => '此資料夾位於工作區儲存空間之外。只有伺服器擁有者可以確認它。';
+
+  @override
+  String get repoPathIssueMissing => '伺服器上此路徑已不存在任何東西。請移除此存放庫，並從其目前的資料夾重新新增。';
+
+  @override
+  String get repoPathIssueUnusable => '此資料夾無法作為存放庫使用。請移除它，並從其他資料夾新增存放庫。';
+
+  @override
+  String get repoPathConfirm => '確認';
+
+  @override
+  String get repoPathConfirmAll => '全部確認';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個資料夾位於工作區儲存空間之外',
+      one: '有 1 個資料夾位於工作區儲存空間之外',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody => '確認此伺服器可以使用它們。每個存放庫都會以你的存取權限重新檢查。';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      '在此機器自身工具設定中找到的伺服器，只會用於你啟動或負責的執行。其他人的執行永遠看不到它們，也不會透過 Control Center 的 MCP 端點提供。';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return '登入 $provider 以查看此存放庫的程式碼。';
+  }
+
+  @override
+  String get repoCodeSignIn => '登入';
+
+  @override
+  String get ideContentSearchFailed => '無法搜尋檔案內容';
+
+  @override
+  String get ideWorktreeFileUnavailable => '此檔案在此工作樹中無法使用。';
+
+  @override
+  String get ideChangesLoadFailed => '無法載入更改';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return '此路徑現在在 $forge 上指向另一個存放庫。工作區管理員必須重新連接它，才能使用。';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly => '只有伺服器擁有者可以還原備份。你仍可以下載它們。';
+
+  @override
+  String get terminalReadOnlyBadge => '唯讀';
+
+  @override
+  String get terminalReadOnlyHint =>
+      '你可以檢視此終端機。若要在其中輸入、調整大小或停止它，需要此對話中每個存放庫的寫入權限。';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      '你可以檢視此環境。若要啟動、停止或重新啟動它，需要此對話中每個存放庫的寫入權限。';
+
+  @override
+  String get environmentHostApprovalOwner => '在此伺服器上執行。核准後才能啟動。';
+
+  @override
+  String get environmentHostApprovalMember => '在此伺服器上執行。伺服器擁有者必須先核准，才能啟動。';
+
+  @override
+  String get environmentHostApprove => '核准';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      '請以工作區管理員身分核准：只有管理員的副本會顯示其機密值，而核准時會將它們寫回。';
+
+  @override
+  String get environmentHostUnapproved => '伺服器擁有者尚未核准此環境，因此它無法在此伺服器上執行。';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      '你尚未核准此環境。它在此伺服器上執行，因此在你核准其定義後才會啟動。';
+
+  @override
+  String get environmentHostApprovalReview => '審查並核准';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return '登入 $provider 以開啟此空間。';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return '你的 $forge 帳戶無法讀取此空間使用的存放庫。';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed => '你的程式碼代管平台帳戶無法讀取此空間使用的存放庫。';
+
+  @override
+  String get spaceAccessNoGrant => '你沒有此空間所用存放庫之一的讀取權限。工作區管理員可以授予。';
+
+  @override
+  String get spaceAccessFailed => '無法開啟此空間。';
+
+  @override
+  String get contextExplorerRefused => '此工作階段無法使用上下文明細。';
+
+  @override
+  String get repoLinkForgeRemoteRequired => '已連接的存放庫需要擁有者／組織與存放庫名稱兩者。';
+
+  @override
+  String get repoCodeNoReadGrant => '你沒有此存放庫的讀取權限。工作區管理員可以授予。';
+
+  @override
+  String get repoCodeNoWriteGrant => '你可以讀取此存放庫，但無法更改。工作區管理員可以授予寫入權限。';
+
+  @override
+  String get repoCodeNoReviewGrant => '你可以讀取此存放庫，但無法審閱。工作區管理員可以授予審閱權限。';
+
+  @override
+  String get rigWatchOnlyBadge => '僅供觀看';
+
+  @override
+  String get rigWatchOnlyHint =>
+      '你可以觀看此機器。操作、轉送連接埠、貼上內容或將檔案拖放到機器上，需要此空間中所有存放庫的寫入權限。';
+
+  @override
+  String get rigStartNeedsWrite => '在此啟動機器需要此空間中所有存放庫的寫入權限。工作區管理員可以授予。';
+
+  @override
+  String get rigViewRefused => '你無法查看此機器。它屬於你沒有讀取權限的空間。';
+
+  @override
+  String get rigPortsWatchOnly => '更改這些連接埠需要此空間中所有存放庫的寫入權限。';
+
+  @override
+  String get rigHolderOnly => '此機器是為某個人開啟的，只有此人才能操作。機器使用的是其本人的登入資料。';
+
+  @override
+  String get rigHolderOnlyHint =>
+      '你可以觀看此機器。它是為某個人開啟的，並使用此人的登入資料，因此只有此人可以操作、轉送連接埠、貼上內容或將檔案拖放到機器上。';
 }
 
 /// The translations for Chinese, as used in Taiwan (`zh_TW`).
@@ -33603,7 +35832,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get guardrailClassPrCreate => '開啟 pull request';
 
   @override
-  String get guardrailClassPrPublish => '發佈審查或合併';
+  String get guardrailClassPrPublish => '更新或合併 pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => '寫入外部追蹤器';
@@ -35924,9 +38153,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get activityToggledMcpServer => '已切換 MCP 伺服器';
 
   @override
-  String get activityUpdatedMcpToken => '已更新 MCP 權杖';
-
-  @override
   String get activitySavedApiKey => '已儲存 API 金鑰';
 
   @override
@@ -36533,9 +38759,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String deleteConfirmName(String name) {
     return '要刪除「$name」嗎？';
   }
-
-  @override
-  String get archiveConversation => '封存對話';
 
   @override
   String get deleteFact => '刪除事實';
@@ -37211,9 +39434,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get matchOsAppearance => '符合你的作業系統外觀，或選擇固定模式。';
 
   @override
-  String get mcpAuthToken => 'MCP 驗證權杖';
-
-  @override
   String get mcpNotAvailableOnServer => '已連線的伺服器無法使用 MCP 伺服器控制。';
 
   @override
@@ -37415,9 +39635,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get noSystemFonts => '未偵測到系統字型。';
-
-  @override
-  String get noTokenSet => '尚未設定權杖 — 存取不受限制。';
 
   @override
   String get noWorkingMemory => '尚無工作記憶備註。';
@@ -37890,30 +40107,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return '伺服器的 GitHub 憑證無法看到 $repos。若存放庫屬於組織，請在該處安裝 GitHub App，或連線具有存取權限的權杖。';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '無法存取 $count 個存放庫',
-      one: '無法存取存放庫',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle => 'GitHub App 安裝已暫停';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return '正在顯示 $repos 的上次已知資料。請在 GitHub 上恢復安裝，或連線具有存取權限的權杖。';
-  }
-
-  @override
   String get repoNoAccessBadge => '無權限';
 
   @override
@@ -38026,9 +40219,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get ruleLabel => '規則';
-
-  @override
-  String get runCompleted => '執行完成';
 
   @override
   String get running => '執行中';
@@ -38187,9 +40377,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get setLabel => '設定';
-
-  @override
-  String get setToken => '設定權杖';
 
   @override
   String get settingsLabel => '設定';
@@ -38382,9 +40569,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get skillOriginManual => '手動';
 
   @override
-  String get skillOriginRegistry => '登錄';
-
-  @override
   String get skillOriginRuntimeLocal => '執行階段本機';
 
   @override
@@ -38557,9 +40741,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get toggleTheme => '切換主題';
-
-  @override
-  String get tokenConfigured => '已設定—用戶端必須出示此權杖。';
 
   @override
   String get topic => '主題';
@@ -41996,7 +44177,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get mcpApprovalMode => '工具核准';
 
   @override
-  String get mcpApprovalModeDescription => '哪些工具動作不必詢問即可執行。讀取一律允許；較高的層級會出現詢問。';
+  String get mcpApprovalModeDescription =>
+      'Control Center 自身工具中，哪些操作無需詢問即可執行（透過其 MCP 端點呼叫，或由其代理呼叫）。讀取一律允許；較高的層級會出現詢問。執行中的伺服器會遵循該執行的操作政策。';
 
   @override
   String get mcpApprovalAlwaysAsk => '總是詢問';
@@ -45415,20 +47597,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsAbout => '關於';
 
   @override
-  String get settingsScopeBadgeYou => '你';
-
-  @override
-  String get settingsScopeBadgeDevice => '此裝置';
-
-  @override
-  String get settingsScopeBadgeWorkspace => '工作區';
-
-  @override
-  String get settingsScopeBadgeServer => '伺服器';
-
-  @override
   String get settingsProfileDescription =>
-      '你在此工作區的名稱、電子郵件和 git 身分。切換工作區會切換此覆蓋層；帳號代號、登入與裝置仍在帳戶上。';
+      '你在此工作區的名稱、電子郵件與 git 身分。切換工作區會切換此覆蓋層；使用者名稱、登入與裝置仍保留在你的帳戶上，位於「你 → 個人資料」。';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -45441,44 +47611,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get settingsDiagnosticsDescription => '此安裝的隔離、索引、同步、日誌與當機回報。';
 
   @override
-  String get settingsWorkspaceGeneralDescription => '此工作區中所有人共用的身分、政策與慣例。';
-
-  @override
-  String get settingsAgentAttributionTitle => '提交署名';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      '選擇是否在代理提交中為 Control Center 署名。工作區管理員可以替工作區內所有人覆寫此選擇。';
-
-  @override
-  String get settingsAgentCoauthorSection => '代理署名';
-
-  @override
-  String get settingsAgentCoauthorTitle => '在代理提交中為 Control Center 署名';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      '你始終是提交的作者與提交者。開啟後，Control Center (@usectrl) 會列為共同作者。關閉後，提交不包含任何代理署名。';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      '此工作區的設定會覆寫你的個人選擇。你的偏好仍會儲存，但在這裡不生效。';
-
-  @override
-  String get settingsAgentAttributionLoading => '正在載入署名設定…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      '選擇是否在代理提交中為 Control Center 署名。工作區的選擇會覆寫每位成員的個人偏好。';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit => '使用每位成員的偏好';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways => '一律為 Control Center 署名';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever => '絕不為 Control Center 署名';
+  String get settingsWorkspaceGeneralDescription => '此工作區所有人共同遵守的政策與慣例。';
 
   @override
   String get settingsWorkspaceMeetingsDescription => '此工作區會議的筆記範本與已儲存的聲音。';
@@ -45816,9 +47949,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get checkingConnection => '正在檢查連線…';
-
-  @override
-  String get fromEnvironment => '來自環境變數';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -46344,14 +48474,14 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get providerAppsGroupServerDescription =>
-      '供繼承此安裝 GitHub 應用程式的工作區使用。擁有自己應用程式的工作區在「工作區 → 一般」中設定。';
+      '供遵循此伺服器登入應用程式的工作區使用。使用自有應用程式的工作區會在「工作區 → 整合」中設定其 App。';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request 對話';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      '繼承工作區中開發者如何在 GitHub 上與此伺服器對話。擁有自己 App 的工作區在工作區 → 一般下有自己的機器人。無需 webhook 或公開 URL——由伺服器輪詢。';
+      '在遵循此伺服器的工作區中，開發者如何透過 GitHub 與此伺服器交流。使用自有應用程式的工作區，會在「工作區 → 整合」中擁有自己的機器人。無需 Webhook 或公開 URL，由伺服器輪詢。';
 
   @override
   String get providerAppBotLogin => '機器人登入名稱';
@@ -46382,9 +48512,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get portLabel => '連接埠';
 
   @override
-  String get mcpNoTokenWarning => '若沒有 token，任何能連到這個連接埠的東西都能呼叫所有工具。';
-
-  @override
   String get mcpBridgedToolsLabel => '工具';
 
   @override
@@ -46411,6 +48538,127 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get guardrailClearAllHere => '全部清除';
+
+  @override
+  String get guardrailFamilyCommands => '命令';
+
+  @override
+  String get guardrailStandingApproval => '持續核准';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return '允許：$what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return '先詢問：$what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return '拒絕：$what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return '分支 $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return '路徑 $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return '主機 $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return '命令 $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return '工具 $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return '以 $prefix 開頭的命令';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return '同時最多 $count 個';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return '最多 $amount 分';
+  }
+
+  @override
+  String get guardrailCoversEverything => '此類的所有動作';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return '核准者 $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return '截止 $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => '直到撤銷';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return '撤銷：$entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => '無法撤銷，請再試一次。';
+
+  @override
+  String get guardrailEntryInactive => '拒絕時不生效';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '下方列出的 $count 種情況仍允許執行',
+      one: '下方列出的 1 種情況仍允許執行',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '整個工作區的 $count 項持續核准也適用於此處。',
+      one: '整個工作區的 1 項持續核准也適用於此處。',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '已為單一空間或代理設定 $count 項持續核准。請在上方選擇「空間」或「代理」查看。',
+      one: '已為單一空間或代理設定 1 項持續核准。請在上方選擇「空間」或「代理」查看。',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => '沙盒';
@@ -47196,6 +49444,12 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get sandboxExecGrantRevokeConfirmBody => '下次有代理需要從此複本執行程式時，系統會再次詢問你。';
 
   @override
+  String get sandboxExecGrantsSearchHint => '搜尋路徑';
+
+  @override
+  String get sandboxExecGrantsNoMatch => '沒有符合搜尋的授權';
+
+  @override
   String get demoBadgeLabel => '示範';
 
   @override
@@ -47534,12 +49788,11 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get backupUploadAction => '選擇檔案並上傳';
 
   @override
-  String get backupTransferUnavailable =>
-      '此連線是透過中繼連到伺服器，而中繼不承載檔案傳輸。請直接連線到伺服器以下載或上傳備份。';
+  String get backupTransferUnavailable => '此連線尚未設定檔案傳輸。請重新連線到伺服器以下載或上傳備份。';
 
   @override
   String get backupTransferForbidden =>
-      '伺服器拒絕了。下載工作區需要管理員角色，還原工作區需要擁有者，整份快照則需要此安裝的操作員。';
+      '伺服器拒絕了。下載工作區需要工作區管理員角色。還原工作區需要伺服器擁有者，且該人還須是此工作區的擁有者。整份伺服器快照需要伺服器擁有者。';
 
   @override
   String get backupTransferUnsupported => '此伺服器沒有備份介面。';
@@ -47829,30 +50082,8 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get rigClipboardAlwaysCopyDescription => '不經詢問，將任何環境中的剪貼簿內容放到此裝置上。';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub 身分';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      '此工作區背景 GitHub 工作的驗證方式：使用此安裝的應用程式，或使用工作區自己的應用程式。';
-
-  @override
-  String get workspaceGitHubModeInherit => '使用此安裝的 GitHub App';
-
-  @override
-  String get workspaceGitHubModeApp => '使用其他 GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint => '使用伺服器 → 提供者應用程式中的 GitHub App。';
-
-  @override
-  String get workspaceGitHubAppHint => '此工作區的機器人和輪詢身分。成員在「你」中透過此 App 登入。';
-
-  @override
   String get profileOverlayHint =>
       '這些欄位是你在此工作區的身分。空白欄位繼承帳戶名稱和電子郵件。切換工作區會切換此覆蓋層。';
-
-  @override
-  String get forgeConnectionsThisWorkspace => '登入或貼上此工作區的權杖。';
 
   @override
   String get stackStartNextPart => '開始下一部分';
@@ -48629,6 +50860,15 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get claudeSignInCommandUnavailable => '伺服器無法提供此帳號的登入指令。';
 
   @override
+  String get claudeAccountSignedIn => '已登入';
+
+  @override
+  String get claudeSignInClosesItself => '登入完成後，此對話框會自動關閉。';
+
+  @override
+  String get claudeSignInClosesItselfAll => '所有帳戶登入完成後，此對話框會自動關閉。';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle => 'Claude Code 登入已過期';
 
   @override
@@ -48775,7 +51015,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get environmentHostSetupNeeded => '需要在伺服器上設定';
+  String get environmentInputNeeded => '需要在伺服器上設定';
 
   @override
   String get environmentKindApp => '應用程式';
@@ -49346,19 +51586,37 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get environmentOpenPanel => '開啟環境';
 
   @override
-  String get environmentNeedsSetup => '需要設定';
+  String get environmentStatusBlocked => '需要處理';
+
+  @override
+  String get environmentStateInTerminal => '在終端機中';
+
+  @override
+  String get environmentWaitingInTerminal => '正在終端機中等待你操作';
+
+  @override
+  String get environmentOpenTerminal => '開啟終端機';
+
+  @override
+  String get environmentSignInNeeded => '需要你登入';
+
+  @override
+  String get environmentDependencyNeeded => '依賴的元件無法使用';
+
+  @override
+  String get environmentStartTerminalDone => '已在此處完成。環境仍在啟動中';
 
   @override
   String get environmentContinueInTerminal => '在終端機中繼續';
 
   @override
-  String get environmentSetupHint => '工具需要你在終端機中輸入密碼或回答提示。完成後啟動會繼續。';
+  String get environmentStartTerminalHint => '工具需要你在終端機中輸入密碼或回答提示。完成後啟動會繼續。';
 
   @override
-  String get environmentSetupTabReason => '啟動需要你操作，因此開啟了此終端機';
+  String get environmentStartTerminalReason => '啟動需要你操作，因此開啟了此終端機';
 
   @override
-  String get environmentSetupTab => '環境設定';
+  String get environmentStartTerminalTab => '環境設定';
 
   @override
   String get environmentsNothingRunning => '此定義沒有正在執行的內容。';
@@ -49637,23 +51895,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return '請在瀏覽器中的 $provider 頁面核准要求。完成後此視窗會自動察覺。';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return '正在等待 $provider…';
-  }
-
-  @override
   String get signInFailedTitle => '登入未完成';
 
   @override
   String get signInReopenPage => '重新開啟登入頁面';
 
   @override
-  String get signInCodePrompt => '輸入瀏覽器中顯示的代碼';
+  String get signInCodePrompt => '請在瀏覽器中確認，然後輸入它顯示的代碼。';
 
   @override
   String get signInCodeMalformed => '這看起來不像登入代碼。代碼由 8 個字母和數字組成。';
@@ -49692,13 +51940,13 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get signInErrorTooManyCodes => '錯誤代碼次數過多。請重新開始登入。';
 
   @override
-  String get signInErrorStaleRequest => '這次登入已失效。請重新開始。';
+  String get signInErrorStaleRequest => '此登入已不再開啟：它已被取消、使用或取代。請重新開始。';
 
   @override
   String get signInErrorInvalidRequest => '伺服器無法讀取這個登入要求。請重新開始。';
 
   @override
-  String get signInErrorRateLimited => '目前登入嘗試次數過多。請等待一分鐘後再試一次。';
+  String get signInErrorRateLimited => '目前請求過多。請稍候一下，然後再試一次。';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -49729,10 +51977,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String signInErrorNotInstalled(String provider) {
     return '$provider 應用程式未安裝在需要的位置。請安裝後再試一次。';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      '此 GitHub 應用程式安裝已授權給另一台 Control Center 伺服器。';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -49788,7 +52032,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get githubInstallationsDescription =>
-      'GitHub 應用程式的安裝位置，僅限於此工作區儲存庫所屬的帳戶。組織的安裝只在其管理員授權的伺服器上有效。';
+      'GitHub 應用程式的安裝位置，僅限於此工作區儲存庫所屬的帳戶。';
 
   @override
   String get githubInstallationsEmpty => 'GitHub 應用程式未安裝在此工作區儲存庫所屬的任何帳戶上。';
@@ -49797,21 +52041,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get githubInstallApp => '安裝 GitHub 應用程式';
 
   @override
-  String get githubAuthorizeServer => '授權此伺服器';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return '此伺服器現在可以使用 $account 上的安裝。';
-  }
-
-  @override
   String get githubInstallationSuspended => '已停權';
-
-  @override
-  String get githubInstallationAuthorized => '已授權';
-
-  @override
-  String get githubInstallationNotAuthorized => '未授權';
 
   @override
   String get linearAutomationTitle => 'Linear 自動化';
@@ -49837,7 +52067,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get connectModeOwnHint =>
-      '在「設定 → 伺服器 → 單一登入」中自行註冊 GitHub、Google 和 Linear 應用程式，並在每個工作區的設定中連接它自己的 Slack 應用程式。「建立我的 GitHub 應用程式」可一步完成 GitHub 設定。';
+      '在「設定 → 伺服器 → 單一登入」中自行註冊 GitHub、Google 和 Linear 應用程式，並在「工作區 → 整合」中連接每個工作區自己的 Slack 應用程式；工作區也可以選擇自有應用程式或 Connect。「建立我的 GitHub 應用程式」可一鍵完成 GitHub 設定。';
 
   @override
   String get connectModeCustom => '使用自訂 Connect 伺服器';
@@ -49967,7 +52197,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get connectRotateKeyBody =>
-      '此伺服器會取得新的金鑰和安裝 ID。所有經由 Connect 完成的登入都會失效，所有人都必須重新登入。透過你自己的應用程式完成的登入不受影響。';
+      '此伺服器會取得新的金鑰與安裝 ID，而舊的 ID 會在 Connect 上撤銷：以它封存的登入，以及舊金鑰，在那裡都會停止運作，因此所有透過 Connect 登入的人都必須重新登入。已發出的權杖在過期前仍可使用。透過你自己的應用程式進行的登入不受影響。若無法連線到 Connect，則不會有任何變更，你可以再試一次。';
 
   @override
   String get connectRotateKeyDone => '金鑰已輪替。所有透過 Connect 登入的人都必須重新登入。';
@@ -50099,33 +52329,6 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   }
 
   @override
-  String get workspaceProviderApps => '供應商應用程式';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      '工作區使用的 Google Calendar、Linear 和 Klipy 應用程式。預設會使用此伺服器的應用程式或 Control Center Connect。設定了自有應用程式的工作區不會退回使用它們。';
-
-  @override
-  String get workspaceProviderAppModeInherit => '使用此伺服器的應用程式';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      '登入與請求會使用此伺服器自己的應用程式，或 Control Center Connect。';
-
-  @override
-  String get workspaceProviderAppModeOwn => '使用此工作區自己的應用程式';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      '只會使用此工作區的應用程式。在設定完成前，此供應商在這裡會關閉，不會退回使用其他應用程式。';
-
-  @override
-  String get workspaceProviderAppStatusInherit => '伺服器應用程式';
-
-  @override
-  String get workspaceProviderAppStatusOwn => '自有應用程式';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return '仍缺少：$fields。在所有欄位都設定完成前，此工作區中的此供應商會關閉，不會退回使用此伺服器的應用程式。';
   }
@@ -50141,22 +52344,106 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String get workspaceProviderAppKlipyHint => '此工作區的 GIF 搜尋會使用這個金鑰。';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return '切換 $provider 應用程式？';
+  String get settingsWorkspaceIntegrations => '整合';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      '此工作區的程式碼託管、工單、行事曆、聊天與 GIF 搜尋，以及用來登入的應用程式。';
+
+  @override
+  String get workspaceConnectDescription =>
+      '此工作區在 GitHub、Google 日曆、Linear、Slack 與 GIF 搜尋中使用哪些應用程式。除非管理員另行選擇，否則會跟隨此伺服器。';
+
+  @override
+  String get workspaceConnectModeInherit => '與此伺服器相同';
+
+  @override
+  String get workspaceConnectInheritHosted => '此伺服器使用 Control Center 的應用程式。';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return '此伺服器使用位於 $url 的 Connect 伺服器。';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return '此工作區中透過此伺服器應用程式連線到 $provider 的所有人，都必須用工作區的應用程式重新登入。';
+  String get workspaceConnectInheritOwn => '此伺服器使用其自有應用程式。';
+
+  @override
+  String get workspaceConnectInheritUnset => '伺服器擁有者尚未選擇，因此套用伺服器自有的應用程式。';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      '僅使用此工作區的應用程式。請在下方各提供者旁邊分別新增。沒有應用程式的提供者在此處會關閉；不會改用此伺服器的應用程式或 Connect。';
+
+  @override
+  String get workspaceConnectCustomUrlHint => '僅限 HTTPS。拒絕私人或本機網路中的位址。';
+
+  @override
+  String get workspaceConnectLocked =>
+      '此伺服器環境中的 CC_CONNECT_URL 決定登入要前往的位置，因此此工作區無法選擇自己的 Connect。它可以跟隨此伺服器，或使用自有的應用程式。';
+
+  @override
+  String get workspaceConnectSwitchTitle => '切換此工作區的登入應用程式？';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      '此工作區的所有人都必須透過新的應用程式重新登入 GitHub、Linear 與 Google 日曆。使用目前應用程式完成的登入將在此失效。';
+
+  @override
+  String get workspaceConnectSwitchAction => '切換應用程式';
+
+  @override
+  String get workspaceConnectLanesDescription => '遵循上方的選擇。提供者絕不會退回使用其他應用程式。';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => '工作區的應用程式';
+
+  @override
+  String get workspaceConnectLaneServerOwn => '伺服器的應用程式';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub 應用程式';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      '此工作區自有的應用程式會代表其儲存庫運作，並為成員完成登入。它絕不會退回使用此伺服器的應用程式或 Connect。';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      '此工作區使用其登入應用程式所提供的 GitHub 應用程式。請將其安裝到您儲存庫所屬的帳戶上。';
+
+  @override
+  String get workspaceGitHubAppActingTitle => '代表此工作區運作';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      '應用程式的機器人會在此工作區儲存庫的拉取請求中留言、審查並輪詢。';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider 應用程式';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return '這會刪除工作區的 $provider 憑證。透過工作區應用程式連線的所有人都必須重新登入。';
+  String workspaceOwnAppDescription(String provider) {
+    return '此工作區中的 $provider 登入與請求僅使用此應用程式。';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => '切換應用程式';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn => 'GIF 搜尋使用此工作區的 Klipy 金鑰。';
+
+  @override
+  String get workspaceGifsSourceServerOwn => 'GIF 搜尋使用此伺服器的 Klipy 金鑰。';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF 搜尋透過 Control Center Connect 執行。';
+
+  @override
+  String get workspaceGifsSourceOff => '此工作區已關閉 GIF 搜尋。';
 
   @override
   String openOnForge(String forge) {
@@ -50173,7 +52460,7 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
 
   @override
   String get connectForgeHint =>
-      '在「設定 → 工作區 → 個人資料與身分 → 程式碼託管」中連結 GitHub、GitLab 或 Bitbucket';
+      '在「設定 → 你 → 個人資料」中連結 GitHub、GitLab 或 Bitbucket';
 
   @override
   String get addForgeRepoPrompt =>
@@ -50190,4 +52477,1062 @@ class AppLocalizationsZhTw extends AppLocalizationsZh {
   String composePrForgeNotConnected(String forge) {
     return '連結 $forge 以在此儲存庫中建立拉取請求';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return '你以 $account 身分登入的 $provider 已失效。請重新登入。';
+  }
+
+  @override
+  String get connectionPaused => '已暫停：此工作區的登入服務已變更';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '暫時無法連線至 $provider，正在重試。';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      '你的登入會保留，服務恢復後即可再次使用。工作區管理員可以在「整合」中檢查登入設定。';
+
+  @override
+  String get signInErrorAttemptUnknown => '伺服器已重新啟動。請重新開始登入。';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return '此工作區尚未設定 $provider 登入。';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return '$provider 登入設定有誤：$error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return '此工作區使用自己的應用程式，但沒有 $provider 應用程式。';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return '此版本無法驗證 Control Center Connect，因此 $provider 登入已關閉。';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending => '此工作區的登入服務變更了身分，需要管理員確認。';
+
+  @override
+  String get signInUnavailableConnectUnreachable => '暫時無法連線至此工作區的登入服務。';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid => '此工作區登入服務的位址缺少或無效。';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      '伺服器營運者已固定登入服務，因此此工作區自己的選擇不會生效。';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return '此工作區的登入服務不提供 $provider。';
+  }
+
+  @override
+  String get signInOpenIntegrations => '開啟整合';
+
+  @override
+  String get signInOpenServerSettings => '開啟登入設定';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return '此操作會以你的身分在 $provider 上執行，但你還沒有新增 token。請新增後再試一次。';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return '要中斷 $provider 嗎？';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return '你需要重新連結 $provider 才能處理它的存放庫。';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return '這只會在此工作區中斷 $provider。其他工作區會保留各自的連線。';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return '這會在共用此連線的所有工作區中斷 $provider。';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '已從此工作區中斷 $provider';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '已從所有工作區中斷 $provider';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return '在 $owner 上安裝 GitHub App';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return '在該處安裝 App 之前，自動化無法存取 $repos。';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return '將 $repos 新增至 GitHub App 的存放庫';
+  }
+
+  @override
+  String get repoAccessSelectBody => 'App 已安裝在此帳號上，但還看不到這些存放庫。';
+
+  @override
+  String get repoAccessChooseRepos => '選擇存放庫';
+
+  @override
+  String get repoAccessSuspendedTitle => 'GitHub App 安裝已暫停';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return '在帳號擁有者於 GitHub 上恢復安裝之前，$repos 的自動化已暫停。';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => '自動化已暫停';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return '此工作區自動化的負責人已無法看到 $repos，因此不會再代表其在那裡執行任何內容。';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return '此工作區自動化的負責人尚未登入程式碼代管平台，因此 $repos 的自動化會等待其登入。';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return '無法檢查對 $repos 的存取權限，正在重試。';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return '請聯絡 $admins 修正此問題。';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin => '請聯絡工作區管理員修正此問題。';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '登入 $forge 即可查看另外 $count 個存放庫的 pull request',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你的 $forge 帳號看不到它們',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個存放庫已隱藏，因為你在此工作區中沒有存取權限',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '正在檢查你對另外 $count 個存放庫的存取權限…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle => '已連結，但自動化還無法存取所有內容';
+
+  @override
+  String get githubInstallOnAnotherOrganization => '安裝至其他組織';
+
+  @override
+  String get forgeTokenEmailLabel => 'Atlassian 帳號電子郵件';
+
+  @override
+  String get forgeTokenEmailInvalid => '請輸入你的 Atlassian 帳號電子郵件地址。';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API 權杖';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbucket API token 需要與建立它的 Atlassian 帳號電子郵件一起使用。';
+
+  @override
+  String get automationTokensTitle => '自動化權杖';
+
+  @override
+  String get automationTokensRepoHint =>
+      'GitLab 和 Bitbucket 上的背景工作（例如提取要求更新、AI 審查留言，以及無人要求的合併要求）會使用機器人存取權杖，絕不使用個人的權杖。儲存庫自己的權杖優先於工作區的權杖。';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      '用於此工作區中所有沒有自己自動化權杖的 GitLab 或 Bitbucket 儲存庫。那裡的背景工作會顯示為此權杖的機器人。';
+
+  @override
+  String get automationTokenNone => '沒有權杖。此處的自動化已暫停。';
+
+  @override
+  String get automationTokenFromWorkspace => '使用工作區的權杖';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return '以 $name 身分操作';
+  }
+
+  @override
+  String get automationTokenStored => '已新增存取權杖';
+
+  @override
+  String get automationTokenRejected => '平台拒絕了此權杖。請替換它。';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return '$forge 自動化權杖';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      '貼上專案或群組存取權杖。它需要 read_api 和 read_repository；若要留言、建立合併要求和推送，請再加上 api 和 write_repository。GitLab 會將其工作顯示為該權杖的機器人。';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      '貼上具有儲存庫讀取權限的儲存庫、專案或工作區存取權杖，並為留言和提取要求加上提取要求寫入權限。你自己的 API 權杖應新增在「你 → 個人資料」下，而不是這裡。';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return '權杖已儲存，但無法讀取 $repos。那裡的自動化仍維持暫停。';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => '要移除自動化權杖嗎？';
+
+  @override
+  String get automationTokenRemoveBody => '依賴此權杖的自動化會暫停，直到新增另一個權杖。';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return '所有沒有自己權杖的 $forge 儲存庫';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return '沒有任何自動化權杖可以讀取 $repos，因此那裡的背景工作已暫停。';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      '你開始的工作所產生的提交會帶有你的名字。請選擇還要標示誰為共同作者，以及程式碼代管平台是否將你的提交顯示為已驗證。';
+
+  @override
+  String get settingsCommitAuthorshipSection => '作者身分';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => '你開始的工作';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      '你是作者與提交者，使用程式碼代管平台為你的登入所驗證的電子郵件。這包含你與代理的對話、你開始的管線，以及你在編輯器中所做的提交。';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => '自動化執行';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      '由排程或 webhook 開始的執行會以機器人身分提交，且絕不簽署。';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      '在工作區中登入程式碼代管平台之前，你在該處的執行會以機器人身分提交。';
+
+  @override
+  String get settingsCoauthorCreditTitle => '將 Control Center 加入為共同作者';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      '你的提交會標示 Control Center（@usectrl）為共同作者，而你啟動的自動化執行會標示你。關閉時，兩者都不會加入這一行。';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      '此工作區的設定會覆寫你的個人選擇。你的偏好仍會儲存，但在這裡不生效。';
+
+  @override
+  String get settingsCoauthorCreditLoading => '正在載入署名設定…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => '共同作者標示';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      '提交是否帶有共同作者行：成員自己的提交會標示 Control Center，而啟動自動化執行的成員，其提交也會標示他們。此處的選擇會覆寫每位成員自己的設定。';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit => '使用每位成員的偏好';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways => '一律加入共同作者標示';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever => '一律不加入共同作者標示';
+
+  @override
+  String get settingsCommitSigningSection => '已驗證的提交';
+
+  @override
+  String get settingsCommitSigningStatusOn => '簽署中';
+
+  @override
+  String get settingsCommitSigningStatusOff => '未簽署';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      '此伺服器可使用你自己的金鑰為你的提交簽署，讓 GitHub 與 GitLab 將它們顯示為已驗證。在你建立金鑰之前，不會進行任何簽署。';
+
+  @override
+  String get settingsCommitSigningCreate => '建立簽署金鑰';
+
+  @override
+  String get settingsCommitSigningCreated => '已建立簽署金鑰。請將它加入你的程式碼代管平台帳戶。';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => '公開金鑰';
+
+  @override
+  String get settingsCommitSigningKeyCopied => '已複製公開金鑰';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => '指紋';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => '建立時間';
+
+  @override
+  String get settingsCommitSigningAddTitle => '將它加入你的程式碼代管平台帳戶';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      '只有在你同時於工作區中登入該程式碼代管平台時，提交才會顯示為已驗證，因此由程式碼代管平台為你的電子郵件作保。';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key。將 Key type 設為 Signing Key。';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys。將 Usage type 設為 Signing。';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Bitbucket 上的提交不會簽署。請勿將此金鑰加入你的 Bitbucket 帳戶：Bitbucket 上的 SSH 金鑰同時也是登入憑證。';
+
+  @override
+  String get settingsCommitSigningUnsupported => '不支援';
+
+  @override
+  String get settingsCommitSigningTrustTitle => '你所信任的內容';
+
+  @override
+  String get settingsCommitSigningTrustPrivate => '私密金鑰絕不會離開此伺服器。';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      '只要金鑰仍在你的程式碼代管平台帳戶上，控制此伺服器的人就能以你的身分簽署提交。';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      '在 GitHub 上，已顯示為已驗證的提交，在你移除金鑰後仍會維持已驗證。';
+
+  @override
+  String get settingsCommitSigningDelete => '刪除金鑰';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => '要刪除你的簽署金鑰嗎？';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      '從現在起，你的提交將不會簽署。金鑰會保留在你的程式碼代管平台帳戶上，直到你在那裡將它移除。';
+
+  @override
+  String get settingsCommitSigningDeleted => '已刪除簽署金鑰';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return '無法載入你的簽署金鑰：$error';
+  }
+
+  @override
+  String get accountProfileTitle => '個人資料';
+
+  @override
+  String get accountProfileDescription =>
+      '你在每個工作區中的身分，以及你自己的程式碼託管、工單、行事曆和聊天帳戶。';
+
+  @override
+  String get accountSectionTitle => '帳戶';
+
+  @override
+  String get accountSectionDescription =>
+      '你的使用者名稱與名稱會跟著你進入每個工作區。工作區可以顯示不同的名稱或電子郵件：請在「工作區 → 個人資料與身分」中設定。';
+
+  @override
+  String accountLoadFailed(String error) {
+    return '無法載入你的個人資料：$error';
+  }
+
+  @override
+  String get accountDisplayNameHint => '其他人在你的訊息與審查中看到的名稱。';
+
+  @override
+  String get accountDisplayNameRequired => '請輸入顯示名稱。';
+
+  @override
+  String get accountFieldCannotBeCleared => '此項目可以變更，但無法移除。';
+
+  @override
+  String get accountAvatarLabel => '圖片';
+
+  @override
+  String get accountAvatarHint => '指向方形圖片的連結，以 https:// 開頭。';
+
+  @override
+  String get accountAvatarInvalid => '請使用以 https:// 開頭的連結。';
+
+  @override
+  String get usernameLabel => '使用者名稱';
+
+  @override
+  String get usernameRule => '2 至 32 個小寫字母、數字、句點、連字號或底線。其他人會用它來提及你。';
+
+  @override
+  String get usernameAvailable => '可以使用。';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return '可以使用。將儲存為 $username。';
+  }
+
+  @override
+  String get usernameInvalid => '請使用 2 至 32 個小寫字母、數字、「.」、「_」或「-」，且以字母或數字開頭與結尾。';
+
+  @override
+  String get usernameReserved => '此使用者名稱已保留。';
+
+  @override
+  String get usernameTaken => '此使用者名稱已被使用。';
+
+  @override
+  String get usernameCheckFailed => '目前無法檢查此名稱。你仍可以儲存，由伺服器決定。';
+
+  @override
+  String get linkedAccountsTitle => '已連結的帳戶';
+
+  @override
+  String get linkedAccountsIdentityProvider => '身分提供者';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => '需要登入';
+
+  @override
+  String get linkedAccountStatusPaused => '已暫停';
+
+  @override
+  String get linkedAccountStatusUnreachable => '無法連線';
+
+  @override
+  String get ssoIdentityDescription => '你的帳戶用來登入的身分提供者。由管理這台伺服器的人負責管理。';
+
+  @override
+  String get settingsAccountsDescription =>
+      '你為自己連結的帳戶。Control Center 會透過這些帳戶以你的身分行事，變更它們只會影響你本人。';
+
+  @override
+  String get accountReachServer => '用於此伺服器上的每個工作區。';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return '僅用於 $workspace。';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub 僅用於 $workspace，該工作區有自己的登入應用程式。GitLab 與 Bitbucket 則用於此伺服器上的每個工作區。';
+  }
+
+  @override
+  String get yourAccountLabel => '你的帳戶';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider：$detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return '你的帳戶：$status。開啟「你 → 個人資料」。';
+  }
+
+  @override
+  String get yourForgeAccountNone => '尚未連結程式碼託管帳戶';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return '尚未連結 $provider 帳戶';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return '尚未連結 $provider 聊天帳戶';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      '你在示範中是暫時的訪客，因此沒有可變更的帳戶：沒有使用者名稱、個人資料或已連結的帳戶。';
+
+  @override
+  String get onboardingStepYou => '你';
+
+  @override
+  String get onboardingYouTitle => '選擇你的使用者名稱';
+
+  @override
+  String get onboardingYouSubtitle =>
+      '你的使用者名稱是他人提及你的方式，也是標示你工作的方式。之後你可以在「設定 → 你 → 個人資料」中變更它與你的顯示名稱。';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return '此 $provider 帳戶已連結到此伺服器上的另一位使用者。請使用其他 $provider 帳戶登入。';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return '權杖將於 $date 到期';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return '權杖已於 $date 到期。請貼上新的權杖以繼續使用。';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '無法連線至 $forge 以檢查此權杖。請稍後再試。';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge 不接受此權杖。請確認你已完整複製，且它未被撤銷。';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return '這不是個人權杖。請貼上你自己 $forge 帳戶的個人存取權杖，而非專案、群組、工作區或機器人的權杖。';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return '此權杖缺少 $scope 範圍，而審查與留言需要它。請建立包含該範圍的權杖。';
+  }
+
+  @override
+  String get personTokenExpired => '此權杖已過期。請建立新的權杖並貼到這裡。';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      '你啟動的代理，可在它們工作的任何存放庫中，以你的身分建立已簽署的提交。在此刪除金鑰會立即停止此行為：已在進行中的執行將不再簽署任何內容。';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return '金鑰未被輪替，沒有任何變更：$error 請再試一次。';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => '你尚未加入任何工作區';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      '工作區管理員必須邀請你，或伺服器擁有者可以為你建立工作區。你一被加入，它就會在這裡開啟。';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return '已登入為 $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => '重新檢查';
+
+  @override
+  String get noWorkspaceSignOut => '登出';
+
+  @override
+  String get workspaceCreateOwnerOnly => '只有伺服器擁有者可以建立工作區。請他建立一個，或請工作區管理員邀請你。';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo 不在你的任何工作區中，而你也不在可以加入它的工作區中。請工作區管理員邀請你。';
+  }
+
+  @override
+  String get serverOwnerOnly => '只有伺服器擁有者可以執行此操作';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      '完整編輯器執行於伺服器本機，因此只有伺服器擁有者可以開啟它。你仍可從檔案總管開啟與編輯檔案。';
+
+  @override
+  String get terminalSandboxedBadge => '沙箱';
+
+  @override
+  String get terminalSandboxedHint => '在此工作區資料夾內的沙箱中執行，因此某些主機工具與路徑在此無法使用。';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      '主機 shell 會在伺服器上不經沙箱執行，因此只有伺服器擁有者可以開啟。一般終端機會在沙箱中執行。';
+
+  @override
+  String get terminalOutsideWorkspace => '終端機只能在此工作區自己的資料夾內開啟。';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      '只有伺服器擁有者可以儲存或核准在伺服器主機上執行的環境。工作區管理員可以使用在 rig 中執行的環境。';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      '你在應用程式自己的編輯器中所做的提交不會執行存放庫中的 Git 掛勾，就像 git commit --no-verify 一樣：伺服器在它自己的主機上執行 Git，而代理與 pull request 都可以變更該目錄樹。';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP 用戶端會以 Authorization: Bearer 標頭傳送此權杖。伺服器會在首次啟動時建立它；你可以輪替，但無法移除。';
+
+  @override
+  String get mcpShowToken => '顯示權杖';
+
+  @override
+  String get mcpHideToken => '隱藏權杖';
+
+  @override
+  String get mcpRotateToken => '輪替權杖';
+
+  @override
+  String get mcpRotateTokenTitle => '要輪替 MCP 權杖嗎？';
+
+  @override
+  String get mcpRotateTokenBody =>
+      '伺服器會立即切換到新的權杖。在你把新權杖提供給每個仍在使用目前權杖的 MCP 用戶端之前，它們都會被拒絕。';
+
+  @override
+  String get mcpTokenRotated => '權杖已輪替。請把新的權杖提供給你的 MCP 用戶端。';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP 端點僅供伺服器擁有者使用';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      '它的權杖可開啟此伺服器上的每個工具，因此只有伺服器擁有者可以檢視、輪替，或啟動與停止此端點。';
+
+  @override
+  String get activityRotatedMcpToken => '已輪替 MCP 權杖';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle => 'Connect 無法撤銷舊金鑰';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      '沒有任何變更。若你仍要輪替，此伺服器會取得新的金鑰，但舊的身分在該 Connect 上會持續有效，直到其登入過期為止。';
+
+  @override
+  String get connectRotateKeyAnyway => '仍要輪替';
+
+  @override
+  String get settingsAuditLog => '稽核紀錄';
+
+  @override
+  String get settingsAuditLogDescription =>
+      '記錄誰在何時變更了什麼以及結果如何，涵蓋伺服器和你管理的每個工作區。伺服器操作只記錄參數名稱，不記錄參數值。';
+
+  @override
+  String get auditLogNoAccessTitle => '僅限管理員';
+
+  @override
+  String get auditLogNoAccess => '稽核紀錄涵蓋伺服器和你管理的工作區。你目前沒有管理任何工作區，因此沒有可顯示的內容。';
+
+  @override
+  String get auditLogSourceServer => '伺服器';
+
+  @override
+  String get auditLogSourceWorkspace => '工作區';
+
+  @override
+  String get auditLogAddFilter => '篩選';
+
+  @override
+  String get auditLogFilterOptionsHint => '篩選…';
+
+  @override
+  String get auditLogFilterActor => '操作者';
+
+  @override
+  String get auditLogFilterSource => '工作區';
+
+  @override
+  String get auditLogFilterOutcome => '結果';
+
+  @override
+  String get auditLogFilterTime => '時間';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category：$values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => '成功';
+
+  @override
+  String get auditLogOutcomeDenied => '已拒絕';
+
+  @override
+  String get auditLogOutcomeFailed => '失敗';
+
+  @override
+  String get auditLogTimeAtOrAfter => '此時或之後';
+
+  @override
+  String get auditLogTimeAfter => '之後';
+
+  @override
+  String get auditLogTimeBefore => '之前';
+
+  @override
+  String get auditLogTimeAtOrBefore => '此時或之前';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return '時間 $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 小時前';
+
+  @override
+  String get auditLogTimePresetDay => '24 小時前';
+
+  @override
+  String get auditLogTimePresetWeek => '7 天前';
+
+  @override
+  String get auditLogTimePresetMonth => '30 天前';
+
+  @override
+  String get auditLogTimeExact => '指定時間';
+
+  @override
+  String get auditLogTimeInvalid => '請使用 YYYY-MM-DD 格式，可選擇加上 HH:MM';
+
+  @override
+  String get auditLogTimeAdd => '新增';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo 現在指向另一個存放庫';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return '此路徑現在在 $forge 上指向另一個存放庫。請重新連結以繼續使用它。';
+  }
+
+  @override
+  String get repoRelink => '重新連結';
+
+  @override
+  String repoRelinked(String repo) {
+    return '已重新連結 $repo。';
+  }
+
+  @override
+  String get repoCodeRepoReplaced => '此路徑現在指向另一個存放庫。工作區管理員必須重新連結它，才能使用。';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return '你的 $forge 帳戶無法讀取此存放庫。';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return '無法確認你的 $forge 存取權限。請再試一次。';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed => '你的程式碼代管平台帳戶無法讀取此存放庫。';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed => '無法確認你的程式碼代管平台存取權限。請再試一次。';
+
+  @override
+  String get repoPathHostPath => '只有伺服器擁有者可以連結位於此工作區儲存空間之外的資料夾。';
+
+  @override
+  String get repoPathMissing => '伺服器上該路徑不存在任何東西。';
+
+  @override
+  String get repoPathDataDir => '存放庫不能指向伺服器的資料資料夾。';
+
+  @override
+  String get repoPathWorkspaceRoot => '存放庫不能是工作區本身的資料夾。';
+
+  @override
+  String get repoPathOriginMismatch => '該資料夾的 origin 指向另一個存放庫。';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return '已儲存。對方需要先登入 $forge，才能開啟此存放庫。';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return '已儲存。對方的 $forge 帳戶目前仍無法讀取此存放庫，因此對他們保持隱藏。';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return '已儲存。目前無法確認對方的 $forge 存取權限。';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo 未連結到你的任何工作區。請詢問伺服器擁有者將它加入。';
+  }
+
+  @override
+  String get reposEmptyAskOwner => '伺服器擁有者會從伺服器的資料夾中新增存放庫。';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      '只有你自己輸入了這個地址。在伺服器擁有者確認之前，單一登入不會與它比對。';
+
+  @override
+  String get settingsServerPeople => '使用者';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      '在此伺服器上擁有帳戶的每個人，以及其電子郵件地址是否已確認。';
+
+  @override
+  String get serverPeopleLabel => '帳戶';
+
+  @override
+  String get serverPeopleOwnerOnly => '只有伺服器擁有者可以檢視所有人的帳戶並確認電子郵件地址。';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => '電子郵件未確認';
+
+  @override
+  String get serverPeopleConfirmEmail => '確認電子郵件';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return '確認 $email 屬於 $name 嗎？單一登入會將此地址與其帳戶比對。';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '已確認 $email。';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle => '代理需要此伺服器上的沙箱';
+
+  @override
+  String get runSandboxUnavailable =>
+      '此伺服器沒有沙箱，因此只有其擁有者可以在此執行代理。擁有者可以安裝沙箱，或為所有人關閉沙箱功能。';
+
+  @override
+  String get repoPathIssueHostPath => '此資料夾位於工作區儲存空間之外。請確認此伺服器可以使用它。';
+
+  @override
+  String get repoPathIssueHostPathAskOwner => '此資料夾位於工作區儲存空間之外。只有伺服器擁有者可以確認它。';
+
+  @override
+  String get repoPathIssueMissing => '伺服器上此路徑已不存在任何東西。請移除此存放庫，並從其目前的資料夾重新新增。';
+
+  @override
+  String get repoPathIssueUnusable => '此資料夾無法作為存放庫使用。請移除它，並從其他資料夾新增存放庫。';
+
+  @override
+  String get repoPathConfirm => '確認';
+
+  @override
+  String get repoPathConfirmAll => '全部確認';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '有 $count 個資料夾位於工作區儲存空間之外',
+      one: '有 1 個資料夾位於工作區儲存空間之外',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody => '確認此伺服器可以使用它們。每個存放庫都會以你的存取權限重新檢查。';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      '在此機器自身工具設定中找到的伺服器，只會用於你啟動或負責的執行。其他人的執行永遠看不到它們，也不會透過 Control Center 的 MCP 端點提供。';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return '登入 $provider 以查看此存放庫的程式碼。';
+  }
+
+  @override
+  String get repoCodeSignIn => '登入';
+
+  @override
+  String get ideContentSearchFailed => '無法搜尋檔案內容';
+
+  @override
+  String get ideWorktreeFileUnavailable => '此檔案在此工作樹中無法使用。';
+
+  @override
+  String get ideChangesLoadFailed => '無法載入變更';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return '此路徑現在在 $forge 上指向另一個存放庫。工作區管理員必須重新連結它，才能使用。';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly => '只有伺服器擁有者可以還原備份。你仍可以下載它們。';
+
+  @override
+  String get terminalReadOnlyBadge => '唯讀';
+
+  @override
+  String get terminalReadOnlyHint =>
+      '你可以檢視此終端機。若要在其中輸入、調整大小或停止它，需要此對話中每個存放庫的寫入權限。';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      '你可以檢視此環境。若要啟動、停止或重新啟動它，需要此對話中每個存放庫的寫入權限。';
+
+  @override
+  String get environmentHostApprovalOwner => '在此伺服器上執行。核准後才能啟動。';
+
+  @override
+  String get environmentHostApprovalMember => '在此伺服器上執行。伺服器擁有者必須先核准，才能啟動。';
+
+  @override
+  String get environmentHostApprove => '核准';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      '請以工作區管理員身分核准：只有管理員的副本會顯示其機密值，而核准時會將它們寫回。';
+
+  @override
+  String get environmentHostUnapproved => '伺服器擁有者尚未核准此環境，因此它無法在此伺服器上執行。';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      '你尚未核准此環境。它在此伺服器上執行，因此在你核准其定義後才會啟動。';
+
+  @override
+  String get environmentHostApprovalReview => '審查並核准';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return '登入 $provider 以開啟此空間。';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return '你的 $forge 帳戶無法讀取此空間使用的存放庫。';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed => '你的程式碼代管平台帳戶無法讀取此空間使用的存放庫。';
+
+  @override
+  String get spaceAccessNoGrant => '你沒有此空間所用存放庫之一的讀取權限。工作區管理員可以授予。';
+
+  @override
+  String get spaceAccessFailed => '無法開啟此空間。';
+
+  @override
+  String get contextExplorerRefused => '此工作階段無法使用上下文明細。';
+
+  @override
+  String get repoLinkForgeRemoteRequired => '已連結的存放庫需要擁有者／組織與存放庫名稱兩者。';
+
+  @override
+  String get repoCodeNoReadGrant => '你沒有此儲存庫的讀取權限。工作區管理員可以授予。';
+
+  @override
+  String get repoCodeNoWriteGrant => '你可以讀取此儲存庫，但無法變更。工作區管理員可以授予寫入權限。';
+
+  @override
+  String get repoCodeNoReviewGrant => '你可以讀取此儲存庫，但無法審閱。工作區管理員可以授予審閱權限。';
+
+  @override
+  String get rigWatchOnlyBadge => '僅供檢視';
+
+  @override
+  String get rigWatchOnlyHint =>
+      '你可以檢視此機器。操作、轉送連接埠、貼上內容或將檔案拖放到機器上，需要此空間中所有儲存庫的寫入權限。';
+
+  @override
+  String get rigStartNeedsWrite => '在此啟動機器需要此空間中所有儲存庫的寫入權限。工作區管理員可以授予。';
+
+  @override
+  String get rigViewRefused => '你無法檢視此機器。它屬於你沒有讀取權限的空間。';
+
+  @override
+  String get rigPortsWatchOnly => '變更這些連接埠需要此空間中所有儲存庫的寫入權限。';
+
+  @override
+  String get rigHolderOnly => '此機器是為某個人開啟的，只有此人才能操作。機器使用的是其本人的登入資訊。';
+
+  @override
+  String get rigHolderOnlyHint =>
+      '你可以檢視此機器。它是為某個人開啟的，並使用此人的登入資訊，因此只有此人可以操作、轉送連接埠、貼上內容或將檔案拖放到機器上。';
 }

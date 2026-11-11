@@ -2,7 +2,7 @@
 title: Pipelines a automatizace
 description: Proč pipeline oddělují plánování od práce, co běh skutečně spustí a které vestavěné šablony jsou po vybalení zapnuté.
 slug: cs-CZ/prirucka/koncepty/pipelines
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Pipeline tvoří deterministickou polovinu Control Center. Agent rozhoduje, co
@@ -34,7 +34,7 @@ bylo horší než zastavení:
   brána částečného schválení `orchestration.awaitApproval`. `human.gate` výjimku
   nemá.
 - Krok s `extras: {'idempotent': false}`, který běžel, když se server zastavil,
-  už mohl uplatnit vedlejší účinek (squash merge, úklid worktree). Druhé
+  už mohl uplatnit vedlejší účinek (záloha pracovního prostoru, úklid worktree). Druhé
   spuštění by ho mohlo uplatnit znovu, takže ho engine nechá spadnout a
   opakování nechá na tobě.
 
@@ -127,8 +127,25 @@ kopie copy-on-write. To nikdy nemělo být volba uživatele.
 
 Ještě jedna asymetrie: vestavěná `pr_review` už na GitHub záměrně nic neposílá.
 Zveřejnění revize je samostatný krok, který musíš pustit ty, a pipeline, která
-by psala přímo, by revizi zveřejnila dvakrát. `cross_review`, `ticket_to_pr` a
-`pr_triage` komentář na GitHub pořád posílají rovnou, když běží.
+by psala přímo, by revizi zveřejnila dvakrát. `cross_review`, `ticket_to_pr`,
+`pr_triage`, `pre_merge_gate` a `external_pr_welcome` komentář na GitHub pořád
+posílají, když běží.
+
+Posílají ho ze serveru přes krok **Post PR comment** (`prReview.comment`), nikdy
+ze shell skriptu: shellové kroky pipeline a sandboxy jejích agentů drží token
+GitHubu, který jen čte. Stejné pravidlo určuje zbytek:
+
+- `external_pr_welcome` posílá svůj pozdrav jako `message` tohoto kroku.
+- `ticket_to_pr` nechá kódovacího agenta pushnout `agent/<ticket_id>` (přes bránu
+  běhů) a otevřít koncept PR nástrojem `open_pull_request`, s GitHub přihlášením
+  člověka, který běh spustil, nebo jako bot, když ho nikdo nespustil. Obojí naráží
+  na pravidla pracovního prostoru **Odeslat na remote** a **Otevřít pull request**.
+  Na Control Center Connect nemůže běh, který nikdo nežádal, třeba ten spuštěný
+  událostí `TicketAssigned`, pushnout ani otevřít PR: sdílený bot aplikace jen čte
+  a komentuje.
+- `pre_merge_gate` nikdy nesloučí. Schválení na své bráně zapíše, že PR je
+  připraven ke sloučení správcem; zamítnutí zapíše, že se žádají změny. Sloučí
+  člověk ze stránky PR.
 
 ## Co engine ví
 

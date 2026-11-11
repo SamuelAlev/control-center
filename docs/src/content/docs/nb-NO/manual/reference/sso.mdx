@@ -2,7 +2,7 @@
 title: Referanse for SSO-konfigurasjon
 description: Alle innstillinger, endepunkter, operasjoner og feilkoder for enkel pålogging.
 slug: nb-NO/handbok/referanse/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Alt som kan konfigureres for enkel pålogging, på ett sted. Verdiene ligger i
@@ -34,6 +34,18 @@ innstillingsskjermen kan være uenig i).
 | `groupRoleMap`         | begge       | `{}`            | gruppe → rolle; owner-mappinger avvises ved lagring                                                                                                  |
 | `autoMember`           | begge       | på              | legg brukere automatisk til i alle arbeidsområder ved første innlogging                                                                              |
 | `allowJit`             | begge       | på              | provisjoner ukjente brukere ved innlogging                                                                                                           |
+
+## Kontomatching
+
+`SsoProvisioner` finner en innlogging i denne rekkefølgen, og aldri etter brukernavn:
+
+1. `(users.sso_issuer, users.sso_subject)` lik innloggingens utsteder og subjectet (SAML NameID / OIDC `sub`).
+2. En konto der adressen er lik innloggingens e-post, bare når begge sider bekrefter den: leverandøren (OIDC `email_verified: true`; et manglende claim er ikke en bekreftelse; en signert SAML-påstand er alltid det) og kontoen (`users.email_verified`). Adresser lagres trimmet og med små bokstaver, og sammenlignes slik. En verifisert adresse matcher bare når nøyaktig én konto har den verifisert; to innehavere matcher ingenting (logges uten adressen), og ingen konto kan verifiseres for en variant av store/små bokstaver av en adresse som en annen konto har verifisert.
+3. Ellers en ny konto når `allowJit` er på; en avvisning når den er av.
+
+`users.email_verified` settes av en SSO-innlogging eller en SCIM-push som bærer adressen, eller av serverens eier med `users.vouchEmail` (**Innstillinger → Server → Personer → Bekreft e-post**, revisjonslogget som `user.email_vouched`). Eierens egen profilredigering bekrefter eierens egen adresse. Enhver annen profilredigering, og enhver adresse som skrives inn på en invitasjon, lar den stå ubekreftet, og redigering av en adresse fjerner flagget. En bekreftet innlogging som oppretter en konto, tar adressen fra kontoer som bare skrev den inn (revisjonslogget som `user.email_unvouched_cleared`), aldri fra en som har den verifisert; i så fall får den nye kontoen ingen adresse.
+
+En konto som ble funnet, og som allerede er festet til et annet subject eller en annen utsteder, avviser innloggingen med `This account is already linked to a different SSO identity`. En deaktivert konto avviser med `This account has been deactivated`.
 
 ## Prosesskonfigurasjon
 
@@ -134,6 +146,7 @@ Feil i `cc_saml_verify_response` har en stabil kode:
   ARBEIDSOMRÅDER MED VILJE.
 - `users.sso_subject` + `users.sso_issuer` — festingen av
   leverandørsubjectet, unik per `(issuer, subject)` via en delvis indeks.
+- `users.email_verified`: om kontoens adresse kan matche en SSO-innlogging eller en SCIM-push (se [Kontomatching](#kontomatching)).
 - `users.deactivated_at` — SCIM-tidsstempelet for deaktivering.
 - SCIM-bearer-tokenet og OIDC-klienthemmeligheten ligger i
   hemmelighetsfilen med 0600-rettigheter, aldri i databasen.

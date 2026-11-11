@@ -19,9 +19,24 @@ a single-file editor, an embedded code-server and an in-app browser open on dema
 deployment-preview tabs are injected automatically when a preview URL is detected
 on the PR. Your tab layout is remembered per PR.
 
+The embedded code-server is offered only to the server owner, because it runs
+on the server as the server's own user. A session belongs to the device and
+person that opened it, opens with VS Code's workspace trust on (VS Code asks
+before trusting a folder) and runs no task automatically. Everyone else keeps
+the single-file editor and the file views.
+
 The Overview tab carries the PR's metadata (author, branch, labels, assignees,
 reactions, commits, check status) and the action row: refresh, **Review**,
-**Merge**, open in IDE and a ⋯ overflow menu.
+**Merge**, a button named after your editor (such as **Open in VS Code**) and
+a ⋯ overflow menu.
+
+That editor button starts a native editor on the **server's** own screen, as the
+server's user and outside any sandbox, so it is offered to the
+[server owner](/manual/concepts/authorization/#the-server-owner) only. On a
+desktop that hosts its own server, that is the person at the desk. The same
+goes for opening a conversation's worktree in an editor. Everyone else uses the
+built-in editor views. Even for the owner, a pull request opens only from a
+repository linked to the workspace.
 
 ### Open a PR from a space's stack
 
@@ -37,13 +52,44 @@ Focus a stack header and press Enter or Space to collapse or expand it.
 Unrelated PRs stay separate, and incomplete or ambiguous branch links are not
 presented as an ordered stack.
 
-In **Source control**, **Stacked pull requests (N)** opens a picker of the stack's
+In the PR's header, the stack badge (a layers icon with the number of pull
+requests in the stack) opens **Stacked pull requests**, a picker of the stack's
 published parts, bottom first. Each entry shows the PR number, part label and
 position; the checked-out part is marked. Select an entry to open its PR workbench.
 **Publish stack** appears only when PR discovery has finished and at least one
 part has no PR. This also applies to the branch menu. PRs created outside Control
 Center count as published, too. Partially published stacks offer both actions;
 single-branch work keeps the individual create/view PR actions.
+
+### Commit and push from Source control
+
+A commit you make in the **Source control** panel is yours: you are its author
+and committer, under the address your forge verified for your sign-in. When you
+created a signing key under **Verified commits** in **Settings** → **You** →
+**Commits**, the server signs it with your own
+signing key before it is pushed. A push carries your own sign-in, narrowed to
+that one repository.
+
+The server runs Git on its own machine, in a tree an agent or a pull request can
+change, so it runs none of the programs a repository can choose:
+
+- Commits skip the repository's Git hooks, as `git commit --no-verify` does.
+  A pre-commit hook, a commit-msg hook or a pre-push hook does not run
+- Credential helpers, editors, external diff tools and signing programs that
+  the repository configures are ignored
+
+Run your checks yourself before committing, or in CI.
+
+Changing the code needs the [write grant](/manual/concepts/authorization/#changing-code-needs-the-write-grant)
+on the repository: saving or reverting files in the editor, **Pull latest PR
+commits**, committing and pushing, publishing a branch, and the stack actions
+that cut, check out or publish a part. With only read or review access you see
+the files and diffs, and these actions answer "You can read this repository but not change it. A workspace admin can grant write access."
+
+**Pull latest PR commits** brings the review worktree up to the pull request's
+newest commits. It fetches with your own GitHub sign-in, and asks you to sign
+in when you have none. Commit or discard your changes first: a worktree with
+uncommitted changes is not synced.
 
 ## Read the diff
 
@@ -123,7 +169,7 @@ the rules.
 Merging is irreversible: it pushes commits to the forge, so it gets a confirmation
 step instead of an undo entry. Afterwards the PR's cache is invalidated, its status
 flips to **Merged** and a `PullRequestStatusChanged` event fires with status
-`merged`. That event releases the ephemeral "open in editor" worktree and starts
+`merged`. That event releases the ephemeral worktree the editor button opened and starts
 two seeded pipelines: **Stale repository cleanup**, which removes the PR's stale
 worktrees and conversation folders and **Release notes**, which drafts a changelog
 entry.
@@ -147,6 +193,15 @@ for the deterministic cohort and axis model.
 
 Control Center also imports PRs opened by humans outside the app. The review flow
 above is identical. External PRs are detected by the PR polling service.
+
+## Troubleshooting
+
+### My pre-commit hook didn't run
+
+Commits made in the app's **Source control** panel skip the repository's Git
+hooks, as `git commit --no-verify` does. The server runs Git on its own
+machine, in a tree that agents and pull requests can change, so it never runs a
+program the repository chooses. Run the hook's checks yourself, or rely on CI.
 
 ## Related guides
 

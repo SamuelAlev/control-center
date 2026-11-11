@@ -77,16 +77,11 @@ String triggerEventHelp(AppLocalizations l10n, String eventType) {
   };
 }
 
-/// Display label for what started [run].
-///
-/// A null `triggerEventType` means a row written before triggers were recorded;
-/// it reads as manual, which is what it was.
-String runTriggerLabel(AppLocalizations l10n, PipelineRun run) {
+/// Display label for what started [run], or null when no trigger was
+/// recorded.
+String? runTriggerLabel(AppLocalizations l10n, PipelineRun run) {
   final eventType = run.triggerEventType;
-  if (eventType == null) {
-    return l10n.pipelineRunTriggerManual;
-  }
-  return triggerEventLabel(l10n, eventType);
+  return eventType == null ? null : triggerEventLabel(l10n, eventType);
 }
 
 /// Why [run] fired, drawn from its trigger payload — the part the label alone

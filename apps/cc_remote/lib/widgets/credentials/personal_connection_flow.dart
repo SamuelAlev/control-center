@@ -1,9 +1,11 @@
 part of 'personal_connection_card.dart';
 
 /// One browser sign-in attempt: `oauth.begin`, then `oauth.status` until it
-/// settles. In Connect mode the browser shows a confirmation code the person
-/// types here (`oauth.complete`); in own mode the provider redirects to the
-/// server, which must be reachable over public HTTPS from the phone.
+/// settles. The browser's last page (Connect's, or this server's own-app
+/// callback) shows a confirmation code the person types here
+/// (`oauth.complete`); nothing is stored before that. In own mode the
+/// provider redirects to the server, which must be reachable over public
+/// HTTPS from the phone.
 mixin _PersonalConnectionFlow
     on ConsumerState<PersonalConnectionCard>, _PersonalCredentialActions {
   Timer? _timer;
@@ -50,6 +52,7 @@ mixin _PersonalConnectionFlow
     _timer?.cancel();
     _token.clear();
     _token.dispose();
+    _email.dispose();
     _code.dispose();
     super.dispose();
   }
@@ -79,17 +82,18 @@ mixin _PersonalConnectionFlow
           widget.workspaceId != workspaceId) {
         return;
       }
-      final uri = Uri.tryParse(attempt.url);
-      if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
+      final uri = attempt.browserUrl;
+      if (uri == null) {
         throw StateError('Invalid sign-in URL');
       }
       _code.clear();
       setState(() => _attempt = attempt);
+      _timer?.cancel();
       _timer = Timer.periodic(
         const Duration(seconds: 2),
         (_) => unawaited(_poll()),
       );
-      openExternal(attempt.url);
+      openExternal(uri.toString());
     } on Object {
       if (mounted) {
         setState(
@@ -102,13 +106,11 @@ mixin _PersonalConnectionFlow
     }
   }
 
-  /// Hands the code Connect's page showed back to the server.
+  /// Hands the code the sign-in's last page showed (this server's own-app
+  /// callback, or Connect's) back to the server.
   Future<void> _confirmCode() async {
     final attempt = _attempt;
-    if (attempt == null ||
-        attempt.mode != SignInLaneMode.connect ||
-        _busy ||
-        !_authorized) {
+    if (attempt == null || _busy || !_authorized) {
       return;
     }
     final l = AppLocalizations.of(context);
@@ -132,14 +134,16 @@ mixin _PersonalConnectionFlow
         final refused = result.status.isTerminal ? null : result.codeError;
         if (refused != null) {
           // A wrong code; the attempt stays open for another.
-          setState(() => _error = _failureMessage(l, refused));
+          setState(() => _error = _failureMessage(l, refused, ''));
         } else {
           _settle(result);
         }
       }
     } on Object catch (e) {
       if (mounted) {
-        setState(() => _error = _failureMessage(l, signInFailureOfRpcError(e)));
+        setState(
+          () => _error = _failureMessage(l, signInFailureOfRpcError(e), ''),
+        );
       }
     } finally {
       if (mounted) setState(() => _busy = false);
@@ -160,14 +164,27 @@ mixin _PersonalConnectionFlow
     _polling = true;
     try {
       final client = ref.read(rpcClientProvider).requireValue;
-      final status = await RemoteProviderSignIn(
-        client,
-      ).status(attempt.loginId, workspaceId: widget.workspaceId);
+      final status = await RemoteProviderSignIn(client).status(
+        attempt.loginId,
+        workspaceId: widget.workspaceId,
+        lane: attempt.lane,
+      );
       if (mounted && _authorized && _attempt?.loginId == attempt.loginId) {
         _settle(status);
       }
-    } on Object {
-      // A lost phone connection is not a failed sign-in; wait for expiry.
+    } on Object catch (e) {
+      // A server that no longer knows the attempt (cancelled on Connect's
+      // page, used, replaced) has answered: end it rather than spin. A lost
+      // phone connection is not a failed sign-in; wait for expiry.
+      final failure = signInFailureOfRpcError(e);
+      if (mounted &&
+          _attempt?.loginId == attempt.loginId &&
+          (failure == SignInFailure.staleRequest ||
+              failure == SignInFailure.attemptUnknown)) {
+        _stop(
+          error: _failureMessage(AppLocalizations.of(context), failure, ''),
+        );
+      }
     } finally {
       _polling = false;
     }
@@ -182,29 +199,51 @@ mixin _PersonalConnectionFlow
         _refresh();
       case SignInAttemptStatus.failed:
         _stop(
-          error: _failureMessage(AppLocalizations.of(context), attempt.error),
+          error: _failureMessage(
+            AppLocalizations.of(context),
+            attempt.error,
+            attempt.message,
+          ),
         );
     }
   }
 
   /// What a sign-in failure means, in words a person can act on.
-  String _failureMessage(AppLocalizations l, SignInFailure? failure) =>
+  ///
+  /// A provider's own reason for refusing an own app's exchange
+  /// ([serverMessage]) is added when the server passed one on.
+  String _failureMessage(
+    AppLocalizations l,
+    SignInFailure? failure,
+    String serverMessage,
+  ) {
+    final message = _failureCopy(l, failure);
+    // An account held by another person is said in full by its own sentence.
+    final detail = failure == SignInFailure.accountAlreadyBound
+        ? ''
+        : serverMessage.trim();
+    return detail.isEmpty ? message : '$message\n$detail';
+  }
+
+  String _failureCopy(AppLocalizations l, SignInFailure? failure) =>
       switch (failure) {
+        SignInFailure.attemptUnknown => l.credentialsSignInServerRestarted,
         SignInFailure.expired ||
-        SignInFailure.staleRequest ||
         SignInFailure.invalidRequest => l.credentialsLoginTimedOut,
+        SignInFailure.staleRequest => l.credentialsSignInNoLongerOpen,
         SignInFailure.codeMismatch => l.credentialsSignInInvalidCode,
         SignInFailure.invalidCode => l.credentialsSignInTooManyCodes,
-        SignInFailure.providerUnavailable ||
-        SignInFailure.rateLimited => l.credentialsSignInRetryLater,
-        SignInFailure.accessDenied ||
+        SignInFailure.providerUnavailable => l.credentialsSignInRetryLater,
+        SignInFailure.rateLimited => l.credentialsSignInRateLimited,
+        SignInFailure.accessDenied => l.credentialsSignInCancelled,
+        SignInFailure.accountAlreadyBound =>
+          l.credentialsSignInAccountAlreadyBound,
         SignInFailure.scopeMismatch ||
         SignInFailure.exchangeFailed ||
         SignInFailure.needsSignIn => l.credentialsSignInRefused,
         SignInFailure.storeFailed => l.credentialsSignInNotSaved,
         SignInFailure.misconfigured ||
         SignInFailure.notInstalled ||
-        SignInFailure.installationBoundElsewhere ||
         SignInFailure.teamBoundElsewhere ||
         SignInFailure.notAdmin ||
         SignInFailure.suspended ||

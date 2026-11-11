@@ -2,10 +2,10 @@
 title: Adaugă repo-uri într-un spațiu de lucru
 description: Înregistrează checkout-uri Git într-un spațiu de lucru pentru ca agenții să poată lucra pe ele.
 slug: ro-RO/manual/ghiduri-practice/adauga-repo-uri
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Acest ghid arată cum să înregistrezi un checkout Git într-un spațiu de lucru, cum să îl reindexezi și cum să îl elimini din nou.
+Acest ghid arată cum să înregistrezi un checkout Git într-un spațiu de lucru, cum să îl reindexezi și cum să îl elimini din nou. Adăugarea unui repo din folderele serverului necesită proprietarul serverului; eliminarea unuia necesită un administrator al spațiului de lucru.
 
 Repo-urile sunt **limitate la spațiul de lucru**. Nu există un registru global și nici un pas de legare: adăugarea unui repo și punerea lui într-un spațiu de lucru sunt același act. Același checkout înregistrat în două spații de lucru devine două rânduri independente, cu două id-uri diferite — între spații de lucru, identitatea unui repo este calea lui din sistemul de fișiere, niciodată id-ul lui.
 
@@ -21,9 +21,29 @@ Orice altceva este refuzat în momentul înregistrării, cu un mesaj explicit: �
 
 Forge-ul este citit din remote și stocat pe repo — nu îl alegi niciodată. Un spațiu de lucru poate conține repo-uri de la toate cele trei simultan, iar comunicarea cu fiecare se face prin propria ei API, cu propria ei credențială. Namespace-urile imbricate ale GitLab sunt păstrate, astfel încât `gitlab.com/group/subgroup/project` se înregistrează cu proprietarul `group/subgroup` și numele `project`.
 
-Folderul trebuie să se afle și pe mașina care găzduiește `cc_server`, într-unul dintre directoarele `--repo-roots` ale acelui server. Această listă de permisiuni are ca valoare implicită directorul home al utilizatorului serverului, iar navigarea deasupra unei rădăcini este refuzată.
+Folderul trebuie să se afle și pe mașina care găzduiește `cc_server`, într-unul dintre directoarele `--repo-roots` ale acelui server. Această listă de permisiuni are ca valoare implicită directorul home al utilizatorului serverului, iar navigarea deasupra unei rădăcini este refuzată. Navigarea prin folderele serverului este oferită doar [proprietarului serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului), pentru că listează fișierele proprii ale mașinii. Ceilalți văd „Proprietarul serverului adaugă depozite din folderele serverului.” în locul butonului **Adaugă depozit**, iar o legătură către un depozit pe care niciunul dintre spațiile lor de lucru nu îl are spune că depozitul nu este legat în niciunul dintre spațiile lor de lucru și să îi ceară proprietarului serverului să îl adauge.
+
+Unde poate fi checkout-ul depinde de cine îl leagă:
+
+- **În spațiul de stocare propriu al spațiului de lucru** de pe server: orice administrator al spațiului de lucru.
+- **Oriunde altundeva pe discul serverului**: doar [proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului), pentru că doar el poate indica serverul spre fișierele proprii ale mașinii. Ceilalți văd „Doar proprietarul serverului poate lega un folder din afara spațiului de stocare al acestui spațiu de lucru.”
+- **Folderul de date al serverului**, sau orice se află în el: niciodată.
+
+`origin` al checkout-ului trebuie să fie chiar repo-ul pe care îl legi. Un folder a cărui `origin` numește alt repo este refuzat cu „Originea acestui folder indică un alt depozit.”
+
+### Foldere pe care serverul nu le folosește încă
+
+Un repo al cărui folder se află în afara spațiului de stocare al spațiului de lucru și nu a fost legat de proprietarul serverului, cum este unul dintr-un spațiu de lucru importat, afișează „Acest folder este în afara spațiului de stocare al spațiului de lucru. Confirmă că acest server îl poate folosi.” sub rândul lui, până când proprietarul serverului îl confirmă. Ceilalți văd în schimb „Acest folder este în afara spațiului de stocare al spațiului de lucru. Doar proprietarul serverului îl poate confirma.”
+
+Proprietarul o confirmă o singură dată: **Confirmă** pe rând sau **Confirmă toate** în notificarea de deasupra listei, când mai multe repo-uri așteaptă. Fiecare este verificat din nou, ca proprietar, prin aceleași verificări ca la legare. Până atunci rămâne în listă, dar nu este deschis, provisionat sau indexat: niciun editor, terminal, mediu sau checkout de spațiu nu îl folosește, iar graful de cod îl sare. Adăugarea din nou a aceluiași folder, ca proprietar al serverului, face același lucru ca o confirmare și păstrează id-ul repo-ului.
+
+Un checkout pe care un link simbolic l-a mutat în alt loc este tratat la fel: rămâne listat și nefolosit până este legat din nou de cineva care are voie să lege folderul spre care indică acum.
+
+Trebuie, de asemenea, să fii autentificat la forge-ul repo-ului, iar contul tău propriu trebuie să poată vedea repo-ul.
 
 ## Înregistrează un checkout
+
+Trebuie să fii proprietarul serverului pentru acești pași.
 
 1. Deschide **Setări → Spațiu de lucru → Depozite** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Apasă **Adaugă depozit**.
@@ -56,7 +76,23 @@ Trage de mânerul de pe un rând. Ordinea pe care o stabilești este ordinea în
 
 ## Corectează legătura GitHub
 
-Pictograma de legătură de pe un rând deschide un editor pentru proprietarul GitHub și numele depozitului ale repo-ului — util când remote-ul a fost redenumit sau transferat.
+Pictograma de legătură de pe un rând deschide un editor pentru proprietarul GitHub și numele depozitului ale repo-ului.
+
+Rar ai nevoie de el. O legătură este legată de id-ul permanent al repo-ului pe forge, așa că o redenumire sau un transfer este urmărit automat.
+
+- Redenumirea unui repo în Control Center schimbă doar numele afișat.
+- Schimbarea repo-ului de pe forge spre care indică o legătură necesită un administrator al spațiului de lucru și este verificată pe forge cu propria autentificare a administratorului, la fel ca la legare.
+- Un repo legat nu poate fi transformat într-unul doar local.
+
+Dacă ulterior calea numește un repo **diferit** (originalul a fost șters și recreat, sau mutat și înlocuit cu altul), Control Center nu îi mai trimite nimic: niciun token, push, comentariu sau cerere. Asta acoperă și acțiunile tale personale: o revizuire, o îmbinare sau un comentariu pe care îl faci pe un astfel de repo sunt refuzate, pe GitHub, GitLab și Bitbucket deopotrivă. Rândul și pull request-urile repo-ului afișează „_repo_ indică acum către un alt depozit” până când un administrator al spațiului de lucru apasă **Reconectează**.
+
+## Cine poate deschide codul
+
+Un grant de repo nu deschide singur fișierele unui repo. Ca să deschidă fișiere, diff-uri, căutare sau un terminal pentru el, un membru are nevoie de grantul Control Center, iar autentificarea lui proprie la forge trebuie să poată citi repo-ul. Administratorii spațiului de lucru nu sunt scutiți de asta; proprietarul serverului este. Vezi [Codul urmează forge-ul](/ro-RO/manual/concepte/autorizare/#codul-urmează-forge-ul).
+
+Când acorzi un repo cuiva al cărui cont de forge nu îl poate citi, grantul este salvat și vezi un avertisment, de exemplu „Salvat. Contul lor GitHub nu poate citi încă acest depozit, deci rămâne ascuns pentru ei.”
+
+Aceeași regulă decide cine poate deschide un spațiu. Un spațiu se deschide doar pentru membrii care pot deschide codul fiecăruia dintre repo-urile pe care le folosește și este ascuns tuturor celorlalți, împreună cu rezultatele căutării, jurnalele rulărilor, todo-urile, activitatea și notificările lui. Un spațiu fără repo-uri este deschis tuturor membrilor. Vezi [Spațiile urmează repo-urile lor](/ro-RO/manual/concepte/autorizare/#spațiile-urmează-repository-urile-lor).
 
 ## Elimină un repo
 
@@ -66,7 +102,31 @@ Pictograma de legătură de pe un rând deschide un editor pentru proprietarul G
 
 Dialogul spune ce face: „_name_ va fi eliminat din acest spațiu de lucru. Fișierele locale de pe disc nu sunt atinse.”
 
+Eliminarea unui repo necesită un administrator al spațiului de lucru. Ea uită și credențialele de forge stocate pentru acel repo, cum ar fi un token de automatizare GitLab sau Bitbucket.
+
 Eliminarea șterge rândul repo-ului din acest spațiu de lucru și propagă ștergerea către rândurile lui din graful de cod — simboluri, muchii, fișiere și puncte de verificare ale indexării —, plus fiecare permisiune de repo acordată pe membru asupra lui, legăturile lui spațiu-repo și înregistrările lui de checkout-uri izolate. Același checkout înregistrat într-un alt spațiu de lucru este un rând independent și nu este afectat. Worktree-urile de pe disc spre care indicau acele înregistrări nu sunt demolate de ștergere.
+
+## Depanare
+
+### Am un grant, dar repo-ul spune că nu îl poate citi contul meu
+
+Contul tău de forge nu poate citi repo-ul, așa că Control Center îți ține codul departe, chiar dacă spațiul de lucru ți l-a acordat. Autentifică-te în forge din **Setări → Tu → Profil → Găzduire de cod** dacă nu ai făcut-o, sau cere proprietarului repo-ului de pe forge acces. Repo-ul se deschide imediat ce contul tău de forge îl poate citi.
+
+### „Acest folder este în afara spațiului de stocare al spațiului de lucru”
+
+Folderul repo-ului se află în afara spațiului de stocare al spațiului de lucru, iar proprietarul serverului nu l-a legat, sau un link simbolic îl indică acum spre altă parte. Rămâne listat, dar nefolosit, până când proprietarul serverului îl confirmă sau adaugă din nou folderul. Dacă nu ești proprietarul, cere-i să o facă. Dacă ești, apasă **Confirmă** pe rând sau **Confirmă toate** deasupra listei; vezi [Foldere pe care serverul nu le folosește încă](#foldere-pe-care-serverul-nu-le-folosește-încă).
+
+### „Nu mai există nimic la această cale de pe server”
+
+Folderul a fost mutat sau șters de pe mașina serverului. Pune-l la loc sau cere unui administrator al spațiului de lucru să elimine repo-ul cu **Elimină** din notificare și să-l adauge din nou din folderul lui actual.
+
+### „Acest folder nu poate fi folosit ca depozit”
+
+Folderul stocat este folderul de date al serverului, ceva din interiorul lui sau chiar folderul de spațiu de stocare al spațiului de lucru. Niciunul dintre acestea nu poate fi un repo. Un administrator al spațiului de lucru îl elimină cu **Elimină** din notificare, apoi adaugă repo-ul din folderul real al checkout-ului.
+
+### „Nu s-a putut confirma accesul tău la forge”
+
+Control Center nu a putut ajunge la forge ca să verifice că și contul tău poate citi repo-ul, așa că a refuzat în loc să ghicească. Încearcă din nou peste puțin.
 
 ## Ghiduri conexe
 

@@ -98,7 +98,6 @@
 
   "inboxLoadFailed": "לא ניתן לטעון את הדואר הנכנס",
   "allCaughtUp": "התעדכנתם בהכול",
-  "inboxNoForgeAccount": "לא מחובר חשבון forge בשרת, ולכן עדיין לא ניתן לשייך אליכם בקשות משיכה.",
   "inboxNothingWaiting": "שום דבר לא חסום ואף בקשת משיכה לא ממתינה לכם.",
   "blocked": "חסומים",
   "sectionNeedsYourReview": "ממתינים לסקירה שלכם",
@@ -187,22 +186,6 @@
       "names": { "type": "String" }
     }
   },
-  "attachmentsTooLargeRelay": "{count, plural, one{\u2068{names}\u2069 גדול מדי לשליחה דרך הממסר מכאן.} two{\u2068{names}\u2069 גדולים מדי לשליחה דרך הממסר מכאן.} many{\u2068{names}\u2069 גדולים מדי לשליחה דרך הממסר מכאן.} other{\u2068{names}\u2069 גדולים מדי לשליחה דרך הממסר מכאן.}}",
-  "@attachmentsTooLargeRelay": {
-    "description": "Composer error: the named files exceed the (lower) relay upload ceiling.",
-    "placeholders": {
-      "count": { "type": "int" },
-      "names": { "type": "String" }
-    }
-  },
-  "attachmentUploadFailed": "לא ניתן להעלות את הקובץ המצורף. נסו שוב.",
-  "attachmentsLeftOut": "{count, plural, one{קובץ מצורף אחד לא הועלה ולא נכלל.} two{שני קבצים מצורפים לא הועלו ולא נכללו.} many{{count} קבצים מצורפים לא הועלו ולא נכללו.} other{{count} קבצים מצורפים לא הועלו ולא נכללו.}}",
-  "@attachmentsLeftOut": {
-    "description": "Composer notice: some attachments failed to upload and were omitted from the sent message.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
   "teammate": "חבר צוות",
   "systemSender": "מערכת",
   "agent": "סוכן",
@@ -261,24 +244,6 @@
   "prsEmptyDescription": "בקשות משיכה מהמאגרים של סביבת העבודה הזו יופיעו כאן.",
   "refreshPullRequests": "רענון בקשות משיכה",
   "noForgeConnected": "לא מחובר forge בשרת, ולכן לא ניתן להביא בקשות משיכה. חברו אחד מאפליקציית שולחן העבודה.",
-  "reposUnreadable": "{count, plural, one{לא ניתן לקרוא מאגר אחד.} two{לא ניתן לקרוא שני מאגרים.} many{לא ניתן לקרוא {count} מאגרים.} other{לא ניתן לקרוא {count} מאגרים.}}",
-  "@reposUnreadable": {
-    "description": "Notice when repos were unreadable and their names are unknown.",
-    "placeholders": {
-      "count": { "type": "int" }
-    }
-  },
-  "reposNotReadable": "לא ניתנים לקריאה: \u2068{names}\u2069",
-  "installationSuspendedTitle": "התקנת GitHub App הושעתה",
-  "installationSuspendedBody": "מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub.",
-  "installationSuspendedNotice": "התקנת GitHub App הושעתה. מוצגים הנתונים האחרונים הידועים עבור ⁨{names}⁩. חדש את ההתקנה ב-GitHub.",
-  "@reposNotReadable": {
-    "description": "Notice naming the repos the poller could not read.",
-    "placeholders": {
-      "names": { "type": "String" }
-    }
-  },
-
   "draft": "טיוטה",
   "merged": "מוזג",
   "closed": "נסגר",
@@ -677,7 +642,7 @@
   "permissionGitCommit": "ביצוע commit לשינויים",
   "permissionGitPush": "דחיפת commits",
   "permissionPrCreate": "יצירת בקשות משיכה",
-  "permissionPrPublish": "פרסום בקשות משיכה",
+  "permissionPrPublish": "עדכון בקשות משיכה או מיזוגן",
   "permissionVendorSyncWrite": "כתיבה בסנכרון עם ספק",
   "permissionNetworkEgress": "גישה לרשת",
   "permissionSecretAccess": "גישה לסודות",
@@ -689,12 +654,11 @@
   "permissionEffectiveDescription": "ההחלטה החלה בטווח הזה ללא ארגומנטים של פעולה. ההרשאות המותנות שלהלן חלות רק על בקשות תואמות; השרת מקבל את ההחלטה הסופית.",
   "permissionSpaceAgentNote": "לא נבחר סוכן. כללים ייחודיים לסוכן יוצגו לאחר בחירת סוכן למעלה.",
   "permissionScopedGrants": "כללים בטווח הזה",
-  "permissionRemembered": "אישור שמור",
+  "permissionRemembered": "אישור מתמשך",
   "permissionSetAtThisScope": "{source} · הוגדר כאן",
   "permissionInheritedFrom": "{source} · התקבל בירושה",
   "permissionExpiresAt": "תוקף עד {date}",
   "permissionSetHere": "הגדרת כלל כאן",
-  "permissionRevokeBeforeEdit": "יש לבטל את הכלל בטווח הזה או את האישור השמור לפני הגדרת כלל כללי לפעולה הזאת.",
   "permissionConfirmRevoke": "אישור ביטול",
   "permissionRevokeRule": "ביטול הכלל",
   "permissionCommandPrefix": "קידומת פקודה: {prefix}",
@@ -808,9 +772,6 @@
   "activityAgentBlocked": "פעולת הסוכן נחסמה",
   "activityMessage": "הודעה חדשה",
   "activityPullRequest": "עדכון בבקשת משיכה",
-  "activityTicket": "עדכון בכרטיס",
-  "activityMeeting": "עדכון בפגישה",
-  "activityCalendar": "חיבור ללוח השנה",
   "activityRig": "עדכון במתחם",
   "activityPrReady": "בקשת המשיכה מוכנה למיזוג",
   "activityPrBlocked": "מיזוג בקשת המשיכה נחסם",
@@ -962,7 +923,7 @@
   "credentialsApiKeyHint": "יש להדביק מפתח API של הספק",
   "credentialsBrowserLogin": "התחברות דרך הדפדפן",
   "credentialsWaitingForLogin": "ממתינים לאישור בדפדפן שלך…",
-  "credentialsConnectCodePrompt": "הזינו את הקוד שמוצג בדפדפן",
+  "credentialsConnectCodePrompt": "קוד אישור",
   "credentialsConnectCodeMalformed": "זה לא נראה כמו קוד כניסה. קודים כוללים 8 אותיות וספרות.",
   "credentialsSignInInvalidCode": "הקוד הזה לא תואם לכניסה הזו. בדקו אותו ונסו שוב.",
   "credentialsSignInTooManyCodes": "יותר מדי קודים שגויים. התחילו את ההתחברות מחדש.",
@@ -979,11 +940,51 @@
   "credentialsCompleteLogin": "השלמת ההתחברות",
   "credentialsPersonalToken": "אסימון גישה אישי",
   "credentialsPersonalTokenHint": "יש להדביק אסימון גישה אישי",
-  "credentialsHostManaged": "החיבור הזה מגיע מאפליקציית השרת או מהסביבה שלו. רק הבעלים של השרת יכולים לשנות אותו שם; עדיין אפשר להוסיף אסימון גישה משלך.",
   "credentialsStopWatching": "הפסקת המעקב",
   "transcriptClaudeSignInExpiredTitle": "תוקף הכניסה ל-Claude Code פג",
   "transcriptClaudeSignInExpiredBody": "הריצה נעצרה כי החשבון שלה כבר לא עובר אימות. היכנסו שוב ואז נסו שוב את התור.",
   "transcriptSignInExpiredTitle": "תוקף הכניסה לספק פג",
   "transcriptSignInExpiredBody": "הריצה נעצרה כי פרטי ההתחברות של הספק כבר לא עובדים. חברו אותו מחדש בהגדרות ← ספקים ואז נסו שוב את התור.",
-  "permissionHostExecution": "הרצת פקודות במארח"
+  "permissionHostExecution": "הרצת פקודות במארח",
+  "credentialsSignInLapsed": "תוקף הכניסה שלכם ל-{provider} פג. היכנסו שוב.",
+  "credentialsSignInPaused": "מושהה: שירות הכניסה של סביבת העבודה הזו השתנה. הכניסה תעבוד שוב כשהשירות יחזור.",
+  "credentialsProviderUnreachable": "אין גישה ל-{provider} כרגע. מנסים שוב.",
+  "credentialsScopeWorkspace": "רק סביבת העבודה הזו",
+  "credentialsScopeAllWorkspaces": "כל סביבות העבודה",
+  "credentialsRemoveConfirmWorkspace": "להסיר את פרטי ההתחברות השמורים מסביבת העבודה הזו? סביבות עבודה אחרות שומרות על שלהן.",
+  "credentialsRemoveConfirmAllWorkspaces": "להסיר את פרטי ההתחברות השמורים מכל סביבות העבודה שמשתפות אותם?",
+  "credentialsSignInServerRestarted": "השרת הופעל מחדש. התחילו את הכניסה מחדש.",
+  "repoAccessInstallApp": "התקינו את GitHub App ב-{owner} כדי שהאוטומציה תגיע אל {names}. הקישו כדי לפתוח את GitHub.",
+  "repoAccessAskAdminInstall": "GitHub App לא מותקנת ב-{owner}, ולכן האוטומציה לא מגיעה אל {names}. בקשו ממנהל של סביבת העבודה להתקין אותה.",
+  "repoAccessAddToApp": "הוסיפו את {names} למאגרים של GitHub App. הקישו כדי לפתוח את GitHub.",
+  "repoAccessAskAdminAdd": "GitHub App עדיין לא רואה את {names}. בקשו ממנהל של סביבת העבודה להוסיף אותם למאגרים שלה.",
+  "repoAccessSuspended": "התקנת GitHub App הושעתה. האוטומציה עבור {names} מושהית עד שאחד מבעלי החשבון יחדש את ההתקנה ב-GitHub.",
+  "repoAccessOwnerCannotSee": "האדם האחראי על האוטומציה של סביבת העבודה הזו כבר לא רואה את {names}, ולכן שום דבר לא רץ שם בשמו.",
+  "repoAccessOwnerNotSignedIn": "האדם האחראי על האוטומציה של סביבת העבודה הזו לא מחובר לפלטפורמת הקוד, ולכן האוטומציה עבור {names} ממתינה עד שיתחבר.",
+  "repoAccessRetrying": "לא ניתן היה לבדוק את הגישה אל {names}. מנסים שוב.",
+  "hiddenReposSignIn": "{count, plural, =1{היכנסו ל-{forge} כדי לראות בקשות משיכה ממאגר נוסף אחד} other{היכנסו ל-{forge} כדי לראות בקשות משיכה מעוד {count} מאגרים}}",
+  "hiddenReposNoForgeAccess": "{count, plural, =1{מאגר אחד מוסתר כי החשבון שלכם ב-{forge} לא רואה אותו} other{{count} מאגרים מוסתרים כי החשבון שלכם ב-{forge} לא רואה אותם}}",
+  "hiddenReposNoGrant": "{count, plural, =1{מאגר אחד מוסתר כי אין לכם גישה אליו בסביבת העבודה הזו} other{{count} מאגרים מוסתרים כי אין לכם גישה אליהם בסביבת העבודה הזו}}",
+  "hiddenReposChecking": "{count, plural, =1{בודקים את הגישה שלכם למאגר נוסף אחד…} other{בודקים את הגישה שלכם לעוד {count} מאגרים…}}",
+  "credentialsAtlassianEmail": "האימייל של חשבון Atlassian",
+  "credentialsAtlassianEmailInvalid": "הזינו את כתובת האימייל של חשבון Atlassian שלכם.",
+  "credentialsBitbucketApiToken": "אסימון API",
+  "repoAccessAutomationTokenMissing": "אף אסימון אוטומציה לא יכול לקרוא את {names}, לכן עבודת הרקע שם מושהית. מנהל יכול להוסיף אסימון בהגדרות ← מאגרים.",
+  "credentialsSignInConfirmInBrowser": "אשרו בדפדפן, ואז הזינו את הקוד שהוא מציג בשדה שלמטה.",
+  "credentialsSignInAccountAlreadyBound": "החשבון הזה כבר מחובר לאדם אחר בשרת הזה. היכנסו עם חשבון אחר.",
+  "credentialsTokenUnreachable": "לא ניתן להגיע ל־{provider} כדי לבדוק את האסימון הזה. נסו שוב בעוד רגע.",
+  "credentialsTokenRejected": "{provider} לא מקבל את האסימון הזה. בדקו שהעתקתם אותו במלואו ושהוא לא בוטל.",
+  "credentialsTokenWrongKind": "זה לא אסימון אישי. הדביקו אסימון גישה אישי מהחשבון שלכם ב־{provider}, ולא אסימון של פרויקט, קבוצה, סביבת עבודה או בוט.",
+  "credentialsTokenNarrowScope": "לאסימון חסרה ההרשאה {scope}, שנדרשת לסקירה ולהערות. צרו אסימון שכולל אותה.",
+  "credentialsTokenExpired": "האסימון הזה פג. צרו חדש והדביקו אותו כאן.",
+  "credentialsSignInRateLimited": "יותר מדי בקשות כרגע. המתינו רגע ונסו שוב.",
+  "credentialsSignInCancelled": "הכניסה בוטלה או נדחתה. התחילו אותה מחדש כשתהיו מוכנים.",
+  "credentialsSignInNoLongerOpen": "הכניסה הזו כבר לא פתוחה: היא בוטלה, נוצלה או הוחלפה. התחילו אותה מחדש.",
+  "noWorkspacesYetHint": "מנהל סביבת עבודה צריך להזמין אתכם, או שבעל השרת יכול ליצור עבורכם סביבת עבודה.",
+  "repoAccessReplaced": "{repos} מצביע כעת על מאגר אחר ב־{forge}. קשרו אותו מחדש מאפליקציית שולחן העבודה או מהאתר כדי להמשיך להשתמש בו.",
+  "repoAccessAskAdminRelink": "{repos} מצביע כעת על מאגר אחר ב־{forge}. מנהל סביבת עבודה צריך לקשר אותו מחדש לפני שאפשר להשתמש בו שוב.",
+  "runSandboxUnavailableTitle": "סוכנים צריכים ארגז חול בשרת הזה",
+  "runSandboxUnavailable": "לשרת הזה אין ארגז חול, ולכן רק בעליו יכולים להפעיל כאן סוכנים. הבעלים יכול להתקין את ארגז החול או לכבות את הבידוד לכולם.",
+  "permissionTools": "כלים: {tools}",
+  "permissionNotInEffect": "לא בתוקף בזמן שפעולה זו חסומה"
 }

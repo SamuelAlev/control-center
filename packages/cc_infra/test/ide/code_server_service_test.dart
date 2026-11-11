@@ -42,6 +42,7 @@ void main() {
           spaceId: 'chB',
           repoId: 'repoB',
           deviceId: 'device-b',
+          userId: 'owner',
         ),
         throwsA(isA<StateError>()),
       );
@@ -78,6 +79,7 @@ void main() {
         spaceId: 'chA',
         repoId: '',
         deviceId: 'device-a',
+        userId: 'owner',
       );
       expect(session.folderPath, worktreeDir.path);
       expect(session.status, CodeServerStatus.unavailable);
@@ -96,6 +98,7 @@ void main() {
           spaceId: 'chA',
           repoId: '',
           deviceId: 'device-a',
+          userId: 'owner',
         ),
         throwsA(isA<StateError>()),
       );
@@ -252,6 +255,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           expect(session.status, CodeServerStatus.ready);
           sessionId = session.sessionId;
@@ -284,6 +288,7 @@ void main() {
               spaceId: 'chA',
               repoId: 'repoA',
               deviceId: '',
+              userId: 'owner',
             ),
             throwsArgumentError,
           );
@@ -293,6 +298,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-b',
+            userId: 'owner',
           );
           expect(b.sessionId, isNot(sessionId));
           expect(b.port, a.port);
@@ -333,6 +339,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           expect(reopened.sessionId, isNot(sessionId));
           expect(reopened.port, b.port);
@@ -345,12 +352,14 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           final otherDevice = await service.ensureSession(
             workspaceId: 'wsA',
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-b',
+            userId: 'owner',
           );
           expect(sameDevice.sessionId, sessionId);
           expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(1));
@@ -389,6 +398,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           expect(reopened.sessionId, isNot(sessionId));
           expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(2));
@@ -417,12 +427,14 @@ void main() {
               spaceId: 'chA',
               repoId: 'repoA',
               deviceId: 'device-a',
+              userId: 'owner',
             ),
             other.ensureSession(
               workspaceId: 'wsA',
               spaceId: 'chA',
               repoId: 'repoA',
               deviceId: 'device-b',
+              userId: 'owner',
             ),
           ]);
           expect(sessions[0].sessionId, isNot(sessions[1].sessionId));
@@ -437,6 +449,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           expect(second.sessionId, sessionId);
           await service.closeSession(
@@ -473,6 +486,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           expect(reopened.sessionId, isNot(sessionId));
           expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(1));
@@ -485,6 +499,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-b',
+            userId: 'owner',
           );
           now = now.add(const Duration(hours: 7));
           expect(service.lookup(sessionId), isNull);
@@ -495,6 +510,7 @@ void main() {
             spaceId: 'chA',
             repoId: 'repoA',
             deviceId: 'device-a',
+            userId: 'owner',
           );
           expect(renewed.sessionId, isNot(sessionId));
           expect(renewed.port, b.port);
@@ -687,6 +703,7 @@ void main() {
           spaceId: 'chA',
           repoId: 'repoA',
           deviceId: 'device-a',
+          userId: 'owner',
         );
         expect(session.status, CodeServerStatus.unavailable);
         // An unavailable session is NOT live in the proxy table.

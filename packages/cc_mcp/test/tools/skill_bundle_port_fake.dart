@@ -46,6 +46,7 @@ class FakeSkillBundles implements SkillBundlePort {
     bool allowQuarantineOverride = false,
     String? spaceId,
     String? agentId,
+    String? actingUserId,
   }) async {
     lastInstalled = _entry(slug);
     return lastInstalled!;
@@ -59,6 +60,7 @@ class FakeSkillBundles implements SkillBundlePort {
     bool allowQuarantineOverride = false,
     String? spaceId,
     String? agentId,
+    String? actingUserId,
   }) async {
     lastUpdated = _entry(slug);
     return lastUpdated!;
@@ -68,8 +70,10 @@ class FakeSkillBundles implements SkillBundlePort {
   Future<SkillVerifyResult> verify(String workspaceId) async => verifyResult;
 
   @override
-  Future<List<SkillUpdateCandidate>> checkUpdates(String workspaceId) async =>
-      updates;
+  Future<List<SkillUpdateCandidate>> checkUpdates(
+    String workspaceId, {
+    String? actingUserId,
+  }) async => updates;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {}

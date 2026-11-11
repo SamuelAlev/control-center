@@ -1,13 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
 import 'package:cc_domain/core/domain/ports/repo_isolation_port.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_infra/src/git/working_tree_capture.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
+import 'package:cc_infra/src/network/forge_git_auth.dart';
 import 'package:cc_infra/src/repos/space_provisioning_log.dart';
 import 'package:cc_natives/cc_natives.dart';
 import 'package:path/path.dart' as p;
@@ -130,10 +131,16 @@ class RiftRepoIsolationAdapter implements RepoIsolationPort {
     if (token == null || token.isEmpty || uri.host != 'github.com') {
       return (url: url, env: _baseEnv);
     }
-    final b64 = base64Encode(utf8.encode('x-access-token:$token'));
-    final param =
-        "'http.https://github.com/.extraHeader=Authorization: Basic $b64'";
-    return (url: url, env: {..._baseEnv, 'GIT_CONFIG_PARAMETERS': param});
+    return (
+      url: url,
+      env: {
+        ..._baseEnv,
+        'GIT_CONFIG_PARAMETERS': forgeGitAuthConfigParameter(
+          ForgeHost.github,
+          token,
+        ),
+      },
+    );
   }
 
   @override

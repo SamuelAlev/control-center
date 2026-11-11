@@ -2,14 +2,14 @@
 title: Skonfiguruj guardraile
 description: Ustaw reguły zezwalania, pytania i odmowy dla akcji agentów, przetestuj je sondą A co jeśli? i dostrój autonomię w każdej przestrzeni.
 slug: pl-PL/podrecznik/poradniki/konfiguracja-guardraili
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Ten poradnik pokazuje, jak skonfigurować guardraile: reguły, które decydują, czy
 akcja agenta zostanie wykonana, czy najpierw poprosi o zatwierdzenie, czy
 zostanie odrzucona.
 
-Guardraile obejmują trzynaście klas efektów, które deklaruje każde narzędzie
+Guardraile obejmują czternaście klas efektów, które deklaruje każde narzędzie
 zmieniające stan. Są egzekwowane po stronie serwera w momencie wywołania
 narzędzia, nigdy przez instrukcję w prompcie.
 
@@ -24,7 +24,7 @@ narzędzia, nigdy przez instrukcję w prompcie.
    się na końcu tego wiersza (**Przywróć odziedziczone**) — decyzja wróci do
    szerszego zakresu
 
-Każdy wiersz pokazuje obowiązującą decyzję jako znacznik statusu oraz plakietkę
+Każdy wiersz pokazuje ustawienie akcji jako znacznik statusu oraz plakietkę
 z informacją, skąd pochodzi: **Ten zakres**, **Odziedziczone** lub **Wbudowana
 wartość domyślna**. Macierz rozstrzyga w trybie Agent (`chat`), więc **Preset
 trybu** nigdy się tu nie pojawia — aby zobaczyć tę warstwę, użyj sondy
@@ -36,6 +36,18 @@ Punkt kontrolny: ustaw **Push do zdalnego repozytorium** na **Odmów** w zakresi
 obszaru roboczego, a następnie uruchom poniższą sondę A co jeśli? dla
 `git push origin main`. Wynik to `deny` ze źródłem `workspace`.
 
+## Przeglądaj i cofaj zatwierdzenia czasowe
+
+Odpowiedź na kartę zatwierdzenia przyciskiem **Zatwierdź na 8 godzin** zapisuje zatwierdzenie czasowe: regułę, która przepuszcza ten sam rodzaj akcji bez pytania, aż się skończy. Każde z nich jest wymienione na tej stronie, pod akcją, do której należy.
+
+1. Przejdź do **Ustawienia → Obszar roboczy → Uprawnienia agentów** i wybierz zakres. Zatwierdzenie zapisuje się dla przestrzeni, z której wzięło się pytanie, więc wybierz **Przestrzeń**, a następnie tę przestrzeń
+2. Pod wierszem akcji przeczytaj wpis: co pozwala (na przykład wypchnięcia do gałęzi pasujących do `feature/**`), słowa **Zatwierdzenie czasowe**, kto je przyznał, jeśli to ktoś inny, i kiedy się kończy
+3. Aby zakończyć je teraz, wskaż wpis i naciśnij **Cofnij**. Agenci pytają ponownie, począwszy od następnej akcji
+
+Wiersz nadal pokazuje ustawienie samej akcji, a linia pod nim liczy przypadki wymienione poniżej, które mimo to są dozwolone. Reguły warunkowe zapisane przez szablon pojawiają się na tej samej liście, a reguły poleceń w grupie **Polecenia** po ostatniej akcji. Na zakresie obszaru roboczego uwaga pod podsumowaniem liczy zatwierdzenia czasowe ustawione dla pojedynczych przestrzeni lub agentów. Na przestrzeni lub u agenta liczy te z obszaru roboczego, które obowiązują także tam.
+
+Zatwierdzenie czasowe tylko oszczędza pytanie. Nigdy nie unieważnia **Odmów**: jeśli ustawisz akcję na **Odmów**, gdy takie zatwierdzenie jeszcze trwa, jego wpis pokazuje **bez skutku, gdy ustawiono «Odmów»**, aż się skończy albo je cofniesz. Zmiana ustawienia akcji zostawia jej zatwierdzenia czasowe w mocy, a cofnięcie jednego z nich zostawia ustawienie.
+
 ## Zrozum, jak rozstrzygana jest decyzja
 
 Rozstrzyganie działa według zasady **najpierw szczegółowość, potem
@@ -44,7 +56,7 @@ restrykcyjność**:
 1. Reguły **przestrzeni**, potem agenta, potem obszaru roboczego. Decyduje
    pierwszy zakres z pasującą regułą i rozstrzyganie się zatrzymuje
 2. Jeśli żadna reguła nie pasuje, stosowany jest **preset trybu** — tryb tylko
-   do odczytu (plan, przegląd, orkiestracja) odrzuca jedenaście z trzynastu klas
+   do odczytu (plan, przegląd, orkiestracja) odrzuca dwanaście z czternastu klas
 3. Jeśli tryb nic nie mówi, stosowana jest **wbudowana wartość domyślna**
 
 W obrębie jednego zakresu reguła dotycząca polecenia rozstrzyga według
@@ -74,7 +86,7 @@ gorsze od odrzuconego.
 | Utworzenie commita                   | Zezwól                     |
 | Push do zdalnego repozytorium        | Zapytaj najpierw           |
 | Otwarcie pull requesta               | Zapytaj najpierw           |
-| Opublikowanie recenzji lub scalenie  | Zapytaj najpierw           |
+| Aktualizacja lub scalenie pull requesta | Zapytaj najpierw           |
 | Zapis do zewnętrznego trackera       | Zapytaj najpierw           |
 | Dostęp do sieci                      | Zezwól                     |
 | Odczyt sekretu                       | Zezwól                     |
@@ -82,6 +94,7 @@ gorsze od odrzuconego.
 | Uruchomienie procesu                 | Zezwól                     |
 | Zmiana struktury obszaru roboczego   | Zezwól                     |
 | Sterowanie rigiem                    | Zezwól                     |
+| Uruchamiaj polecenia na hoście       | Zapytaj najpierw           |
 
 Taksonomia jest zamknięta. Nowe narzędzie, które trafi do wydania bez
 zadeklarowania swoich klas, oblewa test zapadkowy w CI, więc nic nie pojawia się
@@ -92,14 +105,13 @@ z po cichu pustym zbiorem efektów.
 Zanim zmienisz regułę, sprawdź, jak rozstrzyga ją już obecna polityka.
 
 1. Na tej samej stronie przewiń do **A co jeśli?**
-2. Wybierz **Akcję** (jedną z trzynastu klas)
+2. Wybierz **Akcję** (jedną z czternastu klas)
 3. Opcjonalnie wypełnij pola **Polecenie** (na przykład `git push origin main`),
    **Agent**, **Przestrzeń** i **Tryb**
 4. Odczytaj wynik: decyzję, powód i **Źródło:**
 
 Sonda uruchamia ten sam mechanizm rozstrzygający, którego używa ścieżka
-egzekwowania, na bieżących regułach, więc odpowiedź jest dokładna. Jeśli wynik
-jest zaskakujący, zmień regułę w macierzy powyżej i uruchom sondę ponownie.
+egzekwowania, na bieżących regułach, więc odpowiedź jest dokładna. Gdy decyzję podejmuje zatwierdzenie czasowe, źródło pokazuje **Zatwierdzenie czasowe**, a po nim zakres. Jeśli wynik jest zaskakujący, zmień regułę w macierzy powyżej i uruchom sondę ponownie.
 
 ## Ustaw suwak autonomii przestrzeni
 

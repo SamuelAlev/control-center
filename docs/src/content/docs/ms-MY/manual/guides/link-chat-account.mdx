@@ -2,7 +2,7 @@
 title: Pautkan akaun Slack anda
 description: Buktikan identiti Slack ini milik anda supaya ejen bertindak atas mesej anda dan kerja anda diatribusikan kepada anda.
 slug: ms-MY/manual-pengguna/panduan-cara/pautkan-akaun-sembang
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Panduan ini menunjukkan cara memautkan identiti sembang anda kepada pengguna Control Center anda dan cara
@@ -26,7 +26,7 @@ cara memautkan. Tiada apa lain yang dihantar.
 Pemautan memerlukan kedua-dua pihak: menghantar kod dari Slack membuktikan akaun Slack, dan mengesahkannya dalam
 Control Center membuktikan akaun itu milik anda.
 
-1. Pergi ke **Tetapan → Ruang kerja → Profil & identiti** dan tatal ke kad **Akaun sembang dipautkan**
+1. Pergi ke **Tetapan → Anda → Profil** dan cari kad **Akaun sembang dipautkan**
 2. Pada blok Slack, klik **Pautkan akaun Slack saya**. Dialog memaparkan kod sekali guna, contohnya:
 
 ```text
@@ -42,7 +42,7 @@ K7M2QP
    **Dapatkan kod baharu** untuk mencuba semula
 
 Menutup dialog tidak menghilangkan tuntutan. Kod yang tiba kemudian menunggu pada baris **Pautkan akaun Slack saya**
-pada halaman profil anda, dengan **Sahkan** dan **Tolak** yang sama.
+pada kad itu, dengan **Sahkan** dan **Tolak** yang sama.
 
 Sebab langkah pengesahan: kod yang dibaca oleh orang lain dan dihantar dari akaun Slack mereka akan menjadikan akaun
 itu bertindak sebagai anda. Hanya anda boleh mengesahkan, dan hanya profil yang tepat menghantar kod itu.
@@ -65,6 +65,8 @@ Jika profil Slack anda membawa e-mel yang telah disahkan dan sepadan dengan e-me
 Center yang **sudah menjadi ahli ruang kerja ini**, jambatan akan memautkan anda kali pertama anda bercakap dengannya.
 Tiada kod diperlukan.
 
+Bahagian Control Center dikira sebagai disahkan apabila daftar masuk tunggal atau SCIM menetapkan alamat itu, atau pemilik pelayan mengesahkannya dalam **Tetapan → Pelayan → Orang**. Alamat yang anda taip dalam profil anda sendiri tidak disahkan, jadi ia tidak memautkan apa-apa sehingga pemilik mengesahkannya; gunakan aliran kod sementara itu.
+
 Kedua-dua bahagian penting: padanan e-mel membuktikan identiti, tetapi hanya keahlian memberikan akses, jadi orang
 asing yang e-melnya kebetulan wujud pada pelayan tidak akan memautkan kepada apa-apa. Senarai ahli menunjukkan
 bagaimana setiap pautan dibuat ("dipadankan melalui e-mel" atau "dipautkan dengan kod").
@@ -74,11 +76,11 @@ aliran kod menjadi satu-satunya laluan.
 
 ## Lihat siapa yang dipautkan
 
-Senarai ahli tergolong dalam pentadbiran ruang kerja, jadi ia terletak pada bahagian lain permukaan:
-**Tetapan → Ruang kerja → Umum → Jambatan sembang → Akaun dipautkan**. Ia menyenaraikan setiap ahli ruang kerja
+Senarai ahli tergolong dalam pentadbiran ruang kerja, jadi ia terletak pada kad pentadbir:
+**Tetapan → Ruang kerja → Integrasi → Jambatan sembang → Akaun dipautkan**. Ia menyenaraikan setiap ahli ruang kerja
 yang dipautkan, bersama akaun Slack yang dipetakan kepada setiap seorang dan bagaimana pautan itu dibuat.
 
-Status anda sendiri terdapat pada halaman profil anda: baris **Pautkan akaun Slack saya** memaparkan "Dipautkan
+Status anda sendiri ada di **Tetapan → Anda → Profil**: baris **Pautkan akaun Slack saya** memaparkan "Dipautkan
 kepada _your-slack-id_" setelah anda dipautkan, dan meminta anda memautkan apabila anda belum.
 
 Senarai ahli dan pengesahan ialah langganan langsung, kerana perubahan berlaku di sisi yang lain: anda menghantar

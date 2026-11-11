@@ -2,7 +2,7 @@
 title: Glosar
 description: Definiții ale termenilor-cheie folosiți în tot Control Center.
 slug: ro-RO/manual/referinta/glosar
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', 'Manifestul per spațiu de lucru al skill-urilor instalate: pentru fiecare, depozitul sursă, calea în depozit, commit-ul la care este fixat și un hash de conținut cumulat. Instalările, actualizările și dezinstalările îl țin la curent; verify_skills îl verifică față de disc.'],
 ['Gateway-ul rulărilor de agenți', 'Un punct final de loopback pe cc_server care aplică politica de acțiuni în interiorul sandbox-ului unui agent. Fiecare push GitHub făcut de un agent este redirecționat către el, verificat cu regula Push către un remote și transmis cu un token de scriere pe care agentul nu îl deține niciodată; comenzile Bash ale Claude Code sunt verificate printr-un hook pe același punct final.'],
 ['Mode', 'chat, plan, review sau orchestrate. Stocat per spațiu, așa că un agent poate fi în moduri diferite în spații diferite; fiecare conversație dintr-un spațiu îl partajează. Controlează promptul de sistem, regulile de scriere ale sandbox-ului și lista de instrumente MCP permise.'],
-['SandboxBackend', 'microvm (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), native (Seatbelt nativ pe macOS, bubblewrap pe Linux și WSL2) sau none. Detectat o singură dată la pornire; native înfășoară trimiterea agenților când este disponibil. Windows nu are backend nativ, iar Linux are nevoie de bwrap plus socat, așa că rulările de acolo rămân neînfășurate; --sandbox off renunță deliberat.'],
+['SandboxBackend', 'microvm (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), native (Seatbelt nativ pe macOS, bubblewrap pe Linux și WSL2) sau none. Detectat o singură dată la pornire; native înfășoară trimiterea agenților când este disponibil. Windows nu are backend nativ, iar Linux are nevoie de bwrap plus socat; pe o asemenea gazdă pornesc doar rulările proprietarului serverului, neînfășurate, iar ale celorlalți sunt refuzate. --sandbox off rulează neînfășurați agenții fiecărui membru.'],
 ['Stație', 'O mașină de unică folosință pe care un agent o conduce în timp real: un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și instrumentul agentului vizează o singură mașină.'],
 ['Mediu izolat', 'Proprietatea de izolare mai puternică, disponibilă stațiilor sprijinite de VM: o graniță de kernel, disc suprapus de unică folosință, poartă de rețea cu refuz implicit și broker de credențiale. Stațiile Android și iOS sunt de unică folosință, dar folosesc rețeaua administrată de gazdă, așa că nu revendică această graniță. Conducerea oricărei stații folosește clasa de guardrail enclosureControl.'],
 ['RunCost', 'Total de tokeni/cost (tokeni de intrare, tokeni de ieșire, cost estimat în cenți) pentru o singură rulare de agent.'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', 'Orchestrează execuția rulărilor: pornește rulări, programează pași, persistă starea, gestionează routere, îmbinări și continuarea la eșec, reia rulările în curs după repornire.'],
 ['PipelineTriggerDispatcher', 'Se abonează la evenimente de domeniu și pornește automat rulările de pipeline corespunzătoare pentru trigger-ele activate.'],
 ['MemoryAccessPolicy', 'Rezolvă și impune permisiunile de memorie ale rolului de agent pe domenii.'],
-['HarnessCostCalculator', 'Evaluează costul utilizării de tokeni a harness-ului integrat într-un RunCost, pe baza catalogului models.dev. Trimiterea persistă acel total în jurnalul rulării.'],
+['HarnessRunAccounting', 'Contabilizează apelurile de model ale harness-ului integrat o singură dată, prețuite din catalogul models.dev, le persistă pe rularea proprietară și adună cheltuiala unei rulări copil în bugetul părintelui.'],
 ['BudgetEnforcementService', 'Calculează cheltuiala lunară per agent și un blocaj pre-trimitere (checkInvocationBlock). Acel blocaj este consultat doar de reconciliatorii de recuperare (OrphanRunReaper, StrandedTicketReconciler), niciodată de o trimitere obișnuită.'],
 ['BudgetGovernanceService', 'Evaluează cheltuiala lunară per agent după fiecare rulare: un prag soft înregistrează un incident de avertizare; epuizarea înregistrează un incident sever și comută ciclul de viață al agentului în paused.'],
 ['DomainEventBus', 'Magistrală de publicare/abonare cu difuzare în proces, pentru comunicarea între funcționalități. Evenimentele sunt tipizate; abonații consumă fluxuri de tip on.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', 'Clientul subțire de telefon — o PWA Flutter web care controlează de la distanță flota prin releul intermediat, cu o politică de instrumente cu refuz implicit.'],
 ['cc_signaling_server', 'Un broker releu WebSocket fără stare, care găzduiește camere cu acces pe bază de invitație. Un releu simplu: transmite doar cadre sigilate end-to-end, nu deține date de aplicație și nu vede niciodată PSK-ul de asociere.'],
 ['Principal', 'O valoare sigilată care unifică oamenii și agenții într-o singură abstracție de actor. UserPrincipal(userId) sau AgentPrincipal(agentId). Fiecare mesaj, tichet, revizuire, plan și jurnal de rulare se atribuie printr-un Principal.'],
-['Utilizator', 'O identitate umană, stocată în global.db și deci globală între spațiile de lucru. Principalul care creează un spațiu de lucru devine proprietarul lui, marcat pe Workspace.ownerUserId cu un rând de apartenență cu rol de proprietar; ceilalți se alătură prin invitație sau SSO.'],
+['Utilizator', 'O identitate umană, stocată în global.db și deci globală între spațiile de lucru. Doar proprietarul serverului creează un spațiu de lucru și devine proprietarul lui, marcat pe Workspace.ownerUserId cu un rând de apartenență cu rol de proprietar; ceilalți se alătură prin invitație sau SSO.'],
+['Proprietarul serverului', 'Persoana care a configurat serverul, înregistrată o singură dată la prima pornire; nimic trimis prin rețea nu o schimbă. Un administrator sau un proprietar al spațiului de lucru nu este proprietarul serverului. Nimic nu rulează pe mașina serverului în afara unui sandbox decât dacă proprietarul serverului l-a pornit sau a aprobat acel tip de execuție pe gazdă: crearea spațiilor de lucru, shell-ul gazdei, editorul de cod încorporat, mediile care rulează pe gazdă și checkout-urile legate din afara spațiului de stocare al unui spațiu de lucru sunt doar ale lui.'],
 ['WorkspaceMember', 'Un rând de apartenență care leagă un Utilizator de un Spațiu de lucru la un WorkspaceRole. Apartenența — nu o cheie de asociere — este granița de acces.'],
 ['WorkspaceRole', 'Rol de apartenență gradual: owner, admin, member, viewer sau guest. Punctul unic de trecere pentru operațiile pe repo derivă un prag minim de rol per tip de operație.'],
 ['ParticipantPresence', 'Prezență efemeră pentru un Principal (stare, loc, cursor, tastare, starea live a agentului + costul de rulare). Niciodată persistată; găzduită pe server; filtrată după acordările per repo înainte de difuzare.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['Cadran de autonomie', 'Un control per spațiu și per agent — propose-only / act-with-approval / act-freely — implementat ca profil numit peste depozitul de guardrail-uri de acțiune.'],
 ['cc_worker', 'Un binar executant de flotă, headless, în Dart pur. Se asociază cu un cc_server, își declară capabilitățile, preia joburi închiriate, le execută și transmite înapoi evenimente. Nu deține nicio stare durabilă.'],
 ['JobSpec', 'Specificația tipizată pentru tot ce este executabil (rulare de agent, pas de pipeline, index de cod, randare de referință, benchmark, lot de eval-uri): capabilitățile necesare, prioritatea, bugetul, spațiul de lucru.'],
-['ActionClass', 'Un set închis de 13 clase de efecte (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). Fiecare instrument care modifică ceva își declară clasele; motorul de guardrail-uri rezolvă allow / prompt / deny per domeniu de aplicare.'],
+['ActionClass', 'Un set închis de 14 clase de efecte (fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). Fiecare instrument care modifică ceva își declară clasele; motorul de guardrail-uri rezolvă allow / prompt / deny per domeniu de aplicare.'],
 ['WriteLedger', 'Un registru de idempotență limitat la spațiul de lucru. Fiecare mutație poartă o cheie de idempotență per acțiune logică; o reluare returnează rezultatul original, identic octet cu octet. Face reconectarea și lucrul cu mai mulți clienți sigur prin construcție.'],
 ['Cheie de idempotență', 'Un UUIDv7 generat de client, emis per acțiune logică (nu per încercare). Deduplică reîncercările între reconectări și clienți.'],
 ['Inbox „Needs me”', 'O coadă transversală, cu o regulă strictă: un element apare doar dacă blochează ceva (un agent, o îmbinare, o sincronizare) sau cere explicit operatorul.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['Verdict de revizuire', 'ship, hold sau block. Orice constatare P0 cu încredere >= 0,7 blochează; orice altă P0 sau orice P1 ține; în rest, ship. O axă cu poartă care eșuează forțează block și nu poate fi contrazisă la vot de constatări.'],
 ['SessionRecording', 'Un flux de evenimente plus casete HTTP/LLM și I/O de instrumente, capturate pentru o singură rulare și asociate cu un AgentConfigHash.'],
 ['Sesiune de referință', 'O SessionRecording validată, fixată per agent sau playbook.'],
-['Control Center Connect', 'Un serviciu opțional care rulează autentificările la provideri (GitHub, Google, Linear) pentru serverele fără aplicații proprii. Găzduit de Control Center, găzduit de tine sau dezactivat. Returnează sigilii de acreditare și tokenuri GitHub pentru un singur depozit și nu vede niciodată conținutul depozitelor.'],
+['Control Center Connect', 'Un serviciu opțional care rulează autentificările la provideri (GitHub, Google, Linear) pentru serverele sau spațiile de lucru care l-au ales în locul propriilor aplicații. Găzduit de Control Center, găzduit de tine sau dezactivat. Returnează sigilii de acreditare și tokenuri GitHub pentru un singur depozit și nu vede niciodată conținutul depozitelor.'],
 ['Sigiliu de acreditare', 'O acreditare criptată pe care o poate deschide doar Connect-ul care a creat-o, legată de provider, adresa Connect, ID-ul de instalare, spațiul de lucru, cont, aplicație și generația secretului. Serverul stochează sigiliul; tokenurile de acces rămân în memorie.'],
 ['ID de instalare', 'Identitatea unui server față de o adresă Connect, derivată din cheia lui de instalare. Connect permite serverele după ID-ul de instalare; schimbarea cheii îl modifică și deconectează pe toată lumea de pe benzile Connect.'],
-['Legătură de instalare', 'Evidența Connect a serverelor care pot folosi o instalare GitHub a aplicației partajate. O instalare într-o organizație are nevoie ca un administrator să autorizeze fiecare server.'],
-['Bandă de autentificare', 'Autentificarea în browser la un provider: github, google, linear, linear_app sau slack. Fiecare bandă rulează pe aplicația proprie a serverului când aceasta este completă, altfel prin Connect, altfel nu este disponibilă.'],
+['Legătură de instalare', 'Evidența Connect (install_binding) a serverului de care este legată o echipă Slack. Instalările GitHub nu au niciuna: orice server pe care se autentifică un membru le poate folosi.'],
+['Bandă de autentificare', 'Autentificarea în browser la un provider: github, google, linear, linear_app sau slack. Sub propriile aplicații, o bandă rulează pe aplicația proprie (a serverului sau a spațiului de lucru) doar când aceasta este complet configurată, altfel nu este disponibilă; cu un Connect ales, Connect o rulează. Niciuna nu revine la cealaltă.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Mode**: `chat`, `plan`, `review` sau `orchestrate`. Stocat **per spațiu**, așa că un agent poate fi în moduri diferite în spații diferite; fiecare conversație dintr-un spațiu îl partajează. Controlează promptul de sistem, regulile de scriere ale sandbox-ului și lista de instrumente MCP permise. Compozitorul oferă doar `chat`, `plan` și `orchestrate`; `chat` este etichetat „Agent”.
 
-**SandboxBackend**: `microvm` (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), `native` (Seatbelt pe macOS, bubblewrap pe Linux și WSL2) sau `none`. Detectat o singură dată la pornire; `native` este **aplicat la trimiterea agenților** când este disponibil, înfășurând CLI-ul Claude Code și instrumentul `bash` al harness-ului. Windows nu are backend nativ, iar Linux are nevoie de `bwrap` plus `socat`, așa că rulările de acolo rămân neînfășurate; `--sandbox off` renunță deliberat.
+**SandboxBackend**: `microvm` (o VM închisă — singurul backend cu graniță de kernel, aplicat terminalelor interactive), `native` (Seatbelt pe macOS, bubblewrap pe Linux și WSL2) sau `none`. Detectat o singură dată la pornire; `native` este **aplicat la trimiterea agenților** când este disponibil, înfășurând CLI-ul Claude Code și instrumentul `bash` al harness-ului. Windows nu are backend nativ, iar Linux are nevoie de `bwrap` plus `socat`; pe o asemenea gazdă pornesc doar rulările proprietarului serverului, neînfășurate, iar ale celorlalți sunt refuzate. `--sandbox off` rulează neînfășurați agenții fiecărui membru.
 
 **Stație**: O mașină de unică folosință pe care un agent o conduce în timp real — un browser sau un desktop Linux închis, un emulator Android ori un simulator iOS administrat de gazdă, sau un terminal închis. Urmărită live prin propria bandă la rezoluție completă, cu preluarea controlului impusă pe server. Limitată la o conversație, așa că fila umană și apelurile `browser_use` / `computer_use` / `mobile_use` / `ios_use` ale agentului vizează o singură mașină implicită. Vezi [Stații și medii izolate](/ro-RO/manual/concepte/statii/).
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: Rezolvă și impune permisiunile de memorie ale rolului de agent pe domenii.
 
-**HarnessCostCalculator**: Evaluează costul utilizării de tokeni a harness-ului integrat într-un `RunCost`, pe baza catalogului models.dev. Trimiterea persistă acel total în jurnalul rulării.
+**HarnessRunAccounting**: Contabilizează apelurile de model ale harness-ului integrat o singură dată, prețuite din catalogul models.dev, le persistă pe rularea proprietară și adună cheltuiala unei rulări copil în bugetul părintelui.
 
 **BudgetEnforcementService**: Calculează cheltuiala lunară per agent și un blocaj pre-trimitere (`checkInvocationBlock`). Acel blocaj este consultat doar de reconciliatorii de recuperare (`OrphanRunReaper`, `StrandedTicketReconciler`), niciodată de o trimitere obișnuită a unui utilizator sau a unui agent.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: Rezultate structurate extrase de pipeline-ul de rezumare și stocate ca rânduri distincte. Elementele de acțiune se pot lega de un tichet.
 
-**CalendarEvent**: O intrare sincronizată din Google Calendar, limitată la un spațiu de lucru și un cont conectat. Diferită de o Întâlnire: un eveniment este o obligație programată; o Întâlnire este o sesiune înregistrată. Legate unu-la-unu printr-un `MeetingCalendarLink`.
+**CalendarEvent**: O intrare sincronizată din Google Calendar, limitată la un spațiu de lucru și un cont conectat. Diferită de o Întâlnire: un eveniment este o obligație programată; o Întâlnire este o sesiune înregistrată. Legate unu-la-unu prin tabelul `meeting_calendar_links`.
 
 **CalendarAccount**: Un cont Google conectat, per spațiu de lucru, membru și e-mail (`google:<workspaceId>:<userId>:<email>`). Acreditarea lui este stocată pe server ca o cheie `google_*` în `<dataDir>/secrets.json` și nu ajunge niciodată la un client; autentificarea în browser se încheie pe server. O autentificare prin Connect stochează doar un sigiliu de acreditare. Un indicator `authExpiredAt` declanșează bannerul de reconectare.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **Principal**: O valoare sigilată care unifică oamenii și agenții într-o singură abstracție de actor — `UserPrincipal(userId)` sau `AgentPrincipal(agentId)`. Fiecare mesaj, tichet, revizuire, plan și jurnal de rulare se atribuie printr-un Principal.
 
-**Utilizator**: O identitate umană, stocată în `global.db` și deci globală între spațiile de lucru. Principalul care creează un spațiu de lucru devine **proprietarul** lui — marcat pe `Workspace.ownerUserId` cu un rând de apartenență cu rol de proprietar, în aceeași operațiune. Ceilalți se alătură prin invitație sau SSO.
+**Proprietarul serverului**: Persoana care a configurat serverul, înregistrată o singură dată la prima pornire; nimic trimis prin rețea nu o schimbă. Un administrator sau un proprietar al spațiului de lucru nu este proprietarul serverului. Nimic nu rulează pe mașina serverului în afara unui sandbox decât dacă proprietarul serverului l-a pornit sau a aprobat acel tip de execuție pe gazdă: crearea spațiilor de lucru, shell-ul gazdei, editorul de cod încorporat, mediile care rulează pe gazdă și checkout-urile legate din afara spațiului de stocare al unui spațiu de lucru sunt doar ale lui. Vezi [Proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului).
+
+**Utilizator**: O identitate umană, stocată în `global.db` și deci globală între spațiile de lucru. Doar proprietarul serverului creează un spațiu de lucru și devine **proprietarul** lui — marcat pe `Workspace.ownerUserId` cu un rând de apartenență cu rol de proprietar, în aceeași operațiune. Ceilalți se alătură prin invitație sau SSO.
 
 **WorkspaceMember** / **WorkspaceRole**: Un rând de apartenență care leagă un Utilizator de un Spațiu de lucru la un rol (`owner` / `admin` / `member` / `viewer` / `guest`). **Apartenența — nu o cheie de asociere — este granița de acces.** Acordările per repo împiedică apartenența să acorde mai multe privilegii decât forge-ul.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **Cadran de autonomie**: Un control per spațiu și per agent — `propose-only` / `act-with-approval` / `act-freely` — implementat ca profil numit peste depozitul de guardrail-uri de acțiune.
 
-**ActionClass**: Un set închis de 13 clase de efecte (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …). Fiecare instrument care modifică ceva își declară clasele; motorul de guardrail-uri rezolvă `allow` / `prompt` / `deny` per domeniu de aplicare (space > agent > workspace > mode preset > built-in default).
+**ActionClass**: Un set închis de 14 clase de efecte (`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …). Fiecare instrument care modifică ceva își declară clasele; motorul de guardrail-uri rezolvă `allow` / `prompt` / `deny` per domeniu de aplicare (space > agent > workspace > mode preset > built-in default).
 
 **WriteLedger** / **cheie de idempotență**: Fiecare mutație poartă o cheie de idempotență generată de client (UUIDv7, per acțiune logică). Registrul limitat la spațiul de lucru deduplică înainte de a rula handlerul; o reluare returnează rezultatul original, identic octet cu octet. Face reconectarea și lucrul cu mai mulți clienți sigur prin construcție.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: Un broker releu WebSocket fără stare, care găzduiește camere cu acces pe bază de invitație — un releu simplu: transmite doar cadre sigilate end-to-end, nu deține date de aplicație și nu vede niciodată PSK-ul de asociere.
 
-**Control Center Connect**: Un serviciu opțional care rulează autentificările la provideri (GitHub, Google Calendar, Linear) pentru serverele care nu și-au înregistrat propriile aplicații: cel găzduit de Control Center, unul pe care îl rulează o organizație (`cc-connect` sau montat în `cc_server` la `/connect`) sau niciunul. Returnează sigilii de acreditare și tokenuri GitHub pentru un singur depozit și nu vede niciodată conținutul depozitelor. Vezi [Control Center Connect](/ro-RO/manual/referinta/connect/).
+**Control Center Connect**: Un serviciu opțional care rulează autentificările la provideri (GitHub, Google Calendar, Linear) pentru serverele sau spațiile de lucru care l-au ales în locul propriilor aplicații: cel găzduit de Control Center, unul pe care îl rulează o organizație (`cc-connect` sau montat în `cc_server` la `/connect`) sau niciunul. Returnează sigilii de acreditare și tokenuri GitHub pentru un singur depozit și nu vede niciodată conținutul depozitelor. Vezi [Control Center Connect](/ro-RO/manual/referinta/connect/).
 
 **Sigiliu de acreditare**: O acreditare criptată (`credential_seal`) pe care o poate deschide doar Connect-ul care a creat-o, legată de provider, adresa Connect, ID-ul de instalare, spațiul de lucru, cont, aplicație și generația secretului. Serverul stochează sigiliul și ID-ul de instalare pentru care a fost creat; tokenurile de acces rămân în memorie. Un sigiliu al cărui ID de instalare nu se mai potrivește este eliminat, iar proprietarul lui se autentifică din nou.
 
 **ID de instalare**: Identitatea unui server față de o adresă Connect (`install_id`), derivată din cheia de instalare din fișierul lui de secrete. Connect permite serverele după ID-ul de instalare. Schimbarea cheii dă unul nou și deconectează pe toată lumea de pe benzile Connect.
 
-**Legătură de instalare**: Evidența Connect (`install_binding`) a serverelor care pot folosi o instalare GitHub a aplicației partajate. Instalarea printr-un server îl leagă pe acesta; **Autorizează acest server** apăsat de un administrator al organizației leagă un altul.
+**Legătură de instalare**: Evidența Connect (`install_binding`) a serverului de care este legată o echipă Slack. Instalările GitHub nu au niciuna: orice server pe care se autentifică un membru le poate folosi.
 
-**Bandă de autentificare**: Autentificarea în browser la un provider — `github`, `google`, `linear`, `linear_app` sau `slack`. O bandă rulează pe aplicația proprie a serverului când acea aplicație este completă, altfel prin Connect, altfel nu este disponibilă; o aplicație proprie configurată parțial este o eroare, niciodată o revenire la alternativă.
+**Bandă de autentificare**: Autentificarea în browser la un provider — `github`, `google`, `linear`, `linear_app` sau `slack`. Sub propriile aplicații, o bandă rulează pe aplicația proprie (a serverului sau a spațiului de lucru) doar când aceasta este complet configurată, altfel nu este disponibilă; cu un Connect ales, Connect o rulează. Niciuna nu revine la cealaltă, iar o aplicație proprie configurată parțial este o eroare.
 
 ## Vezi și
 

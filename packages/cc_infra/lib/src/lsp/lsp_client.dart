@@ -5,6 +5,7 @@ import 'package:cc_infra/src/jsonrpc_process/jsonrpc_process_client.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_server_registry.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
 /// One connected language server: handshake, document sync, and the requests
@@ -21,18 +22,27 @@ class LspClient {
   /// `initialize` in time. A null is a normal outcome, not an error: a machine
   /// without that toolchain installed simply has no server for it, and the
   /// tool reports "no server" rather than failing the run.
+  ///
+  /// The server runs through [launcher]: inside the run's sandbox when it is
+  /// confined, and then a project-local binary may answer for [config].
   static Future<LspClient?> start({
     required LspServerConfig config,
     required String rootPath,
+    required ToolProcessLauncher launcher,
     Duration warmupTimeout = const Duration(seconds: 20),
   }) async {
-    final binary = resolveServerBinary(config.command, rootPath);
+    final binary = resolveServerBinary(
+      config.command,
+      rootPath,
+      projectLocalBins: launcher.confined,
+    );
     if (binary == null) {
       return null;
     }
     final JsonRpcProcessClient rpc;
     try {
       rpc = await JsonRpcProcessClient.start(
+        launcher: launcher,
         command: binary,
         args: config.args,
         workingDirectory: rootPath,

@@ -60,13 +60,17 @@ Map<String, Object?> decodeJsonObject(List<int> body) {
 }
 
 /// Headers every Connect response carries. Deliberately no CORS header of
-/// any kind: no browser origin may read a Connect answer.
-void applyBaseHeaders(HttpResponse response) {
+/// any kind: no browser origin may read a Connect answer. [https] adds HSTS
+/// (an https public URL).
+void applyBaseHeaders(HttpResponse response, {required bool https}) {
   response.headers
     ..removeAll('access-control-allow-origin')
     ..set('cache-control', 'no-store')
     ..set('x-content-type-options', 'nosniff')
     ..set('referrer-policy', 'no-referrer');
+  if (https) {
+    response.headers.set('strict-transport-security', 'max-age=31536000');
+  }
 }
 
 /// Writes a JSON answer and closes the response.
@@ -84,13 +88,30 @@ Future<void> sendJson(HttpResponse response, int status, Object? body) async {
 Future<void> sendError(HttpResponse response, ConnectErrorCode code) =>
     sendJson(response, code.httpStatus, {'error': code.wire});
 
-/// Writes a hardened HTML page.
-Future<void> sendPage(HttpResponse response, int status, String html) async {
+/// Writes a hardened HTML page; [form] allows its form to post to Connect.
+///
+/// The form page alone replaces the base `no-referrer` policy with
+/// `same-origin`: under `no-referrer` a browser sends `Origin: null` with the
+/// page's own form post, which names no origin to check. `same-origin` makes
+/// it send Connect's origin on that post and still sends nothing to any other
+/// origin.
+Future<void> sendPage(
+  HttpResponse response,
+  int status,
+  String html, {
+  bool form = false,
+}) async {
   final bytes = utf8.encode(html);
+  if (form) {
+    response.headers.set('referrer-policy', 'same-origin');
+  }
   response
     ..statusCode = status
     ..headers.contentType = ContentType.html
-    ..headers.set('content-security-policy', pageContentSecurityPolicy)
+    ..headers.set(
+      'content-security-policy',
+      form ? formPageContentSecurityPolicy : pageContentSecurityPolicy,
+    )
     ..headers.set('x-frame-options', 'DENY')
     ..headers.set('cross-origin-opener-policy', 'same-origin')
     ..headers.set('cross-origin-resource-policy', 'same-origin')

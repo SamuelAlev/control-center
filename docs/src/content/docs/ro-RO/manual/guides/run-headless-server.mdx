@@ -3,7 +3,7 @@ title: Rulează un server headless
 description: Rulează binarul headless cc_server sau imaginea lui Docker, asociază un client la el și configurează-l cu întreaga suprafață de flaguri CLI și variabile de mediu.
 dateModified: 2026-11-08
 slug: ro-RO/manual/ghiduri-practice/ruleaza-server-headless
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Rulează `cc_server` pe o mașină care rămâne pornită, apoi conectează-te la el de
@@ -173,8 +173,10 @@ dispozitivului — `desktop`, `ios`, `android`, orice altceva este un client web
 `--host` (gazda de afișat în URL, pentru că loopback nu este accesibil de pe altă
 mașină) și `--client-url`. Rularea din nou a lui `pair` rotește cheia acelui
 dispozitiv și elimină sesiunile lui active. Asocierea nu creează niciodată un
-spațiu de lucru: onboarding-ul clientului care se conectează numește și creează
-primul spațiu.
+spațiu de lucru. Doar proprietarul serverului poate crea spații de lucru: pe
+clientul proprietarului, onboarding-ul numește și creează primul, iar oricine
+altcineva așteaptă până când proprietarul creează unul pentru el sau un
+administrator al spațiului de lucru îl invită.
 
 Cu `--client-url` afișează și un cod QR care poate fi scanat din terminal și care
 deschide clientul web deja completat:
@@ -193,8 +195,7 @@ serverului plus o expirare), emis din **Setări → Tu → Dispozitivele tale**
 [Asociază un dispozitiv](/ro-RO/manual/ghiduri-practice/asociaza-dispozitiv/).
 :::
 
-O acreditare emisă de `cc_server pair` nu are **nicio expirare**; una emisă în
-aplicație expiră întotdeauna după 30 de zile. Revocă un dispozitiv emis din CLI
+O acreditare emisă de `cc_server pair` expiră după 30 de zile, ca cele emise în aplicație; rulează din nou `pair` pentru același dispozitiv ca să emiți una nouă. Revocă un dispozitiv emis din CLI
 din **Setări → Tu → Dispozitivele tale** când ai terminat cu el.
 
 Cheia de asociere autentifică handshake-ul Noise obligatoriu; fiecare sesiune
@@ -244,6 +245,16 @@ de pe loopback; clienții asociați folosesc în schimb tunelul criptat.
 
 Serverul rulează până la `SIGINT`/`SIGTERM`, apoi se oprește curat.
 
+### Citește liniile de pornire
+
+Două linii îți arată cum este configurat serverul. Linia de expunere, afișată lângă bannerul de pornire, începe cu `cc_server exposure:` și arată cât de departe poate fi atins serverul (`bind`, `tls`, `relay`, `tunnel`), dacă este înregistrat un proprietar de server (`owner`) și cum rulează agenții pe această mașină (`sandbox`):
+
+- `sandbox=native`: fiecare rulare a unui agent este învelită în sandbox-ul sistemului de operare.
+- `sandbox=off`: ai pornit serverul cu `--sandbox off`, deci agenții fiecărui membru rulează fără izolare pe această mașină.
+- `sandbox=unavailable`: gazda nu are un backend de sandbox (Windows sau Linux fără `bwrap` și `socat`), deci pornesc doar rulările agenților pentru care proprietarul serverului răspunde. Celelalte sunt refuzate cu „Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți.”
+
+O linie despre sandbox mai devreme în jurnal spune același lucru în cuvinte și, când lipsește un backend, numește ce trebuie instalat. Rularea agenților altora fără sandbox este o alegere pe care proprietarul serverului o face o singură dată, pentru toți, cu `--sandbox off`. Vezi [Configurează politicile de sandbox](/ro-RO/manual/ghiduri-practice/politici-sandbox/#verifică-dacă-rulările-agenților-tăi-sunt-sandboxate).
+
 ## Pasul 5: Conectează un client
 
 Îndreaptă un client către URL-ul serverului și cheia de asociere de la pasul 3:
@@ -270,6 +281,8 @@ WebSocket prin aceeași sesiune criptată autentificată ca restul clientului.
 `cc_server` decriptează fiecare cerere, o transmite backendului său local
 code-server și criptează răspunsul înapoi către client. Fișierele rămân în
 proprietatea serverului.
+
+Editorul rulează pe server ca utilizatorul propriu al serverului, cu terminalul, sarcinile și extensiile lui, așa că doar [proprietarul serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului) îl poate deschide. O sesiune aparține dispozitivului și persoanei care a deschis-o. Se deschide cu Workspace Trust-ul VS Code pornit, deci VS Code întreabă înainte să aibă încredere într-un folder, și cu sarcinile automate oprite, ca sarcinile unui repository să nu pornească la deschidere. Ceilalți păstrează editorul și vizualizările de fișiere integrate în aplicație; editorul complet nu le este oferit.
 
 Găzduiește clientul web prin HTTPS sau pe o origine loopback securizată, ca
 service worker-ele să poată rula. Build-ul web obișnuit și scripturile de
@@ -317,6 +330,8 @@ așa că serverul nu are nevoie de o adresă publică pentru ele. Autentificări
 prin aplicațiile proprii ale serverului întorc browserul la URL-ul public al
 serverului, așa că setează `--public-url` la o adresă pe care browserele
 oamenilor o pot accesa.
+
+Aceasta este valoarea implicită a serverului. Un administrator al unui spațiu de lucru poate da spațiului de lucru o altă alegere, din **Setări → Spațiu de lucru → Integrări**. Cu `CC_CONNECT_URL` setat, un spațiu de lucru poate totuși trece pe propriile aplicații, dar nu pe un Connect propriu; vezi [Alegerea pe spațiu de lucru](/ro-RO/manual/referinta/connect/#alegerea-pe-spațiu-de-lucru).
 
 Ca să găzduiești Connect pentru alte servere de pe acesta, setează
 `CC_SERVER_CONNECT_HOST=on`; vezi
@@ -370,7 +385,7 @@ spațiul de lucru — nu de deținerea unei chei de asociere.
 Două lucruri de știut înainte de a expune portul dincolo de loopback (doar TLS nu
 furnizează criptarea cap la cap a clientului asociat și nu autorizează resurse):
 
-- **MCP eșuează închis în afara gazdei.** O suprafață MCP fără token răspunde doar pe loopback. Legarea la `any` nu o lărgește — o cerere din afara gazdei este refuzată cu „MCP requires a bearer token to answer non-loopback clients” până când configurezi unul (`mcp.setToken`, sau **Setări → Server → Servere MCP**).
+- **MCP are întotdeauna nevoie de token.** Serverul creează tokenul MCP la prima pornire, iar fiecare cerere, inclusiv cele de pe loopback, trebuie să îl trimită ca `Authorization: Bearer <token>`. Nu poate fi dezactivat; proprietarul serverului îl citește și îl rotește în **Setări → Server → Servere MCP**. Cererile venite de pe o pagină web, cele către un `Host` necunoscut sau un `POST` care nu este JSON sunt refuzate înainte să se verifice tokenul. Vezi [Folosește serverul MCP](/ro-RO/manual/ghiduri-practice/server-mcp/).
 - **`GET /healthz` este neautentificat prin proiectare**, cu CORS wildcard, și publică ID-ul, numele, amprenta de identitate și versiunea de build ale serverului. Clienții au nevoie de amprentă ca să fixeze serverul, deci este deliberat — dar înseamnă că orice `cc_server` accesibil dezvăluie atât oricui întreabă.
 
 ## Ghiduri conexe

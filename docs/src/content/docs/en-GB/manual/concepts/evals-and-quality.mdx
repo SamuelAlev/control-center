@@ -2,7 +2,7 @@
 title: Evals and quality
 description: Eval suites and revision-pinned skill campaigns, and how to interpret their evidence.
 slug: en-GB/manual/concepts/evals-and-quality
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observability → Quality** contains both single-task eval suites and paired
@@ -19,7 +19,7 @@ LLM-rubric judge covers what those checks cannot express.
 Five starter suites seed when a workspace is created. They cover orchestration
 proposals, a review that finds a seeded bug, plan mode staying read-only, plan
 mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
+`WorkspaceCreated` (published by `workspace.create`), skips a name
 that already exists and does not backfill older workspaces.
 
 ### Where they appear

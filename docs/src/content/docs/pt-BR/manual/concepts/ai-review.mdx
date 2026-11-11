@@ -2,7 +2,7 @@
 title: Revisão com IA
 description: Como uma pull request se torna uma pull request revisada — espaços de revisão, nós de revisão e consenso entre pares, coortes e eixos, o veredito Ship/Hold/Block e por que a publicação continua sendo um passo que você dá.
 slug: pt-BR/manual/conceitos/revisao-com-ia
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## A forma de uma revisão
@@ -208,8 +208,14 @@ você clica em **Publicar no GitHub**:
 - O botão **Publicar no GitHub** publica a revisão como a pessoa que clicou
   nele, com o próprio login dela no GitHub: o portão de liberação é dela, então
   a revisão também é. Uma publicação sem uma pessoa por trás é automação, que
-  nunca aprova: Ship sai então como `COMMENT` e, no Control Center Connect, a
-  publicação é atribuída com o prefixo `**Control Center** (for @login):`.
+  nunca aprova: Ship sai então como `COMMENT`, e as @-menções nos achados são
+  neutralizadas para que a publicação não notifique ninguém. Ela é postada pelo
+  bot, exceto no app compartilhado Control Center Connect quando o operador do
+  Connect não listou esta instalação: então ela sai com o login próprio da
+  pessoa responsável, com o nome dela, atribuída com o prefixo
+  `**Control Center** (for @login):`. Um servidor ou espaço de trabalho com o
+  próprio app do GitHub sempre publica como o bot. Um agente que chama a
+  ferramenta MCP só pode publicar a revisão do próprio espaço.
 
 A publicação declara a classe de ação `prPublish`, então o ponto de
 estrangulamento das barreiras a condiciona como qualquer ação mutante — ela

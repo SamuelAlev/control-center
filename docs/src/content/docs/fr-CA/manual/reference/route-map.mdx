@@ -2,7 +2,7 @@
 title: Carte des routes
 description: Chaque route que Control Center enregistre, avec son écran et ses paramètres de requête.
 slug: fr-CA/manuel/reference/carte-des-routes
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Coquille de l’application
@@ -22,7 +22,7 @@ Un identifiant manquant et une configuration manquante sont traitées différemm
 le discriminant est `users.onboarding_finished_at`, lu depuis le `identity.me` de
 l’appelant lui-même — jamais « des espaces de travail existent », ce qui est faux dès
 l’instant où quelqu’un est invité dans un espace de travail qu’il n’a jamais créé. Sans
-forge connectée, un compte qui a terminé la configuration initiale reste dans l’application : la coquille de l’espace de travail affiche un avertissement avec un lien vers Paramètres → Espace de travail → Profil et identité, où se trouve la connexion. Un compte qui ne l’a pas terminée se rend à
+forge connectée, un compte qui a terminé la configuration initiale reste dans l’application : la coquille de l’espace de travail affiche un avertissement avec un lien vers Paramètres → Vous → Profil, où se trouve la connexion. Un compte qui ne l’a pas terminée se rend à
 `/onboarding`. Tant que l’indicateur demeure inconnu, la garde retient l’écran de
 démarrage plutôt que de deviner, parce qu’elle ne redirige jamais à rebours hors de la
 configuration initiale.
@@ -86,8 +86,8 @@ l’application dans le titre de la fenêtre, sans fil d’Ariane.
 
 ## Routes de paramètres
 
-`/settings` redirige vers `/settings/you/appearance`. Le bouton de paramètres de la barre
-latérale et `Cmd/Ctrl + ,` mènent tous deux à `/settings/you/appearance`.
+`/settings` redirige vers `/settings/you/profile`. Le bouton de paramètres de la barre
+latérale et `Cmd/Ctrl + ,` mènent tous deux à `/settings/you/profile`.
 
 Les chemins de paramètres sont organisés par **portée** — `you/`, `workspace/`,
 `server/` — parce que le segment indique qui est touché par un changement. Deux chemins
@@ -98,20 +98,26 @@ sont antérieurs à cette organisation et ne portent aucune portée dans l’URL
 
 | Chemin                        | Écran                                                                        |
 | ----------------------------- | ---------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Thème, langue, typographie, thème de l’éditeur (la page d’accueil des paramètres) |
-| `/settings/you/notifications` | Interrupteurs par événement, heures calmes                                   |
+| `/settings/you/profile`       | Votre compte sur ce serveur : nom, nom d’utilisateur, photo et connexion (la page d’accueil des paramètres) |
+| `/settings/you/profile?section=accounts` | Comptes connectés : vos propres connexions à l’hébergement de code, aux tickets, au calendrier et au clavardage, et brouillons de tickets depuis le clavardage |
+| `/settings/you/appearance`    | Thème, langue, typographie, thème de l’éditeur |
 | `/settings/you/audio`         | Microphone, dictée, détection des réunions et sortie d’ambiance sonore        |
+| `/settings/you/notifications` | Interrupteurs par événement, heures calmes                                   |
+| `/settings/you/commits`       | Qui est crédité dans les commits issus de travaux que vous lancez, et votre clé de signature des commits |
+| `/settings/you/desktop`       | Application de bureau seulement : l’icône de la barre d’état, la fermeture de la fenêtre et l’ouverture à la connexion |
 | `/settings/you/devices`       | Téléphones appairés et contrôle à distance                                    |
 | `/settings/you/newsfeed`      | Gestion du fil : sources, actualisation, état de lecture                      |
+| `/settings/you/links`         | Où s’ouvrent les liens venant de l’extérieur de Control Center                |
 
 ### Espace de travail
 
 | Chemin                             | Écran                                                                                                     |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Profil et identité dans cet espace de travail : nom, auteur git, hébergement de code, calendrier          |
-| `/settings/workspace/general`      | Nom, logo, globs de secrets, concurrence des révisions, nommage des branches, état de la synchronisation, passerelles de clavardage, zone sensible |
+| `/settings/workspace/profile`      | Profil et identité dans cet espace de travail : nom, courriel, auteur git |
+| `/settings/workspace/general`      | Nom, logo, globs de secrets, concurrence des révisions, nommage des branches, zone sensible |
+| `/settings/workspace/integrations` | Choix de connexion, la GitHub App et les jetons d’automatisation, le fournisseur de tickets et l’automatisation, état de la synchronisation, les applications de fournisseur propres à l’espace de travail, passerelles de clavardage, GIF. Chaque groupe de fournisseurs nomme votre propre compte et renvoie à Comptes connectés |
 | `/settings/workspace/meetings`     | Modèles de notes de réunion et profils vocaux enregistrés                                                 |
-| `/settings/workspace/members`      | Liste des membres, invitations, journal d’audit. Le journal d’audit se pagine au moyen du paramètre facultatif `?cursor=` |
+| `/settings/workspace/members`      | Liste des membres et invitations |
 | `/settings/workspace/repositories` | Dépôts enregistrés dans cet espace de travail                                                             |
 | `/settings/workspace/environments` | Définitions d’environnement : ce que les espaces peuvent démarrer et les tâches de leurs arbres de travail |
 | `/settings/workspace/agents`       | Identités d’agents enregistrées                                                                           |
@@ -133,6 +139,8 @@ sont antérieurs à cette organisation et ne portent aucune portée dans l’URL
 | `/settings/server/rigs`        | Rigs : ce que cet hôte peut démarrer, les images de base, les images personnalisées et les machines en cours d’exécution |
 | `/settings/server/sandbox`     | Autorisations d’exécution en bac à sable : programmes que les agents peuvent lancer depuis leur copie de travail de vos dépôts |
 | `/settings/server/diagnostics` | Diagnostics et confidentialité : bac à sable, embedding, journalisation, rapports de plantage |
+| `/settings/server/people`      | Personnes sur ce serveur et confirmation de chaque adresse (propriétaire du serveur seulement)       |
+| `/settings/server/audit`       | Journal d’audit : celui du serveur et celui des espaces de travail que vous administrez                            |
 | `/settings/server/backup`      | Sauvegarde et restauration : instantanés de l’installation, export par espace de travail, import et suppression |
 | `/settings/server/about`       | À propos et mises à jour                                                                    |
 

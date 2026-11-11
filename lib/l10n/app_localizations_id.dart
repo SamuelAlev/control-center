@@ -153,7 +153,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get guardrailClassPrCreate => 'Buka pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Publikasikan review atau merge';
+  String get guardrailClassPrPublish => 'Perbarui atau gabungkan pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Tulis ke pelacak eksternal';
@@ -2549,9 +2549,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get activityToggledMcpServer => 'Mengalihkan server MCP';
 
   @override
-  String get activityUpdatedMcpToken => 'Memperbarui token MCP';
-
-  @override
   String get activitySavedApiKey => 'Menyimpan kunci API';
 
   @override
@@ -3177,9 +3174,6 @@ class AppLocalizationsId extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Hapus \"$name\"?';
   }
-
-  @override
-  String get archiveConversation => 'Arsipkan percakapan';
 
   @override
   String get deleteFact => 'Hapus fakta';
@@ -3872,9 +3866,6 @@ class AppLocalizationsId extends AppLocalizations {
       'Ikuti tampilan OS Anda atau pilih mode tetap.';
 
   @override
-  String get mcpAuthToken => 'Token autentikasi MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Kontrol server MCP tidak tersedia di server yang terhubung.';
 
@@ -4091,10 +4082,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Tidak ada font sistem terdeteksi.';
-
-  @override
-  String get noTokenSet =>
-      'Tidak ada token yang diatur — akses tidak dibatasi.';
 
   @override
   String get noWorkingMemory => 'Belum ada catatan memori kerja.';
@@ -4582,31 +4569,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Kredensial GitHub server tidak dapat melihat $repos. Jika repositori milik organisasi, instal GitHub App di sana atau hubungkan token yang memiliki akses.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repositori tidak dapat diakses',
-      one: 'Repositori tidak dapat diakses',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Instalasi GitHub App ditangguhkan';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Menampilkan data terakhir yang diketahui untuk $repos. Lanjutkan instalasi di GitHub, atau hubungkan token yang memiliki akses.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Tidak ada akses';
 
   @override
@@ -4721,9 +4683,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Aturan';
-
-  @override
-  String get runCompleted => 'Run selesai';
 
   @override
   String get running => 'Berjalan';
@@ -4885,9 +4844,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get setLabel => 'Atur';
-
-  @override
-  String get setToken => 'Atur token';
 
   @override
   String get settingsLabel => 'Pengaturan';
@@ -5086,9 +5042,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get skillOriginManual => 'Manual';
 
   @override
-  String get skillOriginRegistry => 'Registri';
-
-  @override
   String get skillOriginRuntimeLocal => 'Runtime lokal';
 
   @override
@@ -5263,10 +5216,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Alihkan tema';
-
-  @override
-  String get tokenConfigured =>
-      'Dikonfigurasi — klien harus menyertakan token ini.';
 
   @override
   String get topic => 'Topik';
@@ -8826,7 +8775,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Tindakan alat mana yang dijalankan tanpa bertanya. Pembacaan selalu diizinkan; tingkat yang lebih tinggi akan meminta konfirmasi.';
+      'Tindakan mana dari alat Control Center sendiri, yang dipanggil melalui endpoint MCP-nya atau oleh agennya, yang berjalan tanpa bertanya. Pembacaan selalu diizinkan; tingkat yang lebih tinggi meminta konfirmasi. Server di dalam run mengikuti kebijakan tindakan run tersebut.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Selalu tanya';
@@ -12316,20 +12265,8 @@ class AppLocalizationsId extends AppLocalizations {
   String get settingsAbout => 'Tentang';
 
   @override
-  String get settingsScopeBadgeYou => 'ANDA';
-
-  @override
-  String get settingsScopeBadgeDevice => 'PERANGKAT INI';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'RUANG KERJA';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Nama, email, dan identitas git Anda di ruang kerja ini. Mengganti ruang mengganti overlay ini; handle, masuk, dan perangkat tetap di akun.';
+      'Nama, email, dan identitas git Anda di ruang kerja ini. Mengganti ruang kerja mengganti overlay ini; nama pengguna, masuk, dan perangkat Anda tetap di akun Anda di Anda → Profil.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12344,48 +12281,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identitas, kebijakan, dan konvensi yang dibagikan semua orang di ruang kerja ini.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Atribusi commit';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Pilih apakah commit agen mencantumkan Control Center. Admin ruang kerja dapat mengganti pilihan ini untuk semua orang di ruang kerja.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Atribusi agen';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Cantumkan Control Center pada commit agen';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Anda selalu menjadi penulis dan pelaku commit. Jika diaktifkan, Control Center (@usectrl) ditambahkan sebagai penulis bersama. Jika dinonaktifkan, commit tidak mencantumkan kredit agen.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Pengaturan ruang kerja ini menggantikan pilihan pribadi Anda. Preferensi Anda tetap tersimpan, tetapi tidak berlaku di sini.';
-
-  @override
-  String get settingsAgentAttributionLoading => 'Memuat pengaturan atribusi…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Pilih apakah commit agen mencantumkan Control Center. Pilihan ruang kerja menggantikan preferensi pribadi setiap anggota.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Gunakan preferensi setiap anggota';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Selalu cantumkan Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Jangan pernah cantumkan Control Center';
+      'Kebijakan dan konvensi yang dipakai bersama oleh semua orang di ruang kerja ini.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12754,9 +12650,6 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Memeriksa koneksi…';
-
-  @override
-  String get fromEnvironment => 'dari environment';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13323,14 +13216,14 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Dipakai oleh ruang kerja yang mewarisi aplikasi GitHub pemasangan ini. Ruang kerja dengan aplikasi sendiri mengonfigurasinya di Ruang kerja → Umum.';
+      'Dipakai ruang kerja yang mengikuti aplikasi masuk server ini. Ruang kerja dengan aplikasinya sendiri menyiapkan App-nya di Ruang kerja → Integrasi.';
 
   @override
   String get providerAppsGroupPrConversations => 'Percakapan pull request';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Cara pengembang berbicara dengan server ini di GitHub pada ruang yang mewarisi. Ruang dengan App sendiri punya bot di Ruang kerja → Umum. Tanpa webhook atau URL publik — server melakukan polling.';
+      'Cara developer dapat berkomunikasi dengan server ini di GitHub pada ruang kerja yang mengikuti server ini. Ruang kerja dengan aplikasinya sendiri memiliki bot sendiri di Ruang kerja → Integrasi. Berfungsi tanpa webhook atau URL publik; server melakukan polling.';
 
   @override
   String get providerAppBotLogin => 'Login bot';
@@ -13363,10 +13256,6 @@ class AppLocalizationsId extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Tanpa token, apa pun yang dapat menjangkau port ini dapat memanggil setiap tool.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Tool';
 
   @override
@@ -13393,6 +13282,131 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Hapus semua';
+
+  @override
+  String get guardrailFamilyCommands => 'Perintah';
+
+  @override
+  String get guardrailStandingApproval => 'Persetujuan sementara';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Diizinkan untuk $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Tanyakan dulu untuk $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Ditolak untuk $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'cabang $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'jalur $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'host $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'perintah $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'tool $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'perintah yang diawali $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'paling banyak $count sekaligus';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'paling banyak $amount sen';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'setiap tindakan jenis ini';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'oleh $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'berakhir $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'sampai dicabut';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Cabut: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'Tidak dapat mencabutnya. Coba lagi.';
+
+  @override
+  String get guardrailEntryInactive => 'tidak berlaku saat ditolak';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Diizinkan dalam $count kasus di bawah',
+      one: 'Diizinkan dalam 1 kasus di bawah',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count persetujuan sementara untuk seluruh ruang kerja juga berlaku di sini.',
+      one:
+          '1 persetujuan sementara untuk seluruh ruang kerja juga berlaku di sini.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count persetujuan sementara diatur untuk Space atau Agen tertentu. Pilih Space atau Agen di atas untuk melihatnya.',
+      one:
+          '1 persetujuan sementara diatur untuk satu Space atau Agen. Pilih Space atau Agen di atas untuk melihatnya.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandboxing';
@@ -14206,6 +14220,13 @@ class AppLocalizationsId extends AppLocalizations {
       'Anda akan ditanya lagi saat agen perlu menjalankan program dari salinan ini.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Cari jalur';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Tidak ada izin yang cocok dengan pencarian Anda';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14560,11 +14581,11 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Koneksi ini mencapai server lewat relay, yang tidak membawa transfer file. Hubungkan ke server secara langsung untuk mengunduh atau mengunggah cadangan.';
+      'Transfer file belum disiapkan untuk koneksi ini. Hubungkan ulang ke server untuk mengunduh atau mengunggah cadangan.';
 
   @override
   String get backupTransferForbidden =>
-      'Server menolak. Mengunduh ruang kerja memerlukan peran admin, memulihkan memerlukan owner, dan snapshot utuh memerlukan operator instalasi.';
+      'Server menolak. Mengunduh ruang kerja memerlukan peran admin ruang kerja. Memulihkan satu ruang kerja memerlukan pemilik server, yang juga harus memiliki ruang kerja tersebut. Snapshot utuh memerlukan pemilik server.';
 
   @override
   String get backupTransferUnsupported =>
@@ -14872,33 +14893,8 @@ class AppLocalizationsId extends AppLocalizations {
       'Letakkan konten papan klip dari lingkungan mana pun di perangkat ini tanpa bertanya.';
 
   @override
-  String get workspaceGitHubIdentity => 'Identitas GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Cara pekerjaan GitHub di latar belakang dalam ruang kerja ini diautentikasi: dengan aplikasi pemasangan ini, atau dengan aplikasi milik ruang kerja sendiri.';
-
-  @override
-  String get workspaceGitHubModeInherit => 'Gunakan GitHub App instalasi ini';
-
-  @override
-  String get workspaceGitHubModeApp => 'Gunakan GitHub App lain';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Menggunakan GitHub App di Server → Aplikasi penyedia.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Identitas bot dan polling ruang kerja ini. Anggota masuk di Anda melalui App ini.';
-
-  @override
   String get profileOverlayHint =>
       'Bidang ini adalah Anda di ruang kerja ini. Bidang kosong mewarisi nama dan email akun. Mengganti ruang kerja mengganti overlay ini.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Masuk atau tempel token untuk ruang kerja ini.';
 
   @override
   String get stackStartNextPart => 'Mulai bagian berikutnya';
@@ -15703,6 +15699,17 @@ class AppLocalizationsId extends AppLocalizations {
       'Server tidak dapat menyediakan perintah login untuk akun ini.';
 
   @override
+  String get claudeAccountSignedIn => 'Sudah masuk';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Dialog ini akan tertutup otomatis setelah proses masuk selesai.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Dialog ini akan tertutup otomatis setelah semua akun sudah masuk.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Login Claude Code kedaluwarsa';
 
@@ -15854,7 +15861,7 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'Ini perlu disiapkan di server';
+  String get environmentInputNeeded => 'Ini perlu disiapkan di server';
 
   @override
   String get environmentKindApp => 'Aplikasi';
@@ -16456,21 +16463,41 @@ class AppLocalizationsId extends AppLocalizations {
   String get environmentOpenPanel => 'Buka lingkungan';
 
   @override
-  String get environmentNeedsSetup => 'Perlu disiapkan';
+  String get environmentStatusBlocked => 'Perlu tindakan';
+
+  @override
+  String get environmentStateInTerminal => 'Di terminal';
+
+  @override
+  String get environmentWaitingInTerminal => 'Menunggu Anda di terminal';
+
+  @override
+  String get environmentOpenTerminal => 'Buka terminal';
+
+  @override
+  String get environmentSignInNeeded => 'Anda perlu masuk';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Ada yang dibutuhkan ini tidak tersedia';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Selesai di sini. Lingkungan masih dimulai';
 
   @override
   String get environmentContinueInTerminal => 'Lanjutkan di terminal';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Alat ini membutuhkan Anda di terminal untuk kata sandi atau pertanyaan. Proses mulai berlanjut setelah selesai.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Terminal ini terbuka karena proses mulai membutuhkan Anda';
 
   @override
-  String get environmentSetupTab => 'Penyiapan lingkungan';
+  String get environmentStartTerminalTab => 'Penyiapan lingkungan';
 
   @override
   String get environmentsNothingRunning =>
@@ -16763,23 +16790,14 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Setujui permintaan di halaman $provider pada browser. Jendela ini akan tahu sendiri saat Anda selesai.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Menunggu $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Proses masuk tidak selesai';
 
   @override
   String get signInReopenPage => 'Buka lagi halaman masuk';
 
   @override
-  String get signInCodePrompt => 'Masukkan kode yang ditampilkan di browser';
+  String get signInCodePrompt =>
+      'Konfirmasi di browser Anda, lalu masukkan kode yang ditampilkannya.';
 
   @override
   String get signInCodeMalformed =>
@@ -16822,7 +16840,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Proses masuk ini sudah tidak berlaku. Mulai ulang.';
+      'Proses masuk ini sudah tidak terbuka: dibatalkan, sudah dipakai, atau diganti. Mulai lagi.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16830,7 +16848,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Terlalu banyak percobaan masuk saat ini. Tunggu satu menit, lalu coba lagi.';
+      'Terlalu banyak permintaan saat ini. Tunggu sebentar, lalu coba lagi.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16861,10 +16879,6 @@ class AppLocalizationsId extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Aplikasi $provider belum dipasang di tempat yang dibutuhkan. Pasang lalu coba lagi.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Pemasangan aplikasi GitHub ini sudah diotorisasi untuk server Control Center lain.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16923,7 +16937,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Tempat aplikasi GitHub dipasang, di antara akun tempat repositori ruang kerja ini berada. Pemasangan milik organisasi hanya berfungsi di server yang diotorisasi oleh admin organisasi tersebut.';
+      'Tempat aplikasi GitHub dipasang, di antara akun tempat repositori ruang kerja ini berada.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16933,21 +16947,7 @@ class AppLocalizationsId extends AppLocalizations {
   String get githubInstallApp => 'Pasang aplikasi GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Otorisasi server ini';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Server ini sekarang dapat memakai pemasangan di $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Ditangguhkan';
-
-  @override
-  String get githubInstallationAuthorized => 'Diotorisasi';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Belum diotorisasi';
 
   @override
   String get linearAutomationTitle => 'Otomatisasi Linear';
@@ -16973,7 +16973,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Daftarkan sendiri aplikasi GitHub, Google, dan Linear di Pengaturan → Server → Single sign-on, lalu hubungkan aplikasi Slack milik setiap ruang kerja di pengaturannya. \"Buat aplikasi GitHub saya\" menyiapkan GitHub dalam satu langkah.';
+      'Daftarkan sendiri aplikasi GitHub, Google, dan Linear di Pengaturan → Server → Single sign-on, lalu hubungkan aplikasi Slack milik setiap ruang kerja di Ruang kerja → Integrasi, tempat ruang kerja juga dapat memilih aplikasinya sendiri atau Connect. «Buat App GitHub saya» menyiapkan GitHub dalam satu langkah.';
 
   @override
   String get connectModeCustom => 'Gunakan server Connect kustom';
@@ -17108,7 +17108,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Server ini mendapat kunci dan ID pemasangan baru. Semua proses masuk melalui Connect berhenti berfungsi, dan semua orang harus masuk lagi. Proses masuk melalui aplikasi Anda sendiri tidak terpengaruh.';
+      'Server ini mendapatkan kunci dan ID instalasi baru, dan ID lama dinonaktifkan di Connect: masuk yang disegel dengannya, serta kunci lama, berhenti berfungsi di sana, sehingga semua orang yang masuk melalui Connect harus masuk lagi. Token yang sudah dibagikan tetap berfungsi sampai kedaluwarsa. Masuk melalui aplikasi Anda sendiri tidak terpengaruh. Jika Connect tidak dapat dihubungi, tidak ada yang berubah dan Anda dapat mencoba lagi.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17242,33 +17242,6 @@ class AppLocalizationsId extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Aplikasi penyedia';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Aplikasi Google Calendar, Linear, dan Klipy yang digunakan ruang kerja ini. Secara default, ruang kerja memakai aplikasi server ini atau Control Center Connect. Ruang kerja dengan aplikasinya sendiri tidak akan beralih ke aplikasi tersebut.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'Gunakan aplikasi server ini';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Login dan permintaan memakai aplikasi server ini atau Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn => 'Gunakan aplikasi ruang kerja ini';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Hanya aplikasi ruang kerja ini yang dipakai. Selama belum lengkap, penyedia ini nonaktif di sini dan tidak beralih ke aplikasi lain.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Aplikasi server';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Aplikasi sendiri';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Masih kurang: $fields. Sampai semua kolom terisi, penyedia ini nonaktif di ruang kerja ini dan tidak beralih ke aplikasi server.';
   }
@@ -17285,22 +17258,115 @@ class AppLocalizationsId extends AppLocalizations {
       'Pencarian GIF di ruang kerja ini memakai kunci ini.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Alihkan aplikasi $provider?';
+  String get settingsWorkspaceIntegrations => 'Integrasi';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Hosting kode, tiket, kalender, obrolan, dan pencarian GIF di ruang kerja ini, serta aplikasi tempat mereka masuk.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Aplikasi mana yang dipakai ruang kerja ini untuk GitHub, Google Calendar, Linear, Slack, dan pencarian GIF. Kecuali admin memilih lain, ruang kerja ini mengikuti server ini.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Sama seperti server ini';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Server ini menggunakan aplikasi Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Server ini menggunakan server Connect di $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Semua orang yang terhubung ke $provider di ruang kerja ini melalui aplikasi server ini harus masuk lagi dengan aplikasi ruang kerja.';
+  String get workspaceConnectInheritOwn =>
+      'Server ini menggunakan aplikasinya sendiri.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Pemilik server belum memilih, jadi aplikasi milik server yang berlaku.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Hanya aplikasi ruang kerja ini yang dipakai. Tambahkan masing-masing di bawah, di samping penyedianya. Penyedia tanpa aplikasi dinonaktifkan di sini; aplikasi server ini dan Connect tidak dipakai sebagai gantinya.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Hanya HTTPS. Alamat di jaringan pribadi atau lokal ditolak.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL di lingkungan server ini menentukan tujuan proses masuk, sehingga ruang kerja ini tidak dapat memilih Connect sendiri. Ruang kerja ini dapat mengikuti server ini atau memakai aplikasinya sendiri.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Ganti aplikasi masuk ruang kerja ini?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Semua orang di ruang kerja ini harus masuk lagi ke GitHub, Linear, dan Google Calendar melalui aplikasi baru. Proses masuk yang dibuat lewat aplikasi saat ini akan berhenti berfungsi di sini.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Ganti aplikasi';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Mengikuti pilihan di atas. Penyedia tidak pernah kembali ke aplikasi lain.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Aplikasi ruang kerja';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Aplikasi server';
+
+  @override
+  String get workspaceGitHubAppTitle => 'Aplikasi GitHub';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Aplikasi milik ruang kerja ini bertindak untuk repositorinya dan memasukkan anggota. Tidak pernah kembali ke aplikasi server ini atau Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Ruang kerja ini menggunakan aplikasi GitHub yang disediakan aplikasi masuknya. Pasang di akun tempat repositori Anda berada.';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'Bertindak untuk ruang kerja ini';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Bot aplikasi memberi komentar, meninjau, dan melakukan polling pada pull request di repositori ruang kerja ini.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Aplikasi $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Ini akan menghapus kredensial $provider ruang kerja. Semua orang yang terhubung lewat aplikasi ruang kerja harus masuk lagi.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Proses masuk dan permintaan $provider di ruang kerja ini hanya memakai aplikasi ini.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Alihkan aplikasi';
+  String get workspaceGifsTitle => 'GIF';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Pencarian GIF memakai kunci Klipy milik ruang kerja ini.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Pencarian GIF memakai kunci Klipy milik server ini.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Pencarian GIF berjalan melalui Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Pencarian GIF nonaktif di ruang kerja ini.';
 
   @override
   String openOnForge(String forge) {
@@ -17318,7 +17384,7 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Hubungkan GitHub, GitLab, atau Bitbucket di Pengaturan → Ruang kerja → Profil & identitas → Hosting kode';
+      'Hubungkan GitHub, GitLab, atau Bitbucket di Pengaturan → Anda → Profil';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17336,4 +17402,1132 @@ class AppLocalizationsId extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Hubungkan $forge untuk membuka pull request di repositori ini';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Sesi $provider Anda sebagai $account sudah berakhir. Masuk lagi.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Dijeda: layanan masuk ruang kerja ini berubah';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '$provider tidak dapat dihubungi saat ini. Mencoba lagi.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Sesi masuk Anda tetap disimpan dan akan berfungsi lagi setelah layanan kembali. Admin ruang kerja dapat memeriksa pengaturan masuk di Integrasi.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Server dimulai ulang. Mulai proses masuk lagi.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Masuk dengan $provider belum disiapkan untuk ruang kerja ini.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Masuk dengan $provider disiapkan dengan salah: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Ruang kerja ini memakai aplikasinya sendiri, tetapi tidak punya aplikasi $provider.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Build ini tidak dapat memverifikasi Control Center Connect, jadi masuk dengan $provider dinonaktifkan.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Layanan masuk ruang kerja ini mengubah identitasnya. Admin perlu mengonfirmasinya.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Layanan masuk ruang kerja ini tidak dapat dihubungi saat ini.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Alamat layanan masuk ruang kerja ini tidak ada atau tidak valid.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Operator server menetapkan layanan masuk, jadi pilihan ruang kerja ini tidak berlaku.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Layanan masuk ruang kerja ini tidak menyediakan $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Buka integrasi';
+
+  @override
+  String get signInOpenServerSettings => 'Buka pengaturan masuk';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Ini berjalan atas nama Anda di $provider, dan Anda belum menambahkan token. Tambahkan satu, lalu coba lagi.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Putuskan $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Anda perlu menghubungkan $provider lagi untuk bekerja di repositorinya.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Ini memutuskan $provider hanya di ruang kerja ini. Ruang kerja lain tetap memakai koneksinya sendiri.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Ini memutuskan $provider di setiap ruang kerja yang berbagi koneksi ini.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider diputuskan dari ruang kerja ini';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider diputuskan dari semua ruang kerja';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Pasang GitHub App di $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Otomatisasi tidak dapat menjangkau $repos sampai App dipasang di sana.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Tambahkan $repos ke repositori GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'App sudah dipasang di akun ini, tetapi belum dapat melihat repositori ini.';
+
+  @override
+  String get repoAccessChooseRepos => 'Pilih repositori';
+
+  @override
+  String get repoAccessSuspendedTitle => 'Instalasi GitHub App ditangguhkan';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Otomatisasi untuk $repos dijeda sampai pemilik akun melanjutkan instalasi di GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Otomatisasi dijeda';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Orang yang bertanggung jawab atas otomatisasi ruang kerja ini tidak lagi dapat melihat $repos, jadi tidak ada yang berjalan di sana atas namanya.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Orang yang bertanggung jawab atas otomatisasi ruang kerja ini belum masuk ke forge, jadi otomatisasi untuk $repos menunggu sampai mereka masuk.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Tidak dapat memeriksa akses ke $repos. Mencoba lagi.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Minta $admins untuk memperbaikinya.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Minta admin ruang kerja untuk memperbaikinya.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Masuk ke $forge untuk melihat pull request dari $count repositori lagi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositori disembunyikan karena akun $forge Anda tidak dapat melihatnya',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositori disembunyikan karena Anda tidak punya akses di ruang kerja ini',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Memeriksa akses Anda ke $count repositori lagi…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Tertaut, tetapi otomatisasi belum dapat menjangkau semuanya';
+
+  @override
+  String get githubInstallOnAnotherOrganization => 'Pasang di organisasi lain';
+
+  @override
+  String get forgeTokenEmailLabel => 'Email akun Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Masukkan alamat email akun Atlassian Anda.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'Token API';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Token API Bitbucket bekerja bersama email akun Atlassian yang membuatnya.';
+
+  @override
+  String get automationTokensTitle => 'Token otomatisasi';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Pekerjaan latar belakang di GitLab dan Bitbucket, seperti pembaruan pull request, komentar tinjauan AI, dan merge request yang tidak diminta siapa pun, memakai token akses bot, tidak pernah milik seseorang. Token milik repositori sendiri mengalahkan token ruang kerja.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Dipakai untuk setiap repositori GitLab atau Bitbucket di ruang kerja ini yang tidak punya token otomatisasi sendiri. Pekerjaan latar belakang di sana tampil sebagai bot token ini.';
+
+  @override
+  String get automationTokenNone =>
+      'Tidak ada token. Otomatisasi dijeda di sini.';
+
+  @override
+  String get automationTokenFromWorkspace => 'Memakai token ruang kerja';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Bertindak sebagai $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Token akses ditambahkan';
+
+  @override
+  String get automationTokenRejected =>
+      'Platform menolak token ini. Ganti token ini.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Token otomatisasi $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Tempel token akses proyek atau grup. Token ini butuh read_api dan read_repository; tambahkan api dan write_repository untuk komentar, merge request, dan push. GitLab menampilkan pekerjaannya sebagai bot token.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Tempel token akses repositori, proyek, atau ruang kerja dengan izin baca repositori, plus tulis pull request untuk komentar dan pull request. Token API milik Anda sendiri ada di Anda → Profil, bukan di sini.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token disimpan, tetapi tidak bisa membaca $repos. Otomatisasi di sana tetap dijeda.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Hapus token otomatisasi?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Otomatisasi yang bergantung pada token ini dijeda sampai token lain ditambahkan.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Setiap repositori $forge tanpa token sendiri';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Tidak ada token otomatisasi yang bisa membaca $repos, jadi pekerjaan latar belakang di sana dijeda.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commit dari pekerjaan yang Anda mulai memuat nama Anda. Pilih siapa lagi yang dicantumkan, dan apakah forge menampilkan commit Anda sebagai terverifikasi.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Penulis';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Pekerjaan yang Anda mulai';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Anda adalah penulis dan committer, dengan email yang diverifikasi forge Anda untuk masuk. Ini mencakup chat dengan agen, pipeline yang Anda mulai, dan commit yang Anda buat di editor.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Run otomatis';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Run yang dimulai oleh jadwal atau webhook di-commit sebagai bot, dan tidak pernah ditandatangani.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Sampai Anda masuk ke forge di ruang kerja, run Anda di sana di-commit sebagai bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Cantumkan Control Center sebagai co-author';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Commit Anda mencantumkan Control Center (@usectrl) sebagai co-author, dan run otomatis yang Anda aktifkan mencantumkan Anda. Saat dimatikan, kedua baris tidak ditambahkan.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Pengaturan ruang kerja ini menggantikan pilihan pribadi Anda. Preferensi Anda tetap tersimpan, tetapi tidak berlaku di sini.';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'Memuat pengaturan atribusi…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Pencantuman co-author';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Apakah commit memuat baris co-author: Control Center pada commit anggota, dan anggota yang mengaktifkan run otomatis pada commit-nya. Pilihan di sini menggantikan pengaturan masing-masing anggota.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Gunakan preferensi setiap anggota';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Selalu tambahkan pencantuman co-author';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Jangan pernah menambahkan pencantuman co-author';
+
+  @override
+  String get settingsCommitSigningSection => 'Commit terverifikasi';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Menandatangani';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Tidak menandatangani';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Server ini dapat menandatangani commit Anda dengan kunci milik Anda sendiri, sehingga GitHub dan GitLab menampilkannya sebagai terverifikasi. Tidak ada yang ditandatangani sampai Anda membuat kuncinya.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Buat kunci penandatanganan';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Kunci penandatanganan dibuat. Tambahkan ke akun forge Anda.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Kunci publik';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Kunci publik disalin';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Sidik jari';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Dibuat';
+
+  @override
+  String get settingsCommitSigningAddTitle => 'Tambahkan ke akun forge Anda';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Commit hanya tampil sebagai terverifikasi selama Anda juga masuk ke forge tersebut di ruang kerja, sehingga forge menjamin email Anda.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Atur Key type ke Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Atur Usage type ke Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commit di Bitbucket tidak ditandatangani. Jangan tambahkan kunci ini ke akun Bitbucket Anda: kunci SSH di sana juga berfungsi sebagai login.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Tidak didukung';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Yang Anda percayakan';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Kunci privat tidak pernah meninggalkan server ini.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Siapa pun yang mengendalikan server ini dapat menandatangani commit atas nama Anda selama kunci ada di akun forge Anda.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'Di GitHub, commit yang sudah tampil sebagai terverifikasi tetap terverifikasi setelah Anda menghapus kunci.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Hapus kunci';
+
+  @override
+  String get settingsCommitSigningDeleteTitle =>
+      'Hapus kunci penandatanganan Anda?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Mulai sekarang, commit Anda tidak ditandatangani. Kunci tetap ada di akun forge Anda sampai Anda menghapusnya di sana.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Kunci penandatanganan dihapus';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Tidak dapat memuat kunci penandatanganan Anda: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Siapa Anda di setiap ruang kerja, serta akun hosting kode, tiket, kalender, dan chat milik Anda sendiri.';
+
+  @override
+  String get accountSectionTitle => 'Akun';
+
+  @override
+  String get accountSectionDescription =>
+      'Nama pengguna dan nama Anda mengikuti Anda di setiap ruang kerja. Sebuah ruang kerja dapat menampilkan nama atau email yang berbeda: atur itu di Ruang kerja → Profil & identitas.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Tidak dapat memuat profil Anda: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Nama yang dilihat orang lain di pesan dan ulasan Anda.';
+
+  @override
+  String get accountDisplayNameRequired => 'Masukkan nama tampilan.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Ini dapat diubah, tetapi tidak dapat dihapus.';
+
+  @override
+  String get accountAvatarLabel => 'Foto';
+
+  @override
+  String get accountAvatarHint =>
+      'Tautan ke gambar persegi, dimulai dengan https://.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Gunakan tautan yang dimulai dengan https://.';
+
+  @override
+  String get usernameLabel => 'Nama pengguna';
+
+  @override
+  String get usernameRule =>
+      '2 sampai 32 huruf kecil, angka, titik, tanda hubung, atau garis bawah. Orang lain menyebut Anda dengan nama ini.';
+
+  @override
+  String get usernameAvailable => 'Tersedia.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Tersedia. Akan disimpan sebagai $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Gunakan 2 sampai 32 huruf kecil, angka, “.”, “_”, atau “-”, dimulai dan diakhiri dengan huruf atau angka.';
+
+  @override
+  String get usernameReserved => 'Nama pengguna itu dicadangkan.';
+
+  @override
+  String get usernameTaken => 'Nama pengguna itu sudah dipakai.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Nama ini belum dapat diperiksa. Anda tetap bisa menyimpan; server yang memutuskan.';
+
+  @override
+  String get linkedAccountsTitle => 'Akun terhubung';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Penyedia identitas';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Perlu masuk';
+
+  @override
+  String get linkedAccountStatusPaused => 'Dijeda';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Tidak dapat dijangkau';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Penyedia identitas tempat akun Anda masuk. Siapa pun yang menjalankan server ini yang mengelolanya.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Akun yang Anda hubungkan untuk diri sendiri. Control Center bertindak sebagai Anda melalui akun tersebut, dan perubahannya hanya memengaruhi Anda.';
+
+  @override
+  String get accountReachServer =>
+      'Dipakai di setiap ruang kerja di server ini.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Hanya dipakai di $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub hanya dipakai di $workspace, yang memiliki aplikasi masuk sendiri. GitLab dan Bitbucket dipakai di setiap ruang kerja di server ini.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Akun Anda';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Akun Anda: $status. Membuka Anda → Profil.';
+  }
+
+  @override
+  String get yourForgeAccountNone =>
+      'Belum ada akun hosting kode yang terhubung';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Belum ada akun $provider yang terhubung';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Belum ada akun $provider yang ditautkan';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'Anda adalah tamu sementara dalam demo, jadi tidak ada akun yang bisa diubah: tidak ada nama pengguna, profil, atau akun terhubung.';
+
+  @override
+  String get onboardingStepYou => 'Anda';
+
+  @override
+  String get onboardingYouTitle => 'Pilih nama pengguna Anda';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Nama pengguna Anda adalah cara orang menyebut Anda dan cara pekerjaan Anda diberi label. Anda dapat mengubahnya, beserta nama tampilan, nanti di Pengaturan → Anda → Profil.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Akun $provider ini sudah terhubung ke orang lain di server ini. Masuk dengan akun $provider yang berbeda.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token berakhir $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token berakhir $date. Tempel yang baru agar tetap berfungsi.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge tidak dapat dihubungi untuk memeriksa token ini. Coba lagi sebentar.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge tidak menerima token ini. Periksa bahwa Anda sudah menyalin seluruhnya dan token itu belum dicabut.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Ini bukan token pribadi. Tempel token akses pribadi dari akun $forge Anda sendiri, bukan token proyek, grup, ruang kerja, atau bot.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Token ini tidak memiliki cakupan $scope, yang dibutuhkan untuk meninjau dan mengomentari. Buat token yang memilikinya.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Token ini sudah berakhir. Buat yang baru dan tempel di sini.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agen yang Anda mulai dapat membuat commit yang ditandatangani atas nama Anda, di repositori mana pun tempat mereka bekerja. Menghapus kunci di sini langsung menghentikannya: run yang sedang berjalan tidak menandatangani apa pun lagi.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Kunci tidak diganti dan tidak ada yang berubah: $error Coba lagi.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Anda belum berada di ruang kerja';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Admin ruang kerja harus mengundang Anda, atau pemilik server dapat membuatkan ruang kerja untuk Anda. Ruang kerja akan terbuka di sini begitu Anda ditambahkan.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Masuk sebagai $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Periksa lagi';
+
+  @override
+  String get noWorkspaceSignOut => 'Keluar';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Hanya pemilik server yang dapat membuat ruang kerja. Minta mereka membuatnya, atau minta admin ruang kerja untuk mengundang Anda.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo tidak ada di ruang kerja mana pun milik Anda, dan Anda tidak berada di ruang kerja untuk menambahkannya. Minta admin ruang kerja untuk mengundang Anda.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Hanya pemilik server yang dapat melakukan ini';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Editor lengkap berjalan di mesin server, sehingga hanya pemiliknya yang dapat membukanya. Anda tetap dapat membuka dan mengedit file dari Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'Dalam sandbox';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Berjalan di sandbox di dalam folder ruang kerja ini, jadi beberapa alat dan path host tidak tersedia di sini.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Shell host berjalan di server tanpa sandbox, jadi hanya pemilik server yang dapat membukanya. Terminal biasa berjalan di dalam sandbox.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Terminal hanya dapat dibuka di dalam folder ruang kerja ini.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Hanya pemilik server yang dapat menyimpan atau menyetujui lingkungan yang berjalan di host server. Admin ruang kerja dapat menggunakan lingkungan yang berjalan di rig.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commit yang Anda buat di editor bawaan aplikasi tidak menjalankan hook Git dari repositori, seperti git commit --no-verify: server menjalankan Git di host-nya sendiri, dalam pohon yang dapat diubah oleh agen dan pull request.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Klien MCP mengirim token ini di setiap permintaan, sebagai header Authorization: Bearer. Server membuatnya saat pertama kali dijalankan; Anda dapat menggantinya, tetapi tidak dapat menghapusnya.';
+
+  @override
+  String get mcpShowToken => 'Tampilkan token';
+
+  @override
+  String get mcpHideToken => 'Sembunyikan token';
+
+  @override
+  String get mcpRotateToken => 'Ganti token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Ganti token MCP?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Server langsung beralih ke token baru. Setiap klien MCP yang masih memakai token saat ini akan ditolak sampai Anda memberinya token baru.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Token diganti. Berikan token baru ke klien MCP Anda.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'Endpoint MCP hanya untuk pemilik server';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Tokennya membuka setiap alat di server ini, jadi hanya pemilik server yang dapat melihatnya, menggantinya, atau memulai dan menghentikan endpoint.';
+
+  @override
+  String get activityRotatedMcpToken => 'Mengganti token MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect tidak dapat menonaktifkan kunci lama';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Tidak ada yang berubah. Jika tetap mengganti, server ini mendapatkan kunci baru, tetapi identitas lama tetap dapat digunakan di Connect tersebut sampai masuknya berakhir.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Tetap ganti';
+
+  @override
+  String get settingsAuditLog => 'Log audit';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Siapa mengubah apa, di mana, dan hasilnya, di seluruh server dan setiap ruang kerja yang Anda kelola. Operasi server mencatat nama argumen, bukan nilainya.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Khusus admin';
+
+  @override
+  String get auditLogNoAccess =>
+      'Log audit mencakup server dan ruang kerja yang Anda kelola. Anda tidak mengelola ruang kerja apa pun, jadi tidak ada yang bisa ditampilkan.';
+
+  @override
+  String get auditLogSourceServer => 'Server';
+
+  @override
+  String get auditLogSourceWorkspace => 'Ruang kerja';
+
+  @override
+  String get auditLogAddFilter => 'Filter';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filter…';
+
+  @override
+  String get auditLogFilterActor => 'Pelaku';
+
+  @override
+  String get auditLogFilterSource => 'Ruang kerja';
+
+  @override
+  String get auditLogFilterOutcome => 'Hasil';
+
+  @override
+  String get auditLogFilterTime => 'Waktu';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Berhasil';
+
+  @override
+  String get auditLogOutcomeDenied => 'Ditolak';
+
+  @override
+  String get auditLogOutcomeFailed => 'Gagal';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Pada atau sesudah';
+
+  @override
+  String get auditLogTimeAfter => 'Sesudah';
+
+  @override
+  String get auditLogTimeBefore => 'Sebelum';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Pada atau sebelum';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Waktu $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 jam lalu';
+
+  @override
+  String get auditLogTimePresetDay => '24 jam lalu';
+
+  @override
+  String get auditLogTimePresetWeek => '7 hari lalu';
+
+  @override
+  String get auditLogTimePresetMonth => '30 hari lalu';
+
+  @override
+  String get auditLogTimeExact => 'Waktu tepat';
+
+  @override
+  String get auditLogTimeInvalid => 'Gunakan YYYY-MM-DD, opsional dengan HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Tambah';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo sekarang mengarah ke repositori lain';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Path ini sekarang mengarah ke repositori lain di $forge. Tautkan ulang agar tetap bisa digunakan.';
+  }
+
+  @override
+  String get repoRelink => 'Tautkan ulang';
+
+  @override
+  String repoRelinked(String repo) {
+    return '$repo ditautkan ulang.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Path ini sekarang mengarah ke repositori lain. Admin ruang kerja harus menautkannya ulang sebelum dapat digunakan.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Akun $forge Anda tidak dapat membaca repositori ini.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Tidak dapat memastikan akses $forge Anda. Coba lagi.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Akun forge Anda tidak dapat membaca repositori ini.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Tidak dapat memastikan akses forge Anda. Coba lagi.';
+
+  @override
+  String get repoPathHostPath =>
+      'Hanya pemilik server yang dapat menautkan folder di luar penyimpanan ruang kerja ini.';
+
+  @override
+  String get repoPathMissing => 'Tidak ada apa pun di path itu di server.';
+
+  @override
+  String get repoPathDataDir =>
+      'Repositori tidak boleh mengarah ke folder data server.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Repositori tidak boleh berupa folder root ruang kerja itu sendiri.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Origin folder itu adalah repositori lain.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Tersimpan. Mereka perlu masuk ke $forge sebelum dapat membuka repositori ini.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Tersimpan. Akun $forge mereka belum dapat membaca repositori ini, jadi repositori tetap tersembunyi bagi mereka.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Tersimpan. Tidak dapat memastikan akses $forge mereka saat ini.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo tidak ditautkan di ruang kerja Anda mana pun. Minta pemilik server untuk menambahkannya.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Pemilik server menambahkan repositori dari folder server.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Hanya Anda yang memasukkan alamat ini. Single sign-on tidak akan mencocokkannya sampai pemilik server mengonfirmasinya.';
+
+  @override
+  String get settingsServerPeople => 'Orang';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Semua orang yang memiliki akun di server ini, dan apakah alamat email mereka sudah dikonfirmasi.';
+
+  @override
+  String get serverPeopleLabel => 'Akun';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Hanya pemilik server yang dapat melihat semua akun dan mengonfirmasi alamat email.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'Email belum dikonfirmasi';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Konfirmasi email';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Konfirmasi bahwa $email milik $name? Single sign-on akan mencocokkan alamat ini dengan akunnya.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return '$email dikonfirmasi.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agen memerlukan sandbox di server ini';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Server ini tidak memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini. Pemilik dapat memasang sandbox atau mematikan sandboxing untuk semua orang.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Folder ini berada di luar penyimpanan ruang kerja. Pastikan server ini boleh menggunakannya.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Folder ini berada di luar penyimpanan ruang kerja. Hanya pemilik server yang dapat mengonfirmasinya.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Tidak ada apa pun di path ini di server lagi. Hapus repositori ini dan tambahkan lagi dari folder yang sekarang.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Folder ini tidak dapat digunakan sebagai repositori. Hapus dan tambahkan repositori dari folder lain.';
+
+  @override
+  String get repoPathConfirm => 'Konfirmasi';
+
+  @override
+  String get repoPathConfirmAll => 'Konfirmasi semua';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count folder berada di luar penyimpanan ruang kerja',
+      one: '1 folder berada di luar penyimpanan ruang kerja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Konfirmasi bahwa server ini boleh menggunakannya. Setiap repositori diperiksa ulang dengan akses Anda.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Server yang ditemukan di setelan alat milik mesin ini hanya tersedia di run yang Anda mulai atau yang menjadi tanggung jawab Anda. Run milik orang lain tidak pernah melihatnya, dan server tersebut tidak ditawarkan melalui endpoint MCP Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Masuk ke $provider untuk melihat kode repositori ini.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Masuk';
+
+  @override
+  String get ideContentSearchFailed => 'Tidak dapat mencari di dalam file';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'File ini tidak tersedia di worktree ini.';
+
+  @override
+  String get ideChangesLoadFailed => 'Tidak dapat memuat perubahan';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Path ini sekarang mengarah ke repositori lain di $forge. Admin ruang kerja harus menautkannya ulang sebelum dapat digunakan.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Hanya pemilik server yang dapat memulihkan cadangan. Anda tetap bisa mengunduhnya.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Hanya baca';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Anda dapat melihat terminal ini. Mengetik di dalamnya, mengubah ukurannya, atau menghentikannya memerlukan akses tulis ke setiap repositori dalam percakapan ini.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Anda dapat melihat lingkungan ini. Memulai, menghentikan, atau memulai ulang lingkungan ini memerlukan akses tulis ke setiap repositori dalam percakapan ini.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Berjalan di server ini. Setujui agar bisa dimulai.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Berjalan di server ini. Pemilik server harus menyetujuinya sebelum bisa dimulai.';
+
+  @override
+  String get environmentHostApprove => 'Setujui';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Setujui sebagai admin ruang kerja: hanya salinan admin yang menampilkan nilai rahasianya, dan persetujuan menyimpannya kembali.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Pemilik server belum menyetujui lingkungan ini, sehingga tidak dapat berjalan di server ini.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Anda belum menyetujui lingkungan ini. Lingkungan ini berjalan di server ini, jadi akan dimulai setelah Anda menyetujui definisinya.';
+
+  @override
+  String get environmentHostApprovalReview => 'Tinjau dan setujui';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Masuk ke $provider untuk membuka space ini.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Akun $forge Anda tidak dapat membaca repositori yang digunakan space ini.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Akun forge Anda tidak dapat membaca repositori yang digunakan space ini.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Anda tidak memiliki akses baca ke repositori yang digunakan space ini. Admin ruang kerja dapat memberikannya.';
+
+  @override
+  String get spaceAccessFailed => 'Space ini tidak dapat dibuka.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Rincian konteks tidak tersedia dalam sesi ini.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Repositori yang ditautkan memerlukan pemilik dan nama repositori.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Anda tidak memiliki akses baca ke repositori ini. Admin ruang kerja dapat memberikannya.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Anda dapat membaca repositori ini tetapi tidak dapat mengubahnya. Admin ruang kerja dapat memberikan akses tulis.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Anda dapat membaca repositori ini tetapi tidak dapat meninjaunya. Admin ruang kerja dapat memberikan akses tinjauan.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Hanya tonton';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Anda dapat menonton mesin ini. Mengendalikannya, meneruskan portnya, menempelkan sesuatu ke dalamnya, atau menjatuhkan file ke dalamnya memerlukan akses tulis ke setiap repositori di ruang ini.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Memulai mesin di sini memerlukan akses tulis ke setiap repositori di ruang ini. Admin ruang kerja dapat memberikannya.';
+
+  @override
+  String get rigViewRefused =>
+      'Anda tidak dapat melihat mesin ini. Mesin ini milik ruang yang tidak dapat Anda baca.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Mengubah port ini memerlukan akses tulis ke setiap repositori di ruang ini.';
+
+  @override
+  String get rigHolderOnly =>
+      'Hanya orang yang mesin ini dibuka untuknya yang dapat mengendalikannya. Mesin ini menggunakan akun masuk milik orang tersebut.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Anda dapat menonton mesin ini. Mesin ini menggunakan akun masuk milik orang yang mesin ini dibuka untuknya, sehingga hanya orang tersebut yang dapat mengendalikannya, meneruskan portnya, menempelkan sesuatu ke dalamnya, atau menjatuhkan file ke dalamnya.';
 }

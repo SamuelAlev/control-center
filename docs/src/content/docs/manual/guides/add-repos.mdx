@@ -3,7 +3,7 @@ title: Add repos to a workspace
 description: Register Git checkouts into a workspace so agents can work on them.
 ---
 
-This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again.
+This guide shows you how to register a Git checkout into a workspace, re-index it and remove it again. Adding a repository from the server's folders needs the server owner; removing one needs a workspace admin.
 
 Repos are **workspace-scoped**. There is no global registry and no linking step: adding a repo and putting it in a workspace are the same act. The same checkout registered in two workspaces becomes two independent rows with two different ids — across workspaces, a repo's identity is its filesystem path, never its id.
 
@@ -19,9 +19,29 @@ Anything else is refused at registration time with an explicit message: "Folder 
 
 The forge is read from the remote and stored on the repo — you never pick it. A workspace can hold repos from all three at once, and each is talked to through its own API with its own credential. GitLab's nested namespaces are preserved, so `gitlab.com/group/subgroup/project` registers as owner `group/subgroup`, name `project`.
 
-The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused.
+The folder must also live on the machine hosting `cc_server`, inside one of that server's `--repo-roots` directories. That allow-list defaults to the server user's home directory and browsing above a root is refused. Browsing the server's folders is offered to the [server owner](/manual/concepts/authorization/#the-server-owner) only, because it lists the machine's own files. Anyone else sees "The server owner adds repositories from the server's folders." where the **Add repository** button would be, and a link to a repository that none of their workspaces has says that it is not linked in any of their workspaces and to ask the server owner to add it.
+
+Where the checkout may live depends on who links it:
+
+- **Inside the workspace's own storage** on the server: any workspace admin.
+- **Anywhere else on the server's disk**: only the [server owner](/manual/concepts/authorization/#the-server-owner), because only they may point the server at the machine's own files. Anyone else sees "Only the server's owner can link a folder outside this workspace's storage."
+- **The server's data folder**, or anything inside it: never.
+
+The checkout's `origin` must be the repository you are linking. A folder whose `origin` names another repository is refused with "That folder's origin is a different repository."
+
+### Folders the server won't use yet
+
+A repository whose folder is outside the workspace's storage and was not linked by the server owner, such as one in an imported workspace, shows "This folder is outside the workspace's storage. Confirm that this server may use it." under its row until the server owner confirms it. Anyone else sees "This folder is outside the workspace's storage. Only the server's owner can confirm it." instead.
+
+The owner confirms it once: **Confirm** on the row, or **Confirm all** in the notice above the list when several repositories are waiting. Each one is checked again as the owner, the same checks as linking it. Until then it stays in the list but is not opened, provisioned or indexed: no editor, terminal, environment or space checkout uses it, and the code graph skips it. Adding the same folder again as the server owner does the same as confirming it, and keeps the repository's id.
+
+A checkout that a symbolic link has moved elsewhere is treated the same way: it stays listed and unused until it is linked again by someone allowed to link the folder it now points to.
+
+You also need to be signed in to the repository's forge, and your own account must be able to see the repository.
 
 ## Register a checkout
+
+You need to be the server owner for these steps.
 
 1. Open **Settings → Workspace → Repositories** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Click **Add repository**.
@@ -54,7 +74,23 @@ Drag the handle on a row. The order you set is the order every repo list in the 
 
 ## Fix the GitHub link
 
-The link icon on a row opens an editor for the repo's GitHub owner and repository name — useful when the remote was renamed or transferred.
+The link icon on a row opens an editor for the repo's GitHub owner and repository name.
+
+You rarely need it. A link is tied to the repository's permanent id on the forge, so a rename or a transfer is followed automatically.
+
+- Renaming a repository in Control Center changes only its display name.
+- Changing which forge repository a link points at needs a workspace admin, and is checked against the forge with the admin's own sign-in, the same as linking it.
+- A linked repository cannot be turned into a local-only one.
+
+If the path later names a **different** repository (the original was deleted and re-created, or moved and replaced by another), Control Center stops sending it anything: no tokens, pushes, comments or requests. That covers a person's own actions too: a review, merge or comment you make on such a repository is refused, on GitHub, GitLab and Bitbucket alike. The row and the repository's pull requests show "_repo_ now points to a different repository" until a workspace admin clicks **Relink**.
+
+## Who can open the code
+
+A repository grant alone does not open a repository's files. To open files, diffs, search or a terminal for it, a member needs the Control Center grant and their own forge sign-in must be able to read the repository. Workspace admins are not exempt; the server owner is. See [Code follows the forge](/manual/concepts/authorization/#code-follows-the-forge).
+
+When you grant a repository to someone whose forge account can't read it, the grant is saved and you see a warning, such as "Saved. Their GitHub account can't read this repository yet, so it stays hidden from them."
+
+The same rule decides who can open a space. A space opens only for members who can open the code of every repository it uses, and is hidden from everyone else, along with its search results, run logs, todos, activity and notifications. A space with no repositories is open to every member. See [Spaces follow their repositories](/manual/concepts/authorization/#spaces-follow-their-repositories).
 
 ## Remove a repo
 
@@ -64,7 +100,31 @@ The link icon on a row opens an editor for the repo's GitHub owner and repositor
 
 The dialog says what it does: "_name_ will be removed from this workspace. The local files on disk are not touched."
 
+Removing a repository needs a workspace admin. It also forgets the forge credentials stored for that repository, such as a GitLab or Bitbucket automation token.
+
 Removal deletes the repo row from this workspace and cascades away its code-graph rows — symbols, edges, files and index checkpoints — plus every per-member repo grant on it, its space-repo links, and its isolated-checkout records. The same checkout registered in another workspace is an independent row and is unaffected. On-disk worktrees those records pointed at are not torn down by the delete.
+
+## Troubleshooting
+
+### I have a grant but the repository says my account can't read it
+
+Your own forge account can't read the repository, so Control Center keeps its code from you even though the workspace granted it. Sign in to the forge in **Settings → You → Profile → Code hosting** if you haven't, or ask the repository's owner on the forge for access. The repository opens as soon as your forge account can read it.
+
+### "This folder is outside the workspace's storage"
+
+The repository's folder is outside the workspace's storage and the server owner did not link it, or a symbolic link now points it somewhere else. It stays listed but unused until the server owner confirms it or adds the folder again. If you are not the owner, ask them. If you are, press **Confirm** on the row or **Confirm all** above the list; see [Folders the server won't use yet](#folders-the-server-wont-use-yet).
+
+### "Nothing exists at this path on the server anymore"
+
+The folder was moved or deleted on the server's machine. Put it back, or have a workspace admin remove the repository with **Remove** in the notice and add it again from its current folder.
+
+### "This folder can't be used as a repository"
+
+The stored folder is the server's own data folder, something inside it, or the workspace's storage folder itself. None of those can be a repository. A workspace admin removes it with **Remove** in the notice, then adds the repository again from the checkout's real folder.
+
+### "Couldn't confirm your forge access"
+
+Control Center could not reach the forge to check that your account can read the repository, so it refused rather than guess. Try again in a moment.
 
 ## Related guides
 

@@ -23,8 +23,8 @@ import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review
 import 'package:cc_infra/src/network/forge_branch_history.dart';
 import 'package:cc_infra/src/network/forge_cancel_bridge.dart';
 import 'package:cc_infra/src/network/github_api_client.dart';
-import 'package:cc_infra/src/network/github_graphql_client.dart';
 import 'package:cc_infra/src/network/models/github_check_run.dart';
+import 'package:cc_infra/src/network/models/github_graphql_results.dart';
 import 'package:cc_infra/src/network/models/github_job_run.dart';
 import 'package:cc_infra/src/network/models/github_pull_request.dart';
 import 'package:cc_infra/src/network/models/github_reaction.dart';
@@ -52,13 +52,17 @@ class GitHubForgePrClient
         ForgeMergeSignalsClient,
         ForgeOpenPrPagingClient {
   /// Creates a [GitHubForgePrClient] for [owner]/[repo] over [_client].
+  ///
+  /// [_approvalGuard] is consulted before any approval is sent.
   GitHubForgePrClient({
     required this._client,
     required this.owner,
     required this.repo,
+    required this._approvalGuard,
   });
 
   final GitHubApiClient _client;
+  final ForgeApprovalGuard _approvalGuard;
 
   @override
   final String owner;
@@ -547,7 +551,7 @@ class GitHubForgePrClient
     ];
     final workflowBySuite = <int, String>{
       for (final w in latestRuns)
-        if (w.checkSuiteId != 0) w.checkSuiteId: _displayNameFor(w),
+        if (w.checkSuiteId != 0) w.checkSuiteId: w.displayName,
     };
 
     // Resolve the Actions job backing each check run: the jobs of every
@@ -601,20 +605,6 @@ class GitHubForgePrClient
           );
         })
         .toList(growable: false);
-  }
-
-  /// Display name for a workflow run: prefer the explicit `name:` from the
-  /// YAML, fall back to the workflow file basename (e.g. `tests-pr.yaml`) when
-  /// the run was triggered before the workflow was named.
-  static String _displayNameFor(GitHubWorkflowRun w) {
-    if (w.name.isNotEmpty) {
-      return w.name;
-    }
-    if (w.path.isEmpty) {
-      return '';
-    }
-    final slash = w.path.lastIndexOf('/');
-    return slash < 0 ? w.path : w.path.substring(slash + 1);
   }
 
   @override
@@ -1090,6 +1080,9 @@ class GitHubForgePrClient
     List<PendingReviewComment> comments = const [],
     ForgeCancelToken? cancelToken,
   }) async {
+    if (verdict == ForgeReviewVerdict.approve) {
+      await _approvalGuard(this, prNumber);
+    }
     final review = await _client.pr.submitReview(
       owner,
       repo,

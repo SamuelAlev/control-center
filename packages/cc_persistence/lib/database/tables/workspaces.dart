@@ -42,14 +42,19 @@ class WorkspacesTable extends Table {
   BoolColumn get autoPublishReview =>
       boolean().withDefault(const Constant(false))();
 
-  /// How this workspace authenticates to GitHub for background work
-  /// (`inherit` / `app`). Typed because the server reads it on the
-  /// credential path — not an opaque `workspace_settings` string.
-  TextColumn get githubAuthMode =>
-      text().withDefault(const Constant('inherit'))();
+  /// Whose provider apps this workspace uses (`inherit` / `hosted` /
+  /// `custom` / `own`): the server's choice, a Connect of its own, or its own
+  /// apps. Typed because the server reads it on every credential path — not
+  /// an opaque `workspace_settings` string.
+  TextColumn get connectMode => text().withDefault(const Constant('inherit'))();
 
-  /// Numeric GitHub App id when [githubAuthMode] is `app`. Empty otherwise.
-  /// The private key is never a column; it lives in `secrets.json`.
+  /// The canonical Connect base URL when [connectMode] is `custom`. Empty
+  /// otherwise.
+  TextColumn get connectUrl => text().withDefault(const Constant(''))();
+
+  /// Numeric id of this workspace's own GitHub App, used while [connectMode]
+  /// is `own`. Empty when none is saved. The private key is never a column;
+  /// it lives in `secrets.json`.
   TextColumn get githubAppId => text().withDefault(const Constant(''))();
 
   /// The operator's manual order for the workspace switcher / manager

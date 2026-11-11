@@ -1,6 +1,6 @@
 # cc_markdown
 
-In-repo typed-AST Markdown parser and Flutter widget renderer for one-shot content and growing LLM streams. It replaces the former two-engine compatibility layer. Public entry points include `CcMarkdown`, `CcStreamingMarkdown`, `CcMarkdownStreamController`, `CcBlockNode`/`CcInlineNode` and the `CcCustomBlock`/`CcCustomInline` plugin leaves.
+In-repo typed-AST Markdown parser and Flutter widget renderer for one-shot content and growing LLM streams. Public entry points include `CcMarkdown`, `CcStreamingMarkdown`, `CcMarkdownStreamController`, `CcBlockNode`/`CcInlineNode` and the `CcCustomBlock`/`CcCustomInline` plugin leaves.
 
 ```dart
 import 'package:cc_markdown/cc_markdown.dart';

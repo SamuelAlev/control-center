@@ -2,6 +2,8 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition
 import 'package:cc_domain/features/pipelines/domain/repositories/pipeline_template_repository.dart';
 import 'package:cc_domain/features/pipelines/domain/services/pipeline_validator.dart';
 import 'package:cc_persistence/database/daos/pipeline_template_dao.dart';
+import 'package:cc_persistence/database/workspace/workspace_database.dart'
+    show PipelineTemplatesTableData;
 import 'package:cc_persistence/database/workspace_database_manager.dart';
 import 'package:cc_persistence/mappers/pipeline_template_mappers.dart';
 
@@ -48,15 +50,27 @@ class PipelineTemplateRepositoryImpl implements PipelineTemplateRepository {
 
   @override
   Stream<List<PipelineDefinition>> watchForWorkspace(String workspaceId) {
-    return _dao(workspaceId)
-        .watchForWorkspace(workspaceId)
-        .map((rows) => rows.map(pipelineDefinitionFromRow).toList());
+    return _dao(workspaceId).watchForWorkspace(workspaceId).map(_decodeAll);
   }
 
   @override
   Future<List<PipelineDefinition>> forWorkspace(String workspaceId) async {
-    final rows = await _dao(workspaceId).forWorkspace(workspaceId);
-    return rows.map(pipelineDefinitionFromRow).toList();
+    return _decodeAll(await _dao(workspaceId).forWorkspace(workspaceId));
+  }
+
+  /// Decodes every row this build can read. A row it cannot (a step kind it
+  /// does not know) is left out of the list rather than failing it; reading
+  /// that template by id raises the decode error.
+  List<PipelineDefinition> _decodeAll(List<PipelineTemplatesTableData> rows) {
+    final definitions = <PipelineDefinition>[];
+    for (final row in rows) {
+      try {
+        definitions.add(pipelineDefinitionFromRow(row));
+      } on ArgumentError {
+        continue;
+      }
+    }
+    return definitions;
   }
 
   @override

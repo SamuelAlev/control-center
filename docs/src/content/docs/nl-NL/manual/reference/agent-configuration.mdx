@@ -2,7 +2,7 @@
 title: Agentconfiguratie
 description: Elk veld van de agent-entiteit en de enums die hij gebruikt.
 slug: nl-NL/handleiding/referentie/agentconfiguratie
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Deze referentie somt elk veld van de agent-entiteit op, plus de enums en vlaggen die hij gebruikt. Zie [Een agent maken en configureren](/nl-NL/handleiding/gidsen/agent-maken/) voor een stap-voor-stap doorloop van het maken of bewerken van een agent in de app.
@@ -79,6 +79,35 @@ Een onveranderlijke, hoofdletterongevoelige set skill-identificaties. Bij het di
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Shell-hooks
+
+Shell-hooks laten de servereigenaar eigen scripts draaien rond een ingebouwde harness-run: één keer bij het starten van de sessie, vóór elke toolaanroep en na elke toolaanroep. Een hook is willekeurige code, dus hooks zijn hostconfiguratie. Alleen de servereigenaar stelt ze in, met de hand, op de machine van de server. Er is geen instelling in de app en geen operatie die ze schrijft.
+
+Voor een agent staan de hooks in de eigen map onder de datamap van de server:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` is de naam van de map van de agent in de werkruimte (`agents/<slug>/`). Die map staat buiten de opslag van elke werkruimte, en elke sandbox verbergt de datamap, dus geen lid, run of terminal kan hem schrijven.
+
+`hooks.json` koppelt een van drie sleutels aan een script, via een pad ten opzichte van de hookmap:
+
+| Sleutel        | Wanneer hij draait             | Wat de exitcode betekent                                       |
+| -------------- | ------------------------------ | -------------------------------------------------------------- |
+| `sessionStart` | Eén keer, wanneer de run start | Niets; de hook observeert alleen                               |
+| `preTool`      | Vóór elke toolaanroep          | `0` staat de aanroep toe; alles anders weigert hem             |
+| `postTool`     | Na elke toolaanroep            | Niets; de hook observeert alleen                               |
+
+- Elk script wordt gestart als een eigen uitvoerbaar bestand, zonder shell en zonder argumenten, dus het moet uitvoerbaar zijn en beginnen met een shebang-regel. Het ontvangt de gebeurtenis als JSON op stdin: de naam van de gebeurtenis, en voor de toolhooks de naam van de tool met zijn argumenten (`preTool`) of zijn resultaat (`postTool`).
+- Een hook draait als een van de toolprocessen van de run, in de map van de agent voor de run. Wanneer de server agents in een sandbox zet, draait hij binnen de sandbox van de run. Hij krijgt een minimale omgeving en geen van de credentials van de run: geen forge- of providertoken en geen toegang tot de gateway.
+- Elke hook heeft 30 seconden. Zijn uitvoer wordt gelezen en weggegooid.
+- `preTool` faalt gesloten. Een niet-nul exitcode, een time-out of een script dat niet kan starten, weigert de toolaanroep.
+- Een pad dat absoluut is, ontbreekt, of de hookmap verlaat (links worden opgelost), wordt geweigerd, en het logboek van de run zegt welke hook is geweigerd en waarom. Een geweigerde of onleesbare `preTool`-hook weigert elke toolaanroep totdat hij is hersteld.
+- Een `hooks`-blok in `.agents/harness.json`, of het nu in een repository staat of in de eigen map van de agent, wordt genegeerd. Een repository is vaak code van iemand anders, en de map van de agent kan door leden en door runs worden geschreven. Het logboek van de run zegt dat het blok is genegeerd en waar hooks in plaats daarvan worden gelezen.
+
+Shell-hooks gelden alleen voor de ingebouwde harness. Een ingesteld `preTool`- of `postTool`-hook zorgt ervoor dat de run zijn tools één voor één aanroept.
 
 ## AgentLiveState (afgeleid)
 

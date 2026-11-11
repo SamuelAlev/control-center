@@ -84,6 +84,8 @@ class GitLabMergeRequest {
     required this.title,
     required this.state,
     this.projectId = 0,
+    this.sourceProjectId = 0,
+    this.targetProjectId = 0,
     this.description = '',
     this.draft = false,
     this.webUrl = '',
@@ -124,6 +126,8 @@ class GitLabMergeRequest {
       title: json['title'] as String? ?? '',
       state: json['state'] as String? ?? '',
       projectId: (json['project_id'] as num?)?.toInt() ?? 0,
+      sourceProjectId: (json['source_project_id'] as num?)?.toInt() ?? 0,
+      targetProjectId: (json['target_project_id'] as num?)?.toInt() ?? 0,
       description: json['description'] as String? ?? '',
       // `work_in_progress` is the pre-14.0 spelling of `draft`.
       draft:
@@ -200,6 +204,14 @@ class GitLabMergeRequest {
 
   /// Owning project id.
   final int projectId;
+
+  /// The project the source branch lives in (a fork's, for a fork MR); 0
+  /// when the payload carried none.
+  final int sourceProjectId;
+
+  /// The project the MR merges into: durable across renames and transfers;
+  /// 0 when the payload carried none.
+  final int targetProjectId;
 
   /// Description body (raw markdown).
   final String description;

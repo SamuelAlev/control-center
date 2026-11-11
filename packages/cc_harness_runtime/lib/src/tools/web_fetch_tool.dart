@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cc_harness/tools.dart';
+import 'package:cc_harness_runtime/src/net/non_public_address.dart';
 import 'package:cc_harness_runtime/src/tools/site_extractors.dart';
 
 /// Fetches a URL and returns its readable text content (HTML stripped to plain
@@ -242,7 +243,7 @@ class WebFetchTool extends HarnessTool {
       }
     }
     for (final addr in addresses) {
-      if (_isInternal(addr)) {
+      if (isNonPublicAddress(addr)) {
         return (
           addresses: const <InternetAddress>[],
           reason: 'resolves to an internal address (${addr.address})',
@@ -250,54 +251,6 @@ class WebFetchTool extends HarnessTool {
       }
     }
     return (addresses: addresses, reason: null);
-  }
-
-  /// Whether [addr] is a loopback, link-local, private, or otherwise internal
-  /// address that an agent must not reach over the network.
-  static bool _isInternal(InternetAddress addr) {
-    if (addr.isLoopback || addr.isLinkLocal || addr.isMulticast) {
-      return true;
-    }
-    final b = addr.rawAddress;
-    if (addr.type == InternetAddressType.IPv4) {
-      // this-network / loopback / RFC1918 private / link-local / CGNAT.
-      if (b[0] == 0 || b[0] == 127) {
-        return true;
-      }
-      if (b[0] == 10) {
-        return true;
-      }
-      if (b[0] == 172 && b[1] >= 16 && b[1] <= 31) {
-        return true;
-      }
-      if (b[0] == 192 && b[1] == 168) {
-        return true;
-      }
-      if (b[0] == 169 && b[1] == 254) {
-        return true;
-      }
-      if (b[0] == 100 && b[1] >= 64 && b[1] <= 127) {
-        return true;
-      }
-      return false;
-    }
-    // IPv6.
-    final isUnspecified = b.every((byte) => byte == 0);
-    if (isUnspecified) {
-      return true;
-    }
-    if ((b[0] & 0xfe) == 0xfc) {
-      return true; // fc00::/7 unique-local
-    }
-    // IPv4-mapped ::ffff:a.b.c.d — re-check the embedded IPv4.
-    final isV4Mapped =
-        b.take(10).every((byte) => byte == 0) && b[10] == 0xff && b[11] == 0xff;
-    if (isV4Mapped) {
-      return _isInternal(
-        InternetAddress.fromRawAddress(Uint8List.fromList(b.sublist(12, 16))),
-      );
-    }
-    return false;
   }
 
   /// Dependency-free HTML → text: drop script/style, convert breaks/headings to

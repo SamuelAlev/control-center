@@ -77,9 +77,11 @@ A workspace file carries only a single-row `workspace_meta` for self-identificat
 
 ## Creating a workspace
 
+Only the [server owner](/manual/concepts/authorization/#the-server-owner) can create a workspace; the server mints its id. A workspace admin or owner cannot create another one. Someone who is in no workspace yet sees **You are not in a workspace yet**, which asks them to have the server owner create one or a workspace admin invite them, and the **Add workspace** form tells anyone else the same.
+
 Creating a workspace does more than insert a registry row. In one operation the server stamps the creating user as `ownerUserId`, records that user's owner-role membership and publishes a `WorkspaceCreated` domain event. Listeners on that event then seed, idempotently and in the background:
 
-- a **CEO agent** plus four specialists — `qa`, `architect`, `engineer`, `librarian` — with the specialists reporting to the CEO;
+- a **CEO agent** plus five specialists — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — with the specialists reporting to the CEO;
 - the **built-in pipeline templates** and their triggers (event and manual triggers ship enabled; scheduled ones are opt-in except the daily worktree-GC sweep);
 - the **starter eval suites**.
 
@@ -88,7 +90,7 @@ This happens for _every_ workspace, not only the first. The seeded agents are cr
 The owner-membership write matters more than it looks: without it the freshly created workspace would have no members and every workspace-scoped call the creator makes next would be denied.
 
 :::note[Agents cannot create a workspace]
-There is no `create_workspace` MCP tool. Humans create a workspace through `workspace.create` (name-only chokepoint) or `workspace.upsert` (full record, also used for updates). Both stamp the creating user as `owner` and publish `WorkspaceCreated`.
+There is no `create_workspace` MCP tool. The server owner creates a workspace through `workspace.create`, which stamps them as its `owner` and publishes `WorkspaceCreated`. `workspace.upsert` only updates a workspace that already exists; it never creates one, and it never changes a workspace's owner, which only **Transfer ownership** does.
 :::
 
 ## Deleting, exporting, importing

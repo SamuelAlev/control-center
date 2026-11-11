@@ -2,7 +2,7 @@
 title: Assegna a un agente una macchina su cui testare
 description: Assegna a un agente un browser, un desktop, un emulatore Android o un simulatore iOS usa e getta — osservati dal vivo, con controlli che puoi riprendere in mano.
 slug: it-IT/manuale/guide/usa-rig
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Un **rig** è una macchina usa e getta che un agente apre quando deve davvero
@@ -133,6 +133,22 @@ Premi **Ferma la macchina** quando hai finito.
 
 Il controllo è esclusivo di proposito: due attori che digitano nella stessa
 macchina producono input che nessuno dei due intendeva.
+
+### Chi può guardare e chi può pilotare
+
+Una macchina aperta in uno spazio segue i repository di quello spazio, allo stesso modo dello spazio stesso (vedi [Gli spazi seguono i loro repository](/it-IT/manuale/concetti/autorizzazione/#gli-spazi-seguono-i-loro-repository)):
+
+- **Guardarla** richiede l'accesso in lettura allo spazio: una concessione di lettura su ogni repository che lo spazio espone, e il tuo accesso personale alla forge che possa leggerli. Guardare comprende l'elenco delle macchine, lo schermo, l'audio, lo stato del browser, le sue porte, e la lettura degli appunti e dei file.
+- **Pilotarla** richiede anche una [concessione di scrittura](/it-IT/manuale/concetti/autorizzazione/#modificare-il-codice-richiede-la-concessione-di-scrittura) su quei repository. Pilotare comprende aprire una macchina nello spazio, digitare e fare clic, prendere il controllo, avviare, fermare e chiudere la macchina, inoltrarne le porte, scrivere negli appunti, rilasciarvi file e usare il microfono.
+
+Con il solo accesso in lettura la macchina mostra **Solo visualizzazione** e "Puoi guardare questa macchina. Controllarla, inoltrarne le porte, incollarvi contenuti o rilasciarvi file richiede accesso in scrittura a tutti i repository di questo spazio." Sotto un **Avvia la macchina** disattivato la scheda dice "Avviare una macchina qui richiede accesso in scrittura a tutti i repository di questo spazio. Un amministratore dello spazio di lavoro può concederlo." Senza accesso in lettura la macchina non viene mostrata, ma solo "Non puoi visualizzare questa macchina. Appartiene a uno spazio a cui non hai accesso in lettura."
+
+Una macchina che non appartiene a nessuno spazio non raggiunge alcun worktree, e ogni membro dello spazio di lavoro può guardarla e pilotarla.
+
+Una macchina che porta le credenziali personali di accesso di una persona è sua da pilotare: il suo Terminale (VM), o qualunque macchina aperta per lei il cui accesso di rete raggiunge una forge. Solo quella persona, e le esecuzioni di agenti che agiscono solo per lei, possono pilotarla. Gli amministratori dello spazio di lavoro e il proprietario del server non fanno eccezione. Gli altri ammessi dallo spazio possono ancora guardarne lo schermo, l'audio, lo stato e le porte, ma non possono pilotarla, inoltrarne le porte, incollarvi contenuti, rilasciarvi file, copiarne file o leggerne gli appunti. Una macchina del genere mostra **Solo visualizzazione** con questa nota: "Puoi guardare questa macchina. Usa gli accessi della persona per cui è stata aperta, quindi solo lei può controllarla, inoltrarne le porte, incollarvi contenuti o rilasciarvi file." Un'azione rifiutata per questo motivo dice "Solo la persona per cui è stata aperta questa macchina può controllarla. Usa i suoi accessi personali."
+Il Terminale (VM) di un altro non compare affatto per te, proprio come le sue sessioni di terminale.
+
+Ogni macchina mostra se puoi pilotarla, e questo si aggiorna da sola quando cambia una concessione o il tuo accesso alla forge.
 
 ## Fai entrare e uscire le cose
 

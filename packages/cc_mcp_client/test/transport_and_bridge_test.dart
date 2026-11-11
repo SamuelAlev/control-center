@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:cc_mcp_client/cc_mcp_client.dart';
 import 'package:test/test.dart';
 

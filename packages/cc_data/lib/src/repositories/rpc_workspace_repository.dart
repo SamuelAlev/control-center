@@ -41,7 +41,7 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
     secretExcludeGlobs: d.secretExcludeGlobs,
     reviewConcurrency: d.reviewConcurrency ?? 3,
     autoPublishReview: d.autoPublishReview ?? false,
-    githubAuthMode: GithubAuthMode.fromWire(d.githubAuthMode),
+    connectMode: WorkspaceConnectMode.fromWire(d.connectMode),
     githubAppId: d.githubAppId ?? '',
     deletedAt: d.deletedAt,
     createdAt: d.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0),
@@ -55,6 +55,9 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
   /// create and carries the stored value over on update, so ownership stays
   /// server-authoritative and a client never asserts who owns a workspace.
   /// [Workspace.secretExcludeGlobs] IS sent and must be — see above.
+  /// [Workspace.connectMode] and [Workspace.connectUrl] are NOT sent either:
+  /// only `workspaceConnect.set` changes them, and the host ignores them on a
+  /// generic update, so a rename can never carry a stale choice back.
   static WorkspaceDto _toDto(Workspace w) => WorkspaceDto(
     id: w.id,
     name: w.name,
@@ -62,7 +65,6 @@ class RpcWorkspaceRepository implements WorkspaceRepository {
     secretExcludeGlobs: w.secretExcludeGlobs,
     reviewConcurrency: w.reviewConcurrency,
     autoPublishReview: w.autoPublishReview,
-    githubAuthMode: w.githubAuthMode.wireName,
     githubAppId: w.githubAppId,
     deletedAt: w.deletedAt,
     createdAt: w.createdAt,

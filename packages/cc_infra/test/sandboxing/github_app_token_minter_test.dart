@@ -55,15 +55,23 @@ void main() {
     installationId: '99',
   );
 
+  final now = DateTime.utc(2026, 11, 10, 12);
+
   ({GitHubAppTokenMinter minter, TestHttpClient fake}) build(
     HttpResponse Function(HttpRequest) handler,
   ) {
     final fake = TestHttpClient(handler: handler);
     return (
-      minter: GitHubAppTokenMinter(httpClient: fake, config: config),
+      minter: GitHubAppTokenMinter(
+        httpClient: fake,
+        config: config,
+        now: () => now,
+      ),
       fake: fake,
     );
   }
+
+  const perms = {'contents': 'write', 'metadata': 'read'};
 
   group('GitHubAppTokenMinter', () {
     test('buildAppJwt signs a verifiable RS256 JWT with the right claims', () {
@@ -71,14 +79,20 @@ void main() {
       final jwt = b.minter.buildAppJwt();
 
       // Verifiable with the matching public key → the signature is valid RS256.
-      final verified = JWT.verify(jwt, RSAPublicKey(_publicPem));
+      // The claims are pinned to the test clock, not the wall clock, so the
+      // expiry is asserted below rather than against today's date.
+      final verified = JWT.verify(
+        jwt,
+        RSAPublicKey(_publicPem),
+        checkExpiresIn: false,
+      );
       final payload = verified.payload as Map<String, dynamic>;
       expect(payload['iss'], '12345');
-      // exp = iat + 9 min, well under GitHub's 10-minute (600s) ceiling.
-      final iat = payload['iat'] as int;
-      final exp = payload['exp'] as int;
-      expect(exp - iat, 540);
-      expect(exp - iat, lessThanOrEqualTo(600));
+      // Issued a minute in the past (clock skew), expiring nine minutes
+      // ahead: under GitHub's ten-minute ceiling.
+      final seconds = now.millisecondsSinceEpoch ~/ 1000;
+      expect(payload['iat'], seconds - 60);
+      expect(payload['exp'], seconds + 540);
     });
 
     test(
@@ -88,6 +102,7 @@ void main() {
           (req) => httpTextResponse(req, {
             'token': 'ghs_scoped123',
             'expires_at': '2026-07-06T13:00:00Z',
+            'permissions': perms,
             'repository_selection': 'selected',
             'repositories': [
               {'id': 1, 'name': 'my-repo'},
@@ -96,7 +111,7 @@ void main() {
         );
         final minted = await b.minter.mint(
           repositories: ['my-repo'],
-          permissions: {'contents': 'write', 'metadata': 'read'},
+          permissions: perms,
         );
 
         final req = b.fake.requests.single;
@@ -115,58 +130,91 @@ void main() {
 
     test('mint throws when the response carries no token', () async {
       final b = build(
-        (req) => httpTextResponse(req, const {
-          'message': 'Bad credentials',
-        }, statusCode: 401),
+        (req) => httpTextResponse(req, const {'expires_at': 'soon'}),
       );
       await expectLater(
-        b.minter.mint(repositories: ['r']),
-        throwsA(isA<Object>()),
+        b.minter.mint(repositories: ['r'], permissions: perms),
+        throwsFormatException,
       );
     });
 
-    test('an empty repository list never reaches GitHub', () async {
+    test('an answer that is not an object is a typed refusal, never a '
+        'cast error', () async {
+      final b = build((req) => httpTextResponse(req, const ['ghs_x']));
+      await expectLater(
+        b.minter.mint(repositories: ['r'], permissions: perms),
+        throwsFormatException,
+      );
+    });
+
+    test('an empty permission set never reaches GitHub', () async {
       final b = build((req) => httpTextResponse(req, const {}));
       await expectLater(
-        b.minter.mint(repositories: const []),
+        b.minter.mint(repositories: ['r'], permissions: const {}),
         throwsArgumentError,
       );
       expect(b.fake.requests, isEmpty);
     });
 
-    test(
-      'a token GitHub did not limit to the requested repository is revoked '
-      'and refused',
-      () async {
-        for (final body in [
-          {'token': 'ghs_wide', 'repository_selection': 'all'},
-          {'token': 'ghs_wide'},
-          {
-            'token': 'ghs_wide',
-            'repository_selection': 'selected',
-            'repositories': [
-              {'name': 'my-repo'},
-              {'name': 'other'},
-            ],
-          },
-        ]) {
-          final b = build(
-            (req) => req.method.value == 'DELETE'
-                ? httpTextResponse(req, const {}, statusCode: 204)
-                : httpTextResponse(req, body),
-          );
-          await expectLater(
-            b.minter.mint(repositories: ['my-repo']),
-            throwsStateError,
-          );
-          expect(
-            b.fake.requests.map((r) => r.method.value),
-            ['POST', 'DELETE'],
-            reason: '$body',
-          );
-        }
-      },
-    );
+    test('an empty repository list never reaches GitHub', () async {
+      final b = build((req) => httpTextResponse(req, const {}));
+      await expectLater(
+        b.minter.mint(repositories: const [], permissions: perms),
+        throwsArgumentError,
+      );
+      expect(b.fake.requests, isEmpty);
+    });
+
+    test('a token GitHub did not limit to the requested repository is revoked '
+        'and refused', () async {
+      for (final body in [
+        // Exactly the repository, but more permissions than asked.
+        {
+          'token': 'ghs_wide',
+          'repository_selection': 'selected',
+          'permissions': {...perms, 'administration': 'write'},
+          'repositories': [
+            {'name': 'my-repo'},
+          ],
+        },
+        // Exactly the repository, without the permissions that prove what
+        // the token may do.
+        {
+          'token': 'ghs_wide',
+          'repository_selection': 'selected',
+          'repositories': [
+            {'name': 'my-repo'},
+          ],
+        },
+        {'token': 'ghs_wide', 'repository_selection': 'all'},
+        {'token': 'ghs_wide'},
+        // Selected, but without the list that proves which repository.
+        {'token': 'ghs_wide', 'repository_selection': 'selected'},
+        {
+          'token': 'ghs_wide',
+          'repository_selection': 'selected',
+          'permissions': perms,
+          'repositories': [
+            {'name': 'my-repo'},
+            {'name': 'other'},
+          ],
+        },
+      ]) {
+        final b = build(
+          (req) => req.method.value == 'DELETE'
+              ? httpTextResponse(req, const {}, statusCode: 204)
+              : httpTextResponse(req, body),
+        );
+        await expectLater(
+          b.minter.mint(repositories: ['my-repo'], permissions: perms),
+          throwsStateError,
+        );
+        expect(b.fake.requests.map((r) => r.method.value), [
+          'POST',
+          'DELETE',
+        ], reason: '$body');
+      }
+    });
 
     test('revoke DELETEs /installation/token authed with the token', () async {
       final b = build(

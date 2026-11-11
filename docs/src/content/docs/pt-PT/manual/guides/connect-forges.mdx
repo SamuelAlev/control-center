@@ -2,7 +2,7 @@
 title: Ligar um host de código
 description: Ligue o GitHub, o GitLab ou o Bitbucket para que a superfície de PR, o registo de repos e as execuções de agentes funcionem — um único espaço de trabalho pode usar os três.
 slug: pt-PT/manual/guias/ligar-host-de-codigo
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 O Control Center funciona com três hosts de código, designados **forges** em toda a aplicação: **GitHub**, **GitLab** e **Bitbucket Cloud**. Nenhuma delas é a predefinida. Ligue uma e tudo funciona; ligue várias e um único espaço de trabalho pode conter repos de todas elas ao mesmo tempo.
@@ -11,22 +11,26 @@ A forge é uma propriedade de cada **repo**, lida a partir do seu remoto `origin
 
 ## Ligar uma forge
 
-1. Abra **Definições → Espaço de trabalho → Perfil e identidade** (`/settings/workspace/profile`).
+1. Abra **Definições → Você → Perfil** (`/settings/you/profile`).
 2. Encontre o cartão **Hospedagem de código**. Todas as forges suportadas são listadas, estejam ligadas ou não.
 3. No **GitHub**, prima **Entrar no GitHub**. No **GitLab** ou no **Bitbucket**, prima **Adicionar token** e cole um.
 
-**O GitHub só aceita início de sessão.** O início de sessão passa pela GitHub App do próprio servidor ou pelo Control Center Connect, consoante o que o proprietário do servidor tiver configurado (consulte [Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/)); não há nenhum token do GitHub para colar. O GitLab e o Bitbucket continuam a aceitar um token pessoal.
+**O GitHub só aceita início de sessão.** O início de sessão passa pela GitHub App do próprio servidor ou pelo Control Center Connect, consoante o que o proprietário do servidor tiver configurado, ou pelos apps que um administrador do espaço de trabalho escolheu para este espaço de trabalho em **Definições → Espaço de trabalho → Integrações** (consulte [Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/)); não há nenhum token do GitHub para colar. O GitLab e o Bitbucket continuam a aceitar um token pessoal.
 
 De qualquer forma, a credencial é **sua e reside no servidor**, indexada pelo id do seu utilizador: nenhum token é guardado na máquina onde o escreveu, todos os dispositivos em que inicia sessão usam o mesmo, e nenhum outro membro o consegue ler. Produz efeito no **pedido seguinte** — não há nada para reiniciar, e desligar faz com que deixe de ser enviada de imediato.
 
-Cada linha indica de onde veio a sua credencial, porque é essa a diferença entre “o meu token não está a funcionar” e “está a responder outro token”:
+O cartão indica onde as suas contas são usadas. Um token do GitLab ou do Bitbucket é seu em **todos os espaços de trabalho do servidor**, por isso cola-o uma única vez. O seu início de sessão no GitHub também, a menos que um espaço de trabalho tenha as suas próprias apps de início de sessão: esse espaço de trabalho mantém um início de sessão no GitHub próprio, e o cartão indica-o.
 
-| Subtítulo                        | Significado                                                        |
-| --------------------------------- | ------------------------------------------------------------------ |
-| `Ligado como octocat`            | Está a ser usada a sua própria credencial                          |
-| `Ligado como octocat · do ambiente` | Só no GitLab ou no Bitbucket: está a responder uma variável de ambiente do servidor, não o seu token |
-| `Não ligado`                     | Não tem credencial para esta forge                                  |
-| `O login no GitHub ainda não está configurado neste servidor.` | O servidor não tem nem uma GitHub App própria nem o Connect; o proprietário do servidor configura uma das opções |
+Cada linha mostra o estado **da sua** credencial. Só a sua própria credencial responde por si; nada mais assume esse papel:
+
+| A linha diz                                                    | Significado                                                                                                                                  |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Ligado como octocat`                                          | Está a ser usada a sua própria credencial                                                                                                    |
+| `Não ligado`                                                   | Não tem credencial para esta forge                                                                                                           |
+| `A sua sessão no GitHub como octocat expirou. Inicie sessão novamente.` | A sua sessão expirou ou foi revogada na forge                                                                                       |
+| `Em pausa: o serviço de início de sessão deste espaço de trabalho mudou` | Este espaço de trabalho passou a usar outro serviço de início de sessão. A sua sessão é mantida e volta a funcionar se regressar ao anterior, por isso não há botão de iniciar sessão |
+| `Não é possível aceder ao GitHub neste momento. A tentar novamente.` | Uma indisponibilidade temporária. O Control Center continua a tentar; não tem de fazer nada                                              |
+| Uma frase a explicar porque é que o início de sessão não está disponível | Por exemplo `O início de sessão com GitHub não está configurado neste espaço de trabalho.` ou `O serviço de início de sessão deste espaço de trabalho mudou de identidade. Um admin tem de a confirmar.` Os administradores recebem um botão para a definição que resolve o problema |
 
 ### Que token quer cada forge
 
@@ -35,17 +39,43 @@ Cada linha indica de onde veio a sua credencial, porque é essa a diferença ent
 | **GitLab**    | Um token de acesso pessoal com `api`                      | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Um token de API da Atlassian, mais o e-mail da sua conta   | id.atlassian.com → Security → API tokens                   |
 
-O Bitbucket autentica com o **e-mail da sua conta como nome de utilizador** e o token como palavra-passe. Defina `BITBUCKET_EMAIL` no ambiente do servidor para que saiba com que e-mail associar o token.
+O Bitbucket autentica com o **e-mail da sua conta como nome de utilizador** e o token de API como palavra-passe, por isso a caixa de diálogo do Bitbucket pede os dois. Um token de acesso de repositório, projeto ou workspace do Bitbucket não pertence a ninguém, por isso esta caixa de diálogo o recusa: é um [token de automação](#adicionar-um-token-de-automação) em vez disso. O mesmo se aplica a um token de acesso de projeto ou de grupo do GitLab: o GitLab pergunta a quem pertence o token antes de o guardar, e um token de bot é recusado aqui.
+
+Um token nunca fica ligado a um só espaço de trabalho: tem um por forge, e todos os espaços de trabalho do servidor o usam. **Desligar** remove-o para todos eles.
 
 ### Trabalho em segundo plano
 
 O trabalho sem uma pessoa por trás (execuções de agentes, pipelines, sondagem de PRs) também precisa de uma credencial, e cada forge resolve isso de forma diferente:
 
 - **GitHub** — um token para um repositório de cada vez, emitido a partir da GitHub App do servidor ou através do Connect e limitado ao que um membro responsável pode fazer aí. Nunca é o início de sessão de uma pessoa entregue por inteiro, e nenhuma variável de ambiente nem token colado o substitui. Consulte [Configurar a integração com o GitHub](/pt-PT/manual/guias/integracao-github/#em-nome-de-quem-fala-a-sua-credencial)
-- **GitLab** — o token colado pelo proprietário do servidor, depois `GITLAB_TOKEN`, depois `CI_JOB_TOKEN`
-- **Bitbucket** — o token colado pelo proprietário do servidor, depois `BITBUCKET_API_TOKEN`, depois `BITBUCKET_TOKEN` (com `BITBUCKET_EMAIL`)
+- **GitLab** e **Bitbucket** — apenas o **token de automação** do repo: um token de acesso de bot que um administrador do espaço de trabalho adiciona para esse repo, ou para todos os repos dessa forge no espaço de trabalho. O token próprio do repo prevalece sobre o do espaço de trabalho. A sondagem de PRs, os comentários de revisão por IA e os pushes e merge requests que ninguém pediu usam esse token, por isso na forge aparecem como esse bot, nunca como um membro. Nenhum token pessoal de membro entra no lugar, e não existe token ao nível do servidor nem token vindo de variável de ambiente. Sem ele, o trabalho em segundo plano do repo fica em pausa, e o aviso de acesso aos repos di-lo.
 
-As variáveis de ambiente do GitLab e do Bitbucket são a credencial do **servidor**, não a sua: um pedido feito em seu nome usa o seu token e mais nada, pelo que o ambiente nunca o substitui silenciosamente.
+O trabalho que um membro pede (um comentário, uma revisão, uma merge request de um agente aberta para ele) continua a usar o token do próprio membro.
+
+## Adicionar um token de automação
+
+Só os administradores do espaço de trabalho veem ou alteram tokens de automação. Cada um é verificado com a forge quando o guarda: um token que atua como uma pessoa é recusado (um token de acesso pessoal do GitLab, um token de API da Atlassian ou qualquer token do Bitbucket que inicie sessão como a conta de alguém), e também um que não consiga ler o repo para o qual foi criado.
+
+- **Para um repo:** abra **Definições → Espaço de trabalho → Repositórios**. O cartão **Tokens de automação** lista cada repo do GitLab e do Bitbucket com o bot que atua aí, **Usa o token do espaço de trabalho**, ou **Sem token. A automação está em pausa aqui.** Prima **Adicionar token** na linha do repo.
+- **Para todos os repos de uma forge:** abra **Definições → Espaço de trabalho → Integrações**, encontre o cartão **Tokens de automação** e prima **Adicionar token** na linha do GitLab ou do Bitbucket. Os repos que o token não consegue ler são indicados depois de guardar e continuam em pausa.
+
+Quando o trabalho em segundo plano já está em pausa, os administradores também veem **Adicionar token** diretamente no aviso de acesso aos repos. **Atualizar token** substitui um token; o botão do lixo remove-o, e qualquer repo que fique sem token entra em pausa. Se a forge recusar mais tarde um token guardado (revogado ou expirado), a linha dele di-lo, e os repos que ele cobria ficam em pausa até o substituir.
+
+| Forge         | Token de automação                                                                                                                                                                        | Onde o criar                                                                  |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **GitLab**    | Um **token de acesso de projeto** ou **de grupo** com `read_api` e `read_repository`; acrescente `api` e `write_repository` para comentários, merge requests e pushes                    | O projeto ou grupo → Definições → Tokens de acesso                            |
+| **Bitbucket** | Um **token de acesso de repositório**, **de projeto** ou **de workspace** com leitura do repositório, mais escrita em pull requests para comentários e pull requests (escrita no repositório para pushes) | O repositório, projeto ou workspace → Definições → Tokens de acesso           |
+
+No GitLab, o trabalho aparece como o utilizador-bot do token; no Bitbucket, aparece com o nome do token de acesso.
+
+### Bitbucket: token de acesso ou token de API
+
+O Bitbucket tem dois tipos de token, e o Control Center mantém-nos separados:
+
+- Um **token de API** (id.atlassian.com) pertence à sua conta Atlassian e é usado em conjunto com o seu e-mail. É **a sua** credencial e fica em **Hospedagem de código** em **Definições → Você → Perfil**.
+- Um **token de acesso** (criado nas definições de um repositório, projeto ou workspace) pertence a esse repositório, projeto ou workspace, não a uma pessoa. É um **token de automação** e fica em **Tokens de automação**.
+
+Cada caixa de diálogo recusa o outro tipo e indica onde ele pertence.
 
 ## É uma pessoa diferente em cada forge
 
@@ -53,11 +83,26 @@ A mesma pessoa é `octocat` no GitHub e algo completamente diferente no GitLab. 
 
 Se a identidade numa forge não tiver sido resolvida, os seus repos não contribuem em nada para a caixa de entrada, em vez de corresponderem a tudo. A caixa de entrada di-lo, em vez de afirmar que está em dia.
 
+## Só vê o que a sua própria conta consegue ver
+
+Uma pull request de um repo só lhe chega quando o seu papel no espaço de trabalho permite esse repo **e a sua própria conta nessa forge consegue lê-lo**. Os administradores e o proprietário do espaço de trabalho seguem a mesma regra. Quando alguns repos estão ocultos, a caixa de entrada e a fila de PRs indicam quantos e porquê, sem os nomear:
+
+- **Inicie sessão no GitHub para ver pull requests de mais 3 repositórios**: ainda não ligou essa forge aqui. Inicie sessão e eles aparecerão
+- **3 repositórios estão ocultos porque a sua conta do GitHub não os vê**: peça a alguém com acesso na forge
+- **3 repositórios estão ocultos porque não tem acesso a eles neste espaço de trabalho**: peça a um administrador do espaço de trabalho que lhe dê acesso
+- **A verificar o seu acesso a mais 3 repositórios…**: aparece brevemente enquanto o Control Center confirma o que a sua conta consegue ler
+
+O código segue a mesma regra. Para abrir os ficheiros, os diffs ou a pesquisa de um repositório, ou um terminal nele, precisa da sua concessão neste espaço de trabalho e a sua própria conta na forja tem de conseguir lê-lo; os administradores do espaço de trabalho também, só o proprietário do servidor é isento. Quando não é possível contactar a forja para verificar, vê "Não foi possível confirmar o seu acesso na forja. Tente novamente." (com o nome da forja). Veja [O código segue a forja](/pt-PT/manual/conceitos/autorizacao/#código-segue-a-forja).
+
+A mesma regra aplica-se a tudo o que é criado a partir dessas pull requests. Um espaço de revisão, as suas mensagens e as execuções de agentes desaparecem enquanto não conseguir ver a pull request, e um espaço de revisão aberto fecha-se se perder o acesso. As execuções de pipeline sobre uma pull request oculta deixam de aparecer na sua lista de execuções. Os agentes que trabalham para si também não conseguem ler esses espaços de revisão. A lista de repositórios do espaço de trabalho mostra todos os repos a que tem acesso neste espaço de trabalho, mesmo um que a sua conta na forge ainda não consegue alcançar.
+
+Se a forge estiver a limitar pedidos ou estiver em baixo, o Control Center continua a mostrar o que confirmou por último durante alguns minutos e depois oculta essas pull requests até conseguir voltar a verificar.
+
 ## Uma caixa de entrada, todas as forges
 
 A caixa de entrada e a fila de PRs distribuem-se por todas as forges representadas no espaço de trabalho e fundem os resultados num único fluxo — uma pull request do GitHub e uma pull request do Bitbucket ficam lado a lado, ordenadas por tempo em vez de agrupadas por fornecedor.
 
-As falhas ficam isoladas. Uma forge que esteja em baixo, com limite de pedidos ou não ligada não contribui em nada e deixa as restantes intactas; nunca esvazia a caixa de entrada inteira. Os seus próprios repos continuam a mostrar o último estado conhecido até que recupere.
+As falhas ficam isoladas. Uma forge que esteja em baixo ou com limite de pedidos não afeta as restantes, e os seus próprios repos continuam a mostrar o último estado conhecido até recuperar; nunca esvazia a caixa de entrada inteira. Um repo que o servidor já não consegue alcançar deixa de aparecer, em vez de mostrar pull requests desatualizadas, e o **aviso de acesso aos repos** indica-o com a solução: instalar a GitHub App na organização, adicionar o repo aos repositórios da App, retomar uma instalação suspensa, pedir que o membro responsável inicie sessão de novo ou adicionar um token de automação para um repo do GitLab ou do Bitbucket. Os administradores recebem um botão para os passos da GitHub App e para adicionar o token.
 
 ## O que cada forge consegue fazer
 
@@ -93,15 +138,31 @@ O GitLab chama **merge request** a uma pull request. O Control Center diz “pul
 
 ### A lista de PRs está vazia e diz que uma forge não está ligada
 
-Não tem credencial para essa forge. Inicie sessão no GitHub, ou cole um token do GitLab ou do Bitbucket, em **Definições → Espaço de trabalho → Perfil e identidade → Hospedagem de código**. Os repos das outras forges não são afetados.
+Não tem credencial para essa forge. Inicie sessão no GitHub, ou cole um token do GitLab ou do Bitbucket, em **Definições → Você → Perfil → Hospedagem de código**. Os repos das outras forges não são afetados.
 
 ### Liguei uma forge mas os seus repos continuam a não mostrar nada
 
-Verifique o subtítulo da linha. Se uma linha do GitLab ou do Bitbucket disser “do ambiente”, está a responder uma credencial diferente da que esperava — o seu próprio token ganha para tudo o que pedir, pelo que, se disser outra coisa, o seu não foi guardado. No GitHub, verifique se a GitHub App está instalada na conta proprietária dos repos.
+Verifique o estado da linha e depois os avisos acima da lista de PRs. “Inicie sessão no … para ver pull requests de mais … repositórios” significa que a sua conta não está ligada para esses repos; “… ocultos porque a sua conta do … não os vê” significa que a forge não lhe está a dar acesso. No GitHub, o aviso de acesso aos repos indica quando a GitHub App não está instalada na organização do repo ou não o inclui.
+
+### O trabalho em segundo plano de um repo do GitLab ou do Bitbucket está em pausa
+
+O repo não tem um token de automação que o consiga ler. Um administrador do espaço de trabalho adiciona um para o repo ou para o espaço de trabalho inteiro; consulte [Adicionar um token de automação](#adicionar-um-token-de-automação). O seu próprio token pessoal não o retira da pausa: o trabalho em segundo plano nunca usa o token de um membro.
 
 ### Um repo não se regista
 
-O registo exige as três coisas: que o caminho esteja dentro de uma árvore de trabalho git, que tenha um remoto `origin` e que esse remoto aponte para github.com, gitlab.com ou bitbucket.org. Consulte [Adicionar repos a um espaço de trabalho](/pt-PT/manual/guias/adicionar-repos/).
+O registo exige as três coisas: que o caminho esteja dentro de uma árvore de trabalho git, que tenha um remoto `origin` e que esse remoto aponte para github.com, gitlab.com ou bitbucket.org. O `origin` tem também de ser o repositório que está a associar, e apenas o proprietário do servidor pode associar uma pasta fora do armazenamento deste espaço de trabalho. Consulte [Adicionar repos a um espaço de trabalho](/pt-PT/manual/guias/adicionar-repos/).
+
+### Tenho uma concessão mas o repositório diz que a minha conta não o consegue ler
+
+A sua própria conta na forja não consegue ler esse repositório, por isso o código continua fechado para si, independentemente do que o espaço de trabalho conceda. Inicie sessão na forja em **Hospedagem de código**, acima, ou obtenha acesso ao repositório na forja.
+
+### "Não foi possível confirmar o seu acesso na forja"
+
+A forja não pôde ser contactada para verificar o seu acesso, por isso o Control Center recusou em vez de adivinhar. Tente novamente daqui a pouco.
+
+### Um repositório diz que agora aponta para outro repositório
+
+O repositório por trás desse caminho mudou: foi eliminado e criado de novo, ou movido e substituído. O Control Center não lhe envia nada até um administrador do espaço de trabalho carregar em **Associar novamente** no aviso ou na linha do repositório. Uma simples renomeação ou transferência é seguida automaticamente e nunca mostra isto.
 
 ### Tudo deixa de funcionar durante um tempo após uso intenso
 

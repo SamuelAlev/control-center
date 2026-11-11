@@ -152,17 +152,13 @@ class PrDiffViewState extends ConsumerState<PrDiffView> {
   }
 
   /// Opens [threadId], focuses it and scrolls it into view — the comment
-  /// permalink entry point.
-  Future<void> revealThread(
-    String threadId, {
-    required int fileIndex,
-    required int displayLine,
-  }) async {
-    await _unifiedKey.currentState?.revealThread(
-      threadId,
-      fileIndex: fileIndex,
-      displayLine: displayLine,
-    );
+  /// permalink entry point. False when the thread has no row in this diff.
+  Future<bool> revealThread(String threadId, {required int fileIndex}) async {
+    return await _unifiedKey.currentState?.revealThread(
+          threadId,
+          fileIndex: fileIndex,
+        ) ??
+        false;
   }
 
   /// The index of [path] in the diff's file list, or -1 when the file is not

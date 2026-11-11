@@ -3,9 +3,6 @@ import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
 
 /// Origin constants for [SkillUpdated].
 abstract final class SkillUpdateOrigin {
-  /// Installed/updated from the skills registry (marketplace).
-  static const String registry = 'registry';
-
   /// Installed/updated from a GitHub repository (MCP install path).
   static const String github = 'github';
 

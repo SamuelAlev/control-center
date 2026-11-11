@@ -1,8 +1,12 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:control_center/core/providers/media_proxy_provider.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
+import 'package:control_center/l10n/app_localizations_en.dart';
 import 'package:control_center/shared/widgets/media_proxy_scope.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,9 +79,9 @@ void main() {
     });
   }
 
-  test('is unavailable on a connection with no HTTP lane', () {
-    // A relayed connection carries RPC and nothing else. The UI disables the
-    // controls off this rather than offering a button that cannot work.
+  test('is unavailable only without a media proxy', () {
+    // Every connected session, direct or relayed, has one; without it the UI
+    // disables the controls rather than offering a button that cannot work.
     expect(containerWith(config: null).read(backupTransferAvailableProvider),
         isFalse);
     expect(
@@ -167,6 +171,53 @@ void main() {
           contains('not a Control Center workspace database'),
         ),
       ),
+    );
+  });
+
+  test('a non-owner restore refusal is worded by its kind', () async {
+    respondWith(
+      status: 403,
+      textBody:
+          '{"error":"only the server owner may restore",'
+          '"kind":"server_owner_required"}',
+    );
+
+    Object? refusal;
+    try {
+      await containerWith(config: proxy)
+          .read(backupTransferProvider)
+          .restoreFromFile(
+            workspaceId: 'ws-9',
+            file: XFile.fromData(
+              Uint8List.fromList(const [1]),
+              name: 'workspace.db',
+            ),
+          );
+    } on BackupTransferException catch (error) {
+      refusal = error;
+    }
+    expect(
+      refusal,
+      isA<BackupTransferException>()
+          .having((e) => e.statusCode, 'statusCode', 403)
+          .having((e) => e.kind, 'kind', 'server_owner_required'),
+    );
+    final l10n = AppLocalizationsEn();
+    expect(
+      describeBackupTransferError(l10n, refusal!),
+      l10n.backupRestoreServerOwnerOnly,
+    );
+    // The same refusal over RPC (`workspace.import`), by kind as well.
+    expect(
+      describeBackupTransferError(
+        l10n,
+        RemoteRpcException(
+          RpcErrorCodes.unauthorized,
+          'only the server owner may restore',
+          {'kind': 'server_owner_required'},
+        ),
+      ),
+      l10n.serverOwnerOnly,
     );
   });
 

@@ -69,6 +69,12 @@ class PipelineTriggersTable extends Table {
   TextColumn get catchUpPolicy =>
       text().withDefault(const Constant('catchUpLatestOnly'))();
 
+  /// JSON array of every member who armed this trigger, or edited it (or
+  /// its pipeline) while armed; `[]` when disarmed. Server-written only.
+  TextColumn get armedByUserIdsJson => text()
+      .named('armed_by_user_ids')
+      .withDefault(const Constant('[]'))();
+
   /// When this trigger was created.
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 

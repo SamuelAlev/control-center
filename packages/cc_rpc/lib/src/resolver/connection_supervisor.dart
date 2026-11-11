@@ -234,11 +234,9 @@ class ServerConnectionSupervisor {
     _pingTimer = Timer.periodic(pingInterval, (_) => unawaited(_ping()));
   }
 
-  bool _pingSupported = true;
-
   Future<void> _ping() async {
     final client = _client;
-    if (client == null || _closed || _reconnecting || !_pingSupported) {
+    if (client == null || _closed || _reconnecting) {
       return;
     }
     final started = DateTime.now();
@@ -253,12 +251,7 @@ class ServerConnectionSupervisor {
           insecure: _descriptor.insecureAllowed,
         ),
       );
-    } on RemoteRpcException catch (e) {
-      if (e.code == RpcErrorCodes.opUnknown) {
-        // Older server without the ping op: rely on transport-close detection.
-        _pingSupported = false;
-        return;
-      }
+    } on RemoteRpcException {
       // The server answered — the path is alive even if the op errored.
       _missedPings = 0;
     } catch (_) {
@@ -291,7 +284,7 @@ class ServerConnectionSupervisor {
         _onDescriptorUpdated?.call(updated);
       }
     } catch (_) {
-      // Older server or transient failure — the stored descriptor stands.
+      // A transient failure — the stored descriptor stands.
     }
   }
 

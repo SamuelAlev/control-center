@@ -2,7 +2,7 @@
 title: Diagnostikujte agenta
 description: Když agent přestane produkovat běhy, projdi záznam běhu, sondu adaptéru, stav serveru a diagnostiku hostitele.
 slug: cs-CZ/prirucka/navody/diagnostika-agenta
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Tenhle návod ukáže, jak zjistit, proč agent nevytváří běhy.
@@ -13,13 +13,13 @@ Postupuj shora: nejdřív vlastní běhy agenta, potom jeho backend, potom serve
 
 **Nastavení → Pracovní prostor → Agenti** → vyber agenta → **Protokoly**.
 
-Každý běh ukazuje odznak stavu, dobu trvání („Running…“, dokud běží), čas začátku a dokončení, PID a adaptér, který použil. **Zobrazit** otevře surový proud událostí toho běhu. **Zastavit** ukončí běžící proces a označí běh „Killed by user“; **Ukončit běžící** v záhlaví udělá totéž pro každý právě probíhající běh toho agenta.
+Každý běh ukazuje odznak stavu, dobu trvání („Running…“, dokud běží), čas začátku a dokončení, PID a adaptér, který použil. **Zobrazit** otevře surový proud událostí toho běhu. **Zastavit** ukončí běžící proces a označí běh „Killed by user“; **Ukončit běžící** v záhlaví udělá totéž pro každý právě probíhající běh toho agenta v tomto pracovním prostoru. Vidíš a zastavit můžeš jen živé běhy agentů v pracovních prostorech, do kterých patříš; vlastník serveru vidí a zastavuje všechny.
 
 Čti to takhle:
 
 - **Žádné běhy** — k odeslání vůbec nedošlo. Zmínky v composeru jsou `@` a znaky slova (písmena, číslice, podtržítko). Rozlišení je přesná shoda, nebo shoda podle předpony jména agenta, takže `@code-reviewer` se parsuje jako `code` a pořád může probudit agenta jménem `code-reviewer`. Jméno s mezerou jako jeden token zmínit nejde. Pak pokračuj krokem 2.
-- **Běh, který hned skončil chybou** — otevři **Zobrazit**. Selhání spuštění backendu se tu ukáže jako chyba procesu.
-- **Běh zaseknutý na „Running…“** — zastav ho a pak zkontroluj **Časový limit ticha (minuty)** agenta na kartě Nastavení. Nenastavený limit použije výchozí hodnotu daného režimu.
+- **Běh, který hned skončil chybou** — otevři **Zobrazit**. Selhání spuštění backendu se tu ukáže jako chyba procesu. Hláška „Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník.“ znamená, že stroj serveru nemá sandbox operačního systému a ty nejsi jeho vlastník; viz [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/#můj-běh-byl-odmítnut-hláškou-tento-server-nemá-sandbox).
+- **Běh zaseknutý na „Running…“** — zastav ho a pak zkontroluj **Časový limit ticha (minuty)** agenta na jeho kartě **Nastavení**. Nenastavený limit použije výchozí hodnotu daného režimu.
 - **Dokončený běh bez užitečného výstupu** — stav v záznamu běhu zůstane `completed` i u běhu, který skončil bez deklarovaného výstupu; poctivý signál je text shrnutí, ne odznak.
 
 Karta Protokoly náklady neukazuje. Najdeš je v tabulce po agentech v **Observabilita → Přehledy**.
@@ -67,11 +67,11 @@ Dvě věci, které se hodí vědět, když změna „funguje v testech, ale v ap
 - **Soukromí** — jestli se surový obsah diffu smí předat modelu agenta a jestli se posílají hlášení o pádech.
 
 :::caution[Tahle sekce hlásí hostitele a její ovládání je na straně klienta]
-Detekce a vynucení se teď shodují: kde detektor hlásí nativní backend, běhy agentů na tom hostiteli jsou jím opravdu obalené. V téhle sekci je ale živá jen detekce. Hlavní přepínač a výběr backendu jsou preference uložené na tvém zařízení a server žádnou z nich nečte — vlastní přepínač serveru je `--sandbox` (výchozí `on`, `off` pro vypnutí).
+Detekce a vynucení se shodují: kde detektor hlásí nativní backend, běhy agentů na tom hostiteli jsou jím opravdu obalené. V téhle sekci je ale živá jen detekce. Hlavní přepínač a výběr backendu jsou preference uložené na tvém zařízení a server žádnou z nich nečte — vlastní přepínač serveru je `--sandbox` (výchozí `on`, `off` pro vypnutí).
 
-Varování tady stojí za reakci, ale obvykle to není důvod, proč agent selhává. V jakém stavu server je, ověříš ve startovacím logu: vypíše `agent sandbox ON` s poznámkou o backendu, `no OS-native agent sandbox on this host` s nápovědou k instalaci, nebo `agent sandbox DISABLED by --sandbox off`. `GET /healthz` pole sandboxu nenese.
+Varování tady stojí za reakci. Na hostiteli bez backendu je ono právě důvod, proč někdo jiný než vlastník serveru agenty vůbec nespustí. V jakém stavu server je, ověříš ve startovacím logu: vypíše `agent sandbox ON` s poznámkou o backendu, `no OS-native agent sandbox on this host` s nápovědou k instalaci, nebo `agent sandbox DISABLED by --sandbox off`, a jeho řádek o vystavení nese `sandbox=native`, `sandbox=unavailable` nebo `sandbox=off`. `GET /healthz` pole sandboxu nenese.
 
-Kde backend není — na Windows vždy, na Linuxu nebo ve WSL2 bez `bwrap` a `socat` — běhy **nejsou** v sandboxu a ohraničuje je vlastní checkout konverzace, token forge jen pro čtení a brána pro push, guardraily akcí, sanitizace prostředí a plocha nástrojů, kterou jeho režim povolí.
+Kde backend není (na Windows vždy, na Linuxu nebo ve WSL2 bez `bwrap` a `socat`), startují jen běhy, za které odpovídá vlastník serveru, a ostatní se odmítnou. Běhy, které tam startují, a každý běh pod `--sandbox off`, jsou **bez** sandboxu a ohraničuje je vlastní checkout konverzace, token forge jen pro čtení a brána pro push, guardraily akcí, sanitizace prostředí a plocha nástrojů, kterou jeho režim povolí.
 :::
 
 ## Častá selhání

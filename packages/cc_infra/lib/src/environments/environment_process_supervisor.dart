@@ -15,6 +15,7 @@ import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/process/binary_resolver.dart';
 
 import 'package:cc_infra/src/process/child_process.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 /// Which rules a supervised command follows.
@@ -218,7 +219,8 @@ class EnvironmentProcessIds {
   /// Creates an [EnvironmentProcessIds].
   const EnvironmentProcessIds({required this.pid, required this.processGroup});
 
-  /// The command's pid.
+  /// The command's pid, or the group's id once an app's first process has
+  /// exited and left the rest of its group running.
   final int pid;
 
   /// Its process group. A PTY child leads its own, so this equals [pid] on
@@ -314,7 +316,22 @@ class _Supervised {
   int? lastExitCode;
 
   OwnedTerminalSession? session;
+
+  /// The first process has exited, or nothing was spawned yet.
   bool exited = true;
+
+  /// The process group of the last spawn, while anything in it may still run.
+  /// An app keeps it after its first process exits: a launcher that forks and
+  /// exits leaves the app itself running in the group.
+  int? group;
+
+  /// Polls an app's group once its first process has gone.
+  Timer? groupWatch;
+
+  /// Follows the log for `ready.logMatch`, for the current run only. The
+  /// supervisor cancels it on a match, an exit, a stop and a respawn.
+  // ignore: cancel_subscriptions
+  StreamSubscription<String>? logWatch;
   bool stopping = false;
   int generation = 0;
   DateTime? startedAt;
@@ -357,6 +374,8 @@ class EnvironmentProcessSupervisor {
     this.reapGrace = const Duration(seconds: 2),
     this.logRingBytes = 2 * 1024 * 1024,
     this.failureLogLines = 20,
+    this.launchGrace = const Duration(seconds: 5),
+    this.groupPollInterval = const Duration(seconds: 2),
   }) : _hasGuiSession = hasGuiSession ?? _detectGuiSession;
 
   final OwnedTerminalSessionPort _terminals;
@@ -399,6 +418,13 @@ class EnvironmentProcessSupervisor {
 
   /// Lines quoted when something fails.
   final int failureLogLines;
+
+  /// An app whose whole group is gone sooner than this never really started.
+  final Duration launchGrace;
+
+  /// Between checks on an app whose first process exited while the rest of
+  /// its group runs on. Each is a `ps`, so not too often.
+  final Duration groupPollInterval;
 
   final Map<String, _Supervised> _entries = {};
   final StreamController<EnvironmentProcessStateChange> _states =
@@ -447,9 +473,10 @@ class EnvironmentProcessSupervisor {
     }
     final key = _key(spec.environmentId, spec.componentId);
     var entry = _entries[key];
-    if (entry != null && !entry.exited) {
+    if (entry != null && entry.group != null) {
       if (entry.state == EnvironmentComponentPhase.failed.wire &&
-          spec.kind == EnvironmentSupervisedKind.process) {
+          spec.kind == EnvironmentSupervisedKind.process &&
+          !entry.exited) {
         // Still running, but its readiness timed out. A new Start is a new
         // chance: probe again rather than repeat the old verdict.
         _set(entry, EnvironmentComponentPhase.starting.wire);
@@ -509,6 +536,7 @@ class EnvironmentProcessSupervisor {
       EnvironmentComponentPhase.tryParse(state)?.isDown ?? false;
 
   /// Stops [componentId]: SIGINT to the group, then SIGTERM, then SIGKILL.
+  /// An app's group is signalled even when its first process has exited.
   ///
   /// It stays stopped until [start] or [restart] says otherwise.
   Future<void> stop(String environmentId, String componentId) async {
@@ -518,9 +546,12 @@ class EnvironmentProcessSupervisor {
     }
     entry.stopping = true;
     entry.backoff?.cancel();
+    entry.groupWatch?.cancel();
+    _endLogWatch(entry);
     final session = entry.session;
-    if (session != null && !entry.exited) {
-      final group = session.pid;
+    final group = entry.group;
+    if (group != null) {
+      final leaderRuns = session != null && !entry.exited;
       _groups.signal(group, ProcessSignal.sigint);
       if (!await _isGone(entry, group, sigtermAfter)) {
         _groups.signal(group, ProcessSignal.sigterm);
@@ -529,15 +560,18 @@ class EnvironmentProcessSupervisor {
           await _isGone(entry, group, reapGrace);
         }
       }
-      await _terminals.killOwned(
-        workspaceId: entry.spec.workspaceId,
-        sessionId: session.sessionId,
-        owner: entry.spec.owner,
-      );
+      if (leaderRuns) {
+        await _terminals.killOwned(
+          workspaceId: entry.spec.workspaceId,
+          sessionId: session.sessionId,
+          owner: entry.spec.owner,
+        );
+      }
     }
     entry
       ..session = null
-      ..exited = true;
+      ..exited = true
+      ..group = null;
     await _deletePidFile(entry.spec);
     await entry.ring.flush();
     _set(
@@ -576,6 +610,10 @@ class EnvironmentProcessSupervisor {
         .toList(growable: false);
     for (final key in keys) {
       final entry = _entries.remove(key);
+      entry?.groupWatch?.cancel();
+      if (entry != null) {
+        _endLogWatch(entry);
+      }
       await entry?.ring.close();
       await entry?.changes.close();
     }
@@ -591,11 +629,15 @@ class EnvironmentProcessSupervisor {
   /// This is what finding a component's windows starts from.
   EnvironmentProcessIds? processOf(String environmentId, String componentId) {
     final entry = _entries[_key(environmentId, componentId)];
-    final session = entry?.session;
-    if (entry == null || session == null || entry.exited) {
+    final group = entry?.group;
+    if (entry == null || group == null) {
       return null;
     }
-    return EnvironmentProcessIds(pid: session.pid, processGroup: session.pid);
+    final session = entry.session;
+    return EnvironmentProcessIds(
+      pid: session != null && !entry.exited ? session.pid : group,
+      processGroup: group,
+    );
   }
 
   /// Every live pid in [componentId]'s group: a launcher and what it launched.
@@ -706,7 +748,9 @@ class EnvironmentProcessSupervisor {
     for (final entry in _entries.values) {
       entry
         ..stopping = true
-        ..backoff?.cancel();
+        ..backoff?.cancel()
+        ..groupWatch?.cancel();
+      _endLogWatch(entry);
       await entry.ring.close();
       await entry.changes.close();
     }
@@ -758,35 +802,43 @@ class EnvironmentProcessSupervisor {
     entry
       ..logMatched = false
       ..startedAt = _now();
+    entry.groupWatch?.cancel();
+    _endLogWatch(entry);
     final matcher = spec.ready?.logMatch == null
         ? null
         : RegExp(spec.ready!.logMatch!);
-    StreamSubscription<String>? watch;
     if (matcher != null) {
-      watch = entry.ring.lines.listen((line) {
+      entry.logWatch = entry.ring.lines.listen((line) {
         if (generation == entry.generation && matcher.hasMatch(line)) {
           entry.logMatched = true;
-          unawaited(watch?.cancel());
+          _endLogWatch(entry);
         }
       });
     }
 
-    final session = await _terminals.spawnOwned(
-      workspaceId: spec.workspaceId,
-      spaceId: spec.spaceId,
-      owner: spec.owner,
-      executable: executable,
-      arguments: spec.argv.sublist(1),
-      environment: environmentProcessVariables(
-        variables,
+    final OwnedTerminalSession session;
+    try {
+      session = await _terminals.spawnOwned(
+        workspaceId: spec.workspaceId,
+        spaceId: spec.spaceId,
+        owner: spec.owner,
         executable: executable,
-      ),
-      cwd: spec.workingDirectory,
-      onOutput: entry.ring.addBytes,
-    );
+        arguments: spec.argv.sublist(1),
+        environment: environmentProcessVariables(
+          variables,
+          executable: executable,
+        ),
+        cwd: spec.workingDirectory,
+        onOutput: entry.ring.addBytes,
+      );
+    } on Object {
+      _endLogWatch(entry);
+      rethrow;
+    }
     entry
       ..session = session
-      ..exited = false;
+      ..exited = false
+      ..group = session.pid;
     await _writePidFile(spec, session.pid);
     unawaited(
       session.exitCode.then((code) => _onExit(entry, generation, code)),
@@ -901,36 +953,118 @@ class EnvironmentProcessSupervisor {
     entry
       ..exited = true
       ..lastExitCode = code;
+    _endLogWatch(entry);
     entry.ring.finishLine();
     if (entry.stopping) {
       return;
     }
     final spec = entry.spec;
-    final pid = entry.session?.pid;
+    final group = entry.group;
     entry.session = null;
-    await _deletePidFile(spec);
 
-    final String state;
     if (spec.kind == EnvironmentSupervisedKind.app) {
-      state = code == 0
-          ? EnvironmentComponentPhase.closed.wire
-          : EnvironmentComponentPhase.crashed.wire;
+      // A launcher that forks and exits (a wrapper script, some Electron
+      // setups) leaves the app itself in the group: it runs until that empties,
+      // and the pid file stays so a stop or the next boot can still reach it.
+      final rest = group == null ? const <int>[] : await _membersOf(group);
+      if (generation != entry.generation || entry.stopping) {
+        return;
+      }
+      if (rest.isNotEmpty) {
+        _watchGroup(entry, generation, group!);
+        _publish(entry);
+        return;
+      }
+      await _appGone(entry, code);
+      return;
+    }
+
+    entry.group = null;
+    await _deletePidFile(spec);
+    // Whatever the leader left running still holds its ports, and the next
+    // start would lose to it.
+    if (group != null) {
+      _groups.signal(group, ProcessSignal.sigterm);
+    }
+    final state = _afterProcessExit(entry, code);
+    await entry.ring.flush();
+    _publishExit(entry, code, state);
+  }
+
+  void _watchGroup(_Supervised entry, int generation, int group) {
+    entry.groupWatch?.cancel();
+    entry.groupWatch = Timer(groupPollInterval, () async {
+      if (generation != entry.generation || entry.stopping) {
+        return;
+      }
+      final rest = await _membersOf(group);
+      if (generation != entry.generation || entry.stopping) {
+        return;
+      }
+      if (rest.isNotEmpty) {
+        _watchGroup(entry, generation, group);
+        return;
+      }
+      // The launcher's exit code says nothing about how the app ended.
+      await _appGone(entry, 0);
+    });
+  }
+
+  /// The live members of [group]. One that can't be listed counts as still
+  /// there: the next poll or a stop decides.
+  Future<List<int>> _membersOf(int group) async {
+    try {
+      return await _groups.members(group);
+    } on Object catch (e) {
+      CcInfraLog.warning('could not list process group $group: $e');
+      return [group];
+    }
+  }
+
+  /// The last of an app's group has gone on its own.
+  Future<void> _appGone(_Supervised entry, int code) async {
+    final spec = entry.spec;
+    entry
+      ..group = null
+      ..groupWatch?.cancel();
+    await _deletePidFile(spec);
+    final ranFor = entry.startedAt == null
+        ? Duration.zero
+        : _now().difference(entry.startedAt!);
+    final String state;
+    if (ranFor < launchGrace) {
+      // Nothing a person could have closed in that time: it never came up,
+      // or it handed itself to a process outside the group.
+      state = EnvironmentComponentPhase.failed.wire;
       _set(
         entry,
         state,
-        detail: code == 0
-            ? null
-            : _withLastLines(entry, 'Crashed with exit code $code'),
+        detail: _withLastLines(
+          entry,
+          code == 0
+              ? 'Exited right after launch and left nothing running. A '
+                    'launcher that hands the app to another process (as '
+                    '`open` does) cannot be supervised: run the app itself'
+              : 'Exited right after launch with code $code',
+        ),
       );
+    } else if (code == 0) {
+      state = EnvironmentComponentPhase.closed.wire;
+      _set(entry, state);
     } else {
-      // Whatever the leader left running still holds its ports, and the next
-      // start would lose to it.
-      if (pid != null) {
-        _groups.signal(pid, ProcessSignal.sigterm);
-      }
-      state = _afterProcessExit(entry, code);
+      state = EnvironmentComponentPhase.crashed.wire;
+      _set(
+        entry,
+        state,
+        detail: _withLastLines(entry, 'Crashed with exit code $code'),
+      );
     }
     await entry.ring.flush();
+    _publishExit(entry, code, state);
+  }
+
+  void _publishExit(_Supervised entry, int code, String state) {
+    final spec = entry.spec;
     if (!_exits.isClosed) {
       _exits.add(
         EnvironmentProcessExit(
@@ -944,6 +1078,20 @@ class EnvironmentProcessSupervisor {
       );
     }
   }
+
+  void _endLogWatch(_Supervised entry) {
+    final watch = entry.logWatch;
+    entry.logWatch = null;
+    if (watch != null) {
+      unawaited(watch.cancel());
+    }
+  }
+
+  /// Whether anything still follows [componentId]'s log, such as a
+  /// `ready.logMatch` watch.
+  @visibleForTesting
+  bool followsLogOf(String environmentId, String componentId) =>
+      _entries[_key(environmentId, componentId)]?.ring.hasListeners ?? false;
 
   /// A server has no reason to exit, so any exit counts as a failure here,
   /// including a clean one.

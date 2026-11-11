@@ -8,6 +8,7 @@ import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_skills.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_domain/features/dispatch/domain/usecases/build_conversation_context_use_case.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
@@ -17,8 +18,9 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.d
 import 'package:cc_domain/features/messaging/domain/entities/space.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/testing/fake_workspace_repository.dart';
 import 'package:cc_harness/tools.dart';
-import 'package:cc_host/cc_host.dart' show RepoOpContext;
+import 'package:cc_host/cc_host.dart' show RepoOpContext, SessionCapability;
 import 'package:cc_server_core/src/context/context_inspection_service.dart';
 import 'package:cc_server_core/src/context/context_rpc_ops.dart';
 import 'package:path/path.dart' as p;
@@ -402,6 +404,7 @@ void main() {
               messagingRepository: spaces,
             ),
           ),
+          workspaces: FakeWorkspaceRepository(),
         ).single;
 
         Future<String> historyFor(String selectedId) async {
@@ -502,7 +505,10 @@ void main() {
     conversations
       ..seed(workspaceId, 'space-2', 'other-space-conversation')
       ..seed('ws-OTHER', spaceId, 'other-workspace-conversation');
-    final op = buildContextOps(inspection: buildService()).single;
+    final op = buildContextOps(
+      inspection: buildService(),
+      workspaces: FakeWorkspaceRepository(),
+    ).single;
 
     for (final id in [
       'other-space-conversation',
@@ -556,11 +562,20 @@ void main() {
   test(
     'context.inspect op returns the inspection over the wire shape',
     () async {
-      final ops = buildContextOps(inspection: buildService());
+      final ops = buildContextOps(
+        inspection: buildService(),
+        workspaces: FakeWorkspaceRepository(),
+      );
       expect(ops, hasLength(1));
       final op = ops.single;
       expect(op.name, 'context.inspect');
       expect(op.kind, RepoOpKind.read);
+      // It answers the space's AGENTS.md, skills and worktree text: full
+      // clients only, behind the space read gate (a read grant and forge
+      // read on every repository the space exposes).
+      expect(op.requiredCapability, SessionCapability.fullClient);
+      expect(op.repoAccess, RepoGrantLevel.read);
+      expect(op.repoAccessVia, isNotNull);
       expect(
         op.requiredArgs,
         containsAll(['space_id', 'conversation_id', 'agent_id']),

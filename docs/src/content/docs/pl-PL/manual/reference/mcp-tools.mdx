@@ -2,10 +2,10 @@
 title: Narzędzia MCP
 description: Kompletny katalog narzędzi MCP, które rejestruje cc_server, według rodzin.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/narzedzia-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` hostuje jeden rejestr narzędzi MCP (JSON-RPC 2.0), udostępniany na głównym porcie serwera (domyślnie `9030`) pod `POST /mcp` i `GET /sse`, w wersji protokołu `2024-11-05`. Każdy klient trafia do tego samego rejestru: aplikacja desktopowa, wersja webowa, zewnętrzni klienci MCP i wbudowany runtime agentów. Zewnętrzne serwery MCP można podłączyć do tego samego rejestru jako warstwę dynamiczną.
+`cc_server` hostuje jeden rejestr narzędzi MCP (JSON-RPC 2.0), udostępniany na głównym porcie serwera (domyślnie `9030`) pod `POST /mcp` i `GET /sse`, w wersji protokołu `2024-11-05`. Każdy klient trafia do tego samego rejestru: aplikacja desktopowa, wersja webowa, zewnętrzni klienci MCP i wbudowany runtime agentów. Zewnętrzne serwery MCP można podłączyć do tego samego rejestru jako warstwę dynamiczną. Wyjątek stanowią serwery znalezione w osobistej konfiguracji narzędzi użytkownika serwera: ten endpoint nigdy ich nie wylicza, nie wywołuje ani nie przeszukuje, a korzystają z nich wyłącznie wbudowane uruchomienia harnessu, za które odpowiada właściciel serwera (zob. [Osobiste serwery MCP należą do właściciela](/pl-PL/podrecznik/poradniki/serwer-mcp/#osobiste-serwery-mcp-należą-do-właściciela)).
 
 ## Rozmiar rejestru
 
@@ -23,7 +23,7 @@ Pięć narzędzi grafu kodu jest rejestrowanych tylko wtedy, gdy host przekaże 
 Pełny rejestr jest ogłaszany w `tools/list` bez bramkowania wykrywania. Narzędzia edytujące zgłoszenia są typowane.
 
 :::note[Zewnętrzni klienci zawsze widzą cały katalog]
-`tools/list` nigdy nie jest przycinana. Klienci MCP weryfikują nazwy narzędzi względem własnej zbuforowanej kopii tej listy i odrzucają wszystko, czego na niej nie ma, nie pytając serwera — ukryte tam narzędzie jest więc nieosiągalne, a nie tylko ciche.
+`tools/list` nigdy nie jest przycinana, poza osobistymi serwerami MCP właściciela serwera, których ta lista nigdy nie zawiera. Klienci MCP weryfikują nazwy narzędzi względem własnej zbuforowanej kopii tej listy i odrzucają wszystko, czego na niej nie ma, nie pytając serwera — ukryte tam narzędzie jest więc nieosiągalne, a nie tylko ciche.
 
 **Wbudowany harness** działa inaczej: wczytuje na żądanie tylko rezydentny podzbiór definicji, a resztę dociąga przy pierwszym użyciu — to zachowanie po stronie harnessu, które nie zmienia tego rejestru. Zobacz [Kontekst narzędzi i cache promptów](/pl-PL/podrecznik/koncepcje/kontekst-narzedzi).
 :::
@@ -249,7 +249,7 @@ deklarują też `networkEgress` i `processSpawn`; `mobile_use` i `ios_use`
 deklarują też `packageInstall`), więc tryby tylko do odczytu ich odmawiają.
 `rig_list` nie deklaruje żadnej — odczytuje wyłącznie stan obszaru roboczego.
 Pełny słownik czasowników dla każdej powierzchni znajduje się w
-[dokumentacji referencyjnej rigów](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/#action-verbs).
+[dokumentacji referencyjnej rigów](/pl-PL/podrecznik/dokumentacja-referencyjna/rigi/#czasowniki-działań).
 
 | Narzędzie      | Opis                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------ |
@@ -257,8 +257,10 @@ Pełny słownik czasowników dla każdej powierzchni znajduje się w
 | `browser_use`  | Steruje Chromium, Firefoksem lub WebKitem bez interfejsu graficznego (`engine`): nawigacja, kliknięcia, wypełnianie, ekstrakcja (a11y/DOM/konsola), schowek, zrzut ekranu |
 | `mobile_use`   | Steruje Androidem przez ADB: inspekcja/wprowadzanie, zrzuty ekranu, instalowanie/uruchamianie/zatrzymywanie/resetowanie/odinstalowywanie aplikacji, deep linki i polecenia urządzenia w kształcie argv |
 | `ios_use`      | Steruje Symulatorem iOS przez WebDriverAgent/CoreSimulator: inspekcja/wprowadzanie, zrzuty ekranu, instalowanie/uruchamianie/zatrzymywanie/odinstalowywanie aplikacji, deep linki i procesy symulatora w kształcie argv |
-| `rig_list`     | Wylicza rigi obszaru roboczego wraz z powierzchnią, statusem, rozmiarem wyświetlania i kontrolerem |
+| `rig_list`     | Wylicza rigi przestrzeni uruchomienia wraz z powierzchnią, statusem, rozmiarem wyświetlania i kontrolerem |
 | `rig_close`    | Niszczy riga i odrzuca należący do niego stan maszyny                                            |
+
+Te narzędzia mogą wywoływać wyłącznie uruchomienia agentów; każdy inny wywołujący zostaje odrzucony. Uruchomienie sięga tylko do rigów przestrzeni, dla której zostało wydzierżawione: `space_id` pochodzi z uprawnienia uruchomienia, nigdy z wywołania, a rig innej przestrzeni albo rig bez przestrzeni odpowiada dokładnie tak samo jak brakujący.
 
 `app_use` to piąte narzędzie use: steruje oknami aplikacji desktopowej uruchomionej w przestrzeni, bezpośrednio na hoście, a nie w VM, i deklaruje też `fileWriteOutsideWorktree` oraz `fileDelete`. To narzędzie i narzędzia `environment_*` opisuje strona [Konfigurowanie środowisk](/pl-PL/podrecznik/poradniki/srodowiska/).
 
@@ -303,7 +305,7 @@ narzędzia, więc nazwa, którą być może widziałeś cytowaną gdzie indziej,
 | Możliwość                               | Gdzie się zamiast tego znajduje                                                              |
 | --------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Zatrudnianie, zwalnianie i edycja agenta | Interfejs agentów. Nie ma narzędzia `hire_agent` / `fire_agent` / `update_agent`            |
-| Tworzenie obszaru roboczego              | `workspace.upsert` przez RPC, które zasiewa i stempluje własność                             |
+| Tworzenie obszaru roboczego              | `workspace.create` przez RPC, tylko właściciel serwera, które zasiewa i stempluje własność   |
 | Projekty (tworzenie / lista / aktualizacja / przypisanie) | Interfejs zgłoszeń. Projekty to powierzchnia operatora — zobacz [Projekty](/pl-PL/podrecznik/poradniki/projekty/) |
 | Zadanie operatorowi blokującego pytania  | Narzędzie **harnessu** `ask_user`, nie MCP. Renderuje formularz w rozmowie i czeka zablokowane na odpowiedź |
 | Diagnostyka poszczególnych agentów       | Nic. Nie ma `doctor` — zobacz [Diagnostyka agenta](/pl-PL/podrecznik/poradniki/diagnostyka-agenta/) |

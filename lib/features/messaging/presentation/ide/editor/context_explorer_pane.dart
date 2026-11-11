@@ -2,6 +2,8 @@ import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/features/dispatch/domain/context/context_inspection.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_code_failure_view.dart';
+import 'package:control_center/features/messaging/presentation/space_access_refusal.dart';
 import 'package:control_center/features/messaging/presentation/widgets/context_usage_flyout.dart';
 import 'package:control_center/features/messaging/providers/context_inspection_provider.dart';
 import 'package:control_center/features/messaging/providers/context_usage_provider.dart';
@@ -161,6 +163,15 @@ class _ContextExplorerPaneState extends ConsumerState<ContextExplorerPane> {
       hasError: async.hasError && inspection == null,
     );
 
+    // Refused (not a full client, or no read of the space): no retry helps.
+    if (breakdown.hasError && isContextInspectionRefused(async.error)) {
+      return RepoCodeFailureView(
+        error: async.error,
+        fallback: l10n.contextExplorerRefused,
+        workspaceId: widget.workspaceId,
+        describe: spaceForgeAccessFailureOf,
+      );
+    }
     if (breakdown.hasError) {
       return Center(
         child: Column(

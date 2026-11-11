@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:cc_domain/cc_domain.dart' show WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/message.dart';
 import 'package:cc_domain/core/domain/ports/agent_question_port.dart';
+import 'package:cc_domain/core/domain/value_objects/agent_question_metadata.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation.dart';
 import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';

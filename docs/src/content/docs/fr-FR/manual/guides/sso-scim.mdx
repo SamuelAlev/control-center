@@ -2,7 +2,7 @@
 title: Provisionner des utilisateurs avec SCIM
 description: Laissez votre IdP créer, mettre à jour et déprovisionner automatiquement les comptes Control Center.
 slug: fr-FR/manuel/guides/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Utilisez ce guide lorsque vous voulez maîtriser le cycle de vie : un départ
@@ -34,8 +34,9 @@ et autres) utilisent exactement pour cela.
    - **Authentification** : `Authorization: Bearer <token>`
    - **Identifiant utilisateur** : `userName` (e-mail) ou `externalId` — les deux correspondent
 4. Testez avec un seul utilisateur : poussez-le depuis l’IdP, confirmez qu’il
-   apparaît (la création SCIM fixe l’`externalId` du fournisseur sur le compte,
-   le même rattachement qu’établit une première connexion SSO).
+   apparaît (la création SCIM enregistre l’`externalId` du fournisseur sur le
+   compte, ce qui permet aux appels SCIM suivants de le retrouver), puis faites-le
+   se connecter par SSO avant de déployer pour tout le monde.
 
 ## Ce que fait le déprovisionnement
 
@@ -56,6 +57,7 @@ nouvelle invitation ou la politique d’ajout automatique à la connexion.
 
 ## Dépannage
 
+- **Une personne provisionnée est refusée avec « Ce compte est déjà lié à une autre identité SSO »** — limitation connue : un compte créé par SCIM avec un `externalId` reste lié à cet identifiant, et la première connexion SSO à ce compte est refusée. Tant que ce n’est pas corrigé, provisionnez sans `externalId`, ou laissez la création à la volée (JIT) créer le compte à la première connexion et utilisez SCIM pour le déprovisionnement.
 - **401 à chaque appel** — le jeton a changé ; régénérez-le et mettez à jour l’IdP.
 - **L’endpoint n’est pas joignable** — le tunnel est hors service, ou le serveur
   fonctionne uniquement via le relais. SCIM exige du HTTPS direct ; le JIT

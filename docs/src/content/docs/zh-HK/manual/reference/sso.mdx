@@ -2,7 +2,7 @@
 title: SSO 設定參考
 description: 單一登入的每一項設定、端點、操作與錯誤碼。
 slug: zh-HK/手冊/參考/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 關於單一登入的一切可設定項目，都集中在這裡。取值存放在 `global.db` 的
@@ -32,6 +32,18 @@ sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 | `groupRoleMap`         | 兩者     | `{}`            | 群組 → 角色；儲存時會拒絕 owner 對應                                                                                                                 |
 | `autoMember`           | 兩者     | 開啟            | 首次登入時自動把用戶加入每個工作區                                                                                                                   |
 | `allowJit`             | 兩者     | 開啟            | 登入時佈建未知用戶                                                                                                                                   |
+
+## 帳戶匹配
+
+`SsoProvisioner` 解析登入時依以下順序進行，且從不以使用者名稱匹配：
+
+1. `(users.sso_issuer, users.sso_subject)` 等於登入的簽發者與主體（SAML NameID / OIDC `sub`）。
+2. 電郵地址等於登入電郵的帳戶，且僅當兩端都為其作出保證時：供應者（OIDC `email_verified: true`；缺少該宣告不算保證，已簽章的 SAML 斷言則一律算作保證），以及帳戶（`users.email_verified`）。地址會以修剪並轉為小寫的形式儲存與比較；已驗證的地址只有在恰好一個帳戶已驗證它時才會匹配，若有兩個持有者則不匹配任何帳戶（記錄時不含地址）；而某地址的大小寫變體若已被另一個帳戶驗證，則不能為該變體驗證任何帳戶。
+3. 否則，若 `allowJit` 開啟則建立新帳戶；關閉則拒絕登入。
+
+`users.email_verified` 由 SSO 登入或帶有該地址的 SCIM 推送設定，或由伺服器擁有者使用 `users.vouchEmail` 設定（**設定 → 伺服器 → 人員 → 確認電郵**，稽核記錄為 `user.email_vouched`）。擁有者自己的個人資料編輯會為其自身地址作出保證。其他任何個人資料編輯，以及在邀請上輸入的任何地址，都會保持未驗證，而編輯地址會清除該標記。經保證的登入若要建立帳戶，會從只是輸入了該地址的帳戶取得地址（稽核記錄為 `user.email_unvouched_cleared`），絕不從已驗證持有該地址的帳戶取得；在這種情況下，新帳戶不會獲得任何地址。
+
+已匹配但已綁定至不同主體或簽發者的帳戶，會以 `This account is already linked to a different SSO identity` 拒絕登入。已停用的帳戶會以 `This account has been deactivated` 拒絕登入。
 
 ## 程序設定
 
@@ -103,6 +115,7 @@ SSO 連線不會由環境植入。僅餘的一項程序旗標決定 SSO 回呼�
 - `sso_connections`（global.db）——每種類型一列，按設計即跨工作區。
 - `users.sso_subject` + `users.sso_issuer`——供應者主體的固定，透過部分索引
   確保每個 `(issuer, subject)` 唯一。
+- `users.email_verified`——帳戶的地址是否可與 SSO 登入或 SCIM 推送匹配（參閱[帳戶匹配](#帳戶匹配)）。
 - `users.deactivated_at`——SCIM 停用時間戳。
 - SCIM bearer token 與 OIDC 用戶端密鑰存放在 0600 密鑰檔案中，絕不會存入
   資料庫。

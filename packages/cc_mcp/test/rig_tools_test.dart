@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:cc_domain/cc_domain.dart' show JsonRpcRequest;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
+import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/rigs/domain/entities/rig.dart';
 import 'package:cc_domain/features/rigs/domain/ports/rig_port.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
@@ -17,6 +20,7 @@ import 'package:cc_domain/features/rigs/domain/value_objects/rig_spec.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_status.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_surface.dart';
 import 'package:cc_harness/tools.dart';
+import 'package:cc_mcp/src/mcp_tool_dispatcher.dart';
 import 'package:cc_mcp/src/tools/rig_use_tool.dart';
 import 'package:test/test.dart';
 
@@ -192,14 +196,15 @@ Rig _rig({
   required String workspaceId,
   RigSurface surface = RigSurface.computer,
   RigStatus status = const RigReady(),
-  String? conversationId,
+  String? conversationId = 'c1',
+  RigSpec? spec,
 }) => Rig(
   id: id,
   workspaceId: workspaceId,
-  surface: surface,
+  surface: spec?.surface ?? surface,
   backend: EnclosureBackend.qemuHvf,
   status: status,
-  spec: RigSpec(surface: surface, conversationId: conversationId),
+  spec: spec ?? RigSpec(surface: surface, conversationId: conversationId),
   createdBy: const AgentPrincipal('a1'),
   conversationId: conversationId,
   createdAt: DateTime.utc(2026),
@@ -226,7 +231,7 @@ void main() {
       final port = _FakeRigPort();
       final result = await ComputerUseTool(
         rigs: port,
-      ).call({'workspace_id': 'ws1', 'action': 'mouse_move'});
+      ).call({'workspace_id': 'ws1', 'space_id': 'c1', 'action': 'mouse_move'});
       expect(result.isError, isTrue);
       expect(result.content.first.text, contains('coordinate'));
       expect(port.acted, isEmpty);
@@ -238,9 +243,12 @@ void main() {
       final port = _FakeRigPort(
         rigs: [_rig(id: 'r1', workspaceId: 'other')],
       );
-      final result = await ComputerUseTool(
-        rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1', 'action': 'screenshot'});
+      final result = await ComputerUseTool(rigs: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'c1',
+        'rig_id': 'r1',
+        'action': 'screenshot',
+      });
       expect(result.isError, isTrue);
       expect(
         result.content.first.text,
@@ -261,7 +269,7 @@ void main() {
       );
       final result = await RigListTool(
         rigs: port,
-      ).call({'workspace_id': 'ws1'});
+      ).call({'workspace_id': 'ws1', 'space_id': 'c1'});
       final decoded =
           jsonDecode(result.content.first.text) as Map<String, dynamic>;
       final ids = [for (final r in decoded['rigs'] as List) (r as Map)['id']];
@@ -274,7 +282,7 @@ void main() {
       );
       final result = await RigCloseTool(
         rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1'});
+      ).call({'workspace_id': 'ws1', 'space_id': 'c1', 'rig_id': 'r1'});
       expect(result.isError, isTrue);
       expect(await port.get('other', 'r1'), isNotNull);
     });
@@ -285,9 +293,12 @@ void main() {
       final port = _FakeRigPort(
         rigs: [_rig(id: 'r1', workspaceId: 'ws1', surface: RigSurface.browser)],
       );
-      final result = await ComputerUseTool(
-        rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1', 'action': 'screenshot'});
+      final result = await ComputerUseTool(rigs: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'c1',
+        'rig_id': 'r1',
+        'action': 'screenshot',
+      });
       expect(result.isError, isTrue);
       expect(result.content.first.text, contains('browser rig'));
     });
@@ -429,9 +440,12 @@ void main() {
               imageBase64: 'QUJD',
               imageMediaType: 'image/jpeg',
             );
-      final result = await ComputerUseTool(
-        rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1', 'action': 'screenshot'});
+      final result = await ComputerUseTool(rigs: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'c1',
+        'rig_id': 'r1',
+        'action': 'screenshot',
+      });
       expect(result.isError, isFalse);
       final imagePiece = result.content.firstWhere((c) => c.isImage);
       expect(imagePiece.data, 'QUJD');
@@ -449,9 +463,12 @@ void main() {
             ..response = RigActionResult.error(
               'A person has taken control of this rig.',
             );
-      final result = await ComputerUseTool(
-        rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1', 'action': 'left_click'});
+      final result = await ComputerUseTool(rigs: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'c1',
+        'rig_id': 'r1',
+        'action': 'left_click',
+      });
       expect(result.isError, isTrue);
       expect(result.content.first.text, contains('taken control'));
     });
@@ -466,9 +483,12 @@ void main() {
           ),
         ],
       );
-      final result = await ComputerUseTool(
-        rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1', 'action': 'left_click'});
+      final result = await ComputerUseTool(rigs: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'c1',
+        'rig_id': 'r1',
+        'action': 'left_click',
+      });
       expect(result.isError, isTrue);
       expect(result.content.first.text, contains('Creating the disk overlay'));
       expect(
@@ -488,11 +508,311 @@ void main() {
           ),
         ],
       );
-      final result = await ComputerUseTool(
-        rigs: port,
-      ).call({'workspace_id': 'ws1', 'rig_id': 'r1', 'action': 'screenshot'});
+      final result = await ComputerUseTool(rigs: port).call({
+        'workspace_id': 'ws1',
+        'space_id': 'c1',
+        'rig_id': 'r1',
+        'action': 'screenshot',
+      });
       expect(result.content.first.text, contains('QEMU exited immediately'));
     });
+  });
+
+  group('a run reaches only the rigs of its own space', () {
+    late _FakeRigPort port;
+    late McpToolDispatcher dispatcher;
+
+    // Space A's run, as its lease attests it. The model's arguments name
+    // space B; the grant wins.
+    const runOfA = McpCallScope(
+      workspaceId: 'ws1',
+      agentId: 'agent-a',
+      spaceId: 'space-a',
+      attested: true,
+    );
+
+    setUp(() {
+      port = _FakeRigPort(
+        rigs: [
+          _rig(id: 'rig-a', workspaceId: 'ws1', conversationId: 'space-a'),
+          _rig(id: 'rig-b', workspaceId: 'ws1', conversationId: 'space-b'),
+          // Bound to no space: opened by a person, never by this run (a run
+          // opens rigs only in the space its grant names).
+          _rig(id: 'rig-loose', workspaceId: 'ws1', conversationId: null),
+        ],
+      );
+      dispatcher = McpToolDispatcher(
+        registry: McpToolRegistry([
+          ComputerUseTool(rigs: port),
+          BrowserUseTool(rigs: port),
+          RigListTool(rigs: port),
+          RigCloseTool(rigs: port),
+        ]),
+      );
+    });
+
+    Future<Map<String, dynamic>> callTool(
+      String name,
+      Map<String, dynamic> arguments, {
+      McpCallScope? scope = runOfA,
+    }) async {
+      final response = await dispatcher.handleScopedRequest(
+        JsonRpcRequest(
+          method: 'tools/call',
+          params: {'name': name, 'arguments': arguments},
+          id: 1,
+        ),
+        scope: scope,
+      );
+      return response['result'] as Map<String, dynamic>;
+    }
+
+    String textOf(Map<String, dynamic> result) =>
+        ((result['content'] as List).first as Map)['text'] as String;
+
+    test('rig_list shows only the run\'s space', () async {
+      final result = await callTool('rig_list', {
+        'workspace_id': 'ws1',
+        'space_id': 'space-b',
+        'include_closed': true,
+      });
+      final decoded = jsonDecode(textOf(result)) as Map<String, dynamic>;
+      final ids = [for (final r in decoded['rigs'] as List) (r as Map)['id']];
+      expect(ids, ['rig-a']);
+    });
+
+    for (final foreign in ['rig-b', 'rig-loose', 'rig-missing']) {
+      test('$foreign answers like a rig that does not exist', () async {
+        final result = await callTool('computer_use', {
+          'workspace_id': 'ws1',
+          'space_id': 'space-b',
+          'rig_id': foreign,
+          'action': 'screenshot',
+        });
+        expect(result['isError'], isTrue);
+        expect(textOf(result), 'No rig "$foreign" in this workspace.');
+        expect(port.acted, isEmpty);
+        expect(port.opened, isEmpty);
+
+        final closed = await callTool('rig_close', {
+          'workspace_id': 'ws1',
+          'space_id': 'space-b',
+          'rig_id': foreign,
+        });
+        expect(closed['isError'], isTrue);
+        expect(textOf(closed), 'No rig "$foreign" in this workspace.');
+      });
+    }
+
+    test('a rig of another space survives a close aimed at it', () async {
+      await callTool('rig_close', {'workspace_id': 'ws1', 'rig_id': 'rig-b'});
+      await callTool('rig_close', {
+        'workspace_id': 'ws1',
+        'rig_id': 'rig-loose',
+      });
+      expect(await port.get('ws1', 'rig-b'), isNotNull);
+      expect(await port.get('ws1', 'rig-loose'), isNotNull);
+    });
+
+    test('its own rig is driven and closed as before', () async {
+      final acted = await callTool('computer_use', {
+        'workspace_id': 'ws1',
+        'rig_id': 'rig-a',
+        'action': 'screenshot',
+      });
+      expect(acted['isError'], isNot(isTrue));
+      expect(port.acted.single.rigId, 'rig-a');
+
+      final closed = await callTool('rig_close', {
+        'workspace_id': 'ws1',
+        'rig_id': 'rig-a',
+      });
+      expect(closed['isError'], isNot(isTrue));
+      expect(await port.get('ws1', 'rig-a'), isNull);
+    });
+
+    test(
+      'a rig it opens belongs to its own space, whatever it names',
+      () async {
+        await callTool('browser_use', {
+          'workspace_id': 'ws1',
+          'space_id': 'space-b',
+          'action': 'screenshot',
+        });
+        expect(port.opened.single.conversationId, 'space-a');
+      },
+    );
+
+    test('no rig tool answers a caller that is not a run', () async {
+      for (final name in ['computer_use', 'rig_list', 'rig_close']) {
+        final result = await callTool(name, {
+          'workspace_id': 'ws1',
+          'space_id': 'space-a',
+          'rig_id': 'rig-a',
+          'action': 'screenshot',
+        }, scope: const McpCallScope(workspaceId: 'ws1', spaceId: 'space-a'));
+        expect(result['isError'], isTrue, reason: name);
+      }
+      expect(port.acted, isEmpty);
+      expect(await port.get('ws1', 'rig-a'), isNotNull);
+    });
+  });
+
+  group("a machine carrying a person's credentials", () {
+    late _FakeRigPort port;
+    late Set<String?> people;
+    late McpToolDispatcher dispatcher;
+
+    const run = McpCallScope(
+      workspaceId: 'ws1',
+      agentId: 'agent-a',
+      conversationId: 'conv-a',
+      spaceId: 'space-a',
+      attested: true,
+    );
+
+    setUp(() {
+      people = {'pat'};
+      port = _FakeRigPort(
+        rigs: [
+          // pat's terminal machine.
+          _rig(
+            id: 'rig-term',
+            workspaceId: 'ws1',
+            spec: RigSpec.exec(
+              conversationId: 'space-a',
+              openedByUserId: 'pat',
+            ),
+            conversationId: 'space-a',
+          ),
+          // A browser pat opened whose egress reaches a forge.
+          _rig(
+            id: 'rig-cred',
+            workspaceId: 'ws1',
+            surface: RigSurface.browser,
+            spec: RigSpec(
+              surface: RigSurface.browser,
+              conversationId: 'space-a',
+              openedByUserId: 'pat',
+              egressAllowlist: const ['github.com'],
+            ),
+            conversationId: 'space-a',
+          ),
+          // The space's own browser: nobody's credentials.
+          _rig(
+            id: 'rig-plain',
+            workspaceId: 'ws1',
+            surface: RigSurface.browser,
+            spec: RigSpec(
+              surface: RigSurface.browser,
+              conversationId: 'space-a',
+              openedByUserId: 'pat',
+            ),
+            conversationId: 'space-a',
+          ),
+        ],
+      );
+      Future<Set<String?>> runPeople({
+        required String workspaceId,
+        required String? callerConversationId,
+      }) async => callerConversationId == 'conv-a' ? people : const {};
+      dispatcher = McpToolDispatcher(
+        registry: McpToolRegistry([
+          ComputerUseTool(rigs: port, runPeople: runPeople),
+          BrowserUseTool(rigs: port, runPeople: runPeople),
+          RigListTool(rigs: port, runPeople: runPeople),
+          RigCloseTool(rigs: port, runPeople: runPeople),
+        ]),
+      );
+    });
+
+    Future<Map<String, dynamic>> callTool(
+      String name,
+      Map<String, dynamic> arguments,
+    ) async {
+      final response = await dispatcher.handleScopedRequest(
+        JsonRpcRequest(
+          method: 'tools/call',
+          params: {
+            'name': name,
+            'arguments': {
+              'workspace_id': 'ws1',
+              // The model cannot pose as another run.
+              'caller_conversation_id': 'conv-pat',
+              ...arguments,
+            },
+          },
+          id: 1,
+        ),
+        scope: run,
+      );
+      return response['result'] as Map<String, dynamic>;
+    }
+
+    String textOf(Map<String, dynamic> result) =>
+        ((result['content'] as List).first as Map)['text'] as String;
+
+    Future<List<Object?>> listed() async {
+      final result = await callTool('rig_list', const {});
+      final decoded = jsonDecode(textOf(result)) as Map<String, dynamic>;
+      return [for (final r in decoded['rigs'] as List) (r as Map)['id']];
+    }
+
+    test('a run acting for its holder sees and drives it', () async {
+      expect(await listed(), ['rig-term', 'rig-cred', 'rig-plain']);
+      for (final (tool, rig) in [
+        ('computer_use', 'rig-term'),
+        ('browser_use', 'rig-cred'),
+      ]) {
+        final result = await callTool(tool, {
+          'rig_id': rig,
+          'action': 'screenshot',
+        });
+        expect(result['isError'], isNot(isTrue), reason: rig);
+      }
+      expect([for (final a in port.acted) a.rigId], ['rig-term', 'rig-cred']);
+    });
+
+    for (final (label, who) in [
+      ('somebody else', <String?>{'quinn'}),
+      ('nobody', <String?>{null}),
+      ('more than one person', <String?>{'pat', 'quinn'}),
+    ]) {
+      test('a run acting for $label neither drives it nor finds the '
+          'terminal', () async {
+        people = who;
+        expect(await listed(), ['rig-cred', 'rig-plain']);
+
+        final term = await callTool('computer_use', {
+          'rig_id': 'rig-term',
+          'action': 'screenshot',
+        });
+        expect(textOf(term), 'No rig "rig-term" in this workspace.');
+        final closeTerm = await callTool('rig_close', {'rig_id': 'rig-term'});
+        expect(textOf(closeTerm), 'No rig "rig-term" in this workspace.');
+
+        final cred = await callTool('browser_use', {
+          'rig_id': 'rig-cred',
+          'action': 'screenshot',
+        });
+        expect(cred['isError'], isTrue);
+        expect(textOf(cred), rigHolderOnlyRefusal);
+        final closeCred = await callTool('rig_close', {'rig_id': 'rig-cred'});
+        expect(textOf(closeCred), rigHolderOnlyRefusal);
+
+        expect(port.acted, isEmpty);
+        expect(await port.get('ws1', 'rig-term'), isNotNull);
+        expect(await port.get('ws1', 'rig-cred'), isNotNull);
+
+        // The space's own machine keeps the space rule.
+        final plain = await callTool('browser_use', {
+          'rig_id': 'rig-plain',
+          'action': 'screenshot',
+        });
+        expect(plain['isError'], isNot(isTrue));
+        expect(port.acted.single.rigId, 'rig-plain');
+      });
+    }
   });
 
   group('declared effects', () {

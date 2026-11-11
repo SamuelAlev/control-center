@@ -2,7 +2,7 @@
 title: Skills installeren en beheren
 description: Installeer en werk skills in de werkruimte bij via de scanpoort en vergelijk daarna opgeslagen revisies met geëvalueerde vaardigheidsevaluaties binnen een budget.
 slug: nl-NL/handleiding/gidsen/skills-beheren
-sourceHash: b3fff9c069bbc1e2e34ef2ad8aa2ccc711760e08
+sourceHash: 09e63b389de7b11987195a8554c734f244899f03
 ---
 
 Deze gids laat zien hoe je een werkruimte vult met skills van GitHub: voeg een
@@ -102,7 +102,7 @@ wordt als rollbackreferentie in de lock bewaard.
    skill past, en een **Adapter**. De ingebouwde harness gebruikt een
    geconfigureerde provider en een model dat hulpmiddelen kan gebruiken.
    **Claude Code** gebruikt het standaard beheerde Claude-account en een concrete
-   modelidentificatie; meld je eerst aan onder **Instellingen → Adapters**. Het
+   modelidentificatie; meld je eerst aan onder **Instellingen → Server → Modelproviders → Claude Code-accounts**. Het
    leent niet de persoonlijke aanmelding van de serverbeheerder.
 3. Kies een **Vergelijking** uit de tabel hieronder.
 4. Stel **Herhalingen per taak** (1–20) en **Budget (Amerikaanse centen)** in.
@@ -198,8 +198,7 @@ ingebouwde slash-commando’s (`/plan`, `/goal`, `/loop`, `/compact`):
 - `/skill:<repo>:<name>` — een skill die wordt meegeleverd door een repo die in
   deze ruimte is uitgecheckt
 
-Een kale naam die niet ingebouwd is, wordt nog steeds herkend, voor berichten
-die zijn geschreven voordat de namespace bestond. `/skill:plan` is wat een
+`/skill:plan` is wat een
 skill met de naam `plan` bereikt; `/plan` is altijd de ingebouwde.
 
 ## Repo-gebonden skills

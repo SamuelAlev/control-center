@@ -22,8 +22,7 @@ import 'package:control_center/core/server/sso_pair_link.dart';
 /// Probes `<origin>/auth/providers` for the interactive auth methods
 /// [origin] offers. Returns null when the server is unreachable or answered
 /// something unparseable — callers treat that as "nothing offered" and fall
-/// back to manual pairing, exactly as an older server with no such endpoint
-/// would behave.
+/// back to manual pairing.
 ///
 /// [origin] is an HTTP origin (`https://host:9030`), not a `ws(s)://` URL —
 /// derive it with `httpOriginFor`.

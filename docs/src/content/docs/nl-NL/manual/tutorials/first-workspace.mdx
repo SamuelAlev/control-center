@@ -2,7 +2,7 @@
 title: Je eerste werkruimte
 description: Maak een werkruimte aan, registreer er een repo in en bekijk de isolatiegrens zelf.
 slug: nl-NL/handleiding/zelfstudies/eerste-werkruimte
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Wat je gaat bouwen
@@ -11,10 +11,12 @@ Aan het eind van deze zelfstudie heb je:
 
 - Een werkruimte die vernoemd is naar je project
 - Een Git-repository die erin geregistreerd is
-- Vijf geseede agenten, waarvan je er één goed genoeg hebt geconfigureerd om te draaien
+- Zes geseede agenten, waarvan je er één goed genoeg hebt geconfigureerd om te draaien
 - Een tweede, lege werkruimte die de isolatiegrens bewijst
 
 De onboarding heeft al een werkruimte voor je aangemaakt. Deze zelfstudie maakt bewust een nieuwe aan, zodat je elk onderdeel van het proces ziet.
+
+Een werkruimte aanmaken vereist de serverbeheerder, de persoon die de server heeft ingesteld. Op een desktop die zijn eigen server draait ben jij dat. Op de server van iemand anders zegt **Werkruimte toevoegen** "Alleen de serverbeheerder kan werkruimtes aanmaken. Vraag hem er een aan te maken, of vraag een werkruimte-admin je uit te nodigen." Doe een van die twee en volg de rest van de zelfstudie in die werkruimte. Een repository registreren in stap 2 vereist een werkruimte-admin, en de tweede werkruimte in stap 4 vereist opnieuw de serverbeheerder.
 
 Kies voordat je begint een Git-checkout die aan alle drie deze voorwaarden voldoet — de registratiestap weigert al het andere:
 
@@ -35,12 +37,12 @@ Control Center schakelt over naar de nieuwe werkruimte en komt uit op het postva
 Daarachter publiceert de server een `WorkspaceCreated`-gebeurtenis en zaait de werkruimte met:
 
 - een **CEO-agent**, met als persona coördinatie en delegatie
-- vier specialisten — `qa`, `architect`, `engineer` en `librarian` — elk met eigen instructies en skills
+- vijf specialisten — `qa`, `architect`, `engineer`, `librarian` en `content-synthesizer` — elk met eigen instructies en skills
 - de ingebouwde pipelinesjablonen en hun triggerrijen
 
 Elke werkruimte die je aanmaakt krijgt dit allemaal, niet alleen de eerste.
 
-Controleer het: open **Instellingen → Werkruimte → Agenten**. Er staan vijf agenten in de agentenlijst, elk met een holle statusring.
+Controleer het: open **Instellingen → Werkruimte → Agenten**. Er staan zes agenten in de agentenlijst, elk met een holle statusring.
 
 ## Stap 2: Een repository registreren
 
@@ -57,7 +59,7 @@ Controleer het: de repo verschijnt in de lijst met zijn `owner/repo` en huidige 
 
 ## Stap 3: Maak één agent draaibaar
 
-De vijf agenten die deze werkruimte net heeft geseed, hebben geen adapter en geen model. Dispatch draait ze op **Control Center (built-in)** en vraagt, als er geen model is ingesteld, Anthropic om het standaardmodel — ze werken dus alleen als je een Anthropic-account hebt verbonden, en dan op een model dat je niet zelf hebt gekozen. De onboarding bij de eerste start stempelt zijn keuze één keer op elke agent in de eerste werkruimte; een werkruimte die je daarna aanmaakt, begint met alle vijf oningesteld. Stel er nu één in.
+De zes agenten die deze werkruimte net heeft geseed, hebben geen adapter en geen model. Dispatch draait ze op **Control Center (built-in)** en vraagt, als er geen model is ingesteld, Anthropic om het standaardmodel — ze werken dus alleen als je een Anthropic-account hebt verbonden, en dan op een model dat je niet zelf hebt gekozen. De onboarding bij de eerste start stempelt zijn keuze één keer op elke agent in de eerste werkruimte; een werkruimte die je daarna aanmaakt, begint met alle zes oningesteld. Stel er nu één in.
 
 1. Open **Instellingen → Werkruimte → Agenten**
 2. Selecteer `engineer` in de agentenlijst
@@ -73,7 +75,7 @@ Elke agent heeft zijn eigen adapter en model, dus herhaal dit voor elke andere a
 Maak vanuit de chip in de titelbalk een tweede werkruimte aan, precies zoals in stap 1. Bekijk hem daarna:
 
 - **Instellingen → Werkruimte → Repository's** is leeg. De repo die je een minuut geleden hebt geregistreerd staat er niet.
-- **Instellingen → Werkruimte → Agenten** bevat vijf agenten, maar het zijn andere rijen — de adapter die je in stap 3 hebt ingesteld is verdwenen.
+- **Instellingen → Werkruimte → Agenten** bevat zes agenten, maar het zijn andere rijen — de adapter die je in stap 3 hebt ingesteld is verdwenen.
 - De ruimtelijst, tickets en het geheugen zijn allemaal leeg.
 
 Er is niets gelekt, want er is niets om uit te lekken: de rijen van elke werkruimte staan in het eigen databasebestand van die werkruimte. Een cross-workspace-leesopdracht is geen query die wordt gefilterd, maar een query die nergens kan draaien. Een werkruimte verwijderen is een bestand ontkoppelen.
@@ -84,6 +86,6 @@ Lees [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/) voor h
 
 ## Samenvatting
 
-Je hebt een werkruimte aangemaakt, hem een CEO en vier specialisten zien seeden, er een repo in geregistreerd, één agent een adapter en een model gegeven en bevestigd dat een tweede werkruimte daar niets van deelt.
+Je hebt een werkruimte aangemaakt, hem een CEO en vijf specialisten zien seeden, er een repo in geregistreerd, één agent een adapter en een model gegeven en bevestigd dat een tweede werkruimte daar niets van deelt.
 
 **Volgende:** [Je eerste agent starten](/nl-NL/handleiding/zelfstudies/eerste-agent/) om de werkruimte aan het werk te zetten.

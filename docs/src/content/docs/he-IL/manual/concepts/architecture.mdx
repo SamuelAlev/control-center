@@ -3,7 +3,7 @@ title: ארכיטקטורה
 description: כיצד Control Center בנוי במודל של לקוח דק מעל שרת, בארכיטקטורה נקייה מבוססת תכונות וביציאות ומתאמים.
 dateModified: 2026-09-19
 slug: he-IL/מדריך-למשתמש/מושגים/ארכיטקטורה
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## סקירה כללית
@@ -60,7 +60,7 @@ feature_name/
 - ישויות זיכרון: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - אובייקטי ערך משותפים: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - יציאות משותפות: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- שירותי תחום: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- שירותי תחום: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + סוגי אירועים (סביבת עבודה/סוכן, PR/סקירה, הודעות, כרטוס, פייפליין, תזמור, זיכרון, לוח שנה/פגישות, זהות וחברות, נצפות)
 
 ## זהות ורב־משתמשים
@@ -132,7 +132,6 @@ Control Center הוא רב־משתמשים: בני אדם וסוכנים הם ש
 
 - סודות ב־`flutter_secure_storage` (keychain ב-macOS, מנהל פרטי התחברות ב-Windows, libsecret ב-Linux) — פרטי ההתחברות של המכשיר בצד הלקוח ומפתחות שיוך למרוחק, לא אסימוני ספקים
 - `shared_preferences` רק להעדפות לא רגישות (ערכת נושא, גופן, פריסה)
-- סודות ספקים שנותרו מהתקנות ישנות נמסרים לשרת פעם אחת בידי `features/auth/providers/credential_migration.dart`, ואז נמחקים ממחזיק המפתחות של הלקוח
 
 ## אכיפת הארכיטקטורה
 

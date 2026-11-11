@@ -2,7 +2,7 @@
 title: Gérer les adaptateurs et les modèles
 description: Connectez des fournisseurs de modèles, choisissez le modèle sur lequel un agent s'exécute et vérifiez quelles CLI d'exécuteur se trouvent sur l'hôte du serveur.
 slug: fr-CA/manuel/guides/adaptateurs
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Ce guide vous montre comment connecter des fournisseurs de modèles et choisir
@@ -123,6 +123,8 @@ l'adaptateur et le modèle de chaque agent que vous comptez utiliser.
 
 L'agent **Content synthesizer** rédige le texte que Control Center génère autour d'une conversation : son titre, les réponses de `/btw`, les documents `/handoff` et l'entrevue d'objectif de `/goal`. Il exécute à chaque fois une complétion sans outils, sur son propre adaptateur et modèle; donnez-lui donc un petit modèle rapide.
 
+Lorsque cet adaptateur est une CLI ACP, la complétion est un processus sur la machine du serveur et suit la [règle du bac à sable](/fr-CA/manuel/concepts/bac-a-sable-et-securite/#agents-sur-un-hôte-sans-bac-à-sable) : à l'intérieur du bac à sable lorsque le serveur isole les agents, et sans bac à sable uniquement pour les requêtes dont le propriétaire du serveur est responsable. Pour les autres, ces fonctionnalités sont ignorées : aucun titre n'est généré, et `/btw` répond « L'agent Content synthesizer est absent ou n'a pas de runner fonctionnel ».
+
 Modifiez sa **persona** dans **Paramètres → Espace de travail → Agents** pour changer la façon dont ce texte est rédigé : longueur des titres, langue, ton et exemples suivis. Le format de réponse que chaque fonctionnalité analyse (un titre sur une ligne, les sections de l'objectif) est fixe et appliqué après votre persona. Supprimez l'agent pour désactiver ces fonctionnalités; il n'est pas recréé automatiquement.
 
 ## Installer une CLI d'exécuteur
@@ -139,8 +141,7 @@ Appuyez ensuite sur **Actualiser** en haut de la page. Chaque ligne détectée
 affiche la version et le chemin résolus, ainsi que des pastilles indiquant si
 l'outil prend en charge le mode JSON et la sélection de modèle.
 
-Une CLI externe conserve ses propres identifiants, dans sa propre configuration,
-sur l'hôte du serveur. Control Center ne les gère pas.
+Les connexions Claude Code sont listées sous **Comptes Claude Code** sur l’exécuteur Claude Code. Control Center crée le répertoire de configuration de chaque compte sur le serveur et vous donne la commande `claude auth login` à exécuter là-bas ; il ne se connecte jamais à votre place.
 
 :::caution[Les arguments d'adaptateur et les variables d'environnement restent sur cet appareil]
 Chaque ligne d'adaptateur offre un champ **Arguments** et une boîte de dialogue

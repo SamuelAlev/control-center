@@ -70,6 +70,30 @@ class $ReposTableTable extends ReposTable
     requiredDuringInsert: false,
     defaultValue: const Constant(''),
   );
+  static const VerificationMeta _linkedByUserIdMeta = const VerificationMeta(
+    'linkedByUserId',
+  );
+  @override
+  late final GeneratedColumn<String> linkedByUserId = GeneratedColumn<String>(
+    'linked_by_user_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
+  static const VerificationMeta _forgeRepoIdMeta = const VerificationMeta(
+    'forgeRepoId',
+  );
+  @override
+  late final GeneratedColumn<String> forgeRepoId = GeneratedColumn<String>(
+    'forge_repo_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(''),
+  );
   static const VerificationMeta _positionMeta = const VerificationMeta(
     'position',
   );
@@ -126,6 +150,8 @@ class $ReposTableTable extends ReposTable
     forge,
     remoteOwner,
     remoteName,
+    linkedByUserId,
+    forgeRepoId,
     position,
     linkedAt,
     createdAt,
@@ -185,6 +211,24 @@ class $ReposTableTable extends ReposTable
         remoteName.isAcceptableOrUnknown(data['remote_name']!, _remoteNameMeta),
       );
     }
+    if (data.containsKey('linked_by_user_id')) {
+      context.handle(
+        _linkedByUserIdMeta,
+        linkedByUserId.isAcceptableOrUnknown(
+          data['linked_by_user_id']!,
+          _linkedByUserIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('forge_repo_id')) {
+      context.handle(
+        _forgeRepoIdMeta,
+        forgeRepoId.isAcceptableOrUnknown(
+          data['forge_repo_id']!,
+          _forgeRepoIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('position')) {
       context.handle(
         _positionMeta,
@@ -242,6 +286,14 @@ class $ReposTableTable extends ReposTable
         DriftSqlType.string,
         data['${effectivePrefix}remote_name'],
       )!,
+      linkedByUserId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}linked_by_user_id'],
+      )!,
+      forgeRepoId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}forge_repo_id'],
+      )!,
       position: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}position'],
@@ -291,6 +343,13 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
   /// Repository name parsed from the repo's `origin` remote.
   final String remoteName;
 
+  /// The user who linked [path] (`Repo.linkedBy`); empty when not recorded.
+  final String linkedByUserId;
+
+  /// The forge's durable id for the linked repository (`Repo.forgeRepoId`);
+  /// empty until it is first read.
+  final String forgeRepoId;
+
   /// The operator's manual order within the workspace (drag-to-reorder in
   /// settings). Ascending, 0-based; the single ordering every repo list reads,
   /// with [linkedAt] as the stable tiebreak.
@@ -311,6 +370,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     required this.forge,
     required this.remoteOwner,
     required this.remoteName,
+    required this.linkedByUserId,
+    required this.forgeRepoId,
     required this.position,
     required this.linkedAt,
     required this.createdAt,
@@ -325,6 +386,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     map['forge'] = Variable<String>(forge);
     map['remote_owner'] = Variable<String>(remoteOwner);
     map['remote_name'] = Variable<String>(remoteName);
+    map['linked_by_user_id'] = Variable<String>(linkedByUserId);
+    map['forge_repo_id'] = Variable<String>(forgeRepoId);
     map['position'] = Variable<int>(position);
     map['linked_at'] = Variable<DateTime>(linkedAt);
     map['created_at'] = Variable<DateTime>(createdAt);
@@ -340,6 +403,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       forge: Value(forge),
       remoteOwner: Value(remoteOwner),
       remoteName: Value(remoteName),
+      linkedByUserId: Value(linkedByUserId),
+      forgeRepoId: Value(forgeRepoId),
       position: Value(position),
       linkedAt: Value(linkedAt),
       createdAt: Value(createdAt),
@@ -359,6 +424,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       forge: serializer.fromJson<String>(json['forge']),
       remoteOwner: serializer.fromJson<String>(json['remoteOwner']),
       remoteName: serializer.fromJson<String>(json['remoteName']),
+      linkedByUserId: serializer.fromJson<String>(json['linkedByUserId']),
+      forgeRepoId: serializer.fromJson<String>(json['forgeRepoId']),
       position: serializer.fromJson<int>(json['position']),
       linkedAt: serializer.fromJson<DateTime>(json['linkedAt']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
@@ -375,6 +442,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       'forge': serializer.toJson<String>(forge),
       'remoteOwner': serializer.toJson<String>(remoteOwner),
       'remoteName': serializer.toJson<String>(remoteName),
+      'linkedByUserId': serializer.toJson<String>(linkedByUserId),
+      'forgeRepoId': serializer.toJson<String>(forgeRepoId),
       'position': serializer.toJson<int>(position),
       'linkedAt': serializer.toJson<DateTime>(linkedAt),
       'createdAt': serializer.toJson<DateTime>(createdAt),
@@ -389,6 +458,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     String? forge,
     String? remoteOwner,
     String? remoteName,
+    String? linkedByUserId,
+    String? forgeRepoId,
     int? position,
     DateTime? linkedAt,
     DateTime? createdAt,
@@ -400,6 +471,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     forge: forge ?? this.forge,
     remoteOwner: remoteOwner ?? this.remoteOwner,
     remoteName: remoteName ?? this.remoteName,
+    linkedByUserId: linkedByUserId ?? this.linkedByUserId,
+    forgeRepoId: forgeRepoId ?? this.forgeRepoId,
     position: position ?? this.position,
     linkedAt: linkedAt ?? this.linkedAt,
     createdAt: createdAt ?? this.createdAt,
@@ -417,6 +490,12 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
       remoteName: data.remoteName.present
           ? data.remoteName.value
           : this.remoteName,
+      linkedByUserId: data.linkedByUserId.present
+          ? data.linkedByUserId.value
+          : this.linkedByUserId,
+      forgeRepoId: data.forgeRepoId.present
+          ? data.forgeRepoId.value
+          : this.forgeRepoId,
       position: data.position.present ? data.position.value : this.position,
       linkedAt: data.linkedAt.present ? data.linkedAt.value : this.linkedAt,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
@@ -433,6 +512,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
           ..write('forge: $forge, ')
           ..write('remoteOwner: $remoteOwner, ')
           ..write('remoteName: $remoteName, ')
+          ..write('linkedByUserId: $linkedByUserId, ')
+          ..write('forgeRepoId: $forgeRepoId, ')
           ..write('position: $position, ')
           ..write('linkedAt: $linkedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -449,6 +530,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
     forge,
     remoteOwner,
     remoteName,
+    linkedByUserId,
+    forgeRepoId,
     position,
     linkedAt,
     createdAt,
@@ -464,6 +547,8 @@ class ReposTableData extends DataClass implements Insertable<ReposTableData> {
           other.forge == this.forge &&
           other.remoteOwner == this.remoteOwner &&
           other.remoteName == this.remoteName &&
+          other.linkedByUserId == this.linkedByUserId &&
+          other.forgeRepoId == this.forgeRepoId &&
           other.position == this.position &&
           other.linkedAt == this.linkedAt &&
           other.createdAt == this.createdAt &&
@@ -477,6 +562,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
   final Value<String> forge;
   final Value<String> remoteOwner;
   final Value<String> remoteName;
+  final Value<String> linkedByUserId;
+  final Value<String> forgeRepoId;
   final Value<int> position;
   final Value<DateTime> linkedAt;
   final Value<DateTime> createdAt;
@@ -489,6 +576,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     this.forge = const Value.absent(),
     this.remoteOwner = const Value.absent(),
     this.remoteName = const Value.absent(),
+    this.linkedByUserId = const Value.absent(),
+    this.forgeRepoId = const Value.absent(),
     this.position = const Value.absent(),
     this.linkedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -502,6 +591,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     this.forge = const Value.absent(),
     this.remoteOwner = const Value.absent(),
     this.remoteName = const Value.absent(),
+    this.linkedByUserId = const Value.absent(),
+    this.forgeRepoId = const Value.absent(),
     this.position = const Value.absent(),
     this.linkedAt = const Value.absent(),
     this.createdAt = const Value.absent(),
@@ -517,6 +608,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     Expression<String>? forge,
     Expression<String>? remoteOwner,
     Expression<String>? remoteName,
+    Expression<String>? linkedByUserId,
+    Expression<String>? forgeRepoId,
     Expression<int>? position,
     Expression<DateTime>? linkedAt,
     Expression<DateTime>? createdAt,
@@ -530,6 +623,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
       if (forge != null) 'forge': forge,
       if (remoteOwner != null) 'remote_owner': remoteOwner,
       if (remoteName != null) 'remote_name': remoteName,
+      if (linkedByUserId != null) 'linked_by_user_id': linkedByUserId,
+      if (forgeRepoId != null) 'forge_repo_id': forgeRepoId,
       if (position != null) 'position': position,
       if (linkedAt != null) 'linked_at': linkedAt,
       if (createdAt != null) 'created_at': createdAt,
@@ -545,6 +640,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     Value<String>? forge,
     Value<String>? remoteOwner,
     Value<String>? remoteName,
+    Value<String>? linkedByUserId,
+    Value<String>? forgeRepoId,
     Value<int>? position,
     Value<DateTime>? linkedAt,
     Value<DateTime>? createdAt,
@@ -558,6 +655,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
       forge: forge ?? this.forge,
       remoteOwner: remoteOwner ?? this.remoteOwner,
       remoteName: remoteName ?? this.remoteName,
+      linkedByUserId: linkedByUserId ?? this.linkedByUserId,
+      forgeRepoId: forgeRepoId ?? this.forgeRepoId,
       position: position ?? this.position,
       linkedAt: linkedAt ?? this.linkedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -587,6 +686,12 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
     if (remoteName.present) {
       map['remote_name'] = Variable<String>(remoteName.value);
     }
+    if (linkedByUserId.present) {
+      map['linked_by_user_id'] = Variable<String>(linkedByUserId.value);
+    }
+    if (forgeRepoId.present) {
+      map['forge_repo_id'] = Variable<String>(forgeRepoId.value);
+    }
     if (position.present) {
       map['position'] = Variable<int>(position.value);
     }
@@ -614,6 +719,8 @@ class ReposTableCompanion extends UpdateCompanion<ReposTableData> {
           ..write('forge: $forge, ')
           ..write('remoteOwner: $remoteOwner, ')
           ..write('remoteName: $remoteName, ')
+          ..write('linkedByUserId: $linkedByUserId, ')
+          ..write('forgeRepoId: $forgeRepoId, ')
           ..write('position: $position, ')
           ..write('linkedAt: $linkedAt, ')
           ..write('createdAt: $createdAt, ')
@@ -1281,7 +1388,7 @@ class AgentsTableData extends DataClass implements Insertable<AgentsTableData> {
   /// mode-based default at dispatch time.
   final String commandPolicyJson;
 
-  /// Agent role (e.g. 'ceo', 'coder', 'reviewer'). Null for legacy agents.
+  /// Agent role (e.g. 'ceo', 'coder', 'reviewer'). Null when unassigned.
   final String? role;
 
   /// Monthly budget in US cents for this agent.
@@ -2274,18 +2381,6 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _childCostCentsMeta = const VerificationMeta(
-    'childCostCents',
-  );
-  @override
-  late final GeneratedColumn<int> childCostCents = GeneratedColumn<int>(
-    'child_cost_cents',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(0),
-  );
   static const VerificationMeta _childCostMicrosMeta = const VerificationMeta(
     'childCostMicros',
   );
@@ -2647,7 +2742,6 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
     estimatedCostCents,
     costMicros,
     costBasis,
-    childCostCents,
     childCostMicros,
     effort,
     taskFamily,
@@ -2849,15 +2943,6 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
       context.handle(
         _costBasisMeta,
         costBasis.isAcceptableOrUnknown(data['cost_basis']!, _costBasisMeta),
-      );
-    }
-    if (data.containsKey('child_cost_cents')) {
-      context.handle(
-        _childCostCentsMeta,
-        childCostCents.isAcceptableOrUnknown(
-          data['child_cost_cents']!,
-          _childCostCentsMeta,
-        ),
       );
     }
     if (data.containsKey('child_cost_micros')) {
@@ -3209,10 +3294,6 @@ class $AgentRunLogsTableTable extends AgentRunLogsTable
         DriftSqlType.string,
         data['${effectivePrefix}cost_basis'],
       ),
-      childCostCents: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}child_cost_cents'],
-      )!,
       childCostMicros: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}child_cost_micros'],
@@ -3414,17 +3495,11 @@ class AgentRunLogsTableData extends DataClass
   final int costMicros;
 
   /// How the cost was obtained: `estimated` | `providerReported` |
-  /// `subscription` | `mixed`. Nullable; null on legacy rows (read as
-  /// estimated).
+  /// `subscription` | `mixed`. Nullable; null reads as estimated.
   final String? costBasis;
 
-  /// Cost in US cents rolled up from this run's subagent (child) runs, summed
-  /// as each child completes. `estimatedCostCents + childCostCents` is the
-  /// run's total spend including everything it delegated. Zero for leaf runs.
-  final int childCostCents;
-
-  /// Exact child rollup in micro-USD — the precise companion to
-  /// [childCostCents], which rounds sub-cent children to zero.
+  /// Cost in micro-USD rolled up from this run's subagent (child) runs, summed
+  /// as each child completes. Zero for leaf runs.
   final int childCostMicros;
 
   /// Reasoning-effort level the run actually executed at, when recorded. Null
@@ -3450,7 +3525,7 @@ class AgentRunLogsTableData extends DataClass
   final String? latencyJson;
 
   /// Independent verification verdict: `passed` | `failed` | `unverified`.
-  /// Nullable; null on legacy rows (read as unverified). Distinct from
+  /// Nullable; null reads as unverified. Distinct from
   /// [status]: a run can complete and fail verification.
   final String? verificationStatus;
 
@@ -3459,7 +3534,7 @@ class AgentRunLogsTableData extends DataClass
   final String? verificationJson;
 
   /// The role this run played in the agent tree for per-role cost attribution:
-  /// `main` | `sub` | `advisor`. Nullable; null/legacy rows attribute to main.
+  /// `main` | `sub` | `advisor`. Nullable; null attributes to main.
   final String? agentRole;
 
   /// Total wall-clock duration of the run in milliseconds, when measured.
@@ -3570,7 +3645,6 @@ class AgentRunLogsTableData extends DataClass
     required this.estimatedCostCents,
     required this.costMicros,
     this.costBasis,
-    required this.childCostCents,
     required this.childCostMicros,
     this.effort,
     this.taskFamily,
@@ -3649,7 +3723,6 @@ class AgentRunLogsTableData extends DataClass
     if (!nullToAbsent || costBasis != null) {
       map['cost_basis'] = Variable<String>(costBasis);
     }
-    map['child_cost_cents'] = Variable<int>(childCostCents);
     map['child_cost_micros'] = Variable<int>(childCostMicros);
     if (!nullToAbsent || effort != null) {
       map['effort'] = Variable<String>(effort);
@@ -3773,7 +3846,6 @@ class AgentRunLogsTableData extends DataClass
       costBasis: costBasis == null && nullToAbsent
           ? const Value.absent()
           : Value(costBasis),
-      childCostCents: Value(childCostCents),
       childCostMicros: Value(childCostMicros),
       effort: effort == null && nullToAbsent
           ? const Value.absent()
@@ -3881,7 +3953,6 @@ class AgentRunLogsTableData extends DataClass
       estimatedCostCents: serializer.fromJson<int>(json['estimatedCostCents']),
       costMicros: serializer.fromJson<int>(json['costMicros']),
       costBasis: serializer.fromJson<String?>(json['costBasis']),
-      childCostCents: serializer.fromJson<int>(json['childCostCents']),
       childCostMicros: serializer.fromJson<int>(json['childCostMicros']),
       effort: serializer.fromJson<String?>(json['effort']),
       taskFamily: serializer.fromJson<String?>(json['taskFamily']),
@@ -3952,7 +4023,6 @@ class AgentRunLogsTableData extends DataClass
       'estimatedCostCents': serializer.toJson<int>(estimatedCostCents),
       'costMicros': serializer.toJson<int>(costMicros),
       'costBasis': serializer.toJson<String?>(costBasis),
-      'childCostCents': serializer.toJson<int>(childCostCents),
       'childCostMicros': serializer.toJson<int>(childCostMicros),
       'effort': serializer.toJson<String?>(effort),
       'taskFamily': serializer.toJson<String?>(taskFamily),
@@ -4009,7 +4079,6 @@ class AgentRunLogsTableData extends DataClass
     int? estimatedCostCents,
     int? costMicros,
     Value<String?> costBasis = const Value.absent(),
-    int? childCostCents,
     int? childCostMicros,
     Value<String?> effort = const Value.absent(),
     Value<String?> taskFamily = const Value.absent(),
@@ -4065,7 +4134,6 @@ class AgentRunLogsTableData extends DataClass
     estimatedCostCents: estimatedCostCents ?? this.estimatedCostCents,
     costMicros: costMicros ?? this.costMicros,
     costBasis: costBasis.present ? costBasis.value : this.costBasis,
-    childCostCents: childCostCents ?? this.childCostCents,
     childCostMicros: childCostMicros ?? this.childCostMicros,
     effort: effort.present ? effort.value : this.effort,
     taskFamily: taskFamily.present ? taskFamily.value : this.taskFamily,
@@ -4165,9 +4233,6 @@ class AgentRunLogsTableData extends DataClass
           ? data.costMicros.value
           : this.costMicros,
       costBasis: data.costBasis.present ? data.costBasis.value : this.costBasis,
-      childCostCents: data.childCostCents.present
-          ? data.childCostCents.value
-          : this.childCostCents,
       childCostMicros: data.childCostMicros.present
           ? data.childCostMicros.value
           : this.childCostMicros,
@@ -4280,7 +4345,6 @@ class AgentRunLogsTableData extends DataClass
           ..write('estimatedCostCents: $estimatedCostCents, ')
           ..write('costMicros: $costMicros, ')
           ..write('costBasis: $costBasis, ')
-          ..write('childCostCents: $childCostCents, ')
           ..write('childCostMicros: $childCostMicros, ')
           ..write('effort: $effort, ')
           ..write('taskFamily: $taskFamily, ')
@@ -4339,7 +4403,6 @@ class AgentRunLogsTableData extends DataClass
     estimatedCostCents,
     costMicros,
     costBasis,
-    childCostCents,
     childCostMicros,
     effort,
     taskFamily,
@@ -4397,7 +4460,6 @@ class AgentRunLogsTableData extends DataClass
           other.estimatedCostCents == this.estimatedCostCents &&
           other.costMicros == this.costMicros &&
           other.costBasis == this.costBasis &&
-          other.childCostCents == this.childCostCents &&
           other.childCostMicros == this.childCostMicros &&
           other.effort == this.effort &&
           other.taskFamily == this.taskFamily &&
@@ -4454,7 +4516,6 @@ class AgentRunLogsTableCompanion
   final Value<int> estimatedCostCents;
   final Value<int> costMicros;
   final Value<String?> costBasis;
-  final Value<int> childCostCents;
   final Value<int> childCostMicros;
   final Value<String?> effort;
   final Value<String?> taskFamily;
@@ -4509,7 +4570,6 @@ class AgentRunLogsTableCompanion
     this.estimatedCostCents = const Value.absent(),
     this.costMicros = const Value.absent(),
     this.costBasis = const Value.absent(),
-    this.childCostCents = const Value.absent(),
     this.childCostMicros = const Value.absent(),
     this.effort = const Value.absent(),
     this.taskFamily = const Value.absent(),
@@ -4565,7 +4625,6 @@ class AgentRunLogsTableCompanion
     this.estimatedCostCents = const Value.absent(),
     this.costMicros = const Value.absent(),
     this.costBasis = const Value.absent(),
-    this.childCostCents = const Value.absent(),
     this.childCostMicros = const Value.absent(),
     this.effort = const Value.absent(),
     this.taskFamily = const Value.absent(),
@@ -4622,7 +4681,6 @@ class AgentRunLogsTableCompanion
     Expression<int>? estimatedCostCents,
     Expression<int>? costMicros,
     Expression<String>? costBasis,
-    Expression<int>? childCostCents,
     Expression<int>? childCostMicros,
     Expression<String>? effort,
     Expression<String>? taskFamily,
@@ -4679,7 +4737,6 @@ class AgentRunLogsTableCompanion
         'estimated_cost_cents': estimatedCostCents,
       if (costMicros != null) 'cost_micros': costMicros,
       if (costBasis != null) 'cost_basis': costBasis,
-      if (childCostCents != null) 'child_cost_cents': childCostCents,
       if (childCostMicros != null) 'child_cost_micros': childCostMicros,
       if (effort != null) 'effort': effort,
       if (taskFamily != null) 'task_family': taskFamily,
@@ -4743,7 +4800,6 @@ class AgentRunLogsTableCompanion
     Value<int>? estimatedCostCents,
     Value<int>? costMicros,
     Value<String?>? costBasis,
-    Value<int>? childCostCents,
     Value<int>? childCostMicros,
     Value<String?>? effort,
     Value<String?>? taskFamily,
@@ -4799,7 +4855,6 @@ class AgentRunLogsTableCompanion
       estimatedCostCents: estimatedCostCents ?? this.estimatedCostCents,
       costMicros: costMicros ?? this.costMicros,
       costBasis: costBasis ?? this.costBasis,
-      childCostCents: childCostCents ?? this.childCostCents,
       childCostMicros: childCostMicros ?? this.childCostMicros,
       effort: effort ?? this.effort,
       taskFamily: taskFamily ?? this.taskFamily,
@@ -4902,9 +4957,6 @@ class AgentRunLogsTableCompanion
     }
     if (costBasis.present) {
       map['cost_basis'] = Variable<String>(costBasis.value);
-    }
-    if (childCostCents.present) {
-      map['child_cost_cents'] = Variable<int>(childCostCents.value);
     }
     if (childCostMicros.present) {
       map['child_cost_micros'] = Variable<int>(childCostMicros.value);
@@ -5033,7 +5085,6 @@ class AgentRunLogsTableCompanion
           ..write('estimatedCostCents: $estimatedCostCents, ')
           ..write('costMicros: $costMicros, ')
           ..write('costBasis: $costBasis, ')
-          ..write('childCostCents: $childCostCents, ')
           ..write('childCostMicros: $childCostMicros, ')
           ..write('effort: $effort, ')
           ..write('taskFamily: $taskFamily, ')
@@ -7998,7 +8049,7 @@ class SpacesTableData extends DataClass implements Insertable<SpacesTableData> {
   final DateTime updatedAt;
 
   /// Conversation mode. Stored as the `name` of the `Mode` enum
-  /// (`chat`, `review`, `plan`). Defaults to `chat` for legacy rows.
+  /// (`chat`, `review`, `plan`). Defaults to `chat`.
   final String mode;
 
   /// Owning pipeline run when this conversation was spawned by a pipeline
@@ -8027,7 +8078,7 @@ class SpacesTableData extends DataClass implements Insertable<SpacesTableData> {
 
   /// Whether the space EXPLICITLY provisions no repo worktrees (created with
   /// every repo deselected). Needed because "no rows in `space_repos`" already
-  /// means "all workspace repos" (the pre-selection back-compat default), so
+  /// means "all workspace repos" (the default selection), so
   /// an empty selection is otherwise inexpressible. When true, the provisioner
   /// checks out nothing and `space_repos` holds no rows for the space.
   final bool noRepos;
@@ -8708,9 +8759,8 @@ class ConversationsTableData extends DataClass
   /// Conversation id — its own uuid, never the owning space's.
   final String id;
 
-  /// Owning workspace (isolation scope). Nullable to mirror [SpacesTable]
-  /// (a conversation can never be more strictly scoped than its space; some
-  /// system/legacy spaces carry a null workspace).
+  /// Owning workspace (isolation scope). Nullable to mirror [SpacesTable]: a
+  /// conversation can never be more strictly scoped than its space.
   final String? workspaceId;
 
   /// The space this conversation belongs to.
@@ -9330,8 +9380,8 @@ class SpaceParticipantsTableData extends DataClass
   final DateTime joinedAt;
 
   /// When this participant last read the space (their read cursor). Null
-  /// until the space is first opened under this participant, so legacy rows
-  /// are treated as "nothing unseen yet" rather than "everything unseen".
+  /// until the space is first opened under this participant, which is treated
+  /// as "nothing unseen yet" rather than "everything unseen".
   ///
   /// Drives the sidebar's unread indicator: an agent message newer than this
   /// timestamp (while no run is in flight) surfaces a notification dot.
@@ -15002,8 +15052,7 @@ class BudgetPolicyTableData extends DataClass
   /// Unique policy identifier.
   final String id;
 
-  /// Owning workspace. Defaults to empty for legacy rows (none exist in
-  /// practice — the table had no DAO before governance).
+  /// Owning workspace. Defaults to empty.
   final String workspaceId;
 
   /// Scope type (e.g. 'workspace', 'agent').
@@ -24828,6 +24877,18 @@ class $PipelineTriggersTableTable extends PipelineTriggersTable
     requiredDuringInsert: false,
     defaultValue: const Constant('catchUpLatestOnly'),
   );
+  static const VerificationMeta _armedByUserIdsJsonMeta =
+      const VerificationMeta('armedByUserIdsJson');
+  @override
+  late final GeneratedColumn<String> armedByUserIdsJson =
+      GeneratedColumn<String>(
+        'armed_by_user_ids',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+        defaultValue: const Constant('[]'),
+      );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -24855,6 +24916,7 @@ class $PipelineTriggersTableTable extends PipelineTriggersTable
     matchJson,
     lastFiredAt,
     catchUpPolicy,
+    armedByUserIdsJson,
     createdAt,
   ];
   @override
@@ -24970,6 +25032,15 @@ class $PipelineTriggersTableTable extends PipelineTriggersTable
         ),
       );
     }
+    if (data.containsKey('armed_by_user_ids')) {
+      context.handle(
+        _armedByUserIdsJsonMeta,
+        armedByUserIdsJson.isAcceptableOrUnknown(
+          data['armed_by_user_ids']!,
+          _armedByUserIdsJsonMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -25040,6 +25111,10 @@ class $PipelineTriggersTableTable extends PipelineTriggersTable
         DriftSqlType.string,
         data['${effectivePrefix}catch_up_policy'],
       )!,
+      armedByUserIdsJson: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}armed_by_user_ids'],
+      )!,
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -25104,6 +25179,10 @@ class PipelineTriggersTableData extends DataClass
   /// [CronCatchUpPolicy] name (`catchUpLatestOnly` default, or `skip`).
   final String catchUpPolicy;
 
+  /// JSON array of every member who armed this trigger, or edited it (or
+  /// its pipeline) while armed; `[]` when disarmed. Server-written only.
+  final String armedByUserIdsJson;
+
   /// When this trigger was created.
   final DateTime createdAt;
   const PipelineTriggersTableData({
@@ -25120,6 +25199,7 @@ class PipelineTriggersTableData extends DataClass
     required this.matchJson,
     this.lastFiredAt,
     required this.catchUpPolicy,
+    required this.armedByUserIdsJson,
     required this.createdAt,
   });
   @override
@@ -25148,6 +25228,7 @@ class PipelineTriggersTableData extends DataClass
       map['last_fired_at'] = Variable<DateTime>(lastFiredAt);
     }
     map['catch_up_policy'] = Variable<String>(catchUpPolicy);
+    map['armed_by_user_ids'] = Variable<String>(armedByUserIdsJson);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -25177,6 +25258,7 @@ class PipelineTriggersTableData extends DataClass
           ? const Value.absent()
           : Value(lastFiredAt),
       catchUpPolicy: Value(catchUpPolicy),
+      armedByUserIdsJson: Value(armedByUserIdsJson),
       createdAt: Value(createdAt),
     );
   }
@@ -25200,6 +25282,9 @@ class PipelineTriggersTableData extends DataClass
       matchJson: serializer.fromJson<String>(json['matchJson']),
       lastFiredAt: serializer.fromJson<DateTime?>(json['lastFiredAt']),
       catchUpPolicy: serializer.fromJson<String>(json['catchUpPolicy']),
+      armedByUserIdsJson: serializer.fromJson<String>(
+        json['armedByUserIdsJson'],
+      ),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -25220,6 +25305,7 @@ class PipelineTriggersTableData extends DataClass
       'matchJson': serializer.toJson<String>(matchJson),
       'lastFiredAt': serializer.toJson<DateTime?>(lastFiredAt),
       'catchUpPolicy': serializer.toJson<String>(catchUpPolicy),
+      'armedByUserIdsJson': serializer.toJson<String>(armedByUserIdsJson),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -25238,6 +25324,7 @@ class PipelineTriggersTableData extends DataClass
     String? matchJson,
     Value<DateTime?> lastFiredAt = const Value.absent(),
     String? catchUpPolicy,
+    String? armedByUserIdsJson,
     DateTime? createdAt,
   }) => PipelineTriggersTableData(
     id: id ?? this.id,
@@ -25255,6 +25342,7 @@ class PipelineTriggersTableData extends DataClass
     matchJson: matchJson ?? this.matchJson,
     lastFiredAt: lastFiredAt.present ? lastFiredAt.value : this.lastFiredAt,
     catchUpPolicy: catchUpPolicy ?? this.catchUpPolicy,
+    armedByUserIdsJson: armedByUserIdsJson ?? this.armedByUserIdsJson,
     createdAt: createdAt ?? this.createdAt,
   );
   PipelineTriggersTableData copyWithCompanion(
@@ -25288,6 +25376,9 @@ class PipelineTriggersTableData extends DataClass
       catchUpPolicy: data.catchUpPolicy.present
           ? data.catchUpPolicy.value
           : this.catchUpPolicy,
+      armedByUserIdsJson: data.armedByUserIdsJson.present
+          ? data.armedByUserIdsJson.value
+          : this.armedByUserIdsJson,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -25308,6 +25399,7 @@ class PipelineTriggersTableData extends DataClass
           ..write('matchJson: $matchJson, ')
           ..write('lastFiredAt: $lastFiredAt, ')
           ..write('catchUpPolicy: $catchUpPolicy, ')
+          ..write('armedByUserIdsJson: $armedByUserIdsJson, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -25328,6 +25420,7 @@ class PipelineTriggersTableData extends DataClass
     matchJson,
     lastFiredAt,
     catchUpPolicy,
+    armedByUserIdsJson,
     createdAt,
   );
   @override
@@ -25347,6 +25440,7 @@ class PipelineTriggersTableData extends DataClass
           other.matchJson == this.matchJson &&
           other.lastFiredAt == this.lastFiredAt &&
           other.catchUpPolicy == this.catchUpPolicy &&
+          other.armedByUserIdsJson == this.armedByUserIdsJson &&
           other.createdAt == this.createdAt);
 }
 
@@ -25365,6 +25459,7 @@ class PipelineTriggersTableCompanion
   final Value<String> matchJson;
   final Value<DateTime?> lastFiredAt;
   final Value<String> catchUpPolicy;
+  final Value<String> armedByUserIdsJson;
   final Value<DateTime> createdAt;
   final Value<int> rowid;
   const PipelineTriggersTableCompanion({
@@ -25381,6 +25476,7 @@ class PipelineTriggersTableCompanion
     this.matchJson = const Value.absent(),
     this.lastFiredAt = const Value.absent(),
     this.catchUpPolicy = const Value.absent(),
+    this.armedByUserIdsJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   });
@@ -25398,6 +25494,7 @@ class PipelineTriggersTableCompanion
     this.matchJson = const Value.absent(),
     this.lastFiredAt = const Value.absent(),
     this.catchUpPolicy = const Value.absent(),
+    this.armedByUserIdsJson = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
@@ -25418,6 +25515,7 @@ class PipelineTriggersTableCompanion
     Expression<String>? matchJson,
     Expression<DateTime>? lastFiredAt,
     Expression<String>? catchUpPolicy,
+    Expression<String>? armedByUserIdsJson,
     Expression<DateTime>? createdAt,
     Expression<int>? rowid,
   }) {
@@ -25435,6 +25533,7 @@ class PipelineTriggersTableCompanion
       if (matchJson != null) 'match_json': matchJson,
       if (lastFiredAt != null) 'last_fired_at': lastFiredAt,
       if (catchUpPolicy != null) 'catch_up_policy': catchUpPolicy,
+      if (armedByUserIdsJson != null) 'armed_by_user_ids': armedByUserIdsJson,
       if (createdAt != null) 'created_at': createdAt,
       if (rowid != null) 'rowid': rowid,
     });
@@ -25454,6 +25553,7 @@ class PipelineTriggersTableCompanion
     Value<String>? matchJson,
     Value<DateTime?>? lastFiredAt,
     Value<String>? catchUpPolicy,
+    Value<String>? armedByUserIdsJson,
     Value<DateTime>? createdAt,
     Value<int>? rowid,
   }) {
@@ -25471,6 +25571,7 @@ class PipelineTriggersTableCompanion
       matchJson: matchJson ?? this.matchJson,
       lastFiredAt: lastFiredAt ?? this.lastFiredAt,
       catchUpPolicy: catchUpPolicy ?? this.catchUpPolicy,
+      armedByUserIdsJson: armedByUserIdsJson ?? this.armedByUserIdsJson,
       createdAt: createdAt ?? this.createdAt,
       rowid: rowid ?? this.rowid,
     );
@@ -25518,6 +25619,9 @@ class PipelineTriggersTableCompanion
     if (catchUpPolicy.present) {
       map['catch_up_policy'] = Variable<String>(catchUpPolicy.value);
     }
+    if (armedByUserIdsJson.present) {
+      map['armed_by_user_ids'] = Variable<String>(armedByUserIdsJson.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -25543,6 +25647,7 @@ class PipelineTriggersTableCompanion
           ..write('matchJson: $matchJson, ')
           ..write('lastFiredAt: $lastFiredAt, ')
           ..write('catchUpPolicy: $catchUpPolicy, ')
+          ..write('armedByUserIdsJson: $armedByUserIdsJson, ')
           ..write('createdAt: $createdAt, ')
           ..write('rowid: $rowid')
           ..write(')'))
@@ -26496,7 +26601,7 @@ class TicketsTableData extends DataClass
   /// The root ticket id of this delegation chain (PRD 22 §3). Equals the row's
   /// own id for a root; inherited by every delegated descendant. Lets the
   /// cycle detector and budget-envelope inheritance identify a chain without a
-  /// graph walk. Null for legacy rows (treated as their own root).
+  /// graph walk. Null is treated as its own root.
   final String? delegationRootTicketId;
 
   /// Linked discussion space. No FK — cleaned up in application code, like
@@ -37806,8 +37911,7 @@ class CalendarAccountsTableData extends DataClass
   /// Owning workspace.
   final String workspaceId;
 
-  /// The member who connected this account. Empty on rows predating
-  /// per-user calendar ownership (legacy workspace-pool accounts).
+  /// The member who connected this account. Empty when no member owns it.
   final String userId;
 
   /// Provider id (`google`).
@@ -60867,8 +60971,8 @@ class UserActivityTableData extends DataClass
   final String? countryCode;
 
   /// Sanitized JSON object of the mutation's arguments (and a few
-  /// contextual result fields). Null on rows recorded before this column
-  /// existed, or when nothing useful survived redaction.
+  /// contextual result fields). Null when nothing useful survived
+  /// redaction.
   final String? details;
 
   /// When the action happened.
@@ -79186,6 +79290,17 @@ class $EnvironmentDefinitionsTableTable extends EnvironmentDefinitionsTable
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _hostApprovedByMeta = const VerificationMeta(
+    'hostApprovedBy',
+  );
+  @override
+  late final GeneratedColumn<String> hostApprovedBy = GeneratedColumn<String>(
+    'host_approved_by',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -79218,6 +79333,7 @@ class $EnvironmentDefinitionsTableTable extends EnvironmentDefinitionsTable
     approvedBlobHash,
     overridesJson,
     createdBy,
+    hostApprovedBy,
     createdAt,
     updatedAt,
   ];
@@ -79296,6 +79412,15 @@ class $EnvironmentDefinitionsTableTable extends EnvironmentDefinitionsTable
         createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta),
       );
     }
+    if (data.containsKey('host_approved_by')) {
+      context.handle(
+        _hostApprovedByMeta,
+        hostApprovedBy.isAcceptableOrUnknown(
+          data['host_approved_by']!,
+          _hostApprovedByMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -79356,6 +79481,10 @@ class $EnvironmentDefinitionsTableTable extends EnvironmentDefinitionsTable
         DriftSqlType.string,
         data['${effectivePrefix}created_by'],
       ),
+      hostApprovedBy: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}host_approved_by'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -79399,6 +79528,11 @@ class EnvironmentDefinitionsTableData extends DataClass
   /// Who wrote it. Null for a generated definition.
   final String? createdBy;
 
+  /// The server owner who saved it while it ran something on the host; null
+  /// when it runs nothing there or no owner approved it. Written only by the
+  /// server on save, never from a client's copy.
+  final String? hostApprovedBy;
+
   /// When it was created.
   final DateTime createdAt;
 
@@ -79413,6 +79547,7 @@ class EnvironmentDefinitionsTableData extends DataClass
     this.approvedBlobHash,
     this.overridesJson,
     this.createdBy,
+    this.hostApprovedBy,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -79436,6 +79571,9 @@ class EnvironmentDefinitionsTableData extends DataClass
     }
     if (!nullToAbsent || createdBy != null) {
       map['created_by'] = Variable<String>(createdBy);
+    }
+    if (!nullToAbsent || hostApprovedBy != null) {
+      map['host_approved_by'] = Variable<String>(hostApprovedBy);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
@@ -79462,6 +79600,9 @@ class EnvironmentDefinitionsTableData extends DataClass
       createdBy: createdBy == null && nullToAbsent
           ? const Value.absent()
           : Value(createdBy),
+      hostApprovedBy: hostApprovedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(hostApprovedBy),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -79481,6 +79622,7 @@ class EnvironmentDefinitionsTableData extends DataClass
       approvedBlobHash: serializer.fromJson<String?>(json['approvedBlobHash']),
       overridesJson: serializer.fromJson<String?>(json['overridesJson']),
       createdBy: serializer.fromJson<String?>(json['createdBy']),
+      hostApprovedBy: serializer.fromJson<String?>(json['hostApprovedBy']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -79497,6 +79639,7 @@ class EnvironmentDefinitionsTableData extends DataClass
       'approvedBlobHash': serializer.toJson<String?>(approvedBlobHash),
       'overridesJson': serializer.toJson<String?>(overridesJson),
       'createdBy': serializer.toJson<String?>(createdBy),
+      'hostApprovedBy': serializer.toJson<String?>(hostApprovedBy),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -79511,6 +79654,7 @@ class EnvironmentDefinitionsTableData extends DataClass
     Value<String?> approvedBlobHash = const Value.absent(),
     Value<String?> overridesJson = const Value.absent(),
     Value<String?> createdBy = const Value.absent(),
+    Value<String?> hostApprovedBy = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => EnvironmentDefinitionsTableData(
@@ -79526,6 +79670,9 @@ class EnvironmentDefinitionsTableData extends DataClass
         ? overridesJson.value
         : this.overridesJson,
     createdBy: createdBy.present ? createdBy.value : this.createdBy,
+    hostApprovedBy: hostApprovedBy.present
+        ? hostApprovedBy.value
+        : this.hostApprovedBy,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -79551,6 +79698,9 @@ class EnvironmentDefinitionsTableData extends DataClass
           ? data.overridesJson.value
           : this.overridesJson,
       createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
+      hostApprovedBy: data.hostApprovedBy.present
+          ? data.hostApprovedBy.value
+          : this.hostApprovedBy,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -79567,6 +79717,7 @@ class EnvironmentDefinitionsTableData extends DataClass
           ..write('approvedBlobHash: $approvedBlobHash, ')
           ..write('overridesJson: $overridesJson, ')
           ..write('createdBy: $createdBy, ')
+          ..write('hostApprovedBy: $hostApprovedBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -79583,6 +79734,7 @@ class EnvironmentDefinitionsTableData extends DataClass
     approvedBlobHash,
     overridesJson,
     createdBy,
+    hostApprovedBy,
     createdAt,
     updatedAt,
   );
@@ -79598,6 +79750,7 @@ class EnvironmentDefinitionsTableData extends DataClass
           other.approvedBlobHash == this.approvedBlobHash &&
           other.overridesJson == this.overridesJson &&
           other.createdBy == this.createdBy &&
+          other.hostApprovedBy == this.hostApprovedBy &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -79612,6 +79765,7 @@ class EnvironmentDefinitionsTableCompanion
   final Value<String?> approvedBlobHash;
   final Value<String?> overridesJson;
   final Value<String?> createdBy;
+  final Value<String?> hostApprovedBy;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -79624,6 +79778,7 @@ class EnvironmentDefinitionsTableCompanion
     this.approvedBlobHash = const Value.absent(),
     this.overridesJson = const Value.absent(),
     this.createdBy = const Value.absent(),
+    this.hostApprovedBy = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -79637,6 +79792,7 @@ class EnvironmentDefinitionsTableCompanion
     this.approvedBlobHash = const Value.absent(),
     this.overridesJson = const Value.absent(),
     this.createdBy = const Value.absent(),
+    this.hostApprovedBy = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -79654,6 +79810,7 @@ class EnvironmentDefinitionsTableCompanion
     Expression<String>? approvedBlobHash,
     Expression<String>? overridesJson,
     Expression<String>? createdBy,
+    Expression<String>? hostApprovedBy,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -79667,6 +79824,7 @@ class EnvironmentDefinitionsTableCompanion
       if (approvedBlobHash != null) 'approved_blob_hash': approvedBlobHash,
       if (overridesJson != null) 'overrides_json': overridesJson,
       if (createdBy != null) 'created_by': createdBy,
+      if (hostApprovedBy != null) 'host_approved_by': hostApprovedBy,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -79682,6 +79840,7 @@ class EnvironmentDefinitionsTableCompanion
     Value<String?>? approvedBlobHash,
     Value<String?>? overridesJson,
     Value<String?>? createdBy,
+    Value<String?>? hostApprovedBy,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -79695,6 +79854,7 @@ class EnvironmentDefinitionsTableCompanion
       approvedBlobHash: approvedBlobHash ?? this.approvedBlobHash,
       overridesJson: overridesJson ?? this.overridesJson,
       createdBy: createdBy ?? this.createdBy,
+      hostApprovedBy: hostApprovedBy ?? this.hostApprovedBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -79728,6 +79888,9 @@ class EnvironmentDefinitionsTableCompanion
     if (createdBy.present) {
       map['created_by'] = Variable<String>(createdBy.value);
     }
+    if (hostApprovedBy.present) {
+      map['host_approved_by'] = Variable<String>(hostApprovedBy.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -79751,6 +79914,7 @@ class EnvironmentDefinitionsTableCompanion
           ..write('approvedBlobHash: $approvedBlobHash, ')
           ..write('overridesJson: $overridesJson, ')
           ..write('createdBy: $createdBy, ')
+          ..write('hostApprovedBy: $hostApprovedBy, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -83485,6 +83649,8 @@ typedef $$ReposTableTableCreateCompanionBuilder =
       Value<String> forge,
       Value<String> remoteOwner,
       Value<String> remoteName,
+      Value<String> linkedByUserId,
+      Value<String> forgeRepoId,
       Value<int> position,
       Value<DateTime> linkedAt,
       Value<DateTime> createdAt,
@@ -83499,6 +83665,8 @@ typedef $$ReposTableTableUpdateCompanionBuilder =
       Value<String> forge,
       Value<String> remoteOwner,
       Value<String> remoteName,
+      Value<String> linkedByUserId,
+      Value<String> forgeRepoId,
       Value<int> position,
       Value<DateTime> linkedAt,
       Value<DateTime> createdAt,
@@ -83657,6 +83825,16 @@ class $$ReposTableTableFilterComposer
 
   ColumnFilters<String> get remoteName => $composableBuilder(
     column: $table.remoteName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get linkedByUserId => $composableBuilder(
+    column: $table.linkedByUserId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get forgeRepoId => $composableBuilder(
+    column: $table.forgeRepoId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -83851,6 +84029,16 @@ class $$ReposTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get linkedByUserId => $composableBuilder(
+    column: $table.linkedByUserId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get forgeRepoId => $composableBuilder(
+    column: $table.forgeRepoId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<int> get position => $composableBuilder(
     column: $table.position,
     builder: (column) => ColumnOrderings(column),
@@ -83900,6 +84088,16 @@ class $$ReposTableTableAnnotationComposer
 
   GeneratedColumn<String> get remoteName => $composableBuilder(
     column: $table.remoteName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get linkedByUserId => $composableBuilder(
+    column: $table.linkedByUserId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get forgeRepoId => $composableBuilder(
+    column: $table.forgeRepoId,
     builder: (column) => column,
   );
 
@@ -84087,6 +84285,8 @@ class $$ReposTableTableTableManager
                 Value<String> forge = const Value.absent(),
                 Value<String> remoteOwner = const Value.absent(),
                 Value<String> remoteName = const Value.absent(),
+                Value<String> linkedByUserId = const Value.absent(),
+                Value<String> forgeRepoId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> linkedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -84099,6 +84299,8 @@ class $$ReposTableTableTableManager
                 forge: forge,
                 remoteOwner: remoteOwner,
                 remoteName: remoteName,
+                linkedByUserId: linkedByUserId,
+                forgeRepoId: forgeRepoId,
                 position: position,
                 linkedAt: linkedAt,
                 createdAt: createdAt,
@@ -84113,6 +84315,8 @@ class $$ReposTableTableTableManager
                 Value<String> forge = const Value.absent(),
                 Value<String> remoteOwner = const Value.absent(),
                 Value<String> remoteName = const Value.absent(),
+                Value<String> linkedByUserId = const Value.absent(),
+                Value<String> forgeRepoId = const Value.absent(),
                 Value<int> position = const Value.absent(),
                 Value<DateTime> linkedAt = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
@@ -84125,6 +84329,8 @@ class $$ReposTableTableTableManager
                 forge: forge,
                 remoteOwner: remoteOwner,
                 remoteName: remoteName,
+                linkedByUserId: linkedByUserId,
+                forgeRepoId: forgeRepoId,
                 position: position,
                 linkedAt: linkedAt,
                 createdAt: createdAt,
@@ -85441,7 +85647,6 @@ typedef $$AgentRunLogsTableTableCreateCompanionBuilder =
       Value<int> estimatedCostCents,
       Value<int> costMicros,
       Value<String?> costBasis,
-      Value<int> childCostCents,
       Value<int> childCostMicros,
       Value<String?> effort,
       Value<String?> taskFamily,
@@ -85498,7 +85703,6 @@ typedef $$AgentRunLogsTableTableUpdateCompanionBuilder =
       Value<int> estimatedCostCents,
       Value<int> costMicros,
       Value<String?> costBasis,
-      Value<int> childCostCents,
       Value<int> childCostMicros,
       Value<String?> effort,
       Value<String?> taskFamily,
@@ -85698,11 +85902,6 @@ class $$AgentRunLogsTableTableFilterComposer
 
   ColumnFilters<String> get costBasis => $composableBuilder(
     column: $table.costBasis,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get childCostCents => $composableBuilder(
-    column: $table.childCostCents,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -86019,11 +86218,6 @@ class $$AgentRunLogsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<int> get childCostCents => $composableBuilder(
-    column: $table.childCostCents,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<int> get childCostMicros => $composableBuilder(
     column: $table.childCostMicros,
     builder: (column) => ColumnOrderings(column),
@@ -86290,11 +86484,6 @@ class $$AgentRunLogsTableTableAnnotationComposer
   GeneratedColumn<String> get costBasis =>
       $composableBuilder(column: $table.costBasis, builder: (column) => column);
 
-  GeneratedColumn<int> get childCostCents => $composableBuilder(
-    column: $table.childCostCents,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<int> get childCostMicros => $composableBuilder(
     column: $table.childCostMicros,
     builder: (column) => column,
@@ -86544,7 +86733,6 @@ class $$AgentRunLogsTableTableTableManager
                 Value<int> estimatedCostCents = const Value.absent(),
                 Value<int> costMicros = const Value.absent(),
                 Value<String?> costBasis = const Value.absent(),
-                Value<int> childCostCents = const Value.absent(),
                 Value<int> childCostMicros = const Value.absent(),
                 Value<String?> effort = const Value.absent(),
                 Value<String?> taskFamily = const Value.absent(),
@@ -86599,7 +86787,6 @@ class $$AgentRunLogsTableTableTableManager
                 estimatedCostCents: estimatedCostCents,
                 costMicros: costMicros,
                 costBasis: costBasis,
-                childCostCents: childCostCents,
                 childCostMicros: childCostMicros,
                 effort: effort,
                 taskFamily: taskFamily,
@@ -86656,7 +86843,6 @@ class $$AgentRunLogsTableTableTableManager
                 Value<int> estimatedCostCents = const Value.absent(),
                 Value<int> costMicros = const Value.absent(),
                 Value<String?> costBasis = const Value.absent(),
-                Value<int> childCostCents = const Value.absent(),
                 Value<int> childCostMicros = const Value.absent(),
                 Value<String?> effort = const Value.absent(),
                 Value<String?> taskFamily = const Value.absent(),
@@ -86711,7 +86897,6 @@ class $$AgentRunLogsTableTableTableManager
                 estimatedCostCents: estimatedCostCents,
                 costMicros: costMicros,
                 costBasis: costBasis,
-                childCostCents: childCostCents,
                 childCostMicros: childCostMicros,
                 effort: effort,
                 taskFamily: taskFamily,
@@ -98158,6 +98343,7 @@ typedef $$PipelineTriggersTableTableCreateCompanionBuilder =
       Value<String> matchJson,
       Value<DateTime?> lastFiredAt,
       Value<String> catchUpPolicy,
+      Value<String> armedByUserIdsJson,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -98176,6 +98362,7 @@ typedef $$PipelineTriggersTableTableUpdateCompanionBuilder =
       Value<String> matchJson,
       Value<DateTime?> lastFiredAt,
       Value<String> catchUpPolicy,
+      Value<String> armedByUserIdsJson,
       Value<DateTime> createdAt,
       Value<int> rowid,
     });
@@ -98251,6 +98438,11 @@ class $$PipelineTriggersTableTableFilterComposer
 
   ColumnFilters<String> get catchUpPolicy => $composableBuilder(
     column: $table.catchUpPolicy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get armedByUserIdsJson => $composableBuilder(
+    column: $table.armedByUserIdsJson,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -98334,6 +98526,11 @@ class $$PipelineTriggersTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get armedByUserIdsJson => $composableBuilder(
+    column: $table.armedByUserIdsJson,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -98402,6 +98599,11 @@ class $$PipelineTriggersTableTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<String> get armedByUserIdsJson => $composableBuilder(
+    column: $table.armedByUserIdsJson,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 }
@@ -98465,6 +98667,7 @@ class $$PipelineTriggersTableTableTableManager
                 Value<String> matchJson = const Value.absent(),
                 Value<DateTime?> lastFiredAt = const Value.absent(),
                 Value<String> catchUpPolicy = const Value.absent(),
+                Value<String> armedByUserIdsJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PipelineTriggersTableCompanion(
@@ -98481,6 +98684,7 @@ class $$PipelineTriggersTableTableTableManager
                 matchJson: matchJson,
                 lastFiredAt: lastFiredAt,
                 catchUpPolicy: catchUpPolicy,
+                armedByUserIdsJson: armedByUserIdsJson,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -98499,6 +98703,7 @@ class $$PipelineTriggersTableTableTableManager
                 Value<String> matchJson = const Value.absent(),
                 Value<DateTime?> lastFiredAt = const Value.absent(),
                 Value<String> catchUpPolicy = const Value.absent(),
+                Value<String> armedByUserIdsJson = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => PipelineTriggersTableCompanion.insert(
@@ -98515,6 +98720,7 @@ class $$PipelineTriggersTableTableTableManager
                 matchJson: matchJson,
                 lastFiredAt: lastFiredAt,
                 catchUpPolicy: catchUpPolicy,
+                armedByUserIdsJson: armedByUserIdsJson,
                 createdAt: createdAt,
                 rowid: rowid,
               ),
@@ -130134,6 +130340,7 @@ typedef $$EnvironmentDefinitionsTableTableCreateCompanionBuilder =
       Value<String?> approvedBlobHash,
       Value<String?> overridesJson,
       Value<String?> createdBy,
+      Value<String?> hostApprovedBy,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -130148,6 +130355,7 @@ typedef $$EnvironmentDefinitionsTableTableUpdateCompanionBuilder =
       Value<String?> approvedBlobHash,
       Value<String?> overridesJson,
       Value<String?> createdBy,
+      Value<String?> hostApprovedBy,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -130199,6 +130407,11 @@ class $$EnvironmentDefinitionsTableTableFilterComposer
 
   ColumnFilters<String> get createdBy => $composableBuilder(
     column: $table.createdBy,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get hostApprovedBy => $composableBuilder(
+    column: $table.hostApprovedBy,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -130262,6 +130475,11 @@ class $$EnvironmentDefinitionsTableTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get hostApprovedBy => $composableBuilder(
+    column: $table.hostApprovedBy,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -130315,6 +130533,11 @@ class $$EnvironmentDefinitionsTableTableAnnotationComposer
 
   GeneratedColumn<String> get createdBy =>
       $composableBuilder(column: $table.createdBy, builder: (column) => column);
+
+  GeneratedColumn<String> get hostApprovedBy => $composableBuilder(
+    column: $table.hostApprovedBy,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -130377,6 +130600,7 @@ class $$EnvironmentDefinitionsTableTableTableManager
                 Value<String?> approvedBlobHash = const Value.absent(),
                 Value<String?> overridesJson = const Value.absent(),
                 Value<String?> createdBy = const Value.absent(),
+                Value<String?> hostApprovedBy = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -130389,6 +130613,7 @@ class $$EnvironmentDefinitionsTableTableTableManager
                 approvedBlobHash: approvedBlobHash,
                 overridesJson: overridesJson,
                 createdBy: createdBy,
+                hostApprovedBy: hostApprovedBy,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -130403,6 +130628,7 @@ class $$EnvironmentDefinitionsTableTableTableManager
                 Value<String?> approvedBlobHash = const Value.absent(),
                 Value<String?> overridesJson = const Value.absent(),
                 Value<String?> createdBy = const Value.absent(),
+                Value<String?> hostApprovedBy = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -130415,6 +130641,7 @@ class $$EnvironmentDefinitionsTableTableTableManager
                 approvedBlobHash: approvedBlobHash,
                 overridesJson: overridesJson,
                 createdBy: createdBy,
+                hostApprovedBy: hostApprovedBy,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,

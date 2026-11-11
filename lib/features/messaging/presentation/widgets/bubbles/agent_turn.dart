@@ -38,6 +38,7 @@ class AgentTurn extends ConsumerStatefulWidget {
     required this.codeFont,
     this.collapseHeader = false,
     this.inlineMessages = const [],
+    this.canRetry = false,
     this.onStartThread,
   });
 
@@ -53,6 +54,10 @@ class AgentTurn extends ConsumerStatefulWidget {
 
   /// Steering and resolved questions belonging to this run, in time order.
   final List<Message> inlineMessages;
+
+  /// Whether a failed turn offers Retry: the feed's answer to "would the
+  /// server still retry this one" (`MessageItem.canRetry`).
+  final bool canRetry;
 
   /// Hover-rail "start thread" affordance (opens a conversation anchored to
   /// this message). Null hides the action.
@@ -129,12 +134,6 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
     _live.dispose();
     super.dispose();
   }
-
-  Map<String, dynamic>? get _erroredMeta =>
-      _shown.metadata?['error'] == true ? _shown.metadata : null;
-  bool get _failed => _erroredMeta != null && !_retried;
-  bool get _retried => _shown.metadata?['retried'] == true;
-  String? get _errorFamily => _erroredMeta?['errorFamily'] as String?;
 
   /// The turn ended cleanly but unfinished: the loop hit its turn ceiling.
   /// Not an error (no retry affordance), but not a completion either — the
@@ -296,14 +295,9 @@ class _AgentTurnState extends ConsumerState<AgentTurn> {
                 if (_failed) ...[
                   const SizedBox(height: AppSpacing.sm),
                   _FailedBadge(
+                    turn: widget.message,
                     errorFamily: _errorFamily,
-                    onRetry: () => ref
-                        .read(messagingServiceProvider)
-                        .retryAgentTurn(
-                          workspaceId: ref.requireWorkspaceId(),
-                          spaceId: message.spaceId,
-                          failedMessageId: message.id,
-                        ),
+                    canRetry: widget.canRetry,
                   ),
                 ] else if (_retried) ...[
                   const SizedBox(height: AppSpacing.sm),

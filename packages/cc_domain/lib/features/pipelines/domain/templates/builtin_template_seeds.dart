@@ -5,7 +5,6 @@ import 'package:cc_domain/features/pipelines/domain/entities/pipeline_definition
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_input.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_node_config.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/pipeline_step_definition.dart';
-import 'package:cc_domain/features/pipelines/domain/entities/pipeline_trigger.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_kind.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_trigger.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_level.dart'
@@ -39,7 +38,11 @@ class BuiltInBodyKeys {
   /// opens with. See `registerCreateSpaceBody`.
   static const String createSpace = 'messaging.createSpace';
 
-  /// Posts the consolidated findings as a PR comment.
+  /// Posts a comment on the PR from the server, as a review with the
+  /// `COMMENT` event: the step's [kPrCommentMessageKey] template when it sets
+  /// one, otherwise the consolidated findings. It is the only way a pipeline
+  /// writes to a pull request — shell steps and agent sandboxes hold read-only
+  /// forge tokens.
   static const String prReviewComment = 'prReview.comment';
 
   /// Deterministically finalizes the review: gathers every `review_node` in
@@ -168,6 +171,11 @@ class BuiltInBodyKeys {
       'orchestration.awaitApproval';
 }
 
+/// The `extras` key of a [BuiltInBodyKeys.prReviewComment] step holding the
+/// comment to post; `{{key}}` values render escaped (raw: the run's PR, a
+/// valid `author`, `consolidated_findings`). Without it: the findings.
+const String kPrCommentMessageKey = 'message';
+
 /// Agent IDs the built-in `pr_review` template references. These are the
 /// UUIDs of the workspace's seeded specialist agents (qa / architect /
 /// engineer / librarian).
@@ -200,54 +208,6 @@ class BuiltInAgentIds {
   /// Coder agent id used by `ticket_to_pr` / `ci_autofix` to write code.
   /// Defaults to [engineer] when not separately seeded.
   final String coder;
-}
-
-/// A trigger row seeded for a built-in template — the declarative source of
-/// truth for which `PipelineTrigger` rows ship with each built-in pipeline.
-///
-/// Reconciled into the `PipelineTriggers` table on seed/re-seed: a missing
-/// (templateId, eventType) row is inserted with these defaults; an existing one
-/// is left untouched so the user's enable/disable + filter choices survive.
-class BuiltInTriggerSeed {
-  /// Creates a [BuiltInTriggerSeed].
-  const BuiltInTriggerSeed({
-    required this.eventType,
-    this.cronExpression,
-    this.match = const {},
-    this.enabled = true,
-  });
-
-  /// Manual trigger (run-by-hand from the run page).
-  const BuiltInTriggerSeed.manual()
-    : eventType = PipelineTrigger.manualEventType,
-      cronExpression = null,
-      match = const {},
-      enabled = true;
-
-  /// Event trigger with an optional payload [match] filter.
-  const BuiltInTriggerSeed.event(
-    this.eventType, {
-    this.match = const {},
-    this.enabled = true,
-  }) : cronExpression = null;
-
-  /// Scheduled cron or `every:<seconds>` trigger. Defaults to disabled unless
-  /// the built-in requires an automatic sweep.
-  const BuiltInTriggerSeed.schedule(this.cronExpression, {this.enabled = false})
-    : eventType = PipelineTrigger.scheduleEventType,
-      match = const {};
-
-  /// Event type, `schedule`, or `manual`.
-  final String eventType;
-
-  /// Schedule expression for [PipelineTrigger.scheduleEventType] triggers.
-  final String? cronExpression;
-
-  /// Optional event-payload value filter (see [PipelineTrigger.match]).
-  final Map<String, dynamic> match;
-
-  /// Default enabled state when first seeded.
-  final bool enabled;
 }
 
 /// Identifiers of the `index_code` template, named once because three surfaces
@@ -314,103 +274,6 @@ class SkillAnalysisTemplate {
   static const String manualProjectionTriggerEventType = 'SkillAnalysisManual';
   static const String updateProjectionTriggerEventType = 'SkillAnalysisUpdate';
 }
-
-/// The trigger rows seeded for each built-in template, keyed by templateId.
-/// Templates absent from this map ship with no triggers.
-Map<String, List<BuiltInTriggerSeed>> builtInTriggerSeeds() => {
-  'pr_review': const [BuiltInTriggerSeed.manual()],
-  'external_pr_welcome': const [BuiltInTriggerSeed.event('ExternalPrDetected')],
-  // Removes stale isolated worktrees. Fires on PR merged/closed/approved
-  // and ticket done/cancelled (cleaning up that unit), plus a manual run
-  // and an opt-in weekly sweep that reaps any orphaned worktree the events
-  // missed. 'approved' fires when the local user submits an approving
-  // review — pruning the reviewer's "open in editor" worktree.
-  'pr_merged_cleanup': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.event(
-      'PullRequestStatusChanged',
-      match: {
-        'status': ['merged', 'closed', 'approved'],
-      },
-    ),
-    BuiltInTriggerSeed.event('TicketCompleted'),
-    BuiltInTriggerSeed.event('TicketCancelled'),
-    // Deleting a conversation orphans its worktrees, its conversation
-    // folder (per-agent overlays + token-bearing `.mcp.json`) and the
-    // code-graph partitions hanging off them. `WorktreeGcListener` already
-    // releases on this event; the pipeline is the durable, visible,
-    // retryable path for the same work — and the one that still runs when
-    // the listener's in-process handling was missed.
-    BuiltInTriggerSeed.event('SpaceDeleted'),
-    // ENABLED and daily rather than weekly — unlike the other scheduled
-    // seeds this one is not a convenience, it is garbage collection. Left
-    // opt-in and weekly, worktree rows accumulate (117 on a real host, most
-    // from conversations deleted long ago) and each one costs a watcher, a
-    // code-graph partition and a CoW copy on disk. Events cover the normal
-    // path; this catches everything they missed while the server was down.
-    BuiltInTriggerSeed.schedule('every:86400', enabled: true),
-  ],
-  // One workspace per run; old snapshots are pruned only after a fresh
-  // snapshot succeeds. Cron runs every Sunday at 03:00 UTC.
-  'workspace_backup': const [
-    BuiltInTriggerSeed.schedule('0 3 * * 0', enabled: true),
-  ],
-  'cross_review': const [BuiltInTriggerSeed.manual()],
-  'ticket_to_pr': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.event('TicketAssigned'),
-  ],
-  'pr_triage': const [BuiltInTriggerSeed.manual()],
-  'pre_merge_gate': const [BuiltInTriggerSeed.manual()],
-  'release_notes': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.event(
-      'PullRequestStatusChanged',
-      match: {
-        'status': ['merged'],
-      },
-    ),
-  ],
-  // "manual or a cron": ship manual + a weekly schedule (opt-in).
-  'dep_audit': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.schedule('every:604800'),
-  ],
-  'pr_digest': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.schedule('every:86400'),
-  ],
-  // Manual run from the pipeline page, or automatically when a repo is
-  // added to the workspace.
-  'index_code': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.event('RepoAdded'),
-  ],
-  // Skills antivirus (PRD 23 §2/§6): manual run, or automatically whenever a
-  // skill is written through a gated path (marketplace install/update, editor
-  // save) or observed changing on disk. Disabling the template (or just the
-  // event trigger) silences the automatic runs — the antivirus gate itself is
-  // unaffected.
-  'skill_analysis': const [
-    BuiltInTriggerSeed.manual(),
-    BuiltInTriggerSeed.event('SkillUpdated'),
-  ],
-  // Two triggers: the event fired when a recording stops (auto) and
-  // manual — used by the detail screen's "Re-run summary" (e.g. after
-  // editing your personal notes) and the pipelines run page.
-  'meeting_summary': const [
-    BuiltInTriggerSeed.event('MeetingRecordingStopped'),
-    BuiltInTriggerSeed.manual(),
-  ],
-};
-
-/// Built-in templates that ship manually runnable. Derived from
-/// [builtInTriggerSeeds] so the run page and seeding stay in sync.
-Set<String> get manualRunnableBuiltInTemplateIds => {
-  for (final entry in builtInTriggerSeeds().entries)
-    if (entry.value.any((t) => t.eventType == PipelineTrigger.manualEventType))
-      entry.key,
-};
 
 // Shared input field builders for the built-in manual-run pipelines. These are
 // seed defaults (data layer, no BuildContext) so the English labels/help are
@@ -1063,29 +926,32 @@ PipelineDefinition _prReviewSeed({
 
 /// Triggered by [ExternalPrDetected]. Greets the external contributor with
 /// a boilerplate welcome comment and a link to contributing docs.
+///
+/// The server posts it (`prReview.comment` with a message): a shell step's
+/// forge token only reads, so `gh pr comment` from a script cannot.
 PipelineDefinition _externalPrWelcomeSeed({required String workspaceId}) {
   const greetId = 'greet';
   final steps = <PipelineStepDefinition>[
     PipelineStepDefinition(
       id: greetId,
       kind: StepKind.listen,
-      bodyKey: BuiltInBodyKeys.bashScript,
+      bodyKey: BuiltInBodyKeys.prReviewComment,
       config: const PipelineNodeConfig(
         label: 'Post welcome comment',
-        inputKeys: ['repo_owner', 'repo_name', 'pr_number', 'author'],
-        outputKey: 'welcome_comment_url',
-        script:
-            'set -euo pipefail\n'
-            'OWNER="{{repo_owner}}"\n'
-            'REPO="{{repo_name}}"\n'
-            'PR="{{pr_number}}"\n'
-            'AUTHOR="{{author}}"\n'
-            'MSG="👋 Thanks for the PR, @\$AUTHOR! A reviewer will take a '
-            'look shortly. In the meantime, please check our [contributing '
-            'guide](https://github.com/\$OWNER/\$REPO/blob/main/CONTRIBUTING.md)."'
-            '\n'
-            'gh pr comment "\$PR" --repo "\$OWNER/\$REPO" --body "\$MSG"\n'
-            'echo "https://github.com/\$OWNER/\$REPO/pull/\$PR"',
+        inputKeys: [
+          'repo_full_name',
+          'repo_owner',
+          'repo_name',
+          'pr_number',
+          'author',
+        ],
+        extras: {
+          kPrCommentMessageKey:
+              '👋 Thanks for the PR, @{{author}}! A reviewer will take a look '
+              'shortly. In the meantime, please check our [contributing '
+              'guide](https://github.com/{{repo_owner}}/{{repo_name}}/blob/'
+              'main/CONTRIBUTING.md).',
+        },
       ),
       x: 0,
       y: 0,
@@ -1361,8 +1227,9 @@ PipelineDefinition _crossReviewSeed({
 // Tier 1 — Ticket → draft PR (the core "turn a work item into code" flow)
 
 /// Clones the repo on a fresh branch, has a coder agent implement the ticket,
-/// opens a draft PR, runs a self-review in parallel and posts the review as a
-/// PR comment. Trigger payload: repoFullName, ticketId, ticketTitle, ticketBody.
+/// push it and open a draft PR (`open_pull_request`), runs a self-review in
+/// parallel and posts the review as a PR comment from the server. Trigger
+/// payload: repoFullName, ticketId, ticketTitle, ticketBody.
 PipelineDefinition _ticketToPrSeed({
   required String workspaceId,
   required BuiltInAgentIds agentIds,
@@ -1448,24 +1315,34 @@ PipelineDefinition _ticketToPrSeed({
     PipelineStepDefinition(
       id: openPrId,
       kind: StepKind.listen,
-      bodyKey: BuiltInBodyKeys.bashScript,
+      bodyKey: BuiltInBodyKeys.promptAgent,
       triggers: const [
         StepTrigger(sourceStepIds: [implementId]),
       ],
-      config: const PipelineNodeConfig(
+      // An agent step, not a shell script: a pipeline shell step's forge token
+      // only reads. The agent's `git push` goes through the run gateway and
+      // `open_pull_request` opens the PR on the server, on the requester's own
+      // token. Both meet the workspace's push / open-PR rules.
+      config: PipelineNodeConfig(
+        agentId: agentIds.coder,
         label: 'Open draft PR',
-        inputKeys: ['repo_local_path', 'ticket_id', 'ticket_title'],
+        inputKeys: const ['repo_local_path', 'ticket_id', 'ticket_title'],
+        extras: _inRunSpace('Open draft PR'),
         outputKey: 'pr_number',
-        timeoutMs: 120000,
-        script:
-            'set -euo pipefail\n'
-            'cd "{{repo_local_path}}"\n'
-            'TICKET="{{ticket_id}}"\n'
-            'git push -u origin "agent/\$TICKET"\n'
-            'gh pr create --draft --title "{{ticket_title}}" '
-            '--body "Automated draft PR for ticket \$TICKET." '
-            '--head "agent/\$TICKET" >/dev/null\n'
-            "gh pr view \"agent/\$TICKET\" --json number --jq '.number'",
+        timeoutMs: 600000,
+        prompt:
+            'The change for ticket {{ticket_id}} ("{{ticket_title}}") is '
+            'committed in `{{repo_local_path}}` on branch '
+            '`agent/{{ticket_id}}`.\n\n'
+            '1. Push it: `git push -u origin agent/{{ticket_id}}`.\n'
+            '2. Open a draft pull request with the `open_pull_request` tool: '
+            'head `agent/{{ticket_id}}`, base the repository\'s default '
+            'branch, title "{{ticket_title}}", body "Automated draft PR for '
+            'ticket {{ticket_id}}.", draft true. Do not use `gh pr create`; it '
+            'cannot open pull requests from the sandbox.\n\n'
+            'If a pull request from that branch is already open (a re-run), '
+            'do not open another one.\n\n'
+            'Reply with ONLY the pull request number, digits only.',
       ),
       x: 840,
       y: 0,
@@ -1524,9 +1401,10 @@ PipelineDefinition _ticketToPrSeed({
     workspaceId: workspaceId,
     name: 'Ticket → draft PR',
     description:
-        'Clones a fresh branch, has a coder agent implement the ticket, opens '
-        'a draft PR, self-reviews and posts the review. Provide repo_full_name, '
-        'ticket_id, ticket_title, ticket_body.',
+        'Clones a fresh branch, has a coder agent implement the ticket, push '
+        'it and open a draft PR (open_pull_request), self-reviews and posts '
+        'the review. Provide repo_full_name, ticket_id, ticket_title, '
+        'ticket_body.',
     isBuiltIn: true,
     isEnabled: false,
     inputs: [
@@ -1754,8 +1632,12 @@ PipelineDefinition _prTriageSeed({
 
 // Tier 1 — Pre-merge approval gate (human-in-the-loop + router)
 
-/// Reviews a PR, then pauses for a lead/CEO approval before merging. Approve
-/// via the `approve_step` MCP tool, reject via `reject_step`.
+/// Reviews a PR, then pauses for a lead/CEO approval. Approve via the
+/// `approve_step` MCP tool, reject via `reject_step`; either way the server
+/// posts the decision on the PR (`prReview.comment`).
+///
+/// It never merges. No pipeline step merges as the bot: merging stays a
+/// person's action on the PR page, so an approval marks the PR ready for them.
 PipelineDefinition _preMergeGateSeed({
   required String workspaceId,
   required BuiltInAgentIds agentIds,
@@ -1763,7 +1645,7 @@ PipelineDefinition _preMergeGateSeed({
   const reviewId = 'review';
   const gateId = 'gate';
   const routeId = 'route';
-  const mergeId = 'merge';
+  const readyId = 'notify_ready';
   const rejectId = 'notify_changes';
 
   final steps = <PipelineStepDefinition>[
@@ -1814,7 +1696,8 @@ PipelineDefinition _preMergeGateSeed({
         prompt:
             'Review findings for PR #{{pr_number}} before merge:\n\n'
             '{{consolidated_findings}}\n\n'
-            'Approve to squash-merge, or reject to request changes.',
+            'Approve to mark it ready for a person to merge, or reject to '
+            'request changes.',
       ),
       x: 560,
       y: 60,
@@ -1839,23 +1722,20 @@ PipelineDefinition _preMergeGateSeed({
       y: 60,
     ),
     PipelineStepDefinition(
-      id: mergeId,
+      id: readyId,
       kind: StepKind.listen,
-      bodyKey: BuiltInBodyKeys.bashScript,
+      bodyKey: BuiltInBodyKeys.prReviewComment,
       triggers: const [
         StepTrigger(sourceStepIds: [routeId], routeKey: 'approved'),
       ],
       config: const PipelineNodeConfig(
-        label: 'Squash merge',
-        inputKeys: ['repo_full_name', 'pr_number'],
-        outputKey: 'merge_result',
-        timeoutMs: 120000,
-        // Merging is not idempotent — never auto-re-run it on crash-resume.
-        extras: {'idempotent': false},
-        script:
-            'set -euo pipefail\n'
-            'gh pr merge "{{pr_number}}" --repo "{{repo_full_name}}" --squash\n'
-            'echo "merged"',
+        label: 'Mark ready to merge',
+        inputKeys: ['repo_full_name', 'pr_number', 'consolidated_findings'],
+        extras: {
+          kPrCommentMessageKey:
+              'Approved at the pre-merge gate. This pull request is ready for '
+              'a maintainer to merge.\n\n{{consolidated_findings}}',
+        },
       ),
       x: 1120,
       y: 0,
@@ -1863,20 +1743,18 @@ PipelineDefinition _preMergeGateSeed({
     PipelineStepDefinition(
       id: rejectId,
       kind: StepKind.listen,
-      bodyKey: BuiltInBodyKeys.bashScript,
+      bodyKey: BuiltInBodyKeys.prReviewComment,
       triggers: const [
         StepTrigger(sourceStepIds: [routeId], routeKey: 'rejected'),
       ],
       config: const PipelineNodeConfig(
         label: 'Request changes',
-        inputKeys: ['repo_full_name', 'pr_number'],
-        outputKey: 'notify_result',
-        timeoutMs: 60000,
-        script:
-            'set -euo pipefail\n'
-            'gh pr comment "{{pr_number}}" --repo "{{repo_full_name}}" '
-            '--body "Changes requested by the pre-merge gate."\n'
-            'echo "notified"',
+        inputKeys: ['repo_full_name', 'pr_number', 'consolidated_findings'],
+        extras: {
+          kPrCommentMessageKey:
+              'Changes requested by the pre-merge gate.\n\n'
+              '{{consolidated_findings}}',
+        },
       ),
       x: 1120,
       y: 120,
@@ -1887,7 +1765,7 @@ PipelineDefinition _preMergeGateSeed({
       bodyKey: '_terminal_gate',
       // One trigger listing both branches — see `triage$terminal`.
       triggers: const [
-        StepTrigger(sourceStepIds: [mergeId, rejectId]),
+        StepTrigger(sourceStepIds: [readyId, rejectId]),
       ],
     ),
   ];
@@ -1897,9 +1775,10 @@ PipelineDefinition _preMergeGateSeed({
     workspaceId: workspaceId,
     name: 'Pre-merge approval gate',
     description:
-        'Reviews a PR then pauses for lead approval before squash-merging. '
-        'Approve via approve_step, reject via reject_step. Provide '
-        'repo_full_name + pr_number.',
+        'Reviews a PR then pauses for lead approval, and comments the '
+        'decision on the PR: ready for a person to merge, or changes '
+        'requested. It never merges. Approve via approve_step, reject via '
+        'reject_step. Provide repo_full_name + pr_number.',
     isBuiltIn: true,
     isEnabled: false,
     inputs: [_repoFullNameInput(), _prNumberInput()],

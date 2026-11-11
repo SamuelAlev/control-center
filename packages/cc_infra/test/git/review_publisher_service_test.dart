@@ -13,6 +13,10 @@ import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/review_node_payload.dart';
 import 'package:cc_infra/src/git/review_publisher_service.dart';
+import 'package:cc_infra/src/network/github/github_forge_pr_client.dart';
+import 'package:cc_infra/src/network/github_api_client.dart';
+import 'package:cc_infra/testing/http_client.dart';
+import 'package:rhttp/rhttp.dart' show HttpMethod;
 import 'package:test/test.dart';
 
 /// Exercises [ReviewPublisherService] with faked repositories and a
@@ -126,6 +130,75 @@ void main() {
         throwsA(isA<StateError>()),
       );
       expect(github.submits, isEmpty);
+    });
+  });
+
+  group('ReviewPublisherService.publish — the approval chokepoint', () {
+    late TestHttpClient http;
+    late List<int> guarded;
+    late ReviewPublisherService onGitHub;
+
+    setUp(() {
+      guarded = [];
+      http = TestHttpClient(
+        handler: (request) => request.method == HttpMethod.post
+            ? httpTextResponse(request, const {'id': 7})
+            // The PR's file list: empty, so every anchor is accepted.
+            : httpTextResponse(request, const <Object>[]),
+      );
+      final client = GitHubForgePrClient(
+        client: GitHubApiClient(http),
+        owner: 'owner',
+        repo: 'repo',
+        approvalGuard: (_, prNumber) async {
+          guarded.add(prNumber);
+          throw const ValidationException(
+            'An agent opened this pull request at your request.',
+          );
+        },
+      );
+      onGitHub = ReviewPublisherService(
+        forgeClientFor:
+            (
+              actingUserId, {
+              required workspaceId,
+              required repoFullName,
+            }) async => client,
+        messaging: messaging,
+        reviewSpaces: reviewSpaces,
+      );
+      reviewSpaces.association = association();
+      messaging.messages = [];
+    });
+
+    test('an approve-on-ship publish meets the forge client\'s approval '
+        'guard before anything is sent', () async {
+      await expectLater(
+        onGitHub.publish(
+          workspaceId: 'ws1',
+          spaceId: 'ch1',
+          approveOnShip: true,
+          actingUserId: 'alice',
+        ),
+        throwsA(isA<ValidationException>()),
+      );
+      expect(guarded, [42]);
+      expect(http.requests.where((r) => r.method == HttpMethod.post), isEmpty);
+      expect(reviewSpaces.updatedStatus, isNull);
+    });
+
+    test('a comment review never asks the guard', () async {
+      final result = await onGitHub.publish(
+        workspaceId: 'ws1',
+        spaceId: 'ch1',
+        actingUserId: 'alice',
+      );
+      expect(result.event, 'COMMENT');
+      expect(guarded, isEmpty);
+      expect(
+        http.requests.where((r) => r.method == HttpMethod.post),
+        hasLength(1),
+      );
     });
   });
 
@@ -335,6 +408,53 @@ void main() {
         expect(github.submits.single.body, isNot(startsWith('[cc for @octo]')));
       },
     );
+
+    test('agent text automation posts pings no one; the prefix still names '
+        'the person', () async {
+      messaging.messages = [
+        nodeMessage(
+          'm1',
+          payload: payload(confirmedBy: ['peer']),
+          senderId: 'a1',
+          content: 'null check missing, cc @acme/security and @mallory',
+        ),
+      ];
+      for (final asPerson in [true, false]) {
+        github.submits.clear();
+        await attributing(
+          asPerson: asPerson,
+        ).publish(workspaceId: 'ws1', spaceId: 'ch1');
+        final submit = github.submits.single;
+        final bodies = [submit.body, for (final c in submit.comments) c.body];
+        expect(bodies.join(), contains('null check missing'));
+        for (final body in bodies) {
+          expect(body, isNot(contains('@acme/security')));
+          expect(body, isNot(contains('@mallory')));
+        }
+        if (asPerson) {
+          expect(submit.body, startsWith('[cc for @octo] '));
+        }
+      }
+    });
+
+    test('a person publishing their own review keeps their mentions', () async {
+      messaging.messages = [
+        nodeMessage(
+          'm1',
+          payload: payload(confirmedBy: ['peer']),
+          senderId: 'a1',
+          content: 'null check missing, cc @mallory',
+        ),
+      ];
+      await attributing(
+        asPerson: true,
+      ).publish(workspaceId: 'ws1', spaceId: 'ch1', actingUserId: 'alice');
+      final submit = github.submits.single;
+      expect(
+        [submit.body, for (final c in submit.comments) c.body].join(),
+        contains('@mallory'),
+      );
+    });
 
     test('automation on another forge carries no GitHub attribution', () async {
       github.forge = ForgeHost.gitlab;

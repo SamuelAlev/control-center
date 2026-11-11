@@ -77,6 +77,11 @@ class CcServer {
   /// Periodic newsfeed-refresh timer (cancelled on [shutdown]).
   Timer? _newsfeedRefreshTimer;
 
+  /// The database work boot starts without awaiting it (the newsfeed sweep,
+  /// workspace seeding, the template reconcile): drained on [shutdown]
+  /// before the databases close.
+  _BootWork? _bootWork;
+
   /// The open-PR poller behind the live PR list (null when the server holds
   /// no gh token). Disposed on [shutdown].
   OpenPrPollingService? _openPrPoller;
@@ -221,6 +226,17 @@ class CcServer {
   /// delivering to for a while.
   ChatConnector? _chatConnector;
 
+  /// The GitHub and GitLab/Bitbucket HTTP clients. Closed on [shutdown] once
+  /// the RPC listener has stopped, so no request is left riding one.
+  GitHubClients? _githubClients;
+  _ForgeHttpClients? _forgeHttpClients;
+
+  /// Whether [shutdown] released the forge HTTP clients.
+  @visibleForTesting
+  bool get forgeClientsClosed =>
+      (_githubClients?.isClosed ?? false) &&
+      (_forgeHttpClients?.isClosed ?? false);
+
   /// Per-step cap for [shutdown]. Each teardown step is bounded to this so a
   /// single stuck service (a stdio MCP child ignoring SIGTERM, a tunnel
   /// subprocess, drift's background isolate blocked on an in-flight query)
@@ -343,6 +359,13 @@ class CcServer {
       _astParsers?.dispose();
       _pairedDeviceWatch?.dispose();
     });
+    // Boot's unawaited database work stops at its next unit and is waited
+    // for, so no transaction of it is still open when the databases close.
+    await guard(
+      'bootWork',
+      () async => _bootWork?.drain(),
+      timeout: const Duration(seconds: 5),
+    );
     await step('scheduler', () async => _fleetScheduler?.dispose());
     await step(
       'skillEvaluations',
@@ -417,6 +440,10 @@ class CcServer {
     // per open workspace.)
     await guard('rpc', rpc.stop);
     await guard('mcpControl', _mcpControl.dispose);
+    await guard('forgeClients', () async {
+      _githubClients?.close();
+      _forgeHttpClients?.close();
+    });
     await guard('workspaceDbs', _workspaceDbs.closeAll);
     await guard('globalDb', _globalDb.close);
     // The rotating file sink is a module global with no handle to close (it
@@ -425,5 +452,31 @@ class CcServer {
     // otherwise keep writing the new server's log lines into the old
     // instance's directory.
     _fileSink = null;
+  }
+}
+
+/// Database work boot starts and does not await.
+///
+/// Drift rolls back a transaction still open when its database closes, from
+/// its own isolate, and that rollback fails against the closed database; so
+/// [CcServer.shutdown] [drain]s this first: work checks [stopping] between
+/// units and is then waited for.
+class _BootWork {
+  final Set<Future<void>> _pending = {};
+  bool _stopping = false;
+
+  /// Whether shutdown has begun: long work stops at its next unit.
+  bool get stopping => _stopping;
+
+  /// Tracks [work] (which handles its own errors) until it completes.
+  void track(Future<void> work) {
+    _pending.add(work);
+    unawaited(work.whenComplete(() => _pending.remove(work)));
+  }
+
+  /// Marks [stopping] and waits for everything [track]ed.
+  Future<void> drain() {
+    _stopping = true;
+    return Future.wait(_pending.toList());
   }
 }

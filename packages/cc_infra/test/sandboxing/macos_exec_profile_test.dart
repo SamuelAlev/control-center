@@ -1,6 +1,6 @@
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
 import 'package:cc_infra/src/sandboxing/macos_sandbox.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:test/test.dart';
 
 /// Pins the order of the Seatbelt `process-exec` rules. Seatbelt is

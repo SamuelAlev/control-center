@@ -110,13 +110,13 @@ void main() {
     for (final o in ops) {
       for (final role in WorkspaceRole.values) {
         test('${o.name} × ${role.wireName}', () {
-          final legacy = role.atLeast(o.effectiveMinRole);
+          final floor = role.atLeast(o.effectiveMinRole);
           final viaCatalog = resolver.allows(principal(role), o.permission);
           expect(
             viaCatalog,
-            legacy,
+            floor,
             reason:
-                'catalog says $viaCatalog, role floor says $legacy for '
+                'catalog says $viaCatalog, role floor says $floor for '
                 '${o.name} (floor ${o.effectiveMinRole.wireName}, '
                 'permission ${o.permission.wire})',
           );
@@ -255,8 +255,7 @@ void main() {
       expect(denyPush.wire, 'custom:r-no-members');
       expect(RoleDefinition.customIdOf('custom:r-no-members'), 'r-no-members');
       expect(RoleDefinition.customIdOf('admin'), isNull);
-      // An old client meeting a custom role parses null and fails safe to
-      // guest — that is what makes rollout safe.
+      // A custom role is not a built-in role: the built-in parser refuses it.
       expect(WorkspaceRole.fromWire('custom:r-no-members'), isNull);
     });
   });

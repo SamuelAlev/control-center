@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_domain/core/domain/services/slugify.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:cc_infra/src/workspaces/workspace_filesystem_service.dart';
 import 'package:flutter_test/flutter_test.dart';

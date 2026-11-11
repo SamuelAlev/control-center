@@ -64,7 +64,7 @@ void main() {
       isMember: (_, _) async => true,
       canViewNotification: (_, _) async => true,
       ownerUserId: 'alice',
-      viewerLogin: (_) async => '',
+      viewerLogin: (_, _) async => '',
       vapid: (await VapidIdentity.generate()).identity,
     );
     for (final (id, user, status) in [
@@ -187,7 +187,7 @@ void main() {
         isMember: (_, _) async => ++membershipReads == 1,
         canViewNotification: (_, _) async => true,
         ownerUserId: 'alice',
-        viewerLogin: (_) async => '',
+        viewerLogin: (_, _) async => '',
         vapid: (await VapidIdentity.generate()).identity,
         transport: transport,
       );
@@ -248,13 +248,14 @@ void main() {
               isMember: true,
               repoIdsByCoordinate: const {'acme/private': 'repo-private'},
               readableRepoIds: const {},
+              prVisibleRepoIds: const {},
               canReadSpace: (_) async => false,
             );
             checked.complete();
             return visible.isNotEmpty;
           },
           ownerUserId: 'alice',
-          viewerLogin: (_) async => '',
+          viewerLogin: (_, _) async => '',
           vapid: (await VapidIdentity.generate()).identity,
           transport: transport,
         );
@@ -299,11 +300,12 @@ void main() {
             isMember: true,
             repoIdsByCoordinate: const {'acme/private': 'repo-private'},
             readableRepoIds: grants,
+            prVisibleRepoIds: grants,
             canReadSpace: (_) async => grants.contains('repo-private'),
           )).isNotEmpty;
         },
         ownerUserId: 'alice',
-        viewerLogin: (_) async => '',
+        viewerLogin: (_, _) async => '',
         vapid: (await VapidIdentity.generate()).identity,
         transport: transport,
       );
@@ -357,11 +359,12 @@ void main() {
           isMember: true,
           repoIdsByCoordinate: const {'acme/private': 'repo-private'},
           readableRepoIds: const {'repo-private'},
+          prVisibleRepoIds: const {'repo-private'},
           canReadSpace: (_) async => true,
         )).isNotEmpty;
       },
       ownerUserId: 'alice',
-      viewerLogin: (_) async => '',
+      viewerLogin: (_, _) async => '',
       vapid: (await VapidIdentity.generate()).identity,
       transport: transport,
     );
@@ -402,7 +405,7 @@ void main() {
         isMember: (_, _) async => true,
         canViewNotification: (_, _) async => true,
         ownerUserId: 'alice',
-        viewerLogin: (_) async => '',
+        viewerLogin: (_, _) async => '',
         vapid: (await VapidIdentity.generate()).identity,
         transport: transport,
       );

@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/repos/presentation/unlinked_repo_dialog.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -19,6 +20,7 @@ final _current = Workspace(
 Widget _launcher(
   void Function(UnlinkedRepoAction?) onResult, {
   Workspace? currentWorkspace,
+  bool canCreateWorkspace = true,
 }) => Builder(
   builder: (context) => CcButton(
     onPressed: () async => onResult(
@@ -26,6 +28,7 @@ Widget _launcher(
         context: context,
         repoFullName: 'SamuelAlev/control-center',
         currentWorkspace: currentWorkspace,
+        canCreateWorkspace: canCreateWorkspace,
       ),
     ),
     child: const Text('launch'),
@@ -135,5 +138,25 @@ void main() {
     final title = tester.getCenter(find.textContaining('Open source'));
     // The radio leads the row, so under RTL it sits right of the title.
     expect(radio.dx, greaterThan(title.dx));
+  });
+
+  testWidgets('offers no new workspace to someone who may not create one', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      testWrapWithToastOverlay(
+        _launcher(
+          (_) {},
+          currentWorkspace: _current,
+          canCreateWorkspace: false,
+        ),
+      ),
+    );
+    await tester.tap(find.text('launch'));
+    await tester.pumpAndSettle();
+
+    final l10n = AppLocalizations.of(tester.element(find.byType(CcDialog)));
+    expect(find.text(l10n.repoLinkUnlinkedCreate), findsNothing);
+    expect(find.text(l10n.repoLinkUnlinkedAddTo('Open source')), findsOneWidget);
   });
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
 import 'package:cc_domain/features/environments/domain/entities/space_environment.dart';
+import 'package:cc_domain/features/environments/domain/services/environment_definition_validator.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_command.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
@@ -95,6 +96,24 @@ Map<String, dynamic> _full() => {
       'isolate': 'home',
     },
   ],
+};
+
+Map<String, dynamic> _cli([Map<String, dynamic> extra = const {}]) => {
+  'kind': 'cli',
+  'id': 'tool',
+  'verbs': {
+    'create': ['acme', 'up', '{name}'],
+    'status': ['acme', 'status', '{name}', '--json'],
+    'destroy': ['acme', 'down', '{name}'],
+  },
+  ...extra,
+};
+
+Map<String, dynamic> _app([Map<String, dynamic> extra = const {}]) => {
+  'kind': 'app',
+  'id': 'desktop',
+  'command': ['dist/studio'],
+  ...extra,
 };
 
 void main() {
@@ -195,51 +214,68 @@ void main() {
       expect(definition.namedPorts, {'web', 'e2e'});
     });
 
-    test('malformed shapes are FormatExceptions, never TypeErrors', () {
-      for (final bad in <Map<String, dynamic>>[
-        {},
-        {'name': 'x', 'repos': {}, 'components': []},
-        {
-          'name': 'x',
-          'repos': {'a': 1},
-          'components': [],
-        },
-        {
-          ..._minimal(),
-          'components': [
-            {'kind': 'nope', 'id': 'x'},
-          ],
-        },
-        {
-          ..._minimal(),
-          'components': [
-            {
-              'kind': 'task',
-              'id': 'x',
-              'when': ['never'],
-              'command': ['a'],
-            },
-          ],
-        },
+    test('malformed shapes throw their issues, never TypeErrors', () {
+      for (final (bad, path) in <(Map<String, dynamic>, String)>[
+        ({}, 'components'),
+        ({..._minimal(), 'repos': {}}, 'repos'),
+        (
+          {
+            ..._minimal(),
+            'repos': {'a': 1},
+          },
+          'repos.a',
+        ),
+        (
+          {
+            ..._minimal(),
+            'components': [
+              {'kind': 'nope', 'id': 'x'},
+            ],
+          },
+          'components[0].kind',
+        ),
+        (
+          {
+            ..._minimal(),
+            'components': [
+              {
+                'kind': 'task',
+                'id': 'x',
+                'when': ['never'],
+                'command': ['a'],
+              },
+            ],
+          },
+          'components[0].when[0]',
+        ),
       ]) {
         expect(
           () => EnvironmentDefinition.fromJson(bad),
-          throwsFormatException,
+          throwsA(
+            isA<EnvironmentDefinitionException>().having(
+              (error) => error.issues.map((issue) => issue.path),
+              'paths',
+              contains(path),
+            ),
+          ),
+          reason: path,
         );
       }
     });
 
-    test('the first present role is the default working directory', () {
+    test('the declared default role, never another one present', () {
       final definition = EnvironmentDefinition.fromJson(_full());
       final deps = definition.component('deps')!;
       final test = definition.component('test')!;
       expect(definition.roleFor(deps, {'app', 'e2e'}), 'app');
-      expect(definition.roleFor(deps, {'e2e'}), 'e2e');
-      expect(definition.roleFor(test, {'app'}), 'e2e');
+      expect(definition.roleFor(deps, {'e2e'}), isNull);
+      expect(definition.roleFor(test, {'app', 'e2e'}), 'e2e');
+      expect(definition.roleFor(test, {'app'}), isNull);
     });
 
     test('a definition of worktree tasks only has no stack', () {
       final definition = EnvironmentDefinition.fromJson({
+        'contract': 1,
         'name': 'Setup only',
         'repos': {
           'app': {'repoId': 'r'},
@@ -327,23 +363,18 @@ void main() {
     });
 
     test('names every role with no repo', () {
-      expect(
-        () => EnvironmentDefinition.fromJson({
-          'repos': {
-            'app': {'anchor': true},
-            'bound': {'repoId': 'repo-1'},
-            'tests': <String, dynamic>{},
-          },
-          'components': <Object?>[],
-        }),
-        throwsA(
-          isA<FormatException>().having(
-            (error) => error.message,
-            'message',
-            'Pick a repo for: app, tests',
-          ),
-        ),
-      );
+      final issues = parseEnvironmentDefinition({
+        ..._minimal(),
+        'repos': {
+          'app': {'anchor': true},
+          'bound': {'repoId': 'repo-1'},
+          'tests': <String, dynamic>{},
+        },
+      }).issues;
+      expect(issues, const [
+        EnvironmentDefinitionIssue('repos.app.repoId', 'Pick a repo'),
+        EnvironmentDefinitionIssue('repos.tests.repoId', 'Pick a repo'),
+      ]);
     });
 
     test('NODE_OPTIONS may set heap limits and nothing else', () {
@@ -770,6 +801,683 @@ void main() {
     });
   });
 
+  group('strict parsing', () {
+    List<EnvironmentDefinitionIssue> shape(Map<String, dynamic> json) =>
+        parseEnvironmentDefinition(json).issues;
+    List<String> shapePaths(Map<String, dynamic> json) =>
+        shape(json).map((issue) => issue.path).toList();
+    List<String> allPaths(Map<String, dynamic> json) =>
+        checkEnvironmentDefinition(json).map((issue) => issue.path).toList();
+    Map<String, dynamic> withComponents(List<Map<String, dynamic>> list) =>
+        _minimal()..['components'] = list;
+    Map<String, dynamic> process(Map<String, dynamic> extra) => {
+      'kind': 'process',
+      'id': 'web',
+      'port': 'web',
+      'command': ['vite'],
+      ...extra,
+    };
+
+    test('every definition here parses with no issue', () {
+      expect(shape(_minimal()), isEmpty);
+      expect(shape(_full()), isEmpty);
+      expect(shape(withComponents([_cli()])), isEmpty);
+    });
+
+    test('an unknown field is named, with the field it is close to', () {
+      final issues = shape({..._minimal(), 'polcy': <String, dynamic>{}});
+      expect(issues.single.path, 'polcy');
+      expect(issues.single.message, contains('Did you mean "policy"'));
+      expect(
+        shapePaths(
+          withComponents([
+            {
+              'kind': 'compose',
+              'id': 'stack',
+              'servics': ['db'],
+            },
+          ]),
+        ),
+        ['components[0].servics'],
+      );
+    });
+
+    test(r'only the top level tolerates $schema', () {
+      expect(
+        shape({..._minimal(), r'$schema': 'https://acme.test/s'}),
+        isEmpty,
+      );
+      expect(
+        shapePaths({
+          ..._minimal(),
+          'policy': {r'$schema': 'x'},
+        }),
+        [r'policy.$schema'],
+      );
+    });
+
+    test('collects every issue in one pass', () {
+      expect(
+        shapePaths({
+          'name': 3,
+          'repos': {
+            'app': {'repoId': 'r', 'anchor': 'yes'},
+          },
+          'placement': 'vm',
+          'components': [
+            {'kind': 'compose'},
+          ],
+        }),
+        containsAll([
+          'contract',
+          'name',
+          'repos.app.anchor',
+          'placement',
+          'components[0].id',
+        ]),
+      );
+    });
+
+    test('a misspelt choice names the allowed values', () {
+      for (final (json, path) in <(Map<String, dynamic>, String)>[
+        ({..._minimal(), 'placement': 'vm'}, 'placement'),
+        (
+          {
+            ..._minimal(),
+            'routing': {'mode': 'tools'},
+          },
+          'routing.mode',
+        ),
+        (
+          {
+            ..._minimal(),
+            'repos': {
+              'app': {'repoId': 'r', 'anchor': true, 'whenMissing': 'add'},
+            },
+          },
+          'repos.app.whenMissing',
+        ),
+        (
+          {
+            ..._minimal(),
+            'policy': {'autoCreate': 'prspaces'},
+          },
+          'policy.autoCreate',
+        ),
+        (
+          {
+            ..._minimal(),
+            'policy': {'forkPrs': 'vm'},
+          },
+          'policy.forkPrs',
+        ),
+        (
+          withComponents([
+            process({'restart': 'on_failure'}),
+          ]),
+          'components[0].restart',
+        ),
+        (
+          withComponents([
+            _app({'input': 'fg'}),
+          ]),
+          'components[0].input',
+        ),
+        (
+          withComponents([
+            _app({'isolate': 'tmp'}),
+          ]),
+          'components[0].isolate',
+        ),
+        (
+          {
+            ..._minimal(),
+            'options': [
+              {'key': 'seed', 'type': 'boolean'},
+            ],
+          },
+          'options[0].type',
+        ),
+        (
+          withComponents([
+            {
+              'kind': 'task',
+              'id': 'deps',
+              'when': ['provison'],
+              'command': ['pnpm', 'i'],
+            },
+          ]),
+          'components[0].when[0]',
+        ),
+      ]) {
+        final issues = shape(json);
+        expect(issues.map((issue) => issue.path), [path], reason: path);
+        expect(issues.single.message, contains('Use one of'), reason: path);
+      }
+      expect(
+        shape(
+          withComponents([
+            {
+              'kind': 'task',
+              'id': 'deps',
+              'when': ['provison'],
+              'command': ['pnpm', 'i'],
+            },
+          ]),
+        ).single.message,
+        contains('Did you mean "provision"'),
+      );
+    });
+
+    test('a bool is a real bool', () {
+      expect(
+        shapePaths({
+          ..._minimal(),
+          'repos': {
+            'app': {'repoId': 'r', 'anchor': 'true'},
+          },
+          'routing': {'mode': 'tool', 'tls': 'yes'},
+          'components': [
+            process({
+              'endpoint': {'role': 'web', 'primary': 'true'},
+            }),
+          ],
+        }),
+        ['repos.app.anchor', 'routing.tls', 'components[0].endpoint.primary'],
+      );
+    });
+
+    test('a missing id is an issue at its path', () {
+      expect(
+        shapePaths({
+          ..._minimal(),
+          'checks': [
+            {
+              'label': 'Docker',
+              'command': ['docker', 'info'],
+            },
+          ],
+          'components': [
+            {'kind': 'compose'},
+          ],
+        }),
+        ['checks[0].id', 'components[0].id'],
+      );
+    });
+
+    test('contract is required and must be 1', () {
+      expect(shapePaths({..._minimal()}..remove('contract')), ['contract']);
+      expect(shapePaths({..._minimal(), 'contract': '1'}), ['contract']);
+      expect(allPaths({..._minimal(), 'contract': 2}), ['contract']);
+    });
+
+    test('role names are lower-case identifiers', () {
+      for (final key in ['App', 'web-ui', '1st']) {
+        expect(
+          shapePaths({
+            ..._minimal(),
+            'repos': {
+              key: {'repoId': 'r', 'anchor': true},
+            },
+          }),
+          ['repos.$key'],
+          reason: key,
+        );
+      }
+    });
+
+    test('env values are strings', () {
+      expect(
+        shapePaths({
+          ..._minimal(),
+          'env': {'PORT_COUNT': 3},
+          'components': [
+            {
+              'kind': 'compose',
+              'id': 'stack',
+              'env': {'DEBUG': true},
+            },
+          ],
+        }),
+        ['env.PORT_COUNT', 'components[0].env.DEBUG'],
+      );
+    });
+
+    test('a port is a name in port, or names in ports', () {
+      expect(
+        shapePaths(
+          withComponents([
+            process({'port': 3000}),
+          ]),
+        ),
+        ['components[0].port'],
+      );
+      expect(
+        shapePaths(
+          withComponents([
+            process({
+              'port': ['web'],
+            }),
+          ]),
+        ),
+        ['components[0].port'],
+      );
+      expect(
+        shapePaths(
+          withComponents([
+            process({
+              'port': 'web',
+              'ports': ['hmr'],
+            }),
+          ]),
+        ),
+        isEmpty,
+      );
+    });
+
+    test('compose and cli refuse the ports they would ignore', () {
+      expect(
+        shapePaths(
+          withComponents([
+            {'kind': 'compose', 'id': 'stack', 'port': 'db'},
+          ]),
+        ),
+        ['components[0].port'],
+      );
+      expect(
+        shapePaths(
+          withComponents([
+            _cli({
+              'ports': ['web'],
+            }),
+          ]),
+        ),
+        ['components[0].ports'],
+      );
+    });
+
+    test('an app refuses after, which it would ignore', () {
+      expect(
+        shapePaths(
+          withComponents([
+            {'kind': 'compose', 'id': 'stack'},
+            _app({
+              'after': ['stack'],
+            }),
+          ]),
+        ),
+        ['components[1].after'],
+      );
+    });
+
+    test('window matching is gone', () {
+      expect(
+        shapePaths(
+          withComponents([
+            _app({
+              'window': {
+                'match': {'bundleId': 'com.acme.studio'},
+              },
+            }),
+          ]),
+        ),
+        ['components[0].window'],
+      );
+    });
+
+    test('a component runs command or script, as a list of lines', () {
+      expect(
+        shapePaths(
+          withComponents([
+            {
+              'kind': 'task',
+              'id': 'seed',
+              'when': ['create'],
+              'script': 'pnpm seed',
+            },
+          ]),
+        ),
+        ['components[0].script'],
+      );
+      expect(
+        shapePaths(
+          withComponents([
+            {
+              'kind': 'task',
+              'id': 'seed',
+              'when': ['create'],
+              'script': ['pnpm seed'],
+              'command': ['pnpm', 'seed'],
+            },
+          ]),
+        ),
+        ['components[0].script'],
+      );
+      expect(
+        shapePaths(
+          withComponents([
+            {
+              'kind': 'task',
+              'id': 'seed',
+              'when': ['create'],
+            },
+          ]),
+        ),
+        ['components[0].command'],
+      );
+      expect(
+        shapePaths(
+          withComponents([
+            process({
+              'command': [
+                'vite',
+                {'if': 'opt.x'},
+              ],
+            }),
+          ]),
+        ),
+        ['components[0].command[1].args'],
+      );
+    });
+
+    test('a tool maps the verbs it can not do without', () {
+      final cli = _cli();
+      (cli['verbs'] as Map).remove('destroy');
+      expect(shapePaths(withComponents([cli])), [
+        'components[0].verbs.destroy',
+      ]);
+    });
+
+    test('timeouts are positive', () {
+      expect(
+        allPaths(
+          withComponents([
+            {'kind': 'compose', 'id': 'stack', 'timeout': 0},
+            {
+              'kind': 'task',
+              'id': 'seed',
+              'when': ['create'],
+              'command': ['seed'],
+              'timeout': 0,
+            },
+            process({
+              'ready': {'timeout': 0},
+            }),
+          ]),
+        ),
+        containsAll([
+          'components[0].timeout',
+          'components[1].timeout',
+          'components[2].ready.timeout',
+        ]),
+      );
+      expect(
+        allPaths(
+          withComponents([
+            _cli({
+              'readyTimeout': 0,
+              'timeouts': {'status': 0},
+            }),
+          ]),
+        ),
+        ['components[0].timeouts.status', 'components[0].readyTimeout'],
+      );
+    });
+
+    test('policy numbers stay in range', () {
+      expect(
+        allPaths({
+          ..._minimal(),
+          'policy': {'idleStopMinutes': -1, 'maxRunning': -1, 'rigTtlHours': 0},
+        }),
+        ['policy.idleStopMinutes', 'policy.maxRunning', 'policy.rigTtlHours'],
+      );
+      expect(
+        allPaths({
+          ..._minimal(),
+          'policy': {'rigTtlHours': 721},
+        }),
+        ['policy.rigTtlHours'],
+      );
+      expect(
+        allPaths({
+          ..._minimal(),
+          'policy': {'idleStopMinutes': 0, 'maxRunning': 0, 'rigTtlHours': 720},
+        }),
+        isEmpty,
+      );
+      expect(
+        allPaths({
+          ..._minimal(),
+          'naming': {'maxLength': 64},
+        }),
+        ['naming.maxLength'],
+      );
+    });
+
+    test('regular expressions compile at save', () {
+      expect(
+        allPaths({
+          ..._minimal(),
+          'checks': [
+            {
+              'id': 'docker',
+              'command': ['docker', 'info'],
+              'expectOutput': '(unclosed',
+            },
+          ],
+          'components': [
+            process({
+              'ready': {'logMatch': '[ready'},
+            }),
+          ],
+        }),
+        ['checks[0].expectOutput', 'components[0].ready.logMatch'],
+      );
+    });
+
+    test('check ids are unique', () {
+      Map<String, dynamic> check() => {
+        'id': 'docker',
+        'command': ['docker', 'info'],
+      };
+      expect(
+        allPaths({
+          ..._minimal(),
+          'checks': [check(), check()],
+        }),
+        ['checks[1].id'],
+      );
+    });
+
+    test('ready probes are a URL and a host:port', () {
+      List<String> ready(Map<String, dynamic> probe) => allPaths(
+        withComponents([
+          process({'ready': probe}),
+        ]),
+      );
+
+      expect(ready({'http': '/health'}), ['components[0].ready.http']);
+      expect(ready({'tcp': '{port.web}'}), ['components[0].ready.tcp']);
+      expect(
+        ready({
+          'http': 'http://127.0.0.1:{port.web}/health',
+          'tcp': '127.0.0.1:{port.web}',
+        }),
+        isEmpty,
+      );
+      expect(ready({'tcp': 'localhost:5432'}), isEmpty);
+    });
+
+    test('endpoint roles are slugs, unique, with one primary', () {
+      expect(
+        allPaths(
+          withComponents([
+            process({
+              'endpoint': {'role': 'Web'},
+            }),
+          ]),
+        ),
+        ['components[0].endpoint.role'],
+      );
+      expect(
+        allPaths(
+          withComponents([
+            process({
+              'endpoint': {'role': 'web', 'primary': true},
+            }),
+            {
+              'kind': 'process',
+              'id': 'api',
+              'port': 'api',
+              'command': ['api'],
+              'endpoint': {'role': 'web', 'primary': true},
+            },
+          ]),
+        ),
+        ['components[1].endpoint.role', 'components[1].endpoint.primary'],
+      );
+    });
+
+    test('option defaults fit the option', () {
+      List<String> option(Map<String, dynamic> json) => allPaths({
+        ..._minimal(),
+        'options': [
+          {'key': 'x', ...json},
+        ],
+      });
+
+      expect(option({'type': 'bool', 'default': 'yes'}), [
+        'options[0].default',
+      ]);
+      expect(option({'type': 'string', 'agentDefault': 3}), [
+        'options[0].agentDefault',
+      ]);
+      expect(option({'type': 'enum'}), ['options[0].values']);
+      expect(
+        option({
+          'type': 'enum',
+          'values': ['a', 'b'],
+          'default': 'c',
+        }),
+        ['options[0].default'],
+      );
+      expect(
+        option({
+          'type': 'multi',
+          'values': ['a', 'b'],
+          'default': 'a',
+          'agentDefault': ['a', 'c'],
+        }),
+        ['options[0].default', 'options[0].agentDefault'],
+      );
+      expect(
+        option({
+          'type': 'string',
+          'values': ['a'],
+        }),
+        ['options[0].values'],
+      );
+      expect(
+        option({
+          'type': 'multi',
+          'values': ['a', 'b'],
+          'default': ['a'],
+          'agentDefault': <String>[],
+        }),
+        isEmpty,
+      );
+    });
+
+    test('routing.domain is checked in every mode, the tool fields only fit '
+        'tool mode', () {
+      expect(
+        allPaths({
+          ..._minimal(),
+          'routing': {
+            'domain': 'example.com',
+            'upstream': '127.0.0.1:443',
+            'tls': true,
+            'caFile': '~/.acme/ca.crt',
+          },
+        }),
+        ['routing.domain', 'routing.upstream', 'routing.tls', 'routing.caFile'],
+      );
+      expect(
+        allPaths({
+          ..._minimal(),
+          'routing': {'domain': 'acme.test'},
+        }),
+        isEmpty,
+      );
+    });
+
+    test('a statusMap is checked at save', () {
+      final issues = shape(
+        withComponents([
+          _cli({
+            'statusMap': {
+              'state': [
+                {
+                  'when': {'path': '/status/ready', 'equal': true},
+                  'state': 'ready',
+                },
+                {'state': 'up'},
+                {
+                  'when': {'path': 'status/phase', 'equals': 'failed'},
+                  'state': 'failed',
+                },
+                {
+                  'when': {'any': '/containers', 'none': '/containers'},
+                  'state': 'stopped',
+                },
+              ],
+              'endpoints': [
+                {'role': '', 'url': '/urls/app'},
+                {'role': 'db'},
+              ],
+              'services': 'containers/*/service',
+            },
+          }),
+        ]),
+      );
+      const map = 'components[0].statusMap';
+      expect(issues.map((issue) => issue.path), [
+        '$map.state[0].when.equal',
+        '$map.state[1].state',
+        '$map.state[2].when.path',
+        '$map.state[3].when',
+        '$map.endpoints[0].role',
+        '$map.endpoints[1]',
+        '$map.services',
+      ]);
+      expect(issues.first.message, contains('Did you mean "equals"'));
+    });
+
+    test('a statusMap on its own throws its issues', () {
+      expect(
+        () => EnvironmentStatusMap.fromJson({
+          'state': [
+            {'state': 'bogus'},
+          ],
+        }),
+        throwsA(
+          isA<EnvironmentDefinitionException>().having(
+            (error) => error.issues.single.path,
+            'path',
+            'statusMap.state[0].state',
+          ),
+        ),
+      );
+    });
+
+    test('a definition that is not an object is one issue', () {
+      expect(parseEnvironmentDefinition([]).issues, const [
+        EnvironmentDefinitionIssue('', 'A definition must be a JSON object'),
+      ]);
+    });
+  });
+
   group('EnvironmentValues', () {
     const values = EnvironmentValues({
       'name': 'fix',
@@ -1128,5 +1836,81 @@ void main() {
       ).timeoutSeconds,
       300,
     );
+  });
+
+  group('the default role', () {
+    List<(String, String)> issuesOf(
+      List<Map<String, dynamic>> components, {
+      bool appRequired = false,
+      bool otherAnchor = true,
+    }) {
+      final json = _minimal()
+        ..['repos'] = {
+          'app': {'repoId': 'repo-1', 'anchor': true, 'required': appRequired},
+          'e2e': {'repoId': 'repo-2', 'anchor': otherAnchor, 'required': true},
+        }
+        ..['components'] = components;
+      return [
+        for (final issue in validateEnvironmentDefinition(
+          EnvironmentDefinition.fromJson(json),
+        ))
+          (issue.path, issue.message),
+      ];
+    }
+
+    test('relying on an optional first role is an issue there', () {
+      expect(
+        issuesOf([
+          {
+            'kind': 'task',
+            'id': 'named',
+            'when': ['start'],
+            'cwd': {'role': 'e2e'},
+            'command': ['a'],
+          },
+          {
+            'kind': 'task',
+            'id': 'seed',
+            'when': ['start'],
+            'command': ['a'],
+          },
+        ]),
+        [
+          (
+            'components[1]',
+            'Runs in app, which a space may not have. Name a role in cwd, or '
+                'make app required',
+          ),
+        ],
+      );
+    });
+
+    test('a required first role, the one anchor, a named role or a worktree '
+        'task is fine', () {
+      final seed = {
+        'kind': 'task',
+        'id': 'seed',
+        'when': ['start'],
+        'command': ['a'],
+      };
+      expect(issuesOf([seed], appRequired: true), isEmpty);
+      // The one anchor: no space starts this without it.
+      expect(issuesOf([seed], otherAnchor: false), isEmpty);
+      expect(
+        issuesOf([
+          {
+            ...seed,
+            'cwd': {'role': 'app'},
+          },
+          {
+            'kind': 'task',
+            'id': 'deps',
+            'when': ['provision'],
+            'command': ['a'],
+          },
+        ]),
+        isEmpty,
+      );
+    });
   });
 }

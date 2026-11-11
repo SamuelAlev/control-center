@@ -2,7 +2,7 @@
 title: Analitik penggunaan
 description: Apa yang dicatat Control Center saat analitik penggunaan aktif, siapa yang memutuskan, dan apa yang tidak pernah dikirim.
 slug: id-ID/panduan-pengguna/referensi/analitik-penggunaan
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center dapat mengirim **event penggunaan berpseudonim** ke instans [Umami](https://umami.is). Analitik penggunaan **nonaktif sampai operator server mengaktifkannya**. Pengaturan ini milik server dan berlaku untuk setiap klien yang terhubung ke server tersebut: aplikasi desktop, aplikasi web, ponsel, dan server itu sendiri.
@@ -13,7 +13,7 @@ Analitik penggunaan terpisah dari **Bagikan laporan crash**, yaitu pengaturan pe
 
 | Sakelar | Lokasi | Efek |
 | --- | --- | --- |
-| **Bagikan analitik penggunaan** | Onboarding (langkah sandbox) dan **Pengaturan → Privasi**. Hanya operator server yang dapat mengubahnya; anggota lain melihat nilai saat ini dalam mode baca saja | Berlaku untuk seluruh server. Disimpan sebagai `telemetry.usage_analytics` di pengaturan server. Nonaktif kecuali disetel ke `true` |
+| **Bagikan analitik penggunaan** | Onboarding (langkah sandbox) dan **Pengaturan → Server → Diagnostik dan privasi**. Hanya operator server yang dapat mengubahnya; anggota lain melihat nilai saat ini dalam mode baca saja | Berlaku untuk seluruh server. Disimpan sebagai `telemetry.usage_analytics` di pengaturan server. Nonaktif kecuali disetel ke `true` |
 | Jenis build | Otomatis | Build debug dan profile tidak mengirim apa pun. Sebagai gantinya, setiap event ditulis ke log debug |
 | `CC_ANALYTICS_DEBUG=1` | Lingkungan `cc_server` atau file `.env`-nya | Mengizinkan build debug dan profile dari server, serta dari setiap klien yang terhubung ke server itu, benar-benar mengirim event untuk keperluan pengujian. Sakelar di atas tetap harus aktif |
 | `DO_NOT_TRACK=1` | Lingkungan `cc_server` | Menghentikan pelaporan milik server itu sendiri, apa pun posisi sakelarnya. Klien tetap mengikuti sakelar |

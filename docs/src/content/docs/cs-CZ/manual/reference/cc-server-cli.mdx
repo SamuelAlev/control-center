@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Všechny příznaky, proměnné prostředí, podpříkazy a cesty v datovém adresáři headless serveru.
 slug: cs-CZ/prirucka/referencni-prirucka/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Každý příznak procesu se zadává příznakem CLI nebo proměnnou prostředí. Vyhraje
@@ -47,7 +47,7 @@ hodnotou. Když příznak jako by nic nedělal, podívej se na řádky logu při
 
 | Příznak                  | Proměnná                        | Výchozí                               | Význam                                                                                                                      |
 | ------------------------ | ------------------------------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Jestli se běhy agentů obalí nativním sandboxem OS hostitele, když je k dispozici. Vypnutí, ne zapnutí. Viz níže             |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` obalí běhy agentů nativním sandboxem OS hostitele a na hostiteli bez něj startují jen běhy vlastníka serveru. `off` spustí agenty všech členů bez omezení na tomto hostiteli. Viz níže |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Nouzový vypínač indexování grafu kódu na pozadí. `off` naběhne čistě, bez nového sestavení                                  |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Sekundy, o které se první průchod indexu pozdrží po řádku ready (oříznuto na 0–300)                                         |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Jestli běhy harnessu posílají malou rezidentní sadu nástrojů plus jmenný index a zbytek načtou při prvním použití. Viz níže |
@@ -84,21 +84,35 @@ procesu, kde by ho přečetl každý podřízený proces. Naplnění z `.env` pr
 pro každé pole jednou, takže pozdější úpravu v Nastavení restart nevrátí.
 Prázdná hodnota se čte jako nenastavená.
 
-Práce na pozadí pro GitLab a Bitbucket čte i `GITLAB_TOKEN` / `CI_JOB_TOKEN`
-a `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` s `BITBUCKET_EMAIL`. GitHub žádné
-pověření z prostředí nemá.
+Žádné pověření hostitele kódu nepochází z prostředí: GitHub, GitLab i Bitbucket
+jednají vždy přes vlastní přihlášení nebo token člena, případně přes tokeny GitHub
+App omezené na jeden repozitář.
 
 ### `--sandbox`
 
 Server při startu jednou prozkoumá hostitele a běh příkazů agenta obalí
 nativním sandboxem OS, když je backend k dispozici: `sandbox-exec` (Seatbelt)
-na macOS, `bwrap` a `socat` na Linuxu a WSL2. Kde žádný není, na Windows nebo
-na Linuxu bez těch nástrojů, běhy spadnou na očištění prostředí, politiku
-příkazů a guardraily akcí. Log při startu řekne, který stav platí.
+na macOS, `bwrap` a `socat` na Linuxu a WSL2. Rozhodnutí se učiní jednou a platí
+až do restartu serveru. Existují tři výsledky, každý se ukáže na řádku vystavení
+při startu:
 
-`--sandbox off` je nouzový vypínač pro případ, který sonda nevidí: hostitel,
-kde se samotný profil sandboxu chová špatně. Nové sestavení nepotřebuje a
-server po celou dobu procesu loguje varování, takže stav nezůstane potichu.
+| `sandbox=`    | Kdy                                                                              | Čí běhy agentů startují                                                                                                                                                 |
+| ------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `native`      | Backend je k dispozici a `--sandbox` je `on`                                     | Běhy všech, obalené                                                                                                                                                     |
+| `off`         | `--sandbox off`                                                                  | Běhy všech, bez omezení na tomto hostiteli                                                                                                                              |
+| `unavailable` | `--sandbox on` a žádný backend (Windows, nebo Linux bez `bwrap` a `socat`)       | Jen běhy, za které odpovídá vlastník serveru, bez omezení. Ostatní se odmítnou hláškou „Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník.“ |
+
+Pro automatizaci je odpovědná osoba ta, ke které je automatizace navázaná.
+Když není zaznamenán žádný vlastník serveru, na hostiteli `unavailable`
+nestartuje žádný běh. Na Linuxu a WSL2 s nainstalovaným bubblewrapem nativní
+spouštění právě teď selhává uzavřeně pro každý běh; viz
+[Backendy sandboxu](/cs-CZ/prirucka/referencni-prirucka/backendy-sandboxu/#linux-bubblewrap).
+
+`--sandbox off` je volba vlastníka serveru pro všechny, kdo server používají:
+spustí agenty všech členů na tomto stroji bez omezení. Použij ji na hostiteli,
+kde se samotný profil sandboxu chová špatně, nebo když chceš, aby členové mohli
+spouštět agenty na hostiteli bez backendu. Nové sestavení nepotřebuje a server
+po celou dobu procesu loguje varování, takže stav nezůstane potichu.
 
 ### `--tool-deferral`
 
@@ -174,7 +188,6 @@ server změnu převezme do 10 minut nebo při restartu.
 | `cc_server connect enable`      | Použije hostovaný Connect od Control Center                                                                      |
 | `cc_server connect enable --url <url>` | Použije vlastní Connect na té URL (HTTPS, nebo `http` na loopbacku)                                      |
 | `cc_server connect disable`     | Přestane Connect používat. Lidi přihlašují jen vlastní aplikace serveru                                           |
-| `cc_server connect rotate-key --yes` | Vystaví nový instalační klíč a ID instalace. Každý, kdo se přihlásil přes Connect, se přihlásí znovu. Bez `--yes` jen varuje a skončí s `2` |
 
 Bez příkazu je výchozí `status`. Každý příkaz bere `--data-dir`.
 `CC_CONNECT_URL` přebije cokoli, co tyto příkazy uloží. Neznámý příkaz skončí

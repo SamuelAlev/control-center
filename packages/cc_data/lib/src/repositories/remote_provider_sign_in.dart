@@ -1,6 +1,13 @@
 import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, SignInFailure, SignInLaneMode;
+    show
+        ConnectOAuthLane,
+        SignInAttemptStatus,
+        SignInFailure,
+        SignInLaneMode,
+        SignInUnavailableReason;
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus;
 import 'package:cc_rpc/cc_rpc.dart';
 
 export 'package:cc_connect_core/cc_connect_core.dart'
@@ -14,6 +21,7 @@ class SignInLaneInfo {
     required this.mode,
     this.redirectUri = '',
     this.error = '',
+    this.unavailableReason,
   });
 
   /// Decodes one `oauth.lanes` entry; null when the lane is unknown.
@@ -27,6 +35,9 @@ class SignInLaneInfo {
       mode: SignInLaneMode.fromWire(json['mode']),
       redirectUri: json['redirect_uri'] as String? ?? '',
       error: json['error'] as String? ?? '',
+      unavailableReason: SignInUnavailableReason.fromWire(
+        json['unavailable_reason'],
+      ),
     );
   }
 
@@ -40,30 +51,12 @@ class SignInLaneInfo {
   /// Empty in Connect mode.
   final String redirectUri;
 
-  /// Why the lane cannot sign anyone in, already phrased for a person.
+  /// The setup error of a misconfigured own app, already phrased for a
+  /// person; empty otherwise.
   final String error;
-}
 
-/// Where a sign-in attempt stands.
-enum SignInAttemptStatus {
-  /// Waiting for the browser.
-  pending,
-
-  /// The grant is stored.
-  succeeded,
-
-  /// Over; see [SignInAttempt.error].
-  failed;
-
-  /// Parses a wire value; [failed] for anything unknown.
-  static SignInAttemptStatus fromWire(Object? wire) => switch (wire) {
-    'pending' => pending,
-    'succeeded' => succeeded,
-    _ => failed,
-  };
-
-  /// Whether the attempt is over.
-  bool get isTerminal => this != pending;
+  /// Why the lane cannot sign anyone in, when [mode] is unavailable.
+  final SignInUnavailableReason? unavailableReason;
 }
 
 /// One browser sign-in attempt, as `oauth.begin` / `oauth.status` /
@@ -80,11 +73,17 @@ class SignInAttempt {
     this.account = '',
     this.error,
     this.codeError,
+    this.message = '',
   });
 
-  /// Decodes an attempt payload.
-  factory SignInAttempt.fromJson(Map<String, dynamic> json) {
-    final lane = ConnectOAuthLane.fromWire(json['lane'] as String?);
+  /// Decodes an attempt payload. [fallbackLane] stands in when the payload
+  /// names none (an attempt the server no longer knows).
+  factory SignInAttempt.fromJson(
+    Map<String, dynamic> json, {
+    ConnectOAuthLane? fallbackLane,
+  }) {
+    final lane =
+        ConnectOAuthLane.fromWire(json['lane'] as String?) ?? fallbackLane;
     if (lane == null) {
       throw FormatException('Unknown sign-in lane: ${json['lane']}');
     }
@@ -106,6 +105,7 @@ class SignInAttempt {
       account: json['account'] as String? ?? '',
       error: SignInFailure.fromWire(json['error']),
       codeError: SignInFailure.fromWire(json['code_error']),
+      message: json['message'] as String? ?? '',
     );
   }
 
@@ -120,6 +120,28 @@ class SignInAttempt {
 
   /// The provider's authorization page.
   final String url;
+
+  /// [url] when a browser may be sent there: HTTPS, or plain HTTP to a
+  /// loopback host (a provider or Connect running on this machine); null
+  /// for anything else (another scheme, a relative or malformed URL), which
+  /// the client refuses to open.
+  Uri? get browserUrl {
+    final uri = Uri.tryParse(url);
+    if (uri == null || uri.host.isEmpty) {
+      return null;
+    }
+    return switch (uri.scheme) {
+      'https' => uri,
+      'http' when _isLoopback(uri.host) => uri,
+      _ => null,
+    };
+  }
+
+  static bool _isLoopback(String host) =>
+      host == 'localhost' ||
+      host == '::1' ||
+      host == '[::1]' ||
+      RegExp(r'^127(?:\.\d{1,3}){3}$').hasMatch(host);
 
   /// When the attempt stops being completable.
   final DateTime expiresAt;
@@ -136,6 +158,11 @@ class SignInAttempt {
   /// Why the last confirmation code was refused while the attempt stays
   /// open ([SignInFailure.codeMismatch]); null otherwise.
   final SignInFailure? codeError;
+
+  /// The server's own explanation of [error] (an own app's exchange
+  /// refused by the provider, with the provider's reason), already phrased
+  /// for a person; empty when it gave none.
+  final String message;
 }
 
 /// Which slot a stored grant lives in.
@@ -156,12 +183,11 @@ class ProviderConnection {
   /// Creates a [ProviderConnection].
   const ProviderConnection({
     required this.lane,
-    required this.connected,
+    required this.status,
     this.account = '',
     this.accountId = '',
     this.slot = SignInSlot.global,
     this.source = SignInLaneMode.own,
-    this.needsSignIn = false,
   });
 
   /// Decodes one entry; null when the lane is unknown.
@@ -172,22 +198,25 @@ class ProviderConnection {
     }
     return ProviderConnection(
       lane: lane,
-      connected: json['connected'] as bool? ?? false,
+      status: ForgeConnectionStatus.fromWire(json['status'] as String?),
       account: json['account'] as String? ?? '',
       accountId: '${json['account_id'] ?? ''}',
       slot: SignInSlot.fromWire(json['slot']),
       source: json['source'] == 'connect'
           ? SignInLaneMode.connect
           : SignInLaneMode.own,
-      needsSignIn: json['needs_sign_in'] as bool? ?? false,
     );
   }
 
   /// The lane.
   final ConnectOAuthLane lane;
 
-  /// Whether a usable grant is stored.
-  final bool connected;
+  /// Where the grant stands (connected, not connected, needs sign-in,
+  /// paused, unreachable).
+  final ForgeConnectionStatus status;
+
+  /// Whether a usable grant is in effect.
+  bool get isUsable => status == ForgeConnectionStatus.connected;
 
   /// The login, email or name the grant belongs to.
   final String account;
@@ -195,14 +224,11 @@ class ProviderConnection {
   /// The provider's immutable account id.
   final String accountId;
 
-  /// Where the grant is stored.
+  /// Where the grant is stored (or where a sign-in from here would land).
   final SignInSlot slot;
 
   /// Who minted it.
   final SignInLaneMode source;
-
-  /// Whether the grant was refused upstream and needs a new sign-in.
-  final bool needsSignIn;
 }
 
 /// The browser sign-in surface over RPC: `oauth.lanes`, `oauth.begin`,
@@ -240,14 +266,21 @@ class RemoteProviderSignIn {
     }),
   );
 
-  /// Reads where [loginId] stands.
-  Future<SignInAttempt> status(String loginId, {String? workspaceId}) async =>
-      SignInAttempt.fromJson(
-        await _client.call('oauth.status', {
-          'login_id': loginId,
-          'workspace_id': workspaceId,
-        }),
-      );
+  /// Reads where [loginId] stands. An attempt the server no longer knows
+  /// comes back failed with [SignInFailure.attemptUnknown]; [lane] names it
+  /// then.
+  Future<SignInAttempt> status(
+    String loginId, {
+    String? workspaceId,
+    ConnectOAuthLane? lane,
+  }) async => SignInAttempt.fromJson(
+    await _client.call('oauth.status', {
+      'login_id': loginId,
+      'workspace_id': workspaceId,
+      'lane': ?lane?.wire,
+    }),
+    fallbackLane: lane,
+  );
 
   /// Hands a Connect confirmation [code] for [loginId] to the server.
   ///

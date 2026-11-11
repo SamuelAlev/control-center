@@ -2,7 +2,7 @@
 title: SSO yapılandırması referansı
 description: Tek oturum açmanın her ayarı, uç noktası, işlemi ve hata kodu.
 slug: tr-TR/kilavuz/referans/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Tek oturum açmayla ilgili yapılandırılabilir her şey tek bir yerde. Değerler
@@ -33,6 +33,18 @@ ayarlar ekranının çelişebileceği bir bağlantıdır).
 | `groupRoleMap`         | her ikisi      | `{}`            | grup → rol; owner eşlemeleri kaydetme sırasında reddedilir                                                                                            |
 | `autoMember`           | her ikisi      | açık            | ilk oturum açmada kullanıcıları her çalışma alanına otomatik ekle                                                                                      |
 | `allowJit`             | her ikisi      | açık            | oturum açmada bilinmeyen kullanıcıları sağla                                                                                                          |
+
+## Hesap eşleştirme
+
+`SsoProvisioner` bir girişi şu sırayla çözer ve asla kullanıcı adıyla değil:
+
+1. `(users.sso_issuer, users.sso_subject)`, girişin issuer ve subject değerlerine eşitse (SAML NameID / OIDC `sub`).
+2. Adresi girişin e-postasına eşit olan bir hesap; yalnızca iki uç da bunu doğruladığında: sağlayıcı (OIDC `email_verified: true`; eksik bir claim doğrulama sayılmaz; imzalı bir SAML onayı her zaman sayılır) ve hesap (`users.email_verified`). Adresler kırpılmış ve küçük harfe çevrilmiş olarak saklanır ve bu biçimde karşılaştırılır. Doğrulanmış bir adres yalnızca tam olarak bir hesap onu doğrulanmış tutuyorsa eşleşir; onu doğrulanmış tutan iki hesap hiçbir şeyle eşleşmez (adres yazılmadan günlüğe geçer). Başka bir hesabın doğrulanmış tuttuğu bir adresin büyük/küçük harf farklı bir biçimi için hiçbir hesap doğrulanamaz.
+3. Aksi halde `allowJit` açıksa yeni bir hesap; kapalıysa reddetme.
+
+`users.email_verified` bir SSO girişi ya da adresi taşıyan bir SCIM push ile ayarlanır ya da sunucu sahibi `users.vouchEmail` ile ayarlar (**Ayarlar → Sunucu → Kişiler → E-postayı onayla**, denetimde `user.email_vouched`). Sahibin kendi profil düzenlemesi kendi adresini onaylar. Diğer her profil düzenlemesi ve bir davette yazılan her adres onu doğrulanmamış bırakır; bir adresi düzenlemek bayrağı temizler. Onaylanmış bir giriş yeni bir hesap oluşturduğunda adresi, yalnızca yazılmış olan hesaplardan alır (denetimde `user.email_unvouched_cleared`), asla doğrulanmış tutan bir hesaptan; bu durumda yeni hesap hiçbir adres almaz.
+
+Eşleşen ve zaten farklı bir subject ya da issuer'a sabitlenmiş bir hesap, girişi `This account is already linked to a different SSO identity` ile reddeder. Devre dışı bırakılmış bir hesap, `This account has been deactivated` ile reddeder.
 
 ## Süreç yapılandırması
 
@@ -132,6 +144,7 @@ sahip olmak yeterli değildir; eşleştirme tek başına bunları asla vermez.
   ÇALIŞMA ALANLARI ARASI.
 - `users.sso_subject` + `users.sso_issuer` — sağlayıcı subject sabitlemesi,
   kısmi bir dizin aracılığıyla `(issuer, subject)` başına benzersiz.
+- `users.email_verified`: hesabın adresinin bir SSO girişiyle ya da bir SCIM push ile eşleşip eşleşemeyeceği (bkz. [Hesap eşleştirme](#hesap-eşleştirme)).
 - `users.deactivated_at` — SCIM devre dışı bırakma damgası.
 - SCIM bearer token'ı ve OIDC client secret'ı 0600 izinli secrets dosyasında
   yaşar, asla veritabanında değil.

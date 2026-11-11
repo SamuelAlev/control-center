@@ -2,7 +2,7 @@
 title: Gjennomgå og slå sammen en PR
 description: Åpne PR-arbeidsflaten, les diffen, legg igjen kommentarer i linjen, send inn en gjennomgang og slå sammen.
 slug: nb-NO/handbok/slik-gjor-du/gjennomga-og-sla-sammen-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Denne guiden viser deg hvordan du gjennomgår og slår sammen en pull request.
@@ -22,9 +22,13 @@ innebygd code-server og en nettleser i appen åpnes ved behov; faner for
 forhåndsvisning av distribusjon settes inn automatisk når en forhåndsvisnings-URL
 oppdages på PR-en. Fanoppsettet ditt huskes per PR.
 
+Den innebygde code-serveren tilbys bare serverens eier, fordi den kjører på serveren som serverens egen bruker. En økt tilhører enheten og personen som åpnet den, åpnes med VS Codes arbeidsområdetillit på (VS Code spør før en mappe stoles på) og kjører ingen oppgaver automatisk. Alle andre beholder redigereren for enkeltfiler og filvisningene.
+
 Fanen Oversikt har PR-ens metadata (forfatter, gren, etiketter, tildelte,
 reaksjoner, commits, sjekkstatus) og handlingsraden: oppdater, **Gjennomgang**,
-**Slå sammen**, åpne i IDE og en overflytsmeny ⋯.
+**Slå sammen**, en knapp oppkalt etter editoren din (for eksempel **Open in VS Code**) og en overflytsmeny ⋯.
+
+Redigeringsknappen starter en native redigerer på **serverens** egen skjerm, som serverens bruker og utenfor enhver sandkasse, så den tilbys bare [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier). På et skrivebord som er vert for sin egen server, er det personen ved pulten. Det samme gjelder å åpne et samtales worktree i en redigerer. Alle andre bruker de innebygde redigeringsvisningene. Selv for eieren åpnes en pull request bare fra et repo koblet til arbeidsområdet.
 
 ### Åpne en PR fra stabelen til et område
 
@@ -42,14 +46,29 @@ Enter eller Mellomrom for å klappe den sammen eller utvide den. PR-er uten
 tilknytning holdes atskilt, og ufullstendige eller tvetydige grenkoblinger vises
 ikke som en ordnet stabel.
 
-I **Kildekontroll** åpner **Stablede pull requests (N)** en velger over stabelens
-publiserte deler, nederst først. Hver oppføring viser PR-nummeret, delnavnet og
+I PR-ens topptekst åpner stabelmerket (et lagikon med antall pull requests i stabelen)
+**Stablede pull requests**, en velger over stabelens publiserte deler, nederst først. Hver oppføring viser PR-nummeret, delnavnet og
 posisjonen; delen som er sjekket ut, er merket. Velg en oppføring for å åpne
 PR-arbeidsflaten til den. **Publiser stabelen** vises bare når PR-oppdagelsen er
 ferdig og minst én del ikke har noen PR. Dette gjelder også grenmenyen. PR-er som
 er opprettet utenfor Control Center, regnes også som publiserte. Delvis
 publiserte stabler tilbyr begge handlingene; arbeid på en enkelt gren beholder de
 individuelle handlingene for å opprette/vise PR.
+
+### Commit og push fra Kildekontroll
+
+En commit du lager i panelet **Kildekontroll**, er din: du er dens forfatter og committer, under adressen kodeverten har verifisert for innloggingen din. Når du har laget en signeringsnøkkel under **Verifiserte commits** i **Innstillinger** → **Deg** → **Commits**, signerer serveren den med din egen signeringsnøkkel før den pushes. En push bærer din egen innlogging, avgrenset til det ene repoet.
+
+Serveren kjører Git på sin egen maskin, i et tre som en agent eller en pull request kan endre, så den kjører ingen av programmene et repo kan velge:
+
+- Commits hopper over repoets Git-hooks, slik `git commit --no-verify` gjør. En pre-commit-hook, en commit-msg-hook eller en pre-push-hook kjører ikke
+- Credential helpers, redigerere, eksterne diff-verktøy og signeringsprogrammer som repoet konfigurerer, ignoreres
+
+Kjør kontrollene dine selv før du committer, eller i CI.
+
+Å endre koden krever [skrivetilgang](/nb-NO/handbok/konsepter/autorisasjon/#endring-av-kode-krever-skrivetilgang) på repoet: å lagre eller tilbakestille filer i editoren, **Hent siste PR-committer**, committe og pushe, publisere en gren, og stabelhandlingene som kutter, sjekker ut eller publiserer en del. Med bare lese- eller gjennomgangstilgang ser du filene og differene, og disse handlingene svarer "Du kan lese dette arkivet, men ikke endre det. En arbeidsområdeadministrator kan gi skrivetilgang."
+
+**Hent siste PR-committer** henter gjennomgangs-worktreet opp til pull requestens nyeste commits. Den henter med din egen GitHub-innlogging, og ber deg logge inn når du ikke har en. Commit eller forkast endringene dine først: et worktree med ucommittede endringer synkroniseres ikke.
 
 ## Les diffen
 
@@ -131,7 +150,7 @@ Sammenslåing kan ikke angres: den dytter commits til forgen, så den får et
 bekreftelsessteg i stedet for en angreoppføring. Etterpå ugyldiggjøres cachen til
 PR-en, statusen går over til **Sammenslått**, og en
 `PullRequestStatusChanged`-hendelse utløses med status `merged`. Den hendelsen
-frigjør det kortvarige worktreet for «åpne i redigerer» og starter to
+frigjør det kortvarige worktreet som redigeringsknappen åpnet, og starter to
 forhåndsdefinerte pipelines: **Stale repository cleanup**, som fjerner PR-ens
 foreldede worktreer og samtalemapper, og **Release notes**, som utarbeider et
 changelog-innlegg.
@@ -158,6 +177,12 @@ deterministiske modellen med kohorter og akser.
 Control Center importerer også PR-er som mennesker utenfor appen har åpnet.
 Gjennomgangsflyten ovenfor er identisk. Eksterne PR-er oppdages av
 PR-pollingtjenesten.
+
+## Feilsøking
+
+### Pre-commit-hooken min kjørte ikke
+
+Commits laget i appens panel **Kildekontroll** hopper over repoets Git-hooks, slik `git commit --no-verify` gjør. Serveren kjører Git på sin egen maskin, i et tre som agenter og pull requests kan endre, så den kjører aldri et program repoet velger. Kjør hookens kontroller selv, eller stol på CI.
 
 ## Relaterte guider
 

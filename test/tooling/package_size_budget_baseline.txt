@@ -51,28 +51,76 @@
 # hardening, forge read-path paging/per-repo poller state, steering/takeover,
 # Connect and pipeline guards) grew these past the floor; lowered every file
 # that shrank (DispatchSession extractions, rig/env splits, catalog op moves).
+# Lowered 2026-11-09 (ratchet split): workspace partial indexes, meeting wire,
+# memory/newsfeed op packs, GitHub request policy, forge/space-stack/file-catalog
+# runtime wiring, repo-access probes, gateway run views, GraphQL/PR client result
+# models, GitLab value helpers and built-in trigger seeds moved to their own
+# files or parts; workspace_database.dart and github_clients.dart went under budget.
+# Lowered 2026-11-10: the run log row writes moved to dispatch_session_run_log.dart;
+# side-channel and goal-step result mapping moved into their services.
+# Lowered 2026-11-10 (space read gate): the review studio and PR space builders
+# moved to runtime/server_review_studio_wiring.dart and server_pr_space_wiring.dart;
+# the pipeline DTOs moved out of dtos.dart to pipeline_dtos.dart.
+# Lowered 2026-11-10: remote_rpc_catalog.dart takes the shared SpaceRepoAccess
+# instead of building its own; agent_run_gateway.dart is back under budget;
+# catalog_wire.dart and local_rpc_server.dart shrank in parallel work.
+# Lowered 2026-11-10 (rig access): the rig ops moved to catalog/rig_ops.dart
+# and the rig stream resolver to runtime/server_rig_wiring.dart.
+# Raised 2026-11-10 (rig holders, shutdown): cc_server_runtime.dart tracks the
+# boot's unawaited database work for shutdown and hands the rig tools whom a
+# run acts for.
+# Raised 2026-11-10 (rig row flags): cc_server_runtime.dart hands RigAccess
+# the standing-change ticks that re-send a rig frame on a grant or sign-in change.
+# Lowered 2026-11-10 (read-only worktrees): dispatch_session.dart's shared-root
+# helpers moved to dispatch_session_repo_grants.dart, and cc_server_runtime.dart
+# hands the dispatch adapter its space autonomy resolver from server_helpers.dart.
+# Lowered 2026-11-10 (connected accounts): the token-forge scope argument and
+# the users.linkedAccounts wiring are gone from remote_rpc_catalog.dart and
+# cc_server_runtime.dart.
+# Raised 2026-11-10 (audit log): cc_server_runtime.dart hands the server extra
+# ops the workspace activity trail and the PR data gate, so `audit.watchLog`
+# merges both trails into one table.
+# Raised 2026-11-10 (sign-in watch): cc_server_runtime.dart hands the server
+# extra ops the Claude account store, so `claude_accounts.signInStates` lives in
+# catalog/claude_sign_in_ops.dart and not in remote_rpc_catalog.dart.
+# Lowered 2026-11-10 (retry once): retrying a failed turn moved out of
+# messaging_service.dart into messaging/agent_turn_retrier.dart.
+# Raised 2026-11-10 by 5 (update_pull_request): cc_server_runtime.dart registers the agent PR edit tool and imports the shared AgentRunPullRequestScope.
+# Lowered 2026-11-11 (run forge tokens): dispatch_session.dart no longer mints
+# a forge token when a run starts; the agent run gateway mints one when the
+# run's git or gh asks (agent_run_forge_tokens.dart).
+# Raised 2026-11-11 by 5 (run forge tokens): cc_server_runtime.dart hands the
+# dispatch adapter the server's record of a space's checkouts, which is what a
+# run's read tokens are limited to.
+# Raised 2026-11-11: the demo seeder records each run's exact cost in micro-USD,
+# now the only cost arithmetic reads (cents are its projection).
+# Raised 2026-11-11 by 4: messaging_service.dart names each mention's principal
+# type; a mention no longer defaults to an agent.
+# Lowered 2026-11-11 (no backward compat): removing old-data fallbacks shrank
+# nine files; messaging_dao.dart fell under the budget and left the list.
+# Lowered 2026-11-11 (standing approvals): what an "Approve for 8 hours" answer
+# writes, and the pruning of expired ones, moved out of remote_rpc_catalog.dart
+# to catalog/standing_approval_write.dart.
 packages/cc_domain/lib/features/evals/domain/evaluation/evaluation_plan.dart  1580
-packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2855
-packages/cc_domain/lib/src/dtos/dtos.dart  4028
+packages/cc_domain/lib/features/pipelines/domain/templates/builtin_template_seeds.dart  2734
+packages/cc_domain/lib/src/dtos/dtos.dart  3675
 packages/cc_infra/lib/src/chat/chat_bridge_service.dart  1550
-packages/cc_infra/lib/src/dispatch/agent_run_gateway.dart  1569
-packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2688
-packages/cc_infra/lib/src/messaging/messaging_service.dart  1789
-packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1688
-packages/cc_infra/lib/src/network/github_graphql_client.dart  2364
-packages/cc_infra/lib/src/network/github_pr_client.dart  2257
-packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1824
-packages/cc_infra/lib/src/rigs/cdp_client.dart  2509
-packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1796
+packages/cc_infra/lib/src/dispatch/dispatch_session.dart  2355
+packages/cc_infra/lib/src/messaging/messaging_service.dart  1763
+packages/cc_infra/lib/src/network/github/github_forge_pr_client.dart  1681
+packages/cc_infra/lib/src/network/github_graphql_client.dart  2215
+packages/cc_infra/lib/src/network/github_pr_client.dart  2254
+packages/cc_infra/lib/src/network/gitlab/gitlab_forge_pr_client.dart  1803
+packages/cc_infra/lib/src/rigs/cdp_client.dart  2495
+packages/cc_infra/lib/src/rigs/qemu_enclosure_backend.dart  1795
 packages/cc_infra/lib/src/rigs/rig_service.dart  2298
 packages/cc_infra/lib/src/rigs/smolvm_enclosure_backend.dart  2035
-packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1666
-packages/cc_persistence/lib/database/daos/messaging_dao.dart  1536
+packages/cc_infra/lib/src/sandboxing/claude_stream_json.dart  1660
 packages/cc_server_core/lib/src/cached_pr_review_repository.dart  2817
-packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3274
-packages/cc_server_core/lib/src/cc_server_runtime.dart  8286
-packages/cc_server_core/lib/src/demo/demo_seeder.dart  2852
-packages/cc_server_core/lib/src/local_rpc_server.dart  2513
-packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1862
-packages/cc_server_core/lib/src/remote_rpc_catalog.dart  15562
-packages/cc_server_core/lib/src/repo_ide_data_service.dart  2473
+packages/cc_server_core/lib/src/catalog/catalog_wire.dart  3121
+packages/cc_server_core/lib/src/cc_server_runtime.dart  8239
+packages/cc_server_core/lib/src/demo/demo_seeder.dart  2853
+packages/cc_server_core/lib/src/local_rpc_server.dart  2473
+packages/cc_server_core/lib/src/pr_review/open_pr_polling_service.dart  1833
+packages/cc_server_core/lib/src/remote_rpc_catalog.dart  14780
+packages/cc_server_core/lib/src/repo_ide_data_service.dart  2365

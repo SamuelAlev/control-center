@@ -329,35 +329,108 @@ void main() {
       expect(b.fake.requests, isEmpty);
     });
 
-    test(
-      'chunks repos and tolerates errored aliases (null repository)',
-      () async {
-        final b = build(
-          (r) => _json(r, {
-            'data': {
-              'r0': {
-                'pullRequests': {
-                  'pageInfo': {'hasNextPage': true},
-                  'nodes': [
-                    {'number': 1},
-                    {'number': 2},
-                  ],
-                },
+    /// The repo name a single-repo list request asks for.
+    String repoOf(HttpRequest r) => RegExp(
+      r'name: "([^"]+)"',
+    ).firstMatch(_bodyOf(r)['query'] as String)!.group(1)!;
+
+    /// A one-repo response listing [numbers].
+    Object prs(List<int> numbers, {bool hasMore = false}) => {
+      'data': {
+        'r0': {
+          'pullRequests': {
+            'pageInfo': {'hasNextPage': hasMore},
+            'nodes': [
+              for (final n in numbers) {'number': n},
+            ],
+          },
+        },
+      },
+    };
+
+    test('one repo per request, keyed by the caller\'s index', () async {
+      final b = build(
+        (r) => _json(r, switch (repoOf(r)) {
+          'a' => prs([1, 2], hasMore: true),
+          'b' => {
+            'data': {'r0': null}, // inaccessible repo — absent
+          },
+          _ => prs([9]),
+        }),
+      );
+      final res = await b.client.fetchOpenPullRequestsBatch(const [
+        (owner: 'o', name: 'a'),
+        (owner: 'o', name: 'b'),
+        (owner: 'o', name: 'c'),
+      ]);
+
+      expect(
+        b.fake.requests,
+        hasLength(3),
+        reason:
+            'aliasing busy repos into one query ran past GitHub\'s GraphQL '
+            'timeout, so each repo is its own request',
+      );
+      for (final r in b.fake.requests) {
+        expect(_bodyOf(r)['query'] as String, isNot(contains('r1:')));
+      }
+      expect(res.byIndex[0]!.nodes.map((n) => n['number']), [1, 2]);
+      expect(res.byIndex[0]!.hasMore, isTrue);
+      expect(res.byIndex.containsKey(1), isFalse);
+      expect(res.byIndex[2]!.nodes.map((n) => n['number']), [9]);
+      expect(res.byIndex[2]!.hasMore, isFalse);
+    });
+
+    test('carries the repo\'s open PR total across every page', () async {
+      final b = build(
+        (r) => _json(r, {
+          'data': {
+            'r0': {
+              'pullRequests': {
+                'totalCount': 109,
+                'pageInfo': {'hasNextPage': true},
+                'nodes': [
+                  {'number': 1},
+                ],
               },
-              'r1': null, // inaccessible repo — skipped
             },
-          }),
-        );
-        final res = await b.client.fetchOpenPullRequestsBatch(const [
+          },
+        }),
+      );
+      final res = await b.client.fetchOpenPullRequestsBatch(const [
+        (owner: 'o', name: 'a'),
+      ]);
+
+      expect(_bodyOf(b.fake.requests.single)['query'], contains('totalCount'));
+      expect(res.byIndex[0]!.totalCount, 109);
+    });
+
+    test('a repo timing out leaves only that repo unread', () async {
+      final b = build(
+        (r) => repoOf(r) == 'busy' ? _error(r, 504) : _json(r, prs([1])),
+      );
+      final res = await b.client.fetchOpenPullRequestsBatch(const [
+        (owner: 'o', name: 'busy'),
+        (owner: 'o', name: 'b'),
+        (owner: 'o', name: 'c'),
+        (owner: 'o', name: 'd'),
+        (owner: 'o', name: 'e'),
+      ]);
+
+      expect(res.byIndex.containsKey(0), isFalse);
+      expect(res.byIndex.keys, unorderedEquals([1, 2, 3, 4]));
+    });
+
+    test('every repo failing still throws', () async {
+      final b = build((r) => _error(r, 504));
+      await expectLater(
+        b.client.fetchOpenPullRequestsBatch(const [
           (owner: 'o', name: 'a'),
           (owner: 'o', name: 'b'),
-        ]);
-        expect(res.byIndex, contains(0));
-        expect(res.byIndex[0]!.nodes.map((n) => n['number']), [1, 2]);
-        expect(res.byIndex[0]!.hasMore, isTrue);
-        expect(res.byIndex.containsKey(1), isFalse); // skipped
-      },
-    );
+        ]),
+        throwsA(isA<NetworkException>()),
+      );
+    });
 
     test('continues when a chunk returns no data', () async {
       final b = build((r) => _json(r, {'data': null}));
@@ -1175,63 +1248,48 @@ void main() {
   });
 
   group('GitHubGraphQLClient searchBotConversationCandidates', () {
-    test(
-      'searches @usectrl and both App aliases without changing App identity',
-      () async {
-        final b = build(
-          (r) => _json(r, {
-            'data': {
-              'mentioned': {
-                'nodes': [
-                  {
-                    'number': 7,
-                    'title': 'Default mention',
-                    'updatedAt': '2026-01-02T03:04:05Z',
-                    'repository': {'nameWithOwner': 'acme/app'},
-                  },
-                ],
-              },
-              'botMentioned': {'nodes': <Object>[]},
-              'shortMentioned': {'nodes': <Object>[]},
-              'labeled': {'nodes': <Object>[]},
+    test('searches @usectrl and the label, never the App bot login', () async {
+      final b = build(
+        (r) => _json(r, {
+          'data': {
+            'mentioned': {
+              'nodes': [
+                {
+                  'number': 7,
+                  'title': 'Default mention',
+                  'updatedAt': '2026-01-02T03:04:05Z',
+                  'repository': {'nameWithOwner': 'acme/app'},
+                },
+              ],
             },
-          }),
-        );
-        final result = await b.client.searchBotConversationCandidates(
-          botLogin: 'cc-test[bot]',
-          label: 'ai-review',
-          since: DateTime.utc(2026, 1, 2, 3, 4, 5),
-        );
+            'labeled': {'nodes': <Object>[]},
+          },
+        }),
+      );
+      final result = await b.client.searchBotConversationCandidates(
+        botLogin: 'cc-test[bot]',
+        label: 'ai-review',
+        since: DateTime.utc(2026, 1, 2, 3, 4, 5),
+      );
 
-        final body = _bodyOf(b.fake.requests.single);
-        final query = body['query'] as String;
-        final variables = (body['variables'] as Map).cast<String, Object?>();
-        expect(query, contains('botMentioned: search(query: \$bm'));
-        expect(query, contains('shortMentioned: search(query: \$sm'));
-        expect(
-          variables['mn'],
-          'is:pr mentions:"usectrl" updated:>2026-01-02T03:04:05',
-        );
-        expect(
-          variables['bm'],
-          'is:pr mentions:"cc-test[bot]" updated:>2026-01-02T03:04:05',
-        );
-        expect(
-          variables['sm'],
-          'is:pr in:comments "@cc-test" updated:>2026-01-02T03:04:05',
-        );
-        expect(variables['lb'], 'is:pr is:open label:"ai-review"');
-        expect(result.mentioned.single.key, 'acme/app#7');
-        expect(result.botMentioned, isEmpty);
-      },
-    );
+      final body = _bodyOf(b.fake.requests.single);
+      final query = body['query'] as String;
+      final variables = (body['variables'] as Map).cast<String, Object?>();
+      expect(query, isNot(contains('cc-test')));
+      expect(variables.keys, unorderedEquals(['mn', 'lb', 'first']));
+      expect(
+        variables['mn'],
+        'is:pr mentions:"usectrl" updated:>2026-01-02T03:04:05',
+      );
+      expect(variables['lb'], 'is:pr is:open label:"ai-review"');
+      expect(result.mentioned.single.key, 'acme/app#7');
+    });
 
     test('sends no filler search for a lane with nothing to find', () async {
       final b = build(
         (r) => _json(r, {
           'data': {
             'mentioned': {'nodes': <Object>[]},
-            'botMentioned': {'nodes': <Object>[]},
           },
         }),
       );
@@ -1242,10 +1300,8 @@ void main() {
       final body = _bodyOf(b.fake.requests.single);
       final query = body['query'] as String;
       final variables = (body['variables'] as Map).cast<String, Object?>();
-      expect(query, isNot(contains('shortMentioned')));
       expect(query, isNot(contains('labeled')));
-      expect(variables.keys, unorderedEquals(['mn', 'bm', 'first']));
-      expect(result.shortMentioned, isEmpty);
+      expect(variables.keys, unorderedEquals(['mn', 'first']));
       expect(result.labeled, isEmpty);
     });
   });

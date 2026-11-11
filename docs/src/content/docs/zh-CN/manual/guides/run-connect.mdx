@@ -2,7 +2,7 @@
 title: 运行 Connect 服务器
 description: 使用 cc-connect Docker 镜像运行你自己的 Control Center Connect，或将它挂载在 cc_server 内，让你的服务器通过你注册的提供商应用让人们登录。
 slug: zh-CN/手册/操作指南/运行-connect-服务器
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect 会为尚未注册自己应用的服务器执行提供商登录（GitHub、
@@ -39,7 +39,7 @@ Connect 能看到什么、看不到什么，请见 [Connect 参考](/zh-CN/手�
 
 | 提供商         | 注册                                                                                                                                                                                                                                                                 | 保留                                    |
 | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | 回调地址 `<base>/oauth/github/callback`。设置地址 `<base>/oauth/github/setup`，并开启 **Redirect on update**。保持 **Request user authorization (OAuth) during installation** 关闭：开启时，GitHub 会忽略设置地址。保持 **Expire user authorization tokens** 开启 | App id、slug、客户端 id、客户端密钥    |
+| **GitHub App** | 回调地址 `<base>/oauth/github/callback`。设置地址 `<base>/oauth/github/setup`，并开启 **Redirect on update**。保持 **Request user authorization (OAuth) during installation** 关闭：开启时，GitHub 会忽略设置地址。保持 **Expire user authorization tokens** 开启 | App id、slug、客户端 id、客户端密钥、私钥    |
 | **Google**     | 一个类型为 **Web application** 的 OAuth 客户端，重定向 URI 为 `<base>/oauth/google/callback`，并启用 Google Calendar API                                                                                                                                             | 客户端 id、客户端密钥                   |
 | **Linear**     | 一个 OAuth 应用，回调地址为 `<base>/oauth/linear/callback` 与 `<base>/oauth/linear_app/callback`                                                                                                                                                                      | 仅需客户端 id                           |
 | **Slack**      | 重定向地址 `<base>/oauth/slack_oidc/callback` 与 `<base>/oauth/slack/callback`。Event Subscriptions 位于 `<base>/v1/hooks/slack/events`（`app_mention`、`message.*`、`assistant_thread_*`、`app_uninstalled`、`tokens_revoked`）。斜杠命令位于 `<base>/v1/hooks/slack/commands`。开启令牌轮换 | App id、客户端 id、客户端密钥、签名密钥 |
@@ -49,9 +49,9 @@ Connect 能看到什么、看不到什么，请见 [Connect 参考](/zh-CN/手�
 与 **Commit statuses** 读取。为了团队的审查请求，还需加上组织的 **Members** 读取权限。
 Webhook 可以保持关闭：服务器会轮询。
 
-Connect 永远不需要 GitHub App 的私钥。它改为通过某个人自己的登录签发仅适用于单个
-仓库的令牌。Linear 也不需要密钥：Connect 会把授权码交回服务器，由服务器自行完成
-交换。
+Connect 需要 GitHub App 的私钥（在 App 的设置中选择**生成私钥**）。它为 App 的请求签名，用于查找覆盖某个仓库的安装（如果该仓库没有，则查找所有者的安装），并签发仅适用于单个仓库的安装令牌；而且只有在提出请求的人自己的登录证明其有权访问该仓库之后，才会这样做。
+
+你的 Connect 上的每台服务器都共享该 App 的机器人。对于其中任何一台，它都可以以机器人身份读取、评论、加标签和做出回应。只有你在 `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` 中列出的服务器（使用逗号分隔的安装 ID）才被允许以机器人身份审查 pull request；其他每台服务器都使用审查者自己的令牌发布审查。推送永远不会以机器人身份进行。若要让你自己的某台服务器以机器人身份审查，请把它的安装 ID 添加到那里并重新启动。请像封存密钥一样把私钥文件当作机密保管。Linear 不需要密钥：Connect 会把授权码交回服务器，由服务器自行完成交换。
 
 ## 步骤 3：收集安装 ID
 
@@ -103,12 +103,16 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-把你的反向代理指向端口 `8790`。镜像以非特权用户运行，把状态保存在 `/data`
-卷中，并内置健康检查（`cc-connect --healthcheck`，它会探测 `/healthz`）。
+把你的反向代理指向端口 `8790`，并将 `CONNECT_TRUST_PROXY` 设为 Connect 前面的代理跳数，使其按地址的限制能看到每个客户端的地址。镜像以非特权用户运行，把状态保存在 `/data`
+卷中，并内置健康检查（`cc-connect --healthcheck`，它会探测 `/healthz`：只要进程有响应即可）。`/readyz` 还会检查其状态与绑定存储是否有响应，以及使用 Redis 时它是否仍运行着 `maxmemory-policy noeviction`；请把编排器的就绪检查指向那里。
+
+登录同意页面会以表单 POST 作出响应，Connect 只接受来自其自身页面的此类提交：若发送了 `Sec-Fetch-Site`，其值必须是 `same-origin`；若发送了 `Origin`，其值必须与 `CONNECT_PUBLIC_URL` 的来源相同；两者都没有的 POST 会被拒绝。因此代理必须原样传递这两个请求头，并且 `CONNECT_PUBLIC_URL` 必须是人们的浏览器实际使用的地址。如果在该页面上继续操作时总是显示“此链接已过期”，并且日志中出现原因为 `origin` 或 `no_origin` 的 `oauth.done_refused`，那么这两项中有一项设置有误。
 
 当配置是开放的、不安全的或只完成了一半时，Connect 会拒绝启动（退出码 `78`），并
 打印出是哪个变量有误。缺少允许列表、不在回环地址上的 `http` 地址、格式错误的封存
@@ -122,7 +126,7 @@ docker run -d --name cc-connect -p 8790:8790 \
 
 服务器可以自行托管 Connect，而无需单独的容器。挂载的服务与镜像运行的是同一个。
 
-1. 把 `CONNECT_*` 变量放进服务器的 `.env` 文件（或其环境），做法同步骤 5
+1. 把 `CONNECT_*` 变量放进服务器的 `.env` 文件，做法同步骤 5。当 Connect 的某个机密（包括 `CONNECT_SENTRY_DSN`）在服务器的环境中被导出时，服务器会拒绝启动
 2. 添加 `CC_SERVER_CONNECT_HOST=on`
 3. 重新启动服务器。它的日志会打印 `embedded Connect at <url>`
 
@@ -134,6 +138,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 随后 Connect 会在 `<server>/connect` 提供服务：
@@ -162,9 +167,10 @@ CONNECT_GITHUB_CLIENT_SECRET=<secret>
 | `CONNECT_PUBLIC_URL`            | 必填      | 规范的公开地址。HTTPS，或仅限回环地址的 `http`。带路径表示挂载。不得包含查询字符串或片段                                           |
 | `CONNECT_ALLOWED_INSTALLS`      | 必填      | 以逗号分隔的安装 ID。只有配合 `CONNECT_SIGNED_CONFIG_FILE` 时才接受 `*`                                                           |
 | `CONNECT_DENY_INSTALLS`         |           | 即使已被允许也会被拒绝的安装 ID                                                                                                  |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | 数字形式的 GitHub 所有者 ID。设置后，只为这些所有者拥有的仓库签发仓库令牌                                                         |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | 数字形式的 GitHub 所有者 ID。设置后，只为这些所有者拥有的仓库签发仓库令牌。它不限制谁可以登录：获准使用此 Connect 的人仍会收到他们自己的 App 用户令牌。若只为一个组织服务，请让 App 仅限该组织使用                                                         |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |  | 允许 App 的机器人审查 pull request 的安装 ID。默认为空；`*` 会被拒绝，并且每个 ID 也必须已被允许 |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | 绑定地址与端口                                                                                                           |
-| `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` 中受信任的代理跳数（0 到 8）。仅用于按地址的速率限制                                                           |
+| `CONNECT_TRUST_PROXY`           | `0`       | `X-Forwarded-For` 中受信任的代理跳数（0 到 8）。仅用于按地址的限制、登录页面的网络提示以及日志中记录的地址。在代理之后时，`0` 会把每个客户端都视为代理，并且日志会对此提示一次                                                           |
 
 ### 提供商通道
 
@@ -172,6 +178,7 @@ CONNECT_GITHUB_CLIENT_SECRET=<secret>
 | --------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |         | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |         | 密钥，双值                                                                  |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY` |  | 密钥。App 的私钥（PEM） |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |         | Google 客户端。密钥为双值                                                   |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |         | Linear 应用。没有密钥                                                       |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |         | Slack 应用                                                                  |
@@ -189,12 +196,12 @@ CONNECT_GITHUB_CLIENT_SECRET=<secret>
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` 或 `gcp-kms`                                                                                       |
 | `CONNECT_SEAL_KEYS`                                       |                            | 密钥，`local` 时必填。以逗号分隔的 `kid:key` 条目，最新的在前；较旧的条目仍可解密                          |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`，`gcp-kms` 时必填                                         |
-| `CONNECT_STATE`                                           | `memory`                   | 单实例使用 `memory`，多实例使用 `redis`                                                                    |
-| `CONNECT_REDIS_URL`                                       |                            | 密钥。`redis://` 或 `rediss://`                                                                            |
+| `CONNECT_STATE`                                           | `memory`                   | 单实例使用 `memory`，多实例使用 `redis`。内存存储已满时会拒绝新的登录与请求，而不是遗忘一个仍然有效的条目                                                                    |
+| `CONNECT_REDIS_URL`                                       |                            | 密钥。`redis://` 或 `rediss://`。Redis 6.2 或更高版本，且 `maxmemory-policy noeviction`，两者都会在启动时检查                                                                            |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | `rediss://` 使用的 CA 证书包                                                                               |
-| `CONNECT_BINDINGS`                                        | `file`                     | GitHub 安装绑定的存放位置：`file` 或 `firestore`                                                           |
-| `CONNECT_DATA_DIR`                                        | `data`（镜像中为 `/data`） | 存放 `bindings.json`                                                                                       |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` 数据库         | 用于 `CONNECT_BINDINGS=firestore`                                                                          |
+| `CONNECT_BINDINGS`                                        | `file`                     | Slack 团队绑定的存放位置：`file` 或 `firestore`                                                           |
+| `CONNECT_DATA_DIR`                                        | `data`（镜像中为 `/data`） | 存放 `bindings.json`。由一个 Connect 独占锁定：第二个指向同一目录的 Connect 无法启动                                                                                       |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | `(default)` 数据库         | 用于 `CONNECT_BINDINGS=firestore`。Firestore 无响应时 Connect 不会启动                                                                          |
 
 ### 配置、日志与限制
 
@@ -204,18 +211,34 @@ CONNECT_GITHUB_CLIENT_SECRET=<secret>
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | 签名配置必须通过验证的密钥                                                                          |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | 自托管 Connect 所生成配置的世代号                                                                   |
 | `CONNECT_LOG_HMAC_KEY`                  | 每个进程随机生成   | 密钥。设置它，可使代替安装 ID 的标记在重启与不同实例之间保持稳定                                    |
+| `CONNECT_SENTRY_DSN` |  | 密钥。一个 https Sentry DSN，错误行会报告到该处：错误类型、堆栈帧、路由与请求 ID，绝不包括消息、正文或请求头 |
+| `CONNECT_SENTRY_ENVIRONMENT` | `self-hosted` | Sentry 环境 |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | 由 `/v1/version` 报告                                                                               |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | 每个安装的请求数                                                                                    |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | 每个地址的请求数                                                                                    |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | 整个服务的请求数                                                                                    |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | 每个地址的请求数（IPv6 地址按 /64 计算）                                                                                    |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | 整个实例的请求数                                                                                    |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600` | 每个地址的 Slack 事件与命令投递数，与其他请求分开计算 |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100` | 整个实例的 Slack 事件与命令投递数 |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | 每个团队的 Slack 事件数                                                                             |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | 每个安装的 GIF 搜索次数                                                                             |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | 每个地址的 GIF 搜索数（跨服务器）                                                                   |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | 每个地址发起的登录数                                                                                |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | 每个 GitHub 账户在一台服务器上签发的 GitHub 令牌数（登录、刷新、仓库令牌）                          |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 上述值的 4 倍（`120`） | 同一 GitHub 账户在所有服务器上的上限                                                    |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | 每个地址签发的 GitHub 令牌数                                                                        |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | 整个应用的新 GitHub 登录数                                                                          |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | 每台服务器的机器人令牌数                                                                            |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | 每个提出请求的 GitHub 账户的机器人令牌数（跨服务器）                                                |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | 整个应用的机器人令牌数                                                                              |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | 整个应用的刷新与仓库令牌数。新登录有上面单独的限制                                                  |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | 一个 GitHub 账户在 Connect 记录警告之前可持有的有效仓库令牌数                                       |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | 每个地址退役的安装 ID 数（IPv6 按 /48 计算）                                                        |
+
+超过限制的调用会收到 `rate_limited` 应答。服务器会稍后重试，且绝不会因此把任何人登出。
 
 ## 运行多个实例
 
-对大多数组织而言，一个使用 `CONNECT_STATE=memory` 的实例就足够了。位于同一地址之后的
-多个实例需要 `CONNECT_STATE=redis`，以及共享的 `CONNECT_DATA_DIR` 或
-`CONNECT_BINDINGS=firestore`，这样在一个实例上开始的登录才能在另一个实例上完成。
+对大多数组织而言，一个使用 `CONNECT_STATE=memory` 的实例就足够了。位于同一地址之后的多个实例需要 `CONNECT_STATE=redis` 与 `CONNECT_BINDINGS=firestore`，这样在一个实例上开始的登录才能在另一个实例上完成，并且每个实例都能看到相同的 Slack 绑定与已退役的安装 ID。共享的 `CONNECT_DATA_DIR` 行不通：第一个 Connect 会将其锁定。按安装、按地址以及按实例的请求限制是各实例独立的；登录、GitHub 令牌、机器人令牌、每个地址的 GIF 搜索、退役以及 Slack 团队的限制则通过状态存储共享。
 
 ## 轮换提供商密钥
 
@@ -239,19 +262,21 @@ CONNECT_GITHUB_CLIENT_SECRET=<secret>
 ## 封锁服务器
 
 把它的安装 ID 加入 `CONNECT_DENY_INSTALLS` 并重新启动。其所有者会看到“Connect
-已封锁此服务器的安装 ID。”，而它上面所有通过 Connect 的登录都会停止。
+已阻止此服务器的安装 ID。请联系你的 Connect 服务器运营者。”，而它上面所有通过 Connect 的登录都会停止。
+
+服务器在其所有者轮换密钥时，也会退役它自己旧的安装 ID。它通过此 Connect 为其制作的一份凭据封存来证明该 ID 属于它自己，因此只有曾经让某人登录过的服务器才能退役一个 ID。Connect 会永久保留已退役的 ID，因此旧密钥以及为其制作的每个封存都会停止工作，并释放绑定在旧 ID 上的 Slack 工作区。已经发出的令牌会自行过期：个人令牌在 8 小时内，机器人令牌在 1 小时内。Connect 最多保留 100,000 个已退役的 ID；超过该数量后，轮换会被拒绝，并且日志会以错误级别记录此事。
 
 ## 故障排除
 
 ### 服务器提示 Connect 封锁了它
 
-它的安装 ID 不在 `CONNECT_ALLOWED_INSTALLS` 中，或者在 `CONNECT_DENY_INSTALLS` 中。
+它的安装 ID 不在 `CONNECT_ALLOWED_INSTALLS` 中，在 `CONNECT_DENY_INSTALLS` 中，或已被密钥轮换退役。
 当其所有者轮换密钥时，这个 ID 会改变；请向对方索取新的 ID。
 
-### 某个提供商显示为不可用
+### 对某个提供商的所有登录都失败
 
-它的某个变量缺失，因此 Connect 把该通道排除在外。请检查启动日志与上方的表格。GitHub
-需要 App id、slug、客户端 id 与客户端密钥这四项；Google 需要客户端 id 与密钥两者。
+它的某个变量可能缺失，因此 Connect 把该通道排除在外。请检查启动日志与上方的表格。GitHub
+需要 App id、slug、客户端 id、客户端密钥与私钥这五项；Google 需要客户端 id 与密钥两者。
 
 ### 登录因重定向不匹配而失败
 

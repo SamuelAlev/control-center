@@ -2,13 +2,13 @@
 title: Konfigurasikan guardrail
 description: Tetapkan peraturan benarkan, tanya dahulu dan tolak untuk tindakan ejen, ujinya dengan prob Bagaimana jika? dan laras autonomi setiap ruang.
 slug: ms-MY/manual-pengguna/panduan-cara/konfigurasikan-guardrail
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Panduan ini menunjukkan cara mengkonfigurasi guardrail: peraturan yang menentukan
 sama ada tindakan sesuatu ejen dijalankan, meminta kelulusan dahulu, atau ditolak.
 
-Guardrail merangkumi tiga belas kelas kesan yang diisytiharkan oleh setiap alat
+Guardrail merangkumi empat belas kelas kesan yang diisytiharkan oleh setiap alat
 yang mengubah keadaan. Ia dikuatkuasakan di sisi pelayan pada titik alat itu
 dipanggil, tidak pernah melalui arahan di dalam prompt.
 
@@ -23,7 +23,7 @@ dipanggil, tidak pernah melalui arahan di dalam prompt.
    muncul di hujung baris itu (**Kosongkan ke diwarisi**) — keputusannya kembali
    kepada skop yang lebih luas
 
-Setiap baris menunjukkan keputusan berkesan sebagai teg status dan lencana yang
+Setiap baris menunjukkan tetapan tindakan sebagai teg status dan lencana yang
 menyatakan dari mana ia datang: **Skop ini**, **Diwarisi** atau **Lalai
 terbina**. Matriks ini dileraikan pada modus Ejen (`chat`), jadi **Praset modus**
 tidak pernah muncul di sini — gunakan prob Bagaimana jika? dengan modus baca
@@ -35,6 +35,18 @@ Titik semak: tetapkan **Push ke remote** kepada **Tolak** pada skop ruang kerja,
 kemudian jalankan prob Bagaimana jika? di bawah pada `git push origin main`.
 Hasilnya berbunyi `deny` dengan sumber `workspace`.
 
+## Semak dan batalkan kelulusan sementara
+
+Menjawab kad kelulusan dengan **Luluskan selama 8 jam** menulis kelulusan sementara: satu peraturan yang membenarkan jenis tindakan yang sama tanpa bertanya sehingga ia tamat. Setiap satu disenaraikan pada halaman ini, di bawah tindakan yang dimilikinya.
+
+1. Pergi ke **Tetapan → Ruang kerja → Kebenaran ejen** dan pilih skop. Kelulusan ditulis untuk ruang tempat soalan itu datang, jadi pilih **Ruang** dan kemudian ruang itu
+2. Di bawah baris tindakan itu, baca entri: apa yang dibenarkannya (contohnya, push ke cawangan yang sepadan dengan `feature/**`), perkataan **Kelulusan sementara**, siapa yang memberikannya jika ia orang lain, dan bila ia tamat
+3. Untuk menamatkannya sekarang, tunjuk pada entri dan tekan **Tarik balik**. Ejen akan bertanya semula bermula dari tindakan seterusnya
+
+Baris itu terus menunjukkan tetapan tindakan itu sendiri, dan satu baris di bawahnya mengira kes yang disenaraikan di bawah yang tetap dibenarkan. Peraturan bersyarat yang ditulis oleh templat muncul dalam senarai yang sama, dan peraturan perintah dalam kumpulan **Arahan** selepas tindakan terakhir. Pada skop ruang kerja, nota di bawah ringkasan mengira kelulusan sementara yang ditetapkan untuk ruang atau ejen tunggal. Pada ruang atau ejen, ia mengira kelulusan ruang kerja, yang juga terpakai di situ.
+
+Kelulusan sementara hanya menjimatkan satu soalan. Ia tidak sekali-kali mengatasi **Tolak**: jika anda menetapkan tindakan kepada **Tolak** semasa kelulusan sementara untuk tindakan itu masih berkuat kuasa, entri kelulusan itu berbunyi **tidak berkuat kuasa semasa ditolak** sehingga kelulusan itu tamat atau anda membatalkannya. Menukar tetapan tindakan membiarkan kelulusan sementaranya kekal, dan membatalkan salah satunya membiarkan tetapan kekal.
+
 ## Fahami cara keputusan dileraikan
 
 Peleraian mengutamakan **kekhususan dahulu, kemudian keketatan**:
@@ -42,7 +54,7 @@ Peleraian mengutamakan **kekhususan dahulu, kemudian keketatan**:
 1. Peraturan **Ruang**, kemudian **ejen**, kemudian **ruang kerja**. Skop pertama
    yang mempunyai peraturan sepadan yang memutuskan, dan peleraian berhenti
 2. Jika tiada peraturan sepadan, **praset modus** terpakai — modus baca sahaja
-   (pelan, semakan, orkestrasi) menolak sebelas daripada tiga belas kelas itu
+   (pelan, semakan, orkestrasi) menolak dua belas daripada empat belas kelas itu
 3. Jika modus tidak menentukan apa-apa, **lalai terbina** terpakai
 
 Dalam satu skop, peraturan perintah dileraikan mengikut prefiks padanan
@@ -71,7 +83,7 @@ disengajakan: larian tanpa get lebih buruk daripada larian yang ditolak.
 | Cipta commit                         | Benarkan      |
 | Push ke remote                       | Tanya dahulu  |
 | Buka pull request                    | Tanya dahulu  |
-| Terbitkan semakan atau cantuman       | Tanya dahulu  |
+| Kemas kini atau gabungkan pull request | Tanya dahulu  |
 | Tulis ke penjejak luaran             | Tanya dahulu  |
 | Akses rangkaian                      | Benarkan      |
 | Baca rahsia                          | Benarkan      |
@@ -79,6 +91,7 @@ disengajakan: larian tanpa get lebih buruk daripada larian yang ditolak.
 | Jalankan proses                      | Benarkan      |
 | Ubah struktur ruang kerja            | Benarkan      |
 | Kawal persekitaran terasing (stesen) | Benarkan      |
+| Jalankan arahan pada hos             | Tanya dahulu  |
 
 Taksonomi ini tertutup. Alat baharu yang dikeluarkan tanpa mengisytiharkan
 kelasnya akan gagal dalam ujian ratchet di CI, jadi tiada apa-apa yang tiba
@@ -90,14 +103,13 @@ Sebelum mengubah sesuatu peraturan, semak bagaimana polisi semasa sudah
 meleraikannya.
 
 1. Pada halaman yang sama, tatal ke **Bagaimana jika?**
-2. Pilih **Tindakan** (salah satu daripada tiga belas kelas itu)
+2. Pilih **Tindakan** (salah satu daripada empat belas kelas itu)
 3. Secara pilihan, isi **Perintah** (contohnya `git push origin main`), **Ejen**,
    **Ruang** dan **Modus**
 4. Baca hasilnya: keputusan, sebabnya dan **Sumber:**
 
 Prob itu menjalankan peleraian yang sama seperti yang digunakan oleh laluan
-penguatkuasaan, terhadap peraturan langsung anda, jadi jawapannya tepat. Jika ia
-memeranjatkan anda, ubah sesuatu peraturan dalam matriks di atas dan uji semula.
+penguatkuasaan, terhadap peraturan langsung anda, jadi jawapannya tepat. Apabila kelulusan sementara membuat keputusan, sumbernya berbunyi **Kelulusan sementara** diikuti skopnya. Jika jawapan itu memeranjatkan anda, ubah sesuatu peraturan dalam matriks di atas dan uji semula.
 
 ## Tetapkan dail autonomi sesuatu ruang
 

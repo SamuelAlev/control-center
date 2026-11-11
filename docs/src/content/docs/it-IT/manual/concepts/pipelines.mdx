@@ -2,7 +2,7 @@
 title: Pipeline e automazione
 description: Perché le pipeline separano la pianificazione dal lavoro, che cosa ne avvia davvero una e quali modelli integrati sono attivi fin da subito.
 slug: it-IT/manuale/concetti/pipeline
-sourceHash: c9d2c60846aeda9e367a6e926b2b7befe4203cbc
+sourceHash: 7dbf33c34398c6e55e8d706db7822a8a8d165756
 ---
 
 Le pipeline sono la metà deterministica di Control Center. Un agente decide che
@@ -37,7 +37,7 @@ anziché riprendere un passaggio, perché riprendere sarebbe peggio che fermarsi
   parziale `orchestration.awaitApproval`. `human.gate` non è esente.
 - Un passaggio dichiarato `extras: {'idempotent': false}` che era in corso
   quando il server si è fermato potrebbe aver già applicato il proprio effetto
-  collaterale (uno squash merge, la pulizia di un worktree). Rieseguirlo
+  collaterale (un backup dello spazio di lavoro, la pulizia di un worktree). Rieseguirlo
   potrebbe applicarlo due volte, quindi il motore lo fa fallire e lascia a te il
   retry.
 
@@ -142,12 +142,13 @@ garbage collection. Senza di essa, le righe dei worktree, le partizioni del graf
 del codice e le copie copy-on-write si accumulano, e non è mai stato pensato come
 una scelta dell'utente.
 
-Un'altra asimmetria da conoscere: il modello integrato `pr_review` di proposito
-non pubblica più su GitHub. La pubblicazione di una revisione è un passaggio
-separato, soggetto a controllo dell'utente, e una pipeline che pubblicasse
-direttamente lo farebbe due volte. `cross_review`, `ticket_to_pr` e `pr_triage`,
-invece, pubblicano ancora un commento direttamente su GitHub quando vengono
-eseguiti.
+Un'altra asimmetria da conoscere: il modello integrato `pr_review` di proposito non pubblica più su GitHub. La pubblicazione di una revisione è un passaggio separato, soggetto al controllo dell'utente, e una pipeline che pubblicasse direttamente lo farebbe due volte. `cross_review`, `ticket_to_pr`, `pr_triage`, `pre_merge_gate` e `external_pr_welcome`, invece, pubblicano ancora un commento su GitHub quando vengono eseguiti.
+
+Pubblicano dal server, tramite il passaggio **Post PR comment** (`prReview.comment`), mai da uno script di shell: i passaggi di shell di una pipeline e le sandbox degli agenti contengono un token GitHub che può solo leggere. La stessa regola vale per il resto:
+
+- `external_pr_welcome` pubblica il suo saluto come `message` di quel passaggio.
+- `ticket_to_pr` fa sì che l'agente sviluppatore esegua il push di `agent/<ticket_id>` (tramite il gateway dell'esecuzione) e apra la PR in bozza con `open_pull_request`, con l'accesso GitHub della persona che ha avviato l'esecuzione, oppure come bot se nessuno l'ha avviata. Entrambi rispettano le regole **Eseguire il push a un remoto** e **Aprire una pull request** dello spazio di lavoro. Su Control Center Connect, un'esecuzione che nessuno ha richiesto, come quella avviata da `TicketAssigned`, non può fare push né aprire la PR: il bot dell'app condivisa può solo leggere e commentare.
+- `pre_merge_gate` non esegue mai il merge. Approvando al proprio gate pubblica che la PR è pronta per essere unita da un manutentore; rifiutando pubblica che sono richieste modifiche. Il merge lo fa una persona dalla pagina della PR.
 
 ## Che cosa sa il motore
 

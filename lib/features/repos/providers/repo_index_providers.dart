@@ -25,9 +25,8 @@ final repoIndexProgressProvider =
                   // The run's own work, not the size of the checkout: an
                   // incremental reindex touches a handful of files out of
                   // thousands and counting against the whole tree pinned the
-                  // display near zero for the entire run. `totalFiles` is the
-                  // fallback for a snapshot written before this key existed.
-                  final total = json['filesToIndex'] ?? json['totalFiles'];
+                  // display near zero for the entire run.
+                  final total = json['filesToIndex'];
                   final symbols = json['symbols'];
                   return (
                     done: done is int ? done : 0,

@@ -4,8 +4,10 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_host.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/rigs/presentation/rig_tab_surfaces.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
+import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -26,6 +28,7 @@ Future<void> openEndpointInBrowserVm(
   required EnvironmentHost host,
 }) async {
   final toasts = CcToastScope.maybeOf(context);
+  final l10n = AppLocalizations.of(context);
   final repository = ref.read(rigRepositoryProvider);
   final workspaceId = spaceKey.workspaceId;
   host.openBrowserVm(spaceId: spaceKey.spaceId);
@@ -56,8 +59,10 @@ Future<void> openEndpointInBrowserVm(
       toasts?.show(result.text, variant: CcToastVariant.danger);
     }
   } on Object catch (error) {
+    // Opening the space's Browser (VM) and driving it need the write grant
+    // on the space; that refusal is worded, anything else as the server said.
     toasts?.show(
-      environmentFailureMessage(error),
+      repoRefusalOf(l10n, error) ?? environmentFailureMessage(error),
       variant: CcToastVariant.danger,
     );
   }

@@ -29,8 +29,7 @@ human behind it.
   through Control Center Connect, and limited to what an accountable member can
   do there. It is never your sign-in handed over whole
 
-Yours is set in the **Code hosting** card at **Settings → Workspace → Profile &
-identity**; the server's app in **Provider apps** at **Settings → Server → Single
+Yours is set in the **Code hosting** card at **Settings → You → Profile**; the server's app in **Provider apps** at **Settings → Server → Single
 sign-on**. See [Set up GitHub integration](/manual/guides/github-integration/)
 and [Create the GitHub App](/manual/guides/github-app/).
 
@@ -38,9 +37,10 @@ GitLab and Bitbucket still take a pasted personal token, stored the same way.
 See [Connect a code host](/manual/guides/connect-forges/).
 
 :::note[There is also a URL-only screen]
-`/workspaces/<workspaceId>/api-keys` renders the same two cards as onboarding's
+`/workspaces/<workspaceId>/api-keys` renders the same cards as onboarding's
 first step. It has **no navigation entry anywhere in the UI**; it is reachable
-only by typing the URL. Use Settings → Workspace → Profile & identity instead.
+only by typing the URL. Use Settings → You → Profile for your own
+sign-ins, and Settings → Workspace → Integrations for the ticketing vendor.
 :::
 
 ## Set model provider keys
@@ -59,9 +59,9 @@ for adding a custom endpoint.
 These credentials are **host-global**: one key serves every workspace on the
 install. OAuth tokens are refreshed before they expire.
 
-External adapter CLIs keep their own credentials, in their own configuration, on
-the server host — Control Center does not manage them. Authenticate Claude Code the
-way its own documentation says, on the machine `cc_server` runs on.
+Claude Code signs in through **Claude Code accounts** under **Settings → Server →
+Model providers**: each account gets its own configuration directory on the
+server, and you run the `claude auth login` command the app shows you there.
 
 The per-adapter **Environment variables** dialog looks like a place to put a key
 for one of them, but it is not: it writes to your device, while the server reads
@@ -70,14 +70,15 @@ its own copy and nothing bridges the two. See
 
 ## Connect a ticketing vendor
 
-The **Ticketing** card on **Settings → Workspace → General** holds both halves of one decision: which vendor your
-tickets live in, and who Control Center is when it talks to it. Choosing
+The **Ticketing** card on **Settings → Workspace → Integrations** holds the workspace's side: which vendor your
+tickets live in, and who Control Center is when it works there on its own. Choosing
 **Local** hides the Linear rows — local tickets live in this server's own
 database and have nothing to authenticate to.
 
 Linear has two sign-ins and no pasted key: **Linear** is yours, for what you do,
-and **Linear automation** is the workspace's Control Center app, connected by an
-admin, for ticket sync, pipelines and agents. The server may also hold a
+and lives on **Settings → You → Profile**; **Linear automation** is
+the workspace's Control Center app, connected by an admin on the Ticketing card,
+for ticket sync, pipelines and agents. The server may also hold a
 **Service API key** (**Provider apps**) for workspaces without automation
 connected. No ticketing credential is injected into an agent's sandbox; agents
 write tickets through Control Center's tools, which ask the **Write to an
@@ -92,9 +93,11 @@ external tracker** rule. See
   then revoke the old one on the forge
 - **The server's app**: generate a new private key or client secret on the app's
   provider page, paste it in **Provider apps** and press **Test**
-- **The Connect install key**: **Rotate key** on the **Control Center Connect**
-  card, or `cc_server connect rotate-key --yes`. Everybody who signed in through
-  Connect signs in again. See [Control Center Connect](/manual/reference/connect/)
+- **The Connect install key**: the server owner presses **Rotate key** on the
+  **Control Center Connect** card. Everybody who signed in through Connect signs
+  in again. If a Connect server can't be reached, nothing changes and you are
+  offered **Rotate anyway**. See
+  [Rotate the install key](/manual/reference/connect/#rotate-the-install-key)
 - **A model provider**: on its row, sign out (OAuth) or remove the key, then
   connect again
 - **Slack**: for your own app, re-paste the tokens in the connect dialog. The
@@ -106,8 +109,9 @@ external tracker** rule. See
 
 ### A GitLab or Bitbucket token works in `curl` but not here
 
-Check the **Code hosting** row's subtitle. If it reads "from the environment",
-the credential answering is the server's, not yours — yours was not saved.
+Check the **Code hosting** row. If it reads "Not connected" or asks you to
+connect again, your token was not saved or was rejected. For Bitbucket, enter
+your Atlassian account email together with the API token.
 
 ### A GitLab or Bitbucket token is accepted but later requests fail
 

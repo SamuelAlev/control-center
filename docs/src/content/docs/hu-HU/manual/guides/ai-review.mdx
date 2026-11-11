@@ -2,7 +2,7 @@
 title: MI-alapú átnézés használata
 description: Futtassa a pr_review pipeline-t egy PR-en, olvassa el a megállapításokat és az ítéletet, majd tegye közzé az átnézést a GitHubon.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/mi-atnezes
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Ez az útmutató bemutatja, hogyan végeztethet átnézést átnéző ügynökökkel egy
@@ -125,7 +125,7 @@ elvetett megállapítások kimaradnak. A gomb minden még nyitott megállapítá
 tartalmaz, és **Ship** esetén `APPROVE`-ot küld. (A `publish_review_to_github`
 MCP eszköz alapértelmezés szerint csak a társak által megerősített
 megállapításokat veszi alapul, és soha nem hagy jóvá: automatizálásként tesz
-közzé, így ott az `approve_on_ship` hatástalan.)
+közzé, így ott az `approve_on_ship` hatástalan. Ezt az automatikus közzétételt a bot küldi, kivéve a megosztott Control Center Connect alkalmazás esetén, ha a Connect üzemeltetője nem vette fel ezt a telepítést: ekkor a felelős személy saját GitHub-bejelentkezésével, az ő nevében kerül ki.)
 Azok, amelyek fájl- és sorhorgonyt hordoznak, soron belüli megjegyzésekké
 válnak; minden más az összefoglaló törzsébe hajlik, mindegyik egy
 „— Control Center AI review” láblécet kap, hogy a forrás egyértelmű legyen. A
@@ -150,7 +150,8 @@ szeretné futtatni.
 
 Más beépített pipeline-ok közvetlenül posztolnak a GitHubra: a `cross_review`, a
 `pr_triage`, a `ticket_to_pr` és a `pre_merge_gate` mind egy hozzászólás-lépéssel
-zárul. Egyedül a `pr_review` tartja vissza a kimenetét az Ön számára.
+zárul, amelyet a szerver tesz közzé. Egyedül a `pr_review` tartja vissza a
+kimenetét az Ön számára. Egyik sem olvasztja össze vagy hagyja jóvá a PR-t.
 
 ## Átnézők indítása saját maga
 

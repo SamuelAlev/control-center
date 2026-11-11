@@ -2,7 +2,7 @@
 title: Deployment en clients
 description: Hoe de thin-clientarchitectuur van Control Center een headless server scheidt van de desktop-, web- en mobiele clients.
 slug: nl-NL/handleiding/concepten/deployment
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center is geen enkel programma. Het is een
@@ -137,6 +137,8 @@ code-server-backend bezit. De browser heeft HTTPS of een veilige
 loopback-context nodig voor Service Workers. Native clients gebruiken een tot
 capabilities beperkte loopback-façade.
 
+Alleen de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) kan de ingebedde code-server-editor openen: die draait op de server als de eigen gebruiker van de server. Een sessie hoort bij het apparaat en de persoon die haar heeft geopend. Hij opent met VS Code-workspacevertrouwen aan, zodat VS Code vraagt voordat het een map vertrouwt, en met automatische taken uit. Alle anderen houden de ingebouwde editor voor één bestand en de bestandsweergaven.
+
 ### Telefoonpartner (cc_remote)
 
 De **Remote**-app is een aparte, lichtere client — een Flutter-web-PWA op
@@ -210,8 +212,10 @@ alleen een echte `cc_worker` geleasede taken uit.
 
 De twee niveaus pakken sandboxing niet hetzelfde aan. `cc_server` hult de runs
 die hij zelf uitvoert in de OS-sandbox van de host waar een backend bestaat —
-Seatbelt op macOS, bubblewrap op Linux en WSL2 — en valt op Windows of zonder
-`bwrap` en `socat` terug op de andere grenzen. **`cc_worker` sandboxt helemaal
+Seatbelt op macOS, bubblewrap op Linux en WSL2. Op Windows, of zonder `bwrap` en `socat`, start
+hij alleen de runs waarvoor de serverbeheerder verantwoordelijk is en weigert
+hij die van alle anderen, tenzij de eigenaar hem met `--sandbox off` heeft
+gestart; dat voert de agents van elk lid onbeperkt uit. **`cc_worker` sandboxt helemaal
 niet.** Hij meldt een `sandbox`-capability zodat de server taken per platform
 kan plaatsen, maar niets in de worker past er een toe: een geleasede taak wordt
 rechtstreeks gestart, begrensd door de omgeving van de lease en de worktree die
@@ -260,8 +264,8 @@ opgeslagen vingerafdruk-pin. Verifieer die vingerafdruk bij de eerste verbinding
 via een vertrouwde QR-code of een ander vertrouwd kanaal: een ondertekend eerste
 contact alleen kan niet authenticeren wie de sleutel heeft geleverd. Verandert
 de identiteit, dan faalt de client gesloten; koppel opnieuw via een vertrouwd
-kanaal in plaats van de afwijking te negeren. Oudere clients en plaintext-RPC
-kunnen niet verbinden. TLS is nog steeds nodig voor browser-origins, bootstrap
+kanaal in plaats van de afwijking te negeren. Plaintext-RPC wordt niet
+geaccepteerd. TLS is nog steeds nodig voor browser-origins, bootstrap
 en openbare metadata; `--insecure` beïnvloedt de buitenste listener van de
 server, niet de vereiste versleutelde sessie.
 

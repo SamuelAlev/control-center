@@ -9,10 +9,12 @@ By the end of this tutorial, you will have:
 
 - A workspace named after your project
 - A Git repository registered into it
-- Five seeded agents, one of which you have configured well enough to run
+- Six seeded agents, one of which you have configured well enough to run
 - A second, empty workspace that proves the isolation boundary
 
 Onboarding already created a workspace for you. This tutorial creates a fresh one deliberately, so you see every part of the process.
+
+Creating a workspace needs the server owner, the person who set the server up. On a desktop running its own server that is you. On someone else's server, **Add workspace** says "Only the server owner can create workspaces. Ask them to create one, or ask a workspace admin to invite you." Do one of those and follow the rest of the tutorial in that workspace. Registering a repository in step 2 needs a workspace admin, and the second workspace in step 4 needs the server owner again.
 
 Before you start, pick a Git checkout that satisfies all three of these — the registration step refuses anything else:
 
@@ -33,12 +35,12 @@ Control Center switches to the new workspace and lands on its inbox (`/workspace
 Behind that, the server publishes a `WorkspaceCreated` event and seeds the workspace with:
 
 - a **CEO agent**, whose persona is coordination and delegation
-- four specialists — `qa`, `architect`, `engineer` and `librarian` — each with its own instructions and skills
+- five specialists — `qa`, `architect`, `engineer`, `librarian` and `content-synthesizer` — each with its own instructions and skills
 - the built-in pipeline templates and their trigger rows
 
 Every workspace you create gets all of this, not just the first one.
 
-Confirm it: open **Settings → Workspace → Agents**. Five agents are in the roster, each with a hollow status ring.
+Confirm it: open **Settings → Workspace → Agents**. Six agents are in the roster, each with a hollow status ring.
 
 ## Step 2: Register a repository
 
@@ -55,7 +57,7 @@ Confirm it: the repo appears in the list with its `owner/repo` and current branc
 
 ## Step 3: Make one agent runnable
 
-The five agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all five unset. Set one now.
+The six agents this workspace just seeded have no adapter and no model. Dispatch runs them on **Control Center (built-in)** and, with no model set, asks Anthropic for its default one — so they work only if you have connected an Anthropic account, and on a model you did not choose if you have. First-run onboarding stamps its choice onto every agent in the first workspace, once; a workspace you create afterwards starts with all six unset. Set one now.
 
 1. Open **Settings → Workspace → Agents**
 2. Select `engineer` in the roster
@@ -71,7 +73,7 @@ Each agent carries its own adapter and model, so repeat this for any other agent
 Create a second workspace from the title-bar chip, exactly as in step 1. Then look at it:
 
 - **Settings → Workspace → Repositories** is empty. The repo you registered a minute ago is not there.
-- **Settings → Workspace → Agents** holds five agents, but they are different rows — the adapter you set in step 3 is gone.
+- **Settings → Workspace → Agents** holds six agents, but they are different rows — the adapter you set in step 3 is gone.
 - The spaces list, tickets and memory are all empty.
 
 Nothing leaked, because there is nothing to leak from: each workspace's rows live in that workspace's own database file. A cross-workspace read is not a query that gets filtered, it is a query that has nowhere to run. Deleting a workspace is unlinking a file.
@@ -82,6 +84,6 @@ For the full model, read [Workspaces and isolation](/manual/concepts/workspaces/
 
 ## Recap
 
-You created a workspace, watched it seed a CEO and four specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
+You created a workspace, watched it seed a CEO and five specialists, registered a repo into it, gave one agent an adapter and a model and confirmed that a second workspace shares none of it.
 
 **Next:** [Dispatch your first agent](/manual/tutorials/first-agent/) to put the workspace to work.

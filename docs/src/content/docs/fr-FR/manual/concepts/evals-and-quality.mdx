@@ -2,7 +2,7 @@
 title: Évaluations et qualité
 description: Les suites d’évaluation et les campagnes de skills épinglées à des révisions, et comment interpréter leurs preuves.
 slug: fr-FR/manuel/concepts/evaluations-et-qualite
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 **Observabilité → Qualité** contient à la fois des suites d’évaluation à tâche
@@ -21,8 +21,7 @@ ce que ces vérifications ne peuvent pas exprimer.
 Cinq suites de démarrage sont initialisées à la création d’un espace de travail. Elles
 couvrent les propositions d’orchestration, une revue qui détecte un bogue pré-injecté, le
 mode plan qui reste en lecture seule, le mode plan qui produit un plan et un aller-retour
-de ticket. L’initialisation écoute `WorkspaceCreated` (`workspace.upsert` ou
-`workspace.create`), ignore un nom qui existe déjà et n’alimente pas rétroactivement les
+de ticket. L’initialisation écoute `WorkspaceCreated` (publié par `workspace.create`), ignore un nom qui existe déjà et n’alimente pas rétroactivement les
 espaces de travail plus anciens.
 
 ### Où elles apparaissent

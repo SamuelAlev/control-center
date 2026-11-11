@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cc_infra/src/jsonrpc_process/framed_process_channel.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 
 /// A server-initiated request or notification.
 typedef JsonRpcInbound = ({String method, Map<String, dynamic> params, int? id});
@@ -41,6 +42,7 @@ class JsonRpcProcessClient {
   /// Spawns [command] with [args] in [workingDirectory] and returns a client
   /// speaking to it.
   static Future<JsonRpcProcessClient> start({
+    required ToolProcessLauncher launcher,
     required String command,
     required List<String> args,
     required String workingDirectory,
@@ -48,6 +50,7 @@ class JsonRpcProcessClient {
     String? name,
   }) async => JsonRpcProcessClient(
     await FramedProcessChannel.start(
+      launcher: launcher,
       command: command,
       args: args,
       workingDirectory: workingDirectory,

@@ -1,8 +1,8 @@
 ---
 title: Control Center Connect referansı
-description: Connect’in neleri gördüğü ve neleri asla görmediği, üç mod, kurulum kimliği, mühürlü kimlik bilgileri, yapılandırma güveni ve her ayar, işlem ve durum kodu.
+description: Connect’in neleri gördüğü ve neleri asla görmediği, üç mod, bir çalışma alanının kendi seçimi, kurulum kimliği, mühürlü kimlik bilgileri, yapılandırma güveni ve her ayar, işlem ve durum kodu.
 slug: tr-TR/kilavuz/referans/connect
-sourceHash: 9e2243cb8fcdb2fe54609336067b4d044a5d7ddd
+sourceHash: a0e00d57bc7fe0fc791186abf048d9df7897f1b6
 ---
 
 Control Center Connect, kendi uygulamalarını kaydetmemiş sunucular için sağlayıcı
@@ -11,11 +11,11 @@ ya kuruluşunun çalıştırdığı bir Connect’i
 ([Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/))
 kullanır ya da hiçbirini kullanmaz. Seçim **Ayarlar → Sunucu → Tek oturum açma →
 Control Center Connect**, `cc_server connect` ya da `CC_CONNECT_URL` üzerinden
-yapılır.
+yapılır. Bir çalışma alanı, yöneticisi **Ayarlar → Çalışma alanı → Entegrasyonlar** altında başka bir seçim yapmadıkça bu seçimi izler ([Çalışma alanı başına seçim](#çalışma-alanı-başına-seçim)).
 
 ## Hatlar
 
-**Kendi uygulamalarımı kullan** altında (ya da biri seçilmeden önce) bir hat, sunucunun kendi uygulaması tam olarak yapılandırılmışsa onda çalışır, değilse kullanılamaz. Control Center Connect ya da özel bir Connect ile Connect, sunduğu her hattı çalıştırır: sunucunun kendi uygulamaları kayıtlı kalır ama kullanılmaz; bu, oturum açmalar, sunucu otomasyonu ya da sunucunun bildirdiği durum için geçerlidir. Çalışma alanının kendi uygulaması her modda kazanır.
+**Kendi uygulamalarımı kullan** altında (ya da biri seçilmeden önce) bir hat, sunucunun kendi uygulaması tam olarak yapılandırılmışsa onda çalışır, değilse kullanılamaz. Control Center Connect ya da özel bir Connect ile Connect, sunduğu her hattı çalıştırır: sunucunun kendi uygulamaları kayıtlı kalır ama kullanılmaz; bu, oturum açmalar, sunucu otomasyonu ya da sunucunun bildirdiği durum için geçerlidir. Kendi seçimini yapan bir çalışma alanı, her hattı o seçime göre çalıştırır.
 
 | Hat          | Kendi uygulamanın ihtiyaçları                              | Connect üzerinden                                                                 |
 | ------------ | ---------------------------------------------------------- | --------------------------------------------------------------------------------- |
@@ -27,9 +27,7 @@ yapılır.
 | `klipy`      | `KLIPY_APP_KEY`                                            | Connect’in proxy üzerinden sunduğu GIF araması                                    |
 
 Yalnızca kısmen yapılandırılmış bir kendi uygulama, hattını bir hataya dönüştürür;
-asla Connect’e sessizce geri dönmez. Kendi GitHub App’ini kullanan bir çalışma
-alanı (**Ayarlar → Çalışma alanı → Genel → GitHub kimliği**) GitHub için asla
-Connect’ten geçmez; kendi Google, Linear veya Klipy uygulamasını kullanan bir çalışma alanı (**Ayarlar → Çalışma alanı → Genel → Sağlayıcı uygulamaları**) ise o sağlayıcı için sunucunun uygulamasından ya da Connect’ten asla geçmez. Connect seçimini değiştirmek, bir çalışma alanının kendi uygulamasındaki kimseyi oturumdan çıkarmaz.
+asla Connect’e sessizce geri dönmez. **Kendi uygulamalarımı kullan** seçeneğindeki bir çalışma alanı, hiçbir sağlayıcı için sunucunun uygulamalarından ya da herhangi bir Connect’ten geçmez. Sunucunun Connect seçimini değiştirmek, kendi seçimini yapmış bir çalışma alanındaki kimseyi oturumdan çıkarmaz.
 
 ## Connect’in gördükleri ve asla görmedikleri
 
@@ -37,17 +35,22 @@ Connect’ten geçmez; kendi Google, Linear veya Klipy uygulamasını kullanan b
 | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Sunucunun kurulum kimliği ve istek imzaları                                                 | Kaynak kodu, depo içerikleri, diff’ler ya da pull request metni                          |
 | Oturum açma sırasında, oturum açan sağlayıcı hesabı                                         | Biletler, transkriptler ya da bir çalışma alanı veritabanındaki herhangi bir şey         |
-| Bir kimlik bilgisinin hangi çalışma alanına ait olduğu, mührün içinde opak bir kimlik olarak | Bir GitHub App özel anahtarı: depo token’ları bir kişinin oturum açmasından gelir       |
+| Bir kimlik bilgisinin hangi çalışma alanına ait olduğu, mührün içinde opak bir kimlik olarak | Sunucunun kendi uygulama sırları: onlar sunucudan hiçbir zaman çıkmaz                  |
 | Tek depoluk bir GitHub token’ının üretildiği depo                                           | Bekleyen yenileme token’ları: yalnızca sunucunun tuttuğu mühürlerin içinde bulunurlar    |
-| Sunucuya bağlanmış GitHub kurulum kimlikleri                                                | Linear gizli anahtarları: sunucu Linear’ın kodunu kendisi değiştirir                     |
+| Sunucuya bağlanmış Slack ekibi                                                              | Linear gizli anahtarları: sunucu Linear’ın kodunu kendisi değiştirir                     |
 | Klipy için proxy görevi gördüğünde GIF arama terimleri                                      | Parolalar, eşleştirme anahtarları ya da model sağlayıcı anahtarları                      |
 | Slack olay başvuruları (ekip, kanal, ileti kimliği) ve slash komutu metni                   | Slack ileti metni: Connect onu gelir gelmez atar ve sunucu iletiyi Slack’ten kendisi okur |
 
-Connect kısa ömürlü durumu (hazırlanan oturum açmalar, nonce’lar, önbellekler) en
-fazla 15 dakika tutar. Kalıcı tek kayıtları kurulum bağlamalarıdır: hangi
-sunucuların hangi GitHub kurulumunu kullanabileceği ve her Slack ekibinin hangi
-sunucuya bağlı olduğu. Hatalar sağlayıcının yanıtını değil, bir kodu taşır ve
-günlükler kurulum kimliklerini yalnızca anahtarlı karmalar olarak kaydeder.
+Connect, hazırlanan oturum açmaları, nonce’ları ve önbellekleri en fazla 10 dakika,
+saatlik kullanım sayaçlarını en fazla iki saat tutar. Bir kişi olarak üretilen tek
+depoluk bir GitHub token’ı, onu isteyen oturum açmaya mühürlenmiş olarak, süresi
+dolana kadar (en fazla 8 saat) kayıtlı kalır; böylece Connect onu yeniden verebilir ve
+bağlantı kesildiğinde iptal edebilir. Kalıcı tek kayıtları Slack bağlamalarıdır (her Slack
+ekibinin hangi sunucuya bağlı olduğu) ve emekli edilmiş kurulum kimlikleridir. Hatalar
+sağlayıcının yanıtını değil, bir kodu taşır. Günlükler kurulum kimliklerini yalnızca
+anahtarlı karmalar olarak, bir GitHub token’ını ise yalnızca GitHub’ın kuruluş denetim
+günlüğünün ona gösterdiği `hashed_token` olarak kaydeder; böylece bir kuruluş sahibi
+ikisini eşleştirebilir.
 
 ## Modlar
 
@@ -66,9 +69,28 @@ Bu derleme hiçbir barındırılan yapılandırma anahtarı içermez; bu yüzden
 mod `hosted_unprovisioned` bildirir ve hiçbir hatta hizmet vermez. Kendi
 uygulamalar ve özel bir Connect çalışır.
 
+Barındırılan Connect tek bir konteynerde çalışır. Mühür anahtarı ve paylaşılan GitHub App’in özel anahtarı orada ortam değişkenleridir; GitHub’ın bir App’in özel anahtarı için önerdiği gibi yalnızca imzalayan ya da çözen bir kasadaki anahtarlar değildir. Bu, mevcut kurulumun bilinen bir açığıdır.
+
 Bir sunucu Connect’in yapılandırmasını en fazla 10 dakikada bir okur ve her çağrı
 için en fazla 5 saniye bekler. Connect’e ulaşılamadığında son geçerli yapılandırma
 kullanılmaya devam eder ve Ayarlar onu eskimiş olarak işaretler.
+
+## Çalışma alanı başına seçim
+
+**Ayarlar → Çalışma alanı → Entegrasyonlar → Control Center Connect**, bir çalışma alanı için sunucunun seçimini geçersiz kılar. Her üye seçimi ve her oturum açmanın nerede çalıştığını görür; yalnızca bir çalışma alanı yöneticisi değiştirebilir.
+
+| Seçim                               | Davranış                                                                                                                                                  |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Bu sunucuyla aynı**               | Varsayılan. Çalışma alanı sunucu sahibinin seçtiği her şeyi izler; seçenek bunun ne olduğunu adlandırır                                                    |
+| **Control Center’ın uygulamalarını kullan** | Sunucunun ne kullandığından bağımsız olarak Control Center’ın barındırdığı Connect                                                                |
+| **Kendi uygulamalarımı kullan**     | Yalnızca çalışma alanının kendi uygulamaları: GitHub App’i, Google istemcisi, Linear uygulaması, Klipy anahtarı ve Slack uygulaması. Kendi uygulaması olmayan bir sağlayıcı burada kapalıdır; kısmen yapılandırılmış olan bir kurulum hatasıdır |
+| **Özel bir Connect sunucusu kullan** | Çalışma alanının adını verdiği bir HTTPS adresindeki Connect. Özel veya yerel ağdaki adresler reddedilir                                                    |
+
+- **Bu sunucuyla aynı** dışındaki her seçim, her kişinin GitHub ve Linear oturum açmalarını çalışma alanına ait kendi bölmesinde tutar; böylece sunucu genelindekilerle karışmazlar
+- Değişiklik önce sorar: çalışma alanındaki herkes GitHub, Linear ve Google Calendar’a yeni uygulamalar üzerinden yeniden oturum açar
+- Çalışma alanının kendi Slack uygulaması bağlantısı her seçimde çalışır; **Control Center’ı Slack çalışma alanına ekle** seçimi izler
+- `CC_CONNECT_URL` de çalışma alanlarını kendi Connect’lerinden kilitler: sunucuyu izleyebilir ya da kendi uygulamalarını kullanabilirler
+- Bir çalışma alanının özel Connect’ine yalnızca o çalışma alanı için ilk kullanımda güvenilir: orada **Yeni uygulamalara güven** sunucunun ya da başka bir çalışma alanının güvendiklerini asla değiştirmez
 
 ## Kurulum kimliği
 
@@ -100,16 +122,62 @@ hesabına, uygulamaya ve gizli anahtar kuşağına bağlıdır.
 
 ## GitHub kurulumları
 
-Paylaşılan GitHub App’in bir kurulumu, yalnızca Connect onu o sunucunun kurulum
-kimliğine bağladığında o sunucu tarafından kullanılabilir.
+Paylaşılan GitHub App’in bir kurulumu her sunucudan kullanılabilir. Connect, hangi
+sunucunun onu kullanabileceğine dair bir kayıt tutmaz.
 
-- **Ayarlar → Çalışma alanı → Genel** içindeki **GitHub uygulamasını yükle**,
-  GitHub’ı 15 dakikalık bir biletle açar. Kurulumu yapan kişi kişisel hesabın
-  sahibiyse ya da kuruluşu yönetiyorsa Connect yeni kurulumu bağlar
-- **Bu sunucuyu yetkilendir**, zaten var olan bir kurulumu bağlar. Bunu yalnızca
-  bir kuruluş yöneticisi yapabilir
-- Bir kuruluş kurulumu birkaç sunucuya bağlanabilir; her biri bir yöneticinin
-  yetkilendirmesini gerektirir
+- **Ayarlar → Çalışma alanı → Entegrasyonlar** içindeki **GitHub uygulamasını yükle**,
+  uygulamanın GitHub’daki kurulum sayfasını açar. Sunucu bağlantıyı, Connect
+  yapılandırmasındaki uygulama adından oluşturur
+- Tek depoluk bir belirteç, uygulamanın depo sahibine kurulmuş olmasını ve oturum
+  açan kişinin depoya erişimini gerektirir. Bu, o kişinin kendi belirtecidir;
+  rolüyle sınırlıdır, asla daha fazlası değildir
+- Bir kuruluş Control Center’ı GitHub’da sınırlandırır: kurulumu kaldırarak,
+  depolarını daraltarak ya da kişiyi çıkararak
+- Kurulumlarını listelemek gibi yalnızca kişinin yapabileceği çağrılar için Connect,
+  sunucuya tek depoluk bir token yerine kişinin kendi App kullanıcı token’ını verir.
+  Bir sunucuda oturum açmak, o sunucuya bu token’ı emanet etmek demektir
+- GitHub IP izin listesi uygulayan bir kuruluş, adresleri sabit olmadığı için barındırılan
+  Connect’i kullanamaz. Bunun yerine kendi GitHub App’ini kaydeder: kendi sunucularında ya
+  da çalıştırdığı bir Connect’te
+- **Bağlantıyı kes** yalnızca o oturum açmayı iptal eder: Connect yenileme token’ını bir
+  kez harcar ve dönen şeyi siler, kullanıcı token’ını ve Connect’in onun için ürettiği
+  tek depoluk token’ları siler. Bir mühürün herhangi bir yerdeki kopyası çalışmayı durdurur.
+  Kişinin diğer sunucularda ve çalışma alanlarında yaptığı oturum açmalar çalışmaya devam
+  eder. Control Center’ı bir GitHub hesabından tamamen kaldırmak için GitHub’da **Ayarlar →
+  Uygulamalar → Yetkili GitHub Apps → İptal et** yolunu izleyin
+
+### Paylaşılan bot
+
+App’in botu olarak üretilen token’lar (`as: app`), aynı Connect’i kullanan her sunucu için
+GitHub’da aynı botu gösterir: GitHub bu sunucuları birbirinden ayırt edemez.
+
+- Her sunucu botun okumasına ve yorum yapmasına izin verebilir: `read`, `review` ve `comment`
+  (sorunlarda ve pull request’lerde yorumlar, etiketler, atananlar ve tepkiler)
+- Botun adına bir pull request’i incelemek (`bot`, pull request yazar), yalnızca Connect
+  operatörünün `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` içinde listelediği sunucular için izinlidir.
+  Diğer her sunucuya `needs_requester` yanıtı verilir ve inceleme, hesap verebilir kişinin
+  kendi token’ıyla yayımlanır; GitHub bunu o kişiyle sınırlar: inceleme, kişinin adıyla görünür. Bu, yapay zekâ incelemesi yayımlamayı, inceleme yorumlarını ve
+  inceleyici isteklerini kapsar
+- Push etmek, dal oluşturmak ve pull request açmak (`write`) paylaşılan bot olarak asla üretilmez.
+  Her zaman isteyenin kendi oturum açmasını kullanır
+- Bir pull request’i onaylamak, hangi token ile olursa olsun, asla otomatikleştirilmez
+- Kendi GitHub App’i olan bir sunucu ya da çalışma alanı bunların tümünü, incelemeler dahil,
+  bot üzerinde tutar
+
+### Kuruluş sahipleri ve üyelerin bilmesi gerekenler
+
+- Birinin oturum açtığı bir sunucu, onun App kullanıcı token’ını tutar: token başına en fazla
+  8 saat, bağlantıyı kesene kadar yenilenir. Ulaşabildiği ve paylaşılan App’in kurulu olduğu her
+  depoda onun adına hareket edebilir. Connect bir sunucuyu kalıcı olarak kesebilir (emekli
+  edilmiş ya da reddedilmiş bir kurulum), ama daha önce verilmiş bir token süresi dolana kadar
+  geçerli kalır
+- Paylaşılan GitHub App’i bir kuruluşa kurmak, herhangi bir üyenin oturum açtığı her Control
+  Center sunucusu için onay verir; tek bir sunucu için değil
+- Bot, yukarıda belirtildiği gibi paylaşılandır: bir kuruluş GitHub’da hangi sunucunun botu
+  kullandığını ayırt edemez
+- Kendi sınırını isteyen bir kuruluş kendi GitHub App’ini kaydeder ve kendi Connect’ini çalıştırır
+  ([Bir Connect sunucusu çalıştırma](/tr-TR/kilavuz/nasil-yapilir/connect-sunucusu-calistirma/)) ya da App’i kendi
+  sunucularında yapılandırır
 
 ## Yapılandırma güveni
 
@@ -120,7 +188,7 @@ kimliğine bağladığında o sunucu tarafından kullanılabilir.
 
 ## İşlemler
 
-Tüm Connect ayarları yalnızca sunucu sahibine açıktır.
+Sunucunun Connect ayarları yalnızca sunucu sahibine açıktır.
 
 | İşlem                 | Ne yapar                                                                                       |
 | --------------------- | ---------------------------------------------------------------------------------------------- |
@@ -128,7 +196,16 @@ Tüm Connect ayarları yalnızca sunucu sahibine açıktır.
 | `connect.configure`   | `hosted`, `custom` (`url` ile) ya da `off` ayarlar                                             |
 | `connect.test`        | Yapılandırmayı yeniden getirir ve sağlığı bildirir                                             |
 | `connect.confirmPins` | Özel bir Connect’in değişmiş tanımlayıcılarını kabul eder                                      |
-| `connect.rotateKey`   | Yeni bir kurulum anahtarı üretir. Bu sunucuda Connect üzerinden yapılan her oturum açma çalışmayı durdurur |
+| `connect.rotateKey`   | Yeni bir kurulum anahtarı ve yeni bir kurulum kimliği üretir (`force`, eski kimliği bir Connect emekli edemese bile onu değiştirir); bkz. [Kurulum anahtarını değiştirme](#kurulum-anahtarını-değiştirme) |
+
+Bir çalışma alanının kendi seçimi kendi işlemlerine sahiptir; her biri çalışma alanını adlandırır:
+
+| İşlem                          | Kim                      | Ne yapar                                                                              |
+| ------------------------------ | ------------------------ | ------------------------------------------------------------------------------------- |
+| `workspaceConnect.status`      | Herhangi bir üye         | Seçim, neye çözüldüğü, sağlık ve her sağlayıcının kaynağı. Kurulum id’si ve bekleyen sabitlemeler yalnızca yöneticiler için |
+| `workspaceConnect.set`         | Çalışma alanı yöneticisi | `inherit`, `hosted`, `custom` (`url` ile) ya da `own` ayarlar                        |
+| `workspaceConnect.test`        | Çalışma alanı yöneticisi | Çalışma alanının Connect yapılandırmasını yeniden getirir ve sağlığı bildirir          |
+| `workspaceConnect.confirmPins` | Çalışma alanı yöneticisi | Çalışma alanının özel Connect’inin değişmiş tanımlayıcılarını kabul eder              |
 
 Oturum açmaların kendileri `oauth.lanes`, `oauth.begin`, `oauth.status`,
 `oauth.complete`, `oauth.connections` ve `oauth.disconnect` kullanır. Kişi her
@@ -137,23 +214,54 @@ zaman oturum açmış çağırandır.
 ## Connect üzerinden oturum açma
 
 1. Sunucu Connect’ten hattı başlatmasını ister ve sağlayıcının yetkilendirme
-   URL’sini alır; onu göstermeden önce denetler
+   URL’sini alır; onu göstermeden önce denetler. GitHub her zaman hesap seçicisini gösterir
 2. Kişi tarayıcıda onaylar. Sağlayıcı Connect’e geri döner
-3. Connect 8 karakterlik bir kod ve bir `control-center://oauth-done` bağlantısı
-   gösterir
-4. Kişi kodu uygulamaya yazar ya da bağlantıyı izler. Sunucu oturum açmayı kodla
-   ve isteğin kendine ait kanıtıyla talep eder
+3. Connect, oturum açmayı başlatan sunucunun kişi olarak neler yapabileceğini ve bunu ne
+   kadar süreyle yapabileceğini gösterir. Connect bu sunucuyu kimin çalıştırdığını bilemez; bu
+   yüzden sayfa, kişiden yalnızca oturum açmayı kendisi başlattıysa devam etmesini ister, bir
+   başkası ona bağlantıyı gönderdiyse kapatmasını ister. Tarayıcı, oturum açmanın başlatıldığı
+   ağdan farklı bir ağdaysa sayfa bunu söyler: bu barındırılan bir sunucu ya da başka bir cihaz
+   için normaldir ve aynı zamanda oltalamanın göründüğü şekildir. **İptal** oturum açmayı
+   sonlandırır: sağlayıcının kodu asla kullanılmaz. Her sayfa bir kez yanıtlanır; Connect’in az
+   önce gösterdiği sayfadan gelmeyen bir yanıt reddedilir
+4. **Devam et**’ten sonra Connect 8 karakterlik bir kod ve bir `control-center://oauth-done`
+   bağlantısı gösterir. Kodu alan herkes az önce onaylanan erişimi alır; bu yüzden kod yalnızca
+   oturum açmanın başlatıldığı yere gitmelidir
+5. Kişi kodu uygulamaya yazar ya da bağlantıyı izler. Sunucu oturum açmayı kodla ve isteğin
+   kendine ait kanıtıyla talep eder
 
 Bir oturum açma 10 dakika sonra sona erer. Beş yanlış kod onu sonlandırır. Bu
 uygulamanın başlatmadığı bir bağlantı **Oturum açma burada başlatılmadı** ile
-reddedilir.
+reddedilir. Connect, bir ağ adresinin başlatabileceği oturum açma sayısını ve GitHub
+token’larının kişi ve sunucu başına, kişi başına sunucular arasında, adres başına ve tüm
+uygulama için ne sıklıkla verilebileceğini sınırlar. Yeni oturum açmaların kendi bütçeleri
+vardır; bu yüzden başkalarının ihtiyaç duyduğu yenilemeleri asla geciktirmezler. Bir sınırı
+aşan bir çağrı `rate_limited` ile reddedilir ve sunucu oturum kapatmadan daha sonra yeniden
+dener. Kişinin sınırını aşan bir oturum açma GitHub’da geri alınır ve reddedilir.
 
 ## Kurulum anahtarını değiştirme
 
-Connect kartındaki **Anahtarı değiştir** ya da `cc_server connect rotate-key --yes`:
+Connect kartındaki Anahtarı yalnızca sunucu sahibi değiştirebilir; **Ayarlar → Sunucu → Tek oturum açma**
+altındaki **Control Center Connect** kartında **Anahtarı değiştir** ile. Bunun için bir
+komut yoktur. Değiştirme:
 
-- Sunucuya yeni bir kurulum anahtarı ve yeni bir kurulum kimliği verir
-- Connect üzerinden çalışan her hatta herkesin oturumunu kapatır
+- Connect üzerinden çalışan her hatta herkesin oturumunu kapatır. Eski anahtarın
+  kullanıldığı her Connect sunucusu için sunucu, oradan tuttuğu GitHub ve Slack oturum
+  açmalarını iptal eder (bir Google oturum açmasının iptal edilecek bir şeyi yoktur ve
+  kendiliğinden sona erer)
+- Bu Connect sunucularının her birinde eski kurulum kimliğini emekli eder; bunu eski
+  anahtarla imzalar ve sunucunun o Connect’ten tuttuğu bir kimlik bilgisi mührüyle kanıtlar.
+  Bundan sonra Connect eski anahtarla yapılan her isteği reddeder; böylece bu sunucudan
+  alınmış bir mühür ya da eski anahtarın bir kopyası işe yaramaz ve eski kimliğe bağlı Slack
+  çalışma alanları serbest kalır, yeniden bağlanabilirler. Daha önce verilmiş token’lar süresi
+  dolana kadar geçerli kalır (bot token’ı için bir saat, bir kişinin token’ı için sekiz saat).
+  Bu sunucunun hiçbir mührünü tutmadığı bir Connect sunucusunun emekli edilecek bir şeyi yoktur
+  ve atlanır
+- Ardından sunucuya yeni bir kurulum anahtarı ve yeni bir kurulum kimliği verir
+- Bir Connect sunucusuna ulaşılamazsa ya da eski kimliği emekli etmeyi reddederse, anahtarları
+  değiştirmeden durur ve **Connect eski anahtarı kaldıramadı** mesajını gösterir. **Yine de
+  yenile** anahtarları her durumda değiştirir; bu durumda eski kurulum kimliği, token’ları
+  süresi dolana kadar o Connect’te kullanılabilir kalır; GitHub için en fazla 8 saat
 - Sunucunun kendi uygulamaları üzerinden yapılan oturum açmalara dokunmaz
 - Yeni kurulum kimliğinin özel bir Connect’in izin listesine eklenmesini gerektirir
 
@@ -165,7 +273,7 @@ Connect kartındaki **Anahtarı değiştir** ya da `cc_server connect rotate-key
 | `signature`            | Barındırılan yapılandırma imza denetiminden geçemedi                      |
 | `rollback`             | Connect, sunucunun daha önce gördüğünden daha eski bir yapılandırma sundu |
 | `unreachable`          | Sunucu Connect’e ulaşamıyor                                               |
-| `install_blocked`      | Connect bu kurulum kimliğine izin vermiyor                                |
+| `install_blocked`      | Connect bu kurulum kimliğine izin vermiyor veya kimlik emekli edilmiş     |
 | `pins_changed`         | Özel bir Connect farklı uygulama tanımlayıcıları duyurdu                  |
 | `protocol`             | Connect bu sunucunun anlamadığı bir biçimde yanıt verdi                   |
 

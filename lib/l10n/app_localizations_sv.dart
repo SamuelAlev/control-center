@@ -156,7 +156,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get guardrailClassPrPublish =>
-      'Publicera en granskning eller sammanslagning';
+      'Uppdatera eller slå ihop en pull request';
 
   @override
   String get guardrailClassVendorSyncWrite =>
@@ -2559,9 +2559,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get activityToggledMcpServer => 'Växlade MCP-servern';
 
   @override
-  String get activityUpdatedMcpToken => 'Uppdaterade MCP-token';
-
-  @override
   String get activitySavedApiKey => 'Sparade en API-nyckel';
 
   @override
@@ -3184,9 +3181,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Ta bort \"$name\"?';
   }
-
-  @override
-  String get archiveConversation => 'Arkivera samtal';
 
   @override
   String get deleteFact => 'Ta bort fakta';
@@ -3874,9 +3868,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Följ operativsystemets utseende eller välj ett fast läge.';
 
   @override
-  String get mcpAuthToken => 'MCP-autentiseringstoken';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'MCP-serverstyrning saknas på den anslutna servern.';
 
@@ -4090,9 +4081,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Inga systemteckensnitt hittades.';
-
-  @override
-  String get noTokenSet => 'Ingen token angiven – åtkomsten är obegränsad.';
 
   @override
   String get noWorkingMemory => 'Inga arbetsminnesanteckningar ännu.';
@@ -4577,31 +4565,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Serverns GitHub-inloggningsuppgifter kan inte se $repos. Om ett arkiv tillhör en organisation, installera GitHub-appen där eller anslut en token som har åtkomst.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count arkiv kan inte nås',
-      one: 'Ett arkiv kan inte nås',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'GitHub App-installationen är avstängd';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Visar senast kända data för $repos. Återuppta installationen på GitHub, eller anslut en token som har åtkomst.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Ingen åtkomst';
 
   @override
@@ -4715,9 +4678,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Regel';
-
-  @override
-  String get runCompleted => 'Körning slutförd';
 
   @override
   String get running => 'Körs';
@@ -4879,9 +4839,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get setLabel => 'Ange';
-
-  @override
-  String get setToken => 'Ange token';
 
   @override
   String get settingsLabel => 'Inställningar';
@@ -5078,9 +5035,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get skillOriginManual => 'Manuell';
 
   @override
-  String get skillOriginRegistry => 'Register';
-
-  @override
   String get skillOriginRuntimeLocal => 'Lokal runtime';
 
   @override
@@ -5256,10 +5210,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Växla tema';
-
-  @override
-  String get tokenConfigured =>
-      'Konfigurerad – klienter måste visa den här token.';
 
   @override
   String get topic => 'Ämne';
@@ -8818,7 +8768,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Vilka verktygsåtgärder som körs utan att fråga. Läsningar tillåts alltid; högre nivåer frågar.';
+      'Vilka åtgärder i Control Centers egna verktyg, anropade via dess MCP-slutpunkt eller av dess agenter, som körs utan att fråga. Läsningar tillåts alltid; högre nivåer frågar. Servrar inne i en körning följer den körningens åtgärdspolicy.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Fråga alltid';
@@ -12310,20 +12260,8 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsAbout => 'Om';
 
   @override
-  String get settingsScopeBadgeYou => 'DU';
-
-  @override
-  String get settingsScopeBadgeDevice => 'DEN HÄR ENHETEN';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'ARBETSYTA';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Ditt namn, e-post och git-identitet i det här arbetsområdet. Att byta arbetsområde byter det här överlägget; handle, inloggning och enheter stannar på kontot.';
+      'Ditt namn, din e-post och din git-identitet i den här arbetsytan. Byter du arbetsyta byter du det här överlägget; ditt användarnamn, din inloggning och dina enheter ligger kvar på ditt konto under Du → Profil.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12338,49 +12276,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identitet, policy och konventioner som delas av alla i den här arbetsytan.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Tillskrivning av commits';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Välj om Control Center ska krediteras i agentcommits. Administratörer för arbetsytan kan åsidosätta valet för alla i en arbetsyta.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Agentkreditering';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Kreditera Control Center i agentcommits';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Du är alltid författare och committer för commits. När detta är aktiverat läggs Control Center (@usectrl) till som medförfattare. När det är avstängt innehåller commits ingen kreditering av agenten.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Den här arbetsytans inställning åsidosätter ditt personliga val. Din inställning sparas men gäller inte här.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Läser in inställningar för tillskrivning…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Välj om Control Center ska krediteras i agentcommits. Arbetsytans val åsidosätter varje medlems personliga inställning.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Använd varje medlems inställning';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Kreditera alltid Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Kreditera aldrig Control Center';
+      'Policy och konventioner som alla i den här arbetsytan delar.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12749,9 +12645,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Kontrollerar anslutning…';
-
-  @override
-  String get fromEnvironment => 'från miljön';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13320,14 +13213,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Används av arbetsytor som ärver installationens GitHub-app. En arbetsyta med egen app konfigurerar den under Arbetsyta → Allmänt.';
+      'Används av arbetsytor som följer den här serverns inloggningsappar. En arbetsyta med egna appar konfigurerar sin App under Arbetsyta → Integrationer.';
 
   @override
   String get providerAppsGroupPrConversations => 'Pull request-samtal';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Hur utvecklare pratar med den här servern på GitHub i ärvande arbetsområden. Ett arbetsområde med egen App har sin bot under Arbetsområde → Allmänt. Fungerar utan webhook eller offentlig URL — servern pollar.';
+      'Hur utvecklare kan prata med den här servern på GitHub i arbetsytor som följer den här servern. En arbetsyta med egna appar har en egen bot under Arbetsyta → Integrationer. Fungerar utan webhook eller publik URL; servern frågar efter uppdateringar själv.';
 
   @override
   String get providerAppBotLogin => 'Bot-inloggning';
@@ -13360,10 +13253,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Utan en token kan allt som når den här porten anropa varje verktyg.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Verktyg';
 
   @override
@@ -13390,6 +13279,130 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Rensa alla';
+
+  @override
+  String get guardrailFamilyCommands => 'Kommandon';
+
+  @override
+  String get guardrailStandingApproval => 'Stående godkännande';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Tillåtet: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Fråga först: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Nekat: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'grenar $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'sökvägar $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'värdar $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'kommandon $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'verktyg $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'kommandon som börjar med $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'högst $count åt gången';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'högst $amount cent';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'varje åtgärd av den här typen';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'av $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'slutar $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'tills den återkallas';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Återkalla: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed =>
+      'Det gick inte att återkalla. Försök igen.';
+
+  @override
+  String get guardrailEntryInactive => 'inte i kraft när Neka är valt';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tillåten i $count fall nedan',
+      one: 'Tillåten i 1 fall nedan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count stående godkännanden för hela arbetsytan gäller även här.',
+      one: '1 stående godkännande för hela arbetsytan gäller även här.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count stående godkännanden är satta för enskilda ytor eller agenter. Välj Yta eller Agent ovan för att se dem.',
+      one:
+          '1 stående godkännande är satt för en enskild yta eller agent. Välj Yta eller Agent ovan för att se det.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandlåda';
@@ -14202,6 +14215,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du frågas igen nästa gång en agent behöver köra ett program från den här kopian.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Sök sökvägar';
+
+  @override
+  String get sandboxExecGrantsNoMatch => 'Inga beviljanden matchar sökningen';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14557,11 +14576,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Den här anslutningen når servern via ett relä, som inte bär filöverföringar. Anslut till servern direkt för att hämta eller ladda upp en säkerhetskopia.';
+      'Filöverföring är inte konfigurerad för den här anslutningen än. Anslut till servern igen för att hämta eller ladda upp en säkerhetskopia.';
 
   @override
   String get backupTransferForbidden =>
-      'Servern vägrade. Att hämta en arbetsyta kräver adminrollen, att återställa en kräver ägare, och en hel ögonblicksbild kräver installationens operatör.';
+      'Servern vägrade. Att hämta en arbetsyta kräver adminrollen. Att återställa en kräver serverägaren, som också måste äga arbetsytan. En hel ögonblicksbild kräver serverägaren.';
 
   @override
   String get backupTransferUnsupported =>
@@ -14868,34 +14887,8 @@ class AppLocalizationsSv extends AppLocalizations {
       'Lägg urklippsinnehåll från valfri miljö på den här enheten utan att fråga.';
 
   @override
-  String get workspaceGitHubIdentity => 'GitHub-identitet';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Hur GitHub-arbete i bakgrunden i den här arbetsytan autentiseras: med den här installationens app eller med arbetsytans egen app.';
-
-  @override
-  String get workspaceGitHubModeInherit =>
-      'Använd den här installationens GitHub App';
-
-  @override
-  String get workspaceGitHubModeApp => 'Använd en annan GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Använder GitHub App under Server → Leverantörsappar.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Bot- och pollingidentitet för det här arbetsområdet. Medlemmar loggar in under Du via den här App:en.';
-
-  @override
   String get profileOverlayHint =>
       'De här fälten är du i det här arbetsområdet. Tomma fält ärver kontots namn och e-post. Att byta arbetsområde byter det här överlägget.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Logga in eller klistra in en token för det här arbetsområdet.';
 
   @override
   String get stackStartNextPart => 'Starta nästa del';
@@ -15702,6 +15695,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Servern kunde inte ta fram ett inloggningskommando för det här kontot.';
 
   @override
+  String get claudeAccountSignedIn => 'Inloggad';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Den här dialogrutan stängs av sig själv när inloggningen är klar.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Den här dialogrutan stängs av sig själv när alla konton är inloggade.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Inloggningen till Claude Code har gått ut';
 
@@ -15858,8 +15862,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
-      'Det här måste konfigureras på servern';
+  String get environmentInputNeeded => 'Det här måste konfigureras på servern';
 
   @override
   String get environmentKindApp => 'App';
@@ -16460,21 +16463,41 @@ class AppLocalizationsSv extends AppLocalizations {
   String get environmentOpenPanel => 'Öppna miljö';
 
   @override
-  String get environmentNeedsSetup => 'Behöver konfigureras';
+  String get environmentStatusBlocked => 'Åtgärd krävs';
+
+  @override
+  String get environmentStateInTerminal => 'I terminalen';
+
+  @override
+  String get environmentWaitingInTerminal => 'Väntar på dig i en terminal';
+
+  @override
+  String get environmentOpenTerminal => 'Öppna terminal';
+
+  @override
+  String get environmentSignInNeeded => 'Du behöver logga in';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Något som behövs är inte tillgängligt';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Klart här. Miljön startar fortfarande';
 
   @override
   String get environmentContinueInTerminal => 'Fortsätt i terminalen';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Verktyget behöver dig i en terminal för ett lösenord eller en fråga. Starten fortsätter när det är klart.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Den här terminalen öppnades eftersom starten behöver dig';
 
   @override
-  String get environmentSetupTab => 'Miljökonfiguration';
+  String get environmentStartTerminalTab => 'Miljökonfiguration';
 
   @override
   String get environmentsNothingRunning =>
@@ -16767,23 +16790,14 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Godkänn begäran på ${provider}s sida i webbläsaren. Fönstret märker själv när du är klar.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Väntar på $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Inloggningen slutfördes inte';
 
   @override
   String get signInReopenPage => 'Öppna inloggningssidan igen';
 
   @override
-  String get signInCodePrompt => 'Ange koden som visas i webbläsaren';
+  String get signInCodePrompt =>
+      'Bekräfta i webbläsaren och ange sedan koden den visar.';
 
   @override
   String get signInCodeMalformed =>
@@ -16826,7 +16840,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Den här inloggningen är inte längre giltig. Starta den igen.';
+      'Den här inloggningen är inte längre öppen: den avbröts, användes eller ersattes. Starta den igen.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -16834,7 +16848,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'För många inloggningsförsök just nu. Vänta en minut och försök igen.';
+      'För många förfrågningar just nu. Vänta en stund och försök igen.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -16865,10 +16879,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return '$provider-appen är inte installerad där den behövs. Installera den och försök igen.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Den här installationen av GitHub-appen är redan auktoriserad för en annan Control Center-server.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -16927,7 +16937,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Var GitHub-appen är installerad, bland de konton som arbetsytans repositorier tillhör. En organisations installation fungerar bara på servrar som dess administratörer auktoriserar.';
+      'Var GitHub-appen är installerad, bland de konton som arbetsytans repositorier tillhör.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -16937,21 +16947,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get githubInstallApp => 'Installera GitHub-appen';
 
   @override
-  String get githubAuthorizeServer => 'Auktorisera den här servern';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Den här servern kan nu använda installationen på $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Avstängd';
-
-  @override
-  String get githubInstallationAuthorized => 'Auktoriserad';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Inte auktoriserad';
 
   @override
   String get linearAutomationTitle => 'Linear-automatisering';
@@ -16977,7 +16973,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Registrera GitHub-, Google- och Linear-appar själv under Inställningar → Server → Enkel inloggning, och anslut varje arbetsytas egen Slack-app i dess inställningar. ”Skapa min GitHub-app” konfigurerar GitHub i ett steg.';
+      'Registrera GitHub-, Google- och Linear-appar själv under Inställningar → Server → Enkel inloggning, och anslut varje arbetsytas egen Slack-app under Arbetsyta → Integrationer, där en arbetsyta också kan välja egna appar eller Connect. „Skapa min GitHub-app” konfigurerar GitHub i ett steg.';
 
   @override
   String get connectModeCustom => 'Använd en egen Connect-server';
@@ -17112,7 +17108,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Servern får en ny nyckel och ett nytt installations-id. Alla inloggningar via Connect slutar fungera och alla måste logga in igen. Inloggningar via dina egna appar påverkas inte.';
+      'Servern får en ny nyckel och ett nytt installations-id, och det gamla id:t fasas ut hos Connect: inloggningar som förseglats under det, och den gamla nyckeln slutar fungera där, så alla som loggat in via Connect måste logga in igen. Redan utdelade token fungerar tills de går ut. Inloggningar via dina egna appar påverkas inte. Om Connect inte kan nås ändras inget och du kan försöka igen.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17246,33 +17242,6 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Leverantörsappar';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Vilka Google Calendar-, Linear- och Klipy-appar arbetsytan använder. Som standard används serverns appar eller Control Center Connect. En arbetsyta med egen app faller aldrig tillbaka på dem.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'Använd serverns app';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Inloggningar och förfrågningar använder serverns app eller Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn => 'Använd arbetsytans egna app';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Bara arbetsytans app används. Så länge den är ofullständig är leverantören avstängd här i stället för att falla tillbaka på en annan app.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Serverns app';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Egen app';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Saknas fortfarande: $fields. Så länge alla fält inte är ifyllda är leverantören avstängd på den här arbetsytan. Den faller inte tillbaka på serverns app.';
   }
@@ -17289,22 +17258,115 @@ class AppLocalizationsSv extends AppLocalizations {
       'GIF-sökningen på den här arbetsytan använder den här nyckeln.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Byta $provider-app?';
+  String get settingsWorkspaceIntegrations => 'Integrationer';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Kodvärd, ärenden, kalender, chatt och GIF-sökning i den här arbetsytan, och vilka appar de loggar in via.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Vilka appar den här arbetsytan använder för GitHub, Google Kalender, Linear, Slack och GIF-sökning. Om inte en administratör väljer något annat följer den den här servern.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Samma som den här servern';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Den här servern använder Control Centers appar.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Den här servern använder Connect-servern på $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Alla som är anslutna till $provider på den här arbetsytan via serverns app måste logga in igen med arbetsytans app.';
+  String get workspaceConnectInheritOwn =>
+      'Den här servern använder sina egna appar.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Serverns ägare har inte valt ännu, så serverns egna appar gäller.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Endast den här arbetsytans appar används. Lägg till var och en nedan, bredvid dess leverantör. En leverantör utan app är avstängd här; den här serverns appar och Connect används inte i stället.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Endast HTTPS. Adresser i ett privat eller lokalt nätverk nekas.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL i den här serverns miljö anger vart inloggningar skickas, så den här arbetsytan kan inte välja en egen Connect. Den kan följa den här servern eller använda egna appar.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Byta inloggningsappar för den här arbetsytan?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Alla på arbetsytan måste logga in igen på GitHub, Linear och Google Kalender via de nya apparna. Inloggningar som gjorts via de nuvarande apparna slutar fungera här.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Byt appar';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Följer valet ovan. En leverantör faller aldrig tillbaka på en annan app.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Arbetsytans app';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Serverns app';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub-app';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Arbetsytans egna app agerar för dess arkiv och loggar in medlemmar. Den faller aldrig tillbaka på den här serverns app eller på Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Den här arbetsytan använder GitHub-appen som dess inloggningsappar tillhandahåller. Installera den på de konton som dina arkiv tillhör.';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'Agerar för den här arbetsytan';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Appens bot kommenterar, granskar och frågar efter pull requests i den här arbetsytans arkiv.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return '$provider-app';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Det här tar bort arbetsytans $provider-uppgifter. Alla som är anslutna via arbetsytans app måste logga in igen.';
+  String workspaceOwnAppDescription(String provider) {
+    return '$provider-inloggningar och -förfrågningar i den här arbetsytan använder endast den här appen.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Byt app';
+  String get workspaceGifsTitle => 'GIF:ar';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'GIF-sökning använder den här arbetsytans Klipy-nyckel.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'GIF-sökning använder den här serverns Klipy-nyckel.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'GIF-sökning körs via Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'GIF-sökning är avstängd i den här arbetsytan.';
 
   @override
   String openOnForge(String forge) {
@@ -17322,7 +17384,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Anslut GitHub, GitLab eller Bitbucket i Inställningar → Arbetsyta → Profil och identitet → Kodvärd';
+      'Anslut GitHub, GitLab eller Bitbucket under Inställningar → Du → Profil';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17339,4 +17401,1136 @@ class AppLocalizationsSv extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Anslut $forge för att öppna en pull request i det här repot';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Din inloggning på $provider som $account har gått ut. Logga in igen.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Pausad: arbetsytans inloggningstjänst har ändrats';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'Det går inte att nå $provider just nu. Försöker igen.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Din inloggning sparas och fungerar igen när tjänsten är tillbaka. En administratör för arbetsytan kan kontrollera inloggningsinställningen under Integrationer.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Servern startades om. Börja inloggningen igen.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Inloggning med $provider är inte konfigurerad för den här arbetsytan.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Inloggning med $provider är felkonfigurerad: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Den här arbetsytan använder egna appar men har ingen $provider-app.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Den här versionen kan inte verifiera Control Center Connect, så inloggning med $provider är avstängd.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Arbetsytans inloggningstjänst har bytt identitet. En administratör måste bekräfta den.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Det går inte att nå arbetsytans inloggningstjänst just nu.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Adressen till arbetsytans inloggningstjänst saknas eller är ogiltig.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Serverns operatör har låst inloggningstjänsten, så arbetsytans eget val gäller inte.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Arbetsytans inloggningstjänst erbjuder inte $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Öppna integrationer';
+
+  @override
+  String get signInOpenServerSettings => 'Öppna inloggningsinställningar';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Det här körs som du på $provider, och du har inte lagt till någon token. Lägg till en och försök sedan igen.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Koppla från $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Du måste ansluta $provider igen för att arbeta i dess arkiv.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Det här kopplar bara från $provider i den här arbetsytan. Andra arbetsytor behåller sin egen anslutning.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Det här kopplar från $provider i alla arbetsytor som delar den här anslutningen.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider har kopplats från den här arbetsytan';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider har kopplats från alla arbetsytor';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Installera GitHub App på $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Automatiseringen når inte $repos förrän appen är installerad där.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Lägg till $repos bland GitHub Appens arkiv';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Appen är installerad på det här kontot men ser inte de här arkiven ännu.';
+
+  @override
+  String get repoAccessChooseRepos => 'Välj arkiv';
+
+  @override
+  String get repoAccessSuspendedTitle =>
+      'GitHub App-installationen är avstängd';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Automatiseringen för $repos är pausad tills en ägare av kontot återupptar installationen på GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Automatiseringen är pausad';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Personen som ansvarar för arbetsytans automatisering kan inte längre se $repos, så inget körs där för deras räkning.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Personen som ansvarar för arbetsytans automatisering är inte inloggad på forgen, så automatiseringen för $repos väntar tills de loggar in.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Kunde inte kontrollera åtkomsten till $repos. Försöker igen.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Be $admins att åtgärda det här.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Be en administratör för arbetsytan att åtgärda det här.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Logga in på $forge för att se pull requests från $count arkiv till',
+      one: 'Logga in på $forge för att se pull requests från 1 arkiv till',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count arkiv är dolda eftersom ditt $forge-konto inte kan se dem',
+      one: '1 arkiv är dolt eftersom ditt $forge-konto inte kan se det',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count arkiv är dolda eftersom du saknar åtkomst till dem i den här arbetsytan',
+      one:
+          '1 arkiv är dolt eftersom du saknar åtkomst till det i den här arbetsytan',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Kontrollerar din åtkomst till $count arkiv till…',
+      one: 'Kontrollerar din åtkomst till 1 arkiv till…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Länkat, men automatiseringen når inte allt ännu';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Installera på en annan organisation';
+
+  @override
+  String get forgeTokenEmailLabel => 'E-post för Atlassian-kontot';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Ange e-postadressen för ditt Atlassian-konto.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'API-token';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Bitbuckets API-token fungerar tillsammans med e-postadressen för Atlassian-kontot som skapade dem.';
+
+  @override
+  String get automationTokensTitle => 'Automatiseringstoken';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Bakgrundsarbete på GitLab och Bitbucket, som uppdateringar av pull requests, AI-granskningskommentarer och merge requests som ingen bad om, använder en bots åtkomsttoken, aldrig en persons. Ett repositorys egen token går före arbetsytans.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Används för varje GitLab- eller Bitbucket-repository i den här arbetsytan som saknar egen automatiseringstoken. Bakgrundsarbete där visas som den här tokenens bot.';
+
+  @override
+  String get automationTokenNone =>
+      'Ingen token. Automatiseringen är pausad här.';
+
+  @override
+  String get automationTokenFromWorkspace => 'Använder arbetsytans token';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Agerar som $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Åtkomsttoken tillagd';
+
+  @override
+  String get automationTokenRejected =>
+      'Plattformen avvisade den här token. Byt ut den.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Automatiseringstoken för $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Klistra in en åtkomsttoken för projekt eller grupp. Den behöver read_api och read_repository; lägg till api och write_repository för kommentarer, merge requests och pushar. GitLab visar arbetet som tokenens bot.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Klistra in en åtkomsttoken för repository, projekt eller arbetsyta med läsrätt till repositoryt, plus skrivrätt till pull requests för kommentarer och pull requests. Din egen API-token hör hemma under Du → Profil, inte här.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token sparad, men den kan inte läsa $repos. Automatiseringen där förblir pausad.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Ta bort automatiseringstoken?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Automatisering som bygger på den här token pausas tills en annan läggs till.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Varje $forge-repository utan egen token';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Ingen automatiseringstoken kan läsa $repos, så bakgrundsarbetet där är pausat.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commits från arbete du startar bär ditt namn. Välj vem mer som krediteras och om forges visar dina commits som verifierade.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Upphovsskap';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Arbete du startar';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Du är författare och committer, under den e-post som ditt forge verifierade för din inloggning. Detta gäller chattar med agenter, pipelines du startar och commits du gör i editorn.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Automatiska körningar';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Körningar som startas av ett schema eller en webhook committas som boten och signeras aldrig.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Tills du loggar in på ett forge i en arbetsyta committar dina körningar där som boten.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Ange Control Center som medförfattare';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Dina commits anger Control Center (@usectrl) som medförfattare, och automatiska körningar du aktiverat anger dig. När det är avslaget läggs ingen av raderna till.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Den här arbetsytans inställning åsidosätter ditt personliga val. Din inställning sparas men gäller inte här.';
+
+  @override
+  String get settingsCoauthorCreditLoading =>
+      'Läser in inställningar för tillskrivning…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Medförfattarkredit';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Om commits får medförfattarrader: Control Center på en medlems egna commits, och de medlemmar som aktiverat en automatisk körning på dess commits. Ett val här åsidosätter varje medlems eget.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Använd varje medlems inställning';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Lägg alltid till medförfattarkredit';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Lägg aldrig till medförfattarkredit';
+
+  @override
+  String get settingsCommitSigningSection => 'Verifierade commits';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Signeras';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Signeras inte';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Den här servern kan signera dina commits med en egen nyckel, så att GitHub och GitLab visar dem som verifierade. Inget signeras förrän du skapar nyckeln.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Skapa signeringsnyckel';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Signeringsnyckeln skapades. Lägg till den på ditt forge-konto.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Publik nyckel';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Den publika nyckeln kopierades';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Fingeravtryck';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Skapad';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Lägg till den på ditt forge-konto';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'En commit visas bara som verifierad medan du också är inloggad på det forget i arbetsytan, så att forget bekräftar din e-post.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Ställ in Key type på Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Ställ in Usage type på Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commits på Bitbucket signeras inte. Lägg inte till den här nyckeln på ditt Bitbucket-konto: en SSH-nyckel där är också en inloggning.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Stöds inte';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Det du litar på';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Den privata nyckeln lämnar aldrig den här servern.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Den som kontrollerar den här servern kan signera commits som dig så länge nyckeln finns på ditt forge-konto.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'På GitHub förblir commits som redan visats som verifierade verifierade efter att du tagit bort nyckeln.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Ta bort nyckel';
+
+  @override
+  String get settingsCommitSigningDeleteTitle =>
+      'Ta bort din signeringsnyckel?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Dina commits signeras inte längre från och med nu. Nyckeln finns kvar på dina forge-konton tills du tar bort den där.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Signeringsnyckeln togs bort';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Kunde inte läsa in din signeringsnyckel: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Vem du är i varje arbetsyta, och dina egna konton för kodvärd, ärenden, kalender och chatt.';
+
+  @override
+  String get accountSectionTitle => 'Konto';
+
+  @override
+  String get accountSectionDescription =>
+      'Ditt användarnamn och namn följer dig till varje arbetsyta. En arbetsyta kan visa ett annat namn eller en annan e-post: ställ in det under Arbetsyta → Profil och identitet.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Kunde inte läsa in din profil: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Namnet som andra ser på dina meddelanden och granskningar.';
+
+  @override
+  String get accountDisplayNameRequired => 'Ange ett visningsnamn.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Det här kan ändras men inte tas bort.';
+
+  @override
+  String get accountAvatarLabel => 'Bild';
+
+  @override
+  String get accountAvatarHint =>
+      'En länk till en kvadratisk bild, som börjar med https://.';
+
+  @override
+  String get accountAvatarInvalid => 'Använd en länk som börjar med https://.';
+
+  @override
+  String get usernameLabel => 'Användarnamn';
+
+  @override
+  String get usernameRule =>
+      '2 till 32 gemener, siffror, punkter, bindestreck eller understreck. Andra nämner dig med det.';
+
+  @override
+  String get usernameAvailable => 'Ledigt.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Ledigt. Det sparas som $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Använd 2 till 32 gemener, siffror, “.”, “_” eller “-”, och börja och sluta med en bokstav eller siffra.';
+
+  @override
+  String get usernameReserved => 'Det användarnamnet är reserverat.';
+
+  @override
+  String get usernameTaken => 'Det användarnamnet är upptaget.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Namnet går inte att kontrollera just nu. Du kan ändå spara; servern avgör.';
+
+  @override
+  String get linkedAccountsTitle => 'Anslutna konton';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Identitetsleverantör';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Behöver logga in';
+
+  @override
+  String get linkedAccountStatusPaused => 'Pausad';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Kan inte nås';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Identitetsleverantören som ditt konto loggar in med. Den som driver den här servern hanterar den.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Konton du ansluter för dig själv. Control Center agerar som du genom dem, och ändringar påverkar bara dig.';
+
+  @override
+  String get accountReachServer =>
+      'Används i alla arbetsytor på den här servern.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Används bara i $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub används bara i $workspace, som har egna inloggningsappar. GitLab och Bitbucket används i alla arbetsytor på den här servern.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Ditt konto';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Ditt konto: $status. Öppnar Du → Profil.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Inget kodvärdskonto anslutet';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Inget $provider-konto anslutet';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Inget $provider-konto länkat';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'I demon är du en tillfällig gäst, så det finns inget konto att ändra: inget användarnamn, ingen profil och inga anslutna konton.';
+
+  @override
+  String get onboardingStepYou => 'Du';
+
+  @override
+  String get onboardingYouTitle => 'Välj ditt användarnamn';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Ditt användarnamn är hur andra nämner dig och hur ditt arbete märks. Du kan ändra det och ditt visningsnamn senare under Inställningar → Du → Profil.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Det här $provider-kontot är redan anslutet till en annan person på den här servern. Logga in med ett annat $provider-konto.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token går ut $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token gick ut $date. Klistra in en ny för att fortsätta.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge kunde inte nås för att kontrollera token. Försök igen om en stund.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge godkänner inte token. Kontrollera att du kopierat hela den och att den inte har återkallats.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Det här är ingen personlig token. Klistra in en personlig åtkomsttoken från ditt eget $forge-konto, inte en token för ett projekt, en grupp, en arbetsyta eller en bot.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Token saknar behörigheten $scope, som granskning och kommentarer kräver. Skapa en som har den.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Token har gått ut. Skapa en ny och klistra in den här.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agenter du startar kan göra commits signerade som dig, i vilket arkiv de än arbetar. Om du tar bort nyckeln här upphör det direkt: körningar som redan pågår signerar inget mer.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Nyckeln roterades inte, och inget ändrades: $error Försök igen.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Du är inte i någon arbetsyta än';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'En arbetsytadministratör måste bjuda in dig, eller så kan serverägaren skapa en arbetsyta åt dig. Den öppnas här så snart du har lagts till.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Inloggad som $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Kontrollera igen';
+
+  @override
+  String get noWorkspaceSignOut => 'Logga ut';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Bara serverägaren kan skapa arbetsytor. Be om att få en skapad, eller be en arbetsytadministratör att bjuda in dig.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo finns inte i någon av dina arbetsytor, och du är inte i någon arbetsyta att lägga till det i. Be en arbetsytadministratör att bjuda in dig.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Bara serverägaren kan göra det här';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Den fullständiga editorn körs på serverns egen maskin, så bara serverägaren kan öppna den. Du kan fortfarande öppna och redigera filer från Explorer.';
+
+  @override
+  String get terminalSandboxedBadge => 'Sandlåda';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Körs i en sandlåda inom den här arbetsytans mappar, så vissa värdverktyg och sökvägar finns inte här.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Värdskalet körs på servern utan sandlåda, så bara serverägaren kan öppna ett. En vanlig terminal körs i sandlådan.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'En terminal kan bara öppnas inom den här arbetsytans egna mappar.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Bara serverägaren kan spara eller godkänna en miljö som körs på serverns värd. En arbetsytadministratör kan använda en som körs i en rigg.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commits du gör i appens egna editor kör inga Git-hooks från arkivet, precis som med git commit --no-verify: servern kör Git på sin egen värd, i ett träd som agenter och pull requests kan ändra.';
+
+  @override
+  String get mcpTokenDescription =>
+      'MCP-klienter skickar den här token med varje begäran, som en Authorization: Bearer-header. Servern skapar den vid första start; du kan rotera den men inte ta bort den.';
+
+  @override
+  String get mcpShowToken => 'Visa token';
+
+  @override
+  String get mcpHideToken => 'Dölj token';
+
+  @override
+  String get mcpRotateToken => 'Rotera token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Rotera MCP-token?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Servern byter direkt till en ny token. Varje MCP-klient som fortfarande använder den nuvarande nekas tills du ger den den nya.';
+
+  @override
+  String get mcpTokenRotated => 'Token roterad. Ge dina MCP-klienter den nya.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'MCP-slutpunkten är till för serverägaren';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Dess token öppnar varje verktyg på den här servern, så bara serverägaren kan se den, rotera den eller starta och stoppa slutpunkten.';
+
+  @override
+  String get activityRotatedMcpToken => 'Roterade MCP-token';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect kunde inte fasa ut den gamla nyckeln';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Inget ändrades. Om du roterar ändå får servern sin nya nyckel, men den gamla identiteten förblir användbar hos Connect tills dess inloggningar går ut.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Rotera ändå';
+
+  @override
+  String get settingsAuditLog => 'Granskningslogg';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Vem som ändrade vad, var och hur det slutade, på hela servern och i varje arbetsyta du administrerar. Serveråtgärder registrerar argumentnamn, aldrig deras värden.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Endast administratörer';
+
+  @override
+  String get auditLogNoAccess =>
+      'Granskningsloggen omfattar servern och de arbetsytor du administrerar. Du administrerar inga arbetsytor, så det finns inget att visa.';
+
+  @override
+  String get auditLogSourceServer => 'Server';
+
+  @override
+  String get auditLogSourceWorkspace => 'Arbetsyta';
+
+  @override
+  String get auditLogAddFilter => 'Filter';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filtrera…';
+
+  @override
+  String get auditLogFilterActor => 'Person';
+
+  @override
+  String get auditLogFilterSource => 'Arbetsyta';
+
+  @override
+  String get auditLogFilterOutcome => 'Resultat';
+
+  @override
+  String get auditLogFilterTime => 'Tid';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Lyckades';
+
+  @override
+  String get auditLogOutcomeDenied => 'Nekad';
+
+  @override
+  String get auditLogOutcomeFailed => 'Misslyckades';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Vid eller efter';
+
+  @override
+  String get auditLogTimeAfter => 'Efter';
+
+  @override
+  String get auditLogTimeBefore => 'Före';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Vid eller före';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Tid $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 timme sedan';
+
+  @override
+  String get auditLogTimePresetDay => '24 timmar sedan';
+
+  @override
+  String get auditLogTimePresetWeek => '7 dagar sedan';
+
+  @override
+  String get auditLogTimePresetMonth => '30 dagar sedan';
+
+  @override
+  String get auditLogTimeExact => 'Exakt tid';
+
+  @override
+  String get auditLogTimeInvalid => 'Använd YYYY-MM-DD, eventuellt med HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Lägg till';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo pekar nu på ett annat arkiv';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Den här sökvägen pekar nu på ett annat arkiv på $forge. Koppla om den för att fortsätta använda den.';
+  }
+
+  @override
+  String get repoRelink => 'Koppla om';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Omkopplade $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Den här sökvägen pekar nu på ett annat arkiv. En arbetsytadministratör måste koppla om den innan den kan användas.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Ditt $forge-konto kan inte läsa det här arkivet.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Kunde inte bekräfta din åtkomst till $forge. Försök igen.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Ditt forge-konto kan inte läsa det här arkivet.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Kunde inte bekräfta din åtkomst till forge. Försök igen.';
+
+  @override
+  String get repoPathHostPath =>
+      'Bara serverägaren kan koppla en mapp som ligger utanför den här arbetsytans lagring.';
+
+  @override
+  String get repoPathMissing => 'Det finns inget på den sökvägen på servern.';
+
+  @override
+  String get repoPathDataDir =>
+      'Ett arkiv kan inte peka in i serverns datamapp.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Ett arkiv kan inte vara arbetsytans egen mapp.';
+
+  @override
+  String get repoPathOriginMismatch => 'Den mappens origin är ett annat arkiv.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Sparat. Personen behöver logga in på $forge innan den kan öppna det här arkivet.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Sparat. Deras $forge-konto kan inte läsa arkivet ännu, så det döljs för dem.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Sparat. Kunde inte bekräfta deras $forge-åtkomst just nu.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo är inte kopplat i någon av dina arbetsytor. Be serverägaren att lägga till det.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Serverägaren lägger till arkiv från serverns mappar.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Bara du har angett den här adressen. Enkel inloggning matchar den inte förrän serverägaren bekräftar den.';
+
+  @override
+  String get settingsServerPeople => 'Personer';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Alla med ett konto på den här servern, och om deras e-postadress är bekräftad.';
+
+  @override
+  String get serverPeopleLabel => 'Konton';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Bara serverägaren kan se allas konton och bekräfta e-postadresser.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-post ej bekräftad';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Bekräfta e-post';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Bekräfta att $email tillhör $name? Enkel inloggning kopplar den här adressen till deras konto.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Bekräftade $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenter behöver en sandlåda på den här servern';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Den här servern har ingen sandlåda, så bara dess ägare kan köra agenter här. Ägaren kan installera sandlådan eller stänga av sandlådan för alla.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Den här mappen ligger utanför arbetsytans lagring. Bekräfta att den här servern får använda den.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Den här mappen ligger utanför arbetsytans lagring. Bara serverägaren kan bekräfta den.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Det finns inget på den här sökvägen på servern längre. Ta bort det här arkivet och lägg till det igen från dess nuvarande mapp.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Den här mappen kan inte användas som arkiv. Ta bort den och lägg till arkivet från en annan mapp.';
+
+  @override
+  String get repoPathConfirm => 'Bekräfta';
+
+  @override
+  String get repoPathConfirmAll => 'Bekräfta alla';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count mappar ligger utanför arbetsytans lagring',
+      one: '1 mapp ligger utanför arbetsytans lagring',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Bekräfta att den här servern får använda dem. Varje arkiv kontrolleras igen med din åtkomst.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Servrar som finns i den här maskinens egna verktygsinställningar är bara tillgängliga i körningar du startar eller ansvarar för. Andras körningar ser dem aldrig, och de erbjuds inte via Control Centers MCP-slutpunkt.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Logga in på $provider för att se det här arkivets kod.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Logga in';
+
+  @override
+  String get ideContentSearchFailed => 'Kunde inte söka i filer';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Den här filen är inte tillgänglig i det här arbetsträdet.';
+
+  @override
+  String get ideChangesLoadFailed => 'Kunde inte läsa in ändringarna';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Den här sökvägen pekar nu på ett annat arkiv på $forge. En arbetsytadministratör måste koppla om den innan den kan användas.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Bara serverägaren kan återställa säkerhetskopior. Du kan fortfarande ladda ner dem.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Skrivskyddad';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Du kan titta på den här terminalen. Att skriva i den, ändra storlek på den eller stoppa den kräver skrivåtkomst till varje arkiv i den här konversationen.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Du kan titta på den här miljön. Att starta, stoppa eller starta om den kräver skrivåtkomst till varje arkiv i konversationen.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Körs på den här servern. Godkänn den för att låta den starta.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Körs på den här servern. Serverägaren måste godkänna den innan den kan starta.';
+
+  @override
+  String get environmentHostApprove => 'Godkänn';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Godkänn den som arbetsytadministratör: bara en administratörs kopia visar hemliga värden, och vid godkännande sparas de tillbaka.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Serverägaren har ännu inte godkänt den här miljön, så den kan inte köras på den här servern.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Du har ännu inte godkänt den här miljön. Den körs på den här servern och startar när du godkänner dess definition.';
+
+  @override
+  String get environmentHostApprovalReview => 'Granska och godkänn';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Logga in på $provider för att öppna den här ytan.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Ditt $forge-konto kan inte läsa ett arkiv som den här ytan använder.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Ditt forge-konto kan inte läsa ett arkiv som den här ytan använder.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Du har ingen läsåtkomst till ett arkiv som den här ytan använder. En arbetsytadministratör kan ge dig den.';
+
+  @override
+  String get spaceAccessFailed => 'Den här ytan kunde inte öppnas.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Kontextfördelningen är inte tillgänglig i den här sessionen.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Ett kopplat arkiv behöver både en ägare och ett arkivnamn.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Du har inte läsåtkomst till det här arkivet. En arbetsytadministratör kan ge den.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Du kan läsa det här arkivet men inte ändra det. En arbetsytadministratör kan ge skrivåtkomst.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Du kan läsa det här arkivet men inte granska det. En arbetsytadministratör kan ge granskningsåtkomst.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Endast visning';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Du kan titta på den här maskinen. Att styra den, vidarebefordra dess portar, klistra in i den eller släppa filer på den kräver skrivåtkomst till alla arkiv i den här ytan.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Att starta en maskin här kräver skrivåtkomst till alla arkiv i den här ytan. En arbetsytadministratör kan ge den.';
+
+  @override
+  String get rigViewRefused =>
+      'Du kan inte visa den här maskinen. Den tillhör en yta som du inte har läsåtkomst till.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Att ändra dessa portar kräver skrivåtkomst till alla arkiv i den här ytan.';
+
+  @override
+  String get rigHolderOnly =>
+      'Bara personen som maskinen öppnades för kan styra den. Den använder personens egna inloggningar.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Du kan titta på den här maskinen. Den använder inloggningarna för personen den öppnades för, så bara den personen kan styra den, vidarebefordra dess portar, klistra in i den eller släppa filer på den.';
 }

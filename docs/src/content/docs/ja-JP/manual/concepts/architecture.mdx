@@ -3,7 +3,7 @@ title: アーキテクチャ
 description: Control Center が、シンクライアントのサーバーモデル、フィーチャー優先のクリーンアーキテクチャ、およびポートとアダプターによってどのように構成されているかを説明します。
 dateModified: 2026-09-19
 slug: ja-JP/マニュアル/コンセプト/アーキテクチャ
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## 概要
@@ -60,7 +60,7 @@ feature_name/
 - メモリエンティティ: `MemoryFact`、`MemoryPolicy`、`AgentWorkingMemory`、`MemoryAccessGrant`
 - 共有値オブジェクト: `AgentSkills`、`AgentRole`、`Mode`、`SandboxBackend`、`SandboxSpec`、`RunCost`
 - 共有ポート: `SandboxPort`、`CredentialBrokerPort`、`WorkspaceFilesystemPort`、`GitRepoInspectorPort`、`EmbeddingPort`
-- ドメインサービス: `MemoryAccessPolicy`、`ActivityLogger`、`MentionResolver`、`RunLivenessClassifier`
+- ドメインサービス: `MemoryAccessPolicy`、`ActivityLogger`、`AgentMentionParser`、`UserMentionParser`、`RunLivenessClassifier`
 - `DomainEventBus` + イベント種別（ワークスペース/エージェント、PR/レビュー、メッセージング、チケッティング、パイプライン、オーケストレーション、メモリ、カレンダー/ミーティング、アイデンティティとメンバーシップ、オブザーバビリティ）
 
 ## アイデンティティとマルチプレイヤー
@@ -132,7 +132,6 @@ Control Center はマルチユーザーです。人間とエージェントは `
 
 - シークレットは `flutter_secure_storage`（macOS キーチェーン、Windows 資格情報マネージャー、Linux libsecret）に保存されます — プロバイダーのトークンではなく、クライアントのデバイス資格情報とリモートのペアリングキーです
 - `shared_preferences` は機密でない設定（テーマ、フォント、レイアウト）のみに使用します
-- 古いインストールから残ったプロバイダーのシークレットは、`features/auth/providers/credential_migration.dart` によって 1 回だけサーバーに渡され、その後クライアントのキーチェーンから削除されます
 
 ## アーキテクチャの強制
 

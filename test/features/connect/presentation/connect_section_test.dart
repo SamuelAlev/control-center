@@ -1,4 +1,7 @@
 import 'package:cc_data/cc_data.dart';
+import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/features/connect/domain/value_objects/connect_health_error.dart';
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/connect/presentation/settings/connect_section.dart';
@@ -239,6 +242,58 @@ void main() {
     await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(ops(), ['connect.rotateKey']);
+    expect(find.text(l10n.connectRotateKeyDone), findsOneWidget);
+    await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('a key Connect could not retire offers to rotate anyway', (
+    tester,
+  ) async {
+    const reason =
+        'https://connect.controlcenter.example: provider_unavailable';
+    host.onCall = (op, args) {
+      calls.add((op, args));
+      if (op == 'connect.rotateKey' && args['force'] != true) {
+        throw RemoteRpcException(RpcErrorCodes.validation, reason);
+      }
+      return _statusJson('hosted');
+    };
+    tall(tester);
+    await tester.pumpWidget(scope(const ConnectStatusCard(status: _hosted)));
+    await tester.pumpAndSettle();
+
+    Future<void> rotateUnforced() async {
+      final rotate = find.widgetWithText(CcButton, l10n.connectRotateKey);
+      await tester.ensureVisible(rotate);
+      await tester.pumpAndSettle();
+      await tester.tap(rotate);
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.descendant(
+          of: find.byType(CcDialog),
+          matching: find.widgetWithText(CcButton, l10n.connectRotateKey),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // The server's account of which Connect failed, and what forcing leaves.
+    await rotateUnforced();
+    expect(find.text(l10n.connectRotateKeyRetireFailedTitle), findsOneWidget);
+    expect(find.text(reason), findsOneWidget);
+    expect(find.text(l10n.connectRotateKeyForceBody), findsOneWidget);
+
+    // Cancel keeps everything as it was: nothing forced.
+    await tester.tap(find.widgetWithText(CcButton, l10n.cancel));
+    await tester.pumpAndSettle();
+    expect(calls.map((c) => c.$2), [<String, dynamic>{}]);
+
+    await rotateUnforced();
+    await tester.tap(
+      find.widgetWithText(CcButton, l10n.connectRotateKeyAnyway),
+    );
+    await tester.pumpAndSettle();
+    expect(calls.last.$2, {'force': true});
     expect(find.text(l10n.connectRotateKeyDone), findsOneWidget);
     await tester.pump(const Duration(seconds: 10));
   });

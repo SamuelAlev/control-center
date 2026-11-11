@@ -2,7 +2,7 @@
 title: Ruang kerja dan pengasingan
 description: Mengapa ruang kerja ialah sempadan penyewa yang tegas, bagaimana pemisahan pangkalan data menjadikan sempadan itu bersifat struktur dan apa yang sengaja melintasinya.
 slug: ms-MY/manual-pengguna/konsep/ruang-kerja
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Apakah itu ruang kerja?
@@ -79,9 +79,11 @@ Fail ruang kerja hanya membawa `workspace_meta` satu baris untuk pengenalan diri
 
 ## Mencipta ruang kerja
 
+Hanya [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) boleh mencipta ruang kerja; pelayan itu yang menjana idnya. Admin ruang kerja atau pemilik ruang kerja tidak boleh mencipta yang lain. Seseorang yang belum berada dalam mana-mana ruang kerja melihat **Anda belum berada dalam mana-mana ruang kerja**, yang meminta mereka supaya pemilik pelayan mencipta satu atau admin ruang kerja menjemput mereka, dan borang **Tambah ruang kerja** memberitahu sesiapa lain perkara yang sama.
+
 Mencipta ruang kerja melakukan lebih daripada memasukkan satu baris daftar. Dalam satu operasi, pelayan menandakan pengguna pencipta sebagai `ownerUserId`, merekodkan keahlian peranan pemilik pengguna itu dan menerbitkan peristiwa domain `WorkspaceCreated`. Pendengar peristiwa itu kemudian menyemai, secara idempoten dan di latar belakang:
 
-- satu **ejen CEO** serta empat pakar — `qa`, `architect`, `engineer`, `librarian` — dengan pakar melapor kepada CEO;
+- satu **ejen CEO** serta lima pakar — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — dengan pakar melapor kepada CEO;
 - **templat pipeline terbina** dan pencetusnya (pencetus peristiwa dan manual disertakan dalam keadaan didayakan; yang berjadual adalah pilihan kecuali sapuan GC worktree harian);
 - **suite eval permulaan**.
 
@@ -90,7 +92,7 @@ Ini berlaku bagi _setiap_ ruang kerja, bukan yang pertama sahaja. Ejen yang dise
 Penulisan keahlian pemilik itu lebih penting daripada yang kelihatan: tanpanya, ruang kerja yang baru dicipta tidak akan mempunyai ahli dan setiap panggilan berskop ruang kerja yang dibuat pencipta selepas itu akan ditolak.
 
 :::note[Ejen tidak boleh mencipta ruang kerja]
-Tiada alat MCP `create_workspace`. Manusia mencipta ruang kerja melalui `workspace.create` (titik sekatan nama sahaja) atau `workspace.upsert` (rekod penuh, turut digunakan untuk kemas kini). Kedua-duanya menandakan pengguna pencipta sebagai `owner` dan menerbitkan `WorkspaceCreated`.
+Tiada alat MCP `create_workspace`. Pemilik pelayan mencipta ruang kerja melalui `workspace.create`, yang menandakannya sebagai `owner` dan menerbitkan `WorkspaceCreated`. `workspace.upsert` hanya mengemas kini ruang kerja yang sedia ada; ia tidak pernah mencipta satu, dan ia tidak pernah menukar pemilik ruang kerja, yang hanya **Pindahkan pemilikan** lakukan.
 :::
 
 ## Memadam, mengeksport, mengimport
@@ -118,7 +120,7 @@ daripada snapshot pemasangan ialah `workspace.import` yang ditunjuk ke
 `<workspaceId>/workspace.db` snapshot itu; memulihkan seluruh pemasangan kekal
 sebagai penyalinan kembali direktori snapshot dengan pelayan dihentikan.
 
-Apa yang tidak dibawa oleh mana-mana daripadanya ialah seluruh direktori ruang kerja yang lain. Ruang kerja mengumpul lebih daripada sekadar pangkalan data — imej yang ditampal, fail kemahiran dan ejen, kelayakan sembang, worktree — dan eksport serta import memindahkan **fail** itu, jadi segala di sisinya kekal di tempatnya. Itu memang sengaja bagi kelayakan dan boleh dibuang bagi worktree; bagi yang selebihnya, ia had yang perlu diketahui dan bukannya ciri. [Rujukan sandaran](/ms-MY/manual-pengguna/rujukan/sandaran/#what-a-backup-does-not-contain) mempunyai jadual penuhnya.
+Apa yang tidak dibawa oleh mana-mana daripadanya ialah seluruh direktori ruang kerja yang lain. Ruang kerja mengumpul lebih daripada sekadar pangkalan data — imej yang ditampal, fail kemahiran dan ejen, kelayakan sembang, worktree — dan eksport serta import memindahkan **fail** itu, jadi segala di sisinya kekal di tempatnya. Itu memang sengaja bagi kelayakan dan boleh dibuang bagi worktree; bagi yang selebihnya, ia had yang perlu diketahui dan bukannya ciri. [Rujukan sandaran](/ms-MY/manual-pengguna/rujukan/sandaran/#apa-yang-tidak-terkandung-dalam-sandaran) mempunyai jadual penuhnya.
 
 ## Memindahkan sandaran antara pelayan dan peranti anda
 

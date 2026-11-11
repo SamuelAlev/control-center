@@ -2,7 +2,7 @@
 title: Kiértékelések és minőség
 description: Értékelési csomagok és verzióhoz rögzített készségkampányok, valamint ezek bizonyítékainak értelmezése.
 slug: hu-HU/kezikonyv/fogalmak/kiertekelesek-es-minoseg
-sourceHash: 0cb06b23db862137072cfe2a97c3c28dd57fc82b
+sourceHash: b9a6769a12328e128f46d51deb2ac66dd401e00f
 ---
 
 A **Megfigyelhetőség → Minőség** oldal egyfeladatos kiértékelési csomagokat és
@@ -22,7 +22,7 @@ A munkaterület létrehozásakor öt kezdő csomag töltődik be. Ezek lefedik a
 orchestrációs javaslatokat, egy olyan átnézést, amely megtalál egy beültetett
 hibát, a tervmód csak olvasható maradását, a tervmód tervkészítését és egy jegy
 oda-vissza útját. A betöltés a `WorkspaceCreated` eseményre figyel
-(`workspace.upsert` vagy `workspace.create`), kihagyja a már létező nevet, és
+(a `workspace.create` közzéteszi), kihagyja a már létező nevet, és
 nem tölti fel visszamenőleg a régebbi munkaterületeket.
 
 ### Hol jelennek meg

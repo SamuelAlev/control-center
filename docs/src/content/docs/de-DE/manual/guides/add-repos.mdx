@@ -2,10 +2,10 @@
 title: Repos zu einem Arbeitsbereich hinzufügen
 description: So registrierst du Git-Checkouts in einem Arbeitsbereich, damit Agenten daran arbeiten können.
 slug: de-DE/handbuch/anleitungen/repos-hinzufuegen
-sourceHash: 7bd4ceb83615b2c9489935cdadc9781dde849915
+sourceHash: 03b3fd3816fd0eeace58da71f38cbeaa46844f8b
 ---
 
-Diese Anleitung zeigt, wie du einen Git-Checkout in einem Arbeitsbereich registrierst, ihn neu indizierst und wieder entfernst.
+Diese Anleitung zeigt, wie du einen Git-Checkout in einem Arbeitsbereich registrierst, ihn neu indizierst und wieder entfernst. Ein Repository aus den Ordnern des Servers hinzuzufügen braucht den Serverinhaber; ein Repo zu entfernen braucht einen Administrator des Arbeitsbereichs.
 
 Repos sind **an den Arbeitsbereich gebunden**. Es gibt keine globale Registrierung und keinen eigenen Verknüpfungsschritt: Ein Repo hinzuzufügen und es in einen Arbeitsbereich zu legen sind derselbe Vorgang. Derselbe Checkout, in zwei Arbeitsbereichen registriert, wird zu zwei unabhängigen Zeilen mit zwei verschiedenen IDs — über Arbeitsbereiche hinweg ist die Identität eines Repos sein Dateisystempfad, nie seine ID.
 
@@ -21,9 +21,29 @@ Alles andere wird bei der Registrierung mit einer ausdrücklichen Meldung abgele
 
 Die Forge wird vom Remote gelesen und am Repo gespeichert — du wählst sie nie selbst. Ein Arbeitsbereich kann Repos von allen drei gleichzeitig halten, und jedes wird über seine eigene API mit seinen eigenen Zugangsdaten angesprochen. Verschachtelte GitLab-Namespaces bleiben erhalten, deshalb wird `gitlab.com/group/subgroup/project` als Besitzer `group/subgroup` und Name `project` registriert.
 
-Der Ordner muss außerdem auf der Maschine liegen, die `cc_server` hostet, in einem der `--repo-roots`-Verzeichnisse dieses Servers. Diese Zulassungsliste fällt standardmäßig auf das Home-Verzeichnis des Serverbenutzers zurück, und das Navigieren oberhalb einer Wurzel wird abgelehnt.
+Der Ordner muss außerdem auf der Maschine liegen, die `cc_server` hostet, in einem der `--repo-roots`-Verzeichnisse dieses Servers. Diese Zulassungsliste fällt standardmäßig auf das Home-Verzeichnis des Serverbenutzers zurück, und das Navigieren oberhalb einer Wurzel wird abgelehnt. Das Durchsuchen der Ordner des Servers wird nur dem [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber) angeboten, weil es die eigenen Dateien der Maschine auflistet. Alle anderen sehen dort, wo die Schaltfläche **Repository hinzufügen** wäre, „Der Serverinhaber fügt Repositories aus den Ordnern des Servers hinzu.“, und ein Link zu einem Repository, das keiner ihrer Arbeitsbereiche hat, sagt, dass es in keinem ihrer Arbeitsbereiche verknüpft ist, und bittet darum, dass der Serverinhaber es hinzufügt.
+
+Wo der Checkout liegen darf, hängt davon ab, wer ihn verknüpft:
+
+- **Innerhalb des eigenen Speichers des Arbeitsbereichs** auf dem Server: jeder Administrator des Arbeitsbereichs.
+- **Irgendwo sonst auf der Festplatte des Servers**: nur der [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber), denn nur er darf den Server auf die eigenen Dateien der Maschine zeigen lassen. Alle anderen sehen „Nur der Serverinhaber kann einen Ordner außerhalb des Speichers dieses Workspaces verknüpfen.“
+- **Der Datenordner des Servers** oder etwas darin: nie.
+
+Der `origin` des Checkouts muss das Repository sein, das du verknüpfst. Ein Ordner, dessen `origin` ein anderes Repository nennt, wird mit „Der Ursprung dieses Ordners ist ein anderes Repository.“ abgelehnt.
+
+### Ordner, die der Server noch nicht verwendet
+
+Ein Repo, dessen Ordner außerhalb des Speichers des Arbeitsbereichs liegt und das nicht vom Serverinhaber verknüpft wurde, etwa eines in einem importierten Arbeitsbereich, zeigt unter seiner Zeile „Dieser Ordner liegt außerhalb des Speichers des Workspaces. Bestätige, dass dieser Server ihn verwenden darf.“, bis der Serverinhaber es bestätigt. Alle anderen sehen stattdessen „Dieser Ordner liegt außerhalb des Speichers des Workspaces. Nur der Serverinhaber kann ihn bestätigen.“
+
+Der Serverinhaber bestätigt es einmal: **Bestätigen** an der Zeile oder **Alle bestätigen** in der Meldung über der Liste, wenn mehrere Repos warten. Jedes wird als Serverinhaber erneut geprüft, mit denselben Prüfungen wie beim Verknüpfen. Bis dahin bleibt es in der Liste, wird aber nicht geöffnet, bereitgestellt oder indiziert: Kein Editor, kein Terminal, keine Environment und kein Bereichs-Checkout nutzt es, und der Code-Graph überspringt es. Denselben Ordner als Serverinhaber erneut hinzuzufügen wirkt wie das Bestätigen und behält die ID des Repos bei.
+
+Ein Checkout, den ein symbolischer Link anderswohin verschoben hat, wird genauso behandelt: Er bleibt gelistet und ungenutzt, bis ihn jemand, der den Ordner verknüpfen darf, auf den er nun zeigt, erneut verknüpft.
+
+Du musst außerdem beim Forge des Repos angemeldet sein, und dein eigenes Konto muss das Repo sehen können.
 
 ## Einen Checkout registrieren
+
+Für diese Schritte musst du der Serverinhaber sein.
 
 1. Öffne **Einstellungen → Arbeitsbereich → Repositorys** (`/workspaces/<id>/settings/workspace/repositories`).
 2. Klicke auf **Repository hinzufügen**.
@@ -56,7 +76,23 @@ Ziehe den Griff an einer Zeile. Die Reihenfolge, die du festlegst, ist die Reihe
 
 ## Den GitHub-Link korrigieren
 
-Das Link-Symbol an einer Zeile öffnet einen Editor für den GitHub-Besitzer und den Repository-Namen des Repos — nützlich, wenn das Remote umbenannt oder übertragen wurde.
+Das Link-Symbol an einer Zeile öffnet einen Editor für den GitHub-Besitzer und den Repository-Namen des Repos.
+
+Du brauchst ihn selten. Eine Verknüpfung hängt an der dauerhaften ID des Repositorys beim Forge, daher wird eine Umbenennung oder Übertragung automatisch nachverfolgt.
+
+- Die Umbenennung eines Repos in Control Center ändert nur seinen Anzeigenamen.
+- Das Ändern, auf welches Forge-Repository eine Verknüpfung zeigt, braucht einen Administrator des Arbeitsbereichs und wird mit dessen eigener Anmeldung beim Forge geprüft, genau wie beim Verknüpfen.
+- Ein verknüpftes Repo lässt sich nicht in ein rein lokales umwandeln.
+
+Zeigt der Pfad später auf ein **anderes** Repository (das ursprüngliche wurde gelöscht und neu angelegt oder durch ein anderes ersetzt), sendet Control Center ihm nichts mehr: keine Tokens, Pushes, Kommentare oder Anfragen. Das betrifft auch die eigenen Aktionen einer Person: Ein Review, Merge oder Kommentar, den du zu einem solchen Repo machst, wird abgelehnt, bei GitHub, GitLab und Bitbucket gleichermaßen. Die Zeile und die Pull Requests des Repos zeigen „_repo_ zeigt jetzt auf ein anderes Repository“, bis ein Administrator des Arbeitsbereichs auf **Neu verknüpfen** klickt.
+
+## Wer den Code öffnen darf
+
+Eine Repo-Freigabe allein öffnet die Dateien eines Repos nicht. Um Dateien, Diffs, Suche oder ein Terminal dafür zu öffnen, braucht ein Mitglied die Control-Center-Freigabe, und seine eigene Forge-Anmeldung muss das Repo lesen können. Administratoren des Arbeitsbereichs sind davon nicht ausgenommen; der Serverinhaber schon. Siehe [Code folgt dem Forge](/de-DE/handbuch/konzepte/autorisierung/#code-folgt-dem-code-host).
+
+Wenn du einem Mitglied ein Repo freigibst, dessen Forge-Konto es nicht lesen kann, wird die Freigabe gespeichert, und du siehst eine Warnung, etwa „Gespeichert. Ihr GitHub-Konto kann dieses Repository noch nicht lesen, daher bleibt es für die Person verborgen.“
+
+Dieselbe Regel entscheidet, wer einen Bereich öffnen kann. Ein Bereich öffnet sich nur für Mitglieder, die den Code jedes Repos lesen dürfen, das er nutzt, und ist für alle anderen verborgen, samt seinen Suchergebnissen, Lauf-Logs, Todos, Aktivität und Benachrichtigungen. Ein Bereich ohne Repos ist für jedes Mitglied offen. Siehe [Bereiche folgen ihren Repos](/de-DE/handbuch/konzepte/autorisierung/#bereiche-folgen-ihren-repositorys).
 
 ## Ein Repo entfernen
 
@@ -66,7 +102,31 @@ Das Link-Symbol an einer Zeile öffnet einen Editor für den GitHub-Besitzer und
 
 Der Dialog sagt, was er tut: „_name_ wird aus diesem Arbeitsbereich entfernt. Die lokalen Dateien auf der Festplatte bleiben unberührt.“
 
+Ein Repo zu entfernen braucht einen Administrator des Arbeitsbereichs. Dabei werden außerdem die Forge-Zugangsdaten vergessen, die für dieses Repo gespeichert sind, etwa ein Automatisierungstoken für GitLab oder Bitbucket.
+
 Das Entfernen löscht die Repo-Zeile aus diesem Arbeitsbereich und räumt kaskadierend ihre Code-Graph-Zeilen ab — Symbole, Kanten, Dateien und Index-Checkpoints — dazu jede Repo-Freigabe je Mitglied, ihre Verknüpfungen zwischen Bereich und Repo und ihre Datensätze isolierter Checkouts. Derselbe Checkout, in einem anderen Arbeitsbereich registriert, ist eine unabhängige Zeile und bleibt unberührt. Die Worktrees auf der Platte, auf die diese Datensätze zeigten, baut das Löschen nicht ab.
+
+## Fehlersuche
+
+### Ich habe eine Freigabe, aber das Repository sagt, mein Konto kann es nicht lesen
+
+Dein eigenes Forge-Konto kann das Repo nicht lesen, daher hält Control Center seinen Code von dir fern, obwohl der Arbeitsbereich es freigegeben hat. Melde dich unter **Einstellungen → Du → Profil → Code-Hosting** beim Forge an, falls du es noch nicht getan hast, oder bitte den Besitzer des Repos im Forge um Zugriff. Das Repo öffnet sich, sobald dein Forge-Konto es lesen kann.
+
+### „Dieser Ordner liegt außerhalb des Speichers des Workspaces“
+
+Der Ordner des Repos liegt außerhalb des Speichers des Arbeitsbereichs, und der Serverinhaber hat ihn nicht verknüpft, oder ein symbolischer Link zeigt jetzt woanders hin. Es bleibt gelistet, aber ungenutzt, bis der Serverinhaber es bestätigt oder den Ordner erneut hinzufügt. Bist du nicht der Inhaber, frag ihn. Bist du es, drück an der Zeile **Bestätigen** oder über der Liste **Alle bestätigen**; siehe [Ordner, die der Server noch nicht verwendet](#ordner-die-der-server-noch-nicht-verwendet).
+
+### „Unter diesem Pfad auf dem Server befindet sich nichts mehr“
+
+Der Ordner wurde auf der Maschine des Servers verschoben oder gelöscht. Stell ihn wieder her, oder lass einen Administrator des Arbeitsbereichs das Repo mit **Entfernen** in der Meldung entfernen und es aus dem aktuellen Ordner erneut hinzufügen.
+
+### „Dieser Ordner kann nicht als Repository verwendet werden“
+
+Der gespeicherte Ordner ist der eigene Datenordner des Servers, etwas darin oder der Speicherordner des Arbeitsbereichs selbst. Keiner davon kann ein Repo sein. Ein Administrator des Arbeitsbereichs entfernt es mit **Entfernen** in der Meldung und fügt das Repo danach aus dem echten Ordner des Checkouts erneut hinzu.
+
+### „Dein Forge-Zugriff konnte nicht bestätigt werden“
+
+Control Center konnte den Forge nicht erreichen, um zu prüfen, ob dein Konto das Repo lesen kann, und hat deshalb abgelehnt, statt zu raten. Versuche es gleich noch einmal.
 
 ## Verwandte Anleitungen
 

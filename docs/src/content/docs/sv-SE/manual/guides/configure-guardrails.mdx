@@ -2,13 +2,13 @@
 title: Konfigurera räcken
 description: Ange regler för tillåt, fråga först och neka för agenters åtgärder, testa dem med Tänk om-proben och finjustera autonomin per yta.
 slug: sv-SE/handbok/how-to-guider/konfigurera-racken
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Den här guiden visar hur du konfigurerar räcken: reglerna som avgör om en
 agents åtgärd körs, begär godkännande först eller nekas.
 
-Räckena täcker de tretton effektklasser som varje muterande verktyg deklarerar.
+Räckena täcker de fjorton effektklasser som varje muterande verktyg deklarerar.
 De verkställs på serversidan i samma stund som verktyget anropas, aldrig genom
 en instruktion i en prompt.
 
@@ -23,7 +23,7 @@ en instruktion i en prompt.
    visas i slutet av den raden (**Återställ till ärvt**) – beslutet faller
    tillbaka till det bredare omfånget
 
-Varje rad visar det gällande beslutet som en statustagg och ett märke för var
+Varje rad visar åtgärdens inställning som en statustagg och ett märke för var
 det kommer från: **Det här omfånget**, **Ärvt** eller **Inbyggd standard**.
 Matrisen löses i läget Agent (`chat`), så **Lägesförinställning** visas aldrig
 här – använd Tänk om-proben med ett skrivskyddat läge valt för att se det
@@ -35,6 +35,18 @@ Kontrollpunkt: sätt **Pusha till en remote** till **Neka** i arbetsyteomfånget
 och kör sedan Tänk om-proben nedan på `git push origin main`. Resultatet blir
 `deny` med källan `workspace`.
 
+## Granska och återkalla stående godkännanden
+
+Att svara på ett godkännandekort med **Godkänn i 8 timmar** skriver ett stående godkännande: en regel som släpper igenom samma sorts åtgärd utan att fråga tills det upphör. Varje sådant listas på den här sidan, under den åtgärd det hör till.
+
+1. Gå till **Inställningar → Arbetsyta → Agentbehörigheter** och välj omfång. Ett godkännande skrivs för ytan som frågan kom från, så välj **Yta** och sedan den ytan
+2. Under åtgärdens rad läser du posten: vad den tillåter (till exempel pushar till grenar som matchar `feature/**`), orden **Stående godkännande**, vem som gav den när det var någon annan, och när den upphör
+3. För att avsluta den nu pekar du på posten och trycker på **Återkalla**. Agenter frågar igen från och med nästa åtgärd
+
+Raden visar fortfarande åtgärdens egen inställning, och en rad under den räknar de fall som listas nedan och som ändå tillåts. Villkorliga regler som en mall skrev visas i samma lista, och kommandoregler i en grupp **Kommandon** efter den sista åtgärden. På arbetsytenivå räknar en notis under sammanfattningen de stående godkännanden som satts för enskilda ytor eller agenter. På en yta eller hos en agent räknar den arbetsytans, som gäller även där.
+
+Ett stående godkännande besparar bara en fråga. Det åsidosätter aldrig **Neka**: om du sätter en åtgärd till **Neka** medan ett fortfarande gäller, visar dess post **inte i kraft när Neka är valt** tills det upphör eller du återkallar det. Att ändra en åtgärds inställning lämnar dess stående godkännanden kvar, och att återkalla ett lämnar inställningen kvar.
+
 ## Förstå hur ett beslut löses upp
 
 Upplösningen är **specificitet först, sedan restriktivitet**:
@@ -42,7 +54,7 @@ Upplösningen är **specificitet först, sedan restriktivitet**:
 1. **Yta**-regler, sedan **agent**, sedan **arbetsyta**. Det första omfånget
    med en matchande regel avgör och upplösningen stannar
 2. Om ingen regel matchar gäller **lägesförinställningen** – ett skrivskyddat
-   läge (plan, granskning, orkestrering) nekar elva av de tretton klasserna
+   läge (plan, granskning, orkestrering) nekar tolv av de fjorton klasserna
 3. Om läget inte har något att säga gäller den **inbyggda standarden**
 
 Inom ett enskilt omfång löses en kommandoregel genom längsta matchande prefix,
@@ -70,7 +82,7 @@ utan grind är värre än en nekad.
 | Skapa en commit                           | Tillåt           |
 | Pusha till en remote                      | Fråga först      |
 | Öppna en pull request                     | Fråga först      |
-| Publicera en granskning eller sammanslagning | Fråga först   |
+| Uppdatera eller slå ihop en pull request     | Fråga först   |
 | Skriv till ett externt ärendesystem       | Fråga först      |
 | Använd nätverket                          | Tillåt           |
 | Läs en hemlighet                          | Tillåt           |
@@ -78,6 +90,7 @@ utan grind är värre än en nekad.
 | Kör en process                            | Tillåt           |
 | Ändra arbetsytans struktur                | Tillåt           |
 | Styr en avskild miljö (station)           | Tillåt           |
+| Kör kommandon på värden                   | Fråga först      |
 
 Taxonomin är sluten. Ett nytt verktyg som levereras utan att deklarera sina
 klasser faller ett ratchet-test i CI, så inget anländer med en tyst tom
@@ -89,13 +102,13 @@ Innan du ändrar en regel kontrollerar du hur den aktuella policyn redan löser
 den.
 
 1. På samma sida rullar du ned till **Tänk om?**
-2. Välj en **Åtgärd** (en av de tretton klasserna)
+2. Välj en **Åtgärd** (en av de fjorton klasserna)
 3. Fyll valfritt i **Kommando** (till exempel `git push origin main`),
    **Agent**, **Yta** och **Läge**
 4. Läs resultatet: beslutet, orsaken och **Källa:**
 
 Proben kör samma upplösare som verkställighetsvägen använder, mot dina aktuella
-regler, så svaret är exakt. Om det överraskar dig ändrar du en regel i matrisen
+regler, så svaret är exakt. När ett stående godkännande avgör visar källan **Stående godkännande** följt av omfånget. Om svaret överraskar dig ändrar du en regel i matrisen
 ovan och probar igen.
 
 ## Ställ in en ytas autonomireglage

@@ -2,7 +2,7 @@
 title: 從 GitHub PR 與 Control Center 對話
 description: 直接在 PR 對話中向 Control Center 要求審查或提出問題，無需 webhook 或公開 URL。
 slug: zh-HK/手冊/操作指南/github-pr-對話
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 本指南說明如何在不用離開 GitHub 的情況下使用 Control Center：從 PR 頁面
@@ -27,22 +27,7 @@ sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
 
 ## 尋找你的機械人名稱
 
-提及 `@usectrl`，這是 Control Center 專用的 GitHub 帳戶。這是預設觸發方式；工作區的 GitHub 通道仍會處理請求並發佈回覆。你毋須 `usectrl` 帳戶的憑證。
-
-App 本身的登入名稱 `<appslug>[bot]` 及簡短形式 `@appslug` 亦可使用。如要在你自己的 App 上查找這個可選別名：
-
-1. 前往 **設定 → 伺服器 → 單一登入**，捲動到**供應商應用**卡片
-2. 展開 **GitHub** 區塊，然後按**測試**
-3. 當 **機械人登入名**填好後複製它。如果它仍顯示空白提示，登入名稱一律是
-   `<appslug>[bot]` —— 直接輸入它，或使用簡短的 `@appslug`
-
-GitHub 的 `@` 自動完成功能不會顯示 App 帳戶，所以 App 別名必須手動輸入或複製。專用用戶 `@usectrl` 是預設的呼叫方式；`@myapp` 和 `@myapp[bot]` 仍可作為 App 別名使用。
-
-:::note[選擇獨特的應用程式名稱]
-短格式是以文字方式比對。如果某個人類 GitHub 使用者碰巧與你的應用程式共用
-同一個 slug，以短格式提及該使用者也同樣會觸及機械人。完整的 `@myapp[bot]`
-格式則永遠明確無歧義。
-:::
+提及 `@usectrl`，這是 Control Center 專用的 GitHub 帳戶。它是唯一的觸發方式：提及應用程式自己的登入名稱不會有任何作用。工作區的 GitHub 通道仍會處理請求並發佈回覆。你毋須 `usectrl` 帳戶的憑證。
 
 ## 從 GitHub 要求審查
 
@@ -102,7 +87,7 @@ what would the complexity be with the bounded queue instead?
 伺服器會在做任何事之前，先解析評論的作者，或加上 `ai-review` 標籤的人：
 
 - **該 GitHub 帳戶必須已在這部伺服器上登入。** 比對依據是 GitHub 的數字帳戶
-  id，絕不是登入名稱。請從 **設定 → 工作區 → 個人資料與身分 → 程式碼託管** 登入
+  id，絕不是登入名稱。請從 **設定 → 你 → 個人資料 → 程式碼託管** 登入
 - **此人必須是具備寫入角色的成員**（`member`、`admin` 或 `owner`），且隸屬於
   連結該程式庫的工作區
 - **此人必須能在 GitHub 上推送**到該程式庫。回覆使用的權杖會限制在此人的存取權
@@ -122,7 +107,7 @@ what would the complexity be with the bounded queue instead?
 | 項目       | 行為                                                          |
 | ---------- | ------------------------------------------------------------- |
 | 確認       | 在一輪掃描內，由你的帳戶在評論上（若是標籤則在 PR 上）加上 👀 |
-| 答案       | 出現在問題所提出的同一條渠道上，以 `**Control Center** (for @your-login):` 開頭。使用自己的 App 時，作者是該 App 的機械人；經由 Connect 時則是你的帳戶，經由共用 App 代為操作 |
+| 答案       | 出現在問題所提出的同一條渠道上，以 `**Control Center** (for @your-login):` 開頭。由該應用程式的機械人撰寫。在共用的 Connect 應用程式上，審查線程內的回覆會以你自己的帳戶撰寫，除非 Connect 營運者已將此安裝列入清單 |
 | 空間內歸屬 | 問題屬於你；代理代表你執行，並遵循該空間的自主程度設定        |
 | 審查       | 發現項會落在審查空間；發佈到 GitHub 則需手動進行              |
 
@@ -141,8 +126,6 @@ GitHub 配額剩餘不足 15% 的工作區會被略過，直到配額回復為�
   會送達
 - 你是否已在這部伺服器上登入 GitHub、是具備寫入角色的成員，而且能推送到該
   程式庫？其他任何人都會被伺服器忽略，不會收到回覆
-- 若使用 Control Center 的共用 App，組織的安裝是否已為這部伺服器授權？請參閱
-  [為組織授權這部伺服器](/zh-HK/手冊/操作指南/github-app/#為組織授權這部伺服器)
 - 仍然沒有反應？當有東西失敗時，伺服器日誌會寫出掃描和 PR；請尋找
   `pr_conversation:`（輪詢器）和 `github_pr_conversation:`（橋接）
 

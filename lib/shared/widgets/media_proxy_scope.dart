@@ -17,7 +17,31 @@ class MediaProxyConfig {
     required this.httpBase,
     required this.deviceId,
     required this.psk,
+    this.workspaceId,
   });
+
+  /// The workspace whose sign-ins [resolve]'s URLs fetch private forge media
+  /// with (the viewer's active one), or null to fetch anonymously.
+  ///
+  /// Sent as `ws` outside the signature: it only picks among the viewer's own
+  /// credentials, and the host checks the viewer's membership first.
+  final String? workspaceId;
+
+  /// This config resolving media for [workspaceId] (see [workspaceId]). One
+  /// instance per workspace, so each keeps its own signed-URL memo.
+  MediaProxyConfig forWorkspace(String? workspaceId) {
+    if (workspaceId == this.workspaceId) {
+      return this;
+    }
+    return _byWorkspace[workspaceId ?? ''] ??= MediaProxyConfig(
+      httpBase: httpBase,
+      deviceId: deviceId,
+      psk: psk,
+      workspaceId: workspaceId,
+    );
+  }
+
+  final Map<String, MediaProxyConfig> _byWorkspace = {};
 
   /// Appends a resource route after this connection's unguessable local prefix.
   /// Uri.replace(path: '/route') would silently discard that capability.
@@ -76,6 +100,7 @@ class MediaProxyConfig {
         'd': deviceId,
         's': RemoteControlCrypto.signProxyTarget(rawUrl, psk),
         if (bucketed != null) 'w': '$bucketed',
+        'ws': ?workspaceId,
       },
     ).toString();
     // Bounded: a long session scrolling a feed would otherwise retain a signed
@@ -272,8 +297,8 @@ class MediaProxyConfig {
   /// `workspace.import` takes a path on the SERVER, which a person sitting at
   /// another machine cannot produce. Here the bytes travel in the body. The
   /// signed target is `backup-restore:<workspaceId>`; the host requires the
-  /// signer to be the workspace's OWNER, because adopting a file destroys
-  /// everything that workspace currently holds.
+  /// signer to be the SERVER owner who also owns the workspace, because every
+  /// row of an adopted file counts as written by the server.
   String backupRestoreUrl({required String workspaceId}) {
     return resourceUri(
       '/backup/restore',
@@ -510,10 +535,11 @@ class MediaProxyConfig {
       other is MediaProxyConfig &&
           httpBase == other.httpBase &&
           deviceId == other.deviceId &&
-          psk == other.psk;
+          psk == other.psk &&
+          workspaceId == other.workspaceId;
 
   @override
-  int get hashCode => Object.hash(httpBase, deviceId, psk);
+  int get hashCode => Object.hash(httpBase, deviceId, psk, workspaceId);
 }
 
 /// Makes a [MediaProxyConfig] available to the widget subtree so remote-media

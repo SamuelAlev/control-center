@@ -446,9 +446,6 @@ class _FakeHost {
             _isolatedRepoJson('ir1', ticketId: args['ticket_id'] as String),
           ],
         });
-      case 'isolated_repo.upsert':
-        sentIsolatedRepos.add(args);
-        _replyData(id, op, {'ok': true});
       case 'isolated_repo.deleteById':
         sentIsolatedRepos.add(args);
         _replyData(id, op, {'ok': true});
@@ -1067,6 +1064,8 @@ class _FakeHost {
     'name': name,
     'workspace_id': 'ws1',
     'mode': 'chat',
+    'provisioning_status': 'ready',
+    'kind': 'topic',
     'created_at': '2026-01-01T00:00:00.000Z',
     'updated_at': '2026-01-02T00:00:00.000Z',
   };
@@ -2191,7 +2190,7 @@ void main() {
   );
 
   test(
-    'RpcIsolatedRepoRepository maps reads/watch + upsert/delete to entities',
+    'RpcIsolatedRepoRepository maps reads/watch + delete; never writes a row',
     () async {
       final repo = RpcIsolatedRepoRepository(client);
 
@@ -2218,23 +2217,26 @@ void main() {
       final acrossTk = await repo.forTicketAcrossWorkspaces('tk1');
       expect(acrossTk.single.ticketId, 'tk1');
 
-      final entity = IsolatedRepo(
-        id: 'ir9',
-        workspaceId: 'ws1',
-        spaceId: 'c1',
-        repoId: 'r1',
-        path: '/ws/ws1/conversations/c1/repos/r1',
-        branch: 'agent/c1',
-        backend: RepoIsolationBackend.gitWorktree,
-        sourcePath: '/repos/r1',
-        createdAt: DateTime.utc(2026),
-      );
-      await repo.upsert(entity);
-      expect((host.sentIsolatedRepos.last['repo'] as Map)['id'], 'ir9');
+      // A worktree row's paths are what release archives and destroys, so
+      // only the server's provisioner writes one; nothing goes on the wire.
+      final sentBefore = host.sentIsolatedRepos.length;
       expect(
-        (host.sentIsolatedRepos.last['repo'] as Map)['backend'],
-        'gitWorktree',
+        () => repo.upsert(
+          IsolatedRepo(
+            id: 'ir9',
+            workspaceId: 'ws1',
+            spaceId: 'c1',
+            repoId: 'r1',
+            path: '/ws/ws1/conversations/c1/repos/r1',
+            branch: 'agent/c1',
+            backend: RepoIsolationBackend.gitWorktree,
+            sourcePath: '/repos/r1',
+            createdAt: DateTime.utc(2026),
+          ),
+        ),
+        throwsUnsupportedError,
       );
+      expect(host.sentIsolatedRepos, hasLength(sentBefore));
 
       await repo.deleteById('ws1', 'ir9');
       expect(host.sentIsolatedRepos.last['id'], 'ir9');
@@ -2473,7 +2475,6 @@ void main() {
 
     await repo.deleteRun('ws1', 'pr9');
     expect(host.sentPipelineRuns.last['run_id'], 'pr9');
-
   });
 
   test(
@@ -3169,5 +3170,4 @@ void main() {
     expect(url, contains('x.png'));
     expect(host.sentPrReviewOps.last['op'], 'pr_review.uploadContent');
   });
-
 }

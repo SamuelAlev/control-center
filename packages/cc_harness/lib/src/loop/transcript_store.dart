@@ -14,7 +14,7 @@ class HarnessTranscript {
   /// Rebuilds from [toJson]'s output.
   factory HarnessTranscript.fromJson(Map<String, dynamic> json) {
     // Type-tested rather than cast: this reads a file that a crash may have
-    // truncated or an older build may have written differently, and throwing
+    // truncated or that is otherwise malformed, and throwing
     // here would take the run down for a record whose only job is to make the
     // run cheaper.
     final rawMessages = json['messages'];

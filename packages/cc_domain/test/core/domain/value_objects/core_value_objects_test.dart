@@ -6,7 +6,6 @@ import 'package:cc_domain/core/domain/value_objects/agent_role.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_run_role.dart';
 import 'package:cc_domain/core/domain/value_objects/entity_ref.dart';
 import 'package:cc_domain/core/domain/value_objects/file_search_hit.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/message_attachment.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/output_contract_mode.dart';
@@ -14,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/core/domain/value_objects/retry_meta.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
+import 'package:cc_domain/core/domain/value_objects/workspace_connect_mode.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:test/test.dart';
 
@@ -162,14 +162,39 @@ void main() {
     });
   });
 
-  group('GithubAuthMode', () {
+  group('WorkspaceConnectMode', () {
     test('fromWire round-trips; unknown or empty is inherit', () {
-      for (final mode in GithubAuthMode.values) {
-        expect(GithubAuthMode.fromWire(mode.wireName), mode);
+      for (final mode in WorkspaceConnectMode.values) {
+        expect(WorkspaceConnectMode.fromWire(mode.wireName), mode);
       }
-      expect(GithubAuthMode.fromWire(null), GithubAuthMode.inherit);
-      expect(GithubAuthMode.fromWire(''), GithubAuthMode.inherit);
-      expect(GithubAuthMode.fromWire('bogus'), GithubAuthMode.inherit);
+      expect(WorkspaceConnectMode.fromWire(null), WorkspaceConnectMode.inherit);
+      expect(WorkspaceConnectMode.fromWire(''), WorkspaceConnectMode.inherit);
+      expect(
+        WorkspaceConnectMode.fromWire('bogus'),
+        WorkspaceConnectMode.inherit,
+      );
+    });
+
+    test('only inherit follows the server; hosted and custom use a Connect '
+        'of their own', () {
+      expect(
+        [
+          for (final mode in WorkspaceConnectMode.values)
+            if (mode.overridesServer) mode,
+        ],
+        [
+          WorkspaceConnectMode.hosted,
+          WorkspaceConnectMode.custom,
+          WorkspaceConnectMode.own,
+        ],
+      );
+      expect(
+        [
+          for (final mode in WorkspaceConnectMode.values)
+            if (mode.usesOwnConnect) mode,
+        ],
+        [WorkspaceConnectMode.hosted, WorkspaceConnectMode.custom],
+      );
     });
   });
 
@@ -482,11 +507,7 @@ void main() {
 
   group('ConfirmationPort surface', () {
     test('ConfirmationRequest defaults', () {
-      const req = ConfirmationRequest(
-        spaceId: 'c',
-        title: 'T',
-        detail: 'D',
-      );
+      const req = ConfirmationRequest(spaceId: 'c', title: 'T', detail: 'D');
       expect(req.severity, ConfirmationSeverity.warning);
       expect(req.kind, ConfirmationKind.command);
       expect(req.rememberChoice, isNull);

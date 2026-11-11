@@ -31,11 +31,7 @@ Future<void> handleGitHubLink({
     return;
   }
 
-  final refInfo = parseAnyGitHubReference(
-    href,
-    currentOwner: currentOwner,
-    currentRepo: currentRepo,
-  );
+  final refInfo = parseAnyGitHubReference(href);
 
   if (refInfo == null) {
     await _openInBrowser(href);

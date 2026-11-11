@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cc_domain/core/domain/value_objects/sandbox_backend.dart';
 import 'package:control_center/core/providers/storage_providers.dart';
 
@@ -31,19 +29,16 @@ class SandboxPreferences {
   /// Currently selected backend. `null` means "auto" (use the detector's
   /// recommendation).
   ///
-  /// Legacy `"docker"` values are silently rewritten to `"native"` on read
-  /// so existing users keep their "sandboxed" intent when Docker support was
-  /// removed.
+  /// A stored value that names no backend reads as auto, never as
+  /// [SandboxBackend.none]: an unrecognised pin must not switch isolation off.
   SandboxBackend? get backend {
     final stored = _prefs.getString(_kBackendKey);
-    if (stored == null || stored.isEmpty) {
-      return null;
+    for (final backend in SandboxBackend.values) {
+      if (backend.name == stored) {
+        return backend;
+      }
     }
-    if (stored == 'docker') {
-      unawaited(_prefs.setString(_kBackendKey, SandboxBackend.native.name));
-      return SandboxBackend.native;
-    }
-    return SandboxBackend.fromName(stored);
+    return null;
   }
 
   /// Pins a specific backend. Pass `null` to fall back to auto-detect.

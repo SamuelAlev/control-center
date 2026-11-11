@@ -2,7 +2,7 @@
 title: Pași de pipeline
 description: Referință pentru tipurile de pași de pipeline, cheile de corp ale pașilor, configurația lor și rezultatele pașilor.
 slug: ro-RO/manual/referinta/pasi-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Un pas de pipeline are două axe independente:
@@ -61,7 +61,7 @@ Nod generic de tip prompt și trimitere: redă promptul, trimite agentul într-o
 
 ### `pipeline.condition`
 
-Corp de router — citește `config.extras`, evaluează o condiție și returnează `StepResult.route(key)`. Condițiile **nu** sunt expresii JavaScript; sunt acceptate trei forme de redactare, în ordinea priorității:
+Corp de router — citește `config.extras`, evaluează o condiție și returnează `StepResult.route(key)`. Condițiile **nu** sunt expresii JavaScript; sunt acceptate două forme de redactare, în ordinea priorității:
 
 - **Arbore de predicate** (`extras.predicate`) — un arbore boolean care rutează `"true"` / `"false"`. Fiecare nod este o hartă cu un `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — adevărat când oricare dintre căile listate există pe disc; `negate` îl inversează; `recursive` caută și în subdirectoare (sărind peste `.git`, `node_modules`, `build`, `.dart_tool`). Căile relative se rezolvă față de `state[baseKey]` (implicit `repo_local_path`), altfel față de directorul de spațiu de lucru al rulării.
@@ -69,19 +69,28 @@ Corp de router — citește `config.extras`, evaluează o condiție și returnea
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — grupuri booleene.
   - `{"type": "not", "of": <predicate>}` — negație.
 - **Switch** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; rutează către primul caz pe care valoarea de stare îl conține fără a ține cont de majuscule, altfel către `default`.
-- **Comparație** (`extras.left` / `extras.op` / `extras.right`, la nivel superior, variantă veche) — echivalentă cu un predicat `comparison`, păstrată pentru șabloanele redactate înainte de arbore.
 
 Muchiile care ies din nod poartă un `routeKey` care trebuie să corespundă cheii returnate.
 
 ### `prReview.comment`
 
-Publică constatările consolidate ca un comentariu de revizuire pe PR, prin clientul GitHub de PR.
+Publică constatările consolidate, sau propriul `extras.message` al pasului, ca un comentariu de revizuire pe PR, prin clientul GitHub de PR.
 
-| Cheie de stare          | Descriere                                    |
-| ----------------------- | -------------------------------------------- |
-| `repo_full_name`        | `owner/repo` (obligatoriu)                   |
-| `pr_number`             | Numărul PR-ului — int sau șir numeric (obligatoriu) |
-| `consolidated_findings` | Corpul comentariului (obligatoriu)           |
+| Cheie                   | Citită din                 | Descriere                                                    |
+| ----------------------- | -------------------------- | ------------------------------------------------------------ |
+| `repo_full_name`        | Payload-ul declanșatorului | `owner/repo` (obligatoriu)                                   |
+| `pr_number`             | Payload-ul declanșatorului | Numărul PR-ului — int pozitiv sau șir numeric (obligatoriu)  |
+| `consolidated_findings` | Stare                      | Corpul comentariului când pasul nu are un `message`          |
+
+PR-ul vine doar din payload-ul declanșatorului rulării, niciodată dintr-o stare pe care un pas o poate rescrie în timpul rulării. @-mențiunile din textul publicat sunt neutralizate, astfel încât comentariul nu notifică pe nimeni.
+
+Un `message` își randează substituenții `{{key}}` astfel:
+
+- `repo_full_name`, `repo_owner`, `repo_name` și `pr_number` randează PR-ul pe care pasul postează.
+- `author` se randează din payload-ul declanșatorului, ca atare, doar când este un nume de utilizator valid pe forge; orice altceva face pasul să eșueze.
+- `consolidated_findings` se randează ca markdown brut, cu @-mențiunile neutralizate.
+- Orice altă valoare se randează ca text literal: pe o singură linie, cu caracterele de punctuație markdown escapate și @-mențiunile neutralizate.
+- Un substituent care nu se rezolvă la nimic face pasul să eșueze.
 
 Returnează `StepResult.terminal`, cu `comment_review_id` și `commented_at` în stare.
 

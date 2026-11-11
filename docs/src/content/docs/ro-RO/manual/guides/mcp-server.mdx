@@ -1,8 +1,8 @@
 ---
 title: Folosește serverul MCP
-description: Îndreaptă un client MCP extern către serverul de instrumente al Control Center, setează un token bearer și află ce expune suprafața.
+description: Îndreaptă un client MCP extern către serverul de instrumente al Control Center, trimite tokenul bearer și află ce expune suprafața.
 slug: ro-RO/manual/ghiduri-practice/server-mcp
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Acest ghid îți arată cum să conectezi un client MCP extern — Claude Code, un
@@ -30,26 +30,31 @@ Așadar, o instalare locală implicită se află la `http://127.0.0.1:9030/mcp`.
 2. Citește cardul **Server MCP** — arată dacă rulează sau este oprit și portul pe
    care ascultă
 
-Suprafața este activă implicit la o instalare nouă, așa că un client loopback
-funcționează fără nicio vizită prin setări. **Pornește la lansarea aplicației**
-controlează dacă revine după o repornire; **Pornește** / **Oprește** sunt comenzi de
-sesiune care nu schimbă această preferință.
+Suprafața este activă implicit la o instalare nouă. Doar proprietarul serverului vede tokenul de pe card și doar el poate porni sau opri endpoint-ul. **Pornește la lansarea aplicației** controlează dacă revine după o repornire; **Pornește** / **Oprește** sunt comenzi de sesiune care nu schimbă această preferință.
 
 Serverul se leagă la loopback implicit, așa că endpointul este accesibil doar de pe
 mașina pe care rulează `cc_server`, în afară de cazul în care l-ai pornit cu
 `--bind any`.
 
+## Obține tokenul
+
+Fiecare cerere are nevoie de tokenul MCP al serverului, de pe orice mașină, inclusiv de pe loopback. Serverul îl creează prima dată când pornește. Nu există nicio cale să-l dezactivezi sau să-l ștergi.
+
+1. În **Setări → Server → Servere MCP**, găsește rândul **Token de autentificare**
+2. Apasă **Afișează tokenul** și copiază-l
+3. Ca să îl înlocuiești, apasă **Rotește tokenul**. Serverul trece pe noul token imediat, iar fiecare client care folosește încă pe cel vechi este refuzat până îi dai pe cel nou
+
 ## Conectează un client
 
-Îndreaptă clientul către endpointul HTTP streamable. Forma exactă a configurației
-este problema clientului tău; URL-ul este același în ambele cazuri.
+Îndreaptă clientul către endpointul HTTP streamable și trimite tokenul ca `Authorization: Bearer <token>` la fiecare cerere, inclusiv la `GET /sse`. Nu există altă cale de a-l trimite: un token în URL nu este acceptat. Forma exactă a configurației este problema clientului tău.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -72,23 +77,18 @@ același server să nu fie descoperit și din proiect și înregistrat de două 
 Punct de verificare: cere clientului să își listeze instrumentele. Ar trebui să vezi
 intrări `mcp__*` care acoperă tichete, spații, memorie, graful de cod și revizuirea.
 
-## Servește MCP dincolo de gazdă
+## Ce refuză endpoint-ul
 
-1. În **Setări → Server → Servere MCP**, pe rândul **Token de autentificare**,
-   apasă **Setează** și lipește un token
-2. Trimite-l ca `Authorization: Bearer <token>` la fiecare cerere `POST /mcp`
+Tokenul deschide fiecare unealtă de pe server, așa că endpoint-ul refuză și orice ar fi putut trimite o pagină web, înainte să se uite la token:
 
-O suprafață fără token refuză cu 403 orice apelant care nu vine prin loopback.
-Aceasta eșuează închis prin proiectare: tokenul este exact ceea ce face posibil, în
-primul rând, serviciul în afara gazdei.
+| Cerere | Răspuns |
+| ------ | ------- |
+| Un antet `Origin` care nu este o pagină de pe această mașină (`http://localhost`, `http://127.0.0.1` sau `http://[::1]`, pe orice port) | `403`, "Cross-origin requests are not accepted" |
+| Un antet `Host` care nu este nici adresa loopback și portul acestui listener, nici numele public de gazdă al serverului | `403`, "Unknown host" |
+| Un `POST` al cărui corp nu este `application/json` | `415` |
+| Fără token sau cu unul greșit | `401` |
 
-Modificările de token se aplică imediat suprafeței active — fără repornire.
-
-:::note[`GET /sse` preia tokenul din șirul de interogare]
-Fluxul de notificări este verificat după token ca orice altă rută, dar un
-`EventSource` din browser nu poate trimite un antet `Authorization` — așa că `/sse`
-acceptă tokenul și sub forma `?token=<token>`. Fără token, răspunde cu 401.
-:::
+Ca să servești MCP dincolo de gazdă, pornește serverul cu `--bind any` și trimite tokenul de pe cealaltă mașină, adresând serverul prin numele lui public de gazdă.
 
 ## Limitează fiecare apel la un spațiu de lucru
 
@@ -130,6 +130,18 @@ Catalogul complet este anunțat în `tools/list` fără filtrare la descoperire 
 client MCP extern refuză să apeleze un instrument care nu se află în lista lui din
 cache, așa că a ascunde instrumentele le strică, în loc să le facă mai ordonate.
 
+## Serverele MCP personale rămân ale proprietarului
+
+Acest ghid se referă la endpoint-ul propriu al Control Center. Cealaltă direcție, serverele MCP pe care Control Center le dă agenților pe care îi rulează, este listată în **Setări → Server → Servere MCP → Servere MCP externe**. Serverele configurate pe mașina serverului pentru Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode sau într-un `.mcp.json` sunt găsite acolo automat.
+
+Serverele descoperite vin din configurația de unelte a utilizatorului serverului și acționează cu identitatea și credențialele acelui utilizator, deci aparțin proprietarului serverului:
+
+- Sunt disponibile doar în rulările harness-ului integrat pe care proprietarul serverului le pornește sau pentru care răspunde, inclusiv automatizarea dintr-un spațiu de lucru pentru care proprietarul răspunde.
+- Rularea unui membru, automatizarea legată de un membru și fiecare rulare pe un server fără proprietar înregistrat nu primesc niciunul. Acolo uneltele nu sunt listate, nu pot fi apelate și nu apar în căutarea de unelte.
+- Acest endpoint nu le listează, nu le apelează și nu le caută niciodată, pentru nimeni, nici cu tokenul proprietarului, și nu transmite nici resursele, nici prompturile lor. Așadar, un CLI de agent care ajunge la Control Center prin MCP, cum este Claude Code, nu le primește nici prin Control Center; folosește propria lui configurație.
+
+Serverele MCP configurate pentru spațiul de lucru nu sunt afectate de nimic din toate acestea.
+
 ## Depanare
 
 ### Clientul nu vede niciun instrument
@@ -138,9 +150,17 @@ cache, așa că a ascunde instrumentele le strică, în loc să le facă mai ord
 - Verifică dacă portul corespunde portului tău `cc_server`
 - În Claude Code, verifică dacă ai transmis `--mcp-config` și `--strict-mcp-config`
 
-### Eroare 403 de pe o mașină care nu este serverul
+### Eroare 401 Unauthorized
 
-Nu este configurat niciun token bearer. Setează unul și trimite-l.
+Cererea nu avea token, sau avea unul vechi. Copiază tokenul actual din rândul **Token de autentificare** și trimite-l ca `Authorization: Bearer <token>`. Un token din URL este ignorat.
+
+### Eroare 403 de pe un client care mergea înainte
+
+Cererea avea un `Origin` de la o pagină web sau un `Host` la care serverul nu răspunde. Apelează endpoint-ul dintr-un client, nu dintr-o pagină de browser, folosind adresa loopback a serverului sau numele lui public de gazdă.
+
+### Eroare 415 Unsupported Media Type
+
+Trimite corpurile `POST /mcp` ca `application/json`.
 
 ### Un apel de instrument eșuează cu „Missing or invalid argument: workspace_id”
 

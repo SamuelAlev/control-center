@@ -20,6 +20,7 @@ class RigMicrophoneSender extends StatefulWidget {
     required this.endUrl,
     required this.inputDeviceId,
     required this.onStopped,
+    this.onForbidden,
   });
 
   /// Signed URL for microphone chunks.
@@ -33,6 +34,10 @@ class RigMicrophoneSender extends StatefulWidget {
 
   /// Called when permission, capture, or transport fails.
   final VoidCallback onStopped;
+
+  /// Called when the lane answers 403: the person may watch the machine but
+  /// not speak into it. The sender stops either way, without retrying.
+  final VoidCallback? onForbidden;
   @override
   State<RigMicrophoneSender> createState() => _RigMicrophoneSenderState();
 }
@@ -97,6 +102,7 @@ class _RigMicrophoneSenderState extends State<RigMicrophoneSender> {
           )
           .timeout(const Duration(seconds: 5));
       if (started.statusCode != 204) {
+        _reportForbidden(started.statusCode);
         await _fail();
         return;
       }
@@ -147,6 +153,7 @@ class _RigMicrophoneSenderState extends State<RigMicrophoneSender> {
             )
             .timeout(const Duration(seconds: 5));
         if (response.statusCode != 204) {
+          _reportForbidden(response.statusCode);
           await _fail();
           return;
         }
@@ -166,6 +173,12 @@ class _RigMicrophoneSenderState extends State<RigMicrophoneSender> {
       if (!_closing && next != null) {
         _pump = _sendLoop(next);
       }
+    }
+  }
+
+  void _reportForbidden(int status) {
+    if (status == 403 && !_closing && mounted) {
+      widget.onForbidden?.call();
     }
   }
 

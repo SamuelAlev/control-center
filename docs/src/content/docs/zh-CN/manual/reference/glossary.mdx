@@ -2,7 +2,7 @@
 title: 术语表
 description: 贯穿 Control Center 全站的关键术语定义。
 slug: zh-CN/手册/参考/术语表
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', '按工作区记录的已安装技能清单：每个技能的源仓库、仓库内路径、所固定的提交，以及一个汇总内容哈希。安装、更新和卸载都会让它保持最新；verify_skills 会拿它与磁盘核对。'],
 ['智能体运行网关', 'cc_server 上的一个回环端点，在智能体的沙盒内应用操作策略。智能体发起的每一次 GitHub 推送都会被路由到这里，按推送到远程仓库规则检查，再用一个智能体从不持有的写入令牌转发；Claude Code 的 Bash 命令则经由同一端点上的钩子检查。'],
 ['模式', 'chat、plan、review 或 orchestrate。按空间存储，因此同一个智能体可以在不同空间处于不同模式；空间内的每段对话共享它。它控制系统提示词、沙盒写入规则和 MCP 工具允许列表。'],
-['SandboxBackend', 'microvm（隔离的虚拟机——唯一带有内核边界的后端，用于交互式终端）、native（操作系统原生的沙盒：macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap）或 none。启动时探测一次；native 可用时会包裹智能体派发。Windows 没有原生后端，Linux 需要 bwrap 加 socat，因此那里的运行不会被包裹；--sandbox off 会刻意选择退出。'],
+['SandboxBackend', 'microvm（隔离的虚拟机——唯一带有内核边界的后端，用于交互式终端）、native（操作系统原生的沙盒：macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap）或 none。启动时探测一次；native 可用时会包裹智能体派发。Windows 没有原生后端，Linux 需要 bwrap 加 socat；在这样的主机上，只有服务器所有者的运行会启动（不被包裹），其他人的运行会被拒绝。--sandbox off 会让每位成员的智能体都不被包裹地运行。'],
 ['机台', '智能体实时操控的一台可丢弃机器：一个隔离的浏览器或 Linux 桌面、由宿主机管理的 Android 模拟器或 iOS 模拟器，或一个隔离终端。通过它自己的全分辨率通道实时观看，接管由服务器端强制执行。以对话为作用域，因此人类标签页与智能体工具面对的是同一台机器。'],
 ['隔离舱', '由虚拟机支撑的机台所能提供的更强隔离属性：内核边界、一次性覆盖磁盘、默认拒绝的网络闸门和凭据代理。Android 和 iOS 机台是可丢弃的，但使用宿主机管理的网络，因此不宣称具备这道边界。操控任何机台都会用到 enclosureControl 护栏类别。'],
 ['RunCost', '单次智能体运行的令牌/成本统计（输入令牌、输出令牌、以分为单位的估算成本）。'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', '编排运行执行：启动运行、调度步骤、持久化状态、处理路由器/汇合/失败继续，并在重启后恢复进行中的运行。'],
 ['PipelineTriggerDispatcher', '订阅领域事件，并为已启用的触发器自动启动匹配的流水线运行。'],
 ['MemoryAccessPolicy', '解析并强制执行各领域上按智能体角色划分的记忆权限。'],
-['HarnessCostCalculator', '依据 models.dev 目录，把内置 harness 的令牌用量折算为一个 RunCost。派发会把该统计持久化到运行日志上。'],
+['HarnessRunAccounting', '按 models.dev 目录为内置 harness 的模型调用计价，每次调用只计一次，并把它们持久化到所属运行上；子运行的支出会汇总到父运行的预算中。'],
 ['BudgetEnforcementService', '计算每个智能体的月度支出，并产生一个派发前阻断（checkInvocationBlock）。该阻断只会被恢复类对账器（OrphanRunReaper、StrandedTicketReconciler）查询，普通派发从不查询。'],
 ['BudgetGovernanceService', '在每次运行后评估每个智能体的月度支出：达到软阈值会记录一条警告事件；耗尽则记录一条严重事件，并把智能体的生命周期翻转为 paused。'],
 ['DomainEventBus', '用于跨功能通信的进程内广播式发布/订阅总线。事件是带类型的；订阅者消费按类型划分的流。'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', '手机瘦客户端——一个 Flutter Web PWA，通过经代理中转的中继远程控制机群，并采用默认拒绝的工具策略。'],
 ['cc_signaling_server', '无状态的 WebSocket 中继代理，托管需邀请才能加入的房间。一个笨拙的中继：它只转发端到端密封的帧，不保存任何应用数据，也永远看不到配对 PSK。'],
 ['主体', '把人类与智能体统一为单一行动者抽象的密封值。UserPrincipal(userId) 或 AgentPrincipal(agentId)。每条消息、每张工单、每次审查、每个计划和每份运行日志都通过主体来归属。'],
-['用户', '人类身份，存储在 global.db 中，因此跨工作区全局唯一。创建工作区的主体成为其所有者，会被盖到 Workspace.ownerUserId 上，并同时写入一行所有者角色的成员记录；其他人通过邀请或 SSO 加入。'],
+['用户', '人类身份，存储在 global.db 中，因此跨工作区全局唯一。只有服务器所有者才能创建工作区，并成为其所有者，会被盖到 Workspace.ownerUserId 上，并同时写入一行所有者角色的成员记录；其他人通过邀请或 SSO 加入。'],
+['服务器所有者', '在服务器搭建时记录一次的人；经网络发送的任何内容都不会改变它。工作区管理员或工作区所有者不是服务器所有者。除非服务器所有者启动了某项操作或批准了该类主机执行，否则服务器自己的机器上不会有任何东西在沙盒之外运行：创建工作区、主机 shell、嵌入式代码编辑器、在主机上运行的环境，以及从工作区存储之外关联的检出，都只归他们所有。'],
 ['WorkspaceMember', '把 User 以某个 WorkspaceRole 绑定到 Workspace 的成员记录。成员身份——而不是配对密钥——才是访问边界。'],
 ['WorkspaceRole', '分级的成员角色：owner、admin、member、viewer 或 guest。仓库操作收口点会按操作种类推导出一个最低角色下限。'],
 ['ParticipantPresence', '针对某个主体的临时感知（状态、位置、光标、正在输入、智能体实时状态与运行费用）。从不持久化；由服务器集中中转；在扇出前先按仓库授权过滤。'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['自主程度', '按空间、按智能体的控件——propose-only / act-with-approval / act-freely——以动作护栏存储之上的一个具名档位实现。'],
 ['cc_worker', '无界面的纯 Dart 机群执行器二进制文件。与某个 cc_server 配对，声明自己的能力，拉取租约作业，执行它们并把事件流式回传。不持有任何持久状态。'],
 ['JobSpec', '一切可执行对象（智能体运行、流水线步骤、代码索引、金样渲染、基准测试、评测批次）的带类型规格：所需能力、优先级、预算、工作区。'],
-['ActionClass', '包含 13 种效果类别的封闭集合（fileDelete、gitPush、prCreate、networkEgress、processSpawn、enclosureControl 等等）。每个变更类工具都会声明自己的类别；护栏引擎按作用域解析出 allow / prompt / deny。'],
+['ActionClass', '包含 14 种效果类别的封闭集合（fileDelete、gitPush、prCreate、networkEgress、processSpawn、enclosureControl、hostExecution 等等）。每个变更类工具都会声明自己的类别；护栏引擎按作用域解析出 allow / prompt / deny。'],
 ['WriteLedger', '以工作区为作用域的幂等账本。每次变更都携带一个按逻辑操作划分的幂等键；重放会返回字节级完全一致的原始结果。从构造上就让重连和多客户端变得安全。'],
 ['幂等键', '由客户端生成的 UUIDv7，按逻辑操作（而非按尝试）铸造。用于在重连和跨客户端之间去重重试。'],
 ['Needs me 收件箱', '一条跨越各个支柱的队列，规则严格：只有当某个条目阻塞了某事（某个智能体、一次合并、一次同步），或它明确请求操作者介入时，它才会出现。'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['审查判定', 'ship、hold 或 block。任何置信度 >= 0.7 的 P0 发现项都会阻断；任何其他 P0 或任何 P1 则拖住；否则就是 ship。受门禁约束且失败的轴会强制阻断，且无法被发现项投票推翻。'],
 ['SessionRecording', '为单次运行捕获的事件流，加上 HTTP/LLM 录像带和工具 I/O，并配有一个 AgentConfigHash。'],
 ['金样会话', '按智能体或 playbook 固定的、经认可的 SessionRecording。'],
-['Control Center Connect', '一项可选服务，为没有自有应用的服务器运行供应商登录（GitHub、Google、Linear）。由 Control Center 托管、自行托管或关闭。它签发凭据封存和仅针对单个仓库的 GitHub 令牌，且永远看不到仓库内容。'],
+['Control Center Connect', '一项可选服务，为选择它而非自有应用的服务器或工作区运行供应商登录（GitHub、Google、Linear）。由 Control Center 托管、自行托管或关闭。它签发凭据封存和仅针对单个仓库的 GitHub 令牌，且永远看不到仓库内容。'],
 ['凭据封存', '一份加密的凭据，只有签发它的那个 Connect 能够打开，并绑定到提供商、Connect 地址、安装 ID、工作区、账户、应用与密钥世代。服务器保存封存；访问令牌只留在内存中。'],
 ['安装 ID', '服务器面对某个 Connect 地址时的身份，由其安装密钥派生。Connect 以安装 ID 为允许列表来识别服务器。轮换密钥会得到新的安装 ID，并让所有人从 Connect 通道登出。'],
-['安装绑定', 'Connect 记录的信息，表明哪些服务器可以使用共享 App 的某个 GitHub 安装。通过安装完成绑定；组织管理员的**授权此服务器**则绑定另一台。'],
-['登录通道', '某个提供商的浏览器登录：github、google、linear、linear_app 或 slack。当服务器自己的应用配置完整时，通道使用它；否则通过 Connect；否则不可用。'],
+['安装绑定', 'Connect 的记录（install_binding），表明某个 Slack 团队绑定到的唯一服务器。GitHub 安装没有此记录：成员登录的任何服务器都可以使用它们。'],
+['登录通道', '某个提供商的浏览器登录：github、google、linear、linear_app 或 slack。在使用自有应用时，只要该应用配置完整，通道就使用它，否则不可用；选择了 Connect 时，由 Connect 运行它。二者互不回退。'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **模式**：`chat`、`plan`、`review` 或 `orchestrate`。**按空间**存储，因此同一个智能体可以在不同空间处于不同模式；空间内的每段对话共享它。它控制系统提示词、沙盒写入规则和 MCP 工具允许列表。输入框只提供 `chat`、`plan` 和 `orchestrate`；`chat` 的标签是“智能体”。
 
-**SandboxBackend**：`microvm`（隔离的虚拟机——唯一带有内核边界的后端，用于交互式终端）、`native`（macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap）或 `none`。启动时探测一次；`native` 可用时会**包裹智能体派发**，包裹 Claude Code CLI 和 harness 的 `bash` 工具。Windows 没有原生后端，Linux 需要 `bwrap` 加 `socat`，因此那里的运行不会被包裹；`--sandbox off` 会刻意选择退出。
+**SandboxBackend**：`microvm`（隔离的虚拟机——唯一带有内核边界的后端，用于交互式终端）、`native`（macOS 上是 Seatbelt，Linux 和 WSL2 上是 bubblewrap）或 `none`。启动时探测一次；`native` 可用时会**包裹智能体派发**，包裹 Claude Code CLI 和 harness 的 `bash` 工具。Windows 没有原生后端，Linux 需要 `bwrap` 加 `socat`；在这样的主机上，只有服务器所有者的运行会启动（不被包裹），其他人的运行会被拒绝。`--sandbox off` 会让每位成员的智能体都不被包裹地运行。
 
 **机台**：智能体实时操控的一台可丢弃机器——一个隔离的浏览器或 Linux 桌面、由宿主机管理的 Android 模拟器或 iOS 模拟器，或一个隔离终端。通过它自己的全分辨率通道实时观看，接管由服务器端强制执行。以对话为作用域，因此人类标签页与智能体的 `browser_use` / `computer_use` / `mobile_use` / `ios_use` 调用面对的是同一台默认机器。参见[机台与隔离舱](/zh-CN/手册/概念/机台/)。
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**：解析并强制执行各领域上按智能体角色划分的记忆权限。
 
-**HarnessCostCalculator**：依据 models.dev 目录，把内置 harness 的令牌用量折算为一个 `RunCost`。派发会把该统计持久化到运行日志上。
+**HarnessRunAccounting**：按 models.dev 目录为内置 harness 的模型调用计价，每次调用只计一次，并把它们持久化到所属运行上；子运行的支出会汇总到父运行的预算中。
 
 **BudgetEnforcementService**：计算每个智能体的月度支出，并产生一个派发前阻断（`checkInvocationBlock`）。该阻断只会被恢复类对账器（`OrphanRunReaper`、`StrandedTicketReconciler`）查询，绝不会被普通的用户或智能体派发查询。
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**：由总结流水线提取并以独立行存储的结构化输出。行动项可以链接到一张工单。
 
-**CalendarEvent**：同步的 Google Calendar 条目，以某个工作区和已连接账号为作用域。与会议不同：事件是已安排的承诺；会议是已录制的会话。通过 `MeetingCalendarLink` 一对一关联。
+**CalendarEvent**：同步的 Google Calendar 条目，以某个工作区和已连接账号为作用域。与会议不同：事件是已安排的承诺；会议是已录制的会话。通过 `meeting_calendar_links` 表一对一关联。
 
 **CalendarAccount**：已连接的 Google 账号，按工作区、成员和邮箱区分（`google:<workspaceId>:<userId>:<email>`）。其凭据以 `google_*` 键的形式存储在 `<dataDir>/secrets.json` 中，永远不会到达客户端；浏览器登录在服务器上完成。通过 Connect 的登录只保存一份凭据封存。一个 `authExpiredAt` 标志驱动重新连接横幅。
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **主体**：把人类与智能体统一为单一行动者抽象的密封值——`UserPrincipal(userId)` 或 `AgentPrincipal(agentId)`。每条消息、每张工单、每次审查、每个计划和每份运行日志都通过主体来归属。
 
-**用户**：人类身份，存储在 `global.db` 中，因此跨工作区全局唯一。创建工作区的主体成为其**所有者**——在同一次操作中盖到 `Workspace.ownerUserId` 上，并写入一行所有者角色的成员记录。其他人通过邀请或 SSO 加入。
+**服务器所有者**：在服务器搭建时记录一次的人；经网络发送的任何内容都不会改变它。工作区管理员或工作区所有者不是服务器所有者。除非服务器所有者启动了某项操作或批准了该类主机执行，否则服务器自己的机器上不会有任何东西在沙盒之外运行：创建工作区、主机 shell、嵌入式代码编辑器、在主机上运行的环境，以及从工作区存储之外关联的检出，都只归他们所有。参见[服务器所有者](/zh-CN/手册/概念/授权/#服务器所有者)。
+
+**用户**：人类身份，存储在 `global.db` 中，因此跨工作区全局唯一。只有服务器所有者才能创建工作区，并成为其**所有者**——在同一次操作中盖到 `Workspace.ownerUserId` 上，并写入一行所有者角色的成员记录。其他人通过邀请或 SSO 加入。
 
 **WorkspaceMember** / **WorkspaceRole**：把 User 以某个角色（`owner` / `admin` / `member` / `viewer` / `guest`）绑定到 Workspace 的成员记录。**成员身份——而不是配对密钥——才是访问边界。** 按仓库授予的权限让成员身份不会比代码托管平台拥有更高特权。
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **自主程度**：按空间、按智能体的控件——`propose-only` / `act-with-approval` / `act-freely`——以动作护栏存储之上的一个具名档位实现。
 
-**ActionClass**：包含 13 种效果类别的封闭集合（`fileDelete`、`gitPush`、`prCreate`、`networkEgress`、`processSpawn`、`enclosureControl` 等等）。每个变更类工具都会声明自己的类别；护栏引擎按作用域解析出 `allow` / `prompt` / `deny`（space > agent > workspace > mode preset > built-in default）。
+**ActionClass**：包含 14 种效果类别的封闭集合（`fileDelete`、`gitPush`、`prCreate`、`networkEgress`、`processSpawn`、`enclosureControl`、`hostExecution` 等等）。每个变更类工具都会声明自己的类别；护栏引擎按作用域解析出 `allow` / `prompt` / `deny`（space > agent > workspace > mode preset > built-in default）。
 
 **WriteLedger** / **幂等键**：每次变更都携带一个由客户端生成的幂等键（UUIDv7，按逻辑操作划分）。以工作区为作用域的账本会在处理器运行之前去重；重放会返回字节级完全一致的原始结果。从构造上就让重连和多客户端变得安全。
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**：无状态的 WebSocket 中继代理，托管需邀请才能加入的房间——一个笨拙的中继，只转发端到端密封的帧，不保存任何应用数据，也永远看不到配对 PSK。
 
-**Control Center Connect**：一项可选服务，为没有注册自有应用的服务器运行供应商登录（GitHub、Google Calendar、Linear、Slack）：Control Center 托管的 Connect、组织自行运行的 Connect（`cc-connect`，或挂载在 `cc_server` 的 `/connect` 下），或不使用。它签发凭据封存和仅针对单个仓库的 GitHub 令牌，且永远看不到仓库内容。参见 [Control Center Connect](/zh-CN/手册/参考/connect/)。
+**Control Center Connect**：一项可选服务，为选择它而非自有应用的服务器或工作区运行供应商登录（GitHub、Google Calendar、Linear、Slack）：Control Center 托管的 Connect、组织自行运行的 Connect（`cc-connect`，或挂载在 `cc_server` 的 `/connect` 下），或不使用。它签发凭据封存和仅针对单个仓库的 GitHub 令牌，且永远看不到仓库内容。参见 [Control Center Connect](/zh-CN/手册/参考/connect/)。
 
 **凭据封存**：一份加密的凭据（`credential_seal`），只有签发它的那个 Connect 能够打开，并绑定到提供商、Connect 地址、安装 ID、工作区、账户、应用与密钥世代。服务器保存封存以及为其签发时所用的安装 ID；访问令牌只留在内存中。安装 ID 不再匹配的封存会被丢弃，其所有者需要重新登录。
 
 **安装 ID**：服务器面对某个 Connect 地址时的身份（`install_id`），由其机密文件中的安装密钥派生。Connect 以安装 ID 为允许列表来识别服务器。轮换密钥会得到新的安装 ID，并让所有人从 Connect 通道登出。
 
-**安装绑定**：Connect 的记录（`install_binding`），表明哪些服务器可以使用共享 App 的某个 GitHub 安装。通过安装完成绑定；组织管理员的**授权此服务器**则绑定另一台。
+**安装绑定**：Connect 的记录（`install_binding`），表明某个 Slack 团队绑定到的唯一服务器。GitHub 安装没有此记录：成员登录的任何服务器都可以使用它们。
 
-**登录通道**：某个提供商的浏览器登录——`github`、`google`、`linear`、`linear_app` 或 `slack`。当服务器自己的应用配置完整时，通道使用它；否则通过 Connect；否则不可用。配置不完整的自有应用属于错误，绝不会回退。
+**登录通道**：某个提供商的浏览器登录——`github`、`google`、`linear`、`linear_app` 或 `slack`。在使用自有应用时，只要（服务器或工作区的）该应用配置完整，通道就使用它，否则不可用；选择了 Connect 时，由 Connect 运行它。二者互不回退，配置不完整的自有应用属于错误。
 
 ## 相关内容
 

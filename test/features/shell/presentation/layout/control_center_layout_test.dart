@@ -42,6 +42,10 @@ void main() {
         routes: [
           GoRoute(path: inboxRoute(workspaceIdParam), builder: (_, _) => child),
           GoRoute(
+            path: settingsAccountProfileRoute(workspaceIdParam),
+            builder: (_, _) => child,
+          ),
+          GoRoute(
             path: settingsAppearanceRoute(workspaceIdParam),
             builder: (_, _) => child,
           ),
@@ -477,9 +481,10 @@ void main() {
 
     await tester.tap(find.byIcon(AppIcons.settings));
     await tester.pumpAndSettle();
+    // The cog opens Settings where its sidebar starts: You → Profile.
     expect(
       router.routerDelegate.currentConfiguration.uri.path,
-      settingsAppearanceRoute('ws-1'),
+      settingsLandingRoute('ws-1'),
     );
     expect(find.text('Exit settings'), findsOneWidget);
     expect(find.text('YOU'), findsOneWidget);

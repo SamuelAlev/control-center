@@ -36,7 +36,7 @@ mixin _WorktreeChangeGate {
   final _changesInFlight =
       <(String, String, String?, int), Future<List<PrFile>>>{};
   final _groupedInFlight =
-      <(String, String, String?, int), Future<RepoChangeGroups>>{};
+      <(String, String, String?, String?, int), Future<RepoChangeGroups>>{};
 
   /// Working-tree diff vs HEAD (incl. untracked) for Source Control.
   ///
@@ -73,17 +73,24 @@ mixin _WorktreeChangeGate {
   /// this worktree is not offered as "Publish branch". With neither, ahead is
   /// commits the remote default does not contain, so a local conversation
   /// commit is still visible.
+  ///
+  /// [viewerId] is who reads it: the open-PR fallback above is forge data and
+  /// is used only when they may see the repo's pull requests; without a
+  /// viewer only local refs count.
   Future<RepoChangeGroups> repoChangesGrouped(
     String workspaceId,
     String repoId, {
     String? spaceId,
+    String? viewerId,
   }) {
-    final key = (workspaceId, repoId, spaceId, _mutationGeneration);
+    // Keyed by viewer too: two members' answers may differ on forge state.
+    final key = (workspaceId, repoId, spaceId, viewerId, _mutationGeneration);
     return _groupedInFlight[key] ??=
         _repoChangesGrouped(
           workspaceId,
           repoId,
           spaceId: spaceId,
+          viewerId: viewerId,
         ).whenComplete(() {
           // A block, not `=> remove(key)`: remove returns this very future, and
           // whenComplete would wait on it — the read would never complete.
@@ -144,7 +151,9 @@ mixin _WorktreeChangeGate {
   ) => _mutating(() => _revertFiles(workspaceId, spaceId, repoId, paths));
 
   /// Stage/commit/(optional) push in the conversation worktree. Token via `GIT_CONFIG_PARAMETERS` (not argv).
-  /// Push authenticates as [actingUserId]; commit authored by [authorName]/[authorEmail] or Control Center.
+  /// The commit is [actingUserId]'s own: their forge-verified identity and
+  /// signing key, else [authorName]/[authorEmail] (their profile's git
+  /// identity), else Control Center. The push authenticates as them.
   /// [amend] rewrites HEAD; [sync] fetch+rebase before push (conflict returns git error).
   Future<Map<String, dynamic>?> commitAndPush({
     required String workspaceId,
@@ -269,12 +278,18 @@ mixin _WorktreeChangeGate {
   /// clobbers uncommitted edits; the client asks the user to commit/discard
   /// first. Returns null when the space has no worktree for [repoId]; a map
   /// with `ok:false` + `error` on fetch/checkout failure.
+  ///
+  /// The fetch rides [actingUserId]'s own sign-in: a person's sync with no
+  /// usable sign-in fetches nothing and raises the needs-sign-in refusal a
+  /// push raises. Null only for automation (an environment following its PR
+  /// head), which fetches with a one-repository read token.
   Future<Map<String, dynamic>?> syncToPrHead(
     String workspaceId,
     String spaceId,
     String repoId, {
     required String headRef,
     required String branch,
+    required String? actingUserId,
   }) => _mutating(() async {
     try {
       return await _syncToPrHead(
@@ -283,6 +298,7 @@ mixin _WorktreeChangeGate {
         repoId,
         headRef: headRef,
         branch: branch,
+        actingUserId: actingUserId,
       );
     } on RigWorktreeTampered catch (e) {
       return {'ok': false, 'error': e.message};
@@ -301,6 +317,7 @@ mixin _WorktreeChangeGate {
     String workspaceId,
     String repoId, {
     String? spaceId,
+    String? viewerId,
   });
 
   Future<bool> _stageFiles(
@@ -378,5 +395,6 @@ mixin _WorktreeChangeGate {
     String repoId, {
     required String headRef,
     required String branch,
+    required String? actingUserId,
   });
 }

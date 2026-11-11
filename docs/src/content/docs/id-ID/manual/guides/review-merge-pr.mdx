@@ -2,7 +2,7 @@
 title: Meninjau dan menggabungkan PR
 description: Buka workbench PR, baca diff, tinggalkan komentar sebaris, kirim tinjauan, dan gabungkan.
 slug: id-ID/panduan-pengguna/panduan-praktis/tinjau-dan-gabungkan-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Panduan ini menunjukkan cara meninjau dan menggabungkan pull request.
@@ -22,9 +22,13 @@ membukanya. Terminal, editor satu file, code-server tertanam, dan browser dalam
 aplikasi terbuka sesuai permintaan; tab pratinjau deployment disuntikkan otomatis
 saat URL pratinjau terdeteksi pada PR. Tata letak tab Anda diingat per PR.
 
+Code-server tertanam hanya ditawarkan kepada pemilik server, karena ia berjalan di server sebagai pengguna server itu sendiri. Sesinya milik perangkat dan orang yang membukanya, dibuka dengan kepercayaan workspace VS Code aktif (VS Code meminta izin sebelum mempercayai sebuah folder), dan tidak menjalankan tugas apa pun secara otomatis. Semua orang lain tetap menggunakan editor satu file dan tampilan berkas.
+
 Tab Ikhtisar memuat metadata PR (penulis, branch, label, penerima tugas, reaksi,
 commit, status pemeriksaan) dan baris tindakannya: segarkan, **Tinjau**,
-**Gabungkan**, buka di IDE, dan menu tambahan ⋯.
+**Gabungkan**, tombol bernama editor Anda (seperti **Buka di VS Code**), dan menu tambahan ⋯.
+
+Tombol editor itu memulai editor native di **layar server** sendiri, sebagai pengguna server dan di luar sandbox mana pun, sehingga hanya ditawarkan kepada [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server). Pada desktop yang menghosting server sendiri, itu berarti orang yang duduk di depan mesin. Hal yang sama berlaku untuk membuka worktree percakapan di editor. Semua orang lain menggunakan tampilan editor bawaan. Bahkan untuk pemilik, PR hanya dapat dibuka dari repositori yang ditautkan ke ruang kerja.
 
 ### Buka PR dari tumpukan sebuah space
 
@@ -42,7 +46,7 @@ Enter atau Spasi untuk menciutkan atau memperluasnya. PR yang tidak berkaitan
 tetap terpisah, dan tautan branch yang tidak lengkap atau ambigu tidak disajikan
 sebagai tumpukan yang berurutan.
 
-Di **Kontrol sumber**, **Pull request bertumpuk (N)** membuka pemilih bagian
+Di header PR, lencana tumpukan (ikon lapisan dengan jumlah pull request dalam tumpukan) membuka **Pull request bertumpuk**, pemilih bagian
 tumpukan yang sudah diterbitkan, mulai dari yang paling bawah. Setiap entri
 menampilkan nomor PR, label bagian, dan posisinya; bagian yang sedang
 di-checkout ditandai. Pilih sebuah entri untuk membuka workbench PR-nya.
@@ -51,6 +55,21 @@ satu bagian belum punya PR. Hal ini juga berlaku pada menu branch. PR yang
 dibuat di luar Control Center juga dihitung sebagai sudah diterbitkan. Tumpukan
 yang terbit sebagian menawarkan kedua tindakan; pekerjaan satu branch tetap
 memakai tindakan buat/lihat PR masing-masing.
+
+### Commit dan push dari Kontrol sumber
+
+Commit yang Anda buat di panel **Kontrol sumber** adalah milik Anda: Anda adalah penulis dan committer-nya, di bawah alamat yang diverifikasi forge Anda untuk proses masuk Anda. Ketika Anda membuat kunci penandatanganan di bawah **Commit terverifikasi** di **Pengaturan** → **Anda** → **Commit**, server menandatanganinya dengan kunci penandatanganan Anda sendiri sebelum didorong. Push membawa proses masuk Anda sendiri, dipersempit ke repositori itu saja.
+
+Server menjalankan Git di mesinnya sendiri, dalam pohon yang dapat diubah agen atau pull request, sehingga ia tidak menjalankan program apa pun yang dapat dipilih repositori:
+
+- Commit melewati hook Git repositori, seperti yang dilakukan `git commit --no-verify`. Hook pre-commit, hook commit-msg, atau hook pre-push tidak dijalankan
+- Credential helper, editor, alat diff eksternal, dan program penandatanganan yang dikonfigurasi repositori diabaikan
+
+Jalankan pemeriksaan Anda sendiri sebelum commit, atau di CI.
+
+Mengubah kode memerlukan [grant tulis](/id-ID/panduan-pengguna/konsep/otorisasi/#mengubah-kode-membutuhkan-izin-tulis) di repositori: menyimpan atau membatalkan berkas di editor, **Tarik commit PR terbaru**, commit dan push, mempublikasikan branch, dan aksi tumpukan yang membuat, checkout, atau mempublikasikan bagian. Dengan akses baca atau tinjau saja, Anda melihat berkas dan diff, dan aksi-aksi ini menjawab "Anda dapat membaca repositori ini tetapi tidak dapat mengubahnya. Admin ruang kerja dapat memberikan akses tulis."
+
+**Tarik commit PR terbaru** memperbarui worktree tinjauan ke commit terbaru pull request. Ia mengambil dengan proses masuk GitHub Anda sendiri, dan meminta Anda masuk ketika Anda belum punya. Commit atau buang perubahan Anda terlebih dahulu: worktree dengan perubahan yang belum di-commit tidak disinkronkan.
 
 ## Baca diff
 
@@ -135,7 +154,7 @@ Menggabungkan bersifat tidak dapat dibatalkan: ini mendorong commit ke forge, ja
 ia mendapat langkah konfirmasi alih-alih entri urungkan. Setelah itu cache PR
 dibatalkan, statusnya berubah menjadi **Digabungkan**, dan peristiwa
 `PullRequestStatusChanged` dipicu dengan status `merged`. Peristiwa itu melepaskan
-worktree sementara "buka di editor" dan memulai dua pipeline bawaan: **Stale
+worktree sementara yang dibuka tombol editor dan memulai dua pipeline bawaan: **Stale
 repository cleanup**, yang menghapus worktree dan folder percakapan PR yang usang,
 serta **Release notes**, yang menyusun draf entri changelog.
 
@@ -160,6 +179,12 @@ untuk model kohort dan sumbu yang deterministik.
 
 Control Center juga mengimpor PR yang dibuka oleh manusia di luar aplikasi. Alur
 tinjauan di atas tetap sama. PR eksternal dideteksi oleh layanan polling PR.
+
+## Pemecahan masalah
+
+### Hook pre-commit saya tidak berjalan
+
+Commit yang dibuat di panel **Kontrol sumber** aplikasi melewati hook Git repositori, seperti yang dilakukan `git commit --no-verify`. Server menjalankan Git di mesinnya sendiri, dalam pohon yang dapat diubah agen dan pull request, sehingga ia tidak pernah menjalankan program yang dipilih repositori. Jalankan pemeriksaan hook itu sendiri, atau andalkan CI.
 
 ## Panduan terkait
 

@@ -4,6 +4,7 @@ import 'package:cc_infra/src/lsp/diagnostics_ledger.dart';
 import 'package:cc_infra/src/lsp/lsp_server_registry.dart';
 import 'package:cc_infra/src/lsp/lsp_supervisor.dart';
 import 'package:cc_infra/src/lsp/lsp_symbol_position.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
@@ -158,6 +159,7 @@ void main() {
       expect(
         detectLspServers(
           projectRoot: root.path,
+          projectLocalBins: true,
           binaryResolver: (_) => false,
         ),
         isEmpty,
@@ -167,6 +169,7 @@ void main() {
       expect(
         detectLspServers(
           projectRoot: root.path,
+          projectLocalBins: true,
           binaryResolver: (_) => true,
         ).map((s) => s.name),
         ['dartls'],
@@ -174,59 +177,42 @@ void main() {
       );
     });
 
-    test('an explicit override list switches auto-detection off', () {
+    test('a repository lsp.json cannot name a command', () {
+      // The servers are the built-in list; a file in the checkout is data,
+      // never a program the server starts.
       File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('name: x');
-      File(p.join(root.path, 'Cargo.toml')).writeAsStringSync('[package]');
+      Directory(p.join(root.path, '.agents')).createSync();
+      File(p.join(root.path, '.agents', 'lsp.json')).writeAsStringSync(
+        '{"servers": {"dartls": {"command": "/tmp/marker-writer"}}}',
+      );
       final detected = detectLspServers(
         projectRoot: root.path,
-        overrides: const {'dartls': <String, dynamic>{}},
+        projectLocalBins: true,
         binaryResolver: (_) => true,
       );
-      expect(detected.map((s) => s.name), ['dartls']);
+      expect(detected.single.command, 'dart');
     });
 
-    test('an override can disable a server', () {
-      File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('name: x');
+    test('a project-local binary resolves only for a confined server', () {
+      final bin = Directory(p.join(root.path, 'node_modules', '.bin'))
+        ..createSync(recursive: true);
+      File(p.join(bin.path, 'cc-lsp-probe')).writeAsStringSync('#!/bin/sh\n');
       expect(
-        detectLspServers(
-          projectRoot: root.path,
-          overrides: const {
-            'dartls': {'disabled': true},
-          },
-          binaryResolver: (_) => true,
+        resolveServerBinary(
+          'cc-lsp-probe',
+          root.path,
+          projectLocalBins: true,
         ),
-        isEmpty,
+        p.join(bin.path, 'cc-lsp-probe'),
       );
-    });
-
-    test('an override layers over the built-in without restating it', () {
-      File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('name: x');
-      final detected = detectLspServers(
-        projectRoot: root.path,
-        overrides: const {
-          'dartls': {
-            'args': ['--custom'],
-          },
-        },
-        binaryResolver: (_) => true,
+      expect(
+        resolveServerBinary(
+          'cc-lsp-probe',
+          root.path,
+          projectLocalBins: false,
+        ),
+        isNull,
       );
-      expect(detected.single.command, 'dart', reason: 'inherited');
-      expect(detected.single.args, ['--custom']);
-    });
-
-    test('malformed override config falls back to auto-detection', () {
-      File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('name: x');
-      Directory(p.join(root.path, '.agents')).createSync();
-      File(p.join(root.path, '.agents', 'lsp.json'))
-          .writeAsStringSync('{ not json');
-      expect(loadLspOverrides(root.path), isEmpty);
-    });
-
-    test('a config with only non-server keys does not disable detection', () {
-      Directory(p.join(root.path, '.agents')).createSync();
-      File(p.join(root.path, '.agents', 'lsp.json'))
-          .writeAsStringSync('{"idleTimeoutMs": 1000}');
-      expect(loadLspOverrides(root.path), isEmpty);
     });
   });
 
@@ -257,23 +243,43 @@ void main() {
       File(p.join(pkg.path, 'pubspec.yaml')).writeAsStringSync('name: thing');
       final nested = Directory(p.join(pkg.path, 'lib', 'src'))
         ..createSync(recursive: true);
-      expect(findProjectRoot(nested.path), pkg.absolute.path);
+      expect(
+        findProjectRoot(nested.path, ceiling: root.path),
+        pkg.absolute.path,
+      );
     });
 
     test('falls back to the start when nothing is found', () {
       final bare = Directory(p.join(root.path, 'bare'))..createSync();
-      expect(findProjectRoot(bare.path), bare.path);
+      expect(findProjectRoot(bare.path, ceiling: root.path), bare.path);
+    });
+
+    test('never walks above the run\'s working directory', () {
+      // A marker above the ceiling is a tree the run was never handed.
+      File(p.join(root.path, 'pubspec.yaml')).writeAsStringSync('name: up');
+      final run = Directory(p.join(root.path, 'agents', 'a1'))
+        ..createSync(recursive: true);
+      expect(findProjectRoot(run.path, ceiling: run.path), run.path);
+      expect(
+        findProjectRoot(root.path, ceiling: run.path),
+        run.path,
+        reason: 'a start outside the ceiling answers the ceiling',
+      );
     });
   });
 
   group('LspSupervisor', () {
+    const processes = HostToolProcessLauncher();
     test('detection is cached per root', () {
       final supervisor = LspSupervisor();
       addTearDown(supervisor.dispose);
       final root = Directory.systemTemp.createTempSync('cc_sup');
       addTearDown(() => root.deleteSync(recursive: true));
-      final first = supervisor.serversFor(root.path);
-      expect(identical(supervisor.serversFor(root.path), first), isTrue);
+      final first = supervisor.serversFor(root.path, processes);
+      expect(
+        identical(supervisor.serversFor(root.path, processes), first),
+        isTrue,
+      );
     });
 
     test('a linter is excluded from type-intelligence lookups', () {
@@ -287,6 +293,7 @@ void main() {
         supervisor.serversForFile(
           root.path,
           '${root.path}/a.py',
+          processes,
           typeIntelligenceOnly: true,
         ),
         isEmpty,

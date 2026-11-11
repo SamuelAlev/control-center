@@ -13,8 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// No backing space for this PR, and the host will not mint one.
 ///
-/// `pr.ensureSpace` provisions a worktree, so a demo (and an older host that
-/// never shipped the verb) refuses it. Chat then looks up a seeded
+/// `pr.ensureSpace` provisions a worktree, so a demo refuses it. Chat then looks up a seeded
 /// review-space association by repo + number instead; if none exists there is
 /// nothing to open.
 final class PrSpaceUnavailable implements Exception {

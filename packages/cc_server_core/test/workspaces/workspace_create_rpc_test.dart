@@ -23,6 +23,12 @@ void main() {
     ).singleWhere((o) => o.name == 'workspace.create');
   });
 
+  test('only the server owner may call it', () {
+    // Enforced by the dispatcher's server-authority gate, which fails closed
+    // when no owner is wired and names the refusal `server_owner_required`.
+    expect(create.serverAuthority, ServerAuthority.serverOwner);
+  });
+
   test('mints a workspace and records the caller as owner', () async {
     final data = await create.handler(
       const RepoOpContext(

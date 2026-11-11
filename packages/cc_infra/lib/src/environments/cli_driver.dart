@@ -37,6 +37,12 @@ class CliContext {
   final String? routingDomain;
 }
 
+/// Runs [verb] again where a person can answer it, after it stopped through a
+/// pipe for [reason]. Completes once it has exited 0 there, and throws
+/// [EnvironmentDriverException] when it did not.
+typedef CliTerminalRun =
+    Future<void> Function(String verb, EnvironmentError reason);
+
 /// Runs a tool that owns its own lifecycle, through the verbs a definition maps.
 ///
 /// Failures throw [EnvironmentDriverException]. [status] is the exception: it
@@ -89,29 +95,35 @@ class CliDriver {
   /// Status picks the verb: `create` when the tool has no such environment,
   /// `start` when it has a stopped or failed one, nothing when it is already
   /// on its way. Returns the ready report.
+  ///
+  /// With [onTerminal], a verb the component lists as `interactive` that stops
+  /// for a person runs again there, and the start carries on from its exit.
   Future<EnvironmentStatusReport> up(
     CliContext context, {
     void Function(EnvironmentCommandEvent event)? onEvent,
+    CliTerminalRun? onTerminal,
   }) async {
     final report = await status(context);
-    _throwIfActionable(report);
+    _throwIfBlocked(report);
+    Future<void> bringUp(String verb) =>
+        _bringUp(context, verb, onEvent: onEvent, onTerminal: onTerminal);
     switch (report.state) {
       case EnvironmentReportedState.ready:
         return report;
       case EnvironmentReportedState.starting:
         break;
       case EnvironmentReportedState.missing:
-        await _verb(context, 'create', onEvent: onEvent);
+        await bringUp('create');
       case EnvironmentReportedState.stopped:
       case EnvironmentReportedState.failed:
         if (!context.component.verbs.containsKey('start')) {
           if (report.state == EnvironmentReportedState.failed) {
             throw _reportFailure(report);
           }
-          await _verb(context, 'create', onEvent: onEvent);
+          await bringUp('create');
           break;
         }
-        await _verb(context, 'start', onEvent: onEvent);
+        await bringUp('start');
       case EnvironmentReportedState.degraded:
         throw _reportFailure(report);
     }
@@ -128,7 +140,7 @@ class CliDriver {
     final deadline = DateTime.now().add(limit);
     while (true) {
       final report = await status(context);
-      _throwIfActionable(report);
+      _throwIfBlocked(report);
       switch (report.state) {
         case EnvironmentReportedState.ready:
           return report;
@@ -164,11 +176,12 @@ class CliDriver {
     void Function(EnvironmentCommandEvent event)? onEvent,
   }) => _verb(context, 'stop', onEvent: onEvent);
 
-  /// The `reset` verb.
+  /// The `reset` verb. [onTerminal] as in [up].
   Future<void> reset(
     CliContext context, {
     void Function(EnvironmentCommandEvent event)? onEvent,
-  }) => _verb(context, 'reset', onEvent: onEvent);
+    CliTerminalRun? onTerminal,
+  }) => _bringUp(context, 'reset', onEvent: onEvent, onTerminal: onTerminal);
 
   /// The `destroy` verb. An environment the tool has already lost counts as
   /// destroyed.
@@ -184,34 +197,60 @@ class CliDriver {
     final missing =
         context.component.statusMap?.missingErrorCodes.contains(error.code) ??
         false;
-    if (!missing) {
+    if (missing) {
+      return;
+    }
+    // Many tools say "no such environment" in words here and as a code only
+    // from `status`. Ask it: a row whose environment is gone must be
+    // removable, or it stays for good. Anything else it answers, or fails to,
+    // leaves the destroy's own failure standing.
+    final EnvironmentStatusReport report;
+    try {
+      report = await status(context);
+    } on EnvironmentDriverException {
+      throw EnvironmentDriverException(error);
+    }
+    if (report.state != EnvironmentReportedState.missing) {
       throw EnvironmentDriverException(error);
     }
   }
 
   /// The names the tool knows, from the `list` verb.
+  ///
+  /// Throws when the output can't be read as a list of names: "nothing" and
+  /// "nothing I could read" are different answers, and only the first one may
+  /// be acted on.
   Future<List<String>> list(CliContext context) async {
     final result = await _run(context, 'list');
     if (!result.succeeded) {
       throw EnvironmentDriverException(_failureOf(result));
     }
+    EnvironmentDriverException unreadable(String why) =>
+        EnvironmentDriverException(
+          EnvironmentError(
+            code: 'list-unreadable',
+            message: '${context.component.displayName}: `list` $why',
+          ),
+        );
     final Object? json;
     try {
       json = jsonDecode(result.rawStdout);
     } on FormatException {
-      return const [];
+      throw unreadable('did not print JSON');
     }
-    final map = context.component.statusMap;
-    if (map != null) {
-      return map.names(json);
+    final pointer = context.component.statusMap?.list;
+    if (pointer != null) {
+      return context.component.statusMap!.names(json);
+    }
+    if (json is! List) {
+      throw unreadable('printed no array. Point `statusMap.list` at its names');
     }
     return [
-      if (json is List)
-        for (final item in json)
-          if (item is String)
-            item
-          else if (item is Map && item['name'] is String)
-            item['name'] as String,
+      for (final item in json)
+        if (item is String)
+          item
+        else if (item is Map && item['name'] is String)
+          item['name'] as String,
     ];
   }
 
@@ -233,6 +272,11 @@ class CliDriver {
   }
 
   /// Follows the `logs` verb until the subscription is cancelled.
+  ///
+  /// Stderr lines are lines too: a tool writes its own complaints there. A
+  /// verb that ends non-zero ends the stream with an
+  /// [EnvironmentDriverException], so a follower can tell it from a quiet
+  /// service.
   Stream<String> followLogs(
     CliContext context, {
     String? service,
@@ -242,21 +286,39 @@ class CliDriver {
     late final StreamController<String> controller;
     controller = StreamController<String>(
       onListen: () {
-        final started = _runner.start(
-          _command(context, 'logs'),
-          values: context.values.withAll(
-            _logValues(service: service, tail: tail, follow: true),
-          ),
-          workingDirectory: context.workingDirectory,
-          environment: context.environment,
-        );
+        final EnvironmentCommandHandle started;
+        try {
+          started = _runner.start(
+            _command(context, 'logs'),
+            values: context.values.withAll(
+              _logValues(service: service, tail: tail, follow: true),
+            ),
+            workingDirectory: context.workingDirectory,
+            environment: context.environment,
+          );
+        } on Object catch (e) {
+          controller
+            ..addError(e)
+            ..close();
+          return;
+        }
         handle = started;
         started.events.listen((event) {
-          if (event is EnvironmentCommandOutput && !event.isStderr) {
+          if (event is EnvironmentCommandOutput) {
             controller.add(event.line);
           }
         });
-        unawaited(started.result.whenComplete(controller.close));
+        unawaited(
+          started.result
+              .then((result) {
+                if (!result.succeeded && !result.cancelled) {
+                  controller.addError(
+                    EnvironmentDriverException(_failureOf(result)),
+                  );
+                }
+              })
+              .whenComplete(controller.close),
+        );
       },
       onCancel: () => handle?.cancel(),
     );
@@ -297,6 +359,28 @@ class CliDriver {
     if (!result.succeeded) {
       throw EnvironmentDriverException(_failureOf(result));
     }
+  }
+
+  /// A verb that brings the environment up: through a pipe first, since that
+  /// is where its progress and its structured error come from, and again on a
+  /// terminal when it says only a person can take it further.
+  Future<void> _bringUp(
+    CliContext context,
+    String verb, {
+    void Function(EnvironmentCommandEvent event)? onEvent,
+    CliTerminalRun? onTerminal,
+  }) async {
+    final result = await _run(context, verb, onEvent: onEvent);
+    if (result.succeeded) {
+      return;
+    }
+    final error = _failureOf(result);
+    if (onTerminal == null ||
+        !(error.blocker?.answersOnTerminal ?? false) ||
+        !context.component.interactive.contains(verb)) {
+      throw EnvironmentDriverException(error);
+    }
+    await onTerminal(verb, error);
   }
 
   Future<EnvironmentCommandResult> _run(
@@ -396,11 +480,11 @@ class CliDriver {
         exitCode: result.exitCode,
       );
 
-  void _throwIfActionable(EnvironmentStatusReport report) {
+  /// A read that needs a person ends the start: asking again changes nothing.
+  void _throwIfBlocked(EnvironmentStatusReport report) {
     final error = report.error;
-    final exitCode = error?.exitCode;
-    if (error != null && exitCode != null && exitCode >= 3 && exitCode <= 5) {
-      throw EnvironmentDriverException(error);
+    if (error?.blocker != null) {
+      throw EnvironmentDriverException(error!);
     }
   }
 

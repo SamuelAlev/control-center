@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
 import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_policy.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_config_builder.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
 import 'package:test/test.dart';
@@ -32,7 +32,7 @@ void main() {
         protected = Directory('${root.path}/checkout')
           ..createSync(recursive: true);
         File('${protected.path}/tracked.txt').writeAsStringSync('original\n');
-        manager = SandboxManager();
+        manager = SandboxManager(hiddenPaths: const []);
       });
 
       tearDown(() async {
@@ -154,7 +154,7 @@ void main() {
     late List<String> requests;
 
     setUp(() async {
-      manager = SandboxManager();
+      manager = SandboxManager(hiddenPaths: const []);
       requests = [];
       target = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
       gateway = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -294,7 +294,7 @@ void main() {
             .createTempSync('cc-sbx-exec-home-')
             .resolveSymbolicLinksSync(),
       );
-      manager = SandboxManager();
+      manager = SandboxManager(hiddenPaths: const []);
     });
 
     tearDown(() async {

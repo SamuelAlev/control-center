@@ -2,7 +2,7 @@
 title: Referensi konfigurasi SSO
 description: Setiap kenop, endpoint, operasi, dan kode error masuk tunggal.
 slug: id-ID/panduan-pengguna/referensi/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Semua hal yang dapat dikonfigurasi pada masuk tunggal, di satu tempat. Nilainya
@@ -34,6 +34,18 @@ pengaturan).
 | `groupRoleMap`         | keduanya     | `{}`            | grup → peran; pemetaan pemilik ditolak saat disimpan                                                                                                  |
 | `autoMember`           | keduanya     | aktif           | tambahkan pengguna secara otomatis ke setiap ruang kerja saat login pertama                                                                          |
 | `allowJit`             | keduanya     | aktif           | sediakan pengguna tak dikenal saat login                                                                                                              |
+
+## Pencocokan akun
+
+`SsoProvisioner` menyelesaikan sebuah login dengan urutan berikut dan tidak pernah berdasarkan nama pengguna:
+
+1. `(users.sso_issuer, users.sso_subject)` sama dengan issuer dan subjek login (NameID SAML / `sub` OIDC).
+2. Sebuah akun yang alamatnya sama dengan email login, hanya jika kedua pihak menjaminnya: penyedia (OIDC `email_verified: true`; klaim yang tidak ada bukan jaminan; asersi SAML yang ditandatangani selalu menjadi jaminan) dan akun (`users.email_verified`). Alamat disimpan dengan spasi dipangkas dan huruf kecil, dan dibandingkan seperti itu. Alamat terverifikasi hanya cocok saat tepat satu akun memegangnya sebagai terverifikasi; dua pemegang tidak cocok dengan apa pun (dicatat tanpa alamat), dan tidak ada akun yang dapat diverifikasi untuk varian huruf dari alamat yang sudah diverifikasi milik akun lain.
+3. Selain itu, akun baru saat `allowJit` aktif; penolakan saat nonaktif.
+
+`users.email_verified` diisi oleh login SSO atau dorongan SCIM yang membawa alamat tersebut, atau oleh pemilik server dengan `users.vouchEmail` (**Pengaturan → Server → Orang → Konfirmasi email**, dicatat audit sebagai `user.email_vouched`). Edit profil pemilik sendiri menjamin alamatnya sendiri. Edit profil lain, dan alamat apa pun yang diketik pada undangan, membiarkannya tidak terverifikasi, dan mengubah alamat menghapus penanda tersebut. Login terjamin yang membuat akun mengambil alamat dari akun yang hanya mengetikkannya (dicatat audit sebagai `user.email_unvouched_cleared`), tidak pernah dari akun yang memegangnya secara terverifikasi; dalam kasus itu akun baru tidak mendapat alamat.
+
+Akun yang sudah cocok tetapi terikat ke subjek atau issuer lain menolak login dengan `This account is already linked to a different SSO identity`. Akun yang dinonaktifkan menolak dengan `This account has been deactivated`.
 
 ## Konfigurasi proses
 
@@ -133,6 +145,7 @@ Kegagalan `cc_saml_verify_response` membawa kode yang stabil:
   MEMANG DIRANCANG DEMIKIAN.
 - `users.sso_subject` + `users.sso_issuer` — penyematan subjek penyedia, unik
   per `(issuer, subject)` melalui indeks parsial.
+- `users.email_verified`: apakah alamat akun boleh dicocokkan dengan login SSO atau dorongan SCIM (lihat [Pencocokan akun](#pencocokan-akun)).
 - `users.deactivated_at` — stempel penonaktifan SCIM.
 - Token bearer SCIM dan client secret OIDC berada di berkas rahasia bermode 0600,
   tidak pernah di basis data.

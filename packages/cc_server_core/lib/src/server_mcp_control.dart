@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart'
     show McpToolRegistry;
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
+import 'package:cc_infra/cc_paths.dart' show writePrivateFile;
 import 'package:cc_mcp/cc_mcp.dart';
 import 'package:path/path.dart' as p;
 
@@ -33,9 +34,13 @@ abstract interface class McpHostServer {
 /// same [McpToolDispatcher] as RPC, mounted on the main listener (`POST /mcp`, `GET /sse`).
 ///
 /// Loopback companion on [loopbackPort] when the main listener is TLS (CLI can't trust 127.0.0.1)
-/// or absent (tests). Config in `mcp_config.json` (legacy `port` ignored); token changes apply live.
-/// On by default ([startIfEnabled]); off-host callers still need a token. Only [setEnabled] persists
-/// the enabled flag — [start]/[stop] are session controls.
+/// or absent (tests). Config in `mcp_config.json`, written owner-only: the enabled flag and the
+/// server's MCP token, minted at first start and never absent. On by default ([startIfEnabled]).
+/// Only [setEnabled] persists the enabled flag — [start]/[stop] are session controls.
+///
+/// Two credentials reach the surface (see [McpRequestHandler]): an agent run's own secret, which
+/// is the only thing dispatch hands an agent, and the token, which is the server owner's for their
+/// own MCP clients.
 class ServerMcpControl implements McpServerControl {
   /// Creates a control bound to [_dispatcher], persisting config under [dataDir].
   ///
@@ -56,7 +61,10 @@ class ServerMcpControl implements McpServerControl {
   final int _companionPort;
   final File _file;
 
-  McpConfig _config = const McpConfig(enabled: true);
+  static final Random _random = Random.secure();
+
+  bool _enabled = true;
+  String _token = '';
 
   /// Serves `/agent/…` on every listener the MCP surface is mounted on. Set
   /// by the runtime before the surface starts; see [McpRequestHandler.agentRoutes].
@@ -65,6 +73,10 @@ class ServerMcpControl implements McpServerControl {
   /// Proves a run's identity from its secret. Set with [agentRoutes]; see
   /// [McpRequestHandler.attestRun].
   McpCallScope? Function(String secret)? attestRun;
+
+  /// The server's public host names; see [McpRequestHandler.publicHosts]. Set
+  /// by the runtime before the surface starts.
+  Iterable<String> Function()? publicHosts;
   McpRequestHandler? _handler;
   McpHttpServer? _companion;
   McpHostServer? _mainServer;
@@ -78,45 +90,49 @@ class ServerMcpControl implements McpServerControl {
     _mainServer = server;
   }
 
+  /// Reads the config, minting and storing a token when none is stored (a
+  /// first start, or a file that could not be read).
   Future<void> _ensureLoaded() async {
     if (_loaded) {
       return;
     }
     _loaded = true;
-    if (!_file.existsSync()) {
-      return;
-    }
-    try {
-      final decoded = jsonDecode(await _file.readAsString());
-      if (decoded is Map) {
-        final json = decoded.cast<String, dynamic>();
-        _config = McpConfig(
-          token: json['token'] as String?,
-          enabled: json['enabled'] as bool? ?? true,
-        );
+    if (_file.existsSync()) {
+      try {
+        final decoded = jsonDecode(await _file.readAsString());
+        if (decoded is Map) {
+          _enabled = decoded['enabled'] as bool? ?? true;
+          final token = decoded['token'];
+          _token = token is String ? token : '';
+        }
+      } on Object {
+        // Unreadable: start over with a fresh token below.
       }
-    } on Object {
-      // Corrupt config — fall back to defaults.
+    }
+    if (_token.isEmpty) {
+      _token = _mintToken();
+      await _persist();
     }
   }
 
+  /// 32 random bytes, base64url without padding.
+  static String _mintToken() => base64Url
+      .encode([for (var i = 0; i < 32; i++) _random.nextInt(256)])
+      .replaceAll('=', '');
+
   Future<void> _persist() async {
     await _file.parent.create(recursive: true);
-    final tmp = File('${_file.path}.tmp');
-    await tmp.writeAsString(
-      jsonEncode({
-        if (_config.token != null) 'token': _config.token,
-        'enabled': _config.enabled,
-      }),
+    await writePrivateFile(
+      _file.path,
+      utf8.encode(jsonEncode({'token': _token, 'enabled': _enabled})),
     );
-    await tmp.rename(_file.path);
   }
 
   /// Starts the surface on boot unless the user explicitly turned it off.
   /// Called once by the runtime; respects the same gate the desktop uses.
   Future<void> startIfEnabled() async {
     await _ensureLoaded();
-    if (_config.enabled) {
+    if (_enabled) {
       await _startSurface();
     }
   }
@@ -133,9 +149,25 @@ class ServerMcpControl implements McpServerControl {
       // Where clients point their MCP client: the main listener's port. The
       // companion (TLS topology) is an internal dispatch detail.
       port: _mainServer?.boundPort ?? _companionPort,
-      enabled: _config.enabled,
-      hasToken: _config.token != null && _config.token!.isNotEmpty,
+      enabled: _enabled,
     );
+  }
+
+  @override
+  Future<String> token() async {
+    await _ensureLoaded();
+    return _token;
+  }
+
+  @override
+  Future<String> rotateToken() async {
+    await _ensureLoaded();
+    _token = _mintToken();
+    await _persist();
+    // The handler reads its token per request — a rotation is live
+    // immediately, no rebind.
+    _handler?.updateToken(_token);
+    return _token;
   }
 
   @override
@@ -157,21 +189,18 @@ class ServerMcpControl implements McpServerControl {
       return;
     }
     final handler = McpRequestHandler(
-      config: McpConfig(token: _config.token, enabled: true),
+      token: _token,
       dispatcher: _dispatcher,
       agentRoutes: agentRoutes,
       attestRun: attestRun,
+      publicHosts: publicHosts,
     );
     final main = _mainServer;
     // Bind the companion first so a bind failure (port in use) aborts before
     // any visible state change.
     McpHttpServer? companion;
     if (main == null || main.tlsInProcess) {
-      companion = McpHttpServer(
-        port: _companionPort,
-        dispatcher: _dispatcher,
-        handler: handler,
-      );
+      companion = McpHttpServer(port: _companionPort, handler: handler);
       await companion.start();
     }
     main?.mcpHandler = handler;
@@ -200,24 +229,13 @@ class ServerMcpControl implements McpServerControl {
   @override
   Future<void> setEnabled({required bool enabled}) async {
     await _ensureLoaded();
-    _config = McpConfig(token: _config.token, enabled: enabled);
+    _enabled = enabled;
     await _persist();
     if (enabled) {
       await _startSurface();
     } else {
       await _stopSurface();
     }
-  }
-
-  @override
-  Future<void> setToken(String? token) async {
-    await _ensureLoaded();
-    final normalized = (token == null || token.isEmpty) ? null : token;
-    _config = McpConfig(token: normalized, enabled: _config.enabled);
-    await _persist();
-    // The handler reads its config per request — a token change is live
-    // immediately, no rebind.
-    _handler?.updateConfig(McpConfig(token: normalized, enabled: true));
   }
 
   /// Ensures the MCP surface is served so server-run agents can reach the
@@ -252,74 +270,52 @@ class ServerMcpControl implements McpServerControl {
   /// The runtime wires this to [McpToolRegistry.onToolsChanged].
   void notifyToolsChanged() => _handler?.notifyToolsListChanged();
 
-  /// MCP client config for a spawned agent CLI (call after [ensureRunningForDispatch]).
-  /// Headers: optional `Authorization`; `X-CC-Workspace-Id`/`Agent-Id`/`Conversation-Id`/`Space-Id`
-  /// (handler forces workspace, fills empty scope args — space ≠ conversation for guardrails);
-  /// `X-CC-Toolset-Rev` busts client tool-list caches when the catalogue changes;
-  /// [runToken] proves the run to tools that reach the host.
-  Future<String> writeAgentMcpConfig(
+  /// Writes the MCP client config for a spawned agent CLI to [target] and
+  /// returns its path, or deletes [target] and returns null when the run has
+  /// no secret: a run without a gateway lease gets no MCP config rather than
+  /// one that could not authenticate.
+  Future<String?> writeAgentMcpConfig(
     File target, {
-    String? workspaceId,
-    String? agentId,
-    String? conversationId,
-    String? spaceId,
-    String? runToken,
+    required String? runToken,
   }) async {
-    await _writeJson(target, {
-      'mcpServers': await agentMcpServers(
-        workspaceId: workspaceId,
-        agentId: agentId,
-        conversationId: conversationId,
-        spaceId: spaceId,
-        runToken: runToken,
-      ),
-    });
+    final servers = await agentMcpServersForDispatch(runToken: runToken);
+    if (servers == null) {
+      if (target.existsSync()) {
+        target.deleteSync();
+      }
+      return null;
+    }
+    await target.parent.create(recursive: true);
+    await writePrivateFile(
+      target.path,
+      utf8.encode(jsonEncode({'mcpServers': servers})),
+    );
     return target.path;
   }
 
-  /// [agentMcpServers] for a run about to start, with the server listening.
-  /// Preferred over the file when the CLI can take it: the bearer token and the
-  /// run's secret then reach `claude` over stdin and never rest in a directory
-  /// the agent can read.
-  Future<Map<String, Object?>> agentMcpServersForDispatch({
-    String? workspaceId,
-    String? agentId,
-    String? conversationId,
-    String? spaceId,
-    String? runToken,
+  /// [agentMcpServers] for a run about to start, with the server listening,
+  /// or null when the run has no secret. Preferred over the file when the CLI
+  /// can take it: the run's secret then reaches `claude` over stdin and never
+  /// rests in a directory the agent can read.
+  Future<Map<String, Object?>?> agentMcpServersForDispatch({
+    required String? runToken,
   }) async {
+    if (runToken == null || runToken.isEmpty) {
+      return null;
+    }
     await ensureRunningForDispatch();
-    return agentMcpServers(
-      workspaceId: workspaceId,
-      agentId: agentId,
-      conversationId: conversationId,
-      spaceId: spaceId,
-      runToken: runToken,
-    );
+    return agentMcpServers(runToken: runToken);
   }
 
-  /// The server map behind [writeAgentMcpConfig], for a CLI that takes it over
-  /// stdin. Never written to disk on that path: it holds the bearer token and
-  /// the run's secret, and the agent can read its own working directory.
-  Future<Map<String, Object?>> agentMcpServers({
-    String? workspaceId,
-    String? agentId,
-    String? conversationId,
-    String? spaceId,
-    String? runToken,
-  }) async {
-    await _ensureLoaded();
+  /// The server map an agent CLI connects with: the loopback endpoint and the
+  /// run's own secret ([McpCallScope.runGrantHeader]), which proves the run
+  /// and everything it may touch. No bearer token and no caller-written
+  /// scope: the server derives workspace, agent, conversation and space from
+  /// the secret. `X-CC-Toolset-Rev` only busts client tool-list caches when
+  /// the catalogue changes.
+  Map<String, Object?> agentMcpServers({required String runToken}) {
     final headers = <String, String>{
-      if (_config.token != null && _config.token!.isNotEmpty)
-        'Authorization': 'Bearer ${_config.token}',
-      if (workspaceId != null && workspaceId.isNotEmpty)
-        'X-CC-Workspace-Id': workspaceId,
-      if (agentId != null && agentId.isNotEmpty) 'X-CC-Agent-Id': agentId,
-      if (conversationId != null && conversationId.isNotEmpty)
-        'X-CC-Conversation-Id': conversationId,
-      if (spaceId != null && spaceId.isNotEmpty) 'X-CC-Space-Id': spaceId,
-      if (runToken != null && runToken.isNotEmpty)
-        McpCallScope.runGrantHeader: runToken,
+      McpCallScope.runGrantHeader: runToken,
       'X-CC-Toolset-Rev': _dispatcher.registry.toolsetRevision,
     };
     // Agents always dial loopback: the companion when one is bound (TLS
@@ -330,13 +326,6 @@ class ServerMcpControl implements McpServerControl {
       'headers': headers,
     };
     return {'control-center': server};
-  }
-
-  Future<void> _writeJson(File target, Map<String, dynamic> json) async {
-    await target.parent.create(recursive: true);
-    final tmp = File('${target.path}.tmp');
-    await tmp.writeAsString(jsonEncode(json));
-    await tmp.rename(target.path);
   }
 
   /// Stops the underlying surface (called from `CcServer.shutdown()`).

@@ -83,8 +83,8 @@ typedef RepoOpPreview = Future<ActionPreview> Function(RepoOpContext ctx);
 typedef RepoAccessRepoResolver =
     Future<List<String>> Function(RepoOpContext ctx);
 
-/// The server-level authority an op requires from the calling USER — the
-/// declarative form of the hand-rolled `requireServerAdmin` guards.
+/// The server-level authority an op requires from the calling USER, enforced
+/// by the dispatcher before the handler runs.
 ///
 /// `RepoOpDispatcher` evaluates the workspace role gate only for
 /// `workspaceScoped` ops, so a `minRole:` on a global op reads as protection
@@ -189,11 +189,10 @@ class RepoOp {
   /// [repoArg] form.
   final RepoAccessRepoResolver? repoAccessVia;
 
-  /// The server-level authority this op requires — the declarative form of the
-  /// hand-rolled `requireServerAdmin` guards, enforced by the dispatcher
-  /// BEFORE the handler runs so it appears in `op/list` instead of being
-  /// invisible inside handler bodies. Meaningful for `workspaceScoped: false`
-  /// ops (a scoped op already has the role gate).
+  /// The server-level authority this op requires, enforced by the dispatcher
+  /// BEFORE the handler runs (scoped or not) so it appears in `op/list`
+  /// instead of being invisible inside handler bodies. A refusal carries
+  /// `data.kind: server_owner_required`.
   final ServerAuthority serverAuthority;
 
   /// The reversibility boundary this op declares (PRD 19 §5). Null (default)

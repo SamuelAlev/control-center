@@ -109,7 +109,7 @@ void main() {
       expect(looked, [('u1', 'ws1')]);
     });
 
-    test('the oldest member wins a duplicate account claim', () async {
+    test('an account two members hold resolves to neither', () async {
       final directory = GitHubLoginDirectory(
         members: _FakeMembershipRepository([
           _member('first'),
@@ -121,7 +121,7 @@ void main() {
         }),
       );
 
-      expect((await directory.memberForAccountId('ws1', 7))?.userId, 'first');
+      expect(await directory.memberForAccountId('ws1', 7), isNull);
     });
 
     test(

@@ -54,7 +54,11 @@ GoRouter buildRouter({OnboardingGate gate = OnboardingGate.complete}) {
       GoRoute(
         path: settingsRoute(workspaceIdParam),
         redirect: (_, state) =>
-            settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+            settingsLandingRoute(state.pathParameters['workspaceId']!),
+      ),
+      GoRoute(
+        path: settingsAccountProfileRoute(workspaceIdParam),
+        builder: (_, _) => const SizedBox(),
       ),
       GoRoute(
         path: settingsProfileRoute(workspaceIdParam),
@@ -123,7 +127,11 @@ GoRouter buildFullRouter({OnboardingGate gate = OnboardingGate.complete}) {
       GoRoute(
         path: settingsRoute(workspaceIdParam),
         redirect: (_, state) =>
-            settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+            settingsLandingRoute(state.pathParameters['workspaceId']!),
+      ),
+      GoRoute(
+        path: settingsAccountProfileRoute(workspaceIdParam),
+        builder: (_, _) => const SizedBox(),
       ),
       GoRoute(
         path: settingsProfileRoute(workspaceIdParam),
@@ -306,7 +314,7 @@ void main() {
   });
 
   group('Settings redirect', () {
-    testWidgets('/settings redirects to the appearance landing page', (
+    testWidgets('/settings redirects to the profile, its landing page', (
       tester,
     ) async {
       final router = buildRouter();
@@ -320,7 +328,7 @@ void main() {
 
       final location = router.routerDelegate.currentConfiguration.uri
           .toString();
-      expect(location, settingsAppearanceRoute('ws-1'));
+      expect(location, settingsAccountProfileRoute('ws-1'));
     });
   });
 
@@ -732,7 +740,7 @@ void main() {
       expect(location, contains('/pull-requests'));
     });
 
-    testWidgets('/settings redirects to the appearance landing page', (
+    testWidgets('/settings redirects to the profile, its landing page', (
       tester,
     ) async {
       final router = GoRouter(
@@ -746,7 +754,11 @@ void main() {
           GoRoute(
             path: settingsRoute(workspaceIdParam),
             redirect: (_, state) =>
-                settingsAppearanceRoute(state.pathParameters['workspaceId']!),
+                settingsLandingRoute(state.pathParameters['workspaceId']!),
+          ),
+          GoRoute(
+            path: settingsAccountProfileRoute(workspaceIdParam),
+            builder: (_, _) => const SizedBox(),
           ),
           GoRoute(
             path: settingsProfileRoute(workspaceIdParam),
@@ -768,7 +780,7 @@ void main() {
 
       final location = router.routerDelegate.currentConfiguration.uri
           .toString();
-      expect(location, contains(settingsAppearanceRoute('ws-1')));
+      expect(location, settingsAccountProfileRoute('ws-1'));
     });
   });
 

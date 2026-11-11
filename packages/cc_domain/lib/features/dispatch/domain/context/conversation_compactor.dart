@@ -80,7 +80,7 @@ class ConversationCompactor {
     // 1. Find the most-recent prior compaction; only re-summarize after it.
     int? prevCompactionIndex;
     for (var i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].isContextSummary) {
+      if (messages[i].isCompaction) {
         prevCompactionIndex = i;
         break;
       }
@@ -120,7 +120,7 @@ class ConversationCompactor {
     for (var i = 0; i < cutIndexInRegion; i++) {
       final m = region[i];
       // Skip prior summaries and already-compacted rows defensively.
-      if (m.isContextSummary || m.compacted) {
+      if (m.isCompaction || m.compacted) {
         continue;
       }
       toCompact.add(m);

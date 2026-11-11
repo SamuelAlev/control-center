@@ -30,7 +30,7 @@ class PrTerminalTab extends ConsumerStatefulWidget {
     this.backend,
     this.attachSessionId,
     this.initialInput,
-    this.environmentSetup = false,
+    this.environmentStartTerminal = false,
     this.onTitleChange,
   });
 
@@ -44,7 +44,7 @@ class PrTerminalTab extends ConsumerStatefulWidget {
     backend: args['backend'] as String?,
     attachSessionId: args['attachSessionId'] as String?,
     initialInput: args['initialInput'] as String?,
-    environmentSetup: args[kEnvironmentSetupTabArg] == true,
+    environmentStartTerminal: args[kEnvironmentStartTerminalTabArg] == true,
     onTitleChange: onTitleChange,
   );
 
@@ -63,7 +63,7 @@ class PrTerminalTab extends ConsumerStatefulWidget {
   final String? initialInput;
 
   /// Whether a stopped start finishes here, which the tab then explains.
-  final bool environmentSetup;
+  final bool environmentStartTerminal;
 
   /// Forwards the shell's OSC title (see [TerminalPanel.onTitleChange]) so the
   /// host can retitle this tab, wezterm/ghostty/iTerm-style.
@@ -125,12 +125,13 @@ class _PrTerminalTabState extends ConsumerState<PrTerminalTab> {
           onTitleChange: widget.onTitleChange,
           backgroundColor: t.bgPrimary,
         );
-        if (widget.environmentSetup) {
+        if (widget.environmentStartTerminal) {
           return Column(
             children: [
-              EnvironmentSetupBanner(
+              EnvironmentStartTerminalBanner(
                 workspaceId: workspaceId,
                 spaceId: spaceId,
+                sessionId: widget.attachSessionId,
               ),
               Expanded(child: panel),
             ],

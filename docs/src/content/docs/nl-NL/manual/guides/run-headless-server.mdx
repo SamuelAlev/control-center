@@ -3,7 +3,7 @@ title: Een headless server draaien
 description: Draai de headless binary cc_server of de Docker-image ervan, koppel een client eraan en configureer hem met het volledige CLI-flag- en omgevingsoppervlak.
 dateModified: 2026-11-08
 slug: nl-NL/handleiding/gidsen/headless-server-draaien
-sourceHash: 3afd9812c03783bc8e91a08dd698aff8611bc37f
+sourceHash: 82ef1bd62ea2f91104b0525e06e3f417783726e8
 ---
 
 Draai `cc_server` op een machine die aan blijft staan en maak er vervolgens
@@ -171,8 +171,7 @@ apparaattier — `desktop`, `ios`, `android`, al het andere is een webclient),
 (de host die in de URL wordt afgedrukt, want loopback is niet bereikbaar vanaf
 een andere machine) en `--client-url`. Als je `pair` opnieuw uitvoert, roteert de
 sleutel van dat apparaat en vervallen de live-sessies. Koppelen maakt nooit een
-werkruimte aan: de onboarding van de verbindende client benoemt en maakt de
-eerste.
+werkruimte aan. Alleen de serverbeheerder maakt werkruimtes aan: in de onboarding van de client van de beheerder benoemt en maakt die de eerste, en iedereen anders wacht tot de beheerder er een voor hem maakt of een werkruimtebeheerder hem uitnodigt.
 
 Met `--client-url` drukt hij ook een QR af die je in de terminal kunt scannen en
 die de webclient al ingevuld opent:
@@ -190,9 +189,7 @@ aangemaakt vanuit **Instellingen → Jij → Je apparaten** in een draaiende cli
 De twee zijn niet uitwisselbaar. Zie [Een apparaat koppelen](/nl-NL/handleiding/gidsen/apparaat-koppelen/).
 :::
 
-Een referentie die door `cc_server pair` is aangemaakt, heeft **geen
-vervaldatum**; een referentie die in de app is aangemaakt, verloopt altijd na 30
-dagen. Trek een via de CLI aangemaakt apparaat in via
+Een referentie die door `cc_server pair` is aangemaakt, verloopt na 30 dagen, net als een referentie die in de app is aangemaakt; voer `pair` opnieuw uit voor hetzelfde apparaat om een nieuwe uit te geven. Trek een via de CLI aangemaakt apparaat in via
 **Instellingen → Jij → Je apparaten** wanneer je het niet meer nodig hebt.
 
 De koppelingssleutel authenticeert de verplichte Noise-handshake; elke sessie
@@ -243,6 +240,16 @@ tunnel.
 
 De server blijft draaien tot `SIGINT`/`SIGTERM` en sluit dan netjes af.
 
+### Lees de opstartregels
+
+Twee regels laten zien hoe deze server is ingesteld. De blootstellingsregel, afgedrukt naast de ready-banner, begint met `cc_server exposure:` en somt op hoe ver hij bereikbaar is (`bind`, `tls`, `relay`, `tunnel`), of er een serverbeheerder is vastgelegd (`owner`), en hoe agents op deze machine draaien (`sandbox`):
+
+- `sandbox=native`: elke agentrun is ingepakt in de OS-sandbox.
+- `sandbox=off`: je hebt de server met `--sandbox off` gestart, dus de agents van elk lid draaien op deze machine onbeperkt.
+- `sandbox=unavailable`: de host heeft geen sandboxbackend (Windows, of Linux zonder `bwrap` en `socat`), dus alleen agentruns waarvoor de serverbeheerder verantwoordelijk is, starten. Die van alle anderen worden geweigerd met "Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren."
+
+Een sandboxregel eerder in het log zegt hetzelfde in woorden en, wanneer een backend ontbreekt, welk pakket je moet installeren. Andermans agents zonder sandbox laten draaien is een keuze die de serverbeheerder één keer maakt, voor iedereen, met `--sandbox off`. Zie [Sandboxbeleid configureren](/nl-NL/handleiding/gidsen/sandboxbeleid/#controleren-of-je-agentruns-in-een-sandbox-draaien).
+
 ## Stap 5: Een client verbinden
 
 Wijs een client naar de server-URL en koppelingssleutel uit stap 3:
@@ -269,6 +276,8 @@ geauthenticeerde versleutelde sessie als de rest van de client. `cc_server`
 ontsleutelt elk verzoek, stuurt het door naar zijn lokale code-server-backend en
 versleutelt het antwoord terug naar de client. De bestanden blijven eigendom van
 de server.
+
+De editor draait op de server als de eigen gebruiker van de server, met zijn terminal, taken en extensies, dus alleen de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) kan hem openen. Een sessie hoort bij het apparaat en de persoon die haar heeft geopend. Hij opent met VS Code-workspacevertrouwen aan, zodat VS Code vraagt voordat het een map vertrouwt, en met automatische taken uit, zodat de taken van een repository nooit bij het openen starten. Alle anderen houden de ingebouwde editor van de app en de bestandsweergaven; de volledige editor wordt hun niet aangeboden.
 
 Host de webclient via HTTPS of een veilige loopback-origin, zodat Service
 Workers kunnen draaien. De normale webbuild en de releasescripts bevatten de
@@ -314,6 +323,8 @@ Aanmeldingen via Connect eindigen met een code die de browser toont, dus de
 server heeft daarvoor geen openbaar adres nodig. Aanmeldingen via de eigen apps
 van de server sturen de browser terug naar de openbare URL van de server, dus
 stel `--public-url` in op een adres dat de browsers van mensen kunnen bereiken.
+
+Dit is de standaard van de server. Een werkruimtebeheerder kan één werkruimte een andere keuze geven onder **Instellingen → Werkruimte → Integraties**. Met `CC_CONNECT_URL` ingesteld kan een werkruimte nog steeds overstappen naar haar eigen apps, maar niet naar een eigen Connect; zie [Keuze per werkruimte](/nl-NL/handleiding/referentie/connect/#keuze-per-werkruimte).
 
 Wil je vanaf deze server Connect hosten voor andere servers, stel dan
 `CC_SERVER_CONNECT_HOST=on` in; zie
@@ -365,7 +376,7 @@ door het bezit van een koppelingssleutel.
 Twee dingen die je moet weten voordat je de poort buiten loopback beschikbaar
 stelt:
 
-- **MCP faalt gesloten buiten de host.** Een MCP-oppervlak zonder token antwoordt alleen op loopback. `any` binden verruimt dat niet — een verzoek van buiten de host wordt geweigerd met "MCP requires a bearer token to answer non-loopback clients" tot je er een configureert (`mcp.setToken`, of **Instellingen → Server → MCP-servers**).
+- **MCP heeft altijd zijn token nodig.** De server maakt het MCP-token bij de eerste start aan, en elk verzoek, ook dat via loopback, moet het meesturen als `Authorization: Bearer <token>`. Dat kan niet worden uitgezet; de serverbeheerder leest en roteert het onder **Instellingen → Server → MCP-servers**. Verzoeken van een webpagina, naar een onbekende `Host`, of een `POST` die geen JSON is, worden geweigerd voordat het token wordt gecontroleerd. Zie [De MCP-server gebruiken](/nl-NL/handleiding/gidsen/mcp-server/).
 - **`GET /healthz` is bewust niet geauthenticeerd**, met wildcard-CORS, en publiceert het id, de naam, de identiteitsvingerafdruk en de buildversie van de server. Clients hebben de vingerafdruk nodig om de server te pinnen, dus dit is opzettelijk — maar het betekent wel dat elke bereikbare `cc_server` dat alles prijsgeeft aan wie er maar om vraagt.
 
 ## Gerelateerde gidsen

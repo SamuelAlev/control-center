@@ -56,7 +56,7 @@ class _AdapterEnforcementSectionState extends State<AdapterEnforcementSection> {
         // motion instead of a jump.
         CcCollapsible(
           expanded: _expanded,
-          duration: CcMotion.normal,
+          duration: CcMotion.moderate,
           child: _EnforcementDetail(enforcement: enforcement, tokens: t),
         ),
       ],

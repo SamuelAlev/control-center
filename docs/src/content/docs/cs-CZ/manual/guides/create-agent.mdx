@@ -2,12 +2,12 @@
 title: Vytvořte a nakonfigurujte agenta
 description: Přidej agenta do pracovního prostoru, dej mu adaptér, model, skilly a oprávnění a ověř, že běží.
 slug: cs-CZ/prirucka/navody/vytvoreni-agenta
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Tenhle návod ukazuje, jak do pracovního prostoru přidat agenta a nastavit ho tak, aby opravdu běžel.
 
-Každý pracovní prostor vznikne s pěti agenty: CEO a `qa`, `architect`, `engineer` a `librarian`. Agenty tedy obvykle máš dřív, než jsi nějakého nastavil. Postup níže platí stejně pro založeného agenta i pro nového.
+Každý pracovní prostor vznikne se šesti agenty: CEO a `qa`, `architect`, `engineer`, `librarian` a `content-synthesizer`. Agenty tedy obvykle máš dřív, než jsi nějakého nastavil. Postup níže platí stejně pro založeného agenta i pro nového.
 
 ## Než začneš
 
@@ -73,7 +73,7 @@ Agent nemá vlastní přepínače oprávnění. Co smí pushnout, otevřít, slo
 Token GitHub agenta je vždycky jen pro čtení. Push jde přes Control Center, které se před předáním dál zeptá pravidla **Odeslat na remote**. Jak se jednotlivá pravidla dostanou k běhu, popisuje [Nastavte politiky sandboxu](/cs-CZ/prirucka/navody/politiky-sandboxu/).
 
 :::note[Pravidla a sandbox operačního systému jsou samostatné vrstvy]
-Pravidla rozhodují, co agent smí dělat; sandbox operačního systému ohraničuje, kde jeho procesy smějí číst, zapisovat a připojovat se. `cc_server` obalí běhy agenta sandboxem hostitele, pokud tam nějaký je. Windows nativní backend nemá a Linux a WSL2 potřebují `bwrap` a `socat`. Úplnou sadu hranic popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
+Pravidla rozhodují, co agent smí dělat; sandbox operačního systému ohraničuje, kde jeho procesy smějí číst, zapisovat a připojovat se. `cc_server` obalí běhy agenta sandboxem hostitele, pokud tam nějaký je. Windows nativní backend nemá a Linux a WSL2 potřebují `bwrap` a `socat`. Kde žádný není, spouštějí se jen běhy vlastníka serveru, pokud vlastník sandboxing nevypnul pro všechny. Úplnou sadu hranic popisuje [Sandbox a zabezpečení](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/).
 :::
 
 ## Ověř, že běží

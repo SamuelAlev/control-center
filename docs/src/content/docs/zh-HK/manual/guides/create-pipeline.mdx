@@ -2,7 +2,7 @@
 title: 建立管線範本
 description: 在管線編輯器中編寫 DAG 工作流程範本——新增節點、把它們連接起來、宣告輸入，並讓它可以執行。
 slug: zh-HK/手冊/操作指南/建立管線
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 管線範本是在工作區設定中編寫的。工作區側邊欄中的 **管線** 入口是_執行佇列_，
@@ -35,7 +35,7 @@ sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
 | **Bash script**                 | listen   | 執行帶 `{{state}}` 替換的 shell 指令碼；不派發代理                                      |
 | **Open conversation**           | listen   | 開啟該次執行唯一可見的空間及其檢出；代理節點會加入這個房間                              |
 | **Clone PR branch**             | listen   | 透過 `gh pr view` 找出 PR 的 head 分支，並將它複製到執行目錄                             |
-| **Post PR comment**             | listen   | 把彙整後的發現以 GitHub 審查留言的形式發佈到該 PR                                       |
+| **Post PR comment**             | listen   | 由伺服器在該 PR 上發佈一則審查留言：彙整後的發現，或其 `message`                                       |
 | **Reviewer (prompt)**           | listen   | 派發一名專門的審查代理；暫停直到該代理提交結果                                          |
 | **Consolidate (join)**          | join     | 等待多個上游分支，然後請一個代理彙整它們的輸出                                          |
 | **Custom prompt**               | listen   | 經由 `promptAgent` 主體路由的一般提示驅動節點                                           |
@@ -118,6 +118,7 @@ sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
   `repo_full_name`）時，`GH_TOKEN` 和 `GITHUB_TOKEN` 會持有一個只能讀取那一個
   程式庫的權杖，因此對它執行 `gh` 與 `git clone` 無需設定即可運作。否則便沒有
   GitHub 權杖。
+- 指令碼無法寫入 GitHub：在該權杖上，`gh pr comment`、`gh pr merge`、`gh pr create` 和 `git push` 都會失敗。請改用 **Post PR comment** 節點留言（將 `extras.message` 設為你自己的文字，可使用 `{{key}}` 佔位符，而非彙整後的發現）。推送並開啟 pull request 請在代理節點中進行：其 `git push` 會經由執行閘道，而它以 `open_pull_request` 工具開啟 PR。合併交由人處理；沒有任何節點會合併。
 - 只有工作區管理員能建立或編輯含有 bash 步驟的管線。
 - 指令碼會以字面可執行檔 `bash` 啟動，因此伺服器主機的 `PATH` 中必須有
   `bash`。

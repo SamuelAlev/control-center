@@ -2,7 +2,7 @@
 title: 용어집
 description: Control Center 전반에서 사용되는 주요 용어의 정의.
 slug: ko-KR/매뉴얼/레퍼런스/용어집
-sourceHash: 4a8efd55ef147a542308fe1a8e2661f6595e3abc
+sourceHash: 74f74d3ef0b0c09ad6824f501b77f9be1abb11c4
 ---
 
 import StructuredData from "../../../../../components/shared/StructuredData.astro";
@@ -32,7 +32,7 @@ export const glossaryTerms = [
 ['skills-lock.json', '설치된 스킬의 워크스페이스별 매니페스트. 각 스킬마다 소스 저장소, 저장소 내 경로, 고정된 커밋, 롤업된 콘텐츠 해시를 담습니다. 설치, 업데이트, 제거가 이 파일을 최신으로 유지하며, verify_skills가 디스크와 대조합니다.'],
 ['에이전트 실행 게이트웨이', '에이전트의 샌드박스 안에서 작업 정책을 적용하는 cc_server의 루프백 엔드포인트입니다. 에이전트가 하는 모든 GitHub 푸시는 이곳으로 보내져 리모트에 푸시 규칙으로 확인된 뒤, 에이전트가 결코 갖지 않는 쓰기 토큰으로 전달됩니다. Claude Code의 Bash 명령은 같은 엔드포인트의 훅을 통해 확인됩니다.'],
 ['Mode', 'chat, plan, review 또는 orchestrate. 스페이스별로 저장되므로 한 에이전트가 스페이스마다 다른 모드일 수 있고, 스페이스 안의 모든 대화가 이를 공유합니다. 시스템 프롬프트, 샌드박스 쓰기 규칙, MCP 도구 허용 목록을 게이팅합니다.'],
-['SandboxBackend', 'microvm(커널 경계를 가진 유일한 백엔드인 격리 VM으로, 대화형 터미널에 적용됩니다), native(macOS의 Seatbelt, Linux와 WSL2의 bubblewrap) 또는 none. 부팅 시 한 번 탐지합니다. native는 사용 가능할 때 에이전트 디스패치를 감쌉니다. Windows에는 네이티브 백엔드가 없고 Linux에는 bwrap과 socat이 필요하므로 그곳의 실행은 감싸지지 않습니다. --sandbox off는 의도적으로 제외합니다.'],
+['SandboxBackend', 'microvm(커널 경계를 가진 유일한 백엔드인 격리 VM으로, 대화형 터미널에 적용됩니다), native(macOS의 Seatbelt, Linux와 WSL2의 bubblewrap) 또는 none. 부팅 시 한 번 탐지합니다. native는 사용 가능할 때 에이전트 디스패치를 감쌉니다. Windows에는 네이티브 백엔드가 없고 Linux에는 bwrap과 socat이 필요합니다. 그런 호스트에서는 서버 소유자의 실행만 감싸지지 않은 채 시작되고, 다른 사람의 실행은 거부됩니다. --sandbox off는 이 호스트에서 모든 구성원의 에이전트를 감싸지 않은 채 실행합니다.'],
 ['리그', '에이전트가 실시간으로 조작하는 일회용 머신. 격리된 브라우저나 Linux 데스크톱, 호스트가 관리하는 Android 에뮬레이터나 iOS 시뮬레이터, 또는 격리된 터미널입니다. 자체 전체 해상도 레인으로 라이브 관찰되며 테이크오버는 서버 측에서 강제됩니다. 대화 범위이므로 사람 탭과 에이전트 도구가 하나의 머신을 대상으로 합니다.'],
 ['인클로저', 'VM 기반 리그가 가질 수 있는 더 강력한 격리 속성. 커널 경계, 일회용 오버레이 디스크, 기본 거부 네트워크 게이트, 자격 증명 브로커입니다. Android와 iOS 리그는 일회용이지만 호스트가 관리하는 네트워킹을 사용하므로 이 경계를 주장하지 않습니다. 어떤 리그를 조작하든 enclosureControl 가드레일 클래스를 사용합니다.'],
 ['RunCost', '단일 에이전트 실행의 토큰/비용 집계(입력 토큰, 출력 토큰, 센트 단위 예상 비용).'],
@@ -49,7 +49,7 @@ export const glossaryTerms = [
 ['PipelineEngine', '실행 실행을 오케스트레이션합니다. 실행을 시작하고, 단계를 예약하고, 상태를 영속화하고, 라우터/조인/continue-on-fail을 처리하고, 재시작 후 진행 중인 실행을 재개합니다.'],
 ['PipelineTriggerDispatcher', '도메인 이벤트를 구독하고 활성화된 트리거에 대해 일치하는 파이프라인 실행을 자동 시작합니다.'],
 ['MemoryAccessPolicy', '도메인에 대한 에이전트 역할 메모리 권한을 해석하고 강제합니다.'],
-['HarnessCostCalculator', 'models.dev 카탈로그에서 내장 하네스의 토큰 사용량을 RunCost로 가격 산정합니다. 디스패치가 그 집계를 실행 로그에 영속화합니다.'],
+['HarnessRunAccounting', '내장 하네스의 모델 호출을 한 번씩 집계하고, models.dev 카탈로그 기준으로 가격을 매기며, 실행에 영속화하고, 하위 실행의 지출을 상위 실행의 예산에 합산합니다.'],
 ['BudgetEnforcementService', '에이전트별 월 지출과 디스패치 전 차단(checkInvocationBlock)을 계산합니다. 그 차단은 복구 리컨사일러(OrphanRunReaper, StrandedTicketReconciler)만 참조하며, 일반 디스패치는 결코 참조하지 않습니다.'],
 ['BudgetGovernanceService', '각 실행 후 에이전트별 월 지출을 평가합니다. 소프트 임계값은 경고 인시던트를 기록하고, 소진은 하드 인시던트를 기록하며 에이전트 수명주기를 paused로 전환합니다.'],
 ['DomainEventBus', '기능 간 통신을 위한 인프로세스 브로드캐스트 발행/구독 버스. 이벤트는 타입이 있으며 구독자는 타입별 스트림을 소비합니다.'],
@@ -66,7 +66,8 @@ export const glossaryTerms = [
 ['cc_remote', '휴대폰 씬 클라이언트. 기본 거부 도구 정책으로 중계 릴레이를 통해 플릿을 원격 제어하는 Flutter 웹 PWA입니다.'],
 ['cc_signaling_server', '초대 게이트된 방을 호스팅하는 무상태 WebSocket 릴레이 브로커. 종단 간 봉인된 프레임만 전달하고 앱 데이터를 보관하지 않으며 페어링 PSK를 결코 보지 못하는 단순 중계기입니다.'],
 ['주체', '사람과 에이전트를 단일 행위자 추상으로 통합하는 봉인된 값. UserPrincipal(userId) 또는 AgentPrincipal(agentId)입니다. 모든 메시지, 티켓, 리뷰, 플랜, 실행 로그는 주체를 통해 귀속됩니다.'],
-['사용자', '인간 신원으로, global.db에 저장되므로 워크스페이스를 넘어 전역입니다. 워크스페이스를 만든 주체가 그 소유자가 되어 Workspace.ownerUserId에 소유자 역할 멤버십 행과 함께 기록됩니다. 나머지는 초대나 SSO로 합류합니다.'],
+['사용자', '인간 신원으로, global.db에 저장되므로 워크스페이스를 넘어 전역입니다. 서버 소유자만 워크스페이스를 만들며, 그 사람이 소유자가 되어 Workspace.ownerUserId에 소유자 역할 멤버십 행과 함께 기록됩니다. 나머지는 초대나 SSO로 합류합니다.'],
+['서버 소유자', '서버를 설정한 사람으로, 첫 시작 때 한 번 기록되며 네트워크로 보낸 어떤 것도 이를 바꾸지 않습니다. 워크스페이스 관리자나 워크스페이스 소유자는 서버 소유자가 아닙니다. 서버 소유자가 시작했거나 그 종류의 호스트 실행을 승인하지 않는 한, 샌드박스 밖에서 서버 자신의 머신에서 실행되는 것은 없습니다. 워크스페이스 생성, 호스트 셸, 내장 코드 편집기, 호스트에서 실행되는 환경, 워크스페이스 저장소 밖에서 연결된 체크아웃은 오직 서버 소유자의 것입니다.'],
 ['WorkspaceMember', '사용자를 WorkspaceRole로 워크스페이스에 묶는 멤버십 행. 페어링 키가 아니라 멤버십이 접근 경계입니다.'],
 ['WorkspaceRole', '단계적 멤버십 역할: owner, admin, member, viewer 또는 guest. 저장소 작업 초크포인트가 작업 종류마다 최소 역할 하한을 도출합니다.'],
 ['ParticipantPresence', '주체를 위한 일시적 인식(상태, 위치, 커서, 입력 중, 에이전트 라이브 상태와 실행 비용). 결코 영속화되지 않고, 서버 허브를 거치며, 팬아웃 전에 저장소 권한으로 필터링됩니다.'],
@@ -74,7 +75,7 @@ export const glossaryTerms = [
 ['자율성 다이얼', '스페이스별·에이전트별 제어로, propose-only / act-with-approval / act-freely를 액션 가드레일 저장소 위의 이름 있는 프로필로 구현합니다.'],
 ['cc_worker', '헤드리스 순수 Dart 플릿 실행기 바이너리. cc_server와 페어링하고, 기능을 선언하고, 임차된 작업을 가져와 실행하고, 이벤트를 스트리밍해 돌려줍니다. 지속 상태를 보관하지 않습니다.'],
 ['JobSpec', '실행 가능한 모든 것(에이전트 실행, 파이프라인 단계, 코드 인덱스, 골든 렌더, 벤치마크, 평가 배치)에 대한 타입 지정 명세: 필요한 기능, 우선순위, 예산, 워크스페이스.'],
-['ActionClass', '13개의 효과 클래스로 이루어진 닫힌 집합(fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, …). 모든 변경 도구가 자신의 클래스를 선언하며, 가드레일 엔진이 범위마다 allow / prompt / deny를 해석합니다.'],
+['ActionClass', '14개의 효과 클래스로 이루어진 닫힌 집합(fileDelete, gitPush, prCreate, networkEgress, processSpawn, enclosureControl, hostExecution, …). 모든 변경 도구가 자신의 클래스를 선언하며, 가드레일 엔진이 범위마다 allow / prompt / deny를 해석합니다.'],
 ['WriteLedger', '워크스페이스 범위의 멱등성 원장. 모든 변경은 논리적 작업마다 멱등성 키를 가지며, 재생은 바이트 단위로 동일한 원래 결과를 반환합니다. 재연결과 다중 클라이언트를 구조적으로 안전하게 만듭니다.'],
 ['멱등성 키', '논리적 작업마다(시도마다가 아니라) 발급되는 클라이언트 생성 UUIDv7. 재연결과 클라이언트를 넘나드는 재시도를 중복 제거합니다.'],
 ['받은편지함', '엄격한 규칙을 가진 범주 횡단 큐. 무언가(에이전트, 병합, 동기화)를 막고 있거나 운영자가 명시적으로 요청한 항목만 나타납니다.'],
@@ -88,11 +89,11 @@ export const glossaryTerms = [
 ['리뷰 판정', 'ship, hold 또는 block. 신뢰도 >= 0.7인 P0 발견 사항은 block이고, 그 밖의 P0나 모든 P1은 hold이며, 그 외에는 ship입니다. 게이트된 축이 실패하면 block이 강제되며 발견 사항으로 뒤집을 수 없습니다.'],
 ['SessionRecording', '한 실행을 위해 캡처한 이벤트 스트림과 HTTP/LLM 카세트 및 도구 I/O로, AgentConfigHash와 짝을 이룹니다.'],
 ['골든 세션', '에이전트나 플레이북마다 고정되는, 승인된 SessionRecording.'],
-['Control Center Connect', '자체 앱이 없는 서버를 위해 프로바이더 로그인(GitHub, Google, Linear)을 실행하는 선택적 서비스. Control Center가 호스팅하거나, 자체 호스팅하거나, 끕니다. 자격 증명 봉인과 저장소 하나에 대한 GitHub 토큰을 돌려주며 저장소 내용을 결코 보지 않습니다.'],
+['Control Center Connect', '자체 앱 대신 이를 선택한 서버나 워크스페이스를 위해 프로바이더 로그인(GitHub, Google, Linear)을 실행하는 선택적 서비스. Control Center가 호스팅하거나, 자체 호스팅하거나, 끕니다. 자격 증명 봉인과 저장소 하나에 대한 GitHub 토큰을 돌려주며 저장소 내용을 결코 보지 않습니다.'],
 ['자격 증명 봉인', '그것을 만든 Connect만 열 수 있는 암호화된 자격 증명. 프로바이더, Connect 주소, 설치 ID, 워크스페이스, 계정, 앱, 시크릿 세대에 묶입니다. 서버는 봉인을 저장하고 액세스 토큰은 메모리에만 머뭅니다.'],
 ['설치 ID', '하나의 Connect 주소에 대한 서버의 신원으로, 설치 키에서 파생됩니다. Connect는 설치 ID로 서버를 허용 목록에 올립니다. 키를 교체하면 ID가 바뀌고 모두가 Connect 레인에서 로그아웃됩니다.'],
-['설치 바인딩', '공유 App의 GitHub 설치를 어떤 서버가 사용할 수 있는지에 대한 Connect의 기록. 조직 설치는 서버마다 관리자의 승인이 필요합니다.'],
-['로그인 레인', '한 프로바이더의 브라우저 로그인: github, google, linear, linear_app 또는 slack. 각 레인은 서버 자체 앱이 완전하면 그것으로, 아니면 Connect를 통해 실행되며, 둘 다 없으면 사용할 수 없습니다.'],
+['설치 바인딩', 'Slack 팀이 묶여 있는 한 서버를 기록한 Connect의 기록(install_binding)입니다. GitHub 설치에는 이런 기록이 없으며, 멤버가 로그인한 어느 서버든 사용할 수 있습니다.'],
+['로그인 레인', '한 프로바이더의 브라우저 로그인: github, google, linear, linear_app 또는 slack. 자체 앱 방식에서 레인은 자체 앱이 완전히 구성되었을 때 그 앱으로 실행되며, 아니면 사용할 수 없습니다. Connect를 선택한 경우에는 Connect가 실행합니다. 둘 중 어느 쪽도 다른 쪽으로 폴백하지 않습니다.'],
 ];
 
 <StructuredData
@@ -148,7 +149,7 @@ export const glossaryTerms = [
 
 **Mode**: `chat`, `plan`, `review`, `orchestrate` 중 하나입니다. **스페이스별**로 저장되므로 한 에이전트가 스페이스마다 다른 모드일 수 있고, 스페이스 안의 모든 대화가 이를 공유합니다. 시스템 프롬프트, 샌드박스 쓰기 규칙, MCP 도구 허용 목록을 게이팅합니다. 컴포저는 `chat`, `plan`, `orchestrate`만 제공하며 `chat`에는 "Agent" 레이블이 붙습니다.
 
-**SandboxBackend**: `microvm`(커널 경계를 가진 유일한 백엔드인 격리 VM으로, 대화형 터미널에 적용됩니다), `native`(macOS의 Seatbelt, Linux와 WSL2의 bubblewrap) 또는 `none`입니다. 부팅 시 한 번 탐지합니다. `native`는 사용 가능할 때 **에이전트 디스패치에 적용되어** Claude Code CLI와 하네스의 `bash` 도구를 감쌉니다. Windows에는 네이티브 백엔드가 없고 Linux에는 `bwrap`과 `socat`이 필요하므로 그곳의 실행은 감싸지지 않습니다. `--sandbox off`는 의도적으로 제외합니다.
+**SandboxBackend**: `microvm`(커널 경계를 가진 유일한 백엔드인 격리 VM으로, 대화형 터미널에 적용됩니다), `native`(macOS의 Seatbelt, Linux와 WSL2의 bubblewrap) 또는 `none`입니다. 부팅 시 한 번 탐지합니다. `native`는 사용 가능할 때 **에이전트 디스패치에 적용되어** Claude Code CLI와 하네스의 `bash` 도구를 감쌉니다. Windows에는 네이티브 백엔드가 없고 Linux에는 `bwrap`과 `socat`이 필요합니다. 그런 호스트에서는 서버 소유자의 실행만 감싸지지 않은 채 시작되고, 다른 사람의 실행은 거부됩니다. `--sandbox off`는 이 호스트에서 모든 구성원의 에이전트를 감싸지 않은 채 실행합니다.
 
 **리그**: 에이전트가 실시간으로 조작하는 일회용 머신입니다. 격리된 브라우저나 Linux 데스크톱, 호스트가 관리하는 Android 에뮬레이터나 iOS 시뮬레이터, 또는 격리된 터미널입니다. 자체 전체 해상도 레인으로 라이브 관찰되며 테이크오버는 서버 측에서 강제됩니다. 대화 범위이므로 사람 탭과 에이전트의 `browser_use` / `computer_use` / `mobile_use` / `ios_use` 호출이 하나의 기본 머신을 대상으로 합니다. [리그와 인클로저](/ko-KR/매뉴얼/개념/리그/)를 참고하십시오.
 
@@ -186,7 +187,7 @@ export const glossaryTerms = [
 
 **MemoryAccessPolicy**: 도메인에 대한 에이전트 역할 메모리 권한을 해석하고 강제합니다.
 
-**HarnessCostCalculator**: models.dev 카탈로그에서 내장 하네스의 토큰 사용량을 `RunCost`로 가격 산정합니다. 디스패치가 그 집계를 실행 로그에 영속화합니다.
+**HarnessRunAccounting**: 내장 하네스의 모델 호출을 한 번씩 집계하고, models.dev 카탈로그 기준으로 가격을 매기며, 실행에 영속화하고, 하위 실행의 지출을 상위 실행의 예산에 합산합니다.
 
 **BudgetEnforcementService**: 에이전트별 월 지출과 디스패치 전 차단(`checkInvocationBlock`)을 계산합니다. 그 차단은 복구 리컨사일러(`OrphanRunReaper`, `StrandedTicketReconciler`)만 참조하며, 일반 사용자나 에이전트의 디스패치는 결코 참조하지 않습니다.
 
@@ -206,7 +207,7 @@ export const glossaryTerms = [
 
 **MeetingActionItem / MeetingDecision**: 요약 파이프라인이 추출해 개별 행으로 저장하는 구조화된 출력입니다. 실행 항목은 티켓에 연결할 수 있습니다.
 
-**CalendarEvent**: 워크스페이스와 연결된 계정 범위의 동기화된 Google Calendar 항목입니다. 회의와 다릅니다. 이벤트는 예정된 약속이고, 회의는 녹음된 세션입니다. `MeetingCalendarLink`로 일대일로 연결됩니다.
+**CalendarEvent**: 워크스페이스와 연결된 계정 범위의 동기화된 Google Calendar 항목입니다. 회의와 다릅니다. 이벤트는 예정된 약속이고, 회의는 녹음된 세션입니다. `meeting_calendar_links` 테이블을 통해 일대일로 연결됩니다.
 
 **CalendarAccount**: 워크스페이스, 멤버, 이메일마다 하나씩 연결된 Google 계정입니다(`google:<workspaceId>:<userId>:<email>`). 자격 증명은 `<dataDir>/secrets.json`에 `google_*` 키로 서버 측에 저장되며 클라이언트에는 결코 도달하지 않습니다. 브라우저 로그인은 서버에서 완료됩니다. Connect를 통한 로그인은 자격 증명 봉인만 저장합니다. `authExpiredAt` 플래그가 재연결 배너를 구동합니다.
 
@@ -224,7 +225,9 @@ export const glossaryTerms = [
 
 **주체**: 사람과 에이전트를 단일 행위자 추상으로 통합하는 봉인된 값입니다. `UserPrincipal(userId)` 또는 `AgentPrincipal(agentId)`입니다. 모든 메시지, 티켓, 리뷰, 플랜, 실행 로그는 주체를 통해 귀속됩니다.
 
-**사용자**: 인간 신원으로, `global.db`에 저장되므로 워크스페이스를 넘어 전역입니다. 워크스페이스를 만든 주체가 그 **소유자**가 되어, 같은 연산에서 `Workspace.ownerUserId`에 소유자 역할 멤버십 행과 함께 기록됩니다. 나머지는 초대나 SSO로 합류합니다.
+**서버 소유자**: 서버를 설정한 사람으로, 첫 시작 때 한 번 기록되며 네트워크로 보낸 어떤 것도 이를 바꾸지 않습니다. 워크스페이스 관리자나 워크스페이스 소유자는 서버 소유자가 아닙니다. 서버 소유자가 시작했거나 그 종류의 호스트 실행을 승인하지 않는 한, 샌드박스 밖에서 서버 자신의 머신에서 실행되는 것은 없습니다. 워크스페이스 생성, 호스트 셸, 내장 코드 편집기, 호스트에서 실행되는 환경, 워크스페이스 저장소 밖에서 연결된 체크아웃은 오직 서버 소유자의 것입니다. 자세한 내용은 [서버 소유자](/ko-KR/매뉴얼/개념/권한-부여/#서버-소유자)를 참고하세요.
+
+**사용자**: 인간 신원으로, `global.db`에 저장되므로 워크스페이스를 넘어 전역입니다. 서버 소유자만 워크스페이스를 만들며, 그 사람이 그 **소유자**가 되어, 같은 연산에서 `Workspace.ownerUserId`에 소유자 역할 멤버십 행과 함께 기록됩니다. 나머지는 초대나 SSO로 합류합니다.
 
 **WorkspaceMember** / **WorkspaceRole**: 사용자를 역할(`owner` / `admin` / `member` / `viewer` / `guest`)로 워크스페이스에 묶는 멤버십 행입니다. **페어링 키가 아니라 멤버십이 접근 경계입니다.** 저장소별 권한 부여는 멤버십이 코드 호스트보다 큰 권한을 갖지 못하게 합니다.
 
@@ -234,7 +237,7 @@ export const glossaryTerms = [
 
 **자율성 다이얼**: 스페이스별·에이전트별 제어로, `propose-only` / `act-with-approval` / `act-freely`를 액션 가드레일 저장소 위의 이름 있는 프로필로 구현합니다.
 
-**ActionClass**: 13개의 효과 클래스로 이루어진 닫힌 집합(`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, …)입니다. 모든 변경 도구가 자신의 클래스를 선언하며, 가드레일 엔진이 범위마다 `allow` / `prompt` / `deny`를 해석합니다(space > agent > workspace > mode preset > built-in default).
+**ActionClass**: 14개의 효과 클래스로 이루어진 닫힌 집합(`fileDelete`, `gitPush`, `prCreate`, `networkEgress`, `processSpawn`, `enclosureControl`, `hostExecution`, …)입니다. 모든 변경 도구가 자신의 클래스를 선언하며, 가드레일 엔진이 범위마다 `allow` / `prompt` / `deny`를 해석합니다(space > agent > workspace > mode preset > built-in default).
 
 **WriteLedger** / **멱등성 키**: 모든 변경은 클라이언트가 생성한 멱등성 키(UUIDv7, 논리적 작업마다)를 가집니다. 워크스페이스 범위 원장이 핸들러 실행 전에 중복을 제거하며, 재생은 바이트 단위로 동일한 원래 결과를 반환합니다. 재연결과 다중 클라이언트를 구조적으로 안전하게 만듭니다.
 
@@ -280,15 +283,15 @@ export const glossaryTerms = [
 
 **cc_signaling_server**: 초대 게이트된 방을 호스팅하는 무상태 WebSocket 릴레이 브로커입니다. 종단 간 봉인된 프레임만 전달하고, 앱 데이터를 보관하지 않으며, 페어링 PSK를 결코 보지 못하는 단순 중계기입니다.
 
-**Control Center Connect**: 자체 앱을 등록하지 않은 서버를 위해 프로바이더 로그인(GitHub, Google Calendar, Linear)을 실행하는 선택적 서비스입니다. Control Center가 호스팅하는 것, 조직이 운영하는 것(`cc-connect`, 또는 `cc_server`의 `/connect`에 마운트한 것), 또는 없음 중 하나입니다. 자격 증명 봉인과 저장소 하나에 대한 GitHub 토큰을 돌려주며 저장소 내용을 결코 보지 않습니다. [Control Center Connect](/ko-KR/매뉴얼/레퍼런스/connect/)를 참고하세요.
+**Control Center Connect**: 자체 앱 대신 이를 선택한 서버나 워크스페이스를 위해 프로바이더 로그인(GitHub, Google Calendar, Linear)을 실행하는 선택적 서비스입니다. Control Center가 호스팅하는 것, 조직이 운영하는 것(`cc-connect`, 또는 `cc_server`의 `/connect`에 마운트한 것), 또는 없음 중 하나입니다. 자격 증명 봉인과 저장소 하나에 대한 GitHub 토큰을 돌려주며 저장소 내용을 결코 보지 않습니다. [Control Center Connect](/ko-KR/매뉴얼/레퍼런스/connect/)를 참고하세요.
 
 **자격 증명 봉인**: 그것을 만든 Connect만 열 수 있는 암호화된 자격 증명(`credential_seal`)으로, 프로바이더, Connect 주소, 설치 ID, 워크스페이스, 계정, 앱, 시크릿 세대에 묶입니다. 서버는 봉인과 그것이 만들어진 대상 설치 ID를 저장하며, 액세스 토큰은 메모리에만 머뭅니다. 설치 ID가 더 이상 일치하지 않는 봉인은 폐기되고 그 소유자는 다시 로그인합니다.
 
 **설치 ID**: 하나의 Connect 주소에 대한 서버의 신원(`install_id`)으로, 시크릿 파일의 설치 키에서 파생됩니다. Connect는 설치 ID로 서버를 허용 목록에 올립니다. 키를 교체하면 새 ID가 생기고 모두가 Connect 레인에서 로그아웃됩니다.
 
-**설치 바인딩**: 공유 App의 GitHub 설치를 어떤 서버가 사용할 수 있는지에 대한 Connect의 기록(`install_binding`)입니다. 서버를 통해 설치하면 그 서버가 바인딩되고, 조직 관리자의 **이 서버 승인**으로 다른 서버가 바인딩됩니다.
+**설치 바인딩**: Slack 팀이 묶여 있는 한 서버를 기록한 Connect의 기록(`install_binding`)입니다. GitHub 설치에는 이런 기록이 없으며, 멤버가 로그인한 어느 서버든 사용할 수 있습니다.
 
-**로그인 레인**: 한 프로바이더의 브라우저 로그인입니다 — `github`, `google`, `linear`, `linear_app` 또는 `slack`. 레인은 서버 자체 앱이 완전하면 그것으로, 아니면 Connect를 통해 실행되며, 둘 다 없으면 사용할 수 없습니다. 일부만 구성된 자체 앱은 오류이며 결코 폴백하지 않습니다.
+**로그인 레인**: 한 프로바이더의 브라우저 로그인입니다 — `github`, `google`, `linear`, `linear_app` 또는 `slack`. 자체 앱 방식에서 레인은 서버 또는 워크스페이스의 자체 앱이 완전히 구성되었을 때 그 앱으로 실행되며, 아니면 사용할 수 없습니다. Connect를 선택한 경우에는 Connect가 실행합니다. 둘 중 어느 쪽도 다른 쪽으로 폴백하지 않으며, 일부만 구성된 자체 앱은 오류입니다.
 
 ## 관련 항목
 

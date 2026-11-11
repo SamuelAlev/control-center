@@ -2,7 +2,7 @@
 title: チケットのライフサイクル
 description: チケットのフィールド、ステータス、遷移、関連、そして変更操作のチョークポイント。
 slug: ja-JP/マニュアル/リファレンス/チケットライフサイクル
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## チケットのステータス
@@ -118,7 +118,7 @@ GitHub Issues、Jira Cloud、ClickUp に対応します。GitHub Issues はあ�
 | `projectId`              | `String?`                  | 所有するプロジェクト。リモートへプッシュされることはありません                             |
 | `assignedAgentId`        | `String?`                  | 割り当てられたプリンシパルの id（メタデータのみ — 割り当てても何もディスパッチされません） |
 | `assigneeType`           | `PrincipalType`            | `assignedAgentId` が指すプリンシパルの種類 — `user` または `agent`（既定は `agent`）      |
-| `createdByType`          | `PrincipalType?`           | チケットを作成したプリンシパルの種類（`user` または `agent`）。レガシー／システム行では null |
+| `createdByType`          | `PrincipalType?`           | チケットを作成したプリンシパルの種類（`user` または `agent`）。システムが作成した行では null |
 | `createdById`            | `String?`                  | 作成したプリンシパルの id                                                                  |
 | `assignedTeamId`         | `String?`                  | 割り当てられたチーム（メタデータのみ）                                                     |
 | `delegatedByAgentId`     | `String?`                  | このチケットを委任したエージェント                                                         |

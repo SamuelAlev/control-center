@@ -2,7 +2,7 @@
 title: Garde-fous — une politique unique pour chaque action qui modifie l’état
 description: Pourquoi Control Center fait passer chaque effet de bord d’un agent par un moteur unique d’autorisation, de demande ou de refus, pourquoi la taxonomie des ActionClasses reste volontairement restreinte et ce que le cadran d’autonomie change réellement.
 slug: fr-FR/manuel/concepts/garde-fous
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Les agents de Control Center peuvent supprimer des fichiers, pousser des
@@ -21,9 +21,7 @@ une action peut quitter le système : le registre d’outils du harnais intégr
 verrou du répartiteur MCP côté serveur et les mutations d’opérations de dépôt.
 Une règle écrite une fois s’applique donc aussi bien à l’exécuteur intégré
 qu’aux CLI d’agents externes — il n’existe pas de second chemin, plus discret,
-pour la contourner. L’ancienne politique de commandes limitée à bash fonctionne
-toujours : une règle peut cibler un préfixe de commande plutôt qu’une classe
-d’action, et les deux formes coexistent dans le même magasin.
+pour la contourner. Une règle peut aussi cibler un préfixe de commande plutôt qu’une classe d’action ; les deux formes coexistent dans le même magasin.
 
 Le moteur ne remplace toutefois pas le bac à sable du système d’exploitation, et
 le bac à sable ne le remplace pas non plus. Ils répondent à des questions
@@ -32,14 +30,14 @@ le droit de se produire, tandis que le bac à sable délimite la portée du
 processus qui en résulte. `cc_server` applique le bac à sable lorsque l’hôte
 propose un backend — mais [Windows n’en propose aucun et Linux a besoin de
 `bwrap` et `socat`](/fr-FR/manuel/concepts/bac-a-sable-et-securite/). Sur ces
-hôtes, les garde-fous constituent la couche de contrôle la plus externe plutôt
+hôtes, seules les exécutions du propriétaire du serveur démarrent, sauf si celui-ci a désactivé le bac à sable pour tout le monde avec `--sandbox off`. Pour toute exécution qui démarre sans bac à sable, les garde-fous constituent la couche de contrôle la plus externe plutôt
 qu’une politique posée au-dessus d’un socle, ce qu’il est utile de savoir
 lorsque vous décidez du degré de permissivité à adopter.
 
 ## ActionClass : une taxonomie volontairement fermée
 
 Chaque outil qui modifie l’état déclare les **ActionClasses** auxquelles il
-appartient, parmi un ensemble fermé de treize classes d’effet. Cinq d’entre
+appartient, parmi un ensemble fermé de quatorze classes d’effet. Six d’entre
 elles déclenchent une demande d’approbation par défaut ; les autres autorisent,
 et seule une règle peut changer cela.
 
@@ -58,17 +56,18 @@ et seule une règle peut changer cela.
 | `processSpawn`             | Autoriser                  | Lancer un processus (le shell et tout ce qui passe par le shell)        |
 | `workspaceMutation`        | Autoriser                  | Modifier la structure de l’espace de travail (dépôts, espaces, agents)  |
 | `enclosureControl`         | Autoriser                  | Piloter une enceinte (rig) : démarrer une VM, lui envoyer des entrées   |
+| `hostExecution`            | **Demander d’abord**       | Exécuter une commande sur l’hôte du serveur hors de tout bac à sable, à la demande d’un agent : tâches d’environnement, processus, piles compose, et `eval` lorsque son noyau tourne sans confinement   |
 
 Les huit classes autorisées par défaut ont été choisies en partant du principe
 que le socle du bac à sable s’applique en dessous. C’est le cas là où l’hôte
-propose un backend, mais pas sous Windows ni sur une machine Linux dépourvue de
-`bwrap` et `socat` — si vous voulez y soumettre `fileWriteOutsideWorktree` ou
+propose un backend, mais pas sous `--sandbox off`, ni pour les exécutions du propriétaire sous Windows ou sur une machine Linux dépourvue de
+`bwrap` et `socat`. Si vous voulez y soumettre `fileWriteOutsideWorktree` ou
 `packageInstall` à un contrôle, c’est une règle que vous devez écrire.
 
 Cet ensemble est volontairement fermé. Un nouvel outil qui modifie l’état sans
 déclarer de classe échoue au test à cliquet, de sorte que la taxonomie ne peut
 s’étendre que par une décision explicite et argumentée — « la prolifération de
-la taxonomie est la mort de cette fonctionnalité ». Treize classes suffisent à
+la taxonomie est la mort de cette fonctionnalité ». Quatorze classes suffisent à
 exprimer les politiques que les gens écrivent réellement (ne jamais pousser sans
 demander, ne jamais supprimer en dehors d’un arbre de travail, toujours
 autoriser les lectures) et sont assez peu nombreuses pour que l’interface des
@@ -99,7 +98,7 @@ Deux décisions offrent des garanties fortes :
 
 Il n’existe délibérément aucun verrou par tour. Chaque appel d’outil réévalue la
 politique depuis le début, de sorte que la répétition des demandes pour une même
-action est bornée par le « mémoriser cette décision » de l’opérateur lui-même,
+action est bornée par l’approbation temporaire que l’opérateur a lui-même donnée,
 et non par quoi que ce soit lié au tour.
 
 ## Règles au niveau des arguments
@@ -118,6 +117,7 @@ Une contrainte peut viser :
 - **hôtes** — des destinations réseau, avec jokers de sous-domaine (`*.internal`)
 - **commandes** — des préfixes de commande, mis en correspondance sur une limite
   de mot
+- **outils** — l’outil exact que nomme un appel, de sorte qu’une approbation peut couvrir un seul outil plutôt que tous les outils ayant le même effet
 - **plafonds** — `maxCount` / `maxCents`, ce qui permet d’exprimer « supprimer
   jusqu’à 50 fichiers »
 
@@ -162,16 +162,19 @@ et le bac à sable du système d’exploitation sous ces deux éléments. Une r�
 commande qui se résout en `allow` ne relâche jamais ni l’un ni l’autre — le
 filet du mode s’exécute après, et son `deny` est définitif.
 
-## Approbations mémorisées
+## Approbations temporaires
 
-Répondre à une demande par « mémoriser cette décision » écrit une véritable règle
-de politique : limitée à une portée (espace / agent / espace de travail),
-**contrainte sur ses arguments** (approuver un push vers `feature/login` accorde
-`feature/**`, et non `main`) et **auto-révocable** au terme d’un TTL explicite.
-Dire oui pour les prochaines heures n’équivaut pas à réécrire discrètement votre
-politique permanente, et les règles ainsi écrites atterrissent dans le même
-magasin, avec la provenance `remembered` et une date d’expiration, de sorte
-qu’elles peuvent être révoquées avant terme.
+Chaque carte d’approbation que déclenche l’action d’un agent propose **Approuver pour 8 heures** lorsque l’action peut désigner quelque chose de plus étroit que sa classe. Ce choix écrit une véritable règle de politique, une approbation temporaire, dans le même magasin que les règles que vous définissez, avec la provenance `remembered` et une date d’expiration :
+
+- **Limitée à une portée.** Elle est écrite pour l’espace d’où venait la question. Seule la réponse d’un administrateur peut être écrite pour tout l’espace de travail.
+- **Étroite.** Elle désigne une famille de branches (approuver un push vers `feature/login` couvre `feature/**`, et non `main`), un dossier, un hôte, la commande exacte ou l’outil. Un commit est la seule action approuvée en tant que classe, pour cet espace : il n’a rien de plus étroit à désigner.
+- **Auto-révocable.** Elle prend fin au bout de huit heures et peut être révoquée plus tôt sur la page des autorisations des agents.
+
+Une approbation temporaire ne fait qu’épargner une question. Elle répond à un « demander d’abord » défini à sa propre portée ou à une portée plus large, et jamais à un refus, quelle que soit la portée d’où vient ce refus. Elle est stockée à côté de la règle que vous avez définie pour l’action : modifier cette règle laisse donc l’approbation en place, et révoquer l’approbation laisse la règle.
+
+Certains contrôles posent leur propre question après que la politique a autorisé un appel : l’approbation qu’un outil déclare lui-même, ou le filet de commandes d’un mode. Ils ne renoncent à leur question que pour une approbation temporaire qui désigne exactement cet outil ou cette commande. Régler l’action sur Autoriser ne les fait pas taire.
+
+Trois cartes gardent deux boutons, parce qu’il n’y a rien à reporter : laisser le bac à sable exécuter des programmes depuis un dossier (l’approuver est déjà une autorisation enregistrée que vous pouvez révoquer), une opération destructive que vous confirmez une seule fois, et l’installation d’un skill (un skill modifié doit redemander).
 
 ## Niveaux d’application
 

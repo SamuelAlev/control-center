@@ -2,7 +2,7 @@
 title: Sett opp Slack-integrasjon
 description: Koble Slack til et Control Center-arbeidsområde, via den delte Control Center-appen eller en egen app, slik at medlemmer kan styre agenter fra Slack.
 slug: nb-NO/handbok/slik-gjor-du/slack-integrasjon
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Denne guiden viser deg hvordan du kobler Slack til et Control Center-arbeidsområde: ved å legge til den delte Control Center-appen, eller med en egen app som Control Center oppretter for deg eller som du bygger selv.
@@ -27,18 +27,18 @@ Et arbeidsområde kjører på nøyaktig én av disse om gangen.
 
 | Modus                          | Krever                                                                                                       | Du får                                                                                       |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| **Delt Control Center-app**    | Serveren bruker Control Center Connect (**Innstillinger → Server → Enkel pålogging**), og Connect betjener Slack | Ett klikk og en Slack-pålogging. Ingen app å opprette, ikke noe token å lime inn, ingenting å rotere |
+| **Delt Control Center-app**    | App-påloggingene for arbeidsområdet kjører via Control Center Connect (serverens valg under **Innstillinger → Server → Enkel pålogging**, eller arbeidsområdets eget valg under **Innstillinger → Arbeidsområde → Integrasjoner**), og Connect betjener Slack | Ett klikk og en Slack-pålogging. Ingen app å opprette, ikke noe token å lime inn, ingenting å rotere |
 | **Din egen app**               | En Slack-app i Slack-arbeidsområdet ditt, laget på en av de tre måtene nedenfor                              | Ditt eget botnavn, egne beskrivelser og egen skråstrekkommando, redigerbare fra Control Center |
 
 ### Legg til den delte Control Center-appen
 
-1. I Control Center går du til **Innstillinger → Arbeidsområde → Generelt** og ruller ned til kortet **Chat-broer**
+1. I Control Center går du til **Innstillinger → Arbeidsområde → Integrasjoner** og ruller ned til kortet **Chat-broer**
 2. Finn raden **Legg til Control Center i Slack** i Slack-blokken og klikk på **Legg til i Slack**
 3. Nettleseren åpner Slack. Logg inn med Slack, velg Slack-arbeidsområdet og godkjenn installasjonen
 4. Når nettleseren viser en kode, skriver du den inn i dialogen Control Center lot stå åpen. Hvis nettleseren sender deg tilbake til appen av seg selv, er det ingenting å skrive
 5. Et varsel navngir Slack-arbeidsområdet appen ble lagt til i, og Slack-blokken viser at tilkoblingen kjører på den delte Control Center-appen
 
-Bare en administrator i arbeidsområdet kan legge til appen. Raden sier hvorfor den ikke kan starte når serveren bruker sine egne apper i stedet for Connect, når Connect-en din ikke har noen Slack-app, eller når dette arbeidsområdet allerede har koblet til en egen Slack-app.
+Bare en administrator i arbeidsområdet kan legge til appen. Raden sier hvorfor den ikke kan starte når dette arbeidsområdets påloggingsapper er egne apper i stedet for Connect, når Connect-en din ikke har noen Slack-app, eller når dette arbeidsområdet allerede har koblet til en egen Slack-app.
 
 Slik skiller den seg fra din egen app:
 
@@ -64,7 +64,7 @@ Hendelsene til din egen app går aldri gjennom Connect: Socket Mode leverer dem 
 ## Alternativ A: la Control Center opprette appen
 
 1. Generer et tokenpar for appkonfigurasjon på [api.slack.com/apps](https://api.slack.com/apps) og kopier **oppdaterings**tokenet (`xoxe-…`)
-2. I Control Center går du til **Innstillinger → Arbeidsområde → Generelt** og ruller ned til kortet **Chat-broer**
+2. I Control Center går du til **Innstillinger → Arbeidsområde → Integrasjoner** og ruller ned til kortet **Chat-broer**
 3. I Slack-blokken klikker du på **Opprett app for meg**
 4. Lim inn tokenet, juster appnavnet, botnavnet, beskrivelsene og skråstrekkommandoen, og klikk deretter på **Opprett app**
 5. Følg de to gjenstående stegene dialogen viser, hvert av dem som en lenke inn i Slack:
@@ -78,7 +78,7 @@ Konfigurasjonstokenet roteres ved hver bruk. Control Center lagrer den roterte v
 
 Samme app, uten konfigurasjonstoken — Slack gir deg sin egen opprettelsesskjerm med hele manifestet allerede utfylt.
 
-1. I Control Center går du til **Innstillinger → Arbeidsområde → Generelt** og ruller ned til kortet **Chat-broer**
+1. I Control Center går du til **Innstillinger → Arbeidsområde → Integrasjoner** og ruller ned til kortet **Chat-broer**
 2. I Slack-blokken klikker du på **Opprett app for meg**
 3. Juster appnavnet, botnavnet, beskrivelsene og skråstrekkommandoen — disse følger med lenken
 4. Klikk på **Opprett i Slack**. Nettleseren åpner Slacks appopprettelsesside med konfigurasjonen forhåndsutfylt
@@ -132,7 +132,7 @@ message.im
 
 Slik når tokenene til din egen app Control Center. Den delte appen trenger ingenting av dette.
 
-1. Gå til **Innstillinger → Arbeidsområde → Generelt** og rull ned til kortet **Chat-broer**
+1. Gå til **Innstillinger → Arbeidsområde → Integrasjoner** og rull ned til kortet **Chat-broer**
 2. I Slack-blokken klikker du på **Koble til Slack**
 3. Fyll inn feltene:
 
@@ -202,7 +202,7 @@ Ethvert koblet medlem med en skriverolle kan foreslå en sak fra Slack:
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-Teksten før `|` er tittelen, teksten etter er beskrivelsen. Boten svarer at den har laget et utkast til saken. Ingenting opprettes ennå, og ingen saksautomatisering utløses: utkastet venter på deg under **Innstillinger → Arbeidsområde → Profil og identitet → Sakutkast fra chat**, der du kan rette tittelen og beskrivelsen og deretter klikke på **Opprett sak** eller **Forkast**.
+Teksten før `|` er tittelen, teksten etter er beskrivelsen. Boten svarer at den har laget et utkast til saken. Ingenting opprettes ennå, og ingen saksautomatisering utløses: utkastet venter på deg under **Innstillinger → Deg → Profil → Sakutkast fra chat**, der du kan rette tittelen og beskrivelsen og deretter klikke på **Opprett sak** eller **Forkast**.
 
 - Bare medlemmet som kjørte kommandoen, ser utkastet
 - Et utkast du lar ligge, forkastes etter et døgn. Utkast ligger i minnet, så en omstart av serveren forkaster dem også

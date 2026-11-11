@@ -1,8 +1,8 @@
 ---
 title: Usar o servidor MCP
-description: Aponte um cliente MCP externo para o servidor de ferramentas do Control Center, defina um token Bearer e saiba o que a superfície expõe.
+description: Aponte um cliente MCP externo para o servidor de ferramentas do Control Center, envie o token Bearer dele e saiba o que a superfície expõe.
 slug: pt-BR/manual/guias/servidor-mcp
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Este guia mostra como conectar um cliente MCP externo — Claude Code, um editor,
@@ -30,26 +30,42 @@ Assim, uma instalação local padrão fica em `http://127.0.0.1:9030/mcp`.
 2. Leia o cartão **Servidor MCP** — ele mostra se está em execução ou parado e a
    porta em que está escutando
 
-A superfície vem ativada por padrão em uma instalação nova, então um cliente em
-loopback funciona sem mexer em nenhuma configuração. **Iniciar ao abrir o app**
-controla se ela volta depois de uma reinicialização; **Iniciar** / **Parar** são
-controles de sessão que não mudam essa preferência.
+A superfície vem ativada por padrão em uma instalação nova. Somente o proprietário
+do servidor vê o token do cartão, e somente ele pode iniciar ou parar o endpoint.
+**Iniciar ao abrir o app** controla se ela volta depois de uma reinicialização;
+**Iniciar** / **Parar** são controles de sessão que não mudam essa preferência.
 
 Por padrão, o servidor se vincula ao loopback, então o endpoint só é acessível a
 partir da máquina em que o `cc_server` roda, a menos que você o tenha iniciado
 com `--bind any`.
 
+## Obter o token
+
+Toda requisição precisa do token MCP do servidor, de qualquer máquina, inclusive do
+loopback. O servidor o cria na primeira vez que inicia. Não há como desligá-lo nem
+como apagá-lo.
+
+1. Em **Configurações → Servidor → Servidores MCP**, encontre a linha **Token de
+   autenticação**
+2. Pressione **Mostrar token** e copie-o
+3. Para substituí-lo, pressione **Rotacionar token**. O servidor passa para o novo
+   token imediatamente, e todo cliente que ainda usar o antigo é recusado até que
+   você lhe dê o novo
+
 ## Conectar um cliente
 
-Aponte seu cliente para o endpoint Streamable HTTP. O formato exato da
-configuração é problema do seu cliente; a URL é a mesma nos dois casos.
+Aponte seu cliente para o endpoint Streamable HTTP e envie o token como
+`Authorization: Bearer <token>` em toda requisição, inclusive `GET /sse`. Não há
+outra forma de enviá-lo: um token na URL não é aceito. O formato exato da
+configuração é problema do seu cliente.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -72,25 +88,20 @@ Ponto de verificação: peça ao cliente para listar as ferramentas dele. Você 
 ver entradas `mcp__*` cobrindo tickets, espaços, memória, grafo de código e
 revisão.
 
-## Servir MCP além do host
+## O que o endpoint recusa
 
-1. Em **Configurações → Servidor → Servidores MCP**, na linha **Token de
-   autenticação**, pressione **Definir** e cole um token
-2. Envie-o como `Authorization: Bearer <token>` em toda requisição `POST /mcp`
+O token abre todas as ferramentas do servidor, então o endpoint também recusa
+qualquer coisa que uma página web poderia ter enviado, antes de olhar o token:
 
-Uma superfície sem token recusa com 403 qualquer chamador que não seja loopback.
-Isso é fail-closed por design: é o token que torna possível, afinal, o serviço
-fora do host.
+| Requisição | Resposta |
+| ---------- | -------- |
+| Um cabeçalho `Origin` que não é uma página desta máquina (`http://localhost`, `http://127.0.0.1` ou `http://[::1]`, em qualquer porta) | `403`, "Cross-origin requests are not accepted" |
+| Um cabeçalho `Host` que não é o endereço de loopback e a porta deste listener nem o nome de host público do servidor | `403`, "Unknown host" |
+| Um `POST` cujo corpo não é `application/json` | `415` |
+| Nenhum token, ou um token errado | `401` |
 
-Alterações no token se aplicam imediatamente à superfície ativa — sem
-reinicialização.
-
-:::note[`GET /sse` recebe o token na query string]
-O fluxo de notificações passa pela verificação de token como qualquer outra
-rota, mas um `EventSource` de navegador não consegue enviar um cabeçalho
-`Authorization` — por isso `/sse` também aceita o token como `?token=<token>`.
-Sem ele, responde 401.
-:::
+Para servir MCP além do host, inicie o servidor com `--bind any` e envie o token da
+outra máquina, endereçando o servidor pelo nome de host público dele.
 
 ## Restringir cada chamada a um espaço de trabalho
 
@@ -133,6 +144,34 @@ descoberta — um cliente MCP externo se recusa a chamar uma ferramenta que não
 esteja na lista em cache dele, então esconder ferramentas as quebra em vez de
 organizá-las.
 
+## Servidores MCP pessoais continuam sendo do proprietário
+
+Este guia trata do endpoint próprio do Control Center. A outra direção, os
+servidores MCP que o Control Center entrega aos agentes que ele executa, está
+listada em **Configurações → Servidor → Servidores MCP → Servidores MCP externos**.
+Servidores configurados na máquina do servidor para Claude, Codex, Cursor, Gemini,
+VS Code, Windsurf, OpenCode ou em um `.mcp.json` são encontrados ali
+automaticamente.
+
+Esses servidores descobertos vêm da configuração de ferramentas do próprio usuário
+do servidor e agem com a identidade e as credenciais desse usuário; por isso
+pertencem ao proprietário do servidor:
+
+- Ficam disponíveis somente dentro de execuções do harness integrado que o
+  proprietário do servidor inicia ou pelas quais é responsável, incluindo
+  automações em um espaço de trabalho pelo qual o proprietário é responsável.
+- A execução de um membro, a automação vinculada a um membro e toda execução em um
+  servidor sem proprietário registrado não recebem nenhum deles. Ali as ferramentas
+  não aparecem na lista, não podem ser chamadas e não surgem na busca de
+  ferramentas.
+- Este endpoint nunca lista, chama nem busca esses servidores, para ninguém, nem
+  mesmo com o token do proprietário, e não repassa os recursos ou prompts deles.
+  Assim, um CLI de agente que alcança o Control Center por MCP, como o Claude Code,
+  também não os recebe pelo Control Center; ele usa a própria configuração.
+
+Os servidores MCP configurados para o espaço de trabalho não são afetados por nada
+disso.
+
 ## Solução de problemas
 
 ### O cliente não vê nenhuma ferramenta
@@ -141,9 +180,21 @@ organizá-las.
 - Verifique se a porta corresponde à porta do seu `cc_server`
 - No Claude Code, verifique se você passou `--mcp-config` e `--strict-mcp-config`
 
-### 403 de uma máquina que não é o servidor
+### 401 Unauthorized
 
-Nenhum token Bearer está configurado. Defina um e envie-o.
+A requisição não trouxe token, ou trouxe um antigo. Copie o token atual da linha
+**Token de autenticação** e envie-o como `Authorization: Bearer <token>`. Um token
+na URL é ignorado.
+
+### 403 de um cliente que funcionava antes
+
+A requisição trouxe um `Origin` de uma página web, ou um `Host` que o servidor não
+reconhece. Chame o endpoint a partir de um cliente, e não de uma página do
+navegador, pelo endereço de loopback do servidor ou pelo nome de host público dele.
+
+### 415 Unsupported Media Type
+
+Envie os corpos de `POST /mcp` como `application/json`.
 
 ### Uma chamada de ferramenta falha com "Missing or invalid argument: workspace_id"
 

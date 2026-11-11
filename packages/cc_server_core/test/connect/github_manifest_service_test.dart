@@ -104,6 +104,7 @@ void main() {
     'client_secret': 'secret',
     'pem': _pem,
     'owner': owner ?? {'login': 'octocat', 'id': 583231, 'type': 'User'},
+    'permissions': GitHubManifestService.permissions,
   };
 
   test('begin needs a reachable origin and a valid organization', () {
@@ -248,6 +249,10 @@ void main() {
           (
             'a higher level than asked',
             (a, _) => a['permissions'] = {'checks': 'write'},
+          ),
+          (
+            'an answer that does not say what it holds',
+            (a, _) => a.remove('permissions'),
           ),
         ]) {
       test(label, () async {

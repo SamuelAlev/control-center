@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/src/cc_server_config.dart';
@@ -28,7 +29,8 @@ class PairResult {
 
 /// Provisions a paired device (PSK + `paired_devices` row) for thin-client auth.
 ///
-/// Does not create a workspace. Idempotent: re-run rotates the PSK. Safe against a live server
+/// Does not create a workspace. Idempotent: re-run rotates the PSK and restarts
+/// the credential lifetime ([RemotePairingLifecycle.credentialLifetime]). Safe against a live server
 /// (WAL + secrets/registry watch pick up the write).
 Future<PairResult> pairDevice({
   required CcServerConfig config,
@@ -76,6 +78,7 @@ Future<PairResult> pairDevice({
         platform: Value(platform),
         pskRef: const Value('file'),
         status: const Value(PairedDeviceStatus.active),
+        expiresAt: Value(RemotePairingLifecycle.credentialExpiry(DateTime.now())),
       ),
     );
     await FileSecretsStore(dataDir: config.dataDir).writePsk(deviceId, psk);

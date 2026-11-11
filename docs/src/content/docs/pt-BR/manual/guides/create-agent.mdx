@@ -2,14 +2,14 @@
 title: Criar e configurar um agente
 description: Adicione um agente a um espaço de trabalho, dê a ele um adaptador, um modelo, skills e permissões e confirme que ele é executado.
 slug: pt-BR/manual/guias/criar-agente
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Este guia mostra como adicionar um agente a um espaço de trabalho e configurá-lo
 até que ele consiga de fato ser executado.
 
-Todo espaço de trabalho é criado com cinco agentes — um CEO e mais `qa`,
-`architect`, `engineer` e `librarian` —, então normalmente você tem agentes antes
+Todo espaço de trabalho é criado com seis agentes — um CEO e mais `qa`,
+`architect`, `engineer`, `librarian` e `content-synthesizer` —, então normalmente você tem agentes antes
 mesmo de ter configurado qualquer um. As etapas abaixo valem igualmente para um
 agente semeado e para um novo.
 
@@ -89,7 +89,7 @@ Você não escolhe aqui as skills do próprio repo. Um repo que as inclua (em
 `.agents/skills/`, `.claude/skills/` ou `.opencode/skills/`) as fornece
 automaticamente ao agente que estiver trabalhando nele, e elas são trocadas
 quando ele passa para outro — consulte [Skills com escopo de
-repo](/pt-BR/manual/conceitos/modelo-de-agentes/#repo-scoped-skills).
+repo](/pt-BR/manual/conceitos/modelo-de-agentes/#skills-com-escopo-de-repositório).
 
 ## Definir a linha de reporte e a persona
 
@@ -132,7 +132,7 @@ ver como cada regra chega a uma execução.
 As regras decidem o que um agente pode fazer; o sandbox do sistema operacional
 limita onde os processos dele podem ler, escrever e se conectar. O `cc_server`
 envolve as execuções dos agentes no sandbox do host onde ele existe — o Windows
-não tem backend nativo, e o Linux e o WSL2 precisam de `bwrap` e `socat`.
+não tem backend nativo, e o Linux e o WSL2 precisam de `bwrap` e `socat`. Onde nenhum existe, só as execuções do proprietário do servidor começam, a menos que ele tenha desligado o sandbox para todos.
 Consulte [Sandbox e segurança](/pt-BR/manual/conceitos/sandbox-e-seguranca/) para ver o
 conjunto completo de fronteiras.
 :::

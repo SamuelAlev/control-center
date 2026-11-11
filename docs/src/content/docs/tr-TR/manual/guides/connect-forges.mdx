@@ -2,7 +2,7 @@
 title: Bir kod barındırıcısı bağlama
 description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub, GitLab veya Bitbucket’ı bağlayın — tek bir çalışma alanı üçünü birden kullanabilir.
 slug: tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center, uygulama genelinde **forge** olarak adlandırılan üç kod barındırıcısıyla çalışır: **GitHub**, **GitLab** ve **Bitbucket Cloud**. Hiçbiri varsayılan değildir. Birini bağlayın, her şey çalışır; birkaçını bağlayın, tek bir çalışma alanı hepsinden aynı anda depo barındırabilir.
@@ -11,22 +11,26 @@ Forge, her **deponun** bir özelliğidir ve depoyu kaydettiğinizde `origin` rem
 
 ## Bir forge bağlama
 
-1. **Ayarlar → Çalışma alanı → Profil ve kimlik**'i açın (`/settings/workspace/profile`).
+1. **Ayarlar → Siz → Profil**'ı açın (`/settings/you/profile`).
 2. **Kod barındırma** kartını bulun. Desteklenen her forge, bağlı olsun olmasın listelenir.
 3. **GitHub**’da **GitHub hesabıyla oturum aç**’a basın. **GitLab** ya da **Bitbucket**’ta **Token ekle**’ye basıp bir token yapıştırın.
 
-**GitHub yalnızca oturum açmayla çalışır.** Oturum açma, sunucu sahibinin hangisini kurduğuna göre sunucunun kendi GitHub App’i ya da Control Center Connect üzerinden yürür (bkz. [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)); yapıştırılacak bir GitHub token’ı yoktur. GitLab ve Bitbucket hâlâ kişisel bir token alır.
+**GitHub yalnızca oturum açmayla çalışır.** Oturum açma, sunucu sahibinin hangisini kurduğuna göre sunucunun kendi GitHub App’i ya da Control Center Connect üzerinden yürür; ayrıca bir çalışma alanı yöneticisinin bu çalışma alanı için **Ayarlar → Çalışma alanı → Entegrasyonlar** bölümünde seçtiği uygulamalar üzerinden de yürüyebilir (bkz. [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)); yapıştırılacak bir GitHub token’ı yoktur. GitLab ve Bitbucket hâlâ kişisel bir token alır.
 
 Her iki durumda da kimlik bilgisi **size aittir ve sunucuda yaşar**; kullanıcı kimliğinize göre anahtarlanır: token, yazdığınız makinede saklanmaz, oturum açtığınız her cihaz aynı token’ı kullanır ve başka hiçbir üye onu okuyamaz. **Bir sonraki istekte** yürürlüğe girer — yeniden başlatılacak bir şey yoktur ve bağlantıyı kesmek, gönderilmesini anında durdurur.
 
-Her satır, kimlik bilgisinin nereden geldiğini söyler; çünkü “token’ım çalışmıyor” ile “başka bir token yanıt veriyor” arasındaki fark budur:
+Kart, kimlik bilgilerinizin nerede kullanıldığını gösterir. Bir GitLab ya da Bitbucket token’ı **sunucudaki her çalışma alanında** sizindir, bu yüzden bir kez yapıştırırsınız. GitHub oturum açmanız da, bir çalışma alanının kendi oturum açma uygulamaları olmadığı sürece öyledir: o çalışma alanı kendi GitHub oturum açmasını korur ve kart bunu adlandırır.
 
-| Alt başlık                                                          | Anlamı                                                                              |
-| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| `octocat olarak oturum açıldı`                                      | Kendi kimlik bilginiz kullanılıyor                                                  |
-| `octocat olarak oturum açıldı · ortamdan`                           | Yalnızca GitLab ya da Bitbucket: yanıt veren, token’ınız değil, bir sunucu ortam değişkeni |
-| `Bağlı değil`                                                       | Bu forge için hiç kimlik bilginiz yok                                                |
-| `GitHub oturum açma bu sunucuda henüz ayarlanmadı.`                 | Sunucunun ne kendi GitHub App’i ne de Connect’i var; sunucu sahibi birini kurar      |
+Her satır **sizin** kimlik bilginizin durumunu gösterir. Yalnızca kendi kimlik bilginiz sizin adınıza yanıt verir; başka hiçbir şey araya girmez:
+
+| Satırın gösterdiği                                                  | Anlamı                                                                                                                                                                 |
+| ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `octocat olarak oturum açıldı`                                      | Kendi kimlik bilginiz kullanılıyor                                 |
+| `Bağlı değil`                                                       | Bu forge için hiç kimlik bilginiz yok                                                                                                                                  |
+| `octocat olarak GitHub oturumunun süresi doldu. Yeniden oturum aç.` | Oturumunuzun süresi doldu ya da forge’da iptal edildi                                                                                                                  |
+| `Duraklatıldı: bu çalışma alanının oturum açma hizmeti değişti`     | Çalışma alanı başka bir oturum açma hizmetine geçti. Oturum açmanız korunur ve geri dönülürse yeniden çalışır; bu yüzden bir oturum açma düğmesi yoktur                |
+| `GitHub şu anda erişilemiyor. Yeniden deneniyor.`                   | Geçici bir kesinti. Control Center denemeye devam eder; yapmanız gereken bir şey yoktur                                                                                 |
+| Oturum açmanın neden kullanılamadığını açıklayan bir cümle          | Örneğin `GitHub ile oturum açma bu çalışma alanı için ayarlanmamış.` ya da `Bu çalışma alanının oturum açma hizmeti kimliğini değiştirdi. Bir yöneticinin bunu onaylaması gerekiyor.` Yöneticiler sorunu düzelten ayara giden bir düğme görür |
 
 ### Her forge hangi token’ı ister
 
@@ -35,17 +39,43 @@ Her satır, kimlik bilgisinin nereden geldiğini söyler; çünkü “token’ı
 | **GitLab**    | `api` kapsamlı bir kişisel erişim token’ı                                                                 | gitlab.com → User settings → Access tokens          |
 | **Bitbucket** | Bir Atlassian API token’ı ve hesap e-postanız                                                             | id.atlassian.com → Security → API tokens            |
 
-Bitbucket, **kullanıcı adı olarak hesap e-postanızla** ve parola olarak da token’la kimlik doğrular. Hangi e-postayı token’la eşleştireceğini bilmesi için sunucu ortamında `BITBUCKET_EMAIL` ayarlayın.
+Bitbucket, **kullanıcı adı olarak hesap e-postanızla** ve parola olarak API token’ıyla kimlik doğrular; bu yüzden Bitbucket iletişim kutusu ikisini de ister. Bir Bitbucket deposunun, projesinin veya çalışma alanının **erişim token’ı** hiçbir kişiye ait değildir, bu yüzden bu iletişim kutusu onu reddeder: bunun yerine bir [otomasyon token’ı](#otomasyon-token-ekleme) olarak eklenir. Aynı durum GitLab **proje** ya da **grup erişim token’ı** için de geçerlidir: GitLab, token kaydedilmeden önce token’ın kime ait olduğunu sorar ve burada bir botun token’ı reddedilir.
+
+Bir token hiçbir çalışma alanına bağlı değildir: forge başına bir tane tutarsınız ve sunucudaki her çalışma alanı onu kullanır. **Bağlantıyı kes**, onu hepsi için kaldırır.
 
 ### Arka plan işleri
 
 Arkasında insan olmayan işlerin (ajan çalıştırmaları, pipeline’lar, PR yoklaması) de bir kimlik bilgisine ihtiyacı vardır ve her forge bunu farklı karşılar:
 
 - **GitHub** — her seferinde tek bir depo için, sunucunun GitHub App’inden ya da Connect üzerinden üretilen ve hesap verebilir bir üyenin orada yapabilecekleriyle sınırlı bir token. Asla bir kişinin bütünüyle devredilmiş oturum açması değildir ve hiçbir ortam değişkeni ya da yapıştırılan token onun yerine geçmez. Bkz. [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/#kimlik-bilginiz-kimin-adına-konuşur)
-- **GitLab** — sunucu sahibinin yapıştırdığı token, ardından `GITLAB_TOKEN`, ardından `CI_JOB_TOKEN`
-- **Bitbucket** — sunucu sahibinin yapıştırdığı token, ardından `BITBUCKET_API_TOKEN`, ardından `BITBUCKET_TOKEN` (`BITBUCKET_EMAIL` ile birlikte)
+- **GitLab** ve **Bitbucket** — yalnızca deponun **otomasyon token’ı**: bir çalışma alanı yöneticisinin o depo için ya da çalışma alanındaki o forge’daki her depo için eklediği bir bot erişim token’ı. Deponun kendi token’ı çalışma alanınınkine üstün gelir. PR yoklaması, yapay zekâ incelemesi yorumları ve kimsenin istemediği push’lar ile merge request’ler hepsi bunu kullanır; bu yüzden forge’da bot olarak görünürler, asla bir üye olarak değil. Hiçbir üyenin kişisel token’ı onun yerine geçmez ve sunucu genelinde ya da ortam değişkenli bir token yoktur. Olmadan, o depodaki arka plan işleri duraklar ve depo erişim bildirimi bunu söyler.
 
-GitLab ve Bitbucket ortam değişkenleri sizin değil, **sunucunun** kimlik bilgisidir: sizin adınıza yapılan bir istek, sizin token’ınızı ve başka hiçbir şeyi kullanır; dolayısıyla ortam sizin yerinize sessizce geçmez.
+Bir üyenin istediği işler (bir yorum, bir inceleme, onun için açılan bir ajan merge request’i) hâlâ o üyenin kendi token’ını kullanır.
+
+## Otomasyon token ekleme
+
+Otomasyon token’larını yalnızca çalışma alanı yöneticileri görebilir ve değiştirebilir. Her token, kaydettiğinizde forge ile denetlenir: kişi gibi davranan bir token reddedilir (bir GitLab kişisel erişim token’ı, bir Atlassian API token’ı ya da birinin hesabına giriş yapan herhangi bir Bitbucket token’ı) ve depoyu okuyamayan bir token da reddedilir.
+
+- **Tek bir depo için:** **Ayarlar → Çalışma alanı → Depolar**’ı açın. **Otomasyon belirteçleri** kartı, her GitLab ve Bitbucket deposunu orada işlem yapan botla birlikte listeler: **Çalışma alanının belirtecini kullanır** ya da **Belirteç yok. Otomasyon burada duraklatıldı.** Deponun satırında **Token ekle**’ye basın.
+- **Bir forge’daki her depo için:** **Ayarlar → Çalışma alanı → Entegrasyonlar**’ı açın, **Otomasyon belirteçleri** kartını bulun ve GitLab ya da Bitbucket satırında **Token ekle**’ye basın. Token’ın okuyamadığı depolar, kaydettikten sonra adlandırılır ve duraklatılmış kalır.
+
+Arka plan işleri zaten duraklatılmışsa yöneticiler, depo erişim bildirimi üzerinde doğrudan **Token ekle** düğmesini de görür. **Token’ı güncelle** bir token’ı değiştirir; çöp kutusu düğmesi onu kaldırır ve token’ı kalmayan her depo duraklar. Forge, saklanan bir token’ı daha sonra reddederse (iptal edilmiş ya da süresi dolmuş), satırı bunu söyler ve o token’ın kapsadığı depolar siz değiştirene kadar duraklar.
+
+| Forge         | Otomasyon token’ı                                                                                                                                                  | Nerede oluşturulur                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| **GitLab**    | `read_api` ve `read_repository` yetkili bir **proje** ya da **grup erişim token’ı**; yorumlar, merge request’ler ve push’lar için `api` ve `write_repository` ekleyin | Proje ya da grup → Settings → Access tokens                         |
+| **Bitbucket** | Depo okuma yetkili bir **depo**, **proje** ya da **çalışma alanı erişim token’ı**; yorumlar ve pull request’ler için pull request yazma yetkisiyle birlikte (push’lar için depo yazma) | Depo, proje ya da çalışma alanı → Settings → Access tokens          |
+
+GitLab işi token’ın bot kullanıcısı olarak gösterir; Bitbucket ise erişim token’ının adı altında gösterir.
+
+### Bitbucket: erişim token’ı mı API token’ı mı
+
+Bitbucket iki tür token’a sahiptir ve Control Center bunları birbirinden ayırır:
+
+- Bir **API token’ı** (id.atlassian.com) Atlassian hesabınıza aittir ve e-postanızla birlikte kullanılır. **Sizin** kimlik bilginizdir ve **Ayarlar → Siz → Profil** bölümünde **Kod barındırma** altına girer.
+- Bir **erişim token’ı** (bir depo, proje ya da çalışma alanının ayarlarında oluşturulur) o depoya, projeye ya da çalışma alanına aittir, bir kişiye değil. Bir **otomasyon token’ıdır** ve **Otomasyon belirteçleri** altına girer.
+
+Her iletişim kutusu diğer türü reddeder ve nereye ait olduğunu söyler.
 
 ## Her forge’da farklı bir kişisiniz
 
@@ -53,11 +83,26 @@ Aynı kişi GitHub’da `octocat`, GitLab’da ise bambaşka biridir. Control Ce
 
 Bir forge’ın kimliği çözülemediyse, depoları her şeyle eşleşmek yerine gelen kutusuna hiçbir şey katmaz. Gelen kutusu da her şeyi yakaladığınızı iddia etmek yerine bunu söyler.
 
+## Yalnızca kendi hesabınızın görebildiklerini görürsünüz
+
+Bir deponun pull request’leri size yalnızca çalışma alanındaki rolünüz o depoya izin verdiğinde **ve kendi hesabınız o forge’da depoyu okuyabildiğinde** ulaşır. Çalışma alanı yöneticileri ve sahibi de aynı kuralı izler. Bazı depolar gizlendiğinde gelen kutusu ve PR kuyruğu kaç tane olduğunu ve nedenini söyler; ancak depoların adını vermez:
+
+- **3 depodaki pull request’leri de görmek için GitHub hizmetinde oturum aç**: bu forge’u burada henüz bağlamadınız. Oturum açın, depolar görünür
+- **GitHub hesabın göremediği için 3 depo gizlendi**: forge’da erişimi olan birinden yardım isteyin
+- **Bu çalışma alanında erişimin olmadığı için 3 depo gizlendi**: bir çalışma alanı yöneticisinden erişim isteyin
+- **3 depoya daha erişimin kontrol ediliyor…**: Control Center hesabınızın neleri okuyabildiğini doğrularken kısa bir süre görünür
+
+Kod da aynı kuralı izler. Bir deponun dosyalarını, diff’lerini, aramasını ya da üzerindeki bir terminali açmak için bu çalışma alanında o depoya ait izne ve kendi forge hesabınızın depoyu okuyabilmesine ihtiyacınız vardır; çalışma alanı yöneticileri de öyle, yalnızca sunucu sahibi muaftır. Kontrol için forge’a ulaşılamadığında “Kod barındırma erişiminiz doğrulanamadı. Yeniden deneyin.” mesajını görürsünüz (forge’un adını içerir). Bkz. [Kod forge’u izler](/tr-TR/kilavuz/kavramlar/yetkilendirme/#kod-kod-barındırıcısını-izler).
+
+Aynı kural, bu pull request’lerden yapılan her şey için de geçerlidir. Bir inceleme alanı, mesajları ve ajan çalıştırmaları, siz onun pull request’ini göremediğiniz sürece kaybolur; erişiminizi kaybederseniz açık bir inceleme alanı kapanır. Gizli bir pull request’le ilgili pipeline çalıştırmaları çalıştırma listenizden düşer. Sizin adınıza çalışan ajanlar da bu inceleme alanlarını okuyamaz. Çalışma alanının depo listesi, bu çalışma alanında erişiminiz olan her depoyu gösterir; forge hesabınızın henüz ulaşamadığı bir depo bile dahil.
+
+Forge hız sınırına takıldığında ya da kapalıyken Control Center, en son doğruladığı şeyi birkaç dakika boyunca göstermeye devam eder; sonra yeniden kontrol edebilene kadar o pull request’leri gizler.
+
 ## Tek gelen kutusu, her forge
 
 Gelen kutusu ve PR kuyruğu, çalışma alanında temsil edilen her forge’a yayılır ve sonuçları tek bir akışta birleştirir — bir GitHub pull request’i ile bir Bitbucket pull request’i, satıcıya göre gruplanmak yerine zamana göre sıralanarak yan yana durur.
 
-Hatalar yalıtılmıştır. Çalışmayan, hız sınırına takılan ya da bağlı olmayan bir forge hiçbir şey katmaz ve diğerlerine dokunmaz; gelen kutusunun tamamını asla boşaltmaz. Kendi depoları, forge kendine gelene kadar bilinen son durumunu göstermeye devam eder.
+Hatalar yalıtılmıştır. Çalışmayan ya da hız sınırına takılan bir forge diğerlerine dokunmaz ve kendi depoları, forge kendine gelene kadar bilinen son durumunu korur; gelen kutusunun tamamını asla boşaltmaz. Sunucunun artık ulaşamadığı bir depo, eski pull request’leri göstermek yerine listeden düşer ve **depo erişim bildirimi** onu düzeltme adımıyla birlikte adlandırır: GitHub App’i deponun kuruluşuna yükleyin, depoyu App’in depolarına ekleyin, duraklatılmış bir kurulumu sürdürün ya da sorumlu üyenin yeniden oturum açmasını sağlayın ya da bir GitLab veya Bitbucket deposu için otomasyon token’ı ekleyin. Yöneticiler GitHub App adımları ve token ekleme için bir düğme görür.
 
 ## Her forge neler yapabilir
 
@@ -93,15 +138,31 @@ GitLab, bir pull request’e **merge request** der. Control Center kendi modeli 
 
 ### PR listesi boş ve bir forge’ın bağlı olmadığını söylüyor
 
-O forge için hiç kimlik bilginiz yok. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** altında GitHub’a oturum açın ya da bir GitLab veya Bitbucket token’ı yapıştırın. Diğer forge’ların depoları etkilenmez.
+O forge için hiç kimlik bilginiz yok. **Ayarlar → Siz → Profil → Kod barındırma** altında GitHub’a oturum açın ya da bir GitLab veya Bitbucket token’ı yapıştırın. Diğer forge’ların depoları etkilenmez.
 
 ### Bir forge bağladım ama depoları hâlâ hiçbir şey göstermiyor
 
-Satırın alt başlığına bakın. Bir GitLab ya da Bitbucket satırında “ortamdan” yazıyorsa, beklediğinizden farklı bir kimlik bilgisi yanıt veriyordur — istediğiniz her şeyde kendi token’ınız kazanır; dolayısıyla aksini söylüyorsa sizinki kaydedilmemiştir. GitHub’da, GitHub App’in depoların sahibi olan hesaba kurulu olduğunu kontrol edin.
+Satırın durumuna bakın, sonra PR listesinin üstündeki bildirimlere. “… depodaki pull request’leri de görmek için … hizmetinde oturum aç” kendi hesabınızın o depolar için bağlı olmadığı anlamına gelir; “… hesabın göremediği için … depo gizlendi” ise forge’un size erişim vermediği anlamına gelir. GitHub’da depo erişim bildirimi, GitHub App deponun kuruluşuna kurulu değilse ya da depoyu kapsamıyorsa bunu size söyler.
+
+### GitLab veya Bitbucket deposunda arka plan işleri duraklatılmış
+
+Depoda onu okuyabilen bir otomasyon token’ı yok. Bir çalışma alanı yöneticisi depo için ya da tüm çalışma alanı için bir tane ekler; bkz. [Otomasyon token ekleme](#otomasyon-token-ekleme). Kendi kişisel token’ınız bunu devreye sokmaz: arka plan işleri hiçbir zaman bir üyenin token’ını kullanmaz.
 
 ### Bir depo kaydolmuyor
 
-Kayıt için üçünün de olması gerekir: yol bir git çalışma ağacının içinde olmalı, bir `origin` remote’u bulunmalı ve bu remote github.com, gitlab.com ya da bitbucket.org adresini göstermeli. Bkz. [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+Kayıt için üçünün de olması gerekir: yol bir git çalışma ağacının içinde olmalı, bir `origin` remote’u bulunmalı ve bu remote github.com, gitlab.com ya da bitbucket.org adresini göstermeli. Ayrıca `origin`, bağladığınız depo olmalıdır; çalışma alanının kendi depolama alanının dışındaki bir klasörü yalnızca sunucu sahibi bağlayabilir. Bkz. [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+
+### Bir iznim var ama depo hesabımın okuyamadığını söylüyor
+
+Kendi forge hesabınız o depoyu okuyamıyor, bu yüzden çalışma alanının izni ne olursa olsun kodu size kapalıdır. Yukarıdaki **Kod barındırma** altında forge’da oturum açın ya da forge’da depoya erişim isteyin.
+
+### “Kod barındırma erişiminiz doğrulanamadı”
+
+Erişiminizi kontrol etmek için forge’a ulaşılamadı; bu yüzden Control Center tahmin yürütmek yerine reddetti. Biraz sonra yeniden deneyin.
+
+### Bir depo artık farklı bir depoyu gösteriyor
+
+Bu yolun arkasındaki depo değişti: silinip yeniden oluşturuldu ya da taşınıp yerine bir başkası konuldu. Bir çalışma alanı yöneticisi bildirimde ya da deponun satırında **Yeniden bağla** düğmesine tıklayana kadar Control Center ona hiçbir şey göndermez. Basit bir yeniden adlandırma ya da devir kendiliğinden izlenir ve bu uyarıyı hiç göstermez.
 
 ### Yoğun kullanımdan sonra her şey bir süre çalışmayı durduruyor
 

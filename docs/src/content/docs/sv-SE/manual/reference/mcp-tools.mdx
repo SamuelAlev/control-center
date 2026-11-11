@@ -2,10 +2,10 @@
 title: MCP-verktyg
 description: Komplett katalog över de MCP-verktyg som cc_server registrerar, per familj.
 slug: sv-SE/handbok/referens/mcp-verktyg
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar kan bryggas in i samma register som ett dynamiskt lager.
+`cc_server` har ett enda MCP-register (JSON-RPC 2.0) för verktyg, som betjänas på serverns huvudport (standard `9030`) under `POST /mcp` och `GET /sse`, med protokollversion `2024-11-05`. Varje klient når samma register: skrivbordsappen, webbversionen, externa MCP-klienter och den inbyggda agentköraren. Externa MCP-servrar kan bryggas in i samma register som ett dynamiskt lager. Servrar som hittas i serverns användares egna verktygskonfiguration är undantaget: den här endpointen listar, anropar eller söker aldrig i dem, och bara inbyggda harness-körningar som serverägaren ansvarar för får använda dem (se [Personliga MCP-servrar förblir ägarens](/sv-SE/handbok/how-to-guider/mcp-server/#personliga-mcp-servrar-förblir-ägarens)).
 
 ## Registrets storlek
 
@@ -23,7 +23,7 @@ De fem kodgrafverktygen registreras bara när värden skickar in ett kodgraf-rep
 Hela registret annonseras i `tools/list` utan någon upptäcktsgrind. Ändringar av ärenden görs med typade verktyg.
 
 :::note[Externa klienter ser alltid hela katalogen]
-`tools/list` beskärs aldrig. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
+`tools/list` beskärs aldrig, utom för serverägarens personliga MCP-servrar, som den aldrig innehåller. MCP-klienter validerar verktygsnamn mot sin egen cachade kopia av listan och avvisar allt som inte står där utan att fråga servern, så ett verktyg som döljs där går inte att nå – det är inte bara tyst.
 
 Den **inbyggda harnessen** fungerar annorlunda: den läser bara in en resident delmängd av definitionerna per förfrågan och hämtar resten vid första användning, vilket är ett beteende på harness-sidan och inte ändrar det här registret. Se [Verktygskontext och promptcache](/sv-SE/handbok/koncept/verktygskontext).
 :::
@@ -255,8 +255,10 @@ arbetsytans tillstånd. Hela verbförrådet per yta finns i
 | `browser_use`  | Styr en headless Chromium, Firefox eller WebKit (`engine`): navigera, klicka, fylla i, extrahera (a11y/DOM/konsol), urklipp, skärmbild |
 | `mobile_use`   | Styr Android över ADB: inspektera/mata in, skärmbilder, installera/starta/stoppa/återställa/avinstallera appar, djuplänkar och argv-formade enhetskommandon |
 | `ios_use`      | Styr iOS-simulatorn via WebDriverAgent/CoreSimulator: inspektera/mata in, skärmbilder, installera/starta/stoppa/avinstallera appar, djuplänkar och argv-formade simulatorprocesser |
-| `rig_list`     | Lista en arbetsytas stationer med yta, status, skärmstorlek och styrenhet                      |
+| `rig_list`     | Lista stationerna i körningens yta med yta, status, skärmstorlek och styrenhet                      |
 | `rig_close`    | Förstör en station och kassera dess ägda maskintillstånd                                        |
+
+Bara agentkörningar kan anropa de här verktygen; alla andra anropare nekas. En körning når bara stationerna i den yta den leasades för: `space_id` kommer från körningens behörighet, aldrig från anropet, och en station i en annan yta, eller i ingen yta, svarar exakt som en saknad.
 
 `app_use` är ett femte use-verktyg: det styr fönstren i en skrivbordsapp som startats i en yta, direkt på värden i stället för i en VM, och deklarerar också `fileWriteOutsideWorktree` och `fileDelete`. Det och `environment_*`-verktygen beskrivs i [Konfigurera miljöer](/sv-SE/handbok/how-to-guider/miljoer/).
 
@@ -301,7 +303,7 @@ alls, så ett namn du kan ha sett hänvisat till någon annanstans returnerar "u
 | Förmåga                                 | Var den finns i stället                                                                      |
 | --------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Att anställa, avskeda eller redigera en agent | Agentgränssnittet. Det finns inget `hire_agent` / `fire_agent` / `update_agent`-verktyg     |
-| Att skapa en arbetsyta                  | `workspace.upsert` över RPC, som skapar grunddata och stämplar ägandet                        |
+| Att skapa en arbetsyta                  | `workspace.create` över RPC, bara för serverägaren, som skapar grunddata och stämplar ägandet |
 | Projekt (skapa / lista / uppdatera / lägga in) | Ärendegränssnittet. Projekt är en operatörsyta – se [Projekt](/sv-SE/handbok/how-to-guider/projekt/) |
 | Att ställa en blockerande fråga till operatören | **harness**-verktyget `ask_user`, inte MCP. Det renderar ett formulär i samtalet och blockerar på svaret |
 | Felsökning per agent                    | Ingenting. Det finns ingen `doctor` – se [Felsök en agent](/sv-SE/handbok/how-to-guider/felsok-agent/) |

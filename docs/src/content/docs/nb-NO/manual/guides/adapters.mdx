@@ -2,7 +2,7 @@
 title: Administrer adaptere og modeller
 description: Koble til modellleverandører, velg modellen en agent kjører på, og sjekk hvilke kjører-CLI-er som finnes på serververten.
 slug: nb-NO/handbok/slik-gjor-du/adaptere
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Denne veiledningen viser deg hvordan du kobler til modellleverandører og velger
@@ -118,6 +118,8 @@ modellen eksplisitt for hver agent du har tenkt å bruke.
 
 Agenten **Content synthesizer** skriver teksten Control Center genererer rundt en samtale: tittelen, svar på `/btw`, `/handoff`-dokumenter og `/goal`-målintervjuet. Den kjører én fullføring uten verktøy hver gang, med egen adapter og modell, så gi den en liten, rask modell.
 
+Når den adapteren er en ACP-CLI, er fullføringen en prosess på serverens maskin og følger [sandkasseregelen](/nb-NO/handbok/konsepter/sandkasse-og-sikkerhet/#agenter-på-en-vert-uten-sandkasse): inne i sandkassen når serveren sandkasser agenter, og uten sandkasse bare for forespørsler serverens eier står ansvarlig for. For alle andre skippes disse funksjonene: ingen tittel genereres, og `/btw` svarer "Content synthesizer-agenten mangler eller har ingen fungerende runner".
+
 Rediger **persona** til agenten i **Innstillinger → Arbeidsområde → Agenter** for å endre hvordan teksten leses — tittellengde, språk, tone og eksemplene den følger. Svarformatet hver funksjon tolker (en tittel på én linje, målets seksjoner) er fast og brukes etter personaen din. Slett agenten for å slå av disse funksjonene; den blir ikke gjenskapt automatisk.
 
 ## Installer en kjører-CLI
@@ -133,8 +135,7 @@ Trykk deretter **Oppdater** øverst på siden. Hver oppdagede rad viser den
 utløste versjonen og stien, pluss brikker for hvorvidt den støtter JSON-modus og
 modellvalg.
 
-En ekstern CLI beholder sin egen påloggingsinformasjon i sin egen konfigurasjon
-på serververten. Control Center administrerer den ikke.
+Claude Code-pålogginger listes under **Claude Code-kontoer** på Claude Code-adapteren. Control Center oppretter konfigurasjonsmappen for hver konto på serveren og gir deg kommandoen `claude auth login` å kjøre der; den logger aldri inn for deg.
 
 :::caution[Ekstra argumenter og miljøvariabler blir på denne enheten]
 Hver adapterrad tilbyr et felt for **Ekstra argumenter** og en dialog for

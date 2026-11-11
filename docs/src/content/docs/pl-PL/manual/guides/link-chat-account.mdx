@@ -2,7 +2,7 @@
 title: Połącz swoje konto Slack
 description: Potwierdź, że tożsamość w Slacku należy do Ciebie, aby agenci działali na Twoich wiadomościach, a Twoja praca była przypisywana Tobie.
 slug: pl-PL/podrecznik/poradniki/laczenie-konta-czatu
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Ten poradnik pokazuje, jak połączyć tożsamość czatu z użytkownikiem Control Center i jak ją odłączyć.
@@ -19,7 +19,7 @@ Niepołączony członek, który wspomni bota, otrzymuje w tym wątku Slacka odpo
 
 Łączenie wymaga obu stron: wysłanie kodu ze Slacka dowodzi konta Slack, a potwierdzenie go w Control Center dowodzi, że to konto jest Twoje.
 
-1. Przejdź do **Ustawienia → Obszar roboczy → Profil i tożsamość** i przewiń do karty **Połączone konta czatu**
+1. Przejdź do **Ustawienia → Ty → Profil** i znajdź kartę **Połączone konta czatu**
 2. W bloku Slack kliknij **Połącz moje konto Slack**. Okno dialogowe pokazuje jednorazowy kod, na przykład:
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Jeśli to Twoje konto, kliknij **Potwierdź**. Połączenie zostaje utworzone, okno dialogowe to potwierdza, a bot potwierdza w tej samej wiadomości prywatnej
 6. Jeśli nie jest Twoje, kliknij **Odrzuć**. Nic nie zostaje połączone, a kod przestaje działać; kliknij **Pobierz nowy kod**, aby spróbować ponownie
 
-Zamknięcie okna dialogowego nie powoduje utraty zgłoszenia. Kod, który dotrze później, czeka w wierszu **Połącz moje konto Slack** na stronie Twojego profilu, z tymi samymi przyciskami **Potwierdź** i **Odrzuć**.
+Zamknięcie okna dialogowego nie powoduje utraty zgłoszenia. Kod, który dotrze później, czeka w wierszu **Połącz moje konto Slack** na tej karcie, z tymi samymi przyciskami **Potwierdź** i **Odrzuć**.
 
 Po co krok potwierdzenia: kod podejrzany przez ramię i wysłany z cudzego konta Slack sprawiłby inaczej, że to konto działałoby jako Ty. Potwierdzić możesz tylko Ty i tylko dokładnie ten profil, który wysłał kod.
 
@@ -50,18 +50,20 @@ Kod nieznany, wygasły, odrzucony lub wygenerowany dla innego obszaru roboczego 
 
 Jeśli Twój profil Slacka zawiera potwierdzony adres e-mail zgodny ze zweryfikowanym adresem e-mail użytkownika Control Center, który **jest już członkiem tego obszaru roboczego**, most połączy Cię przy pierwszej rozmowie z nim. Kod nie jest potrzebny.
 
+Po stronie Control Center adres uznaje się za zweryfikowany, gdy ustawiło go logowanie jednokrotne (SSO) lub SCIM albo gdy właściciel serwera potwierdził go w **Ustawienia → Serwer → Osoby**. Adres, który wpisałeś w swoim profilu, nie jest zweryfikowany, więc nic nie łączy, dopóki właściciel go nie potwierdzi; do tego czasu użyj przepływu z kodem.
+
 Liczą się obie połowy: dopasowanie adresu e-mail dowodzi tożsamości, ale dostęp daje wyłącznie członkostwo, więc obcy, którego adres przypadkiem istnieje na serwerze, nie zostaje z niczym połączony. Lista pokazuje, jak powstało każde połączenie („dopasowano po e-mailu” albo „połączono kodem”).
 
 Automatyczne łączenie wymaga zakresu `users:read.email`. Bez niego Slack nie ujawni adresu i jedyną drogą pozostaje ścieżka z kodem.
 
 ## Zobacz, kto jest połączony
 
-Lista należy do administracji obszaru roboczego, więc znajduje się po drugiej
-stronie powierzchni: **Ustawienia → Obszar roboczy → Ogólne → Mostki czatu → Połączone konta**.
+Lista należy do administracji obszaru roboczego, więc znajduje się na karcie administracyjnej:
+**Ustawienia → Obszar roboczy → Integracje → Mostki czatu → Połączone konta**.
 Wymienia każdego połączonego członka obszaru roboczego wraz z kontem Slack, do
 którego jest przypisany, oraz sposobem, w jaki powstało połączenie.
 
-Twój własny stan widać na stronie profilu: wiersz **Połącz moje konto Slack** po
+Twój własny stan widać w **Ustawienia → Ty → Profil**: wiersz **Połącz moje konto Slack** po
 połączeniu brzmi „Połączono z _twoj-slack-id_”, a gdy konto nie jest połączone,
 informuje, że należy je połączyć.
 

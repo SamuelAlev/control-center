@@ -2,13 +2,13 @@
 title: Konverzace v PR
 description: Jak se z komentáře u GitHub PR stane tah agenta bez webhooku, co autora autorizuje a komu se připisuje každá strana konverzace.
 slug: cs-CZ/prirucka/koncepty/konverzace-v-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Pull request už je místo, kde se o kódu mluví. Konverzace v PR z něj udělají
 plochu pracovního prostoru Control Center, stejně jako
 [chatový most](/cs-CZ/prirucka/koncepty/chatove-mosty/) udělá plochu ze Slacku:
-zmíníš na PR `@usectrl` (nebo bota GitHub App pracovního prostoru), odpovíš
+zmíníš na PR `@usectrl`, odpovíš
 v jeho vláknech revize, nebo přidáš štítek `ai-review`, a práce proběhne
 v prostoru kontroly toho PR — se stejným připsáním a stejnými guardraily jako
 cokoli napsané v aplikaci. Komentář i štítek se hlídají stejně: podle člena,
@@ -25,7 +25,7 @@ každá strana**.
 Jediný push kanál, který GitHub aplikaci dává, je webhook a webhook potřebuje
 příchozí URL — to jediné, co tahle plocha záměrně nikdy nevyžaduje. Objevování
 je proto obchůzka: jedno hledání s aliasy na každou instalaci aplikace se
-zeptá GitHubu na PR, které zmiňují bota (nebo jeho krátký slug), a na otevřené
+zeptá GitHubu na PR, které zmiňují `@usectrl`, a na otevřené
 PR se štítkem kontroly. PR, které už mají prostor kontroly, si nechají přečíst
 vlákna komentářů a všechno se porovná podle id komentáře s tím, co viděla
 minulá obchůzka. Vlastní aplikace obchází každou minutu nejvýš 25 PR. Přes
@@ -70,8 +70,8 @@ nezveřejní:
 - **Přihlášený člen.** Účet musí patřit členovi _tohoto_ pracovního prostoru,
   který se na tomto serveru přihlásil ke GitHubu
 - **Role se zápisem.** `viewer` a `guest` práci spustit nemůžou
-- **Právo pushovat.** Odpovědi používají token `bot` omezený na přístup toho
-  člena k repozitáři. Když ho server vydat nedokáže, nepokračuje
+- **Právo pushovat.** Odpovědi používají token pro jediný repozitář, omezený na
+  přístup toho člena k němu. Když ho server vydat nedokáže, nepokračuje
 
 Všechny kontroly proběhnou před jakýmkoli potvrzením, takže cizí člověk
 nedostane reakci ani odpověď. Komentář se nikdy nepřipíše někomu, kdo ho
@@ -93,15 +93,17 @@ nárok.
 Každá strana konverzace nese jinou identitu a ten rozdíl je ta funkce:
 
 - **Na GitHubu je odpověď automatizace tvým jménem.** Každá odpověď jede na
-  tokenu `bot` pro ten jeden repozitář, omezeném na přístup člena, který se
-  ptá. U vlastní aplikace je autorem účet `[bot]` aplikace. Přes Connect je
-  token sdílené App uživatelský token, takže odpověď napíše účet člena, který
-  se ptá, a jedná přes App. V obou případech každá odpověď začíná
-  `**Control Center** (for @login):`, což říká, kdo se ptal, a zároveň slouží
-  jako pojistka proti smyčce.
+  tokenu pro jediný repozitář, omezeném na přístup člena, který se ptá, a
+  autorem je účet `[bot]` aplikace. Jedna výjimka: u sdílené aplikace
+  Control Center Connect píše bot do review vláken jen tehdy, když ji provozovatel
+  Connectu pro danou instalaci uvedl; jinak je odpověď uvnitř review vlákna
+  napsaná účtem člena, který se ptá,. V obou případech každá
+  odpověď začíná `**Control Center** (for @login):`, což říká, kdo se ptal, a
+  zároveň slouží jako pojistka proti smyčce. Zmínky @ v textu agenta jsou
+  neúčinné, takže odpověď nikdy neupozorní uživatele ani tým.
 - **V prostoru je otázka tvoje.** Zpráva se připíše členovi, na kterého se
-  autor vyřešil, a běh agenta se vykoná jeho jménem: commity ho zapíšou jako
-  spoluautora a volič autonomie prostoru i guardraily akcí platí přesně tak
+  autor vyřešil, a běh agenta se vykoná jeho jménem: jeho commity jsou jeho
+  a volič autonomie prostoru i guardraily akcí platí přesně tak
   jako u zprávy napsané v aplikaci. Zápisy na hostitele kódu z běhu používají
   tokeny pro jediný repozitář ohraničené tímto členem, nikdy celé předané
   přihlášení člena.
@@ -109,22 +111,16 @@ Každá strana konverzace nese jinou identitu a ten rozdíl je ta funkce:
 Zveřejnit zjištění kontroly zpět na GitHub zůstává rozhodnutím člověka a padá
 v Control Center. Zmínka může kontrolu _spustit_; zveřejní ji jen člověk.
 
-## Pojistka proti smyčce a krátké jméno
+## Pojistka proti smyčce
 
 Všechno, co napsal účet bota, se zahodí dřív, než se spustí jakákoli brána —
 náš konkrétně a každá přípona `[bot]`, aby kontrolní bot jiné aplikace
 neprobudil ani toho našeho — a stejně tak každý komentář, který začíná
-předponou `**Control Center** (for @`, protože odpověď přes Connect píše účet
-člověka. Bez toho by odpovědi přicházely jako nové komentáře a spouštěly most
+předponou `**Control Center** (for @`, protože odpověď v review vlákně přes Connect
+může psát účet člověka. Bez toho by odpovědi přicházely jako nové komentáře a spouštěly most
 donekonečna.
 
-Přípona `[bot]` je taky důvod, proč existuje krátký tvar. GitHub login účtu
-aplikace natvrdo nastaví na `<slug>[bot]`, nenabízí na něj doplňování a
-`@slug` na aplikaci nikdy nevyřeší — přijmout holý slug je tedy rozhodnutí
-_našeho_ porovnávače a najít ho chce vyhledávací stopu nad surovým **textem**
-komentáře, ne index zmínek GitHubu. Cena se pojmenuje, nezamlčí: člověk,
-který má stejný slug jako aplikace, osloví bota každou zmínkou sebe sama
-v krátkém tvaru. U výrazných jmen aplikace ta kolize zůstane hypotetická.
+Jen `@usectrl` spustí práci. Vlastní login aplikace (`<slug>[bot]`) ani její holý slug neoslovují nic: GitHub pro účet aplikace nenabízí doplňování a holý slug může patřit lidskému uživateli.
 
 ## Co záměrně nenabízíme
 

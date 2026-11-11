@@ -2,7 +2,7 @@
 title: Starta granskningsagenter
 description: Skicka ut specialiserade granskningsagenter mot en PR från PR-vyn, ett MCP-verktyg eller ett pipelinesteg.
 slug: sv-SE/handbok/how-to-guider/starta-granskningsagenter
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Den här guiden visar hur du dispatchar granskningsagenter för att granska pull
@@ -88,7 +88,7 @@ Två händelser spelar roll här och de är inte utbytbara:
 | Händelse               | Utlöses när                                                                                                    | Nyttolastnycklar                                                   |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | En PR öppnas **via Control Center** – komponeringsytan, eller en agent som anropar `pr_lifecycle.publish`       | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | PR-avsökningstjänsten hittar en PR som öppnats direkt på GitHub                                                 | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | PR-avsökningstjänsten hittar en PR som öppnats direkt på GitHub                                                 | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 En PR som öppnas på github.com utlöser aldrig `PullRequestPublished`, så en mall
 som bara är kopplad till den händelsen ser den inte. Notera också att

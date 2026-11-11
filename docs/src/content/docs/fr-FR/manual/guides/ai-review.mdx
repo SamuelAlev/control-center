@@ -2,7 +2,7 @@
 title: Utiliser la revue assistée par IA
 description: Exécutez le pipeline pr_review sur une PR, lisez les remarques et le verdict, puis publiez la revue sur GitHub.
 slug: fr-FR/manuel/guides/revue-par-ia
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Ce guide vous montre comment faire relire une pull request par des agents
@@ -125,7 +125,10 @@ rejetées sont ignorées. Le bouton inclut toutes les remarques encore ouvertes 
 sur **Ship**, soumet `APPROVE`. (L’outil MCP `publish_review_to_github` se
 limite par défaut aux remarques confirmées par un pair et n’approuve jamais : il
 publie en tant qu’automatisation, si bien que `approve_on_ship` y est sans
-effet.) Celles qui portent une ancre de fichier et de
+effet. Cette publication automatisée est postée par le bot, sauf sur
+l’application partagée Control Center Connect lorsque l’opérateur de Connect n’a
+pas listé cette installation : elle part alors avec la connexion GitHub de la
+personne responsable, sous son nom.) Celles qui portent une ancre de fichier et de
 ligne deviennent des commentaires en ligne ; tout le reste est replié dans le
 corps du résumé, chacune avec une signature « — Control Center AI
 review » pour que la source soit sans ambiguïté. Un verdict **Block** est
@@ -149,7 +152,8 @@ qu’elle s’exécute sans supervision.
 
 D’autres pipelines intégrés publient, eux, directement sur GitHub : `cross_review`,
 `pr_triage`, `ticket_to_pr` et `pre_merge_gate` se terminent chacun par une étape
-de commentaire. Seul `pr_review` retient sa sortie à votre intention.
+de commentaire, que le serveur publie. Seul `pr_review` retient sa sortie à votre
+intention. Aucun d’eux ne fusionne ni n’approuve.
 
 ## Lancer les relecteurs vous-même
 

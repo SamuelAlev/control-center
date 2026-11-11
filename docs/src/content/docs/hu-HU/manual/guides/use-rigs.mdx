@@ -2,7 +2,7 @@
 title: Tesztgép adása egy ügynöknek
 description: Adjon az ügynöknek egy eldobható böngészőt, asztali környezetet, Android-emulátort vagy iOS-szimulátort — élőben figyelhető, és bármikor átveheti a vezérlést.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Az **állomás** egy eldobható gép, amelyet az ügynök akkor nyit meg, amikor
@@ -136,6 +136,21 @@ Ha végzett, nyomja meg a **Gép leállítása** gombot.
 
 A vezérlés szándékosan kizárólagos: ha ketten gépelnek ugyanabba a gépbe, abból
 olyan bemenet lesz, amelyet egyikük sem szánt.
+
+### Ki nézheti meg, és ki vezérelheti
+
+Az a gép, amelyet egy térben nyitottak meg, a tér tárolóit követi, ugyanúgy, ahogy maga a tér is (lásd: [A terek a tárolóikat követik](/hu-HU/kezikonyv/fogalmak/jogosultsag/#a-terek-a-tárolóikat-követik)):
+
+- **A megnézéshez** olvasási jog kell a térhez: olvasási jog a tér minden megjelenített tárolójára, és a saját forge-bejelentkezése, amellyel mindegyiket el tudja olvasni. A megnézés lefedi a gépek listáját, a képernyőt, a hangot, a böngésző állapotát, a portjait, valamint a vágólap és a fájlok olvasását.
+- **A vezérléshez** ugyanezekre a tárolókra [írási jog](/hu-HU/kezikonyv/fogalmak/jogosultsag/#kódmódosításhoz-írási-jog-kell) is kell. A vezérlés lefedi a gép megnyitását a térben, a gépelést és kattintást, az irányítás átvételét, a gép indítását, leállítását és bezárását, a portjainak továbbítását, a vágólapjába írást, a fájlok ráejtését és a mikrofon használatát.
+
+Csak olvasási joggal a gép a **Csak megfigyelés** állapotot mutatja, és ezt írja: „Megfigyelheted ezt a gépet. Vezérléséhez, portjainak továbbításához, beillesztéshez vagy fájlok ráhúzásához a tér minden tárolójához írási hozzáférés szükséges.” Letiltott **Gép indítása** gomb alatt a fül ezt írja: „A gép itt történő indításához a tér minden tárolójához írási hozzáférés szükséges. A munkaterület adminisztrátora megadhatja.” Olvasási jog nélkül a gép nem jelenik meg, helyette ez áll: „Nem tekintheted meg ezt a gépet. Olyan térhez tartozik, amelyhez nincs olvasási hozzáférésed.”
+
+Egy térhez nem tartozó gép nem ér el worktree-t, és a munkaterület minden tagja megnézheti és vezérelheti.
+
+Olyan gép, amely valakinek a saját bejelentkezéseit viszi, csak az a személy vezérelheti, a saját terminálgépe, vagy bármely olyan gép, amelyet az ő számára nyitottak meg, és amelynek hálózati elérése eléri a forge-ot. Csak az a személy vezérelheti, és csak azok az ügynökfuttatások, amelyek kizárólag az ő nevében járnak el. A munkaterület-adminisztrátorok és a szerver tulajdonosa sem írja felül ezt. A térből a többi jogosult személy megnézheti a képernyőjét, hangját, állapotát és portjait, de nem vezérelheti, nem továbbíthatja a portjait, nem illeszthet bele tartalmat, nem ejthet rá fájlt, nem másolhat ki belőle fájlt, és nem olvashatja a vágólapját. Az ilyen gép **Csak megfigyelés** állapotot mutat, és ezzel a megjegyzéssel: „Megfigyelheted ezt a gépet. Annak a személynek a bejelentkezéseit használja, akinek megnyitották, ezért csak ő vezérelheti, továbbíthatja a portjait, tartalmat illeszthet bele, vagy fájlokat húzhat rá.” Az emiatt megtagadott művelet ezt írja: „Csak az a személy vezérelheti ezt a gépet, akinek megnyitották. A saját bejelentkezéseit használja.” Más valakinek a terminálgépe egyáltalán nem jelenik meg Önnek, ahogy a terminálmunkamenetei sem.
+
+Minden gépen látszik, hogy vezérelheti-e, és ez magától frissül, amikor egy jog vagy a forge-bejelentkezése változik.
 
 ## Tartalom be- és kijuttatása
 

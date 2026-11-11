@@ -2,7 +2,7 @@
 title: Kotak pasir dan keselamatan
 description: Apa yang sebenarnya membataskan ejen dalam Control Center hari ini, sejauh mana kotak pasir OS menjangkau dan sempadan mana yang kekal pada hos yang tiada bahagian belakang.
 slug: ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Di mana kotak pasir OS menjangkau dan tidak menjangkau]
@@ -10,8 +10,7 @@ sourceHash: ac926eb1b2447d93207802824742f121d232f171
 dalam kotak pasir natif OS apabila satu tersedia — Seatbelt pada macOS, bubblewrap
 pada Linux dan WSL2 (yang memerlukan `bwrap` dan `socat` pada `PATH`). Jika tiada
 bahagian belakang wujud — Windows, atau mesin Linux yang kekurangan alat tersebut
-— larian berpatah balik kepada sempadan lain di bawah dan pelayan menyatakannya
-dalam log permulaannya. `--sandbox off` mematikannya secara sengaja.
+— hanya larian ejen pemilik pelayan yang dimulakan, tanpa kurungan, dan larian orang lain ditolak. Pemilik pelayan boleh sebaliknya memulakan pelayan dengan `--sandbox off`, yang menjalankan ejen setiap ahli tanpa kurungan pada mesin itu. Log permulaan menyatakan kes yang anda berada; lihat [Ejen pada hos tanpa kotak pasir](#ejen-pada-hos-tanpa-kotak-pasir).
 
 Dua jurang terus wujud melepasi kotak pasir dan wajar diingati:
 
@@ -37,7 +36,23 @@ Control Center menjawabnya secara berlapis dan lapisan-lapisan itu memang sengaj
 berdikari. Jika satu hilang, yang lain masih bertahan. Itu penting, kerana lapisan
 paling luar — kotak pasir OS — ialah satu-satunya yang bersyarat: ia bergantung
 pada hos yang menawarkan bahagian belakang dan pada Windows tiada hos yang
-berbuat demikian.
+berbuat demikian. Di mana ia tiada, pelayan tidak secara senyap menjalankan ejen semua orang tanpanya.
+
+## Ejen pada hos tanpa kotak pasir
+
+Pelayan memutuskan sekali semasa but cara ejen berjalan pada mesinnya, dan mengekalkan keputusan itu sehingga ia dimulakan semula:
+
+- **Dalam kotak pasir.** Hos mempunyai bahagian belakang dan kotak pasir dihidupkan. Setiap larian dibalut.
+- **Mati.** Pemilik pelayan memulakan pelayan dengan `--sandbox off`. Ejen setiap ahli berjalan tanpa kurungan pada mesin ini. Itu pilihan pemilik untuk semua orang yang menggunakan pelayan, bukan tetapan bagi satu larian.
+- **Tidak tersedia.** Kotak pasir dihidupkan tetapi hos tiada bahagian belakang. Larian hanya dimulakan apabila orang yang bertanggungjawab ke atasnya ialah [pemilik](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) pelayan: orang yang memintanya, atau bagi jadual, webhook atau automasi lain, orang yang ia terikat kepadanya. Larian orang lain ditolak sebelum kelayakan ditempa atau proses dimulakan, dengan "Pelayan ini tiada kotak pasir, jadi hanya pemiliknya boleh menjalankan ejen di sini. Pemilik boleh memasang kotak pasir atau mematikan kotak pasir untuk semua orang."
+
+Sebabnya ialah pemilikan mesin itu. Ejen tanpa kurungan boleh melakukan apa sahaja yang boleh dilakukan oleh akaun pengguna pelayan, jadi hanya orang yang memiliki akaun itu menjalankan satu, melainkan mereka memutuskan sebaliknya untuk semua orang. Pelayan Windows sentiasa berada dalam kes tidak tersedia. Linux mempunyai keanehannya sendiri, yang diliputi dalam [rujukan bahagian belakang kotak pasir](/ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir/#linux-bubblewrap): penghantaran natif kini gagal tertutup di sana walaupun dengan bubblewrap dipasang.
+
+Perkara kecil yang memulakan proses untuk anda juga tertakluk kepada peraturan yang sama:
+
+- **Pembantu pantas yang berjalan melalui CLI ACP**: tajuk perbualan, `/btw`, `/handoff` dan `/goal`. Apabila pelayan mengotak pasirkan ejen, ia berjalan dalam kotak pasir, dalam sesi sendiri. Di bawah `--sandbox off` ia berjalan tanpa kurungan. Tanpa kotak pasir yang tersedia ia hanya berjalan untuk permintaan yang pemilik pelayan bertanggungjawab ke atasnya; untuk orang lain ia dilangkau, jadi tiada tajuk dijana dan soalan sampingan melaporkan bahawa synthesizer Kandungan tiada pelari yang berfungsi. Pembantu yang tidak memulakan sebarang alat tidak terjejas.
+- **Ujian golden bagi pull request** dalam semakan visual Review Studio mengikut peraturan yang sama.
+- **Proses alat dan `bash`** dalam sesuatu larian tidak sekali-kali jatuh kembali ke hos. Jika pelayan ditetapkan untuk mengotak pasirkan ejen tetapi tiada kotak pasir untuk diberikan kepada sesuatu larian, larian itu ditolak.
 
 ## Apa yang sebenarnya membataskan ejen
 
@@ -108,8 +123,7 @@ Alat `bash` ialah tempat lain yang perlu diperjelas. Perintahnya dinilai terhada
 polisi perintah modus dan kemudian dilancarkan dengan persekitaran yang
 disanitasi serta worktree sebagai direktori kerjanya. Apabila bahagian belakang
 wujud, pelancaran itu dibalut, jadi kotak pasirlah yang menghalang perintah shell
-daripada menulis di luar worktree; apabila tiada — Windows, atau Linux tanpa
-`bwrap` dan `socat` — polisi perintah ialah satu-satunya perkara antara perintah
+daripada menulis di luar worktree; apabila tiada bahagian belakang (setiap larian di bawah `--sandbox off`, dan larian pemilik sendiri pada Windows atau pada Linux tanpa `bwrap` dan `socat`) — polisi perintah ialah satu-satunya perkara antara perintah
 itu dan seluruh cakera yang lain. Dalam modus `chat`, polisi itu menolak secara
 mutlak senarai tetap (peningkatan keistimewaan, pemusnahan sistem dan cakera,
 pelarian kontena dan namespace) dan meminta pengesahan bagi mutasi keadaan jauh
@@ -125,7 +139,7 @@ tersekat selama-lamanya pada gesaan kelulusannya sendiri. Panggilan baca, tulis 
 panggilan yang tidak kelihatan itu masih berlaku di dalam balutan kotak pasir,
 jadi OS ialah sempadan di sekelilingnya. Apabila tiada, tiada apa-apa. Setiap
 penyesuai menyatakan hal ini dalam matriks penguatkuasaannya — lihat [matriks
-kejujuran penyesuai](/ms-MY/manual-pengguna/konsep/guardrail/#the-adapter-honesty-matrix).
+kejujuran penyesuai](/ms-MY/manual-pengguna/konsep/guardrail/#matriks-kejujuran-penyesuai).
 
 ## Push melalui Control Center
 
@@ -137,10 +151,7 @@ yang menjalankan ejen.
 
 Push ialah tindakan yang mesti bertahan walaupun terhadap ejen yang cuba
 memintas sesuatu peraturan, jadi ia dikuatkuasakan melalui apa yang dipegang
-ejen, bukan melalui apa yang dijalankannya. Larian dalam worktree GitHub
-mendapat token untuk repositori itu sahaja, ditempa daripada GitHub App ruang kerja, App milik pelayan,
-atau Control Center Connect. Token itu boleh membaca kandungan dan, apabila ahli yang bertanggungjawab
-boleh push, mengulas pada pull request, tetapi tidak boleh push. Konfigurasi git larian menulis semula setiap URL push GitHub
+ejen, bukan melalui apa yang dijalankannya. Larian tidak memegang token forge apabila ia bermula, dan `git`-nya tidak pernah menerimanya. Apabila `gh` memerlukannya, Control Center memberikan token untuk satu repositori GitHub yang dikerjakan larian, ditempa daripada GitHub App ruang kerja, App milik pelayan atau Control Center Connect. Ia hanya membaca: ia tidak boleh push, mengulas atau menyunting. Konfigurasi git larian menulis semula setiap URL push GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) kepada
 **gerbang larian ejen**, titik akhir loopback pada `cc_server`. Gerbang itu
 membaca ref mana yang dikemas kini oleh push, bertanya kepada peraturan
@@ -154,24 +165,22 @@ kepada ejen. Push yang ditolak muncul dalam output git sendiri:
 ```
 
 Gerbang itu hanya memajukan push ke repo worktree itu sendiri atau ke repo
-GitHub yang dipautkan kepada ruang kerja. Fetch terus ke GitHub dengan token
-baca.
+GitHub yang dipautkan kepada ruang kerja. Fetch juga melalui gerbang, di GitHub, GitLab dan Bitbucket: ia mengambil repositori yang dikerjakan larian dengan kelayakan yang disimpannya sendiri dan tidak pernah dilihat larian. Pada GitLab dan Bitbucket itu ialah token anda sendiri apabila anda meminta larian itu, dan token automasi repo apabila tiada sesiapa memintanya. Fetch tidak meminta kelulusan sesiapa, dan hanya peraturan Tolak pada **Akses rangkaian** yang menghalangnya.
 
 Perintah shell lain menemui pintu pagar yang lebih lembut. Alat `bash` harness
 dan, melalui hook, alat `Bash` Claude Code mengelaskan setiap baris perintah
 dan bertanya kepada peraturan yang menaunginya: `git commit`, `merge`,
 `rebase`, `cherry-pick`, `revert` dan `am` ialah **Cipta commit**;
 `gh pr create` ialah **Buka pull request**; `gh pr merge`, `review`, `comment`
-dan `close` ialah **Terbitkan semakan atau cantuman**; `gh issue create`,
+dan `close` ialah **Kemas kini atau gabungkan pull request**; `gh issue create`,
 `edit`, `comment` dan `close` ialah **Tulis ke penjejak luaran**; pemasangan
-pakej ialah **Pasang pakej**; `curl` dan `wget` ialah **Akses rangkaian**. Ini
-mengenali cara lazim menulis sesuatu tindakan, dan ejen yang bertekad
+pakej ialah **Pasang pakej**; `curl` dan `wget` ialah **Akses rangkaian**. Menulis ke GitHub dari shell ialah pengecualian: penulisan `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` dan `gh issue` tidak berfungsi dalam larian, yang tokennya hanya membaca, dan ejen ditunjukkan kepada alat Control Center, yang bertanya kepada peraturan ini. Ini mengenali cara lazim menulis sesuatu tindakan, dan ejen yang bertekad
 menyembunyikannya (`eval`, fail skrip, panggilan API terus) boleh berbuat
 demikian. Push tidak bergantung padanya.
 
 Setiap token GitHub yang diterima oleh larian dihadkan dua kali: kepada satu repositori, dan kepada apa yang
 boleh dilakukan oleh ahli yang bertanggungjawab (yang meminta, jika tidak pemilik ruang kerja) pada repositori
-itu. Tiada kelayakan sandaran. Apabila tiada token dapat dicetak, larian bermula tanpa token dan notanya menerangkan sebabnya.
+itu. Tiada kelayakan sandaran. Apabila tiada token dapat dicetak, arahan yang memintanya menerangkan sebabnya.
 
 Tiada kunci API tiket diletakkan dalam kotak pasir. Ejen menulis tiket melalui
 alat MCP Control Center, yang bertanya kepada **Tulis ke penjejak luaran**.
@@ -183,6 +192,16 @@ masih bertanya pada setiap panggilan. Pemegang kelayakan larian dilepaskan apabi
 dibongkar. Token di sebalik pemegang itu dikongsi bagi setiap ahli dan repositori serta tamat dalam
 lebih kurang satu jam; ahli yang log keluar daripada GitHub atau meninggalkan ruang kerja serta-merta
 membatalkan setiap token yang dicetak bagi pihak mereka.
+
+## Repositori yang ejen hanya boleh baca
+
+Larian ejen hanya boleh mengubah checkout bagi repositori yang orang yang ia bertindak untuknya memegang [geran tulis](/ms-MY/manual-pengguna/konsep/kebenaran/#mengubah-kod-memerlukan-geran-tulis) ke atasnya. Admin ruang kerja memegangnya pada setiap repositori yang dipautkan. Larian yang tiada sesiapa minta, seperti jadual atau automasi lain, dinilai oleh orang bertanggungjawab yang sama yang token automasinya terikat kepadanya.
+
+Dalam ruang yang mempunyai repositori yang orang itu hanya boleh baca, ejen masih boleh membaca dan mencari repositori itu, tetapi tidak boleh mengubah failnya. Alat failnya menolak dengan mesej yang bermula `<repo> is read-only for this run` dan menyatakan bahawa mengubah checkout memerlukan geran tulis, yang tidak dipegang oleh orang yang larian itu bertindak untuknya, dan bahawa admin ruang kerja boleh memberikannya. Dalam kotak pasir, checkout itu hanya boleh dibaca oleh setiap proses, jadi arahan shell yang menulis di situ gagal dengan "Operation not permitted". Itu termasuk `git commit` serta binaan atau ujian yang menulis outputnya di dalam checkout. Repositori yang orang itu boleh tulis berkelakuan seperti biasa, jadi admin, dan sesiapa yang mempunyai akses tulis kepada setiap repositori dalam ruang itu, tidak melihat sebarang perbezaan.
+
+Keputusan ini dibuat sekali, apabila larian bermula. Perubahan geran berkuat kuasa pada larian ejen seterusnya, dan begitu juga repositori yang ditambah ke ruang semasa larian.
+
+Apabila pemilik pelayan telah mematikan kotak pasir, hanya alat fail ejen dan alat tulis Claude Code yang ditolak, dan arahan shell masih boleh mengubah checkout. Tiada apa pun boleh di-push tanpa geran tulis dalam kedua-dua keadaan, kerana setiap push disemak terhadapnya. Proses mana yang dikurung oleh kotak pasir pada setiap platform terdapat dalam [bahagian belakang kotak pasir](/ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir/).
 
 ## Apa yang ditambah oleh kotak pasir dan di mana ia berhenti
 
@@ -198,17 +217,12 @@ menjawab, ia menyuap kedua-dua sambungan yang ada pada laluan penghantaran,
 kerana pengangkutan itu tidak berkongsi satu. Yang pertama (`SandboxPort`)
 membalut CLI Claude Code. Yang kedua (`SandboxManager`) membalut penyesuai ACP
 dan alat `bash` harness terbina. Menyuap hanya satu akan menyebabkan yang lain
-dilancarkan tanpa balutan, yang memang pernah berlaku. Pada hos tanpa bahagian
-belakang, atau di bawah `--sandbox off`, semuanya dilancarkan tanpa balutan dan
-pelayan menyatakan kes mana yang anda alami pada baris permulaannya. ACP dan
+dilancarkan tanpa balutan, yang memang pernah berlaku. Di bawah `--sandbox off`
+semuanya dilancarkan tanpa balutan; pada hos tanpa bahagian belakang hanya larian pemilik dilancarkan, juga tanpa balutan. Pelayan menyatakan kes mana yang anda alami pada baris permulaannya. ACP dan
 `bash` harness masih menyanitasi persekitaran; Claude Code melalui
 `NoSandboxAdapter` mewarisi persekitaran hos.
 
-Satu permukaan sengaja mengecualikan diri: terminal yang dihoskan pelayan
-menerima argumen bahagian belakang bagi setiap sesi dan `cc_server` membinanya
-dengan lalai kepada shell hos, jadi terminal yang anda buka dari aplikasi berjalan
-tanpa kotak pasir melainkan klien menamakan `native` secara eksplisit. Itu shell
-sebenar pada hos pelayan, bukan larian ejen.
+Terminal yang dihoskan pelayan hanya membuka shell hos untuk [pemilik](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan) pelayan. Semua orang lain mendapat terminal berkotak pasir, dengan had ejen, dalam direktori ruang kerja itu sendiri. Hanya orang yang membuka terminal boleh menaipnya, membacanya atau menutupnya.
 
 Pada Linux, `bubblewrap` membina namespace mount, jadi ejen benar-benar melihat
 hanya apa yang diikat masuk ke dalamnya. Pada macOS, `sandbox-exec` mengenakan
@@ -221,6 +235,10 @@ di atasnya, penyekatan unlink pada setiap laluan yang ditolak dan nenek moyangny
 supaya penamaan semula tidak dapat memintas penolakan tulis, penolakan exec untuk
 binari yang sentiasa berbahaya dan untuk apa-apa yang disalin ke direktori boleh
 tulis, serta rangkaian yang dihadkan kepada port proksi loopback dan DNS. Pemasangan toolchain di bawah direktori home anda (pnpm daripada corepack, pengurus versi node, pelayar Playwright, rustup, fvm, uv dan yang seumpamanya) kekal boleh dijalankan di dalam blok exec tersebut, supaya ejen boleh menggunakannya tanpa penyelesaian lain. Penolakan yang sentiasa berbahaya tetap terpakai di dalamnya. Setiap sesi turut mendapat `TMPDIR` persendirian sendiri. Ia ialah satu-satunya direktori sementara tempat ejen dibenarkan menjalankan program yang dibinanya atau membuka soket Unix.
+
+Dua perlindungan lagi terpakai dalam setiap modus. Kotak pasir tidak boleh menambah, menggantikan, memadam atau menamakan semula arahan dalam folder yang dijalankan oleh pelayan daripadanya (setiap folder pada `PATH`-nya dan folder alat per-pengguna yang biasa), jadi larian yang dikotak pasirkan tidak boleh menanam program yang kemudiannya dimulakan oleh pelayan di luar kotak pasir. Pemasangan global dan suis versi lalai dari dalam larian oleh itu gagal dengan "Operation not permitted", manakala pemasangan dalam projek dan larian gaya `npx` terus berfungsi; pasang alat global pada pelayan itu sendiri dan mulakan semula. Dan setiap laluan rumah yang tidak dapat dibaca oleh kotak pasir juga tidak dapat ditulis, dengan fail permulaan shell pengguna pelayan dan fail sesi tidak sekali-kali boleh ditulis. Butiran dan had platform terdapat dalam [Folder arahan pelayan](/ms-MY/manual-pengguna/rujukan/bahagian-belakang-kotak-pasir/#folder-arahan-pelayan).
+
+Kotak pasir alat larian tergolong kepada larian itu dan dilepaskan apabila ia tamat. Pelayan bahasa dimulakan semula dengan setiap larian yang dikotak pasirkan. Sesi nyahpepijat mengekalkan kotak pasirnya merentas giliran sehingga sesi itu tamat, untuk paling lama 30 minit.
 
 Akibat praktikalnya: pada Linux, pandangan ejen terhadap sistem fail disempitkan;
 pada macOS, ejen masih boleh _membaca_ sebahagian besar hos dan checkout berdaftar

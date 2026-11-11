@@ -198,7 +198,7 @@ class _CcSwipeActionsState extends State<CcSwipeActions>
     // removal from reading as a glitch.
     _settle.duration = CcMotion.resolve(
       context,
-      action == null ? CcMotion.normal : CcMotion.slow,
+      action == null ? CcMotion.moderate : CcMotion.slow,
     );
     _settle.forward(from: 0);
 

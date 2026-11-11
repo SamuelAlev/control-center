@@ -2,10 +2,10 @@
 title: Ferramentas MCP
 description: Catálogo completo das ferramentas MCP que o cc_server registra, por família.
 slug: pt-BR/manual/referencia/ferramentas-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-O `cc_server` hospeda um único registro de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (padrão `9030`) em `POST /mcp` e `GET /sse`, com versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registro: o desktop, a build web, clientes MCP externos e o runtime de agentes integrado. Servidores MCP externos podem ser conectados ao mesmo registro como uma camada dinâmica.
+O `cc_server` hospeda um único registro de ferramentas MCP (JSON-RPC 2.0), servido na porta principal do servidor (padrão `9030`) em `POST /mcp` e `GET /sse`, com versão de protocolo `2024-11-05`. Todos os clientes chegam ao mesmo registro: o desktop, a build web, clientes MCP externos e o runtime de agentes integrado. Servidores MCP externos podem ser conectados ao mesmo registro como uma camada dinâmica. Servidores encontrados na configuração de ferramentas do próprio usuário do servidor são a exceção: este endpoint nunca os lista, chama ou pesquisa, e apenas as execuções do harness integrado, das quais o proprietário do servidor é responsável, os usam (veja [Servidores MCP pessoais continuam sendo do proprietário](/pt-BR/manual/guias/servidor-mcp/#servidores-mcp-pessoais-continuam-sendo-do-proprietário)).
 
 ## Tamanho do registro
 
@@ -23,7 +23,7 @@ As cinco ferramentas de grafo de código só são registradas quando o host pass
 O registro completo é anunciado em `tools/list`, sem restrição de descoberta. As edições de tickets são ferramentas tipadas.
 
 :::note[Clientes externos sempre veem o catálogo inteiro]
-O `tools/list` nunca é enxugado. Os clientes MCP validam nomes de ferramentas contra a própria cópia em cache dessa lista e recusam qualquer coisa não listada sem nunca perguntar ao servidor, então uma ferramenta ali escondida é inalcançável, e não apenas silenciosa.
+O `tools/list` nunca é enxugado, exceto pelos servidores MCP pessoais do proprietário do servidor, que ele nunca inclui. Os clientes MCP validam nomes de ferramentas contra a própria cópia em cache dessa lista e recusam qualquer coisa não listada sem nunca perguntar ao servidor, então uma ferramenta ali escondida é inalcançável, e não apenas silenciosa.
 
 O **harness integrado** é diferente: ele carrega apenas um subconjunto residente de definições por requisição e traz o restante no primeiro uso, o que é um comportamento do lado do harness e não altera este registro. Consulte [Contexto de ferramentas e cache de prompts](/pt-BR/manual/conceitos/contexto-de-ferramentas).
 :::
@@ -247,7 +247,7 @@ como dado não confiável. As quatro ferramentas de uso, mais a `rig_close`, dec
 (as ferramentas de uso também declaram `networkEgress` e `processSpawn`; `mobile_use` e
 `ios_use` também declaram `packageInstall`), então modos somente leitura as negam. A `rig_list`
 não declara nenhuma — ela apenas lê o estado do espaço de trabalho. O vocabulário completo de verbos por superfície está na
-[referência de rigs](/pt-BR/manual/referencia/rigs/#action-verbs).
+[referência de rigs](/pt-BR/manual/referencia/rigs/#verbos-de-ação).
 
 | Ferramenta     | Descrição                                                                                       |
 | -------------- | ----------------------------------------------------------------------------------------------- |
@@ -255,8 +255,10 @@ não declara nenhuma — ela apenas lê o estado do espaço de trabalho. O vocab
 | `browser_use`  | Controla um Chromium, Firefox ou WebKit headless (`engine`): navegar, clicar, preencher, extrair (a11y/DOM/console), área de transferência, captura de tela |
 | `mobile_use`   | Controla o Android via ADB: inspecionar/entrada, capturas de tela, instalar/iniciar/parar/redefinir/desinstalar apps, deep links e comandos de dispositivo em formato argv |
 | `ios_use`      | Controla o iOS Simulator por WebDriverAgent/CoreSimulator: inspecionar/entrada, capturas de tela, instalar/iniciar/parar/desinstalar apps, deep links e processos de simulador em formato argv |
-| `rig_list`     | Lista os rigs de um espaço de trabalho com superfície, status, tamanho da tela e controlador  |
+| `rig_list`     | Lista os rigs do espaço da execução com superfície, status, tamanho da tela e controlador  |
 | `rig_close`    | Destrói um rig e descarta o estado da máquina que ele possui                                   |
+
+Somente execuções de agentes podem chamar estas ferramentas; qualquer outro chamador é recusado. Uma execução alcança apenas os rigs do espaço para o qual recebeu a concessão: `space_id` vem da concessão da execução, nunca da chamada, e um rig de outro espaço, ou de nenhum espaço, responde exatamente como um rig inexistente.
 
 `app_use` é uma quinta ferramenta use: controla as janelas de um aplicativo de desktop aberto em um espaço, diretamente no host e não em uma VM, e também declara `fileWriteOutsideWorktree` e `fileDelete`. Ela e as ferramentas `environment_*` estão descritas em [Configurar ambientes](/pt-BR/manual/guias/ambientes/).
 
@@ -301,7 +303,7 @@ alguma, então um nome que você talvez tenha visto referenciado em outro lugar 
 | Capacidade                                | Onde ela vive em vez disso                                                                                     |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | Contratar, demitir ou editar um agente    | A UI de agentes. Não existe ferramenta `hire_agent` / `fire_agent` / `update_agent`                             |
-| Criar um espaço de trabalho               | `workspace.upsert` por RPC, que semeia e carimba a propriedade                                                  |
+| Criar um espaço de trabalho               | `workspace.create` por RPC, somente para o proprietário do servidor, que semeia e carimba a propriedade                                                  |
 | Projetos (criar / listar / atualizar / registrar) | A UI de tickets. Projetos são uma superfície do operador — consulte [Projetos](/pt-BR/manual/guias/projetos/)   |
 | Fazer ao operador uma pergunta bloqueante | A ferramenta `ask_user` do **harness**, não o MCP. Ela renderiza um formulário na conversa e bloqueia até a resposta |
 | Diagnóstico por agente                    | Nada. Não existe um `doctor` — consulte [Diagnóstico de agente](/pt-BR/manual/guias/diagnosticar-agente/)       |

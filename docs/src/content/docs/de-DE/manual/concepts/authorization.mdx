@@ -2,7 +2,7 @@
 title: Autorisierung — wer was darf und wie du es nachweist
 description: Der Berechtigungskatalog hinter den Rollen von Control Center, das manipulationserkennbare Audit-Protokoll, in dem jede Autorisierungsentscheidung landet, und die installationsweiten Vorgaben, die ein Betreiber festlegen kann.
 slug: de-DE/handbuch/konzepte/autorisierung
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center beantwortet zwei Autorisierungsfragen, und die beiden meinen
@@ -65,19 +65,58 @@ Mitglieder führen sie als `custom:<id>`, und ein Client, der zu alt ist, um
 diesen Wert zu verstehen, fällt auf Gast zurück, statt zu raten.
 
 Unter den Rollen liegen **Freigaben pro Repo** (`none` / `read` / `review` /
-`write`): die Mitgliedschaft im Arbeitsbereich gibt nie stillschweigend mehr
+`write`, siehe [Code ändern braucht den Schreibzugriff](#code-ändern-braucht-den-schreibzugriff)): die Mitgliedschaft im Arbeitsbereich gibt nie stillschweigend mehr
 Rechte als der Code-Host. Jede Oberfläche, die Code zeigt, prüft sie — auch
 die, die seitlich an den Code kommen, etwa ein Terminal oder eine
 Editor-Sitzung auf dem Worktree eines Bereichs.
 
-## Serverautorität
+## Code folgt dem Code-Host
 
-Manche Operationen betreffen gar keinen Arbeitsbereich: installationsweite
-Einstellungen, die SSO-Konfiguration, Anbieter-Zugangsdaten, die
-Modellverwaltung, Sicherungen der ganzen Installation. Sie deklarieren
-**Serverautorität** und werden für alle abgelehnt außer dem Betreiber der
-Installation (dem hinterlegten Server-Eigentümer). Absichtlich gibt es genau
-eine Betreiberidentität und genau eine Definition davon.
+Eine Freigabe allein öffnet nicht den Code eines Repositorys. Um seine Dateien, Diffs oder Suchergebnisse zu sehen oder ein Terminal darauf zu öffnen, braucht ein Mitglied die Control-Center-Freigabe **und** seine eigene Anmeldung beim Code-Host muss das Repository lesen können. Arbeitsbereichs-Admins sind davon nicht ausgenommen; der Serverinhaber schon, weil der Checkout auf seiner Maschine liegt. Ein Repository ohne Remote beim Code-Host braucht nur die Freigabe.
+
+- Gibt ein Admin einem Mitglied ein Repository frei, dessen Code-Host-Konto es nicht lesen kann, wird die Freigabe gespeichert, und der Admin sieht eine Warnung.
+- Lässt sich der Code-Host zur Prüfung nicht erreichen, lautet die Antwort nein, nie eine Vermutung: die Person sieht „Dein GitHub-Zugriff konnte nicht bestätigt werden. Versuche es erneut.“ (mit dem Namen des Code-Hosts der Person) und versucht es später erneut.
+- Pull Requests und alles, was aus ihnen entsteht, folgen derselben Regel.
+
+### Code ändern braucht den Schreibzugriff
+
+Eine Repository-Freigabe hat drei Stufen, und jede enthält die davor:
+
+- **read**: die Dateien, Diffs und Suchergebnisse des Repositorys sehen, sofern deine eigene Anmeldung beim Code-Host es ebenfalls lesen kann.
+- **review**: lesen, plus Genehmigen, Änderungen anfordern und die übrigen Review-Aktionen auf seinen Pull Requests.
+- **write**: review, plus Code ändern und Agentenläufe steuern, die in das Repository schreiben. Code ändern umfasst das Speichern oder Zurücksetzen von Dateien im Editor, das Synchronisieren eines Worktrees mit dem Head seines Pull Requests, Committen und Pushen, das Veröffentlichen eines Branches sowie die Stack-Aktionen, die einen Teil anlegen, auschecken oder veröffentlichen.
+
+Jeder Push, der für eine Person gemacht wird, selbst oder durch einen Agentenlauf, den sie angefordert hat, prüft ihre Schreibfreigabe für dieses Repository im Moment des Pushs, bei GitHub, GitLab und Bitbucket gleichermaßen. Das Veröffentlichen eines Stacks prüft jedes Repository des Stacks, bevor es eines davon pusht.
+
+Eine Ablehnung nennt die fehlende Freigabe. Ohne Lesezugriff zeigt die App „Du hast keinen Lesezugriff auf dieses Repository. Ein Workspace-Admin kann ihn freigeben.“ Mit Lesezugriff, aber ohne Schreibzugriff heißt es „Du kannst dieses Repository lesen, aber nicht ändern. Ein Workspace-Admin kann Schreibzugriff freigeben.“
+
+### Bereiche folgen ihren Repositorys
+
+Was Agenten über Code geschrieben haben, folgt dem Code. Der Inhalt eines Bereichs (seine Nachrichten, Transkripte und Werkzeugausgaben, Suchergebnisse, Laufprotokolle, Todos, Aktivität und Benachrichtigungen) trägt den Code der Repositorys, an denen er arbeitet. Deshalb öffnet sich ein Bereich nur für ein Mitglied, das eine Leseberechtigung auf jedes Repository des Bereichs hält und dessen eigene Anmeldung beim Code-Host es lesen kann. Das sind die Repositorys, die für den Bereich ausgewählt sind, oder alle Repositorys des Arbeitsbereichs, wenn für den Bereich keine Auswahl gespeichert ist. Ein Bereich, der ohne Repositorys angelegt wird, steht jedem Mitglied offen.
+
+Einen Bereich, den jemand nicht öffnen kann, wird ihm nirgends angezeigt, auch nicht in der Suche, in Laufprotokollen, Todos, Aktivität und Benachrichtigungen. Arbeitsbereichs-Admins halten jede Freigabe, sind aber vom Code-Host-Teil nicht ausgenommen; der Serverinhaber schon.
+
+Für eine Unterhaltung, die alle lesen sollen, lege den Bereich ohne Repositorys an oder nur mit Repositorys, die alle lesen können.
+
+## Der Serverinhaber
+
+Die Person, die den Server eingerichtet hat, ist sein **Inhaber**. Der Server hält sie beim ersten Start fest, und nichts, was übers Netz geschickt wird, ändert das. Ein Arbeitsbereichs-Admin oder Arbeitsbereichs-Eigentümer ist nicht der Serverinhaber: Jeder kann einen Arbeitsbereich erhalten, aber die Maschine des Servers hat genau einen Inhaber.
+
+**Auf der Maschine des Servers läuft nichts außerhalb einer Sandbox, außer der Serverinhaber hat es gestartet oder diese Art der Ausführung auf dem Host genehmigt.** Konkret kann nur der Serverinhaber:
+
+- Einen Arbeitsbereich anlegen. Alle anderen sehen einen Bildschirm, der sie bittet, den Inhaber um einen zu bitten oder einen Arbeitsbereichs-Admin um eine Einladung.
+- Die Host-Shell im serverseitigen Terminal öffnen. Alle anderen bekommen ein Terminal in der Sandbox, mit den Grenzen eines Agenten, in den Verzeichnissen des Arbeitsbereichs.
+- Den eingebetteten Code-Editor öffnen. Er läuft als eigener Benutzer des Servers, mit seinem Terminal, Aufgaben und Erweiterungen.
+- Einen Pull Request oder den Worktree einer Unterhaltung in einem nativen Editor öffnen. Der Editor startet auf dem Bildschirm des Servers, als Benutzer des Servers.
+- Die Definition einer [Umgebung](/de-DE/handbuch/anleitungen/environments/) speichern oder genehmigen, die auf dem Host etwas ausführt: Platzierung auf dem Host, eine Prüfung, die einen Befehl ausführt, oder eine Bereitstellungs- oder Archivierungsaufgabe.
+- Agenten auf einem Server ausführen, dessen Maschine keine Sandbox hat. Alle anderen Läufe werden dort abgewiesen, außer der Inhaber hat den Server mit `--sandbox off` gestartet; dann laufen die Agenten jedes Mitglieds ohne Einschränkung (siehe [Agenten auf einem Host ohne Sandbox](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/#agenten-auf-einem-host-ohne-sandbox)).
+- Einen Repository-Checkout verknüpfen, der außerhalb des eigenen Speichers des Arbeitsbereichs liegt, einen schon verknüpften vor dieser Regel bestätigen und beim Hinzufügen eines Repositorys die Ordner des Servers durchsuchen (siehe [Repositorys hinzufügen](/de-DE/handbuch/anleitungen/repos-hinzufuegen/)).
+- Jeden laufenden Agentenprozess auf dem Server sehen und stoppen. Alle anderen sehen und stoppen nur laufende Agentenläufe in Arbeitsbereichen, denen sie angehören.
+- Agenten die MCP-Server nutzen lassen, die in den eigenen Werkzeugen des Serverbenutzers eingerichtet sind (Claude, Codex, Cursor und die übrigen). Nur die eingebauten Harness-Läufe, für die der Inhaber einsteht, bekommen sie; siehe [Persönliche MCP-Server bleiben beim Inhaber](/de-DE/handbuch/anleitungen/mcp-server/#persönliche-mcp-server-bleiben-beim-inhaber).
+- Die E-Mail-Adresse einer Person bestätigen, damit Single Sign-on sie zuordnen kann (siehe [Mit einem OpenID-Connect-Provider verbinden](/de-DE/handbuch/anleitungen/sso-oidc/#wie-anmeldungen-zu-bestehenden-konten-passen)).
+- Installationsweite Einstellungen ändern: SSO, Anbieter-Zugangsdaten, den MCP-Endpunkt und sein Token, die Modellverwaltung, Connect und Sicherungen der ganzen Installation. Diese Operationen deklarieren **Serverautorität** und werden für alle anderen abgelehnt.
+
+Absichtlich gibt es genau eine Betreiberidentität und genau eine Definition davon.
 
 ## Das Audit-Protokoll
 

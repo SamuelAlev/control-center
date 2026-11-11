@@ -34,7 +34,11 @@ List<RepoOp> buildPrReviewOps({
     required Future<Map<String, dynamic>?> Function() fetch,
   })
   previewSwr,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
   required MessagingRepository messagingRepository,
   PrPreviewFetcher? fetchPrPreview,
@@ -293,7 +297,7 @@ List<RepoOp> buildPrReviewOps({
     handler: (ctx) async {
       final workspaceId = ctx.workspaceId!;
       final spaceId = ctx.args['space_id'] as String;
-      await assertSpaceOwned(workspaceId, spaceId);
+      await assertSpaceOwned(workspaceId, spaceId, ctx.userId);
       final c = requireRepoCoords(ctx.args);
       final prNumber = (ctx.args['pr_number'] as num).toInt();
       final wanted = <String>{
@@ -559,6 +563,8 @@ List<RepoOp> buildPrReviewOps({
         c.repo,
         userId: ctx.userId,
       );
+      // An approval passes the forge client's approval guard (who asked an
+      // agent for this pull request, its author) before anything is sent.
       await repo.submitReview(
         prNumber: (ctx.args['pr_number'] as num).toInt(),
         event: ctx.args['event'] as String,
@@ -592,7 +598,7 @@ List<RepoOp> buildPrReviewOps({
     handler: (ctx) async {
       final workspaceId = ctx.workspaceId!;
       final spaceId = ctx.args['space_id'] as String;
-      await assertSpaceOwned(workspaceId, spaceId);
+      await assertSpaceOwned(workspaceId, spaceId, ctx.userId);
 
       final rawStatus = ctx.args['status'];
       final status = rawStatus is String

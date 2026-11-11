@@ -2,7 +2,7 @@
 title: Kết nối máy chủ từ xa
 description: Trỏ ứng dụng máy tính hoặc máy khách web tới một cc_server đang chạy ở nơi khác và chuyển đổi giữa các máy chủ mà không cần khởi động lại.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-tu-xa
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Mọi máy khách đều là một lớp dựng giao diện trên một `cc_server` sở hữu dữ liệu.
@@ -84,6 +84,12 @@ của nó chuyển các yêu cầu qua phiên đã mã hóa và đã xác thực
 code-server trên `cc_server`. Hãy lưu trữ máy khách web qua HTTPS hoặc loopback bảo
 mật để Service Worker khả dụng. Máy khách gốc dùng một mặt tiền loopback giới hạn
 theo năng lực.
+
+Chỉ chủ sở hữu máy chủ mới mở được trình soạn thảo code-server nhúng: nó chạy trên
+máy chủ với tư cách người dùng riêng của máy chủ. Một phiên thuộc về thiết bị và
+người đã mở nó. Phiên này mở với Workspace Trust của VS Code được bật, nên VS Code
+hỏi trước khi tin cậy một thư mục, và với các tác vụ tự động tắt. Những người khác
+giữ trình soạn thảo một tệp tích hợp và các chế độ xem tệp.
 :::
 
 ### Những gì trình duyệt không làm
@@ -98,9 +104,10 @@ mặt cần một cửa sổ native hoặc chính các thiết bị của máy:
 
 Hai thứ hoạt động khác đi chứ không phải biến mất. Việc **ghi âm** cuộc họp hoạt
 động trong trình duyệt, thu micrô của bạn cùng một bản chia sẻ màn hình có kèm track
-âm thanh. **Mở trong IDE** cũng hoạt động, nhưng yêu cầu máy chủ khởi chạy trình
-soạn thảo trên màn hình của _máy chủ_, nên nút này tự ẩn khi gặp một máy không giao
-diện không cài trình soạn thảo nào.
+âm thanh. Nút mang tên trình soạn thảo của bạn (chẳng hạn **Mở trong VS Code**) yêu cầu máy
+chủ khởi chạy trình soạn thảo trên màn hình của _máy chủ_, nên nó chỉ được cung cấp
+cho chủ sở hữu máy chủ, và nút này tự ẩn khi gặp một máy không giao diện không cài
+trình soạn thảo nào.
 
 ## Khắc phục sự cố
 

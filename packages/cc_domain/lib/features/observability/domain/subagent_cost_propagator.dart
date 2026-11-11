@@ -3,7 +3,7 @@ import 'dart:async';
 /// Serializes subagent-cost roll-ups onto a parent run so concurrent
 /// propagations to the **same** parent never lose a read-modify-write update.
 /// When a subagent finishes, its cost rolls up to the parent run's
-/// `childCostCents` field. The roll-up is a read-modify-write: read the parent's
+/// `childCostMicros` field. The roll-up is a read-modify-write: read the parent's
 /// current child cost, add the delta, write it back. If two subagents of the
 /// same parent finish at the same time, a naive `read; add; write` interleaves
 /// (both read the same base, both write base + their own delta) and one delta is

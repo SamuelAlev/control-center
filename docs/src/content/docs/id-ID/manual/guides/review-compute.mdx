@@ -2,7 +2,7 @@
 title: Komputasi tinjauan (kohort, sumbu, dan diff deterministik)
 description: Apa yang dihasilkan proses komputasi tinjauan di sisi server — kohort, diff kontrak API dan visual, gerbang per sumbu — dan bagaimana itu dilipat ke dalam tab Tinjau.
 slug: id-ID/panduan-pengguna/panduan-praktis/komputasi-tinjauan
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Tab **Tinjau** milik PR menampilkan kemajuan langsung pipeline tinjauan saat
@@ -16,8 +16,6 @@ Di balik tab itu, `cc_server` membangun kohort file, menjalankan sumbu-sumbu
 deterministik, dan menyajikannya melalui operasi RPC `review_studio.*`
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` dan kembaran `watch*`-nya).
-Tata letak tersimpan yang masih menyebut `pr.reviewStudio` akan membuka tab
-Tinjau yang sama ini.
 
 Di tab Tinjau:
 
@@ -84,6 +82,8 @@ proses komputasi merender komponen yang berubah sebelum dan sesudah melalui
 proses golden `flutter test` secara headless di worktree base dan head PR, lalu
 membandingkan pikselnya.
 
+Tes tersebut adalah kode milik pull request itu sendiri, jadi ia berjalan seperti proses alat agen: di dalam sandbox bila server menjalankan agen di sandbox, tanpa pembatasan bila pemilik server mematikan sandbox, dan tanpa sandbox hanya untuk permintaan yang dipertanggungjawabkan kepada pemilik server. Bagi orang lain, sumbu ini melaporkan **unavailable** dengan alasan "tidak ada sandbox di server ini, dan hanya pemiliknya yang boleh menjalankan tes PR tanpa sandbox".
+
 :::note[Ini memerlukan Flutter SDK di host server]
 Server murni Dart tidak dapat merender widget Flutter di dalam proses, jadi ia
 menjalankan `flutter test` sebagai proses eksternal. SDK tersebut harus terpasang
@@ -94,9 +94,10 @@ pernah melaporkan kelulusan yang tidak benar-benar diraihnya.
 
 Snapshot yang ditandai **changed** atau **removed** menahan gerbang visual sampai
 disetujui; snapshot **unchanged**, **added**, dan **approved** membukanya.
-Ketidaktersediaan memiliki salah satu dari empat alasan: tidak ada Flutter SDK di
+Ketidaktersediaan memiliki salah satu dari lima alasan: tidak ada Flutter SDK di
 host, tidak ada aplikasi Widgetbook di repo, tidak ada kasus penggunaan yang
-dapat diuji golden, atau galat harness golden.
+dapat diuji golden, galat harness golden, atau tidak ada sandbox untuk permintaan
+yang tidak dipertanggungjawabkan kepada pemilik server.
 
 Menyetujui perubahan yang memang diinginkan adalah `review_studio.approveVisual`.
 

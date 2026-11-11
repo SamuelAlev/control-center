@@ -2,7 +2,7 @@
 title: Sikkerhetskopier og gjenopprett
 description: Ta et øyeblikksbilde av installasjonen, flytt et arbeidsområde mellom maskiner, gjenopprett ett arbeidsområde eller alle, og oppbevar kopier et annet sted.
 slug: nb-NO/handbok/slik-gjor-du/sikkerhetskopier-og-gjenopprett
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Denne guiden dekker de fem tingene folk faktisk gjør med sikkerhetskopier: tar én, henter
@@ -16,7 +16,8 @@ Alt her ligger under **Innstillinger → Server → Sikkerhetskopi og gjenoppret
 
 - En **full klient** — skrivebords- eller nettappen. En telefon som er paret, kan ikke utløse noe av dette, og det er med vilje.
 - Å ta, liste opp, laste ned eller slette et **installasjonsøyeblikksbilde**: **eieren** av installasjonen.
-- For handlinger per arbeidsområde: **admin** i det arbeidsområdet for å eksportere det eller for å liste og laste ned de planlagte sikkerhetskopiene, **eier** for å importere eller slette det eller for å slette en av sikkerhetskopiene.
+- For handlinger per arbeidsområde: **admin** i det arbeidsområdet for å eksportere det eller for å liste og laste ned de planlagte sikkerhetskopiene, **eier** for å slette det eller for å slette en av sikkerhetskopiene.
+- For å **gjenopprette** et arbeidsområde, fra en opplastet fil, en planlagt sikkerhetskopi eller et øyeblikksbilde: [serverens eier](/nb-NO/handbok/konsepter/autorisasjon/#serverens-eier), som også må være eieren av det arbeidsområdet. En gjenoppretting får serveren til å ta en databasefil som sin egen, så det er serverens eiers avgjørelse. Alle andre ser «Bare serverens eier kan gjenopprette sikkerhetskopier. Du kan fortsatt laste dem ned.» i stedet for gjenopprettingshandlingene.
 - For ned- og opplastinger: en paret fullklient, enten på en direkte eller en relébasert tilkobling. Begge veier frakter filbytene gjennom den samme autentiserte, ende-til-ende-krypterte ressurskanalen; reléet kan ikke lese dem.
 
 :::caution[Installasjonsøyeblikksbilder er manuelle]
@@ -42,6 +43,8 @@ Begge artefaktene er **bare databaser**:
 
 - Et **installasjonsøyeblikksbilde** er en katalog med tidsstempel: `manifest.json`, `global.db` og én `<workspaceId>/workspace.db` per arbeidsområde.
 - En **arbeidsområdeeksport** er den ene filen `workspace.db`.
+
+Et arbeidsområdes database er hele arbeidsområdet: samtalene, kjøringslogger, kodeindeksen, repokoblingene, miljødefinisjoner og medlemmene. Den holder også arbeidsområdets webhook-tokener for pipelinen og hemmelighetene for webhooks for sakssynkronisering, i lesbar form. Behandle en nedlastet sikkerhetskopi eller eksport av et arbeidsområde som en hemmelighet. Den inneholder ingen leverandørinnlogginger, enhetsnøkler eller brukerhemmeligheter; de ligger i den globale databasen og serverens hemmelighetslager.
 
 Ingen av dem tar med resten av datakatalogen: `secrets.json` (paringsnøkler,
 leverandørpåloggingsinformasjon, SSO), et arbeidsområdes `blobs/` (bilder limt inn i
@@ -75,7 +78,7 @@ mislyktes — sjekk serverloggen.
 
 ## Planlegg sikkerhetskopier av arbeidsområder og oppbevaring
 
-Åpne **Innstillinger → Pipelines → Pipeline-maler** for arbeidsområdet og finn
+Åpne **Innstillinger → Arbeidsområde → Pipeline-maler** for arbeidsområdet og finn
 **Workspace backup**. Den aktiverte planen kjører hver søndag kl. 03:00 UTC:
 **Back up workspace**, etterfulgt av **Delete backups older than** (30 dager som
 standard). Den andre noden kjører bare etter at sikkerhetskopien er vellykket. Du kan
@@ -100,7 +103,7 @@ admin i, sier det i raden i stedet for å liste sikkerhetskopiene.
 
 Utvid en rad for å se hver sikkerhetskopi, med den nyeste først:
 
-- **Gjenopprett** erstatter arbeidsområdets gjeldende database med denne sikkerhetskopien. Eksporter arbeidsområdet først hvis du kan komme til å angre det. Krever **eier**.
+- **Gjenopprett** erstatter arbeidsområdets gjeldende database med denne sikkerhetskopien. Eksporter arbeidsområdet først hvis du kan komme til å angre det. Krever serverens eier, som også må eie arbeidsområdet.
 - **Last ned** lagrer filen på maskinen du bruker. Sikkerhetskopien blir liggende på serveren.
 - **Kopier sti** kopierer plasseringen på serveren.
 - **Slett** fjerner denne sikkerhetskopien permanent når du har skrevet inn navnet på arbeidsområdet. Krever **eier**.
@@ -114,7 +117,7 @@ noen fjerner dem. Installasjonens **eier** ser dem i den samme listen, merket
 de radene.
 
 De har ingen **Gjenopprett**, siden det ikke finnes noe arbeidsområde å gjenopprette til.
-For å få en tilbake laster du den ned, oppretter et arbeidsområde og laster opp filen som
+For å få en tilbake laster du den ned, oppretter et arbeidsområde (bare serverens eier kan det) og laster opp filen som
 beskrevet i
 [Flytt et arbeidsområde til en annen installasjon](#flytt-et-arbeidsområde-til-en-annen-installasjon).
 
@@ -154,9 +157,9 @@ Ett arbeidsområde er én databasefil, så overleveringen er en filoperasjon.
 2. På **mål**serveren oppretter du (eller velger) arbeidsområdet som skal ta imot det.
 3. Utvid det arbeidsområdet, og trykk **Velg en fil og last opp** under **Gjenopprett fra denne enheten**. Velg `.db`-filen du lastet ned.
 
-Hvis begge serverne er maskinen du sitter ved, gjør **Lagre på server** pluss
-**Importer** → **Velg fil** det samme uten rundturen; stiene i importdialogen løses opp på
-serververten.
+Steg 3 er en gjenoppretting, så den krever serverens eier på **mål**serveren, som også må eie det arbeidsområdet.
+
+Hvis begge serverne er maskinen du sitter ved, gjør **Lagre på server** på kilden, og deretter filens sti i **Arbeidsområdets databasefil** og **Importer** på målet, det samme uten rundturen; stien løses opp på serververten.
 
 :::caution[Import erstatter alt]
 Import overskriver alt målarbeidsområdet inneholder nå, og det kan ikke angres. Eksporter
@@ -170,11 +173,11 @@ installasjon**. I det andre tilfellet tilhører filens parede enheter og bruker-
 installasjonen den kom fra, og de løses ikke opp på denne — arbeidsområdets egne data er
 intakte, men sjekk medlemskapet på nytt etter at du har tatt det i bruk.
 
-Chatbot-tokener ligger ved siden av databasen, ikke inni den, så et arbeidsområde du gir
-til noen andre, inneholder ingen aktive påloggingsdata. Installasjonen som mottar det,
-kobler til sine egne.
+Chatbot-tokener og leverandørinnlogginger ligger utenfor databasen, så installasjonen som mottar det, kobler til sine egne. Filen inneholder arbeidsområdets webhook-tokener for pipelinen og hemmelighetene for webhooks for sakssynkronisering, så et arbeidsområde du gir til noen andre, gir dem også disse. Roter dem etterpå hvis mottakeren ikke skal ha dem.
 
 ## Gjenopprett ett arbeidsområde fra et øyeblikksbilde
+
+Du må være serverens eier og arbeidsområdets eier.
 
 1. Under **Installasjonsøyeblikksbilder** utvider du øyeblikksbildet du vil bruke.
 2. Finn raden til arbeidsområdet og trykk **Gjenopprett**.
@@ -186,8 +189,8 @@ behandle den samme filen annerledes.
 
 En rad kan si **Ikke lenger på denne serveren**, med **Gjenopprett** deaktivert:
 øyeblikksbildet inneholder et arbeidsområde denne installasjonen ikke lenger har. Hent det
-tilbake manuelt — opprett et arbeidsområde, og importer deretter til det fra
-`<snapshot path>/<old workspace id>/workspace.db` under **Arbeidsområdedata**. Det
+tilbake manuelt — opprett et arbeidsområde (bare serverens eier), og skriv deretter inn
+`<snapshot path>/<old workspace id>/workspace.db` i feltet **Arbeidsområdets databasefil** under **Arbeidsområdedata**, og trykk **Importer**. Det
 utvidede øyeblikksbildet viser sin egen **Sti på serveren** i et kopifelt, og radens tittel
 er den gamle arbeidsområde-id-en, så du har begge halvdelene av stien foran deg.
 
@@ -358,9 +361,11 @@ lagres.
 | Symptom                                                                  | Årsak og løsning                                                                                                         |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Ned- eller opplasting mislykkes etter en endret tilkobling | Prøv på nytt på den aktive parede tilkoblingen. Både direkte og relé støtter kryptert filoverføring; ingen av dem tilbyr en klartekst-HTTP-reserve |
-| «Serveren nektet»                                                        | Rolle. Å ta eller liste opp et installasjonsøyeblikksbilde krever installasjonens operatør. Å laste ned et arbeidsområde krever admin, å gjenopprette ett krever eier, og en zip med et helt øyeblikksbilde krever installasjonens operatør |
-| «Denne serveren har ingen sikkerhetskopiflate»                           | Verten har ingen sikkerhetskopiport koblet opp — en demoserver. Operasjonene mangler i stedet for å bli avvist         |
-| «Filen er større enn serveren godtar»                                    | Opplastinger er begrenset til 8 GiB. Legg filen på serververten og bruk **Importer** → **Velg fil** i stedet            |
+| «Serveren nektet. Å laste ned et arbeidsområde krever admin-rollen. Å gjenopprette ett krever serverens eier, som også må eie arbeidsområdet. Et helt øyeblikksbilde krever serverens eier.» | Rolle. Å ta, liste opp eller laste ned et installasjonsøyeblikksbilde krever serverens eier. Å laste ned et arbeidsområde krever admin; å gjenopprette ett krever serverens eier, som også må eie arbeidsområdet |
+| «Filoverføring er ikke satt opp for denne tilkoblingen ennå. Koble til serveren på nytt for å laste ned eller opp en sikkerhetskopi.» | Denne tilkoblingen til serveren har ingen filoverføringskanal, så **Last ned** og opplastingen er slått av. Koble til serveren på nytt, og prøv så igjen |
+| «Bare serverens eier kan gjenopprette sikkerhetskopier. Du kan fortsatt laste dem ned.» | Å gjenopprette erstatter et arbeidsområdes database på serververten, så bare serverens eier gjenoppretter. Last ned sikkerhetskopien og be dem om det |
+| «Denne serveren har ingen sikkerhetskopiflate.»                          | Verten har ingen sikkerhetskopiport koblet opp — en demoserver. Operasjonene mangler i stedet for å bli avvist         |
+| «Filen er større enn serveren godtar.»                                   | Opplastinger er begrenset til 8 GiB. Legg filen på serververten og skriv inn stien i **Arbeidsområdets databasefil** i stedet |
 | Import avvist: ikke en Control Center-arbeidsområdedatabase              | Filen har ingen `workspace_meta`-rad — den er ikke en arbeidsområdeeksport, eller den er avkortet. Ingenting ble erstattet |
 | Et øyeblikksbilde står som **Ufullstendig**                              | Manifestet mangler eller navngir filer som ikke finnes. Ta et nytt; ta i mellomtiden i bruk enkeltfiler for arbeidsområder fra det |
 | Et øyeblikksbilde sier at arbeidsområder ikke ble fanget opp             | Disse arbeidsområdene har aldri blitt skrevet til, eller kopien deres mislyktes. Sjekk serverloggen                     |

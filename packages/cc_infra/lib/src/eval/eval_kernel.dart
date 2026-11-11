@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:cc_infra/src/eval/kernel_runners.dart';
 import 'package:cc_infra/src/eval/magics_transform.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/process/child_process.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 import 'package:path/path.dart' as p;
 
 /// Which interpreter a kernel runs.
@@ -106,22 +106,26 @@ abstract interface class KernelLauncher {
   Future<Process> start(KernelLanguage language, String runnerPath);
 }
 
-/// Runs the kernel as a child process of the server.
+/// Runs the kernel on the server host, used when the conversation has no
+/// enclosure (`RigKernelLauncher`). Both speak the same NDJSON, so nothing
+/// above this line knows which one it got.
 ///
-/// The plain path, used when no enclosure is available. The enclosure launcher
-/// is the one that matters for an untrusted repo — see `RigKernelLauncher` —
-/// but they speak the same NDJSON, so nothing above this line knows which one
-/// it got.
+/// The interpreter starts through the run's [processes] launcher: inside the
+/// run's sandbox when the server sandboxes agents.
 class HostKernelLauncher implements KernelLauncher {
   /// Creates a [HostKernelLauncher] rooted at [workingDirectory].
   const HostKernelLauncher({
     required this.workingDirectory,
+    required this.processes,
     this.pythonExecutable,
     this.nodeExecutable,
   });
 
   /// Where cells run.
   final String workingDirectory;
+
+  /// Starts the interpreter.
+  final ToolProcessLauncher processes;
 
   /// Override for the Python interpreter.
   final String? pythonExecutable;
@@ -141,27 +145,28 @@ class HostKernelLauncher implements KernelLauncher {
     // A checkout's own venv is the interpreter its dependencies are installed
     // against; a `$PATH` python is a different environment, and a cell that
     // cannot import the package the repo depends on reads as broken code.
+    // The venv is the repository's program, so only a confined kernel uses it.
     final python =
         pythonExecutable ??
-        _firstExisting([
-          p.join(workingDirectory, '.venv', 'bin', 'python3'),
-          p.join(workingDirectory, 'venv', 'bin', 'python3'),
-        ]) ??
+        (processes.confined
+            ? _firstExisting([
+                p.join(workingDirectory, '.venv', 'bin', 'python3'),
+                p.join(workingDirectory, 'venv', 'bin', 'python3'),
+              ])
+            : null) ??
         'python3';
     return switch (language) {
-      KernelLanguage.python => ChildProcess.start(
+      KernelLanguage.python => processes.start(
         python,
         // Unbuffered: the whole value of streaming a cell's output is losing
         // it to a 4KB buffer that only flushes when the cell ends.
         ['-u', runnerPath],
         workingDirectory: workingDirectory,
-        toolchain: true,
       ),
-      KernelLanguage.javascript => ChildProcess.start(
+      KernelLanguage.javascript => processes.start(
         nodeExecutable ?? 'node',
         [runnerPath],
         workingDirectory: workingDirectory,
-        toolchain: true,
       ),
     };
   }

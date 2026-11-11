@@ -2,7 +2,7 @@
 title: Het agentmodel
 description: Wat een agent in Control Center nu eigenlijk is, welke velden het gedrag veranderen en hoe de adapter waarop hij draait bepaalt wat er kan worden afgedwongen.
 slug: nl-NL/handleiding/concepten/agentmodel
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Wat is een agent?
@@ -54,7 +54,7 @@ Reposkills worden voor **elke** adapter geladen, niet alleen voor de ingebouwde 
 
 Een agent draagt geen eigen machtigingsvlaggen. Of hij een commit mag maken, mag pushen, een pull request mag openen, naar een tracker mag schrijven of het netwerk mag bereiken, beslissen de [actiebeveiligingen](/nl-NL/handleiding/concepten/beveiligingen/) — toestaan, eerst vragen of weigeren, op het bereik werkruimte, agent of ruimte — en dezelfde regels gelden welke adapter hem ook draait.
 
-Wat een run _aangereikt krijgt_, verandert niet met die regels. Een run in een GitHub-worktree krijgt altijd een GitHub-token met alleen leesrechten, en een push wordt gevraagd op het moment dat hij gebeurt: de git-configuratie van de agent stuurt elke GitHub-push via Control Center, dat de regel **Naar een remote pushen** toepast voordat het hem doorstuurt.
+Wat een run _aangereikt krijgt_, verandert niet met die regels. Een run kan altijd de GitHub-repositories lezen waarmee hij werkt, met een token met alleen leesrechten, en een push wordt gevraagd op het moment dat hij gebeurt: de git-configuratie van de agent stuurt elke GitHub-push via Control Center, dat de regel **Naar een remote pushen** toepast voordat het hem doorstuurt.
 
 Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/) voor hoe dat werkt, waaronder wat er op bestandssysteemniveau wel en niet wordt afgedwongen.
 
@@ -70,16 +70,16 @@ Het veld met de grootste gevolgen op een agent is zijn adapter, want het transpo
 Concreet: **alleen de ingebouwde harness ondersteunt subagents, bijsturing midden in een run, pauzeren en hervatten (en dus overname) en structurele afdwinging van de modus.** Claude Code krijgt niets daarvan.
 
 :::caution[De OS-sandbox is een ondergrens, geen modusbewaker, en niet elke host heeft er een]
-De matrix hierboven gaat over wat Control Center kan _zien en bij de poort kan controleren_. Daaronder wikkelt `cc_server` de Claude Code-CLI in de OS-sandbox van de host waar die bestaat — Seatbelt op macOS, bubblewrap op Linux en WSL2 — dus een ongeziene `rm` of een ongeziene schrijfactie wordt alsnog door het OS begrensd. Op **Windows is er helemaal geen backend** en op Linux of WSL2 zonder `bwrap` en `socat` meldt de probe er geen, dus daar vallen die runs terug op opschoning van de omgeving, via de broker verstrekte inloggegevens, de beveiligingen op de calls die Control Center kan zien en de eigen worktree van het gesprek (copy-on-write waar `rift` wordt meegeleverd; `git worktree` op Windows).
+De matrix hierboven gaat over wat Control Center kan _zien en bij de poort kan controleren_. Daaronder wikkelt `cc_server` de Claude Code-CLI in de OS-sandbox van de host waar die bestaat — Seatbelt op macOS, bubblewrap op Linux en WSL2 — dus een ongeziene `rm` of een ongeziene schrijfactie wordt alsnog door het OS begrensd. Op **Windows is er helemaal geen backend** en op Linux of WSL2 zonder `bwrap` en `socat` meldt de probe er geen. Daar starten alleen de runs van de serverbeheerder; die van alle anderen worden geweigerd, tenzij de beheerder de server met `--sandbox off` heeft gestart. Een run die zonder sandbox start, valt terug op opschoning van de omgeving, via de broker verstrekte inloggegevens, de beveiligingen op de calls die Control Center kan zien en de eigen worktree van het gesprek (copy-on-write waar `rift` wordt meegeleverd; `git worktree` op Windows).
 
 Wat de sandbox niet is, is een _poort_. Hij begrenst waar een proces mag lezen, schrijven en verbinden — een alleen-lezenmodus bereikt hem wel, in de vorm van alleen-lezen bind mounts — maar hij kan geen call onderscheppen, niet om goedkeuring vragen en je achteraf niet vertellen wat de CLI heeft geprobeerd. Dat, plus de vier mogelijkheden die net hierboven zijn genoemd, is nog steeds wat de ingebouwde harness heeft en de andere niet. Zie [Sandbox en beveiliging](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/).
 :::
 
-Een agent **zonder** adapter valt terug op **Control Center (built-in)** — de loop in de server, dus er is geen CLI te installeren — en zijn runlog registreert `cc-harness`. Elke geseede agent wordt aangemaakt zonder adapter of model, dus de vijf agenten van een verse werkruimte draaien daar allemaal, op Anthropics standaardmodel, tot je per agent een adapter en model instelt. De keuze "standaardadapter" bij de onboarding is een clientvoorkeur die de server nooit leest, en die wordt niet met terugwerkende kracht toegepast op al aangemaakte agenten.
+Een agent **zonder** adapter valt terug op **Control Center (built-in)** — de loop in de server, dus er is geen CLI te installeren — en zijn runlog registreert `cc-harness`. Elke geseede agent wordt aangemaakt zonder adapter of model, dus de zes agenten van een verse werkruimte draaien daar allemaal, op Anthropics standaardmodel, tot je per agent een adapter en model instelt. Het afronden van de adapterstap van de onboarding zet het adapter- en modelpaar op elke agent die er in de werkruimtes van dat moment nog geen heeft; er is geen standaardrunner per werkruimte.
 
 ## Waar agenten vandaan komen
 
-- **Geseed met de werkruimte.** Elke werkruimte — niet alleen de eerste — krijgt een CEO plus vier specialisten (`qa`, `architect`, `engineer`, `librarian`) die aan hem rapporteren, idempotent op de achtergrond aangemaakt wanneer de werkruimte wordt aangemaakt. Zie [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/).
+- **Geseed met de werkruimte.** Elke werkruimte — niet alleen de eerste — krijgt een CEO plus vijf specialisten (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) die aan hem rapporteren, idempotent op de achtergrond aangemaakt wanneer de werkruimte wordt aangemaakt. Zie [Werkruimtes en isolatie](/nl-NL/handleiding/concepten/werkruimtes/).
 - **Handmatig toegevoegd** via Instellingen → Werkruimte → Agenten. Een agent vragen om een collega aan te nemen maakt geen rij aan; gebruik dat scherm.
 
 ## Livestatus

@@ -2,7 +2,7 @@
 title: Diagnostiquer un agent
 description: Déroulez le journal d’exécution, la sonde d’adaptateur, l’état du serveur et les diagnostics de l’hôte lorsqu’un agent cesse de produire des exécutions.
 slug: fr-FR/manuel/guides/diagnostiquer-agent
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Ce guide vous montre comment déterminer pourquoi un agent ne produit pas d’exécutions.
@@ -13,13 +13,13 @@ Procédez de haut en bas : d’abord les exécutions de l’agent lui-même, pu
 
 **Paramètres → Espace de travail → Agents** → sélectionnez l’agent → **Journaux**.
 
-Chaque exécution affiche un badge d’état, une durée (« Running… » tant qu’elle est en cours), ses heures de début et de fin, son PID et l’adaptateur utilisé. **Vue** ouvre le flux d’événements brut de cette exécution. **Arrêter** tue un processus en cours et marque l’exécution « Killed by user » ; **Arrêter l’exécution** dans l’en-tête fait de même pour toutes les exécutions en cours de cet agent.
+Chaque exécution affiche un badge d’état, une durée (« Running… » tant qu’elle est en cours), ses heures de début et de fin, son PID et l’adaptateur utilisé. **Vue** ouvre le flux d’événements brut de cette exécution. **Arrêter** tue un processus en cours et marque l’exécution « Killed by user » ; **Arrêter l'exécution** dans l’en-tête fait de même pour toutes les exécutions en cours de cet agent dans cet espace de travail. Vous ne voyez et n’arrêtez que les exécutions d’agents en cours dans les espaces de travail auxquels vous appartenez ; le propriétaire du serveur les voit et les arrête toutes.
 
 Interprétez ces informations ainsi :
 
 - **Aucune exécution du tout** — le lancement n’a jamais eu lieu. Les mentions dans le composeur sont `@` suivi de caractères de mot (lettres, chiffres, trait de soulignement). La résolution se fait par correspondance exacte ou par préfixe sur le nom de l’agent : `@code-reviewer` est donc analysé comme `code` et peut tout de même réveiller un agent nommé `code-reviewer`. Un nom contenant un espace ne peut pas être mentionné en un seul jeton. Passez ensuite à l’étape 2.
-- **Une exécution qui s’est terminée immédiatement en erreur** — ouvrez **Vue**. Un échec de lancement du backend apparaît ici comme une erreur de processus.
-- **Une exécution bloquée sur « Running… »** — arrêtez-la, puis vérifiez le **Délai de silence** de l’agent dans l’onglet Paramètres. Un délai non défini utilise la valeur par défaut du mode.
+- **Une exécution qui s’est terminée immédiatement en erreur** — ouvrez **Vue**. Un échec de lancement du backend apparaît ici comme une erreur de processus. « Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents. » signifie que la machine du serveur n’a pas de bac à sable du système d’exploitation et que vous n’en êtes pas le propriétaire ; voir [Configurer les politiques de bac à sable](/fr-FR/manuel/guides/politiques-de-bac-a-sable/#mon-exécution-dagent-a-été-refusée---ce-serveur-na-pas-de-bac-à-sable-).
+- **Une exécution bloquée sur « Running… »** — arrêtez-la, puis vérifiez le **Délai de silence (minutes)** de l’agent dans son onglet **Paramètres**. Un délai non défini utilise la valeur par défaut du mode.
 - **Une exécution terminée sans sortie utile** — l’état du journal d’exécution reste `completed` pour une exécution qui s’est terminée sans son livrable déclaré ; le signal fiable est le texte du résumé, et non le badge.
 
 L’onglet Journaux n’affiche aucun coût. Pour les dépenses, utilisez le tableau par agent dans **Observabilité → Aperçu**.
@@ -67,11 +67,11 @@ Deux choses à savoir lorsqu’une modification « marche dans les tests mais p
 - **Confidentialité** — si le contenu brut des diffs peut être transmis au modèle de l’agent et si les rapports de plantage sont envoyés.
 
 :::caution[Cette section décrit l’hôte ; ses contrôles sont côté client]
-Détection et application concordent désormais : là où le détecteur signale un backend natif, les exécutions d’agents sur cet hôte y sont réellement enveloppées. Mais le détecteur est la seule chose active de cette section. L’interrupteur principal et le sélecteur de backend sont des préférences stockées sur votre appareil, et le serveur n’en lit aucun — son propre interrupteur est `--sandbox` (`on` par défaut, `off` pour s’en désengager).
+Détection et application concordent : là où le détecteur signale un backend natif, les exécutions d’agents sur cet hôte y sont réellement enveloppées. Mais le détecteur est la seule chose active de cette section. L’interrupteur principal et le sélecteur de backend sont des préférences stockées sur votre appareil, et le serveur n’en lit aucun — son propre interrupteur est `--sandbox` (`on` par défaut, `off` pour s’en désengager).
 
-Un avertissement ici mérite donc d’être traité, mais ce n’est généralement pas la cause de la défaillance d’un agent. Pour confirmer l’état du serveur, lisez son journal de démarrage : il affiche `agent sandbox ON` avec la note sur le backend, `no OS-native agent sandbox on this host` avec une indication d’installation, ou `agent sandbox DISABLED by --sandbox off`. `GET /healthz` ne contient aucun champ de bac à sable.
+Un avertissement ici mérite donc d’être traité. Sur un hôte sans backend, c’est la raison pour laquelle quelqu’un d’autre que le propriétaire du serveur ne peut pas lancer d’agents du tout. Pour confirmer l’état du serveur, lisez son journal de démarrage : il affiche `agent sandbox ON` avec la note sur le backend, `no OS-native agent sandbox on this host` avec une indication d’installation, ou `agent sandbox DISABLED by --sandbox off`, et sa ligne d’exposition porte `sandbox=native`, `sandbox=unavailable` ou `sandbox=off`. `GET /healthz` ne contient aucun champ de bac à sable.
 
-Là où il n’y a pas de backend — toujours sous Windows, sous Linux ou WSL2 sans `bwrap` ni `socat` — les exécutions ne sont **pas** isolées et ce qui les encadre, c’est l’arbre de travail propre à la conversation, son jeton de forge en lecture seule et la passerelle de push, les garde-fous d’action, l’assainissement de l’environnement et la surface d’outils que son mode autorise.
+Là où il n’y a pas de backend (toujours sous Windows, sous Linux ou WSL2 sans `bwrap` ni `socat`), seules les exécutions dont le propriétaire du serveur répond démarrent, et celles des autres sont refusées. Les exécutions qui démarrent là, et toutes celles sous `--sandbox off`, ne sont **pas** isolées et ce qui les encadre, c’est l’arbre de travail propre à la conversation, son jeton de forge en lecture seule et la passerelle de push, les garde-fous d’action, l’assainissement de l’environnement et la surface d’outils que son mode autorise.
 :::
 
 ## Défaillances courantes

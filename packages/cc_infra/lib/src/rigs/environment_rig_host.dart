@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cc_domain/cc_domain.dart' show NotFoundException;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
+import 'package:cc_domain/features/environments/domain/services/environment_definition_validator.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_component.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
@@ -269,6 +270,9 @@ class RigEnvironmentHost implements EnvironmentRigHost {
         ...compose,
         'up',
         '-d',
+        // A service the compose file dropped stops with the rest, as on the
+        // host.
+        '--remove-orphans',
         if (component.build) '--build',
         ...component.services,
       ],

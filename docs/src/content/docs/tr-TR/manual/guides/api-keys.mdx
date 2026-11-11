@@ -2,7 +2,7 @@
 title: API anahtarlarını yönetme
 description: Her kimlik bilgisinin nerede yaşadığı — sunucudaki kullanıcı hesabınız, sunucunun kendisi ya da harici bir CLI — ve nasıl ayarlanacağı, döndürüleceği ve kaldırılacağı.
 slug: tr-TR/kilavuz/nasil-yapilir/api-anahtarlari
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Bu kılavuz, Control Center’ın kullandığı her kimlik bilgisinin nerede
@@ -33,7 +33,7 @@ olmadığına bağlıdır.
   yapabilecekleriyle sınırlı bir token alır. Bu asla bütünüyle devredilmiş
   oturum açmanız değildir
 
-Sizinki **Ayarlar → Çalışma alanı → Profil ve kimlik** altındaki **Kod
+Sizinki **Ayarlar → Siz → Profil** altındaki **Kod
 barındırma** kartında ayarlanır; sunucunun uygulaması **Ayarlar → Sunucu → Tek oturum
 açma** altındaki **Sağlayıcı uygulamaları**'nda. Bkz.
 [GitHub entegrasyonunu kurma](/tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu/)
@@ -43,10 +43,10 @@ GitLab ve Bitbucket hâlâ aynı şekilde saklanan, yapıştırılmış kişisel
 alır. Bkz. [Bir kod barındırıcısı bağlama](/tr-TR/kilavuz/nasil-yapilir/kod-barindiricisi-baglama/).
 
 :::note[Yalnızca URL ile erişilen bir ekran da var]
-`/workspaces/<workspaceId>/api-keys` adresi, ilk kurulumun ilk adımındaki iki
-kartın aynısını gösterir. **Arayüzün hiçbir yerinde gezinme girişi yoktur**;
-yalnızca URL yazılarak ulaşılır. Bunun yerine Ayarlar → Çalışma alanı → Profil ve
-kimlik yolunu kullanın.
+`/workspaces/<workspaceId>/api-keys` adresi, ilk kurulumun ilk adımındaki kartların
+aynısını gösterir. **Arayüzün hiçbir yerinde gezinme girişi yoktur**;
+yalnızca URL yazılarak ulaşılır. Bunun yerine kendi oturum açmalarınız için Ayarlar → Siz → Profil
+yolunu, bilet sağlayıcısı için Ayarlar → Çalışma alanı → Entegrasyonlar yolunu kullanın.
 :::
 
 ## Model sağlayıcı anahtarlarını ayarlama
@@ -66,10 +66,7 @@ Bu kimlik bilgileri **ana makine genelinde geçerlidir**: tek bir anahtar
 kurulumdaki her çalışma alanına hizmet eder. OAuth token’ları süreleri dolmadan
 yenilenir.
 
-Harici adaptör CLI’ları kendi kimlik bilgilerini, kendi yapılandırmalarında,
-sunucu ana makinesinde tutar — Control Center bunları yönetmez. Claude Code’un
-kimlik doğrulamasını, `cc_server`’ın çalıştığı makinede, kendi belgelerinin
-söylediği şekilde yapın.
+Claude Code, **Ayarlar → Sunucu → Model sağlayıcıları** altındaki **Claude Code hesapları** üzerinden oturum açar: her hesap sunucuda kendi yapılandırma dizinini alır ve uygulamanın gösterdiği `claude auth login` komutunu orada çalıştırırsınız.
 
 Adaptör başına **Ortam değişkenleri** iletişim kutusu, bunlardan biri için bir
 anahtar koyulacak yer gibi görünür ama değildir: sizin cihazınıza yazar, oysa
@@ -78,14 +75,14 @@ sunucu kendi kopyasını okur ve ikisi arasında hiçbir köprü yoktur. Bkz.
 
 ## Bir bilet sağlayıcısı bağlama
 
-**Ayarlar → Çalışma alanı → Genel** üzerindeki **Biletler** kartı tek bir kararın
-iki yarısını barındırır: biletlerinizin hangi sağlayıcıda yaşadığı ve Control
-Center’ın onunla konuşurken kim olduğu. **Yerel**'i seçmek Linear satırlarını
+**Ayarlar → Çalışma alanı → Entegrasyonlar** üzerindeki **Biletler** kartı çalışma alanının tarafını
+barındırır: biletlerinizin hangi sağlayıcıda yaşadığı ve Control Center’ın orada
+kendi başına çalışırken kim olduğu. **Yerel**'i seçmek Linear satırlarını
 gizler — yerel biletler bu sunucunun kendi veritabanında yaşar ve kimlik
 doğrulaması yapılacak bir şeyleri yoktur.
 
 Linear’da iki oturum açma vardır ve yapıştırılan anahtar yoktur: **Linear**
-sizindir, yaptıklarınız için; **Linear otomasyonu** ise bir yöneticinin bağladığı,
+yaptıklarınız için sizindir ve **Ayarlar → Siz → Profil** bölümünde bulunur; **Linear otomasyonu** ise bir yöneticinin **Biletler** kartında bağladığı,
 bilet senkronizasyonu, pipeline’lar ve ajanlar için çalışma alanının Control
 Center uygulamasıdır. Sunucu ayrıca otomasyonu bağlı olmayan çalışma alanları
 için bir **Hizmet API anahtarı** (**Sağlayıcı uygulamaları**) tutabilir. Bir
@@ -104,10 +101,11 @@ araçlarıyla yazar. Bkz.
 - **Sunucunun uygulaması**: uygulamanın sağlayıcı sayfasında yeni bir özel
   anahtar ya da istemci sırrı oluşturun, **Sağlayıcı uygulamaları**'na
   yapıştırın ve **Test**'e basın
-- **Connect kurulum anahtarı**: **Control Center Connect** kartında **Anahtarı
-  değiştir** ya da `cc_server connect rotate-key --yes`. Connect üzerinden oturum
-  açan herkes yeniden oturum açar. Bkz.
-  [Control Center Connect](/tr-TR/kilavuz/referans/connect/)
+- **Connect kurulum anahtarı**: sunucu sahibi **Control Center Connect** kartında
+  **Anahtarı değiştir** düğmesine basar. Connect üzerinden oturum açan herkes
+  yeniden oturum açar. Bir Connect sunucusuna ulaşılamazsa hiçbir şey değişmez ve
+  **Yine de yenile** seçeneği sunulur. Bkz.
+  [Kurulum anahtarını yenileme](/tr-TR/kilavuz/referans/connect/#kurulum-anahtarını-değiştirme)
 - **Bir model sağlayıcısı**: satırında oturumu kapatın (OAuth) ya da anahtarı
   kaldırın, sonra yeniden bağlayın
 - **Slack**: kendi uygulamanız için token’ları bağlantı iletişim kutusuna yeniden
@@ -120,8 +118,7 @@ araçlarıyla yazar. Bkz.
 
 ### Bir GitLab ya da Bitbucket token’ı `curl` ile çalışıyor ama burada çalışmıyor
 
-**Kod barındırma** satırının alt başlığına bakın. “ortamdan” yazıyorsa yanıt
-veren kimlik bilgisi sizinki değil, sunucununkidir — sizinki kaydedilmemiştir.
+**Kod barındırma** satırına bakın. “Bağlı değil” yazıyor ya da sizden yeniden bağlanmanızı istiyorsa token’ınız kaydedilmemiş ya da reddedilmiştir. Bitbucket için Atlassian hesap e-postanızı API token’ınızla birlikte girin.
 
 ### Bir GitLab ya da Bitbucket token’ı kabul ediliyor ama sonraki istekler başarısız oluyor
 

@@ -2,7 +2,7 @@
 title: Beszélgetés a Control Centerrel GitHub PR-ből
 description: Kérjen átnézést vagy tegyen fel kérdést a Control Centernek magából a PR-beszélgetésből, webhook és nyilvános URL nélkül.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/github-pr-beszelgetesek
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Ez az útmutató bemutatja, hogyan dolgozhat a Control Centerrel anélkül, hogy
@@ -31,24 +31,7 @@ pontosan úgy viselkedik, mint egy nyilvános telepítés.
 
 ## A bot nevének megkeresése
 
-Említse meg a `@usectrl` nevet, a Control Center külön GitHub-fiókját. Ez az alapértelmezett aktiválási mód; a kérést továbbra is a munkaterület GitHub-sávja kezeli, és az küldi a válaszokat. A `usectrl` fiókhoz nem kell hitelesítő adat.
-
-Az alkalmazás saját `<appslug>[bot]` bejelentkezési neve és a rövid `@appslug` alak is működik. Az opcionális alias megkeresése saját alkalmazás esetén:
-
-1. Nyissa meg a **Beállítások → Szerver → Egyszeri bejelentkezés** oldalt, és
-   görgessen a **Szolgáltatói alkalmazások** kártyához
-2. Nyissa meg a **GitHub** blokkot, és kattintson a **Teszt** elemre
-3. Másolja ki a **Bot bejelentkezési név** értékét, amikor kitöltődik. Ha még
-   mindig az üres súgószöveget mutatja, a bejelentkezési név mindig
-   `<appslug>[bot]` — gépelje be, vagy használja a rövid `@appslug` alakot
-
-A GitHub nem kínál alkalmazásfiókokat a `@`-automatikus kiegészítésben, ezért az alkalmazás aliasait be kell gépelni vagy ki kell másolni. Alapértelmezés szerint a külön `@usectrl` felhasználóval indítható a kérés; a `@myapp` és a `@myapp[bot]` továbbra is elfogadott alkalmazásalias.
-
-:::note[Válasszon jellegzetes alkalmazásnevet]
-A rövid alak szövegként kerül illesztésre. Ha egy emberi GitHub-felhasználónak
-véletlenül ugyanaz a slugja, mint az alkalmazásának, akkor a rövid alakkal való
-említés is eléri a botot. A teljes `@myapp[bot]` alak mindig egyértelmű.
-:::
+Említse meg a `@usectrl` nevet, a Control Center külön GitHub-fiókját. Ez az egyetlen aktiválási mód: az App saját bejelentkezésének megemlítése semmit sem indít; a kérést továbbra is a munkaterület GitHub-sávja kezeli, és az küldi a válaszokat. A `usectrl` fiókhoz nem kell hitelesítő adat.
 
 ## Átnézés kérése a GitHubból
 
@@ -122,8 +105,7 @@ az `ai-review` címkét hozzáadta:
 
 - **A GitHub-fióknak be kell jelentkeznie** ezen a szerveren. Az egyeztetés a
   GitHub numerikus fiókazonosítója alapján történik, soha nem a bejelentkezési
-  név alapján. Jelentkezzen be a **Beállítások → Munkaterület → Profil és
-  identitás → Kódtárhely** helyen
+  név alapján. Jelentkezzen be a **Beállítások → Ön → Profil → Kódtárhely** helyen
 - **Írási jogosultságú szerepkörrel rendelkező tagnak kell lennie**
   (`member`, `admin` vagy `owner`) abban a munkaterületben, amely a tárolót
   kapcsolja
@@ -148,7 +130,7 @@ reagál, a másik pedig hallgat. Ugyanez érvényes a címkére.
 | Dolog                | Viselkedés                                                                |
 | ------------------- | ------------------------------------------------------------------------ |
 | Visszaigazolás      | 👀 az Ön fiókjától a hozzászóláson (vagy címke esetén a PR-en), egy pásztázáson belül |
-| Válaszok            | Abban a szálban közzétéve, amelyben a kérdést feltették, `**Control Center** (for @your-login):` kezdettel. Saját alkalmazásnál a szerző az alkalmazás botja; a Connecten keresztül az Ön fiókja, amely a megosztott Appon keresztül jár el |
+| Válaszok            | Abban a szálban közzétéve, amelyben a kérdést feltették, `**Control Center** (for @your-login):` kezdettel. A szerző az alkalmazás botja. A megosztott Connect-alkalmazáson az átnézési szál belsejében küldött válasz az Ön saját fiókja nevén készül, kivéve, ha a Connect üzemeltetője nem vette fel ezt a telepítést a listájára |
 | Attribúció a térben | A kérdés az Öné; az ügynök az Ön nevében fut, a tér autonómiatárcsája szerint |
 | Átnézések           | A megállapítások az átnézési térbe kerülnek; a GitHubra való közzététel kézi |
 
@@ -171,9 +153,6 @@ hozzáférésre. Semmi sem vész el, amíg a szerver offline — egy leállás a
 - Be van jelentkezve a GitHubra ezen a szerveren, írási jogosultságú
   szerepkörű tag, és pusholhat a repóba? A szerver mindenki mást válasz nélkül
   figyelmen kívül hagy
-- A Control Center megosztott Appján engedélyezve van a szervezet telepítése
-  ehhez a szerverhez? Lásd:
-  [A szerver engedélyezése egy szervezet számára](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/#a-szerver-engedélyezése-egy-szervezet-számára)
 - Még mindig semmi? A szervernapló megnevezi a pásztázást és a PR-t, amikor
   valami elszáll; keresse a `pr_conversation:` (a lekérdező) és a
   `github_pr_conversation:` (a híd) bejegyzést

@@ -2,7 +2,7 @@
 title: SSO-konfigurációs referencia
 description: Az egyszeri bejelentkezés minden kapcsolója, végpontja, művelete és hibakódja.
 slug: hu-HU/kezikonyv/referencia/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Az egyszeri bejelentkezés minden beállítható eleme egy helyen. Az értékek a
@@ -34,6 +34,18 @@ képernyő ellentmondhat).
 | `groupRoleMap`         | mindkettő     | `{}`            | csoport → szerep; a tulajdonosi leképezéseket mentéskor elutasítjuk                                                                                  |
 | `autoMember`           | mindkettő     | be              | a felhasználók automatikus hozzáadása minden munkaterülethez az első bejelentkezéskor                                                              |
 | `allowJit`             | mindkettő     | be              | ismeretlen felhasználók provisionálása bejelentkezéskor                                                                                             |
+
+## Fiókegyeztetés
+
+Az `SsoProvisioner` a bejelentkezést a következő sorrendben oldja fel, és soha nem felhasználónév alapján:
+
+1. `(users.sso_issuer, users.sso_subject)` megegyezik a bejelentkezés kibocsátójával és alanyával (SAML NameID / OIDC `sub`).
+2. Olyan fiók, amelynek címe megegyezik a bejelentkezés e-mail-címével, csak akkor, ha mindkét oldal igazolja: a szolgáltató (OIDC `email_verified: true`; a hiányzó claim nem igazolás; az aláírt SAML-állítás mindig igazolás), és a fiók (`users.email_verified`). A címek levágva és kisbetűsre alakítva kerülnek tárolásra, és így is hasonlítjuk őket össze; igazolt cím csak akkor egyezik, ha pontosan egy fiók tartja igazoltnak. Két tulajdonos esetén nincs egyezés (naplóbejegyzés íródik, a cím nélkül), és egy cím kis- és nagybetűs változatához nem lehet igazolt fiókot rendelni, ha egy másik fiók igazoltan tartja a címet.
+3. Egyébként új fiók, ha az `allowJit` be van kapcsolva; elutasítás, ha ki van kapcsolva.
+
+A `users.email_verified` értékét SSO-bejelentkezés vagy olyan SCIM-push állítja be, amely tartalmazza a címet, vagy a szerver tulajdonosa a `users.vouchEmail` művelettel (**Beállítások → Szerver → Emberek → E-mail megerősítése**, naplózva mint `user.email_vouched`). A tulajdonos saját profilszerkesztése a saját címét igazolja. Bármely más profilszerkesztés, valamint meghívón megadott bármely cím igazolatlan marad, a cím szerkesztése pedig törli a jelzőt. Az igazolt bejelentkezés, amely fiókot hoz létre, a címet csak azoktól a fiókoktól veszi át, amelyek csak beírták (naplózva mint `user.email_unvouched_cleared`), soha nem attól, amely igazoltan tartja; ilyenkor az új fiók nem kap címet.
+
+Ha egy egyeztetett fiók már más alanyhoz vagy kibocsátóhoz van rögzítve, a bejelentkezést ez utasítja el: `This account is already linked to a different SSO identity`. A deaktivált fiók ezzel utasítja el: `This account has been deactivated`.
 
 ## Folyamatkonfiguráció
 
@@ -137,6 +149,7 @@ A `cc_saml_verify_response` hibái stabil kódot hordoznak:
   MUNKATERÜLETEKEN ÁTNYÚLÓ.
 - `users.sso_subject` + `users.sso_issuer` — a szolgáltatói alany rögzítése,
   `(issuer, subject)` szerint egyedi, részleges indexszel.
+- `users.email_verified`: hogy a fiók címe egyezhet-e SSO-bejelentkezéssel vagy SCIM-push-sal (lásd: [Fiókegyeztetés](#fiókegyeztetés)).
 - `users.deactivated_at` — a SCIM-deaktiválás bélyegzője.
 - A SCIM bearer token és az OIDC kliens titkos kulcsa a 0600 jogosultságú
   titkosfájlban él, soha nem az adatbázisban.

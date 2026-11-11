@@ -2,7 +2,7 @@
 title: Bilet yaşam döngüsü
 description: Bilet alanları, durumlar, geçişler, ilişkiler ve değişiklik darboğazı.
 slug: tr-TR/kilavuz/referans/bilet-yasam-dongusu
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Bilet durumları
@@ -118,7 +118,7 @@ Agrega, tek bir satırda iki ayrı kaygıyı kapsar. **Ayna** (sağlayıcı, ana
 | `projectId`              | `String?`                  | Biletin ait olduğu proje; asla uzak tarafa gönderilmez                                   |
 | `assignedAgentId`        | `String?`                  | Atanan Principal'ın kimliği (yalnızca meta veri — atama hiçbir şey göndermez)            |
 | `assigneeType`           | `PrincipalType`            | `assignedAgentId` değerinin adlandırdığı Principal türü — `user` ya da `agent` (varsayılan `agent`) |
-| `createdByType`          | `PrincipalType?`           | Bileti oluşturan Principal türü (`user` ya da `agent`); eski/sistem satırları için null      |
+| `createdByType`          | `PrincipalType?`           | Bileti oluşturan Principal türü (`user` ya da `agent`); sistemin oluşturduğu satırlar için null      |
 | `createdById`            | `String?`                  | Oluşturan Principal'ın kimliği                                                              |
 | `assignedTeamId`         | `String?`                  | Atanan ekip (yalnızca meta veri)                                                            |
 | `delegatedByAgentId`     | `String?`                  | Bu bileti devreden ajan                                                                     |

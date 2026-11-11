@@ -2,7 +2,7 @@
 title: Inteligencia de código
 description: Por qué un agente necesita el compilador, un buscador estructural y un depurador, y qué responde cada uno que los demás no pueden.
 slug: es-ES/manual/conceptos/inteligencia-de-codigo
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center ofrece a un agente cuatro formas de entender el código más allá de leerlo. Responden a preguntas genuinamente distintas, y la razón de que haya cuatro en lugar de una es que ningún mecanismo por sí solo responde a todas.
@@ -31,6 +31,8 @@ Repetir lo que ya se le ha dicho al agente es peor que no decir nada: llena el r
 Ningún servidor arranca al iniciar. Uno arranca en la primera petición que lo necesita, que casi siempre es la primera edición de un archivo que reclama como suyo, y los inactivos se limpian. Un host que nunca toca Dart nunca arranca un analizador.
 
 La detección es una **intersección**: debe existir un marcador de raíz en el checkout *y* el binario debe poder resolverse. Un marcador por sí solo dice «este proyecto es Python» y nada sobre si el servidor está instalado; un binario que se resuelve por sí solo dice que el host tiene una cadena de herramientas y nada sobre este checkout. Solo ambos a la vez significan que una consulta puede tener éxito, y una herramienta que se ofrece y siempre falla es peor que una que no está.
+
+Lo que un repositorio puede influir es deliberadamente poco. Los servidores vienen de una tabla integrada, nunca de un archivo del checkout, y un binario dentro del proyecto (`node_modules/.bin`) solo se usa cuando la ejecución va en sandbox. Un servidor de lenguaje es un programa que se ejecuta en la máquina del servidor, así que un repositorio no puede elegir uno.
 
 ## Por qué existe la búsqueda estructural si ya está grep
 

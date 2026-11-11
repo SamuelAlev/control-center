@@ -2,7 +2,7 @@
 title: Associer un appareil
 description: Associez votre téléphone (ou un second navigateur ou poste de bureau) à votre serveur Control Center pour suivre la flotte à distance.
 slug: fr-CA/manuel/guides/associer-appareil
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Ce guide vous montre comment associer un téléphone à Control Center, de manière
@@ -65,8 +65,7 @@ dès l’instant de sa création et la barrière de connexion vérifie seulement
 le justificatif est actif et non expiré. Traitez le code QR et la clé
 d’appairage comme un mot de passe et révoquez tout ce que vous ne vouliez pas
 distribuer. Les sessions de client directes comme relayées exigent le chiffrement
-de bout en bout ; les anciens clients ne peuvent pas se rabattre sur du RPC en
-clair.
+de bout en bout ; il n’existe aucun RPC en clair.
 :::
 
 ## Gérer les appareils associés
@@ -81,8 +80,7 @@ est immédiate et irréversible du point de vue de l’appareil.
 
 Les justificatifs créés à partir de ce panneau sont à durée limitée : ils
 expirent 30 jours après leur émission et la barrière de connexion les refuse
-ensuite. Un justificatif créé avec `cc_server pair` sur la ligne de commande ne
-comporte **aucune expiration** — révoquez-le à la main lorsque la machine à
+ensuite. Un justificatif créé avec `cc_server pair` sur la ligne de commande expire de la même façon ; relancez `pair` pour en émettre un nouveau, et révoquez-le à la main lorsque la machine à
 laquelle il était destiné est retirée.
 
 ## Changer d’espace de travail depuis le téléphone

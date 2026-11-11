@@ -1,9 +1,7 @@
 import 'package:control_center/features/settings/presentation/screens/settings_page.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/sync_health_card.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/branch_template_section.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/workspace/agent_attribution_workspace_section.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/workspace/coauthor_credit_workspace_section.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/workspace_policy_section.dart';
-import 'package:control_center/features/settings/settings_extensions.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:flutter/widgets.dart';
@@ -14,7 +12,10 @@ import 'package:flutter/widgets.dart';
 /// scattered: `secretExcludeGlobs` and `reviewConcurrency` had no UI at all,
 /// sync health and chat bridges were filed under a personal "Accounts" page,
 /// and the branch template lived at the bottom of the "Advanced" junk drawer.
-/// Meeting note templates and voice profiles live on Workspace → Meetings.
+/// Meeting note templates and voice profiles live on Workspace → Meetings;
+/// the workspace's side of every provider (Connect choice, code hosting,
+/// tickets and their sync health, calendar, chat, GIFs) lives on Workspace →
+/// Integrations, and a person's own sign-ins on You → Profile.
 ///
 /// Workspace name, logo and deletion stay on the `/workspaces` picker, which is
 /// where they already work and where you need them when the workspace you are
@@ -33,14 +34,10 @@ class WorkspaceGeneralSettingsScreen extends StatelessWidget {
     return SettingsPage(
       title: l10n.settingsWorkspaceGeneral,
       subtitle: l10n.settingsWorkspaceGeneralDescription,
-      // Ticketing, conversation titles and chat-bridge setup land here via
-      // [SettingsSlot.workspaceGeneral], not by name.
-      slot: SettingsSlot.workspaceGeneral,
       sections: [
         WorkspacePolicySection(workspaceId: workspaceId),
-        const AgentAttributionWorkspaceSection(),
+        const CoauthorCreditWorkspaceSection(),
         const BranchTemplateSection(),
-        const SyncHealthCard(),
       ],
     );
   }

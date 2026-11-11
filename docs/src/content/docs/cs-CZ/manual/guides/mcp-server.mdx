@@ -1,8 +1,8 @@
 ---
 title: Používejte MCP server
-description: Namiř externího klienta MCP na server nástrojů Control Center, nastav bearer token a zjisti, co plocha vystavuje.
+description: Namiř externího klienta MCP na server nástrojů Control Center, pošli jeho bearer token a zjisti, co plocha vystavuje.
 slug: cs-CZ/prirucka/navody/mcp-server
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Tenhle návod ukazuje, jak připojit externího klienta MCP — Claude Code, editor
@@ -29,25 +29,38 @@ Výchozí místní instalace je tedy na `http://127.0.0.1:9030/mcp`.
 2. Přečti kartu **Server MCP** — ukazuje **Běží** nebo **Zastaveno** a port,
    na kterém naslouchá
 
-Na čerstvé instalaci je plocha zapnutá, takže klient na loopbacku funguje bez
-zajížďky do nastavení. **Spustit při startu aplikace** určuje, jestli se po
-restartu vrátí. **Start** a **Zastavit** platí jen pro aktuální běh a tuhle
-předvolbu nemění.
+Na čerstvé instalaci je plocha zapnutá. Token na kartě vidí jen vlastník serveru
+a jen on může endpoint spustit nebo zastavit. **Spustit při startu aplikace**
+určuje, jestli se po restartu vrátí. **Start** a **Zastavit** platí jen pro
+aktuální běh a tuhle předvolbu nemění.
 
 Server se ve výchozím stavu váže na loopback, takže endpoint je dosažitelný jen
 ze stroje, na kterém běží `cc_server`, pokud jsi ho nespustil s `--bind any`.
 
+## Získej token
+
+Každý požadavek potřebuje token MCP serveru, z kteréhokoli stroje, včetně
+loopbacku. Server ho vytvoří při prvním startu. Vypnout ho ani vymazat nejde.
+
+1. V **Nastavení → Server → Servery MCP** najdi řádek **Autentizační token**
+2. Stiskni **Zobrazit token** a zkopíruj ho
+3. Chceš-li ho nahradit, stiskni **Otočit token**. Server přejde na nový token
+   okamžitě a každý klient, který ještě používá starý, bude odmítnut, dokud mu
+   nedáš nový
+
 ## Připoj klienta
 
-Namiř klienta na endpoint Streamable HTTP. Přesný tvar konfigurace je věc
-klienta, URL je v obou případech stejná.
+Namiř klienta na endpoint Streamable HTTP a pošli token jako
+`Authorization: Bearer <token>` u každého požadavku, včetně `GET /sse`. Jinak ho
+poslat nejde: token v URL se nepřijímá. Přesný tvar konfigurace je věc klienta.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -69,23 +82,20 @@ server z projektu ještě neobjeví a nezaregistruje podruhé.
 Kontrolní bod: požádej klienta, ať vypíše nástroje. Měl bys vidět položky
 `mcp__*` pro tickety, prostory, paměť, graf kódu a kontrolu.
 
-## Zpřístupni MCP mimo hostitele
+## Co endpoint odmítne
 
-1. V **Nastavení → Server → Servery MCP** na řádku **Autentizační token**
-   stiskni **Nastavit** a vlož token
-2. Posílej ho jako `Authorization: Bearer <token>` u každého požadavku
-   `POST /mcp`
+Token otevírá každý nástroj na serveru, takže endpoint odmítne i cokoli, co mohla
+poslat webová stránka, dřív než se podívá na token:
 
-Plocha bez tokenu odmítne každého volajícího mimo loopback kódem 403. Je to
-záměrně uzavřené: právě token službu mimo hostitele vůbec umožňuje.
+| Požadavek                                                               | Odpověď |
+| ----------------------------------------------------------------------- | ------- |
+| Hlavička `Origin`, která není stránkou na tomto stroji (`http://localhost`, `http://127.0.0.1` nebo `http://[::1]`, na libovolném portu) | `403`, „Cross-origin requests are not accepted“ |
+| Hlavička `Host`, která není ani loopback adresou a portem tohoto listeneru, ani veřejným jménem hostitele serveru | `403`, „Unknown host“ |
+| `POST`, jehož tělo není `application/json`                              | `415`   |
+| Žádný token, nebo špatný                                                | `401`   |
 
-Změna tokenu se na živé ploše projeví hned, restart není potřeba.
-
-:::note[`GET /sse` bere token v query stringu]
-Proud notifikací se na token kontroluje jako každá jiná trasa, ale prohlížečové
-`EventSource` neumí poslat hlavičku `Authorization`. Proto `/sse` bere token i
-jako `?token=<token>`. Bez něj odpoví 401.
-:::
+Pro obsluhu MCP mimo hostitele spusť server s `--bind any` a pošli token z jiného
+stroje, přičemž server oslovuj jeho veřejným jménem hostitele.
 
 ## Omez každé volání na pracovní prostor
 
@@ -125,6 +135,23 @@ Celý katalog se hlásí v `tools/list` a nic se z něj neschovává. Externí k
 MCP odmítne zavolat nástroj, který v jeho uloženém seznamu není, takže
 schovávání nástrojů je rozbije, místo aby seznam uklidilo.
 
+## Osobní servery MCP zůstávají vlastníkovi
+
+Tahle příručka je o vlastním endpointu Control Center. Opačný směr, servery MCP,
+které Control Center předává agentům, které spouští, najdeš v **Nastavení →
+Server → Servery MCP → Externí servery MCP**. Servery nastavené na stroji serveru
+pro Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode nebo v `.mcp.json`
+se tam najdou automaticky.
+
+Tyto nalezené servery pocházejí z vlastní konfigurace nástrojů uživatele serveru
+a jednají s jeho identitou a přihlašovacími údaji, takže patří vlastníkovi serveru:
+
+- Jsou dostupné jen uvnitř vestavěných běhů harnessu, které vlastník serveru spouští nebo za které odpovídá, včetně automatizace v pracovním prostoru, za který vlastník odpovídá.
+- Běh člena, automatizace navázaná na člena a každý běh na serveru bez zaznamenaného vlastníka žádný z nich nedostane. Tam nástroje nejsou vypsány, nelze je volat a neobjeví se ve vyhledávání nástrojů.
+- Tenhle endpoint je nikdy nevypisuje, nevolá ani nehledá, pro nikoho, ani s tokenem vlastníka, a nepředává jejich zdroje ani prompty. Agentní CLI, které se k Control Center dostává přes MCP, například Claude Code, je tedy přes Control Center nezíská; používá vlastní konfiguraci.
+
+Servery MCP nastavené pro pracovní prostor tím nejsou dotčeny.
+
 ## Řešení problémů
 
 ### Klient nevidí žádné nástroje
@@ -133,9 +160,17 @@ schovávání nástrojů je rozbije, místo aby seznam uklidilo.
 - Zkontroluj, že port sedí s portem tvého `cc_server`
 - U Claude Code zkontroluj, že jsi předal `--mcp-config` a `--strict-mcp-config`
 
-### 403 ze stroje, který není serverem
+### 401 Neautorizováno
 
-Bearer token není nastavený. Nastav ho a pošli ho.
+Požadavek nesl žádný token, nebo starý. Zkopíruj aktuální token z řádku **Autentizační token** a pošli ho jako `Authorization: Bearer <token>`. Token v URL se ignoruje.
+
+### 403 od klienta, který dřív fungoval
+
+Požadavek nesl `Origin` z webové stránky, nebo `Host`, na který server neodpovídá. Volej endpoint z klienta, ne z prohlížečové stránky, a to přes loopback adresu serveru nebo jeho veřejné jméno hostitele.
+
+### 415 Nepodporovaný typ média
+
+Pošli tělo `POST /mcp` jako `application/json`.
 
 ### Volání nástroje selže hláškou „Missing or invalid argument: workspace_id“
 

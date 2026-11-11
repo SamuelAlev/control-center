@@ -1,12 +1,15 @@
+import 'package:cc_domain/core/domain/entities/user.dart';
 import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/identity_events.dart';
+import 'package:cc_domain/core/domain/value_objects/username.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:uuid/uuid.dart';
 
 /// First-boot identity: creates the install owner locally (no cloud account).
 ///
-/// Idempotent; subsequent boots reuse the stored owner. Pairing/devices come later.
+/// Idempotent; subsequent boots reuse the recorded owner. Pairing/devices come
+/// later.
 class IdentityBootstrap {
   /// Creates an [IdentityBootstrap] over the global database [_global] and the
   /// per-workspace databases [_workspaces].
@@ -28,48 +31,55 @@ class IdentityBootstrap {
   /// Runs the bootstrap; returns the owner's user id.
   Future<String> run() async {
     final ownerId = await _ensureOwner();
-    await _backfillWorkspaceOwnership(ownerId);
-    await _bindOrphanDevices(ownerId);
-    await _adoptSentinels(ownerId);
+    await _ensureOwnerMemberships();
     return ownerId;
   }
 
-  /// Mints the owner when no users exist; otherwise returns the earliest
-  /// user (the bootstrap owner).
+  /// Returns the server owner: the user id recorded in `server_meta`
+  /// ([GlobalDatabase.serverOwnerKey]).
+  ///
+  /// Nothing that reaches the server over the network decides who that is.
+  /// With no record the owner is minted here, before any listener opens, and
+  /// recorded. Existing accounts never become the owner by being there: a data
+  /// dir that has accounts but no record gets a freshly minted owner too, so
+  /// ownership never falls to whichever account exists or signs in next.
   Future<String> _ensureOwner() async {
-    final users = await _global.userDao.getAll();
-    if (users.isNotEmpty) {
-      return users.first.id;
+    final meta = _global.workspaceRouteDao;
+    final recorded = await meta.meta(GlobalDatabase.serverOwnerKey);
+    if (recorded != null) {
+      return recorded;
     }
     // The OS account name is the only hint taken from the environment: it is
-    // a display default, not configuration. Name and email are edited in
-    // Settings → Workspace → Profile & identity, which is where a person looking at
-    // them would change them.
-    final handle = _sanitizeHandle(_env['USER'] ?? _env['USERNAME'] ?? 'owner');
-    final displayName = handle;
-    final id = _uuid.v4();
-    await _global.userDao.upsert(
-      UsersTableCompanion(
-        id: Value(id),
-        handle: Value(handle),
-        displayName: Value(displayName),
-        email: const Value(null),
-        createdAt: Value(DateTime.now()),
+    // a suggestion, not configuration. The person confirms or changes their
+    // username and name in onboarding's first step, and later under You →
+    // Profile.
+    final suggested = Username.fromFreeText(
+      _env['USER'] ?? _env['USERNAME'] ?? '',
+      fallback: 'owner',
+    );
+    final owner = await DaoUserRepository(_global.userDao).insertWithFreeHandle(
+      User(
+        id: _uuid.v4(),
+        handle: suggested.value,
+        displayName: suggested.value,
+        createdAt: DateTime.now(),
       ),
     );
-    _log?.call('identity: minted owner "$handle" ($id)');
-    return id;
+    await meta.setMeta(GlobalDatabase.serverOwnerKey, owner.id);
+    _log?.call('identity: minted owner "${owner.handle}" (${owner.id})');
+    return owner.id;
   }
 
-  Future<void> _backfillWorkspaceOwnership(String ownerId) async {
+  /// Gives every workspace's recorded owner an owner membership in that
+  /// workspace when the row is missing. A workspace without a recorded owner
+  /// is left alone: nobody is granted it.
+  Future<void> _ensureOwnerMemberships() async {
     final rows = await _global.select(_global.workspacesTable).get();
     for (final ws in rows) {
-      if (ws.ownerUserId == null) {
-        await (_global.update(_global.workspacesTable)
-              ..where((t) => t.id.equals(ws.id)))
-            .write(WorkspacesTableCompanion(ownerUserId: Value(ownerId)));
+      final ownerUserId = ws.ownerUserId;
+      if (ownerUserId == null) {
+        continue;
       }
-      final ownerUserId = ws.ownerUserId ?? ownerId;
       final db = _workspaces.of(ws.id);
       final member = await db.workspaceMemberDao.getMember(ws.id, ownerUserId);
       if (member == null) {
@@ -97,91 +107,5 @@ class IdentityBootstrap {
         );
       }
     }
-  }
-
-  Future<void> _bindOrphanDevices(String ownerId) async {
-    final devices = await _global.pairedDeviceDao.getAll();
-    for (final device in devices) {
-      if (device.userId == null) {
-        await _global.pairedDeviceDao.setUserId(device.id, ownerId);
-      }
-    }
-  }
-
-  /// Re-attributes placeholder human actors to [ownerId], in every workspace.
-  ///
-  /// The one genuinely cross-database question here is "does this sender id
-  /// belong to a real user?" — `users` is global, the messages are not and
-  /// SQLite cannot join across files. The user id set is small and bounded by
-  /// the number of humans on the install, so it is read once and inlined into
-  /// each workspace's statement.
-  Future<void> _adoptSentinels(String ownerId) async {
-    final users = await _global.userDao.getAll();
-    final knownUserIds = {for (final u in users) u.id, ownerId};
-    final idList = knownUserIds.map((_) => '?').join(', ');
-
-    // CROSS-WORKSPACE BY DESIGN: a one-time migration that re-attributes the
-    // pre-identity `'user'` sentinel in EVERY workspace to the owner. It runs
-    // once at boot before any session exists, and it issues raw
-    // `customStatement` UPDATEs rather than the typed reads
-    // CrossWorkspaceQueries fans out; `forEachWorkspace` would fit the shape
-    // but not the ordering — this has to complete before the RPC surface opens.
-    for (final workspaceId in await _workspaces.allWorkspaceIds()) {
-      final db = _workspaces.of(workspaceId);
-      // Space participants: the 'user' sentinel row becomes the owner.
-      await db.customStatement(
-        'UPDATE space_participants '
-        "SET principal_id = ?, participant_type = 'user' "
-        "WHERE principal_id = 'user'",
-        [ownerId],
-      );
-      // Human space messages: senderType 'user' is authoritative; senderId
-      // may hold the literal 'user' (dispatch path) or a device id (the RPC
-      // send path stamped the device before identity existed). Any human
-      // message not attributable to a known user belongs to the owner.
-      await db.customStatement(
-        'UPDATE conversation_messages SET sender_id = ? '
-        "WHERE sender_type = 'user' AND sender_id NOT IN ($idList)",
-        [ownerId, ...knownUserIds],
-      );
-      // Tickets assigned to the human sentinel.
-      await db.customStatement(
-        "UPDATE tickets SET assigned_agent_id = ?, assignee_type = 'user' "
-        "WHERE assigned_agent_id = 'user'",
-        [ownerId],
-      );
-      // Ticket collaborators.
-      await db.customStatement(
-        'UPDATE ticket_collaborators '
-        "SET principal_id = ?, collaborator_type = 'user' "
-        "WHERE principal_id = 'user'",
-        [ownerId],
-      );
-      // Approvals decided/requested by the anonymous human.
-      await db.customStatement(
-        'UPDATE approvals SET decided_by_id = ? '
-        "WHERE decided_by_actor_type = 'user' AND decided_by_id IS NULL",
-        [ownerId],
-      );
-      await db.customStatement(
-        'UPDATE approvals SET requested_by_id = ? '
-        "WHERE requested_by_actor_type = 'user' "
-        "AND (requested_by_id IS NULL OR requested_by_id = 'user')",
-        [ownerId],
-      );
-      await db.customStatement(
-        'UPDATE approval_comments SET author_id = ? '
-        "WHERE author_type = 'user' AND author_id IS NULL",
-        [ownerId],
-      );
-    }
-  }
-
-  static String _sanitizeHandle(String raw) {
-    final cleaned = raw
-        .toLowerCase()
-        .replaceAll(RegExp('[^a-z0-9_.-]+'), '-')
-        .replaceAll(RegExp(r'^-+|-+$'), '');
-    return cleaned.isEmpty ? 'owner' : cleaned;
   }
 }

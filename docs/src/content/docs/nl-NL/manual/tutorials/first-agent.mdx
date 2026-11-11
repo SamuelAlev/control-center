@@ -2,7 +2,7 @@
 title: Je eerste agent starten
 description: Maak een agent aan, geef hem een ruimte en een taak en zie de run terugstromen.
 slug: nl-NL/handleiding/zelfstudies/eerste-agent
-sourceHash: bb1df29d02b0fe4da9da87f8f8ee0ed923025e04
+sourceHash: 626b1415789c11d385e7a32cac000ea3e8ca7278
 ---
 
 ## Wat je gaat bouwen
@@ -76,7 +76,7 @@ Wat de run begrenst: zijn eigen copy-on-write-worktree, de inloggegevens die bij
 
 **Controlepunt.** Eén runrij, met de status, duur, begin- en eindtijd en de adapter waarop hij heeft gedraaid.
 
-De wijzigingen van de agent staan gecommit op de branch van het gesprek, in zijn worktree. Jij bent altijd de auteur en committer met je Git-identiteit uit de werkruimte. Standaard vermeldt `Co-Authored-By: Control Center <hi@usectrl.dev>` GitHub `@usectrl` als mede-auteur. Je kunt deze mede-auteursvermelding uitschakelen via **Instellingen → Jij → Toeschrijving van commits**, tenzij een werkruimtebeheerder de keuze heeft overschreven via **Instellingen → Werkruimte → Algemeen**.
+De wijzigingen van de agent staan gecommit op de branch van het gesprek, in zijn worktree. Omdat jij de run hebt gevraagd, zijn de commits van jou: jij bent de auteur en committer, onder het adres dat je forge heeft geverifieerd (je GitHub-noreply-adres uit je GitHub-aanmelding), en een `Co-Authored-By:`-trailer vermeldt Control Center, tenzij je dat hebt uitgezet. Als je niet bij de forge bent aangemeld, zijn de commits in plaats daarvan van de Control Center-bot en zeggen de notities van de run dat.
 
 ## Een pull request krijgen
 

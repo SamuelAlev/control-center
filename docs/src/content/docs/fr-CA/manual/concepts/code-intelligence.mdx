@@ -2,7 +2,7 @@
 title: Intelligence du code
 description: Pourquoi un agent a besoin du compilateur, d’un moteur de correspondance structurelle et d’un débogueur — et ce que chacun répond que les autres ne peuvent pas.
 slug: fr-CA/manuel/concepts/intelligence-du-code
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center donne à un agent quatre façons de comprendre le code autrement qu’en le lisant. Elles répondent à des questions réellement différentes, et s’il y en a quatre plutôt qu’une, c’est qu’aucun mécanisme pris seul ne répond à toutes.
@@ -31,6 +31,8 @@ Répéter à l’agent ce qu’on lui a déjà dit est pire que de ne rien dire 
 Aucun serveur ne démarre au lancement. Un serveur démarre à la première requête qui en a besoin, c’est-à-dire presque toujours à la première modification d’un fichier qu’il prend en charge, et les serveurs inactifs sont balayés. Un hôte qui ne touche jamais à Dart ne démarre jamais d’analyseur.
 
 La détection est une **intersection** : un marqueur racine doit exister dans le checkout *et* le binaire doit être résolu. Un marqueur seul dit « ce projet est en Python » et rien sur l’installation ou non du serveur ; un binaire résolu seul dit que l’hôte possède une chaîne d’outils et rien sur ce checkout. Seuls les deux ensemble signifient qu’une requête peut réussir, et un outil offert qui échoue toujours est pire qu’un outil absent.
+
+Ce qu’un dépôt peut influencer reste volontairement restreint. Les serveurs proviennent d’une table intégrée, jamais d’un fichier du checkout, et un binaire situé dans le projet (`node_modules/.bin`) n’est utilisé que lorsque l’exécution est dans un bac à sable. Un serveur de langage est un programme qui s’exécute sur la machine du serveur ; un dépôt ne peut donc pas en désigner un.
 
 ## Pourquoi la recherche structurelle, alors que grep existe
 

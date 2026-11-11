@@ -2,13 +2,13 @@
 title: Konfigurer tillatelsesregler
 description: Sett tillat-, spør først- og nekt-regler for agenthandlinger, test dem med «Hva om?»-proben og juster autonomien per område.
 slug: nb-NO/handbok/slik-gjor-du/konfigurer-tillatelsesregler
-sourceHash: 2cd90bd119b8ddaca3ef7a834b47d6534b4e13ec
+sourceHash: 813ec225499d4a47a071bf30855e384471dd0a53
 ---
 
 Denne guiden viser deg hvordan du konfigurerer tillatelsesregler: reglene som
 avgjør om en agenthandling kjøres, ber om godkjenning først eller avvises.
 
-Tillatelsesreglene dekker de tretten effektklassene som hvert endrende verktøy
+Tillatelsesreglene dekker de fjorten effektklassene som hvert endrende verktøy
 deklarerer. De håndheves på serversiden i det verktøyet kalles, aldri av en
 instruks i en prompt.
 
@@ -23,7 +23,7 @@ instruks i en prompt.
    vises til slutt på den raden (**Tilbakestill til arvet**) — vedtaket faller
    tilbake til det bredere omfanget
 
-Hver rad viser det gjeldende vedtaket som en statusmerkelapp og et merke for
+Hver rad viser handlingens innstilling som en statusmerkelapp og et merke for
 hvor det kommer fra: **Dette omfanget**, **Arvet** eller **Innebygd standard**.
 Matrisen løses på **Agent**-modus (`chat`), så **Modusforhåndsvalg** vises aldri
 her — bruk «Hva om?»-proben med en skrivebeskyttet modus valgt for å se det
@@ -35,6 +35,18 @@ Kontrollpunkt: sett **Push til en remote** til **Nekt** på
 arbeidsområdeomfanget, og kjør deretter «Hva om?»-proben nedenfor på
 `git push origin main`. Resultatet viser `deny` med kilden `workspace`.
 
+## Gjennomgå og trekk tilbake stående godkjenninger
+
+Å svare på et godkjenningskort med **Godkjenn i 8 timer** skriver en stående godkjenning: en regel som slipper samme slags handling gjennom uten å spørre til den opphører. Hver av dem står på denne siden, under handlingen den tilhører.
+
+1. Gå til **Innstillinger → Arbeidsområde → Agenttillatelser** og velg omfanget. En godkjenning skrives for området spørsmålet kom fra, så velg **Område** og deretter det området
+2. Under handlingens rad leser du oppføringen: hva den tillater (for eksempel push til grener som matcher `feature/**`), ordene **Stående godkjenning**, hvem som ga den når det var noen andre, og når den opphører
+3. For å avslutte den nå peker du på oppføringen og trykker på **Tilbakekall**. Agenter spør igjen fra og med deres neste handling
+
+Raden viser fortsatt handlingens egen innstilling, og en linje under den teller tilfellene nedenfor som tillates uansett. Betingede regler som en mal skrev, vises i samme liste, og kommandoregler i en gruppe **Kommandoer** etter den siste handlingen. På arbeidsområdeomfanget teller en merknad under sammendraget de stående godkjenningene satt for enkeltområder eller agenter. På et område eller en agent teller den arbeidsområdets, som gjelder der også.
+
+En stående godkjenning sparer bare for et spørsmål. Den overstyrer aldri **Nekt**: hvis du setter en handling til **Nekt** mens en fortsatt gjelder, står oppføringen som **uten virkning når Nekt er valgt** til den opphører eller du trekker den tilbake. Å endre en handlings innstilling lar dens stående godkjenninger stå, og å trekke tilbake en av dem lar innstillingen stå.
+
 ## Forstå hvordan et vedtak løses
 
 Løsningen er **spesifisitet først, deretter restriktivitet**:
@@ -42,8 +54,8 @@ Løsningen er **spesifisitet først, deretter restriktivitet**:
 1. **Område**-regler, deretter **agent**, deretter **arbeidsområde**. Det
    første omfanget med en samsvarende regel bestemmer, og løsningen stopper
 2. Hvis ingen regel samsvarer, gjelder **modusforhåndsvalget** — en
-   skrivebeskyttet modus (plan, gjennomgang, orkestrering) avviser elleve av de
-   tretten klassene
+   skrivebeskyttet modus (plan, gjennomgang, orkestrering) avviser tolv av de
+   fjorten klassene
 3. Hvis modusen ikke har noe å si, gjelder den **innebygde standarden**
 
 Innenfor ett og samme omfang løses en kommandoregel etter det lengste
@@ -71,7 +83,7 @@ port er verre enn en avvist kjøring.
 | Opprett en commit            | Tillat            |
 | Push til en remote           | Spør først        |
 | Åpne en pull request         | Spør først        |
-| Publiser en gjennomgang eller sammenslåing | Spør først |
+| Oppdater eller slå sammen en pull request  | Spør først |
 | Skriv til et eksternt oppfølgingssystem | Spør først |
 | Bruk nettverket              | Tillat            |
 | Les en hemmelighet           | Tillat            |
@@ -79,6 +91,7 @@ port er verre enn en avvist kjøring.
 | Kjør en prosess              | Tillat            |
 | Endre strukturen på arbeidsområdet | Tillat      |
 | Styre et isolert miljø (stasjon) | Tillat        |
+| Kjør kommandoer på verten        | Spør først    |
 
 Taksonomien er lukket. Et nytt verktøy som leveres uten å deklarere klassene
 sine, feiler en ratchet-test i CI, så ingenting kommer inn med et stille tomt
@@ -89,14 +102,13 @@ effektsett.
 Før du endrer en regel, sjekk hvordan gjeldende policy allerede løser den.
 
 1. På samme side ruller du ned til **Hva om?**
-2. Velg en **Handling** (én av de tretten klassene)
+2. Velg en **Handling** (én av de fjorten klassene)
 3. Fyll eventuelt inn **Kommando** (for eksempel `git push origin main`),
    **Agent**, **Område** og **Modus**
 4. Les resultatet: vedtaket, årsaken og **Kilde:**
 
 Proben kjører den samme løseren som håndhevelsesbanen bruker, mot dine aktive
-regler, så svaret er nøyaktig. Hvis det overrasker deg, endrer du en regel i
-matrisen ovenfor og kjører proben igjen.
+regler, så svaret er nøyaktig. Når en stående godkjenning avgjør, viser kilden **Stående godkjenning** etterfulgt av omfanget. Hvis svaret overrasker deg, endrer du en regel i matrisen ovenfor og kjører proben igjen.
 
 ## Still inn autonomien for et område
 

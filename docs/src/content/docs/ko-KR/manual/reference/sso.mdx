@@ -2,7 +2,7 @@
 title: SSO 구성 레퍼런스
 description: 싱글 사인온의 모든 설정 항목, 엔드포인트, 작업, 오류 코드.
 slug: ko-KR/매뉴얼/레퍼런스/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 싱글 사인온에 대해 구성할 수 있는 모든 것을 한곳에 모았습니다. 값은
@@ -33,6 +33,18 @@ sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
 | `groupRoleMap`         | 둘 다      | `{}`            | 그룹 → 역할. 소유자 매핑은 저장 시 거부됩니다                                                                                                         |
 | `autoMember`           | 둘 다      | 켜짐            | 첫 로그인 시 모든 워크스페이스에 사용자를 자동 추가합니다                                                                                             |
 | `allowJit`             | 둘 다      | 켜짐            | 로그인 시 알 수 없는 사용자를 프로비저닝합니다                                                                                                        |
+
+## 계정 일치
+
+`SsoProvisioner`는 로그인을 다음 순서로 확인하며, 사용자 이름으로는 결코 확인하지 않습니다.
+
+1. `(users.sso_issuer, users.sso_subject)`가 로그인의 issuer 및 subject(SAML NameID / OIDC `sub`)와 같은 계정.
+2. 주소가 로그인의 이메일과 같은 계정. 단, 양쪽이 모두 이를 보증할 때에만 일치합니다. 제공자 쪽(OIDC `email_verified: true`이며, 클레임이 없으면 보증이 아니고, 서명된 SAML 어설션은 항상 보증입니다)과 계정 쪽(`users.email_verified`)입니다. 주소는 다듬고 소문자로 바꾼 뒤 저장되고 그 방식으로 비교되며, 인증된 주소는 정확히 한 계정이 인증해 가지고 있을 때에만 일치합니다. 두 계정이 가지고 있으면 아무것과도 일치하지 않고(주소 없이 기록됩니다), 다른 계정이 인증해 가진 주소의 대소문자만 다른 변형으로는 어떤 계정도 인증할 수 없습니다.
+3. 그 밖의 경우에는 `allowJit`이 켜져 있으면 새 계정을 만들고, 꺼져 있으면 거부합니다.
+
+`users.email_verified`는 주소를 담은 SSO 로그인이나 SCIM 푸시로 설정되거나, 서버 소유자가 `users.vouchEmail`로 설정합니다(**설정 → 서버 → 사람 → 이메일 확인**, 감사 기록 `user.email_vouched`). 소유자 자신의 프로필 편집은 자신의 주소를 보증합니다. 그 밖의 프로필 편집과 초대에서 직접 입력한 주소는 인증되지 않은 상태로 남으며, 주소를 편집하면 플래그가 지워집니다. 보증된 로그인이 계정을 만들 때에는 직접 입력만 한 계정에서 주소를 가져오며(감사 기록 `user.email_unvouched_cleared`), 인증된 주소를 가진 계정에서는 결코 가져오지 않습니다. 이 경우 새 계정에는 주소가 주어지지 않습니다.
+
+이미 다른 주체나 issuer에 고정된 일치 계정은 `This account is already linked to a different SSO identity` 메시지와 함께 로그인을 거부합니다. 비활성화된 계정은 `This account has been deactivated` 메시지와 함께 거부합니다.
 
 ## 프로세스 구성
 
@@ -129,6 +141,7 @@ IdP 시작 SAML 응답(활성화된 경우)에는 시작한 수신자가 없습�
   워크스페이스 간 공유입니다.
 - `users.sso_subject` + `users.sso_issuer` — 제공자 주체 고정으로, 부분
   인덱스를 통해 `(issuer, subject)`마다 고유합니다.
+- `users.email_verified`: 계정의 주소가 SSO 로그인이나 SCIM 푸시와 일치할 수 있는지 여부([계정 일치](#계정-일치) 참고).
 - `users.deactivated_at` — SCIM 비활성화 스탬프.
 - SCIM bearer 토큰과 OIDC 클라이언트 시크릿은 0600 시크릿 파일에
   저장되며, 데이터베이스에는 절대 저장되지 않습니다.

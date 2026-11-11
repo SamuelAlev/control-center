@@ -248,10 +248,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allCaughtUp => 'You’re all caught up';
 
   @override
-  String get inboxNoForgeAccount =>
-      'No forge account is connected on the server, so pull requests can’t be attributed to you yet.';
-
-  @override
   String get inboxNothingWaiting =>
       'Nothing is blocked and no pull request is waiting on you.';
 
@@ -458,32 +454,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names are too large to send over the relay from here.',
-      one: '$names is too large to send over the relay from here.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Couldn\'t upload the attachment. Try again.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count attachments couldn\'t be uploaded and were left out.',
-      one: '1 attachment couldn\'t be uploaded and was left out.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Teammate';
 
   @override
@@ -619,35 +589,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'No forge is connected on the server, so no pull requests can be fetched. Connect one from the desktop app.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repos could not be read.',
-      one: '1 repo could not be read.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Not readable: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'GitHub App installation suspended';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Showing last known data for $names. Resume the installation on GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'GitHub App installation suspended. Showing last known data for $names. Resume the installation on GitHub.';
-  }
 
   @override
   String get draft => 'Draft';
@@ -1297,7 +1238,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionPrCreate => 'Create pull requests';
 
   @override
-  String get permissionPrPublish => 'Publish pull requests';
+  String get permissionPrPublish => 'Update or merge pull requests';
 
   @override
   String get permissionVendorSyncWrite => 'Write vendor sync';
@@ -1341,7 +1282,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get permissionBuiltInDefault => 'Built-in default';
 
   @override
-  String get permissionRemembered => 'Remembered approval';
+  String get permissionRemembered => 'Standing approval';
 
   @override
   String get permissionSource => 'Source';
@@ -1363,10 +1304,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Set a rule here';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Revoke the scoped or remembered rule before setting a general rule for this action.';
 
   @override
   String get permissionConfirmRevoke => 'Confirm revoke';
@@ -1419,6 +1356,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Commands: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Tools: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Not in effect while this action is denied';
 
   @override
   String permissionMaxCount(String count) {
@@ -1875,15 +1821,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Pull request update';
-
-  @override
-  String get activityTicket => 'Ticket update';
-
-  @override
-  String get activityMeeting => 'Meeting update';
-
-  @override
-  String get activityCalendar => 'Calendar connection';
 
   @override
   String get activityRig => 'Enclosure update';
@@ -2565,8 +2502,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Waiting for authorization in your browser…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Enter the code shown in your browser';
+  String get credentialsConnectCodePrompt => 'Confirmation code';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2635,10 +2571,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'Paste a personal access token';
 
   @override
-  String get credentialsHostManaged =>
-      'This connection comes from the server app or environment. Only the server owner can change it there; you can still add your own token.';
-
-  @override
   String get credentialsStopWatching => 'Stop watching';
 
   @override
@@ -2658,6 +2590,207 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Run commands on the host';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Your $provider sign-in has lapsed. Sign in again.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Paused: this workspace\'s sign-in service changed. It works again once the service is back.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'Can\'t reach $provider right now. Retrying.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'This workspace only';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'All workspaces';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Remove your saved credential from this workspace? Other workspaces keep theirs.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Remove your saved credential from every workspace that shares it?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'The server restarted. Start the sign-in again.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Install the GitHub App on $owner so automation can reach $names. Tap to open GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'The GitHub App isn\'t installed on $owner, so automation can\'t reach $names. Ask a workspace admin to install it.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Add $names to the GitHub App\'s repositories. Tap to open GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'The GitHub App can\'t see $names yet. Ask a workspace admin to add them to its repositories.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App installation suspended. Automation for $names is paused until an owner of the account resumes the installation on GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'The person accountable for this workspace\'s automation can no longer see $names, so nothing runs there on their behalf.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'The person accountable for this workspace\'s automation isn\'t signed in to the forge, so automation for $names waits until they sign in.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Couldn\'t check access to $names. Retrying.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Sign in to $forge to see pull requests from $count more repositories',
+      one: 'Sign in to $forge to see pull requests from 1 more repository',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositories are hidden because your $forge account can\'t see them',
+      one: '1 repository is hidden because your $forge account can\'t see it',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count repositories are hidden because you don\'t have access to them in this workspace',
+      one:
+          '1 repository is hidden because you don\'t have access to it in this workspace',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Checking your access to $count more repositories…',
+      one: 'Checking your access to 1 more repository…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Atlassian account email';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Enter the email address of your Atlassian account.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API token';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'No automation token can read $names, so background work there is paused. An admin can add one in Settings → Repositories.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Confirm in your browser, then enter the code it shows.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'This account is already connected to another person on this server. Sign in with a different account.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider could not be reached to check this token. Try again in a moment.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider does not accept this token. Check that you copied all of it and that it has not been revoked.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'This is not a personal token. Paste a personal access token from your own $provider account, not a project, group, workspace or bot token.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'This token is missing the $scope scope, which reviewing and commenting need. Create one that has it.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'This token has expired. Create a new one and paste it here.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Too many requests right now. Wait a bit, then try again.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'The sign-in was cancelled or declined. Start it again when you\'re ready.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'This sign-in is no longer open: it was cancelled, used or replaced. Start it again.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'A workspace admin has to invite you, or the server owner can create a workspace for you.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos now points to a different repository on $forge. Relink it from the desktop or web app to keep using it.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos now points to a different repository on $forge. A workspace admin has to relink it before it can be used again.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agents need a sandbox on this server';
+
+  @override
+  String get runSandboxUnavailable =>
+      'This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).

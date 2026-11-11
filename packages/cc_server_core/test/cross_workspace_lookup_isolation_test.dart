@@ -56,28 +56,23 @@ void main() {
       );
 
       final seed = openSeedDatabases(tmp.path);
-      await seed.global.userDao.upsert(
-        const UsersTableCompanion(
-          id: Value('user-owner'),
-          handle: Value('owner'),
-          displayName: Value('Owner'),
-        ),
-      );
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.workspaceRegistryDao.upsertWorkspace(
-        const WorkspacesTableCompanion(
-          id: Value(workspaceId),
-          name: Value('Private'),
+        WorkspacesTableCompanion(
+          id: const Value(workspaceId),
+          name: const Value('Private'),
+          ownerUserId: Value(seededOwnerId),
         ),
       );
       await seed.workspaces
           .of(workspaceId)
           .workspaceMemberDao
           .upsert(
-            const WorkspaceMembersTableCompanion(
-              id: Value('m-owner'),
-              workspaceId: Value(workspaceId),
-              userId: Value('user-owner'),
-              role: Value('owner'),
+            WorkspaceMembersTableCompanion(
+              id: const Value('m-owner'),
+              workspaceId: const Value(workspaceId),
+              userId: Value(seededOwnerId),
+              role: const Value('owner'),
             ),
           );
       final orchestrations = DaoOrchestrationRepository(seed.workspaces);
@@ -131,12 +126,14 @@ void main() {
         ),
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(ownerDevice),
-          workspaceId: Value(workspaceId),
-          label: Value('owner'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(ownerDevice),
+          workspaceId: const Value(workspaceId),
+          label: const Value('owner'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -149,7 +146,7 @@ void main() {
       final uri = Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc');
 
       // A second account with no membership in the private workspace, added
-      // after boot so the owner adoption above stays deterministic.
+      // after boot.
       const guestDevice = 'guest-device';
       final guestPsk = RemoteControlCrypto.generatePsk();
       final guestSeed = openSeedDatabases(tmp.path);
@@ -161,12 +158,13 @@ void main() {
         ),
       );
       await guestSeed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(guestDevice),
-          userId: Value('user-guest'),
-          label: Value('guest'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(guestDevice),
+          userId: const Value('user-guest'),
+          label: const Value('guest'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await guestSeed.close();

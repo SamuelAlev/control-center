@@ -38,29 +38,40 @@ class AddRepoFromPathUseCase {
   /// The [RepoAdded] event is scoped to [workspaceId] so the trigger
   /// dispatcher only starts the indexing pipeline in that workspace.
   ///
-  /// [verify] runs before a new repo is persisted and refuses it by throwing.
+  /// [verify] runs before a new repo is persisted and refuses it by throwing;
+  /// the repo it answers (with what the check learned, such as the forge's
+  /// durable id) is the one persisted. [linkedBy] is the user linking it
+  /// (`Repo.linkedBy`).
+  ///
+  /// An existing repo at the path is linked again, keeping its id, name and
+  /// creation time, when [relink] says so (its stored link is no longer
+  /// served): [verify] runs and the inspected remote and [linkedBy] replace
+  /// what was stored.
   Future<Repo> execute(
     String path, {
     required String workspaceId,
-    Future<void> Function(Repo repo)? verify,
+    required String linkedBy,
+    Future<Repo> Function(Repo repo)? verify,
+    Future<bool> Function(Repo existing)? relink,
   }) async {
     final info = await _inspector.inspect(path);
     final existing = await _repository.findByPath(workspaceId, info.path);
-    if (existing != null) {
+    if (existing != null && !(await relink?.call(existing) ?? false)) {
       return existing;
     }
     final now = DateTime.now();
-    final repo = Repo(
-      id: const Uuid().v4(),
-      name: '${info.owner}/${info.repoName}',
+    final inspected = Repo(
+      id: existing?.id ?? const Uuid().v4(),
+      name: existing?.name ?? '${info.owner}/${info.repoName}',
       path: info.path,
       forge: info.forge,
       remoteOwner: info.owner,
       remoteName: info.repoName,
-      createdAt: now,
+      createdAt: existing?.createdAt ?? now,
       updatedAt: now,
+      linkedBy: linkedBy,
     );
-    await verify?.call(repo);
+    final repo = await verify?.call(inspected) ?? inspected;
     await _repository.upsert(workspaceId, repo);
     _eventBus?.publish(
       RepoAdded(

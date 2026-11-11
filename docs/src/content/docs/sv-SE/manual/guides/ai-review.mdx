@@ -2,7 +2,7 @@
 title: Använd AI-driven granskning
 description: Kör pipelinen pr_review på en PR, läs fynden och utfallet och publicera sedan granskningen till GitHub.
 slug: sv-SE/handbok/how-to-guider/ai-granskning
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Den här guiden visar hur du låter granskaragenter granska en pull request och hur
@@ -117,7 +117,10 @@ Control Center skickar **en** GitHub-granskning. Fynd som redan är åtgärdade 
 avvisade hoppas över. Knappen inkluderar varje återstående öppet fynd och skickar
 `APPROVE` vid **Ship**. (MCP-verktyget `publish_review_to_github` använder som
 standard bara kollegabekräftade fynd och godkänner aldrig: det publicerar som
-automatisering, så `approve_on_ship` har ingen effekt där.) De som bär ett ankare till fil och rad blir
+automatisering, så `approve_on_ship` har ingen effekt där. Den automatiska publiceringen
+görs av boten, utom på den delade Control Center Connect-appen när Connect-operatören inte
+har listat den här installationen: då går den ut på den ansvariga personens egna GitHub-inloggning,
+under deras namn.) De som bär ett ankare till fil och rad blir
 inline-kommentarer; allt annat vävs in i sammanfattningstexten, och var och en bär
 en "— Control Center AI review"-fotnot så att källan är entydig. Ett **Block**-utfall
 skickas in som `REQUEST_CHANGES`; **Hold** som `COMMENT`; **Ship** som
@@ -138,7 +141,8 @@ obevakad.
 
 Andra inbyggda pipelines lägger faktiskt upp på GitHub direkt: `cross_review`,
 `pr_triage`, `ticket_to_pr` och `pre_merge_gate` slutar alla i ett
-kommentarssteg. Bara `pr_review` håller tillbaka sin utdata åt dig.
+kommentarssteg som servern publicerar. Bara `pr_review` håller tillbaka sin utdata
+åt dig. Ingen av dem slår ihop eller godkänner.
 
 ## Starta granskningsagenter själv
 

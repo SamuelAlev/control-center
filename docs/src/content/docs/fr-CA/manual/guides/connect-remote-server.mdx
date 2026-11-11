@@ -2,7 +2,7 @@
 title: Se connecter à un serveur distant
 description: Pointez l’application de bureau ou le client web vers un cc_server exécuté ailleurs et basculez entre les serveurs sans redémarrer.
 slug: fr-CA/manuel/guides/connecter-serveur-distant
-sourceHash: 8d841c8b1933f830c10d2d9b1f2fd3cae1e5f2f6
+sourceHash: 89f3745faa7bf8228d8df77a07a9f3742d4c3df2
 ---
 
 Chaque client est un moteur de rendu au-dessus d’un `cc_server` qui détient les
@@ -92,6 +92,8 @@ worker achemine les requêtes par la session chiffrée authentifiée vers le bac
 code-server sur `cc_server`. Hébergez le client web en HTTPS ou sur une boucle
 locale sécurisée pour que les service workers soient disponibles. Les clients
 natifs utilisent une façade en boucle locale à portée de capacités.
+
+Seul le propriétaire du serveur peut ouvrir l’éditeur intégré code-server : il s’exécute sur le serveur, sous l’utilisateur propre au serveur. Une session appartient à l’appareil et à la personne qui l’ont ouverte. Elle s’ouvre avec la confiance d’espace de travail de VS Code activée, de sorte que VS Code demande avant de faire confiance à un dossier, et avec les tâches automatiques désactivées. Les autres utilisateurs conservent l’éditeur intégré à fichier unique et les vues de fichiers.
 :::
 
 ### Ce que le navigateur ne fait pas
@@ -107,8 +109,9 @@ quelques surfaces ont besoin d’une fenêtre native ou des appareils de la mach
 Deux éléments se comportent différemment plutôt que d’être absents.
 L’**enregistrement** d’une réunion fonctionne dans le navigateur : il capte
 votre microphone plus un partage d’écran qui comprend une piste audio.
-**Ouvrir dans l’éditeur** fonctionne aussi, mais demande au serveur de lancer
-l’éditeur sur l’écran _du serveur_ ; le bouton se masque donc devant un hôte
+Le bouton qui porte le nom de votre éditeur (comme **Ouvrir dans VS Code**)
+demande au serveur de lancer l’éditeur sur l’écran _du serveur_ ; il n’est donc
+proposé qu’au propriétaire du serveur, et le bouton se masque devant un hôte
 sans interface où aucun éditeur n’est installé.
 
 ## Dépannage

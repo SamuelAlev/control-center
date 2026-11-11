@@ -2,7 +2,7 @@
 title: Debug pengujian yang gagal dengan agen
 description: Minta agen menetapkan breakpoint, menjalankan program di bawah debugger, dan membaca stack frame sungguhan alih-alih menambahkan pernyataan print.
 slug: id-ID/panduan-pengguna/panduan-praktis/debug-pengujian-gagal
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 Panduan ini menunjukkan cara membuat agen memakai debugger pada kegagalan yang tidak dapat dijelaskan oleh pernyataan print.
@@ -31,8 +31,8 @@ Alat itu menjawab dengan apa yang ditemukannya, atau menjelaskan bahwa sebuah ad
 | Rust / C / C++  | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   | Sudah termasuk dalam LLVM            |
 | Go              | `dlv dap`                    | `go.mod`                                         | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python memilih interpreter milik proyek]
-`debugpy` dicari di `.venv/bin` atau `venv/bin` sebelum `$PATH`. Python dari `$PATH` adalah lingkungan yang berbeda, dan attach dari lingkungan yang salah gagal dengan cara yang terbaca seperti kode yang rusak, bukan seperti interpreter yang salah.
+:::note[Python memilih interpreter milik proyek saat run berada dalam sandbox]
+Dalam run yang berada dalam sandbox, `debugpy` dicari di `.venv/bin` atau `venv/bin` sebelum `$PATH`. Python dari `$PATH` adalah lingkungan yang berbeda, dan attach dari lingkungan yang salah gagal dengan cara yang terbaca seperti kode yang rusak, bukan seperti interpreter yang salah. Dalam run tanpa sandbox, ia hanya memakai `$PATH`, sehingga sebuah repositori tidak dapat memilih interpreter yang berjalan di mesin server.
 :::
 
 ## Tetapkan breakpoint dulu, baru jalankan
@@ -106,6 +106,8 @@ Untuk proses yang macet, bukan proses yang Anda jalankan sendiri:
 debug(op: "attach", port: 5858)
 ```
 
+Port harus salah satu port yang diteruskan milik run itu sendiri. Port lain ditolak sebelum apa pun dimulai, sehingga agen tidak dapat melekat ke proses milik orang lain di mesin server.
+
 ## Selesaikan
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Selalu akhiri sesi. Adapter debug memiliki **proses yang berhenti** yang memegang apa pun yang dipegang proses itu — port, lock, koneksi basis data.
 
 :::note[Ia tidak dapat lepas dari kendali Anda]
-Setiap sesi memiliki TTL tegas yang tidak dapat diperpanjangnya, jumlahnya tepat satu per percakapan, dan semuanya dibongkar saat server berhenti. `launch` kedua ditolak alih-alih menggantikan yang pertama: agen yang memulai sesi kedua tanpa mengakhiri yang pertama hampir pasti telah kehilangan jejak sesi pertama.
+Setiap sesi memiliki TTL tegas yang tidak dapat diperpanjangnya (30 menit), jumlahnya tepat satu per percakapan, dan semuanya dibongkar saat server berhenti. Dalam run yang berada dalam sandbox, sesi mempertahankan sandbox-nya di antara giliran paling lama selama itu. `launch` kedua ditolak alih-alih menggantikan yang pertama: agen yang memulai sesi kedua tanpa mengakhiri yang pertama hampir pasti telah kehilangan jejak sesi pertama.
 :::
 
 ## Output yang dibatasi

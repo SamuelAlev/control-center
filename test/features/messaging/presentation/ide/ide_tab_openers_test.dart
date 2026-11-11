@@ -1,4 +1,5 @@
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/messaging/presentation/ide/editor/messaging_tab_kinds.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_conversation_tabs.dart';
 import 'package:control_center/features/messaging/presentation/ide/ide_host.dart';
@@ -56,14 +57,17 @@ void main() {
   late IdeTabOpeners open;
   late int publishes;
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {bool canUseHost = true}) async {
     final group = EditorTabGroupController()
       ..insert(0, MessagingIdeTabs.chat('space'));
     final layout = EditorLayoutController.single(controller: group);
     addTearDown(layout.dispose);
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [rpcClientProvider.overrideWithValue(fakeRpcClient())],
+        overrides: [
+          rpcClientProvider.overrideWithValue(fakeRpcClient()),
+          canUseHostProvider.overrideWithValue(canUseHost),
+        ],
         child: testWrap(
           Consumer(
             builder: (context, ref, _) {
@@ -119,6 +123,23 @@ void main() {
       (t) => t.kind == MessagingTabKinds.codeServer,
     );
     expect(editors.single.args['repoId'], 'repo-1');
+  });
+
+  testWidgets('without host access there is no editor: files open read-only', (
+    tester,
+  ) async {
+    await pump(tester, canUseHost: false);
+    open.openEditor();
+    expect(host.layout.allTabs(), hasLength(1));
+
+    open.openWorktreeFile((repoId: 'repo-1', path: 'lib/main.dart'));
+    expect(
+      host.layout.allTabs().where(
+        (t) => t.kind == MessagingTabKinds.codeServer,
+      ),
+      isEmpty,
+    );
+    expect(_selected(host.layout).kind, MessagingTabKinds.file);
   });
 
   testWidgets('nothing opens without a space', (tester) async {

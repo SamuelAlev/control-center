@@ -1,8 +1,8 @@
 ---
 title: Tạo GitHub App
-description: Cấp cho máy chủ của bạn một GitHub App riêng chỉ với một cú nhấp, cài đặt nó ở nơi có kho mã của bạn, và ủy quyền máy chủ cho bản cài đặt của một tổ chức.
+description: Cấp cho máy chủ của bạn một GitHub App riêng chỉ với một cú nhấp, cài đặt nó ở nơi có kho mã của bạn, để mọi người trong tổ chức có thể dùng nó từ bất kỳ máy chủ nào.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Hướng dẫn này cho bạn biết cách cấp cho máy chủ của mình một GitHub App riêng. Việc
@@ -31,7 +31,7 @@ token mà máy chủ cấp chỉ bao phủ một kho mã và được giới h�
 viên chịu trách nhiệm có thể làm ở đó. Đọc một kho mã đã liên kết chỉ cần app; mọi thao
 tác ghi cần một thành viên có quyền push. Tự động hóa không bao giờ phê duyệt một pull request.
 
-App riêng của máy chủ chỉ được dùng khi chọn **Dùng ứng dụng của riêng tôi**. Với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả GitHub; app của máy chủ vẫn được lưu nhưng không dùng cho đến khi bạn chuyển lại. App của một không gian làm việc ([Dùng một app khác cho một không gian làm việc](#dùng-một-app-khác-cho-một-không-gian-làm-việc)) vẫn áp dụng ở mọi chế độ. Một app thiếu một số trường là một lỗi, không phải phương án dự phòng: đăng nhập GitHub bị từ chối cho đến khi mọi trường được đặt.
+App riêng của máy chủ chỉ được dùng khi chọn **Dùng ứng dụng của riêng tôi**. Với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả GitHub; app của máy chủ vẫn được lưu nhưng không dùng cho đến khi bạn chuyển lại. Một không gian làm việc chạy trên app riêng ([Cấp cho một không gian làm việc app riêng](#cấp-cho-một-không-gian-làm-việc-app-riêng)) dùng app riêng của nó, bất kể chế độ của máy chủ. Một app thiếu một số trường là một lỗi, không phải phương án dự phòng: đăng nhập GitHub bị từ chối cho đến khi mọi trường được đặt.
 
 ## Điều kiện tiên quyết
 
@@ -81,23 +81,22 @@ Một ứng dụng đã đăng ký nhưng chưa cài đặt thì có thể đăn
 1. Chọn tài khoản hoặc tổ chức sở hữu các kho mã của bạn trên trang cài đặt mà GitHub đã mở
 2. Chọn **All repositories**, hoặc chọn những kho mã mà máy chủ này nên thấy
 
-Để cài đặt trên một tài khoản khác về sau, một quản trị viên không gian làm việc vào
-**Cài đặt → Không gian làm việc → Chung**, tìm **Các bản cài đặt ứng dụng GitHub** trên
-thẻ danh tính GitHub và nhấn **Cài ứng dụng GitHub**. Danh sách hiển thị mọi tài khoản mà
+Để cài đặt trên một tài khoản khác về sau, một quản trị viên không gian làm việc vào **Cài đặt → Không gian làm việc → Tích hợp**, tìm **Các bản cài đặt ứng dụng GitHub** trên thẻ **Ứng dụng GitHub** dưới Lưu trữ mã và nhấn **Cài ứng dụng GitHub**. Danh sách hiển thị mọi tài khoản mà
 app đã được cài đặt và đánh dấu một bản cài đặt bị tạm ngưng.
 
-## Ủy quyền máy chủ này cho một tổ chức
+## Chia sẻ bản cài đặt của một tổ chức
 
-Trên app dùng chung của Control Center, bản cài đặt của một tổ chức chỉ phục vụ những
-máy chủ mà quản trị viên của nó đã ủy quyền. Cài đặt qua **Cài ứng dụng GitHub** sẽ ủy
-quyền máy chủ đã khởi chạy nó. Với một bản cài đặt đã tồn tại:
+Một tổ chức cài GitHub App một lần. Sau đó, bất kỳ ai trong tổ chức đăng nhập GitHub
+trên một máy chủ Control Center đều có thể dùng bản cài đặt, dù đó là máy chủ nào:
+của bạn, của đồng nghiệp hay của chính họ. Không cần ủy quyền riêng cho từng máy chủ.
 
-1. Một quản trị viên của tổ chức đó đăng nhập GitHub trên máy chủ này
-2. Họ mở **Cài đặt → Không gian làm việc → Chung → Các bản cài đặt ứng dụng GitHub**
-3. Hàng của tổ chức ghi **Chưa được ủy quyền**. Họ nhấn **Ủy quyền máy chủ này**
+Mỗi token mà máy chủ nhận được thuộc về chính người đã đăng nhập, giới hạn ở một kho
+mã và vai trò của người đó trong kho mã ấy, nên nó không vượt quá những gì người đó có
+thể làm trên GitHub. Nhật ký kiểm toán của GitHub hiển thị người đó, hành động qua ứng dụng.
 
-Hàng đó sau đó ghi **Đã ủy quyền**. App riêng của bạn không cần điều này: mọi bản cài
-đặt của nó đều thuộc về máy chủ của bạn.
+Để ngăn Control Center truy cập một tổ chức, chủ sở hữu tổ chức gỡ bản cài đặt hoặc thu
+hẹp các kho mã của nó trên GitHub. Xóa một người khỏi tổ chức cũng chấm dứt quyền truy
+cập của họ.
 
 ## Đăng ký bằng tay thay thế
 
@@ -133,16 +132,16 @@ trình của nó, nơi mọi tiến trình con đều có thể đọc được;
 (trong Docker, gắn nó tại `/app/bin/.env`). Việc nạp diễn ra **một lần cho mỗi trường**,
 nên việc chỉnh sửa trong Cài đặt không bị lần khởi động lại kế tiếp hoàn tác.
 
-## Dùng một app khác cho một không gian làm việc
+## Cấp cho một không gian làm việc app riêng
 
-Một không gian làm việc có thể dùng một app riêng thay vì app của máy chủ. Một quản trị
-viên không gian làm việc vào **Cài đặt → Không gian làm việc → Chung**, chọn **Dùng một
-GitHub App khác** trên thẻ **Danh tính GitHub** và nhập id, khóa riêng, id client và bí
-mật client của app đó. Thành viên khi đó đăng nhập vào app đó cho không gian làm việc
-này. Một không gian làm việc dùng app riêng không bao giờ rơi về app của máy chủ hay về
-Connect: cho đến khi các trường của nó đầy đủ, công việc GitHub của nó bị từ chối. Điều này áp dụng bất kể máy chủ đăng nhập người dùng bằng cách nào, kể cả qua Connect.
+Một không gian làm việc có thể chạy trên một app riêng thay vì app của máy chủ:
 
-Thẻ **Ứng dụng nhà cung cấp** trên cùng trang làm điều tương tự cho Google Calendar, Linear và tìm GIF. Xem [Cấp cho một không gian làm việc ứng dụng Linear riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/#cấp-cho-một-không-gian-làm-việc-ứng-dụng-linear-riêng) và [Cấp cho một không gian làm việc client Google riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/#cấp-cho-một-không-gian-làm-việc-client-google-riêng).
+1. Một quản trị viên không gian làm việc vào **Cài đặt → Không gian làm việc → Tích hợp**
+2. Trên thẻ **Control Center Connect**, chọn **Dùng ứng dụng của riêng tôi** và nhấn **Áp dụng**. Mọi người đăng nhập lại qua các ứng dụng của không gian làm việc
+3. Thẻ **Ứng dụng GitHub** dưới Lưu trữ mã giờ có các trường của app: **Id ứng dụng** và **Khóa riêng** dưới **Hoạt động thay mặt không gian làm việc này**, **Id client** và **Bí mật client** dưới **Đăng nhập cho mọi người**. Nhấn **Kiểm thử** khi đã đặt đủ
+
+Thành viên khi đó đăng nhập vào app đó cho không gian làm việc này. Một không gian làm việc trên app riêng không bao giờ rơi về app của máy chủ hay về Connect: cho đến khi các trường của nó đầy đủ, công việc GitHub của nó bị từ chối. Cùng lựa chọn này áp dụng cho Google Calendar, Linear và tìm GIF, mỗi cái có các trường riêng bên cạnh nhà cung cấp của nó trên cùng trang. Xem [Cấp cho một không gian làm việc ứng dụng Linear riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-linear/#cấp-cho-một-không-gian-làm-việc-ứng-dụng-linear-riêng) và [Cấp cho một không gian làm việc client Google riêng](/vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich/#cấp-cho-một-không-gian-làm-việc-client-google-riêng). Các lựa chọn khác trên thẻ đó, và mỗi lựa chọn làm gì, nằm trong [Lựa chọn riêng của từng không gian làm việc](/vi-VN/so-tay/tham-chieu/connect/#lựa-chọn-riêng-của-từng-không-gian-làm-việc).
+
 
 ## Xử lý sự cố
 
@@ -157,8 +156,7 @@ Trang dùng một lần đã được sử dụng, hoặc đã qua mười phút
 
 ### Kiểm thử báo thông tin xác thực hoạt động nhưng ứng dụng chưa được cài ở đâu cả
 
-Đăng ký và cài đặt là hai bước riêng biệt. Mở trang cài đặt của app, hoặc dùng
-**Cài ứng dụng GitHub** trong Không gian làm việc → Chung.
+Đăng ký và cài đặt là hai bước riêng biệt. Mở trang cài đặt của app, hoặc dùng **Cài ứng dụng GitHub** trong Không gian làm việc → Tích hợp.
 
 ### Kiểm thử báo không đọc được khóa riêng
 

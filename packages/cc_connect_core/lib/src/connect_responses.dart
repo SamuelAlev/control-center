@@ -38,8 +38,21 @@ final class GitHubInstallationsResponse {
   };
 }
 
+/// `POST /v1/install/retire`: signed by the install being retired, with a
+/// [SealRequest] body naming any credential seal this Connect made for that
+/// install (any lane, any workspace), answered [ConnectAck]. Connect retires
+/// only when the seal opens for the signing install, so an install that
+/// holds no seal is answered `invalid_request` and a seal of another
+/// install `access_denied`. From then on this Connect answers every request
+/// signed by that install `install_blocked`, for good, and releases the
+/// install's Slack team bindings. A server calls it with its old install key
+/// and one stored seal before it switches to a new key, so a copy of the old
+/// key and the seals made for it stop working here; it skips a Connect it
+/// holds no seal of, since nothing there needs containing.
+const String connectInstallRetirePath = '/v1/install/retire';
+
 /// A bare success from a route with nothing else to say
-/// (`/v1/github/authorize_server`, `/v1/github/revoke`, `/v1/slack/revoke`).
+/// (`/v1/github/revoke`, `/v1/slack/revoke`, `/v1/install/retire`).
 final class ConnectAck {
   /// Creates the acknowledgement.
   const ConnectAck({this.updatedSeal = ''});

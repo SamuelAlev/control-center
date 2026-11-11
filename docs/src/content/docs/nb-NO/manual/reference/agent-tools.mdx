@@ -2,7 +2,7 @@
 title: Innebygde agentverktøy
 description: Verktøyflaten den innebygde harnessen gir en agent — språkserver, strukturelt søk, feilsøker, kerneler og worker-kontroll — med hver operasjon og argumentene dens.
 slug: nb-NO/handbok/referanse/agentverktoy
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Dette er de **serverbundne** verktøyene den innebygde agentkjøretiden registrerer direkte — språkserver, strukturelt søk, feilsøker, kerneler, spørsmål og worker-kontroll — i motsetning til [MCP-verktøyene](/nb-NO/handbok/referanse/mcp-verktoy/) den broer inn, og de generiske fil-, søke- og skallverktøyene fra harness-kjøretiden. De ligger ikke i MCP-registeret: en ekstern MCP-klient ser dem ikke, fordi hvert av dem er bundet til en levende ressurs på serversiden — en språkserverprosess, en feilsøkingsadapter, en tolk — som tilhører én kjøring.
@@ -24,6 +24,8 @@ Hvert verktøy erklærer et nivå, og nivået avgjør **hvilke flater som ser de
 ## `lsp` — spørringer mot språkserveren
 
 Registreres når kjøringen har en supervisor for språkserveren og en arbeidskatalog. Om en server faktisk kan svare, oppdages ved kallstid, som et **snitt**: en rotmarkør må finnes *og* serverbinærfila må kunne løses opp. Ett av dem alene betyr at ingen server starter — `status` sier det — i stedet for en stille gjetning.
+
+Servere kommer bare fra den innebygde tabellen; en `lsp.json` i et arkiv leses ikke. I en kjøring i sandkasse får hver kjøring sin egen språkserverøkt, så servere starter på nytt med hver kjøring. Prosjektlokale binærfiler (`node_modules/.bin`) brukes bare når kjøringen er i sandkasse, og prosjektroten løses aldri høyere enn kjøringens arbeidskatalog.
 
 Posisjoner adresseres med `line` pluss en `symbol`-delstreng, aldri med kolonne. En modell som blir bedt om en kolonne, gjetter, og en feil gjetning løses opp til et annet symbol på samme linje — et svar som ser riktig ut og handler om noe annet. Å utelate `symbol` på en navigasjonshandling er en feil, ikke en gjetning på første kolonne.
 
@@ -117,7 +119,7 @@ Hver fil sammenlignes med innholdet som ble fanget opp ved mellomlagringen, og *
 
 Registreres når kjøringen har en supervisor for feilsøkingsøkter, en arbeidskatalog og en samtale-id. Om en adapter faktisk kan starte, oppdages ved kallstid, etter samme snittsregel som språkserveren (rotmarkør *og* binærfil). `exec`-nivå; ikke parallelltrygt (en økt er tilstand på tvers av kall, så en `continue` som løper forbi en `stack`, ville lese en ramme som allerede har flyttet seg).
 
-Én økt per samtale, med en hard TTL (30 minutter). En andre `launch` nektes i stedet for å stille erstatte den første.
+Én økt per samtale, med en hard TTL (30 minutter). En andre `launch` nektes i stedet for å stille erstatte den første. I en kjøring i sandkasse beholder økten sandkassen sin på tvers av runder til den avsluttes, altså i høyst disse 30 minuttene.
 
 | Operasjon     | Argumenter                    | Merknader                                      |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Registreres når kjøringen har en supervisor for feilsøkingsøkter, en arbeids
 | `status`      | —                             | Om en økt kjører, og hvor den stoppet          |
 | `breakpoints` | `file`, `lines[]`             | Tom `lines` tømmer filen. Kan settes **før** oppstart |
 | `launch`      | `program`, `args[]`           | Starter programmet stoppet ved bruddpunktene dine |
-| `attach`      | `port`                        | Kobler til en feilsøkt prosess som allerede kjører |
+| `attach`      | `port`                        | Kobler til en feilsøkt prosess som allerede kjører på en av kjøringens egne videresendte porter; enhver annen port avvises før noe starter |
 | `continue`    | `thread_id?`                  | Kjører til neste stopp                         |
 | `pause`       | `thread_id?`                  | Stopper den der den er                         |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Flytter ett steg                    |
@@ -146,7 +148,7 @@ Registreres når kjøringen har en supervisor for feilsøkingsøkter, en arbeids
 | `lldb`    | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                   |
 | `delve`   | `dlv dap`                    | `go.mod`                                         |
 
-`debugpy` foretrekker en prosjektlokal `.venv/bin` eller `venv/bin` framfor `$PATH`: en python fra `$PATH` er et annet miljø, og å koble til fra det gale miljøet feiler på en måte som leses som ødelagt kode.
+`debugpy` foretrekker en prosjektlokal `.venv/bin` eller `venv/bin` framfor `$PATH` når kjøringen er i sandkasse: en python fra `$PATH` er et annet miljø, og å koble til fra det gale miljøet feiler på en måte som leses som ødelagt kode. Uten sandkasse bruker den bare `$PATH`, så et arkiv kan ikke velge tolken som kjører på verten.
 
 ---
 
@@ -176,7 +178,7 @@ Broen **går inn i harnessets verktøyregister på nytt**, så tillatelsesregler
 Cellens tidsavbrudd er et *inaktivitets*budsjett (standard 5 minutter) og **settes på pause** mens et brokall pågår, så en celle som sprer seg ut til underagenter, ikke drepes midt i utsendelsen.
 
 :::note[Hvor kernelen kjører]
-I samtalens isolerte miljø når den har ett, ellers på vertsmaskinen. Den starter ikke et isolert miljø for å komme dit — den samme regelen som hindrer at en stasjonsfane starter av seg selv.
+I samtalens isolerte miljø når den har ett, ellers i kjøringens OS-sandkasse på verten. Med sandkassen av eller utilgjengelig kjører den uten avgrensning, og `eval` ber om godkjenning for vertskjøring. Den starter ikke et isolert miljø for å komme dit — den samme regelen som hindrer at en stasjonsfane starter av seg selv.
 :::
 
 ---

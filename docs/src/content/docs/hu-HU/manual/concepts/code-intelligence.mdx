@@ -2,7 +2,7 @@
 title: Kódintelligencia
 description: Miért van szüksége egy ügynöknek a fordítóra, egy strukturális illesztőre és egy hibakeresőre – és mit válaszol meg mindegyik, amit a többiek nem.
 slug: hu-HU/kezikonyv/fogalmak/kodintelligencia
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 A Control Center négy módot ad egy ügynöknek arra, hogy a kódot az elolvasásán túl is megértse. Ezek valóban különböző kérdésekre adnak választ, és azért van belőlük négy az egy helyett, mert egyetlen mechanizmus sem válaszolja meg mindet.
@@ -31,6 +31,8 @@ Hogy megismételjük, amit az ügynöknek már elmondtunk, rosszabb, mint a csen
 Induláskor egyetlen szerver sem indul el. Az első olyan kérésre indul el, amelynek szüksége van rá – ez szinte mindig az első szerkesztés egy olyan fájlban, amelyre igényt tart –, a tétleneket pedig elsöpri. Egy hoszt, amely soha nem nyúl a Dart-hoz, soha nem indít elemzőt.
 
 A felderítés egy **metszet**: a checkoutban lennie kell egy gyökérjelölőnek, *és* a binárisnak fel kell oldódnia. A jelölő önmagában azt mondja, hogy „ez a projekt Python”, és semmit arról, hogy telepítve van-e a szerver; a feloldható bináris önmagában azt mondja, hogy a hoszton van eszközkészlet, és semmit erről a checkoutról. Csak a kettő együtt jelenti azt, hogy egy lekérdezés sikerülhet, és egy felkínált, de mindig elbukó eszköz rosszabb annál, amelyik nincs is meg.
+
+A repó befolyását szándékosan kicsire tartjuk. A szervereket egy beépített táblázat adja, nem a checkoutban lévő fájl, és a projekten belüli binárist (`node_modules/.bin`) csak akkor használjuk, ha a futtatás homokozóban fut. A nyelvi szerver a szerver gépén futó program, ezért a repó nem nevezhet meg egyet sem.
 
 ## Miért strukturális keresés, ha van grep
 

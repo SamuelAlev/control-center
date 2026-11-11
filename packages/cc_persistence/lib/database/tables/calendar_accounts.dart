@@ -23,8 +23,7 @@ class CalendarAccountsTable extends Table {
   /// Owning workspace.
   TextColumn get workspaceId => text()();
 
-  /// The member who connected this account. Empty on rows predating
-  /// per-user calendar ownership (legacy workspace-pool accounts).
+  /// The member who connected this account. Empty when no member owns it.
   TextColumn get userId => text().withDefault(const Constant(''))();
 
   /// Provider id (`google`).

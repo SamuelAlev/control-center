@@ -2,7 +2,7 @@
 title: Instalar
 description: Usa Control Center en el navegador o instala la aplicación de escritorio, configura un backend de agentes y elige dónde se ejecuta su servidor.
 slug: es-ES/manual/instalar
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center se ejecuta de dos maneras: como **aplicación web** en
@@ -143,7 +143,7 @@ Las listas de modelos las sirve en vivo cada proveedor conectado; [models.dev](h
 
 Una credencial de GitHub es **tuya y vive en el servidor**, indexada por tu id de usuario, no en el llavero del sistema operativo del cliente. Todos los dispositivos desde los que inicies sesión usan la misma, y ningún otro miembro puede leerla.
 
-GitHub solo admite inicio de sesión: **Ajustes → Espacio de trabajo → Perfil e identidad → Alojamiento de código** ofrece **Iniciar sesión en GitHub**, y no hay ningún token que pegar. El inicio de sesión pasa por la GitHub App propia del servidor ([Crear la GitHub App](/es-ES/manual/guias/github-app/)) o por Control Center Connect, según lo que haya elegido el propietario del servidor. Con la app propia del servidor, el navegador vuelve al servidor por sí solo; a través de Connect, escribes el código de 8 caracteres que muestra el navegador, o dejas que abra Control Center. Consulta [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/).
+GitHub solo admite inicio de sesión: **Ajustes → Tú → Perfil → Alojamiento de código** ofrece **Iniciar sesión en GitHub**, y no hay ningún token que pegar. El inicio de sesión pasa por la GitHub App propia del servidor ([Crear la GitHub App](/es-ES/manual/guias/github-app/)) o por Control Center Connect, según lo que haya elegido el propietario del servidor, salvo que un administrador del espacio de trabajo haya elegido otras apps de inicio de sesión para ese espacio de trabajo en **Ajustes → Espacio de trabajo → Integraciones**. Con la app propia del servidor, el navegador vuelve al servidor por sí solo; a través de Connect, escribes el código de 8 caracteres que muestra el navegador, o dejas que abra Control Center. Consulta [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/).
 
 El onboarding pide esta conexión. Después, esa misma tarjeta es donde vuelves a iniciar sesión o te desconectas. GitLab y Bitbucket usan la misma tarjeta con un token personal pegado; consulta [Conectar un host de código](/es-ES/manual/guias/conectar-host-de-codigo/).
 
@@ -165,7 +165,7 @@ Para alojar tú mismo un servidor, sigue [Ejecutar un servidor headless](/es-ES/
 
 1. **Ajustes → Servidor → Proveedores de modelos** lista ambos adaptadores. «Control Center (built-in)» aparece como encontrado con la versión `built-in`; Claude Code aparece como encontrado si su CLI está en el `PATH` del host del servidor. Pulsa **Actualizar** si no aparece.
 2. **Ajustes → Espacio de trabajo → Repositorios** lista los repos de este espacio de trabajo, y **Añadir repositorio** explora las carpetas del host del servidor.
-3. **Ajustes → Espacio de trabajo → Agentes** lista los cinco agentes que sembró tu primer espacio de trabajo. Cada uno necesita un **Adaptador** y un **Modelo** definidos antes de poder ejecutarse.
+3. **Ajustes → Espacio de trabajo → Agentes** lista los seis agentes que sembró tu primer espacio de trabajo. Cada uno necesita un **Adaptador** y un **Modelo** definidos antes de poder ejecutarse.
 4. **Ajustes → Servidor → Diagnóstico y privacidad** informa de los backends de entorno aislado que ofrece este host, el estado del modelo de embeddings y el registro.
 
 ## Compilar desde el código fuente

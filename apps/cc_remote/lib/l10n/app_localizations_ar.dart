@@ -246,10 +246,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get allCaughtUp => 'اطّلعت على كل شيء';
 
   @override
-  String get inboxNoForgeAccount =>
-      'لا يوجد حساب منصة Git متصل بالخادم، لذا لا يمكن نسب طلبات السحب إليك بعد.';
-
-  @override
   String get inboxNothingWaiting => 'لا شيء معطّل ولا يوجد طلب سحب في انتظارك.';
 
   @override
@@ -458,39 +454,6 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '⁨$names⁩ أكبر من أن تُرسل عبر المرحّل من هنا.',
-      many: '⁨$names⁩ أكبر من أن تُرسل عبر المرحّل من هنا.',
-      few: '⁨$names⁩ أكبر من أن تُرسل عبر المرحّل من هنا.',
-      two: '⁨$names⁩ أكبر من أن يُرسلا عبر المرحّل من هنا.',
-      one: '⁨$names⁩ أكبر من أن يُرسل عبر المرحّل من هنا.',
-      zero: '⁨$names⁩ أكبر من أن تُرسل عبر المرحّل من هنا.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed => 'تعذّر رفع المرفق. حاول مرة أخرى.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'تعذّر رفع $count مرفق فاستُبعدت.',
-      many: 'تعذّر رفع $count مرفقًا فاستُبعدت.',
-      few: 'تعذّر رفع $count مرفقات فاستُبعدت.',
-      two: 'تعذّر رفع مرفقين فاستُبعدا.',
-      one: 'تعذّر رفع مرفق واحد فاستُبعد.',
-      zero: 'لم يتعذّر رفع أي مرفق.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'زميل';
 
   @override
@@ -626,39 +589,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'لا توجد منصة Git متصلة بالخادم، لذا يتعذّر جلب طلبات السحب. اربط منصة من تطبيق سطح المكتب.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'تعذّرت قراءة $count مستودع.',
-      many: 'تعذّرت قراءة $count مستودعًا.',
-      few: 'تعذّرت قراءة $count مستودعات.',
-      two: 'تعذّرت قراءة مستودعين.',
-      one: 'تعذّرت قراءة مستودع واحد.',
-      zero: 'لم تتعذّر قراءة أي مستودع.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'تعذّرت قراءة: ⁨$names⁩';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'تم تعليق تثبيت GitHub App';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'يتم عرض آخر بيانات معروفة لـ ⁨$names⁩. استأنف التثبيت على GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'تم تعليق تثبيت GitHub App. يتم عرض آخر بيانات معروفة لـ ⁨$names⁩. استأنف التثبيت على GitHub.';
-  }
 
   @override
   String get draft => 'مسودة';
@@ -1321,7 +1251,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get permissionPrCreate => 'إنشاء طلبات سحب';
 
   @override
-  String get permissionPrPublish => 'نشر طلبات سحب';
+  String get permissionPrPublish => 'تحديث طلبات سحب أو دمجها';
 
   @override
   String get permissionVendorSyncWrite => 'الكتابة أثناء مزامنة المورّد';
@@ -1365,7 +1295,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get permissionBuiltInDefault => 'الافتراضي المضمّن';
 
   @override
-  String get permissionRemembered => 'موافقة محفوظة';
+  String get permissionRemembered => 'موافقة سارية';
 
   @override
   String get permissionSource => 'المصدر';
@@ -1387,10 +1317,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'تحديد قاعدة هنا';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'ألغِ القاعدة الخاصة بالنطاق أو المحفوظة قبل تحديد قاعدة عامة لهذا الإجراء.';
 
   @override
   String get permissionConfirmRevoke => 'تأكيد الإلغاء';
@@ -1441,6 +1367,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'الأوامر: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'الأدوات: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect => 'غير سارية أثناء رفض هذا الإجراء';
 
   @override
   String permissionMaxCount(String count) {
@@ -1893,15 +1827,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'تحديث طلب السحب';
-
-  @override
-  String get activityTicket => 'تحديث التذكرة';
-
-  @override
-  String get activityMeeting => 'تحديث الاجتماع';
-
-  @override
-  String get activityCalendar => 'اتصال التقويم';
 
   @override
   String get activityRig => 'تحديث الحاوية';
@@ -2578,7 +2503,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get credentialsWaitingForLogin => 'بانتظار التفويض في متصفحك…';
 
   @override
-  String get credentialsConnectCodePrompt => 'أدخل الرمز المعروض في المتصفح';
+  String get credentialsConnectCodePrompt => 'رمز التأكيد';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2648,10 +2573,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'الصق رمز وصول شخصيًا';
 
   @override
-  String get credentialsHostManaged =>
-      'يأتي هذا الاتصال من تطبيق الخادم أو بيئته. لا يستطيع تغييره هناك سوى مالك الخادم؛ لكن يمكنك إضافة رمز الوصول الخاص بك.';
-
-  @override
   String get credentialsStopWatching => 'إيقاف المتابعة';
 
   @override
@@ -2672,4 +2593,202 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'تشغيل الأوامر على المضيف';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'انتهت صلاحية تسجيل دخولك إلى $provider. سجّل الدخول مجددًا.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'متوقف مؤقتًا: تغيّرت خدمة تسجيل الدخول في مساحة العمل هذه. سيعمل مجددًا عند عودة الخدمة.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'يتعذر الوصول إلى $provider الآن. جارٍ إعادة المحاولة.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'مساحة العمل هذه فقط';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'كل مساحات العمل';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'إزالة بيانات الاعتماد المحفوظة من مساحة العمل هذه؟ تحتفظ مساحات العمل الأخرى ببياناتها.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'إزالة بيانات الاعتماد المحفوظة من كل مساحات العمل التي تشاركها؟';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'أُعيد تشغيل الخادم. ابدأ تسجيل الدخول من جديد.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'ثبّت GitHub App على $owner لتصل الأتمتة إلى $names. اضغط لفتح GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App غير مثبّت على $owner، لذا لا تصل الأتمتة إلى $names. اطلب من مسؤول مساحة العمل تثبيته.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'أضف $names إلى مستودعات GitHub App. اضغط لفتح GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'لا يرى GitHub App $names بعد. اطلب من مسؤول مساحة العمل إضافتها إلى مستودعاته.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'تم تعليق تثبيت GitHub App. الأتمتة لـ $names متوقفة مؤقتًا حتى يستأنف أحد مالكي الحساب التثبيت على GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'لم يعد الشخص المسؤول عن أتمتة مساحة العمل هذه يرى $names، لذا لا يعمل شيء هناك باسمه.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'الشخص المسؤول عن أتمتة مساحة العمل هذه لم يسجّل الدخول إلى منصة الاستضافة، لذا تنتظر الأتمتة لـ $names حتى يسجّل الدخول.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'تعذر التحقق من الوصول إلى $names. جارٍ إعادة المحاولة.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'سجّل الدخول إلى $forge لرؤية طلبات السحب من مستودعات إضافية: $count',
+      one: 'سجّل الدخول إلى $forge لرؤية طلبات السحب من مستودع إضافي واحد',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مستودعات مخفية لأن حسابك على $forge لا يراها: $count',
+      one: 'مستودع واحد مخفي لأن حسابك على $forge لا يراه',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مستودعات مخفية ليس لديك وصول إليها في مساحة العمل هذه: $count',
+      one: 'مستودع واحد مخفي لأنه ليس لديك وصول إليه في مساحة العمل هذه',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'جارٍ التحقق من وصولك إلى مستودعات إضافية: $count…',
+      one: 'جارٍ التحقق من وصولك إلى مستودع إضافي واحد…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'البريد الإلكتروني لحساب Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'أدخل عنوان البريد الإلكتروني لحسابك على Atlassian.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'رمز API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'لا يوجد رمز أتمتة يستطيع قراءة $names، لذا فالعمل في الخلفية هناك متوقف مؤقتًا. يمكن للمسؤول إضافة رمز من الإعدادات ← المستودعات.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'أكِّد في متصفحك، ثم أدخل الرمز الذي يظهر فيه.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'هذا الحساب مرتبط بالفعل بشخص آخر على هذا الخادم. سجّل الدخول بحساب مختلف.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'تعذّر الوصول إلى $provider للتحقق من هذا الرمز. حاول مرة أخرى بعد قليل.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider لا يقبل هذا الرمز. تحقّق من أنك نسخته كاملًا وأنه لم يُلغَ.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'هذا ليس رمز وصول شخصيًا. الصق رمز وصول شخصيًا من حسابك الخاص على $provider، لا رمز مشروع أو مجموعة أو مساحة عمل أو روبوت.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'ينقص هذا الرمز نطاق $scope. أنشئ رمزًا يتضمنه.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'انتهت صلاحية هذا الرمز. أنشئ رمزًا جديدًا والصقه هنا.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'طلبات كثيرة جدًا الآن. انتظر قليلًا ثم حاول مرة أخرى.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'أُلغي تسجيل الدخول أو رُفض. ابدأه من جديد عندما تكون مستعدًا.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'تسجيل الدخول هذا لم يعد مفتوحًا: أُلغي أو استُخدم أو استُبدل. ابدأه من جديد.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'يجب أن يدعوك مسؤول مساحة عمل، أو يمكن لمالك الخادم إنشاء مساحة عمل لك.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos يشير الآن إلى مستودع مختلف على $forge. أعِد ربطه من تطبيق سطح المكتب أو الويب لمواصلة استخدامه.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos يشير الآن إلى مستودع مختلف على $forge. يجب أن يعيد مسؤول مساحة العمل ربطه قبل أن يُستخدم مجددًا.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'يحتاج الوكلاء إلى حاوية معزولة على هذا الخادم';
+
+  @override
+  String get runSandboxUnavailable =>
+      'لا توجد حاوية معزولة على هذا الخادم، لذا لا يمكن إلا لمالكه تشغيل الوكلاء هنا. يمكن للمالك تثبيت الحاوية المعزولة، أو إيقاف العزل للجميع.';
 }

@@ -1,11 +1,14 @@
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:cc_domain/cc_domain.dart' show AuthException;
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus;
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_bridge_connection.dart';
 import 'package:cc_domain/features/chat_bridge/domain/value_objects/chat_provider.dart';
 import 'package:cc_infra/cc_infra.dart' show SlackApiException;
 import 'package:cc_server_core/src/chat/chat_connector.dart';
 import 'package:cc_server_core/src/chat/slack_chat_provider_plugin.dart';
 import 'package:cc_server_core/src/connect/sign_in_service.dart';
+import 'package:cc_server_core/src/identity/provider_token.dart';
 
 /// The `slack` lane of the browser sign-in: installing the shared Control
 /// Center Slack app into a workspace through Connect.
@@ -54,6 +57,15 @@ final class SlackSignInLane implements SignInLaneBinding {
   Future<SignInIdentity> identify(String accessToken) =>
       throw UnsupportedError('The shared Slack app has no own-app exchange.');
 
+  /// The team is the workspace's, never a person's.
+  @override
+  Future<Set<String>> accountHolders(String accountId) async => const {};
+
+  /// The shared app's grants are sealed; the sign-in service revokes them at
+  /// Connect.
+  @override
+  Future<void> revokeOwnGrant(ProviderToken token, String? slot) async {}
+
   @override
   Future<void> store(SignInResult result) async {
     final workspaceId = result.slot;
@@ -96,11 +108,11 @@ final class SlackSignInLane implements SignInLaneBinding {
     }
     return LaneConnection(
       lane: lane,
-      connected: true,
+      status: ForgeConnectionStatus.connected,
       account: connection.teamName,
       accountId: connection.teamId,
       workspaceSlot: true,
-      source: SignInMode.connect,
+      source: SignInLaneMode.connect,
     );
   }
 
@@ -118,5 +130,52 @@ final class SlackSignInLane implements SignInLaneBinding {
     if (connection?.mode == ChatConnectionMode.connect) {
       await _connector.disconnect(workspaceId, ChatProvider.slack);
     }
+  }
+
+  /// The shared app's install of each of [workspaceIds] that the Connect at
+  /// [connectOrigin] sealed. An install is a workspace's, so the global slot
+  /// holds none.
+  @override
+  Future<List<SealRequest>> connectSeals(
+    String connectOrigin,
+    List<String> workspaceIds,
+  ) async {
+    final seals = <SealRequest>[];
+    for (final workspaceId in workspaceIds) {
+      final connection = await _connector.connectionFor(
+        workspaceId,
+        ChatProvider.slack,
+      );
+      if (connection?.mode != ChatConnectionMode.connect) {
+        continue;
+      }
+      final token = ProviderToken.tryParse(
+        connection!.credentials[SlackChatProviderPlugin.grantField],
+      );
+      if (token != null &&
+          token.isSealed &&
+          token.connectOrigin == connectOrigin) {
+        seals.add(SealRequest(seal: token.seal, workspaceId: workspaceId));
+      }
+    }
+    return seals;
+  }
+
+  /// The install is the workspace's, not a person's: it goes only with the
+  /// workspace ([userId] null), released upstream like [disconnect].
+  @override
+  Future<int> offboard({String? userId, String? workspaceId}) async {
+    if (userId != null || workspaceId == null) {
+      return 0;
+    }
+    final connection = await _connector.connectionFor(
+      workspaceId,
+      ChatProvider.slack,
+    );
+    if (connection?.mode != ChatConnectionMode.connect) {
+      return 0;
+    }
+    await _connector.disconnect(workspaceId, ChatProvider.slack);
+    return 1;
   }
 }

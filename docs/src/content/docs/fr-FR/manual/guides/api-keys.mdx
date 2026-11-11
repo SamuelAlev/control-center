@@ -2,7 +2,7 @@
 title: Gérer les clés API
 description: Où vit chaque identifiant — votre compte d’utilisateur sur le serveur, le serveur lui-même ou une CLI externe — et comment le définir, le faire tourner ou le supprimer.
 slug: fr-FR/manuel/guides/cles-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Ce guide indique où est stocké chaque identifiant utilisé par Control Center et
@@ -33,8 +33,7 @@ ou non d’un humain derrière elle.
   borné à ce qu’un membre responsable peut y faire. Ce n’est jamais votre
   connexion transmise telle quelle
 
-La vôtre se définit dans la carte **Hébergement de code** sous **Paramètres →
-Espace de travail → Profil et identité** ; l’application du serveur, dans
+La vôtre se définit dans la carte **Hébergement de code** sous **Paramètres → Vous → Profil** ; l’application du serveur, dans
 **Applications fournisseur** sous **Paramètres → Serveur → Authentification
 unique**. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/)
 et [Créer la GitHub App](/fr-FR/manuel/guides/github-app/).
@@ -43,10 +42,10 @@ GitLab et Bitbucket acceptent toujours un jeton personnel collé, stocké de la
 même façon. Voir [Connecter un hébergeur de code](/fr-FR/manuel/guides/connecter-hebergeur-de-code/).
 
 :::note[Il existe aussi un écran accessible uniquement par URL]
-`/workspaces/<workspaceId>/api-keys` affiche les deux mêmes cartes que la
+`/workspaces/<workspaceId>/api-keys` affiche les mêmes cartes que la
 première étape de l’intégration initiale. Il n’a **aucune entrée de
 navigation nulle part dans l’interface** ; il n’est accessible qu’en saisissant
-l’URL. Utilisez plutôt Paramètres → Espace de travail → Profil et identité.
+l’URL. Utilisez plutôt Paramètres → Vous → Profil pour vos propres connexions, et Paramètres → Espace de travail → Intégrations pour le fournisseur de tickets.
 :::
 
 ## Définir les clés de fournisseurs de modèles
@@ -66,10 +65,7 @@ Ces identifiants sont **globaux à l’hôte** : une seule clé sert chaque esp
 travail de l’installation. Les jetons OAuth sont renouvelés avant leur
 expiration.
 
-Les CLI des adaptateurs externes conservent leurs propres identifiants, dans
-leur propre configuration, sur l’hôte du serveur — Control Center ne les gère
-pas. Authentifiez Claude Code comme l’indique sa propre documentation, sur la
-machine où `cc_server` s’exécute.
+Claude Code se connecte via **Comptes Claude Code** dans **Paramètres → Serveur → Fournisseurs de modèles** : chaque compte reçoit son propre répertoire de configuration sur le serveur, et vous exécutez là-bas la commande `claude auth login` que l’application vous affiche.
 
 La boîte de dialogue **Variables d’environnement** propre à chaque adaptateur
 semble être l’endroit où déposer une clé pour l’un d’eux, mais ce n’est pas le
@@ -79,16 +75,12 @@ rien ne relie les deux. Voir
 
 ## Connecter un fournisseur de tickets
 
-La carte **Tickets** sous **Paramètres → Espace de travail → Général** regroupe
-les deux volets d’une même décision : chez quel fournisseur vivent vos tickets,
-et qui est Control Center lorsqu’il s’adresse à lui. Choisir **Local** masque
+La carte **Tickets** sous **Paramètres → Espace de travail → Intégrations** regroupe la part de l’espace de travail : chez quel fournisseur vivent vos tickets, et qui est Control Center lorsqu’il y travaille seul. Choisir **Local** masque
 les lignes Linear — les tickets locaux vivent dans la base de données de ce
 serveur et n’ont rien à authentifier.
 
 Linear propose deux connexions et aucune clé à coller : **Linear** est la
-vôtre, pour ce que vous faites, et **Automatisation Linear** est l’application
-Control Center de l’espace de travail, connectée par un administrateur, pour la
-synchronisation des tickets, les pipelines et les agents. Le serveur peut aussi
+vôtre, pour ce que vous faites, et se trouve dans **Paramètres → Vous → Profil** ; **Automatisation Linear** est l’application Control Center de l’espace de travail, connectée par un administrateur sur la carte **Tickets**, pour la synchronisation des tickets, les pipelines et les agents. Le serveur peut aussi
 détenir une **Clé API de service** (**Applications fournisseur**) pour les
 espaces de travail sans automatisation connectée. Aucun identifiant de tickets
 n’est injecté dans le bac à sable d’un agent ; les agents écrivent les tickets
@@ -106,10 +98,11 @@ outil de suivi externe**. Voir
 - **L’application du serveur** : générez une nouvelle clé privée ou un nouveau
   secret client sur la page de l’application chez le fournisseur, collez-le dans
   **Applications fournisseur** et appuyez sur **Tester**
-- **La clé d’installation Connect** : **Renouveler la clé** sur la carte
-  **Control Center Connect**, ou `cc_server connect rotate-key --yes`. Toutes
-  les personnes qui se sont connectées via Connect doivent se reconnecter. Voir
-  [Control Center Connect](/fr-FR/manuel/reference/connect/)
+- **La clé d’installation Connect** : le propriétaire du serveur appuie sur **Renouveler la clé** sur la carte
+  **Control Center Connect**. Toutes les personnes qui se sont connectées via
+  Connect doivent se reconnecter. Si un serveur Connect est injoignable, rien ne
+  change et l’on vous propose **Renouveler quand même**. Voir
+  [Renouveler la clé d’installation](/fr-FR/manuel/reference/connect/#renouveler-la-clé-dinstallation)
 - **Un fournisseur de modèles** : sur sa ligne, déconnectez-vous (OAuth) ou
   supprimez la clé, puis reconnectez-vous
 - **Slack** : pour votre propre application, recollez les jetons dans la boîte
@@ -122,9 +115,7 @@ outil de suivi externe**. Voir
 
 ### Un jeton GitLab ou Bitbucket fonctionne dans `curl` mais pas ici
 
-Vérifiez le sous-titre de la ligne **Hébergement de code**. S’il indique
-« depuis l’environnement », l’identifiant qui répond est celui du serveur, pas
-le vôtre — le vôtre n’a pas été enregistré.
+Vérifiez la ligne **Hébergement de code**. Si elle indique « Non connecté » ou vous demande de vous reconnecter, votre jeton n’a pas été enregistré ou a été rejeté. Pour Bitbucket, saisissez l’adresse e-mail de votre compte Atlassian avec le jeton d’API.
 
 ### Un jeton GitLab ou Bitbucket est accepté mais les requêtes suivantes échouent
 

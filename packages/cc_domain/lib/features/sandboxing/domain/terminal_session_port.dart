@@ -4,10 +4,10 @@
 /// manager. Desktop and web clients drive those sessions through the
 /// `terminal.*` RPC ops and `terminal.output` subscription; clients never spawn
 /// a PTY themselves.
-/// Sessions are WORKSPACE-SCOPED: `spawn` records the owning workspace and the
-/// host validates ownership on every `output`/`write`/`resize`/`kill` before
-/// touching a session, so one workspace can never read or drive another's
-/// terminal (the workspace-isolation invariant).
+/// A session belongs to its workspace and to the person who opened it: every
+/// `output`/`titles`/`write`/`resize`/`kill` names both, a session of another
+/// workspace is refused, and a session somebody else opened answers as if it
+/// did not exist. Session ids are random, so one is never guessed.
 library;
 
 import 'package:cc_domain/features/sandboxing/domain/terminal_command_buffer.dart';
@@ -15,26 +15,37 @@ import 'package:cc_domain/features/sandboxing/domain/terminal_command_buffer.dar
 /// Owns server-side PTY terminal sessions and exposes their lifecycle for the
 /// `terminal.*` RPC surface.
 abstract interface class TerminalSessionPort {
-  /// Spawns a new sandboxed shell PTY for [workspaceId] and returns its opaque
-  /// session id. [spaceId] (when given) scopes the on-disk working directory
-  /// to the conversation; [cwd] overrides the resolved directory; [backend]
-  /// (a `SandboxBackend` name) pins the sandbox backend, defaulting to the
-  /// host's active backend. [rows]/[cols] set the initial PTY size.
+  /// Spawns a new shell PTY for [workspaceId], opened by [actingUserId], and
+  /// returns its opaque session id. [spaceId] (when given) scopes the on-disk
+  /// working directory to the conversation; [cwd] overrides the resolved
+  /// directory; [backend] (a `SandboxBackend` name) pins the sandbox backend,
+  /// defaulting to the host's. [rows]/[cols] set the initial PTY size.
+  ///
+  /// [hostShellAllowed] is whether this person may run a shell on the server
+  /// host unsandboxed, which only the server's owner may. The caller decides
+  /// it from the authenticated session; the port never infers it. Without it
+  /// an explicit `none` is refused and an unspecified backend that would be
+  /// `none` is the sandboxed one. Every session except the owner's host shell
+  /// opens only inside the workspace's own directories or its registered
+  /// repositories, and a [cwd] outside them is refused.
   Future<String> spawn({
     required String workspaceId,
+    required String actingUserId,
+    required bool hostShellAllowed,
     required int rows,
     required int cols,
     String? spaceId,
     String? cwd,
     String? backend,
-    String? actingUserId,
   });
 
-  /// The raw PTY output byte stream for [sessionId], owned by [workspaceId].
-  /// The stream closes when the shell process exits. Throws if the session does
-  /// not exist or belongs to another workspace.
+  /// The raw PTY output byte stream for [sessionId], owned by [workspaceId]
+  /// and opened by [userId]. The stream closes when the shell process exits.
+  /// Throws if the session does not exist, belongs to another workspace or
+  /// was opened by somebody else.
   Stream<List<int>> output({
     required String workspaceId,
+    required String userId,
     required String sessionId,
   });
 
@@ -43,15 +54,16 @@ abstract interface class TerminalSessionPort {
   /// the shell sits at its prompt. Emits the current title immediately on
   /// listen, then on every foreground change — the ghostty/VS Code fallback
   /// for shells that never retitle via OSC 0/2. Hosts that cannot inspect the
-  /// PTY's foreground process emit nothing. Throws if the session does not
-  /// exist or belongs to another workspace.
+  /// PTY's foreground process emit nothing. Throws as [output] does.
   Stream<String> titles({
     required String workspaceId,
+    required String userId,
     required String sessionId,
   });
 
   /// Writes [data] (already-decoded bytes) to [sessionId]'s PTY stdin. A no-op
-  /// when the session is gone. Throws on a cross-workspace mismatch.
+  /// when the session is gone or somebody else opened it. Throws on a
+  /// cross-workspace mismatch.
   ///
   /// The result says whether this chunk *submitted* a command (Enter). Typing
   /// without sending does nothing the audit trail should record; the
@@ -59,26 +71,33 @@ abstract interface class TerminalSessionPort {
   /// can name what ran rather than the bare carriage return.
   Future<TerminalWriteResult> write({
     required String workspaceId,
+    required String userId,
     required String sessionId,
     required List<int> data,
   });
 
   /// Resizes [sessionId]'s PTY to [rows]×[cols]. A no-op when the session is
-  /// gone. Throws on a cross-workspace mismatch.
+  /// gone or somebody else opened it. Throws on a cross-workspace mismatch.
   Future<void> resize({
     required String workspaceId,
+    required String userId,
     required String sessionId,
     required int rows,
     required int cols,
   });
 
-  /// Kills [sessionId]'s shell and releases its sandbox resources. Idempotent.
-  /// Throws on a cross-workspace mismatch.
+  /// Kills [sessionId]'s shell and releases its sandbox resources. Idempotent,
+  /// and a no-op for a session somebody else opened. Throws on a
+  /// cross-workspace mismatch.
   ///
   /// A session with an owner (see [OwnedTerminalSessionPort]) is left running:
   /// this is what closing a tab sends, and closing the tab of a supervised
   /// process must not stop it.
-  Future<void> kill({required String workspaceId, required String sessionId});
+  Future<void> kill({
+    required String workspaceId,
+    required String userId,
+    required String sessionId,
+  });
 
   /// The `SandboxBackend` name [sessionId] actually runs under, or null when
   /// the session is unknown.
@@ -89,6 +108,19 @@ abstract interface class TerminalSessionPort {
   /// "enclosed VM" while running on the host would be the worst possible
   /// label.
   String? backendOf(String sessionId);
+
+  /// For a session an [OwnedTerminalSessionPort] owner started (an
+  /// environment's setup or process, running on the host), the space it
+  /// runs for; null for a person's own session or an unknown id.
+  ///
+  /// Driving an owned session ([write], [resize], [kill]) takes the grant
+  /// that starts one in that space, which the caller checks first.
+  ({String? spaceId})? ownedSessionOf(String sessionId);
+
+  /// The person who opened [sessionId], or null for an owned session or an
+  /// unknown id. What belongs to that session (its forwarded ports) answers
+  /// anyone else as if it did not exist, as the session itself does.
+  String? openerOf(String sessionId);
 }
 
 /// A session started through [OwnedTerminalSessionPort.spawnOwned].
@@ -115,8 +147,10 @@ class OwnedTerminalSession {
 ///
 /// The owner tag (`environment:<id>/<component>`) makes the session run a given
 /// command instead of the login shell and survive its tab: only [killOwned],
-/// holding the same tag, ends it. Tabs can still open, read and type into it
-/// through [TerminalSessionPort].
+/// holding the same tag, ends it. No person opened it, so any member of its
+/// workspace can read it through [TerminalSessionPort]; typing into it,
+/// resizing or closing it takes the grant that starts one in its space (see
+/// [TerminalSessionPort.ownedSessionOf]).
 abstract interface class OwnedTerminalSessionPort {
   /// Runs [executable] in a new PTY owned by [owner], on the host.
   ///

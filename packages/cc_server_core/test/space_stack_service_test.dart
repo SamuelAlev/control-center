@@ -1,11 +1,14 @@
 import 'dart:io';
 
+import 'package:cc_domain/cc_domain.dart' show RepoGrantRequiredException;
 import 'package:cc_domain/core/domain/entities/isolated_repo.dart';
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_isolation_backend.dart';
+import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/messaging/domain/entities/space_stack_entry.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/space_stack_repository.dart';
 import 'package:cc_server_core/src/space_stack_service.dart';
@@ -146,6 +149,7 @@ void main() {
 
     final opened = <({String head, String base, bool draft})>[];
     final grouped = <List<int>>[];
+    final owners = <Set<String>>[];
     service = _service(
       isolated: isolated,
       stacks: stacks,
@@ -155,13 +159,21 @@ void main() {
       },
       group: (numbers) async => grouped.add(numbers),
       stacksSupported: true,
+      owners: owners,
+      remote: origin.path,
     );
 
+    // An unrequested run: the bot opens them, every arming admin owns them.
     final view = await service.publish(
       workspaceId: 'ws',
       spaceId: 'space-1',
       repoId: 'repo-1',
+      approvalOwnerUserIds: {'admin', 'other-admin'},
     );
+    expect(owners, [
+      {'admin', 'other-admin'},
+      {'admin', 'other-admin'},
+    ]);
 
     expect(view.ok, isTrue, reason: view.error);
     expect(view.opened, 2);
@@ -197,24 +209,88 @@ void main() {
     await _commit(root.path, 'ui.txt', 'ui');
 
     var grouped = false;
+    final owners = <Set<String>>[];
     service = _service(
       isolated: isolated,
       stacks: stacks,
       open: (_) async => (number: 7, externalId: 'gl-7'),
       group: (_) async => grouped = true,
       stacksSupported: false,
+      owners: owners,
+      remote: origin.path,
     );
 
     final view = await service.publish(
       workspaceId: 'ws',
       spaceId: 'space-1',
       repoId: 'repo-1',
+      actingUserId: 'alice',
     );
+    // The person acting owns what they publish.
+    expect(owners, [
+      {'alice'},
+      {'alice'},
+    ]);
 
     expect(view.ok, isTrue, reason: view.error);
     expect(view.opened, 2);
     expect(view.grouped, isFalse);
     expect(grouped, isFalse);
+  });
+
+  test('a person without the write grant publishes nothing', () async {
+    final origin = await Directory.systemTemp.createTemp('space_stack_origin_');
+    addTearDown(() async {
+      if (origin.existsSync()) {
+        await origin.delete(recursive: true);
+      }
+    });
+    await _git(origin.path, ['init', '--bare', '-b', 'main']);
+    await _git(root.path, ['remote', 'add', 'origin', origin.path]);
+    await _commit(root.path, 'migration.txt', 'migration');
+    expect(
+      (await service.cut(
+        workspaceId: 'ws',
+        spaceId: 'space-1',
+        repoId: 'repo-1',
+        name: 'ui',
+      )).ok,
+      isTrue,
+    );
+    await _commit(root.path, 'ui.txt', 'ui');
+
+    var opened = 0;
+    service = _service(
+      isolated: isolated,
+      stacks: stacks,
+      open: (_) async => (number: ++opened, externalId: 'pr-$opened'),
+      remote: origin.path,
+      writers: const {'alice'},
+    );
+
+    // No repository named: the whole stack, every repository checked.
+    await expectLater(
+      service.publish(
+        workspaceId: 'ws',
+        spaceId: 'space-1',
+        actingUserId: 'bob',
+      ),
+      throwsA(
+        isA<RepoGrantRequiredException>().having(
+          (e) => e.level,
+          'level',
+          RepoGrantLevel.write,
+        ),
+      ),
+    );
+    expect(opened, 0);
+    final pushed = await Process.run('git', [
+      '-C',
+      origin.path,
+      'branch',
+      '--list',
+    ]);
+    expect('${pushed.stdout}'.trim(), isEmpty);
   });
 
   test('nothing to publish leaves the forge untouched', () async {
@@ -259,6 +335,9 @@ SpaceStackService _service({
   Future<void> Function(List<int> numbers)? group,
   bool stacksSupported = true,
   String? pinned = 'release',
+  List<Set<String>>? owners,
+  String? remote,
+  Set<String>? writers,
 }) {
   return SpaceStackService(
     isolatedRepos: isolated,
@@ -266,6 +345,8 @@ SpaceStackService _service({
     repos: _Repos(),
     pinnedBase: (_, _, _) async => pinned,
     tokenFor: (_, _, _) async => null,
+    mayPush: (_, _, userId) async =>
+        writers == null || writers.contains(userId),
     openPullRequest:
         ({
           required Repo repo,
@@ -276,7 +357,9 @@ SpaceStackService _service({
           required String base,
           required bool draft,
           String? actingUserId,
+          required Set<String> approvalOwnerUserIds,
         }) async {
+          owners?.add(approvalOwnerUserIds);
           final openCall = open;
           if (openCall == null) {
             return (number: 1, externalId: 'pr-1');
@@ -293,6 +376,8 @@ SpaceStackService _service({
           await group?.call(prNumbers);
         },
     stacksSupported: (_) => stacksSupported,
+    agentsOf: (_) async => [AgentCommitIdentity.controlCenter],
+    remoteUrl: remote == null ? null : (_) => remote,
   );
 }
 

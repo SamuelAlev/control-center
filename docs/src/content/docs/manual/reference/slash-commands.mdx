@@ -137,7 +137,7 @@ Both are the same shape — take the conversation as it stands, ask one question
 
 Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Skills are reached only as `/skill:<name>`, so a user-authored command never collides with one.
 
 ---
 

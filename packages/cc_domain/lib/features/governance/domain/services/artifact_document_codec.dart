@@ -20,8 +20,8 @@ class ArtifactDocument {
   /// discarded.
   ///
   /// This is the RENDER path: content already accepted and persisted must never
-  /// throw on the way back out (a revision written by an older build, or one an
-  /// operator hand-edited, still has to display). Use
+  /// throw on the way back out (a revision an operator hand-edited still has
+  /// to display). Use
   /// [ArtifactDocumentCodec.decodeStrict] at a typed boundary where a caller
   /// deserves violations and [ArtifactDocumentCodec.decodeLoose] where the
   /// diagnostics are fed back to an agent.
@@ -29,7 +29,7 @@ class ArtifactDocument {
       ArtifactDocumentCodec.decodeLoose(json).document;
 
   /// The envelope's `format` tag. Bump only for a breaking block-schema change;
-  /// additive kinds do not need a new version (an old client drops a kind it
+  /// additive kinds do not need a new version (a reader drops a kind it
   /// cannot decode, which is exactly the tolerant behaviour we want).
   static const String formatVersion = 'blocks@1';
 
@@ -183,8 +183,8 @@ class ArtifactDocumentCodec {
     if (json is Map) {
       final format = json['format'];
       if (format != null && format != ArtifactDocument.formatVersion) {
-        // Kept as a warning, not an error: an unknown tag most likely means a
-        // newer writer and dropping every block we CAN read helps nobody.
+        // A warning, not an error: dropping every block we CAN read because
+        // of one unknown tag helps nobody.
         warnings.add(
           'format: unrecognized "$format" — read as '
           '"${ArtifactDocument.formatVersion}"',

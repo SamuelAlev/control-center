@@ -15,7 +15,7 @@ CcTheme(
 );
 ```
 
-`context.designSystem` reads semantic colors from the nearest `CcTheme`; `context.ccTheme?.monoFontFamily` exposes the code font family. Do not hardcode colors. The token families are `DesignSystemTokens` (colors), `CcTypography` (type scale), `AppSpacing` (8px-based spacing and gap widgets), `AppRadii` (2px/4px/pill), `AppShadows`/`CcElevation` (shadows/overlay layers), `CcMotion` (enter/exit speeds, reduced-motion handling) and `CcFonts` (host-bundled Manrope/Fira Code). Type hierarchy uses size and color, not extra font weight; `CcMotion.resolve`/`resolveTravel` remove motion when reduced, while `resolveFade` retains opacity transitions.
+`context.designSystem` reads semantic colors from the nearest `CcTheme`; `context.ccTheme?.monoFontFamily` exposes the code font family. Do not hardcode colors. The token families are `DesignSystemTokens` (colors), `CcTypography` (type scale), `AppSpacing` (8px-based spacing and gap widgets), `AppRadii` (0 everywhere except `pill`), `AppShadows`/`CcElevation` (shadows/overlay layers), `CcMotion` (enter/exit speeds, reduced-motion handling) and `CcFonts` (host-bundled Manrope/Fira Code). Type hierarchy uses size and color, not extra font weight; `CcMotion.resolve`/`resolveTravel` remove motion when reduced, while `resolveFade` retains opacity transitions.
 
 Components under `lib/src/components/` cover buttons; text/select/toggle inputs; badges, alerts, progress and toasts; cards, tiles and avatars; tabs, menus, popovers, dialogs and sidebars; and resizable layout. See the gallery for actual component states rather than maintaining another component inventory here. Foundations include focus modality (`:focus-visible` style), token resolvers, tappable surfaces and overlay anchors.
 

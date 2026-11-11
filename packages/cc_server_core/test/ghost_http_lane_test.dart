@@ -30,12 +30,15 @@ void main() {
     final psk = RemoteControlCrypto.generatePsk();
 
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(deviceId),
-        label: Value('logo lane'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        label: const Value('logo lane'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();

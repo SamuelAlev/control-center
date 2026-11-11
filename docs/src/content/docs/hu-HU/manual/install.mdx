@@ -2,7 +2,7 @@
 title: Telepítés
 description: Használja a Control Centert böngészőben, vagy telepítse az asztali alkalmazást, állítson be egy ügynök-háttérrendszert, és válassza ki, hol fusson a szervere.
 slug: hu-HU/kezikonyv/telepites
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 A Control Center kétféleképpen fut: **webalkalmazásként** a
@@ -191,12 +191,12 @@ A GitHub-hitelesítő adat **az Öné, és a szerveren él**, a felhasználói a
 kötve — nem a kliens operációs rendszerének kulcstartójában. Minden eszköz, ahonnan
 bejelentkezik, ugyanazt használja, és más tag nem olvashatja.
 
-A GitHub kizárólag bejelentkezéssel működik: a **Beállítások → Munkaterület →
-Profil és identitás → Kódtárhely** a **Bejelentkezés: GitHub** lehetőséget
+A GitHub kizárólag bejelentkezéssel működik: a **Beállítások → Ön →
+Profil → Kódtárhely** a **Bejelentkezés: GitHub** lehetőséget
 kínálja, és nincs beillesztendő token. A bejelentkezés a szerver saját GitHub
 Appján ([GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/))
 vagy a Control Center Connecten keresztül fut, aszerint, hogy a szerver
-tulajdonosa melyiket választotta. A szerver saját alkalmazásával a böngésző
+tulajdonosa melyiket választotta, hacsak egy munkaterület-adminisztrátor más bejelentkezési alkalmazást nem választott ehhez a munkaterülethez a **Beállítások → Munkaterület → Integrációk** oldalon. A szerver saját alkalmazásával a böngésző
 magától visszatér a szerverre; a Connecten keresztül beírja a böngésző által
 mutatott 8 karakteres kódot, vagy hagyja, hogy a böngésző megnyissa a Control
 Centert. Lásd: [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/).
@@ -249,7 +249,7 @@ a `--data-dir` / `--port` / `--bind` kapcsolókat tárgyalja.
    szervergazdagép `PATH`-jában van. Ha hiányzik, nyomja meg a **Frissítés** gombot.
 2. A **Beállítások → Munkaterület → Tárolók** listázza ennek a munkaterületnek a
    repóit, a **Tároló hozzáadása** pedig a szervergazdagép mappáit böngészi.
-3. A **Beállítások → Munkaterület → Ügynökök** listázza azt az öt ügynököt, amelyet az
+3. A **Beállítások → Munkaterület → Ügynökök** listázza azt a hat ügynököt, amelyet az
    első munkaterülete létrehozott. Mindegyikhez be kell állítani egy **Adaptert** és
    egy **Modellt**, mielőtt futhat.
 4. A **Beállítások → Szerver → Diagnosztika és adatvédelem** jelenti azokat a

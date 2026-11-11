@@ -2,7 +2,7 @@
 title: Barreiras — uma política única para toda ação que altera o estado
 description: Por que o Control Center encaminha todo efeito colateral de agente por um único motor de permitir, perguntar ou negar, por que a taxonomia de ActionClass é mantida pequena de propósito e o que o dial de autonomia realmente muda.
 slug: pt-BR/manual/conceitos/barreiras
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Os agentes no Control Center podem excluir arquivos, fazer push de branches,
@@ -20,9 +20,7 @@ que uma ação pode sair do sistema: o registro de ferramentas do harness
 integrado, o portão do despachante MCP no servidor e as mutações de operações
 de repositório. Uma regra escrita uma vez se aplica, portanto, tanto ao runtime
 integrado quanto às CLIs de agentes externas — não há um segundo caminho, mais
-silencioso, para contorná-la. A antiga política de comandos restrita ao bash
-continua funcionando: uma regra pode corresponder a um prefixo de comando em vez
-de a uma classe de ação, e as duas formas coexistem no mesmo armazenamento.
+silencioso, para contorná-la. Uma regra também pode corresponder a um prefixo de comando em vez de a uma classe de ação, e as duas formas coexistem no mesmo armazenamento.
 
 O motor não substitui, porém, o sandbox do sistema operacional, e o sandbox não
 o substitui. Eles respondem a perguntas diferentes: as barreiras decidem se uma
@@ -30,14 +28,16 @@ chamada que o Control Center consegue ver pode acontecer, enquanto o sandbox
 delimita até onde o processo resultante pode chegar. O `cc_server` aplica o
 sandbox quando o host oferece um backend — mas [Windows não oferece nenhum e o
 Linux precisa de `bwrap` e `socat`](/pt-BR/manual/conceitos/sandbox-e-seguranca/).
-Nesses hosts, as barreiras são a camada de imposição mais externa, e não uma
-política sobreposta a um piso, o que vale saber quando você decide o quão
+Nesses hosts, só começam as execuções do proprietário do servidor, a menos que
+ele tenha desligado o sandbox para todos com `--sandbox off`. Para qualquer
+execução que começa sem sandbox, as barreiras são a camada de imposição mais
+externa, e não uma política sobreposta a um piso, o que vale saber quando você decide o quão
 permissivo ser.
 
 ## ActionClass: uma taxonomia deliberadamente fechada
 
 Toda ferramenta que altera o estado declara a quais **ActionClasses** pertence,
-a partir de um conjunto fechado de treze classes de efeito. Cinco delas
+a partir de um conjunto fechado de quatorze classes de efeito. Seis delas
 perguntam por padrão; as demais permitem, e é uma regra que muda isso.
 
 | Classe                     | Padrão integrado       | O que abrange                                                   |
@@ -55,18 +55,19 @@ perguntam por padrão; as demais permitem, e é uma regra que muda isso.
 | `processSpawn`             | Permitir               | Gerar um processo (o shell e qualquer coisa que invoque o shell) |
 | `workspaceMutation`        | Permitir               | Alterar a estrutura do espaço de trabalho (repositórios, espaços, agentes) |
 | `enclosureControl`         | Permitir               | Controlar um recinto (rig): inicializar uma VM, enviar entrada para ela |
+| `hostExecution`            | **Perguntar primeiro** | Executar um comando no host do servidor fora de qualquer sandbox, a pedido de um agente: tarefas de ambiente, processos, stacks do compose e `eval` quando o kernel dele roda sem confinamento |
 
 As oito classes permitidas por padrão foram escolhidas com base na suposição de
 que o piso do sandbox se aplica abaixo delas. Isso acontece onde o host oferece
-um backend, e não acontece no Windows nem em uma máquina Linux sem `bwrap` e
-`socat` — então, se você quiser que `fileWriteOutsideWorktree` ou
+um backend, e não acontece sob `--sandbox off`, nem para as execuções do próprio
+proprietário no Windows ou em uma máquina Linux sem `bwrap` e `socat`. Se você quiser que `fileWriteOutsideWorktree` ou
 `packageInstall` sejam controladas ali, essa é uma regra que você mesmo precisa
 escrever.
 
 O conjunto é fechado de propósito. Uma nova ferramenta que altera o estado e não
 declara nenhuma classe falha no teste de catraca, de modo que a taxonomia só
 pode crescer por uma decisão explícita e argumentada — "a proliferação da
-taxonomia é a morte deste recurso". Treze classes bastam para expressar as
+taxonomia é a morte deste recurso". Quatorze classes bastam para expressar as
 políticas que as pessoas de fato escrevem (nunca fazer push sem perguntar, nunca
 excluir fora de uma árvore de trabalho, sempre permitir leituras) e são poucas o
 suficiente para que a interface de configurações continue compreensível.
@@ -95,7 +96,7 @@ Duas decisões trazem garantias rígidas:
 
 Não existe, de propósito, nenhuma trava por turno. Cada chamada de ferramenta
 resolve a política do zero, de modo que a repetição de perguntas para a mesma
-ação é limitada pelo próprio "lembrar desta decisão" do operador, e não por
+ação é limitada pela aprovação temporária própria do operador, e não por
 qualquer coisa ligada ao turno.
 
 ## Regras no nível dos argumentos
@@ -113,6 +114,7 @@ Uma restrição pode nomear:
   lê-se "qualquer branch exceto main")
 - **hosts** — destinos de rede, com curingas de subdomínio (`*.internal`)
 - **comandos** — prefixos de comando, correspondidos em um limite de palavra
+- **ferramentas** — a ferramenta exata que uma chamada nomeia, para que uma aprovação possa cobrir uma ferramenta em vez de todas as que têm o mesmo efeito
 - **tetos** — `maxCount` / `maxCents`, de modo que "excluir até 50 arquivos" é
   expressável
 
@@ -156,16 +158,19 @@ operacional abaixo de ambos. Uma regra de comando que resolve para `allow` nunca
 afrouxa nenhuma das duas — a malha do modo é executada depois, e seu `deny` é
 definitivo.
 
-## Aprovações permanentes
+## Aprovações temporárias
 
-Responder a um prompt com "lembrar desta" grava uma regra de política de
-verdade: com escopo (espaço / agente / espaço de trabalho), **restrita por
-argumentos** (aprovar um push para `feature/login` concede `feature/**`, e não
-`main`) e **autorrevogável** com base em um TTL explícito. Dizer sim pelas
-próximas horas não é o mesmo que reescrever em silêncio a sua política
-permanente, e as regras gravadas assim caem no mesmo armazenamento, com
-procedência `remembered` e uma expiração, de modo que podem ser revogadas antes
-do prazo.
+Cada cartão de aprovação gerado pela ação de um agente oferece **Aprovar durante 8 horas** quando a ação tem algo mais restrito que a sua classe para nomear. Escolher essa opção grava uma regra de política de verdade, uma aprovação temporária, no mesmo armazenamento das regras que você define, com procedência `remembered` e uma expiração:
+
+- **Com escopo.** Ela é escrita para o espaço de onde veio a pergunta. Somente a resposta de um administrador pode ser gravada para todo o espaço de trabalho.
+- **Restrita.** Nomeia uma família de branches (aprovar um push para `feature/login` cobre `feature/**`, e não `main`), uma pasta, um host, o comando exato ou a ferramenta. Um commit é a única ação aprovada como classe, para esse espaço: não há nada mais restrito para nomear.
+- **Autorrevogável.** Ela termina após oito horas, e pode ser revogada antes na página de permissões dos agentes.
+
+Uma aprovação temporária só evita uma pergunta. Ela responde a um Perguntar primeiro definido no próprio escopo ou em um mais amplo, e nunca a uma negação, venha a negação de qualquer escopo. Ela fica armazenada ao lado da regra que você define para a ação, então mudar essa regra mantém a aprovação no lugar, e revogar a aprovação mantém a regra.
+
+Alguns controles perguntam por conta própria depois que a política permitiu uma chamada: a aprovação declarada pela própria ferramenta, ou a malha de comandos de um modo. Eles pulam a pergunta somente para uma aprovação temporária que nomeie exatamente essa ferramenta ou esse comando. Definir a ação como permitir não os silencia.
+
+Três cartões mantêm dois botões, porque não há nada a levar adiante: deixar o sandbox executar programas de uma pasta (aprová-la já é uma concessão armazenada que você pode revogar), uma operação destrutiva que você confirma uma vez, e a instalação de uma skill (uma skill alterada deve perguntar de novo).
 
 ## Níveis de imposição
 

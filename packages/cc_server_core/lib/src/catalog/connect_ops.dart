@@ -3,7 +3,9 @@ import 'package:cc_domain/cc_domain.dart' show RepoOpKind, ValidationException;
 import 'package:cc_host/cc_host.dart' show RepoOp, ServerAuthority;
 import 'package:cc_server_core/src/connect/connect_client.dart';
 import 'package:cc_server_core/src/connect/connect_settings.dart';
+import 'package:cc_server_core/src/connect/install_key_rotation.dart';
 import 'package:cc_server_core/src/connect/klipy_gifs.dart';
+import 'package:cc_server_core/src/forge/forge_audit.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 
 /// Where one Connect-capable lane gets its credentials right now.
@@ -90,7 +92,8 @@ Future<List<ConnectLaneStatus>> connectLaneStatuses({
     (
       lane: 'klipy',
       source: switch (klipySource) {
-        KlipyLaneSource.own => ConnectLaneSource.own,
+        KlipyLaneSource.own ||
+        KlipyLaneSource.workspaceOwn => ConnectLaneSource.own,
         KlipyLaneSource.connect => ConnectLaneSource.connect,
         KlipyLaneSource.off || null => ConnectLaneSource.off,
       },
@@ -112,13 +115,17 @@ List<RepoOp> buildConnectOps({
   KlipyGifs? klipy,
   Future<bool> Function()? slackOwnApp,
   Future<void> Function()? onChanged,
+  InstallKeyRotation? keyRotation,
 }) {
   if (settings == null || connect == null || apps == null) {
     return const [];
   }
 
   Future<Map<String, Object?>> status({bool refresh = false}) async {
-    final state = await connect.configState(refresh: refresh);
+    final state = await connect.configState(
+      await connect.serverTarget(),
+      refresh: refresh,
+    );
     final config = state.config;
     return {
       'mode': state.choice.mode.name,
@@ -172,7 +179,14 @@ List<RepoOp> buildConnectOps({
           ),
         };
         final url = ctx.args['url'];
+        final before = (await settings.choice()).mode;
         await settings.setChoice(mode, url: url is String ? url.trim() : '');
+        forgeAudit(ForgeAuditEvent.connectChoiceChanged, {
+          'scope': 'server',
+          'user_id': ctx.userId,
+          'from': before.name,
+          'to': mode.name,
+        });
         return changed();
       },
     ),
@@ -188,22 +202,39 @@ List<RepoOp> buildConnectOps({
       kind: RepoOpKind.mutate,
       workspaceScoped: false,
       serverAuthority: ServerAuthority.serverOwner,
-      handler: (_) async {
-        await connect.confirmPendingPins();
+      handler: (ctx) async {
+        final target = await connect.serverTarget();
+        await connect.confirmPendingPins(target);
+        forgeAudit(ForgeAuditEvent.connectPinsConfirmed, {
+          'scope': 'server',
+          'user_id': ctx.userId,
+          'origin': target.origin,
+        });
         return changed();
       },
     ),
-    RepoOp(
-      name: 'connect.rotateKey',
-      kind: RepoOpKind.mutate,
-      workspaceScoped: false,
-      serverAuthority: ServerAuthority.serverOwner,
-      handler: (_) async {
-        // Every seal this server holds is bound to the old install id; each
-        // reads as "sign in again" from here on.
-        await settings.rotateInstallSeed();
-        return changed();
-      },
-    ),
+    if (keyRotation != null)
+      RepoOp(
+        name: 'connect.rotateKey',
+        kind: RepoOpKind.mutate,
+        workspaceScoped: false,
+        serverAuthority: ServerAuthority.serverOwner,
+        handler: (ctx) async {
+          // Each Connect retires the old key first: from then on it refuses
+          // the old key and every seal made for it, while access tokens it
+          // already handed out last until they expire. Every grant reads as
+          // "sign in again" from here on. `force` replaces the key even when a
+          // Connect could not retire it.
+          try {
+            await keyRotation.rotate(
+              userId: ctx.userId,
+              force: ctx.args['force'] == true,
+            );
+          } on ConnectRetireFailed catch (e) {
+            throw ValidationException(e.message);
+          }
+          return changed();
+        },
+      ),
   ];
 }

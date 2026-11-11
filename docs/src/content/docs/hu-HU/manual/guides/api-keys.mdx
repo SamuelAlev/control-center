@@ -2,7 +2,7 @@
 title: API-kulcsok kezelése
 description: Hol él az egyes hitelesítő adat — a szerveren lévő felhasználói fiókjában, magán a szerveren vagy egy külső CLI-ben —, és hogyan állíthatja be, forgathatja és távolíthatja el.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/api-kulcsok
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Ez az útmutató bemutatja, hol tárolja a Control Center az általa használt
@@ -33,8 +33,7 @@ van-e mögötte ember.
   amit egy felelős tag ott megtehet. Soha nem az Ön egészben átadott
   bejelentkezése
 
-Az Öné a **Kódtárhely** kártyán van beállítva a **Beállítások → Munkaterület →
-Profil és identitás** alatt; a szerver alkalmazása a **Szolgáltatói alkalmazások** alatt a
+Az Öné a **Kódtárhely** kártyán van beállítva a **Beállítások → Ön → Profil** alatt; a szerver alkalmazása a **Szolgáltatói alkalmazások** alatt a
 **Beállítások → Szerver → Egyszeri bejelentkezés** útvonalon. Lásd a
 [GitHub-integráció beállítása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-integracio/)
 és a [GitHub App létrehozása](/hu-HU/kezikonyv/gyakorlati-utmutatok/github-app/) oldalt.
@@ -44,10 +43,10 @@ ugyanígy tárolódik. Lásd a
 [Kódhoszt csatlakoztatása](/hu-HU/kezikonyv/gyakorlati-utmutatok/kodhoszt-csatlakoztatasa/) oldalt.
 
 :::note[Van egy kizárólag URL-lel elérhető képernyő is]
-A `/workspaces/<workspaceId>/api-keys` ugyanazt a két kártyát jeleníti meg,
+A `/workspaces/<workspaceId>/api-keys` ugyanazokat a kártyákat jeleníti meg,
 mint a bevezető első lépése. **A felületen sehol nincs navigációs bejegyzése**;
-csak az URL beírásával érhető el. Használja helyette inkább a Beállítások →
-Munkaterület → Profil és identitás útvonalat.
+csak az URL beírásával érhető el. Használja a Beállítások → Ön → Profil útvonalat a saját bejelentkezéseihez, a Beállítások → Munkaterület →
+Integrációk útvonalat pedig a jegykezelő szolgáltatóhoz.
 :::
 
 ## Modellszolgáltatói kulcsok beállítása
@@ -67,10 +66,7 @@ oldalon találja.
 Ezek a hitelesítő adatok **hoszt-szintűek**: egyetlen kulcs szolgálja ki a
 telepítés minden munkaterületét. Az OAuth-tokenek a lejáratuk előtt frissülnek.
 
-A külső adapterek CLI-jei a saját hitelesítő adataikat a saját
-konfigurációjukban, a szervergépen tartják — a Control Center nem kezeli ezeket.
-A Claude Code-ot a saját dokumentációja szerint hitelesítse, azon a gépen,
-amelyen a `cc_server` fut.
+A Claude Code bejelentkezése a **Beállítások → Szerver → Modellszolgáltatók** alatt, a **Claude Code-fiókok** részen történik: minden fiók saját konfigurációs könyvtárat kap a szerveren, és az alkalmazás által megjelenített `claude auth login` parancsot ott kell futtatnia.
 
 Az adapterenkénti **Környezeti változók** párbeszédablak úgy tűnik, mintha
 alkalmas lenne egy kulcs elhelyezésére valamelyikükhöz, de nem az: az eszközére
@@ -80,16 +76,16 @@ alkalmas lenne egy kulcs elhelyezésére valamelyikükhöz, de nem az: az eszkö
 
 ## Jegykezelő szolgáltató csatlakoztatása
 
-A **Jegykezelés** kártya a **Beállítások → Munkaterület → Általános** alatt egy
-döntés mindkét felét tartalmazza: hogy melyik szolgáltatónál élnek a jegyei, és
-hogy ki a Control Center, amikor vele beszél. A **Helyi** választása elrejti a
+A **Jegykezelés** kártya a **Beállítások → Munkaterület → Integrációk** alatt a
+munkaterület oldalát tartalmazza: hogy melyik szolgáltatónál élnek a jegyei, és
+hogy ki a Control Center, amikor ott önállóan dolgozik. A **Helyi** választása elrejti a
 Linear-sorokat — a helyi jegyek e szerver saját adatbázisában élnek, és nincs
 mihez hitelesíteniük.
 
 A Linearnek két bejelentkezése van, és nincs beillesztendő kulcs: a **Linear** az
-Öné, ahhoz, amit Ön tesz, a **Linear-automatizálás** pedig a munkaterület Control
-Center-alkalmazása, amelyet egy adminisztrátor csatlakoztat a
-jegyszinkronizáláshoz, a pipeline-okhoz és az ügynökökhöz. A szerver ezenkívül
+Öné, ahhoz, amit Ön tesz, és a **Beállítások → Ön → Profil** oldalon
+él; a **Linear-automatizálás** pedig a munkaterület Control Center-alkalmazása,
+amelyet egy adminisztrátor csatlakoztat a **Jegykezelés** kártyán a jegyszinkronizáláshoz, a pipeline-okhoz és az ügynökökhöz. A szerver ezenkívül
 tárolhat egy **Szolgáltatási API-kulcsot** (**Szolgáltatói alkalmazások**) azoknak
 a munkaterületeknek, amelyek nem csatlakoztattak automatizálást. Az ügynök
 homokozójába nem kerül jegykezelő hitelesítő adat; az ügynökök a Control Center
@@ -107,10 +103,11 @@ kérdezik meg. Lásd a
 - **A szerver alkalmazása**: hozzon létre új privát kulcsot vagy client
   secretet az alkalmazás szolgáltatói oldalán, illessze be a **Szolgáltatói
   alkalmazások** alatt, és nyomja meg a **Teszt** gombot
-- **A Connect telepítési kulcsa**: **Kulcs cseréje** a **Control Center Connect**
-  kártyán, vagy `cc_server connect rotate-key --yes`. Mindenki, aki a Connecten
-  keresztül jelentkezett be, újra bejelentkezik. Lásd a
-  [Control Center Connect](/hu-HU/kezikonyv/referencia/connect/) oldalt
+- **A Connect telepítési kulcsa**: a szerver tulajdonosa megnyomja a **Kulcs
+  cseréje** gombot a **Control Center Connect** kártyán. Mindenki, aki a Connecten
+  keresztül jelentkezett be, újra bejelentkezik. Ha a Connect-szerver nem érhető
+  el, semmi sem változik, és felkínálják a **Mindenképpen cserél** lehetőséget.
+  Lásd: [A telepítési kulcs cseréje](/hu-HU/kezikonyv/referencia/connect/#a-telepítési-kulcs-cseréje)
 - **Egy modellszolgáltató**: a sorában jelentkezzen ki (OAuth), vagy távolítsa
   el a kulcsot, majd csatlakoztassa újra
 - **Slack**: saját alkalmazásnál illessze be újra a tokeneket a csatlakozási
@@ -122,9 +119,7 @@ kérdezik meg. Lásd a
 
 ### Egy GitLab- vagy Bitbucket-token működik a `curl`-ben, de itt nem
 
-Ellenőrizze a **Kódtárhely** sorának alcímét. Ha az áll ott, hogy „a
-környezetből", akkor a szerver hitelesítő adata válaszol, nem az Öné — az Öné
-nem került mentésre.
+Ellenőrizze a **Kódtárhely** sorát. Ha ott az áll, hogy „Nincs csatlakoztatva”, vagy újracsatlakozást kér, akkor a tokenje nem lett elmentve, vagy elutasították. Bitbucketnél adja meg Atlassian-fiókja e-mail-címét az API-tokennel együtt.
 
 ### Egy GitLab- vagy Bitbucket-token elfogadott, de a későbbi kérések meghiúsulnak
 

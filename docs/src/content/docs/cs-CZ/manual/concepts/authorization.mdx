@@ -2,7 +2,7 @@
 title: Autorizace — kdo smí co dělat a jak to doložíš
 description: Katalog oprávnění za rolemi Control Center, auditní stopa odolná proti manipulaci, kam padá každé autorizační rozhodnutí, a nastavení celé instalace, která operátor umí ukotvit.
 slug: cs-CZ/prirucka/koncepty/autorizace
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center odpovídá na dvě autorizační otázky a každá je jiná.
@@ -59,18 +59,76 @@ jako `custom:<id>` a klient, který tu hodnotu ještě nezná, spadne na
 roli Host.
 
 Pod rolemi jsou **přidělení na repozitář** (`none` / `read` / `review` /
-`write`). Členství v pracovním prostoru zůstává v mezích hostitele kódu.
+`write`, viz [Změna kódu vyžaduje zápisové přidělení](#změna-kódu-vyžaduje-zápisové-přidělení)). Členství v pracovním prostoru zůstává v mezích hostitele kódu.
 Kontroluje je každá plocha, která kód ukazuje, i ta, která se ke kódu
 dostane z boku, třeba terminál nebo relace editoru otevřená na worktree
 prostoru.
 
-## Autorita serveru
+## Kód se řídí hostitelem kódu
 
-Některé operace se pracovního prostoru vůbec netýkají: nastavení celé
-instalace, konfigurace SSO, přihlašovací údaje poskytovatelů, správa
-modelů, zálohy celé instalace. Ty deklarují **autoritu serveru**. Pustí
-je jen operátor instalace (zaznamenaný vlastník serveru). Identita
-operátora je schválně jedna a definice taky.
+Samotné přidělení neotevírá nikomu kód repozitáře. Aby člen viděl jeho soubory,
+diffy nebo výsledky hledání, nebo aby na něm otevřel terminál, potřebuje
+přidělení Control Center **a** jeho vlastní přihlášení k hostiteli kódu musí
+repozitář číst. Admini pracovního prostoru výjimku nemají; vlastník serveru ji
+má, protože checkout je na jeho stroji. Repozitář bez vzdáleného hostitele kódu
+potřebuje jen přidělení.
+
+- Když admin přidělí repozitář někomu, jehož účet u hostitele kódu ho nemůže číst, přidělení se uloží a admin uvidí varování.
+- Když hostitele kódu nelze pro kontrolu dosáhnout, odpověď je ne, nikdy hádání: dotyčný vidí zprávu „Váš přístup k GitHub se nepodařilo ověřit. Zkuste to znovu.“ (u jiného hostitele s jeho názvem) a zkusí to později.
+- Pull requesty a vše, co z nich vzniklo, se řídí stejným pravidlem.
+
+### Změna kódu vyžaduje zápisové přidělení
+
+Přidělení k repozitáři má tři stupně a každý zahrnuje ten předchozí:
+
+- **read**: vidět soubory repozitáře, diffy a výsledky hledání, pokud je může číst i tvé vlastní přihlášení k hostiteli kódu.
+- **review**: čtení plus schvalování, žádání o změny a další akce kontroly na jeho pull requestech.
+- **write**: review plus změna kódu a běhy agentů, které zapisují do repozitáře. Změna kódu zahrnuje ukládání nebo vracení souborů v editoru, synchronizaci worktree s hlavou jeho pull requestu, commitování a pushování, publikování větve a akce skládaných pull requestů, které část vytvoří, přepnou na ni nebo ji publikují.
+
+Každý push provedený pro osobu, ať už ji samotnou nebo během agenta, o jehož běh požádala, kontroluje její zápisové přidělení k danému repozitáři v okamžiku pushe, a to na GitHubu, GitLabu i Bitbucketu stejně. Publikování zásobníku zkontroluje každý repozitář v zásobníku dřív, než pushne kterýkoli z nich.
+
+Odmítnutí pojmenuje chybějící přidělení. Bez čtecího přístupu aplikace hlásí „Nemáte přístup ke čtení tohoto repozitáře. Správce pracovního prostoru vám ho může udělit.“ Když máš čtení, ale ne zápis, hlásí „Tento repozitář můžete číst, ale nemůžete ho měnit. Správce pracovního prostoru vám může udělit přístup pro zápis.“
+
+### Prostory se řídí svými repozitáři
+
+Obsah, který agenti napsali o kódu, se řídí kódem. Obsah prostoru (jeho zprávy,
+přepisy a výstup nástrojů, výsledky hledání, záznamy běhů, úkoly, aktivita
+a oznámení) nese kód repozitářů, se kterými pracuje. Prostor se proto otevře jen
+členovi, který má čtecí přidělení na každý repozitář, jehož prostor používá,
+a jehož vlastní přihlášení k hostiteli kódu ho může číst. Jsou to repozitáře
+vybrané pro prostor, nebo všechny repozitáře pracovního prostoru, když žádný
+výběr zaznamenaný není. Prostor vytvořený bez repozitářů je otevřený každému
+členovi.
+
+Prostor, který někdo nemůže otevřít, mu není nikde vypsán, včetně hledání,
+záznamů běhů, úkolů, aktivity a oznámení. Admini pracovního prostoru drží každé
+přidělení, ale z části hostitele kódu výjimku nemají; vlastník serveru ji má.
+
+Pro konverzaci, kterou má číst každý, vytvořte prostor bez repozitářů, nebo jen
+s repozitáři, které může číst každý.
+
+## Vlastník serveru
+
+Člověk, který server nastavil, je jeho **vlastník**. Server si ho zaznamená
+jednou, při prvním startu, a nic přenesené po síti to nemění. Admin pracovního
+prostoru ani vlastník pracovního prostoru není vlastníkem serveru: pracovní
+prostor lze přidělit komukoli, ale stroj serveru má jednoho vlastníka.
+
+**Na stroji serveru nic neběží mimo sandbox, pokud to nespustil vlastník serveru nebo neschválil tento druh provádění na hostiteli.** Konkrétně jen vlastník serveru může:
+
+- Vytvořit pracovní prostor. Ostatní uvidí obrazovku, která je vyzve, aby vlastníka požádali o vytvoření, nebo aby je pozval admin pracovního prostoru.
+- Otevřít shell hostitele v terminálu na serveru. Ostatní dostanou terminál v sandboxu s omezeními agenta, v adresářích pracovního prostoru.
+- Otevřít vestavěný editor kódu. Běží jako vlastní uživatel serveru, se svým terminálem, úlohami a rozšířeními.
+- Otevřít pull request nebo worktree konverzace v nativním editoru. Editor se spustí na obrazovce serveru, jako uživatel serveru.
+- Uložit nebo schválit definici [prostředí](/cs-CZ/prirucka/navody/prostredi/), která na hostiteli spouští cokoli: umístění na hostiteli, kontrolu, která spustí příkaz, nebo úlohu provisioningu či archivace.
+- Spouštět agenty na serveru, jehož stroj nemá sandbox. Běhy všech ostatních se tam odmítnou, pokud vlastník serveru nespustil s `--sandbox off`, což spustí agenty všech členů bez omezení (viz [Agenti na hostiteli bez sandboxu](/cs-CZ/prirucka/koncepty/sandbox-a-zabezpeceni/#agenti-na-hostiteli-bez-sandboxu)).
+- Propojit checkout repozitáře, který leží mimo vlastní úložiště pracovního prostoru, potvrdit ten, který je už propojený před tímto pravidlem, a při přidávání repozitáře procházet složky serveru (viz [Přidejte repozitáře do pracovního prostoru](/cs-CZ/prirucka/navody/pridani-repozitaru/)).
+- Vidět a zastavit každý běžící proces agenta na serveru. Ostatní vidí a zastavují jen živé běhy agentů v pracovních prostorech, do kterých patří.
+- Nechat agenty používat servery MCP nastavené v nástrojích uživatele serveru (Claude, Codex, Cursor a další). Získají je jen vestavěné běhy harnessu, za které vlastník odpovídá (viz [Osobní servery MCP zůstávají vlastníkovy](/cs-CZ/prirucka/navody/mcp-server/#osobní-servery-mcp-zůstávají-vlastníkovi)).
+- Potvrdit e-mailovou adresu člověka, aby ji jednotné přihlášení mohlo spárovat (viz [Připojte poskytovatele OpenID Connect](/cs-CZ/prirucka/navody/sso-oidc/#jak-se-přihlášení-páruje-s-existujícími-účty)).
+- Měnit nastavení celé instalace: SSO, přihlašovací údaje poskytovatelů, koncový bod MCP a jeho token, správu modelů, Connect a zálohy celé instalace. Tyto operace deklarují **autoritu serveru** a všem ostatním se odmítnou.
+
+Identita operátora je schválně jedna a definice taky.
 
 ## Auditní stopa
 

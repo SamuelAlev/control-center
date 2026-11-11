@@ -82,7 +82,14 @@ class GitHubRateBudget {
 
   /// Whether any resource of the quota behind [workspaceId] (and [userId])
   /// is below [lowWatermark] in its current window.
-  bool isLow(String workspaceId, {String? userId}) {
+  bool isLow(String workspaceId, {String? userId}) =>
+      isBelow(workspaceId, lowWatermark, userId: userId);
+
+  /// Whether any resource of the quota behind [workspaceId] (and [userId])
+  /// is below [fraction] of its limit in its current window. An explicit
+  /// refresh asks this with a floor under [lowWatermark]: a person may spend
+  /// the reserve, never the last of it.
+  bool isBelow(String workspaceId, double fraction, {String? userId}) {
     final buckets = _readings[_key(workspaceId, userId)];
     if (buckets == null) {
       return false;
@@ -90,7 +97,7 @@ class GitHubRateBudget {
     final now = _now();
     buckets.removeWhere((_, reading) => !reading.validUntil.isAfter(now));
     return buckets.values.any(
-      (reading) => reading.remaining < reading.limit * lowWatermark,
+      (reading) => reading.remaining < reading.limit * fraction,
     );
   }
 

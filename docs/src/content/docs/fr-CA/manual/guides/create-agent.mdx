@@ -2,12 +2,12 @@
 title: Créer et configurer un agent
 description: Ajoutez un agent à un espace de travail, attribuez-lui un adaptateur, un modèle, des skills et des permissions, puis confirmez qu’il s’exécute.
 slug: fr-CA/manuel/guides/creer-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Ce guide explique comment ajouter un agent à un espace de travail et le configurer jusqu’à ce qu’il puisse réellement s’exécuter.
 
-Chaque espace de travail est amorcé avec cinq agents — un CEO plus `qa`, `architect`, `engineer` et `librarian` —, de sorte que vous avez habituellement des agents avant même d’en avoir configuré un seul. Les étapes ci-dessous s’appliquent tout autant à un agent amorcé qu’à un nouvel agent.
+Chaque espace de travail est amorcé avec six agents — un CEO plus `qa`, `architect`, `engineer`, `librarian` et `content-synthesizer` —, de sorte que vous avez habituellement des agents avant même d’en avoir configuré un seul. Les étapes ci-dessous s’appliquent tout autant à un agent amorcé qu’à un nouvel agent.
 
 ## Avant de commencer
 
@@ -53,7 +53,7 @@ La liste déroulante **Modèle** est dictée par l’adaptateur que vous avez ch
 
 **Compétences** est un sélecteur à puces parmi les ensembles de skills installés dans cet espace de travail. Touchez une puce pour l’activer ou la désactiver ; le glyphe de coche marque celles qui sont sélectionnées. Si l’espace de travail n’a aucun skill, le champ affiche « No skills available. Create skills in Settings → Skills first. »
 
-Vous ne choisissez pas ici les skills propres à un dépôt. Un dépôt qui en fournit (dans `.agents/skills/`, `.claude/skills/` ou `.opencode/skills/`) les attribue automatiquement à l’agent qui travaille dans ce dépôt, et ils sont remplacés lorsque celui-ci passe à un autre — voir [Skills à portée de dépôt](/fr-CA/manuel/concepts/modele-agent/#repo-scoped-skills).
+Vous ne choisissez pas ici les skills propres à un dépôt. Un dépôt qui en fournit (dans `.agents/skills/`, `.claude/skills/` ou `.opencode/skills/`) les attribue automatiquement à l’agent qui travaille dans ce dépôt, et ils sont remplacés lorsque celui-ci passe à un autre — voir [Skills à portée de dépôt](/fr-CA/manuel/concepts/modele-agent/#skills-à-portée-de-dépôt).
 
 ## Définir le rattachement hiérarchique et la persona
 
@@ -86,7 +86,7 @@ Les règles décident de ce qu’un agent peut faire ; le bac à sable de l’OS
 l’endroit où ses processus peuvent lire, écrire et se connecter. `cc_server`
 enveloppe les exécutions d’agents dans le bac à sable de l’hôte lorsqu’il en
 existe un — Windows n’a aucun backend natif, et Linux et WSL2 ont besoin de
-`bwrap` et `socat`. Voir [Bac à sable et
+`bwrap` et `socat`. Là où il n’en existe aucun, seules les exécutions du propriétaire du serveur démarrent, à moins que celui-ci n’ait désactivé le bac à sable pour tout le monde. Voir [Bac à sable et
 sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/) pour l’ensemble complet des
 frontières.
 :::

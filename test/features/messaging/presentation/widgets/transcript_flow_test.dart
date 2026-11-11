@@ -91,6 +91,30 @@ void main() {
       expect(find.text(l10n.claudeAccountSignIn), findsNothing);
     });
 
+    testWidgets('a run refused for want of a sandbox is guidance in the '
+        "client's words", (tester) async {
+      final l10n = await AppLocalizations.delegate.load(const Locale('en'));
+      await tester.pumpWidget(
+        testWrap(
+          TranscriptFlow(
+            codeFont: 'monospace',
+            segments: [
+              ErrorSegment(
+                message: 'server sentence',
+                code: ErrorSegment.sandboxUnavailableCode,
+                startedAt: ts,
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text(l10n.runSandboxUnavailableTitle), findsOneWidget);
+      expect(find.text(l10n.runSandboxUnavailable), findsOneWidget);
+      expect(find.text('server sentence'), findsNothing);
+    });
+
     testWidgets('renders reasoning, tools and answer inline in order', (
       tester,
     ) async {

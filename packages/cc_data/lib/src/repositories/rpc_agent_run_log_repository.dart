@@ -77,7 +77,6 @@ class RpcAgentRunLogRepository
     outputRejections: d.outputRejections,
     retry: RetryMeta(parentRunId: d.retryOfRunId, attempt: d.retryAttempt),
     role: AgentRunRole.tryParse(d.agentRole),
-    childCostCents: d.childCostCents,
     childCostMicros: d.childCostMicros,
     effort: d.effort,
     taskFamily: d.taskFamily,
@@ -129,7 +128,6 @@ class RpcAgentRunLogRepository
     retryOfRunId: l.retry.parentRunId,
     retryAttempt: l.retry.attempt,
     agentRole: l.role.name,
-    childCostCents: l.childCostCents,
     childCostMicros: l.childCostMicros,
     effort: l.effort,
     taskFamily: l.taskFamily,
@@ -255,6 +253,8 @@ class RpcAgentRunLogRepository
     int amountMicros,
   ) => _remote.addChildCostMicros(workspaceId, runId, amountMicros);
 
+  /// [logPath] is not sent: the server records a run's log path itself and
+  /// accepts none from the wire.
   @override
   Future<bool> updateRuntime(
     String workspaceId,
@@ -275,7 +275,6 @@ class RpcAgentRunLogRepository
     runId,
     pid: pid,
     markRunning: markRunning,
-    logPath: logPath,
     contextSnapshotJson: contextSnapshotJson,
     lastOutputAt: lastOutputAt,
     liveness: liveness,

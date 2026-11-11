@@ -10,6 +10,25 @@ import 'package:test/test.dart';
 import 'support/fake_redis.dart';
 import 'support/harness.dart';
 
+final class _FlakyCipher implements SealCipher {
+  _FlakyCipher(this._inner, this._fail);
+
+  final SealCipher _inner;
+  final bool Function() _fail;
+
+  @override
+  Future<SealCiphertext> encrypt(List<int> plaintext, List<int> aad) {
+    if (_fail()) {
+      throw StateError('kms down');
+    }
+    return _inner.encrypt(plaintext, aad);
+  }
+
+  @override
+  Future<List<int>> decrypt(SealCiphertext ciphertext, List<int> aad) =>
+      _inner.decrypt(ciphertext, aad);
+}
+
 final class _FixedTokens implements GcpTokenSource {
   @override
   Future<String> token() async => 'ya29.metadata';
@@ -81,23 +100,22 @@ void _stateStoreContract(String name, Future<StateStore> Function() open) {
       );
       // Renewed every third of its TTL: still held well past it.
       await Future<void>.delayed(const Duration(milliseconds: 700));
-      expect(await store.get('lock'), lease!.token);
-      await lease.release();
+      expect(
+        await StateLease.acquire(store, 'lock', const Duration(seconds: 1)),
+        isNull,
+      );
+      await lease!.release();
       expect(await store.get('lock'), isNull);
 
       // A holder whose lease lapsed never releases its successor's.
-      await store.set('lock2', 'ghost', const Duration(minutes: 1));
-      final successor = await StateLease.takeOver(
+      final lapsed = await StateLease.acquire(
         store,
         'lock2',
-        'ghost',
         const Duration(minutes: 1),
       );
-      expect(successor, isNotNull);
-      expect(await store.deleteIf('lock2', 'ghost'), isFalse);
-      expect(await store.get('lock2'), successor!.token);
-      await successor.release();
-      expect(await store.get('lock2'), isNull);
+      await store.set('lock2', 'successor', const Duration(minutes: 1));
+      await lapsed!.release();
+      expect(await store.get('lock2'), 'successor');
     });
 
     test('take is single use, even concurrently', () async {
@@ -133,16 +151,43 @@ void main() {
   _stateStoreContract('MemoryStateStore', () async => MemoryStateStore());
 
   group('MemoryStateStore', () {
-    test('uses its clock and evicts the soonest expiry when full', () async {
+    test('never evicts live state: a full store refuses the write', () async {
       var now = DateTime.utc(2026, 11, 8);
-      final store = MemoryStateStore(clock: () => now, maxEntries: 2);
+      var full = 0;
+      final store = MemoryStateStore(
+        clock: () => now,
+        maxEntries: 2,
+        maxNonces: 1,
+        onFull: () => full++,
+      );
+      addTearDown(store.close);
       await store.set('a', '1', const Duration(seconds: 10));
       await store.set('b', '2', const Duration(minutes: 10));
+      await expectLater(
+        store.set('c', '3', const Duration(minutes: 10)),
+        throwsA(isA<StateStoreUnavailable>()),
+      );
+      expect(full, 1);
+      expect(await store.get('a'), '1', reason: 'live state is kept');
+      expect(await store.get('b'), '2');
+      // Overwriting an existing key is not a new entry.
+      await store.set('b', '2b', const Duration(minutes: 10));
+
+      // Nonces have their own room: the full store still takes one.
+      expect(
+        await store.putIfAbsent('nonce:i:n1', '1', const Duration(minutes: 5)),
+        isTrue,
+      );
+      await expectLater(
+        store.putIfAbsent('nonce:i:n2', '1', const Duration(minutes: 5)),
+        throwsA(isA<StateStoreUnavailable>()),
+      );
+
+      // Expired entries are dropped to make room.
+      now = now.add(const Duration(seconds: 11));
       await store.set('c', '3', const Duration(minutes: 10));
       expect(await store.get('a'), isNull);
-      expect(await store.get('b'), '2');
-      now = now.add(const Duration(minutes: 11));
-      expect(await store.get('b'), isNull);
+      expect(await store.get('c'), '3');
     });
   });
 
@@ -177,16 +222,118 @@ void main() {
       await expectLater(store.get('k'), throwsA(isA<StateStoreUnavailable>()));
     });
 
-    test('falls back to MULTI GET DEL without GETDEL', () async {
-      redis.oldServer = true;
+    test('the probe needs GETDEL (Redis 6.2+) and AUTH', () async {
       final store = RedisStateStore(
         Uri.parse('redis://127.0.0.1:${redis.port}'),
       );
       addTearDown(store.close);
-      await store.set('t', 'v', const Duration(minutes: 1));
-      expect(await store.take('t'), 'v');
-      expect(await store.take('t'), isNull);
+      await store.probe();
+      redis.oldServer = true;
+      await expectLater(store.probe(), throwsA(isA<StateStoreUnavailable>()));
+      await expectLater(store.take('t'), throwsA(isA<StateStoreUnavailable>()));
     });
+
+    test('an old Redis fails the boot with exit-78 config error', () async {
+      redis.oldServer = true;
+      final identity = await ConnectInstallIdentity.derive(
+        masterSeed: seed(1),
+        connectUrl: testPublicUrl,
+      );
+      await expectLater(
+        Harness.start(
+          allowed: [identity],
+          env: {
+            'CONNECT_STATE': 'redis',
+            'CONNECT_REDIS_URL': 'redis://127.0.0.1:${redis.port}',
+          },
+        ),
+        throwsA(
+          isA<ConnectConfigException>().having(
+            (e) => e.message,
+            'message',
+            contains('Redis 6.2'),
+          ),
+        ),
+      );
+    });
+
+    test('a Redis that may evict keys fails the boot', () async {
+      final identity = await ConnectInstallIdentity.derive(
+        masterSeed: seed(1),
+        connectUrl: testPublicUrl,
+      );
+      for (final policy in ['allkeys-lru', 'volatile-ttl', 'allkeys-random']) {
+        redis.evictionPolicy = policy;
+        await expectLater(
+          Harness.start(
+            allowed: [identity],
+            env: {
+              'CONNECT_STATE': 'redis',
+              'CONNECT_REDIS_URL': 'redis://127.0.0.1:${redis.port}',
+            },
+          ),
+          throwsA(
+            isA<ConnectConfigException>().having(
+              (e) => e.message,
+              'message',
+              allOf(contains(policy), contains('noeviction')),
+            ),
+          ),
+        );
+      }
+      redis.evictionPolicy = 'noeviction';
+      final harness = await Harness.start(
+        allowed: [identity],
+        env: {
+          'CONNECT_STATE': 'redis',
+          'CONNECT_REDIS_URL': 'redis://127.0.0.1:${redis.port}',
+        },
+      );
+      await harness.close();
+      expect(redis.commands, contains(equals(['INFO', 'memory'])));
+    });
+
+    test(
+      '/readyz rechecks the eviction policy and logs each change once',
+      () async {
+        final identity = await ConnectInstallIdentity.derive(
+          masterSeed: seed(1),
+          connectUrl: testPublicUrl,
+        );
+        var now = DateTime.utc(2026, 11, 10);
+        final harness = await Harness.start(
+          allowed: [identity],
+          env: {
+            'CONNECT_STATE': 'redis',
+            'CONNECT_REDIS_URL': 'redis://127.0.0.1:${redis.port}',
+          },
+          clock: () => now,
+        );
+        addTearDown(harness.close);
+        Future<int> ready() async {
+          now = now.add(const Duration(seconds: 6));
+          return (await harness.raw('GET', '/readyz')).status;
+        }
+
+        List<Map<String, Object?>> changes() => [
+          for (final line in harness.logs)
+            if (jsonDecode(line) case final Map<String, Object?> json
+                when json['event'] == 'readyz.eviction_policy')
+              json,
+        ];
+        expect(await ready(), 200);
+        redis.evictionPolicy = 'allkeys-lru';
+        expect(await ready(), 503);
+        expect(await ready(), 503);
+        redis.evictionPolicy = 'noeviction';
+        expect(await ready(), 200);
+        expect(await ready(), 200);
+        expect(changes().map((l) => '${l['reason']}/${l['level']}'), [
+          'allkeys_lru/error',
+          'noeviction/info',
+        ]);
+      },
+    );
 
     test('reconnects after the connection drops', () async {
       final store = RedisStateStore(
@@ -295,6 +442,28 @@ void main() {
       now = now.add(const Duration(seconds: 31));
       expect((await cipher.encrypt([1], [2])).keyId, 'k2');
     });
+
+    test('a reload that does not parse keeps the last good ring', () async {
+      var ring = _keyring([('k1', 1)]);
+      var now = DateTime.utc(2026, 11, 8);
+      var failures = 0;
+      final source = SecretSource.fromEnvironment(
+        {'K_FILE': '/run/keys'},
+        'K',
+        readFile: (_) => ring,
+        clock: () => now,
+      )!;
+      final cipher = LocalAeadSealCipher(
+        source,
+        onReloadFailed: () => failures++,
+      );
+      final sealed = await cipher.encrypt([1], [2]);
+      ring = 'k2:not-a-key';
+      now = now.add(const Duration(seconds: 31));
+      expect((await cipher.encrypt([1], [2])).keyId, 'k1');
+      expect(await cipher.decrypt(sealed, [2]), [1]);
+      expect(failures, 1, reason: 'once per bad value');
+    });
   });
 
   group('CredentialSealer', () {
@@ -304,6 +473,7 @@ void main() {
     final sealer = CredentialSealer(
       connectOrigin: 'https://connect.test',
       cipher: cipher,
+      log: ConnectLog(sink: (_) {}),
     );
     const mine = SealBinding(installId: 'install-a', workspaceId: 'ws1');
 
@@ -365,6 +535,7 @@ void main() {
         final otherConnect = CredentialSealer(
           connectOrigin: 'https://other.test',
           cipher: cipher,
+          log: ConnectLog(sink: (_) {}),
         );
         await denied(
           otherConnect.open(
@@ -375,6 +546,64 @@ void main() {
         );
       },
     );
+
+    test('a refused seal is logged by reason, never by value', () async {
+      final sealerLogs = <String>[];
+      final sealer = CredentialSealer(
+        connectOrigin: 'https://connect.test',
+        cipher: cipher,
+        log: ConnectLog(sink: sealerLogs.add),
+      );
+      final seal = await sealOne();
+      await denied(
+        sealer.open(
+          seal,
+          provider: ConnectProvider.github,
+          binding: const SealBinding(installId: 'x', workspaceId: 'ws9'),
+        ),
+      );
+      await denied(
+        sealer.open('v1.junk', provider: ConnectProvider.slack, binding: mine),
+      );
+      final lines = sealerLogs.map(jsonDecode).cast<Map<String, Object?>>();
+      expect(
+        lines.map((l) => '${l['event']} ${l['provider']} ${l['reason']}'),
+        containsAll([
+          'seal.refused github decrypt',
+          'seal.refused slack malformed',
+        ]),
+      );
+      expect(sealerLogs.join(), isNot(contains(seal)));
+    });
+
+    test('encryption is retried before it fails, and logged', () async {
+      final logs = <String>[];
+      var failuresLeft = 2;
+      final flaky = _FlakyCipher(cipher, () => failuresLeft-- > 0);
+      final retrying = CredentialSealer(
+        connectOrigin: 'https://connect.test',
+        cipher: flaky,
+        log: ConnectLog(sink: logs.add),
+        retryDelays: const [Duration.zero, Duration.zero],
+      );
+      Future<String> once() => retrying.seal(
+        provider: ConnectProvider.github,
+        accountId: '1001',
+        appId: '4242',
+        generation: 2,
+        binding: mine,
+        payload: {'refresh': 'ghr_x'},
+      );
+      expect(await once(), startsWith('v1.'));
+      expect(logs, isEmpty);
+      failuresLeft = 3;
+      await expectLater(once(), throwsA(isA<StateError>()));
+      final line = jsonDecode(logs.single) as Map<String, Object?>;
+      expect(line['event'], 'seal.encrypt_failed');
+      expect(line['level'], 'error');
+      expect(line['exception'], 'StateError');
+      expect(line['count'], 3);
+    });
 
     test('malformed, oversized or edited seals are access_denied', () async {
       final seal = await sealOne();
@@ -535,25 +764,18 @@ void main() {
       teamId: 'T0TEAM',
       installId: install,
       botId: 'B0BOT',
+      botUserId: 'U0BOT',
       appId: 'A0TEST',
       boundAt: DateTime.utc(2026, 11, 8),
     );
 
     test('persists across reopen, privately', () async {
       final store = await FileBindingStore.open(dir.path);
-      await store.addGitHub(77, 'install-a');
-      await store.addGitHub(77, 'install-b');
-      await store.addGitHub(77, 'install-a');
       expect((await store.bindSlack(team('install-a'))).installId, 'install-a');
       await store.close();
 
       final reopened = await FileBindingStore.open(dir.path);
-      expect((await reopened.github(77))!.installIds, {
-        'install-a',
-        'install-b',
-      });
       expect((await reopened.slack('T0TEAM'))!.installId, 'install-a');
-      expect(await reopened.github(78), isNull);
       if (!Platform.isWindows) {
         final mode = File('${dir.path}/bindings.json').statSync().mode;
         expect(mode & 0x3f, 0, reason: 'no group/other access');
@@ -600,7 +822,6 @@ void main() {
 
     test('a write that fails leaves the bindings as they were', () async {
       final store = await FileBindingStore.open(dir.path);
-      await store.addGitHub(77, 'install-a');
       // The directory goes read-only: the next write cannot land.
       await Process.run('chmod', ['500', dir.path]);
       addTearDown(() => Process.run('chmod', ['700', dir.path]));
@@ -608,15 +829,141 @@ void main() {
         store.bindSlack(team('install-a')),
         throwsA(isA<BindingStoreUnavailable>()),
       );
-      await expectLater(
-        store.addGitHub(77, 'install-b'),
-        throwsA(isA<BindingStoreUnavailable>()),
-      );
       expect(await store.slack('T0TEAM'), isNull);
-      expect((await store.github(77))!.installIds, {'install-a'});
       await Process.run('chmod', ['700', dir.path]);
       await store.close();
     }, skip: Platform.isWindows ? 'POSIX modes only' : false);
+
+    test('a file in an older shape refuses to open', () async {
+      for (final file in [
+        // A top-level key this version does not write.
+        {'v': 1, 'slack': <String, Object?>{}, 'retired': <Object?>[]},
+        // No retired set.
+        {'slack': <String, Object?>{}},
+        // A retired entry that is not an install id.
+        {
+          'slack': <String, Object?>{},
+          'retired': [7],
+        },
+        // A Slack binding recorded without the bot's user id.
+        {
+          'slack': {
+            'T0TEAM': {
+              'install_id': 'install-a',
+              'bot_id': 'B0BOT',
+              'app_id': 'A0TEST',
+              'bound_at': '2026-11-08T00:00:00Z',
+            },
+          },
+          'retired': <Object?>[],
+        },
+      ]) {
+        File('${dir.path}/bindings.json').writeAsStringSync(jsonEncode(file));
+        await expectLater(
+          FileBindingStore.open(dir.path),
+          throwsA(
+            isA<BindingStoreUnavailable>().having(
+              (e) => e.reason,
+              'reason',
+              'bindings.json is corrupt',
+            ),
+          ),
+        );
+      }
+    });
+
+    test('writes only the slack section and the retired set', () async {
+      final store = await FileBindingStore.open(dir.path);
+      await store.bindSlack(team('install-a'));
+      await store.close();
+      final written =
+          jsonDecode(File('${dir.path}/bindings.json').readAsStringSync())
+              as Map<String, Object?>;
+      expect(written.keys, ['slack', 'retired']);
+    });
+
+    test('a retired install stays retired across reopen', () async {
+      final store = await FileBindingStore.open(dir.path);
+      expect(await store.isRetired('install-a'), isFalse);
+      expect(await store.retireInstall('install-a'), isTrue);
+      expect(await store.retireInstall('install-a'), isTrue);
+      expect(await store.isRetired('install-a'), isTrue);
+      expect(await store.isRetired('install-b'), isFalse);
+      await store.close();
+      final reopened = await FileBindingStore.open(dir.path);
+      expect(await reopened.isRetired('install-a'), isTrue);
+      await reopened.close();
+    });
+
+    test('a full retired set refuses one more, and keeps the rest', () async {
+      File('${dir.path}/bindings.json').writeAsStringSync(
+        jsonEncode({
+          'slack': <String, Object?>{},
+          'retired': [for (var i = 0; i < maxRetiredInstalls; i++) 'i$i'],
+        }),
+      );
+      final store = await FileBindingStore.open(dir.path);
+      expect(await store.retireInstall('install-a'), isFalse);
+      expect(await store.isRetired('install-a'), isFalse);
+      expect(await store.isRetired('i0'), isTrue);
+      expect(await store.retireInstall('i0'), isTrue, reason: 'already');
+      await store.close();
+    });
+
+    test('a second Connect on the same directory refuses to start', () async {
+      final first = await FileBindingStore.open(dir.path);
+      await expectLater(
+        FileBindingStore.open(dir.path),
+        throwsA(isA<BindingStoreUnavailable>()),
+      );
+      await first.close();
+      // Closing releases the directory.
+      final again = await FileBindingStore.open(dir.path);
+      await again.close();
+    });
+
+    test('the lock holds against another process', () async {
+      final script = File('${dir.path}/hold_lock.dart')
+        ..writeAsStringSync('''
+import 'dart:io';
+
+Future<void> main(List<String> args) async {
+  final file = await File(args.first).open(mode: FileMode.append);
+  await file.lock(FileLock.exclusive);
+  stdout.writeln('locked');
+  await stdin.first;
+}
+''');
+      final holder = await Process.start(Platform.resolvedExecutable, [
+        script.path,
+        '${dir.path}${Platform.pathSeparator}bindings.lock',
+      ]);
+      addTearDown(holder.kill);
+      final lines = holder.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter());
+      expect(await lines.first, 'locked');
+      await expectLater(
+        Harness.start(
+          allowed: [
+            await ConnectInstallIdentity.derive(
+              masterSeed: seed(1),
+              connectUrl: testPublicUrl,
+            ),
+          ],
+          env: {'CONNECT_DATA_DIR': dir.path},
+        ),
+        throwsA(
+          isA<ConnectConfigException>().having(
+            (e) => e.message,
+            'message',
+            contains('another Connect holds this directory'),
+          ),
+        ),
+      );
+      holder.stdin.writeln();
+      await holder.exitCode;
+    });
 
     test('a corrupt file refuses to open', () async {
       File('${dir.path}/bindings.json').writeAsStringSync('{nope');
@@ -662,6 +1009,7 @@ void main() {
         teamId: 'T0TEAM',
         installId: 'install-a',
         botId: 'B0BOT',
+        botUserId: 'U0BOT',
         appId: 'A0TEST',
         boundAt: now,
       );
@@ -678,20 +1026,22 @@ void main() {
       expect(await cached.slack('T0TEAM'), isNull, reason: 'expired');
       await cached.close();
     });
+  });
 
-    test('a fresh GitHub read bypasses the cache', () async {
+  group('CachedBindingStore retired set', () {
+    test('a retirement is remembered for good; a miss only briefly', () async {
       final dir = await Directory.systemTemp.createTemp('cc_bind');
       addTearDown(() => dir.delete(recursive: true));
+      var now = DateTime.utc(2026, 11, 8);
       final inner = await FileBindingStore.open(dir.path);
-      final cached = CachedBindingStore(inner);
-      await inner.addGitHub(77, 'install-a');
-      expect((await cached.github(77))!.installIds, {'install-a'});
-      await inner.addGitHub(77, 'install-b');
-      expect((await cached.github(77))!.installIds, {'install-a'});
-      expect((await cached.github(77, fresh: true))!.installIds, {
-        'install-a',
-        'install-b',
-      });
+      final cached = CachedBindingStore(inner, clock: () => now);
+      expect(await cached.isRetired('install-a'), isFalse);
+      // Retired through another instance.
+      await inner.retireInstall('install-a');
+      now = now.add(const Duration(seconds: 31));
+      expect(await cached.isRetired('install-a'), isTrue);
+      expect(await cached.retireInstall('install-b'), isTrue);
+      expect(await cached.isRetired('install-b'), isTrue);
       await cached.close();
     });
   });
@@ -707,39 +1057,16 @@ void main() {
       tokens: _FixedTokens(),
     );
 
-    test(
-      'reads, appends GitHub binds atomically and creates Slack binds once',
-      () async {
-        final upstream = FakeUpstream()
-          ..json('GET', '$docs/cc_connect_github/77', 404, {})
-          ..json('POST', '$docs:commit', 200, {'writeResults': <Object?>[]})
-          ..json('GET', '$docs/cc_connect_github/78', 200, {
-            'fields': {
-              'install_ids': {
-                'arrayValue': {
-                  'values': [
-                    {'stringValue': 'install-a'},
-                  ],
-                },
-              },
-              'bound_at': {'timestampValue': '2026-11-08T00:00:00Z'},
-            },
-          });
-        final store = open(upstream);
-        expect(await store.github(77), isNull);
-        expect((await store.github(78))!.installIds, {'install-a'});
-        await store.addGitHub(77, 'install-b');
-        final commit = upstream.callsTo('POST', '$docs:commit').single.json;
-        final write =
-            (commit['writes']! as List).single as Map<String, Object?>;
-        expect(jsonEncode(write), contains('appendMissingElements'));
-        expect(jsonEncode(write), contains('install-b'));
-        expect(
-          upstream.calls.first.request.headers['authorization'],
-          'Bearer ya29.metadata',
-        );
-      },
-    );
+    test('reads with the metadata-server token', () async {
+      final upstream = FakeUpstream()
+        ..json('GET', '$docs/cc_connect_slack/T0TEAM', 404, {});
+      final store = open(upstream);
+      expect(await store.slack('T0TEAM'), isNull);
+      expect(
+        upstream.calls.single.request.headers['authorization'],
+        'Bearer ya29.metadata',
+      );
+    });
 
     test('a Slack bind that loses the race returns the winner', () async {
       final upstream = FakeUpstream()
@@ -751,6 +1078,7 @@ void main() {
           'fields': {
             'install_id': {'stringValue': 'install-a'},
             'bot_id': {'stringValue': 'B0BOT'},
+            'bot_user_id': {'stringValue': 'U0BOT'},
             'app_id': {'stringValue': 'A0TEST'},
           },
         });
@@ -760,6 +1088,7 @@ void main() {
           teamId: 'T0TEAM',
           installId: 'install-b',
           botId: 'B0BOT',
+          botUserId: 'U0BOT2',
           appId: 'A0TEST',
           boundAt: DateTime.utc(2026, 11, 8),
         ),
@@ -767,6 +1096,109 @@ void main() {
       expect(winner.installId, 'install-a');
       final create = upstream.callsTo('POST', '$docs:commit').single.json;
       expect(jsonEncode(create), contains('"exists":false'));
+    });
+
+    test('a document without bot_user_id is refused as corrupt', () async {
+      final upstream = FakeUpstream()
+        ..json('GET', '$docs/cc_connect_slack/T0TEAM', 200, {
+          'updateTime': '2026-11-08T00:00:00.000001Z',
+          'fields': {
+            'install_id': {'stringValue': 'install-a'},
+            'bot_id': {'stringValue': 'B0BOT'},
+            'app_id': {'stringValue': 'A0TEST'},
+          },
+        });
+      await expectLater(
+        open(upstream).slack('T0TEAM'),
+        throwsA(isA<BindingStoreUnavailable>()),
+      );
+    });
+
+    test('the probe reads a sentinel document', () async {
+      final upstream = FakeUpstream()
+        ..json('GET', '$docs/cc_connect_slack/_probe', 404, {});
+      await open(upstream).probe();
+      final denied = FakeUpstream()
+        ..json('GET', '$docs/cc_connect_slack/_probe', 403, {});
+      await expectLater(
+        open(denied).probe(),
+        throwsA(isA<BindingStoreUnavailable>()),
+      );
+    });
+
+    test(
+      'retire creates the document and counts it under preconditions',
+      () async {
+        final upstream = FakeUpstream()
+          ..json('GET', '$docs/cc_connect_retired/install-a', 404, {})
+          ..json('GET', '$docs/cc_connect_retired_count/count', 200, {
+            'updateTime': '2026-11-08T00:00:00.000001Z',
+            'fields': {
+              'count': {'integerValue': '4'},
+            },
+          })
+          ..json('POST', '$docs:commit', 200, {});
+        expect(await open(upstream).retireInstall('install-a'), isTrue);
+        final commit = jsonEncode(
+          upstream.callsTo('POST', '$docs:commit').single.json,
+        );
+        expect(commit, contains('cc_connect_retired/install-a'));
+        expect(commit, contains('"exists":false'));
+        expect(commit, contains('"integerValue":"5"'));
+        expect(commit, contains('"updateTime":"2026-11-08T00:00:00.000001Z"'));
+      },
+    );
+
+    test(
+      'retire of a retired install commits nothing; a full set refuses',
+      () async {
+        final retired = FakeUpstream()
+          ..json('GET', '$docs/cc_connect_retired/install-a', 200, {
+            'updateTime': '2026-11-08T00:00:00.000001Z',
+            'fields': <String, Object?>{},
+          });
+        expect(await open(retired).isRetired('install-a'), isTrue);
+        expect(await open(retired).retireInstall('install-a'), isTrue);
+        expect(retired.callsTo('POST', '$docs:commit'), isEmpty);
+        final full = FakeUpstream()
+          ..json('GET', '$docs/cc_connect_retired/install-b', 404, {})
+          ..json('GET', '$docs/cc_connect_retired_count/count', 200, {
+            'updateTime': '2026-11-08T00:00:00.000001Z',
+            'fields': {
+              'count': {'integerValue': '$maxRetiredInstalls'},
+            },
+          });
+        expect(await open(full).retireInstall('install-b'), isFalse);
+        expect(full.callsTo('POST', '$docs:commit'), isEmpty);
+      },
+    );
+
+    test('an install\'s teams come from one install_id query', () async {
+      final upstream = FakeUpstream()
+        ..json('POST', '$docs:runQuery', 200, [
+          {
+            'document': {'name': '$docs/cc_connect_slack/T0ONE'},
+          },
+          {
+            'document': {'name': '$docs/cc_connect_slack/T0TWO'},
+          },
+          {'readTime': '2026-11-10T00:00:00Z'},
+        ]);
+      expect(await open(upstream).slackTeamsOf('install-a'), [
+        'T0ONE',
+        'T0TWO',
+      ]);
+      final query = jsonEncode(
+        upstream.callsTo('POST', '$docs:runQuery').single.json,
+      );
+      expect(query, contains('"fieldPath":"install_id"'));
+      expect(query, contains('"stringValue":"install-a"'));
+      final broken = FakeUpstream()
+        ..json('POST', '$docs:runQuery', 200, {'not': 'a list'});
+      await expectLater(
+        open(broken).slackTeamsOf('install-a'),
+        throwsA(isA<BindingStoreUnavailable>()),
+      );
     });
 
     test('an outage is BindingStoreUnavailable', () async {
@@ -826,6 +1258,10 @@ void main() {
   });
 
   group('ConnectLog', () {
+    List<Map<String, Object?>> parsed(List<String> lines) => [
+      for (final line in lines) jsonDecode(line) as Map<String, Object?>,
+    ];
+
     test('keeps allowlisted, safe fields only and tags ids', () {
       final lines = <String>[];
       final log = ConnectLog(
@@ -844,20 +1280,138 @@ void main() {
         'reason': 'has spaces and <html>',
         'route': '/v1/config',
       });
-      final line = jsonDecode(lines.single) as Map<String, Object?>;
+      final line = parsed(lines).first;
       expect(line['event'], 'test.event');
+      expect(line['message'], 'test.event');
+      expect(line['level'], 'info');
       expect(line['install'], tag);
       expect(line['status'], 200);
       expect(line['route'], '/v1/config');
       expect(line.containsKey('token'), isFalse);
-      expect(lines.single, isNot(contains('<html>')));
+      expect(lines.join(), isNot(contains('<html>')));
+      expect(lines.join(), isNot(contains('ghu_secret')));
+    });
+
+    test('a value carrying a GitHub token prefix is dropped unwritten', () {
+      final lines = <String>[];
+      final log = ConnectLog(sink: lines.add);
+      final values = [
+        for (final prefix in ['ghp', 'gho', 'ghu', 'ghs', 'ghr'])
+          '${prefix}_${'A' * 36}',
+        'github_pat_${'B' * 30}',
+        'x:ghu_${'C' * 36}',
+      ];
+      for (final value in values) {
+        log.event('test.event', {'reason': value});
+      }
+      log.event('test.event', {'reason': 'github_app_write_scope'});
+      final out = lines.join();
+      for (final value in values) {
+        expect(out, isNot(contains(value)));
+      }
+      final all = parsed(lines);
+      expect(
+        all
+            .where((l) => l['event'] == 'log.field_dropped')
+            .map((l) => l['field']),
+        everyElement('reason'),
+      );
+      expect(
+        all.where((l) => l['reason'] == 'github_app_write_scope'),
+        hasLength(1),
+      );
+    });
+
+    test('a dropped field or event is never silent', () {
+      final lines = <String>[];
+      final log = ConnectLog(sink: lines.add);
+      log.event('test.event', {'token': 'x', 'reason': 'a b'});
       log.event('Bad Name!');
-      expect(lines, hasLength(1));
+      final dropped = parsed(lines)
+          .where((l) => l['event'] == 'log.field_dropped')
+          .map((l) => '${l['source_event']}/${l['field']}/${l['level']}');
+      expect(dropped, ['test.event/token/warn', 'test.event/reason/warn']);
+      expect(parsed(lines).last['event'], 'log.event_dropped');
+    });
+
+    test('lines in a request scope carry its id, route and install', () {
+      final lines = <String>[];
+      final log = ConnectLog(sink: lines.add);
+      final scope = ConnectRequestScope()..route = '/v1/config';
+      expect(scope.requestId, matches(RegExp(r'^[A-Za-z0-9_-]{22}$')));
+      scope.run(() {
+        log.event('one');
+        scope.install = 'abcdef0123456789';
+        log.event('two', {'route': '/own'});
+      });
+      log.event('outside');
+      final [one, two, outside] = parsed(lines);
+      expect(one['request_id'], scope.requestId);
+      expect(one['route'], '/v1/config');
+      expect(one.containsKey('install'), isFalse);
+      expect(two['install'], 'abcdef0123456789');
+      expect(two['route'], '/own');
+      expect(outside.containsKey('request_id'), isFalse);
+    });
+
+    test('sampled writes once per key per minute, then the count', () {
+      final lines = <String>[];
+      var now = DateTime.utc(2026, 11, 8);
+      final log = ConnectLog(sink: lines.add, clock: () => now);
+      for (var i = 0; i < 4; i++) {
+        log.sampled('auth.refused', 'k1', {'reason': 'digest'});
+      }
+      log.sampled('auth.refused', 'k2', {'reason': 'digest'});
+      expect(lines, hasLength(2));
+      now = now.add(const Duration(minutes: 1));
+      log.sampled('auth.refused', 'k1', {'reason': 'digest'});
+      final last = parsed(lines).last;
+      expect(last['suppressed'], 3);
+      expect(last['level'], 'warn');
+    });
+
+    test('hashed_token is GitHub audit-log base64 and nothing else', () {
+      // echo -n abc | openssl dgst -sha256 -binary | base64
+      expect(
+        githubHashedToken('abc'),
+        'ungWv48Bz+pBQUDeXa4iI7ADYaOWF3qctBD/YfIAFa0=',
+      );
+      final lines = <String>[];
+      final log = ConnectLog(sink: lines.add);
+      log.event('a', {'hashed_token': githubHashedToken('ghu_x')});
+      log.event('b', {'hashed_token': 'ghu_rawtokenvalue'});
+      log.event('c', {'reason': githubHashedToken('ghu_x')});
+      final lines0 = parsed(lines);
+      expect(lines0.first['hashed_token'], githubHashedToken('ghu_x'));
+      expect(lines.join(), isNot(contains('ghu_rawtokenvalue')));
+      expect(
+        lines0
+            .where((l) => l['event'] == 'log.field_dropped')
+            .map((l) => l['field']),
+        ['hashed_token', 'reason'],
+      );
+    });
+
+    test('only error lines reach the reporter', () {
+      final failures = <ConnectFailure>[];
+      final log = ConnectLog(sink: (_) {})..reporter = failures.add;
+      log.event('fine');
+      log.event('meh', const {}, ConnectLogLevel.warn);
+      log.event('bad', {'error': 'x'}, ConnectLogLevel.error);
+      log.exception(
+        'http.error',
+        StateError('secret-looking'),
+        StackTrace.current,
+      );
+      expect(failures.map((f) => f.type), ['bad', 'StateError']);
+      expect(failures.first.error, 'x');
+      expect(failures.last.stack, isNotNull);
     });
 
     test('truncateIp keeps a /24 or /48', () {
       expect(truncateIp('203.0.113.77'), '203.0.113.0/24');
       expect(truncateIp('2001:db8:1234:5678::1'), '2001:db8:1234::/48');
+      expect(truncateIp('2001:db8::1'), '2001:db8:0::/48');
       expect(truncateIp('garbage'), isEmpty);
     });
   });

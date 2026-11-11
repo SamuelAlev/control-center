@@ -98,6 +98,7 @@ ForgeProviderRegistry buildForgeProviderRegistry({
   required ForgeHttpClientFactory httpClientFactory,
   required RhttpClient githubHttp,
   required PrDiffSource localGitSource,
+  required ForgeApprovalGuardResolver approvalGuard,
   DomainEventBus? eventBus,
   PrChangeSignals? changeSignals,
   BlobStore? blobStore,
@@ -114,7 +115,11 @@ ForgeProviderRegistry buildForgeProviderRegistry({
         workspaceDbs: workspaceDbs,
         // The registry is per actor: [httpClient] already carries whose
         // credential every call rides.
-        clientFor: forgePrClientBuilder(forge, httpClient),
+        clientFor: forgePrClientBuilder(
+          forge,
+          httpClient,
+          approvalGuard: approvalGuard,
+        ),
         localGitSource: localGitSource,
         buildApiDiffSource: (client) =>
             forgeApiDiffSource(forge, httpClient, client),
@@ -130,27 +135,47 @@ ForgeProviderRegistry buildForgeProviderRegistry({
 
 /// The client resolver for [forge] over [httpClient], whose transport already
 /// carries the credential (so the workspace and actor only choose the repo).
+///
+/// Every client it builds passes its approvals through [approvalGuard] for
+/// the same repo, workspace and actor: this is where every server forge
+/// client that can approve is made.
 ForgePrClientResolver forgePrClientBuilder(
   ForgeHost forge,
-  RhttpClient httpClient,
-) => switch (forge) {
+  RhttpClient httpClient, {
+  required ForgeApprovalGuardResolver approvalGuard,
+}) => switch (forge) {
   ForgeHost.github =>
     (repo, {required workspaceId, actingUserId}) => GitHubForgePrClient(
       client: GitHubApiClient(httpClient),
       owner: repo.remoteOwner,
       repo: repo.remoteName,
+      approvalGuard: approvalGuard(
+        repo,
+        workspaceId: workspaceId,
+        actingUserId: actingUserId,
+      ),
     ),
   ForgeHost.gitlab =>
     (repo, {required workspaceId, actingUserId}) => GitLabForgePrClient(
       client: GitLabApiClient(httpClient),
       owner: repo.remoteOwner,
       repo: repo.remoteName,
+      approvalGuard: approvalGuard(
+        repo,
+        workspaceId: workspaceId,
+        actingUserId: actingUserId,
+      ),
     ),
   ForgeHost.bitbucket =>
     (repo, {required workspaceId, actingUserId}) => BitbucketForgePrClient(
       client: BitbucketApiClient(httpClient),
       owner: repo.remoteOwner,
       repo: repo.remoteName,
+      approvalGuard: approvalGuard(
+        repo,
+        workspaceId: workspaceId,
+        actingUserId: actingUserId,
+      ),
     ),
   ForgeHost.local => throw ArgumentError.value(
     forge,

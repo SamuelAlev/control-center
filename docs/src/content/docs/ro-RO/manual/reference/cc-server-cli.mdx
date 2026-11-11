@@ -2,7 +2,7 @@
 title: CLI cc_server
 description: Toate flag-urile, variabilele de mediu, subcomenzile și căile din directorul de date ale serverului headless.
 slug: ro-RO/manual/referinta/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Fiecare setare a procesului acceptă un flag de linie de comandă sau o variabilă de
@@ -48,7 +48,7 @@ când un flag pare să nu aibă efect.
 
 | Flag                     | Variabilă                       | Implicit                              | Semnificație                                                                                                                                |
 | ------------------------ | ------------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Dacă rulările agenților sunt înfășurate în sandbox-ul nativ al sistemului de operare al gazdei, atunci când există unul. O renunțare explicită, nu o activare — vezi mai jos |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` înfășoară rulările agenților în sandbox-ul nativ al sistemului de operare al gazdei, iar pe o gazdă fără unul pornesc doar rulările proprietarului serverului. `off` rulează agenții fiecărui membru neizolați pe această gazdă. Vezi mai jos |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Comutator de oprire forțată, utilizabil în producție, pentru indexarea în fundal a grafului de cod. `off` pornește curat, fără o reconstrucție |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Secunde cât este amânată prima trecere de indexare după bannerul de disponibilitate (limitat la 0–300)                                        |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Dacă rulările harnessului trimit un set mic de instrumente rezidente plus un index de nume, încărcând restul la prima utilizare. Vezi mai jos |
@@ -90,23 +90,34 @@ Inițializarea din `.env` are loc o singură dată per câmp, așa că o editare
 ulterioară în Setări nu este anulată de o repornire. O valoare goală este citită
 ca nesetată.
 
-Munca de fundal GitLab și Bitbucket citește și `GITLAB_TOKEN` / `CI_JOB_TOKEN` și
-`BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` cu `BITBUCKET_EMAIL`. GitHub nu are
-niciun credențial din mediu.
+Niciun credențial de forge nu vine din mediu: GitHub, GitLab și Bitbucket acționează
+pe propria autentificare sau pe tokenul unui membru ori pe tokenuri GitHub App
+pentru un singur depozit, limitate la acel membru.
 
 ### `--sandbox`
 
 Serverul sondează gazda o dată la pornire și înfășoară execuția comenzilor agenților în
 sandbox-ul nativ al sistemului de operare atunci când există un backend disponibil:
-`sandbox-exec` (Seatbelt) pe macOS, `bwrap` plus `socat` pe Linux și WSL2. Acolo unde nu
-există niciunul — pe Windows sau pe o gazdă Linux căreia îi lipsesc acele instrumente —
-rulările revin la sanitizarea mediului, la politica de comenzi și la guardrail-urile de
-acțiune, iar jurnalul de pornire spune care dintre stări se aplică.
+`sandbox-exec` (Seatbelt) pe macOS, `bwrap` plus `socat` pe Linux și WSL2. Decizia se ia o
+singură dată și ține până la repornirea serverului. Există trei rezultate, fiecare afișat pe
+linia de expunere de la pornire:
 
-`--sandbox off` este comutatorul de oprire forțată pentru cazul pe care sonda nu îl poate
-vedea: o gazdă în care profilul de sandbox se comportă el însuși greșit. Nu necesită o
-reconstrucție, iar serverul scrie un avertisment în jurnal pe toată durata procesului,
-astfel încât starea nu este niciodată trecută sub tăcere.
+| `sandbox=`    | Când                                    | Ale cui rulări de agenți pornesc                                                 |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Un backend este disponibil și `--sandbox` este `on` | Ale tuturor, înveliște                                                     |
+| `off`         | `--sandbox off`                         | Ale tuturor, neizolate pe această gazdă                                          |
+| `unavailable` | `--sandbox on` și niciun backend (Windows sau Linux fără `bwrap` și `socat`) | Doar rulările de care răspunde proprietarul serverului, neizolate. Ceilalți sunt refuzați cu „Acest server nu are sandbox, deci doar proprietarul lui poate rula aici agenți.” |
+
+Pentru automatizare, persoana responsabilă este cea de care este legată automatizarea. Fără un
+proprietar de server înregistrat, nicio rulare nu pornește pe o gazdă `unavailable`. Pe Linux
+și WSL2 cu bubblewrap instalat, dispecerul nativ eșuează închis pentru fiecare rulare în
+prezent; vezi [Backend-uri sandbox](/ro-RO/manual/referinta/backend-uri-sandbox/#linux-bubblewrap).
+
+`--sandbox off` este decizia proprietarului serverului pentru toți cei care folosesc serverul:
+rulează fiecare agent al unui membru neizolat pe această mașină. Folosește-l pe o gazdă în care
+profilul de sandbox se comportă el însuși greșit sau ca să lași membrii să ruleze agenți pe o
+gazdă fără backend. Nu necesită o reconstrucție, iar serverul scrie un avertisment în jurnal pe
+toată durata procesului, astfel încât starea nu este niciodată trecută sub tăcere.
 
 ### `--tool-deferral`
 
@@ -186,7 +197,6 @@ rulează preia o modificare în cel mult 10 minute sau la repornire.
 | `cc_server connect enable`      | Folosește Connect-ul găzduit al Control Center                                                                   |
 | `cc_server connect enable --url <url>` | Folosește un Connect propriu la acel URL (HTTPS sau `http` pe loopback)                                  |
 | `cc_server connect disable`     | Nu mai folosește Connect. Doar aplicațiile proprii ale serverului autentifică oamenii                            |
-| `cc_server connect rotate-key --yes` | Emite o nouă cheie de instalare și un nou ID de instalare. Toți cei care s-au autentificat prin Connect se autentifică din nou. Fără `--yes` doar avertizează și iese cu `2` |
 
 `status` este implicit când nu se dă nicio comandă. Fiecare comandă acceptă
 `--data-dir`. `CC_CONNECT_URL` are prioritate față de ce stochează acestea. O

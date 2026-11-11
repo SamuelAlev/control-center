@@ -2,7 +2,7 @@
 title: KI-Review
 description: Wie ein Pull Request zu einem geprüften wird. Review-Bereiche, Review-Knoten und Peer-Konsens, Kohorten und Achsen, das Verdikt Ship/Hold/Block, und warum das Veröffentlichen ein Schritt bleibt, den du selbst machst.
 slug: de-DE/handbuch/konzepte/ki-review
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## Aufbau eines Reviews
@@ -218,8 +218,15 @@ veröffentlichen** drückst:
   Person, die sie gedrückt hat, über deren eigene GitHub-Anmeldung: Das
   Release-Gate gehört ihr, also auch das Review. Eine Veröffentlichung ohne
   Person dahinter ist Automatisierung, und die genehmigt nie: Ship geht dann als
-  `COMMENT` hinaus, und auf Control Center Connect wird der Beitrag mit dem
-  Präfix `**Control Center** (for @login):` gekennzeichnet.
+  `COMMENT` hinaus, und @-Erwähnungen in den Befunden werden entschärft, damit
+  der Beitrag niemanden benachrichtigt. Gepostet wird er vom Bot, außer auf der
+  gemeinsamen App Control Center Connect, wenn deren Betreiber diese
+  Installation nicht eingetragen hat: dann geht er über die eigene Anmeldung der
+  verantwortlichen Person hinaus, unter deren Namen und
+  mit dem Präfix `**Control Center** (for @login):`. Ein Server oder
+  Arbeitsbereich mit einer eigenen GitHub-App postet immer als Bot. Ein Agent,
+  der das MCP-Tool aufruft, kann nur das Review seines eigenen Bereichs
+  veröffentlichen.
 
 Das Veröffentlichen deklariert die Aktionsklasse `prPublish`. Der Engpass der
 Schutzregeln behandelt es deshalb wie jede verändernde Aktion. Standard ist

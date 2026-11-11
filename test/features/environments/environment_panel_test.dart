@@ -25,8 +25,8 @@ const _hostSetup = EnvironmentError(
   exitCode: 3,
 );
 
-/// A definition whose tool can finish a stopped start on a terminal.
-EnvironmentDefinitionRecord _setupRecord() => definitionRecord(
+/// A definition whose tool can carry a start on at a terminal.
+EnvironmentDefinitionRecord _interactiveRecord() => definitionRecord(
   components: [
     {
       'kind': 'cli',
@@ -35,9 +35,23 @@ EnvironmentDefinitionRecord _setupRecord() => definitionRecord(
         'create': ['tool', 'create'],
         'status': ['tool', 'status'],
         'destroy': ['tool', 'destroy'],
-        'setup': ['tool', 'create'],
       },
+      'interactive': ['create'],
     },
+  ],
+);
+
+/// A start that waits for someone on terminal [sessionId].
+SpaceEnvironment _waiting([String sessionId = 'session-1']) => environment(
+  status: EnvironmentStatus.creating,
+  components: [
+    EnvironmentComponentState(
+      id: 'tool',
+      kind: 'cli',
+      state: 'interactive',
+      sessionId: sessionId,
+      detail: _hostSetup.message,
+    ),
   ],
 );
 
@@ -121,110 +135,139 @@ void main() {
       );
     });
 
-    testWidgets('a Start that stops for host setup opens its terminal', (
-      tester,
-    ) async {
-      final record = definitionRecord(
-        components: [
-          {
-            'kind': 'cli',
-            'id': 'tool',
-            'verbs': {
-              'create': ['tool', 'create'],
-              'status': ['tool', 'status'],
-              'destroy': ['tool', 'destroy'],
-              'setup': ['tool', 'create'],
-            },
-          },
-        ],
-      );
-      final repository =
-          FakeEnvironmentRepository(
-              eligibleDefinitions: [record],
-              definitions: [record],
-            )
-            ..ensureResult = environment(
-              status: EnvironmentStatus.failed,
-              lastError: const EnvironmentError(
-                code: 'hosts',
-                message: 'Adding the hostnames needs sudo',
-                exitCode: 3,
-              ),
-            );
-      final host = RecordingHost();
-      await _pump(tester, repository, host: host);
-
-      await tester.tap(find.text('Start').first);
-      await tester.pumpAndSettle();
-
-      expect(repository.calls, containsAllInOrder(['ensure', 'startSetup']));
-      expect(host.opened, ['setup:setup-session']);
-    });
-
-    testWidgets('the row a start creates does not cancel its terminal', (
-      tester,
-    ) async {
-      final record = _setupRecord();
+    /// A start in flight: its rows arrive as the server publishes them.
+    Future<
+      ({
+        FakeEnvironmentRepository repository,
+        StreamController<List<SpaceEnvironment>> rows,
+        RecordingHost host,
+      })
+    >
+    pressStart(WidgetTester tester) async {
+      final record = _interactiveRecord();
       final rows = StreamController<List<SpaceEnvironment>>();
       addTearDown(rows.close);
-      final stopped = environment(
-        status: EnvironmentStatus.failed,
-        lastError: _hostSetup,
-      );
       final repository =
           FakeEnvironmentRepository(
               eligibleDefinitions: [record],
               definitions: [record],
             )
             ..liveRows = rows.stream
-            ..ensureGate = Completer<void>()
-            ..ensureResult = stopped;
+            ..ensureGate = Completer<void>();
       rows.add(const []);
       final host = RecordingHost();
       await _pump(tester, repository, host: host);
 
       await tester.tap(find.text('Start').first);
       await tester.pump();
-      // The server publishes the row long before `ensure` returns, and it
-      // replaces the Start button that was pressed.
-      rows.add([environment(status: EnvironmentStatus.creating)]);
+      return (repository: repository, rows: rows, host: host);
+    }
+
+    Future<void> publish(
+      WidgetTester tester,
+      StreamController<List<SpaceEnvironment>> rows,
+      SpaceEnvironment row,
+    ) async {
+      rows.add([row]);
       await tester.pump();
       await tester.pump();
-      expect(find.text('Start'), findsNothing);
+    }
 
-      rows.add([stopped]);
-      repository.ensureGate!.complete();
-      await tester.pumpAndSettle();
+    testWidgets('a Start says someone is there to answer', (tester) async {
+      final start = await pressStart(tester);
 
-      expect(repository.calls, contains('startSetup'));
-      expect(host.opened, ['setup:setup-session']);
+      expect(start.repository.lastAttended, isTrue);
+
+      start.repository.ensureGate!.complete();
+      await publish(tester, start.rows, environment());
     });
 
-    testWidgets('a Start that answers after leaving the space opens nothing', (
+    testWidgets('a start that needs someone opens the terminal it waits on', (
       tester,
     ) async {
-      final record = _setupRecord();
-      final repository =
-          FakeEnvironmentRepository(
-              eligibleDefinitions: [record],
-              definitions: [record],
-            )
-            ..ensureGate = Completer<void>()
-            ..ensureResult = environment(
-              status: EnvironmentStatus.failed,
-              lastError: _hostSetup,
-            );
-      final host = RecordingHost();
-      await _pump(tester, repository, host: host);
+      final start = await pressStart(tester);
+      // The server publishes the row long before `ensure` returns, and it
+      // replaces the Start button that was pressed.
+      await publish(
+        tester,
+        start.rows,
+        environment(status: EnvironmentStatus.creating),
+      );
+      expect(find.text('Start'), findsNothing);
+      expect(start.host.opened, isEmpty);
 
-      await tester.tap(find.text('Start').first);
+      await publish(tester, start.rows, _waiting());
+      expect(start.host.opened, ['start-terminal:session-1']);
+      // The start is still the one start: nothing asked for a second.
+      expect(
+        start.repository.calls.where((call) => call == 'ensure').length,
+        1,
+      );
+
+      // However often the row is published, the tab opens once.
+      await publish(tester, start.rows, _waiting());
+      expect(start.host.opened, ['start-terminal:session-1']);
+
+      start.repository.ensureGate!.complete();
+      await publish(tester, start.rows, environment());
+      expect(start.host.opened, ['start-terminal:session-1']);
+    });
+
+    testWidgets('a second wait in the same start opens its own terminal', (
+      tester,
+    ) async {
+      final start = await pressStart(tester);
+
+      await publish(tester, start.rows, _waiting());
+      await publish(
+        tester,
+        start.rows,
+        environment(status: EnvironmentStatus.creating),
+      );
+      await publish(tester, start.rows, _waiting('session-2'));
+
+      expect(start.host.opened, [
+        'start-terminal:session-1',
+        'start-terminal:session-2',
+      ]);
+
+      start.repository.ensureGate!.complete();
+      await publish(tester, start.rows, environment());
+    });
+
+    testWidgets('someone who left the space gets no tab, and a way back', (
+      tester,
+    ) async {
+      final start = await pressStart(tester);
+      start.host.onSpace = false;
+
+      await publish(tester, start.rows, _waiting());
+
+      expect(start.host.opened, isEmpty);
+      expect(find.text('Waiting for you in a terminal'), findsOneWidget);
+      expect(
+        find.textContaining('Adding the hostnames needs sudo'),
+        findsOneWidget,
+      );
+      await tester.tap(find.text('Open terminal'));
       await tester.pump();
-      host.onSpace = false;
-      repository.ensureGate!.complete();
-      await tester.pumpAndSettle();
+      expect(start.host.opened, ['start-terminal:session-1']);
 
-      expect(repository.calls, isNot(contains('startSetup')));
-      expect(host.opened, isEmpty);
+      start.repository.ensureGate!.complete();
+      await publish(tester, start.rows, environment());
+    });
+
+    testWidgets('a wait that began before this start is not opened after it', (
+      tester,
+    ) async {
+      final start = await pressStart(tester);
+      start.repository.ensureGate!.complete();
+      await publish(tester, start.rows, environment());
+
+      // Someone else's start, later: this press is over.
+      await publish(tester, start.rows, _waiting('session-9'));
+
+      expect(start.host.opened, isEmpty);
     });
 
     testWidgets('a Start that worked opens nothing', (tester) async {
@@ -238,7 +281,7 @@ void main() {
       await tester.tap(find.text('Start').first);
       await tester.pumpAndSettle();
 
-      expect(repository.calls, isNot(contains('startSetup')));
+      expect(repository.calls, contains('ensure'));
       expect(host.opened, isEmpty);
     });
 
@@ -412,92 +455,114 @@ void main() {
       expect(find.text('Start'), findsWidgets);
     });
 
-    testWidgets('a start stopped for host setup reads as needing setup', (
+    /// A start that stopped for someone, on the component named [stopped].
+    SpaceEnvironment blocked({String stopped = 'tool'}) => environment(
+      status: EnvironmentStatus.blocked,
+      lastError: const EnvironmentError(
+        code: 'hosts',
+        message: 'Adding the hostnames needs sudo',
+        command: 'tool create',
+        exitCode: 3,
+      ),
+      components: [
+        EnvironmentComponentState(
+          id: 'tool',
+          kind: 'cli',
+          state: stopped == 'tool' ? 'failed' : 'ready',
+        ),
+        EnvironmentComponentState(
+          id: 'seed',
+          kind: 'task',
+          state: stopped == 'seed' ? 'failed' : 'pending',
+        ),
+      ],
+    );
+
+    testWidgets('a start that waits on someone reads as action needed', (
       tester,
     ) async {
       await _pump(
         tester,
         FakeEnvironmentRepository(
           definitions: [definitionRecord()],
+          environments: [blocked()],
+        ),
+      );
+
+      expect(find.text('Action needed'), findsWidgets);
+      expect(find.text('Failed'), findsNothing);
+      expect(find.text('This needs setting up on the server'), findsOneWidget);
+      // Nothing in this definition runs on a terminal, so it says how by hand.
+      expect(find.text('Continue in terminal'), findsNothing);
+      expect(find.text('Run in terminal'), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
+    });
+
+    testWidgets('a tool that can ask for itself is continued on a terminal', (
+      tester,
+    ) async {
+      final repository = FakeEnvironmentRepository(
+        definitions: [_interactiveRecord()],
+        environments: [blocked()],
+      );
+      final host = RecordingHost();
+      await _pump(tester, repository, host: host);
+
+      // A row that was already waiting starts nothing by itself.
+      expect(repository.calls, isNot(contains('ensure')));
+      expect(find.text('Run in terminal'), findsNothing);
+      expect(find.text('Retry'), findsNothing);
+      // The tool's own command is not shown: it is never what runs.
+      expect(find.text('tool create'), findsNothing);
+      await tester.tap(find.text('Continue in terminal'));
+      await tester.pumpAndSettle();
+
+      // The same start again, this time with someone there.
+      expect(repository.calls, contains('ensure'));
+      expect(repository.lastAttended, isTrue);
+    });
+
+    testWidgets('a task that needs someone says how, since only a tool\'s '
+        'verb runs on a terminal', (tester) async {
+      await _pump(
+        tester,
+        FakeEnvironmentRepository(
+          definitions: [_interactiveRecord()],
+          environments: [blocked(stopped: 'seed')],
+        ),
+      );
+
+      expect(find.text('Continue in terminal'), findsNothing);
+      expect(find.text('Run in terminal'), findsOneWidget);
+    });
+
+    testWidgets('a sign-in and a missing dependency say which', (tester) async {
+      Future<void> pumpWith(int exitCode) => _pump(
+        tester,
+        FakeEnvironmentRepository(
+          definitions: [definitionRecord()],
           environments: [
             environment(
-              status: EnvironmentStatus.failed,
-              lastError: const EnvironmentError(
-                code: 'hosts',
-                message: 'Adding the hostnames needs sudo',
-                command: 'tool create',
-                exitCode: 3,
+              status: EnvironmentStatus.blocked,
+              lastError: EnvironmentError(
+                code: 'blocked',
+                message: 'Stopped',
+                exitCode: exitCode,
               ),
-              components: [
-                EnvironmentComponentState(
-                  id: 'stack',
-                  kind: 'cli',
-                  state: 'failed',
-                ),
-              ],
             ),
           ],
         ),
       );
 
-      expect(find.text('Needs setup'), findsNWidgets(2));
-      expect(find.text('Failed'), findsNothing);
-      expect(find.text('Run in terminal'), findsOneWidget);
-    });
+      await pumpWith(4);
+      expect(find.text('This needs you to sign in'), findsOneWidget);
 
-    testWidgets('a definition with a setup verb offers its terminal', (
-      tester,
-    ) async {
-      final repository = FakeEnvironmentRepository(
-        definitions: [
-          definitionRecord(
-            components: [
-              {
-                'kind': 'cli',
-                'id': 'tool',
-                'verbs': {
-                  'create': ['tool', 'create'],
-                  'status': ['tool', 'status'],
-                  'destroy': ['tool', 'destroy'],
-                  'setup': ['tool', 'create'],
-                },
-              },
-            ],
-          ),
-        ],
-        environments: [
-          environment(
-            status: EnvironmentStatus.failed,
-            lastError: const EnvironmentError(
-              code: 'hosts',
-              message: 'Adding the hostnames needs sudo',
-              command: 'tool create',
-              exitCode: 3,
-            ),
-            components: [
-              EnvironmentComponentState(
-                id: 'tool',
-                kind: 'cli',
-                state: 'failed',
-              ),
-            ],
-          ),
-        ],
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpWith(5);
+      expect(
+        find.text('Something this needs is not available'),
+        findsOneWidget,
       );
-      final host = RecordingHost();
-      await _pump(tester, repository, host: host);
-
-      // A row that was already waiting opens nothing by itself, and the tab
-      // does the explaining, so this is only the way back to it.
-      expect(repository.calls, isNot(contains('startSetup')));
-      expect(find.text('This needs setting up on the server'), findsNothing);
-      expect(find.text('Needs setup'), findsWidgets);
-      expect(find.text('Run in terminal'), findsNothing);
-      await tester.tap(find.text('Continue in terminal'));
-      await tester.pumpAndSettle();
-
-      expect(repository.calls, contains('startSetup'));
-      expect(host.opened, contains('setup:setup-session'));
     });
 
     testWidgets('lays out right to left', (tester) async {

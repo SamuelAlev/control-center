@@ -2,7 +2,7 @@
 title: Revizuiește și îmbină un PR
 description: Deschide un banc de lucru pentru un PR, citește diff-ul, lasă comentarii inline, trimite o revizuire și îmbină.
 slug: ro-RO/manual/ghiduri-practice/revizuieste-si-imbina-pr
-sourceHash: 7a645139279bdfcc60db8aca001833c339a81be2
+sourceHash: 82ef6685ad6cd93eff18902346ba77abd8292299
 ---
 
 Acest ghid îți arată cum să revizuiești și să îmbini un pull request.
@@ -24,10 +24,26 @@ de previzualizare a implementării sunt injectate automat când este detectată 
 adresă URL de previzualizare pe PR. Aranjarea tab-urilor este reținută pentru
 fiecare PR.
 
+Code-server-ul integrat este oferit doar proprietarului serverului, pentru că
+rulează pe server ca utilizatorul propriu al serverului. O sesiune aparține
+dispozitivului și persoanei care a deschis-o, se deschide cu încrederea în
+spațiul de lucru a VS Code pornită (VS Code întreabă înainte să aibă încredere
+într-un folder) și nu rulează nicio sarcină automat. Ceilalți păstrează
+editorul de fișier unic și vizualizările de fișiere.
+
 Tab-ul Prezentare conține metadatele PR-ului (autor, ramură, etichete, persoane
 asignate, reacții, commit-uri, starea verificărilor) și rândul de acțiuni:
-reîmprospătare, **Revizuire**, **Fuzionează**, deschidere în IDE și un meniu
+reîmprospătare, **Revizuire**, **Fuzionează**, un buton numit după editorul tău (cum este **Deschide în VS Code**) și un meniu
 flotant ⋯.
+
+Butonul de editor pornește un editor nativ pe **ecranul serverului**,
+ca utilizatorul serverului și în afara oricărui sandbox, deci este oferită doar
+[proprietarului serverului](/ro-RO/manual/concepte/autorizare/#proprietarul-serverului). Pe
+un desktop care își găzduiește propriul server, asta înseamnă persoana de la
+birou. Același lucru este valabil și pentru deschiderea worktree-ului unei
+conversații într-un editor. Ceilalți folosesc vizualizările de editor integrate.
+Chiar și pentru proprietar, un pull request se deschide doar dintr-un repository
+legat de spațiul de lucru.
 
 ### Deschide un PR dintr-o stivă a spațiului
 
@@ -45,7 +61,7 @@ antetul unei stive și apasă Enter sau Space pentru a o restrânge sau extinde.
 PR-urile fără legătură rămân separate, iar legăturile de ramuri incomplete sau
 ambigue nu sunt prezentate ca o stivă ordonată.
 
-În **Control sursă**, **Pull request-uri stivuite (N)** deschide un selector cu
+În antetul PR-ului, insigna de stivă (o pictogramă de straturi cu numărul de pull request-uri din stivă) deschide **Pull request-uri stivuite**, un selector cu
 părțile publicate ale stivei, de jos în sus. Fiecare intrare arată numărul
 PR-ului, eticheta părții și poziția; partea la care s-a făcut checkout este
 marcată. Selectează o intrare pentru a deschide bancul de lucru al PR-ului ei.
@@ -54,6 +70,34 @@ puțin o parte nu are PR. Acest lucru se aplică și meniului de ramuri. PR-uril
 create în afara Control Center contează și ele ca publicate. Stivele publicate
 parțial oferă ambele acțiuni; munca pe o singură ramură păstrează acțiunile
 individuale de creare/vizualizare a PR-ului.
+
+### Commit și push din Control sursă
+
+Un commit pe care îl faci în panoul **Control sursă** este al tău: tu ești
+autorul și committer-ul, sub adresa pe care forge-ul tău a verificat-o pentru
+autentificarea ta. Când ai creat o cheie de semnare sub **Commit-uri verificate** din **Setări** → **Tu** → **Commit-uri**, serverul
+îl semnează cu cheia ta proprie de semnare înainte să fie împins. Un push poartă
+autentificarea ta proprie, restrânsă la acel singur repository.
+
+Serverul rulează Git pe propria lui mașină, într-un arbore pe care îl poate
+schimba un agent sau un pull request, deci nu rulează niciunul dintre programele
+pe care le poate alege un repository:
+
+- Commit-urile sar peste hook-urile Git ale repository-ului, la fel ca
+  `git commit --no-verify`. Un hook pre-commit, un hook commit-msg sau un hook
+  pre-push nu rulează
+- Helperii de credențiale, editoarele, uneltele externe de diff și programele de
+  semnare pe care le configurează repository-ul sunt ignorate
+
+Rulează singur verificările înainte de commit, sau în CI.
+
+Modificarea codului necesită [grantul de scriere](/ro-RO/manual/concepte/autorizare/#modificarea-codului-necesită-grantul-de-scriere) pe depozit: salvarea sau anularea fișierelor în editor, **Fă pull la ultimele commit-uri PR**, commit-ul și push-ul, publicarea unui branch și acțiunile de stack care taie, fac checkout sau publică o parte. Cu doar acces de citire sau de revizuire vezi fișierele și diff-urile, iar aceste acțiuni răspund „Poți citi acest depozit, dar nu îl poți modifica. Un administrator al spațiului de lucru poate acorda accesul de scriere.”
+
+**Fă pull la ultimele commit-uri PR** aduce worktree-ul de revizuire la cele mai
+noi commit-uri ale pull request-ului. Face fetch cu propria ta autentificare
+GitHub și îți cere să te autentifici când nu ai niciuna. Fă commit sau renunță la
+modificările tale mai întâi: un worktree cu modificări necommitate nu este
+sincronizat.
 
 ## Citește diff-ul
 
@@ -140,7 +184,7 @@ revizuirii; protecția ramurilor a forge-ului este cea care impune regulile.
 de confirmare în loc de o intrare de anulare. După aceea, cache-ul PR-ului este
 invalidat, starea lui devine **Fuzionat** și se declanșează un eveniment
 `PullRequestStatusChanged` cu starea `merged`. Acel eveniment eliberează
-worktree-ul efemer „deschide în editor” și pornește două pipeline-uri
+worktree-ul efemer deschis de butonul de editor și pornește două pipeline-uri
 predefinite: **Stale repository cleanup**, care elimină worktree-urile și
 folderele de conversație învechite ale PR-ului, și **Release notes**, care
 redactează o intrare de changelog.
@@ -168,6 +212,16 @@ determinist de cohorte și axe.
 Control Center importă și PR-uri deschise de oameni din afara aplicației. Fluxul
 de revizuire de mai sus este identic. PR-urile externe sunt detectate de
 serviciul de interogare periodică a PR-urilor.
+
+## Depanare
+
+### Hook-ul meu pre-commit nu a rulat
+
+Commit-urile făcute în panoul **Control sursă** al aplicației sar peste hook-urile
+Git ale repository-ului, la fel ca `git commit --no-verify`. Serverul rulează Git
+pe propria lui mașină, într-un arbore pe care îl pot schimba agenții și
+pull request-urile, deci nu rulează niciodată un program ales de repository.
+Rulează singur verificările hook-ului sau bazează-te pe CI.
 
 ## Ghiduri conexe
 

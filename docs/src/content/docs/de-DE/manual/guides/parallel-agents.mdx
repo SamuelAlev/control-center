@@ -2,7 +2,7 @@
 title: Agenten parallel ausführen
 description: Schick mehrere Agenten gleichzeitig los und halte ihre Arbeit auseinander.
 slug: de-DE/handbuch/anleitungen/parallele-agenten
-sourceHash: 2ccf61caeef73652ce7b7839ede519a9ad3cc4e8
+sourceHash: a14be769d17ca7bcc63fc1c9c22645a1127209a5
 ---
 
 Diese Anleitung zeigt dir, wie du mehrere Agenten gleichzeitig laufen lässt, ohne dass sie einander überschreiben.
@@ -48,7 +48,7 @@ Ein Ticket einem Agenten zuzuweisen hält die Zuständigkeit fest. Es gibt keine
 
 ## Die Läufe beobachten
 
-**Observability → Live** (Fußzeile der Seitenleiste → Observability, dann der Tab **Live**) zeigt die Agentenliste dieses Arbeitsbereichs und frischt sie jede Sekunde auf: Status (Läuft / Inaktiv / Geparkt / Abgebrochen), was jeder gerade tut, Token und Kosten seines letzten Laufs und eine Steuerung zum Beenden eines laufenden Prozesses. Wählst du eine Zeile, dockt eine Schublade mit dem Live-Transkript an.
+**Observability → Live** (Fußzeile der Seitenleiste → Observability, dann der Tab **Live**) zeigt die Agentenliste dieses Arbeitsbereichs und frischt sie jede Sekunde auf: Status (Läuft / Inaktiv / Geparkt / Abgebrochen), was jeder gerade tut, Token und Kosten seines letzten Laufs und eine Steuerung zum Beenden eines laufenden Prozesses. Die Steuerung stoppt nur laufende Agentenläufe in Arbeitsbereichen, denen du angehörst; der Serverinhaber kann jeden beenden. Wählst du eine Zeile, dockt eine Schublade mit dem Live-Transkript an.
 
 **Einstellungen → Arbeitsbereich → Agenten** zeigt dieselbe Liste mit einem anderen Statusvokabular aus der Laufhistorie jedes Agenten, das Aufmerksamkeit zuerst nimmt — Läuft, Blockiert, Fehlgeschlagen, Inaktiv, Noch keine Ausführungen — sortiert, sodass alles, was Aufmerksamkeit braucht, nach oben steigt. Der Tab **Protokolle** jedes Agenten hält seine eigene Laufhistorie.
 

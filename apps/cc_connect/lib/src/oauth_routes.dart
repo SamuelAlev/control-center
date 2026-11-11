@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_connect/src/binding_store.dart';
+import 'package:cc_connect/src/connect_log.dart';
 import 'package:cc_connect/src/context.dart';
 import 'package:cc_connect/src/credential_seal.dart';
 import 'package:cc_connect/src/grant_routes.dart';
@@ -9,9 +10,8 @@ import 'package:cc_connect/src/http_io.dart';
 import 'package:cc_connect/src/pages.dart';
 import 'package:cc_connect/src/provider_slack.dart';
 import 'package:cc_connect/src/provider_support.dart';
-import 'package:cc_connect/src/redis_state_store.dart';
+import 'package:cc_connect/src/quota.dart';
 import 'package:cc_connect/src/service_config.dart' show SlackCredentials;
-import 'package:cc_connect/src/upstream_http.dart';
 import 'package:cc_connect_core/cc_connect_core.dart';
 import 'package:crypto/crypto.dart' as crypto;
 
@@ -39,13 +39,10 @@ String _sha(String value) =>
 /// post-install `/oauth/github/setup`.
 final class OAuthRoutes {
   /// Creates the routes.
-  OAuthRoutes(this.ctx, this.grants);
+  OAuthRoutes(this.ctx);
 
   /// The shared context.
   final ConnectContext ctx;
-
-  /// Grant plumbing (GitHub seal resolution and binding).
-  final GrantRoutes grants;
 
   String get _base => ctx.config.publicBaseUrl;
 
@@ -93,6 +90,17 @@ final class OAuthRoutes {
     if (!accepts) {
       throw _unavailable;
     }
+    // Logins live [loginTtl], so this also caps the logins one address has
+    // outstanding (up to twice the limit across a window boundary).
+    await ctx.quotas.admit([
+      Quota(
+        'logins_ip',
+        caller.address,
+        window: loginTtl,
+        limit: ctx.config.rateLimits.loginsPerIpPer10Minutes,
+        logFields: {'ip': caller.network},
+      ),
+    ]);
     final login = StagedLogin(
       id: newLoginId(),
       lane: lane,
@@ -101,6 +109,7 @@ final class OAuthRoutes {
       codeChallenge: request.codeChallenge,
       confirmCode: newConfirmCode(),
       expiresAt: ctx.now().add(loginTtl),
+      startNetwork: caller.network,
       oidcNonce: lane == ConnectOAuthLane.slack ? b64url(randomBytes(16)) : '',
     );
     final state = b64url(randomBytes(32));
@@ -162,7 +171,7 @@ final class OAuthRoutes {
           'state': state,
           'code_challenge': login.codeChallenge,
           'code_challenge_method': 'S256',
-          'prompt': 'consent',
+          'prompt': 'select_account',
         });
       case ConnectOAuthLane.google:
         return Uri.https('accounts.google.com', '/o/oauth2/v2/auth', {
@@ -204,6 +213,14 @@ final class OAuthRoutes {
 
   // --------------------------------------------------------------- callback
 
+  /// Answers the expired page and logs `oauth.callback_refused`.
+  Future<void> _callbackRefused(HttpResponse response, String reason) {
+    ctx.log.event('oauth.callback_refused', {
+      'reason': reason,
+    }, ConnectLogLevel.warn);
+    return sendStaticPage(response, StaticPage.expired);
+  }
+
   /// `GET /oauth/{segment}/callback`.
   Future<void> callback(HttpRequest request, String segment) async {
     final response = request.response;
@@ -211,15 +228,15 @@ final class OAuthRoutes {
     try {
       query = request.uri.queryParameters;
     } on FormatException {
-      return sendStaticPage(response, StaticPage.expired);
+      return _callbackRefused(response, 'query');
     }
     final state = query['state'];
     if (state == null || !_opaqueToken.hasMatch(state)) {
-      return sendStaticPage(response, StaticPage.expired);
+      return _callbackRefused(response, 'state_shape');
     }
     final mapping = await ctx.state.take('state:$state');
     if (mapping == null) {
-      return sendStaticPage(response, StaticPage.expired);
+      return _callbackRefused(response, 'state_unknown');
     }
     final decoded = jsonDecode(mapping);
     final loginId = decoded is Map ? decoded['login'] : null;
@@ -228,7 +245,7 @@ final class OAuthRoutes {
     );
     final login = loginId is String ? await ctx.login(loginId) : null;
     if (login == null) {
-      return sendStaticPage(response, StaticPage.expired);
+      return _callbackRefused(response, 'login_unknown');
     }
     final route = ConnectOAuthLane.fromCallbackSegment(segment);
     if (route == null ||
@@ -237,7 +254,7 @@ final class OAuthRoutes {
         route.hop != hop ||
         login.nextHop != hop) {
       await ctx.burnLogin(login.id);
-      return sendStaticPage(response, StaticPage.expired);
+      return _callbackRefused(response, 'hop_mismatch');
     }
     final code = query['code'];
     if (query.containsKey('error') ||
@@ -257,7 +274,7 @@ final class OAuthRoutes {
     );
     if (!await ctx.saveLogin(authorized)) {
       // Burned or advanced by another request meanwhile.
-      return sendStaticPage(response, StaticPage.expired);
+      return _callbackRefused(response, 'login_changed');
     }
     final cookie = b64url(randomBytes(32));
     await ctx.state.set(
@@ -300,27 +317,6 @@ final class OAuthRoutes {
         });
         return await sendStaticPage(response, StaticPage.teamBoundElsewhere);
       }
-      // One bot install per team at a time: every `oauth.v2.access` rotates
-      // the team's single bot token, so only the login holding this
-      // reservation may exchange.
-      final reservation = _slackClaimKey(identity.teamId);
-      final ttl = login.expiresAt.difference(ctx.now());
-      if (!await ctx.state.putIfAbsent(reservation, login.id, ttl)) {
-        final holder = await ctx.state.get(reservation);
-        // A reservation whose login was abandoned (expired or burned) is
-        // free; one mid-exchange or still live is not. Taking it over is
-        // compare-and-set: of two logins that both found it abandoned, one
-        // wins and the other is told an install is in progress.
-        final abandoned =
-            holder != null &&
-            !holder.startsWith(_slackExchanging) &&
-            await ctx.login(holder) == null;
-        if (!abandoned ||
-            !await ctx.state.replace(reservation, holder, login.id, ttl)) {
-          await ctx.burnLogin(login.id);
-          return await sendStaticPage(response, StaticPage.slackInProgress);
-        }
-      }
       final checked = login.advance(
         SlackPrechecked(teamId: identity.teamId, userId: identity.userId),
       );
@@ -348,6 +344,10 @@ final class OAuthRoutes {
       );
     } on ConnectException catch (error) {
       await ctx.burnLogin(login.id);
+      ctx.log.event('oauth.callback_refused', {
+        'reason': 'slack_precheck',
+        'error': error.code.wire,
+      }, ConnectLogLevel.warn);
       return sendStaticPage(
         response,
         error.code == ConnectErrorCode.accessDenied
@@ -359,18 +359,166 @@ final class OAuthRoutes {
 
   // ------------------------------------------------------------------- done
 
-  /// `GET /oauth/{lane}/done`: the confirm code, for the browser that holds
-  /// the login cookie only.
-  Future<void> done(HttpRequest request, ConnectOAuthLane lane) async {
-    final response = request.response;
+  /// The login whose provider redirect this browser completed, by its
+  /// `/done` cookie; null when absent, expired or on another lane.
+  Future<(StagedLogin, String)?> _doneLogin(
+    HttpRequest request,
+    ConnectOAuthLane lane,
+  ) async {
     final cookie = requestCookie(request, connectCookieNameFor(_base));
     if (cookie == null || !_opaqueToken.hasMatch(cookie)) {
-      return sendStaticPage(response, StaticPage.expired);
+      return null;
     }
-    final loginId = await ctx.state.get('done:${_sha(cookie)}');
+    final key = 'done:${_sha(cookie)}';
+    final loginId = await ctx.state.get(key);
     final login = loginId == null ? null : await ctx.login(loginId);
     if (login == null || login.lane != lane || login.providerCode == null) {
+      return null;
+    }
+    return (login, key);
+  }
+
+  /// `GET /oauth/{lane}/done`: the consent page, for the browser that holds
+  /// the login cookie only. It shows what the server will be able to do and
+  /// asks to continue or cancel; it shows no code and no deep link. When
+  /// [network] (this browser's truncated address) is not the one the login
+  /// was started from, it says so; that changes nothing else.
+  Future<void> done(
+    HttpRequest request,
+    ConnectOAuthLane lane, {
+    required String network,
+  }) async {
+    final response = request.response;
+    final found = await _doneLogin(request, lane);
+    if (found == null) {
       return sendStaticPage(response, StaticPage.expired);
+    }
+    final login = found.$1;
+    // The answer must carry this page's token, so it never rests on the
+    // browser sending fetch metadata. A reload replaces it.
+    final token = b64url(randomBytes(32));
+    await ctx.state.set(
+      _consentKey(login.id),
+      token,
+      login.expiresAt.difference(ctx.now()),
+    );
+    return sendPage(
+      response,
+      200,
+      renderConsentPage(
+        lane: lane,
+        otherNetwork: network != login.startNetwork,
+        action: Uri.parse('$_base/oauth/${lane.wire}/done'),
+        token: token,
+      ),
+      form: true,
+    );
+  }
+
+  static String _consentKey(String loginId) => 'consent:$loginId';
+
+  /// Why a browser form post cannot be shown to come from Connect's own
+  /// page, or null when it can. `Sec-Fetch-Site`, when sent, must be
+  /// `same-origin`; `Origin`, when it names an origin, must be this
+  /// service's public origin; and at least one of the two must be there. A
+  /// browser that renders the page sends at least one of them on the form
+  /// post, so a request with neither is not that page. This is on top of the
+  /// page's single-use form token.
+  ///
+  /// `Origin: null` names no origin: a browser writes it when the posting
+  /// page's referrer policy withholds the origin. It proves nothing and
+  /// refutes nothing, so it counts as not sent. Connect's own form page asks
+  /// for the real origin ([sendPage]); this covers a browser that withholds
+  /// it anyway.
+  String? _foreignPostReason(HttpRequest request) {
+    final site = request.headers['sec-fetch-site'];
+    if (site != null && (site.length != 1 || site.single != 'same-origin')) {
+      return 'cross_site';
+    }
+    final sent = request.headers['origin'];
+    final origin = sent != null && sent.length == 1 && sent.single == 'null'
+        ? null
+        : sent;
+    if (origin != null &&
+        (origin.length != 1 || !_isOwnOrigin(origin.single))) {
+      return 'origin';
+    }
+    if (site == null && origin == null) {
+      return 'no_origin';
+    }
+    return null;
+  }
+
+  bool _isOwnOrigin(String value) {
+    final Uri parsed;
+    try {
+      parsed = Uri.parse(value.trim());
+    } on FormatException {
+      return false;
+    }
+    final own = Uri.parse(_base);
+    // `Uri.origin` is defined for http and https only.
+    return (parsed.scheme == 'https' || parsed.scheme == 'http') &&
+        parsed.host.isNotEmpty &&
+        (parsed.path.isEmpty || parsed.path == '/') &&
+        !parsed.hasQuery &&
+        !parsed.hasFragment &&
+        parsed.userInfo.isEmpty &&
+        parsed.origin == own.origin;
+  }
+
+  /// `POST /oauth/{lane}/done`: the consent page's answer, same cookie and
+  /// the page's single-use `token`. `action=continue` shows the confirm code
+  /// and the deep link; `action=cancel` burns the login, so its provider
+  /// code is never exchanged. A request that does not prove it came from
+  /// Connect's own page ([_foreignPostReason]), or one without the page's
+  /// token, is refused and leaves the login as it was.
+  Future<void> doneAction(HttpRequest request, ConnectOAuthLane lane) async {
+    final response = request.response;
+    Future<void> refused(String reason) {
+      ctx.log.event('oauth.done_refused', {
+        'lane': lane.wire,
+        'reason': reason,
+      }, ConnectLogLevel.warn);
+      return sendStaticPage(response, StaticPage.expired);
+    }
+
+    final foreign = _foreignPostReason(request);
+    if (foreign != null) {
+      return refused(foreign);
+    }
+    final body = await readCappedBody(request, 256);
+    Map<String, String> form = const {};
+    if (body != null) {
+      try {
+        form = Uri.splitQueryString(utf8.decode(body));
+      } on FormatException {
+        form = const {};
+      }
+    }
+    final action = form['action'];
+    if (action != 'continue' && action != 'cancel') {
+      return refused('action');
+    }
+    final found = await _doneLogin(request, lane);
+    if (found == null) {
+      return refused('login_unknown');
+    }
+    final (login, key) = found;
+    final token = form['token'] ?? '';
+    final expected = await ctx.state.get(_consentKey(login.id));
+    if (expected == null ||
+        !_opaqueToken.hasMatch(token) ||
+        !constantTimeEquals(token, expected) ||
+        // Single use: of two answers racing with one token, one wins.
+        !await ctx.state.deleteIf(_consentKey(login.id), expected)) {
+      return refused('token');
+    }
+    if (action == 'cancel') {
+      await ctx.burnLogin(login.id);
+      await ctx.state.delete(key);
+      ctx.log.event('oauth.cancelled', {'lane': lane.wire});
+      return sendStaticPage(response, StaticPage.cancelled);
     }
     return sendPage(
       response,
@@ -396,8 +544,14 @@ final class OAuthRoutes {
     } on FormatException {
       throw _invalid;
     }
+    void refused(String reason, [int? attempts]) => ctx.log.event(
+      'oauth.claim_refused',
+      {'lane': lane.wire, 'reason': reason, 'count': attempts},
+      ConnectLogLevel.warn,
+    );
     final login = await ctx.login(request.loginId);
     if (login == null) {
+      refused('login_unknown');
       throw _stale;
     }
     // Another install's login is answered like a wrong code, without
@@ -406,8 +560,12 @@ final class OAuthRoutes {
     final providerCode = login.providerCode;
     if (login.installId != caller.installId ||
         login.lane != lane ||
-        login.workspaceId != request.workspaceId ||
-        providerCode == null) {
+        login.workspaceId != request.workspaceId) {
+      refused('other_login');
+      throw _mismatch;
+    }
+    if (providerCode == null) {
+      refused('not_authorized_yet');
       throw _mismatch;
     }
     final attempts = await ctx.state.increment(
@@ -416,6 +574,7 @@ final class OAuthRoutes {
     );
     if (attempts > maxClaimAttempts) {
       await ctx.burnLogin(login.id);
+      refused('attempts', attempts);
       throw _mismatch;
     }
     final code = normaliseConfirmCode(request.confirmCode);
@@ -430,37 +589,64 @@ final class OAuthRoutes {
       if (attempts >= maxClaimAttempts) {
         await ctx.burnLogin(login.id);
       }
-      ctx.log.event('oauth.claim_refused', {
-        'lane': lane.wire,
-        'count': attempts,
-        'install': ctx.log.tag(caller.installId),
-      });
+      refused(codeOk ? 'verifier' : 'code', attempts);
       throw _mismatch;
     }
-    // Single use: of two concurrent correct claims exactly one proceeds.
-    if (await ctx.state.take('login:${login.id}') == null) {
-      throw _stale;
+    if (lane == ConnectOAuthLane.github) {
+      // Before the login is spent, so a refused claim can be retried. Sign-ins
+      // have an App-wide ceiling of their own, so they never hold the one
+      // refreshes and children spend.
+      await ctx.quotas.admit(ctx.githubExchangeQuotas(caller));
     }
-    await ctx.state.delete('attempts:${login.id}');
-    final binding = caller.binding(login.workspaceId);
+    // Slack: one bot exchange per team at a time, since every
+    // `oauth.v2.access` rotates the team's single bot token. Held before the
+    // login is spent, so a claim that finds it busy can be retried.
+    final team = login.slackPrecheck?.teamId;
+    final reservation = team == null ? null : _slackClaimKey(team);
+    final exchanging = '$_slackExchanging${login.id}';
+    if (lane == ConnectOAuthLane.slack) {
+      if (reservation == null) {
+        refused('slack_precheck');
+        throw _mismatch;
+      }
+      if (!await ctx.state.putIfAbsent(
+        reservation,
+        exchanging,
+        _slackExchangeTtl,
+      )) {
+        refused('slack_exchange_busy');
+        throw const ConnectException(
+          ConnectErrorCode.rateLimited,
+          reason: 'slack_exchange_busy',
+        );
+      }
+    }
     try {
+      // Single use: of two concurrent correct claims exactly one proceeds.
+      if (await ctx.state.take('login:${login.id}') == null) {
+        refused('spent');
+        throw _stale;
+      }
+      await ctx.state.delete('attempts:${login.id}');
       return await _exchangeClaim(
         caller,
         lane,
         login,
         providerCode,
         request,
-        binding,
+        caller.binding(login.workspaceId),
       );
     } on ConnectException catch (e) {
+      if (e.code == ConnectErrorCode.staleRequest) {
+        rethrow;
+      }
       // The code and verifier were right; the provider, or what it handed
       // back, was not. Say why: nothing else would.
       ctx.log.event('oauth.claim_failed', {
         'lane': lane.wire,
         'error': e.code.wire,
         'reason': e.reason,
-        'install': ctx.log.tag(caller.installId),
-      });
+      }, ConnectLogLevel.warn);
       // The login is spent either way. A grant the provider refused (wrong
       // scopes, another app, an identity mismatch) is "sign in again", never
       // `access_denied`: the server must not read it as a wrong code.
@@ -468,6 +654,15 @@ final class OAuthRoutes {
         throw ConnectException(ConnectErrorCode.needsSignIn, reason: e.reason);
       }
       rethrow;
+    } finally {
+      if (reservation != null) {
+        // Only this claim's own mark: one that lapsed may have been taken.
+        try {
+          await ctx.state.deleteIf(reservation, exchanging);
+        } on Object {
+          // Lapses after [_slackExchangeTtl].
+        }
+      }
     }
   }
 
@@ -502,10 +697,7 @@ final class OAuthRoutes {
         binding,
       ),
     };
-    ctx.log.event('oauth.claimed', {
-      'lane': lane.wire,
-      'install': ctx.log.tag(caller.installId),
-    });
+    ctx.log.event('oauth.claimed', {'lane': lane.wire});
     return result;
   }
 
@@ -523,6 +715,24 @@ final class OAuthRoutes {
       codeVerifier: verifier,
     );
     final user = await api.user(tokens.access);
+    // The account is known only now. Over its budget the token just minted
+    // is revoked upstream rather than handed out.
+    try {
+      await ctx.quotas.admit(
+        ctx.githubAccountQuotas(binding.installId, user.id),
+      );
+    } on ConnectException {
+      try {
+        await api.deleteToken(tokens.access);
+      } on Object {
+        // Still refused: the token is never handed out either way.
+      }
+      rethrow;
+    }
+    ctx.log.event('github.signed_in', {
+      'github_user_id': user.id,
+      'hashed_token': githubHashedToken(tokens.access),
+    });
     final seal = await ctx.sealer.seal(
       provider: ConnectProvider.github,
       accountId: '${user.id}',
@@ -619,37 +829,15 @@ final class OAuthRoutes {
     if (precheck == null) {
       throw _denied;
     }
-    final reservation = _slackClaimKey(precheck.teamId);
-    final exchanging = '$_slackExchanging${login.id}';
-    // Compare-and-set from this login's reservation to "exchanging": when it
-    // lapsed or another login holds it, exchanging now would rotate a token
-    // someone else may already hold.
-    if (!await ctx.state.replace(
-      reservation,
-      login.id,
-      exchanging,
-      _slackExchangeTtl,
-    )) {
-      throw _denied;
-    }
-    try {
-      return await _exchangeSlack(
-        caller,
-        login,
-        precheck,
-        providerCode,
-        binding,
-        creds,
-        api,
-      );
-    } finally {
-      // Only this exchange's own mark: one that lapsed may have been taken.
-      try {
-        await ctx.state.deleteIf(reservation, exchanging);
-      } on Object {
-        // Lapses after [_slackExchangeTtl].
-      }
-    }
+    return _exchangeSlack(
+      caller,
+      login,
+      precheck,
+      providerCode,
+      binding,
+      creds,
+      api,
+    );
   }
 
   static String _slackClaimKey(String teamId) => 'slackclaim:$teamId';
@@ -761,86 +949,21 @@ final class OAuthRoutes {
 
   // ------------------------------------------------------------ GitHub setup
 
-  /// `GET /oauth/github/setup`: GitHub's post-install redirect. The `state`
-  /// is a single-use install ticket from `/v1/github/install/start`; the
-  /// ticket's own seal proves who installed, and only an org admin (or the
-  /// personal account itself) binds the installation to the ticket's server.
+  /// `GET /oauth/github/setup`: GitHub's post-install redirect. It records
+  /// nothing: an installation needs no per-server binding (the account's
+  /// install is its consent, and every token is a member's own, clamped to
+  /// their role), so this only tells the person what happened.
   Future<void> githubSetup(HttpRequest request) async {
-    final response = request.response;
-    final Map<String, String> query;
+    final String? action;
     try {
-      query = request.uri.queryParameters;
+      action = request.uri.queryParameters['setup_action'];
     } on FormatException {
-      return sendStaticPage(response, StaticPage.expired);
+      return sendStaticPage(request.response, StaticPage.githubInstalled);
     }
-    final state = query['state'];
-    final action = query['setup_action'];
-    if (state == null || !_opaqueToken.hasMatch(state)) {
-      return sendStaticPage(
-        response,
-        action == 'update' ? StaticPage.githubUpdated : StaticPage.expired,
-      );
-    }
-    final raw = await ctx.state.take('ticket:$state');
-    final ticket = raw == null ? null : jsonDecode(raw);
-    if (ticket is! Map ||
-        ticket['install_id'] is! String ||
-        ticket['workspace_id'] is! String ||
-        ticket['seal'] is! String) {
-      return sendStaticPage(response, StaticPage.expired);
-    }
-    // Unsigned (GitHub redirects here), so the allowlist the signed routes
-    // apply is applied to the ticket's install instead: blocking a server
-    // also voids the tickets it already holds.
-    if (!ctx.config.access.permits(ticket['install_id'] as String)) {
-      ctx.log.event('github.setup_blocked', {
-        'install': ctx.log.tag(ticket['install_id'] as String),
-      });
-      return sendStaticPage(response, StaticPage.installBlocked);
-    }
-    if (action == 'request') {
-      return sendStaticPage(response, StaticPage.githubRequested);
-    }
-    final installationId = int.tryParse(query['installation_id'] ?? '');
-    if (installationId == null || installationId <= 0) {
-      return sendStaticPage(response, StaticPage.githubNotInstalled);
-    }
-    try {
-      final lane = await ctx.githubLane();
-      final grant = await grants.resolveGitHub(
-        ConnectCaller(installId: ticket['install_id'] as String),
-        ticket['workspace_id'] as String,
-        ticket['seal'] as String,
-        lane: lane,
-        minRemaining: const Duration(minutes: 1),
-        rotate: false,
-      );
-      final outcome = await grants.authorizeInstallation(
-        grant,
-        installationId,
-        ticket['install_id'] as String,
-        lane: lane,
-      );
-      return await sendStaticPage(response, switch (outcome) {
-        AuthorizeOutcome.bound => StaticPage.githubInstalled,
-        AuthorizeOutcome.notInstalled => StaticPage.githubNotInstalled,
-        AuthorizeOutcome.suspended => StaticPage.githubNotInstalled,
-        AuthorizeOutcome.notAdmin => StaticPage.githubNotAdmin,
-      });
-    } on ConnectException catch (error) {
-      return sendStaticPage(
-        response,
-        error.code == ConnectErrorCode.providerUnavailable ||
-                error.code == ConnectErrorCode.rateLimited
-            ? StaticPage.failed
-            : StaticPage.expired,
-      );
-    } on StateStoreUnavailable {
-      return sendStaticPage(response, StaticPage.failed);
-    } on BindingStoreUnavailable {
-      return sendStaticPage(response, StaticPage.failed);
-    } on UpstreamUnavailable {
-      return sendStaticPage(response, StaticPage.failed);
-    }
+    return sendStaticPage(request.response, switch (action) {
+      'request' => StaticPage.githubRequested,
+      'update' => StaticPage.githubUpdated,
+      _ => StaticPage.githubInstalled,
+    });
   }
 }

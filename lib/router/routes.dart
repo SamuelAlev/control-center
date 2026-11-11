@@ -254,15 +254,34 @@ String newsfeedArticleRoute(String workspaceId, String articleId) =>
 // guard and "return to where you were" keep their existing contract. The scope
 // segment, not the prefix, is what states the blast radius.
 
-/// Settings root (redirects to You → Appearance).
+/// Settings root (redirects to [settingsLandingRoute]).
 String settingsRoute(String workspaceId) => '/workspaces/$workspaceId/settings';
+
+/// Where Settings opens: You → Profile, the first page in its sidebar.
+String settingsLandingRoute(String workspaceId) =>
+    settingsAccountProfileRoute(workspaceId);
 
 /// Settings → Workspace → Profile & identity.
 String settingsProfileRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/profile';
 
+/// Settings → You → Profile: who the person is on this server (username,
+/// name, picture, single sign-on identity), then the accounts they connect
+/// for themself (code hosting, ticketing, calendar and chat sign-ins).
+String settingsAccountProfileRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/you/profile';
+
+/// [settingsAccountProfileRoute] opened at its connected accounts, for a link
+/// that is about one of them. Read back with [opensAtConnectedAccounts].
+String settingsAccountsRoute(String workspaceId) =>
+    '${settingsAccountProfileRoute(workspaceId)}?section=accounts';
+
+/// Whether [uri] asks for the profile page at its connected accounts: what
+/// [settingsAccountsRoute] writes.
+bool opensAtConnectedAccounts(Uri uri) =>
+    uri.queryParameters['section'] == 'accounts';
+
 /// Settings → You → Appearance (theme, language, typography, editor theme).
-/// The settings landing.
 String settingsAppearanceRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/appearance';
 
@@ -270,9 +289,9 @@ String settingsAppearanceRoute(String workspaceId) =>
 String settingsNotificationsRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/notifications';
 
-/// Settings → You → Commit attribution (workspace policy takes precedence).
-String settingsAgentAttributionRoute(String workspaceId) =>
-    '/workspaces/$workspaceId/settings/you/attribution';
+/// Settings → You → Commits (authorship, co-author credit, signing key).
+String settingsCommitsRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/you/commits';
 
 /// Settings → You → Audio (microphone, dictation, meeting detection,
 /// soundscape output).
@@ -298,10 +317,16 @@ String settingsNewsfeedRoute(String workspaceId) =>
 String settingsLinksRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/you/links';
 
-/// Settings → Workspace → General (name, logo, secret globs, review
-/// concurrency, branch naming, sync health, chat bridges, danger zone).
+/// Settings → Workspace → General (secret globs, review concurrency, commit
+/// attribution, branch naming).
 String settingsWorkspaceGeneralRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/workspace/general';
+
+/// Settings → Workspace → Integrations (the workspace's Connect choice and
+/// its side of code hosting, tickets and sync health, calendar, chat bridges
+/// and GIFs; a person's own sign-ins live on [settingsAccountsRoute]).
+String settingsWorkspaceIntegrationsRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/workspace/integrations';
 
 /// Settings → Workspace → Meetings (note templates and saved voice profiles).
 String settingsMeetingsRoute(String workspaceId) =>
@@ -393,6 +418,16 @@ String settingsVoiceMeetingsRoute(String workspaceId) =>
 /// engine, logging, crash reporting).
 String settingsDiagnosticsRoute(String workspaceId) =>
     '/workspaces/$workspaceId/settings/server/diagnostics';
+
+/// Settings → Server → Audit log: who changed what, across the server trail
+/// (server owner) and every workspace the person administers.
+String settingsServerAuditRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/server/audit';
+
+/// Settings → Server → People: every account on the server and whether its
+/// email is confirmed. Server owner only.
+String settingsServerPeopleRoute(String workspaceId) =>
+    '/workspaces/$workspaceId/settings/server/people';
 
 /// Settings → Server → Enclosures (rigs): what this host can boot, the base
 /// images, and the machines running right now.
@@ -502,7 +537,7 @@ String calendarRoute(String workspaceId) => '/workspaces/$workspaceId/calendar';
 String calendarDetailRoute(String workspaceId, String id) =>
     '/workspaces/$workspaceId/calendar/$id';
 
-/// Maps a concrete in-shell location to the *logical* route that keybinding `when` clauses and `scope`s are written against (they predate the/ `/workspaces/:id` prefix).
+/// Maps a concrete in-shell location to the *logical* route that keybinding `when` clauses and `scope`s are written against (workspace-independent, so without the `/workspaces/:id` prefix).
 /// For example `/workspaces/ws-1/tickets/42` → `/tickets/42`. Non-workspace locations (`/onboarding`, the `/workspaces` picker) pass through unchanged.
 String workspaceShellLogicalRoute(String location) {
   final scoped = RegExp(r'^/workspaces/[^/]+(/.*)$').firstMatch(location);

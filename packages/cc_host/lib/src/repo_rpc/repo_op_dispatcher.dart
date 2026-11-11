@@ -62,6 +62,13 @@ typedef RepoGrantResolver =
       String repoId,
     );
 
+/// Refuses [userId] the code of [repoId] in [workspaceId] unless their own
+/// forge sign-in can read that repository, by throwing the app's refusal
+/// (mapped through [RpcExceptionMapper] like a handler's). Completes when they
+/// may read it.
+typedef RepoForgeReadGate =
+    Future<void> Function(String workspaceId, String userId, String repoId);
+
 /// Appends one audit record for a successfully executed mutating op.
 ///
 /// [ip] is the server's view of the client address for the session the call
@@ -78,6 +85,21 @@ typedef UserActivityRecorder =
       String? targetId,
       String? ip,
       Map<String, Object?>? details,
+    });
+
+/// Appends one record of an install-wide mutating op call: who, which op,
+/// which argument NAMES (never values) and how it ended (`ok`, `denied` by a
+/// gate, or `failed` in the handler). The workspace trail
+/// ([UserActivityRecorder]) cannot hold these calls: they belong to no
+/// workspace.
+typedef ServerAuditRecorder =
+    Future<void> Function({
+      required String userId,
+      required String deviceId,
+      required String op,
+      required List<String> argNames,
+      required String outcome,
+      String? ip,
     });
 
 /// The workspace-scoped idempotency ledger (PRD 19 §3), consulted by the
@@ -127,7 +149,9 @@ class RepoOpDispatcher {
     this.mapException,
     this.resolveRole,
     this.resolveRepoGrant,
+    this.requireForgeRead,
     this.recordActivity,
+    this.recordServerAudit,
     this.writeLedger,
     this.actionGuard,
     this.workspaceExists,
@@ -166,8 +190,24 @@ class RepoOpDispatcher {
   /// Per-repo grant lookup for [RepoOp.repoAccess]-declaring ops.
   final RepoGrantResolver? resolveRepoGrant;
 
+  /// The forge half of the per-repo gates: every repo a code-bearing op
+  /// exposes must also be one the caller's own forge sign-in can read. Unlike
+  /// the grant, admins are not exempt; the gate itself decides who is (the
+  /// server owner) and which repos have no forge to ask. Null (bare test
+  /// dispatchers) skips it.
+  final RepoForgeReadGate? requireForgeRead;
+
   /// Audit sink for successful mutating ops.
   final UserActivityRecorder? recordActivity;
+
+  /// Audit sink for install-wide mutating ops ([serverAudited]): every call
+  /// that passed op lookup and argument validation, refusals included.
+  final ServerAuditRecorder? recordServerAudit;
+
+  /// Whether calls of [op] go to [recordServerAudit]: a mutating op no
+  /// workspace owns that has not opted out of the trail ([RepoOp.audited]).
+  static bool serverAudited(RepoOp op) =>
+      !op.workspaceScoped && op.kind != RepoOpKind.read && op.audited;
 
   /// Audit sink for authorization VERDICTS (refusals included). Null in bare
   /// test dispatchers; production always supplies it.
@@ -190,9 +230,8 @@ class RepoOpDispatcher {
 
   /// The [ServerAuthority.serverOwner] gate. Unlike [resolveRole], a missing
   /// resolver does NOT skip the check: an op that declared server authority is
-  /// refused when nobody can vouch for the caller (fail closed) — matching the
-  /// in-handler `requireServerAdmin` guards, which throw on an install with no
-  /// recorded owner rather than serving install-wide settings ungated.
+  /// refused when nobody can vouch for the caller (fail closed), never served
+  /// ungated because an install has no recorded owner.
   final ServerOwnerResolver? resolveServerOwner;
 
   /// Handles a `repo/call`. [params] is the request's `params`
@@ -284,6 +323,47 @@ class RepoOpDispatcher {
       }
     }
 
+    final response = await _admitAndRun(
+      id: id,
+      params: params,
+      op: op,
+      args: args,
+      workspaceId: workspaceId,
+      deviceId: deviceId,
+      userId: userId,
+      sessionCapability: sessionCapability,
+      remoteAddress: remoteAddress,
+      isCancelled: isCancelled,
+    );
+    if (serverAudited(op) && params['dry_run'] != true) {
+      _auditServerCall(
+        op: op,
+        args: args,
+        response: response,
+        userId: userId,
+        deviceId: deviceId,
+        ip: remoteAddress,
+      );
+    }
+    return response;
+  }
+
+  /// Runs the admission gates and then the handler of an op whose lookup,
+  /// version and arguments [call] has already checked.
+  Future<Map<String, dynamic>> _admitAndRun({
+    required dynamic id,
+    required Map<String, dynamic> params,
+    required RepoOp op,
+    required Map<String, dynamic> args,
+    required String? workspaceId,
+    required String deviceId,
+    required String userId,
+    required SessionCapability sessionCapability,
+    required String? remoteAddress,
+    required bool Function()? isCancelled,
+  }) async {
+    final opName = op.name;
+
     // Privilege gate — a phone session must never reach a `fullClient`-only op
     // (e.g. `pairing.*`), even though it authenticated. Fail closed before the
     // handler runs. Null requiredCapability = any authenticated session.
@@ -300,8 +380,8 @@ class RepoOpDispatcher {
       );
     }
 
-    // Server-authority gate — the declarative form of the hand-rolled
-    // `requireServerAdmin` guards. Runs for every op that declares authority
+    // Server-authority gate — the only server-owner check; no handler repeats
+    // it. Runs for every op that declares authority
     // (scoped or not) and FAILS CLOSED when no resolver is wired: an op that
     // said "owner only" must never run ungated because a catalog was built
     // without identity wiring.
@@ -329,6 +409,9 @@ class RepoOpDispatcher {
           id,
           RpcErrorCodes.unauthorized,
           'Only the server owner may call this operation: $opName',
+          // Named, so a client can say "ask this server's operator" instead
+          // of reporting a failure.
+          data: const {'kind': 'server_owner_required'},
         );
       }
     }
@@ -386,44 +469,60 @@ class RepoOpDispatcher {
     // Per-repo grant gate — workspace membership must never silently grant
     // code visibility. Ops that expose repo content declare `repoAccess`; the
     // caller needs that grant level on the named repo (owners/admins pass
-    // implicitly).
+    // implicitly) and, admins included, a forge sign-in that can read it.
+    // An op that derives its repos ([RepoOp.repoAccessVia]) is gated below.
     final repoAccess = op.repoAccess;
     if (repoAccess != null &&
+        op.repoAccessVia == null &&
         op.workspaceScoped &&
-        role != null &&
-        !role.isAdmin) {
+        role != null) {
       final repoId = args[op.repoArg];
       if (repoId is String && repoId.isNotEmpty) {
-        final verdict = await _checkRepoGrant(
+        if (!role.isAdmin) {
+          final verdict = await _checkRepoGrant(
+            workspaceId: workspaceId!,
+            userId: userId,
+            roleDefinition: roleDefinition,
+            permission: op.permission,
+            repoId: repoId,
+            level: repoAccess,
+          );
+          if (!verdict.allowed) {
+            CcHostLog.warning(
+              'Denying repo/call "$opName" for $userId@$deviceId — '
+              '${verdict.reason} (repo $repoId)',
+            );
+            _auditDecision(
+              workspaceId: workspaceId,
+              userId: userId,
+              deviceId: deviceId,
+              op: op,
+              allowed: false,
+              sourceScope: verdict.source.name,
+              reason: '${verdict.reason} (repo $repoId)',
+              ip: remoteAddress,
+            );
+            return _error(
+              id,
+              RpcErrorCodes.unauthorized,
+              'No ${repoAccess.wireName} access to this repo',
+              data: repoGrantRequiredData(repoAccess),
+            );
+          }
+        }
+        final refused = await _refuseWithoutForgeRead(
+          id: id,
+          op: op,
           workspaceId: workspaceId!,
           userId: userId,
-          roleDefinition: roleDefinition,
-          permission: op.permission,
+          deviceId: deviceId,
           repoId: repoId,
-          level: repoAccess,
+          ip: remoteAddress,
         );
-        if (!verdict.allowed) {
-          CcHostLog.warning(
-            'Denying repo/call "$opName" for $userId@$deviceId — '
-            '${verdict.reason} (repo $repoId)',
-          );
-          _auditDecision(
-            workspaceId: workspaceId,
-            userId: userId,
-            deviceId: deviceId,
-            op: op,
-            allowed: false,
-            sourceScope: verdict.source.name,
-            reason: '${verdict.reason} (repo $repoId)',
-            ip: remoteAddress,
-          );
-          return _error(
-            id,
-            RpcErrorCodes.unauthorized,
-            'No ${repoAccess.wireName} access to this repo',
-          );
+        if (refused != null) {
+          return refused;
         }
-      } else {
+      } else if (!role.isAdmin) {
         // Fail closed: a repo-scoped op that arrives without a repo_id is a
         // code bug that would silently bypass the per-repo grant gate.
         // Deny loudly rather than let it through unchecked.
@@ -452,13 +551,11 @@ class RepoOpDispatcher {
     // Multi-repo grant gate — ops whose repo set is derived, not named by one
     // argument (a space terminal, a code-server tab, an agent dispatch). The
     // caller needs the declared grant level on EVERY repo the op exposes;
-    // owners/admins pass implicitly, exactly like the single-repo gate above.
+    // owners/admins pass implicitly, exactly like the single-repo gate above,
+    // and every caller's forge sign-in must read each of them.
     // An empty resolution (a space with no repos) exposes nothing and passes.
     final accessVia = op.repoAccessVia;
-    if (accessVia != null &&
-        op.workspaceScoped &&
-        role != null &&
-        !role.isAdmin) {
+    if (accessVia != null && op.workspaceScoped && role != null) {
       final level = op.repoAccess!;
       final List<String> exposedRepos;
       try {
@@ -467,35 +564,50 @@ class RepoOpDispatcher {
         return _mapHandlerError(id, opName, e, st);
       }
       for (final repoId in exposedRepos) {
-        final verdict = await _checkRepoGrant(
+        if (!role.isAdmin) {
+          final verdict = await _checkRepoGrant(
+            workspaceId: workspaceId!,
+            userId: userId,
+            roleDefinition: roleDefinition,
+            permission: op.permission,
+            repoId: repoId,
+            level: level,
+          );
+          if (!verdict.allowed) {
+            CcHostLog.warning(
+              'Denying repo/call "$opName" for $userId@$deviceId — '
+              '${verdict.reason} (repo $repoId)',
+            );
+            _auditDecision(
+              workspaceId: workspaceId,
+              userId: userId,
+              deviceId: deviceId,
+              op: op,
+              allowed: false,
+              sourceScope: verdict.source.name,
+              reason: '${verdict.reason} (repo $repoId)',
+              ip: remoteAddress,
+            );
+            return _error(
+              id,
+              RpcErrorCodes.unauthorized,
+              'No ${level.wireName} access to a repository this operation '
+              'exposes',
+              data: repoGrantRequiredData(level),
+            );
+          }
+        }
+        final refused = await _refuseWithoutForgeRead(
+          id: id,
+          op: op,
           workspaceId: workspaceId!,
           userId: userId,
-          roleDefinition: roleDefinition,
-          permission: op.permission,
+          deviceId: deviceId,
           repoId: repoId,
-          level: level,
+          ip: remoteAddress,
         );
-        if (!verdict.allowed) {
-          CcHostLog.warning(
-            'Denying repo/call "$opName" for $userId@$deviceId — '
-            '${verdict.reason} (repo $repoId)',
-          );
-          _auditDecision(
-            workspaceId: workspaceId,
-            userId: userId,
-            deviceId: deviceId,
-            op: op,
-            allowed: false,
-            sourceScope: verdict.source.name,
-            reason: '${verdict.reason} (repo $repoId)',
-            ip: remoteAddress,
-          );
-          return _error(
-            id,
-            RpcErrorCodes.unauthorized,
-            'No ${level.wireName} access to a repository this operation '
-            'exposes',
-          );
+        if (refused != null) {
+          return refused;
         }
       }
     }
@@ -682,6 +794,45 @@ class RepoOpDispatcher {
     }
   }
 
+  /// Records one [serverAudited] call through [recordServerAudit], fire and
+  /// forget: a slow or failed write never changes or delays the answer. The
+  /// outcome is read off the answer itself, so every return path is covered:
+  /// a result is `ok`, an authorization refusal `denied`, anything else
+  /// `failed`.
+  void _auditServerCall({
+    required RepoOp op,
+    required Map<String, dynamic> args,
+    required Map<String, dynamic> response,
+    required String userId,
+    required String deviceId,
+    required String? ip,
+  }) {
+    final error = response['error'];
+    final outcome = error is! Map
+        ? 'ok'
+        : error['code'] == RpcErrorCodes.unauthorized
+        ? 'denied'
+        : 'failed';
+    final write = recordServerAudit?.call(
+      userId: userId,
+      deviceId: deviceId,
+      op: op.name,
+      argNames: args.keys.toList(),
+      outcome: outcome,
+      ip: ip,
+    );
+    if (write != null) {
+      unawaited(
+        write.then<void>(
+          (_) {},
+          onError: (Object e) {
+            CcHostLog.warning('server audit append for ${op.name} failed: $e');
+          },
+        ),
+      );
+    }
+  }
+
   /// Emits one authorization row into the audit spine (best effort: a failed
   /// audit must never change a verdict).
   void _auditDecision({
@@ -712,6 +863,43 @@ class RepoOpDispatcher {
       correlationId: correlationId,
       actionClasses: [for (final c in op.actionClasses) c.wire],
     );
+  }
+
+  /// The error frame refusing [op] when [requireForgeRead] refuses [userId]
+  /// the code of [repoId], audited like a grant refusal; null when it passes.
+  Future<Map<String, dynamic>?> _refuseWithoutForgeRead({
+    required dynamic id,
+    required RepoOp op,
+    required String workspaceId,
+    required String userId,
+    required String deviceId,
+    required String repoId,
+    required String? ip,
+  }) async {
+    final gate = requireForgeRead;
+    if (gate == null) {
+      return null;
+    }
+    try {
+      await gate(workspaceId, userId, repoId);
+      return null;
+    } catch (e, st) {
+      CcHostLog.warning(
+        'Denying repo/call "${op.name}" for $userId@$deviceId — their forge '
+        'sign-in cannot read repo $repoId (${e.runtimeType})',
+      );
+      _auditDecision(
+        workspaceId: workspaceId,
+        userId: userId,
+        deviceId: deviceId,
+        op: op,
+        allowed: false,
+        sourceScope: 'forge',
+        reason: 'Forge sign-in cannot read the repository (repo $repoId)',
+        ip: ip,
+      );
+      return _mapHandlerError(id, op.name, e, st);
+    }
   }
 
   /// Resolves ONE repo's grant and answers it through the permission

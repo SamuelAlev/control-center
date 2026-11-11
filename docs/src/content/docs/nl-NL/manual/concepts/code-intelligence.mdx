@@ -2,7 +2,7 @@
 title: Code-intelligentie
 description: Waarom een agent de compiler, een structurele matcher en een debugger nodig heeft — en wat elk daarvan beantwoordt wat de andere niet kunnen.
 slug: nl-NL/handleiding/concepten/code-intelligentie
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center geeft een agent vier manieren om code te begrijpen buiten het alleen lezen ervan. Ze beantwoorden echt verschillende vragen, en de reden dat het er vier zijn in plaats van één is dat geen enkel mechanisme ze allemaal beantwoordt.
@@ -31,6 +31,8 @@ Herhalen wat de agent al te horen heeft gekregen is erger dan niets zeggen: het 
 Geen enkele server start bij het opstarten. Er start er één bij het eerste verzoek dat hem nodig heeft, wat bijna altijd de eerste bewerking is van een bestand dat hij opeist, en inactieve servers worden opgeruimd. Een host die nooit Dart aanraakt, start nooit een analyzer.
 
 Detectie is een **doorsnede**: er moet een marker in de root van de checkout staan *en* de binary moet te vinden zijn. Alleen een marker zegt “dit project is Python” en niets over of de server is geïnstalleerd; alleen een vindbare binary zegt dat de host een toolchain heeft en niets over deze checkout. Alleen beide samen betekenen dat een query kan slagen, en een tool die wordt aangeboden en altijd faalt is erger dan een die er niet is.
+
+Wat een repository kan beïnvloeden blijft bewust klein. De servers komen uit een ingebouwde tabel, nooit uit een bestand in de checkout, en een binary binnen het project (`node_modules/.bin`) wordt alleen gebruikt wanneer de run in een sandbox draait. Een language server is een programma dat op de machine van de server draait, dus een repository mag er geen noemen.
 
 ## Waarom structureel zoeken, als grep al bestaat
 

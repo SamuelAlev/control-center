@@ -2,15 +2,23 @@
 title: Backend sandbox
 description: Backend sandbox, tempat penerapannya, dan setiap objek nilai yang digunakan runtime sandbox.
 slug: id-ID/panduan-pengguna/referensi/backend-sandbox
-sourceHash: 235f37cc47d2f397d653edfd7f2a9d50cb8fb33e
+sourceHash: d444360f4c728b29953c3b0ef715281f950b77ee
 ---
 
 :::caution[Apakah sebuah run di-sandbox bergantung pada host]
-`cc_server` menyelidiki host sekali saat boot dan membungkus pengiriman agen dalam backend native bila probe melaporkan ada backend yang tersedia dan `--sandbox` tidak bernilai `off`. Kedua titik sambung pengiriman dibungkus: CLI Claude Code melalui port sandbox, dan ACP plus alat `bash` harness bawaan melalui manajer sandbox.
+`cc_server` memutuskan sekali saat boot bagaimana agen berjalan di host ini, dan keputusan itu berlaku sampai server dimulai ulang:
 
-Bila probe melaporkan tidak ada backend — **selalu di Windows** dan Linux atau WSL2 tanpa `bwrap` dan `socat` — run agen **tidak** di-sandbox. ACP dan alat `bash` harness tetap dijalankan dengan sanitasi lingkungan; Claude Code melewati `NoSandboxAdapter` dan mewarisi lingkungan host. Batas-batas yang tersisa adalah worktree milik run itu sendiri (copy-on-write di tempat `rift` tersedia; `git worktree` di Windows), token forge hanya-baca yang dijembatani per peluncuran dan dicabut saat pembongkaran, push yang harus lolos aturan push di gateway run agen, kebijakan perintah per mode, [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) tindakan yang terpadu (fail-closed), sanitasi lingkungan pada jalur ACP dan `bash` harness, serta permukaan alat yang diizinkan oleh mode-nya.
+- **Dalam sandbox** (`native`): probe menemukan backend dan `--sandbox` tidak bernilai `off`. Kedua titik sambung pengiriman dibungkus: CLI Claude Code melalui port sandbox, dan ACP plus alat `bash` harness bawaan melalui manajer sandbox.
+- **Nonaktif** (`off`): pemilik server memulainya dengan `--sandbox off`. Setiap agen anggota berjalan tanpa pembatasan di mesin ini, siapa pun yang memulainya.
+- **Tidak tersedia** (`unavailable`): sandbox aktif tetapi probe tidak menemukan backend (**selalu di Windows**, dan Linux atau WSL2 tanpa `bwrap` dan `socat`). Sebuah run hanya dimulai bila orang yang bertanggung jawab atasnya adalah [pemilik](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server) server: orang yang memintanya, atau untuk otomatisasi, orang yang terikat padanya. Run milik orang lain ditolak sebelum kredensial dibuat, lease diambil, atau proses dimulai. Tanpa pemilik yang tercatat, tidak ada run yang dimulai.
+
+Run yang ditolak gagal dengan kode `sandbox_unavailable`. Aplikasi menampilkannya sebagai **Agen memerlukan sandbox di server ini**: "Server ini tidak memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini. Pemilik dapat memasang sandbox atau mematikan sandboxing untuk semua orang."
+
+Run yang tetap dimulai tanpa sandbox (di bawah `off`, atau run milik pemilik di bawah `unavailable`) berjalan langsung di host. ACP dan alat `bash` harness tetap dijalankan dengan sanitasi lingkungan; Claude Code melewati `NoSandboxAdapter` dan mewarisi lingkungan host. Batas-batas yang tersisa adalah worktree milik run itu sendiri (copy-on-write di tempat `rift` tersedia; `git worktree` di Windows), token forge hanya-baca yang dijembatani per peluncuran dan dicabut saat pembongkaran, push yang harus lolos aturan push di gateway run agen, kebijakan perintah per mode, [pagar pengaman](/id-ID/panduan-pengguna/konsep/pagar-pengaman/) tindakan yang terpadu (fail-closed), sanitasi lingkungan pada jalur ACP dan `bash` harness, serta permukaan alat yang diizinkan oleh mode-nya.
 
 Alat berkas dalam proses milik harness (read, write, edit, apply patch, search, find, search_files) berada di luar sandbox di setiap host: alat itu berjalan di dalam proses server, jadi hanya `bash` yang dibungkus.
+
+Host tidak pernah menjadi fallback bagi server yang di-sandbox. Bila server menyandbox agen tetapi tidak memiliki sandbox untuk diberikan kepada sebuah run, proses alat dan perintah `bash`-nya ditolak, bukan dimulai di host. Postur yang sama memutuskan proses-proses kecil di sekitar sebuah run: helper ACP sekali-jalan (judul percakapan, `/btw`, `/handoff`, `/goal`) dan tes golden sebuah pull request di Review Studio berjalan di sandbox bila server menyandbox agen, tanpa pembatasan di bawah `off`, dan di bawah `unavailable` hanya untuk permintaan yang dipertanggungjawabkan kepada pemilik server; selain itu, proses tersebut dilewati.
 :::
 
 ## Ringkasan backend
@@ -19,9 +27,9 @@ Alat berkas dalam proses milik harness (read, write, edit, apply patch, search, 
 | ----------- | --------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | VM tertutup | `microvm` | macOS, Linux, Windows (hypervisor microVM)    | Digerbangi probe pada runtime microVM; berlaku untuk terminal interaktif — shell berjalan di dalam [rig](/id-ID/panduan-pengguna/konsep/rigs/), bukan di host |
 | Native      | `native`  | macOS (Seatbelt), Linux dan WSL2 (bubblewrap) | Diprobe saat boot; Linux menolak run yang memerlukan penolakan tulis berupa glob nama berkas, yang tidak dapat ditegakkan bubblewrap |
-| Tidak ada   | `none`    | Semua                                         | Default penguraian, default terminal, dan fallback bila tidak ada backend yang tersedia atau `--sandbox off` disetel |
+| Tidak ada   | `none`    | Semua                                         | Default penguraian dan default terminal; dispatch agen memakainya di bawah `--sandbox off`, dan untuk run milik pemilik sendiri bila tidak ada backend yang tersedia |
 
-`SandboxBackend.fromName` mengembalikan `none` untuk nilai tersimpan yang null atau tidak dikenali. Nilai `"docker"` yang tersimpan dipetakan ke `native`.
+`SandboxBackend.fromName` mengembalikan `none` untuk nilai tersimpan yang null atau tidak dikenali.
 
 **`microvm` adalah satu-satunya backend dengan batas kernel** — beban
 kerjanya benar-benar tidak berjalan di host. Backend ini tidak pernah menjadi
@@ -34,7 +42,7 @@ dilaporkan kembali ke klien dan diberi lencana, sehingga terminal tidak pernah
 dapat mengklaim dirinya tertutup padahal berjalan di host. Siklus hidup,
 image, dan egress untuk VM itu sendiri dibahas di [referensi rigs](/id-ID/panduan-pengguna/referensi/rigs/).
 
-**Windows tidak memiliki sandbox native.** `NativeSandboxAdapter.probe` mengembalikan `available: false` di setiap host yang bukan macOS atau Linux/WSL2. Karena itu, pengiriman agen di Windows memakai `none`. Backend `microvm` terpisah: backend itu digerbangi probe pada runtime microVM dan berlaku untuk terminal interaktif serta rigs, bukan untuk membungkus `bash` di host.
+**Windows tidak memiliki sandbox native.** `NativeSandboxAdapter.probe` mengembalikan `available: false` di setiap host yang bukan macOS atau Linux/WSL2, sehingga server Windows berstatus `unavailable`: hanya run agen milik pemilik server yang dimulai, tanpa pembatasan, dan run milik orang lain ditolak. Agar setiap anggota dapat menjalankan agen di sana, pemilik memulai server dengan `--sandbox off`, yang menjalankan semuanya tanpa pembatasan. Backend `microvm` terpisah: backend itu digerbangi probe pada runtime microVM dan berlaku untuk terminal interaktif serta rigs, bukan untuk membungkus `bash` di host.
 
 ## Hasil probe
 
@@ -47,9 +55,9 @@ Probe-lah yang menggerbangi penegakan. Probe berjalan sekali, saat boot server.
 | Linux atau WSL2 tanpa salah satu alat  | `false`     | `requiresInstall: true`, dengan petunjuk pemasangan yang menyebutkan paket yang hilang |
 | Platform lain apa pun                  | `false`     | Sandbox native tidak ditawarkan di platform ini                           |
 
-Server mencatat hasilnya pada satu baris startup: `agent sandbox ON` plus catatannya, `no OS-native agent sandbox on this host` plus petunjuknya, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tidak membawa bidang sandbox.
+Server mencatat hasilnya pada satu baris startup: `agent sandbox ON` plus catatannya; `no OS-native agent sandbox on this host` plus petunjuknya, yang menambahkan bahwa hanya run yang dipertanggungjawabkan pemilik server yang akan dimulai; atau `agent sandbox DISABLED by --sandbox off`. Baris exposure yang dicetak saat startup membawa keputusan yang sama sebagai `sandbox=native`, `sandbox=off`, atau `sandbox=unavailable`. `GET /healthz` tidak membawa bidang sandbox.
 
-`--sandbox` / `CC_SERVER_SANDBOX` menerima `on` (default) atau `off`. Ini adalah pengabaian opsional, bukan pengaktifan: `on` berarti "bungkus bila host menyediakan backend", tidak pernah "wajibkan satu".
+`--sandbox` / `CC_SERVER_SANDBOX` menerima `on` (default) atau `off`. `on` membungkus setiap run bila host menyediakan backend, dan hanya menerima run milik pemilik bila tidak. `off` menjalankan agen setiap anggota tanpa pembatasan di host ini; itu pilihan pemilik untuk semua orang, bukan pengaturan per run.
 
 ## Backend native
 
@@ -64,6 +72,8 @@ Profil yang dihasilkan **permisif secara default** (`(allow default)`) dan memah
 - **Proses**: `process-exec` menolak biner yang selalu berbahaya, plus pemblokiran eksekusi apa pun dari direktori yang dapat ditulis. Direktori instalasi toolchain yang dikenal di bawah home Anda (cache corepack, `npx` dan `pnpm dlx`, pengelola versi node, browser Playwright, rustup dan cargo, Go, fvm dan pub cache, pyenv, uv dan pipx, rbenv, sdkman, mise, asdf dan `~/.local/bin`) dibuka kembali di bawah blokir tersebut. Direktori temp bersama juga diblokir. Setiap sesi justru mendapatkan `TMPDIR` pribadi di bawah `/private/tmp`, tempat program yang dibangunnya (binary `go test`, build cargo) dapat dijalankan. Penolakan untuk biner yang selalu berbahaya diterapkan setelah izin-izin ini
 - **Jaringan**: dibatasi ke port proksi dalam proses plus DNS — loopback tidak diizinkan secara menyeluruh dan mendengarkan TCP ditolak. Unix socket hanya diizinkan di dalam `TMPDIR` pribadi sesi, yang mencakup alat seperti tsx dan Chrome yang menyimpan socket IPC di sana; SSH agent dan socket lain tetap tidak dapat dijangkau. Proksi menegakkan daftar izin domain per sesi (lihat [Egress jaringan](#egress-jaringan))
 - **Konfigurasi**: profil dihasilkan per peluncuran dari `SandboxSpec`
+- **Perintah server sendiri**: tidak ada turunan langsung dari folder tempat server menjalankan program (setiap entri `PATH` dan folder alat per-pengguna yang biasa seperti `~/.local/bin`, dengan tautan manajer versi seperti `~/fvm/default` diselesaikan) yang dapat dibuat, diganti, dihapus, atau di-rename, begitu pula paket terpasang yang ditunjuk oleh sebuah perintah tertaut. Lihat [Folder perintah server](#folder-perintah-server)
+- **Berkas start-up**: setiap path home yang profilnya tolak-baca juga ditolak-tulis, dan berkas start-up shell serta sesi pengguna server (`.zshenv`, `.zlogin`, `.bash_login`, konfigurasi fish, unit pengguna systemd, entri autostart, dan sejenisnya) ditolak-tulis di setiap mode
 
 Persyaratan:
 
@@ -76,6 +86,7 @@ Memakai bubblewrap (`bwrap`) untuk membuat namespace mount dan PID.
 - **Sistem berkas**: membuat namespace mount dengan hanya jalur yang di-bind yang terlihat
 - **Jaringan**: berjalan di namespace jaringan yang tidak dibagi; lalu lintas mencapai proksi host melalui jembatan Unix socket `socat`
 - **Proses**: isolasi namespace PID
+- **Perintah server sendiri dan berkas start-up**: perlindungan yang sama seperti di macOS, dinyatakan sebagai bind bubblewrap. Belum diverifikasi di Linux, dan folder perintah yang hilang di sana masih dapat dibuat
 
 Persyaratan:
 
@@ -92,19 +103,51 @@ pada waktu pembuatan diperlukan untuk memulihkan pengiriman native di Linux.
 Menonaktifkan sandboxing adalah pengabaian tanpa kurungan yang eksplisit,
 bukan solusi setara.
 
+Dalam praktiknya, server Linux atau WSL2 menjalankan agen saat ini dengan salah satu dari dua cara. Dimulai dengan `--sandbox off`, ia menjalankan agen setiap anggota tanpa pembatasan. Tanpa bubblewrap atau `socat` yang terpasang, ia berstatus `unavailable` dan hanya menjalankan agen milik pemilik server, tanpa pembatasan. Dengan kedua alat terpasang dan sandbox aktif, setiap run gagal-tertutup, termasuk milik pemilik.
+
+## Folder perintah server
+
+Server menemukan, sekali saat start, setiap folder tempat ia menjalankan program: setiap entri `PATH`-nya, folder alat per-pengguna yang ia periksa (seperti `~/.local/bin`, `~/.bun/bin`, dan folder global npm, yarn, serta pnpm), dan folder asli di balik setiap tautan di sepanjang jalan (tautan manajer versi seperti `~/fvm/default` atau default fnm). Di dalam sandbox, agen tidak dapat menambah, mengganti, menghapus, atau mengganti nama perintah di folder-folder itu, tautan yang mengarah ke salah satunya, atau paket terpasang yang ditunjuk oleh perintah tertaut, dan tidak dapat mengganti nama folder di atasnya. Jika tidak, run yang di-sandbox dapat menanam program yang kemudian dimulai oleh server, atau orang, di luar sandbox.
+
+Yang berubah bagi sebuah run:
+
+- Instalasi global dari dalam run yang di-sandbox gagal dengan "Operation not permitted": `npm i -g`, `pnpm add -g`, `yarn global add`, `bun add -g`, `corepack enable`, `pipx install`, `uv tool install`, serta `cargo install`, `go install`, atau `dart pub global activate` bila folder bin-nya ada di `PATH` server.
+- Mengganti versi default gagal dengan cara yang sama (`fnm default`, `nvm alias default`, `fvm global`), begitu pula alat yang memperbarui dirinya sendiri di tempat.
+- Instalasi lokal proyek (`node_modules/.bin`), `npx`, `pnpm dlx`, manajer paket yang dikelola corepack, cache SDK, dan build normal tetap berfungsi.
+
+Untuk membuat alat global tersedia bagi agen, pasang di server itu sendiri, sebagai pengguna server, lalu mulai ulang server agar perintah baru juga dilindungi. Atau pasang di dalam proyek. Perintah yang dipasang setelah server dimulai hanya terlindungi penuh mulai start berikutnya.
+
+Diterapkan dan diuji di macOS. Di Linux, aturan yang sama berupa bind bubblewrap yang belum diverifikasi. Windows tidak memiliki sandbox.
+
 ## Backend none
 
-Tanpa sandboxing. Proses berjalan langsung di host dengan akses sistem berkas, jaringan, dan proses milik host. ACP dan alat `bash` harness tetap mendapat sanitasi lingkungan dan kebijakan perintah; Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host. Inilah yang menjadi fallback pengiriman agen di host tanpa backend yang tersedia atau dengan `--sandbox off`, dan inilah default terminal bila klien tidak menyebutkan backend apa pun.
+Tanpa sandboxing. Proses berjalan langsung di host dengan akses sistem berkas, jaringan, dan proses milik host. ACP dan alat `bash` harness tetap mendapat sanitasi lingkungan dan kebijakan perintah; Claude Code melalui `NoSandboxAdapter` mewarisi lingkungan host. Pengiriman agen memakainya untuk setiap run di bawah `--sandbox off`, dan di host tanpa backend yang tersedia hanya untuk run milik pemilik server sendiri; run milik orang lain ditolak di sana. Untuk terminal, ini adalah shell host, yang hanya boleh dibuka oleh pemilik server.
 
 ## Terminal yang dihosting server
 
-Terminal di-sandbox dengan ketentuannya sendiri, bukan oleh probe pengiriman. `defaultBackend` milik `TerminalSessionService` bernilai `none` dan `cc_server` tidak menimpanya, jadi sesi terminal menjalankan shell host kecuali klien secara eksplisit meminta `native` — panel terminal di desktop tidak memintanya.
+Terminal yang dihosting server membuka shell host hanya untuk [pemilik](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server) server. Orang lain mendapat terminal yang di-sandbox, dengan batasan agen, di dalam direktori milik ruang kerja itu sendiri.
 
-Saat `native` diminta, shell dibungkus melalui `SandboxManager` di bawah profil terminal tetap: `$HOME` dan direktori kerja sesi dapat ditulis, jaringan terbuka, dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, serta `~/Library/Keychains` ditolak-baca. Token forge hanya-baca dan gateway push tidak berlaku — itu urusan pengiriman. Bila pembungkusan tidak didukung, sesi gagal alih-alih menampilkan lencana native pada PTY shell host.
+Cara backend dipilih untuk sebuah sesi:
+
+| Diminta | Pemilik server | Orang lain |
+| --- | --- | --- |
+| Tidak ada | Backend default server | Default, dengan `none` diganti `native` |
+| `none` (shell host) | Shell host | Ditolak: shell host berjalan di server tanpa sandbox |
+| `native` | Sandbox native, profil pemilik | Sandbox native, profil agen |
+| `microvm` | VM tertutup | VM tertutup |
+| Nama yang tidak dikenal | Ditolak | Ditolak |
+
+- **Profil pemilik.** `$HOME` dan direktori kerja sesi dapat ditulis, jaringan terbuka, dan `~/.ssh`, `~/.aws`, `~/.gnupg`, `~/.config/gh`, serta `~/Library/Keychains` ditolak-baca.
+- **Profil agen** (`memberTerminalSandboxConfig`). Kebijakan yang sama dengan yang dijalankan agen di ruang kerja itu: penulisan tetap di direktori kerja, direktori run pribadi, `/tmp`, dan bagian `$HOME` yang boleh ditulis agen; rahasia ditolak-baca; jaringan memakai daftar izin egress agen; program hanya dijalankan dari direktori kerja dan toolchain yang terpasang.
+- Terminal hanya dibuka di dalam direktori milik ruang kerja. Direktori kerja di luar itu ditolak, tidak pernah diganti dengan yang lain.
+- Hanya orang yang membuka terminal yang dapat membaca, mengetik ke, mengubah ukuran, atau menutupnya. Bagi orang lain, idnya tampak tidak dikenal.
+- `microvm` yang diminta secara eksplisit di host tanpa layanan rig akan gagal alih-alih turun ke backend lain. Default `microvm` di host seperti itu turun ke `native` dan menyatakannya di log.
+
+Token forge hanya-baca dan gateway push tidak berlaku untuk terminal: itu urusan pengiriman. Bila pembungkusan tidak didukung, sesi gagal alih-alih menampilkan lencana sandbox pada sesi shell host.
 
 ## Egress jaringan
 
-Saat sandbox diluncurkan, akses jaringan keluar ditegakkan oleh proksi dalam proses, bukan oleh aturan firewall kernel. Di host tanpa backend yang tersedia, tidak satu pun dari ini berlaku dan proses yang dijalankan menjangkau jaringan persis seperti yang akan dilakukan pengguna server.
+Saat sandbox diluncurkan, akses jaringan keluar ditegakkan oleh proksi dalam proses, bukan oleh aturan firewall kernel. Run yang tidak di-sandbox (setiap run di bawah `--sandbox off`, atau run pemilik di host tanpa backend) tidak mendapatkan semua ini: proses yang dijalankannya menjangkau jaringan persis seperti pengguna server.
 
 - Runtime sandbox menjalankan proksi HTTP/HTTPS dan proksi SOCKS5 di `127.0.0.1` di dalam proses `cc_server`, **satu pasang per sesi yang dibatasi** (`http_proxy.dart`, `socks_proxy.dart`). Run yang berjalan bersamaan tidak berbagi satu pasang.
 - Proses yang di-sandbox menerima variabel lingkungan proksi (`HTTP_PROXY`/`HTTPS_PROXY` → proksi HTTP, `ALL_PROXY` → proksi SOCKS; `GIT_SSH_COMMAND` mengarahkan git-over-SSH melalui proksi SOCKS). Di Linux, namespace jaringannya tidak dibagi, jadi proksilah satu-satunya jalan keluar; di macOS sandbox berbagi loopback host dan berbicara langsung dengannya.

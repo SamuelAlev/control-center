@@ -30,6 +30,8 @@ SpaceDto _space(String id, {String workspaceId = _ws, bool archived = false}) =>
       id: id,
       name: id,
       workspaceId: workspaceId,
+      provisioningStatus: 'ready',
+      kind: 'topic',
       archivedAt: archived ? DateTime.utc(2025) : null,
     );
 

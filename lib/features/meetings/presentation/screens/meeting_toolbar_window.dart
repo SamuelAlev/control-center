@@ -4,9 +4,9 @@
 
 import 'dart:async';
 
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/app/window_chrome.dart';
 import 'package:control_center/core/providers/locale_provider.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_recorder_controller.dart';
 import 'package:control_center/features/meetings/presentation/notifiers/meeting_toolbar_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';

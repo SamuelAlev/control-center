@@ -2,7 +2,7 @@
 title: Spárujte zařízení
 description: Spáruj telefon (nebo druhý prohlížeč či desktop) se serverem Control Center, ať flotilu sleduješ na dálku.
 slug: cs-CZ/prirucka/navody/parovani-zarizeni
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Tenhle návod ukazuje, jak spárovat telefon s Control Center, ať odkudkoli čteš
@@ -58,8 +58,7 @@ Krok čekání na schválení tu není: vydané zařízení je aktivní od okam�
 vytvoření a brána připojení kontroluje jen to, že pověření je aktivní
 a nevypršelo. S QR i s párovacím klíčem zacházej jako s heslem a odvolej
 všechno, co jsi předat nechtěl. Přímé i zprostředkované klientské relace
-vyžadují šifrování od konce ke konci; starší klienti nemohou spadnout na
-otevřené RPC.
+vyžadují šifrování od konce ke konci; otevřené RPC neexistuje.
 :::
 
 ## Správa spárovaných zařízení
@@ -73,9 +72,7 @@ Odvolání je správný krok u ztraceného nebo vyměněného telefonu. Z pohled
 zařízení je okamžité a nevratné.
 
 Pověření vydaná z tohohle panelu jsou časově omezená: vyprší 30 dní po vydání
-a brána připojení je potom uzavře. Pověření vydané přes `cc_server pair` na
-příkazovém řádku **nevyprší vůbec** — odvolej ho ručně, až se stroj, pro který
-bylo, vyřadí.
+a brána připojení je potom uzavře. Pověření vydané přes `cc_server pair` na příkazovém řádku vyprší stejně; když chceš nové, spusť `pair` znovu. Odvolej ho ručně, až se stroj, pro který bylo, vyřadí.
 
 ## Přepínání pracovních prostorů z telefonu
 

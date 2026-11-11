@@ -2,7 +2,7 @@
 title: Das Agentenmodell
 description: Was ein Agent in Control Center tatsächlich ist, welche seiner Felder das Verhalten ändern und wie der Adapter, auf dem er läuft, bestimmt, was sich durchsetzen lässt.
 slug: de-DE/handbuch/konzepte/agentenmodell
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Was ist ein Agent?
@@ -54,7 +54,7 @@ Repo-Skills werden für **jeden** Adapter geladen, nicht nur für den eingebaute
 
 Ein Agent trägt keine eigenen Berechtigungs-Flags. Ob er committen, pushen, einen Pull Request öffnen, in einen Tracker schreiben oder das Netzwerk erreichen darf, entscheiden die [Aktions-Schutzregeln](/de-DE/handbuch/konzepte/schutzregeln/) — zulassen, zuerst fragen oder verweigern, im Geltungsbereich Arbeitsbereich, Agent oder Bereich —, und dieselben Regeln gelten, egal welcher Adapter ihn ausführt.
 
-Was einem Lauf _gereicht_ wird, ändert sich mit diesen Regeln nicht. Ein Lauf in einem GitHub-Worktree bekommt immer ein GitHub-Token, das nur lesen darf, und nach einem Push wird gefragt, wenn er passiert: Die Git-Konfiguration des Agenten schickt jeden GitHub-Push durch Control Center, das die Regel **Zu einem Remote pushen** anwendet, bevor es ihn weiterleitet.
+Was einem Lauf _gereicht_ wird, ändert sich mit diesen Regeln nicht. Ein Lauf kann die GitHub-Repositories, mit denen er arbeitet, immer über ein Nur-Lese-Token lesen, und nach einem Push wird gefragt, wenn er passiert: Die Git-Konfiguration des Agenten schickt jeden GitHub-Push durch Control Center, das die Regel **Zu einem Remote pushen** anwendet, bevor es ihn weiterleitet.
 
 Wie das funktioniert, einschließlich dessen, was auf Dateisystemebene durchgesetzt wird und was nicht, steht unter [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
 
@@ -70,16 +70,16 @@ Das folgenreichste Feld eines Agenten ist sein Adapter, denn der Transport des A
 Konkret unterstützt **nur der eingebaute Harness** Subagenten, Lenken mitten im Lauf, Pause und Fortsetzen (und damit die Übernahme) sowie die strukturelle Durchsetzung des Modus. Claude Code kann nichts davon.
 
 :::caution[Die OS-Sandbox ist eine Untergrenze, kein Moduswächter, und nicht jeder Host hat eine]
-Die Matrix oben beschreibt, was Control Center _sehen und am Tor prüfen_ kann. Darunter legt `cc_server` die Claude-Code-CLI in die OS-Sandbox des Hosts, wo es eine gibt: Seatbelt unter macOS, bubblewrap unter Linux und WSL2. Ein ungesehenes `rm` oder ein ungesehenes Schreiben bleibt so an das Betriebssystem gebunden. Unter **Windows gibt es überhaupt kein Backend**, und unter Linux oder WSL2 ohne `bwrap` und `socat` meldet die Prüfung keines. Dort fallen diese Läufe auf die Bereinigung der Umgebung, vermittelte Zugangsdaten, die Schutzregeln für Aufrufe, die Control Center sieht, und den eigenen Worktree des Gesprächs zurück (Copy-on-Write, wo `rift` ausgeliefert wird; `git worktree` unter Windows).
+Die Matrix oben beschreibt, was Control Center _sehen und am Tor prüfen_ kann. Darunter legt `cc_server` die Claude-Code-CLI in die OS-Sandbox des Hosts, wo es eine gibt: Seatbelt unter macOS, bubblewrap unter Linux und WSL2. Ein ungesehenes `rm` oder ein ungesehenes Schreiben bleibt so an das Betriebssystem gebunden. Unter **Windows gibt es überhaupt kein Backend**, und unter Linux oder WSL2 ohne `bwrap` und `socat` meldet die Prüfung keines. Dort starten nur die Läufe des Serverinhabers, alle anderen werden abgelehnt, außer der Inhaber hat den Server mit `--sandbox off` gestartet. Ein Lauf ohne Sandbox fällt auf die Bereinigung der Umgebung, vermittelte Zugangsdaten, die Schutzregeln für Aufrufe, die Control Center sieht, und den eigenen Worktree des Gesprächs zurück (Copy-on-Write, wo `rift` ausgeliefert wird; `git worktree` unter Windows).
 
 Die Sandbox ist eine Begrenzung, kein _Tor_. Festgelegt wird, wo ein Prozess lesen, schreiben und Verbindungen öffnen darf. Ein Nur-Lese-Modus erreicht sie, als schreibgeschützte Bind-Mounts. Einen Aufruf abfangen, eine Freigabe auslösen oder dir danach sagen, was die CLI versucht hat, kann sie nicht. Genau das, plus die vier Befugnisse direkt oben, hat der eingebaute Harness, die anderen nicht. Siehe [Sandbox und Sicherheit](/de-DE/handbuch/konzepte/sandbox-und-sicherheit/).
 :::
 
-Ein Agent **ohne** Adapter fällt auf **Control Center (built-in)** zurück, die Schleife im Server, für die keine CLI zu installieren ist. Im Laufprotokoll steht `cc-harness`. Jeder mit dem Arbeitsbereich angelegte Agent entsteht ohne Adapter und ohne Modell, die fünf Agenten eines frischen Arbeitsbereichs laufen also alle dort, auf dem Standardmodell von Anthropic, bis du je Agent einen Adapter und ein Modell setzt. Die Onboarding-Wahl „Standardadapter“ ist eine Einstellung auf dem Client, die der Server nie liest, und sie gilt nicht nachträglich für schon angelegte Agenten.
+Ein Agent **ohne** Adapter fällt auf **Control Center (built-in)** zurück, die Schleife im Server, für die keine CLI zu installieren ist. Im Laufprotokoll steht `cc-harness`. Jeder mit dem Arbeitsbereich angelegte Agent entsteht ohne Adapter und ohne Modell, die sechs Agenten eines frischen Arbeitsbereichs laufen also alle dort, auf dem Standardmodell von Anthropic, bis du je Agent einen Adapter und ein Modell setzt. Den Schritt zum Adapter im Onboarding abzuschließen setzt Adapter und Modell auf jedem Agenten, dem noch eines fehlt, in den Arbeitsbereichen, die in diesem Moment existieren; einen Standard-Runner je Arbeitsbereich gibt es nicht.
 
 ## Woher Agenten kommen
 
-- **Mit dem Arbeitsbereich angelegt.** Jeder Arbeitsbereich, nicht nur der erste, bekommt einen CEO und vier Spezialisten (`qa`, `architect`, `engineer`, `librarian`), die an ihn berichten, idempotent im Hintergrund angelegt, wenn der Arbeitsbereich entsteht. Siehe [Arbeitsbereiche und Isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/).
+- **Mit dem Arbeitsbereich angelegt.** Jeder Arbeitsbereich, nicht nur der erste, bekommt einen CEO und fünf Spezialisten (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`), die an ihn berichten, idempotent im Hintergrund angelegt, wenn der Arbeitsbereich entsteht. Siehe [Arbeitsbereiche und Isolation](/de-DE/handbuch/konzepte/arbeitsbereiche/).
 - **Von Hand ergänzt** unter Einstellungen → Arbeitsbereich → Agenten. Einen Agenten zu bitten, eine Kollegin oder einen Kollegen einzustellen, legt keine Zeile an. Dafür ist dieser Bildschirm da.
 
 ## Live-Zustand

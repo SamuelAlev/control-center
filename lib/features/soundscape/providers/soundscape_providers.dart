@@ -275,8 +275,8 @@ class SoundscapeController extends Notifier<SoundscapeState> {
         'brightness': state.tuneBrightness,
       });
     } on Object {
-      // Disconnected or the server predates the op — the audio simply keeps
-      // its current tune.
+      // Disconnected or the server does not offer the op — the audio simply
+      // keeps its current tune.
     }
   }
 

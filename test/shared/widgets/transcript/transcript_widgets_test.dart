@@ -1,4 +1,4 @@
-import 'package:control_center/core/theme/design_system_tokens.dart';
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/shared/widgets/transcript/util/split_diff.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/code_preview.dart';
 import 'package:control_center/shared/widgets/transcript/widgets/file_change_body.dart';

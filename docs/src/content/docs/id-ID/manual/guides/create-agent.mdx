@@ -2,12 +2,12 @@
 title: Buat dan konfigurasi agen
 description: Tambahkan agen ke ruang kerja, berikan adapter, model, skill, dan izin kepadanya, lalu pastikan agen dapat berjalan.
 slug: id-ID/panduan-pengguna/panduan-praktis/buat-agen
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Panduan ini menunjukkan cara menambahkan agen ke ruang kerja dan mengonfigurasinya hingga benar-benar dapat berjalan.
 
-Setiap ruang kerja menyemai lima agen — seorang CEO plus `qa`, `architect`, `engineer`, dan `librarian` — sehingga biasanya Anda sudah memiliki agen sebelum mengonfigurasi satu pun. Langkah-langkah di bawah ini berlaku sama untuk agen yang disemai maupun agen baru.
+Setiap ruang kerja menyemai enam agen — seorang CEO plus `qa`, `architect`, `engineer`, `librarian`, dan `content-synthesizer` — sehingga biasanya Anda sudah memiliki agen sebelum mengonfigurasi satu pun. Langkah-langkah di bawah ini berlaku sama untuk agen yang disemai maupun agen baru.
 
 ## Sebelum memulai
 
@@ -53,7 +53,7 @@ Dropdown **Model** dikendalikan oleh adapter yang Anda pilih. Untuk adapter bawa
 
 **Skill** adalah pemilih chip atas bundel skill yang terpasang di ruang kerja ini. Ketuk sebuah chip untuk mengaktifkan atau menonaktifkannya; glif centang menandai yang dipilih. Jika ruang kerja tidak memiliki skill, kolomnya berbunyi "No skills available. Create skills in Settings → Skills first."
 
-Anda tidak memilih skill milik repo sendiri di sini. Repo yang menyertakannya (di `.agents/skills/`, `.claude/skills/`, atau `.opencode/skills/`) menyumbangkannya secara otomatis ke agen mana pun yang bekerja di repo itu, dan skill tersebut berganti saat agen berpindah ke repo lain — lihat [Skill dengan cakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#repo-scoped-skills).
+Anda tidak memilih skill milik repo sendiri di sini. Repo yang menyertakannya (di `.agents/skills/`, `.claude/skills/`, atau `.opencode/skills/`) menyumbangkannya secara otomatis ke agen mana pun yang bekerja di repo itu, dan skill tersebut berganti saat agen berpindah ke repo lain — lihat [Skill dengan cakupan repo](/id-ID/panduan-pengguna/konsep/model-agen/#skill-dengan-cakupan-repo).
 
 ## Tetapkan garis pelaporan dan persona
 
@@ -73,7 +73,7 @@ Agen tidak memiliki tombol izin sendiri. Apa yang boleh di-push, dibuka, di-merg
 Token GitHub agen selalu hanya-baca. Push melewati Control Center, yang menanyakan aturan **Push ke remote** sebelum meneruskannya. Lihat [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/) untuk cara setiap aturan menjangkau sebuah run.
 
 :::note[Aturan dan sandbox OS adalah lapisan yang terpisah]
-Aturan menentukan apa yang boleh dilakukan agen; sandbox OS membatasi di mana prosesnya dapat membaca, menulis, dan terhubung. `cc_server` membungkus run agen dalam sandbox host bila tersedia — Windows tidak memiliki backend native, sedangkan Linux dan WSL2 memerlukan `bwrap` dan `socat`. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk keseluruhan batasnya.
+Aturan menentukan apa yang boleh dilakukan agen; sandbox OS membatasi di mana prosesnya dapat membaca, menulis, dan terhubung. `cc_server` membungkus run agen dalam sandbox host bila tersedia — Windows tidak memiliki backend native, sedangkan Linux dan WSL2 memerlukan `bwrap` dan `socat`. Di host yang tidak memiliki sandbox, hanya run milik pemilik server yang dimulai, kecuali pemilik mematikan sandbox untuk semua orang. Lihat [Sandbox dan keamanan](/id-ID/panduan-pengguna/konsep/sandbox-dan-keamanan/) untuk keseluruhan batasnya.
 :::
 
 ## Pastikan agen dapat berjalan

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
 import 'package:cc_domain/features/skills/domain/ports/skill_scan_port.dart';
 import 'package:cc_domain/features/skills/domain/scanner/skill_scan_types.dart';
 import 'package:cc_harness/tools.dart';
-import 'package:cc_infra/cc_infra.dart';
 
 /// MCP tool that creates a new skill file in a workspace.
 class CreateSkillTool extends McpTool {

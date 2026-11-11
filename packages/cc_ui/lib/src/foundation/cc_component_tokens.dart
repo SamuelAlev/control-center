@@ -112,6 +112,19 @@ class CcButtonTokens {
     borderHover: _transparent,
   );
 
+  /// Ghost destructive — transparent at rest with a red foreground; hover
+  /// fills with the soft danger wash. Same alpha-0 trick as [ghost] so the
+  /// hover transition lerps only alpha.
+  factory CcButtonTokens.ghostDestructive(DesignSystemTokens t) =>
+      CcButtonTokens(
+        bg: t.dangerSoft.withValues(alpha: 0),
+        bgHover: t.dangerSoft,
+        bgPressed: t.danger.withValues(alpha: 0.2),
+        fg: t.fgErrorPrimary,
+        border: _transparent,
+        borderHover: _transparent,
+      );
+
   /// Resting background.
   final Color bg;
 

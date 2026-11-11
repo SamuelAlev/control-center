@@ -2,7 +2,7 @@
 title: Gestionar claves API
 description: Dónde vive cada credencial —tu cuenta de usuario en el servidor, el propio servidor o una CLI externa— y cómo configurarla, rotarla y eliminarla.
 slug: es-ES/manual/guias/claves-api
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Esta guía muestra dónde se guarda cada credencial que usa Control Center y cómo
@@ -17,7 +17,6 @@ concreta depende de si hay una persona detrás.
 | Tu inicio de sesión del host de código / de tickets | El archivo de secretos 0600 del servidor, indexado por tu id de usuario | Todo lo que haces tú: la superficie de PR, las revisiones, las fusiones, tus acciones en Linear |
 | Las apps de proveedor del servidor     | El mismo archivo, más `server_settings` para lo que no son secretos | Iniciar la sesión de las personas, y tokens de un solo repositorio para agentes, pipelines y sondeo |
 | La clave de instalación de Connect     | El mismo archivo (`connect_install_key`)                    | Identificar este servidor ante Control Center Connect              |
-
 | Claves de proveedores de modelos y tokens OAuth | El propio almacén de credenciales del servidor             | El adaptador integrado, para todos los espacios de trabajo de la instalación |
 | Credenciales del bot de Slack          | `<dataDir>/<workspaceId>/chat_credentials/` en el servidor  | El puente de chat de ese espacio de trabajo: los tokens de tu propia app o la concesión sellada de la app compartida |
 | Credenciales de CLI externas           | Lo que use esa CLI                                          | Claude Code, en el host del servidor                               |
@@ -35,7 +34,7 @@ concreta depende de si hay una persona detrás.
   entregado por completo
 
 El tuyo se configura en la tarjeta **Alojamiento de código**, en
-**Ajustes → Espacio de trabajo → Perfil e identidad**; la app del servidor, en
+**Ajustes → Tú → Perfil**; la app del servidor, en
 **Aplicaciones de proveedor**, en
 **Ajustes → Servidor → Inicio de sesión único**. Consulta
 [Configurar la integración con GitHub](/es-ES/manual/guias/integracion-github/)
@@ -46,10 +45,10 @@ misma forma. Consulta
 [Conectar un host de código](/es-ES/manual/guias/conectar-host-de-codigo/).
 
 :::note[También hay una pantalla solo accesible por URL]
-`/workspaces/<workspaceId>/api-keys` muestra las mismas dos tarjetas que el
+`/workspaces/<workspaceId>/api-keys` muestra las mismas tarjetas que el
 primer paso de la puesta en marcha. **No tiene ninguna entrada de navegación en
 toda la interfaz**; solo se puede acceder a ella escribiendo la URL. En su
-lugar, usa Ajustes → Espacio de trabajo → Perfil e identidad.
+lugar, usa Ajustes → Tú → Perfil para tus propios inicios de sesión, y Ajustes → Espacio de trabajo → Integraciones para el proveedor de tickets.
 :::
 
 ## Configurar las claves de los proveedores de modelos
@@ -69,10 +68,7 @@ Estas credenciales son **globales del host**: una sola clave sirve a todos los
 espacios de trabajo de la instalación. Los tokens OAuth se renuevan antes de
 que caduquen.
 
-Las CLI de adaptadores externos conservan sus propias credenciales, en su propia
-configuración, en el host del servidor: Control Center no las gestiona.
-Autentica Claude Code tal como indica su propia documentación, en la máquina
-donde se ejecuta `cc_server`.
+Claude Code inicia sesión a través de **Cuentas de Claude Code** en **Ajustes → Servidor → Proveedores de modelos**: cada cuenta tiene su propio directorio de configuración en el servidor, y ejecutas allí el comando `claude auth login` que te muestra la aplicación.
 
 El diálogo **Variables de entorno** de cada adaptador parece un buen sitio donde
 poner la clave de uno de ellos, pero no lo es: escribe en tu dispositivo,
@@ -81,15 +77,15 @@ mientras que el servidor lee su propia copia y nada conecta ambas. Consulta
 
 ## Conectar un proveedor de tickets
 
-La tarjeta **Tickets** de **Ajustes → Espacio de trabajo → General** reúne las
-dos mitades de una misma decisión: en qué proveedor viven tus tickets y quién es
-Control Center cuando habla con él. Elegir **Local** oculta las filas de
+La tarjeta **Tickets** de **Ajustes → Espacio de trabajo → Integraciones** reúne la
+parte del espacio de trabajo: en qué proveedor viven tus tickets y quién es
+Control Center cuando trabaja allí por su cuenta. Elegir **Local** oculta las filas de
 Linear: los tickets locales viven en la base de datos de este servidor y no hay
 nada a lo que autenticarse.
 
 Linear tiene dos inicios de sesión y ninguna clave que pegar: **Linear** es el
-tuyo, para lo que haces tú, y **Automatización de Linear** es la app de Control
-Center del espacio de trabajo, que conecta un administrador, para la
+tuyo, para lo que haces tú, y vive en **Ajustes → Tú → Perfil**; **Automatización de Linear** es la app de Control
+Center del espacio de trabajo, que conecta un administrador en la tarjeta Tickets, para la
 sincronización de tickets, los pipelines y los agentes. El servidor también
 puede tener una **Clave de API de servicio** (**Aplicaciones de proveedor**)
 para los espacios de trabajo que no tienen la automatización conectada. En el
@@ -108,11 +104,12 @@ a la regla **Escribir en un rastreador externo**. Consulta
 - **La aplicación del servidor**: genera una nueva clave privada o un nuevo
   secreto de cliente en la página del proveedor de la aplicación, pégalo en
   **Aplicaciones de proveedor** y pulsa **Probar**
-- **La clave de instalación de Connect**: **Rotar la clave** en la tarjeta
-  **Control Center Connect**, o `cc_server connect rotate-key --yes`. Todas las
-  personas que iniciaron sesión a través de Connect vuelven a iniciarla.
-  Consulta [Control Center Connect](/es-ES/manual/referencia/connect/)
-
+- **La clave de instalación de Connect**: el propietario del servidor pulsa
+  **Rotar la clave** en la tarjeta **Control Center Connect**. Todas las personas
+  que iniciaron sesión a través de Connect vuelven a iniciarla. Si no se puede
+  llegar a un servidor de Connect, no cambia nada y se te ofrece **Rotar de todos
+  modos**. Consulta
+  [Rotar la clave de instalación](/es-ES/manual/referencia/connect/#rotar-la-clave-de-instalación)
 - **Un proveedor de modelos**: en su fila, cierra la sesión (OAuth) o elimina la
   clave, y vuelve a conectarlo
 - **Slack**: con tu propia app, vuelve a pegar los tokens en el diálogo de
@@ -125,9 +122,9 @@ a la regla **Escribir en un rastreador externo**. Consulta
 
 ### Un token de GitLab o Bitbucket funciona en `curl`, pero no aquí
 
-Comprueba el subtítulo de la fila **Alojamiento de código**. Si dice «desde el
-entorno», la credencial que responde es la del servidor, no la tuya: la tuya no
-se guardó.
+Comprueba la fila **Alojamiento de código**. Si dice «No conectado» o te pide que
+vuelvas a conectarla, tu token no se guardó o fue rechazado. En Bitbucket, escribe
+el correo de tu cuenta de Atlassian junto con el token de API.
 
 ### Un token de GitLab o Bitbucket se acepta, pero las peticiones posteriores fallan
 

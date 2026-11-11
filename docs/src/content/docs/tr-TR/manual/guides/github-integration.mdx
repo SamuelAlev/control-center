@@ -2,7 +2,7 @@
 title: GitHub entegrasyonunu kurma
 description: PR yüzeyi, depo kaydı ve ajan çalıştırmaları çalışsın diye GitHub'a oturum açın.
 slug: tr-TR/kilavuz/nasil-yapilir/github-entegrasyonu
-sourceHash: 51e944e9fc9fe246665a481cd893e00f201ac59e
+sourceHash: 98a1af9125407f82822b65963800772877a1a2c7
 ---
 
 Bu kılavuz, kurulumun GitHub'a özgü kısımlarını ele alır. GitHub, desteklenen üç
@@ -29,7 +29,7 @@ her cihaz — masaüstü, web ve telefon — onu kullanır. Aynı sunucudaki ba�
 
 GitHub yalnızca oturum açmayla çalışır: yapıştırılacak bir token yoktur.
 
-1. **Ayarlar → Çalışma alanı → Profil ve kimlik → Kod barındırma** bölümüne gidin
+1. **Ayarlar → Siz → Profil → Kod barındırma** bölümüne gidin
    (ya da ilk kurulumun ilk adımına)
 2. **GitHub** satırında **GitHub hesabıyla oturum aç**’a tıklayın
 3. Tarayıcınız GitHub’ı açar. Uygulamayı onaylayın
@@ -55,16 +55,29 @@ kapatmak ya da bir çalışma alanından çıkarılmak da sunucunun sizin adın�
 
 ## Kimlik bilginiz kimin adına konuşur
 
-- **Yaptığınız her şey** (PR sayfasını açmak, inceleme göndermek, onaylamak,
-  birleştirmek) **sizin** oturum açmanızla ve başka hiçbir şeyle çalışmaz. Oturum
-  açmadıysanız uygulama bunu söyler ve oturum açmanızı ister. Başka hiçbir kimlik
-  bilgisi sizin yerinize geçmez
-- **Kimsenin yazmadığı işler** (ajan çalıştırmaları, pipeline’lar, PR yoklaması,
-  bot yanıtları, klonlar) sunucunun GitHub App’inden ya da Connect üzerinden
-  üretilen tek depoluk bir token alır. Bu token, hesap verebilir bir üyenin orada
-  yapabilecekleriyle sınırlıdır: isteyen üye, değilse çalışma alanı sahibi. Push
-  edemeyen bir üye token’ı okumaya sınırlar
+Control Center, GitHub’ın kendi ayrımını izler: bir **kişi olarak** yapılan eylemler ile **uygulama olarak** yapılan eylemler:
+
+| Olan şey | GitHub’da görünen |
+| --- | --- |
+| Kendi yaptığınız her şey: yorum, inceleme, onay, birleştirme, inceleyici isteme | **Siz**. GitHub, konuşmadaki bir yorumu Control Center uygulamasıyla yapılmış olarak işaretler; bir inceleme ve satır içi yorumları böyle bir işaret taşımaz |
+| Yapay zekâ incelemesi, PR görüşmelerindeki ajan yanıtları ve yorumları, etiketler, pipeline ve bot işleri | **Control Center botu**. Paylaşılan Connect uygulamasında bir inceleme, yalnızca Connect operatörünün bu kurulumu listelediği yerlerde botun işidir; aksi halde hesap verebilir kişi olarak görünür |
+| Bir ajanın sizin için açtığı pull request, bu pull request’in başlığına veya açıklamasına yapılan düzenlemeler, onun push’ları ve commit’leri | **Siz**. Ortak yazar kredisi açıkken Control Center ortak yazar olarak krediye alınır |
+| Kimsenin istemediği işler (zamanlamalar, webhook’lar) | **Control Center botu**, commit’lerinin yazarı olarak da. Control Center Connect üzerinde hiçbir zaman push yapmaz ya da pull request açmaz |
+
+- **Yaptığınız her şey** **sizin** oturum açmanızla ve başka hiçbir şeyle çalışır. Oturum açmadıysanız uygulama oturum açmanızı ister. Başka hiçbir kimlik bilgisi sizin yerinize geçmez
+- **Bot işleri** tek seferde tek bir depo için bir token alır ve hesap verebilir bir üyenin orada yapabilecekleriyle sınırlıdır: isteyen üye, değilse çalışma alanı sahibi. Push edemeyen bir üye bunu yalnızca okumaya sınırlar. Birinin adına hareket eden bot yanıtları **Control Center (for @login)** ile başlar
+- **Ajanlar pull request’leri Control Center üzerinden açar**, asla sandbox’larından değil; böylece pull request sizindir ve GitHub’ın kendi kuralları onu onaylamanızı engeller. Control Center ayrıca, ajanı bu işi isteyen kişinin onayını ve pull request’in yazarının onayını da reddeder. Zamanlanmış ya da webhook çalıştırmalarında bu, tetikleyicisini etkinleştiren ya da çalışırken hattını düzenleyen her yöneticiyi kapsar. Başka biri incelemelidir. Control Center pull request’i kimin açtığını ya da forge’daki hangi hesabın sizin olduğunu doğrulayamazsa reddeder ve tekrar denemenizi ister
+- **Ajanlar da Control Center üzerinden yorum yapar.** Bir ajan çalıştırmasının aldığı GitHub token’ı yalnızca okur. Bir ajan üzerinde çalıştığı pull request’e yorum yaptığında, Control Center yorumu bot olarak gönderir; çalıştırmayı biri istediyse yorum **Control Center (for @login)** ile başlar. Bir ajan yalnızca kendi pull request’ine yorum yapabilir: aynı depodaki, fork olmayan ve son commit’i ajan tarafından push edilmiş ya da alanın dalının güncel commit’i olan bir pull request’e. Bir ajanın yorumundaki @ anmaları kimseye bildirim göndermez. Ayrıca bir ajan, pull request’i açık olduğu sürece kendi pull request’inin başlığını veya açıklamasını değiştirebilir. Bu düzenleme, pull request’in açıldığı şekilde yapılır (çalıştırmayı siz istediyseniz sizin adınıza) ve varsayılan olarak önce onay ister. Bir pull request’in açıklaması, ajan onu açtığında ve düzenlediğinde @ anmalarını korur; böylece adı geçen kişilere bildirim gönderilir
+- **Control Center Connect üzerinde bot hiçbir zaman push yapmaz veya pull request açmaz.** Orada push etmek, dal oluşturmak ya da pull request açmak, bunu isteyen bir kişi gerektirir ve o kişinin oturum açmasıyla çalışır. Zamanlanmış ya da webhook çalıştırması push etmeye kalkarsa bunu söyleyen bir mesajla durur. Gözetimsiz çalışmaların push yapabilmesi için çalışma alanına **Ayarlar** altından kendi GitHub App’ini verin
+- **Connect botu ne yapabilir.** Paylaşılan Connect uygulamasında bot yorum yapar, etiketler ve tepki verir. Bir inceleme (yapay zekâ incelemesi, inceleme yorumları, inceleyici istekleri) yalnızca Connect operatörünün bu sunucunun kurulumunu listelediği durumlarda gönderilir. Aksi halde inceleme, hesap verebilir kişinin kendi oturum açmasıyla gider ve o kişinin adına görünür. Bot hiçbir zaman bir pull request’i açmaz, düzenlemez, kapatmaz ya da başlığını değiştirmez, bir incelemeyi iptal etmez, bir yorumu düzenlemez ya da silmez; bunlar, isteyen bir kişinin kendi oturum açmasıyla yapılır. Connect, kuruluşunuzun kurulumunu tek bir Control Center sunucusuna bağlamaz: depoya push yapabilen ve Connect ile oturum açmış bir üyenin bulunduğu herhangi bir sunucu, o depo için botun yorum token’ını alabilir
+- **Kendi GitHub App’i olan bir sunucu ya da çalışma alanı**, yukarıdakilerin tümünü, incelemeler dahil, bot üzerinde tutar
 - **Otomasyon bir pull request’i asla onaylamaz.** Onay bir kişinin eylemidir
+
+Bir depoyu bağladığınızda Control Center, hesabınızın o depoyu görebildiğini kontrol eder; GitHub App’in deponun kuruluşuna kurulu olmadığında ya da depoyu kapsamadığında, düzeltmek için bir bağlantıyla birlikte uyarır. Bağlamak ve bağlantıyı kesmek bir çalışma alanı yöneticisi gerektirir; çalışma alanının kendi depolama alanının dışındaki bir çalışma kopyası yalnızca sunucu sahibi tarafından bağlanabilir; bkz. [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+
+Depo bağlantısı GitHub’ın kalıcı kimliğini izler; bu yüzden yeniden adlandırma ya da devir sizden bir şey gerektirmez. Yol daha sonra farklı bir depoyu gösterirse Control Center ona hiçbir şey göndermeyi durdurur ve bir çalışma alanı yöneticisi **Yeniden bağla**’ya tıklayana kadar bir bildirim gösterir.
+
+Bir deponun kodunu açmak (dosyalar, diff’ler, arama, bir terminal) hem çalışma alanındaki iznini hem de onu okuyabilen kendi GitHub oturum açmanızı gerektirir. Çalışma alanı yöneticileri aynı kurala uyar; yalnızca sunucu sahibi muaftır.
 
 ## Entegrasyonun size verdikleri
 
@@ -74,7 +87,7 @@ kapatmak ya da bir çalışma alanından çıkarılmak da sunucunun sizin adın�
 | Kontrol çalıştırmaları  | GitHub Checks API'si                                                                                          |
 | İnceleme yayımlama      | İncelemenizi PR'a sizin adınıza gönderen, kullanıcı kapılı bir adım                                            |
 | Depo kaydı              | Bir checkout, `origin` remote'u github.com'a — ya da gitlab.com / bitbucket.org'a — işaret ediyorsa kabul edilir |
-| Ajanın GitHub erişimi   | Çalıştırmanın tek deposu için `GH_TOKEN` / `GITHUB_TOKEN` olarak bir token; push'lar Control Center'dan geçer |
+| Ajanın GitHub erişimi   | Çalıştırma içinde `git fetch` Control Center üzerinden geçer; Control Center, çalıştırmanın üzerinde çalıştığı depoları, çalıştırmanın hiçbir zaman tutmadığı salt okunur bir token ile getirir. `gh` bunları, istendiğinde Control Center’ın verdiği ve çalıştırma bittiğinde iptal ettiği salt okunur bir token ile okur. Push’lar, pull request’ler, bunlardaki düzenlemeler ve yorumlar Control Center’dan geçer |
 | Bildirim ping'leri      | GitHub bildirim gelen kutunuzu sunucu tarafında yoklamak "Pull request'te bahsedildi" ve "İnceleme istendi" bildirimlerini tetikler |
 | Kullanıcı profilleri    | Profil üzerine gelme kartları ve yazara göre PR filtreleme                                                     |
 
@@ -94,23 +107,28 @@ için çipe tıklayın. Durumlar her iki dakikada bir kendiliğinden yenilenir.
 ## Ajanların GitHub'da nasıl davrandığını bilin
 
 - Bir GitHub çalışma ağacında çalışan bir ajan, o tek depo için bir token alır.
-  Hesap verebilir üye push edebiliyorsa kodu okuyabilir ve pull request’lere yorum
-  yapabilir; edemiyorsa yalnızca okuyabilir. Bir push, **Uzak depoya push et**
+  yalnızca kodu, sorunları ve pull request’leri okuyabilir; yorumlar yukarıda anlatıldığı gibi
+  Control Center üzerinden geçer. Bir push, **Uzak depoya push et**
   kuralına soran ve ardından onu ajanın asla elinde tutmadığı bir yazma
   token'ıyla ileten Control Center'dan geçer. Bkz.
   [Sandbox politikalarını yapılandırma](/tr-TR/kilavuz/nasil-yapilir/sandbox-politikalari/)
-- Ajanın commit'leri hem yazar hem de committer olarak her zaman isteği yapan kişinin Git kimliğini kullanır. Varsayılan olarak `Co-Authored-By: Control Center <hi@usectrl.dev>` satırı, GitHub `@usectrl`'ü ortak yazar olarak belirtir. **Ayarlar → Siz → Commit atfı** bölümünden kimliğinizi değiştirmeden bu ortak yazar atfını kapatabilirsiniz. **Ayarlar → Çalışma alanı → Genel** bölümündeki çalışma alanı ayarı önceliklidir ve kişisel anahtarı kilitler. Claude Code'un kendi atfı her zaman kapalıdır. Commit imzalama için ayrıca geçerli bir yapılandırma gerekir
+- Kendi başlattığınız iş sizin adınıza commit edilir. Bir ajandan bir şey istediğinizde ya da IDE’de commit yaptığınızda, yazar ve commit eden sizsiniz; forge’un doğruladığı bir adresle: GitHub oturum açmanızdan gelen GitHub noreply adresiniz ya da GitLab ve Bitbucket’te oturum açmanızın bildirdiği e-posta. Çalışma alanındaki Git kimliğiniz yalnızca, hiçbir forge’un sizin bir adresinizi doğrulamadığı bir depoda elle yaptığınız bir commit için kullanılır. O forge’a oturum açmadıysanız, bir ajanın commit’leri bunun yerine botun olur ve çalıştırmanın notları bunu söyler
+- Kimsenin istemediği iş botun adına commit edilir. Zamanlanmış ya da webhook çalıştırması, çalışma alanının GitHub App’inin (`<app>[bot]`, GitHub noreply adresiyle) adına commit eder; GitHub App olmadığında ya da depo GitLab veya Bitbucket’teyse `Control Center <hi@usectrl.dev>` adına commit eder
+- **Control Center’ı ortak yazar olarak belirt** (**Ayarlar** → **Siz** → **Commit'ler**) karşı taraf için bir `Co-Authored-By:` satırı ekler: commit’lerinizde Control Center, botun commit’lerinde ise çalıştırmanın arkasındaki tetikleyiciyi kuran her kişi. Aksi belirtilmedikçe açıktır. Bir çalışma alanı yöneticisi bunu **Ayarlar** → **Çalışma alanı** → **Genel** altındaki **Ortak yazar kredisi** ile herkes için belirleyebilir; sizin kendi seçiminiz kaydedilir ama o çalışma alanında uygulanmaz. Claude Code’un kendi atfı her zaman kapalıdır
+- Commit’leriniz imzalanabilir. **Ayarlar** → **Siz** → **Commit'ler** altındaki **Doğrulanmış commit'ler** bölümünde **İmzalama anahtarı oluştur**’u seçin ve genel yarısını GitHub ya da GitLab hesabınıza bir imzalama anahtarı olarak ekleyin; bundan sonra sizin istediğiniz çalıştırmaların commit’leri ve IDE’de yaptığınız commit’ler doğrulanmış görünür. Özel yarı sunucunuzda kalır; hesabınızda anahtar durdukça, o sunucuyu kontrol eden herkes sizin adınıza commit imzalayabilir ve GitHub’da zaten doğrulanmış görünen bir commit, anahtarı kaldırdıktan sonra da doğrulanmış kalır. Bitbucket’te imzalama yalnızca anahtarı yoktur: oraya anahtar eklemeyin; Bitbucket’teki commit’ler imzalanmaz. Botun commit’leri asla imzalanmaz
+- IDE’nin **Kaynak denetimi** panelinde yaptığınız commit’ler, `git commit --no-verify` komutunda olduğu gibi deponun Git hook’larını atlar; sunucunun Git’i ise deponun yapılandırdığı kimlik bilgisi yardımcılarını, düzenleyicileri, dış diff araçlarını ve imzalayıcıları yok sayar: Git’i kendi makinesinde, bir ajanın ya da bir pull request’in değiştirebileceği bir ağaçta çalıştırır. Bkz. [Kaynak denetiminden commit atın ve gönderin](/tr-TR/kilavuz/nasil-yapilir/pr-inceleme-ve-birlestirme/#kaynak-denetiminden-commit-atın-ve-gönderin)
+- Ajanın push ettiği her commit önce denetlenir; `stack_publish`’in bir yığın için push ettiği katmanlar dahil. Başka birini gösteren, bir krediyi düşüren ya da ödünç alan, bir sign-off ekleyen ya da ayarlarınızın dediği gibi imzalanmamış olan push reddedilir. Kendiniz IDE’den push ettiğiniz commit’ler sizindir ve bu şekilde denetlenmez
 - Bir rig üzerinde açtığınız bir terminal, tek depoya daraltılmış kendi oturum
   açmanızı alır; dolayısıyla oradaki push’lar sizindir
 - Hiçbir token üretilemediğinde (hesap verebilir kimse oturum açmamışsa, uygulama
-  sahibe kurulu değilse ya da kurulum askıya alınmışsa) çalıştırma token’sız
-  başlar ve notları nedenini belirtir. Yedek bir kimlik bilgisi yoktur
+  sahibe kurulu değilse ya da kurulum askıya alınmışsa) bunu isteyen komut
+  nedenini belirtir. Yedek bir kimlik bilgisi yoktur
 
 ## Sorun giderme
 
 ### PR listesi boş ve GitHub'ın bağlı olmadığını söylüyor
 
-Bu sunucuda GitHub’a oturum açmadınız. **Kod barındırma** altında **GitHub
+Bu sunucuda GitHub’a oturum açmadınız. **Ayarlar → Siz → Profil → Kod barındırma** altında **GitHub
 hesabıyla oturum aç**’a tıklayın. Diğer forge'lardaki depolar etkilenmez.
 
 ### GitHub satırı oturum açmanın bu sunucuda ayarlanmadığını söylüyor
@@ -118,6 +136,8 @@ hesabıyla oturum aç**’a tıklayın. Diğer forge'lardaki depolar etkilenmez.
 Sunucunun ne kendi GitHub App’i ne de Connect’i var. Sunucu sahibi **Ayarlar →
 Sunucu → Tek oturum açma** bölümünde birini seçer: **GitHub uygulamamı oluştur**
 yaklaşık iki dakika sürer. Bkz. [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/).
+
+Kendi uygulamalarını kullanan bir çalışma alanında, çalışma alanının GitHub App’i eksik ya da eksik doldurulmuşsa satır bunu söyler. Bir çalışma alanı yöneticisi bunu **Ayarlar → Çalışma alanı → Entegrasyonlar** altındaki **GitHub Uygulaması** kartında tamamlar; bkz. [Bir çalışma alanına kendi uygulamasını verme](/tr-TR/kilavuz/nasil-yapilir/github-app/#bir-çalışma-alanına-kendi-uygulamasını-verme).
 
 ### İletişim kutusu kodun eşleşmediğini söylüyor
 
@@ -127,10 +147,8 @@ oturum açmayı sonlandırır; yeniden başlatın.
 ### Oturum açma uygulamanın kurulu olmadığını söylüyor
 
 GitHub App’in, depoya sahip olan hesapta kurulumu yok. Bir çalışma alanı
-yöneticisi onu **Ayarlar → Çalışma alanı → Genel → GitHub uygulaması kurulumları**
-bölümünden kurar. Control Center’ın paylaşılan App’ini kullanan bir kuruluş için o
-kuruluşun bir yöneticisinin **Bu sunucuyu yetkilendir**’e tıklaması gerekebilir.
-Bkz. [GitHub App oluşturma](/tr-TR/kilavuz/nasil-yapilir/github-app/#bu-sunucuyu-bir-kuruluş-için-yetkilendirme).
+yöneticisi onu **Ayarlar → Çalışma alanı → Entegrasyonlar → GitHub uygulaması kurulumları**
+bölümünden kurar.
 
 ### Herkesin GitHub’a yeniden oturum açması gerekiyor
 
@@ -142,8 +160,27 @@ yapılan oturum açmalar, onları yapan sunucuya bağlıdır.
 
 Kayıt için üçünün de olması gerekir: yol bir git çalışma ağacının içindedir, bir
 `origin` remote'u vardır ve o remote desteklenen bir forge'a (github.com,
-gitlab.com ya da bitbucket.org) işaret eder. Bkz.
-[Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+gitlab.com ya da bitbucket.org) işaret eder. `origin`, bağladığınız depo olmalıdır ve
+çalışma alanının kendi depolama alanının dışındaki bir klasörü yalnızca sunucu sahibi
+bağlayabilir. Bkz. [Bir çalışma alanına depo ekleme](/tr-TR/kilavuz/nasil-yapilir/depo-ekleme/).
+
+### Depo iznim var ama depo hesabımın okuyamadığını söylüyor
+
+GitHub hesabınız o depoyu okuyamaz; bu yüzden çalışma alanı izni olsa bile kodu size
+kapalı kalır. **Kod barındırma** altında GitHub’a oturum açın ya da GitHub’da depoya
+erişim isteyin.
+
+### "GitHub erişiminiz doğrulanamadı"
+
+GitHub erişiminizi denetlemek için GitHub’a ulaşılamadı, bu yüzden Control Center tahmin
+etmek yerine reddetti. Birazdan yeniden deneyin.
+
+### Connect üzerindeki incelemeler botun değil, benim adıma görünüyor
+
+Paylaşılan Connect uygulamasında bot, yalnızca Connect operatörünün kurulumlarını
+listelediği kurulumlar için inceleme gönderir. Diğer her yerde inceleme, hesap verebilir
+kişinin kendi oturum açmasıyla gider. Botun inceleme göndermesi için
+çalışma alanına kendi GitHub App’inizi verin.
 
 ### Yoğun kullanımdan sonra her şey bir süre çalışmayı durduruyor
 

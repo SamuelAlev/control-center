@@ -1,8 +1,8 @@
 ---
 title: Créer la GitHub App
-description: Dotez votre serveur de sa propre GitHub App en un clic, installez-la là où se trouvent vos dépôts et autorisez le serveur pour l’installation d’une organisation.
+description: Dotez votre serveur de sa propre GitHub App en un clic et installez-la là où se trouvent vos dépôts, pour que chacun dans l’organisation puisse l’utiliser depuis n’importe quel serveur.
 slug: fr-CA/manuel/guides/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Ce guide vous montre comment donner à votre serveur sa propre GitHub App. Cela
@@ -35,7 +35,7 @@ responsable peut y faire. Lire un dépôt lié ne requiert que l’app ; tout ce
 écrit requiert un membre capable de pousser. L’automatisation n’approuve jamais
 une demande de tirage.
 
-L’app du serveur ne s’applique que sous **Utiliser mes propres applications**. Avec Control Center ou un Connect personnalisé, Connect exécute chaque voie, GitHub compris; l’app du serveur reste enregistrée mais inutilisée jusqu’à ce que vous reveniez en arrière. Une app propre à l’espace de travail ([Donner une autre app à un espace de travail](#donner-une-autre-app-à-un-espace-de-travail)) s’applique toujours, quel que soit le mode. Une app dont
+L’app du serveur ne s’applique que sous **Utiliser mes propres applications**. Avec Control Center ou un Connect personnalisé, Connect exécute chaque voie, GitHub compris; l’app du serveur reste enregistrée mais inutilisée jusqu’à ce que vous reveniez en arrière. Un espace de travail sur ses propres applications ([Donner à un espace de travail sa propre app](#donner-à-un-espace-de-travail-sa-propre-app)) utilise sa propre app à la place, quel que soit le mode du serveur. Une app dont
 certains champs manquent est une erreur, pas un repli : les connexions GitHub
 sont refusées tant que tous les champs ne sont pas remplis.
 
@@ -97,26 +97,18 @@ rien lire.
    voir
 
 Pour l’installer plus tard sur un autre compte, un administrateur de l’espace de
-travail va dans **Paramètres → Espace de travail → Général**, repère
-**Installations de l’application GitHub** sur la carte d’identité GitHub et
-clique sur **Installer l’application GitHub**. La liste indique chaque compte
+travail va dans **Paramètres → Espace de travail → Intégrations**, repère
+**Installations de l’application GitHub** sur la carte **Application GitHub**
+sous Hébergement de code et clique sur **Installer l’application GitHub**. La liste indique chaque compte
 sur lequel l’app est installée et signale une installation suspendue.
 
-## Autoriser ce serveur pour une organisation
+## Partager l’installation d’une organisation
 
-Sur l’App partagée de Control Center, l’installation d’une organisation ne sert
-que les serveurs que ses administrateurs ont autorisés. Installer au moyen de
-**Installer l’application GitHub** autorise le serveur qui a lancé
-l’installation. Pour une installation qui existe déjà :
+Une organisation installe la GitHub App une seule fois. Ensuite, toute personne de l’organisation qui se connecte à GitHub sur un serveur Control Center peut utiliser l’installation, quel que soit ce serveur : le sien, celui d’un collègue ou un serveur à elle. Il n’y a rien à autoriser serveur par serveur.
 
-1. Un administrateur de cette organisation se connecte à GitHub sur ce serveur
-2. Il ouvre **Paramètres → Espace de travail → Général → Installations de
-   l’application GitHub**
-3. La ligne de l’organisation indique **Non autorisée**. Il clique sur
-   **Autoriser ce serveur**
+Chaque jeton qu’obtient un serveur appartient à la personne connectée, est limité à un dépôt et à son rôle sur ce dépôt, si bien qu’il ne dépasse jamais ce qu’elle pourrait faire sur GitHub. Le journal d’audit de GitHub montre cette personne agissant par l’intermédiaire de l’app.
 
-La ligne indique alors **Autorisée**. Votre propre app n’a besoin de rien de
-tout cela : chacune de ses installations appartient à votre serveur.
+Pour que Control Center cesse d’accéder à une organisation, un propriétaire de l’organisation supprime l’installation ou réduit ses dépôts sur GitHub. Retirer une personne de l’organisation lui retire aussi son accès.
 
 ## L’enregistrer plutôt à la main
 
@@ -156,18 +148,31 @@ pourrait le lire ; gardez-les dans le fichier `.env` (sous Docker, montez-le sur
 `/app/bin/.env`). L’initialisation se fait **une fois par champ**, donc une
 modification faite dans Paramètres n’est pas annulée au prochain redémarrage.
 
-## Donner une autre app à un espace de travail
+## Donner à un espace de travail sa propre app
 
-Un espace de travail peut utiliser sa propre app au lieu de celle du serveur. Un
-administrateur de l’espace de travail va dans **Paramètres → Espace de travail →
-Général**, choisit **Utiliser une autre GitHub App** sur la carte **Identité
-GitHub** et saisit l’identifiant de cette app, sa clé privée, son identifiant
-client et son secret client. Les membres se connectent alors à cette app pour
-cet espace de travail. Un espace de travail doté de sa propre app ne se rabat
-jamais sur l’app du serveur ni sur Connect : tant que ses champs ne sont pas
-complets, son travail GitHub est refusé. Cela s’applique quelle que soit la façon dont le serveur connecte les gens, Connect compris.
+Un espace de travail peut fonctionner avec une app à lui plutôt que celle du
+serveur :
 
-La carte **Applications fournisseur** de cette même page fait de même pour Google Calendar, Linear et la recherche de GIF. Voir [Donner à un espace de travail sa propre application Linear](/fr-CA/manuel/guides/integration-linear/#donner-à-un-espace-de-travail-sa-propre-application-linear) et [Donner à un espace de travail son propre client Google](/fr-CA/manuel/guides/connecter-calendrier/#donner-à-un-espace-de-travail-son-propre-client-google).
+1. Un administrateur de l’espace de travail va dans **Paramètres → Espace de
+   travail → Intégrations**
+2. Sur la carte **Control Center Connect**, il choisit **Utiliser mes propres
+   applications** puis clique sur **Appliquer**. Tout le monde dans l’espace de
+   travail se reconnecte alors par les applications de l’espace de travail
+3. La carte **Application GitHub** sous Hébergement de code contient maintenant
+   les champs de l’app : **Identifiant d’application** et **Clé privée** sous
+   **Agit pour cet espace de travail**, **Identifiant client** et **Secret
+   client** sous **Connexion des utilisateurs**. Cliquez sur **Tester** une fois
+   qu’ils sont renseignés
+
+Les membres se connectent alors à cette app pour cet espace de travail. Un espace
+de travail sur ses propres applications ne se rabat jamais sur l’app du serveur
+ni sur Connect : tant que ses champs ne sont pas complets, son travail GitHub est
+refusé. Le même choix couvre Google Calendar, Linear et la recherche de GIF, chacun
+avec ses propres champs à côté de son fournisseur sur la même page. Voir
+[Donner à un espace de travail sa propre application Linear](/fr-CA/manuel/guides/integration-linear/#donner-à-un-espace-de-travail-sa-propre-application-linear)
+et [Donner à un espace de travail son propre client Google](/fr-CA/manuel/guides/connecter-calendrier/#donner-à-un-espace-de-travail-son-propre-client-google).
+Les autres choix de cette carte, et ce que fait chacun, sont décrits dans
+[Choix par espace de travail](/fr-CA/manuel/reference/connect/#choix-par-espace-de-travail).
 
 ## Dépannage
 
@@ -185,7 +190,7 @@ Recommencez à partir de Paramètres.
 
 L’enregistrement et l’installation sont deux étapes distinctes. Ouvrez la page
 d’installation de l’app, ou utilisez **Installer l’application GitHub** dans
-Espace de travail → Général.
+Espace de travail → Intégrations.
 
 ### Tester indique que la clé privée n’a pas pu être lue
 

@@ -2,14 +2,14 @@
 title: Utwórz i skonfiguruj agenta
 description: Dodaj agenta do obszaru roboczego, przypisz mu adapter, model, skille i uprawnienia i potwierdź, że działa.
 slug: pl-PL/podrecznik/poradniki/tworzenie-agenta
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Ten poradnik pokazuje, jak dodać agenta do obszaru roboczego i konfigurować go
 tak, aby naprawdę działał.
 
-Każdy obszar roboczy powstaje z pięcioma agentami — CEO oraz `qa`, `architect`,
-`engineer` i `librarian` — więc zwykle masz agentów, zanim skonfigurujesz
+Każdy obszar roboczy powstaje z sześcioma agentami — CEO oraz `qa`, `architect`,
+`engineer`, `librarian` i `content-synthesizer` — więc zwykle masz agentów, zanim skonfigurujesz
 choćby jednego. Poniższe kroki dotyczą tak samo agenta utworzonego razem
 z obszarem, jak i zupełnie nowego.
 
@@ -92,7 +92,7 @@ Nie wybierasz tutaj skilli należących do samego repozytorium. Repozytorium,
 które je dostarcza (w `.agents/skills/`, `.claude/skills/` lub
 `.opencode/skills/`), przekazuje je automatycznie temu agentowi, który pracuje
 w tym repozytorium, a gdy przenosi się on do innego, skille zostają podmienione
-— zob. [Skille w zakresie repozytorium](/pl-PL/podrecznik/koncepcje/model-agentow/#repo-scoped-skills).
+— zob. [Skille w zakresie repozytorium](/pl-PL/podrecznik/koncepcje/model-agentow/#skille-ograniczone-do-repozytorium).
 
 ## Ustaw linię raportowania i personę
 
@@ -134,7 +134,7 @@ repozytorium**. Jak każda reguła dociera do uruchomienia, opisuje
 Reguły decydują, co agent może robić; piaskownica systemu operacyjnego
 ogranicza, gdzie jego procesy mogą czytać, zapisywać i się łączyć. `cc_server`
 opakowuje uruchomienia agentów w piaskownicę hosta, tam gdzie ona istnieje —
-Windows nie ma natywnego backendu, a Linux i WSL2 wymagają `bwrap` i `socat`.
+Windows nie ma natywnego backendu, a Linux i WSL2 wymagają `bwrap` i `socat`. Tam, gdzie piaskownicy nie ma, startują tylko uruchomienia właściciela serwera, chyba że właściciel wyłączył piaskownicę dla wszystkich.
 Pełny zestaw granic znajdziesz w [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 :::
 

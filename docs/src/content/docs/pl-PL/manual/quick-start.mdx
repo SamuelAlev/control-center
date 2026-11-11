@@ -2,7 +2,7 @@
 title: Szybki start
 description: Zainstaluj Control Center, skonfiguruj jednego agenta i obserwuj, jak pracuje na Twoim repozytorium.
 slug: pl-PL/podrecznik/szybki-start
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 To najkrótsza kompletna droga od zera do agenta pracującego na Twoim własnym kodzie. Przejdź ją po kolei; każdy krok zależy od poprzedniego.
@@ -20,7 +20,7 @@ Ta sama aplikacja działa w przeglądarce pod adresem [app.usectrl.dev](https://
 te same funkcje. Karta przeglądarki nie może jednak hostować serwera, więc musisz zapewnić go
 samodzielnie — uruchom `cc_server` lokalnie i połącz się z `ws://localhost:9030` albo wskaż serwer
 na innej maszynie. Ten szybki start wybiera ścieżkę desktopową, bo nie wymaga konfiguracji serwera;
-trasę przeglądarkową opisano w sekcji [Instalacja](/pl-PL/podrecznik/instalacja/#use-it-in-your-browser).
+trasę przeglądarkową opisano w sekcji [Instalacja](/pl-PL/podrecznik/instalacja/#używaj-w-przeglądarce).
 :::
 
 ## Krok 2: Przejdź przez onboarding
@@ -29,7 +29,7 @@ Kroki onboardingu przebiegają po kolei — nie można ich pomijać. Pierwszy po
 
 1. **Logowanie** (tylko właściciel serwera): wybierz, jak ten serwer loguje ludzi do GitHuba, Kalendarza Google i Linear — **Użyj aplikacji Control Center**, **Użyj własnych aplikacji** albo **Użyj własnego serwera Connect**. Przy własnych aplikacjach **Utwórz moją aplikację GitHub** konfiguruje GitHub w jednym kroku. Możesz to później zmienić w **Ustawienia → Serwer → Logowanie jednokrotne**.
 2. **Połącz**: zaloguj się do GitHuba albo wklej token GitLab lub Bitbucket. Poświadczenie jest przechowywane na serwerze i przypisane do Twojego konta.
-3. **Obszar roboczy**: nadaj nazwę pierwszemu obszarowi roboczemu i opcjonalnie wybierz logo. Utworzenie go dodaje na start pięciu agentów — CEO oraz `qa`, `architect`, `engineer` i `librarian` — a także wbudowane szablony potoków.
+3. **Obszar roboczy** (tylko właściciel serwera): nadaj nazwę pierwszemu obszarowi roboczemu i opcjonalnie wybierz logo. Każda inna osoba czeka na **Nie jesteś jeszcze w obszarze roboczym**, aż właściciel utworzy dla niej obszar albo administrator obszaru roboczego ją zaprosi. Utworzenie go dodaje na start sześciu agentów — CEO oraz `qa`, `architect`, `engineer`, `librarian` i `content-synthesizer` — a także wbudowane szablony potoków.
 4. **Sandbox**: zapisuje preferencję dotyczącą sandboxa. Oba wybory pozwalają kontynuować.
 5. **Adapter**: wybierz adapter i model, które mają być domyślne dla agentów. Wybierz **Control Center (built-in)**, a następnie użyj selektora dostawców, który się pojawi, aby zalogować się u dostawcy modeli — lista modeli pozostaje pusta, dopóki żaden nie zostanie połączony. Zakończenie tego kroku przypisuje też adapter i model do agenta CEO obszaru roboczego.
 6. **Głos (opcjonalnie)**: zainstaluj lokalny model mowy do dyktowania albo pomiń ten krok.
@@ -37,7 +37,7 @@ Kroki onboardingu przebiegają po kolei — nie można ich pomijać. Pierwszy po
 Następnie Control Center otwiera skrzynkę Twojego obszaru roboczego.
 
 :::note[Co ogranicza uruchomienie agenta]
-Polecenia agenta są opakowywane w natywny dla systemu sandbox hosta, gdy jest dostępny — Seatbelt w macOS, bubblewrap w Linuksie. Windows nie ma backendu, więc uruchomienia na nim ograniczają wyłącznie pozostałe warstwy: własny worktree rozmowy (`git worktree` w Windows; copy-on-write tam, gdzie dostępny jest `rift`), poświadczenia przyznawane na czas każdego uruchomienia i odbierane przy jego zakończeniu oraz guardraile akcji. Zobacz [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
+Polecenia agenta są opakowywane w natywny dla systemu sandbox hosta, gdy jest dostępny — Seatbelt w macOS, bubblewrap w Linuksie. Windows nie ma backendu. Na hoście bez niego startują tylko uruchomienia agentów właściciela serwera, a ograniczają je wyłącznie pozostałe warstwy: własny worktree rozmowy (`git worktree` w Windows; copy-on-write tam, gdzie dostępny jest `rift`), poświadczenia przyznawane na czas każdego uruchomienia i odbierane przy jego zakończeniu oraz guardraile akcji. Uruchomienia wszystkich pozostałych są odrzucane, dopóki właściciel nie zainstaluje sandboxa albo nie wyłączy go dla wszystkich. Zobacz [Sandbox i bezpieczeństwo](/pl-PL/podrecznik/koncepcje/sandbox-i-bezpieczenstwo/).
 :::
 
 ## Krok 3: Dodaj repozytorium
@@ -61,7 +61,7 @@ Na karcie **Ustawienia** ustaw:
 
 Kliknij **Zapisz zmiany**.
 
-W praktyce tego kroku nie można pominąć. Tylko agent CEO dziedziczy adapter wybrany podczas onboardingu; czterej specjaliści są tworzeni bez niego. Domyślnie korzystają z **Control Center (built-in)** i domyślnego modelu Anthropic, więc uruchomią się tylko wtedy, gdy masz połączone konto Anthropic — i to na modelu, którego nie wybrałeś, jeśli je masz.
+W praktyce tego kroku nie można pominąć. Krok adaptera w onboardingu ustawia swój adapter i model na każdym agencie, który istniał w tym momencie; obszar roboczy utworzony później startuje z sześcioma agentami bez ustawień. Agent bez adaptera korzysta z **Control Center (built-in)** i domyślnego modelu Anthropic, więc uruchomi się tylko wtedy, gdy masz połączone konto Anthropic — i to na modelu, którego nie wybrałeś, jeśli je masz.
 
 ## Krok 5: Wyślij agentowi zadanie
 

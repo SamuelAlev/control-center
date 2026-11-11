@@ -2,7 +2,7 @@
 title: Strumenti agent integrati
 description: La superficie degli strumenti che l'harness integrato offre a un agente — language server, ricerca strutturale, debugger, kernel e controllo dei worker — con ogni operazione e i suoi argomenti.
 slug: it-IT/manuale/riferimento/strumenti-agente
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Questi sono gli strumenti **vincolati al server** che il runtime integrato degli agenti registra direttamente — language server, ricerca strutturale, debugger, kernel, domande e controllo dei worker — in contrapposizione agli [strumenti MCP](/it-IT/manuale/riferimento/strumenti-mcp/) che collega dall'esterno e agli strumenti generici per file, ricerca e shell del runtime dell'harness. Non sono nel registro MCP: un client MCP esterno non li vedrà, perché ciascuno è vincolato a una risorsa viva lato server — un processo del language server, un adattatore di debug, un interprete — che appartiene a una singola esecuzione.
@@ -24,6 +24,8 @@ Ogni strumento dichiara un livello, e il livello decide **quali superfici lo ved
 ## `lsp` — query al language server
 
 Registrato quando l'esecuzione ha un supervisor del language server e una directory di lavoro. Se un server può davvero rispondere viene rilevato al momento della chiamata, come un'**intersezione**: deve esistere un marcatore di radice *e* il binario del server deve essere risolvibile. Uno solo dei due significa che nessun server parte — `status` lo dice — invece di un'ipotesi silenziosa.
+
+I server provengono solo dalla tabella integrata; un `lsp.json` del repository non viene letto. In un'esecuzione con sandbox ogni esecuzione ha la propria sessione del language server, quindi i server ripartono a ogni esecuzione. I binari locali al progetto (`node_modules/.bin`) vengono usati solo quando l'esecuzione è in sandbox, e la radice del progetto non risale mai sopra la directory di lavoro dell'esecuzione.
 
 Le posizioni si indicano con `line` più una sottostringa `symbol`, mai con la colonna. Un modello a cui viene chiesta una colonna tira a indovinare, e un'ipotesi sbagliata risolve in un simbolo diverso sulla stessa riga — una risposta che sembra giusta ma parla d'altro. Omettere `symbol` in un'azione di navigazione è un errore, non un'ipotesi sulla prima colonna.
 
@@ -117,7 +119,7 @@ Ogni file viene confrontato con il contenuto acquisito al momento dello staging,
 
 Registrato quando l'esecuzione ha un supervisor della sessione di debug, una directory di lavoro e un id della conversazione. Se un adattatore può davvero partire viene rilevato al momento della chiamata, con la stessa regola di intersezione del language server (marcatore di radice *e* binario). Livello `exec`; non sicuro in parallelo (una sessione è stato che attraversa le chiamate, quindi un `continue` che scavalca `stack` leggerebbe un frame che si è già spostato).
 
-Una sessione per conversazione, con un TTL rigido (30 minuti). Un secondo `launch` viene rifiutato invece di sostituire silenziosamente il primo.
+Una sessione per conversazione, con un TTL rigido (30 minuti). Un secondo `launch` viene rifiutato invece di sostituire silenziosamente il primo. In un'esecuzione con sandbox la sessione mantiene il suo sandbox tra i turni fino alla fine, quindi per al massimo quei 30 minuti.
 
 | Op            | Argomenti                     | Note                                           |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Una sessione per conversazione, con un TTL rigido (30 minuti). Un secondo `launc
 | `status`      | —                             | Se una sessione è in esecuzione, e dove si è fermata |
 | `breakpoints` | `file`, `lines[]`             | Un `lines` vuoto cancella il file. Si possono impostare **prima** del lancio |
 | `launch`      | `program`, `args[]`           | Avvia il programma fermo sui tuoi breakpoint   |
-| `attach`      | `port`                        | Si aggancia a un processo già in esecuzione    |
+| `attach`      | `port`                        | Si aggancia a un processo già in esecuzione su una delle porte inoltrate dell'esecuzione; qualsiasi altra porta viene rifiutata prima che parta qualcosa |
 | `continue`    | `thread_id?`                  | Esegue fino alla prossima sosta                |
 | `pause`       | `thread_id?`                  | Lo ferma dove si trova                         |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Avanza di un passo                    |
@@ -146,7 +148,7 @@ Una sessione per conversazione, con un TTL rigido (30 minuti). Un secondo `launc
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` preferisce un `.venv/bin` o `venv/bin` locale al progetto rispetto a `$PATH`: un python preso da `$PATH` è un ambiente diverso, e agganciarsi da quello sbagliato fallisce in un modo che si legge come codice rotto.
+`debugpy` preferisce un `.venv/bin` o `venv/bin` locale al progetto rispetto a `$PATH` quando l'esecuzione è in sandbox: un python preso da `$PATH` è un ambiente diverso, e agganciarsi da quello sbagliato fallisce in un modo che si legge come codice rotto. Senza sandbox usa solo `$PATH`, quindi un repository non può scegliere l'interprete che gira sull'host.
 
 ---
 
@@ -176,7 +178,7 @@ Il bridge **rientra nel registro degli strumenti dell'harness**, quindi guardrai
 Il timeout della cella è un budget di *inattività* (predefinito: 5 minuti) e viene **sospeso** finché una chiamata tramite bridge è in corso, così una cella che si dirama verso i sottoagenti non viene uccisa a metà diramazione.
 
 :::note[Dove viene eseguito il kernel]
-Nel recinto della conversazione quando ne ha uno, altrimenti sull'host. Non avvia un recinto per arrivarci — la stessa regola che impedisce a una scheda rig di avviarsi da sola.
+Nel recinto della conversazione quando ne ha uno, altrimenti nel sandbox del sistema operativo dell'esecuzione sull'host. Con il sandbox disattivato o non disponibile gira senza confinamento e `eval` richiede l'approvazione dell'esecuzione sull'host. Non avvia un recinto per arrivarci — la stessa regola che impedisce a una scheda rig di avviarsi da sola.
 :::
 
 ---

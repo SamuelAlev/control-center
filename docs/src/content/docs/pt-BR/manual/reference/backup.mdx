@@ -2,7 +2,7 @@
 title: Backup, exportação e importação
 description: A estrutura do snapshot, o manifesto, cada operação de backup e rota de transferência, e exatamente quais arquivos um backup contém e não contém.
 slug: pt-BR/manual/referencia/backup
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Tudo o que o Control Center consegue copiar, entregar ou adotar, e a forma exata de cada
@@ -112,6 +112,7 @@ contém mais do que o banco de dados dele, e nada do restante viaja:
 | `models/`                           | Não             | Não                                      |
 | `meetings/<meetingId>/`             | Não             | Não                                      |
 | `rigs/`                             | Não             | Não                                      |
+| `_agent_hooks/`                     | Não             | Não                                      |
 
 Parte disso é descartável — `spaces/` contém worktrees copy-on-write que são
 reprovisionados a partir dos repos, `pr_clones/` é um cache, `models/` é baixado de novo,
@@ -119,8 +120,12 @@ reprovisionados a partir dos repos, `pr_clones/` é um cache, `models/` é baixa
 linhas do banco de dados apontam, `skills/` e `agents/` contêm os arquivos com que um
 agente roda, e `secrets.json` contém todas as chaves de emparelhamento, credenciais de
 provedor e configurações de SSO da instalação. Veja
-[Fazer backup e restaurar](/pt-BR/manual/guias/backup-e-restauracao/#copy-backups-off-the-machine)
+[Fazer backup e restaurar](/pt-BR/manual/guias/backup-e-restauracao/#copiar-backups-para-fora-da-máquina)
 para cobrir o restante.
+:::caution[Um banco de dados de espaço de trabalho guarda segredos de webhook]
+`workspace.db` é o espaço de trabalho inteiro: conversas, logs de execução, o índice de código, vínculos de repositórios, definições de ambientes e membros. Ele também guarda, em forma legível, os tokens de webhook de pipeline e os segredos de webhook de sincronização de tickets do espaço de trabalho; por isso trate uma exportação ou um backup baixado como um segredo. Ele não guarda nenhum login de provedor, chave de dispositivo nem segredo de usuário; esses ficam em `global.db` e `secrets.json`.
+:::
+
 :::note[Tokens de chat ficam deliberadamente de fora]
 O fato de `chat_credentials/` ficar ao lado do banco de dados, e não dentro dele, é o
 motivo de um espaço de trabalho entregue a outra pessoa não carregar nenhum token de bot
@@ -145,7 +150,7 @@ servidor sem porta de backup configurada, como o servidor de demonstração.
 | `workspace.listBackups` | read | Espaço de trabalho | `admin` | nenhum | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | Espaço de trabalho | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | Espaço de trabalho | `admin` | nenhum        | `{ok, path}`                  |
-| `workspace.import`   | mutate | Espaço de trabalho | `owner` | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | Espaço de trabalho | `owner`, e o proprietário do servidor | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | Instalação* | `owner`      | `id`          | linha do registro marcada como excluída |
 
 * `workspace.delete` não tem escopo porque a linha que ele marca vive no registro
@@ -170,9 +175,12 @@ caminho.
 trabalho, então ser admin de um espaço de trabalho não basta para gerenciar os
 outros. A exclusão aceita apenas o nome do diretório com carimbo de data/hora que
 consta na listagem, não um caminho arbitrário do servidor, e remove o snapshot
-inteiro (inclusive snapshots incompletos). A exportação/importação por espaço de
-trabalho continua restrita ao admin/proprietário do espaço de trabalho, e não ao
-proprietário da instalação.
+inteiro (inclusive snapshots incompletos). A exportação e os downloads de backup agendado por espaço de
+trabalho continuam restritos ao admin do espaço de trabalho.
+:::
+
+:::note[A restauração é do proprietário do servidor]
+`workspace.import` e `POST /backup/restore` fazem o servidor adotar um arquivo de banco de dados cujas linhas ele passa a tratar como suas: vínculos de repositórios e quem os fez, definições de ambientes que rodam no host, caminhos de worktree e de logs. Por isso ambos exigem o proprietário do servidor (`ServerAuthority.serverOwner`), que também precisa ser o proprietário do espaço de trabalho. Qualquer outra pessoa, e todo chamador em um host sem proprietário registrado, é recusado com `server_owner_required`. Nenhum gatilho nem visualização trazido pelo arquivo é adotado.
 :::
 
 ### Resposta de `server.listBackups`
@@ -250,7 +258,7 @@ string de destino dele usando a sua PSK de emparelhamento e a função abaixo.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **admin** do espaço de trabalho |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **proprietário** da instalação |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **admin** do espaço de trabalho; **proprietário** da instalação depois que o espaço de trabalho é excluído |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietário** do espaço de trabalho |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **proprietário** da instalação que também é **proprietário** do espaço de trabalho (`403` com `server_owner_required` caso contrário) |
 
 `w` é um id de espaço de trabalho, `n` é um nome de diretório de snapshot ou de backup
 agendado, `d` é o id do dispositivo que chama e `s` é a assinatura. Em `/backup/snapshot`,

@@ -2,7 +2,7 @@
 title: Dùng space
 description: Tạo space, đặt chế độ cho chúng, quản lý người tham gia và quyền tự chủ, rồi mở cuộc trò chuyện và luồng.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/space
-sourceHash: 0ff35b3accf1965e073f54bed63e4add8bcc1dfb
+sourceHash: c588f695c796a2ddce571d4870ef5c7d3594fe07
 ---
 
 Hướng dẫn này chỉ cho bạn cách dùng space. Một **space** là bề mặt nhắn tin trong
@@ -26,6 +26,8 @@ xem [Space giữa các agent](#space-giữa-các-agent) bên dưới.
    một space không checkout gì cả
 6. Xác nhận
 
+Các kho mã bạn chọn cũng quyết định ai có thể mở space. Chỉ những thành viên có quyền đọc trên tất cả chúng, và có đăng nhập forge của chính họ đọc được tất cả chúng, mới thấy space cùng mọi thứ trong đó: tin nhắn, kết quả tìm kiếm, nhật ký chạy, todo, hoạt động và thông báo. Một space không có kho mã nào thì mở cho mọi thành viên. Với một cuộc hội thoại mà toàn bộ không gian làm việc nên đọc được, hãy bỏ chọn mọi kho mã, hoặc chỉ giữ các kho mà ai cũng đọc được. Xem [Space đi theo kho mã của chúng](/vi-VN/so-tay/khai-niem/uy-quyen/#space-đi-theo-kho-mã-của-chúng).
+
 Chỉ một agent mới trả lời tin nhắn, nên một space không có agent sẽ không khởi chạy gì: ô soạn thảo cho biết điều đó và giữ tin nhắn của bạn cho đến khi bạn @ nhắc một agent, khi đó agent được thêm vào space và tin nhắn được gửi. Không có runner mặc định đứng sau một space trống.
 
 Space thuộc phạm vi không gian làm việc: bạn chỉ thấy agent từ không gian làm việc
@@ -35,7 +37,7 @@ Mỗi kho mã được checkout tại `repos/<name>/` bên trong space. Một kh
 skill agent của riêng nó sẽ đóng góp chúng cho agent bất kỳ đang làm việc trong đó
 — mỗi lần một bộ của một kho, hoán đổi khi agent di chuyển. Từ trình soạn bạn có
 thể truy cập bất kỳ skill nào trong số đó với `/skill:<repo>:<name>`. Xem
-[Skill theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#repo-scoped-skills).
+[Skill theo phạm vi kho mã](/vi-VN/so-tay/khai-niem/mo-hinh-agent/#kỹ-năng-theo-phạm-vi-kho-mã).
 
 Bề mặt này nằm tại `/workspaces/<id>/spaces`, và một space đơn lẻ tại
 `/workspaces/<id>/spaces/<spaceId>`.

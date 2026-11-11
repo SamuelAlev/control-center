@@ -2,10 +2,10 @@
 title: Alat MCP
 description: Katalog lengkap alat MCP yang didaftarkan oleh cc_server, mengikut keluarga.
 slug: ms-MY/manual-pengguna/rujukan/alat-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran boleh dijambatkan ke dalam daftar yang sama sebagai lapisan dinamik.
+`cc_server` mengehoskan satu daftar alat MCP (JSON-RPC 2.0), disajikan pada port pelayan utama (lalai `9030`) di `POST /mcp` dan `GET /sse`, versi protokol `2024-11-05`. Setiap klien mencapai daftar yang sama: desktop, binaan web, klien MCP luaran dan masa jalan ejen terbina. Pelayan MCP luaran boleh dijambatkan ke dalam daftar yang sama sebagai lapisan dinamik. Pelayan yang ditemui dalam konfigurasi alat pengguna pelayan sendiri ialah pengecualian: titik akhir ini tidak pernah menyenaraikan, memanggil atau mencarinya, dan hanya larian harness terbina yang pemilik pelayan bertanggungjawab untuknya yang mendapatkannya (lihat [Pelayan MCP peribadi kekal milik pemiliknya](/ms-MY/manual-pengguna/panduan-cara/pelayan-mcp/#pelayan-mcp-peribadi-kekal-milik-pemilik)).
 
 ## Saiz daftar
 
@@ -23,7 +23,7 @@ Kelima-limanya alat graf kod didaftarkan hanya apabila hos menghantar repositori
 Daftar penuh diiklankan dalam `tools/list` tanpa pengawalan penemuan. Suntingan tiket ialah alat bertaip.
 
 :::note[Klien luaran sentiasa melihat keseluruhan katalog]
-`tools/list` tidak pernah dipangkas. Klien MCP mengesahkan nama alat terhadap salinan senarai itu yang dicache sendiri dan menolak apa-apa yang tidak tersenarai tanpa bertanya kepada pelayan, jadi alat yang tersembunyi di situ tidak dapat dicapai dan bukan sekadar senyap.
+`tools/list` tidak pernah dipangkas, kecuali pelayan MCP peribadi pemilik pelayan, yang tidak pernah dibawanya. Klien MCP mengesahkan nama alat terhadap salinan senarai itu yang dicache sendiri dan menolak apa-apa yang tidak tersenarai tanpa bertanya kepada pelayan, jadi alat yang tersembunyi di situ tidak dapat dicapai dan bukan sekadar senyap.
 
 **Harness terbina** berbeza: ia memuatkan hanya subset takrifan yang residen bagi setiap permintaan dan menarik masuk selebihnya pada penggunaan pertama, iaitu tingkah laku di sisi harness dan tidak mengubah daftar ini. Lihat [Konteks alat dan caching prompt](/ms-MY/manual-pengguna/konsep/konteks-alat).
 :::
@@ -249,7 +249,7 @@ penggunaan serta `rig_close` mengisytiharkan `enclosureControl` [kelas tindakan]
 baca sahaja menolaknya. `rig_list` tidak mengisytiharkan apa-apa — ia hanya
 membaca keadaan ruang kerja. Perbendaharaan kata kata kerja penuh bagi setiap
 permukaan ada dalam
-[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/#action-verbs).
+[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/#kata-kerja-tindakan).
 
 | Alat           | Huraian                                                                                          |
 | -------------- | ------------------------------------------------------------------------------------------------ |
@@ -257,8 +257,10 @@ permukaan ada dalam
 | `browser_use`  | Kawal Chromium, Firefox atau WebKit tanpa kepala (`engine`): navigasi, klik, isi, ekstrak (a11y/DOM/konsol), papan keratan, tangkapan skrin |
 | `mobile_use`   | Kawal Android melalui ADB: periksa/masukkan input, tangkapan skrin, pasang/mula/henti/set semula/nyahpasang apl, pautan mendalam dan perintah peranti berbentuk argv |
 | `ios_use`      | Kawal iOS Simulator melalui WebDriverAgent/CoreSimulator: periksa/masukkan input, tangkapan skrin, pasang/mula/henti/nyahpasang apl, pautan mendalam dan proses simulator berbentuk argv |
-| `rig_list`     | Senaraikan stesen sesuatu ruang kerja berserta permukaan, status, saiz paparan dan pengawal      |
+| `rig_list`     | Senaraikan stesen bagi ruang larian ini berserta permukaan, status, saiz paparan dan pengawal   |
 | `rig_close`    | Musnahkan sesuatu stesen dan buang keadaan mesin yang dimilikinya                                |
+
+Hanya larian ejen boleh memanggil alat ini; mana-mana pemanggil lain ditolak. Sesuatu larian hanya mencapai stesen bagi ruang yang diberikan kepadanya: `space_id` datang daripada geran larian, bukan daripada panggilan, dan stesen bagi ruang lain, atau tiada ruang, dijawab sama seperti stesen yang tiada.
 
 `app_use` ialah alat use kelima: ia memandu tetingkap apl desktop yang dilancarkan dalam ruang, terus pada hos dan bukan dalam VM, dan juga mengisytiharkan `fileWriteOutsideWorktree` dan `fileDelete`. Alat ini dan alat `environment_*` diterangkan dalam [Sediakan persekitaran](/ms-MY/manual-pengguna/panduan-cara/persekitaran/).
 
@@ -304,7 +306,7 @@ mengembalikan "unknown tool":
 | Keupayaan                               | Di mana ia berada sebaliknya                                                                  |
 | --------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | Mengambil pekerja, memecat atau menyunting ejen | UI ejen. Tiada alat `hire_agent` / `fire_agent` / `update_agent`                       |
-| Mencipta ruang kerja                    | `workspace.upsert` melalui RPC, yang menyemai dan mengecop pemilikan                            |
+| Mencipta ruang kerja                    | `workspace.create` melalui RPC, pemilik pelayan sahaja, yang menyemai dan mengecop pemilikan   |
 | Projek (cipta / senarai / kemas kini / failkan) | UI tiket. Projek ialah permukaan pengendali — lihat [Projek](/ms-MY/manual-pengguna/panduan-cara/projek/) |
 | Menanyakan soalan yang menyekat kepada pengendali | Alat `ask_user` **harness**, bukan MCP. Ia merender borang dalam perbualan dan menyekat sehingga jawapan diterima |
 | Diagnosis bagi setiap ejen              | Tiada apa-apa. Tiada `doctor` — lihat [Diagnosis ejen](/ms-MY/manual-pengguna/panduan-cara/diagnosis-ejen/) |

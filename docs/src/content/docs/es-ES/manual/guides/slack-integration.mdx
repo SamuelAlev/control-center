@@ -2,7 +2,7 @@
 title: Configurar la integración con Slack
 description: Conecta Slack a un espacio de trabajo de Control Center, mediante la app compartida de Control Center o una propia, para que los miembros puedan dirigir agentes desde Slack.
 slug: es-ES/manual/guias/integracion-slack
-sourceHash: 6e64b188603c114bc12d2398f6f07901d81d44f5
+sourceHash: 26029e147705d9405e85ccebaca1fdc1ad674c8c
 ---
 
 Esta guía te muestra cómo conectar Slack a un espacio de trabajo de Control Center: añadiendo la app compartida de Control Center, o con una app propia que Control Center crea por ti o que construyes tú mismo.
@@ -27,18 +27,18 @@ Un espacio de trabajo funciona con exactamente una de las dos a la vez.
 
 | Modo                                | Necesita                                                                                                   | Obtienes                                                                                   |
 | ----------------------------------- | ---------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| **App compartida de Control Center** | El servidor usa Control Center Connect (**Ajustes → Servidor → Inicio de sesión único**) y Connect sirve Slack | Un clic y un inicio de sesión en Slack. Ninguna app que crear, ningún token que pegar, nada que rotar |
+| **App compartida de Control Center** | Las apps de inicio de sesión del espacio de trabajo pasan por Control Center Connect (la elección del servidor en **Ajustes → Servidor → Inicio de sesión único**, o la del propio espacio de trabajo en **Ajustes → Espacio de trabajo → Integraciones**) y Connect sirve Slack | Un clic y un inicio de sesión en Slack. Ninguna app que crear, ningún token que pegar, nada que rotar |
 | **Tu propia app**                   | Una app de Slack en tu espacio de trabajo de Slack, hecha de una de las tres formas siguientes             | Tu propio nombre de bot, descripciones y comando slash, editables desde Control Center     |
 
 ### Añadir la app compartida de Control Center
 
-1. En Control Center, ve a **Ajustes → Espacio de trabajo → General** y desplázate hasta la tarjeta **Puentes de chat**
+1. En Control Center, ve a **Ajustes → Espacio de trabajo → Integraciones** y desplázate hasta la tarjeta **Puentes de chat**
 2. En el bloque de Slack, busca la fila **Añadir Control Center a Slack** y haz clic en **Añadir a Slack**
 3. El navegador abre Slack. Inicia sesión con Slack, elige el espacio de trabajo de Slack y aprueba la instalación
 4. Cuando el navegador muestre un código, introdúcelo en el diálogo que Control Center dejó abierto. Si el navegador te devuelve a la aplicación por sí solo, no hay nada que escribir
 5. Un aviso nombra el espacio de trabajo de Slack al que se añadió la app, y el bloque de Slack muestra que la conexión funciona con la app compartida de Control Center
 
-Solo un administrador del espacio de trabajo puede añadir la app. La fila explica por qué no puede empezar cuando el servidor usa sus propias apps en lugar de Connect, cuando tu Connect no tiene app de Slack o cuando este espacio de trabajo ya tiene conectada su propia app de Slack.
+Solo un administrador del espacio de trabajo puede añadir la app. La fila explica por qué no puede empezar cuando las apps de inicio de sesión de este espacio de trabajo son sus propias apps en lugar de Connect, cuando tu Connect no tiene app de Slack o cuando este espacio de trabajo ya tiene conectada su propia app de Slack.
 
 En qué se diferencia de tu propia app:
 
@@ -64,7 +64,7 @@ Los eventos de tu propia app nunca pasan por Connect: Socket Mode los entrega di
 ## Opción A: deja que Control Center cree la app
 
 1. Genera un par de tokens de configuración de la app en [api.slack.com/apps](https://api.slack.com/apps) y copia el token de **refresco** (`xoxe-…`)
-2. En Control Center, ve a **Ajustes → Espacio de trabajo → General** y desplázate hasta la tarjeta **Puentes de chat**
+2. En Control Center, ve a **Ajustes → Espacio de trabajo → Integraciones** y desplázate hasta la tarjeta **Puentes de chat**
 3. En el bloque de Slack, haz clic en **Crear la app por mí**
 4. Pega el token, ajusta el nombre de la app, el nombre del bot, las descripciones y el comando slash, y haz clic en **Crear app**
 5. Sigue los dos pasos restantes que muestra el diálogo, cada uno como un enlace a Slack:
@@ -78,7 +78,7 @@ El token de configuración rota en cada uso. Control Center guarda el valor rota
 
 La misma app, sin token de configuración: Slack te entrega su propia pantalla de creación con el manifiesto ya rellenado.
 
-1. En Control Center, ve a **Ajustes → Espacio de trabajo → General** y desplázate hasta la tarjeta **Puentes de chat**
+1. En Control Center, ve a **Ajustes → Espacio de trabajo → Integraciones** y desplázate hasta la tarjeta **Puentes de chat**
 2. En el bloque de Slack, haz clic en **Crear la app por mí**
 3. Ajusta el nombre de la app, el nombre del bot, las descripciones y el comando slash: viajan con el enlace
 4. Haz clic en **Crear en Slack**. Tu navegador abre la página de creación de apps de Slack con la configuración precargada
@@ -132,7 +132,7 @@ message.im
 
 Así es como los tokens de tu propia app llegan a Control Center. La app compartida no necesita nada de esto.
 
-1. Ve a **Ajustes → Espacio de trabajo → General** y desplázate hasta la tarjeta **Puentes de chat**
+1. Ve a **Ajustes → Espacio de trabajo → Integraciones** y desplázate hasta la tarjeta **Puentes de chat**
 2. En el bloque de Slack, haz clic en **Conectar Slack**
 3. Rellena los campos:
 
@@ -205,7 +205,7 @@ Cualquier miembro vinculado con un rol de escritura puede proponer un ticket des
 /cc ticket Fix the flaky login test | It fails on CI about once a day.
 ```
 
-El texto anterior a `|` es el título, y el posterior, la descripción. El bot responde que ha creado un borrador del ticket. Todavía no se crea nada ni se dispara ninguna automatización de tickets: el borrador te espera en **Ajustes → Espacio de trabajo → Perfil e identidad → Borradores de tickets del chat**, donde puedes corregir el título y la descripción y luego hacer clic en **Crear ticket** o **Descartar**.
+El texto anterior a `|` es el título, y el posterior, la descripción. El bot responde que ha creado un borrador del ticket. Todavía no se crea nada ni se dispara ninguna automatización de tickets: el borrador te espera en **Ajustes → Tú → Perfil → Borradores de tickets del chat**, donde puedes corregir el título y la descripción y luego hacer clic en **Crear ticket** o **Descartar**.
 
 - Solo el miembro que ejecutó el comando ve el borrador
 - Un borrador que dejas sin tocar se descarta al cabo de un día. Los borradores viven en memoria, así que un reinicio del servidor también los descarta

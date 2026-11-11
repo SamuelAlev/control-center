@@ -2,16 +2,18 @@
 title: Sandlåda och säkerhet
 description: Vad som faktiskt begränsar en agent i Control Center i dag, hur långt OS-sandlådan når och vilka gränser som håller på en värd som saknar backend.
 slug: sv-SE/handbok/koncept/sandlada-och-sakerhet
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Var OS-sandlådan når och inte når]
 `cc_server` sonderar värden vid start och lindar in agentens kommandokörning i
 den OS-inbyggda sandlådan när en sådan finns — Seatbelt på macOS, bubblewrap på
 Linux och WSL2 (som kräver `bwrap` och `socat` i `PATH`). Där ingen backend
-finns — Windows, eller en Linux-maskin som saknar verktygen — faller
-körningarna tillbaka på de andra gränserna nedan och servern säger det i sin
-startlogg. `--sandbox off` stänger av den medvetet.
+finns — Windows, eller en Linux-maskin som saknar verktygen — startar
+bara serverägarens agentkörningar, obegränsade, och alla andras nekas.
+Serverägaren kan i stället starta servern med `--sandbox off`, som kör varje
+medlems agenter obegränsade på den maskinen. Startloggen säger vilket fall du är
+i; se [Agenter på en värd utan sandlåda](#agenter-på-en-värd-utan-sandlåda).
 
 Två luckor överlever sandlådan och är värda att hålla i minnet:
 
@@ -35,7 +37,48 @@ inte hade hunnit granska klart. Så frågan produkten måste svara på är inte
 Control Center svarar på det i lager, och lagren är medvetet oberoende. Saknas
 ett håller de andra fortfarande. Det spelar roll, eftersom det yttersta lagret —
 OS-sandlådan — är det enda villkorliga: det beror på att värden erbjuder en
-backend, och på Windows gör ingen värd det.
+backend, och på Windows gör ingen värd det. Där den saknas kör servern inte tyst
+allas agenter utan den.
+
+## Agenter på en värd utan sandlåda
+
+Servern avgör en gång vid start hur agenter körs på dess maskin, och behåller det
+beslutet tills den startar om:
+
+- **Med sandlåda.** Värden har en backend och sandlådan är på. Varje körning
+  lindas in.
+- **Av.** Serverägaren startade servern med `--sandbox off`. Varje medlems agenter
+  körs obegränsade på den här maskinen. Det är ägarens val för alla som använder
+  servern, inte en inställning för en enskild körning.
+- **Otillgänglig.** Sandlådan är på men värden har ingen backend. En körning startar
+  bara när personen som ansvarar för den är [serverägaren](/sv-SE/handbok/koncept/auktorisering/#serverägaren):
+  personen som bad om den, eller för ett schema, en webhook eller annan automation,
+  personen den är bunden till. Andras körningar nekas innan någon uppgift utfärdas
+  eller någon process startar, med ”Den här servern har ingen sandlåda, så bara dess
+  ägare kan köra agenter här. Ägaren kan installera sandlådan eller stänga av
+  sandlådan för alla.”
+
+Skälet är ägandet av maskinen. En obegränsad agent kan göra allt som serverns
+användarkonto kan göra, så bara den som äger det kontot kör en, om de inte
+bestämmer annat för alla. En Windows-server är alltid i det otillgängliga fallet.
+Linux har en egen krångel, som beskrivs i
+[sandlådebackendsreferensen](/sv-SE/handbok/referens/sandladebackends/#linux-bubblewrap):
+inbyggd dispatch stänger där vid fel även med bubblewrap installerat.
+
+Samma regel gäller de mindre sakerna som startar en process åt dig:
+
+- **Snabba hjälpare som körs via en ACP-CLI**: samtalstitlar, `/btw`, `/handoff`
+  och `/goal`. När servern sandlådar agenter körs de inuti sandlådan, i en egen
+  session. Under `--sandbox off` körs de obegränsade. Utan någon tillgänglig sandlåda
+  körs de bara för begäran som serverägaren är ansvarig för; för andra hoppas de
+  över, så ingen titel genereras och ett sidoärende rapporterar att Content
+  synthesizer saknar en fungerande körare. Hjälpare som inte startar något
+  verktyg påverkas inte.
+- **En pull requests golden-tester** i Review Studios visuella kontroll följer
+  samma regel.
+- **Verktygsprocesser och `bash`** i en körning faller aldrig tillbaka till värden.
+  Om servern är inställd att sandlåda agenter men inte har någon sandlåda att ge en
+  körning, nekas de.
 
 ## Vad som faktiskt begränsar en agent
 
@@ -103,7 +146,8 @@ Verktyget `bash` är den andra platsen att vara precis på. Dess kommandon
 utvärderas mot lägets kommandopolicy och startas sedan med en sanerad miljö och
 worktreen som arbetskatalog. Där en backend finns lindas den starten in, så
 sandlådan är det som hindrar ett skalkommando från att skriva utanför worktreen;
-där ingen finns — Windows, eller Linux utan `bwrap` och `socat` — är
+där ingen finns (varje körning under `--sandbox off`, och serverägarens egna
+körningar på Windows eller på Linux utan `bwrap` och `socat`) är
 kommandopolicyen det enda mellan kommandot och resten av disken. I läget `chat`
 nekar policyn hårt en fast lista (privilegieeskalering, förstörelse av system och
 disk, container- och namnrymdsflykt) och frågar vid fjärrtillståndsmutationer
@@ -127,11 +171,7 @@ avgörs av [räckena](/sv-SE/handbok/koncept/racken/) — tillåt, fråga först
 — och samma regler gäller oavsett vilken adapter som kör agenten.
 
 En push är den åtgärd som måste hålla även mot en agent som försöker kringgå en
-regel, så den framtvingas genom vad agenten har, inte genom vad den kör. En
-körning i en GitHub-worktree får en token för just det repot, utfärdad från
-arbetsytans GitHub-app, serverns egen app eller Control Center Connect. Den kan
-läsa innehåll och, när den ansvariga medlemmen kan pusha, kommentera på pull
-requests, men den kan inte pusha. Körningens git-konfiguration skriver om varje push-URL till GitHub
+regel, så den framtvingas genom vad agenten har, inte genom vad den kör. En körning har ingen token för kodvärden när den startar, och dess `git` får aldrig en. När `gh` behöver en får den av Control Center en token för ett enda GitHub-repo som körningen arbetar med, utfärdad från arbetsytans GitHub-app, serverns egen app eller Control Center Connect. Den kan bara läsa: den kan inte pusha, kommentera eller redigera. Körningens git-konfiguration skriver om varje push-URL till GitHub
 (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) till
 **agentkörningsgatewayen**, en loopback-slutpunkt på `cc_server`. Gatewayen
 läser vilka refs pushen uppdaterar, frågar regeln **Pusha till en remote** — så
@@ -145,17 +185,15 @@ i gits egen utdata:
 ```
 
 Gatewayen skickar bara vidare pushar till worktreens eget repo eller till ett
-GitHub-repo som är länkat till arbetsytan. Fetch går direkt till GitHub med
-lästoken.
+GitHub-repo som är länkat till arbetsytan. Fetch går via gatewayen också, mot GitHub, GitLab och Bitbucket: den hämtar repona som körningen arbetar med med en autentiseringsuppgift som den själv behåller och som körningen aldrig ser. På GitLab och Bitbucket är det din egen token när du bad om körningen, och repots automatiseringstoken när ingen bad om körningen. En fetch frågar ingen, och bara att **Använd nätverket** är satt till Neka stoppar den.
 
 Andra skalkommandon möter en mjukare grind. Harnessens `bash`-verktyg och, via
 en hook, Claude Codes `Bash`-verktyg klassificerar varje kommandorad och frågar
 den regel den hör till: `git commit`, `merge`, `rebase`, `cherry-pick`,
 `revert` och `am` är **Skapa en commit**; `gh pr create` är **Öppna en pull
-request**; `gh pr merge`, `review`, `comment` och `close` är **Publicera en
-granskning eller sammanslagning**; `gh issue create`, `edit`, `comment` och
+request**; `gh pr merge`, `review`, `comment` och `close` är **Uppdatera eller slå ihop en pull request**; `gh issue create`, `edit`, `comment` och
 `close` är **Skriv till ett externt ärendesystem**; paketinstallationer är
-**Installera ett paket**; `curl` och `wget` är **Använd nätverket**. Det känner
+**Installera ett paket**; `curl` och `wget` är **Använd nätverket**. Att skriva till GitHub från skalet är undantaget: `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` och `gh issue`-skrivningar fungerar inte i en körning, vars token bara kan läsa, och agenten hänvisas till Control Centers verktyg, som frågar dessa regler. Det känner
 igen det vanliga sättet att skriva en åtgärd, och en agent som är fast besluten
 att dölja en (`eval`, en skriptfil, ett direkt API-anrop) kan göra det. Pushar
 är inte beroende av det.
@@ -163,7 +201,7 @@ att dölja en (`eval`, en skriptfil, ett direkt API-anrop) kan göra det. Pushar
 Varje GitHub-token som en körning får är begränsad två gånger: till ett enda
 repo, och till vad den ansvariga medlemmen (den som frågade, annars arbetsytans
 ägare) kan göra där. Det finns ingen reservuppgift. När ingen token kan utfärdas
-startar körningen utan, och dess anteckningar förklarar varför.
+förklarar kommandot som begärde den varför.
 
 Ingen API-nyckel för ärenden läggs i en sandlåda. Agenter skriver ärenden via
 Control Centers MCP-verktyg, som frågar **Skriv till ett externt
@@ -176,6 +214,16 @@ fortfarande vid varje anrop. Körningens handtag för inloggningsuppgifter släp
 när den rivs ner. Token bakom dem delas per medlem och repo och går ut inom
 ungefär en timme; en medlem som loggar ut från GitHub eller lämnar arbetsytan tar
 på en gång bort alla token som utfärdats för medlemmens räkning.
+
+## Arkiv som en agent bara kan läsa
+
+En agentkörning får bara ändra checkouten av de arkiv som personen den agerar för har [skrivbehörighet](/sv-SE/handbok/koncept/auktorisering/#ändring-av-kod-kräver-skrivbehörighet) på. Arbetsytans administratörer har den på varje länkat arkiv. En körning som ingen bett om, till exempel ett schema eller en annan automation, bedöms av samma ansvariga person som dess automationstoken är bunden till.
+
+I en yta med ett arkiv som den personen bara kan läsa kan agenten fortfarande läsa och söka i arkivet, men den kan inte ändra dess filer. Dess filverktyg nekar med ett meddelande som börjar `<repo> is read-only for this run` och säger att ändring av checkouten kräver skrivbehörighet, som personen körningen agerar för inte har, och att en arbetsytadministratör kan ge den. Inne i en sandlåda är checkouten skrivskyddad för varje process, så ett skalkommando som skriver dit misslyckas med "Operation not permitted". Det gäller även `git commit` och ett bygge eller test som skriver sin utdata inne i checkouten. Arkiv personen kan skriva till fungerar som vanligt, så administratörer, och alla med skrivåtkomst till varje arkiv i ytan, ser ingen skillnad.
+
+Detta avgörs en gång, när körningen startar. En ändring av behörighet träder i kraft vid agentens nästa körning, och det gör även ett arkiv som läggs till ytan under en körning.
+
+Där serverägaren stängt av sandlådan blockeras bara agentens egna filverktyg och Claude Codes skrivverktyg, och skalkommandon kan fortfarande ändra checkouten. Ingenting kan pushas utan skrivbehörigheten i alla fall, eftersom varje push kontrolleras mot den. Vilka processer sandlådan begränsar på varje plattform står i [Sandlådebackends](/sv-SE/handbok/referens/sandladebackends/).
 
 ## Vad sandlådan tillför och var den slutar
 
@@ -191,16 +239,15 @@ båda de skarvar som dispatchvägen har, eftersom transporterna inte delar någo
 Den första (`SandboxPort`) lindar in Claude Code-CLI:n. Den andra
 (`SandboxManager`) lindar in ACP-adaptrar och den inbyggda harnessens
 `bash`-verktyg. Att bara mata den ena skulle lämna de andra startande utan
-inlindning, vilket är vad som brukade hända. På en värd utan backend, eller under
-`--sandbox off`, startar de alla utan inlindning och servern säger vilket fall du
-är i på sin startrad. ACP och harnessens `bash` sanerar fortfarande miljön;
+inlindning, vilket är vad som brukade hända. Under `--sandbox off` startar de alla utan
+inlindning; på en värd utan backend startar bara ägarens körningar, också utan
+inlindning. Servern säger vilket fall du är i på sin startrad. ACP och harnessens `bash` sanerar fortfarande miljön;
 Claude Code via `NoSandboxAdapter` ärver värdmiljön.
 
-En yta väljer medvetet att stå utanför: den serverdrivna terminalen tar ett
-backend-argument per session och `cc_server` konstruerar den med värdskalet som
-standard, så en terminal du öppnar från appen körs utan sandlåda om inte en klient
-uttryckligen anger `native`. Det är ett riktigt skal på servervärden, inte en
-agentkörning.
+Den serverdrivna terminalen öppnar värdskalet bara för serverns
+[ägare](/sv-SE/handbok/koncept/auktorisering/#serverägaren). Alla andra får en
+sandlådad terminal, med en agents begränsningar, i arbetsytans egna kataloger. Bara
+personen som öppnade en terminal kan skriva i den, läsa den eller stänga den.
 
 På Linux bygger `bubblewrap` en monteringsnamnrymd, så agenten ser verkligen bara
 det som bands in i den. På macOS tillämpar `sandbox-exec` en Seatbelt-profil som
@@ -212,6 +259,22 @@ uttryckliga tillåtanden ovanpå, unlink-blockering på varje nekad sökväg och
 förfäder så att en namnändring inte kan kringgå ett skrivnekande, exec-nekanden
 för alltid farliga binärer och för allt som kopierats in i en skrivbar katalog
 samt nätverk begränsat till loopback-proxyportarna plus DNS. Verktygsinstallationer under ditt hem (corepacks pnpm, nodeversionshanterare, Playwright-webbläsare, rustup, fvm, uv och liknande) förblir körbara trots den exec-spärren, så att agenter kan använda dem utan omvägar. De alltid farliga förbuden gäller fortfarande inuti dem. Varje session får också en egen privat `TMPDIR`. Det är den enda temporära katalog där agenten får köra program den har byggt eller öppna Unix-socketar.
+
+Två skydd till gäller i varje läge. En sandlåda kan inte lägga till, ersätta, ta bort
+eller byta namn på ett kommando i mapparna som servern kör program från (varje mapp på
+dess `PATH` och de vanliga verktygsmapparna per användare), så en sandlådad körning
+kan inte plantera ett program som servern senare startar utanför sandlådan. Globala
+installationer och byten av standardversion från inne i en körning misslyckas därför
+med ”Operation not permitted”, medan projektlokala installationer och `npx`-liknande
+körningar fortsätter att fungera; installera globala verktyg på servern själv och
+starta om den. Och varje hemsökväg som en sandlåda inte kan läsa kan den inte skriva
+till heller, med serverns användares skal- och sessionsstartfiler aldrig skrivbara.
+Detaljer och plattformsbegränsningar finns i
+[Serverns kommandomappar](/sv-SE/handbok/referens/sandladebackends/#serverns-kommandomappar).
+
+En körnings verktygssandlådor hör till den körningen och frigörs när den tar slut.
+Språkservrar startar på nytt med varje sandlådad körning. En felsökningssession
+behåller sin sandlåda över turerna tills sessionen tar slut, under högst 30 minuter.
 
 Den praktiska konsekvensen: på Linux är agentens vy av filsystemet snävare; på
 macOS kan agenten fortfarande _läsa_ det mesta av värden, och dina registrerade

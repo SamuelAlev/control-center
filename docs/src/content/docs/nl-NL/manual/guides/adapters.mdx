@@ -2,7 +2,7 @@
 title: Adapters en modellen beheren
 description: Verbind modelproviders, kies het model waarop een agent draait en bekijk welke agent-runner-CLI's de serverhost heeft.
 slug: nl-NL/handleiding/gidsen/adapters
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Deze gids laat zien hoe je modelproviders verbindt en kiest waarop een agent
@@ -118,6 +118,8 @@ adapter en het model expliciet in op elke agent die je wilt gebruiken.
 
 De agent **Content synthesizer** schrijft de tekst die Control Center rond een gesprek genereert: de titel, antwoorden op `/btw`, `/handoff`-documenten en het doelinterview van `/goal`. Elke keer voert hij één completion zonder tools uit, met zijn eigen adapter en model, dus geef hem een klein, snel model.
 
+Wanneer die adapter een ACP-CLI is, is de completion een proces op de machine van de server en volgt het de [sandboxregel](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/#agents-op-een-host-zonder-sandbox): binnen de sandbox wanneer de server agents in een sandbox draait, en zonder sandbox alleen voor verzoeken waarvoor de serverbeheerder verantwoordelijk is. Voor alle anderen worden deze functies overgeslagen: er wordt geen titel gegenereerd, en `/btw` antwoordt "De Content synthesizer-agent ontbreekt of heeft geen werkende runner".
+
 Pas de **persona** aan in **Instellingen → Werkruimte → Agenten** om te veranderen hoe die tekst klinkt: titellengte, taal, toon en de voorbeelden die hij volgt. Het antwoordformaat dat elke functie verwerkt (een titel van één regel, de secties van het doel) ligt vast en wordt toegepast na je persona. Verwijder de agent om deze functies uit te zetten; hij wordt niet opnieuw aangemaakt.
 
 ## Een runner-CLI installeren
@@ -134,8 +136,7 @@ Druk daarna boven aan de pagina op **Vernieuwen**. Elke gedetecteerde rij toont 
 gevonden versie en het pad, plus chips die aangeven of JSON-modus en
 modelselectie worden ondersteund.
 
-Een externe CLI houdt zijn eigen referenties bij, in zijn eigen configuratie, op
-de serverhost. Control Center beheert ze niet.
+Claude Code-aanmeldingen staan onder **Claude Code-accounts** op de Claude Code-runner. Control Center maakt de configuratiemap van elk account aan op de server en geeft je het commando `claude auth login` om daar uit te voeren; het meldt nooit zelf aan voor je.
 
 :::caution[Adapterargumenten en omgevingsvariabelen blijven op dit apparaat]
 Elke adapterrij biedt een veld **Extra argumenten** en een dialoogvenster

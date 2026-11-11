@@ -87,7 +87,7 @@ Les skills apparaissent dans la même liste sous leur propre espace de noms `ski
 
 Les skills de dépôt portent un badge indiquant le dépôt d’où ils proviennent, car un nom seul ne dit pas de quel service il encode les conventions et deux dépôts peuvent chacun fournir un `testing`. Vous n’avez pas besoin de saisir le préfixe pour en trouver un : saisir le nom nu du skill correspond aussi aux entrées préfixées par l’espace de noms.
 
-Un agent ne porte jamais que les skills du dépôt dans lequel il travaille actuellement — voir [Skills limités à un dépôt](/fr-FR/manuel/concepts/modele-agent/#repo-scoped-skills). Le compositeur n’est pas limité de cette façon : vous pouvez invoquer le skill de n’importe quel dépôt en le nommant.
+Un agent ne porte jamais que les skills du dépôt dans lequel il travaille actuellement — voir [Skills limités à un dépôt](/fr-FR/manuel/concepts/modele-agent/#skills-limités-au-dépôt). Le compositeur n’est pas limité de cette façon : vous pouvez invoquer le skill de n’importe quel dépôt en le nommant.
 
 `/compact` et `/todo` sont interceptées par le client et ne sont jamais enregistrées comme messages — une ligne `/compact` dans la transcription repousserait d’un tour la coupure du prochain compactage. `/plan` bascule le mode stocké de l’espace plutôt que de circuler comme texte. Aucune des trois n’est donc « un message que vous envoyez à l’agent » ; ne vous attendez pas à les voir dans l’historique.
 

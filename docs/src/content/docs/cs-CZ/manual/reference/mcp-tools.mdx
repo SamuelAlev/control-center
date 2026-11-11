@@ -2,10 +2,10 @@
 title: Nástroje MCP
 description: Úplný katalog nástrojů MCP, které cc_server registruje, po rodinách.
 slug: cs-CZ/prirucka/referencni-prirucka/nastroje-mcp
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se dají přemostit do stejného registru jako dynamická vrstva.
+`cc_server` hostí jeden registr nástrojů MCP (JSON-RPC 2.0), vystavený na hlavním portu serveru (výchozí `9030`) na `POST /mcp` a `GET /sse`, verze protokolu `2024-11-05`. Ke stejnému registru se dostane každý klient: desktop, webové sestavení, externí klienti MCP i vestavěný runtime agenta. Externí servery MCP se dají přemostit do stejného registru jako dynamická vrstva. Servery zjištěné v osobní konfiguraci nástrojů uživatele serveru jsou výjimka: tento endpoint je nikdy nevypisuje, nevolá ani neprohledává a dostanou je jen běhy vestavěného harnessu, za které odpovídá vlastník serveru (viz [Osobní servery MCP zůstávají vlastníkovi](/cs-CZ/prirucka/navody/mcp-server/#osobní-servery-mcp-zůstávají-vlastníkovi)).
 
 ## Velikost registru
 
@@ -23,7 +23,7 @@ Těch pět nástrojů grafu kódu se registruje jen tehdy, když hostitel před�
 Celý registr se v `tools/list` nabízí bez brány objevování. Úpravy ticketů jsou typované nástroje.
 
 :::note[Externí klienti vždy vidí celý katalog]
-`tools/list` se nikdy neořezává. Klienti MCP ověřují jména nástrojů proti vlastní kopii toho seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj skrytý tam je nedosažitelný, ne jen tichý.
+`tools/list` se nikdy neořezává, s výjimkou osobních serverů MCP vlastníka serveru, které nikdy nenese. Klienti MCP ověřují jména nástrojů proti vlastní kopii toho seznamu v cache a cokoliv, co v něm není, odmítnou, aniž by se serveru zeptali, takže nástroj skrytý tam je nedosažitelný, ne jen tichý.
 
 **Vestavěný harness** je jiný: na každý požadavek načte jen rezidentní podmnožinu definic a zbytek dotáhne při prvním použití. Je to chování na straně harnessu a tenhle registr se tím nemění. Viz [Kontext nástrojů a cache promptů](/cs-CZ/prirucka/koncepty/kontext-nastroju/).
 :::
@@ -256,8 +256,10 @@ odmítnou. `rig_list` nedeklaruje žádnou — jen čte stav pracovního prostor
 | `browser_use`  | Řídí headless Chromium, Firefox nebo WebKit (`engine`): navigace, klik, vyplnění, extrakce (a11y/DOM/konzole), schránka, snímek obrazovky |
 | `mobile_use`   | Řídí Android přes ADB: inspekce a vstup, snímky obrazovky, instalace, start, stop, reset a odinstalace aplikací, deep linky a příkazy zařízení ve tvaru argv |
 | `ios_use`      | Řídí iOS Simulator přes WebDriverAgent/CoreSimulator: inspekce a vstup, snímky obrazovky, instalace, start, stop a odinstalace aplikací, deep linky a procesy simulátoru ve tvaru argv |
-| `rig_list`     | Vypíše stanice pracovního prostoru s plochou, stavem, velikostí displeje a řadičem |
+| `rig_list`     | Vypíše stanice prostoru běhu s plochou, stavem, velikostí displeje a řadičem |
 | `rig_close`    | Zničí stanici a zahodí stav stroje, který vlastní |
+
+Tyto nástroje může volat jen běh agenta; každý jiný volající je odmítnut. Běh dosáhne jen na stanice prostoru, pro který byl přidělen: `space_id` pochází z přidělení běhu, nikdy z volání, a stanice jiného prostoru nebo žádného prostoru odpoví přesně jako chybějící.
 
 `app_use` je pátý nástroj use: ovládá okna desktopové aplikace spuštěné v prostoru, přímo na hostiteli, ne ve VM, a deklaruje také `fileWriteOutsideWorktree` a `fileDelete`. Tento nástroj i nástroje `environment_*` popisuje stránka [Nastavení prostředí](/cs-CZ/prirucka/navody/prostredi/).
 
@@ -302,7 +304,7 @@ vůbec, takže jméno, které jsi mohl vidět jinde, vrátí „unknown tool“:
 | Schopnost                              | Kde žije místo toho                                                                              |
 | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Nabírání, propouštění nebo úprava agenta | Rozhraní agentů. Nástroj `hire_agent` / `fire_agent` / `update_agent` není                       |
-| Vytvoření pracovního prostoru          | `workspace.upsert` přes RPC, které pracovní prostor založí a orazítkuje vlastnictví              |
+| Vytvoření pracovního prostoru          | `workspace.create` přes RPC, jen pro vlastníka serveru, které pracovní prostor založí a orazítkuje vlastnictví |
 | Projekty (založení / výpis / úprava / zařazení) | Rozhraní ticketů. Projekty jsou plocha operátora — viz [Projekty](/cs-CZ/prirucka/navody/projekty/) |
 | Blokující otázka operátorovi           | Nástroj **harnessu** `ask_user`, ne MCP. Vykreslí formulář v konverzaci a čeká na odpověď        |
 | Diagnostika po agentech                | Nic. `doctor` není — viz [Diagnostikujte agenta](/cs-CZ/prirucka/navody/diagnostika-agenta/)     |

@@ -2,7 +2,7 @@
 title: Slash commands
 description: Every command you can type in the composer, what it does and where it runs.
 slug: en-GB/manual/reference/slash-commands
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Commands typed in a space's composer. They fall into three groups by where they take effect, and the difference matters: a **local** command never travels as a message, so it neither appears in the transcript nor reaches an agent.
@@ -139,7 +139,7 @@ Both are the same shape — take the conversation as it stands, ask one question
 
 Templating: `$1`, `$@`, `$@[start:length]` and `$ARGUMENTS`. Frontmatter may set `description` (composer autocomplete). `allowed-tools` and `model` are parsed from the file but a user-command invocation currently only substitutes arguments into the body — they do not change the run's model or tool surface.
 
-A user-authored command wins over a skill of the same name — it is a shortcut a human invoked deliberately, with arguments.
+Skills are reached only as `/skill:<name>`, so a user-authored command never collides with one.
 
 ---
 

@@ -2,7 +2,8 @@ export 'package:cc_connect_core/src/wire_errors.dart';
 export 'package:cc_connect_core/src/wire_github.dart';
 export 'package:cc_connect_core/src/wire_oauth.dart';
 
-/// `POST /v1/{github,google,slack}/refresh` and `/v1/slack/revoke`.
+/// `POST /v1/{github,google,slack}/refresh`, `/v1/slack/revoke` and
+/// `/v1/install/retire`.
 final class SealRequest {
   /// Creates the request.
   const SealRequest({required this.seal, required this.workspaceId});

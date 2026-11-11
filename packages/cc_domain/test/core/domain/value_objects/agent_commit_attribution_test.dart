@@ -1,97 +1,70 @@
-import 'package:cc_domain/core/domain/repositories/user_preferences_repository.dart';
-import 'package:cc_domain/core/domain/repositories/workspace_settings_repository.dart';
-import 'package:cc_domain/core/domain/services/resolve_agent_attribution.dart';
 import 'package:cc_domain/core/domain/value_objects/agent_commit_attribution.dart';
 import 'package:test/test.dart';
 
-class _UserPreferences implements UserPreferencesRepository {
-  final values = <String, String>{};
-
-  @override
-  Future<String?> get(String userId, String key) async => values[userId];
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _WorkspaceSettings implements WorkspaceSettingsRepository {
-  final values = <String, String>{};
-
-  @override
-  Future<String?> get(String workspaceId, String key) async =>
-      values[workspaceId];
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
 void main() {
-  test(
-    'workspace choices override users and clearing restores their preferences',
-    () {
-      for (final user in ['true', 'false']) {
-        expect(
-          resolveAgentCommitAttribution(
-            userPreference: user,
-            workspaceOverride: 'false',
-          ),
-          isFalse,
-        );
-        expect(
-          resolveAgentCommitAttribution(
-            userPreference: user,
-            workspaceOverride: 'true',
-          ),
-          isTrue,
-        );
-        expect(
-          resolveAgentCommitAttribution(
-            userPreference: user,
-            workspaceOverride: AgentAttributionOverride.inherit.storedValue,
-          ),
-          user == 'true',
-        );
-      }
+  test('a workspace choice overrides every member, and clearing it restores '
+      'their own preference', () {
+    for (final user in ['true', 'false']) {
       expect(
         resolveAgentCommitAttribution(
-          userPreference: null,
-          workspaceOverride: null,
+          userPreference: user,
+          workspaceOverride: 'false',
+        ),
+        isFalse,
+      );
+      expect(
+        resolveAgentCommitAttribution(
+          userPreference: user,
+          workspaceOverride: 'true',
         ),
         isTrue,
       );
       expect(
         resolveAgentCommitAttribution(
-          userPreference: 'invalid',
-          workspaceOverride: 'invalid',
+          userPreference: user,
+          workspaceOverride: AgentAttributionOverride.inherit.storedValue,
         ),
-        isTrue,
+        user == 'true',
       );
-    },
-  );
+    }
+  });
 
-  test(
-    'stored choices remain isolated per user and workspace and update between runs',
-    () async {
-      final users = _UserPreferences()..values['alice'] = 'false';
-      final workspaces = _WorkspaceSettings()
-        ..values['forced-on'] = 'true'
-        ..values['forced-off'] = 'false';
-      Future<bool> resolve(String user, String workspace) =>
-          resolveStoredAgentAttribution(
-            preferences: users,
-            workspaceSettings: workspaces,
-            userId: user,
-            workspaceId: workspace,
-          );
-      expect(await resolve('alice', 'personal'), isFalse);
-      expect(await resolve('bob', 'personal'), isTrue);
-      expect(await resolve('alice', 'forced-on'), isTrue);
-      expect(await resolve('bob', 'forced-off'), isFalse);
-      expect(await resolve('bob', 'personal'), isTrue);
-      workspaces.values.remove('forced-off');
-      expect(await resolve('bob', 'forced-off'), isTrue);
-      users.values['bob'] = 'false';
-      expect(await resolve('bob', 'personal'), isFalse);
-    },
-  );
+  test('an unset or unreadable choice is on', () {
+    expect(
+      resolveAgentCommitAttribution(
+        userPreference: null,
+        workspaceOverride: null,
+      ),
+      isTrue,
+    );
+    expect(
+      resolveAgentCommitAttribution(
+        userPreference: 'invalid',
+        workspaceOverride: 'invalid',
+      ),
+      isTrue,
+    );
+  });
+
+  test('the override round-trips through its stored value', () {
+    for (final override in AgentAttributionOverride.values) {
+      expect(
+        AgentAttributionOverride.fromStored(override.storedValue),
+        override,
+      );
+    }
+    expect(AgentAttributionOverride.inherit.value, isNull);
+    expect(AgentAttributionOverride.enabled.value, isTrue);
+    expect(AgentAttributionOverride.disabled.value, isFalse);
+  });
+
+  test('the instruction every adapter gets names the trailer variable and '
+      'forbids overriding identity or signing', () {
+    expect(
+      agentCommitAttributionInstruction,
+      contains('CC_GIT_COAUTHOR_TRAILER'),
+    );
+    expect(agentCommitAttributionInstruction, contains('Signed-off-by'));
+    expect(agentCommitAttributionInstruction, contains('signing'));
+  });
 }

@@ -23,6 +23,8 @@ Each tool declares a tier, and the tier decides **which surfaces see it** — no
 
 Registered when the run has a language-server supervisor and a working directory. Whether a server can actually answer is detected at call time, as an **intersection**: a root marker must exist *and* the server binary must resolve. Either one alone means no server starts — `status` says so — rather than a silent guess.
 
+Servers come from the built-in table only; a repository `lsp.json` is not read. In a sandboxed run each run gets its own language-server session, so servers start again with each run. Project-local binaries (`node_modules/.bin`) are used only when the run is sandboxed, and the project root never resolves above the run's working directory.
+
 Positions are addressed by `line` plus a `symbol` substring, never by column. A model asked for a column guesses, and a wrong guess resolves to a different symbol on the same line — an answer that looks right and is about something else. Omitting `symbol` on a navigation action is an error, not a first-column guess.
 
 | Action            | Arguments                        | Returns                                    |
@@ -115,7 +117,7 @@ Every file is compared against the content captured at staging time, and **any**
 
 Registered when the run has a debug-session supervisor, a working directory and a conversation id. Whether an adapter can actually start is detected at call time, by the same intersection rule as the language server (root marker *and* binary). `exec` tier; not parallel-safe (a session is state across calls, so `continue` overtaking `stack` would read a frame that has already moved).
 
-One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first.
+One session per conversation, with a hard TTL (30 minutes). A second `launch` is refused rather than silently replacing the first. In a sandboxed run the session keeps its sandbox across turns until it ends, so for at most those 30 minutes.
 
 | Op            | Arguments                     | Notes                                          |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -123,7 +125,7 @@ One session per conversation, with a hard TTL (30 minutes). A second `launch` is
 | `status`      | —                             | Whether a session is running, and where it stopped |
 | `breakpoints` | `file`, `lines[]`             | Empty `lines` clears the file. May be set **before** launching |
 | `launch`      | `program`, `args[]`           | Starts the program stopped at your breakpoints |
-| `attach`      | `port`                        | Connects to an already-running debuggee         |
+| `attach`      | `port`                        | Connects to an already-running debuggee on one of the run's own forwarded ports; any other port is refused before anything starts |
 | `continue`    | `thread_id?`                  | Runs until the next stop                        |
 | `pause`       | `thread_id?`                  | Stops it where it is                            |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Moves one step                          |
@@ -144,7 +146,7 @@ One session per conversation, with a hard TTL (30 minutes). A second `launch` is
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH`: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code.
+`debugpy` prefers a project-local `.venv/bin` or `venv/bin` over `$PATH` when the run is sandboxed: a `$PATH` python is a different environment, and attaching from the wrong one fails in a way that reads as broken code. Unsandboxed it uses `$PATH` only, so a repository cannot choose the interpreter that runs on the host.
 
 ---
 
@@ -174,7 +176,7 @@ The bridge **re-enters the harness tool registry**, so guardrails, approval and 
 The cell's timeout is an *inactivity* budget (default 5 minutes) and it is **suspended** while a bridged call is outstanding, so a cell that fans out to subagents is not killed mid-fanout.
 
 :::note[Where the kernel runs]
-In the conversation's enclosure when it has one, on the host otherwise. It does not boot an enclosure to get there — the same rule that stops a rig tab auto-starting.
+In the conversation's enclosure when it has one, otherwise in the run's OS sandbox on the host. With the sandbox off or unavailable it runs unconfined and `eval` asks for host-execution approval. It does not boot an enclosure to get there, the same rule that stops a rig tab auto-starting.
 :::
 
 ---

@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/workspace.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/settings/presentation/widgets/kit/settings_kit.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_flow.dart';
+import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_restore_gate.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/backup_transfer_feedback.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/features/settings/providers/backup_transfer.dart';
@@ -342,8 +343,9 @@ class _SnapshotRow extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           SettingsCopyField(value: snapshot.path),
           const SizedBox(height: AppSpacing.md),
+          const BackupRestoreOwnerOnlyNote(),
           for (final entry in snapshot.workspaces)
-            _SnapshotWorkspaceRow(
+            BackupSnapshotWorkspaceRow(
               entry: entry,
               // A snapshot outlives the registry: a workspace can be deleted,
               // or the whole file moved to another install. Naming the id and
@@ -382,63 +384,6 @@ class _SnapshotRow extends StatelessWidget {
                 action: inline ? null : delete,
               );
             },
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SnapshotWorkspaceRow extends StatelessWidget {
-  const _SnapshotWorkspaceRow({
-    required this.entry,
-    required this.name,
-    required this.busy,
-    required this.onRestore,
-  });
-
-  final BackupSnapshotWorkspaceView entry;
-  final String? name;
-  final bool busy;
-  final Future<void> Function(BackupSnapshotWorkspaceView, String) onRestore;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final tokens = context.designSystem ?? DesignSystemTokens.light();
-    final known = name != null;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  name ?? entry.workspaceId,
-                  style: CcTypography.bodySm.copyWith(
-                    color: known ? tokens.textPrimary : tokens.textTertiary,
-                  ),
-                ),
-                Text(
-                  known ? humanBytes(entry.bytes) : l10n.backupWorkspaceUnknown,
-                  style: CcTypography.caption.copyWith(
-                    color: tokens.textTertiary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          CcButton(
-            size: CcButtonSize.sm,
-            variant: CcButtonVariant.secondary,
-            loading: busy,
-            onPressed: known && !busy ? () => onRestore(entry, name!) : null,
-            child: Text(l10n.backupRestoreAction),
           ),
         ],
       ),

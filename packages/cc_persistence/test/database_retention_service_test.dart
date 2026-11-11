@@ -1,3 +1,4 @@
+import 'package:cc_domain/core/domain/value_objects/agent_pull_request_cache_kinds.dart';
 import 'package:cc_domain/core/domain/value_objects/editor_layout_cache_kinds.dart';
 import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_seeds.dart';
 import 'package:cc_persistence/cc_persistence.dart';
@@ -136,7 +137,8 @@ void main() {
     },
   );
 
-  test('runOnce ages out cache rows but keeps editor layouts', () async {
+  test('runOnce ages out cache rows but keeps editor layouts and agent pull '
+      'request requesters', () async {
     final db = dbs.of('ws-1');
     Future<void> seedCache(String kind, String key) => db
         .into(db.cachesTable)
@@ -152,11 +154,22 @@ void main() {
     await seedCache('prDetail', '42');
     await seedCache(EditorLayoutCacheKinds.space, 'user:u-1:space-1');
     await seedCache(EditorLayoutCacheKinds.pullRequest, 'user:u-1:o/r#1');
+    await seedCache(
+      AgentPullRequestCacheKinds.opened,
+      'github|github.com|o/r#1',
+    );
+    await seedCache(
+      AgentPullRequestCacheKinds.pending,
+      'github|github.com|o/r@agent/x',
+    );
 
     expect(await service().runOnce(), 1);
 
     final remaining = await db.select(db.cachesTable).get();
-    expect(remaining.map((r) => r.kind).toSet(), EditorLayoutCacheKinds.all);
+    expect(remaining.map((r) => r.kind).toSet(), {
+      ...EditorLayoutCacheKinds.all,
+      ...AgentPullRequestCacheKinds.all,
+    });
   });
 
   group('index_code runs', () {

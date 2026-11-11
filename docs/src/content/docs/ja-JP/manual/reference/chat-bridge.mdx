@@ -2,7 +2,7 @@
 title: チャットブリッジ
 description: チャットブリッジのプロバイダー、コマンド、資格情報、ケイパビリティ、RPC 操作、ストレージについて説明します。
 slug: ja-JP/マニュアル/リファレンス/チャットブリッジ
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## プロバイダー
@@ -150,7 +150,7 @@ Control Center がアプリを作成または編集するときに表明する�
 | メンションを受け付け        | `Working on it…`                                               |
 | ステップ `repo`             | `Cloning <repo>…`                                              |
 | ステップ `prCheckout`       | `Checking out the pull request in <repo>…`                     |
-| ステップ `script`           | `Running the setup script for <repo>…`                         |
+| ステップ `provisionTasks`           | `Running worktree tasks for <repo>…`                         |
 | ステップ `agent`            | `Setting up <agent>…`                                          |
 | `provisioning`、ステップはまだなし | `Preparing the workspace…`                              |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Control Center がアプリを作成または編集するときに表明する�
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 接続資格情報               | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | 途中まで進んだガイド付きセットアップ | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| レガシー Slack ファイル    | `<dataDir>/<workspaceId>/slack_credentials.json` と `slack_app_setup.json`。一度読み込まれ、その場で移行されます |
 
 資格情報はワークスペースのデータベースの隣にあり、その中にはありません。ワークスペースを削除するとそのチャットトークンも一緒に削除され、`workspace.export` やバックアップは `workspace.db` をコピーします — したがって、他人に渡されたワークスペースに有効なボットトークンは含まれません。書き込みはアトミック（一時ファイルとリネーム）で、所有者のみに制限されます。
 

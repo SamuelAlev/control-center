@@ -1,6 +1,7 @@
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_bulk_action_bar.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_load_more_footer.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_rail.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_table/pr_repo_section_card.dart';
 import 'package:control_center/features/pr_review/providers/pr_table_providers.dart';
@@ -9,6 +10,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Width of the repo rail in the grouped PR table.
 const double kPrRepoRailWidth = 224;
+
+/// How close (in pixels) to the end of the shown repo's rows the next page
+/// starts loading.
+const double kPrRepoLoadMoreExtent = 600;
 
 /// The repo-grouped PR table — the inbox's view (left rail + section card)
 /// keyed by repository. The left rail lists every repo with its PR count
@@ -30,6 +35,9 @@ class PrRepoView extends ConsumerStatefulWidget {
     this.selectable = false,
     this.selectedRepoId,
     this.onSelect,
+    this.totals = const {},
+    this.paging = const {},
+    this.onLoadMore,
   });
 
   /// Every repo + its (filtered) items, in rail order. Never hidden — a repo
@@ -48,6 +56,18 @@ class PrRepoView extends ConsumerStatefulWidget {
   /// Invoked with the tapped repo id. When set, the parent owns selection
   /// (typically by writing the list URL); local state is not updated.
   final ValueChanged<String>? onSelect;
+
+  /// Rail counts that override a section's loaded item count, keyed by repo
+  /// id: the forge's total when the shown items are only the first pages.
+  final Map<String, int> totals;
+
+  /// Per-repo paging state, keyed by repo id. A repo without an entry has
+  /// nothing more to load.
+  final Map<String, PrRepoPaging> paging;
+
+  /// Loads the next page of the given repo's PRs. Called when the shown repo
+  /// scrolls near its end (or its rows do not fill the pane) and on retry.
+  final ValueChanged<String>? onLoadMore;
 
   @override
   ConsumerState<PrRepoView> createState() => _PrRepoViewState();
@@ -86,10 +106,47 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
   /// section so the first repo is preselected.
   String? _selectedRepoId;
 
+  /// The repo whose card is shown, as of the last build.
+  String? _shownRepoId;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_maybeLoadMore);
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Asks for the shown repo's next page once the scroll position is within
+  /// [kPrRepoLoadMoreExtent] of its end — including when its rows are too
+  /// few to scroll at all. A failed load waits for an explicit retry.
+  void _maybeLoadMore() {
+    final id = _shownRepoId;
+    final onLoadMore = widget.onLoadMore;
+    final paging = id == null ? null : widget.paging[id];
+    if (id == null ||
+        onLoadMore == null ||
+        paging == null ||
+        !paging.hasMore ||
+        paging.loading ||
+        paging.failed ||
+        !_scrollController.hasClients) {
+      return;
+    }
+    // Attached is not laid out: until the viewport's first layout (a repo
+    // switch, a pane that is not built yet) the position has no extents and
+    // `extentAfter` throws. The listener or the next frame's check retries.
+    final position = _scrollController.position;
+    if (!position.hasContentDimensions || !position.hasPixels) {
+      return;
+    }
+    if (position.extentAfter < kPrRepoLoadMoreExtent) {
+      onLoadMore(id);
+    }
   }
 
   void _onSelect(String id) {
@@ -116,6 +173,15 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
         : sections.first.repo.id;
     final selected = sections.firstWhere((s) => s.repo.id == selectedId);
     final allItems = [for (final s in sections) ...s.items];
+    final paging = widget.paging[selectedId];
+    _shownRepoId = selectedId;
+    // Re-checked after every layout: a page that lands without filling the
+    // pane (or a filter that leaves few rows) must keep loading on its own.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _maybeLoadMore();
+      }
+    });
 
     // The bottom spacing sits OUTSIDE the scroll view (as margin, not
     // padding): inside the scroll view it would stretch the scroll viewport
@@ -142,6 +208,11 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
                 selectable: widget.selectable,
               ),
             ),
+            if (paging != null && paging.hasMore)
+              PrRepoLoadMoreFooter(
+                paging: paging,
+                onRetry: () => widget.onLoadMore?.call(selectedId),
+              ),
           ],
         ),
       ),
@@ -157,7 +228,11 @@ class _PrRepoViewState extends ConsumerState<PrRepoView> {
             child: PrRepoRail(
               entries: [
                 for (final section in sections)
-                  (repo: section.repo, count: section.items.length),
+                  (
+                    repo: section.repo,
+                    count:
+                        widget.totals[section.repo.id] ?? section.items.length,
+                  ),
               ],
               selectedRepoId: selectedId,
               onSelect: _onSelect,

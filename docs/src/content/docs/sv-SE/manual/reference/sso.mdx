@@ -2,7 +2,7 @@
 title: Referens för SSO-konfiguration
 description: Alla inställningar, slutpunkter, operationer och felkoder för enkel inloggning.
 slug: sv-SE/handbok/referens/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Allt som går att konfigurera för enkel inloggning, på ett ställe. Värdena
@@ -34,6 +34,18 @@ inställningsskärmen kan säga emot).
 | `groupRoleMap`         | båda   | `{}`            | grupp → roll; ägarmappningar avvisas vid sparande                                                                                                    |
 | `autoMember`           | båda   | på              | lägg automatiskt till användare i varje arbetsyta vid första inloggningen                                                                            |
 | `allowJit`             | båda   | på              | provisionera okända användare vid inloggning                                                                                                         |
+
+## Kontomatchning
+
+`SsoProvisioner` löser upp en inloggning i den här ordningen, och aldrig via ett användarnamn:
+
+1. `(users.sso_issuer, users.sso_subject)` lika med inloggningens utfärdare och subject (SAML NameID / OIDC `sub`).
+2. Ett konto vars adress är lika med inloggningens e-postadress, bara när båda sidor intygar den: leverantören (OIDC `email_verified: true`; ett saknat claim är ingen intygelse, en signerad SAML-assertion intygar alltid) och kontot (`users.email_verified`). Adresser lagras trimmade och i gemener och jämförs så, och en verifierad adress matchar bara när exakt ett konto har den verifierad; två innehavare matchar ingen (loggas utan adressen), och inget konto kan verifieras för en skiftlägesvariant av en adress som ett annat konto har verifierad.
+3. Annars ett nytt konto när `allowJit` är på; ett avslag när den är av.
+
+`users.email_verified` sätts av en SSO-inloggning eller en SCIM-push som bär adressen, eller av serverägaren med `users.vouchEmail` (**Inställningar → Server → Personer → Bekräfta e-post**, granskad som `user.email_vouched`). Ägarens egen profilredigering intygar ägarens egen adress. Varje annan profilredigering, och varje adress som skrivs in vid en inbjudan, lämnar den overifierad, och att redigera en adress rensar flaggan. En intygad inloggning som skapar ett konto tar adressen från konton som bara skrev in den (granskad som `user.email_unvouched_cleared`), aldrig från ett som har den verifierad; i det fallet får det nya kontot ingen adress.
+
+Ett matchat konto som redan är fäst vid ett annat subject eller en annan utfärdare avvisar inloggningen med `This account is already linked to a different SSO identity`. Ett avaktiverat konto avvisas med `This account has been deactivated`.
 
 ## Processkonfiguration
 
@@ -133,6 +145,7 @@ Fel i `cc_saml_verify_response` bär en stabil kod:
   ARBETSYTOR AV DESIGN.
 - `users.sso_subject` + `users.sso_issuer` — fästningen av leverantörens
   subject, unik per `(issuer, subject)` via ett partiellt index.
+- `users.email_verified`: om kontots adress får matcha en SSO-inloggning eller en SCIM-push (se [Kontomatchning](#kontomatchning)).
 - `users.deactivated_at` — stämpeln för SCIM-inaktivering.
 - SCIM-bearer-token och OIDC-klienthemligheten ligger i hemlighetsfilen
   med 0600, aldrig i databasen.

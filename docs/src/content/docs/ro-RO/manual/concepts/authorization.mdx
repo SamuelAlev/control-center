@@ -2,7 +2,7 @@
 title: Autorizare — cine poate face ce și cum o dovedești
 description: Catalogul de permisiuni din spatele rolurilor din Control Center, jurnalul de audit cu detectarea modificărilor în care ajunge fiecare decizie de autorizare și controalele la nivel de instalare pe care le poate fixa un operator.
 slug: ro-RO/manual/concepte/autorizare
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center răspunde la două întrebări de autorizare, iar ele sunt cu adevărat
@@ -60,19 +60,59 @@ superioară validă. Membrii le dețin ca `custom:<id>`, iar un client prea vech
 să înțeleagă acea valoare revine la Invitat în loc să ghicească.
 
 Sub roluri stau **permisiunile per repo** (`none` / `read` / `review` /
-`write`): apartenența la spațiul de lucru nu depășește niciodată în silență
+`write`, vezi [Modificarea codului necesită grantul de scriere](#modificarea-codului-necesită-grantul-de-scriere)):
+apartenența la spațiul de lucru nu depășește niciodată în silență
 privilegiile forge-ului. Fiecare suprafață care expune cod le verifică — inclusiv
 cele care ajung la cod pe ocolite, cum ar fi un terminal sau o sesiune de editor
 deschisă pe worktree-ul unui spațiu.
 
-## Autoritatea serverului
+## Codul urmează forge-ul
 
-Unele operațiuni nu privesc deloc un spațiu de lucru: setări la nivel de
-instalare, configurarea SSO, credențiale de provider, gestionarea modelelor,
-backupuri ale întregii instalări. Acestea declară **autoritate de server** și sunt
-refuzate pentru toată lumea, cu excepția operatorului instalării (proprietarul de
-server înregistrat). Există în mod deliberat o singură identitate de operator și
-o singură definiție a acesteia.
+Un grant singur nu deschide codul unui repository. Ca să vadă fișierele, diff-urile sau rezultatele căutării lui ori să deschidă un terminal pe el, un membru are nevoie de grantul Control Center **și** autentificarea lui în forge trebuie să poată citi repository-ul. Administratorii spațiului de lucru nu sunt scutiți; proprietarul serverului este, pentru că checkout-ul se află pe mașina lui. Un repository fără remote de forge are nevoie doar de grant.
+
+- Când un administrator acordă un repository cuiva al cărui cont din forge nu îl poate citi, grantul este salvat, iar administratorul vede un avertisment.
+- Când forge-ul nu poate fi contactat ca să verifice, răspunsul este nu, niciodată o presupunere: persoana vede „Nu s-a putut confirma accesul tău la GitHub. Încearcă din nou.” (cu numele forge-ului ei) și încearcă mai târziu.
+- Pull request-urile și tot ce se face din ele urmează aceeași regulă.
+
+### Modificarea codului necesită grantul de scriere
+
+Un grant pe repository are trei niveluri, iar fiecare include nivelul dinaintea lui:
+
+- **citire**: vezi fișierele, diff-urile și rezultatele căutării repository-ului, cu condiția ca autentificarea ta în forge să îl poată citi și ea.
+- **revizuire**: citire, plus aprobarea, cererea de modificări și celelalte acțiuni de revizuire asupra pull request-urilor lui.
+- **scriere**: revizuire, plus modificarea codului și conducerea rulărilor de agent care scriu în repository. Modificarea codului acoperă salvarea sau anularea fișierelor în editor, sincronizarea unui worktree cu capul pull request-ului, commit-ul și push-ul, publicarea unui branch și acțiunile de stack care taie, fac checkout sau publică o parte.
+
+Fiecare push făcut pentru o persoană, fie de ea, fie de o rulare de agent cerută de ea, verifică grantul ei de scriere pe repository-ul respectiv în momentul push-ului, pe GitHub, GitLab și Bitbucket deopotrivă. Publicarea unui stack verifică fiecare repository din stack înainte să împingă oricare dintre ele.
+
+Un refuz numește grantul care lipsește. Fără acces de citire, aplicația spune „Nu ai acces de citire la acest depozit. Un administrator al spațiului de lucru îl poate acorda.” Cu citire, dar fără scriere, spune „Poți citi acest depozit, dar nu îl poți modifica. Un administrator al spațiului de lucru poate acorda accesul de scriere.”
+
+### Spațiile urmează repository-urile lor
+
+Ce au scris agenții despre cod urmează codul. Conținutul unui spațiu (mesajele, transcrierile și ieșirea uneltelor, rezultatele căutării, jurnalele de rulare, todo-urile, activitatea și notificările) poartă codul repository-urilor cu care lucrează, deci un spațiu se deschide doar pentru un membru care are un grant de citire pe fiecare repository pe care îl folosește spațiul și a cărui autentificare proprie în forge poate citi fiecare asemenea repository. Acestea sunt repository-urile selectate pentru spațiu sau toate repository-urile spațiului de lucru, când nu este înregistrată nicio selecție. Un spațiu creat fără repository-uri este deschis pentru fiecare membru.
+
+Un spațiu pe care cineva nu îl poate deschide nu este listat pentru el nicăieri, inclusiv în căutare, jurnalele de rulare, todo-uri, activitate și notificări. Administratorii spațiului de lucru dețin fiecare grant, dar nu sunt scutiți de jumătatea din forge; proprietarul serverului este.
+
+Pentru o conversație pe care toți ar trebui să o poată citi, creează spațiul fără repository-uri sau doar cu repository-uri pe care toți le pot citi.
+
+## Proprietarul serverului
+
+Persoana care a configurat serverul este **proprietarul** lui. Serverul o înregistrează o singură dată, la prima pornire, iar nimic trimis prin rețea nu schimbă asta. Un administrator sau un proprietar al unui spațiu de lucru nu este proprietarul serverului: oricine poate primi un spațiu de lucru, dar mașina serverului are un singur proprietar.
+
+**Nimic nu rulează pe mașina serverului în afara unui sandbox, dacă proprietarul serverului nu l-a pornit sau nu a aprobat acel fel de execuție pe gazdă.** Concret, doar proprietarul serverului poate:
+
+- Să creeze un spațiu de lucru. Ceilalți văd un ecran care le cere să îi ceară proprietarului să creeze unul sau unui administrator al spațiului de lucru să îi invite.
+- Să deschidă shell-ul gazdei în terminalul găzduit pe server. Ceilalți primesc un terminal în sandbox, cu limitele unui agent, în directoarele spațiului de lucru.
+- Să deschidă editorul de cod încorporat. Rulează ca utilizatorul propriu al serverului, cu terminalul, sarcinile și extensiile lui.
+- Să deschidă un pull request sau worktree-ul unei conversații într-un editor nativ. Editorul pornește pe ecranul serverului, ca utilizatorul serverului.
+- Să salveze sau să aprobe o definiție de [mediu](/ro-RO/manual/ghiduri-practice/medii/) care rulează ceva pe gazdă: plasare pe gazdă, o verificare care rulează o comandă sau o sarcină de provisionare ori de arhivare.
+- Să ruleze agenți pe un server a cărui mașină nu are sandbox. Rulările celorlalți sunt refuzate acolo, dacă proprietarul nu a pornit serverul cu `--sandbox off`, caz în care agenții fiecărui membru rulează fără izolare (vezi [Agenții pe o gazdă fără sandbox](/ro-RO/manual/concepte/sandbox-si-securitate/#agenți-pe-o-gazdă-fără-sandbox)).
+- Să lege un checkout de repository care se află în afara spațiului de stocare al spațiului de lucru, să confirme unul legat înainte de această regulă și să răsfoiască folderele serverului când adaugă un repository (vezi [Adaugă repository-uri](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/)).
+- Să vadă și să oprească fiecare proces de agent aflat în rulare pe server. Ceilalți văd și opresc doar rulările live ale agenților din spațiile de lucru din care fac parte.
+- Să facă agenții să folosească serverele MCP configurate în uneltele proprii ale utilizatorului serverului (Claude, Codex, Cursor și celelalte). Doar rulările harness-ului integrat, pentru care proprietarul răspunde, le primesc; vezi [Serverele MCP personale rămân ale proprietarului](/ro-RO/manual/ghiduri-practice/server-mcp/#serverele-mcp-personale-rămân-ale-proprietarului).
+- Să confirme adresa de e-mail a unei persoane, ca autentificarea unică să o poată potrivi (vezi [Conectează un furnizor OpenID Connect](/ro-RO/manual/ghiduri-practice/sso-oidc/#cum-se-potrivesc-autentificările-cu-conturile-existente)).
+- Să schimbe setările la nivel de instalare: SSO, credențialele providerilor, endpoint-ul MCP și tokenul lui, gestionarea modelelor, Connect și backupurile întregii instalări. Aceste operațiuni declară **autoritate de server** și sunt refuzate pentru toți ceilalți.
+
+Există în mod deliberat o singură identitate de operator și o singură definiție a acesteia.
 
 ## Jurnalul de audit
 

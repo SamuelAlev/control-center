@@ -42,7 +42,15 @@ class ExternalMcpSection extends ConsumerWidget {
 
     return SectionCard(
       label: l10n.mcpExternalServers,
-      subtitle: Text(l10n.mcpExternalServersDescription),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.mcpExternalServersDescription),
+          const SizedBox(height: AppSpacing.xs),
+          // The server only offers these in runs its owner is accountable for.
+          Text(l10n.mcpExternalServersOwnerRunsOnly),
+        ],
+      ),
       padding: const EdgeInsets.only(top: AppSpacing.md),
       headerPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       child: Column(

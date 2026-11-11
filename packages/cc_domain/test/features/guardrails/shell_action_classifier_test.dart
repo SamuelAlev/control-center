@@ -199,6 +199,26 @@ void main() {
       );
     });
 
+    test(
+      'a gh REST write to an issue or PR conversation is a vendor write',
+      () {
+        expect(
+          classifier.classify(
+            'gh api repos/acme/app/issues/12/comments -f body=hello',
+          ),
+          {ActionClass.vendorSyncWrite},
+        );
+        expect(
+          classifier.classify('gh api -X PUT repos/acme/app/issues/12/lock'),
+          {ActionClass.vendorSyncWrite},
+        );
+        expect(
+          classifier.classify('gh api repos/acme/app/issues/12/comments'),
+          isEmpty,
+        );
+      },
+    );
+
     test('quoted and printed command text is not an effect', () {
       for (final command in [
         "echo 'git push; gh pr create; rm file'",

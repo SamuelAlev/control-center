@@ -3,6 +3,8 @@ import 'package:cc_domain/core/domain/ports/embedding_port.dart';
 import 'package:cc_domain/core/domain/ports/media_render_port.dart';
 import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
+import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
+import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_domain/features/governance/domain/services/agent_presence_service.dart';
@@ -51,12 +53,19 @@ McpToolRegistry buildServerMcpRegistry({
   // repository resolves `of(workspaceId)` per call).
   required GlobalDatabase globalDb,
   required WorkspaceDatabaseManager workspaceDbs,
+  // The repositories whose checkouts the server serves (`GuardedRepoRepository`):
+  // `list_repos` hands agents a `local_path`, so a repository whose stored path
+  // is refused is never listed.
+  required RepoRepository servedRepos,
   required NewsfeedRepository newsfeedRepository,
   // The newsfeed is per-user; MCP tools have no session user, so agents
   // ride the SERVER OWNER's feed list.
   required String newsfeedOwnerUserId,
   required TicketRepository ticketRepository,
   required MessagingRepository messagingRepository,
+  // Which review spaces an agent run may not read (its requester's PR
+  // visibility); `list_spaces` and `get_messages` withhold them.
+  required HiddenSpacesForCaller hiddenSpacesForCaller,
   // The in-process waiter behind `ask_user`. Claude and Pi only see MCP
   // tools, so without this registration a prompt that says "call ask_user"
   // is a tool the catalogue does not contain — the run says so and guesses.
@@ -93,6 +102,10 @@ McpToolRegistry buildServerMcpRegistry({
   // Verifies indexed paths against the caller's working copy (degradable — the
   // code-graph tools serve unverified results when absent, exactly as before).
   CodeGraphTreePort? codeGraphTree,
+  // Which repositories' code graphs may be read: linked and served
+  // (`servedCodeGraphRepos`). A refused repository's index is kept but
+  // neither searched nor listed.
+  required CodeGraphRepoGate codeGraphRepos,
   // Embedding service (degradable — keyword-only search when absent).
   EmbeddingPort? embeddingService,
   // Schema validator for the pipeline output contract (degradable — when null
@@ -189,14 +202,16 @@ McpToolRegistry buildServerMcpRegistry({
     // Ticket WRITE tools (create/update/assign/comment/close/link/…) are typed
     // MCP tools registered post-construction in `cc_server_runtime` — they need
     // the workflow + link + messaging services, which are built after this
-    // DB-only registry. The legacy `ticket_cli` (CLI-args-in-JSON) surface was
-    // removed in favour of them.
-    // Messaging (read + write). The write tool registers as `send_message`; it
-    // was long referenced by the mode-guard allow-lists and the review-mode
-    // prompt but never registered — agents were instructed to call a tool that
-    // did not exist.
-    ListSpacesTool(repository: messagingRepository),
-    GetSpaceMessagesTool(repository: messagingRepository),
+    // DB-only registry.
+    // Messaging (read + write). The write tool registers as `send_message`.
+    ListSpacesTool(
+      repository: messagingRepository,
+      hiddenSpaces: hiddenSpacesForCaller,
+    ),
+    GetSpaceMessagesTool(
+      repository: messagingRepository,
+      hiddenSpaces: hiddenSpacesForCaller,
+    ),
     SendSpaceMessageTool(repository: messagingRepository),
     // Same name as the harness built-in. External clients address it as
     // `mcp__control-center__ask_user`; the harness registry registers its own
@@ -206,10 +221,12 @@ McpToolRegistry buildServerMcpRegistry({
     GetSpaceNotesTool(
       notesPort: _DaoSpaceNotesPort(workspaceDbs),
       messagingRepository: messagingRepository,
+      hiddenSpaces: hiddenSpacesForCaller,
     ),
     UpdateSpaceNotesTool(
       notesPort: _DaoSpaceNotesPort(workspaceDbs),
       messagingRepository: messagingRepository,
+      hiddenSpaces: hiddenSpacesForCaller,
     ),
     TodoWriteTool(
       todoRepository: todoRepository,
@@ -221,7 +238,7 @@ McpToolRegistry buildServerMcpRegistry({
     // Conversation-aware: agent callers get their conversation's isolated
     // CoW worktree paths, never the original checkouts.
     ListReposTool(
-      repoRepository: repoRepository,
+      repoRepository: servedRepos,
       isolatedRepoRepository: DaoIsolatedRepoRepository(workspaceDbs),
     ),
     // ── Memory (read + write) ──
@@ -317,18 +334,30 @@ McpToolRegistry buildServerMcpRegistry({
     if (codeGraphRepository != null) ...[
       SearchCodeTool(
         repository: codeGraphRepository,
-        workspaceRepository: workspaceRepository,
+        repoGate: codeGraphRepos,
         embeddingService: embeddingService,
         tree: codeGraphTree,
       ),
       CodeSymbolTool(
         repository: codeGraphRepository,
-        workspaceRepository: workspaceRepository,
+        repoGate: codeGraphRepos,
         tree: codeGraphTree,
       ),
-      CodeCallersTool(repository: codeGraphRepository, tree: codeGraphTree),
-      CodeCalleesTool(repository: codeGraphRepository, tree: codeGraphTree),
-      CodeImpactTool(repository: codeGraphRepository, tree: codeGraphTree),
+      CodeCallersTool(
+        repository: codeGraphRepository,
+        repoGate: codeGraphRepos,
+        tree: codeGraphTree,
+      ),
+      CodeCalleesTool(
+        repository: codeGraphRepository,
+        repoGate: codeGraphRepos,
+        tree: codeGraphTree,
+      ),
+      CodeImpactTool(
+        repository: codeGraphRepository,
+        repoGate: codeGraphRepos,
+        tree: codeGraphTree,
+      ),
     ],
   ]);
 

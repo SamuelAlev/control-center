@@ -22,9 +22,11 @@ import 'package:cc_domain/features/pr_review/domain/entities/workflow_graph.dart
 import 'package:cc_domain/features/pr_review/domain/ports/forge_pr_client.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/pending_review_comment.dart';
+import 'package:cc_infra/src/network/error_mapper.dart';
 import 'package:cc_infra/src/network/forge_branch_history.dart';
 import 'package:cc_infra/src/network/forge_cancel_bridge.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_api_client.dart';
+import 'package:cc_infra/src/network/gitlab/gitlab_forge_values.dart';
 import 'package:cc_infra/src/network/gitlab/gitlab_pr_mapper.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_award_emoji.dart';
 import 'package:cc_infra/src/network/gitlab/models/gitlab_project.dart';
@@ -44,20 +46,25 @@ class GitLabForgePrClient
     implements
         ForgePrClient,
         ForgeBranchPrHistoryClient,
-        ForgeOpenPrPagingClient {
+        ForgeOpenPrPagingClient,
+        ForgeOpenPrChangeProbeClient {
   /// Creates a [GitLabForgePrClient] for `owner/repo` on the instance [_client]
   /// is pointed at.
   ///
   /// [owner] is the namespace path and may be nested
   /// (`group/subgroup`); [repo] is the project name. Together they form the
-  /// project coordinate every request is addressed by.
+  /// project coordinate every request is addressed by. [_approvalGuard] is
+  /// consulted before any approval is sent.
   GitLabForgePrClient({
     required this._client,
     required String owner,
     required String repo,
+    required this._approvalGuard,
   }) : owner = owner,
        repo = repo,
        _projectId = GitLabApiClient.encodeProjectPath('$owner/$repo');
+
+  final ForgeApprovalGuard _approvalGuard;
 
   /// How many pipelines of one commit contribute check runs.
   ///
@@ -171,6 +178,20 @@ class GitLabForgePrClient
       ],
       hasMore: result.hasMore,
     );
+  }
+
+  @override
+  Future<String> openPullRequestsFingerprint() async {
+    try {
+      final probe = await _client.probeOpenMergeRequests(_projectId);
+      return '${probe.total ?? '?'}|${probe.topIid ?? 0}|'
+          '${probe.topUpdatedAt ?? ''}';
+    } on RhttpException catch (e) {
+      if (e is RhttpCancelException) {
+        rethrow;
+      }
+      throw mapHttpException(e);
+    }
   }
 
   @override
@@ -940,7 +961,7 @@ class GitLabForgePrClient
     await _client.deleteMergeRequestNote(
       _projectId,
       prNumber,
-      noteId: _noteId(commentId),
+      noteId: gitLabNoteId(commentId),
       cancelToken: _token(cancelToken),
     );
   }
@@ -959,18 +980,6 @@ class GitLabForgePrClient
     );
   }
 
-  static int _noteId(String commentId) {
-    final noteId = int.tryParse(commentId.trim());
-    if (noteId == null || noteId <= 0) {
-      throw ArgumentError.value(
-        commentId,
-        'commentId',
-        'GitLab note ids are integers',
-      );
-    }
-    return noteId;
-  }
-
   /// Submits a verdict on merge request [prNumber].
   ///
   /// Publishes pending draft notes first (`pendingReviewBatching`). Mapping:
@@ -985,6 +994,10 @@ class GitLabForgePrClient
     List<PendingReviewComment> comments = const [],
     ForgeCancelToken? cancelToken,
   }) async {
+    // Before the comments too: a refused approval sends nothing at all.
+    if (verdict == ForgeReviewVerdict.approve) {
+      await _approvalGuard(this, prNumber);
+    }
     final token = _token(cancelToken);
     // GitLab has no single call that posts inline notes AND casts a verdict, so
     // a batched review lands as its comments first and the verdict after — the
@@ -1082,7 +1095,7 @@ class GitLabForgePrClient
     }
 
     final squash = method == ForgeMergeMethod.squash;
-    final message = _composeCommitMessage(commitTitle, commitMessage);
+    final message = gitLabCommitMessage(commitTitle, commitMessage);
     final merged = await _client.acceptMergeRequest(
       _projectId,
       prNumber,
@@ -1275,7 +1288,7 @@ class GitLabForgePrClient
     if (mr == null) {
       return;
     }
-    final drop = _lowercased(logins);
+    final drop = lowercasedHandles(logins);
     final ids = <int>[
       for (final user in mr.assignees)
         if (!drop.contains(user.username.toLowerCase())) user.id,
@@ -1433,7 +1446,7 @@ class GitLabForgePrClient
     if (mr == null) {
       return;
     }
-    final drop = _lowercased(logins);
+    final drop = lowercasedHandles(logins);
     final ids = <int>[
       for (final user in mr.reviewers)
         if (!drop.contains(user.username.toLowerCase())) user.id,
@@ -1470,7 +1483,7 @@ class GitLabForgePrClient
       awards = await _client.listNoteAwardEmoji(
         _projectId,
         prNumber,
-        _requireNoteId(targetId, target),
+        gitLabReactionNoteId(targetId, target),
         cancelToken: token,
       );
     }
@@ -1509,7 +1522,7 @@ class GitLabForgePrClient
     final token = _token(cancelToken);
     final name = gitLabAwardEmojiName(content);
     final isPullRequest = target == ForgeReactionTarget.pullRequest;
-    final noteId = isPullRequest ? 0 : _requireNoteId(targetId, target);
+    final noteId = isPullRequest ? 0 : gitLabReactionNoteId(targetId, target);
 
     if (add) {
       if (isPullRequest) {
@@ -1642,27 +1655,6 @@ class GitLabForgePrClient
   static CancelToken? _token(ForgeCancelToken? cancelToken) =>
       rhttpCancelTokenFor(cancelToken);
 
-  static Set<String> _lowercased(Iterable<String> values) => <String>{
-    for (final value in values)
-      if (value.trim().isNotEmpty) value.trim().toLowerCase(),
-  };
-
-  /// Joins a merge-commit title and body the way git writes them.
-  static String? _composeCommitMessage(String? title, String? message) {
-    final head = title?.trim() ?? '';
-    final tail = message?.trim() ?? '';
-    if (head.isEmpty && tail.isEmpty) {
-      return null;
-    }
-    if (head.isEmpty) {
-      return tail;
-    }
-    if (tail.isEmpty) {
-      return head;
-    }
-    return '$head\n\n$tail';
-  }
-
   /// Publishes the viewer's queued draft notes, if there are any.
   ///
   /// The listing comes first so an empty queue costs one cheap read instead of
@@ -1777,19 +1769,6 @@ class GitLabForgePrClient
       }
     }
     return null;
-  }
-
-  /// The note id behind a comment reaction target.
-  static int _requireNoteId(String targetId, ForgeReactionTarget target) {
-    final noteId = int.tryParse(targetId.trim());
-    if (noteId == null || noteId <= 0) {
-      throw ArgumentError.value(
-        targetId,
-        'targetId',
-        'a ${target.name} reaction on GitLab needs a numeric note id',
-      );
-    }
-    return noteId;
   }
 
   /// The token's user, fetched once and remembered.

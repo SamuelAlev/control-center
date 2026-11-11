@@ -80,6 +80,6 @@ The Worker bundle stays free of docs content. Request-time code must not read `a
 
 ## Website analytics
 
-Umami at `https://analytics.alev.dev` uses public website ID `d84f01cc-5611-4363-b598-ddd31e3011c1` (not an API credential). `install_section_click`, `release_page_click` and `demo_open_click` count CTA actions, **not** completed downloads, installs or activated users. The release event ID remains for reporting continuity even though current OS cards redirect to installers. Limit properties to CTA placement and explicit platform; omit query/fragment, respect Do Not Track, track only `usectrl.dev`, add no visitor ID or cross-domain attribution, and never block navigation when tracking is unavailable.
+Umami at `https://analytics.alev.dev` uses public website ID `d84f01cc-5611-4363-b598-ddd31e3011c1` (not an API credential). `install_section_click`, `release_page_click` and `demo_open_click` count CTA actions, **not** completed downloads, installs or activated users. `release_page_click` also counts the OS cards, which link straight to installers. Limit properties to CTA placement and explicit platform; omit query/fragment, respect Do Not Track, track only `usectrl.dev`, add no visitor ID or cross-domain attribution, and never block navigation when tracking is unavailable.
 
 The Umami script is inserted only on the `usectrl.dev` hostname. `pnpm dev` and local Wrangler previews do not download it or send analytics requests.

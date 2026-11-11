@@ -2,12 +2,12 @@
 title: Create and configure an agent
 description: Add an agent to a workspace, give it an adapter, model, skills and permissions and confirm it runs.
 slug: en-GB/manual/guides/create-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 This guide shows you how to add an agent to a workspace and configure it until it can actually run.
 
-Every workspace is seeded with five agents — a CEO plus `qa`, `architect`, `engineer` and `librarian` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
+Every workspace is seeded with six agents — a CEO plus `qa`, `architect`, `engineer`, `librarian` and `content-synthesizer` — so you usually have agents before you have configured any. The steps below apply equally to a seeded agent and a new one.
 
 ## Before you start
 
@@ -73,7 +73,7 @@ An agent has no permission toggles of its own. What it may push, open, merge or 
 The agent's GitHub token is always read-only. A push goes through Control Center, which asks the **Push to a remote** rule before forwarding it. See [Configure sandbox policies](/en-GB/manual/guides/sandbox-policies/) for how each rule reaches a run.
 
 :::note[Rules and the OS sandbox are separate layers]
-The rules decide what an agent may do; the OS sandbox bounds where its processes can read, write and connect. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for the full set of boundaries.
+The rules decide what an agent may do; the OS sandbox bounds where its processes can read, write and connect. `cc_server` wraps agent runs in the host's sandbox where one exists — Windows has no native backend, and Linux and WSL2 need `bwrap` and `socat`. Where none exists, only the server owner's runs start unless the owner turned the sandbox off for everyone. See [Sandbox and security](/en-GB/manual/concepts/sandbox-security/) for the full set of boundaries.
 :::
 
 ## Verify it runs

@@ -2,7 +2,7 @@
 title: Skonfiguruj integrację Linear
 description: Zaloguj się do Linear, połącz automatyzację Linear obszaru roboczego i wybierz Linear jako dostawcę zgłoszeń dla nowych zgłoszeń.
 slug: pl-PL/podrecznik/poradniki/integracja-linear
-sourceHash: 41da671d02eef88c9b984f6ea923c8d5ed68503a
+sourceHash: 659da2b1cb60ad87223fb94f802f79ef5c61598b
 ---
 
 Linear ma w Control Center dwie tożsamości i obie są logowaniem w przeglądarce:
@@ -23,7 +23,7 @@ Control Center i nie wymagają żadnej zewnętrznej usługi — zobacz
 
 ## Wybierz Linear dla obszaru roboczego
 
-1. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i znajdź kartę **Zgłoszenia**
+1. Przejdź do **Ustawienia → Obszar roboczy → Integracje** i znajdź kartę **Zgłoszenia**
 2. Ustaw **Dostawca zgłoszeń** na **Linear**
 
 Zgłoszenia tworzone od tego momentu dostają znacznik `provider: linear`.
@@ -32,7 +32,7 @@ wiersze Linear: nie ma się do czego uwierzytelniać.
 
 ## Zaloguj się do Linear
 
-Na tej samej karcie wiersz **Linear** należy do Ciebie:
+Twoje własne logowanie do Linear jest w **Ustawienia → Ty → Profil**, na karcie **Zgłoszenia**:
 
 1. Kliknij **Zaloguj się do Linear**
 2. Zatwierdź w przeglądarce
@@ -44,9 +44,11 @@ Wszystko, co robisz w Linear z Control Center, działa na tym logowaniu i na
 niczym innym. Jeśli nie jesteś zalogowany, aplikacja poprosi Cię o zalogowanie,
 zamiast działać jako ktoś inny.
 
+Logowanie działa we wszystkich obszarach roboczych na serwerze, chyba że obszar roboczy ma własne aplikacje logowania: ten obszar roboczy zachowuje wtedy własne logowanie do Linear. Karta mówi, które obowiązuje.
+
 ## Połącz automatyzację Linear
 
-Wiersz **Automatyzacja Linear** to aplikacja Control Center obszaru roboczego
+Wiersz **Automatyzacja Linear** na karcie **Zgłoszenia** w **Ustawienia → Obszar roboczy → Integracje** to aplikacja Control Center obszaru roboczego
 w Linear. Synchronizacja zgłoszeń, pipeline'y i agenci zapisują przez nią, więc
 automatyczne issues i komentarze pojawiają się jako Control Center, a nie jako
 człowiek.
@@ -66,9 +68,8 @@ zgłoszenia przez własne narzędzia Control Center, które najpierw pytają reg
 Użyj własnej aplikacji, gdy wybrano **Użyj własnych aplikacji**. Aplikacja serwera
 obowiązuje tylko wtedy: przy aplikacjach Control Center albo własnym Connect Connect
 obsługuje każdą ścieżkę, także Linear, a aplikacja serwera i klucz API usługi pozostają
-zapisane, ale nieużywane. Aplikacja obszaru roboczego
-([poniżej](#daj-jednemu-obszarowi-roboczemu-własną-aplikację-linear)) nadal obowiązuje we
-wszystkich trybach.
+zapisane, ale nieużywane. Obszar roboczy na własnych aplikacjach
+([poniżej](#daj-jednemu-obszarowi-roboczemu-własną-aplikację-linear)) używa zamiast tego własnej aplikacji, niezależnie od trybu serwera.
 
 1. Utwórz aplikację OAuth na
    [linear.app/settings/api/applications/new](https://linear.app/settings/api/applications/new)
@@ -95,23 +96,18 @@ Obszar roboczy może logować się do Linear przez własną aplikację zamiast a
 serwera. Ustawić to może tylko administrator lub właściciel obszaru roboczego.
 
 1. Utwórz aplikację OAuth Linear tak jak w krokach powyżej
-2. Przejdź do **Ustawienia → Obszar roboczy → Ogólne** i otwórz **Aplikacje dostawców**, a następnie kartę **Linear**
-3. Wybierz **Użyj własnej aplikacji tego obszaru roboczego**
-4. Dodaj do aplikacji Linear oba adresy URL wywołania zwrotnego, które wiersz pokazuje pod **Adresy URL wywołania zwrotnego**, dosłownie
-5. Wklej jej **Identyfikator klienta** i, opcjonalnie, **Klucz API usługi** dla automatyzacji tego obszaru roboczego
+2. Przejdź do **Ustawienia → Obszar roboczy → Integracje**. Na karcie **Control Center Connect** wybierz **Użyj własnych aplikacji** i kliknij **Zastosuj**
+3. W sekcji Zgłoszenia pojawi się karta **Aplikacja Linear**. Dodaj do aplikacji Linear oba adresy URL wywołania zwrotnego, które karta pokazuje pod **Adresy URL wywołania zwrotnego**, dosłownie
+4. Wklej **Identyfikator klienta** i opcjonalnie **Klucz API usługi** do automatyzacji w tym obszarze roboczym
 
 Aplikacja obszaru roboczego obsługuje wtedy każde logowanie do Linear i każde żądanie
 automatyzacji w tym obszarze roboczym, niezależnie od tego, jak serwer loguje ludzi. Nigdy
 nie przechodzi na aplikację serwera ani na Connect: dopóki nie ustawiono identyfikatora
-klienta, Linear jest w tym obszarze roboczym wyłączony, a wiersz mówi, czego brakuje.
+klienta, Linear jest w tym obszarze roboczym wyłączony, a karta mówi, czego brakuje.
 Jej klucz API usługi jest używany tylko tutaj; bez niego synchronizacja wymaga
 **Połącz Linear na potrzeby automatyzacji**.
 
-Przełączenie między aplikacją serwera a aplikacją obszaru roboczego albo zmiana identyfikatora
-klienta obszaru roboczego wylogowuje wszystkich członków obszaru roboczego z Linear i rozłącza
-ich automatyzację. Logują się ponownie przez nową aplikację. **Użyj aplikacji tego serwera**
-usuwa zapisane pola obszaru roboczego. Sekrety są tylko do zapisu: wiersz pokazuje jedynie,
-czy któryś jest zapisany. Inne obszary robocze na serwerze nie są zmieniane.
+**Użyj własnych aplikacji** obejmuje od razu wszystkich dostawców: GitHub, Kalendarz Google i wyszukiwanie GIF działają także wyłącznie na aplikacjach obszaru roboczego, każde ustawione obok swojego dostawcy na tej samej stronie. Przełączenie aplikacji logowania obszaru roboczego albo zmiana identyfikatora klienta obszaru roboczego wylogowuje wszystkich członków obszaru roboczego z Linear i rozłącza ich automatyzację. Logują się ponownie przez nową aplikację. Zapisane pola pozostają, gdy obszar roboczy wraca do innego wyboru, ale są używane tylko przy **Użyj własnych aplikacji**. Sekrety są tylko do zapisu: karta pokazuje jedynie, czy któryś jest zapisany. Inne obszary robocze na serwerze nie są zmieniane.
 
 ## Rozwiązywanie problemów
 
@@ -119,9 +115,8 @@ czy któryś jest zapisany. Inne obszary robocze na serwerze nie są zmieniane.
 
 Serwer nie ma ani własnej aplikacji Linear, ani Connect. Jedno z nich wybiera
 właściciel serwera w **Ustawienia → Serwer → Logowanie jednokrotne**. Gdy obszar roboczy
-używa własnej aplikacji, wiersz zamiast tego mówi, że konfiguracja nie jest zakończona:
-administrator obszaru roboczego dodaje identyfikator klienta w **Ustawienia → Obszar
-roboczy → Ogólne → Aplikacje dostawców**.
+używa własnych aplikacji, wiersz zamiast tego mówi, że konfiguracja nie jest zakończona:
+administrator obszaru roboczego dodaje identyfikator klienta na karcie **Aplikacja Linear** w **Ustawienia → Obszar roboczy → Integracje**.
 
 ### Synchronizacja zgłoszeń kończy się błędem uwierzytelniania
 

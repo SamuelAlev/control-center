@@ -2,7 +2,7 @@
 title: Démarrage express
 description: Installez Control Center, configurez un agent et regardez-le travailler sur votre dépôt.
 slug: fr-CA/manuel/demarrage-express
-sourceHash: 7a800da57b88d3f77d09af71155604428c7c2010
+sourceHash: 37fbb567fbd28ec3a5d85ee2790d86239cca2b4c
 ---
 
 C’est le chemin complet le plus court pour passer de rien à un agent qui travaille sur votre propre code. Suivez-le dans l’ordre ; chaque étape dépend de la précédente.
@@ -20,7 +20,7 @@ La même application s’exécute dans le navigateur à l’adresse [app.usectrl
 mêmes fonctionnalités. Un onglet de navigateur ne peut toutefois pas héberger le serveur ; vous devez donc en fournir
 un — exécutez `cc_server` localement et connectez-vous à `ws://localhost:9030`, ou pointez-le vers un serveur sur une
 autre machine. Ce démarrage express emprunte la voie de l’application de bureau parce qu’il n’exige aucune
-configuration de serveur ; consultez [Installer](/fr-CA/manuel/installer/#use-it-in-your-browser) pour la voie du navigateur.
+configuration de serveur ; consultez [Installer](/fr-CA/manuel/installer/#lutiliser-dans-votre-navigateur) pour la voie du navigateur.
 :::
 
 ## Étape 2 : Passer par l’intégration initiale
@@ -29,7 +29,7 @@ Les étapes de l’intégration initiale s’exécutent dans l’ordre — aucun
 
 1. **Connexion** (propriétaire du serveur seulement) : choisissez comment ce serveur connecte les gens à GitHub, Google Calendar et Linear — **Utiliser les applications de Control Center**, **Utiliser mes propres applications** ou **Utiliser un serveur Connect personnalisé**. Avec vos propres apps, **Créer mon application GitHub** configure GitHub en une seule étape. Vous pourrez changer ce choix plus tard dans **Paramètres → Serveur → Authentification unique**.
 2. **Connexion** : connectez-vous à GitHub, ou collez un jeton GitLab ou Bitbucket. L’identifiant est conservé sur le serveur et rattaché à votre compte.
-3. **Espace de travail** : nommez votre premier espace de travail et, si vous le souhaitez, choisissez un logo. Sa création amorce cinq agents — un CEO ainsi que `qa`, `architect`, `engineer` et `librarian` — et les modèles de pipelines intégrés.
+3. **Espace de travail** (propriétaire du serveur seulement) : nommez votre premier espace de travail et, si vous le souhaitez, choisissez un logo. Les autres personnes attendent sur **Vous ne faites pas encore partie d’un espace de travail** que le propriétaire en crée un pour elles ou qu’un administrateur d’espace de travail les invite. Sa création amorce six agents — un CEO ainsi que `qa`, `architect`, `engineer`, `librarian` et `content-synthesizer` — et les modèles de pipelines intégrés.
 4. **Bac à sable** : enregistre une préférence de bac à sable. L’un ou l’autre choix vous permet de continuer.
 5. **Adaptateur** : choisissez l’adaptateur et le modèle par défaut des agents. Choisissez **Control Center (built-in)**, puis utilisez le sélecteur de fournisseur qui apparaît pour vous connecter à un fournisseur de modèles — la liste de modèles reste vide tant qu’aucun n’est connecté. Terminer cette étape inscrit aussi l’adaptateur et le modèle sur l’agent CEO de l’espace de travail.
 6. **Voix (facultatif)** : installez un modèle de reconnaissance vocale sur l’appareil pour la dictée, ou passez cette étape.
@@ -37,7 +37,7 @@ Les étapes de l’intégration initiale s’exécutent dans l’ordre — aucun
 Control Center ouvre ensuite la boîte de réception de votre espace de travail.
 
 :::note[Ce qui borne l’exécution d’un agent]
-Les commandes de l’agent sont encapsulées dans le bac à sable natif du système d’exploitation de l’hôte lorsqu’il en existe un — Seatbelt sur macOS, bubblewrap sur Linux. Windows n’offre aucun backend, de sorte que les exécutions y sont bornées uniquement par les autres couches : l’arbre de travail propre à la conversation (`git worktree` sur Windows ; copie sur écriture là où `rift` est livré), les identifiants délivrés par le courtier à chaque lancement et révoqués à l’arrêt, ainsi que les garde-fous d’action. Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/).
+Les commandes de l’agent sont encapsulées dans le bac à sable natif du système d’exploitation de l’hôte lorsqu’il en existe un — Seatbelt sur macOS, bubblewrap sur Linux. Windows n’offre aucun backend. Sur un hôte qui n’en a aucun, seules les exécutions d’agent du propriétaire du serveur démarrent, et elles ne sont bornées que par les autres couches : l’arbre de travail propre à la conversation (`git worktree` sur Windows ; copie sur écriture là où `rift` est livré), les identifiants délivrés par le courtier à chaque lancement et révoqués à l’arrêt, ainsi que les garde-fous d’action. Les exécutions de tous les autres sont refusées tant que le propriétaire n’installe pas le bac à sable ou ne le désactive pas pour tout le monde. Voir [Bac à sable et sécurité](/fr-CA/manuel/concepts/bac-a-sable-et-securite/).
 :::
 
 ## Étape 3 : Ajouter un dépôt
@@ -61,7 +61,7 @@ Dans l’onglet **Paramètres**, définissez :
 
 Appuyez sur **Enregistrer les modifications**.
 
-Cette étape n’est pas facultative en pratique. Seul l’agent CEO hérite de l’adaptateur choisi durant l’intégration initiale ; les quatre spécialistes sont créés sans adaptateur. Ils se rabattent sur **Control Center (built-in)** avec le modèle par défaut d’Anthropic, de sorte qu’ils ne s’exécutent que si vous avez connecté un compte Anthropic — et, le cas échéant, sur un modèle que vous n’avez pas choisi.
+Cette étape n’est pas facultative en pratique. L’étape d’adaptateur de l’intégration initiale définit son adaptateur et son modèle sur chaque agent existant à ce moment-là ; un espace de travail créé plus tard amorce les six agents sans adaptateur ni modèle. Un agent qui n’en a pas se rabat sur **Control Center (built-in)** avec le modèle par défaut d’Anthropic, de sorte qu’ils ne s’exécutent que si vous avez connecté un compte Anthropic — et, le cas échéant, sur un modèle que vous n’avez pas choisi.
 
 ## Étape 5 : Envoyer une tâche à l’agent
 

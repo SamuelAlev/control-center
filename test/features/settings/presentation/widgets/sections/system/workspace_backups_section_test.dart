@@ -4,6 +4,7 @@ import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/media_proxy_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/system/workspace_backups_section.dart';
 import 'package:control_center/features/settings/providers/backup_providers.dart';
 import 'package:control_center/features/workspaces/providers/workspace_providers.dart';
@@ -52,9 +53,11 @@ void main() {
     TextDirection textDirection = TextDirection.ltr,
     MediaProxyConfig? proxy,
     List<Override> overrides = const [],
+    bool owner = true,
   }) => ProviderScope(
     overrides: [
       rpcClientProvider.overrideWithValue(host.client()),
+      canUseHostProvider.overrideWithValue(owner),
       workspacesProvider.overrideWith((ref) => Stream.value(workspaces)),
       mediaProxyConfigProvider.overrideWithValue(proxy),
       ...overrides,

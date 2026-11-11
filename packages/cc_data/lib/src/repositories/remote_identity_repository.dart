@@ -1,4 +1,9 @@
+import 'package:cc_data/src/server_owner_failure.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart'
+    show RepoGrantAccessWarning;
+import 'package:cc_domain/core/domain/value_objects/username.dart';
+import 'package:cc_domain/core/domain/value_objects/username_check.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 /// The session's resolved identity: the authenticated user, the device the
@@ -10,6 +15,9 @@ class IdentityMe {
     required this.deviceId,
     required this.isServerOwner,
     required this.memberships,
+    this.canCreateWorkspaces = false,
+    this.canUseHost = false,
+    this.ssoIssuer = '',
   });
 
   /// Decodes the `identity.me` payload.
@@ -17,6 +25,9 @@ class IdentityMe {
     user: UserDto.fromJson((json['user'] as Map).cast<String, dynamic>()),
     deviceId: json['device_id'] as String? ?? '',
     isServerOwner: json['is_server_owner'] as bool? ?? false,
+    canCreateWorkspaces: json['can_create_workspaces'] as bool? ?? false,
+    canUseHost: json['can_use_host'] as bool? ?? false,
+    ssoIssuer: json['sso_issuer'] as String? ?? '',
     memberships: [
       for (final m in (json['memberships'] as List? ?? const []))
         if (m is Map) WorkspaceMemberDto.fromJson(m.cast<String, dynamic>()),
@@ -32,6 +43,21 @@ class IdentityMe {
   /// Whether this user is the bootstrap owner (admin of server-global
   /// surfaces like the device registry).
   final bool isServerOwner;
+
+  /// Whether this user may create workspaces (`workspace.create`). Today
+  /// only the server owner may; the client follows this flag, never
+  /// [isServerOwner], so a wider rule needs no client change.
+  final bool canCreateWorkspaces;
+
+  /// Whether this user may run unsandboxed on the server host: the host
+  /// shell, the embedded code-server editor, host-placed environments.
+  /// Today only the server owner may; everyone else gets sandboxed tools.
+  /// Absent reads as false.
+  final bool canUseHost;
+
+  /// The identity provider (issuer) this account is pinned to by single
+  /// sign-on; empty when the account has none.
+  final String ssoIssuer;
 
   /// Every workspace membership of the user.
   final List<WorkspaceMemberDto> memberships;
@@ -77,20 +103,54 @@ class RemoteIdentityRepository {
   Stream<List<UserDto>> watchUsers() =>
       _client.subscribe('users.watchAll', const {}).map(_users);
 
-  /// Updates the caller's own profile fields (null leaves a field unchanged).
+  /// Updates the caller's own account row (null or blank leaves a field
+  /// unchanged) and returns it.
+  ///
+  /// A refused [handle] throws [UsernameRefusedException], read from the
+  /// error's `data.kind`, so the caller can say why in its own language.
   Future<UserDto> updateProfile({
+    String? handle,
     String? displayName,
     String? email,
     String? avatarRef,
     String? gitAuthorName,
     String? gitAuthorEmail,
   }) async {
-    final data = await _client.call('users.updateProfile', {
-      'display_name': ?displayName,
-      'email': ?email,
-      'avatar_ref': ?avatarRef,
-      'git_author_name': ?gitAuthorName,
-      'git_author_email': ?gitAuthorEmail,
+    final Map<String, dynamic> data;
+    try {
+      data = await _client.call('users.updateProfile', {
+        'handle': ?handle,
+        'display_name': ?displayName,
+        'email': ?email,
+        'avatar_ref': ?avatarRef,
+        'git_author_name': ?gitAuthorName,
+        'git_author_email': ?gitAuthorEmail,
+      });
+    } on RemoteRpcException catch (error) {
+      if (usernameRefusalOf(error) case final reason?) {
+        throw UsernameRefusedException(reason);
+      }
+      rethrow;
+    }
+    return UserDto.fromJson((data['user'] as Map).cast<String, dynamic>());
+  }
+
+  /// Whether [handle] could be the caller's username right now.
+  ///
+  /// Live validation only: a later [updateProfile] can still be refused
+  /// when someone takes the name in between.
+  Future<UsernameCheck> checkHandle(String handle) async {
+    final data = await _client.call('users.checkHandle', {'handle': handle});
+    return UsernameCheck.fromJson(data);
+  }
+
+  /// Confirms, as the server owner, that [userId]'s email address is theirs,
+  /// so single sign-on matches it to their account; returns the updated row.
+  ///
+  /// Server owner only: anyone else gets [ServerOwnerRequiredException].
+  Future<UserDto> vouchEmail(String userId) async {
+    final data = await _client.callAsOwner('users.vouchEmail', {
+      'user_id': userId,
     });
     return UserDto.fromJson((data['user'] as Map).cast<String, dynamic>());
   }
@@ -169,17 +229,24 @@ class RemoteIdentityRepository {
   }
 
   /// Sets [userId]'s grant on [repoId] (admin-gated server-side).
-  Future<void> setRepoGrant(
+  ///
+  /// The grant is saved either way; the result says when the member still
+  /// cannot read the repository with their own forge sign-in (null when they
+  /// can, or the grant was removed).
+  Future<RepoGrantAccessWarning?> setRepoGrant(
     String workspaceId,
     String userId,
     String repoId,
     String level,
-  ) => _client.call('members.setRepoGrant', {
-    'workspace_id': workspaceId,
-    'user_id': userId,
-    'repo_id': repoId,
-    'level': level,
-  });
+  ) async {
+    final data = await _client.call('members.setRepoGrant', {
+      'workspace_id': workspaceId,
+      'user_id': userId,
+      'repo_id': repoId,
+      'level': level,
+    });
+    return RepoGrantAccessWarning.fromResult(data['access_warning']);
+  }
 
   /// Mints an invite; returns the metadata, the ONE-TIME code, the server's
   /// redemption URL (derived from the live descriptor — empty when the host
@@ -255,34 +322,6 @@ class RemoteIdentityRepository {
             : const <String, String>{};
       });
 
-  /// Live audit trail of [workspaceId], newest first.
-  Stream<List<UserActivityDto>> watchActivity(String workspaceId) => _client
-      .subscribe('activity.watchForWorkspace', {'workspace_id': workspaceId})
-      .map(_activity);
-
-  /// Cursor page of [workspaceId]'s audit trail, with the real total.
-  Stream<UserActivityPageDto> watchActivityPage(
-    String workspaceId, {
-    String? cursor,
-    int limit = 10,
-    String? query,
-    String? ip,
-    String? countryCode,
-    bool localNetwork = false,
-    List<String> userIds = const [],
-  }) => _client
-      .subscribe('activity.watchForWorkspace', {
-        'workspace_id': workspaceId,
-        'cursor': ?cursor,
-        'limit': limit,
-        'query': ?query,
-        'ip': ?ip,
-        'country_code': ?countryCode,
-        if (localNetwork) 'local_network': true,
-        if (userIds.isNotEmpty) 'user_ids': userIds,
-      })
-      .map(UserActivityPageDto.fromJson);
-
   static List<UserDto> _users(Map<String, dynamic> data) =>
       ((data['users'] as List?) ?? const [])
           .whereType<Map>()
@@ -300,53 +339,15 @@ class RemoteIdentityRepository {
           .whereType<Map>()
           .map((i) => WorkspaceInviteDto.fromJson(i.cast<String, dynamic>()))
           .toList();
-
-  static List<UserActivityDto> _activity(Map<String, dynamic> data) =>
-      ((data['entries'] as List?) ?? const [])
-          .whereType<Map>()
-          .map((e) => UserActivityDto.fromJson(e.cast<String, dynamic>()))
-          .toList();
 }
 
-/// One newest-first page of the workspace audit trail.
-class UserActivityPageDto {
-  /// Creates a [UserActivityPageDto].
-  const UserActivityPageDto({
-    required this.entries,
-    required this.total,
-    required this.start,
-    this.nextCursor,
-    this.prevCursor,
-  });
-
-  /// Decodes the `activity.watchForWorkspace` page snapshot.
-  factory UserActivityPageDto.fromJson(Map<String, dynamic> json) =>
-      UserActivityPageDto(
-        entries: RemoteIdentityRepository._activity(json),
-        total: (json['total'] as num?)?.toInt() ?? 0,
-        start: (json['start'] as num?)?.toInt() ?? 1,
-        nextCursor: json['next_cursor'] as String?,
-        prevCursor: json['prev_cursor'] as String?,
-      );
-
-  /// The page's entries, newest first.
-  final List<UserActivityDto> entries;
-
-  /// How many rows match the filter across the whole trail.
-  final int total;
-
-  /// 1-based index of the first row on this page.
-  final int start;
-
-  /// Opaque cursor for the next older page.
-  final String? nextCursor;
-
-  /// Opaque cursor for the previous newer page; null on the first page.
-  final String? prevCursor;
-
-  /// Whether an older page exists.
-  bool get hasMore => nextCursor != null;
-
-  /// 1-based index of the last row on this page.
-  int get end => entries.isEmpty ? start - 1 : start + entries.length - 1;
+/// The username refusal [error] carries, or null when it is another error.
+UsernameRefusal? usernameRefusalOf(Object? error) {
+  if (error is! RemoteRpcException ||
+      error.code != RpcErrorCodes.validation ||
+      error.data is! Map) {
+    return null;
+  }
+  final kind = (error.data! as Map)['kind'];
+  return UsernameRefusal.values.where((r) => r.errorKind == kind).firstOrNull;
 }

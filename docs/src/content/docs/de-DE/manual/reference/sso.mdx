@@ -2,7 +2,7 @@
 title: SSO-Konfiguration
 description: Jede Stellschraube, jeder Endpunkt, jede Operation und jeder Fehlercode von Single Sign-on.
 slug: de-DE/handbuch/referenz/sso
-sourceHash: 6d23fe9bd73416004cf4219ead1c001afbbd4f98
+sourceHash: 7b68f50058dc584dfb53d5cc3cf6c01c9f97e3ff
 ---
 
 Alles, was sich an Single Sign-on konfigurieren lässt, an einer Stelle. Die
@@ -34,6 +34,18 @@ Einstellungsbildschirm uneins sein kann).
 | `groupRoleMap`         | beide    | `{}`            | Gruppe → Rolle; Zuordnungen auf Eigentümer werden beim Speichern abgelehnt                                                                                   |
 | `autoMember`           | beide    | an              | Benutzer bei der ersten Anmeldung automatisch jedem Arbeitsbereich hinzufügen                                                                                |
 | `allowJit`             | beide    | an              | unbekannte Benutzer bei der Anmeldung provisionieren                                                                                                         |
+
+## Kontoabgleich
+
+`SsoProvisioner` löst eine Anmeldung in dieser Reihenfolge auf und nie über den Benutzernamen:
+
+1. `(users.sso_issuer, users.sso_subject)` ist gleich Issuer und Subject der Anmeldung (SAML-NameID / OIDC-`sub`).
+2. Ein Konto, dessen Adresse gleich der E-Mail der Anmeldung ist, aber nur, wenn beide Seiten dafür bürgen: der Anbieter (OIDC `email_verified: true`; ein fehlender Claim ist keine Bürgschaft, eine signierte SAML-Assertion ist immer eine) und das Konto (`users.email_verified`). Adressen werden getrimmt und kleingeschrieben gespeichert und so verglichen. Eine verifizierte Adresse passt nur, wenn genau ein Konto sie verifiziert hält; zwei Inhaber passen auf nichts (protokolliert ohne die Adresse), und kein Konto kann für eine Schreibvariante einer Adresse verifiziert werden, die ein anderes Konto verifiziert hält.
+3. Sonst ein neues Konto, wenn `allowJit` an ist; eine Ablehnung, wenn es aus ist.
+
+`users.email_verified` setzt ein SSO-Login oder ein SCIM-Push, der die Adresse mitbringt, oder der Serverinhaber mit `users.vouchEmail` (**Einstellungen → Server → Personen → E-Mail bestätigen**, protokolliert als `user.email_vouched`). Die eigene Profilbearbeitung des Inhabers bürgt für seine eigene Adresse. Jede andere Profilbearbeitung und jede Adresse, die bei einer Einladung eingetippt wird, lässt das Feld unverifiziert, und das Ändern einer Adresse löscht das Flag. Ein bestätigter Login, der ein Konto anlegt, übernimmt die Adresse von Konten, die sie nur eingetippt haben (protokolliert als `user.email_unvouched_cleared`), nie von einem Konto, das sie verifiziert hält; in diesem Fall bekommt das neue Konto keine Adresse.
+
+Ein bereits zugeordnetes Konto, das an ein anderes Subject oder einen anderen Issuer gebunden ist, lehnt die Anmeldung mit `This account is already linked to a different SSO identity` ab. Ein deaktiviertes Konto lehnt mit `This account has been deactivated` ab.
 
 ## Prozesskonfiguration
 
@@ -139,6 +151,7 @@ Fehler von `cc_saml_verify_response` tragen einen stabilen Code:
 - `users.sso_subject` + `users.sso_issuer` — die Festschreibung des
   Anbieter-Subjects, eindeutig je `(issuer, subject)` über einen partiellen
   Index.
+- `users.email_verified`: ob die Adresse des Kontos mit einem SSO-Login oder einem SCIM-Push zusammenpassen darf (siehe [Kontoabgleich](#kontoabgleich)).
 - `users.deactivated_at` — der Stempel der SCIM-Deaktivierung.
 - Das SCIM-Bearer-Token und das OIDC-Client-Secret liegen in der
   Geheimnisdatei mit Modus 0600, nie in der Datenbank.

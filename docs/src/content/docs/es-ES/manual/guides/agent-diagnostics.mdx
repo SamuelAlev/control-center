@@ -2,7 +2,7 @@
 title: Diagnosticar un agente
 description: Recorre el registro de ejecuciones, la prueba del adaptador, el estado del servidor y el diagnóstico del host cuando un agente deja de producir ejecuciones.
 slug: es-ES/manual/guias/diagnosticar-agente
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Esta guía te muestra cómo averiguar por qué un agente no está produciendo ejecuciones.
@@ -13,13 +13,13 @@ Trabaja de arriba abajo: primero las ejecuciones del propio agente, luego su bac
 
 **Ajustes → Espacio de trabajo → Agentes** → selecciona el agente → **Registros**.
 
-Cada ejecución muestra una insignia de estado, una duración («Running…» mientras está en curso), sus horas de inicio y finalización, su PID y el adaptador que utilizó. **Vista** abre el flujo de eventos sin procesar de esa ejecución. **Detener** mata un proceso en ejecución y marca la ejecución como «Killed by user»; **Detener en ejecución** en la cabecera hace lo mismo con todas las ejecuciones en curso de ese agente.
+Cada ejecución muestra una insignia de estado, una duración («Running…» mientras está en curso), sus horas de inicio y finalización, su PID y el adaptador que utilizó. **Vista** abre el flujo de eventos sin procesar de esa ejecución. **Detener** mata un proceso en ejecución y marca la ejecución como «Killed by user»; **Detener en ejecución** en la cabecera hace lo mismo con todas las ejecuciones en curso de ese agente en este espacio de trabajo. Solo puedes ver y detener las ejecuciones de agentes activas en los espacios de trabajo a los que perteneces; el propietario del servidor ve y detiene todas.
 
 Léelo así:
 
 - **Ninguna ejecución** — el despacho nunca se produjo. Las menciones del compositor son `@` más caracteres de palabra (letras, dígitos, guion bajo). La resolución es una coincidencia exacta o por prefijo con el nombre del agente, así que `@code-reviewer` se analiza como `code` y aun así puede despertar a un agente llamado `code-reviewer`. Un nombre con un espacio no se puede mencionar como un solo token. En ese caso, pasa al paso 2.
-- **Una ejecución que terminó inmediatamente con error** — abre **Vista**. Un fallo al lanzar el backend aparece aquí como un error de proceso.
-- **Una ejecución atascada en «Running…»** — deténla y consulta después el **Tiempo de silencio (minutos)** del agente en la pestaña Ajustes. Un tiempo de espera sin definir usa el valor predeterminado de cada modo.
+- **Una ejecución que terminó inmediatamente con error** — abre **Vista**. Un fallo al lanzar el backend aparece aquí como un error de proceso. «Este servidor no tiene sandbox, así que solo su propietario puede ejecutar agentes aquí.» significa que la máquina del servidor no tiene sandbox del sistema operativo y que tú no eres su propietario; consulta [Configurar las políticas de sandbox](/es-ES/manual/guias/politicas-de-entorno-aislado/#mi-ejecución-de-agente-fue-rechazada-con-este-servidor-no-tiene-sandbox).
+- **Una ejecución atascada en «Running…»** — deténla y consulta después el **Tiempo de silencio (minutos)** del agente en su pestaña **Ajustes**. Un tiempo de espera sin definir usa el valor predeterminado de cada modo.
 - **Una ejecución completada sin salida útil** — el estado del registro de ejecuciones se queda en `completed` para una ejecución que terminó sin su entregable declarado; la señal honesta es el texto del resumen, no la insignia.
 
 La pestaña Registros no muestra ningún coste. Para ver el gasto, usa la tabla por agente de **Observabilidad → Resumen**.
@@ -67,11 +67,11 @@ Dos cosas que conviene saber cuando un cambio «funciona en las pruebas pero no 
 - **Privacidad** — si el contenido de los diffs sin procesar puede reenviarse al modelo del agente y si se envían informes de fallos.
 
 :::caution[Esta sección informa sobre el host, pero sus controles están en el cliente]
-La detección y la aplicación ahora coinciden: cuando el detector informa de un backend nativo, las ejecuciones de agentes en ese host realmente van envueltas en él. Pero el detector es lo único vivo de esta sección. El interruptor maestro y el selector de backend son preferencias guardadas en tu dispositivo, y el servidor no lee ninguno de ellos: el interruptor propio del servidor es `--sandbox` (`on` por defecto, `off` para desactivarlo).
+La detección y la aplicación coinciden: cuando el detector informa de un backend nativo, las ejecuciones de agentes en ese host realmente van envueltas en él. Pero el detector es lo único vivo de esta sección. El interruptor maestro y el selector de backend son preferencias guardadas en tu dispositivo, y el servidor no lee ninguno de ellos: el interruptor propio del servidor es `--sandbox` (`on` por defecto, `off` para desactivarlo).
 
-Así que una advertencia aquí merece que actúes, pero no suele ser la razón de que un agente esté fallando. Para confirmar en qué estado está el servidor, lee su registro de arranque: imprime `agent sandbox ON` con la nota del backend, `no OS-native agent sandbox on this host` con una sugerencia de instalación, o `agent sandbox DISABLED by --sandbox off`. `GET /healthz` no incluye ningún campo de sandbox.
+Así que una advertencia aquí merece que actúes. En un host sin backend es la razón por la que alguien que no es el propietario del servidor no puede ejecutar agentes en absoluto. Para confirmar en qué estado está el servidor, lee su registro de arranque: imprime `agent sandbox ON` con la nota del backend, `no OS-native agent sandbox on this host` con una sugerencia de instalación, o `agent sandbox DISABLED by --sandbox off`, y su línea de exposición lleva `sandbox=native`, `sandbox=unavailable` o `sandbox=off`. `GET /healthz` no incluye ningún campo de sandbox.
 
-Donde no hay backend —Windows siempre, Linux o WSL2 sin `bwrap` y `socat`— las ejecuciones **no** están en un entorno aislado, y lo que las limita es el checkout propio de la conversación, su token de forja de solo lectura y la pasarela de push, las barandillas de acciones, la sanitización del entorno y la superficie de herramientas que permite su modo.
+Donde no hay backend (Windows siempre, Linux o WSL2 sin `bwrap` y `socat`) solo arrancan las ejecuciones de las que es responsable el propietario del servidor, y las de los demás se rechazan. Las ejecuciones que arrancan allí, y todas las que se hacen con `--sandbox off`, **no** están en un entorno aislado, y lo que las limita es el checkout propio de la conversación, su token de forja de solo lectura y la pasarela de push, las barandillas de acciones, la sanitización del entorno y la superficie de herramientas que permite su modo.
 :::
 
 ## Fallos habituales

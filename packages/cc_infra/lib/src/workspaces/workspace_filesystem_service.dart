@@ -1,11 +1,8 @@
 import 'dart:io';
 
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:path/path.dart' as p;
-
-/// Re-exports `slugify` from the domain layer.
-export 'package:cc_domain/core/domain/services/slugify.dart';
 
 /// Decides whether [skillSlug] may be symlinked into an agent's prompt-visible
 /// `.agents/skills` dir. Wired by the server to the skills-antivirus quarantine

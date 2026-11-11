@@ -7,6 +7,7 @@
 library;
 
 import 'package:cc_domain/cc_domain.dart' show RpcErrorCodes;
+import 'package:cc_domain/core/domain/value_objects/server_owner_required.dart';
 import 'package:cc_domain/features/mcp/domain/mcp_server_status.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
@@ -38,8 +39,25 @@ class RpcMcpServerControl implements McpServerControl {
       _client.call('mcp.setEnabled', {'enabled': enabled});
 
   @override
-  Future<void> setToken(String? token) =>
-      _client.call('mcp.setToken', {'token': token});
+  Future<String> token() => _ownerToken('mcp.token');
+
+  @override
+  Future<String> rotateToken() => _ownerToken('mcp.rotateToken');
+
+  /// Calls an owner-only token op. A refusal for not being the server owner
+  /// surfaces as `ServerOwnerRequiredException`, so the section words it.
+  Future<String> _ownerToken(String op) async {
+    try {
+      return (await _client.call(op, const {}))['token'] as String;
+    } on RemoteRpcException catch (e) {
+      throw serverOwnerRequiredFromRpc(
+            code: e.code,
+            message: e.message,
+            data: e.data,
+          ) ??
+          e;
+    }
+  }
 }
 
 /// The MCP-server control the settings section drives — the RPC-backed control

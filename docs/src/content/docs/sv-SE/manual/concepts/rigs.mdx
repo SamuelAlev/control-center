@@ -2,7 +2,7 @@
 title: Stationer och avskilda miljöer
 description: Varför agenter får tillfälliga maskiner i stället för din dator – isoleringsgränserna, visningskanalerna, autentiseringsuppgifterna, portarna och livscykeln.
 slug: sv-SE/handbok/koncept/stationer
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 En **station** är en tillfällig maskin som en agent kör i realtid – en
@@ -245,7 +245,12 @@ tyst göra något annat.
 En station är medvetet **inte** en global destination. Livevyn är en flik i ytan
 eller PR:en där arbetet sker, avgränsad till det samtalet – så din flik och
 agentens `browser_use`-anrop adresserar *en* maskin (en per motor, på
-webbläsarstationen). Huruvida stationer alls kan startas är en egenskap hos
+webbläsarstationen). En station som öppnats i en yta är ytans maskin, med ytans
+worktrees inom räckhåll, så den följer ytans repon: läsrätt till ytan låter dig
+titta på den, och en skrivbehörighet på de repon låter dig styra den. En station
+som inte hör till någon yta når inga worktrees, och varje arbetsytemedlem kan
+använda den. [Vem kan titta och vem kan styra](/sv-SE/handbok/how-to-guider/anvand-stationer/#vem-kan-titta-och-vem-kan-styra)
+listar vad var och en omfattar. Huruvida stationer alls kan startas är en egenskap hos
 värden, så förmågor, avbildningar, egna avbildningar per arbetsyta och listan
 över körande maskiner finns under **Inställningar → Server → Stationer**. Att
 styra en avskild miljö är en egen [åtgärdsklass i

@@ -492,9 +492,9 @@ void main() {
     });
 
     // Deliberately ONE-DIRECTIONAL. A feature importing settings' card
-    // vocabulary (`settings_shared.dart`, `scope_badge.dart`, `SettingsPage`)
-    // is the hub PROVIDING a design language, which is what makes a contributed
-    // card look native; settings importing a feature's widgets is the hub
+    // vocabulary (`settings_shared.dart`, `SettingsPage`) is the hub
+    // PROVIDING a design language, which is what makes a contributed card
+    // look native; settings importing a feature's widgets is the hub
     // CONSUMING its spokes, which is how it became the app's de-facto
     // integration point in the first place. Contributions come through
     // `settings_extensions.dart` + `di/settings_registry.dart` instead.

@@ -2,7 +2,7 @@
 title: 流水线步骤
 description: 流水线步骤种类、步骤主体键、它们的配置以及步骤结果的参考。
 slug: zh-CN/手册/参考/流水线步骤
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 一个流水线步骤有两个彼此独立的维度：
@@ -61,7 +61,7 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 
 ### `pipeline.condition`
 
-路由器主体——读取 `config.extras`，评估一个条件并返回 `StepResult.route(key)`。条件**不是** JavaScript 表达式；支持三种编写形态，按优先级排列：
+路由器主体——读取 `config.extras`，评估一个条件并返回 `StepResult.route(key)`。条件**不是** JavaScript 表达式；支持两种编写形态，按优先级排列：
 
 - **谓词树**（`extras.predicate`）——一棵布尔树，路由 `"true"` / `"false"`。每个节点都是一个带 `type` 的映射：
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` —— 当所列路径中有任何一个在磁盘上存在时为 true；`negate` 将其翻转；`recursive` 还会搜索子目录（跳过 `.git`、`node_modules`、`build`、`.dart_tool`）。相对路径相对 `state[baseKey]`（默认 `repo_local_path`）解析，否则相对每次运行的工作区目录解析。
@@ -69,19 +69,28 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` —— 布尔组。
   - `{"type": "not", "of": <predicate>}` —— 取反。
 - **Switch**（`extras.switchKey`）—— `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`；路由到状态值以不区分大小写方式包含的第一个 case，否则路由到 `default`。
-- **Comparison**（旧式顶层 `extras.left` / `extras.op` / `extras.right`）—— 等价于一个 `comparison` 谓词，为在谓词树之前编写的模板保留。
 
 从该节点出发的边带有一个 `routeKey`，它必须与返回的键匹配。
 
 ### `prReview.comment`
 
-通过 GitHub PR 客户端把汇总后的发现项发布为一条 PR 审查评论。
+通过 GitHub PR 客户端，把汇总后的发现项或步骤自己的 `extras.message` 发布为一条 PR 审查评论。
 
-| 状态键                   | 说明                                    |
-| ------------------------ | --------------------------------------- |
-| `repo_full_name`         | `owner/repo`（必需）                    |
-| `pr_number`              | PR 编号——整数或数字字符串（必需）       |
-| `consolidated_findings`  | 评论正文（必需）                        |
+| 键                      | 读取自       | 说明                                         |
+| ----------------------- | ------------ | -------------------------------------------- |
+| `repo_full_name`        | 触发器载荷   | `owner/repo`（必需）                         |
+| `pr_number`             | 触发器载荷   | PR 编号，正整数或数字字符串（必需）          |
+| `consolidated_findings` | 状态         | 当步骤没有 `message` 时的评论正文            |
+
+pull request 只来自运行的触发器载荷，从不来自步骤可能在运行中途改写的状态。发布文本中的 @ 提及会被失效处理，因此评论不会通知任何人。
+
+`message` 按如下方式渲染其 `{{key}}` 占位符：
+
+- `repo_full_name`、`repo_owner`、`repo_name` 和 `pr_number` 渲染步骤所发布到的那个 pull request。
+- `author` 原样取自触发器载荷，且仅当它是代码托管平台上有效的用户名时才会渲染；否则步骤失败。
+- `consolidated_findings` 以原始 markdown 渲染，其中的 @ 提及会被失效处理。
+- 其他所有值都渲染为字面文本：单行显示，markdown 标点会被转义，@ 提及会被失效处理。
+- 解析为空值的占位符会使步骤失败。
 
 返回 `StepResult.terminal`，并在状态中带有 `comment_review_id` 和 `commented_at`。
 

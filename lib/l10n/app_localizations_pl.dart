@@ -158,7 +158,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get guardrailClassPrCreate => 'Otwarcie pull requesta';
 
   @override
-  String get guardrailClassPrPublish => 'Opublikowanie recenzji lub scalenie';
+  String get guardrailClassPrPublish =>
+      'Aktualizacja lub scalenie pull requesta';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Zapis do zewnętrznego trackera';
@@ -2581,9 +2582,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get activityToggledMcpServer => 'Przełączono serwer MCP';
 
   @override
-  String get activityUpdatedMcpToken => 'Zaktualizowano token MCP';
-
-  @override
   String get activitySavedApiKey => 'Zapisano klucz API';
 
   @override
@@ -3224,9 +3222,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Usunąć „$name”?';
   }
-
-  @override
-  String get archiveConversation => 'Zarchiwizuj rozmowę';
 
   @override
   String get deleteFact => 'Usuń fakt';
@@ -3922,9 +3917,6 @@ class AppLocalizationsPl extends AppLocalizations {
       'Dopasuj do wyglądu systemu operacyjnego lub wybierz stały tryb.';
 
   @override
-  String get mcpAuthToken => 'Token uwierzytelniający MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Sterowanie serwerem MCP nie jest dostępne na połączonym serwerze.';
 
@@ -4145,10 +4137,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Nie wykryto czcionek systemowych.';
-
-  @override
-  String get noTokenSet =>
-      'Brak ustawionego tokena — dostęp jest bez ograniczeń.';
 
   @override
   String get noWorkingMemory => 'Brak notatek pamięci roboczej.';
@@ -4641,33 +4629,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Dane uwierzytelniające GitHub serwera nie widzą $repos. Jeśli repozytorium należy do organizacji, zainstaluj tam GitHub App albo podłącz token z dostępem.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Brak dostępu do $count repozytorium',
-      many: 'Brak dostępu do $count repozytoriów',
-      few: 'Brak dostępu do $count repozytoriów',
-      one: 'Brak dostępu do repozytorium',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Instalacja GitHub App została wstrzymana';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Wyświetlane są ostatnio znane dane dla $repos. Wznów instalację na GitHubie albo podłącz token z dostępem.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Brak dostępu';
 
   @override
@@ -4786,9 +4747,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Reguła';
-
-  @override
-  String get runCompleted => 'Uruchomienie zakończone';
 
   @override
   String get running => 'Działa';
@@ -4952,9 +4910,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get setLabel => 'Ustaw';
-
-  @override
-  String get setToken => 'Ustaw token';
 
   @override
   String get settingsLabel => 'Ustawienia';
@@ -5152,9 +5107,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get skillOriginManual => 'Ręczne';
 
   @override
-  String get skillOriginRegistry => 'Rejestr';
-
-  @override
   String get skillOriginRuntimeLocal => 'Lokalny runtime';
 
   @override
@@ -5329,10 +5281,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Przełącz motyw';
-
-  @override
-  String get tokenConfigured =>
-      'Skonfigurowano — klienci muszą podać ten token.';
 
   @override
   String get topic => 'Temat';
@@ -8947,7 +8895,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Które działania narzędzi wykonują się bez pytania. Odczyty są zawsze dozwolone; wyższe poziomy wymagają potwierdzenia.';
+      'Które akcje narzędzi Control Center, wywoływane przez jego punkt końcowy MCP lub przez agenty, wykonują się bez pytania. Odczyty są zawsze dozwolone; wyższe poziomy wymagają potwierdzenia. Serwery w uruchomieniu podlegają polityce akcji tego uruchomienia.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Zawsze pytaj';
@@ -12495,20 +12443,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get settingsAbout => 'O aplikacji';
 
   @override
-  String get settingsScopeBadgeYou => 'TY';
-
-  @override
-  String get settingsScopeBadgeDevice => 'TO URZĄDZENIE';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'OBSZAR ROBOCZY';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERWER';
-
-  @override
   String get settingsProfileDescription =>
-      'Twoja nazwa, e-mail i tożsamość git w tej przestrzeni. Zmiana przestrzeni zmienia tę nakładkę; identyfikator, logowanie i urządzenia zostają na koncie.';
+      'Twoje imię, e-mail i tożsamość git w tym obszarze roboczym. Zmiana obszaru roboczego zmienia tę nakładkę; twoja nazwa użytkownika, logowanie i urządzenia pozostają na koncie w Ty → Profil.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12523,50 +12459,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Tożsamość, zasady i konwencje wspólne dla wszystkich w tym obszarze roboczym.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Przypisanie autorstwa commitów';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Wybierz, czy commity agenta mają wskazywać Control Center jako współautora. Administratorzy obszaru roboczego mogą zastąpić ten wybór dla wszystkich w obszarze roboczym.';
-
-  @override
-  String get settingsAgentCoauthorSection =>
-      'Wskazanie agenta jako współautora';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Uwzględniaj Control Center w autorstwie commitów agenta';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Zawsze jesteś autorem i committerem commitów. Po włączeniu Control Center (@usectrl) jest dodawane jako współautor. Po wyłączeniu commity nie zawierają wzmianki o agencie.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Ustawienie tego obszaru roboczego zastępuje Twój osobisty wybór. Twoja preferencja jest zapisana, ale nie obowiązuje tutaj.';
-
-  @override
-  String get settingsAgentAttributionLoading =>
-      'Wczytywanie ustawień autorstwa…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Wybierz, czy commity agenta mają wskazywać Control Center jako współautora. Ustawienie obszaru roboczego zastępuje osobistą preferencję każdego członka.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Użyj preferencji każdego członka';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Zawsze wskazuj Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Nigdy nie wskazuj Control Center';
+      'Zasady i konwencje wspólne dla wszystkich w tym obszarze roboczym.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12937,9 +12830,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Sprawdzanie połączenia…';
-
-  @override
-  String get fromEnvironment => 'ze środowiska';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13511,14 +13401,14 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Używana przez obszary robocze, które dziedziczą aplikację GitHub tej instalacji. Obszar roboczy z własną aplikacją konfiguruje ją w Obszar roboczy → Ogólne.';
+      'Używany przez obszary robocze, które podążają za aplikacjami logowania tego serwera. Obszar roboczy z własnymi aplikacjami konfiguruje własną App w sekcji Obszar roboczy → Integracje.';
 
   @override
   String get providerAppsGroupPrConversations => 'Rozmowy przy pull requestach';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Jak deweloperzy rozmawiają z tym serwerem na GitHubie w przestrzeniach dziedziczących. Przestrzeń z własną App ma bota w Przestrzeń → Ogólne. Działa bez webhooka i publicznego URL — serwer odpytuje.';
+      'Jak deweloperzy mogą rozmawiać z tym serwerem na GitHubie w obszarach roboczych, które podążają za tym serwerem. Obszar roboczy z własnymi aplikacjami ma własnego bota w sekcji Obszar roboczy → Integracje. Działa bez webhooka i publicznego URL-a; serwer odpytuje sam.';
 
   @override
   String get providerAppBotLogin => 'Login bota';
@@ -13551,10 +13441,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Bez tokenu wszystko, co dosięgnie tego portu, może wywołać każde narzędzie.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Narzędzia';
 
   @override
@@ -13581,6 +13467,141 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Wyczyść wszystko';
+
+  @override
+  String get guardrailFamilyCommands => 'Polecenia';
+
+  @override
+  String get guardrailStandingApproval => 'Zatwierdzenie czasowe';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Zezwolono: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Pytaj najpierw: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Odmówiono: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'gałęzie $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'ścieżki $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'hosty $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'polecenia $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'narzędzia $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'polecenia zaczynające się od $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'najwyżej $count naraz';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'najwyżej $amount centów';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'każde działanie tego rodzaju';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'przez $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'do $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'do odwołania';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Cofnij: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'Nie udało się cofnąć. Spróbuj ponownie.';
+
+  @override
+  String get guardrailEntryInactive => 'bez skutku, gdy ustawiono «Odmów»';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zezwolono w $count przypadkach wymienionych poniżej',
+      many: 'Zezwolono w $count przypadkach wymienionych poniżej',
+      few: 'Zezwolono w $count przypadkach wymienionych poniżej',
+      one: 'Zezwolono w $count przypadku wymienionym poniżej',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count zatwierdzeń czasowych dla całego obszaru roboczego także tu obowiązuje.',
+      many:
+          '$count zatwierdzeń czasowych dla całego obszaru roboczego także tu obowiązuje.',
+      few:
+          '$count zatwierdzenia czasowe dla całego obszaru roboczego także tu obowiązują.',
+      one:
+          '$count zatwierdzenie czasowe dla całego obszaru roboczego także tu obowiązuje.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count zatwierdzeń czasowych jest ustawionych dla pojedynczych przestrzeni lub agentów. Wybierz «Przestrzeń» lub «Agent» powyżej, aby je zobaczyć.',
+      many:
+          '$count zatwierdzeń czasowych jest ustawionych dla pojedynczych przestrzeni lub agentów. Wybierz «Przestrzeń» lub «Agent» powyżej, aby je zobaczyć.',
+      few:
+          '$count zatwierdzenia czasowe są ustawione dla pojedynczych przestrzeni lub agentów. Wybierz «Przestrzeń» lub «Agent» powyżej, aby je zobaczyć.',
+      one:
+          '$count zatwierdzenie czasowe jest ustawione dla jednej przestrzeni lub agenta. Wybierz «Przestrzeń» lub «Agent» powyżej, aby je zobaczyć.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Piaskownica';
@@ -14405,6 +14426,13 @@ class AppLocalizationsPl extends AppLocalizations {
       'Zapytamy Cię ponownie, gdy agent następnym razem będzie musiał uruchomić program z tej kopii.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Szukaj ścieżek';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Brak zezwoleń pasujących do wyszukiwania';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14767,11 +14795,11 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'To połączenie dociera do serwera przez relay, który nie przenosi plików. Połącz się z serwerem bezpośrednio, aby pobrać lub wysłać kopię zapasową.';
+      'Przesyłanie plików nie jest jeszcze skonfigurowane dla tego połączenia. Połącz się ponownie z serwerem, aby pobrać lub wysłać kopię zapasową.';
 
   @override
   String get backupTransferForbidden =>
-      'Serwer odmówił. Pobieranie obszaru roboczego wymaga roli administratora, przywracanie — właściciela, a całej migawki — operatora instalacji.';
+      'Serwer odmówił. Pobranie obszaru roboczego wymaga roli administratora obszaru roboczego. Przywrócenie go wymaga właściciela serwera, który musi być też właścicielem tego obszaru roboczego. Całej migawki wymaga właściciela serwera.';
 
   @override
   String get backupTransferUnsupported =>
@@ -15079,33 +15107,8 @@ class AppLocalizationsPl extends AppLocalizations {
       'Umieszczaj zawartość schowka z dowolnego środowiska na tym urządzeniu bez pytania.';
 
   @override
-  String get workspaceGitHubIdentity => 'Tożsamość GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Jak uwierzytelnia się praca GitHub w tle w tym obszarze roboczym: aplikacją tej instalacji albo własną aplikacją obszaru roboczego.';
-
-  @override
-  String get workspaceGitHubModeInherit => 'Użyj GitHub App tej instalacji';
-
-  @override
-  String get workspaceGitHubModeApp => 'Użyj innej GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Używa GitHub App w Serwer → Aplikacje dostawców.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Tożsamość bota i odpytywania tej przestrzeni. Członkowie logują się w Ty przez tę App.';
-
-  @override
   String get profileOverlayHint =>
       'Te pola to ty w tej przestrzeni. Puste pola dziedziczą nazwę i e-mail konta. Zmiana przestrzeni zmienia tę nakładkę.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Zaloguj się albo wklej token dla tej przestrzeni.';
 
   @override
   String get stackStartNextPart => 'Rozpocznij następną część';
@@ -15921,6 +15924,17 @@ class AppLocalizationsPl extends AppLocalizations {
       'Serwer nie mógł podać polecenia logowania dla tego konta.';
 
   @override
+  String get claudeAccountSignedIn => 'Zalogowano';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'To okno zamknie się automatycznie po zakończeniu logowania.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'To okno zamknie się automatycznie, gdy wszystkie konta zostaną zalogowane.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle => 'Sesja Claude Code wygasła';
 
   @override
@@ -16076,8 +16090,7 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded =>
-      'To trzeba skonfigurować na serwerze';
+  String get environmentInputNeeded => 'To trzeba skonfigurować na serwerze';
 
   @override
   String get environmentKindApp => 'Aplikacja';
@@ -16684,21 +16697,41 @@ class AppLocalizationsPl extends AppLocalizations {
   String get environmentOpenPanel => 'Otwórz środowisko';
 
   @override
-  String get environmentNeedsSetup => 'Wymaga konfiguracji';
+  String get environmentStatusBlocked => 'Wymaga działania';
+
+  @override
+  String get environmentStateInTerminal => 'W terminalu';
+
+  @override
+  String get environmentWaitingInTerminal => 'Czeka na Ciebie w terminalu';
+
+  @override
+  String get environmentOpenTerminal => 'Otwórz terminal';
+
+  @override
+  String get environmentSignInNeeded => 'Musisz się zalogować';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Wymagany składnik jest niedostępny';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Tutaj gotowe. Środowisko nadal się uruchamia';
 
   @override
   String get environmentContinueInTerminal => 'Kontynuuj w terminalu';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Narzędzie potrzebuje Cię w terminalu do podania hasła lub odpowiedzi. Uruchamianie będzie kontynuowane po zakończeniu.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Ten terminal otworzył się, ponieważ uruchamianie potrzebuje Ciebie';
 
   @override
-  String get environmentSetupTab => 'Konfiguracja środowiska';
+  String get environmentStartTerminalTab => 'Konfiguracja środowiska';
 
   @override
   String get environmentsNothingRunning => 'Nic nie działa z tej definicji.';
@@ -17002,23 +17035,14 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Zatwierdź prośbę na stronie $provider w przeglądarce. To okno samo zauważy, kiedy skończysz.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Oczekiwanie na $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Logowanie nie zostało ukończone';
 
   @override
   String get signInReopenPage => 'Otwórz ponownie stronę logowania';
 
   @override
-  String get signInCodePrompt => 'Wpisz kod wyświetlony w przeglądarce';
+  String get signInCodePrompt =>
+      'Potwierdź w przeglądarce, a następnie wpisz pokazany tam kod.';
 
   @override
   String get signInCodeMalformed =>
@@ -17061,7 +17085,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'To logowanie jest już nieważne. Rozpocznij je od nowa.';
+      'To logowanie nie jest już otwarte: zostało anulowane, wykorzystane lub zastąpione. Rozpocznij je ponownie.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -17069,7 +17093,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Zbyt wiele prób logowania w tej chwili. Odczekaj minutę i spróbuj ponownie.';
+      'Zbyt wiele żądań w tej chwili. Poczekaj chwilę i spróbuj ponownie.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -17100,10 +17124,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Aplikacja $provider nie jest zainstalowana tam, gdzie jest potrzebna. Zainstaluj ją i spróbuj ponownie.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Ta instalacja aplikacji GitHub jest już autoryzowana dla innego serwera Control Center.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -17162,7 +17182,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Gdzie zainstalowano aplikację GitHub, spośród kont, do których należą repozytoria tego obszaru roboczego. Instalacja organizacji działa tylko na serwerach autoryzowanych przez jej administratorów.';
+      'Gdzie zainstalowano aplikację GitHub, spośród kont, do których należą repozytoria tego obszaru roboczego.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -17172,21 +17192,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get githubInstallApp => 'Zainstaluj aplikację GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Autoryzuj ten serwer';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Ten serwer może teraz korzystać z instalacji w $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Zawieszona';
-
-  @override
-  String get githubInstallationAuthorized => 'Autoryzowana';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Nieautoryzowana';
 
   @override
   String get linearAutomationTitle => 'Automatyzacja Linear';
@@ -17212,7 +17218,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Zarejestruj samodzielnie aplikacje GitHub, Google i Linear w Ustawienia → Serwer → Logowanie jednokrotne, a własną aplikację Slack każdego obszaru roboczego podłącz w jego ustawieniach. „Utwórz moją aplikację GitHub” konfiguruje GitHub w jednym kroku.';
+      'Zarejestruj samodzielnie aplikacje GitHub, Google i Linear w Ustawienia → Serwer → Logowanie jednokrotne, a własną aplikację Slack każdego obszaru roboczego podłącz w Obszar roboczy → Integracje, gdzie obszar roboczy może też wybrać własne aplikacje lub Connect. „Utwórz moją aplikację GitHub” konfiguruje GitHub w jednym kroku.';
 
   @override
   String get connectModeCustom => 'Użyj własnego serwera Connect';
@@ -17347,7 +17353,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Ten serwer otrzyma nowy klucz i nowy identyfikator instalacji. Wszystkie logowania wykonane przez Connect przestaną działać i wszyscy będą musieli zalogować się ponownie. Logowania przez twoje własne aplikacje nie zostaną naruszone.';
+      'Ten serwer dostaje nowy klucz i nowy identyfikator instalacji, a stary identyfikator jest wycofywany w Connect: logowania zapieczętowane pod nim oraz stary klucz przestają tam działać, więc każdy, kto logował się przez Connect, będzie musiał zalogować się ponownie. Tokeny już wydane działają do wygaśnięcia. Logowania przez twoje własne aplikacje nie są dotknięte. Jeśli Connect jest nieosiągalny, nic się nie zmienia i możesz spróbować ponownie.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17481,34 +17487,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Aplikacje dostawców';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Z których aplikacji Kalendarza Google, Linear i Klipy korzysta ten obszar roboczy. Domyślnie używa aplikacji tego serwera lub Control Center Connect. Obszar roboczy z własną aplikacją nigdy nie wraca do nich.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'Użyj aplikacji tego serwera';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Logowania i żądania używają aplikacji tego serwera lub Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Użyj własnej aplikacji tego obszaru roboczego';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Używana jest tylko aplikacja tego obszaru roboczego. Dopóki jest niekompletna, ten dostawca jest tutaj wyłączony zamiast wracać do innej aplikacji.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Aplikacja serwera';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Własna aplikacja';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Wciąż brakuje: $fields. Dopóki wszystkie pola nie są wypełnione, ten dostawca jest wyłączony w tym obszarze roboczym. Nie wraca do aplikacji tego serwera.';
   }
@@ -17525,22 +17503,116 @@ class AppLocalizationsPl extends AppLocalizations {
       'Wyszukiwanie GIF-ów w tym obszarze roboczym używa tego klucza.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Przełączyć aplikację $provider?';
+  String get settingsWorkspaceIntegrations => 'Integracje';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Hosting kodu, zgłoszenia, kalendarz, czat i wyszukiwanie GIF-ów w tym obszarze roboczym oraz to, przez które aplikacje się logują.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Z jakich aplikacji ten obszar roboczy korzysta w przypadku GitHuba, Kalendarza Google, Linear, Slacka i wyszukiwania GIF-ów. Jeśli administrator nie wybierze inaczej, podąża za tym serwerem.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Tak samo jak ten serwer';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Ten serwer używa aplikacji Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Ten serwer używa serwera Connect pod adresem $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Wszyscy połączeni z $provider w tym obszarze roboczym przez aplikację tego serwera będą musieli zalogować się ponownie za pomocą aplikacji obszaru roboczego.';
+  String get workspaceConnectInheritOwn =>
+      'Ten serwer używa własnych aplikacji.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Właściciel serwera jeszcze nie wybrał, więc obowiązują własne aplikacje serwera.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Używane są tylko aplikacje tego obszaru roboczego. Dodaj każdą z nich poniżej, obok jej dostawcy. Dostawca bez aplikacji jest tu wyłączony; zamiast niego nie są używane aplikacje tego serwera ani Connect.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Tylko HTTPS. Adresy w sieci prywatnej lub lokalnej są odrzucane.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL w środowisku tego serwera określa, dokąd trafiają logowania, więc ten obszar roboczy nie może wybrać własnego Connect. Może podążać za tym serwerem albo używać własnych aplikacji.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Przełączyć aplikacje logowania tego obszaru roboczego?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Wszyscy w tym obszarze roboczym muszą zalogować się ponownie do GitHuba, Linear i Kalendarza Google przez nowe aplikacje. Logowania wykonane przez obecne aplikacje przestaną tu działać.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Przełącz aplikacje';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Zgodne z wyborem powyżej. Dostawca nigdy nie wraca do innej aplikacji.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Aplikacja obszaru roboczego';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Aplikacja serwera';
+
+  @override
+  String get workspaceGitHubAppTitle => 'Aplikacja GitHub';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Własna aplikacja tego obszaru roboczego działa w imieniu jego repozytoriów i loguje członków. Nigdy nie wraca do aplikacji tego serwera ani do Connect.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Ten obszar roboczy korzysta z aplikacji GitHub dostarczanej przez jego aplikacje logowania. Zainstaluj ją na kontach, do których należą Twoje repozytoria.';
+
+  @override
+  String get workspaceGitHubAppActingTitle =>
+      'Działa w imieniu tego obszaru roboczego';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Bot aplikacji komentuje, recenzuje i odpytuje pull requesty w repozytoriach tego obszaru roboczego.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Aplikacja $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'To usunie dane logowania $provider obszaru roboczego. Wszyscy połączeni przez aplikację obszaru roboczego będą musieli zalogować się ponownie.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Logowania i żądania $provider w tym obszarze roboczym korzystają wyłącznie z tej aplikacji.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Przełącz aplikację';
+  String get workspaceGifsTitle => 'GIF-y';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Wyszukiwanie GIF-ów używa klucza Klipy tego obszaru roboczego.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Wyszukiwanie GIF-ów używa klucza Klipy tego serwera.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Wyszukiwanie GIF-ów działa przez Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Wyszukiwanie GIF-ów jest wyłączone w tym obszarze roboczym.';
 
   @override
   String openOnForge(String forge) {
@@ -17558,7 +17630,7 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Połącz GitHub, GitLab lub Bitbucket w Ustawienia → Obszar roboczy → Profil i tożsamość → Hosting kodu';
+      'Połącz GitHub, GitLab lub Bitbucket w Ustawienia → Ty → Profil';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17575,4 +17647,1141 @@ class AppLocalizationsPl extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Połącz $forge, aby otworzyć pull request w tym repozytorium';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Twoje logowanie do $provider jako $account wygasło. Zaloguj się ponownie.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Wstrzymane: zmieniła się usługa logowania tego obszaru roboczego';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return 'Nie można teraz połączyć się z $provider. Ponawianie.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Twoje logowanie zostaje zachowane i zadziała ponownie, gdy usługa wróci. Administrator obszaru roboczego może sprawdzić konfigurację logowania w Integracjach.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Serwer został uruchomiony ponownie. Zacznij logowanie od nowa.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Logowanie przez $provider nie jest skonfigurowane w tym obszarze roboczym.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Logowanie przez $provider jest źle skonfigurowane: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Ten obszar roboczy używa własnych aplikacji, ale nie ma aplikacji $provider.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Ta kompilacja nie może zweryfikować Control Center Connect, więc logowanie przez $provider jest wyłączone.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Usługa logowania tego obszaru roboczego zmieniła tożsamość. Administrator musi ją potwierdzić.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Nie można teraz połączyć się z usługą logowania tego obszaru roboczego.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Brak adresu usługi logowania tego obszaru roboczego lub jest on nieprawidłowy.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Operator serwera ustawił usługę logowania na stałe, więc wybór tego obszaru roboczego nie obowiązuje.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Usługa logowania tego obszaru roboczego nie obsługuje $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Otwórz integracje';
+
+  @override
+  String get signInOpenServerSettings => 'Otwórz ustawienia logowania';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'To działa w Twoim imieniu w $provider, a nie dodano tokenu. Dodaj go i spróbuj ponownie.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Rozłączyć $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Aby pracować na repozytoriach w $provider, trzeba będzie połączyć go ponownie.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'To rozłącza $provider tylko w tym obszarze roboczym. Inne obszary robocze zachowują własne połączenie.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'To rozłącza $provider w każdym obszarze roboczym, który współdzieli to połączenie.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return 'Rozłączono $provider z tym obszarem roboczym';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return 'Rozłączono $provider ze wszystkimi obszarami roboczymi';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Zainstaluj GitHub App w $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Automatyzacja nie dotrze do $repos, dopóki aplikacja nie zostanie tam zainstalowana.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Dodaj $repos do repozytoriów GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Aplikacja jest zainstalowana na tym koncie, ale jeszcze nie widzi tych repozytoriów.';
+
+  @override
+  String get repoAccessChooseRepos => 'Wybierz repozytoria';
+
+  @override
+  String get repoAccessSuspendedTitle =>
+      'Instalacja GitHub App została wstrzymana';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Automatyzacja dla $repos jest wstrzymana, dopóki właściciel konta nie wznowi instalacji w GitHub.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Automatyzacja jest wstrzymana';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Osoba odpowiedzialna za automatyzację tego obszaru roboczego nie widzi już $repos, więc nic nie działa tam w jej imieniu.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Osoba odpowiedzialna za automatyzację tego obszaru roboczego nie jest zalogowana do forge, więc automatyzacja dla $repos czeka, aż się zaloguje.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Nie udało się sprawdzić dostępu do $repos. Ponawianie.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Poproś $admins o naprawienie tego.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Poproś administratora obszaru roboczego o naprawienie tego.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Zaloguj się do $forge, aby zobaczyć pull requesty z kolejnych repozytoriów: $count',
+      one:
+          'Zaloguj się do $forge, aby zobaczyć pull requesty z jeszcze 1 repozytorium',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ukryte repozytoria, których Twoje konto $forge nie widzi: $count',
+      one: '1 repozytorium jest ukryte, bo Twoje konto $forge go nie widzi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ukryte repozytoria, do których nie masz dostępu w tym obszarze roboczym: $count',
+      one:
+          '1 repozytorium jest ukryte, bo nie masz do niego dostępu w tym obszarze roboczym',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sprawdzanie Twojego dostępu do kolejnych repozytoriów: $count…',
+      one: 'Sprawdzanie Twojego dostępu do jeszcze 1 repozytorium…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Połączono, ale automatyzacja nie dociera jeszcze wszędzie';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Zainstaluj w innej organizacji';
+
+  @override
+  String get forgeTokenEmailLabel => 'E-mail konta Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Wpisz adres e-mail swojego konta Atlassian.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'Token API';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Tokeny API Bitbucket działają razem z adresem e-mail konta Atlassian, które je utworzyło.';
+
+  @override
+  String get automationTokensTitle => 'Tokeny automatyzacji';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Praca w tle w GitLabie i Bitbucket, na przykład aktualizacje pull requestów, komentarze z przeglądu AI i merge requesty, o które nikt nie prosił, używa tokenu dostępu bota, nigdy tokenu osoby. Własny token repozytorium ma pierwszeństwo przed tokenem przestrzeni roboczej.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Używany dla każdego repozytorium GitLab lub Bitbucket w tej przestrzeni roboczej, które nie ma własnego tokenu automatyzacji. Praca w tle jest tam widoczna jako bot tego tokenu.';
+
+  @override
+  String get automationTokenNone =>
+      'Brak tokenu. Automatyzacja jest tu wstrzymana.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Używa tokenu przestrzeni roboczej';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Działa jako $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Dodano token dostępu';
+
+  @override
+  String get automationTokenRejected =>
+      'Platforma odrzuciła ten token. Zastąp go.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Token automatyzacji $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Wklej token dostępu projektu lub grupy. Potrzebuje read_api i read_repository; dodaj api i write_repository dla komentarzy, merge requestów i pushy. GitLab pokazuje jego pracę jako bota tokenu.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Wklej token dostępu repozytorium, projektu lub przestrzeni roboczej z odczytem repozytorium oraz zapisem pull requestów dla komentarzy i pull requestów. Twój własny token API należy do sekcji Ty → Profil, nie tutaj.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token zapisany, ale nie może odczytać $repos. Automatyzacja pozostaje tam wstrzymana.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Usunąć token automatyzacji?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Automatyzacja zależna od tego tokenu zostanie wstrzymana, dopóki nie dodasz innego.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Każde repozytorium $forge bez własnego tokenu';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Żaden token automatyzacji nie może odczytać $repos, więc praca w tle jest tam wstrzymana.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commity z pracy, którą rozpoczynasz, noszą twoje imię. Wybierz, kto jeszcze ma być wymieniony i czy platformy hostingu kodu mają oznaczać twoje commity jako zweryfikowane.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Autorstwo';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Praca, którą rozpoczynasz';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Jesteś autorem i committerem na adres e-mail, który hosting kodu zweryfikował dla twojego logowania. Dotyczy to czatów z agentami, pipeline\'ów, które uruchamiasz, i commitów, które tworzysz w edytorze.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Automatyczne uruchomienia';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Uruchomienia zlecone przez harmonogram lub webhook są commitowane jako bot i nigdy nie są podpisywane.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Dopóki nie zalogujesz się do hostingu kodu w obszarze roboczym, twoje uruchomienia tam są commitowane jako bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Dodawaj Control Center jako współautora';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Twoje commity wymieniają Control Center (@usectrl) jako współautora, a automatyczne uruchomienia, które włączyłeś, wymieniają ciebie. Po wyłączeniu nie dodaje się żadnej z tych linii.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Ustawienie tego obszaru roboczego zastępuje Twój osobisty wybór. Twoja preferencja jest zapisana, ale nie obowiązuje tutaj.';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'Wczytywanie ustawień autorstwa…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Uznanie współautorstwa';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Czy commity zawierają linie współautorów: Control Center w commitach członka oraz członkowie, którzy włączyli automatyczne uruchomienie, w jego commitach. Wybór tutaj nadpisuje ustawienie każdego członka.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Użyj preferencji każdego członka';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Zawsze dodawaj uznanie współautorstwa';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Nigdy nie dodawaj uznania współautorstwa';
+
+  @override
+  String get settingsCommitSigningSection => 'Zweryfikowane commity';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Podpisywanie';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Bez podpisu';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Ten serwer może podpisywać twoje commity kluczem, który jest twój, dzięki czemu GitHub i GitLab pokazują je jako zweryfikowane. Nic nie jest podpisywane, dopóki nie utworzysz klucza.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Utwórz klucz podpisywania';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Utworzono klucz podpisywania. Dodaj go do swojego konta w hostingu kodu.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Klucz publiczny';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Skopiowano klucz publiczny';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Odcisk palca';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Utworzono';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Dodaj go do swojego konta w hostingu kodu';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Commit jest pokazywany jako zweryfikowany tylko wtedy, gdy jesteś jednocześnie zalogowany do tego hostingu kodu w obszarze roboczym, dzięki czemu hosting potwierdza twój e-mail.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Ustaw Key type na Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Ustaw Usage type na Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commity w Bitbucket nie są podpisywane. Nie dodawaj tego klucza do swojego konta Bitbucket: klucz SSH tam jest także logowaniem.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Nieobsługiwane';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Czemu ufasz';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Klucz prywatny nigdy nie opuszcza tego serwera.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Ktokolwiek kontroluje ten serwer, może podpisywać commity jako ty, dopóki klucz znajduje się na twoim koncie w hostingu kodu.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'W GitHub commity już pokazane jako zweryfikowane pozostają zweryfikowane po usunięciu klucza.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Usuń klucz';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Usunąć klucz podpisywania?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Od teraz twoje commity nie będą podpisywane. Klucz pozostaje na twoich kontach w hostingu kodu, dopóki go tam nie usuniesz.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Usunięto klucz podpisywania';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Nie udało się wczytać twojego klucza podpisywania: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Kim jesteś w każdym obszarze roboczym i jakie masz własne konta do hostingu kodu, zgłoszeń, kalendarza i czatu.';
+
+  @override
+  String get accountSectionTitle => 'Konto';
+
+  @override
+  String get accountSectionDescription =>
+      'Twoja nazwa użytkownika i imię podążają za tobą do każdego obszaru roboczego. Obszar roboczy może pokazywać inne imię lub e-mail: ustaw to w Obszar roboczy → Profil i tożsamość.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Nie udało się wczytać twojego profilu: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Imię i nazwisko, które inni widzą przy twoich wiadomościach i recenzjach.';
+
+  @override
+  String get accountDisplayNameRequired => 'Wpisz nazwę wyświetlaną.';
+
+  @override
+  String get accountFieldCannotBeCleared => 'Można to zmienić, ale nie usunąć.';
+
+  @override
+  String get accountAvatarLabel => 'Zdjęcie';
+
+  @override
+  String get accountAvatarHint =>
+      'Link do kwadratowego obrazu, zaczynający się od https://.';
+
+  @override
+  String get accountAvatarInvalid =>
+      'Użyj linku zaczynającego się od https://.';
+
+  @override
+  String get usernameLabel => 'Nazwa użytkownika';
+
+  @override
+  String get usernameRule =>
+      'Od 2 do 32 małych liter, cyfr, kropek, myślników lub podkreśleń. Ludzie wspominają cię właśnie tak.';
+
+  @override
+  String get usernameAvailable => 'Dostępna.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Dostępna. Zostanie zapisana jako $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Użyj od 2 do 32 małych liter, cyfr, „.”, „_” lub „-”, zaczynając i kończąc literą lub cyfrą.';
+
+  @override
+  String get usernameReserved => 'Ta nazwa użytkownika jest zarezerwowana.';
+
+  @override
+  String get usernameTaken => 'Ta nazwa użytkownika jest zajęta.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Nie udało się sprawdzić tej nazwy w tej chwili. Możesz nadal zapisać; decyduje serwer.';
+
+  @override
+  String get linkedAccountsTitle => 'Połączone konta';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Dostawca tożsamości';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Wymaga logowania';
+
+  @override
+  String get linkedAccountStatusPaused => 'Wstrzymano';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Niedostępne';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Dostawca tożsamości, przez który logujesz się na swoje konto. Zarządza nim osoba administrująca tym serwerem.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Konta, które połączysz na własne potrzeby. Control Center działa w ich imieniu, a zmiany dotyczą tylko Ciebie.';
+
+  @override
+  String get accountReachServer =>
+      'Używane we wszystkich obszarach roboczych na tym serwerze.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Używane tylko w $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub jest używany tylko w $workspace, który ma własne aplikacje logowania. GitLab i Bitbucket są używane we wszystkich obszarach roboczych na tym serwerze.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Twoje konto';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Twoje konto: $status. Otwiera Ty → Profil.';
+  }
+
+  @override
+  String get yourForgeAccountNone => 'Nie połączono konta hostingu kodu';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Nie połączono konta $provider';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Nie powiązano konta $provider';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'W demo jesteś tymczasowym gościem, więc nie ma konta do zmiany: brak nazwy użytkownika, profilu i połączonych kont.';
+
+  @override
+  String get onboardingStepYou => 'Ty';
+
+  @override
+  String get onboardingYouTitle => 'Wybierz swoją nazwę użytkownika';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Twoja nazwa użytkownika to sposób, w jaki ludzie cię wspominają, i jak oznaczana jest twoja praca. Możesz ją i swoją nazwę wyświetlaną zmienić później w Ustawienia → Ty → Profil.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'To konto $provider jest już połączone z inną osobą na tym serwerze. Zaloguj się innym kontem $provider.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Token wygasa $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Token wygasł $date. Wklej nowy, aby dalej działał.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return 'Nie udało się połączyć z $forge, aby sprawdzić ten token. Spróbuj ponownie za chwilę.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge nie akceptuje tego tokenu. Sprawdź, czy skopiowano go w całości i czy nie został unieważniony.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'To nie jest token osobisty. Wklej osobisty token dostępu z własnego konta $forge, a nie token projektu, grupy, obszaru roboczego ani bota.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Temu tokenowi brakuje zakresu $scope, który jest potrzebny do przeglądania i komentowania. Utwórz token, który go ma.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Ten token wygasł. Utwórz nowy i wklej go tutaj.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agenty, które uruchamiasz, mogą tworzyć commity podpisane jako ty, w dowolnym repozytorium, w którym pracują. Usunięcie klucza tutaj natychmiast to zatrzymuje: uruchomienia już trwające nie podpisują niczego więcej.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Klucz nie został zrotowany i nic się nie zmieniło: $error Spróbuj ponownie.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Nie jesteś jeszcze w obszarze roboczym';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Administrator obszaru roboczego musi cię zaprosić albo właściciel serwera może utworzyć dla ciebie obszar roboczy. Otworzy się tutaj, gdy tylko zostaniesz dodany.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Zalogowano jako $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Sprawdź ponownie';
+
+  @override
+  String get noWorkspaceSignOut => 'Wyloguj się';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Tylko właściciel serwera może tworzyć obszary robocze. Poproś go o utworzenie jednego albo poproś administratora obszaru roboczego o zaproszenie cię.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo nie znajduje się w żadnym z twoich obszarów roboczych, a nie jesteś w obszarze roboczym, do którego można by je dodać. Poproś administratora obszaru roboczego o zaproszenie cię.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Tylko właściciel serwera może to zrobić';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Pełny edytor działa na maszynie serwera, więc tylko właściciel serwera może go otworzyć. Nadal możesz otwierać i edytować pliki z Eksploratora.';
+
+  @override
+  String get terminalSandboxedBadge => 'W piaskownicy';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Działa w piaskownicy wewnątrz folderów tego obszaru roboczego, więc niektóre narzędzia i ścieżki hosta nie są tutaj dostępne.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Powłoka hosta działa na serwerze bez piaskownicy, więc tylko właściciel serwera może ją otworzyć. Zwykły terminal działa w piaskownicy.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Terminal można otworzyć tylko wewnątrz własnych folderów tego obszaru roboczego.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Tylko właściciel serwera może zapisać lub zatwierdzić środowisko działające na hoście serwera. Administrator obszaru roboczego może użyć takiego, które działa w stanowisku (rig).';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commity, które tworzysz w edytorze aplikacji, nie uruchamiają żadnych hooków Git z repozytorium, jak przy git commit --no-verify: serwer uruchamia Git na własnym hoście, w drzewie, które agenty i pull requesty mogą zmieniać.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Klienty MCP wysyłają ten token z każdym żądaniem jako nagłówek Authorization: Bearer. Serwer tworzy go przy pierwszym uruchomieniu; możesz go zrotować, ale nie usunąć.';
+
+  @override
+  String get mcpShowToken => 'Pokaż token';
+
+  @override
+  String get mcpHideToken => 'Ukryj token';
+
+  @override
+  String get mcpRotateToken => 'Zrotuj token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Zrotować token MCP?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Serwer od razu przełącza się na nowy token. Każdy klient MCP, który nadal używa obecnego, zostanie odrzucony, dopóki nie dostanie nowego.';
+
+  @override
+  String get mcpTokenRotated =>
+      'Token zrotowany. Przekaż nowy token swoim klientom MCP.';
+
+  @override
+  String get mcpOwnerOnlyTitle =>
+      'Punkt końcowy MCP jest dla właściciela serwera';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Jego token otwiera każde narzędzie na tym serwerze, więc tylko właściciel serwera może go zobaczyć, zrotować albo uruchomić i zatrzymać punkt końcowy.';
+
+  @override
+  String get activityRotatedMcpToken => 'Zrotowano token MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect nie mógł wycofać starego klucza';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Nic się nie zmieniło. Jeśli mimo to zrotujesz, ten serwer dostanie nowy klucz, ale stara tożsamość pozostanie użyteczna w tym Connect, dopóki jej logowania nie wygasną.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Zrotuj mimo to';
+
+  @override
+  String get settingsAuditLog => 'Dziennik audytu';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Kto co zmienił, gdzie i jak się to zakończyło, na serwerze i we wszystkich obszarach roboczych, którymi administrujesz. Operacje serwera zapisują nazwy argumentów, nigdy ich wartości.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Tylko dla administratorów';
+
+  @override
+  String get auditLogNoAccess =>
+      'Dziennik audytu obejmuje serwer i obszary robocze, którymi administrujesz. Nie administrujesz żadnym obszarem roboczym, więc nie ma tu nic do pokazania.';
+
+  @override
+  String get auditLogSourceServer => 'Serwer';
+
+  @override
+  String get auditLogSourceWorkspace => 'Obszar roboczy';
+
+  @override
+  String get auditLogAddFilter => 'Filtr';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filtruj…';
+
+  @override
+  String get auditLogFilterActor => 'Aktor';
+
+  @override
+  String get auditLogFilterSource => 'Obszar roboczy';
+
+  @override
+  String get auditLogFilterOutcome => 'Wynik';
+
+  @override
+  String get auditLogFilterTime => 'Czas';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Sukces';
+
+  @override
+  String get auditLogOutcomeDenied => 'Odmówiono';
+
+  @override
+  String get auditLogOutcomeFailed => 'Niepowodzenie';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Od';
+
+  @override
+  String get auditLogTimeAfter => 'Po';
+
+  @override
+  String get auditLogTimeBefore => 'Przed';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Do';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Czas $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => '1 godzinę temu';
+
+  @override
+  String get auditLogTimePresetDay => '24 godziny temu';
+
+  @override
+  String get auditLogTimePresetWeek => '7 dni temu';
+
+  @override
+  String get auditLogTimePresetMonth => '30 dni temu';
+
+  @override
+  String get auditLogTimeExact => 'Dokładny czas';
+
+  @override
+  String get auditLogTimeInvalid => 'Wpisz YYYY-MM-DD, opcjonalnie z HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Dodaj';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo wskazuje teraz na inne repozytorium';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Ta ścieżka wskazuje teraz na inne repozytorium na $forge. Połącz ją ponownie, aby dalej z niej korzystać.';
+  }
+
+  @override
+  String get repoRelink => 'Połącz ponownie';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Ponownie połączono $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Ta ścieżka wskazuje teraz na inne repozytorium. Administrator obszaru roboczego musi połączyć ją ponownie, zanim będzie można jej użyć.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Twoje konto $forge nie może odczytać tego repozytorium.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Nie udało się potwierdzić twojego dostępu do $forge. Spróbuj ponownie.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Twoje konto w hostingu kodu nie może odczytać tego repozytorium.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Nie udało się potwierdzić twojego dostępu w hostingu kodu. Spróbuj ponownie.';
+
+  @override
+  String get repoPathHostPath =>
+      'Tylko właściciel serwera może połączyć folder spoza pamięci tego obszaru roboczego.';
+
+  @override
+  String get repoPathMissing => 'Na serwerze nie ma niczego pod tą ścieżką.';
+
+  @override
+  String get repoPathDataDir =>
+      'Repozytorium nie może wskazywać na folder danych serwera.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Repozytorium nie może być głównym folderem obszaru roboczego.';
+
+  @override
+  String get repoPathOriginMismatch =>
+      'Origin tego folderu to inne repozytorium.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Zapisano. Muszą się zalogować do $forge, zanim będą mogli otworzyć to repozytorium.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Zapisano. Ich konto $forge nie może jeszcze odczytać tego repozytorium, więc pozostaje ono dla nich ukryte.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Zapisano. Nie udało się w tej chwili potwierdzić ich dostępu do $forge.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo nie jest połączone w żadnym z twoich obszarów roboczych. Poproś właściciela serwera, aby je dodał.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Właściciel serwera dodaje repozytoria z folderów serwera.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Tylko ty wpisałeś ten adres. Logowanie jednokrotne go nie dopasuje, dopóki właściciel serwera go nie potwierdzi.';
+
+  @override
+  String get settingsServerPeople => 'Osoby';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Wszyscy, którzy mają konto na tym serwerze, i to, czy ich adres e-mail jest potwierdzony.';
+
+  @override
+  String get serverPeopleLabel => 'Konta';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Tylko właściciel serwera może zobaczyć konta wszystkich i potwierdzać adresy e-mail.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-mail niepotwierdzony';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Potwierdź e-mail';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Potwierdzić, że $email należy do $name? Logowanie jednokrotne dopasuje ten adres do jego konta.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Potwierdzono $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenty potrzebują piaskownicy na tym serwerze';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Ten serwer nie ma piaskownicy, więc agenty mogą tu uruchamiać tylko jego właściciel. Właściciel może zainstalować piaskownicę albo wyłączyć piaskownicowanie dla wszystkich.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Ten folder znajduje się poza pamięcią obszaru roboczego. Potwierdź, że ten serwer może z niego korzystać.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Ten folder znajduje się poza pamięcią obszaru roboczego. Tylko właściciel serwera może to potwierdzić.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Na serwerze nie ma już niczego pod tą ścieżką. Usuń to repozytorium i dodaj je ponownie z jego obecnego folderu.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Ten folder nie może być używany jako repozytorium. Usuń go i dodaj repozytorium z innego folderu.';
+
+  @override
+  String get repoPathConfirm => 'Potwierdź';
+
+  @override
+  String get repoPathConfirmAll => 'Potwierdź wszystkie';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count folderów znajduje się poza pamięcią obszaru roboczego',
+      many: '$count folderów znajduje się poza pamięcią obszaru roboczego',
+      few: '$count foldery znajdują się poza pamięcią obszaru roboczego',
+      one: '1 folder znajduje się poza pamięcią obszaru roboczego',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Potwierdź, że ten serwer może z nich korzystać. Każde repozytorium jest sprawdzane ponownie z twoim dostępem.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Serwery znalezione w ustawieniach narzędzi tej maszyny są dostępne tylko w uruchomieniach, które zaczynasz lub za które odpowiadasz. Uruchomienia innych osób ich nie widzą, a nie są oferowane przez punkt końcowy MCP Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Zaloguj się do $provider, aby zobaczyć kod tego repozytorium.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Zaloguj się';
+
+  @override
+  String get ideContentSearchFailed => 'Nie udało się wyszukać w plikach';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Ten plik nie jest dostępny w tym worktree.';
+
+  @override
+  String get ideChangesLoadFailed => 'Nie udało się wczytać zmian';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Ta ścieżka wskazuje teraz na inne repozytorium na $forge. Administrator obszaru roboczego musi połączyć ją ponownie, zanim będzie można z niej korzystać.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Tylko właściciel serwera może przywracać kopie zapasowe. Nadal możesz je pobrać.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Tylko do odczytu';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Możesz oglądać ten terminal. Pisanie w nim, zmiana rozmiaru lub zatrzymanie wymagają dostępu do zapisu do każdego repozytorium w tej rozmowie.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Możesz oglądać to środowisko. Uruchamianie, zatrzymywanie lub ponowne uruchamianie wymaga dostępu do zapisu do każdego repozytorium w tej rozmowie.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Działa na tym serwerze. Zatwierdź je, aby pozwolić na uruchomienie.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Działa na tym serwerze. Właściciel serwera musi je zatwierdzić, zanim będzie można je uruchomić.';
+
+  @override
+  String get environmentHostApprove => 'Zatwierdź';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Zatwierdź je jako administrator obszaru roboczego: tylko kopia administratora pokazuje wartości sekretne, a zatwierdzenie zapisuje je z powrotem.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Właściciel serwera nie zatwierdził jeszcze tego środowiska, więc nie może działać na tym serwerze.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Nie zatwierdziłeś jeszcze tego środowiska. Działa na tym serwerze, więc uruchomi się, gdy zatwierdzisz jego definicję.';
+
+  @override
+  String get environmentHostApprovalReview => 'Przejrzyj i zatwierdź';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Zaloguj się do $provider, aby otworzyć tę przestrzeń.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Twoje konto $forge nie może odczytać repozytorium, z którego korzysta ta przestrzeń.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Twoje konto w hostingu kodu nie może odczytać repozytorium, z którego korzysta ta przestrzeń.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Nie masz dostępu do odczytu do repozytorium, z którego korzysta ta przestrzeń. Administrator obszaru roboczego może go przyznać.';
+
+  @override
+  String get spaceAccessFailed => 'Nie udało się otworzyć tej przestrzeni.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Podział kontekstu nie jest dostępny w tej sesji.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Połączone repozytorium wymaga zarówno właściciela, jak i nazwy repozytorium.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Nie masz dostępu do odczytu tego repozytorium. Administrator obszaru roboczego może go przyznać.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Możesz czytać to repozytorium, ale nie możesz go zmieniać. Administrator obszaru roboczego może przyznać dostęp do zapisu.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Możesz czytać to repozytorium, ale nie możesz go recenzować. Administrator obszaru roboczego może przyznać dostęp do recenzji.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Tylko podgląd';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Możesz obserwować tę maszynę. Sterowanie nią, przekierowywanie jej portów, wklejanie do niej i upuszczanie na nią plików wymaga dostępu do zapisu do wszystkich repozytoriów w tej przestrzeni.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Uruchomienie maszyny tutaj wymaga dostępu do zapisu do wszystkich repozytoriów w tej przestrzeni. Administrator obszaru roboczego może go przyznać.';
+
+  @override
+  String get rigViewRefused =>
+      'Nie możesz wyświetlić tej maszyny. Należy ona do przestrzeni, do której nie masz dostępu do odczytu.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Zmiana tych portów wymaga dostępu do zapisu do wszystkich repozytoriów w tej przestrzeni.';
+
+  @override
+  String get rigHolderOnly =>
+      'Tylko osoba, dla której otwarto tę maszynę, może nią sterować. Maszyna korzysta z jej własnych logowań.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Możesz obserwować tę maszynę. Korzysta ona z logowań osoby, dla której została otwarta, więc tylko ona może sterować nią, przekierowywać jej porty, wklejać do niej treści i upuszczać na nią pliki.';
 }

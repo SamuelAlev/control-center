@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/logging/cc_domain_log.dart';
 import 'package:cc_domain/features/code_graph/domain/services/code_indexer.dart';
 import 'package:cc_domain/features/pipelines/domain/entities/step_result.dart';
@@ -11,8 +12,10 @@ import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_s
 /// Registers the `code.index` step body — background tree-sitter indexing that
 /// builds the code graph (symbols + edges) for code search.
 ///
-/// Reads `repo_id` + `repo_local_path` from the trigger payload and the
-/// workspace from the run context, then delegates to [CodeIndexer]: walk
+/// Reads `repo_id` from the trigger payload and the workspace from the run
+/// context, takes the checkout from that repository as [servedRepos] serves
+/// it (never a path from the payload, so a run cannot index a path the server
+/// refuses to serve), then delegates to [CodeIndexer]: walk
 /// the repo, extract symbols/edges in worker isolates and ingest them into the
 /// workspace-scoped code graph. Streams progress into the step-run row, honours
 /// the UI Stop
@@ -26,19 +29,24 @@ import 'package:cc_domain/features/pipelines/domain/templates/builtin_template_s
 void registerIndexCodeBody(
   PipelineBodyRegistry registry, {
   required CodeIndexer codeIndexer,
+  required RepoRepository servedRepos,
   required PipelineRunRepository runRepository,
   required StepProcessRegistry stepProcessRegistry,
 }) {
   registry.registerBody(BuiltInBodyKeys.indexCode, (ctx) async {
     final repoId = ctx.optional<String>('repo_id');
-    final repoPath = ctx.optional<String>('repo_local_path');
-    if (repoId == null ||
-        repoId.isEmpty ||
-        repoPath == null ||
-        repoPath.isEmpty) {
-      return StepResult.failed(
-        'index_code: missing repo_id/repo_local_path in trigger payload',
-      );
+    if (repoId == null || repoId.isEmpty) {
+      return StepResult.failed('index_code: missing repo_id in trigger payload');
+    }
+    final String repoPath;
+    try {
+      final repo = await servedRepos.getById(ctx.workspaceId, repoId);
+      if (repo == null) {
+        return StepResult.failed('index_code: repo $repoId is not linked');
+      }
+      repoPath = repo.path;
+    } on Object catch (e) {
+      return StepResult.failed('index_code: $e');
     }
 
     if (ctx.dryRun) {

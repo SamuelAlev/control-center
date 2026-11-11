@@ -2,7 +2,7 @@
 title: Arkitektur
 description: Hvordan Control Center er strukturert med en tynnklient- og servermodell, funksjonsorientert Clean Architecture og porter og adaptere.
 slug: nb-NO/handbok/konsepter/arkitektur
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Oversikt
@@ -59,7 +59,7 @@ To navngitte unntak er verdt å kjenne:
 - Minneentiteter: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Delte verdiobjekter: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Delte porter: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Domenetjenester: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Domenetjenester: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + hendelsestyper (arbeidsområde/agent, PR/gjennomgang, meldinger, saker, pipeline, orkestrering, minne, kalender/møter, identitet og medlemskap, observabilitet)
 
 ## Identitet og flerbruker
@@ -131,7 +131,6 @@ Serveren holder legitimasjonen som betyr noe: GitHub- og sakstokener for agentut
 
 - Hemmeligheter i `flutter_secure_storage` (macOS-nøkkelring, Windows-legitimasjonsbehandler, Linux libsecret) — klientens enhetslegitimasjon og eksterne parkoblingsnøkler, ikke leverandørtokener
 - `shared_preferences` kun for ikke-sensitive innstillinger (tema, skrift, oppsett)
-- Gjenværende leverandørhemmeligheter fra eldre installasjoner overleveres serveren én gang av `features/auth/providers/credential_migration.dart` og slettes deretter fra klientens nøkkelring
 
 ## Håndheving av arkitekturen
 

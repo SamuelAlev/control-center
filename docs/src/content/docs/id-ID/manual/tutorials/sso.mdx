@@ -2,7 +2,7 @@
 title: Masukkan tim Anda dengan SSO
 description: Hubungkan Okta (SAML) ke server Control Center Anda dan lakukan login dari awal hingga akhir.
 slug: id-ID/panduan-pengguna/tutorial/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -86,6 +86,16 @@ Dua kebijakan menentukan apa yang dilakukan login pertama:
   yang lebih aman.
 - **Sediakan pengguna yang belum dikenal pada login pertama** — aktif secara
   default; matikan untuk menolak siapa pun yang akunnya belum ada.
+
+Jika orang sudah memiliki akun di server ini, konfirmasikan alamat email mereka
+sebelum siapa pun masuk dengan SSO: buka **Pengaturan → Server → Orang** dan
+gunakan **Konfirmasi email** pada setiap baris yang bertanda **Email belum
+dikonfirmasi**. Login hanya cocok dengan akun yang ada melalui email bila alamat
+itu sudah dikonfirmasi (atau diatur oleh SSO atau SCIM). Alamat yang diketik
+seseorang di profilnya sendiri atau pada undangan tidak cocok dengan apa pun,
+sehingga tanpa langkah ini mereka mendapat akun kedua, atau ditolak saat
+penyediaan pengguna yang belum dikenal dimatikan. Lihat [Cara login mencocokkan
+akun yang sudah ada](/id-ID/panduan-pengguna/panduan-praktis/sso-oidc/#bagaimana-login-mencocokkan-akun-yang-sudah-ada).
 
 Secara opsional, petakan atribut yang membawa nama grup (milik Okta umumnya
 `groups`) dan terjemahkan grup menjadi peran dengan peta tersebut — misalnya

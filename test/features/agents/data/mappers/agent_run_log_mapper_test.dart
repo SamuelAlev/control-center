@@ -25,7 +25,7 @@ AgentRunLogsTableData _makeRow({
   int cachedReadTokens = 0,
   int cachedWriteTokens = 0,
   int estimatedCostCents = 15,
-  int childCostCents = 0,
+  int childCostMicros = 0,
   String? agentRole,
   int? durationMs,
   int? timeToFirstTokenMs,
@@ -60,9 +60,8 @@ AgentRunLogsTableData _makeRow({
   cachedReadTokens: cachedReadTokens,
   cachedWriteTokens: cachedWriteTokens,
   estimatedCostCents: estimatedCostCents,
-  childCostCents: childCostCents,
   costMicros: 0,
-  childCostMicros: 0,
+  childCostMicros: childCostMicros,
   resumedNativeSession: false,
   agentRole: agentRole,
   durationMs: durationMs,
@@ -106,7 +105,7 @@ void main() {
         cachedReadTokens: 40,
         cachedWriteTokens: 10,
         estimatedCostCents: 30,
-        childCostCents: 7,
+        childCostMicros: 70000,
         agentRole: 'sub',
         durationMs: 4200,
         timeToFirstTokenMs: 850,
@@ -142,7 +141,7 @@ void main() {
       expect(log.cost.estimatedCostCents, 30);
       expect(log.cost.durationMs, 4200);
       expect(log.cost.timeToFirstTokenMs, 850);
-      expect(log.childCostCents, 7);
+      expect(log.childCostMicros, 70000);
       expect(log.role, AgentRunRole.sub);
       expect(log.lastOutputAt, DateTime(2025, 6, 1, 23));
       expect(log.continuationSummary, 'continued');
@@ -167,7 +166,7 @@ void main() {
         // A null/absent agentRole attributes to the main agent; no rolled-up
         // child cost by default.
         expect(log.role, AgentRunRole.main);
-        expect(log.childCostCents, 0);
+        expect(log.childCostMicros, 0);
       },
     );
 

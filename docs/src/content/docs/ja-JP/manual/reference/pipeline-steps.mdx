@@ -2,7 +2,7 @@
 title: パイプラインステップ
 description: パイプラインステップの種類、ステップボディのキー、その設定とステップ結果についてのリファレンス。
 slug: ja-JP/マニュアル/リファレンス/パイプラインステップ
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 パイプラインのステップには、互いに独立した 2 つの軸があります:
@@ -61,7 +61,7 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
 
 ### `pipeline.condition`
 
-ルーターボディです — `config.extras` を読み取り、条件を評価して `StepResult.route(key)` を返します。条件は JavaScript 式では**ありません**。3 つの記述形式を優先順にサポートしています:
+ルーターボディです — `config.extras` を読み取り、条件を評価して `StepResult.route(key)` を返します。条件は JavaScript 式では**ありません**。2 つの記述形式を優先順にサポートしています:
 
 - **述語ツリー**（`extras.predicate`）— `"true"` / `"false"` にルーティングするブールツリーです。各ノードは `type` を持つマップです:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — リストされたパスのいずれかがディスク上に存在するときに true になります。`negate` はそれを反転させます。`recursive` はサブディレクトリも検索します（`.git`、`node_modules`、`build`、`.dart_tool` をスキップ）。相対パスは `state[baseKey]`（デフォルトは `repo_local_path`）を基準に解決され、そうでなければ実行ごとのワークスペースディレクトリを基準にします。
@@ -69,19 +69,28 @@ sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — ブールグループです。
   - `{"type": "not", "of": <predicate>}` — 否定です。
 - **スイッチ**（`extras.switchKey`）— `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`。ステートの値が大文字小文字を区別せずに含む最初の case へルーティングし、どれにも含まれなければ `default` へルーティングします。
-- **比較**（レガシーのトップレベル `extras.left` / `extras.op` / `extras.right`）— `comparison` 述語と同等で、ツリー以前に作成されたテンプレートのために残されています。
 
 ノードから出るエッジは、返されたキーと一致しなければならない `routeKey` を持ちます。
 
 ### `prReview.comment`
 
-統合された指摘を、GitHub PR クライアントを介して PR レビューコメントとして投稿します。
+統合された指摘、またはそのステップ自身の `extras.message` を、GitHub PR クライアントを介して PR レビューコメントとして投稿します。
 
-| ステートキー                 | 説明                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo`（必須）                      |
-| `pr_number`               | PR 番号 — int または数値文字列（必須） |
-| `consolidated_findings`   | コメント本文（必須）                      |
+| キー                      | 取得元           | 説明                                                  |
+| ------------------------- | ---------------- | ----------------------------------------------------- |
+| `repo_full_name`          | トリガーペイロード | `owner/repo`（必須）                                  |
+| `pr_number`               | トリガーペイロード | PR 番号 — 正の int または数値文字列（必須）           |
+| `consolidated_findings`   | ステート         | `message` がないステップの場合のコメント本文          |
+
+プルリクエストは、実行のトリガーペイロードからのみ取得されます。ステップが実行中に書き換えられるステートからは取得されません。投稿されるテキスト内の @メンションは無効化されるため、コメントは誰にも通知しません。
+
+`message` は、次のように `{{key}}` プレースホルダーを描画します:
+
+- `repo_full_name`、`repo_owner`、`repo_name`、`pr_number` は、ステップが投稿するプルリクエストを描画します。
+- `author` は、フォージ上で有効なユーザー名である場合に限り、トリガーペイロードからそのまま描画されます。それ以外の場合はステップが失敗します。
+- `consolidated_findings` は生の Markdown として描画され、その中の @メンションは無効化されます。
+- それ以外のすべての値はリテラルテキストとして描画されます。1 行にまとめられ、Markdown の記号はエスケープされ、@メンションは無効化されます。
+- 何も解決されないプレースホルダーがあると、ステップは失敗します。
 
 ステートに `comment_review_id` と `commented_at` を伴う `StepResult.terminal` を返します。
 

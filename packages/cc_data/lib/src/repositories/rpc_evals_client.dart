@@ -1,4 +1,5 @@
 import 'package:cc_data/src/repositories/skill_campaign_views.dart';
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 
 DateTime? _date(Object? iso) => iso is String ? DateTime.tryParse(iso) : null;
@@ -117,7 +118,7 @@ class ReliabilityView {
   /// Parses from the `evals.reliability` wire map.
   factory ReliabilityView.fromWire(Map<String, dynamic> w) => ReliabilityView(
     score: (w['score'] as num?)?.toDouble() ?? 0,
-    recommended: w['recommended'] as String? ?? 'observe_only',
+    recommended: AutonomyLevel.fromWire(w['recommended'] as String?),
     rationale: ((w['rationale'] as List?) ?? const [])
         .map((e) => e.toString())
         .toList(),
@@ -126,8 +127,8 @@ class ReliabilityView {
   /// The reliability score `[0,1]`.
   final double score;
 
-  /// The recommended autonomy wire string.
-  final String recommended;
+  /// The recommended autonomy ceiling; the safest level when absent.
+  final AutonomyLevel recommended;
 
   /// The evidence lines shown on the dial.
   final List<String> rationale;

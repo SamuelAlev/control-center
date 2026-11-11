@@ -2,7 +2,7 @@
 title: ریویوور ایجنٹس بھیجیں
 description: PR ویو، کسی MCP ٹول یا کسی پائپ لائن مرحلے سے کسی PR پر ماہر ریویوور ایجنٹس بھیجیں۔
 slug: ur-PK/ہدایت-نامہ/طریقہ-کار-گائیڈز/ریویوور-ایجنٹس-بھیجیں
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 یہ گائیڈ دکھاتی ہے کہ pull requests کے ریویو کے لیے ریویوور ایجنٹس کیسے بھیجے جائیں۔
@@ -82,7 +82,7 @@ dispatch_reviewers(
 | ایونٹ                  | کب چلتا ہے                                                                                                      | پے لوڈ کلیدیں                                                       |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | کوئی PR **Control Center کے ذریعے** کھولا جائے — کمپوز سطح، یا `pr_lifecycle.publish` کال کرنے والا ایجنٹ     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | PR پولنگ سروس کو GitHub پر براہ راست کھلا کوئی PR ملے                                                     | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | PR پولنگ سروس کو GitHub پر براہ راست کھلا کوئی PR ملے                                                     | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 github.com پر کھلا PR کبھی `PullRequestPublished` نہیں چھوڑتا، اس لیے صرف اسی ایونٹ سے
 جڑا ٹیمپلیٹ اسے نہیں دیکھے گا۔ یہ بھی یاد رکھیں کہ `PullRequestPublished` کوئی

@@ -1,8 +1,8 @@
 ---
 title: Gunakan server MCP
-description: Arahkan klien MCP eksternal ke server alat Control Center, tetapkan token bearer, dan ketahui apa yang diekspos permukaannya.
+description: Arahkan klien MCP eksternal ke server alat Control Center, kirimkan token bearer-nya, dan ketahui apa yang diekspos permukaannya.
 slug: id-ID/panduan-pengguna/panduan-praktis/server-mcp
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Panduan ini menunjukkan cara menghubungkan klien MCP eksternal — Claude Code,
@@ -29,8 +29,7 @@ Jadi instalasi lokal bawaan berada di `http://127.0.0.1:9030/mcp`.
 2. Baca kartu **Server MCP** — kartu itu menunjukkan berjalan atau berhenti dan
    port yang sedang didengarkannya
 
-Permukaan ini aktif secara bawaan pada instalasi baru, sehingga klien loopback
-berfungsi tanpa perlu mengutak-atik pengaturan. **Mulai saat aplikasi
+Permukaan ini aktif secara bawaan pada instalasi baru. Hanya pemilik server yang melihat token pada kartu, dan hanya mereka yang dapat memulai atau menghentikan endpoint. **Mulai saat aplikasi
 diluncurkan** mengontrol apakah permukaan itu kembali setelah mulai ulang;
 **Mulai** / **Berhenti** adalah kontrol sesi yang tidak mengubah preferensi
 tersebut.
@@ -39,17 +38,25 @@ Server ini mengikat loopback secara bawaan, sehingga endpoint-nya hanya dapat
 dijangkau dari mesin tempat `cc_server` berjalan kecuali Anda memulainya dengan
 `--bind any`.
 
+## Dapatkan token
+
+Setiap permintaan memerlukan token MCP server, dari mesin mana pun, termasuk loopback. Server membuatnya saat pertama kali dijalankan. Tidak ada cara untuk mematikannya dan tidak ada cara untuk menghapusnya.
+
+1. Di **Pengaturan → Server → Server MCP**, temukan baris **Token autentikasi**
+2. Tekan **Tampilkan token** dan salin
+3. Untuk menggantinya, tekan **Ganti token**. Server langsung beralih ke token baru, dan setiap klien yang masih memakai token lama ditolak sampai Anda memberinya token baru
+
 ## Hubungkan klien
 
-Arahkan klien Anda ke endpoint HTTP Streamable. Bentuk konfigurasi yang tepat
-adalah urusan klien Anda; URL-nya sama saja.
+Arahkan klien Anda ke endpoint HTTP Streamable dan kirimkan token sebagai `Authorization: Bearer <token>` pada setiap permintaan, termasuk `GET /sse`. Tidak ada cara lain untuk mengirimkannya: token di URL tidak diterima. Bentuk konfigurasi yang tepat adalah urusan klien Anda.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -71,24 +78,18 @@ sama tidak juga ditemukan dari proyek dan didaftarkan dua kali.
 Titik periksa: minta klien menampilkan daftar alatnya. Anda semestinya melihat
 entri `mcp__*` yang mencakup tiket, space, memori, graf kode, dan tinjauan.
 
-## Layani MCP di luar host
+## Apa yang ditolak endpoint
 
-1. Di **Pengaturan → Server → Server MCP**, pada baris **Token autentikasi**,
-   tekan **Atur** dan tempelkan token
-2. Kirimkan sebagai `Authorization: Bearer <token>` pada setiap permintaan
-   `POST /mcp`
+Token membuka setiap alat di server, jadi endpoint juga menolak apa pun yang dapat dikirim oleh halaman web, sebelum memeriksa token:
 
-Permukaan tanpa token menolak setiap pemanggil non-loopback dengan 403. Itu
-memang fail-closed menurut desainnya: token itulah yang membuat layanan di luar
-host mungkin sama sekali.
+| Permintaan | Jawaban |
+| ---------- | ------- |
+| Header `Origin` yang bukan halaman di mesin ini (`http://localhost`, `http://127.0.0.1` atau `http://[::1]`, port apa pun) | `403`, "Permintaan lintas-origin tidak diterima" |
+| Header `Host` yang bukan alamat loopback dan port listener ini, dan bukan nama host publik server | `403`, "Host tidak dikenal" |
+| `POST` yang isinya bukan `application/json` | `415` |
+| Tidak ada token, atau token yang salah | `401` |
 
-Perubahan token langsung berlaku pada permukaan yang aktif — tanpa mulai ulang.
-
-:::note[`GET /sse` menerima token di string kueri]
-Aliran notifikasi diperiksa tokennya seperti setiap rute lain, tetapi `EventSource`
-peramban tidak dapat mengirim header `Authorization` — jadi `/sse` juga menerima
-token sebagai `?token=<token>`. Tanpa token, ia menjawab 401.
-:::
+Untuk melayani MCP di luar host, jalankan server dengan `--bind any` dan kirimkan token dari mesin lain, dengan menyebut server melalui nama host publiknya.
 
 ## Batasi setiap panggilan ke satu ruang kerja
 
@@ -130,6 +131,18 @@ Katalog lengkapnya diumumkan di `tools/list` tanpa gerbang penemuan — klien MC
 eksternal menolak memanggil alat yang tidak ada dalam daftar cache-nya, jadi
 menyembunyikan alat justru merusaknya alih-alih merapikannya.
 
+## Server MCP pribadi tetap milik pemilik
+
+Panduan ini membahas endpoint Control Center sendiri. Arah sebaliknya, yaitu server MCP yang Control Center berikan kepada agen yang dijalankannya, tercantum di bawah **Pengaturan → Server → Server MCP → Server MCP eksternal**. Server yang dikonfigurasi di mesin server untuk Claude, Codex, Cursor, Gemini, VS Code, Windsurf, OpenCode, atau dalam `.mcp.json` ditemukan di sana secara otomatis.
+
+Server yang ditemukan itu berasal dari konfigurasi alat milik pengguna server dan bertindak dengan identitas serta kredensial pengguna tersebut, sehingga menjadi milik pemilik server:
+
+- Server itu hanya tersedia di dalam run harness bawaan yang dimulai pemilik server atau yang dipertanggungjawabkan kepadanya, termasuk otomatisasi di ruang kerja yang dipertanggungjawabkan pemilik.
+- Run anggota, otomatisasi yang terikat pada anggota, dan setiap run di server tanpa pemilik yang tercatat tidak mendapatkannya sama sekali. Di sana alat-alat itu tidak didaftarkan, tidak dapat dipanggil, dan tidak muncul dalam pencarian alat.
+- Endpoint ini tidak pernah mendaftar, memanggil, atau mencari server tersebut, untuk siapa pun, termasuk pemilik dengan tokennya, dan tidak meneruskan sumber daya atau prompt-nya. Jadi agen CLI yang menjangkau Control Center melalui MCP, seperti Claude Code, tidak mendapatkannya lewat Control Center; ia memakai konfigurasinya sendiri.
+
+Server MCP yang dikonfigurasi untuk ruang kerja tidak terpengaruh oleh semua ini.
+
 ## Pemecahan masalah
 
 ### Klien tidak melihat alat apa pun
@@ -139,9 +152,17 @@ menyembunyikan alat justru merusaknya alih-alih merapikannya.
 - Pada Claude Code, periksa Anda sudah memberikan `--mcp-config` dan
   `--strict-mcp-config`
 
-### 403 dari mesin yang bukan server
+### 401 Unauthorized
 
-Tidak ada token bearer yang dikonfigurasi. Tetapkan satu dan kirimkan.
+Permintaan tidak membawa token, atau membawa token lama. Salin token saat ini dari baris **Token autentikasi** dan kirimkan sebagai `Authorization: Bearer <token>`. Token di URL diabaikan.
+
+### 403 dari klien yang dulu berfungsi
+
+Permintaan membawa `Origin` dari halaman web, atau `Host` yang tidak dijawab server. Panggil endpoint dari klien, bukan dari halaman peramban, dengan alamat loopback server atau nama host publiknya.
+
+### 415 Unsupported Media Type
+
+Kirim isi `POST /mcp` sebagai `application/json`.
 
 ### Panggilan alat gagal dengan "Missing or invalid argument: workspace_id"
 

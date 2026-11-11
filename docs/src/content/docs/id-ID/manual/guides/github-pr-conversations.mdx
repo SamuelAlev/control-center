@@ -2,7 +2,7 @@
 title: Bicara ke Control Center dari PR GitHub
 description: Minta Control Center untuk tinjauan atau ajukan pertanyaan langsung dari percakapan PR, tanpa webhook atau URL publik.
 slug: id-ID/panduan-pengguna/panduan-praktis/percakapan-pr-github
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Panduan ini menunjukkan cara bekerja dengan Control Center tanpa meninggalkan
@@ -17,7 +17,7 @@ GitHub lewat polling, sehingga laptop di balik NAT berperilaku persis seperti de
 ## Prasyarat
 
 - Ruang kerja memiliki jalur GitHub: GitHub App milik server atau Connect, dengan app
-  [terpasang](/id-ID/panduan-pengguna/panduan-praktis/github-app/) di akun pemilik repositori. App milik sendiri
+  [terpasang](/id-ID/panduan-pengguna/panduan-praktis/github-app/#pasang-di-tempat-repositori-anda-berada) di akun pemilik repositori. App milik sendiri
   memerlukan izin baca dan tulis **Pull requests** dan **Issues**, yang sudah diberikan **Buat aplikasi GitHub saya**
 - Repositori sudah ditautkan ke sebuah ruang kerja di Control Center
 - Anda sudah [masuk ke GitHub](/id-ID/panduan-pengguna/panduan-praktis/integrasi-github/) di server ini,
@@ -27,27 +27,8 @@ GitHub lewat polling, sehingga laptop di balik NAT berperilaku persis seperti de
 
 ## Cari nama bot Anda
 
-Sebut `@usectrl`, akun GitHub khusus Control Center. Ini adalah pemicu default; jalur GitHub ruang
+Sebut `@usectrl`, akun GitHub khusus Control Center. Ini satu-satunya pemicu: menyebut login milik App itu sendiri tidak melakukan apa pun. Jalur GitHub ruang
 kerja Anda tetap memproses permintaan dan mengirim balasan. Anda tidak memerlukan kredensial akun `usectrl`.
-
-Login app itu sendiri, `<appslug>[bot]`, dan bentuk singkat `@appslug` juga berlaku. Untuk mencari alias
-opsional tersebut pada app milik sendiri Anda:
-
-1. Buka **Pengaturan → Server → Single sign-on** dan gulir ke kartu
-   **Aplikasi penyedia**
-2. Buka blok **GitHub** dan klik **Tes**
-3. Salin **Login bot** saat nilainya terisi. Jika masih menampilkan petunjuk
-   kosong, login-nya selalu `<appslug>[bot]` — ketik itu, atau bentuk pendeknya
-   `@appslug`
-
-GitHub tidak menampilkan akun App di pelengkapan otomatis `@`, jadi alias App harus diketik atau disalin. Akun khusus `@usectrl` adalah cara default untuk memanggilnya; `@myapp` maupun `@myapp[bot]` tetap diterima sebagai alias App.
-
-:::note[Pilih nama app yang khas]
-Bentuk pendek dicocokkan sebagai teks. Jika ada pengguna GitHub manusia yang
-kebetulan memiliki slug app yang sama, menyebut pengguna itu dengan bentuk
-pendek juga akan menjangkau bot. Bentuk lengkap `@myapp[bot]` selalu tidak
-ambigu.
-:::
 
 ## Minta tinjauan dari GitHub
 
@@ -117,7 +98,7 @@ Server menyelesaikan penulis sebuah komentar, atau siapa pun yang menambahkan la
 sebelum melakukan apa pun:
 
 - **Akun GitHub harus sudah masuk** di server ini. Pencocokannya memakai id akun GitHub numerik, tidak
-  pernah login. Masuk dari **Pengaturan → Ruang kerja → Profil & identitas → Hosting kode**
+  pernah login. Masuk dari **Pengaturan → Anda → Profil → Hosting kode**
 - **Mereka harus anggota dengan peran tulis** (`member`, `admin`, atau `owner`) di ruang kerja
   yang menautkan repositori tersebut
 - **Mereka harus dapat push** ke repositori di GitHub. Balasan memakai token yang dibatasi pada akses
@@ -139,7 +120,7 @@ lain tetap diam. Hal yang sama berlaku untuk label.
 | Hal                 | Perilaku                                                                 |
 | ------------------- | ------------------------------------------------------------------------ |
 | Pengakuan           | 👀 dari akun Anda pada komentar (atau pada PR, untuk label), dalam satu penyapuan |
-| Jawaban             | Diposting di jalur tempat pertanyaan diajukan, dimulai dengan `**Control Center** (for @your-login):`. Pada app milik sendiri, penulisnya adalah akun bot app; lewat Connect, itu akun Anda, bertindak melalui App |
+| Jawaban             | Diposting di jalur tempat pertanyaan diajukan, dimulai dengan `**Control Center** (for @your-login):`. Ditulis oleh akun bot app. Pada app Connect bersama, balasan di dalam utas tinjauan ditulis oleh akun Anda sendiri, kecuali operator Connect mencantumkan instalasi ini |
 | Atribusi di dalam space | Pertanyaannya milik Anda; agen berjalan atas nama Anda, di bawah pengaturan otonomi space |
 | Tinjauan            | Temuan mendarat di space tinjauan; publikasi ke GitHub dilakukan secara manual |
 
@@ -159,8 +140,6 @@ saat server offline — komentar yang tiba selama server mati akan tertangkap pa
   mengantarkan
 - Apakah Anda sudah masuk ke GitHub di server ini, apakah Anda anggota dengan peran tulis, dan
   dapatkah Anda push ke repo? Server mengabaikan siapa pun selain itu tanpa membalas
-- Pada app bersama Control Center, apakah pemasangan organisasi sudah diotorisasi untuk server ini?
-  Lihat [Buat GitHub App](/id-ID/panduan-pengguna/panduan-praktis/github-app/)
 - Masih tidak ada? Log server menyebutkan penyapuan dan PR-nya ketika ada yang
   gagal; cari `pr_conversation:` (penyapu) dan
   `github_pr_conversation:` (jembatan)

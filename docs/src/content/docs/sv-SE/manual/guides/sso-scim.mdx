@@ -2,7 +2,7 @@
 title: Provisionera användare med SCIM
 description: Låt din IdP skapa, uppdatera och avprovisionera Control Center-konton automatiskt.
 slug: sv-SE/handbok/how-to-guider/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Använd den här guiden när du vill ha livscykelkontroll — vid avslut måste
@@ -34,8 +34,9 @@ just det.
    - **Authentication**: `Authorization: Bearer <token>`
    - **User id**: `userName` (e-post) eller `externalId` — båda matchar
 4. Testa med en användare: pusha användaren från IdP:n och bekräfta att den
-   dyker upp (ett SCIM-create fäster leverantörens `externalId` på kontot,
-   samma fästning som den första SSO-inloggningen gör).
+   dyker upp (ett SCIM-create registrerar leverantörens `externalId` på kontot,
+   vilket är hur senare SCIM-anrop hittar det). Låt sedan personen logga in via
+   SSO innan du rullar ut till alla.
 
 ## Vad avprovisionering gör
 
@@ -55,6 +56,7 @@ policyn för automatiskt medlemskap vid inloggning.
 
 ## Felsökning
 
+- **En etablerad person nekas med "Kontot är redan kopplat till en annan SSO-identitet"** — känd begränsning: ett konto som SCIM skapade med en `externalId` förblir bundet till det id:t, och personens första SSO-inloggning till kontot nekas. Tills detta åtgärdas: etablera utan `externalId`, eller låt just-in-time-provisionering skapa kontot vid första inloggningen och använd SCIM för avprovisionering.
 - **401 på varje anrop** — token har ändrats; generera om den och uppdatera
   IdP:n.
 - **Endpointen går inte att nå** — tunneln är nere, eller så nås servern bara

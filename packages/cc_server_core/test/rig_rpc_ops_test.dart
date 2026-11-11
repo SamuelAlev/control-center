@@ -14,17 +14,8 @@ void main() {
     userId: userId,
   );
 
-  void requireOwner(RepoOpContext context) {
-    if (context.userId != owner) {
-      throw StateError('owner required');
-    }
-  }
-
   test('declares global server-owner authority and both setup effects', () {
-    final op = buildRigInstallBackendSetupOp(
-      rigs: _RecordingRigPort(),
-      requireServerAdmin: requireOwner,
-    );
+    final op = buildRigInstallBackendSetupOp(rigs: _RecordingRigPort());
     expect(op.name, 'rig.installBackendSetup');
     expect(op.workspaceScoped, isFalse);
     expect(op.serverAuthority, ServerAuthority.serverOwner);
@@ -35,25 +26,30 @@ void main() {
     expect(op.requiredArgs, ['action']);
   });
 
-  test('rejects a non-owner before delegating', () async {
+  test('the dispatcher refuses a non-owner before delegating', () async {
     final rigs = _RecordingRigPort();
-    final op = buildRigInstallBackendSetupOp(
-      rigs: rigs,
-      requireServerAdmin: requireOwner,
+    final dispatcher = RepoOpDispatcher(
+      registry: RepoOpRegistry([buildRigInstallBackendSetupOp(rigs: rigs)]),
+      resolveServerOwner: (userId) async => userId == owner,
     );
-    await expectLater(
-      op.handler(context('member', 'ios-automation')),
-      throwsStateError,
+    final response = await dispatcher.call(
+      id: 1,
+      params: {
+        'op': 'rig.installBackendSetup',
+        'args': {'action': 'ios-automation'},
+      },
+      deviceId: 'device',
+      userId: 'member',
+      sessionCapability: SessionCapability.fullClient,
     );
+    final error = response['error'] as Map;
+    expect((error['data'] as Map)['kind'], 'server_owner_required');
     expect(rigs.installed, isEmpty);
   });
 
   test('validates the stable action wire and delegates it once', () async {
     final rigs = _RecordingRigPort();
-    final op = buildRigInstallBackendSetupOp(
-      rigs: rigs,
-      requireServerAdmin: requireOwner,
-    );
+    final op = buildRigInstallBackendSetupOp(rigs: rigs);
     expect(
       await op.handler(context(owner, 'ios-automation')),
       {'ok': true},

@@ -2,7 +2,7 @@
 title: Agentkonfigurasjon
 description: Alle feltene på agententiteten og enumene den bruker.
 slug: nb-NO/handbok/referanse/agentkonfigurasjon
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Denne referansen lister opp alle feltene på agententiteten, i tillegg til enumene og flaggene den bruker. En stegvis gjennomgang av å opprette eller redigere en agent i appen finner du i [Opprett og konfigurer en agent](/nb-NO/handbok/slik-gjor-du/opprett-agent/).
@@ -78,6 +78,35 @@ Et uforanderlig sett med skill-identifikatorer uten hensyn til store og små bok
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Skall-hooks
+
+Skall-hooks lar serverens eier kjøre egne skript rundt en kjøring av det innebygde harnesset: én gang ved øktstart, før hvert verktøykall og etter hvert verktøykall. En hook er vilkårlig kode, så hooks er vertskonfigurasjon. Bare serverens eier setter dem opp, for hånd, på serverens maskin. Det finnes ingen innstilling i appen og ingen operasjon som skriver dem.
+
+For en agent ligger hooks i agentens egen mappe under serverens datakatalog:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` er navnet på agentens mappe i arbeidsområdet (`agents/<slug>/`). Den mappen ligger utenfor all arbeidsområdelagring, og hver sandkasse skjuler datakatalogen, så ingen medlem, kjøring eller terminal kan skrive til den.
+
+`hooks.json` kobler en av tre nøkler til et skript, med en sti i forhold til hook-mappen:
+
+| Nøkkel         | Når den kjører           | Hva exit-koden betyr                                           |
+| -------------- | ------------------------ | -------------------------------------------------------------- |
+| `sessionStart` | Én gang, når kjøringen starter | Ingenting; hooken observerer bare                        |
+| `preTool`      | Før hvert verktøykall    | `0` tillater kallet; alt annet avviser det                     |
+| `postTool`     | Etter hvert verktøykall  | Ingenting; hooken observerer bare                              |
+
+- Hvert skript startes som en egen kjørbar fil, uten skall og uten argumenter, så det må være kjørbart og starte med en shebang-linje. Det får hendelsen som JSON på stdin: hendelsesnavnet, og for verktøyhookene verktøyets navn med argumentene (`preTool`) eller resultatet (`postTool`).
+- En hook kjører som en av kjøringens verktøyprosesser, i agentens mappe for kjøringen. Når serveren setter agenter i sandkasse, kjører den inne i kjøringens sandkasse. Den får et minimalt miljø og ingen av kjøringens legitimasjon: ingen kodevert- eller leverandørtoken og ingen gateway-tilgang.
+- Hver hook har 30 sekunder. Utdataene leses og kastes.
+- `preTool` feiler lukket. En ikke-null exit-kode, en tidsavbrytelse eller et skript som ikke kan starte, avviser verktøykallet.
+- En sti som er absolutt, mangler, eller som forlater hook-mappen (lenker løst), avvises, og kjøringsloggen sier hvilken hook som ble avvist og hvorfor. En avvist eller uleselig `preTool`-hook avviser alle verktøykall til den er rettet.
+- En `hooks`-blokk i `.agents/harness.json`, enten i et repo eller i agentens egen mappe, ignoreres. Et repo er ofte andres kode, og agentens mappe kan skrives av medlemmer og av kjøringer. Kjøringsloggen sier at blokken ble ignorert, og hvor hooks leses fra i stedet.
+
+Skall-hooks gjelder bare for det innebygde harnesset. En konfigurert `preTool`- eller `postTool`-hook gjør at kjøringen kaller verktøyene sine ett om gangen.
 
 ## AgentLiveState (utledet)
 

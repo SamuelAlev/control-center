@@ -2,7 +2,7 @@
 title: Konfigurasi kebijakan sandbox
 description: Apa yang membatasi sebuah run agen, cara mengetahui apakah sandbox OS membungkusnya, dan bagaimana aturan aksi menentukan apa yang boleh di-push atau dijangkau agen.
 slug: id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox
-sourceHash: 21c8f9b676e921927d8f244fd8ba25b547d49d66
+sourceHash: e4a4c32d8e84a1aa0ef0dc8887f527866309e25c
 ---
 
 Apakah sebuah run agen di-sandbox ditentukan di server, saat boot
@@ -23,7 +23,7 @@ yang bersyarat — lima sisanya berlaku di setiap host.
 
 | Batas                    | Apa yang dilakukannya                                                                                                                                                                            |
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Sandbox OS               | Seatbelt di macOS, bubblewrap di Linux dan WSL2. Membungkus Claude Code CLI, adapter ACP, dan alat `bash` harness. **Tidak ada di Windows dan di Linux tanpa `bwrap` dan `socat`** |
+| Sandbox OS               | Seatbelt di macOS, bubblewrap di Linux dan WSL2. Membungkus Claude Code CLI, adapter ACP, dan alat `bash` harness. **Tidak ada di Windows dan di Linux tanpa `bwrap` dan `socat`, tempat hanya run milik pemilik server yang dimulai** |
 | Worktree-nya sendiri     | Setiap percakapan mendapat checkout copy-on-write. Checkout asli dilipat ke dalam run sebagai jalur tolak-tulis dan sandbox-lah yang menegakkannya                                                  |
 | Kredensial yang dijembatani | Broker kredensial membuat lingkungan per-run dan melepaskannya saat pembongkaran. Token GitHub di dalamnya dapat membaca tetapi tidak dapat push: push melewati Control Center, yang lebih dulu menanyakan aturan push |
 | Pagar pengaman tindakan  | Setiap alat yang memutasi mendeklarasikan kelas efeknya dan pagar menyelesaikannya sebelum panggilan berjalan. Sebuah `prompt` tanpa penyetuju yang terhubung ditolak                              |
@@ -43,10 +43,7 @@ Tiga hal tetap lebih lemah daripada tampilannya:
   yang membatasinya. Hanya alat `bash` yang melewati runner perintah yang di-sandbox.
   Alat-alat itu dibatasi oleh pembatasan jalur miliknya sendiri plus pagar pengaman
   tindakan.
-- Di host tanpa backend, baris pertama sama sekali tidak berlaku. ACP dan alat
-  `bash` harness kembali ke sanitasi lingkungan plus kebijakan perintah;
-  Claude Code mewarisi lingkungan host melalui `NoSandboxAdapter`. Server
-  mengatakannya di log startup-nya. Periksa milik Anda di bawah.
+- Di host tanpa backend, hanya run yang dipertanggungjawabkan kepada pemilik server yang dimulai, dan untuk run tersebut baris pertama sama sekali tidak berlaku. Run milik orang lain ditolak. Di bawah `--sandbox off`, setiap run anggota dimulai tanpa baris pertama. Dalam kedua kasus, ACP dan alat `bash` harness kembali ke sanitasi lingkungan plus kebijakan perintah, dan Claude Code mewarisi lingkungan host melalui `NoSandboxAdapter`. Server menyebutkan kasus mana yang berlaku di log startup-nya. Periksa milik Anda di bawah.
 
 ## Tentukan apa yang boleh di-push agen
 
@@ -56,8 +53,8 @@ Masing-masing adalah aturan aksi:
 | Aturan                                | Default bawaan | Apa yang dicakupnya                                                          |
 | ------------------------------------- | -------------- | ---------------------------------------------------------------------------- |
 | **Push ke remote**                    | Tanyakan dulu  | Setiap `git push` ke GitHub, adapter apa pun                                 |
-| **Buka pull request**                 | Tanyakan dulu  | `gh pr create` dan alat pull request                                         |
-| **Publikasikan review atau merge**    | Tanyakan dulu  | `gh pr merge`, `gh pr review`, `gh pr comment`, `gh pr close`                |
+| **Buka pull request**                 | Tanyakan dulu  | Alat pull request Control Center. `gh pr create` tidak berfungsi dalam run                                         |
+| **Perbarui atau gabungkan pull request** | Tanyakan dulu  | Komentar agen pada pull request-nya, perubahan judul atau deskripsinya, dan review yang dipublikasikan, melalui alat Control Center. `gh pr comment`, `gh pr edit`, `gh pr review`, `gh pr merge`, dan `gh pr close` tidak berfungsi dalam run                |
 | **Tulis ke pelacak eksternal**        | Tanyakan dulu  | Penulisan tiket melalui alat Control Center dan `gh issue`                   |
 | **Akses jaringan**                    | Izinkan        | Apakah sandbox punya jaringan sama sekali, dan alat web milik harness        |
 
@@ -113,45 +110,51 @@ dan apakah `--sandbox` menyala. Periksa keduanya dalam urutan itu.
    **Tanpa isolasi**. Fakta **Berlaku** adalah preferensi perangkat ini, bukan
    pembungkus yang sebenarnya digunakan server.
 3. Baca log startup server. Log itu mencetak tepat salah satu dari tiga baris:
-   - `agent sandbox ON` plus catatan backend — run dibungkus
+   - `agent sandbox ON` plus catatan backend: run dibungkus
    - `no OS-native agent sandbox on this host` plus petunjuk pemasangan bila ada
-     — run tidak dibungkus
-   - `agent sandbox DISABLED by --sandbox off` — pengabaian yang disengaja
+     : hanya run yang dipertanggungjawabkan kepada pemilik server yang dimulai, tanpa dibungkus, dan run orang lain ditolak
+   - `agent sandbox DISABLED by --sandbox off`: run setiap anggota dimulai tanpa dibungkus
+4. Baris exposure yang dicetak saat startup mengatakan hal yang sama dalam satu kata: `sandbox=native`, `sandbox=off` atau `sandbox=unavailable`.
 
 `GET /healthz` tidak melaporkan status sandbox, jadi log startup-lah
 pemeriksaannya.
 
-Untuk mematikan sandbox secara sengaja — host tempat profil berperilaku salah
-adalah alasan fitur ini ada — jalankan server dengan `--sandbox off`, atau
-setel `CC_SERVER_SANDBOX=off`. Default-nya `on` dan `on` berarti "gunakan
-backend bila host memilikinya", tidak pernah "wajibkan satu".
+Hanya pemilik server yang memutuskan menjalankan tanpa sandbox. Untuk melakukannya
+bagi semua orang, jalankan server dengan `--sandbox off`, atau setel
+`CC_SERVER_SANDBOX=off`. Agen setiap anggota lalu berjalan tanpa kurungan di mesin
+itu, jadi ini keputusan tentang semua orang yang memakai server, dibuat sekali saat
+boot. Default-nya `on`: ia membungkus setiap run bila host memiliki backend dan,
+bila tidak, hanya memulai run milik pemilik.
 
 Dua situasi tidak pernah mendapat pembungkus sandbox native. Di **Windows**,
-probe native selalu melaporkan tidak tersedia dan tidak ada yang perlu dipasang
-— pengiriman agen memakai `none`. Backend `microvm` terpisah (terminal
-interaktif dan rig) dan digerbangi probe pada runtime-nya sendiri. Di **Linux
-dan WSL2**, baik `bwrap` maupun `socat` harus ada di `PATH`; tanpa keduanya,
-probe melaporkan tidak tersedia dan menyebutkan paket yang hilang.
+probe native selalu melaporkan tidak tersedia dan tidak ada yang perlu dipasang,
+sehingga hanya run milik pemilik server yang dimulai kecuali pemilik memberi
+`--sandbox off`. Backend `microvm` terpisah (terminal interaktif dan rig) dan
+digerbangi probe pada runtime-nya sendiri. Di **Linux dan WSL2**, baik `bwrap`
+maupun `socat` harus ada di `PATH`; tanpa keduanya, probe melaporkan tidak
+tersedia dan menyebutkan paket yang hilang, dan hanya run milik pemilik yang
+dimulai.
 
 Di Linux/WSL2 dengan bubblewrap terpasang, glob berkas rahasia milik kebijakan
-standar tidak dapat ditegakkan untuk berkas yang dibuat agen belakangan. Run
-native semacam itu sekarang gagal alih-alih diam-diam mengabaikan aturannya.
-Probe boot yang positif karena itu tidak menjamin bahwa pengiriman di Linux
-dapat dimulai. `--sandbox off` adalah pengabaian tanpa kurungan yang disengaja,
-bukan pengganti batas keamanan.
+standar tidak dapat ditegakkan untuk berkas yang dibuat agen belakangan, sehingga
+setiap run native gagal alih-alih diam-diam mengabaikan aturannya, termasuk milik
+pemilik. Probe boot yang positif karena itu tidak berarti dispatch Linux dapat
+dimulai: saat ini server Linux menjalankan agen dengan `--sandbox off`, atau tanpa
+bubblewrap hanya untuk pemilik. `--sandbox off` adalah pengabaian tanpa kurungan
+yang disengaja, bukan pengganti batas keamanan.
 
 ## Ketahui apa yang sudah dilarang oleh sebuah mode
 
 Mode disimpan per space dan menjadi masukan bagi penyelesai pagar pengaman
 sebagai lapisan **preset mode**. Tiga dari empat mode bersifat hanya-baca dan
-mode hanya-baca menolak sebelas kelas efek mentah-mentah:
+mode hanya-baca menolak dua belas kelas efek mentah-mentah:
 
 | Mode                 | Worktree   | Ditolak oleh prasetel                                                                                                                                                            |
 | -------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Agen** (`chat`)    | Dapat ditulisi | Tidak ada — default bawaan yang berlaku                                                                                                                                      |
-| **Rencana**          | Hanya-baca | Hapus file, tulis di luar pohon kerja, buat commit, push ke remote, buka pull request, publikasikan review atau merge, tulis ke pelacak eksternal, instal paket, jalankan proses, ubah struktur ruang kerja, boot atau kendalikan enclosure (rig) |
-| **Tinjauan**         | Hanya-baca | Sebelas hal yang sama. Tidak dapat dipilih pengguna — penyusun pesan hanya menawarkan Agen, Rencana, dan Orkestrasi                                                              |
-| **Orkestrasi**       | Hanya-baca | Sebelas hal yang sama                                                                                                                                                            |
+| **Rencana**          | Hanya-baca | Hapus file, tulis di luar pohon kerja, buat commit, push ke remote, buka pull request, publikasikan review atau merge, tulis ke pelacak eksternal, instal paket, jalankan proses, ubah struktur ruang kerja, boot atau kendalikan enclosure (rig), jalankan perintah di host |
+| **Tinjauan**         | Hanya-baca | Dua belas hal yang sama. Tidak dapat dipilih pengguna — penyusun pesan hanya menawarkan Agen, Rencana, dan Orkestrasi                                                              |
+| **Orkestrasi**       | Hanya-baca | Dua belas hal yang sama                                                                                                                                                            |
 
 Akses jaringan dan akses secret sengaja _tidak_ ditolak oleh mode hanya-baca:
 penelitian adalah inti dari mode itu.
@@ -176,17 +179,32 @@ Baca apa yang dicetak git. `Control Center policy: …` berarti sebuah aturan
 menolak push atau **Tanyakan dulu** tidak dijawab.
 `… is not linked to this workspace` berarti push menuju repo yang bukan repo
 milik worktree dan tidak ditautkan ke ruang kerja.
-`Control Center has no GitHub credential that can push …` berarti GitHub App
-tidak terpasang di repo itu dan tidak ada kredensial fallback yang dapat push:
-pasang App di repo tersebut atau hubungkan GitHub.
+`Control Center has no GitHub credential that can push …` berarti tidak ada token push yang dapat dibuat: pasang GitHub App di repo itu atau hubungkan GitHub.
+
+### Run agen saya ditolak dengan "Server ini tidak memiliki sandbox"
+
+Run menampilkan **Agen memerlukan sandbox di server ini** dengan "Server ini tidak
+memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini.
+Pemilik dapat memasang sandbox atau mematikan sandboxing untuk semua orang." Host
+server tidak memiliki sandbox OS, dan orang yang bertanggung jawab atas run ini
+bukan pemilik server, sehingga tidak ada yang dimulai. Untuk jadwal, webhook, atau
+otomatisasi lain, orang yang bertanggung jawab adalah orang yang diikat otomatisasi
+itu, bukan siapa pun yang sedang melihatnya.
+
+Hanya pemilik server yang dapat mengubah ini. Di Linux dan WSL2 mereka memasang
+`bubblewrap` dan `socat` lalu memulai ulang server (tetapi baca dulu catatan Linux
+di atas). Di Windows tidak ada backend untuk dipasang. Pilihan lainnya adalah
+memulai ulang server dengan `--sandbox off`, yang menjalankan agen setiap anggota
+tanpa kurungan di mesin itu.
 
 ### Kartu Sandboxing melaporkan tidak ada sandbox native
 
-Berarti run agen di host itu tidak dibungkus oleh Seatbelt atau bubblewrap dan
-batas-batas yang tersisa itulah yang Anda miliki. Di Linux dan WSL2, pasang
-kedua alat yang hilang — `sudo apt-get install bubblewrap socat` — lalu jalankan
-ulang server; log startup selanjutnya akan menyebutkan sandbox menyala. Di
-Windows tidak ada backend native untuk dipasang, jadi perketat pagar pengamannya
+Berarti run agen di host itu tidak dibungkus oleh Seatbelt atau bubblewrap: hanya
+run milik pemilik server yang dimulai, dan batas-batas yang tersisa itulah yang
+mereka miliki. Di Linux dan WSL2, pasang kedua alat yang hilang
+(`sudo apt-get install bubblewrap socat`) lalu jalankan ulang server; log startup
+selanjutnya akan menyebutkan sandbox menyala. Di Windows tidak ada backend native
+untuk dipasang, jadi perketat pagar pengamannya untuk run milik pemilik sendiri
 sebagai gantinya: lihat
 [Konfigurasi pagar pengaman](/id-ID/panduan-pengguna/panduan-praktis/konfigurasi-pagar-pengaman/).
 
@@ -201,8 +219,9 @@ sendiri plus pagar pengaman. Perintah `bash` atau CLI Claude Code _memang_
 dibungkus di tempat backend ada dan checkout terdaftar Anda bersifat tolak-tulis
 di dalam pembungkus itu pada setiap mode, termasuk ejaan yang telah diselesaikan
 symlink-nya (di macOS jalur yang dicapai melalui `/tmp` atau `/var/folders`
-diselesaikan di bawah `/private` dan kedua ejaan itu kini ditolak). Di host tanpa
-backend, tidak satu pun dari itu berlaku. Apa pun caranya, pagar pengaman dapat
+diselesaikan di bawah `/private` dan kedua ejaan itu ditolak). Di bawah
+`--sandbox off`, atau untuk run milik pemilik sendiri di host tanpa backend, tidak
+satu pun dari itu berlaku. Apa pun caranya, pagar pengaman dapat
 menolak **Tulis di luar pohon kerja** mentah-mentah.
 
 ## Panduan terkait

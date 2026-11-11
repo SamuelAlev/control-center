@@ -2,16 +2,18 @@
 title: Sandbox và bảo mật
 description: Điều gì thực sự ràng buộc một agent trong Control Center hiện nay, sandbox hệ điều hành vươn tới đâu và những ranh giới nào vẫn đứng vững trên một máy chủ không có backend.
 slug: vi-VN/so-tay/khai-niem/sandbox-va-bao-mat
-sourceHash: ac926eb1b2447d93207802824742f121d232f171
+sourceHash: 65a7a0a56b42c828ed1cb9ae36001596a03dc046
 ---
 
 :::note[Sandbox hệ điều hành vươn tới đâu và không vươn tới đâu]
 `cc_server` dò máy chủ lúc khởi động và bọc việc thực thi lệnh của agent trong
 sandbox gốc của hệ điều hành khi có sẵn một cái — Seatbelt trên macOS, bubblewrap
 trên Linux và WSL2 (cần `bwrap` và `socat` trên `PATH`). Nơi không có backend nào
-— Windows, hoặc một máy Linux thiếu những công cụ đó — các lượt chạy quay về
-những ranh giới khác bên dưới và máy chủ nói rõ điều đó trong log khởi động.
-`--sandbox off` tắt nó một cách có chủ đích.
+— Windows, hoặc một máy Linux thiếu những công cụ đó — chỉ các lượt chạy agent của chủ
+sở hữu máy chủ mới bắt đầu, không bị giới hạn, còn lượt chạy của người khác bị từ chối.
+Chủ sở hữu máy chủ cũng có thể khởi động nó với `--sandbox off`, điều này chạy mọi
+agent của thành viên không bị giới hạn trên máy đó. Log khởi động cho biết bạn đang ở
+trường hợp nào; xem [Agent trên máy chủ không có sandbox](#agent-trên-máy-chủ-không-có-sandbox).
 
 Hai lỗ hổng vẫn tồn tại bên trong sandbox và đáng để ghi nhớ:
 
@@ -36,7 +38,46 @@ Control Center trả lời điều đó bằng nhiều lớp và các lớp này
 một cách có chủ đích. Nếu thiếu một lớp, những lớp khác vẫn đứng vững. Điều đó
 quan trọng, bởi lớp ngoài cùng — sandbox hệ điều hành — là lớp duy nhất có điều
 kiện: nó phụ thuộc vào việc máy chủ có cung cấp backend hay không, và trên
-Windows thì không máy nào có.
+Windows thì không máy nào có. Khi nó thiếu, máy chủ không âm thầm chạy agent của mọi người mà không có nó.
+
+## Agent trên máy chủ không có sandbox
+
+Máy chủ quyết định một lần khi khởi động cách các agent chạy trên máy của nó, và giữ
+quyết định đó cho tới khi nó khởi động lại:
+
+- **Có sandbox.** Máy chủ có backend và sandbox đang bật. Mọi lượt chạy đều được bọc.
+- **Tắt.** Chủ sở hữu máy chủ khởi động máy chủ với `--sandbox off`. Mọi agent của
+  thành viên chạy không bị giới hạn trên máy này. Đó là lựa chọn của chủ sở hữu cho tất
+  cả những ai dùng máy chủ, không phải một cài đặt cho một lượt chạy.
+- **Không khả dụng.** Sandbox đang bật nhưng máy chủ không có backend. Một lượt chạy chỉ
+  bắt đầu khi người chịu trách nhiệm cho nó là [chủ sở hữu](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ)
+  máy chủ: người đã yêu cầu nó, hoặc với lịch, webhook hay tự động hóa khác là người mà
+  nó được gắn với. Lượt chạy của người khác bị từ chối trước khi thông tin xác thực được
+  cấp hoặc tiến trình bắt đầu, với thông báo "Máy chủ này không có sandbox, nên chỉ chủ
+  sở hữu của nó mới có thể chạy agent ở đây. Chủ sở hữu có thể cài đặt sandbox hoặc tắt
+  sandboxing cho tất cả mọi người."
+
+Lý do nằm ở quyền sở hữu máy. Một agent không bị giới hạn có thể làm bất cứ điều gì mà
+tài khoản người dùng của máy chủ làm được, nên chỉ người sở hữu tài khoản đó mới chạy
+một agent như vậy, trừ khi họ quyết định khác cho mọi người. Máy chủ Windows luôn ở
+trường hợp không khả dụng. Linux có một điểm phức tạp riêng, được nêu trong
+[tham chiếu backend sandbox](/vi-VN/so-tay/tham-chieu/backend-sandbox/#linux-bubblewrap): việc
+điều phối native hiện đóng khi lỗi ở đó ngay cả khi đã cài bubblewrap.
+
+Quy tắc tương tự áp dụng cho những thứ nhỏ hơn tự khởi tạo một tiến trình cho bạn:
+
+- **Các trợ thủ nhanh chạy qua một CLI ACP**: tiêu đề cuộc hội thoại, `/btw`, `/handoff`
+  và `/goal`. Khi máy chủ bọc agent trong sandbox, chúng chạy bên trong sandbox, trong một
+  phiên riêng. Dưới `--sandbox off` chúng chạy không bị giới hạn. Khi không có sandbox nào
+  khả dụng, chúng chỉ chạy cho các yêu cầu mà chủ sở hữu máy chủ chịu trách nhiệm; với
+  người khác thì chúng bị bỏ qua, nên không có tiêu đề nào được tạo và một câu hỏi phụ báo
+  rằng Content synthesizer không có trình chạy nào hoạt động. Các trợ thủ không khởi động
+  công cụ nào thì không bị ảnh hưởng.
+- **Golden test của một pull request** trong kiểm tra trực quan của Review Studio tuân theo
+  cùng quy tắc.
+- **Tiến trình công cụ và `bash`** trong một lượt chạy không bao giờ quay về chạy trên máy
+  chủ. Nếu máy chủ được đặt để bọc agent trong sandbox mà không có sandbox nào để cấp cho
+  một lượt chạy, lượt chạy đó bị từ chối.
 
 ## Điều gì thực sự ràng buộc một agent
 
@@ -108,8 +149,9 @@ Công cụ `bash` là chỗ khác cần nói cho chính xác. Các lệnh của 
 dựa trên chính sách lệnh của chế độ rồi được spawn với một môi trường đã làm
 sạch và cây làm việc làm thư mục làm việc. Nơi có backend, lần spawn đó được
 bọc, nên sandbox chính là thứ ngăn một lệnh shell ghi ra ngoài cây làm việc; nơi
-không có — Windows, hoặc Linux thiếu `bwrap` và `socat` — chính sách lệnh là thứ
-duy nhất nằm giữa lệnh đó và phần còn lại của ổ đĩa. Ở chế độ `chat`, chính sách
+không có — mọi lượt chạy dưới `--sandbox off`, và lượt chạy của chính chủ sở hữu trên Windows hoặc
+trên Linux thiếu `bwrap` và `socat` — chính sách lệnh là thứ duy nhất nằm giữa lệnh đó và
+phần còn lại của ổ đĩa. Ở chế độ `chat`, chính sách
 từ chối cứng một danh sách cố định (leo thang đặc quyền, phá hủy hệ thống và ổ
 đĩa, thoát khỏi container và namespace) và hỏi trước với các thay đổi trạng thái
 từ xa (`git push`, `gh pr create`, xuất bản và cài đặt gói). Bất cứ thứ gì không
@@ -123,7 +165,7 @@ bởi một `claude -p` phi tương tác nếu không thì sẽ chặn mãi mãi
 duyệt của chính nó. Các lệnh gọi read, write và edit của nó diễn ra bên trong tiến trình của chính nó và Control Center không bao giờ thấy chúng. Các lệnh gọi `Bash` của nó được gửi, trước khi chạy, tới một hook trên máy chủ để phân loại dòng lệnh và hỏi quy tắc tương ứng, còn các công cụ `mcp__*` do Control Center phục vụ vẫn đi qua cổng như thường lệ. Nơi có backend, những lệnh gọi vô hình đó vẫn diễn ra
 bên trong lớp bọc sandbox, nên hệ điều hành là ranh giới bao quanh chúng. Nơi
 không có, thì không có gì cả. Mỗi adapter nói rõ điều này trong ma trận thực thi
-của nó — xem [ma trận trung thực của adapter](/vi-VN/so-tay/khai-niem/rao-chan/#the-adapter-honesty-matrix).
+của nó — xem [ma trận trung thực của adapter](/vi-VN/so-tay/khai-niem/rao-chan/#ma-trận-trung-thực-của-adapter).
 
 ## Push đi qua Control Center
 
@@ -134,10 +176,7 @@ chối — và cùng các quy tắc đó áp dụng bất kể adapter nào ch�
 
 Push là hành động phải đứng vững ngay cả trước một agent đang tìm cách lách quy
 tắc, nên nó được thực thi bằng thứ agent nắm giữ chứ không phải bằng thứ agent
-chạy. Một lượt chạy trong worktree GitHub nhận một token dành cho đúng một kho mã
-đó, được cấp từ GitHub App của không gian làm việc, App riêng của máy chủ hoặc
-Control Center Connect. Nó có thể đọc nội dung và, khi thành viên chịu trách nhiệm
-có quyền push, bình luận trên pull request, nhưng không thể push. Cấu hình git của
+chạy. Lượt chạy không giữ token forge nào khi bắt đầu, và `git` của nó không bao giờ nhận được token. Khi `gh` của nó cần một token, Control Center cấp cho nó một token dành cho đúng một kho mã GitHub mà lượt chạy đang xử lý, được tạo từ GitHub App của không gian làm việc, App riêng của máy chủ hoặc Control Center Connect. Token này chỉ đọc: nó không thể push, bình luận hay chỉnh sửa. Cấu hình git của
 lượt chạy viết lại mọi URL push GitHub (`https://github.com/`, `git@github.com:`, `ssh://git@github.com/`) về
 **cổng lượt chạy agent**, một endpoint loopback trên `cc_server`. Cổng đọc xem
 lần push cập nhật những ref nào, hỏi quy tắc **Push lên remote** — nên một quy
@@ -151,25 +190,23 @@ ngay trong đầu ra của git:
 ```
 
 Cổng chỉ chuyển tiếp push tới kho mã của chính worktree hoặc tới một kho mã
-GitHub được liên kết với không gian làm việc. Các lần fetch đi thẳng tới GitHub
-bằng token đọc.
+GitHub được liên kết với không gian làm việc. Các lần fetch cũng đi qua cổng. Trên GitHub, GitLab và Bitbucket, cổng fetch các kho mà lượt chạy đang xử lý bằng một thông tin xác thực mà nó giữ và lượt chạy không bao giờ thấy. Trên GitLab và Bitbucket, đó là token của chính bạn khi bạn yêu cầu lượt chạy, và là token tự động hóa của kho khi không ai yêu cầu. Một lần fetch không hỏi ai, và chỉ khi **Truy cập mạng** được đặt thành Từ chối thì lần fetch mới bị từ chối.
 
 Các lệnh shell khác gặp một cổng mềm hơn. Công cụ `bash` của harness và, qua một
 hook, công cụ `Bash` của Claude Code phân loại từng dòng lệnh và hỏi quy tắc mà
 nó thuộc về: `git commit`, `merge`, `rebase`, `cherry-pick`, `revert` và `am` là
 **Tạo một commit**; `gh pr create` là **Mở một pull request**; `gh pr merge`,
-`review`, `comment` và `close` là **Xuất bản review hoặc merge**;
+`review`, `comment` và `close` là **Cập nhật hoặc hợp nhất một pull request**;
 `gh issue create`, `edit`, `comment` và `close` là **Ghi vào tracker bên
 ngoài**; các lệnh cài gói là **Cài một gói**; `curl` và `wget` là **Truy cập
-mạng**. Cơ chế này nhận ra cách viết thông thường của một hành động, và một
+mạng**. Ghi vào GitHub từ shell là ngoại lệ: các thao tác ghi `gh pr create`, `gh pr comment`, `gh pr edit`, `gh pr merge` và `gh issue` không hoạt động trong một lượt chạy, vì token của lượt chạy chỉ đọc, và agent được chỉ đến các công cụ của Control Center, chính những công cụ này sẽ hỏi các quy tắc này. Cơ chế này nhận ra cách viết thông thường của một hành động, và một
 agent quyết tâm che giấu nó (`eval`, một tệp script, một lời gọi API trực tiếp)
 có thể làm được. Push không phụ thuộc vào cơ chế này.
 
 Mọi token GitHub mà một lượt chạy nhận được đều bị giới hạn hai lần: theo một kho
 mã, và theo những gì thành viên chịu trách nhiệm (người đã yêu cầu, nếu không thì là
 chủ không gian làm việc) có thể làm trên kho đó. Không có thông tin xác thực dự
-phòng nào. Khi không cấp được token, lượt chạy bắt đầu mà không có token và ghi
-chú của nó nói rõ lý do.
+phòng nào. Khi không cấp được token, lệnh đã yêu cầu token đó sẽ nói rõ lý do.
 
 Không có khóa API phiếu nào được đặt vào sandbox. Agent ghi phiếu qua các công
 cụ MCP của Control Center, vốn hỏi quy tắc **Ghi vào tracker bên ngoài**.
@@ -181,6 +218,16 @@ lệnh gọi. Các handle thông tin xác thực của lượt chạy được g
 token đứng sau chúng được dùng chung theo từng thành viên và kho mã, và hết hạn
 trong khoảng một giờ; việc một thành viên đăng xuất GitHub hoặc rời không gian làm
 việc sẽ hủy ngay mọi token được cấp thay mặt họ.
+
+## Kho mà agent chỉ có thể đọc
+
+Một lượt chạy agent chỉ được thay đổi checkout của những kho mà người nó hành động thay mặt giữ [quyền ghi](/vi-VN/so-tay/khai-niem/uy-quyen/#thay-đổi-mã-cần-quyền-ghi) trên đó. Quản trị viên không gian làm việc giữ quyền này trên mọi kho đã liên kết. Một lượt chạy không ai yêu cầu, chẳng hạn một lịch hoặc một automation khác, được đánh giá bởi cùng người chịu trách nhiệm mà token của automation đó bị ràng buộc.
+
+Trong một space có một kho mà người đó chỉ có thể đọc, agent vẫn đọc và tìm kiếm được kho đó, nhưng không thể thay đổi tệp của nó. Các công cụ tệp của nó từ chối với một thông báo bắt đầu bằng `<repo> is read-only for this run`, và nói rằng việc thay đổi checkout cần quyền ghi, thứ mà người mà lượt chạy hành động thay mặt không giữ, và quản trị viên không gian làm việc có thể cấp quyền đó. Bên trong sandbox, checkout là chỉ đọc đối với mọi tiến trình, nên một lệnh shell ghi vào đó sẽ thất bại với "Operation not permitted". Điều đó bao gồm `git commit` và một build hoặc test ghi đầu ra bên trong checkout. Các kho mà người đó có thể ghi hoạt động như bình thường, nên quản trị viên, và bất kỳ ai có quyền ghi trên mọi kho của space, không thấy khác biệt nào.
+
+Điều này được quyết định một lần, khi lượt chạy bắt đầu. Một thay đổi grant có hiệu lực ở lượt chạy tiếp theo của agent, và một kho được thêm vào space trong lúc một lượt chạy đang diễn ra cũng vậy.
+
+Khi chủ sở hữu máy chủ đã tắt sandbox, chỉ các công cụ tệp của chính agent và công cụ ghi của Claude Code bị từ chối, còn các lệnh shell vẫn có thể thay đổi checkout. Dù trong trường hợp nào, không thể push nếu thiếu quyền ghi, vì mọi push đều được kiểm tra với quyền đó. Sandbox nào giới hạn tiến trình nào trên mỗi nền tảng được mô tả trong [Backend sandbox](/vi-VN/so-tay/tham-chieu/backend-sandbox/).
 
 ## Sandbox bổ sung điều gì và dừng lại ở đâu
 
@@ -196,16 +243,15 @@ cho cả hai đường nối mà đường điều phối có, bởi các transp
 một đường. Đường thứ nhất (`SandboxPort`) bọc CLI Claude Code. Đường thứ hai
 (`SandboxManager`) bọc các adapter ACP và công cụ `bash` của harness tích hợp.
 Chỉ cấp cho một đường sẽ khiến những đường còn lại spawn mà không được bọc, đó là
-điều từng xảy ra. Trên một máy chủ không có backend, hoặc dưới `--sandbox off`,
-tất cả chúng spawn không được bọc và máy chủ nói rõ bạn đang ở trường hợp nào
-trên dòng khởi động của nó. ACP và `bash` của harness vẫn làm sạch môi trường;
+điều từng xảy ra. Dưới `--sandbox off` tất cả chúng spawn không được bọc; trên một máy chủ không có
+backend chỉ các lượt chạy của chủ sở hữu mới bắt đầu, cũng không được bọc. Máy chủ nói
+rõ bạn đang ở trường hợp nào trên dòng khởi động của nó. ACP và `bash` của harness vẫn làm sạch môi trường;
 Claude Code qua `NoSandboxAdapter` kế thừa môi trường của máy chủ.
 
-Một bề mặt cố tình không tham gia: terminal do máy chủ cung cấp nhận một đối số
-backend theo từng phiên và `cc_server` khởi tạo nó với mặc định là shell của máy
-chủ, nên một terminal bạn mở từ ứng dụng sẽ chạy không có sandbox trừ khi máy
-khách nêu rõ `native`. Đó là một shell thật trên máy chủ, không phải một lượt
-chạy agent.
+Terminal do máy chủ cung cấp chỉ mở shell của máy chủ cho
+[chủ sở hữu](/vi-VN/so-tay/khai-niem/uy-quyen/#chủ-sở-hữu-máy-chủ) máy chủ. Những người khác
+nhận một terminal được sandbox, với giới hạn của một agent, trong các thư mục của chính
+không gian làm việc. Chỉ người đã mở terminal mới gõ được vào đó, đọc được hoặc đóng nó.
 
 Trên Linux, `bubblewrap` dựng một namespace mount, nên agent thực sự chỉ thấy
 những gì đã được gắn vào đó. Trên macOS, `sandbox-exec` áp dụng một profile
@@ -218,6 +264,22 @@ mọi đường dẫn bị từ chối và các tổ tiên của nó để một
 qua một lệnh từ chối ghi, từ chối exec với các tệp nhị phân luôn nguy hiểm và với
 bất cứ thứ gì được sao chép vào một thư mục có thể ghi, và mạng bị giới hạn ở
 các cổng proxy loopback cùng DNS. Các công cụ được cài đặt trong thư mục home của bạn (pnpm do corepack cài, trình quản lý phiên bản node, trình duyệt Playwright, rustup, fvm, uv và tương tự) vẫn chạy được bên trong khối exec đó, nên agent có thể dùng chúng mà không cần cách lách. Quy tắc từ chối cho các tệp nhị phân luôn nguy hiểm vẫn áp dụng bên trong chúng. Mỗi phiên cũng được cấp một `TMPDIR` riêng. Đây là thư mục tạm duy nhất mà agent có thể chạy chương trình do chính nó build hoặc mở socket Unix.
+
+Hai bảo vệ nữa áp dụng trong mọi chế độ. Một sandbox không thể thêm, thay thế, xóa hay
+đổi tên một lệnh trong các thư mục mà máy chủ chạy chương trình từ đó (mọi thư mục trên
+`PATH` của nó và các thư mục công cụ thông thường theo từng người dùng), nên một lượt
+chạy trong sandbox không thể cài sẵn một chương trình mà máy chủ sau này khởi động bên
+ngoài sandbox. Vì vậy, cài đặt toàn cục và việc chuyển phiên bản mặc định từ bên trong
+một lượt chạy sẽ thất bại với "Operation not permitted", trong khi cài đặt cục bộ của dự
+án và các lần chạy kiểu `npx` vẫn hoạt động; hãy cài công cụ toàn cục trên chính máy chủ
+rồi khởi động lại nó. Và mọi đường dẫn home mà sandbox không đọc được thì cũng không ghi
+được, với các tệp khởi động shell và phiên của người dùng máy chủ không bao giờ ghi được.
+Chi tiết và giới hạn theo nền tảng nằm trong
+[Các thư mục lệnh của máy chủ](/vi-VN/so-tay/tham-chieu/backend-sandbox/#thư-mục-lệnh-của-máy-chủ).
+
+Các sandbox công cụ của một lượt chạy thuộc về lượt chạy đó và được giải phóng khi nó kết
+thúc. Language server khởi động lại từ đầu với mỗi lượt chạy có sandbox. Một phiên gỡ lỗi
+giữ sandbox của nó qua các lượt cho đến khi phiên kết thúc, tối đa 30 phút.
 
 Hệ quả thực tế: trên Linux, tầm nhìn của agent về hệ thống tệp bị thu hẹp; trên
 macOS, agent vẫn có thể _đọc_ phần lớn máy chủ và các bản checkout đã đăng ký của

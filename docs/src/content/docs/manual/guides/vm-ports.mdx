@@ -9,7 +9,7 @@ Nothing here opens the machine up: every path is created by the server, on reque
 
 ## See what is listening
 
-1. Open the conversation's **Terminal (VM)** or host-shell (in a space or on a PR page).
+1. In the conversation's editor (in a space or on a PR page), open **Terminal** from the `+` menu: under **Machines** for a shell in the conversation's VM, or under **Tools** for a terminal on the server. Only the server owner can open a host shell; anyone else's terminal is sandboxed.
 2. Start your server — `pnpm dev`, `python -m http.server 8000`, anything.
 3. Within a few seconds the **plug icon** in the terminal's top-right corner
    gets a dot. Click it.
@@ -113,6 +113,12 @@ not) anything is listening on it. A manual forward keeps its address while
 your server restarts — the row shows *not listening* until it comes back —
 where auto-forwards disappear when their port does. On a host-shell you can
 also set a different local port.
+
+Changing forwards needs a write grant on every repository the space exposes. With read access you still see the ports,
+and the panel says "Changing these ports needs write access to every repository in this space." in place of **Add port**. See
+[Who can watch and who can drive](/manual/guides/use-rigs/#who-can-watch-and-who-can-drive).
+
+A terminal someone opened for themselves keeps its ports to them: for anyone else, its port list and its port changes answer as if the session did not exist, exactly like the session itself. Terminals shared in a space follow the space rule above.
 
 ## How it stays contained
 

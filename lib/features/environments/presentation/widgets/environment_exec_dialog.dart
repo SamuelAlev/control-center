@@ -3,6 +3,7 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/providers.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -75,7 +76,13 @@ class _EnvironmentExecFormState extends ConsumerState<EnvironmentExecForm> {
       }
     } on Object catch (error) {
       if (mounted) {
-        setState(() => _error = environmentFailureMessage(error));
+        setState(
+          () => _error = environmentRefusalMessage(
+            AppLocalizations.of(context),
+            error,
+            owner: ref.read(canUseHostProvider),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -155,7 +162,9 @@ class _EnvironmentExecFormState extends ConsumerState<EnvironmentExecForm> {
       ),
       actions: [
         CcButton(
-          onPressed: _busy ? null : _run,
+          onPressed: _busy || !environmentOperable(ref, widget.spaceKey)
+              ? null
+              : _run,
           loading: _busy,
           child: Text(l10n.environmentRun),
         ),

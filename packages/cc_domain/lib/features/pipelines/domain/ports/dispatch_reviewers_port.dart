@@ -12,7 +12,7 @@ abstract class DispatchReviewersPort {
   ///
   /// [cohortBrief] is the deterministic review-area map (markdown) appended
   /// to each brief so reviewers walk areas in impact order and stamp their
-  /// findings with a `cohort_key`. Null keeps the legacy brief.
+  /// findings with a `cohort_key`. Null sends the brief without it.
   ///
   /// Returns a map with `dispatched` and `unmatched` lists.
   Future<Map<String, dynamic>> dispatch({

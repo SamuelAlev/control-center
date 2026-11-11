@@ -2,7 +2,7 @@
 title: Nasazení a klienti
 description: Jak architektura tenkého klienta v Control Center odděluje server bez rozhraní od klientů na počítači, webu a v telefonu.
 slug: cs-CZ/prirucka/koncepty/nasazeni
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center není jeden program. Je to **architektura tenkého klienta**:
@@ -124,6 +124,8 @@ vlastní soubory i backend code-server. Prohlížeč potřebuje pro service work
 HTTPS nebo zabezpečený kontext loopbacku. Nativní klienti používají fasádu
 loopback s rozsahem podle schopnosti.
 
+Jen [vlastník serveru](/cs-CZ/prirucka/koncepty/autorizace/#vlastník-serveru) může otevřít vestavěný editor code-server: běží na serveru jako vlastní uživatel serveru. Relace patří zařízení a osobě, která ji otevřela. Otevírá se se zapnutou důvěrou pracovního prostoru ve VS Code, takže se VS Code před důvěrou ve složku zeptá, a s vypnutými automatickými úlohami. Všichni ostatní zůstávají u vestavěného editoru jednoho souboru a zobrazení souborů.
+
 ### Telefonní společník (cc_remote)
 
 Aplikace **Remote** je samostatný, lehčí klient — webová PWA ve Flutteru na
@@ -193,8 +195,10 @@ místního workera opravdu umístí, selže, místo aby se provedla. Dnes zapůj
 
 Obě vrstvy sandbox nepoužívají stejně. `cc_server` obalí běhy, které provádí
 sám, sandboxem operačního systému hostitele, kde backend existuje — Seatbelt
-na macOS, bubblewrap na Linuxu a WSL2 — a na Windows nebo bez `bwrap` a
-`socat` spadne na ostatní hranice. **`cc_worker` sandbox nepoužívá vůbec.**
+na macOS, bubblewrap na Linuxu a WSL2. Na Windows nebo bez `bwrap` a `socat`
+spustí jen běhy, za které odpovídá vlastník serveru, a běhy ostatních odmítne,
+pokud vlastník nespustil server s `--sandbox off`, což spustí agenty všech členů
+bez omezení. **`cc_worker` sandbox nepoužívá vůbec.**
 Ohlašuje schopnost `sandbox`, aby server uměl umisťovat úlohy podle platformy,
 ale ve workeru se žádný neaplikuje: zapůjčená úloha se spustí přímo,
 ohraničená prostředím zapůjčení a worktree, který dostala. Zapůjčit práci ven
@@ -237,8 +241,7 @@ Klient kontroluje podepsanou identitu serveru proti svému uloženému pinu
 otisku. Při prvním připojení ten otisk ověř přes důvěryhodný QR nebo jiný
 důvěryhodný kanál: podepsaný první kontakt sám nedokáže ověřit, kdo klíč
 poskytl. Když se identita změní, klient se uzavře; spáruj se znovu přes
-důvěryhodný kanál, místo aby nesoulad ignoroval. Starší klienti a otevřené
-RPC se připojit nemohou. TLS je pořád potřeba pro originy prohlížeče,
+důvěryhodný kanál, místo aby nesoulad ignoroval. Otevřené RPC se nepřijímá. TLS je pořád potřeba pro originy prohlížeče,
 bootstrap a veřejná metadata; `--insecure` ovlivňuje vnější posluchač serveru,
 ne povinnou šifrovanou relaci.
 

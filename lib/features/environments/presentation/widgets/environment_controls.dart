@@ -6,6 +6,7 @@ import 'package:cc_domain/features/environments/domain/value_objects/environment
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/presentation/environment_setup_prompt.dart';
 import 'package:control_center/features/environments/presentation/settings/environment_editor_seed.dart';
+import 'package:control_center/features/environments/presentation/widgets/environment_attended_start.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_feedback.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_lifecycle_actions.dart';
 import 'package:control_center/features/environments/presentation/widgets/environment_start.dart';
@@ -71,12 +72,14 @@ class EnvironmentControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final inFlight = ref.watch(environmentActionsProvider(spaceKey));
+    final operable = environmentOperable(ref, spaceKey);
     final status = environment.status;
-    // A failed environment whose other parts still run needs Stop too: without
-    // it those parts stay up with nothing to bring them down but Destroy.
+    // An environment that failed or waits for someone, whose other parts
+    // still run, needs Stop too: without it those parts stay up with nothing
+    // to bring them down but Destroy.
     final canStop =
         (status.isRunning && status != EnvironmentStatus.starting) ||
-        (status == EnvironmentStatus.failed &&
+        (status.needsAttention &&
             environment.components.any((part) => part.phase?.isLive ?? false));
     return Wrap(
       spacing: AppSpacing.xs,
@@ -88,7 +91,7 @@ class EnvironmentControls extends ConsumerWidget {
             size: CcButtonSize.sm,
             icon: AppIcons.circleStop,
             loading: inFlight.contains('stop'),
-            onPressed: inFlight.contains('stop')
+            onPressed: inFlight.contains('stop') || !operable
                 ? null
                 : () => unawaited(
                     stopEnvironment(
@@ -101,15 +104,15 @@ class EnvironmentControls extends ConsumerWidget {
                   ),
             child: Text(l10n.stop),
           )
-        // A failure offers Retry where it is explained: one way to go again.
+        // What stopped it offers the way on where it is explained: one way to
+        // go again.
         else if (!status.isBusy &&
-            !(status == EnvironmentStatus.failed &&
-                environment.lastError != null))
+            !(status.needsAttention && environment.lastError != null))
           CcButton(
             size: CcButtonSize.sm,
             icon: AppIcons.play,
             loading: inFlight.contains('start'),
-            onPressed: inFlight.contains('start')
+            onPressed: inFlight.contains('start') || !operable
                 ? null
                 : () => unawaited(_start(context, ref)),
             child: Text(l10n.startLabel),
@@ -122,7 +125,8 @@ class EnvironmentControls extends ConsumerWidget {
           loading: inFlight.contains('destroy'),
           onPressed:
               inFlight.contains('destroy') ||
-                  status == EnvironmentStatus.destroying
+                  status == EnvironmentStatus.destroying ||
+                  !operable
               ? null
               : () => unawaited(
                   destroyEnvironment(context, ref, spaceKey, environment),
@@ -158,13 +162,20 @@ class EnvironmentOverflowMenu extends ConsumerWidget {
       confirmLabel: l10n.environmentResetData,
     );
     if (confirmed && context.mounted) {
-      await runEnvironmentAction(
-        context,
-        ref,
+      final attendance = AttendedStart.of(context, ref);
+      await attendance.follow(
         spaceKey,
-        'reset',
-        (repository) =>
-            repository.reset(spaceKey.workspaceId, spaceKey.spaceId),
+        () => runEnvironmentAction(
+          context,
+          ref,
+          spaceKey,
+          'reset',
+          (repository) => repository.reset(
+            spaceKey.workspaceId,
+            spaceKey.spaceId,
+            attended: attendance.attended,
+          ),
+        ),
       );
     }
   }
@@ -173,7 +184,8 @@ class EnvironmentOverflowMenu extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     final t = context.designSystem ?? DesignSystemTokens.light();
-    final idle = !environment.status.isBusy;
+    final idle =
+        !environment.status.isBusy && environmentOperable(ref, spaceKey);
     final record = ref.watch(
       environmentDefinitionRecordProvider((
         workspaceId: spaceKey.workspaceId,

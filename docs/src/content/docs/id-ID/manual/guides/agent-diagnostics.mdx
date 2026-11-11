@@ -2,7 +2,7 @@
 title: Diagnosis agen
 description: Telusuri log run, pemeriksaan adapter, status server, dan diagnostik host saat agen berhenti menghasilkan run.
 slug: id-ID/panduan-pengguna/panduan-praktis/diagnosis-agen
-sourceHash: c242be554fc1aa70c558047a876704dc927b8960
+sourceHash: 020fd247d0107a7ac11ce9c6fc64b9d1c953f625
 ---
 
 Panduan ini menunjukkan cara mengetahui mengapa sebuah agen tidak menghasilkan run.
@@ -13,13 +13,13 @@ Periksa dari atas ke bawah: run agen itu sendiri terlebih dahulu, lalu backend-n
 
 **Pengaturan → Ruang kerja → Agen** → pilih agen → **Log**.
 
-Setiap run menampilkan lencana status, durasi ("Berjalan…" saat masih berlangsung), waktu mulai dan penyelesaiannya, PID-nya, dan adapter yang dipakainya. **Lihat** membuka aliran peristiwa mentah run tersebut. **Berhenti** mematikan proses yang sedang berjalan dan menandai run itu "Dihentikan oleh pengguna"; **Hentikan yang berjalan** di header melakukan hal yang sama untuk setiap run agen tersebut yang sedang berlangsung.
+Setiap run menampilkan lencana status, durasi ("Berjalan…" saat masih berlangsung), waktu mulai dan penyelesaiannya, PID-nya, dan adapter yang dipakainya. **Lihat** membuka aliran peristiwa mentah run tersebut. **Berhenti** mematikan proses yang sedang berjalan dan menandai run itu "Dihentikan oleh pengguna"; **Hentikan yang berjalan** di header melakukan hal yang sama untuk setiap run agen tersebut yang sedang berlangsung di ruang kerja ini. Anda hanya dapat melihat dan menghentikan run agen yang sedang berlangsung di ruang kerja tempat Anda menjadi anggota; pemilik server melihat dan menghentikan semuanya.
 
 Bacalah seperti ini:
 
 - **Tidak ada run sama sekali** — pengiriman tidak pernah terjadi. Sebutan di composer adalah `@` ditambah karakter kata (huruf, angka, garis bawah). Resolusinya adalah pencocokan persis atau awalan pada nama agen, sehingga `@code-reviewer` diuraikan sebagai `code` dan tetap dapat membangunkan agen bernama `code-reviewer`. Nama yang mengandung spasi tidak dapat disebutkan sebagai satu token. Lalu lanjut ke langkah 2.
-- **Run yang langsung berakhir dengan galat** — buka **Lihat**. Kegagalan meluncurkan backend muncul di sini sebagai galat proses.
-- **Run yang macet pada "Berjalan…"** — hentikan, lalu periksa **Batas waktu diam** agen di tab Pengaturan. Batas waktu yang tidak diatur menggunakan default per mode.
+- **Run yang langsung berakhir dengan galat** — buka **Lihat**. Kegagalan meluncurkan backend muncul di sini sebagai galat proses. "Server ini tidak memiliki sandbox, sehingga hanya pemiliknya yang dapat menjalankan agen di sini." berarti mesin server tidak memiliki sandbox OS dan Anda bukan pemiliknya; lihat [Konfigurasi kebijakan sandbox](/id-ID/panduan-pengguna/panduan-praktis/kebijakan-sandbox/#run-agen-saya-ditolak-dengan-server-ini-tidak-memiliki-sandbox).
+- **Run yang macet pada "Berjalan…"** — hentikan, lalu periksa **Batas waktu diam (menit)** agen di tab **Pengaturan**. Batas waktu yang tidak diatur menggunakan default per mode.
 - **Run yang selesai tanpa keluaran berguna** — status log run tetap `completed` untuk run yang berakhir tanpa hasil kerja yang dideklarasikannya; sinyal yang jujur adalah teks ringkasan, bukan lencana.
 
 Tab Log tidak menampilkan biaya. Untuk pengeluaran, gunakan tabel per agen di **Observabilitas → Wawasan**.
@@ -67,11 +67,11 @@ Dua hal yang perlu diketahui ketika sebuah perubahan "berhasil di pengujian teta
 - **Privasi** — apakah konten diff mentah boleh diteruskan ke model agen dan apakah laporan kerusakan dikirim.
 
 :::caution[Bagian ini melaporkan host, dan kontrolnya ada di sisi klien]
-Deteksi dan penegakan kini sejalan: di tempat detektor melaporkan backend native, run agen di host itu benar-benar dibungkus olehnya. Tetapi detektor adalah satu-satunya hal yang aktif di bagian ini. Tombol utama dan pemilih backend adalah preferensi yang disimpan di perangkat Anda dan server tidak membaca satu pun darinya — sakelar milik server sendiri adalah `--sandbox` (`on` secara default, `off` untuk tidak ikut).
+Deteksi dan penegakan sejalan: di tempat detektor melaporkan backend native, run agen di host itu benar-benar dibungkus olehnya. Tetapi detektor adalah satu-satunya hal yang aktif di bagian ini. Tombol utama dan pemilih backend adalah preferensi yang disimpan di perangkat Anda dan server tidak membaca satu pun darinya — sakelar milik server sendiri adalah `--sandbox` (`on` secara default, `off` untuk tidak ikut).
 
-Jadi peringatan di sini layak ditindaklanjuti, tetapi biasanya bukan penyebab agen gagal. Untuk memastikan kondisi server, bacalah log startup-nya: log mencetak `agent sandbox ON` dengan catatan backend, `no OS-native agent sandbox on this host` dengan petunjuk instalasi, atau `agent sandbox DISABLED by --sandbox off`. `GET /healthz` tidak memuat kolom sandbox.
+Jadi peringatan di sini layak ditindaklanjuti. Pada host tanpa backend, inilah alasan orang selain pemilik server tidak dapat menjalankan agen sama sekali. Untuk memastikan kondisi server, bacalah log startup-nya: log mencetak `agent sandbox ON` dengan catatan backend, `no OS-native agent sandbox on this host` dengan petunjuk instalasi, atau `agent sandbox DISABLED by --sandbox off`, dan baris exposure-nya memuat `sandbox=native`, `sandbox=unavailable` atau `sandbox=off`. `GET /healthz` tidak memuat kolom sandbox.
 
-Di tempat yang tidak ada backend — Windows selalu, Linux atau WSL2 tanpa `bwrap` dan `socat` — run **tidak** di-sandbox dan yang membatasinya adalah checkout milik percakapan itu sendiri, token forge hanya-baca dan gateway push, pagar pengaman tindakan, sanitasi lingkungan, dan permukaan alat yang diizinkan modenya.
+Di tempat yang tidak ada backend (Windows selalu, Linux atau WSL2 tanpa `bwrap` dan `socat`), hanya run yang dipertanggungjawabkan kepada pemilik server yang dimulai, dan run milik orang lain ditolak. Run yang dimulai di sana, dan setiap run di bawah `--sandbox off`, **tidak** di-sandbox, dan yang membatasinya adalah checkout milik percakapan itu sendiri, token forge hanya-baca dan gateway push, pagar pengaman tindakan, sanitasi lingkungan, dan permukaan alat yang diizinkan modenya.
 :::
 
 ## Kegagalan umum

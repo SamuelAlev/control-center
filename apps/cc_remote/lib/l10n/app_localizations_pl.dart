@@ -250,10 +250,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get allCaughtUp => 'Wszystko na bieżąco';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Na serwerze nie połączono konta forge, więc pull requesty nie mogą być jeszcze przypisane do Ciebie.';
-
-  @override
   String get inboxNothingWaiting =>
       'Nic nie jest zablokowane i żaden pull request na Ciebie nie czeka.';
 
@@ -461,33 +457,6 @@ class AppLocalizationsPl extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names są za duże, aby wysłać je stąd przez przekaźnik.',
-      one: '$names jest za duży, aby wysłać go stąd przez przekaźnik.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Nie udało się przesłać załącznika. Spróbuj ponownie.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count załączników nie zostało przesłanych i zostało pominiętych.',
-      one: '1 załącznik nie został przesłany i został pominięty.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Współpracownik';
 
   @override
@@ -623,36 +592,6 @@ class AppLocalizationsPl extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Na serwerze nie połączono żadnego forge, więc nie można pobrać pull requestów. Połącz go w aplikacji na komputer.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Nie udało się odczytać $count repo.',
-      one: 'Nie udało się odczytać 1 repo.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Nieczytelne: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle =>
-      'Instalacja GitHub App została wstrzymana';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Wyświetlane są ostatnio znane dane dla $names. Wznów instalację na GitHubie.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Instalacja GitHub App została wstrzymana. Wyświetlane są ostatnio znane dane dla $names. Wznów instalację na GitHubie.';
-  }
 
   @override
   String get draft => 'Szkic';
@@ -1313,7 +1252,8 @@ class AppLocalizationsPl extends AppLocalizations {
   String get permissionPrCreate => 'Tworzenie pull requestów';
 
   @override
-  String get permissionPrPublish => 'Publikowanie pull requestów';
+  String get permissionPrPublish =>
+      'Aktualizowanie lub scalanie pull requestów';
 
   @override
   String get permissionVendorSyncWrite => 'Zapis synchronizacji dostawcy';
@@ -1357,7 +1297,7 @@ class AppLocalizationsPl extends AppLocalizations {
   String get permissionBuiltInDefault => 'Wbudowana wartość domyślna';
 
   @override
-  String get permissionRemembered => 'Zapamiętana zgoda';
+  String get permissionRemembered => 'Zatwierdzenie czasowe';
 
   @override
   String get permissionSource => 'Źródło';
@@ -1379,10 +1319,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Ustaw tutaj regułę';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Cofnij regułę zakresową lub zapamiętaną, zanim ustawisz ogólną regułę dla tego działania.';
 
   @override
   String get permissionConfirmRevoke => 'Potwierdź cofnięcie';
@@ -1435,6 +1371,15 @@ class AppLocalizationsPl extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Polecenia: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Narzędzia: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Bez skutku, gdy to działanie ma ustawienie «Odmów»';
 
   @override
   String permissionMaxCount(String count) {
@@ -1895,15 +1840,6 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Aktualizacja pull requestu';
-
-  @override
-  String get activityTicket => 'Aktualizacja zgłoszenia';
-
-  @override
-  String get activityMeeting => 'Aktualizacja spotkania';
-
-  @override
-  String get activityCalendar => 'Połączenie z kalendarzem';
 
   @override
   String get activityRig => 'Aktualizacja środowiska izolowanego';
@@ -2595,8 +2531,7 @@ class AppLocalizationsPl extends AppLocalizations {
       'Oczekiwanie na autoryzację w przeglądarce…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Wpisz kod wyświetlony w przeglądarce';
+  String get credentialsConnectCodePrompt => 'Kod potwierdzenia';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2666,10 +2601,6 @@ class AppLocalizationsPl extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'Wklej osobisty token dostępu';
 
   @override
-  String get credentialsHostManaged =>
-      'To połączenie pochodzi z aplikacji serwera lub jego środowiska. Tylko właściciel serwera może je tam zmienić; nadal możesz dodać własny token.';
-
-  @override
   String get credentialsStopWatching => 'Przestań obserwować';
 
   @override
@@ -2688,4 +2619,205 @@ class AppLocalizationsPl extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Uruchamiaj polecenia na hoście';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Twoje logowanie do $provider wygasło. Zaloguj się ponownie.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Wstrzymane: zmieniła się usługa logowania tego obszaru roboczego. Zadziała ponownie, gdy usługa wróci.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'Nie można teraz połączyć się z $provider. Ponawianie.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Tylko ten obszar roboczy';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Wszystkie obszary robocze';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Usunąć zapisane dane logowania z tego obszaru roboczego? Inne obszary robocze zachowają swoje.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Usunąć zapisane dane logowania ze wszystkich obszarów roboczych, które je współdzielą?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Serwer został uruchomiony ponownie. Zacznij logowanie od nowa.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Zainstaluj GitHub App w $owner, aby automatyzacja dotarła do $names. Dotknij, aby otworzyć GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'GitHub App nie jest zainstalowana w $owner, więc automatyzacja nie dociera do $names. Poproś administratora obszaru roboczego o jej instalację.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Dodaj $names do repozytoriów GitHub App. Dotknij, aby otworzyć GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App jeszcze nie widzi $names. Poproś administratora obszaru roboczego o dodanie ich do jej repozytoriów.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Instalacja GitHub App została wstrzymana. Automatyzacja dla $names jest wstrzymana, dopóki właściciel konta nie wznowi instalacji w GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'Osoba odpowiedzialna za automatyzację tego obszaru roboczego nie widzi już $names, więc nic nie działa tam w jej imieniu.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'Osoba odpowiedzialna za automatyzację tego obszaru roboczego nie jest zalogowana do forge, więc automatyzacja dla $names czeka, aż się zaloguje.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Nie udało się sprawdzić dostępu do $names. Ponawianie.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Zaloguj się do $forge, aby zobaczyć pull requesty z kolejnych repozytoriów: $count',
+      one:
+          'Zaloguj się do $forge, aby zobaczyć pull requesty z jeszcze 1 repozytorium',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ukryte repozytoria, których Twoje konto $forge nie widzi: $count',
+      one: '1 repozytorium jest ukryte, bo Twoje konto $forge go nie widzi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Ukryte repozytoria, do których nie masz dostępu w tym obszarze roboczym: $count',
+      one:
+          '1 repozytorium jest ukryte, bo nie masz do niego dostępu w tym obszarze roboczym',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sprawdzanie Twojego dostępu do kolejnych repozytoriów: $count…',
+      one: 'Sprawdzanie Twojego dostępu do jeszcze 1 repozytorium…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'E-mail konta Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Wpisz adres e-mail swojego konta Atlassian.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Token API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Żaden token automatyzacji nie może odczytać $names, więc praca w tle jest tam wstrzymana. Administrator może dodać token w Ustawienia → Repozytoria.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Potwierdź w przeglądarce, a następnie wpisz pokazany tam kod.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'To konto jest już połączone z inną osobą na tym serwerze. Zaloguj się innym kontem.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'Nie udało się połączyć z $provider, aby sprawdzić ten token. Spróbuj ponownie za chwilę.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider nie akceptuje tego tokenu. Sprawdź, czy skopiowano go w całości i czy nie został unieważniony.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'To nie jest token osobisty. Wklej osobisty token dostępu z własnego konta $provider, a nie token projektu, grupy, obszaru roboczego ani bota.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Temu tokenowi brakuje zakresu $scope, który jest potrzebny do przeglądania i komentowania. Utwórz token, który go ma.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Ten token wygasł. Utwórz nowy i wklej go tutaj.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Zbyt wiele żądań w tej chwili. Poczekaj chwilę i spróbuj ponownie.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'Logowanie zostało anulowane lub odrzucone. Rozpocznij je ponownie, gdy będziesz gotowy.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'To logowanie nie jest już otwarte: zostało anulowane, wykorzystane lub zastąpione. Rozpocznij je ponownie.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Administrator obszaru roboczego musi cię zaprosić albo właściciel serwera może utworzyć dla ciebie obszar roboczy.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos wskazuje teraz na inne repozytorium na $forge. Połącz je ponownie w aplikacji na komputer lub w przeglądarce, aby nadal z niego korzystać.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos wskazuje teraz na inne repozytorium na $forge. Administrator obszaru roboczego musi połączyć je ponownie, zanim będzie można z niego znowu korzystać.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenty potrzebują piaskownicy na tym serwerze';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Ten serwer nie ma piaskownicy, więc agenty mogą tu uruchamiać tylko jego właściciel. Właściciel może zainstalować piaskownicę albo wyłączyć piaskownicowanie dla wszystkich.';
 }

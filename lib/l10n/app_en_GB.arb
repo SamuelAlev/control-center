@@ -4,15 +4,6 @@
   "commandPaletteOrgMembers": "Organisation members",
   "commandPaletteBrowseTeamDesc": "View all organisation members",
   "ownerOrganization": "Owner / Organisation",
-  "repoAccessNoticeBody": "The server's GitHub credential can't see {repos}. If a repository belongs to an organisation, install the GitHub App there or connect a token that has access.",
-  "@repoAccessNoticeBody": {
-    "description": "Body of the notice listing repos the server's forge credential cannot access",
-    "placeholders": {
-      "repos": {
-        "type": "String"
-      }
-    }
-  },
   "skillSourceRemoveConfirmBody": "Installed skills stay installed. Only the repository catalogue is removed.",
   "meetingTemplateInstructionsHint": "How should the AI structure and emphasise these notes?",
   "focusModeFloat": "Minimise to bar",
@@ -91,14 +82,11 @@
   "noProfilePrsMatchSearchHint": "Try another title or pull request number",
   "windowMinimize": "Minimise",
   "windowMaximize": "Maximise",
-  "signInErrorInstallationBoundElsewhere": "This GitHub App installation is already authorised for another Control Center server.",
-  "githubInstallationsDescription": "Where the GitHub App is installed, among the accounts this workspace's repositories belong to. An organisation's installation works only on servers its admins authorise.",
-  "githubAuthorizeServer": "Authorise this server",
-  "githubInstallationAuthorized": "Authorised",
-  "githubInstallationNotAuthorized": "Not authorised",
   "connectModeCustomHint": "Your organisation runs its own Connect server. Sign-ins go there instead of to Control Center's.",
   "connectInstallIdHint": "Identifies this server to Connect. Give it to an organisation owner or Connect operator who asks for it.",
   "providerAppCreateGitHubOrg": "Organisation (optional)",
   "providerAppCreateGitHubOrgHint": "Leave empty to create the app under your own GitHub account. Creating it under an organisation takes an owner of that organisation.",
-  "calendarDeleteConfirmInvite": "It's removed from your calendar only. The organiser and other guests keep it."
+  "calendarDeleteConfirmInvite": "It's removed from your calendar only. The organiser and other guests keep it.",
+  "githubInstallOnAnotherOrganization": "Install on another organisation",
+  "onboardingYouSubtitle": "Your username is how people mention you and how your work is labelled. You can change it and your display name later in Settings → You → Profile."
 }

@@ -2,7 +2,7 @@
 title: Configurer des environnements
 description: Donnez à chaque espace et à chaque pull request sa propre pile en fonctionnement, avec compose, une CLI personnalisée, des processus supervisés ou une application de bureau.
 slug: fr-CA/manuel/guides/environnements
-sourceHash: 6f82eacd39ce12f79fa338eace024bc5880c8b54
+sourceHash: 781077ccf815863a5a925c1dc769c4f9272cb446
 ---
 
 Un **environnement** est la pile en fonctionnement d’un espace : les services dont une branche a besoin, isolés de tous les autres espaces, visibles dans la barre latérale et accessibles aux agents. Les pull requests en ont un aussi, car une PR possède déjà son propre espace.
@@ -11,12 +11,26 @@ Un administrateur de l’espace de travail rédige une **définition** une seule
 
 ## Créer une définition
 
-1. Ouvrez **Paramètres → Espace de travail → Environnements**. Seuls les administrateurs de l’espace de travail peuvent modifier les définitions.
+1. Ouvrez **Paramètres → Espace de travail → Environnements**. Seuls les administrateurs de l’espace de travail peuvent modifier les définitions, et seul le propriétaire du serveur peut enregistrer celle qui s’exécute sur l’hôte du serveur (voir [Qui peut enregistrer quoi](#qui-peut-enregistrer-quoi)).
 2. Cliquez sur **Nouvelle définition**, puis sur **Définition vierge** ou **Ébaucher depuis le dépôt**. Un brouillon cherche dans le dépôt des fichiers compose, un `Procfile` et des scripts `package.json`, puis vous vérifiez le résultat.
 3. Remplissez le formulaire ou utilisez l’onglet **JSON**. Les exemples de cette page montrent ce JSON.
 4. Cliquez sur **Lancer le test**. Un environnement jetable démarre, Control Center attend qu’il soit prêt, puis le détruit.
 
-Pour conserver une définition dans un dépôt, utilisez **Lier un fichier du dépôt**. Control Center lit le fichier uniquement sur la branche par défaut et n’exécute que la version approuvée par un administrateur. Une version plus récente affiche **Mise à jour disponible** et ne change rien avant d’être approuvée.
+L’enregistrement vérifie une définition de façon stricte. Un champ inconnu, une valeur d’un mauvais type ou un choix mal orthographié est refusé, avec son chemin et le nom valide le plus proche, comme `repos.app.requird: Unknown field. Did you mean "required"?`. Un `$schema` au niveau racine est autorisé.
+
+Pour conserver une définition dans un dépôt, utilisez **Lier un fichier du dépôt**. Control Center lit le fichier uniquement sur la branche par défaut et n’exécute que la version approuvée : par un administrateur de l’espace de travail, ou par le propriétaire du serveur lorsque la définition s’exécute sur l’hôte. Une version plus récente affiche **Mise à jour disponible** et ne change rien avant d’être approuvée.
+
+### Qui peut enregistrer quoi
+
+Une définition d’environnement peut exécuter des commandes sur l’hôte du serveur, sous l’utilisateur du serveur. C’est une décision du propriétaire du serveur, et non un rôle d’espace de travail :
+
+- Une définition **s’exécute sur l’hôte** lorsqu’elle a un placement sur l’hôte, une vérification qui exécute une commande, ou une tâche `provision` ou `archive`. Ces tâches s’exécutent dans l’arbre de travail de l’espace, sur l’hôte, quel que soit le placement.
+- Seul le [propriétaire du serveur](/fr-CA/manuel/concepts/autorisation/#le-propriétaire-du-serveur) peut enregistrer ou approuver une définition qui s’exécute sur l’hôte. Cela comprend l’approbation d’une nouvelle version d’un fichier de dépôt lié. Un administrateur d’espace de travail qui tente de le faire voit « Seul le propriétaire du serveur peut enregistrer ou approuver un environnement qui s’exécute sur l’hôte du serveur. Un administrateur d’espace de travail peut utiliser un environnement qui tourne dans un rig. »
+- Un administrateur d’espace de travail peut enregistrer et approuver une définition qui s’exécute entièrement dans un rig : `"placement": "rig"`, sans commande de vérification ni tâche `provision` ou `archive`.
+- Les membres démarrent, arrêtent et utilisent les environnements dans les deux cas.
+- Une définition qui s’exécute sur l’hôte ne s’exécute qu’après que le **propriétaire actuel** du serveur l’a enregistrée ou approuvée. Le serveur enregistre lui-même cette approbation et la vérifie avant chaque démarrage, chaque vérification, chaque tâche et chaque synchronisation de la tête d’une pull request. Une définition que le propriétaire actuel n’a pas approuvée, comme celle qu’un propriétaire précédent a enregistrée, attend sous sa ligne dans la liste des environnements et dans l’éditeur. Le propriétaire du serveur voit « S’exécute sur ce serveur. Approuvez-le pour qu’il puisse démarrer. » avec **Approuver**, qui l’enregistre sans modification; les autres voient « S’exécute sur ce serveur. Le propriétaire du serveur doit l’approuver avant qu’il puisse démarrer. »
+- Un environnement retenu pour cette approbation affiche « Le propriétaire du serveur n’a pas encore approuvé cet environnement, il ne peut donc pas s’exécuter sur ce serveur. » Le propriétaire du serveur voit plutôt « Vous n’avez pas encore approuvé cet environnement. Il s’exécute sur ce serveur et démarrera une fois sa définition approuvée. » avec **Examiner et approuver**, qui ouvre la définition.
+- Les terminaux de processus d’un environnement, et le terminal qu’ouvre un démarrage lorsqu’il a besoin de vous, s’exécutent sur l’hôte du serveur. Y écrire, les redimensionner ou les fermer exige un accès en écriture à chaque dépôt exposé par l’espace, lu avec votre propre connexion à la forge : la même condition que pour démarrer l’environnement. Les autres n’ont aucun accès à ces terminaux.
 
 ## La plus petite définition
 
@@ -35,7 +49,7 @@ Tout le reste a une valeur par défaut : le fichier compose est détecté, tous 
 
 ## Types de composants
 
-Un environnement est une liste ordonnée de composants. Chacun attend que le précédent soit prêt, sauf si `after` en désigne d’autres, et l’arrêt se fait dans l’ordre inverse. `enabledWhen` conditionne un composant à une option ou à un rôle, par exemple `opt.seed`, `!opt.seed` ou `repo.web`.
+Un environnement est une liste ordonnée de composants. Chacun attend que le précédent soit prêt, sauf si `after` en désigne d’autres, et l’arrêt se fait dans l’ordre inverse. `enabledWhen` conditionne un composant à une option ou à un rôle, par exemple `opt.seed`, `!opt.seed` ou `repo.web`. Un composant dont le rôle est facultatif et absent de l’espace est écarté de la même façon, sans qu’il faille `enabledWhen` : il ne démarre pas et n’a ni `{port.*}` ni `{url.*}`, de sorte qu’un autre composant qui les lit fait échouer le démarrage.
 
 | Type | Qui l’exécute | Usage |
 | --- | --- | --- |
@@ -56,9 +70,11 @@ Les composants `task` prennent une liste `when` :
 | `manual` | À la demande : **Exécuter**, `cc-env run <id>` ou `environment_run_task` |
 | `archive` | Juste avant la destruction de l’arbre de travail |
 
-Une commande donnée sous forme de tableau est un argv : les valeurs d’option ne passent donc jamais par un shell. Une chaîne, ou `script` avec un tableau de lignes, s’exécute sous `bash -lc`. Les paramètres fictifs comme `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` et `{url.<role>}` ne sont développés que dans l’argv. Les commandes shell lisent les mêmes valeurs dans des variables `CC_ENV_*`, comme `$CC_ENV_PORT_WEB`.
+Une tâche qui n’a rien à faire au démarrage affiche **Inactif** et n’apparaît pas dans la liste des étapes affichée pendant le démarrage de l’environnement : une tâche `manual` ou `change`, ou une tâche `create` déjà exécutée.
 
-Chaque commande et chaque terminal d’espace reçoivent aussi `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_REPO_PATH_<ROLE>` et, dans les espaces de PR, `CC_PR_NUMBER` et `CC_PR_IS_FORK`. Avec un composant compose, ils reçoivent également `COMPOSE_PROJECT_NAME` et `COMPOSE_FILE`, si bien que `docker compose exec` dans une tâche atteint le bon projet.
+Une commande donnée sous forme de tableau est un argv : les valeurs d’option ne passent donc jamais par un shell. Une chaîne, ou `script` avec un tableau de lignes, s’exécute sous `bash -lc`. Les paramètres fictifs comme `{name}`, `{branch}`, `{stateDir}`, `{repo.<role>}`, `{port.<key>}`, `{opt.<key>}` et `{url.<role>}` ne sont développés que dans l’argv. Les commandes shell lisent les mêmes valeurs dans des variables `CC_ENV_*`, comme `$CC_ENV_PORT_WEB`. Un paramètre fictif inconnu dans un composant retenu pour cet espace arrête le démarrage avant que quoi que ce soit ne s’exécute.
+
+Chaque commande et chaque terminal d’espace reçoivent aussi `CC_ENV_NAME`, `CC_ENV_STATE_DIR`, `CC_ENV_URL`, `CC_SPACE_ID`, `CC_ENV_REPO_<ROLE>` et, dans les espaces de PR, `CC_PR_NUMBER` et `CC_PR_IS_FORK`. Avec un composant compose, ils reçoivent également `COMPOSE_PROJECT_NAME` et `COMPOSE_FILE`, si bien que `docker compose exec` dans une tâche atteint le bon projet.
 
 ## Rôles et répertoire de travail
 
@@ -77,7 +93,7 @@ Une définition lie des **rôles** aux dépôts de l’espace de travail, ce qui
 - `whenMissing` : ce qui se passe quand l’espace n’a pas le rôle. `addToSpace` ajoute le dépôt sur sa branche par défaut et s’applique par défaut aux rôles `required`. `useSource` transmet votre copie enregistrée, à traiter en lecture seule. `skip` laisse la variable non définie et s’applique par défaut dans les autres cas.
 - Démarrer exige un droit `write` sur un dépôt ancre de l’espace et un accès en lecture à tous les autres dépôts liés.
 
-Une commande s’exécute dans le premier rôle de `repos` que possède l’espace : une définition à un seul dépôt n’a donc pas à le mentionner. Tout composant peut le remplacer avec `"cwd": { "role": "e2e", "path": "packages/ui" }`. Les deux champs sont facultatifs.
+Une commande s’exécute dans le premier rôle déclaré dans `repos`, jamais dans un autre rôle que possède l’espace par hasard : une définition à un seul dépôt n’a donc pas à le mentionner. Tout composant peut le remplacer avec `"cwd": { "role": "e2e", "path": "packages/ui" }`. Les deux champs sont facultatifs. Lorsque le premier rôle pourrait manquer dans un espace, parce qu’il n’est ni `required` ni le seul ancrage, chaque composant doit nommer son rôle.
 
 ## Ports et URL
 
@@ -130,6 +146,8 @@ Une application web et Postgres dans un même fichier compose, avec un `.env` ig
 
 `healthchecks` permet à un service sans contrôle de santé propre de bloquer le composant suivant. Sans cela, un conteneur en marche compte comme prêt, et les migrations peuvent devancer une base de données encore en démarrage.
 
+Chaque démarrage et chaque actualisation lance `up` avec `--remove-orphans`, de sorte qu’un service retiré du fichier compose s’arrête et libère son port. Les images sont construites au démarrage et à l’actualisation, sauf si le composant définit `"build": false`.
+
 ## Exemple : CLI personnalisée
 
 Un outil fictif `acme` qui gère ses conteneurs, ses domaines et son TLS. Control Center fournit `{name}` et apprend tout le reste de `status`. Il ne déduit jamais les noms d’hôte d’un outil et ne modifie jamais `/etc/hosts`.
@@ -147,7 +165,8 @@ Un outil fictif `acme` qui gère ses conteneurs, ses domaines et son TLS. Contro
   "components": [
     { "kind": "cli", "id": "acme",
       "verbs": {
-        "create":  ["acme", "env", "create", "{name}", "--json",
+        "create":  ["acme", "env", "create", "{name}",
+                    { "if": "!interactive", "args": ["--json"] },
                     { "if": "repo.web", "args": ["--web-dir", "{repo.web}"] }],
         "start":   ["acme", "env", "start", "{name}"],
         "stop":    ["acme", "env", "stop", "{name}"],
@@ -161,6 +180,7 @@ Un outil fictif `acme` qui gère ses conteneurs, ses domaines et son TLS. Contro
                     { "if": "follow", "args": ["--follow"] }],
         "exec":    ["acme", "env", "exec", "{name}", "{service}", "{command}"]
       },
+      "interactive": ["create"],
       "keepsDataOnStop": false,
       "statusMap": {
         "state": [
@@ -188,6 +208,10 @@ Un outil fictif `acme` qui gère ses conteneurs, ses domaines et son TLS. Contro
 ```
 
 - `create`, `status` et `destroy` sont obligatoires. Control Center choisit `create` ou `start` d’après le statut qu’il lit. Tout verbe peut être `{ "shell": "…" }` au lieu d’un argv.
+- `interactive` désigne les verbes, parmi `create`, `start` et `reset`, qui peuvent demander ce dont ils ont besoin sur un terminal. Lorsqu’un de ces verbes se termine avec le code 3 pour une personne qui a appuyé sur **Démarrer**, Control Center relance le même verbe dans un onglet de terminal, et le démarrage se poursuit une fois qu’il se termine avec le code 0. Là, la condition `interactive` est vraie et `CC_ENV_INTERACTIVE=1` est défini, de sorte que `{ "if": "!interactive", "args": ["--json"] }` conserve la sortie machine pour le canal non interactif. Un démarrage par un agent, ou un démarrage automatique, n’ouvre jamais de terminal : l’environnement affiche **Action requise** et attend.
+- Un `destroy` qui échoue supprime tout de même l’environnement lorsque `status` annonce ensuite `missing`, de sorte qu’un environnement que l’outil n’a plus peut toujours être supprimé.
+- `list` permet à Control Center de remarquer un environnement que l’outil a perdu. Il n’est marqué disparu que lorsque son nom est absent de `list` et que `status` indique alors `missing`. Une sortie qui ne se lit pas comme une liste ne modifie rien.
+- `{service}` dans `logs` et `exec` doit être un seul mot qui ne commence pas par `-`, et l’un des services que l’outil a signalés en dernier lorsqu’il en a signalé.
 - `statusMap` lit le JSON de l’outil avec des pointeurs JSON, où `*` correspond à chaque élément. Les règles d’état sont ordonnées et la première correspondance l’emporte. Une condition est `path` avec `equals`, ou `any` ou `none` avec `where`.
 - `keepsDataOnStop: false` désactive l’arrêt sur inactivité et ajoute un avertissement de perte de données à **Arrêter**. Utilisez-le quand l’arrêt perd des données.
 - `routing.mode: "tool"` relie les noms d’hôte de l’outil au navigateur (VM) et aux agents. Le domaine doit se terminer par `.test`, `.localhost` ou `.internal`, et une URL signalée hors de ce domaine est ignorée.
@@ -229,8 +253,8 @@ Uniquement des processus et des tâches, sans conteneurs. L’application web tr
 }
 ```
 
-- Chaque processus est un onglet de terminal que vous pouvez ouvrir, lire et dans lequel vous pouvez écrire. Fermer l’onglet ne l’arrête pas.
-- `ready` accepte `http`, `tcp` ou `logMatch`. `restart` vaut `on-failure` (par défaut), `always` ou `never`. `restartOn` redémarre le processus quand un chemin modifié correspond.
+- Chaque processus est un onglet de terminal que vous pouvez ouvrir, lire et dans lequel vous pouvez écrire, si vous avez un accès en écriture à chaque dépôt de l’espace (voir [Qui peut enregistrer quoi](#qui-peut-enregistrer-quoi)). Fermer l’onglet ne l’arrête pas.
+- `ready` accepte `http` (une URL complète), `tcp` (`host:port`) ou `logMatch` (une expression régulière). `restart` vaut `on-failure` (par défaut), `always` ou `never`. `restartOn` redémarre le processus quand un chemin modifié correspond.
 - `options` devient un formulaire sur **Démarrer**, et `agentDefault` s’applique aux exécutions lancées par un agent.
 
 ## Exemple : application de bureau
@@ -251,21 +275,21 @@ Une application de bureau avec une étape de build. Une application fonctionne d
 }
 ```
 
-Une application ne démarre pas avec l’environnement. Quelqu’un clique sur **Lancer**, et `prepare` s’exécute d’abord. **Recompiler et relancer** relance cette paire. Une sortie propre s’affiche comme fermée, un plantage montre les dernières lignes de journal sans redémarrer, un redémarrage du serveur ne la relance jamais, et l’arrêt sur inactivité laisse tranquille une application en marche.
+Une application ne démarre pas avec l’environnement. Quelqu’un clique sur **Lancer**, et `prepare` s’exécute d’abord. **Recompiler et relancer** relance cette paire. `enabledWhen` s’applique à l’application et à sa tâche `prepare`, et **Lancer** est refusé tant que l’un des deux est désactivé. Une application compte comme en marche tant qu’un processus de son groupe de processus tourne, de sorte qu’un lanceur qui démarre l’application puis se termine convient. Si tout a disparu dans les 5 secondes environ suivant **Lancer**, l’application s’affiche en échec avec ses dernières lignes de journal. Ensuite, une sortie propre s’affiche comme fermée et un plantage montre les dernières lignes de journal, sans que l’une ni l’autre ne la redémarre. Un redémarrage du serveur ferme l’application et ne la relance jamais, et l’arrêt sur inactivité laisse tranquille une application en marche.
 
 ### Autorisations et limites des applications de bureau
 
 - Sur macOS, accordez une fois à Control Center **Enregistrement de l’écran** et **Accessibilité** dans Réglages Système. L’hôte du serveur a besoin d’une session graphique : un serveur sans interface refuse de lancer une application.
-- Lancez directement le binaire. `open -a` confie l’application à LaunchServices et elle quitte l’arbre de processus suivi par Control Center. `"window": { "match": { "bundleId": "…" } }` couvre ce cas, mais n’est sûr qu’avec une seule copie en marche.
+- Lancez directement le binaire. `open -a` confie l’application à LaunchServices et elle quitte l’arbre de processus suivi par Control Center, de sorte que l’application s’affiche en échec juste après son lancement.
 - Les fenêtres restent sur un écran. macOS ne capture pas une fenêtre placée hors de tout écran : une application utilisée par un agent est donc visible sur l’écran du serveur. Elle n’a pas besoin du focus.
 - `"isolate": "home"` donne à l’application un répertoire personnel privé via `HOME`, `XDG_*` et `CFFIXED_USER_HOME`, pour que des copies de deux espaces tournent côte à côte. `NSUserDefaults` n’est pas isolé : les préférences Cocoa et `shared_preferences` de Flutter restent partagées entre les copies.
 - `isolate` ne s’applique qu’au processus lancé. Un lanceur de chaîne d’outils comme `flutter run` a besoin du vrai répertoire personnel : associez donc `isolate` à un binaire compilé. Si l’application a son propre réglage, comme `--user-data-dir`, préférez-le.
 - Les agents pilotent la fenêtre avec `app_use`, qui ne peut atteindre que l’arbre de processus de cet environnement. Un agent voit la fenêtre, pas le bureau. Les lancements par un agent passent par la politique d’actions et demandent confirmation par défaut, et la saisie de l’agent s’arrête quand une personne a le contrôle.
 - `"input": "background"` (par défaut) envoie les événements au processus. `"foreground"` active la fenêtre et prend le contrôle du curseur.
 
-## Les tâches d’arbre de travail remplacent les scripts de dépôt
+## Tâches d’arbre de travail
 
-Les tâches `provision` et `archive` remplacent les anciens scripts d’installation et d’archivage par dépôt. **Les scripts existants ont été migrés automatiquement :** chaque dépôt qui en avait possède maintenant une définition à son nom, avec des tâches `setup` et `archive` contenant le même texte de script. L’icône sur la ligne d’un dépôt dans **Paramètres → Espace de travail → Dépôts** l’ouvre. Les exécutions passées restent en historique en lecture seule.
+Les tâches `provision` et `archive` exécutent l’installation et le démontage d’un dépôt avec son arbre de travail. L’icône sur la ligne d’un dépôt dans **Paramètres → Espace de travail → Dépôts** ouvre la définition du dépôt.
 
 Ces tâches suivent l’arbre de travail, pas l’environnement : elles s’exécutent donc dans les espaces où personne ne clique sur **Démarrer** :
 
@@ -292,7 +316,7 @@ Un dépôt sans pile a seulement besoin d’une définition contenant ses tâche
 
 - Il n’y a pas encore d’environnement : ces tâches ne peuvent donc pas utiliser `{name}`, `{port.*}`, `{url.*}`, `{opt.*}` ni `enabledWhen`, et elles ne reçoivent pas le `env` de la définition.
 - Une seule définition peut contenir des tâches `provision` et `archive` pour un dépôt. Les autres peuvent le lier pour tout le reste.
-- `"when": ["provision", "change"]` réinstalle aussi quand un fichier de verrouillage change, ce que les scripts d’installation ne faisaient pas.
+- `"when": ["provision", "change"]` réinstalle aussi quand un fichier de verrouillage change.
 - Une tâche s’exécute pour l’arbre de travail de son rôle `cwd` : une définition multi-dépôts peut donc configurer chaque dépôt séparément.
 - Une exécution de test définit `CC_SCRIPT_TEST=1`. Une nouvelle tentative repart d’un arbre de travail propre : écrivez des tâches qui supportent une réexécution.
 
@@ -312,9 +336,9 @@ cc-env exec <service> -- <cmd>
 cc-env run <task> -- <args>
 ```
 
-Avec un composant compose, un shim `docker` autorise aussi `docker compose` avec `ps`, `logs`, `exec`, `port`, `restart` et `top`. Aucune option ne peut précéder le verbe, `logs` ne peut pas suivre le flux, et `exec` n’accepte que `-T`. Tout le reste se termine avec le code 5 et « not available in Control Center agent runs ».
+Avec un composant compose, un shim `docker` autorise aussi `docker compose` avec `ps`, `logs`, `exec`, `port`, `restart` et `top`, et seulement sur le projet compose propre à cet environnement. Aucune option ne peut précéder le verbe, et chaque verbe accepte une courte liste d’options : `logs` ne peut pas suivre le flux, et `exec` n’accepte que `-T` (ou `--no-tty`). Les options qui dirigent compose vers un autre fichier ou projet (`-f`, `-p`, `--project-directory`, `--env-file`, `--profile`) sont refusées, où qu’elles apparaissent. Tout le reste se termine avec le code 5 et « not available in Control Center agent runs ».
 
-Un dépôt dont les skills appellent son propre outil peut continuer ainsi. Un bloc `agentPassthrough` sur un composant `cli` déclare les commandes que les agents peuvent exécuter :
+Un dépôt dont les skills appellent son propre outil peut continuer ainsi. Un bloc `agentPassthrough` sur un composant `cli` déclare les commandes que les agents peuvent exécuter. Seules les commandes que la définition approuvée déclare passent, et chacune s’exécute sur l’hôte : elle relève donc de la règle **Exécuter des commandes sur l'hôte**, qui demande d’abord par défaut :
 
 ```jsonc
 "agentPassthrough": {
@@ -388,20 +412,26 @@ Les codes de sortie valent pour tous les verbes :
 | Code | Signification |
 | --- | --- |
 | 0 | OK |
-| 3 | Configuration de l’hôte requise. **Exécuter dans le terminal** ouvre un terminal d’espace avec la commande saisie mais non exécutée, puis **Réessayer** relance l’opération. Control Center n’exécute jamais `sudo` |
-| 4 | Authentification requise |
-| 5 | Dépendance indisponible |
+| 3 | Une réponse est attendue dans un terminal, par exemple un mot de passe `sudo`. Un verbe listé dans `interactive` s’exécute à nouveau dans un onglet de terminal pour la personne qui a appuyé sur **Démarrer**. Sinon, **Exécuter dans le terminal** ouvre un terminal d’espace avec la `command` de l’outil saisie mais non exécutée, puis **Réessayer** relance l’opération. Control Center n’exécute jamais `sudo` et ne répond jamais à une invite |
+| 4 | Connexion requise. La `command` de l’outil indique comment |
+| 5 | Quelque chose dont il dépend n’est pas disponible, comme un moteur de conteneurs qui ne tourne pas |
 | Autre | Échec |
+
+Les codes 3, 4 et 5 ne sont pas des échecs. L’environnement affiche **Action requise** et attend, et le démarrage suivant reprend là où celui-ci s’est arrêté. Une tâche qui se termine avec l’un d’eux signifie la même chose.
 
 La progression va sur stderr, en JSON délimité par des sauts de ligne :
 
 ```json
-{"type":"step","label":"Pull images","state":"running"}
-{"type":"note","message":"Hosts entries stayed behind after destroy"}
+{"type":"step","id":"images","label":"Pull images","state":"running"}
+{"type":"log","stream":"stdout","line":"postgres Pulled"}
+{"type":"step","id":"images","label":"Pulled 4 images","state":"done"}
+{"type":"note","level":"warn","message":"Hosts entries stayed behind after destroy"}
 {"type":"error","code":"hosts-missing","message":"Add the hosts entry","hint":"Needs sudo","command":"sudo acme hosts add fix-login"}
 ```
 
-Les lignes `step` s’affichent sous forme de liste d’étapes en direct et les lignes `note` telles quelles. Une dernière ligne de type `error` devient une erreur structurée, avec `command` proposée à la copie. Sinon, Control Center affiche les 20 dernières lignes de stderr. Tout ce qui n’est pas du JSON est du journal ordinaire.
+Lorsqu’un environnement démarre, le panneau liste les composants par lesquels passe le démarrage, chacun avec un spinner, un crochet ou une croix. Une ligne `step` indique ce que fait l’outil à cet instant, et son `label` s’affiche sous la ligne propre à l’outil ; les étapes n’ajoutent jamais de lignes. Le `state` d’une étape est `pending`, `running`, `done` ou `failed`, et une étape sans `state` est en cours. Une étape qui s’annonce à nouveau sous le même `id` (une chaîne ou un nombre, ou le même `label` à défaut) remplace ce qu’elle disait auparavant, de sorte qu’un outil avec un seul spinner peut garder un même `id` et changer le `label`. Sans ids, les étapes se suivent : une nouvelle termine la précédente. Quand la commande se termine, une étape encore en cours se termine comme la commande.
+
+Une ligne `log` transporte une ligne de sortie que l’outil a enveloppée en JSON et se lit comme une sortie ordinaire. Une ligne `note` va dans la sortie de l’exécution, et une ligne avec `"level": "warn"` reste aussi sur l’environnement comme avertissement. Une dernière ligne de type `error` devient une erreur structurée, avec `command` proposée à la copie, et les 12 dernières lignes de sortie s’affichent sous son `message`. Sinon, Control Center affiche les 20 dernières lignes de stderr. Tout ce qui n’est pas du JSON est du journal ordinaire.
 
 ## Voir aussi
 

@@ -1,19 +1,20 @@
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/code_edge_kind.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/features/code_graph/domain/entities/code_symbol.dart';
+import 'package:cc_domain/features/code_graph/domain/ports/code_graph_repo_gate.dart';
 import 'package:cc_domain/features/code_graph/domain/ports/code_graph_tree_port.dart';
 import 'package:cc_domain/features/code_graph/domain/repositories/code_graph_repository.dart';
 import 'package:cc_host/cc_host.dart';
 
 /// Name-level code-graph lookup for the PR-diff symbol popover.
 ///
-/// Workspace-scoped and membership-gated like sibling ops. Partition selection
+/// Workspace-scoped and membership-gated like sibling ops, and only for a
+/// repository [repoGate] admits (linked, with a served checkout). Partition selection
 /// (PR worktree vs linked checkout) mirrors the MCP code-graph tools: fail
 /// open to the base when the worktree partition has no indexed files.
 List<RepoOp> buildCodeGraphOps({
-  required WorkspaceRepository workspaceRepository,
+  required CodeGraphRepoGate repoGate,
   required CodeGraphRepository codeGraph,
   CodeGraphTreePort? tree,
 }) => [
@@ -29,13 +30,9 @@ List<RepoOp> buildCodeGraphOps({
       if (name.isEmpty) {
         throw const ValidationException('name must not be empty');
       }
-      final linked = await workspaceRepository.isRepoLinkedToWorkspace(
-        workspaceId,
-        repoId,
-      );
-      if (!linked) {
+      if (!await repoGate(workspaceId, repoId)) {
         throw const WorkspaceMismatchException(
-          'Repo is not linked to this workspace',
+          'Repo is not linked to this workspace, or its checkout is not served',
         );
       }
       final spaceRaw = ctx.args['space_id'];

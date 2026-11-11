@@ -34,6 +34,11 @@ class EnvironmentDefinitionsTable extends Table {
   /// Who wrote it. Null for a generated definition.
   TextColumn get createdBy => text().nullable()();
 
+  /// The server owner who saved it while it ran something on the host; null
+  /// when it runs nothing there or no owner approved it. Written only by the
+  /// server on save, never from a client's copy.
+  TextColumn get hostApprovedBy => text().nullable()();
+
   /// When it was created.
   DateTimeColumn get createdAt => dateTime()();
 

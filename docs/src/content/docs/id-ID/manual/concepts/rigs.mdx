@@ -2,7 +2,7 @@
 title: Rigs dan lingkungan terisolasi
 description: Mengapa agen mendapat mesin sekali pakai alih-alih komputer Anda — batas isolasi, jalur tampilan, kredensial, port, dan siklus hidupnya.
 slug: id-ID/panduan-pengguna/konsep/rigs
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 **Rig** adalah mesin sekali pakai yang dikemudikan agen secara real time —
@@ -256,6 +256,7 @@ Rig dengan sengaja **bukan** tujuan global. Tampilan langsungnya adalah tab di
 space atau PR tempat pekerjaan berlangsung, bercakupan percakapan itu —
 sehingga tab Anda dan panggilan `browser_use` agen menuju *satu* mesin (satu
 per engine, di permukaan browser).
+Rig yang dibuka di sebuah space adalah mesin milik space itu, dengan worktree space dalam jangkauannya, sehingga ia mengikuti repositori space: akses baca ke space memungkinkan Anda menontonnya, dan izin tulis atas repositori tersebut memungkinkan Anda mengemudikannya. Rig yang tidak dimiliki space mana pun tidak menjangkau worktree, dan setiap anggota ruang kerja dapat memakainya. [Siapa yang dapat menonton dan siapa yang dapat mengemudikan](/id-ID/panduan-pengguna/panduan-praktis/gunakan-rigs/#siapa-yang-dapat-menonton-dan-siapa-yang-dapat-mengemudikan) memuat cakupan masing-masing.
 Apakah rig dapat boot sama sekali adalah properti host, jadi kemampuan, image,
 image kustom per ruang kerja, dan daftar mesin yang berjalan berada di
 **Pengaturan → Server → Rigs**. Mengemudikan lingkungan terisolasi adalah

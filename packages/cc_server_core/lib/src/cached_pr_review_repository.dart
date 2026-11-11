@@ -85,8 +85,8 @@ class CachedPrReviewRepository implements PrReviewRepository {
   /// Live-update bus: when present, every `watch*` stream stays open after its
   /// initial SWR pass and re-validates whenever a [PrChangeSignal] for its PR
   /// arrives (from the open-PR poller, the notifications poller, or a local
-  /// mutation). When null (tests, token-less hosts) the streams keep the
-  /// legacy one-shot cache-then-fetch behavior.
+  /// mutation). When null (tests, token-less hosts) the streams are one-shot:
+  /// cache, then fetch, then complete.
   final PrChangeSignals? _signals;
 
   String get _repoFullName => '$_owner/$_repo';
@@ -222,7 +222,7 @@ class CachedPrReviewRepository implements PrReviewRepository {
 
     // Reactive phase: stay subscribed and re-validate on every change signal
     // for this PR. Without a signals bus (or for kinds that don't react) the
-    // stream completes after the first pass — the legacy SWR behavior.
+    // stream completes after the first pass.
     final signals = _signals;
     if (signals == null || reactToPr == null) {
       return;

@@ -2,7 +2,7 @@
 title: Siklus hidup tiket
 description: Kolom, status, transisi, relasi tiket, dan titik penyempitan mutasi.
 slug: id-ID/panduan-pengguna/referensi/siklus-hidup-tiket
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Status tiket
@@ -117,7 +117,7 @@ Agregat ini mencakup dua urusan pada satu baris. **Cermin** (penyedia, kunci, ju
 | `projectId`              | `String?`                  | Proyek yang memiliki; tidak pernah didorong ke jarak jauh                                  |
 | `assignedAgentId`        | `String?`                  | Id prinsipal penerima tugas (hanya metadata — menugaskan tidak mengirim apa pun)            |
 | `assigneeType`           | `PrincipalType`            | Jenis prinsipal yang ditunjuk `assignedAgentId` — `user` atau `agent` (default `agent`)     |
-| `createdByType`          | `PrincipalType?`           | Jenis prinsipal yang membuat tiket (`user` atau `agent`); null untuk baris lama/sistem     |
+| `createdByType`          | `PrincipalType?`           | Jenis prinsipal yang membuat tiket (`user` atau `agent`); null untuk baris buatan sistem     |
 | `createdById`            | `String?`                  | Id prinsipal pembuat                                                                       |
 | `assignedTeamId`         | `String?`                  | Tim penerima tugas (hanya metadata)                                                        |
 | `delegatedByAgentId`     | `String?`                  | Agen yang mendelegasikan tiket ini                                                         |

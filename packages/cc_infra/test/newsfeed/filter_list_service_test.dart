@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/features/newsfeed/domain/filter_list_update_state.dart';
-import 'package:cc_infra/src/newsfeed/abp_parser.dart';
+import 'package:cc_domain/features/newsfeed/domain/helpers/abp_parser.dart';
 import 'package:cc_infra/src/newsfeed/filter_list_service.dart';
 import 'package:cc_infra/testing/http_client.dart';
 import 'package:rhttp/rhttp.dart';

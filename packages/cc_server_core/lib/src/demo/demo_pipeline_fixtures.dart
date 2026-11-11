@@ -457,7 +457,9 @@ DemoPipelineRunFixture _prReview380() {
 
 /// The run the pipelines page opens when someone asks why a job failed.
 ///
-/// `open_pr` is the bash step that pushes the branch. It is a real node.
+/// `open_pr` is the coder's step that pushes the branch and opens the draft PR
+/// with `open_pull_request`. It is a real node. The run came from a ticket
+/// assignment nobody requested, so the Connect bot refused the push.
 /// Downstream `comment` is skipped. The parallel self-review still finished.
 DemoPipelineRunFixture _ticketHx129Failed() {
   const ticket = 'HX-129';
@@ -472,8 +474,9 @@ DemoPipelineRunFixture _ticketHx129Failed() {
         'research. A silent email failure needs a visible failure state.',
   };
   const pushError =
-      'bash exited 1: gh: authentication required for helix/evalkit '
-      '(no forge credential on this host)';
+      'pr_number: git push was refused: On Control Center Connect the GitHub '
+      'App never pushes, creates a branch or opens a pull request on its own; '
+      'that needs a person who asked for it.';
   return DemoPipelineRunFixture(
     runId: 'demo-pipeline-run-1',
     templateId: 'ticket_to_pr',
@@ -523,28 +526,16 @@ DemoPipelineRunFixture _ticketHx129Failed() {
             'agent/HX-129 as a1c4e90. Tests for the silent-failure path are '
             'in test_export.py.',
       ),
-      _bash(
-        stepId: 'open_pr',
+      _openPr(
+        ticket: ticket,
         startSec: 122,
         durationSec: 4,
-        outputKey: 'pr_number',
-        script:
-            'set -euo pipefail\n'
-            'cd "$path"\n'
-            'git push -u origin "agent/$ticket"\n'
-            'gh pr create --draft --title "Scheduled eval-score exports" '
-            '--head "agent/$ticket"',
-        inputs: {
-          'repo_local_path': path,
-          'ticket_id': ticket,
-          'ticket_title': 'Scheduled eval-score exports for research',
-        },
-        stdout: 'git push -u origin agent/HX-129',
-        stderr:
-            'gh: authentication required for helix/evalkit\n'
-            'no forge credential on this host — the branch was left at '
-            'agent/HX-129',
-        exitCode: 1,
+        transcript:
+            '\$ git push -u origin agent/HX-129\n'
+            'remote: On Control Center Connect the GitHub App only reads and '
+            'comments. Pushing, creating a branch or opening a pull request '
+            'needs a person who asked for it.\n'
+            'error: failed to push some refs to helix/evalkit',
         error: pushError,
       ),
       _review(
@@ -563,8 +554,8 @@ DemoPipelineRunFixture _ticketHx129Failed() {
         'comment',
         startSec: 126,
         reason:
-            'Skipped because Open draft PR failed: no forge credential, so '
-            'there is no PR to comment on.',
+            'Skipped because Open draft PR failed: nobody requested the run, '
+            'so there is no PR to comment on.',
       ),
     ],
   );
@@ -628,23 +619,16 @@ DemoPipelineRunFixture _ticketHx131() {
             'pins 00:00:04 before the boundary and expects both records. '
             'Committed on agent/HX-131.',
       ),
-      _bash(
-        stepId: 'open_pr',
+      _openPr(
+        ticket: ticket,
         startSec: 104,
         durationSec: 9,
-        outputKey: 'pr_number',
-        script:
-            'set -euo pipefail\n'
-            'cd "$path"\n'
-            'git push -u origin "agent/$ticket"\n'
-            'gh pr create --draft --title "Pin the eval budget window" '
-            '--head "agent/$ticket"\n'
-            'gh pr view "agent/$ticket" --json number --jq .number',
-        inputs: {'repo_local_path': path, 'ticket_id': ticket},
-        stdout: '380',
-        stderr:
+        transcript:
+            '\$ git push -u origin agent/HX-131\n'
             "branch 'agent/HX-131' set up to track 'origin/agent/HX-131'.\n"
+            'open_pull_request: opened draft #380 '
             'https://example.invalid/helix/evalkit/pull/380',
+        prNumber: '380',
       ),
       _review(
         stepId: 'self_review',
@@ -963,6 +947,36 @@ DemoPipelineStepFixture _review({
       'inputs': {'pr': pr},
     },
     output: {key: findings},
+  );
+}
+
+/// The `ticket_to_pr` coder step that pushes `agent/<ticket>` through the run
+/// gateway and opens the draft PR with `open_pull_request`.
+DemoPipelineStepFixture _openPr({
+  required String ticket,
+  required int startSec,
+  required int durationSec,
+  required String transcript,
+  String? prNumber,
+  String? error,
+}) {
+  return DemoPipelineStepFixture(
+    stepId: 'open_pr',
+    status: error == null
+        ? PipelineStepStatus.completed
+        : PipelineStepStatus.failed,
+    startSec: startSec,
+    durationSec: durationSec,
+    error: error,
+    input: {
+      'bodyKey': BuiltInBodyKeys.promptAgent,
+      'outputKey': 'pr_number',
+      'prompt':
+          'Push agent/$ticket and open a draft pull request with '
+          'open_pull_request. Reply with ONLY the pull request number.',
+      'inputs': {'ticket_id': ticket},
+    },
+    output: {'output': transcript, 'pr_number': ?prNumber},
   );
 }
 

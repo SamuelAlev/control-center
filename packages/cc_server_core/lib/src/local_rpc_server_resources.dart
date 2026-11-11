@@ -21,6 +21,7 @@ extension _SecureResourceMethods on LocalRpcServer {
             : null;
         if (session == null ||
             session.deviceId != principal.deviceId ||
+            session.userId != principal.userId ||
             !session.expiresAt.isAfter(DateTime.now()) ||
             await _lacksMembershipForUser(
               principal.userId,

@@ -2,7 +2,7 @@
 title: Mluvte s Control Center z GitHub PR
 description: Požádej Control Center o kontrolu, nebo mu polož otázku, přímo z konverzace PR. Bez webhooku a bez veřejné URL.
 slug: cs-CZ/prirucka/navody/konverzace-v-github-pr
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Tenhle návod ukazuje, jak pracovat s Control Center a neopustit GitHub:
@@ -29,23 +29,7 @@ notebook za NAT se chová stejně jako veřejné nasazení.
 
 ## Najdi jméno bota
 
-Zmiň `@usectrl`, vyhrazený účet Control Center na GitHubu. To je výchozí způsob spuštění; požadavek však dál zpracuje dráha GitHubu tvého pracovního prostoru a ta také odpovídá. Přihlašovací údaje k účtu `usectrl` nepotřebuješ.
-
-Funguje také vlastní login aplikace `<appslug>[bot]` i jeho krátký tvar `@appslug`. Volitelný alias u vlastní aplikace zjistíš takto:
-
-1. Jdi do **Nastavení → Server → Jednotné přihlášení** a sjeď na kartu
-   **Aplikace poskytovatelů**
-2. Otevři blok **GitHub** a klikni na **Test**
-3. Až se vyplní, zkopíruj **Přihlášení bota**. Když pořád ukazuje prázdnou
-   nápovědu, login je vždy `<appslug>[bot]`. Napiš ten, nebo krátké `@appslug`
-
-GitHub účty aplikací v doplňování `@` nenabízí, proto musíš alias aplikace napsat nebo zkopírovat. Výchozím způsobem oslovení je vyhrazený uživatel `@usectrl`; `@myapp` i `@myapp[bot]` zůstávají přijímanými aliasy aplikace.
-
-:::note[Vyber výrazné jméno aplikace]
-Krátký tvar se porovnává jako text. Když má nějaký člověk na GitHubu stejný
-slug jako tvoje aplikace, zmínka toho člověka v krátkém tvaru dojde i botovi.
-Plný tvar `@myapp[bot]` je vždy jednoznačný.
-:::
+Zmiň `@usectrl`, vyhrazený účet Control Center na GitHubu. Je to jediný způsob, jak spustit práci: zmínka o vlastním loginu aplikace nedělá nic; požadavek však dál zpracuje dráha GitHubu tvého pracovního prostoru a ta také odpovídá. Přihlašovací údaje k účtu `usectrl` nepotřebuješ.
 
 ## Požádej o kontrolu z GitHubu
 
@@ -115,7 +99,7 @@ cokoli udělá:
 
 - **Účet GitHub musí být na tomto serveru přihlášený.** Shoda se hledá podle
   číselného id účtu na GitHubu, nikdy podle loginu. Přihlas se v **Nastavení →
-  Pracovní prostor → Profil a identita → Hostování kódu**
+  Vy → Profil → Hostování kódu**
 - **Musí jít o člena s rolí pro zápis** (`member`, `admin` nebo `owner`)
   v pracovním prostoru, který ten repozitář propojuje
 - **Musí smět do repozitáře na GitHubu pushovat.** Odpovědi používají token
@@ -137,7 +121,7 @@ který zareaguje první, a druhý mlčí. Totéž platí pro štítek.
 | Věc                  | Chování                                                                                         |
 | -------------------- | ----------------------------------------------------------------------------------------------- |
 | Potvrzení            | 👀 od tvého účtu na komentáři (u štítku na PR), do jedné obchůzky                                 |
-| Odpovědi             | Odeslané ve stopě, ve které se ptalo, se začátkem `**Control Center** (for @your-login):`. U vlastní aplikace je autorem bot aplikace; přes Connect je to tvůj účet, který jedná přes sdílenou App |
+| Odpovědi             | Odeslané ve stopě, ve které se ptalo, se začátkem `**Control Center** (for @your-login):`. Autorem je bot aplikace. Na sdílené aplikaci Connect je odpověď uvnitř vlákna revize napsána z tvého účtu, pokud provozovatel Connectu tuto instalaci neuvedl na seznam |
 | Připsání v prostoru  | Otázka je tvoje; agent běží tvým jménem, podle voliče autonomie prostoru                        |
 | Kontroly             | Zjištění skončí v prostoru kontroly; zveřejnění na GitHub je ruční                              |
 
@@ -157,9 +141,6 @@ offline: komentář, který přijde v té době, chytí další obchůzka.
   přeskočí dřív, než se cokoli zapíše, takže pozdější propojení pořád doručí
 - Jsi na tomto serveru přihlášený ke GitHubu, jsi člen s rolí pro zápis a smíš
   do repozitáře pushovat? Kohokoli jiného server ignoruje bez odpovědi
-- Je u sdílené App od Control Center instalace organizace autorizovaná pro
-  tento server? Viz
-  [Autorizuj tento server pro organizaci](/cs-CZ/prirucka/navody/github-app/#autorizuj-tento-server-pro-organizaci)
 - Pořád nic? Log serveru při selhání jmenuje obchůzku a PR. Hledej
   `pr_conversation:` (obchůzka) a `github_pr_conversation:` (most)
 

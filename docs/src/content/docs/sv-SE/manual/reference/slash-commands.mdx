@@ -2,7 +2,7 @@
 title: Slash-kommandon
 description: Varje kommando du kan skriva i meddelandefältet, vad det gör och var det körs.
 slug: sv-SE/handbok/referens/slash-kommandon
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Kommandon som skrivs i en ytas meddelandefält. De delas in i tre grupper efter var de får effekt, och skillnaden spelar roll: ett **lokalt** kommando färdas aldrig som ett meddelande, så det varken syns i transkriptet eller når en agent.
@@ -137,7 +137,7 @@ Båda har samma form — ta samtalet som det står, ställ en fråga om det, spa
 
 Mallning: `$1`, `$@`, `$@[start:length]` och `$ARGUMENTS`. Frontmatter får sätta `description` (autokomplettering i meddelandefältet). `allowed-tools` och `model` tolkas från filen, men ett anrop av ett användarkommando ersätter för närvarande bara argument i brödtexten — de ändrar inte körningens modell eller verktygsyta.
 
-Ett användarskrivet kommando vinner över en skill med samma namn — det är en genväg som en människa anropade med avsikt, med argument.
+Skills nås bara som `/skill:<name>`, så ett användarskrivet kommando kolliderar aldrig med en skill.
 
 ---
 

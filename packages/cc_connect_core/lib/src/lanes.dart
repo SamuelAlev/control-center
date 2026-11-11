@@ -282,7 +282,9 @@ void validateAuthorizeUrl({
       if (q.containsKey('scope')) {
         throw const AuthorizeUrlRejected('scope');
       }
-      if (single('prompt') != 'consent') {
+      // GitHub documents only `select_account`; it shows the account
+      // picker, so the person sees which GitHub account is being granted.
+      if (single('prompt') != 'select_account') {
         throw const AuthorizeUrlRejected('prompt');
       }
     case ConnectOAuthLane.google:

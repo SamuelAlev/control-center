@@ -1,6 +1,6 @@
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

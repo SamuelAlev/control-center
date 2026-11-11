@@ -8,36 +8,50 @@ import 'package:collection/collection.dart';
 /// A resolved mention stored on a message's metadata.
 ///
 /// PRD 16 §15: `@mentions` resolve to **principals** — humans as well as
-/// agents. [principalType] distinguishes the two; [agentId] (kept for
-/// backward compatibility with every persisted mention written before §15)
-/// carries the mentioned principal's id either way — an agent id when
-/// [principalType] is [PrincipalType.agent], a user id when it is
-/// [PrincipalType.user]. Use [principalId] at call sites that read more
-/// naturally that way.
+/// agents. [principalType] distinguishes the two; [principalId] is an agent
+/// id for [PrincipalType.agent] and a user id for [PrincipalType.user].
 class MessageMention {
-  /// Creates a [MessageMention] from a JSON map. Tolerant of frames written
-  /// before §15: a missing `principalType` defaults to [PrincipalType.agent],
-  /// so every mention persisted so far decodes unchanged.
-  factory MessageMention.fromJson(Map<String, dynamic> json) => MessageMention(
-    agentId: json['agentId'] as String,
-    raw: json['raw'] as String,
-    resolvedVia: json['resolvedVia'] as String?,
-    principalType:
-        PrincipalType.fromWire(json['principalType'] as String?) ??
-        PrincipalType.agent,
-  );
+  /// Creates a [MessageMention] from a JSON map.
+  ///
+  /// Throws [FormatException] when `principalType` is missing or unknown.
+  factory MessageMention.fromJson(Map<String, dynamic> json) {
+    final type = PrincipalType.fromWire(json['principalType'] as String?);
+    if (type == null) {
+      throw FormatException(
+        'MessageMention: unknown principalType ${json['principalType']}',
+      );
+    }
+    return MessageMention(
+      principalId: json['principalId'] as String,
+      raw: json['raw'] as String,
+      resolvedVia: json['resolvedVia'] as String?,
+      principalType: type,
+    );
+  }
 
   /// Creates a const [MessageMention].
   const MessageMention({
-    required this.agentId,
+    required this.principalId,
     required this.raw,
+    required this.principalType,
     this.resolvedVia,
-    this.principalType = PrincipalType.agent,
   });
+
+  /// [MessageMention.fromJson], or null when [json] is not a mention this
+  /// build can read.
+  static MessageMention? tryFromJson(Map<String, dynamic> json) {
+    try {
+      return MessageMention.fromJson(json);
+    } on FormatException {
+      return null;
+    } on TypeError {
+      return null;
+    }
+  }
 
   /// The id of the mentioned principal (an agent id, or — when
   /// [principalType] is [PrincipalType.user] — a human user id).
-  final String agentId;
+  final String principalId;
 
   /// Raw mention text from the message content.
   final String raw;
@@ -45,36 +59,28 @@ class MessageMention {
   /// How the mention was resolved, if recorded.
   final String? resolvedVia;
 
-  /// Which kind of principal [agentId] names. Defaults to
-  /// [PrincipalType.agent] so every mention persisted before PRD 16 §15
-  /// (human mentions did not exist yet) decodes unchanged.
+  /// Which kind of principal [principalId] names.
   final PrincipalType principalType;
 
-  /// Alias for [agentId] that reads correctly at a human-mention call site.
-  String get principalId => agentId;
-
-  /// Serializes this mention to a JSON map. `principalType` is omitted when
-  /// it is the default `agent` — every mention written before §15 round-trips
-  /// byte-for-byte identical.
+  /// Serializes this mention to a JSON map.
   Map<String, dynamic> toJson() => {
-    'agentId': agentId,
+    'principalId': principalId,
+    'principalType': principalType.wireName,
     'raw': raw,
     if (resolvedVia != null) 'resolvedVia': resolvedVia,
-    if (principalType != PrincipalType.agent)
-      'principalType': principalType.wireName,
   };
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is MessageMention &&
-          agentId == other.agentId &&
+          principalId == other.principalId &&
           raw == other.raw &&
           resolvedVia == other.resolvedVia &&
           principalType == other.principalType;
 
   @override
-  int get hashCode => Object.hash(agentId, raw, resolvedVia, principalType);
+  int get hashCode => Object.hash(principalId, raw, resolvedVia, principalType);
 }
 
 /// Rendering type of a space message.
@@ -158,18 +164,13 @@ enum SenderType {
 
   /// Decodes a stored or wire sender type.
   ///
-  /// Rows and peers older than [system] wrote server-authored messages as
-  /// `agent` with sender id [systemSenderId]; those decode to [system]. An
-  /// unknown value never decodes to [user] (a human-authored message is the
-  /// one that can start a run or count as a turn start): it is [system] for
-  /// the system sender id and [agent] otherwise.
-  static SenderType fromWire(String? value, {required String senderId}) =>
-      switch (value) {
-        'user' => SenderType.user,
-        'system' => SenderType.system,
-        _ when senderId == systemSenderId => SenderType.system,
-        _ => SenderType.agent,
-      };
+  /// An unknown value never decodes to [user] (a human-authored message is
+  /// the one that can start a run or count as a turn start): it is [agent].
+  static SenderType fromWire(String? value) => switch (value) {
+    'user' => SenderType.user,
+    'system' => SenderType.system,
+    _ => SenderType.agent,
+  };
 }
 
 /// A lightweight per-response quality signal the user can attach to an agent
@@ -334,12 +335,6 @@ class Message {
   /// message when its run ended undelivered (`metadata['convertedFromSteering']`).
   bool get convertedFromSteering => metadata?['convertedFromSteering'] == true;
 
-  /// Whether this message stands in for older context — either a first-class
-  /// [MessageType.compaction] message or a legacy compacted system
-  /// summary (`system` + `metadata['compacted'] == true`).
-  bool get isContextSummary =>
-      isCompaction || (isSystem && metadata?['compacted'] == true);
-
   /// For a compaction message, the id of the first message kept verbatim after
   /// the compacted span (the "tail start"), or null.
   String? get compactionTailStartId => metadata?['tailStartId'] as String?;
@@ -465,7 +460,8 @@ class Message {
     return raw is Map ? raw.cast<String, dynamic>() : null;
   }
 
-  /// Mentions decoded from `metadata['mentions']`.
+  /// Mentions decoded from `metadata['mentions']`; an entry that does not
+  /// decode is skipped.
   List<MessageMention> get mentions {
     final raw = metadata?['mentions'];
     if (raw is! List) {
@@ -473,7 +469,7 @@ class Message {
     }
     return [
       for (final m in raw)
-        if (m is Map<String, dynamic>) MessageMention.fromJson(m),
+        if (m is Map<String, dynamic>) ?MessageMention.tryFromJson(m),
     ];
   }
 

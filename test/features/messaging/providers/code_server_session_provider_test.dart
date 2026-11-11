@@ -1,5 +1,9 @@
 import 'dart:async';
 
+import 'package:cc_domain/cc_domain.dart'
+    show RpcErrorCodes, ServerOwnerRequiredException;
+import 'package:cc_rpc/cc_rpc.dart' show RemoteRpcException;
+import 'package:control_center/core/infrastructure/provider_retry.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/features/messaging/providers/code_server_session_provider.dart';
 import 'package:control_center/features/settings/providers/editor_preferences_provider.dart';
@@ -123,5 +127,37 @@ void main() {
     await container.pump();
     await Future<void>.delayed(Duration.zero);
     expect(references, 0);
+  });
+  test('a refusal for not being the server owner arrives typed', () async {
+    final host = FakeRpcHost()
+      ..onCall = (op, args) => throw RemoteRpcException(
+        RpcErrorCodes.unauthorized,
+        'Only the server owner can open the editor.',
+        {'kind': 'server_owner_required'},
+      );
+    final container = ProviderContainer(
+      // The app's retry policy: a refusal is final, not retried.
+      retry: appProviderRetry,
+      overrides: [
+        rpcClientProvider.overrideWithValue(host.client()),
+        activeWorkspaceIdProvider.overrideWith(_Workspace.new),
+        editorAutoSaveModeProvider.overrideWith(_AutoSave.new),
+      ],
+    );
+    addTearDown(() async {
+      container.dispose();
+      await host.close();
+    });
+    const request = CodeServerSessionRequest(spaceId: 'space-a');
+    final subscription = container.listen(
+      codeServerSessionProvider(request),
+      (_, _) {},
+    );
+    addTearDown(subscription.close);
+
+    await expectLater(
+      container.read(codeServerSessionProvider(request).future),
+      throwsA(isA<ServerOwnerRequiredException>()),
+    );
   });
 }

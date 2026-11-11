@@ -2,7 +2,7 @@
 title: Statistiche di utilizzo
 description: Cosa registra Control Center quando le statistiche di utilizzo sono attive, chi decide e cosa non viene mai inviato.
 slug: it-IT/manuale/riferimento/statistiche-di-utilizzo
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center può inviare **eventi di utilizzo pseudonimi** a un'istanza di [Umami](https://umami.is). Le statistiche di utilizzo sono **disattivate finché l'operatore del server non le attiva**. L'impostazione appartiene al server e si applica a ogni client connesso: l'app desktop, l'app web, il telefono e il server stesso.
@@ -13,7 +13,7 @@ Le statistiche di utilizzo sono distinte da **Condividi i rapporti di arresto an
 
 | Interruttore | Dove | Effetto |
 | --- | --- | --- |
-| **Condividi le statistiche di utilizzo** | Onboarding (passaggio del sandbox) e **Impostazioni → Privacy**. Solo l'operatore del server può modificarlo; gli altri membri vedono il valore attuale in sola lettura | Per tutto il server. Salvato come `telemetry.usage_analytics` nelle impostazioni del server. Disattivato se non è impostato a `true` |
+| **Condividi le statistiche di utilizzo** | Onboarding (passaggio del sandbox) e **Impostazioni → Server → Diagnostica e privacy**. Solo l'operatore del server può modificarlo; gli altri membri vedono il valore attuale in sola lettura | Per tutto il server. Salvato come `telemetry.usage_analytics` nelle impostazioni del server. Disattivato se non è impostato a `true` |
 | Tipo di build | Automatico | Le build di debug e di profiling non inviano nulla. Scrivono invece ogni evento nel log di debug |
 | `CC_ANALYTICS_DEBUG=1` | Ambiente di `cc_server` o il suo `.env` | Consente alle build di debug e di profiling del server, e di ogni client connesso, di inviare davvero gli eventi, a scopo di test. L'interruttore precedente deve comunque essere attivo |
 | `DO_NOT_TRACK=1` | Ambiente di `cc_server` | Interrompe l'invio da parte del server stesso, qualunque sia il valore dell'interruttore. I client continuano a seguire l'interruttore |

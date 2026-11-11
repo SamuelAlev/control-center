@@ -1,12 +1,12 @@
 import 'package:cc_data/cc_data.dart' show ConnectModeSetting, ConnectStatus;
 import 'package:control_center/features/connect/providers/connect_providers.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/integrations/provider_apps_section.dart';
 import 'package:control_center/features/settings/providers/provider_apps_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../../../../../helpers/settings_contribution.dart';
 import '../../../../../../helpers/test_wrap.dart';
 
 /// The server's own apps apply only under "Use my own apps"; the card offers
@@ -29,7 +29,7 @@ void main() {
           ),
           connectStatusProvider.overrideWith((ref) => status()),
         ],
-        child: testWrap(const ProviderAppsSection()),
+        child: testWrap(const ContributedSection('settings.provider-apps')),
       ),
     );
     await tester.pumpAndSettle();

@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/ports/schema_validator_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
 import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart';
+import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/features/code_graph/domain/services/code_indexer.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_dispatch_port.dart';
 import 'package:cc_domain/features/meetings/domain/repositories/meeting_repository.dart';
@@ -84,6 +85,9 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   required OrchestrationRepository orchestrationRepository,
   required TicketWorkflowService ticketWorkflow,
   required CodeIndexer codeIndexer,
+  // The repositories whose checkouts the server serves: `code.index` reads its
+  // checkout from here by `repo_id`, never from a payload path.
+  required RepoRepository servedRepos,
   required SkillAnalysisPort skillAnalysis,
   required DatabaseBackupPort? databaseBackup,
   required DomainEventBus eventBus,
@@ -236,6 +240,7 @@ ServerPipelineExecutor buildServerPipelineExecutor({
   registerIndexCodeBody(
     registry,
     codeIndexer: codeIndexer,
+    servedRepos: servedRepos,
     runRepository: runRepository,
     stepProcessRegistry: stepProcess,
   );

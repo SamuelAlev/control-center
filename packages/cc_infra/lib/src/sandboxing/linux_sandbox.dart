@@ -5,8 +5,10 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_infra/src/process/child_process.dart';
-import 'package:cc_infra/src/sandboxing/sandbox_config.dart';
+import 'package:cc_infra/src/sandboxing/hidden_roots.dart';
+import 'package:cc_infra/src/sandboxing/host_executables.dart';
 
 /// Wrapping logic for Linux (and WSL2), using `bubblewrap` (`bwrap`) for
 /// filesystem + PID + namespace isolation and `socat` Unix-socket bridges
@@ -107,9 +109,23 @@ abstract final class LinuxSandbox {
       args.add('12');
     }
 
-    for (final p in config.filesystem.allowWrite) {
-      args.addAll(['--bind', p, p]);
+    final hidden = HiddenRoots.of(config);
+    // Paths granted for reading only, so they exist in here (the server's own
+    // agent run client may live under `/opt`, which nothing else binds).
+    // Bound before the writable roots: a path inside one keeps whatever the
+    // binds after it decide, and a hidden one is bound back further down.
+    for (final p in config.filesystem.allowRead) {
+      if (!hidden.covers(p)) {
+        args.addAll(['--ro-bind-try', p, p]);
+      }
     }
+    // Writable roots inside a hidden one are bound after it is masked.
+    for (final p in config.filesystem.allowWrite) {
+      if (!hidden.covers(p)) {
+        args.addAll(['--bind', p, p]);
+      }
+    }
+    args.addAll(hostExecutableBinds(config));
     for (final p in config.filesystem.denyRead) {
       if (FileSystemEntity.isDirectorySync(p)) {
         args.addAll(['--tmpfs', p]);
@@ -117,7 +133,39 @@ abstract final class LinuxSandbox {
         args.addAll(['--ro-bind-try', '/dev/null', p]);
       }
     }
+    // Server-private trees: an empty tmpfs over a directory (it may sit under
+    // the writable `$HOME`), `/dev/null` over a file, then exactly what the
+    // config names inside them bound back. bwrap reads every bind source from
+    // the host's tree, so the mask does not hide the sources.
+    for (final root in hidden.roots) {
+      if (FileSystemEntity.isDirectorySync(root)) {
+        args.addAll(['--tmpfs', root]);
+      } else {
+        args.addAll(['--ro-bind-try', '/dev/null', root]);
+      }
+    }
+    for (final p in hidden.writable) {
+      args.addAll(['--bind-try', p, p]);
+    }
+    for (final p in hidden.readable) {
+      if (!hidden.writable.contains(p)) {
+        args.addAll(['--ro-bind-try', p, p]);
+      }
+    }
     for (final p in config.filesystem.denyWrite) {
+      // Re-binding a hidden or read-denied directory read-only would make it
+      // readable. Both are masked already, and nothing written to the mask
+      // reaches the host.
+      if (hidden.hides(p) || config.filesystem.denyRead.contains(p)) {
+        continue;
+      }
+      // bwrap can only shadow what exists: binding over a missing path
+      // creates it on the host, and an empty `.git/commondir` breaks git.
+      // macOS denies the missing ones too; here they stay creatable.
+      if (FileSystemEntity.typeSync(p, followLinks: false) ==
+          FileSystemEntityType.notFound) {
+        continue;
+      }
       if (FileSystemEntity.isDirectorySync(p)) {
         // A directory cannot be shadowed by /dev/null: bwrap refuses the
         // mount outright ("Can't create file at …: Is a directory") and the
@@ -159,6 +207,15 @@ abstract final class LinuxSandbox {
       }
     }
 
+    // The run's tool dirs (its git signer, its environment shims) sit inside
+    // its writable worktree. Re-bound read-only after every writable bind, so
+    // last-mount-wins keeps them unchangeable.
+    for (final dir in config.policy?.toolDirs ?? const <String>[]) {
+      if (dir.isNotEmpty) {
+        args.addAll(['--ro-bind-try', dir, dir]);
+      }
+    }
+
     // Exec-deny: shadow always-dangerous binaries with /dev/null so they
     // can't be invoked from inside the sandbox.
     for (final exe in config.denyExecutables) {
@@ -172,7 +229,14 @@ abstract final class LinuxSandbox {
     for (final mandatory in findMandatoryDenyPaths(
       config.filesystem.allowWrite,
     )) {
-      if (FileSystemEntity.isDirectorySync(mandatory)) {
+      if (isGitInternal(mandatory)) {
+        // Git inside the sandbox still reads these (an empty config has no
+        // remotes, empty alternates lose objects): unwritable, not gone.
+        // One inside a hidden root stays hidden: re-binding it would show it.
+        if (!hidden.hides(mandatory)) {
+          args.addAll(['--ro-bind-try', mandatory, mandatory]);
+        }
+      } else if (FileSystemEntity.isDirectorySync(mandatory)) {
         // A directory cannot be shadowed by /dev/null — bwrap refuses the
         // mount ("Can't create file at …: Is a directory") and the WHOLE
         // sandbox dies at spawn. A mandatory deny wants the path GONE, and
@@ -198,6 +262,79 @@ abstract final class LinuxSandbox {
     args.addAll(['--', binShell, '-c', innerCommand]);
     return args;
   }
+
+  /// The binds that keep the host's executable directories unchangeable
+  /// (see [FilesystemConfig.hostExecutables]), placed right after the
+  /// writable binds so every later mask still applies inside them.
+  ///
+  /// bwrap has no per-name rule, so a directory is re-bound read-only and its
+  /// existing sub-directories re-bound writable over it: its direct children
+  /// cannot change, the trees below them can. Each directory between the
+  /// writable root and a protected path is bound onto itself, which makes it a
+  /// mount point that cannot be renamed or removed (`EBUSY`). A symlink cannot
+  /// be bound, so the directory holding it is treated like an executable
+  /// directory. bwrap only binds what exists: a missing directory stays
+  /// creatable here (macOS denies it).
+  static List<String> hostExecutableBinds(SandboxConfig config) {
+    final writableRoots = config.filesystem.allowWrite;
+    final protect = hostExecutablesUnder(
+      config.filesystem.hostExecutables,
+      writableRoots,
+    );
+    if (protect.isEmpty) {
+      return const [];
+    }
+    bool exists(String path) => FileSystemEntity.isDirectorySync(path);
+    final readOnlyDirs = <String>{
+      for (final dir in protect.dirs)
+        if (exists(dir) &&
+            FileSystemEntity.typeSync(dir, followLinks: false) !=
+                FileSystemEntityType.link)
+          dir,
+      // Not when the link sits directly in a writable root: that root would
+      // turn read-only as a whole.
+      for (final link in protect.links)
+        if (exists(_parent(link)) && !writableRoots.contains(_parent(link)))
+          _parent(link),
+    };
+    final readOnlyTrees = <String>{
+      for (final root in protect.installRoots)
+        if (FileSystemEntity.typeSync(root) != FileSystemEntityType.notFound)
+          root,
+    };
+    final mountPoints = <String>{
+      for (final path in [...readOnlyDirs, ...readOnlyTrees])
+        ...ancestorsBelowWritableRoot(path, writableRoots),
+    }..removeAll([...readOnlyDirs, ...readOnlyTrees]);
+    final args = <String>[];
+    // Outermost first: a later bind of an ancestor would cover the ones
+    // below it.
+    for (final dir
+        in mountPoints.toList()..sort((a, b) => a.length.compareTo(b.length))) {
+      args.addAll(['--bind', dir, dir]);
+    }
+    for (final dir in readOnlyDirs) {
+      args.addAll(['--ro-bind', dir, dir]);
+      final List<FileSystemEntity> children;
+      try {
+        children = Directory(dir).listSync(followLinks: false);
+      } on FileSystemException {
+        continue;
+      }
+      for (final child in children.whereType<Directory>()) {
+        if (!readOnlyDirs.contains(child.path) &&
+            !mountPoints.contains(child.path)) {
+          args.addAll(['--bind', child.path, child.path]);
+        }
+      }
+    }
+    for (final root in readOnlyTrees) {
+      args.addAll(['--ro-bind', root, root]);
+    }
+    return args;
+  }
+
+  static String _parent(String path) => File(path).parent.path;
 
   /// Returns argv to run [argv] inside a bwrap sandbox, with optional socket
   /// bridges. The caller is responsible for starting the corresponding
@@ -403,9 +540,24 @@ abstract final class LinuxSandbox {
 
   static const List<String> _mandatoryEnvPrefixes = ['.env'];
 
-  static const List<String> _mandatoryDirSegments = [
+  /// The git internals that steer which config, hooks, attributes and
+  /// objects git reads (`SandboxPolicyResolver.dangerousGitPaths`), as path
+  /// endings.
+  static const List<String> _gitInternalSegments = [
     '.git/hooks',
     '.git/config',
+    '.git/config.worktree',
+    '.git/commondir',
+    '.git/info',
+    '.git/objects/info',
+  ];
+
+  /// Whether [path] is one of [_gitInternalSegments].
+  static bool isGitInternal(String path) =>
+      _gitInternalSegments.any((segment) => path.endsWith('/$segment'));
+
+  /// Directory names that must never be writable, matched as path endings.
+  static const List<String> _mandatoryDirSegments = [
     '.vscode',
     '.idea',
     '.claude/commands',
@@ -449,6 +601,10 @@ abstract final class LinuxSandbox {
       final name = entry.uri.pathSegments.isNotEmpty
           ? entry.uri.pathSegments.last
           : entry.path.split('/').last;
+      if (isGitInternal(entry.path)) {
+        hits.add(entry.path);
+        continue;
+      }
       if (entry is File) {
         if (_mandatoryFileNames.contains(name) ||
             _mandatoryEnvPrefixes.any(name.startsWith)) {

@@ -156,7 +156,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get guardrailClassPrCreate => 'Otevřít pull request';
 
   @override
-  String get guardrailClassPrPublish => 'Zveřejnit kontrolu nebo sloučení';
+  String get guardrailClassPrPublish =>
+      'Aktualizovat nebo sloučit pull request';
 
   @override
   String get guardrailClassVendorSyncWrite => 'Zápis do externího trackeru';
@@ -2570,9 +2571,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get activityToggledMcpServer => 'Přepnut server MCP';
 
   @override
-  String get activityUpdatedMcpToken => 'Aktualizován token MCP';
-
-  @override
   String get activitySavedApiKey => 'Uložen API klíč';
 
   @override
@@ -3208,9 +3206,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String deleteConfirmName(String name) {
     return 'Smazat „$name“?';
   }
-
-  @override
-  String get archiveConversation => 'Archivovat konverzaci';
 
   @override
   String get deleteFact => 'Smazat fakt';
@@ -3905,9 +3900,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Sjednotit se vzhledem OS, nebo zvolit pevný režim.';
 
   @override
-  String get mcpAuthToken => 'Autentizační token MCP';
-
-  @override
   String get mcpNotAvailableOnServer =>
       'Ovládání serveru MCP není na připojeném serveru k dispozici.';
 
@@ -4126,9 +4118,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get noSystemFonts => 'Nebyla zjištěna žádná systémová písma.';
-
-  @override
-  String get noTokenSet => 'Žádný token nastaven — přístup je neomezený.';
 
   @override
   String get noWorkingMemory => 'Zatím žádné poznámky pracovní paměti.';
@@ -4618,33 +4607,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String repoAccessNoticeBody(String repos) {
-    return 'Přihlašovací údaje GitHub serveru nevidí $repos. Pokud repozitář patří organizaci, nainstalujte tam GitHub App, nebo připojte token s přístupem.';
-  }
-
-  @override
-  String repoAccessNoticeTitle(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repozitářů není přístupných',
-      many: '$count repozitářů není přístupných',
-      few: '$count repozitáře nejsou přístupné',
-      one: 'Repozitář není přístupný',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get repoAccessNoticeSuspendedTitle =>
-      'Instalace GitHub App je pozastavena';
-
-  @override
-  String repoAccessNoticeSuspendedBody(String repos) {
-    return 'Zobrazují se naposledy známá data pro $repos. Obnovte instalaci na GitHubu, nebo připojte token s přístupem.';
-  }
-
-  @override
   String get repoNoAccessBadge => 'Bez přístupu';
 
   @override
@@ -4763,9 +4725,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get ruleLabel => 'Pravidlo';
-
-  @override
-  String get runCompleted => 'Běh dokončen';
 
   @override
   String get running => 'Běží';
@@ -4929,9 +4888,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get setLabel => 'Nastavit';
-
-  @override
-  String get setToken => 'Nastavit token';
 
   @override
   String get settingsLabel => 'Nastavení';
@@ -5130,9 +5086,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get skillOriginManual => 'Ručně';
 
   @override
-  String get skillOriginRegistry => 'Registr';
-
-  @override
   String get skillOriginRuntimeLocal => 'Lokální runtime';
 
   @override
@@ -5307,10 +5260,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get toggleTheme => 'Přepnout motiv';
-
-  @override
-  String get tokenConfigured =>
-      'Nastaveno — klienti musí tento token předložit.';
 
   @override
   String get topic => 'Téma';
@@ -8913,7 +8862,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get mcpApprovalModeDescription =>
-      'Které akce nástrojů běží bez ptaní. Čtení je vždy povoleno; vyšší úrovně se zeptají.';
+      'Které akce vlastních nástrojů Control Center, volané přes jeho koncový bod MCP nebo jeho agenty, běží bez ptaní. Čtení je vždy povoleno; vyšší úrovně se ptají. Servery uvnitř běhu se řídí zásadou akcí tohoto běhu.';
 
   @override
   String get mcpApprovalAlwaysAsk => 'Vždy se zeptat';
@@ -12448,20 +12397,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsAbout => 'O aplikaci';
 
   @override
-  String get settingsScopeBadgeYou => 'VY';
-
-  @override
-  String get settingsScopeBadgeDevice => 'TOTO ZAŘÍZENÍ';
-
-  @override
-  String get settingsScopeBadgeWorkspace => 'PRACOVNÍ PROSTOR';
-
-  @override
-  String get settingsScopeBadgeServer => 'SERVER';
-
-  @override
   String get settingsProfileDescription =>
-      'Vaše jméno, e-mail a git identita v tomto workspace. Přepnutí workspace přepne tuto vrstvu; handle, přihlášení a zařízení zůstanou na účtu.';
+      'Vaše jméno, e-mail a git identita v tomto pracovním prostoru. Přepnutí pracovního prostoru přepne tuto vrstvu; uživatelské jméno, přihlášení a zařízení zůstávají na vašem účtu v Vy → Profil.';
 
   @override
   String get settingsServerConnectionDescription =>
@@ -12476,48 +12413,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsWorkspaceGeneralDescription =>
-      'Identita, politika a konvence sdílené všemi v tomto pracovním prostoru.';
-
-  @override
-  String get settingsAgentAttributionTitle => 'Připisování autorství commitů';
-
-  @override
-  String get settingsAgentAttributionDescription =>
-      'Zvolte, zda mají commity agentů uvádět Control Center jako spoluautora. Správci pracovního prostoru mohou tuto volbu přepsat pro všechny členy.';
-
-  @override
-  String get settingsAgentCoauthorSection => 'Uvedení agenta jako spoluautora';
-
-  @override
-  String get settingsAgentCoauthorTitle =>
-      'Uvádět Control Center u commitů agentů';
-
-  @override
-  String get settingsAgentCoauthorDescription =>
-      'Autorem i committerem commitů jste vždy vy. Při zapnutí je Control Center (@usectrl) uvedeno jako spoluautor. Při vypnutí commity neuvádějí žádného agenta.';
-
-  @override
-  String get settingsAgentCoauthorWorkspaceOverride =>
-      'Nastavení tohoto pracovního prostoru má přednost před vaší osobní volbou. Vaše preference zůstává uložená, ale tady se neuplatní.';
-
-  @override
-  String get settingsAgentAttributionLoading => 'Načítání nastavení autorství…';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorDescription =>
-      'Zvolte, zda mají commity agentů uvádět Control Center jako spoluautora. Volba pracovního prostoru má přednost před osobní preferencí každého člena.';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorInherit =>
-      'Použít preferenci každého člena';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorAlways =>
-      'Vždy uvádět Control Center';
-
-  @override
-  String get settingsWorkspaceAgentCoauthorNever =>
-      'Nikdy neuvádět Control Center';
+      'Zásady a konvence sdílené všemi v tomto pracovním prostoru.';
 
   @override
   String get settingsWorkspaceMeetingsDescription =>
@@ -12886,9 +12782,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get checkingConnection => 'Kontrola připojení…';
-
-  @override
-  String get fromEnvironment => 'z prostředí';
 
   @override
   String forgeTokenTitle(String forge) {
@@ -13460,14 +13353,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get providerAppsGroupServerDescription =>
-      'Používají ji pracovní prostory, které dědí aplikaci GitHub této instalace. Pracovní prostor s vlastní aplikací ji nastavuje v Pracovní prostor → Obecné.';
+      'Používají pracovní prostory, které se řídí přihlašovacími aplikacemi tohoto serveru. Pracovní prostor s vlastními aplikacemi nastaví svou App v sekci Pracovní prostor → Integrace.';
 
   @override
   String get providerAppsGroupPrConversations => 'Konverzace pull requestů';
 
   @override
   String get providerAppsGroupPrConversationsDescription =>
-      'Jak vývojáři mluví s tímto serverem na GitHubu v děděných workspacích. Workspace s vlastní App má bota v Workspace → Obecné. Funguje bez webhooku a veřejné URL — server polluje.';
+      'Jak mohou vývojáři s tímto serverem komunikovat na GitHubu v pracovních prostorech, které se řídí tímto serverem. Pracovní prostor s vlastními aplikacemi má vlastního bota v sekci Pracovní prostor → Integrace. Funguje bez webhooku nebo veřejné adresy, server se dotazuje sám.';
 
   @override
   String get providerAppBotLogin => 'Přihlášení bota';
@@ -13500,10 +13393,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get portLabel => 'Port';
 
   @override
-  String get mcpNoTokenWarning =>
-      'Bez tokenu může cokoli, co dosáhne tohoto portu, volat každý nástroj.';
-
-  @override
   String get mcpBridgedToolsLabel => 'Nástroje';
 
   @override
@@ -13530,6 +13419,141 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get guardrailClearAllHere => 'Vymazat vše';
+
+  @override
+  String get guardrailFamilyCommands => 'Příkazy';
+
+  @override
+  String get guardrailStandingApproval => 'Schválení na čas';
+
+  @override
+  String guardrailEntryAllow(String what) {
+    return 'Povoleno: $what';
+  }
+
+  @override
+  String guardrailEntryPrompt(String what) {
+    return 'Nejdřív se zeptat: $what';
+  }
+
+  @override
+  String guardrailEntryDeny(String what) {
+    return 'Zakázáno: $what';
+  }
+
+  @override
+  String guardrailCoversBranches(String patterns) {
+    return 'větve $patterns';
+  }
+
+  @override
+  String guardrailCoversPaths(String patterns) {
+    return 'cesty $patterns';
+  }
+
+  @override
+  String guardrailCoversHosts(String patterns) {
+    return 'hostitelé $patterns';
+  }
+
+  @override
+  String guardrailCoversCommands(String patterns) {
+    return 'příkazy $patterns';
+  }
+
+  @override
+  String guardrailCoversTools(String names) {
+    return 'nástroje $names';
+  }
+
+  @override
+  String guardrailCoversCommandPrefix(String prefix) {
+    return 'příkazy začínající na $prefix';
+  }
+
+  @override
+  String guardrailCoversMaxCount(String count) {
+    return 'nejvýše $count najednou';
+  }
+
+  @override
+  String guardrailCoversMaxCents(String amount) {
+    return 'nejvýše $amount centů';
+  }
+
+  @override
+  String get guardrailCoversEverything => 'každá akce tohoto druhu';
+
+  @override
+  String guardrailEntryGivenBy(String name) {
+    return 'od $name';
+  }
+
+  @override
+  String guardrailEntryEnds(String time) {
+    return 'končí $time';
+  }
+
+  @override
+  String get guardrailEntryNoEnd => 'dokud nebude odvoláno';
+
+  @override
+  String guardrailRevokeEntry(String entry) {
+    return 'Odvolat: $entry';
+  }
+
+  @override
+  String get guardrailRevokeFailed => 'Nepodařilo se odvolat. Zkuste to znovu.';
+
+  @override
+  String get guardrailEntryInactive => 'bez účinku, když je nastaveno Zakázat';
+
+  @override
+  String guardrailClassPartlyAllowed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Povoleno v $count případech uvedených níže',
+      many: 'Povoleno v $count případech uvedených níže',
+      few: 'Povoleno v $count případech uvedených níže',
+      one: 'Povoleno v $count případě uvedeném níže',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingFromWorkspace(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count schválení na čas pro celý pracovní prostor se zde také uplatní.',
+      many:
+          '$count schválení na čas pro celý pracovní prostor se zde také uplatní.',
+      few:
+          '$count schválení na čas pro celý pracovní prostor se zde také uplatní.',
+      one:
+          '$count schválení na čas pro celý pracovní prostor se zde také uplatní.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String guardrailStandingInNarrowerScopes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count schválení na čas je nastaveno pro jednotlivé prostory nebo agenty. Vyberte nahoře «Prostor» nebo «Agent», abyste je viděli.',
+      many:
+          '$count schválení na čas je nastaveno pro jednotlivé prostory nebo agenty. Vyberte nahoře «Prostor» nebo «Agent», abyste je viděli.',
+      few:
+          '$count schválení na čas jsou nastavena pro jednotlivé prostory nebo agenty. Vyberte nahoře «Prostor» nebo «Agent», abyste je viděli.',
+      one:
+          '$count schválení na čas je nastaveno pro jeden prostor nebo agenta. Vyberte nahoře «Prostor» nebo «Agent», abyste je viděli.',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get sandboxingCardLabel => 'Sandboxing';
@@ -14354,6 +14378,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Příště, až agent bude potřebovat spustit program z této kopie, se zeptáme znovu.';
 
   @override
+  String get sandboxExecGrantsSearchHint => 'Hledat cesty';
+
+  @override
+  String get sandboxExecGrantsNoMatch =>
+      'Vašemu hledání neodpovídá žádné povolení';
+
+  @override
   String get demoBadgeLabel => 'Demo';
 
   @override
@@ -14715,11 +14746,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get backupTransferUnavailable =>
-      'Toto připojení dosahuje server přes relé, které nepřenáší soubory. Připojte se k serveru přímo a stáhněte nebo nahrajte zálohu.';
+      'Přenos souborů pro toto připojení ještě není nastaven. Pro stažení nebo nahrání zálohy se znovu připojte k serveru.';
 
   @override
   String get backupTransferForbidden =>
-      'Server odmítl. Stažení pracovního prostoru potřebuje roli admin, obnovení potřebuje vlastníka a celý snímek potřebuje operátora instalace.';
+      'Server odmítl. Stažení pracovního prostoru vyžaduje roli admin pracovního prostoru. Obnovení vyžaduje vlastníka serveru, který musí být zároveň vlastníkem tohoto pracovního prostoru. Celý snímek vyžaduje vlastníka serveru.';
 
   @override
   String get backupTransferUnsupported => 'Tento server nemá povrch záloh.';
@@ -15022,33 +15053,8 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vložit obsah schránky z libovolného kontejneru do tohoto zařízení bez dotazu.';
 
   @override
-  String get workspaceGitHubIdentity => 'Identita GitHub';
-
-  @override
-  String get workspaceGitHubIdentityDescription =>
-      'Jak se ověřuje práce s GitHubem na pozadí v tomto pracovním prostoru: aplikací této instalace, nebo vlastní aplikací pracovního prostoru.';
-
-  @override
-  String get workspaceGitHubModeInherit => 'Použít GitHub App této instalace';
-
-  @override
-  String get workspaceGitHubModeApp => 'Použít jinou GitHub App';
-
-  @override
-  String get workspaceGitHubInheritHint =>
-      'Používá GitHub App v Server → Aplikace poskytovatelů.';
-
-  @override
-  String get workspaceGitHubAppHint =>
-      'Bot a identita pollingu tohoto workspace. Členové se na You přihlašují přes tuto App.';
-
-  @override
   String get profileOverlayHint =>
       'Tato pole jste vy v tomto workspace. Prázdná pole zdědí jméno a e-mail účtu. Přepnutí workspace přepne tuto vrstvu.';
-
-  @override
-  String get forgeConnectionsThisWorkspace =>
-      'Přihlaste se nebo vložte token pro tento workspace.';
 
   @override
   String get stackStartNextPart => 'Začít další část';
@@ -15866,6 +15872,17 @@ class AppLocalizationsCs extends AppLocalizations {
       'Server nemohl poskytnout přihlašovací příkaz pro tento účet.';
 
   @override
+  String get claudeAccountSignedIn => 'Přihlášeno';
+
+  @override
+  String get claudeSignInClosesItself =>
+      'Tento dialog se zavře sám, jakmile přihlášení skončí.';
+
+  @override
+  String get claudeSignInClosesItselfAll =>
+      'Tento dialog se zavře sám, jakmile budou přihlášeny všechny účty.';
+
+  @override
   String get transcriptClaudeSignInExpiredTitle =>
       'Přihlášení ke Claude Code vypršelo';
 
@@ -16022,7 +16039,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get environmentHostSetupNeeded => 'Toto je třeba nastavit na serveru';
+  String get environmentInputNeeded => 'Toto je třeba nastavit na serveru';
 
   @override
   String get environmentKindApp => 'Aplikace';
@@ -16627,21 +16644,41 @@ class AppLocalizationsCs extends AppLocalizations {
   String get environmentOpenPanel => 'Otevřít prostředí';
 
   @override
-  String get environmentNeedsSetup => 'Vyžaduje nastavení';
+  String get environmentStatusBlocked => 'Vyžaduje akci';
+
+  @override
+  String get environmentStateInTerminal => 'V terminálu';
+
+  @override
+  String get environmentWaitingInTerminal => 'Čeká na vás v terminálu';
+
+  @override
+  String get environmentOpenTerminal => 'Otevřít terminál';
+
+  @override
+  String get environmentSignInNeeded => 'Je potřeba se přihlásit';
+
+  @override
+  String get environmentDependencyNeeded =>
+      'Něco, co je potřeba, není dostupné';
+
+  @override
+  String get environmentStartTerminalDone =>
+      'Zde hotovo. Prostředí se stále spouští';
 
   @override
   String get environmentContinueInTerminal => 'Pokračovat v terminálu';
 
   @override
-  String get environmentSetupHint =>
+  String get environmentStartTerminalHint =>
       'Nástroj vás potřebuje v terminálu kvůli heslu nebo dotazu. Spouštění po dokončení pokračuje.';
 
   @override
-  String get environmentSetupTabReason =>
+  String get environmentStartTerminalReason =>
       'Tento terminál se otevřel, protože spouštění vás potřebuje';
 
   @override
-  String get environmentSetupTab => 'Nastavení prostředí';
+  String get environmentStartTerminalTab => 'Nastavení prostředí';
 
   @override
   String get environmentsNothingRunning => 'Z této definice nic neběží.';
@@ -16943,23 +16980,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String signInWaitingOwn(String provider) {
-    return 'Schvalte žádost na stránce $provider v prohlížeči. Toto okno samo pozná, až budete hotovi.';
-  }
-
-  @override
-  String signInWaiting(String provider) {
-    return 'Čekání na $provider…';
-  }
-
-  @override
   String get signInFailedTitle => 'Přihlášení nebylo dokončeno';
 
   @override
   String get signInReopenPage => 'Znovu otevřít přihlašovací stránku';
 
   @override
-  String get signInCodePrompt => 'Zadejte kód zobrazený v prohlížeči';
+  String get signInCodePrompt =>
+      'Potvrďte v prohlížeči a poté zadejte zobrazený kód.';
 
   @override
   String get signInCodeMalformed =>
@@ -17002,7 +17030,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get signInErrorStaleRequest =>
-      'Toto přihlášení už není platné. Spusťte ho znovu.';
+      'Toto přihlášení už není otevřené: bylo zrušeno, použito nebo nahrazeno. Spusťte je znovu.';
 
   @override
   String get signInErrorInvalidRequest =>
@@ -17010,7 +17038,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get signInErrorRateLimited =>
-      'Právě teď je příliš mnoho pokusů o přihlášení. Počkejte minutu a zkuste to znovu.';
+      'Právě teď je příliš mnoho požadavků. Počkejte chvilku a zkuste to znovu.';
 
   @override
   String signInErrorStoreFailed(String provider) {
@@ -17041,10 +17069,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String signInErrorNotInstalled(String provider) {
     return 'Aplikace $provider není nainstalovaná tam, kde je potřeba. Nainstalujte ji a zkuste to znovu.';
   }
-
-  @override
-  String get signInErrorInstallationBoundElsewhere =>
-      'Tato instalace aplikace GitHub je už autorizovaná pro jiný server Control Center.';
 
   @override
   String get signInErrorTeamBoundElsewhere =>
@@ -17103,7 +17127,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get githubInstallationsDescription =>
-      'Kde je aplikace GitHub nainstalovaná, mezi účty, kterým patří repozitáře tohoto pracovního prostoru. Instalace organizace funguje jen na serverech, které autorizují její správci.';
+      'Kde je aplikace GitHub nainstalovaná, mezi účty, kterým patří repozitáře tohoto pracovního prostoru.';
 
   @override
   String get githubInstallationsEmpty =>
@@ -17113,21 +17137,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get githubInstallApp => 'Nainstalovat aplikaci GitHub';
 
   @override
-  String get githubAuthorizeServer => 'Autorizovat tento server';
-
-  @override
-  String githubServerAuthorized(String account) {
-    return 'Tento server teď může používat instalaci v $account.';
-  }
-
-  @override
   String get githubInstallationSuspended => 'Pozastaveno';
-
-  @override
-  String get githubInstallationAuthorized => 'Autorizováno';
-
-  @override
-  String get githubInstallationNotAuthorized => 'Neautorizováno';
 
   @override
   String get linearAutomationTitle => 'Automatizace Linear';
@@ -17153,7 +17163,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get connectModeOwnHint =>
-      'Zaregistrujte aplikace GitHub, Google a Linear sami v Nastavení → Server → Jednotné přihlášení a vlastní aplikaci Slack připojte v nastavení každého pracovního prostoru. „Vytvořit moji aplikaci GitHub“ nastaví GitHub jedním krokem.';
+      'Zaregistrujte aplikace GitHub, Google a Linear sami v Nastavení → Server → Jednotné přihlášení a vlastní aplikaci Slack každého pracovního prostoru připojte v Pracovní prostor → Integrace, kde si pracovní prostor může zvolit i vlastní aplikace nebo Connect. „Vytvořit moji GitHub App“ nastaví GitHub jedním krokem.';
 
   @override
   String get connectModeCustom => 'Použít vlastní server Connect';
@@ -17288,7 +17298,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get connectRotateKeyBody =>
-      'Tento server dostane nový klíč a nové ID instalace. Všechna přihlášení provedená přes Connect přestanou fungovat a všichni se musí přihlásit znovu. Přihlášení přes vaše vlastní aplikace to neovlivní.';
+      'Tento server dostane nový klíč a nové ID instalace a staré ID je v Connectu vyřazeno: přihlášení zapečetěná pod ním a starý klíč tam přestanou fungovat, takže se všichni, kdo se přihlásili přes Connect, musí přihlásit znovu. Už vydané tokeny fungují do vypršení platnosti. Přihlášení přes vaše vlastní aplikace nejsou dotčena. Pokud Connect nelze kontaktovat, nic se nezmění a můžete to zkusit znovu.';
 
   @override
   String get connectRotateKeyDone =>
@@ -17422,34 +17432,6 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get workspaceProviderApps => 'Aplikace poskytovatelů';
-
-  @override
-  String get workspaceProviderAppsDescription =>
-      'Které aplikace Google Calendar, Linear a Klipy tento pracovní prostor používá. Ve výchozím stavu používá aplikace tohoto serveru nebo Control Center Connect. Pracovní prostor s vlastní aplikací se k nim nikdy nevrací.';
-
-  @override
-  String get workspaceProviderAppModeInherit => 'Použít aplikaci serveru';
-
-  @override
-  String get workspaceProviderAppModeInheritHint =>
-      'Přihlášení a požadavky používají aplikaci tohoto serveru nebo Control Center Connect.';
-
-  @override
-  String get workspaceProviderAppModeOwn =>
-      'Použít vlastní aplikaci pracovního prostoru';
-
-  @override
-  String get workspaceProviderAppModeOwnHint =>
-      'Používá se jen aplikace tohoto pracovního prostoru. Dokud není kompletní, je tento poskytovatel zde vypnutý a nevrací se k jiné aplikaci.';
-
-  @override
-  String get workspaceProviderAppStatusInherit => 'Aplikace serveru';
-
-  @override
-  String get workspaceProviderAppStatusOwn => 'Vlastní aplikace';
-
-  @override
   String workspaceProviderAppMissingFields(String fields) {
     return 'Stále chybí: $fields. Dokud nejsou vyplněna všechna pole, je tento poskytovatel v tomto pracovním prostoru vypnutý. Nevrací se k aplikaci serveru.';
   }
@@ -17466,22 +17448,115 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyhledávání GIFů v tomto pracovním prostoru používá tento klíč.';
 
   @override
-  String workspaceProviderAppSwitchTitle(String provider) {
-    return 'Přepnout aplikaci $provider?';
+  String get settingsWorkspaceIntegrations => 'Integrace';
+
+  @override
+  String get settingsWorkspaceIntegrationsDescription =>
+      'Hostování kódu, úkoly, kalendář, chat a vyhledávání GIFů v tomto pracovním prostoru a aplikace, přes které se přihlašují.';
+
+  @override
+  String get workspaceConnectDescription =>
+      'Aplikace, které tento pracovní prostor používá pro GitHub, Google Calendar, Linear, Slack a vyhledávání GIFů. Pokud správce nevybere jinak, řídí se tímto serverem.';
+
+  @override
+  String get workspaceConnectModeInherit => 'Stejné jako tento server';
+
+  @override
+  String get workspaceConnectInheritHosted =>
+      'Tento server používá aplikace Control Center.';
+
+  @override
+  String workspaceConnectInheritCustom(String url) {
+    return 'Tento server používá server Connect na adrese $url.';
   }
 
   @override
-  String workspaceProviderAppSwitchToOwnBody(String provider) {
-    return 'Všichni, kdo jsou v tomto pracovním prostoru připojeni k $provider přes aplikaci serveru, se musí znovu přihlásit aplikací pracovního prostoru.';
+  String get workspaceConnectInheritOwn =>
+      'Tento server používá vlastní aplikace.';
+
+  @override
+  String get workspaceConnectInheritUnset =>
+      'Vlastník serveru ještě nevybral, takže platí vlastní aplikace serveru.';
+
+  @override
+  String get workspaceConnectOwnHint =>
+      'Používají se pouze aplikace tohoto pracovního prostoru. Přidejte každou z nich níže u jejího poskytovatele. Poskytovatel bez vlastní aplikace je zde vypnutý; místo něj se nepoužijí aplikace tohoto serveru ani Connect.';
+
+  @override
+  String get workspaceConnectCustomUrlHint =>
+      'Pouze HTTPS. Adresy v privátní nebo místní síti jsou odmítnuty.';
+
+  @override
+  String get workspaceConnectLocked =>
+      'CC_CONNECT_URL v prostředí tohoto serveru určuje, kam přihlášení směřují, takže tento pracovní prostor nemůže zvolit vlastní Connect. Může se řídit tímto serverem nebo používat vlastní aplikace.';
+
+  @override
+  String get workspaceConnectSwitchTitle =>
+      'Přepnout přihlašovací aplikace tohoto pracovního prostoru?';
+
+  @override
+  String get workspaceConnectSwitchBody =>
+      'Všichni v tomto pracovním prostoru se musí znovu přihlásit do GitHubu, Linearu a Google Calendar přes nové aplikace. Přihlášení provedená přes současné aplikace zde přestanou fungovat.';
+
+  @override
+  String get workspaceConnectSwitchAction => 'Přepnout aplikace';
+
+  @override
+  String get workspaceConnectLanesDescription =>
+      'Řídí se výběrem výše. Poskytovatel se nikdy nevrací k jiné aplikaci.';
+
+  @override
+  String get workspaceConnectLaneWorkspaceOwn => 'Aplikace pracovního prostoru';
+
+  @override
+  String get workspaceConnectLaneServerOwn => 'Aplikace serveru';
+
+  @override
+  String get workspaceGitHubAppTitle => 'GitHub App';
+
+  @override
+  String get workspaceGitHubAppOwnDescription =>
+      'Vlastní App tohoto pracovního prostoru jedná za jeho repozitáře a přihlašuje členy. Nikdy se nevrací k App tohoto serveru ani ke Connectu.';
+
+  @override
+  String get workspaceGitHubAppSharedDescription =>
+      'Tento pracovní prostor používá GitHub App, kterou poskytují jeho přihlašovací aplikace. Nainstalujte ji na účty, kterým patří vaše repozitáře.';
+
+  @override
+  String get workspaceGitHubAppActingTitle => 'Jedná za tento pracovní prostor';
+
+  @override
+  String get workspaceGitHubAppActingDescription =>
+      'Bot App komentuje, kontroluje a hlasuje v pull requestech v repozitářích tohoto pracovního prostoru.';
+
+  @override
+  String workspaceOwnAppTitle(String provider) {
+    return 'Aplikace $provider';
   }
 
   @override
-  String workspaceProviderAppSwitchToServerBody(String provider) {
-    return 'Tím se smažou přihlašovací údaje $provider pracovního prostoru. Všichni připojení přes aplikaci pracovního prostoru se musí znovu přihlásit.';
+  String workspaceOwnAppDescription(String provider) {
+    return 'Přihlášení a požadavky $provider v tomto pracovním prostoru používají pouze tuto aplikaci.';
   }
 
   @override
-  String get workspaceProviderAppSwitchAction => 'Přepnout aplikaci';
+  String get workspaceGifsTitle => 'GIFy';
+
+  @override
+  String get workspaceGifsSourceWorkspaceOwn =>
+      'Vyhledávání GIFů používá klíč Klipy tohoto pracovního prostoru.';
+
+  @override
+  String get workspaceGifsSourceServerOwn =>
+      'Vyhledávání GIFů používá klíč Klipy tohoto serveru.';
+
+  @override
+  String get workspaceGifsSourceConnect =>
+      'Vyhledávání GIFů běží přes Control Center Connect.';
+
+  @override
+  String get workspaceGifsSourceOff =>
+      'Vyhledávání GIFů je v tomto pracovním prostoru vypnuté.';
 
   @override
   String openOnForge(String forge) {
@@ -17499,7 +17574,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get connectForgeHint =>
-      'Připojte GitHub, GitLab nebo Bitbucket v Nastavení → Pracovní prostor → Profil a identita → Hostování kódu';
+      'Připojte GitHub, GitLab nebo Bitbucket v Nastavení → Vy → Profil';
 
   @override
   String get addForgeRepoPrompt =>
@@ -17516,4 +17591,1137 @@ class AppLocalizationsCs extends AppLocalizations {
   String composePrForgeNotConnected(String forge) {
     return 'Připojte $forge, abyste v tomto repozitáři mohli otevřít pull request';
   }
+
+  @override
+  String connectionNeedsSignInAs(String provider, String account) {
+    return 'Vaše přihlášení k $provider jako $account vypršelo. Přihlaste se znovu.';
+  }
+
+  @override
+  String get connectionPaused =>
+      'Pozastaveno: přihlašovací služba tohoto pracovního prostoru se změnila';
+
+  @override
+  String connectionUnreachable(String provider) {
+    return '$provider teď není dostupný. Zkouší se znovu.';
+  }
+
+  @override
+  String get forgeSignInBannerPausedBody =>
+      'Vaše přihlášení zůstává zachované a znovu začne fungovat, jakmile bude služba zpět. Správce pracovního prostoru může nastavení přihlášení zkontrolovat v Integracích.';
+
+  @override
+  String get signInErrorAttemptUnknown =>
+      'Server se restartoval. Začněte přihlášení znovu.';
+
+  @override
+  String signInUnavailableNotConfigured(String provider) {
+    return 'Přihlášení přes $provider není pro tento pracovní prostor nastavené.';
+  }
+
+  @override
+  String signInUnavailableMisconfigured(String provider, String error) {
+    return 'Přihlášení přes $provider je nastavené chybně: $error';
+  }
+
+  @override
+  String signInUnavailableOwnAppMissing(String provider) {
+    return 'Tento pracovní prostor používá vlastní aplikace, ale nemá aplikaci pro $provider.';
+  }
+
+  @override
+  String signInUnavailableConnectUnprovisioned(String provider) {
+    return 'Tato verze nedokáže ověřit Control Center Connect, proto je přihlášení přes $provider vypnuté.';
+  }
+
+  @override
+  String get signInUnavailableConnectPinsPending =>
+      'Přihlašovací služba tohoto pracovního prostoru změnila identitu. Správce ji musí potvrdit.';
+
+  @override
+  String get signInUnavailableConnectUnreachable =>
+      'Přihlašovací služba tohoto pracovního prostoru teď není dostupná.';
+
+  @override
+  String get signInUnavailableConnectUrlInvalid =>
+      'Adresa přihlašovací služby tohoto pracovního prostoru chybí nebo je neplatná.';
+
+  @override
+  String get signInUnavailableBlockedByEnvironment =>
+      'Provozovatel serveru přihlašovací službu pevně nastavil, takže volba tohoto pracovního prostoru neplatí.';
+
+  @override
+  String signInUnavailableLaneNotOffered(String provider) {
+    return 'Přihlašovací služba tohoto pracovního prostoru nenabízí $provider.';
+  }
+
+  @override
+  String get signInOpenIntegrations => 'Otevřít integrace';
+
+  @override
+  String get signInOpenServerSettings => 'Otevřít nastavení přihlášení';
+
+  @override
+  String forgeTokenRequiredBody(String provider) {
+    return 'Tato akce běží pod vaším jménem na $provider a nepřidali jste token. Přidejte ho a zkuste to znovu.';
+  }
+
+  @override
+  String disconnectProviderTitle(String provider) {
+    return 'Odpojit $provider?';
+  }
+
+  @override
+  String disconnectProviderBody(String provider) {
+    return 'Abyste mohli pracovat na repozitářích v $provider, budete ho muset připojit znovu.';
+  }
+
+  @override
+  String disconnectScopeWorkspaceBody(String provider) {
+    return 'Tímto odpojíte $provider jen v tomto pracovním prostoru. Ostatní pracovní prostory si ponechají vlastní připojení.';
+  }
+
+  @override
+  String disconnectScopeGlobalBody(String provider) {
+    return 'Tímto odpojíte $provider ve všech pracovních prostorech, které toto připojení sdílejí.';
+  }
+
+  @override
+  String disconnectedFromWorkspace(String provider) {
+    return '$provider odpojen od tohoto pracovního prostoru';
+  }
+
+  @override
+  String disconnectedFromAllWorkspaces(String provider) {
+    return '$provider odpojen od všech pracovních prostorů';
+  }
+
+  @override
+  String repoAccessInstallTitle(String owner) {
+    return 'Nainstalujte GitHub App na $owner';
+  }
+
+  @override
+  String repoAccessInstallBody(String repos) {
+    return 'Automatizace se k $repos nedostane, dokud tam aplikace nebude nainstalovaná.';
+  }
+
+  @override
+  String repoAccessSelectTitle(String repos) {
+    return 'Přidejte $repos mezi repozitáře GitHub App';
+  }
+
+  @override
+  String get repoAccessSelectBody =>
+      'Aplikace je na tomto účtu nainstalovaná, ale tyto repozitáře zatím nevidí.';
+
+  @override
+  String get repoAccessChooseRepos => 'Vybrat repozitáře';
+
+  @override
+  String get repoAccessSuspendedTitle => 'Instalace GitHub App je pozastavena';
+
+  @override
+  String repoAccessSuspendedBody(String repos) {
+    return 'Automatizace pro $repos je pozastavená, dokud vlastník účtu neobnoví instalaci na GitHubu.';
+  }
+
+  @override
+  String get repoAccessAutomationPausedTitle => 'Automatizace je pozastavená';
+
+  @override
+  String repoAccessOwnerCannotSeeBody(String repos) {
+    return 'Osoba odpovědná za automatizaci tohoto pracovního prostoru už $repos nevidí, takže tam jejím jménem nic neběží.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedInBody(String repos) {
+    return 'Osoba odpovědná za automatizaci tohoto pracovního prostoru není přihlášená ke forge, takže automatizace pro $repos čeká, dokud se nepřihlásí.';
+  }
+
+  @override
+  String repoAccessTransient(String repos) {
+    return 'Přístup k $repos se nepodařilo ověřit. Zkouší se znovu.';
+  }
+
+  @override
+  String repoAccessAskAdmins(String admins) {
+    return 'Požádejte o opravu: $admins.';
+  }
+
+  @override
+  String get repoAccessAskAnAdmin =>
+      'Požádejte o opravu správce pracovního prostoru.';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Přihlaste se k $forge, abyste viděli pull requesty z dalších repozitářů: $count',
+      one:
+          'Přihlaste se k $forge, abyste viděli pull requesty z dalšího repozitáře',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Skryté repozitáře, které váš účet $forge nevidí: $count',
+      one: '1 repozitář je skrytý, protože ho váš účet $forge nevidí',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Skryté repozitáře, ke kterým v tomto pracovním prostoru nemáte přístup: $count',
+      one:
+          '1 repozitář je skrytý, protože k němu v tomto pracovním prostoru nemáte přístup',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Ověřuje se váš přístup k dalším repozitářům: $count…',
+      one: 'Ověřuje se váš přístup k dalšímu repozitáři…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoLinkAccessWarningsTitle =>
+      'Propojeno, ale automatizace zatím nedosáhne všude';
+
+  @override
+  String get githubInstallOnAnotherOrganization =>
+      'Nainstalovat v jiné organizaci';
+
+  @override
+  String get forgeTokenEmailLabel => 'E-mail účtu Atlassian';
+
+  @override
+  String get forgeTokenEmailInvalid =>
+      'Zadejte e-mailovou adresu svého účtu Atlassian.';
+
+  @override
+  String get forgeTokenApiTokenLabel => 'Token API';
+
+  @override
+  String get forgeTokenBitbucketHint =>
+      'Tokeny API Bitbucketu fungují spolu s e-mailem účtu Atlassian, který je vytvořil.';
+
+  @override
+  String get automationTokensTitle => 'Automatizační tokeny';
+
+  @override
+  String get automationTokensRepoHint =>
+      'Práce na pozadí v GitLabu a Bitbucketu, například aktualizace pull requestů, komentáře z AI revize a merge requesty, o které nikdo nežádal, používá přístupový token bota, nikdy token člověka. Vlastní token repozitáře má přednost před tokenem pracovního prostoru.';
+
+  @override
+  String get automationTokensWorkspaceHint =>
+      'Používá se pro každé repozitář GitLab nebo Bitbucket v tomto pracovním prostoru, které nemá vlastní automatizační token. Práce na pozadí se tam zobrazuje jako bot tohoto tokenu.';
+
+  @override
+  String get automationTokenNone =>
+      'Žádný token. Automatizace je zde pozastavena.';
+
+  @override
+  String get automationTokenFromWorkspace =>
+      'Používá token pracovního prostoru';
+
+  @override
+  String automationTokenActsAs(String name) {
+    return 'Jedná jako $name';
+  }
+
+  @override
+  String get automationTokenStored => 'Přístupový token přidán';
+
+  @override
+  String get automationTokenRejected =>
+      'Platforma tento token odmítla. Nahraďte ho.';
+
+  @override
+  String automationTokenDialogTitle(String forge) {
+    return 'Automatizační token pro $forge';
+  }
+
+  @override
+  String get automationTokenGitLabHint =>
+      'Vložte přístupový token projektu nebo skupiny. Potřebuje read_api a read_repository; pro komentáře, merge requesty a pushe přidejte api a write_repository. GitLab zobrazuje jeho práci jako bota tokenu.';
+
+  @override
+  String get automationTokenBitbucketHint =>
+      'Vložte přístupový token repozitáře, projektu nebo pracovního prostoru se čtením repozitáře a zápisem pull requestů pro komentáře a pull requesty. Váš vlastní API token patří pod Vy → Profil, ne sem.';
+
+  @override
+  String automationTokenUnreadable(String repos) {
+    return 'Token uložen, ale nemůže číst $repos. Automatizace tam zůstává pozastavena.';
+  }
+
+  @override
+  String get automationTokenRemoveTitle => 'Odebrat automatizační token?';
+
+  @override
+  String get automationTokenRemoveBody =>
+      'Automatizace, která na tomto tokenu závisí, se pozastaví, dokud nepřidáte jiný.';
+
+  @override
+  String automationTokenWorkspaceTarget(String forge) {
+    return 'Každé repozitář $forge bez vlastního tokenu';
+  }
+
+  @override
+  String repoAccessAutomationTokenMissingBody(String repos) {
+    return 'Žádný automatizační token nemůže číst $repos, takže práce na pozadí je tam pozastavena.';
+  }
+
+  @override
+  String get settingsCommitsDescription =>
+      'Commity z práce, kterou spustíte, nesou vaše jméno. Vyberte, kdo další se uvede jako spolupracovník, a zda hostování kódu má vaše commity označit jako ověřené.';
+
+  @override
+  String get settingsCommitAuthorshipSection => 'Autorství';
+
+  @override
+  String get settingsCommitAuthorshipYoursLabel => 'Práce, kterou spustíte';
+
+  @override
+  String get settingsCommitAuthorshipYoursBody =>
+      'Jste autor a committer pod e-mailem, který vaše hostování kódu ověřilo pro vaše přihlášení. Týká se to konverzací s agenty, pipeline, které spustíte, a commitů, které vytvoříte v editoru.';
+
+  @override
+  String get settingsCommitAuthorshipBotLabel => 'Automatizované běhy';
+
+  @override
+  String get settingsCommitAuthorshipBotBody =>
+      'Běhy spuštěné plánem nebo webhookem se commitují jako bot a nikdy se nepodepisují.';
+
+  @override
+  String get settingsCommitAuthorshipSignInNote =>
+      'Dokud se v pracovním prostoru nepřihlásíte k hostování kódu, vaše běhy tam se commitují jako bot.';
+
+  @override
+  String get settingsCoauthorCreditTitle =>
+      'Uvádět Control Center jako spolupracovníka';
+
+  @override
+  String get settingsCoauthorCreditDescription =>
+      'Vaše commity uvádějí Control Center (@usectrl) jako spolupracovníka a automatizované běhy, které jste zapnuli, uvádějí vás. Když je to vypnuto, žádný z těchto řádků se nepřidá.';
+
+  @override
+  String get settingsCoauthorCreditWorkspaceOverride =>
+      'Nastavení tohoto pracovního prostoru má přednost před vaší osobní volbou. Vaše preference zůstává uložená, ale tady se neuplatní.';
+
+  @override
+  String get settingsCoauthorCreditLoading => 'Načítání nastavení autorství…';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditTitle => 'Uvedení spolupracovníka';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditDescription =>
+      'Zda commity obsahují řádky spolupracovníků: Control Center u vlastních commitů člena a členové, kteří zapnuli automatizovaný běh, u jeho commitů. Zde zvolená hodnota přepisuje nastavení každého člena.';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditInherit =>
+      'Použít preferenci každého člena';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditAlways =>
+      'Vždy uvádět spolupracovníka';
+
+  @override
+  String get settingsWorkspaceCoauthorCreditNever =>
+      'Nikdy neuvádět spolupracovníka';
+
+  @override
+  String get settingsCommitSigningSection => 'Ověřené commity';
+
+  @override
+  String get settingsCommitSigningStatusOn => 'Podepisování';
+
+  @override
+  String get settingsCommitSigningStatusOff => 'Nepodepisuje se';
+
+  @override
+  String get settingsCommitSigningIntro =>
+      'Tento server může vaše commity podepisovat vlastním klíčem, takže je GitHub a GitLab zobrazí jako ověřené. Nic se nepodepisuje, dokud klíč nevytvoříte.';
+
+  @override
+  String get settingsCommitSigningCreate => 'Vytvořit podpisový klíč';
+
+  @override
+  String get settingsCommitSigningCreated =>
+      'Podpisový klíč vytvořen. Přidejte jej do svého účtu u hostování kódu.';
+
+  @override
+  String get settingsCommitSigningPublicKeyLabel => 'Veřejný klíč';
+
+  @override
+  String get settingsCommitSigningKeyCopied => 'Veřejný klíč zkopírován';
+
+  @override
+  String get settingsCommitSigningFingerprintLabel => 'Otisk';
+
+  @override
+  String get settingsCommitSigningCreatedLabel => 'Vytvořeno';
+
+  @override
+  String get settingsCommitSigningAddTitle =>
+      'Přidejte jej do svého účtu u hostování kódu';
+
+  @override
+  String get settingsCommitSigningAddDescription =>
+      'Commit se zobrazí jako ověřený, jen pokud jste zároveň přihlášeni k tomuto hostování kódu v pracovním prostoru, takže hostování potvrzuje váš e-mail.';
+
+  @override
+  String get settingsCommitSigningGitHubSteps =>
+      'Settings → SSH and GPG keys → New SSH key. Nastavte Key type na Signing Key.';
+
+  @override
+  String get settingsCommitSigningGitLabSteps =>
+      'Preferences → SSH Keys. Nastavte Usage type na Signing.';
+
+  @override
+  String get settingsCommitSigningBitbucketSteps =>
+      'Commity na Bitbucketu se nepodepisují. Tento klíč nepřidávejte do svého účtu na Bitbucketu: SSH klíč tam je zároveň přihlášením.';
+
+  @override
+  String get settingsCommitSigningUnsupported => 'Nepodporováno';
+
+  @override
+  String get settingsCommitSigningTrustTitle => 'Čemu důvěřujete';
+
+  @override
+  String get settingsCommitSigningTrustPrivate =>
+      'Soukromý klíč tento server nikdy neopustí.';
+
+  @override
+  String get settingsCommitSigningTrustControl =>
+      'Kdokoli, kdo ovládá tento server, může podepisovat commity jako vy, dokud je klíč na vašem účtu u hostování kódu.';
+
+  @override
+  String get settingsCommitSigningTrustVerified =>
+      'Na GitHubu zůstanou commity, které už jsou ověřené, ověřené i po odebrání klíče.';
+
+  @override
+  String get settingsCommitSigningDelete => 'Smazat klíč';
+
+  @override
+  String get settingsCommitSigningDeleteTitle => 'Smazat váš podpisový klíč?';
+
+  @override
+  String get settingsCommitSigningDeleteBody =>
+      'Vaše commity budou od teď nepodepsané. Klíč zůstane na vašich účtech u hostování kódu, dokud jej tam neodeberete.';
+
+  @override
+  String get settingsCommitSigningDeleted => 'Podpisový klíč smazán';
+
+  @override
+  String settingsCommitSigningLoadFailed(String error) {
+    return 'Váš podpisový klíč se nepodařilo načíst: $error';
+  }
+
+  @override
+  String get accountProfileTitle => 'Profil';
+
+  @override
+  String get accountProfileDescription =>
+      'Kdo jste v každém pracovním prostoru a jaké máte vlastní účty pro hostování kódu, ticketing, kalendář a chat.';
+
+  @override
+  String get accountSectionTitle => 'Účet';
+
+  @override
+  String get accountSectionDescription =>
+      'Vaše uživatelské jméno a jméno vás doprovázejí do každého pracovního prostoru. Pracovní prostor může zobrazovat jiné jméno nebo e-mail: nastavte to v Pracovní prostor → Profil a identita.';
+
+  @override
+  String accountLoadFailed(String error) {
+    return 'Váš profil se nepodařilo načíst: $error';
+  }
+
+  @override
+  String get accountDisplayNameHint =>
+      'Jméno, které lidé vidí u vašich zpráv a revizí.';
+
+  @override
+  String get accountDisplayNameRequired => 'Zadejte zobrazované jméno.';
+
+  @override
+  String get accountFieldCannotBeCleared =>
+      'Lze to změnit, ale nelze to odebrat.';
+
+  @override
+  String get accountAvatarLabel => 'Obrázek';
+
+  @override
+  String get accountAvatarHint =>
+      'Odkaz na čtvercový obrázek, začínající https://.';
+
+  @override
+  String get accountAvatarInvalid => 'Použijte odkaz začínající https://.';
+
+  @override
+  String get usernameLabel => 'Uživatelské jméno';
+
+  @override
+  String get usernameRule =>
+      '2 až 32 malých písmen, číslic, teček, pomlček nebo podtržítek. Lidé vás s ním zmiňují.';
+
+  @override
+  String get usernameAvailable => 'Volné.';
+
+  @override
+  String usernameAvailableAs(String username) {
+    return 'Volné. Bude uloženo jako $username.';
+  }
+
+  @override
+  String get usernameInvalid =>
+      'Použijte 2 až 32 malých písmen, číslic, „.“, „_“ nebo „-“, začínajících a končících písmenem nebo číslicí.';
+
+  @override
+  String get usernameReserved => 'Toto uživatelské jméno je rezervováno.';
+
+  @override
+  String get usernameTaken => 'Toto uživatelské jméno je obsazeno.';
+
+  @override
+  String get usernameCheckFailed =>
+      'Toto jméno teď nelze ověřit. Uložit můžete i tak; rozhodne server.';
+
+  @override
+  String get linkedAccountsTitle => 'Připojené účty';
+
+  @override
+  String get linkedAccountsIdentityProvider => 'Poskytovatel identity';
+
+  @override
+  String get linkedAccountStatusNeedsSignIn => 'Vyžaduje přihlášení';
+
+  @override
+  String get linkedAccountStatusPaused => 'Pozastaveno';
+
+  @override
+  String get linkedAccountStatusUnreachable => 'Nedostupné';
+
+  @override
+  String get ssoIdentityDescription =>
+      'Poskytovatel identity, přes který se váš účet přihlašuje. Spravuje ho provozovatel tohoto serveru.';
+
+  @override
+  String get settingsAccountsDescription =>
+      'Účty, které si připojujete za sebe. Control Center jejich prostřednictvím jedná jako vy a změny se týkají pouze vás.';
+
+  @override
+  String get accountReachServer =>
+      'Používá se ve všech pracovních prostorech na tomto serveru.';
+
+  @override
+  String accountReachWorkspace(String workspace) {
+    return 'Používá se jen v $workspace.';
+  }
+
+  @override
+  String forgeReachGitHubOwnApp(String workspace) {
+    return 'GitHub se používá jen v $workspace, který má vlastní přihlašovací aplikace. GitLab a Bitbucket se používají ve všech pracovních prostorech na tomto serveru.';
+  }
+
+  @override
+  String get yourAccountLabel => 'Váš účet';
+
+  @override
+  String yourAccountEntry(String provider, String detail) {
+    return '$provider: $detail';
+  }
+
+  @override
+  String yourAccountLineSemantics(String status) {
+    return 'Váš účet: $status. Otevře Vy → Profil.';
+  }
+
+  @override
+  String get yourForgeAccountNone =>
+      'Není připojen žádný účet pro hostování kódu';
+
+  @override
+  String yourAccountNotConnected(String provider) {
+    return 'Účet $provider není připojen';
+  }
+
+  @override
+  String yourChatAccountNotLinked(String provider) {
+    return 'Účet $provider není propojen';
+  }
+
+  @override
+  String get demoUnavailableAccount =>
+      'V demu jste dočasný host, takže není co měnit: žádné uživatelské jméno, profil ani připojené účty.';
+
+  @override
+  String get onboardingStepYou => 'Vy';
+
+  @override
+  String get onboardingYouTitle => 'Zvolte své uživatelské jméno';
+
+  @override
+  String get onboardingYouSubtitle =>
+      'Vaše uživatelské jméno je způsob, jak vás lidé zmiňují, a jak se označuje vaše práce. Můžete je později změnit, stejně jako zobrazované jméno, v Nastavení → Vy → Profil.';
+
+  @override
+  String signInErrorAccountAlreadyBound(String provider) {
+    return 'Tento účet $provider je už připojen k jiné osobě na tomto serveru. Přihlaste se jiným účtem $provider.';
+  }
+
+  @override
+  String forgeTokenExpiresOn(String date) {
+    return 'Platnost tokenu vyprší $date';
+  }
+
+  @override
+  String forgeTokenExpiredOn(String date) {
+    return 'Platnost tokenu vypršela $date. Vložte nový, aby dál fungoval.';
+  }
+
+  @override
+  String personTokenUnreachable(String forge) {
+    return '$forge nebyl dostupný, takže nelze tento token ověřit. Zkuste to za chvíli znovu.';
+  }
+
+  @override
+  String personTokenRejected(String forge) {
+    return '$forge tento token nepřijímá. Zkontrolujte, zda jste zkopírovali celý a zda nebyl zrušen.';
+  }
+
+  @override
+  String personTokenWrongKind(String forge) {
+    return 'Toto není osobní token. Vložte osobní přístupový token z vlastního účtu $forge, ne token projektu, skupiny, pracovního prostoru nebo bota.';
+  }
+
+  @override
+  String personTokenNarrowScope(String scope) {
+    return 'Tomuto tokenu chybí oprávnění $scope, které je potřeba k revizím a komentářům. Vytvořte token, který ho má.';
+  }
+
+  @override
+  String get personTokenExpired =>
+      'Platnost tohoto tokenu vypršela. Vytvořte nový a vložte jej sem.';
+
+  @override
+  String get settingsCommitSigningTrustAgents =>
+      'Agenti, které spustíte, mohou vytvářet commity podepsané jako vy, v kterémkoli repozitáři, ve kterém pracují. Smazáním klíče zde to okamžitě zastavíte: běhy, které už probíhají, nepodepisují nic dalšího.';
+
+  @override
+  String connectRotateKeyFailed(String error) {
+    return 'Klíč nebyl otočen a nic se nezměnilo: $error Zkuste to znovu.';
+  }
+
+  @override
+  String get noWorkspaceInviteTitle => 'Zatím nejste v pracovním prostoru';
+
+  @override
+  String get noWorkspaceInviteBody =>
+      'Správce pracovního prostoru vás musí pozvat, nebo vám vlastník serveru může pracovní prostor vytvořit. Otevře se zde, jakmile budete přidáni.';
+
+  @override
+  String noWorkspaceSignedInAs(String name) {
+    return 'Přihlášen jako $name';
+  }
+
+  @override
+  String get noWorkspaceCheckAgain => 'Zkontrolovat znovu';
+
+  @override
+  String get noWorkspaceSignOut => 'Odhlásit se';
+
+  @override
+  String get workspaceCreateOwnerOnly =>
+      'Pracovní prostory může vytvářet jen vlastník serveru. Požádejte ho o vytvoření, nebo požádejte správce pracovního prostoru, aby vás pozval.';
+
+  @override
+  String repoLinkNoWorkspaceToAddTo(String repo) {
+    return '$repo není v žádném z vašich pracovních prostorů a nejste v pracovním prostoru, do kterého by se přidal. Požádejte správce pracovního prostoru, aby vás pozval.';
+  }
+
+  @override
+  String get serverOwnerOnly => 'Toto může udělat jen vlastník serveru';
+
+  @override
+  String get ideCodeServerOwnerOnlyHint =>
+      'Celý editor běží na počítači serveru, takže jej může otevřít jen jeho vlastník. Soubory můžete i nadále otevírat a upravovat v Průzkumníkovi.';
+
+  @override
+  String get terminalSandboxedBadge => 'V sandboxu';
+
+  @override
+  String get terminalSandboxedHint =>
+      'Běží v sandboxu uvnitř složek tohoto pracovního prostoru, takže některé nástroje a cesty hostitele tu nejsou dostupné.';
+
+  @override
+  String get terminalHostShellOwnerOnly =>
+      'Shell hostitele běží na serveru bez sandboxu, takže jej může otevřít jen vlastník serveru. Běžný terminál běží v sandboxu.';
+
+  @override
+  String get terminalOutsideWorkspace =>
+      'Terminál lze otevřít jen uvnitř vlastních složek tohoto pracovního prostoru.';
+
+  @override
+  String get environmentHostOwnerOnly =>
+      'Prostředí, které běží na hostiteli serveru, může uložit nebo schválit jen vlastník serveru. Správce pracovního prostoru může použít to, které běží na stanici.';
+
+  @override
+  String get settingsCommitsNoHooks =>
+      'Commity, které vytvoříte v editoru aplikace, nespouštějí žádné Git hooky z repozitáře, stejně jako git commit --no-verify: server spouští Git na svém vlastním hostiteli, ve stromu, který mohou agenti a pull requesty měnit.';
+
+  @override
+  String get mcpTokenDescription =>
+      'Klienti MCP posílají tento token s každým požadavkem jako hlavičku Authorization: Bearer. Server jej vytvoří při prvním spuštění; můžete jej otočit, ale nelze jej odebrat.';
+
+  @override
+  String get mcpShowToken => 'Zobrazit token';
+
+  @override
+  String get mcpHideToken => 'Skrýt token';
+
+  @override
+  String get mcpRotateToken => 'Otočit token';
+
+  @override
+  String get mcpRotateTokenTitle => 'Otočit token MCP?';
+
+  @override
+  String get mcpRotateTokenBody =>
+      'Server se hned přepne na nový token. Každý klient MCP, který stále používá aktuální, bude odmítnut, dokud mu nedáte nový.';
+
+  @override
+  String get mcpTokenRotated => 'Token otočen. Dejte svým klientům MCP nový.';
+
+  @override
+  String get mcpOwnerOnlyTitle => 'Koncový bod MCP je pro vlastníka serveru';
+
+  @override
+  String get mcpOwnerOnlyBody =>
+      'Jeho token otevírá každý nástroj na tomto serveru, takže jej může vidět, otočit nebo koncový bod spustit a zastavit jen vlastník serveru.';
+
+  @override
+  String get activityRotatedMcpToken => 'Otočen token MCP';
+
+  @override
+  String get connectRotateKeyRetireFailedTitle =>
+      'Connect nemohl vyřadit starý klíč';
+
+  @override
+  String get connectRotateKeyForceBody =>
+      'Nic se nezměnilo. Pokud přesto otočíte, tento server dostane nový klíč, ale starý identifikátor zůstane u tohoto Connectu použitelný, dokud nevyprší jeho přihlášení.';
+
+  @override
+  String get connectRotateKeyAnyway => 'Otočit i tak';
+
+  @override
+  String get settingsAuditLog => 'Auditní log';
+
+  @override
+  String get settingsAuditLogDescription =>
+      'Kdo co změnil, kde a jak to skončilo, napříč serverem a všemi pracovními prostory, které spravujete. Serverové operace zaznamenávají názvy argumentů, nikdy jejich hodnoty.';
+
+  @override
+  String get auditLogNoAccessTitle => 'Jen pro administrátory';
+
+  @override
+  String get auditLogNoAccess =>
+      'Auditní log pokrývá server a pracovní prostory, které spravujete. Nespravujete žádný pracovní prostor, takže není co zobrazit.';
+
+  @override
+  String get auditLogSourceServer => 'Server';
+
+  @override
+  String get auditLogSourceWorkspace => 'Pracovní prostor';
+
+  @override
+  String get auditLogAddFilter => 'Filtr';
+
+  @override
+  String get auditLogFilterOptionsHint => 'Filtrovat…';
+
+  @override
+  String get auditLogFilterActor => 'Aktér';
+
+  @override
+  String get auditLogFilterSource => 'Pracovní prostor';
+
+  @override
+  String get auditLogFilterOutcome => 'Výsledek';
+
+  @override
+  String get auditLogFilterTime => 'Čas';
+
+  @override
+  String auditLogFilterChip(String category, String values) {
+    return '$category: $values';
+  }
+
+  @override
+  String auditLogFilterChipMore(String values, int count) {
+    return '$values +$count';
+  }
+
+  @override
+  String get auditLogOutcomeOk => 'Úspěšně';
+
+  @override
+  String get auditLogOutcomeDenied => 'Zakázáno';
+
+  @override
+  String get auditLogOutcomeFailed => 'Selhalo';
+
+  @override
+  String get auditLogTimeAtOrAfter => 'Od';
+
+  @override
+  String get auditLogTimeAfter => 'Po';
+
+  @override
+  String get auditLogTimeBefore => 'Před';
+
+  @override
+  String get auditLogTimeAtOrBefore => 'Do';
+
+  @override
+  String auditLogTimeChip(String operator, String time) {
+    return 'Čas $operator $time';
+  }
+
+  @override
+  String get auditLogTimePresetHour => 'před 1 hodinou';
+
+  @override
+  String get auditLogTimePresetDay => 'před 24 hodinami';
+
+  @override
+  String get auditLogTimePresetWeek => 'před 7 dny';
+
+  @override
+  String get auditLogTimePresetMonth => 'před 30 dny';
+
+  @override
+  String get auditLogTimeExact => 'Přesný čas';
+
+  @override
+  String get auditLogTimeInvalid => 'Zadejte YYYY-MM-DD, volitelně s HH:MM';
+
+  @override
+  String get auditLogTimeAdd => 'Přidat';
+
+  @override
+  String repoAccessReplacedTitle(String repo) {
+    return '$repo nyní ukazuje na jiný repozitář';
+  }
+
+  @override
+  String repoAccessReplacedBody(String forge) {
+    return 'Tato cesta nyní ukazuje na jiný repozitář na $forge. Pokud s ním chcete dál pracovat, znovu jej propojte.';
+  }
+
+  @override
+  String get repoRelink => 'Znovu propojit';
+
+  @override
+  String repoRelinked(String repo) {
+    return 'Znovu propojen $repo.';
+  }
+
+  @override
+  String get repoCodeRepoReplaced =>
+      'Tato cesta nyní ukazuje na jiný repozitář. Správce pracovního prostoru jej musí znovu propojit, než půjde použít.';
+
+  @override
+  String repoCodeForgeCannotRead(String forge) {
+    return 'Váš účet $forge nemá přístup ke čtení tohoto repozitáře.';
+  }
+
+  @override
+  String repoCodeForgeUnconfirmed(String forge) {
+    return 'Váš přístup k $forge se nepodařilo ověřit. Zkuste to znovu.';
+  }
+
+  @override
+  String get repoCodeForgeCannotReadUnnamed =>
+      'Váš účet u hostování kódu nemá přístup ke čtení tohoto repozitáře.';
+
+  @override
+  String get repoCodeForgeUnconfirmedUnnamed =>
+      'Váš přístup k hostování kódu se nepodařilo ověřit. Zkuste to znovu.';
+
+  @override
+  String get repoPathHostPath =>
+      'Propojit složku mimo úložiště tohoto pracovního prostoru může jen vlastník serveru.';
+
+  @override
+  String get repoPathMissing => 'Na této cestě na serveru nic neexistuje.';
+
+  @override
+  String get repoPathDataDir =>
+      'Repozitář nemůže ukazovat do datové složky serveru.';
+
+  @override
+  String get repoPathWorkspaceRoot =>
+      'Repozitář nemůže být kořenovou složkou pracovního prostoru.';
+
+  @override
+  String get repoPathOriginMismatch => 'Origin této složky je jiný repozitář.';
+
+  @override
+  String repoGrantNeedsSignIn(String forge) {
+    return 'Uloženo. Před otevřením tohoto repozitáře se musí přihlásit k $forge.';
+  }
+
+  @override
+  String repoGrantCannotRead(String forge) {
+    return 'Uloženo. Jejich účet $forge zatím nemůže tento repozitář číst, takže zůstává skrytý.';
+  }
+
+  @override
+  String repoGrantUnconfirmed(String forge) {
+    return 'Uloženo. Jejich přístup k $forge se teď nepodařilo ověřit.';
+  }
+
+  @override
+  String repoLinkAskOwnerToAdd(String repo) {
+    return '$repo není propojen v žádném z vašich pracovních prostorů. Požádejte vlastníka serveru, aby jej přidal.';
+  }
+
+  @override
+  String get reposEmptyAskOwner =>
+      'Repozitáře ze složek serveru přidává vlastník serveru.';
+
+  @override
+  String get accountEmailUnconfirmedHint =>
+      'Tuto adresu jste zadal pouze vy. Jednotné přihlášení ji nebude shodovat, dokud ji vlastník serveru nepotvrdí.';
+
+  @override
+  String get settingsServerPeople => 'Lidé';
+
+  @override
+  String get settingsServerPeopleDescription =>
+      'Všichni s účtem na tomto serveru a to, zda je jejich e-mailová adresa potvrzená.';
+
+  @override
+  String get serverPeopleLabel => 'Účty';
+
+  @override
+  String get serverPeopleOwnerOnly =>
+      'Účty všech lidí a potvrzování e-mailových adres vidí jen vlastník serveru.';
+
+  @override
+  String get serverPeopleEmailNotConfirmed => 'E-mail nepotvrzen';
+
+  @override
+  String get serverPeopleConfirmEmail => 'Potvrdit e-mail';
+
+  @override
+  String serverPeopleConfirmEmailBody(String email, String name) {
+    return 'Potvrdit, že $email patří uživateli $name? Jednotné přihlášení podle této adresy přiřadí jeho účet.';
+  }
+
+  @override
+  String serverPeopleEmailConfirmed(String email) {
+    return 'Potvrzeno $email.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Agenti na tomto serveru potřebují sandbox';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Tento server nemá sandbox, takže zde agenty může spouštět jen jeho vlastník. Vlastník může sandbox nainstalovat nebo sandboxing vypnout pro všechny.';
+
+  @override
+  String get repoPathIssueHostPath =>
+      'Tato složka je mimo úložiště pracovního prostoru. Potvrďte, že tento server ji smí používat.';
+
+  @override
+  String get repoPathIssueHostPathAskOwner =>
+      'Tato složka je mimo úložiště pracovního prostoru. Potvrdit ji může jen vlastník serveru.';
+
+  @override
+  String get repoPathIssueMissing =>
+      'Na této cestě na serveru už nic neexistuje. Odeberte tento repozitář a přidejte jej znovu z jeho aktuální složky.';
+
+  @override
+  String get repoPathIssueUnusable =>
+      'Tuto složku nelze použít jako repozitář. Odeberte ji a přidejte repozitář z jiné složky.';
+
+  @override
+  String get repoPathConfirm => 'Potvrdit';
+
+  @override
+  String get repoPathConfirmAll => 'Potvrdit vše';
+
+  @override
+  String repoPathConfirmAllTitle(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count složek je mimo úložiště pracovního prostoru',
+      few: '$count složky jsou mimo úložiště pracovního prostoru',
+      one: '1 složka je mimo úložiště pracovního prostoru',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get repoPathConfirmAllBody =>
+      'Potvrďte, že tento server je smí používat. Každý repozitář se znovu kontroluje s vaším přístupem.';
+
+  @override
+  String get mcpExternalServersOwnerRunsOnly =>
+      'Servery nalezené v nastavení nástrojů tohoto počítače jsou dostupné jen v bězích, které spouštíte nebo za které odpovídáte. Běhy ostatních je nikdy nevidí a nenabízejí se přes koncový bod MCP Control Center.';
+
+  @override
+  String repoCodeNeedsSignIn(String provider) {
+    return 'Pro zobrazení kódu tohoto repozitáře se přihlaste k $provider.';
+  }
+
+  @override
+  String get repoCodeSignIn => 'Přihlásit se';
+
+  @override
+  String get ideContentSearchFailed => 'Hledání v souborech se nezdařilo';
+
+  @override
+  String get ideWorktreeFileUnavailable =>
+      'Tento soubor není v tomto worktree dostupný.';
+
+  @override
+  String get ideChangesLoadFailed => 'Změny se nepodařilo načíst';
+
+  @override
+  String repoCodeRepoReplacedOn(String forge) {
+    return 'Tato cesta nyní ukazuje na jiný repozitář na $forge. Správce pracovního prostoru jej musí znovu propojit, než půjde použít.';
+  }
+
+  @override
+  String get backupRestoreServerOwnerOnly =>
+      'Zálohy může obnovit jen vlastník serveru. Stáhnout je můžete i nadále.';
+
+  @override
+  String get terminalReadOnlyBadge => 'Jen pro čtení';
+
+  @override
+  String get terminalReadOnlyHint =>
+      'Tento terminál můžete sledovat. Psaní do něj, změna velikosti nebo jeho zastavení vyžaduje přístup k zápisu do každého repozitáře v této konverzaci.';
+
+  @override
+  String get environmentOperateNeedsWrite =>
+      'Toto prostředí můžete sledovat. Spuštění, zastavení nebo restart vyžaduje přístup k zápisu do každého repozitáře v této konverzaci.';
+
+  @override
+  String get environmentHostApprovalOwner =>
+      'Běží na tomto serveru. Schvalte jej, aby se mohlo spustit.';
+
+  @override
+  String get environmentHostApprovalMember =>
+      'Běží na tomto serveru. Před spuštěním jej musí schválit vlastník serveru.';
+
+  @override
+  String get environmentHostApprove => 'Schválit';
+
+  @override
+  String get environmentHostApproveNeedsAdmin =>
+      'Schvalte jej jako správce pracovního prostoru: tajné hodnoty vidí jen kopie správce a schválení je uloží zpět.';
+
+  @override
+  String get environmentHostUnapproved =>
+      'Vlastník serveru toto prostředí zatím neschválil, takže na tomto serveru nemůže běžet.';
+
+  @override
+  String get environmentHostUnapprovedOwner =>
+      'Toto prostředí jste zatím neschválil. Běží na tomto serveru, takže se spustí, až schválíte jeho definici.';
+
+  @override
+  String get environmentHostApprovalReview => 'Zkontrolovat a schválit';
+
+  @override
+  String spaceAccessNeedsSignIn(String provider) {
+    return 'Pro otevření tohoto prostoru se přihlaste k $provider.';
+  }
+
+  @override
+  String spaceAccessForgeCannotRead(String forge) {
+    return 'Váš účet $forge nemůže číst repozitář, který tento prostor používá.';
+  }
+
+  @override
+  String get spaceAccessForgeCannotReadUnnamed =>
+      'Váš účet u hostování kódu nemůže číst repozitář, který tento prostor používá.';
+
+  @override
+  String get spaceAccessNoGrant =>
+      'Nemáte přístup ke čtení k repozitáři, který tento prostor používá. Správce pracovního prostoru vám jej může udělit.';
+
+  @override
+  String get spaceAccessFailed => 'Tento prostor se nepodařilo otevřít.';
+
+  @override
+  String get contextExplorerRefused =>
+      'Rozpad kontextu není v této relaci dostupný.';
+
+  @override
+  String get repoLinkForgeRemoteRequired =>
+      'Propojený repozitář potřebuje vlastníka i název repozitáře.';
+
+  @override
+  String get repoCodeNoReadGrant =>
+      'Nemáte přístup ke čtení tohoto repozitáře. Správce pracovního prostoru vám ho může udělit.';
+
+  @override
+  String get repoCodeNoWriteGrant =>
+      'Tento repozitář můžete číst, ale nemůžete ho měnit. Správce pracovního prostoru vám může udělit přístup pro zápis.';
+
+  @override
+  String get repoCodeNoReviewGrant =>
+      'Tento repozitář můžete číst, ale nemůžete ho kontrolovat. Správce pracovního prostoru vám může udělit přístup ke kontrole.';
+
+  @override
+  String get rigWatchOnlyBadge => 'Pouze sledování';
+
+  @override
+  String get rigWatchOnlyHint =>
+      'Tento stroj můžete sledovat. Ovládání, přesměrování jeho portů, vkládání do něj a přetahování souborů na něj vyžaduje přístup pro zápis ke všem repozitářům v tomto prostoru.';
+
+  @override
+  String get rigStartNeedsWrite =>
+      'Spuštění stroje zde vyžaduje přístup pro zápis ke všem repozitářům v tomto prostoru. Správce pracovního prostoru ho může udělit.';
+
+  @override
+  String get rigViewRefused =>
+      'Tento stroj nemůžete zobrazit. Patří do prostoru, ke kterému nemáte přístup ke čtení.';
+
+  @override
+  String get rigPortsWatchOnly =>
+      'Změna těchto portů vyžaduje přístup pro zápis ke všem repozitářům v tomto prostoru.';
+
+  @override
+  String get rigHolderOnly =>
+      'Stroj může ovládat jen osoba, pro kterou byl otevřen. Používá její vlastní přihlášení.';
+
+  @override
+  String get rigHolderOnlyHint =>
+      'Tento stroj můžete sledovat. Používá přihlášení osoby, pro kterou byl otevřen, takže jen ona ho může ovládat, přesměrovat jeho porty, vkládat do něj nebo na něj přetahovat soubory.';
 }

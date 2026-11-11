@@ -72,8 +72,8 @@ extension _PipelineRecovery on PipelineEngine {
       final definition = await _definitionFor(run);
       if (definition == null) {
         CcDomainLog.warning(
-          'PipelineEngine: Cannot resume run ${run.id}: template ${run.templateId} '
-          'missing for workspace ${run.workspaceId}',
+          'PipelineEngine: Cannot resume run ${run.id}: it has no pinned '
+          'template snapshot',
         );
         continue;
       }
@@ -117,8 +117,8 @@ extension _PipelineRecovery on PipelineEngine {
           continue;
         }
         // A step explicitly marked non-idempotent that was already mid-flight
-        // (running/suspended) might have completed its side effect (e.g.
-        // `gh pr merge`) before the crash. Re-running could double-apply it,
+        // (running/suspended) might have completed its side effect (e.g. a
+        // workspace backup) before the crash. Re-running could double-apply it,
         // so fail it instead and let the user retry deliberately.
         final nonIdempotent = stepDef.config.extras['idempotent'] == false;
         final alreadyStarted =
@@ -186,8 +186,8 @@ extension _PipelineRecovery on PipelineEngine {
 
     final stepRuns = await repository.stepRunsForPipeline(pipelineRunId);
     // Rows waiting on a dispatched task are kept in `running` so the UI
-    // doesn't say "suspended" while the agent is actively working. Some
-    // legacy / non-task suspensions still use `suspended`; accept both. A step
+    // doesn't say "suspended" while the agent is actively working. Non-task
+    // suspensions use `suspended`; accept both. A step
     // that was re-dispatched (manual retry, or a timeout that re-fired the
     // body) can momentarily have more than one such row — take the most
     // recently started so the harvest below reads the live attempt, not a

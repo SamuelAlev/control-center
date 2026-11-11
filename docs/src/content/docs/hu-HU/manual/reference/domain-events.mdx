@@ -2,7 +2,7 @@
 title: Domainesemények
 description: Az 54 domainesemény teljes katalógusa, a payloadjaik és az őket fogyasztó szerveroldali előfizetők.
 slug: hu-HU/kezikonyv/referencia/domainesemenyek
-sourceHash: 7857f82beec0a620ca8c74862685d6a3535e2863
+sourceHash: 4ebae749215ee95f153064f44795fcff9b326c1a
 ---
 
 ## Eseménybusz
@@ -148,14 +148,13 @@ Több alrendszer, amely kívülről eseményvezéreltnek látszik, valójában n
 
 | Aldomain | Hogyan mozog helyette az állapot |
 | --- | --- |
-| Memória | A `record_memory_fact` és társai írnak és visszatérnek; az előhívás olvas. Semmi sem tesz közzé tényt vagy ütközést |
+| Memória | A `propose_fact` és társai írnak és visszatérnek; az előhívás olvas. Semmi sem tesz közzé tényt vagy ütközést |
 | Orchestráció | A javaslat, annak jóváhagyása és a generált pipeline-futtatás sorok és RPC-hívások |
 | Tervdokumentumok | A `submit_plan` ír egy revíziót; a jóváhagyás orchestrációt hoz létre. Egyik sem kerül bejelentésre |
 | Artefaktumok | A `publish_artifact` / `revise_artifact` közvetlenül írja a revíziókat |
 | Jóváhagyások | Az eszkalációt a jóváhagyási munkafolyamat-szolgáltatás kezeli |
 | Jegyszinkronizáció | A szolgáltatói koordinátor az előbbi jegyeseményekre fizet elő; a bejövő webhookok közvetlenül kerülnek alkalmazásra |
 | Naptárfrissítés | Egy szinkronizálás felvesz vagy frissít eseményeket, és a kliens újraolvassa őket; nincs frissítési szórás |
-| Worktree-összefésülések | A `worktree_merge_log` rögzíti őket, és onnan olvashatók |
 
 ## Előfizetők
 
@@ -190,7 +189,7 @@ Az alábbi előfizetők mindegyike a `runCcServer` belsejében jön létre (vagy
 
 A `TicketAssigned` audit- és értesítési jelzés, valamint pipeline-eseményindító. Az ügynökhöz rendelés tulajdonjogot rögzít, és nem indít futtatást — nincs jegy-diszpécser. A csapathoz rendelés (beállított `assignedTeamId`) a kivétel: a `TeamRoutingService` elindítja a csapatvezetőt.
 
-A `TicketRemoteSyncHandler` deklarálva van, de éles kódban soha nem példányosul, így ma semmire sem fizet elő. A kliensoldali `NotificationEventMapper` csak a saját tesztjében példányosul — a kliens–szerver szétválasztás előtti, folyamaton belüli útvonal maradványa. Az élő toastok az alábbi wire-frame-ekből érkeznek.
+Az élő toastok az alábbi wire-frame-ekből érkeznek.
 
 ## Az értesítések leképezése
 

@@ -4,6 +4,7 @@ library;
 
 import 'dart:io';
 
+import 'package:cc_domain/features/remote_control/domain/services/remote_pairing_lifecycle.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket.dart';
 import 'package:cc_domain/features/ticketing/domain/entities/ticket_status.dart';
 import 'package:cc_infra/src/process/cc_server_process.dart';
@@ -75,7 +76,12 @@ void main() {
       // --- Seed exactly as the desktop thin boot would (one-time, pre-spawn,
       // so there is never two-process access to the same SQLite file).
       final seed = openSeedDatabases(tmp.path);
-      await seed.seedWorkspace(workspaceId, name: 'Fork A');
+      final ownerId = await seed.serverOwner();
+      await seed.seedWorkspace(
+        workspaceId,
+        name: 'Fork A',
+        ownerUserId: ownerId,
+      );
       await DaoTicketRepository(
         seed.workspaces,
         seed.global.workspaceRouteDao,
@@ -90,12 +96,16 @@ void main() {
         ),
       );
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          workspaceId: Value(workspaceId),
-          label: Value('fork-a'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          userId: Value(ownerId),
+          workspaceId: const Value(workspaceId),
+          label: const Value('fork-a'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          expiresAt: Value(
+            RemotePairingLifecycle.credentialExpiry(DateTime.now()),
+          ),
         ),
       );
       await seed.close();

@@ -2,7 +2,7 @@
 title: Kodintelligens
 description: Varför en agent behöver kompilatorn, en strukturell mönstermatcher och en felsökare – och vad var och en av dem svarar på som de andra inte kan.
 slug: sv-SE/handbok/koncept/kodintelligens
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center ger en agent fyra sätt att förstå kod utöver att bara läsa den. De svarar på genuint olika frågor, och anledningen till att det är fyra i stället för ett är att ingen enskild mekanism svarar på alla.
@@ -31,6 +31,8 @@ Att upprepa det agenten redan har fått veta är sämre än att inget säga: det
 Ingen server startar vid uppstart. En startar vid den första begäran som behöver den, vilket nästan alltid är den första redigeringen av en fil den gör anspråk på, och inaktiva servrar sveps bort. En värd som aldrig rör Dart startar aldrig en analyzer.
 
 Detektering är en **skärning**: en rotmarkör måste finnas i utcheckningen *och* binärfilen måste kunna slås upp. En markör ensam säger "det här projektet är Python" och ingenting om huruvida servern är installerad; en binärfil som kan slås upp säger ensam att värden har en verktygskedja och ingenting om just den här utcheckningen. Först båda tillsammans betyder att en fråga kan lyckas, och ett verktyg som erbjuds men alltid misslyckas är sämre än ett som inte finns.
+
+Det som ett arkiv kan påverka hålls medvetet litet. Servrarna kommer från en inbyggd tabell, aldrig från en fil i utcheckningen, och en binärfil inne i projektet (`node_modules/.bin`) används bara när körningen är sandlådad. En språkserver är ett program som körs på serverns maskin, så ett arkiv får inte namnge en.
 
 ## Varför strukturell sökning, när grep finns
 

@@ -1,5 +1,5 @@
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_domain/features/agents/domain/value_objects/discovered_agent.dart';
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
 import 'package:cc_infra/src/util/agents_md_parser.dart';
 
 /// Scans a workspace's own agent directory for `AGENTS.md` files that have not

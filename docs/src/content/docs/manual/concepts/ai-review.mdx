@@ -197,8 +197,14 @@ a review can never double-publish. When you press **Publish to GitHub**:
 - The **Publish to GitHub** button posts the review as the person who pressed
   it, on their own GitHub sign-in: the release gate is theirs, so the review is
   too. A publish with no person behind it is automation, which never approves:
-  Ship then goes out as `COMMENT`, and on Control Center Connect the post is
-  attributed with the `**Control Center** (for @login):` prefix.
+  Ship then goes out as `COMMENT`, and @-mentions in the findings are made
+  inert so the post notifies no one. It is posted by the bot, except on the
+  shared Control Center Connect app when the Connect operator has not listed
+  this installation: then it goes out on the accountable person's own sign-in,
+  under their name, attributed with the
+  `**Control Center** (for @login):` prefix. A server or workspace with its
+  own GitHub App always posts it as the bot. An
+  agent calling the MCP tool can publish only its own space's review.
 
 Publishing declares the `prPublish` action class, so the guardrail chokepoint
 gates it like any mutating action — it prompts by default and fails closed

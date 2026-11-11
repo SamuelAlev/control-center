@@ -2,7 +2,7 @@
 title: Debuguj padający test z agentem
 description: Zleć agentowi ustawienie punktu przerwania, uruchomienie pod debuggerem i odczytanie prawdziwej ramki stosu zamiast dodawania instrukcji print.
 slug: pl-PL/podrecznik/poradniki/debugowanie-padajacego-testu
-sourceHash: 0cba5ba0bec9a976141c2f61846c735a65b47e23
+sourceHash: 21948bc5ed504ad4cac22cbe6fb75ff116c45940
 ---
 
 W tym poradniku pokazujemy, jak skłonić agenta do użycia debuggera przy awarii, której nie wyjaśniają instrukcje print.
@@ -31,8 +31,8 @@ Odpowiada tym, co znalazł, albo wyjaśnia, że adapter potrzebuje obu połówek
 | Rust / C / C++ | `lldb-dap`                   | `Cargo.toml`, `CMakeLists.txt`                  | Dostarczany z LLVM                         |
 | Go             | `dlv dap`                    | `go.mod`                                        | `go install github.com/go-delve/delve/cmd/dlv@latest` |
 
-:::note[Python wybiera interpreter projektu]
-`debugpy` jest szukany w `.venv/bin` lub `venv/bin` przed `$PATH`. Python z `$PATH` to inne środowisko, a podłączenie z niewłaściwego zawodzi w sposób, który wygląda jak zepsuty kod, a nie jak niewłaściwy interpreter.
+:::note[Python wybiera interpreter projektu, gdy uruchomienie działa w piaskownicy]
+W uruchomieniu w piaskownicy `debugpy` jest szukany w `.venv/bin` lub `venv/bin` przed `$PATH`. Python z `$PATH` to inne środowisko, a podłączenie z niewłaściwego zawodzi w sposób, który wygląda jak zepsuty kod, a nie jak niewłaściwy interpreter. W uruchomieniu bez piaskownicy używany jest wyłącznie `$PATH`, więc repozytorium nie może wybrać interpretera, który działa na maszynie serwera.
 :::
 
 ## Najpierw ustaw punkt przerwania, potem uruchom
@@ -106,6 +106,8 @@ Dla zawieszonego procesu, a nie takiego, który dopiero uruchamiasz:
 debug(op: "attach", port: 5858)
 ```
 
+Port musi być jednym z przekierowanych portów tego uruchomienia. Każdy inny port jest odrzucany, zanim cokolwiek się zacznie, więc agent nie może podłączyć się do procesu innej osoby na maszynie serwera.
+
 ## Zakończ
 
 ```
@@ -115,7 +117,7 @@ debug(op: "terminate")
 Zawsze kończ sesję. Adapter debuggera posiada **zatrzymany proces**, który trzyma wszystko, co trzyma ten proces — port, blokadę, połączenie z bazą danych.
 
 :::note[To nie może Ci się wymknąć spod kontroli]
-Każda sesja ma twardy TTL, którego nie może przedłużyć, na rozmowę przypada dokładnie jedna, a wszystko jest rozbierane, gdy serwer się zatrzyma. Drugie `launch` jest odrzucane, zamiast zastępować pierwsze: agent, który rozpoczyna jedno bez zakończenia drugiego, prawie na pewno zgubił pierwsze z oczu.
+Każda sesja ma twardy TTL, którego nie może przedłużyć (30 minut), na rozmowę przypada dokładnie jedna, a wszystko jest rozbierane, gdy serwer się zatrzyma. W uruchomieniu w piaskownicy sesja zachowuje piaskownicę przez wiele tur, ale najwyżej tak długo. Drugie `launch` jest odrzucane, zamiast zastępować pierwsze: agent, który rozpoczyna jedno bez zakończenia drugiego, prawie na pewno zgubił pierwsze z oczu.
 :::
 
 ## Ograniczone dane wyjściowe

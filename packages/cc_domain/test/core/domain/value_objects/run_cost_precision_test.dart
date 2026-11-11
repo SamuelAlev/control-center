@@ -34,10 +34,11 @@ void main() {
       const estimated = RunCost(costMicros: 3200);
       const reported = RunCost(
         estimatedCostCents: 2,
+        costMicros: 20000,
         costBasis: CostBasis.providerReported,
       );
       final combined = estimated + reported;
-      expect(combined.preciseCostMicros, 23200);
+      expect(combined.costMicros, 23200);
       expect(combined.estimatedCostCents, 2);
       expect(combined.costBasis, CostBasis.mixed);
       expect((RunCost.zero + reported).costBasis, CostBasis.providerReported);
@@ -47,9 +48,12 @@ void main() {
         costMicros: 3200,
         costBasis: CostBasis.subscription,
       );
-      const legacyEstimated = RunUsage(estimatedCostCents: 2);
-      final usage = subscribed + legacyEstimated;
-      expect(usage.preciseCostMicros, 23200);
+      const estimatedUsage = RunUsage(
+        estimatedCostCents: 2,
+        costMicros: 20000,
+      );
+      final usage = subscribed + estimatedUsage;
+      expect(usage.costMicros, 23200);
       expect(usage.estimatedCostCents, 2);
       expect(usage.costBasis, CostBasis.mixed);
       expect((RunUsage.zero + subscribed).costBasis, CostBasis.subscription);
@@ -59,7 +63,7 @@ void main() {
       const unknown = RunCost(costBasis: CostBasis.unknown);
       const known = RunCost(costMicros: 100, costBasis: CostBasis.subscription);
       for (final combined in [unknown + known, known + unknown]) {
-        expect(combined.preciseCostMicros, 100);
+        expect(combined.costMicros, 100);
         expect(combined.costBasis, CostBasis.unknown);
       }
       const missingUsage = RunUsage(costBasis: CostBasis.unknown);
@@ -128,7 +132,6 @@ void main() {
     test('micro-USD sums exactly and does not round to cents', () {
       final sum = const RunCost(costMicros: 7) + const RunCost(costMicros: 9);
       expect(sum.costMicros, 16);
-      expect(sum.preciseCostMicros, 16);
       expect(sum.costUsd, 16 / 1000000);
     });
 
@@ -140,24 +143,6 @@ void main() {
         total = total + const RunCost(costMicros: 3);
       }
       expect(total.costMicros, 300);
-      expect(total.preciseCostMicros, 300);
-    });
-
-    // Protects: a cents-only historical row is widened, never divided, so its
-    // precise figure is exact.
-    test('a cents-only RunCost widens to precise micros', () {
-      const centsOnly = RunCost(estimatedCostCents: 3);
-      expect(centsOnly.costMicros, 0);
-      expect(centsOnly.preciseCostMicros, 3 * 10000);
-      expect(centsOnly.preciseCostMicros, 30000);
-    });
-
-    // Protects: when an exact figure exists it is authoritative over the
-    // legacy cents projection.
-    test('preciseCostMicros prefers micros when non-zero', () {
-      const both = RunCost(estimatedCostCents: 999, costMicros: 7);
-      expect(both.preciseCostMicros, 7);
-      expect(both.costUsd, 7 / 1000000);
     });
   });
 
@@ -264,7 +249,7 @@ void main() {
       );
       final cost = usage.toCost(durationMs: 120, timeToFirstTokenMs: 45);
       expect(cost.costMicros, 9);
-      expect(cost.preciseCostMicros, 9);
+      expect(cost.costMicros, 9);
       expect(cost.costBasis, CostBasis.providerReported);
       expect(cost.inputTokens, 4);
       expect(cost.durationMs, 120);

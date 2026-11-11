@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -14,6 +13,7 @@ import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/dispatch/domain/entities/agent_process_event.dart';
 import 'package:cc_domain/features/dispatch/domain/ports/agent_backend.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -23,6 +23,7 @@ import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/backends/acp_backend.dart';
 import 'package:cc_infra/src/dispatch/backends/harness_backend.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:test/test.dart';
 
 import '../helpers/windows_safe_delete.dart';
@@ -41,32 +42,6 @@ class _NoopSandbox implements SandboxPort {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _Broker implements CredentialBrokerPort {
-  _Broker({this.revokeThrows = false});
-
-  final bool revokeThrows;
-  final revoked = <String>[];
-
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async => const ScopedCredentials(handle: 'h1', environment: {});
-
-  @override
-  Future<void> revoke(String handle) async {
-    revoked.add(handle);
-    if (revokeThrows) {
-      throw StateError('broker unreachable');
-    }
-  }
 }
 
 class _UnusedAgentRepo implements AgentRepository {
@@ -186,7 +161,6 @@ class _Loop implements AgentLoop {
 
 void main() {
   DispatchSession session({
-    required CredentialBrokerPort broker,
     required _Loop loop,
     _Factory? factory,
     String cliName = 'cc-harness',
@@ -196,16 +170,18 @@ void main() {
     addTearDown(() => deleteDirBestEffort(tempDir));
     return DispatchSession(
       deps: SandboxDispatchDeps(
+        hostExecution: const HostExecutionGate(
+          posture: HostExecutionPosture.offByOwner,
+        ),
         sandbox: _NoopSandbox(),
-        broker: broker,
         agentRepo: _UnusedAgentRepo(),
         runLogRepo: _UnusedRunLogRepo(),
         eventBus: null,
-        resolveCommitIdentity: (_, {workspaceId}) async =>
-            AgentCommitIdentity.owner(
+        resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+            AgentCommitIdentity.person((
               name: 'Test User',
               email: 'test@example.test',
-            ),
+            )),
         backendRegistry: BackendRegistry({
           'cc-harness': const HarnessBackend(),
           'some-acp': const AcpBackend(cliName: 'some-acp'),
@@ -239,10 +215,9 @@ void main() {
     );
   }
 
-  test('a stop whose revoke throws still ends the run exactly once', () async {
-    final broker = _Broker(revokeThrows: true);
+  test('a stop ends the run exactly once', () async {
     final loop = _Loop(waitForCancel: true);
-    final s = session(broker: broker, loop: loop);
+    final s = session(loop: loop);
     final events = <AgentProcessEvent>[];
     final closed = Completer<void>();
     s.controller.stream.listen(events.add, onDone: closed.complete);
@@ -253,7 +228,6 @@ void main() {
     await running;
     await closed.future.timeout(const Duration(seconds: 5));
 
-    expect(broker.revoked, ['h1']);
     expect(events.whereType<DoneEvent>(), hasLength(1));
     final errors = events.whereType<ErrorEvent>().map((e) => e.content);
     expect(errors, contains(kRunStoppedByUserSummary));
@@ -265,7 +239,6 @@ void main() {
   test('an explicit caller key keeps leading over the stored pool', () async {
     final factory = _Factory();
     final s = session(
-      broker: _Broker(),
       loop: _Loop(),
       factory: factory,
       callerEnv: const {'OPENAI_API_KEY': 'sk-caller'},
@@ -277,7 +250,7 @@ void main() {
   });
 
   test('without the OS sandbox an ACP agent is refused, not run', () async {
-    final s = session(broker: _Broker(), loop: _Loop(), cliName: 'some-acp');
+    final s = session(loop: _Loop(), cliName: 'some-acp');
     final events = <AgentProcessEvent>[];
     final closed = Completer<void>();
     s.controller.stream.listen(events.add, onDone: closed.complete);

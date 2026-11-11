@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cc_connect_core/cc_connect_core.dart'
-    show ConnectOAuthLane, SealedGrant;
+    show ConnectOAuthLane, SealedGrant, SignInLaneMode;
 import 'package:cc_domain/cc_domain.dart'
     show AuthException, NotFoundException, ValidationException;
 import 'package:cc_domain/core/domain/entities/agent.dart';
@@ -10,6 +10,9 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_connection.dart'
+    show ForgeConnectionStatus;
 import 'package:cc_domain/core/domain/value_objects/principal.dart';
 import 'package:cc_domain/features/chat_bridge/domain/entities/chat_space_link.dart';
 import 'package:cc_domain/features/chat_bridge/domain/entities/chat_user_link.dart';
@@ -597,11 +600,11 @@ void main() {
       await lane.store(result());
 
       final connection = await lane.connection('u-1', 'w-1');
-      expect(connection?.connected, isTrue);
+      expect(connection?.status, ForgeConnectionStatus.connected);
       expect(connection?.account, 'Acme');
       expect(connection?.accountId, 'T1');
       expect(connection?.workspaceSlot, isTrue);
-      expect(connection?.source, SignInMode.connect);
+      expect(connection?.source, SignInLaneMode.connect);
       expect(grants.attached, ['T1']);
     });
 
@@ -982,11 +985,12 @@ class _FakeGrants implements SlackConnectGrants {
   final List<String> attached = [];
 
   @override
-  SlackRelayAttach get attach => (teamId, {required onItem, required onState}) {
-    attached.add(teamId);
-    onState(ChatConnectionState.connected, null);
-    return () => attached.remove(teamId);
-  };
+  SlackRelayAttach attachFor(String workspaceId) =>
+      (teamId, {required onItem, required onState}) {
+        attached.add(teamId);
+        onState(ChatConnectionState.connected, null);
+        return () => attached.remove(teamId);
+      };
 
   @override
   Future<SlackGrantRenewal> renew(

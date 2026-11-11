@@ -4,9 +4,14 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
 import 'package:cc_domain/core/domain/value_objects/mode.dart';
-import 'package:cc_domain/features/guardrails/domain/services/action_approval_copy.dart';
+import 'package:cc_domain/core/domain/value_objects/sandbox_spec.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
 import 'package:cc_domain/features/guardrails/domain/services/shell_action_classifier.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_request.dart';
+import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_comment_port.dart'
+    show kAgentShellGitHubWriteRefusal;
+import 'package:cc_domain/features/pr_review/domain/ports/agent_pull_request_port.dart'
+    show kAgentShellPrCreateRefusal;
 import 'package:cc_domain/features/sandboxing/domain/command_policy/command_policy.dart';
 import 'package:cc_domain/features/sandboxing/domain/sandbox_config.dart';
 import 'package:cc_harness/cancellation.dart';
@@ -16,24 +21,29 @@ import 'package:cc_infra/src/process/agent_shell_process_service.dart';
 import 'package:cc_infra/src/process/child_process.dart';
 import 'package:cc_infra/src/sandboxing/process_sandbox.dart';
 import 'package:cc_infra/src/sandboxing/sandbox_manager.dart';
+import 'package:cc_infra/src/sandboxing/tool_process_launcher.dart';
 
 /// Runs the harness `bash` tool's commands through CC's command policy, the OS
 /// sandbox and (for `prompt`-tier commands) the confirmation flow — the same
 /// stack the external-CLI transports use.
 ///
-/// When no [SandboxManager] is wired, commands run with environment
-/// sanitization only (and a warning), mirroring the dispatch session's
-/// no-sandbox fallback.
+/// When no [SandboxManager] is wired, commands start through [hostProcesses],
+/// the run's own unconfined launcher, which the dispatch hands in only when
+/// the host execution posture admitted the run outside a sandbox; without one
+/// a command is refused, never run on the host.
 class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// Creates a [SandboxedHarnessCommandRunner].
   SandboxedHarnessCommandRunner({
+    this.sandboxSessionId,
     required this._mode,
     required this._networkEnabled,
     this._loopbackPorts = const [],
     this._environmentScope,
     this.sandboxManager,
+    this.hostProcesses,
     this.confirmationPort,
     this.execGrantRootsResolver,
+    this.sandboxSpec,
     this.actionGuard,
     this.workspaceId,
     this.agentId,
@@ -49,8 +59,13 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// TERMINALS list can show it and a person can stop it.
   final HarnessShellRegistry _shellRegistry;
 
-  /// The OS sandbox manager, or null to run with env sanitization only.
+  /// The OS sandbox manager, or null when this run is not sandboxed.
   final SandboxManager? sandboxManager;
+
+  /// Starts commands when [sandboxManager] is null: the run's tool process
+  /// launcher, unconfined only when the posture admitted the run on the host.
+  /// Null with no [sandboxManager] refuses every command.
+  final ToolProcessLauncher? hostProcesses;
 
   /// Confirmation port for `prompt`-tier commands. Null denies them.
   final ConfirmationPort? confirmationPort;
@@ -82,6 +97,15 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
   /// runs under one profile for the whole dispatch. Null leaves the
   /// writable-dir exec block fully closed.
   final Future<List<String>> Function()? execGrantRootsResolver;
+
+  /// The sandbox spec of the run this runner serves, for its session id.
+  ///
+  /// A dispatch hands in its own, so a command sees exactly what the run's
+  /// CLI would: its bind mounts (the overlay, the agent profile, the space's
+  /// worktrees), its runner state and tool dirs, its exec grants. Without it
+  /// the spec is built from the command's cwd alone. Rebuilt per command, so
+  /// an exec grant answered mid-run applies to the next one.
+  final Future<SandboxSpec> Function(String sessionId)? sandboxSpec;
 
   /// Workspace the run belongs to.
   final String? workspaceId;
@@ -124,36 +148,60 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     CancellationToken? cancel,
   }) async {
     var preApproved = false;
+    // 0. Pull requests are opened by the server's `open_pull_request` tool,
+    // as the person who requested the run; the run's token cannot open
+    // one. Refused before any approval is raised.
+    final shellClasses = const ShellActionClassifier().classify(command);
+    if (shellClasses.contains(ActionClass.prCreate)) {
+      return HarnessCommandResult.deny(kAgentShellPrCreateRefusal);
+    }
+    // This run's GitHub token only reads: comments go through the server's
+    // `comment_on_pull_request` tool and title or description edits through
+    // `update_pull_request`; anything else is a person's to do.
+    if (shellClasses.contains(ActionClass.prPublish) ||
+        shellClasses.contains(ActionClass.vendorSyncWrite)) {
+      return HarnessCommandResult.deny(kAgentShellGitHubWriteRefusal);
+    }
     // 1a. Operator command rules (the policy store), when wired. A stored
     // rule is MORE specific than the built-in net, so it decides first; the
     // net below still runs as the floor, so a stored `allow` can never
     // loosen a mode preset that forbids the effect outright.
     final guard = actionGuard;
+    // `processSpawn` for running anything at all, plus whatever the command
+    // line itself does — so "Push to a remote: ask first" asks about
+    // `git push` typed here as well as about the push gateway.
+    final classes = {ActionClass.processSpawn, ...shellClasses};
+    // Named branches let branch rules and branch-scoped standing approvals
+    // decide, as the Claude Code hook does for the same command.
+    final request = ActionRequest(
+      classes: classes,
+      command: command,
+      refs: shellClasses.contains(ActionClass.gitPush)
+          ? ShellActionClassifier.pushRefs(command) ?? const []
+          : const [],
+    );
+    GuardVerdict? verdict;
     if (guard != null && workspaceId != null) {
-      // `processSpawn` for running anything at all, plus whatever the command
-      // line itself does — so "Open a pull request: ask first" asks about
-      // `gh pr create` typed here as well as about the MCP tool.
-      final verdict = await guard.check(
+      verdict = await guard.check(
         workspaceId: workspaceId!,
-        classes: {
-          ActionClass.processSpawn,
-          ...const ShellActionClassifier().classify(command),
-        },
+        classes: classes,
         command: command,
         spaceId: spaceId,
         conversationId: conversationId,
         agentId: agentId,
         mode: _mode,
         actionSummary: 'bash: $command',
+        request: request,
       );
       if (!verdict.allowed) {
         return HarnessCommandResult.deny(
           'Command denied by policy: ${verdict.reason ?? command}',
         );
       }
-      // The guard already asked and the human said yes; the net below must
-      // not ask again for the same command.
-      preApproved = verdict.prompted;
+      // The guard already asked and the human said yes, or a person approved
+      // this exact command for a while; the net below must not ask again.
+      preApproved =
+          verdict.prompted || verdict.standingApprovalCovers(command: command);
     }
 
     // 1b. Command policy preflight (the built-in mode net). It stays the
@@ -173,21 +221,19 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
             'Command requires approval but no approver is connected: $command',
           );
         }
-        final copy = ActionApprovalCopy.describe(
-          classes: {
-            ActionClass.processSpawn,
-            ...const ShellActionClassifier().classify(command),
-          },
-          command: command,
-        );
         final approved = await port.requestApproval(
-          ConfirmationRequest(
-            spaceId: spaceId ?? '',
+          ActionGuardService.approvalRequest(
+            resolution: verdict?.resolution,
+            classes: classes,
+            askedByPolicy: false,
+            request: request,
+            spaceId: spaceId,
             conversationId: conversationId,
             workspaceId: workspaceId,
-            title: copy.title,
-            detail: copy.detail,
-            command: command,
+            agentId: agentId,
+            actionSummary: 'bash: $command',
+            severity: ConfirmationSeverity.warning,
+            kind: ConfirmationKind.command,
           ),
         );
         if (!approved) {
@@ -218,17 +264,16 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
           environment: {...wrap.environment, ..._baseEnv, ...?env},
           toolchain: true,
         );
-      } else {
-        CcInfraLog.warning(
-          'Harness bash: no native sandbox available; running with the '
-          'allowlisted environment only.',
-        );
-        process = await ChildProcess.start(
+      } else if (hostProcesses case final launcher?) {
+        process = await launcher.start(
           argv.first,
           argv.skip(1).toList(),
           workingDirectory: cwd,
           environment: {..._baseEnv, ...?env},
-          toolchain: true,
+        );
+      } else {
+        return HarnessCommandResult.deny(
+          'No sandbox is available to run commands in: $command',
         );
       }
 
@@ -371,22 +416,32 @@ class SandboxedHarnessCommandRunner implements HarnessCommandRunner {
     }
   }
 
-  Future<SandboxConfig> _buildSandboxConfig(String cwd) async =>
-      processSandboxConfig(
-        processSandboxSpec(
-          sessionId:
-              'harness-${agentId ?? 'oneshot'}::${conversationId ?? 'no-conv'}',
-          workspaceId: workspaceId ?? '',
-          agentId: agentId,
-          workdir: cwd,
-          networkEnabled: _networkEnabled,
-          mode: _mode,
-          protectedPaths: await _protectedPaths?.call() ?? const [],
-          execGrantRoots: await _execGrantRoots(),
-          loopbackPorts: _loopbackPorts,
-          environmentScope: _environmentScope,
-        ),
-      );
+  /// The sandbox session commands run in; the dispatch names one per run so
+  /// it can release it when the run ends.
+  final String? sandboxSessionId;
+
+  String get _sandboxSessionId =>
+      sandboxSessionId ??
+      'harness-${agentId ?? 'oneshot'}::${conversationId ?? 'no-conv'}';
+
+  Future<SandboxConfig> _buildSandboxConfig(String cwd) async {
+    final runSpec = await sandboxSpec?.call(_sandboxSessionId);
+    return processSandboxConfig(
+      runSpec ??
+          processSandboxSpec(
+            sessionId: _sandboxSessionId,
+            workspaceId: workspaceId ?? '',
+            agentId: agentId,
+            workdir: cwd,
+            networkEnabled: _networkEnabled,
+            mode: _mode,
+            protectedPaths: await _protectedPaths?.call() ?? const [],
+            execGrantRoots: await _execGrantRoots(),
+            loopbackPorts: _loopbackPorts,
+            environmentScope: _environmentScope,
+          ),
+    );
+  }
 }
 
 /// Accumulates streamed process output with bounded memory: the first `headCap`

@@ -1,10 +1,12 @@
 import 'dart:async';
 
 import 'package:cc_domain/core/domain/entities/repo.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/open_pr_list_repository.dart';
 import 'package:control_center/di/providers.dart';
+import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/identity/providers/identity_providers.dart';
 import 'package:control_center/features/inbox/providers/inbox_providers.dart';
 import 'package:control_center/features/pr_review/providers/pr_filter_providers.dart';
@@ -58,6 +60,7 @@ void main() {
         activeWorkspaceIdProvider.overrideWith(workspace),
         currentUserIdProvider.overrideWith((ref) => userId?.call() ?? 'user-1'),
         currentUserLoginProvider.overrideWith((ref) => login?.call() ?? 'me'),
+        hasAnyForgeConnectedProvider.overrideWithValue(true),
         reposForWorkspaceProvider(
           'w1',
         ).overrideWith((ref) => Stream.value([repo])),
@@ -446,7 +449,7 @@ void main() {
         container.invalidate(recentlyMergedPrsProvider);
 
         final gate = Completer<List<RepoOpenPrs>>();
-        fake.onClosed = (_, _) => gate.future;
+        fake.onClosed = (_) => gate.future;
         final second = container.listen(recentlyMergedPrsProvider, (_, _) {});
         addTearDown(second.close);
         await _pump();
@@ -523,8 +526,7 @@ class _FakeOpenPrListRepository implements OpenPrListRepository {
   Future<Set<String>> Function(String workspaceId)? onReviewed;
 
   List<RepoOpenPrs> closed = const [];
-  Future<List<RepoOpenPrs>> Function(String workspaceId, String login)?
-  onClosed;
+  Future<List<RepoOpenPrs>> Function(String workspaceId)? onClosed;
 
   @override
   Stream<WorkspaceOpenPrs> watchOpenForWorkspace(String workspaceId) {
@@ -549,13 +551,10 @@ class _FakeOpenPrListRepository implements OpenPrListRepository {
   }
 
   @override
-  Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(
-    String workspaceId,
-    String login,
-  ) {
+  Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(String workspaceId) {
     closedCalls++;
     final hook = onClosed;
-    return hook != null ? hook(workspaceId, login) : Future.value(closed);
+    return hook != null ? hook(workspaceId) : Future.value(closed);
   }
 
   @override
@@ -579,11 +578,11 @@ class _FakeOpenPrListRepository implements OpenPrListRepository {
   Future<void> refreshOpenForWorkspace(String workspaceId) async {}
 
   @override
-  Stream<int> watchNeedsMyReviewCount(String workspaceId) =>
+  Stream<NeedsMyReviewCount> watchNeedsMyReviewCount(String workspaceId) =>
       throw UnimplementedError();
 
   @override
-  Stream<List<InaccessibleRepo>> watchRepoAccessForWorkspace(
+  Stream<List<RepoAccessIssue>> watchRepoAccessForWorkspace(
     String workspaceId,
   ) => throw UnimplementedError();
 

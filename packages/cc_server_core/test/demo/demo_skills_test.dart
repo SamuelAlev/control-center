@@ -24,6 +24,7 @@ void main() {
               required String repo,
               required String path,
               String? ref,
+              String? actingUserId,
             }) async => throw UnsupportedError('unused'),
       );
       final statuses = await bundles.listInstalledStatus('ws');

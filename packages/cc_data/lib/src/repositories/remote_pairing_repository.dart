@@ -36,8 +36,7 @@ class PairingMint {
 
   /// The server's full connection descriptor (compact JSON map, PRD 15):
   /// every known path plus the identity fingerprint. This is what a phone
-  /// pairing QR embeds (`PairingPayload` v2). Null when the host predates the
-  /// descriptor surface.
+  /// pairing QR embeds (`PairingPayload` v2). Null when the host sends none.
   final Map<String, dynamic>? descriptor;
 
   /// The signaling broker a phone uses to rendezvous with cc_server when the

@@ -72,6 +72,18 @@ class RigTransferClient {
   final MediaProxyConfig proxy;
   final http.Client _client;
 
+  /// Told when a lane answers 403. A `drive` lane (clipboard write, file
+  /// drop) refuses someone who may watch the machine but not drive it; a
+  /// viewing lane (clipboard or file read) refuses someone who cannot read
+  /// the machine's space.
+  void Function({required bool drive})? onForbidden;
+
+  void _check(int status, {required bool drive}) {
+    if (status == 403) {
+      onForbidden?.call(drive: drive);
+    }
+  }
+
   /// The deadline for a clipboard round trip.
   ///
   /// Longer than it looks because of what is behind it: the server asks the
@@ -108,6 +120,7 @@ class RigTransferClient {
           )
           .timeout(_clipboardTimeout);
       if (response.statusCode != 200) {
+        _check(response.statusCode, drive: false);
         AppLog.d(
           'rig-transfer',
           'clipboard read for $rigId returned ${response.statusCode}',
@@ -142,6 +155,7 @@ class RigTransferClient {
           )
           .timeout(_clipboardTimeout);
       if (response.statusCode != 200) {
+        _check(response.statusCode, drive: true);
         return RigTransferAck.failed(
           'The machine did not accept the paste (HTTP '
           '${response.statusCode}).',
@@ -194,6 +208,7 @@ class RigTransferClient {
           )
           .timeout(_filesTimeout);
       if (response.statusCode != 200) {
+        _check(response.statusCode, drive: true);
         return RigDropResult.error(
           'The machine did not accept the files (HTTP '
           '${response.statusCode}).',
@@ -230,6 +245,7 @@ class RigTransferClient {
           )
           .timeout(_filesTimeout);
       if (response.statusCode != 200) {
+        _check(response.statusCode, drive: false);
         AppLog.d(
           'rig-transfer',
           'file read of $guestPath returned ${response.statusCode}',

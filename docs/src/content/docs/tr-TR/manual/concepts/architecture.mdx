@@ -3,7 +3,7 @@ title: Mimari
 description: Control Center’ın ince istemci sunucu modeli, özellik öncelikli Clean Architecture ile portlar ve adaptörler kullanılarak nasıl yapılandırıldığı.
 dateModified: 2026-09-19
 slug: tr-TR/kilavuz/kavramlar/mimari
-sourceHash: 6deab5870609631a049ad0d9fd0e15d8a0b0579d
+sourceHash: 21483ae1b80b0d32664feca5004972b92d1db090
 ---
 
 ## Genel bakış
@@ -60,7 +60,7 @@ Bilinmeye değer iki adlandırılmış istisna var:
 - Bellek varlıkları: `MemoryFact`, `MemoryPolicy`, `AgentWorkingMemory`, `MemoryAccessGrant`
 - Paylaşılan değer nesneleri: `AgentSkills`, `AgentRole`, `Mode`, `SandboxBackend`, `SandboxSpec`, `RunCost`
 - Paylaşılan portlar: `SandboxPort`, `CredentialBrokerPort`, `WorkspaceFilesystemPort`, `GitRepoInspectorPort`, `EmbeddingPort`
-- Alan hizmetleri: `MemoryAccessPolicy`, `ActivityLogger`, `MentionResolver`, `RunLivenessClassifier`
+- Alan hizmetleri: `MemoryAccessPolicy`, `ActivityLogger`, `AgentMentionParser`, `UserMentionParser`, `RunLivenessClassifier`
 - `DomainEventBus` + olay türleri (çalışma alanı/ajan, PR/inceleme, mesajlaşma, biletleme, pipeline, orkestrasyon, bellek, takvim/toplantılar, kimlik ve üyelik, gözlemlenebilirlik)
 
 ## Kimlik ve çok oyunculu
@@ -132,7 +132,6 @@ Tüm harici HTTP sunucuda yaşar. İstemciler GitHub’a, Linear’a ya da Googl
 
 - Sırlar `flutter_secure_storage` içinde (macOS anahtarlığı, Windows kimlik bilgisi yöneticisi, Linux libsecret) — istemcinin aygıt kimlik bilgisi ve uzak eşleştirme anahtarları, sağlayıcı token’ları değil
 - Yalnızca hassas olmayan tercihler için `shared_preferences` (tema, yazı tipi, yerleşim)
-- Eski kurulumlardan kalan sağlayıcı sırları, `features/auth/providers/credential_migration.dart` tarafından bir kez sunucuya devredilir ve ardından istemci anahtarlığından silinir
 
 ## Mimari kısıtlarının uygulanması
 

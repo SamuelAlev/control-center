@@ -37,19 +37,22 @@ EnvironmentHost prEnvironmentHost({
         dedupKey: '${PrTabKinds.rig}:${target.dedupKey}',
       );
 
-  void openTerminal(String sessionId, String label, {bool setup = false}) =>
-      openOrFocus(
-        EditorTab(
-          kind: PrTabKinds.terminal,
-          label: label,
-          icon: PrTabKinds.iconFor(PrTabKinds.terminal),
-          args: {
-            'attachSessionId': sessionId,
-            if (setup) kEnvironmentSetupTabArg: true,
-          },
-          dedupKey: '${PrTabKinds.terminal}:environment-$sessionId',
-        ),
-      );
+  void openTerminal(
+    String sessionId,
+    String label, {
+    bool startTerminal = false,
+  }) => openOrFocus(
+    EditorTab(
+      kind: PrTabKinds.terminal,
+      label: label,
+      icon: PrTabKinds.iconFor(PrTabKinds.terminal),
+      args: {
+        'attachSessionId': sessionId,
+        if (startTerminal) kEnvironmentStartTerminalTabArg: true,
+      },
+      dedupKey: '${PrTabKinds.terminal}:environment-$sessionId',
+    ),
+  );
 
   return EnvironmentHost(
     openUrl: ({required url, required label}) => openOrFocus(
@@ -103,8 +106,9 @@ EnvironmentHost prEnvironmentHost({
     ),
     openProcess: ({required spaceId, required sessionId, required label}) =>
         openTerminal(sessionId, label),
-    openSetup: ({required spaceId, required sessionId, required label}) =>
-        openTerminal(sessionId, label, setup: true),
+    openStartTerminal:
+        ({required spaceId, required sessionId, required label}) =>
+            openTerminal(sessionId, label, startTerminal: true),
     openViewer: ({required spaceId, required componentId, required label}) =>
         openOrFocus(
           rigTab(

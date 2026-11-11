@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 ///
 /// Default 200ms backoff is a footgun for RPC subscriptions: a stream error
 /// re-opens `sub/subscribe`, so unrecoverable errors (rate limit, auth) storm
-/// the server. Never retry [_unrecoverableRpcCodes] or unrecoverable
-/// [NetworkException]; transient RPC errors retry a few times with a ≥1s
+/// the server. Never retry [_unrecoverableRpcCodes], unrecoverable
+/// [NetworkException] or an [AuthException]; transient RPC errors retry a few times with a ≥1s
 /// floor; otherwise [ProviderContainer.defaultRetry].
 Duration? appProviderRetry(int retryCount, Object error) {
   if (error is RemoteRpcException) {
@@ -22,6 +22,12 @@ Duration? appProviderRetry(int retryCount, Object error) {
   }
   if (error is NetworkException &&
       _unrecoverableNetworkCodes.contains(error.code)) {
+    return null;
+  }
+  // A typed refusal (ServerOwnerRequiredException and the other
+  // AuthExceptions a repository maps an unauthorized answer to) is as final
+  // as the raw `unauthorized` code it came from.
+  if (error is AuthException) {
     return null;
   }
   return ProviderContainer.defaultRetry(retryCount, error);

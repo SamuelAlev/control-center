@@ -18,13 +18,6 @@ class _FakeEnvironments implements EnvironmentPort {
     String definitionId,
   ) async => const [];
 
-  @override
-  Future<String> startSetup(
-    String workspaceId,
-    String spaceId, {
-    required Principal by,
-  }) async => 'session-1';
-
   final calls = <String>[];
   Principal? lastBy;
 
@@ -55,9 +48,10 @@ class _FakeEnvironments implements EnvironmentPort {
     required String spaceId,
     String? definitionId,
     Map<String, dynamic> options = const {},
+    bool attended = false,
     required Principal by,
   }) async {
-    calls.add('ensure $spaceId $options');
+    calls.add('ensure $spaceId $options${attended ? ' attended' : ''}');
     lastBy = by;
     return _environment(workspaceId, spaceId);
   }

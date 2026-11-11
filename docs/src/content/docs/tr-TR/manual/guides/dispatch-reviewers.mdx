@@ -2,7 +2,7 @@
 title: İnceleyici ajanları gönderme
 description: Uzman inceleyici ajanları PR görünümünden, bir MCP aracından veya bir pipeline adımından bir PR'a gönderin.
 slug: tr-TR/kilavuz/nasil-yapilir/inceleyici-ajanlari-gonderme
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Bu kılavuz, pull request'leri incelemek üzere inceleyici ajanları nasıl
@@ -86,7 +86,7 @@ Burada iki olay önemlidir ve birbirlerinin yerine kullanılamazlar:
 | Olay                   | Ne zaman tetiklenir                                                                                             | Yük anahtarları                                                     |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | `PullRequestPublished` | Bir PR **Control Center üzerinden** açılır — oluşturma yüzeyi ya da `pr_lifecycle.publish` çağıran bir ajan     | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                  |
-| `ExternalPrDetected`   | PR yoklama servisi doğrudan GitHub'da açılmış bir PR bulur                                                      | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`        |
+| `ExternalPrDetected`   | PR yoklama servisi doğrudan GitHub'da açılmış bir PR bulur                                                      | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`        |
 
 github.com üzerinde açılan bir PR `PullRequestPublished` olayını asla
 yayımlamaz; dolayısıyla yalnızca o olaya bağlanan bir şablon onu görmez. Ayrıca

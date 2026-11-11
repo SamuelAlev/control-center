@@ -59,9 +59,6 @@ class DiffWorkerPool extends ChangeNotifier {
   int get _effectiveWorkerCount =>
       math.min(32, math.max(1, debugWorkerCountOverride ?? kWorkerCount));
 
-  /// Retained for source compatibility; the chunk size lives in the worker core.
-  static const int kTokenChunkLines = diffTokenChunkLines;
-
   /// The cross-platform worker pool. Null until the first [enqueue] lazily
   /// creates it (which spawns [_effectiveWorkerCount] isolates / Web Workers on
   /// first `compute`), and null again after idle teardown or [shutdown].

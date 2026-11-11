@@ -2,14 +2,14 @@
 title: Conversas de PR
 description: Como um comentário de PR no GitHub se torna um turno de agente sem webhook, o que autoriza o autor e a quem cada lado da conversa é atribuído.
 slug: pt-BR/manual/conceitos/conversas-de-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Uma pull request já é o lugar onde a conversa sobre o código acontece. As
 conversas de PR a tornam uma superfície em um espaço de trabalho do Control
 Center, do mesmo modo que uma [ponte de
 chat](/pt-BR/manual/conceitos/pontes-de-chat/) torna o Slack uma: mencione
-`@usectrl` (ou o bot do GitHub App do espaço de trabalho) em uma PR, responda
+`@usectrl` em uma PR, responda
 dentro das threads de revisão dela, ou adicione o rótulo `ai-review`, e o
 trabalho acontece no espaço de revisão da PR — sob a mesma atribuição e as
 mesmas barreiras que qualquer coisa digitada no app. Um comentário e um rótulo
@@ -26,8 +26,7 @@ flui**, **o que autoriza um comentário que chega de fora** e **a quem cada lado
 O único canal de envio que o GitHub oferece a um app é um webhook, e um webhook
 precisa de uma URL de entrada — justamente a única coisa que esta superfície
 deliberadamente nunca exige. Então a descoberta é uma varredura: uma busca com
-alias por instalação do app pede ao GitHub as PRs que mencionam o bot (ou seu
-slug curto) e as PRs abertas que carregam o rótulo de revisão; as PRs que já
+alias por instalação do app pede ao GitHub as PRs que mencionam `@usectrl` e as PRs abertas que carregam o rótulo de revisão; as PRs que já
 têm um espaço de revisão têm suas threads de comentários lidas, e tudo é
 comparado por id de comentário com o que foi visto na varredura anterior. Um
 app próprio faz a varredura a cada minuto, em no máximo 25 PRs. Pelo Connect, as
@@ -75,9 +74,9 @@ nada é publicado:
 - **Um membro com login feito.** A conta precisa pertencer a um membro _deste_
   espaço de trabalho que entrou no GitHub neste servidor
 - **Um papel com escrita.** `viewer` e `guest` não podem iniciar trabalho
-- **Acesso de push.** As respostas usam um token `bot` limitado ao acesso desse
-  membro ao repositório. Se o servidor não conseguir emitir um, ele não
-  prossegue
+- **Acesso de push.** As respostas usam um token para esse único repositório,
+  limitado ao acesso desse membro a ele. Se o servidor não conseguir emitir um,
+  ele não prossegue
 
 Todas as verificações rodam antes de qualquer confirmação de recebimento, então
 um estranho não recebe nenhuma reação nem resposta. Um comentário nunca é
@@ -100,16 +99,17 @@ Cada lado da conversa carrega uma identidade diferente, e a diferença é o
 recurso:
 
 - **No GitHub, a resposta é uma automação em seu nome.** Cada resposta usa um
-  token `bot` para aquele único repositório, limitado ao acesso do membro que
-  perguntou. Com um app próprio, o autor é a conta `[bot]` do app. Pelo
-  Connect, um token do App compartilhado é um token de usuário, então a
-  resposta tem como autor a conta do membro que perguntou, agindo por meio do
-  App. Em qualquer caso, toda resposta começa com
-  `**Control Center** (for @login):`, que diz quem perguntou e também serve de
-  proteção contra loops.
+  token para aquele único repositório, limitado ao acesso do membro que
+  perguntou, e é de autoria da conta `[bot]` do app. Uma exceção: no app
+  compartilhado Control Center Connect, o bot publica em threads de revisão
+  somente quando o operador do Connect cadastrou a instalação; caso contrário,
+  uma resposta dentro de uma thread de revisão tem como autor a conta do próprio
+  membro que perguntou. Em qualquer caso, toda resposta
+  começa com `**Control Center** (for @login):`, que diz quem perguntou e também serve de
+  proteção contra loops. As @-menções nas palavras do agente são neutralizadas, então uma resposta nunca notifica um usuário ou equipe.
 - **No espaço, a pergunta é sua.** A mensagem é atribuída ao membro ao qual o
-  autor foi resolvido, e a execução do agente roda em nome dele: os commits o
-  reconhecem como coautor, e o dial de autonomia e as barreiras de ação do
+  autor foi resolvido, e a execução do agente roda em nome dele: os commits da
+  execução são dele, e o dial de autonomia e as barreiras de ação do
   espaço se aplicam exatamente como a uma mensagem digitada no app. As
   gravações na forge feitas pela execução usam tokens de um único repositório
   limitados a esse membro, nunca o login dele entregue por inteiro.
@@ -118,24 +118,17 @@ Publicar as constatações da revisão de volta no GitHub continua sendo uma
 decisão de uma pessoa, tomada no Control Center. Uma menção pode _iniciar_ uma
 revisão; só um humano publica uma.
 
-## A proteção contra loops e o nome curto
+## A proteção contra loops
 
 Tudo o que é de autoria de uma conta de bot é descartado antes que qualquer
 filtro rode — o nosso especificamente, e qualquer sufixo `[bot]`, para que o
 bot de revisão de outro app também não possa acordar o nosso —, e também todo
 comentário que começa com o prefixo `**Control Center** (for @`, já que uma
-resposta pelo Connect tem como autor a conta de uma pessoa. Sem isso, as
+resposta em thread de revisão pelo Connect pode ter como autor a conta de uma pessoa. Sem isso, as
 respostas chegariam como comentários novos e disparariam a ponte de novo para
 sempre.
 
-O sufixo `[bot]` também é o motivo de a forma curta existir. O GitHub fixa o
-login da conta de um app em `<slug>[bot]`, não oferece autocomplete para ele e
-nunca resolve `@slug` para o app — então aceitar o slug puro é uma decisão do
-_nosso_ mecanismo de correspondência, e descobri-lo exige uma faixa de busca no
-**texto** bruto dos comentários, em vez do índice de menções do GitHub. O custo
-é declarado, e não amenizado: um usuário humano que compartilhe o slug do app
-aciona o bot a cada menção em forma curta a si mesmo. Nomes de app distintos
-tornam a colisão hipotética.
+Só `@usectrl` inicia trabalho. O login próprio do App (`<slug>[bot]`) e o slug puro não endereçam nada: o GitHub não oferece autocomplete para uma conta de app, e um slug puro pode pertencer a um usuário humano.
 
 ## O que deliberadamente não é oferecido
 

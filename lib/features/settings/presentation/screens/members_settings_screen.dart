@@ -3,7 +3,6 @@ import 'package:control_center/features/identity/providers/identity_providers.da
 import 'package:control_center/features/settings/presentation/screens/settings_page.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/invite_member_dialog.dart';
 import 'package:control_center/features/settings/presentation/widgets/sections/workspace/members_roster_section.dart';
-import 'package:control_center/features/settings/presentation/widgets/sections/workspace/workspace_activity_section.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/router/routes.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -40,10 +39,7 @@ class MembersSettingsScreen extends ConsumerWidget {
             child: Text(l10n.inviteMember),
           ),
       ],
-      sections: [
-        MembersRosterSection(workspaceId: workspaceId),
-        WorkspaceActivitySection(workspaceId: workspaceId),
-      ],
+      sections: [MembersRosterSection(workspaceId: workspaceId)],
     );
   }
 }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:cc_infra/src/ports/workspace_filesystem_port.dart';
+import 'package:cc_domain/core/domain/ports/workspace_filesystem_port.dart';
 import 'package:cc_mcp/src/tools/create_skill_tool.dart';
 import 'package:test/test.dart';
 

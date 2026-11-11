@@ -42,7 +42,11 @@ void main() {
       // paired device or PSK: those come from the server's env-based bootstrap
       // provisioning, which is the code path under test.
       final seed = openSeedDatabases(tmp.path);
-      await seed.seedWorkspace(workspaceId, name: 'Thin');
+      await seed.seedWorkspace(
+        workspaceId,
+        name: 'Thin',
+        ownerUserId: await seed.serverOwner(),
+      );
       await seed.close();
 
       // Spawn the REAL cc_server with the bootstrap credentials in the env —

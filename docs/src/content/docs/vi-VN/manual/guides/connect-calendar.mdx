@@ -2,7 +2,7 @@
 title: Kết nối Google Calendar
 description: Kết nối Google Calendar với một không gian làm việc, quản lý nhiều tài khoản và kết nối lại khi đăng nhập hết hạn.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-lich
-sourceHash: c1a5f74a97cc7f9d2a27b4e79f07d074e9862b47
+sourceHash: 478861ade8b68e2475a6a03b53e9bf8dfe548618
 ---
 
 Hướng dẫn này chỉ cho bạn cách kết nối Google Calendar với một không gian làm
@@ -20,7 +20,7 @@ bộ sự kiện của bạn cho không gian làm việc đó vào Control Cente
 ## Kết nối một tài khoản
 
 1. Mở **Lịch** trên thanh bên.
-2. Nhấp **Thêm tài khoản lịch** trên thanh bên của lịch. (Mục này cũng nằm tại **Cài đặt → Không gian làm việc → Hồ sơ & danh tính**, trong **Google Calendar**.)
+2. Nhấp **Thêm tài khoản lịch** trên thanh bên của lịch. (Mục này cũng nằm tại **Cài đặt → Bạn → Hồ sơ**, trong **Google Calendar**.)
 3. Nhấp **Kết nối Google Calendar**. Trình duyệt của bạn mở trang đồng ý của Google.
 4. Chọn tài khoản và phê duyệt quyền truy cập sự kiện lịch và danh sách lịch của bạn.
 
@@ -49,7 +49,6 @@ Luồng kết nối yêu cầu `calendar.events` và `calendar.calendarlist.read
 - **Xóa sự kiện:** mở sự kiện và nhấp biểu tượng thùng rác. Xác nhận cho biết ai bị ảnh hưởng: khách được thông báo rằng một sự kiện bạn tổ chức đã bị hủy, còn xóa một lời mời chỉ gỡ nó khỏi lịch của bạn. Xóa một lần xuất hiện của sự kiện lặp lại sẽ giữ nguyên phần còn lại của chuỗi
 
 Khách nhận được thư mời, cập nhật hoặc hủy của chính Google. Bạn chỉ có thể tạo sự kiện trên các lịch mà tài khoản của bạn được phép ghi, và chỉ bằng tài khoản của chính bạn: lịch đã kết nối của thành viên khác không bao giờ được đề xuất. Việc dời một lần xuất hiện của sự kiện lặp lại cũng giữ nguyên phần còn lại của chuỗi.
-
 
 ## Đồng bộ diễn ra thế nào
 
@@ -92,13 +91,12 @@ chủ đã đổi máy chủ Connect hoặc xoay khóa Connect, máy khách Goog
 
 ## Ngắt kết nối một tài khoản
 
-Từ thanh bên của lịch (hoặc **Cài đặt → Không gian làm việc → Hồ sơ & danh
-tính**), nhấp **Ngắt kết nối** trên tài khoản. Thao tác này xóa các sự kiện đã
+Từ thanh bên của lịch (hoặc **Cài đặt → Bạn → Hồ sơ**), nhấp **Ngắt kết nối** trên tài khoản. Thao tác này xóa các sự kiện đã
 đồng bộ và xóa thông tin xác thực đã lưu của tài khoản trên máy chủ.
 
 ## Tự mang theo client Google của bạn
 
-Chạy client Google riêng khi bạn chọn **Dùng ứng dụng của riêng tôi**. Client của máy chủ chỉ áp dụng khi đó: với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả Google, và client của máy chủ vẫn được lưu nhưng không dùng. Để màn hình đồng ý hiển thị tên dự án của bạn trong khi máy chủ dùng Connect, hãy cấp cho không gian làm việc một client riêng ([bên dưới](#cấp-cho-một-không-gian-làm-việc-client-google-riêng)); điều này áp dụng ở mọi chế độ.
+Chạy client Google riêng khi bạn chọn **Dùng ứng dụng của riêng tôi**. Client của máy chủ chỉ áp dụng khi đó: với Control Center Connect hoặc Connect tùy chỉnh, Connect chạy mọi làn, kể cả Google, và client của máy chủ vẫn được lưu nhưng không dùng. Để màn hình đồng ý hiển thị tên dự án của bạn trong khi máy chủ dùng Connect, hãy đặt không gian làm việc vào ứng dụng riêng của nó và cấp cho nó một client riêng ([bên dưới](#cấp-cho-một-không-gian-làm-việc-client-google-riêng)); điều này áp dụng bất kể chế độ của máy chủ.
 
 1. Trong [Google Cloud Console](https://console.cloud.google.com/apis/credentials), bật **Google Calendar API** và cấu hình **OAuth consent screen**, thêm các phạm vi `calendar.events`, `calendar.calendarlist.readonly`, `openid` và `email`. Khi app chưa được xác minh, hãy thêm chính bạn làm **test user**.
 2. Tạo một **OAuth client ID** với loại ứng dụng **Web application**.
@@ -119,14 +117,13 @@ về client đã cấp nó.
 Một không gian làm việc có thể kết nối Google Calendar qua một client riêng thay vì client của máy chủ. Chỉ quản trị viên hoặc chủ sở hữu của không gian làm việc mới có thể thiết lập.
 
 1. Tạo client Google loại **Web application** như ở bước 1 và 2 phía trên
-2. Vào **Cài đặt → Không gian làm việc → Chung → Ứng dụng nhà cung cấp** và mở **Google Calendar**
-3. Chọn **Dùng ứng dụng riêng của không gian làm việc này**
-4. Thêm URI chuyển hướng mà hàng hiển thị dưới **URL callback** vào client, nguyên văn
-5. Dán **Id client** và **Bí mật client**
+2. Vào **Cài đặt → Không gian làm việc → Tích hợp**. Trên thẻ **Control Center Connect**, chọn **Dùng ứng dụng của riêng tôi** và nhấn **Áp dụng**
+3. Dưới **Lịch**, thẻ **ứng dụng Google Calendar** xuất hiện. Thêm URI chuyển hướng mà thẻ hiển thị dưới **URL callback** vào client, nguyên văn
+4. Dán **Id client** và **Bí mật client**
 
-Các tài khoản lịch được kết nối trong không gian làm việc này khi đó đi qua client đó, bất kể máy chủ đăng nhập người dùng bằng cách nào. Nó không bao giờ rơi về client của máy chủ hay Connect: cho đến khi cả hai trường được đặt, Google Calendar tắt trong không gian làm việc này và hàng sẽ cho biết còn thiếu gì. Bí mật không bao giờ rời khỏi máy chủ.
+Các tài khoản lịch được kết nối trong không gian làm việc này khi đó đi qua client đó, bất kể máy chủ đăng nhập người dùng bằng cách nào. Nó không bao giờ rơi về client của máy chủ hay Connect: cho đến khi cả hai trường được đặt, Google Calendar tắt trong không gian làm việc này và thẻ sẽ cho biết còn thiếu gì. Bí mật không bao giờ rời khỏi máy chủ.
 
-Chuyển đổi giữa client của máy chủ và client của không gian làm việc, hoặc đổi id client của không gian làm việc, sẽ đánh dấu mọi tài khoản Google trong không gian làm việc này để kết nối lại. **Dùng ứng dụng của máy chủ này** sẽ xóa các trường đã lưu của không gian làm việc. Các không gian làm việc khác trên máy chủ không bị ảnh hưởng.
+**Dùng ứng dụng của riêng tôi** áp dụng cho mọi nhà cung cấp cùng lúc: GitHub, Linear và tìm GIF cũng chỉ chạy trên ứng dụng riêng của không gian làm việc. Đổi ứng dụng đăng nhập của không gian làm việc, hoặc đổi id client của không gian làm việc, sẽ đánh dấu mọi tài khoản Google trong không gian làm việc này để kết nối lại. Các trường đã lưu được giữ lại khi không gian làm việc chuyển sang lựa chọn khác, nhưng chỉ được dùng dưới **Dùng ứng dụng của riêng tôi**. Các không gian làm việc khác trên máy chủ không bị ảnh hưởng.
 
 ## Xử lý sự cố
 
@@ -137,8 +134,8 @@ Chuyển đổi giữa client của máy chủ và client của không gian làm
 | `invalid_client` từ Google | Id và secret đến từ hai client khác nhau, hoặc client đã bị xóa |
 | Phê duyệt thành công nhưng đồng bộ trống | Tài khoản của bạn không phải **test user** trên màn hình đồng ý, hoặc một phạm vi được yêu cầu không được cấp |
 | Hộp thoại báo mã không khớp | Hãy gõ đúng 8 ký tự như trình duyệt hiển thị. Năm lần nhập sai sẽ kết thúc đăng nhập; hãy bắt đầu lại |
-| “Không thể cập nhật phản hồi của bạn”, hoặc tạo, dời hay xóa sự kiện thất bại | Tài khoản được kết nối với phạm vi chỉ đọc cũ. Hãy kết nối lại; lịch được chia sẻ chỉ đọc với bạn cũng từ chối ghi |
-| Mọi người phải kết nối lại | Máy khách Google của máy chủ hoặc không gian làm việc đã thay đổi, hoặc lựa chọn Connect hay khóa của máy chủ đã thay đổi. Xem [Kết nối lại một tài khoản đã hết hạn](#kết-nối-lại-một-tài-khoản-đã-hết-hạn) |
+| “Không thể cập nhật phản hồi của bạn”, hoặc tạo, dời hay xóa sự kiện thất bại | Tài khoản không cấp quyền ghi lịch. Hãy kết nối lại và phê duyệt mọi phạm vi được yêu cầu; lịch được chia sẻ chỉ đọc với bạn cũng từ chối ghi |
+| Mọi người phải kết nối lại | Máy khách Google của máy chủ hoặc không gian làm việc đã thay đổi, hoặc lựa chọn Connect của máy chủ hoặc của không gian làm việc, hoặc khóa của máy chủ đã thay đổi. Xem [Kết nối lại một tài khoản đã hết hạn](#kết-nối-lại-một-tài-khoản-đã-hết-hạn) |
 
 ## Hướng dẫn liên quan
 

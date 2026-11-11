@@ -2,7 +2,7 @@
 title: Jembatan chat
 description: Penyedia, perintah, kredensial, kemampuan, operasi RPC, dan penyimpanan untuk jembatan chat.
 slug: id-ID/panduan-pengguna/referensi/jembatan-chat
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Penyedia
@@ -150,7 +150,7 @@ Kartu terbuka saat sebuah sebutan diterima, sebelum kloning dan sebelum token pe
 | Sebutan diterima            | `Working on it…`                                               |
 | Langkah `repo`              | `Cloning <repo>…`                                              |
 | Langkah `prCheckout`        | `Checking out the pull request in <repo>…`                     |
-| Langkah `script`            | `Running the setup script for <repo>…`                         |
+| Langkah `provisionTasks`    | `Running worktree tasks for <repo>…`                           |
 | Langkah `agent`             | `Setting up <agent>…`                                          |
 | `provisioning`, belum ada langkah | `Preparing the workspace…`                               |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Kueri ini ada karena penautan terjadi di sisi _lain_: anggota mengetikkan kode s
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Kredensial koneksi         | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Penyiapan terpandu yang belum selesai | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                   |
-| Berkas Slack lama          | `<dataDir>/<workspaceId>/slack_credentials.json` dan `slack_app_setup.json`, dibaca sekali dan dimigrasikan di tempat |
 
 Kredensial berada di samping basis data ruang kerja, bukan di dalamnya: menghapus ruang kerja sekaligus menghapus token chatnya dan `workspace.export` atau cadangan menyalin `workspace.db` — jadi ruang kerja yang diserahkan kepada orang lain tidak membawa token bot yang masih hidup. Penulisan bersifat atomik (berkas sementara plus rename) dan diperketat hanya untuk pemiliknya.
 

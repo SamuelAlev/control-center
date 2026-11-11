@@ -6,6 +6,7 @@ import 'package:cc_domain/core/domain/events/domain_event_bus.dart';
 import 'package:cc_domain/core/domain/events/messaging_events.dart';
 import 'package:cc_domain/core/domain/repositories/user_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_membership_repository.dart';
+import 'package:cc_domain/core/domain/services/active_stream_registry.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_segment.dart';
 import 'package:cc_domain/core/domain/value_objects/transcript_update.dart';
 import 'package:cc_domain/features/chat_bridge/domain/entities/chat_space_link.dart';
@@ -27,7 +28,6 @@ import 'package:cc_infra/src/chat/chat_provider_adapter.dart';
 import 'package:cc_infra/src/chat/chat_text.dart';
 import 'package:cc_infra/src/chat/chat_ticket_draft_store.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
-import 'package:cc_infra/src/messaging/active_stream_registry.dart';
 import 'package:uuid/uuid.dart';
 
 part 'chat_turn_relay.dart';
@@ -460,8 +460,8 @@ class ChatBridgeService {
         userId: null,
         refusal:
             'I do not know who you are in Control Center yet. Open Settings → '
-            'Workspace → Profile & identity, press “Link my $_productName account”, '
-            'then send me the code it shows in a direct message.',
+            'You → Profile, press “Link my $_productName account”, then send '
+            'me the code it shows in a direct message.',
       );
     }
     final member = await _members.getMember(workspaceId, link.userId);
@@ -511,7 +511,7 @@ class ChatBridgeService {
         email.isEmpty) {
       return null;
     }
-    final user = await _users.getByEmail(email);
+    final user = await _users.getByVerifiedEmail(email);
     if (user == null || !await verified(user.id)) {
       return null;
     }
@@ -674,8 +674,8 @@ class ChatBridgeService {
       'What I can do:\n'
       '• `$_command ticket <title> | <description>` — draft a ticket you then '
       'create in Control Center\n'
-      '• send me the code from Settings → Workspace → Profile & identity in a '
-      'direct message to link this $_productName account\n'
+      '• send me the code from Settings → You → Profile in a direct '
+      'message to link this $_productName account\n'
       '• mention me (`@${_adapter.botName}`) or send me a direct message to put '
       'an agent on something';
 
@@ -745,7 +745,7 @@ class ChatBridgeService {
 
   static const String _invalidCode =
       'That code is not valid (or has expired). Generate a fresh one in '
-      'Settings → Workspace → Profile & identity.';
+      'Settings → You → Profile.';
 
   /// Tells the chat member that the link they asked for was confirmed. Best
   /// effort: the link exists either way.
@@ -797,7 +797,7 @@ class ChatBridgeService {
     CcInfraLog.info('${_tag()}: drafted ticket ${draft.id} from a command');
     return _Answer(
       'Drafted “${draft.title}”. Create it in Control Center under '
-      'Settings → Workspace → Profile & identity; drafts are kept for a day.',
+      'Settings → You → Profile; drafts are kept for a day.',
     );
   }
 

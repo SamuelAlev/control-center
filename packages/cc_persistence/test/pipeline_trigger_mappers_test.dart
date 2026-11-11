@@ -20,6 +20,7 @@ void main() {
         match: {'status': 'merged'},
         lastFiredAt: lastFired,
         catchUpPolicy: CronCatchUpPolicy.skip,
+        armedByUserIds: const {'bob', 'alice'},
         createdAt: now,
       );
 
@@ -34,6 +35,7 @@ void main() {
       expect(companion.matchJson, Value(jsonEncode({'status': 'merged'})));
       expect(companion.lastFiredAt, Value(lastFired));
       expect(companion.catchUpPolicy, const Value('skip'));
+      expect(companion.armedByUserIdsJson, const Value('["alice","bob"]'));
       expect(companion.createdAt, Value(now));
     });
 
@@ -83,6 +85,7 @@ void main() {
         matchJson: '{"status":"merged"}',
         lastFiredAt: lastFired,
         catchUpPolicy: 'skip',
+        armedByUserIdsJson: '["bob","alice"]',
         createdAt: now,
       );
 
@@ -97,6 +100,7 @@ void main() {
       expect(trigger.match, {'status': 'merged'});
       expect(trigger.lastFiredAt, lastFired);
       expect(trigger.catchUpPolicy, CronCatchUpPolicy.skip);
+      expect(trigger.armedByUserIds, {'alice', 'bob'});
       expect(trigger.createdAt, now);
     });
 
@@ -112,12 +116,14 @@ void main() {
         matchJson: 'not-json',
         lastFiredAt: null,
         catchUpPolicy: 'catchUpLatestOnly',
+        armedByUserIdsJson: 'not-json',
         createdAt: DateTime(2025, 1, 1),
       );
 
       final trigger = triggerFromRow(row);
 
       expect(trigger.match, isEmpty);
+      expect(trigger.armedByUserIds, isEmpty);
     });
 
     test('matchJson that is not a Map falls back to empty map', () {
@@ -132,6 +138,7 @@ void main() {
         matchJson: '[1, 2, 3]',
         lastFiredAt: null,
         catchUpPolicy: 'catchUpLatestOnly',
+        armedByUserIdsJson: 'not-json',
         createdAt: DateTime(2025, 1, 1),
       );
 
@@ -155,6 +162,7 @@ void main() {
         },
         lastFiredAt: DateTime(2025, 6, 9),
         catchUpPolicy: CronCatchUpPolicy.skip,
+        armedByUserIds: const {'carol', 'alice'},
         createdAt: DateTime(2025, 6, 1),
       );
 
@@ -172,11 +180,13 @@ void main() {
           matchJson: companion.matchJson.value,
           lastFiredAt: companion.lastFiredAt.value,
           catchUpPolicy: companion.catchUpPolicy.value,
+          armedByUserIdsJson: companion.armedByUserIdsJson.value,
           createdAt: companion.createdAt.value,
         ),
       );
 
       expect(roundtripped, original);
+      expect(roundtripped.armedByUserIds, {'alice', 'carol'});
       // The catch-up policy survives the full round-trip (== ignores it).
       expect(roundtripped.catchUpPolicy, CronCatchUpPolicy.skip);
     });

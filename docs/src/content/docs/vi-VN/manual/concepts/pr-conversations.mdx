@@ -2,13 +2,13 @@
 title: Hội thoại PR
 description: Cách một bình luận trên PR GitHub trở thành một lượt agent mà không cần webhook, điều gì cấp quyền cho tác giả, và mỗi bên của cuộc hội thoại được quy kết cho ai.
 slug: vi-VN/so-tay/khai-niem/hoi-thoai-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Một pull request vốn đã là nơi diễn ra cuộc hội thoại về mã nguồn. Hội thoại PR
 biến nó thành một bề mặt trên không gian làm việc Control Center, giống như một
 [cầu chat](/vi-VN/so-tay/khai-niem/cau-chat/) biến Slack thành một bề mặt: nhắc
-đến `@usectrl` (hoặc bot GitHub App của không gian làm việc) trên một PR, trả lời
+đến `@usectrl` trên một PR, trả lời
 bên trong các luồng đánh giá của nó, hoặc thêm nhãn `ai-review`, và công việc diễn
 ra trong không gian đánh giá của PR — dưới cùng cách quy kết và cùng rào chắn như
 bất cứ điều gì được gõ trong ứng dụng. Một bình luận và một nhãn đều được kiểm soát
@@ -25,7 +25,7 @@ bên ngoài** và **mỗi bên được quy kết cho ai**.
 Kênh đẩy (push) duy nhất mà GitHub dành cho một app là webhook, mà webhook thì
 cần một URL đến — đúng thứ mà bề mặt này cố tình không bao giờ đòi hỏi. Nên
 việc phát hiện là một lượt quét: một tìm kiếm có bí danh cho mỗi cài đặt app hỏi
-GitHub về những PR nhắc đến bot (hoặc slug ngắn của nó) và về những PR đang mở
+GitHub về những PR nhắc đến `@usectrl` và về những PR đang mở
 mang nhãn đánh giá; những PR đã có không gian đánh giá thì được đọc các luồng bình
 luận của chúng, và mọi thứ được đối chiếu theo id bình luận với những gì đã thấy ở
 lượt quét trước. Một app riêng quét mỗi phút trên tối đa 25 PR. Qua Connect, các
@@ -72,8 +72,7 @@ Ba kiểm tra theo thứ tự, và trượt ở bất kỳ kiểm tra nào đề
 - **Một thành viên đã đăng nhập.** Tài khoản phải thuộc về một thành viên của _không
   gian làm việc này_ đã đăng nhập GitHub trên máy chủ này
 - **Vai trò ghi.** `viewer` và `guest` không thể khởi động công việc
-- **Quyền push.** Các câu trả lời dùng một token `bot` giới hạn theo quyền truy cập
-  kho mã của thành viên đó. Nếu máy chủ không cấp được token, nó không tiếp tục
+- **Quyền push.** Các câu trả lời dùng một token cho đúng kho mã đó, giới hạn theo quyền truy cập của thành viên với kho mã ấy. Nếu máy chủ không cấp được token, nó không tiếp tục
 
 Mọi kiểm tra chạy trước mọi lời xác nhận, nên một người lạ không nhận được phản
 ứng hay câu trả lời nào. Một bình luận không bao giờ được quy kết cho người không
@@ -95,15 +94,16 @@ Mỗi bên của cuộc hội thoại mang một danh tính khác nhau, và chí
 làm nên tính năng:
 
 - **Trên GitHub, câu trả lời là tự động hóa thay mặt bạn.** Mọi câu trả lời dùng
-  một token `bot` cho đúng kho mã đó, giới hạn theo quyền truy cập của thành viên
-  đang hỏi. Trên app riêng, tác giả là tài khoản `[bot]` của app. Qua Connect, token
-  của App dùng chung là token người dùng, nên câu trả lời được ghi là tài khoản của
-  thành viên đang hỏi, hoạt động thông qua App. Dù theo cách nào, mỗi câu trả lời
+  một token cho đúng kho mã đó, giới hạn theo quyền truy cập của thành viên đang hỏi,
+  và được ghi là tài khoản `[bot]` của app. Có một ngoại lệ: trên app Control Center
+  Connect dùng chung, bot chỉ đăng trong luồng đánh giá khi nhà vận hành Connect đã liệt
+  kê cài đặt app này, nên nếu không thì câu trả lời trong luồng đánh giá được ghi là tài
+  khoản của chính thành viên đang hỏi. Dù theo cách nào, mỗi câu trả lời
   cũng bắt đầu bằng `**Control Center** (for @login):`, cho biết ai đã hỏi và đồng
-  thời đóng vai trò chốt chặn vòng lặp.
+  thời đóng vai trò chốt chặn vòng lặp. Các lượt nhắc @ trong lời của agent được vô hiệu hóa, nên phản hồi không bao giờ thông báo cho người dùng hay nhóm nào.
 - **Trong space, câu hỏi là của bạn.** Tin nhắn được quy kết cho thành viên mà tác
-  giả phân giải thành, và lượt chạy agent thực thi thay mặt họ: các commit ghi họ là
-  đồng tác giả, còn núm tự chủ và rào chắn hành động của space áp dụng đúng như với
+  giả phân giải thành, và lượt chạy agent thực thi thay mặt họ: các commit của nó thuộc về
+  họ, còn núm tự chủ và rào chắn hành động của space áp dụng đúng như với
   một tin nhắn được gõ trong ứng dụng. Các thao tác ghi lên máy chủ mã từ lượt chạy
   dùng các token một-repo bị giới hạn bởi thành viên đó, chứ không bao giờ là đăng
   nhập của họ được chuyển nguyên vẹn.
@@ -112,23 +112,16 @@ Việc công bố các phát hiện của đánh giá trở lại GitHub vẫn l
 người, được đưa ra trong Control Center. Một lượt nhắc đến có thể _khởi động_ một
 cuộc đánh giá; chỉ con người mới công bố nó.
 
-## Chốt chặn vòng lặp, và cái tên ngắn
+## Chốt chặn vòng lặp
 
 Mọi thứ do một tài khoản bot tạo ra đều bị loại bỏ trước khi bất kỳ cổng nào chạy —
 cụ thể là bot của chúng ta, và mọi hậu tố `[bot]`, để bot đánh giá của một app khác
 cũng không thể đánh thức bot của chúng ta — và cũng vậy với mọi bình luận bắt đầu
-bằng tiền tố `**Control Center** (for @`, vì câu trả lời qua Connect được ghi bằng
+bằng tiền tố `**Control Center** (for @`, vì một câu trả lời trong luồng đánh giá qua Connect có thể được ghi bằng
 tài khoản của một người. Không có điều này, chính những câu trả lời sẽ đến như những
 bình luận mới và khiến cầu nối tự kích hoạt lại mãi mãi.
 
-Hậu tố `[bot]` cũng là lý do tồn tại của dạng ngắn. GitHub cố định tên đăng nhập
-của một tài khoản app thành `<slug>[bot]`, không cung cấp tính năng tự động hoàn
-thành cho nó, và không bao giờ phân giải `@slug` thành app — nên việc chấp nhận
-slug trần là quyết định của bộ so khớp _của chúng ta_, và để phát hiện nó cần một
-làn tìm kiếm thô trên **văn bản** bình luận thay vì chỉ mục nhắc đến của GitHub.
-Cái giá được nói thẳng ra thay vì làm mờ đi: một người dùng trùng slug với app sẽ
-vô tình gọi bot bằng mọi lượt nhắc đến dạng ngắn về chính mình. Những cái tên app đủ
-đặc trưng khiến va chạm chỉ còn là giả thuyết.
+Chỉ `@usectrl` mới bắt đầu công việc. Tên đăng nhập của chính App (`<slug>[bot]`) và slug trần của nó không nhắm tới bất kỳ thứ gì: GitHub không có tính năng tự động hoàn thành cho tài khoản app, và một slug trần có thể thuộc về một người dùng là con người.
 
 ## Những gì được cố ý không cung cấp
 

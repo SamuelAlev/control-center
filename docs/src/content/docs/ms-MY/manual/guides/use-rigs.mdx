@@ -2,7 +2,7 @@
 title: Berikan ejen mesin untuk diuji
 description: Berikan ejen penyemak imbas, desktop, emulator Android atau Simulator iOS pakai buang — ditonton secara langsung, dengan kawalan yang boleh anda ambil alih.
 slug: ms-MY/manual-pengguna/panduan-cara/gunakan-stesen
-sourceHash: 948500930fcdf592a038f71c4f0d49ae6aa35ad4
+sourceHash: 4c1c63ab461c65f8dbb9db406ef2698cb5920618
 ---
 
 Sebuah **stesen** ialah mesin pakai buang yang dibuka oleh ejen apabila ia
@@ -133,6 +133,21 @@ Tekan **Hentikan mesin** apabila anda selesai.
 
 Kawalan bersifat eksklusif dengan sengaja: dua pelaku yang menaip ke dalam satu
 mesin menghasilkan input yang tidak dimaksudkan oleh mana-mana pihak.
+
+### Siapa boleh menonton dan siapa boleh memandu
+
+Mesin yang dibuka dalam ruang mengikut repositori ruang itu, sama seperti ruang itu sendiri (lihat [Ruang mengikut repositorinya](/ms-MY/manual-pengguna/konsep/kebenaran/#ruang-mengikut-repositorinya)):
+
+- **Menontonnya** memerlukan akses baca ke ruang itu: geran baca pada setiap repositori yang didedahkan oleh ruang itu, dan log masuk forge anda sendiri yang boleh membaca setiap satu daripadanya. Menonton meliputi senarai mesin, skrin, bunyi, keadaan penyemak imbas, portnya, serta membaca papan kliknya dan failnya.
+- **Memandunya** juga memerlukan [geran tulis](/ms-MY/manual-pengguna/konsep/kebenaran/#mengubah-kod-memerlukan-geran-tulis) pada repositori tersebut. Memandu meliputi membuka mesin dalam ruang itu, menaip dan mengklik, mengambil kawalan, memulakan, menghentikan dan menutup mesin, memajukan portnya, menulis ke papan kliknya, menjatuhkan fail padanya dan menggunakan mikrofon.
+
+Dengan akses baca sahaja, mesin itu memaparkan **Tonton sahaja** dan "Anda boleh menonton mesin ini. Mengawalnya, memajukan portnya, menampal ke dalamnya atau menjatuhkan fail ke dalamnya memerlukan akses tulis untuk setiap repositori dalam ruang ini." Di bawah **Mulakan mesin** yang dilumpuhkan, tab itu memaparkan "Memulakan mesin di sini memerlukan akses tulis untuk setiap repositori dalam ruang ini. Admin ruang kerja boleh memberikannya." Tanpa akses baca, mesin itu tidak ditunjukkan, hanya "Anda tidak boleh melihat mesin ini. Mesin ini milik ruang yang anda tidak mempunyai akses baca."
+
+Mesin yang tidak tergolong dalam mana-mana ruang tidak mencapai sebarang worktree, dan setiap ahli ruang kerja boleh menontonnya dan memandunya.
+
+Mesin yang membawa log masuk milik seseorang adalah milik orang itu untuk dipandu: terminal mesin mereka, atau mana-mana mesin yang dibuka untuk mereka yang capaian rangkaiannya sampai ke forge. Hanya orang itu, dan larian ejen yang bertindak untuk mereka sahaja, boleh memandunya. Admin ruang kerja dan pemilik pelayan tidak mengatasinya. Orang lain yang diterima oleh ruang itu masih boleh menonton skrin, bunyi, keadaan dan portnya, tetapi tidak boleh memandunya, memajukan portnya, menampal ke dalamnya, menjatuhkan fail padanya, menyalin fail keluar daripadanya atau membaca papan kliknya. Mesin sedemikian memaparkan **Tonton sahaja** dengan nota ini: "Anda boleh menonton mesin ini. Mesin ini menggunakan log masuk orang yang mesin ini dibuka untuknya, jadi hanya orang itu yang boleh mengawalnya, memajukan portnya, menampal ke dalamnya atau menjatuhkan fail ke dalamnya." Tindakan yang ditolak atas sebab ini berkata "Hanya orang yang mesin ini dibuka untuknya boleh mengawalnya. Mesin ini menggunakan log masuk orang itu sendiri." Terminal mesin orang lain tidak muncul untuk anda langsung, sama seperti sesi terminal mereka.
+
+Setiap mesin menunjukkan sama ada anda boleh memandunya, dan itu dikemas kini dengan sendirinya apabila geran atau log masuk forge anda berubah.
 
 ## Pindahkan sesuatu masuk dan keluar
 

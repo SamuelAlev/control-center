@@ -47,6 +47,7 @@ PrUser prUserFromBitbucket(BitbucketUser? user) {
     login: user.handle,
     avatarUrl: user.avatarUrl,
     name: user.displayName.isEmpty ? null : user.displayName,
+    accountId: user.accountId,
   );
 }
 
@@ -81,6 +82,8 @@ PullRequest pullRequestFromBitbucket(
     baseRef: pr.destinationBranch,
     baseSha: pr.destinationCommitHash,
     headRef: pr.sourceBranch,
+    baseRepoId: pr.destinationRepositoryUuid,
+    headRepoId: pr.sourceRepositoryUuid,
     requestedReviewers: pr.reviewers
         .map(prUserFromBitbucket)
         .toList(growable: false),

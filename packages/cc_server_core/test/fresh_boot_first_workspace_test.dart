@@ -16,12 +16,11 @@ import 'helpers/test_database.dart';
 /// bootstrap mints the first user at boot) must let the connected client run
 /// the whole onboarding flow WITHOUT a server restart.
 ///
-/// Guards the `workspace.upsert` create path: the creating principal becomes
-/// the workspace owner (ownerUserId + an owner membership row) in the same op.
-/// Before that fix the freshly created workspace had no members, so
-/// `session/list_workspaces` stayed empty and every workspace-scoped op the
-/// creator issued next was denied with "Not a member of this workspace" until
-/// the next boot's `IdentityBootstrap` backfill repaired it.
+/// Guards the `workspace.create` path: the creating principal becomes the
+/// workspace owner (ownerUserId + an owner membership row) in the same op.
+/// Without it the freshly created workspace has no members, so
+/// `session/list_workspaces` stays empty and every workspace-scoped op the
+/// creator issues next is denied with "Not a member of this workspace".
 void main() {
   if (!hostHasServerNatives) {
     test(
@@ -52,15 +51,18 @@ void main() {
       const deviceId = 'web-test-device';
       final psk = RemoteControlCrypto.generatePsk();
 
-      // Seed ONLY an orphan paired device (no workspace, no user) — the state
-      // of a brand-new install. Boot mints the owner and binds the device.
+      // Seed ONLY the owner and their paired device (no workspace) — the
+      // state of a brand-new install after `cc_server pair`.
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          label: Value('fresh-boot test'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          label: const Value('fresh-boot test'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -113,27 +115,24 @@ void main() {
       expect(liveIds, isEmpty);
 
       // Create the first workspace exactly the way onboarding does.
-      final created = await client.call('workspace.upsert', {
-        'workspace': {'id': 'ws-fresh', 'name': 'Fresh'},
-      });
-      expect(created['workspace_id'], 'ws-fresh');
+      final created = await client.call('workspace.create', {'name': 'Fresh'});
+      final freshId = (created['workspace'] as Map)['id'] as String;
 
       // The already-open stream must catch up on its own.
       final deadline = DateTime.now().add(const Duration(seconds: 10));
-      while (!liveIds.contains('ws-fresh') &&
-          DateTime.now().isBefore(deadline)) {
+      while (!liveIds.contains(freshId) && DateTime.now().isBefore(deadline)) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }
       expect(
         liveIds,
-        contains('ws-fresh'),
+        contains(freshId),
         reason:
             'the subscription held across the create never saw the workspace',
       );
 
       // The creator is a member: the membership-scoped session list sees it…
       final visible = await client.listWorkspaces();
-      expect(visible.map((w) => w['id']), contains('ws-fresh'));
+      expect(visible.map((w) => w['id']), contains(freshId));
 
       // …the row carries the creator as owner…
       final all = await client
@@ -142,11 +141,33 @@ void main() {
           .timeout(const Duration(seconds: 10));
       final row = (all['workspaces'] as List)
           .cast<Map<String, dynamic>>()
-          .singleWhere((w) => w['id'] == 'ws-fresh');
+          .singleWhere((w) => w['id'] == freshId);
       expect(row['owner_user_id'], isNotNull);
+      expect(row['connect_mode'], 'inherit');
+
+      // The generic update never changes the Connect choice: only
+      // `workspaceConnect.set` does.
+      await client.call('workspace.upsert', {
+        'workspace': {
+          'id': freshId,
+          'name': 'Fresh',
+          'connect_mode': 'custom',
+          'connect_url': 'https://connect.example.com',
+        },
+      });
+      final updated =
+          ((await client
+                      .subscribe('workspace.watchAll', const {})
+                      .first
+                      .timeout(const Duration(seconds: 10)))['workspaces']
+                  as List)
+              .cast<Map<String, dynamic>>()
+              .singleWhere((w) => w['id'] == freshId);
+      expect(updated['connect_mode'], 'inherit');
+      expect(updated.containsKey('connect_url'), isFalse);
 
       // …and workspace-scoped ops work immediately (no restart needed).
-      client.activeWorkspaceId = 'ws-fresh';
+      client.activeWorkspaceId = freshId;
       final tickets = await client.call('tickets.list', const {});
       expect(tickets['tickets'], isEmpty);
     },
@@ -163,17 +184,20 @@ void main() {
       const deviceId = 'ghost-test-device';
       final psk = RemoteControlCrypto.generatePsk();
 
-      // Same fresh-install state as above: an orphan paired device, no user,
-      // no workspace. The client below acts as one whose persisted active
+      // Same fresh-install state as above: the owner's paired device, no
+      // workspace. The client below acts as one whose persisted active
       // workspace id predates the data-dir reset — the id is stale: nothing
       // on this server ever registered it.
       final seed = openSeedDatabases(tmp.path);
+      final seededOwnerId = await seedServerOwner(seed);
       await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          label: Value('ghost-id test'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
+        PairedDevicesTableCompanion(
+          id: const Value(deviceId),
+          label: const Value('ghost-id test'),
+          pskRef: const Value('file'),
+          status: const Value(PairedDeviceStatus.active),
+          userId: Value(seededOwnerId),
+          expiresAt: Value(seededDeviceExpiry()),
         ),
       );
       await seed.close();
@@ -229,78 +253,71 @@ void main() {
     timeout: const Timeout(Duration(minutes: 2)),
   );
 
-  test(
-    'onboarding is recorded on the user, monotonically',
-    () async {
-      // The gate that picks between "sign in again" and "run the first-run
-      // flow" reads this flag. It was a synced PREFERENCE, and the preference
-      // sync promotes a device's local values onto whichever account first
-      // signs in there — so a machine that had onboarded once marked a
-      // brand-new user as already set up, and they got the re-auth screen
-      // instead of the setup they had never done. It is a column on the user
-      // now, reachable only through the caller's own session.
-      final tmp = Directory.systemTemp.createTempSync('cc_server_onboarded');
-      await stageServerNatives(tmp.path);
-      addTearDown(() => deleteDirBestEffort(tmp));
+  test('onboarding is recorded on the user, monotonically', () async {
+    // The gate that picks between "sign in again" and "run the first-run
+    // flow" reads this flag. It was a synced PREFERENCE, and the preference
+    // sync promotes a device's local values onto whichever account first
+    // signs in there — so a machine that had onboarded once marked a
+    // brand-new user as already set up, and they got the re-auth screen
+    // instead of the setup they had never done. It is a column on the user
+    // now, reachable only through the caller's own session.
+    final tmp = Directory.systemTemp.createTempSync('cc_server_onboarded');
+    await stageServerNatives(tmp.path);
+    addTearDown(() => deleteDirBestEffort(tmp));
 
-      const deviceId = 'onboarded-test-device';
-      final psk = RemoteControlCrypto.generatePsk();
+    const deviceId = 'onboarded-test-device';
+    final psk = RemoteControlCrypto.generatePsk();
 
-      // The fresh-install state: an orphan paired device that boot binds to
-      // the owner it mints. Nobody has onboarded on this server.
-      final seed = openSeedDatabases(tmp.path);
-      await seed.global.pairedDeviceDao.upsert(
-        const PairedDevicesTableCompanion(
-          id: Value(deviceId),
-          label: Value('onboarding flag test'),
-          pskRef: Value('file'),
-          status: Value(PairedDeviceStatus.active),
-        ),
-      );
-      await seed.close();
-      await FileSecretsStore(dataDir: tmp.path).writePsk(deviceId, psk);
+    // The fresh-install state: the owner's paired device. Nobody has
+    // onboarded on this server.
+    final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
+    await seed.global.pairedDeviceDao.upsert(
+      PairedDevicesTableCompanion(
+        id: const Value(deviceId),
+        label: const Value('onboarding flag test'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
+      ),
+    );
+    await seed.close();
+    await FileSecretsStore(dataDir: tmp.path).writePsk(deviceId, psk);
 
-      final server = await runCcServer(
-        args: ['--data-dir', tmp.path, '--port', '0'],
-      );
-      addTearDown(server.shutdown);
+    final server = await runCcServer(
+      args: ['--data-dir', tmp.path, '--port', '0'],
+    );
+    addTearDown(server.shutdown);
 
-      final client = await connectBootedServer(
-        uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
-        deviceId: deviceId,
-        psk: psk,
-      );
-      addTearDown(client.close);
-      await client.initialize();
+    final client = await connectBootedServer(
+      uri: Uri.parse('ws://127.0.0.1:${server.rpc.boundPort}/rpc'),
+      deviceId: deviceId,
+      psk: psk,
+    );
+    addTearDown(client.close);
+    await client.initialize();
 
-      Future<String?> finishedAt() async {
-        final me = await client.call('identity.me', const {});
-        return (me['user'] as Map)['onboarding_finished_at'] as String?;
-      }
+    Future<String?> finishedAt() async {
+      final me = await client.call('identity.me', const {});
+      return (me['user'] as Map)['onboarding_finished_at'] as String?;
+    }
 
-      // A brand-new account has never onboarded — the flag is absent, not
-      // false-y-by-accident, and the client reads "no" from that.
-      expect(await finishedAt(), isNull);
+    // A brand-new account has never onboarded — the flag is absent, not
+    // false-y-by-accident, and the client reads "no" from that.
+    expect(await finishedAt(), isNull);
 
-      final stamped = await client.call(
-        'users.markOnboardingFinished',
-        const {},
-      );
-      final at = stamped['onboarding_finished_at'] as String;
-      expect(at, isNotEmpty);
-      expect(await finishedAt(), at);
+    final stamped = await client.call('users.markOnboardingFinished', const {});
+    final at = stamped['onboarding_finished_at'] as String;
+    expect(at, isNotEmpty);
+    expect(await finishedAt(), at);
 
-      // Monotonic: the gate re-records the flag on every launch that observes a
-      // complete setup, so a second call must not move the date.
-      final again = await client.call(
-        'users.markOnboardingFinished',
-        const {},
-      );
-      expect(again['onboarding_finished_at'], at);
-      expect(await finishedAt(), at);
-    },
-    timeout: const Timeout(Duration(minutes: 2)),
-  );
+    // Monotonic: the gate re-records the flag on every launch that observes a
+    // complete setup, so a second call must not move the date.
+    final again = await client.call('users.markOnboardingFinished', const {});
+    expect(again['onboarding_finished_at'], at);
+    expect(await finishedAt(), at);
+  }, timeout: const Timeout(Duration(minutes: 2)));
 
   test('a non-member cannot see, read, mutate, or watch another user\'s '
       'workspace', () async {
@@ -313,17 +330,18 @@ void main() {
     const guestDeviceId = 'guest-device';
     final guestPsk = RemoteControlCrypto.generatePsk();
 
-    // Seed ONLY the orphan owner device (boot binds it to the minted
-    // owner). The guest user + device are inserted AFTER boot: the identity
-    // bootstrap adopts the earliest existing user as owner, so seeding the
-    // guest up front would make it the owner and void the test.
+    // Seed ONLY the owner and their device; the guest user + device are
+    // inserted after boot.
     final seed = openSeedDatabases(tmp.path);
+    final seededOwnerId = await seedServerOwner(seed);
     await seed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(ownerDeviceId),
-        label: Value('owner'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(ownerDeviceId),
+        label: const Value('owner'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        userId: Value(seededOwnerId),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await seed.close();
@@ -331,8 +349,7 @@ void main() {
     await secrets.writePsk(ownerDeviceId, ownerPsk);
     // The guest PSK is written NOW, pre-boot: the server's secrets store
     // caches the file at first read, so a PSK written after boot would be
-    // invisible to it. Only the guest's user/device ROWS go in post-boot
-    // (the bootstrap would otherwise adopt the guest as owner).
+    // invisible to it. Only the guest's user/device ROWS go in post-boot.
     await secrets.writePsk(guestDeviceId, guestPsk);
 
     final server = await runCcServer(
@@ -348,12 +365,14 @@ void main() {
     );
     addTearDown(owner.close);
     await owner.initialize();
-    await owner.call('workspace.upsert', {
-      'workspace': {'id': 'ws-private', 'name': 'Private'},
-    });
+    final privateId =
+        ((await owner.call('workspace.create', {
+                  'name': 'Private',
+                }))['workspace']
+                as Map)['id']
+            as String;
 
-    // Now register the second user with their own active device (bound via
-    // `userId`, so no bootstrap backfill touches it).
+    // Now register the second user with their own active device.
     final guestSeed = openSeedDatabases(tmp.path);
     await guestSeed.global.userDao.upsert(
       const UsersTableCompanion(
@@ -363,12 +382,13 @@ void main() {
       ),
     );
     await guestSeed.global.pairedDeviceDao.upsert(
-      const PairedDevicesTableCompanion(
-        id: Value(guestDeviceId),
-        userId: Value('user-guest'),
-        label: Value('guest'),
-        pskRef: Value('file'),
-        status: Value(PairedDeviceStatus.active),
+      PairedDevicesTableCompanion(
+        id: const Value(guestDeviceId),
+        userId: const Value('user-guest'),
+        label: const Value('guest'),
+        pskRef: const Value('file'),
+        status: const Value(PairedDeviceStatus.active),
+        expiresAt: Value(seededDeviceExpiry()),
       ),
     );
     await guestSeed.close();
@@ -400,14 +420,14 @@ void main() {
 
     // 2. A workspace-scoped op naming the foreign workspace is denied.
     await expectLater(
-      guest.call('tickets.list', const {'workspace_id': 'ws-private'}),
+      guest.call('tickets.list', {'workspace_id': privateId}),
       unauthorized(),
     );
 
     // 3. A workspace-scoped subscription is refused as a stream error.
     await expectLater(
-      guest.subscribe('tickets.watchForWorkspace', const {
-        'workspace_id': 'ws-private',
+      guest.subscribe('tickets.watchForWorkspace', {
+        'workspace_id': privateId,
       }).first,
       unauthorized(),
     );
@@ -415,12 +435,12 @@ void main() {
     // 4. The registry ops a non-member could previously abuse are denied:
     //    deleting or reordering a workspace they do not belong to.
     await expectLater(
-      guest.call('workspace.delete', const {'id': 'ws-private'}),
+      guest.call('workspace.delete', {'id': privateId}),
       unauthorized(),
     );
     await expectLater(
-      guest.call('workspace.reorder', const {
-        'workspace_ids': ['ws-private'],
+      guest.call('workspace.reorder', {
+        'workspace_ids': [privateId],
       }),
       unauthorized(),
     );
@@ -428,9 +448,9 @@ void main() {
     // 5. Control: the owner's session still sees and reads the workspace.
     expect(
       (await owner.listWorkspaces()).map((w) => w['id']),
-      contains('ws-private'),
+      contains(privateId),
     );
-    owner.activeWorkspaceId = 'ws-private';
+    owner.activeWorkspaceId = privateId;
     final tickets = await owner.call('tickets.list', const {});
     expect(tickets['tickets'], isEmpty);
   }, timeout: const Timeout(Duration(minutes: 2)));

@@ -2,7 +2,7 @@
 title: 备份、导出与导入
 description: 快照的目录布局、清单、每一项备份操作与传输路由，以及备份究竟包含和不包含哪些文件。
 slug: zh-CN/手册/参考/备份
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Control Center 能够复制、移交或接纳的一切，以及每种产物的确切形态。要实际执行一次
@@ -96,12 +96,17 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | `models/`                           | 否             | 否                     |
 | `meetings/<meetingId>/`             | 否             | 否                     |
 | `rigs/`                             | 否             | 否                     |
+| `_agent_hooks/`                     | 否             | 否                     |
 
 其中有些是可丢弃的——`spaces/` 保存的是从仓库重新预配的写时复制工作树，`pr_clones/`
 是缓存，`models/` 可重新下载，`rigs/` 是机器状态。有些则不是：`blobs/` 保存着数据库
 行所指向的粘贴图片，`skills/` 和 `agents/` 保存着智能体运行时使用的文件，而
 `secrets.json` 保存着该安装上的每一个配对密钥、提供商凭据和 SSO 设置。如何覆盖其余
-内容，请参阅[备份与恢复](/zh-CN/手册/操作指南/备份与恢复/#copy-backups-off-the-machine)。
+内容，请参阅[备份与恢复](/zh-CN/手册/操作指南/备份与恢复/#将备份复制到机器之外)。
+:::caution[工作区数据库包含 Webhook 密钥]
+`workspace.db` 是整个工作区：对话、运行日志、代码索引、仓库关联、环境定义和成员。它还以可读形式保存工作区的流水线 Webhook 令牌和工单同步 Webhook 密钥，因此请把下载的导出文件或备份视为机密。它不包含任何提供商登录、设备密钥或用户密钥；这些保存在 `global.db` 和 `secrets.json` 中。
+:::
+
 :::note[聊天令牌被刻意留在原处]
 `chat_credentials/` 位于数据库旁边而不是其中，正因如此，交给别人的工作区不会携带
 任何有效的机器人令牌。参见[聊天桥接参考](/zh-CN/手册/参考/聊天桥接/)。
@@ -123,7 +128,7 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | `workspace.listBackups` | read | 工作区 | `admin` | 无 | `{backups: [...]}` |
 | `workspace.deleteBackup` | mutate | 工作区 | `owner` | `name` | `{ok}` |
 | `workspace.export`   | read   | 工作区    | `admin`           | 无            | `{ok, path}`                  |
-| `workspace.import`   | mutate | 工作区    | `owner`           | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | mutate | 工作区    | `owner`，且需要服务器所有者 | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | mutate | 安装*     | `owner`           | `id`          | 注册表行被标记为已删除        |
 
 * `workspace.delete` 没有作用范围，是因为它标记的那一行位于全局注册表中；其处理程序
@@ -142,8 +147,11 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 **所有者**（`ServerAuthority.serverOwner`），与 `GET /backup/snapshot` 是同一道
 关卡。一份快照会捕获每个工作区的数据库，因此仅仅是一个工作区的管理员，还不足以管理
 其它工作区。删除只接受列表中出现的那个时间戳目录名，而不是任意的服务器路径，并且会
-移除整个快照（包括未完成的快照）。按工作区进行的导出/导入仍然只要求工作区管理员/
-所有者，而不是安装所有者。
+移除整个快照（包括未完成的快照）。按工作区进行的导出以及定时备份的下载仍然只要求工作区管理员。
+:::
+
+:::note[恢复由服务器所有者负责]
+`workspace.import` 和 `POST /backup/restore` 会让服务器接纳一个数据库文件，并把其中的行视为它自己的：仓库关联及其创建者、在主机上运行的环境定义、工作树与日志路径。因此两者都需要服务器所有者（`ServerAuthority.serverOwner`），且该所有者还必须是工作区的所有者。其他任何人，以及在没有记录所有者的主机上的每个调用者，都会被以 `server_owner_required` 拒绝。文件带来的任何触发器或视图都不会被采纳。
 :::
 
 ### `server.listBackups` 的响应
@@ -212,7 +220,7 @@ Control Center 能够复制、移交或接纳的一切，以及每种产物的�
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | 工作区**管理员**     |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | 安装**所有者**       |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | 工作区**管理员**；工作区删除后为安装**所有者** |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 工作区**所有者**     |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | 安装**所有者**，且同时是工作区**所有者**（否则返回 `403` 及 `server_owner_required`） |
 
 `w` 是工作区 id，`n` 是快照或定时备份的目录名，`d` 是发起调用的设备 id，`s` 是签名。在
 `/backup/snapshot` 上，`n` 是依据备份列表解析的，而不是直接拼接到备份根目录上，因此这条

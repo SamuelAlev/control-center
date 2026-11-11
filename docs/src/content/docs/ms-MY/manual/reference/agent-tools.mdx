@@ -2,7 +2,7 @@
 title: Alat ejen terbina
 description: Permukaan alat yang diberikan oleh harness terbina kepada ejen — pelayan bahasa, carian struktur, nyahpepijat, kernel dan kawalan pekerja — dengan setiap operasi dan argumennya.
 slug: ms-MY/manual-pengguna/rujukan/alat-ejen
-sourceHash: 87976724ac6f361ec90144df2ef99a62ff912ad4
+sourceHash: 02d86be443aedbc83a764f690b1d2c91886ff19c
 ---
 
 Ini ialah alat **terikat pelayan** yang didaftarkan secara langsung oleh masa jalan ejen terbina — pelayan bahasa, carian struktur, nyahpepijat, kernel, soalan dan kawalan pekerja — berbanding [alat MCP](/ms-MY/manual-pengguna/rujukan/alat-mcp/) yang dijambatkannya masuk serta alat fail, carian dan shell generik daripada masa jalan harness. Alat-alat ini tiada dalam daftar MCP: klien MCP luaran tidak akan melihatnya, kerana setiap satunya terikat pada sumber sisi pelayan yang hidup — proses pelayan bahasa, penyesuai nyahpepijat, penterjemah — yang dimiliki oleh satu larian.
@@ -24,6 +24,8 @@ Setiap alat menyatakan satu tahap, dan tahap itu menentukan **permukaan mana yan
 ## `lsp` — pertanyaan pelayan bahasa
 
 Didaftarkan apabila larian itu mempunyai penyelia pelayan bahasa dan direktori kerja. Sama ada pelayan benar-benar boleh menjawab dikesan pada masa panggilan, sebagai satu **persilangan**: penanda akar mesti wujud *dan* binari pelayan mesti dapat diselesaikan. Salah satu sahaja bermakna tiada pelayan dimulakan — `status` menyatakannya — dan bukannya tekaan senyap.
+
+Pelayan datang daripada jadual terbina dalam sahaja; `lsp.json` repositori tidak dibaca. Dalam larian yang dikotak pasirkan setiap larian mendapat sesi pelayan bahasanya sendiri, jadi pelayan dimulakan semula bersama setiap larian. Binari dalam projek (`node_modules/.bin`) hanya digunakan apabila larian itu dikotak pasirkan, dan akar projek tidak sekali-kali diselesaikan melebihi direktori kerja larian itu.
 
 Kedudukan dialamatkan melalui `line` serta subrentetan `symbol`, tidak sekali-kali melalui lajur. Model yang diminta memberikan lajur akan meneka, dan tekaan yang salah akan menyelesaikan kepada simbol yang berbeza pada baris yang sama — jawapan yang kelihatan betul tetapi mengenai perkara lain. Meninggalkan `symbol` pada tindakan navigasi ialah satu ralat, bukan tekaan lajur pertama.
 
@@ -117,7 +119,7 @@ Setiap fail dibandingkan dengan kandungan yang ditangkap pada masa ia diperingka
 
 Didaftarkan apabila larian itu mempunyai penyelia sesi nyahpepijat, direktori kerja dan id perbualan. Sama ada penyesuai benar-benar boleh bermula dikesan pada masa panggilan, melalui peraturan persilangan yang sama seperti pelayan bahasa (penanda akar *dan* binari). Tahap `exec`; tidak selamat selari (sesi ialah keadaan merentasi panggilan, jadi `continue` yang memintas `stack` akan membaca bingkai yang sudahpun bergerak).
 
-Satu sesi bagi setiap perbualan, dengan TTL keras (30 minit). `launch` kedua ditolak dan bukan secara senyap menggantikan yang pertama.
+Satu sesi bagi setiap perbualan, dengan TTL keras (30 minit). `launch` kedua ditolak dan bukan secara senyap menggantikan yang pertama. Dalam larian yang dikotak pasirkan sesi itu mengekalkan kotak pasirnya merentas giliran sehingga ia tamat, jadi hanya untuk paling lama 30 minit tersebut.
 
 | Op            | Argumen                       | Nota                                           |
 | ------------- | ----------------------------- | ---------------------------------------------- |
@@ -125,7 +127,7 @@ Satu sesi bagi setiap perbualan, dengan TTL keras (30 minit). `launch` kedua dit
 | `status`      | —                             | Sama ada sesi sedang berjalan, dan di mana ia berhenti |
 | `breakpoints` | `file`, `lines[]`             | `lines` kosong mengosongkan fail itu. Boleh ditetapkan **sebelum** melancarkan |
 | `launch`      | `program`, `args[]`           | Memulakan program dalam keadaan berhenti pada titik henti anda |
-| `attach`      | `port`                        | Menyambung kepada proses yang dinyahpepijat yang sudah berjalan |
+| `attach`      | `port`                        | Menyambung kepada proses yang dinyahpepijat yang sudah berjalan pada salah satu port teruskan milik larian itu; mana-mana port lain ditolak sebelum apa-apa bermula |
 | `continue`    | `thread_id?`                  | Berjalan sehingga hentian seterusnya           |
 | `pause`       | `thread_id?`                  | Menghentikannya di tempat ia berada            |
 | `step_over` / `step_in` / `step_out` | `thread_id?` | Bergerak satu langkah                |
@@ -146,7 +148,7 @@ Satu sesi bagi setiap perbualan, dengan TTL keras (30 minit). `launch` kedua dit
 | `lldb`    | `lldb-dap`                 | `Cargo.toml`, `CMakeLists.txt`                  |
 | `delve`   | `dlv dap`                  | `go.mod`                                        |
 
-`debugpy` mengutamakan `.venv/bin` atau `venv/bin` dalam projek berbanding `$PATH`: python `$PATH` ialah persekitaran yang berbeza, dan melampirkan daripada yang salah akan gagal dengan cara yang terbaca sebagai kod rosak.
+`debugpy` mengutamakan `.venv/bin` atau `venv/bin` dalam projek berbanding `$PATH` apabila larian itu dikotak pasirkan: python `$PATH` ialah persekitaran yang berbeza, dan melampirkan daripada yang salah akan gagal dengan cara yang terbaca sebagai kod rosak. Tanpa kotak pasir ia hanya menggunakan `$PATH`, jadi repositori tidak boleh memilih jurubahasa yang dijalankan pada hos.
 
 ---
 
@@ -176,7 +178,7 @@ Jambatan itu **masuk semula ke dalam daftar alat harness**, jadi guardrail, kelu
 Timeout sel itu ialah belanjawan *ketakaktifan* (lalai 5 minit) dan ia **digantung** selagi panggilan berjambatan belum selesai, jadi sel yang menyebar ke subejen tidak dibunuh di pertengahan penyebaran.
 
 :::note[Di mana kernel berjalan]
-Dalam persekitaran terasing perbualan apabila perbualan itu memilikinya, dan pada hos jika sebaliknya. Ia tidak memulakan persekitaran terasing untuk sampai ke sana — peraturan yang sama yang menghalang tab stesen daripada bermula secara automatik.
+Dalam persekitaran terasing perbualan apabila perbualan itu memilikinya, jika tidak dalam kotak pasir OS larian itu pada hos. Dengan kotak pasir dimatikan atau tidak tersedia ia berjalan tanpa kurungan dan `eval` meminta kelulusan pelaksanaan hos. Ia tidak memulakan persekitaran terasing untuk sampai ke sana, peraturan yang sama yang menghalang tab stesen daripada bermula secara automatik.
 :::
 
 ---

@@ -201,6 +201,11 @@ void main() {
         // table can enforce that. Rows carry ids and port numbers, never
         // workspace content. See EnvironmentSlotLeasesTable's doc comment.
         'EnvironmentSlotLeasesTable',
+        // Server-scope ops (ones that name no workspace) and who called them:
+        // read only by the server owner (the audit log, `audit.watchLog`),
+        // and it holds argument names, never values. See ServerAuditTable's
+        // doc comment.
+        'ServerAuditTable',
       }),
       reason:
           'The global table set changed. A table here is visible to EVERY '

@@ -2,7 +2,7 @@
 title: Creează un șablon de pipeline
 description: Redactează un șablon de flux DAG în editorul de pipeline-uri — adaugă noduri, leagă-le, declară intrări și fă-l să poată rula.
 slug: ro-RO/manual/ghiduri-practice/creeaza-pipeline
-sourceHash: e1dba245e27c40c692fe135d7b8c712bab587061
+sourceHash: 32939c4211b68f780d4def0de71250daf68f5106
 ---
 
 Șabloanele de pipeline se redactează în setările spațiului de lucru. Intrarea
@@ -34,25 +34,25 @@ Bara laterală **Bibliotecă de noduri** stă permanent în partea stângă a
 editorului. Filtrează-o cu caseta **Caută noduri** și trage o intrare pe pânză —
 nodul ajunge exact acolo unde îl lași, fără nicio conexiune de intrare.
 
-| Nod din paletă                  | Tip de pas | Ce face                                                                                        |
-| ------------------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| **Bash script**                 | listen     | Rulează un script shell cu substituție de `{{state}}`; nu se trimite niciun agent               |
+| Nod din paletă                  | Tip de pas | Ce face                                                                                                   |
+| ------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------- |
+| **Bash script**                 | listen     | Rulează un script shell cu substituție de `{{state}}`; nu se trimite niciun agent                         |
 | **Open conversation**           | listen     | Deschide singurul spațiu vizibil al rulării și checkout-ul lui; nodurile de agent se alătură acestei săli |
-| **Clone PR branch**             | listen     | Descoperă ramura head a PR-ului prin `gh pr view` și o clonează în directorul rulării            |
-| **Post PR comment**             | listen     | Publică constatările consolidate pe PR ca un comentariu de revizuire GitHub                     |
-| **Reviewer (prompt)**           | listen     | Trimite un agent revizor specialist; suspendă până când agentul își trimite rezultatul           |
-| **Consolidate (join)**          | join       | Așteaptă mai multe ramuri din amonte, apoi cere unui agent să le consolideze ieșirile            |
-| **Custom prompt**               | listen     | Nod generic condus de un prompt, rutat prin corpul `promptAgent`                                 |
-| **Post to space**               | listen     | Trimite un mesaj într-un spațiu de mesagerie                                                     |
-| **Condition / switch (router)** | router     | Ramifică fluxul în funcție de o valoare de stare                                                 |
-| **If file exists (router)**     | router     | Rutează `"true"` când o cale există în clone, altfel `"false"`                                   |
-| **Any file exists (OR router)** | router     | Rutează `"true"` când există oricare dintre căile listate                                        |
-| **All conditions (AND router)** | router     | Rutează `"true"` doar când există toate căile listate                                            |
-| **Team dispatch**               | listen     | Trimite o echipă întreagă și suspendă până când aceasta termină                                  |
-| **Approval gate**               | listen     | Face o pauză pentru o decizie de aprobare                                                        |
+| **Clone PR branch**             | listen     | Descoperă ramura head a PR-ului prin `gh pr view` și o clonează în directorul rulării                     |
+| **Post PR comment**             | listen     | Publică un comentariu de revizuire pe PR, de pe server: constatările sau `message`-ul pasului             |
+| **Reviewer (prompt)**           | listen     | Trimite un agent revizor specialist; suspendă până când agentul își trimite rezultatul                    |
+| **Consolidate (join)**          | join       | Așteaptă mai multe ramuri din amonte, apoi cere unui agent să le consolideze ieșirile                     |
+| **Custom prompt**               | listen     | Nod generic condus de un prompt, rutat prin corpul `promptAgent`                                          |
+| **Post to space**               | listen     | Trimite un mesaj într-un spațiu de mesagerie                                                              |
+| **Condition / switch (router)** | router     | Ramifică fluxul în funcție de o valoare de stare                                                          |
+| **If file exists (router)**     | router     | Rutează `"true"` când o cale există în clone, altfel `"false"`                                            |
+| **Any file exists (OR router)** | router     | Rutează `"true"` când există oricare dintre căile listate                                                 |
+| **All conditions (AND router)** | router     | Rutează `"true"` doar când există toate căile listate                                                     |
+| **Team dispatch**               | listen     | Trimite o echipă întreagă și suspendă până când aceasta termină                                           |
+| **Approval gate**               | listen     | Face o pauză pentru o decizie de aprobare                                                                 |
 | **For each (map)**              | forEach    | Redă un prompt pentru fiecare element, apoi trimite agentul o singură dată cu acele prompturi concatenate |
-| **Call sub-pipeline**           | listen     | Rulează alt șablon ca pas imbricat                                                               |
-| **Clean up worktrees**          | listen     | Elimină worktree-urile izolate învechite; determinist, nu se trimite niciun agent                |
+| **Call sub-pipeline**           | listen     | Rulează alt șablon ca pas imbricat                                                                        |
+| **Clean up worktrees**          | listen     | Elimină worktree-urile izolate învechite; determinist, nu se trimite niciun agent                         |
 
 Biblioteca le grupează sub **Flux și logică**, **Revizuire PR**, **Agenți**,
 **Mesagerie** și **Cod**. Nu există un grup Demo.
@@ -140,6 +140,13 @@ pentru că niciunul nu este configurabil:
   `GITHUB_TOKEN` conțin un token care poate doar citi acel depozit, așa că
   `gh` și `git clone` pe el funcționează fără configurare. Altfel nu există
   niciun token GitHub.
+- Un script nu poate scrie pe GitHub: `gh pr comment`, `gh pr merge`,
+  `gh pr create` și `git push` eșuează cu acel token. Comentează în schimb cu un
+  nod **Post PR comment** (setează `extras.message` ca să postezi propriul text,
+  cu substituenți `{{key}}`, în loc de constatările consolidate). Fă push și
+  deschide pull request-uri dintr-un nod de agent: `git push`-ul lui trece prin
+  gateway-ul de rulări, iar el deschide PR-ul cu unealta `open_pull_request`.
+  Merge-ul rămâne unei persoane; niciun nod nu face merge.
 - Doar un administrator al spațiului de lucru poate crea sau edita un pipeline
   cu un pas bash.
 - Scriptul este lansat ca executabilul literal `bash`, deci `bash` trebuie să

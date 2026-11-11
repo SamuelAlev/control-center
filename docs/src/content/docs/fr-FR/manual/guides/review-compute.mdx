@@ -2,7 +2,7 @@
 title: Calcul de revue (cohortes, axes et diffs déterministes)
 description: Ce que produit côté serveur la passe de calcul de revue — cohortes, diffs de contrat d’API et visuels, verrous par axe — et comment cela se reflète dans l’onglet Revue.
 slug: fr-FR/manuel/guides/calcul-de-revue
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 L’onglet **Revue** d’une PR montre la progression en direct du pipeline de revue
@@ -15,8 +15,6 @@ Derrière cet onglet, `cc_server` construit des cohortes de fichiers, exécute l
 axes déterministes et les sert via les opérations RPC `review_studio.*`
 (`cohorts`, `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` et leurs jumelles `watch*`).
-Une disposition persistée qui nomme encore `pr.reviewStudio` ouvre ce même
-onglet Revue.
 
 Dans l’onglet Revue :
 
@@ -91,6 +89,8 @@ Widgetbook, la passe de calcul rend les composants modifiés avant et après via
 une passe golden `flutter test` sans interface dans les arbres de travail de base
 et de tête de la PR, puis compare les pixels.
 
+Ces tests font partie du code de la PR : ils s’exécutent comme un processus d’outil d’agent, à l’intérieur du bac à sable lorsque le serveur isole les agents, sans confinement lorsque le propriétaire du serveur a désactivé le bac à sable, et sans bac à sable uniquement pour une requête dont le propriétaire du serveur est responsable. Pour les autres, l’axe signale **unavailable** avec la raison « no sandbox on this server, and only its owner may run a PR's tests unsandboxed ».
+
 :::note[Un SDK Flutter est requis sur l’hôte du serveur]
 Le serveur en Dart pur ne peut pas rendre les widgets Flutter dans son propre
 processus, il délègue donc à `flutter test`. Le SDK doit être installé sur la
@@ -101,9 +101,9 @@ succès qu’il n’a pas mérité.
 
 Les instantanés marqués **changed** ou **removed** retiennent le verrou visuel
 jusqu’à leur approbation ; les instantanés **unchanged**, **added** et
-**approved** le lèvent. L’indisponibilité a l’une de ces quatre raisons : pas de
+**approved** le lèvent. L’indisponibilité a l’une de ces cinq raisons : pas de
 SDK Flutter sur l’hôte, pas d’app Widgetbook dans le dépôt, pas de cas d’usage
-testables en golden, ou une erreur du harnais golden.
+testables en golden, une erreur du harnais golden, ou aucun bac à sable pour une requête dont le propriétaire du serveur n’est pas responsable.
 
 Approuver un changement prévu se fait avec `review_studio.approveVisual`.
 

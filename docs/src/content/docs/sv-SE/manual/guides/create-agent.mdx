@@ -2,12 +2,12 @@
 title: Skapa och konfigurera en agent
 description: Lägg till en agent i en arbetsyta, ge den en adapter, modell, skills och behörigheter och bekräfta att den körs.
 slug: sv-SE/handbok/how-to-guider/skapa-agent
-sourceHash: 86a4d4cebabd49a7fc5a845f47d52a6e91457c7b
+sourceHash: 58596a19e502ffa5156e2c256d7b456c8bd8d02b
 ---
 
 Den här guiden visar hur du lägger till en agent i en arbetsyta och konfigurerar den tills den faktiskt kan köra.
 
-Varje arbetsyta skapas med fem agenter – en CEO plus `qa`, `architect`, `engineer` och `librarian` – så du har oftast agenter redan innan du har konfigurerat någon. Stegen nedan gäller lika mycket för en medföljande agent som för en ny.
+Varje arbetsyta skapas med sex agenter – en CEO plus `qa`, `architect`, `engineer`, `librarian` och `content-synthesizer` – så du har oftast agenter redan innan du har konfigurerat någon. Stegen nedan gäller lika mycket för en medföljande agent som för en ny.
 
 ## Innan du börjar
 
@@ -73,7 +73,7 @@ En agent har inga egna behörighetsväxlar. Vad den får pusha, öppna, slå sam
 Agentens GitHub-token kan alltid bara läsa. En push går genom Control Center, som frågar regeln **Pusha till en remote** innan den skickas vidare. Se [Konfigurera sandlådepolicyer](/sv-SE/handbok/how-to-guider/sandladepolicyer/) för hur varje regel når en körning.
 
 :::note[Regler och OS-sandlådan är separata lager]
-Reglerna avgör vad en agent får göra; OS-sandlådan begränsar var dess processer kan läsa, skriva och ansluta. `cc_server` omsluter agentkörningar i värdens sandlåda där en sådan finns – Windows har ingen inbyggd backend, och Linux och WSL2 behöver `bwrap` och `socat`. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för alla gränser.
+Reglerna avgör vad en agent får göra; OS-sandlådan begränsar var dess processer kan läsa, skriva och ansluta. `cc_server` omsluter agentkörningar i värdens sandlåda där en sådan finns – Windows har ingen inbyggd backend, och Linux och WSL2 behöver `bwrap` och `socat`. Där ingen sådan finns startar bara serverägarens körningar, om inte ägaren har stängt av sandlådan för alla. Se [Sandlåda och säkerhet](/sv-SE/handbok/koncept/sandlada-och-sakerhet/) för alla gränser.
 :::
 
 ## Verifiera att den körs

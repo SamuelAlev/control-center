@@ -198,7 +198,7 @@ class BuildGitHubReviewUseCase {
 
   /// The three-axis triage line. Severity always renders (every finding has
   /// one, falling back to the priority mapping); category and effort only when
-  /// the reviewer supplied them, so a legacy finding reads as it always did.
+  /// the reviewer supplied them.
   String _labelLine(ReviewNodePayload p) {
     final parts = <String>[
       if (p.category != null) _categoryLabel(p.category!),

@@ -1,21 +1,23 @@
-import 'package:cc_domain/features/environments/domain/value_objects/environment_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/features/environments/providers/environment_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// Why a terminal opened by itself: a start stopped for a person, and this is
-/// where it finishes.
+/// Why a terminal opened by itself: a start needs a person, and this is where
+/// it waits for them.
 ///
-/// Follows the environment rather than the tab, so it goes once the start has
-/// carried on and stays away from a tab restored after that.
-class EnvironmentSetupBanner extends ConsumerWidget {
-  /// Creates an [EnvironmentSetupBanner].
-  const EnvironmentSetupBanner({
+/// Follows the environment rather than the tab. While the start waits here it
+/// says what for; once the tool has what it needed it says the start carries
+/// on, since the terminal has gone quiet and the rest happens elsewhere; and
+/// on a tab restored later it says nothing.
+class EnvironmentStartTerminalBanner extends ConsumerStatefulWidget {
+  /// Creates an [EnvironmentStartTerminalBanner].
+  const EnvironmentStartTerminalBanner({
     super.key,
     required this.workspaceId,
     required this.spaceId,
+    this.sessionId,
   });
 
   /// The owning workspace.
@@ -24,15 +26,38 @@ class EnvironmentSetupBanner extends ConsumerWidget {
   /// The terminal's space.
   final String spaceId;
 
+  /// The session this tab shows, when it is known.
+  final String? sessionId;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<EnvironmentStartTerminalBanner> createState() =>
+      _EnvironmentStartTerminalBannerState();
+}
+
+class _EnvironmentStartTerminalBannerState
+    extends ConsumerState<EnvironmentStartTerminalBanner> {
+  /// Whether this tab has shown the start waiting on it. Only then does "done
+  /// here" mean anything: a tab restored after the fact never waited.
+  bool _waited = false;
+
+  @override
+  Widget build(BuildContext context) {
     final environment = ref.watch(
-      spaceEnvironmentProvider((workspaceId: workspaceId, spaceId: spaceId)),
+      spaceEnvironmentProvider((
+        workspaceId: widget.workspaceId,
+        spaceId: widget.spaceId,
+      )),
     );
-    final error = environment?.lastError;
-    if (environment?.status != EnvironmentStatus.failed ||
-        error == null ||
-        !error.needsHostSetup) {
+    final waiting = environment?.interactiveComponent;
+    final here =
+        waiting != null &&
+        (widget.sessionId == null || waiting.sessionId == widget.sessionId);
+    if (here) {
+      _waited = true;
+    } else if (!(environment?.status.isBusy ?? false)) {
+      _waited = false;
+    }
+    if (!here && !_waited) {
       return const SizedBox.shrink();
     }
     final l10n = AppLocalizations.of(context);
@@ -40,11 +65,18 @@ class EnvironmentSetupBanner extends ConsumerWidget {
       padding: const EdgeInsets.all(AppSpacing.sm),
       child: SizedBox(
         width: double.infinity,
-        child: CcAlert(
-          variant: CcAlertVariant.warning,
-          title: l10n.environmentSetupTabReason,
-          description: Text('${error.message}\n${l10n.environmentSetupHint}'),
-        ),
+        child: here
+            ? CcAlert(
+                variant: CcAlertVariant.warning,
+                title: l10n.environmentStartTerminalReason,
+                description: Text(
+                  [
+                    ?waiting.detail,
+                    l10n.environmentStartTerminalHint,
+                  ].join('\n'),
+                ),
+              )
+            : CcAlert(title: l10n.environmentStartTerminalDone),
       ),
     );
   }

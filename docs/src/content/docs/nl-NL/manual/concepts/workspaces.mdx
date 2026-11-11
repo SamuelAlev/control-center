@@ -2,7 +2,7 @@
 title: Werkruimtes en isolatie
 description: Waarom een werkruimte een harde tenantgrens is, hoe de databasesplitsing die grens structureel maakt en wat er bewust overheen gaat.
 slug: nl-NL/handleiding/concepten/werkruimtes
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Wat is een werkruimte?
@@ -79,9 +79,11 @@ Een werkruimtebestand bevat alleen een `workspace_meta` met één rij voor zelfi
 
 ## Een werkruimte aanmaken
 
+Alleen de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder) kan een werkruimte aanmaken; de server kent het id toe. Een werkruimte-admin of -eigenaar kan er geen andere aanmaken. Wie nog in geen werkruimte zit, ziet **Je zit nog niet in een werkruimte**, wat hem vraagt de serverbeheerder een werkruimte te laten aanmaken of een werkruimte-admin hem te laten uitnodigen, en het formulier **Werkruimte toevoegen** zegt iedereen anders hetzelfde.
+
 Een werkruimte aanmaken doet meer dan een rij in het register invoegen. In één bewerking stempelt de server de aanmakende gebruiker als `ownerUserId`, legt hij het lidmaatschap met de eigenaarsrol van die gebruiker vast en publiceert hij een `WorkspaceCreated`-domeingebeurtenis. Luisteraars op die gebeurtenis zaaien vervolgens, idempotent en op de achtergrond:
 
-- een **CEO-agent** plus vier specialisten — `qa`, `architect`, `engineer`, `librarian` — waarbij de specialisten aan de CEO rapporteren;
+- een **CEO-agent** plus vijf specialisten — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` — waarbij de specialisten aan de CEO rapporteren;
 - de **ingebouwde pipelinesjablonen** en hun triggers (triggers op gebeurtenissen en handmatige triggers worden ingeschakeld geleverd; geplande zijn opt-in, behalve de dagelijkse worktree-GC-sweep);
 - de **starter-evalsuites**.
 
@@ -90,7 +92,7 @@ Dit gebeurt voor _elke_ werkruimte, niet alleen de eerste. De geseede agenten wo
 Het wegschrijven van het eigenaarslidmaatschap is belangrijker dan het lijkt: zonder dat zou de pas aangemaakte werkruimte geen leden hebben en zou elke call met werkruimtescope die de maker daarna doet, worden geweigerd.
 
 :::note[Agenten kunnen geen werkruimte aanmaken]
-Er is geen MCP-tool `create_workspace`. Mensen maken een werkruimte aan via `workspace.create` (chokepoint met alleen een naam) of `workspace.upsert` (volledig record, ook gebruikt voor updates). Beide stempelen de aanmakende gebruiker als `owner` en publiceren `WorkspaceCreated`.
+Er is geen MCP-tool `create_workspace`. De serverbeheerder maakt een werkruimte aan via `workspace.create`, dat hem als `owner` stempelt en `WorkspaceCreated` publiceert. `workspace.upsert` werkt alleen een bestaande werkruimte bij; het maakt er nooit een aan, en het wijzigt nooit de eigenaar van een werkruimte, wat alleen **Eigenaarschap overdragen** doet.
 :::
 
 ## Verwijderen, exporteren, importeren

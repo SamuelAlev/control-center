@@ -189,6 +189,9 @@ class FakeWindows implements EnvironmentHostWindows {
   final List<List<int>> opened = [];
   final List<String> closed = [];
 
+  /// When set, [open] throws this, the way a window that never shows does.
+  Object? openFailure;
+
   @override
   Future<String> open({
     required String workspaceId,
@@ -199,6 +202,10 @@ class FakeWindows implements EnvironmentHostWindows {
     required EnvironmentAppInputMode inputMode,
   }) async {
     opened.add(pids);
+    final failure = openFailure;
+    if (failure != null) {
+      throw failure;
+    }
     return 'rig-window';
   }
 
@@ -292,6 +299,10 @@ class FakeRigHost implements EnvironmentRigHost {
 
 const principal = UserPrincipal('member');
 
+/// The server owner a harness starts with: [principal], so what a test saves
+/// as the owner is approved for the host.
+const serverOwnerId = 'member';
+
 /// Everything an [EnvironmentService] test needs, with nothing real behind it
 /// but files in a temp directory.
 class ServiceHarness {
@@ -380,6 +391,9 @@ class ServiceHarness {
   /// Set to refuse admin.
   bool admin = false;
 
+  /// The server owner the service sees now; null when none is recorded.
+  String? serverOwner = serverOwnerId;
+
   /// Runs when a start asks whether its caller is an admin.
   void Function()? onAdminCheck;
 
@@ -397,6 +411,9 @@ class ServiceHarness {
 
   /// Makes clones for `testDefinition`.
   EnvironmentTestCloneProvider? testClone;
+
+  /// How long a start waits on a terminal. Read when [service] is first used.
+  Duration terminalTimeout = const Duration(minutes: 20);
 
   bool withSync = true;
 
@@ -471,6 +488,7 @@ class ServiceHarness {
         onAdminCheck?.call();
         return admin;
       },
+      serverOwner: () async => serverOwner,
       home: root,
       windows: windows,
       rigHost: rigHost,
@@ -484,6 +502,7 @@ class ServiceHarness {
       testClone: testClone,
       now: () => now,
       maintenanceInterval: const Duration(hours: 1),
+      terminalTimeout: terminalTimeout,
     ),
   );
 
@@ -502,7 +521,13 @@ class ServiceHarness {
         probeInterval: const Duration(milliseconds: 1),
         exitPollInterval: const Duration(milliseconds: 1),
         reapGrace: const Duration(milliseconds: 1),
+        launchGrace: appLaunchGrace,
+        groupPollInterval: const Duration(milliseconds: 1),
       );
+
+  /// How soon an app may exit and still count as closed, not failed. Set it
+  /// before anything touches [supervisor].
+  Duration appLaunchGrace = const Duration(seconds: 5);
 
   /// A space holding [repoId], with a real worktree and compose file.
   EnvironmentSpaceInfo addSpace(
@@ -547,16 +572,20 @@ class ServiceHarness {
   }
 
   /// Stores [json] as a definition, unchecked, the way an old row would be.
+  /// Stores [json] as a row, approved for the host by [hostApprovedBy]
+  /// (the server owner unless a test says otherwise).
   String store(
     Map<String, dynamic> json, {
     String id = 'def-1',
     String workspace = 'ws-a',
+    String? hostApprovedBy = serverOwnerId,
   }) {
     definitions.records[id] = EnvironmentDefinitionRecord(
       id: id,
       workspaceId: workspace,
       name: '${json['name']}',
       definitionJson: jsonEncode(json),
+      hostApprovedBy: hostApprovedBy,
       createdAt: now,
       updatedAt: now,
     );
@@ -567,12 +596,14 @@ class ServiceHarness {
     String space = 'space-1',
     String? definitionId,
     Map<String, dynamic> options = const {},
+    bool attended = false,
     Principal by = principal,
   }) => service.ensure(
     workspaceId: directory.spaces[space]!.workspaceId,
     spaceId: space,
     definitionId: definitionId,
     options: options,
+    attended: attended,
     by: by,
   );
 

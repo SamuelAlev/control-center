@@ -134,11 +134,12 @@ class SubmitPlanTool extends McpTool {
         'Your active run is not tied to a conversation — a plan needs one.',
       );
     }
-    // The dispatch path writes `AgentRunLog.spaceId`, so this resolves to the
-    // real space. The fallback is for older run rows written before it did —
-    // it is wrong for a thread (a conversation id names no space) and exists
-    // only so a legacy run degrades instead of throwing.
-    final spaceId = run.spaceId ?? conversationId;
+    final spaceId = run.spaceId;
+    if (spaceId == null || spaceId.isEmpty) {
+      return CallResult.error(
+        'Your active run is not tied to a space — a plan needs one.',
+      );
+    }
 
     PlanGraph graph;
     final List<PlanClarification> clarifications;

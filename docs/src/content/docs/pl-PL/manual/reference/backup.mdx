@@ -2,7 +2,7 @@
 title: Kopia zapasowa, eksport i import
 description: Układ migawki, manifest, każda operacja kopii zapasowej i trasa transferu oraz dokładnie to, które pliki kopia zapasowa zawiera, a których nie.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/kopia-zapasowa
-sourceHash: 9190bc0cdf1720f7a59b8df1f2face2f71c7f778
+sourceHash: 6d0ed9c625fb84d43792fae1962f55a739c87757
 ---
 
 Wszystko, co Control Center potrafi skopiować, przekazać lub przejąć, oraz dokładny kształt
@@ -110,13 +110,23 @@ jego bazę danych, a nic z reszty nie podróżuje:
 | `models/`                           | Nie            | Nie                    |
 | `meetings/<meetingId>/`             | Nie            | Nie                    |
 | `rigs/`                             | Nie            | Nie                    |
+| `_agent_hooks/`                     | Nie            | Nie                    |
 
 Część z tego jest jednorazowa — `spaces/` przechowuje drzewa robocze z kopiowaniem przy zapisie,
 które są odtwarzane z repozytoriów, `pr_clones/` to cache, `models/` pobiera się ponownie,
 a `rigs/` to stan maszyny. Część jednak nie: `blobs/` przechowuje wklejone obrazy, na które
 wskazują wiersze w bazie danych, `skills/` i `agents/` przechowują pliki, z którymi działa agent,
 a `secrets.json` przechowuje każdy klucz parowania, poświadczenie dostawcy i ustawienie SSO
-w instalacji. Jak objąć resztę, opisano w [Kopia zapasowa i przywracanie](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/#copy-backups-off-the-machine).
+w instalacji. Jak objąć resztę, opisano w [Kopia zapasowa i przywracanie](/pl-PL/podrecznik/poradniki/kopia-zapasowa-i-przywracanie/#kopiowanie-kopii-zapasowych-poza-maszynę).
+:::caution[Baza danych obszaru roboczego przechowuje sekrety webhooków]
+`workspace.db` to cały obszar roboczy: rozmowy, dzienniki uruchomień, indeks kodu,
+powiązania z repozytoriami, definicje środowisk i członkowie. Przechowuje też w czytelnej
+postaci tokeny webhooków potoków obszaru roboczego i sekrety webhooków synchronizacji
+zgłoszeń, więc traktuj pobrany eksport lub kopię zapasową jak sekret. Nie przechowuje
+żadnego logowania do dostawcy, klucza urządzenia ani sekretu użytkownika; te są w
+`global.db` i `secrets.json`.
+:::
+
 :::note[Tokeny czatu celowo zostają poza kopią]
 To, że `chat_credentials/` leży obok bazy danych, a nie w niej, jest powodem, dla którego obszar
 roboczy przekazany komuś innemu nie niesie ze sobą żadnych aktywnych tokenów bota. Zobacz
@@ -140,7 +150,7 @@ zapasowych, takim jak serwer demonstracyjny.
 | `workspace.listBackups` | odczyt | Obszar roboczy | `admin` | brak | `{backups: [...]}` |
 | `workspace.deleteBackup` | zapis | Obszar roboczy | `owner` | `name` | `{ok}` |
 | `workspace.export`   | odczyt | Obszar roboczy | `admin`      | brak          | `{ok, path}`                  |
-| `workspace.import`   | zapis  | Obszar roboczy | `owner`      | `source_path` | `{ok, workspace_id}`          |
+| `workspace.import`   | zapis  | Obszar roboczy | `owner` i właściciel serwera | `source_path` | `{ok, workspace_id}`          |
 | `workspace.delete`   | zapis  | Instalacja* | `owner`         | `id`          | wiersz rejestru oznaczony jako usunięty |
 
 * `workspace.delete` nie ma zakresu, bo wiersz, który oznacza, mieszka w globalnym
@@ -164,8 +174,18 @@ listy, a nie ścieżkę.
 bycie administratorem jednego obszaru roboczego nie wystarcza do zarządzania pozostałymi.
 Usuwanie przyjmuje wyłącznie nazwę katalogu ze znacznikiem czasu z listy, a nie dowolną
 ścieżkę serwera, i usuwa całą migawkę (w tym migawki niekompletne).
-Eksport i import w obrębie obszaru roboczego pozostają przy roli administratora/właściciela
-obszaru roboczego, a nie właściciela instalacji.
+Eksport obszaru roboczego i pobieranie zaplanowanych kopii zapasowych pozostają przy roli
+administratora obszaru roboczego.
+:::
+
+:::note[Przywracanie należy do właściciela serwera]
+`workspace.import` i `POST /backup/restore` sprawiają, że serwer przejmuje plik bazy danych,
+którego wiersze traktuje jako własne: powiązania z repozytoriami i to, kto je utworzył,
+definicje środowisk uruchamiane na hoście, ścieżki worktree i logów. Dlatego obie operacje
+wymagają właściciela serwera (`ServerAuthority.serverOwner`), który musi być też właścicielem
+obszaru roboczego. Każdy inny, a także każde wywołanie na hoście bez zapisanego właściciela,
+jest odrzucane z `server_owner_required`. Żadne wyzwalacze ani widoki, które przynosi plik,
+nie są przejmowane.
 :::
 
 ### Odpowiedź `server.listBackups`
@@ -239,7 +259,7 @@ ciągiem docelowym przy użyciu jego PSK parowania oraz rolę poniżej.
 | `/backup/workspace`     | GET    | `w`, `d`, `s`   | `backup-workspace:<workspaceId>` | **administrator** obszaru roboczego |
 | `/backup/snapshot`      | GET    | `n`, `d`, `s`   | `backup-snapshot:<name>`         | **właściciel** instalacji |
 | `/backup/stored`        | GET    | `w`, `n`, `d`, `s` | `backup-stored:<workspaceId>:<name>` | **administrator** obszaru roboczego; **właściciel** instalacji po usunięciu obszaru roboczego |
-| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **właściciel** obszaru roboczego |
+| `/backup/restore`       | POST   | `w`, `d`, `s`   | `backup-restore:<workspaceId>`   | **właściciel** instalacji, który jest też **właścicielem** obszaru roboczego (`403` z `server_owner_required` w przeciwnym razie) |
 
 `w` to identyfikator obszaru roboczego, `n` — nazwa katalogu migawki lub zaplanowanej kopii
 zapasowej, `d` — identyfikator wywołującego urządzenia, a `s` — podpis. W `/backup/snapshot`

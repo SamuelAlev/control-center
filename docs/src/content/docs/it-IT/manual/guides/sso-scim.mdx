@@ -2,7 +2,7 @@
 title: Esegui il provisioning degli utenti con SCIM
 description: Consenti al tuo IdP di creare, aggiornare ed eseguire il deprovisioning degli account di Control Center automaticamente.
 slug: it-IT/manuale/guide/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Usa questa guida quando vuoi il controllo del ciclo di vita: l'offboarding
@@ -35,8 +35,9 @@ altri) usano esattamente per questo.
    - **Autenticazione**: `Authorization: Bearer <token>`
    - **ID utente**: `userName` (email) oppure `externalId` — entrambi corrispondono
 4. Prova con un utente: invialo dal tuo IdP, verifica che compaia (la
-   create SCIM fissa l'`externalId` del provider sull'account, lo stesso
-   fissaggio che imposta il primo accesso SSO).
+   create SCIM registra l'`externalId` del provider sull'account, ed è così
+   che le chiamate SCIM successive lo trovano), poi fai in modo che quella
+   persona acceda tramite SSO prima di estendere l'attivazione a tutti.
 
 ## Che cosa fa il deprovisioning
 
@@ -58,6 +59,7 @@ appartenenza automatica al momento dell'accesso.
 
 ## Risoluzione dei problemi
 
+- **A un utente provisionato viene rifiutato l'accesso con "Questo account è già collegato a un'identità SSO diversa"**: limite noto. Un account creato da SCIM con un `externalId` resta legato a quell'id, e il primo accesso SSO a esso viene rifiutato. Finché non sarà risolto, esegui il provisioning senza `externalId`, oppure lascia che il provisioning just-in-time crei l'account al primo accesso e usa SCIM per il deprovisioning.
 - **401 a ogni chiamata**: il token è cambiato; rigeneralo e aggiorna l'IdP.
 - **L'endpoint non è raggiungibile**: il tunnel è inattivo oppure il server
   è solo relay. SCIM richiede HTTPS diretto; il JIT continua a funzionare

@@ -4,6 +4,11 @@ import 'package:cc_domain/cc_domain.dart' show FileSearchHit;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/auth/presentation/widgets/sign_in_prompts.dart';
+import 'package:control_center/features/auth/providers/oauth_providers.dart'
+    show SignInNeed;
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_code_failure_view.dart';
 import 'package:control_center/features/messaging/presentation/ide/search_line_preview.dart';
 import 'package:control_center/features/messaging/presentation/utils/provisioning_step_label.dart';
 import 'package:control_center/features/messaging/providers/explorer_view_state_provider.dart';
@@ -18,12 +23,6 @@ import 'package:control_center/shared/icons/app_icons.dart';
 import 'package:flutter/rendering.dart' show ScrollDirection;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// The panel's two surfaces are still named from here, so callers (and the
-// widget tests) keep one import. The enum itself lives with the view state it
-// is part of, which outlives this widget.
-export 'package:control_center/features/messaging/providers/explorer_view_state_provider.dart'
-    show ExplorerSearchMode;
 
 /// A scored file hit paired with the repo id it belongs to (the value type of
 /// [repoFileSearchProvider]).
@@ -70,14 +69,19 @@ class _TreeRow {
     required this.repoName,
     required this.showChevron,
   }) : kind = _TreeRowKind.node,
-       listingArgs = null;
+       listingArgs = null,
+       failure = null;
 
   /// A placeholder row (loading / loading-more / error) at [depth].
-  const _TreeRow.placeholder(this.kind, {required this.depth, this.listingArgs})
-    : node = null,
-      expanded = false,
-      repoName = '',
-      showChevron = false;
+  const _TreeRow.placeholder(
+    this.kind, {
+    required this.depth,
+    this.listingArgs,
+    this.failure,
+  }) : node = null,
+       expanded = false,
+       repoName = '',
+       showChevron = false;
 
   final _TreeRowKind kind;
   final RepoFileNode? node;
@@ -93,6 +97,11 @@ class _TreeRow {
 
   /// For [kind] == error: the listing to re-fetch on retry.
   final RepoDirectoryListingArgs? listingArgs;
+
+  /// For [kind] == error: why the page failed, so a refusal of the
+  /// person's own forge access is worded (and a missing sign-in offered)
+  /// instead of reading as a generic failure.
+  final Object? failure;
 
   /// Whether a directory row shows its disclosure chevron. Hidden only when
   /// the directory is expanded AND fully loaded AND empty — before that we
@@ -692,7 +701,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
         search,
         repoById,
         firstPageLoading: searchAsync.isLoading && !hasFresh,
-        hasError: searchAsync.hasError && !hasFresh,
+        error: hasFresh ? null : searchAsync.error,
         l10n: l10n,
       ),
     );
@@ -731,6 +740,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
           async.hasError ? _TreeRowKind.error : _TreeRowKind.loading,
           depth: depth,
           listingArgs: async.hasError ? args : null,
+          failure: async.error,
         ),
       );
       return;
@@ -797,6 +807,9 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
           _TreeRowKind.error,
           depth: depth,
           listingArgs: args,
+          failure: ref
+              .read(repoDirectoryListingProvider(args).notifier)
+              .lastFailure,
         ),
       );
     } else if (listing.hasMore) {
@@ -894,6 +907,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
             onToggle: _toggleRow,
             onOpenFile: (_) {},
             onRetry: _retryRow,
+            onSignIn: _signIn,
           ),
         ),
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -912,10 +926,20 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
                   path: node.fullRelativePath,
                 )),
           onRetry: _retryRow,
+          onSignIn: _signIn,
         ),
       ),
     );
   }
+
+  /// Offers the sign-in a refused listing or search names.
+  void _signIn(SignInNeed need) => unawaited(
+    showSignInRequiredDialog(
+      context,
+      need: need,
+      workspaceId: widget.workspaceId,
+    ),
+  );
 
   /// Retries a failed directory listing: a failed LATER page continues from
   /// the entries already fetched (the next `loadMore` clears `failed`); a
@@ -939,7 +963,7 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
     RepoFileSearchState? search,
     Map<String, Repo> repoById, {
     required bool firstPageLoading,
-    required bool hasError,
+    required Object? error,
     required AppLocalizations l10n,
   }) {
     final hits = search?.hits ?? const <ExplorerHit>[];
@@ -950,11 +974,11 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       if (firstPageLoading) {
         return const Center(child: CcSpinner());
       }
-      if (hasError) {
-        return CcEmptyState(
-          icon: AppIcons.searchX,
-          size: CcEmptyStateSize.sm,
-          message: l10n.ideFileSearchFailed,
+      if (error != null) {
+        return RepoCodeFailureView(
+          error: error,
+          fallback: l10n.ideFileSearchFailed,
+          workspaceId: widget.workspaceId,
         );
       }
     }
@@ -1028,6 +1052,14 @@ class _ExplorerPanelState extends ConsumerState<ExplorerPanel> {
       );
     } else if (loading && !_contentEverLoaded) {
       body = const Center(child: CcSpinner());
+    } else if (async.hasError && fresh == null) {
+      // A failed grep is not an empty one: say why, or that it failed.
+      body = RepoCodeFailureView(
+        error: async.error!,
+        fallback: l10n.ideContentSearchFailed,
+        workspaceId: widget.workspaceId,
+        onRetry: () => ref.invalidate(repoContentSearchProvider(args)),
+      );
     } else {
       body = CcEmptyState(
         icon: AppIcons.searchX,
@@ -1087,6 +1119,7 @@ class _TreeRowTile extends StatelessWidget {
     required this.onToggle,
     required this.onOpenFile,
     required this.onRetry,
+    required this.onSignIn,
     this.onQuickViewFile,
   });
 
@@ -1094,6 +1127,7 @@ class _TreeRowTile extends StatelessWidget {
   final ValueChanged<_TreeRow> onToggle;
   final ValueChanged<RepoFileNode> onOpenFile;
   final ValueChanged<_TreeRow> onRetry;
+  final ValueChanged<SignInNeed> onSignIn;
   final ValueChanged<RepoFileNode>? onQuickViewFile;
 
   @override
@@ -1119,9 +1153,17 @@ class _TreeRowTile extends StatelessWidget {
             ),
           );
         case _TreeRowKind.error:
-          return CcTappable(
-            // Tap retries the failed page (see the panel's _retryRow).
-            onPressed: () => onRetry(row),
+          // A refusal of the person's own forge access is worded by its
+          // code; a missing sign-in turns the row into that sign-in.
+          final failure = row.failure == null
+              ? null
+              : repoCodeFailureOf(l10n, row.failure!);
+          final need = failure?.signIn;
+          final message = failure?.message ?? l10n.ideFolderLoadFailed;
+          final tile = CcTappable(
+            // Tap signs in, or retries the failed page (see the panel's
+            // _retryRow).
+            onPressed: need != null ? () => onSignIn(need) : () => onRetry(row),
             borderRadius: BorderRadius.zero,
             builder: (context, states) => Padding(
               padding: EdgeInsetsDirectional.fromSTEB(
@@ -1132,11 +1174,19 @@ class _TreeRowTile extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Icon(AppIcons.triangleAlert, size: 14, color: t.textTertiary),
+                  Icon(
+                    need != null
+                        ? AppIcons.keyRound
+                        : failure != null
+                        ? AppIcons.lock
+                        : AppIcons.triangleAlert,
+                    size: 14,
+                    color: t.textTertiary,
+                  ),
                   const SizedBox(width: AppSpacing.xs),
                   Flexible(
                     child: Text(
-                      l10n.ideFolderLoadFailed,
+                      message,
                       overflow: TextOverflow.ellipsis,
                       maxLines: 1,
                       style: TextStyle(fontSize: 12, color: t.textTertiary),
@@ -1144,7 +1194,7 @@ class _TreeRowTile extends StatelessWidget {
                   ),
                   const SizedBox(width: AppSpacing.xs),
                   Text(
-                    l10n.retry,
+                    need != null ? l10n.repoCodeSignIn : l10n.retry,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -1155,6 +1205,11 @@ class _TreeRowTile extends StatelessWidget {
               ),
             ),
           );
+          // Rows share one measured height, so a refusal longer than the
+          // row reads in full on hover.
+          return failure == null
+              ? tile
+              : CcTooltip(message: message, child: tile);
         case _TreeRowKind.node:
           break; // Unreachable; handled below.
       }

@@ -2,7 +2,7 @@
 title: Installer
 description: Bruk Control Center i nettleseren eller installer skrivebordsappen, sett opp en agentbackend og velg hvor serveren skal kjøre.
 slug: nb-NO/handbok/installer
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center kjører på to måter: som en **nettapp** på
@@ -124,7 +124,7 @@ Modellister betjenes direkte av hver tilkoblet leverandør; [models.dev](https:/
 
 En GitHub-legitimasjon er **din og ligger på serveren**, knyttet til bruker-id-en din — ikke i klientoperativsystemets nøkkelring. Hver enhet du logger inn fra, bruker den samme, og ingen andre medlemmer kan lese den.
 
-GitHub har bare pålogging: **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting** tilbyr **Logg inn på GitHub**, og det finnes ikke noe token å lime inn. Påloggingen går via serverens egen GitHub App ([Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)) eller via Control Center Connect, avhengig av hva servereieren valgte. Med serverens egen app kommer nettleseren tilbake til serveren av seg selv; via Connect skriver du inn koden på 8 tegn som nettleseren viser, eller lar den åpne Control Center. Se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/).
+GitHub har bare pålogging: **Innstillinger → Deg → Profil → Kodehosting** tilbyr **Logg inn på GitHub**, og det finnes ikke noe token å lime inn. Påloggingen går via serverens egen GitHub App ([Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/)) eller via Control Center Connect, avhengig av hva servereieren valgte, med mindre en arbeidsområdeadministrator har valgt andre påloggingsapper for det arbeidsområdet i **Innstillinger → Arbeidsområde → Integrasjoner**. Med serverens egen app kommer nettleseren tilbake til serveren av seg selv; via Connect skriver du inn koden på 8 tegn som nettleseren viser, eller lar den åpne Control Center. Se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/).
 
 Oppstartsveiledningen ber om denne tilkoblingen. Etterpå er det samme kortet stedet der du logger inn på nytt eller kobler fra. GitLab og Bitbucket bruker samme kort med et innlimt personlig token; se [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/).
 
@@ -146,7 +146,7 @@ For å hoste en server selv, følg [Kjør en headless server](/nb-NO/handbok/sli
 
 1. **Innstillinger → Server → Modellleverandører** viser begge adapterne. «Control Center (built-in)» vises som funnet med versjonen `built-in`; Claude Code vises som funnet hvis CLI-en ligger på `PATH` til serververten. Trykk **Oppdater** hvis den mangler.
 2. **Innstillinger → Arbeidsområde → Arkiv** viser repoene i dette arbeidsområdet, og **Legg til arkiv** lar deg bla gjennom mappene på serververten.
-3. **Innstillinger → Arbeidsområde → Agenter** viser de fem agentene det første arbeidsområdet ditt ble opprettet med. Hver av dem trenger en **Adapter** og en **Modell** satt før den kan kjøre.
+3. **Innstillinger → Arbeidsområde → Agenter** viser de seks agentene det første arbeidsområdet ditt ble opprettet med. Hver av dem trenger en **Adapter** og en **Modell** satt før den kan kjøre.
 4. **Innstillinger → Server → Diagnostikk og personvern** rapporterer sandkasse-backendene denne verten tilbyr, tilstanden til embedding-modellen og logging.
 
 ## Bygg fra kildekoden

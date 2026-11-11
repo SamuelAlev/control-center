@@ -2,7 +2,7 @@
 title: Primul tău spațiu de lucru
 description: Creează un spațiu de lucru, înregistrează un repo în el și vezi singur granița de izolare.
 slug: ro-RO/manual/tutoriale/primul-spatiu-de-lucru
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Ce vei construi
@@ -11,10 +11,12 @@ La finalul acestui tutorial vei avea:
 
 - Un spațiu de lucru numit după proiectul tău
 - Un depozit Git înregistrat în el
-- Cinci agenți populați, dintre care unul configurat suficient de bine încât să ruleze
+- Șase agenți populați, dintre care unul configurat suficient de bine încât să ruleze
 - Un al doilea spațiu de lucru, gol, care demonstrează granița de izolare
 
 Onboarding-ul ți-a creat deja un spațiu de lucru. Acest tutorial creează deliberat unul nou, ca să vezi fiecare parte a procesului.
+
+Crearea unui spațiu de lucru necesită proprietarul serverului, persoana care a configurat serverul. Pe un desktop care rulează propriul server, acesta ești tu. Pe serverul altcuiva, **Adaugă spațiu de lucru** afișează „Doar proprietarul serverului poate crea spații de lucru. Cere-i să creeze unul sau cere unui administrator al spațiului de lucru să te invite.” Fă una dintre acestea și urmează restul tutorialului în acel spațiu de lucru. Înregistrarea unui depozit la pasul 2 necesită un administrator al spațiului de lucru, iar al doilea spațiu de lucru de la pasul 4 necesită din nou proprietarul serverului.
 
 Înainte de a începe, alege un checkout Git care îndeplinește toate aceste trei condiții — pasul de înregistrare refuză orice altceva:
 
@@ -35,12 +37,12 @@ Control Center trece la noul spațiu de lucru și ajunge în inbox-ul acestuia (
 În spate, serverul publică un eveniment `WorkspaceCreated` și populează spațiul de lucru cu:
 
 - un **agent CEO**, a cărui personă este coordonarea și delegarea
-- patru specialiști — `qa`, `architect`, `engineer` și `librarian` — fiecare cu propriile instrucțiuni și skill-uri
+- cinci specialiști — `qa`, `architect`, `engineer`, `librarian` și `content-synthesizer` — fiecare cu propriile instrucțiuni și skill-uri
 - șabloanele de pipeline încorporate și rândurile lor de trigger
 
 Fiecare spațiu de lucru pe care îl creezi primește toate acestea, nu doar primul.
 
-Confirmă: deschide **Setări → Spațiu de lucru → Agenți**. Cinci agenți sunt în listă, fiecare cu un inel de stare gol.
+Confirmă: deschide **Setări → Spațiu de lucru → Agenți**. Șase agenți sunt în listă, fiecare cu un inel de stare gol.
 
 ## Pasul 2: Înregistrează un depozit
 
@@ -57,7 +59,7 @@ Confirmă: depozitul apare în listă cu `owner/repo` al lui și ramura curentă
 
 ## Pasul 3: Fă un agent să poată rula
 
-Cei cinci agenți pe care tocmai i-a populat acest spațiu de lucru nu au nici adaptor, nici model. Trimiterea îi rulează pe **Control Center (built-in)** și, fără niciun model setat, cere Anthropic modelul său implicit — așa că funcționează doar dacă ai conectat un cont Anthropic și, dacă ai, rulează pe un model pe care nu l-ai ales. Onboarding-ul de la prima rulare scrie alegerea sa pe fiecare agent din primul spațiu de lucru, o singură dată; un spațiu de lucru pe care îl creezi după aceea pornește cu toți cinci nesetați. Setează unul acum.
+Cei șase agenți pe care tocmai i-a populat acest spațiu de lucru nu au nici adaptor, nici model. Trimiterea îi rulează pe **Control Center (built-in)** și, fără niciun model setat, cere Anthropic modelul său implicit — așa că funcționează doar dacă ai conectat un cont Anthropic și, dacă ai, rulează pe un model pe care nu l-ai ales. Onboarding-ul de la prima rulare scrie alegerea sa pe fiecare agent din primul spațiu de lucru, o singură dată; un spațiu de lucru pe care îl creezi după aceea pornește cu toți șase nesetați. Setează unul acum.
 
 1. Deschide **Setări → Spațiu de lucru → Agenți**
 2. Selectează `engineer` în listă
@@ -73,7 +75,7 @@ Fiecare agent își poartă propriul adaptor și model, așa că repetă acest l
 Creează un al doilea spațiu de lucru din cipul din bara de titlu, exact ca la pasul 1. Apoi privește-l:
 
 - **Setări → Spațiu de lucru → Depozite** este gol. Depozitul pe care l-ai înregistrat acum un minut nu este acolo.
-- **Setări → Spațiu de lucru → Agenți** conține cinci agenți, dar sunt rânduri diferite — adaptorul pe care l-ai setat la pasul 3 a dispărut.
+- **Setări → Spațiu de lucru → Agenți** conține șase agenți, dar sunt rânduri diferite — adaptorul pe care l-ai setat la pasul 3 a dispărut.
 - Lista de spații, tichetele și memoria sunt toate goale.
 
 Nu s-a scurs nimic, pentru că nu există de unde să se scurgă: rândurile fiecărui spațiu de lucru trăiesc în fișierul de bază de date propriu acelui spațiu. O citire între spații de lucru nu este o interogare care este filtrată, ci o interogare care nu are unde să ruleze. Ștergerea unui spațiu de lucru înseamnă ruperea legăturii cu un fișier.
@@ -84,6 +86,6 @@ Pentru modelul complet, citește [Spații de lucru și izolare](/ro-RO/manual/co
 
 ## Recapitulare
 
-Ai creat un spațiu de lucru, l-ai văzut cum populează un CEO și patru specialiști, ai înregistrat un depozit în el, ai dat unui agent un adaptor și un model și ai confirmat că un al doilea spațiu de lucru nu împarte nimic din toate acestea.
+Ai creat un spațiu de lucru, l-ai văzut cum populează un CEO și cinci specialiști, ai înregistrat un depozit în el, ai dat unui agent un adaptor și un model și ai confirmat că un al doilea spațiu de lucru nu împarte nimic din toate acestea.
 
 **În continuare:** [Trimite primul agent](/ro-RO/manual/tutoriale/primul-agent/) ca să pui spațiul de lucru la treabă.

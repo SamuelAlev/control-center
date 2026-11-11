@@ -1,4 +1,4 @@
-import 'package:cc_mcp_client/cc_mcp_client.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/capability_tier.dart';
 import 'package:test/test.dart';
 
 void main() {

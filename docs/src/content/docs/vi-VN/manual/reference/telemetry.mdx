@@ -2,7 +2,7 @@
 title: Phân tích sử dụng
 description: Control Center ghi lại những gì khi bật phân tích sử dụng, ai là người quyết định và những gì không bao giờ được gửi đi.
 slug: vi-VN/so-tay/tham-chieu/phan-tich-su-dung
-sourceHash: e5b9aa796a4fe246aca08328cbb2e0cbe54091c5
+sourceHash: 69db91fed6fb5bb971512afbb22346b6ac79649d
 ---
 
 Control Center có thể gửi **sự kiện sử dụng ở dạng bí danh** đến một phiên bản [Umami](https://umami.is). Phân tích sử dụng **tắt cho đến khi người vận hành máy chủ bật lên**. Thiết lập này thuộc về máy chủ và áp dụng cho mọi máy khách kết nối với nó: ứng dụng máy tính, ứng dụng web, điện thoại và chính máy chủ.
@@ -13,7 +13,7 @@ Phân tích sử dụng tách biệt với **Chia sẻ báo cáo sự cố**, m�
 
 | Công tắc | Ở đâu | Tác dụng |
 | --- | --- | --- |
-| **Chia sẻ phân tích sử dụng** | Bước làm quen (bước sandbox) và **Cài đặt → Quyền riêng tư**. Chỉ người vận hành máy chủ mới thay đổi được; các thành viên khác chỉ xem được giá trị hiện tại | Toàn máy chủ. Lưu dưới dạng `telemetry.usage_analytics` trong thiết lập máy chủ. Tắt trừ khi được đặt thành `true` |
+| **Chia sẻ phân tích sử dụng** | Bước làm quen (bước sandbox) và **Cài đặt → Máy chủ → Chẩn đoán và quyền riêng tư**. Chỉ người vận hành máy chủ mới thay đổi được; các thành viên khác chỉ xem được giá trị hiện tại | Toàn máy chủ. Lưu dưới dạng `telemetry.usage_analytics` trong thiết lập máy chủ. Tắt trừ khi được đặt thành `true` |
 | Loại bản dựng | Tự động | Bản dựng debug và profile không gửi. Thay vào đó, chúng ghi từng sự kiện vào nhật ký gỡ lỗi |
 | `CC_ANALYTICS_DEBUG=1` | Môi trường của `cc_server` hoặc tệp `.env` của nó | Cho phép bản dựng debug và profile của máy chủ, và của mọi máy khách kết nối với nó, gửi thật để kiểm thử. Công tắc ở trên vẫn phải được bật |
 | `DO_NOT_TRACK=1` | Môi trường của `cc_server` | Dừng việc báo cáo của chính máy chủ, bất kể công tắc ra sao. Máy khách vẫn tuân theo công tắc |

@@ -2,7 +2,7 @@
 title: Obliczenia recenzji (kohorty, osie i deterministyczne różnice)
 description: Co przebieg obliczeń recenzji tworzy po stronie serwera — kohorty, różnice kontraktu API i różnice wizualne, bramki na poszczególnych osiach — oraz jak to trafia do karty Recenzja.
 slug: pl-PL/podrecznik/poradniki/obliczenia-recenzji
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Karta **Recenzja** PR-a to najpierw bieżący postęp potoku recenzji, gdy ten
@@ -15,8 +15,6 @@ Za tą kartą `cc_server` buduje kohorty plików, uruchamia deterministyczne osi
 i udostępnia je przez operacje RPC `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` oraz ich bliźniaki `watch*`).
-Zapisany układ, który nadal wskazuje `pr.reviewStudio`, otwiera tę samą kartę
-Recenzja.
 
 Na karcie Recenzja:
 
@@ -84,6 +82,8 @@ Widgetbook, przebieg obliczeń renderuje zmienione komponenty przed i po przez
 uruchamiany bez interfejsu przebieg golden `flutter test` w worktree PR-a dla
 base i head, a następnie porównuje piksele.
 
+Te testy to kod samego pull requestu, więc działają jak proces narzędzia agenta: w sandboxie, gdy serwer uruchamia agentów w sandboxie; bez ograniczeń, gdy właściciel serwera wyłączył sandbox; a bez sandboxa tylko dla żądania, za które odpowiada właściciel serwera. Dla wszystkich innych oś zgłasza **unavailable** z powodem „no sandbox on this server, and only its owner may run a PR's tests unsandboxed”.
+
 :::note[To wymaga Flutter SDK na hoście serwera]
 Serwer w czystym Darcie nie może renderować widżetów Fluttera w swoim procesie,
 więc wywołuje `flutter test` jako osobny proces. SDK musi być zainstalowany na
@@ -94,9 +94,10 @@ zaliczenia, na które nie zasłużyła.
 
 Migawki oznaczone jako **changed** lub **removed** wstrzymują bramkę wizualną do
 czasu zatwierdzenia; migawki **unchanged**, **added** i **approved** ją
-zdejmują. Niedostępność ma jeden z czterech powodów: brak Flutter SDK na hoście,
+zdejmują. Niedostępność ma jeden z pięciu powodów: brak Flutter SDK na hoście,
 brak aplikacji Widgetbook w repozytorium, brak przypadków użycia nadających się
-do testów golden lub błąd harnessu golden.
+do testów golden, błąd harnessu golden lub brak sandboxa dla żądania, za które
+właściciel serwera nie odpowiada.
 
 Zatwierdzanie zamierzonej zmiany to `review_studio.approveVisual`.
 

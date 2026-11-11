@@ -249,10 +249,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get allCaughtUp => 'سب دیکھ لیا';
 
   @override
-  String get inboxNoForgeAccount =>
-      'سرور پر کوئی forge اکاؤنٹ منسلک نہیں، اس لیے ابھی pull requests آپ سے منسوب نہیں کیے جا سکتے۔';
-
-  @override
   String get inboxNothingWaiting =>
       'کچھ بلاک نہیں اور کوئی pull request آپ کے انتظار میں نہیں۔';
 
@@ -460,32 +456,6 @@ class AppLocalizationsUr extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '⁨$names⁩ یہاں سے ریلے پر بھیجنے کے لیے بہت بڑی ہیں۔',
-      one: '⁨$names⁩ یہاں سے ریلے پر بھیجنے کے لیے بہت بڑی ہے۔',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'منسلکہ اپ لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count منسلکے اپ لوڈ نہیں ہو سکے اور چھوڑ دیے گئے۔',
-      one: '1 منسلکہ اپ لوڈ نہیں ہو سکا اور چھوڑ دیا گیا۔',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'ساتھی';
 
   @override
@@ -621,35 +591,6 @@ class AppLocalizationsUr extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'سرور پر کوئی forge منسلک نہیں، اس لیے pull requests حاصل نہیں کیے جا سکتے۔ ڈیسک ٹاپ ایپ سے ایک منسلک کریں۔';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count ریپوز پڑھے نہیں جا سکے۔',
-      one: '1 ریپو پڑھا نہیں جا سکا۔',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'پڑھے نہیں جا سکے: ⁨$names⁩';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'GitHub App انسٹالیشن معطل ہے';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return '⁨$names⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'GitHub App انسٹالیشن معطل ہے. ⁨$names⁩ کے لیے آخری معلوم ڈیٹا دکھایا جا رہا ہے۔ GitHub پر انسٹالیشن دوبارہ شروع کریں۔';
-  }
 
   @override
   String get draft => 'ڈرافٹ';
@@ -1301,7 +1242,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get permissionPrCreate => 'Pull requests بنائیں';
 
   @override
-  String get permissionPrPublish => 'Pull requests شائع کریں';
+  String get permissionPrPublish => 'Pull requests کو اپ ڈیٹ یا merge کریں';
 
   @override
   String get permissionVendorSyncWrite => 'وینڈر سنک میں لکھیں';
@@ -1345,7 +1286,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get permissionBuiltInDefault => 'بلٹ اِن ڈیفالٹ';
 
   @override
-  String get permissionRemembered => 'یاد رکھی گئی منظوری';
+  String get permissionRemembered => 'جاری منظوری';
 
   @override
   String get permissionSource => 'ماخذ';
@@ -1367,10 +1308,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'یہاں قاعدہ مقرر کریں';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'اس عمل کے لیے عمومی قاعدہ مقرر کرنے سے پہلے دائرے کا یا یاد رکھا گیا قاعدہ منسوخ کریں۔';
 
   @override
   String get permissionConfirmRevoke => 'منسوخی کی تصدیق کریں';
@@ -1422,6 +1359,14 @@ class AppLocalizationsUr extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'کمانڈز: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'ٹولز: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect => 'اس ایکشن کے منع ہونے کے دوران نافذ نہیں';
 
   @override
   String permissionMaxCount(String count) {
@@ -1876,15 +1821,6 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Pull request کی تازہ کاری';
-
-  @override
-  String get activityTicket => 'ٹکٹ کی تازہ کاری';
-
-  @override
-  String get activityMeeting => 'میٹنگ کی تازہ کاری';
-
-  @override
-  String get activityCalendar => 'کیلنڈر کنکشن';
 
   @override
   String get activityRig => 'انکلوژر کی تازہ کاری';
@@ -2568,8 +2504,7 @@ class AppLocalizationsUr extends AppLocalizations {
       'آپ کے براؤزر میں اجازت کا انتظار ہے…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'براؤزر میں دکھایا گیا کوڈ درج کریں';
+  String get credentialsConnectCodePrompt => 'تصدیقی کوڈ';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2638,10 +2573,6 @@ class AppLocalizationsUr extends AppLocalizations {
   String get credentialsPersonalTokenHint => 'ذاتی رسائی کا ٹوکن پیسٹ کریں';
 
   @override
-  String get credentialsHostManaged =>
-      'یہ کنکشن سرور ایپ یا ماحول سے آتا ہے۔ اسے وہاں صرف سرور کا مالک بدل سکتا ہے؛ آپ اپنا ٹوکن پھر بھی شامل کر سکتے ہیں۔';
-
-  @override
   String get credentialsStopWatching => 'نگرانی بند کریں';
 
   @override
@@ -2662,4 +2593,207 @@ class AppLocalizationsUr extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'میزبان پر کمانڈز چلائیں';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'آپ کا $provider سائن اِن ختم ہو گیا ہے۔ دوبارہ سائن اِن کریں۔';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'موقوف: اس ورک اسپیس کی سائن اِن سروس بدل گئی ہے۔ سروس واپس آتے ہی یہ دوبارہ کام کرے گا۔';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'ابھی $provider تک رسائی نہیں ہو پا رہی۔ دوبارہ کوشش کی جا رہی ہے۔';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'صرف یہ ورک اسپیس';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'تمام ورک اسپیسز';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'اپنی محفوظ کردہ اسناد اس ورک اسپیس سے ہٹائیں؟ دوسری ورک اسپیسز اپنی اسناد رکھتی ہیں۔';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'اپنی محفوظ کردہ اسناد ان تمام ورک اسپیسز سے ہٹائیں جو انہیں شیئر کرتی ہیں؟';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'سرور دوبارہ شروع ہو گیا۔ سائن اِن دوبارہ شروع کریں۔';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return '$owner پر GitHub App انسٹال کریں تاکہ آٹومیشن $names تک پہنچ سکے۔ GitHub کھولنے کے لیے تھپتھپائیں۔';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return '$owner پر GitHub App انسٹال نہیں ہے، اس لیے آٹومیشن $names تک نہیں پہنچ سکتی۔ ورک اسپیس کے کسی ایڈمن سے اسے انسٹال کرنے کو کہیں۔';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return '$names کو GitHub App کی ریپوزٹریز میں شامل کریں۔ GitHub کھولنے کے لیے تھپتھپائیں۔';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'GitHub App ابھی $names نہیں دیکھ سکتی۔ ورک اسپیس کے کسی ایڈمن سے انہیں اس کی ریپوزٹریز میں شامل کرنے کو کہیں۔';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'GitHub App انسٹالیشن معطل ہے۔ $names کے لیے آٹومیشن اس وقت تک موقوف ہے جب تک اکاؤنٹ کا کوئی مالک GitHub پر انسٹالیشن دوبارہ شروع نہ کرے۔';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'اس ورک اسپیس کی آٹومیشن کا ذمہ دار شخص اب $names نہیں دیکھ سکتا، اس لیے وہاں ان کی طرف سے کچھ نہیں چلتا۔';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'اس ورک اسپیس کی آٹومیشن کا ذمہ دار شخص فورج میں سائن اِن نہیں ہے، اس لیے $names کی آٹومیشن ان کے سائن اِن کرنے تک انتظار کرتی ہے۔';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return '$names تک رسائی کی جانچ نہیں ہو سکی۔ دوبارہ کوشش کی جا رہی ہے۔';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'مزید $count ریپوزٹریز کی pull requests دیکھنے کے لیے $forge میں سائن اِن کریں',
+      one:
+          'مزید 1 ریپوزٹری کی pull requests دیکھنے کے لیے $forge میں سائن اِن کریں',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ریپوزٹریز چھپی ہوئی ہیں کیونکہ آپ کا $forge اکاؤنٹ انہیں نہیں دیکھ سکتا',
+      one:
+          '1 ریپوزٹری چھپی ہوئی ہے کیونکہ آپ کا $forge اکاؤنٹ اسے نہیں دیکھ سکتا',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count ریپوزٹریز چھپی ہوئی ہیں کیونکہ اس ورک اسپیس میں آپ کو ان تک رسائی نہیں',
+      one:
+          '1 ریپوزٹری چھپی ہوئی ہے کیونکہ اس ورک اسپیس میں آپ کو اس تک رسائی نہیں',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'مزید $count ریپوزٹریز تک آپ کی رسائی جانچی جا رہی ہے…',
+      one: 'مزید 1 ریپوزٹری تک آپ کی رسائی جانچی جا رہی ہے…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Atlassian اکاؤنٹ کی ای میل';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'اپنے Atlassian اکاؤنٹ کا ای میل پتہ درج کریں۔';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API ٹوکن';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'کوئی آٹومیشن ٹوکن $names نہیں پڑھ سکتا، اس لیے وہاں پس منظر کا کام موقوف ہے۔ ایڈمن ترتیبات ← ریپوزٹریز میں ایک شامل کر سکتا ہے۔';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'اپنے براؤزر میں تصدیق کریں، پھر جو کوڈ دکھائے وہ درج کریں۔';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'یہ اکاؤنٹ اس سرور پر پہلے ہی کسی اور شخص سے جڑا ہوا ہے۔ کسی مختلف اکاؤنٹ سے سائن ان کریں۔';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'اس ٹوکن کی جانچ کے لیے $provider تک رسائی نہیں ہو سکی۔ کچھ دیر بعد دوبارہ کوشش کریں۔';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider یہ ٹوکن قبول نہیں کرتا۔ دیکھیں کہ آپ نے پورا ٹوکن کاپی کیا ہے اور وہ منسوخ نہیں ہوا۔';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'یہ ذاتی ٹوکن نہیں ہے۔ اپنے $provider اکاؤنٹ کا ذاتی ایکسیس ٹوکن چسپاں کریں، پروجیکٹ، گروپ، ورک اسپیس یا بوٹ کا ٹوکن نہیں۔';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'اس ٹوکن میں $scope اسکوپ نہیں ہے۔ ایسا ٹوکن بنائیں جس میں وہ ہو۔';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'یہ ٹوکن ختم ہو چکا ہے۔ نیا بنائیں اور یہاں چسپاں کریں۔';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'ابھی درخواستیں بہت زیادہ ہیں۔ کچھ دیر انتظار کریں، پھر دوبارہ کوشش کریں۔';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'سائن ان منسوخ یا مسترد کیا گیا۔ تیار ہوں تو اسے دوبارہ شروع کریں۔';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'یہ سائن ان اب کھلا نہیں ہے: یہ منسوخ، استعمال، یا تبدیل ہو چکا ہے۔ اسے دوبارہ شروع کریں۔';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'ایک ورک اسپیس ایڈمن کو آپ کو دعوت دینی ہوگی، یا سرور کا مالک آپ کے لیے ورک اسپیس بنا سکتا ہے۔';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos اب $forge پر ایک مختلف ریپوزٹری کی طرف اشارہ کرتی ہے۔ استعمال جاری رکھنے کے لیے ڈیسک ٹاپ یا ویب ایپ سے اسے دوبارہ لنک کریں۔';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos اب $forge پر ایک مختلف ریپوزٹری کی طرف اشارہ کرتی ہے۔ دوبارہ استعمال سے پہلے ایک ورک اسپیس ایڈمن کو اسے دوبارہ لنک کرنا ہوگا۔';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'ایجنٹس کو اس سرور پر سینڈ باکس چاہیے';
+
+  @override
+  String get runSandboxUnavailable =>
+      'اس سرور پر سینڈ باکس نہیں ہے، اس لیے یہاں صرف اس کا مالک ایجنٹس چلا سکتا ہے۔ مالک سینڈ باکس انسٹال کر سکتا ہے یا سب کے لیے سینڈ باکسنگ بند کر سکتا ہے۔';
 }

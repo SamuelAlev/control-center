@@ -20,6 +20,9 @@ class IdentityMapper {
     handle: row.handle,
     displayName: row.displayName,
     email: row.email,
+    // A vouched flag without an address would be a corrupt row; read it as
+    // not vouched rather than refuse the account.
+    emailVerified: row.emailVerified && (row.email?.isNotEmpty ?? false),
     avatarRef: row.avatarRef,
     gitAuthorName: row.gitAuthorName,
     gitAuthorEmail: row.gitAuthorEmail,

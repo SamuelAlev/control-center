@@ -2,7 +2,7 @@
 title: 채팅 브리지
 description: 채팅 브리지의 제공업체, 명령, 자격 증명, 능력, RPC 연산과 저장소.
 slug: ko-KR/매뉴얼/레퍼런스/채팅-브리지
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## 제공업체
@@ -150,7 +150,7 @@ Control Center가 앱을 만들거나 편집할 때 강제하는 구조 설정: 
 | 멘션 접수됨                 | `Working on it…`                                               |
 | 단계 `repo`                 | `Cloning <repo>…`                                              |
 | 단계 `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| 단계 `script`               | `Running the setup script for <repo>…`                         |
+| 단계 `provisionTasks`               | `Running worktree tasks for <repo>…`                         |
 | 단계 `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, 아직 단계 없음 | `Preparing the workspace…`                                  |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ Control Center가 앱을 만들거나 편집할 때 강제하는 구조 설정: 
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | 연결 자격 증명        | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | 중간에 멈춘 안내형 설정 | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| 레거시 Slack 파일     | `<dataDir>/<workspaceId>/slack_credentials.json` 및 `slack_app_setup.json`, 한 번 읽고 제자리에서 마이그레이션됩니다 |
 
 자격 증명은 워크스페이스의 데이터베이스 안이 아니라 그 옆에 있습니다. 워크스페이스를 삭제하면 채팅 토큰도 함께 사라지고, `workspace.export`나 백업은 `workspace.db`를 복사합니다 — 따라서 다른 사람에게 넘긴 워크스페이스에는 살아 있는 봇 토큰이 들어 있지 않습니다. 쓰기는 원자적이며(임시 파일에 쓴 뒤 이름 바꾸기) 소유자 전용으로 조여집니다.
 

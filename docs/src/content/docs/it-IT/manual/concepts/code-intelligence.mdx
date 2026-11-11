@@ -2,7 +2,7 @@
 title: Intelligence del codice
 description: Perché un agente ha bisogno del compilatore, di un matcher strutturale e di un debugger — e cosa risponde ciascuno che gli altri non possono.
 slug: it-IT/manuale/concetti/intelligence-del-codice
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center offre a un agente quattro modi per capire il codice che vanno oltre la semplice lettura. Rispondono a domande davvero diverse, e il motivo per cui sono quattro e non uno è che nessun singolo meccanismo le risponde tutte.
@@ -31,6 +31,8 @@ Ripetere ciò che è già stato detto all'agente è peggio che non dire nulla: r
 Nessun server parte all'avvio. Ne parte uno alla prima richiesta che ne ha bisogno, che è quasi sempre la prima modifica a un file di sua competenza, e quelli inattivi vengono eliminati. Un host che non tocca mai Dart non avvia mai un analyzer.
 
 Il rilevamento è un'**intersezione**: nel checkout deve esistere un marcatore di radice *e* il binario deve essere risolvibile. Un marcatore da solo dice "questo progetto è Python" e nulla sul fatto che il server sia installato; un binario risolvibile da solo dice che l'host ha una toolchain e nulla su questo checkout. Solo entrambi insieme significano che una query può riuscire, e uno strumento offerto che fallisce sempre è peggio di uno assente.
+
+Ciò che un repository può influenzare è limitato di proposito. I server arrivano da una tabella integrata, mai da un file nel checkout, e un binario interno al progetto (`node_modules/.bin`) viene usato solo quando l'esecuzione è in sandbox. Un language server è un programma che gira sulla macchina del server, quindi un repository non può sceglierne uno.
 
 ## Perché serve la ricerca strutturale quando esiste grep
 

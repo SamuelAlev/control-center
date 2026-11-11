@@ -2,7 +2,7 @@
 title: Bản đồ tuyến
 description: Mọi tuyến mà Control Center đăng ký, kèm màn hình và tham số truy vấn của nó.
 slug: vi-VN/so-tay/tham-chieu/ban-do-tuyen
-sourceHash: 3b3f84b2810506b288ba11c6d2b0d785b653097d
+sourceHash: cfb5516c7ba0806bb16fb62802cc17a8cb4b55d4
 ---
 
 ## Khung ứng dụng
@@ -11,7 +11,7 @@ Khung ứng dụng (`ControlCenterLayout`) bọc mọi tuyến bên trong không
 
 Chốt chặn hoàn tất khi có ít nhất một máy chủ mã được kết nối **cho người dùng đã đăng nhập** và có ít nhất một không gian làm việc tồn tại.
 
-Thông tin xác thực bị thiếu và phần thiết lập ban đầu bị thiếu được xử lý khác nhau, và yếu tố phân biệt là `users.onboarding_finished_at` đọc từ chính `identity.me` của người gọi — không bao giờ là "đã có không gian làm việc tồn tại", vì điều đó sai ngay khi ai đó được mời vào một không gian làm việc mà họ chưa từng tạo. Khi không có máy chủ mã nào được kết nối, một tài khoản đã hoàn tất thiết lập ban đầu vẫn ở trong ứng dụng: khung không gian làm việc hiển thị cảnh báo kèm liên kết đến **Cài đặt → Không gian làm việc → Hồ sơ & danh tính**, nơi có đăng nhập. Tài khoản chưa hoàn tất thì đến `/onboarding`. Khi cờ này vẫn chưa rõ, chốt chặn giữ nguyên màn hình splash thay vì đoán, bởi nó không bao giờ chuyển hướng ngược ra khỏi onboarding.
+Thông tin xác thực bị thiếu và phần thiết lập ban đầu bị thiếu được xử lý khác nhau, và yếu tố phân biệt là `users.onboarding_finished_at` đọc từ chính `identity.me` của người gọi — không bao giờ là "đã có không gian làm việc tồn tại", vì điều đó sai ngay khi ai đó được mời vào một không gian làm việc mà họ chưa từng tạo. Khi không có máy chủ mã nào được kết nối, một tài khoản đã hoàn tất thiết lập ban đầu vẫn ở trong ứng dụng: khung không gian làm việc hiển thị cảnh báo kèm liên kết đến **Cài đặt → Bạn → Hồ sơ**, nơi có đăng nhập. Tài khoản chưa hoàn tất thì đến `/onboarding`. Khi cờ này vẫn chưa rõ, chốt chặn giữ nguyên màn hình splash thay vì đoán, bởi nó không bao giờ chuyển hướng ngược ra khỏi onboarding.
 
 ## Tuyến không có tiền tố
 
@@ -65,7 +65,7 @@ Không có **mục "Kế hoạch" nào trên thanh bên**. Studio kế hoạch m
 
 ## Tuyến cài đặt
 
-`/settings` chuyển hướng đến `/settings/you/appearance`. Nút cài đặt trên thanh bên và `Cmd/Ctrl + ,` đều dẫn đến `/settings/you/appearance`.
+`/settings` chuyển hướng đến `/settings/you/profile`. Nút cài đặt trên thanh bên và `Cmd/Ctrl + ,` đều dẫn đến `/settings/you/profile`.
 
 Các đường dẫn cài đặt được đặt trong không gian tên theo **phạm vi** — `you/`, `workspace/`, `server/` — vì đoạn đó cho biết thay đổi ảnh hưởng đến ai. Hai đường dẫn có trước cơ chế không gian tên nên không mang phạm vi trong URL: `/settings/memory` và `/settings/pipelines`.
 
@@ -73,20 +73,26 @@ Các đường dẫn cài đặt được đặt trong không gian tên theo **p
 
 | Đường dẫn                     | Màn hình                                                                   |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `/settings/you/appearance`    | Chủ đề, ngôn ngữ, kiểu chữ, chủ đề trình soạn thảo (trang đích của cài đặt) |
-| `/settings/you/notifications` | Công tắc theo từng sự kiện, giờ yên tĩnh                                    |
+| `/settings/you/profile`       | Tài khoản của bạn trên máy chủ này: tên, tên người dùng, ảnh và đăng nhập (trang đích của cài đặt) |
+| `/settings/you/profile?section=accounts` | Tài khoản đã kết nối: đăng nhập lưu trữ mã, phiếu, lịch và chat của riêng bạn, cùng bản nháp phiếu từ chat |
+| `/settings/you/appearance`    | Chủ đề, ngôn ngữ, kiểu chữ, chủ đề trình soạn thảo |
 | `/settings/you/audio`         | Micro, đọc chính tả, phát hiện cuộc họp và đầu ra cảnh âm                  |
+| `/settings/you/notifications` | Công tắc theo từng sự kiện, giờ yên tĩnh                                    |
+| `/settings/you/commits`       | Ai được ghi nhận trên commit từ công việc bạn bắt đầu, và khóa ký commit của bạn |
+| `/settings/you/desktop`       | Chỉ ứng dụng desktop: biểu tượng khay, đóng cửa sổ và mở khi đăng nhập   |
 | `/settings/you/devices`       | Điện thoại đã ghép nối và điều khiển từ xa                                 |
 | `/settings/you/newsfeed`      | Quản lý bảng tin: nguồn, làm mới, trạng thái đã đọc                        |
+| `/settings/you/links`         | Nơi mở các liên kết từ bên ngoài Control Center                            |
 
 ### Không gian làm việc
 
 | Đường dẫn                          | Màn hình                                                                                            |
 | ---------------------------------- | --------------------------------------------------------------------------------------------------- |
-| `/settings/workspace/profile`      | Hồ sơ và danh tính trong không gian làm việc này: tên, tác giả git, nơi lưu trữ mã, lịch |
-| `/settings/workspace/general`      | Tên, logo, mẫu glob bí mật, số đánh giá đồng thời, cách đặt tên nhánh, tình trạng đồng bộ, cầu nối chat, vùng nguy hiểm |
+| `/settings/workspace/profile`      | Hồ sơ và danh tính trong không gian làm việc này: tên, email, tác giả git |
+| `/settings/workspace/general`      | Tên, logo, mẫu glob bí mật, số đánh giá đồng thời, cách đặt tên nhánh, vùng nguy hiểm |
+| `/settings/workspace/integrations` | Lựa chọn Connect, ứng dụng GitHub và token tự động hóa, nhà cung cấp phiếu và tự động hóa, tình trạng đồng bộ, ứng dụng nhà cung cấp riêng của không gian làm việc, cầu nối chat, GIF. Mỗi nhóm nhà cung cấp nêu tài khoản của bạn và liên kết đến Tài khoản đã kết nối |
 | `/settings/workspace/meetings`     | Mẫu ghi chú cuộc họp và hồ sơ giọng nói đã lưu                                                      |
-| `/settings/workspace/members`      | Danh sách thành viên, lời mời, nhật ký kiểm tra. Nhật ký kiểm tra phân trang bằng `?cursor=` tùy chọn |
+| `/settings/workspace/members`      | Danh sách thành viên và lời mời |
 | `/settings/workspace/repositories` | Các kho lưu trữ đã đăng ký trong không gian làm việc này                                             |
 | `/settings/workspace/environments` | Định nghĩa môi trường: những gì space có thể khởi động và các tác vụ worktree chạy |
 | `/settings/workspace/agents`       | Danh tính agent đã đăng ký                                                                          |
@@ -108,6 +114,8 @@ Các đường dẫn cài đặt được đặt trong không gian tên theo **p
 | `/settings/server/rigs`        | Rigs: máy chủ này có thể khởi động những gì, ảnh nền, ảnh tùy chỉnh, máy đang chạy     |
 | `/settings/server/sandbox`     | Quyền cấp exec sandbox: các chương trình agent được phép chạy từ bản sao làm việc trong kho lưu trữ của bạn |
 | `/settings/server/diagnostics` | Chẩn đoán và quyền riêng tư: sandbox, embedding, ghi nhật ký, báo cáo sự cố |
+| `/settings/server/people` | Những người trên máy chủ này và việc từng địa chỉ đã được xác nhận hay chưa (chỉ chủ sở hữu máy chủ) |
+| `/settings/server/audit` | Nhật ký kiểm tra: của máy chủ, và của các không gian làm việc bạn quản trị |
 | `/settings/server/backup`      | Sao lưu và khôi phục: ảnh chụp bản cài, xuất theo từng không gian làm việc, nhập và xóa |
 | `/settings/server/about`       | Giới thiệu và cập nhật                                                                |
 

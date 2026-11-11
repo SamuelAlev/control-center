@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:rhttp/rhttp.dart';
 
 /// Wire code when GitHub refuses to mint because the App installation is
@@ -96,6 +97,30 @@ NetworkException mapHttpException(RhttpException e) {
     );
   }
 
+  // A person acting with no sign-in of their own on the forge, refused
+  // locally before anything was sent (`ForgeCredentialUnavailable
+  // .needsSignIn`): the body names the sign-in they need.
+  if (statusCode == 401 && needsSignInLaneOf(httpErrorBody(e)) != null) {
+    return NetworkException(
+      _messageOf(httpErrorBody(e)) ?? 'Sign in to continue',
+      statusCode: 401,
+      responseBody: body,
+      code: kNeedsSignInCode,
+    );
+  }
+
+  // Automation on a token-only forge with no automation token for the
+  // repository, refused locally before anything was sent
+  // (`ForgeCredentialUnavailable.automationTokenMissing`).
+  if (statusCode == 401 && isAutomationTokenMissingBody(httpErrorBody(e))) {
+    return NetworkException(
+      _messageOf(httpErrorBody(e)) ?? 'No automation token',
+      statusCode: 401,
+      responseBody: body,
+      code: kAutomationTokenMissingCode,
+    );
+  }
+
   if (statusCode == 401 || statusCode == 403) {
     return NetworkException(
       httpExceptionReason(e) ?? 'Authentication failed',
@@ -111,6 +136,18 @@ NetworkException mapHttpException(RhttpException e) {
       statusCode: 404,
       responseBody: body,
       code: 'not_found',
+    );
+  }
+
+  // Another repository at a linked path, refused locally before anything
+  // was sent (`ForgeCredentialUnavailable.repoReplaced`): the body names
+  // the forge.
+  if (statusCode == 409 && repoReplacedForgeOf(httpErrorBody(e)) != null) {
+    return NetworkException(
+      _messageOf(httpErrorBody(e)) ?? 'The linked repository was replaced',
+      statusCode: 409,
+      responseBody: body,
+      code: kRepoReplacedCode,
     );
   }
 
@@ -178,6 +215,53 @@ NetworkException mapHttpException(RhttpException e) {
     responseBody: body,
     code: 'network_error',
   );
+}
+
+/// [NetworkException.code] of a request refused locally because the acting
+/// person has no sign-in of their own on the forge; [needsSignInLaneOf] reads
+/// the lane from its `responseBody`.
+const String kNeedsSignInCode = 'needs_sign_in';
+
+/// The sign-in lane a locally refused request names (decoded failure body or
+/// raw JSON text), or null when it is not a missing-sign-in refusal.
+String? needsSignInLaneOf(Object? body) {
+  final decoded = body is String ? _decodeBody(body) : body;
+  final lane = decoded is Map ? decoded['needs_sign_in'] : null;
+  return lane is String && lane.isNotEmpty ? lane : null;
+}
+
+/// [NetworkException.code] of a request refused locally because the linked
+/// repository's path now names another repository on its forge;
+/// [repoReplacedForgeOf] reads which forge from its `responseBody`.
+const String kRepoReplacedCode = 'repo_replaced';
+
+/// The forge a locally refused request names as having replaced the linked
+/// repository (decoded failure body or raw JSON text), or null when it is
+/// not that refusal.
+ForgeHost? repoReplacedForgeOf(Object? body) {
+  final decoded = body is String ? _decodeBody(body) : body;
+  final wire = decoded is Map ? decoded['repo_replaced'] : null;
+  if (wire is! String) {
+    return null;
+  }
+  final forge = ForgeHost.fromWire(wire);
+  return forge.isSupported ? forge : null;
+}
+
+/// [NetworkException.code] of automation refused locally because the
+/// repository has no automation token on its token-only forge.
+const String kAutomationTokenMissingCode = 'automation_token_missing';
+
+/// Whether a locally refused request's body (decoded or raw JSON text) is
+/// an automation-token-missing refusal.
+bool isAutomationTokenMissingBody(Object? body) {
+  final decoded = body is String ? _decodeBody(body) : body;
+  return decoded is Map && decoded['automation_token_missing'] == true;
+}
+
+String? _messageOf(Object? body) {
+  final message = body is Map ? body['message'] : null;
+  return message is String && message.isNotEmpty ? message : null;
 }
 
 /// The decoded body of a failed request: JSON when the body IS JSON, the raw

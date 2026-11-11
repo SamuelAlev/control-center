@@ -164,18 +164,14 @@ class CredentialsScreen extends ConsumerWidget {
                             name: forge.displayName,
                             workspaceId: workspaceId,
                             isForge: true,
-                            connected:
-                                forgeById[forge.wire]?.authenticated ?? false,
+                            connected: forgeById[forge.wire]?.isUsable ?? false,
                             username: forgeById[forge.wire]?.username ?? '',
-                            // A lapsed person grant reads as connected on
-                            // the server; show it as needing attention.
-                            statusError:
-                                forgeById[forge.wire]?.needsSignIn ?? false
-                                ? l.credentialsSignInAgain
-                                : forgeById[forge.wire]?.error,
-                            hostManaged:
-                                forgeById[forge.wire]?.source ==
-                                ForgeCredentialSource.environment,
+                            // Each status reads differently: a lapsed grant
+                            // asks for a sign-in, a paused or unreachable
+                            // one explains and waits.
+                            status: forgeById[forge.wire]?.status,
+                            scope: forgeById[forge.wire]?.scope,
+                            statusError: forgeById[forge.wire]?.error,
                             canManage: member,
                             // GitHub is sign-in only; GitLab and Bitbucket
                             // take a personal token.

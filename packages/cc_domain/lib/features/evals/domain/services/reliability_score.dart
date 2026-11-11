@@ -1,20 +1,4 @@
-/// A recommended autonomy ceiling, derived from measured reliability (PRD 21
-/// §7 → the PRD 16 §12 graduated-autonomy dial).
-enum RecommendedAutonomy {
-  /// Not enough evidence, or poor reliability: observe only.
-  observeOnly('observe_only'),
-
-  /// Reliable enough to act, but with human approval on effects.
-  actWithApproval('act_with_approval'),
-
-  /// Demonstrated reliability high enough to act freely.
-  actFreely('act_freely');
-
-  const RecommendedAutonomy(this.wire);
-
-  /// Stable wire string.
-  final String wire;
-}
+import 'package:cc_domain/features/messaging/domain/value_objects/autonomy_level.dart';
 
 /// The evidence a reliability score is computed from (PRD 21 §7). All fields
 /// are already-captured analytics — eval pass-rates plus production outcomes.
@@ -128,27 +112,27 @@ class ReliabilityScore {
       rationale.add('${evidence.doomLoopIncidents} doom-loop incident(s).');
     }
 
-    RecommendedAutonomy recommended;
+    AutonomyLevel recommended;
     if (total >= minRunsForFreely &&
         score >= freelyThreshold &&
         evidence.sandboxViolations == 0) {
-      recommended = RecommendedAutonomy.actFreely;
+      recommended = AutonomyLevel.actFreely;
       rationale.add(
         'act-freely: ${(score * 100).round()}% over $total graded run(s), '
         '0 sandbox violations.',
       );
     } else if (total >= minRunsForApproval && score >= approvalThreshold) {
-      recommended = RecommendedAutonomy.actWithApproval;
+      recommended = AutonomyLevel.actWithApproval;
       rationale.add(
         'act-with-approval: reliable but evidence/threshold below '
         'the act-freely bar.',
       );
     } else {
-      recommended = RecommendedAutonomy.observeOnly;
+      recommended = AutonomyLevel.proposeOnly;
       rationale.add(
         total < minRunsForApproval
-            ? 'observe-only: not enough evidence yet ($total run(s)).'
-            : 'observe-only: reliability below the approval bar.',
+            ? 'propose-only: not enough evidence yet ($total run(s)).'
+            : 'propose-only: reliability below the approval bar.',
       );
     }
 
@@ -163,8 +147,8 @@ class ReliabilityScore {
   /// The reliability score `[0, 1]`.
   final double score;
 
-  /// The recommended autonomy ceiling.
-  final RecommendedAutonomy recommended;
+  /// The recommended autonomy ceiling (PRD 16 §12 dial).
+  final AutonomyLevel recommended;
 
   /// The human-readable evidence lines (shown on the autonomy dial).
   final List<String> rationale;
@@ -173,17 +157,8 @@ class ReliabilityScore {
   final ReliabilityEvidence evidence;
 
   /// Whether an agent may be set to [target] given this score (the dial gate):
-  /// act-freely requires an act-freely recommendation.
-  bool permits(RecommendedAutonomy target) {
-    switch (target) {
-      case RecommendedAutonomy.observeOnly:
-        return true;
-      case RecommendedAutonomy.actWithApproval:
-        return recommended != RecommendedAutonomy.observeOnly;
-      case RecommendedAutonomy.actFreely:
-        return recommended == RecommendedAutonomy.actFreely;
-    }
-  }
+  /// [target] must be within the recommended ceiling.
+  bool permits(AutonomyLevel target) => target.atMost(recommended);
 
   /// Serializes to JSON.
   Map<String, dynamic> toJson() => {

@@ -9,64 +9,27 @@ import 'package:cc_domain/core/domain/repositories/isolated_repo_repository.dart
 import 'package:cc_domain/core/domain/repositories/repo_repository.dart';
 import 'package:cc_domain/core/domain/repositories/workspace_repository.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/features/dispatch/domain/ports/commit_signing_port.dart';
 import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_identity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pr_file.dart';
-// Narrow on purpose: this service needs exactly one cc_infra type. The
+// Narrow on purpose: this service needs two cc_infra pieces. The
 // package-wide barrel would drag the whole dispatch/chat/infra surface into
 // every compile of this file (and everything that tests it).
 // ignore: implementation_imports
 import 'package:cc_infra/src/git/process_session_diff_adapter.dart';
+// ignore: implementation_imports
+import 'package:cc_infra/src/network/forge_git_auth.dart';
 import 'package:cc_natives/cc_natives.dart';
+import 'package:cc_server_core/src/commit_resigner.dart';
+import 'package:cc_server_core/src/fs_confinement.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 part 'repo_ide_change_gate.dart';
+part 'repo_ide_commit_identity.dart';
 part 'repo_ide_content_search.dart';
-
-/// Options for [RepoIdeDataService.searchContent], mirroring VS Code's search
-/// controls. Defaults (`caseSensitive: false`, `regex: false`, `wholeWord:
-/// false`, empty globs) reproduce the original case-insensitive literal
-/// behaviour, so an older client that omits the option map gets the legacy
-/// semantics.
-class SearchContentOptions {
-  /// Creates [SearchContentOptions]. All flags default to the legacy
-  /// (case-insensitive, literal, no-glob) behaviour.
-  const SearchContentOptions({
-    this.caseSensitive = false,
-    this.regex = false,
-    this.wholeWord = false,
-    this.include = const [],
-    this.exclude = const [],
-    this.paths = const [],
-  });
-
-  /// Case-sensitive matching. When false (default) `git grep` runs with `-i`.
-  final bool caseSensitive;
-
-  /// Treat `query` as a regex. When false (default) `git grep` runs with `-F`
-  /// (fixed-string); when true the `-F` is dropped.
-  final bool regex;
-
-  /// Whole-word matching. Adds `git grep`'s `-w`.
-  final bool wholeWord;
-
-  /// Comma/space-separated include pathspecs (matched as path globs after
-  /// `git grep`'s `--`). Empty (default) → no include filter.
-  final List<String> include;
-
-  /// Comma/space-separated exclude pathspecs (each forwarded as `:!glob`).
-  /// Empty (default) → no exclude filter.
-  final List<String> exclude;
-
-  /// Exact repo-relative files to grep (a JSON list, never a split string).
-  ///
-  /// When non-empty these replace [include] as the include pathspecs, so a
-  /// PR-scoped search cannot leak into the rest of the tree. [include] then
-  /// filters this list (git-style globs) rather than OR-ing onto the whole
-  /// tree. Empty (default) → whole-tree grep, optionally narrowed by
-  /// [include].
-  final List<String> paths;
-}
+part 'repo_ide_push.dart';
+part 'repo_ide_refs.dart';
 
 /// Result of writing a draft into a conversation worktree.
 class WorktreeWriteResult {
@@ -81,7 +44,9 @@ class WorktreeWriteResult {
 }
 
 /// Head commit of an open pull request for [branch] in [repoId], from the
-/// local open-PR snapshot. Null when this branch has no open pull request.
+/// local open-PR snapshot, as [viewerId] may see it. Null when this branch
+/// has no open pull request, or [viewerId] may not see the repo's pull
+/// requests (PR visibility: their grant AND their own forge sign-in).
 ///
 /// Must not hit the network: [RepoIdeDataService.repoChangesGrouped] runs on
 /// the source-control poll, every few seconds.
@@ -90,6 +55,7 @@ typedef PublishedBranchHead =
       required String workspaceId,
       required String repoId,
       required String branch,
+      required String viewerId,
     });
 
 /// Result of reverting one or more working-tree files in a conversation
@@ -166,10 +132,13 @@ class RepoIdeDataService with _WorktreeChangeGate {
     this._githubToken,
     this._publishedBranchHead,
     this._autoFetchInterval,
+    this._commitIdentity,
+    CommitSigningPort? signing,
   }) : _repos = repoRepository,
        _workspaces = workspaceRepository,
        _isolated = isolatedRepoRepository,
-       _diff = diff ?? const ProcessSessionDiffAdapter();
+       _diff = diff ?? const ProcessSessionDiffAdapter(),
+       _resigner = signing == null ? null : CommitResigner(signing);
 
   final RepoRepository _repos;
   final WorkspaceRepository _workspaces;
@@ -189,6 +158,14 @@ class RepoIdeDataService with _WorktreeChangeGate {
   final PublishedBranchHead? _publishedBranchHead;
 
   final Duration? _autoFetchInterval;
+
+  /// Who a person's own commits name, credit and are signed by. Null commits
+  /// under the caller's profile identity alone, uncredited and unsigned.
+  final PersonCommitIdentity? _commitIdentity;
+
+  /// Signs a person's commits with their own signing key. Null signs
+  /// nothing.
+  final CommitResigner? _resigner;
 
   /// When each worktree root last started a background fetch, and the fetch
   /// still running there. Keyed by normalized root, so every client polling
@@ -274,6 +251,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
     String workspaceId,
     String repoId, {
     String? spaceId,
+    String? viewerId,
   }) async {
     Future<
       ({
@@ -286,7 +264,9 @@ class RepoIdeDataService with _WorktreeChangeGate {
       })
     >
     pack(String root, {bool autoFetch = false}) async {
-      final published = _publishedBranchHead;
+      // Forge-derived state only for a named viewer; without one, local refs
+      // alone decide (fail closed).
+      final published = viewerId == null ? null : _publishedBranchHead;
       // Independent reads of one worktree; the panel polls this, so run them
       // side by side.
       final (grouped, sync) = await (
@@ -299,13 +279,15 @@ class RepoIdeDataService with _WorktreeChangeGate {
                   workspaceId: workspaceId,
                   repoId: repoId,
                   branch: branch,
+                  viewerId: viewerId!,
                 ),
         ),
       ).wait;
       // Behind is counted against local refs, which only a fetch moves. A
-      // branch that was never published has nothing upstream to fetch.
-      if (autoFetch && sync.hasUpstream) {
-        _scheduleAutoFetch(p.normalize(root), workspaceId, repoId);
+      // branch that was never published has nothing upstream to fetch. The
+      // fetch runs as the viewer, so a panel nobody named fetches nothing.
+      if (autoFetch && sync.hasUpstream && viewerId != null) {
+        _scheduleAutoFetch(p.normalize(root), workspaceId, repoId, viewerId);
       }
       return (
         staged: grouped.staged,
@@ -520,7 +502,12 @@ class RepoIdeDataService with _WorktreeChangeGate {
   /// Starts [_fetchUpstream] for [root] unless one is running or the last one
   /// started within [_autoFetchInterval]. A failed fetch still waits out the
   /// interval, so an unreachable remote is not retried on every poll.
-  void _scheduleAutoFetch(String root, String workspaceId, String repoId) {
+  void _scheduleAutoFetch(
+    String root,
+    String workspaceId,
+    String repoId,
+    String viewerId,
+  ) {
     final interval = _autoFetchInterval;
     if (interval == null || _autoFetches.containsKey(root)) {
       return;
@@ -538,6 +525,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
       root,
       workspaceId,
       repoId,
+      viewerId,
     ).catchError((Object _) {});
     _autoFetches[root] = run;
     unawaited(run.whenComplete(() => _autoFetches.remove(root)));
@@ -552,10 +540,14 @@ class RepoIdeDataService with _WorktreeChangeGate {
   /// remote-tracking ref: the configured upstream, else `origin/<branch>`.
   /// The explicit refspec writes that ref even when the remote's configured
   /// fetch refspec does not cover the branch. Only that one branch, no tags.
+  ///
+  /// A GitHub remote is fetched on [viewerId]'s own sign-in, never on the
+  /// workspace's accountable person: a viewer without one fetches nothing.
   Future<void> _fetchUpstream(
     String root,
     String workspaceId,
     String repoId,
+    String viewerId,
   ) async {
     const env = {
       'GIT_TERMINAL_PROMPT': '0',
@@ -601,14 +593,15 @@ class RepoIdeDataService with _WorktreeChangeGate {
     // SSH spellings count: server-run git rewrites them to HTTPS
     // ([IsolatedGit.githubHttpsRewrites]) and never uses the host's SSH.
     if (_isGitHubRemote(url)) {
-      final token = await _githubTokenForRepo(workspaceId, repoId);
-      if (token != null && token.isNotEmpty) {
-        final b64 = base64Encode(utf8.encode('x-access-token:$token'));
-        authEnv = {
-          'GIT_CONFIG_PARAMETERS':
-              "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
-        };
+      final token = await _githubTokenForRepo(
+        workspaceId,
+        repoId,
+        actingUserId: viewerId,
+      );
+      if (token == null || token.isEmpty) {
+        return;
       }
+      authEnv = _githubAuthEnv(token);
     }
 
     final process = await IsolatedGit.start(
@@ -730,11 +723,13 @@ class RepoIdeDataService with _WorktreeChangeGate {
     }
     final root = p.normalize(repoRoot);
     final resolved = p.normalize(p.join(root, path));
-    // Confine to the repo root — reject `..` traversal and absolute escapes.
-    if (resolved != root && !p.isWithin(root, resolved)) {
+    // Confine to the repo root — reject `..` traversal and absolute escapes,
+    // and a symlink in the tree that points out of it.
+    final real = confinedRealPath(root, resolved);
+    if (real == null) {
       return (content: '', binary: false);
     }
-    final file = File(resolved);
+    final file = File(real);
     if (!file.existsSync()) {
       return (content: '', binary: false);
     }
@@ -824,8 +819,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
     final dir = p.normalize(p.join(root, path));
     // Confine to the repo root — reject `..` traversal and absolute escapes
     // (same rule as [readFile]). A file (not a dir) at `path` lists nothing.
-    if ((dir != root && !p.isWithin(root, dir)) ||
-        !Directory(dir).existsSync()) {
+    if (confinedRealPath(root, dir) == null || !Directory(dir).existsSync()) {
       return const {'entries': <Map<String, dynamic>>[], 'has_more': false};
     }
     final entries = await _resolvedEntries(root, dir);
@@ -987,7 +981,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
   /// highlighting stays a presentation concern). An empty query yields nothing.
   ///
   /// [options] toggles case-sensitivity, regex, whole-word and include/exclude
-  /// pathspecs. Defaults reproduce the legacy case-insensitive literal search.
+  /// pathspecs. Defaults to a case-insensitive literal search.
   Future<List<Map<String, dynamic>>> searchContent(
     String workspaceId,
     String query, {
@@ -1253,8 +1247,8 @@ class RepoIdeDataService with _WorktreeChangeGate {
 
   /// Adapter that satisfies the RPC fetcher typedef: parses a raw options map
   /// (from the wire) into [SearchContentOptions] and delegates to
-  /// [searchContent]. Unknown keys are ignored; missing keys fall back to the
-  /// legacy defaults.
+  /// [searchContent]. Unknown keys are ignored; missing keys take the
+  /// [SearchContentOptions] defaults.
   Future<List<Map<String, dynamic>>> searchContentWithOptions(
     String workspaceId,
     String query, {
@@ -1305,10 +1299,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
     }
     final root = p.normalize(worktree.path);
     final normalized = p.normalize(p.join(root, path));
-    if (normalized != root && !p.isWithin(root, normalized)) {
+    final real = normalized == root ? null : confinedRealPath(root, normalized);
+    if (real == null) {
       return null;
     }
-    final file = File(normalized);
+    final file = File(real);
     await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes, flush: true);
     // POSIX-canonical like every other wire-facing relative path in this
@@ -1406,10 +1401,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
     }
     final root = p.normalize(worktree.path);
     final resolved = p.normalize(p.join(root, path));
-    if (resolved != root && !p.isWithin(root, resolved)) {
+    final real = confinedRealPath(root, resolved);
+    if (real == null) {
       return null;
     }
-    final file = File(resolved);
+    final file = File(real);
     if (!file.existsSync()) {
       return (content: '', binary: false);
     }
@@ -1463,8 +1459,8 @@ class RepoIdeDataService with _WorktreeChangeGate {
 
     // Stage the explicit paths (if any). With real staging the client stages via
     // `repos.stage` and commits with NO paths — we then commit the index AS-IS
-    // (crucially, no `git add -A`, which would sweep in unstaged changes). Legacy
-    // callers that pass explicit paths still get them staged here first.
+    // (crucially, no `git add -A`, which would sweep in unstaged changes). A
+    // caller that passes explicit paths gets them staged here first.
     if (safePaths.isNotEmpty) {
       final add = await git(['add', '--', ...safePaths]);
       if (add.exitCode != 0) {
@@ -1487,17 +1483,28 @@ class RepoIdeDataService with _WorktreeChangeGate {
         };
       }
     }
-    // Commit with a per-invocation identity (never touches global git config).
-    final name = (authorName?.trim().isNotEmpty ?? false)
-        ? authorName!.trim()
-        : AgentCommitIdentity.controlCenterName;
-    final email = (authorEmail?.trim().isNotEmpty ?? false)
-        ? authorEmail!.trim()
-        : AgentCommitIdentity.controlCenterEmail;
+    // The commit is the person's own: their forge-verified address (their
+    // profile's git identity where no forge vouches for one), Control
+    // Center's credit when their attribution setting is on, and their
+    // signing key. A per-invocation identity: no git config file is touched.
+    final identity = await _personIdentity(
+      workspaceId,
+      repoId,
+      actingUserId,
+      profile:
+          (authorName?.trim().isNotEmpty ?? false) &&
+              (authorEmail?.trim().isNotEmpty ?? false)
+          ? (name: authorName!.trim(), email: authorEmail!.trim())
+          : null,
+    );
+    final author = identity?.author ?? AgentCommitIdentity.controlCenter;
+    final name = author.name;
+    final email = author.email;
     // `--amend` rewrites HEAD; with an empty message we keep the prior one
     // (`--no-edit`), otherwise the supplied message replaces it.
     final keepMessage = amend && message.trim().isEmpty;
     final commit = await git([
+      ...CommitResigner.unsignedGitArgs,
       '-c',
       'user.name=$name',
       '-c',
@@ -1505,6 +1512,11 @@ class RepoIdeDataService with _WorktreeChangeGate {
       'commit',
       if (amend) '--amend',
       if (keepMessage) '--no-edit' else ...['-m', message],
+      // git places each line as a trailer and skips one already there.
+      for (final trailer in identity?.coAuthorTrailers ?? const <String>[]) ...[
+        '--trailer',
+        trailer,
+      ],
     ]);
     if (commit.exitCode != 0) {
       return {
@@ -1514,6 +1526,17 @@ class RepoIdeDataService with _WorktreeChangeGate {
       };
     }
     var headSha = ((await git(['rev-parse', 'HEAD'])).stdout as String).trim();
+    final signError = await _signCommitted(root, actingUserId, identity);
+    if (signError != null) {
+      // Never push what should have been signed and is not.
+      return {
+        'committed': true,
+        'pushed': false,
+        'headSha': headSha,
+        'error': signError,
+      };
+    }
+    headSha = ((await git(['rev-parse', 'HEAD'])).stdout as String).trim();
     if (!push) {
       return {'committed': true, 'pushed': false, 'headSha': headSha};
     }
@@ -1528,14 +1551,8 @@ class RepoIdeDataService with _WorktreeChangeGate {
       actingUserId: actingUserId,
       write: true,
     );
-    var env = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      final b64 = base64Encode(utf8.encode('x-access-token:$token'));
-      env = {
-        'GIT_CONFIG_PARAMETERS':
-            "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
-      };
-    }
+    final env = _githubAuthEnv(token);
+    String? remoteTip;
     // "Commit & sync": integrate any remote commits before pushing so the push
     // fast-forwards (VS Code's Sync = pull --rebase then push). A missing remote
     // branch (first push) or a failed fetch just falls through to the push; a
@@ -1551,8 +1568,10 @@ class RepoIdeDataService with _WorktreeChangeGate {
         'origin',
         branch,
       ], env: env);
-      if (fetch.exitCode == 0) {
+      remoteTip = fetch.exitCode == 0 ? 'FETCH_HEAD' : null;
+      if (remoteTip != null) {
         final rebase = await git([
+          ...CommitResigner.unsignedGitArgs,
           '-c',
           'user.name=$name',
           '-c',
@@ -1569,8 +1588,23 @@ class RepoIdeDataService with _WorktreeChangeGate {
             'error': (rebase.stderr as String).trim(),
           };
         }
-        headSha = ((await git(['rev-parse', 'HEAD'])).stdout as String).trim();
       }
+    }
+    // Everything this push sends that is the person's own goes out signed.
+    final outgoingError = await _signOutgoing(
+      root,
+      actingUserId,
+      identity,
+      remoteTip: remoteTip,
+    );
+    headSha = ((await git(['rev-parse', 'HEAD'])).stdout as String).trim();
+    if (outgoingError != null) {
+      return {
+        'committed': true,
+        'pushed': false,
+        'headSha': headSha,
+        'error': outgoingError,
+      };
     }
     // An amended commit rewrites history, so its push leases-force; a fresh
     // commit (or a rebased sync) fast-forwards. `credential.helper=` keeps the
@@ -1628,8 +1662,6 @@ class RepoIdeDataService with _WorktreeChangeGate {
         'error': 'the worktree has no branch to publish',
       };
     }
-    final headSha = ((await git(['rev-parse', 'HEAD'])).stdout as String)
-        .trim();
     // Report (never silently include) work the push leaves behind.
     final dirty = await git(['status', '--porcelain']);
     final uncommitted = (dirty.stdout as String)
@@ -1645,18 +1677,21 @@ class RepoIdeDataService with _WorktreeChangeGate {
       actingUserId: actingUserId,
       write: true,
     );
-    var env = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      final b64 = base64Encode(utf8.encode('x-access-token:$token'));
-      env = {
-        'GIT_CONFIG_PARAMETERS':
-            "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
-      };
+    final env = _githubAuthEnv(token);
+    final signError = await _signOutgoing(
+      root,
+      actingUserId,
+      await _personIdentity(workspaceId, repoId, actingUserId),
+    );
+    if (signError != null) {
+      return {'branch': branch, 'pushed': false, 'error': signError};
     }
     // No lease-force: publishing must never overwrite someone else's commits on
     // a branch that already exists. A rejected push surfaces git's own message,
     // which is the actionable thing (diverged / protected / no permission).
     // `credential.helper=` keeps the host's keychain out of it.
+    final headSha = ((await git(['rev-parse', 'HEAD'])).stdout as String)
+        .trim();
     final pushRes = await git([
       '-c',
       'credential.helper=',
@@ -1730,14 +1765,8 @@ class RepoIdeDataService with _WorktreeChangeGate {
       actingUserId: actingUserId,
       write: true,
     );
-    var env = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      final b64 = base64Encode(utf8.encode('x-access-token:$token'));
-      env = {
-        'GIT_CONFIG_PARAMETERS':
-            "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
-      };
-    }
+    final env = _githubAuthEnv(token);
+    final identity = await _personIdentity(workspaceId, repoId, actingUserId);
 
     // A missing remote branch (first publish) fails the fetch; the push below
     // creates it. Any other fetch failure falls through to the push, which
@@ -1775,7 +1804,20 @@ class RepoIdeDataService with _WorktreeChangeGate {
         if (dirty) {
           return {'pulled': false, 'pushed': false, 'dirty': true};
         }
-        final rebase = await git(['rebase', 'FETCH_HEAD']);
+        // The person who clicked re-commits their local commits onto the
+        // remote's: under their verified identity when a forge vouches for
+        // one (signed with their key before the push), else as Control Center.
+        final rebase = await git([
+          ...CommitResigner.unsignedGitArgs,
+          if (identity != null) ...[
+            '-c',
+            'user.name=${identity.author.name}',
+            '-c',
+            'user.email=${identity.author.email}',
+          ],
+          'rebase',
+          'FETCH_HEAD',
+        ]);
         if (rebase.exitCode != 0) {
           await git(['rebase', '--abort']);
           final err = (rebase.stderr as String).trim();
@@ -1801,6 +1843,20 @@ class RepoIdeDataService with _WorktreeChangeGate {
         : int.tryParse((aheadRes.stdout as String).trim()) ?? 0;
     if (fetched && ahead == 0) {
       return {'pulled': pulled, 'pushed': false, 'dirty': false};
+    }
+    final signError = await _signOutgoing(
+      root,
+      actingUserId,
+      identity,
+      remoteTip: fetched ? 'FETCH_HEAD' : null,
+    );
+    if (signError != null) {
+      return {
+        'pulled': pulled,
+        'pushed': false,
+        'dirty': false,
+        'error': signError,
+      };
     }
     final pushRes = await git([
       '-c',
@@ -2056,16 +2112,6 @@ class RepoIdeDataService with _WorktreeChangeGate {
     return verified.exitCode == 0;
   }
 
-  Map<String, dynamic> _checkoutFailure(ProcessResult res) {
-    final err = (res.stderr as String).trim();
-    final dirty =
-        err.contains('local changes') ||
-        err.contains('would be overwritten') ||
-        err.contains('overwritten by checkout') ||
-        err.contains('Please commit your changes');
-    return {'ok': false, 'dirty': dirty, 'error': dirty ? null : err};
-  }
-
   @override
   Future<Map<String, dynamic>?> _syncToPrHead(
     String workspaceId,
@@ -2073,6 +2119,7 @@ class RepoIdeDataService with _WorktreeChangeGate {
     String repoId, {
     required String headRef,
     required String branch,
+    required String? actingUserId,
   }) async {
     final worktree = await _worktreeFor(workspaceId, spaceId, repoId);
     if (worktree == null) {
@@ -2092,21 +2139,22 @@ class RepoIdeDataService with _WorktreeChangeGate {
     if (repo == null || !repo.hasForgeRemote) {
       return {'ok': false, 'error': 'no GitHub remote for repo'};
     }
-    // Fetching a PR head-ref needs auth — bail (never hit the network) without a
-    // token. The token rides in the git auth header env (never argv, so
-    // invisible to `ps`), mirroring commitAndPush / the rift isolation adapter.
-    final token = await _githubTokenForRepo(workspaceId, repoId);
+    // The acting person's token (a missing sign-in throws before any fetch),
+    // in the auth header env, never argv.
+    final token = await _githubTokenForRepo(
+      workspaceId,
+      repoId,
+      actingUserId: actingUserId,
+    );
     if (token == null || token.isEmpty) {
       return {'ok': false, 'error': 'GitHub authentication required'};
     }
     final cleanUrl =
-        'https://github.com/${repo.remoteOwner}/${repo.remoteName}.git';
-    final b64 = base64Encode(utf8.encode('x-access-token:$token'));
+        'https://${repo.forge.gitHost}/${repo.remoteOwner}/${repo.remoteName}.git';
     final fetchEnv = {
       'GIT_TERMINAL_PROMPT': '0',
       'GIT_ASKPASS': 'echo',
-      'GIT_CONFIG_PARAMETERS':
-          "'http.https://github.com/.extraHeader=Authorization: Basic $b64'",
+      ..._githubAuthEnv(token),
     };
 
     final fetch = await git([
@@ -2203,8 +2251,8 @@ class RepoIdeDataService with _WorktreeChangeGate {
   /// Isolated like every server-run git ([IsolatedGit]): a space worktree is
   /// the server's copy, so the operator's global config, credential helpers,
   /// signing key and SSH agent never apply to a member's commit, fetch or
-  /// push. Toolchain variables pass through for the repo's own commit hooks.
-  /// A rebase needs a committer, which no global config supplies any more:
+  /// push, and no repository hook runs: an agent or a pull request can write
+  /// this tree, and git here runs on the host. A rebase needs a committer, which no global config supplies any more:
   /// [_serverIdentity] stands in, and a caller's own `-c user.*` (a commit's
   /// author) comes later and wins.
   Future<ProcessResult> _hostGit(
@@ -2218,11 +2266,10 @@ class RepoIdeDataService with _WorktreeChangeGate {
     ], workingDirectory: root),
     workingDirectory: root,
     environment: environment,
-    toolchain: true,
   );
 
   /// Who a server-side history rewrite (a pull's rebase) is committed by when
-  /// the caller names nobody: the server, never the operator's global
+  /// no person can be named: Control Center, never the operator's global
   /// identity.
   static const List<String> _serverIdentity = [
     '-c',
@@ -2315,159 +2362,4 @@ class RepoIdeDataService with _WorktreeChangeGate {
     }
     return false;
   }
-}
-
-/// The part of a rejected `git push` a person can act on: the hook's own
-/// text and git's rejection. Progress and the `To <url>` echo are dropped.
-/// Null when git said nothing — the push is still refused.
-String? _pushRefusalText(ProcessResult result) {
-  final lines = <String>[];
-  void take(Object? raw) {
-    for (final line in raw.toString().split('\n')) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty || _isPushNoise(trimmed)) {
-        continue;
-      }
-      lines.add(trimmed);
-    }
-  }
-
-  // stderr is git's rejection. A pre-push hook often explains itself on stdout.
-  take(result.stderr);
-  take(result.stdout);
-  if (lines.isEmpty) {
-    return null;
-  }
-  const cap = 8;
-  final picked = lines.length <= cap
-      ? lines
-      : lines.sublist(lines.length - cap);
-  return picked.join('\n');
-}
-
-bool _isPushNoise(String line) {
-  if (line.startsWith('To ') || line.startsWith('to ')) {
-    return true;
-  }
-  const prefixes = [
-    'Enumerating objects',
-    'Counting objects',
-    'Compressing objects',
-    'Writing objects',
-    'Total ',
-    'Delta compression',
-    'remote: Resolving deltas',
-  ];
-  for (final prefix in prefixes) {
-    if (line.startsWith(prefix) || line.startsWith('remote: $prefix')) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/// True when rebasing onto `FETCH_HEAD` would conflict: uncommitted paths the
-/// incoming commits also touch, or a clean merge-tree that still conflicts.
-/// A dirty tree with no overlap is not a conflict — the caller refuses it as
-/// dirty so a rebase cannot clobber it. `merge-tree` exit 1 is the conflict
-/// signal; any other failure is "could not tell", and the rebase reports it.
-Future<bool> _pullWouldConflict(
-  Future<ProcessResult> Function(List<String> args, {Map<String, String>? env})
-  git,
-  Set<String> dirtyNames,
-) async {
-  if (dirtyNames.isNotEmpty) {
-    final incoming = await git([
-      'diff',
-      '--name-only',
-      '-z',
-      'HEAD',
-      'FETCH_HEAD',
-    ]);
-    if (incoming.exitCode == 0 &&
-        dirtyNames.any(_nulPaths(incoming.stdout as String).contains)) {
-      return true;
-    }
-  }
-  final merge = await git([
-    'merge-tree',
-    '--write-tree',
-    '--name-only',
-    'HEAD',
-    'FETCH_HEAD',
-  ]);
-  return merge.exitCode == 1;
-}
-
-/// Paths from `git status --porcelain -z`. A rename's original path is skipped;
-/// the name in the worktree is the one a checkout would overwrite.
-Set<String> _porcelainPaths(String raw) {
-  final names = <String>{};
-  final parts = raw.split('\x00');
-  for (var i = 0; i < parts.length; i++) {
-    final entry = parts[i];
-    if (entry.length < 4) {
-      continue;
-    }
-    names.add(entry.substring(3));
-    final xy = entry.substring(0, 2);
-    if (xy.contains('R') || xy.contains('C')) {
-      i++;
-    }
-  }
-  return names;
-}
-
-Set<String> _nulPaths(String raw) => {
-  for (final part in raw.split('\x00'))
-    if (part.isNotEmpty) part,
-};
-
-/// A branch, remote-tracking ref or tag name that cannot be an option and
-/// cannot escape the ref namespace. `git check-ref-format` still runs on
-/// branch names; this only keeps a caller-supplied token out of argv flags.
-bool _isRefToken(String name) {
-  if (name.isEmpty || name.length > 250) {
-    return false;
-  }
-  if (name.startsWith('-') || name.startsWith('.') || name.startsWith('/')) {
-    return false;
-  }
-  if (name.endsWith('/') || name.endsWith('.') || name.endsWith('.lock')) {
-    return false;
-  }
-  if (name.contains('..') || name.contains('//') || name.contains('@{')) {
-    return false;
-  }
-  return RegExp(r'^[A-Za-z0-9._/@+-]+$').hasMatch(name);
-}
-
-/// `(kind, name, localName)` for a `for-each-ref` refname, or null.
-(String, String, String)? _parseRefName(String refname) {
-  const heads = 'refs/heads/';
-  const remotes = 'refs/remotes/';
-  const tags = 'refs/tags/';
-  if (refname.startsWith(heads)) {
-    final name = refname.substring(heads.length);
-    if (name.isEmpty) {
-      return null;
-    }
-    return ('branch', name, name);
-  }
-  if (refname.startsWith(remotes)) {
-    final name = refname.substring(remotes.length);
-    final slash = name.indexOf('/');
-    if (name.isEmpty || slash <= 0 || slash == name.length - 1) {
-      return null;
-    }
-    return ('remote', name, name.substring(slash + 1));
-  }
-  if (refname.startsWith(tags)) {
-    final name = refname.substring(tags.length);
-    if (name.isEmpty) {
-      return null;
-    }
-    return ('tag', name, name);
-  }
-  return null;
 }

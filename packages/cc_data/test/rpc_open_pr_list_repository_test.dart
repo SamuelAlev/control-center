@@ -1,5 +1,7 @@
 import 'package:cc_data/cc_data.dart';
 import 'package:cc_domain/cc_domain.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:test/test.dart';
 
@@ -58,39 +60,59 @@ void main() {
       },
     );
 
-    test('listOpenForWorkspace decodes the inaccessible-repo list', () async {
+    test('listOpenForWorkspace decodes repo access and hidden repos', () async {
       host.callResults['pr.listOpenForWorkspace'] = {
         'authenticated': true,
         'repos': <Map<String, dynamic>>[],
-        'inaccessible_repos': [
+        'repo_access': [
           'junk',
           {
+            'forge': 'github',
+            'owner': 'acme',
+            'name': 'api',
+            'repo_full_name': 'acme/api',
             'repo_id': 'r1',
-            'repo_full_name': 'control_center/control_center',
-            'reason': 'not_found',
+            'state': 'app_not_installed',
             'since': '2026-08-23T17:08:44.000Z',
+            'checked_at': '2026-08-23T18:00:00.000Z',
+            'install_url': 'https://github.com/apps/cc/installations/new',
           },
+          {'owner': 'acme', 'name': 'web', 'state': 'from_the_future'},
+        ],
+        'hidden_repos': [
+          {'forge': 'github', 'reason': 'sign_in_required', 'count': 3},
+          {'forge': 'gitlab', 'reason': 'checking', 'count': 0},
+          {'forge': 'gitlab', 'reason': 'unknown_reason', 'count': 2},
         ],
       };
       final repo = RpcOpenPrListRepository(client);
       final result = await repo.listOpenForWorkspace('ws');
-      expect(result.inaccessibleRepos.length, 1);
-      final entry = result.inaccessibleRepos.single;
+      final entry = result.repoAccess.single;
+      expect(entry.forge, ForgeHost.github);
+      expect(entry.repoFullName, 'acme/api');
       expect(entry.repoId, 'r1');
-      expect(entry.repoFullName, 'control_center/control_center');
-      expect(entry.reason, 'not_found');
+      expect(entry.state, RepoAccessState.appNotInstalled);
       expect(entry.since, DateTime.utc(2026, 8, 23, 17, 8, 44));
+      expect(entry.checkedAt, DateTime.utc(2026, 8, 23, 18));
+      expect(entry.installUrl, 'https://github.com/apps/cc/installations/new');
+      expect(result.hiddenRepos, [
+        HiddenRepos(
+          forge: ForgeHost.github,
+          reason: HiddenRepoReason.signInRequired,
+          count: 3,
+        ),
+      ]);
     });
 
-    test('a snapshot without the access key decodes to an empty list '
-        '(older server)', () async {
+    test('a snapshot without access keys decodes to empty lists', () async {
       host.callResults['pr.listOpenForWorkspace'] = {
         'authenticated': true,
         'repos': <Map<String, dynamic>>[],
       };
       final repo = RpcOpenPrListRepository(client);
       final result = await repo.listOpenForWorkspace('ws');
-      expect(result.inaccessibleRepos, isEmpty);
+      expect(result.repoAccess, isEmpty);
+      expect(result.hiddenRepos, isEmpty);
     });
 
     test('reviewRequestedForWorkspace decodes reviews', () async {
@@ -127,14 +149,24 @@ void main() {
       expect(keys, {'o/r/42', 'o/r/43'});
     });
 
-    test('closedByAuthorForWorkspace passes the login', () async {
+    test('closedByAuthorForWorkspace sends no login', () async {
       host.callResults['pr.closedByAuthorForWorkspace'] = {'repos': []};
       final repo = RpcOpenPrListRepository(client);
-      await repo.closedByAuthorForWorkspace('ws', 'sam');
-      expect(
-        host.lastCall('pr.closedByAuthorForWorkspace')!.args['login'],
-        'sam',
-      );
+      await repo.closedByAuthorForWorkspace('ws');
+      final args = host.lastCall('pr.closedByAuthorForWorkspace')!.args;
+      expect(args['workspace_id'], 'ws');
+      expect(args.containsKey('login'), isFalse);
+    });
+
+    test('reviewRequestedForWorkspace names the workspace', () async {
+      host.callResults['pr.searchReviewRequestedForWorkspace'] = {
+        'reviews': <Object>[],
+      };
+      final repo = RpcOpenPrListRepository(client);
+      await repo.reviewRequestedForWorkspace('ws');
+      expect(host.lastCall('pr.searchReviewRequestedForWorkspace')!.args, {
+        'workspace_id': 'ws',
+      });
     });
 
     test(
@@ -163,7 +195,7 @@ void main() {
           ],
         };
         final repo = RpcOpenPrListRepository(client);
-        final groups = await repo.closedByAuthorForWorkspace('ws', 'sam');
+        final groups = await repo.closedByAuthorForWorkspace('ws');
         expect(groups.length, 1);
         expect(groups.first.repoId, 'o/r');
         expect(groups.first.hasMore, isTrue);
@@ -180,7 +212,7 @@ void main() {
           ],
         };
         final repo = RpcOpenPrListRepository(client);
-        final groups = await repo.closedByAuthorForWorkspace('ws', 'sam');
+        final groups = await repo.closedByAuthorForWorkspace('ws');
         expect(groups.single.repoId, '');
         expect(groups.single.hasMore, isFalse);
         expect(groups.single.prs, isEmpty);

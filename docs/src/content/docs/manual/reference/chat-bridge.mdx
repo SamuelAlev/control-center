@@ -148,7 +148,7 @@ The card opens when a mention is accepted, before clone and before the first tok
 | Mention accepted            | `Working on it…`                                               |
 | Step `repo`                 | `Cloning <repo>…`                                              |
 | Step `prCheckout`           | `Checking out the pull request in <repo>…`                     |
-| Step `script`               | `Running the setup script for <repo>…`                         |
+| Step `provisionTasks`       | `Running worktree tasks for <repo>…`                           |
 | Step `agent`                | `Setting up <agent>…`                                          |
 | `provisioning`, no step yet | `Preparing the workspace…`                                     |
 | `ready`                     | `Starting the agent…`                                          |
@@ -252,7 +252,6 @@ It exists because the linking happens on the _other_ side: a member types the on
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Connection credentials     | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                   |
 | Half-finished guided setup | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                             |
-| Legacy Slack files         | `<dataDir>/<workspaceId>/slack_credentials.json` and `slack_app_setup.json`, read once and migrated in place |
 
 Credentials live beside the workspace's database, not inside it: deleting a workspace takes its chat tokens with it and `workspace.export` or a backup copies `workspace.db` — so a workspace handed to somebody else carries no live bot tokens. Writes are atomic (temp file plus rename) and tightened to owner-only.
 

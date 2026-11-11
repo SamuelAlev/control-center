@@ -2,7 +2,7 @@
 title: Výpočet kontroly (kohorty, osy a deterministické diffy)
 description: Co průchod výpočtu kontroly vyrobí na serveru — kohorty, diffy API kontraktu a vizuální diffy, brány po osách — a jak se to složí do záložky Kontrola.
 slug: cs-CZ/prirucka/navody/vypocet-kontroly
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 Záložka **Kontrola** u PR je živý průběh pipeline kontroly, dokud běží,
@@ -14,8 +14,6 @@ V pozadí té záložky `cc_server` sestavuje kohorty souborů, pouští
 deterministické osy a podává je přes RPC operace `review_studio.*` (`cohorts`,
 `blastRadius`, `cohortImpact`, `ciSignals`, `dependencyDiffs`,
 `setContractDecision`, `approveVisual`, `compute` a jejich dvojčata `watch*`).
-Uložené rozložení, které pořád nese jméno `pr.reviewStudio`, otevře tutéž
-záložku Kontrola.
 
 Na záložce Kontrola:
 
@@ -82,6 +80,8 @@ výpočtu vykreslí změněné komponenty před změnou a po ní headless zlatý
 průchodem `flutter test` ve worktree daného PR na base a na head a potom
 porovná pixely.
 
+Tyto testy jsou vlastní kód pull requestu, takže běží jako procesy nástroje agenta: uvnitř sandboxu, když server agenty sandboxuje, bez omezení, když vlastník serveru sandbox vypnul, a bez sandboxu jen u požadavku, za který odpovídá vlastník serveru. Pro všechny ostatní osa hlásí **unavailable** s důvodem „no sandbox on this server, and only its owner may run a PR's tests unsandboxed“.
+
 :::note[Na hostiteli serveru musí být Flutter SDK]
 Server v čistém Dartu nedokáže vykreslit widgety Flutter uvnitř procesu,
 a proto spustí `flutter test` jako externí proces. SDK musí být nainstalované
@@ -92,8 +92,9 @@ nevydobyla, nikdy neohlásí.
 
 Snímky ve stavu **changed** nebo **removed** drží vizuální bránu, dokud je
 neschválíš. Stavy **unchanged**, **added** a **approved** ji uvolní.
-Nedostupnost má jeden ze čtyř důvodů: „no Flutter SDK on host“, „no Widgetbook
-app in repo“, „no golden-testable use-cases“ nebo „golden harness error“.
+Nedostupnost má jeden z pěti důvodů: „no Flutter SDK on host“, „no Widgetbook
+app in repo“, „no golden-testable use-cases“, „golden harness error“, nebo
+„no sandbox for a request the server owner is not accountable for“.
 
 Schválení zamýšlené změny je `review_studio.approveVisual`.
 

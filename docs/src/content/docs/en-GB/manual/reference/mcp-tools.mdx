@@ -2,10 +2,10 @@
 title: MCP tools
 description: Complete catalogue of the MCP tools cc_server registers, by family.
 slug: en-GB/manual/reference/mcp-tools
-sourceHash: a57b69f9c3e61c9b51886f5ba55c0ad214615b39
+sourceHash: 06ddfe4bb3d59a0729df296a4a8566e38efb99d7
 ---
 
-`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer.
+`cc_server` hosts one MCP (JSON-RPC 2.0) tool registry, served on the main server port (default `9030`) at `POST /mcp` and `GET /sse`, protocol version `2024-11-05`. Every client reaches the same registry: the desktop, the web build, external MCP clients and the built-in agent runtime. External MCP servers can be bridged into the same registry as a dynamic layer. Servers discovered in the server user's own tool configuration are the exception: this endpoint never lists, calls or searches them, and only built-in harness runs the server owner is accountable for get them (see [Personal MCP servers stay the owner's](/en-GB/manual/guides/mcp-server/#personal-mcp-servers-stay-the-owners)).
 
 ## Registry size
 
@@ -23,7 +23,7 @@ The five code-graph tools are registered only when the host passes a code-graph 
 The full registry is advertised in `tools/list` with no discovery gating. Ticket edits are typed tools.
 
 :::note[External clients always see the whole catalogue]
-`tools/list` is never trimmed. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
+`tools/list` is never trimmed, apart from the server owner's personal MCP servers, which it never carries. MCP clients validate tool names against their own cached copy of that list and refuse anything unlisted without asking the server, so a tool hidden there is unreachable rather than merely quiet.
 
 The **built-in harness** is different: it loads only a resident subset of definitions per request and pulls the rest in on first use, which is a harness-side behaviour and does not change this registry. See [Tool context and prompt caching](/en-GB/manual/concepts/tool-context).
 :::
@@ -254,8 +254,10 @@ declares none — it only reads workspace state. The full verb vocabulary per su
 | `browser_use`  | Drive a headless Chromium, Firefox or WebKit (`engine`): navigate, click, fill, extract (a11y/DOM/console), clipboard, screenshot |
 | `mobile_use`   | Drive Android over ADB: inspect/input, screenshots, install/start/stop/reset/uninstall apps, deep links and argv-shaped device commands |
 | `ios_use`      | Drive iOS Simulator through WebDriverAgent/CoreSimulator: inspect/input, screenshots, install/start/stop/uninstall apps, deep links and argv-shaped simulator processes |
-| `rig_list`     | List a workspace's rigs with surface, status, display size and controller |
+| `rig_list`     | List the rigs of the run's space with surface, status, display size and controller |
 | `rig_close`    | Destroy a rig and discard its owned machine state |
+
+Only agent runs can call these tools; any other caller is refused. A run reaches only the rigs of the space it was leased for: `space_id` comes from the run's grant, never from the call, and a rig of another space, or of no space, answers exactly as a missing one.
 
 `app_use` is a fifth use tool: it drives the windows of a desktop app launched in a space, directly on the host rather than in a VM, and also declares `fileWriteOutsideWorktree` and `fileDelete`. It and the `environment_*` tools are described in [Set up environments](/en-GB/manual/guides/environments/).
 
@@ -300,7 +302,7 @@ at all, so a name you may have seen referenced elsewhere returns "unknown tool":
 | Capability                             | Where it lives instead                                                                       |
 | -------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Hiring, firing or editing an agent      | The agents UI. There is no `hire_agent` / `fire_agent` / `update_agent` tool                 |
-| Creating a workspace                    | `workspace.upsert` over RPC, which seeds and stamps ownership                                  |
+| Creating a workspace                    | `workspace.create` over RPC, server owner only, which seeds and stamps ownership               |
 | Projects (create / list / update / file) | The tickets UI. Projects are an operator surface — see [Projects](/en-GB/manual/guides/projects/)     |
 | Asking the operator a blocking question | The **harness** `ask_user` tool, not MCP. It renders a form in the conversation and blocks on the answer  |
 | Per-agent diagnostics                   | Nothing. There is no `doctor` — see [Agent diagnostics](/en-GB/manual/guides/agent-diagnostics/)      |

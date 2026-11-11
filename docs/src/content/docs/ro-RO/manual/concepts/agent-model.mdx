@@ -2,7 +2,7 @@
 title: Modelul agenților
 description: Ce este de fapt un agent în Control Center, care dintre câmpurile lui schimbă comportamentul și cum decide adaptorul pe care rulează ce anume poate fi impus.
 slug: ro-RO/manual/concepte/modelul-agentilor
-sourceHash: 97bcad8a3d1961396e3d477ac5eca364ae1411b3
+sourceHash: 67b0923ca68ffc61dd43d37b01d5f5aca82fc9a1
 ---
 
 ## Ce este un agent?
@@ -54,7 +54,7 @@ Skill-urile de repo sunt încărcate pentru **fiecare** adaptor, nu doar pentru 
 
 Un agent nu are indicatori de permisiune proprii. Dacă poate crea un commit, face push, deschide un pull request, scrie într-un tracker sau ajunge la rețea decid [guardrail-urile de acțiune](/ro-RO/manual/concepte/guardrail-uri/) — permite, întreabă întâi sau refuză, la nivelul spațiului de lucru, al agentului sau al spațiului — iar aceleași reguli se aplică indiferent de adaptorul care îl rulează.
 
-Ce _primește_ o rulare nu se schimbă odată cu aceste reguli. O rulare într-un worktree GitHub primește întotdeauna un token GitHub doar pentru citire, iar despre un push se întreabă în momentul în care are loc: configurația git a agentului trimite fiecare push către GitHub prin Control Center, care aplică regula **Push către un remote** înainte de a-l transmite mai departe.
+Ce _primește_ o rulare nu se schimbă odată cu aceste reguli. O rulare poate citi întotdeauna depozitele GitHub cu care lucrează, cu un token doar pentru citire, iar despre un push se întreabă în momentul în care are loc: configurația git a agentului trimite fiecare push către GitHub prin Control Center, care aplică regula **Push către un remote** înainte de a-l transmite mai departe.
 
 Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/) pentru cum funcționează asta, inclusiv ce se impune și ce nu la nivel de sistem de fișiere.
 
@@ -70,16 +70,16 @@ Cel mai important câmp al unui agent este adaptorul, pentru că transportul ada
 Concret, **doar harness-ul încorporat suportă subagenți, dirijare pe parcursul rulării, pauză și reluare (și, prin urmare, preluarea controlului) și impunerea structurală a modului.** Claude Code nu beneficiază de nimic din toate acestea.
 
 :::caution[Sandbox-ul sistemului de operare este un minim garantat, nu un mecanism care impune modurile, și nu orice gazdă are unul]
-Matricea de mai sus se referă la ce poate Control Center să _vadă și să filtreze_. Dedesubt, `cc_server` învelește CLI-ul Claude Code în sandbox-ul de sistem de operare al gazdei, acolo unde există unul — Seatbelt pe macOS, bubblewrap pe Linux și WSL2 — așa că un `rm` nevăzut sau o scriere nevăzută rămân totuși limitate de sistemul de operare. Pe **Windows nu există niciun backend**, iar pe Linux sau WSL2 fără `bwrap` și `socat` sonda nu raportează niciunul, așa că acolo rulările respective retombe pe sanitizarea mediului, pe acreditările puse la dispoziție de broker, pe guardrail-urile apelurilor pe care Control Center le poate vedea și pe worktree-ul propriu al conversației (copy-on-write acolo unde vine `rift`; `git worktree` pe Windows).
+Matricea de mai sus se referă la ce poate Control Center să _vadă și să filtreze_. Dedesubt, `cc_server` învelește CLI-ul Claude Code în sandbox-ul de sistem de operare al gazdei, acolo unde există unul — Seatbelt pe macOS, bubblewrap pe Linux și WSL2 — așa că un `rm` nevăzut sau o scriere nevăzută rămân totuși limitate de sistemul de operare. Pe **Windows nu există niciun backend**, iar pe Linux sau WSL2 fără `bwrap` și `socat` sonda nu raportează niciunul. Acolo pornesc doar rulările proprietarului serverului, iar ale tuturor celorlalți sunt refuzate, cu excepția cazului în care proprietarul a pornit serverul cu `--sandbox off`. O rulare care pornește fără sandbox retombe pe sanitizarea mediului, pe acreditările puse la dispoziție de broker, pe guardrail-urile apelurilor pe care Control Center le poate vedea și pe worktree-ul propriu al conversației (copy-on-write acolo unde vine `rift`; `git worktree` pe Windows).
 
 Ceea ce sandbox-ul nu este: o _poartă_. El limitează unde poate citi, scrie și conecta un proces — chiar și un mod doar-citire ajunge la el, sub formă de montări bind doar-citire — dar nu poate intercepta un apel, nu poate ridica o aprobare și nu-ți poate spune ulterior ce a încercat CLI-ul. Asta, plus cele patru capacități numite imediat mai sus, este tot ceea ce are harness-ul încorporat și ceilalți nu. Vezi [Sandbox și securitate](/ro-RO/manual/concepte/sandbox-si-securitate/).
 :::
 
-Un agent **fără** niciun adaptor retombe pe **Control Center (built-in)** — bucla din interiorul serverului, așa că nu există niciun CLI de instalat — iar jurnalul lui de rulare consemnează `cc-harness`. Fiecare agent populat este creat fără adaptor și fără model, așa că cei cinci agenți ai unui spațiu de lucru nou rulează cu toții acolo, pe modelul implicit al Anthropic, până când setezi un adaptor și un model pentru fiecare agent. Alegerea „adaptor implicit" din asistentul de început este o preferință de client pe care serverul nu o citește niciodată și nu se aplică retroactiv agenților deja creați.
+Un agent **fără** niciun adaptor retombe pe **Control Center (built-in)** — bucla din interiorul serverului, așa că nu există niciun CLI de instalat — iar jurnalul lui de rulare consemnează `cc-harness`. Fiecare agent populat este creat fără adaptor și fără model, așa că cei șase agenți ai unui spațiu de lucru nou rulează cu toții acolo, pe modelul implicit al Anthropic, până când setezi un adaptor și un model pentru fiecare agent. Finalizarea pasului de adaptor din asistentul de început setează perechea adaptor–model pe fiecare agent care nu o are încă, în spațiile de lucru existente în acel moment; nu există un runner implicit al spațiului de lucru.
 
 ## De unde vin agenții
 
-- **Populare odată cu spațiul de lucru.** Fiecare spațiu de lucru — nu doar primul — primește un CEO plus patru specialiști (`qa`, `architect`, `engineer`, `librarian`) care raportează acestuia, creați idempotent în fundal la crearea spațiului de lucru. Vezi [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
+- **Populare odată cu spațiul de lucru.** Fiecare spațiu de lucru — nu doar primul — primește un CEO plus cinci specialiști (`qa`, `architect`, `engineer`, `librarian`, `content-synthesizer`) care raportează acestuia, creați idempotent în fundal la crearea spațiului de lucru. Vezi [Spații de lucru și izolare](/ro-RO/manual/concepte/spatii-de-lucru/).
 - **Adăugare manuală** din Setări → Spațiu de lucru → Agenți. Faptul că ceri unui agent să angajeze un coleg nu creează un rând; folosește acel ecran.
 
 ## Stare în timp real

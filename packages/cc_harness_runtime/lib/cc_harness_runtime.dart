@@ -22,6 +22,7 @@ export 'src/context/markdown_frontmatter.dart';
 export 'src/env_provider_credential_store.dart';
 export 'src/file_provider_credential_store.dart';
 export 'src/harness_provider_factory.dart';
+export 'src/net/non_public_address.dart';
 export 'src/oauth/browser_handoff_page.dart';
 export 'src/oauth/codex_oauth.dart';
 export 'src/oauth/cursor_oauth.dart';

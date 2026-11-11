@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Jedes Flag, jede Umgebungsvariable, jeder Unterbefehl und jeder Pfad im Datenverzeichnis des Headless-Servers.
 slug: de-DE/handbuch/referenz/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Jedes Prozess-Flag lässt sich als CLI-Flag oder als Umgebungsvariable setzen; das
@@ -48,7 +48,7 @@ Zeilen des Startlogs, wenn ein Flag keine Wirkung zu haben scheint.
 
 | Flag                     | Umgebung                        | Vorgabe                               | Bedeutung                                                                                                                          |
 | ------------------------ | ------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | Ob Agentenläufe in die betriebssystemeigene Sandbox des Hosts gehüllt werden, wenn eine verfügbar ist. Ein Opt-out, kein Einschalten — siehe unten |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                  | `on` hüllt Agentenläufe in die betriebssystemeigene Sandbox des Hosts, und auf einem Host ohne eine startet nur der Lauf des Serverinhabers. `off` lässt alle Läufe der Mitglieder auf diesem Host unbegrenzt laufen. Siehe unten |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                  | Notausschalter im Feld für die Code-Graph-Indexierung im Hintergrund. `off` startet sauber, ohne einen Rebuild                      |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                  | Sekunden, die der erste Indexdurchlauf nach dem Bereitschaftsbanner wartet (begrenzt auf 0–300)                                    |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                  | Ob Harness-Läufe eine kleine residente Tool-Menge plus einen Namensindex schicken und den Rest beim ersten Gebrauch laden. Siehe unten |
@@ -90,23 +90,33 @@ Belegen aus der `.env` passiert einmal je Feld, eine spätere Änderung in den
 Einstellungen macht ein Neustart also nicht rückgängig. Ein leerer Wert gilt als
 nicht gesetzt.
 
-Hintergrundarbeit für GitLab und Bitbucket liest außerdem `GITLAB_TOKEN` /
-`CI_JOB_TOKEN` und `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` mit
-`BITBUCKET_EMAIL`. Für GitHub gibt es kein Zugangsdatum aus der Umgebung.
+Kein Code-Host-Zugangsdatum kommt aus der Umgebung: GitHub, GitLab und Bitbucket handeln alle über die eigene Anmeldung oder das Token eines Mitglieds oder über GitHub-App-Tokens, die auf ein einzelnes Repository begrenzt sind.
 
 ### `--sandbox`
 
 Der Server sondiert den Host einmal beim Start und hüllt die Befehlsausführung
 der Agenten in die betriebssystemeigene Sandbox, sobald ein Backend verfügbar
 ist: `sandbox-exec` (Seatbelt) unter macOS, `bwrap` plus `socat` unter Linux und
-WSL2. Wo keins vorhanden ist — unter Windows oder auf einem Linux-Host ohne
-diese Werkzeuge — fallen die Läufe auf die Bereinigung der Umgebung, die
-Befehlsrichtlinie und die Aktions-Schutzregeln zurück, und das Startlog sagt,
-welcher Zustand gilt.
+WSL2. Die Entscheidung fällt einmal und gilt bis zum Neustart des Servers. Es gibt drei
+Ergebnisse, die jeweils in der Exposition-Zeile des Starts stehen:
 
-`--sandbox off` ist der Notausschalter im Feld für den Fall, den die Sonde nicht
-sieht: einen Host, auf dem das Sandbox-Profil selbst sich falsch verhält. Ein
-Rebuild ist nicht nötig, und der Server schreibt für die Lebensdauer des
+| `sandbox=`    | Wann                                    | Wessen Agentenläufe starten                                                      |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Ein Backend ist verfügbar und `--sandbox` ist `on` | Alle, gehüllt                                                        |
+| `off`         | `--sandbox off`                         | Alle, auf diesem Host unbegrenzt                                                 |
+| `unavailable` | `--sandbox on` und kein Backend (Windows oder Linux ohne `bwrap` und `socat`) | Nur Läufe, für die der Serverinhaber verantwortlich ist, unbegrenzt. Andere werden mit „Dieser Server hat keine Sandbox, daher kann hier nur der Serverinhaber Agenten ausführen.“ abgelehnt |
+
+Bei Automatisierungen ist die verantwortliche Person diejenige, an die die
+Automatisierung gebunden ist. Ohne aufgezeichneten Serverinhaber startet auf
+einem `unavailable`-Host kein Lauf. Unter Linux und WSL2 mit installiertem
+bubblewrap schlägt die native Ausführung derzeit für jeden Lauf geschlossen fehl;
+siehe [Sandbox-Backends](/de-DE/handbuch/referenz/sandbox-backends/#linux-bubblewrap).
+
+`--sandbox off` ist die Entscheidung des Serverinhabers für alle, die den Server
+nutzen: Er lässt alle Läufe der Mitglieder auf diesem Rechner unbegrenzt laufen.
+Nutze es auf einem Host, auf dem das Sandbox-Profil selbst sich falsch verhält,
+oder damit Mitglieder auf einem Host ohne Backend Agenten laufen lassen können.
+Ein Rebuild ist nicht nötig, und der Server schreibt für die Lebensdauer des
 Prozesses eine Warnung, damit der Zustand nie still bleibt.
 
 ### `--tool-deferral`
@@ -192,7 +202,6 @@ Datenverzeichnis. Ein laufender Server übernimmt eine Änderung innerhalb von
 | `cc_server connect enable`      | Nutzt das gehostete Connect von Control Center                                                                   |
 | `cc_server connect enable --url <url>` | Nutzt ein eigenes Connect unter dieser URL (HTTPS, oder `http` auf Loopback)                              |
 | `cc_server connect disable`     | Hört auf, Connect zu nutzen. Nur die eigenen Apps des Servers melden Personen an                                 |
-| `cc_server connect rotate-key --yes` | Erzeugt einen neuen Installationsschlüssel und eine neue Installations-ID. Alle, die sich über Connect angemeldet haben, melden sich erneut an. Ohne `--yes` warnt es nur und endet mit `2` |
 
 `status` ohne Befehl ist die Vorgabe. Jeder Befehl nimmt `--data-dir`.
 `CC_CONNECT_URL` überstimmt, was diese Befehle speichern. Ein unbekannter Befehl

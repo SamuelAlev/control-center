@@ -2,7 +2,7 @@
 title: Lier votre compte Slack
 description: Prouvez qu’une identité Slack est la vôtre afin que les agents agissent sur vos messages et que votre travail vous soit attribué.
 slug: fr-CA/manuel/guides/lier-compte-clavardage
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Ce guide vous montre comment lier votre identité de clavardage à votre utilisateur Control Center et comment délier cette liaison.
@@ -19,7 +19,7 @@ Un membre non lié qui mentionne le robot reçoit une réponse dans ce fil Slack
 
 La liaison demande les deux côtés : envoyer un code à partir de Slack prouve le compte Slack, et le confirmer dans Control Center prouve que ce compte est le vôtre.
 
-1. Allez à **Paramètres → Espace de travail → Profil et identité** et faites défiler jusqu’à la carte **Comptes de messagerie liés**
+1. Allez dans **Paramètres → Vous → Profil** et repérez la carte **Comptes de messagerie liés**
 2. Dans le bloc Slack, cliquez sur **Lier mon compte Slack**. La boîte de dialogue affiche un code à usage unique, par exemple :
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Si c’est votre compte, cliquez sur **Confirmer**. La liaison est établie, la boîte de dialogue l’indique et le robot le confirme dans le même message direct
 6. Si ce n’est pas le vôtre, cliquez sur **Refuser**. Rien n’est lié et le code cesse de fonctionner ; cliquez sur **Obtenir un nouveau code** pour réessayer
 
-Fermer la boîte de dialogue ne fait pas perdre une revendication. Un code qui arrive plus tard attend sur la ligne **Lier mon compte Slack** de votre page de profil, avec les mêmes boutons **Confirmer** et **Refuser**.
+Fermer la boîte de dialogue ne fait pas perdre une revendication. Un code qui arrive plus tard attend sur la ligne **Lier mon compte Slack** de cette carte, avec les mêmes boutons **Confirmer** et **Refuser**.
 
 Pourquoi cette étape de confirmation : sans elle, un code lu par-dessus votre épaule et envoyé à partir du compte Slack de quelqu’un d’autre ferait agir ce compte en votre nom. Vous seul pouvez confirmer, et seulement le profil exact qui a envoyé le code.
 
@@ -50,15 +50,17 @@ Un code inconnu, expiré, refusé ou créé pour un autre espace de travail éch
 
 Si votre profil Slack porte un courriel confirmé qui correspond au courriel vérifié d’un utilisateur Control Center qui est **déjà membre de cet espace de travail**, la passerelle vous lie la première fois que vous lui parlez. Aucun code n’est nécessaire.
 
+Côté Control Center, le courriel est considéré comme vérifié lorsque l’authentification unique ou SCIM l’a défini, ou lorsque le propriétaire du serveur l’a confirmé dans **Paramètres → Serveur → Personnes**. Une adresse que vous avez saisie dans votre propre profil n’est pas vérifiée : elle ne lie donc rien tant que le propriétaire ne l’a pas confirmée. Utilisez le flux par code en attendant.
+
 Les deux moitiés comptent : la correspondance de courriel prouve l’identité, mais seule l’appartenance accorde l’accès, donc un inconnu dont le courriel se trouve par hasard sur le serveur ne se lie à rien. La liste des comptes liés indique comment chaque liaison a été établie (« associé par courriel » ou « lié avec un code »).
 
 La liaison automatique exige la portée `users:read.email`. Sans elle, Slack ne divulguera pas l’adresse et le parcours par code est la seule voie.
 
 ## Voir qui est lié
 
-La liste des comptes liés relève de l’administration de l’espace de travail, donc elle vit de l’autre côté de la surface : **Paramètres → Espace de travail → Général → Ponts de messagerie → Comptes liés**. Elle répertorie chaque membre lié de l’espace de travail, avec le compte Slack auquel chacun correspond et la façon dont la liaison a été établie.
+La liste des comptes liés relève de l’administration de l’espace de travail, donc elle vit dans la carte d’administration : **Paramètres → Espace de travail → Intégrations → Ponts de messagerie → Comptes liés**. Elle répertorie chaque membre lié de l’espace de travail, avec le compte Slack auquel chacun correspond et la façon dont la liaison a été établie.
 
-Votre propre état se trouve sur votre page de profil : la ligne **Lier mon compte Slack** affiche « Lié à _votre-identifiant-slack_ » une fois que vous êtes lié, et vous invite à établir la liaison lorsque vous ne l’êtes pas.
+Votre propre état se trouve dans **Paramètres → Vous → Profil** : la ligne **Lier mon compte Slack** affiche « Lié à _votre-identifiant-slack_ » une fois que vous êtes lié, et vous invite à établir la liaison lorsque vous ne l’êtes pas.
 
 La liste et la revendication sont des abonnements en direct, parce que le changement se produit de l’autre côté : vous envoyez le code dans Slack, donc aucune requête de l’application ne peut rapporter la réponse.
 

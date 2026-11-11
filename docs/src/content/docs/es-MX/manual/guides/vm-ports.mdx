@@ -2,7 +2,7 @@
 title: Reenviar puertos desde un terminal
 description: Llega a un servidor de desarrollo iniciado en una Terminal (VM) o en un shell del host — desde tu máquina, desde el Navegador (VM), desde Android, en tu red o bajo un dominio de desarrollo con HTTPS.
 slug: es-MX/manual/guias/puertos-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Un servidor que inicias en la terminal de una conversación se publica solo para
@@ -16,8 +16,11 @@ con la terminal o el rig.
 
 ## Ver qué está escuchando
 
-1. Abre la **Terminal (VM)** de la conversación o un shell del host (en un
-   espacio o en la página de una PR).
+1. En el editor de la conversación (en un espacio o en la página de una PR),
+   abre **Terminal** desde el menú `+`: en **Máquinas** para un shell en la VM
+   de la conversación, o en **Herramientas** para una terminal en el servidor.
+   Solo el propietario del servidor puede abrir un shell del host; la terminal
+   de cualquier otra persona está en sandbox.
 2. Inicia tu servidor: `pnpm dev`, `python -m http.server 8000`, lo que sea.
 3. En unos segundos, el **icono de enchufe** de la esquina superior derecha de
    la terminal recibe un punto. Haz clic en él.
@@ -132,6 +135,13 @@ que vuelve—, mientras que los reenvíos automáticos desaparecen cuando
 desaparece su puerto. En un shell del host también puedes establecer un puerto
 local distinto.
 
+Cambiar los reenvíos requiere acceso de escritura a cada repositorio que expone
+el espacio. Con acceso de lectura sigues viendo los puertos, y el panel muestra
+"Cambiar estos puertos requiere acceso de escritura a todos los repositorios de este espacio." en lugar de **Añadir puerto**. Consulta
+[Quién puede ver y quién puede manejar](/es-MX/manual/guias/usar-rigs/#quién-puede-observar-y-quién-puede-dirigir).
+
+Una terminal que alguien abrió para sí mismo mantiene sus puertos solo para esa persona: para cualquier otra, su lista de puertos y sus cambios de puertos responden como si la sesión no existiera, igual que la sesión misma. Las terminales compartidas en un espacio siguen la regla del espacio de arriba.
+
 ## Cómo se mantiene contenido
 
 Los puertos se indexan por espacio de trabajo y espacio. El mapa de puertos
@@ -143,9 +153,9 @@ túneles inversos que el servidor mantiene abiertos para el Navegador (VM) y
 Android. Un shell del host nunca escanea toda la máquina. Nunca se crea un
 servicio a la escucha dentro de un huésped que el servidor no haya puesto allí,
 y todo se desmonta con la terminal o el rig. El diseño se explica en
-[Rigs y recintos](/es-MX/manual/conceptos/rigs/#ports-without-holes);
+[Rigs y recintos](/es-MX/manual/conceptos/rigs/#puertos-sin-agujeros);
 los puertos reservados exactos y las reglas de dominios están en la
-[referencia de rigs](/es-MX/manual/referencia/rigs/#ports-and-dev-domains).
+[referencia de rigs](/es-MX/manual/referencia/rigs/#puertos-y-dominios-de-desarrollo).
 
 ## Relacionado
 

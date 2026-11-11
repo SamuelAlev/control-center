@@ -2,7 +2,7 @@
 title: Bruk AI-drevet gjennomgang
 description: Kjør pr_review-pipelinen på en PR, les funnene og vedtaket, og publiser deretter gjennomgangen til GitHub.
 slug: nb-NO/handbok/slik-gjor-du/ai-gjennomgang
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Denne guiden viser deg hvordan du lar reviewer-agenter gjennomgå en pull request,
@@ -120,7 +120,7 @@ Control Center sender **én** GitHub-gjennomgang. Funn som allerede er løst ell
 avvist, hoppes over. Knappen tar med hvert gjenstående åpne funn og sender
 `APPROVE` ved **Ship**. (MCP-verktøyet `publish_review_to_github` bruker
 bare funn bekreftet av andre reviewere som standard og godkjenner aldri: det
-publiserer som automatisering, så `approve_on_ship` har ingen virkning der.) De som har et fil- og linjefeste, blir innebygde
+publiserer som automatisering, så `approve_on_ship` har ingen virkning der. Den automatiske publiseringen legges ut av boten, unntatt på den delte Control Center Connect-appen når Connect-operatøren ikke har listet denne installasjonen: da går den ut på den ansvarlige personens egen GitHub-pålogging, under deres navn.) De som har et fil- og linjefeste, blir innebygde
 kommentarer; alt annet legges inn i sammendragsteksten, hver med en
 «— Control Center AI review»-footer, slik at kilden er entydig. Et **Block**-vedtak
 sendes som `REQUEST_CHANGES`; **Hold** som `COMMENT`; **Ship** som `APPROVE` fra
@@ -142,7 +142,7 @@ Agenttillatelser hvis du vil at den skal kjøre uten tilsyn.
 
 Andre innebygde pipelines legger faktisk ut på GitHub direkte: `cross_review`,
 `pr_triage`, `ticket_to_pr` og `pre_merge_gate` avsluttes alle med et
-kommentarsteg. Bare `pr_review` holder tilbake resultatet til deg.
+kommentarsteg, som serveren legger ut. Bare `pr_review` holder tilbake resultatet til deg. Ingen av dem slår sammen eller godkjenner.
 
 ## Send ut reviewere selv
 

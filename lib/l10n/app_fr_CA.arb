@@ -12,7 +12,7 @@
   "meetingAutoDetectDescription": "Surveille le calendrier et les applis de visioconférence, et propose d'enregistrer au début d'une réunion.",
   "emailLabel": "Courriel",
   "gitAuthorEmailLabel": "Courriel d'auteur git",
-  "settingsProfileDescription": "Votre nom, votre courriel et l'identité git dans cet espace de travail. Changer d'espace change cette superposition; le pseudonyme, la connexion et les appareils restent sur votre compte.",
+  "settingsProfileDescription": "Votre nom, votre courriel et l'identité git dans cet espace de travail. Changer d'espace change cette superposition; le nom d'utilisateur, la connexion et les appareils restent sur votre compte, dans Vous → Profil.",
   "ssoEmailAttributeLabel": "Attribut courriel",
   "chatLinkMethodEmail": "{externalUserId} · associé par courriel",
   "@chatLinkMethodEmail": {
@@ -40,5 +40,22 @@
   "profileTeamMembers": "Membres : {count}",
   "noPrsByTeamInWorkspace": "Aucune demande de tirage de {team} dans cet espace de travail",
   "profilePrStateFilterLabel": "Filtrer les demandes de tirage par état",
-  "noProfilePrsMatchSearchHint": "Essayez un autre titre ou numéro de demande de tirage"
+  "noProfilePrsMatchSearchHint": "Essayez un autre titre ou numéro de demande de tirage",
+  "hiddenReposSignIn": "{count, plural, =1{Connectez-vous à {forge} pour voir les demandes de tirage d'un dépôt de plus} other{Connectez-vous à {forge} pour voir les demandes de tirage de {count} dépôts de plus}}",
+  "workspaceGitHubAppActingDescription": "Le bot de l'application commente, examine et interroge les demandes de tirage des dépôts de cet espace de travail.",
+  "forgeTokenEmailLabel": "Courriel du compte Atlassian",
+  "forgeTokenEmailInvalid": "Saisissez l'adresse courriel de votre compte Atlassian.",
+  "forgeTokenBitbucketHint": "Les jetons d'API Bitbucket s'utilisent avec le courriel du compte Atlassian qui les a créés.",
+  "automationTokensRepoHint": "Le travail en arrière-plan sur GitLab et Bitbucket, comme les mises à jour des demandes de tirage, les commentaires de revue IA et les merge requests que personne n'a demandées, utilise un jeton d'accès de bot, jamais celui d'une personne. Le jeton propre d'un dépôt l'emporte sur celui de l'espace de travail.",
+  "automationTokenBitbucketHint": "Collez un jeton d'accès de dépôt, de projet ou d'espace de travail avec la lecture du dépôt, plus l'écriture des demandes de tirage pour les commentaires et les demandes de tirage. Votre propre jeton d'API se place sous Vous → Profil, pas ici.",
+  "settingsCommitAuthorshipYoursBody": "Vous êtes l’auteur et le committer, sous l’adresse courriel que votre forge a vérifiée pour votre connexion. Cela couvre les conversations avec les agents, les pipelines que vous lancez et les commits que vous faites dans l’éditeur.",
+  "settingsCommitSigningAddDescription": "Un commit n’apparaît comme vérifié que si vous êtes aussi connecté à cette forge dans l’espace de travail : la forge garantit ainsi votre adresse courriel.",
+  "accountSectionDescription": "Votre nom d’utilisateur et votre nom vous suivent dans chaque espace de travail. Un espace de travail peut afficher un autre nom ou une autre adresse courriel : réglez-les dans Espace de travail → Profil et identité.",
+  "personTokenNarrowScope": "Ce jeton n’a pas la portée {scope}, nécessaire pour relire et commenter. Créez-en un qui l’a.",
+  "settingsCommitsNoHooks": "Les commits faits dans l’éditeur de l’application n’exécutent aucun hook Git du dépôt, comme avec git commit --no-verify : le serveur exécute Git sur son propre hôte, dans un arbre que les agents et les demandes de tirage peuvent modifier.",
+  "settingsServerPeopleDescription": "Tous les comptes de ce serveur, et l’état de confirmation de leur adresse courriel.",
+  "serverPeopleOwnerOnly": "Seul le propriétaire du serveur peut voir tous les comptes et confirmer les adresses courriel.",
+  "serverPeopleEmailNotConfirmed": "Courriel non confirmé",
+  "serverPeopleConfirmEmail": "Confirmer le courriel",
+  "mcpExternalServersOwnerRunsOnly": "Les serveurs trouvés dans les paramètres d’outils propres à cette machine ne sont disponibles que dans les exécutions que vous lancez ou dont vous êtes responsable. Les exécutions des autres ne les voient jamais, et ils ne sont pas proposés par le point de terminaison MCP de Control Center."
 }

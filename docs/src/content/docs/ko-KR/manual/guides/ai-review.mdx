@@ -2,7 +2,7 @@
 title: AI 기반 리뷰 사용
 description: PR에서 pr_review 파이프라인을 실행하고, 발견 사항과 판정을 확인한 다음, 리뷰를 GitHub에 게시합니다.
 slug: ko-KR/매뉴얼/사용-가이드/ai-리뷰
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 이 가이드에서는 리뷰어 에이전트가 풀 리퀘스트를 리뷰하도록 하고 그 결과를
@@ -118,7 +118,7 @@ Control Center는 **하나의** GitHub 리뷰를 보냅니다. 이미 해결되�
 발견 사항은 건너뜁니다. 이 버튼은 남아 있는 열린 발견 사항을 모두 포함하며,
 **Ship**인 경우 `APPROVE`를 제출합니다. (MCP 도구
 `publish_review_to_github`는 동료가 확인한 발견 사항만 기본으로 하며 결코
-승인하지 않습니다. 자동화로 게시하므로 거기서는 `approve_on_ship`이 아무 효과가 없습니다.) 파일과 줄 앵커가 있는
+승인하지 않습니다. 자동화로 게시하므로 거기서는 `approve_on_ship`이 아무 효과가 없습니다. 이 자동 게시는 봇이 올리며, 다만 Connect 운영자가 이 설치를 목록에 올리지 않은 공유 Control Center Connect 앱에서는 책임 있는 사람 본인의 GitHub 로그인으로 게시되고 그 사람의 이름이 표시됩니다.) 파일과 줄 앵커가 있는
 발견 사항은 인라인 댓글이 되고, 나머지는 모두 요약 본문에 합쳐지며, 각
 항목에는 출처가 분명하도록 "— Control Center AI review" 푸터가 붙습니다.
 **Block** 판정은 `REQUEST_CHANGES`로, **Hold**는 `COMMENT`로, **Ship**은 이
@@ -138,9 +138,7 @@ Control Center는 **하나의** GitHub 리뷰를 보냅니다. 이미 해결되�
 설정하세요.
 :::
 
-다른 기본 제공 파이프라인은 GitHub에 직접 게시합니다. `cross_review`,
-`pr_triage`, `ticket_to_pr`, `pre_merge_gate`는 각각 댓글 단계로 끝납니다.
-`pr_review`만 출력을 붙잡아 두고 여러분의 결정을 기다립니다.
+다른 기본 제공 파이프라인은 GitHub에 직접 게시합니다. `cross_review`, `pr_triage`, `ticket_to_pr`, `pre_merge_gate`는 각각 서버가 게시하는 댓글 단계로 끝납니다. `pr_review`만 출력을 붙잡아 두고 여러분의 결정을 기다립니다. 이들 중 어느 것도 병합하거나 승인하지 않습니다.
 
 ## 리뷰어 직접 디스패치
 

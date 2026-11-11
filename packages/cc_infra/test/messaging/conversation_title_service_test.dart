@@ -7,10 +7,13 @@ import 'package:cc_domain/features/messaging/domain/entities/conversation_tree.d
 import 'package:cc_domain/features/messaging/domain/ports/conversation_title_port.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/conversation_repository.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/messages.dart';
 import 'package:cc_harness/provider.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/adapter_one_shot_runner.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
+import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/messaging/content_synthesizer_resolver.dart';
 import 'package:cc_infra/src/messaging/conversation_title_service.dart';
 import 'package:test/test.dart';
@@ -48,7 +51,11 @@ void main() {
   });
 
   ConversationTitleService runner() => ConversationTitleService(
-    runner: AdapterOneShotRunner(credentials: creds, factory: factory),
+    runner: AdapterOneShotRunner(
+      confinement: _offByOwner,
+      credentials: creds,
+      factory: factory,
+    ),
     synthesizer: ContentSynthesizerResolver(agents),
     conversationRepo: conversations,
     messagingRepo: messaging,
@@ -104,6 +111,7 @@ void main() {
   Future<void> send({String? conversationId = 'conv-1'}) =>
       runner().maybeGenerate(
         workspaceId: workspaceId,
+        requestedByUserId: 'olga',
         spaceId: spaceId,
         conversationId: conversationId,
       );
@@ -377,7 +385,11 @@ void main() {
     messaging.scanThrows = true;
     factory.reply = 'Git rebase question';
     final titled = ConversationTitleService(
-      runner: AdapterOneShotRunner(credentials: creds, factory: factory),
+      runner: AdapterOneShotRunner(
+        confinement: _offByOwner,
+        credentials: creds,
+        factory: factory,
+      ),
       synthesizer: ContentSynthesizerResolver(agents),
       conversationRepo: conversations,
       messagingRepo: messaging,
@@ -398,6 +410,7 @@ void main() {
     );
     await titled.maybeGenerate(
       workspaceId: workspaceId,
+      requestedByUserId: 'olga',
       spaceId: spaceId,
       conversationId: 'conv-1',
     );
@@ -514,7 +527,11 @@ void main() {
     messaging.scanThrows = true;
     factory.reply = 'Git rebase question';
     final titled = ConversationTitleService(
-      runner: AdapterOneShotRunner(credentials: creds, factory: factory),
+      runner: AdapterOneShotRunner(
+        confinement: _offByOwner,
+        credentials: creds,
+        factory: factory,
+      ),
       synthesizer: ContentSynthesizerResolver(agents),
       conversationRepo: conversations,
       messagingRepo: messaging,
@@ -534,6 +551,7 @@ void main() {
     );
     await titled.maybeGenerate(
       workspaceId: workspaceId,
+      requestedByUserId: 'olga',
       spaceId: spaceId,
       conversationId: 'conv-1',
     );
@@ -559,6 +577,7 @@ void main() {
 
       final pass = service.maybeGenerate(
         workspaceId: workspaceId,
+        requestedByUserId: 'olga',
         spaceId: spaceId,
         conversationId: 'conv-1',
       );
@@ -595,6 +614,7 @@ void main() {
 
       await service.maybeGenerate(
         workspaceId: workspaceId,
+        requestedByUserId: 'olga',
         spaceId: spaceId,
         conversationId: 'conv-1',
       );
@@ -617,6 +637,7 @@ void main() {
 
       await service.maybeGenerate(
         workspaceId: workspaceId,
+        requestedByUserId: 'olga',
         spaceId: spaceId,
         conversationId: 'conv-1',
       );
@@ -630,6 +651,7 @@ void main() {
   group('suggestTitle', () {
     Future<ConversationTitleSuggestion> suggest() => runner().suggestTitle(
       workspaceId: workspaceId,
+      requestedByUserId: 'olga',
       conversationId: 'conv-1',
     );
 
@@ -918,3 +940,8 @@ class _FakeMessaging implements MessagingRepository {
     String? title,
   }) async => throw UnimplementedError();
 }
+
+/// These run on the in-process harness, which the posture does not gate.
+const _offByOwner = OneShotConfinement(
+  gate: HostExecutionGate(posture: HostExecutionPosture.offByOwner),
+);

@@ -71,8 +71,9 @@ class GitHubLoginDirectory {
   /// The member of [workspaceId] who signed in to GitHub as account
   /// [accountId], or null.
   ///
-  /// Null is the refusal answer: unknown id, not signed in, a sign-in that
-  /// predates account ids, or a non-member.
+  /// Null is the refusal answer: unknown id, not signed in, a non-member, or
+  /// an account two members hold (sign-in refuses a second holder, so that
+  /// is never resolved in either's favour).
   Future<WorkspaceMember?> memberForAccountId(
     String workspaceId,
     int accountId,
@@ -96,16 +97,19 @@ class GitHubLoginDirectory {
     final generation = (_generation[workspaceId] ?? 0, _allGeneration);
     final members = await _members.getForWorkspace(workspaceId);
     final accounts = <String, String>{};
+    final contested = <String>{};
     for (final member in members) {
       final token = await _credentials(member.userId, workspaceId);
       final accountId = token?.accountId.trim() ?? '';
       if (accountId.isEmpty) {
         continue;
       }
-      // putIfAbsent: the OLDEST member wins (the port returns members
-      // oldest-first), so a duplicate claim is deterministic.
-      accounts.putIfAbsent(accountId, () => member.userId);
+      if (accounts.containsKey(accountId)) {
+        contested.add(accountId);
+      }
+      accounts[accountId] = member.userId;
     }
+    contested.forEach(accounts.remove);
     final index = _WorkspaceIndex(
       members: members,
       accounts: accounts,

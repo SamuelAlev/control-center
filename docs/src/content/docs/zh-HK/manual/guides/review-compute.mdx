@@ -2,7 +2,7 @@
 title: 審查運算（群體、軸向與確定性 diff）
 description: 審查運算這一遍在伺服器端產出甚麼 —— 群體、API 契約與視覺 diff、按軸向劃分的閘門 —— 以及它如何匯入檢閱分頁。
 slug: zh-HK/手冊/操作指南/審查運算
-sourceHash: ef68b2c3d9be911d4513b96f391b071a3e13dc10
+sourceHash: b28056afaa08f6e1811b8e59abe236f7819afdf6
 ---
 
 PR 的**檢閱**分頁顯示的是審查管線運行期間的即時進度，接著是它發佈出來的產出物，
@@ -12,8 +12,7 @@ PR 的**檢閱**分頁顯示的是審查管線運行期間的即時進度，接�
 在這個分頁背後，`cc_server` 會建立檔案群體、運行確定性軸向，並透過 `review_studio.*`
 RPC 操作把它們對外提供（`cohorts`、`blastRadius`、`cohortImpact`、`ciSignals`、
 `dependencyDiffs`、`setContractDecision`、`approveVisual`、`compute`，以及它們各自的
-`watch*` 孿生操作）。一個仍然寫著 `pr.reviewStudio` 的持久化佈局，打開的也是同一個
-檢閱分頁。
+`watch*` 孿生操作）。
 
 在檢閱分頁上：
 
@@ -66,6 +65,8 @@ breaking 變更亦然；breaking 但已獲批准會發出警告；沒有 breakin
 便會在該 PR 的 base 與 head 工作樹中，透過一次無介面的 `flutter test` golden 執行
 渲染出這些改動組件的前後狀態，然後對像素做 diff。
 
+這些測試是 pull request 自身的程式碼，因此它們的執行方式與代理的工具程序相同：伺服器為代理配置沙盒時在沙盒內執行；伺服器擁有者關閉沙盒時不受限制地執行；沒有沙盒時，則只為伺服器擁有者負責的請求執行。對其他人而言，此軸向會報告 **unavailable**，原因為「no sandbox on this server, and only its owner may run a PR's tests unsandboxed」。
+
 :::note[這需要在伺服器主機上安裝 Flutter SDK]
 純 Dart 伺服器無法在行程內渲染 Flutter widget，因此它會呼叫外部命令 `flutter test`。
 SDK 必須安裝在運行 `cc_server` 的那台機器上 —— 而不是你的用戶端上。沒有它，這個軸向
@@ -74,9 +75,9 @@ SDK 必須安裝在運行 `cc_server` 的那台機器上 —— 而不是你的�
 :::
 
 標記為 **changed** 或 **removed** 的快照會扣住視覺閘門，直到獲得批准；**unchanged**、
-**added** 與 **approved** 的快照則會放行。不可用有四種可能原因：主機上沒有 Flutter
-SDK、程式庫中沒有 Widgetbook 應用程式、沒有可作 golden 測試的用例，或 golden 裝置
-出錯。
+**added** 與 **approved** 的快照則會放行。不可用有五種可能原因：主機上沒有 Flutter
+SDK、程式庫中沒有 Widgetbook 應用程式、沒有可作 golden 測試的用例、golden 裝置出錯，
+或沒有沙盒可供並非伺服器擁有者負責的請求使用。
 
 批准一個有意為之的變更用的是 `review_studio.approveVisual`。
 

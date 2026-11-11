@@ -2,7 +2,7 @@
 title: Ein Gerät koppeln
 description: Kopple dein Telefon (oder einen zweiten Browser oder Desktop) mit deinem Control Center-Server, damit du die Flotte aus der Ferne verfolgen kannst.
 slug: de-DE/handbuch/anleitungen/geraet-koppeln
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Diese Anleitung zeigt, wie du ein Telefon mit Control Center koppelst, damit du
@@ -64,8 +64,7 @@ ab dem Moment der Erstellung aktiv, und das Verbindungs-Gate prüft nur, dass di
 Zugangsdaten aktiv und nicht abgelaufen sind. Behandle den QR und den
 Kopplungsschlüssel wie ein Passwort und widerrufe alles, was du nicht
 weitergeben wolltest. Sowohl direkte als auch über das Relay laufende
-Client-Sitzungen erfordern Ende-zu-Ende-Verschlüsselung; ältere Clients können
-nicht auf Klartext-RPC zurückfallen.
+Client-Sitzungen erfordern Ende-zu-Ende-Verschlüsselung; es gibt kein Klartext-RPC.
 :::
 
 ## Gekoppelte Geräte verwalten
@@ -80,8 +79,7 @@ Telefon. Es wirkt sofort und ist aus Sicht des Geräts unumkehrbar.
 
 Zugangsdaten, die dieser Bereich ausstellt, sind befristet: Sie laufen 30 Tage
 nach der Ausstellung ab, und danach lehnt das Verbindungs-Gate sie ab. Zugangsdaten,
-die `cc_server pair` auf der Kommandozeile ausstellt, haben **überhaupt kein
-Ablaufdatum** — widerrufe sie von Hand, wenn die Maschine, für die sie gedacht
+die `cc_server pair` auf der Kommandozeile ausstellt, laufen genauso ab; führe `pair` erneut aus, um eine neue auszustellen, und widerrufe sie von Hand, wenn die Maschine, für die sie gedacht
 waren, außer Dienst geht.
 
 ## Arbeitsbereiche vom Telefon wechseln

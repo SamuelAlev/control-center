@@ -2,7 +2,7 @@
 title: Ruang kerja pertama Anda
 description: Buat ruang kerja, daftarkan repo ke dalamnya, dan saksikan sendiri batas isolasinya.
 slug: id-ID/panduan-pengguna/tutorial/ruang-kerja-pertama
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Yang akan Anda bangun
@@ -11,10 +11,12 @@ Pada akhir tutorial ini, Anda akan memiliki:
 
 - Ruang kerja yang dinamai sesuai proyek Anda
 - Repositori Git yang didaftarkan ke dalamnya
-- Lima agen yang disemai, salah satunya telah Anda konfigurasi cukup baik untuk dapat dijalankan
+- Enam agen yang disemai, salah satunya telah Anda konfigurasi cukup baik untuk dapat dijalankan
 - Ruang kerja kedua yang kosong yang membuktikan batas isolasi
 
 Onboarding sudah membuatkan ruang kerja untuk Anda. Tutorial ini sengaja membuat yang baru, agar Anda melihat setiap bagian prosesnya.
+
+Membuat ruang kerja memerlukan pemilik server, yaitu orang yang menyiapkan server. Pada desktop yang menjalankan server sendiri, itu adalah Anda. Pada server milik orang lain, **Tambah ruang kerja** menampilkan "Hanya pemilik server yang dapat membuat ruang kerja. Minta mereka membuatnya, atau minta admin ruang kerja untuk mengundang Anda." Lakukan salah satu dari itu lalu ikuti sisa tutorial di ruang kerja tersebut. Mendaftarkan repositori di langkah 2 memerlukan admin ruang kerja, dan ruang kerja kedua di langkah 4 kembali memerlukan pemilik server.
 
 Sebelum mulai, pilih checkout Git yang memenuhi ketiga syarat berikut — langkah pendaftaran akan menolak yang lain:
 
@@ -35,12 +37,12 @@ Control Center beralih ke ruang kerja baru dan membuka kotak masuknya (`/workspa
 Di balik itu, server menerbitkan peristiwa `WorkspaceCreated` dan menyemai ruang kerja dengan:
 
 - **agen CEO**, yang personanya adalah koordinasi dan delegasi
-- empat spesialis — `qa`, `architect`, `engineer`, dan `librarian` — masing-masing dengan instruksi dan skill-nya sendiri
+- lima spesialis — `qa`, `architect`, `engineer`, `librarian`, dan `content-synthesizer` — masing-masing dengan instruksi dan skill-nya sendiri
 - templat pipeline bawaan beserta baris pemicunya
 
 Setiap ruang kerja yang Anda buat mendapatkan semua ini, bukan hanya yang pertama.
 
-Pastikan: buka **Pengaturan → Ruang kerja → Agen**. Lima agen ada di daftar, masing-masing dengan cincin status yang berongga.
+Pastikan: buka **Pengaturan → Ruang kerja → Agen**. Enam agen ada di daftar, masing-masing dengan cincin status yang berongga.
 
 ## Langkah 2: Daftarkan repositori
 
@@ -57,7 +59,7 @@ Pastikan: repo muncul di daftar dengan `owner/repo` dan cabang saat ini.
 
 ## Langkah 3: Buat satu agen dapat dijalankan
 
-Kelima agen yang baru saja disemai ruang kerja ini tidak memiliki adapter dan model. Pengiriman menjalankannya pada **Control Center (built-in)** dan, karena tidak ada model yang ditetapkan, meminta model default kepada Anthropic — jadi agen-agen itu hanya berjalan jika Anda telah menghubungkan akun Anthropic, dan pada model yang tidak Anda pilih jika memang sudah terhubung. Onboarding saat pertama dijalankan menempelkan pilihannya ke setiap agen di ruang kerja pertama, sekali saja; ruang kerja yang Anda buat setelahnya dimulai dengan kelimanya belum diatur. Atur satu sekarang.
+Keenam agen yang baru saja disemai ruang kerja ini tidak memiliki adapter dan model. Pengiriman menjalankannya pada **Control Center (built-in)** dan, karena tidak ada model yang ditetapkan, meminta model default kepada Anthropic — jadi agen-agen itu hanya berjalan jika Anda telah menghubungkan akun Anthropic, dan pada model yang tidak Anda pilih jika memang sudah terhubung. Onboarding saat pertama dijalankan menempelkan pilihannya ke setiap agen di ruang kerja pertama, sekali saja; ruang kerja yang Anda buat setelahnya dimulai dengan keenamnya belum diatur. Atur satu sekarang.
 
 1. Buka **Pengaturan → Ruang kerja → Agen**
 2. Pilih `engineer` di daftar agen
@@ -73,7 +75,7 @@ Setiap agen membawa adapter dan modelnya sendiri, jadi ulangi ini untuk agen lai
 Buat ruang kerja kedua dari chip di bilah judul, persis seperti pada langkah 1. Lalu perhatikan:
 
 - **Pengaturan → Ruang kerja → Repositori** kosong. Repo yang Anda daftarkan satu menit lalu tidak ada di sana.
-- **Pengaturan → Ruang kerja → Agen** berisi lima agen, tetapi barisnya berbeda — adapter yang Anda atur pada langkah 3 tidak ada.
+- **Pengaturan → Ruang kerja → Agen** berisi enam agen, tetapi barisnya berbeda — adapter yang Anda atur pada langkah 3 tidak ada.
 - Daftar space, tiket, dan memori semuanya kosong.
 
 Tidak ada yang bocor, karena memang tidak ada yang bisa bocor: baris tiap ruang kerja tersimpan di berkas basis data milik ruang kerja itu sendiri. Pembacaan lintas ruang kerja bukanlah kueri yang difilter, melainkan kueri yang tidak punya tempat untuk dijalankan. Menghapus ruang kerja sama dengan melepas tautan sebuah berkas.
@@ -84,6 +86,6 @@ Untuk model selengkapnya, baca [Ruang kerja dan isolasi](/id-ID/panduan-pengguna
 
 ## Rekap
 
-Anda membuat ruang kerja, menyaksikannya menyemai seorang CEO dan empat spesialis, mendaftarkan repo ke dalamnya, memberi satu agen adapter dan model, lalu memastikan bahwa ruang kerja kedua tidak berbagi satu pun dari itu.
+Anda membuat ruang kerja, menyaksikannya menyemai seorang CEO dan lima spesialis, mendaftarkan repo ke dalamnya, memberi satu agen adapter dan model, lalu memastikan bahwa ruang kerja kedua tidak berbagi satu pun dari itu.
 
 **Selanjutnya:** [Kirim agen pertama Anda](/id-ID/panduan-pengguna/tutorial/agen-pertama/) untuk membuat ruang kerja itu bekerja.

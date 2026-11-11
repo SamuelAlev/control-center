@@ -2,7 +2,7 @@
 title: اعزام عامل‌های بازبین
 description: اعزام عامل‌های بازبین متخصص به یک PR از نمای PR، یک ابزار MCP یا یک گام پایپ‌لاین.
 slug: fa-IR/راهنمای-کاربر/راهنماهای-عملی/اعزام-عاملهای-بازبین
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 این راهنما نشان می‌دهد چگونه عامل‌های بازبین را برای بازبینی pull requestها اعزام کنید.
@@ -86,7 +86,7 @@ dispatch_reviewers(
 | رویداد                 | زمان فعال‌شدن                                                                                                    | کلیدهای بار داده                                                   |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | یک PR **از طریق Control Center** باز شود — سطح ساخت PR، یا عاملی که `pr_lifecycle.publish` را فراخوانی می‌کند     | `pr_id`، `workspace_id`، `repo_owner`، `repo_name`                 |
-| `ExternalPrDetected`   | سرویس پایش PR، PRی را بیابد که مستقیماً روی GitHub باز شده است                                                   | `repo_owner`، `repo_name`، `pr_number`، `pr_title`، `author`       |
+| `ExternalPrDetected`   | سرویس پایش PR، PRی را بیابد که مستقیماً روی GitHub باز شده است                                                   | `repo_owner`، `repo_name`، `repo_full_name`، `pr_number`، `pr_title`، `author`       |
 
 PRی که روی github.com باز می‌شود هرگز `PullRequestPublished` را منتشر نمی‌کند،
 پس قالبی که فقط به آن رویداد سیم‌کشی شده باشد آن را نخواهد دید. همچنین توجه

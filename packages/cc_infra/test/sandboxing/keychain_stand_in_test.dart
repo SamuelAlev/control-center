@@ -32,7 +32,7 @@ void main() {
       setUp(() {
         root = Directory.systemTemp.createTempSync('cc-keychain-stand-in-');
         work = Directory('${root.path}/work')..createSync(recursive: true);
-        manager = SandboxManager();
+        manager = SandboxManager(hiddenPaths: const []);
       });
 
       tearDown(() async {

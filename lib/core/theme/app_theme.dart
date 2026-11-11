@@ -1,7 +1,6 @@
-import 'package:cc_ui/cc_ui.dart' show CcTypography;
+import 'package:cc_ui/cc_ui.dart'
+    show CcTypography, DesignSystemPalette, DesignSystemTokens;
 import 'package:control_center/core/theme/app_fonts.dart';
-import 'package:control_center/core/theme/design_system_palette.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:material_ui/material_ui.dart';

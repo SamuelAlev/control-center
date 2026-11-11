@@ -98,6 +98,46 @@ class ActionPolicyRule {
   bool coversRequest(ActionRequest request) =>
       coverageOf(request) == ConstraintMatch.hit;
 
+  /// Whether this is a standing approval: an "Approve for 8 hours" answer
+  /// written by `confirmation.respond`. It answers asks, never denies (see
+  /// `PolicyResolver`).
+  bool get isStandingApproval =>
+      provenance == 'remembered' && decision == ActionDecision.allow;
+
+  /// Whether this standing approval covers [request].
+  ///
+  /// Stricter than [coversRequest] about commands: a person approved the
+  /// command they read, so it must be the whole command. Read as a prefix,
+  /// `npm test` would also cover `npm test && ./anything`.
+  bool standsFor(ActionRequest request) {
+    if (!coversRequest(request)) {
+      return false;
+    }
+    final commands = constraint?.commands;
+    return commands == null || commands.contains(request.command?.trim());
+  }
+
+  /// Whether this is a plain rule: a person's decision for a whole class or
+  /// command prefix, with no condition and no end.
+  bool get isPlain =>
+      provenance == 'user' && constraint == null && expiresAt == null;
+
+  /// Whether saving [other] replaces this rule.
+  ///
+  /// A plain rule is unique per scope and class/prefix. Any other rule is
+  /// unique per scope, class/prefix, exact constraint and provenance, so
+  /// approving the same thing again refreshes it instead of stacking a copy,
+  /// while a plain rule and a standing approval of one class coexist.
+  bool sharesIdentityWith(ActionPolicyRule other) =>
+      workspaceId == other.workspaceId &&
+      scopeType == other.scopeType &&
+      scopeId == other.scopeId &&
+      actionClass == other.actionClass &&
+      commandPrefix == other.commandPrefix &&
+      isPlain == other.isPlain &&
+      (isPlain ||
+          (constraint == other.constraint && provenance == other.provenance));
+
   /// A short provenance label for the policy surface's badge.
   String get provenanceLabel {
     if (provenance == 'remembered') {

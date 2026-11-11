@@ -1,7 +1,13 @@
 import 'package:cc_domain/core/domain/entities/user_activity_entry.dart';
-import 'package:cc_domain/core/domain/value_objects/user_activity_page.dart';
+import 'package:cc_domain/core/domain/value_objects/activity_cursor.dart';
+import 'package:cc_domain/core/domain/value_objects/audit_log_filter.dart';
 
 /// Persistence port for the append-only per-user audit trail.
+///
+/// The read side is keyset paging over `(createdAt, id)`, the same order as
+/// the server trail, so the audit log can merge both into one table. Every
+/// record here returned successfully: an outcome filter that leaves out
+/// `ok` matches nothing.
 abstract class UserActivityRepository {
   /// Appends one audit record.
   Future<void> append(UserActivityEntry entry);
@@ -18,20 +24,38 @@ abstract class UserActivityRepository {
     int limit = 200,
   });
 
-  /// One newest-first page of [workspaceId]'s trail, with the real total
-  /// and cursors for the adjacent pages.
-  Future<UserActivityPage> getPage(
+  /// Matching records of [workspaceId] strictly older than [olderThan] (from
+  /// the newest when null), newest first, at most [limit].
+  Future<List<UserActivityEntry>> pageRows(
     String workspaceId, {
-    int limit = defaultUserActivityPageSize,
-    String? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
+    ActivityCursor? olderThan,
+    required int limit,
+    AuditLogFilter filter = const AuditLogFilter(),
   });
 
-  /// Live counterpart of [getPage]. Re-emits when a new row is appended.
-  Stream<UserActivityPage> watchPage(
+  /// Matching records of [workspaceId] strictly newer than [newerThan],
+  /// oldest first, at most [limit].
+  Future<List<UserActivityEntry>> newerRows(
     String workspaceId, {
-    int limit = defaultUserActivityPageSize,
-    String? cursor,
-    UserActivityFilter filter = const UserActivityFilter(),
+    required ActivityCursor newerThan,
+    required int limit,
+    AuditLogFilter filter = const AuditLogFilter(),
   });
+
+  /// How many of [workspaceId]'s records match, or only those strictly newer
+  /// than [newerThan].
+  Future<int> count(
+    String workspaceId, {
+    AuditLogFilter filter = const AuditLogFilter(),
+    ActivityCursor? newerThan,
+  });
+
+  /// [workspaceId]'s matching records per actor id.
+  Future<Map<String, int>> countByActor(
+    String workspaceId, {
+    AuditLogFilter filter = const AuditLogFilter(),
+  });
+
+  /// Emits whenever [workspaceId]'s trail gains or loses a record.
+  Stream<void> watchChanges(String workspaceId);
 }

@@ -5,8 +5,8 @@ import 'package:cc_data/cc_data.dart' show RemoteForgeConnections;
 import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/core/domain/value_objects/forge_urls.dart';
-import 'package:cc_domain/core/domain/value_objects/github_auth_mode.dart';
 import 'package:cc_domain/features/pr_review/domain/providers/forge_capabilities.dart';
+import 'package:control_center/core/offline/offline_queue_provider.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/di/providers.dart'
@@ -86,7 +86,7 @@ final forgeConnectionsProvider = FutureProvider<List<ForgeConnection>>((
   // settling into a permanently empty identity; a connected list is re-read on
   // the slower cadence so a lapse is noticed.
   refreshIn(
-    connections.any((c) => c.authenticated && !c.needsSignIn)
+    connections.any((c) => c.isUsable)
         ? kForgeConnectionRefreshInterval
         : kForgeConnectionRetryInterval,
   );
@@ -139,7 +139,7 @@ final connectedForgesProvider = Provider<Set<ForgeHost>>((ref) {
   final connections = ref.watch(forgeConnectionsProvider).value ?? const [];
   return {
     for (final c in connections)
-      if (c.authenticated) c.forge,
+      if (c.isUsable) c.forge,
   };
 });
 
@@ -239,26 +239,15 @@ final forgeUrlsForRepoProvider =
       (ref, coord) => ForgeUrls(ref.watch(forgeForRepoProvider(coord))),
     );
 
-/// The scope a GitHub sign-in runs in for the active workspace.
-///
-/// A workspace on its own GitHub App signs people in through THAT App, so the
-/// grant is the workspace's; every other workspace shares this server's
-/// GitHub lane, where a person's grant is server-wide (null).
-final githubSignInScopeProvider = Provider<String?>((ref) {
-  final workspace = ref.watch(activeWorkspaceProvider);
-  return workspace != null && workspace.githubAuthMode == GithubAuthMode.app
-      ? workspace.id
-      : null;
-});
-
 /// The sign-in lane behind [forge], or null for a forge that is token-only
 /// (GitLab, Bitbucket).
 ConnectOAuthLane? signInLaneForForge(ForgeHost forge) =>
     ConnectOAuthLane.fromWire(forge.wire);
 
-/// Stores [token] as the caller's own credential for [forge] and returns the
-/// resulting connection. Token-only forges (GitLab, Bitbucket): GitHub is
-/// sign-in only and the server refuses a GitHub token.
+/// Stores [token] as the caller's own credential for [forge], used in every
+/// workspace on this server, and returns the resulting connection.
+/// Token-only forges (GitLab, Bitbucket): GitHub is sign-in only and the
+/// server refuses a GitHub token.
 ///
 /// Takes effect on the very next forge request: the server reads the token per
 /// call, so there is no restart and no stale interceptor.
@@ -267,22 +256,29 @@ Future<ForgeConnection> setForgeToken(
   ForgeHost forge,
   String token,
 ) async {
-  final workspaceId = ref.read(activeWorkspaceIdProvider);
   final data = await ref.read(rpcClientProvider).call(
     'credentials.setForgeToken',
-    {'forge': forge.wire, 'token': token, ...overlayWorkspaceArgs(workspaceId)},
+    {'forge': forge.wire, 'token': token},
   );
   invalidateForgeState(ref.invalidate);
-  return ForgeConnection.fromJson(data);
+  final connection = ForgeConnection.fromJson(data);
+  if (connection.isUsable) {
+    // A token-only forge's lane is its wire name: changes the server refused
+    // for want of this token run now.
+    unawaited(
+      ref
+          .read(offlineQueueControllerProvider.notifier)
+          .resumeAfterSignIn(forge.wire),
+    );
+  }
+  return connection;
 }
 
-/// Clears a token-only [forge]'s stored credential in this workspace. A
-/// GitHub grant is revoked through `oauth.disconnect` instead.
+/// Clears the caller's pasted token for the token-only [forge], in every
+/// workspace. A GitHub grant is revoked through `oauth.disconnect` instead.
 Future<void> clearForgeToken(WidgetRef ref, ForgeHost forge) async {
-  final workspaceId = ref.read(activeWorkspaceIdProvider);
   await ref.read(rpcClientProvider).call('credentials.clearForgeToken', {
     'forge': forge.wire,
-    ...overlayWorkspaceArgs(workspaceId),
   });
   invalidateForgeState(ref.invalidate);
 }

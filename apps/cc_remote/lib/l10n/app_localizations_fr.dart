@@ -251,10 +251,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get allCaughtUp => 'Vous êtes à jour';
 
   @override
-  String get inboxNoForgeAccount =>
-      'Aucun compte forge n’est connecté sur le serveur, les pull requests ne peuvent donc pas encore vous être attribuées.';
-
-  @override
   String get inboxNothingWaiting =>
       'Rien n’est bloqué et aucune pull request n’attend votre action.';
 
@@ -463,34 +459,6 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$names sont trop volumineux pour être envoyés via le relais d’ici.',
-      one: '$names est trop volumineux pour être envoyé via le relais d’ici.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Impossible d’envoyer la pièce jointe. Réessayez.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other:
-          '$count pièces jointes n’ont pas pu être envoyées et ont été omises.',
-      one: '1 pièce jointe n’a pas pu être envoyée et a été omise.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Collègue';
 
   @override
@@ -627,35 +595,6 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'Aucune forge n’est connectée au serveur, les pull requests ne peuvent pas être récupérées. Connectez-en une depuis l’application de bureau.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count dépôts n’ont pas pu être lus.',
-      one: '1 dépôt n’a pas pu être lu.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Illisibles : $names';
-  }
-
-  @override
-  String get installationSuspendedTitle => 'Installation GitHub App suspendue';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'Affichage des dernières données connues pour $names. Reprenez l\'installation sur GitHub.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'Installation GitHub App suspendue. Affichage des dernières données connues pour $names. Reprenez l\'installation sur GitHub.';
-  }
 
   @override
   String get draft => 'Brouillon';
@@ -1320,7 +1259,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get permissionPrCreate => 'Créer des pull requests';
 
   @override
-  String get permissionPrPublish => 'Publier des pull requests';
+  String get permissionPrPublish =>
+      'Mettre à jour ou fusionner des pull requests';
 
   @override
   String get permissionVendorSyncWrite =>
@@ -1365,7 +1305,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get permissionBuiltInDefault => 'Valeur par défaut';
 
   @override
-  String get permissionRemembered => 'Autorisation mémorisée';
+  String get permissionRemembered => 'Approbation temporaire';
 
   @override
   String get permissionSource => 'Source';
@@ -1387,10 +1327,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Définir une règle ici';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'Révoquez la règle de cette portée ou l’autorisation mémorisée avant de définir une règle générale pour cette action.';
 
   @override
   String get permissionConfirmRevoke => 'Confirmer la révocation';
@@ -1443,6 +1379,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Commandes : $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Outils : $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Sans effet tant que cette action est sur Refuser';
 
   @override
   String permissionMaxCount(String count) {
@@ -1905,15 +1850,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Mise à jour de la pull request';
-
-  @override
-  String get activityTicket => 'Mise à jour du ticket';
-
-  @override
-  String get activityMeeting => 'Mise à jour de la réunion';
-
-  @override
-  String get activityCalendar => 'Connexion au calendrier';
 
   @override
   String get activityRig => 'Mise à jour de l’enceinte';
@@ -2606,8 +2542,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'En attente d’autorisation dans votre navigateur…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Saisissez le code affiché dans votre navigateur';
+  String get credentialsConnectCodePrompt => 'Code de confirmation';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2678,10 +2613,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Collez un jeton d’accès personnel';
 
   @override
-  String get credentialsHostManaged =>
-      'Cette connexion provient de l’application serveur ou de son environnement. Seul le propriétaire du serveur peut la modifier là-bas ; vous pouvez toutefois ajouter votre propre jeton.';
-
-  @override
   String get credentialsStopWatching => 'Arrêter la surveillance';
 
   @override
@@ -2701,6 +2632,208 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Exécuter des commandes sur l\'hôte';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'Votre connexion à $provider a expiré. Reconnectez-vous.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'En pause : le service de connexion de cet espace de travail a changé. Elle fonctionnera de nouveau dès le retour du service.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'Impossible de joindre $provider pour le moment. Nouvelle tentative en cours.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Cet espace de travail uniquement';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Tous les espaces de travail';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Supprimer vos identifiants enregistrés de cet espace de travail ? Les autres espaces de travail gardent les leurs.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Supprimer vos identifiants enregistrés de chaque espace de travail qui les partage ?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'Le serveur a redémarré. Relancez la connexion.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Installez la GitHub App sur $owner pour que l\'automatisation atteigne $names. Touchez pour ouvrir GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'La GitHub App n\'est pas installée sur $owner, l\'automatisation ne peut donc pas atteindre $names. Demandez à un admin de l\'espace de travail de l\'installer.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Ajoutez $names aux dépôts de la GitHub App. Touchez pour ouvrir GitHub.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'La GitHub App ne voit pas encore $names. Demandez à un admin de l\'espace de travail de les ajouter à ses dépôts.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'Installation de la GitHub App suspendue. L\'automatisation pour $names est en pause jusqu\'à ce qu\'un propriétaire du compte réactive l\'installation sur GitHub.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'La personne responsable de l\'automatisation de cet espace de travail ne voit plus $names, donc rien n\'y est exécuté en son nom.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'La personne responsable de l\'automatisation de cet espace de travail n\'est pas connectée à la forge, donc l\'automatisation pour $names attend qu\'elle se connecte.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Impossible de vérifier l\'accès à $names. Nouvelle tentative en cours.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Connectez-vous à $forge pour voir les pull requests de $count dépôts de plus',
+      one:
+          'Connectez-vous à $forge pour voir les pull requests d\'un dépôt de plus',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dépôts sont masqués, car votre compte $forge ne les voit pas',
+      one: '1 dépôt est masqué, car votre compte $forge ne le voit pas',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count dépôts sont masqués, car vous n\'y avez pas accès dans cet espace de travail',
+      one:
+          '1 dépôt est masqué, car vous n\'y avez pas accès dans cet espace de travail',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Vérification de votre accès à $count dépôts de plus…',
+      one: 'Vérification de votre accès à 1 dépôt de plus…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'E-mail du compte Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Saisissez l\'adresse e-mail de votre compte Atlassian.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'Jeton d\'API';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Aucun jeton d\'automatisation ne peut lire $names, le travail en arrière-plan y est donc en pause. Un admin peut en ajouter un dans Réglages → Dépôts.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Confirmez dans votre navigateur, puis saisissez le code qu’il affiche.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Ce compte est déjà connecté à une autre personne sur ce serveur. Connectez-vous avec un autre compte.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return '$provider est injoignable pour vérifier ce jeton. Réessayez dans un instant.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return '$provider refuse ce jeton. Vérifiez que vous l’avez copié en entier et qu’il n’a pas été révoqué.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Ce n’est pas un jeton personnel. Collez un jeton d’accès personnel de votre propre compte $provider, et non un jeton de projet, de groupe, d’espace de travail ou de bot.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Ce jeton n’a pas le périmètre $scope, nécessaire pour relire et commenter. Créez-en un qui l’a.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Ce jeton a expiré. Créez-en un nouveau et collez-le ici.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Trop de requêtes pour le moment. Patientez un peu, puis réessayez.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'La connexion a été annulée ou refusée. Relancez-la quand vous êtes prêt.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Cette connexion n’est plus ouverte : elle a été annulée, utilisée ou remplacée. Relancez-la.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Un administrateur d’espace de travail doit vous inviter, ou le propriétaire du serveur peut créer un espace de travail pour vous.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return '$repos désigne maintenant un autre dépôt sur $forge. Reliez-le depuis l’application de bureau ou web pour continuer à l’utiliser.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return '$repos désigne maintenant un autre dépôt sur $forge. Un administrateur d’espace de travail doit le relier avant de pouvoir de nouveau l’utiliser.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Les agents ont besoin d’un bac à sable sur ce serveur';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Ce serveur n’a pas de bac à sable : seul son propriétaire peut y lancer des agents. Le propriétaire peut installer le bac à sable ou le désactiver pour tout le monde.';
 }
 
 /// The translations for French, as used in Canada (`fr_CA`).
@@ -2721,4 +2854,34 @@ class AppLocalizationsFrCa extends AppLocalizationsFr {
 
   @override
   String get tabNews => 'Fil de nouvelles';
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Connectez-vous à $forge pour voir les demandes de tirage de $count dépôts de plus',
+      one:
+          'Connectez-vous à $forge pour voir les demandes de tirage d\'un dépôt de plus',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Courriel du compte Atlassian';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Saisissez l\'adresse courriel de votre compte Atlassian.';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Aucun jeton d\'automatisation ne peut lire $names, le travail en arrière-plan y est donc en pause. Un admin peut en ajouter un dans Paramètres → Dépôts.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Ce jeton n’a pas la portée $scope, nécessaire pour relire et commenter. Créez-en un qui l’a.';
+  }
 }

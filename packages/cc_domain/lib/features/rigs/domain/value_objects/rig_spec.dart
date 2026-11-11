@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
+import 'package:cc_domain/core/domain/value_objects/forge_host.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/browser_defaults.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/enclosure_backend.dart';
 import 'package:cc_domain/features/rigs/domain/value_objects/rig_browser_engine.dart';
@@ -177,6 +178,55 @@ class RigSpec {
   /// screen — reusing one for the other would hand an agent a machine it
   /// cannot see.
   bool get isExec => imageId == execImageId;
+
+  /// The person whose own credentials this machine carries, or null when it
+  /// carries nobody's.
+  ///
+  /// The guest's credential helper mints against [openedByUserId]'s own
+  /// forge access whenever the machine may reach a forge: a terminal rig
+  /// always (the person's own shell, reused only by them, minting with
+  /// [ForgeTokenScope.write] through their sign-in narrowed to the repo),
+  /// any other rig whose [egressAllowlist] names a forge's git host. An
+  /// environment rig is never registered with the credential endpoint.
+  /// Such a machine is driven only by that person and by runs they are
+  /// accountable for ([drivableBy]).
+  String? get credentialHolder {
+    final opener = openedByUserId;
+    if (opener == null || opener.isEmpty || isEnvironment) {
+      return null;
+    }
+    if (isExec || forgeTokenScope == ForgeTokenScope.write) {
+      return opener;
+    }
+    final forges = {
+      for (final forge in ForgeHost.values)
+        if (forge.gitHost.isNotEmpty) forge.gitHost.toLowerCase(),
+    };
+    return egressAllowlist.any((h) => forges.contains(h.toLowerCase()))
+        ? opener
+        : null;
+  }
+
+  /// Whether this machine is [credentialHolder]'s own terminal machine.
+  ///
+  /// The terminal rule (a session somebody else opened answers as if it did
+  /// not exist) covers the machine behind it: nobody else may see it
+  /// ([visibleTo]).
+  bool get isOwnedTerminal => isExec && credentialHolder != null;
+
+  /// Whether [personId] may know this machine exists: anyone who passes its
+  /// space's read gate, except for somebody else's [isOwnedTerminal].
+  bool visibleTo(String? personId) =>
+      !isOwnedTerminal || credentialHolder == personId;
+
+  /// Whether [personId] may drive this machine (act on it, take or release
+  /// control, close it, forward its ports, write its clipboard, drop files
+  /// into it): anyone its space allows for a machine carrying nobody's
+  /// credentials, only the [credentialHolder] otherwise.
+  bool drivableBy(String? personId) {
+    final holder = credentialHolder;
+    return holder == null || holder == personId;
+  }
 
   /// The image id every exec (terminal) rig boots.
   ///
@@ -403,13 +453,10 @@ class RigSpec {
     return RigSpec(
       surface: surface,
       backend: EnclosureBackend.fromWire(json['backend'] as String?),
-      // An ABSENT engine is Chromium: every rig row written before engines
-      // existed is a Chromium rig, and reading those back as "unknown" would
-      // strand them. An engine this build does not know is a different case —
-      // it also lands on Chromium here, but only because a persisted row has
-      // to resolve to something bootable; the RPC entry point rejects an
-      // unknown engine outright rather than quietly opening the wrong
-      // browser.
+      // A persisted row has to resolve to something bootable, so an engine
+      // this build does not read lands on the fallback; the RPC entry point
+      // rejects an unknown engine outright rather than quietly opening the
+      // wrong browser.
       browserEngine:
           RigBrowserEngine.fromWire(json['browserEngine'] as String?) ??
           RigBrowserEngine.fallback,

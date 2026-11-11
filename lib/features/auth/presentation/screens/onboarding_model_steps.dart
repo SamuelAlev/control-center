@@ -197,7 +197,7 @@ class OnboardingVoiceStep extends ConsumerWidget {
 }
 
 /// Shown when the connected server hosts no model control for this surface
-/// (an older/headless server with no model lifecycle ops). Lets the user
+/// (a headless server with no model lifecycle ops). Lets the user
 /// continue past the step rather than blocking onboarding on it.
 class _ServerManagedPlaceholder extends StatelessWidget {
   const _ServerManagedPlaceholder({

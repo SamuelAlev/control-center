@@ -171,8 +171,7 @@ class CalendarAccountDto {
 
   final String id;
 
-  /// The member who connected this account. Empty on legacy workspace-pool
-  /// rows.
+  /// The member who connected this account. Empty when no owner is recorded.
   final String userId;
   final String providerId;
   final String accountEmail;

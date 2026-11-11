@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/review_studio_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/visual_diff.dart';
+import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/log/cc_infra_log.dart';
 import 'package:cc_infra/src/pr_review/image_differ.dart';
 import 'package:cc_infra/src/process/child_process.dart';
@@ -44,11 +45,17 @@ class VisualDiffOutcome {
 /// worktrees (offscreen — no display needed). This REQUIRES a Flutter SDK on
 /// the host: declared as a host capability, degraded gracefully otherwise. The
 /// image diff is pure Dart ([ImageDiffer]).
+///
+/// `flutter test` runs the PR's own code, so it starts the way an ACP one-shot
+/// does ([OneShotConfinement]): inside the sandbox when the server sandboxes
+/// agents, unconfined when the owner turned sandboxing off, and with no
+/// sandbox only for a request the server owner is accountable for.
 class VisualDiffService {
   /// Creates a [VisualDiffService].
   VisualDiffService({
     required this._repository,
     required this._paths,
+    required this._confinement,
     this._flutterBinary,
     this.testTimeout = const Duration(minutes: 8),
     this.onSnapshotWritten,
@@ -56,6 +63,7 @@ class VisualDiffService {
 
   final VisualDiffRepository _repository;
   final CcPaths _paths;
+  final OneShotConfinement _confinement;
   final String? _flutterBinary;
 
   /// Durable review snapshot catalog hook; checkout goldens remain excluded.
@@ -89,9 +97,10 @@ class VisualDiffService {
   /// at [headSha]) by rendering goldens at head, checking out [baseSha] and
   /// rendering again, then restoring head. Returns either the snapshots or an
   /// honest unavailability reason. The worktree is throwaway, so the internal
-  /// checkouts are safe.
+  /// checkouts are safe. [requestedByUserId] asked for the review.
   Future<VisualDiffOutcome> compute({
     required String workspaceId,
+    required String? requestedByUserId,
     required String repoId,
     required String prExternalId,
     required String repoPath,
@@ -104,21 +113,34 @@ class VisualDiffService {
       return VisualDiffOutcome.unavailable(reason);
     }
     final flutter = (await _resolveFlutter())!;
+    final spawn = await _confinement.spawnFor(
+      workspaceId: workspaceId,
+      requestedByUserId: requestedByUserId,
+      workdir: repoPath,
+    );
+    if (spawn == null) {
+      return VisualDiffOutcome.unavailable(
+        'no sandbox on this server, and only its owner may run a PR\'s tests '
+        'unsandboxed',
+      );
+    }
 
     // Render goldens offscreen at both SHAs. A harness/subprocess failure
     // degrades to "unavailable", never a crash and never a silent pass.
     Map<String, Uint8List> baseGoldens;
     Map<String, Uint8List> headGoldens;
     try {
-      headGoldens = await _renderGoldens(flutter, repoPath);
+      headGoldens = await _renderGoldens(flutter, repoPath, spawn);
       await _checkout(git, repoPath, baseSha);
-      baseGoldens = await _renderGoldens(flutter, repoPath);
+      baseGoldens = await _renderGoldens(flutter, repoPath, spawn);
       await _checkout(git, repoPath, headSha);
     } catch (e) {
       CcInfraLog.warning('visual_diff: golden render failed: $e');
       // Best-effort restore to head so the worktree isn't left on base.
       await _checkout(git, repoPath, headSha).catchError((_) {});
       return VisualDiffOutcome.unavailable('golden harness error');
+    } finally {
+      await spawn.release();
     }
 
     if (baseGoldens.isEmpty && headGoldens.isEmpty) {
@@ -236,12 +258,20 @@ class VisualDiffService {
   Future<Map<String, Uint8List>> _renderGoldens(
     String flutter,
     String repoPath,
+    OneShotSpawn spawn,
   ) async {
+    final command = await spawn.prepare([
+      flutter,
+      'test',
+      '--update-goldens',
+      '--no-pub',
+    ]);
     final result =
         await ChildProcess.run(
-          flutter,
-          ['test', '--update-goldens', '--no-pub'],
+          command.executable,
+          command.argv,
           workingDirectory: repoPath,
+          environment: command.environment,
           toolchain: true,
         ).timeout(
           testTimeout,

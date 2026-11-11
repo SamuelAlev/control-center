@@ -1,5 +1,6 @@
 import 'package:cc_infra/src/network/github_graphql_client.dart';
 import 'package:cc_infra/src/network/github_pr_client.dart';
+import 'package:cc_infra/src/network/models/github_graphql_results.dart';
 import 'package:cc_infra/src/network/models/github_issue_comment.dart';
 import 'package:cc_infra/src/network/models/github_review_comment.dart';
 

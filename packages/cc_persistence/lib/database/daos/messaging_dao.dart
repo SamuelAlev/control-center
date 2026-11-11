@@ -162,9 +162,8 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
   /// writes its transcript on every chunk. Nothing that renders a list reads
   /// `segments` from this row: a live turn comes from the relay, a finished
   /// one from [getMessageById]. The stripped text is written with the row, so
-  /// this select does not parse it. A row that predates that write still
-  /// falls through to the JSON strip. [getMessages] and [getMessageById] keep
-  /// the array. History pages and in-space search use this list too.
+  /// this select does not parse it; a row without it lists no metadata.
+  /// [getMessages] and [getMessageById] keep the array. History pages and in-space search use this list too.
   late final String _messageColumnsLite = _liteColumns();
 
   /// Column list selected by [watchMessages] and the other list reads.
@@ -178,27 +177,11 @@ class MessagingDao extends DatabaseAccessor<WorkspaceDatabase>
   /// names would be ambiguous there.
   String _liteColumns([String? qualifier]) {
     final prefix = qualifier == null ? '' : '$qualifier.';
-    final metadata = '${_liteMetadataSql(prefix)} AS metadata';
+    final metadata = '${prefix}list_metadata AS metadata';
     return conversationMessagesTable.$columns
         .where((c) => c.name != 'embedding' && c.name != 'list_metadata')
         .map((c) => c.name == 'metadata' ? metadata : '$prefix${c.name}')
         .join(', ');
-  }
-
-  /// `list_metadata` when the write stamped it. Otherwise the strip the list
-  /// used to do in SQL, so a row inserted around the migration still hides
-  /// its transcript. SQLite evaluates `CASE` left to right, so a stamped row
-  /// never reads the metadata column.
-  String _liteMetadataSql(String prefix) {
-    final list = '${prefix}list_metadata';
-    final meta = '${prefix}metadata';
-    return 'CASE WHEN $list IS NOT NULL THEN $list ELSE '
-        "CASE WHEN json_type($meta, '\$.segments') IS NULL THEN $meta "
-        'ELSE json_set('
-        "json_remove($meta, '\$.segments'), "
-        "'\$.segments_elided', json('true'), "
-        "'\$.segment_count', json_array_length($meta, '\$.segments')"
-        ') END END';
   }
 
   /// Watches the messages of one conversation ordered by creation time.
@@ -783,17 +766,13 @@ LIMIT 1
 
   /// Every summary row in a conversation, oldest first, without transcripts.
   ///
-  /// Compaction messages, plus legacy system rows whose metadata says
-  /// `compacted: true`. The JSON check is only on `system` rows. A summary
-  /// whose `compacted` column is set still has to be returned: the verbatim
-  /// tail skips that column, and the prompt would otherwise lose the summary.
+  /// The compaction messages. A summary whose `compacted` column is set still
+  /// has to be returned: the verbatim tail skips that column, and the prompt
+  /// would otherwise lose the summary.
   String get contextSummarySql =>
       'SELECT $_messageColumnsLite '
       'FROM conversation_messages '
-      'WHERE conversation_id = ? AND reverted = 0 AND ('
-      "message_type = 'compaction' OR ("
-      "message_type = 'system' AND "
-      "json_type(metadata, '\$.compacted') = 'true')) "
+      "WHERE conversation_id = ? AND reverted = 0 AND message_type = 'compaction' "
       'ORDER BY created_at ASC, rowid ASC';
 
   /// Summaries for [contextSummarySql].
@@ -1104,36 +1083,16 @@ LIMIT 1
             ..where((t) => t.conversationId.equals(conversationId)))
           .go();
 
-  /// The conversation's current branch tip, or the newest message when the
-  /// conversation predates the tree.
-  ///
-  /// Falls back rather than returning null so an existing conversation joins
-  /// the tree on its next message instead of starting a second root beside
-  /// its own history.
+  /// The conversation's current branch tip, or null when it has none.
   Future<String?> currentLeaf(String conversationId) async {
     final row = await (select(
       conversationsTable,
     )..where((t) => t.id.equals(conversationId))).getSingleOrNull();
     final pointer = row?.leafMessageId;
-    if (pointer != null && pointer.isNotEmpty) {
-      return pointer;
-    }
-    final newest =
-        await (select(conversationMessagesTable)
-              ..where((t) => t.conversationId.equals(conversationId))
-              ..where((t) => t.reverted.equals(false))
-              ..orderBy([
-                (t) => OrderingTerm(
-                  expression: t.createdAt,
-                  mode: OrderingMode.desc,
-                ),
-              ])
-              ..limit(1))
-            .getSingleOrNull();
-    return newest?.id;
+    return pointer == null || pointer.isEmpty ? null : pointer;
   }
 
-  /// Points a conversation at [messageId] (null = the newest message).
+  /// Points a conversation at [messageId] (null = no tip).
   Future<void> setLeaf(String conversationId, String? messageId) =>
       (update(conversationsTable)..where((t) => t.id.equals(conversationId)))
           .write(ConversationsTableCompanion(leafMessageId: Value(messageId)));
@@ -1330,8 +1289,8 @@ LIMIT 1
   /// with it.
   Future<void> deleteSpaceCascade(String spaceId) => transaction(() async {
     await (delete(spacesTable)..where((t) => t.id.equals(spaceId))).go();
-    // Belt and braces for a row whose FK somehow did not cascade (a legacy
-    // file created before the constraint, or `foreign_keys` off).
+    // Belt and braces for a row whose FK did not cascade (`foreign_keys`
+    // off on this connection).
     await (delete(
       conversationMessagesTable,
     )..where((t) => t.spaceId.equals(spaceId))).go();

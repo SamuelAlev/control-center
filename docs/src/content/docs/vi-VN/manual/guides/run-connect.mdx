@@ -2,7 +2,7 @@
 title: Chạy máy chủ Connect
 description: Chạy Control Center Connect của riêng bạn từ ảnh Docker cc-connect, hoặc gắn nó trong cc_server, để các máy chủ của bạn đăng nhập người dùng qua những ứng dụng nhà cung cấp mà bạn đăng ký.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/chay-may-chu-connect
-sourceHash: 3a8e908f4276748d69e874aec46c35c2f53d4e62
+sourceHash: ddd0eb741963737a0442a50894c3f889376765e2
 ---
 
 Control Center Connect chạy các đăng nhập nhà cung cấp (GitHub, Google Calendar, Linear,
@@ -44,7 +44,7 @@ là `CONNECT_PUBLIC_URL` của bạn.
 
 | Nhà cung cấp  | Đăng ký                                                                                                                                                                                                                                                              | Giữ lại                                 |
 | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **GitHub App** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` với **Redirect on update** bật. Để **Request user authorization (OAuth) during installation** tắt: nếu bật, GitHub bỏ qua setup URL. Giữ **Expire user authorization tokens** bật | App id, slug, client id, client secret |
+| **Ứng dụng GitHub** | Callback URL `<base>/oauth/github/callback`. Setup URL `<base>/oauth/github/setup` với **Redirect on update** bật. Để **Request user authorization (OAuth) during installation** tắt: nếu bật, GitHub bỏ qua setup URL. Giữ **Expire user authorization tokens** bật | App id, slug, client id, client secret, a private key |
 | **Google**    | Một OAuth client loại **Web application** với redirect URI `<base>/oauth/google/callback`, và Google Calendar API đã được bật                                                                                                                                       | Client id, client secret                |
 | **Linear**    | Một ứng dụng OAuth với callback URL `<base>/oauth/linear/callback` và `<base>/oauth/linear_app/callback`                                                                                                                                                              | Chỉ client id                           |
 | **Slack**     | Redirect URL `<base>/oauth/slack_oidc/callback` và `<base>/oauth/slack/callback`. Event Subscriptions tại `<base>/v1/hooks/slack/events` (`app_mention`, `message.*`, `assistant_thread_*`, `app_uninstalled`, `tokens_revoked`). Slash command tại `<base>/v1/hooks/slack/commands`. Bật token rotation | App id, client id, client secret, signing secret |
@@ -54,9 +54,9 @@ Hãy cấp cho GitHub App các quyền kho mã sau: **Metadata** chỉ đọc, *
 statuses** chỉ đọc. Thêm quyền tổ chức **Members** chỉ đọc cho các yêu cầu review của nhóm.
 Webhook có thể tắt: các máy chủ tự thăm dò.
 
-Connect không bao giờ cần khóa riêng của GitHub App. Thay vào đó nó cấp các token một-kho từ
-đăng nhập của chính người dùng. Linear cũng không cần bí mật: Connect trả mã về cho máy chủ, và
-máy chủ tự hoàn tất trao đổi.
+Connect cần khóa riêng của GitHub App (**Generate a private key** trong cài đặt của App). Nó ký các yêu cầu của App để tìm cài đặt bao phủ một kho mã (hoặc, khi kho mã không có cài đặt nào, cài đặt của chủ sở hữu) và cấp một token cài đặt cho đúng một kho mã, mỗi lần chỉ sau khi đăng nhập của người yêu cầu đã chứng minh họ có quyền truy cập kho mã đó.
+
+Mọi máy chủ trên Connect của bạn dùng chung bot của App. Nó có thể đọc, bình luận, gắn nhãn và thả cảm xúc với tư cách bot cho bất kỳ máy chủ nào trong số đó. Việc review pull request với tư cách bot chỉ được phép cho các máy chủ bạn liệt kê trong `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` (id cài đặt của chúng, phân tách bằng dấu phẩy); mọi máy chủ khác đăng review bằng token của chính người review. Việc push không bao giờ được thực hiện với tư cách bot. Để cho phép một máy chủ của riêng bạn review với tư cách bot, hãy thêm id cài đặt của nó vào đó rồi khởi động lại. Giữ tệp khóa như một bí mật, giống khóa niêm phong. Linear không cần bí mật: Connect trả mã về cho máy chủ, và máy chủ tự hoàn tất trao đổi.
 
 ## Bước 3: Thu thập id cài đặt
 
@@ -109,13 +109,15 @@ docker run -d --name cc-connect -p 8790:8790 \
   -e CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd \
   -e CONNECT_GITHUB_CLIENT_SECRET_FILE=/run/secrets/github \
   -v "$PWD/github_secret:/run/secrets/github:ro" \
+  -e CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/run/secrets/github_key \
+  -v "$PWD/github_app_key.pem:/run/secrets/github_key:ro" \
   -v cc-connect-data:/data \
   ghcr.io/samuelalev/cc-connect:latest
 ```
 
-Hãy trỏ reverse proxy của bạn tới cổng `8790`. Ảnh chạy với một người dùng không có đặc quyền,
-giữ trạng thái trong volume `/data` và có health check tích hợp (`cc-connect --healthcheck`, thăm
-dò `/healthz`).
+Hãy trỏ reverse proxy của bạn tới cổng `8790`, và đặt `CONNECT_TRUST_PROXY` thành số chặng proxy đứng trước Connect để giới hạn theo địa chỉ của nó thấy địa chỉ của từng client. Ảnh chạy với một người dùng không có đặc quyền, giữ trạng thái trong volume `/data` và có health check tích hợp (`cc-connect --healthcheck`, thăm dò `/healthz`: tiến trình có trả lời). `/readyz` còn kiểm tra rằng các kho trạng thái và ràng buộc của nó phản hồi, và rằng Redis, khi được dùng, vẫn chạy `maxmemory-policy noeviction`; hãy trỏ kiểm tra sẵn sàng của orchestrator tới đó.
+
+Trang đồng ý đăng nhập trả về một form post mà Connect chỉ chấp nhận từ chính trang của nó: `Sec-Fetch-Site`, khi được gửi, phải là `same-origin`, và `Origin`, khi được gửi, phải là origin của `CONNECT_PUBLIC_URL`; một post không có cả hai bị từ chối. Vì vậy proxy phải chuyển tiếp nguyên vẹn cả hai header, và `CONNECT_PUBLIC_URL` phải là địa chỉ mà trình duyệt của mọi người thực sự dùng. Nếu việc tiếp tục trên trang đó luôn hiện "Liên kết này đã hết hạn", và nhật ký có `oauth.done_refused` với lý do `origin` hoặc `no_origin`, thì một trong hai header đó đang bị tắt.
 
 Connect từ chối khởi động (mã thoát `78`) khi cấu hình của nó mở, không an toàn hoặc còn dở dang,
 và in ra biến nào sai. Thiếu danh sách cho phép, một địa chỉ `http` không phải loopback, một khóa
@@ -130,7 +132,8 @@ ra `Health: ok` cùng các làn tương tự.
 Một máy chủ có thể tự lưu trữ Connect thay vì dùng một container riêng. Dịch vụ được gắn chính là
 dịch vụ mà ảnh chạy.
 
-1. Đặt các biến `CONNECT_*` vào tệp `.env` của máy chủ (hoặc môi trường của nó), như ở Bước 5
+1. Đặt các biến `CONNECT_*` vào tệp `.env` của máy chủ, như ở Bước 5.
+   Máy chủ từ chối khởi động khi một bí mật Connect, kể cả `CONNECT_SENTRY_DSN`, được export trong môi trường của nó
 2. Thêm `CC_SERVER_CONNECT_HOST=on`
 3. Khởi động lại máy chủ. Nhật ký của nó in ra `embedded Connect at <url>`
 
@@ -142,6 +145,7 @@ CONNECT_GITHUB_APP_ID=123456
 CONNECT_GITHUB_APP_SLUG=acme-control-center
 CONNECT_GITHUB_CLIENT_ID=Iv23li0123456789abcd
 CONNECT_GITHUB_CLIENT_SECRET=<secret>
+CONNECT_GITHUB_APP_PRIVATE_KEY_FILE=/etc/cc/github_app_key.pem
 ```
 
 Connect khi đó được phục vụ tại `<server>/connect`:
@@ -172,9 +176,10 @@ xoay vòng.
 | `CONNECT_PUBLIC_URL`            | bắt buộc  | URL công khai chuẩn. HTTPS, hoặc `http` chỉ trên loopback. Một đường dẫn nghĩa là được gắn. Không có query hay fragment        |
 | `CONNECT_ALLOWED_INSTALLS`      | bắt buộc  | Các id cài đặt phân tách bằng dấu phẩy. `*` chỉ được chấp nhận cùng `CONNECT_SIGNED_CONFIG_FILE`                                 |
 | `CONNECT_DENY_INSTALLS`         |           | Các id cài đặt bị từ chối ngay cả khi đã được cho phép                                                                           |
-| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Các id chủ sở hữu GitHub dạng số. Khi đặt, token kho mã chỉ được cấp cho các kho mã do họ sở hữu                               |
+| `CONNECT_GITHUB_ALLOWED_OWNERS` |           | Các id chủ sở hữu GitHub dạng số. Khi đặt, token kho mã chỉ được cấp cho các kho mã do họ sở hữu. Nó không giới hạn ai đăng nhập: một người được phép dùng Connect này vẫn nhận token người dùng App riêng của họ. Để chỉ phục vụ một tổ chức, hãy giữ App riêng cho tổ chức đó |
+| `CONNECT_GITHUB_REVIEW_BOT_INSTALLS` |      | Các id cài đặt được phép để bot của App review pull request. Mặc định rỗng; `*` bị từ chối, và mỗi id cũng phải được cho phép |
 | `CONNECT_HOST`, `CONNECT_PORT`  | `0.0.0.0`, `8790` | Địa chỉ bind và cổng                                                                                                      |
-| `CONNECT_TRUST_PROXY`           | `0`       | Số chặng proxy đáng tin trong `X-Forwarded-For` (0 đến 8). Chỉ dùng cho giới hạn tốc độ theo địa chỉ                              |
+| `CONNECT_TRUST_PROXY`           | `0`       | Số chặng proxy đáng tin trong `X-Forwarded-For` (0 đến 8). Chỉ dùng cho các giới hạn theo địa chỉ, gợi ý mạng của trang đăng nhập và địa chỉ được ghi nhật ký. Đứng sau proxy, `0` coi mọi client là proxy, và nhật ký nói điều đó một lần                              |
 
 ### Các làn nhà cung cấp
 
@@ -182,6 +187,7 @@ xoay vòng.
 | --------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------- |
 | `CONNECT_GITHUB_APP_ID`, `CONNECT_GITHUB_APP_SLUG`, `CONNECT_GITHUB_CLIENT_ID` |           | GitHub App                                                                  |
 | `CONNECT_GITHUB_CLIENT_SECRET`                                              |           | Bí mật, dual                                                                |
+| `CONNECT_GITHUB_APP_PRIVATE_KEY`                                            |           | Bí mật. Khóa riêng của App (PEM)                                            |
 | `CONNECT_GOOGLE_CLIENT_ID`, `CONNECT_GOOGLE_CLIENT_SECRET`                  |           | Client Google. Bí mật là dual                                               |
 | `CONNECT_LINEAR_CLIENT_ID`                                                  |           | Ứng dụng Linear. Không có bí mật                                            |
 | `CONNECT_SLACK_APP_ID`, `CONNECT_SLACK_CLIENT_ID`                           |           | Ứng dụng Slack                                                              |
@@ -199,12 +205,12 @@ xoay vòng.
 | `CONNECT_SEAL_BACKEND`                                    | `local`                    | `local` hoặc `gcp-kms`                                                                                     |
 | `CONNECT_SEAL_KEYS`                                       |                            | Bí mật, bắt buộc với `local`. Các mục `kid:key` phân tách bằng dấu phẩy, mới nhất trước; các mục cũ hơn vẫn giải mã được |
 | `CONNECT_KMS_KEY`                                         |                            | `projects/…/locations/…/keyRings/…/cryptoKeys/…`, bắt buộc với `gcp-kms`                                   |
-| `CONNECT_STATE`                                           | `memory`                   | `memory` cho một instance, `redis` cho nhiều instance                                                      |
-| `CONNECT_REDIS_URL`                                       |                            | Bí mật. `redis://` hoặc `rediss://`                                                                        |
+| `CONNECT_STATE`                                           | `memory`                   | `memory` cho một instance, `redis` cho nhiều instance. Kho trạng thái đầy sẽ từ chối đăng nhập và yêu cầu mới thay vì quên một mục còn hiệu lực                                                      |
+| `CONNECT_REDIS_URL`                                       |                            | Bí mật. `redis://` hoặc `rediss://`. Redis 6.2 trở lên với `maxmemory-policy noeviction`, cả hai được kiểm tra khi khởi động                                                                        |
 | `CONNECT_REDIS_CA_FILE`                                   |                            | Bundle CA cho `rediss://`                                                                                  |
-| `CONNECT_BINDINGS`                                        | `file`                     | Nơi lưu các ràng buộc cài đặt GitHub: `file` hoặc `firestore`                                             |
-| `CONNECT_DATA_DIR`                                        | `data` (`/data` trong ảnh) | Chứa `bindings.json`                                                                                       |
-| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | cơ sở dữ liệu `(default)`  | Dùng cho `CONNECT_BINDINGS=firestore`                                                                      |
+| `CONNECT_BINDINGS`                                        | `file`                     | Nơi lưu các ràng buộc đội Slack: `file` hoặc `firestore`                                             |
+| `CONNECT_DATA_DIR`                                        | `data` (`/data` trong ảnh) | Chứa `bindings.json`. Bị khóa bởi một Connect: Connect thứ hai trên cùng thư mục sẽ không khởi động                                                                                       |
+| `CONNECT_FIRESTORE_PROJECT`, `CONNECT_FIRESTORE_DATABASE` | cơ sở dữ liệu `(default)`  | Dùng cho `CONNECT_BINDINGS=firestore`. Connect không khởi động khi Firestore không phản hồi                                                                      |
 
 ### Cấu hình, nhật ký và giới hạn
 
@@ -214,19 +220,37 @@ xoay vòng.
 | `CONNECT_CONFIG_PUBLIC_KEYS`            |                    | Các khóa mà cấu hình đã ký phải xác minh được                                                       |
 | `CONNECT_CONFIG_EPOCH`                  | `1`                | Epoch của cấu hình mà một Connect tự lưu trữ tạo ra                                                 |
 | `CONNECT_LOG_HMAC_KEY`                  | ngẫu nhiên mỗi tiến trình | Bí mật. Đặt nó để các thẻ thay cho id cài đặt trong nhật ký ổn định qua các lần khởi động lại và các instance |
+| `CONNECT_SENTRY_DSN`                    |                    | Bí mật. Một DSN Sentry https mà các dòng lỗi được báo cáo tới: loại lỗi, khung stack, route và id yêu cầu, không bao giờ là thông điệp, nội dung hay header |
+| `CONNECT_SENTRY_ENVIRONMENT`            | `self-hosted`      | Môi trường Sentry                                                                                   |
 | `CONNECT_VERSION`, `CONNECT_IMAGE_DIGEST` |                  | Được báo cáo bởi `/v1/version`                                                                      |
 | `CONNECT_RATE_INSTALL_PER_MINUTE`       | `600`              | Số yêu cầu cho mỗi cài đặt                                                                          |
-| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Số yêu cầu cho mỗi địa chỉ                                                                          |
-| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Số yêu cầu cho toàn bộ dịch vụ                                                                      |
+| `CONNECT_RATE_IP_PER_MINUTE`            | `300`              | Số yêu cầu cho mỗi địa chỉ (một địa chỉ IPv6 tính theo /64)                                                                          |
+| `CONNECT_RATE_GLOBAL_PER_SECOND`        | `500`              | Số yêu cầu cho toàn bộ instance                                                                      |
+| `CONNECT_RATE_SLACK_HOOK_IP_PER_MINUTE` | `600`              | Lượt gửi sự kiện và lệnh Slack cho mỗi địa chỉ, được đếm riêng với các yêu cầu khác               |
+| `CONNECT_RATE_SLACK_HOOK_GLOBAL_PER_SECOND` | `100`          | Lượt gửi sự kiện và lệnh Slack cho toàn bộ instance                                                 |
 | `CONNECT_RATE_SLACK_TEAM_PER_MINUTE`    | `600`              | Sự kiện Slack cho mỗi team                                                                          |
 | `CONNECT_RATE_KLIPY_PER_MINUTE`         | `120`              | Số lượt tìm GIF cho mỗi cài đặt                                                                     |
+| `CONNECT_RATE_KLIPY_IP_PER_MINUTE`      | `240`              | Lượt tìm GIF cho mỗi địa chỉ, trên mọi máy chủ                                                      |
+| `CONNECT_RATE_LOGINS_IP_PER_10_MINUTES` | `60`               | Số đăng nhập đã bắt đầu cho mỗi địa chỉ                                                             |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_PER_HOUR` | `30`         | Số token GitHub đã cấp cho mỗi tài khoản GitHub trên một máy chủ (đăng nhập, làm mới, token kho mã) |
+| `CONNECT_RATE_GITHUB_TOKENS_ACCOUNT_CEILING_PER_HOUR` | 4 × mục trên (`120`) | Như trên cho mỗi tài khoản GitHub trên mọi máy chủ                                        |
+| `CONNECT_RATE_GITHUB_TOKENS_IP_PER_HOUR` | `600`             | Số token GitHub đã cấp cho mỗi địa chỉ                                                              |
+| `CONNECT_RATE_GITHUB_EXCHANGE_CEILING_PER_HOUR` | `500`      | Đăng nhập GitHub mới cho toàn bộ ứng dụng                                                           |
+| `CONNECT_RATE_GITHUB_APP_MINTS_INSTALL_PER_HOUR` | `120`     | Token bot cho mỗi máy chủ                                                                           |
+| `CONNECT_RATE_GITHUB_APP_MINTS_ACCOUNT_PER_HOUR` | `240`     | Token bot cho mỗi tài khoản GitHub yêu cầu, trên mọi máy chủ                                        |
+| `CONNECT_RATE_GITHUB_APP_CEILING_PER_HOUR` | `3000`          | Token bot cho toàn bộ ứng dụng                                                                      |
+| `CONNECT_RATE_GITHUB_TOKEN_CEILING_PER_HOUR` | `1500`        | Làm mới và token kho mã cho toàn bộ ứng dụng. Đăng nhập mới có giới hạn riêng ở trên               |
+| `CONNECT_GITHUB_TOKEN_CAP_WARN`         | `10`               | Số token kho mã còn hiệu lực mà một tài khoản GitHub được giữ trước khi Connect ghi cảnh báo        |
+| `CONNECT_RATE_RETIRE_IP_PER_HOUR`       | `10`               | Id cài đặt bị thu hồi cho mỗi địa chỉ (theo /48 với IPv6)                                           |
+
+Một lời gọi vượt giới hạn được trả lời `rate_limited`. Các máy chủ thử lại sau và không bao giờ đăng xuất ai vì điều đó.
 
 ## Chạy nhiều hơn một instance
 
 Một instance với `CONNECT_STATE=memory` là đủ cho hầu hết các tổ chức. Nhiều instance phía sau
-một địa chỉ cần `CONNECT_STATE=redis`, và hoặc một `CONNECT_DATA_DIR` dùng chung hoặc
+một địa chỉ cần `CONNECT_STATE=redis` và
 `CONNECT_BINDINGS=firestore`, để một đăng nhập bắt đầu trên instance này có thể hoàn tất trên
-instance khác.
+instance khác và mọi instance thấy cùng các ràng buộc Slack và cùng id cài đặt đã thu hồi. Một `CONNECT_DATA_DIR` dùng chung thì không hoạt động: Connect đầu tiên sẽ khóa nó. Các giới hạn theo cài đặt, theo địa chỉ và theo instance là riêng cho từng instance; các giới hạn đăng nhập, token GitHub, token bot, lượt tìm GIF theo địa chỉ, thu hồi và đội Slack được chia sẻ qua kho trạng thái.
 
 ## Xoay bí mật nhà cung cấp
 
@@ -250,19 +274,21 @@ dụng mới**. Hãy báo chủ máy chủ trước khi bạn chuyển, để h�
 ## Chặn một máy chủ
 
 Thêm id cài đặt của nó vào `CONNECT_DENY_INSTALLS` rồi khởi động lại. Chủ của nó sẽ thấy
-"Connect đã chặn id cài đặt của máy chủ này" và mọi đăng nhập qua Connect trên đó sẽ dừng lại.
+"Connect đã chặn ID cài đặt của máy chủ này. Hãy liên hệ người vận hành máy chủ Connect của bạn." và mọi đăng nhập qua Connect trên đó sẽ dừng lại.
+
+Một máy chủ cũng thu hồi id cài đặt cũ của chính nó khi chủ của nó xoay khóa. Nó chứng minh id đó là của mình bằng một niêm phong thông tin xác thực mà Connect này đã tạo cho nó, nên chỉ một máy chủ đã từng đăng nhập ai đó mới có thể thu hồi một id. Connect giữ các id đã thu hồi mãi mãi, nên khóa cũ và mọi niêm phong được tạo cho nó đều ngừng hoạt động, và giải phóng các workspace Slack đang gắn với id cũ. Token đã cấp trước đó tự hết hạn: trong vòng 8 giờ với token của người, 1 giờ với token của bot. Connect giữ tối đa 100.000 id đã thu hồi; vượt quá mức đó, một lần xoay khóa bị từ chối và nhật ký ghi điều đó ở mức lỗi.
 
 ## Xử lý sự cố
 
 ### Một máy chủ báo Connect đã chặn nó
 
-Id cài đặt của nó không có trong `CONNECT_ALLOWED_INSTALLS`, hoặc nó có trong
-`CONNECT_DENY_INSTALLS`. Id đổi khi chủ máy chủ xoay khóa; hãy yêu cầu id mới.
+Id cài đặt của nó không có trong `CONNECT_ALLOWED_INSTALLS`, nó có trong
+`CONNECT_DENY_INSTALLS`, hoặc nó đã bị thu hồi bởi một lần xoay khóa. Id đổi khi chủ máy chủ xoay khóa; hãy yêu cầu id mới.
 
-### Một nhà cung cấp hiển thị là không khả dụng
+### Mọi đăng nhập vào một nhà cung cấp đều thất bại
 
-Một trong các biến của nó bị thiếu, nên Connect đã loại làn đó ra. Hãy kiểm tra nhật ký khởi động
-và các bảng ở trên. GitHub cần đủ bốn thứ là app id, slug, client id và client secret; Google
+Một trong các biến của nó có thể bị thiếu, nên Connect đã loại làn đó ra. Hãy kiểm tra nhật ký khởi động
+và các bảng ở trên. GitHub cần đủ năm thứ là app id, slug, client id, client secret và khóa riêng; Google
 cần cả client id lẫn client secret.
 
 ### Đăng nhập thất bại với lỗi không khớp redirect

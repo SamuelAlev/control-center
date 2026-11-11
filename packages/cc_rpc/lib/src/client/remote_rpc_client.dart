@@ -150,8 +150,7 @@ class RemoteRpcClient {
 
   /// The connected server's build identity from the last `initialize`
   /// response — its advertised version, git sha and repo-RPC catalog
-  /// version. Null before initialize completes or when the server predates
-  /// these fields (an old server is exactly the mismatch worth surfacing).
+  /// version. Null before initialize completes.
   ServerBuild? get serverBuild => _serverBuild;
   ServerBuild? _serverBuild;
 

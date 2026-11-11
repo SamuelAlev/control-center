@@ -2,6 +2,7 @@ import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/features/messaging/domain/value_objects/space_provisioning_status.dart';
 import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/providers/rpc_client_provider.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
 import 'package:control_center/features/messaging/presentation/ide/panels/pull_requests_section.dart';
 import 'package:control_center/features/messaging/providers/messaging_providers.dart';
 import 'package:control_center/features/messaging/providers/repo_changes_provider.dart';
@@ -80,7 +81,7 @@ class _ScmPullRequestsSectionState
           ? l10n.stackPublished
           : result.dirty
           ? l10n.stackSwitchDirty
-          : l10n.stackPublishFailed,
+          : repoRefusalOf(l10n, result.failure) ?? l10n.stackPublishFailed,
       variant: result.ok ? CcToastVariant.success : CcToastVariant.danger,
     );
   }
@@ -165,12 +166,7 @@ class _ScmPullRequestsSectionState
                   hasForgeRemote: repo.hasForgeRemote,
                   hasExistingPr: false,
                   dirtyFiles: changes.staged.length + changes.unstaged.length,
-                  statusKnown: changes.statusKnown,
-                  hasUpstream: changes.hasUpstream,
-                  ahead: changes.ahead,
                   aheadOfBase: changes.aheadOfBase,
-                  aheadOfBaseKnown: changes.aheadOfBaseKnown,
-                  branch: branch,
                 )) {
               action = CcMenuItem(
                 label: l10n.ideSourceControlCreatePr,

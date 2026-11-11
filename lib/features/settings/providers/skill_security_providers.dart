@@ -336,9 +336,7 @@ class RpcSkillSecurityControl {
   /// came from. Server-side these are already behind the scan gate, so every
   /// name returned is one a slash command can actually load.
   Future<List<RepoSkillDto>> repoSkills(String spaceId) async {
-    final data = await _client.call('skills.repoSkills', {
-      'space_id': spaceId,
-    });
+    final data = await _client.call('skills.repoSkills', {'space_id': spaceId});
     final list = (data['skills'] as List?) ?? const [];
     return [
       for (final e in list)
@@ -393,22 +391,23 @@ class RepoSkillDto {
 /// human naming a skill pays no such cost, and a space can hold several agents
 /// with different active repos, so there is no single "current" repo here.
 ///
-/// An older host without the op returns nothing rather than failing the
-/// composer.
-final repoSkillListProvider =
-    FutureProvider.family<List<RepoSkillDto>, String>((ref, spaceId) async {
-      if (spaceId.isEmpty) {
+/// A host without the op (a demo server) returns nothing rather than failing
+/// the composer.
+final repoSkillListProvider = FutureProvider.family<List<RepoSkillDto>, String>(
+  (ref, spaceId) async {
+    if (spaceId.isEmpty) {
+      return const [];
+    }
+    try {
+      return await ref.watch(skillSecurityControlProvider).repoSkills(spaceId);
+    } on RemoteRpcException catch (e) {
+      if (e.code == RpcErrorCodes.opUnknown) {
         return const [];
       }
-      try {
-        return await ref.watch(skillSecurityControlProvider).repoSkills(spaceId);
-      } on RemoteRpcException catch (e) {
-        if (e.code == RpcErrorCodes.opUnknown) {
-          return const [];
-        }
-        rethrow;
-      }
-    });
+      rethrow;
+    }
+  },
+);
 
 /// The control the settings UI drives — RPC-backed, talking to the connected
 /// host.

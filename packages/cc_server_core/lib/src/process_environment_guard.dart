@@ -1,3 +1,6 @@
+import 'package:cc_connect_core/cc_connect_core.dart'
+    show isConnectSecretEnvKey;
+
 /// Provider secrets the server takes only from its `.env` file or the settings
 /// UI, never from the exported process environment.
 ///
@@ -13,11 +16,13 @@ const List<String> refusedProcessSecrets = [
 ];
 
 /// Whether [key] is a provider secret the server refuses to boot with when it
-/// is exported: [refusedProcessSecrets] and every `SLACK_*SECRET*`.
+/// is exported: [refusedProcessSecrets], every `SLACK_*SECRET*`, and every
+/// secret of an embedded Connect ([isConnectSecretEnvKey]).
 bool isRefusedProcessSecret(String key) {
   final upper = key.toUpperCase();
   return refusedProcessSecrets.contains(upper) ||
-      (upper.startsWith('SLACK_') && upper.contains('SECRET'));
+      (upper.startsWith('SLACK_') && upper.contains('SECRET')) ||
+      isConnectSecretEnvKey(upper);
 }
 
 /// Thrown by `runCcServer` when the process environment exports a provider

@@ -1,8 +1,8 @@
 ---
 title: MCP sunucusunu kullanma
-description: Harici bir MCP istemcisini Control Center’ın araç sunucusuna yöneltin, bir bearer token ayarlayın ve yüzeyin neleri açığa çıkardığını bilin.
+description: Harici bir MCP istemcisini Control Center’ın araç sunucusuna yöneltin, bearer token’ını gönderin ve yüzeyin neleri açığa çıkardığını bilin.
 slug: tr-TR/kilavuz/nasil-yapilir/mcp-sunucusu
-sourceHash: d4ef1440c3d703a832e44c7d9010e9b46e4e08b6
+sourceHash: e5a2e01ca056d5d46cba2fbedb71d9557a79266a
 ---
 
 Bu kılavuz, harici bir MCP istemcisini — Claude Code, bir düzenleyici veya MCP
@@ -29,26 +29,41 @@ Yani varsayılan bir yerel kurulum `http://127.0.0.1:9030/mcp` adresindedir.
 2. **MCP sunucusu** kartını okuyun — kart, sunucunun çalışıyor mu durduruldu mu
    olduğunu ve dinlediği portu gösterir
 
-Yüzey, yeni bir kurulumda varsayılan olarak açıktır; bu yüzden bir loopback
-istemcisi hiçbir ayara dokunmadan çalışır. **Uygulama açılışında başlat**,
-yeniden başlatmadan sonra geri gelip gelmeyeceğini denetler; **Başlat** /
-**Durdur** ise bu tercihi değiştirmeyen oturum denetimleridir.
+Yüzey, yeni bir kurulumda varsayılan olarak açıktır. Kartın token’ını yalnızca
+sunucu sahibi görür ve uç noktayı yalnızca o başlatabilir ya da durdurabilir.
+**Uygulama açılışında başlat**, yeniden başlatmadan sonra geri gelip gelmeyeceğini
+denetler; **Başlat** / **Durdur** ise bu tercihi değiştirmeyen oturum denetimleridir.
 
 Sunucu varsayılan olarak loopback’e bağlanır; bu nedenle, `--bind any` ile
 başlatmadığınız sürece uç noktaya yalnızca `cc_server`’ın çalıştığı makineden
 erişilebilir.
 
+## Token’ı alın
+
+Her istek, her makineden, loopback dahil, sunucunun MCP token’ını göndermelidir.
+Sunucu token’ı ilk başlatıldığında oluşturur. Bunu kapatmanın ve temizlemenin bir
+yolu yoktur.
+
+1. **Ayarlar → Sunucu → MCP sunucuları** bölümünde **Kimlik doğrulama token'ı**
+   satırını bulun
+2. **Token’ı göster** düğmesine basın ve kopyalayın
+3. Değiştirmek için **Token’ı yenile** düğmesine basın. Sunucu yeni token’a hemen
+   geçer ve eski token’ı kullanan her istemci, ona yeni token’ı verene kadar reddedilir
+
 ## Bir istemci bağlama
 
-İstemcinizi Streamable HTTP uç noktasına yöneltin. Yapılandırmanın tam şekli
-istemcinizin işidir; URL her iki durumda da aynıdır.
+İstemcinizi Streamable HTTP uç noktasına yöneltin ve token’ı her istekte, `GET /sse`
+dahil, `Authorization: Bearer <token>` olarak gönderin. Bunu gönderecek başka bir yol
+yoktur: URL içindeki bir token kabul edilmez. Yapılandırmanın tam şekli istemcinizin
+işidir.
 
 ```json
 {
   "mcpServers": {
     "control-center": {
       "type": "http",
-      "url": "http://127.0.0.1:9030/mcp"
+      "url": "http://127.0.0.1:9030/mcp",
+      "headers": { "Authorization": "Bearer <token>" }
     }
   }
 }
@@ -70,24 +85,20 @@ aynı sunucu projeden de keşfedilip iki kez kaydedilmez.
 Kontrol noktası: istemciden araçlarını listelemesini isteyin. Biletleri, alanları,
 belleği, kod grafiğini ve incelemeyi kapsayan `mcp__*` girdileri görmelisiniz.
 
-## MCP’yi ana makine dışına sunma
+## Uç noktanın neyi reddettiği
 
-1. **Ayarlar → Sunucu → MCP sunucuları** sayfasında, **Kimlik doğrulama token’ı**
-   satırında **Ayarla**’ya basın ve bir token yapıştırın
-2. Her `POST /mcp` isteğinde bunu `Authorization: Bearer <token>` olarak gönderin
+Token, sunucudaki her aracı açar; bu yüzden uç nokta, bir web sayfasının
+gönderebileceği her şeyi de token’a bakmadan önce reddeder:
 
-Token’sız bir yüzey, loopback dışından gelen her çağrıyı 403 ile reddeder. Bu,
-tasarım gereği reddetme yönünde çalışır: ana makine dışına hizmet vermeyi asıl
-mümkün kılan şey token’dır.
+| İstek | Yanıt |
+| ----- | ----- |
+| Bu makinedeki bir sayfa olmayan bir `Origin` başlığı (`http://localhost`, `http://127.0.0.1` ya da `http://[::1]`, herhangi bir port) | `403`, "Kaynaklar arası istekler kabul edilmez" |
+| Bu dinleyicinin loopback adresi ve portu ile sunucunun genel ana makine adı dışında kalan bir `Host` başlığı | `403`, "Bilinmeyen ana makine" |
+| `application/json` olmayan bir gövdeye sahip `POST` | `415` |
+| Token yok ya da yanlış | `401` |
 
-Token değişiklikleri canlı yüzeye anında uygulanır — yeniden başlatma gerekmez.
-
-:::note[`GET /sse` token’ı sorgu dizesinde alır]
-Bildirim akışı da diğer tüm rotalar gibi token denetiminden geçer, ancak bir
-tarayıcı `EventSource`’u bir `Authorization` başlığı gönderemez — bu yüzden
-`/sse` token’ı `?token=<token>` olarak da kabul eder. Token olmadan 401 yanıtı
-verir.
-:::
+MCP’yi ana makine dışına sunmak için sunucuyu `--bind any` ile başlatın ve token’ı
+diğer makineden, sunucuya genel ana makine adıyla hitap ederek gönderin.
 
 ## Her çağrıyı bir çalışma alanına kapsamlandırma
 
@@ -127,6 +138,30 @@ harici bir MCP istemcisi, önbelleğe aldığı listesinde bulunmayan bir aracı
 çağırmayı reddeder; dolayısıyla araçları gizlemek, onları düzenlemek yerine
 bozar.
 
+## Kişisel MCP sunucuları sahibinde kalır
+
+Bu kılavuz Control Center’ın kendi uç noktası hakkındadır. Diğer yön, Control Center’ın
+çalıştırdığı ajanlara verdiği MCP sunucularıdır ve **Ayarlar → Sunucu → MCP sunucuları
+→ Harici MCP sunucuları** altında listelenir. Claude, Codex, Cursor, Gemini, VS Code,
+Windsurf, OpenCode için sunucu makinesinde ya da bir `.mcp.json` içinde yapılandırılmış
+sunucular orada otomatik olarak bulunur.
+
+Bu keşfedilen sunucular sunucu kullanıcısının kendi araç yapılandırmasından gelir ve o
+kullanıcının kimliği ve kimlik bilgileriyle hareket eder; bu yüzden sunucu sahibine aittir:
+
+- Yalnızca sunucu sahibinin başlattığı ya da sorumlu olduğu yerleşik harness
+  çalıştırmalarında kullanılabilirler; buna sahibin sorumlu olduğu bir çalışma
+  alanındaki otomasyon da dahildir.
+- Bir üyenin çalıştırması, bir üyeye bağlı otomasyon ve kaydedilmiş bir sahibi olmayan
+  bir sunucudaki her çalıştırma bunlardan hiçbirini almaz. Orada araçlar listelenmez,
+  çağrılamaz ve araç aramasında görünmez.
+- Bu uç nokta, kim olursa olsun, sahibinin token’ı dahil, bunları hiçbir zaman listelemez,
+  çağırmaz ya da aramaz; kaynaklarını ya da istemlerini de aktarmaz. Bu nedenle MCP
+  üzerinden Control Center’a ulaşan bir ajan CLI’si, örneğin Claude Code, bunları Control
+  Center üzerinden de almaz; kendi yapılandırmasını kullanır.
+
+Çalışma alanı için yapılandırılmış MCP sunucuları bundan etkilenmez.
+
 ## Sorun giderme
 
 ### İstemci hiç araç görmüyor
@@ -136,9 +171,21 @@ bozar.
 - Claude Code’da `--mcp-config` ve `--strict-mcp-config` seçeneklerini
   geçtiğinizi kontrol edin
 
-### Sunucu olmayan bir makineden 403
+### 401 Unauthorized
 
-Yapılandırılmış bir bearer token yok. Bir tane ayarlayın ve gönderin.
+İstek bir token taşımadı ya da eski bir token taşıdı. **Kimlik doğrulama token'ı**
+satırındaki geçerli token’ı kopyalayın ve `Authorization: Bearer <token>` olarak
+gönderin. URL’deki bir token yok sayılır.
+
+### Daha önce çalışan bir istemciden 403
+
+İstek, bir web sayfasından gelen bir `Origin` ya da sunucunun yanıt vermediği bir `Host`
+taşıdı. Uç noktayı bir tarayıcı sayfasından değil, bir istemciden, sunucunun loopback
+adresiyle ya da genel ana makine adıyla çağırın.
+
+### 415 Unsupported Media Type
+
+`POST /mcp` gövdelerini `application/json` olarak gönderin.
 
 ### Bir araç çağrısı “Missing or invalid argument: workspace_id” hatasıyla başarısız oluyor
 

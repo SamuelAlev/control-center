@@ -2,7 +2,7 @@
 title: Folosește revizuirea bazată pe IA
 description: Rulează pipeline-ul pr_review pe un PR, citește constatările și verdictul, apoi publică revizuirea pe GitHub.
 slug: ro-RO/manual/ghiduri-practice/revizuire-ia
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 Acest ghid îți arată cum să pui agenți recenzori să revizuiască un pull request și
@@ -120,7 +120,10 @@ rezolvate sau respinse sunt sărite. Butonul include fiecare constatare deschis�
 rămasă și, la **Ship**, trimite `APPROVE`. (Instrumentul MCP
 `publish_review_to_github` folosește implicit doar constatările confirmate de
 colegi și nu aprobă niciodată: publică drept automatizare, așa că
-`approve_on_ship` nu are efect acolo.) Cele
+`approve_on_ship` nu are efect acolo. Această publicare automată este postată de
+bot, cu excepția aplicației comune Control Center Connect, când operatorul Connect
+nu a inclus această instalare pe listă: atunci pleacă din autentificarea GitHub
+proprie a persoanei responsabile, sub numele ei.) Cele
 care poartă o ancoră de fișier și linie devin comentarii inline; tot restul se
 pliază în corpul rezumatului, fiecare cu un subsol "— Control Center AI review",
 astfel încât sursa este neechivocă. Un verdict **Block** este trimis ca
@@ -143,7 +146,8 @@ Setări → Spațiu de lucru → Permisiuni agent dacă vrei să ruleze nesuprav
 
 Alte pipeline-uri integrate postează direct pe GitHub: `cross_review`,
 `pr_triage`, `ticket_to_pr` și `pre_merge_gate` se termină fiecare cu un pas de
-comentariu. Doar `pr_review` își ține rezultatul înapoi pentru tine.
+comentariu, pe care serverul îl postează. Doar `pr_review` își ține rezultatul
+înapoi pentru tine. Niciunul dintre ele nu face merge și nu aprobă.
 
 ## Trimite singur recenzenții
 

@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:cc_domain/core/domain/ports/git_command_port.dart';
 import 'package:cc_domain/features/pr_review/domain/repositories/review_studio_repository.dart';
 import 'package:cc_domain/features/pr_review/domain/value_objects/visual_diff.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/cancellation.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
+import 'package:cc_infra/src/dispatch/one_shot_confinement.dart';
 import 'package:cc_infra/src/pr_review/visual_diff_service.dart';
 import 'package:cc_infra/src/util/cc_paths.dart';
 import 'package:test/test.dart';
@@ -79,9 +82,18 @@ void main() {
   VisualDiffService service({
     required _RecordingRepo repo,
     String? flutterBinary,
+    HostExecutionPosture posture = HostExecutionPosture.offByOwner,
   }) => VisualDiffService(
     repository: repo,
     paths: CcPaths(temp.path),
+    confinement: OneShotConfinement(
+      gate: HostExecutionGate(
+        posture: posture,
+        ownerAccountable:
+            ({required workspaceId, required requestedByUserId}) async =>
+                requestedByUserId == 'olga',
+      ),
+    ),
     flutterBinary: flutterBinary,
   );
 
@@ -179,6 +191,7 @@ void main() {
       final svc = service(repo: _RecordingRepo(), flutterBinary: bin.path);
       final outcome = await svc.compute(
         workspaceId: 'ws',
+        requestedByUserId: 'olga',
         repoId: 'r',
         prExternalId: 'pr_1',
         repoPath: repoPath,
@@ -197,6 +210,7 @@ void main() {
         final svc = service(repo: _RecordingRepo(), flutterBinary: bin.path);
         final outcome = await svc.compute(
           workspaceId: 'ws',
+          requestedByUserId: 'olga',
           repoId: 'r',
           prExternalId: 'pr_1',
           repoPath: '${temp.path}/missing',
@@ -209,6 +223,45 @@ void main() {
           outcome.reason,
           anyOf('no Flutter SDK on host', 'no Widgetbook app in repo'),
         );
+      },
+    );
+
+    test(
+      'with no sandbox, a member\'s review runs none of the PR\'s code',
+      () async {
+        // The PR's tests are its author's code: with no sandbox they run only
+        // for a request the server owner is accountable for.
+        final marker = File('${temp.path}/ran');
+        final bin = File('${temp.path}/flutter')
+          ..writeAsStringSync('#!/bin/sh\ntouch "${marker.path}"\n');
+        if (!Platform.isWindows) {
+          Process.runSync('chmod', ['+x', bin.path]);
+        }
+        final repoPath = '${temp.path}/repo';
+        final subPkg = Directory('$repoPath/packages/widgetbook')
+          ..createSync(recursive: true);
+        File('$repoPath/pubspec.yaml').writeAsStringSync('name: demo\n');
+        File(
+          '${subPkg.path}/pubspec.yaml',
+        ).writeAsStringSync('name: w\ndependencies:\n  widgetbook: ^1.0\n');
+        final svc = service(
+          repo: _RecordingRepo(),
+          flutterBinary: bin.path,
+          posture: HostExecutionPosture.unavailable,
+        );
+        final outcome = await svc.compute(
+          workspaceId: 'ws',
+          requestedByUserId: 'eve',
+          repoId: 'r',
+          prExternalId: 'pr_1',
+          repoPath: repoPath,
+          git: _ThrowingGit(),
+          baseSha: 'aaa',
+          headSha: 'bbb',
+        );
+        expect(outcome.available, isFalse);
+        expect(outcome.reason, startsWith('no sandbox on this server'));
+        expect(marker.existsSync(), isFalse);
       },
     );
   });

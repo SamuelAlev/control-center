@@ -54,6 +54,15 @@ void main() {
   const expectedMcp = <String, Set<String>>{
     // --- Publishing / dispatch / external network ---
     'publish_review_to_github': {'prPublish'},
+    // Opens a pull request on the server as the run's requester; the shell's
+    // `gh pr create` is refused (the run's token cannot open one).
+    'open_pull_request': {'prCreate'},
+    // Comments on the run's own pull request on the server, as the bot; the
+    // run's token is read-only, so `gh pr comment` is refused.
+    'comment_on_pull_request': {'prPublish'},
+    // Retitles or rewrites the description of the run's own open pull
+    // request on the server, as its requester; `gh pr edit` is refused.
+    'update_pull_request': {'prPublish'},
     'start_ai_review': {'processSpawn'}, // starts the pr_review pipeline
     'dispatch_reviewers': {'processSpawn'}, // spawns reviewer subagents
     'install_skill': {
@@ -312,7 +321,6 @@ void main() {
       'processSpawn',
     },
     'environment.exec': {'hostExecution', 'processSpawn'},
-    'environment.startSetup': {'hostExecution', 'processSpawn'},
     'environment.restartProcess': {
       'enclosureControl',
       'hostExecution',
@@ -372,7 +380,6 @@ void main() {
     'fs.persistLogo': {'fileWriteOutsideWorktree'},
     'fs.persistLogoBytes': {'fileWriteOutsideWorktree'},
     'fs.writeString': {'fileWriteOutsideWorktree'},
-    'fs.ensureMcpSymlink': {'fileWriteOutsideWorktree'},
     'fs.syncAgentSkillLinks': {'fileWriteOutsideWorktree'},
     // A PTY on the host. `write` is not a lesser act than `spawn`: writing to
     // a live shell IS executing commands in it.
@@ -384,8 +391,10 @@ void main() {
     'process.killAgentShell': {'processSpawn'},
     // Launches (or reuses) a code-server process for the space.
     'codeServer.open': {'processSpawn'},
-    // Launches a GUI editor on the host against one conversation worktree.
+    // Launches a GUI editor on the host against one conversation worktree,
+    // or a PR's (which it provisions first).
     'ide.openSpaceWorktree': {'processSpawn'},
+    'ide.openPrInEditor': {'processSpawn'},
     'fs.deleteAgentDir': {'fileDelete'},
     'fs.writeSkillFile': {'fileWriteOutsideWorktree'},
     'fs.deleteSkillDir': {'fileDelete'},

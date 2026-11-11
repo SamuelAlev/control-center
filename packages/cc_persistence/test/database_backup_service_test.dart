@@ -793,6 +793,49 @@ void main() {
       },
     );
 
+    test('adopts no trigger or view the file brought, and keeps its own '
+        'FTS triggers', () async {
+      await seedWorkspace('ws1', agentName: 'Ada');
+      final exported = await service().exportWorkspace('ws1');
+      final writer = sqlite.sqlite3.open(exported);
+      try {
+        // Both run on the server's later writes and reads: one rewrites a row
+        // the server just wrote, the other answers a query in its place.
+        writer.execute(
+          'CREATE TRIGGER planted AFTER INSERT ON agents BEGIN '
+          "UPDATE agents SET name = 'pwned' WHERE id = NEW.id; END",
+        );
+        writer.execute(
+          'DROP TRIGGER memory_facts_ai; CREATE TRIGGER memory_facts_ai '
+          'AFTER INSERT ON memory_facts BEGIN SELECT 1; END',
+        );
+        writer.execute('CREATE VIEW planted_view AS SELECT 1');
+      } finally {
+        writer.close();
+      }
+
+      await service().importWorkspace(workspaceId: 'ws1', sourcePath: exported);
+
+      final schema = await workspaces
+          .of('ws1')
+          .customSelect(
+            'SELECT type, name, sql FROM sqlite_master '
+            "WHERE type IN ('trigger', 'view')",
+          )
+          .get();
+      final names = {for (final row in schema) row.read<String>('name')};
+      expect(names, isNot(contains('planted')));
+      expect(names, isNot(contains('planted_view')));
+      final ftsInsert = schema.singleWhere(
+        (row) => row.read<String>('name') == 'memory_facts_ai',
+      );
+      expect(
+        ftsInsert.read<String>('sql'),
+        contains('memory_facts_fts'),
+        reason: 'the server reinstalls its own trigger, not the planted body',
+      );
+    });
+
     test('restores every route kind from imported rows', () async {
       await seedWorkspace('ws1', agentName: 'Ada');
       final db = workspaces.of('ws1');

@@ -18,6 +18,8 @@ class RepoMapper {
       remoteName: row.remoteName,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      linkedBy: row.linkedByUserId,
+      forgeRepoId: row.forgeRepoId,
     );
   }
 

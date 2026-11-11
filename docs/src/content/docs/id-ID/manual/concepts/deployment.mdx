@@ -2,7 +2,7 @@
 title: Deployment dan klien
 description: Bagaimana arsitektur thin-client Control Center memisahkan server headless dari klien desktop, web, dan selulernya.
 slug: id-ID/panduan-pengguna/konsep/deployment
-sourceHash: 182b337c47cead3ca68a372add075f70a481f2ab
+sourceHash: 11de961add7554abea134e7576ae894f3b991c1a
 ---
 
 Control Center bukan satu program. Control Center adalah **arsitektur
@@ -135,6 +135,8 @@ ada ke `cc_server`, yang memiliki berkas dan backend code-server. Peramban
 memerlukan HTTPS atau konteks loopback yang aman untuk Service Worker. Klien native
 memakai fasad loopback yang dibatasi kapabilitas.
 
+Hanya [pemilik server](/id-ID/panduan-pengguna/konsep/otorisasi/#pemilik-server) yang dapat membuka editor code-server tertanam: editor itu berjalan di server sebagai pengguna server itu sendiri. Sesi dimiliki oleh perangkat dan orang yang membukanya. Editor dibuka dengan kepercayaan ruang kerja VS Code aktif, sehingga VS Code meminta izin sebelum mempercayai sebuah folder, dan dengan tugas otomatis dimatikan. Orang lain tetap memakai editor berkas tunggal bawaan dan tampilan berkas.
+
 ### Pendamping ponsel (cc_remote)
 
 Aplikasi **Remote** adalah klien terpisah yang lebih ringan — PWA web Flutter di
@@ -207,8 +209,11 @@ sungguhan yang mengeksekusi pekerjaan sewaan.
 
 Kedua tingkat ini tidak melakukan sandbox dengan cara yang sama. `cc_server`
 membungkus jalan yang dieksekusinya sendiri dalam sandbox OS host di tempat
-backend tersedia — Seatbelt di macOS, bubblewrap di Linux dan WSL2 — dan jatuh
-kembali ke batas lain di Windows atau tanpa `bwrap` dan `socat`. **`cc_worker`
+backend tersedia — Seatbelt di macOS, bubblewrap di Linux dan WSL2. Di Windows,
+atau tanpa `bwrap` dan `socat`, ia hanya menjalankan run yang dipertanggungjawabkan
+kepada pemilik server dan menolak run milik orang lain, kecuali pemilik memulainya
+dengan `--sandbox off`, yang menjalankan agen setiap anggota tanpa pembatasan.
+**`cc_worker`
 tidak melakukan sandbox sama sekali.** Worker mengiklankan kapabilitas `sandbox`
 agar server dapat menempatkan pekerjaan berdasarkan platform, tetapi tidak ada
 apa pun di dalam worker yang menerapkannya: pekerjaan sewaan dijalankan
@@ -257,7 +262,7 @@ yang tersimpan. Pada koneksi pertama, verifikasi sidik jari itu melalui QR
 tepercaya atau saluran tepercaya lain: kontak pertama yang bertanda tangan saja
 tidak dapat mengautentikasi siapa yang memberikan kunci. Jika identitas berubah,
 klien gagal secara tertutup; lakukan pairing ulang melalui saluran tepercaya alih-alih
-mengabaikan ketidakcocokan. Klien lama dan RPC teks asli tidak dapat terhubung.
+mengabaikan ketidakcocokan. RPC teks asli tidak diterima.
 TLS tetap diperlukan untuk origin peramban, bootstrap, dan metadata publik;
 `--insecure` memengaruhi listener luar server, bukan sesi terenkripsi yang
 diwajibkan.

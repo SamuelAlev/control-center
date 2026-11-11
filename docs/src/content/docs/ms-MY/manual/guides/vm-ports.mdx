@@ -2,7 +2,7 @@
 title: Majukan port dari terminal
 description: Capai pelayan dev yang dimulakan dalam Terminal (VM) atau shell hos — dari mesin anda, dari Penyemak imbas (VM), dari Android, pada rangkaian anda, atau di bawah domain dev dengan HTTPS.
 slug: ms-MY/manual-pengguna/panduan-cara/port-vm
-sourceHash: 7d2e6a2dbc9fa3ab16494cc2ebdd1eebd06dd5b3
+sourceHash: e16a504a8231bef7838099ba3ab2650e7342a31c
 ---
 
 Pelayan yang anda mulakan dalam terminal sesuatu perbualan hanya diterbitkan
@@ -16,7 +16,7 @@ atas permintaan, dan mati bersama terminal atau stesen.
 
 ## Lihat apa yang sedang mendengar
 
-1. Buka **Terminal (VM)** perbualan itu atau shell hos (dalam ruang atau pada halaman PR).
+1. Dalam editor perbualan (dalam ruang atau pada halaman PR), buka **Terminal** daripada menu `+`: di bawah **Mesin** untuk shell dalam VM perbualan itu, atau di bawah **Alat** untuk terminal pada pelayan. Hanya pemilik pelayan boleh membuka shell hos; terminal orang lain dikotak pasirkan.
 2. Mulakan pelayan anda — `pnpm dev`, `python -m http.server 8000`, apa-apa sahaja.
 3. Dalam beberapa saat, **ikon plag** di penjuru kanan atas terminal akan
    mendapat satu titik. Kliknya.
@@ -129,6 +129,10 @@ pelayan anda dimulakan semula — baris itu memaparkan *tidak mendengar* sehingg
 ia kembali — manakala pemajuan automatik hilang apabila portnya hilang. Pada
 shell hos anda juga boleh menetapkan port setempat yang berbeza.
 
+Mengubah pemajuan memerlukan geran tulis pada setiap repositori yang didedahkan oleh ruang itu. Dengan akses baca, anda masih boleh melihat port, dan panel itu memaparkan "Menukar port ini memerlukan akses tulis untuk setiap repositori dalam ruang ini." sebagai ganti **Tambah port**. Lihat [Siapa boleh menonton dan siapa boleh memandu](/ms-MY/manual-pengguna/panduan-cara/gunakan-stesen/#siapa-boleh-menonton-dan-siapa-boleh-memandu).
+
+Terminal yang dibuka oleh seseorang untuk dirinya sendiri hanya memberi portnya kepada mereka: bagi orang lain, senarai port dan perubahan port dijawab seolah-olah sesi itu tidak wujud, sama seperti sesi itu sendiri. Terminal yang dikongsi dalam sesuatu ruang mengikut peraturan ruang di atas.
+
 ## Bagaimana ia kekal terbatas
 
 Port dikunci mengikut ruang kerja dan ruang. Peta port hipervisor sendiri
@@ -140,9 +144,9 @@ pelayan untuk Penyemak imbas (VM) dan Android. Shell hos tidak pernah mengimbas
 seluruh mesin. Tiada pendengar yang pernah dicipta di dalam tetamu yang tidak
 diletakkan oleh pelayan di sana, dan semuanya diruntuhkan bersama terminal atau
 stesen. Reka bentuk ini diterangkan dalam
-[Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/#ports-without-holes);
+[Stesen dan persekitaran terasing](/ms-MY/manual-pengguna/konsep/stesen/#port-tanpa-lubang);
 port terkhas yang tepat dan peraturan domain ada dalam
-[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/#ports-and-dev-domains).
+[rujukan stesen](/ms-MY/manual-pengguna/rujukan/stesen/#port-dan-domain-dev).
 
 ## Berkaitan
 

@@ -6,8 +6,8 @@
 sealed class PresenceLocus {
   const PresenceLocus();
 
-  /// Parses a locus from its wire map; null for unknown tags (forward
-  /// compatibility — an old client simply doesn't render the new locus kind).
+  /// Parses a locus from its wire map; null for a tag this build does not
+  /// read, which is simply not rendered.
   static PresenceLocus? fromWire(Map<String, dynamic> wire) {
     switch (wire['t']) {
       case 'sp':

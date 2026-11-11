@@ -2,7 +2,7 @@
 title: Trí tuệ mã nguồn
 description: Vì sao một agent cần trình biên dịch, bộ so khớp cấu trúc và trình gỡ lỗi — và mỗi thứ trả lời được điều gì mà những thứ còn lại không thể.
 slug: vi-VN/so-tay/khai-niem/tri-tue-ma-nguon
-sourceHash: 0e4ed674d7812de65d2fcb02de568d541c0ec369
+sourceHash: 36b332ff84e0bd8f70d0fe6e8cc1faad3ffca2ed
 ---
 
 Control Center cho agent bốn cách để hiểu mã nguồn ngoài việc đọc nó. Chúng trả lời những câu hỏi thực sự khác nhau, và lý do có bốn cách chứ không phải một là vì không có cơ chế đơn lẻ nào trả lời được tất cả.
@@ -31,6 +31,8 @@ Nhắc lại điều agent đã được cho biết còn tệ hơn là không n�
 Không có máy chủ nào khởi động cùng lúc bật máy. Một máy chủ chỉ khởi động ở yêu cầu đầu tiên cần đến nó — gần như luôn là lần sửa đầu tiên vào một tệp mà nó nhận quản lý — và những máy chủ nhàn rỗi sẽ bị dọn đi. Một máy không bao giờ đụng tới Dart sẽ không bao giờ khởi động trình phân tích.
 
 Việc phát hiện là một phép **giao**: dấu hiệu gốc phải tồn tại trong bản checkout *và* tệp nhị phân phải phân giải được. Chỉ riêng dấu hiệu thì nói rằng "dự án này là Python" và không nói gì về việc máy chủ đã được cài hay chưa; chỉ riêng tệp nhị phân phân giải được thì nói rằng máy này có bộ công cụ và không nói gì về bản checkout này. Chỉ khi cả hai cùng có thì một truy vấn mới có thể thành công, và một công cụ được đưa ra nhưng luôn thất bại thì tệ hơn một công cụ không hiện diện.
+
+Những gì một kho mã có thể ảnh hưởng được được giữ ở mức tối thiểu có chủ ý. Các máy chủ được lấy từ một bảng dựng sẵn, không bao giờ từ một tệp trong bản checkout, và một tệp nhị phân nằm trong dự án (`node_modules/.bin`) chỉ được dùng khi lần chạy nằm trong sandbox. Máy chủ ngôn ngữ là một chương trình chạy trên máy của máy chủ, nên một kho mã không được quyền chỉ định một máy chủ như vậy.
 
 ## Vì sao cần tìm kiếm cấu trúc khi đã có grep
 

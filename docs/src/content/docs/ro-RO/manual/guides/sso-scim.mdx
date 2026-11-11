@@ -2,7 +2,7 @@
 title: Provisionă utilizatori cu SCIM
 description: Lasă IdP-ul tău să creeze, să actualizeze și să deprovisioneze automat conturile Control Center.
 slug: ro-RO/manual/ghiduri-practice/sso-scim
-sourceHash: b92e7eab9d3cff3012173819bb7017af096c3699
+sourceHash: 6a1dc7732fbacb9af03673d327e1a996ac5e25c9
 ---
 
 Folosește acest ghid când vrei control asupra ciclului de viață — offboarding-ul
@@ -34,8 +34,9 @@ exact în acest scop.
    - **Autentificare**: `Authorization: Bearer <token>`
    - **ID utilizator**: `userName` (email) sau `externalId` — ambele se potrivesc
 4. Testează cu un singur utilizator: trimite-l din IdP, confirmă că apare (crearea
-   prin SCIM fixează `externalId` al furnizorului pe cont, aceeași fixare pe care
-   o setează prima autentificare SSO).
+   prin SCIM înregistrează `externalId` al furnizorului pe cont, iar așa îl găsesc
+   apelurile SCIM ulterioare), apoi cere acelei persoane să se autentifice prin SSO
+   înainte să o extinzi tuturor.
 
 ## Ce face deprovisionarea
 
@@ -56,6 +57,7 @@ de politica de membru automat aplicată la autentificare.
 
 ## Depanare
 
+- **Un utilizator provisionat este refuzat cu „Acest cont este deja legat de o altă identitate SSO"** — limitare cunoscută: un cont creat prin SCIM cu `externalId` rămâne legat de acel id, iar prima autentificare SSO în el este refuzată. Până la remediere, provisionează fără `externalId` sau lasă provisionarea JIT să creeze contul la prima autentificare și folosește SCIM doar pentru deprovisionare.
 - **401 la fiecare apel** — tokenul s-a schimbat; regenerează-l și actualizează IdP-ul.
 - **Endpointul nu este accesibil** — tunelul este oprit sau serverul funcționează
   doar prin releu. SCIM are nevoie de HTTPS direct; JIT continuă să funcționeze

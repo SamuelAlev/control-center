@@ -15,9 +15,13 @@ import 'package:control_center/core/providers/rpc_client_provider.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
 import 'package:control_center/core/theme/font_settings.dart';
 import 'package:control_center/di/demo_providers.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_code_failure_view.dart';
+import 'package:control_center/features/identity/providers/identity_providers.dart';
+import 'package:control_center/features/messaging/presentation/space_access_refusal.dart';
 import 'package:control_center/features/rigs/presentation/rig_ports_panel.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/features/rigs/providers/rig_transfer_providers.dart';
+import 'package:control_center/features/sandboxing/presentation/terminal_access.dart';
 import 'package:control_center/features/sandboxing/presentation/terminal_file_transfer.dart';
 import 'package:control_center/features/sandboxing/presentation/terminal_session_controller.dart';
 import 'package:control_center/l10n/app_localizations.dart';
@@ -109,8 +113,8 @@ class TerminalSession {
 /// Interactive xterm-rendered terminal attached, over RPC, to a PTY the
 /// connected SERVER runs inside the agent sandbox.
 ///
-/// Compat wrapper: owns one [TerminalSessionController] for the lifetime of
-/// the panel (kill-on-unmount). The messaging IDE does NOT use this — it
+/// Owns one [TerminalSessionController] for the lifetime of the panel
+/// (kill-on-unmount). The messaging IDE does NOT use this — it
 /// keeps controllers alive across space switches via the app-level
 /// `terminalRegistryProvider` and renders [TerminalSessionView] directly.
 /// "Restart shell" (the IDE tab's context-menu action) kills the server
@@ -152,9 +156,8 @@ class TerminalPanel extends ConsumerStatefulWidget {
   ConsumerState<TerminalPanel> createState() => _TerminalPanelState();
 }
 
-/// Backwards-compatible wrapper that owns one [TerminalSessionController]
-/// per mounted panel (kill-on-unmount, the historical behaviour — used by the
-/// PR review terminal tab). The messaging IDE does NOT use this: it keeps
+/// Owns one [TerminalSessionController] per mounted panel (kill-on-unmount —
+/// used by the PR review terminal tab). The messaging IDE does NOT use this: it keeps
 /// controllers alive across space switches via the app-level
 /// `terminalRegistryProvider` and renders them through [TerminalSessionView].
 class _TerminalPanelState extends ConsumerState<TerminalPanel> {
@@ -341,7 +344,7 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
   /// typed instead, which is what every tool that understands the file wants
   /// as an argument anyway.
   Future<void> _richPaste() async {
-    if (_transferBusy) {
+    if (_transferBusy || !widget.controller.canDrive) {
       return;
     }
     _transferBusy = true;
@@ -391,7 +394,7 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
 
   /// Takes a file drop and types the resulting paths at the prompt.
   Future<void> _acceptDrop(PerformDropEvent event) async {
-    if (_transferBusy) {
+    if (_transferBusy || !widget.controller.canDrive) {
       return;
     }
     _transferBusy = true;
@@ -511,14 +514,24 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
             controller.backend == 'microvm' ||
             controller.session.backend == 'microvm';
         final ptyId = controller.ptySessionId;
+        final refused = controller.accessRefusal != null;
         final showPorts =
+            !refused &&
             controller.session.spaceId.isNotEmpty &&
             (isVmTerminal || (ptyId != null && ptyId.isNotEmpty));
+        // Someone who may not use the host only ever gets a sandboxed shell;
+        // say so, and why some host things are missing in it.
+        final showSandboxNote =
+            !ref.watch(canUseHostProvider) &&
+            isSandboxedTerminalBackend(controller.backend);
         return Container(
           decoration: BoxDecoration(color: bg),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (!controller.canDrive && !refused)
+                const TerminalReadOnlyNote(),
+              if (showSandboxNote) const TerminalSandboxNote(),
               Expanded(
                 child: Stack(
                   children: [
@@ -557,12 +570,29 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
         ? const DemoUnavailable(capability: DemoCapability.terminal)
         : controller.unavailable
         ? const _UnavailableBody()
+        // Watching a terminal in a space runs the space's gate first; its
+        // refusal is the space-access notice, not a blank terminal.
+        : controller.accessRefusal != null
+        ? RepoCodeFailureView(
+            error: controller.accessRefusal,
+            fallback: AppLocalizations.of(context).spaceAccessFailed,
+            workspaceId: controller.session.workspaceId,
+            describe: spaceAccessFailureOf,
+            onRetry: controller.retryAccess,
+          )
         : controller.booting
         ? _BootingBody(error: controller.error)
         : controller.error != null
         ? _ErrorBody(
-            message: controller.error!,
-            onRetry: controller.ensureBooted,
+            // A refusal is worded here and is retried only when the forge
+            // could not be asked; any other failure (a sandbox that cannot
+            // start on this host) keeps the server's message and its retry.
+            message:
+                controller.refusal?.message(AppLocalizations.of(context)) ??
+                controller.error!,
+            onRetry: controller.refusal?.retryable ?? true
+                ? controller.ensureBooted
+                : null,
           )
         : _terminalSurface(controller, termTheme, codeFont);
   }
@@ -624,6 +654,8 @@ class _TerminalSessionViewState extends ConsumerState<TerminalSessionView> {
                 controller: _termCtl,
                 focusNode: _focusNode,
                 autofocus: true,
+                // Someone else's terminal: watch and select, never type.
+                readOnly: !controller.canDrive,
                 onKeyEvent: controller.onKeyEvent,
                 shortcuts: _shortcuts,
                 theme: termTheme,
@@ -780,7 +812,7 @@ class _ErrorBody extends StatelessWidget {
   const _ErrorBody({required this.message, required this.onRetry});
 
   final String message;
-  final VoidCallback onRetry;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
@@ -807,8 +839,10 @@ class _ErrorBody extends StatelessWidget {
                 color: tokens?.textPrimary,
               ),
             ),
-            const SizedBox(height: 16),
-            CcButton(onPressed: onRetry, child: Text(l10n.retry)),
+            if (onRetry case final retry?) ...[
+              const SizedBox(height: 16),
+              CcButton(onPressed: retry, child: Text(l10n.retry)),
+            ],
           ],
         ),
       ),

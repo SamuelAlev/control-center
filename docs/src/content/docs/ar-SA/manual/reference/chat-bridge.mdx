@@ -2,7 +2,7 @@
 title: جسر الدردشة
 description: مزوّدو جسر الدردشة وأوامره وبيانات اعتماده وقدراته وعمليات RPC وتخزينه.
 slug: ar-SA/دليل-المستخدم/مرجع/جسر-الدردشة
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## المزوّدون
@@ -150,7 +150,7 @@ message.im
 | قُبلت الإشارة | `Working on it…` |
 | الخطوة `repo` | `Cloning <repo>…` |
 | الخطوة `prCheckout` | `Checking out the pull request in <repo>…` |
-| الخطوة `script` | `Running the setup script for <repo>…` |
+| الخطوة `provisionTasks` | `Running worktree tasks for <repo>…` |
 | الخطوة `agent` | `Setting up <agent>…` |
 | `provisioning`، بلا خطوة بعد | `Preparing the workspace…` |
 | `ready` | `Starting the agent…` |
@@ -254,7 +254,6 @@ message.im
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | بيانات اعتماد الاتصال | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json` |
 | إعداد موجّه لم يكتمل | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json` |
-| ملفات Slack القديمة | `<dataDir>/<workspaceId>/slack_credentials.json` و`slack_app_setup.json`، تُقرأ مرة واحدة وتُرحَّل في موضعها |
 
 تعيش بيانات الاعتماد إلى جانب قاعدة مساحة العمل لا داخلها: حذف مساحة العمل يأخذ رموز الدردشة معها، و`workspace.export` أو النسخ الاحتياطي ينسخ `workspace.db` — فمساحة عمل تُسلَّم إلى شخص آخر لا تحمل رموز بوت حيّة. الكتابة ذرية (ملف مؤقت ثم إعادة تسمية) ومقيّدة بالمالك وحده.
 

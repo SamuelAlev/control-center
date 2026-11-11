@@ -17,9 +17,6 @@ abstract final class CcElevation {
   /// Z-order: popovers / dropdowns.
   static const int popover = 200;
 
-  /// Z-order: popovers / dropdowns (alias).
-  static const int dropdown = 200;
-
   /// Z-order: context menus.
   static const int menu = 300;
 

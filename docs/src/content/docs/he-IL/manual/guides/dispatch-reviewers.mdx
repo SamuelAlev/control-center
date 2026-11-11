@@ -2,7 +2,7 @@
 title: שליחת סוכני סקירה
 description: שלחו סוכני סקירה מתמחים אל בקשת משיכה מתצוגת ה-PR, מכלי MCP או משלב פייפליין.
 slug: he-IL/מדריך-למשתמש/מדריכים-מעשיים/שליחת-סוכני-סקירה
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 המדריך הזה מראה לכם איך לשלוח סוכני סקירה כדי שיסקרו בקשות משיכה.
@@ -79,7 +79,7 @@ dispatch_reviewers(
 | אירוע                  | מופעל כאשר                                                                                                        | מפתחות המטען                                                       |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | PR נפתח **דרך Control Center** — משטח יצירת ה-PR, או סוכן שקורא ל-`pr_lifecycle.publish`                          | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | שירות סקר בקשות המשיכה מוצא PR שנפתח ישירות ב-GitHub                                                              | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | שירות סקר בקשות המשיכה מוצא PR שנפתח ישירות ב-GitHub                                                              | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 PR שנפתח ב-github.com לעולם לא מרים `PullRequestPublished`, כך שתבנית שמחווטת רק
 לאירוע הזה לא תראה אותו. שימו לב גם ש-`PullRequestPublished` לא נושא `pr_number` —

@@ -22,18 +22,29 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
 
   final ForgePrClientResolver _clientFor;
 
-  /// No conditional-request support outside GitHub, so every pass reports the
-  /// list as changed.
+  /// No conditional-request support outside GitHub, so the probe is one
+  /// small read instead: the open list's first page of size one, ordered by
+  /// update, plus the open count ([ForgeOpenPrChangeProbeClient]). Its
+  /// fingerprint stands in for the ETag, and the full list is re-read only
+  /// when it moves.
   ///
-  /// Reporting "unchanged" would be a guess, and a wrong guess here silently
-  /// freezes a repo's queue until something else invalidates it. The cost of
-  /// being honest is one extra list call per poll.
+  /// A forge client without the probe reports "changed" every pass: guessing
+  /// "unchanged" would silently freeze a repo's queue. A failed probe
+  /// propagates, so the poller can classify an access denial.
   @override
   Future<({bool changed, String? etag})> probeRepo(
     Repo repo,
     String? etag, {
     required String workspaceId,
-  }) => Future.value((changed: true, etag: null));
+  }) async {
+    final client = _clientFor(repo, workspaceId: workspaceId);
+    if (client is! ForgeOpenPrChangeProbeClient) {
+      return (changed: true, etag: null);
+    }
+    final fingerprint = await (client as ForgeOpenPrChangeProbeClient)
+        .openPullRequestsFingerprint();
+    return (changed: fingerprint != etag, etag: fingerprint);
+  }
 
   @override
   Future<OpenPrFetchResult> fetchGroups(
@@ -55,7 +66,12 @@ class ForgeClientOpenPrFetchAdapter implements OpenPrFetchPort {
           // to tell "no open PRs" from "the forge did not respond".
           resolved.add(repo.id);
           if (page.prs.isNotEmpty) {
-            groups.add((repo: repo, prs: page.prs, hasMore: page.hasMore));
+            groups.add((
+              repo: repo,
+              prs: page.prs,
+              hasMore: page.hasMore,
+              totalCount: page.hasMore ? null : page.prs.length,
+            ));
           }
         } on Object catch (e) {
           CcHostLog.warning(
@@ -352,24 +368,53 @@ class MultiForgeOpenPrFetchAdapter implements OpenPrFetchPort {
   )?.firstFailingCheck(repo, prNumber, workspaceId: workspaceId);
 }
 
+/// One forge-wide merged-PR search: the pull requests [login] got merged
+/// since [mergedSince] across [repos] (all on one forge), on [userId]'s own
+/// credential in [workspaceId], each paired with the repo it belongs to.
+typedef MergedPrSearch =
+    Future<List<({Repo repo, PullRequest pr})>> Function({
+      required String login,
+      required List<Repo> repos,
+      required DateTime mergedSince,
+      required String userId,
+      required String workspaceId,
+    });
+
 /// Merged-history search across every forge in a workspace.
 ///
-/// The inbox's "merging and recently merged" section used to be one GitHub
-/// search. With mixed forges there is no single search endpoint, so each repo
-/// is asked for the operator's merged pull requests under *that forge's*
-/// identity — the same human is a different login on each — and the results are
-/// merged.
+/// The inbox's "merging and recently merged" section. Each forge is asked
+/// for the caller's merged pull requests under *that forge's* identity — the
+/// same human is a different login on each — on the caller's own
+/// credential, as few times as the forge allows:
+///
+/// * GitHub: one `is:pr is:merged author:<login> merged:>=<date> repo:a …`
+///   search per [githubChunk] repos, [githubConcurrency] at a time.
+/// * GitLab: one `/merge_requests?scope=all&state=merged` request, filtered
+///   to the linked projects.
+/// * Bitbucket: there is no cross-repository search, so per repo,
+///   [bitbucketConcurrency] at a time.
 class MultiForgeMergedHistory {
   /// Creates a [MultiForgeMergedHistory].
-  ///
-  /// Both resolvers take the acting user so the answer is THAT person's:
-  /// their per-forge viewer login, fetched on their own credential. With no
-  /// user both fall to the server chain — the pre-multiplayer behavior, only
-  /// right for a surface with no caller.
   const MultiForgeMergedHistory({
     required this._clientFor,
     required this._viewerLoginFor,
+    required this._githubSearch,
+    required this._gitlabSearch,
+    this._now,
   });
+
+  /// How far back the history reaches.
+  static const Duration window = Duration(days: 30);
+
+  /// Repos per GitHub search (the query's `repo:` qualifiers).
+  static const int githubChunk = 5;
+
+  /// GitHub searches in flight at once (the search API has its own, small,
+  /// rate limit).
+  static const int githubConcurrency = 2;
+
+  /// Bitbucket repos asked at once.
+  static const int bitbucketConcurrency = 4;
 
   final ForgePrClientResolver _clientFor;
   final Future<String> Function(
@@ -378,52 +423,157 @@ class MultiForgeMergedHistory {
     String? workspaceId,
   })
   _viewerLoginFor;
+  final MergedPrSearch _githubSearch;
+  final MergedPrSearch _gitlabSearch;
+  final DateTime Function()? _now;
 
   /// [userId]'s recently merged pull requests across [repos], grouped by
   /// repo. Repos whose forge cannot answer — including a forge that user has
   /// not connected — are simply absent.
   ///
-  /// [workspaceId] is the workspace [repos] belong to; without one this
-  /// answers nothing (its credentials and App lane come from it).
+  /// [workspaceId] is the workspace [repos] belong to; without one (or
+  /// without a user) this answers nothing, since its credentials come from
+  /// them.
   Future<List<OpenPrGroup>> mergedByViewer(
     List<Repo> repos, {
     String? userId,
     String? workspaceId,
   }) async {
-    // Fail closed: a client needs the workspace its credentials come from.
-    if (workspaceId == null || workspaceId.isEmpty) {
+    if (workspaceId == null ||
+        workspaceId.isEmpty ||
+        userId == null ||
+        userId.isEmpty) {
       return const [];
     }
-    final groups = <OpenPrGroup>[];
+    final since = (_now?.call() ?? DateTime.now()).toUtc().subtract(window);
+    final byForge = <ForgeHost, List<Repo>>{};
+    for (final repo in repos) {
+      (byForge[repo.forge] ??= []).add(repo);
+    }
+    final byRepoId = <String, ({Repo repo, List<PullRequest> prs})>{};
+    void add(Repo repo, PullRequest pr) {
+      (byRepoId[repo.id] ??= (repo: repo, prs: <PullRequest>[])).prs.add(pr);
+    }
 
-    await Future.wait(
-      repos.map((repo) async {
-        try {
-          final login = await _viewerLoginFor(
-            repo.forge,
-            userId: userId,
-            workspaceId: workspaceId,
-          );
+    Future<String> loginOn(ForgeHost forge) async {
+      try {
+        return await _viewerLoginFor(
+          forge,
+          userId: userId,
+          workspaceId: workspaceId,
+        );
+      } on Object catch (e) {
+        CcHostLog.warning(
+          'merged_history: ${forge.displayName} login unavailable: $e',
+        );
+        return '';
+      }
+    }
+
+    await Future.wait([
+      for (final MapEntry(key: forge, value: forgeRepos) in byForge.entries)
+        () async {
+          final login = await loginOn(forge);
           if (login.isEmpty) {
             return;
           }
-          final prs = await _clientFor(
-            repo,
-            actingUserId: userId,
-            workspaceId: workspaceId,
-          ).listMergedByAuthor(login);
-          if (prs.isNotEmpty) {
-            groups.add((repo: repo, prs: prs, hasMore: false));
+          switch (forge) {
+            case ForgeHost.github:
+              final chunks = [
+                for (var i = 0; i < forgeRepos.length; i += githubChunk)
+                  forgeRepos.skip(i).take(githubChunk).toList(),
+              ];
+              await _bounded(chunks, githubConcurrency, (chunk) async {
+                for (final hit in await _search(
+                  _githubSearch,
+                  forge,
+                  login: login,
+                  repos: chunk,
+                  since: since,
+                  userId: userId,
+                  workspaceId: workspaceId,
+                )) {
+                  add(hit.repo, hit.pr);
+                }
+              });
+            case ForgeHost.gitlab:
+              for (final hit in await _search(
+                _gitlabSearch,
+                forge,
+                login: login,
+                repos: forgeRepos,
+                since: since,
+                userId: userId,
+                workspaceId: workspaceId,
+              )) {
+                add(hit.repo, hit.pr);
+              }
+            case ForgeHost.bitbucket:
+              await _bounded(forgeRepos, bitbucketConcurrency, (repo) async {
+                try {
+                  final prs = await _clientFor(
+                    repo,
+                    actingUserId: userId,
+                    workspaceId: workspaceId,
+                  ).listMergedByAuthor(login);
+                  for (final pr in prs) {
+                    final mergedAt = pr.mergedAt;
+                    if (mergedAt == null || !mergedAt.isBefore(since)) {
+                      add(repo, pr);
+                    }
+                  }
+                } on Object catch (e) {
+                  CcHostLog.warning(
+                    'merged_history: Bitbucket search failed for '
+                    '${repo.fullName}: $e',
+                  );
+                }
+              });
+            case ForgeHost.local:
+              return;
           }
-        } on Object catch (e) {
-          CcHostLog.warning(
-            'merged_history: ${repo.forge.displayName} search failed for '
-            '${repo.fullName}: $e',
-          );
-        }
-      }),
-    );
+        }(),
+    ]);
 
-    return groups;
+    return [
+      for (final entry in byRepoId.values)
+        (repo: entry.repo, prs: entry.prs, hasMore: false, totalCount: null),
+    ];
+  }
+
+  static Future<List<({Repo repo, PullRequest pr})>> _search(
+    MergedPrSearch search,
+    ForgeHost forge, {
+    required String login,
+    required List<Repo> repos,
+    required DateTime since,
+    required String userId,
+    required String workspaceId,
+  }) async {
+    try {
+      return await search(
+        login: login,
+        repos: repos,
+        mergedSince: since,
+        userId: userId,
+        workspaceId: workspaceId,
+      );
+    } on Object catch (e) {
+      CcHostLog.warning(
+        'merged_history: ${forge.displayName} search failed for '
+        '${repos.length} repo(s): $e',
+      );
+      return const [];
+    }
+  }
+
+  static Future<void> _bounded<T>(
+    List<T> items,
+    int width,
+    Future<void> Function(T item) each,
+  ) async {
+    for (var i = 0; i < items.length; i += width) {
+      await Future.wait(items.skip(i).take(width).map(each));
+    }
   }
 }

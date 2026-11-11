@@ -274,10 +274,9 @@ void main() {
       expect(Directory('${tmp.path}/$warm').existsSync(), isFalse);
     });
 
-    test('a pre-stamp state file is treated as stale, not as fresh', () async {
-      // State written before pool entries carried a `seeded_at` is a bare list
-      // of ids. Their real age is unknowable, so they are read as expired:
-      // reseeding one needlessly is free, shipping a week-old demo is not.
+    test('an unstamped pool entry is reaped, not handed out', () async {
+      // A pool entry without a `seeded_at` has no knowable age, so the state
+      // file is unreadable and the reconcile reaps what it named.
       final first = buildService(limits: DemoLimits(poolSize: 1));
       await first.start();
       await awaitPool(first, 1);
@@ -305,7 +304,7 @@ void main() {
       expect(
         second.pool,
         isNot(contains(legacyId)),
-        reason: 'an unstamped entry is not trusted to be fresh',
+        reason: 'an unstamped entry is never trusted to be fresh',
       );
       expect(Directory('${tmp.path}/$legacyId').existsSync(), isFalse);
     });

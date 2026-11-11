@@ -2,7 +2,7 @@
 title: AI 審查
 description: 一個 pull request 如何變成已審查的 PR — 審查空間、審查節點與同儕共識、群組與軸、Ship/Hold/Block 判定，以及為什麼發佈始終是由你親自採取的步驟。
 slug: zh-TW/手冊/概念/ai-審查
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## 審查的樣貌
@@ -106,7 +106,7 @@ PR 的審查情境就是一個訊息空間 — 模式 `review`、種類 `pr` —
 - 錨定到檔案與行號的發現會變成行內留言；其餘一切都收進摘要內文，每一項都帶有「— Control Center AI review」頁尾，讓來源一目了然。
 - 發佈時會重新驗證錨點是否對得上 PR 的*目前*差異。對已被改寫的程式碼留下留言，是審查者最會摧毀信任的行為；如果 GitHub 無論如何都拒絕某個行內錨點，整筆審查會重新送出，並把所有發現收進內文，確保沒有任何東西被悄悄丟掉。
 - **Block** 判定會以 `REQUEST_CHANGES` 提交；**Hold** 為 `COMMENT`；按鈕送出的 **Ship** 則為 `APPROVE`（`approve_on_ship: true`）。MCP 工具以自動化身分發佈，一律讓 Ship 維持為 `COMMENT`。
-- **發佈到 GitHub** 按鈕會以按下它的人的身分、用他自己的 GitHub 登入張貼審查：放行關卡是他的，所以審查也是他的。背後沒有人的發佈屬於自動化，而自動化絕不核准：此時 Ship 會以 `COMMENT` 送出；在 Control Center Connect 上，貼文會加上 `**Control Center** (for @login):` 前綴以標明歸屬。
+- **發佈到 GitHub** 按鈕會以按下它的人的身分、用他自己的 GitHub 登入張貼審查：放行關卡是他的，所以審查也是他的。背後沒有人的發佈屬於自動化，而自動化絕不核准：此時 Ship 會以 `COMMENT` 送出，且發現中的 @ 提及會被停用，因此該貼文不會通知任何人。該貼文由機器人發佈，但在共用的 Control Center Connect 應用程式上，若 Connect 營運者尚未將此安裝列入清單，則改以負責人本人的 GitHub 登入發佈，以他的名義並加上 `**Control Center** (for @login):` 前綴以標明歸屬。擁有自己 GitHub 應用程式的伺服器或工作區，一律以機器人身分發佈。透過 MCP 工具呼叫的代理只能發佈其自身空間的審查。
 
 發佈會宣告 `prPublish` 動作類別，因此護欄檢查點會像對待任何變更型動作一樣設下閘門 — 它預設會提示，且在沒有連接任何核准者時一律拒絕。另請參閱[護欄](/zh-TW/手冊/概念/護欄/)。
 

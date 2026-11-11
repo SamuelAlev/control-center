@@ -1,5 +1,7 @@
 import 'package:cc_domain/features/pr_review/domain/usecases/classify_pr_inbox_use_case.dart';
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/widgets/hidden_repos_notice.dart';
+import 'package:control_center/features/forge/presentation/widgets/repo_access_banner.dart';
 import 'package:control_center/features/inbox/presentation/models/inbox_attention_item.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_attention_card.dart';
 import 'package:control_center/features/inbox/presentation/widgets/inbox_empty_state.dart';
@@ -25,7 +27,6 @@ import 'package:control_center/shared/utils/repo_filters.dart';
 import 'package:control_center/shared/widgets/page_wrapper.dart';
 import 'package:control_center/shared/widgets/pinned_header_bleed_guard.dart';
 import 'package:control_center/shared/widgets/refresh_control.dart';
-import 'package:control_center/shared/widgets/repo_access_banner.dart';
 import 'package:control_center/shared/widgets/scoped_shortcuts.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
@@ -173,7 +174,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
       ctx,
       // Reveal below the pinned attention strip, not hidden underneath it.
       alignment: _attentionStripFraction,
-      duration: CcMotion.resolve(context, CcMotion.normal),
+      duration: CcMotion.resolve(context, CcMotion.moderate),
       curve: CcMotion.standard,
     );
   }
@@ -328,6 +329,11 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // What the reader cannot see, on both branches: a short or empty
+          // inbox is not "all caught up" while repositories are hidden.
+          HiddenReposNotice(
+            hidden: ref.watch(prsByRepoProvider).value?.hiddenRepos ?? const [],
+          ),
           // Caveats over a list that HAS content ("this may be stale").
           // Suppressed on the empty branch, where the empty state already
           // makes the stronger claim ("this list may not be true") — one
@@ -335,9 +341,8 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           if (!isEmpty) ...[
             const GitHubDegradedBanner(),
             RepoAccessBanner(
-              repos:
-                  ref.watch(prsByRepoProvider).value?.inaccessibleRepos ??
-                  const [],
+              issues:
+                  ref.watch(prsByRepoProvider).value?.repoAccess ?? const [],
             ),
           ],
           // The active-filters bar (chips + "add filter"); renders nothing

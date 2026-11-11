@@ -89,15 +89,17 @@ void main() {
     }
   });
 
-  test('the ticket failure is the draft-PR shell step', () {
+  test('the ticket failure is the coder step that opens the draft PR', () {
     final run = demoPipelineRuns().firstWhere(
       (r) => r.runId == 'demo-pipeline-run-1',
     );
     final open = run.steps.firstWhere((s) => s.stepId == 'open_pr');
     expect(run.status, PipelineRunStatus.failed);
     expect(open.status, PipelineStepStatus.failed);
-    expect(open.input?['script'], contains('gh pr create'));
-    expect(open.output?['exitCode'], 1);
+    // An agent step on the gateway, not a shell script with a write token.
+    expect(open.input?['bodyKey'], BuiltInBodyKeys.promptAgent);
+    expect(open.input?['prompt'], contains('open_pull_request'));
+    expect(open.error, contains('needs a person who asked for it'));
     expect(
       run.steps.firstWhere((s) => s.stepId == 'comment').status,
       PipelineStepStatus.skipped,

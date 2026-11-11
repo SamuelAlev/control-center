@@ -2,7 +2,7 @@
 title: Parler à Control Center depuis une PR GitHub
 description: Demandez à Control Center une revue ou posez-lui une question directement depuis la conversation de la PR, sans webhook ni URL publique.
 slug: fr-FR/manuel/guides/conversations-pr-github
-sourceHash: b5c8f6d4b310fd16ae9272285f90a33cd89e1bd8
+sourceHash: 0f83d861e944d9f637134360a608ad598cc99771
 ---
 
 Ce guide explique comment travailler avec Control Center sans quitter GitHub :
@@ -32,25 +32,7 @@ comporte exactement comme un déploiement public.
 
 ## Trouver le nom de votre bot
 
-Mentionnez `@usectrl`, le compte GitHub dédié à Control Center. C’est le déclencheur par défaut ; la voie GitHub de votre espace de travail traite toujours la demande et publie les réponses. Vous n’avez pas besoin des identifiants du compte `usectrl`.
-
-L’identifiant propre à l’application, `<appslug>[bot]`, et sa forme courte `@appslug` fonctionnent aussi. Pour trouver cet alias facultatif sur votre propre application :
-
-1. Ouvrez **Paramètres → Serveur → Authentification unique** et faites défiler
-   jusqu’à la carte **Applications fournisseur**
-2. Ouvrez le bloc **GitHub** et cliquez sur **Tester**
-3. Copiez **Login du bot** lorsqu’il se remplit. S’il affiche encore l’indice du
-   champ vide, l’identifiant est toujours `<appslug>[bot]` — saisissez-le, ou
-   bien la forme courte `@appslug`
-
-GitHub ne propose pas les comptes d’application dans l’autocomplétion `@` ; il faut donc saisir ou copier leurs alias. Le compte dédié `@usectrl` est le moyen par défaut de lancer une demande ; `@myapp` et `@myapp[bot]` restent tous deux acceptés comme alias de l’application.
-
-:::note[Choisissez un nom d’application distinctif]
-La forme courte est comparée en tant que texte. Si un utilisateur GitHub humain
-partage par hasard le slug de votre application, le mentionner sous sa forme
-courte atteint aussi le bot. La forme complète `@myapp[bot]` est toujours sans
-ambiguïté.
-:::
+Mentionnez `@usectrl`, le compte GitHub dédié à Control Center. C’est le seul déclencheur : mentionner l’identifiant de connexion propre à l’App n’a aucun effet. La voie GitHub de votre espace de travail traite toujours la demande et publie les réponses. Vous n’avez pas besoin des identifiants du compte `usectrl`.
 
 ## Demander une revue depuis GitHub
 
@@ -124,8 +106,7 @@ l’étiquette `ai-review`, avant de faire quoi que ce soit :
 
 - **Le compte GitHub doit être connecté** sur ce serveur. La correspondance se
   fait sur l’identifiant numérique du compte GitHub, jamais sur l’identifiant de
-  connexion. Connectez-vous depuis **Paramètres → Espace de travail → Profil et
-  identité → Hébergement de code**
+  connexion. Connectez-vous depuis **Paramètres → Vous → Profil → Hébergement de code**
 - **La personne doit être membre avec un rôle d’écriture** (`member`, `admin` ou
   `owner`) dans l’espace de travail qui lie le dépôt
 - **Elle doit pouvoir pousser** vers le dépôt sur GitHub. Les réponses utilisent
@@ -149,7 +130,7 @@ silencieux. Il en va de même pour l’étiquette.
 | Élément | Comportement |
 | ------------------- | ------------------------------------------------------------------------ |
 | Accusé de réception | 👀 depuis votre compte sur le commentaire (ou sur la PR, pour l’étiquette), en l’espace d’un balayage |
-| Réponses | Publiées dans le fil où la question a été posée, en commençant par `**Control Center** (for @your-login):`. Avec une application propre, l’auteur est le bot de l’application ; via Connect, c’est votre compte, agissant au travers de l’App partagée |
+| Réponses | Publiées dans le fil où la question a été posée, en commençant par `**Control Center** (for @your-login):`. Rédigées par le bot de l’application : sur l’application Connect partagée, une réponse dans un fil de revue est rédigée par votre propre compte, sauf si l’opérateur de Connect a listé cette installation |
 | Attribution dans l’espace | La question est la vôtre ; l’agent s’exécute en votre nom, selon les réglages d’autonomie de l’espace |
 | Revues | Les constats arrivent dans l’espace de revue ; la publication vers GitHub est manuelle |
 
@@ -173,9 +154,6 @@ balayage suivant.
 - Êtes-vous connecté à GitHub sur ce serveur, membre avec un rôle d’écriture et
   en mesure de pousser vers le dépôt ? Le serveur ignore toute autre personne
   sans répondre
-- Sur l’App partagée de Control Center, l’installation de l’organisation
-  est-elle autorisée pour ce serveur ? Voir
-  [Autoriser ce serveur pour une organisation](/fr-FR/manuel/guides/github-app/#autoriser-ce-serveur-pour-une-organisation)
 - Toujours rien ? Le journal du serveur nomme le balayage et la PR en cas
   d’échec ; cherchez `pr_conversation:` (l’interrogateur) et
   `github_pr_conversation:` (la passerelle)

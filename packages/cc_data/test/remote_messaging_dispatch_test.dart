@@ -167,7 +167,7 @@ void main() {
           'workspace_id': _ws,
           'mode': 'chat',
           'provisioning_status': 'ready',
-          'origin': 'user',
+          'kind': 'topic',
         },
       };
       final dispatch = RemoteMessagingDispatch(client);
@@ -189,7 +189,13 @@ void main() {
 
     test('createSpace forwards the pipelineRunId when given', () async {
       host.callResults['messaging.createSpace'] = {
-        'space': {'id': 'c-9', 'name': 'P', 'workspace_id': ''},
+        'space': {
+          'id': 'c-9',
+          'name': 'P',
+          'workspace_id': '',
+          'provisioning_status': 'ready',
+          'kind': 'topic',
+        },
       };
       final dispatch = RemoteMessagingDispatch(client);
       await dispatch.createSpace(
@@ -266,8 +272,7 @@ void main() {
         },
       );
       final call = host.lastCall('dispatch.sendAndDispatch')!;
-      final attachments =
-          (call.args['metadata'] as Map)['attachments'] as List;
+      final attachments = (call.args['metadata'] as Map)['attachments'] as List;
       expect((attachments.single as Map)['name'], 'shot.png');
     });
 
@@ -453,7 +458,8 @@ void main() {
           'name': 'Team',
           'workspace_id': _ws,
           'mode': 'chat',
-          'origin': 'user',
+          'provisioning_status': 'ready',
+          'kind': 'topic',
         },
       };
       final port = RpcMessagingPort(client);

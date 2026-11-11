@@ -43,12 +43,41 @@ final currentUserIdProvider = Provider<String?>((ref) {
 ///
 /// Gates the install-wide settings surfaces — SSO, MCP, provider apps, model
 /// management, backups — which the server refuses for anyone else
-/// (`ServerAuthority.serverOwner` / `requireServerAdmin`). False while
+/// (the declared `ServerAuthority.serverOwner` authority). False while
 /// identity is still loading, so a surface never flashes open and then
 /// closes: the fail-safe direction is hiding an operator's own control for a
 /// moment, not offering a control the server will refuse.
 final isServerOwnerProvider = Provider<bool>(
   (ref) => ref.watch(currentIdentityProvider).value?.isServerOwner ?? false,
+);
+
+/// Whether this user administers at least one workspace, as `identity.me`
+/// reports their memberships. False while identity is loading.
+final isWorkspaceAdminAnywhereProvider = Provider<bool>((ref) {
+  final memberships =
+      ref.watch(currentIdentityProvider).value?.memberships ?? const [];
+  return memberships.any(
+    (m) => WorkspaceRole.fromWire(m.role)?.isAdmin ?? false,
+  );
+});
+
+/// Whether this user may create workspaces, as `identity.me` reports it.
+///
+/// Every "new workspace" affordance follows this, never [isServerOwnerProvider]:
+/// the server decides who may create, and today that is only its owner.
+/// False while identity is loading, so a create action never flashes open.
+final canCreateWorkspacesProvider = Provider<bool>(
+  (ref) =>
+      ref.watch(currentIdentityProvider).value?.canCreateWorkspaces ?? false,
+);
+
+/// Whether this user may run unsandboxed on the server host, as
+/// `identity.me` reports it (`can_use_host`).
+///
+/// Gates the host shell, the embedded code-server editor and every "open in
+/// editor" affordance. False while identity is loading, like the create right.
+final canUseHostProvider = Provider<bool>(
+  (ref) => ref.watch(currentIdentityProvider).value?.canUseHost ?? false,
 );
 
 /// Live users visible to this session, keyed by id — the lookup behind
@@ -77,99 +106,33 @@ final myWorkspaceRoleProvider = Provider.family<WorkspaceRole?, String>((
   return WorkspaceRole.fromWire(me?.roleIn(workspaceId));
 });
 
+/// The names of `workspaceId`'s admins, for "ask an admin" copy shown to a
+/// member who cannot fix something themselves. Empty while loading.
+final workspaceAdminNamesProvider = Provider.family<List<String>, String>((
+  ref,
+  workspaceId,
+) {
+  final members =
+      ref.watch(workspaceMembersProvider(workspaceId)).value ?? const [];
+  final users = ref.watch(usersByIdProvider).value ?? const {};
+  return [
+    for (final m in members)
+      if (WorkspaceRole.fromWire(m.role)?.isAdmin ?? false)
+        if ([m.displayName, users[m.userId]?.displayName, m.email].firstWhere(
+              (n) => n != null && n.trim().isNotEmpty,
+              orElse: () => null,
+            )
+            case final name?)
+          name.trim(),
+  ];
+});
+
 /// Live invites of one workspace (admin surface).
 final workspaceInvitesProvider =
     StreamProvider.family<List<WorkspaceInviteDto>, String>(
       (ref, workspaceId) =>
           ref.watch(identityRepositoryProvider).watchInvites(workspaceId),
     );
-
-/// Live cursor page of one workspace's audit trail.
-final workspaceActivityPageProvider =
-    StreamProvider.family<UserActivityPageDto, WorkspaceActivityPageQuery>(
-      (ref, query) => ref
-          .watch(identityRepositoryProvider)
-          .watchActivityPage(
-            query.workspaceId,
-            cursor: query.cursor,
-            query: query.search,
-            ip: query.ip,
-            countryCode: query.countryCode,
-            localNetwork: query.localNetwork,
-            userIds: query.userIds,
-          ),
-    );
-
-/// Arguments for [workspaceActivityPageProvider] — workspace, cursor and
-/// the filters the table sends with each page.
-class WorkspaceActivityPageQuery {
-  /// Creates a [WorkspaceActivityPageQuery].
-  const WorkspaceActivityPageQuery({
-    required this.workspaceId,
-    this.cursor,
-    this.search = '',
-    this.ip,
-    this.countryCode,
-    this.localNetwork = false,
-    this.userIds = const [],
-  });
-
-  /// Workspace whose trail is shown.
-  final String workspaceId;
-
-  /// Opaque page cursor (`?cursor=`), or null for the newest page.
-  final String? cursor;
-
-  /// Case-insensitive substring over action / target / IP / details.
-  final String search;
-
-  /// Exact client IP filter.
-  final String? ip;
-
-  /// Exact ISO country-code filter.
-  final String? countryCode;
-
-  /// Private/loopback rows with no GeoIP country.
-  final bool localNetwork;
-
-  /// Actor ids whose display name matched [search].
-  final List<String> userIds;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is WorkspaceActivityPageQuery &&
-          workspaceId == other.workspaceId &&
-          cursor == other.cursor &&
-          search == other.search &&
-          ip == other.ip &&
-          countryCode == other.countryCode &&
-          localNetwork == other.localNetwork &&
-          _idsEqual(userIds, other.userIds);
-
-  @override
-  int get hashCode => Object.hash(
-    workspaceId,
-    cursor,
-    search,
-    ip,
-    countryCode,
-    localNetwork,
-    Object.hashAll(userIds),
-  );
-}
-
-bool _idsEqual(List<String> a, List<String> b) {
-  if (a.length != b.length) {
-    return false;
-  }
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) {
-      return false;
-    }
-  }
-  return true;
-}
 
 /// Live stream of the current user's own server-side preferences.
 final ownServerPrefsProvider = StreamProvider<Map<String, String>>(

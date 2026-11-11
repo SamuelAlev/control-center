@@ -2,7 +2,7 @@
 title: Guardrail — satu polisi untuk setiap tindakan yang mengubah keadaan
 description: Mengapa Control Center menyalurkan setiap kesan sampingan ejen melalui satu enjin allow/prompt/deny, mengapa taksonomi ActionClass sengaja dibiarkan kecil dan apa yang sebenarnya diubah oleh dail autonomi.
 slug: ms-MY/manual-pengguna/konsep/guardrail
-sourceHash: b9e2ab723b2ba4b387f0a5657724adc99af930fe
+sourceHash: ba73a08cbb74fa3985128d7ecc3401aab9cf2013
 ---
 
 Ejen dalam Control Center boleh memadam fail, push cawangan, menerbitkan pull
@@ -19,9 +19,8 @@ Terdapat tepat satu enjin polisi. Ia dirujuk pada setiap titik tempat sesuatu
 tindakan boleh keluar daripada sistem: daftar alat harness terbina, pintu
 penghantar MCP di sisi pelayan dan mutasi operasi repo. Peraturan yang ditulis
 sekali oleh itu terpakai kepada runtime terbina dan CLI ejen luaran sama rata —
-tiada laluan kedua yang lebih senyap untuk mengelilinginya. Polisi perintah
-lama yang hanya untuk bash masih berfungsi: peraturan boleh memadankan awalan
-perintah dan bukan kelas tindakan, dan kedua-dua bentuk itu wujud bersama dalam
+tiada laluan kedua yang lebih senyap untuk mengelilinginya. Peraturan juga boleh memadankan awalan
+perintah dan bukan kelas tindakan; kedua-dua bentuk itu wujud dalam
 stor yang sama.
 
 Namun, enjin ini bukan pengganti kotak pasir OS, dan kotak pasir bukan
@@ -31,15 +30,15 @@ sama sekali, manakala kotak pasir mengehadkan ke mana proses yang terhasil
 boleh menjangkau. `cc_server` menerapkan kotak pasir di tempat hos menawarkan
 backend — tetapi [Windows tidak menawarkannya dan Linux memerlukan `bwrap` dan
 `socat`](/ms-MY/manual-pengguna/konsep/kotak-pasir-dan-keselamatan/). Pada hos
-seperti itu, guardrail ialah lapisan penguatkuasaan paling luar dan bukan polisi
+seperti itu, hanya larian pemilik pelayan yang dimulakan, melainkan pemilik mematikan kotak pasir untuk semua orang dengan `--sandbox off`. Bagi mana-mana larian yang dimulakan tanpa kotak pasir, guardrail ialah lapisan penguatkuasaan paling luar dan bukan polisi
 yang berdiri di atas lantai, dan itu wajar diketahui apabila anda memutuskan
 sejauh mana kebebasan yang ingin diberikan.
 
 ## ActionClass: taksonomi yang sengaja ditutup
 
 Setiap alat yang mengubah keadaan mengisytiharkan **ActionClasses** mana yang
-menjadi miliknya, daripada himpunan tertutup yang mengandungi tiga belas kelas
-kesan. Lima daripadanya bertanya dahulu secara lalai; yang selebihnya
+menjadi miliknya, daripada himpunan tertutup yang mengandungi empat belas kelas
+kesan. Enam daripadanya bertanya dahulu secara lalai; yang selebihnya
 membenarkan, dan peraturanlah yang mengubahnya.
 
 | Kelas                      | Lalai terbina    | Apa yang dicakup                                                     |
@@ -57,17 +56,19 @@ membenarkan, dan peraturanlah yang mengubahnya.
 | `processSpawn`             | benarkan         | Menjalankan proses (shell dan apa-apa yang memanggil shell)          |
 | `workspaceMutation`        | benarkan         | Mengubah struktur ruang kerja (repo, ruang, ejen)                    |
 | `enclosureControl`         | benarkan         | Mengawal persekitaran terasing (stesen): menghidupkan VM, menghantar input kepadanya |
+| `hostExecution`            | **Tanya dahulu** | Menjalankan arahan pada pelayan hos di luar mana-mana kotak pasir atas permintaan ejen: tugas persekitaran, proses, timbunan compose, dan `eval` apabila kernelnya berjalan tanpa kurungan |
 
 Lapan kelas yang membenarkan secara lalai dipilih dengan andaian bahawa lantai
 kotak pasir terpakai di bawahnya. Ia terpakai di tempat hos menawarkan backend,
-dan tidak terpakai pada Windows atau pada mesin Linux yang tiada `bwrap` dan
-`socat` — jadi jika anda mahu `fileWriteOutsideWorktree` atau `packageInstall`
-dikawal di situ, itulah peraturan yang perlu anda tulis sendiri.
+dan tidak terpakai di bawah `--sandbox off`, mahupun untuk larian pemilik sendiri
+pada Windows atau pada mesin Linux yang tiada `bwrap` dan `socat`. Jika anda mahu
+`fileWriteOutsideWorktree` atau `packageInstall` dikawal di situ, itulah peraturan
+yang perlu anda tulis sendiri.
 
 Himpunan ini ditutup dengan sengaja. Alat pengubah baharu yang tidak
 mengisytiharkan sebarang kelas akan gagal dalam ujian ratchet, jadi taksonomi
 hanya boleh berkembang melalui keputusan yang eksplisit dan berhujah —
-“kekacauan taksonomi ialah kematian ciri ini.” Tiga belas kelas cukup untuk
+“kekacauan taksonomi ialah kematian ciri ini.” Empat belas kelas cukup untuk
 menyatakan polisi yang benar-benar ditulis orang (jangan sekali-kali push tanpa
 bertanya, jangan sekali-kali memadam di luar worktree, sentiasa benarkan
 bacaan) dan cukup sedikit sehingga UI tetapan kekal mudah difahami.
@@ -97,8 +98,7 @@ Dua keputusan membawa jaminan keras:
 
 Tiada selak bagi setiap giliran, dan itu memang disengajakan. Setiap panggilan
 alat menyelesaikan semula polisi dari awal, jadi permintaan berulang untuk
-tindakan yang sama dihadkan oleh “ingat keputusan ini” milik pengendali sendiri,
-bukan oleh apa-apa yang berskop giliran.
+tindakan yang sama dihadkan oleh kelulusan sementara milik pengendali sendiri, bukan oleh apa-apa yang berskop giliran.
 
 ## Peraturan peringkat argumen
 
@@ -115,6 +115,7 @@ Kekangan boleh menamakan:
   “mana-mana cawangan kecuali main”)
 - **hos** — destinasi rangkaian, dengan kad bebas subdomain (`*.internal`)
 - **perintah** — awalan perintah, dipadankan pada sempadan perkataan
+- **alat** — alat tepat yang dinamakan oleh sesuatu panggilan, supaya kelulusan boleh meliputi satu alat dan bukan setiap alat dengan kesan yang sama
 - **siling** — `maxCount` / `maxCents`, jadi “padam sehingga 50 fail” boleh
   dinyatakan
 
@@ -160,16 +161,19 @@ kedua-duanya. Peraturan perintah yang diselesaikan kepada `allow` tidak pernah
 melonggarkan mana-mana satu daripadanya — jaring modus berjalan selepasnya dan
 `deny` daripadanya adalah muktamad.
 
-## Kelulusan berkekalan
+## Kelulusan sementara
 
-Menjawab permintaan kelulusan dengan “ingat ini” menulis peraturan polisi yang
-sebenar: berskop (ruang / ejen / ruang kerja), **dikekang oleh argumen**
-(meluluskan push ke `feature/login` memberikan `feature/**`, bukan `main`) dan
-**membatalkan dirinya sendiri** pada TTL yang eksplisit. Berkata ya untuk
-beberapa jam berikutnya tidak sama dengan menulis semula polisi kekal anda
-secara senyap, dan peraturan yang ditulisnya masuk ke dalam stor yang sama
-dengan asal usul `remembered` dan tarikh luput, jadi ia boleh dibatalkan lebih
-awal.
+Setiap kad kelulusan yang dimunculkan oleh tindakan ejen menawarkan **Luluskan selama 8 jam** apabila tindakan itu mempunyai sesuatu yang lebih sempit daripada kelasnya untuk dinamakan. Memilihnya menulis satu peraturan polisi sebenar, iaitu kelulusan sementara, ke dalam stor yang sama dengan peraturan yang anda tetapkan, dengan asal usul `remembered` dan tarikh luput:
+
+- **Berskop.** Ia ditulis untuk ruang tempat soalan itu datang. Hanya jawapan pentadbir boleh ditulis untuk seluruh ruang kerja.
+- **Sempit.** Ia menamakan satu keluarga cawangan (meluluskan push ke `feature/login` meliputi `feature/**`, bukan `main`), satu folder, satu hos, perintah yang tepat atau alatnya. Commit ialah satu-satunya tindakan yang diluluskan sebagai kelas, untuk ruang itu: tiada apa yang lebih sempit untuk dinamakan.
+- **Membatalkan dirinya sendiri.** Ia tamat selepas lapan jam, dan boleh dibatalkan lebih awal pada halaman kebenaran ejen.
+
+Kelulusan sementara hanya menjimatkan satu soalan. Ia menjawab Tanya dahulu yang ditetapkan pada skopnya sendiri atau skop yang lebih luas, dan tidak sekali-kali Tolak, dari skop mana pun Tolak itu datang. Ia disimpan di sebelah peraturan yang anda tetapkan untuk tindakan itu, jadi menukar peraturan itu membiarkan kelulusan kekal, dan membatalkan kelulusan membiarkan peraturan kekal.
+
+Sesetengah pintu bertanya sendiri selepas polisi membenarkan panggilan: kelulusan yang diisytiharkan sendiri oleh sesuatu alat, atau jaring perintah modus. Mereka melangkau soalan itu hanya untuk kelulusan sementara yang menamakan alat atau perintah tepat itu. Menetapkan tindakan kepada Benarkan tidak akan menyenyapkan mereka.
+
+Tiga kad kekal dengan dua butang kerana tiada apa untuk dibawa ke hadapan: membenarkan sandbox menjalankan program dari satu folder (meluluskannya sudah merupakan geran tersimpan yang boleh anda batalkan), operasi musnah yang anda sahkan sekali, dan pemasangan kemahiran (kemahiran yang berubah patut bertanya semula).
 
 ## Tahap penguatkuasaan
 

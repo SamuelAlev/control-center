@@ -336,7 +336,7 @@ class ObservabilityMetricsCalculator {
       // only ever its children's own rows, so this is hierarchy-safe for ANY
       // composition of the input set — and it is why the total cannot be
       // inflated by summing both a parent's rollup and its child rows.
-      totalCostMicros += cost.preciseCostMicros;
+      totalCostMicros += cost.costMicros;
       // The inclusive tree total adds a run's propagated child rollup only when
       // its parent is absent from the set; a child that IS present is already
       // included on its parent's row and must not be added twice.

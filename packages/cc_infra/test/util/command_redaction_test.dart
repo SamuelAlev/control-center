@@ -96,12 +96,29 @@ void main() {
       );
     });
 
-    test('a too-short GitHub PAT body is NOT redacted (guard threshold)', () {
-      // ghp_ + 32 chars < {36,} → no match, kept verbatim.
+    test('a too-short GitHub token body is NOT redacted (guard threshold)', () {
+      // ghp_ + 10 chars < the shared table's 20 → no match, kept verbatim.
       expect(
-        redactSecrets('leak ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
-        'leak ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        redactSecrets('leak ghp_aaaaaaaaaa'),
+        'leak ghp_aaaaaaaaaa',
       );
+    });
+
+    test('every shape of the shared token table, as the scanner sees it', () {
+      const tokens = [
+        'glpat-aaaaaaaaaaaaaaaaaaaa',
+        'ATATTaaaaaaaaaaaaaaaaaaaaaaaa',
+        'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl',
+        '-----BEGIN RSA PRIVATE KEY-----\nAAAA\n-----END RSA PRIVATE KEY-----',
+        'AIzaaaaaaaaaaaaaaaaaaaaaaaaa',
+        'ghu_aaaaaaaaaaaaaaaaaaaaaaaa',
+      ];
+      for (final token in tokens) {
+        final out = redactSecrets('before $token after');
+        expect(out, isNot(contains(token)), reason: token);
+        expect(out, startsWith('before '), reason: token);
+        expect(out, endsWith(' after'), reason: token);
+      }
     });
 
     test('PAT embedded in a git URL (x-access-token scheme)', () {

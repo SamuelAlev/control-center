@@ -2,7 +2,7 @@
 title: Emparejar un dispositivo
 description: Empareja tu teléfono (o un segundo navegador o escritorio) con tu servidor de Control Center para poder seguir la flota en remoto.
 slug: es-ES/manual/guias/emparejar-dispositivo
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Esta guía te muestra cómo emparejar un teléfono con Control Center, para que
@@ -64,8 +64,7 @@ activo desde el momento en que se crea y la barrera de conexión solo comprueba
 que la credencial esté activa y no haya caducado. Trata el QR y la clave de
 emparejamiento como una contraseña y revoca todo lo que no tuvieras intención de
 entregar. Tanto las sesiones de cliente directas como las que pasan por el relé
-requieren cifrado de extremo a extremo; los clientes antiguos no pueden recurrir
-a RPC en texto plano.
+requieren cifrado de extremo a extremo; no hay RPC en texto plano.
 :::
 
 ## Gestionar dispositivos emparejados
@@ -81,7 +80,7 @@ irreversible desde la perspectiva del dispositivo.
 Las credenciales generadas desde este panel tienen un límite de tiempo: caducan
 30 días después de emitirse y, a partir de ahí, la barrera de conexión las
 rechaza (falla en cerrado). Una credencial generada con `cc_server pair` en la
-línea de comandos **no caduca en absoluto**: revócala a mano cuando se retire la
+línea de comandos caduca igual: vuelve a ejecutar `pair` para emitir una nueva, y revócala a mano cuando se retire la
 máquina para la que era.
 
 ## Cambiar de espacio de trabajo desde el teléfono

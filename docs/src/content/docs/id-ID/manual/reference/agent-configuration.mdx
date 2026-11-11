@@ -2,7 +2,7 @@
 title: Konfigurasi agen
 description: Setiap bidang pada entitas agen dan enum yang digunakannya.
 slug: id-ID/panduan-pengguna/referensi/konfigurasi-agen
-sourceHash: 904bb7405ad37c80514442bf1aab84b6c68e34c6
+sourceHash: 3853c61b732ee1d5ddd860f7eb567ed859f49565
 ---
 
 Referensi ini mencantumkan setiap bidang pada entitas agen, beserta enum dan flag yang digunakannya. Untuk panduan langkah demi langkah dalam membuat atau mengedit agen di aplikasi, lihat [Buat dan konfigurasi agen](/id-ID/panduan-pengguna/panduan-praktis/buat-agen/).
@@ -79,6 +79,35 @@ Kumpulan pengenal skill yang tidak dapat diubah dan tidak peka huruf besar/kecil
 ```
 {'flutter', 'dart', 'rest-api'}
 ```
+
+## Hook shell
+
+Hook shell memungkinkan pemilik server menjalankan skrip mereka sendiri di sekitar run harness bawaan: sekali saat sesi dimulai, sebelum setiap pemanggilan alat, dan setelah setiap pemanggilan alat. Hook adalah kode arbitrer, sehingga hook merupakan konfigurasi host. Hanya pemilik server yang menyiapkannya, secara manual, di mesin server. Tidak ada pengaturan di aplikasi dan tidak ada operasi yang menulisnya.
+
+Untuk agen, hook berada di folder miliknya di bawah direktori data server:
+
+```text
+<data dir>/_agent_hooks/<workspace id>/<agent slug>/hooks.json
+```
+
+`<agent slug>` adalah nama folder agen di ruang kerja (`agents/<slug>/`). Folder itu berada di luar penyimpanan setiap ruang kerja, dan setiap sandbox menyembunyikan direktori data, sehingga tidak ada anggota, run, atau terminal yang dapat menulisnya.
+
+`hooks.json` memetakan salah satu dari tiga kunci ke sebuah skrip, dengan path relatif terhadap folder hook:
+
+| Kunci          | Kapan dijalankan             | Arti kode keluarnya                                              |
+| -------------- | ---------------------------- | ---------------------------------------------------------------- |
+| `sessionStart` | Sekali, saat run dimulai     | Tidak ada; hook hanya mengamati                                  |
+| `preTool`      | Sebelum setiap pemanggilan alat | `0` mengizinkan pemanggilan; selain itu menolaknya            |
+| `postTool`     | Setelah setiap pemanggilan alat | Tidak ada; hook hanya mengamati                               |
+
+- Setiap skrip dijalankan sebagai executable tersendiri, tanpa shell dan tanpa argumen, sehingga ia harus dapat dieksekusi dan dimulai dengan baris shebang. Ia menerima peristiwa sebagai JSON di stdin: nama peristiwa, dan untuk hook alat, nama alat beserta argumennya (`preTool`) atau hasilnya (`postTool`).
+- Hook berjalan sebagai salah satu proses alat run, di direktori agen untuk run tersebut. Ketika server menjalankan agen di sandbox, hook berjalan di dalam sandbox run. Ia mendapat lingkungan minimal dan tidak ada kredensial run: tidak ada token forge atau penyedia, dan tidak ada akses gateway.
+- Setiap hook memiliki 30 detik. Outputnya dibaca lalu dibuang.
+- `preTool` gagal tertutup. Kode keluar bukan nol, timeout, atau skrip yang tidak dapat dimulai akan menolak pemanggilan alat.
+- Path yang absolut, tidak ada, atau yang keluar dari folder hook (tautan diselesaikan terlebih dahulu) ditolak, dan log run menyatakan hook mana yang ditolak dan alasannya. `preTool` yang ditolak atau tidak dapat dibaca akan menolak setiap pemanggilan alat sampai diperbaiki.
+- Blok `hooks` di `.agents/harness.json`, baik di repositori maupun di folder agen itu sendiri, diabaikan. Repositori sering kali merupakan kode orang lain, dan folder agen dapat ditulis oleh anggota serta oleh run. Log run menyatakan bahwa blok itu diabaikan dan di mana hook dibaca sebagai gantinya.
+
+Hook shell hanya berlaku untuk harness bawaan. `preTool` atau `postTool` yang dikonfigurasi membuat run memanggil alatnya satu per satu.
 
 ## AgentLiveState (turunan)
 

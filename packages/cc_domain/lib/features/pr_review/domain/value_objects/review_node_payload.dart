@@ -90,7 +90,7 @@ enum ReviewNodeStatus {
   dismissed;
 
   /// The stable wire/storage name. `consensusReady` stores as
-  /// `consensus_ready`, which predates the enum and is what is on disk.
+  /// `consensus_ready`.
   String get wireName =>
       this == ReviewNodeStatus.consensusReady ? 'consensus_ready' : name;
 
@@ -138,9 +138,9 @@ enum ReviewFindingProvenance {
 /// What a finding is *about* — the reader-facing concern it belongs to.
 ///
 /// Orthogonal to [ReviewNodePriority]: the category says who should care, the
-/// priority says whether it blocks. Absent on findings written before the
-/// three-axis vocabulary existed, which is why every consumer treats it as
-/// optional rather than defaulting it to something wrong.
+/// priority says whether it blocks. A reviewer may omit it, which is why
+/// every consumer treats it as optional rather than defaulting it to
+/// something wrong.
 enum ReviewFindingCategory {
   /// Vulnerabilities, authn/authz flaws, secret handling, data exposure.
   security,
@@ -232,8 +232,8 @@ enum ReviewFindingSeverity {
     ReviewFindingSeverity.info => ReviewNodePriority.p3,
   };
 
-  /// The severity a priority-only (legacy) finding reads as, so one ordering
-  /// covers old and new payloads alike.
+  /// The severity a priority-only finding reads as, so one ordering covers
+  /// every payload.
   static ReviewFindingSeverity fromPriority(ReviewNodePriority priority) =>
       switch (priority) {
         ReviewNodePriority.p0 => ReviewFindingSeverity.critical,
@@ -384,11 +384,11 @@ class ReviewNodePayload {
   final List<String> linkedTicketIds;
 
   /// Stable semantic-cohort key this finding routes to (PRD 18 §1). Null for
-  /// findings recorded before cohorts were computed or repository-wide notes.
+  /// findings recorded without a cohort or repository-wide notes.
   final String? cohortKey;
 
   /// The review axis that produced this finding (PRD 18 §7). Null for findings
-  /// from the legacy single-axis review path.
+  /// from the single-axis review path.
   final ReviewAxis? axis;
 
   /// Who produced this finding — a reviewer agent or a deterministic rule.
@@ -396,19 +396,18 @@ class ReviewNodePayload {
   /// The distinction is load-bearing rather than cosmetic: a regex hit and a
   /// model's judgement carry different kinds of certainty, and a reader who
   /// cannot tell them apart will either over-trust the model or dismiss the
-  /// rule. Absent metadata reads as [ReviewFindingProvenance.agent], which is
-  /// what every finding written before deterministic scanning was.
+  /// rule. Absent metadata reads as [ReviewFindingProvenance.agent].
   final ReviewFindingProvenance provenance;
 
   /// The static rule that produced this finding, when [provenance] is
   /// [ReviewFindingProvenance.staticRule]. Null otherwise.
   final String? ruleId;
 
-  /// The concern this finding belongs to. Null on findings filed before the
-  /// three-axis vocabulary — the UI omits the chip rather than guessing.
+  /// The concern this finding belongs to. Null when the reviewer stated none
+  /// — the UI omits the chip rather than guessing.
   final ReviewFindingCategory? category;
 
-  /// The reader-facing severity. Null on legacy findings; use
+  /// The reader-facing severity. Null on priority-only findings; use
   /// [effectiveSeverity], which falls back to the priority mapping.
   final ReviewFindingSeverity? severity;
 
@@ -442,8 +441,8 @@ class ReviewNodePayload {
   /// Whether this finding came from a deterministic rule rather than an agent.
   bool get isDeterministic => provenance == ReviewFindingProvenance.staticRule;
 
-  /// This finding's severity, falling back to the priority mapping so legacy
-  /// and current payloads sort and threshold on one scale.
+  /// This finding's severity, falling back to the priority mapping so every
+  /// payload sorts and thresholds on one scale.
   ReviewFindingSeverity get effectiveSeverity =>
       severity ?? ReviewFindingSeverity.fromPriority(priority);
 

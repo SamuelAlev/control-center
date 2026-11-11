@@ -2,7 +2,7 @@
 title: cc_server CLI
 description: Elke flag, omgevingsvariabele, subcommando en datadirectorypad van de headless server.
 slug: nl-NL/handleiding/referentie/cc-server-cli
-sourceHash: 4653187d295065918324777d9aa872b4896dce2e
+sourceHash: 10f84d5eb670dafa742b53fa6190384c3362356e
 ---
 
 Elke procesflag heeft een CLI-flag of een omgevingsvariabele; de flag wint, dan
@@ -48,7 +48,7 @@ opstarten wanneer een flag geen effect lijkt te hebben.
 
 | Flag                     | Env                             | Standaard                               | Betekenis                                                                                                                     |
 | ------------------------ | ------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                    | Of agent-runs worden verpakt in de OS-native sandbox van de host wanneer die beschikbaar is. Een opt-out, geen opt-in — zie hieronder |
+| `--sandbox`              | `CC_SERVER_SANDBOX`             | `on`                                    | `on` verpakt agent-runs in de OS-native sandbox van de host, en op een host zonder die starten alleen de runs van de servereigenaar. `off` draait de agents van elk lid op deze host zonder inperking. Zie hieronder |
 | `--code-index`           | `CC_SERVER_CODE_INDEX`          | `on`                                    | Noodschakelaar in het veld voor het op de achtergrond indexeren van de codegraph. Met `off` start hij schoon, zonder herbouw  |
 | `--code-index-defer`     | `CC_SERVER_CODE_INDEX_DEFER`    | `15`                                    | Seconden waarmee de eerste indexeringsronde na de gereedheidsbanner wordt uitgesteld (begrensd op 0–300)                      |
 | `--tool-deferral`        | `CC_SERVER_TOOL_DEFERRAL`       | `on`                                    | Of harness-runs een kleine residente toolset plus een naamindex meesturen en de rest bij het eerste gebruik laden. Zie hieronder |
@@ -86,23 +86,25 @@ waar elk kindproces het kan lezen. Vullen vanuit `.env` gebeurt één keer per
 veld, dus een latere bewerking in Instellingen wordt niet ongedaan gemaakt door
 een herstart. Een lege waarde geldt als niet ingesteld.
 
-Achtergrondwerk voor GitLab en Bitbucket leest ook `GITLAB_TOKEN` /
-`CI_JOB_TOKEN` en `BITBUCKET_API_TOKEN` / `BITBUCKET_TOKEN` met
-`BITBUCKET_EMAIL`. GitHub heeft geen inloggegeven uit de omgeving.
+Geen enkel forge-inloggegeven komt uit de omgeving: GitHub, GitLab en Bitbucket
+handelen allemaal op de eigen aanmelding of het token van een lid, of op
+GitHub-app-tokens voor één repository die daarbij zijn begrensd.
 
 ### `--sandbox`
 
 De server peilt de host één keer bij het opstarten en verpakt de uitvoering van
 agentcommando's in de OS-native sandbox wanneer er een backend beschikbaar is:
-`sandbox-exec` (Seatbelt) op macOS, `bwrap` plus `socat` op Linux en WSL2. Waar
-die er niet is — Windows, of een Linux-host zonder die tools — vallen runs terug
-op het saneren van de omgeving, het commandobeleid en de actiebeveiligingen, en
-geeft het opstartlog aan welke toestand geldt.
+`sandbox-exec` (Seatbelt) op macOS, `bwrap` plus `socat` op Linux en WSL2. De beslissing wordt één keer genomen en blijft geldig tot de server herstart. Er zijn drie uitkomsten, elk getoond op de blootstellingsregel bij het opstarten:
 
-`--sandbox off` is de noodschakelaar in het veld voor het geval dat de peiling
-niet kan zien: een host waar het sandboxprofiel zelf zich misdraagt. Het vraagt
-geen herbouw, en de server logt een waarschuwing zolang het proces leeft, zodat
-de toestand nooit stil blijft.
+| `sandbox=`    | Wanneer                                 | Wiens agent-runs starten                                                         |
+| ------------- | --------------------------------------- | -------------------------------------------------------------------------------- |
+| `native`      | Een backend is beschikbaar en `--sandbox` staat op `on` | Die van iedereen, omhuld                                               |
+| `off`         | `--sandbox off`                         | Die van iedereen, zonder inperking op deze host                                  |
+| `unavailable` | `--sandbox on` en geen backend (Windows, of Linux zonder `bwrap` en `socat`) | Alleen runs waarvoor de servereigenaar verantwoordelijk is, zonder inperking. Bij anderen wordt geweigerd met "Deze server heeft geen sandbox, dus alleen de serverbeheerder kan hier agents uitvoeren." |
+
+Voor automatisering is de verantwoordelijke persoon degene aan wie de automatisering is gebonden. Zonder vastgelegde servereigenaar start op een `unavailable`-host geen enkele run. Op Linux en WSL2 met bubblewrap geïnstalleerd faalt de native dispatch momenteel voor elke run; zie [Sandbackends](/nl-NL/handleiding/referentie/sandboxbackends/#linux-bubblewrap).
+
+`--sandbox off` is de keuze van de servereigenaar voor iedereen die de server gebruikt: die laat de agents van elk lid op deze machine zonder inperking draaien. Gebruik het op een host waar het sandboxprofiel zelf zich misdraagt, of om leden agents te laten draaien op een host zonder backend. Het vraagt geen herbouw, en de server logt een waarschuwing zolang het proces leeft, zodat de toestand nooit stil blijft.
 
 ### `--tool-deferral`
 
@@ -183,7 +185,6 @@ server pikt een wijziging binnen 10 minuten of bij een herstart op.
 | `cc_server connect enable`      | Gebruikt de gehoste Connect van Control Center                                                                   |
 | `cc_server connect enable --url <url>` | Gebruikt een eigen Connect op die URL (HTTPS, of `http` op loopback)                                      |
 | `cc_server connect disable`     | Stopt met Connect. Alleen de eigen apps van de server melden mensen aan                                          |
-| `cc_server connect rotate-key --yes` | Maakt een nieuwe installatiesleutel en een nieuw installatie-ID. Iedereen die zich via Connect heeft aangemeld, meldt zich opnieuw aan. Zonder `--yes` waarschuwt het alleen en sluit af met `2` |
 
 `status` zonder commando is de standaard. Elk commando accepteert `--data-dir`.
 `CC_CONNECT_URL` gaat voor wat deze commando's opslaan. Een onbekend commando

@@ -79,8 +79,9 @@ class UserPreferenceSync {
   ObservableKeyValueBackend get _backend => ref.read(keyValueBackendProvider);
 
   /// Applies [server] as the authoritative snapshot, promoting any local values
-  /// the server has never seen. Idempotent: after the first run the server
-  /// holds the key, so later runs take the pull branch.
+  /// the server has never seen (a choice made offline or before this user's
+  /// first sync). Idempotent: after the first run the server holds the key, so
+  /// later runs take the pull branch.
   Future<void> bootstrap(Map<String, String> server) async {
     _promoted
       ..clear()

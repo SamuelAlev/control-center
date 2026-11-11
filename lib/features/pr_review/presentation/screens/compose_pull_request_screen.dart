@@ -4,11 +4,11 @@ import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/di/demo_providers.dart';
 import 'package:control_center/features/forge/providers/forge_providers.dart';
 import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_commits_tab.dart';
-import 'package:control_center/features/pr_review/presentation/screens/pull_request_detail/pr_tab_chip.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/compose/compose_branch_bar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/compose/compose_file_tree_overlay.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/compose/compose_pr_body_field.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/compose/compose_pr_pickers.dart';
+import 'package:control_center/features/pr_review/presentation/widgets/compose/compose_tab_bar.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/compose/compose_unpushed_head_notice.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pr_diff_view.dart';
 import 'package:control_center/features/pr_review/presentation/widgets/pull_request_list/pr_list_shared.dart';
@@ -564,11 +564,11 @@ class _BodyState extends ConsumerState<_Body>
                     if (showTabs)
                       SliverPersistentHeader(
                         pinned: true,
-                        delegate: _ComposeTabBarDelegate(
+                        delegate: ComposeTabBarDelegate(
                           height: _tabStripHeight,
                           background: t.bgPrimary,
                           borderColor: t.borderSecondary,
-                          child: _ComposeTabBar(
+                          child: ComposeTabBar(
                             controller: _tabController,
                             filesCount: filesCount,
                             commitsCount: commitsCount,
@@ -625,7 +625,7 @@ class _BodyState extends ConsumerState<_Body>
   }) {
     if (!validPair) {
       return SliverToBoxAdapter(
-        child: _CenteredHint(message: l10n.composePrPickBranches),
+        child: ComposeCenteredHint(message: l10n.composePrPickBranches),
       );
     }
     return diffAsync.when(
@@ -636,12 +636,12 @@ class _BodyState extends ConsumerState<_Body>
         ),
       ),
       error: (e, _) => SliverToBoxAdapter(
-        child: _CenteredHint(message: l10n.failedWithError('$e')),
+        child: ComposeCenteredHint(message: l10n.failedWithError('$e')),
       ),
       data: (diff) {
         if (diff == null || (diff.files.isEmpty && diff.commits.isEmpty)) {
           return SliverToBoxAdapter(
-            child: _CenteredHint(message: l10n.composePrNothingToCompare),
+            child: ComposeCenteredHint(message: l10n.composePrNothingToCompare),
           );
         }
         if (_activeTab == 1) {
@@ -666,7 +666,7 @@ class _BodyState extends ConsumerState<_Body>
         }
         if (diff.files.isEmpty) {
           return SliverToBoxAdapter(
-            child: _CenteredHint(message: l10n.composePrNothingToCompare),
+            child: ComposeCenteredHint(message: l10n.composePrNothingToCompare),
           );
         }
         return SliverPadding(
@@ -678,137 +678,6 @@ class _BodyState extends ConsumerState<_Body>
           ),
         );
       },
-    );
-  }
-}
-
-/// The pinned Files-changed / Commits tab strip above the compose diff, styled
-/// to match the PR detail page's tab strip.
-class _ComposeTabBar extends StatelessWidget {
-  const _ComposeTabBar({
-    required this.controller,
-    required this.filesCount,
-    required this.commitsCount,
-  });
-
-  final TabController controller;
-  final int filesCount;
-  final int commitsCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return TabBar(
-      controller: controller,
-      isScrollable: true,
-      tabAlignment: TabAlignment.start,
-      dividerColor: Colors.transparent,
-      indicatorColor: t.textPrimary,
-      labelColor: t.textPrimary,
-      unselectedLabelColor: t.textTertiary,
-      tabs: [
-        Tab(
-          height: 40,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(AppIcons.fileText, size: 14),
-              const SizedBox(width: 6),
-              Text(l10n.filesChanged),
-              const SizedBox(width: 6),
-              CountBadge(count: filesCount),
-            ],
-          ),
-        ),
-        Tab(
-          height: 40,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(AppIcons.gitCommit, size: 14),
-              const SizedBox(width: 6),
-              Text(l10n.commits),
-              const SizedBox(width: 6),
-              CountBadge(count: commitsCount),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Sliver delegate that pins [_ComposeTabBar] below the form while the diff
-/// scrolls. Mirrors the PR detail page's tab-strip header.
-class _ComposeTabBarDelegate extends SliverPersistentHeaderDelegate {
-  _ComposeTabBarDelegate({
-    required this.height,
-    required this.background,
-    required this.borderColor,
-    required this.child,
-  });
-
-  final double height;
-  final Color background;
-  final Color borderColor;
-  final Widget child;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) {
-    return Material(
-      color: background,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: borderColor)),
-        ),
-        child: SizedBox(
-          height: height,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: child,
-          ),
-        ),
-      ),
-    );
-  }
-
-  @override
-  bool shouldRebuild(_ComposeTabBarDelegate oldDelegate) {
-    return oldDelegate.height != height ||
-        oldDelegate.background != background ||
-        oldDelegate.borderColor != borderColor ||
-        oldDelegate.child != child;
-  }
-}
-
-class _CenteredHint extends StatelessWidget {
-  const _CenteredHint({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.designSystem ?? DesignSystemTokens.light();
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 48),
-      child: Center(
-        child: Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 13.5, color: t.textTertiary),
-        ),
-      ),
     );
   }
 }

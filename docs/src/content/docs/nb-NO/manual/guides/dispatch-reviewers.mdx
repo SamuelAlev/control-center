@@ -2,7 +2,7 @@
 title: Send ut reviewer-agenter
 description: Send spesialist-reviewere mot en PR fra PR-visningen, et MCP-verktøy eller et pipeline-steg.
 slug: nb-NO/handbok/slik-gjor-du/send-ut-reviewer-agenter
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Denne guiden viser deg hvordan du sender ut reviewer-agenter for å gjennomgå
@@ -88,7 +88,7 @@ To hendelser betyr noe her, og de kan ikke brukes om hverandre:
 | Hendelse               | Utløses når                                                                                                     | Nyttelastnøkler                                                    |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 | `PullRequestPublished` | En PR åpnes **gjennom Control Center** — komponeringsflaten, eller en agent som kaller `pr_lifecycle.publish`    | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                 |
-| `ExternalPrDetected`   | PR-avspørringstjenesten finner en PR som er åpnet direkte på GitHub                                             | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`       |
+| `ExternalPrDetected`   | PR-avspørringstjenesten finner en PR som er åpnet direkte på GitHub                                             | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author`       |
 
 En PR som åpnes på github.com, utløser aldri `PullRequestPublished`, så en mal
 som bare er koblet til den hendelsen, ser den ikke. Legg også merke til at

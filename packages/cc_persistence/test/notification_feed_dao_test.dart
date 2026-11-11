@@ -252,33 +252,30 @@ void main() {
         if (s.readAt != null) s.itemId,
     };
 
-    test(
-      'marks only that conversation, plus legacy space-only frames',
-      () async {
-        await dao.insertAndPrune(message('mine', base));
-        await dao.insertAndPrune(message('legacy', base, conversationId: null));
-        await dao.insertAndPrune(
-          message('sibling', base, conversationId: 'conv-2'),
-        );
-        await dao.insertAndPrune(
-          message('elsewhere', base, spaceId: 'space-2'),
-        );
-        await dao.insertAndPrune(
-          message('pr', base, method: 'notifications/pr_merged'),
-        );
+    test('marks only that conversation', () async {
+      await dao.insertAndPrune(message('mine', base));
+      await dao.insertAndPrune(
+        message('no-conversation', base, conversationId: null),
+      );
+      await dao.insertAndPrune(
+        message('sibling', base, conversationId: 'conv-2'),
+      );
+      await dao.insertAndPrune(message('elsewhere', base, spaceId: 'space-2'));
+      await dao.insertAndPrune(
+        message('pr', base, method: 'notifications/pr_merged'),
+      );
 
-        await dao.markConversationMessagesRead(
-          'ws-1',
-          'user-1',
-          spaceId: 'space-1',
-          conversationId: 'conv-1',
-          readAt: base.add(const Duration(minutes: 1)),
-        );
+      await dao.markConversationMessagesRead(
+        'ws-1',
+        'user-1',
+        spaceId: 'space-1',
+        conversationId: 'conv-1',
+        readAt: base.add(const Duration(minutes: 1)),
+      );
 
-        expect(await readIds('user-1'), {'mine', 'legacy'});
-        expect(await readIds('user-2'), isEmpty, reason: 'states are per user');
-      },
-    );
+      expect(await readIds('user-1'), {'mine'});
+      expect(await readIds('user-2'), isEmpty, reason: 'states are per user');
+    });
 
     test('leaves messages that arrived after the read alone', () async {
       await dao.insertAndPrune(message('later', base));
@@ -403,7 +400,11 @@ void main() {
 
       final at = DateTime.utc(2026, 10, 10, 12);
       expect(
-        await dao.resolveAgentWaitsRecordedBefore('ws-1', DateTime(2026, 10, 10), at),
+        await dao.resolveAgentWaitsRecordedBefore(
+          'ws-1',
+          DateTime(2026, 10, 10),
+          at,
+        ),
         1,
       );
       final stamps = await resolvedAt();

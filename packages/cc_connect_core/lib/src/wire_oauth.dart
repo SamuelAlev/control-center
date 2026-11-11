@@ -14,16 +14,14 @@ final class OAuthStartRequest {
     final workspace = json['workspace_id'];
     final challenge = json['code_challenge'];
     final method = json['code_challenge_method'];
-    // Older servers still say `purpose: sign_in` (the only flow there ever
-    // was); anything else, or an installation id, is a flow this Connect
-    // does not run.
-    final purpose = json['purpose'];
+    // Sign-in is the only flow: a `purpose` or an installation id names a
+    // flow this Connect does not run.
     final hint = json['login_hint'];
     if (workspace is! String ||
         !isWorkspaceScope(workspace) ||
         challenge is! String ||
         method != 'S256' ||
-        (purpose != null && purpose != 'sign_in') ||
+        json.containsKey('purpose') ||
         json['installation_id'] != null ||
         (hint != null && hint is! String)) {
       throw const FormatException('oauth start');

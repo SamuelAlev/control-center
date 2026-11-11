@@ -151,8 +151,8 @@ export function sitemapAlternates(url: string, routes: ManualRoutes): { url: str
 
 /**
  * Where a localized manual URL that is not canonical lives now: Starlight's
- * prefixed English path (the pre-translation URL, still built as a fallback
- * route) or another locale's slug under this prefix. Null when [pathname] is
+ * prefixed English path (still built as a fallback route) or another locale's
+ * slug under this prefix. Null when [pathname] is
  * canonical or not a manual page. Returns an unencoded path.
  */
 export function manualRedirect(pathname: string, routes: ManualRoutes): string | null {

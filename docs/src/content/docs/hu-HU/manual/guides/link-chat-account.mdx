@@ -2,7 +2,7 @@
 title: Slack-fiók összekapcsolása
 description: Igazolja, hogy egy Slack-identitás az Öné, hogy az ügynökök az Ön üzeneteire cselekedjenek, és a munkája Önhöz legyen rendelve.
 slug: hu-HU/kezikonyv/gyakorlati-utmutatok/csevegofiok-osszekapcsolasa
-sourceHash: b205878bbdf9be64cefa1d598e11d7f0d74b63b1
+sourceHash: 792c9160ac1358a3166fae162976811f6f9925b1
 ---
 
 Ez az útmutató bemutatja, hogyan kapcsolhatja össze a csevegőidentitását a Control Center-felhasználójával, és hogyan választhatja le.
@@ -19,7 +19,7 @@ Egy össze nem kapcsolt tag, aki megemlíti a botot, abban a Slack szálban kap 
 
 Az összekapcsoláshoz mindkét oldal kell: a kód Slackből való elküldése a Slack-fiókot igazolja, a Control Centerben való megerősítése pedig azt, hogy az a fiók az Öné.
 
-1. Lépjen a **Beállítások → Munkaterület → Profil és identitás** helyre, és görgessen az **Összekapcsolt csevegőfiókok** kártyához
+1. Lépjen a **Beállítások → Ön → Profil** helyre, és keresse meg az **Összekapcsolt csevegőfiókok** kártyát
 2. A Slack blokkon kattintson **A Slack fiókom összekapcsolása** elemre. A párbeszédablak egy egyszer használatos kódot mutat, például:
 
 ```text
@@ -31,7 +31,7 @@ K7M2QP
 5. Ha ez az Ön fiókja, kattintson a **Megerősítés** gombra. Az összekapcsolás létrejön, a párbeszédablak ezt jelzi, és a bot ugyanabban a közvetlen üzenetben megerősíti
 6. Ha nem az Öné, kattintson az **Elutasítás** gombra. Semmi nem kapcsolódik össze, és a kód érvényét veszti; az újrapróbálkozáshoz kattintson az **Új kód kérése** gombra
 
-A párbeszédablak bezárása nem veszít el egy igénylést. A később érkező kód a profiloldala **A Slack fiókom összekapcsolása** sorában várakozik, ugyanazzal a **Megerősítés** és **Elutasítás** lehetőséggel.
+A párbeszédablak bezárása nem veszít el egy igénylést. A később érkező kód az **Összekapcsolt csevegőfiókok** kártya **A Slack fiókom összekapcsolása** sorában várakozik, ugyanazzal a **Megerősítés** és **Elutasítás** lehetőséggel.
 
 Miért van megerősítési lépés: egy a válla fölött leolvasott és valaki más Slack-fiókjából elküldött kód különben azt a fiókot az Ön nevében cselekvővé tenné. Csak Ön erősítheti meg, és csak pontosan azt a profilt, amely a kódot elküldte.
 
@@ -50,15 +50,17 @@ Egy ismeretlen, lejárt, elutasított vagy másik munkaterülethez kiállított 
 
 Ha a Slack-profiljában van egy megerősített e-mail-cím, amely egyezik egy olyan Control Center-felhasználó ellenőrzött e-mail-címével, aki **már tagja ennek a munkaterületnek**, a híd az első beszélgetés alkalmával összekapcsolja Önt. Kódra nincs szükség.
 
+A Control Center oldalon az e-mail-cím akkor számít ellenőrzöttnek, ha az egyszeri bejelentkezés vagy a SCIM állította be, vagy ha a szerver tulajdonosa megerősítette a **Beállítások → Szerver → Emberek** menüpontban. A saját profiljában megadott cím nem ellenőrzött, ezért addig nem köt össze semmit, amíg a tulajdonos meg nem erősíti; addig használja a kódos összekapcsolást.
+
 Mindkét feltétel számít: az e-mail-egyezés igazolja az identitást, de hozzáférést csak a tagság ad, így egy idegen, akinek a címe véletlenül létezik a szerveren, semmihez sem kapcsolódik. A névsor mutatja, hogyan jött létre az egyes kapcsolatok („e-mail alapján párosítva” vagy „kóddal összekapcsolva”).
 
 Az automatikus összekapcsoláshoz a `users:read.email` hatókör szükséges. Enélkül a Slack nem adja ki a címet, és csak a kódos folyamat marad.
 
 ## Ki van összekapcsolva
 
-A névsor a munkaterület adminisztrációjához tartozik, ezért a felület másik felén él: **Beállítások → Munkaterület → Általános → Csevegőhidak → Összekapcsolt fiókok**. Kilistázza a munkaterület minden összekapcsolt tagját, azt a Slack-fiókot, amelyhez tartoznak, és a kapcsolat létrejöttének módját.
+A névsor a munkaterület adminisztrációjához tartozik, ezért az adminisztrációs kártyán él: **Beállítások → Munkaterület → Integrációk → Csevegőhidak → Összekapcsolt fiókok**. Kilistázza a munkaterület minden összekapcsolt tagját, azt a Slack-fiókot, amelyhez tartoznak, és a kapcsolat létrejöttének módját.
 
-A saját állapota a profiloldalán látható: az **A Slack fiókom összekapcsolása** sor az összekapcsolás után ezt írja: „Összekapcsolva: _your-slack-id_”, összekapcsolás hiányában pedig arra kéri, hogy kapcsolja össze.
+A saját állapota a **Beállítások → Ön → Profil** oldalon látható: az **A Slack fiókom összekapcsolása** sor az összekapcsolás után ezt írja: „Összekapcsolva: _your-slack-id_”, összekapcsolás hiányában pedig arra kéri, hogy kapcsolja össze.
 
 A névsor és az igénylés élő előfizetés, mert a változás a másik oldalon történik: Ön küldi el a kódot a Slackben, így egyetlen alkalmazásból érkező kérés sem hozhatja vissza a választ.
 

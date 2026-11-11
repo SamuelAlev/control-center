@@ -2,7 +2,7 @@
 title: Para en enhet
 description: Parkoppla din telefon (eller en andra webbläsare eller skrivbordsapp) med din Control Center-server så att du kan följa flottan på distans.
 slug: sv-SE/handbok/how-to-guider/para-enhet
-sourceHash: 0f4800656af827d5470db17dac06efaec673be53
+sourceHash: cdddda465f2b2cad0ec418e0f03e067f518b2bc1
 ---
 
 Den här guiden visar hur du parkopplar en telefon med Control Center, så att du
@@ -59,8 +59,7 @@ Det finns inget steg där något väntar på godkännande: en utfärdad enhet ä
 från det att den skapas, och anslutningsgrinden kontrollerar bara att
 autentiseringsuppgiften är aktiv och inte har löpt ut. Behandla QR-koden och
 parkopplingsnyckeln som ett lösenord och återkalla allt du inte menade att lämna
-ut. Både direkta och reläade klientsessioner kräver end-to-end-kryptering; äldre
-klienter kan inte falla tillbaka på klartext-RPC.
+ut. Både direkta och reläade klientsessioner kräver end-to-end-kryptering; klartext-RPC finns inte.
 :::
 
 ## Hantera parkopplade enheter
@@ -76,7 +75,7 @@ sker omedelbart och går inte att ångra från enhetens perspektiv.
 Autentiseringsuppgifter som utfärdas från den här panelen är tidsbegränsade: de
 löper ut 30 dagar efter att de utfärdats, och anslutningsgrinden faller stängt för
 dem därefter. En autentiseringsuppgift som utfärdats med `cc_server pair` på
-kommandoraden har **ingen utgång alls** — återkalla den för hand när maskinen den
+kommandoraden löper ut på samma sätt; kör `pair` igen för att utfärda en ny, och återkalla den för hand när maskinen den
 var avsedd för tas ur bruk.
 
 ## Byt arbetsyta från telefonen

@@ -2,6 +2,7 @@ import 'package:cc_domain/cc_domain.dart'
     show
         AuthException,
         NotFoundException,
+        RepoGrantRequiredException,
         RepoOpKind,
         WorkspaceMismatchException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
@@ -18,6 +19,11 @@ import 'package:cc_server_core/src/forge/forge_pr_client_resolver.dart';
 /// The linked repos of a workspace (forge or not; the ops filter).
 typedef WorkspaceReposLookup = Future<List<Repo>> Function(String workspaceId);
 
+/// Refuses [userId] reading [repo]'s forge data in [workspaceId] unless their
+/// own sign-in on its forge can read it (`PrRepoVisibility.requireForgeAccess`).
+typedef ForgeReadAccessCheck =
+    Future<void> Function(String workspaceId, String userId, Repo repo);
+
 /// `forge.repoBranches`, `forge.defaultBranch`, `forge.prTemplates` and
 /// `forge.compareBranches`: the compose-PR reads, on the repo's own forge.
 ///
@@ -25,12 +31,14 @@ typedef WorkspaceReposLookup = Future<List<Repo>> Function(String workspaceId);
 /// the client holds no token. The `owner`/`repo` (and optional `forge`) args
 /// must name a forge repo linked to the bound workspace, and the caller must
 /// hold a read grant on it (membership is not code access), before any forge
-/// call. Stating `forge` keeps two repos with the same `owner/name` on
+/// call, and their own forge sign-in must be able to read it (PR
+/// visibility). Stating `forge` keeps two repos with the same `owner/name` on
 /// different forges apart; without it a coordinate both forges share is
 /// refused rather than guessed. Empty when no client resolver is wired.
 List<RepoOp> buildForgeComposeOps({
   required WorkspaceReposLookup linkedRepos,
   required WorkspaceMembershipRepository? members,
+  required ForgeReadAccessCheck? forgeAccess,
   required ForgePrClientResolver? clientFor,
   ForgeConnectionView? connections,
 }) {
@@ -40,10 +48,11 @@ List<RepoOp> buildForgeComposeOps({
 
   Future<(Repo, ForgePrClient)> resolve(RepoOpContext ctx) async {
     final workspaceId = ctx.workspaceId!;
-    final repo = await _requireLinkedForgeRepo(
+    final repo = await requireLinkedForgeRepo(
       ctx,
       linkedRepos: linkedRepos,
       members: members,
+      forgeAccess: forgeAccess,
     );
     return (
       repo,
@@ -148,11 +157,14 @@ List<RepoOp> buildForgeComposeOps({
 }
 
 /// The forge repo `owner`/`repo` (and `forge`, when stated) names among the
-/// bound workspace's linked repos, after checking the caller's read grant.
-Future<Repo> _requireLinkedForgeRepo(
+/// bound workspace's linked repos, after checking the caller's read grant
+/// and their own forge reach ([forgeAccess]; none wired fails closed). The
+/// one gate for extra ops that read a repo's forge data by coordinate.
+Future<Repo> requireLinkedForgeRepo(
   RepoOpContext ctx, {
   required WorkspaceReposLookup linkedRepos,
   required WorkspaceMembershipRepository? members,
+  required ForgeReadAccessCheck? forgeAccess,
 }) async {
   final owner = ctx.args['owner'];
   final name = ctx.args['repo'];
@@ -197,8 +209,18 @@ Future<Repo> _requireLinkedForgeRepo(
   if (!member.role.isAdmin) {
     final grants = await members.getRepoGrants(workspaceId, ctx.userId);
     if (!(grants[repo.id] ?? RepoGrantLevel.none).allowsRead) {
-      throw const AuthException('No read access to this repo');
+      throw const RepoGrantRequiredException(
+        RepoGrantLevel.read,
+        'No read access to this repo',
+      );
     }
   }
+  if (forgeAccess == null) {
+    throw const AuthException(
+      'This server cannot check forge access, so this repository cannot be '
+      'read.',
+    );
+  }
+  await forgeAccess(workspaceId, ctx.userId, repo);
   return repo;
 }

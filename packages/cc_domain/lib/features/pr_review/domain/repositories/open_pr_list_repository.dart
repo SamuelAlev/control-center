@@ -1,4 +1,5 @@
 import 'package:cc_domain/core/domain/entities/repo.dart' show Repo;
+import 'package:cc_domain/core/domain/value_objects/repo_access.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/github_profile_activity.dart';
 import 'package:cc_domain/features/pr_review/domain/entities/pull_request.dart';
 
@@ -13,6 +14,7 @@ class RepoOpenPrs {
     required this.repoId,
     required this.hasMore,
     required this.prs,
+    this.totalCount,
   });
 
   /// The linked repo's id (matches a `Repo.id` in the active workspace).
@@ -21,46 +23,12 @@ class RepoOpenPrs {
   /// Whether the repo has more open PRs beyond this first page.
   final bool hasMore;
 
+  /// The repo's open PR count across every page, as the forge reports it.
+  /// Null when the forge gives no total (then only [prs] is known).
+  final int? totalCount;
+
   /// The open pull requests for this repo, checks already overlaid.
   final List<PullRequest> prs;
-}
-
-/// One linked repo the server's credential cannot access: its poll probes were
-/// denied (GitHub answers 404 for a repo the token cannot see, or 401/403)
-/// consistently enough that the server parked it — most commonly because the
-/// GitHub App is not installed on the repo's org, or because that installation
-/// has been suspended. The server keeps retrying on a slow cadence and unparks
-/// the repo the moment a probe succeeds.
-class InaccessibleRepo {
-  /// Creates an [InaccessibleRepo] entry.
-  const InaccessibleRepo({
-    required this.repoId,
-    required this.repoFullName,
-    required this.reason,
-    this.since,
-  });
-
-  /// Wire [reason] when the GitHub App installation covering this repo's
-  /// owner has been suspended. The fix is to resume it on GitHub or connect
-  /// a token — not to install the app again.
-  static const String installationSuspended = 'installation_suspended';
-
-  /// Whether [reason] is [installationSuspended].
-  bool get isInstallationSuspended => reason == installationSuspended;
-
-  /// The linked repo's id (matches a `Repo.id` in the active workspace).
-  final String repoId;
-
-  /// The repo's `owner/name` at the last observation.
-  final String repoFullName;
-
-  /// The denial's wire code: `not_found` (a 404 — GitHub's answer for a repo
-  /// the credential cannot see), `auth_error` (401/403), or
-  /// [installationSuspended].
-  final String reason;
-
-  /// When the server parked the repo, or null when unknown.
-  final DateTime? since;
 }
 
 /// The workspace's open pull requests across its linked GitHub repos, fetched
@@ -71,7 +39,8 @@ class WorkspaceOpenPrs {
     required this.authenticated,
     required this.groups,
     this.sweepInFlight = false,
-    this.inaccessibleRepos = const [],
+    this.repoAccess = const [],
+    this.hiddenRepos = const [],
   });
 
   /// An empty, authenticated result (server has a token, no PRs / no repos).
@@ -96,17 +65,38 @@ class WorkspaceOpenPrs {
   /// carries it; one-shot reads default to false.
   final bool sweepInFlight;
 
-  /// Linked repos the server's credential cannot access. Their groups are
-  /// absent from (or stale in) [groups]; the UI explains why instead of
+  /// Linked repos automation cannot reach, and why. Their groups are absent
+  /// from [groups]; the UI explains why and offers the fix instead of
   /// showing a silently empty queue.
-  final List<InaccessibleRepo> inaccessibleRepos;
+  final List<RepoAccessIssue> repoAccess;
+
+  /// Linked repos left out of the caller's view, as counts per forge and
+  /// reason (never names): not signed in to that forge, no access on it, no
+  /// grant here, or not checked yet.
+  final List<HiddenRepos> hiddenRepos;
+}
+
+/// The server's live "needs your review" count (`pr.watchNeedsMyReviewCount`)
+/// across every forge, plus what the caller cannot see.
+class NeedsMyReviewCount {
+  /// Creates a [NeedsMyReviewCount].
+  const NeedsMyReviewCount({required this.count, this.hiddenRepos = const []});
+
+  /// Nothing waiting, nothing hidden.
+  static const NeedsMyReviewCount zero = NeedsMyReviewCount(count: 0);
+
+  /// Open pull requests requesting the caller's (or their team's) review.
+  final int count;
+
+  /// Linked repos left out of [count].
+  final List<HiddenRepos> hiddenRepos;
 }
 
 /// Reads the active workspace's open pull requests over RPC.
 ///
-/// The thin client holds no GitHub token; the gh-authenticated server fetches +
-/// enriches the PRs and this repository maps the wire result back to domain
-/// entities. [watchOpenForWorkspace] is the live subscription behind the PR
+/// The thin client holds no forge token; the server fetches and enriches the
+/// PRs of the repos the caller may see (their own grant and forge sign-in) and
+/// this repository maps the wire result back to domain entities. [watchOpenForWorkspace] is the live subscription behind the PR
 /// list; [listOpenForWorkspace] remains as the one-shot fallback.
 abstract interface class OpenPrListRepository {
   /// Fetches the open PRs across [workspaceId]'s linked GitHub repos.
@@ -123,42 +113,37 @@ abstract interface class OpenPrListRepository {
   /// user refresh). The result arrives over [watchOpenForWorkspace].
   Future<void> refreshOpenForWorkspace(String workspaceId);
 
-  /// Watches the linked repos the server's credential cannot access in
-  /// [workspaceId] — the lite feed behind the repos-settings notice, so that
-  /// surface never holds the full open-PR payload just to explain an access
-  /// gap. The same list rides [WorkspaceOpenPrs.inaccessibleRepos] on the full
-  /// watch.
-  Stream<List<InaccessibleRepo>> watchRepoAccessForWorkspace(
-    String workspaceId,
-  );
+  /// Watches the linked repos automation cannot reach in [workspaceId] — the
+  /// lite feed behind the repos-settings notice, so that surface never holds
+  /// the full open-PR payload just to explain an access gap. The same list
+  /// rides [WorkspaceOpenPrs.repoAccess] on the full watch.
+  Stream<List<RepoAccessIssue>> watchRepoAccessForWorkspace(String workspaceId);
 
-  /// Live count of open PRs requesting the server user's review across
-  /// [workspaceId]'s linked repos.
+  /// Live count of open PRs requesting the caller's review across every
+  /// forge of [workspaceId]'s linked repos.
   ///
-  /// The lite feed behind the sidebar's inbox badge: the count is computed
-  /// server-side from the open-PR poller's snapshot, so an always-on badge
-  /// never has to hold the full PR list (titles, bodies, checks) in client
-  /// memory the way watching [watchOpenForWorkspace] would.
-  Stream<int> watchNeedsMyReviewCount(String workspaceId);
+  /// The lite feed behind the inbox badge on desktop and phone: the server
+  /// computes it, so an always-on badge never has to hold the full PR list
+  /// (titles, bodies, checks) in client memory the way watching
+  /// [watchOpenForWorkspace] would.
+  Stream<NeedsMyReviewCount> watchNeedsMyReviewCount(String workspaceId);
 
-  /// Open PRs requesting the server user's review across [workspaceId]'s linked
-  /// repos (the dashboard's priority reviews), each tagged with its repo id so
+  /// Open PRs requesting the caller's review across [workspaceId]'s linked
+  /// repos they may see (the dashboard's priority reviews), each tagged with its repo id so
   /// the caller joins it back to the workspace's [Repo] entities.
   Future<List<({String repoId, PullRequest pr})>> reviewRequestedForWorkspace(
     String workspaceId,
   );
 
-  /// `"<owner/repo>#<number>"` keys of the open PRs the server user has already
-  /// reviewed across [workspaceId]'s linked repos (the PR-list "reviewed by me"
+  /// `"<owner/repo>#<number>"` keys of the open PRs the caller has already
+  /// reviewed across [workspaceId]'s linked repos they may see (the PR-list "reviewed by me"
   /// overlay).
   Future<Set<String>> reviewedByKeysForWorkspace(String workspaceId);
 
-  /// Merged/closed PRs authored by [login] across [workspaceId]'s linked repos
-  /// (first page per repo), grouped by repo id (the user profile's history).
-  Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(
-    String workspaceId,
-    String login,
-  );
+  /// Merged/closed PRs the caller authored across [workspaceId]'s linked
+  /// repos (first page per repo), grouped by repo id. The server resolves
+  /// the caller's account on each forge.
+  Future<List<RepoOpenPrs>> closedByAuthorForWorkspace(String workspaceId);
 
   /// All-state GitHub PR activity authored by [login] across [workspaceId]'s
   /// linked repositories, including exact outcome counts and delivery metrics.

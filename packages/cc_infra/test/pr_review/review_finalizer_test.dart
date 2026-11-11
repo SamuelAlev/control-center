@@ -417,8 +417,8 @@ void main() {
     // The review level is a REPORTING dial. It decides where a finding is
     // rendered, never whether it exists and never whether the PR ships.
     group('review level demotion', () {
-      Future<ReviewFinalization> finalizeAt(ReviewLevel level) => build()
-          .finalize(
+      Future<ReviewFinalization> finalizeAt(ReviewLevel level) =>
+          build().finalize(
             workspaceId: _workspaceId,
             spaceId: _spaceId,
             finalizerId: 'ceo',
@@ -516,10 +516,7 @@ void main() {
           ),
         ];
         final result = await finalizeAt(ReviewLevel.balanced);
-        expect(
-          result.consensusReadyCount + result.needsAdjudicationCount,
-          2,
-        );
+        expect(result.consensusReadyCount + result.needsAdjudicationCount, 2);
       });
 
       test('the verdict is identical with and without demotion', () async {
@@ -578,10 +575,9 @@ void main() {
         expect(meta?['nitpickMessageIds'], ['f1']);
       });
 
-      test('a legacy priority-only finding demotes on its priority', () async {
-        // No severity stored: the payload falls back to the priority mapping,
-        // so an old review still groups sensibly instead of treating every
-        // finding as top-severity.
+      test('a priority-only finding demotes on its priority', () async {
+        // No severity stored: the payload falls back to the priority mapping
+        // instead of treating every finding as top-severity.
         messaging.messages = [
           _finding(
             id: 'f1',
@@ -707,10 +703,7 @@ void main() {
         );
         // The strongest survives; the weaker is demoted, not deleted.
         expect(result.nitpickMessageIds, ['weak']);
-        expect(
-          result.consensusReadyCount + result.needsAdjudicationCount,
-          2,
-        );
+        expect(result.consensusReadyCount + result.needsAdjudicationCount, 2);
       });
 
       test('leaves findings on different lines alone', () async {
@@ -788,7 +781,10 @@ void main() {
         expect(body, isNot(contains('# Review summary')));
         expect(body, isNot(contains('Consensus-ready')));
         expect(body, isNot(contains('Walkthrough')));
-        expect(body.split('\n').where((l) => l.trim().isNotEmpty), hasLength(1));
+        expect(
+          body.split('\n').where((l) => l.trim().isNotEmpty),
+          hasLength(1),
+        );
       });
 
       test('a review with only nitpicks still renders in full', () async {

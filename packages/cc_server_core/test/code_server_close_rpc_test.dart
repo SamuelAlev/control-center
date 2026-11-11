@@ -64,12 +64,14 @@ void main() {
         spaceId: 'space-a',
         repoId: 'repo-a',
         deviceId: 'device-a',
+        userId: 'owner',
       );
       final b = await service.ensureSession(
         workspaceId: 'ws-a',
         spaceId: 'space-a',
         repoId: 'repo-a',
         deviceId: 'device-b',
+        userId: 'owner',
       );
       final close = buildCodeServerFileOps(
         codeServer: service,
@@ -111,6 +113,7 @@ void main() {
         spaceId: 'space-a',
         repoId: 'repo-a',
         deviceId: 'device-a',
+        userId: 'owner',
       );
       expect(File('${tmp.path}/launches').readAsLinesSync(), hasLength(2));
     },

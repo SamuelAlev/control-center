@@ -1,7 +1,7 @@
 part of 'environment_service.dart';
 
 /// Starting each kind of component, and serving what they publish.
-mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
+mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps, _TerminalOps {
   List<EnvironmentComponent> _startable(_Stack stack) => [
     for (final component in stack.definition.components)
       if (stack.isEnabled(component) &&
@@ -43,8 +43,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     SpaceEnvironment env,
     _Stack stack,
     List<EnvironmentComponent> components,
-    _StartMode mode,
-    List<String> log,
+    _StartRun start,
   ) async {
     final done = <String, Future<void>>{};
     final starting = {for (final component in components) component.id};
@@ -66,7 +65,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
         } else {
           // Off here (its `enabledWhen` is false), or not something a start
           // runs: there is nothing to wait for, and the run log says so.
-          log.add(
+          start.log.line(
             '${component.displayName} does not wait for $id: it is not '
             'part of this start',
           );
@@ -74,7 +73,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       }
       done[component.id] = Future.wait(
         dependencies,
-      ).then((_) => _startComponent(env, stack, component, mode, log));
+      ).then((_) => _startComponent(env, stack, component, start));
       previous = component.id;
     }
     await Future.wait(done.values);
@@ -84,9 +83,12 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     SpaceEnvironment env,
     _Stack stack,
     EnvironmentComponent component,
-    _StartMode mode,
-    List<String> log,
+    _StartRun start,
   ) async {
+    if (component is TaskEnvironmentComponent &&
+        !_runsOnStart(stack, component)) {
+      return;
+    }
     await _setComponent(
       env,
       component.id,
@@ -95,9 +97,9 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     try {
       switch (component) {
         case ComposeEnvironmentComponent():
-          await _startCompose(env, stack, component, mode);
+          await _startCompose(env, stack, component, start.mode);
         case CliEnvironmentComponent():
-          await _startCli(env, stack, component, mode, log);
+          await _startCli(env, stack, component, start);
         case ProcessEnvironmentComponent():
           await _startProcess(env, stack, component);
         case TaskEnvironmentComponent():
@@ -203,9 +205,10 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
       CliContext(
         component: component,
         values: stack.contract.values,
-        // A space that is gone has no worktree, and a tool's `destroy` still
-        // has to run from somewhere.
-        workingDirectory: stack.roles.isEmpty
+        // A space that is gone, or lacks the tool's optional role, has no
+        // worktree for it, and a tool's `destroy` still has to run from
+        // somewhere.
+        workingDirectory: stack.roles.isEmpty || !stack.hasRole(component)
             ? _d.home
             : stack.contract.workingDirectory(component.cwd),
         environment: stack.contract.forComponent(component),
@@ -216,29 +219,89 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     SpaceEnvironment env,
     _Stack stack,
     CliEnvironmentComponent component,
-    _StartMode mode,
-    List<String> log,
+    _StartRun start,
   ) async {
     final context = _cliContext(stack, component);
+    final onEvent = _cliEvents(env, component, start.log);
+    final CliTerminalRun? onTerminal = _mayUseTerminal(stack, env, start)
+        ? (verb, reason) => _runOnTerminal(
+            env: env,
+            stack: stack,
+            context: context,
+            verb: verb,
+            reason: reason,
+            log: start.log,
+          )
+        : null;
     final EnvironmentStatusReport report;
-    if (mode == _StartMode.reset) {
-      await _d.cli.reset(context, onEvent: _logTo(log));
+    if (start.mode == _StartMode.reset) {
+      await _d.cli.reset(context, onEvent: onEvent, onTerminal: onTerminal);
       report = await _d.cli.waitReady(context);
     } else {
-      report = await _d.cli.up(context, onEvent: _logTo(log));
+      report = await _d.cli.up(
+        context,
+        onEvent: onEvent,
+        onTerminal: onTerminal,
+      );
     }
     await _applyCliReport(env, component, report);
   }
 
-  /// Collects a verb's output into [log], for the run it belongs to.
-  void Function(EnvironmentCommandEvent) _logTo(List<String> log) => (event) {
-    if (event is EnvironmentCommandOutput) {
-      log.add(event.line);
+  /// What a tool's verb says while it runs: every line to the run's record,
+  /// its steps to the component so a start shows where it is, and what it
+  /// warns about to the environment.
+  void Function(EnvironmentCommandEvent) _cliEvents(
+    SpaceEnvironment env,
+    CliEnvironmentComponent component,
+    EnvironmentRunLog log,
+  ) => (event) {
+    log.event(event);
+    if (event is EnvironmentCommandExit) {
+      _inBackground(
+        _setComponent(
+          env,
+          component.id,
+          (state) => state.withStepsEnded(failed: !event.succeeded),
+        ),
+        'steps of ${env.id}',
+      );
+      return;
+    }
+    if (event is! EnvironmentCommandProgress) {
+      return;
+    }
+    final progress = event.progress;
+    if (progress.isStep) {
+      _inBackground(
+        _setComponent(env, component.id, (state) => state.withStep(progress)),
+        'step of ${env.id}',
+      );
+    } else if (progress.isWarning) {
+      _inBackground(
+        _update(
+          env.workspaceId,
+          env.id,
+          (row) => row.warnings.contains(progress.label)
+              ? row
+              : row.copyWith(warnings: [...row.warnings, progress.label!]),
+        ),
+        'warning of ${env.id}',
+      );
     }
   };
 
-  /// Puts [kind] on record for [env], so the space's activity shows it.
-  Future<String> _beginRun(
+  /// A write nothing waits for. It keeps its place among the row's writes;
+  /// only its failure has nowhere to go but the log.
+  void _inBackground(Future<Object?> write, String what) => unawaited(
+    write.then<void>(
+      (_) {},
+      onError: (Object e) => CcInfraLog.warning('$what not recorded: $e'),
+    ),
+  );
+
+  /// Puts [kind] on record for [env], so the space's activity shows it, and
+  /// returns where its output goes while it runs.
+  Future<EnvironmentRunLog> _beginRun(
     SpaceEnvironment env,
     EnvironmentRunKind kind, {
     String? label,
@@ -257,56 +320,74 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
         startedAt: _d.now(),
       ),
     );
-    return id;
+    _runsChanged(env.workspaceId, env.spaceId);
+    return EnvironmentRunLog(
+      id: id,
+      workspaceId: env.workspaceId,
+      runs: _d.runs,
+      onFlushed: () => _runsChanged(env.workspaceId, env.spaceId),
+    );
   }
 
-  /// Closes what [_beginRun] opened.
+  /// Closes what [_beginRun] opened. A [failure] only a person can clear ends
+  /// the run `blocked`, not `failed`: nothing broke.
   Future<void> _endRun(
     SpaceEnvironment env,
-    String id, {
+    EnvironmentRunLog run, {
     EnvironmentError? failure,
-    List<String> log = const [],
-  }) => _d.runs.finish(
-    env.workspaceId,
-    id,
-    status: failure == null
-        ? EnvironmentRunStatus.succeeded
-        : EnvironmentRunStatus.failed,
-    completedAt: _d.now(),
-    exitCode: failure?.exitCode,
-    error: failure?.message,
-    output: log.join('\n'),
-  );
+  }) async {
+    run.close();
+    await _d.runs.finish(
+      env.workspaceId,
+      run.id,
+      status: failure == null
+          ? EnvironmentRunStatus.succeeded
+          : failure.blocker != null
+          ? EnvironmentRunStatus.blocked
+          : EnvironmentRunStatus.failed,
+      completedAt: _d.now(),
+      exitCode: failure?.exitCode,
+      error: failure?.message,
+      output: run.text,
+    );
+    _runsChanged(env.workspaceId, env.spaceId);
+  }
 
+  /// Records what a tool said about itself. A [polled] report gives way to a
+  /// mutation in progress: that owns the row until it ends, and says more
+  /// about where things are than a read taken alongside it.
   Future<void> _applyCliReport(
     SpaceEnvironment env,
     CliEnvironmentComponent component,
-    EnvironmentStatusReport report,
-  ) => _update(
+    EnvironmentStatusReport report, {
+    bool polled = false,
+  }) => _update(
     env.workspaceId,
     env.id,
-    (row) => row.copyWith(
-      endpoints: _mergeEndpoints(row.endpoints, report.endpoints),
-      warnings: {...row.warnings, ...report.warnings}.toList(),
-      // Sticky: the space dropping a repo needs a Recreate whatever a tool says.
-      needsRecreate: row.needsRecreate || report.needsRecreate,
-      components: [
-        for (final state in row.components)
-          state.id == component.id
-              ? state.copyWith(
-                  state: _componentStateOf(report.state),
-                  detail: report.detail,
-                  services: [
-                    for (final service in report.services)
-                      {
-                        'name': service,
-                        'state': EnvironmentComponentPhase.ready.wire,
-                      },
-                  ],
-                )
-              : state,
-      ],
-    ),
+    (row) => polled && row.status.isBusy
+        ? row
+        : row.copyWith(
+            endpoints: _mergeEndpoints(row.endpoints, report.endpoints),
+            warnings: {...row.warnings, ...report.warnings}.toList(),
+            // Sticky: the space dropping a repo needs a Recreate whatever a tool says.
+            needsRecreate: row.needsRecreate || report.needsRecreate,
+            components: [
+              for (final state in row.components)
+                state.id == component.id
+                    ? state.copyWith(
+                        state: _componentStateOf(report.state),
+                        detail: report.detail,
+                        services: [
+                          for (final service in report.services)
+                            {
+                              'name': service,
+                              'state': EnvironmentComponentPhase.ready.wire,
+                            },
+                        ],
+                      )
+                    : state,
+            ],
+          ),
   );
 
   String _componentStateOf(EnvironmentReportedState state) => switch (state) {
@@ -360,26 +441,30 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
     _Stack stack,
     TaskEnvironmentComponent task,
   ) async {
-    final marker = _createMarker(stack.stateDir, task.id);
-    final isCreate = task.when.contains(EnvironmentTaskTrigger.create);
-    final runs =
-        task.when.contains(EnvironmentTaskTrigger.start) ||
-        (isCreate && !marker.existsSync());
-    if (!runs) {
-      await _setComponent(
-        env,
-        task.id,
-        (state) =>
-            state.copyWith(state: EnvironmentComponentPhase.pending.wire),
-      );
-      return;
-    }
     _throwIfFailed(await _runEnvironmentTask(env, stack, task), task);
-    if (isCreate) {
+    if (task.when.contains(EnvironmentTaskTrigger.create)) {
+      final marker = _createMarker(stack.stateDir, task.id);
       await marker.parent.create(recursive: true);
       await marker.writeAsString(_d.now().toUtc().toIso8601String());
     }
   }
+
+  /// Whether a start has anything for [task] to do: it runs on every start,
+  /// or once after create and that once is still to come. A task for another
+  /// trigger (a change, a request) is idle through a start.
+  bool _runsOnStart(_Stack stack, TaskEnvironmentComponent task) =>
+      task.when.contains(EnvironmentTaskTrigger.start) ||
+      (task.when.contains(EnvironmentTaskTrigger.create) &&
+          !_createMarker(stack.stateDir, task.id).existsSync());
+
+  /// Where [component] stands as a start begins.
+  String _phaseBeforeStart(_Stack stack, EnvironmentComponent component) =>
+      switch (component) {
+        AppEnvironmentComponent() => EnvironmentComponentPhase.closed,
+        TaskEnvironmentComponent() when !_runsOnStart(stack, component) =>
+          EnvironmentComponentPhase.idle,
+        _ => EnvironmentComponentPhase.pending,
+      }.wire;
 
   /// Throws what [outcome] failed with, keeping a tool's structured error: a
   /// failed task is often an exit 3 with a command to copy.
@@ -432,6 +517,7 @@ mixin _ComponentOps on _EnvironmentServiceBase, _DefinitionOps {
         definitionId: env.definitionId,
         environmentId: env.id,
         arguments: arguments,
+        onEvent: (_) => _runsChangedSoon(env.workspaceId, env.spaceId),
       );
       run = outcome.run;
       error = outcome.error;

@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:cc_domain/core/domain/value_objects/embedding_model_paths.dart';
 import 'package:cc_infra/cc_infra.dart';
 import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_server_core/cc_server_core.dart';

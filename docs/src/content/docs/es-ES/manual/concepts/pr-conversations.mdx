@@ -2,14 +2,14 @@
 title: Conversaciones de PR
 description: Cómo un comentario de PR en GitHub se convierte en un turno de agente sin webhook, qué autoriza al autor y a quién se atribuye cada lado de la conversación.
 slug: es-ES/manual/conceptos/conversaciones-de-pr
-sourceHash: 9248a97ec5e76eee08f4c68a92b6ddcb05369d6d
+sourceHash: 3a70352af667539880afc13c48d95479e0c42a28
 ---
 
 Una pull request ya es el lugar donde ocurre la conversación sobre el código.
 Las conversaciones de PR la convierten en una superficie de un espacio de
 trabajo de Control Center, igual que un
 [puente de chat](/es-ES/manual/conceptos/puentes-de-chat/) convierte Slack en
-una: menciona a `@usectrl` (o al bot de la GitHub App del espacio de trabajo)
+una: menciona a `@usectrl`
 en una PR, responde dentro de sus hilos de revisión o añade la etiqueta
 `ai-review`, y el trabajo ocurre en el espacio de revisión de la PR — bajo la
 misma atribución y las mismas barandillas que cualquier cosa escrita en la
@@ -27,8 +27,7 @@ dirección va la conexión**, **qué autoriza un comentario que llega de fuera**
 El único canal de envío que GitHub ofrece a una app es un webhook, y un webhook
 necesita una URL de entrada — justo lo único que esta superficie nunca exige de
 forma deliberada. Así que el descubrimiento es un barrido: una búsqueda con
-alias por cada instalación de la app pide a GitHub las PR que mencionan al bot
-(o su slug corto) y las PR abiertas que llevan la etiqueta de revisión; a las PR
+alias por cada instalación de la app pide a GitHub las PR que mencionan `@usectrl` y las PR abiertas que llevan la etiqueta de revisión; a las PR
 que ya tienen un espacio de revisión se les leen sus hilos de comentarios, y
 todo se compara por id de comentario con lo visto en el barrido anterior. Una
 app propia barre cada minuto como máximo 25 PR. A través de Connect, las
@@ -78,8 +77,7 @@ no se publica nada:
   miembro de _este_ espacio de trabajo que haya iniciado sesión en GitHub en
   este servidor
 - **Un rol con escritura.** `viewer` y `guest` no pueden iniciar trabajo
-- **Acceso de push.** Las respuestas usan un token `bot` limitado al acceso de
-  ese miembro al repositorio. Si el servidor no puede emitir uno, no continúa
+- **Acceso de push.** Las respuestas usan un token para ese único repositorio, limitado al acceso de ese miembro a él. Si el servidor no puede emitir uno, no continúa
 
 Todas las comprobaciones se ejecutan antes de cualquier acuse de recibo, así que
 un desconocido no recibe ni reacción ni respuesta. Un comentario nunca se
@@ -102,17 +100,19 @@ Cada lado de la conversación lleva una identidad distinta, y esa diferencia es
 la función:
 
 - **En GitHub, la respuesta es automatización en tu nombre.** Cada respuesta
-  viaja con un token `bot` para ese único repositorio, limitado al acceso del
-  miembro que pregunta. Con una app propia, el autor es la cuenta `[bot]` de la
-  app. A través de Connect, un token de la App compartida es un token de
-  usuario, así que la respuesta la firma la cuenta del miembro que pregunta,
-  actuando a través de la App. En cualquier caso, cada respuesta empieza por
-  `**Control Center** (for @login):`, que dice quién preguntó y sirve también
-  de protección contra bucles.
-
+  usa un token para ese único repositorio, limitado al acceso del miembro que
+  pregunta, y la firma la cuenta `[bot]` de la app. Una excepción: en la app
+  compartida de Control Center Connect, el bot publica en los hilos de revisión
+  solo cuando el operador de Connect ha incluido la instalación; si no, una
+  respuesta dentro de un hilo de revisión la firma la cuenta propia del miembro
+  que pregunta. En cualquier caso, cada respuesta
+  empieza por `**Control Center** (for @login):`, que dice quién preguntó y sirve
+  también de protección contra bucles. Las menciones @ en las palabras del agente
+  quedan inertes, así que una respuesta nunca notifica a un usuario ni a un
+  equipo.
 - **En el espacio, la pregunta es tuya.** El mensaje se atribuye al miembro al
-  que se resolvió el autor, y la ejecución del agente corre en su nombre: los
-  commits lo reconocen como coautor, y el dial de autonomía del espacio y las
+  que se resolvió el autor, y la ejecución del agente corre en su nombre: sus
+  commits son suyos, y el dial de autonomía del espacio y las
   barandillas de acciones se aplican exactamente igual que a un mensaje escrito
   en la aplicación. Las escrituras en el host de código que hace la ejecución
   usan tokens de un solo repositorio acotados por ese miembro, nunca su inicio
@@ -122,25 +122,17 @@ Publicar los hallazgos de la revisión de vuelta en GitHub sigue siendo una
 decisión de una persona, tomada en Control Center. Una mención puede _iniciar_
 una revisión; solo un humano publica una.
 
-## La protección contra bucles y el nombre corto
+## La protección contra bucles
 
 Todo lo que firma una cuenta de bot se descarta antes de que se ejecute
 cualquier filtro — el nuestro en concreto, y cualquier sufijo `[bot]`, para que
 el bot de revisión de otra app tampoco pueda despertar al nuestro —, y lo mismo
 ocurre con cualquier comentario que empiece por el prefijo
-`**Control Center** (for @`, ya que una respuesta a través de Connect la firma
-la cuenta de una persona. Sin esto, las respuestas llegarían como comentarios
+`**Control Center** (for @`, ya que una respuesta en un hilo de revisión a través
+de Connect puede firmarla la cuenta de una persona. Sin esto, las respuestas llegarían como comentarios
 nuevos y volverían a disparar el puente indefinidamente.
 
-El sufijo `[bot]` es también la razón de que exista la forma corta. GitHub fija
-el login de la cuenta de una app en `<slug>[bot]`, no ofrece autocompletado
-para él y nunca resuelve `@slug` hacia la app — así que aceptar el slug sin
-sufijo es una decisión de _nuestro_ emparejador, y descubrirlo requiere una vía
-de búsqueda sobre el **texto** bruto de los comentarios, no el índice de
-menciones de GitHub. El coste se declara en lugar de disimularse: un usuario
-humano que comparte el slug de la app menciona al bot cada vez que se menciona a
-sí mismo en forma corta. Con nombres de app distintivos, la colisión es
-hipotética.
+Solo `@usectrl` inicia trabajo. El propio login de la App (`<slug>[bot]`) y su slug sin sufijo no dirigen nada: GitHub no ofrece autocompletado para una cuenta de app, y un slug sin sufijo puede pertenecer a un usuario humano.
 
 ## Lo que deliberadamente no se ofrece
 

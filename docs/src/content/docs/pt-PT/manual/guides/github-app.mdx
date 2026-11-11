@@ -1,8 +1,8 @@
 ---
 title: Criar a GitHub App
-description: Dê ao seu servidor uma GitHub App própria com um clique, instale-a onde estão os seus repositórios e autorize o servidor para a instalação de uma organização.
+description: Dê ao seu servidor uma GitHub App própria com um clique, instale-a onde estão os seus repositórios para que todos na organização a possam usar a partir de qualquer servidor.
 slug: pt-PT/manual/guias/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Este guia mostra como dar ao seu servidor uma GitHub App própria. Demora cerca
@@ -38,8 +38,9 @@ aprova uma pull request.
 A app própria do servidor só se aplica em **Usar as minhas próprias apps**. Com as
 apps do Control Center ou um Connect próprio, o Connect executa todas as faixas,
 incluindo a do GitHub; a app do servidor continua guardada, mas sem uso, até voltar a
-trocar. A app de um espaço de trabalho ([Dar a um espaço de trabalho uma app diferente](#dar-a-um-espaço-de-trabalho-uma-app-diferente))
-continua a valer em todos os modos. Uma app com alguns campos em falta é um erro, e não
+trocar. Um espaço de trabalho com as próprias apps
+([Dar a um espaço de trabalho uma app própria](#dar-a-um-espaço-de-trabalho-uma-app-própria))
+usa a app própria dele no lugar, qualquer que seja o modo do servidor. Uma app com alguns campos em falta é um erro, e não
 um motivo para recorrer a outra coisa: os inícios de sessão no GitHub são recusados até
 que todos os campos estejam definidos.
 
@@ -100,26 +101,18 @@ lê nada.
 2. Escolha **All repositories**, ou selecione os que este servidor deve ver
 
 Para a instalar noutra conta mais tarde, um administrador do espaço de trabalho
-vai a **Definições → Espaço de trabalho → Geral**, encontra **Instalações do
-app do GitHub** no cartão de identidade do GitHub e clica em **Instalar o app
-do GitHub**. A lista mostra todas as contas em que a app está instalada e
+vai a **Definições → Espaço de trabalho → Integrações**, encontra **Instalações do
+app do GitHub** no cartão **App do GitHub**, em Hospedagem de código, e clica em
+**Instalar o app do GitHub**. A lista mostra todas as contas em que a app está instalada e
 assinala uma instalação suspensa.
 
-## Autorizar este servidor para uma organização
+## Partilhar a instalação de uma organização
 
-Na App partilhada do Control Center, a instalação de uma organização só serve
-os servidores que os administradores dela autorizaram. Instalar através de
-**Instalar o app do GitHub** autoriza o servidor que iniciou a instalação. Para
-uma instalação que já existe:
+Uma organização instala a GitHub App uma única vez. Depois disso, qualquer pessoa da organização que inicie sessão no GitHub num servidor do Control Center pode usar a instalação, seja qual for esse servidor: o seu, o de um colega ou um próprio. Não há nada a autorizar por servidor.
 
-1. Um administrador dessa organização inicia sessão no GitHub neste servidor
-2. Abre **Definições → Espaço de trabalho → Geral → Instalações do app do
-   GitHub**
-3. A linha da organização diz **Não autorizada**. Clica em **Autorizar este
-   servidor**
+Cada token que um servidor recebe é da própria pessoa que iniciou sessão, limitado a um repositório e ao seu papel nele, por isso nunca vai além do que ela poderia fazer no GitHub. O registo de auditoria do GitHub mostra essa pessoa, a atuar através da app.
 
-A linha passa então a dizer **Autorizada**. A sua própria app não precisa de
-nada disto: todas as instalações dela pertencem ao seu servidor.
+Para impedir que o Control Center alcance uma organização, um proprietário da organização remove a instalação ou reduz os repositórios no GitHub. Remover uma pessoa da organização também termina o acesso dela.
 
 ## Registar manualmente
 
@@ -158,22 +151,19 @@ ler; mantenha-os no ficheiro `.env` (no Docker, monte-o em `/app/bin/.env`). O
 preenchimento acontece **uma vez por campo**, pelo que o que edita nas
 Definições não é desfeito no reinício seguinte.
 
-## Dar a um espaço de trabalho uma app diferente
+## Dar a um espaço de trabalho uma app própria
 
-Um espaço de trabalho pode usar uma app própria em vez da do servidor. Um
-administrador do espaço de trabalho vai a **Definições → Espaço de trabalho →
-Geral**, escolhe **Usar outro GitHub App** no cartão **Identidade GitHub** e
-introduz o ID da app, a chave privada, o ID de cliente e o segredo de cliente
-dessa app. Os membros passam então a iniciar sessão nessa app para este espaço
-de trabalho. Um espaço de trabalho com app própria nunca recorre à app do
-servidor nem ao Connect: enquanto os campos dele não estiverem completos, o
-trabalho dele no GitHub é recusado. Isto aplica-se seja qual for a forma como o servidor
-inicia a sessão das pessoas, inclusive através do Connect.
+Um espaço de trabalho pode usar uma app própria em vez da do servidor:
 
-O cartão **Aplicativos de provedores** nesta mesma página faz o mesmo para o Google
-Calendar, o Linear e a pesquisa de GIFs. Consulte
+1. Um administrador do espaço de trabalho vai a **Definições → Espaço de trabalho → Integrações**
+2. No cartão **Control Center Connect**, escolhe **Usar as minhas próprias apps** e clica em **Aplicar**. Todos no espaço de trabalho voltam a iniciar sessão, pelas apps do espaço de trabalho
+3. O cartão **App do GitHub**, em Hospedagem de código, passa a ter os campos dessa app: **Id da aplicação** e **Chave privada** em **Atuando por este espaço de trabalho**, **Id de cliente** e **Segredo de cliente** em **Entrada das pessoas**. Clique em **Testar** assim que estiverem definidos
+
+Os membros passam então a iniciar sessão nessa app para este espaço de trabalho. Um espaço de trabalho com as próprias apps nunca recorre à app do servidor nem ao Connect: enquanto os campos dele não estiverem completos, o trabalho dele no GitHub é recusado. A mesma escolha vale para o Google Calendar, o Linear e a pesquisa de GIFs, cada um com os próprios campos ao lado do respetivo provedor, na mesma página. Consulte
 [Dê ao espaço de trabalho a sua própria aplicação do Linear](/pt-PT/manual/guias/integracao-linear/#dê-ao-espaço-de-trabalho-a-sua-própria-aplicação-do-linear)
 e [Dê ao espaço de trabalho o seu próprio cliente Google](/pt-PT/manual/guias/ligar-calendario/#dê-ao-espaço-de-trabalho-o-seu-próprio-cliente-google).
+As outras escolhas desse cartão, e o que cada uma faz, estão em
+[Escolha por espaço de trabalho](/pt-PT/manual/referencia/connect/#escolha-por-espaço-de-trabalho).
 
 ## Resolução de problemas
 
@@ -190,7 +180,7 @@ partir das Definições.
 ### O teste diz que as credenciais funcionam mas a app não está instalada em lado nenhum
 
 O registo e a instalação são passos separados. Abra a página de instalação da
-app ou use **Instalar o app do GitHub** em Espaço de trabalho → Geral.
+app ou use **Instalar o app do GitHub** em Espaço de trabalho → Integrações.
 
 ### O teste diz que não foi possível ler a chave privada
 

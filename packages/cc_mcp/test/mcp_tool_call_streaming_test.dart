@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cc_domain/cc_domain.dart';
-import 'package:cc_domain/features/mcp/domain/mcp_config.dart';
 import 'package:cc_domain/features/mcp/domain/services/mcp_tool_registry.dart';
 import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_mcp/src/mcp_request_handler.dart';
@@ -57,7 +56,7 @@ Future<HttpClientResponse> _post(
   int port,
   Map<String, dynamic> body, {
   bool acceptsStream = true,
-  String agentId = 'agent-1',
+  String run = 'run-1',
 }) async {
   final client = HttpClient();
   try {
@@ -70,7 +69,7 @@ Future<HttpClientResponse> _post(
             ? 'application/json, text/event-stream'
             : 'application/json',
       )
-      ..set('X-CC-Agent-Id', agentId);
+      ..set(McpCallScope.runGrantHeader, run);
     request.write(jsonEncode(body));
     return await request.close();
   } finally {
@@ -97,8 +96,12 @@ void main() {
   setUp(() async {
     dispatcher = _ControlledDispatcher();
     final handler = McpRequestHandler(
-      config: const McpConfig(enabled: true),
+      token: 'owner-token',
       dispatcher: dispatcher,
+      // Two live runs, so a cancel can come from the wrong one.
+      attestRun: (secret) => secret.startsWith('run-')
+          ? McpCallScope(workspaceId: 'ws-1', agentId: secret, attested: true)
+          : null,
       streamAfter: _streamAfter,
       streamHeartbeat: _heartbeat,
     );
@@ -165,7 +168,8 @@ void main() {
       final body = jsonEncode(_toolsCall());
       socket.write(
         'POST /mcp HTTP/1.1\r\n'
-        'Host: 127.0.0.1\r\n'
+        'Host: 127.0.0.1:${server.port}\r\n'
+        '${McpCallScope.runGrantHeader}: run-1\r\n'
         'Content-Type: application/json\r\n'
         'Accept: application/json, text/event-stream\r\n'
         'Content-Length: ${utf8.encode(body).length}\r\n'
@@ -206,7 +210,7 @@ void main() {
       'method': 'notifications/cancelled',
       'params': {'requestId': 7, 'reason': 'timeout'},
     };
-    final other = await _post(server.port, cancel(), agentId: 'agent-2');
+    final other = await _post(server.port, cancel(), run: 'run-2');
     expect(other.statusCode, HttpStatus.accepted);
     expect(
       await _completes(abandoned, within: const Duration(milliseconds: 100)),

@@ -135,7 +135,10 @@ class EnvironmentScriptRow extends ConsumerWidget {
                 size: CcButtonSize.sm,
                 tooltip: l10n.environmentRun,
                 loading: running,
-                onPressed: environment.status.isBusy || running
+                onPressed:
+                    environment.status.isBusy ||
+                        running ||
+                        !environmentOperable(ref, spaceKey)
                     ? null
                     : () => unawaited(
                         runEnvironmentAction(

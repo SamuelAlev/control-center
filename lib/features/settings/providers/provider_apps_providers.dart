@@ -116,8 +116,8 @@ class ProviderAppStatusView {
 /// The server's provider app configuration (operator only).
 ///
 /// Resolves to an empty list when the caller is not the server owner or the
-/// server is older than these ops — the card then simply does not render,
-/// which is the right answer for a member who cannot change it anyway.
+/// server does not offer these ops (a demo) — the card then simply does not
+/// render, which is the right answer for a member who cannot change it anyway.
 final providerAppsProvider = FutureProvider<List<ProviderAppStatusView>>((
   ref,
 ) async {

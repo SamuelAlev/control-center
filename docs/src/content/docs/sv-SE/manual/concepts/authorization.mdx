@@ -2,7 +2,7 @@
 title: Auktorisering – vem får göra vad, och hur du bevisar det
 description: Behörighetskatalogen bakom Control Centers roller, revisionsspåret som avslöjar manipulation och som varje auktoriseringsbeslut hamnar i, samt de installationsövergripande reglage en operatör kan låsa fast.
 slug: sv-SE/handbok/koncept/auktorisering
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center besvarar två auktoriseringsfrågor, och de är verkligen olika.
@@ -61,17 +61,99 @@ för gammal för att förstå det värdet faller tillbaka på gäst i stället f
 att gissa.
 
 Under rollerna ligger **behörigheter per repo** (`none` / `read` / `review` /
-`write`): ett arbetsytemedlemskap ger aldrig tyst fler privilegier än
+`write`, se [Ändring av kod kräver skrivbehörighet](#ändring-av-kod-kräver-skrivbehörighet)):
+ett arbetsytemedlemskap ger aldrig tyst fler privilegier än
 forge-tjänsten. Varje yta som exponerar kod kontrollerar dem – även de som når
 kod på omvägar, som en terminal eller en redigerarsession som öppnats mot en
 ytas worktree.
 
-## Serverauktoritet
+## Kod följer forge-tjänsten
 
-Vissa operationer handlar inte om en arbetsyta alls: installationsövergripande
-inställningar, SSO-konfiguration, leverantörsuppgifter, modellhantering,
-säkerhetskopior av hela installationen. De deklarerar **serverauktoritet** och
-nekas för alla utom installationens operatör (den registrerade serverägaren).
+Ett bidrag ensamt öppnar inte en repos kod. För att se dess filer, diffar eller
+sökresultat, eller för att öppna en terminal på det, behöver en medlem både
+Control Center-bidraget **och** att deras egen forge-inloggning kan läsa repot.
+Arbetsytans administratörer är inte undantagna; serverägaren är det, eftersom
+kopian ligger på deras maskin. Ett repo utan forge-fjärr behöver bara bidraget.
+
+- När en administratör ger någon ett repo vars forge-konto inte kan läsa det
+  sparas bidraget, och administratören ser en varning.
+- När forge-tjänsten inte går att nå för kontrollen är svaret nej, aldrig en
+  gissning: personen ser "Kunde inte bekräfta din åtkomst till GitHub. Försök
+  igen." (med forge-tjänstens namn) och försöker igen senare.
+- Pull requests och allt som görs från dem följer samma regel.
+
+### Ändring av kod kräver skrivbehörighet
+
+En behörighet per repo har tre nivåer, och varje nivå omfattar den föregående:
+
+- **read**: se repots filer, diffar och sökresultat, under förutsättning att din egen forge-inloggning också kan läsa det.
+- **review**: read, plus att godkänna, begära ändringar och de andra granskningsåtgärderna på dess pull requests.
+- **write**: review, plus att ändra koden och köra agentkörningar som skriver till repot. Att ändra koden omfattar att spara eller återställa filer i redigeraren, synka ett worktree till pull requestens head, committa och pusha, publicera en gren och de stackåtgärder som skapar, checkar ut eller publicerar en del.
+
+Varje push som görs för en person, av dem själva eller av en agentkörning de bett om, kontrollerar deras skrivbehörighet på det repot i ögonblicket för pushen, på GitHub, GitLab och Bitbucket lika. Att publicera en stack kontrollerar varje repo i stacken innan något av dem pushas.
+
+Ett nekande anger vilken behörighet som saknas. Utan läsåtkomst säger appen "Du har inte läsåtkomst till det här arkivet. En arbetsytadministratör kan ge den." Med läsning men inte skrivning säger den "Du kan läsa det här arkivet men inte ändra det. En arbetsytadministratör kan ge skrivåtkomst."
+
+### Ytor följer sina repon
+
+Det som agenter skrev om kod följer koden. En yta (dess meddelanden, transkript
+och verktygsutdata, sökresultat, körloggar, att-göra-listor, aktivitet och
+aviseringar) bär koden i de repon den arbetar med, så en yta öppnas bara för en
+medlem som har en läsbehörighet på varje repo ytan använder, och vars egen
+forge-inloggning kan läsa dem. Det är de repon som valts för den, eller alla
+arbetsytans repon när ytan inte har något val registrerat. En yta utan några
+repon är öppen för varje medlem.
+
+En yta som någon inte kan öppna visas inte för dem någonstans, inte heller i
+sökning, körloggar, att-göra-listor, aktivitet eller aviseringar.
+Arbetsytans administratörer har alla behörigheter men är inte undantagna från
+forge-halvan; serverägaren är det.
+
+För en konversation som alla ska kunna läsa, skapa ytan utan repon, eller bara
+med repon som alla kan läsa.
+
+## Serverägaren
+
+Personen som satte upp servern är dess **ägare**. Servern registrerar dem en gång,
+vid första start, och inget som skickas över nätverket ändrar det. En
+arbetsytadministratör, eller en arbetsytsägare, är inte serverägaren: vem som
+helst kan få en arbetsyta, men serverns maskin har en ägare.
+
+**Ingenting körs på serverns egen maskin utanför en sandlåda om inte serverägaren
+startade det eller godkände just den sortens värdkörning.** Konkret kan bara
+serverägaren:
+
+- Skapa en arbetsyta. Alla andra ser en skärm som ber dem att låta ägaren skapa
+  en eller att en arbetsytadministratör bjuder in dem.
+- Öppna värdens skal i den serverhostade terminalen. Alla andra får en terminal i
+  sandlåda, med en agents begränsningar, i arbetsytans egna mappar.
+- Öppna den inbäddade kodredigeraren. Den körs som serverns egen användare, med
+  dess terminal, uppgifter och tillägg.
+- Öppna en pull request eller en konversations worktree i en inbyggd redigerare.
+  Redigeraren startar på serverns egen skärm, som serverns användare.
+- Spara eller godkänna en [miljö](/sv-SE/handbok/how-to-guider/miljoer/)-definition som kör
+  något på värden: värdplacering, en kontroll som kör ett kommando, eller en
+  provisionerings- eller arkiveringsuppgift.
+- Köra agenter på en server vars maskin saknar sandlåda. Alla andras körningar
+  nekas där, om inte ägaren startade servern med `--sandbox off`, vilket kör varje
+  medlems agenter osandlådat (se
+  [Agenter på en värd utan sandlåda](/sv-SE/handbok/koncept/sandlada-och-sakerhet/#agenter-på-en-värd-utan-sandlåda)).
+- Länka en repokopia som ligger utanför arbetsytans egen lagring, bekräfta en som
+  länkats före den regeln, och bläddra bland serverns mappar när du lägger till ett
+  arkiv (se [Lägg till arkiv](/sv-SE/handbok/how-to-guider/lagg-till-repos/)).
+- Se och stoppa varje körande agentprocess på servern. Alla andra ser och stoppar
+  bara levande agentkörningar i arbetsytor de tillhör.
+- Låta agenter använda MCP-servrar som är konfigurerade i serverns användares
+  egna verktyg (Claude, Codex, Cursor med flera). Bara inbyggda harness-körningar
+  som ägaren svarar för får dem; se
+  [Personliga MCP-servrar förblir ägarens](/sv-SE/handbok/how-to-guider/mcp-server/#personliga-mcp-servrar-förblir-ägarens).
+- Bekräfta en persons e-postadress, så att single sign-on kan matcha den (se
+  [Anslut en OpenID Connect-leverantör](/sv-SE/handbok/how-to-guider/sso-oidc/#hur-inloggningar-matchar-befintliga-konton)).
+- Ändra installationsövergripande inställningar: SSO, leverantörsuppgifter,
+  MCP-slutpunkten och dess token, modellhantering, Connect och säkerhetskopior av
+  hela installationen. Dessa operationer deklarerar **serverauktoritet** och nekas
+  för alla andra.
+
 Det finns medvetet en enda operatörsidentitet och en enda definition av den.
 
 ## Revisionsspåret

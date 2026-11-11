@@ -2,7 +2,7 @@
 title: Back-uppen en herstellen
 description: Maak een momentopname van de installatie, verplaats een werkruimte tussen machines, herstel één werkruimte of allemaal, en bewaar kopieën ergens anders.
 slug: nl-NL/handleiding/gidsen/back-uppen-en-herstellen
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Deze handleiding behandelt de vijf dingen die mensen daadwerkelijk met back-ups doen:
@@ -16,7 +16,8 @@ Alles hier staat onder **Instellingen → Server → Back-up en herstel**.
 
 - Een **volledige client** — de desktop- of webapp. Een gekoppelde telefoon kan dit allemaal niet starten, en dat is bewust.
 - Voor het maken, opvragen, downloaden of verwijderen van een **momentopname van de installatie**: de **eigenaar** van de installatie.
-- Voor acties per werkruimte: **beheerder** van die werkruimte om te exporteren of om de geplande back-ups te bekijken en te downloaden, **eigenaar** om te importeren of te verwijderen of om een van de back-ups te verwijderen.
+- Voor acties per werkruimte: **beheerder** van die werkruimte om te exporteren of om de geplande back-ups te bekijken en te downloaden, **eigenaar** om hem te verwijderen of om een van de back-ups te verwijderen.
+- Om een werkruimte te **herstellen**, uit een geüpload bestand, een geplande back-up of een momentopname: de [serverbeheerder](/nl-NL/handleiding/concepten/autorisatie/#de-serverbeheerder), die ook de eigenaar van die werkruimte moet zijn. Een herstel laat de server een databasebestand als zijn eigen overnemen, dus dat is een beslissing van de serverbeheerder. Alle anderen zien “Alleen de serverbeheerder kan back-ups herstellen. Je kunt ze nog wel downloaden.” in plaats van de herstelacties.
 - Voor downloads en uploads: een gekoppelde volledige client, op een rechtstreekse of een via een relay bemiddelde verbinding. Beide routes dragen de bestandsbytes door dezelfde geauthenticeerde, end-to-end-versleutelde brontunnel; de relay kan ze niet lezen.
 
 :::caution[Momentopnamen van de installatie zijn handmatig]
@@ -41,6 +42,8 @@ Beide artefacten zijn **alleen databases**:
 
 - Een **momentopname van de installatie** is een map met tijdstempel: `manifest.json`, `global.db` en per werkruimte één `<workspaceId>/workspace.db`.
 - Een **werkruimte-export** is dat ene bestand `workspace.db`.
+
+Een werkruimte-database is de hele werkruimte: haar gesprekken, runlogboeken, codeindex, repokoppelingen, omgevingsdefinities en leden. Ze bevat ook de pipeline-webhooktokens en de webhookgeheimen van de ticketsynchronisatie van de werkruimte, in leesbare vorm. Bewaar een gedownloade back-up of export van een werkruimte zoals je een geheim bewaart. Ze bevat geen aanmeldingen bij aanbieders, apparaatsleutels of gebruikersgeheimen; die staan in de globale database en in de geheimenopslag van de server.
 
 Geen van beide bevat de rest van de gegevensmap: `secrets.json` (koppelingssleutels,
 inloggegevens van aanbieders, SSO), de `blobs/` van een werkruimte (afbeeldingen die in
@@ -73,7 +76,7 @@ is mislukt — kijk in het serverlog.
 
 ## Back-ups van werkruimtes en bewaring plannen
 
-Open **Instellingen → Pipelines → Pipelinesjablonen** voor de werkruimte en zoek
+Open **Instellingen → Werkruimte → Pipelinesjablonen** voor de werkruimte en zoek
 **Workspace backup**. Het ingeschakelde schema draait elke zondag om 03:00 UTC:
 **Back up workspace**, gevolgd door **Delete backups older than** (standaard 30 dagen).
 De tweede node draait pas nadat de back-up is gelukt. Je kunt de bewaartermijn in dagen
@@ -97,7 +100,7 @@ geen beheerder bent, meldt dat in de rij in plaats van de back-ups te tonen.
 
 Klap een rij uit om elke back-up te zien, de nieuwste eerst:
 
-- **Herstellen** vervangt de huidige database van de werkruimte door deze back-up. Exporteer de werkruimte eerst als je dit misschien ongedaan wilt maken. Vereist **eigenaar**.
+- **Herstellen** vervangt de huidige database van de werkruimte door deze back-up. Exporteer de werkruimte eerst als je dit misschien ongedaan wilt maken. Vereist de serverbeheerder, die ook de eigenaar van de werkruimte moet zijn.
 - **Downloaden** slaat het bestand op op de machine die je gebruikt. De back-up blijft op de server staan.
 - **Pad kopiëren** kopieert de locatie op de server.
 - **Verwijderen** verwijdert deze back-up definitief, nadat je de naam van de werkruimte hebt getypt. Vereist **eigenaar**.
@@ -111,7 +114,7 @@ gemarkeerd met **Werkruimte verwijderd**, en kan ze daar downloaden of verwijder
 anders ziet die rijen.
 
 Ze hebben geen **Herstellen**, omdat er geen werkruimte is om in te herstellen. Om er een
-terug te halen, download je hem, maak je een werkruimte aan en upload je het bestand zoals
+terug te halen, download je hem, maak je een werkruimte aan (alleen de serverbeheerder kan dat) en upload je het bestand zoals
 beschreven in
 [Een werkruimte naar een andere installatie verplaatsen](#een-werkruimte-naar-een-andere-installatie-verplaatsen).
 
@@ -152,9 +155,9 @@ Eén werkruimte is één databasebestand, dus het overdragen is een bestandsbewe
 2. Maak op de **doel**server de werkruimte aan die hem ontvangt (of kies er een).
 3. Klap die werkruimte uit en druk onder **Herstellen vanaf dit apparaat** op **Bestand kiezen en uploaden**. Kies de `.db` die je hebt gedownload.
 
-Staan beide servers op de machine waar je achter zit, dan doen **Op server opslaan** plus
-**Importeren** → **Bestand kiezen** hetzelfde zonder de omweg; de paden in het
-importdialoogvenster worden opgelost op de serverhost.
+Stap 3 is een herstel, dus die vraagt om de serverbeheerder van de bestemming, die ook de eigenaar van die werkruimte moet zijn.
+
+Staan beide servers op de machine waar je achter zit, dan doen **Op server opslaan** op de bron, daarna het pad van het bestand in **Databasebestand van de werkruimte** en **Importeren** op de bestemming, hetzelfde zonder de omweg; dat pad wordt opgelost op de serverhost.
 
 :::caution[Importeren vervangt alles]
 Importeren overschrijft alles wat de doelwerkruimte nu bevat, en dat kan niet ongedaan
@@ -170,11 +173,15 @@ gebruikers-id's van het bestand bij de installatie waar het vandaan komt en werk
 niet — de eigen gegevens van de werkruimte zijn intact, maar controleer het lidmaatschap
 opnieuw nadat je hem hebt overgenomen.
 
-Tokens van chatbots staan naast de database, niet erin, dus een werkruimte die je aan
-iemand anders geeft, bevat geen actieve inloggegevens. De ontvangende installatie verbindt
-zijn eigen tokens opnieuw.
+Tokens van chatbots en aanmeldingen bij aanbieders staan buiten de database, dus de
+ontvangende installatie verbindt zijn eigen tokens opnieuw. Het bestand bevat wél de
+pipeline-webhooktokens en de webhookgeheimen van de ticketsynchronisatie van de
+werkruimte, dus een werkruimte die je aan iemand anders geeft, geeft die ook mee. Roteer
+ze daarna als de ontvanger ze niet mag hebben.
 
 ## Eén werkruimte uit een momentopname herstellen
+
+Je moet de serverbeheerder en de eigenaar van de werkruimte zijn.
 
 1. Klap onder **Momentopnamen van de installatie** de momentopname uit die je wilt.
 2. Zoek de rij van de werkruimte en druk op **Herstellen**.
@@ -186,8 +193,8 @@ zou kunnen behandelen.
 
 Een rij kan **Staat niet meer op deze server** zeggen, met **Herstellen** uitgeschakeld:
 de momentopname bevat een werkruimte die deze installatie niet meer heeft. Haal hem
-handmatig terug — maak een werkruimte aan en importeer daaronder onder
-**Werkruimtegegevens** uit `<snapshot path>/<old workspace id>/workspace.db`. De
+handmatig terug — maak een werkruimte aan (alleen de serverbeheerder) en voer daaronder onder
+**Werkruimtegegevens** in het veld **Databasebestand van de werkruimte** `<snapshot path>/<old workspace id>/workspace.db` in en druk op **Importeren**. De
 uitgeklapte momentopname toont zijn eigen **Pad op de server** in een kopieerveld, en de
 titel van de rij is het oude werkruimte-id, dus je hebt beide helften van dat pad voor je.
 
@@ -360,9 +367,11 @@ worden bewaard.
 | Symptoom                                                                  | Oorzaak en oplossing                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Download of upload mislukt na een gewijzigde verbinding | Probeer het opnieuw op de actieve gekoppelde verbinding. Zowel rechtstreeks als via een relay wordt versleutelde bestandsoverdracht ondersteund; geen van beide biedt een plaintext-HTTP-terugval |
-| “De server weigerde”                                                     | Rol. Een momentopname van de installatie maken of opvragen vereist de beheerder van de installatie. Een werkruimte downloaden vereist beheerder, er een herstellen vereist eigenaar, een zip van een hele momentopname vereist de beheerder van de installatie |
-| “Deze server heeft geen back-upoppervlak”                                | Op de host is geen back-uppoort aangesloten — een demoserver. De handelingen ontbreken in plaats van dat ze worden geweigerd                          |
-| “Het bestand is groter dan de server accepteert”                         | Uploads zijn beperkt tot 8 GiB. Zet het bestand op de serverhost en gebruik in plaats daarvan **Importeren** → **Bestand kiezen**                 |
+| “De server weigerde. Een werkruimte downloaden vereist de rol admin. Er een herstellen vereist de serverbeheerder, die ook eigenaar van de werkruimte moet zijn. Een hele momentopname vereist de serverbeheerder.” | Rol. Een momentopname van de installatie maken, opvragen of downloaden vereist de serverbeheerder. Een werkruimte downloaden vereist beheerder; er een herstellen vereist de serverbeheerder, die ook eigenaar van de werkruimte moet zijn |
+| “Bestandsoverdracht is voor deze verbinding nog niet ingesteld. Verbind opnieuw met de server om een back-up te downloaden of te uploaden.” | Deze verbinding met de server heeft geen bestandsoverdrachtskanaal, dus **Downloaden** en de upload zijn uitgeschakeld. Verbind opnieuw met de server en probeer het daarna opnieuw |
+| “Alleen de serverbeheerder kan back-ups herstellen. Je kunt ze nog wel downloaden.” | Herstellen vervangt de database van een werkruimte op de serverhost, dus alleen de serverbeheerder herstelt. Download de back-up en vraag de serverbeheerder om te herstellen |
+| “Deze server heeft geen back-upoppervlak.”                                | Op de host is geen back-uppoort aangesloten — een demoserver. De handelingen ontbreken in plaats van dat ze worden geweigerd                          |
+| “Het bestand is groter dan de server accepteert.”                         | Uploads zijn beperkt tot 8 GiB. Zet het bestand op de serverhost en voer het pad ervan in bij **Databasebestand van de werkruimte**                 |
 | Import geweigerd: geen werkruimtedatabase van Control Center             | Het bestand heeft geen rij `workspace_meta` — het is geen werkruimte-export, of het is afgekapt. Er is niets vervangen             |
 | Een momentopname staat als **Onvolledig** in de lijst                    | Het manifest ontbreekt of noemt bestanden die er niet zijn. Maak een nieuwe; neem ondertussen afzonderlijke werkruimtebestanden eruit over |
 | Een momentopname meldt dat werkruimtes niet zijn vastgelegd              | Die werkruimtes zijn nooit beschreven, of hun kopie is mislukt. Kijk in het serverlog                                  |

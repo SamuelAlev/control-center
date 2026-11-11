@@ -251,10 +251,6 @@ class AppLocalizationsHu extends AppLocalizations {
   String get allCaughtUp => 'Minden elolvasva';
 
   @override
-  String get inboxNoForgeAccount =>
-      'A szerveren nincs csatlakoztatott forge-fiók, ezért a pull requestek még nem rendelhetők Önhöz.';
-
-  @override
   String get inboxNothingWaiting =>
       'Semmi sincs blokkolva, és egyetlen pull request sem vár Önre.';
 
@@ -461,32 +457,6 @@ class AppLocalizationsHu extends AppLocalizations {
   }
 
   @override
-  String attachmentsTooLargeRelay(int count, String names) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$names túl nagy ahhoz, hogy innen a relén keresztül küldje.',
-      one: '$names túl nagy ahhoz, hogy innen a relén keresztül küldje.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get attachmentUploadFailed =>
-      'Nem sikerült feltölteni a mellékletet. Próbálja újra.';
-
-  @override
-  String attachmentsLeftOut(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count mellékletet nem sikerült feltölteni, ezért kimaradt.',
-      one: '1 mellékletet nem sikerült feltölteni, ezért kimaradt.',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get teammate => 'Csapattárs';
 
   @override
@@ -623,36 +593,6 @@ class AppLocalizationsHu extends AppLocalizations {
   @override
   String get noForgeConnected =>
       'A szerveren nincs csatlakoztatott forge, ezért nem lehet pull requesteket lekérni. Csatlakoztasson egyet az asztali alkalmazásból.';
-
-  @override
-  String reposUnreadable(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count repót nem sikerült olvasni.',
-      one: '1 repót nem sikerült olvasni.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reposNotReadable(String names) {
-    return 'Nem olvasható: $names';
-  }
-
-  @override
-  String get installationSuspendedTitle =>
-      'A GitHub App telepítése fel van függesztve';
-
-  @override
-  String installationSuspendedBody(String names) {
-    return 'A $names utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.';
-  }
-
-  @override
-  String installationSuspendedNotice(String names) {
-    return 'A GitHub App telepítése fel van függesztve. A $names utoljára ismert adatai jelennek meg. Folytassa a telepítést a GitHubon.';
-  }
 
   @override
   String get draft => 'Piszkozat';
@@ -1311,7 +1251,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get permissionPrCreate => 'Pull requestek létrehozása';
 
   @override
-  String get permissionPrPublish => 'Pull requestek közzététele';
+  String get permissionPrPublish => 'Pull requestek frissítése vagy egyesítése';
 
   @override
   String get permissionVendorSyncWrite => 'Szolgáltatói szinkron írása';
@@ -1355,7 +1295,7 @@ class AppLocalizationsHu extends AppLocalizations {
   String get permissionBuiltInDefault => 'Beépített alapértelmezett';
 
   @override
-  String get permissionRemembered => 'Megjegyzett jóváhagyás';
+  String get permissionRemembered => 'Időkorlátos jóváhagyás';
 
   @override
   String get permissionSource => 'Forrás';
@@ -1377,10 +1317,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get permissionSetHere => 'Szabály beállítása itt';
-
-  @override
-  String get permissionRevokeBeforeEdit =>
-      'A művelet általános szabályának beállítása előtt vonja vissza a hatókörhöz kötött vagy megjegyzett szabályt.';
 
   @override
   String get permissionConfirmRevoke => 'Visszavonás megerősítése';
@@ -1433,6 +1369,15 @@ class AppLocalizationsHu extends AppLocalizations {
   String permissionCommands(String commands) {
     return 'Parancsok: $commands';
   }
+
+  @override
+  String permissionTools(String tools) {
+    return 'Eszközök: $tools';
+  }
+
+  @override
+  String get permissionNotInEffect =>
+      'Nincs hatálya, amíg ez a művelet Tiltás értékre van állítva';
 
   @override
   String permissionMaxCount(String count) {
@@ -1892,15 +1837,6 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get activityPullRequest => 'Pull request frissítése';
-
-  @override
-  String get activityTicket => 'Jegy frissítése';
-
-  @override
-  String get activityMeeting => 'Megbeszélés frissítése';
-
-  @override
-  String get activityCalendar => 'Naptárkapcsolat';
 
   @override
   String get activityRig => 'Elkülönített környezet frissítése';
@@ -2590,8 +2526,7 @@ class AppLocalizationsHu extends AppLocalizations {
       'Várakozás a böngészőben történő engedélyezésre…';
 
   @override
-  String get credentialsConnectCodePrompt =>
-      'Írd be a böngészőben látható kódot';
+  String get credentialsConnectCodePrompt => 'Megerősítő kód';
 
   @override
   String get credentialsConnectCodeMalformed =>
@@ -2662,10 +2597,6 @@ class AppLocalizationsHu extends AppLocalizations {
       'Illesszen be egy személyes hozzáférési tokent';
 
   @override
-  String get credentialsHostManaged =>
-      'Ez a kapcsolat a szerveralkalmazásból vagy a környezetből származik. Ott csak a szerver tulajdonosa módosíthatja; saját tokent továbbra is hozzáadhat.';
-
-  @override
   String get credentialsStopWatching => 'Figyelés leállítása';
 
   @override
@@ -2686,4 +2617,205 @@ class AppLocalizationsHu extends AppLocalizations {
 
   @override
   String get permissionHostExecution => 'Parancsok futtatása a gazdagépen';
+
+  @override
+  String credentialsSignInLapsed(String provider) {
+    return 'A(z) $provider bejelentkezésed lejárt. Jelentkezz be újra.';
+  }
+
+  @override
+  String get credentialsSignInPaused =>
+      'Szüneteltetve: a munkaterület bejelentkezési szolgáltatása megváltozott. Újra működik, amint a szolgáltatás visszatér.';
+
+  @override
+  String credentialsProviderUnreachable(String provider) {
+    return 'A(z) $provider most nem érhető el. Újrapróbálkozás folyamatban.';
+  }
+
+  @override
+  String get credentialsScopeWorkspace => 'Csak ez a munkaterület';
+
+  @override
+  String get credentialsScopeAllWorkspaces => 'Minden munkaterület';
+
+  @override
+  String get credentialsRemoveConfirmWorkspace =>
+      'Eltávolítod a mentett hitelesítő adataidat ebből a munkaterületből? A többi megtartja a sajátját.';
+
+  @override
+  String get credentialsRemoveConfirmAllWorkspaces =>
+      'Eltávolítod a mentett hitelesítő adataidat minden munkaterületből, amely használja őket?';
+
+  @override
+  String get credentialsSignInServerRestarted =>
+      'A szerver újraindult. Kezdd újra a bejelentkezést.';
+
+  @override
+  String repoAccessInstallApp(String owner, String names) {
+    return 'Telepítsd a GitHub Appot ide: $owner, hogy az automatizálás elérje ezeket: $names. Koppints a GitHub megnyitásához.';
+  }
+
+  @override
+  String repoAccessAskAdminInstall(String owner, String names) {
+    return 'A GitHub App nincs telepítve ide: $owner, ezért az automatizálás nem éri el ezeket: $names. Kérd meg a munkaterület egyik adminját a telepítésre.';
+  }
+
+  @override
+  String repoAccessAddToApp(String names) {
+    return 'Add hozzá a GitHub App tárolóihoz: $names. Koppints a GitHub megnyitásához.';
+  }
+
+  @override
+  String repoAccessAskAdminAdd(String names) {
+    return 'A GitHub App még nem látja ezeket: $names. Kérd meg a munkaterület egyik adminját, hogy adja hozzá őket a tárolóihoz.';
+  }
+
+  @override
+  String repoAccessSuspended(String names) {
+    return 'A GitHub App telepítése fel van függesztve. Az automatizálás szünetel ezekben: $names, amíg a fiók egyik tulajdonosa folytatja a telepítést a GitHubon.';
+  }
+
+  @override
+  String repoAccessOwnerCannotSee(String names) {
+    return 'A munkaterület automatizálásáért felelős személy már nem látja ezeket: $names, ezért ott semmi sem fut a nevében.';
+  }
+
+  @override
+  String repoAccessOwnerNotSignedIn(String names) {
+    return 'A munkaterület automatizálásáért felelős személy nincs bejelentkezve a forge-ba, ezért az automatizálás ezekben: $names vár, amíg be nem jelentkezik.';
+  }
+
+  @override
+  String repoAccessRetrying(String names) {
+    return 'Nem sikerült ellenőrizni a hozzáférést ezekhez: $names. Újrapróbálkozás folyamatban.';
+  }
+
+  @override
+  String hiddenReposSignIn(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          'Jelentkezz be ide: $forge, hogy további $count tároló pull requestjeit is lásd',
+      one:
+          'Jelentkezz be ide: $forge, hogy további 1 tároló pull requestjeit is lásd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoForgeAccess(int count, String forge) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tároló rejtve van, mert a(z) $forge-fiókod nem látja őket',
+      one: '1 tároló rejtve van, mert a(z) $forge-fiókod nem látja',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposNoGrant(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other:
+          '$count tároló rejtve van, mert ebben a munkaterületben nincs hozzájuk hozzáférésed',
+      one:
+          '1 tároló rejtve van, mert ebben a munkaterületben nincs hozzá hozzáférésed',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String hiddenReposChecking(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'A hozzáférésed ellenőrzése további $count tárolóhoz…',
+      one: 'A hozzáférésed ellenőrzése további 1 tárolóhoz…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get credentialsAtlassianEmail => 'Az Atlassian-fiók e-mail-címe';
+
+  @override
+  String get credentialsAtlassianEmailInvalid =>
+      'Add meg az Atlassian-fiókod e-mail-címét.';
+
+  @override
+  String get credentialsBitbucketApiToken => 'API-token';
+
+  @override
+  String repoAccessAutomationTokenMissing(String names) {
+    return 'Egyetlen automatizálási token sem tudja olvasni ezt: $names, ezért az ottani háttérmunka szünetel. Egy admin hozzáadhat egyet a Beállítások → Tárolók menüben.';
+  }
+
+  @override
+  String get credentialsSignInConfirmInBrowser =>
+      'Erősítse meg a böngészőjében, majd írja be a megjelenő kódot.';
+
+  @override
+  String get credentialsSignInAccountAlreadyBound =>
+      'Ez a fiók már másik személyhez van csatlakoztatva ezen a szerveren. Jelentkezzen be egy másik fiókkal.';
+
+  @override
+  String credentialsTokenUnreachable(String provider) {
+    return 'A(z) $provider nem érhető el a token ellenőrzéséhez. Próbálja újra egy pillanat múlva.';
+  }
+
+  @override
+  String credentialsTokenRejected(String provider) {
+    return 'A(z) $provider nem fogadja el ezt a tokent. Ellenőrizze, hogy mindent átmásolt-e, és hogy nem vonták-e vissza.';
+  }
+
+  @override
+  String credentialsTokenWrongKind(String provider) {
+    return 'Ez nem személyes token. Személyes hozzáférési tokent illesszen be a saját $provider-fiókjából, ne projekt-, csoport-, munkaterület- vagy botos tokent.';
+  }
+
+  @override
+  String credentialsTokenNarrowScope(String scope) {
+    return 'Ebből a tokenből hiányzik a(z) $scope hatókör, amely az átnézéshez és a kommentekhez szükséges. Hozzon létre olyat, amelyikben megvan.';
+  }
+
+  @override
+  String get credentialsTokenExpired =>
+      'Ez a token lejárt. Hozzon létre egy újat, és illessze be ide.';
+
+  @override
+  String get credentialsSignInRateLimited =>
+      'Most túl sok kérés érkezett. Várjon egy kicsit, majd próbálja újra.';
+
+  @override
+  String get credentialsSignInCancelled =>
+      'A bejelentkezés megszakadt vagy el lett utasítva. Indítsa újra, amikor készen áll.';
+
+  @override
+  String get credentialsSignInNoLongerOpen =>
+      'Ez a bejelentkezés már nincs nyitva: megszakították, felhasználták vagy újabb váltotta fel. Indítsa újra.';
+
+  @override
+  String get noWorkspacesYetHint =>
+      'Egy munkaterület-adminisztrátornak meg kell hívnia Önt, vagy a szerver tulajdonosa létrehozhat Önnek egy munkaterületet.';
+
+  @override
+  String repoAccessReplaced(String repos, String forge) {
+    return 'A(z) $repos most egy másik tárolóra mutat a(z) $forge oldalon. Az újrakapcsoláshoz használja az asztali vagy a webes alkalmazást, hogy tovább használhassa.';
+  }
+
+  @override
+  String repoAccessAskAdminRelink(String repos, String forge) {
+    return 'A(z) $repos most egy másik tárolóra mutat a(z) $forge oldalon. Egy munkaterület-adminisztrátornak újra kell kapcsolnia, mielőtt ismét használható lenne.';
+  }
+
+  @override
+  String get runSandboxUnavailableTitle =>
+      'Az ügynökökhöz homokozó kell ezen a szerveren';
+
+  @override
+  String get runSandboxUnavailable =>
+      'Ezen a szerveren nincs homokozó, ezért itt csak a tulajdonosa futtathat ügynököket. A tulajdonos telepítheti a homokozót, vagy mindenki számára kikapcsolhatja a homokozást.';
 }

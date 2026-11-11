@@ -1,5 +1,35 @@
 part of 'local_rpc_server.dart';
 
+/// Looks up a live code-server session by its capability `sessionId` for the
+/// `/proxy/vscode/<sid>/*` reverse proxy. Returns null for an unknown / expired
+/// / foreign-workspace session (the proxy then denies with 403). Wired by the
+/// server runtime to [CodeServerService.lookup]; null on a host that does not
+/// run code-server (the route then 404s).
+typedef CodeServerSessionResolver =
+    CodeServerSession? Function(String sessionId);
+
+/// Records a bridge-extension "open this file as an app tab" report for the
+/// code-server addressed by capability `sessionId`. Wired by the runtime to
+/// [CodeServerService.reportOpen]; null on a host that does not run code-server.
+/// `windowId` is the reporting window's bridge id; a report without one is
+/// malformed and dropped before it gets here.
+typedef CodeServerOpenReporter =
+    void Function(String sessionId, String absPath, int? line, String windowId);
+
+/// Records a bridge-extension "this file's dirty state changed" report for the
+/// code-server addressed by capability `sessionId`. Wired by the runtime to
+/// [CodeServerService.reportDirty]; null on a host that does not run code-server.
+typedef CodeServerDirtyReporter =
+    void Function(String sessionId, String absPath, bool dirty);
+
+/// Resolves the reverse command stream for the code-server addressed by
+/// capability `sessionId` — the `{cmd, …}` maps relayed to the bridge extension
+/// over `/proxy/vscode/<sid>/__cc_commands__` (SSE). Wired by the runtime to
+/// [CodeServerService.commandStream]; null on a host that does not run
+/// code-server.
+typedef CodeServerCommandStreamResolver =
+    Stream<Map<String, Object?>> Function(String sessionId);
+
 extension _CodeServerMethods on LocalRpcServer {
   Future<void> _serveCodeServerProxy(HttpRequest request) async {
     final res = request.response;
@@ -94,12 +124,9 @@ extension _CodeServerMethods on LocalRpcServer {
               final rawLine = decoded['line'];
               final line = rawLine is num ? rawLine.toInt() : null;
               final window = decoded['window'];
-              codeServerReport?.call(
-                sid,
-                path,
-                line,
-                window is String && window.isNotEmpty ? window : null,
-              );
+              if (window is String && window.isNotEmpty) {
+                codeServerReport?.call(sid, path, line, window);
+              }
             }
           }
         }

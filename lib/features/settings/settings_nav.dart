@@ -48,6 +48,7 @@ class SettingsNavItem {
     this.matchesSubroutes = false,
     this.detailRoutes = const [],
     this.ownerOnly = false,
+    this.workspaceAdminsToo = false,
     this.desktopOnly = false,
   });
 
@@ -75,12 +76,17 @@ class SettingsNavItem {
   /// SERVER OWNER (the install's operator).
   ///
   /// The server has always refused these writes — every one of them sits
-  /// behind `requireServerAdmin` / `ServerAuthority.serverOwner` — but the
+  /// behind the declared `ServerAuthority.serverOwner` authority — but the
   /// client rendered them for every full client and only surfaced the refusal
   /// as an error after the operator had filled in a form. `identity.me`
   /// carries `is_server_owner` precisely so the UI can tell the truth up
   /// front; before this it was decoded and never read.
   final bool ownerOnly;
+
+  /// With [ownerOnly], also shown to anyone who administers a workspace: a
+  /// page that reads per-workspace data an admin owns next to the server's
+  /// (the audit log), and narrows itself server-side to what each may read.
+  final bool workspaceAdminsToo;
 
   /// When true the destination exists only in the desktop app: it configures
   /// the native process itself (its tray icon, its window, its login launch),
@@ -91,6 +97,12 @@ class SettingsNavItem {
   /// the nav model filters on this, so a browser never shows, cycles to or
   /// searches for a page it cannot render.
   bool get availableHere => !desktopOnly || !kIsWeb;
+
+  /// Whether a person is offered this destination: everyone, unless it is
+  /// [ownerOnly]; then the server owner, and workspace admins when
+  /// [workspaceAdminsToo].
+  bool shownTo({required bool isServerOwner, required bool isWorkspaceAdmin}) =>
+      !ownerOnly || isServerOwner || (workspaceAdminsToo && isWorkspaceAdmin);
 }
 
 /// A scope-labelled group of settings destinations.
@@ -128,12 +140,26 @@ class SettingsNavGroup {
 ///
 /// Ordering rule: a page has ONE scope. Where a feature genuinely spans scopes
 /// it is split and cross-linked rather than filed under its dominant scope with
-/// the rest hidden — see the Accounts / Voice / Adapters splits.
+/// the rest hidden — see the Accounts / Voice / Adapters splits, and a
+/// person's connected accounts (You → Profile) beside Integrations
+/// (Workspace).
+///
+/// The first item is where Settings opens (`settingsLandingRoute`).
 const List<SettingsNavGroup> kSettingsNav = [
   SettingsNavGroup(
     scope: SettingScope.user,
     label: _youLabel,
     items: [
+      // Who the person is and the accounts they connect for themself. Every
+      // sign-in is stored against the person, never the workspace, so it is
+      // part of their profile: the workspace's half of each integration
+      // stays on Workspace → Integrations, cross-linked.
+      SettingsNavItem(
+        id: 'you.profile',
+        icon: AppIcons.userRound,
+        label: _accountProfileLabel,
+        route: settingsAccountProfileRoute,
+      ),
       SettingsNavItem(
         id: 'you.appearance',
         icon: AppIcons.paintbrushVertical,
@@ -153,10 +179,10 @@ const List<SettingsNavGroup> kSettingsNav = [
         route: settingsNotificationsRoute,
       ),
       SettingsNavItem(
-        id: 'you.attribution',
+        id: 'you.commits',
         icon: AppIcons.gitCommit,
-        label: _attributionLabel,
-        route: settingsAgentAttributionRoute,
+        label: _commitsLabel,
+        route: settingsCommitsRoute,
       ),
       SettingsNavItem(
         id: 'you.desktop',
@@ -200,6 +226,12 @@ const List<SettingsNavGroup> kSettingsNav = [
         icon: AppIcons.slidersHorizontal,
         label: _generalLabel,
         route: settingsWorkspaceGeneralRoute,
+      ),
+      SettingsNavItem(
+        id: 'workspace.integrations',
+        icon: AppIcons.cable,
+        label: _integrationsLabel,
+        route: settingsWorkspaceIntegrationsRoute,
       ),
       SettingsNavItem(
         id: 'workspace.meetings',
@@ -317,6 +349,21 @@ const List<SettingsNavGroup> kSettingsNav = [
         route: settingsDiagnosticsRoute,
       ),
       SettingsNavItem(
+        id: 'server.people',
+        ownerOnly: true,
+        icon: AppIcons.users,
+        label: _serverPeopleLabel,
+        route: settingsServerPeopleRoute,
+      ),
+      SettingsNavItem(
+        id: 'server.audit',
+        ownerOnly: true,
+        workspaceAdminsToo: true,
+        icon: AppIcons.activity,
+        label: _serverAuditLabel,
+        route: settingsServerAuditRoute,
+      ),
+      SettingsNavItem(
         id: 'server.backup',
         icon: AppIcons.archive,
         label: _backupLabel,
@@ -352,10 +399,11 @@ String _youLabel(AppLocalizations l) => l.settingsScopeYou;
 String _workspaceLabel(AppLocalizations l) => l.settingsScopeWorkspace;
 String _serverLabel(AppLocalizations l) => l.settingsScopeServer;
 
+String _accountProfileLabel(AppLocalizations l) => l.accountProfileTitle;
 String _profileLabel(AppLocalizations l) => l.settingsProfile;
 String _appearanceLabel(AppLocalizations l) => l.appearance;
 String _notificationsLabel(AppLocalizations l) => l.notifications;
-String _attributionLabel(AppLocalizations l) => l.settingsAgentAttributionTitle;
+String _commitsLabel(AppLocalizations l) => l.commits;
 String _audioSettingsLabel(AppLocalizations l) => l.settingsAudio;
 String _desktopAppLabel(AppLocalizations l) => l.navDesktopApp;
 String _devicesLabel(AppLocalizations l) => l.settingsYourDevices;
@@ -363,6 +411,8 @@ String _newsfeedLabel(AppLocalizations l) => l.newsfeedLabel;
 String _linksLabel(AppLocalizations l) => l.settingsLinks;
 
 String _generalLabel(AppLocalizations l) => l.settingsWorkspaceGeneral;
+String _integrationsLabel(AppLocalizations l) =>
+    l.settingsWorkspaceIntegrations;
 String _meetingsLabel(AppLocalizations l) => l.navMeetings;
 String _membersLabel(AppLocalizations l) => l.membersNav;
 String _agentsLabel(AppLocalizations l) => l.agents;
@@ -377,6 +427,8 @@ String _connectionLabel(AppLocalizations l) => l.settingsServerConnection;
 String _ssoLabel(AppLocalizations l) => l.settingsServerSso;
 String _providersLabel(AppLocalizations l) => l.settingsModelProviders;
 String _mcpLabel(AppLocalizations l) => l.mcpServers;
+String _serverAuditLabel(AppLocalizations l) => l.settingsAuditLog;
+String _serverPeopleLabel(AppLocalizations l) => l.settingsServerPeople;
 String _voiceLabel(AppLocalizations l) => l.settingsVoiceModels;
 String _sandboxLabel(AppLocalizations l) => l.settingsSandboxLabel;
 

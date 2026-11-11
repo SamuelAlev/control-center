@@ -2,114 +2,175 @@
 title: Kết nối máy chủ mã
 description: Kết nối GitHub, GitLab hoặc Bitbucket để bề mặt PR, việc đăng ký kho mã và các lượt chạy agent hoạt động — một không gian làm việc có thể dùng cả ba.
 slug: vi-VN/so-tay/huong-dan-thuc-hanh/ket-noi-may-chu-ma
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
-Control Center làm việc với ba máy chủ mã, được gọi là **forge** xuyên suốt ứng dụng: **GitHub**, **GitLab** và **Bitbucket Cloud**. Không máy chủ nào là mặc định. Kết nối một cái là mọi thứ hoạt động; kết nối nhiều cái thì một không gian làm việc duy nhất có thể chứa kho mã từ tất cả cùng lúc.
+Control Center làm việc với ba máy chủ mã, được gọi chung là **forge** trong toàn bộ ứng dụng: **GitHub**, **GitLab** và **Bitbucket Cloud**. Không có forge nào là mặc định. Kết nối một forge là mọi thứ hoạt động; kết nối nhiều forge thì một không gian làm việc có thể chứa kho mã từ tất cả chúng cùng lúc.
 
-Máy chủ mã là thuộc tính của từng **kho mã**, được đọc từ remote `origin` khi bạn đăng ký kho mã đó. Bạn không bao giờ phải chọn, và không có cài đặt nào theo từng không gian làm việc để làm sai.
+Forge là thuộc tính của từng **kho mã**, được đọc từ remote `origin` khi bạn đăng ký kho đó. Bạn không bao giờ phải chọn forge, và không có cài đặt theo không gian làm việc nào để bạn có thể cấu hình sai.
 
-## Kết nối một máy chủ mã
+## Kết nối một forge
 
-1. Mở **Cài đặt → Không gian làm việc → Hồ sơ & danh tính** (`/settings/workspace/profile`).
-2. Tìm thẻ **Lưu trữ mã**. Mọi máy chủ mã được hỗ trợ đều được liệt kê, dù đã kết nối hay chưa.
-3. Trên **GitHub**, nhấn **Đăng nhập vào GitHub**. Trên **GitLab** hoặc **Bitbucket**, nhấn **Thêm token** rồi dán một token vào.
+1. Mở **Cài đặt → Bạn → Hồ sơ** (`/settings/you/profile`).
+2. Tìm thẻ **Lưu trữ mã**. Mọi forge được hỗ trợ đều được liệt kê, dù đã kết nối hay chưa.
+3. Trên **GitHub**, nhấn **Đăng nhập GitHub**. Trên **GitLab** hoặc **Bitbucket**, nhấn **Thêm token** và dán một token vào.
 
-**GitHub chỉ có đăng nhập.** Việc đăng nhập chạy qua GitHub App riêng của máy chủ hoặc qua Control Center Connect, tùy theo chủ máy chủ đã thiết lập (xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)); không có token GitHub nào để dán. GitLab và Bitbucket vẫn nhận một token cá nhân.
+**GitHub chỉ hỗ trợ đăng nhập.** Việc đăng nhập đi qua GitHub App của chính máy chủ hoặc qua Control Center Connect, tùy theo chủ máy chủ đã thiết lập cái nào, hoặc qua các ứng dụng mà quản trị viên không gian làm việc đã chọn cho không gian làm việc này trong **Cài đặt → Không gian làm việc → Tích hợp** (xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)); không có token GitHub nào để dán. GitLab và Bitbucket vẫn yêu cầu token cá nhân.
 
-Dù theo cách nào, thông tin xác thực **là của bạn và nằm trên máy chủ**, được đánh khóa theo id người dùng của bạn: không token nào được lưu trên máy mà bạn đã nhập nó, mọi thiết bị bạn đăng nhập đều dùng cùng một token, và không thành viên nào khác đọc được nó. Nó có hiệu lực ngay ở **yêu cầu kế tiếp** — không có gì phải khởi động lại, và việc ngắt kết nối sẽ dừng gửi nó ngay lập tức.
+Dù theo cách nào, thông tin xác thực đó là **của bạn và được lưu trên máy chủ**, gắn với id người dùng của bạn: không có token nào được lưu trên máy bạn đã gõ vào, mọi thiết bị bạn đăng nhập đều dùng chung một thông tin xác thực, và thành viên khác không thể đọc nó. Nó có hiệu lực ở **yêu cầu tiếp theo** — không cần khởi động lại gì cả, và ngắt kết nối sẽ dừng việc gửi nó ngay lập tức.
 
-Mỗi hàng cho biết thông tin xác thực của nó đến từ đâu, vì đó là khác biệt giữa “token của tôi không hoạt động” và “một token khác đang trả lời”:
+Thẻ cho biết tài khoản của bạn được dùng ở đâu. Token GitLab hoặc Bitbucket là của bạn trong **mọi không gian làm việc trên máy chủ**, nên bạn chỉ dán một lần. Đăng nhập GitHub của bạn cũng vậy, trừ khi một không gian làm việc có ứng dụng đăng nhập riêng: không gian làm việc đó giữ một đăng nhập GitHub riêng, và thẻ sẽ nêu rõ điều đó.
 
-| Dòng phụ                         | Ý nghĩa                                                            |
-| -------------------------------- | ------------------------------------------------------------------ |
-| `Đã đăng nhập với tên octocat`           | Thông tin xác thực của chính bạn đang được dùng                     |
-| `Đã đăng nhập với tên octocat · từ môi trường` | Chỉ với GitLab hoặc Bitbucket: một biến môi trường của máy chủ đang trả lời, không phải token của bạn |
-| `Chưa kết nối`                  | Bạn chưa có thông tin xác thực cho máy chủ mã này                   |
-| `Đăng nhập GitHub chưa được thiết lập trên máy chủ này.` | Máy chủ không có GitHub App riêng cũng không có Connect; chủ máy chủ thiết lập một trong hai |
+Mỗi dòng hiển thị trạng thái thông tin xác thực **của bạn**. Chỉ thông tin xác thực riêng của bạn mới đại diện cho bạn; không có gì khác thay thế:
 
-### Mỗi máy chủ mã cần loại token nào
+| Dòng hiển thị                                                 | Ý nghĩa                                                                                                                      |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `Đã đăng nhập với tên octocat`                                | Thông tin xác thực riêng của bạn đang được dùng |
+| `Chưa kết nối`                                                | Bạn không có thông tin xác thực nào cho forge này                                                                            |
+| `Phiên đăng nhập GitHub của bạn với tư cách octocat đã hết hạn. Hãy đăng nhập lại.` | Phiên đăng nhập của bạn đã hết hạn hoặc bị thu hồi trên forge                                                    |
+| `Đã tạm dừng: dịch vụ đăng nhập của không gian làm việc này đã thay đổi` | Không gian làm việc này đã chuyển sang dịch vụ đăng nhập khác. Đăng nhập của bạn được giữ lại và hoạt động lại nếu chuyển trở về, vì vậy ở đây không có nút đăng nhập |
+| `Hiện không kết nối được với GitHub. Đang thử lại.`             | Sự cố tạm thời. Control Center sẽ tiếp tục thử lại; bạn không cần làm gì                                                     |
+| Một câu giải thích vì sao không thể đăng nhập                 | Ví dụ `Đăng nhập bằng GitHub chưa được thiết lập cho không gian làm việc này.` hoặc `Dịch vụ đăng nhập của không gian làm việc này đã thay đổi danh tính. Quản trị viên cần xác nhận.` Quản trị viên sẽ có nút dẫn đến cài đặt khắc phục vấn đề |
 
-| Máy chủ mã         | Token                                                     | Nơi tạo                                                   |
+### Loại token mà mỗi forge cần
+
+| Forge         | Token                                                     | Nơi tạo                                                   |
 | ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
-| **GitLab**    | Một personal access token có `api`                        | gitlab.com → User settings → Access tokens                 |
-| **Bitbucket** | Một token API của Atlassian, kèm email tài khoản của bạn  | id.atlassian.com → Security → API tokens                   |
+| **GitLab**    | Personal access token có quyền `api`                      | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | API token của Atlassian, cùng với email tài khoản của bạn | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket xác thực bằng **email tài khoản của bạn làm tên người dùng** và token làm mật khẩu. Đặt `BITBUCKET_EMAIL` trong môi trường máy chủ để nó biết ghép token với email nào.
+Bitbucket xác thực bằng **email tài khoản của bạn làm tên người dùng** và API token làm mật khẩu, vì vậy hộp thoại Bitbucket yêu cầu cả hai. **Access token** của kho, dự án hoặc không gian làm việc Bitbucket không thuộc về một người nào, nên hộp thoại này từ chối nó: thay vào đó nó là một [token tự động hóa](#thêm-token-tự-động-hóa). Điều tương tự áp dụng cho **access token của dự án** hoặc **nhóm** trên GitLab: GitLab được hỏi token thuộc về ai trước khi nó được lưu, và token của bot sẽ bị từ chối tại đây.
+
+Mỗi token không gắn với một không gian làm việc: bạn giữ một token cho mỗi forge, và mọi không gian làm việc trên máy chủ đều dùng nó. **Ngắt kết nối** xóa nó cho tất cả.
 
 ### Công việc nền
 
-Công việc không có người đứng sau (lần chạy agent, pipeline, thăm dò PR) cũng cần một thông tin xác thực, và mỗi máy chủ mã trả lời theo cách riêng:
+Công việc không có người đứng sau (lượt chạy agent, pipeline, thăm dò PR) cũng cần thông tin xác thực, và mỗi forge xử lý việc này khác nhau:
 
-- **GitHub** — một token cho đúng một kho mã tại một thời điểm, được cấp từ GitHub App của máy chủ hoặc qua Connect và giới hạn trong những gì một thành viên chịu trách nhiệm có thể làm ở đó. Đó không bao giờ là đăng nhập của một người được chuyển nguyên vẹn, và không có biến môi trường hay token dán vào nào đứng thay. Xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/#đăng-nhập-của-bạn-đại-diện-cho-ai)
-- **GitLab** — token mà chủ máy chủ đã dán, rồi `GITLAB_TOKEN`, rồi `CI_JOB_TOKEN`
-- **Bitbucket** — token mà chủ máy chủ đã dán, rồi `BITBUCKET_API_TOKEN`, rồi `BITBUCKET_TOKEN` (kèm `BITBUCKET_EMAIL`)
+- **GitHub** — một token cho một kho mã tại một thời điểm, được cấp từ GitHub App của máy chủ hoặc qua Connect và giới hạn trong những gì một thành viên chịu trách nhiệm có thể làm ở đó. Nó không bao giờ là phiên đăng nhập của một người được giao nguyên vẹn, và không có biến môi trường hay token dán vào nào thay thế được. Xem [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/#đăng-nhập-của-bạn-đại-diện-cho-ai)
+- **GitLab** và **Bitbucket** — chỉ dùng **token tự động hóa** của kho: một access token của bot mà quản trị viên không gian làm việc thêm cho kho đó, hoặc cho mọi kho trên forge đó trong không gian làm việc. Token riêng của kho được ưu tiên hơn token của không gian làm việc. Việc thăm dò pull request, bình luận review AI, và các lần push và merge request không ai yêu cầu đều dùng nó, nên trên forge chúng hiển thị là bot đó, không bao giờ là một thành viên. Không có token cá nhân nào của thành viên thay thế được, và không có token cấp máy chủ hay biến môi trường nào. Nếu không có token này, công việc nền trên kho sẽ tạm dừng và thông báo truy cập kho sẽ nói rõ điều đó.
 
-Các biến môi trường của GitLab và Bitbucket là thông tin xác thực **của máy chủ**, không phải của bạn: một yêu cầu thực hiện thay mặt bạn chỉ dùng token của bạn và không dùng gì khác, nên môi trường không bao giờ âm thầm đứng ra thay bạn.
+Công việc mà một thành viên yêu cầu (một bình luận, một review, một merge request do agent mở cho họ) vẫn dùng token riêng của thành viên đó.
 
-## Bạn là một người khác trên mỗi máy chủ mã
+## Thêm token tự động hóa
 
-Cùng một người là `octocat` trên GitHub và là một cái tên hoàn toàn khác trên GitLab. Control Center phân giải danh tính của bạn **theo từng máy chủ mã** và dùng đúng danh tính cho từng kho mã, nhờ đó “cần tôi đánh giá”, “do tôi tạo” và “bạn đã phê duyệt cái này” đúng trong một không gian làm việc hỗn hợp.
+Chỉ quản trị viên không gian làm việc mới thấy hoặc thay đổi token tự động hóa. Mỗi token được kiểm tra với forge khi bạn lưu: token hoạt động như một người (token truy cập cá nhân GitLab, API token Atlassian, hoặc bất kỳ token Bitbucket nào đăng nhập bằng tài khoản của ai đó) bị từ chối, và token không đọc được kho mã mà nó dành cho cũng bị từ chối.
 
-Nếu danh tính của một máy chủ mã chưa được phân giải, các kho mã của nó không đóng góp gì vào hộp thư thay vì khớp với mọi thứ. Hộp thư nói rõ điều đó thay vì tuyên bố rằng bạn đã xử lý hết.
+- **Cho một kho:** mở **Cài đặt → Không gian làm việc → Kho lưu trữ**. Thẻ **Token tự động hóa** liệt kê mọi kho GitLab và Bitbucket cùng bot sẽ hành động ở đó, **Dùng token của không gian làm việc**, hoặc **Không có token. Tự động hóa đang tạm dừng ở đây.** Nhấn **Thêm token** trên dòng của kho.
+- **Cho mọi kho trên một forge:** mở **Cài đặt → Không gian làm việc → Tích hợp**, tìm thẻ **Token tự động hóa** và nhấn **Thêm token** trên dòng GitLab hoặc Bitbucket. Các kho mà token không đọc được sẽ được nêu tên sau khi bạn lưu và vẫn tạm dừng.
 
-## Một hộp thư, mọi máy chủ mã
+Khi công việc nền đã tạm dừng, quản trị viên cũng sẽ thấy **Thêm token** ngay trên thông báo truy cập kho. **Cập nhật token** thay thế một token; nút thùng rác xóa nó, và bất kỳ kho nào không còn token sẽ tạm dừng. Nếu về sau forge từ chối một token đã lưu (đã bị thu hồi hoặc hết hạn), dòng của nó sẽ nói rõ và các kho mà nó phục vụ sẽ tạm dừng cho đến khi bạn thay thế token.
 
-Hộp thư và hàng đợi PR trải rộng ra mọi máy chủ mã có mặt trong không gian làm việc rồi hợp nhất kết quả thành một dòng duy nhất — một pull request GitHub và một pull request Bitbucket nằm cạnh nhau, sắp theo thời gian thay vì nhóm theo nhà cung cấp.
+| Forge         | Token tự động hóa                                                                                        | Nơi tạo                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | Một **access token của dự án** hoặc **nhóm** với `read_api` và `read_repository`; thêm `api` và `write_repository` cho bình luận, merge request và push | Dự án hoặc nhóm → Settings → Access tokens                     |
+| **Bitbucket** | Một **access token của kho**, **dự án** hoặc **không gian làm việc**, có quyền đọc kho, cùng quyền ghi pull request cho bình luận và pull request (quyền ghi kho cho push) | Kho, dự án hoặc không gian làm việc → Settings → Access tokens |
 
-Các lỗi được cô lập. Một máy chủ mã bị sập, bị giới hạn tốc độ hoặc chưa kết nối thì không đóng góp gì và không đụng đến những cái khác; nó không bao giờ làm trống toàn bộ hộp thư. Các kho mã của riêng nó vẫn hiển thị trạng thái biết được gần nhất cho đến khi nó hoạt động trở lại.
+GitLab hiển thị công việc dưới tên bot user của token; Bitbucket hiển thị dưới tên của access token.
 
-## Mỗi máy chủ mã làm được gì
+### Bitbucket: access token hay API token
 
-Mọi máy chủ mã đều hỗ trợ vòng lặp cốt lõi: liệt kê và mở pull request, đọc diff, bình luận theo dòng và ở cấp cao nhất, đánh giá, hợp nhất và đóng. Ngoài phạm vi đó, chúng thực sự khác nhau, và Control Center ẩn đi những gì một máy chủ mã không làm được thay vì hiển thị một điều khiển âm thầm thất bại.
+Bitbucket có hai loại token, và Control Center tách riêng chúng:
 
-| Khả năng                        | GitHub | GitLab | Bitbucket |
+- Một **API token** (id.atlassian.com) thuộc về tài khoản Atlassian của bạn và được dùng cùng email của bạn. Đó là thông tin xác thực **của bạn** và được đặt dưới **Lưu trữ mã** trong **Cài đặt → Bạn → Hồ sơ**.
+- Một **access token** (tạo trong cài đặt của kho, dự án hoặc không gian làm việc) thuộc về kho, dự án hoặc không gian làm việc đó, không thuộc về một người. Đó là một **token tự động hóa** và được đặt dưới **Token tự động hóa**.
+
+Mỗi hộp thoại từ chối loại kia và cho biết nó thuộc về đâu.
+
+## Bạn là một người khác nhau trên mỗi forge
+
+Cùng một người là `octocat` trên GitHub và là một cái tên hoàn toàn khác trên GitLab. Control Center xác định danh tính của bạn **theo từng forge** và dùng đúng danh tính cho từng kho, đó là điều giúp các mục "cần tôi review", "do tôi tạo" và "bạn đã phê duyệt" đúng trong một không gian làm việc hỗn hợp.
+
+Nếu danh tính trên một forge chưa được xác định, các kho của forge đó không đóng góp gì vào hộp thư đến thay vì khớp với mọi thứ. Hộp thư đến sẽ nói rõ điều này thay vì khẳng định bạn đã xử lý hết.
+
+## Bạn chỉ thấy những gì tài khoản của chính bạn có thể thấy
+
+Pull request của một kho chỉ đến với bạn khi vai trò của bạn trong không gian làm việc cho phép kho đó **và tài khoản của chính bạn trên forge đó có thể đọc nó**. Quản trị viên và chủ không gian làm việc cũng theo quy tắc này. Khi một số kho bị ẩn, hộp thư đến và hàng đợi PR sẽ cho biết số lượng và lý do, mà không nêu tên:
+
+- **Đăng nhập GitHub để xem pull request từ 3 kho khác**: bạn chưa kết nối forge đó ở đây. Đăng nhập và chúng sẽ xuất hiện
+- **3 kho đang bị ẩn vì tài khoản GitHub của bạn không thể xem chúng**: hãy nhờ người có quyền truy cập trên forge
+- **3 kho đang bị ẩn vì bạn không có quyền truy cập chúng trong không gian làm việc này**: hãy nhờ quản trị viên không gian làm việc cấp quyền
+- **Đang kiểm tra quyền truy cập của bạn đối với 3 kho khác…**: hiển thị thoáng qua trong khi Control Center xác nhận những kho nào tài khoản của bạn có thể đọc
+
+Mã cũng tuân theo quy tắc đó. Để mở tệp, diff hoặc tìm kiếm của một kho, hoặc một terminal trên kho đó, bạn cần quyền của nó trong không gian làm việc này và tài khoản forge của chính bạn phải đọc được kho; quản trị viên không gian làm việc cũng vậy, chỉ chủ sở hữu máy chủ là ngoại lệ. Khi không thể kết nối tới forge để kiểm tra, bạn sẽ thấy "Không thể xác nhận quyền truy cập forge của bạn. Hãy thử lại." (nêu tên forge). Xem [Mã đi theo forge](/vi-VN/so-tay/khai-niem/uy-quyen/#mã-đi-theo-forge).
+
+Cùng quy tắc đó bao trùm mọi thứ được tạo từ các pull request đó. Một space đánh giá, các tin nhắn và lần chạy agent của nó biến mất khi bạn không thể thấy pull request của nó, và một space đánh giá đang mở sẽ đóng nếu bạn mất quyền truy cập. Các lần chạy pipeline liên quan đến một pull request bị ẩn sẽ không còn trong danh sách lần chạy của bạn. Các agent làm việc cho bạn cũng không thể đọc những space đánh giá đó. Danh sách kho của không gian làm việc hiển thị mọi kho mà bạn có quyền truy cập trong không gian làm việc này, kể cả một kho mà tài khoản forge của bạn chưa thể kết nối tới.
+
+Nếu forge đang giới hạn tốc độ hoặc ngừng hoạt động, Control Center vẫn hiển thị những gì nó xác nhận lần cuối trong vài phút, rồi ẩn các pull request đó cho tới khi có thể kiểm tra lại.
+
+## Một hộp thư đến, mọi forge
+
+Hộp thư đến và hàng đợi PR tỏa ra đến mọi forge có trong không gian làm việc và gộp kết quả thành một luồng duy nhất — pull request của GitHub và pull request của Bitbucket nằm cạnh nhau, sắp xếp theo thời gian thay vì nhóm theo nhà cung cấp.
+
+Lỗi được cô lập. Một forge bị sập hoặc bị giới hạn tốc độ sẽ không ảnh hưởng đến các forge khác, và các kho của nó giữ trạng thái đã biết lần cuối cho đến khi forge phục hồi; nó không bao giờ làm trống toàn bộ hộp thư đến. Một kho mà máy chủ không còn kết nối được sẽ biến khỏi danh sách thay vì hiển thị pull request cũ, và **thông báo truy cập kho** sẽ nêu tên nó cùng cách khắc phục: cài GitHub App vào tổ chức của kho, thêm kho vào danh sách kho của App, tiếp tục một cài đặt đang bị tạm ngưng, nhờ thành viên chịu trách nhiệm đăng nhập lại, hoặc thêm token tự động hóa cho kho GitLab hoặc Bitbucket. Quản trị viên sẽ có nút cho các bước GitHub App và cho việc thêm token.
+
+## Mỗi forge làm được gì
+
+Mọi forge đều hỗ trợ vòng lặp cốt lõi: liệt kê và mở pull request, đọc diff, bình luận trong dòng và ở cấp cao nhất, review, merge và đóng. Ngoài ra chúng thực sự khác nhau, và Control Center ẩn những gì một forge không làm được thay vì hiển thị một điều khiển âm thầm thất bại.
+
+| Khả năng                          | GitHub | GitLab | Bitbucket |
 | --------------------------------- | :----: | :----: | :-------: |
-| Đánh giá theo lô (đang chờ)         |   ✓    |   ✓    |     —     |
-| Yêu cầu thay đổi                   |   ✓    |   ✓    |     ✓     |
-| Trạng thái “đã xem” theo từng tệp được đồng bộ    |   ✓    |   —    |     —     |
-| Biểu cảm emoji                   |   ✓    |   ✓    |     —     |
-| Người đánh giá theo đội / nhóm            |   ✓    |   ✓    |     —     |
-| Người đánh giá được gợi ý               |   ✓    |   —    |     ✓     |
-| Kết quả CI trên một PR                |   ✓    |   ✓    |     ✓     |
-| Đi sâu vào các bước/nhật ký của một job CI  |   ✓    |   ✓    |     —     |
-| Pull request xếp chồng             |   ✓    |   —    |     —     |
-| Mẫu mô tả PR          |   ✓    |   ✓    |     —     |
-| Thăm dò thông báo              |   ✓    |   —    |     —     |
-| Hồ sơ người dùng phong phú            |   ✓    |   ✓    |     —     |
-| PR head ref phía máy chủ           |   ✓    |   ✓    |     —     |
+| Review theo lô (đang chờ)         |   ✓    |   ✓    |     —     |
+| Yêu cầu thay đổi                  |   ✓    |   ✓    |     ✓     |
+| Đồng bộ trạng thái "đã xem" theo tệp |   ✓    |   —    |     —     |
+| Biểu tượng cảm xúc                |   ✓    |   ✓    |     —     |
+| Người review là nhóm / group      |   ✓    |   ✓    |     —     |
+| Người review được gợi ý           |   ✓    |   —    |     ✓     |
+| Kết quả CI trên PR                |   ✓    |   ✓    |     ✓     |
+| Xem chi tiết các bước/log của job CI |   ✓    |   ✓    |     —     |
+| Pull request xếp chồng            |   ✓    |   —    |     —     |
+| Mẫu mô tả PR                      |   ✓    |   ✓    |     —     |
+| Thăm dò thông báo                 |   ✓    |   —    |     —     |
+| Hồ sơ người dùng đầy đủ           |   ✓    |   ✓    |     —     |
+| Ref đầu PR phía máy chủ           |   ✓    |   ✓    |     —     |
 
-Khi thiếu một khả năng, tính năng sẽ suy giảm một cách trung thực:
+Khi thiếu một khả năng, tính năng suy giảm một cách trung thực:
 
-- **Trạng thái đã xem** vẫn hoạt động, nhưng chỉ trên thiết bị mà bạn đã đặt nó.
-- **Đánh giá theo lô** trên Bitbucket đăng từng bình luận một, nên người đánh giá thấy chúng đến riêng lẻ thay vì cùng một lúc.
-- **Không có PR head ref** trên Bitbucket nghĩa là khi checkout một pull request, hệ thống tìm nhánh nguồn của nó theo tên, và việc này thất bại khi nhánh đó đã bị xóa.
+- **Trạng thái "đã xem"** vẫn hoạt động, nhưng chỉ trên thiết bị bạn đã đặt nó.
+- **Review theo lô** trên Bitbucket đăng bình luận từng cái một, nên người review thấy chúng đến lần lượt thay vì cùng lúc.
+- **Không có PR head ref** trên Bitbucket nghĩa là khi checkout một pull request, nhánh nguồn của nó sẽ được lấy theo tên, và thao tác này sẽ thất bại khi nhánh đó đã bị xóa.
 
 ## Thuật ngữ
 
-GitLab gọi pull request là **merge request**. Control Center dùng “pull request” xuyên suốt mô hình của mình, và dùng đúng danh từ của từng máy chủ mã khi nói về máy chủ mã đó.
+GitLab gọi pull request là **merge request**. Control Center luôn nói "pull request" trong mô hình của chính nó, và dùng danh từ riêng của mỗi forge khi nói về forge đó.
 
-## Xử lý sự cố
+## Khắc phục sự cố
 
-### Danh sách PR trống và báo rằng một máy chủ mã chưa được kết nối
+### Danh sách PR trống và báo một forge chưa được kết nối
 
-Bạn chưa có thông tin xác thực cho máy chủ mã đó. Hãy đăng nhập vào GitHub, hoặc dán token GitLab hoặc Bitbucket, trong **Cài đặt → Không gian làm việc → Hồ sơ & danh tính → Lưu trữ mã**. Các kho mã của những máy chủ mã khác không bị ảnh hưởng.
+Bạn không có thông tin xác thực cho forge đó. Hãy đăng nhập GitHub, hoặc dán token GitLab hay Bitbucket, trong **Cài đặt → Bạn → Hồ sơ → Lưu trữ mã**. Kho của các forge khác không bị ảnh hưởng.
 
-### Tôi đã kết nối một máy chủ mã nhưng các kho mã của nó vẫn không hiện gì
+### Tôi đã kết nối một forge nhưng các kho của nó vẫn không hiển thị gì
 
-Hãy kiểm tra dòng phụ của hàng. Nếu một hàng GitLab hoặc Bitbucket ghi “từ môi trường”, thì một thông tin xác thực khác đang trả lời chứ không phải cái bạn mong đợi — token của bạn luôn thắng với mọi thứ bạn yêu cầu, nên nếu dòng phụ ghi khác thì cái của bạn chưa được lưu. Trên GitHub, hãy kiểm tra rằng GitHub App đã được cài trên tài khoản sở hữu các kho mã.
+Kiểm tra trạng thái của dòng, rồi xem các thông báo phía trên danh sách PR. "Đăng nhập để xem pull request từ … kho khác" nghĩa là tài khoản của bạn chưa được kết nối với những kho đó; "… kho đang bị ẩn vì tài khoản … của bạn không thể xem chúng" nghĩa là forge không cấp quyền truy cập cho bạn. Trên GitHub, thông báo truy cập kho sẽ cho bạn biết khi GitHub App chưa được cài vào tổ chức của kho hoặc không bao gồm kho đó.
 
-### Một kho mã không đăng ký được
+### Công việc nền trên kho GitLab hoặc Bitbucket đang bị tạm dừng
 
-Việc đăng ký cần cả ba điều kiện: đường dẫn nằm trong một worktree git, nó có remote `origin`, và remote đó trỏ tới github.com, gitlab.com hoặc bitbucket.org. Xem [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+Kho đó không có token tự động hóa nào đọc được nó. Quản trị viên không gian làm việc sẽ thêm một token cho kho hoặc cho toàn bộ không gian làm việc; xem [Thêm token tự động hóa](#thêm-token-tự-động-hóa). Token cá nhân của bạn không thể bỏ tạm dừng: công việc nền không bao giờ dùng token của thành viên.
 
-### Mọi thứ ngừng hoạt động một lúc sau khi dùng nhiều
+### Không thể đăng ký kho
 
-Đó là cầu dao ngắt mạch của giới hạn tốc độ. Khi một máy chủ mã báo đã chạm giới hạn chính, máy khách sẽ cho các yêu cầu tiếp theo thất bại ngay tại chỗ, không gọi mạng, cho đến khi hết cửa sổ thời gian — nhờ vậy một cơn bão thử lại không thể làm giới hạn sâu thêm. Các lỗi tạm thời được thử lại với backoff lũy thừa.
+Việc đăng ký cần đủ ba điều kiện: đường dẫn nằm trong git work tree, kho có remote `origin`, và remote đó trỏ đến github.com, gitlab.com hoặc bitbucket.org. `origin` cũng phải là chính kho bạn đang liên kết, và một thư mục nằm ngoài bộ nhớ của không gian làm việc chỉ có thể được liên kết bởi chủ sở hữu máy chủ. Xem [Thêm kho vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/).
+
+### Tôi có quyền truy cập nhưng kho báo tài khoản của tôi không đọc được
+
+Tài khoản forge của chính bạn không thể đọc kho đó, nên mã của nó vẫn đóng với bạn bất kể không gian làm việc cấp quyền gì. Hãy đăng nhập vào forge trong **Lưu trữ mã** ở trên, hoặc nhận quyền truy cập kho trên forge.
+
+### "Không thể xác nhận quyền truy cập forge của bạn"
+
+Không thể kết nối tới forge để kiểm tra quyền truy cập của bạn, nên Control Center từ chối thay vì đoán. Hãy thử lại sau một lát.
+
+### Một kho báo rằng nó giờ trỏ tới một kho khác
+
+Kho đứng sau đường dẫn đó đã thay đổi: nó bị xóa rồi tạo lại, hoặc được chuyển đi và thay thế. Control Center không gửi gì tới nó cho đến khi quản trị viên không gian làm việc nhấn **Liên kết lại** trên thông báo hoặc trên dòng của kho. Việc đổi tên hay chuyển nhượng đơn thuần được theo dõi tự động và không bao giờ hiện thông báo này.
+
+### Mọi thứ dừng lại một lúc sau khi dùng nhiều
+
+Đó là bộ ngắt mạch giới hạn tốc độ. Khi một forge báo đã chạm giới hạn chính, client sẽ tự làm các yêu cầu tiếp theo thất bại ở phía cục bộ mà không gọi mạng, cho đến khi hết khoảng thời gian đó — để một đợt thử lại dồn dập không làm giới hạn sâu hơn. Các lỗi tạm thời được thử lại với backoff lũy thừa.
 
 ## Hướng dẫn liên quan
 
-- [Thêm kho mã vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
+- [Thêm kho vào không gian làm việc](/vi-VN/so-tay/huong-dan-thuc-hanh/them-kho-ma/)
 - [Thiết lập tích hợp GitHub](/vi-VN/so-tay/huong-dan-thuc-hanh/tich-hop-github/)
-- [Xem xét và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
-- [Phân loại hộp thư](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)
+- [Review và merge một PR](/vi-VN/so-tay/huong-dan-thuc-hanh/xem-xet-va-merge-pr/)
+- [Phân loại hộp thư đến](/vi-VN/so-tay/huong-dan-thuc-hanh/phan-loai-hop-thu/)

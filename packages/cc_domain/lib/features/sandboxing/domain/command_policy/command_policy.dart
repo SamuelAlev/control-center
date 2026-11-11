@@ -165,8 +165,9 @@ const List<String> defaultDeny = [
 /// DISJOINT from [defaultDeny].
 ///
 /// `git push` and the `gh pr` mutations are deliberately absent: the action
-/// policy owns them ("Push to a remote", "Open a pull request", "Publish a
-/// review or merge"), asked by the agent run gateway and the shell classifier.
+/// policy owns them ("Push to a remote", "Open a pull request", "Update or
+/// merge a pull request"), asked by the agent run gateway and the shell
+/// classifier.
 /// Listing them here as well would ask the operator twice — and an operator
 /// who set "Push to a remote: allow" would still be asked. Read-only modes keep
 /// denying them through [mutatingCommands].

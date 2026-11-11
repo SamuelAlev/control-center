@@ -44,11 +44,13 @@ class WebPushService {
   final Future<bool> Function(NotificationFeedItem item, String userId)
   canViewNotification;
 
-  /// Server owner used to scope legacy PR frames without an explicit recipient.
+  /// Server owner: the only recipient of a PR frame that names no explicit
+  /// recipient (`for_user_id`).
   final String ownerUserId;
 
-  /// Resolves forge logins to avoid notifying actors about their own actions.
-  final Future<String> Function(String userId) viewerLogin;
+  /// Resolves a person's GitHub login in a workspace (the grant in effect
+  /// there) to avoid notifying actors about their own actions.
+  final Future<String> Function(String userId, String workspaceId) viewerLogin;
 
   /// Stable server-wide signer shared by registered browser subscriptions.
   final VapidIdentity vapid;
@@ -211,6 +213,7 @@ class WebPushService {
         try {
           login = await viewerLogin(
             device.userId!,
+            item.workspaceId,
           ).timeout(const Duration(seconds: 2), onTimeout: () => '');
         } on Object {
           login = '';

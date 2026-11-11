@@ -2,7 +2,7 @@
 title: Stații și medii izolate
 description: De ce primesc agenții mașini de unică folosință în locul computerului tău — granițele de izolare, canalele de afișare, credențialele, porturile și ciclul de viață.
 slug: ro-RO/manual/concepte/statii
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 O **stație** este o mașină de unică folosință pe care un agent o conduce în timp
@@ -259,6 +259,7 @@ O stație nu este, deliberat, o **destinație globală**. Vizualizarea live este
 filă în spațiul sau PR-ul în care se întâmplă munca, limitată la acea conversație
 — așa că fila ta și apelurile `browser_use` ale agentului se adresează *unei
 singure* mașini (una per motor, pe suprafața de browser).
+O stație deschisă într-un spațiu este mașina spațiului, cu worktree-urile spațiului la îndemână, deci urmează depozitele spațiului: accesul de citire la spațiu îți permite să o privești, iar un drept de scriere asupra acelor depozite îți permite să o conduci. O stație care nu aparține niciunui spațiu nu ajunge la niciun worktree, iar fiecare membru al spațiului de lucru o poate folosi. [Cine poate privi și cine poate conduce](/ro-RO/manual/ghiduri-practice/foloseste-statii/#cine-poate-privi-și-cine-poate-conduce) enumeră ce acoperă fiecare.
 Dacă stațiile pot porni deloc este o proprietate a gazdei, așa că
 capabilitățile, imaginile, imaginile personalizate per spațiu de lucru și lista
 mașinilor care rulează se află în **Setări → Server → Stații**. Conducerea unui

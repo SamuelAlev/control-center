@@ -2,7 +2,7 @@
 title: Hacer copia de seguridad y restaurar
 description: Crea una instantánea de la instalación, mueve un espacio de trabajo entre máquinas, restaura un espacio de trabajo o todos ellos y guarda copias en otro sitio.
 slug: es-ES/manual/guias/copia-de-seguridad-y-restauracion
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Esta guía cubre las cinco cosas que la gente hace de verdad con las copias de
@@ -17,7 +17,8 @@ Todo lo que hay aquí está en **Ajustes → Servidor → Copia de seguridad y r
 
 - Un **cliente completo** — la aplicación de escritorio o la web. Un teléfono emparejado no puede desencadenar nada de esto, por diseño.
 - Para crear, listar, descargar o eliminar una **instantánea de la instalación**: el **propietario** de la instalación.
-- Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportarlo o para listar y descargar sus copias de seguridad programadas, **propietario** para importarlo o eliminarlo o para eliminar una de sus copias de seguridad.
+- Para las acciones por espacio de trabajo: **administrador** de ese espacio de trabajo para exportarlo o para listar y descargar sus copias de seguridad programadas, **propietario** para eliminarlo o para eliminar una de sus copias de seguridad.
+- Para **restaurar** un espacio de trabajo, desde un archivo subido, una copia de seguridad programada o una instantánea: el [propietario del servidor](/es-ES/manual/conceptos/autorizacion/#el-propietario-del-servidor), que además debe ser el propietario de ese espacio de trabajo. Restaurar hace que el servidor adopte un archivo de base de datos como suyo, así que es decisión del propietario del servidor. A los demás se les muestra «Solo el propietario del servidor puede restaurar copias de seguridad. Aún puedes descargarlas.» en lugar de las acciones de restaurar.
 - Para las descargas y las subidas: un cliente completo emparejado, ya sea por una conexión directa o por el relé intermediado. Ambas rutas transportan los bytes del archivo por el mismo túnel de recursos autenticado y cifrado de extremo a extremo; el relé no puede leerlos.
 
 :::caution[Las instantáneas de la instalación son manuales]
@@ -44,11 +45,13 @@ Ambos artefactos son **solo bases de datos**:
 - Una **instantánea de la instalación** es un directorio con marca de tiempo: `manifest.json`, `global.db` y un `<workspaceId>/workspace.db` por cada espacio de trabajo.
 - Una **exportación de espacio de trabajo** es ese único archivo `workspace.db`.
 
+La base de datos de un espacio de trabajo es el espacio de trabajo completo: sus conversaciones, registros de ejecución, índice de código, vínculos de repositorios, definiciones de entornos y miembros. También guarda, en texto legible, los tokens de webhook de las canalizaciones y los secretos de webhook de sincronización de tickets. Guarda una copia de seguridad o una exportación descargada de un espacio de trabajo como guardarías un secreto. No contiene inicios de sesión de proveedores, claves de dispositivos ni secretos de usuario; eso vive en la base de datos global y en el almacén de secretos del servidor.
+
 Ninguno de los dos incluye el resto del directorio de datos: `secrets.json` (claves de
 emparejamiento, credenciales de proveedores, SSO), el `blobs/` de un espacio de trabajo
 (imágenes pegadas en los mensajes), `skills/`, `agents/`, `chat_credentials/`, el audio
 de reuniones grabadas o las imágenes de rigs. Parte de eso es prescindible y parte no —
-la [tabla completa está en la referencia](/es-ES/manual/referencia/copia-de-seguridad/#what-a-backup-does-not-contain),
+la [tabla completa está en la referencia](/es-ES/manual/referencia/copia-de-seguridad/#qué-no-contiene-una-copia-de-seguridad),
 y cubrirlo es para lo que sirve la [sección de fuera de la máquina](#copiar-las-copias-de-seguridad-fuera-de-la-máquina).
 
 ## Crear una instantánea de toda la instalación
@@ -75,7 +78,7 @@ o bien uno cuya copia falló — revisa el registro del servidor.
 
 ## Programar copias de seguridad del espacio de trabajo y su retención
 
-Abre **Ajustes → Pipelines → Plantillas de pipeline** para el espacio de trabajo y busca
+Abre **Ajustes → Espacio de trabajo → Plantillas de pipeline** para el espacio de trabajo y busca
 **Workspace backup**. Su programación, si está activada, se ejecuta todos los domingos a
 las 03:00 UTC: **Back up workspace**, seguido de **Delete backups older than** (30 días
 por defecto). El segundo nodo solo se ejecuta después de que la copia se complete
@@ -101,7 +104,7 @@ listar sus copias de seguridad.
 
 Expande una fila para ver cada copia de seguridad, de la más reciente a la más antigua:
 
-- **Restaurar** sustituye la base de datos actual del espacio de trabajo por esta copia de seguridad. Exporta antes el espacio de trabajo si puede que necesites deshacerlo. Requiere **propietario**.
+- **Restaurar** sustituye la base de datos actual del espacio de trabajo por esta copia de seguridad. Exporta antes el espacio de trabajo si puede que necesites deshacerlo. Requiere al propietario del servidor, que además debe ser propietario del espacio de trabajo.
 - **Descargar** guarda el archivo en la máquina que estás usando. La copia de seguridad se queda en el servidor.
 - **Copiar ruta** copia su ubicación en el servidor.
 - **Eliminar** borra esta copia de seguridad de forma permanente, una vez que escribes el nombre del espacio de trabajo. Requiere **propietario**.
@@ -115,7 +118,7 @@ lista, marcadas como **Espacio de trabajo eliminado**, y puede descargarlas o el
 ahí. Nadie más ve esas filas.
 
 No tienen **Restaurar**, porque no hay ningún espacio de trabajo en el que restaurar. Para
-recuperar una, descárgala, crea un espacio de trabajo y sube el archivo como se describe
+recuperar una, descárgala, crea un espacio de trabajo (solo puede hacerlo el propietario del servidor) y sube el archivo como se describe
 en [Mover un espacio de trabajo a otra instalación](#mover-un-espacio-de-trabajo-a-otra-instalación).
 
 ## Eliminar una instantánea de la instalación
@@ -157,9 +160,9 @@ operación con archivos.
 2. En el servidor de **destino**, crea (o elige) el espacio de trabajo que lo va a recibir.
 3. Despliega ese espacio de trabajo y, en **Restaurar desde este dispositivo**, pulsa **Elegir un archivo y subirlo**. Elige el `.db` que descargaste.
 
-Si ambos servidores son la misma máquina en la que estás, **Guardar en el servidor** más
-**Importar** → **Elegir archivo** hacen lo mismo sin el viaje de ida y vuelta; las rutas
-del diálogo de importación se resuelven en el host del servidor.
+El paso 3 es una restauración, así que necesita al propietario del servidor de destino, que además debe ser propietario de ese espacio de trabajo.
+
+Si ambos servidores son la misma máquina en la que estás, **Guardar en el servidor** en el origen, y después la ruta del archivo en **Archivo de base de datos del espacio de trabajo** e **Importar** en el destino, hacen lo mismo sin el viaje de ida y vuelta; esa ruta se resuelve en el host del servidor.
 
 :::caution[La importación lo sustituye todo]
 Importar sobrescribe todo lo que contiene ahora el espacio de trabajo de destino, y no se
@@ -174,11 +177,11 @@ usuario del archivo pertenecen a la instalación de la que vino y no se resolver
 — los datos propios del espacio de trabajo están intactos, pero vuelve a comprobar la
 pertenencia después de adoptarlo.
 
-Los tokens del bot de chat están junto a la base de datos, no dentro de ella, así que un
-espacio de trabajo que entregas a otra persona no lleva credenciales activas. La
-instalación receptora vuelve a conectar las suyas.
+Los tokens del bot de chat y los inicios de sesión de proveedores viven fuera de la base de datos, así que la instalación receptora vuelve a conectar los suyos. El archivo sí lleva los tokens de webhook de canalizaciones y los secretos de webhook de sincronización de tickets del espacio de trabajo, así que un espacio de trabajo que entregas a otra persona también se los entrega. Rótalos después si el destinatario no debe tenerlos.
 
 ## Restaurar un espacio de trabajo desde una instantánea
+
+Necesitas ser el propietario del servidor y propietario del espacio de trabajo.
 
 1. En **Instantáneas de la instalación**, despliega la instantánea que quieras.
 2. Busca la fila del espacio de trabajo y pulsa **Restaurar**.
@@ -190,8 +193,8 @@ mecanismo que pudiera tratar el mismo archivo de otra manera.
 
 Una fila puede indicar **Ya no está en este servidor**, con **Restaurar** desactivado: la
 instantánea contiene un espacio de trabajo que esta instalación ya no tiene. Recupéralo a
-mano — crea un espacio de trabajo y luego, en **Datos del espacio de trabajo**, importa en
-él desde `<snapshot path>/<old workspace id>/workspace.db`. La instantánea desplegada
+mano — crea un espacio de trabajo (solo puede hacerlo el propietario del servidor) y luego, en **Datos del espacio de trabajo**, introduce
+`<snapshot path>/<old workspace id>/workspace.db` en su campo **Archivo de base de datos del espacio de trabajo** y pulsa **Importar**. La instantánea desplegada
 muestra su propia **Ruta en el servidor** en un campo de copia, y el título de la fila es
 el id del espacio de trabajo antiguo, así que tienes delante las dos mitades de esa ruta.
 
@@ -366,9 +369,11 @@ dónde se almacenan.
 | Síntoma                                                                  | Causa y solución                                                                                                            |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | La descarga o la subida falla tras cambiar de conexión | Vuelve a intentarlo en la conexión emparejada activa. Tanto la conexión directa como la del relé admiten transferencia de archivos cifrada; ninguna expone una alternativa HTTP en texto plano |
-| «El servidor lo rechazó»                                                 | Rol. Crear o listar una instantánea de la instalación necesita el operador de la instalación. Descargar un espacio de trabajo necesita administrador, restaurar uno necesita propietario, un zip de instantánea completa necesita el operador de la instalación |
-| «Este servidor no expone ninguna superficie de copia de seguridad»       | El host no tiene ningún puerto de copia de seguridad conectado — un servidor de demostración. Las operaciones están ausentes en lugar de rechazadas                          |
-| «El archivo supera el tamaño que acepta el servidor»                     | Las subidas tienen un límite de 8 GiB. Pon el archivo en el host del servidor y usa mejor **Importar** → **Elegir archivo**                 |
+| «El servidor lo rechazó. Descargar un espacio de trabajo requiere el rol de admin del espacio de trabajo. Restaurar uno requiere el propietario del servidor, que además debe ser propietario de ese espacio de trabajo. Una instantánea completa requiere el propietario del servidor.» | Rol. Crear, listar o descargar una instantánea de la instalación necesita al propietario del servidor. Descargar un espacio de trabajo necesita administrador; restaurar uno necesita al propietario del servidor, que además debe ser propietario del espacio de trabajo |
+| «Las transferencias de archivos aún no están configuradas para esta conexión. Vuelve a conectarte al servidor para descargar o subir una copia de seguridad.» | Esta conexión con el servidor no tiene canal de transferencia de archivos, así que **Descargar** y la subida están desactivados. Vuelve a conectarte al servidor y prueba de nuevo |
+| «Solo el propietario del servidor puede restaurar copias de seguridad. Aún puedes descargarlas.» | Restaurar sustituye la base de datos de un espacio de trabajo en el host del servidor, así que solo el propietario del servidor restaura. Descarga la copia de seguridad y pídesela a él |
+| «Este servidor no expone ninguna superficie de copia de seguridad.»      | El host no tiene ningún puerto de copia de seguridad conectado — un servidor de demostración. Las operaciones están ausentes en lugar de rechazadas                          |
+| «El archivo supera el tamaño que acepta el servidor.»                    | Las subidas tienen un límite de 8 GiB. Pon el archivo en el host del servidor e introduce su ruta en **Archivo de base de datos del espacio de trabajo**                 |
 | Import refused: not a Control Center workspace database                  | El archivo no tiene ninguna fila `workspace_meta` — no es una exportación de espacio de trabajo, o está truncado. No se sustituyó nada             |
 | Una instantánea aparece como **Incompleta**                              | Falta su manifiesto o nombra archivos ausentes. Crea una nueva; mientras tanto, adopta de ella los archivos de espacio de trabajo individuales |
 | Una instantánea dice que no se capturaron espacios de trabajo             | En esos espacios de trabajo nunca se ha escrito, o su copia falló. Revisa el registro del servidor                                  |

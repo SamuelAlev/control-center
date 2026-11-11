@@ -51,18 +51,6 @@ class _PipelineRunDetailScreenState
       return InlineLoadError(runAsync.error!);
     }
     final run = runAsync.value;
-    // A run draws the graph it was pinned to when it started; only a run that
-    // predates snapshots falls back to the live template (which an edit since
-    // may have changed, and a deletion removed).
-    final pinned = run?.templateSnapshot;
-    final templatesAsync = run == null
-        ? const AsyncValue<List<PipelineDefinition>>.loading()
-        : pinned != null
-        ? AsyncValue<List<PipelineDefinition>>.data([pinned])
-        : ref.watch(pipelineTemplatesProvider(run.workspaceId));
-    if (templatesAsync.hasError) {
-      return InlineLoadError(templatesAsync.error!);
-    }
     final stepsAsync = ref.watch(pipelineStepRunsForRunProvider(widget.runId));
     if (stepsAsync.hasError) {
       return InlineLoadError(stepsAsync.error!);
@@ -70,23 +58,12 @@ class _PipelineRunDetailScreenState
     final stepRuns = stepsAsync.value ?? const <PipelineStepRun>[];
     ref.watch(pipelineClockProvider); // tick for live duration display
 
-    final templates = templatesAsync.value;
-    if (run == null || templates == null) {
-      if (runAsync.isLoading || templatesAsync.isLoading) {
-        return _RunDetailSkeleton(tokens: tokens);
-      }
-      return Center(
-        child: Text(
-          l10n.pipelinesNoSteps,
-          style: TextStyle(color: tokens.textTertiary),
-        ),
-      );
+    if (run == null && runAsync.isLoading) {
+      return _RunDetailSkeleton(tokens: tokens);
     }
-
-    final definition = templates
-        .where((t) => t.templateId == run.templateId)
-        .firstOrNull;
-    if (definition == null) {
+    // A run draws the graph it was pinned to when it started.
+    final definition = run?.templateSnapshot;
+    if (run == null || definition == null) {
       return Center(
         child: Text(
           l10n.pipelinesNoSteps,
@@ -298,7 +275,7 @@ class _RunMetaStrip extends StatelessWidget {
       if (run.status != PipelineRunStatus.queued)
         formatPipelineDurationCoarse(duration),
       if (total > 0) l10n.pipelineRunStepProgress(completed, total),
-      runTriggerLabel(l10n, run),
+      ?runTriggerLabel(l10n, run),
       ?triggerReason,
       if (run.attemptCount > 1) l10n.pipelineRunAttempt(run.attemptCount),
       if (run.wasRestarted)

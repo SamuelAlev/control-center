@@ -50,4 +50,36 @@ void main() {
     expect((details['name'] as String).length, 201);
     expect(auditDetailsOf(args: {'workspace_id': 'ws-1', 'data': 'xx'}), isNull);
   });
+
+  test('redacts credential keys at any depth and the sign-in handoff values',
+      () {
+    final details = auditDetailsOf(
+      args: {
+        'login_id': 'login-1',
+        'code': 'ABCD2345',
+        'verifier': 'v' * 43,
+        'state': 's' * 43,
+        'seal': 'v1.sealed',
+        'grant': {'refresh_token': 'r' * 30, 'account': 'octo'},
+      },
+    )!;
+    expect(details['login_id'], 'login-1');
+    for (final key in ['code', 'verifier', 'state', 'seal']) {
+      expect(details[key], '[REDACTED]', reason: key);
+    }
+    expect(details['grant'], {'refresh_token': '[REDACTED]', 'account': 'octo'});
+  });
+
+  test('scrubs token-shaped values under any key', () {
+    final token = 'ghu_${'a' * 30}';
+    final details = auditDetailsOf(
+      args: {
+        'note': 'pasted $token by mistake',
+        'list': ['x', token],
+      },
+      result: {'command': 'git push https://x-access-token:$token@github.com'},
+    )!;
+    expect(details.toString(), isNot(contains(token)));
+    expect(details['note'], startsWith('pasted '));
+  });
 }

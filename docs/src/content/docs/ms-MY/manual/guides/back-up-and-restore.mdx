@@ -2,7 +2,7 @@
 title: Sandarkan dan pulihkan
 description: Ambil snapshot pemasangan, pindahkan ruang kerja antara mesin, pulihkan satu ruang kerja atau kesemuanya, dan simpan salinan di tempat lain.
 slug: ms-MY/manual-pengguna/panduan-cara/sandarkan-dan-pulihkan
-sourceHash: 7e75ed8e0ce5dce965a0ec467f37bbf94ac74f6a
+sourceHash: ea5be71eb84f94507739e79fb525b643006492b1
 ---
 
 Panduan ini merangkumi lima perkara yang sebenarnya dilakukan orang dengan sandaran:
@@ -16,7 +16,8 @@ Semuanya di sini terletak di **Tetapan → Pelayan → Sandaran & pulih**.
 
 - **Klien penuh** — apl desktop atau web. Telefon yang digandingkan tidak boleh mencetuskan mana-mana daripada ini, memang sengaja.
 - Untuk mengambil, menyenaraikan, memuat turun atau memadam **snapshot pemasangan**: **pemilik** pemasangan itu.
-- Untuk tindakan mengikut ruang kerja: **pentadbir** ruang kerja itu untuk eksport atau untuk menyenaraikan dan memuat turun sandaran berjadualnya, **pemilik** untuk mengimport atau memadamnya atau untuk memadam salah satu sandarannya.
+- Untuk tindakan mengikut ruang kerja: **pentadbir** ruang kerja itu untuk eksport atau untuk menyenaraikan dan memuat turun sandaran berjadualnya, **pemilik** untuk memadamnya atau untuk memadam salah satu sandarannya.
+- Untuk **memulihkan** ruang kerja, daripada fail yang dimuat naik, sandaran berjadual atau snapshot: [pemilik pelayan](/ms-MY/manual-pengguna/konsep/kebenaran/#pemilik-pelayan), yang juga mesti pemilik ruang kerja itu. Pemulihan membuatkan pelayan menerima fail pangkalan data sebagai miliknya, jadi ia keputusan pemilik pelayan. Semua orang lain melihat "Hanya pemilik pelayan boleh memulihkan sandaran. Anda masih boleh memuat turunnya." sebagai ganti tindakan pulih.
 - Untuk muat turun dan muat naik: klien penuh yang digandingkan, sama ada pada sambungan langsung atau melalui geganti berperantara. Kedua-dua laluan membawa bait fail melalui terowong sumber yang disahkan dan disulitkan hujung ke hujung yang sama; geganti tidak boleh membacanya.
 
 ::::caution[Snapshot pemasangan dibuat secara manual]
@@ -42,11 +43,13 @@ Kedua-dua artifak ialah **pangkalan data sahaja**:
 - **Snapshot pemasangan** ialah direktori bertanda masa: `manifest.json`, `global.db` dan satu `<workspaceId>/workspace.db` bagi setiap ruang kerja.
 - **Eksport ruang kerja** ialah fail `workspace.db` tunggal itu.
 
+Pangkalan data ruang kerja ialah keseluruhan ruang kerja: perbualannya, log larian, indeks kod, pautan repositori, definisi persekitaran dan ahlinya. Ia juga memegang token webhook saluran pipeline dan rahsia webhook penyegerakan tiket, dalam bentuk boleh dibaca. Simpan sandaran atau eksport ruang kerja yang dimuat turun seperti anda menyimpan rahsia. Ia tidak memegang log masuk pembekal, kunci peranti atau rahsia pengguna; semuanya berada dalam pangkalan data global dan stor rahsia pelayan.
+
 Kedua-duanya tidak membawa seluruh direktori data yang lain: `secrets.json` (kunci
 penggandingan, kelayakan penyedia, SSO), `blobs/` sesebuah ruang kerja (imej yang ditampal
 ke dalam mesej), `skills/`, `agents/`, `chat_credentials/`, audio mesyuarat yang dirakam
 atau imej rig. Sebahagian daripadanya boleh dibuang dan sebahagiannya tidak —
-[jadual penuhnya ada dalam rujukan](/ms-MY/manual-pengguna/rujukan/sandaran/#what-a-backup-does-not-contain),
+[jadual penuhnya ada dalam rujukan](/ms-MY/manual-pengguna/rujukan/sandaran/#apa-yang-tidak-terkandung-dalam-sandaran),
 dan melindunginya itulah tujuan [bahagian luar mesin](#salin-sandaran-keluar-daripada-mesin).
 
 ## Ambil snapshot seluruh pemasangan
@@ -73,7 +76,7 @@ gagal — semak log pelayan.
 
 ## Jadualkan sandaran ruang kerja dan pengekalannya
 
-Buka **Tetapan → Pipelines → Templat pipeline** untuk ruang kerja itu dan cari
+Buka **Tetapan → Ruang kerja → Templat pipeline** untuk ruang kerja itu dan cari
 **Workspace backup**. Jadualnya yang diaktifkan berjalan setiap Ahad pada 03:00 UTC:
 **Back up workspace**, diikuti **Delete backups older than** (30 hari secara lalai).
 Nod kedua hanya berjalan selepas sandaran berjaya. Anda boleh menukar hari pengekalan
@@ -97,7 +100,7 @@ pentadbirnya menyatakan hal itu dalam barisnya dan tidak menyenaraikan sandarann
 
 Kembangkan baris untuk melihat setiap sandaran, yang terbaharu dahulu:
 
-- **Pulihkan** menggantikan pangkalan data semasa ruang kerja itu dengan sandaran ini. Eksport ruang kerja dahulu jika anda mungkin perlu membatalkannya. Memerlukan **pemilik**.
+- **Pulihkan** menggantikan pangkalan data semasa ruang kerja itu dengan sandaran ini. Eksport ruang kerja dahulu jika anda mungkin perlu membatalkannya. Memerlukan pemilik pelayan, yang juga mesti memiliki ruang kerja itu.
 - **Muat turun** menyimpan fail pada mesin yang anda gunakan. Sandaran kekal pada pelayan.
 - **Salin laluan** menyalin lokasinya pada pelayan.
 - **Padam** membuang sandaran ini secara kekal, selepas anda menaip nama ruang kerja. Memerlukan **pemilik**.
@@ -111,7 +114,7 @@ membuangnya. **Pemilik** pemasangan melihatnya dalam senarai yang sama, bertanda
 melihat baris tersebut.
 
 Sandaran itu tiada **Pulihkan**, kerana tiada ruang kerja untuk dipulihkan. Untuk
-mengembalikannya, muat turun sandaran itu, cipta ruang kerja, dan muat naik fail seperti
+mengembalikannya, muat turun sandaran itu, cipta ruang kerja (hanya pemilik pelayan boleh), dan muat naik fail seperti
 yang diterangkan dalam
 [Pindahkan ruang kerja ke pemasangan lain](#pindahkan-ruang-kerja-ke-pemasangan-lain).
 
@@ -151,9 +154,9 @@ Satu ruang kerja ialah satu fail pangkalan data, jadi menyerahkannya ialah opera
 2. Pada pelayan **destinasi**, cipta (atau pilih) ruang kerja yang akan menerimanya.
 3. Kembangkan ruang kerja itu, dan di bawah **Pulihkan dari peranti ini** tekan **Pilih fail dan muat naik**. Pilih `.db` yang anda muat turun tadi.
 
-Jika kedua-dua pelayan ialah mesin yang anda sedang duduki, **Simpan pada pelayan** serta
-**Import** → **Pilih fail** melakukan perkara yang sama tanpa pusingan pergi balik;
-laluan dalam dialog import diselesaikan pada hos pelayan.
+Langkah 3 ialah pemulihan, jadi ia memerlukan pemilik pelayan destinasi, yang juga mesti memiliki ruang kerja itu.
+
+Jika kedua-dua pelayan ialah mesin yang anda duduki, **Simpan pada pelayan** pada sumber, kemudian laluan fail dalam **Fail pangkalan data ruang kerja** dan **Import** pada destinasi, melakukan perkara yang sama tanpa pusingan itu; laluan itu diselesaikan pada hos pelayan.
 
 :::caution[Import menggantikan segala-galanya]
 Mengimport menimpa segala yang dipegang oleh ruang kerja sasaran sekarang, dan ia tidak
@@ -169,11 +172,11 @@ pengguna fail tersebut kepunyaan pemasangan asalnya dan tidak akan diselesaikan 
 pemasangan ini — data ruang kerja itu sendiri utuh, tetapi semak semula keahlian selepas
 menerimanya.
 
-Token bot sembang terletak di sisi pangkalan data, bukan di dalamnya, jadi ruang kerja
-yang anda serahkan kepada orang lain tidak membawa kelayakan hidup. Pemasangan penerima
-menyambung semula kelayakannya sendiri.
+Token bot sembang dan log masuk pembekal berada di luar pangkalan data, jadi pemasangan penerima menyambung semula dengan miliknya sendiri. Fail itu memang membawa token webhook saluran pipeline dan rahsia webhook penyegerakan tiket ruang kerja, jadi ruang kerja yang anda serahkan kepada orang lain turut menyerahkannya. Jana semula selepas itu jika penerima tidak sepatutnya memilikinya.
 
 ## Pulihkan satu ruang kerja daripada snapshot
+
+Anda perlu menjadi pemilik pelayan dan pemilik ruang kerja itu.
 
 1. Di bawah **Snapshot pemasangan**, kembangkan snapshot yang anda mahu.
 2. Cari baris ruang kerja itu dan tekan **Pulihkan**.
@@ -185,8 +188,7 @@ yang sama secara berbeza.
 
 Satu baris mungkin menyatakan **Tidak lagi pada pelayan ini**, dengan **Pulihkan**
 dilumpuhkan: snapshot itu memegang ruang kerja yang tidak lagi dimiliki pemasangan ini.
-Bawanya kembali secara manual — cipta ruang kerja, kemudian di bawah **Data ruang kerja**
-import ke dalamnya daripada `<snapshot path>/<old workspace id>/workspace.db`. Snapshot
+Bawanya kembali secara manual — cipta ruang kerja (hanya pemilik pelayan), kemudian di bawah **Data ruang kerja** masukkan `<snapshot path>/<old workspace id>/workspace.db` dalam medan **Fail pangkalan data ruang kerja** dan tekan **Import**. Snapshot
 yang dikembangkan menunjukkan **Laluan pada pelayan** sendiri dalam medan salinan, dan
 tajuk baris itu ialah id ruang kerja lama, jadi kedua-dua bahagian laluan itu ada di
 hadapan anda.
@@ -361,9 +363,11 @@ menukar tempat penyimpanannya.
 | Gejala                                                                  | Punca dan pembaikan                                                                                                      |
 | ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
 | Muat turun atau muat naik gagal selepas sambungan berubah              | Cuba semula pada sambungan berganding yang aktif. Laluan langsung dan geganti kedua-duanya menyokong pemindahan fail tersulit; tiada satu pun mendedahkan sandaran HTTP teks biasa |
-| "Pelayan menolak"                                                        | Peranan. Mengambil atau menyenaraikan snapshot pemasangan memerlukan operator pemasangan. Memuat turun ruang kerja memerlukan pentadbir, memulihkannya memerlukan pemilik, dan zip seluruh snapshot memerlukan operator pemasangan |
-| "Pelayan ini tiada permukaan sandaran"                                   | Hos itu tiada port sandaran yang dipasang — pelayan demo. Operasi itu tidak wujud dan bukannya ditolak                    |
-| "Fail itu lebih besar daripada yang diterima oleh pelayan"               | Muat naik dihadkan pada 8 GiB. Letakkan fail itu pada hos pelayan dan gunakan **Import** → **Pilih fail** sebagai gantinya |
+| "Pelayan menolak. Memuat turun ruang kerja memerlukan peranan pentadbir ruang kerja. Memulihkan satu ruang kerja memerlukan pemilik pelayan, yang juga mesti memiliki ruang kerja itu. Snapshot keseluruhan memerlukan pemilik pelayan." | Peranan. Mengambil, menyenaraikan atau memuat turun snapshot pemasangan memerlukan pemilik pelayan. Memuat turun ruang kerja memerlukan pentadbir; memulihkannya memerlukan pemilik pelayan, yang juga mesti memiliki ruang kerja itu |
+| "Pemindahan fail belum disediakan untuk sambungan ini. Sambung semula ke pelayan untuk memuat turun atau memuat naik sandaran." | Sambungan ke pelayan ini tiada lorong pemindahan fail, jadi **Muat turun** dan muat naik dimatikan. Sambung semula ke pelayan, kemudian cuba lagi |
+| "Hanya pemilik pelayan boleh memulihkan sandaran. Anda masih boleh memuat turunnya." | Pemulihan menggantikan pangkalan data ruang kerja pada hos pelayan, jadi hanya pemilik pelayan memulihkan. Muat turun sandaran dan minta pemilik pelayan |
+| "Pelayan ini tiada permukaan sandaran."                                  | Hos itu tiada port sandaran yang dipasang — pelayan demo. Operasi itu tidak wujud dan bukannya ditolak                    |
+| "Fail lebih besar daripada yang pelayan terima."                         | Muat naik dihadkan pada 8 GiB. Letakkan fail itu pada hos pelayan dan masukkan laluannya dalam **Fail pangkalan data ruang kerja** |
 | Import ditolak: bukan pangkalan data ruang kerja Control Center          | Fail itu tiada baris `workspace_meta` — ia bukan eksport ruang kerja, atau ia terpotong. Tiada apa yang digantikan         |
 | Sesuatu snapshot disenaraikan sebagai **Tidak lengkap**                  | Manifesnya hilang atau menamakan fail yang tiada. Ambil snapshot baharu; sementara itu terima pakai fail ruang kerja individu daripadanya |
 | Sesuatu snapshot menyatakan ruang kerja tidak ditangkap                 | Ruang kerja itu tidak pernah ditulis, atau salinannya gagal. Semak log pelayan                                             |

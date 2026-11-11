@@ -9,8 +9,9 @@ import 'package:cc_domain/core/domain/value_objects/forge_connection.dart';
 /// * **Own app** (`source: oauth`): the server ran the OAuth exchange with its
 ///   own client credentials and holds the access + refresh tokens itself.
 /// * **Connect** (`source: connect`): the refresh credential exists only as a
-///   KMS-sealed [seal] bound to this server's install id. The access token is
-///   short-lived and lives in process memory only — [encode] never writes
+///   Connect-sealed [seal] (Connect's AEAD, with a local cipher or KMS) bound
+///   to this server's install id. The access token is short-lived and lives
+///   in process memory only — [encode] never writes
 ///   it, so a copied secrets file or backup carries nothing usable without
 ///   this server's identity and the Connect that sealed it.
 ///

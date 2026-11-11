@@ -2,72 +2,117 @@
 title: Connecter un hébergeur de code
 description: Connectez GitHub, GitLab ou Bitbucket pour que la surface des PR, l’enregistrement des dépôts et les exécutions d’agents fonctionnent — un même espace de travail peut utiliser les trois.
 slug: fr-FR/manuel/guides/connecter-hebergeur-de-code
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
-Control Center fonctionne avec trois hébergeurs de code, appelés **forges** dans toute l’application : **GitHub**, **GitLab** et **Bitbucket Cloud**. Aucun n’est celui par défaut. Connectez-en un et tout fonctionne ; connectez-en plusieurs et un même espace de travail peut réunir à la fois des dépôts des trois.
+Control Center fonctionne avec trois hébergeurs de code, appelés **forges** dans toute l’application : **GitHub**, **GitLab** et **Bitbucket Cloud**. Aucun n’est celui par défaut. Connectez-en un et tout fonctionne ; connectez-en plusieurs et un même espace de travail peut réunir à la fois des dépôts des trois.
 
 La forge est une propriété de chaque **dépôt**, lue depuis son dépôt distant `origin` au moment où vous l’enregistrez. Vous n’en choisissez jamais une, et aucun réglage par espace de travail ne peut être mal configuré.
 
 ## Connecter une forge
 
-1. Ouvrez **Paramètres → Espace de travail → Profil et identité** (`/settings/workspace/profile`).
+1. Ouvrez **Paramètres → Vous → Profil** (`/settings/you/profile`).
 2. Repérez la carte **Hébergement de code**. Toutes les forges prises en charge y figurent, connectées ou non.
 3. Sur **GitHub**, appuyez sur **Se connecter à GitHub**. Sur **GitLab** ou **Bitbucket**, appuyez sur **Ajouter un jeton**, puis collez-en un.
 
-**Pour GitHub, il n’y a que la connexion.** Elle passe par la GitHub App propre au serveur ou par Control Center Connect, selon ce que le propriétaire du serveur a configuré (voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/)) ; il n’y a aucun jeton GitHub à coller. GitLab et Bitbucket acceptent toujours un jeton personnel.
+**Pour GitHub, il n’y a que la connexion.** Elle passe par la GitHub App propre au serveur ou par Control Center Connect, selon ce que le propriétaire du serveur a configuré, ou par les applications qu’un administrateur de l’espace de travail a choisies pour cet espace dans **Paramètres → Espace de travail → Intégrations** (voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/)) ; il n’y a aucun jeton GitHub à coller. GitLab et Bitbucket acceptent toujours un jeton personnel.
 
-Dans un cas comme dans l’autre, l’identifiant est **le vôtre et réside sur le serveur**, indexé par votre ID utilisateur : aucun jeton n’est stocké sur la machine où vous l’avez saisi, tous les appareils depuis lesquels vous vous connectez utilisent le même, et aucun autre membre ne peut le lire. Il prend effet à la **prochaine requête** — il n’y a rien à redémarrer, et la déconnexion met fin immédiatement à son envoi.
+Dans un cas comme dans l’autre, l’identifiant est **le vôtre et réside sur le serveur**, indexé par votre ID utilisateur : aucun jeton n’est stocké sur la machine où vous l’avez saisi, tous les appareils depuis lesquels vous vous connectez utilisent le même, et aucun autre membre ne peut le lire. Il prend effet à la **prochaine requête** — il n’y a rien à redémarrer, et la déconnexion met fin immédiatement à son envoi.
 
-Chaque ligne vous indique d’où vient son identifiant, car c’est la différence entre « mon jeton ne fonctionne pas » et « un autre jeton répond » :
+La carte indique où vos comptes sont utilisés. Un jeton GitLab ou Bitbucket est le vôtre dans **chaque espace de travail du serveur** : vous ne le collez donc qu’une fois. Il en va de même pour votre connexion GitHub, sauf si un espace de travail dispose de ses propres applications de connexion : cet espace conserve alors une connexion GitHub propre, et la carte la nomme.
 
-| Sous-titre                                                       | Signification                                                         |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `Connecté en tant que octocat`                                   | Votre propre identifiant est utilisé                                  |
-| `Connecté en tant que octocat · depuis l’environnement`          | GitLab ou Bitbucket uniquement : une variable d’environnement du serveur répond, pas votre jeton |
-| `Non connecté`                                                   | Vous n’avez aucun identifiant pour cette forge                        |
-| `La connexion à GitHub n'est pas encore configurée sur ce serveur.` | Le serveur n’a ni GitHub App propre ni Connect ; le propriétaire du serveur en configure un |
+Chaque ligne affiche l’état de **votre** identifiant. Seul votre propre identifiant répond pour vous ; rien d’autre ne le remplace :
+
+| La ligne indique | Signification |
+| --- | --- |
+| `Connecté en tant que octocat` | Votre propre identifiant est utilisé |
+| `Non connecté` | Vous n’avez aucun identifiant pour cette forge |
+| `Votre connexion à GitHub en tant que octocat a expiré. Reconnectez-vous.` | Votre connexion a expiré ou a été révoquée sur la forge |
+| `En pause : le service de connexion de cet espace de travail a changé` | Cet espace de travail est passé à un autre service de connexion. Votre connexion est conservée et refonctionne s’il revient en arrière ; il n’y a donc pas de bouton de connexion |
+| `Impossible de joindre GitHub pour le moment. Nouvelle tentative en cours.` | Une panne temporaire. Control Center continue de réessayer ; il n’y a rien à faire |
+| Une phrase expliquant pourquoi la connexion n’est pas disponible | Par exemple `La connexion à GitHub n'est pas configurée pour cet espace de travail.` ou `Le service de connexion de cet espace de travail a changé d'identité. Un admin doit la confirmer.` Les administrateurs disposent d’un bouton vers le réglage qui corrige le problème |
 
 ### Le jeton que chaque forge demande
 
-| Forge         | Jeton                                                                                                                 | Où le créer                                         |
-| ------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| **GitLab**    | Un jeton d’accès personnel avec `api`                                                                                 | gitlab.com → User settings → Access tokens          |
-| **Bitbucket** | Un jeton d’API Atlassian, plus l’adresse e-mail de votre compte                                                       | id.atlassian.com → Security → API tokens            |
+| Forge         | Jeton                                                     | Où le créer                                               |
+| ------------- | --------------------------------------------------------- | --------------------------------------------------------- |
+| **GitLab**    | Un jeton d’accès personnel avec `api`                     | gitlab.com → User settings → Access tokens                 |
+| **Bitbucket** | Un jeton d’API Atlassian, plus l’adresse e-mail de votre compte | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket s’authentifie avec l’**adresse e-mail de votre compte comme nom d’utilisateur** et le jeton comme mot de passe. Définissez `BITBUCKET_EMAIL` dans l’environnement du serveur pour qu’il sache quelle adresse e-mail associer au jeton.
+Bitbucket s’authentifie avec l’**adresse e-mail de votre compte comme nom d’utilisateur** et le jeton d’API comme mot de passe ; la boîte de dialogue Bitbucket demande donc les deux. Un jeton d’accès de dépôt, de projet ou d’espace de travail Bitbucket **n’appartient à aucune personne** : cette boîte de dialogue le refuse, et il faut alors utiliser un [jeton d’automatisation](#ajouter-un-jeton-dautomatisation). Il en va de même pour un jeton d’accès de projet ou de groupe GitLab : GitLab est interrogé sur l’identité du jeton avant son enregistrement, et le jeton d’un bot est refusé ici.
+
+Un jeton n’est jamais lié à un seul espace de travail : vous en avez un par forge, et chaque espace de travail du serveur l’utilise. **Déconnecter** le supprime pour tous.
 
 ### Travail en arrière-plan
 
-Le travail sans humain derrière (exécutions d’agents, pipelines, interrogation des PR) a lui aussi besoin d’un identifiant, et chaque forge y répond différemment :
+Le travail sans humain derrière (exécutions d’agents, pipelines, interrogation des PR) a lui aussi besoin d’un identifiant, et chaque forge y répond différemment :
 
-- **GitHub** — un jeton limité à un seul dépôt à la fois, émis à partir de la GitHub App du serveur ou via Connect et borné à ce qu’un membre responsable peut y faire. Ce n’est jamais la connexion d’une personne transmise telle quelle, et aucune variable d’environnement ni aucun jeton collé ne le remplace. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/#pour-qui-parle-votre-identifiant)
-- **GitLab** — le jeton collé par le propriétaire du serveur, puis `GITLAB_TOKEN`, puis `CI_JOB_TOKEN`
-- **Bitbucket** — le jeton collé par le propriétaire du serveur, puis `BITBUCKET_API_TOKEN`, puis `BITBUCKET_TOKEN` (avec `BITBUCKET_EMAIL`)
+- **GitHub** — un jeton limité à un seul dépôt à la fois, émis à partir de la GitHub App du serveur ou via Connect et borné à ce qu’un membre responsable peut y faire. Ce n’est jamais la connexion d’une personne transmise telle quelle, et aucune variable d’environnement ni aucun jeton collé ne s’y substitue. Voir [Configurer l’intégration GitHub](/fr-FR/manuel/guides/integration-github/#pour-qui-parle-votre-identifiant)
+- **GitLab** et **Bitbucket** — uniquement le **jeton d’automatisation** du dépôt : un jeton d’accès de bot qu’un administrateur de l’espace de travail ajoute pour ce dépôt, ou pour chaque dépôt de cette forge dans l’espace de travail. Le jeton propre au dépôt l’emporte sur celui de l’espace de travail. L’interrogation des pull requests, les commentaires de revue IA, ainsi que les pushes et les merge requests que personne n’a demandés utilisent ce jeton ; sur la forge, ils apparaissent donc sous le nom de ce bot, jamais sous celui d’un membre. Aucun jeton personnel d’un membre ne s’y substitue, et il n’existe ni jeton à l’échelle du serveur ni jeton issu d’une variable d’environnement. Sans jeton d’automatisation, le travail en arrière-plan du dépôt est suspendu et l’avis d’accès aux dépôts l’indique.
 
-Les variables d’environnement de GitLab et de Bitbucket sont les identifiants **du serveur**, et non les vôtres : une requête faite en votre nom utilise votre jeton et rien d’autre ; l’environnement ne vous remplace donc jamais discrètement.
+Le travail qu’un membre demande (un commentaire, une revue, une merge request ouverte pour lui par un agent) utilise toujours le jeton propre à ce membre.
+
+## Ajouter un jeton d’automatisation
+
+Seuls les administrateurs de l’espace de travail voient les jetons d’automatisation et peuvent les modifier. Chacun est vérifié auprès de la forge lors de son enregistrement : un jeton personnel est refusé (un jeton d’accès personnel GitLab, un jeton d’API Atlassian, ou tout jeton Bitbucket qui se connecte sous le compte de quelqu’un), tout comme un jeton incapable de lire le dépôt auquel il est destiné.
+
+- **Pour un dépôt :** ouvrez **Paramètres → Espace de travail → Dépôts**. La carte **Jetons d'automatisation** liste chaque dépôt GitLab et Bitbucket avec le bot qui y agit, **Utilise le jeton de l'espace de travail**, ou **Aucun jeton. L'automatisation est en pause ici.** Appuyez sur **Ajouter un jeton** sur la ligne du dépôt.
+- **Pour toutes les forges d’un type :** ouvrez **Paramètres → Espace de travail → Intégrations**, repérez la carte **Jetons d'automatisation** et appuyez sur **Ajouter un jeton** sur la ligne GitLab ou Bitbucket. Les dépôts que le jeton ne peut pas lire sont nommés après l’enregistrement et restent en pause.
+
+Lorsque le travail en arrière-plan est déjà suspendu, les administrateurs disposent aussi d’**Ajouter un jeton** directement sur l’avis d’accès aux dépôts. **Mettre à jour le jeton** remplace un jeton ; l’icône de corbeille le supprime, et tout dépôt qui se retrouve sans jeton est suspendu. Si la forge refuse plus tard un jeton enregistré (révoqué ou expiré), sa ligne l’indique, et les dépôts qu’il couvrait sont suspendus jusqu’à ce que vous le remplaciez.
+
+| Forge         | Jeton d’automatisation                                                                                   | Où le créer                                                    |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | Un **jeton d’accès de projet** ou **de groupe** avec `read_api` et `read_repository` ; ajoutez `api` et `write_repository` pour les commentaires, les merge requests et les pushes | Le projet ou le groupe → Settings → Access tokens              |
+| **Bitbucket** | Un **jeton d’accès de dépôt**, **de projet** ou **d’espace de travail** avec lecture du dépôt, plus écriture sur les pull requests pour les commentaires et les pull requests (écriture du dépôt pour les pushes) | Le dépôt, le projet ou l’espace de travail → Settings → Access tokens |
+
+GitLab affiche le travail sous le nom de l’utilisateur bot du jeton ; Bitbucket l’affiche sous le nom du jeton d’accès.
+
+### Bitbucket : jeton d’accès ou jeton d’API
+
+Bitbucket a deux types de jetons, que Control Center sépare :
+
+- Un **jeton d’API** (id.atlassian.com) appartient à votre compte Atlassian et s’utilise avec votre adresse e-mail. C’est **votre** identifiant, et il va sous **Hébergement de code** dans **Paramètres → Vous → Profil**.
+- Un **jeton d’accès** (créé dans les paramètres d’un dépôt, d’un projet ou d’un espace de travail) appartient à ce dépôt, ce projet ou cet espace de travail, pas à une personne. C’est un **jeton d’automatisation** et il va sous **Jetons d'automatisation**.
+
+Chaque boîte de dialogue refuse l’autre type et indique où il doit aller.
 
 ## Vous êtes une personne différente sur chaque forge
 
-Le même humain est `octocat` sur GitHub et tout autre chose sur GitLab. Control Center résout votre identité **par forge** et utilise la bonne pour chaque dépôt, ce qui rend exacts « à réviser », « créé par moi » et « vous avez approuvé ceci » dans un espace de travail mixte.
+Le même humain est `octocat` sur GitHub et tout autre chose sur GitLab. Control Center résout votre identité **par forge** et utilise la bonne pour chaque dépôt, ce qui rend exacts « à réviser », « créé par moi » et « vous avez approuvé ceci » dans un espace de travail mixte.
 
 Si l’identité d’une forge n’est pas résolue, ses dépôts n’apportent rien à la boîte de réception plutôt que de tout faire correspondre. La boîte de réception le signale au lieu de prétendre que vous êtes à jour.
+
+## Vous ne voyez que ce que votre propre compte peut voir
+
+Les pull requests d’un dépôt ne vous parviennent que si votre rôle dans l’espace de travail autorise ce dépôt **et si votre propre compte sur cette forge peut le lire**. Les administrateurs de l’espace de travail et le propriétaire suivent la même règle. Lorsque certains dépôts sont masqués, la boîte de réception et la file des PR indiquent combien et pourquoi, sans les nommer :
+
+- **Connectez-vous à GitHub pour voir les pull requests de 3 dépôts de plus** : vous n’avez pas encore connecté cette forge ici. Connectez-vous et ils apparaîtront
+- **3 dépôts sont masqués, car votre compte GitHub ne les voit pas** : demandez à quelqu’un qui y a accès sur la forge
+- **3 dépôts sont masqués, car vous n'y avez pas accès dans cet espace de travail** : demandez à un administrateur de l’espace de travail de vous y donner accès
+- **Vérification de votre accès à 3 dépôts de plus…** : affiché brièvement pendant que Control Center confirme ce que votre compte peut lire
+
+Le code suit la même règle. Pour ouvrir les fichiers, les diffs ou la recherche d’un dépôt, ou un terminal sur celui-ci, il vous faut son droit d’accès dans cet espace de travail, et votre propre compte sur la forge doit pouvoir le lire ; c’est vrai aussi pour les administrateurs de l’espace de travail, seul le propriétaire du serveur est exempté. Lorsque la forge est injoignable pour vérifier, vous voyez « Impossible de confirmer votre accès à la forge. Réessayez. » (en nommant la forge). Voir [Le code suit la forge](/fr-FR/manuel/concepts/autorisation/#le-code-suit-la-forge).
+
+La même règle s’applique à tout ce qui découle de ces pull requests. Un espace de revue, ses messages et ses exécutions d’agent disparaissent tant que vous ne pouvez pas voir sa pull request, et un espace de revue ouvert se ferme si vous perdez l’accès. Les exécutions de pipeline liées à une pull request masquée sortent de votre liste d’exécutions. Les agents qui travaillent pour vous ne peuvent pas non plus lire ces espaces de revue. La liste des dépôts de l’espace de travail affiche chaque dépôt auquel vous avez accès dans cet espace de travail, même celui que votre compte sur la forge ne peut pas encore atteindre.
+
+Si la forge est limitée en débit ou hors service, Control Center continue d’afficher ce qu’il avait confirmé en dernier pendant quelques minutes, puis masque ces pull requests jusqu’à pouvoir les vérifier à nouveau.
 
 ## Une seule boîte de réception, toutes les forges
 
 La boîte de réception et la file d’attente des PR se déploient sur chaque forge représentée dans l’espace de travail et fusionnent les résultats en un seul flux — une demande de tirage GitHub et une demande de tirage Bitbucket se côtoient, classées par heure plutôt que regroupées par fournisseur.
 
-Les défaillances sont isolées. Une forge en panne, limitée en débit ou non connectée n’apporte rien et laisse les autres intactes ; elle ne vide jamais toute la boîte de réception. Ses propres dépôts continuent d’afficher leur dernier état connu jusqu’à son rétablissement.
+Les défaillances sont isolées. Une forge en panne ou limitée en débit laisse les autres intactes, et ses dépôts conservent leur dernier état connu jusqu’à son rétablissement ; elle ne vide jamais toute la boîte de réception. Un dépôt que le serveur ne peut plus atteindre disparaît au lieu d’afficher des pull requests périmées, et l’**avis d’accès aux dépôts** le nomme avec la solution : installer la GitHub App sur son organisation, ajouter le dépôt aux dépôts de l’App, reprendre une installation suspendue, faire se reconnecter le membre responsable, ou ajouter un jeton d’automatisation pour un dépôt GitLab ou Bitbucket. Les administrateurs disposent d’un bouton pour les étapes de la GitHub App et pour l’ajout du jeton.
 
 ## Ce que chaque forge sait faire
 
-Chaque forge prend en charge la boucle de base : lister et ouvrir des demandes de tirage, lire les diffs, commenter en ligne et au niveau général, réviser, fusionner et fermer. Au-delà, elles diffèrent réellement, et Control Center masque ce qu’une forge ne peut pas faire plutôt que d’afficher un contrôle qui échoue en silence.
+Chaque forge prend en charge la boucle de base : lister et ouvrir des demandes de tirage, lire les diffs, commenter en ligne et au niveau général, réviser, fusionner et fermer. Au-delà, elles diffèrent réellement, et Control Center masque ce qu’une forge ne peut pas faire plutôt que d’afficher un contrôle qui échoue en silence.
 
 | Capacité                                          | GitHub | GitLab | Bitbucket |
 | ------------------------------------------------- | :----: | :----: | :-------: |
 | Révisions groupées (en attente)                   |   ✓    |   ✓    |     —     |
 | Demander des modifications                        |   ✓    |   ✓    |     ✓     |
-| État « vu » par fichier synchronisé               |   ✓    |   —    |     —     |
+| État « vu » par fichier synchronisé               |   ✓    |   —    |     —     |
 | Réactions emoji                                   |   ✓    |   ✓    |     —     |
 | Relecteurs d’équipe / de groupe                   |   ✓    |   ✓    |     —     |
 | Relecteurs suggérés                               |   ✓    |   —    |     ✓     |
@@ -79,29 +124,45 @@ Chaque forge prend en charge la boucle de base : lister et ouvrir des demandes 
 | Profils utilisateurs enrichis                     |   ✓    |   ✓    |     —     |
 | Référence de tête de PR côté serveur              |   ✓    |   ✓    |     —     |
 
-Là où une capacité manque, la fonction se dégrade honnêtement :
+Là où une capacité manque, la fonction se dégrade honnêtement :
 
-- L’**état « vu »** fonctionne toujours, mais uniquement sur l’appareil où vous l’avez défini.
+- L’**état « vu »** fonctionne toujours, mais uniquement sur l’appareil où vous l’avez défini.
 - Les **révisions groupées** sur Bitbucket publient chaque commentaire séparément, de sorte que les relecteurs les voient arriver un à un plutôt que tous d’un coup.
 - L’**absence de référence de tête de PR** sur Bitbucket signifie que l’extraction d’une demande de tirage récupère sa branche source par son nom, ce qui échoue une fois cette branche supprimée.
 
 ## Vocabulaire
 
-GitLab appelle une demande de tirage une **merge request**. Control Center parle de « pull request » dans tout son propre modèle et emploie le nom propre à chaque forge lorsqu’il évoque celle-ci.
+GitLab appelle une demande de tirage une **merge request**. Control Center parle de « pull request » dans tout son propre modèle et emploie le nom propre à chaque forge lorsqu’il évoque celle-ci.
 
 ## Dépannage
 
 ### La liste des PR est vide et indique qu’une forge n’est pas connectée
 
-Vous n’avez aucun identifiant pour cette forge. Connectez-vous à GitHub, ou collez un jeton GitLab ou Bitbucket, dans **Paramètres → Espace de travail → Profil et identité → Hébergement de code**. Les dépôts des autres forges ne sont pas touchés.
+Vous n’avez aucun identifiant pour cette forge. Connectez-vous à GitHub, ou collez un jeton GitLab ou Bitbucket, dans **Paramètres → Vous → Profil → Hébergement de code**. Les dépôts des autres forges ne sont pas touchés.
 
 ### J’ai connecté une forge, mais ses dépôts n’affichent toujours rien
 
-Vérifiez le sous-titre de la ligne. Si une ligne GitLab ou Bitbucket indique « depuis l’environnement », c’est un autre identifiant que celui attendu qui répond — votre propre jeton l’emporte pour tout ce que vous demandez ; si le sous-titre dit autre chose, c’est que le vôtre n’a pas été enregistré. Pour GitHub, vérifiez que la GitHub App est installée sur le compte propriétaire des dépôts.
+Vérifiez l’état de la ligne, puis les avis au-dessus de la liste des PR. « Connectez-vous à GitHub pour voir les pull requests de 3 dépôts de plus » signifie que votre propre compte n’est pas connecté pour ces dépôts ; « 3 dépôts sont masqués, car votre compte GitHub ne les voit pas » signifie que la forge ne vous donne pas accès. Sur GitHub, l’avis d’accès aux dépôts vous indique si la GitHub App n’est pas installée sur l’organisation du dépôt ou ne l’inclut pas.
+
+### Le travail en arrière-plan d’un dépôt GitLab ou Bitbucket est suspendu
+
+Le dépôt n’a aucun jeton d’automatisation capable de le lire. Un administrateur de l’espace de travail en ajoute un pour le dépôt ou pour l’espace de travail entier ; voir [Ajouter un jeton d’automatisation](#ajouter-un-jeton-dautomatisation). Votre jeton personnel ne le réactive pas : le travail en arrière-plan n’utilise jamais le jeton d’un membre.
 
 ### Un dépôt refuse de s’enregistrer
 
-L’enregistrement exige les trois conditions suivantes : le chemin se trouve à l’intérieur d’un arbre de travail Git, il possède un dépôt distant `origin`, et ce dépôt distant pointe vers github.com, gitlab.com ou bitbucket.org. Voir [Ajouter des dépôts à un espace de travail](/fr-FR/manuel/guides/ajouter-des-depots/).
+L’enregistrement exige les trois conditions suivantes : le chemin se trouve à l’intérieur d’un arbre de travail Git, il possède un dépôt distant `origin`, et ce dépôt distant pointe vers github.com, gitlab.com ou bitbucket.org. L’`origin` doit aussi être le dépôt que vous reliez, et un dossier situé hors du stockage de l’espace de travail ne peut être relié que par le propriétaire du serveur. Voir [Ajouter des dépôts à un espace de travail](/fr-FR/manuel/guides/ajouter-des-depots/).
+
+### J’ai un droit d’accès mais le dépôt indique que mon compte ne peut pas le lire
+
+Votre propre compte sur la forge ne peut pas lire ce dépôt : son code reste donc fermé pour vous, quel que soit le droit accordé par l’espace de travail. Connectez-vous à la forge dans **Hébergement de code** ci-dessus, ou obtenez l’accès au dépôt sur la forge.
+
+### « Impossible de confirmer votre accès à la forge »
+
+La forge n’a pas pu être jointe pour vérifier votre accès, si bien que Control Center a refusé plutôt que de deviner. Réessayez dans un instant.
+
+### Un dépôt indique qu’il pointe maintenant vers un autre dépôt
+
+Le dépôt derrière ce chemin a changé : il a été supprimé puis recréé, ou déplacé et remplacé. Control Center ne lui envoie rien tant qu’un administrateur de l’espace de travail ne clique pas sur **Relier à nouveau** dans l’avis ou sur la ligne du dépôt. Un simple renommage ou transfert est suivi automatiquement et n’affiche jamais cet avis.
 
 ### Tout cesse de fonctionner un moment après un usage intensif
 

@@ -13,6 +13,7 @@ import 'package:cc_persistence/cc_persistence.dart';
 import 'package:cc_rpc/cc_rpc.dart';
 import 'package:cc_server_core/cc_server_core.dart';
 import 'package:cc_server_core/src/identity/server_identity_store.dart';
+import 'package:cc_server_core/src/media_proxy_guard.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -45,8 +46,12 @@ void main() {
     late int playlistLookups;
     late int segmentLookups;
     late Stream<List<int>>? liveAudio;
+    late ConnectionFactory mediaDial;
+    late List<Uri> credentialAsked;
 
     const workspace = 'studio';
+    // Registered, but member-a is not a member of it.
+    const otherWorkspace = 'annex';
     const device = 'desktop-a';
     const secondDevice = 'desktop-b';
     const hash =
@@ -166,6 +171,8 @@ void main() {
       streamLookups = 0;
       playlistLookups = 0;
       segmentLookups = 0;
+      mediaDial = pinnedPermittedConnection;
+      credentialAsked = [];
       liveAudio = null;
       server = LocalRpcServer(
         dispatcher: _Dispatcher(),
@@ -174,7 +181,8 @@ void main() {
         identity: await ServerIdentityStore.load(dataDir.path),
         eventBus: events,
         workspaceResolver: (_) async => const [],
-        workspaceExists: (ws) async => ws == workspace && workspaceRegistered,
+        workspaceExists: (ws) async =>
+            (ws == workspace || ws == otherWorkspace) && workspaceRegistered,
         resolveRole: (ws, user) async =>
             ws == workspace && member && user == 'member-a'
             ? WorkspaceRole.member
@@ -263,6 +271,11 @@ void main() {
                   : null;
             },
         mediaCacheDir: '${dataDir.path}/media_cache',
+        mediaConnectionFactory: (uri, host, port) => mediaDial(uri, host, port),
+        mediaCredential: (userId, target, ws) async {
+          credentialAsked.add(target);
+          return 'Bearer viewer-credential';
+        },
         address: InternetAddress.loopbackIPv4,
         port: 0,
       );
@@ -734,6 +747,24 @@ void main() {
       expect(audioLookups, 0);
     });
 
+    test('media for a workspace the viewer is not in is refused before any '
+        'fetch', () async {
+      // A public literal: passes the SSRF checks without a DNS lookup.
+      const url = 'http://93.184.216.34/private.png';
+      Uri media(String ws) => Uri(
+        path: '/proxy/media',
+        queryParameters: {
+          'u': base64Url.encode(utf8.encode(url)),
+          'd': device,
+          's': sign(url),
+          'ws': ws,
+        },
+      );
+      expect(await status(media('other-workspace')), HttpStatus.forbidden);
+      member = false;
+      expect(await status(media(workspace)), HttpStatus.forbidden);
+    });
+
     test(
       'sealed slow images stop upstream on session close while shared consumers survive',
       () async {
@@ -822,7 +853,12 @@ void main() {
             active--;
           }
         });
-        final overrides = _SlowMediaProxyOverrides(proxy.port, host);
+        // Only this test's connection factory sends the public literal to
+        // the fixture; the production SSRF rules still judge it.
+        mediaDial = (uri, _, _) async {
+          expect(uri.host, host);
+          return Socket.startConnect(InternetAddress.loopbackIPv4, proxy.port);
+        };
         Future<void> nextArrival(int previous) async {
           if (opened > previous) {
             return;
@@ -846,7 +882,7 @@ void main() {
         await remote.close();
         await server.stop();
         try {
-          await HttpOverrides.runZoned(() async {
+          await () async {
             await server.start();
             remote = await connectRemoteRpc(
               uri: Uri.parse('ws://127.0.0.1:${server.boundPort}/rpc'),
@@ -967,7 +1003,7 @@ void main() {
               await remote.close();
               await server.stop();
             }
-          }, createHttpClient: overrides.createHttpClient);
+          }();
         } finally {
           await arrivals.close();
           await proxy.close(force: true);
@@ -1064,6 +1100,141 @@ void main() {
       },
     );
 
+    group('the media proxy upstream', () {
+      late HttpServer upstream;
+      late List<({String path, String? authorization})> seen;
+
+      setUp(() async {
+        seen = [];
+        upstream = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+        addTearDown(() => upstream.close(force: true));
+        upstream.listen((req) async {
+          seen.add((
+            path: req.uri.path,
+            authorization: req.headers.value(HttpHeaders.authorizationHeader),
+          ));
+          final next = req.uri.queryParameters['next'];
+          if (next != null) {
+            req.response
+              ..statusCode = HttpStatus.found
+              ..headers.set(HttpHeaders.locationHeader, next);
+          } else {
+            req.response
+              ..headers.contentType = ContentType('image', 'png')
+              ..add(blobBytes);
+          }
+          await req.response.close();
+        });
+      });
+
+      /// Every connection lands on [upstream], whatever address it names.
+      Future<ConnectionTask<Socket>> toUpstream(InternetAddress _, int _) =>
+          Socket.startConnect(InternetAddress.loopbackIPv4, upstream.port);
+
+      Uri media(String url, {String? ws}) => Uri(
+        path: '/proxy/media',
+        queryParameters: {
+          'u': base64Url.encode(utf8.encode(url)),
+          'd': device,
+          's': sign(url),
+          'ws': ?ws,
+        },
+      );
+
+      test('connects only to the address it judged, never a second DNS '
+          'answer', () async {
+        final lookups = <String>[];
+        final dialed = <String>[];
+        mediaDial = pinnedConnectionVia(
+          // Public once, loopback on every later lookup: a rebinding resolver.
+          lookup: (host) async {
+            lookups.add(host);
+            return [
+              InternetAddress(
+                lookups.length == 1 ? '93.184.216.34' : '127.0.0.1',
+              ),
+            ];
+          },
+          dial: (address, port) {
+            dialed.add(address.address);
+            return toUpstream(address, port);
+          },
+        );
+
+        final ok = await get(media('http://rebind.test/one.png'));
+        expect(ok.statusCode, HttpStatus.ok);
+        expect(await bytes(ok), blobBytes);
+        expect(lookups, ['rebind.test'], reason: 'one lookup, no pre-check');
+        expect(dialed, ['93.184.216.34']);
+      });
+
+      test('pins every redirect hop the same way', () async {
+        final lookups = <String>[];
+        final dialed = <String>[];
+        // A hop to the same host reuses the connection already pinned to the
+        // judged address; a hop to another host opens a new one, which is
+        // judged again. Here that host resolves to loopback.
+        mediaDial = pinnedConnectionVia(
+          lookup: (host) async {
+            lookups.add(host);
+            return [
+              InternetAddress(
+                host == 'rebind.test' ? '93.184.216.34' : '127.0.0.1',
+              ),
+            ];
+          },
+          dial: (address, port) {
+            dialed.add(address.address);
+            return toUpstream(address, port);
+          },
+        );
+
+        final refused = await get(
+          media('http://rebind.test/one.png?next=http://inside.test/two.png'),
+        );
+        await refused.body.drain<void>();
+        expect(refused.statusCode, isNot(HttpStatus.ok));
+        expect(lookups, ['rebind.test', 'inside.test']);
+        expect(dialed, ['93.184.216.34']);
+        expect([for (final r in seen) r.path], ['/one.png']);
+      });
+
+      test('the viewer credential is dropped on a redirect to http, even on '
+          'the same host', () async {
+        mediaDial = (_, _, _) => toUpstream(InternetAddress.anyIPv4, 0);
+
+        final response = await get(
+          media(
+            'https://raw.githubusercontent.com/one.png'
+            '?next=http://raw.githubusercontent.com/two.png',
+            ws: workspace,
+          ),
+        );
+        await response.body.drain<void>();
+        expect(seen, [
+          (path: '/one.png', authorization: 'Bearer viewer-credential'),
+          (path: '/two.png', authorization: null),
+        ]);
+      });
+
+      test('an http target is never fetched with a credential', () async {
+        mediaDial = (_, _, _) => toUpstream(InternetAddress.anyIPv4, 0);
+
+        final response = await get(
+          media('http://raw.githubusercontent.com/one.png', ws: workspace),
+        );
+        await response.body.drain<void>();
+        expect(credentialAsked, isEmpty);
+        expect(seen.single.authorization, isNull);
+      });
+    });
+
+    test("a member of one workspace cannot read another's blob with a valid "
+        'signature', () async {
+      expect(await status(blobUrl(ws: otherWorkspace)), HttpStatus.forbidden);
+      expect(blobLookups, 0);
+    });
+
     test('device revocation terminates an active soundscape stream', () async {
       final listened = Completer<void>();
       final cancelled = Completer<void>();
@@ -1107,6 +1278,23 @@ void main() {
       await subscription.cancel();
     });
   });
+
+  test('a server bound beyond loopback refuses to start without a '
+      'membership resolver', () {
+    LocalRpcServer build(InternetAddress address) => LocalRpcServer(
+      dispatcher: _Dispatcher(),
+      devicesDao: _Devices(const {}),
+      secrets: _Secrets(const {}),
+      eventBus: DomainEventBus(),
+      workspaceResolver: (_) async => const [],
+      address: address,
+      port: 0,
+    );
+
+    expect(() => build(InternetAddress.anyIPv4), throwsArgumentError);
+    expect(() => build(InternetAddress.anyIPv6), throwsArgumentError);
+    expect(build(InternetAddress.loopbackIPv4), isA<LocalRpcServer>());
+  });
 }
 
 class _Dispatcher implements RpcDispatcher {
@@ -1132,6 +1320,7 @@ class _Devices implements PairedDeviceDao {
     status: 'active',
     pairedAt: DateTime.now(),
     lastSeenAt: DateTime.now(),
+    expiresAt: DateTime.now().add(const Duration(hours: 1)),
   );
 
   @override
@@ -1169,19 +1358,4 @@ class _Secrets implements PairedDeviceSecretsPort {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-/// Test-only forward proxy for a public IP; never changes SSRF policy.
-final class _SlowMediaProxyOverrides extends HttpOverrides {
-  _SlowMediaProxyOverrides(this.port, this.host);
-  final int port;
-  final String host;
-
-  @override
-  HttpClient createHttpClient(SecurityContext? context) {
-    final client = super.createHttpClient(context);
-    client.findProxy = (uri) =>
-        uri.host == host ? 'PROXY 127.0.0.1:$port' : 'DIRECT';
-    return client;
-  }
 }

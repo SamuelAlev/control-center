@@ -2,7 +2,7 @@
 title: Autorisatie — wie wat mag doen, en hoe je dat aantoont
 description: De permissiecatalogus achter de rollen van Control Center, het manipulatiedetecterende auditlogboek waarin elke autorisatiebeslissing terechtkomt, en de installatiebrede instellingen die een operator kan vastzetten.
 slug: nl-NL/handleiding/concepten/autorisatie
-sourceHash: 475fb7cd00c2b895796f8ee3547781cb16043ef3
+sourceHash: 832fe92193ae6d3ad1f702d7eecb103ed73c177a
 ---
 
 Control Center beantwoordt twee autorisatievragen, en die zijn wezenlijk
@@ -63,19 +63,104 @@ en een client die te oud is om die waarde te begrijpen, valt terug op gast in
 plaats van te gokken.
 
 Onder de rollen zitten de **verleningen per repository** (`none` / `read` /
-`review` / `write`): lidmaatschap van een werkruimte geeft nooit stilzwijgend
+`review` / `write`, zie [Code wijzigen vereist de schrijfgrant](#code-wijzigen-vereist-de-schrijfgrant)): lidmaatschap van een werkruimte geeft nooit stilzwijgend
 meer rechten dan de codehost. Elk oppervlak dat code toont, controleert ze —
 ook de oppervlakken die zijdelings bij de code komen, zoals een terminal of een
 editorsessie die op de worktree van een ruimte is geopend.
 
-## Serverautoriteit
+## Code volgt de codehost
 
-Sommige operaties gaan helemaal niet over een werkruimte: installatiebrede
-instellingen, de SSO-configuratie, de inloggegevens van providers, het beheer
-van modellen, back-ups van de hele installatie. Die verklaren
-**serverautoriteit** en worden voor iedereen geweigerd behalve voor de operator
-van de installatie (de geregistreerde servereigenaar). Er is met opzet één
-operatoridentiteit en één definitie daarvan.
+Een grant alleen opent de code van een repository niet. Om de bestanden, diffs
+of zoekresultaten te zien, of om een terminal erop te openen, heeft een lid de
+Control Center-grant **en** moet zijn eigen forge-aanmelding de repository kunnen
+lezen. Werkruimtebeheerders zijn niet vrijgesteld; de serverbeheerder wel, omdat
+de checkout op zijn machine staat. Een repository zonder forge-remote heeft alleen
+de grant nodig.
+
+- Wanneer een beheerder een repository geeft aan iemand wiens forge-account die
+  niet kan lezen, wordt de grant opgeslagen en ziet de beheerder een waarschuwing.
+- Wanneer de forge niet bereikbaar is om het te controleren, is het antwoord nee,
+  nooit een gok: de persoon ziet "Je GitHub-toegang kon niet worden bevestigd. Probeer
+  het opnieuw." (met de naam van zijn forge) en probeert het later opnieuw.
+- Pull requests en alles wat daaruit is gemaakt, volgen dezelfde regel.
+
+### Code wijzigen vereist de schrijfgrant
+
+Een repositorygrant heeft drie niveaus, en elk niveau omvat het vorige:
+
+- **read**: de bestanden, diffs en zoekresultaten van de repository zien, mits je eigen forge-aanmelding die ook kan lezen.
+- **review**: lezen, plus goedkeuren, wijzigingen aanvragen en de andere reviewacties op de pull requests.
+- **write**: review, plus code wijzigen en agentruns aansturen die naar de repository schrijven. Code wijzigen omvat het opslaan of terugzetten van bestanden in de editor, een worktree synchroniseren met de head van zijn pull request, committen en pushen, een branch publiceren, en de stackacties die een deel afsnijden, uitchecken of publiceren.
+
+Elke push die voor een persoon wordt gedaan, door hemzelf of door een agentrun die hij heeft gevraagd, controleert zijn schrijfgrant op die repository op het moment van de push, bij GitHub, GitLab en Bitbucket gelijk. Het publiceren van een stack controleert elke repository in de stack voordat er een van wordt gepusht.
+
+Een weigering noemt de grant die ontbreekt. Zonder leestoegang toont de app "Je hebt geen leestoegang tot deze repository. Een werkruimtebeheerder kan die toekennen." Met lezen maar zonder schrijven staat er "Je kunt deze repository lezen maar niet wijzigen. Een werkruimtebeheerder kan schrijftoegang toekennen."
+
+### Ruimtes volgen hun repositories
+
+Wat agents over code hebben geschreven, volgt de code. De inhoud van een ruimte
+(haar berichten, transcripties en toolweergave, zoekresultaten, runlogs, todo's,
+activiteit en meldingen) draagt de code van de repositories waarmee ze werkt, dus
+een ruimte opent alleen voor een lid dat een leesgrant heeft op, en wiens eigen
+forge-aanmelding kan lezen, elke repository die de ruimte gebruikt. Dat zijn de
+repositories die ervoor zijn geselecteerd, of alle repositories van de werkruimte
+wanneer de ruimte geen selectie heeft vastgelegd. Een ruimte die zonder
+repositories is aangemaakt, is open voor elk lid.
+
+Een ruimte die iemand niet kan openen, wordt voor hem nergens getoond, ook niet in
+zoekopdrachten, runlogs, todo's, activiteit en meldingen. Werkruimtebeheerders
+hebben elke grant, maar zijn niet vrijgesteld van het forge-deel; de serverbeheerder
+wel.
+
+Maak voor een gesprek dat iedereen moet kunnen lezen de ruimte zonder repositories,
+of alleen met repositories die iedereen kan lezen.
+
+## De serverbeheerder
+
+De persoon die de server heeft ingesteld, is de **eigenaar**. De server legt dat
+één keer vast, bij de eerste start, en niets dat via het netwerk binnenkomt,
+verandert dat. Een werkruimtebeheerder, of een werkruimte-eigenaar, is niet de
+serverbeheerder: iedereen kan een werkruimte krijgen, maar de machine van de server
+heeft één eigenaar.
+
+**Er draait niets op de eigen machine van de server buiten een sandbox, tenzij de
+serverbeheerder het heeft gestart of die soort hostuitvoering heeft goedgekeurd.**
+Concreet kan alleen de serverbeheerder:
+
+- Een werkruimte aanmaken. Iedereen anders ziet een scherm dat vraagt de eigenaar
+  er een te laten aanmaken of een werkruimtebeheerder hem uit te nodigen.
+- De hostshell openen in de op de server gehoste terminal. Iedereen anders krijgt
+  een sandboxterminal, met de beperkingen van een agent, in de eigen mappen van de
+  werkruimte.
+- De ingebedde codeeditor openen. Die draait als de eigen gebruiker van de server,
+  met zijn terminal, taken en extensies.
+- Een pull request of de worktree van een gesprek in een native editor openen. De
+  editor start op het scherm van de server zelf, als de gebruiker van de server.
+- Een [omgeving](/nl-NL/handleiding/gidsen/omgevingen/)-definitie opslaan of goedkeuren die
+  iets op de host uitvoert: plaatsing op de host, een controle die een opdracht
+  uitvoert, of een voorzien- of archiveertaak.
+- Agents draaien op een server waarvan de machine geen sandbox heeft. Andermans
+  runs worden daar geweigerd, tenzij de eigenaar de server met `--sandbox off` heeft
+  gestart, wat de agents van elk lid onbeperkt uitvoert (zie
+  [Agents op een host zonder sandbox](/nl-NL/handleiding/concepten/sandbox-en-beveiliging/#agents-op-een-host-zonder-sandbox)).
+- Een repository-checkout koppelen die buiten de eigen opslag van de werkruimte ligt,
+  een koppeling bevestigen die van vóór die regel dateert, en de mappen van de server
+  doorbladeren bij het toevoegen van een repository (zie
+  [Repository's toevoegen](/nl-NL/handleiding/gidsen/repos-toevoegen/)).
+- Elk draaiend agentproces op de server zien en stoppen. Iedereen anders ziet en
+  stopt alleen live agentruns in werkruimtes waar hij lid van is.
+- Toestaan dat agents de MCP-servers gebruiken die zijn ingesteld in de eigen tools
+  van de servergebruiker (Claude, Codex, Cursor en de rest). Alleen de ingebouwde
+  harness-runs waarvoor de eigenaar verantwoordelijk is, krijgen ze; zie
+  [Persoonlijke MCP-servers blijven van de eigenaar](/nl-NL/handleiding/gidsen/mcp-server/#persoonlijke-mcp-servers-blijven-van-de-eigenaar).
+- Het e-mailadres van een persoon bevestigen, zodat single sign-on het kan koppelen
+  (zie [Een OpenID Connect-provider verbinden](/nl-NL/handleiding/gidsen/sso-oidc/#hoe-inlogs-bestaande-accounts-koppelen)).
+- Installatiebrede instellingen wijzigen: SSO, inloggegevens van providers, het
+  MCP-endpoint en zijn token, modelbeheer, Connect en back-ups van de hele
+  installatie. Deze operaties verklaren **serverautoriteit** en worden voor iedereen
+  anders geweigerd.
+
+Er is met opzet één operatoridentiteit en één definitie daarvan.
 
 ## Het auditlogboek
 

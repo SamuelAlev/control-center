@@ -2,7 +2,7 @@
 title: Állomások és elszigetelt környezetek
 description: Miért kapnak az ügynökök eldobható gépeket a számítógépe helyett – az elszigetelési határok, a megjelenítési sávok, a hitelesítő adatok, a portok és az életciklus.
 slug: hu-HU/kezikonyv/fogalmak/allomasok
-sourceHash: 5f285a010c7d8951e314489bd4a30c4fa1e2b19c
+sourceHash: c7c962c5841e720033e7cded673ca20e4d6b94ef
 ---
 
 Az **állomás** egy eldobható gép, amelyet egy ügynök valós időben vezérel – egy
@@ -269,6 +269,7 @@ Az állomás szándékosan **nem** globális célpont. Az élő nézet egy fül 
 térben vagy PR-ben, ahol éppen a munka folyik, és arra a beszélgetésre van
 szabva – így az Ön füle és az ügynök `browser_use` hívásai *egyetlen* gépet
 szólítanak meg (a böngészőfelületen motoronként egyet).
+A térben megnyitott állomás a tér gépe, a tér worktree-jei elérhetők rajta, ezért a tér tárolóit követi: a térhez való olvasási jog megnézését, a tér tárolóira adott írási jog pedig vezérlését engedi. Az állomás, amely egyetlen térhez sem tartozik, semmilyen worktree-hez nem fér hozzá, és minden munkaterületi tag használhatja. [Ki nézheti meg, és ki vezérelheti](/hu-HU/kezikonyv/gyakorlati-utmutatok/allomasok-hasznalata/#ki-nézheti-meg-és-ki-vezérelheti) felsorolja, mit fed le mindegyik.
 Az, hogy egyáltalán indíthatók-e állomások, a gazdagép tulajdonsága, ezért a
 képességek, a képek, a munkaterületenkénti egyéni képek és a futó gépek listája
 a **Beállítások → Szerver → Állomások** alatt található. Az elszigetelt

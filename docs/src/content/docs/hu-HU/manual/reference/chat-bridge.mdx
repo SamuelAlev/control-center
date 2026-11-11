@@ -2,7 +2,7 @@
 title: Csevegőhíd
 description: Szolgáltatók, parancsok, hitelesítő adatok, képességek, RPC-műveletek és a csevegőhíd tárolása.
 slug: hu-HU/kezikonyv/referencia/csevegohid
-sourceHash: 39c4f6945fa5b443614c9f4e4875130897e2dbc5
+sourceHash: 306c8ea7ac881b3ee7249c62254b06200733c829
 ---
 
 ## Szolgáltatók
@@ -150,7 +150,7 @@ A kártya akkor nyílik meg, amikor egy említést elfogadnak, a klónozás elő
 | Említés elfogadva           | `Working on it…`                                               |
 | `repo` lépés                | `Cloning <repo>…`                                              |
 | `prCheckout` lépés          | `Checking out the pull request in <repo>…`                     |
-| `script` lépés              | `Running the setup script for <repo>…`                         |
+| `provisionTasks` lépés              | `Running worktree tasks for <repo>…`                         |
 | `agent` lépés               | `Setting up <agent>…`                                          |
 | `provisioning`, még nincs lépés | `Preparing the workspace…`                                 |
 | `ready`                     | `Starting the agent…`                                          |
@@ -254,7 +254,6 @@ A `chat.providers` szolgáltatónként egy bejegyzést ad vissza — a deskripto
 | -------------------------- | ------------------------------------------------------------------------------------------------------------ |
 | Kapcsolati hitelesítő adatok | `<dataDir>/<workspaceId>/chat_credentials/<provider>.json`                                                  |
 | Félkész, vezetett beállítás | `<dataDir>/<workspaceId>/chat_credentials/<provider>_setup.json`                                            |
-| Régi Slack-fájlok          | `<dataDir>/<workspaceId>/slack_credentials.json` és `slack_app_setup.json`, egyszer beolvasva és a helyén migrálva |
 
 A hitelesítő adatok a munkaterület adatbázisa mellett élnek, nem benne: egy munkaterület törlése magával viszi a csevegési tokenjeit, a `workspace.export` vagy egy mentés pedig átmásolja a `workspace.db`-t — így egy másnak átadott munkaterület nem hordoz élő bottokeneket. Az írások atomikusak (ideiglenes fájl és átnevezés), és csak a tulajdonos számára engedélyezettek.
 

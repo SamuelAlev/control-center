@@ -2,7 +2,7 @@
 title: Twój pierwszy obszar roboczy
 description: Utwórz obszar roboczy, zarejestruj w nim repozytorium i sam sprawdź granicę izolacji.
 slug: pl-PL/podrecznik/samouczki/pierwszy-obszar-roboczy
-sourceHash: 440f194e9a338e12ec07988df0c76935c444ef3b
+sourceHash: d460acba4d4c2b430d91d55579c849037ff804b1
 ---
 
 ## Co zbudujesz
@@ -11,10 +11,12 @@ Po ukończeniu tego samouczka będziesz mieć:
 
 - Obszar roboczy nazwany po Twoim projekcie
 - Repozytorium Git zarejestrowane w nim
-- Pięciu zasianych agentów, z których jednego skonfigurowałeś na tyle dobrze, by dał się uruchomić
+- Sześciu zasianych agentów, z których jednego skonfigurowałeś na tyle dobrze, by dał się uruchomić
 - Drugi, pusty obszar roboczy, który dowodzi granicy izolacji
 
 Onboarding utworzył już dla Ciebie obszar roboczy. Ten samouczek tworzy nowy celowo, żebyś zobaczył każdy etap tego procesu.
+
+Utworzenie obszaru roboczego wymaga właściciela serwera, czyli osoby, która skonfigurowała serwer. Na komputerze z własnym serwerem to Ty. Na cudzym serwerze **Dodaj obszar roboczy** pokazuje komunikat „Tylko właściciel serwera może tworzyć obszary robocze. Poproś go o utworzenie jednego albo poproś administratora obszaru roboczego o zaproszenie cię.” Wykonaj jedną z tych czynności i przejdź resztę samouczka w tym obszarze. Rejestracja repozytorium w kroku 2 wymaga administratora obszaru roboczego, a drugi obszar roboczy w kroku 4 znów wymaga właściciela serwera.
 
 Zanim zaczniesz, wybierz kopię roboczą Git, która spełnia wszystkie trzy poniższe warunki — krok rejestracji odrzuca wszystko inne:
 
@@ -35,12 +37,12 @@ Control Center przełącza się na nowy obszar roboczy i ląduje w jego skrzynce
 Za tym wszystkim serwer publikuje zdarzenie `WorkspaceCreated` i zasiewa obszar roboczy:
 
 - **agentem CEO**, którego persona to koordynacja i delegowanie
-- czterema specjalistami — `qa`, `architect`, `engineer` i `librarian` — z których każdy ma własne instrukcje i skille
+- pięcioma specjalistami — `qa`, `architect`, `engineer`, `librarian` i `content-synthesizer` — z których każdy ma własne instrukcje i skille
 - wbudowanymi szablonami potoków i ich wierszami wyzwalaczy
 
 Każdy utworzony obszar roboczy dostaje to wszystko, nie tylko pierwszy.
 
-Potwierdź to: otwórz **Ustawienia → Obszar roboczy → Agenci**. Na liście jest pięciu agentów, każdy z pustym pierścieniem statusu.
+Potwierdź to: otwórz **Ustawienia → Obszar roboczy → Agenci**. Na liście jest sześciu agentów, każdy z pustym pierścieniem statusu.
 
 ## Krok 2: Zarejestruj repozytorium
 
@@ -57,7 +59,7 @@ Potwierdź to: repozytorium pojawia się na liście ze swoim `owner/repo` i bie�
 
 ## Krok 3: Uczyń jednego agenta uruchamialnym
 
-Pięciu agentów, których ten obszar roboczy właśnie zasiał, nie ma adaptera ani modelu. Wysyłanie uruchamia ich na **Control Center (built-in)** i bez ustawionego modelu prosi Anthropic o jego domyślny — działają więc tylko wtedy, gdy masz połączone konto Anthropic, i na modelu, którego nie wybrałeś, jeśli je masz. Onboarding przy pierwszym uruchomieniu zapisuje swój wybór na każdym agencie w pierwszym obszarze roboczym, jednorazowo; obszar roboczy utworzony później startuje ze wszystkimi pięcioma bez ustawień. Ustaw jednego teraz.
+Sześciu agentów, których ten obszar roboczy właśnie zasiał, nie ma adaptera ani modelu. Wysyłanie uruchamia ich na **Control Center (built-in)** i bez ustawionego modelu prosi Anthropic o jego domyślny — działają więc tylko wtedy, gdy masz połączone konto Anthropic, i na modelu, którego nie wybrałeś, jeśli je masz. Onboarding przy pierwszym uruchomieniu zapisuje swój wybór na każdym agencie w pierwszym obszarze roboczym, jednorazowo; obszar roboczy utworzony później startuje ze wszystkimi sześcioma bez ustawień. Ustaw jednego teraz.
 
 1. Otwórz **Ustawienia → Obszar roboczy → Agenci**
 2. Wybierz `engineer` na liście
@@ -73,7 +75,7 @@ Każdy agent ma własny adapter i model, więc powtórz to dla każdego innego a
 Utwórz drugi obszar roboczy z chipu na pasku tytułu, dokładnie tak jak w kroku 1. Potem mu się przyjrzyj:
 
 - **Ustawienia → Obszar roboczy → Repozytoria** jest puste. Repozytorium zarejestrowanego minutę temu tam nie ma.
-- **Ustawienia → Obszar roboczy → Agenci** zawiera pięciu agentów, ale to inne wiersze — adapter ustawiony w kroku 3 przepadł.
+- **Ustawienia → Obszar roboczy → Agenci** zawiera sześciu agentów, ale to inne wiersze — adapter ustawiony w kroku 3 przepadł.
 - Lista przestrzeni, zgłoszenia i pamięć są puste.
 
 Nic nie wyciekło, bo nie ma skąd wyciekać: wiersze każdego obszaru roboczego żyją w pliku bazy danych tego obszaru. Odczyt między obszarami roboczymi to nie zapytanie, które poddaje się filtrowaniu, lecz zapytanie, które nie ma gdzie się wykonać. Usunięcie obszaru roboczego to odłączenie pliku.
@@ -84,6 +86,6 @@ Pełny model znajdziesz w sekcji [Obszary robocze i izolacja](/pl-PL/podrecznik/
 
 ## Podsumowanie
 
-Utworzyłeś obszar roboczy, zobaczyłeś, jak zasiewa CEO i czterech specjalistów, zarejestrowałeś w nim repozytorium, dałeś jednemu agentowi adapter i model i potwierdziłeś, że drugi obszar roboczy nie dzieli z nim niczego.
+Utworzyłeś obszar roboczy, zobaczyłeś, jak zasiewa CEO i pięciu specjalistów, zarejestrowałeś w nim repozytorium, dałeś jednemu agentowi adapter i model i potwierdziłeś, że drugi obszar roboczy nie dzieli z nim niczego.
 
 **Dalej:** [Wyślij pierwszego agenta](/pl-PL/podrecznik/samouczki/pierwszy-agent/), aby wziąć obszar roboczy do pracy.

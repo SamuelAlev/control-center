@@ -1,9 +1,12 @@
+import 'dart:convert';
+
 import 'package:cc_domain/cc_domain.dart';
 import 'package:cc_domain/core/domain/value_objects/repo_grant_level.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
 import 'package:cc_domain/features/environments/domain/entities/environment_run.dart';
 import 'package:cc_domain/features/environments/domain/ports/environment_port.dart';
+import 'package:cc_domain/features/environments/domain/value_objects/environment_definition.dart';
 import 'package:cc_harness/tools.dart';
 import 'package:cc_host/cc_host.dart';
 
@@ -11,21 +14,41 @@ import 'package:cc_host/cc_host.dart';
 ///
 /// Definitions are commands the server runs as itself, so writing them
 /// is admin-only, and members read them with their `env` values and overrides
-/// hidden. Everything under `environment.` derives the environment from
-/// `space_id` and never accepts a second name: a caller can only reach the
-/// environment of a space they can already see.
+/// hidden. One that runs anything on the host outside a rig is the server
+/// owner's alone to save or approve: the service decides that on the
+/// validated definition, and [serverOwnerUserId] tells it who the owner is.
+/// Everything under `environment.` derives the environment from `space_id`
+/// and never accepts a second name: a caller can only reach the environment
+/// of a space they can already see.
 ///
 /// `repoAccessVia` applies the per-repo grant check to every repo the space
 /// exposes, because an environment mounts and runs those repos.
 List<RepoOp> buildEnvironmentOps({
   required EnvironmentPort environments,
   required RepoAccessRepoResolver reposExposedBySpace,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
+  required String? serverOwnerUserId,
 }) {
+  // From the session, never an argument. No recorded owner: nobody is.
+  bool byServerOwner(RepoOpContext ctx) =>
+      serverOwnerUserId != null && ctx.userId == serverOwnerUserId;
+
+  Map<String, dynamic> approval(EnvironmentDefinitionRecord record) =>
+      definitionHostApproval(record, serverOwnerUserId: serverOwnerUserId);
+
+  Map<String, dynamic> wire(
+    RepoOpContext ctx,
+    EnvironmentDefinitionRecord record,
+  ) => {..._wire(ctx, record), ...approval(record)};
+
   Future<String> space(RepoOpContext ctx) async {
     final spaceId = _string(ctx.args, 'space_id');
-    await assertSpaceOwned(ctx.workspaceId!, spaceId);
+    await assertSpaceOwned(ctx.workspaceId!, spaceId, ctx.userId);
     return spaceId;
   }
 
@@ -37,7 +60,7 @@ List<RepoOp> buildEnvironmentOps({
       handler: (ctx) async {
         final records = await environments.listDefinitions(ctx.workspaceId!);
         return {
-          'definitions': [for (final record in records) _wire(ctx, record)],
+          'definitions': [for (final record in records) wire(ctx, record)],
         };
       },
     ),
@@ -54,7 +77,7 @@ List<RepoOp> buildEnvironmentOps({
         if (record == null) {
           throw const NotFoundException('Definition not found');
         }
-        return _wire(ctx, record);
+        return wire(ctx, record);
       },
     ),
     RepoOp(
@@ -68,7 +91,7 @@ List<RepoOp> buildEnvironmentOps({
           await space(ctx),
         );
         return {
-          'definitions': [for (final record in records) _wire(ctx, record)],
+          'definitions': [for (final record in records) wire(ctx, record)],
         };
       },
     ),
@@ -89,8 +112,9 @@ List<RepoOp> buildEnvironmentOps({
           definitionId: ctx.args['definition_id'] as String?,
           definition: Map<String, dynamic>.from(definition),
           by: ctx.principal,
+          byServerOwner: byServerOwner(ctx),
         );
-        return record.toJson();
+        return {...record.toJson(), ...approval(record)};
       },
     ),
     RepoOp(
@@ -138,8 +162,9 @@ List<RepoOp> buildEnvironmentOps({
               : null,
           expectedBlobHash: ctx.args['blob_hash'] as String?,
           by: ctx.principal,
+          byServerOwner: byServerOwner(ctx),
         );
-        return record.toJson();
+        return {...record.toJson(), ...approval(record)};
       },
     ),
     RepoOp(
@@ -247,6 +272,7 @@ List<RepoOp> buildEnvironmentOps({
           options: options is Map
               ? Map<String, dynamic>.from(options)
               : const {},
+          attended: _attended(ctx),
           by: ctx.principal,
         );
         return environment.toJson();
@@ -285,6 +311,7 @@ List<RepoOp> buildEnvironmentOps({
       handler: (ctx) async => (await environments.reset(
         ctx.workspaceId!,
         await space(ctx),
+        attended: _attended(ctx),
         by: ctx.principal,
       )).toJson(),
     ),
@@ -334,25 +361,6 @@ List<RepoOp> buildEnvironmentOps({
         }
         await environments.destroy(workspaceId, spaceId, by: ctx.principal);
         return {'ok': true};
-      },
-    ),
-    RepoOp(
-      name: 'environment.startSetup',
-      kind: RepoOpKind.mutate,
-      requiredCapability: SessionCapability.fullClient,
-      repoAccess: RepoGrantLevel.write,
-      repoAccessVia: reposExposedBySpace,
-      actionClasses: const {
-        ActionClass.hostExecution,
-        ActionClass.processSpawn,
-      },
-      requiredArgs: const ['space_id'],
-      handler: (ctx) async => {
-        'session_id': await environments.startSetup(
-          ctx.workspaceId!,
-          await space(ctx),
-          by: ctx.principal,
-        ),
       },
     ),
     RepoOp(
@@ -514,12 +522,16 @@ Future<String> requireReadableSpace(
   WatchQueryContext ctx, {
   required RepoAccessRepoResolver reposExposedBySpace,
   required RepoReadGrantCheck requireRepoReadGrant,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
 }) async {
   final workspaceId = ctx.workspaceId!;
   final spaceId = _string(ctx.args, 'space_id');
-  await assertSpaceOwned(workspaceId, spaceId);
+  await assertSpaceOwned(workspaceId, spaceId, ctx.userId);
   final repos = await reposExposedBySpace(
     RepoOpContext(
       args: ctx.args,
@@ -539,12 +551,21 @@ Future<String> requireReadableSpace(
 }
 
 /// Live environment state, behind [requireReadableSpace].
+///
+/// Each `environment.watch` frame carries `can_operate`: [mayOperate] for the
+/// subscriber, asked once when they subscribe, so a reader without the grant
+/// `environment.ensure` takes sees why its controls are off.
 List<WatchQuery> buildEnvironmentWatchQueries({
   required EnvironmentPort environments,
   required RepoAccessRepoResolver reposExposedBySpace,
   required RepoReadGrantCheck requireRepoReadGrant,
-  required Future<void> Function(String workspaceId, String spaceId)
+  required Future<void> Function(
+    String workspaceId,
+    String spaceId,
+    String userId,
+  )
   assertSpaceOwned,
+  required Future<bool> Function(RepoOpContext ctx, String spaceId) mayOperate,
 }) {
   Future<String> readableSpace(WatchQueryContext ctx) => requireReadableSpace(
     ctx,
@@ -558,11 +579,21 @@ List<WatchQuery> buildEnvironmentWatchQueries({
       name: 'environment.watch',
       handler: (ctx) async* {
         final spaceId = await readableSpace(ctx);
+        final canOperate = await mayOperate(
+          RepoOpContext(
+            args: ctx.args,
+            workspaceId: ctx.workspaceId,
+            deviceId: ctx.deviceId,
+            userId: ctx.userId,
+          ),
+          spaceId,
+        );
         yield* environments
             .watch(ctx.workspaceId!, spaceId)
             .map(
               (list) => {
                 'environments': [for (final item in list) item.toJson()],
+                'can_operate': canOperate,
               },
             );
       },
@@ -590,16 +621,46 @@ List<WatchQuery> buildEnvironmentWatchQueries({
       name: 'environment.watchRuns',
       handler: (ctx) async* {
         final spaceId = await readableSpace(ctx);
-        yield _runs(await environments.runs(ctx.workspaceId!, spaceId));
-        yield* environments
-            .watch(ctx.workspaceId!, spaceId)
-            .asyncMap(
-              (_) async =>
-                  _runs(await environments.runs(ctx.workspaceId!, spaceId)),
-            );
+        yield* environments.watchRuns(ctx.workspaceId!, spaceId).map(_runs);
       },
     ),
   ];
+}
+
+/// Whether [record] runs anything on the host (`runs_on_host`, with its
+/// overrides applied) and whether the current server owner approved that
+/// (`host_approved`): the server owner is the only one who can, by saving it.
+/// A row that does not parse runs nothing and reports false for both.
+Map<String, dynamic> definitionHostApproval(
+  EnvironmentDefinitionRecord record, {
+  required String? serverOwnerUserId,
+}) {
+  var runsOnHost = false;
+  try {
+    final base = jsonDecode(record.definitionJson);
+    final overrides = record.overridesJson;
+    final extra = overrides == null ? null : jsonDecode(overrides);
+    if (base is Map && (extra == null || extra is Map)) {
+      final merged = extra is Map
+          ? mergeEnvironmentOverrides(
+              Map<String, dynamic>.from(base),
+              Map<String, dynamic>.from(extra),
+            )
+          : Map<String, dynamic>.from(base);
+      runsOnHost =
+          parseEnvironmentDefinition(merged).definition?.runsOnHost ?? false;
+    }
+  } on FormatException {
+    // Text that is not JSON at all.
+    runsOnHost = false;
+  }
+  return {
+    'runs_on_host': runsOnHost,
+    'host_approved':
+        serverOwnerUserId != null &&
+        serverOwnerUserId.isNotEmpty &&
+        record.hostApprovedBy == serverOwnerUserId,
+  };
 }
 
 /// [record] as [ctx]'s caller may read it. A role nobody resolved hides too.
@@ -611,6 +672,10 @@ Map<String, dynamic> _wire(
 Map<String, dynamic> _runs(List<EnvironmentRun> runs) => {
   'runs': [for (final run in runs) run.toJson()],
 };
+
+/// Whether the caller says a person is there to answer a terminal: see
+/// `EnvironmentPort.ensure`. Only ops a person's own client reaches read it.
+bool _attended(RepoOpContext ctx) => ctx.args['attended'] == true;
 
 String _string(Map<String, dynamic> args, String key) {
   final value = args[key];

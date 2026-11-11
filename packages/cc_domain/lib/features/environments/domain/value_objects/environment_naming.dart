@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/features/environments/domain/services/environment_definition_reader.dart';
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
 
@@ -13,18 +14,23 @@ class EnvironmentNaming {
     this.pool,
   });
 
-  /// Parses a `naming` object.
-  factory EnvironmentNaming.fromJson(Map<String, dynamic> json) =>
-      EnvironmentNaming(
-        template: (json['template'] as String?) ?? '{branch}',
-        project: json['project'] as String?,
-        maxLength: (json['maxLength'] as num?)?.toInt() ?? 31,
-        pool: json['pool'] is Map
-            ? EnvironmentNamePool.fromJson(
-                Map<String, dynamic>.from(json['pool'] as Map),
-              )
-            : null,
-      );
+  /// Reads a `naming` object.
+  static EnvironmentNaming read(EnvironmentJsonReader reader) {
+    final template = reader.string('template', nonEmpty: true);
+    final project = reader.string('project');
+    final maxLength = reader.integer('maxLength');
+    final poolReader = reader.object('pool');
+    final pool = poolReader == null
+        ? null
+        : EnvironmentNamePool.read(poolReader);
+    reader.finish();
+    return EnvironmentNaming(
+      template: template ?? '{branch}',
+      project: project,
+      maxLength: maxLength ?? 31,
+      pool: pool,
+    );
+  }
 
   /// The name template.
   final String template;
@@ -60,12 +66,16 @@ class EnvironmentNamePool {
   /// Creates an [EnvironmentNamePool].
   const EnvironmentNamePool({required this.names, required this.size});
 
-  /// Parses a `pool` object.
-  factory EnvironmentNamePool.fromJson(Map<String, dynamic> json) =>
-      EnvironmentNamePool(
-        names: (json['names'] as String?) ?? '',
-        size: (json['size'] as num?)?.toInt() ?? 0,
-      );
+  /// Reads a `pool` object, or null when it can't be built.
+  static EnvironmentNamePool? read(EnvironmentJsonReader reader) {
+    final names = reader.string('names', required: true);
+    final size = reader.integer('size', required: true);
+    reader.finish();
+    if (names == null || size == null) {
+      return null;
+    }
+    return EnvironmentNamePool(names: names, size: size);
+  }
 
   /// A template containing `{n}`.
   final String names;

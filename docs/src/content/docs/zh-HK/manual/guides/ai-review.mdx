@@ -2,7 +2,7 @@
 title: 使用 AI 輔助審查
 description: 對 PR 執行 pr_review 管線，閱讀發現項與判定，然後把審查發佈到 GitHub。
 slug: zh-HK/手冊/操作指南/ai-審查
-sourceHash: 018d4dfdd7815582b3738bda71a5583f6e8e3398
+sourceHash: 0a944db246f577f4a38912383da42303e1c1ff3c
 ---
 
 本指南說明如何讓審查代理審查一個 pull request，以及如何把結果發佈到 GitHub。
@@ -97,7 +97,7 @@ Control Center 會啟動預置的 `pr_review` 管線，並開啟該 PR 的**檢�
 Control Center 只會送出**一條** GitHub 審查。已經解決或已忽略的發現項會被略過。該
 按鈕會包含所有仍然未解決的發現項，並且在 **Ship** 時提交 `APPROVE`。（MCP 工具
 `publish_review_to_github` 的預設行為是只提交經同行確認的發現項，並且絕不批准：它以
-自動化身分發佈，所以 `approve_on_ship` 在那裏沒有作用。）帶有檔案與行號錨點的發現項會變成行內評論；其餘
+自動化身分發佈，所以 `approve_on_ship` 在那裏沒有作用。這次自動化發佈由機械人發出，但在共用的 Control Center Connect 應用程式上，若 Connect 營運者未列出此安裝，則會改以負責人員自己的 GitHub 登入發出，以其名義。）帶有檔案與行號錨點的發現項會變成行內評論；其餘
 一切都歸入摘要正文，每一項都帶有「— Control Center AI review」頁腳，令來源清楚明確。
 **Block** 判定會以 `REQUEST_CHANGES` 提交；**Hold** 以 `COMMENT` 提交；**Ship** 則由
 該按鈕以 `APPROVE` 提交。隨後提示會顯示**已發佈**。審查會以你的身分、用你自己的 GitHub
@@ -113,7 +113,7 @@ Control Center 只會送出**一條** GitHub 審查。已經解決或已忽略�
 :::
 
 其他內建管線則會直接發佈到 GitHub：`cross_review`、`pr_triage`、`ticket_to_pr` 和
-`pre_merge_gate` 都以一個評論步驟結尾。只有 `pr_review` 會把它的輸出留給你處理。
+`pre_merge_gate` 都以一個評論步驟結尾，由伺服器發佈。只有 `pr_review` 會把它的輸出留給你處理。它們都不會合併，也不會核准。
 
 ## 自行派發審查者
 

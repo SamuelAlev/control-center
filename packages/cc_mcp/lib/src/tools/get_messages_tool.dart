@@ -1,14 +1,22 @@
 import 'dart:convert';
 
 import 'package:cc_domain/features/mcp/domain/ports/mcp_tool_port.dart';
+import 'package:cc_domain/features/mcp/domain/value_objects/mcp_call_scope.dart';
 import 'package:cc_domain/features/messaging/domain/repositories/messaging_repository.dart';
+import 'package:cc_mcp/src/tools/hidden_spaces_for_caller.dart';
 
 /// Get space messages tool.
 class GetSpaceMessagesTool extends McpTool {
   /// Creates a new [Get space messages tool].
-  GetSpaceMessagesTool({required this._repository});
+  GetSpaceMessagesTool({
+    required this._repository,
+    required this._hiddenSpaces,
+  });
 
   final MessagingRepository _repository;
+
+  /// Review spaces of pull requests the run's requester cannot see.
+  final HiddenSpacesForCaller _hiddenSpaces;
 
   @override
   String get name => 'get_messages';
@@ -35,6 +43,7 @@ class GetSpaceMessagesTool extends McpTool {
             'example a thread. Defaults to the space\'s standing '
             'conversation.',
       },
+      McpCallScope.callerConversationKey: callerConversationProperty,
       'limit': {
         'type': 'integer',
         'description': 'Maximum number of messages to return (default 50).',
@@ -64,11 +73,19 @@ class GetSpaceMessagesTool extends McpTool {
     // caller's workspace. A bare space_id is NOT proof of ownership — scope
     // it against the workspace's spaces (same pattern as ListSpacesTool).
     // Reject loudly on a foreign/unknown space.
-    final spaces = await _repository
-        .watchSpacesByWorkspace(workspaceId)
-        .first;
+    final spaces = await _repository.watchSpacesByWorkspace(workspaceId).first;
     if (!spaces.any((c) => c.id == spaceId)) {
       return CallResult.error('Space belongs to a different workspace.');
+    }
+    // An agent acts for its requester: a review space of a pull request
+    // that person cannot see is not readable to the run either.
+    if (await isSpaceHiddenFromCaller(
+      _hiddenSpaces,
+      arguments,
+      workspaceId: workspaceId,
+      spaceId: spaceId,
+    )) {
+      return CallResult.error(hiddenSpaceRefusal);
     }
 
     final messages = await _repository.getMessages(

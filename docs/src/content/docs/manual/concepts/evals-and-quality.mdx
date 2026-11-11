@@ -17,7 +17,7 @@ LLM-rubric judge covers what those checks cannot express.
 Five starter suites seed when a workspace is created. They cover orchestration
 proposals, a review that finds a seeded bug, plan mode staying read-only, plan
 mode producing a plan and a ticket round-trip. Seeding listens for
-`WorkspaceCreated` (`workspace.upsert` or `workspace.create`), skips a name
+`WorkspaceCreated` (published by `workspace.create`), skips a name
 that already exists and does not backfill older workspaces.
 
 ### Where they appear

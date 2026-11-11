@@ -11,11 +11,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:xterm/xterm.dart';
 
 class _Terminals extends Fake implements TerminalSessionPort {
+  @override
+  ({String? spaceId})? ownedSessionOf(String sessionId) => null;
+
   final chunks = StreamController<List<int>>.broadcast();
 
   @override
   Stream<List<int>> output({
     required String workspaceId,
+    required String userId,
     required String sessionId,
   }) => chunks.stream;
 
@@ -30,7 +34,13 @@ void main() {
     terminals = _Terminals();
     final (serverChannel, clientChannel) = InProcessRpcChannel.pair();
     final manager = SubscriptionManager(
-      registry: WatchQueryRegistry(buildTerminalWatchQueries(terminals)),
+      registry: WatchQueryRegistry(
+        buildTerminalWatchQueries(
+          terminals,
+          mayDrive: (_) async => true,
+          requireView: (_) async {},
+        ),
+      ),
       deviceId: 'device',
       userId: 'user',
       send: (frame) => unawaited(serverChannel.send(frame)),
@@ -67,6 +77,9 @@ void main() {
     final terminal = Terminal()..resize(80, 24);
     final subscription = repository
         .output('pty-1')
+        .expand<List<int>>(
+          (frame) => frame is TerminalBytes ? [frame.bytes] : const [],
+        )
         .transform(const Utf8Decoder())
         .listen(terminal.write);
     addTearDown(subscription.cancel);
@@ -101,5 +114,18 @@ void main() {
     }
 
     expect(terminal.buffer.lines[0].getText().trimRight(), 'llll');
+  });
+
+  test('the first frame is the drive right, never an empty chunk', () async {
+    final frames = <TerminalOutputFrame>[];
+    final subscription = repository.output('pty-1').listen(frames.add);
+    addTearDown(subscription.cancel);
+    await pumpEventQueue(times: 10);
+    terminals.chunks.add(utf8.encode('x'));
+    await pumpEventQueue(times: 10);
+
+    expect(frames, hasLength(2));
+    expect((frames.first as TerminalDriveRight).canDrive, isTrue);
+    expect((frames.last as TerminalBytes).bytes, utf8.encode('x'));
   });
 }

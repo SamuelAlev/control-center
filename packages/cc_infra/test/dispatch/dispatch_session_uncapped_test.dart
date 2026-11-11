@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:cc_domain/core/domain/entities/agent_run_log.dart';
 import 'package:cc_domain/core/domain/ports/confirmation_port.dart';
-import 'package:cc_domain/core/domain/ports/credential_broker_port.dart';
 import 'package:cc_domain/core/domain/ports/sandbox_port.dart';
 import 'package:cc_domain/core/domain/repositories/agent_repository.dart';
 import 'package:cc_domain/core/domain/repositories/agent_run_log_repository.dart';
@@ -18,7 +17,9 @@ import 'package:cc_domain/features/dispatch/domain/value_objects/agent_commit_id
 import 'package:cc_domain/features/guardrails/domain/entities/action_policy_rule.dart';
 import 'package:cc_domain/features/guardrails/domain/repositories/action_policy_repository.dart';
 import 'package:cc_domain/features/guardrails/domain/services/action_guard_service.dart';
+import 'package:cc_domain/features/guardrails/domain/value_objects/action_constraint.dart';
 import 'package:cc_domain/features/guardrails/domain/value_objects/action_decision.dart';
+import 'package:cc_domain/features/sandboxing/domain/host_execution_posture.dart';
 import 'package:cc_harness/cancellation.dart';
 import 'package:cc_harness/loop.dart';
 import 'package:cc_harness/messages.dart';
@@ -27,6 +28,7 @@ import 'package:cc_harness/tools.dart';
 import 'package:cc_harness_runtime/cc_harness_runtime.dart';
 import 'package:cc_infra/src/dispatch/backends/harness_backend.dart';
 import 'package:cc_infra/src/dispatch/dispatch_session.dart';
+import 'package:cc_infra/src/dispatch/host_execution_gate.dart';
 import 'package:test/test.dart';
 
 import '../helpers/windows_safe_delete.dart';
@@ -89,22 +91,6 @@ class _NoopSandbox implements SandboxPort {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class _NoopBroker implements CredentialBrokerPort {
-  @override
-  Future<ScopedCredentials> mint({
-    required String conversationId,
-    required ForgeTokenScope scope,
-    String? repoOwner,
-    String? repoName,
-    String? actingUserId,
-    String? workspaceId,
-    bool personal = false,
-  }) async => const ScopedCredentials(handle: 'h', environment: {});
-
-  @override
-  Future<void> revoke(String handle) async {}
 }
 
 class _UnusedAgentRepo implements AgentRepository {
@@ -213,16 +199,18 @@ class _RecordingLoop implements AgentLoop {
   addTearDown(() => deleteDirBestEffort(tempDir));
   final loop = _RecordingLoop(script, onRun: onRun);
   final deps = SandboxDispatchDeps(
+    hostExecution: const HostExecutionGate(
+      posture: HostExecutionPosture.offByOwner,
+    ),
     sandbox: _NoopSandbox(),
-    broker: _NoopBroker(),
     agentRepo: _UnusedAgentRepo(),
     runLogRepo: _UnusedRunLogRepo(),
     eventBus: null,
-    resolveCommitIdentity: (_, {workspaceId}) async =>
-        AgentCommitIdentity.owner(
+    resolveCommitIdentity: (_, {workspaceId, runLogId, forge}) async =>
+        AgentCommitIdentity.person((
           name: 'Test User',
           email: 'test@example.test',
-        ),
+        )),
     backendRegistry: BackendRegistry({'cc-harness': const HarnessBackend()}),
     harnessCredentialStore: _KeylessStore(),
     harnessProviderFactory: const HarnessProviderFactory(),
@@ -513,4 +501,70 @@ void main() {
       expect(audits.single.prompted, isFalse);
     },
   );
+
+  test('approving a tool call for 8 hours spares the same call in that '
+      'directory, never a deny', () async {
+    final rules = <ActionPolicyRule>[];
+    final approver = _RecordingApprover(true);
+    final gates = <bool>[];
+    final h = _buildSession(
+      prompt: 'clean up',
+      spaceId: 'space-1',
+      script: [const LoopDone(LoopDoneReason.completed)],
+      actionGuard: ActionGuardService(repository: _Rules(rules)),
+      confirmationPort: approver,
+      onRun: (config) async {
+        final tool = _PolicyTool(ActionClass.fileDelete);
+        Future<void> call(String path) async => gates.add(
+          (await config.tools.approvalCallback!(tool, {'path': path})).allowed,
+        );
+        await call('/w/a/x.txt');
+        // What `confirmation.respond` writes for "Approve for 8 hours".
+        final card = approver.requests.single;
+        final now = DateTime.now();
+        rules.add(
+          ActionPolicyRule(
+            id: 'remembered',
+            workspaceId: 'ws-1',
+            scopeType: ActionScopeType.space,
+            scopeId: card.spaceId,
+            actionClass: ActionClass.fromWire(card.actionClasses.single),
+            decision: ActionDecision.allow,
+            provenance: 'remembered',
+            constraint: ActionConstraint.decode(card.constraintJson),
+            expiresAt: now.add(const Duration(hours: 8)),
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        await call('/w/a/y.txt');
+        await call('/w/b/z.txt');
+        rules.add(
+          ActionPolicyRule(
+            id: 'deny',
+            workspaceId: 'ws-1',
+            scopeType: ActionScopeType.workspace,
+            scopeId: '',
+            actionClass: ActionClass.fileDelete,
+            decision: ActionDecision.deny,
+            createdAt: now,
+            updatedAt: now,
+          ),
+        );
+        await call('/w/a/y.txt');
+      },
+    );
+
+    await _collect(h.session);
+    final card = approver.requests.first;
+    expect(card.rememberChoice, isNotNull);
+    expect(card.actionClasses, ['fileDelete']);
+    expect(
+      ActionConstraint.decode(card.constraintJson),
+      const ActionConstraint(paths: ['/w/a/**'], tools: ['policy_effect']),
+    );
+    expect(gates, [true, true, true, false]);
+    // Asked about /w/a/x.txt and /w/b/z.txt only.
+    expect(approver.requests, hasLength(2));
+  });
 }

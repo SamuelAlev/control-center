@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cc_domain/cc_domain.dart' show ServerOwnerRequiredException;
 import 'package:cc_domain/core/domain/entities/repo.dart';
 import 'package:cc_domain/core/domain/value_objects/workspace_role.dart';
 import 'package:cc_domain/features/environments/domain/entities/environment_definition_record.dart';
@@ -608,6 +609,35 @@ void main() {
 
     expect(repository.calls, contains('setDefinition'));
     expect(find.text('Taken already'), findsOneWidget);
+  });
+
+  testWidgets('a host-placed definition only the owner may save says so', (
+    tester,
+  ) async {
+    final repository = FakeEnvironmentRepository(
+      definitions: [definitionRecord()],
+      setDefinitionError: const ServerOwnerRequiredException(
+        'Only the server owner can save this.',
+      ),
+    );
+    await _pump(tester, repository);
+    await _openFirst(tester);
+
+    await tester.enterText(find.byType(EditableText).first, 'Shop two');
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Only the server owner can save or approve an environment that runs '
+        'on the server host. A workspace admin can use one that runs in a rig.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Only the server owner can save this.'), findsNothing);
+    // The editor stays open for the admin: only the save was refused.
+    expect(find.byType(EnvironmentDefinitionEditor), findsOneWidget);
   });
 
   testWidgets('the JSON view keeps keys the form has no field for', (

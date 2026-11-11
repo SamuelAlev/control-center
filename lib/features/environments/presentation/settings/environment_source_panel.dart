@@ -35,6 +35,7 @@ class _EnvironmentSourcePanelState
 
   Future<void> _approve(EnvironmentDefinitionRecord record) async {
     final toasts = CcToastScope.maybeOf(context);
+    final l10n = AppLocalizations.of(context);
     final overrides = record.overridesJson;
     setState(() => _approving = true);
     try {
@@ -59,7 +60,7 @@ class _EnvironmentSourcePanelState
         );
     } on Object catch (error) {
       toasts?.show(
-        environmentFailureMessage(error),
+        environmentSaveFailureMessage(l10n, error),
         variant: CcToastVariant.danger,
       );
     } finally {

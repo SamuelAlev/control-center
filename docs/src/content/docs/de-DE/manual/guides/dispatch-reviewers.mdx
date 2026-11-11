@@ -2,7 +2,7 @@
 title: Reviewer-Agenten starten
 description: Starte spezialisierte Reviewer-Agenten für einen PR aus der PR-Ansicht, über ein MCP-Tool oder einen Pipeline-Schritt.
 slug: de-DE/handbuch/anleitungen/reviewer-starten
-sourceHash: 33a4b809876b0759ee2921537cd8a8abb1f3cbf6
+sourceHash: def87f6cdf6e7c0060f5a8435dc46e8ace44eca0
 ---
 
 Diese Anleitung zeigt, wie du Reviewer-Agenten startest, damit sie Pull Requests
@@ -88,10 +88,10 @@ Damit eine Review-Pipeline von selbst startet:
 
 Zwei Ereignisse zählen hier, und sie sind nicht austauschbar:
 
-| Ereignis               | Wird ausgelöst, wenn                                                                                                              | Payload-Schlüssel                                              |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `PullRequestPublished` | Ein PR wird **über Control Center** geöffnet, auf der Oberfläche zum Erstellen des PR oder durch einen Agenten mit `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`             |
-| `ExternalPrDetected`   | Der PR-Polling-Dienst findet einen PR, der direkt auf GitHub geöffnet wurde                                                       | `repo_owner`, `repo_name`, `pr_number`, `pr_title`, `author`   |
+| Ereignis               | Wird ausgelöst, wenn                                                                                                                      | Payload-Schlüssel                                                              |
+| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `PullRequestPublished` | Ein PR wird **über Control Center** geöffnet, auf der Oberfläche zum Erstellen des PR oder durch einen Agenten mit `pr_lifecycle.publish` | `pr_id`, `workspace_id`, `repo_owner`, `repo_name`                             |
+| `ExternalPrDetected`   | Der PR-Polling-Dienst findet einen PR, der direkt auf GitHub geöffnet wurde                                                               | `repo_owner`, `repo_name`, `repo_full_name`, `pr_number`, `pr_title`, `author` |
 
 Ein auf github.com geöffneter PR löst nie `PullRequestPublished` aus. Eine
 Vorlage, die nur an dieses Ereignis gehängt ist, sieht ihn also nicht.

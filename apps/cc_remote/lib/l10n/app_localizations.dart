@@ -606,12 +606,6 @@ abstract class AppLocalizations {
   /// **'You’re all caught up'**
   String get allCaughtUp;
 
-  /// Inbox empty-state description when no forge account is connected.
-  ///
-  /// In en, this message translates to:
-  /// **'No forge account is connected on the server, so pull requests can’t be attributed to you yet.'**
-  String get inboxNoForgeAccount;
-
   /// Inbox empty-state description when the inbox is genuinely empty.
   ///
   /// In en, this message translates to:
@@ -972,24 +966,6 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{{names} is too large to send from here.} other{{names} are too large to send from here.}}'**
   String attachmentsTooLarge(int count, String names);
 
-  /// Composer error: the named files exceed the (lower) relay upload ceiling.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{{names} is too large to send over the relay from here.} other{{names} are too large to send over the relay from here.}}'**
-  String attachmentsTooLargeRelay(int count, String names);
-
-  /// Composer error: no attachment survived the upload and there was no text.
-  ///
-  /// In en, this message translates to:
-  /// **'Couldn\'t upload the attachment. Try again.'**
-  String get attachmentUploadFailed;
-
-  /// Composer notice: some attachments failed to upload and were omitted from the sent message.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 attachment couldn\'t be uploaded and was left out.} other{{count} attachments couldn\'t be uploaded and were left out.}}'**
-  String attachmentsLeftOut(int count);
-
   /// Fallback display name for another member's message.
   ///
   /// In en, this message translates to:
@@ -1247,36 +1223,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No forge is connected on the server, so no pull requests can be fetched. Connect one from the desktop app.'**
   String get noForgeConnected;
-
-  /// Notice when repos were unreadable and their names are unknown.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 repo could not be read.} other{{count} repos could not be read.}}'**
-  String reposUnreadable(int count);
-
-  /// Notice naming the repos the poller could not read.
-  ///
-  /// In en, this message translates to:
-  /// **'Not readable: {names}'**
-  String reposNotReadable(String names);
-
-  /// Title when the GitHub App installation is suspended and lists are cached.
-  ///
-  /// In en, this message translates to:
-  /// **'GitHub App installation suspended'**
-  String get installationSuspendedTitle;
-
-  /// Empty-inbox body when the GitHub App installation is suspended.
-  ///
-  /// In en, this message translates to:
-  /// **'Showing last known data for {names}. Resume the installation on GitHub.'**
-  String installationSuspendedBody(String names);
-
-  /// Inline notice on inbox and PR list when the GitHub App installation is suspended.
-  ///
-  /// In en, this message translates to:
-  /// **'GitHub App installation suspended. Showing last known data for {names}. Resume the installation on GitHub.'**
-  String installationSuspendedNotice(String names);
 
   /// PR lifecycle: a draft pull request.
   ///
@@ -2403,7 +2349,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionPrPublish.
   ///
   /// In en, this message translates to:
-  /// **'Publish pull requests'**
+  /// **'Update or merge pull requests'**
   String get permissionPrPublish;
 
   /// No description provided for @permissionVendorSyncWrite.
@@ -2487,7 +2433,7 @@ abstract class AppLocalizations {
   /// No description provided for @permissionRemembered.
   ///
   /// In en, this message translates to:
-  /// **'Remembered approval'**
+  /// **'Standing approval'**
   String get permissionRemembered;
 
   /// No description provided for @permissionSource.
@@ -2519,12 +2465,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Set a rule here'**
   String get permissionSetHere;
-
-  /// No description provided for @permissionRevokeBeforeEdit.
-  ///
-  /// In en, this message translates to:
-  /// **'Revoke the scoped or remembered rule before setting a general rule for this action.'**
-  String get permissionRevokeBeforeEdit;
 
   /// No description provided for @permissionConfirmRevoke.
   ///
@@ -2603,6 +2543,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Commands: {commands}'**
   String permissionCommands(String commands);
+
+  /// Permissions screen: the tools one listed rule or standing approval is limited to. {tools} is a comma-separated list of tool names, which stay as they are.
+  ///
+  /// In en, this message translates to:
+  /// **'Tools: {tools}'**
+  String permissionTools(String tools);
+
+  /// Permissions screen: shown on a listed standing approval when the action it approves is set to Deny. A standing approval only spares a question; it never overrides a Deny.
+  ///
+  /// In en, this message translates to:
+  /// **'Not in effect while this action is denied'**
+  String get permissionNotInEffect;
 
   /// No description provided for @permissionMaxCount.
   ///
@@ -3364,24 +3316,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pull request update'**
   String get activityPullRequest;
-
-  /// No description provided for @activityTicket.
-  ///
-  /// In en, this message translates to:
-  /// **'Ticket update'**
-  String get activityTicket;
-
-  /// No description provided for @activityMeeting.
-  ///
-  /// In en, this message translates to:
-  /// **'Meeting update'**
-  String get activityMeeting;
-
-  /// No description provided for @activityCalendar.
-  ///
-  /// In en, this message translates to:
-  /// **'Calendar connection'**
-  String get activityCalendar;
 
   /// No description provided for @activityRig.
   ///
@@ -4607,10 +4541,10 @@ abstract class AppLocalizations {
   /// **'Waiting for authorization in your browser…'**
   String get credentialsWaitingForLogin;
 
-  /// Label of the field where a person types the confirmation code Control Center Connect's page showed after they approved a sign-in
+  /// Label of the field where a person types the code the browser showed after they confirmed a sign-in (both Control Center Connect and this server's own sign-in)
   ///
   /// In en, this message translates to:
-  /// **'Enter the code shown in your browser'**
+  /// **'Confirmation code'**
   String get credentialsConnectCodePrompt;
 
   /// Shown when the typed sign-in confirmation code is not 8 letters and digits
@@ -4721,12 +4655,6 @@ abstract class AppLocalizations {
   /// **'Paste a personal access token'**
   String get credentialsPersonalTokenHint;
 
-  /// No description provided for @credentialsHostManaged.
-  ///
-  /// In en, this message translates to:
-  /// **'This connection comes from the server app or environment. Only the server owner can change it there; you can still add your own token.'**
-  String get credentialsHostManaged;
-
   /// No description provided for @credentialsStopWatching.
   ///
   /// In en, this message translates to:
@@ -4762,6 +4690,240 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Run commands on the host'**
   String get permissionHostExecution;
+
+  /// Connection status: the grant expired or was revoked
+  ///
+  /// In en, this message translates to:
+  /// **'Your {provider} sign-in has lapsed. Sign in again.'**
+  String credentialsSignInLapsed(String provider);
+
+  /// Connection status: the grant is parked because the workspace's sign-in service changed
+  ///
+  /// In en, this message translates to:
+  /// **'Paused: this workspace\'s sign-in service changed. It works again once the service is back.'**
+  String get credentialsSignInPaused;
+
+  /// Connection status: renewing the grant failed for now; it retries on its own
+  ///
+  /// In en, this message translates to:
+  /// **'Can\'t reach {provider} right now. Retrying.'**
+  String credentialsProviderUnreachable(String provider);
+
+  /// Credential scope: applies to the current workspace only
+  ///
+  /// In en, this message translates to:
+  /// **'This workspace only'**
+  String get credentialsScopeWorkspace;
+
+  /// Credential scope: applies to every workspace on the server
+  ///
+  /// In en, this message translates to:
+  /// **'All workspaces'**
+  String get credentialsScopeAllWorkspaces;
+
+  /// Confirmation before removing a credential kept for this workspace only
+  ///
+  /// In en, this message translates to:
+  /// **'Remove your saved credential from this workspace? Other workspaces keep theirs.'**
+  String get credentialsRemoveConfirmWorkspace;
+
+  /// Confirmation before removing a credential shared by all workspaces
+  ///
+  /// In en, this message translates to:
+  /// **'Remove your saved credential from every workspace that shares it?'**
+  String get credentialsRemoveConfirmAllWorkspaces;
+
+  /// Sign-in failure: the server no longer knows the attempt
+  ///
+  /// In en, this message translates to:
+  /// **'The server restarted. Start the sign-in again.'**
+  String get credentialsSignInServerRestarted;
+
+  /// Notice for admins: the GitHub App is not installed on the owner of these repositories
+  ///
+  /// In en, this message translates to:
+  /// **'Install the GitHub App on {owner} so automation can reach {names}. Tap to open GitHub.'**
+  String repoAccessInstallApp(String owner, String names);
+
+  /// Notice for members: the GitHub App is not installed on the owner of these repositories
+  ///
+  /// In en, this message translates to:
+  /// **'The GitHub App isn\'t installed on {owner}, so automation can\'t reach {names}. Ask a workspace admin to install it.'**
+  String repoAccessAskAdminInstall(String owner, String names);
+
+  /// Notice for admins: these repositories are not selected in the GitHub App installation
+  ///
+  /// In en, this message translates to:
+  /// **'Add {names} to the GitHub App\'s repositories. Tap to open GitHub.'**
+  String repoAccessAddToApp(String names);
+
+  /// Notice for members: these repositories are not selected in the GitHub App installation
+  ///
+  /// In en, this message translates to:
+  /// **'The GitHub App can\'t see {names} yet. Ask a workspace admin to add them to its repositories.'**
+  String repoAccessAskAdminAdd(String names);
+
+  /// Notice: the GitHub App installation covering these repositories is suspended
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub App installation suspended. Automation for {names} is paused until an owner of the account resumes the installation on GitHub.'**
+  String repoAccessSuspended(String names);
+
+  /// Notice: the workspace's accountable person lost access to these repositories
+  ///
+  /// In en, this message translates to:
+  /// **'The person accountable for this workspace\'s automation can no longer see {names}, so nothing runs there on their behalf.'**
+  String repoAccessOwnerCannotSee(String names);
+
+  /// Notice: the workspace's accountable person is not signed in to the forge
+  ///
+  /// In en, this message translates to:
+  /// **'The person accountable for this workspace\'s automation isn\'t signed in to the forge, so automation for {names} waits until they sign in.'**
+  String repoAccessOwnerNotSignedIn(String names);
+
+  /// Muted notice: an access check got no answer and is retried automatically
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check access to {names}. Retrying.'**
+  String repoAccessRetrying(String names);
+
+  /// Notice: repositories hidden because the person is not signed in to that forge
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Sign in to {forge} to see pull requests from 1 more repository} other{Sign in to {forge} to see pull requests from {count} more repositories}}'**
+  String hiddenReposSignIn(int count, String forge);
+
+  /// Notice: repositories hidden because the person's own forge account cannot read them
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 repository is hidden because your {forge} account can\'t see it} other{{count} repositories are hidden because your {forge} account can\'t see them}}'**
+  String hiddenReposNoForgeAccess(int count, String forge);
+
+  /// Notice: repositories hidden because the person holds no grant on them in this workspace
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 repository is hidden because you don\'t have access to it in this workspace} other{{count} repositories are hidden because you don\'t have access to them in this workspace}}'**
+  String hiddenReposNoGrant(int count);
+
+  /// Quiet notice while access to some repositories is still being checked
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Checking your access to 1 more repository…} other{Checking your access to {count} more repositories…}}'**
+  String hiddenReposChecking(int count);
+
+  /// Label of the email field next to a Bitbucket API token
+  ///
+  /// In en, this message translates to:
+  /// **'Atlassian account email'**
+  String get credentialsAtlassianEmail;
+
+  /// Error when the Atlassian account email for a Bitbucket token is missing or malformed
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the email address of your Atlassian account.'**
+  String get credentialsAtlassianEmailInvalid;
+
+  /// Label of the Bitbucket API token field
+  ///
+  /// In en, this message translates to:
+  /// **'API token'**
+  String get credentialsBitbucketApiToken;
+
+  /// Notice: GitLab/Bitbucket repositories whose background work is paused for lack of an automation token
+  ///
+  /// In en, this message translates to:
+  /// **'No automation token can read {names}, so background work there is paused. An admin can add one in Settings → Repositories.'**
+  String repoAccessAutomationTokenMissing(String names);
+
+  /// Shown while a browser sign-in is open: the browser page (Control Center Connect's or this server's own) first asks to confirm, then shows a code to type in the field below
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm in your browser, then enter the code it shows.'**
+  String get credentialsSignInConfirmInBrowser;
+
+  /// Sign-in failure: the provider account is already held by another person on this server; one account acts for one person only
+  ///
+  /// In en, this message translates to:
+  /// **'This account is already connected to another person on this server. Sign in with a different account.'**
+  String get credentialsSignInAccountAlreadyBound;
+
+  /// Token form error: the server could not ask the forge about the pasted token
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} could not be reached to check this token. Try again in a moment.'**
+  String credentialsTokenUnreachable(String provider);
+
+  /// Token form error: the forge refused the pasted token
+  ///
+  /// In en, this message translates to:
+  /// **'{provider} does not accept this token. Check that you copied all of it and that it has not been revoked.'**
+  String credentialsTokenRejected(String provider);
+
+  /// Token form error: the pasted token belongs to a bot, project, group or workspace instead of the person
+  ///
+  /// In en, this message translates to:
+  /// **'This is not a personal token. Paste a personal access token from your own {provider} account, not a project, group, workspace or bot token.'**
+  String credentialsTokenWrongKind(String provider);
+
+  /// Token form error: the pasted token lacks a permission. {scope} is the forge's own scope name; keep it as is
+  ///
+  /// In en, this message translates to:
+  /// **'This token is missing the {scope} scope, which reviewing and commenting need. Create one that has it.'**
+  String credentialsTokenNarrowScope(String scope);
+
+  /// Token form error: the pasted token is already expired
+  ///
+  /// In en, this message translates to:
+  /// **'This token has expired. Create a new one and paste it here.'**
+  String get credentialsTokenExpired;
+
+  /// Sign-in failure: the sign-in service is limiting requests. Must not ask the person to sign in again
+  ///
+  /// In en, this message translates to:
+  /// **'Too many requests right now. Wait a bit, then try again.'**
+  String get credentialsSignInRateLimited;
+
+  /// Sign-in failure: the person cancelled on the browser page, or declined at the provider
+  ///
+  /// In en, this message translates to:
+  /// **'The sign-in was cancelled or declined. Start it again when you\'re ready.'**
+  String get credentialsSignInCancelled;
+
+  /// Sign-in failure: the server no longer knows this attempt
+  ///
+  /// In en, this message translates to:
+  /// **'This sign-in is no longer open: it was cancelled, used or replaced. Start it again.'**
+  String get credentialsSignInNoLongerOpen;
+
+  /// Under noWorkspacesYet on the workspace switcher, when the signed-in person is in no workspace. The phone cannot create workspaces; 'the server owner' = the person who runs this Control Center server.
+  ///
+  /// In en, this message translates to:
+  /// **'A workspace admin has to invite you, or the server owner can create a workspace for you.'**
+  String get noWorkspacesYetHint;
+
+  /// Pull requests notice for a workspace admin: the linked owner/name now names a different repository on the forge. The phone cannot edit links
+  ///
+  /// In en, this message translates to:
+  /// **'{repos} now points to a different repository on {forge}. Relink it from the desktop or web app to keep using it.'**
+  String repoAccessReplaced(String repos, String forge);
+
+  /// Same notice for a member who is not an admin
+  ///
+  /// In en, this message translates to:
+  /// **'{repos} now points to a different repository on {forge}. A workspace admin has to relink it before it can be used again.'**
+  String repoAccessAskAdminRelink(String repos, String forge);
+
+  /// Title of the notice in an agent turn when the server refused to start the run because it has no sandbox and the person is not the server owner. Guidance, not an error
+  ///
+  /// In en, this message translates to:
+  /// **'Agents need a sandbox on this server'**
+  String get runSandboxUnavailableTitle;
+
+  /// Body of that notice. 'Owner' = the person who runs this Control Center server; 'sandbox' = the isolation agents run in
+  ///
+  /// In en, this message translates to:
+  /// **'This server has no sandbox, so only its owner can run agents here. The owner can install the sandbox or turn sandboxing off for everyone.'**
+  String get runSandboxUnavailable;
 }
 
 class _AppLocalizationsDelegate

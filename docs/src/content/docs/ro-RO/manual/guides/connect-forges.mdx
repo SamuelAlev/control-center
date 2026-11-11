@@ -2,7 +2,7 @@
 title: Conectează un host de cod
 description: Conectează GitHub, GitLab sau Bitbucket pentru ca suprafața PR, înregistrarea repo-urilor și rulările agenților să funcționeze — un singur spațiu de lucru le poate folosi pe toate trei.
 slug: ro-RO/manual/ghiduri-practice/conecteaza-host-de-cod
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center funcționează cu trei hosturi de cod, numite **forge-uri** în toată aplicația: **GitHub**, **GitLab** și **Bitbucket Cloud**. Niciunul nu este implicit. Conectează unul și totul funcționează; conectează mai multe și un singur spațiu de lucru poate conține repo-uri din toate deodată.
@@ -11,22 +11,26 @@ Forge-ul este o proprietate a fiecărui **repo**, citită din remote-ul `origin`
 
 ## Conectează un forge
 
-1. Deschide **Setări → Spațiu de lucru → Profil și identitate** (`/settings/workspace/profile`).
+1. Deschide **Setări → Tu → Profil** (`/settings/you/profile`).
 2. Găsește cardul **Găzduire de cod**. Fiecare forge acceptat este listat, conectat sau nu.
 3. Pe **GitHub**, apasă **Autentifică-te în GitHub**. Pe **GitLab** sau **Bitbucket**, apasă **Adaugă token** și lipește unul.
 
-**GitHub funcționează doar prin autentificare.** Autentificarea rulează prin GitHub App proprie a serverului sau prin Control Center Connect, după cum a configurat proprietarul serverului (vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)); nu există niciun token GitHub de lipit. GitLab și Bitbucket primesc în continuare un token personal.
+**GitHub funcționează doar prin autentificare.** Autentificarea rulează prin GitHub App proprie a serverului sau prin Control Center Connect, după cum a configurat proprietarul serverului, sau prin aplicațiile pe care un administrator al spațiului de lucru le-a ales pentru acest spațiu de lucru, din **Setări → Spațiu de lucru → Integrări** (vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/)); nu există niciun token GitHub de lipit. GitLab și Bitbucket primesc în continuare un token personal.
 
 În ambele cazuri, acreditarea este **a ta și se află pe server**, indexată după id-ul tău de utilizator: niciun token nu este stocat pe mașina pe care l-ai introdus, fiecare dispozitiv de pe care te autentifici o folosește pe aceeași, iar niciun alt membru nu o poate citi. Ea intră în vigoare la **următoarea cerere** — nu este nimic de repornit, iar deconectarea oprește imediat trimiterea ei.
 
-Fiecare rând îți spune de unde provine acreditarea sa, pentru că aceasta este diferența dintre „tokenul meu nu funcționează” și „răspunde un alt token”:
+Cardul arată unde sunt folosite conturile tale. Un token GitLab sau Bitbucket este al tău în **fiecare spațiu de lucru de pe server**, așa că îl lipești o singură dată. La fel este și autentificarea ta în GitHub, dacă un spațiu de lucru nu are propriile aplicații de autentificare: acel spațiu de lucru păstrează o autentificare GitHub proprie, iar cardul o numește.
 
-| Subtitlu                                        | Semnificație                                                                       |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `Signed in as octocat`                          | Se folosește propria ta acreditare                                                 |
-| `Signed in as octocat · from the environment`   | Doar GitLab sau Bitbucket: răspunde o variabilă de mediu a serverului, nu tokenul tău |
-| `Not connected`                                 | Nu ai nicio acreditare pentru acest forge                                          |
-| `GitHub sign-in isn't set up on this server yet.` | Serverul nu are nici GitHub App proprie, nici Connect; proprietarul serverului configurează una dintre ele |
+Fiecare rând arată starea **propriei** tale acreditări. Doar propria ta acreditare răspunde pentru tine; nimic altceva nu ține locul ei:
+
+| Rândul spune                                                   | Semnificație                                                                                                                                 |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Autentificat ca octocat`                                      | Se folosește propria ta acreditare             |
+| `Neconectat`                                                   | Nu ai nicio acreditare pentru acest forge                                                                                                    |
+| `Autentificarea ta în GitHub ca octocat a expirat. Autentifică-te din nou.` | Autentificarea ta a expirat sau a fost revocată la forge                                                                          |
+| `În pauză: serviciul de autentificare al acestui spațiu de lucru s-a schimbat` | Acest spațiu de lucru a trecut pe alt serviciu de autentificare. Autentificarea ta este păstrată și funcționează din nou dacă revine la cel anterior, deci nu există buton de autentificare |
+| `GitHub nu poate fi contactat acum. Se reîncearcă.`            | O întrerupere temporară. Control Center continuă să reîncerce; nu trebuie să faci nimic                                                     |
+| O propoziție care explică de ce autentificarea nu este disponibilă | De exemplu `Autentificarea cu GitHub nu este configurată pentru acest spațiu de lucru.` sau `Serviciul de autentificare al acestui spațiu de lucru și-a schimbat identitatea. Un administrator trebuie să o confirme.` Administratorii primesc un buton către setarea care rezolvă problema |
 
 ### Ce token cere fiecare forge
 
@@ -35,17 +39,43 @@ Fiecare rând îți spune de unde provine acreditarea sa, pentru că aceasta est
 | **GitLab**    | Un token de acces personal cu `api`                       | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Un token API Atlassian, plus adresa de e-mail a contului tău | id.atlassian.com → Security → API tokens                |
 
-Bitbucket se autentifică folosind **adresa de e-mail a contului ca nume de utilizator** și tokenul ca parolă. Setează `BITBUCKET_EMAIL` în mediul serverului, ca să știe cu ce adresă de e-mail să asocieze tokenul.
+Bitbucket se autentifică folosind **adresa de e-mail a contului ca nume de utilizator** și tokenul API ca parolă, deci dialogul Bitbucket cere pe amândouă. Un **token de acces** de depozit, proiect sau spațiu de lucru Bitbucket nu aparține nimănui, așa că acest dialog îl refuză: este în schimb un [token de automatizare](#adaugă-un-token-de-automatizare). Același lucru este valabil și pentru un token de acces de proiect sau de grup GitLab: GitLab întreabă a cui este tokenul înainte de a-l salva, iar un token de bot este refuzat aici.
+
+Un token nu este legat niciodată de un singur spațiu de lucru: ai câte unul pe forge, iar fiecare spațiu de lucru de pe server îl folosește. **Deconectează** îl elimină pentru toate.
 
 ### Munca de fundal
 
 Munca fără niciun om în spate (rulări de agenți, pipeline-uri, interogarea periodică a PR-urilor) are și ea nevoie de o acreditare, iar fiecare forge răspunde diferit:
 
 - **GitHub** — un token pentru câte un singur depozit, emis din GitHub App a serverului sau prin Connect și limitat la ce poate face acolo un membru responsabil. Nu este niciodată autentificarea unei persoane predată întreagă, iar nicio variabilă de mediu sau token lipit nu ține locul lui. Vezi [Configurează integrarea GitHub](/ro-RO/manual/ghiduri-practice/integrare-github/#pentru-cine-vorbește-acreditarea-ta)
-- **GitLab** — tokenul lipit al proprietarului serverului, apoi `GITLAB_TOKEN`, apoi `CI_JOB_TOKEN`
-- **Bitbucket** — tokenul lipit al proprietarului serverului, apoi `BITBUCKET_API_TOKEN`, apoi `BITBUCKET_TOKEN` (cu `BITBUCKET_EMAIL`)
+- **GitLab** și **Bitbucket** — doar **tokenul de automatizare** al repo-ului: un token de acces de bot pe care un administrator al spațiului de lucru îl adaugă pentru repo-ul respectiv sau pentru fiecare repo de pe forge-ul acela din spațiul de lucru. Tokenul propriu al repo-ului are prioritate față de cel al spațiului de lucru. Interogarea PR-urilor, comentariile de revizuire AI și push-urile și merge request-urile pe care nu le-a cerut nimeni folosesc acest token, deci pe forge apar ca acel bot, niciodată ca un membru. Niciun token personal al unui membru nu ține locul lui, și nu există niciun token la nivel de server sau din variabilă de mediu. Fără el, munca de fundal a repo-ului se oprește, iar notificarea de acces la repo-uri spune asta.
 
-Variabilele de mediu GitLab și Bitbucket sunt acreditarea **serverului**, nu a ta: o cerere făcută în numele tău folosește tokenul tău și nimic altceva, așa că mediul nu te înlocuiește niciodată pe nesimțite.
+Munca pe care o cere un membru (un comentariu, o revizuire, un merge request al unui agent deschis pentru el) folosește în continuare tokenul propriu al membrului.
+
+## Adaugă un token de automatizare
+
+Doar administratorii spațiului de lucru văd sau schimbă tokenurile de automatizare. Fiecare este verificat cu forge-ul la salvare: un token care acționează ca o persoană este refuzat (un token personal de acces GitLab, un token API Atlassian sau orice token Bitbucket care se autentifică drept contul cuiva), la fel și unul care nu poate citi repo-ul pentru care este făcut.
+
+- **Pentru un repo:** deschide **Setări → Spațiu de lucru → Depozite**. Cardul **Tokenuri de automatizare** listează fiecare repo GitLab și Bitbucket împreună cu botul care acționează acolo, **Folosește tokenul spațiului de lucru**, sau **Niciun token. Automatizarea este în pauză aici.** Apasă **Adaugă token** pe rândul repo-ului.
+- **Pentru fiecare repo de pe un forge:** deschide **Setări → Spațiu de lucru → Integrări**, găsește cardul **Tokenuri de automatizare** și apasă **Adaugă token** pe rândul GitLab sau Bitbucket. Repo-urile pe care tokenul nu le poate citi sunt numite după salvare și rămân în pauză.
+
+Când munca de fundal este deja în pauză, administratorii primesc și **Adaugă token** direct pe notificarea de acces la repo-uri. **Actualizează tokenul** înlocuiește un token; butonul coș de gunoi îl elimină, iar orice repo rămas fără unul intră în pauză. Dacă forge-ul refuză mai târziu un token stocat (revocat sau expirat), rândul lui spune asta, iar repo-urile pe care le acoperea se opresc până îl înlocuiești.
+
+| Forge         | Token de automatizare                                                                                                                                                                     | Unde îl creezi                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **GitLab**    | Un **token de acces de proiect** sau **de grup** cu `read_api` și `read_repository`; adaugă `api` și `write_repository` pentru comentarii, merge request-uri și push-uri                 | Proiectul sau grupul → Setări → Tokenuri de acces                              |
+| **Bitbucket** | Un **token de acces de depozit**, **de proiect** sau **de spațiu de lucru** cu citire de depozit, plus scriere pe pull request-uri pentru comentarii și pull request-uri (scriere pe depozit pentru push-uri) | Depozitul, proiectul sau spațiul de lucru → Setări → Tokenuri de acces         |
+
+Pe GitLab, munca apare ca utilizatorul-bot al tokenului; pe Bitbucket, apare sub numele tokenului de acces.
+
+### Bitbucket: token de acces sau token API
+
+Bitbucket are două tipuri de token, iar Control Center le ține separate:
+
+- Un **token API** (id.atlassian.com) aparține contului tău Atlassian și se folosește împreună cu adresa ta de e-mail. Este **acreditarea ta** și se află sub **Găzduire de cod** în **Setări → Tu → Profil**.
+- Un **token de acces** (creat în setările unui depozit, proiect sau spațiu de lucru) aparține acelui depozit, proiect sau spațiu de lucru, nu unei persoane. Este un **token de automatizare** și se află sub **Tokenuri de automatizare**.
+
+Fiecare dialog refuză celălalt tip și spune unde aparține.
 
 ## Ești o altă persoană pe fiecare forge
 
@@ -53,11 +83,26 @@ Aceeași persoană este `octocat` pe GitHub și cu totul altceva pe GitLab. Cont
 
 Dacă identitatea unui forge nu s-a rezolvat, repo-urile lui nu contribuie cu nimic la inbox, în loc să se potrivească cu tot. Inboxul spune asta în loc să afirme că ești la zi cu tot.
 
+## Vezi doar ce poate vedea propriul tău cont
+
+Un pull request al unui repo ajunge la tine doar dacă rolul tău în spațiul de lucru permite repo-ul **și contul tău de pe acel forge îl poate citi**. Administratorii și proprietarul spațiului de lucru urmează aceeași regulă. Când unele repo-uri sunt ascunse, inboxul și coada de PR-uri spun câte și de ce, fără să le numească:
+
+- **Autentifică-te în GitHub ca să vezi pull request-urile din alte 3 depozite**: nu ai conectat încă acel forge aici. Autentifică-te și vor apărea
+- **Depozite ascunse pentru că contul tău GitHub nu le vede: 3**: cere cuiva cu acces pe forge
+- **Depozite ascunse la care nu ai acces în acest spațiu de lucru: 3**: cere unui administrator al spațiului de lucru să îți dea acces
+- **Se verifică accesul tău la alte 3 depozite…**: afișat scurt, cât timp Control Center confirmă ce poate citi contul tău
+
+Codul urmează aceeași regulă. Ca să deschizi fișierele, diff-urile sau căutarea unui repo, ori un terminal pe el, ai nevoie de grantul lui în acest spațiu de lucru, iar contul tău propriu de pe forge trebuie să-l poată citi; administratorii spațiului de lucru la fel, doar proprietarul serverului este scutit. Când forge-ul nu poate fi contactat ca să verifice, vezi „Nu s-a putut confirma accesul tău la forge. Încearcă din nou.” (cu numele forge-ului). Vezi [Codul urmează forge-ul](/ro-RO/manual/concepte/autorizare/#codul-urmează-forge-ul).
+
+Aceeași regulă se aplică tuturor lucrurilor create din acele pull request-uri. Un spațiu de revizuire, mesajele lui și rulările agenților dispar atât timp cât nu poți vedea pull request-ul, iar un spațiu de revizuire deschis se închide dacă îți pierzi accesul. Rulările de pipeline despre un pull request ascuns dispar din lista ta de rulări. Agenții care lucrează pentru tine nu pot citi nici ei acele spații de revizuire. Lista de depozite a spațiului de lucru arată fiecare repo la care ai acces în acest spațiu de lucru, chiar și unul la care contul tău de pe forge nu poate ajunge încă.
+
+Dacă forge-ul limitează rata cererilor sau este picat, Control Center continuă să arate ce a confirmat ultima dată câteva minute, apoi ascunde acele pull request-uri până când poate verifica din nou.
+
 ## Un singur inbox, toate forge-urile
 
 Inboxul și coada de PR-uri se ramifică spre toate forge-urile reprezentate în spațiul de lucru și îmbină rezultatele într-un singur flux — un pull request GitHub și un pull request Bitbucket stau unul lângă altul, ordonate după timp, nu grupate după furnizor.
 
-Eșecurile sunt izolate. Un forge care este picat, limitat de rată sau neconectat nu contribuie cu nimic și nu le afectează pe celelalte; nu golește niciodată tot inboxul. Repo-urile lui continuă să afișeze ultima stare cunoscută până când își revine.
+Eșecurile sunt izolate. Un forge care este picat sau limitat de rată nu le afectează pe celelalte, iar repo-urile lui continuă să afișeze ultima stare cunoscută până când își revine; nu golește niciodată tot inboxul. Un repo la care serverul nu mai poate ajunge iese din listă în loc să afișeze pull request-uri vechi, iar **notificarea de acces la repo-uri** îl numește împreună cu remedierea: instalează GitHub App pe organizație, adaugă repo-ul în depozitele aplicației, reia o instalare suspendată, cere membrului responsabil să se autentifice din nou sau adaugă un token de automatizare pentru un repo GitLab sau Bitbucket. Administratorii primesc un buton pentru pașii GitHub App și pentru adăugarea tokenului.
 
 ## Ce poate face fiecare forge
 
@@ -93,15 +138,31 @@ GitLab numește un pull request **merge request**. Control Center spune „pull 
 
 ### Lista de PR-uri este goală și spune că un forge nu este conectat
 
-Nu ai nicio acreditare pentru acel forge. Autentifică-te în GitHub sau lipește un token GitLab ori Bitbucket în **Setări → Spațiu de lucru → Profil și identitate → Găzduire de cod**. Repo-urile celorlalte forge-uri nu sunt afectate.
+Nu ai nicio acreditare pentru acel forge. Autentifică-te în GitHub sau lipește un token GitLab ori Bitbucket în **Setări → Tu → Profil → Găzduire de cod**. Repo-urile celorlalte forge-uri nu sunt afectate.
 
 ### Am conectat un forge, dar repo-urile lui tot nu afișează nimic
 
-Verifică subtitlul rândului. Dacă un rând GitLab sau Bitbucket scrie „from the environment”, răspunde o altă acreditare decât cea la care te așteptai — tokenul tău are prioritate pentru orice ceri tu, așa că, dacă scrie altfel, al tău nu a fost salvat. Pe GitHub, verifică dacă GitHub App este instalată pe contul care deține repo-urile.
+Verifică starea rândului, apoi notificările de deasupra listei de PR-uri. „Autentifică-te în … ca să vezi pull request-urile din alte … depozite” înseamnă că propriul tău cont nu este conectat pentru acele repo-uri; „… ascunse pentru că contul tău … nu le vede” înseamnă că forge-ul nu îți acordă acces. Pe GitHub, notificarea de acces la repo-uri îți spune când GitHub App nu este instalată pe organizația repo-ului sau nu îl include.
+
+### Munca de fundal pe un repo GitLab sau Bitbucket este în pauză
+
+Repo-ul nu are un token de automatizare care să îl poată citi. Un administrator al spațiului de lucru adaugă unul pentru repo sau pentru întregul spațiu de lucru; vezi [Adaugă un token de automatizare](#adaugă-un-token-de-automatizare). Propriul tău token personal nu îl scoate din pauză: munca de fundal nu folosește niciodată tokenul unui membru.
 
 ### Un repo nu se înregistrează
 
-Înregistrarea are nevoie de toate trei: calea să fie într-un arbore de lucru git, repo-ul să aibă un remote `origin`, iar acel remote să indice spre github.com, gitlab.com sau bitbucket.org. Vezi [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+Înregistrarea are nevoie de toate trei: calea să fie într-un arbore de lucru git, repo-ul să aibă un remote `origin`, iar acel remote să indice spre github.com, gitlab.com sau bitbucket.org. `origin` trebuie să fie și repo-ul pe care îl legi, iar un folder din afara spațiului de stocare al spațiului de lucru poate fi legat doar de proprietarul serverului. Vezi [Adaugă repo-uri într-un spațiu de lucru](/ro-RO/manual/ghiduri-practice/adauga-repo-uri/).
+
+### Am un grant, dar repo-ul spune că nu îl poate citi contul meu
+
+Propriul tău cont de pe forge nu poate citi acel repo, deci codul lui rămâne închis pentru tine, indiferent ce acordă spațiul de lucru. Autentifică-te în forge din cardul **Găzduire de cod** de mai sus sau obține acces la repo pe forge.
+
+### „Nu s-a putut confirma accesul tău la forge”
+
+Forge-ul nu a putut fi contactat ca să verifice accesul tău, așa că Control Center a refuzat în loc să ghicească. Încearcă din nou peste puțin.
+
+### Un repo spune că acum indică spre alt repo
+
+Repo-ul din spatele acelei căi s-a schimbat: a fost șters și creat din nou, sau mutat și înlocuit. Control Center nu îi trimite nimic până când un administrator al spațiului de lucru apasă **Reconectează** pe notificare sau pe rândul repo-ului. O simplă redenumire sau un transfer sunt urmărite singure și nu afișează niciodată asta.
 
 ### Totul se oprește o vreme după o utilizare intensă
 

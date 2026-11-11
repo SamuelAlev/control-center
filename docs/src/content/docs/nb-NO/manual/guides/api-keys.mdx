@@ -2,7 +2,7 @@
 title: Administrer API-nøkler
 description: Hvor hver påloggingsinformasjon ligger — brukerkontoen din på serveren, serveren selv eller en ekstern CLI — og hvordan du setter, roterer og fjerner den.
 slug: nb-NO/handbok/slik-gjor-du/api-nokler
-sourceHash: bab9269b865e51b287e56406accf2e3534c843b5
+sourceHash: fee16e796066693a62082bf0cc15eb89eaf488f6
 ---
 
 Denne veiledningen viser hvor hver påloggingsinformasjon Control Center bruker,
@@ -32,8 +32,7 @@ står et menneske bak den.
   Control Center Connect, og begrenset til det et ansvarlig medlem kan gjøre
   der. Det er aldri påloggingen din overlevert i sin helhet
 
-Din settes i kortet **Kodehosting** under **Innstillinger → Arbeidsområde →
-Profil og identitet**; serverens app i **Leverandørapper** under **Innstillinger →
+Din settes i kortet **Kodehosting** under **Innstillinger → Deg → Profil**; serverens app i **Leverandørapper** under **Innstillinger →
 Server → Enkel pålogging**. Se
 [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)
 og [Opprett GitHub App](/nb-NO/handbok/slik-gjor-du/github-app/).
@@ -42,10 +41,9 @@ GitLab og Bitbucket tar fortsatt imot et innlimt personlig token, lagret på sam
 måte. Se [Koble til en kodevert](/nb-NO/handbok/slik-gjor-du/koble-til-kodevert/).
 
 :::note[Det finnes også en skjerm som bare nås via URL-en]
-`/workspaces/<workspaceId>/api-keys` viser de samme to kortene som første steg i
+`/workspaces/<workspaceId>/api-keys` viser de samme kortene som første steg i
 onboarding. Den har **ingen navigasjonsoppføring noe sted i grensesnittet**; den
-nås bare ved å skrive inn URL-en. Bruk Innstillinger → Arbeidsområde → Profil og
-identitet i stedet.
+nås bare ved å skrive inn URL-en. Bruk Innstillinger → Deg → Profil for dine egne pålogginger, og Innstillinger → Arbeidsområde → Integrasjoner for saksleverandøren.
 :::
 
 ## Sett nøkler for modellleverandører
@@ -64,10 +62,7 @@ hele listen og for å legge til et egendefinert endepunkt.
 Denne påloggingsinformasjonen er **vertsglobal**: én nøkkel betjener alle
 arbeidsområder i installasjonen. OAuth-tokens fornyes før de utløper.
 
-Eksterne adapter-CLI-er beholder sin egen påloggingsinformasjon, i sin egen
-konfigurasjon, på serververten — Control Center administrerer dem ikke.
-Autentiser Claude Code slik dens egen dokumentasjon beskriver, på maskinen der
-`cc_server` kjører.
+Claude Code logger inn gjennom **Claude Code-kontoer** under **Innstillinger → Server → Modellleverandører**: hver konto får sin egen konfigurasjonsmappe på serveren, og du kjører kommandoen `claude auth login` som appen viser deg der.
 
 Dialogen **Miljøvariabler** per adapter ser ut som et sted å legge inn en nøkkel
 for en av dem, men det er den ikke: den skriver til enheten din, mens serveren
@@ -76,15 +71,14 @@ leser sin egen kopi, og ingenting bygger bro mellom de to. Se
 
 ## Koble til en saksleverandør
 
-Kortet **Saker** under **Innstillinger → Arbeidsområde → Generelt** rommer begge
-halvdelene av én beslutning: hvilken leverandør sakene dine ligger hos, og hvem
-Control Center er når det snakker med den. Velger du **Lokal**, skjules
+Kortet **Saker** under **Innstillinger → Arbeidsområde → Integrasjoner** rommer arbeidsområdets side: hvilken leverandør sakene dine ligger hos, og hvem
+Control Center er når det jobber der på egen hånd. Velger du **Lokal**, skjules
 Linear-radene — lokale saker ligger i serverens egen database og har ingenting å
 autentisere seg mot.
 
 Linear har to pålogginger og ingen innlimt nøkkel: **Linear** er din, for det du
-gjør, og **Linear-automatisering** er arbeidsområdets Control Center-app, koblet
-til av en administrator, for sakssynkronisering, pipelines og agenter. Serveren
+gjør, og ligger under **Innstillinger → Deg → Profil**; **Linear-automatisering** er arbeidsområdets Control Center-app, koblet
+til av en administrator på kortet **Saker**, for sakssynkronisering, pipelines og agenter. Serveren
 kan også ha en **Tjeneste-API-nøkkel** (**Leverandørapper**) for arbeidsområder
 uten tilkoblet automatisering. Ingen påloggingsinformasjon for saker injiseres i
 en agents sandkasse; agenter skriver saker gjennom Control Centers verktøy, som
@@ -101,10 +95,11 @@ spør regelen **Skriv til et eksternt oppfølgingssystem**. Se
 - **Serverens app**: generer en ny privat nøkkel eller klienthemmelighet på
   appens side hos leverandøren, lim den inn under **Leverandørapper** og trykk
   **Test**
-- **Installasjonsnøkkelen til Connect**: **Bytt nøkkel** på kortet **Control
-  Center Connect**, eller `cc_server connect rotate-key --yes`. Alle som logget
-  inn via Connect, logger inn på nytt. Se
-  [Control Center Connect](/nb-NO/handbok/referanse/connect/)
+- **Installasjonsnøkkelen til Connect**: serverens eier trykker **Bytt nøkkel** på
+  kortet **Control Center Connect**. Alle som logget inn via Connect, logger inn
+  på nytt. Hvis en Connect-server ikke kan nås, endres ingenting, og du får tilbud
+  om **Roter likevel**. Se
+  [Roter installasjonsnøkkelen](/nb-NO/handbok/referanse/connect/#bytt-installasjonsnøkkelen)
 - **En modellleverandør**: i raden dens, logg ut (OAuth) eller fjern nøkkelen, og
   koble til på nytt
 - **Slack**: for din egen app limer du inn tokenene på nytt i
@@ -117,8 +112,7 @@ spør regelen **Skriv til et eksternt oppfølgingssystem**. Se
 
 ### Et GitLab- eller Bitbucket-token virker i `curl`, men ikke her
 
-Sjekk undertittelen til raden **Kodehosting**. Hvis det står «fra miljøet», er
-det serverens påloggingsinformasjon som svarer, ikke din — din ble ikke lagret.
+Sjekk raden **Kodehosting**. Hvis den sier «Ikke tilkoblet» eller ber deg koble til på nytt, ble tokenet ditt ikke lagret, eller det ble avvist. For Bitbucket må du skrive inn e-postadressen til Atlassian-kontoen din sammen med API-tokenet.
 
 ### Et GitLab- eller Bitbucket-token godtas, men senere forespørsler mislykkes
 

@@ -2,7 +2,7 @@
 title: Arbeitsbereiche und Isolation
 description: Warum ein Arbeitsbereich eine harte Mandantengrenze ist, wie die Aufteilung der Datenbanken diese Grenze strukturell macht und was sie absichtlich überschreitet.
 slug: de-DE/handbuch/konzepte/arbeitsbereiche
-sourceHash: 5aa42b92112fe67e28a53f00e17b4d24eb56599b
+sourceHash: 211cf836840f9db7a16ec2a48c2115caa2535471
 ---
 
 ## Was ist ein Arbeitsbereich?
@@ -79,9 +79,11 @@ Eine Arbeitsbereichsdatei trägt nur ein einzeiliges `workspace_meta` zur Selbst
 
 ## Einen Arbeitsbereich anlegen
 
+Nur der [Serverinhaber](/de-DE/handbuch/konzepte/autorisierung/#der-serverinhaber) kann einen Arbeitsbereich anlegen; der Server vergibt dessen ID. Ein Administrator des Arbeitsbereichs oder ein Eigentümer kann keinen weiteren anlegen. Wer noch in keinem Arbeitsbereich ist, sieht **Du bist noch in keinem Workspace**. Dort steht, dass er den Serverinhaber bitten soll, einen anzulegen, oder ein Administrator des Arbeitsbereichs ihn einlädt; das Formular **Arbeitsbereich hinzufügen** sagt allen anderen dasselbe.
+
 Einen Arbeitsbereich anzulegen fügt mehr ein als eine Registry-Zeile. In einem Vorgang trägt der Server den anlegenden Benutzer als `ownerUserId` ein, schreibt die Mitgliedschaft dieses Benutzers in der Eigentümerrolle und veröffentlicht ein Domain-Ereignis `WorkspaceCreated`. Zuhörer dieses Ereignisses legen dann idempotent und im Hintergrund an:
 
-- einen **CEO-Agenten** plus vier Spezialisten — `qa`, `architect`, `engineer`, `librarian` —, wobei die Spezialisten an den CEO berichten;
+- einen **CEO-Agenten** plus fünf Spezialisten — `qa`, `architect`, `engineer`, `librarian`, `content-synthesizer` —, wobei die Spezialisten an den CEO berichten;
 - die **eingebauten Pipeline-Vorlagen** und ihre Trigger (Ereignis- und manuelle Trigger werden aktiv ausgeliefert; geplante sind Opt-in, außer dem täglichen Worktree-GC-Sweep);
 - die **Eval-Suiten für den Einstieg**.
 
@@ -90,7 +92,7 @@ Das geschieht für _jeden_ Arbeitsbereich, nicht nur für den ersten. Die angele
 Das Schreiben der Eigentümer-Mitgliedschaft wiegt mehr, als es aussieht: ohne es hätte der frisch angelegte Arbeitsbereich keine Mitglieder, und jeder folgende arbeitsbereichsbezogene Aufruf des Anlegenden würde abgelehnt.
 
 :::note[Agenten können keinen Arbeitsbereich anlegen]
-Es gibt kein MCP-Tool `create_workspace`. Menschen legen einen Arbeitsbereich über `workspace.create` an (Engpass nur für den Namen) oder über `workspace.upsert` (vollständiger Datensatz, auch für Aktualisierungen). Beide tragen den anlegenden Benutzer als `owner` ein und veröffentlichen `WorkspaceCreated`.
+Es gibt kein MCP-Tool `create_workspace`. Der Serverinhaber legt einen Arbeitsbereich über `workspace.create` an; dabei wird er als `owner` eingetragen und `WorkspaceCreated` veröffentlicht. `workspace.upsert` aktualisiert nur einen bestehenden Arbeitsbereich; es legt nie einen an und ändert nie den Eigentümer eines Arbeitsbereichs, das tut nur **Besitz übertragen**.
 :::
 
 ## Löschen, Exportieren, Importieren

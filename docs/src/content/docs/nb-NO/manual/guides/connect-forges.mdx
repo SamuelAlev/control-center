@@ -2,7 +2,7 @@
 title: Koble til en kodevert
 description: Koble til GitHub, GitLab eller Bitbucket slik at PR-flaten, repo-registrering og agentkjøringer fungerer — ett arbeidsområde kan bruke alle tre.
 slug: nb-NO/handbok/slik-gjor-du/koble-til-kodevert
-sourceHash: 16912ac8fa8f1a631c9a244127fb95dfbd883307
+sourceHash: 6860edfcac8086c2cb6e3ab3052b3304f4ff3f29
 ---
 
 Control Center støtter tre kodeverter, kalt **forger** i hele appen: **GitHub**, **GitLab** og **Bitbucket Cloud**. Ingen av dem er standardvalget. Koble til én, og alt fungerer; koble til flere, og ett enkelt arbeidsområde kan romme repoer fra alle samtidig.
@@ -11,22 +11,26 @@ Forgen er en egenskap ved hvert **repo**, lest fra `origin`-remoteen når du reg
 
 ## Koble til en forge
 
-1. Åpne **Innstillinger → Arbeidsområde → Profil og identitet** (`/settings/workspace/profile`).
+1. Åpne **Innstillinger → Deg → Profil** (`/settings/you/profile`).
 2. Finn kortet **Kodehosting**. Alle forger som støttes, er listet opp, tilkoblet eller ikke.
 3. På **GitHub** trykker du **Logg inn på GitHub**. På **GitLab** eller **Bitbucket** trykker du **Legg til token** og limer inn ett.
 
-**GitHub har bare pålogging.** Påloggingen går via serverens egen GitHub App eller via Control Center Connect, avhengig av hva servereieren har satt opp (se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)); det finnes ikke noe GitHub-token å lime inn. GitLab og Bitbucket tar fortsatt imot et personlig token.
+**GitHub har bare pålogging.** Påloggingen går via serverens egen GitHub App eller via Control Center Connect, avhengig av hva servereieren har satt opp, eller gjennom appene en arbeidsområdeadministrator valgte for dette arbeidsområdet i **Innstillinger → Arbeidsområde → Integrasjoner** (se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/)); det finnes ikke noe GitHub-token å lime inn. GitLab og Bitbucket tar fortsatt imot et personlig token.
 
 Uansett er påloggingsinformasjonen **din og ligger på serveren**, knyttet til bruker-ID-en din: ingen token lagres på maskinen der du skrev den inn, hver enhet du logger inn fra, bruker den samme, og ingen andre medlemmer kan lese den. Den trer i kraft ved **neste forespørsel** — det er ingenting å starte på nytt, og å koble fra stopper sendingen umiddelbart.
 
-Hver rad forteller hvor påloggingsinformasjonen kom fra, fordi det er forskjellen mellom «tokenet mitt fungerer ikke» og «et annet token svarer»:
+Kortet forteller hvor kontoene dine brukes. Et GitLab- eller Bitbucket-token er ditt i **alle arbeidsområder på serveren**, så du limer det inn én gang. Din GitHub-pålogging er det også, med mindre et arbeidsområde har egne påloggingsapper: det arbeidsområdet beholder en egen GitHub-pålogging, og kortet nevner den.
 
-| Undertekst                                                        | Betydning                                                              |
-| ----------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `Logget inn som octocat`                                          | Din egen påloggingsinformasjon brukes                                  |
-| `Logget inn som octocat · fra miljøet`                            | Bare GitLab eller Bitbucket: en miljøvariabel på serveren svarer, ikke tokenet ditt |
-| `Ikke tilkoblet`                                                  | Du har ingen påloggingsinformasjon for denne forgen                    |
-| `Pålogging på GitHub er ikke satt opp på denne serveren ennå.`    | Serveren har verken sin egen GitHub App eller Connect; servereieren setter opp en av dem |
+Hver rad viser tilstanden til **din** påloggingsinformasjon. Bare din egen påloggingsinformasjon svarer for deg; ingen andre trer inn:
+
+| Raden sier                                                    | Betydning                                                                                                                                                                                           |
+| ------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Logget inn som octocat`                                      | Din egen påloggingsinformasjon brukes                                                                     |
+| `Ikke tilkoblet`                                              | Du har ingen påloggingsinformasjon for denne forgen                                                                                                                                                 |
+| `Påloggingen din på GitHub som octocat er utløpt. Logg inn på nytt.` | Påloggingen din er utløpt eller tilbakekalt hos forgen                                                                                                                                       |
+| `Satt på pause: arbeidsområdets påloggingstjeneste er endret` | Arbeidsområdet har byttet til en annen påloggingstjeneste. Påloggingen din beholdes, og fungerer igjen hvis det byttes tilbake, så det finnes ingen påloggingsknapp                              |
+| `Får ikke kontakt med GitHub akkurat nå. Prøver igjen.`       | En midlertidig driftsforstyrrelse. Control Center fortsetter å prøve på nytt; du trenger ikke gjøre noe                                                                                              |
+| En setning som forklarer hvorfor pålogging ikke er tilgjengelig | For eksempel `Pålogging med GitHub er ikke satt opp for dette arbeidsområdet.` eller `Påloggingstjenesten for dette arbeidsområdet har endret identitet. En administrator må bekrefte den.` Administratorer får en knapp til innstillingen som retter det |
 
 ### Hvilket token hver forge vil ha
 
@@ -35,17 +39,43 @@ Hver rad forteller hvor påloggingsinformasjonen kom fra, fordi det er forskjell
 | **GitLab**    | Et personlig tilgangstoken med `api`                        | gitlab.com → User settings → Access tokens                 |
 | **Bitbucket** | Et Atlassian-API-token, pluss e-postadressen til kontoen din | id.atlassian.com → Security → API tokens                   |
 
-Bitbucket autentiserer med **e-postadressen til kontoen din som brukernavn** og tokenet som passord. Sett `BITBUCKET_EMAIL` i servermiljøet, slik at den vet hvilken e-postadresse som skal kobles til tokenet.
+Bitbucket autentiserer med **e-postadressen til kontoen din som brukernavn** og API-tokenet som passord, så Bitbucket-dialogen spør etter begge. Et Bitbucket-**tilgangstoken** for arbeidsområde, prosjekt eller repo tilhører ingen person, så denne dialogen avviser det: det er et [automasjonstoken](#legg-til-et-automasjonstoken) i stedet. Det samme gjelder et GitLab-prosjekt- eller gruppetilgangstoken: GitLab spør hvem tokenet tilhører før det lagres, og et botens token avvises her.
+
+Et token er aldri knyttet til ett arbeidsområde: du har ett per forge, og alle arbeidsområder på serveren bruker det. **Koble fra** fjerner det for dem alle.
 
 ### Bakgrunnsarbeid
 
 Arbeid uten et menneske bak (agentkjøringer, pipelines, PR-polling) trenger også påloggingsinformasjon, og hver forge løser det på sin måte:
 
 - **GitHub** — et token for ett repo om gangen, utstedt fra serverens GitHub App eller via Connect og begrenset til det et ansvarlig medlem kan gjøre der. Det er aldri en persons pålogging overlevert i sin helhet, og ingen miljøvariabel eller innlimt token trer inn i stedet. Se [Sett opp GitHub-integrasjon](/nb-NO/handbok/slik-gjor-du/github-integrasjon/#hvem-påloggingsinformasjonen-din-taler-for)
-- **GitLab** — servereierens innlimte token, deretter `GITLAB_TOKEN`, deretter `CI_JOB_TOKEN`
-- **Bitbucket** — servereierens innlimte token, deretter `BITBUCKET_API_TOKEN`, deretter `BITBUCKET_TOKEN` (med `BITBUCKET_EMAIL`)
+- **GitLab** og **Bitbucket** — bare repoets **automasjonstoken**: et botens tilgangstoken som en arbeidsområdeadministrator legger til for det repoet, eller for hvert repo på den forgen i arbeidsområdet. Repoets eget token vinner over arbeidsområdets. PR-polling, AI-gjennomgangskommentarer, og push og merge requests ingen ba om, bruker alle det, så på forgen vises de som den boten, aldri som et medlem. Ingen medlems personlige token trer inn i stedet, og det finnes ingen token på servernivå eller i miljøvariabler. Uten et slikt token settes bakgrunnsarbeid på repoet på pause, og varselet om repotilgang sier det.
 
-Miljøvariablene for GitLab og Bitbucket er **serverens** påloggingsinformasjon, ikke din: en forespørsel som gjøres på dine vegne, bruker tokenet ditt og ingenting annet, så miljøet trer aldri stille inn i stedet for deg.
+Arbeid et medlem ber om (en kommentar, en gjennomgang, en agents merge request åpnet for dem) bruker fortsatt medlemmets eget token.
+
+## Legg til et automasjonstoken
+
+Bare arbeidsområdeadministratorer ser eller endrer automasjonstokener. Hvert av dem sjekkes mot forgen når du lagrer det: et personlig token avvises (et personlig GitLab-tilgangstoken, et Atlassian-API-token eller et Bitbucket-token som logger inn som noens konto), og det samme gjelder et som ikke kan lese repoet det er ment for.
+
+- **For ett repo:** åpne **Innstillinger → Arbeidsområde → Arkiv**. Kortet **Automasjonstokener** lister opp hvert GitLab- og Bitbucket-repo med boten som handler der, **Bruker arbeidsområdets token**, eller **Ingen token. Automasjon er satt på pause her.** Trykk **Legg til token** på repoets rad.
+- **For hvert repo på en forge:** åpne **Innstillinger → Arbeidsområde → Integrasjoner**, finn kortet **Automasjonstokener** og trykk **Legg til token** på GitLab- eller Bitbucket-raden. Repoer tokenet ikke kan lese, blir navngitt etter at du lagrer, og forblir satt på pause.
+
+Når bakgrunnsarbeid allerede er satt på pause, får administratorer også **Legg til token** rett på varselet om repotilgang. **Oppdater token** erstatter et token; søppelbøtteknappen fjerner det, og et repo som står igjen uten token settes på pause. Hvis forgen senere avviser et lagret token (tilbakekalt eller utløpt), sier raden det, og repoene det dekket settes på pause til du erstatter det.
+
+| Forge         | Automasjonstoken                                                                                         | Hvor du oppretter det                                          |
+| ------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| **GitLab**    | Et **prosjekt- eller gruppetilgangstoken** med `read_api` og `read_repository`; legg til `api` og `write_repository` for kommentarer, merge requests og push | Prosjektet eller gruppen → Settings → Access tokens            |
+| **Bitbucket** | Et **repo-, prosjekt- eller arbeidsområdetilgangstoken** med lesetilgang til repoet, pluss skrivetilgang til pull requests for kommentarer og pull requests (skrivetilgang til repoet for push) | Repoet, prosjektet eller arbeidsområdet → Settings → Access tokens |
+
+GitLab viser arbeidet som tokenets botbruker; Bitbucket viser det under navnet på tilgangstokenet.
+
+### Bitbucket: tilgangstoken eller API-token
+
+Bitbucket har to typer token, og Control Center holder dem fra hverandre:
+
+- Et **API-token** (id.atlassian.com) tilhører Atlassian-kontoen din og brukes sammen med e-postadressen din. Det er **ditt** token og hører hjemme under **Kodehosting** i **Innstillinger → Deg → Profil**.
+- Et **tilgangstoken** (opprettet i innstillingene til et repo, prosjekt eller arbeidsområde) tilhører det repoet, prosjektet eller arbeidsområdet, ikke en person. Det er et **automasjonstoken** og hører hjemme under **Automasjonstokener**.
+
+Hver dialog avviser den andre typen og sier hvor den hører hjemme.
 
 ## Du er en annen person hos hver forge
 
@@ -53,11 +83,26 @@ Det samme mennesket er `octocat` på GitHub og noe helt annet på GitLab. Contro
 
 Hvis identiteten din hos en forge ikke er fastslått, bidrar repoene derfra med ingenting i innboksen i stedet for å matche alt. Innboksen sier fra om det i stedet for å påstå at du har full oversikt.
 
+## Du ser bare det din egen konto kan se
+
+Pull requests for et repo når bare deg når arbeidsområdets rolle tillater repoet **og din egen konto hos forgen kan lese det**. Arbeidsområdets administratorer og eieren følger samme regel. Når noen repoer er skjult, sier innboksen og PR-køen hvor mange og hvorfor, uten å nevne dem:
+
+- **Logg inn på GitHub for å se pull requests fra 3 arkiver til**: du har ikke koblet til den forgen her ennå. Logg inn, så dukker de opp
+- **3 arkiver er skjult fordi GitHub-kontoen din ikke kan se dem**: spør noen som har tilgang hos forgen
+- **3 arkiver er skjult fordi du ikke har tilgang til dem i dette arbeidsområdet**: be en arbeidsområdeadministrator om tilgang
+- **Sjekker tilgangen din til 3 arkiver til…**: vises kort mens Control Center bekrefter hva kontoen din kan lese
+
+Kode følger samme regel. For å åpne et repos filer, differ eller søk, eller en terminal på det, trenger du tilgangen til repoet i dette arbeidsområdet, og din egen kodevertskonto må kunne lese det; arbeidsområdets administratorer også, bare serverens eier er unntatt. Når kodeverten ikke kan nås for å sjekke, ser du «Kunne ikke bekrefte tilgangen din til kodehosteren. Prøv igjen.» (med navnet på kodeverten). Se [Kode følger kodeverten](/nb-NO/handbok/konsepter/autorisasjon/#kode-følger-plattformen).
+
+Samme regel gjelder alt som lages fra disse pull requestene. Et gjennomgangsområde, dets meldinger og agentkjøringer forsvinner så lenge du ikke kan se pull requesten, og et åpent gjennomgangsområde lukkes hvis du mister tilgangen. Pipelinekjøringer om en skjult pull request faller ut av kjørelisten din. Agenter som jobber for deg kan heller ikke lese disse gjennomgangsområdene. Arbeidsområdets repoliste viser hvert repo du har tilgang til i dette arbeidsområdet, selv et som forgekontoen din ikke når ennå.
+
+Hvis forgen begrenser hastigheten eller er nede, viser Control Center fortsatt det den sist bekreftet i noen minutter, og skjuler så disse pull requestene til den kan sjekke igjen.
+
 ## Én innboks, alle forger
 
 Innboksen og PR-køen grener ut over alle forger som er representert i arbeidsområdet, og fletter resultatene sammen til én strøm — en GitHub-pull request og en Bitbucket-pull request ligger ved siden av hverandre, ordnet etter tid i stedet for gruppert etter leverandør.
 
-Feil er isolert. En forge som er nede, har nådd en hastighetsgrense eller ikke er tilkoblet, bidrar med ingenting og lar de andre være i fred; den tømmer aldri hele innboksen. Repoene dens fortsetter å vise sist kjente tilstand til den er tilbake.
+Feil er isolert. En forge som er nede eller har nådd en hastighetsgrense, påvirker ikke de andre, og repoene dens beholder sist kjente tilstand til den er tilbake; den tømmer aldri hele innboksen. Et repo serveren ikke lenger kan nå, faller ut i stedet for å vise utdaterte pull requests, og **varselet om repotilgang** nevner det med løsningen: installer GitHub App-en på organisasjonen, legg repoet til App-ens repoer, gjenoppta en suspendert installasjon, be det ansvarlige medlemmet om å logge inn igjen, eller legg til et automasjonstoken for et GitLab- eller Bitbucket-repo. Administratorer får en knapp for GitHub App-trinnene og for å legge til tokenet.
 
 ## Hva hver forge kan gjøre
 
@@ -93,15 +138,31 @@ GitLab kaller en pull request for en **merge request**. Control Center sier «pu
 
 ### PR-listen er tom og sier at en forge ikke er tilkoblet
 
-Du har ingen påloggingsinformasjon for den forgen. Logg inn på GitHub, eller lim inn et GitLab- eller Bitbucket-token, i **Innstillinger → Arbeidsområde → Profil og identitet → Kodehosting**. Repoer fra andre forger påvirkes ikke.
+Du har ingen påloggingsinformasjon for den forgen. Logg inn på GitHub, eller lim inn et GitLab- eller Bitbucket-token, i **Innstillinger → Deg → Profil → Kodehosting**. Repoer fra andre forger påvirkes ikke.
 
 ### Jeg koblet til en forge, men repoene viser fortsatt ingenting
 
-Sjekk underteksten på raden. Hvis en GitLab- eller Bitbucket-rad sier «fra miljøet», er det en annen påloggingsinformasjon som svarer enn den du forventet — ditt eget token vinner for alt du ber om, så hvis den sier noe annet, ble ikke ditt lagret. På GitHub sjekker du at GitHub App-en er installert på kontoen som eier repoene.
+Sjekk tilstanden til raden, og deretter varslene over PR-listen. «Logg inn på … for å se pull requests fra … arkiver til» betyr at kontoen din ikke er tilkoblet for disse repoene; «… skjult fordi … kontoen din ikke kan se dem» betyr at forgen ikke gir deg tilgang. På GitHub forteller varselet om repotilgang deg når GitHub App-en ikke er installert på repoets organisasjon, eller ikke inkluderer repoet.
+
+### Bakgrunnsarbeid på et GitLab- eller Bitbucket-repo er satt på pause
+
+Repoet har ikke et automasjonstoken som kan lese det. En arbeidsområdeadministrator legger til et for repoet eller for hele arbeidsområdet; se [Legg til et automasjonstoken](#legg-til-et-automasjonstoken). Ditt eget personlige token opphever ikke pausen: bakgrunnsarbeid bruker aldri et medlems token.
 
 ### Et repo vil ikke registreres
 
-Registrering krever alle tre: stien ligger inne i et git-worktree, den har en `origin`-remote, og den remote-en peker på github.com, gitlab.com eller bitbucket.org. Se [Legg til repoer i et arbeidsområde](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/).
+Registrering krever alle tre: stien ligger inne i et git-worktree, den har en `origin`-remote, og den remote-en peker på github.com, gitlab.com eller bitbucket.org. `origin` må også være repoet du kobler til, og en mappe utenfor arbeidsområdets egen lagring kan bare kobles til av serverens eier. Se [Legg til repoer i et arbeidsområde](/nb-NO/handbok/slik-gjor-du/legg-til-repoer/).
+
+### Jeg har en tilgang, men arkivet sier at kontoen min ikke kan lese det
+
+Din egen kodevertskonto kan ikke lese det repoet, så koden forblir stengt for deg uansett hva arbeidsområdet gir. Logg inn hos kodeverten under **Kodehosting** ovenfor, eller få tilgang til repoet hos kodeverten.
+
+### «Kunne ikke bekrefte tilgangen din til kodehosteren»
+
+Kodeverten kunne ikke nås for å sjekke tilgangen din, så Control Center avviste i stedet for å gjette. Prøv igjen om en liten stund.
+
+### Et arkiv peker nå på et annet arkiv
+
+Repoet bak den stien er endret: det ble slettet og opprettet på nytt, eller flyttet og erstattet. Control Center sender det ingenting før en arbeidsområdeadministrator klikker **Koble til på nytt** på varselet eller repoets rad. En vanlig omdøping eller overføring følges av seg selv og viser aldri dette.
 
 ### Alt slutter å fungere en stund etter tung bruk
 

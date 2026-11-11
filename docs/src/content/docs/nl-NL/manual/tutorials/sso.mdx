@@ -2,7 +2,7 @@
 title: Je team aanmelden met SSO
 description: Verbind Okta (SAML) met je Control Center-server en doorloop een aanmelding van begin tot eind.
 slug: nl-NL/handleiding/zelfstudies/sso
-sourceHash: 48c99cb5cd6460d5dcf3ec1c33e3d25ead95f178
+sourceHash: c2f12a9e11571d40cdfad8797038e018a994f922
 ---
 
 import SsoCheck from "../../../../../components/manual/SsoCheck.astro";
@@ -86,6 +86,8 @@ Twee beleidsregels bepalen wat een eerste aanmelding doet:
   nodig, wat de veiligere standaard is.
 - **Onbekende gebruikers voorzien bij eerste login** — staat standaard aan; zet
   het uit om iedereen te weigeren wiens account nog niet bestaat.
+
+Als er al accounts op deze server bestaan, bevestig dan hun e-mailadressen voordat iemand met SSO inlogt: open **Instellingen → Server → Personen** en gebruik **E-mail bevestigen** bij elke rij met **E-mail niet bevestigd**. Een login koppelt een bestaand account op e-mail alleen wanneer dat adres bevestigd is (of door SSO of SCIM is ingesteld). Een adres dat iemand zelf in zijn profiel of bij een uitnodiging heeft ingevoerd, komt met niets overeen, dus zonder deze stap krijgt die persoon een tweede account, of wordt hij geweigerd wanneer het voorzien van onbekende gebruikers uitstaat. Zie [Hoe inlogs bestaande accounts koppelen](/nl-NL/handleiding/gidsen/sso-oidc/#hoe-inlogs-bestaande-accounts-koppelen).
 
 Optioneel koppel je een attribuut met groepsnamen (bij Okta is dat gewoonlijk
 `groups`) en vertaal je groepen naar rollen met de map — bijvoorbeeld

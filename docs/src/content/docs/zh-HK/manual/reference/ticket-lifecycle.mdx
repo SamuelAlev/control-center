@@ -2,7 +2,7 @@
 title: 工單生命週期
 description: 工單欄位、狀態、轉換、關聯，以及變更關卡。
 slug: zh-HK/手冊/參考/工單生命週期
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## 工單狀態
@@ -117,7 +117,7 @@ GitHub issue 會以 `originKind: externalSync` 和預設的
 | `projectId`              | `String?`                  | 所屬項目；永遠不會推送到遠端                                                               |
 | `assignedAgentId`        | `String?`                  | 被指派主體的 id（僅中繼資料——指派不會派發任何東西）                                        |
 | `assigneeType`           | `PrincipalType`            | `assignedAgentId` 所指的主體種類——`user` 或 `agent`（預設 `agent`）                        |
-| `createdByType`          | `PrincipalType?`           | 建立該工單的主體種類（`user` 或 `agent`）；對舊有／系統資料列為 null                       |
+| `createdByType`          | `PrincipalType?`           | 建立該工單的主體種類（`user` 或 `agent`）；對系統建立的資料列為 null                       |
 | `createdById`            | `String?`                  | 建立該工單的主體 id                                                                        |
 | `assignedTeamId`         | `String?`                  | 被指派的團隊（僅中繼資料）                                                                 |
 | `delegatedByAgentId`     | `String?`                  | 委派這張工單的代理                                                                         |

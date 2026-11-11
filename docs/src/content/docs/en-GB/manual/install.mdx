@@ -2,7 +2,7 @@
 title: Install
 description: Use Control Center in the browser or install the desktop app, set up an agent backend and choose where its server runs.
 slug: en-GB/manual/install
-sourceHash: 800c67cc40ba9b500412c57b202a3da559d94aa0
+sourceHash: b998841fffd63cf7468f99d06a81fa7ee9d87669
 ---
 
 Control Center runs two ways: as a **web app** at
@@ -119,7 +119,7 @@ Model lists are served live by each connected provider; [models.dev](https://mod
 
 A GitHub credential is **yours and lives on the server**, keyed by your user id — not in the client OS keychain. Every device you sign in from uses the same one, and no other member can read it.
 
-GitHub is sign-in only: **Settings → Workspace → Profile & identity → Code hosting** offers **Sign in to GitHub**, and there is no token to paste. The sign-in runs through the server's own GitHub App ([Create the GitHub App](/en-GB/manual/guides/github-app/)) or through Control Center Connect, whichever the server owner chose. With the server's own app, the browser comes back to the server by itself; through Connect, you type the 8-character code the browser shows, or let it open Control Center. See [Set up GitHub integration](/en-GB/manual/guides/github-integration/).
+GitHub is sign-in only: **Settings → You → Profile → Code hosting** offers **Sign in to GitHub**, and there is no token to paste. The sign-in runs through the server's own GitHub App ([Create the GitHub App](/en-GB/manual/guides/github-app/)) or through Control Center Connect, whichever the server owner chose, unless a workspace admin picked other sign-in apps for that workspace in **Settings → Workspace → Integrations**. With the server's own app, the browser comes back to the server by itself; through Connect, you type the 8-character code the browser shows, or let it open Control Center. See [Set up GitHub integration](/en-GB/manual/guides/github-integration/).
 
 Onboarding asks for this connection. After that the same card is where you sign in again or disconnect. GitLab and Bitbucket use the same card with a pasted personal token; see [Connect a code host](/en-GB/manual/guides/connect-forges/).
 
@@ -141,7 +141,7 @@ To host a server yourself, follow [Run a headless server](/en-GB/manual/guides/r
 
 1. **Settings → Server → Model providers** lists both adapters. "Control Center (built-in)" reads found with version `built-in`; Claude Code reads found if its CLI is on the server host's `PATH`. Press **Refresh** if it is missing.
 2. **Settings → Workspace → Repositories** lists this workspace's repos, and **Add repository** browses the server host's folders.
-3. **Settings → Workspace → Agents** lists the five agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
+3. **Settings → Workspace → Agents** lists the six agents your first workspace seeded. Each one needs an **Adapter** and a **Model** set before it can run.
 4. **Settings → Server → Diagnostics & privacy** reports the sandbox backends this host offers, the embedding model's state, and logging.
 
 ## Build from source

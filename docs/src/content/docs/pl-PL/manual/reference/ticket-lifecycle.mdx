@@ -2,7 +2,7 @@
 title: Cykl życia zgłoszenia
 description: Pola, statusy, przejścia i relacje zgłoszenia oraz punkt kontrolny mutacji.
 slug: pl-PL/podrecznik/dokumentacja-referencyjna/cykl-zycia-zgloszenia
-sourceHash: 62ef1d872851fe4bab09efcce2ea05b14777f4d9
+sourceHash: a1a2da0284f1d87384b7f3b498af011e68d52d45
 ---
 
 ## Statusy zgłoszeń
@@ -117,7 +117,7 @@ Agregat obejmuje dwa zagadnienia w jednym wierszu. **Kopia lustrzana** (dostawca
 | `projectId`              | `String?`                  | Projekt będący właścicielem; nigdy nie jest wysyłany do systemu zdalnego                   |
 | `assignedAgentId`        | `String?`                  | Identyfikator przypisanego podmiotu (tylko metadane — przypisanie nic nie wysyła)         |
 | `assigneeType`           | `PrincipalType`            | Rodzaj podmiotu, który wskazuje `assignedAgentId` — `user` lub `agent` (domyślnie `agent`) |
-| `createdByType`          | `PrincipalType?`           | Rodzaj podmiotu, który utworzył zgłoszenie (`user` lub `agent`); null dla wierszy zastanych/systemowych |
+| `createdByType`          | `PrincipalType?`           | Rodzaj podmiotu, który utworzył zgłoszenie (`user` lub `agent`); null dla wierszy utworzonych przez system |
 | `createdById`            | `String?`                  | Identyfikator podmiotu tworzącego                                                          |
 | `assignedTeamId`         | `String?`                  | Przypisany zespół (tylko metadane)                                                         |
 | `delegatedByAgentId`     | `String?`                  | Agent, który delegował to zgłoszenie                                                       |

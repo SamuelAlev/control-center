@@ -2,7 +2,7 @@
 title: Typy kroků pipeline
 description: Druhy kroků pipeline, klíče těl, jejich konfigurace a výsledky kroků.
 slug: cs-CZ/prirucka/referencni-prirucka/kroky-pipeline
-sourceHash: 269afd4c35ef58796d74770d9e01ecde6271fac3
+sourceHash: 22275c7daf766e721fd2c24547ed5fbbe963fe17
 ---
 
 Krok pipeline má dvě na sobě nezávislé osy:
@@ -61,7 +61,7 @@ Obecný uzel pro prompt a odeslání: vykreslí prompt, odešle agenta do konver
 
 ### `pipeline.condition`
 
-Tělo routeru — přečte `config.extras`, vyhodnotí podmínku a vrátí `StepResult.route(key)`. Podmínky **nejsou** výrazy JavaScriptu; podporované jsou tři tvary zápisu, v tomhle pořadí priority:
+Tělo routeru — přečte `config.extras`, vyhodnotí podmínku a vrátí `StepResult.route(key)`. Podmínky **nejsou** výrazy JavaScriptu; podporované jsou dva tvary zápisu, v tomhle pořadí priority:
 
 - **Strom predikátů** (`extras.predicate`) — booleovský strom, který vede na `"true"` / `"false"`. Každý uzel je mapa s `type`:
   - `{"type": "fileExists", "paths": [...], "baseKey": "repo_local_path", "negate": false, "recursive": false}` — platí, když na disku existuje kterákoli uvedená cesta; `negate` to obrátí; `recursive` hledá i v podadresářích (přeskočí `.git`, `node_modules`, `build`, `.dart_tool`). Relativní cesty se vyhodnotí vůči `state[baseKey]` (výchozí `repo_local_path`), jinak vůči adresáři pracovního prostoru daného běhu.
@@ -69,19 +69,28 @@ Tělo routeru — přečte `config.extras`, vyhodnotí podmínku a vrátí `Step
   - `{"type": "and" | "or", "of": [<predicate>, ...]}` — booleovské skupiny.
   - `{"type": "not", "of": <predicate>}` — negace.
 - **Přepínač** (`extras.switchKey`) — `{"switchKey": "pr_class", "cases": [...], "default": "standard"}`; vede na první případ, jehož řetězec hodnota stavu obsahuje bez ohledu na velikost písmen, jinak na `default`.
-- **Porovnání** (starší zápis nahoře v `extras.left` / `extras.op` / `extras.right`) — odpovídá predikátu `comparison` a zůstává kvůli šablonám napsaným před stromem.
 
 Hrany vycházející z uzlu nesou `routeKey`, který se musí shodovat s vráceným klíčem.
 
 ### `prReview.comment`
 
-Pošle sloučená zjištění jako komentář k revizi PR přes klienta GitHub PR.
+Pošle sloučená zjištění nebo vlastní `extras.message` kroku jako komentář k revizi PR přes klienta GitHub PR.
 
-| Stavový klíč                 | Popis                                  |
-| ------------------------- | -------------------------------------------- |
-| `repo_full_name`          | `owner/repo` (povinné)                      |
-| `pr_number`               | Číslo PR — int, nebo číselný řetězec (povinné) |
-| `consolidated_findings`   | Tělo komentáře (povinné)                      |
+| Klíč                    | Čte se z           | Popis                                                                  |
+| ----------------------- | ------------------ | ---------------------------------------------------------------------- |
+| `repo_full_name`        | payload spouštěče  | `owner/repo` (povinné)                                                 |
+| `pr_number`             | payload spouštěče  | Číslo PR, kladné celé číslo nebo číselný řetězec (povinné)             |
+| `consolidated_findings` | stav               | Tělo komentáře, pokud krok nemá `message`                              |
+
+Pull request pochází pouze z payloadu spouštěče běhu, nikdy ze stavu, který krok může uprostřed běhu přepsat. Zmínky @ v odeslaném textu jsou neúčinné, takže komentář nikoho neupozorní.
+
+Pole `message` vykreslí své zástupné položky `{{key}}` takto:
+
+- `repo_full_name`, `repo_owner`, `repo_name` a `pr_number` vykreslí PR, na který krok zveřejňuje.
+- `author` se vykreslí z payloadu spouštěče beze změny, a to jen tehdy, je-li platným uživatelským jménem na forge; jinak krok selže.
+- `consolidated_findings` se vykreslí jako surový markdown, jeho zmínky @ jsou neúčinné.
+- Každá jiná hodnota se vykreslí jako doslovný text: na jednom řádku, s escapovanou markdown interpunkcí a neúčinnými zmínkami @.
+- Zástupná položka, která nic nevrátí, způsobí selhání kroku.
 
 Vrátí `StepResult.terminal` a do stavu zapíše `comment_review_id` a `commented_at`.
 

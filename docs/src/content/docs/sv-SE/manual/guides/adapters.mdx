@@ -2,7 +2,7 @@
 title: Hantera adapters och modeller
 description: Anslut modellleverantörer, välj vilken modell en agent körs på och se vilka CLI-verktyg för agentkörare som finns på servervärden.
 slug: sv-SE/handbok/how-to-guider/adapters
-sourceHash: 95711b308edbea6e01de5bd07ed0c4b04785f1af
+sourceHash: 9abf351581509f74a145171b05604ed1e435fd9f
 ---
 
 Den här guiden visar hur du ansluter modellleverantörer och väljer vad en agent
@@ -120,6 +120,12 @@ kring en konversation: dess titel, `/btw`-svar, `/handoff`-dokument och
 intervjun för `/goal`-målet. Den kör ett verktygsfritt slutförande varje gång,
 på sin egen adapter och modell, så ge den en liten och snabb modell.
 
+När den adaptern är en ACP-CLI är slutförandet en process på serverns maskin
+och följer [sandlåderegeln](/sv-SE/handbok/koncept/sandlada-och-sakerhet/#agenter-på-en-värd-utan-sandlåda):
+inuti sandlådan när servern sandlåder agenter, och utan sandlåda bara för
+förfrågningar som serverägaren svarar för. För alla andra hoppas dessa funktioner
+över: ingen titel genereras, och `/btw` svarar "Content synthesizer-agenten saknas eller har ingen fungerande runner".
+
 Redigera dess **persona** i **Inställningar → Arbetsyta → Agenter** för att
 ändra hur texten låter: titellängd, språk, ton, exemplen den följer. Svarsformatet
 som varje funktion tolkar (en enradstitel, målets avsnitt) är fast och tillämpas
@@ -139,8 +145,7 @@ Tryck sedan på **Uppdatera** högst upp på sidan. Varje upptäckt rad visar de
 upplösta versionen och sökvägen, plus taggar för om den stöder JSON-läge och
 modellval.
 
-Ett externt CLI behåller sina egna inloggningsuppgifter, i sin egen
-konfiguration, på servervärden. Control Center hanterar dem inte.
+Claude Code-inloggningar listas under **Claude Code-konton** på Claude Code-adaptern. Control Center skapar varje kontos konfigurationsmapp på servern och ger dig kommandot `claude auth login` att köra där; den loggar aldrig in åt dig.
 
 :::caution[Adaptrars argument och miljövariabler stannar på den här enheten]
 Varje adapterrad har ett fält för **extra argument** och en dialogruta för

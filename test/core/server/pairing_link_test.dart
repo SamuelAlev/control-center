@@ -39,16 +39,19 @@ void main() {
       expect(link?.psk, isEmpty);
     });
 
-    test('reads a bare fragment and the query-string form', () {
+    test('reads a bare fragment', () {
       final payload = _fragment({
         's': 'ws://host:9030/rpc',
         'i': 'd',
         'k': 'k',
       });
       expect(PairingLink.parse('  $payload\n')?.deviceId, 'd');
+    });
+
+    test('refuses the query-string form', () {
       expect(
-        PairingLink.parse('https://h/#server=ws://h/rpc&device=d&psk=k')?.psk,
-        'k',
+        PairingLink.parse('https://h/#server=ws://h/rpc&device=d&psk=k'),
+        isNull,
       );
     });
 

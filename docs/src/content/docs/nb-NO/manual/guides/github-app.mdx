@@ -1,8 +1,8 @@
 ---
 title: Opprett GitHub App
-description: Gi serveren din sin egen GitHub App med ett klikk, installer den der repoene dine ligger, og autoriser serveren for installasjonen til en organisasjon.
+description: Gi serveren din sin egen GitHub App med ett klikk, installer den der repoene dine ligger, slik at alle i organisasjonen kan bruke den fra hvilken som helst server.
 slug: nb-NO/handbok/slik-gjor-du/github-app
-sourceHash: 9bdeaf97cf02cb9dda5f036fec15e3ce8fe4956f
+sourceHash: e58a9f9ff53eb59fe1059dcd8898c41b284a1e85
 ---
 
 Denne veiledningen viser deg hvordan du gir serveren din sin egen GitHub App. Det
@@ -34,7 +34,7 @@ ansvarlig medlem kan gjøre der. Å lese et tilkoblet repo krever bare appen; al
 som skriver, krever et medlem som kan pushe. Automatisering godkjenner aldri en
 pull request.
 
-Serverens egen app gjelder bare under **Bruk mine egne apper**. Med Control Centers eller en egendefinert Connect håndterer Connect GitHub, og serverens app forblir lagret, men ubrukt til du bytter tilbake. Arbeidsområdets egen app ([Gi ett arbeidsområde en annen app](#gi-ett-arbeidsområde-en-annen-app)) gjelder i alle moduser. En app der noen av
+Serverens egen app gjelder bare under **Bruk mine egne apper**. Med Control Centers eller en egendefinert Connect håndterer Connect GitHub, og serverens app forblir lagret, men ubrukt til du bytter tilbake. Et arbeidsområde på egne apper ([Gi ett arbeidsområde en egen app](#gi-ett-arbeidsområde-en-egen-app)) bruker sin egen app i stedet, uansett serverens modus. En app der noen av
 feltene mangler, er en feil, ikke en reserveløsning: GitHub-pålogginger avvises
 til hvert felt er satt.
 
@@ -93,26 +93,18 @@ ingenting.
 2. Velg **All repositories**, eller velg de repoene denne serveren skal se
 
 For å installere den på en annen konto senere går en administrator i
-arbeidsområdet til **Innstillinger → Arbeidsområde → Generelt**, finner
-**Installasjoner av GitHub-appen** på kortet for GitHub-identitet og klikker
+arbeidsområdet til **Innstillinger → Arbeidsområde → Integrasjoner**, finner
+**Installasjoner av GitHub-appen** på kortet **GitHub-app** under Kodehosting og klikker
 **Installer GitHub-appen**. Listen viser alle kontoer appen er installert på,
 og markerer en suspendert installasjon.
 
-## Autoriser denne serveren for en organisasjon
+## Del en organisasjons installasjon
 
-På den delte appen til Control Center betjener en organisasjons installasjon
-bare de serverne administratorene har autorisert. En installasjon via
-**Installer GitHub-appen** autoriserer serveren som startet den. For en
-installasjon som allerede finnes:
+En organisasjon installerer GitHub-appen én gang. Deretter kan alle i organisasjonen som logger inn på GitHub på en Control Center-server, bruke installasjonen, uansett hvilken server det er: din, en kollegas eller en egen. Det er ingenting å autorisere per server.
 
-1. En administrator i den organisasjonen logger inn på GitHub på denne serveren
-2. Vedkommende åpner **Innstillinger → Arbeidsområde → Generelt → Installasjoner
-   av GitHub-appen**
-3. Organisasjonens rad sier **Ikke autorisert**. Vedkommende klikker
-   **Autoriser denne serveren**
+Hvert token en server får, tilhører den innloggede personen, begrenset til ett repo og til rollen vedkommende har der, så det rekker aldri lenger enn det personen kunne gjort på GitHub. GitHubs revisjonslogg viser den personen, som handler gjennom appen.
 
-Raden viser deretter **Autorisert**. Din egen app trenger ikke noe av dette:
-hver installasjon av den tilhører serveren din.
+For å hindre at Control Center når en organisasjon, fjerner en eier av organisasjonen installasjonen eller snevrer inn repoene på GitHub. Å fjerne en person fra organisasjonen stopper tilgangen deres også.
 
 ## Registrer den for hånd i stedet
 
@@ -149,17 +141,15 @@ prosessmiljøet, der hver underprosess kunne lese dem; hold dem i `.env`-filen (
 Docker monterer du den på `/app/bin/.env`). Fyllingen skjer **én gang per
 felt**, så redigeringer i Innstillinger blir ikke overskrevet ved neste omstart.
 
-## Gi ett arbeidsområde en annen app
+## Gi ett arbeidsområde en egen app
 
-Et arbeidsområde kan bruke sin egen app i stedet for serverens. En
-administrator i arbeidsområdet går til **Innstillinger → Arbeidsområde →
-Generelt**, velger **Bruk en annen GitHub-app** på kortet **GitHub-identitet** og
-legger inn appens id, private nøkkel, client id og client secret. Medlemmene
-logger da inn på den appen for dette arbeidsområdet. Et arbeidsområde med egen
-app faller aldri tilbake på serverens app eller på Connect: til feltene er
-fullstendige, avvises GitHub-arbeidet. Dette gjelder uansett hvordan serveren logger folk inn, Connect inkludert.
+Et arbeidsområde kan kjøre på en egen app i stedet for serverens:
 
-Kortet **Leverandørapper** på samme side gjør det samme for Google Calendar, Linear og GIF-søk. Se [Gi ett arbeidsområde en egen Linear-applikasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/#gi-ett-arbeidsområde-en-egen-linear-applikasjon) og [Gi ett arbeidsområde en egen Google-klient](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/#gi-ett-arbeidsområde-en-egen-google-klient).
+1. En administrator i arbeidsområdet går til **Innstillinger → Arbeidsområde → Integrasjoner**
+2. På kortet **Control Center Connect** velger de **Bruk mine egne apper** og klikker **Bruk**. Alle i arbeidsområdet logger inn på nytt gjennom arbeidsområdets apper
+3. Kortet **GitHub-app** under Kodehosting holder nå appens felt: **App-id** og **Privat nøkkel** under **Handler for dette arbeidsområdet**, **Client id** og **Client secret** under **Logge inn folk**. Klikk **Test** når de er satt
+
+Medlemmene logger da inn på den appen for dette arbeidsområdet. Et arbeidsområde på egne apper faller aldri tilbake på serverens app eller på Connect: til feltene er fullstendige, avvises GitHub-arbeidet. Det samme valget dekker Google Calendar, Linear og GIF-søk, hver med sine egne felt ved siden av leverandøren på samme side. Se [Gi ett arbeidsområde en egen Linear-applikasjon](/nb-NO/handbok/slik-gjor-du/linear-integrasjon/#gi-ett-arbeidsområde-en-egen-linear-applikasjon) og [Gi ett arbeidsområde en egen Google-klient](/nb-NO/handbok/slik-gjor-du/koble-til-kalender/#gi-ett-arbeidsområde-en-egen-google-klient). De andre valgene på kortet, og hva hvert av dem gjør, står i [Valg for hvert arbeidsområde](/nb-NO/handbok/referanse/connect/#valg-for-hvert-arbeidsområde).
 
 ## Feilsøking
 
@@ -176,7 +166,7 @@ fra Innstillinger.
 ### Test sier at påloggingsinformasjonen virker, men at appen ikke er installert noe sted
 
 Registrering og installasjon er separate trinn. Åpne appens installasjonsside,
-eller bruk **Installer GitHub-appen** under Arbeidsområde → Generelt.
+eller bruk **Installer GitHub-appen** under Arbeidsområde → Integrasjoner.
 
 ### Test sier at den private nøkkelen ikke kunne leses
 

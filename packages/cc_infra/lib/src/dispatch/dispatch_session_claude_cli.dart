@@ -53,14 +53,9 @@ extension _ClaudeCliMethods on DispatchSession {
   /// `claude -p` draws from the same Claude Code subscription quota as
   /// interactive mode.
   Future<void> _runClaudeCli({
-    required ScopedCredentials scoped,
     required String sandboxSessionId,
     required String wsId,
   }) async {
-    for (final note in scoped.notes) {
-      addEvent(DebugEvent(content: '[claude] $note'));
-    }
-
     final claudePath = await resolveBinary('claude');
     if (claudePath == null) {
       addEvent(
@@ -100,8 +95,7 @@ extension _ClaudeCliMethods on DispatchSession {
           '[claude] this Claude Code account is signed out '
           '($claudeConfigDir). Sign in from Settings → Adapters → '
           'Claude Code, or run `claude auth login` with '
-          'CLAUDE_CONFIG_DIR set to that directory, or give it a long-lived '
-          'token from `claude setup-token`.';
+          'CLAUDE_CONFIG_DIR set to that directory.';
       // Signed-out is the one Claude verdict this session can gate itself: the
       // account is already resolved, so its directory is in the sandbox's
       // writable set and a `claude auth login` into that SAME directory lands
@@ -316,7 +310,7 @@ extension _ClaudeCliMethods on DispatchSession {
     );
 
     final mergedEnv = {
-      ..._mergedEnv(scopedEnv: scoped.environment, backendEnv: discoveryEnv),
+      ..._mergedEnv(backendEnv: discoveryEnv),
       ...ClaudeCliBackend.autoMemoryOffEnv,
     };
 
@@ -1260,10 +1254,8 @@ extension _ClaudeCliMethods on DispatchSession {
           outputTokens: turn.outputTokens,
           cachedReadTokens: turn.cacheReadTokens,
           cachedWriteTokens: turn.cacheWriteTokens,
-          // The legacy cents axis carries the DELTA only; the run total rides
-          // the cumulative event below as micros, so a host that still sums
-          // cents never double counts.
-          estimatedCostCents: turn.costDeltaCents,
+          // The DELTA only; the run total rides the cumulative event below.
+          estimatedCostCents: (turn.costDeltaMicros / 10000).round(),
           costMicros: turn.costDeltaMicros,
           costBasis: basis,
         ),

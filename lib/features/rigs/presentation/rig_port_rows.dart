@@ -9,6 +9,8 @@ import 'dart:async';
 
 import 'package:cc_data/cc_data.dart' show RemoteRigRepository, RigPortView;
 import 'package:cc_ui/cc_ui.dart';
+import 'package:control_center/features/forge/presentation/repo_code_refusal.dart';
+import 'package:control_center/features/rigs/providers/rig_access_provider.dart';
 import 'package:control_center/features/rigs/providers/rig_providers.dart';
 import 'package:control_center/l10n/app_localizations.dart';
 import 'package:control_center/shared/icons/app_icons.dart';
@@ -19,10 +21,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// Which source the ports popover is talking to: an exec rig or a host-shell
 /// PTY session. Mutations and the watch key both branch on this.
 class PortsTarget {
-  /// An enclosed Terminal (VM) identified by [rigId].
-  const PortsTarget.rig({required this.workspaceId, required String this.rigId})
-    : sessionId = null,
-      spaceId = '';
+  /// An enclosed Terminal (VM) identified by [rigId], in [spaceId] when the
+  /// rig is bound to a space.
+  const PortsTarget.rig({
+    required this.workspaceId,
+    required String this.rigId,
+    this.spaceId = '',
+  }) : sessionId = null;
 
   /// A host-shell PTY identified by [sessionId] in [spaceId].
   const PortsTarget.session({
@@ -40,8 +45,8 @@ class PortsTarget {
   /// Server PTY session id, when this is a host-shell.
   final String? sessionId;
 
-  /// The conversation the session belongs to. Empty for an exec rig (the
-  /// rig already carries its conversation).
+  /// The conversation the session or rig belongs to; empty for a rig bound
+  /// to no space.
   final String spaceId;
 
   /// Whether this target is a host-shell session.
@@ -59,7 +64,11 @@ class PortRow extends ConsumerWidget {
     this.domainTls = false,
     this.browserReachable = false,
     this.androidReachable = false,
+    this.readOnly = false,
   });
+
+  /// Whether the person may only look: no menu of changes.
+  final bool readOnly;
 
   /// The rig or host-shell this row belongs to.
   final PortsTarget target;
@@ -163,7 +172,7 @@ class PortRow extends ConsumerWidget {
             tooltip: l10n.rigPortsCopyUrl,
             onPressed: () => unawaited(_copyLocalUrl(context)),
           ),
-          PortMenu(target: target, port: port),
+          if (!readOnly) PortMenu(target: target, port: port),
         ],
       ),
     );
@@ -193,19 +202,27 @@ class PortMenu extends ConsumerWidget {
               ? l10n.rigPortsExposeLan
               : l10n.rigPortsLanPrivate,
           icon: AppIcons.globe,
-          onSelected: () =>
-              unawaited(_setLan(repo, exposed: port.lanPort == null)),
+          onSelected: () => unawaited(
+            runPortChange(
+              context,
+              ref,
+              target,
+              () => _setLan(repo, exposed: port.lanPort == null),
+            ),
+          ),
         ),
         CcMenuItem(
           label: l10n.rigPortsSetDomain,
           icon: AppIcons.link,
-          onSelected: () => unawaited(_promptDomain(context, repo)),
+          onSelected: () => unawaited(_promptDomain(context, ref, repo)),
         ),
         CcMenuItem(
           label: l10n.rigPortsStopForward,
           icon: AppIcons.x,
           destructive: true,
-          onSelected: () => unawaited(_remove(repo)),
+          onSelected: () => unawaited(
+            runPortChange(context, ref, target, () => _remove(repo)),
+          ),
         ),
       ],
       target: CcIcon(
@@ -248,6 +265,7 @@ class PortMenu extends ConsumerWidget {
 
   Future<void> _promptDomain(
     BuildContext context,
+    WidgetRef ref,
     RemoteRigRepository repo,
   ) async {
     final value = await showCcDialog<String?>(
@@ -259,28 +277,28 @@ class PortMenu extends ConsumerWidget {
       return;
     }
     final domain = value.trim();
-    try {
-      if (target.isSession) {
-        await repo.setTerminalPortDomain(
-          target.workspaceId,
-          target.sessionId!,
-          spaceId: target.spaceId,
-          guestPort: port.guestPort,
-          domain: domain.isEmpty ? null : domain,
-        );
-      } else {
-        await repo.setPortDomain(
-          target.workspaceId,
-          target.rigId!,
-          port.guestPort,
-          domain.isEmpty ? null : domain,
-        );
-      }
-    } on Object catch (e) {
-      if (context.mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
-      }
+    if (!context.mounted) {
+      return;
     }
+    await runPortChange(
+      context,
+      ref,
+      target,
+      () => target.isSession
+          ? repo.setTerminalPortDomain(
+              target.workspaceId,
+              target.sessionId!,
+              spaceId: target.spaceId,
+              guestPort: port.guestPort,
+              domain: domain.isEmpty ? null : domain,
+            )
+          : repo.setPortDomain(
+              target.workspaceId,
+              target.rigId!,
+              port.guestPort,
+              domain.isEmpty ? null : domain,
+            ),
+    );
   }
 }
 
@@ -383,33 +401,28 @@ class _AddPortRowState extends ConsumerState<AddPortRow> {
       return;
     }
     setState(() => _adding = true);
-    try {
-      final repo = ref.read(rigRepositoryProvider);
-      if (widget.target.isSession) {
-        await repo.addTerminalPort(
-          widget.target.workspaceId,
-          widget.target.sessionId!,
-          spaceId: widget.target.spaceId,
-          guestPort: port,
-          hostPort: localPort,
-        );
-      } else {
-        await repo.addPort(
-          widget.target.workspaceId,
-          widget.target.rigId!,
-          port,
-        );
-      }
+    final repo = ref.read(rigRepositoryProvider);
+    final target = widget.target;
+    final added = await runPortChange(
+      context,
+      ref,
+      target,
+      () => target.isSession
+          ? repo.addTerminalPort(
+              target.workspaceId,
+              target.sessionId!,
+              spaceId: target.spaceId,
+              guestPort: port,
+              hostPort: localPort,
+            )
+          : repo.addPort(target.workspaceId, target.rigId!, port),
+    );
+    if (added) {
       _controller.clear();
       _local.clear();
-    } on Object catch (e) {
-      if (mounted) {
-        CcToastScope.of(context).show('$e', variant: CcToastVariant.danger);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _adding = false);
-      }
+    }
+    if (mounted) {
+      setState(() => _adding = false);
     }
   }
 
@@ -468,7 +481,11 @@ class AutoForwardRow extends ConsumerWidget {
     super.key,
     required this.target,
     required this.enabled,
+    this.readOnly = false,
   });
+
+  /// Whether the person may only look: the switch shows but does not move.
+  final bool readOnly;
 
   /// The rig or host-shell this toggle applies to.
   final PortsTarget target;
@@ -497,7 +514,11 @@ class AutoForwardRow extends ConsumerWidget {
           ),
           CcSwitch(
             value: enabled,
-            onChanged: (next) => unawaited(_set(ref, next)),
+            onChanged: readOnly
+                ? null
+                : (next) => unawaited(
+                    runPortChange(context, ref, target, () => _set(ref, next)),
+                  ),
           ),
         ],
       ),
@@ -519,5 +540,34 @@ class AutoForwardRow extends ConsumerWidget {
       target.rigId!,
       enabled: next,
     );
+  }
+}
+
+/// Runs one port change for [target] and says why when it fails: a refusal
+/// by kind in words (no write grant, the space unreadable), anything else as
+/// the server put it. A refused change on a rig in a space also lowers that
+/// space's rig access, so the controls it may not use go away. Returns
+/// whether the change went through.
+Future<bool> runPortChange(
+  BuildContext context,
+  WidgetRef ref,
+  PortsTarget target,
+  Future<void> Function() change,
+) async {
+  final l10n = AppLocalizations.of(context);
+  final toasts = CcToastScope.maybeOf(context);
+  final access = target.isSession
+      ? null
+      : rigAccessNotifierOf(ref, target.workspaceId, target.spaceId);
+  try {
+    await change();
+    return true;
+  } on Object catch (e) {
+    access?.noteRefusal(e);
+    toasts?.show(
+      repoRefusalOf(l10n, e) ?? '$e',
+      variant: CcToastVariant.danger,
+    );
+    return false;
   }
 }

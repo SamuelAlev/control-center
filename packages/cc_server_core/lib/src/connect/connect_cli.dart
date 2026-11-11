@@ -11,7 +11,7 @@ import 'package:cc_server_core/src/dotenv.dart';
 import 'package:cc_server_core/src/file_secrets_store.dart';
 import 'package:cc_server_core/src/identity/provider_app_settings.dart';
 
-/// `cc_server connect status | enable [--url URL] | disable | rotate-key`.
+/// `cc_server connect status | enable [--url URL] | disable`.
 ///
 /// Reads and writes the same server settings Settings → Connect does, from
 /// the data directory, without starting the server. A running server
@@ -77,21 +77,6 @@ Future<int> runConnectCommand({
         await settings.setChoice(ConnectMode.off);
         await _printStatus(stdoutSink, client, apps, klipy);
         return 0;
-      case 'rotate-key':
-        if (!rest.contains('--yes')) {
-          stderrSink.writeln(
-            'Rotating the install key signs every person out of every '
-            'Connect lane on this server. Run again with --yes to do it.',
-          );
-          return 2;
-        }
-        await settings.rotateInstallSeed();
-        stdoutSink.writeln(
-          'New install key. Everyone signs in again; update any Connect '
-          'allowlist with the new install id below.',
-        );
-        await _printStatus(stdoutSink, client, apps, klipy, refresh: true);
-        return 0;
       default:
         stderrSink
           ..writeln('Unknown connect command: $command')
@@ -113,7 +98,6 @@ Usage: cc_server connect <command> [--data-dir PATH]
   status               Show the Connect this server uses and each lane's source.
   enable [--url URL]   Use the hosted Connect, or a self-hosted one at URL.
   disable              Use own apps only.
-  rotate-key --yes     Replace the install key (everyone signs in again).
 
 CC_CONNECT_URL (hosted, off or a URL) overrides the stored choice.''';
 
@@ -124,7 +108,10 @@ Future<void> _printStatus(
   KlipyGifs klipy, {
   bool refresh = false,
 }) async {
-  final state = await client.configState(refresh: refresh);
+  final state = await client.configState(
+    await client.serverTarget(),
+    refresh: refresh,
+  );
   final lanes = await connectLaneStatuses(
     apps: apps,
     config: state.usable ? state.config : null,

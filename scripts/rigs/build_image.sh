@@ -705,9 +705,9 @@ write_files:
                   self._send_json(200, {"display": {"width": w, "height": h}})
                   return
               if path == "/version":
-                  # Forward compatibility: a host talking to an image that
-                  # predates this endpoint gets a 404 and treats it as "old",
-                  # which is why the client tolerates it instead of throwing.
+                  # The host compares these to decide whether a downloaded
+                  # image is current; an image without the endpoint reads as
+                  # stale.
                   self._send_json(200, {"protocol": PROTOCOL,
                                         "agent": AGENT_BUILD})
                   return

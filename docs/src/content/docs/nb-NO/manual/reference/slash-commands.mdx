@@ -2,7 +2,7 @@
 title: Skråstrekkommandoer
 description: Alle kommandoene du kan skrive i skrivefeltet, hva de gjør, og hvor de kjører.
 slug: nb-NO/handbok/referanse/skrastrekkommandoer
-sourceHash: 0327f82514bb0ff3eaae861d98979a76099b6ab4
+sourceHash: 9e0ef34f0fb3c22560d00546b169323f2906929e
 ---
 
 Kommandoer du skriver i skrivefeltet til et område. De faller i tre grupper etter hvor de virker, og forskjellen betyr noe: en **lokal** kommando reiser aldri som en melding, så den verken vises i transkriptet eller når fram til en agent.
@@ -139,7 +139,7 @@ Begge har samme form — ta samtalen som den står, still ett spørsmål om den,
 
 Malbehandling: `$1`, `$@`, `$@[start:length]` og `$ARGUMENTS`. Frontmatter kan sette `description` (autofullføring i skrivefeltet). `allowed-tools` og `model` leses fra filen, men en brukerkommando setter foreløpig bare inn argumentene i innholdet — de endrer ikke kjøringens modell eller verktøyflate.
 
-En kommando brukeren selv har skrevet, vinner over en skill med samme navn — det er en snarvei et menneske bevisst har påkalt, med argumenter.
+En skill nås bare som `/skill:<name>`, så en kommando brukeren selv har skrevet, kolliderer aldri med en.
 
 ---
 

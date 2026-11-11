@@ -475,7 +475,7 @@ class _CcTextFieldState extends State<CcTextField>
 
     // Field anatomy: an optional persistent label above the box and a
     // helper or error message below. When none are supplied the field renders
-    // as the bare box (backward compatible).
+    // as the bare box.
     final showLabel = widget.label != null;
     final showError = hasError;
     final showWarn = hasWarn;

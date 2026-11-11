@@ -33,10 +33,7 @@ extension _PipelineAdmission on PipelineEngine {
     if (parent.isTerminal) {
       throw const ValidationException('Parent pipeline run has finished');
     }
-    final parentDefinition =
-        parent.templateSnapshot ??
-        await templates.getById(workspaceId, parent.templateId);
-    final step = parentDefinition?.step(parentStepId);
+    final step = parent.templateSnapshot?.step(parentStepId);
     if (step == null || step.bodyKey != BuiltInBodyKeys.callFlow) {
       throw const ValidationException(
         'Parent step is not a sub-pipeline (flow.callPipeline) step',
@@ -57,37 +54,46 @@ extension _PipelineAdmission on PipelineEngine {
   }
 
   /// [payload] with [kPipelineRequestedByKey] set from [requestedByUserId]
-  /// (or the parent run's, for a sub-pipeline) and never from the payload
-  /// itself: a trigger's inputs, a webhook body or a client argument must not
-  /// be able to name whose access a run borrows.
+  /// and [kPipelineArmedByKey] from [armedByUserIds] (or the parent run's,
+  /// for a sub-pipeline) and never from the payload itself: a trigger's
+  /// inputs, a webhook body or a client argument must not be able to name
+  /// whose access a run borrows, or who may approve what it opens.
   Future<Map<String, dynamic>?> _withRequester(
     Map<String, dynamic>? payload, {
     required String? requestedByUserId,
+    required Set<String> armedByUserIds,
     required String? parentPipelineRunId,
     required String workspaceId,
   }) async {
-    var requester = requestedByUserId;
-    if ((requester == null || requester.isEmpty) &&
-        parentPipelineRunId != null) {
+    var requester = requestedByUserId ?? '';
+    final armers = {
+      for (final id in armedByUserIds)
+        if (id.isNotEmpty) id,
+    };
+    if (parentPipelineRunId != null && (requester.isEmpty || armers.isEmpty)) {
       final parent = await repository.getRun(parentPipelineRunId);
-      final Object? inherited;
-      if (parent != null && parent.workspaceId == workspaceId) {
-        inherited =
-            (parent.triggerPayload ?? const {})[kPipelineRequestedByKey];
-      } else {
-        inherited = null;
+      final inherited = parent != null && parent.workspaceId == workspaceId
+          ? parent.triggerPayload ?? const <String, dynamic>{}
+          : const <String, dynamic>{};
+      final theirRequester = inherited[kPipelineRequestedByKey];
+      if (requester.isEmpty && theirRequester is String) {
+        requester = theirRequester;
       }
-      requester = inherited is String ? inherited : null;
+      if (armers.isEmpty) {
+        armers.addAll(pipelineArmedByOf(inherited));
+      }
     }
-    final hasKey = payload?.containsKey(kPipelineRequestedByKey) ?? false;
-    if (!hasKey && (requester == null || requester.isEmpty)) {
+    const keys = {kPipelineRequestedByKey, kPipelineArmedByKey};
+    final hasKey = keys.any((k) => payload?.containsKey(k) ?? false);
+    if (!hasKey && requester.isEmpty && armers.isEmpty) {
       return payload;
     }
-    final sanitized = {...?payload}..remove(kPipelineRequestedByKey);
-    if (requester != null && requester.isNotEmpty) {
-      sanitized[kPipelineRequestedByKey] = requester;
-    }
-    return sanitized;
+    return {...?payload}
+      ..removeWhere((k, _) => keys.contains(k))
+      ..addAll({
+        if (requester.isNotEmpty) kPipelineRequestedByKey: requester,
+        if (armers.isNotEmpty) kPipelineArmedByKey: armers.toList()..sort(),
+      });
   }
 
   /// Builds the run row, persists it and kicks
@@ -241,7 +247,16 @@ extension _PipelineAdmission on PipelineEngine {
         }
         // The cap is the template's current setting; the graph the run
         // executes is the one it was pinned to when it was queued.
-        final definition = next.templateSnapshot ?? live;
+        final definition = next.templateSnapshot;
+        if (definition == null) {
+          await _cancelQueuedRun(
+            next,
+            reason: 'Run ${next.id} has no pinned template snapshot.',
+          );
+          // The next queued run still waits for a slot this one never took.
+          _track(_admitNext(workspaceId, templateId));
+          return null;
+        }
         final cap = live.maxParallelRuns;
         if (cap != null) {
           final active = await repository.activeRunCountForTemplate(

@@ -31,6 +31,7 @@ class HarnessToolResult {
     this.isError = false,
     this.images = const [],
     this.activateTools = const {},
+    this.refusal,
   });
 
   /// Successful result text, optionally with [images] the model should see.
@@ -47,6 +48,13 @@ class HarnessToolResult {
   /// Error result text (surfaced to the model as an errored tool result).
   factory HarnessToolResult.error(String message) =>
       HarnessToolResult(content: message, isError: true);
+
+  /// A refusal the host has a name for: an error result carrying [refusal]
+  /// (see [ReadOnlyRoot.refusal]).
+  factory HarnessToolResult.refused(
+    String message,
+    Map<String, Object?> refusal,
+  ) => HarnessToolResult(content: message, isError: true, refusal: refusal);
 
   /// Result text shown to the model.
   final String content;
@@ -71,6 +79,34 @@ class HarnessToolResult {
   /// run's surface at all) — a tool cannot widen its own run's permissions by
   /// naming something the surface denied.
   final Set<String> activateTools;
+
+  /// Why the call was refused, in the host's own terms (for Control Center,
+  /// `{kind, level}` error data), when it was refused for a reason the host
+  /// named; null otherwise.
+  final Map<String, Object?>? refusal;
+}
+
+/// A directory inside the workspace the run may read but not change, and what
+/// a tool tells the model when it refuses a change there.
+///
+/// The host decides which directories these are; the file-changing tools
+/// refuse any path under one, symlinks resolved.
+class ReadOnlyRoot {
+  /// Creates a [ReadOnlyRoot].
+  const ReadOnlyRoot({
+    required this.path,
+    required this.reason,
+    this.refusal = const {},
+  });
+
+  /// The directory.
+  final String path;
+
+  /// Shown to the model with the refused path.
+  final String reason;
+
+  /// Carried on the refusal as [HarnessToolResult.refusal].
+  final Map<String, Object?> refusal;
 }
 
 /// Per-run context handed to every tool: where it runs and on whose behalf.
@@ -83,6 +119,7 @@ class HarnessToolContext {
   const HarnessToolContext({
     required this.workingDirectory,
     this.sharedRoots = const [],
+    this.readOnlyRoots = const [],
     this.agentId,
     this.workspaceId,
     this.conversationId,
@@ -101,6 +138,10 @@ class HarnessToolContext {
   /// cwd reaches it only through a `repos → ../../repos` symlink, so its real
   /// path is outside the cwd and would otherwise be refused — even for reads.
   final List<String> sharedRoots;
+
+  /// Directories inside the workspace the file-changing tools refuse to
+  /// change. Reading them is unaffected.
+  final List<ReadOnlyRoot> readOnlyRoots;
 
   /// The agent running the loop, when known.
   final String? agentId;
@@ -137,6 +178,7 @@ class HarnessToolContext {
       HarnessToolContext(
         workingDirectory: workingDirectory,
         sharedRoots: sharedRoots,
+        readOnlyRoots: readOnlyRoots,
         agentId: agentId,
         workspaceId: workspaceId,
         conversationId: conversationId,
@@ -149,6 +191,7 @@ class HarnessToolContext {
   HarnessToolContext withToolCallId(String? toolCallId) => HarnessToolContext(
     workingDirectory: workingDirectory,
     sharedRoots: sharedRoots,
+    readOnlyRoots: readOnlyRoots,
     agentId: agentId,
     workspaceId: workspaceId,
     conversationId: conversationId,

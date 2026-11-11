@@ -1,5 +1,5 @@
+import 'package:cc_ui/cc_ui.dart';
 import 'package:control_center/core/theme/app_fonts.dart';
-import 'package:control_center/core/theme/design_system_tokens.dart';
 import 'package:flutter/widgets.dart';
 
 /// Semantic colors for the meetings views, resolved straight from the

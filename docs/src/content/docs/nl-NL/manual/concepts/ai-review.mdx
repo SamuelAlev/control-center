@@ -2,7 +2,7 @@
 title: AI-review
 description: Hoe een pull request een gereviewde pull request wordt — reviewruimtes, reviewnodes en consensus tussen peers, cohorten en assen, het oordeel Ship/Hold/Block, en waarom publiceren een stap blijft die je zelf zet.
 slug: nl-NL/handleiding/concepten/ai-review
-sourceHash: f4cef65335d2b2230cb325f34e13c5ecb8fa23d3
+sourceHash: 2173babe1d7000736d4474090f46237a38f26fe8
 ---
 
 ## De vorm van een review
@@ -217,8 +217,7 @@ GitHub** drukt:
 - De knop **Publiceren naar GitHub** plaatst de review als de persoon die erop
   drukte, met diens eigen GitHub-aanmelding: de releasepoort is van die persoon,
   dus de review ook. Een publicatie zonder persoon erachter is automatisering, en
-  die keurt nooit goed: Ship gaat dan uit als `COMMENT`, en op Control Center
-  Connect krijgt het bericht het voorvoegsel `**Control Center** (for @login):`.
+  die keurt nooit goed: Ship gaat dan uit als `COMMENT`, en @-vermeldingen in de bevindingen worden onschadelijk gemaakt, zodat het bericht niemand noemt. Het bericht wordt geplaatst door de bot, behalve op de gedeelde Control Center Connect-app wanneer de Connect-beheerder deze installatie niet heeft opgenomen: dan gaat het uit op de eigen aanmelding van de verantwoordelijke persoon, onder diens naam, met het voorvoegsel `**Control Center** (for @login):`. Een server of werkruimte met een eigen GitHub-app plaatst het altijd als bot. Een agent die de MCP-tool aanroept, kan alleen de review van zijn eigen ruimte publiceren.
 
 Publiceren declareert de actieklasse `prPublish`, dus het controlepunt van de
 beveiligingen houdt het net als elke muterende actie tegen — het vraagt standaard
